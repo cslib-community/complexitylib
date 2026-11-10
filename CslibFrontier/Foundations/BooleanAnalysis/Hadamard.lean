@@ -38,7 +38,7 @@ message is unique (`BitString.existsUnique_hammingDist_hadamardCode_le_of_le_blr
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

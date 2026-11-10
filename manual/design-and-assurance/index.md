@@ -3,7 +3,7 @@
 cslib-frontier combines several mathematical models through explicit interpretation and resource theorems. Its characteristic engineering choice is to make ordinary functional or oracle programs the client interface, then discharge their cost through reusable certificates for concrete machines. No single notion of computation subsumes every circuit, probabilistic, logical or memory model in the library. The model sections document those distinctions; this section explains how the interfaces are organized and checked. [cslib-frontier][complexitylib]
 
 - [Architecture and design decisions](architecture.md): semantic layers, encoding, resource accounting, module boundaries, and migration.
-- [Proof automation and client interfaces](automation.md): an index of the tactics by goal, certificate search, loop rules, word-RAM execution, circuit construction, logical synthesis and stateful refinement.
+- [Proof automation and client interfaces](automation.md): an index of the tactics by goal, certificate search, loop rules, word-RAM execution, circuit construction and logical synthesis.
 - [Assurance and trust](assurance.md): builds, axiom audits, the results registry, semantic review and the retired formal abstracts and comparator contracts.
 - [Upstream reuse and source credit](upstream-and-credit.md): dependency identity, copied code, general mathematics, original contributions and attribution.
 

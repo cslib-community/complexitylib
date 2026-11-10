@@ -110,15 +110,12 @@ theorem IsHuffmanBuild.leaves_perm_flatten {α β : Type*} [Add β] [LE β] {w :
 theorem IsHuffmanBuild.leaves_perm {α β : Type*} [Add β] [LE β] {w : α → β}
     {syms : List α} {T : CodeTree α} (h : IsHuffmanBuild w (syms.map .leaf) T) :
     T.leaves.Perm syms := by
-  have hflat : ∀ L : List α, ((L.map CodeTree.leaf).map CodeTree.leaves).flatten = L := by
-    intro L
+  have hflat : ∀ L : List α, ((L.map CodeTree.leaf).map CodeTree.leaves).flatten = L := fun L => by
     induction L with
     | nil => rfl
     | cons a as ih =>
-      simp only [List.map_cons, List.flatten_cons, CodeTree.leaves_leaf, List.singleton_append]
-      exact congrArg (a :: ·) ih
-  have hp := h.leaves_perm_flatten
-  rwa [hflat syms] at hp
+      simp only [List.map_cons, List.flatten_cons, CodeTree.leaves_leaf, List.singleton_append, ih]
+  exact hflat syms ▸ h.leaves_perm_flatten
 
 /-! ## Monoid rearrangement and depth-weighted list swaps -/
 
@@ -127,17 +124,11 @@ depth `d₂` to the smaller weight `w₁` does not exceed assigning `d₂` to `w
 theorem rearrangement_nsmul_le {β : Type*} [AddCommMonoid β] [PartialOrder β]
     [IsOrderedAddMonoid β] {d₁ d₂ : ℕ} (hd : d₁ ≤ d₂) {w₁ w₂ : β} (hw : w₁ ≤ w₂) :
     d₂ • w₁ + d₁ • w₂ ≤ d₁ • w₁ + d₂ • w₂ := by
-  have hd_eq : d₂ = d₁ + (d₂ - d₁) := (Nat.add_sub_of_le hd).symm
-  rw [hd_eq, add_nsmul, add_nsmul]
-  have hbase : (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₁ ≤
-      (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₂ :=
-    add_le_add le_rfl (nsmul_le_nsmul_right hw (d₂ - d₁))
-  have hlhs : (d₁ • w₁ + (d₂ - d₁) • w₁) + d₁ • w₂ =
-      (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₁ := by ac_rfl
-  have hrhs : d₁ • w₁ + (d₁ • w₂ + (d₂ - d₁) • w₂) =
-      (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₂ := by ac_rfl
-  rw [hlhs, hrhs]
-  exact hbase
+  rw [← Nat.add_sub_of_le hd, add_nsmul, add_nsmul]
+  have hle := add_le_add (le_refl (d₁ • w₁ + d₁ • w₂)) (nsmul_le_nsmul_right hw (d₂ - d₁))
+  rwa [show (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₁ = d₁ • w₁ + (d₂ - d₁) • w₁ + d₁ • w₂ by ac_rfl,
+    show (d₁ • w₁ + d₁ • w₂) + (d₂ - d₁) • w₂ = d₁ • w₁ + (d₁ • w₂ + (d₂ - d₁) • w₂) by ac_rfl]
+    at hle
 
 private def zipCost {γ β : Type*} [AddCommMonoid β] (W : γ → β)
     (xs : List γ) (ds : List ℕ) : β :=
@@ -195,24 +186,21 @@ private theorem zipCost_swap_head_tail {γ β : Type*} [AddCommMonoid β] [Parti
     zipCost W (z :: (p ++ u :: q)) (D :: es) ≤
       zipCost W (u :: (p ++ z :: q)) (D :: es) := by
   rcases split_at_length p z q hlen with ⟨d_p, d_z, d_q, rfl, hp, _⟩
-  have hdz_le : d_z ≤ D := hD d_z (List.mem_append_right _ List.mem_cons_self)
   simp only [zipCost_cons, zipCost_append W hp]
-  have hrearr := rearrangement_nsmul_le hdz_le hw
-  have hlhs : D • W z + (zipCost W p d_p + (d_z • W u + zipCost W q d_q)) =
-      (D • W z + d_z • W u) + (zipCost W p d_p + zipCost W q d_q) := by ac_rfl
-  have hrhs : D • W u + (zipCost W p d_p + (d_z • W z + zipCost W q d_q)) =
-      (d_z • W z + D • W u) + (zipCost W p d_p + zipCost W q d_q) := by ac_rfl
-  rw [hlhs, hrhs]
-  exact add_le_add hrearr le_rfl
+  have hle := add_le_add (rearrangement_nsmul_le (hD d_z (by simp)) hw)
+    (le_refl (zipCost W p d_p + zipCost W q d_q))
+  rwa [show D • W z + d_z • W u + (zipCost W p d_p + zipCost W q d_q) =
+      D • W z + (zipCost W p d_p + (d_z • W u + zipCost W q d_q)) by ac_rfl,
+    show d_z • W z + D • W u + (zipCost W p d_p + zipCost W q d_q) =
+      D • W u + (zipCost W p d_p + (d_z • W z + zipCost W q d_q)) by ac_rfl] at hle
 
 private theorem zipCost_swap_second_tail {γ β : Type*} [AddCommMonoid β] [PartialOrder β]
     [IsOrderedAddMonoid β] (W : γ → β) (x : γ) {v z : γ} {p q : List γ} {D : ℕ} {es : List ℕ}
     (hlen : (p ++ z :: q).length = es.length)
     (hD : ∀ d ∈ es, d ≤ D) (hw : W z ≤ W v) :
     zipCost W (x :: z :: (p ++ v :: q)) (D :: D :: es) ≤
-      zipCost W (x :: v :: (p ++ z :: q)) (D :: D :: es) := by
-  simp only [zipCost_cons]
-  exact add_le_add le_rfl (zipCost_swap_head_tail W hlen hD hw)
+      zipCost W (x :: v :: (p ++ z :: q)) (D :: D :: es) :=
+  add_le_add le_rfl (zipCost_swap_head_tail W hlen hD hw)
 
 /-- Step B: when `x` already occupies slot 0 (`depth D`), move `y` into slot 1 (`depth D`). -/
 private theorem exists_perm_tail_stepB {γ β : Type*} [AddCommMonoid β] [PartialOrder β]
@@ -225,18 +213,13 @@ private theorem exists_perm_tail_stepB {γ β : Type*} [AddCommMonoid β] [Parti
     ∃ tail' : List γ, tail'.Perm F_rest ∧
       zipCost W (x :: y :: tail') (D :: D :: es) ≤
         zipCost W (x :: v :: tail) (D :: D :: es) := by
-  have hy_mem : y ∈ v :: tail := hperm.subset List.mem_cons_self
-  rcases List.mem_cons.mp hy_mem with rfl | hy_tail
+  rcases List.mem_cons.mp (hperm.subset List.mem_cons_self) with rfl | hy_tail
   · exact ⟨tail, (List.Perm.cons_inv hperm).symm, le_rfl⟩
   · rcases List.append_of_mem hy_tail with ⟨p, q, rfl⟩
-    have hperm_mid : (v :: (p ++ y :: q)).Perm (y :: (v :: p ++ q)) := by
-      simpa using (List.perm_middle (l₁ := v :: p) (a := y) (l₂ := q))
-    have hF_perm : F_rest.Perm (v :: p ++ q) := List.Perm.cons_inv (hperm.trans hperm_mid)
-    have hv_in : v ∈ F_rest := hF_perm.symm.subset List.mem_cons_self
-    have htail'_perm : (p ++ v :: q).Perm F_rest :=
-      List.perm_middle.trans hF_perm.symm
-    exact ⟨p ++ v :: q, htail'_perm,
-      zipCost_swap_second_tail W x hlen hD (hmin_y v hv_in)⟩
+    have hF_perm : F_rest.Perm (v :: p ++ q) := List.Perm.cons_inv <|
+      hperm.trans (by simpa using List.perm_middle (l₁ := v :: p) (a := y) (l₂ := q))
+    exact ⟨p ++ v :: q, List.perm_middle.trans hF_perm.symm,
+      zipCost_swap_second_tail W x hlen hD (hmin_y v (hF_perm.symm.subset List.mem_cons_self))⟩
 
 /-- Moving a minimum-weight pair `(x, y)` into the first two leaf slots `(D, D)` of a depth profile
 `D :: D :: es` (`∀ d ∈ es, d ≤ D`) never increases `zipCost`. -/
@@ -251,58 +234,36 @@ private theorem exists_perm_tail_zipCost_le {γ β : Type*} [AddCommMonoid β] [
       zipCost W (x :: y :: tail') (D :: D :: es) ≤
         zipCost W (u :: v :: tail) (D :: D :: es) := by
   have hmin_y : ∀ z ∈ F_rest, W y ≤ W z := fun z hz => (hmin z hz).2
-  have hx_mem : x ∈ u :: v :: tail := hperm.subset List.mem_cons_self
-  rcases List.mem_cons.mp hx_mem with rfl | hx_vtail
+  rcases List.mem_cons.mp (hperm.subset List.mem_cons_self) with rfl | hx_vtail
   · exact exists_perm_tail_stepB W x y (List.Perm.cons_inv hperm) hmin_y hlen hD
   · rcases List.mem_cons.mp hx_vtail with rfl | hx_tail
-    · have hswap_perm : (u :: x :: tail).Perm (x :: u :: tail) := List.Perm.swap x u tail
-      have hperm' : (y :: F_rest).Perm (u :: tail) :=
-        List.Perm.cons_inv (hperm.trans hswap_perm)
-      rcases exists_perm_tail_stepB W x y hperm' hmin_y hlen hD with ⟨tail', htp, hle⟩
-      rw [← zipCost_swap_first_two W u x tail D es] at hle
-      exact ⟨tail', htp, hle⟩
+    · rcases exists_perm_tail_stepB W x y
+          (List.Perm.cons_inv (hperm.trans (List.Perm.swap x u tail))) hmin_y hlen hD with
+        ⟨tail', htp, hle⟩
+      exact ⟨tail', htp, hle.trans_eq (zipCost_swap_first_two W x u tail D es)⟩
     · rcases List.append_of_mem hx_tail with ⟨a, b, rfl⟩
-      have hx_mid : (u :: v :: (a ++ x :: b)).Perm (x :: (u :: v :: a ++ b)) := by
-        simpa using (List.perm_middle (l₁ := u :: v :: a) (a := x) (l₂ := b))
-      have hyF : (y :: F_rest).Perm (u :: v :: a ++ b) :=
-        List.Perm.cons_inv (hperm.trans hx_mid)
-      have hy_mem : y ∈ u :: (v :: a ++ b) := by simpa using hyF.subset List.mem_cons_self
-      rcases List.mem_cons.mp hy_mem with rfl | hy_rest
+      have hyF : (y :: F_rest).Perm (u :: v :: a ++ b) := List.Perm.cons_inv <|
+        hperm.trans (by simpa using List.perm_middle (l₁ := u :: v :: a) (a := x) (l₂ := b))
+      rcases List.mem_cons.mp (by simpa using hyF.subset List.mem_cons_self :
+          y ∈ u :: (v :: a ++ b)) with rfl | hy_rest
       · have hF_perm : F_rest.Perm (v :: a ++ b) := List.Perm.cons_inv hyF
-        have hv_in : v ∈ F_rest := hF_perm.symm.subset List.mem_cons_self
-        have htail'_perm : (a ++ v :: b).Perm F_rest :=
-          List.perm_middle.trans hF_perm.symm
-        have hle1 := zipCost_swap_second_tail W y hlen hD (hmin v hv_in).1
-        rw [← zipCost_swap_first_two W x y (a ++ v :: b) D es] at hle1
-        exact ⟨a ++ v :: b, htail'_perm, hle1⟩
+        refine ⟨a ++ v :: b, List.perm_middle.trans hF_perm.symm, ?_⟩
+        rw [zipCost_swap_first_two]
+        exact zipCost_swap_second_tail W y hlen hD
+          (hmin v (hF_perm.symm.subset List.mem_cons_self)).1
       · rcases List.append_of_mem hy_rest with ⟨p, q, hpq⟩
-        have hy_mid : (u :: (p ++ y :: q)).Perm (y :: (u :: p ++ q)) := by
-          simpa using (List.perm_middle (l₁ := u :: p) (a := y) (l₂ := q))
-        have hyF' : (y :: F_rest).Perm (y :: (u :: p ++ q)) := by
-          have : (u :: v :: a ++ b) = u :: (p ++ y :: q) := by simpa using congrArg (u :: ·) hpq
-          exact (this ▸ hyF).trans hy_mid
-        have hF_perm : F_rest.Perm (u :: p ++ q) := List.Perm.cons_inv hyF'
-        have hu_in : u ∈ F_rest := hF_perm.symm.subset List.mem_cons_self
-        have hlen_vtail : (v :: a ++ x :: b).length = (D :: es).length := by
-          simp [hlen]
-        have hD_cons : ∀ d ∈ D :: es, d ≤ D := by
-          intro d hd
-          rcases List.mem_cons.mp hd with rfl | hes
-          · exact le_rfl
-          · exact hD d hes
-        have hle_head : zipCost W (x :: (v :: a ++ u :: b)) (D :: D :: es) ≤
-            zipCost W (u :: (v :: a ++ x :: b)) (D :: D :: es) :=
-          zipCost_swap_head_tail W (p := v :: a) (q := b) hlen_vtail hD_cons (hmin u hu_in).1
-        have hau_perm : (v :: (a ++ u :: b)).Perm (u :: v :: a ++ b) := by
-          have h1 : (a ++ u :: b).Perm (u :: (a ++ b)) := List.perm_middle
-          exact (h1.cons v).trans (List.Perm.swap u v (a ++ b))
-        have hyF_new : (y :: F_rest).Perm (v :: (a ++ u :: b)) :=
-          hyF.trans hau_perm.symm
-        have hlen_au : (a ++ u :: b).length = es.length := by
-          simp only [List.length_append, List.length_cons] at hlen ⊢
-          omega
-        rcases exists_perm_tail_stepB W x y hyF_new hmin_y hlen_au hD with ⟨tail', htp, hle_B⟩
-        exact ⟨tail', htp, le_trans hle_B (by simpa using hle_head)⟩
+        have hF_perm : F_rest.Perm (u :: p ++ q) := List.Perm.cons_inv <|
+          (show (y :: F_rest).Perm (u :: (p ++ y :: q)) by simpa [hpq] using hyF).trans
+            (by simpa using List.perm_middle (l₁ := u :: p) (a := y) (l₂ := q))
+        have hle_head := zipCost_swap_head_tail W (p := v :: a) (q := b)
+          (by simpa [List.cons_append] using hlen) (List.forall_mem_cons.mpr ⟨le_rfl, hD⟩)
+          (hmin u (hF_perm.symm.subset List.mem_cons_self)).1
+        have hyF_new : (y :: F_rest).Perm (v :: (a ++ u :: b)) := hyF.trans
+          (((List.perm_middle (l₁ := a) (a := u) (l₂ := b)).cons v).trans
+            (List.Perm.swap u v (a ++ b))).symm
+        rcases exists_perm_tail_stepB W x y hyF_new hmin_y (by simpa using hlen) hD with
+          ⟨tail', htp, hle_B⟩
+        exact ⟨tail', htp, le_trans hle_B (by simpa [List.cons_append] using hle_head)⟩
 
 /-! ## Maximum-depth leftward rotation, relabeling, and cherry contraction -/
 
@@ -359,63 +320,45 @@ inductive LeftCherryAtDepth {δ : Type*} :
       LeftCherryAtDepth l d u v C →
       LeftCherryAtDepth (.branch l r) (d + 1) u v (fun z => .branch (C z) r)
 
-private theorem eq_leaf_of_maxDepth_eq_zero {δ : Type*} {T : CodeTree δ}
-    (h : T.maxDepth = 0) : ∃ a, T = .leaf a := by
-  cases T with
-  | leaf a => exact ⟨a, rfl⟩
-  | branch l r => simp [CodeTree.maxDepth] at h
+private theorem map_snd_map_succ {δ : Type*} (L : List (δ × ℕ)) :
+    (L.map fun p => (p.1, p.2 + 1)).map Prod.snd = (L.map Prod.snd).map (· + 1) := by
+  simp [List.map_map, Function.comp_def]
 
 theorem exists_leftCherryAtDepth_rotateDeepestLeft {δ : Type*} (l r : CodeTree δ) :
     ∃ u v C, LeftCherryAtDepth (rotateDeepestLeft (CodeTree.branch l r))
       (CodeTree.branch l r).maxDepth u v C := by
-  suffices h : ∀ (n : ℕ) (T : CodeTree δ), T.maxDepth ≤ n → 1 ≤ T.maxDepth →
-      ∃ u v C, LeftCherryAtDepth (rotateDeepestLeft T) T.maxDepth u v C by
-    exact h (CodeTree.branch l r).maxDepth (CodeTree.branch l r) le_rfl
-      (by simp [CodeTree.maxDepth])
-  intro n
-  induction n with
-  | zero =>
-    intro T h0 h1
-    omega
-  | succ n ih =>
-    intro T hle h1
-    cases T with
-    | leaf _ => simp [CodeTree.maxDepth] at h1
-    | branch l' r' =>
-      simp only [rotateDeepestLeft]
-      split_ifs with hcmp
-      · cases l' with
-        | leaf u =>
-          have hr0 : r'.maxDepth = 0 := by
-            simp only [CodeTree.maxDepth] at hcmp
-            omega
-          rcases eq_leaf_of_maxDepth_eq_zero hr0 with ⟨v, rfl⟩
-          exact ⟨u, v, fun z => .leaf z,
-            by simpa [CodeTree.maxDepth, rotateDeepestLeft] using LeftCherryAtDepth.base u v⟩
-        | branch l₁ l₂ =>
-          have hl_le : (CodeTree.branch l₁ l₂).maxDepth ≤ n := by
-            simp only [CodeTree.maxDepth] at hle ⊢
-            omega
-          have hl_1 : 1 ≤ (CodeTree.branch l₁ l₂).maxDepth := by simp [CodeTree.maxDepth]
-          rcases ih (.branch l₁ l₂) hl_le hl_1 with ⟨u, v, C, hC⟩
-          have hd_eq : (CodeTree.branch l₁ l₂).maxDepth + 1 =
-              (CodeTree.branch (.branch l₁ l₂) r').maxDepth := by
-            simp only [CodeTree.maxDepth] at hcmp ⊢
-            omega
-          exact ⟨u, v, fun z => .branch (C z) r', hd_eq ▸ LeftCherryAtDepth.left hC⟩
-      · cases r' with
-        | leaf v => simp [CodeTree.maxDepth] at hcmp
-        | branch r₁ r₂ =>
-          have hr_le : (CodeTree.branch r₁ r₂).maxDepth ≤ n := by
-            simp only [CodeTree.maxDepth] at hle ⊢
-            omega
-          have hr_1 : 1 ≤ (CodeTree.branch r₁ r₂).maxDepth := by simp [CodeTree.maxDepth]
-          rcases ih (.branch r₁ r₂) hr_le hr_1 with ⟨u, v, C, hC⟩
-          have hd_eq : (CodeTree.branch r₁ r₂).maxDepth + 1 =
-              (CodeTree.branch l' (.branch r₁ r₂)).maxDepth := by
-            simp only [CodeTree.maxDepth] at hcmp ⊢
-            omega
-          exact ⟨u, v, fun z => .branch (C z) l', hd_eq ▸ LeftCherryAtDepth.left hC⟩
+  suffices h : ∀ T : CodeTree δ, 1 ≤ T.maxDepth →
+      ∃ u v C, LeftCherryAtDepth (rotateDeepestLeft T) T.maxDepth u v C from
+    h (.branch l r) (by simp [CodeTree.maxDepth])
+  intro T h1
+  have hstep : ∀ {a b : CodeTree δ}, b.maxDepth ≤ a.maxDepth →
+      (1 ≤ a.maxDepth → ∃ u v C, LeftCherryAtDepth (rotateDeepestLeft a) a.maxDepth u v C) →
+      ∃ u v C, LeftCherryAtDepth (.branch (rotateDeepestLeft a) b)
+        (CodeTree.branch a b).maxDepth u v C := by
+    intro a b hab iha
+    cases a with
+    | leaf u =>
+      cases b with
+      | leaf v =>
+        exact ⟨u, v, .leaf, by
+          simpa [rotateDeepestLeft, CodeTree.maxDepth] using LeftCherryAtDepth.base u v⟩
+      | branch _ _ => simp [CodeTree.maxDepth] at hab
+    | branch a₁ a₂ =>
+      rcases iha (by simp [CodeTree.maxDepth]) with ⟨u, v, C, hC⟩
+      have hd : (CodeTree.branch a₁ a₂).maxDepth + 1 =
+          (CodeTree.branch (.branch a₁ a₂) b).maxDepth := by
+        simp only [CodeTree.maxDepth] at hab ⊢
+        omega
+      exact ⟨u, v, fun z => .branch (C z) b, hd ▸ LeftCherryAtDepth.left hC⟩
+  induction T with
+  | leaf _ => simp [CodeTree.maxDepth] at h1
+  | branch l r ihl ihr =>
+    simp only [rotateDeepestLeft]
+    split_ifs with hcmp
+    · exact hstep hcmp ihl
+    · have hcomm : (CodeTree.branch l r).maxDepth = (CodeTree.branch r l).maxDepth := by
+        simp [CodeTree.maxDepth, Nat.max_comm]
+      exact hcomm ▸ hstep (by omega) ihr
 
 theorem LeftCherryAtDepth.leaves_and_depths {δ : Type*} {T : CodeTree δ} {D : ℕ} {u v : δ}
     {C : δ → CodeTree δ} (h : LeftCherryAtDepth T D u v C) :
@@ -430,15 +373,10 @@ theorem LeftCherryAtDepth.leaves_and_depths {δ : Type*} {T : CodeTree δ} {D : 
   | @left l r d u v C _ ih =>
     rcases ih with ⟨tail_l, ds_l, hl_leaves, hC_leaves, hl_depths, hlen_l⟩
     refine ⟨tail_l ++ r.leaves,
-      ds_l.map (· + 1) ++ (r.leafDepths.map Prod.snd).map (· + 1), ?_, ?_, ?_, ?_⟩
+      ds_l.map (· + 1) ++ (r.leafDepths.map Prod.snd).map (· + 1), ?_, fun z => ?_, ?_, ?_⟩
     · simp [hl_leaves]
-    · intro z
-      simp [hC_leaves z]
-    · have hmap : ∀ L : List (δ × ℕ),
-          (L.map fun p => (p.1, p.2 + 1)).map Prod.snd = (L.map Prod.snd).map (· + 1) := by
-        intro L
-        simp [List.map_map, Function.comp_def]
-      simp only [CodeTree.leafDepths, List.map_append, hmap, hl_depths, List.map_cons,
+    · simp [hC_leaves z]
+    · simp only [CodeTree.leafDepths, List.map_append, map_snd_map_succ, hl_depths, List.map_cons,
         List.cons_append]
     · have hr_len : r.leaves.length = (r.leafDepths.map Prod.snd).length := by
         rw [List.length_map, ← CodeTree.map_fst_leafDepths r, List.length_map]
@@ -461,56 +399,34 @@ private theorem relabel_append_spec {δ γ : Type*} (fb : γ) (T : CodeTree δ)
       (relabel fb T xs).1.leafDepths = xs.zip (T.leafDepths.map Prod.snd) := by
   induction T generalizing xs ys with
   | leaf _ =>
-    cases xs with
-    | nil => simp at hlen
-    | cons x xs' =>
-      cases xs' with
-      | nil => simp [relabel, CodeTree.leafDepths]
-      | cons _ _ => simp at hlen
+    rcases xs with _ | ⟨x, _ | ⟨_, _⟩⟩
+    · simp at hlen
+    · simp [relabel, CodeTree.leafDepths]
+    · simp at hlen
   | branch l r ihl ihr =>
     simp only [CodeTree.leaves_branch, List.length_append] at hlen
     let xs₁ := xs.take l.leaves.length
     let xs₂ := xs.drop l.leaves.length
     have hxs_split : xs = xs₁ ++ xs₂ := (List.take_append_drop l.leaves.length xs).symm
-    have hlen₁ : xs₁.length = l.leaves.length := by
-      simp only [xs₁, List.length_take]
-      omega
-    have hlen₂ : xs₂.length = r.leaves.length := by
-      simp only [xs₂, List.length_drop]
-      omega
+    have hlen₁ : xs₁.length = l.leaves.length := by simp only [xs₁, List.length_take]; omega
+    have hlen₂ : xs₂.length = r.leaves.length := by simp only [xs₂, List.length_drop]; omega
     rcases ihl (ys := xs₂ ++ ys) hlen₁ with ⟨hl_app_ys, hl_leaves, hl_depths⟩
     rcases ihl (ys := xs₂) hlen₁ with ⟨hl_app, _, _⟩
     rcases ihr (ys := ys) hlen₂ with ⟨hr_app_ys, hr_leaves, hr_depths⟩
-    have hbr_ys : relabel fb (.branch l r) (xs ++ ys) =
-        (.branch (relabel fb l xs₁).1 (relabel fb r xs₂).1, ys) := by
-      rw [hxs_split, List.append_assoc]
-      simp only [relabel, hl_app_ys, hr_app_ys]
     have hbr_xs : (relabel fb (.branch l r) xs).1 =
         .branch (relabel fb l xs₁).1 (relabel fb r xs₂).1 := by
-      rw [hxs_split]
-      simp only [relabel, hl_app]
+      rw [hxs_split]; simp only [relabel, hl_app]
     refine ⟨?_, ?_, ?_⟩
-    · rw [hbr_ys, hbr_xs]
+    · rw [hbr_xs, hxs_split, List.append_assoc]; simp only [relabel, hl_app_ys, hr_app_ys]
     · rw [hbr_xs, CodeTree.leaves_branch, hl_leaves, hr_leaves, ← hxs_split]
-    · rw [hbr_xs, CodeTree.leafDepths, hl_depths, hr_depths, hxs_split]
-      have hmap_snd : ∀ L : List (δ × ℕ),
-          (L.map fun p => (p.1, p.2 + 1)).map Prod.snd = (L.map Prod.snd).map (· + 1) := by
-        intro L
-        simp [List.map_map, Function.comp_def]
-      have hzip_succ : ∀ (us : List γ) (ds : List ℕ),
-          (us.zip ds).map (fun p => (p.1, p.2 + 1)) = us.zip (ds.map (· + 1)) := by
-        intro us
-        induction us with
-        | nil => simp
-        | cons u us ihu =>
-          intro ds
-          cases ds with
-          | nil => simp
-          | cons d ds => simp [ihu]
+    · have hzip_succ : ∀ (us : List γ) (ds : List ℕ),
+          (us.zip ds).map (fun p => (p.1, p.2 + 1)) = us.zip (ds.map (· + 1)) :=
+        fun _ _ => List.zip_map_right.symm
       have hdl_len : xs₁.length = ((l.leafDepths.map Prod.snd).map (· + 1)).length := by
         rw [List.length_map, List.length_map, hlen₁, ← CodeTree.map_fst_leafDepths l,
           List.length_map]
-      simp only [CodeTree.leafDepths, List.map_append, hmap_snd, hzip_succ,
+      rw [hbr_xs, CodeTree.leafDepths, hl_depths, hr_depths, hxs_split]
+      simp only [CodeTree.leafDepths, List.map_append, map_snd_map_succ, hzip_succ,
         List.zip_append hdl_len]
 
 private theorem LeftCherryAtDepth.relabel_spec {δ γ : Type*} {T : CodeTree δ} {D : ℕ} {u v : δ}
@@ -522,9 +438,7 @@ private theorem LeftCherryAtDepth.relabel_spec {δ γ : Type*} {T : CodeTree δ}
   induction h generalizing rest with
   | base u v =>
     cases rest with
-    | nil =>
-      exact ⟨fun z => .leaf z, by simpa [relabel] using LeftCherryAtDepth.base x y,
-        fun _ => rfl⟩
+    | nil => exact ⟨.leaf, by simpa [relabel] using LeftCherryAtDepth.base x y, fun _ => rfl⟩
     | cons _ _ => simp at hlen
   | @left l r d u v C hl ih =>
     rcases hl.leaves_and_depths with ⟨tail_l, _, hl_leaves, _, _, _⟩
@@ -534,26 +448,18 @@ private theorem LeftCherryAtDepth.relabel_spec {δ γ : Type*} {T : CodeTree δ}
     let rest₂ := rest.drop tail_l.length
     have hrest_split : rest = rest₁ ++ rest₂ := (List.take_append_drop tail_l.length rest).symm
     have hlen₁ : (x :: y :: rest₁).length = l.leaves.length := by
-      rw [hl_leaves]
-      simp only [rest₁, List.length_cons, List.length_take]
-      omega
+      rw [hl_leaves]; simp only [rest₁, List.length_cons, List.length_take]; omega
     have hlen₂ : rest₂.length = r.leaves.length := by
-      simp only [rest₂, List.length_drop]
-      omega
+      simp only [rest₂, List.length_drop]; omega
     rcases relabel_append_spec x l (xs := x :: y :: rest₁) (ys := rest₂) hlen₁ with ⟨hl_app, _, _⟩
     rcases relabel_append_spec x r (xs := rest₂) (ys := []) hlen₂ with ⟨_, hr_leaves, _⟩
     rcases ih hlen₁ with ⟨C'_l, hC'_l, hC'_leaves⟩
     have hbr : (relabel x (.branch l r) (x :: y :: rest)).1 =
         .branch (relabel x l (x :: y :: rest₁)).1 (relabel x r rest₂).1 := by
-      have hsplit2 : (x :: y :: rest) = (x :: y :: rest₁) ++ rest₂ := by
-        simp [hrest_split]
-      rw [hsplit2]
+      rw [show x :: y :: rest = (x :: y :: rest₁) ++ rest₂ by simp [hrest_split]]
       simp only [relabel, hl_app]
-    refine ⟨fun z => .branch (C'_l z) (relabel x r rest₂).1, ?_, ?_⟩
-    · rw [hbr]
-      exact LeftCherryAtDepth.left hC'_l
-    · intro z
-      simp [hC'_leaves z, hr_leaves, ← hrest_split]
+    refine ⟨fun z => .branch (C'_l z) (relabel x r rest₂).1,
+      hbr ▸ LeftCherryAtDepth.left hC'_l, fun z => by simp [hC'_leaves z, hr_leaves, ← hrest_split]⟩
 
 /-- **Greedy-Choice Exchange Lemma** ([CLRS2009], Lemma 16.2): in any full binary tree `S` whose
 leaves contain a minimum-weight pair `(x, y)` (`∀ z ∈ F_rest, W x ≤ W z ∧ W y ≤ W z`), rotating and
@@ -571,29 +477,21 @@ theorem exists_cherry_weightedPathLength_le {γ β : Type*}
       (∀ z, (C' z).leaves = z :: tail') ∧
       S'.weightedPathLength W ≤ S.weightedPathLength W := by
   cases S with
-  | leaf a =>
-    have hlen := hperm.length_eq
-    simp at hlen
+  | leaf a => have := hperm.length_eq; simp at this
   | branch l r =>
     let S₁ := rotateDeepestLeft (CodeTree.branch l r)
     rcases exists_leftCherryAtDepth_rotateDeepestLeft l r with ⟨u, v, C, hC⟩
     rcases hC.leaves_and_depths with ⟨tail, ds, hS₁_leaves, _, hS₁_depths, htail_len⟩
-    have hperm₁ : (x :: y :: F_rest).Perm (u :: v :: tail) := by
-      rw [← hS₁_leaves]
-      exact hperm.symm.trans (leaves_rotateDeepestLeft_perm (CodeTree.branch l r)).symm
+    have hperm₁ : (x :: y :: F_rest).Perm (u :: v :: tail) :=
+      hS₁_leaves ▸ hperm.symm.trans (leaves_rotateDeepestLeft_perm (CodeTree.branch l r)).symm
     have hD_ds : ∀ d ∈ ds, d ≤ (CodeTree.branch l r).maxDepth := by
       intro d hd
-      have hmem_snd : d ∈ S₁.leafDepths.map Prod.snd := by grind
-      rcases List.mem_map.mp hmem_snd with ⟨p, hp, rfl⟩
-      have hle := CodeTree.snd_le_maxDepth_of_mem_leafDepths hp
-      rwa [maxDepth_rotateDeepestLeft] at hle
+      rcases List.mem_map.mp (show d ∈ S₁.leafDepths.map Prod.snd by grind) with ⟨p, hp, rfl⟩
+      exact (CodeTree.snd_le_maxDepth_of_mem_leafDepths hp).trans_eq (maxDepth_rotateDeepestLeft _)
     rcases exists_perm_tail_zipCost_le W hperm₁ hmin htail_len hD_ds with ⟨tail', htail'_perm, hle⟩
     have hlen_relabel : (x :: y :: tail').length = S₁.leaves.length := by
-      have hp_len := hperm₁.length_eq
-      have ht_len := htail'_perm.length_eq
-      rw [hS₁_leaves]
-      simp only [List.length_cons] at hp_len ⊢
-      omega
+      have := hperm₁.length_eq; have := htail'_perm.length_eq
+      rw [hS₁_leaves]; simp only [List.length_cons] at *; omega
     rcases relabel_append_spec x S₁ (xs := x :: y :: tail') (ys := []) hlen_relabel with
       ⟨_, hS'_leaves, hS'_depths⟩
     rcases hC.relabel_spec x y hlen_relabel with ⟨C', hC', hC'_leaves⟩
@@ -601,19 +499,12 @@ theorem exists_cherry_weightedPathLength_le {γ β : Type*}
     have hS'_wpl : S'.weightedPathLength W =
         zipCost W (x :: y :: tail') ((CodeTree.branch l r).maxDepth ::
           (CodeTree.branch l r).maxDepth :: ds) := by
-      rw [CodeTree.weightedPathLength_eq_sum_leafDepths, hS'_depths, hS₁_depths]
-      rfl
+      rw [CodeTree.weightedPathLength_eq_sum_leafDepths, hS'_depths, hS₁_depths]; rfl
     have hS₁_wpl : S₁.weightedPathLength W =
         zipCost W (u :: v :: tail) ((CodeTree.branch l r).maxDepth ::
           (CodeTree.branch l r).maxDepth :: ds) := by
-      have hzip_self : ∀ L : List (γ × ℕ), L = (L.map Prod.fst).zip (L.map Prod.snd) := by
-        intro L
-        induction L with
-        | nil => rfl
-        | cons p ps ih =>
-          rcases p with ⟨a, d⟩
-          simp only [List.map_cons, List.zip_cons_cons]
-          exact congrArg ((a, d) :: ·) ih
+      have hzip_self : ∀ L : List (γ × ℕ), L = (L.map Prod.fst).zip (L.map Prod.snd) := fun L => by
+        simpa only [List.unzip_fst, List.unzip_snd] using (List.zip_unzip L).symm
       rw [CodeTree.weightedPathLength_eq_sum_leafDepths, hzip_self S₁.leafDepths,
         CodeTree.map_fst_leafDepths, hS₁_leaves, hS₁_depths]
       rfl

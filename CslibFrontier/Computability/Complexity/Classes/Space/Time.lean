@@ -47,9 +47,10 @@ theorem DTIME_subset_DSPACE {t : ℕ → ℕ} : DTIME enc t ⊆ DSPACE enc t := 
     (fun _ => le_rfl) fun a => ?_⟩
   rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc]
 
-/-- **Space bounds time exponentially** (the inclusion `DSPACE s ⊆ DTIME (2 ^ O(s))` of cslib pull
-request #767, for encoded instances): a decider within space `O(s n)` halts within its number of
-configurations, `O((n + 2) * 2 ^ (c * s n))` for a constant `c` of the decider. -/
+/-- **Space bounds time exponentially** (`DSPACE s ⊆ DTIME ((n + 2) * 2 ^ O(s))`, for encoded
+instances, corresponding to the space-to-time inclusion of cslib pull request #767): a decider
+within space `O(s n)` halts within its number of configurations, `O((n + 2) * 2 ^ (c * s n))` for
+a constant `c` of the decider. -/
 theorem exists_mem_DTIME_of_mem_DSPACE {s : ℕ → ℕ} (h : A ∈ DSPACE enc s) :
     ∃ c, A ∈ DTIME enc fun n => (n + 2) * 2 ^ (c * s n) := by
   obtain ⟨c₁, c₂, t, hA⟩ := h

@@ -55,7 +55,7 @@ inequality and Cauchy–Schwarz then bound the sum of statistical distances.
 * [R. Raz, *A parallel repetition theorem*][Raz1998]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

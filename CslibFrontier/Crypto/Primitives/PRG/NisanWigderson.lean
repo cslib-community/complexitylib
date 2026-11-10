@@ -311,7 +311,6 @@ theorem hardwiredExperiment_nextBitPredictor_pure (D : Design ℓ n a m)
     PMF.bind_bind,
     Function.comp_apply, PMF.pure_bind]
   pmf_swap
-  rfl
 
 /-- **The Nisan–Wigderson reconstruction for deterministic tests**, with explicit hardwiring. If
 `0 < m` and a deterministic test accepts outputs of the generator with probability at least `ε`

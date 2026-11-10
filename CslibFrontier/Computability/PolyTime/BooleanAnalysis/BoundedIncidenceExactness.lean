@@ -35,6 +35,9 @@ Exactness holds on feasible prepared inputs (`prepareBranchEvalInput (n', eqs')`
 `validBranchEvalParams` or the unary resource-dimension guard `validDesignShape` (which bounds
 measurement and group dimensions rather than certifying arbitrary designs) and return `0`.
 
+The proofs reuse the private scope and group-index lemmas of `BoundedIncidenceSemantics`, which
+this module reads through `import all`.
+
 ## Main results
 
 * `Cslib.Complexity.SubexponentialSAT.SparsePolyCounter.evalBoundedIncidenceBranch_eq_rootCount`:

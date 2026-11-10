@@ -8,10 +8,12 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Program
+public import CslibFrontier.Crypto.Protocols.MPC.AllToAll
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Foundations.Data.BitString.Block
 public import Cslib.Computability.Circuit.Boolean.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Multi-Party Boolean Circuit Evaluation in the Shared-Multiplication Hybrid Model
@@ -112,133 +114,6 @@ namespace GMWCircuit
 
 /-! ### Step 1: Input sharing via all-to-all point-to-point messages -/
 
-/-- All ordered sender-receiver pairs `(s, r) : Fin m × Fin m` (including `(s, s)` self-pairs). -/
-@[expose] def allPairs (m : ℕ) : List (Fin m × Fin m) :=
-  (List.finRange m).flatMap fun s => (List.finRange m).map fun r => (s, r)
-
-/-- Point-to-point message round from `p.1` to `p.2` carrying `Msg`. -/
-@[expose, reducible] def msgRound {m : ℕ} {spec : MultiOracleSpec} (Msg : Type)
-    (p : Fin m × Fin m) : Round m spec :=
-  .message p.1 p.2 Msg
-
-/-- Schedule of point-to-point message rounds along `L : List (Fin m × Fin m)`. -/
-@[expose, reducible] def msgSchedule {m : ℕ} {spec : MultiOracleSpec} (Msg : Type)
-    (L : List (Fin m × Fin m)) : Schedule m spec :=
-  L.map (msgRound Msg)
-
-/-- Schedule of all-to-all point-to-point messages of type `Msg`. -/
-@[expose, reducible] def allToAllSchedule (m : ℕ) {spec : MultiOracleSpec} (Msg : Type) :
-    Schedule m spec :=
-  msgSchedule Msg (allPairs m)
-
-/-- Extract party `i`'s inbox update from message round `p = (s, r)`. -/
-@[expose] def extractMsg {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [Zero Msg]
-    (p : Fin m × Fin m) (i : Fin m)
-    (recv : (msgRound (spec := spec) Msg p).Received i) : Fin m → Msg :=
-  if h : i = p.2 then Pi.single p.1 (recv h) else 0
-
-/-- Execute point-to-point message rounds along `L`, accumulating received messages into `st.2`
-and applying `finish` at `.done`. -/
-@[expose] def msgStepsWith {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [AddCommMonoid Msg]
-    {Out : Fin m → Type} (finish : (i : Fin m) → (Fin m → Msg) → Out i) :
-    (L : List (Fin m × Fin m)) →
-      Steps (fun _ : Fin m => (Fin m → Msg) × (Fin m → Msg))
-        Out (msgSchedule (spec := spec) Msg L)
-  | [] => .done (fun i st => finish i st.2)
-  | p :: L =>
-    .message (sender := p.1) (receiver := p.2)
-      (fun st => st.1 p.2)
-      ((msgStepsWith finish L).mapState fun i st =>
-        let (toSend, acc) := st.1
-        (toSend, acc + extractMsg p i st.2))
-
-/-- All-to-all message exchange: party `s` sends `toSend s r` to party `r`, and party `i` applies
-`finish i` to the vector `fun s => toSend s i` of received messages. -/
-@[expose] def allToAllStepsWith (m : ℕ) {spec : MultiOracleSpec} {Msg : Type} [AddCommMonoid Msg]
-    {Out : Fin m → Type} (finish : (i : Fin m) → (Fin m → Msg) → Out i) :
-    Steps (fun _ : Fin m => Fin m → Msg) Out (allToAllSchedule m (spec := spec) Msg) :=
-  (msgStepsWith finish (allPairs m)).mapState (fun _ toSend => (toSend, 0))
-
-/-- Sum of party `i`'s received message updates along `L`. -/
-private def sumReceivedMsgs {m : ℕ} {spec : MultiOracleSpec} {Msg : Type} [AddCommMonoid Msg] :
-    (L : List (Fin m × Fin m)) → (i : Fin m) →
-      (msgSchedule (spec := spec) Msg L).Received i → Fin m → Msg
-  | [], _, _ => 0
-  | p :: L, i, r => extractMsg p i r.1 + sumReceivedMsgs L i r.2
-
-@[simp] private theorem outputAt_msgStepsWith {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
-    [AddCommMonoid Msg] {Out : Fin m → Type}
-    (finish : (i : Fin m) → (Fin m → Msg) → Out i)
-    (L : List (Fin m × Fin m)) (i : Fin m)
-    (st_i : (Fin m → Msg) × (Fin m → Msg))
-    (recv_i : (msgSchedule (spec := spec) Msg L).Received i) :
-    (msgStepsWith finish L).outputAt i st_i recv_i =
-      finish i (st_i.2 + sumReceivedMsgs L i recv_i) := by
-  induction L generalizing st_i with
-  | nil =>
-    cases recv_i
-    simp [msgStepsWith, Steps.outputAt, sumReceivedMsgs]
-  | cons p L ih =>
-    rcases recv_i with ⟨r_head, r_tail⟩
-    simp [msgStepsWith, Steps.outputAt, ih, sumReceivedMsgs, add_assoc]
-
-/-- Received record for party `i` in round `p = (s, r)` constructed from party `i`'s inbox
-`inbox_i : Fin m → Msg`. -/
-@[expose] def receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
-    (p : Fin m × Fin m) (i : Fin m) (inbox_i : Fin m → Msg) :
-    (msgRound (spec := spec) Msg p).Received i :=
-  fun _ => inbox_i p.1
-
-/-- Received transcript for party `i` along `msgSchedule Msg L` constructed from `inbox_i`. -/
-@[expose] def receivedScheduleOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
-    (i : Fin m) (inbox_i : Fin m → Msg) :
-    (L : List (Fin m × Fin m)) → (msgSchedule (spec := spec) Msg L).Received i
-  | [] => ()
-  | p :: L => (receivedMsgOfInbox p i inbox_i, receivedScheduleOfInbox i inbox_i L)
-
-theorem deliverMessage_eq_receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
-    (toSend : (s : Fin m) → Fin m → Msg) (p : Fin m × Fin m) (i : Fin m) :
-    Round.deliverMessage (spec := spec) (sender := p.1) (receiver := p.2) (toSend p.1 p.2) i =
-      receivedMsgOfInbox p i (fun s => toSend s i) := by
-  funext h
-  subst h
-  rfl
-
-private theorem evalWith_msgStepsWith {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
-    [AddCommMonoid Msg] {Out : Fin m → Type}
-    (finish : (i : Fin m) → (Fin m → Msg) → Out i)
-    (L : List (Fin m × Fin m)) (W : MultiOracleWorld spec)
-    (st : (i : Fin m) → (Fin m → Msg) × (Fin m → Msg)) :
-    (msgStepsWith finish L).evalWith W st =
-      PMF.pure (fun i => receivedScheduleOfInbox i (fun s => (st s).1 i) L) := by
-  induction L generalizing st with
-  | nil => rfl
-  | cons p L ih =>
-    simp [msgStepsWith, ih, deliverMessage_eq_receivedMsgOfInbox (fun s => (st s).1) p,
-      receivedScheduleOfInbox]
-
-@[simp] private theorem extractMsg_receivedMsgOfInbox {m : ℕ} {spec : MultiOracleSpec} {Msg : Type}
-    [AddCommMonoid Msg] (p : Fin m × Fin m) (i : Fin m) (inbox_i : Fin m → Msg) :
-    extractMsg (spec := spec) p i (receivedMsgOfInbox p i inbox_i) =
-      if i = p.2 then Pi.single p.1 (inbox_i p.1) else 0 := by
-  by_cases h : i = p.2 <;> simp [extractMsg, receivedMsgOfInbox, h]
-
-@[simp] private theorem sumReceivedMsgs_receivedScheduleOfInbox {m : ℕ} {spec : MultiOracleSpec}
-    {Msg : Type} [AddCommMonoid Msg] (i : Fin m) (inbox_i : Fin m → Msg) :
-    sumReceivedMsgs (spec := spec) (allPairs m) i
-      (receivedScheduleOfInbox i inbox_i (allPairs m)) = inbox_i := by
-  have hL : ∀ L : List (Fin m × Fin m),
-      sumReceivedMsgs (spec := spec) L i (receivedScheduleOfInbox i inbox_i L) =
-        (L.map fun p => extractMsg (spec := spec) p i (receivedMsgOfInbox p i inbox_i)).sum := by
-    intro L
-    induction L with
-    | nil => rfl
-    | cons p L ih => simp [sumReceivedMsgs, receivedScheduleOfInbox, ih]
-  rw [hL]
-  ext s₀
-  simp [allPairs, List.flatMap_def, Function.comp_def, ← Fin.sum_univ_def,
-    Finset.sum_apply, Pi.single_apply]
-
 /-- Party `s`'s `m` additive shares of its input `x_s : BitString n` formed from its private coins
 `c_s : Fin n → Fin (m - 1) → Bool` via `ProbComp.completeShares` (Construction 7.5.10, Step 1,
 p. 706, with the completing share placed at `⊤ : Fin m`). -/
@@ -290,8 +165,8 @@ received shares via `BitString.blocksEquiv.symm` into its initial input-wire val
     Steps (fun _ : Fin m => BitString n × (Fin n → Fin (m - 1) → Bool))
       (fun _ : Fin m => Fin (m * n) → Bool)
       (inputShareSchedule m n) :=
-  (allToAllStepsWith m (fun _ inc => BitString.blocksEquiv.symm inc)).mapState
-    (fun _ st => shareInputBits m n st.1 st.2)
+  allToAllStepsWith m (fun _ st => shareInputBits m n st.1 st.2)
+    (fun _ _ inc => BitString.blocksEquiv.symm inc)
 
 /-- Deterministic Step 1 received transcript when party `s` has input `x s` and coins `c s`. -/
 @[expose] def deliverInputShares {m n : ℕ} (x : (i : Fin m) → BitString n)
@@ -303,14 +178,14 @@ private theorem evalWith_inputShareSteps {m n : ℕ} (W : MultiOracleWorld (shar
     (x : (i : Fin m) → BitString n) (c : (i : Fin m) → Fin n → Fin (m - 1) → Bool) :
     (inputShareSteps m n).evalWith W (fun i => (x i, c i)) =
       PMF.pure (deliverInputShares x c) := by
-  simp only [inputShareSteps, allToAllStepsWith, Steps.evalWith_mapState, evalWith_msgStepsWith]
+  simp only [inputShareSteps, evalWith_allToAllStepsWith]
   rfl
 
 theorem outputAt_inputShareSteps {m n : ℕ}
     (x : (i : Fin m) → BitString n) (c : (i : Fin m) → Fin n → Fin (m - 1) → Bool) (i : Fin m) :
     (inputShareSteps m n).outputAt i (x i, c i) (deliverInputShares x c i) =
       BitString.blocksEquiv.symm (fun s => shareInputBits m n (x s) (c s) i) := by
-  simp [inputShareSteps, allToAllStepsWith, deliverInputShares]
+  simp only [inputShareSteps, deliverInputShares, outputAt_allToAllStepsWith]
 
 attribute [local simp] outputAt_inputShareSteps
 
@@ -497,8 +372,7 @@ private theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
     · simp [lineSteps, lineDist, sharedMulWorld, sharedMulFunctionality,
         hw (wires 0), hw (wires 1), PMF.map, Function.comp_def]
     · intro r_line hr wire
-      simp only [lineDist, ProbComp.eval_map, PMF.mem_support_map_iff] at hr
-      obtain ⟨ans, hans, rfl⟩ := hr
+      supp_cases hr [lineDist] with ⟨ans, hans, rfl⟩
       have hsum := ProbComp.sum_sampleAdditiveShares _ hans
       simp only [lineSteps, Steps.outputAt, deliverMulOracle, Round.deliverOracle]
       refine Wire.lastCases ?_ (fun wire => ?_) wire
@@ -509,8 +383,7 @@ private theorem evalWith_lineSteps {m inputCount g : ℕ} [NeZero m]
     · simp [lineSteps, lineDist, sharedMulWorld, sharedMulFunctionality,
         hw (wires 0), hw (wires 1), PMF.map, Function.comp_def]
     · intro r_line hr wire
-      simp only [lineDist, ProbComp.eval_map, PMF.mem_support_map_iff] at hr
-      obtain ⟨ans, hans, rfl⟩ := hr
+      supp_cases hr [lineDist] with ⟨ans, hans, rfl⟩
       have hsum := ProbComp.sum_sampleAdditiveShares _ hans
       simp only [lineSteps, Steps.outputAt, deliverMulOracle, Round.deliverOracle]
       refine Wire.lastCases ?_ (fun wire => ?_) wire
@@ -559,9 +432,7 @@ theorem evalWith_progSteps {m inputCount g : ℕ} [NeZero m]
         (fun i => (progSteps m p).outputAt i (st i) (r_p i)) (hsum_p r_p hr_p)).1
       rw [hline]
     · intro r_prog hr_prog wire
-      simp only [progDist, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-        PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hr_prog
-      obtain ⟨r_p, hr_p, r_line, hr_line, rfl⟩ := hr_prog
+      supp_cases hr_prog [progDist, bind_pure_comp] with ⟨r_p, hr_p, r_line, hr_line, rfl⟩
       have hline := (evalWith_lineSteps x_flat p line
         (fun i => (progSteps m p).outputAt i (st i) (r_p i)) (hsum_p r_p hr_p)).2 r_line hr_line
       simpa [progSteps] using hline wire
@@ -837,9 +708,7 @@ private theorem evalWith_outCoordsSteps {m k : ℕ} [NeZero m]
         (deliverCoord coord.1 ans i)) (fun r j => by simp [hst r j])).1
       rw [hnext]
     · intro recv hrecv i
-      simp only [outCoordsDist, ProbComp.eval_bind, ProbComp.eval_map, bind_pure_comp,
-        PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hrecv
-      obtain ⟨ans, hans, r_tail, hr_tail, rfl⟩ := hrecv
+      supp_cases hrecv [outCoordsDist, bind_pure_comp] with ⟨ans, hans, r_tail, hr_tail, rfl⟩
       have hsum := ProbComp.sum_sampleAdditiveShares _ hans
       have hnext := (ih (fun i => (singleCoordSteps m k coord).outputAt i (st i)
         (deliverCoord coord.1 ans i)) (fun r j => by simp [hst r j])).2 r_tail hr_tail i
@@ -1176,8 +1045,7 @@ theorem snd_eq_circuitFunctionality_of_mem_support_evalWith {m n k : ℕ} [NeZer
         (gmwCircuitSchedule m n k C) i) × ((i : Fin m) → BitString k)}
     (hres : res ∈ ((gmwCircuitProtocol m n k C).evalWith (sharedMulWorld m) x).support) :
     res.2 = circuitFunctionality m n k C x := by
-  rw [evalWith_gmwCircuitProtocol, PMF.mem_support_map_iff] at hres
-  obtain ⟨_, _, rfl⟩ := hres
+  supp_cases hres [evalWith_gmwCircuitProtocol] with ⟨_, _, rfl⟩
   rfl
 
 /-- Simulator for `gmwCircuitProtocol m n k C` (Proposition 7.5.11, pp. 706–707; cf.

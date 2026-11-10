@@ -22,6 +22,10 @@ come from the degree-bounded fold rules; the specification and growth contracts 
 contracts of `Turing.MultiTapeTM.ComputableInPolyTime` (in `Internal.PolyTimeLoops`) with tidied
 conclusions.
 
+## Main definitions
+
+* `Turing.MultiTapeTM.encFoldStep`: the encoding of the input of a fold step with a parameter.
+
 ## Main results
 
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.foldl'`: a fold with bounded accumulators.
@@ -46,6 +50,12 @@ namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 variable {γ α β π : Type} {encIn : γ ↪ List Bool} {encA : α ↪ List Bool}
   {encB : β ↪ List Bool} {encL : List α ↪ List Bool} {encP : π ↪ List Bool}
   [ListEncoding encA encL] [SizedListEncoding encA encL]
+
+/-- The encoding of the input `((p, b), a)` of a fold step with a fixed parameter: the pair of the
+parameter `p`, framed, and the accumulator `b`, framed as a whole, then the element `a`. -/
+abbrev _root_.Turing.MultiTapeTM.encFoldStep {π β α : Type} (encP : π ↪ List Bool)
+    (encB : β ↪ List Bool) (encA : α ↪ List Bool) : (π × β) × α ↪ List Bool :=
+  encPair (encPair encP encB) encA
 
 /-- A left fold is polynomial-time when its step is polynomial-time and its intermediate
 accumulators have polynomially bounded encoded length. -/
@@ -73,7 +83,7 @@ theorem foldlWith {par : γ → π} {list : γ → List α} {init : γ → β}
     (hlist : ComputableTidilyInPolyTime list encIn encL)
     (hinit : ComputableTidilyInPolyTime init encIn encB)
     (hstep : ComputableTidilyInPolyTime (fun p : (π × β) × α => step p.1.1 p.1.2 p.2)
-      (encPair (encPair encP encB) encA) encB)
+      (encFoldStep encP encB encA) encB)
     {B : γ → ℕ} (hB : PolyBounded (fun x => (encIn x).length) B)
     (hstates : ∀ x, ∀ i ≤ (list x).length,
       (encB (((list x).take i).foldl (step (par x)) (init x))).length ≤ B x) :
@@ -96,7 +106,7 @@ theorem foldlWith_spec {par : γ → π} {list : γ → List α} {init : γ → 
     (hlist : ComputableTidilyInPolyTime list encIn encL)
     (hinit : ComputableTidilyInPolyTime init encIn encB)
     (hstep : ComputableTidilyInPolyTime (fun p : (π × β) × α => step p.1.1 p.1.2 p.2)
-      (encPair (encPair encP encB) encA) encB)
+      (encFoldStep encP encB encA) encB)
     (invariant : γ → List α → β → Prop)
     (hbase : ∀ x, invariant x [] (init x))
     (hpreserve : ∀ x consumed state value, consumed ++ [value] <+: list x →
@@ -140,7 +150,7 @@ theorem foldlWith_of_bounded_growth {par : γ → π} {list : γ → List α} {i
     (hlist : ComputableTidilyInPolyTime list encIn encL)
     (hinit : ComputableTidilyInPolyTime init encIn encB)
     (hstep : ComputableTidilyInPolyTime (fun p : (π × β) × α => step p.1.1 p.1.2 p.2)
-      (encPair (encPair encP encB) encA) encB)
+      (encFoldStep encP encB encA) encB)
     {growth : γ → ℕ} (hpoly : PolyBounded (fun x => (encIn x).length) growth)
     (hgrowth : ∀ x state value, value ∈ list x →
       (encB (step (par x) state value)).length ≤ (encB state).length + growth x) :
@@ -159,7 +169,7 @@ theorem foldlWithInput_of_bounded_growth {list : γ → List α} {init : γ → 
     (hinit : ComputableTidilyInPolyTime init encIn encB)
     (hcompute : ComputableTidilyInPolyTime list encIn encL ∧
       ComputableTidilyInPolyTime (fun p : (γ × β) × α => step p.1.1 p.1.2 p.2)
-        (encPair (encPair encIn encB) encA) encB ∧
+        (encFoldStep encIn encB encA) encB ∧
       ListEncoding encA encL ∧ SizedListEncoding encA encL)
     {growth : γ → ℕ} (hbound : PolyBounded (fun x => (encIn x).length) growth ∧
       ∀ x state value, value ∈ list x →

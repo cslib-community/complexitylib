@@ -32,6 +32,8 @@ exponential-time subroutines and combine their answers in polynomial time are as
   `Cslib.GenericRAM.NativeCertificate.ExpTimePolySpace.comp_ofPolyTime`: pairs and
   polynomial-time postprocessing.
 * `Cslib.GenericRAM.NativeCertificate.ExpTimePolySpace.computableInO`: the resulting machine bounds.
+* `Cslib.GenericRAM.NativeCertificate.branch_bounds_of_two_pow`: a branch whose `yes` side runs in
+  time `2 ^ N` times a polynomial, with the polynomial left implicit.
 -/
 
 public section
@@ -158,5 +160,30 @@ theorem expTimePolySpace_ofPolyTime (hf : ComputableInPolyTime f enc eβ) (E : �
       ((Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_add_right _ _)).trans
         (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos _)))
   · exact Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_add_left _ _))
+
+/-- **A branch whose `yes` side runs in time `2 ^ N` times a polynomial** runs in polynomial space
+and in time `2 ^ N` times a polynomial, when the test and the `no` side are polynomial and the
+`yes` side has polynomial space. The `yes` time bound is needed only where `condition` holds. The
+polynomial factor `T` is left implicit, unlike the explicit constants of `ExpTimePolySpace`. -/
+theorem branch_bounds_of_two_pow {condition : α → Bool} {f₁ f₂ : α → β}
+    {test : NativeCertificate condition enc encBool}
+    {yes : NativeCertificate f₁ enc eβ} {no : NativeCertificate f₂ enc eβ}
+    (ht : test.IsPolynomial) (hn : no.IsPolynomial)
+    (hys : PolyBounded (fun a => (enc a).length) yes.space)
+    {N Ty : α → ℕ} (hTy : PolyBounded (fun a => (enc a).length) Ty)
+    (hyt : ∀ a, condition a = true → yes.time a ≤ 2 ^ N a * Ty a) :
+    PolyBounded (fun a => (enc a).length) (branch test yes no).space ∧
+      ∃ T : α → ℕ, PolyBounded (fun a => (enc a).length) T ∧
+        ∀ a, (branch test yes no).time a ≤ 2 ^ N a * T a := by
+  refine ⟨(ht.2.add (hys.add hn.2)).mono fun a => ?_,
+    fun a => test.time a + no.time a + Ty a, (ht.1.add hn.1).add hTy, fun a => ?_⟩
+  · simp only [branch_space]
+    split <;> omega
+  · have h1 : 1 ≤ 2 ^ N a := Nat.one_le_two_pow
+    simp only [branch_time]
+    split
+    · have := hyt a ‹_›
+      nlinarith
+    · nlinarith
 
 end Cslib.GenericRAM.NativeCertificate

@@ -66,8 +66,8 @@ directions from the zero-knowledge roadmap:
 * `Cslib.Interactive.VerifierStrategy`, `Cslib.Interactive.runAgainst`,
   `Cslib.Interactive.Reduction.viewOf`, `Cslib.Interactive.Reduction.ZK`,
   `Cslib.Interactive.honestVerifierStrategy`.
-* `Cslib.Interactive.AuxSimulatorRealizedBy`, `Cslib.Interactive.Reduction.EfficientAuxHVZK`,
-  `Cslib.Interactive.Reduction.ComputationalHVZK`,
+* `Cslib.Interactive.Encoding.encStatementAux`, `Cslib.Interactive.AuxSimulatorRealizedBy`,
+  `Cslib.Interactive.Reduction.EfficientAuxHVZK`, `Cslib.Interactive.Reduction.ComputationalHVZK`,
   `Cslib.Interactive.Reduction.ComputationalAuxHVZK`.
 * `Cslib.Interactive.relProd`, `Cslib.Interactive.relDisj`,
   `Cslib.Interactive.Verifier.liftFirst`, `Cslib.Interactive.Verifier.liftSecond`,
@@ -412,6 +412,14 @@ section Indexed
 
 variable {I : Type} {sI : I → Spec} {StmtI WitI StmtOutI WitOutI AuxI : I → Type}
 
+/-- The index, the statement and the auxiliary input `(i, x, z)` of an indexed family, with `x` and
+`z` already encoded: the index under `enc.index`, then `x` and `z` as bit words. The index and `x`
+are framed; `z` is not. An auxiliary-input simulator program reads this triple, and a
+distinguisher reads it after the unary security parameter, paired with an encoded transcript. -/
+abbrev Encoding.encStatementAux (enc : Encoding I sI StmtI) :
+    I × List Bool × List Bool ↪ List Bool :=
+  encPair enc.index (encPair encBits encBits)
+
 /-- The program `program` realizes the auxiliary-input simulator family `Sim` on encodings up to
 statistical distance `δ`: on `(i, enc.statement i x, encAux i z)`, its output is within `δ i` of
 the encoded transcript sampled by `Sim i x z`. -/
@@ -463,7 +471,7 @@ structure Reduction.EfficientAuxHVZK
   /-- One uniform strict PPT program of the index, statement and auxiliary input realizes `Sim` up
   to `δ`. -/
   realized : ∃ program,
-    IsPPTOn (encPair enc.index (encPair encBits encBits)) encBits program ∧
+    IsPPTOn enc.encStatementAux encBits program ∧
       AuxSimulatorRealizedBy enc encAux Sim program δ
 
 /-- **Every `EfficientHVZK` reduction is automatically `EfficientAuxHVZK`**: the simulator and its
@@ -505,7 +513,7 @@ structure Reduction.ComputationalHVZK
       (∀ n, rel (idx n) (x n) (w n)) →
       ∀ D : ℕ → I → List Bool → List Bool → List Bool → ProbComp Bool,
         IsPPTOn
-          (encPair (encPair encUnary (encPair enc.index (encPair encBits encBits))) encBits)
+          (encPair (encPair encUnary enc.encStatementAux) encBits)
           encBool (fun ⟨⟨n, i, xw, zw⟩, τw⟩ => D n i xw zw τw) →
         Negligible (fun n => Game.advantage
           ((((R (idx n)).honestTranscript (x n) (w n)).map (enc.transcript (idx n))).bind
@@ -526,7 +534,7 @@ structure Reduction.ComputationalAuxHVZK
     (encAux : ∀ i, AuxI i ↪ List Bool)
     (program : I × List Bool × List Bool → ProbComp (List Bool)) : Prop where
   /-- The simulator program is uniform strict PPT in `(i, enc.statement i x, encAux i z)`. -/
-  ppt : IsPPTOn (encPair enc.index (encPair encBits encBits)) encBits program
+  ppt : IsPPTOn enc.encStatementAux encBits program
   /-- Honest and simulated encoded transcripts have negligible distinguishing advantage across all
   polynomially bounded valid families and auxiliary inputs. -/
   indistinguishable :
@@ -537,7 +545,7 @@ structure Reduction.ComputationalAuxHVZK
       (∀ n, rel (idx n) (x n) (w n)) →
       ∀ D : ℕ → I → List Bool → List Bool → List Bool → ProbComp Bool,
         IsPPTOn
-          (encPair (encPair encUnary (encPair enc.index (encPair encBits encBits))) encBits)
+          (encPair (encPair encUnary enc.encStatementAux) encBits)
           encBool (fun ⟨⟨n, i, xw, zw⟩, τw⟩ => D n i xw zw τw) →
         Negligible (fun n => Game.advantage
           ((((R (idx n)).honestTranscript (x n) (w n)).map (enc.transcript (idx n))).bind
@@ -572,7 +580,7 @@ theorem AuxSimulatorRealizedBy.computationalAuxHVZK
     {Sim : ∀ i, StmtI i → AuxI i → ProbComp (Transcript (sI i))}
     {program : I × List Bool × List Bool → ProbComp (List Bool)} {ε δ : I → ℝ≥0∞}
     (hzk : ∀ i, (R i).AuxHVZK (rel i) (Sim i) (fun _ _ => ε i))
-    (hppt : IsPPTOn (encPair enc.index (encPair encBits encBits)) encBits program)
+    (hppt : IsPPTOn enc.encStatementAux encBits program)
     (hreal : AuxSimulatorRealizedBy enc encAux Sim program δ)
     {η : I → ℝ≥0} (hη : ∀ i, ε i + δ i ≤ η i)
     (hnegl : ∀ idx : ℕ → I, PolynomiallyBounded (fun n => (enc.index (idx n)).length) →

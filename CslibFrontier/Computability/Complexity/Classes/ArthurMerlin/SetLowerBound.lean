@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin
 public import CslibFrontier.Computability.Complexity.Classes.SBP
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 public import CslibFrontier.Probability.BitString.AffineHash
+public import CslibFrontier.Probability.BitString.AffineHash.Word
 
 import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
@@ -19,7 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
-import CslibFrontier.Computability.Probabilistic.LinearHash
+import CslibFrontier.Computability.Probabilistic.AffineHash
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Foundations.Data.BitString.WordCount
 
@@ -125,46 +126,6 @@ theorem card_amplifiedSet {N : ℕ} (S : Finset (BitString N)) {T ℓ : ℕ} (h 
   · simp [hu]
 
 /-! ### The verifier -/
-
-/-- The seed of an affine hash to `m` bits of strings of `M` bits, read from `m * M + m` bits: the
-rows of the matrix, then the offset. -/
-def seedEquiv (m M : ℕ) : BitString (m * M + m) ≃ (Fin m → BitString M) × BitString m :=
-  (Fin.appendEquiv (m * M) m).symm.trans (BitString.blocksEquiv.prodCongr (Equiv.refl _))
-
-/-- Whether the affine hash to `m` bits of strings of `M` bits with seed `seed` sends `x` to zero,
-computed on words (`Cslib.BitString.LinearHash.wordHash`): the hash of the matrix part of the seed
-is the offset part. -/
-def hashZero (m M : ℕ) (seed x : List Bool) : Bool :=
-  !(List.zipWith Bool.xor (BitString.LinearHash.wordHash m seed x)
-    (BitString.listRow m M seed)).any fun b => b
-
-/-- On strings of the right lengths, `hashZero` decides whether the affine hash given by the seed
-sends the string to zero. -/
-theorem hashZero_ofFn {m M : ℕ} (r : BitString (m * M + m)) (x : BitString M) :
-    hashZero m M (List.ofFn r) (List.ofFn x) = true ↔
-      BitString.LinearHash.affineHash (seedEquiv m M r) x = 0 := by
-  have hoffset : BitString.listRow m M (List.ofFn r) =
-      List.ofFn ((Fin.appendEquiv _ _).symm r).2 := by
-    rw [List.ofFn_add, BitString.listRow, Nat.mul_comm M,
-      List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn]
-    rfl
-  have hhash : BitString.LinearHash.wordHash m (List.ofFn r) (List.ofFn x) =
-      List.ofFn (BitString.LinearHash.hash
-        (BitString.block ((Fin.appendEquiv _ _).symm r).1) x) := by
-    rw [BitString.LinearHash.wordHash_eq_ofFn, List.ofFn_add, BitString.ofList_ofFn_append]
-    rfl
-  rw [hashZero, hhash, hoffset, ← BitString.ofFn_add, BitString.not_any_ofFn_eq_true_iff]
-  rfl
-
-/-- `hashZero` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_hashZero {β : Type} {encIn : β ↪ List Bool} {m M : β → ℕ}
-    {seed x : β → List Bool} (hm : ComputableInPolyTime m encIn encUnary)
-    (hM : ComputableInPolyTime M encIn encUnary) (hseed : ComputableInPolyTime seed encIn encBits)
-    (hx : ComputableInPolyTime x encIn encBits) :
-    ComputableInPolyTime (fun b => hashZero (m b) (M b) (seed b) (x b)) encIn encBool := by
-  unfold hashZero
-  fun_prop
 
 /-- The Arthur–Merlin verifier of the set lower bound protocol, with element length `N`,
 certificate length `c`, hash length `m`, padding length `T` and padding threshold `ℓ`, where `n` is

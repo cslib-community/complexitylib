@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunPropFinite
 
 /-!
 # Native linear-workspace compact-graph routines
@@ -22,8 +23,7 @@ by the caller.
 
 ## Main results
 
-* `Turing.MultiTapeNTM.ConfigurationGraph.and_inSpace`,
-  `Turing.MultiTapeNTM.ConfigurationGraph.readRegisters_budget`,
+* `Turing.MultiTapeNTM.ConfigurationGraph.readRegisters_budget`,
   `Turing.MultiTapeNTM.ConfigurationGraph.valid_budget`,
   `Turing.MultiTapeNTM.ConfigurationGraph.nextRegisters_budget`,
   `Turing.MultiTapeNTM.ConfigurationGraph.matchesEntry_budget`,
@@ -44,24 +44,13 @@ open MultiTapeTM ComputableInSpace
 
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
 
-/-- Boolean conjunction preserves a common space budget. -/
-theorem and_inSpace {f g : α → Bool}
-    (hf : ComputableInSpace f enc encBool S) (hg : ComputableInSpace g enc encBool S) :
-    ComputableInSpace (fun a => f a && g a) enc encBool S :=
-  budget_finite (fun p : Bool × Bool => p.1 && p.2) (budget_prod hf hg)
-
-private theorem or_inSpace {f g : α → Bool}
-    (hf : ComputableInSpace f enc encBool S) (hg : ComputableInSpace g enc encBool S) :
-    ComputableInSpace (fun a => f a || g a) enc encBool S :=
-  budget_finite (fun p : Bool × Bool => p.1 || p.2) (budget_prod hf hg)
-
 private theorem all_inSpace {ι : Type} (l : List ι) {f : ι → α → Bool}
     (hf : ∀ i, ComputableInSpace (f i) enc encBool S)
     (hin : (fun a => (enc a).length) ≼ S) :
     ComputableInSpace (fun a => (l.map fun i => f i a).all id) enc encBool S := by
   induction l with
   | nil => exact budget_const true hin
-  | cons i l ih => exact and_inSpace (hf i) ih
+  | cons i l ih => exact budget_boolAnd (hf i) ih
 
 private theorem any_inSpace {ι : Type} (l : List ι) {f : ι → α → Bool}
     (hf : ∀ i, ComputableInSpace (f i) enc encBool S)
@@ -69,7 +58,7 @@ private theorem any_inSpace {ι : Type} (l : List ι) {f : ι → α → Bool}
     ComputableInSpace (fun a => l.any fun i => f i a) enc encBool S := by
   induction l with
   | nil => exact budget_const false hin
-  | cons i l ih => exact or_inSpace (hf i) ih
+  | cons i l ih => exact budget_boolOr (hf i) ih
 
 variable {k : ℕ} {State : Type} [Fintype State]
   {B n u v : α → ℕ} {symbol : α → Option Bool}
@@ -100,8 +89,8 @@ theorem valid_budget (hB : ComputableInSpace B enc encNat S)
   have ho := budget_natLt (hr .output) (budget_const 3 hin)
   have hh := all_inSpace (List.ofFn fun i : Fin k => i)
     (fun i => budget_natLt (hr (.head i)) (budget_const 3 hin)) hin
-  apply (and_inSpace (and_inSpace (and_inSpace
-    (and_inSpace (budget_natLt hu hb) hi) hc) ho) hh).of_enc_eq
+  apply (budget_boolAnd (budget_boolAnd (budget_boolAnd
+    (budget_boolAnd (budget_natLt hu hb) hi) hc) ho) hh).of_enc_eq
   intro a
   congr 1
   dsimp only [valid]
@@ -115,7 +104,7 @@ private theorem inputSymbol_budget {p : α → ℕ}
     (hin : (fun a => (enc a).length) ≼ S) :
     ComputableInSpace (fun a => inputSymbol (n a) (p a) (symbol a))
       enc (encOption encBool) S := by
-  have hc := or_inSpace (budget_natIsZero hp) (budget_natEq hp (budget_natSucc hn))
+  have hc := budget_boolOr (budget_natIsZero hp) (budget_natEq hp (budget_natSucc hn))
   simpa only [inputSymbol, Bool.or_eq_true, decide_eq_true_eq] using
     budget_ite hc (budget_const none hin) hs
 
@@ -173,7 +162,7 @@ theorem matchesEntry_budget {r : α → Register k → ℕ}
     (inputSymbol_budget hn (hr .inputPos) hs hin)
   have hh := all_inSpace (List.ofFn fun i : Fin k => i)
     (fun i => budget_natEq (hr (.head i)) (budget_const (symbolCode (t.2.2.1 i)) hin)) hin
-  apply (and_inSpace (and_inSpace hc hi) hh).of_enc_eq
+  apply (budget_boolAnd (budget_boolAnd hc hi) hh).of_enc_eq
   intro a
   congr 1
   dsimp only [matchesEntry]
@@ -200,15 +189,15 @@ theorem edgeWithSymbol_budget (ntm : MultiTapeNTM k Bool State)
     ComputableInSpace (fun a => edgeWithSymbol ntm (B a) (n a) (u a) (v a) (symbol a))
       enc encBool S := by
   have hr := readRegisters_budget (k := k) hB hu
-  have hh := and_inSpace
+  have hh := budget_boolAnd
     (budget_natEq (hr .control) (budget_const (stateCode (none : Option State)) hin))
     (budget_natEq hv hu)
   have hentry (t : Instruction k State) :=
     let hnxt := nextRegisters_budget hn hr hin t.2.2.2
-    and_inSpace (and_inSpace (matchesEntry_budget hn hr hs hin t) (fitsB_budget hB hnxt hin))
+    budget_boolAnd (budget_boolAnd (matchesEntry_budget hn hr hs hin t) (fitsB_budget hB hnxt hin))
       (budget_natEq hv (pack_inSpace hB hnxt hin))
-  exact and_inSpace (and_inSpace (valid_budget hB hn hu hin) (valid_budget hB hn hv hin))
-    (or_inSpace hh (any_inSpace (instructions ntm) hentry hin))
+  exact budget_boolAnd (budget_boolAnd (valid_budget hB hn hu hin) (valid_budget hB hn hv hin))
+    (budget_boolOr hh (any_inSpace (instructions ntm) hentry hin))
 
 /-- The overflow test preserves any budget covering the short arguments. -/
 theorem overflow_budget (ntm : MultiTapeNTM k Bool State)
@@ -221,10 +210,10 @@ theorem overflow_budget (ntm : MultiTapeNTM k Bool State)
       enc encBool S := by
   have hr := readRegisters_budget (k := k) hB hu
   have hentry (t : Instruction k State) :=
-    and_inSpace (matchesEntry_budget hn hr hs hin t)
+    budget_boolAnd (matchesEntry_budget hn hr hs hin t)
       (budget_finite (encC := encBool) not
         (fitsB_budget hB (nextRegisters_budget hn hr hin t.2.2.2) hin))
-  exact and_inSpace (valid_budget hB hn hu hin) (any_inSpace (instructions ntm) hentry hin)
+  exact budget_boolAnd (valid_budget hB hn hu hin) (any_inSpace (instructions ntm) hentry hin)
 
 /-- Compute the only input query in native deterministic linear workspace. -/
 theorem queryIndex_budget (hB : ComputableInSpace B enc encNat S)
@@ -240,7 +229,7 @@ theorem bad_budget (hB : ComputableInSpace B enc encNat S)
     ComputableInSpace (fun a => bad (State := State) (k := k) (B a) (n a) (u a))
       enc encBool S := by
   have hr := readRegisters_budget (k := k) hB hu
-  exact and_inSpace (and_inSpace (valid_budget hB hn hu hin)
+  exact budget_boolAnd (budget_boolAnd (valid_budget hB hn hu hin)
     (budget_natEq (hr .control) (budget_const (stateCode (none : Option State)) hin)))
     (budget_natEq (hr .output) (budget_const 1 hin))
 

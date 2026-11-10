@@ -25,7 +25,7 @@ description length `(F.encDesc d).length`.
   `(F.encode d x).length` in terms of `(F.encDesc d).length`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 

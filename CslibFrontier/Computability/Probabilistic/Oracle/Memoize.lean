@@ -114,21 +114,20 @@ theorem IsOraclePPTOn.memoize {Operation α Key Value : Type} [DecidableEq Opera
       (encList (encPair keyEncoding valueEncoding))) :
     IsOraclePPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
       (fun a => memoize (compute a) (query a) (cache a)) := by
-  have hquery := hquery.tidy
-  have hcache := hcache.tidy
   let found (a : α) := (cache a).find? (fun entry => query a == entry.1)
-  have hfound : ComputableTidilyInPolyTime found input
+  have hfound : ComputableInPolyTime found input
       (encOption (encPair keyEncoding valueEncoding)) := by fun_prop
-  have hhit : ComputableTidilyInPolyTime
+  have hhit : ComputableInPolyTime
       (fun a => (((found a).getD (query a, Classical.arbitrary Value)).2, cache a)) input
       (encPair valueEncoding (encList (encPair keyEncoding valueEncoding))) := by fun_prop
-  have hmiss : ComputableTidilyInPolyTime
+  have hmiss : ComputableInPolyTime
       (fun pair : α × Value => (pair.2, (query pair.1, pair.2) :: cache pair.1))
       (encPair input valueEncoding)
       (encPair valueEncoding (encList (encPair keyEncoding valueEncoding))) := by fun_prop
-  refine (IsOraclePPTOn.cond (condition := fun a => (found a).isSome) (by fun_prop)
-    hhit.isOraclePPTOn (hcompute.map_with (f := fun a value => (value, (query a, value) :: cache a))
-      hmiss)).congr fun a _ _ _ => ?_
+  refine (IsOraclePPTOn.cond' (condition := fun a => (found a).isSome) (by fun_prop)
+    hhit.isOraclePPTOn
+    (hcompute.map_with' (f := fun a value => (value, (query a, value) :: cache a)) hmiss)).congr
+    fun a _ _ _ => ?_
   have hlookup : (cache a).lookup (query a) = (found a).map Prod.snd := by
     simp only [found, List.lookup_eq_findSome?, List.find?_eq_findSome?_guard,
       List.map_findSome?]

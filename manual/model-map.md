@@ -301,17 +301,19 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `wordram-randomized` | [Exact finite-uniform randomized Word-RAM](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
 | `wordram-expected` | [Expected Word-RAM execution and Las Vegas loops](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
 | `wordram-structured` | [Structured programs with exact native counts](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
+| `wordram-resizable` | [Word-granular Resizable Word RAM and adaptive-adversary execution](algorithms-and-memory/wordram-and-bridges.md) | word-ram |
 | `state-transition` | [Relational adaptive data-structure clients](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `randomized-state-transition` | [Randomized state transitions and refinement](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `oblivious-sequence` | [Oblivious operation/transcript contracts](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `cell-probe-data-structure` | [Cell-probe data-structure implementations and Word-RAM lower-bound transfer](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `memory-oracle` | [Allocated word-memory oracle](algorithms-and-memory/memory-specifications.md) | memory |
+| `resizable-memory-oracle` | [Word-granular resizable memory specification](algorithms-and-memory/memory-specifications.md) | memory |
 | `native-callable` | [Dynamic programs, controllers and graded realization](algorithms-and-memory/memory-specifications.md) | memory |
 | `ram-footprints-traces` | [RAM footprints, traces and memory windows](algorithms-and-memory/memory-specifications.md) | memory |
 | `online-deterministic` | [Deterministic online competitive problems](algorithms-and-memory/online-and-streaming.md) | online |
 | `count-min-stream` | [Weighted insertion Count-Min sketch](algorithms-and-memory/online-and-streaming.md) | streaming |
 | `native-stream-fold` | [Native input-stream folds](algorithms-and-memory/online-and-streaming.md) | streaming |
-| `cost-game` | [Finite strategic games in cost form, mixed Nash equilibria, potentials and coarse correlated equilibria](algorithms-and-memory/strategic-games.md) | game-theory |
+| `cost-game` | [Finite strategic games in cost form, mixed Nash, correlated and coarse correlated equilibria, potentials](algorithms-and-memory/strategic-games.md) | game-theory |
 | `atomic-congestion-game` | [Atomic congestion games with Rosenthal's potential](algorithms-and-memory/strategic-games.md) | game-theory |
 | `nonatomic-routing` | [Nonatomic selfish routing and Wardrop flows](algorithms-and-memory/strategic-games.md) | game-theory |
 | `hedge-dynamics` | [No-regret (Hedge) dynamics in finite games and their price of anarchy](algorithms-and-memory/strategic-games.md) | game-theory |

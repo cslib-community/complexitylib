@@ -68,10 +68,10 @@ Lemma 4.7 / Lemma 4.8 schedule replacement design bridge of
      `S = heavyVars univ F (fun i => equationScope (P i)) b₀` with `2 ≤ s_div` and
      `totalIncidence F (fun i => equationScope (P i)) * s_div ≤ b₀ * Fintype.card ι` (which holds
      in particular for `paperHeavyThreshold` and `heavyThreshold`), `Fintype.card ι ≤ 2 * n'` holds
-     automatically and the sum of the real domain-examination bounds across all
-     `b ∈ branchAssignments S` is at most
-     `2 ^ (Fintype.card ι / s_div) * (2 * numNodes n' * numGroups n' *`
-     `exp (((k * (2 * c + 4) + 4) : ℝ) * n' * rowCost β n'))`.
+     automatically, and for any `examSum : (ι → Bool) → ℝ` that is at most
+     `2 * numNodes n' * numGroups n' * exp (((k * (2 * c + 4) + 4) : ℝ) * n' * rowCost β n')`
+     on every `b ∈ branchAssignments S`, the sum of `examSum b` over `b ∈ branchAssignments S`
+     is at most `2 ^ (Fintype.card ι / s_div)` times that bound.
 
 ## Main definitions
 
@@ -421,13 +421,15 @@ theorem Feasible.branch_domainExaminationBound_le [Fintype ι]
 /-- **Section 5.5 Theorem 2.2 multi-branch domain-examination bound across `branchAssignments S`**:
 When `S = heavyVars univ F (fun i => equationScope (P i)) b₀` with `2 ≤ s_div`,
 `totalIncidence F (fun i => equationScope (P i)) * s_div ≤ b₀ * Fintype.card ι`, and
-`e : ↥(univ \ S) ≃ Fin n'`, the free-variable dimension satisfies `Fintype.card ι ≤ 2 * n'`, there
-are at most `2 ^ (Fintype.card ι / s_div)` branches in `branchAssignments S`, and if each branch
-`b ∈ branchAssignments S` has its real examination sum bounded via
-`Feasible.branch_domainExaminationBound_le`, then the sum of those examination bounds across all
-`b ∈ branchAssignments S` is at most
+`e : ↥(univ \ S) ≃ Fin n'`, the free-variable dimension satisfies `Fintype.card ι ≤ 2 * n'`, and
+for any function `examSum : (ι → Bool) → ℝ` whose value at every `b ∈ branchAssignments S` is at
+most the single-branch bound of `Feasible.branch_domainExaminationBound_le`,
+`2 * numNodes n' * numGroups n' * exp (((k * (2 * c + 4) + 4 : ℕ) : ℝ) * n' * rowCost β n')`,
+the sum of `examSum b` over all `b ∈ branchAssignments S` is at most
 `(2 : ℝ) ^ (Fintype.card ι / s_div) * (2 * numNodes n' * numGroups n' *
-  exp (((k * (2 * c + 4) + 4 : ℕ) : ℝ) * n' * rowCost β n'))`. -/
+  exp (((k * (2 * c + 4) + 4 : ℕ) : ℝ) * n' * rowCost β n'))`.
+The factor `2 ^ (Fintype.card ι / s_div)` bounds the number of branches by
+`card_branchAssignments_heavyVars_le_two_pow_div`. -/
 theorem sum_branch_domainExaminationBound_le [Fintype ι] [DecidableEq ι]
     (F : Finset κ) (P : κ → Finset (Finset ι)) {β b₀ s_div k c : ℕ}
     (hs_div : 2 ≤ s_div)

@@ -400,26 +400,6 @@ theorem raw_admissible {k : ℕ} (R : RoleProfile J) (l bin : ℕ)
     simp [Admissible, gridChannel, hsm, hst, hmt]
 
 omit [Fact P.Prime] in
-/-- Every actual residual request stays on the natural-exponent grid; usage min
-is max of exponents, and does not allocate another role. -/
-theorem raw_grid {k : ℕ} (R : RoleProfile J) (l bin : ℕ)
-    (ks km kt kb : ℕ) (ss sm st : List (ZMod P))
-    (r : HierarchyTask.Request k (Fin J) (ZMod P))
-    (hr : r ∈ (HierarchyTask.rawRequests l bin .residual
-      (gridChannel R.source ks ss) (gridChannel R.midpoint km sm)
-      (gridChannel R.terminal kt st) (rate kb)).calls) :
-    ∃ es et eu, r.source.rate = rate es ∧ r.terminal.rate = rate et ∧
-      r.usage.rate = rate eu := by
-  simp only [HierarchyTask.rawRequests, HierarchyTask.RawRequests.calls,
-    Option.toList_some, List.mem_append, List.mem_cons, List.not_mem_nil,
-    or_false] at hr
-  rcases hr with (rfl | rfl | rfl) | rfl
-  · exact ⟨ks, kb, max kt kb, rfl, rfl, rate_min kt kb⟩
-  · exact ⟨ks, km, km, rfl, rfl, rfl⟩
-  · exact ⟨km, kb, max kt kb, rfl, rfl, rate_min kt kb⟩
-  · exact ⟨ks, km, max kt km, rfl, rfl, rate_min kt km⟩
-
-omit [Fact P.Prime] in
 /-- Copy source / terminal symbols prepend to the inherited suffix, on the actual
 weight and residual-normalized constructors. -/
 theorem copy_admissible {k : ℕ} (R : RoleProfile J) (l bin : ℕ)
@@ -536,15 +516,11 @@ noncomputable def denseLaws (D : ZMod P) (hD : D ≠ 0) (role : Fin J)
     exact fun i => ((mem_retentionBox.1 hv) i).trans_le hLa
   usage_nonempty v := by
     classical
-    apply dens_ne_zero.mp
-    intro hz
-    have hh := density role Lt hLtP (CopyPadding.identifier D suffix v)
-    rw [hz] at hh
-    have hp : (0: ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
-    have hlt : (0: ℝ) < Lt := by exact_mod_cast hLt0
-    have : (0: ℝ) < ((Lt: ℝ) / P) ^ 4 := by positivity
-    rw [← hh] at this
-    norm_num at this
+    have hp : (0 : ℝ) < P := by exact_mod_cast (Fact.out : P.Prime).pos
+    have hlt : (0 : ℝ) < Lt := by exact_mod_cast hLt0
+    have h : (0 : ℝ) < ((Lt : ℝ) / P) ^ 4 := by positivity
+    rw [← density role Lt hLtP (CopyPadding.identifier D suffix v)] at h
+    exact dens_pos.mp (by exact_mod_cast h)
   support := hsupport
   gate_nonneg := hg0
   gate_le_one := hg1
@@ -892,8 +868,10 @@ theorem adjacent_rate_ratio (k : ℕ) : rate k / rate (k + 1) = 16 := by
   field_simp
 
 omit [Fact P.Prime] in
-/-- Raw call construction preserves a supplied finite exponent horizon. This
-is local call closure, not closure of every estimator guard / enumeration query. -/
+/-- Every actual residual request stays on the natural-exponent grid (the usage min is a max
+of exponents, and no other role is allocated), and raw call construction preserves a supplied
+finite exponent horizon. This is local call closure, not closure of every estimator guard /
+enumeration query. -/
 theorem raw_grid_bounded {k : ℕ} (R : RoleProfile J) (l bin K ks km kt kb : ℕ)
     (hs : ks ≤ K) (hm : km ≤ K) (ht : kt ≤ K) (hb : kb ≤ K)
     (ss sm st : List (ZMod P)) (r : HierarchyTask.Request k (Fin J) (ZMod P))

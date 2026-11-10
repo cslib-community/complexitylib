@@ -10,7 +10,6 @@ import CslibFrontier.Tactic.FirstOrder
 import CslibFrontier.Tactic.FOOperator
 import CslibFrontier.Tactic.LogSpace
 import CslibFrontier.Tactic.Space
-import CslibFrontier.Tactic.Stateful
 
 /-!
 # Failure messages of the search tactics
@@ -108,41 +107,6 @@ example (S : ℕ → ℕ) : ComputableInSpace (fun n : ℕ => n) encNat encNat S
 example (S : ℕ → ℕ) (hS : (fun n => (encNat n).length) ≼ S) :
     ComputableInSpace (fun n : ℕ => n) encNat encNat S := by
   space
-
-/-! ### `stateful` -/
-
-section Stateful
-
-open Cslib.DataStructure
-
-/-- A counter whose operation `true` increments it; both operations return the new value. -/
-abbrev counter : StateTransitionSpec :=
-  StateTransitionSpec.ofFn (State := ℕ) (Op := Bool) (Result := fun _ => ℕ) fun s inc =>
-    if inc then (s + 1, s + 1) else (s, s)
-
-/-- Read the counter, then increment it. -/
-def readThenBump : counter.Client ℕ := do
-  let _ ← counter.call false
-  counter.call true
-
-/--
-Note: stateful proves pure results and single calls from local contracts and the `Stateful` rule
-  set, and does not unfold a client definition. Unfold it first, split a sequence with
-  `StateTransitionSpec.CostHoare.bind` (or `Hoare.bind`) and an intermediate contract, and select an
-  implementation with `StateTransitionSpec.CostHoare.link` (or `Hoare.link`).
--/
-#guard_msgs (whitespace := lax, substring := true) in
-example : counter.CostHoare (fun _ _ => 1) (fun _ => True) readThenBump (fun _ _ => True)
-    (fun _ => 2) := by
-  stateful
-
-example : counter.CostHoare (fun _ _ => 1) (fun _ => True) readThenBump (fun _ _ => True)
-    (fun _ => 2) := by
-  unfold readThenBump
-  exact StateTransitionSpec.CostHoare.bind (mid := fun _ _ => True) (by stateful)
-    (fun _ => by stateful) (fun _ _ _ _ _ => le_refl 2)
-
-end Stateful
 
 /-! ### `fo_qf`, `fo_iso_closed` and `fo_definable` -/
 
