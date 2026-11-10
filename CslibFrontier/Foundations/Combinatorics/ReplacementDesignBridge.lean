@@ -88,8 +88,9 @@ This module bridges the two layers without introducing a third intermediate inte
 * `Cslib.ReplacementCounting.Design.domainExaminationBound_le_mul_exp_threeTermExponent`,
   `Cslib.ReplacementCounting.Design.domainExaminationBound_div_le_mul_exp_threeTermExponent`:
   equation (3.16) exponential bound on Proposition 3.4's finite-domain examination count.
-* `Cslib.LinearAlgebra.exists_countingDesign_of_scopes`: Lemma 4.7 existence of a concrete
-  `ReplacementDesign` together with its induced `Cslib.ReplacementCounting.Design`.
+* `Cslib.LinearAlgebra.exists_countingDesign_of_scopes`: for each `s`, Lemma 4.7 existence of a
+  concrete `ReplacementDesign` whose integer replacement rows are `commonDenom Q R` times the rows
+  of its induced `Cslib.ReplacementCounting.Design` over `s`.
 
 ## References
 
@@ -598,17 +599,20 @@ variable {Q r A₀ R n : ℕ}
 ([OpenAI2026ETH], Definition 3.1, Proposition 3.4, and Lemma 4.7, pp. 21–25, 33–34):
 Under the algebraic Lemma 4.7 hypotheses on `scope : F → Finset (Fin n)` with `0 < τ ≤ 1 / 2`,
 for each `s : Finset F` there exists a concrete `D : ReplacementDesign scope Q r A₀ R τ`
-satisfying the bounds stated below (on `D.h`, on the assignment of factors with empty scope, and on
-the `ℓ₁` coefficient norms of its integer replacement rows), whose integer replacement rows are
-`commonDenom Q R` times the rows of `D.toCountingDesign s hr hR hRQ hτ_pos hτ_le`.
+satisfying the conditions stated below (a bound on `D.h`, `(D.factorAssign f t).1 = 0` for every
+factor `f` with empty scope, and a bound on the `ℓ₁` coefficient norms of its integer replacement
+rows), whose integer replacement rows are `commonDenom Q R` times the rows of
+`D.toCountingDesign s hr hR hRQ hτ_pos hτ_le`.
 
 The statement fixes `s` before `D`, and its `Nonempty` conjunct asserts only that some
 `Cslib.ReplacementCounting.Design` with these parameters exists, without naming it. The proof takes
-`D` from `exists_replacementDesign`, independently of `s`, and uses `D.toCountingDesign s …` as that
-design; since `toCountingDesign` is defined for every `D` and `s`, the same `D` serves every `s`,
-and `Design.targetSum_eq_of_taylorJet_jetOrder`,
+`D` from `exists_replacementDesign`, independently of `s`, and uses
+`D.toCountingDesign s hr hR hRQ hτ_pos hτ_le` as that design. The hypotheses `hr`, `hR`, `hRQ`,
+`hτ_pos` and `hτ_le` do not mention `s`, so the same `D` serves every `s`, and
+`Design.targetSum_eq_of_taylorJet_jetOrder`,
 `Design.sum_restricted_shiftedFactor_eq_sum_measurement_fibers`, and
-`Design.domainExaminationBound_le_mul_exp_threeTermExponent` apply to it. -/
+`Design.domainExaminationBound_le_mul_exp_threeTermExponent` apply to the counting design
+`D.toCountingDesign s hr hR hRQ hτ_pos hτ_le`. -/
 theorem exists_countingDesign_of_scopes {F : Type*} [Fintype F]
     (scope : F → Finset (Fin n)) (s : Finset F) {Q r A₀ R b w : ℕ} {τ : ℚ}
     (hn : 1 ≤ n) (hb_pos : 1 ≤ b) (hw_pos : 1 ≤ w)
