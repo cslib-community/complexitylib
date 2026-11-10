@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Interactive.Plain
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.EventBind
 
 /-!
@@ -462,6 +463,15 @@ theorem plainLaw_bindLeaf_run : ∀ (s : Spec) (smp : PerChallenge ProbComp s) {
     rw [PMF.bind_map]
     rfl
 
+/-- Running a strategy continued by a pure map at its end maps the output, keeping the
+transcript. -/
+theorem plainLaw_bindLeaf_pure_run (s : Spec) (smp : PerChallenge ProbComp s) {α β : Type}
+    (st : ProverStrategy (ProbOracleComp OracleSpec.empty) s α) (f : Transcript s → α → β) :
+    plainLaw (ProverStrategy.bindLeaf s st (fun τ a => pure (f τ a)) >>= runStrategy s smp) =
+      (plainLaw (runStrategy s smp st)).map fun r => (r.1, f r.1 r.2) := by
+  rw [plainLaw_bindLeaf_run]
+  simp only [plainLaw_pure, PMF.pure_map]
+  exact PMF.bind_pure_comp _ _
 
 /-- Split a strategy for `s₁ ++ s₂` into a strategy for `s₁` ending with one for `s₂`. -/
 def ProverStrategy.split {m : Type → Type} [Monad m] {α : Type} :
@@ -555,6 +565,26 @@ theorem plainLaw_run_split : ∀ (s₁ s₂ : Spec) (smp₁ : PerChallenge ProbC
     rw [PMF.bind_map]
     rfl
 
+/-- Run the first part of a split prover, which ends by running its second part and applying `g`
+to the first transcript and the result: the law runs the first part, then the second part, and
+applies `g`. This is the prover a composed verifier's first component faces. -/
+theorem plainLaw_split_bindLeaf_run (s₁ s₂ : Spec) (smp₁ : PerChallenge ProbComp s₁)
+    (smp₂ : PerChallenge ProbComp s₂) {α γ : Type}
+    (P : ProbOracleComp OracleSpec.empty
+      (ProverStrategy (ProbOracleComp OracleSpec.empty) (s₁ ++ s₂) α))
+    (g : Transcript s₁ → Transcript s₂ × α → γ) :
+    plainLaw ((ProverStrategy.split s₁ s₂ ·) <$> P >>= (fun st₁ => ProverStrategy.bindLeaf s₁ st₁
+        fun τ₁ st₂ => g τ₁ <$> runStrategy s₂ smp₂ st₂) >>= runStrategy s₁ smp₁) =
+      (plainLaw ((ProverStrategy.split s₁ s₂ ·) <$> P >>= runStrategy s₁ smp₁)).bind
+        fun r₁ => (plainLaw (runStrategy s₂ smp₂ r₁.2)).map fun r₂ => (r₁.1, g r₁.1 r₂) := by
+  simp only [bind_assoc, plainLaw_bind, PMF.bind_bind]
+  congr 1
+  funext st₁
+  rw [← plainLaw_bind, plainLaw_bindLeaf_run]
+  congr 1
+  funext r₁
+  rw [plainLaw_map, PMF.map_comp]
+  rfl
 
 /-- Splitting a concatenated transcript recovers its halves. -/
 theorem Spec.Transcript.split_append : ∀ (s₁ s₂ : Spec) (τ₁ : Transcript s₁)
@@ -562,12 +592,6 @@ theorem Spec.Transcript.split_append : ∀ (s₁ s₂ : Spec) (τ₁ : Transcrip
   | [], _, _, _ => rfl
   | _ :: s₁, s₂, τ₁, τ₂ => by
     simp only [Transcript.split, Transcript.append, Spec.Transcript.split_append s₁ s₂ τ₁.2 τ₂]
-
-private theorem toOuterMeasure_bind_le_add {α β : Type} (μ : PMF α) (f : α → PMF β)
-    (t : Set β) (A : Set α) {K : ℝ≥0∞} (h : ∀ a ∉ A, (f a).toOuterMeasure t ≤ K) :
-    (μ.bind f).toOuterMeasure t ≤ μ.toOuterMeasure A + K := by
-  simpa only [compl_compl] using
-    Probability.PMF.toOuterMeasure_bind_failure_le μ f Aᶜ t K fun a _ ha => h a ha
 
 section Compose
 
@@ -597,7 +621,8 @@ theorem Reduction.Complete.append {R₁ : Reduction OracleSpec.empty OracleSpec.
   have hl₁ := h₁ x w hxw
   rw [Reduction.run, World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hl₁ ⊢
   rw [plainLaw_run_reductionAppend]
-  refine le_trans (toOuterMeasure_bind_le_add _ _ _ _ fun r₁ hr₁ => ?_) (add_le_add hl₁ le_rfl)
+  refine le_trans (Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ _ fun r₁ _ hr₁ => ?_)
+    (add_le_add hl₁ le_rfl)
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, not_not] at hr₁
   obtain ⟨hout, hrel⟩ := hr₁
   have hl₂ := h₂ r₁.2.1 r₁.2.2 hrel
@@ -634,7 +659,8 @@ theorem Verifier.Sound.append {V₁ : Verifier OracleSpec.empty s₁ S₁ S₂}
   have hl₁ := h₁ x hx _ ((ProverStrategy.split s₁ s₂ ·) <$> P)
   rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hl₁ ⊢
   rw [plainLaw_run_verifierAppend]
-  refine le_trans (toOuterMeasure_bind_le_add _ _ _ _ fun r₁ hr₁ => ?_) (add_le_add hl₁ le_rfl)
+  refine le_trans (Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ _ fun r₁ _ hr₁ => ?_)
+    (add_le_add hl₁ le_rfl)
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, not_exists, not_and] at hr₁
   rw [PMF.toOuterMeasure_map_apply]
   cases hout : V₁.outputOn x r₁.1 with
@@ -700,15 +726,9 @@ theorem Verifier.KnowledgeSound.append {V₁ : Verifier OracleSpec.empty s₁ S�
     have hlaw₁ : plainLaw (P₁ >>= runStrategy s₁ V₁.samplers) =
         (plainLaw ((ProverStrategy.split s₁ s₂ ·) <$> P >>= runStrategy s₁ V₁.samplers)).bind
           fun r₁ => (plainLaw (runStrategy s₂ V₂.samplers r₁.2)).map
-            fun r₂ => (r₁.1, E₂ ((V₁.outputOn x r₁.1).getD y₀) r₂.1 r₂.2) := by
-      simp only [P₁, bind_assoc, plainLaw_bind, PMF.bind_bind]
-      congr 1
-      funext st₁
-      rw [← plainLaw_bind, plainLaw_bindLeaf_run]
-      congr 1
-      funext r₁
-      rw [plainLaw_map, PMF.map_comp]
-      rfl
+            fun r₂ => (r₁.1, E₂ ((V₁.outputOn x r₁.1).getD y₀) r₂.1 r₂.2) :=
+      plainLaw_split_bindLeaf_run s₁ s₂ V₁.samplers V₂.samplers P
+        fun τ₁ r₂ => E₂ ((V₁.outputOn x τ₁).getD y₀) r₂.1 r₂.2
     rw [hlaw₁] at hl₁
     refine le_trans (le_of_eq ?_) hl₁
     rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]

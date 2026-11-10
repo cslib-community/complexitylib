@@ -178,7 +178,7 @@ private theorem exec_exact {w : ℕ} (x : Data 7)
 /-- In five instructions the elementary update returns an exact low digit and carry, both
 strictly below the radix. Memory and the two operands, addend, and radix are preserved.
 For globally bounded input data, `ExecWithin.bounded` also gives globally bounded output data. -/
-theorem exec {w : ℕ} (x : Data 7) (hw : 2 ≤ w) (hbase : x.regs base = radix w)
+theorem exec {w : ℕ} (x : Data 7) (hbase : x.regs base = radix w)
     (ha : x.regs left < radix w) (hb : x.regs right < radix w)
     (hd : x.regs addend < radix w) (hc : x.regs carry < radix w) :
     ∃ y, ExecWithin w program x y 5 ∧
@@ -187,7 +187,7 @@ theorem exec {w : ℕ} (x : Data 7) (hw : 2 ≤ w) (hbase : x.regs base = radix 
         y.regs digit + radix w * y.regs carry ∧
       y.mem = x.mem ∧ y.regs left = x.regs left ∧ y.regs right = x.regs right ∧
       y.regs addend = x.regs addend ∧ y.regs base = x.regs base := by
-  have hβ : 0 < radix w := by have := one_lt_radix hw; omega
+  have hβ : 0 < radix w := Nat.two_pow_pos _
   have hs := limb_update_lt_sq ha hb hd hc
   have hq : (x.regs left * x.regs right + x.regs addend + x.regs carry) /
       radix w < radix w := by
@@ -220,7 +220,7 @@ theorem exec_initialized {w : ℕ} (x : Data 7) (hw : 2 ≤ w)
     simpa +decide [setupResult] using hd
   have hc' : (setupResult w x).regs carry < radix w := by
     simpa +decide [setupResult] using hc
-  obtain ⟨y, he, hy⟩ := exec (setupResult w x) hw (by simp [setupResult]) ha' hb' hd' hc'
+  obtain ⟨y, he, hy⟩ := exec (setupResult w x) (by simp [setupResult]) ha' hb' hd' hc'
   refine ⟨y, (exec_setup x hw).within.seq he, ?_⟩
   simpa +decide [setupResult] using hy
 

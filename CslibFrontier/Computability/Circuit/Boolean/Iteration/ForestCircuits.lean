@@ -74,9 +74,7 @@ theorem forest_dictionary_cost_le (n s v M Q L : ℕ) (hL : 0 < L) (hLN : L ≤ 
         ≤ (12 * (n + 1)) ^ 3 := Nat.pow_le_pow_left h1 3
       _ = 1728 * (n + 1) ^ 3 := by ring
   have hr : M + Q + 1 ≤ 3 * (L + 2 ^ n / L + 1) := by lia
-  have hb : (n + 1) ^ 3 * (L + 2 ^ n / L + 1) ≤ powerBudget n s (2 ^ n) L := by
-    unfold powerBudget
-    nlinarith
+  have hb : (n + 1) ^ 3 * (L + 2 ^ n / L + 1) ≤ powerBudget n s (2 ^ n) L := Nat.le_add_left _ _
   unfold dictionaryCost
   calc 256 * (M + Q + 1) * (Nat.clog 2 (M + Q + 1) + n + (1 + v) + 3) ^ 3
       ≤ 256 * (3 * (L + 2 ^ n / L + 1)) * (1728 * (n + 1) ^ 3) := by gcongr
@@ -92,7 +90,7 @@ theorem transientForestCost_le (n s d M E L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^
     hL hLN (by omega) hM le_rfl
   have he := forest_dictionary_cost_le n s (n + (n + 1 + (n + 1)) + (n + 3)) E (2 * L + 1) L
     hL hLN (by omega) hE (by omega)
-  have hn1 : n + 1 ≤ (n + 1) ^ 3 := by nlinarith [Nat.zero_le (n ^ 2)]
+  have hn1 : n + 1 ≤ (n + 1) ^ 3 := Nat.le_self_pow (by decide) _
   have hp : (2 * L + 1) * (41 * n + 41) + (24 * n + 50) + 2 ≤
       200 * ((n + 1) ^ 3 * (L + 2 ^ n / L + 1)) := by
     have h1 : (2 * L + 1) * (41 * n + 41) ≤
@@ -102,12 +100,8 @@ theorem transientForestCost_le (n s d M E L : ℕ) (hL : 0 < L) (hLN : L ≤ 2 ^
       have hL1 : 1 ≤ L + 2 ^ n / L + 1 := by omega
       nlinarith
     nlinarith
-  have hb : (n + 1) ^ 3 * (L + 2 ^ n / L + 1) ≤ powerBudget n s (2 ^ n) L := by
-    unfold powerBudget
-    nlinarith
-  have hs : L * s ≤ powerBudget n s (2 ^ n) L := by
-    unfold powerBudget
-    nlinarith
+  have hb : (n + 1) ^ 3 * (L + 2 ^ n / L + 1) ≤ powerBudget n s (2 ^ n) L := Nat.le_add_left _ _
+  have hs : L * s ≤ powerBudget n s (2 ^ n) L := Nat.le_add_right _ _
   unfold transientForestCost
   nlinarith
 
@@ -125,6 +119,20 @@ theorem forest_transient_circuit (c : Circuit signature n n) (L : ℕ)
   obtain ⟨out, hout, hsize⟩ := synthesis_transient_forest_reachability c L hL depth hd tables
   exact ⟨out, hout, hsize.trans (transientForestCost_le n c.size depth.size
     tables.markCount tables.edgeTable.count L hL hLN hds tables.markCount_le tables.edgeCount_le)⟩
+
+/-- The fixed overhead `2 + 50 (n + 4) ^ 2 + (49 n + 138)` of the navigation flag, beyond the
+depth, label and transient circuits, is at most `1000 * powerBudget`. -/
+theorem navigationOverhead_le (n s M L : ℕ) :
+    2 + 50 * (n + 4) ^ 2 + (49 * n + 138) ≤ 1000 * powerBudget n s M L := by
+  have hb := cube_le_powerBudget n s M L
+  have hfour : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 3 := by
+    have h1 : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 2 := by
+      have := Nat.pow_le_pow_left (show n + 4 ≤ 4 * (n + 1) by omega) 2
+      nlinarith
+    have h2 : (n + 1) ^ 2 ≤ (n + 1) ^ 3 := Nat.pow_le_pow_right (by omega) (by decide)
+    nlinarith
+  have hn1 : n + 1 ≤ (n + 1) ^ 3 := Nat.le_self_pow (by decide) _
+  nlinarith
 
 /-- **General reachability.** Combining compressed-forest ancestry for transient targets with
 canonical cycle representatives for periodic targets decides reachability for all pairs `(x, y)`
@@ -151,18 +159,8 @@ theorem forest_reachability_circuit (c : Circuit signature n n) (L : ℕ)
   refine ⟨out, fun z => ?_, hsize.trans ?_⟩
   · rw [hout z]
     exact navigationBits_flag f (inputLeft z) (inputRight z)
-  · have hb : (n + 1) ^ 3 ≤ powerBudget n c.size (2 ^ n) L := by
-      have hh := Nat.mul_le_mul_left ((n + 1) ^ 3) (show 1 ≤ L + 2 ^ n / L + 1 by lia)
-      unfold powerBudget
-      nlinarith
-    have hfour : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 3 := by
-      have h1 : (n + 4) ^ 2 ≤ 16 * (n + 1) ^ 2 := by
-        have := Nat.pow_le_pow_left (show n + 4 ≤ 4 * (n + 1) by omega) 2
-        nlinarith
-      have h2 : (n + 1) ^ 2 ≤ (n + 1) ^ 3 := Nat.pow_le_pow_right (by omega) (by decide)
-      nlinarith
-    have hn1 : n + 1 ≤ (n + 1) ^ 3 := by nlinarith [Nat.zero_le (n ^ 2)]
-    nlinarith
+  · have h := navigationOverhead_le n c.size (2 ^ n) L
+    omega
 
 /-- **Square-root reachability.** Optimizing the checkpoint parameter `L` gives a circuit of size at
 most `13500000 * optimizedBudget n c.size (2 ^ n)` deciding reachability for all state pairs. -/

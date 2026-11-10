@@ -153,72 +153,46 @@ structure ShrinkingCollisionGrid where
 
 /-! ### Polynomial-time certificates and dimension bounds -/
 
+attribute [local fun_prop] InaccessibleEntropyFamily.polyTime_inLen
+  InaccessibleEntropyFamily.polyTime_outLen InaccessibleEntropyFamily.polyTime_denom
+  InaccessibleEntropyFamily.polyTime_evalWord
+
 @[fun_prop]
 theorem computableInPolyTime_ampSlack (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime (ampSlack F) encUnary encUnary := by
   unfold ampSlack
-  have hid := ComputableInPolyTime.id' (encIn := encUnary)
-  have hn2 := ComputableInPolyTime.unary_add' hid (ComputableInPolyTime.const 2)
-  have hw1 := ComputableInPolyTime.unary_add' F.polyTime_inLen (ComputableInPolyTime.const 1)
-  have hsq := ComputableInPolyTime.unary_mul' hw1 hw1
-  exact ComputableInPolyTime.unary_mul'
-    (ComputableInPolyTime.unary_mul'
-      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 3) hn2)
-      F.polyTime_denom)
-    hsq
+  fun_prop
 
 @[fun_prop]
 theorem computableInPolyTime_ampReps (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime (ampReps F) encUnary encUnary := by
   unfold ampReps
-  exact ComputableInPolyTime.unary_mul'
-    (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 6) F.polyTime_denom)
-    (computableInPolyTime_ampSlack F)
+  fun_prop
 
 @[fun_prop]
 theorem computableInPolyTime_ampGridCount (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime (ampGridCount F) encUnary encUnary := by
   unfold ampGridCount
-  have hw1 := ComputableInPolyTime.unary_add' F.polyTime_inLen (ComputableInPolyTime.const 1)
-  exact ComputableInPolyTime.unary_add'
-    (ComputableInPolyTime.unary_mul'
-      (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 6) F.polyTime_denom)
-      hw1)
-    (ComputableInPolyTime.const 3)
+  fun_prop
 
 @[fun_prop]
 theorem computableInPolyTime_ampRepInLen (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime (ampRepInLen F) encUnary encUnary := by
   unfold ampRepInLen
-  exact ComputableInPolyTime.ite_decide
-    (ComputableInPolyTime.unary_eq' F.polyTime_inLen (ComputableInPolyTime.const 0))
-    (ComputableInPolyTime.unary_add' .id' (ComputableInPolyTime.const 2))
-    (ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_inLen)
+  exact .ite_decide (by fun_prop) (by fun_prop) (by fun_prop)
 
 @[fun_prop]
 theorem computableInPolyTime_ampRepOutLen (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime (ampRepOutLen F) encUnary encUnary := by
   unfold ampRepOutLen
-  exact ComputableInPolyTime.ite_decide
-    (ComputableInPolyTime.unary_eq' F.polyTime_inLen (ComputableInPolyTime.const 0))
-    (ComputableInPolyTime.unary_add' .id' (ComputableInPolyTime.const 2))
-    (ComputableInPolyTime.unary_mul' (computableInPolyTime_ampReps F) F.polyTime_outLen)
+  exact .ite_decide (by fun_prop) (by fun_prop) (by fun_prop)
 
 @[fun_prop]
 theorem computableInPolyTime_ampRepEvalWord (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime (fun p : ℕ × List Bool => ampRepEvalWord F p.1 p.2)
       (encPair encUnary encBits) encBits := by
   unfold ampRepEvalWord
-  have hfst := ComputableInPolyTime.fst encUnary encBits
-  have hsnd := ComputableInPolyTime.snd encUnary encBits
-  exact ComputableInPolyTime.ite_decide
-    (ComputableInPolyTime.unary_eq' (F.polyTime_inLen.comp hfst) (ComputableInPolyTime.const 0))
-    ((ComputableInPolyTime.bitsReplicate false).comp
-      (ComputableInPolyTime.unary_add' hfst (ComputableInPolyTime.const 2)))
-    (computableInPolyTime_repEvalWord
-      ((computableInPolyTime_ampReps F).comp hfst)
-      (F.polyTime_inLen.comp hfst)
-      hfst F.polyTime_evalWord hsnd)
+  exact .ite_decide (by fun_prop) (by fun_prop) (by fun_prop)
 
 private theorem le_ampSlack (F : InaccessibleEntropyFamily) (n : ℕ) :
     3 * (n + 2) ≤ ampSlack F n := by
@@ -292,43 +266,21 @@ private theorem two_rpow_neg_le_half_pow (n : ℕ) {x : ℝ} (hx : x ≤ -(n : �
 private theorem computableInPolyTime_shrunkHashInLen_amp (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime
       (fun n => shrunkHashInLen (ampRepInLen F n) (ampRepOutLen F n)) encUnary encUnary := by
-  unfold shrunkHashInLen inputHashInLen inputHashOutLen outHashLen
-  have hn₁ := computableInPolyTime_ampRepInLen F
-  have hm₁ := computableInPolyTime_ampRepOutLen F
-  have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
-  have hin₂ := ComputableInPolyTime.unary_add' hn₁ hsq
-  have hout₂ := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hm₁ hsq) hn₁
-  have houtH := ComputableInPolyTime.unary_sub' hin₂ (ComputableInPolyTime.const 1)
-  exact ComputableInPolyTime.unary_add' hin₂ (ComputableInPolyTime.unary_mul' houtH hout₂)
+  unfold shrunkHashInLen outHashLen inputHashInLen inputHashOutLen
+  fun_prop
 
 private theorem computableInPolyTime_shrunkHashOutLen_amp (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime
       (fun n => shrunkHashOutLen (ampRepInLen F n) (ampRepOutLen F n)) encUnary encUnary := by
   unfold shrunkHashOutLen outHashLen inputHashInLen inputHashOutLen
-  have hn₁ := computableInPolyTime_ampRepInLen F
-  have hm₁ := computableInPolyTime_ampRepOutLen F
-  have hsq := ComputableInPolyTime.unary_mul' hn₁ hn₁
-  have hin₂ := ComputableInPolyTime.unary_add' hn₁ hsq
-  have hout₂ := ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_add' hm₁ hsq) hn₁
-  have houtH := ComputableInPolyTime.unary_sub' hin₂ (ComputableInPolyTime.const 1)
-  exact ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul' houtH hout₂) houtH
+  fun_prop
 
 private theorem computableInPolyTime_shrunkHashEvalWord_amp (F : InaccessibleEntropyFamily) :
     ComputableInPolyTime
       (fun ⟨n, q, raw⟩ => shrunkHashEvalWord (ampRepInLen F n) (ampRepOutLen F n)
         (ampRepEvalWord F n) (q * ampSlack F n) raw)
       (encPair encUnary (encPair encUnary encBits)) encBits := by
-  have hn := ComputableInPolyTime.fst encUnary (encPair encUnary encBits)
-  have hrest := ComputableInPolyTime.snd encUnary (encPair encUnary encBits)
-  have hq := (ComputableInPolyTime.fst encUnary encBits).comp hrest
-  have hraw := (ComputableInPolyTime.snd encUnary encBits).comp hrest
-  exact computableInPolyTime_shrunkHashEvalWord
-    ((computableInPolyTime_ampRepInLen F).comp hn)
-    ((computableInPolyTime_ampRepOutLen F).comp hn)
-    hn
-    (ComputableInPolyTime.unary_mul' hq ((computableInPolyTime_ampSlack F).comp hn))
-    (computableInPolyTime_ampRepEvalWord F)
-    hraw
+  fun_prop
 
 private noncomputable def ampGoodIdx (F : InaccessibleEntropyFamily) (N₀ n : ℕ) : ℕ :=
   if n < N₀ then 0
@@ -421,8 +373,7 @@ private theorem amp_randomCollisionGame_succProbability_le
   let f₀ := wordToFinMap w₀ m₀ (F.evalWord n)
   let a₀ := accessibleSetExpectation (F.accSet n)
   let k₀ := PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString w₀)).map fun z => (f₀ z, z))
-  have ha₀_nonneg : 0 ≤ a₀ :=
-    accessibleSetExpectation_nonneg fun z => ⟨z, F.self_mem_accSet n z⟩
+  have ha₀_nonneg : 0 ≤ a₀ := accessibleSetExpectation_nonneg _
   have hgap₀ : a₀ ≤ k₀ - 1 / (D : ℝ) := hN₀ n hn
   have hk₀_le : k₀ ≤ (w₀ : ℝ) := conditionalEntropy_le_inLen f₀
   have hD_pos : (0 : ℝ) < D := by exact_mod_cast F.denom_pos n

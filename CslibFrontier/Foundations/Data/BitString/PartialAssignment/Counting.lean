@@ -206,20 +206,22 @@ theorem card_filter_extends_withFree {ρ' : PartialAssignment ι} {ℓ : ℕ}
   have h := card_filter_powersetCard_subset ρ'.free univ ℓ (subset_univ _) hℓ
   rw [card_univ] at h
   rw [← h]
+  -- Freeing the coordinates of a superset `F` of `ρ'.free` leaves exactly `F` free.
+  have hfree {F : Finset ι} (hsub : ρ'.free ⊆ F) :
+      free (fun i => if i ∈ F then none else ρ' i) = F := by
+    ext i
+    by_cases hi : i ∈ F
+    · simp [hi]
+    · simp only [mem_free, hi, ↓reduceIte, iff_false]
+      exact fun h => hi (hsub (mem_free.2 h))
   refine card_nbij' free (fun F i => if i ∈ F then none else ρ' i) (fun ρ hρ => ?_)
     (fun F hF => ?_) (fun ρ hρ => ?_) (fun F hF => ?_)
   · obtain ⟨hρ, hext⟩ := mem_filter.1 hρ
     exact mem_filter.2 ⟨mem_powersetCard.2 ⟨subset_univ _, (mem_withFree.1 hρ)⟩,
       hext.free_subset⟩
   · obtain ⟨hF, hsub⟩ := mem_filter.1 hF
-    have hfree : free (fun i => if i ∈ F then none else ρ' i) = F := by
-      ext i
-      by_cases hi : i ∈ F
-      · simp [hi]
-      · simp only [mem_free, hi, ↓reduceIte, iff_false]
-        exact fun h => hi (hsub (mem_free.2 h))
     refine mem_filter.2 ⟨mem_withFree.2 ?_, fun i b hb => ?_⟩
-    · rw [hfree]
+    · rw [hfree hsub]
       exact (mem_powersetCard.1 hF).2
     · by_cases hi : i ∈ F
       · simp [hi] at hb
@@ -230,12 +232,7 @@ theorem card_filter_extends_withFree {ρ' : PartialAssignment ι} {ℓ : ℕ}
     · simp [hi, mem_free.1 hi]
     · obtain ⟨b, hb⟩ := Option.ne_none_iff_exists'.1 fun h => hi (mem_free.2 h)
       simp [hi, hb, hext i b hb]
-  · obtain ⟨-, hsub⟩ := mem_filter.1 hF
-    ext i
-    by_cases hi : i ∈ F
-    · simp [hi]
-    · simp only [mem_free, hi, ↓reduceIte, iff_false]
-      exact fun h => hi (hsub (mem_free.2 h))
+  · exact hfree (mem_filter.1 hF).2
 
 /-! ### Drawing random restrictions -/
 

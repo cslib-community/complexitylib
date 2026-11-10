@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.RootDecisionCorrect
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.FirstHalt
 
 /-!
@@ -104,74 +105,27 @@ theorem exists_runFrom_candidates [Finite Q]
     ∃ T σ, (machine M e).runFrom w (initial args) T = .inl (args, σ, result) ∧
       (machine M e).halted (.inl (args, σ, result)) = true ∧
       ∀ t ≤ T, (encState ((machine M e).runFrom w (initial args) t)).length ≤ B := by
-  let bound := 3 ^ ((k + 1) * (horizon args))
-  have haux (n : ℕ) : ∀ σ, σ + n = bound →
-      (result ≠ none → ∃ j, σ ≤ j ∧ j < bound ∧ values j = result) →
-      ∃ T cursor, (machine M e).runFrom w (.inl (args, σ, none)) T =
-          .inl (args, cursor, result) ∧
-        (machine M e).halted (.inl (args, cursor, result)) = true ∧
-        ∀ t ≤ T, (encState ((machine M e).runFrom w (.inl (args, σ, none)) t)).length ≤ B := by
-    induction n with
-    | zero =>
-      intro σ hσ hex
-      have hnone : result = none := by
-        by_contra h
-        obtain ⟨j, hlo, hhi, _⟩ := hex h
-        omega
-      subst result
-      have heq : σ = bound := by omega
-      refine ⟨0, σ, rfl, ?_, ?_⟩
-      · subst σ
-        rcases args with ⟨N, b, q⟩
-        change !ScheduleCounter.valid k (3 ^ ((k + 1) * q), q) = true
-        rw [ScheduleCounter.valid_bound]
-        rfl
-      · intro t ht
-        have htzero : t = 0 := by omega
-        subst t
-        exact hcaller σ (by omega) none
-    | succ n ih =>
-      intro σ hσ hex
-      have hlt : σ < bound := by omega
-      obtain ⟨T, hT, hTspace⟩ := hstep σ hlt
-      cases hv : values σ with
-      | none =>
-        have hfuture : result ≠ none →
-            ∃ j, σ + 1 ≤ j ∧ j < bound ∧ values j = result := by
-          intro hresult
-          obtain ⟨j, hlo, hhi, hj⟩ := hex hresult
-          have hne : j ≠ σ := by intro heq; subst j; rw [hv] at hj; exact hresult hj.symm
-          exact ⟨j, by omega, hhi, hj⟩
-        obtain ⟨U, cursor, hU, hhalt, hUspace⟩ := ih (σ + 1) (by omega) hfuture
-        refine ⟨T + U, cursor, ?_, hhalt, ?_⟩
-        · rw [QueryMachine.runFrom_add, hT, hv, hU]
-        · intro t ht
-          by_cases hbefore : t ≤ T
-          · exact hTspace t hbefore
-          · have hafter : T ≤ t := by omega
-            obtain ⟨u, rfl⟩ := Nat.exists_eq_add_of_le hafter
-            rw [QueryMachine.runFrom_add, hT, hv]
-            exact hUspace u (by omega)
-      | some answer =>
-        have hresult : some answer = result := by
-          rcases hsafe σ hlt with hnone | hresult
-          · rw [hv] at hnone
-            cases hnone
-          · rw [hv] at hresult
-            exact hresult
-        refine ⟨T, σ, ?_, ?_, hTspace⟩
-        · rw [hv] at hT
-          rw [← hresult]
-          exact hT
-        · rw [← hresult]
-          rcases args with ⟨N, b, q⟩
-          change !pending k ((N, b, q), σ, some answer) = true
-          rfl
-  obtain ⟨T, σ, hrun, hhalt, hspace⟩ := haux bound 0 (by omega) (by
-    intro hresult
-    obtain ⟨σ, hσ, hv⟩ := hcomplete hresult
-    exact ⟨σ, Nat.zero_le _, hσ, hv⟩)
-  exact ⟨T, σ, hrun, hhalt, hspace⟩
+  obtain ⟨T, ⟨hrun, hnone⟩ | ⟨σ, answer, -, hσ, hv, hrun⟩, hB⟩ :=
+    QueryMachine.exists_runFrom_search_encoding_le (M := machine M e) (w := w) encState
+      (fun σ => .inl (args, σ, none)) values (fun σ answer => .inl (args, σ, some answer))
+      (hi := 3 ^ ((k + 1) * (horizon args))) (Nat.zero_le _) (hcaller 0 (Nat.zero_le _) none)
+      (fun σ _ hσ hv => by simpa only [hv] using hstep σ hσ)
+      (fun σ answer _ hσ hv => by simpa only [hv] using hstep σ hσ)
+  · have hresult : result = none := by
+      by_contra h
+      obtain ⟨σ, hσ, hv⟩ := hcomplete h
+      exact h (hv.symm.trans (hnone σ (Nat.zero_le _) hσ))
+    subst result
+    refine ⟨T, 3 ^ ((k + 1) * (horizon args)), hrun, ?_, hB⟩
+    rcases args with ⟨N, b, q⟩
+    change !ScheduleCounter.valid k (3 ^ ((k + 1) * q), q) = true
+    rw [ScheduleCounter.valid_bound]
+    rfl
+  · have hresult : some answer = result := by
+      simpa only [hv, reduceCtorEq, false_or] using hsafe σ hσ
+    subst result
+    rcases args with ⟨N, b, q⟩
+    exact ⟨T, σ, hrun, rfl, hB⟩
 
 /-- Sequential native schedule search returns exactly the original machine's bounded halted
 decision. Every candidate is evaluated on the original input; no lookup or supplier oracle is

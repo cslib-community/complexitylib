@@ -329,8 +329,7 @@ theorem repBitAccessibleSet_subset_fiber {t inLen₀ outLen₀ : ℕ}
         (wordToFinMap (t * inLen₀) (t * outLen₀) (repEvalWord t inLen₀ evalWord₀) z) := by
   intro z' hz'
   rw [mem_fiberSet, wordToFinMap_repEvalWord hlen, wordToFinMap_repEvalWord hlen]
-  congr 1
-  funext i
+  congr 1 with i : 1
   dsimp only [repHashFin]
   exact (mem_fiberSet _ _ _).mp (hsub _ ((mem_repBitAccessibleSet L₀ z z').mp hz' i))
 

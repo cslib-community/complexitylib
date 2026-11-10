@@ -25,6 +25,8 @@ import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.PolyTime.Init
+import CslibFrontier.Probability.PMF.Finiteness
+import CslibFrontier.Crypto.Game.Order
 
 /-!
 # Naor–Yung universal one-way hash functions from one-way permutations
@@ -467,8 +469,7 @@ theorem succProbability_targetCollisionGame_naorYungStep_le
       Game.succProbability
         (ProbComp.eval (inversionGame f (naorYungStepInverter f adversary) (n + 2))) := by
   let validStep (m : ℕ) (w : List Bool) : Bool := w.length == m + 2
-  unfold Game.succProbability
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
+  apply Game.succProbability_mono
   rw [naorYungStep_inversion_eval_eq hf_len hf_bij adversary n]
   simp only [targetCollisionGame, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList]
   apply PMF.bind_apply_mono_on_support; intro choice _
@@ -1069,9 +1070,7 @@ theorem succProbability_targetCollisionGame_naorYungCompressionEval_le
   have hpos : (0 : ℝ≥0) < dyadicSize (n + 1) := by exact_mod_cast dyadicSize_pos (n + 1)
   rw [hcomp_eq, hred_eq, Game.succProbability_uniform, Fintype.card_fin,
     mul_div_cancel₀ _ hpos.ne']
-  have hsum_ne_top : (∑ s : Fin (dyadicSize (n + 1)), (slotTrial s.val) true) ≠ ⊤ :=
-    ne_of_lt (ENNReal.sum_lt_top.mpr fun s _ => (PMF.apply_ne_top _ _).lt_top)
-  have hmono := ENNReal.toNNReal_mono hsum_ne_top hsum_le
+  have hmono := ENNReal.toNNReal_mono (by finiteness) hsum_le
   rwa [ENNReal.toNNReal_sum fun s _ => PMF.apply_ne_top _ _] at hmono
 
 /-- **Naor–Yung `KeyedCompressionFamily`** ([NaorYung1989], Section 3; [Goldreich2004],

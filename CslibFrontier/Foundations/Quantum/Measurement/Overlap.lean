@@ -53,16 +53,8 @@ theorem norm_inner_sq_add_sq_measureProb_sub_le_one {ι : Type*} [Fintype ι]
   classical
   set p := measureProb ψ S
   set q := measureProb φ S
-  have hp1 : measureProb ψ Sᶜ = 1 - p := by
-    have := measureProb_univ ψ
-    rw [← union_compl S, measureProb, sum_union disjoint_compl_right, hψ] at this
-    change p + measureProb ψ Sᶜ = 1 ^ 2 at this
-    linarith
-  have hq1 : measureProb φ Sᶜ = 1 - q := by
-    have := measureProb_univ φ
-    rw [← union_compl S, measureProb, sum_union disjoint_compl_right, hφ] at this
-    change q + measureProb φ Sᶜ = 1 ^ 2 at this
-    linarith
+  have hp1 : measureProb ψ Sᶜ = 1 - p := by rw [measureProb_compl, hψ, one_pow]
+  have hq1 : measureProb φ Sᶜ = 1 - q := by rw [measureProb_compl, hφ, one_pow]
   -- Cauchy–Schwarz on `S` and on its complement
   have hcs (T : Finset ι) : ‖∑ k ∈ T, (starRingEnd ℂ) (ψ.ofLp k) * φ.ofLp k‖ ≤
       √(measureProb ψ T) * √(measureProb φ T) := by
@@ -95,8 +87,7 @@ theorem norm_inner_sq_add_sq_measureProb_sub_le_one {ι : Type*} [Fintype ι]
     nlinarith [sq_nonneg (a * b - a' * b')]
   have hdiff : p - q = (a * b' - a' * b) * (a * b' + a' * b) := by
     nlinarith
-  have h₁ : ‖inner ℂ ψ φ‖ ^ 2 ≤ (a * b + a' * b') ^ 2 :=
-    pow_le_pow_left₀ (norm_nonneg _) hinner 2
+  have h₁ : ‖inner ℂ ψ φ‖ ^ 2 ≤ (a * b + a' * b') ^ 2 := by gcongr
   have h₂ : (p - q) ^ 2 ≤ (a * b' - a' * b) ^ 2 := by
     rw [hdiff, mul_pow]
     nlinarith [sq_nonneg (a * b' - a' * b)]

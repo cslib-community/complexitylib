@@ -82,29 +82,22 @@ class RegistryTests(unittest.TestCase):
                 registry.compiled_constants([self.entry])
             load.assert_not_called()
 
-    def test_abstract_metadata_is_reused_and_citations_are_context(self):
-        source = self.root / "abstracts/CslibFrontierAbstracts/ExampleAbstract.lean"
-        source.parent.mkdir(parents=True)
-        source.write_text("/-! [Example2026] -/\nnamespace Abstract\n"
-                          "theorem example : True := trivial\nend Abstract\n")
-        abstract = {"id": "example", "title": "Current catalogue title", "scope": "Current scope",
-                    "module": "CslibFrontierAbstracts.ExampleAbstract",
-                    "headline_theorems": ["Abstract.example"]}
-        with patch.object(registry, "load_lean_registry", return_value={
-                "schema_version": 1, "abstract_catalogue": "abstracts/catalogue.json", "results": []}), \
-                patch.object(registry.build_abstracts, "load_catalogue", return_value=[abstract]):
-            entries = registry.collect(self.root)
-        self.assertEqual(entries[0]["title"], abstract["title"])
-        self.assertEqual(entries[0]["scope"], abstract["scope"])
-        self.assertEqual(entries[0]["source_review"], "module-citations")
-        self.assertEqual(entries[0]["sources"], [{"bib_key": "Example2026", "source_theorem": None, "locator": None}])
-        rendered = registry.markdown(entries, self.root)
-        self.assertIn("abstracts/CslibFrontierAbstracts/ExampleAbstract.lean#L3", rendered)
-        self.assertNotIn("CslibFrontierAbstracts/ExampleAbstract.html", rendered)
+    def test_collect_reads_recorded_lean_entries_only(self):
+        manifest = {"schema_version": 1, "results": [self.entry]}
+        with patch.object(registry, "load_lean_registry", return_value=manifest):
+            self.assertEqual(registry.collect(self.root), [self.entry])
+        for change in (lambda m: m.update(schema_version=2),
+                       lambda m: m.update(results={}),
+                       lambda m: m["results"][0].update(source_review="module-citations")):
+            broken = copy.deepcopy(manifest)
+            change(broken)
+            with self.subTest(manifest=broken), \
+                    patch.object(registry, "load_lean_registry", return_value=broken), \
+                    self.assertRaises(ValueError):
+                registry.collect(self.root)
 
     def test_lean_export_checks_freshness_then_runs_exporter_in_requested_root(self):
-        manifest = {"schema_version": 1, "abstract_catalogue": "abstracts/catalogue.json",
-                    "results": [self.entry]}
+        manifest = {"schema_version": 1, "results": [self.entry]}
         with patch.object(registry.subprocess, "run", side_effect=[
                 subprocess.CompletedProcess([], 0, "", ""),
                 subprocess.CompletedProcess([], 0, json.dumps(manifest), "")]) as run:

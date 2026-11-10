@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.VOLE.Circuit
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.EventBind
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Soundness of the circuit-bound ideal VOLE session
@@ -49,8 +50,7 @@ private theorem interpret_liftProver {n : ℕ} {α : Type}
     OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
       (fun _ => PMF.pure c.senderView)) program := by
   rw [liftProver, OracleComp.interpret_interpret]
-  congr 1
-  funext q
+  congr 1 with q : 1
   rcases q with q | q <;>
     simp [OracleComp.sumHandler, ProbOracleComp.query]
 
@@ -80,10 +80,8 @@ theorem circuitCheck_eval_execute (C : Circuit (arithSignature F) (p + k) m)
   rw [voleWorld_eval]
   simp only [voleIdealDist, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
     PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  funext u
-  congr 1
-  funext v
+  congr 1 with u : 1
+  congr 1 with v : 1
   simp only [Verifier.execute, OracleComp.interpret_bind, interpret_liftProver,
     circuitCheck_output, OracleComp.interpret_pure]
   simp only [runStrategy, circuitCheck, circuitCheckSpec, SigmaProtocol.sigmaSpec,
@@ -95,19 +93,7 @@ theorem circuitCheck_eval_execute (C : Circuit (arithSignature F) (p + k) m)
       (ProbComp.uniform (CircuitMulGate C → F)) =
       PMF.uniformOfFintype (CircuitMulGate C → F) := ProbComp.eval_uniform _
   simp only [huniform, ProbOracleComp.interpret_query, OracleComp.sumHandler, PMF.pure_bind]
-  rw [PMF.bind_comm]
-  congr 1
-  funext st
-  rw [PMF.bind_comm]
-  congr 1
-  funext first
-  rw [PMF.bind_comm]
-  congr 1
-  funext r
-  rw [PMF.bind_comm]
-  congr 1
-  funext response
-  rw [PMF.bind_comm]
+  pmf_swap
   rfl
 
 

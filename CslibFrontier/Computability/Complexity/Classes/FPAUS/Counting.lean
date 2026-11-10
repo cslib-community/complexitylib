@@ -15,6 +15,7 @@ public import CslibFrontier.Languages.Probabilistic.Repeat
 import CslibFrontier.Languages.Probabilistic.Concentration
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.EventBind
+import CslibFrontier.Probability.PMF.ToReal
 
 /-!
 # Almost uniform sampling gives approximate counting for self-reducible families
@@ -486,7 +487,7 @@ theorem approxWithin_estimate {S : α → ℕ → ProbComp (Option (List Bool))}
   have hsub : goodᶜ ⊆ {s | ¬ R.Good x p ℓ s} := fun s hs hgood =>
     hs (R.approxWithin_of_good hp hgood)
   have hbad : (μ.toOuterMeasure goodᶜ).toReal ≤ (1 / 2 : ℝ) ^ t :=
-    (ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _) (MeasureTheory.measure_mono hsub)).trans
+    (PMF.toOuterMeasure_toReal_mono _ hsub).trans
       (hfail.trans hℓ)
   have hsum := Probability.PMF.toOuterMeasure_toReal_add_compl μ good
   linarith

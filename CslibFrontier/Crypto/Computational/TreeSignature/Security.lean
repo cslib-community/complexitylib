@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.TreeSignature.CoinHybrid
 public import CslibFrontier.Crypto.Computational.CollisionResistant
 public import CslibFrontier.Crypto.Computational.OneWay
+public import CslibFrontier.Crypto.Negligible.Dyadic
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -29,7 +30,6 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Computational.MerkleSignature.Security
 import CslibFrontier.Crypto.Computational.OneWayToPRF
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -37,8 +37,10 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Tactic.Negligible
 
 /-!
 # Security of stateless tree signatures
@@ -711,6 +713,33 @@ private theorem certifyPlanted_support_inv (S : IndexedSignatureScheme) (depth :
       exact plantedLoopInv_step S a hMv hMe k prev (ih prev hprev) state hstep
   exact hiter (depth a.parameter - 1)
 
+private theorem plantedLoopInv_enc_bounds {Mv Me d i : ℕ} {a : CertLoopIn}
+    {state : PlantedCertState} (hi : i ≤ d)
+    (hinv : plantedLoopInv Mv Me a i state) :
+    (encKeys state.1.2.2).length ≤ d * (2 * (2 * (encKeys a.keys).length + 1 + Me) + 1) ∧
+    (encNodeCache state.2.1).length ≤
+      (encNodeCache a.visited).length + d * (4 * (d + 1) + 2 * Mv + 3) ∧
+    (encEdgeCache state.2.2).length ≤
+      (encEdgeCache a.edges).length + d * (8 * d + 2 * Me + 11) := by
+  rcases a with ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩
+  rcases state with ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩
+  dsimp only [plantedLoopInv, CertLoopIn.keys, CertLoopIn.sigCap,
+    CertLoopIn.visited, CertLoopIn.edges] at hinv ⊢
+  obtain ⟨-, -, hcertsLen, hcerts, -, -, hvisLen, hedgLen⟩ := hinv
+  have hcertsList : (encKeys certs).length ≤
+      certs.length * (2 * (2 * (encKeys keys).length + 1 + Me) + 1) :=
+    length_encList_le (encPair encBits encBits) certs fun c hc => by
+      obtain ⟨h1, h2⟩ := hcerts c hc
+      simp only [length_encPair, encBits_apply]
+      omega
+  rw [hcertsLen] at hcertsList
+  have hcmul := Nat.mul_le_mul_right (2 * (2 * (encKeys keys).length + 1 + Me) + 1) hi
+  have hvmul := Nat.mul_le_mul hi
+    (show 4 * (i + 1) + 2 * Mv + 3 ≤ 4 * (d + 1) + 2 * Mv + 3 by omega)
+  have hemul := Nat.mul_le_mul hi
+    (show 8 * i + 2 * Me + 11 ≤ 8 * d + 2 * Me + 11 by omega)
+  exact ⟨hcertsList.trans hcmul, hvisLen.trans (by omega), hedgLen.trans (by omega)⟩
+
 private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth : ℕ → ℕ}
     (hdepth : ComputableInPolyTime depth encUnary encUnary) :
     IsOraclePPTOn
@@ -823,35 +852,12 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
             depth a.parameter * (8 * depth a.parameter + 2 * Me a + 11))) :=
       (((PolyBounded.const 2).mul hvB).add (.const 1)).add heB
     exact (((PolyBounded.const 2).mul hleft).add (.const 1)).add hright
-  · rintro ⟨⟨keys, ⟨target, sigCap⟩, ⟨n, leaf⟩⟩, ⟨visited₀, edges₀⟩⟩ i
-      ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi
-      ⟨hnode, hidx, hcertsLen, hcerts, -, -, hvisLen, hedgLen⟩
-    dsimp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter,
-      CertLoopIn.visited, CertLoopIn.edges] at hi hnode hidx hcertsLen hcerts hvisLen hedgLen ⊢
-    have hiLe : i ≤ depth n := hi.trans (Nat.sub_le _ _)
-    have hcertsList : (encKeys certs).length ≤
-        certs.length * (2 * (2 * (encKeys keys).length + 1 + Me
-          ((keys, (target, sigCap), (n, leaf)), (visited₀, edges₀))) + 1) :=
-      length_encList_le (encPair encBits encBits) certs fun c hc => by
-        obtain ⟨h1, h2⟩ := hcerts c hc
-        simp only [length_encPair, encBits_apply]
-        omega
-    rw [hcertsLen] at hcertsList
-    have hcmul : i * (2 * (2 * (encKeys keys).length + 1 + Me
-          ((keys, (target, sigCap), (n, leaf)), (visited₀, edges₀))) + 1) ≤
-        depth n * (2 * (2 * (encKeys keys).length + 1 + Me
-          ((keys, (target, sigCap), (n, leaf)), (visited₀, edges₀))) + 1) :=
-      Nat.mul_le_mul_right _ hiLe
-    have hvmul : i * (4 * (i + 1) + 2 * Mv
-          ((keys, (target, sigCap), (n, leaf)), (visited₀, edges₀)) + 3) ≤
-        depth n * (4 * (depth n + 1) + 2 * Mv
-          ((keys, (target, sigCap), (n, leaf)), (visited₀, edges₀)) + 3) :=
-      Nat.mul_le_mul hiLe (by omega)
-    have hemul : i * (8 * i + 2 * Me
-          ((keys, (target, sigCap), (n, leaf)), (visited₀, edges₀)) + 11) ≤
-        depth n * (8 * depth n + 2 * Me
-          ((keys, (target, sigCap), (n, leaf)), (visited₀, edges₀)) + 11) :=
-      Nat.mul_le_mul hiLe (by omega)
+  · intro a i ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi hinv
+    have hle := plantedLoopInv_enc_bounds (hi.trans (Nat.sub_le _ _)) hinv
+    dsimp only [plantedLoopInv] at hinv
+    dsimp only at hle
+    obtain ⟨hnode, hidx, -⟩ := hinv
+    obtain ⟨hcB, hvB, heB⟩ := hle
     simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, hnode]
     omega
 
@@ -874,11 +880,20 @@ private theorem isOraclePPTOn_plantedTreeHandler (S : IndexedSignatureScheme)
   let encHL := encPair encH encBits
   let encHLC := encPair encHL encPlantedCert
   let encHLCS := encPair encHLC (encPair encBits encEdgeCache)
-  have hbadBr : ComputableInPolyTime
-      (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) =>
-        (([] : List Bool),
-          ((p.2.2.1.1, p.2.2.1.2), (p.2.1.2 :: p.2.2.2.1, p.2.2.2.2.1, true))))
-      encH (encPair encBits encPlantedState) := by fun_prop
+  let badOut (p : ForgerCaller × ((Unit × List Bool) × PlantedState)) : List Bool × PlantedState :=
+    ([], ((p.2.2.1.1, p.2.2.1.2), (p.2.1.2 :: p.2.2.2.1, p.2.2.2.2.1, true)))
+  let goodLeaf (q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool) :
+      WordOracleComp Unit (List Bool × PlantedState) :=
+    certifyPlanted S depth q.1.1.2 q.1.1.1.2 (sigCap q.1.1.1.1.1) q.1.1.1.1.1 q.2
+      (q.1.2.2.1.1, q.1.2.2.1.2) >>= fun c =>
+        signEdgeM S q.1.1.2 q.1.1.1.2 (sigCap q.1.1.1.1.1) c.1.1 c.1.2.1
+          (q.2.getLastD false).toNat q.1.2.1.2 c.2.2 >>= fun e =>
+            pure (encodeSignature q.2 c.1.2.2 e.1,
+              ((c.2.1, e.2), (q.1.2.1.2 :: q.1.2.2.2.1, q.2 :: q.1.2.2.2.2.1, false)))
+  let afterLeaf (p : ForgerCaller × ((Unit × List Bool) × PlantedState)) (leaf : List Bool) :
+      WordOracleComp Unit (List Bool × PlantedState) :=
+    if p.2.2.2.2.1.contains leaf then pure (badOut p) else goodLeaf (p, leaf)
+  have hbadBr : ComputableInPolyTime badOut encH (encPair encBits encPlantedState) := by fun_prop
   have hnoMsgBr : ComputableInPolyTime
       (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) =>
         (([] : List Bool),
@@ -891,9 +906,7 @@ private theorem isOraclePPTOn_plantedTreeHandler (S : IndexedSignatureScheme)
       (fun p : ForgerCaller × ((Unit × List Bool) × PlantedState) => depth p.1.1.1.1)
       encH encUnary).sampleList).isOraclePPTOn
   have hcollBr : ComputableInPolyTime
-      (fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool =>
-        (([] : List Bool),
-          ((q.1.2.2.1.1, q.1.2.2.1.2), (q.1.2.1.2 :: q.1.2.2.2.1, q.1.2.2.2.2.1, true))))
+      (fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool => badOut q.1)
       encHL (encPair encBits encPlantedState) :=
     hbadBr.comp (ComputableInPolyTime.fst encH encBits)
   have hcertPrep := (isOraclePPTOn_certifyPlanted S hdepth).preprocess' (input := encHL)
@@ -914,51 +927,29 @@ private theorem isOraclePPTOn_plantedTreeHandler (S : IndexedSignatureScheme)
           ((s.1.2.2.1, s.2.2),
             (s.1.1.1.2.1.2 :: s.1.1.1.2.2.2.1, s.1.1.2 :: s.1.1.1.2.2.2.2.1, false))))
       encHLCS (encPair encBits encPlantedState) := by fun_prop
-  have hgoodLeaf := hcertPrep.bind_with
-    (second := fun (q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool)
-        (c : PlantedCertState) =>
-      signEdgeM S q.1.1.2 q.1.1.1.2 (sigCap q.1.1.1.1.1) c.1.1 c.1.2.1
-        (q.2.getLastD false).toNat q.1.2.1.2 c.2.2 >>= fun e =>
-          pure (encodeSignature q.2 c.1.2.2 e.1,
-            ((c.2.1, e.2), (q.1.2.1.2 :: q.1.2.2.2.1, q.2 :: q.1.2.2.2.2.1, false))))
-    (hsignLast.bind_with
-      (second := fun (r : ((ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool) ×
-          PlantedCertState) (e : List Bool × EdgeSigCache) =>
-        (pure (encodeSignature r.1.2 r.2.1.2.2 e.1,
-          ((r.2.2.1, e.2), (r.1.1.2.1.2 :: r.1.1.2.2.2.1, r.1.2 :: r.1.1.2.2.2.2.1, false))) :
-          WordOracleComp Unit (List Bool × PlantedState)))
-      hpostGood.isOraclePPTOn)
+  have hgoodLeaf : IsOraclePPTOn encHL (encPair encBits encPlantedState) goodLeaf :=
+    hcertPrep.bind_with
+      (second := fun (q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool)
+          (c : PlantedCertState) =>
+        signEdgeM S q.1.1.2 q.1.1.1.2 (sigCap q.1.1.1.1.1) c.1.1 c.1.2.1
+          (q.2.getLastD false).toNat q.1.2.1.2 c.2.2 >>= fun e =>
+            pure (encodeSignature q.2 c.1.2.2 e.1,
+              ((c.2.1, e.2), (q.1.2.1.2 :: q.1.2.2.2.1, q.2 :: q.1.2.2.2.2.1, false))))
+      (hsignLast.bind_with
+        (second := fun (r : ((ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool) ×
+            PlantedCertState) (e : List Bool × EdgeSigCache) =>
+          (pure (encodeSignature r.1.2 r.2.1.2.2 e.1,
+            ((r.2.2.1, e.2), (r.1.1.2.1.2 :: r.1.1.2.2.2.1, r.1.2 :: r.1.1.2.2.2.2.1, false))) :
+            WordOracleComp Unit (List Bool × PlantedState)))
+        hpostGood.isOraclePPTOn)
   have hafterLeaf : IsOraclePPTOn encHL (encPair encBits encPlantedState)
-      (fun q : (ForgerCaller × ((Unit × List Bool) × PlantedState)) × List Bool =>
-        if q.1.2.2.2.2.1.contains q.2 then
-          pure ([], ((q.1.2.2.1.1, q.1.2.2.1.2),
-            (q.1.2.1.2 :: q.1.2.2.2.1, q.1.2.2.2.2.1, true)))
-        else
-          certifyPlanted S depth q.1.1.2 q.1.1.1.2 (sigCap q.1.1.1.1.1) q.1.1.1.1.1 q.2
-            (q.1.2.2.1.1, q.1.2.2.1.2) >>= fun c =>
-              signEdgeM S q.1.1.2 q.1.1.1.2 (sigCap q.1.1.1.1.1) c.1.1 c.1.2.1
-                (q.2.getLastD false).toNat q.1.2.1.2 c.2.2 >>= fun e =>
-                  pure (encodeSignature q.2 c.1.2.2 e.1,
-                    ((c.2.1, e.2),
-                      (q.1.2.1.2 :: q.1.2.2.2.1, q.2 :: q.1.2.2.2.2.1, false)))) :=
+      (fun q => afterLeaf q.1 q.2) :=
     IsOraclePPTOn.cond' (condition := fun q => q.1.2.2.2.2.1.contains q.2) (by fun_prop)
       hcollBr.isOraclePPTOn hgoodLeaf
-  have hnotBad := hleaf.bind_with
-    (second := fun (p : ForgerCaller × ((Unit × List Bool) × PlantedState)) (leaf : List Bool) =>
-      if p.2.2.2.2.1.contains leaf then
-        pure ([], ((p.2.2.1.1, p.2.2.1.2), (p.2.1.2 :: p.2.2.2.1, p.2.2.2.2.1, true)))
-      else
-        certifyPlanted S depth p.1.2 p.1.1.2 (sigCap p.1.1.1.1) p.1.1.1.1 leaf
-          (p.2.2.1.1, p.2.2.1.2) >>= fun c =>
-            signEdgeM S p.1.2 p.1.1.2 (sigCap p.1.1.1.1) c.1.1 c.1.2.1
-              (leaf.getLastD false).toNat p.2.1.2 c.2.2 >>= fun e =>
-                pure (encodeSignature leaf c.1.2.2 e.1,
-                  ((c.2.1, e.2),
-                    (p.2.1.2 :: p.2.2.2.1, leaf :: p.2.2.2.2.1, false))))
-    hafterLeaf
+  have hnotBad := hleaf.bind_with (second := afterLeaf) hafterLeaf
   have hlenEq := IsOraclePPTOn.cond' (condition := fun p => p.2.2.2.2.2) (by fun_prop)
     hbadBr.isOraclePPTOn hnotBad
-  simpa only [plantedTreeHandler, StateT.run] using
+  simpa only [plantedTreeHandler, StateT.run, badOut, afterLeaf, goodLeaf] using
     IsOraclePPTOn.ite' (condition := fun p => p.2.1.2.length = p.1.1.1.1) (by fun_prop)
       hlenEq hnoMsgBr.isOraclePPTOn
 
@@ -1033,9 +1024,14 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
       have hloop := certifyPlanted_support_inv S depth
         ((c.2, (c.1.2, sigCap c.1.1.1), (c.1.1.1, leaf)), (visited, edges))
         le_rfl le_rfl hvis hedg _ hcert
+      have hloopB := plantedLoopInv_enc_bounds (Nat.sub_le (depth c.1.1.1) 1) hloop
       dsimp only [plantedLoopInv, CertLoopIn.keys, CertLoopIn.sigCap,
         CertLoopIn.parameter] at hloop
-      obtain ⟨hnode, hidx, hcertsLen, hcerts, hvis', hedg', hvisGrow, hedgGrow⟩ := hloop
+      dsimp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.visited,
+        CertLoopIn.edges] at hloopB
+      obtain ⟨hnode, hidx, -, -, hvis', hedg', -, -⟩ := hloop
+      obtain ⟨hcB, hvB, heB⟩ := hloopB
+      have hsub := Nat.sub_le (depth c.1.1.1) 1
       have heLast := ProbOracleComp.memoize_call_size_le (encPair encBits encUnary) encBits
         (fun _ => signEdgeRaw S c.2 c.1.2 (sigCap c.1.1.1) idx
           (leaf.getLastD false).toNat request.2)
@@ -1049,18 +1045,7 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
         at heLast
       have hu : (leaf.getLastD false).toNat ≤ 1 := Bool.toNat_le _
       refine ⟨⟨hvis', heLast.2.1⟩, ?_, ?_⟩
-      · have hcertsList : (encKeys certs).length ≤
-            certs.length * (2 * (2 * (encKeys c.2).length + 1 + sigCap c.1.1.1) + 1) :=
-          length_encList_le (encPair encBits encBits) certs fun cert hcertMem => by
-            obtain ⟨h1, h2⟩ := hcerts cert hcertMem
-            simp only [length_encPair, encBits_apply]
-            omega
-        rw [hcertsLen] at hcertsList
-        have hcmul : (depth c.1.1.1 - 1) *
-            (2 * (2 * (encKeys c.2).length + 1 + sigCap c.1.1.1) + 1) ≤
-            depth c.1.1.1 * (2 * (2 * (encKeys c.2).length + 1 + sigCap c.1.1.1) + 1) :=
-          Nat.mul_le_mul_right _ (Nat.sub_le _ _)
-        have hσLen : σ.length ≤ sigCap c.1.1.1 := heLast.1
+      · have hσLen : σ.length ≤ sigCap c.1.1.1 := heLast.1
         simp only [encodeSignature, length_encPair, encBits_apply, hleafLen]
         dsimp only [plantedResourceAllowance]
         omega
@@ -1068,20 +1053,9 @@ private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth 
             (encList encBits seenLeaves).length + (2 * depth c.1.1.1 + 2) := by
           simp only [encList_cons, List.length_append, length_frame, encBits_apply, hleafLen]
           omega
-        have hvmul : (depth c.1.1.1 - 1) * (4 * (depth c.1.1.1 - 1 + 1) + 2 * c.2.length + 3) ≤
-            depth c.1.1.1 * (4 * (depth c.1.1.1 + 1) + 2 * c.2.length + 3) :=
-          Nat.mul_le_mul (Nat.sub_le _ _) (by omega)
-        have hemul : (depth c.1.1.1 - 1) * (8 * (depth c.1.1.1 - 1) + 2 * sigCap c.1.1.1 + 11) +
-            (4 * (2 * (depth c.1.1.1 - 1) + 1 + (leaf.getLastD false).toNat) +
-              2 * sigCap c.1.1.1 + 3) ≤
-            (depth c.1.1.1 + 1) * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) := by
-          have h1 : (depth c.1.1.1 - 1) * (8 * (depth c.1.1.1 - 1) + 2 * sigCap c.1.1.1 + 11) ≤
-              depth c.1.1.1 * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) :=
-            Nat.mul_le_mul (Nat.sub_le _ _) (by omega)
-          have h2 : (depth c.1.1.1 + 1) * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) =
-              depth c.1.1.1 * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) +
-                (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) := Nat.succ_mul _ _
-          omega
+        have hsucc : (depth c.1.1.1 + 1) * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) =
+            depth c.1.1.1 * (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) +
+              (8 * depth c.1.1.1 + 2 * sigCap c.1.1.1 + 11) := Nat.succ_mul _ _
         rw [plantedState_length_eq, plantedState_length_eq]
         dsimp only [plantedResourceAllowance]
         omega
@@ -1491,40 +1465,13 @@ private theorem toOuterMeasure_bad_queryBounded_le {α σ : Type}
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) extHandler)
           (cont y.1)).run y.2).toOuterMeasure {x | bad x.2} ≤ _
-      rw [PMF.toOuterMeasure_bind_apply]
       set K : ℝ≥0∞ := ((2 * rem * (seen s + 1) + rem ^ 2 : ℕ) : ℝ≥0∞) * ε
-      have hterm (y : List Bool × σ) : (extHandler req s) y *
-          ((OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) extHandler)
-            (cont y.1)).run y.2).toOuterMeasure {x | bad x.2} ≤
-          (extHandler req s) y * ({x : List Bool × σ | bad x.2}.indicator 1 y + K) := by
-        by_cases hmem : y ∈ (extHandler req s).support
-        · refine mul_le_mul_of_nonneg_left ?_ zero_le
-          by_cases hy : bad y.2
-          · have hy' : y ∈ {x : List Bool × σ | bad x.2} := hy
-            rw [Set.indicator_of_mem hy', Pi.one_apply]
-            exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-          · have hy' : y ∉ {x : List Bool × σ | bad x.2} := hy
-            rw [Set.indicator_of_notMem hy', zero_add]
+      calc _ ≤ (extHandler req s).toOuterMeasure {x | bad x.2} + K := by
+            refine Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ K fun y hmem hy => ?_
             have hnat : 2 * rem * seen y.2 + rem ^ 2 ≤ 2 * rem * (seen s + 1) + rem ^ 2 := by
               have := hgrow req s hs y hmem hy
               nlinarith
             exact (ih y.1 hy).trans (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr hnat) zero_le)
-        · rw [(PMF.apply_eq_zero_iff _ _).mpr hmem, zero_mul, zero_mul]
-      calc ∑' y, (extHandler req s) y *
-            ((OracleComp.interpret
-              (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) extHandler)
-              (cont y.1)).run y.2).toOuterMeasure {x | bad x.2}
-          ≤ ∑' y, (extHandler req s) y * ({x : List Bool × σ | bad x.2}.indicator 1 y + K) :=
-            tsum_le_tsum hterm
-        _ = (extHandler req s).toOuterMeasure {x | bad x.2} + K := by
-            simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-              PMF.toOuterMeasure_apply]
-            congr 1
-            refine tsum_congr fun y => ?_
-            by_cases hy : y ∈ {x : List Bool × σ | bad x.2}
-            · rw [Set.indicator_of_mem hy, Set.indicator_of_mem hy, Pi.one_apply, mul_one]
-            · rw [Set.indicator_of_notMem hy, Set.indicator_of_notMem hy, mul_zero]
         _ ≤ (seen s : ℝ≥0∞) * (2 * ε) + K := by
             rw [← htwo]
             exact add_le_add_left (hstep req s hs) K
@@ -1708,6 +1655,364 @@ private theorem eval_iterate_probComp {σ : Type}
   | succ m ih =>
     rw [OracleComp.iterate_succ, ProbComp.eval_bind, ih, Function.iterate_succ_apply']
 
+private theorem bind_bind_comm_of_invariant {α₁ β₁ α β γ : Type}
+    (d₁ : PMF α₁) (exp₁ : α₁ → PMF γ) (rep₁ : α₁ → β₁) (d₂ : γ → PMF β₁) (inv₁ : α₁ → Prop)
+    (exp₀ : PMF γ)
+    (f₁ : α₁ → PMF α) (exp : α → PMF γ) (rep : α → β) (f₂ : γ → β₁ → PMF β) (inv : α → Prop)
+    (hd : (d₁.bind fun a => (exp₁ a).map (·, rep₁ a)) =
+        (exp₀.bind fun k => (d₂ k).map (k, ·)) ∧ ∀ a ∈ d₁.support, inv₁ a)
+    (hf : ∀ a ∈ d₁.support, inv₁ a →
+      ((f₁ a).bind fun b => (exp b).map (·, rep b)) =
+        ((exp₁ a).bind fun k => (f₂ k (rep₁ a)).map (k, ·)) ∧
+      ∀ b ∈ (f₁ a).support, inv b) :
+    ((d₁.bind f₁).bind fun b => (exp b).map (·, rep b)) =
+      (exp₀.bind fun k => ((d₂ k).bind (f₂ k)).map (k, ·)) ∧
+    ∀ b ∈ (d₁.bind f₁).support, inv b := by
+  refine ⟨?_, ?_⟩
+  · rw [PMF.bind_bind]
+    have hcongr : (d₁.bind fun a => (f₁ a).bind fun b => (exp b).map (·, rep b)) =
+        (d₁.bind fun a => (exp₁ a).bind fun k => (f₂ k (rep₁ a)).map (k, ·)) :=
+      PMF.bind_congr_on_support _ _ _ fun a ha => (hf a ha (hd.2 a ha)).1
+    rw [hcongr]
+    have h2 := congrArg (fun d => d.bind fun (k, b₁) => (f₂ k b₁).map (k, ·)) hd.1
+    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2 ⊢
+    rw [h2]
+    refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
+    simp only [PMF.map_bind]
+  · intro b hb
+    obtain ⟨a, ha, hmem⟩ := (PMF.mem_support_bind_iff _ _ _).mp hb
+    exact (hf a ha (hd.2 a ha)).2 b hmem
+
+private theorem bind_map_of_invariant {α₁ β₁ α β : Type}
+    (d₁ : PMF α₁) (d₂ : PMF β₁) (rep₁ : α₁ → β₁) (inv₁ : α₁ → Prop)
+    (f₁ : α₁ → PMF α) (f₂ : β₁ → PMF β) (rep : α → β) (inv : α → Prop)
+    (hd : d₁.map rep₁ = d₂ ∧ ∀ a ∈ d₁.support, inv₁ a)
+    (hf : ∀ a ∈ d₁.support, inv₁ a →
+      (f₁ a).map rep = f₂ (rep₁ a) ∧ ∀ b ∈ (f₁ a).support, inv b) :
+    (d₁.bind f₁).map rep = d₂.bind f₂ ∧ ∀ b ∈ (d₁.bind f₁).support, inv b := by
+  have hmain := bind_bind_comm_of_invariant d₁ (fun _ => PMF.pure ()) rep₁ (fun _ => d₂) inv₁
+    (PMF.pure ()) f₁ (fun _ => PMF.pure ()) rep (fun _ => f₂) inv
+    ⟨by rw [PMF.pure_bind, ← hd.1]; simp only [PMF.map, PMF.bind_bind,
+      PMF.pure_bind, Function.comp_def], hd.2⟩
+    fun a ha hia => by
+      obtain ⟨heq, hinv⟩ := hf a ha hia
+      refine ⟨?_, hinv⟩
+      rw [PMF.pure_bind, ← heq]
+      simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  exact ⟨by simpa only [PMF.map, PMF.pure_bind, PMF.bind_pure, PMF.bind_bind,
+    Function.comp_def] using congrArg (PMF.map Prod.snd) hmain.1, hmain.2⟩
+
+private theorem eval_ite {α : Type} (P : Prop) [Decidable P] (a b : ProbComp α) :
+    ProbComp.eval (if P then a else b) = if P then ProbComp.eval a else ProbComp.eval b := by
+  split_ifs <;> rfl
+
+private theorem run_interpret_ite {ι ext α : Type} {spec : ι → Type}
+    (h : (q : ι) → StateT ext PMF (spec q)) (P : Prop) [Decidable P]
+    (a b : OracleComp spec α) (s : ext) :
+    (OracleComp.interpret h (if P then a else b)).run s =
+      if P then (OracleComp.interpret h a).run s else (OracleComp.interpret h b).run s := by
+  split_ifs <;> rfl
+
+private theorem pmf_map_ite {α β : Type} (P : Prop) [Decidable P] (a b : PMF α) (f : α → β) :
+    (if P then a else b).map f = if P then a.map f else b.map f := by
+  split_ifs <;> rfl
+
+private theorem iterate_pmf_bind_comm_of_invariant {α β γ : Type}
+    (step₁ : α → PMF α) (step₂ : γ → β → PMF β)
+    (exp : α → PMF γ) (rep : α → β) (inv : ℕ → α → Prop)
+    (m : ℕ) (init : α) (hinit : inv 0 init)
+    (hstep : ∀ i < m, ∀ a, inv i a →
+      ((step₁ a).bind fun a' => (exp a').map (·, rep a')) =
+        ((exp a).bind fun k => (step₂ k (rep a)).map (k, ·)) ∧
+      ∀ a' ∈ (step₁ a).support, inv (i + 1) a') :
+    let jDist := Nat.iterate (fun d => d.bind step₁) m (PMF.pure init)
+    (jDist.bind fun a => (exp a).map (·, rep a)) =
+      ((exp init).bind fun k =>
+        (Nat.iterate (fun d => d.bind (step₂ k)) m (PMF.pure (rep init))).map (k, ·)) ∧
+      ∀ a ∈ jDist.support, inv m a := by
+  induction m with
+  | zero =>
+    refine ⟨?_, fun a ha => ?_⟩
+    · simp only [Function.iterate_zero, id_eq, PMF.pure_bind, PMF.map, Function.comp_def]
+    · obtain rfl := (PMF.mem_support_pure_iff _ _).mp ha
+      exact hinit
+  | succ m ih =>
+    obtain ⟨heq, hsupp⟩ := ih fun i hi => hstep i (Nat.lt_succ_of_lt hi)
+    set jDist_m := Nat.iterate (fun d => d.bind step₁) m (PMF.pure init)
+    refine ⟨?_, ?_⟩
+    · rw [Function.iterate_succ_apply', PMF.bind_bind]
+      have hbind : (jDist_m.bind fun a => (step₁ a).bind fun a' => (exp a').map (·, rep a')) =
+          (jDist_m.bind fun a => (exp a).bind fun k => (step₂ k (rep a)).map (k, ·)) :=
+        PMF.bind_congr_on_support _ _ _ fun a ha =>
+          (hstep m (Nat.lt_succ_self m) a (hsupp a ha)).1
+      rw [hbind]
+      have h2 := congrArg (fun d => d.bind fun (k, b) => (step₂ k b).map (k, ·)) heq
+      simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2 ⊢
+      rw [h2]
+      refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
+      rw [Function.iterate_succ_apply']
+      simp only [PMF.map_bind]
+    · intro a' ha'
+      rw [Function.iterate_succ_apply'] at ha'
+      obtain ⟨a, ha, hm⟩ := (PMF.mem_support_bind_iff _ _ _).mp ha'
+      exact (hstep m (Nat.lt_succ_self m) a (hsupp a ha)).2 a' hm
+
+private theorem iterate_pmf_map_of_invariant {α β : Type}
+    (step₁ : α → PMF α) (step₂ : β → PMF β) (rep : α → β) (inv : ℕ → α → Prop)
+    (m : ℕ) (init : α) (hinit : inv 0 init)
+    (hstep : ∀ i < m, ∀ a, inv i a →
+      (step₁ a).map rep = step₂ (rep a) ∧ ∀ a' ∈ (step₁ a).support, inv (i + 1) a') :
+    let dist := Nat.iterate (fun d => d.bind step₁) m (PMF.pure init)
+    dist.map rep = Nat.iterate (fun d => d.bind step₂) m (PMF.pure (rep init)) ∧
+      ∀ a ∈ dist.support, inv m a := by
+  have hmain := iterate_pmf_bind_comm_of_invariant step₁ (fun _ => step₂)
+    (fun _ => PMF.pure ()) rep inv m init hinit fun i hi a ha => by
+      obtain ⟨heq, hinv⟩ := hstep i hi a ha
+      refine ⟨?_, hinv⟩
+      rw [PMF.pure_bind, ← heq]
+      simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  exact ⟨by simpa only [PMF.map, PMF.pure_bind, PMF.bind_pure, PMF.bind_bind,
+    Function.comp_def] using congrArg (PMF.map Prod.snd) hmain.1, hmain.2⟩
+
+private theorem iterate_pmf_invariant {α : Type}
+    (step : α → PMF α) (inv : ℕ → α → Prop) (m : ℕ) (init : α) (hinit : inv 0 init)
+    (hstep : ∀ i < m, ∀ a, inv i a → ∀ a' ∈ (step a).support, inv (i + 1) a') :
+    ∀ a ∈ (Nat.iterate (fun d => d.bind step) m (PMF.pure init)).support, inv m a :=
+  (iterate_pmf_map_of_invariant step (fun _ => PMF.pure ()) (fun _ => ()) inv m init hinit
+    fun i hi a ha => ⟨by rw [PMF.map_const], hstep i hi a ha⟩).2
+
+private theorem treeHandler_bind_comm_of_invariant {α β γ : Type}
+    (P Q : Prop) [Decidable P] [Decidable Q]
+    (leafDist : PMF (List Bool)) (seen : List Bool → Bool)
+    (rn₁ rb₁ rc₁ : α) (g₁ : List Bool → PMF α)
+    (exp₀ : PMF γ) (exp : α → PMF γ) (rep : α → β)
+    (rn₂ rb₂ rc₂ : γ → β) (g₂ : γ → List Bool → PMF β) (inv : α → Prop)
+    (hrn : (exp rn₁).map (·, rep rn₁) = exp₀.map (fun k => (k, rn₂ k)) ∧ inv rn₁)
+    (hrb : (exp rb₁).map (·, rep rb₁) = exp₀.map (fun k => (k, rb₂ k)) ∧ inv rb₁)
+    (hrc : (exp rc₁).map (·, rep rc₁) = exp₀.map (fun k => (k, rc₂ k)) ∧ inv rc₁)
+    (hgood : P → ¬ Q → ∀ leaf ∈ leafDist.support, seen leaf = false →
+      ((g₁ leaf).bind fun x => (exp x).map (·, rep x)) =
+        (exp₀.bind fun k => (g₂ k leaf).map (k, ·)) ∧
+      ∀ x ∈ (g₁ leaf).support, inv x) :
+    let lhs : PMF α :=
+      if P then
+        if Q then PMF.pure rb₁
+        else leafDist.bind fun leaf => if seen leaf then PMF.pure rc₁ else g₁ leaf
+      else PMF.pure rn₁
+    (lhs.bind fun x => (exp x).map (·, rep x)) =
+      (exp₀.bind fun k =>
+        (if P then
+          if Q then PMF.pure (rb₂ k)
+          else leafDist.bind fun leaf => if seen leaf then PMF.pure (rc₂ k) else g₂ k leaf
+        else PMF.pure (rn₂ k)).map (k, ·)) ∧
+    ∀ x ∈ lhs.support, inv x := by
+  dsimp only
+  split_ifs with hP hQ
+  · refine ⟨(by
+      rw [PMF.pure_bind]; simp only [PMF.pure_map]
+      simpa only [PMF.map, Function.comp_def] using hrb.1), fun x hx => ?_⟩
+    obtain rfl := (PMF.mem_support_pure_iff _ _).mp hx
+    exact hrb.2
+  · refine ⟨?_, ?_⟩
+    · rw [PMF.bind_bind]
+      simp_rw [PMF.map_bind]
+      rw [PMF.bind_comm exp₀ leafDist]
+      refine PMF.bind_congr_on_support _ _ _ fun leaf hl => ?_
+      cases hs : seen leaf
+      · simp only [Bool.false_eq_true, ↓reduceIte]
+        simpa only [PMF.map_bind] using (hgood hP hQ leaf hl hs).1
+      · simp only [↓reduceIte, PMF.pure_bind, PMF.pure_map]
+        exact hrc.1
+    · intro x hx
+      obtain ⟨leaf, hl, hmem⟩ := (PMF.mem_support_bind_iff _ _ _).mp hx
+      cases hs : seen leaf
+      · simp only [hs, Bool.false_eq_true, ↓reduceIte] at hmem
+        exact (hgood hP hQ leaf hl hs).2 x hmem
+      · simp only [hs, ↓reduceIte] at hmem
+        obtain rfl := (PMF.mem_support_pure_iff _ _).mp hmem
+        exact hrc.2
+  · refine ⟨(by
+      rw [PMF.pure_bind]; simp only [PMF.pure_map]
+      simpa only [PMF.map, Function.comp_def] using hrn.1), fun x hx => ?_⟩
+    obtain rfl := (PMF.mem_support_pure_iff _ _).mp hx
+    exact hrn.2
+
+private theorem treeHandler_map_of_invariant {α β : Type}
+    (P Q : Prop) [Decidable P] [Decidable Q]
+    (leafDist : PMF (List Bool)) (seen : List Bool → Bool)
+    (rn₁ rb₁ rc₁ : α) (g₁ : List Bool → PMF α) (rep : α → β)
+    (rn₂ rb₂ rc₂ : β) (g₂ : List Bool → PMF β) (inv : α → Prop)
+    (hrn : rep rn₁ = rn₂ ∧ inv rn₁) (hrb : rep rb₁ = rb₂ ∧ inv rb₁)
+    (hrc : rep rc₁ = rc₂ ∧ inv rc₁)
+    (hgood : P → ¬ Q → ∀ leaf ∈ leafDist.support, seen leaf = false →
+      (g₁ leaf).map rep = g₂ leaf ∧ ∀ x ∈ (g₁ leaf).support, inv x) :
+    let lhs : PMF α :=
+      if P then
+        if Q then PMF.pure rb₁
+        else leafDist.bind fun leaf => if seen leaf then PMF.pure rc₁ else g₁ leaf
+      else PMF.pure rn₁
+    lhs.map rep =
+      (if P then
+        if Q then PMF.pure rb₂
+        else leafDist.bind fun leaf => if seen leaf then PMF.pure rc₂ else g₂ leaf
+      else PMF.pure rn₂) ∧
+    ∀ x ∈ lhs.support, inv x := by
+  have hmain := treeHandler_bind_comm_of_invariant P Q leafDist seen rn₁ rb₁ rc₁ g₁
+    (PMF.pure ()) (fun _ => PMF.pure ()) rep (fun _ => rn₂) (fun _ => rb₂) (fun _ => rc₂)
+    (fun _ => g₂) inv
+    ⟨by rw [hrn.1], hrn.2⟩
+    ⟨by rw [hrb.1], hrb.2⟩
+    ⟨by rw [hrc.1], hrc.2⟩
+    fun hP hQ leaf hl hs => by
+      obtain ⟨heq, hinv⟩ := hgood hP hQ leaf hl hs
+      refine ⟨?_, hinv⟩
+      rw [PMF.pure_bind, ← heq]
+      simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  exact ⟨by simpa only [PMF.map, PMF.pure_bind, PMF.bind_pure, PMF.bind_bind,
+    Function.comp_def] using congrArg (PMF.map Prod.snd) hmain.1, hmain.2⟩
+
+private theorem treeHandler_support_invariant {α : Type}
+    (P Q : Prop) [Decidable P] [Decidable Q]
+    (leafDist : PMF (List Bool)) (seen : List Bool → Bool)
+    (rn rb rc : α) (g : List Bool → PMF α) (inv : α → Prop)
+    (hrn : inv rn) (hrb : inv rb) (hrc : inv rc)
+    (hgood : P → ¬ Q → ∀ leaf ∈ leafDist.support, seen leaf = false →
+      ∀ x ∈ (g leaf).support, inv x) :
+    ∀ x ∈ (if P then
+        if Q then PMF.pure rb
+        else leafDist.bind fun leaf => if seen leaf then PMF.pure rc else g leaf
+      else PMF.pure rn).support, inv x :=
+  (treeHandler_map_of_invariant P Q leafDist seen rn rb rc g (fun _ => ()) () () ()
+    (fun _ => PMF.pure ()) inv ⟨rfl, hrn⟩ ⟨rfl, hrb⟩ ⟨rfl, hrc⟩
+    fun hP hQ leaf hl hs => ⟨by rw [PMF.map_const], hgood hP hQ leaf hl hs⟩).2
+
+private theorem run_interpret_queryBounded_bind_comm {α σ₁ σ₂ γ : Type}
+    (h₁ : Unit × List Bool → StateT σ₁ PMF (List Bool))
+    (h₂ : γ → Unit × List Bool → StateT σ₂ PMF (List Bool))
+    (exp : σ₁ → PMF γ) (rep : σ₁ → σ₂) (inv : ℕ → σ₁ → Prop)
+    (hweaken : ∀ r s, inv (r + 1) s → inv r s)
+    (hstep : ∀ rem req s, inv (rem + 1) s →
+      ((h₁ req s).bind fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) =
+        ((exp s).bind fun k => (h₂ k req (rep s)).map fun y => (k, y.1, y.2)) ∧
+      ∀ ans s', (ans, s') ∈ (h₁ req s).support → inv rem s')
+    {prog : WordOracleComp Unit α} {rem : ℕ} (hq : prog.IsQueryBounded rem)
+    {st : σ₁} (hinv : inv rem st) :
+    (((OracleComp.interpret
+      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
+      prog).run st).bind fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) =
+      ((exp st).bind fun k =>
+        ((OracleComp.interpret
+          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
+          prog).run (rep st)).map fun y => (k, y.1, y.2)) ∧
+    ∀ res st', (res, st') ∈ ((OracleComp.interpret
+      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
+      prog).run st).support → inv 0 st' := by
+  have hzero : ∀ r s, inv r s → inv 0 s := by
+    intro r
+    induction r with
+    | zero => exact fun _ h => h
+    | succ r ih => exact fun s h => ih s (hweaken r s h)
+  induction hq generalizing st with
+  | pure a rem =>
+    refine ⟨?_, fun res st' hm => ?_⟩
+    · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
+        PMF.pure_bind, PMF.map, Function.comp_def]
+    · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure] at hm
+      obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
+      exact hzero rem _ hinv
+  | liftBind q cont rem _ ih =>
+    cases q with
+    | inl j =>
+      simp only [Sum.elim_inl, Nat.add_zero] at hinv
+      refine ⟨?_, ?_⟩
+      · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          Probability.PMF.monad_bind_eq_bind]
+        change (((ProbComp.unifOracle j).map (·, st)).bind fun x =>
+          (OracleComp.interpret
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
+            (cont x.1)).run x.2).bind
+            (fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) = _
+        rw [PMF.bind_map, Function.comp_def, PMF.bind_bind]
+        simp_rw [(ih _ hinv).1]
+        rw [PMF.bind_comm]
+        refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
+        change _ = (((ProbComp.unifOracle j).map (·, rep st)).bind fun x =>
+          (OracleComp.interpret
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
+            (cont x.1)).run x.2).map fun y => (k, y.1, y.2)
+        rw [PMF.bind_map, PMF.map_bind]
+        rfl
+      · intro res st' hm
+        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          Probability.PMF.monad_bind_eq_bind] at hm
+        change (res, st') ∈ (((ProbComp.unifOracle j).map (·, st)).bind fun x =>
+          (OracleComp.interpret
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
+            (cont x.1)).run x.2).support at hm
+        obtain ⟨⟨i, st₁⟩, hmi, hmc⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
+        obtain ⟨_, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hmi
+        obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq
+        exact (ih _ hinv).2 res st' hmc
+    | inr req =>
+      simp only [Sum.elim_inr] at hinv
+      obtain ⟨hstep_eq, hstep_supp⟩ := hstep rem req st hinv
+      refine ⟨?_, ?_⟩
+      · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          Probability.PMF.monad_bind_eq_bind]
+        change ((h₁ req st).bind fun x =>
+          (OracleComp.interpret
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
+            (cont x.1)).run x.2).bind
+            (fun x => (exp x.2).map fun k => (k, x.1, rep x.2)) = _
+        rw [PMF.bind_bind]
+        have hcont : ((h₁ req st).bind fun x =>
+              (((OracleComp.interpret
+                (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
+                (cont x.1)).run x.2).bind fun x =>
+                  (exp x.2).map fun k => (k, x.1, rep x.2))) =
+            ((h₁ req st).bind fun x =>
+              (exp x.2).bind fun k =>
+                ((OracleComp.interpret
+                  (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
+                  (cont x.1)).run (rep x.2)).map fun y => (k, y.1, y.2)) :=
+          PMF.bind_congr_on_support _ _ _ fun ⟨ans, s'⟩ hm =>
+            (ih ans (hstep_supp ans s' hm)).1
+        rw [hcont]
+        have h2 := congrArg (fun d => d.bind fun x =>
+          ((OracleComp.interpret
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ x.1))
+            (cont x.2.1)).run x.2.2).map fun y => (x.1, y.1, y.2)) hstep_eq
+        simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2
+        rw [h2]
+        refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
+        change _ = ((h₂ k req (rep st)).bind fun x =>
+          (OracleComp.interpret
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) (h₂ k))
+            (cont x.1)).run x.2).map fun y => (k, y.1, y.2)
+        rw [PMF.map_bind]
+      · intro res st' hm
+        simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
+          Probability.PMF.monad_bind_eq_bind] at hm
+        change (res, st') ∈ ((h₁ req st).bind fun x =>
+          (OracleComp.interpret
+            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h₁)
+            (cont x.1)).run x.2).support at hm
+        obtain ⟨⟨ans, s'⟩, hms, hmc⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
+        exact (ih ans (hstep_supp ans s' hms)).2 res st' hmc
+
+private theorem run_interpret_queryBounded_invariant {α σ : Type}
+    (h : Unit × List Bool → StateT σ PMF (List Bool)) (inv : ℕ → σ → Prop)
+    (hweaken : ∀ r s, inv (r + 1) s → inv r s)
+    (hstep : ∀ rem req s, inv (rem + 1) s → ∀ ans s', (ans, s') ∈ (h req s).support → inv rem s')
+    {prog : WordOracleComp Unit α} {rem : ℕ} (hq : prog.IsQueryBounded rem)
+    {st : σ} (hinv : inv rem st) :
+    ∀ res st', (res, st') ∈ ((OracleComp.interpret
+      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j)) h)
+      prog).run st).support → inv 0 st' :=
+  (run_interpret_queryBounded_bind_comm h (fun _ => h) (fun _ => PMF.pure ()) id inv hweaken
+    (fun rem req s hs => ⟨by simp only [PMF.pure_bind, PMF.pure_map]; rfl, hstep rem req s hs⟩)
+    hq hinv).2
+
 private theorem map_dropCaches_jointSignAt (S : IndexedSignatureScheme) (T : S.Seeded)
     (M : ℕ) (path sk : List Bool) (u : ℕ) (msg : List Bool) (c : CoinCache)
     (es : EdgeSigCache) :
@@ -1751,34 +2056,19 @@ private theorem map_dropCaches_jointCertify (S : IndexedSignatureScheme) (T : S.
     Function.comp_def]
   refine PMF.bind_congr_on_support _ _ _ fun ⟨root, cc₀, nodes₀⟩ _ => ?_
   rw [interpret_iterate_pmf]
-  suffices ∀ m (dist : PMF (CoinCache × LazyCertState)),
-      (Nat.iterate (fun d => d.bind (jointCertifyStep S T M n leaf)) m dist).map
-        (fun out => (out.2.1, out.1)) =
-      Nat.iterate
-        (fun d => d.bind fun (s, c) =>
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (lazyCoinHandler M))
-            (certifyStepO S T n leaf s)).run c)
-        m (dist.map fun out => (out.2.1, out.1)) by
-    simpa only [PMF.pure_map] using this (depth n - 1)
-      (PMF.pure (cc₀, (([], root, []), (nodes₀, caches.2))))
-  intro m
-  induction m with
-  | zero => intro dist; rfl
-  | succ m ih =>
-    intro dist
-    rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← ih]
-    simp only [PMF.map_bind, PMF.bind_map, Function.comp_def]
-    refine PMF.bind_congr_on_support _ _ _ fun ⟨c, ⟨node, ⟨pk, sk⟩, certs⟩, ns, es⟩ _ => ?_
-    simp only [jointCertifyStep, certifyStepO, OracleComp.run_interpret_bind,
-      OracleComp.run_interpret_pure, Probability.PMF.monad_bind_eq_bind,
-      Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.map_comp, Function.comp_def,
-      ← hnk (node ++ [leaf.getD node.length false]) c ns, PMF.bind_map]
-    refine PMF.bind_congr_on_support _ _ _ fun ⟨child, c', ns'⟩ _ => ?_
-    rw [← map_dropCaches_jointSignAt S T M node sk (leaf.getD node.length false).toNat child.1 c'
-      es, PMF.bind_map]
-    simp only [PMF.map, Function.comp_def]
+  refine (iterate_pmf_map_of_invariant (jointCertifyStep S T M n leaf) _
+    (fun out => (out.2.1, out.1)) (fun _ _ => True) (depth n - 1)
+    (cc₀, (([], root, []), (nodes₀, caches.2))) trivial fun _ _ out _ => ?_).1
+  obtain ⟨c, ⟨node, ⟨pk, sk⟩, certs⟩, ns, es⟩ := out
+  refine ⟨?_, fun _ _ => trivial⟩
+  simp only [jointCertifyStep, certifyStepO, OracleComp.run_interpret_bind,
+    OracleComp.run_interpret_pure, Probability.PMF.monad_bind_eq_bind,
+    Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.map_comp, Function.comp_def,
+    ← hnk (node ++ [leaf.getD node.length false]) c ns, PMF.bind_map]
+  refine PMF.bind_congr_on_support _ _ _ fun ⟨child, c', ns'⟩ _ => ?_
+  rw [← map_dropCaches_jointSignAt S T M node sk (leaf.getD node.length false).toNat child.1 c'
+    es, PMF.bind_map]
+  simp only [PMF.map, Function.comp_def]
 
 private theorem map_dropCaches_jointCoinHandler (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) (M n : ℕ) (req : Unit × List Bool) (s : JointLazyState) :
@@ -2011,32 +2301,11 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
     out.2.1.1 = leaf.take m ∧
     out.2.2.1.lookup out.2.1.1 = some out.2.1.2.1 ∧
     out.2.1.2.1 ∈ (ProbComp.eval (S.keyGen n)).support
-  suffices ∀ m, m ≤ depth n - 1 →
-      let dist := Nat.iterate (fun d => d.bind (jointCertifyStep S T M n leaf)) m
-        (PMF.pure (cc, (([], root, []), (nodes, edges))))
-      dist.map Prod.snd =
-        Nat.iterate (fun d => d.bind fun s => ProbComp.eval (certifyStepLazy S n leaf s)) m
-          (PMF.pure (([], root, []), (nodes, edges))) ∧
-      ∀ out ∈ dist.support, stepInv m out by
-    obtain ⟨heq, hsupp⟩ := this (depth n - 1) le_rfl
-    exact ⟨heq, fun cc' cert ns' es' hm => hsupp (cc', (cert, (ns', es'))) hm⟩
-  intro m hm
-  induction m with
-  | zero =>
-    refine ⟨by simp [PMF.pure_map], ?_⟩
-    intro out hout
-    obtain rfl := (PMF.mem_support_pure_iff _ _).mp hout
-    exact ⟨hinv, rfl, hrootSome, (hinv.2.1 [] root (lookup_mem hrootSome)).2⟩
-  | succ m ih =>
-    obtain ⟨heq_m, hsupp_m⟩ := ih (by omega)
-    set dist_m := Nat.iterate (fun d => d.bind (jointCertifyStep S T M n leaf)) m
-      (PMF.pure (cc, (([], root, []), (nodes, edges))))
-    have hstep (out : CoinCache × LazyCertState) (hout : out ∈ dist_m.support) :
-        (jointCertifyStep S T M n leaf out).map Prod.snd =
-          ProbComp.eval (certifyStepLazy S n leaf out.2) ∧
-        ∀ out' ∈ (jointCertifyStep S T M n leaf out).support, stepInv (m + 1) out' := by
-      obtain ⟨c, ⟨node, ⟨pk, sk⟩, certs⟩, ns, es⟩ := out
-      obtain ⟨hinv_c, hnode_eq, hns_node, hkey_supp⟩ := hsupp_m _ hout
+  have hmain := iterate_pmf_map_of_invariant (jointCertifyStep S T M n leaf)
+    (fun s => ProbComp.eval (certifyStepLazy S n leaf s)) Prod.snd stepInv (depth n - 1)
+    (cc, (([], root, []), (nodes, edges)))
+    ⟨hinv, rfl, hrootSome, (hinv.2.1 [] root (lookup_mem hrootSome)).2⟩
+    fun m hm ⟨c, ⟨node, ⟨pk, sk⟩, certs⟩, ns, es⟩ ⟨hinv_c, hnode_eq, hns_node, hkey_supp⟩ => by
       dsimp only at hinv_c hnode_eq hns_node hkey_supp
       have hnode_len : node.length = m := by
         rw [hnode_eq, List.length_take, hleaf, Nat.min_eq_left (by omega)]
@@ -2047,88 +2316,90 @@ private theorem jointCertify_spec (S : IndexedSignatureScheme) (T : S.Seeded) (d
       have hchild_len : childPath.length < depth n := by
         simpa only [childPath, List.length_append, List.length_singleton] using hnode_lt_d1
       obtain ⟨hnk_eq, hnk_inv⟩ := jointNodeKey_spec S T hwidth hkgBudget hinv_c hchild_len
-      have hsign_step (child : List Bool × List Bool) (c' : CoinCache) (ns' : NodeKeyCache)
-          (hmem_nk : (child, (c', ns')) ∈ (jointNodeKey S T M n childPath (c, ns)).support) :
-          ((jointSignAt S T M node sk bit.toNat child.1 (c', es)).map fun (σ, (_, es')) =>
-            (σ, es')) =
-            ProbComp.eval (memoize (fun _ => S.sign sk bit.toNat child.1)
-              (node, bit.toNat) es) ∧
-          ∀ σ c'' es',
-            (σ, (c'', es')) ∈ (jointSignAt S T M node sk bit.toNat child.1 (c', es)).support →
-            jointLazyInv S T M (depth n) n root
-              (c'', ((ns', es'), (queried, seenLeaves, bad))) := by
-        obtain ⟨hinv_c', hns'_child, hchild_supp, hns'_keep⟩ := hnk_inv child c' ns' hmem_nk
-        have hne_nc : node ≠ childPath := by
-          intro h
-          have := congrArg List.length h
-          simp only [childPath, List.length_append, List.length_singleton] at this
-          omega
-        have hns'_node : ns'.lookup node = some (pk, sk) := hns'_keep node (pk, sk) hns_node hne_nc
-        have hbu : bit.toNat ≤ 1 := by
-          dsimp only [bit]
-          cases leaf.getD node.length false <;> simp
-        simp only [jointSignAt, lazyCoinRequest, memoize]
-        cases hes : es.lookup (node, bit.toNat) with
-        | some σ₀ =>
-          obtain ⟨kp, kc, w, hkp, hkc, hw, hσ₀⟩ :=
-            hinv_c'.2.2.2.2.2 node bit σ₀ hnode_lt_d1 hes
-          rw [hns'_node] at hkp; cases Option.some.inj hkp
-          rw [hns'_child] at hkc; cases Option.some.inj hkc
-          constructor
-          · simp only [hw, Probability.PMF.monad_pure_eq_pure, PMF.pure_map, ProbComp.eval_pure,
-              ← hσ₀]
-          · intro σ c'' es' hm_sa
-            simp only [hw, Probability.PMF.monad_pure_eq_pure, PMF.pure_map] at hm_sa
-            have heq := (PMF.mem_support_pure_iff _ _).mp hm_sa
-            cases heq
-            exact hinv_c'
-        | none =>
-          have hcc_none := hinv_c'.2.2.2.2.1 node bit.toNat hnode_lt hbu hes
-          have hbud : T.signBudget sk bit.toNat child.1 ≤ M :=
-            hsgBudget (pk, sk) hkey_supp bit.toNat hbu child.1 (Or.inr ⟨child, hchild_supp, rfl⟩)
-          simp only [hcc_none, bind_pure_comp, PMF.monad_map_eq_map,
-            ProbComp.eval_map, PMF.map_comp, Function.comp_def]
+      have hbu : bit.toNat ≤ 1 := by
+        dsimp only [bit]
+        cases leaf.getD node.length false <;> simp
+      have hne_nc : node ≠ childPath := by
+        intro h
+        have := congrArg List.length h
+        simp only [childPath, List.length_append, List.length_singleton] at this
+        omega
+      simp only [jointCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
+        PMF.monad_bind_eq_bind]
+      refine bind_map_of_invariant (jointNodeKey S T M n childPath (c, ns))
+        (ProbComp.eval (memoize (fun _ => S.keyGen n) childPath ns))
+        (fun x => (x.1, x.2.2))
+        (fun x =>
+          jointLazyInv S T M (depth n) n root (x.2.1, ((x.2.2, es), (queried, seenLeaves, bad))) ∧
+          x.2.2.lookup childPath = some x.1 ∧
+          x.1 ∈ (ProbComp.eval (S.keyGen n)).support ∧
+          x.2.2.lookup node = some (pk, sk))
+        (fun (child, c', ns') => (jointSignAt S T M node sk bit.toNat child.1 (c', es)).map
+          fun (σ, c'', es') => (c'', ((childPath, child, certs ++ [(child.1, σ)]), (ns', es'))))
+        (fun (child, ns') => (ProbComp.eval (memoize (fun _ => S.sign sk bit.toNat child.1)
+          (node, bit.toNat) es)).bind fun (σ, es') =>
+            PMF.pure ((childPath, child, certs ++ [(child.1, σ)]), (ns', es')))
+        Prod.snd (stepInv (m + 1))
+        ⟨hnk_eq, fun ⟨child, c', ns'⟩ hmem_nk => by
+          obtain ⟨hinv_c', hns'_child, hchild_supp, hns'_keep⟩ := hnk_inv child c' ns' hmem_nk
+          exact ⟨hinv_c', hns'_child, hchild_supp, hns'_keep node (pk, sk) hns_node hne_nc⟩⟩
+        fun ⟨child, c', ns'⟩ _ ⟨hinv_c', hns'_child, hchild_supp, hns'_node⟩ => by
+          have hsign_step :
+              ((jointSignAt S T M node sk bit.toNat child.1 (c', es)).map fun (σ, (_, es')) =>
+                (σ, es')) =
+                ProbComp.eval (memoize (fun _ => S.sign sk bit.toNat child.1)
+                  (node, bit.toNat) es) ∧
+              ∀ σ c'' es',
+                (σ, (c'', es')) ∈ (jointSignAt S T M node sk bit.toNat child.1 (c', es)).support →
+                jointLazyInv S T M (depth n) n root
+                  (c'', ((ns', es'), (queried, seenLeaves, bad))) := by
+            simp only [jointSignAt, lazyCoinRequest, memoize]
+            cases hes : es.lookup (node, bit.toNat) with
+            | some σ₀ =>
+              obtain ⟨kp, kc, w, hkp, hkc, hw, hσ₀⟩ :=
+                hinv_c'.2.2.2.2.2 node bit σ₀ hnode_lt_d1 hes
+              rw [hns'_node] at hkp; cases Option.some.inj hkp
+              rw [hns'_child] at hkc; cases Option.some.inj hkc
+              constructor
+              · simp only [hw, Probability.PMF.monad_pure_eq_pure, PMF.pure_map, ProbComp.eval_pure,
+                  ← hσ₀]
+              · intro σ c'' es' hm_sa
+                simp only [hw, Probability.PMF.monad_pure_eq_pure, PMF.pure_map] at hm_sa
+                cases (PMF.mem_support_pure_iff _ _).mp hm_sa
+                exact hinv_c'
+            | none =>
+              have hcc_none := hinv_c'.2.2.2.2.1 node bit.toNat hnode_lt hbu hes
+              have hbud : T.signBudget sk bit.toNat child.1 ≤ M :=
+                hsgBudget (pk, sk) hkey_supp bit.toNat hbu child.1
+                  (Or.inr ⟨child, hchild_supp, rfl⟩)
+              simp only [hcc_none, bind_pure_comp, PMF.monad_map_eq_map,
+                ProbComp.eval_map, PMF.map_comp, Function.comp_def]
+              refine ⟨?_, ?_⟩
+              · rw [T.eval_sign sk bit.toNat child.1 (T.signBudget sk bit.toNat child.1) le_rfl,
+                  ← BitString.uniformList_take hbud, PMF.map_comp, PMF.map_comp]
+                rfl
+              · intro σ c'' es' hm_sa
+                obtain ⟨w, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_sa
+                obtain ⟨rfl, h2⟩ := Prod.mk.inj heq.symm
+                obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
+                refine jointLazyInv_insert_sign S T hwidth queried bad hinv_c' (fun _ h => h)
+                  hnode_lt hbu w _ (fun _ => by omega) fun b hb_eq _ => ?_
+                have hb' : b = bit :=
+                  Bool.eq_iff_iff.mpr (by rw [← b.toNat_eq_one, ← bit.toNat_eq_one, hb_eq])
+                subst hb'
+                exact ⟨(pk, sk), child, hns'_node, hns'_child, rfl⟩
           refine ⟨?_, ?_⟩
-          · rw [T.eval_sign sk bit.toNat child.1 (T.signBudget sk bit.toNat child.1) le_rfl,
-              ← BitString.uniformList_take hbud, PMF.map_comp, PMF.map_comp]
-            rfl
-          · intro σ c'' es' hm_sa
-            obtain ⟨w, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_sa
-            obtain ⟨rfl, h2⟩ := Prod.mk.inj heq.symm
-            obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-            refine jointLazyInv_insert_sign S T hwidth queried bad hinv_c' (fun _ h => h)
-              hnode_lt hbu w _ (fun _ => by omega) fun b hb_eq _ => ?_
-            have hb' : b = bit :=
-              Bool.eq_iff_iff.mpr (by rw [← b.toNat_eq_one, ← bit.toNat_eq_one, hb_eq])
-            subst hb'
-            exact ⟨(pk, sk), child, hns'_node, hns'_child, rfl⟩
-      refine ⟨?_, ?_⟩
-      · simp only [jointCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def]
-        rw [← hnk_eq, PMF.bind_map]
-        refine PMF.bind_congr_on_support _ _ _ fun ⟨child, c', ns'⟩ hmem_nk => ?_
-        dsimp only [Function.comp_def, bit]
-        obtain ⟨hsa_eq, -⟩ := hsign_step child c' ns' hmem_nk
-        rw [← hsa_eq, PMF.bind_map]
-        simp only [PMF.map, Function.comp_def, bit]
-      · intro out' hout'
-        simp only [jointCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
-          PMF.mem_support_map_iff] at hout'
-        obtain ⟨⟨child, c', ns'⟩, hmem_nk, ⟨σ, c'', es'⟩, hmem_sa, rfl⟩ := hout'
-        obtain ⟨_, hns'_child, hchild_supp, -⟩ := hnk_inv child c' ns' hmem_nk
-        obtain ⟨-, hsa_inv⟩ := hsign_step child c' ns' hmem_nk
-        refine ⟨hsa_inv σ c'' es' hmem_sa, ?_, hns'_child, hchild_supp⟩
-        have hlt_leaf : m < leaf.length := by omega
-        dsimp only [stepInv, childPath, bit]
-        rw [hnode_len, hnode_eq, List.getD_eq_getElem _ _ hlt_leaf,
-          List.take_succ_eq_append_getElem hlt_leaf]
-    rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← heq_m]
-    refine ⟨?_, ?_⟩
-    · simp only [PMF.map_bind, PMF.bind_map, Function.comp_def]
-      exact PMF.bind_congr_on_support _ _ _ fun out hout => (hstep out hout).1
-    · intro out' hout'
-      obtain ⟨out, hout, hmem⟩ := (PMF.mem_support_bind_iff _ _ _).mp hout'
-      exact (hstep out hout).2 out' hmem
+          · have heq := congrArg (PMF.map fun (σ, es') =>
+              ((childPath, child, certs ++ [(child.1, σ)]), (ns', es'))) hsign_step.1
+            simpa only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def] using heq
+          · intro out' hout'
+            obtain ⟨⟨σ, c'', es'⟩, hmem_sa, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout'
+            refine ⟨hsign_step.2 σ c'' es' hmem_sa, ?_, hns'_child, hchild_supp⟩
+            have hlt_leaf : m < leaf.length := by omega
+            dsimp only [stepInv, childPath, bit]
+            rw [hnode_len, hnode_eq, List.getD_eq_getElem _ _ hlt_leaf,
+              List.take_succ_eq_append_getElem hlt_leaf]
+  exact ⟨hmain.1, fun cc' cert ns' es' hm => hmain.2 (cc', (cert, (ns', es'))) hm⟩
 
 private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) {M n : ℕ} (hdepth_pos : 1 ≤ depth n) (hwidth : 2 * depth n + 4 ≤ M)
@@ -2143,138 +2414,67 @@ private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.S
     ∀ a s', (a, s') ∈ (jointCoinHandler S T depth M n req s).support →
       jointLazyInv S T M (depth n) n root s' := by
   obtain ⟨cc, ⟨nodes, edges⟩, queried, seenLeaves, bad⟩ := s
-  simp only [jointCoinHandler, lazySignHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  split_ifs with hmsg hbad
-  · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun a s' hm => ?_⟩
-    obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact hinv
-  · simp only [ProbComp.eval_bind, BitString.eval_sampleList, PMF.map_bind]
-    have hleaf_step (leaf : List Bool)
-        (hleaf_supp : leaf ∈ (BitString.uniformList (depth n)).support) :
-        ((if seenLeaves.contains leaf then
-          PMF.pure ([], (cc, ((nodes, edges), (req.2 :: queried, seenLeaves, true))))
-        else
-          (jointCertify S T depth M n leaf (cc, (nodes, edges))).bind
-            fun (cc', ((node, (_, sk), certs), (nodes', edges'))) =>
-              (jointSignAt S T M node sk (leaf.getLastD false).toNat req.2 (cc', edges')).map
-                fun (σ, (cc'', edges'')) =>
-                  (encodeSignature leaf certs σ,
-                    (cc'', ((nodes', edges''), (req.2 :: queried, leaf :: seenLeaves, false))))).map
-          fun (a, s') => (a, s'.2)) =
-        ProbComp.eval (if seenLeaves.contains leaf then
-          pure ([], ((nodes, edges), (req.2 :: queried, seenLeaves, true)))
-        else do
-          let ((node, (_, sk), certs), (nodes', edges')) ←
-            certifyLazy S depth n root leaf (nodes, edges)
-          let (σ, edges'') ←
-            memoize (fun _ => S.sign sk (leaf.getLastD false).toNat req.2)
-              (node, (leaf.getLastD false).toNat) edges'
-          return (encodeSignature leaf certs σ,
-            ((nodes', edges''), (req.2 :: queried, leaf :: seenLeaves, false)))) ∧
-        ∀ a s', (a, s') ∈ (if seenLeaves.contains leaf then
-          PMF.pure ([], (cc, ((nodes, edges), (req.2 :: queried, seenLeaves, true))))
-        else
-          (jointCertify S T depth M n leaf (cc, (nodes, edges))).bind
-            fun (cc', ((node, (_, sk), certs), (nodes', edges'))) =>
-              (jointSignAt S T M node sk (leaf.getLastD false).toNat req.2 (cc', edges')).map
-                fun (σ, (cc'', edges'')) =>
-                  (encodeSignature leaf certs σ,
-                    (cc'', ((nodes', edges''),
-                      (req.2 :: queried, leaf :: seenLeaves, false))))).support →
-          jointLazyInv S T M (depth n) n root s' := by
-      have hleaf_len := BitString.length_of_mem_support_uniformList hleaf_supp
-      split_ifs with hseen
-      · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun a s' hm => ?_⟩
-        obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-        exact hinv
-      · have hnotMem : leaf ∉ seenLeaves := fun h => hseen (List.contains_iff_mem.mpr h)
-        obtain ⟨hcert_eq, hcert_inv⟩ :=
-          jointCertify_spec S T depth hdepth_pos hwidth hkgBudget hsgBudget hinv hleaf_len
-        have hlast_step (cc' : CoinCache) (node pk sk : List Bool)
-            (certs : List (List Bool × List Bool)) (ns' : NodeKeyCache) (es' : EdgeSigCache)
-            (hm_cert : (cc', ((node, (pk, sk), certs), (ns', es'))) ∈
-              (jointCertify S T depth M n leaf (cc, (nodes, edges))).support) :
-            (((jointSignAt S T M node sk (leaf.getLastD false).toNat req.2 (cc', es')).map
-              fun (σ, (cc'', edges'')) =>
-                (encodeSignature leaf certs σ,
-                  (cc'', ((ns', edges''), (req.2 :: queried, leaf :: seenLeaves, false))))).map
-              fun (a, s') => (a, s'.2)) =
-            ProbComp.eval (do
-              let (σ, edges'') ←
-                memoize (fun _ => S.sign sk (leaf.getLastD false).toNat req.2)
-                  (node, (leaf.getLastD false).toNat) es'
-              return (encodeSignature leaf certs σ,
-                ((ns', edges''), (req.2 :: queried, leaf :: seenLeaves, false)))) ∧
-            ∀ a s', (a, s') ∈ ((jointSignAt S T M node sk (leaf.getLastD false).toNat req.2
-              (cc', es')).map fun (σ, (cc'', edges'')) =>
-                (encodeSignature leaf certs σ,
-                  (cc'', ((ns', edges''),
-                    (req.2 :: queried, leaf :: seenLeaves, false))))).support →
-              jointLazyInv S T M (depth n) n root s' := by
-          obtain ⟨hinv_c', hnode_eq, hns'_node, hkey_supp⟩ :=
-            hcert_inv cc' (node, (pk, sk), certs) ns' es' hm_cert
-          dsimp only at hnode_eq hns'_node hkey_supp ⊢
-          have hnode_len : node.length = depth n - 1 := by
-            rw [hnode_eq, List.length_take, hleaf_len, Nat.min_eq_left (by omega)]
-          have hnode_lt : node.length < depth n := by
-            rw [hnode_len]
-            exact Nat.sub_lt hdepth_pos Nat.one_pos
-          set uLast := (leaf.getLastD false).toNat
-          have huLast : uLast ≤ 1 := by
-            dsimp only [uLast]
-            cases leaf.getLastD false <;> simp
-          have hes'_none : es'.lookup (node, uLast) = none := by
-            cases hlk : es'.lookup (node, uLast) with
-            | none => rfl
-            | some σ₀ =>
-              exfalso
-              obtain ⟨-, -, hleaf_ex⟩ := hinv_c'.2.2.2.1 node uLast σ₀ (lookup_mem hlk)
-              obtain ⟨l, hl_mem, hl_len, hq_eq, hv_eq⟩ := hleaf_ex hnode_len
-              have hbit_eq : leaf.getLastD false = l.getLastD false :=
-                Bool.eq_iff_iff.mpr (by
-                  rw [← (leaf.getLastD false).toNat_eq_one, ← (l.getLastD false).toNat_eq_one]
-                  exact congrArg (· = 1) hv_eq |>.to_iff)
-              have hleaf_eq : leaf = l := by
-                rw [← take_sub_one_append_getLastD hdepth_pos hleaf_len,
-                  ← take_sub_one_append_getLastD hdepth_pos hl_len, ← hnode_eq, hq_eq, hbit_eq]
-              exact hnotMem (hleaf_eq ▸ hl_mem)
-          have hcc'_none := hinv_c'.2.2.2.2.1 node uLast hnode_lt huLast hes'_none
-          have hbud : T.signBudget sk uLast req.2 ≤ M :=
-            hsgBudget (pk, sk) hkey_supp uLast huLast req.2 (Or.inl hmsg)
-          simp only [jointSignAt, lazyCoinRequest, memoize, hes'_none, hcc'_none,
-            bind_pure_comp, PMF.monad_map_eq_map,
-            ProbComp.eval_map, PMF.map_comp, Function.comp_def]
-          refine ⟨?_, ?_⟩
-          · rw [T.eval_sign sk uLast req.2 (T.signBudget sk uLast req.2) le_rfl,
-              ← BitString.uniformList_take hbud, PMF.map_comp, PMF.map_comp]
-            rfl
-          · intro a s' hm_last
-            obtain ⟨w, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_last
-            obtain ⟨_, rfl⟩ := Prod.mk.inj heq.symm
-            exact jointLazyInv_insert_sign S T hwidth (req.2 :: queried) false hinv_c'
-              (fun _ h => List.mem_cons_of_mem _ h) hnode_lt huLast w _
-              (fun _ => ⟨leaf, List.mem_cons_self, hleaf_len, hnode_eq, rfl⟩)
-              (fun _ _ hp => by omega)
-        refine ⟨?_, ?_⟩
-        · simp only [ProbComp.eval_bind, PMF.map_bind, ← hcert_eq, PMF.bind_map,
-            Function.comp_def]
-          refine PMF.bind_congr_on_support _ _ _
-            fun ⟨cc', ⟨node, ⟨pk, sk⟩, certs⟩, ns', es'⟩ hm_cert => ?_
-          dsimp only [Function.comp_def]
-          have h1 := (hlast_step cc' node pk sk certs ns' es' hm_cert).1
-          simp only [ProbComp.eval_bind, PMF.map_comp, Function.comp_def] at h1 ⊢
-          exact h1
-        · intro a s' hm_bind
-          obtain ⟨⟨cc', ⟨node, ⟨pk, sk⟩, certs⟩, ns', es'⟩, hm_cert, hm_last⟩ :=
-            (PMF.mem_support_bind_iff _ _ _).mp hm_bind
-          exact (hlast_step cc' node pk sk certs ns' es' hm_cert).2 a s' hm_last
-    refine ⟨PMF.bind_congr_on_support _ _ _ fun leaf hl => (hleaf_step leaf hl).1, ?_⟩
-    intro a s' hm_top
-    obtain ⟨leaf, hl, hm_in⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm_top
-    exact (hleaf_step leaf hl).2 a s' hm_in
-  · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun a s' hm => ?_⟩
-    obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact hinv
+  simp only [jointCoinHandler, lazySignHandler, eval_ite, ProbComp.eval_bind,
+    BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  refine (fun h => ⟨h.1, fun a s' hm => h.2 (a, s') hm⟩)
+    (treeHandler_map_of_invariant (req.2.length = n) (bad = true)
+      (BitString.uniformList (depth n)) (fun leaf => seenLeaves.contains leaf)
+      _ _ _ _ (fun x : List Bool × JointLazyState => (x.1, x.2.2)) _ _ _ _
+      (fun x : List Bool × JointLazyState => jointLazyInv S T M (depth n) n root x.2)
+      ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ fun hmsg _ leaf hleaf_supp hseen => ?_)
+  have hleaf_len := BitString.length_of_mem_support_uniformList hleaf_supp
+  have hnotMem : leaf ∉ seenLeaves := fun h => by simp [h] at hseen
+  obtain ⟨hcert_eq, hcert_inv⟩ :=
+    jointCertify_spec S T depth hdepth_pos hwidth hkgBudget hsgBudget hinv hleaf_len
+  refine bind_map_of_invariant (jointCertify S T depth M n leaf (cc, (nodes, edges)))
+    (ProbComp.eval (certifyLazy S depth n root leaf (nodes, edges))) Prod.snd
+    (fun (cc', (cert, (ns', es'))) =>
+      jointLazyInv S T M (depth n) n root (cc', ((ns', es'), (queried, seenLeaves, bad))) ∧
+      cert.1 = leaf.take (depth n - 1) ∧
+      ns'.lookup cert.1 = some cert.2.1 ∧
+      cert.2.1 ∈ (ProbComp.eval (S.keyGen n)).support)
+    _ _ (fun x : List Bool × JointLazyState => (x.1, x.2.2))
+    (fun x : List Bool × JointLazyState => jointLazyInv S T M (depth n) n root x.2)
+    ⟨hcert_eq, fun ⟨cc', cert, ns', es'⟩ hm_cert => hcert_inv cc' cert ns' es' hm_cert⟩
+    fun ⟨cc', ⟨node, ⟨pk, sk⟩, certs⟩, ns', es'⟩ _
+      ⟨hinv_c', hnode_eq, hns'_node, hkey_supp⟩ => ?_
+  dsimp only at hnode_eq hns'_node hkey_supp ⊢
+  have hnode_len : node.length = depth n - 1 := by
+    rw [hnode_eq, List.length_take, hleaf_len, Nat.min_eq_left (by omega)]
+  have hnode_lt : node.length < depth n := by
+    rw [hnode_len]
+    exact Nat.sub_lt hdepth_pos Nat.one_pos
+  set uLast := (leaf.getLastD false).toNat
+  have huLast : uLast ≤ 1 := Bool.toNat_le _
+  have hes'_none : es'.lookup (node, uLast) = none := by
+    cases hlk : es'.lookup (node, uLast) with
+    | none => rfl
+    | some σ₀ =>
+      exfalso
+      obtain ⟨-, -, hleaf_ex⟩ := hinv_c'.2.2.2.1 node uLast σ₀ (lookup_mem hlk)
+      obtain ⟨l, hl_mem, hl_len, hq_eq, hv_eq⟩ := hleaf_ex hnode_len
+      have hbit_eq : leaf.getLastD false = l.getLastD false :=
+        Bool.eq_iff_iff.mpr (by
+          rw [← (leaf.getLastD false).toNat_eq_one, ← (l.getLastD false).toNat_eq_one]
+          exact congrArg (· = 1) hv_eq |>.to_iff)
+      have hleaf_eq : leaf = l := by
+        rw [← take_sub_one_append_getLastD hdepth_pos hleaf_len,
+          ← take_sub_one_append_getLastD hdepth_pos hl_len, ← hnode_eq, hq_eq, hbit_eq]
+      exact hnotMem (hleaf_eq ▸ hl_mem)
+  have hcc'_none := hinv_c'.2.2.2.2.1 node uLast hnode_lt huLast hes'_none
+  have hbud : T.signBudget sk uLast req.2 ≤ M :=
+    hsgBudget (pk, sk) hkey_supp uLast huLast req.2 (Or.inl hmsg)
+  simp only [jointSignAt, lazyCoinRequest, memoize, hes'_none, hcc'_none,
+    bind_pure_comp, PMF.monad_map_eq_map, ProbComp.eval_map, PMF.map_comp, Function.comp_def]
+  refine ⟨?_, fun x hm_last => ?_⟩
+  · rw [T.eval_sign sk uLast req.2 (T.signBudget sk uLast req.2) le_rfl,
+      ← BitString.uniformList_take hbud]
+    simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+  · obtain ⟨w, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_last
+    exact jointLazyInv_insert_sign S T hwidth (req.2 :: queried) false hinv_c'
+      (fun _ h => List.mem_cons_of_mem _ h) hnode_lt huLast w _
+      (fun _ => ⟨leaf, List.mem_cons_self, hleaf_len, hnode_eq, rfl⟩)
+      (fun _ _ hp => by omega)
 
 private theorem run_interpret_signHandler (S : IndexedSignatureScheme) (T : S.Seeded)
     (depth : ℕ → ℕ) (M n : ℕ) (req : Unit × List Bool) (queried : List (List Bool))
@@ -2314,18 +2514,19 @@ theorem succProbability_treeIdealGame_le_lazy (S : IndexedSignatureScheme) (T : 
       Game.succProbability (ProbComp.eval (lazyTreeGame S depth adversary n)) +
         (Q ^ 2 : ℝ≥0) / 2 ^ (depth n + 1) := by
   set M := N n
+  let gameWith (h : Unit × List Bool → StateT GuardedCoinState PMF (List Bool))
+      (w₀ : List Bool) : PMF Bool :=
+    let root := T.keyGenWith n (w₀.take (T.keyGenBudget n))
+    let pk := encPair encUnary encBits (n, root.1)
+    let init : GuardedCoinState := ([(padRequest M (keyInput []), w₀)], ([], [], false))
+    ((OracleComp.interpret
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k)) h)
+      (adversary n pk)).run init).bind fun (msig, (_, (queried, _, _))) =>
+        PMF.pure ((msig.1.length == n) && !queried.contains msig.1 &&
+          verify S depth pk msig.1 msig.2)
   -- Step 1: rewrite treeIdealGame as w₀ ← uniformList M followed by unguardedCoinHandler
   have hstep1 : ProbComp.eval (treeIdealGame S T depth N adversary n) =
-      (BitString.uniformList M).bind fun w₀ =>
-        let root := T.keyGenWith n (w₀.take (T.keyGenBudget n))
-        let pk := encPair encUnary encBits (n, root.1)
-        let init : GuardedCoinState := ([(padRequest M (keyInput []), w₀)], ([], [], false))
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-            (unguardedCoinHandler S T depth M n))
-          (adversary n pk)).run init).bind fun (msig, (_, (queried, _, _))) =>
-            PMF.pure ((msig.1.length == n) && !queried.contains msig.1 &&
-              verify S depth pk msig.1 msig.2) := by
+      (BitString.uniformList M).bind (gameWith (unguardedCoinHandler S T depth M n)) := by
     rw [eval_treeIdealGame_eq_lazyCoin]
     simp only [simulateTreeGame, OracleComp.run_interpret_bind, OracleComp.run_interpret_pure,
       Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
@@ -2346,7 +2547,7 @@ theorem succProbability_treeIdealGame_le_lazy (S : IndexedSignatureScheme) (T : 
         List.take_take, Nat.min_self]
     rw [hroot, PMF.bind_map]
     refine PMF.bind_congr_on_support _ _ _ fun w₀ _ => ?_
-    dsimp only [Function.comp_def]
+    dsimp only [Function.comp_def, gameWith]
     set root := T.keyGenWith n (w₀.take (T.keyGenBudget n))
     set pk := encPair encUnary encBits (n, root.1)
     set cc₀ : CoinCache := [(padRequest M (keyInput []), w₀)]
@@ -2378,16 +2579,7 @@ theorem succProbability_treeIdealGame_le_lazy (S : IndexedSignatureScheme) (T : 
     simpa only [PMF.pure_map] using hfst
   -- Step 2: rewrite lazyTreeGame via jointCoinHandler -> guardedCoinHandler
   have hstep2 : ProbComp.eval (lazyTreeGame S depth adversary n) =
-      (BitString.uniformList M).bind fun w₀ =>
-        let root := T.keyGenWith n (w₀.take (T.keyGenBudget n))
-        let pk := encPair encUnary encBits (n, root.1)
-        let init : GuardedCoinState := ([(padRequest M (keyInput []), w₀)], ([], [], false))
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-            (guardedCoinHandler S T depth M n))
-          (adversary n pk)).run init).bind fun (msig, (_, (queried, _, _))) =>
-            PMF.pure ((msig.1.length == n) && !queried.contains msig.1 &&
-              verify S depth pk msig.1 msig.2) := by
+      (BitString.uniformList M).bind (gameWith (guardedCoinHandler S T depth M n)) := by
     have hrootLaw : ProbComp.eval (S.keyGen n) =
         (BitString.uniformList M).map (fun w₀ => T.keyGenWith n (w₀.take (T.keyGenBudget n))) := by
       rw [T.eval_keyGen n (T.keyGenBudget n) le_rfl, ← BitString.uniformList_take hkgBudget,
@@ -2397,6 +2589,7 @@ theorem succProbability_treeIdealGame_le_lazy (S : IndexedSignatureScheme) (T : 
     simp only [lazyTreeGame, ProbComp.eval_bind, ProbComp.eval_pure, hrootLaw, PMF.bind_map,
       Function.comp_def, ProbOracleComp.eval_run_interpret]
     refine PMF.bind_congr_on_support _ _ _ fun w₀ _ => ?_
+    dsimp only [gameWith]
     set root := T.keyGenWith n (w₀.take (T.keyGenBudget n))
     set pk := encPair encUnary encBits (n, root.1)
     set jInit : JointLazyState :=
@@ -2457,29 +2650,11 @@ theorem succProbability_treeIdealGame_le_lazy (S : IndexedSignatureScheme) (T : 
     rw [hstep1, hstep2, PMF.bind_apply, PMF.bind_apply]
     have hpt (w₀ : List Bool) :
         BitString.uniformList M w₀ *
-          (((OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (unguardedCoinHandler S T depth M n))
-            (adversary n (encPair encUnary encBits
-              (n, (T.keyGenWith n (w₀.take (T.keyGenBudget n))).1)))).run
-            ([(padRequest M (keyInput []), w₀)], ([], [], false))).bind
-            (fun (msig, (_, (queried, _, _))) =>
-              PMF.pure ((msig.1.length == n) && !queried.contains msig.1 &&
-                verify S depth (encPair encUnary encBits
-                  (n, (T.keyGenWith n (w₀.take (T.keyGenBudget n))).1)) msig.1 msig.2)) true) ≤
+          gameWith (unguardedCoinHandler S T depth M n) w₀ true ≤
         BitString.uniformList M w₀ *
-          ((((OracleComp.interpret
-            (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-              (guardedCoinHandler S T depth M n))
-            (adversary n (encPair encUnary encBits
-              (n, (T.keyGenWith n (w₀.take (T.keyGenBudget n))).1)))).run
-            ([(padRequest M (keyInput []), w₀)], ([], [], false))).bind
-            (fun (msig, (_, (queried, _, _))) =>
-              PMF.pure ((msig.1.length == n) && !queried.contains msig.1 &&
-                verify S depth (encPair encUnary encBits
-                  (n, (T.keyGenWith n (w₀.take (T.keyGenBudget n))).1)) msig.1 msig.2)) true) +
-          (err : ℝ≥0∞)) := by
+          (gameWith (guardedCoinHandler S T depth M n) w₀ true + (err : ℝ≥0∞)) := by
       refine mul_le_mul_of_nonneg_left ?_ zero_le
+      dsimp only [gameWith]
       set root := T.keyGenWith n (w₀.take (T.keyGenBudget n))
       set pk := encPair encUnary encBits (n, root.1)
       set init : GuardedCoinState := ([(padRequest M (keyInput []), w₀)], ([], [], false))
@@ -2678,6 +2853,40 @@ private def slotEdgeInv (K : ℕ) (st : PresampledState) : Prop :=
   (∀ e₁ ∈ visited, ∀ e₂ ∈ visited, e₁.2 < K → e₁.2 = e₂.2 → e₁ = e₂) ∧
   ∀ p idx u m, (p, idx, u, m) ∈ allSigned → (p, idx) ∈ visited ∧ edges.lookup (p, u) ≠ none
 
+private theorem visitNodePure_inv {P : List Bool → Prop} {K : ℕ} {visited : NodeSlotCache}
+    (path : List Bool) (hp : P path)
+    (hlt : ∀ e ∈ visited, P e.1 ∧ (e.2 < K → e.2 < visited.length))
+    (huniq : ∀ e₁ ∈ visited, ∀ e₂ ∈ visited, e₁.2 < K → e₁.2 = e₂.2 → e₁ = e₂) :
+    let (idx, visited') := visitNodePure K path visited
+    (path, idx) ∈ visited' ∧
+    (∀ e ∈ visited, e ∈ visited') ∧
+    visited'.length ≤ visited.length + 1 ∧
+    (∀ e ∈ visited', P e.1 ∧ (e.2 < K → e.2 < visited'.length)) ∧
+    (∀ e₁ ∈ visited', ∀ e₂ ∈ visited', e₁.2 < K → e₁.2 = e₂.2 → e₁ = e₂) ∧
+    (∀ e ∈ visited', e ∈ visited ∨ e = (path, min visited.length K)) := by
+  simp only [visitNodePure]
+  cases hlk : visited.lookup path with
+  | some idx =>
+    exact ⟨lookup_mem hlk, fun _ h => h, Nat.le_succ _, hlt, huniq, fun _ h => Or.inl h⟩
+  | none =>
+    refine ⟨List.mem_cons_self, fun _ h => List.mem_cons_of_mem _ h,
+      by simp only [List.length_cons, le_refl], ?_, ?_, fun _ h => List.mem_cons.mp h |>.symm⟩
+    · intro e he
+      simp only [List.length_cons]
+      rcases List.mem_cons.mp he with rfl | htail
+      · exact ⟨hp, fun _ => Nat.lt_succ_of_le (Nat.min_le_left _ _)⟩
+      · exact ⟨(hlt e htail).1, fun hK => Nat.lt_succ_of_lt ((hlt e htail).2 hK)⟩
+    · intro e₁ he₁ e₂ he₂ he₁K heq
+      rcases List.mem_cons.mp he₁ with rfl | ht₁ <;> rcases List.mem_cons.mp he₂ with rfl | ht₂
+      · rfl
+      · dsimp only at he₁K heq
+        have hlt₂ := (hlt e₂ ht₂).2 (heq ▸ he₁K)
+        omega
+      · have hlt₁ := (hlt e₁ ht₁).2 he₁K
+        dsimp only at heq
+        omega
+      · exact huniq e₁ ht₁ e₂ ht₂ he₁K heq
+
 private theorem visitNodePure_slotInv {K : ℕ} {visited : NodeSlotCache} (path : List Bool)
     (hlt : ∀ e ∈ visited, e.2 < K → e.2 < visited.length)
     (huniq : ∀ e₁ ∈ visited, ∀ e₂ ∈ visited, e₁.2 < K → e₁.2 = e₂.2 → e₁ = e₂) :
@@ -2686,29 +2895,9 @@ private theorem visitNodePure_slotInv {K : ℕ} {visited : NodeSlotCache} (path 
     (∀ e ∈ visited, e ∈ visited') ∧
     (∀ e ∈ visited', e.2 < K → e.2 < visited'.length) ∧
     (∀ e₁ ∈ visited', ∀ e₂ ∈ visited', e₁.2 < K → e₁.2 = e₂.2 → e₁ = e₂) := by
-  simp only [visitNodePure]
-  cases hlk : visited.lookup path with
-  | some idx =>
-    exact ⟨lookup_mem hlk, fun _ h => h, hlt, huniq⟩
-  | none =>
-    refine ⟨List.mem_cons_self, fun _ h => List.mem_cons_of_mem _ h, ?_, ?_⟩
-    · intro e he heK
-      simp only [List.length_cons]
-      rcases List.mem_cons.mp he with rfl | htail
-      · dsimp only at heK ⊢
-        omega
-      · have := hlt e htail heK
-        omega
-    · intro e₁ he₁ e₂ he₂ he₁K heq
-      rcases List.mem_cons.mp he₁ with rfl | ht₁ <;> rcases List.mem_cons.mp he₂ with rfl | ht₂
-      · rfl
-      · dsimp only at he₁K heq
-        have hlt₂ := hlt e₂ ht₂ (heq ▸ he₁K)
-        omega
-      · have hlt₁ := hlt e₁ ht₁ he₁K
-        dsimp only at heq
-        omega
-      · exact huniq e₁ ht₁ e₂ ht₂ he₁K heq
+  have h := visitNodePure_inv (P := fun _ => True) path trivial
+    (fun e he => ⟨trivial, hlt e he⟩) huniq
+  exact ⟨h.1, h.2.1, fun e he => (h.2.2.2.1 e he).2, h.2.2.2.2.1⟩
 
 private theorem localSignEdge_planted_spec (S : IndexedSignatureScheme)
     {n sigCap : ℕ} (hcap : 2 ≤ S.capacity n)
@@ -2844,47 +3033,22 @@ private theorem localCertify_planted_spec (S : IndexedSignatureScheme) (depth : 
   let loopInv (st : LocalCertState) : Prop :=
     let ((node, idx, _), (v, e, a)) := st
     (node, idx) ∈ v ∧ slotEdgeInv keys.length (((v, e), rest), a)
-  suffices ∀ m,
-      let dist := Nat.iterate (fun d => d.bind (localCertifyStep S keys sigCap leaf)) m
-        (PMF.pure (([], 0, []), (visited, edges, allSigned)))
-      (dist.map fun (c, (v, e, a)) => ((c, (v, e)), signedLogOf target a)) =
-        Nat.iterate
-          (fun d => d.bind fun (cs, sg) =>
-            (OracleComp.interpret
-              (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-                (fun q s => ProbComp.eval (S.indexedSigningOracle n x.2 q s)))
-              (certifyStepPlanted S keys' target sigCap leaf cs)).run sg)
-          m (PMF.pure ((([], 0, []), (visited, edges)), signedLogOf target allSigned)) ∧
-      ∀ st ∈ dist.support, loopInv st by
-    obtain ⟨heq, hsupp⟩ := this (depth n - 1)
-    exact ⟨heq, fun c v e a hm => hsupp (c, (v, e, a)) hm⟩
-  intro m
-  induction m with
-  | zero =>
-    refine ⟨by simp only [Function.iterate_zero, id_eq, PMF.pure_map], ?_⟩
-    intro st hst
-    obtain rfl := (PMF.mem_support_pure_iff _ _).mp hst
-    exact ⟨hrootVis, hrootVis, hltVis, huniqVis, hallVis⟩
-  | succ m ih =>
-    obtain ⟨heq_m, hsupp_m⟩ := ih
-    set dist_m := Nat.iterate (fun d => d.bind (localCertifyStep S keys sigCap leaf)) m
-      (PMF.pure (([], 0, []), (visited, edges, allSigned)))
-    have hstep (st : LocalCertState) (hst : st ∈ dist_m.support) :
-        ((localCertifyStep S keys sigCap leaf st).map
-          fun (c, (v, e, a)) => ((c, (v, e)), signedLogOf target a)) =
-          (OracleComp.interpret
-            (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-              (fun q s => ProbComp.eval (S.indexedSigningOracle n x.2 q s)))
-            (certifyStepPlanted S keys' target sigCap leaf
-              (st.1, (st.2.1, st.2.2.1)))).run (signedLogOf target st.2.2.2) ∧
-        ∀ st' ∈ (localCertifyStep S keys sigCap leaf st).support, loopInv st' := by
-      obtain ⟨⟨node, idx, certs⟩, v, e, a⟩ := st
-      obtain ⟨hnode_v, hroot_v, hlt_v, huniq_v, hall_v⟩ := hsupp_m _ hst
+  have hmain := iterate_pmf_map_of_invariant
+    (localCertifyStep S keys sigCap leaf)
+    (fun (cs, sg) =>
+      (OracleComp.interpret
+        (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
+          (fun q s => ProbComp.eval (S.indexedSigningOracle n x.2 q s)))
+        (certifyStepPlanted S keys' target sigCap leaf cs)).run sg)
+    (fun (c, (v, e, a)) => ((c, (v, e)), signedLogOf target a))
+    (fun _ st => loopInv st) (depth n - 1) (([], 0, []), (visited, edges, allSigned))
+    ⟨hrootVis, hrootVis, hltVis, huniqVis, hallVis⟩
+    fun _ _ ⟨⟨node, idx, certs⟩, v, e, a⟩ ⟨hnode_v, hroot_v, hlt_v, huniq_v, hall_v⟩ => by
       set bit := leaf.getD node.length false
       set childPath := node ++ [bit]
-      have hvisStep := visitNodePure_slotInv childPath hlt_v huniq_v
+      obtain ⟨hchild_vp, hmono_vp, hlt_vp, huniq_vp⟩ :=
+        visitNodePure_slotInv childPath hlt_v huniq_v
       set vp := visitNodePure keys.length childPath v
-      obtain ⟨hchild_vp, hmono_vp, hlt_vp, huniq_vp⟩ := hvisStep
       have hnode_vp : (node, idx) ∈ vp.2 := hmono_vp _ hnode_v
       have hall_vp : ∀ p₀ idx₀ u₀ m₀, (p₀, idx₀, u₀, m₀) ∈ a →
           (p₀, idx₀) ∈ vp.2 ∧ e.lookup (p₀, u₀) ≠ none :=
@@ -2896,7 +3060,7 @@ private theorem localCertify_planted_spec (S : IndexedSignatureScheme) (depth : 
       obtain ⟨hedg_eq, hedg_inv⟩ :=
         localSignEdge_planted_spec S (sigCap := sigCap) hcap hslotLt huniq_vp hall_vp hnode_vp hbu
           (keys.getD vp.1 ([], [])).1
-      refine ⟨?_, ?_⟩
+      refine ⟨?_, fun st' hst' => ?_⟩
       · simp only [localCertifyStep, certifyStepPlanted, hlenEq, OracleComp.run_interpret_bind,
           OracleComp.run_interpret_pure, run_interpret_visitNodeM,
           Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
@@ -2908,17 +3072,10 @@ private theorem localCertify_planted_spec (S : IndexedSignatureScheme) (depth : 
         rw [hpkEq]
         simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def] at h1 ⊢
         exact h1
-      · intro st' hst'
-        simp only [localCertifyStep, PMF.mem_support_map_iff] at hst'
+      · simp only [localCertifyStep, PMF.mem_support_map_iff] at hst'
         obtain ⟨⟨σ, e', a'⟩, hm_edg, rfl⟩ := hst'
         exact ⟨hchild_vp, hmono_vp _ hroot_v, hlt_vp, huniq_vp, hedg_inv σ e' a' hm_edg⟩
-    rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← heq_m]
-    refine ⟨?_, ?_⟩
-    · simp only [PMF.map_bind, PMF.bind_map, Function.comp_def]
-      exact PMF.bind_congr_on_support _ _ _ fun st hst => (hstep st hst).1
-    · intro st' hst'
-      obtain ⟨st, hst, hm⟩ := (PMF.mem_support_bind_iff _ _ _).mp hst'
-      exact (hstep st hst).2 st' hm
+  exact ⟨hmain.1, fun c v e a hm => hmain.2 (c, (v, e, a)) hm⟩
 
 private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (depth : ℕ → ℕ)
     {n sigCap : ℕ} (hcap : 2 ≤ S.capacity n)
@@ -2950,125 +3107,50 @@ private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (dept
       ((visited, edges), (queried, seenLeaves, bad)) =
       plantedTreeHandler S depth keys' target sigCap n req
         ((visited, edges), (queried, seenLeaves, bad)) from rfl]
-  simp only [localTreeHandler, plantedTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  split_ifs with hmsg hbad
-  · refine ⟨?_, fun ans st' hm => ?_⟩
-    · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
-    · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-      exact hinv
-  · rw [OracleComp.run_interpret_bind, ProbOracleComp.run_interpret_sample,
-      BitString.eval_sampleList, Probability.PMF.monad_bind_eq_bind, PMF.bind_map,
-      PMF.map_bind, PMF.map_bind]
-    dsimp only [Function.comp_def]
-    have hleaf_step (leaf : List Bool) :
-        ((if seenLeaves.contains leaf then
-          PMF.pure ([], (((visited, edges), (req.2 :: queried, seenLeaves, true)), allSigned))
-        else
-          (localCertify S depth keys sigCap n leaf (visited, edges, allSigned)).bind
-            fun ((node, idx, certs), (visited', edges', allSigned')) =>
-              (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
-                (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (((visited', edges''), (req.2 :: queried, leaf :: seenLeaves, false)),
-                      allSigned''))).map
-          fun (ans, (ps', allSigned')) => (ans, ps', signedLogOf target allSigned')) =
-        (((OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (fun q s => ProbComp.eval (S.indexedSigningOracle n x.2 q s)))
-          (if seenLeaves.contains leaf then
-            pure ([], ((visited, edges), (req.2 :: queried, seenLeaves, true)))
-          else do
-            let ((node, idx, certs), (visited', edges')) ←
-              certifyPlanted S depth keys' target sigCap n leaf (visited, edges)
-            let (σ, edges'') ←
-              signEdgeM S keys' target sigCap node idx (leaf.getLastD false).toNat req.2 edges'
-            return (encodeSignature leaf certs σ,
-              ((visited', edges''), (req.2 :: queried, leaf :: seenLeaves, false))))).run
-          (signedLogOf target allSigned)).map
-          fun ⟨⟨ans, ps'⟩, signed'⟩ => (ans, ps', signed')) ∧
-        ∀ ans st', (ans, st') ∈ (if seenLeaves.contains leaf then
-          PMF.pure ([], (((visited, edges), (req.2 :: queried, seenLeaves, true)), allSigned))
-        else
-          (localCertify S depth keys sigCap n leaf (visited, edges, allSigned)).bind
-            fun ((node, idx, certs), (visited', edges', allSigned')) =>
-              (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
-                (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (((visited', edges''), (req.2 :: queried, leaf :: seenLeaves, false)),
-                      allSigned''))).support →
-          slotEdgeInv keys.length st' := by
-      split_ifs with hseen
-      · refine ⟨?_, fun ans st' hm => ?_⟩
-        · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
-            PMF.pure_map]
-        · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-          exact hinv
-      · obtain ⟨hcert_eq, hcert_inv⟩ :=
-          localCertify_planted_spec S depth hcap leaf hinv
-        have hlast (node : List Bool) (idx : ℕ) (certs : List (List Bool × List Bool))
-            (v' : NodeSlotCache) (e' : EdgeSigCache) (a' : AllSignedLog)
-            (hm_cert : ((node, idx, certs), (v', e', a')) ∈
-              (localCertify S depth keys sigCap n leaf (visited, edges, allSigned)).support) :
-            (((localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
-              (e', a')).map fun (σ, (e'', a'')) =>
-                (encodeSignature leaf certs σ,
-                  (((v', e''), (req.2 :: queried, leaf :: seenLeaves, false)), a''))).map
-              fun (ans, (ps', allSigned')) => (ans, ps', signedLogOf target allSigned')) =
-            (((OracleComp.interpret
-              (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-                (fun q s => ProbComp.eval (S.indexedSigningOracle n x.2 q s)))
-              (do
-                let (σ, edges'') ←
-                  signEdgeM S keys' target sigCap node idx (leaf.getLastD false).toNat req.2 e'
-                return (encodeSignature leaf certs σ,
-                  ((v', edges''), (req.2 :: queried, leaf :: seenLeaves, false))))).run
-              (signedLogOf target a')).map
-              fun ⟨⟨ans, ps'⟩, signed'⟩ => (ans, ps', signed')) ∧
-            ∀ ans st', (ans, st') ∈ ((localSignEdge S keys sigCap node idx
-              (leaf.getLastD false).toNat req.2 (e', a')).map fun (σ, (e'', a'')) =>
-                (encodeSignature leaf certs σ,
-                  (((v', e''), (req.2 :: queried, leaf :: seenLeaves, false)), a''))).support →
-              slotEdgeInv keys.length st' := by
-          obtain ⟨hnode_v', hroot_v', hlt_v', huniq_v', hall_v'⟩ :=
-            hcert_inv (node, idx, certs) v' e' a' hm_cert
-          have huLast : (leaf.getLastD false).toNat ≤ 1 := Bool.toNat_le _
-          obtain ⟨hedg_eq, hedg_inv⟩ :=
-            localSignEdge_planted_spec S (sigCap := sigCap) hcap hslotLt huniq_v' hall_v'
-              hnode_v' huLast req.2
-          refine ⟨?_, ?_⟩
-          · simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_pure,
-              Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-              PMF.map_bind, PMF.pure_map, PMF.map_comp, Function.comp_def]
-            have h1 := congrArg (PMF.map fun (σ, (e'', s'')) =>
-              (encodeSignature leaf certs σ,
-                ((v', e''), (req.2 :: queried, leaf :: seenLeaves, false)), s'')) hedg_eq
-            dsimp only [keys, keys', target] at h1 ⊢
-            simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def] at h1 ⊢
-            exact h1
-          · intro ans st' hm_edg
-            obtain ⟨⟨σ, e'', a''⟩, hm_se, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_edg
-            obtain ⟨_, rfl⟩ := Prod.mk.inj heq.symm
-            exact ⟨hroot_v', hlt_v', huniq_v', hedg_inv σ e'' a'' hm_se⟩
-        refine ⟨?_, ?_⟩
-        · rw [OracleComp.run_interpret_bind, Probability.PMF.monad_bind_eq_bind]
-          simp only [PMF.map_bind]
-          dsimp only [keys, keys', target] at hcert_eq hlast ⊢
-          rw [← hcert_eq, PMF.bind_map]
-          refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨node, idx, certs⟩, v', e', a'⟩ hm => ?_
-          dsimp only [Function.comp_def]
-          exact (hlast node idx certs v' e' a' hm).1
-        · intro ans st' hm_bind
-          obtain ⟨⟨⟨node, idx, certs⟩, v', e', a'⟩, hm_cert, hm_edg⟩ :=
-            (PMF.mem_support_bind_iff _ _ _).mp hm_bind
-          exact (hlast node idx certs v' e' a' hm_cert).2 ans st' hm_edg
-    refine ⟨PMF.bind_congr_on_support _ _ _ fun leaf _ => (hleaf_step leaf).1, ?_⟩
-    intro ans st' hm_top
-    obtain ⟨leaf, -, hm_in⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm_top
-    exact (hleaf_step leaf).2 ans st' hm_in
-  · refine ⟨?_, fun ans st' hm => ?_⟩
-    · simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
-    · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-      exact hinv
+  simp only [localTreeHandler, plantedTreeHandler, Probability.PMF.monad_bind_eq_bind,
+    Probability.PMF.monad_pure_eq_pure]
+  conv =>
+    arg 1
+    rhs
+    simp only [run_interpret_ite, pmf_map_ite, OracleComp.run_interpret_bind,
+      OracleComp.run_interpret_pure, ProbOracleComp.run_interpret_sample, BitString.eval_sampleList,
+      Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_map,
+      PMF.map_bind, PMF.pure_map, Function.comp_def]
+  refine (fun h => ⟨h.1, fun ans st' hm => h.2 (ans, st') hm⟩)
+    (treeHandler_map_of_invariant (req.2.length = n) (bad = true)
+      (BitString.uniformList (depth n)) (fun leaf => seenLeaves.contains leaf)
+      _ _ _ _ (fun x : List Bool × PresampledState => (x.1, x.2.1, signedLogOf target x.2.2))
+      _ _ _ _ (fun x : List Bool × PresampledState => slotEdgeInv keys.length x.2)
+      ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ fun _ _ leaf _ _ => ?_)
+  obtain ⟨hcert_eq, hcert_inv⟩ := localCertify_planted_spec S depth hcap leaf hinv
+  dsimp only [keys, keys', target] at hcert_eq ⊢
+  refine bind_map_of_invariant
+    (localCertify S depth keys sigCap n leaf (visited, edges, allSigned))
+    ((OracleComp.interpret
+      (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
+        (fun q s => ProbComp.eval (S.indexedSigningOracle n x.2 q s)))
+      (certifyPlanted S depth keys' target sigCap n leaf (visited, edges))).run
+      (signedLogOf target allSigned))
+    (fun (c, (v, e, a)) => ((c, (v, e)), signedLogOf target a))
+    (fun ((node, idx, _), (v', e', a')) =>
+      (node, idx) ∈ v' ∧ slotEdgeInv keys.length (((v', e'), (queried, seenLeaves, bad)), a'))
+    _ _ (fun x : List Bool × PresampledState => (x.1, x.2.1, signedLogOf target x.2.2))
+    (fun x : List Bool × PresampledState => slotEdgeInv keys.length x.2)
+    ⟨hcert_eq, fun ⟨c, v', e', a'⟩ hm => hcert_inv c v' e' a' hm⟩
+    fun ⟨⟨node, idx, certs⟩, v', e', a'⟩ _ ⟨hnode_v', hroot_v', hlt_v', huniq_v', hall_v'⟩ => ?_
+  have huLast : (leaf.getLastD false).toNat ≤ 1 := Bool.toNat_le _
+  obtain ⟨hedg_eq, hedg_inv⟩ :=
+    localSignEdge_planted_spec S (sigCap := sigCap) hcap hslotLt huniq_v' hall_v'
+      hnode_v' huLast req.2
+  refine ⟨?_, fun x hm_edg => ?_⟩
+  · have h1 := congrArg (PMF.map fun (σ, (e'', s'')) =>
+      (encodeSignature leaf certs σ,
+        ((v', e''), (req.2 :: queried, leaf :: seenLeaves, false)), s'')) hedg_eq
+    dsimp only [keys, keys', target] at h1 ⊢
+    simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def] at h1 ⊢
+    exact h1
+  · obtain ⟨⟨σ, e'', a''⟩, hm_se, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_edg
+    exact ⟨hroot_v', hlt_v', huniq_v', hedg_inv σ e'' a'' hm_se⟩
 
 private theorem map_plantedWin_presampledExp (S : IndexedSignatureScheme)
     (depth slotBound sigCap : ℕ → ℕ) {n : ℕ} (hcap : 2 ≤ S.capacity n)
@@ -3220,6 +3302,53 @@ private theorem nodesOf_append_singleton (usedKeys : List (List Bool × List Boo
   refine List.map_congr_left fun e he => ?_
   rw [List.getD_append _ _ _ _ (hvis e he)]
 
+private theorem jointVisitKey_support_inv (S : IndexedSignatureScheme) (n : ℕ)
+    {uk : List (List Bool × List Bool)} {vis : NodeSlotCache}
+    (hlen : uk.length = vis.length) (hpos : 0 < uk.length)
+    (hvis : ∀ e ∈ vis, e.2 < vis.length) (path : List Bool)
+    {idx : ℕ} {uk' : List (List Bool × List Bool)} {vis' : NodeSlotCache}
+    (hm : (idx, (uk', vis')) ∈ (jointVisitKey S n path (uk, vis)).support) :
+    uk'.length = vis'.length ∧
+    0 < uk'.length ∧
+    (∀ e ∈ vis', e.2 < vis'.length) ∧
+    idx < uk'.length ∧
+    uk.length ≤ uk'.length ∧
+    vis'.length ≤ vis.length + 1 ∧
+    uk'.getD 0 ([], []) = uk.getD 0 ([], []) ∧
+    (∀ k ∈ uk', k ∈ uk ∨ k ∈ (ProbComp.eval (S.keyGen n)).support) ∧
+    (∀ j < uk.length, uk'.getD j ([], []) = uk.getD j ([], [])) ∧
+    (∀ p₀ i₀, vis.lookup p₀ = some i₀ → vis'.lookup p₀ = some i₀) := by
+  simp only [jointVisitKey] at hm
+  cases hlk : vis.lookup path with
+  | some i₀ =>
+    rw [hlk] at hm
+    obtain ⟨rfl, h2⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
+    obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
+    exact ⟨hlen, hpos, hvis, hlen ▸ hvis _ (lookup_mem hlk), le_rfl, Nat.le_succ _,
+      rfl, fun _ h => Or.inl h, fun _ _ => rfl, fun _ _ h => h⟩
+  | none =>
+    rw [hlk] at hm
+    obtain ⟨child, hchild, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
+    obtain ⟨rfl, h2⟩ := Prod.mk.inj heq.symm
+    obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
+    refine ⟨by simp [hlen], by simp, ?_, by simp [hlen], by simp, by simp,
+      List.getD_append _ _ _ _ hpos, ?_, fun j hj => List.getD_append _ _ _ _ hj, ?_⟩
+    · intro e he
+      simp only [List.length_cons]
+      rcases List.mem_cons.mp he with rfl | htail
+      · simp
+      · have := hvis e htail
+        omega
+    · intro k hk
+      rcases List.mem_append.mp hk with hk | hk
+      · exact Or.inl hk
+      · obtain rfl := List.mem_singleton.mp hk
+        exact Or.inr hchild
+    · intro p₀ i₀ hp₀
+      have hne : p₀ ≠ path := fun h => by subst h; rw [hp₀] at hlk; cases hlk
+      rw [List.lookup_cons, beq_false_of_ne hne]
+      exact hp₀
+
 private theorem jointVisitKey_lazy_spec (S : IndexedSignatureScheme) (n : ℕ)
     {root : List Bool × List Bool} {usedKeys : List (List Bool × List Bool)}
     {visited : NodeSlotCache}
@@ -3242,57 +3371,30 @@ private theorem jointVisitKey_lazy_spec (S : IndexedSignatureScheme) (n : ℕ)
       usedKeys.length ≤ uk'.length ∧
       vis'.length ≤ visited.length + 1 ∧
       ∀ j < usedKeys.length, uk'.getD j ([], []) = usedKeys.getD j ([], []) := by
-  simp only [jointVisitKey, memoize]
-  have hlkMap : (nodesOf usedKeys visited).lookup path =
-      (visited.lookup path).map (fun i => usedKeys.getD i ([], [])) :=
-    List.lookup_map_snd visited (fun i => usedKeys.getD i ([], [])) path
-  cases hlk : visited.lookup path with
-  | some idx =>
-    rw [hlk, Option.map_some] at hlkMap
-    have hidxLt : idx < usedKeys.length := hlen ▸ hvis (path, idx) (lookup_mem hlk)
-    refine ⟨?_, ?_⟩
-    · simp only [hlkMap, PMF.pure_map, ProbComp.eval_pure]
-    · intro i uk' vis' hm
-      have heq := (PMF.mem_support_pure_iff _ _).mp hm
-      obtain ⟨rfl, h2⟩ := Prod.mk.inj heq
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-      exact ⟨hlen, hrootVis, hrootKey, hsupp, hvis, hidxLt, le_rfl, Nat.le_succ _,
-        fun _ _ => rfl⟩
-  | none =>
-    rw [hlk, Option.map_none] at hlkMap
-    have hvisU : ∀ e ∈ visited, e.2 < usedKeys.length := fun e he => hlen ▸ hvis e he
-    have hrootNe : ([] : List Bool) ≠ path := fun h => by
-      subst h; rw [hrootVis] at hlk; cases hlk
-    have hpos : 0 < usedKeys.length := by
-      have := hvis ([], 0) (lookup_mem hrootVis)
-      omega
-    refine ⟨?_, ?_⟩
-    · simp only [hlkMap, bind_pure_comp, ProbComp.eval_map, PMF.map_comp, Function.comp_def]
+  have hpos : 0 < usedKeys.length := by
+    have := hvis ([], 0) (lookup_mem hrootVis)
+    omega
+  refine ⟨?_, ?_⟩
+  · simp only [jointVisitKey, memoize]
+    have hlkMap : (nodesOf usedKeys visited).lookup path =
+        (visited.lookup path).map (fun i => usedKeys.getD i ([], [])) :=
+      List.lookup_map_snd visited (fun i => usedKeys.getD i ([], [])) path
+    cases hlk : visited.lookup path with
+    | some idx =>
+      rw [hlk, Option.map_some] at hlkMap
+      simp only [hlkMap, PMF.pure_map, ProbComp.eval_pure]
+    | none =>
+      rw [hlk, Option.map_none] at hlkMap
+      have hvisU : ∀ e ∈ visited, e.2 < usedKeys.length := fun e he => hlen ▸ hvis e he
+      simp only [hlkMap, bind_pure_comp, ProbComp.eval_map, PMF.map_comp, Function.comp_def]
       refine PMF.map_congr_on_support _ _ _ fun child _ => ?_
       simp only [← hlen, List.getD_append_cons_length usedKeys [] child ([], []),
         nodesOf_append_singleton usedKeys visited hvisU path child]
-    · intro i uk' vis' hm
-      obtain ⟨child, hchild, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
-      obtain ⟨rfl, h2⟩ := Prod.mk.inj heq.symm
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-      refine ⟨by simp [hlen], ?_, ?_, ?_, ?_, by simp [hlen], by simp, by simp, ?_⟩
-      · rw [List.lookup_cons, beq_false_of_ne hrootNe]
-        exact hrootVis
-      · rw [List.getD_append _ _ _ _ hpos]
-        exact hrootKey
-      · intro k hk
-        rcases List.mem_append.mp hk with hk | hk
-        · exact hsupp k hk
-        · obtain rfl := List.mem_singleton.mp hk
-          exact hchild
-      · intro e he
-        simp only [List.length_cons]
-        rcases List.mem_cons.mp he with rfl | htail
-        · simp
-        · have := hvis e htail
-          omega
-      · intro j hj
-        exact List.getD_append _ _ _ _ hj
+  · intro i uk' vis' hm
+    obtain ⟨h1, _, h5, h6, h7, h8, h0, h4, h9, hlk0⟩ :=
+      jointVisitKey_support_inv S n hlen hpos hvis path hm
+    exact ⟨h1, hlk0 [] 0 hrootVis, h0.trans hrootKey,
+      fun k hk => (h4 k hk).elim (hsupp k) id, h5, h6, h7, h8, h9⟩
 
 private theorem localSignEdge_notrunc (S : IndexedSignatureScheme) {sigCap n : ℕ}
     (hsigCap : ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support, ∀ u ≤ 1, ∀ msg,
@@ -3346,78 +3448,56 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
     omega
   dsimp only [jointKeysCertify, certifyLazy]
   rw [eval_iterate_probComp]
+  let rep : JointKeysCertState → LazyCertState :=
+    fun (uk', ((node, idx, certs), (vis', edg', _))) =>
+      ((node, uk'.getD idx ([], []), certs), (nodesOf uk' vis', edg'))
   let stepInv (out : JointKeysCertState) : Prop :=
     let (uk, ((_, idx, _), (vis, edg, all))) := out
     jointKeysInv S n root (uk, (((vis, edg), rest), all)) ∧ idx < uk.length
-  suffices ∀ m,
-      let dist := Nat.iterate (fun d => d.bind (jointKeysCertifyStep S sigCap n leaf)) m
-        (PMF.pure (usedKeys, (([], 0, []), (visited, edges, allSigned))))
-      (dist.map fun (uk', ((node, idx, certs), (vis', edg', _))) =>
-        ((node, uk'.getD idx ([], []), certs), (nodesOf uk' vis', edg'))) =
-      Nat.iterate (fun d => d.bind fun s => ProbComp.eval (certifyStepLazy S n leaf s)) m
-        (PMF.pure (([], root, []), (nodesOf usedKeys visited, edges))) ∧
-      ∀ out ∈ dist.support, stepInv out by
-    obtain ⟨heq, hsupp⟩ := this (depth n - 1)
-    exact ⟨heq, fun uk' node idx certs vis' edg' all' hm =>
-      hsupp (uk', ((node, idx, certs), (vis', edg', all'))) hm⟩
-  intro m
-  induction m with
-  | zero =>
-    refine ⟨?_, ?_⟩
-    · simp only [Function.iterate_zero, id_eq, PMF.pure_map, hrootKey0]
-    · intro out hout
-      obtain rfl := (PMF.mem_support_pure_iff _ _).mp hout
-      exact ⟨⟨hlen0, hrootVis0, hrootKey0, hsupp0, hvis0⟩, hpos0⟩
-  | succ m ih =>
-    obtain ⟨heq_m, hsupp_m⟩ := ih
-    set dist_m := Nat.iterate (fun d => d.bind (jointKeysCertifyStep S sigCap n leaf)) m
-      (PMF.pure (usedKeys, (([], 0, []), (visited, edges, allSigned))))
-    have hstep (out : JointKeysCertState) (hout : out ∈ dist_m.support) :
-        ((jointKeysCertifyStep S sigCap n leaf out).map
-          fun (uk', ((node, idx, certs), (vis', edg', _))) =>
-            ((node, uk'.getD idx ([], []), certs), (nodesOf uk' vis', edg'))) =
-          ProbComp.eval (certifyStepLazy S n leaf
-            ((out.2.1.1, out.1.getD out.2.1.2.1 ([], []), out.2.1.2.2),
-              (nodesOf out.1 out.2.2.1, out.2.2.2.1))) ∧
-        ∀ out' ∈ (jointKeysCertifyStep S sigCap n leaf out).support, stepInv out' := by
-      obtain ⟨uk, ⟨node, idx, certs⟩, vis, edg, all⟩ := out
-      obtain ⟨⟨hlen, hrootVis, hrootKey, hsupp, hvis⟩, hidx⟩ := hsupp_m _ hout
+  have hmain := iterate_pmf_map_of_invariant
+    (jointKeysCertifyStep S sigCap n leaf)
+    (fun s => ProbComp.eval (certifyStepLazy S n leaf s)) rep
+    (fun _ out => stepInv out) (depth n - 1)
+    (usedKeys, (([], 0, []), (visited, edges, allSigned)))
+    ⟨⟨hlen0, hrootVis0, hrootKey0, hsupp0, hvis0⟩, hpos0⟩
+    fun _ _ ⟨uk, ⟨node, idx, certs⟩, vis, edg, all⟩
+        ⟨⟨hlen, hrootVis, hrootKey, hsupp_u, hvis⟩, hidx⟩ => by
       set bit := leaf.getD node.length false
       set childPath := node ++ [bit]
       obtain ⟨hvis_eq, hvis_inv⟩ :=
-        jointVisitKey_lazy_spec S n hlen hrootVis hrootKey hsupp hvis childPath
+        jointVisitKey_lazy_spec S n hlen hrootVis hrootKey hsupp_u hvis childPath
       have hbu : bit.toNat ≤ 1 := Bool.toNat_le bit
-      refine ⟨?_, ?_⟩
-      · simp only [jointKeysCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp, Function.comp_def]
-        rw [← hvis_eq, PMF.bind_map]
-        refine PMF.bind_congr_on_support _ _ _ fun ⟨childIdx, uk', vis'⟩ hm_v => ?_
-        dsimp only [Function.comp_def, bit]
-        obtain ⟨_, _, _, hsupp', _, hchildLt, hlenLe, _, hkeep⟩ := hvis_inv childIdx uk' vis' hm_v
-        have hidx_eq : uk'.getD idx ([], []) = uk.getD idx ([], []) := hkeep idx hidx
-        have hidx' : idx < uk'.length := hidx.trans_le hlenLe
-        have hchildMem : uk'.getD childIdx ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
-          rw [List.getD_eq_getElem _ _ hchildLt]
-          exact hsupp' _ (List.getElem_mem hchildLt)
-        have hse := localSignEdge_notrunc S hsigCap hsupp' hidx' hbu (path := node)
-          (Or.inr ⟨_, hchildMem, rfl⟩) edg all
-        rw [hidx_eq] at hse
-        rw [← hse, PMF.bind_map]
-        simp only [PMF.map, Function.comp_def, bit]
-      · intro out' hout'
-        simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
-          PMF.mem_support_map_iff]
-          at hout'
-        obtain ⟨⟨childIdx, uk', vis'⟩, hm_v, ⟨σ, edg', all'⟩, -, rfl⟩ := hout'
-        obtain ⟨hlen', hrv', hrk', hsp', hv', hcLt, -, -, -⟩ := hvis_inv childIdx uk' vis' hm_v
-        exact ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt⟩
-    rw [Function.iterate_succ_apply', Function.iterate_succ_apply', ← heq_m]
-    refine ⟨?_, ?_⟩
-    · simp only [PMF.map_bind, PMF.bind_map, Function.comp_def]
-      exact PMF.bind_congr_on_support _ _ _ fun out hout => (hstep out hout).1
-    · intro out' hout'
-      obtain ⟨out, hout, hm⟩ := (PMF.mem_support_bind_iff _ _ _).mp hout'
-      exact (hstep out hout).2 out' hm
+      simp only [jointKeysCertifyStep, certifyStepLazy, ProbComp.eval_bind, ProbComp.eval_pure,
+        PMF.monad_bind_eq_bind]
+      refine bind_map_of_invariant (jointVisitKey S n childPath (uk, vis))
+        (ProbComp.eval (memoize (fun _ => S.keyGen n) childPath (nodesOf uk vis)))
+        (fun (idx, (uk', vis')) => (uk'.getD idx ([], []), nodesOf uk' vis'))
+        (fun (childIdx, (uk', vis')) =>
+          jointKeysInv S n root (uk', (((vis', edg), rest), all)) ∧ childIdx < uk'.length ∧
+          uk'.getD idx ([], []) = uk.getD idx ([], []) ∧ idx < uk'.length)
+        _ _ rep stepInv ⟨hvis_eq, fun ⟨childIdx, uk', vis'⟩ hm_v => by
+          obtain ⟨hlen', hrv', hrk', hsp', hv', hcLt, hlenLe, _, hkeep⟩ :=
+            hvis_inv childIdx uk' vis' hm_v
+          exact ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt, hkeep idx hidx, hidx.trans_le hlenLe⟩⟩
+        fun ⟨childIdx, uk', vis'⟩ _ ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt, hidx_eq, hidx'⟩ => by
+          have hchildMem : uk'.getD childIdx ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
+            rw [List.getD_eq_getElem _ _ hcLt]
+            exact hsp' _ (List.getElem_mem hcLt)
+          have hse := localSignEdge_notrunc S hsigCap hsp' hidx' hbu (path := node)
+            (Or.inr ⟨_, hchildMem, rfl⟩) edg all
+          rw [hidx_eq] at hse
+          refine ⟨?_, fun out' hm_out => ?_⟩
+          · dsimp only [Function.comp_def, bit, rep]
+            have heq := congrArg (PMF.map fun (σ, edg') =>
+              ((childPath, uk'.getD childIdx ([], []),
+                  certs ++ [((uk'.getD childIdx ([], [])).1, σ)]),
+                nodesOf uk' vis', edg')) hse
+            simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def] at heq ⊢
+            exact heq
+          · obtain ⟨⟨σ, edg', all'⟩, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_out
+            exact ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt⟩
+  refine ⟨by simpa only [rep, hrootKey0] using hmain.1, fun uk' node idx certs vis' edg' all' hm =>
+    hmain.2 (uk', ((node, idx, certs), (vis', edg', all'))) hm⟩
 
 private def lazyStateOfJoint (st : JointKeysState) : LazyTreeState :=
   ((nodesOf st.1 st.2.1.1.1, st.2.1.1.2), st.2.1.2)
@@ -3435,80 +3515,42 @@ private theorem jointKeysHandler_lazy_step (S : IndexedSignatureScheme) (depth :
     ∀ ans st', (ans, st') ∈ (jointKeysHandler S depth sigCap n req st).support →
       jointKeysInv S n root st' := by
   obtain ⟨uk, ⟨⟨vis, edg⟩, queried, seenLeaves, bad⟩, allSigned⟩ := st
-  dsimp only [lazyStateOfJoint]
-  simp only [jointKeysHandler, lazySignHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  split_ifs with hmsg hbad
-  · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun ans st' hm => ?_⟩
-    obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact hinv
-  · rw [ProbComp.eval_bind, BitString.eval_sampleList, PMF.map_bind]
-    have hleaf_step (leaf : List Bool) :
-        ((if seenLeaves.contains leaf then
-          PMF.pure ([], (uk, (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
-        else
-          (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned))).bind
-            fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
-              (localSignEdge S uk' sigCap node idx (leaf.getLastD false).toNat req.2
-                (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (uk', (((vis', edg''),
-                      (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))).map
-          fun (ans, st') => (ans, lazyStateOfJoint st')) =
-        ProbComp.eval (if seenLeaves.contains leaf then
-          pure ([], ((nodesOf uk vis, edg), (req.2 :: queried, seenLeaves, true)))
-        else do
-          let ((node, (_, sk), certs), (nodes', edges')) ←
-            certifyLazy S depth n root leaf (nodesOf uk vis, edg)
-          let (σ, edges'') ←
-            memoize (fun _ => S.sign sk (leaf.getLastD false).toNat req.2)
-              (node, (leaf.getLastD false).toNat) edges'
-          return (encodeSignature leaf certs σ,
-            ((nodes', edges''), (req.2 :: queried, leaf :: seenLeaves, false)))) ∧
-        ∀ ans st', (ans, st') ∈ (if seenLeaves.contains leaf then
-          PMF.pure ([], (uk, (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
-        else
-          (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned))).bind
-            fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
-              (localSignEdge S uk' sigCap node idx (leaf.getLastD false).toNat req.2
-                (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (uk', (((vis', edg''),
-                      (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))).support →
-          jointKeysInv S n root st' := by
-      split_ifs with hseen
-      · refine ⟨by simp only [lazyStateOfJoint, PMF.pure_map, ProbComp.eval_pure],
-          fun ans st' hm => ?_⟩
-        obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-        exact hinv
-      · obtain ⟨hcert_eq, hcert_inv⟩ := jointKeysCertify_lazy_spec S depth hsigCap hinv leaf
-        refine ⟨?_, ?_⟩
-        · simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, ← hcert_eq,
-            PMF.bind_map, Function.comp_def]
-          refine PMF.bind_congr_on_support _ _ _
-            fun ⟨uk', ⟨node, idx, certs⟩, vis', edg', all'⟩ hm_cert => ?_
-          dsimp only [Function.comp_def, lazyStateOfJoint]
-          obtain ⟨⟨_, _, _, hsupp', _⟩, hidx'⟩ :=
-            hcert_inv uk' node idx certs vis' edg' all' hm_cert
-          have huLast : (leaf.getLastD false).toNat ≤ 1 := Bool.toNat_le _
-          have hse := localSignEdge_notrunc S hsigCap hsupp' hidx' huLast (path := node)
-            (Or.inl hmsg) edg' all'
-          rw [← hse, PMF.bind_map]
-          simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
-        · intro ans st' hm_bind
-          obtain ⟨⟨uk', ⟨node, idx, certs⟩, vis', edg', all'⟩, hm_cert, hm_se⟩ :=
-            (PMF.mem_support_bind_iff _ _ _).mp hm_bind
-          obtain ⟨⟨σ, edg'', all''⟩, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
-          obtain ⟨_, rfl⟩ := Prod.mk.inj heq.symm
-          obtain ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, -⟩ :=
-            hcert_inv uk' node idx certs vis' edg' all' hm_cert
-          exact ⟨hlen', hrv', hrk', hsp', hv'⟩
-    refine ⟨PMF.bind_congr_on_support _ _ _ fun leaf _ => (hleaf_step leaf).1, ?_⟩
-    intro ans st' hm_top
-    obtain ⟨leaf, -, hm_in⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm_top
-    exact (hleaf_step leaf).2 ans st' hm_in
-  · refine ⟨by simp only [PMF.pure_map, ProbComp.eval_pure], fun ans st' hm => ?_⟩
-    obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact hinv
+  simp only [lazyStateOfJoint]
+  simp only [jointKeysHandler, lazySignHandler, eval_ite, ProbComp.eval_bind,
+    BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  refine (fun h => ⟨h.1, fun ans st' hm => h.2 (ans, st') hm⟩)
+    (treeHandler_map_of_invariant (req.2.length = n) (bad = true)
+      (BitString.uniformList (depth n)) (fun leaf => seenLeaves.contains leaf)
+      _ _ _ _ (fun x : List Bool × JointKeysState => (x.1, lazyStateOfJoint x.2)) _ _ _ _
+      (fun x : List Bool × JointKeysState => jointKeysInv S n root x.2)
+      ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ ⟨rfl, hinv⟩ fun hmsg _ leaf _ _ => ?_)
+  obtain ⟨hcert_eq, hcert_inv⟩ := jointKeysCertify_lazy_spec S depth hsigCap hinv leaf
+  refine bind_map_of_invariant
+    (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned)))
+    (ProbComp.eval (certifyLazy S depth n root leaf (nodesOf uk vis, edg)))
+    (fun (uk', ((node, idx, certs), (vis', edg', _))) =>
+      ((node, uk'.getD idx ([], []), certs), (nodesOf uk' vis', edg')))
+    (fun (uk', (_, idx, _), (vis', edg', all')) =>
+      jointKeysInv S n root (uk', (((vis', edg'), (queried, seenLeaves, bad)), all')) ∧
+      idx < uk'.length)
+    _ _ (fun x : List Bool × JointKeysState => (x.1, lazyStateOfJoint x.2))
+    (fun x : List Bool × JointKeysState => jointKeysInv S n root x.2)
+    ⟨hcert_eq, fun ⟨uk', ⟨node, idx, certs⟩, vis', edg', all'⟩ hm =>
+      hcert_inv uk' node idx certs vis' edg' all' hm⟩
+    fun ⟨uk', ⟨node, idx, certs⟩, vis', edg', all'⟩ _
+      ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hidx'⟩ => ?_
+  have huLast : (leaf.getLastD false).toNat ≤ 1 := Bool.toNat_le _
+  have hse := localSignEdge_notrunc S hsigCap hsp' hidx' huLast (path := node)
+    (Or.inl hmsg) edg' all'
+  refine ⟨?_, fun x hm_se => ?_⟩
+  · dsimp only [Function.comp_def, lazyStateOfJoint]
+    have heq := congrArg (PMF.map fun (σ, edg'') =>
+      (encodeSignature leaf certs σ, (nodesOf uk' vis', edg''),
+        req.2 :: queried, leaf :: seenLeaves, false)) hse
+    simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def] at heq ⊢
+    exact heq
+  · obtain ⟨⟨σ, edg'', all''⟩, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
+    exact ⟨hlen', hrv', hrk', hsp', hv'⟩
 
 private noncomputable def expandKeys (S : IndexedSignatureScheme) (n K : ℕ)
     (uk : List (List Bool × List Bool)) : PMF (List (List Bool × List Bool)) :=
@@ -3578,150 +3620,67 @@ private theorem jointKeysCertify_expandKeys (S : IndexedSignatureScheme) (depth 
       (∀ e ∈ cs.2.1, e.2 < cs.2.1.length) ∧
       cs.1.2.1 < uk'.length ∧ cs.2.1.length ≤ vis.length + (depth n - 1) := by
   dsimp only [jointKeysCertify, localCertify]
-  suffices ∀ m, vis.length + m ≤ K →
-      let jDist := Nat.iterate (fun d => d.bind (jointKeysCertifyStep S sigCap n leaf)) m
-        (PMF.pure (uk, (([], 0, []), (vis, edg, all))))
-      (jDist.bind fun (uk', cs) => (expandKeys S n K uk').map fun keys => (keys, cs)) =
-        (expandKeys S n K uk).bind (fun keys =>
-          (Nat.iterate (fun d => d.bind (localCertifyStep S keys sigCap leaf)) m
-            (PMF.pure (([], 0, []), (vis, edg, all)))).map fun cs => (keys, cs)) ∧
-      ∀ uk' cs, (uk', cs) ∈ jDist.support →
-        uk'.length = cs.2.1.length ∧ 0 < uk'.length ∧
-        (∀ e ∈ cs.2.1, e.2 < cs.2.1.length) ∧
-        cs.1.2.1 < uk'.length ∧ cs.2.1.length ≤ vis.length + m by
-    exact this (depth n - 1) hbound
-  intro m
-  induction m with
-  | zero =>
-    intro _
-    refine ⟨?_, ?_⟩
-    · simp only [Function.iterate_zero, id_eq, PMF.pure_bind, PMF.map, Function.comp_def]
-    · intro uk' cs hm
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-      exact ⟨hlen0, hpos0, hvis0, hpos0, Nat.le_add_right _ _⟩
-  | succ m ih =>
-    intro hbound_m
-    obtain ⟨heq_m, hsupp_m⟩ := ih (by omega)
-    set jDist_m := Nat.iterate (fun d => d.bind (jointKeysCertifyStep S sigCap n leaf)) m
-      (PMF.pure (uk, (([], 0, []), (vis, edg, all))))
-    have hstep (uk_m : List (List Bool × List Bool)) (cs_m : LocalCertState)
-        (hm : (uk_m, cs_m) ∈ jDist_m.support) :
-        ((jointKeysCertifyStep S sigCap n leaf (uk_m, cs_m)).bind
-          fun (uk', cs') => (expandKeys S n K uk').map fun keys => (keys, cs')) =
-          (expandKeys S n K uk_m).bind (fun keys =>
-            (localCertifyStep S keys sigCap leaf cs_m).map fun cs' => (keys, cs')) ∧
-        ∀ uk' cs', (uk', cs') ∈ (jointKeysCertifyStep S sigCap n leaf (uk_m, cs_m)).support →
-          uk'.length = cs'.2.1.length ∧ 0 < uk'.length ∧
-          (∀ e ∈ cs'.2.1, e.2 < cs'.2.1.length) ∧
-          cs'.1.2.1 < uk'.length ∧ cs'.2.1.length ≤ vis.length + (m + 1) := by
-      obtain ⟨⟨node, idx, certs⟩, vis_m, edg_m, all_m⟩ := cs_m
-      obtain ⟨hlen_m, hpos_m, hvis_m, hidx_m, hgrow_m⟩ := hsupp_m uk_m _ hm
+  let inv (m : ℕ) (st : List (List Bool × List Bool) × LocalCertState) : Prop :=
+    st.1.length = st.2.2.1.length ∧ 0 < st.1.length ∧
+    (∀ e ∈ st.2.2.1, e.2 < st.2.2.1.length) ∧
+    st.2.1.2.1 < st.1.length ∧ st.2.2.1.length ≤ vis.length + m
+  have hmain := iterate_pmf_bind_comm_of_invariant (jointKeysCertifyStep S sigCap n leaf)
+    (fun keys => localCertifyStep S keys sigCap leaf) (fun st => expandKeys S n K st.1) Prod.snd
+    inv (depth n - 1) (uk, (([], 0, []), (vis, edg, all)))
+    ⟨hlen0, hpos0, hvis0, hpos0, Nat.le_add_right _ _⟩
+    fun m hm ⟨uk_m, ⟨⟨node, idx, certs⟩, vis_m, edg_m, all_m⟩⟩
+        ⟨hlen_m, hpos_m, hvis_m, hidx_m, hgrow_m⟩ => by
       dsimp only at hlen_m hpos_m hvis_m hidx_m hgrow_m
       have hltK : vis_m.length < K := by omega
       set bit := leaf.getD node.length false
       set childPath := node ++ [bit]
-      have hvkInv : ∀ childIdx uk' vis',
-          (childIdx, (uk', vis')) ∈ (jointVisitKey S n childPath (uk_m, vis_m)).support →
-          uk'.length = vis'.length ∧ 0 < uk'.length ∧ (∀ e ∈ vis', e.2 < vis'.length) ∧
-          childIdx < uk'.length ∧ uk_m.length ≤ uk'.length ∧ vis'.length ≤ vis_m.length + 1 := by
-        intro childIdx uk' vis' hmv
-        simp only [jointVisitKey] at hmv
-        cases hlk : vis_m.lookup childPath with
-        | some i₀ =>
-          rw [hlk] at hmv
-          have heq := (PMF.mem_support_pure_iff _ _).mp hmv
-          obtain ⟨rfl, h2⟩ := Prod.mk.inj heq
-          obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-          exact ⟨hlen_m, hpos_m, hvis_m, hlen_m ▸ hvis_m _ (lookup_mem hlk),
-            le_rfl, Nat.le_succ _⟩
-        | none =>
-          rw [hlk] at hmv
-          obtain ⟨child, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hmv
-          obtain ⟨rfl, h2⟩ := Prod.mk.inj heq.symm
-          obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-          refine ⟨by simp [hlen_m], by simp, ?_, by simp [hlen_m], by simp, by simp⟩
-          intro e he
-          simp only [List.length_cons]
-          rcases List.mem_cons.mp he with rfl | htail
-          · simp
-          · have := hvis_m e htail
-            omega
-      refine ⟨?_, ?_⟩
-      · simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.bind_bind]
-        have h1 : (jointVisitKey S n childPath (uk_m, vis_m)).bind
-            (fun (childIdx, (uk', vis')) =>
-              let childPk := (uk'.getD childIdx ([], [])).1
-              ((localSignEdge S uk' sigCap node idx bit.toNat childPk (edg_m, all_m)).map
-                fun (σ, (edg', all')) =>
-                  (uk', ((childPath, childIdx, certs ++ [(childPk, σ)]),
-                    (vis', edg', all')))).bind
-                fun (uk'', cs') => (expandKeys S n K uk'').map fun keys => (keys, cs')) =
-            (jointVisitKey S n childPath (uk_m, vis_m)).bind
-              (fun (childIdx, (uk', vis')) =>
-                (expandKeys S n K uk').bind fun keys =>
-                  let childPk := (keys.getD childIdx ([], [])).1
-                  (localSignEdge S keys sigCap node idx bit.toNat childPk (edg_m, all_m)).map
-                    fun (σ, (edg', all')) =>
-                      (keys, ((childPath, childIdx, certs ++ [(childPk, σ)]),
-                        (vis', edg', all')))) := by
-          refine PMF.bind_congr_on_support _ _ _ fun ⟨childIdx, uk', vis'⟩ hmv => ?_
-          obtain ⟨_, _, _, hcLt, hleU, _⟩ := hvkInv childIdx uk' vis' hmv
-          have hidx' : idx < uk'.length := hidx_m.trans_le hleU
-          simp only [PMF.bind_map, Function.comp_def]
-          have hse := localSignEdge_expandKeys S n K sigCap hidx' node bit.toNat
-            (uk'.getD childIdx ([], [])).1 (edg_m, all_m)
-          have hse' := congrArg (PMF.map fun (keys, (σ, (edg', all'))) =>
-            (keys, ((childPath, childIdx, certs ++ [((uk'.getD childIdx ([], [])).1, σ)]),
-              (vis', edg', all')))) hse
-          simp only [PMF.map_bind, PMF.map_comp, Function.comp_def] at hse'
-          rw [hse']
-          refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
-          obtain ⟨rem, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hkeys
-          simp only [List.getD_append _ _ _ _ hcLt]
-        rw [h1]
-        have h2 := congrArg (fun d => d.bind fun (keys, childIdx, vis') =>
+      simp only [jointKeysCertifyStep, localCertifyStep, PMF.monad_bind_eq_bind]
+      have hstep := bind_bind_comm_of_invariant (jointVisitKey S n childPath (uk_m, vis_m))
+        (fun x => expandKeys S n K x.2.1) (fun x => (x.1, x.2.2))
+        (fun keys => PMF.pure (visitNodePure keys.length childPath vis_m))
+        (fun x => x.2.1.length = x.2.2.length ∧ 0 < x.2.1.length ∧
+          (∀ e ∈ x.2.2, e.2 < x.2.2.length) ∧
+          x.1 < x.2.1.length ∧ uk_m.length ≤ x.2.1.length ∧ x.2.2.length ≤ vis_m.length + 1)
+        (expandKeys S n K uk_m)
+        (fun (childIdx, uk', vis') =>
+          let childPk := (uk'.getD childIdx ([], [])).1
+          (localSignEdge S uk' sigCap node idx bit.toNat childPk (edg_m, all_m)).map
+            fun (σ, (edg', all')) =>
+              (uk', ((childPath, childIdx, certs ++ [(childPk, σ)]), (vis', edg', all'))))
+        (fun x => expandKeys S n K x.1) Prod.snd
+        (fun keys (childIdx, vis') =>
           let childPk := (keys.getD childIdx ([], [])).1
           (localSignEdge S keys sigCap node idx bit.toNat childPk (edg_m, all_m)).map
             fun (σ, (edg', all')) =>
-              (keys, ((childPath, childIdx, certs ++ [(childPk, σ)]), (vis', edg', all'))))
-          (jointVisitKey_expandKeys S n K hlen_m hltK childPath)
-        simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2
-        rw [h2]
-        simp only [localCertifyStep, PMF.map_comp, Function.comp_def, bit, childPath]
-      · intro uk' cs' hm_step
-        simp only [jointKeysCertifyStep, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
-          PMF.mem_support_map_iff]
-          at hm_step
-        obtain ⟨⟨childIdx, uk₁, vis₁⟩, hmv, ⟨σ, edg', all'⟩, -, heq⟩ := hm_step
-        obtain ⟨hl1, hp1, hv1, hcLt, -, hg1⟩ := hvkInv childIdx uk₁ vis₁ hmv
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq.symm
-        dsimp only
-        exact ⟨hl1, hp1, hv1, hcLt, by omega⟩
-    rw [Function.iterate_succ_apply']
-    dsimp only
-    change ((jDist_m.bind (jointKeysCertifyStep S sigCap n leaf)).bind
-        fun (uk', cs) => (expandKeys S n K uk').map fun keys => (keys, cs)) = _ ∧
-      ∀ uk' cs, (uk', cs) ∈ (jDist_m.bind (jointKeysCertifyStep S sigCap n leaf)).support → _
-    rw [PMF.bind_bind]
-    have hbind : (jDist_m.bind fun x =>
-          (jointKeysCertifyStep S sigCap n leaf x).bind fun (uk', cs') =>
-            (expandKeys S n K uk').map fun keys => (keys, cs')) =
-        (jDist_m.bind fun x =>
-          (expandKeys S n K x.1).bind fun keys =>
-            (localCertifyStep S keys sigCap leaf x.2).map fun cs' => (keys, cs')) :=
-      PMF.bind_congr_on_support _ _ _ fun ⟨uk_m, cs_m⟩ hm => (hstep uk_m cs_m hm).1
-    rw [hbind]
-    have hstep2 := congrArg (fun d => d.bind fun (keys, cs_m) =>
-      (localCertifyStep S keys sigCap leaf cs_m).map fun cs' => (keys, cs')) heq_m
-    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at hstep2
-    refine ⟨?_, ?_⟩
-    · rw [hstep2]
-      refine PMF.bind_congr_on_support _ _ _ fun keys _ => ?_
-      rw [Function.iterate_succ_apply']
-      simp only [PMF.map_bind]
-    · intro uk' cs' hm_all
-      obtain ⟨⟨uk_m, cs_m⟩, hm_m, hm_s⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm_all
-      exact (hstep uk_m cs_m hm_m).2 uk' cs' hm_s
+              ((childPath, childIdx, certs ++ [(childPk, σ)]), (vis', edg', all')))
+        (inv (m + 1))
+        ⟨by simpa only [PMF.map, PMF.pure_bind, Function.comp_def] using
+            jointVisitKey_expandKeys S n K hlen_m hltK childPath,
+          fun ⟨childIdx, uk', vis'⟩ hm_vk => by
+            obtain ⟨hl, hp, hv, hc, hle, hg, -⟩ :=
+              jointVisitKey_support_inv S n hlen_m hpos_m hvis_m childPath hm_vk
+            exact ⟨hl, hp, hv, hc, hle, hg⟩⟩
+        fun ⟨childIdx, uk', vis'⟩ _ ⟨hl1, hp1, hv1, hcLt, hleU, hg1⟩ => by
+          have hidx' : idx < uk'.length := hidx_m.trans_le hleU
+          refine ⟨?_, ?_⟩
+          · simp only [PMF.bind_map, Function.comp_def]
+            have hse := localSignEdge_expandKeys S n K sigCap hidx' node bit.toNat
+              (uk'.getD childIdx ([], [])).1 (edg_m, all_m)
+            have hse' := congrArg (PMF.map fun (keys, (σ, (edg', all'))) =>
+              (keys, ((childPath, childIdx, certs ++ [((uk'.getD childIdx ([], [])).1, σ)]),
+                (vis', edg', all')))) hse
+            simp only [PMF.map_bind, PMF.map_comp, Function.comp_def] at hse'
+            rw [hse']
+            refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
+            obtain ⟨rem, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hkeys
+            rw [List.getD_append _ _ _ _ hcLt]
+            simp only [PMF.map_comp, Function.comp_def]
+          · intro ⟨uk'', cs'⟩ hm_se
+            obtain ⟨⟨σ, edg', all'⟩, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
+            obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq.symm
+            exact ⟨hl1, hp1, hv1, hcLt, hg1.trans (Nat.add_le_add_right hgrow_m 1)⟩
+      exact ⟨by simpa only [PMF.pure_bind] using hstep.1, hstep.2⟩
+  exact ⟨hmain.1, fun uk' cs hm => hmain.2 (uk', cs) hm⟩
 
 private def jointExpandInv (K : ℕ) (budget : ℕ) (st : JointKeysState) : Prop :=
   st.1.length = st.2.1.1.1.length ∧
@@ -3746,130 +3705,77 @@ private theorem jointKeysHandler_expandKeys (S : IndexedSignatureScheme) (depth 
   obtain ⟨hlen, hpos, hvis, hbound⟩ := hinv
   dsimp only at hlen hpos hvis hbound ⊢
   simp only [jointKeysHandler, localTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  split_ifs with hmsg hbad
-  · refine ⟨?_, ?_⟩
-    · simp only [PMF.pure_bind, PMF.map, Function.comp_def]
-    · intro ans uk' ps' hm
-      obtain ⟨_, h2⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-      exact ⟨hlen, hpos, hvis, Nat.le_add_right _ _⟩
-  · have hcommLeaf : ((BitString.uniformList (depth n)).bind fun leaf =>
-        (if seenLeaves.contains leaf then
-          PMF.pure ([], (uk, (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
-        else
-          (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned))).bind
-            fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
-              (localSignEdge S uk' sigCap node idx (leaf.getLastD false).toNat req.2
-                (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                  (encodeSignature leaf certs σ,
-                    (uk', (((vis', edg''),
-                      (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))).bind
-          fun (ans, (uk', ps')) => (expandKeys S n K uk').map fun keys => (keys, ans, ps')) =
-        (expandKeys S n K uk).bind fun keys =>
-          (BitString.uniformList (depth n)).bind fun leaf =>
-            (if seenLeaves.contains leaf then
-              PMF.pure ([], (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned))
-            else
-              (localCertify S depth keys sigCap n leaf (vis, edg, allSigned)).bind
-                fun ((node, idx, certs), (vis', edg', allSigned')) =>
-                  (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
-                    (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                      (encodeSignature leaf certs σ,
-                        (((vis', edg''), (req.2 :: queried, leaf :: seenLeaves, false)),
-                          allSigned''))).map fun (ans, ps') => (keys, ans, ps') := by
-      have hperLeaf (leaf : List Bool) :
-          ((if seenLeaves.contains leaf then
-            PMF.pure ([], (uk, (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
-          else
-            (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned))).bind
-              fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
-                (localSignEdge S uk' sigCap node idx (leaf.getLastD false).toNat req.2
-                  (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                    (encodeSignature leaf certs σ,
-                      (uk', (((vis', edg''),
-                        (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))).bind
-            fun (ans, (uk', ps')) => (expandKeys S n K uk').map fun keys => (keys, ans, ps')) =
-          (expandKeys S n K uk).bind fun keys =>
-            (if seenLeaves.contains leaf then
-              PMF.pure ([], (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned))
-            else
-              (localCertify S depth keys sigCap n leaf (vis, edg, allSigned)).bind
-                fun ((node, idx, certs), (vis', edg', allSigned')) =>
-                  (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
-                    (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                      (encodeSignature leaf certs σ,
-                        (((vis', edg''), (req.2 :: queried, leaf :: seenLeaves, false)),
-                          allSigned''))).map fun (ans, ps') => (keys, ans, ps') := by
-        split_ifs with hseen
-        · simp only [PMF.pure_bind, PMF.map, Function.comp_def]
-        · obtain ⟨hcert_eq, hcert_inv⟩ :=
-            jointKeysCertify_expandKeys S depth sigCap n K hlen hpos hvis hbound leaf edg allSigned
-          simp only [PMF.bind_bind]
-          have h1 : (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned))).bind
-              (fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
-                ((localSignEdge S uk' sigCap node idx (leaf.getLastD false).toNat req.2
-                  (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                    (encodeSignature leaf certs σ,
-                      (uk', (((vis', edg''),
-                        (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))).bind
-                  fun (ans, (uk'', ps')) =>
-                    (expandKeys S n K uk'').map fun keys => (keys, ans, ps')) =
-              (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned))).bind
-                (fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
-                  (expandKeys S n K uk').bind fun keys =>
-                    (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
-                      (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
-                        (keys, encodeSignature leaf certs σ,
-                          (((vis', edg''), (req.2 :: queried, leaf :: seenLeaves, false)),
-                            allSigned''))) := by
-            refine PMF.bind_congr_on_support _ _ _
-              fun ⟨uk', ⟨node, idx, certs⟩, vis', edg', all'⟩ hm_cert => ?_
-            obtain ⟨_, _, _, hidx', _⟩ := hcert_inv uk' _ hm_cert
-            simp only [PMF.bind_map, Function.comp_def]
+  let invOut : List Bool × JointKeysState → Prop := fun x =>
+    x.2.1.length = x.2.2.1.1.1.length ∧ 0 < x.2.1.length ∧
+    (∀ e ∈ x.2.2.1.1.1, e.2 < x.2.2.1.1.1.length) ∧
+    x.2.2.1.1.1.length ≤ vis.length + (depth n - 1)
+  have hpureInv : uk.length = vis.length ∧ 0 < uk.length ∧
+      (∀ e ∈ vis, e.2 < vis.length) ∧ vis.length ≤ vis.length + (depth n - 1) :=
+    ⟨hlen, hpos, hvis, Nat.le_add_right _ _⟩
+  have hmain := treeHandler_bind_comm_of_invariant (req.2.length = n) (bad = true)
+    (BitString.uniformList (depth n)) (fun leaf => seenLeaves.contains leaf)
+    ([], (uk, (((vis, edg), (req.2 :: queried, seenLeaves, bad)), allSigned)))
+    ([], (uk, (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
+    ([], (uk, (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
+    (fun leaf => (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned))).bind
+      fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
+        (localSignEdge S uk' sigCap node idx (leaf.getLastD false).toNat req.2
+          (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
+            (encodeSignature leaf certs σ,
+              (uk', (((vis', edg''),
+                (req.2 :: queried, leaf :: seenLeaves, false)), allSigned''))))
+    (expandKeys S n K uk) (fun x : List Bool × JointKeysState => expandKeys S n K x.2.1)
+    (fun x : List Bool × JointKeysState => (x.1, x.2.2))
+    (fun _ => ([], (((vis, edg), (req.2 :: queried, seenLeaves, bad)), allSigned)))
+    (fun _ => ([], (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
+    (fun _ => ([], (((vis, edg), (req.2 :: queried, seenLeaves, true)), allSigned)))
+    (fun keys leaf => (localCertify S depth keys sigCap n leaf (vis, edg, allSigned)).bind
+      fun ((node, idx, certs), (vis', edg', allSigned')) =>
+        (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
+          (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
+            (encodeSignature leaf certs σ,
+              (((vis', edg''), (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))
+    invOut ⟨rfl, hpureInv⟩ ⟨rfl, hpureInv⟩ ⟨rfl, hpureInv⟩ fun _ _ leaf _ _ => by
+      have hcert :=
+        jointKeysCertify_expandKeys S depth sigCap n K hlen hpos hvis hbound leaf edg allSigned
+      let certInv : List (List Bool × List Bool) × LocalCertState → Prop := fun (uk', cs') =>
+        uk'.length = cs'.2.1.length ∧ 0 < uk'.length ∧
+        (∀ e ∈ cs'.2.1, e.2 < cs'.2.1.length) ∧
+        cs'.1.2.1 < uk'.length ∧ cs'.2.1.length ≤ vis.length + (depth n - 1)
+      exact bind_bind_comm_of_invariant
+        (jointKeysCertify S depth sigCap n leaf (uk, (vis, edg, allSigned)))
+        (fun x => expandKeys S n K x.1) Prod.snd
+        (fun keys => localCertify S depth keys sigCap n leaf (vis, edg, allSigned))
+        certInv (expandKeys S n K uk)
+        (fun (uk', ((node, idx, certs), (vis', edg', allSigned'))) =>
+          (localSignEdge S uk' sigCap node idx (leaf.getLastD false).toNat req.2
+            (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
+              (encodeSignature leaf certs σ,
+                (uk', (((vis', edg''),
+                  (req.2 :: queried, leaf :: seenLeaves, false)), allSigned''))))
+        (fun x : List Bool × JointKeysState => expandKeys S n K x.2.1)
+        (fun x : List Bool × JointKeysState => (x.1, x.2.2))
+        (fun keys ((node, idx, certs), (vis', edg', allSigned')) =>
+          (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
+            (edg', allSigned')).map fun (σ, (edg'', allSigned'')) =>
+              (encodeSignature leaf certs σ,
+                (((vis', edg''), (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))
+        invOut ⟨hcert.1, fun ⟨uk', cs'⟩ hm => hcert.2 uk' cs' hm⟩
+        fun ⟨uk', ⟨node, idx, certs⟩, vis', edg', all'⟩ _ ⟨hl1, hp1, hv1, hidx', hg1⟩ => by
+          refine ⟨?_, ?_⟩
+          · simp only [PMF.bind_map, Function.comp_def]
             have hse := localSignEdge_expandKeys S n K sigCap hidx' node
               (leaf.getLastD false).toNat req.2 (edg', all')
             have hse' := congrArg (PMF.map fun (keys, (σ, (edg'', all''))) =>
               (keys, encodeSignature leaf certs σ,
                 (((vis', edg''), (req.2 :: queried, leaf :: seenLeaves, false)), all''))) hse
-            simp only [PMF.map_bind, PMF.map_comp, Function.comp_def] at hse'
-            exact hse'
-          rw [h1]
-          have h2 := congrArg (fun d => d.bind
-            fun (keys, ((node, idx, certs), (vis', edg', all'))) =>
-            (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
-              (edg', all')).map fun (σ, (edg'', all'')) =>
-                (keys, encodeSignature leaf certs σ,
-                  (((vis', edg''), (req.2 :: queried, leaf :: seenLeaves, false)), all''))) hcert_eq
-          simp only [PMF.bind_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
-            Function.comp_def] at h2 ⊢
-          exact h2
-      simp_rw [hperLeaf]
-      exact PMF.bind_comm _ _ _
-    refine ⟨?_, ?_⟩
-    · rw [PMF.bind_bind]
-      simpa only [PMF.map_bind] using hcommLeaf
-    · intro ans uk' ps' hm_top
-      obtain ⟨leaf, -, hm_in⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm_top
-      split_ifs at hm_in with hseen
-      · obtain ⟨_, h2⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm_in)
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-        exact ⟨hlen, hpos, hvis, Nat.le_add_right _ _⟩
-      · obtain ⟨⟨uk₁, ⟨node, idx, certs⟩, vis₁, edg₁, all₁⟩, hm_cert, hm_se⟩ :=
-          (PMF.mem_support_bind_iff _ _ _).mp hm_in
-        obtain ⟨⟨σ, edg₂, all₂⟩, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
-        obtain ⟨hl1, hp1, hv1, -, hg1⟩ :=
-          (jointKeysCertify_expandKeys S depth sigCap n K hlen hpos hvis hbound leaf edg
-            allSigned).2 uk₁ _ hm_cert
-        obtain ⟨_, h2⟩ := Prod.mk.inj heq.symm
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-        dsimp only at hl1 hg1 ⊢
-        exact ⟨hl1, hp1, hv1, hg1⟩
-  · refine ⟨?_, ?_⟩
-    · simp only [PMF.pure_bind, PMF.map, Function.comp_def]
-    · intro ans uk' ps' hm
-      obtain ⟨_, h2⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
-      exact ⟨hlen, hpos, hvis, Nat.le_add_right _ _⟩
+            simpa only [PMF.map_bind, PMF.map_comp, Function.comp_def] using hse'
+          · intro ⟨ans, uk'', ps'⟩ hm_se
+            obtain ⟨⟨σ, edg'', all''⟩, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
+            obtain ⟨_, h2⟩ := Prod.mk.inj heq.symm
+            obtain ⟨rfl, rfl⟩ := Prod.mk.inj h2
+            exact ⟨hl1, hp1, hv1, hg1⟩
+  exact ⟨hmain.1, fun ans uk' ps' hm => hmain.2 (ans, (uk', ps')) hm⟩
 
 private theorem expand_jointKeys_run_interpret {α : Type} (S : IndexedSignatureScheme)
     (depth : ℕ → ℕ) (sigCap n K : ℕ) {prog : WordOracleComp Unit α} {rem : ℕ}
@@ -3885,83 +3791,21 @@ private theorem expand_jointKeys_run_interpret {α : Type} (S : IndexedSignature
           (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
             (localTreeHandler S depth keys sigCap n))
           prog).run st.2).map fun (res, ps') => (keys, res, ps') := by
-  induction hq generalizing st with
-  | pure a rem =>
-    simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
-      PMF.pure_bind, PMF.map, Function.comp_def]
-  | liftBind q cont rem _ ih =>
-    cases q with
-    | inl j =>
-      simp only [Sum.elim_inl, Nat.add_zero] at hinv
-      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        Probability.PMF.monad_bind_eq_bind]
-      change (((ProbComp.unifOracle j).map (·, st)).bind fun x =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (jointKeysHandler S depth sigCap n))
-          (cont x.1)).run x.2).bind
-          (fun (res, (uk', ps')) => (expandKeys S n K uk').map fun keys => (keys, res, ps')) = _
-      rw [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-      simp_rw [ih _ hinv]
-      rw [PMF.bind_comm]
-      refine PMF.bind_congr_on_support _ _ _ fun keys _ => ?_
-      change _ = (((ProbComp.unifOracle j).map (·, st.2)).bind fun x =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (localTreeHandler S depth keys sigCap n))
-          (cont x.1)).run x.2).map fun (res, ps') => (keys, res, ps')
-      rw [PMF.bind_map, PMF.map_bind]
-      rfl
-    | inr req =>
-      simp only [Sum.elim_inr] at hinv
-      obtain ⟨hlen, hpos, hvis, hbound⟩ := hinv
-      have hmul : (rem + 1) * (depth n - 1) = rem * (depth n - 1) + (depth n - 1) :=
-        Nat.succ_mul rem (depth n - 1)
-      have hstepInv : jointExpandInv K (depth n - 1) st :=
-        ⟨hlen, hpos, hvis, by omega⟩
-      obtain ⟨hstep_eq, hstep_supp⟩ :=
-        jointKeysHandler_expandKeys S depth sigCap n K req st hstepInv
-      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        Probability.PMF.monad_bind_eq_bind]
-      change ((jointKeysHandler S depth sigCap n req st).bind fun x =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (jointKeysHandler S depth sigCap n))
-          (cont x.1)).run x.2).bind
-          (fun (res, (uk', ps')) => (expandKeys S n K uk').map fun keys => (keys, res, ps')) = _
-      rw [PMF.bind_bind]
-      have hcont : ((jointKeysHandler S depth sigCap n req st).bind fun x =>
-            (((OracleComp.interpret
-              (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-                (jointKeysHandler S depth sigCap n))
-              (cont x.1)).run x.2).bind fun (res, (uk', ps')) =>
-                (expandKeys S n K uk').map fun keys => (keys, res, ps'))) =
-          ((jointKeysHandler S depth sigCap n req st).bind fun (ans, (uk', ps')) =>
-            (expandKeys S n K uk').bind fun keys =>
-              ((OracleComp.interpret
-                (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-                  (localTreeHandler S depth keys sigCap n))
-                (cont ans)).run ps').map fun (res, ps'') => (keys, res, ps'')) := by
-        refine PMF.bind_congr_on_support _ _ _ fun ⟨ans, uk', ps'⟩ hm => ?_
-        obtain ⟨hl', hp', hv', hg'⟩ := hstep_supp ans uk' ps' hm
-        have hinv' : jointExpandInv K (rem * (depth n - 1)) (uk', ps') :=
-          ⟨hl', hp', hv', by dsimp only; omega⟩
-        exact ih ans hinv'
-      rw [hcont]
-      have h2 := congrArg (fun d => d.bind fun (keys, ans, ps') =>
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (localTreeHandler S depth keys sigCap n))
-          (cont ans)).run ps').map fun (res, ps'') => (keys, res, ps'')) hstep_eq
-      simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h2
-      rw [h2]
-      refine PMF.bind_congr_on_support _ _ _ fun keys _ => ?_
-      change _ = ((localTreeHandler S depth keys sigCap n req st.2).bind fun x =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (localTreeHandler S depth keys sigCap n))
-          (cont x.1)).run x.2).map fun (res, ps'') => (keys, res, ps'')
-      rw [PMF.map_bind]
+  exact (run_interpret_queryBounded_bind_comm (jointKeysHandler S depth sigCap n)
+    (fun keys => localTreeHandler S depth keys sigCap n)
+    (fun st => expandKeys S n K st.1) Prod.snd
+    (fun rem st => jointExpandInv K (rem * (depth n - 1)) st)
+    (fun r s ⟨h1, h2, h3, h4⟩ =>
+      ⟨h1, h2, h3, le_trans (Nat.add_le_add_left (Nat.mul_le_mul_right _ (Nat.le_succ r)) _) h4⟩)
+    (fun r req s ⟨h1, h2, h3, h4⟩ => by
+      have hmul : (r + 1) * (depth n - 1) = r * (depth n - 1) + (depth n - 1) :=
+        Nat.succ_mul r (depth n - 1)
+      obtain ⟨heq, hsupp⟩ :=
+        jointKeysHandler_expandKeys S depth sigCap n K req s ⟨h1, h2, h3, by omega⟩
+      exact ⟨heq, fun ans ⟨uk', ps'⟩ hm => by
+        obtain ⟨hl, hp, hv, hg⟩ := hsupp ans uk' ps' hm
+        exact ⟨hl, hp, hv, by dsimp only at hg ⊢; omega⟩⟩)
+    hq hinv).1
 
 private theorem eval_lazyTreeGame_eq_presampled (S : IndexedSignatureScheme)
     (depth slotBound sigCap : ℕ → ℕ) {n Q : ℕ} (hdepth_pos : 1 ≤ depth n)
@@ -4114,115 +3958,80 @@ private theorem localCertify_bounded_inv (S : IndexedSignatureScheme) (depth : �
             b.toNat = u ∧ (p ++ [b], childIdx) ∈ v' ∧ m = (keys.getD childIdx ([], [])).1) ∨
           (p.length + 1 = depth n ∧ m ∈ queried)) := by
   dsimp only [localCertify]
-  suffices ∀ k, k ≤ depth n - 1 →
-      ∀ cs ∈ (Nat.iterate (fun d => d.bind (localCertifyStep S keys sigCap leaf)) k
-          (PMF.pure (([], 0, []), (visited, edges, allSigned)))).support,
-        cs.1.1.length = k ∧
-        (cs.1.1, cs.1.2.1) ∈ cs.2.1 ∧
-        ([], 0) ∈ cs.2.1 ∧
-        cs.2.1.length ≤ visited.length + k ∧
-        (∀ e ∈ cs.2.1, e.1.length < depth n ∧ e.2 < cs.2.1.length) ∧
-        (∀ e₁ ∈ cs.2.1, ∀ e₂ ∈ cs.2.1, e₁.2 = e₂.2 → e₁ = e₂) ∧
-        ∀ p idx₀ u m, (p, idx₀, u, m) ∈ cs.2.2.2 →
-          (p, idx₀) ∈ cs.2.1 ∧
-          ((p.length + 1 < depth n ∧ ∃ (b : Bool) (childIdx : ℕ),
-              b.toNat = u ∧ (p ++ [b], childIdx) ∈ cs.2.1 ∧
-                m = (keys.getD childIdx ([], [])).1) ∨
-            (p.length + 1 = depth n ∧ m ∈ queried)) by
-    intro node idx certs v' e' a' hm
-    obtain ⟨h1, h2, h3, h4, h5, h6, h7⟩ := this (depth n - 1) le_rfl _ hm
-    exact ⟨by dsimp only at h1; omega, h2, h3, h4, h5, h6, h7⟩
-  intro k
-  induction k with
-  | zero =>
-    intro _ cs hm
-    obtain rfl := (PMF.mem_support_pure_iff _ _).mp hm
-    exact ⟨rfl, hroot, hroot, Nat.le_add_right _ _, hvis, huniq, hall⟩
-  | succ k ih =>
-    intro hk cs' hm'
-    rw [Function.iterate_succ_apply'] at hm'
-    obtain ⟨⟨⟨node, idx, certs⟩, v, e, a⟩, hm_prev, hm_step⟩ :=
-      (PMF.mem_support_bind_iff _ _ _).mp hm'
-    obtain ⟨hnLen, hnode_v, hroot_v, hgrow_v, hvis_v, huniq_v, hall_v⟩ :=
-      ih (by omega) _ hm_prev
-    dsimp only at hnLen hnode_v hroot_v hgrow_v hvis_v huniq_v hall_v
-    have hvLt : v.length < keys.length := by omega
-    have hkLt : k + 1 < depth n := by omega
-    set bit := leaf.getD node.length false
-    set childPath := node ++ [bit]
-    have hcLen : childPath.length = k + 1 := by
-      simp only [childPath, List.length_append, List.length_singleton, hnLen]
-    simp only [localCertifyStep, PMF.mem_support_map_iff] at hm_step
-    obtain ⟨⟨σ, e', a'⟩, hm_se, rfl⟩ := hm_step
-    set vp := visitNodePure keys.length childPath v
-    have hvpSpec :
-        (childPath, vp.1) ∈ vp.2 ∧
-        (∀ ent ∈ v, ent ∈ vp.2) ∧
-        vp.2.length ≤ visited.length + (k + 1) ∧
-        (∀ ent ∈ vp.2, ent.1.length < depth n ∧ ent.2 < vp.2.length) ∧
-        (∀ e₁ ∈ vp.2, ∀ e₂ ∈ vp.2, e₁.2 = e₂.2 → e₁ = e₂) := by
-      simp only [vp, visitNodePure]
-      cases hlk : v.lookup childPath with
-      | some cIdx =>
-        dsimp only
-        exact ⟨lookup_mem hlk, fun _ h => h, by omega, hvis_v, huniq_v⟩
+  let inv (k : ℕ) (cs : LocalCertState) : Prop :=
+    cs.1.1.length = k ∧
+    (cs.1.1, cs.1.2.1) ∈ cs.2.1 ∧
+    ([], 0) ∈ cs.2.1 ∧
+    cs.2.1.length ≤ visited.length + k ∧
+    (∀ e ∈ cs.2.1, e.1.length < depth n ∧ e.2 < cs.2.1.length) ∧
+    (∀ e₁ ∈ cs.2.1, ∀ e₂ ∈ cs.2.1, e₁.2 = e₂.2 → e₁ = e₂) ∧
+    ∀ p idx₀ u m, (p, idx₀, u, m) ∈ cs.2.2.2 →
+      (p, idx₀) ∈ cs.2.1 ∧
+      ((p.length + 1 < depth n ∧ ∃ (b : Bool) (childIdx : ℕ),
+          b.toNat = u ∧ (p ++ [b], childIdx) ∈ cs.2.1 ∧
+            m = (keys.getD childIdx ([], [])).1) ∨
+        (p.length + 1 = depth n ∧ m ∈ queried))
+  have hmain := iterate_pmf_invariant (localCertifyStep S keys sigCap leaf) inv (depth n - 1)
+    (([], 0, []), (visited, edges, allSigned))
+    ⟨rfl, hroot, hroot, Nat.le_add_right _ _, hvis, huniq, hall⟩
+    fun k hk ⟨⟨node, idx, certs⟩, v, e, a⟩
+        ⟨hnLen, hnode_v, hroot_v, hgrow_v, hvis_v, huniq_v, hall_v⟩ cs' hm_step => by
+      dsimp only at hnLen hnode_v hroot_v hgrow_v hvis_v huniq_v hall_v
+      have hvLt : v.length < keys.length := by omega
+      have hkLt : k + 1 < depth n := by omega
+      set bit := leaf.getD node.length false
+      set childPath := node ++ [bit]
+      have hcLen : childPath.length = k + 1 := by
+        simp only [childPath, List.length_append, List.length_singleton, hnLen]
+      simp only [localCertifyStep, PMF.mem_support_map_iff] at hm_step
+      obtain ⟨⟨σ, e', a'⟩, hm_se, rfl⟩ := hm_step
+      set vp := visitNodePure keys.length childPath v
+      have hvp := visitNodePure_inv (P := fun p => p.length < depth n) (K := keys.length)
+        childPath (hcLen ▸ hkLt) (fun ent he => ⟨(hvis_v ent he).1, fun _ => (hvis_v ent he).2⟩)
+        (fun e₁ he₁ e₂ he₂ _ heq => huniq_v e₁ he₁ e₂ he₂ heq)
+      have hltK : ∀ ent ∈ vp.2, ent.2 < keys.length := fun ent he => by
+        rcases hvp.2.2.2.2.2 ent he with h | rfl
+        · exact (hvis_v ent h).2.trans hvLt
+        · exact (Nat.min_le_left _ _).trans_lt hvLt
+      refine ⟨hcLen, hvp.1, hvp.2.1 _ hroot_v, hvp.2.2.1.trans (Nat.add_le_add_right hgrow_v 1),
+        fun ent he => ⟨(hvp.2.2.2.1 ent he).1, (hvp.2.2.2.1 ent he).2 (hltK ent he)⟩,
+        fun e₁ he₁ e₂ he₂ heq => hvp.2.2.2.2.1 e₁ he₁ e₂ he₂ (hltK e₁ he₁) heq, ?_⟩
+      intro p idx₀ u m hm_a'
+      simp only [localSignEdge] at hm_se
+      have liftOld : ∀ (p₀ : List Bool) (idx₁ u₁ : ℕ) (m₁ : List Bool),
+          (p₀, idx₁, u₁, m₁) ∈ a →
+          (p₀, idx₁) ∈ vp.2 ∧
+          ((p₀.length + 1 < depth n ∧ ∃ (b : Bool) (childIdx : ℕ),
+              b.toNat = u₁ ∧ (p₀ ++ [b], childIdx) ∈ vp.2 ∧
+                m₁ = (keys.getD childIdx ([], [])).1) ∨
+            (p₀.length + 1 = depth n ∧ m₁ ∈ queried)) := by
+        intro p₀ idx₁ u₁ m₁ hma
+        obtain ⟨hpv, hdisj⟩ := hall_v p₀ idx₁ u₁ m₁ hma
+        refine ⟨hvp.2.1 _ hpv, ?_⟩
+        rcases hdisj with ⟨hpLt, b, cIdx, hbu, hcv, hmeq⟩ | hleafCase
+        · exact Or.inl ⟨hpLt, b, cIdx, hbu, hvp.2.1 _ hcv, hmeq⟩
+        · exact Or.inr hleafCase
+      cases hes : e.lookup (node, bit.toNat) with
+      | some σ₀ =>
+        rw [hes] at hm_se
+        obtain ⟨_, h2⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm_se)
+        obtain ⟨_, rfl⟩ := Prod.mk.inj h2
+        exact liftOld p idx₀ u m hm_a'
       | none =>
-        have hmin : min v.length keys.length = v.length := Nat.min_eq_left hvLt.le
-        rw [hmin]
-        refine ⟨List.mem_cons_self, fun _ h => List.mem_cons_of_mem _ h,
-          by simp only [List.length_cons]; omega, ?_, ?_⟩
-        · intro ent hent
-          simp only [List.length_cons]
-          rcases List.mem_cons.mp hent with rfl | htail
-          · exact ⟨hcLen ▸ hkLt, Nat.lt_succ_self _⟩
-          · obtain ⟨hl, hs⟩ := hvis_v ent htail
-            exact ⟨hl, by omega⟩
-        · intro e₁ he₁ e₂ he₂ heq
-          rcases List.mem_cons.mp he₁ with rfl | ht₁ <;>
-            rcases List.mem_cons.mp he₂ with rfl | ht₂
-          · rfl
-          · have hs₂ := (hvis_v e₂ ht₂).2
-            dsimp only at heq
-            omega
-          · have hs₁ := (hvis_v e₁ ht₁).2
-            dsimp only at heq
-            omega
-          · exact huniq_v e₁ ht₁ e₂ ht₂ heq
-    obtain ⟨hchild_vp, hmono_vp, hgrow_vp, hvis_vp, huniq_vp⟩ := hvpSpec
-    refine ⟨hcLen, hchild_vp, hmono_vp _ hroot_v, hgrow_vp, hvis_vp, huniq_vp, ?_⟩
-    intro p idx₀ u m hm_a'
-    simp only [localSignEdge] at hm_se
-    have liftOld : ∀ (p₀ : List Bool) (idx₁ u₁ : ℕ) (m₁ : List Bool),
-        (p₀, idx₁, u₁, m₁) ∈ a →
-        (p₀, idx₁) ∈ vp.2 ∧
-        ((p₀.length + 1 < depth n ∧ ∃ (b : Bool) (childIdx : ℕ),
-            b.toNat = u₁ ∧ (p₀ ++ [b], childIdx) ∈ vp.2 ∧
-              m₁ = (keys.getD childIdx ([], [])).1) ∨
-          (p₀.length + 1 = depth n ∧ m₁ ∈ queried)) := by
-      intro p₀ idx₁ u₁ m₁ hma
-      obtain ⟨hpv, hdisj⟩ := hall_v p₀ idx₁ u₁ m₁ hma
-      refine ⟨hmono_vp _ hpv, ?_⟩
-      rcases hdisj with ⟨hpLt, b, cIdx, hbu, hcv, hmeq⟩ | hleafCase
-      · exact Or.inl ⟨hpLt, b, cIdx, hbu, hmono_vp _ hcv, hmeq⟩
-      · exact Or.inr hleafCase
-    cases hes : e.lookup (node, bit.toNat) with
-    | some σ₀ =>
-      rw [hes] at hm_se
-      obtain ⟨_, h2⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm_se)
-      obtain ⟨_, rfl⟩ := Prod.mk.inj h2
-      exact liftOld p idx₀ u m hm_a'
-    | none =>
-      rw [hes] at hm_se
-      obtain ⟨raw, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
-      obtain ⟨_, h2⟩ := Prod.mk.inj heq.symm
-      obtain ⟨_, rfl⟩ := Prod.mk.inj h2
-      rcases List.mem_cons.mp hm_a' with hhead | htail
-      · obtain ⟨rfl, h2'⟩ := Prod.mk.inj hhead
-        obtain ⟨rfl, h3'⟩ := Prod.mk.inj h2'
-        obtain ⟨rfl, rfl⟩ := Prod.mk.inj h3'
-        exact ⟨hmono_vp _ hnode_v,
-          Or.inl ⟨hnLen ▸ hkLt, bit, vp.1, rfl, hchild_vp, rfl⟩⟩
-      · exact liftOld p idx₀ u m htail
+        rw [hes] at hm_se
+        obtain ⟨raw, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
+        obtain ⟨_, h2⟩ := Prod.mk.inj heq.symm
+        obtain ⟨_, rfl⟩ := Prod.mk.inj h2
+        rcases List.mem_cons.mp hm_a' with hhead | htail
+        · obtain ⟨rfl, h2'⟩ := Prod.mk.inj hhead
+          obtain ⟨rfl, h3'⟩ := Prod.mk.inj h2'
+          obtain ⟨rfl, rfl⟩ := Prod.mk.inj h3'
+          exact ⟨hvp.2.1 _ hnode_v,
+            Or.inl ⟨hnLen ▸ hkLt, bit, vp.1, rfl, hvp.1, rfl⟩⟩
+        · exact liftOld p idx₀ u m htail
+  intro node idx certs v' e' a' hm
+  obtain ⟨h1, h2, h3, h4, h5, h6, h7⟩ := hmain _ hm
+  exact ⟨by dsimp only at h1; omega, h2, h3, h4, h5, h6, h7⟩
 
 private theorem localTreeHandler_bounded_inv (S : IndexedSignatureScheme) (depth : ℕ → ℕ)
     (keys : List (List Bool × List Bool)) (sigCap n : ℕ) (hd : 1 ≤ depth n)
@@ -4247,20 +4056,28 @@ private theorem localTreeHandler_bounded_inv (S : IndexedSignatureScheme) (depth
         (p.length + 1 = depth n ∧ m ∈ m' :: queried)) :=
     let ⟨hpv, hdisj⟩ := ha p idx u m hma
     ⟨hpv, hdisj.imp id fun ⟨hl, hmq⟩ => ⟨hl, List.mem_cons_of_mem _ hmq⟩⟩
+  have hpureInv : ∀ b, presampledBoundedInv (depth n) keys rem
+      (((visited, edges), (req.2 :: queried, seenLeaves, b)), allSigned) := fun b =>
+    ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
   intro ans st' hm
   simp only [localTreeHandler, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hm
-  split_ifs at hm with hmsg hbad
-  · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
-  · obtain ⟨leaf, -, hm_in⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
-    split_ifs at hm_in with hseen
-    · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm_in)
-      exact ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
-    · obtain ⟨⟨⟨node, idx, certs⟩, v', e', a'⟩, hm_cert, hm_se⟩ :=
+  refine treeHandler_support_invariant (req.2.length = n) (bad = true)
+    (BitString.uniformList (depth n)) (fun leaf => seenLeaves.contains leaf)
+    ([], (((visited, edges), (req.2 :: queried, seenLeaves, bad)), allSigned))
+    ([], (((visited, edges), (req.2 :: queried, seenLeaves, true)), allSigned))
+    ([], (((visited, edges), (req.2 :: queried, seenLeaves, true)), allSigned))
+    (fun leaf => (localCertify S depth keys sigCap n leaf (visited, edges, allSigned)).bind
+      fun ((node, idx, certs), (visited', edges', allSigned')) =>
+        (localSignEdge S keys sigCap node idx (leaf.getLastD false).toNat req.2
+          (edges', allSigned')).map fun (σ, (edges'', allSigned'')) =>
+            (encodeSignature leaf certs σ,
+              (((visited', edges''), (req.2 :: queried, leaf :: seenLeaves, false)), allSigned'')))
+    (fun x => presampledBoundedInv (depth n) keys rem x.2)
+    (hpureInv bad) (hpureInv true) (hpureInv true)
+    (fun _ _ leaf _ _ x hm_in => by
+      obtain ⟨⟨⟨node, idx, certs⟩, v', e', a'⟩, hm_cert, hm_se⟩ :=
         (PMF.mem_support_bind_iff _ _ _).mp hm_in
-      obtain ⟨⟨σ, e'', a''⟩, hm_edge, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
-      obtain ⟨_, rfl⟩ := Prod.mk.inj heq.symm
-      dsimp only
+      obtain ⟨⟨σ, e'', a''⟩, hm_edge, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hm_se
       obtain ⟨hnLen, hnode_v', hroot_v', hgrow_v', hvis_v', huniq_v', hall_v'⟩ :=
         localCertify_bounded_inv S depth keys sigCap n hd leaf hroot (by omega) hvis huniq hall
           node idx certs v' e' a' hm_cert
@@ -4283,9 +4100,8 @@ private theorem localTreeHandler_bounded_inv (S : IndexedSignatureScheme) (depth
           obtain ⟨rfl, h3'⟩ := Prod.mk.inj h2'
           obtain ⟨rfl, rfl⟩ := Prod.mk.inj h3'
           exact ⟨hnode_v', Or.inr ⟨hnLen, List.mem_cons_self⟩⟩
-        · exact liftQ hall_v' req.2 p idx₀ u m htail
-  · obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    exact ⟨hroot, by omega, hvis, huniq, liftQ hall req.2⟩
+        · exact liftQ hall_v' req.2 p idx₀ u m htail)
+    (ans, st') hm
 
 private theorem run_interpret_localTreeHandler_bounded_inv {α : Type}
     (S : IndexedSignatureScheme) (depth : ℕ → ℕ) (keys : List (List Bool × List Bool))
@@ -4297,43 +4113,15 @@ private theorem run_interpret_localTreeHandler_bounded_inv {α : Type}
         (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
           (localTreeHandler S depth keys sigCap n))
         prog).run st).support →
-      presampledBoundedInv (depth n) keys 0 st' := by
-  induction hq generalizing st with
-  | pure a rem =>
-    intro res st' hm
-    simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure] at hm
-    obtain ⟨_, rfl⟩ := Prod.mk.inj ((PMF.mem_support_pure_iff _ _).mp hm)
-    obtain ⟨hroot, hbound, hvis, huniq, hall⟩ := hinv
-    exact ⟨hroot, by omega, hvis, huniq, hall⟩
-  | liftBind q cont rem _ ih =>
-    cases q with
-    | inl j =>
-      simp only [Sum.elim_inl, Nat.add_zero] at hinv
-      intro res st' hm
-      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        Probability.PMF.monad_bind_eq_bind] at hm
-      change (res, st') ∈ (((ProbComp.unifOracle j).map (·, st)).bind fun x =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (localTreeHandler S depth keys sigCap n))
-          (cont x.1)).run x.2).support at hm
-      obtain ⟨⟨i, st₁⟩, hmi, hmc⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
-      obtain ⟨_, -, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hmi
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq
-      exact ih _ hinv res st' hmc
-    | inr req =>
-      simp only [Sum.elim_inr] at hinv
-      intro res st' hm
-      simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-        Probability.PMF.monad_bind_eq_bind] at hm
-      change (res, st') ∈ ((localTreeHandler S depth keys sigCap n req st).bind fun x =>
-        (OracleComp.interpret
-          (OracleComp.sumHandler (fun j => StateT.lift (ProbComp.unifOracle j))
-            (localTreeHandler S depth keys sigCap n))
-          (cont x.1)).run x.2).support at hm
-      obtain ⟨⟨ans, st₁⟩, hms, hmc⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
-      exact ih ans (localTreeHandler_bounded_inv S depth keys sigCap n hd req hinv ans st₁ hms)
-        res st' hmc
+      presampledBoundedInv (depth n) keys 0 st' :=
+  run_interpret_queryBounded_invariant (localTreeHandler S depth keys sigCap n)
+    (presampledBoundedInv (depth n) keys)
+    (fun r _ ⟨h1, h2, h3, h4, h5⟩ =>
+      ⟨h1, le_trans (Nat.add_le_add_left (Nat.mul_le_mul_right _ (Nat.le_succ r)) _) h2,
+        h3, h4, h5⟩)
+    (fun _ req _ hs ans st' hm => localTreeHandler_bounded_inv S depth keys sigCap n hd req hs
+      ans st' hm)
+    hq hinv
 
 private def chainPk (pk₀ : List Bool) (certs : List (List Bool × List Bool)) (j : ℕ) :
     List Bool :=
@@ -4461,20 +4249,26 @@ private theorem win_implies_any_plantedWin (S : IndexedSignatureScheme) (depth :
         ((leaf.getD jStar false).toNat, msgStar, last)
     (cand.1, cand.2.1) ∉ signedLogOf target allSigned ∧
       S.verify (keys.getD target ([], [])).1 cand.1 cand.2.1 cand.2.2 = true)
+  have hlogMem : ∀ {u₀ m₀}, (u₀, m₀) ∈ signedLogOf target allSigned →
+      ((leaf.take jStar).length + 1 < depth n ∧
+        ∃ (b : Bool) (childIdx : ℕ), b.toNat = u₀ ∧
+          (leaf.take jStar ++ [b], childIdx) ∈ visited ∧
+          m₀ = (keys.getD childIdx ([], [])).1) ∨
+      ((leaf.take jStar).length + 1 = depth n ∧ m₀ ∈ queried) := by
+    intro u₀ m₀ hmemLog
+    simp only [signedLogOf, List.mem_map, List.mem_filter, beq_iff_eq] at hmemLog
+    obtain ⟨⟨p, idx, u', m'⟩, ⟨hm_all, hidxEq⟩, heqPair⟩ := hmemLog
+    obtain ⟨huEq, hmEq⟩ := Prod.mk.inj heqPair
+    dsimp only at hidxEq huEq hmEq
+    rw [hidxEq, huEq, hmEq] at hm_all
+    obtain ⟨hp_vis, hdisj⟩ := hall p target u₀ m₀ hm_all
+    obtain ⟨rfl, -⟩ := Prod.mk.inj (huniq _ hp_vis _ hmemT rfl)
+    exact hdisj
   by_cases hjLt : jStar + 1 < depth n
   · simp only [hjLt, ↓reduceIte]
     refine ⟨?_, ?_⟩
     · intro hmemLog
-      simp only [signedLogOf, List.mem_map, List.mem_filter, beq_iff_eq] at hmemLog
-      obtain ⟨⟨p, idx, u, m⟩, ⟨hm_all, hidxEq⟩, heqPair⟩ := hmemLog
-      obtain ⟨huEq, hmEq⟩ := Prod.mk.inj heqPair
-      dsimp only at hidxEq huEq hmEq
-      rw [hidxEq, huEq, hmEq] at hm_all
-      obtain ⟨hp_vis, hdisj⟩ := hall p target (leaf.getD jStar false).toNat
-        (certs.getD jStar ([], [])).1 hm_all
-      have hpeq : (p, target) = (leaf.take jStar, target) := huniq _ hp_vis _ hmemT rfl
-      obtain ⟨rfl, -⟩ := Prod.mk.inj hpeq
-      rcases hdisj with ⟨_, b, childIdx, hbu, hcVis, hcmEq⟩ | ⟨hbadLen, _⟩
+      rcases hlogMem hmemLog with ⟨_, b, childIdx, hbu, hcVis, hcmEq⟩ | ⟨hbadLen, _⟩
       · have hbeq : b = leaf.getD jStar false :=
           Bool.eq_iff_iff.mpr (by
             rw [← b.toNat_eq_one, ← (leaf.getD jStar false).toNat_eq_one, hbu])
@@ -4497,15 +4291,7 @@ private theorem win_implies_any_plantedWin (S : IndexedSignatureScheme) (depth :
     have hjEq : jStar = depth n - 1 := by omega
     refine ⟨?_, ?_⟩
     · intro hmemLog
-      simp only [signedLogOf, List.mem_map, List.mem_filter, beq_iff_eq] at hmemLog
-      obtain ⟨⟨p, idx, u, m⟩, ⟨hm_all, hidxEq⟩, heqPair⟩ := hmemLog
-      obtain ⟨_, hmEq⟩ := Prod.mk.inj heqPair
-      dsimp only at hidxEq hmEq
-      rw [hidxEq, hmEq] at hm_all
-      obtain ⟨hp_vis, hdisj⟩ := hall p target u msgStar hm_all
-      have hpeq : (p, target) = (leaf.take jStar, target) := huniq _ hp_vis _ hmemT rfl
-      obtain ⟨rfl, -⟩ := Prod.mk.inj hpeq
-      rcases hdisj with ⟨hbadLt, _⟩ | ⟨_, hmq⟩
+      rcases hlogMem hmemLog with ⟨hbadLt, _⟩ | ⟨_, hmq⟩
       · rw [hpathLen, hjEq] at hbadLt
         omega
       · exact hfresh hmq
@@ -4688,13 +4474,6 @@ theorem succProbability_eufCmaGame_scheme_le (S : IndexedSignatureScheme) (T : S
     _ ≤ (_ + _) + _ := add_le_add hideal le_rfl
     _ = _ := by ring
 
-/-- Any depth schedule satisfying `n ≤ depth n` makes `(1 : ℝ≥0) / 2 ^ depth n` negligible. -/
-theorem negligible_inv_two_pow_of_le {depth : ℕ → ℕ} (h : ∀ n, n ≤ depth n) :
-    Negligible (fun n => (1 : ℝ≥0) / 2 ^ depth n) := by
-  refine negligible_of_le (negligible_geometric (ratio := 2⁻¹) (by norm_num)) fun n => ?_
-  rw [one_div, inv_pow]
-  exact inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (h n))
-
 private theorem exists_sigCap_polyTime (S : IndexedSignatureScheme) :
     ∃ sigCap : ℕ → ℕ,
       ComputableInPolyTime sigCap encUnary encUnary ∧
@@ -4731,9 +4510,6 @@ theorem eufCMA_scheme_of_inv (S : IndexedSignatureScheme) (hS : S.IndexedEUFCMA)
   obtain ⟨sigCap, hsigCapPoly, hsigCap⟩ := exists_sigCap_polyTime S
   obtain ⟨ck, dk, hkgLen⟩ := S.keyGen_ppt.length_le
   simp only [encUnary_apply, List.length_replicate] at hkgLen
-  obtain ⟨cd, dd, hdd⟩ := hdepth.polyBounded_length.exists_le
-  simp only [encUnary_apply, List.length_replicate] at hdd
-  have hdepthPB : PolynomiallyBounded depth := PolynomiallyBounded.of_forall_le cd dd hdd
   apply SignatureScheme.EUFCMA.of_negligible
   intro adversary hA
   obtain ⟨εPrf, hεPrfNeg, hprfLe⟩ :=
@@ -4743,46 +4519,36 @@ theorem eufCMA_scheme_of_inv (S : IndexedSignatureScheme) (hS : S.IndexedEUFCMA)
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
     dsimp only [Q]
     fun_prop
-  have hQPB : PolynomiallyBounded Q := by
-    dsimp only [Q]
-    fun_prop
   let slotBound (n : ℕ) : ℕ := Q n * depth n
   have hslotPoly : ComputableInPolyTime slotBound encUnary encUnary :=
     hQPoly.unary_mul' hdepth
-  have hdyadicPB : PolynomiallyBounded (fun n => dyadicSize (slotBound n)) :=
-    dyadicSize_polynomiallyBounded.comp (hQPB.mul hdepthPB)
   have hForgerPPT := isOraclePPT_indexedForger S hdepth hslotPoly hsigCapPoly hA
   have hIdxNeg := hS.negligible (indexedForger S depth slotBound sigCap adversary) hForgerPPT
-  have hCollNeg : Negligible (fun n => ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n)) :=
-    hdepthNeg.polynomiallyBounded_mul (hQPB.pow 2)
-  have htotNeg : Negligible (fun n =>
+  have hbound : ∀ n,
+      Game.succProbability
+        (ProbComp.eval
+          ((scheme S T (prfCoins family) N depth (computableInPolyTime_prfCoins hF.polyTime)
+            hN hdepth hcap hdepth_pos).eufCmaGame adversary n)) ≤
       (dyadicSize (slotBound n) : ℝ≥0) * Game.succProbability
         (ProbComp.eval
           (S.indexedEufCmaGame (indexedForger S depth slotBound sigCap adversary) n)) +
-      ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n) + εPrf n) :=
-    ((hIdxNeg.polynomiallyBounded_mul hdyadicPB).add hCollNeg).add hεPrfNeg
-  refine negligible_of_le htotNeg fun n => ?_
-  rw [eufCmaGame_scheme]
-  have hqBound : ∀ root ∈ (ProbComp.eval (S.keyGen n)).support,
-      (adversary n (encPair encUnary encBits (n, root.1))).IsQueryBounded (Q n) := by
-    intro root hroot
-    have hrk : root.1.length ≤ ck * (n + 1) ^ dk := by
-      have := (length_le_encPair_left encBits encBits root).trans (hkgLen n root hroot)
-      simpa only [encBits_apply] using this
-    have hpkLen : (encPair encUnary encBits (n, root.1)).length = 2 * n + 1 + root.1.length := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-    have hleQ : cq * (n + (encPair encUnary encBits (n, root.1)).length + 2) ^ dq ≤ Q n :=
-      Nat.mul_le_mul_left cq (Nat.pow_le_pow_left (by omega) dq)
-    exact (hqb n _).1.mono hleQ
-  have hideal := succProbability_treeIdealGame_le S T depth N slotBound sigCap (hcap n)
-    (hdepth_pos n) (hwidth n) (hkgBudget n) (hsgBudget n) le_rfl (hsigCap n) adversary hqBound
-  have hcollLe : (Q n ^ 2 : ℝ≥0) / 2 ^ (depth n + 1) ≤
-      ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n) := by
-    rw [Nat.cast_pow, div_eq_mul_inv, one_div]
-    exact mul_le_mul_of_nonneg_left
-      (inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (Nat.le_succ _))) zero_le
-  exact (hprfLe n).trans
-    (add_le_add (hideal.trans (add_le_add le_rfl hcollLe)) le_rfl)
+      (Q n ^ 2 : ℝ≥0) / 2 ^ (depth n + 1) + εPrf n := fun n => by
+    rw [eufCmaGame_scheme]
+    have hqBound : ∀ root ∈ (ProbComp.eval (S.keyGen n)).support,
+        (adversary n (encPair encUnary encBits (n, root.1))).IsQueryBounded (Q n) := by
+      intro root hroot
+      have hrk : root.1.length ≤ ck * (n + 1) ^ dk := by
+        have := (length_le_encPair_left encBits encBits root).trans (hkgLen n root hroot)
+        simpa only [encBits_apply] using this
+      have hpkLen : (encPair encUnary encBits (n, root.1)).length = 2 * n + 1 + root.1.length := by
+        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+      have hleQ : cq * (n + (encPair encUnary encBits (n, root.1)).length + 2) ^ dq ≤ Q n :=
+        Nat.mul_le_mul_left cq (Nat.pow_le_pow_left (by omega) dq)
+      exact (hqb n _).1.mono hleQ
+    have hideal := succProbability_treeIdealGame_le S T depth N slotBound sigCap (hcap n)
+      (hdepth_pos n) (hwidth n) (hkgBudget n) (hsgBudget n) le_rfl (hsigCap n) adversary hqBound
+    exact (hprfLe n).trans (add_le_add hideal le_rfl)
+  negligible using hbound
 
 /-- **Stateless EUF-CMA security of `TreeSignature.scheme` at `coinParam budget`**
 ([BonehShoup2023], Section 14.6.3, Theorem 14.6): instantiating the PRF parameter at

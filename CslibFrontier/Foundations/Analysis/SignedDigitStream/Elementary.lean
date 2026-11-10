@@ -96,6 +96,32 @@ theorem abs_ediv_sub_div_lt_one (A : ℤ) {M : ℤ} (hM : 0 < M) :
   rw [heq, abs_neg, abs_div, abs_of_nonneg hr0, abs_of_pos hM_real]
   exact (div_lt_one hM_real).mpr hrlt
 
+/-- Closing step of the scaled floor-quotient approximations: if `A / M = 2 ^ t * P` over `ℝ` and
+`2 ^ t * P` is within `3 / 8` of `2 ^ t * Z`, then the floor quotient `A / M` is within scaled
+error `< 2` of `2 ^ t * Z`. -/
+private theorem abs_ediv_sub_lt_two_of_scaled (A : ℤ) {M : ℕ} (hM : 0 < M) {t : ℕ} {P Z : ℝ}
+    (hA : (A : ℝ) / M = (2 : ℝ) ^ t * P)
+    (herr : |(2 : ℝ) ^ t * P - (2 : ℝ) ^ t * Z| ≤ 3 / 8) :
+    |((A / M : ℤ) : ℝ) - (2 : ℝ) ^ t * Z| < 2 := by
+  have hfl := abs_ediv_sub_div_lt_one A (Int.natCast_pos.mpr hM)
+  rw [Int.cast_natCast, hA] at hfl
+  have htri := abs_sub_le ((A / M : ℤ) : ℝ) ((2 : ℝ) ^ t * P) ((2 : ℝ) ^ t * Z)
+  linarith
+
+/-- Scaled error of the prefix approximations at `K = t + 4`: if `|P - Z| ≤ 6 / 2 ^ (t + 4)`, then
+`2 ^ t * P` is within `3 / 8` of `2 ^ t * Z`. -/
+private theorem abs_two_pow_mul_sub_le_of_prefix {t : ℕ} {P Z : ℝ}
+    (h : |P - Z| ≤ 6 / (2 : ℝ) ^ (t + 4)) :
+    |(2 : ℝ) ^ t * P - (2 : ℝ) ^ t * Z| ≤ 3 / 8 := by
+  rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t)]
+  calc (2 : ℝ) ^ t * |P - Z| ≤ (2 : ℝ) ^ t * (6 / (2 : ℝ) ^ (t + 4)) :=
+        mul_le_mul_of_nonneg_left h (by positivity)
+    _ = 3 / 8 := by
+        have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
+        rw [hpow]
+        field_simp
+        ring
+
 section RationalStreams
 
 /-- Exact integer floor approximation `(2 ^ t * r.num) / r.den` for a rational constant `r`. -/
@@ -295,7 +321,6 @@ theorem pairAvgApprox_isScaledApprox {x y : ℕ → ℤ}
   intro t
   unfold pairAvgApprox
   set A := intPrefix x (t + 4) + intPrefix y (t + 4)
-  have hfl := abs_ediv_sub_div_lt_one A (by decide : (0 : ℤ) < 32)
   have hA : (A : ℝ) / (32 : ℝ) =
       (2 : ℝ) ^ t * ((streamPrefix x (t + 4) + streamPrefix y (t + 4)) / 2) := by
     dsimp [A]
@@ -307,36 +332,16 @@ theorem pairAvgApprox_isScaledApprox {x y : ℕ → ℤ}
     ring
   have hx_err := abs_streamVal_sub_streamPrefix_le hx (t + 4)
   have hy_err := abs_streamVal_sub_streamPrefix_le hy (t + 4)
-  have htrunc : |(2 : ℝ) ^ t * ((streamPrefix x (t + 4) + streamPrefix y (t + 4)) / 2) -
-      (2 : ℝ) ^ t * ((streamVal x + streamVal y) / 2)| ≤ 3 / 8 := by
-    have hdiff : (2 : ℝ) ^ t * ((streamPrefix x (t + 4) + streamPrefix y (t + 4)) / 2) -
-        (2 : ℝ) ^ t * ((streamVal x + streamVal y) / 2) =
-        (2 : ℝ) ^ t / 2 * ((streamPrefix x (t + 4) - streamVal x) +
-          (streamPrefix y (t + 4) - streamVal y)) := by ring
-    rw [hdiff, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t / 2)]
-    have htri : |(streamPrefix x (t + 4) - streamVal x) +
-        (streamPrefix y (t + 4) - streamVal y)| ≤ 12 / (2 : ℝ) ^ (t + 4) := by
-      have h1 := abs_add_le (streamPrefix x (t + 4) - streamVal x)
-        (streamPrefix y (t + 4) - streamVal y)
-      rw [abs_sub_comm (streamPrefix x (t + 4)), abs_sub_comm (streamPrefix y (t + 4))] at h1
-      have hsum : (6 : ℝ) / (2 : ℝ) ^ (t + 4) + 6 / (2 : ℝ) ^ (t + 4) =
-          12 / (2 : ℝ) ^ (t + 4) := by ring
-      linarith
-    calc (2 : ℝ) ^ t / 2 * |(streamPrefix x (t + 4) - streamVal x) +
-          (streamPrefix y (t + 4) - streamVal y)|
-        ≤ (2 : ℝ) ^ t / 2 * (12 / (2 : ℝ) ^ (t + 4)) :=
-          mul_le_mul_of_nonneg_left htri (by positivity)
-      _ = 3 / 8 := by
-          have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
-          rw [hpow]
-          field_simp
-          ring
-  push_cast at hfl
-  rw [hA] at hfl
-  have htri := abs_sub_le ((A / 32 : ℤ) : ℝ)
-    ((2 : ℝ) ^ t * ((streamPrefix x (t + 4) + streamPrefix y (t + 4)) / 2))
-    ((2 : ℝ) ^ t * ((streamVal x + streamVal y) / 2))
-  linarith
+  refine abs_ediv_sub_lt_two_of_scaled A (by decide : 0 < 32) hA
+    (abs_two_pow_mul_sub_le_of_prefix ?_)
+  rw [abs_sub_comm]
+  have hdiff : (streamVal x + streamVal y) / 2 -
+      (streamPrefix x (t + 4) + streamPrefix y (t + 4)) / 2 =
+      ((streamVal x - streamPrefix x (t + 4)) + (streamVal y - streamPrefix y (t + 4))) / 2 := by
+    ring
+  rw [hdiff, abs_div, abs_two]
+  linarith [abs_add_le (streamVal x - streamPrefix x (t + 4))
+    (streamVal y - streamPrefix y (t + 4))]
 
 theorem pairAvgApprox_emod {x y : ℕ → ℤ} (t q : ℕ) :
     pairAvgApprox x y t % (2 : ℤ) ^ q =
@@ -380,86 +385,38 @@ theorem maxApprox_isScaledApprox {x y : ℕ → ℤ}
     IsScaledApprox (max (streamVal x) (streamVal y)) (maxApprox x y) := by
   intro t
   rw [maxApprox_eq_ediv hx hy t]
-  set A := max (intPrefix x (t + 4)) (intPrefix y (t + 4))
-  have hfl := abs_ediv_sub_div_lt_one A (by decide : (0 : ℤ) < 16)
-  have hA : (A : ℝ) / (16 : ℝ) =
-      (2 : ℝ) ^ t * max (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) := by
-    dsimp [A]
-    rw [Int.cast_max, streamPrefix_eq_intPrefix_div, streamPrefix_eq_intPrefix_div,
-      max_div_div_right (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (t + 4))]
-    have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
-    rw [hpow]
-    field_simp
-  have hlip := abs_max_sub_max_le_max (streamPrefix x (t + 4)) (streamPrefix y (t + 4))
-    (streamVal x) (streamVal y)
   have hx_err := abs_streamVal_sub_streamPrefix_le hx (t + 4)
   have hy_err := abs_streamVal_sub_streamPrefix_le hy (t + 4)
-  rw [abs_sub_comm] at hx_err
-  rw [abs_sub_comm] at hy_err
-  have hmax_err : |max (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) -
-      max (streamVal x) (streamVal y)| ≤ 6 / (2 : ℝ) ^ (t + 4) :=
-    hlip.trans (max_le hx_err hy_err)
-  have htrunc : |(2 : ℝ) ^ t * max (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) -
-      (2 : ℝ) ^ t * max (streamVal x) (streamVal y)| ≤ 3 / 8 := by
-    rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t)]
-    calc (2 : ℝ) ^ t * |max (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) -
-          max (streamVal x) (streamVal y)|
-        ≤ (2 : ℝ) ^ t * (6 / (2 : ℝ) ^ (t + 4)) :=
-          mul_le_mul_of_nonneg_left hmax_err (by positivity)
-      _ = 3 / 8 := by
-          have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
-          rw [hpow]
-          field_simp
-          ring
-  push_cast at hfl
-  rw [hA] at hfl
-  have htri := abs_sub_le ((A / 16 : ℤ) : ℝ)
-    ((2 : ℝ) ^ t * max (streamPrefix x (t + 4)) (streamPrefix y (t + 4)))
-    ((2 : ℝ) ^ t * max (streamVal x) (streamVal y))
-  linarith
+  rw [abs_sub_comm] at hx_err hy_err
+  refine abs_ediv_sub_lt_two_of_scaled _ (by decide : 0 < 16)
+    (P := max (streamPrefix x (t + 4)) (streamPrefix y (t + 4))) ?_
+    (abs_two_pow_mul_sub_le_of_prefix ((abs_max_sub_max_le_max _ _ _ _).trans
+      (max_le hx_err hy_err)))
+  rw [Int.cast_max, streamPrefix_eq_intPrefix_div, streamPrefix_eq_intPrefix_div,
+    max_div_div_right (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (t + 4))]
+  have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
+  rw [hpow]
+  push_cast
+  field_simp
 
 theorem minApprox_isScaledApprox {x y : ℕ → ℤ}
     (hx : IsSignedStream x) (hy : IsSignedStream y) :
     IsScaledApprox (min (streamVal x) (streamVal y)) (minApprox x y) := by
   intro t
   rw [minApprox_eq_ediv hx hy t]
-  set A := min (intPrefix x (t + 4)) (intPrefix y (t + 4))
-  have hfl := abs_ediv_sub_div_lt_one A (by decide : (0 : ℤ) < 16)
-  have hA : (A : ℝ) / (16 : ℝ) =
-      (2 : ℝ) ^ t * min (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) := by
-    dsimp [A]
-    rw [Int.cast_min, streamPrefix_eq_intPrefix_div, streamPrefix_eq_intPrefix_div,
-      min_div_div_right (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (t + 4))]
-    have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
-    rw [hpow]
-    field_simp
-  have hlip := abs_min_sub_min_le_max (streamPrefix x (t + 4)) (streamPrefix y (t + 4))
-    (streamVal x) (streamVal y)
   have hx_err := abs_streamVal_sub_streamPrefix_le hx (t + 4)
   have hy_err := abs_streamVal_sub_streamPrefix_le hy (t + 4)
-  rw [abs_sub_comm] at hx_err
-  rw [abs_sub_comm] at hy_err
-  have hmin_err : |min (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) -
-      min (streamVal x) (streamVal y)| ≤ 6 / (2 : ℝ) ^ (t + 4) :=
-    hlip.trans (max_le hx_err hy_err)
-  have htrunc : |(2 : ℝ) ^ t * min (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) -
-      (2 : ℝ) ^ t * min (streamVal x) (streamVal y)| ≤ 3 / 8 := by
-    rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t)]
-    calc (2 : ℝ) ^ t * |min (streamPrefix x (t + 4)) (streamPrefix y (t + 4)) -
-          min (streamVal x) (streamVal y)|
-        ≤ (2 : ℝ) ^ t * (6 / (2 : ℝ) ^ (t + 4)) :=
-          mul_le_mul_of_nonneg_left hmin_err (by positivity)
-      _ = 3 / 8 := by
-          have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
-          rw [hpow]
-          field_simp
-          ring
-  push_cast at hfl
-  rw [hA] at hfl
-  have htri := abs_sub_le ((A / 16 : ℤ) : ℝ)
-    ((2 : ℝ) ^ t * min (streamPrefix x (t + 4)) (streamPrefix y (t + 4)))
-    ((2 : ℝ) ^ t * min (streamVal x) (streamVal y))
-  linarith
+  rw [abs_sub_comm] at hx_err hy_err
+  refine abs_ediv_sub_lt_two_of_scaled _ (by decide : 0 < 16)
+    (P := min (streamPrefix x (t + 4)) (streamPrefix y (t + 4))) ?_
+    (abs_two_pow_mul_sub_le_of_prefix ((abs_min_sub_min_le_max _ _ _ _).trans
+      (max_le hx_err hy_err)))
+  rw [Int.cast_min, streamPrefix_eq_intPrefix_div, streamPrefix_eq_intPrefix_div,
+    min_div_div_right (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (t + 4))]
+  have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
+  rw [hpow]
+  push_cast
+  field_simp
 
 theorem abs_shiftClipVal_le_one (v : ℤ) (z : ℝ) : |shiftClipVal v z| ≤ 1 := by
   unfold shiftClipVal
@@ -497,8 +454,7 @@ theorem shiftClipApprox_isScaledApprox (v : ℤ) {x : ℕ → ℤ} (hx : IsSigne
         _ = (2 : ℝ) ^ ((t : ℤ) + v) * |streamVal x| := by
             rw [abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ v),
               zpow_add₀ (by norm_num), zpow_natCast, mul_assoc]
-        _ ≤ (2 : ℝ) ^ (-5 : ℤ) * 12 :=
-            mul_le_mul hpow_le hx12 (abs_nonneg _) (by positivity)
+        _ ≤ (2 : ℝ) ^ (-5 : ℤ) * 12 := by gcongr
         _ = 3 / 8 := by norm_num
     simp only [Int.cast_zero, zero_sub, abs_neg]
     linarith
@@ -507,16 +463,15 @@ theorem shiftClipApprox_isScaledApprox (v : ℤ) {x : ℕ → ℤ} (hx : IsSigne
     have hK : (K : ℤ) = (t : ℤ) + v + 4 := Int.toNat_of_nonneg hnonneg
     set B : ℤ := (2 : ℤ) ^ (t + 4)
     set A : ℤ := max (-B) (min B (intPrefix x K))
-    have hfl := abs_ediv_sub_div_lt_one A (by decide : (0 : ℤ) < 16)
+    have hzpow : (2 : ℝ) ^ t * ((2 : ℝ) ^ v / (2 : ℝ) ^ K) = 1 / 16 := by
+      rw [← zpow_natCast (2 : ℝ) t, ← zpow_natCast (2 : ℝ) K, div_eq_mul_inv,
+        ← zpow_neg, ← mul_assoc, ← zpow_add₀ (by norm_num), ← zpow_add₀ (by norm_num)]
+      have hexp : (t : ℤ) + v + -(K : ℤ) = -4 := by omega
+      rw [hexp]
+      norm_num
     have hscale : (intPrefix x K : ℝ) / (16 : ℝ) =
         (2 : ℝ) ^ t * ((2 : ℝ) ^ v * streamPrefix x K) := by
       rw [streamPrefix_eq_intPrefix_div]
-      have hzpow : (2 : ℝ) ^ t * ((2 : ℝ) ^ v / (2 : ℝ) ^ K) = 1 / 16 := by
-        rw [← zpow_natCast (2 : ℝ) t, ← zpow_natCast (2 : ℝ) K, div_eq_mul_inv,
-          ← zpow_neg, ← mul_assoc, ← zpow_add₀ (by norm_num), ← zpow_add₀ (by norm_num)]
-        have hexp : (t : ℤ) + v + -(K : ℤ) = -4 := by omega
-        rw [hexp]
-        norm_num
       calc (intPrefix x K : ℝ) / (16 : ℝ)
           = (intPrefix x K : ℝ) * (1 / 16) := by ring
         _ = (intPrefix x K : ℝ) * ((2 : ℝ) ^ t * ((2 : ℝ) ^ v / (2 : ℝ) ^ K)) := by rw [hzpow]
@@ -552,27 +507,12 @@ theorem shiftClipApprox_isScaledApprox (v : ℤ) {x : ℕ → ℤ} (hx : IsSigne
             mul_le_mul_of_nonneg_left hlip (by positivity)
         _ = (2 : ℝ) ^ t * ((2 : ℝ) ^ v * |streamPrefix x K - streamVal x|) := by
             rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ v)]
-        _ ≤ (2 : ℝ) ^ t * ((2 : ℝ) ^ v * (6 / (2 : ℝ) ^ K)) :=
-            mul_le_mul_of_nonneg_left
-              (mul_le_mul_of_nonneg_left hx_err (by positivity)) (by positivity)
+        _ ≤ (2 : ℝ) ^ t * ((2 : ℝ) ^ v * (6 / (2 : ℝ) ^ K)) := by gcongr
+        _ = 6 * ((2 : ℝ) ^ t * ((2 : ℝ) ^ v / (2 : ℝ) ^ K)) := by ring
         _ = 3 / 8 := by
-            have hzpow : (2 : ℝ) ^ t * ((2 : ℝ) ^ v / (2 : ℝ) ^ K) = 1 / 16 := by
-              rw [← zpow_natCast (2 : ℝ) t, ← zpow_natCast (2 : ℝ) K, div_eq_mul_inv,
-                ← zpow_neg, ← mul_assoc, ← zpow_add₀ (by norm_num), ← zpow_add₀ (by norm_num)]
-              have hexp : (t : ℤ) + v + -(K : ℤ) = -4 := by omega
-              rw [hexp]
-              norm_num
-            calc (2 : ℝ) ^ t * ((2 : ℝ) ^ v * (6 / (2 : ℝ) ^ K))
-                = 6 * ((2 : ℝ) ^ t * ((2 : ℝ) ^ v / (2 : ℝ) ^ K)) := by ring
-              _ = 6 * (1 / 16) := by rw [hzpow]
-              _ = 3 / 8 := by norm_num
-    push_cast at hfl
-    rw [hA] at hfl
-    have htri := abs_sub_le ((A / 16 : ℤ) : ℝ)
-      ((2 : ℝ) ^ t * shiftClipVal v (streamPrefix x K))
-      ((2 : ℝ) ^ t * shiftClipVal v (streamVal x))
-    dsimp only
-    linarith
+            rw [hzpow]
+            norm_num
+    exact abs_ediv_sub_lt_two_of_scaled A (by decide : 0 < 16) hA htrunc
 
 end ElementaryOperations
 
@@ -667,15 +607,6 @@ theorem zeroPaddedRankApprox_isScaledApprox {ι : Type*} (k : ℕ) (s : Finset �
     IsScaledApprox (kthLargest k s fun i => streamVal (x i)) (zeroPaddedRankApprox k s x) := by
   intro t
   unfold zeroPaddedRankApprox
-  set A := kthLargest k s fun i => intPrefix (x i) (t + 4)
-  have hfl := abs_ediv_sub_div_lt_one A (by decide : (0 : ℤ) < 16)
-  have hA : (A : ℝ) / (16 : ℝ) =
-      (2 : ℝ) ^ t * kthLargest k s (fun i => streamPrefix (x i) (t + 4)) := by
-    rw [kthLargest_streamPrefix_eq_div]
-    dsimp [A]
-    have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
-    rw [hpow]
-    field_simp
   have herr_pt : ∀ i ∈ s, |streamPrefix (x i) (t + 4) - streamVal (x i)| ≤ 6 / (2 : ℝ) ^ (t + 4) :=
     fun i hi => by
       rw [abs_sub_comm]
@@ -685,24 +616,13 @@ theorem zeroPaddedRankApprox_isScaledApprox {ι : Type*} (k : ℕ) (s : Finset �
     rcases Nat.eq_zero_or_pos k with rfl | hk
     · exact abs_kthLargest_zero_sub_le s (by positivity) herr_pt
     · exact abs_kthLargest_sub_kthLargest_le hk (by positivity) herr_pt
-  have htrunc : |(2 : ℝ) ^ t * kthLargest k s (fun i => streamPrefix (x i) (t + 4)) -
-      (2 : ℝ) ^ t * kthLargest k s (fun i => streamVal (x i))| ≤ 3 / 8 := by
-    rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t)]
-    calc (2 : ℝ) ^ t * |kthLargest k s (fun i => streamPrefix (x i) (t + 4)) -
-          kthLargest k s (fun i => streamVal (x i))|
-        ≤ (2 : ℝ) ^ t * (6 / (2 : ℝ) ^ (t + 4)) :=
-          mul_le_mul_of_nonneg_left hstab (by positivity)
-      _ = 3 / 8 := by
-          have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
-          rw [hpow]
-          field_simp
-          ring
-  push_cast at hfl
-  rw [hA] at hfl
-  have htri := abs_sub_le ((A / 16 : ℤ) : ℝ)
-    ((2 : ℝ) ^ t * kthLargest k s (fun i => streamPrefix (x i) (t + 4)))
-    ((2 : ℝ) ^ t * kthLargest k s (fun i => streamVal (x i)))
-  linarith
+  refine abs_ediv_sub_lt_two_of_scaled _ (by decide : 0 < 16) ?_
+    (abs_two_pow_mul_sub_le_of_prefix hstab)
+  rw [kthLargest_streamPrefix_eq_div]
+  have hpow : (2 : ℝ) ^ (t + 4) = 16 * (2 : ℝ) ^ t := by ring
+  rw [hpow]
+  push_cast
+  field_simp
 
 /-- Transition step of the 63-state absorbing `2 s - 3 u` comparator on `[-31, 31]`. -/
 @[expose] def cmpBufferedStep (p δ : ℤ) : ℤ :=
@@ -754,6 +674,31 @@ theorem cmpBuffered_pos_iff {s u : ℕ → ℤ} (hs : IsSignedStream s) (hu : Is
   rw [hdiv]
   omega
 
+/-- Truncation error of the buffered test at place `K = M + R + 7`, at scale `2 ^ M`: the
+scaled prefix is within the slack `(3 / 64) / 2 ^ R` of the scaled value. -/
+private theorem abs_two_pow_mul_streamPrefix_sub_le {M R : ℕ} {x : ℕ → ℤ}
+    (hx : IsSignedStream x) :
+    |(2 : ℝ) ^ M * streamPrefix x (M + R + 7) - (2 : ℝ) ^ M * streamVal x| ≤
+      (3 / 64) / (2 : ℝ) ^ R := by
+  have h := abs_streamVal_sub_streamPrefix_le hx (M + R + 7)
+  rw [abs_sub_comm] at h
+  rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ M)]
+  calc (2 : ℝ) ^ M * |streamPrefix x (M + R + 7) - streamVal x|
+      ≤ (2 : ℝ) ^ M * (6 / (2 : ℝ) ^ (M + R + 7)) :=
+        mul_le_mul_of_nonneg_left h (by positivity)
+    _ = (3 / 64) / (2 : ℝ) ^ R := by
+        have hp : (2 : ℝ) ^ (M + R + 7) = 128 * ((2 : ℝ) ^ M * (2 : ℝ) ^ R) := by ring
+        rw [hp]
+        field_simp
+        ring
+
+/-- Five times the buffered-test slack `(3 / 64) / 2 ^ R` is below any `ρ ≥ 1 / 2 ^ R`. -/
+private theorem five_mul_slack_lt {R : ℕ} {ρ : ℝ} (hρ : 1 / (2 : ℝ) ^ R ≤ ρ) :
+    5 * ((3 / 64) / (2 : ℝ) ^ R) < ρ := by
+  have hρ0 : (0 : ℝ) < 1 / (2 : ℝ) ^ R := by positivity
+  have h : 5 * ((3 / 64) / (2 : ℝ) ^ R) = (15 / 64) * (1 / (2 : ℝ) ^ R) := by ring
+  linarith
+
 /-- **Lemma 10.8 (completeness of buffered test)** [OpenAI2026LogSpace, Lemma 10.8]: if `sVal` and
 `uVal` have normalized streams `s, u` at scale `2 ^ M`, `uVal ≥ ρ ≥ 1 / 2 ^ R`, and
 `2 * uVal < sVal`, then `bufferedTest M R s u = true`. -/
@@ -765,42 +710,14 @@ theorem bufferedTest_eq_true_of_two_mul_lt {M R : ℕ} {s u : ℕ → ℤ}
     bufferedTest M R s u = true := by
   unfold bufferedTest
   rw [decide_eq_true_eq, cmpBuffered_pos_iff hs hu]
-  set K := M + R + 7
-  set ε : ℝ := (3 / 64) / (2 : ℝ) ^ R
-  have hs_err := abs_streamVal_sub_streamPrefix_le hs K
-  have hu_err := abs_streamVal_sub_streamPrefix_le hu K
-  have hK_pow : (6 : ℝ) / (2 : ℝ) ^ K = ε / (2 : ℝ) ^ M := by
-    dsimp [K, ε]
-    have hp : (2 : ℝ) ^ (M + R + 7) = 128 * ((2 : ℝ) ^ M * (2 : ℝ) ^ R) := by ring
-    rw [hp]
-    field_simp
-    ring
-  rw [hK_pow] at hs_err hu_err
-  have hs_lo : sVal - ε ≤ (2 : ℝ) ^ M * streamPrefix s K := by
-    have h1 : streamVal s - ε / (2 : ℝ) ^ M ≤ streamPrefix s K :=
-      sub_le_iff_le_add.mpr ((sub_le_iff_le_add'.mp (le_of_abs_le hs_err)))
-    have hmul := mul_le_mul_of_nonneg_left h1 (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ M)
-    rw [mul_sub, ← hsVal] at hmul
-    have hcancel : (2 : ℝ) ^ M * (ε / (2 : ℝ) ^ M) = ε := by field_simp
-    linarith
-  have hu_hi : (2 : ℝ) ^ M * streamPrefix u K ≤ uVal + ε := by
-    have h1 : streamPrefix u K ≤ streamVal u + ε / (2 : ℝ) ^ M := by
-      rw [abs_sub_comm] at hu_err
-      exact sub_le_iff_le_add'.mp (le_of_abs_le hu_err)
-    have hmul := mul_le_mul_of_nonneg_left h1 (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ M)
-    rw [mul_add, ← huVal] at hmul
-    have hcancel : (2 : ℝ) ^ M * (ε / (2 : ℝ) ^ M) = ε := by field_simp
-    linarith
-  have hposM : (0 : ℝ) < (2 : ℝ) ^ M := by positivity
-  have h5ε : 5 * ε < ρ := by
-    have hρ0 : (0 : ℝ) < 1 / (2 : ℝ) ^ R := by positivity
-    calc 5 * ε = (15 / 64) * (1 / (2 : ℝ) ^ R) := by dsimp [ε]; ring
-      _ < 1 * (1 / (2 : ℝ) ^ R) := mul_lt_mul_of_pos_right (by norm_num) hρ0
-      _ = 1 / (2 : ℝ) ^ R := one_mul _
-      _ ≤ ρ := hρ
-  have hscaled : (2 : ℝ) ^ M * (3 * streamPrefix u K) < (2 : ℝ) ^ M * (2 * streamPrefix s K) := by
-    linarith
-  exact lt_of_mul_lt_mul_left hscaled hposM.le
+  have hs_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hs
+  have hu_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hu
+  rw [← hsVal] at hs_err
+  rw [← huVal] at hu_err
+  have hscaled : (2 : ℝ) ^ M * (3 * streamPrefix u (M + R + 7)) <
+      (2 : ℝ) ^ M * (2 * streamPrefix s (M + R + 7)) := by
+    linarith [five_mul_slack_lt hρ, neg_le_of_abs_le hs_err, le_of_abs_le hu_err]
+  exact lt_of_mul_lt_mul_left hscaled (by positivity)
 
 /-- **Lemma 10.8 (soundness of buffered test)** [OpenAI2026LogSpace, Lemma 10.8]: under the same
 scaling hypotheses, if `sVal ≤ uVal`, then `bufferedTest M R s u = false`. -/
@@ -811,43 +728,15 @@ theorem bufferedTest_eq_false_of_le {M R : ℕ} {s u : ℕ → ℤ}
     (hρ : 1 / (2 : ℝ) ^ R ≤ ρ) (huρ : ρ ≤ uVal) (hle : sVal ≤ uVal) :
     bufferedTest M R s u = false := by
   unfold bufferedTest
-  rw [decide_eq_false_iff_not, not_lt]
-  by_contra hlt_raw
-  rw [not_le] at hlt_raw
+  rw [decide_eq_false_iff_not]
+  intro hlt_raw
   have hlt := (cmpBuffered_pos_iff hs hu (M + R + 7)).mp hlt_raw
-  set K := M + R + 7
-  set ε : ℝ := (3 / 64) / (2 : ℝ) ^ R
-  have hs_err := abs_streamVal_sub_streamPrefix_le hs K
-  have hu_err := abs_streamVal_sub_streamPrefix_le hu K
-  have hK_pow : (6 : ℝ) / (2 : ℝ) ^ K = ε / (2 : ℝ) ^ M := by
-    dsimp [K, ε]
-    have hp : (2 : ℝ) ^ (M + R + 7) = 128 * ((2 : ℝ) ^ M * (2 : ℝ) ^ R) := by ring
-    rw [hp]
-    field_simp
-    ring
-  rw [hK_pow] at hs_err hu_err
-  have hs_hi : (2 : ℝ) ^ M * streamPrefix s K ≤ sVal + ε := by
-    rw [abs_sub_comm] at hs_err
-    have h1 := sub_le_iff_le_add'.mp (le_of_abs_le hs_err)
-    have hmul := mul_le_mul_of_nonneg_left h1 (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ M)
-    rw [mul_add, ← hsVal] at hmul
-    have hcancel : (2 : ℝ) ^ M * (ε / (2 : ℝ) ^ M) = ε := by field_simp
-    linarith
-  have hu_lo : uVal - ε ≤ (2 : ℝ) ^ M * streamPrefix u K := by
-    have h1 := sub_le_iff_le_add.mpr (sub_le_iff_le_add'.mp (le_of_abs_le hu_err))
-    have hmul := mul_le_mul_of_nonneg_left h1 (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ M)
-    rw [mul_sub, ← huVal] at hmul
-    have hcancel : (2 : ℝ) ^ M * (ε / (2 : ℝ) ^ M) = ε := by field_simp
-    linarith
-  have hposM : (0 : ℝ) < (2 : ℝ) ^ M := by positivity
-  have hmul_lt := mul_lt_mul_of_pos_left hlt hposM
-  have h5ε : 5 * ε < ρ := by
-    have hρ0 : (0 : ℝ) < 1 / (2 : ℝ) ^ R := by positivity
-    calc 5 * ε = (15 / 64) * (1 / (2 : ℝ) ^ R) := by dsimp [ε]; ring
-      _ < 1 * (1 / (2 : ℝ) ^ R) := mul_lt_mul_of_pos_right (by norm_num) hρ0
-      _ = 1 / (2 : ℝ) ^ R := one_mul _
-      _ ≤ ρ := hρ
-  linarith
+  have hs_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hs
+  have hu_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hu
+  rw [← hsVal] at hs_err
+  rw [← huVal] at hu_err
+  have hmul_lt := mul_lt_mul_of_pos_left hlt (by positivity : (0 : ℝ) < (2 : ℝ) ^ M)
+  linarith [five_mul_slack_lt hρ, le_of_abs_le hs_err, neg_le_of_abs_le hu_err]
 
 end OrderStatisticsAndBufferedTests
 

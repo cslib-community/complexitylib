@@ -14,10 +14,11 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.BitString.Counter
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Computational Schnorr signatures under the discrete-logarithm assumption
@@ -195,8 +196,8 @@ def schnorrCommitBits (input : F.Desc × List Bool) : List Bool :=
 `F.encode d (r • g)`. -/
 @[simp] theorem schnorrCommitBits_encScalar (d : F.Desc) (r : ZMod (F.order d)) :
     F.schnorrCommitBits (d, F.encScalar d r) = F.encode d (r • F.generator d) := by
-  simp only [schnorrCommitBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits,
-    Nat.foldr_bit_bits, F.smul_encode, ZMod.natCast_zmod_val]
+  simp only [schnorrCommitBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits,
+    F.smul_encode, ZMod.natCast_zmod_val]
 
 /-- **Bit-level Schnorr commitment is computable in polynomial time**. -/
 theorem computableInPolyTime_schnorrCommitBits :
@@ -227,8 +228,7 @@ def schnorrRespondBits (input : F.Desc × List Bool × List Bool × List Bool) :
     (roOut : List Bool) :
     F.schnorrRespondBits (d, F.encScalar d α, F.encScalar d r, roOut) =
       F.encScalar d (r + (ofBits roOut : ZMod (F.order d)) * α) := by
-  simp only [schnorrRespondBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits,
-    Nat.foldr_bit_bits]
+  simp only [schnorrRespondBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits]
   congr 1
   rw [← ZMod.val_natCast (F.order d), Nat.cast_add, Nat.cast_mul, ZMod.natCast_zmod_val,
     ZMod.natCast_zmod_val]
@@ -425,7 +425,7 @@ theorem schnorrSigVerifyBits_schnorrSignCoins (d : F.Desc) (α r : ZMod (F.order
         F.schnorrSignCoins (d, F.encScalar d α, msg, F.encScalar d r, roOut), roOut) =
       true := by
   rw [schnorrSignCoins_encScalar, schnorrSigVerifyBits_encode]
-  simp only [encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits, Nat.foldr_bit_bits,
+  simp only [encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits,
     ZMod.natCast_zmod_val, add_smul, mul_smul, decide_true]
 
 /-- Verification compares the supplied commitment with public commitment recovery on all words,
@@ -594,24 +594,7 @@ theorem negligible_eufCmaGame_schnorrFamilyROMScheme {M : Type} [DecidableEq M]
         (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :
     Negligible fun n =>
       Game.succProbability (eufCmaGame (F.schnorrFamilyROMScheme (d n) (hm n)) (A n)) := by
-  have hpoly₁ : PolynomiallyBounded (fun n => Qs n * (Qs n + Qro n)) := hQs.mul (hQs.add hQro)
-  have hpoly₂ : PolynomiallyBounded (fun n => Qro n + 1) := hQro.add (PolynomiallyBounded.const 1)
-  have hterm₁ : Negligible fun n => (Qs n * (Qs n + Qro n) : ℕ) * (1 / F.order (d n) : ℝ≥0) :=
-    horder.polynomiallyBounded_mul hpoly₁
-  have hterm₂ : Negligible fun n => (Qro n + 1 : ℕ) * (1 / 2 ^ k n : ℝ≥0) :=
-    hchallenge.polynomiallyBounded_mul hpoly₂
-  have hterm₃ : Negligible fun n =>
-      NNReal.sqrt ((Qro n + 1 : ℕ) * Game.succProbability
-        (oneWayGame (schnorrKeyGen (F.generator (d n)))
-          (fun α u => α • F.generator (d n) = u)
-          (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :=
-    Negligible.sqrt (hDL.polynomiallyBounded_mul hpoly₂)
-  refine negligible_of_le ((hterm₁.add hterm₂).add hterm₃) fun n => ?_
-  rw [← NNReal.coe_le_coe, Pi.add_apply, Pi.add_apply, NNReal.coe_add, NNReal.coe_add,
-    NNReal.coe_mul, NNReal.coe_mul, Real.coe_sqrt, NNReal.coe_mul, NNReal.coe_div, NNReal.coe_div,
-    NNReal.coe_one, NNReal.coe_pow, NNReal.coe_ofNat, NNReal.coe_natCast, NNReal.coe_natCast,
-    NNReal.coe_natCast, Nat.cast_mul, Nat.cast_add, Nat.cast_add, Nat.cast_one,
-    mul_one_div, mul_one_div]
-  exact F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
+  negligible using fun n =>
+    F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
 
 end Cslib.Crypto.PrimeOrderGroupFamily

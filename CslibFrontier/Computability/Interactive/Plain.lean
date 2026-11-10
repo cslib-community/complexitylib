@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Interactive.Security
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.EventBind
 
@@ -181,32 +182,13 @@ theorem rbrFrom_le : ∀ (s : Spec) (smp : PerChallenge ProbComp s)
       (h.1 hS msg) st'
   | .verifier C :: s, smp, ε, S, wins, h, hS, _, st => by
     simp only [runStrategy, plainLaw_bind, plainLaw_sample]
-    rw [PMF.toOuterMeasure_bind_apply]
     set A : Set C := {c | S (some (c, Prefix.empty s))}
-    have hinner : ∀ c, ((plainLaw (st c)).bind fun st' => (plainLaw (runStrategy s smp.2 st')).bind
-        fun r => plainLaw (pure ((c, r.1), r.2))).toOuterMeasure {r | wins r.1} ≤
-        A.indicator 1 c + PerChallenge.sum s ε.2 := by
-      intro c
-      by_cases hc : c ∈ A
-      · refine le_trans ?_ le_self_add
-        rw [Set.indicator_of_mem hc]
-        exact Probability.PMF.toOuterMeasure_le_one _ _
-      · rw [Set.indicator_of_notMem hc, zero_add]
-        refine Probability.PMF.toOuterMeasure_bind_le _ _ _ fun st' => ?_
-        simp only [plainLaw_pure]
-        rw [toOuterMeasure_bind_pure]
-        exact rbrFrom_le s smp.2 ε.2 (fun p => S (some (c, p))) (fun τ => wins (c, τ)) (h.2 c) hc
-          st'
-    calc ∑' c, ProbComp.eval smp.1 c * _ ≤
-          ∑' c, ProbComp.eval smp.1 c * (A.indicator 1 c + PerChallenge.sum s ε.2) :=
-          tsum_le_tsum fun c => by gcongr; exact hinner c
-      _ = (ProbComp.eval smp.1).toOuterMeasure A + PerChallenge.sum s ε.2 := by
-          simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun c => ?_
-          by_cases hc : c ∈ A <;> simp [hc]
-      _ ≤ ε.1 + PerChallenge.sum s ε.2 := by gcongr; exact h.1 hS
+    refine (Probability.PMF.toOuterMeasure_bind_le_add _ _ A _ (PerChallenge.sum s ε.2)
+      fun c _ hc => ?_).trans (add_le_add (h.1 hS) le_rfl)
+    refine Probability.PMF.toOuterMeasure_bind_le _ _ _ fun st' => ?_
+    simp only [plainLaw_pure]
+    rw [toOuterMeasure_bind_pure]
+    exact rbrFrom_le s smp.2 ε.2 (fun p => S (some (c, p))) (fun τ => wins (c, τ)) (h.2 c) hc st'
 
 /-- **Round-by-round soundness implies soundness**, with the sum of the per-round errors. -/
 theorem Verifier.RbrSound.sound {s : Spec} {StmtIn StmtOut : Type}

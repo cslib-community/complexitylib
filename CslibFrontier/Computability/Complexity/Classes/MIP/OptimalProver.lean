@@ -324,12 +324,9 @@ private theorem listPiPMF_extract [DecidableEq ι] (default : α) (μ : ι → P
       simp only [listPiPMF, Probability.PMF.monad_bind_eq_bind, PMF.map_bind, PMF.map_comp,
         Function.comp_def]
       rw [PMF.bind_comm]
-      congr 1
-      funext a₀
-      congr 1
-      funext a
-      congr 1
-      funext f
+      congr 1 with a₀ : 1
+      congr 1 with a : 1
+      congr 1 with f : 1
       exact Function.update_comm h a₀ a f
 
 /-- Presample an independent tuple of `Sigma TreeStrategy` across all channels `i : ι`. -/
@@ -376,8 +373,7 @@ private theorem piPresample_step [Fintype ι] [DecidableEq ι] (P : ι → Prove
     (presampleTree_step (P i₀) L queries d' (s i₀) hm)
   simp only [PMF.bind_map, PMF.bind_bind, Function.comp_def] at hstep
   rw [hstep]
-  congr 1
-  funext ys
+  congr 1 with ys : 1
   have hcongr : listPiPMF defaultTree (μ d s) ((Finset.univ : Finset ι).toList.erase i₀) =
       listPiPMF defaultTree (μ (Function.update d i₀ d') (Function.update s i₀ ys.2))
         ((Finset.univ : Finset ι).toList.erase i₀) := by
@@ -429,18 +425,8 @@ private theorem run_eq_bind_piPresample [Fintype ι] [DecidableEq ι]
     obtain ⟨i₀, m⟩ := q
     have hm : m ∈ (BitString.shortWords L).toList :=
       Finset.mem_toList.mpr (BitString.mem_shortWords.mpr hq)
-    have hdi₀ : d i₀ = (d i₀ - 1) + 1 := by
-      have := hd i₀
-      lia
-    have hd' : ∀ i, k ≤ Function.update d i₀ (d i₀ - 1) i := by
-      intro i
-      by_cases h : i = i₀
-      · subst h
-        have := hd i
-        simp only [Function.update_self]
-        lia
-      · simp only [Function.update_of_ne h]
-        exact (Nat.le_succ k).trans (hd i)
+    have hdi₀ : d i₀ = (d i₀ - 1) + 1 := by grind
+    have hd' : ∀ i, k ≤ Function.update d i₀ (d i₀ - 1) i := by grind
     change ((OracleComp.interpret (Prover.independent P).respond
         (OracleComp.query (i₀, m) >>= next)).run s).map Prod.fst =
       (piPresample P L (BitString.shortWords L).toList d s).bind fun f =>
@@ -465,11 +451,9 @@ private theorem run_eq_bind_piPresample [Fintype ι] [DecidableEq ι]
     simp only [PMF.bind_map, PMF.bind_bind, Function.comp_def] at hstep
     rw [hstep]
     simp only [StateT.run_mk, PMF.bind_map, Function.comp_def]
-    congr 1
-    funext ys
+    congr 1 with ys : 1
     rw [ih ys.1 (Function.update d i₀ (d i₀ - 1)) hd' (Function.update s i₀ ys.2)]
-    congr 1
-    funext f'
+    congr 1 with f' : 1
     rw [← htake ys.1]
     rfl
 
@@ -754,9 +738,7 @@ theorem validFrom_candidateProver (H : List (List (List Bool × List Bool)))
       cases hmem_match
     | cons first more =>
       obtain ⟨r₀, rest₀⟩ := first
-      have hfirst_mem : (r₀, rest₀) ∈ cand.filterMap filterFn := by
-        rw [hm]
-        exact List.mem_cons_self
+      have hfirst_mem : (r₀, rest₀) ∈ cand.filterMap filterFn := by grind
       rw [List.mem_filterMap] at hfirst_mem
       obtain ⟨h₀, hh₀, hfilter₀⟩ := hfirst_mem
       cases h₀ with

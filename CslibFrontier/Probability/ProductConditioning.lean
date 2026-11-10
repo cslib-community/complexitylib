@@ -39,6 +39,8 @@ inequality and Cauchy–Schwarz then bound the sum of statistical distances.
 * `Cslib.Probability.PMF.sum_mul_log_div_filter`: conditioning on `W` has divergence
   `ln (1 / Pr[W])`.
 * `Cslib.Probability.PMF.sum_sum_mul_log_div_map_le`: superadditivity of divergence from a product.
+* `Cslib.Probability.PMF.sum_sq_dist_map_le`: the squared distances of the marginals from the
+  factors add up to at most half the divergence from the product (Pinsker's inequality).
 * `Cslib.Probability.PMF.sum_sq_dist_map_filter_pi_le`: Raz's conditioning lemma.
 * `Cslib.Probability.PMF.toOuterMeasure_toReal_le_two_rpow`: Holenstein's form
   `Pr[W] ≤ 2 ^ (-∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖²)`.
@@ -135,6 +137,25 @@ theorem sum_sum_mul_log_div_map_le [DecidableEq ι] (P : PMF (∀ i, β i)) (p :
   simp only [← hmarg]
   linarith
 
+/-- **Pinsker's inequality for the marginals.** The squared statistical distances of the marginals
+of `P` from the factors `p j` add up to at most half the divergence of `P` from the product `pi p`,
+in nats: Pinsker's inequality for each marginal, summed by `sum_sum_mul_log_div_map_le`. -/
+theorem sum_sq_dist_map_le [DecidableEq ι] (P : PMF (∀ i, β i)) (p : ∀ i, PMF (β i))
+    (h : P.support ⊆ (pi p).support) :
+    ∑ j, dist (P.map fun u => u j) (p j) ^ 2 ≤
+      (∑ u, (P u).toReal * Real.log ((P u).toReal / (pi p u).toReal)) / 2 := by
+  have hpinsker (j : ι) : 2 * dist (P.map fun u => u j) (p j) ^ 2 ≤
+      ∑ a, ((P.map fun u => u j) a).toReal *
+        Real.log (((P.map fun u => u j) a).toReal / (p j a).toReal) := by
+    refine two_mul_dist_sq_le_sum_mul_log_div fun a ha => ?_
+    rw [PMF.support_map] at ha
+    obtain ⟨u, hu, rfl⟩ := ha
+    exact (mem_support_pi_iff p u).mp (h hu) j
+  have hsum := (sum_le_sum fun j (_ : j ∈ univ) => hpinsker j).trans
+    (sum_sum_mul_log_div_map_le P p h)
+  rw [← mul_sum] at hsum
+  linarith
+
 /-- **Raz's conditioning lemma** [Raz, Claim 5.1][Raz1998], [Holenstein, Lemma 4.1][Holenstein2009].
 Conditioning independent coordinates on an event `W` moves them little:
 `∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖² ≤ ln (1 / Pr[W]) / 2`. -/
@@ -143,23 +164,12 @@ theorem sum_sq_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β
     ∑ j, dist (((pi p).filter W hW).map fun u => u j) (p j) ^ 2 ≤
       Real.log (1 / ((pi p).toOuterMeasure W).toReal) / 2 := by
   classical
-  set Q := (pi p).filter W hW
-  have hQ : Q.support ⊆ (pi p).support := by
+  have hQ : ((pi p).filter W hW).support ⊆ (pi p).support := by
     rw [PMF.support_filter]
     exact Set.inter_subset_right
-  have hsup := sum_sum_mul_log_div_map_le Q p hQ
-  rw [sum_mul_log_div_filter] at hsup
-  have hpinsker : ∀ j, 2 * dist (Q.map fun u => u j) (p j) ^ 2 ≤
-      ∑ a, ((Q.map fun u => u j) a).toReal *
-        Real.log (((Q.map fun u => u j) a).toReal / (p j a).toReal) := by
-    intro j
-    refine two_mul_dist_sq_le_sum_mul_log_div fun a ha => ?_
-    rw [PMF.support_map] at ha
-    obtain ⟨u, hu, rfl⟩ := ha
-    exact (mem_support_pi_iff p u).mp (hQ hu) j
-  have := sum_le_sum fun j (_ : j ∈ univ) => hpinsker j
-  rw [← mul_sum] at this
-  linarith
+  have h := sum_sq_dist_map_le _ p hQ
+  rw [sum_mul_log_div_filter] at h
+  exact h
 
 /-- **Raz's conditioning lemma** in the form of [Holenstein, Lemma 4.1, (4.1)][Holenstein2009]:
 `Pr[W] ≤ 2 ^ (-∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖²)`. -/

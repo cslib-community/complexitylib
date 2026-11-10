@@ -31,8 +31,7 @@ example : ∃ g, GateCode.toPlacedGate? 3 (false, 2, [0, 1]) = some g ∧
     (GateCode.isSome_toPlacedGate?_iff.mpr (by decide : GateCode.WellFormed 3 (false, 2, [0, 1])))
   refine ⟨g, hg, ?_⟩
   rw [GateCode.eval_toPlacedGate_ket hg (by decide)]
-  congr 1
-  funext i
+  congr 1 with i : 1
   fin_cases i <;> rfl
 
 /-! ### A family that reads the first input bit -/

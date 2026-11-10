@@ -448,10 +448,7 @@ private theorem Good.step {φ : QBF ℕ} {s : State} (h : Good φ s) : Good φ (
       obtain ⟨hle, hnest₂⟩ := hnest
       have hpop : Nested φ.tokens.length input.length stack := hnest₂.mono (by omega)
       have hkeep : ∀ g ∈ { f with first := some b } :: stack, g.token :: g.rest <:+ φ.tokens := by
-        intro g hg
-        rcases List.mem_cons.mp hg with rfl | hg
-        · exact hf
-        · exact hbelow g hg
+        grind
       obtain ⟨⟨k, x⟩, first, rest⟩ := f
       cases k <;> cases first <;>
         first

@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Fagin.Tableau.Defs
+import CslibFrontier.Computability.Machines.Turing.MultiTape.InputAt
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Semantic realization of the first-order tableau formulas on `Fin B`
@@ -86,10 +88,7 @@ theorem exists_of_realize_endPosSentence {u : List Bool}
     (h : (Fin B) ⊨ endPosSentence r) :
     ∃ e : Fin B, u.length ≤ (e : ℕ) ∧ (e : ℕ) + 1 < B ∧
       ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = (e : ℕ) := by
-  simp only [endPosSentence, Sentence.realize_inf, realize_closeEx, realize_closeAll,
-    Formula.realize_inf, Formula.realize_not, Formula.realize_imp, Formula.realize_iExs,
-    realize_rel₁, realize_le hlt, realize_isMax hlt, realize_varEq,
-    Sum.elim_inl, Sum.elim_inr] at h
+  fo_simp [endPosSentence, realize_le hlt, realize_isMax hlt] at h
   obtain ⟨⟨yE, ⟨hE, ⟨yU, hU, hle⟩⟩, hnotMax⟩, huniq⟩ := h
   have hU_eq : (yU 0 : ℕ) = u.length := (huLen (yU 0)).1 hU
   rw [Fin.le_def] at hle
@@ -110,10 +109,7 @@ theorem realize_endPosSentence_of_canonical {u : List Bool} {e : ℕ}
     (huLen : ∀ z : Fin B, RelMap r.uLen ![z] ↔ (z : ℕ) = u.length)
     (hend : ∀ z : Fin B, RelMap r.endPos ![z] ↔ (z : ℕ) = e) :
     (Fin B) ⊨ endPosSentence r := by
-  simp only [endPosSentence, Sentence.realize_inf, realize_closeEx, realize_closeAll,
-    Formula.realize_inf, Formula.realize_not, Formula.realize_imp, Formula.realize_iExs,
-    realize_rel₁, realize_le hlt, realize_isMax hlt, realize_varEq,
-    Sum.elim_inl, Sum.elim_inr]
+  fo_simp [endPosSentence, realize_le hlt, realize_isMax hlt]
   refine ⟨⟨![(⟨e, by omega⟩ : Fin B)], ⟨(hend _).2 rfl, ⟨![(⟨u.length, by omega⟩ : Fin B)],
     (huLen _).2 rfl, ?_⟩⟩, ?_⟩, fun y ⟨h0, h1⟩ => ?_⟩
   · simpa [Fin.le_def] using hle
@@ -129,23 +125,12 @@ theorem realize_inputAtFormula {u w : List Bool}
   have heB := hI.length_lt
   rcases s with _ | b
   · -- `s = none`
-    simp only [inputAtFormula, Formula.realize_sup, realize_isZero hlt, Formula.realize_iExs,
-      Formula.realize_inf, realize_rel₁, realize_lt hlt, Sum.elim_inl, Sum.elim_inr,
-      Fin.lt_def]
-    constructor
-    · rintro (hj0 | ⟨yE, hE, hltE⟩)
-      · simp [inputAt, hj0]
-      · have hE' := (hI.endPos_iff (yE 0)).1 hE
-        simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false]
-        exact List.getElem?_eq_none (by simp; omega)
-    · intro hnone
-      by_cases hj0 : (env vJ : ℕ) = 0
-      · exact Or.inl hj0
-      · right
-        simp only [inputAt, hj0, ite_false, List.getElem?_eq_none_iff, List.length_append] at hnone
-        refine ⟨![(⟨u.length + w.length, by omega⟩ : Fin B)], (hI.endPos_iff _).2 rfl, ?_⟩
-        dsimp
-        omega
+    fo_simp [inputAtFormula, realize_isZero hlt, realize_lt hlt, Fin.lt_def, inputAt_eq_none_iff,
+      List.length_append]
+    refine or_congr Iff.rfl ⟨fun ⟨yE, hE, hltE⟩ => ?_, fun hj => ?_⟩
+    · have hE' := (hI.endPos_iff (yE 0)).1 hE
+      omega
+    · exact ⟨![⟨u.length + w.length, by omega⟩], (hI.endPos_iff _).2 rfl, hj⟩
   · -- `s = some b`
     have huBit_iff : ∀ (p : Fin B) (hp : (p : ℕ) < u.length),
         (if b then RelMap r.uBit ![p] else ¬RelMap r.uBit ![p]) ↔ u[(p : ℕ)]? = some b := by
@@ -168,49 +153,35 @@ theorem realize_inputAtFormula {u w : List Bool}
             (env vJ : ℕ) ≤ (y 1 : ℕ)) ∧
             (if b then RelMap r.certBit ![env vJ] else ¬RelMap r.certBit ![env vJ])) := by
       cases b <;>
-        simp only [inputAtFormula, Formula.realize_sup, Formula.realize_iExs, Formula.realize_inf,
-          Formula.realize_not, realize_succ hlt, realize_rel₁, realize_lt hlt,
-          realize_le hlt, Sum.elim_inl, Sum.elim_inr, Fin.lt_def, Fin.le_def,
-          Bool.false_eq_true, ↓reduceIte]
-    rw [hform]
+        fo_simp [inputAtFormula, realize_succ hlt, realize_lt hlt, realize_le hlt, Fin.lt_def,
+          Fin.le_def, ↓reduceIte]
+    rw [hform, inputAt_eq_some_iff]
     constructor
     · rintro (⟨y, ⟨⟨hp, hU⟩, hltU⟩, hBit⟩ | ⟨y, ⟨⟨⟨hU, hE⟩, hgtU⟩, hleE⟩, hCert⟩)
       · have hU' := (hI.uLen_iff (y 1)).1 hU
         have hp_lt : (y 0 : ℕ) < u.length := by omega
-        have hj_sub : (env vJ : ℕ) - 1 = (y 0 : ℕ) := by omega
-        simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false, hj_sub,
-          List.getElem?_append_left hp_lt]
+        refine ⟨y 0, hp, ?_⟩
+        rw [List.getElem?_append_left hp_lt]
         exact (huBit_iff (y 0) hp_lt).1 hBit
       · have hU' := (hI.uLen_iff (y 0)).1 hU
         have hE' := (hI.endPos_iff (y 1)).1 hE
-        have hge : u.length ≤ (env vJ : ℕ) - 1 := by omega
-        simp only [inputAt, show (env vJ : ℕ) ≠ 0 by omega, ite_false,
-          List.getElem?_append_right hge]
+        refine ⟨(env vJ : ℕ) - 1, by omega, ?_⟩
+        rw [List.getElem?_append_right (by omega)]
         exact (hcert_iff (env vJ) (by omega) (by omega)).1 hCert
-    · intro hsome
-      have hj0 : (env vJ : ℕ) ≠ 0 := by rintro h0; simp [inputAt, h0] at hsome
-      simp only [inputAt, hj0, ite_false] at hsome
-      by_cases hju : (env vJ : ℕ) ≤ u.length
-      · left
-        have hp_lt : (env vJ : ℕ) - 1 < u.length := by omega
-        rw [List.getElem?_append_left hp_lt] at hsome
-        let p : Fin B := ⟨(env vJ : ℕ) - 1, by omega⟩
-        let uFin : Fin B := ⟨u.length, by omega⟩
-        refine ⟨![p, uFin], ⟨⟨by dsimp [p]; omega, (hI.uLen_iff uFin).2 rfl⟩, hp_lt⟩, ?_⟩
-        rw [Matrix.cons_val_zero, huBit_iff p hp_lt]
-        exact hsome
-      · right
-        have hge : u.length ≤ (env vJ : ℕ) - 1 := by omega
-        rw [List.getElem?_append_right hge] at hsome
-        have hidx : (env vJ : ℕ) - 1 - u.length < w.length := by
-          by_contra hle
-          rw [List.getElem?_eq_none (by omega)] at hsome
-          cases hsome
-        let uFin : Fin B := ⟨u.length, by omega⟩
-        let eFin : Fin B := ⟨u.length + w.length, by omega⟩
-        refine ⟨![uFin, eFin], ⟨⟨⟨(hI.uLen_iff uFin).2 rfl, (hI.endPos_iff eFin).2 rfl⟩,
-          by dsimp [uFin]; omega⟩, by dsimp [eFin]; omega⟩, ?_⟩
-        rw [hcert_iff (env vJ) (by omega) (by omega)]
+    · rintro ⟨q, hq, hsome⟩
+      rcases lt_or_ge q u.length with hqu | hqu
+      · -- the position lies in the input `u`
+        rw [List.getElem?_append_left hqu] at hsome
+        let p : Fin B := ⟨q, by omega⟩
+        exact Or.inl ⟨![p, ⟨u.length, by omega⟩], ⟨⟨hq, (hI.uLen_iff _).2 rfl⟩, hqu⟩,
+          (huBit_iff p hqu).2 hsome⟩
+      · -- the position lies in the certificate `w`
+        rw [List.getElem?_append_right hqu] at hsome
+        have hidx : q - u.length < w.length := (List.getElem?_eq_some_iff.mp hsome).choose
+        refine Or.inr ⟨![⟨u.length, by omega⟩, ⟨u.length + w.length, by omega⟩],
+          ⟨⟨⟨(hI.uLen_iff _).2 rfl, (hI.endPos_iff _).2 rfl⟩, by dsimp; omega⟩, by dsimp; omega⟩,
+          ?_⟩
+        rw [hcert_iff (env vJ) (by omega) (by omega), hq, Nat.add_sub_cancel]
         exact hsome
 
 /-- Predicate stating that the relation symbols of `r` at time `t : Fin B` agree with a
@@ -236,9 +207,8 @@ private theorem realize_inReadFormula {u w : List Bool} {cfg : Cfg m Bool State 
     (s : Option Bool) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (inReadFormula r s vT).Realize env ↔ (Feature.inRead s).Holds cfg := by
   have heB := hI.length_lt
-  simp only [inReadFormula, Formula.realize_iExs, Formula.realize_inf, realize_rel₂,
-    realize_inputAtFormula hlt hI, Sum.elim_inl, Sum.elim_inr, ht,
-    hA.inPos, holds_inPos, holds_inRead, Cfg.inputSymbol_eq_inputAt]
+  fo_simp [inReadFormula, realize_inputAtFormula hlt hI, ht, hA.inPos, holds_inPos, holds_inRead,
+    Cfg.inputSymbol_eq_inputAt]
   constructor
   · rintro ⟨y, hpos, hs⟩
     rwa [hpos]
@@ -251,10 +221,8 @@ private theorem realize_readFormula {input : List Bool} {cfg : Cfg m Bool State 
     (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     (i : Fin m) (s : Option Bool) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (readFormula r i s vT).Realize env ↔ (Feature.read i s).Holds cfg := by
-  simp only [readFormula, Formula.realize_iExs, Formula.realize_sup, Formula.realize_inf,
-    realize_rel₂, Sum.elim_inl, Sum.elim_inr, ht,
-    hA.headPos, hA.headNeg, hA.cellPos, hA.cellNeg,
-    holds_head, holds_cell, holds_read, Cfg.workTapeSymbols]
+  fo_simp [readFormula, ht, hA.headPos, hA.headNeg, hA.cellPos, hA.cellNeg, holds_head, holds_cell,
+    holds_read, Cfg.workTapeSymbols]
   constructor
   · rintro ⟨y, (⟨hh, hc⟩ | ⟨hh, hc⟩)⟩ <;> rwa [hh]
   · intro hs
@@ -276,8 +244,7 @@ theorem realize_sitFormula {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {
     (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     (y : Situation m State) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (sitFormula r y vT).Realize env ↔ (Feature.sit y).Holds cfg := by
-  simp only [sitFormula, Formula.realize_inf, Formula.realize_iInf, realize_rel₁, ht,
-    hA.state, realize_inReadFormula hlt hI  hA _ vT env ht,
+  fo_simp [sitFormula, ht, hA.state, realize_inReadFormula hlt hI hA _ vT env ht,
     realize_readFormula hb hA _ _ vT env ht, holds_sit_iff, and_assoc]
 
 include hlt in
@@ -298,9 +265,7 @@ private theorem realize_inPosPrevFormula {u w : List Bool} {cfg : Cfg m Bool Sta
       moveInputPosNat, SignType.zero_eq_zero, SignType.coe_zero]
     omega
   · -- `d = .neg`
-    simp only [inPosPrevFormula, Formula.realize_sup, Formula.realize_inf,
-      realize_isZero hlt, Formula.realize_iExs, realize_succ hlt, realize_rel₂,
-      Sum.elim_inl, Sum.elim_inr, ht, hA.inPos, holds_inPos,
+    fo_simp [inPosPrevFormula, realize_isZero hlt, realize_succ hlt, ht, hA.inPos, holds_inPos,
       moveInputPosNat, SignType.neg_eq_neg_one, SignType.coe_neg_one]
     constructor
     · rintro (⟨hj0, hp0⟩ | ⟨y, hy, hpy⟩) <;> omega
@@ -310,10 +275,8 @@ private theorem realize_inPosPrevFormula {u w : List Bool} {cfg : Cfg m Bool Sta
       · right
         refine ⟨![(⟨cfg.inputPos.val, by omega⟩ : Fin B)], by dsimp; omega, rfl⟩
   · -- `d = .pos`
-    simp only [inPosPrevFormula, Formula.realize_sup, Formula.realize_inf,
-      Formula.realize_iExs, realize_rel₁, realize_succ hlt, realize_le hlt,
-      realize_rel₂, Sum.elim_inl, Sum.elim_inr, Fin.le_def, ht, hA.inPos, holds_inPos,
-      moveInputPosNat, SignType.pos_eq_one, SignType.coe_one]
+    fo_simp [inPosPrevFormula, realize_succ hlt, realize_le hlt, Fin.le_def, ht, hA.inPos,
+      holds_inPos, moveInputPosNat, SignType.pos_eq_one, SignType.coe_one]
     constructor
     · rintro (⟨y, ⟨hE, hsucc⟩, hpj⟩ | ⟨y, ⟨⟨⟨hE, hle⟩, hsucc⟩, hp0⟩⟩)
       · have hE' := (hend (y 0)).1 hE
@@ -347,9 +310,8 @@ private theorem realize_headPrevFormula {headSame headOpp : L'.Relations 2} {t :
     simp only [headPrevFormula, realize_rel₂, ht, hSame,
       SignType.zero_eq_zero, SignType.coe_zero, mul_zero, add_zero]
   · -- `d = .neg`
-    simp only [headPrevFormula, Formula.realize_iExs, Formula.realize_inf,
-      realize_succ hlt, realize_rel₂, Sum.elim_inl, Sum.elim_inr, ht, hSame,
-      SignType.neg_eq_neg_one, SignType.coe_neg_one]
+    fo_simp [headPrevFormula, realize_succ hlt, ht, hSame, SignType.neg_eq_neg_one,
+      SignType.coe_neg_one]
     constructor
     · rintro ⟨y, hsucc, hpos⟩
       rcases hsign with rfl | rfl <;> omega
@@ -359,9 +321,7 @@ private theorem realize_headPrevFormula {headSame headOpp : L'.Relations 2} {t :
       dsimp
       rcases hsign with rfl | rfl <;> omega
   · -- `d = .pos`
-    simp only [headPrevFormula, Formula.realize_sup, Formula.realize_inf,
-      realize_isZero hlt, Formula.realize_iExs, realize_succ hlt, realize_rel₂,
-      Sum.elim_inl, Sum.elim_inr, ht, hSame, hOpp,
+    fo_simp [headPrevFormula, realize_isZero hlt, realize_succ hlt, ht, hSame, hOpp,
       SignType.pos_eq_one, SignType.coe_one, mul_one]
     constructor
     · rintro (⟨ha0, y, hsucc, hpos⟩ | ⟨y, hsucc, hpos⟩)
@@ -387,9 +347,7 @@ theorem realize_stateStepRHS [DecidableEq State]
     (hI : r.EncodesInput B u w) (hb : ∀ i : Fin m, |cfg.workTapePos i| < B) (hA : r.AgreesAt cfg t)
     (q' : Option State) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (stateStepRHS r tm q' vT).Realize env ↔ (Feature.state q').Holds (tm.step cfg) := by
-  simp only [stateStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
-    realize_rel₁, ht, hA.state,
-    realize_sitFormula hlt hI hb hA _ vT env ht]
+  fo_simp [stateStepRHS, ht, hA.state, realize_sitFormula hlt hI hb hA _ vT env ht]
   rw [holds_step_state_iff tm q']
   refine or_congr ⟨fun ⟨h, hq⟩ => ⟨h, by split_ifs at hq with h' <;> simp_all⟩,
     fun ⟨h, hq⟩ => ⟨h, by simp [hq]⟩⟩ ?_
@@ -404,9 +362,7 @@ theorem realize_outStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} {
     (o : OutView) {V : Type*} (vT : V) (env : V → Fin B) (ht : env vT = t) :
     (outStepRHS r tm o vT).Realize env ↔ (Feature.out o).Holds (tm.step cfg) := by
   classical
-  simp only [outStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
-    realize_rel₁, ht, hA.state, hA.out,
-    realize_sitFormula hlt hI hb hA _ vT env ht]
+  fo_simp [outStepRHS, ht, hA.state, hA.out, realize_sitFormula hlt hI hb hA _ vT env ht]
   rw [holds_step_out_iff tm o]
   refine or_congr Iff.rfl ?_
   simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_univ, true_and]
@@ -421,9 +377,7 @@ theorem realize_inPosStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)}
     {V : Type*} (vT vJ : V) (env : V → Fin B) (ht : env vT = t) :
     (inPosStepRHS r tm vT vJ).Realize env ↔ (Feature.inPos (env vJ : ℕ)).Holds (tm.step cfg) := by
   classical
-  simp only [inPosStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
-    realize_rel₁, realize_rel₂, ht, hA.state, hA.inPos,
-    realize_sitFormula hlt hI hb hA _ vT env ht,
+  fo_simp [inPosStepRHS, ht, hA.state, hA.inPos, realize_sitFormula hlt hI hb hA _ vT env ht,
     realize_inPosPrevFormula hlt hI.length_lt hI.endPos_iff hA _ vT vJ env ht]
   rcases hq : cfg.state with _ | q
   · simp [hq, not_holds_sit hq]
@@ -448,11 +402,8 @@ private theorem realize_headStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u
   have hsign' : (sign : ℤ) = 1 ∨ (sign : ℤ) = -1 := by rcases hsign with rfl | rfl <;> simp
   have hmul_coe : ∀ d : SignType, (sign : ℤ) * ((sign * d : SignType) : ℤ) = (d : ℤ) := by
     rcases hsign with rfl | rfl <;> rintro (_ | _ | _) <;> rfl
-  simp only [headStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_iSup,
-    realize_rel₁, realize_rel₂, ht, hA.state, hSame,
-    realize_sitFormula hlt hI hb' hA _ vT env ht,
-    realize_headPrevFormula hlt (hb i) hsign' hSame hOpp _ vT vA env ht,
-    hmul_coe]
+  fo_simp [headStepRHS, ht, hA.state, hSame, realize_sitFormula hlt hI hb' hA _ vT env ht,
+    realize_headPrevFormula hlt (hb i) hsign' hSame hOpp _ vT vA env ht, hmul_coe]
   rcases hq : cfg.state with _ | q
   · simp [hq, not_holds_sit hq]
   · simp [holds_state, hq, holds_sit_iff_eq hq, holds_head, step_eq_apply tm hq,
@@ -496,9 +447,7 @@ theorem realize_cellStepRHS {u w : List Bool} {cfg : Cfg m Bool State (u ++ w)} 
     (cellStepRHS r tm headSame cellSame i s vT vA).Realize env ↔
       (Feature.cell i z s).Holds (tm.step cfg) := by
   classical
-  simp only [cellStepRHS, Formula.realize_sup, Formula.realize_inf, Formula.realize_not,
-    Formula.realize_iSup, realize_rel₁, realize_rel₂, ht, hA.state, hhead, hcell,
-    realize_sitFormula hlt hI hb hA _ vT env ht]
+  fo_simp [cellStepRHS, ht, hA.state, hhead, hcell, realize_sitFormula hlt hI hb hA _ vT env ht]
   rw [holds_step_cell_iff tm z s]
   refine or_congr Iff.rfl ?_
   simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_univ, true_and]
@@ -510,10 +459,7 @@ include hlt in
 /-- Semantic characterization of `initSentence`: it holds iff `AgreesAt` holds at `t = 0`. -/
 theorem realize_initSentence [DecidableEq State] {input : List Bool} (hB1 : 1 < B) :
     (Fin B) ⊨ initSentence r tm ↔ r.AgreesAt (tm.initCfg input) (⟨0, by omega⟩ : Fin B) := by
-  simp only [initSentence, realize_closeAll, Formula.realize_imp, Formula.realize_inf,
-    Formula.realize_iInf, Formula.realize_iff, Formula.realize_iAlls, Formula.realize_iExs,
-    realize_isZero hlt, realize_rel₁, realize_rel₂, realize_succ hlt,
-    Sum.elim_inl, Sum.elim_inr]
+  fo_simp [initSentence, realize_isZero hlt, realize_succ hlt]
   have h1_iff : ∀ j : Fin B,
       (∃ y : Fin 1 → Fin B, (y 0 : ℕ) = 0 ∧ (j : ℕ) = (y 0 : ℕ) + 1) ↔ (j : ℕ) = 1 := by
     intro j

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.DiffieHellman
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
@@ -183,7 +184,7 @@ theorem ddhFixedURerandomizeLaw_ideal (d : F.Desc) {α β γ : ZMod (F.order d)}
       rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
   simp_rw [hσ]
   rw [PMF.bind_comm]
-  congr 1; funext β'
+  congr 1 with β' : 1
   change (PMF.uniformOfFintype (ZMod (F.order d))).bind
     ((fun γ' => PMF.pure (β' • F.generator d, γ' • F.generator d)) ∘
       (Equiv.mulRight₀ (γ - α * β) (sub_ne_zero.mpr hγ)).trans (Equiv.addLeft (α * β'))) = _
@@ -254,7 +255,7 @@ theorem multiDDHRerandomizeLaw_real (d : F.Desc) (ι : Type*) [Fintype ι] [Deci
     ← PMF.uniformOfFintype_prod_map_fst (α := ι → ZMod (F.order d)) (β := ι → ZMod (F.order d)),
     ← PMF.uniformOfFintype_map_equiv e, PMF.map_comp, PMF.map_comp,
     multiDDHRerandomizeLaw]
-  congr 1; funext r; funext i
+  congr 1 with r : 1; funext i
   simp [e, ddhRerandomizeRealTupleEquiv, ddhFixedURerandomize_smul_generator]
 
 /-- On any non-DDH triple `(α • g, β • g, γ • g)` with `γ ≠ α * β`, `multiDDHRerandomizeLaw`
@@ -269,7 +270,7 @@ theorem multiDDHRerandomizeLaw_ideal (d : F.Desc) (ι : Type*) [Fintype ι] [Dec
       (ddhRerandomizeRealCoordEquiv β).trans (ddhRerandomizeSecondCoordEquiv hγ)
   rw [multiDDHIdealTupleLaw, ← PMF.uniformOfFintype_map_equiv e, PMF.map_comp,
     multiDDHRerandomizeLaw]
-  congr 1; funext r; funext i
+  congr 1 with r : 1; funext i
   simp [e, ddhRerandomizeRealCoordEquiv, ddhRerandomizeSecondCoordEquiv,
     ddhFixedURerandomize_smul_generator]
 
@@ -297,15 +298,13 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
         (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) =
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (F.multiDDHRealTupleLaw d ι α).bind (test (α • F.generator d))) := by
-    simp only [ddhRealTupleLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-      PMF.pure_bind, multiDDHRerandomizeLaw_real, PMF.bind_const]
+    simp only [pmf_norm, ddhRealTupleLaw, multiDDHRerandomizeLaw_real, PMF.bind_const]
   rw [← hreal]
   refine (Game.advantage_triangle _
     ((F.ddhIdealTupleLaw d).bind fun t =>
       (F.multiDDHRerandomizeLaw d ι t.1 t.2.1 t.2.2).bind (test t.1)) _).trans ?_
   refine add_le_add le_rfl ?_
-  simp only [ddhIdealTupleLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
+  simp only [pmf_norm, ddhIdealTupleLaw]
   -- Bound the advantage inside the outer `α, β` averages using `Game.advantage_bind_le`.
   have hpoint (α β : ZMod (F.order d)) :
       (Game.advantage

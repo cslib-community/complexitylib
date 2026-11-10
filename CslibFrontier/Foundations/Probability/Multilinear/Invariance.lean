@@ -100,7 +100,7 @@ theorem abs_integral_sub_integral_le_of_moments {μ ν : Measure ℝ} [IsProbabi
     rw [integral_finsetSum _ hint]
     refine sum_congr rfl fun j _ => ?_
     rw [← integral_const_mul]
-    congr 1; funext s; simp only [mul_pow]; ring
+    congr 1 with s : 1; simp only [mul_pow]; ring
   have hRint {m : Measure ℝ} [IsProbabilityMeasure m] (hm : MemLp id ((n + 1 : ℕ) : ℝ≥0∞) m) :
       Integrable R m :=
     ((integrable_abs_pow_of_memLp hm le_rfl).const_mul K).mono'
@@ -109,7 +109,7 @@ theorem abs_integral_sub_integral_le_of_moments {μ ν : Measure ℝ} [IsProbabi
   have hsplit {m : Measure ℝ} [IsProbabilityMeasure m] (hm : MemLp id ((n + 1 : ℕ) : ℝ≥0∞) m) :
       ∫ s, ψ (a + s * b) ∂m = ∫ s, T s ∂m + ∫ s, R s ∂m := by
     rw [← integral_add (hTint hm).1 (hRint hm)]
-    congr 1; funext s; simp [R]
+    congr 1 with s : 1; simp [R]
   have hRle {m : Measure ℝ} [IsProbabilityMeasure m] (hm : MemLp id ((n + 1 : ℕ) : ℝ≥0∞) m) :
       |∫ s, R s ∂m| ≤ K * ∫ s, |s| ^ (n + 1) ∂m := by
     rw [← integral_const_mul]
@@ -135,7 +135,7 @@ theorem integral_abs_pow_three_le (hμ : HasInvarianceMoments μ) : ∫ s, |s| ^
     ((integrable_abs_pow_of_memLp hm4 (j := 3) (by norm_num)).congr (ae_of_all _ fun s => by
       simp only; rw [← sq_abs s]; ring))
   have h3 : ∫ s, |s| * s ^ 2 ∂μ = ∫ s, |s| ^ 3 ∂μ := by
-    congr 1; funext s; rw [← sq_abs s]; ring
+    congr 1 with s : 1; rw [← sq_abs s]; ring
   simp only [sq_abs, ← pow_mul] at h
   rw [h3, hμ.integral_sq, one_mul] at h
   have h0 : 0 ≤ ∫ s, |s| ^ 3 ∂μ := integral_nonneg fun _ => by positivity
@@ -352,7 +352,7 @@ private theorem integral_abs_multilinearDerivCoeff_pow_three_le (P : ι → Meas
     (g := fun z => D z ^ 2) (by simpa using hD2) (by simpa only [← pow_mul] using hD4)
     (hD3.congr (ae_of_all _ fun z => by simp only; rw [← sq_abs (D z)]; ring))
   have h3 : ∫ z, |D z| * D z ^ 2 ∂Measure.pi P = ∫ z, |D z| ^ 3 ∂Measure.pi P := by
-    congr 1; funext z; rw [← sq_abs (D z)]; ring
+    congr 1 with z : 1; rw [← sq_abs (D z)]; ring
   simp only [sq_abs, ← pow_mul, Nat.reduceMul] at hCS
   rw [h3, h2] at hCS
   set M := ∫ z, |D z| ^ 3 ∂Measure.pi P

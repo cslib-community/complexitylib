@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Expected
 public import CslibFrontier.Languages.Probabilistic.Vector
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.EventBind
 
@@ -32,15 +33,10 @@ When one run fails with probability `q` (under answer distributions `h`, as in
   (`OracleComp.expectedCost_retry_le_two_mul`): the expected number of runs is at most `2`.
 
 `OracleComp.pi` runs a family of programs one after the other and collects their results. Over an
-arbitrary interface its possible results are coordinatewise (`OracleComp.mem_supportWith_pi_iff`),
-its expected cost is the sum of the expected costs (`OracleComp.expectedCost_pi`), and the
-probability that some coordinate is bad is at most the sum of the probabilities
-(`OracleComp.toOuterMeasure_evalWith_pi_exists_le`, a union bound). These complement the
-`ProbComp` statements of `CslibFrontier.Languages.Probabilistic.Vector`.
-`ProbComp.mem_support_pi_iff`
-there is the special case of `OracleComp.mem_supportWith_pi_iff` for uniform replies, with the same
-proof. Deriving it from the general lemma would make `Vector` import `Semantics`, so it is left as a
-follow-up.
+arbitrary interface its expected cost is the sum of the expected costs
+(`OracleComp.expectedCost_pi`), and the probability that some coordinate is bad is at most the sum
+of the probabilities (`OracleComp.toOuterMeasure_evalWith_pi_exists_le`, a union bound). These
+complement the support and law statements of `CslibFrontier.Languages.Probabilistic.Vector`.
 
 ## Main definitions
 
@@ -54,9 +50,8 @@ follow-up.
   `P(a) (1 + q + ⋯ + q ^ (fuel - 1))`, where `P(a)` is the probability that one run returns `a`.
 * `Cslib.OracleComp.expectedCost_retry`, `Cslib.OracleComp.expectedCost_retry_le_two_mul`: the
   expected cost of the loop is a geometric sum, at most twice a run when `q ≤ 1 / 2`.
-* `Cslib.OracleComp.mem_supportWith_pi_iff`, `Cslib.OracleComp.expectedCost_pi`,
-  `Cslib.OracleComp.toOuterMeasure_evalWith_pi_exists_le`: support, expected cost and union bound
-  for `OracleComp.pi`.
+* `Cslib.OracleComp.expectedCost_pi`, `Cslib.OracleComp.toOuterMeasure_evalWith_pi_exists_le`:
+  expected cost and union bound for `OracleComp.pi`.
 -/
 
 public section
@@ -254,29 +249,6 @@ section Pi
 
 variable {m : ℕ} {β : Fin m → Type v}
 
-/-- A tuple is a possible result of `pi programs` exactly when each coordinate is a possible
-result of its program. -/
-theorem mem_supportWith_pi_iff (possible : (q : ι) → Set (spec q))
-    (programs : (i : Fin m) → OracleComp spec (β i)) (r : (i : Fin m) → β i) :
-    r ∈ supportWith possible (pi programs) ↔ ∀ i, r i ∈ supportWith possible (programs i) := by
-  induction m with
-  | zero =>
-    have hr : r = fun i => i.elim0 := funext fun i => i.elim0
-    subst hr
-    simp
-  | succ m ih =>
-    simp only [pi_succ, mem_supportWith_bind_iff, mem_supportWith_map_iff, ih]
-    constructor
-    · rintro ⟨first, hfirst, rest, hrest, rfl⟩ i
-      refine Fin.cases ?_ ?_ i
-      · simpa using hfirst
-      · intro j
-        simpa using hrest j
-    · intro hr
-      refine ⟨r 0, hr 0, fun j => r j.succ, fun j => hr j.succ, ?_⟩
-      ext i
-      exact Fin.cases rfl (fun _ => rfl) i
-
 variable (h : (q : ι) → PMF (spec q))
 
 /-- The expected cost of running a family of programs is the sum of their expected costs. -/
@@ -298,38 +270,16 @@ theorem toOuterMeasure_evalWith_pi_exists_le (programs : (i : Fin m) → OracleC
   induction m with
   | zero => simp
   | succ m ih =>
-    rw [pi_succ, evalWith_bind, PMF.toOuterMeasure_bind_apply, Fin.sum_univ_succ]
-    set rest := ∑ j : Fin m, (evalWith h (programs j.succ)).toOuterMeasure {a | bad j.succ a}
-    have hstep : ∀ a,
-        (evalWith h (Fin.cons a <$> pi fun j : Fin m => programs j.succ)).toOuterMeasure
-          {r | ∃ i, bad i (r i)} ≤ {a | bad 0 a}.indicator 1 a + rest := by
-      intro a
-      rw [evalWith_map, PMF.toOuterMeasure_map_apply]
-      have hsub : (Fin.cons a : ((j : Fin m) → β j.succ) → (i : Fin (m + 1)) → β i) ⁻¹'
-            {r | ∃ i, bad i (r i)} ⊆ {_r | bad 0 a} ∪ {r | ∃ j, bad j.succ (r j)} := by
-        rintro r ⟨i, hi⟩
-        cases i using Fin.cases with
-        | zero => exact Or.inl (by simpa using hi)
-        | succ j => exact Or.inr ⟨j, by simpa using hi⟩
-      refine (MeasureTheory.measure_mono hsub).trans
-        ((MeasureTheory.measure_union_le _ _).trans (add_le_add ?_ (ih _ _)))
-      by_cases ha : bad 0 a
-      · rw [Set.indicator_of_mem (by exact ha), Pi.one_apply]
-        exact Probability.PMF.toOuterMeasure_le_one _ _
-      · simp [ha]
-    calc ∑' a, evalWith h (programs 0) a *
-          (evalWith h (Fin.cons a <$> pi fun j : Fin m => programs j.succ)).toOuterMeasure
-            {r | ∃ i, bad i (r i)}
-        ≤ ∑' a, evalWith h (programs 0) a * ({a | bad 0 a}.indicator 1 a + rest) :=
-          tsum_le_tsum fun a => by gcongr; exact hstep a
-      _ = (evalWith h (programs 0)).toOuterMeasure {a | bad 0 a} + rest := by
-          simp only [mul_add]
-          rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul, PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun a => ?_
-          by_cases ha : bad 0 a
-          · simp [ha]
-          · simp [ha]
+    rw [pi_succ, evalWith_bind, Fin.sum_univ_succ]
+    refine Probability.PMF.toOuterMeasure_bind_le_add _ _ {a | bad 0 a} _ _ fun a _ ha => ?_
+    rw [evalWith_map, PMF.toOuterMeasure_map_apply]
+    have hsub : (Fin.cons a : ((j : Fin m) → β j.succ) → (i : Fin (m + 1)) → β i) ⁻¹'
+          {r | ∃ i, bad i (r i)} ⊆ {r | ∃ j, bad j.succ (r j)} := by
+      rintro r ⟨i, hi⟩
+      cases i using Fin.cases with
+      | zero => exact (ha (by simpa using hi)).elim
+      | succ j => exact ⟨j, by simpa using hi⟩
+    exact (MeasureTheory.measure_mono hsub).trans (ih _ _)
 
 end Pi
 

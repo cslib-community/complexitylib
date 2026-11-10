@@ -110,8 +110,7 @@ theorem map_not_true (p : PMF α) (E : α → Bool) :
     rw [tsum_bool] at h
     have hnot : (p.map (fun a => !E a)) true = (p.map E) false := by
       rw [PMF.map_apply, PMF.map_apply]
-      congr 1
-      funext a
+      congr 1 with a : 1
       cases E a <;> simp
     rwa [hnot]
   exact ENNReal.eq_sub_of_add_eq

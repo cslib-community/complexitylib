@@ -2,11 +2,20 @@
 
 ## Relational operations and adaptive clients
 
-[StateTransitionSpec](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition.lean#L95) gives a state type, operation type, dependent result type, valid-operation predicate and relational step. A specification need not be deterministic or total; those are separate properties. A priority-queue insertion may choose any fresh handle and an extract-min may choose any tied minimum [complexitylib][complexitylib].
+[StateTransitionSpec](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition.lean#L95) gives a state type, operation type, dependent result type, valid-operation predicate and relational step. A specification need not be deterministic or total; those are separate properties. A priority-queue insertion may choose any fresh handle and an extract-min may choose any tied minimum [cslib-frontier][complexitylib].
 
 `Client` is a typed free program whose next operation can depend on the previous result. `DemonicValid` requires every continuation to remain valid for every allowed result. `ClientRun` records an actual permitted path and transcript. Totality turns demonic validity into existence of a run. `ofFn` specializes a deterministic transition function; `toLTS` and `toFLTS` connect with upstream transition-system interfaces.
 
 A client charge sums explicitly chosen operation weights. Pure Lean work in the continuation is uncharged. An abstract client bound therefore measures interaction with the supplied backend, not total machine time. Refinement packages an invariant, abstract-state map and lower-level method programs; composition transports correctness and cost bounds. [CslibFrontier/DataStructure/StateTransition/Amortized.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition/Amortized.lean) adds potential-based telescoping.
+
+For a deterministic specification, `clientResult`, `clientState` and `clientHistory` give the
+answer, final state and operation history of a client run. To split them at the binds of a `do`
+block, use `simp only [client_simps]` instead of rewriting with `clientState_bind` and its
+relatives by hand. The simp set also splits `totalCost` and `ValidHistory` of the history at the
+state where the first client stops, and, with `WordRAM.Realization` imported, `memoryCost`. It
+does not unfold individual operations: add their step lemmas yourself. See the
+[client-splitting regressions](../../CslibFrontierTests/StateTransitionClientSimps.lean), which
+cover a generic specification and `Memory.spec w`.
 
 For deterministic methods, import `CslibFrontier.DataStructure.StateTransition.LinkCongr` to
 use `StateTransitionSpec.runClient_link_congr` when replacing methods under an adaptive client.
@@ -57,6 +66,8 @@ sizes `n₁`, `n₂`, its scratch size is `l + max n₁ n₂`; the factor remain
 component factor. The original safe-domain and valid-history obligations still apply at the
 actual intermediate state. `Witness.bind_execWithin` can tighten the two component execution
 budgets on that same code and add them, retaining the full memory, output and register frame.
+A new sequential constructor over the same `bindSharedLeft`/`bindSharedRight` layout gets both
+stages' register premises from `bindShared_layout`, as `RealizesRand.Witness.bind` does.
 
 The complete checked [dependent-read client](../../CslibFrontierTests/WordRAMRealizationBindScratch.lean)
 reads a pointer and then its target using one supplied emitter. Its generic Backend has five
@@ -198,6 +209,16 @@ The Chan–He traversal's record helpers are another `Exec.rename_post` client.
 move a fixed register bank through the traversal's own nine-register word stack in exactly
 `9*n+1` and `14*n+1` instructions. They are local to the hand-stepped traversal, not a library
 stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
+
+Each worklist transition, in the catalogue traversal and in the visitor, begins by popping one
+entry with `pop_entry`, which changes memory only inside the reserved stack and keeps the
+persistent caller registers 71–95.
+[`Traversal.Arena.preserved_of_stack_frame`](../../CslibFrontier/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalStackFrame.lean)
+turns that frame into the worklist facts both cursors share: the heap pointer and the floor below
+it, the output-count register, caller controls, memory outside the stack, the prime bitmap, and
+the readback and heap bounds of the pending entries. A new transition should take these facts
+from it rather than re-deriving them. Visitor callers apply it to the
+`comap (preprocessingRegisters r)` views of both states.
 
 Both root controllers reuse
 [`Traversal.initializeRoot_exec`](../../CslibFrontier/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalInitialize.lean).

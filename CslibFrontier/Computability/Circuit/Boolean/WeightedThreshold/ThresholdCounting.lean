@@ -28,11 +28,16 @@ weighted threshold circuits ([KaneWilliams2016], `arXiv:1511.07860v1`, Theorem 2
    `(2 ^ |κ| + 1) ^ ((|κ| + 2) * q + |κ| + 1)` functions in `IsDepthTwoWithGates q`.
    The original fixed-weight refinement `IsDepthTwoOverWeights` counts threshold shifts from a
    fixed finite family `W`: `card_isThresholdShift_le`, `card_isWeightShift_le`, and
-   `card_isDepthTwoOverWeights_le`. Its per-survivor description costs `O(|κ| + log (#W + 1))`
-   bits. This refinement is not attributed to Kane–Williams.
+   `card_isDepthTwoOverWeights_le`; it is monotone in `q` and `W`
+   (`IsDepthTwoOverWeights.mono`, `IsDepthTwoOverWeights.mono_weights`) and contains the
+   constants (`isDepthTwoOverWeights_const`). Its per-survivor
+   description costs `O(|κ| + log (#W + 1))` bits. This refinement is not attributed to
+   Kane–Williams.
 3. **Depth-two circuit collapse under subcube restrictions (`embedUpdate`,
    `sum_card_filter_embedUpdate`, `isDepthTwoWithGates_eval_embedUpdate`,
    `isDepthTwoWithGates_eval_embedUpdate_const`,
+   `sum_card_filter_not_forcedToConst_blockLiveSet_le`,
+   `sum_card_filter_not_forcedToAtMostOne_blockLiveSet_le`,
    `sum_circuitUnforcedConstCount_blockLiveSet_le`,
    `sum_circuitUnforcedAtMostOneCount_blockLiveSet_le`):**
    Under any restriction fixing all inputs outside `univ.image emb` (`emb : κ → Fin n` injective),
@@ -207,15 +212,20 @@ theorem IsDepthTwoWithGates.mono {κ : Type*} [Fintype κ] {q₁ q₂ : ℕ} (hq
   rcases padFeatures_eq g r with ⟨r', hr'⟩ | hr' <;> rw [hr']
   exacts [hg r', isLTF_const false]
 
-/-- **Counting depth-two threshold functions with `q` bottom LTF gates**: there are at most
-`(2 ^ |κ| + 1) ^ ((|κ| + 2) * q + |κ| + 1)` functions in `IsDepthTwoWithGates q`. -/
-theorem card_isDepthTwoWithGates_le {κ : Type*} [Fintype κ] [DecidableEq κ] (q : ℕ) :
-    #{f : (κ → Bool) → Bool | IsDepthTwoWithGates q f} ≤
-      (2 ^ Fintype.card κ + 1) ^ ((Fintype.card κ + 2) * q + Fintype.card κ + 1) := by
-  let G : Finset (Fin q → (κ → Bool) → Bool) := Fintype.piFinset fun _ : Fin q => univ.filter IsLTF
-  have hsub : (univ.filter fun f : (κ → Bool) → Bool => IsDepthTwoWithGates q f) ⊆
+/-- Shared counting step for depth-two classes: if every function in `Q` is a threshold function
+over `q` bottom features satisfying `P`, and at most `B` functions satisfy `P`, then `Q` has at most
+`B ^ q * (2 ^ |κ| + 1) ^ (q + |κ| + 1)` members. -/
+private theorem card_le_of_isThresholdOver_depthTwoFeatures {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (q : ℕ) (P : ((κ → Bool) → Bool) → Prop) [DecidablePred P] {B : ℕ}
+    (hP : #{g : (κ → Bool) → Bool | P g} ≤ B) (Q : ((κ → Bool) → Bool) → Prop) [DecidablePred Q]
+    (hQ : ∀ f, Q f → ∃ g : Fin q → (κ → Bool) → Bool,
+      (∀ r, P (g r)) ∧ IsThresholdOver (depthTwoFeatures q g) f) :
+    #{f : (κ → Bool) → Bool | Q f} ≤
+      B ^ q * (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) := by
+  let G : Finset (Fin q → (κ → Bool) → Bool) := Fintype.piFinset fun _ : Fin q => univ.filter P
+  have hsub : (univ.filter Q) ⊆
       G.biUnion fun g => univ.filter (IsThresholdOver (depthTwoFeatures q g)) := by
-    intro f hf; rw [mem_filter] at hf; rcases hf.2 with ⟨g, hg, hthr⟩
+    intro f hf; rcases hQ f (mem_filter.mp hf).2 with ⟨g, hg, hthr⟩
     exact mem_biUnion.mpr ⟨g, Fintype.mem_piFinset.mpr fun r => mem_filter.mpr ⟨mem_univ _, hg r⟩,
       mem_filter.mpr ⟨mem_univ _, hthr⟩⟩
   have htop (g : Fin q → (κ → Bool) → Bool) :
@@ -223,19 +233,24 @@ theorem card_isDepthTwoWithGates_le {κ : Type*} [Fintype κ] [DecidableEq κ] (
         (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) := by
     simpa [Fintype.card_fun, Fintype.card_bool, Fintype.card_sum, Fintype.card_fin] using
       card_isThresholdOver_le (depthTwoFeatures q g)
-  have hG : #G ≤ ((2 ^ Fintype.card κ + 1) ^ (Fintype.card κ + 1)) ^ q := by
+  have hG : #G ≤ B ^ q := by
     rw [Fintype.card_piFinset, prod_const, card_univ, Fintype.card_fin]
-    exact Nat.pow_le_pow_left card_isLTF_le q
-  calc #{f : (κ → Bool) → Bool | IsDepthTwoWithGates q f}
+    exact Nat.pow_le_pow_left hP q
+  calc #{f : (κ → Bool) → Bool | Q f}
       ≤ ∑ g ∈ G, #{f : (κ → Bool) → Bool | IsThresholdOver (depthTwoFeatures q g) f} :=
         (card_le_card hsub).trans card_biUnion_le
     _ ≤ ∑ _g ∈ G, (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) :=
         sum_le_sum fun g _ => htop g
-    _ ≤ ((2 ^ Fintype.card κ + 1) ^ (Fintype.card κ + 1)) ^ q *
-          (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) := by
-        rw [sum_const, smul_eq_mul]; exact Nat.mul_le_mul_right _ hG
-    _ = (2 ^ Fintype.card κ + 1) ^ ((Fintype.card κ + 2) * q + Fintype.card κ + 1) := by
-        rw [← pow_mul, ← pow_add]; congr 1; ring
+    _ ≤ _ := by rw [sum_const, smul_eq_mul]; exact Nat.mul_le_mul_right _ hG
+
+/-- **Counting depth-two threshold functions with `q` bottom LTF gates**: there are at most
+`(2 ^ |κ| + 1) ^ ((|κ| + 2) * q + |κ| + 1)` functions in `IsDepthTwoWithGates q`. -/
+theorem card_isDepthTwoWithGates_le {κ : Type*} [Fintype κ] [DecidableEq κ] (q : ℕ) :
+    #{f : (κ → Bool) → Bool | IsDepthTwoWithGates q f} ≤
+      (2 ^ Fintype.card κ + 1) ^ ((Fintype.card κ + 2) * q + Fintype.card κ + 1) := by
+  refine (card_le_of_isThresholdOver_depthTwoFeatures q IsLTF card_isLTF_le
+    (IsDepthTwoWithGates q) fun _ hf => hf).trans_eq ?_
+  rw [← pow_mul, ← pow_add]; congr 1; ring
 
 /-! ### Threshold shifts of fixed weight vectors -/
 
@@ -354,6 +369,19 @@ theorem IsDepthTwoOverWeights.mono {κ : Type*} [Fintype κ] {W : Finset (κ →
   rcases padFeatures_eq g r with ⟨r', hr'⟩ | hr' <;> rw [hr']
   exacts [hg r', Or.inl rfl]
 
+/-- `IsDepthTwoOverWeights W q` is monotone in the set `W` of bottom weight vectors. -/
+theorem IsDepthTwoOverWeights.mono_weights {κ : Type*} [Fintype κ] {W₁ W₂ : Finset (κ → ℝ)}
+    (hW : W₁ ⊆ W₂) {q : ℕ} {f : (κ → Bool) → Bool} (hf : IsDepthTwoOverWeights W₁ q f) :
+    IsDepthTwoOverWeights W₂ q f := by
+  rcases hf with ⟨g, hg, hthr⟩
+  exact ⟨g, fun r => (hg r).imp_right fun ⟨β, hβ, hshift⟩ => ⟨β, hW hβ, hshift⟩, hthr⟩
+
+/-- Every constant Boolean function belongs to `IsDepthTwoOverWeights W q`. -/
+theorem isDepthTwoOverWeights_const {κ : Type*} [Fintype κ] (W : Finset (κ → ℝ)) (q : ℕ)
+    (b : Bool) : IsDepthTwoOverWeights W q fun _ => b := by
+  refine ⟨fun _ _ => false, fun _ => Or.inl rfl, 0, if b then 0 else 1, fun u => ?_⟩
+  cases b <;> simp [ltfEval]
+
 /-- **Counting depth-two threshold functions over fixed bottom weight vectors**: there are at most
 `((2 ^ |κ| + 1) * min (#W + 1) ((2 ^ |κ| + 1) ^ |κ|)) ^ q * (2 ^ |κ| + 1) ^ (q + |κ| + 1)`
 functions in `IsDepthTwoOverWeights W q`. Each bottom gate costs `O(|κ| + log #W)` bits, compared
@@ -362,29 +390,9 @@ theorem card_isDepthTwoOverWeights_le {κ : Type*} [Fintype κ] [DecidableEq κ]
     (W : Finset (κ → ℝ)) (q : ℕ) :
     #{f : (κ → Bool) → Bool | IsDepthTwoOverWeights W q f} ≤
       ((2 ^ Fintype.card κ + 1) * min (#W + 1) ((2 ^ Fintype.card κ + 1) ^ Fintype.card κ)) ^ q *
-        (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) := by
-  let G : Finset (Fin q → (κ → Bool) → Bool) :=
-    Fintype.piFinset fun _ : Fin q => univ.filter (IsWeightShift W)
-  have hsub : (univ.filter fun f : (κ → Bool) → Bool => IsDepthTwoOverWeights W q f) ⊆
-      G.biUnion fun g => univ.filter (IsThresholdOver (depthTwoFeatures q g)) := by
-    intro f hf; rw [mem_filter] at hf; rcases hf.2 with ⟨g, hg, hthr⟩
-    exact mem_biUnion.mpr ⟨g, Fintype.mem_piFinset.mpr fun r => mem_filter.mpr ⟨mem_univ _, hg r⟩,
-      mem_filter.mpr ⟨mem_univ _, hthr⟩⟩
-  have htop (g : Fin q → (κ → Bool) → Bool) :
-      #{f : (κ → Bool) → Bool | IsThresholdOver (depthTwoFeatures q g) f} ≤
-        (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) := by
-    simpa [Fintype.card_fun, Fintype.card_bool, Fintype.card_sum, Fintype.card_fin] using
-      card_isThresholdOver_le (depthTwoFeatures q g)
-  have hG : #G ≤ ((2 ^ Fintype.card κ + 1) *
-      min (#W + 1) ((2 ^ Fintype.card κ + 1) ^ Fintype.card κ)) ^ q := by
-    rw [Fintype.card_piFinset, prod_const, card_univ, Fintype.card_fin]
-    exact Nat.pow_le_pow_left (card_isWeightShift_le W) q
-  calc #{f : (κ → Bool) → Bool | IsDepthTwoOverWeights W q f}
-      ≤ ∑ g ∈ G, #{f : (κ → Bool) → Bool | IsThresholdOver (depthTwoFeatures q g) f} :=
-        (card_le_card hsub).trans card_biUnion_le
-    _ ≤ ∑ _g ∈ G, (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) :=
-        sum_le_sum fun g _ => htop g
-    _ ≤ _ := by rw [sum_const, smul_eq_mul]; exact Nat.mul_le_mul_right _ hG
+        (2 ^ Fintype.card κ + 1) ^ (q + Fintype.card κ + 1) :=
+  card_le_of_isThresholdOver_depthTwoFeatures q (IsWeightShift W) (card_isWeightShift_le W)
+    (IsDepthTwoOverWeights W q) fun _ hf => hf
 
 /-! ### Embedded subcube completions and collapse of depth-two threshold circuits -/
 
@@ -693,6 +701,76 @@ theorem isDepthTwoWithGates_eval_embedUpdate_const {κ : Type*} [Fintype κ]
 
 /-! ### Expected unforced gate counts under block-partition random restrictions -/
 
+/-- Exchanging a count over `k ∈ G` with sums over `σ` and `w`: both sides count the triples
+`(k, σ, w)` with `k ∈ G` and `P k σ w`. -/
+private theorem sum_sum_card_filter_comm {α β γ : Type*} [Fintype β] [Fintype γ] (G : Finset α)
+    (P : α → β → γ → Prop) [∀ k σ w, Decidable (P k σ w)] :
+    (∑ σ : β, ∑ w : γ, (#{k ∈ G | P k σ w} : ℝ)) = ∑ k ∈ G, ∑ σ : β, (#{w : γ | P k σ w} : ℝ) := by
+  simp_rw [← sum_boole]
+  exact (sum_congr rfl fun _ _ => sum_comm).trans sum_comm
+
+/-- Averaging the number of gates `k ∈ G` whose depth-1 LTF is not `ForcedToConst` outside
+`blockLiveSet blockVar σ` by `w`, over all block selections `σ : κ → τ` and assignments
+`w : Fin n → Bool`, gives at most `|κ → τ| * 2 ^ n * (4 * (1 / |τ|) * c.size * √n)`, for any set
+`G` of gates of `c`. -/
+theorem sum_card_filter_not_forcedToConst_blockLiveSet_le {κ τ : Type*}
+    [Fintype κ] [DecidableEq κ] [Fintype τ] {n t : ℕ}
+    (c : Circuit signature n t) (G : Finset (Fin c.size)) (blockVar : κ → τ → Fin n)
+    (hinj : ∀ j₁ t₁ j₂ t₂, blockVar j₁ t₁ = blockVar j₂ t₂ → j₁ = j₂ ∧ t₁ = t₂) :
+    (∑ σ : κ → τ, ∑ w : Fin n → Bool, (#{k ∈ G | ¬ ForcedToConst
+      (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
+      (blockLiveSet blockVar σ) w} : ℝ)) ≤
+      (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
+        (4 * (1 / (Fintype.card τ : ℝ)) * (c.size : ℝ) * Real.sqrt (n : ℝ)) := by
+  rw [sum_sum_card_filter_comm]
+  have hgate (k : Fin c.size) : (∑ σ : κ → τ, (#{w : Fin n → Bool | ¬ ForcedToConst
+      (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
+      (blockLiveSet blockVar σ) w} : ℝ)) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
+        (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (n : ℝ)) := by
+    refine (sum_card_not_forcedToConst_blockLiveSet_le blockVar hinj _ _).trans ?_
+    rw [Fintype.card_fin]
+    refine mul_le_mul_of_nonneg_left
+      (mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt ?_) (by positivity)) (by positivity)
+    exact_mod_cast (card_le_univ _).trans_eq (by simp)
+  refine (sum_le_sum fun k _ => hgate k).trans ?_
+  rw [sum_const, nsmul_eq_mul]
+  have hcard : (#G : ℝ) ≤ (c.size : ℝ) := by
+    exact_mod_cast (card_le_univ _).trans_eq (Fintype.card_fin _)
+  nlinarith [(by positivity : (0 : ℝ) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
+    (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (n : ℝ)))]
+
+/-- Averaging the number of gates `k ∈ G` whose depth-1 LTF is not `ForcedToAtMostOne` outside
+`blockLiveSet blockVar σ` by `w`, over all block selections `σ : κ → τ` and assignments
+`w : Fin n → Bool`, gives at most `|κ → τ| * 2 ^ n * (4 * c.wireCount * (1 / |τ|) * √(1 / |τ|))`,
+for any set `G` of gates of `c`. -/
+theorem sum_card_filter_not_forcedToAtMostOne_blockLiveSet_le {κ τ : Type*}
+    [Fintype κ] [DecidableEq κ] [Fintype τ] {n t : ℕ}
+    (c : Circuit signature n t) (G : Finset (Fin c.size)) (blockVar : κ → τ → Fin n)
+    (hinj : ∀ j₁ t₁ j₂ t₂, blockVar j₁ t₁ = blockVar j₂ t₂ → j₁ = j₂ ∧ t₁ = t₂) :
+    (∑ σ : κ → τ, ∑ w : Fin n → Bool, (#{k ∈ G | ¬ ForcedToAtMostOne
+      (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
+      (blockLiveSet blockVar σ) w} : ℝ)) ≤
+      (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n * (4 * (c.wireCount : ℝ) *
+        (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))) := by
+  rw [sum_sum_card_filter_comm]
+  refine (sum_le_sum fun k _ =>
+    sum_card_not_forcedToAtMostOne_blockLiveSet_le blockVar hinj _ _).trans ?_
+  rw [Fintype.card_fin]
+  have hwire : (∑ k ∈ G, (#(ltfSupport (inputWeight c.program k)) : ℝ)) ≤ (c.wireCount : ℝ) := by
+    simp_rw [ltfSupport_inputWeight_eq_inputSupport]
+    exact_mod_cast (sum_le_univ_sum_of_nonneg fun _ => Nat.zero_le _).trans
+      c.inputWireCount_le_wireCount
+  have hfactor : (∑ k ∈ G, (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
+      (4 * (#(ltfSupport (inputWeight c.program k)) : ℝ) *
+        (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ)))) =
+      (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
+        (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))) *
+        ∑ k ∈ G, (#(ltfSupport (inputWeight c.program k)) : ℝ) := by
+    rw [mul_sum]; exact sum_congr rfl fun k _ => by ring
+  rw [hfactor]
+  nlinarith [(by positivity : (0 : ℝ) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
+    (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))))]
+
 /-- Averaging `circuitUnforcedConstCount c o (blockLiveSet blockVar σ) w` over all block selections
 `σ : κ → τ` and assignments `w : Fin n → Bool` gives at most
 `|κ → τ| * 2 ^ n * (4 * (1 / |τ|) * c.size * √n)`. -/
@@ -704,34 +782,10 @@ theorem sum_circuitUnforcedConstCount_blockLiveSet_le {κ τ : Type*}
       (circuitUnforcedConstCount c o (blockLiveSet blockVar σ) w : ℝ)) ≤
       (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
         (4 * (1 / (Fintype.card τ : ℝ)) * (c.size : ℝ) * Real.sqrt (n : ℝ)) := by
-  classical
   unfold circuitUnforcedConstCount
-  cases hout : c.outputs o with
+  cases c.outputs o with
   | input _ => simp only [CharP.cast_eq_zero, sum_const_zero]; positivity
-  | gate top =>
-    dsimp only
-    have hswap : (∑ σ : κ → τ, ∑ w : Fin n → Bool,
-        (#(unforcedConstGates c.program top (blockLiveSet blockVar σ) w) : ℝ)) =
-        ∑ k ∈ gateSupport c.program top, ∑ σ : κ → τ, (#{w : Fin n → Bool | ¬ ForcedToConst
-          (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
-          (blockLiveSet blockVar σ) w} : ℝ) := by
-      simp_rw [unforcedConstGates, ← sum_boole]
-      exact (sum_congr rfl fun _ _ => sum_comm).trans sum_comm
-    rw [hswap]
-    have hgate (k : Fin c.size) : (∑ σ : κ → τ, (#{w : Fin n → Bool | ¬ ForcedToConst
-        (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
-        (blockLiveSet blockVar σ) w} : ℝ)) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-          (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (n : ℝ)) := by
-      refine (sum_card_not_forcedToConst_blockLiveSet_le blockVar hinj _ _).trans ?_
-      rw [Fintype.card_fin]
-      refine mul_le_mul_of_nonneg_left
-        (mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt ?_) (by positivity)) (by positivity)
-      exact_mod_cast (card_le_univ _).trans_eq (by simp)
-    refine (sum_le_sum fun k _ => hgate k).trans ?_; rw [sum_const, nsmul_eq_mul]
-    have hcard : (#(gateSupport c.program top) : ℝ) ≤ (c.size : ℝ) := by
-      exact_mod_cast (card_le_univ _).trans_eq (by simp)
-    nlinarith [(by positivity : (0 : ℝ) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-      (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (n : ℝ)))]
+  | gate top => exact sum_card_filter_not_forcedToConst_blockLiveSet_le c _ blockVar hinj
 
 /-- Averaging `circuitUnforcedAtMostOneCount c o (blockLiveSet blockVar σ) w` over all block
 selections `σ : κ → τ` and assignments `w : Fin n → Bool` gives at most
@@ -744,37 +798,9 @@ theorem sum_circuitUnforcedAtMostOneCount_blockLiveSet_le {κ τ : Type*}
       (circuitUnforcedAtMostOneCount c o (blockLiveSet blockVar σ) w : ℝ)) ≤
       (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n * (4 * (c.wireCount : ℝ) *
         (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))) := by
-  classical
   unfold circuitUnforcedAtMostOneCount
-  cases hout : c.outputs o with
+  cases c.outputs o with
   | input _ => simp only [CharP.cast_eq_zero, sum_const_zero]; positivity
-  | gate top =>
-    dsimp only
-    have hswap : (∑ σ : κ → τ, ∑ w : Fin n → Bool,
-        (#(unforcedAtMostOneGates c.program top (blockLiveSet blockVar σ) w) : ℝ)) =
-        ∑ k ∈ gateSupport c.program top, ∑ σ : κ → τ, (#{w : Fin n → Bool | ¬ ForcedToAtMostOne
-          (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
-          (blockLiveSet blockVar σ) w} : ℝ) := by
-      simp_rw [unforcedAtMostOneGates, ← sum_boole]
-      exact (sum_congr rfl fun _ _ => sum_comm).trans sum_comm
-    rw [hswap]
-    refine (sum_le_sum fun k _ =>
-      sum_card_not_forcedToAtMostOne_blockLiveSet_le blockVar hinj _ _).trans ?_
-    rw [Fintype.card_fin]
-    have hwire : (∑ k ∈ gateSupport c.program top,
-        (#(ltfSupport (inputWeight c.program k)) : ℝ)) ≤ (c.wireCount : ℝ) := by
-      simp_rw [ltfSupport_inputWeight_eq_inputSupport]
-      exact_mod_cast (sum_le_univ_sum_of_nonneg fun _ => Nat.zero_le _).trans
-        c.inputWireCount_le_wireCount
-    have hfactor : (∑ k ∈ gateSupport c.program top, (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-        (4 * (#(ltfSupport (inputWeight c.program k)) : ℝ) *
-          (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ)))) =
-        (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-          (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))) *
-          ∑ k ∈ gateSupport c.program top, (#(ltfSupport (inputWeight c.program k)) : ℝ) := by
-      rw [mul_sum]; exact sum_congr rfl fun k _ => by ring
-    rw [hfactor]
-    nlinarith [(by positivity : (0 : ℝ) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-      (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))))]
+  | gate top => exact sum_card_filter_not_forcedToAtMostOne_blockLiveSet_le c _ blockVar hinj
 
 end Cslib.Circuits.Boolean.WeightedThreshold

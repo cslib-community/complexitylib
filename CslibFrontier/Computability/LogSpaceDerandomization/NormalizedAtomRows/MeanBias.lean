@@ -97,7 +97,7 @@ lemma preparationError_le (R : RoleProfile J) (D : ZMod P) (st : List (ZMod P)) 
 theorem preparation_sub_genuinePrep_le
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
     (R : RoleProfile J) (D : ZMod P) (st : List (ZMod P)) (k : ℕ)
-    {Lh Lρ : ℝ} (hLρ : 0 ≤ Lρ)
+    {Lh Lρ : ℝ}
     (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
     (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
     (A : Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
@@ -105,6 +105,7 @@ theorem preparation_sub_genuinePrep_le
     |DenseRowRecipe.preparation (polynomialPrepCutoff4 HP.θ) HP.ρ HP.K (rate k)
       (retainedMask R.terminal (side P k) D st) (A σ) σ x y -
       genuinePrep HP R.terminal D st k G σ x y| ≤ preparationError R D st k Lh Lρ A G σ x y := by
+  have hLρ : 0 ≤ Lρ := (abs_nonneg _).trans (by simpa using hρ 1 0)
   simp only [genuinePrep, DenseRowRecipe.preparation, preparationError, retainedMask]
   have hb := DenseRowRecipe.atomPrep_stability
     (fun z => ⟨polynomialPrepCutoff4_nonneg _ _, polynomialPrepCutoff4_le_one _ _⟩)
@@ -117,7 +118,7 @@ independence or desired preparation mean is assumed; empty slices contribute zer
 theorem preparation_mean_bias_le
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
     (R : RoleProfile J) (D : ZMod P) (ss st : List (ZMod P)) (ks k kt : ℕ)
-    {Lh Lρ : ℝ} (hLρ : 0 ≤ Lρ)
+    {Lh Lρ : ℝ}
     (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
     (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
     (A : Environment P J → Matrix (ZMod P) (ZMod P) ℝ)
@@ -136,7 +137,7 @@ theorem preparation_mean_bias_le
     (retainedMask R.terminal (side P k) D st) (A σ) σ x y
   have hb := (abs_expect_le S (fun σ => T σ - genuinePrep HP R.terminal D st k G σ x y)).trans
     (expect_le_expect fun σ _ =>
-      preparation_sub_genuinePrep_le HP hK R D st k hLρ hh hρ A G σ x y)
+      preparation_sub_genuinePrep_le HP hK R D st k hh hρ A G σ x y)
   simp only [expect_sub_distrib, S, T, genuineMean, rowSliceMean, retainedMask] at hb ⊢
   convert hb using 1
   congr 8
@@ -180,7 +181,7 @@ theorem actualSelectedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempt
         (retainedMask R.terminal (side P kt) D st) x y) E)
     (times : ℕ → ZMod P → ZMod P → ℕ)
     (F : ℕ → Environment P J → ZMod P → ZMod P → ℝ)
-    {Lh Lρ : ℝ} (hLρ : 0 ≤ Lρ)
+    {Lh Lρ : ℝ} (_hLρ : 0 ≤ Lρ)
     (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
     (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
     (ζ : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ) (i : ℕ) (x y : ZMod P) :
@@ -196,7 +197,7 @@ theorem actualSelectedSecondSignal_mean_bias_le {E : Type*} [Fintype E] [Nonempt
   rw [actualClippedMean_second_eq]
   apply min_le_min_left
   apply mul_le_mul_of_nonneg_left _ (abs_nonneg ζ)
-  exact preparation_mean_bias_le HP hK R D ss st ks k kt hLρ hh hρ _ G x y
+  exact preparation_mean_bias_le HP hK R D ss st ks k kt hh hρ _ G x y
 
 /-- Actual recursive preparation wiring: cutoff after the full-rank raw H4 child walk,
 then the source × usage preparation walk. Request size q is fixed across precisions.
@@ -216,7 +217,7 @@ theorem actualCompletedSecondSignal_mean_bias_le {q : ℕ} {E : Type*} [Fintype 
       (RetainedPairSlice (retainedMask R.source (side P ks) D ss)
         (retainedMask R.terminal (side P kt) D st) x y) E)
     (times : ℕ → ZMod P → ZMod P → ℕ)
-    {Lh Lρ : ℝ} (hLρ : 0 ≤ Lρ)
+    {Lh Lρ : ℝ} (_hLρ : 0 ≤ Lρ)
     (hh : ∀ a b, |polynomialPrepCutoff4 HP.θ a - polynomialPrepCutoff4 HP.θ b| ≤ Lh * |a - b|)
     (hρ : ∀ a b, |HP.ρ a - HP.ρ b| ≤ Lρ * |a - b|)
     (ζ : ℝ) (G : Matrix (ZMod P) (ZMod P) ℝ) (i : ℕ) (x y : ZMod P) :
@@ -232,7 +233,7 @@ theorem actualCompletedSecondSignal_mean_bias_le {q : ℕ} {E : Type*} [Fintype 
         (preparationError R D st k Lh Lρ (A (i + 1)) G) x y) := by
   dsimp only
   exact actualSelectedSecondSignal_mean_bias_le HP hK D R ks k kt _husage ss st _
-    graphs times _ hLρ hh hρ ζ G i x y
+    graphs times _ _hLρ hh hρ ζ G i x y
 
 end
 end Matrix.HierarchyParams.H4RankEnvironment.NormalizedMoments

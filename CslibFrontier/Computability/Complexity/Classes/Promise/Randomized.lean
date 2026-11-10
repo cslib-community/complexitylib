@@ -303,8 +303,7 @@ theorem RPReducibleWithError.of_subset {s : α → ℝ}
     RPReducibleWithError encA encB s X Y' := by
   obtain ⟨R, hR, hRyes, hRno⟩ := h
   refine ⟨R, hR, fun a ha b hb => hyes (hRyes a ha b hb), fun a ha => (hRno a ha).trans ?_⟩
-  exact ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-    ((ProbComp.eval (R a)).toOuterMeasure.mono hno)
+  exact PMF.toOuterMeasure_toReal_mono (ProbComp.eval (R a)) hno
 
 /-- Enlarging the target promise preserves `RPReducible`. -/
 theorem RPReducible.of_subset (h : RPReducible encA encB X Y) (hyes : Y.yes ⊆ Y'.yes)
@@ -393,8 +392,8 @@ theorem RPReducibleWithError.trans_polyTimeReducible {s : α → ℝ}
     obtain ⟨b, hb, rfl⟩ := hc
     exact gyes (hyes a ha b hb)
   · simp only [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-    refine (hno a ha).trans (ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _) ?_)
-    exact (ProbComp.eval (R a)).toOuterMeasure.mono gno.subset_preimage
+    exact (hno a ha).trans
+      (PMF.toOuterMeasure_toReal_mono (ProbComp.eval (R a)) gno.subset_preimage)
 
 /-- Precomposing an `RPReducible` reduction with a deterministic polynomial-time reduction yields
 an `RPReducible` reduction. -/

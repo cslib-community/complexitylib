@@ -144,6 +144,18 @@ theorem minHash_eq_of_isMin {σ : Equiv.Perm α} {A : Finset α} {s : α} (hs : 
     (hmin : ∀ a ∈ A, σ s ≤ σ a) : minHash σ A = σ s :=
   le_antisymm (Finset.inf_le hs) (Finset.le_inf fun a ha => WithTop.coe_le_coe.2 (hmin a ha))
 
+/-- A set whose MinHash value is the rank `σ s` contains `s`. -/
+private theorem mem_of_minHash_eq_coe {σ : Equiv.Perm α} {B : Finset α} {s : α}
+    (h : minHash σ B = σ s) : s ∈ B := by
+  have hB0 : B.Nonempty := by
+    by_contra hB0
+    rw [Finset.not_nonempty_iff_eq_empty] at hB0
+    rw [hB0, minHash_empty] at h
+    exact WithTop.top_ne_coe h
+  obtain ⟨t, ht, hbt⟩ := Finset.exists_mem_eq_inf B hB0 fun b => (σ b : WithTop α)
+  rw [minHash, hbt] at h
+  rwa [← σ.injective (WithTop.coe_injective h)]
+
 variable [Fintype α]
 
 /-- The permutations under which `s` has the least rank in `S`. -/
@@ -221,28 +233,8 @@ private theorem minHash_eq_minHash_iff {σ : Equiv.Perm α} {A B : Finset α} {s
   · intro heq
     rw [Finset.mem_inter]
     rcases Finset.mem_union.1 hs with hsA | hsB
-    · refine ⟨hsA, ?_⟩
-      rw [hA hsA] at heq
-      have hB0 : B.Nonempty := by
-        by_contra hB0
-        rw [Finset.not_nonempty_iff_eq_empty] at hB0
-        rw [hB0, minHash_empty] at heq
-        exact WithTop.coe_ne_top heq
-      obtain ⟨t, ht, hbt⟩ := Finset.exists_mem_eq_inf B hB0 fun b => (σ b : WithTop α)
-      rw [minHash, hbt] at heq
-      rw [σ.injective (WithTop.coe_injective heq)]
-      exact ht
-    · refine ⟨?_, hsB⟩
-      rw [hB hsB] at heq
-      have hA0 : A.Nonempty := by
-        by_contra hA0
-        rw [Finset.not_nonempty_iff_eq_empty] at hA0
-        rw [hA0, minHash_empty] at heq
-        exact WithTop.top_ne_coe heq
-      obtain ⟨t, ht, hat⟩ := Finset.exists_mem_eq_inf A hA0 fun a => (σ a : WithTop α)
-      rw [minHash, hat] at heq
-      rw [← σ.injective (WithTop.coe_injective heq)]
-      exact ht
+    · exact ⟨hsA, mem_of_minHash_eq_coe (heq.symm.trans (hA hsA))⟩
+    · exact ⟨mem_of_minHash_eq_coe (heq.trans (hB hsB)), hsB⟩
   · intro h
     rw [Finset.mem_inter] at h
     rw [hA h.1, hB h.2]

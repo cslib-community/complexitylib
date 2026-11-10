@@ -13,6 +13,7 @@ public import Mathlib.Data.Fintype.Pi
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.EventBind
 
@@ -193,16 +194,15 @@ theorem lazyRandomWalkCoupling_pow_toOuterMeasure_ne_le (i : ι) (t : ℕ)
 theorem lazyRandomWalkCoupling_pow_toOuterMeasure_le (t : ℕ) (z : (ι → Bool) × (ι → Bool)) :
     (((lazyRandomWalkCoupling ι ^ t) z).toOuterMeasure {w | w.1 ≠ w.2}).toReal ≤
       Fintype.card ι * (1 - (Fintype.card ι : ℝ)⁻¹) ^ t := by
-  have hsub : {w : (ι → Bool) × (ι → Bool) | w.1 ≠ w.2} = ⋃ i, {w | w.1 i ≠ w.2 i} := by
+  have hsub : {w : (ι → Bool) × (ι → Bool) | w.1 ≠ w.2} =
+      ⋃ i ∈ Finset.univ, {w | w.1 i ≠ w.2 i} := by
     ext w
     simp [Function.ne_iff]
   rw [hsub]
-  calc (((lazyRandomWalkCoupling ι ^ t) z).toOuterMeasure (⋃ i, {w | w.1 i ≠ w.2 i})).toReal
-      ≤ (∑ i, ((lazyRandomWalkCoupling ι ^ t) z).toOuterMeasure {w | w.1 i ≠ w.2 i}).toReal :=
-        ENNReal.toReal_mono (ENNReal.sum_ne_top.mpr fun _ _ => toOuterMeasure_ne_top _ _)
-          (MeasureTheory.measure_iUnion_fintype_le _ _)
-    _ = ∑ i, (((lazyRandomWalkCoupling ι ^ t) z).toOuterMeasure {w | w.1 i ≠ w.2 i}).toReal :=
-        ENNReal.toReal_sum fun _ _ => toOuterMeasure_ne_top _ _
+  calc (((lazyRandomWalkCoupling ι ^ t) z).toOuterMeasure
+        (⋃ i ∈ Finset.univ, {w | w.1 i ≠ w.2 i})).toReal
+      ≤ ∑ i, (((lazyRandomWalkCoupling ι ^ t) z).toOuterMeasure {w | w.1 i ≠ w.2 i}).toReal :=
+        toOuterMeasure_toReal_biUnion_finset_le _ _ _
     _ ≤ ∑ _i : ι, (1 - (Fintype.card ι : ℝ)⁻¹) ^ t :=
         Finset.sum_le_sum fun i _ => lazyRandomWalkCoupling_pow_toOuterMeasure_ne_le i t z
     _ = _ := by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]

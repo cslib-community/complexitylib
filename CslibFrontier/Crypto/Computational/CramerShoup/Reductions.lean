@@ -13,9 +13,11 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.UniformNat
+import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Certified PPT Reductions and Probabilistic Operations for Cramer–Shoup
@@ -152,16 +154,7 @@ theorem advantage_bind_sampleCramerShoupPair_le (n : ℕ) (d : F.Desc)
       2 / 2 ^ n := by
   simp only [sampleCramerShoupPair, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind]
-  refine (Game.advantage_triangle _
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ =>
-      (ProbComp.eval (F.sampleExp n d)).bind fun t =>
-        k σ (t : ZMod (F.order d))) _).trans ?_
-  have h1 := F.advantage_bind_sampleExp_le n d (fun σ =>
-    (ProbComp.eval (F.sampleExp n d)).bind fun t => k σ (t : ZMod (F.order d)))
-  have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _
-    (fun σ => F.advantage_bind_sampleExp_le n d (k σ))
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
-    _ = 2 / 2 ^ n := by ring
+  exact F.advantage_bind_sampleExp_pair_le n d k
 
 /-- Replacing `sampleCramerShoupTripleExponents n d` by three independent uniform draws on
 `ZMod (F.order d)` changes `Game.advantage` by at most `3 / 2 ^ n`. -/
@@ -952,8 +945,7 @@ def decodeCramerShoupSK (w : List Bool) : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ 
 theorem decodeCramerShoupSK_encCramerShoupSK (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
     decodeCramerShoupSK (encCramerShoupSK sk) = sk := by
   rcases sk with ⟨⟨s, t⟩, ⟨⟨s₁, t₁⟩, ⟨s₂, t₂⟩⟩⟩
-  have hbits (n : ℕ) : ofBits n.bits = n := Nat.foldr_bit_bits n
-  simp [encCramerShoupSK, decodeCramerShoupSK, encPair_apply, encNat_apply, hbits,
+  simp [encCramerShoupSK, decodeCramerShoupSK, encPair_apply, encNat_apply,
     unframe_frame_append, dropFrame_frame_append]
 
 private theorem computableTidilyInPolyTime_decodeCramerShoupSK :

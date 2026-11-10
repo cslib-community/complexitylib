@@ -21,7 +21,8 @@ The selector and greedy program are those of `GreedyParitySearch`; this module s
 native machine for a counter on `(context, rows)`. The context is part of every live state and
 counter input. Its encoding is charged even when candidate enumeration or the outer loop is empty.
 This closes the fixed-counter interface gap without constructing the common-zero counter or the
-initial Tanner matrix of [OpenAI2026ETH], §§6.2–6.3 (pp. 42–43).
+initial Tanner matrix of [OpenAI2026ETH], §§6.2–6.3 (pp. 42–43). A counter fixed before the runtime
+inputs is the unit context, which gives the fixed-counter bounds for `GreedyParitySearch`.
 
 ## Main definitions
 
@@ -33,6 +34,9 @@ initial Tanner matrix of [OpenAI2026ETH], §§6.2–6.3 (pp. 42–43).
 
 * `GreedyContext.computableInO_greedy`: independent time and polynomial-workspace bounds.
 * `GreedyContext.count_greedy_eq_card_sat`: the fixed-counter correctness theorem pointwise.
+* `computableInO_selectBestTestRow`, `computableInO_greedyParityRows`,
+  `computableInPolySpace_greedyParityRows`: fixed-counter time and workspace bounds, from the unit
+  context.
 
 ## References
 
@@ -624,5 +628,156 @@ theorem computableInPolySpace_greedy {count : C × List (List Bool) → ℕ}
   exact ⟨_, fun n => c * (poly n + 1), by fun_prop, hc, hl⟩
 
 end Cslib.Logic.PL.CNF.GreedyContext
+
+/-! ### Fixed counters as the unit context
+
+A counter fixed before the runtime inputs is the case `C := Unit` of the context interface. The
+fixed-counter bounds below transfer `GreedyContext.computableInO_select` and
+`GreedyContext.computableInO_greedy` along the linear re-encoding `a ↦ ((), a)`. -/
+
+namespace Cslib.Logic.PL.CNF
+
+open Finset Cslib.BitString Cslib.GenericRAM Turing.MultiTapeTM GreedyContext
+
+/-- A fixed counter, read as a counter on `(Unit, rows)` after dropping the unit frame. -/
+private noncomputable def unitCounter {countSys : List (List Bool) → ℕ}
+    (cCount : NativeCertificate countSys (encList encBits) encNat) :
+    NativeCertificate (fun p : Unit × List (List Bool) => countSys p.2)
+      (encContextRows encUnit) encNat :=
+  cCount.comp (NativeCertificate.linear (ComputableInO.snd encUnit (encList encBits)))
+
+private theorem unitCounter_space {countSys : List (List Bool) → ℕ}
+    (cCount : NativeCertificate countSys (encList encBits) encNat)
+    (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space) :
+    PolyBounded (fun p => (encContextRows encUnit p).length) (unitCounter cCount).space :=
+  PolyBounded.self.add (hSpace.comp (PolyBounded.self.mono fun p => by
+    simp only [encContextRows, length_encPair]; omega))
+
+/-- Re-encode a fixed-counter input as a unit-context input. -/
+private theorem unitInput {α : Type} (enc : α ↪ List Bool) :
+    ComputableInO (fun a : α => ((), a)) enc (encPair encUnit enc)
+      (fun a => (enc a).length + (enc a).length) (fun a => (enc a).length + (enc a).length) :=
+  (ComputableInO.const ()).prod ComputableInO.id'
+
+private theorem length_unitInput {α : Type} (enc : α ↪ List Bool) (a : α) :
+    (encPair encUnit enc ((), a)).length = (enc a).length + 1 := by
+  simp only [length_encPair, encUnit_apply, List.length_nil]; omega
+
+/-- **Fixed-counter per-round `ComputableInO` time and polynomial-workspace bound for
+`selectBestTestRow`** (with `countSys` and `cCount` fixed before runtime inputs `(m, P, rows)`). -/
+theorem computableInO_selectBestTestRow {countSys : List (List Bool) → ℕ}
+    (cCount : NativeCertificate countSys (encList encBits) encNat)
+    (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space)
+    (R : ℕ × ℕ × List (List Bool) → ℕ)
+    (hR : ∀ a : ℕ × ℕ × List (List Bool),
+      let (m, P, rows) := a
+      ∀ j ≤ candidateTupleCount m P,
+        cCount.time (rows ++ [materializeTestRow m (decodeTestTuple m P j)]) ≤ R a) :
+    ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
+      ComputableInO
+        (fun (m, P, rows) => selectBestTestRow countSys m P rows)
+        encSelectBestIn encBits
+        (fun a =>
+          let (m, P, _) := a
+          (candidateTupleCount m P + 1) * (poly (encSelectBestIn a).length + R a))
+        (fun a => poly (encSelectBestIn a).length) := by
+  obtain ⟨poly, hpoly, h⟩ := computableInO_select (unitCounter cCount)
+    (unitCounter_space cCount hSpace) (fun a => R a.2 + (encInput encUnit a).length)
+    fun ⟨_, m, P, rows⟩ j hj => by
+      have := hR (m, P, rows) j hj
+      dsimp only [unitCounter, NativeCertificate.comp_time, NativeCertificate.linear_time]
+      simp only [encContextRows, encInput, encSelectBestIn, length_encPair, encUnit_apply,
+        List.length_nil, encList_append, List.length_append, encList_cons, encList_nil,
+        List.append_nil, length_frame, encBits_apply, length_materializeTestRow,
+        encUnary_apply, List.length_replicate]
+      omega
+  refine ⟨fun L => poly (L + 1) + 3 * L + 1, by fun_prop, ?_⟩
+  refine (h.comp' (unitInput encSelectBestIn)).mono_le (fun ⟨m, P, rows⟩ => ?_)
+    fun ⟨m, P, rows⟩ => ?_
+  all_goals
+    have hl : (encInput encUnit ((), m, P, rows)).length =
+        (encSelectBestIn (m, P, rows)).length + 1 := length_unitInput encSelectBestIn (m, P, rows)
+    dsimp only
+    rw [hl]
+  · nlinarith [Nat.zero_le (candidateTupleCount m P * (encSelectBestIn (m, P, rows)).length)]
+  · omega
+
+/-- **Fixed-counter `3n`-round `ComputableInO` time and polynomial-workspace bound for
+`greedyParityRows`.** For fixed `countSys` and `cCount` (supplied before runtime inputs
+`(n, m, P, rows)`), runs in time `O((3 * n + 1) * ((2 * m) ^ P + 1) * (poly(|input|) + R))` and
+polynomial workspace `O(poly(|input|))`, never storing `(2 * m) ^ P` lists or counts
+([OpenAI2026ETH], §6.3, p. 43). -/
+theorem computableInO_greedyParityRows {countSys : List (List Bool) → ℕ}
+    (cCount : NativeCertificate countSys (encList encBits) encNat)
+    (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space)
+    (R : ℕ × ℕ × ℕ × List (List Bool) → ℕ)
+    (hR : ∀ a : ℕ × ℕ × ℕ × List (List Bool),
+      let (n, m, P, rows) := a
+      ∀ i ≤ 3 * n, ∀ j ≤ candidateTupleCount m P,
+        cCount.time (greedyParityRowsAt countSys m P rows i ++
+          [materializeTestRow m (decodeTestTuple m P j)]) ≤ R a) :
+    ∃ poly : ℕ → ℕ, Cslib.PolynomiallyBounded poly ∧
+      ComputableInO
+        (fun (n, m, P, rows) => greedyParityRows countSys n m P rows)
+        encGreedyIn (encList encBits)
+        (fun a =>
+          let (n, m, P, _) := a
+          (3 * n + 1) * (candidateTupleCount m P + 1) *
+            (poly (encGreedyIn a).length + R a))
+        (fun a => poly (encGreedyIn a).length) := by
+  let E (L : ℕ) := 6 * L * L + 6 * L + 2
+  obtain ⟨poly, hpoly, h⟩ := computableInO_greedy (unitCounter cCount)
+    (unitCounter_space cCount hSpace) (fun a => R a.2 + E (encGreedyInput encUnit a).length)
+    fun ⟨_, n, m, P, rows⟩ i hi j hj => by
+      have := hR (n, m, P, rows) i hi j hj
+      dsimp only at hi
+      dsimp only [unitCounter, NativeCertificate.comp_time, NativeCertificate.linear_time, E]
+      eta_reduce
+      set L := (encGreedyInput encUnit ((), n, m, P, rows)).length
+      have hL : n ≤ L ∧ m ≤ L ∧ (encList encBits rows).length ≤ L := by
+        simp only [L, encGreedyInput, encGreedyIn, encSelectBestIn, length_encPair,
+          encUnary_apply, List.length_replicate]
+        omega
+      have hg : i * (2 * m + 1) ≤ 3 * L * (2 * L + 1) := Nat.mul_le_mul (by omega) (by omega)
+      have hx : 3 * L * (2 * L + 1) = 6 * L * L + 3 * L := by ring
+      simp only [encContextRows, length_encPair, encUnit_apply, List.length_nil, encList_append,
+        List.length_append, encList_cons, encList_nil, List.append_nil, length_frame,
+        encBits_apply, length_materializeTestRow, length_encList_greedyParityRowsAt]
+      omega
+  refine ⟨fun N => poly (N + 1) + E (N + 1) + 2 * N, by fun_prop, ?_⟩
+  refine (h.comp' (unitInput encGreedyIn)).mono_le (fun ⟨n, m, P, rows⟩ => ?_)
+    fun ⟨n, m, P, rows⟩ => ?_
+  all_goals
+    have hl : (encGreedyInput encUnit ((), n, m, P, rows)).length =
+        (encGreedyIn (n, m, P, rows)).length + 1 := length_unitInput encGreedyIn (n, m, P, rows)
+    dsimp only
+    rw [hl]
+  · have hM : 1 ≤ (3 * n + 1) * (candidateTupleCount m P + 1) := Nat.mul_pos (by omega) (by omega)
+    generalize (3 * n + 1) * (candidateTupleCount m P + 1) = M at hM ⊢
+    nlinarith [Nat.mul_le_mul_right (encGreedyIn (n, m, P, rows)).length hM]
+  · omega
+
+/-- For a fixed counter `(countSys, cCount)` using polynomial workspace, `greedyParityRows` runs in
+polynomial space on runtime inputs `(n, m, P, rows)`. -/
+theorem computableInPolySpace_greedyParityRows {countSys : List (List Bool) → ℕ}
+    (cCount : NativeCertificate countSys (encList encBits) encNat)
+    (hSpace : PolyBounded (fun r => (encList encBits r).length) cCount.space) :
+    ComputableInPolySpace
+      (fun (n, m, P, rows) => greedyParityRows countSys n m P rows)
+      encGreedyIn (encList encBits) := by
+  let cell (a : ℕ × ℕ × ℕ × List (List Bool)) (i j : ℕ) : ℕ :=
+    cCount.time (greedyParityRowsAt countSys a.2.1 a.2.2.1 a.2.2.2 i ++
+      [materializeTestRow a.2.1 (decodeTestTuple a.2.1 a.2.2.1 j)])
+  let rowMax (a : ℕ × ℕ × ℕ × List (List Bool)) (i : ℕ) : ℕ :=
+    listMax (cell a i) (List.range (candidateTupleCount a.2.1 a.2.2.1 + 1))
+  let R (a : ℕ × ℕ × ℕ × List (List Bool)) : ℕ := listMax (rowMax a) (List.range (3 * a.1 + 1))
+  have hR : ∀ a, ∀ i ≤ 3 * a.1, ∀ j ≤ candidateTupleCount a.2.1 a.2.2.1, cell a i j ≤ R a :=
+    fun a i hi j hj => (le_listMax (f := cell a i) (List.mem_range.mpr (by omega))).trans
+      (le_listMax (f := rowMax a) (List.mem_range.mpr (by omega)))
+  obtain ⟨poly, hpoly, c, hc, hl⟩ := computableInO_greedyParityRows cCount hSpace R hR
+  exact ⟨_, fun n => c * (poly n + 1),
+    (Cslib.PolynomiallyBounded.const c).mul (hpoly.add (.const 1)), hc, hl⟩
+
+end Cslib.Logic.PL.CNF
 
 end

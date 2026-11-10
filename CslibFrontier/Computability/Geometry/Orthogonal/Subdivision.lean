@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.Geometry.Orthogonal.Subdivision
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 public import CslibFrontier.Computability.Geometry.Orthogonal.Encoding
+import CslibFrontier.Computability.Geometry.Orthogonal.PointPolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -49,13 +50,7 @@ private theorem computable_length :
   unfold length encPoint
   fun_prop
 
-private theorem computable_direction :
-    ComputableInPolyTime (fun p : Point × Point => direction p.1 p.2)
-      (encPair encPoint encPoint) encPoint := by
-  unfold direction encPoint
-  fun_prop
-
-attribute [local fun_prop] computable_length computable_direction
+attribute [local fun_prop] computable_length computableInPolyTime_direction
 
 private theorem computable_advance :
     ComputableInPolyTime (fun p : (Point × Point) × ℕ =>

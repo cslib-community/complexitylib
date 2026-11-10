@@ -60,11 +60,11 @@ theorem crossing_axes_exist {φ : CNF ℕ}
   rcases PlanarCompile.occurrencePath_crossing_straight hw hv hoi hp hpi with hs | hs <;>
     rcases PlanarCompile.occurrencePath_crossing_straight hw hv hoj hp hpj with ht | ht
   · exact False.elim (hot (PlanarCompile.crossing_axis_occurrence_eq hw hv hoi hoj hp
-      hpi hpj (Or.inl rfl) hs ht))
+      hpi hpj hs ht))
   · exact ⟨_, hoi, _, hoj, hpi, hpj, hs, ht⟩
   · exact ⟨_, hoj, _, hoi, hpj, hpi, ht, hs⟩
   · exact False.elim (hot (PlanarCompile.crossing_axis_occurrence_eq hw hv hoi hoj hp
-      hpi hpj (Or.inr rfl) hs ht))
+      hpi hpj hs ht))
 
 /-- Every retained ordinary cell lies on an actual source occurrence path. -/
 theorem ordinary_occurrence_exists {φ : CNF ℕ} {p : Point} (hp : p ∈ ordinaryCells φ) :
@@ -80,8 +80,15 @@ theorem ordinary_value_source {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3)
     {σ : Variable → Bool} (h : (rawFormula φ).eval σ = true)
     {p : Point} (hp : p ∈ ordinaryCells φ) {o : Occurrence ℕ}
-    (ho : o ∈ Cslib.Logic.PL.occurrences φ) (hpo : p ∈ (occurrencePath φ o).dropLast) :
+    (hpo : p ∈ (occurrencePath φ o).dropLast) :
     σ (p, Sum.inl (0, 0)) = sourceValue φ σ o.2.2.1 := by
+  have ho : o ∈ Cslib.Logic.PL.occurrences φ := by
+    by_contra hn
+    have hlen := congrArg List.length (PlanarCompile.occurrencePaths_eq_paths φ)
+    rw [List.length_map] at hlen
+    rw [occurrencePath, PlanarCompile.occurrencePath, List.idxOf_eq_length hn,
+      List.getD_eq_default _ _ hlen.ge] at hpo
+    exact List.not_mem_nil hpo
   obtain ⟨k, hk, heq⟩ := List.mem_iff_getElem.mp hpo
   have hk' : k < (occurrencePath φ o).length - 1 := by
     simpa only [List.length_dropLast] using hk
@@ -111,10 +118,7 @@ theorem crossing_axis_value {φ : CNF ℕ}
   rw [getElem_wire _ _ _ hk', heq] at hc
   cases axis with
   | false =>
-    have hl : side p (p - (1, 0)) = 0 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 0
-    have hr : side p (p + (1, 0)) = 1 := by
-      simpa [PairedPorts.neighbor] using side_neighbor p 1
+    obtain ⟨hl, hr, -, -⟩ := PlanarCompile.side_cardinal p
     rcases hnb with ⟨hprev, _⟩ | ⟨hprev, _⟩
     all_goals
       simp only [Bool.false_eq_true, ↓reduceIte] at hprev ⊢
@@ -122,10 +126,7 @@ theorem crossing_axis_value {φ : CNF ℕ}
       rw [crossing_port_value h hp] at hc
       simpa using hc
   | true =>
-    have hb : side p (p - (0, 1)) = 2 := by
-      simpa [PairedPorts.neighbor, sub_eq_add_neg] using side_neighbor p 2
-    have ht : side p (p + (0, 1)) = 3 := by
-      simpa [PairedPorts.neighbor] using side_neighbor p 3
+    obtain ⟨-, -, hb, ht⟩ := PlanarCompile.side_cardinal p
     rcases hnb with ⟨hprev, _⟩ | ⟨hprev, _⟩
     all_goals
       simp only [↓reduceIte] at hprev ⊢
@@ -146,9 +147,9 @@ theorem ordinary_assignments_agree {φ : CNF ℕ}
     (((eval_rawFormula_iff φ σ).1 hσ).2.1 p hp) v
   have ht := (OrdinaryRing.eval_formula_iff _).1
     (((eval_rawFormula_iff φ τ).1 hτ).2.1 p hp) v
-  exact hs.trans ((ordinary_value_source hw hv hσ hp ho hpo).trans
+  exact hs.trans ((ordinary_value_source hw hv hσ hp hpo).trans
     ((he _ (variable_mem_of_mem_occurrences ho)).trans
-      ((ordinary_value_source hw hv hτ hp ho hpo).symm.trans ht.symm)))
+      ((ordinary_value_source hw hv hτ hp hpo).symm.trans ht.symm)))
 
 /-- Source agreement forces agreement on every variable of every emitted crossover. -/
 theorem crossing_assignments_agree {φ : CNF ℕ}
