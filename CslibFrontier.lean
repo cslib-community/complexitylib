@@ -1789,6 +1789,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure.Loop
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Formula
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Decider
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Output
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Reduction

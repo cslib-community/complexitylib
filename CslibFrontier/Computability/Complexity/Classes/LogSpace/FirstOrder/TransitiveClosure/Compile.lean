@@ -41,6 +41,9 @@ formula at each polarity, with every register at most `B`.
 
 ## Main results
 
+* `Cslib.Logic.FO.Ordered.TCModelChecker.reaches_digitsCode`,
+  `Cslib.Logic.FO.Ordered.TCModelChecker.reaches_loadCode`: decoding a code into a tuple and
+  loading the source tuple of a closure, shared with the FO(DTC) loop.
 * `Cslib.Logic.FO.Ordered.TCModelChecker.correct_ofFO`, `correct_neg`, `correct_conj`,
   `correct_ex`: correctness for the first-order constructors.
 
@@ -748,26 +751,5 @@ theorem correct_ex (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type}
         (keyC _ 0 _ rfl (Nat.zero_le _) hk₀ (List.getD_set_self hlen) hn)⟩
 
 end Correct
-
-variable (v) in
-omit [L.IsRelational] in
-/-- The register bound `(N + 1) ^ (d + k)` of a decider, for input length `N` and maximal input
-arity `d`, dominates `1`, the cardinality `n`, `n ^ k`, `N` and the size of every input table. -/
-theorem decider_bounds (a : EncodedStructure) (k : ℕ) :
-    1 ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    a.1 ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    a.1 ^ k ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    (encStructure a).length ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    ∀ i, a.1 ^ arityAt v i ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) := by
-  have hm0 : v.maxArity ≠ 0 := by simp [Vocabulary.maxArity]
-  have hN : 1 ≤ (encStructure a).length + 1 := Nat.le_add_left 1 _
-  have hmono : ((encStructure a).length + 1) ^ v.maxArity ≤
-      ((encStructure a).length + 1) ^ (v.maxArity + k) := Nat.pow_le_pow_right hN (by omega)
-  have hn : a.1 ≤ (encStructure a).length + 1 :=
-    (card_le_length_encStructure a).trans (Nat.le_succ _)
-  refine ⟨Nat.one_le_pow _ _ hN, ?_, ?_, (length_le_pow_maxArity v a).trans hmono,
-    fun i => (pow_arityAt_le v a i).trans hmono⟩
-  · exact hn.trans ((Nat.le_self_pow hm0 _).trans hmono)
-  · exact (Nat.pow_le_pow_left hn k).trans (Nat.pow_le_pow_right hN (by omega))
 
 end Cslib.Logic.FO.Ordered.TCModelChecker
