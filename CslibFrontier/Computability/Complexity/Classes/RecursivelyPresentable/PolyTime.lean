@@ -36,14 +36,19 @@ delayed diagonalization construction of
 
 * `Cslib.Complexity.Ladner.isComputable_clock`, `.isComputable_withClock`: `(i, l) ↦ clock i l` is
   computable on unary inputs via exponential padding.
+* `Cslib.Complexity.UniformDiagonalization.setOf_pIndexed_mem_P`,
+  `Cslib.Complexity.UniformDiagonalization.exists_setOf_pIndexed_eq`: every slice of `pIndexed`
+  is in `P`, and every problem in `P` is a slice at arbitrarily large indices.
+* `Cslib.Complexity.UniformDiagonalization.computableInPolyTime_pIndexedCap`,
+  `Cslib.Complexity.UniformDiagonalization.pIndexedCap_eq_pIndexed_of_le`,
+  `Cslib.Complexity.UniformDiagonalization.isComputable_pIndexed`: the budget-capped form is
+  polynomial-time and agrees with `pIndexed` once the budget suffices, and `pIndexed` is computable.
 * `Cslib.Complexity.recursivelyPresentable_P`: `P` on bit words is recursively presentable.
 * `Cslib.Complexity.Ladner.computableInPolyTime_transducerIndexed`,
   `Cslib.Complexity.Ladner.exists_transducerIndexed_eq`,
   `Cslib.Complexity.Ladner.isComputable_transducerIndexed`: every fixed slice of
   `transducerIndexed` is polynomial-time, every polynomial-time function on bit words appears at
   arbitrarily large indices, and the two-argument family is computable.
-* `Cslib.Complexity.PolyTimeReducible.isDecidable`: polynomial-time many-one reducibility reflects
-  `IsDecidable`.
 * `Cslib.Complexity.polyTimeReducible_of_symmDiff_finite_left`,
   `Cslib.Complexity.polyTimeReducible_of_symmDiff_finite_right`,
   `Cslib.Complexity.closedUnderFiniteVariation_polyTimeReducible_le`: finite-variation patching of
@@ -240,17 +245,7 @@ end Ladner
 open Ladner (transducerIndexed computableInPolyTime_transducerIndexed
   exists_transducerIndexed_eq isComputable_transducerIndexed)
 
-/-! ### Reflection of decidability and finite-variation patching of reductions -/
-
-/-- Polynomial-time many-one reducibility reflects `IsDecidable`. -/
-theorem PolyTimeReducible.isDecidable {α β : Type} {encA : α ↪ List Bool}
-    {encB : β ↪ List Bool} {A : Set α} {B : Set β}
-    (hAB : PolyTimeReducible encA encB A B) (hB : IsDecidable B encB) :
-    IsDecidable A encA := by
-  obtain ⟨r, hr, hAB'⟩ := hAB
-  obtain ⟨fb, hfb, hB'⟩ := isDecidable_iff.mp hB
-  exact isDecidable_iff.mpr ⟨fb ∘ r, hfb.comp hr.isComputable,
-    fun x => (hAB' x).trans (hB' (r x))⟩
+/-! ### Finite-variation patching of reductions -/
 
 /-- Patch a polynomial-time map `f : α → β` on two `P`-sets `S₁` (mapped to `b₁ ∈ B`) and `S₀`
 (mapped to `b₀ ∉ B`). -/

@@ -389,7 +389,7 @@ private theorem exists_mem_P_markedUnion_ite_between {A B : Set (List Bool)}
       let C := markedUnion A (G.ite B A)
       PolyTimeReducible encBits encBits A C ∧ ¬PolyTimeReducible encBits encBits C A ∧
         PolyTimeReducible encBits encBits C B ∧ ¬PolyTimeReducible encBits encBits B C := by
-  have hdecA : IsDecidable A encBits := hAB.isDecidable hdecB
+  have hdecA : IsDecidable A encBits := hdecB.of_mappingReducible hAB.mappingReducible
   obtain ⟨⟨a₀, ha₀⟩, ⟨a₁, ha₁⟩⟩ := exists_notMem_and_mem_of_notMem_P hAP
   obtain ⟨⟨b₀, hb₀⟩, -⟩ := exists_notMem_and_mem_of_notMem_P hBP
   obtain ⟨fa, hfa, hA'⟩ := hdecA.exists_isComputable
@@ -457,7 +457,7 @@ theorem exists_isDecidable_between_of_notMem_P {A B : Set (List Bool)}
     obtain ⟨⟨c₀, hc₀⟩, ⟨c₁, hc₁⟩⟩ := exists_notMem_and_mem_of_notMem_P hCP
     exact ⟨C, hdecC, polyTimeReducible_of_mem_P hAP hc₁ hc₀,
       fun hCA => hCP (hCA.mem_P hAP), hCB, hBC⟩
-  · have hdecA : IsDecidable A encBits := hAB.isDecidable hdecB
+  · have hdecA : IsDecidable A encBits := hdecB.of_mappingReducible hAB.mappingReducible
     obtain ⟨G, hG, h₁, h₂, h₃, h₄⟩ :=
       exists_mem_P_markedUnion_ite_between hdecB hAP hBP hAB hBA
     exact ⟨markedUnion A (G.ite B A),
