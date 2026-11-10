@@ -62,15 +62,9 @@ theorem exists_decidesInSpace_compl
   let : Fintype State := Fintype.ofFinite State
   -- a closed round, from the source's space bound
   let J₀ : α → ℕ := fun a => 4 * (c₁ * s (enc a).length + c₂) + 1
-  have hJ₀ (a : α) : Closed ntm (roundRadix State (enc a).length (J₀ a)) (enc a) := by
-    have hstart := le_startRadix (State := State) (enc a).length
-    have hcard := card_lt_startRadix (State := State) (enc a).length
-    have hle := startRadix_le_roundRadix (State := State) (enc a).length (J₀ a)
-    refine closed_of_runsInSpace (hA a).1 (by omega) (by omega) ?_
-    calc 3 ^ (4 * (c₁ * s (enc a).length + c₂) + 1) ≤ 4 ^ J₀ a :=
-          Nat.pow_le_pow_left (by omega) _
-      _ ≤ roundRadix State (enc a).length (J₀ a) :=
-          Nat.le_mul_of_pos_right _ (by omega)
+  have hJ₀ (a : α) : Closed ntm (roundRadix State (enc a).length (J₀ a)) (enc a) :=
+    (closed_iff_fits (card_lt_roundRadix _ _)).mpr fun _ hv =>
+      fits_roundRadix_of_runsInSpace (hA a).1 le_rfl hv
   refine (queryMachine ntm).exists_decidesInSpace query_inSpace (next_inSpace ntm)
     halted_inSpace accept_inSpace
     (fun a => abstractTime k State (J₀ a) (enc a).length)
