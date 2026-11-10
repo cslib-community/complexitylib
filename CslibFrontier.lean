@@ -3744,6 +3744,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORCounterDP
 public import CslibFrontier.Cryptanalysis.AddXNORCounterDPResources
 public import CslibFrontier.Cryptanalysis.AddXNORCounterInitialization
 public import CslibFrontier.Cryptanalysis.AddXNORCounterPairing
+public import CslibFrontier.Cryptanalysis.AddXNORCounterProjection
 public import CslibFrontier.Cryptanalysis.AddXNORCounterPull
 public import CslibFrontier.Cryptanalysis.AddXNORCounterSerialization
 public import CslibFrontier.Cryptanalysis.AddXNORCounting
@@ -3822,6 +3823,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORSortedMeet
 public import CslibFrontier.Cryptanalysis.AddXNORSortedQuarterMachine
 public import CslibFrontier.Cryptanalysis.AddXNORSortedRecords
 public import CslibFrontier.Cryptanalysis.AddXNORSource
+public import CslibFrontier.Cryptanalysis.AddXNORSourceCounterCounts
 public import CslibFrontier.Cryptanalysis.AddXNORSourceQuarter
 public import CslibFrontier.Cryptanalysis.AddXNORSourceResources
 public import CslibFrontier.Cryptanalysis.AddXNORSpectrum

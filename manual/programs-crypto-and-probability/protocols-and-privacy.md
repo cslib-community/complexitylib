@@ -2680,9 +2680,13 @@ or counting conclusion is supplied as an endpoint premise.
 
 [`AddXNORCounterDPResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterDPResources.lean)
 normalizes the installed machine's actual profiles in `CounterDP.source_certificate`:
-bit time and charged peak workspace are $O(2^p P(p+q+1))$, for one fixed polynomial
-and machine, on original width-$p$ typed operands of length $q$. Initialization,
-operand reversal, all counter-table copies, mapping and radix-sort buffers,
+bit time and charged peak workspace are $O(2^p P(p+\ell+1))$, for one fixed
+polynomial and machine, on the already-projected instance $\rho_p(I)$ with $\ell$
+width-$p$ operands. Here $\ell$ is the operand count of this DP call, not the
+paper's $q=N-1$; the forward half in Lemma 8 has $\ell=2k$. This DP certificate
+does not perform projection from the full-width input; use the actual projection
+machine described below for that step of the prepass. Initialization, operand
+reversal, all counter-table copies, mapping and radix-sort buffers,
 pairing, binary addition, reindexing, fold control and encoded readback are
 charged. Callback clocks are summed; workspace uses their maximum and every
 prefix table, including initialization and final output. This proves the
@@ -2694,6 +2698,40 @@ whole-run dissection theorem is unchanged.
 Checked clients execute empty/zero-width chains, physical zero counters,
 collisions, repeated operands and both original directions. From the repository
 root run `lake build CslibFrontierTests.AddXNORCounterDP --wfail --iofail`.
+
+Full-width input projection is now executed by
+[`AddXNORCounterProjection.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterProjection.lean).
+Its input carries the original physical width, requested depth, direction,
+full-width seed/target and original operands. `prepareCertificate` computes
+$d=\min(p,m)$ and reduces each original word modulo $2^d$ with the existing
+binary-remainder and map-with-input machines. `runCertificate` then runs the
+approved DP. `run_classes` derives every original low-bit class population,
+including multiplicities; no projected input, table or execution conclusion is
+supplied as a premise. `source_certificate` charges projection, materialized
+words and the complete DP in bit time and every-prefix peak workspace bounded
+by $2^d P(I+1)$, where $I$ is the original encoded input length.
+
+[`AddXNORSourceCounterCounts.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSourceCounterCounts.lean)
+composes this route with actual source preparation. It derives the first-operand
+seed, zero inverse target, consecutive quarters and capped class depth
+$d=\min(p,m,\lfloor q/4\rfloor)$ from the original operand tape, with the paper's
+$q=N-1$. It runs both half-chain DPs and returns two dense numeric-key count
+arrays. `side_classes` proves that these are the original forward and backward
+low-bit class populations, including the residual fourth quarter.
+`quarter_certificate` bounds the actual combined time and peak workspace by
+$2^{\lfloor q/4\rfloor}P(I+1)$ before any full-state class list is generated.
+The bound includes both count arrays simultaneously, original-input/cut copies,
+projection, DP callback/sort/arithmetic buffers and output.
+
+This finishes original-input projection and the faster all-count producer.
+A resource-faithful scalar max/min scan of the two arrays to obtain $\mu_d$,
+its equality with the solver's computed balance, and installation of this prepass
+into the dissection solver remain open. A generic polynomial-time `List.zip` or
+repeated per-class lookup would not supply the required sharp scan bound. The
+existing whole-run solver and its theorem are unchanged; source Theorem 7 and
+the other recorded paper clauses are not claimed complete. Build the integrated
+high-bit, non-self-inverse, zero-depth, empty and residual-quarter clients with
+`lake build CslibFrontierTests.AddXNORCounterProjection --wfail --iofail`.
 
 The installed fallback is checked by
 [`CslibFrontierTests/AddXNORClassBatches.lean`](../../CslibFrontierTests/AddXNORClassBatches.lean),

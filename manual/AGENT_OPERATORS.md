@@ -313,9 +313,14 @@ by raising the baseline. These names preserve layout and do not introduce defaul
 Orientation recomputes counts; no cached-size oracle is input. The faster source
 reachable-state-DP machine now initializes, loops and returns all counts in both
 directions. Its original-width resource normalization is in
-`CounterDP.source_certificate`; reuse this certificate rather than a semantic table
-or a generic polynomial in its full wire. The faster quarter-time balance-prepass
-composition remains an open endpoint.
+`CounterDP.source_certificate`; its input is already projected for the source
+application. `CounterProjection.runCertificate` now projects the full-width input
+inside the machine. `SourceCounterCounts.quarter_certificate` composes source
+preparation and both actual projected DPs, charging simultaneous count arrays
+and all temporaries before any full-state class enumeration. Reuse these routes
+rather than a semantic table or a generic polynomial in its full wire. The scalar
+max/min balance scan and installation into the dissection solver remain open;
+polynomial-time `List.zip` or repeated table lookups do not give that sharp bound.
 Do not promote pair/batch traversal sums or unnormalized machine profiles to
 sharp source TM bounds. The global worst-case inequalities are now proved for the
 sorted-list source certificate; the source fast prepass and other main clauses
