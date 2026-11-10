@@ -200,7 +200,7 @@ theorem le_add_mul_sqrt_disagreement {ε : ℝ}
       simp only [E, hr, hr', Bool.true_and, List.any_eq_true, List.mem_range, Bool.and_eq_true]
       exact ⟨j, Finset.mem_range.mp hj, hrj, hrj'⟩
     have hfin (t : Set R) : μ.toOuterMeasure t ≠ ⊤ :=
-      ne_top_of_le_ne_top ENNReal.one_ne_top (Probability.PMF.toOuterMeasure_le_one _ _)
+      Probability.PMF.toOuterMeasure_ne_top _ _
     calc p s ≤ (μ.toOuterMeasure
           {r | acc s r = true ∧ ∀ j b, opens s r j b = true → b = π j}).toReal +
           ∑ j ∈ Finset.range M, (a j (!π j)).toReal := by

@@ -64,6 +64,7 @@ bounds: time `exp(O(L log s))` and polynomial space.
 
 ## Main definitions
 
+* `Cslib.Circuits.Frontier.NativePacket.encPortBits`: the encoding of ports with the bits on them.
 * `Cslib.Circuits.Frontier.NativePacket.PacketCtx`: the context of a packet entry.
 * `Cslib.Circuits.Frontier.NativePacket.packetTerms`: coefficient extraction for a packet.
 * `Cslib.Circuits.Frontier.NativePacket.packetEntryNative`: the native packet entry.
@@ -499,6 +500,11 @@ theorem crossRatioList_polyTime {p : α → ℕ} {fl : α → List ℕ} {a i : �
 end PolyTime
 
 
+/-- Ports with the bits on them, such as the column ports of a packet context: each port is the pair
+`(slot, b)` of its slot in binary and the bit `b` on it. The pairs are framed and concatenated in
+port order, each with its slot framed. -/
+abbrev encPortBits : List (ℕ × Bool) ↪ List Bool := encList (encPair encNat encBool)
+
 section PolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
@@ -510,7 +516,7 @@ theorem localFormList_polyTime {p : α → ℕ} {fl : α → List ℕ} {a L : α
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
     (ha : ComputableInPolyTime a encIn encUnary) (hL : ComputableInPolyTime L encIn encUnary)
     (ht : ComputableInPolyTime t encIn encIntBin)
-    (hcols : ComputableInPolyTime cols encIn (encList (encPair encNat encBool)))
+    (hcols : ComputableInPolyTime cols encIn encPortBits)
     (hx : ComputableInPolyTime x encIn encNat)
     (hζ : ComputableInPolyTime ζ encIn (encList encNat)) :
     ComputableInPolyTime (fun z => localFormList (p z) (fl z) (a z) (L z) (t z) (cols z) (x z)
@@ -568,7 +574,7 @@ theorem modeValueList_polyTime {p : α → ℕ} {fl : α → List ℕ} {i : α �
     (hfl : ComputableInPolyTime fl encIn (encList encNat))
     (hi : ComputableInPolyTime i encIn encUnary)
     (hdiffer : ComputableInPolyTime differ encIn encBool)
-    (hcols : ComputableInPolyTime cols encIn (encList (encPair encNat encBool)))
+    (hcols : ComputableInPolyTime cols encIn encPortBits)
     (hy₀ : ComputableInPolyTime y₀ encIn encNat) (hb : ComputableInPolyTime b encIn encUnary) :
     ComputableInPolyTime (fun z => modeValueList (p z) (fl z) (i z) (differ z) (cols z) (y₀ z)
       (b z)) encIn (encList encNat) := by
@@ -608,7 +614,7 @@ theorem rowTermList_polyTime {p : α → ℕ} {fl : α → List ℕ} {a L i nb :
     (hi : ComputableInPolyTime i encIn encUnary) (ht : ComputableInPolyTime t encIn encIntBin)
     (hnb : ComputableInPolyTime nb encIn encUnary)
     (hdiffer : ComputableInPolyTime differ encIn encBool)
-    (hcols : ComputableInPolyTime cols encIn (encList (encPair encNat encBool)))
+    (hcols : ComputableInPolyTime cols encIn encPortBits)
     (hζ : ComputableInPolyTime ζ encIn (encList encNat))
     (hr : ComputableInPolyTime r encIn (encPair encNat encBool))
     (ho : ComputableInPolyTime o encIn (encOption encNat)) :
@@ -696,7 +702,7 @@ abbrev encProd : (ℕ × List ℕ) × ((ℕ × ℕ) × ((ℕ × ℕ) × (ℤ × 
   encPair (encPair encUnary (encList encNat))
     (encPair (encPair encUnary encUnary) (encPair (encPair encUnary encUnary)
       (encPair encIntBin (encPair encUnary (encPair (encPair encBool (encPair encBool encBool))
-        (encPair (encList (encPair encNat encBool)) (encList encNat)))))))
+        (encPair encPortBits (encList encNat)))))))
 
 /-- **The encoding of a packet context**: the counts in unary, `t` in binary sign-magnitude
 form, and the lists in binary. -/
@@ -719,7 +725,7 @@ theorem mk_polyTime {δ : Type} {encIn : δ ↪ List Bool}
     (he₁ : ComputableInPolyTime e₁ encIn encBool)
     (he₂ : ComputableInPolyTime e₂ encIn encBool)
     (hdiffer : ComputableInPolyTime differ encIn encBool)
-    (hcols : ComputableInPolyTime cols encIn (encList (encPair encNat encBool)))
+    (hcols : ComputableInPolyTime cols encIn encPortBits)
     (hζ : ComputableInPolyTime ζ encIn (encList encNat)) :
     ComputableInPolyTime (fun x => PacketCtx.mk (p x) (fl x) (a x) (L x) (i x) (tiles x)
       (t x) (nb x) (e₁ x) (e₂ x) (differ x) (cols x) (ζ x)) encIn enc :=
@@ -732,7 +738,7 @@ private theorem toProd_polyTime : ComputableInPolyTime equivProd enc encProd :=
 private theorem rest_polyTime :
     ComputableInPolyTime (fun c : PacketCtx => (equivProd c).2.2.2.2.2) enc
       (encPair (encPair encBool (encPair encBool encBool))
-        (encPair (encList (encPair encNat encBool)) (encList encNat))) :=
+        (encPair encPortBits (encList encNat))) :=
   (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
     ((ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
       ((ComputableInPolyTime.snd _ _).comp toProd_polyTime))))
@@ -780,8 +786,7 @@ theorem differ_polyTime : ComputableInPolyTime PacketCtx.differ enc encBool :=
   (ComputableInPolyTime.snd _ _).comp ((ComputableInPolyTime.snd _ _).comp
     ((ComputableInPolyTime.fst _ _).comp rest_polyTime))
 /-- The column ports, in polynomial time. -/
-theorem cols_polyTime : ComputableInPolyTime PacketCtx.cols enc
-    (encList (encPair encNat encBool)) :=
+theorem cols_polyTime : ComputableInPolyTime PacketCtx.cols enc encPortBits :=
   (ComputableInPolyTime.fst _ _).comp ((ComputableInPolyTime.snd _ _).comp rest_polyTime)
 /-- The interpolation value, in polynomial time. -/
 theorem ζ_polyTime : ComputableInPolyTime PacketCtx.ζ enc (encList encNat) :=
@@ -1160,8 +1165,7 @@ theorem sidePorts_polyTime {α : Type} {encIn : α ↪ List Bool} {ports : α �
     (hports : ComputableInPolyTime ports encIn (encList (encPair encBool encNat)))
     (hbs : ComputableInPolyTime bs encIn encBits)
     (hside : ComputableInPolyTime side encIn encBool) :
-    ComputableInPolyTime (fun x => sidePorts (ports x) (bs x) (side x)) encIn
-      (encList (encPair encNat encBool)) := by
+    ComputableInPolyTime (fun x => sidePorts (ports x) (bs x) (side x)) encIn encPortBits := by
   have h1 := ComputableInPolyTime.fst encIn encUnary
   have h2 := ComputableInPolyTime.snd encIn encUnary
   have hport := (ComputableInPolyTime.listGetD (encA := encPair encBool encNat)

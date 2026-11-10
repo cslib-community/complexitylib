@@ -8,95 +8,82 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.DriverCorrect
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchBounds
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.BalancedParameters
+import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchBounds
 
 /-!
-# Quantitative storage of the complete native driver
+# Quantitative storage of Williams's native driver
 
-The maximum over increasing guesses is bounded by the selected block width at the largest
-guess. The complete driver, including its original-input scan, has squared storage at most a
-fixed-machine constant times the largest guess multiplied by its binary length. No number of
-guesses multiplies the candidate storage allowance.
+With the initialized evaluator and balanced parameters, every candidate through the largest
+guess fits a fixed multiple of the block width selected at that guess. The complete driver,
+including its original-input scan, has squared storage at most a fixed-machine constant times
+the largest guess multiplied by its binary length. No number of guesses multiplies the
+candidate storage allowance.
 -/
 
 public section
 
-namespace Turing.MultiTapePTM.BlockComputation.OuterSearch
+namespace Turing.MultiTapePTM.BlockComputation.Driver
 
 open MultiTapeTM
 
-/-- Taking a finite maximum of candidate allowances preserves the balanced storage shape. -/
-theorem space_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N A : ℕ,
-    space k s Q N A ≤ C * (BalancedParameters.blockWidth A + N.size + 1) := by
-  obtain ⟨c, hc⟩ := ScheduleSearch.space_le k s Q
-  refine ⟨15 * c + 64, ?_⟩
-  intro N A
-  have hsup : candidateSpace k s Q N A ≤
-      c * (15 * BalancedParameters.blockWidth A + N.size + 1) := by
-    unfold candidateSpace
-    apply Finset.sup_le
-    intro guess hguess
-    have hguessA : guess ≤ A := by grind
-    have hcost := hc N (BalancedParameters.blockWidth guess)
-      (BalancedParameters.horizon guess) (BalancedParameters.blockWidth_pos guess)
-    have hstorage := BalancedParameters.storage_le guess
-    have hmono := BalancedParameters.blockWidth_mono hguessA
-    have hterm : BalancedParameters.blockWidth guess + BalancedParameters.horizon guess *
-        ((BalancedParameters.blockWidth guess).size + 1) + N.size + 1 ≤
-        15 * BalancedParameters.blockWidth A + N.size + 1 := by nlinarith
-    exact hcost.trans (Nat.mul_le_mul_left c hterm)
-  have hsize := BalancedParameters.size_lt_twice_blockWidth A
-  simp only [space, callerSpace, length_encNat_eq_size]
-  nlinarith
-
-end Turing.MultiTapePTM.BlockComputation.OuterSearch
-
-namespace Turing.MultiTapePTM.BlockComputation.Driver
-
-/-- The input scan and all increasing-guess candidates use one balanced-width allowance. -/
-theorem space_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N τ : ℕ,
-    space k s Q N τ ≤ C *
-      (BalancedParameters.blockWidth (max (N + 1) τ) + N.size + 1) := by
-  obtain ⟨c, hc⟩ := OuterSearch.space_le k s Q
-  refine ⟨c + 8, ?_⟩
-  intro N τ
-  have houter := hc N (max (N + 1) τ)
-  have hlog : Nat.log2 N ≤ N.size := by
-    by_cases hz : N = 0
-    · subst N
-      decide
-    · exact ((Nat.log2_lt hz).mpr (Nat.lt_size_self N)).le
-  dsimp only [space]
-  nlinarith
-
 /-- An integer square bound states the square-root storage rate without real-valued rounding. -/
 theorem space_sq_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N τ : ℕ,
-    (space k s Q N τ) ^ 2 ≤
-      C * (max (N + 1) τ * (max (N + 1) τ).size) := by
-  obtain ⟨c, hc⟩ := space_le k s Q
-  refine ⟨64 * c ^ 2, ?_⟩
+    (space k (InitializedEvaluator.scheduleAllowance k s Q) BalancedParameters.parameters
+      N τ) ^ 2 ≤ C * (max (N + 1) τ * (max (N + 1) τ).size) := by
+  obtain ⟨c, hc⟩ := ScheduleSearch.scheduleAllowance_le k s Q
+  let K := 64 * (k + 2) * (18 * c + 20)
+  refine ⟨4 * K ^ 2, ?_⟩
   intro N τ
-  let A := max (N + 1) τ
-  have hA : 0 < A := by dsimp only [A]; omega
-  have hN : N ≤ A := by dsimp only [A]; omega
-  have hNsize := Nat.size_le_size hN
-  have hAsize := BalancedParameters.size_lt_twice_blockWidth A
-  have hblock := BalancedParameters.blockWidth_pos A
-  have hshape := hc N τ
-  have hscalar : space k s Q N τ ≤ 4 * c * BalancedParameters.blockWidth A := by
-    change space k s Q N τ ≤ c *
-      (BalancedParameters.blockWidth A + N.size + 1) at hshape
-    have hterm : BalancedParameters.blockWidth A + N.size + 1 ≤
-        4 * BalancedParameters.blockWidth A := by omega
+  let G := max (N + 1) τ
+  let B := BalancedParameters.blockWidth G
+  have hG : 0 < G := by dsimp only [G]; omega
+  have hNsize : N.size ≤ G.size := Nat.size_le_size (by dsimp only [G]; omega)
+  have hGsize : G.size < 2 * B := BalancedParameters.size_lt_twice_blockWidth G
+  have hB : 0 < B := BalancedParameters.blockWidth_pos G
+  have hX : ∀ guess ≤ G,
+      InitializedEvaluator.scheduleAllowance k s Q N
+          (BalancedParameters.parameters.blockWidth guess)
+          (BalancedParameters.parameters.horizon guess) +
+        (BalancedParameters.parameters.blockWidth guess).size +
+        BalancedParameters.parameters.horizon guess ≤
+      c * (15 * B + N.size + 1) + 15 * B := by
+    intro guess hguess
+    change InitializedEvaluator.scheduleAllowance k s Q N (BalancedParameters.blockWidth guess)
+        (BalancedParameters.horizon guess) + (BalancedParameters.blockWidth guess).size +
+        BalancedParameters.horizon guess ≤ _
+    have hcost := hc N (BalancedParameters.blockWidth guess) (BalancedParameters.horizon guess)
+      (BalancedParameters.blockWidth_pos guess)
+    have hstorage := BalancedParameters.storage_le guess
+    have hmono : BalancedParameters.blockWidth guess ≤ B :=
+      BalancedParameters.blockWidth_mono hguess
+    have hbs : (BalancedParameters.blockWidth guess).size ≤
+        BalancedParameters.blockWidth guess := by
+      simpa only [length_encNat_eq_size] using
+        length_encNat_le_self (BalancedParameters.blockWidth guess)
+    have hhz : BalancedParameters.horizon guess ≤ BalancedParameters.horizon guess *
+        ((BalancedParameters.blockWidth guess).size + 1) := Nat.le_mul_of_pos_right _ (by omega)
+    have hterm : BalancedParameters.blockWidth guess + BalancedParameters.horizon guess *
+        ((BalancedParameters.blockWidth guess).size + 1) + N.size + 1 ≤ 15 * B + N.size + 1 := by
+      omega
+    have hmul := Nat.mul_le_mul_left c hterm
+    omega
+  have hinner : c * (15 * B + N.size + 1) + 15 * B + N.size + G.size + 1 ≤ (18 * c + 20) * B := by
+    have hmul := Nat.mul_le_mul_left c (show 15 * B + N.size + 1 ≤ 18 * B by omega)
+    nlinarith
+  have hscalar : space k (InitializedEvaluator.scheduleAllowance k s Q)
+      BalancedParameters.parameters N τ ≤ K * B :=
     calc
-      space k s Q N τ ≤ c * (BalancedParameters.blockWidth A + N.size + 1) := hshape
-      _ ≤ c * (4 * BalancedParameters.blockWidth A) := Nat.mul_le_mul_left c hterm
-      _ = 4 * c * BalancedParameters.blockWidth A := by ring
-  have hsquare := Nat.mul_le_mul hscalar hscalar
-  have hbalanced := BalancedParameters.blockWidth_sq_le hA
-  have hscaled := Nat.mul_le_mul_left (16 * c ^ 2) hbalanced
-  change (space k s Q N τ) ^ 2 ≤ 64 * c ^ 2 * (A * A.size)
-  nlinarith
+      _ ≤ 64 * (k + 2) * (c * (15 * B + N.size + 1) + 15 * B + N.size + G.size + 1) :=
+        space_le_of_le k _ _ N τ _ hX
+      _ ≤ 64 * (k + 2) * ((18 * c + 20) * B) := Nat.mul_le_mul_left _ hinner
+      _ = K * B := by dsimp only [K]; ring
+  have hbalanced : B ^ 2 ≤ 4 * (G * G.size) := BalancedParameters.blockWidth_sq_le hG
+  calc
+    _ ≤ (K * B) ^ 2 := Nat.pow_le_pow_left hscalar 2
+    _ = K ^ 2 * B ^ 2 := by ring
+    _ ≤ K ^ 2 * (4 * (G * G.size)) := Nat.mul_le_mul_left _ hbalanced
+    _ = 4 * K ^ 2 * (G * G.size) := by ring
 
 end Turing.MultiTapePTM.BlockComputation.Driver
