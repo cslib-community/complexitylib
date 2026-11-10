@@ -887,7 +887,8 @@ theorem length_heavyVarList_le_div_of_incidence {n b₀ s_div : ℕ} {eqs : List
     (HeavyBranchFold.heavyVarList n b₀ eqs).length ≤ n / s_div := by
   have heq_sum : (eqs.map fun eq => (equationVars eq).length) = eqs.map (scopeWidthOn n) :=
     List.map_congr_left fun eq heq => (scopeWidthOn_eq_length_equationVars (hvars eq heq)).symm
-  have hdiv := HeavyBranchFold.length_heavyVarList_le_div hb₀ hvars; rw [heq_sum] at hdiv
+  have hdiv := HeavyBranchFold.length_heavyVarList_le_div (n := n) (sys := eqs) hb₀
+  rw [heq_sum] at hdiv
   refine hdiv.trans ((Nat.le_div_iff_mul_le hs).mpr (Nat.le_of_mul_le_mul_right ?_ hb₀))
   have hqb : (eqs.map (scopeWidthOn n)).sum / b₀ * b₀ ≤ (eqs.map (scopeWidthOn n)).sum :=
     Nat.div_mul_le_self _ _

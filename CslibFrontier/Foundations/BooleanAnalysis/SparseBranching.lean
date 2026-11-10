@@ -55,8 +55,8 @@ This module completes the algebraic and combinatorial infrastructure of Sections
    `Cslib.BitString.withNeutralFactors` and `Cslib.BitString.withNeutralScope` increments each
    variable's incidence by `1`, ensuring positive variable incidence (`1 ≤ varIncidence`),
    total incidence $M' \ge n'$ (`Cslib.BitString.card_le_totalIncidence_withNeutralFactors`), and
-   light-variable incidence at most $b_0 + 1$. Finally, when `1 ≤ b₀`, `1 ≤ s`,
-   `∀ i ∈ F, scope i ⊆ V`, and `totalIncidence F scope * s ≤ b₀ * #V` (which holds both for the
+   light-variable incidence at most $b_0 + 1$. Finally, when `1 ≤ s` and
+   `totalIncidence F scope * s ≤ b₀ * #V` (which holds both for the
    manuscript's threshold `paperHeavyThreshold M n s = ⌈M / n⌉ * s` and for the combined-ceiling
    variant `heavyThreshold M n s = ⌈M * s / n⌉` when `1 ≤ n`), the heavy-variable set has size at
    most `#V / s`, at most `2 ^ (Fintype.card ι / s)` branches, and leaves
@@ -612,59 +612,57 @@ theorem mul_le_paperHeavyThreshold_mul {M n s : ℕ} (hn : 1 ≤ n) :
     M * s ≤ (((M + n - 1) / n) * n) * s := Nat.mul_le_mul_right s hceil
     _ = (((M + n - 1) / n) * s) * n := by ring
 
-/-- **§5.5 ($|S| \le n / s$)**: whenever `totalIncidence F scope * s ≤ b₀ * #V`, `1 ≤ b₀`,
-`1 ≤ s`, and `∀ i ∈ F, scope i ⊆ V`, the heavy-variable set `heavyVars V F scope b₀` has
-cardinality at most `#V / s`. -/
+/-- **§5.5 ($|S| \le n / s$)**: whenever `totalIncidence F scope * s ≤ b₀ * #V` and `1 ≤ s`, the
+heavy-variable set `heavyVars V F scope b₀` has cardinality at most `#V / s`. -/
 theorem card_heavyVars_le_card_div [DecidableEq ι] (V : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 1 ≤ s)
-    (hV : ∀ i ∈ F, scope i ⊆ V) (hM : totalIncidence F scope * s ≤ b₀ * #V) :
+    (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 1 ≤ s)
+    (hM : totalIncidence F scope * s ≤ b₀ * #V) :
     #(heavyVars V F scope b₀) ≤ #V / s := by
   refine (Nat.le_div_iff_mul_le hs).mpr ?_
-  have hcard := card_heavyVars_mul_le_totalIncidence V F scope b₀ hV
-  have hmul : (#(heavyVars V F scope b₀) * s) * b₀ ≤ #V * b₀ := by
+  have hcard := card_heavyVars_mul_succ_le_totalIncidence V F scope b₀
+  have hmul : (#(heavyVars V F scope b₀) * s) * (b₀ + 1) ≤ #V * (b₀ + 1) := by
     calc
-      (#(heavyVars V F scope b₀) * s) * b₀
-        = (#(heavyVars V F scope b₀) * b₀) * s := by ring
+      (#(heavyVars V F scope b₀) * s) * (b₀ + 1)
+        = (#(heavyVars V F scope b₀) * (b₀ + 1)) * s := by ring
       _ ≤ totalIncidence F scope * s := Nat.mul_le_mul_right s hcard
       _ ≤ b₀ * #V := hM
-      _ = #V * b₀ := Nat.mul_comm _ _
-  exact Nat.le_of_mul_le_mul_right hmul hb₀
+      _ ≤ #V * (b₀ + 1) := by rw [Nat.mul_comm]; exact Nat.mul_le_mul_left _ (Nat.le_succ b₀)
+  exact Nat.le_of_mul_le_mul_right hmul (Nat.succ_pos b₀)
 
-/-- **§5.5 ($2^{|S|} \le 2^{n / s}$)**: under `totalIncidence F scope * s ≤ b₀ * Fintype.card ι`,
-`1 ≤ b₀`, and `1 ≤ s`, there are at most `2 ^ (Fintype.card ι / s)` heavy-variable branches. -/
+/-- **§5.5 ($2^{|S|} \le 2^{n / s}$)**: under `totalIncidence F scope * s ≤ b₀ * Fintype.card ι`
+and `1 ≤ s`, there are at most `2 ^ (Fintype.card ι / s)` heavy-variable branches. -/
 theorem card_branchAssignments_heavyVars_le_two_pow_div [Fintype ι] [DecidableEq ι]
-    (F : Finset κ) (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 1 ≤ s)
+    (F : Finset κ) (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 1 ≤ s)
     (hM : totalIncidence F scope * s ≤ b₀ * Fintype.card ι) :
     #(branchAssignments (heavyVars univ F scope b₀)) ≤ 2 ^ (Fintype.card ι / s) := by
   rw [card_branchAssignments]
-  have hle := card_heavyVars_le_card_div univ F scope hb₀ hs (fun _ _ => subset_univ _)
-    (by simpa [card_univ] using hM)
+  have hle := card_heavyVars_le_card_div univ F scope hs (by simpa [card_univ] using hM)
   rw [card_univ] at hle
   exact Nat.pow_le_pow_right (by decide) hle
 
-/-- **§5.5 ($n' = n - |S| \ge n - n / s$)**: under `totalIncidence F scope * s ≤ b₀ * #V`,
-`1 ≤ b₀`, `1 ≤ s`, and `∀ i ∈ F, scope i ⊆ V`, the set `V \ heavyVars V F scope b₀` of free
-variables has cardinality at least `#V - #V / s`. -/
+/-- **§5.5 ($n' = n - |S| \ge n - n / s$)**: under `totalIncidence F scope * s ≤ b₀ * #V` and
+`1 ≤ s`, the set `V \ heavyVars V F scope b₀` of free variables has cardinality at least
+`#V - #V / s`. -/
 theorem card_sdiff_heavyVars_ge [DecidableEq ι] (V : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 1 ≤ s)
-    (hV : ∀ i ∈ F, scope i ⊆ V) (hM : totalIncidence F scope * s ≤ b₀ * #V) :
+    (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 1 ≤ s)
+    (hM : totalIncidence F scope * s ≤ b₀ * #V) :
     #V - #V / s ≤ #(V \ heavyVars V F scope b₀) := by
   have hsub : heavyVars V F scope b₀ ⊆ V := filter_subset _ V
   rw [card_sdiff, inter_eq_left.mpr hsub]
-  have hle := card_heavyVars_le_card_div V F scope hb₀ hs hV hM
+  have hle := card_heavyVars_le_card_div V F scope hs hM
   omega
 
-/-- **§5.5 ($n' \ge n / 2$ for $s \ge 2$)**: when `2 ≤ s`, `1 ≤ b₀`, `∀ i ∈ F, scope i ⊆ V`, and
+/-- **§5.5 ($n' \ge n / 2$ for $s \ge 2$)**: when `2 ≤ s` and
 `totalIncidence F scope * s ≤ b₀ * #V`, at least half of the variables in `V` remain free after
 removing `heavyVars V F scope b₀`: `#V ≤ 2 * #(V \ heavyVars V F scope b₀)` and
 `#V / 2 ≤ #(V \ heavyVars V F scope b₀)`. -/
 theorem card_sdiff_heavyVars_ge_half [DecidableEq ι] (V : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ s : ℕ} (hb₀ : 1 ≤ b₀) (hs : 2 ≤ s)
-    (hV : ∀ i ∈ F, scope i ⊆ V) (hM : totalIncidence F scope * s ≤ b₀ * #V) :
+    (scope : κ → Finset ι) {b₀ s : ℕ} (hs : 2 ≤ s)
+    (hM : totalIncidence F scope * s ≤ b₀ * #V) :
     #V ≤ 2 * #(V \ heavyVars V F scope b₀) ∧
       #V / 2 ≤ #(V \ heavyVars V F scope b₀) := by
   have hdiv : #V / s ≤ #V / 2 := Nat.div_le_div_left hs (by decide)
-  have hge := card_sdiff_heavyVars_ge V F scope hb₀ (by omega) hV hM
+  have hge := card_sdiff_heavyVars_ge V F scope (by omega) hM
   constructor <;> omega
 
 /-- **§5.1 & §5.5 ($\ell = n + 1$)**: the shared modular precision `n + 1` used for both the

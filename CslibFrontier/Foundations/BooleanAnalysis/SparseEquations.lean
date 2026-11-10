@@ -48,13 +48,13 @@ truncation from `CslibFrontier.Foundations.Data.Polynomial.ParityAmplifier` [Tod
   `commonZeroCount I P` on the nose via `(· % 2 ^ ℓ)` whenever `Fintype.card ι < ℓ`
   (`Cslib.BitString.emod_sum_sumCoeffsBelow_prod_parityFactor_eq_commonZeroCount`).
 
-Finally, for any system of equations with variable scopes `scope : κ → Finset ι` contained in a
-candidate variable set `V` (`∀ i ∈ F, scope i ⊆ V`) and positive incidence threshold `1 ≤ b₀`,
-the set `Cslib.BitString.heavyVars V F scope b₀` of variables in `V` appearing in more than `b₀`
-scopes has cardinality at most `totalIncidence F scope / b₀`
-(`Cslib.BitString.card_heavyVars_le_div`), while every
-remaining variable in `V \ heavyVars V F scope b₀` (and in any post-branching restricted equation
-scope when `∀ i ∈ I, equationScope (P i) ⊆ V`) has incidence at most `b₀`. Branching on all
+Finally, for any system of equations with variable scopes `scope : κ → Finset ι`, candidate
+variable set `V` and positive incidence threshold `1 ≤ b₀`, the set
+`Cslib.BitString.heavyVars V F scope b₀` of variables in `V` appearing in more than `b₀` scopes has
+cardinality at most `totalIncidence F scope / b₀` (`Cslib.BitString.card_heavyVars_le_div`). When
+the scopes lie in `V` (`∀ i ∈ F, scope i ⊆ V`), every remaining variable in
+`V \ heavyVars V F scope b₀` (and in any post-branching restricted equation scope when
+`∀ i ∈ I, equationScope (P i) ⊆ V`) has incidence at most `b₀`. Branching on all
 `2 ^ #S` assignments to a variable subset `S` and simplifying each equation via
 `Cslib.BitString.restrictMonomials` preserves degree bounds, never increases the number of
 monomials per equation, and decomposes `commonZeroCount` additively across the branches
@@ -343,19 +343,33 @@ def varIncidence [DecidableEq ι] (F : Finset κ) (scope : κ → Finset ι) (v 
 def totalIncidence (F : Finset κ) (scope : κ → Finset ι) : ℕ :=
   ∑ i ∈ F, #(scope i)
 
-/-- Double-counting variable-constraint incidences over a universe `U` containing all scopes. -/
-theorem sum_varIncidence_eq_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) (hU : ∀ i ∈ F, scope i ⊆ U) :
-    ∑ v ∈ U, varIncidence F scope v = totalIncidence F scope := by
-  unfold varIncidence totalIncidence
+/-- Double counting over any universe `U`: the incidences of variables in `U` are the sizes of the
+scopes cut down to `U`. -/
+private theorem sum_varIncidence_eq_sum_card_inter [DecidableEq ι] (U : Finset ι) (F : Finset κ)
+    (scope : κ → Finset ι) :
+    ∑ v ∈ U, varIncidence F scope v = ∑ i ∈ F, #(U ∩ scope i) := by
+  unfold varIncidence
   simp only [card_eq_sum_ones]
   have h1 : (∑ v ∈ U, ∑ x ∈ {i ∈ F | v ∈ scope i}, 1) =
       ∑ v ∈ U, ∑ i ∈ F, if v ∈ scope i then 1 else 0 := by
     refine sum_congr rfl fun v _ => ?_
     rw [sum_filter]
   rw [h1, sum_comm]
-  refine sum_congr rfl fun i hi => ?_
-  rw [← sum_filter, filter_mem_eq_inter, inter_eq_right.mpr (hU i hi)]
+  refine sum_congr rfl fun i _ => ?_
+  rw [← sum_filter, filter_mem_eq_inter]
+
+/-- Double-counting variable-constraint incidences over a universe `U` containing all scopes. -/
+theorem sum_varIncidence_eq_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
+    (scope : κ → Finset ι) (hU : ∀ i ∈ F, scope i ⊆ U) :
+    ∑ v ∈ U, varIncidence F scope v = totalIncidence F scope := by
+  rw [sum_varIncidence_eq_sum_card_inter, totalIncidence]
+  exact sum_congr rfl fun i hi => by rw [inter_eq_right.mpr (hU i hi)]
+
+/-- Over any universe `U`, the incidences of variables in `U` are at most the total incidence. -/
+theorem sum_varIncidence_le_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
+    (scope : κ → Finset ι) : ∑ v ∈ U, varIncidence F scope v ≤ totalIncidence F scope := by
+  rw [sum_varIncidence_eq_sum_card_inter, totalIncidence]
+  exact sum_le_sum fun i _ => card_le_card inter_subset_right
 
 /-- If every constraint in `F` has scope size at most `k`, then `totalIncidence F scope` is at
 most `k * #F`. -/
@@ -373,9 +387,9 @@ def heavyVars [DecidableEq ι] (U : Finset ι) (F : Finset κ) (scope : κ → F
 
 /-- Markov / counting bound: `#(heavyVars U F scope b₀) * (b₀ + 1) ≤ totalIncidence F scope`. -/
 theorem card_heavyVars_mul_succ_le_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) (b₀ : ℕ) (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (scope : κ → Finset ι) (b₀ : ℕ) :
     #(heavyVars U F scope b₀) * (b₀ + 1) ≤ totalIncidence F scope := by
-  rw [← sum_varIncidence_eq_totalIncidence U F scope hU]
+  refine le_trans ?_ (sum_varIncidence_le_totalIncidence U F scope)
   calc
     #(heavyVars U F scope b₀) * (b₀ + 1)
       = ∑ _v ∈ heavyVars U F scope b₀, (b₀ + 1) := by
@@ -389,17 +403,17 @@ theorem card_heavyVars_mul_succ_le_totalIncidence [DecidableEq ι] (U : Finset �
 
 /-- `#(heavyVars U F scope b₀) * b₀ ≤ totalIncidence F scope`. -/
 theorem card_heavyVars_mul_le_totalIncidence [DecidableEq ι] (U : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) (b₀ : ℕ) (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (scope : κ → Finset ι) (b₀ : ℕ) :
     #(heavyVars U F scope b₀) * b₀ ≤ totalIncidence F scope := by
   refine (Nat.mul_le_mul_left _ (Nat.le_succ b₀)).trans ?_
-  exact card_heavyVars_mul_succ_le_totalIncidence U F scope b₀ hU
+  exact card_heavyVars_mul_succ_le_totalIncidence U F scope b₀
 
 /-- **§5.5 (heavy-variable cardinality bound)**: for `b₀ > 0`, the number of heavy variables is at
 most `totalIncidence F scope / b₀`. -/
 theorem card_heavyVars_le_div [DecidableEq ι] (U : Finset ι) (F : Finset κ)
-    (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀) (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀) :
     #(heavyVars U F scope b₀) ≤ totalIncidence F scope / b₀ :=
-  (Nat.le_div_iff_mul_le hb₀).mpr (card_heavyVars_mul_le_totalIncidence U F scope b₀ hU)
+  (Nat.le_div_iff_mul_le hb₀).mpr (card_heavyVars_mul_le_totalIncidence U F scope b₀)
 
 /-- Every variable in `U \ heavyVars U F scope b₀` has incidence at most `b₀`. -/
 theorem varIncidence_le_of_mem_sdiff_heavyVars [DecidableEq ι] {U : Finset ι} {F : Finset κ}
@@ -622,11 +636,10 @@ theorem varIncidence_equationScope_restrictMonomials_heavyVars_le [DecidableEq �
 /-- **§5.5 (heavy-variable branch count bound)**: for `b₀ > 0`, the number of canonical branches on
 `heavyVars U F scope b₀` is at most `2 ^ (totalIncidence F scope / b₀)`. -/
 theorem card_branchAssignments_heavyVars_le [Fintype ι] [DecidableEq ι] (U : Finset ι)
-    (F : Finset κ) (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀)
-    (hU : ∀ i ∈ F, scope i ⊆ U) :
+    (F : Finset κ) (scope : κ → Finset ι) {b₀ : ℕ} (hb₀ : 0 < b₀) :
     #(branchAssignments (heavyVars U F scope b₀)) ≤ 2 ^ (totalIncidence F scope / b₀) := by
   rw [card_branchAssignments]
-  exact Nat.pow_le_pow_right (by omega) (card_heavyVars_le_div U F scope hb₀ hU)
+  exact Nat.pow_le_pow_right (by omega) (card_heavyVars_le_div U F scope hb₀)
 
 /-- **§5.5 (additive branch decomposition of `commonZeroCount`)**: branching over all canonical
 assignments `b ∈ branchAssignments S` to `S` partitions `commonZeroCount I P` into the sum of

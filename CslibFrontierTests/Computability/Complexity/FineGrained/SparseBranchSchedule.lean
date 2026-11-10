@@ -102,7 +102,7 @@ example :
         (2 * (numNodes 2 : ℝ) * (numGroups 2 : ℝ) *
           Real.exp (((3 * (2 * 1 + 4) + 4 : ℕ) : ℝ) * (2 : ℝ) * rowCost 1 2)) :=
   sum_branch_domainExaminationBound_le (β := 1) (k := 3) (c := 1)
-    (univ : Finset (Fin 1)) sampleP (by decide) (by decide) (by decide) sampleEquiv2
+    (univ : Finset (Fin 1)) sampleP (by decide) (by decide) sampleEquiv2
     (fun _ => 0) (fun _ _ => by positivity)
 
 /-- Nonvacuous concrete witness at `n = 2 ^ (2 ^ 50)` for an empty active equation set
