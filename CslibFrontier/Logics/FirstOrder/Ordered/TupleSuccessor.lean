@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.TupleInterpretation
+public import CslibFrontier.Logics.FirstOrder.Ordered.Successor
 import CslibFrontier.Tactic.FirstOrder
 
 /-!
@@ -19,9 +20,10 @@ lexicographic rank by exactly one. The full tuple universe is essential to the i
 
 The native carry compiler preserves quantifier-freeness when its supplied source successor is
 quantifier-free, as in Immerman's Exercise 1.33(2) with source SUC available. In the library's
-`≤`/BIT basis, the canonical source successor instead uses a universal adjacency formula. Its
-compiled tuple formula is first-order, with one element quantifier in each carry alternative;
-no unconditional quantifier-free claim is made for this basis. Native full-tuple BIT is supplied
+`≤`/BIT basis, the canonical source successor `Ordered.successor` (in `Ordered.Successor`)
+instead uses a universal adjacency formula. Its compiled tuple formula is first-order, with one
+element quantifier in each carry alternative; no unconditional quantifier-free claim is made for
+this basis. Native full-tuple BIT is supplied
 in `Ordered.TupleBit`; numeric-preserving full-tuple composition is in
 `Ordered.FullTuple.Composition`.
 
@@ -29,7 +31,6 @@ in `Ordered.TupleBit`; numeric-preserving full-tuple composition is in
 
 * `Cslib.Logic.FO.Ordered.IsCarrySuccessor`: the coordinatewise carry condition.
 * `Cslib.Logic.FO.Ordered.tupleSuccOf`: compile any supplied source successor using finite carries.
-* `Cslib.Logic.FO.Ordered.successor`: canonical source adjacency, with one universal quantifier.
 * `Cslib.Logic.FO.Ordered.tupleSucc`: the canonical full-tuple successor formula.
 
 ## Main results
@@ -189,32 +190,7 @@ theorem isQF_tupleSuccOf {L : Language} {σ : (language L).Formula (Fin 2)}
     (hσ : σ.IsQF) (k : ℕ) : (tupleSuccOf σ k).IsQF := by
   unfold tupleSuccOf; fo_qf
 
-/-- Source successor in the canonical `≤` language: strict order with no intermediate point.
-The formula universally quantifies one element; it is not asserted quantifier-free. -/
-noncomputable def successor (L : Language) : (language L).Formula (Fin 2) :=
-  (le L (.var 1) (.var 0)).not ⊓ Formula.iAlls Unit
-    ((le L (.var (.inr ())) (.var (.inl 0))).not.imp
-      (le L (.var (.inl 1)) (.var (.inr ()))))
-
 variable {L : Language} {n k : ℕ} [Fact (2 ≤ n)] [L.Structure (Fin n)]
-
-/-- The canonical source formula defines ordinary, non-wrapping successor. -/
-@[simp, fo_realize]
-theorem realize_successor (v : Fin 2 → Fin n) :
-    (successor L).Realize v ↔ (v 1).val = (v 0).val + 1 := by
-  fo_simp [successor, not_le]
-  constructor
-  · rintro ⟨h, hi⟩
-    have h' : (v 0).val < (v 1).val := h
-    let c : Fin n := ⟨(v 0).val + 1, by have := (v 1).isLt; lia⟩
-    have hc := hi (fun _ => c) (by change (v 0).val < (v 0).val + 1; lia)
-    change (v 1).val ≤ (v 0).val + 1 at hc
-    lia
-  · intro h
-    refine ⟨by change (v 0).val < (v 1).val; lia, fun z hz => ?_⟩
-    change (v 0).val < (z ()).val at hz
-    change (v 1).val ≤ (z ()).val
-    lia
 
 /-- Any correct source successor formula compiles to exact successor of lexicographic ranks. -/
 theorem realize_tupleSuccOf {σ : (language L).Formula (Fin 2)}

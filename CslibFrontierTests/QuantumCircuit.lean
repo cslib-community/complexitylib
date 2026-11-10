@@ -45,8 +45,7 @@ example : (Circuit.run [x₀, h₀] fun _ => false).ofLp (fun _ => true) =
     -((Real.sqrt 2)⁻¹ : ℝ) := by
   have hx : x₀.eval (ket fun _ => false) = ket fun _ => true := by
     simp only [x₀, Gate.not, Gate.ofInvolutive, PlacedGate.eval_ofPerm_ket]
-    congr 1
-    funext j
+    congr 1 with j : 1
     exact (splitEquiv_symm_apply_wire (Function.Embedding.refl _) _ _ j).trans (by
       fin_cases j; rfl)
   simp only [Circuit.run, Circuit.eval_cons, Circuit.eval_nil, hx, PlacedGate.eval_ket_apply,
@@ -61,8 +60,7 @@ noncomputable def toffoli₀ : PlacedGate 3 := ⟨3, Gate.toffoli, Function.Embe
 example : Circuit.run [toffoli₀] ![true, true, false] = ket ![true, true, true] := by
   simp only [Circuit.run, Circuit.eval_cons, Circuit.eval_nil, toffoli₀, Gate.toffoli,
     Gate.ofInvolutive, PlacedGate.eval_ofPerm_ket]
-  congr 1
-  funext j
+  congr 1 with j : 1
   exact (splitEquiv_symm_apply_wire (Function.Embedding.refl _) _ _ j).trans (by
     fin_cases j <;> rfl)
 
@@ -74,8 +72,7 @@ noncomputable def cnot₂₀ : PlacedGate 3 := ⟨2, Gate.cnot, ⟨![2, 0], by d
 example : Circuit.run [cnot₂₀] ![false, false, true] = ket ![true, false, true] := by
   simp only [Circuit.run, Circuit.eval_cons, Circuit.eval_nil, cnot₂₀, Gate.cnot,
     Gate.ofInvolutive, PlacedGate.eval_ofPerm_ket]
-  congr 1
-  funext j
+  congr 1 with j : 1
   fin_cases j
   · exact splitEquiv_symm_apply_wire ⟨![2, 0], _⟩ _ _ 1
   · exact (splitEquiv_symm_apply_of_not ⟨![2, 0], _⟩ _ _ 1 (by decide)).trans rfl
@@ -84,8 +81,7 @@ example : Circuit.run [cnot₂₀] ![false, false, true] = ket ![true, false, tr
 example : Circuit.run [cnot₂₀] ![true, true, false] = ket ![true, true, false] := by
   simp only [Circuit.run, Circuit.eval_cons, Circuit.eval_nil, cnot₂₀, Gate.cnot,
     Gate.ofInvolutive, PlacedGate.eval_ofPerm_ket]
-  congr 1
-  funext j
+  congr 1 with j : 1
   fin_cases j
   · exact splitEquiv_symm_apply_wire ⟨![2, 0], _⟩ _ _ 1
   · exact (splitEquiv_symm_apply_of_not ⟨![2, 0], _⟩ _ _ 1 (by decide)).trans rfl
@@ -130,8 +126,7 @@ theorem run_bell : Circuit.run [hq₀, cx₀₁] ![false, false] =
     cases a <;> cases b <;> simp [funext_iff, Fin.forall_fin_two]
   have step₂ (x : Fin 2 → Bool) : cx₀₁.eval (ket x) = ket ![x 0, x 1 ^^ x 0] := by
     simp only [cx₀₁, Gate.cnot, Gate.ofInvolutive, PlacedGate.eval_ofPerm_ket]
-    congr 1
-    funext j
+    congr 1 with j : 1
     exact (splitEquiv_symm_apply_wire (Function.Embedding.refl _) _ _ j).trans (by
       fin_cases j <;> rfl)
   simp only [Circuit.run, Circuit.eval_cons, Circuit.eval_nil, step₁, map_smul, map_add, step₂]

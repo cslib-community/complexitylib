@@ -128,7 +128,7 @@ theorem exists_first_reply_correct {k q s p r m : ℕ} {Q : Type} [Finite Q] [Fa
         · change RawController.ReplyCorrect _ _ _ ⟨S, fr :: stack, .ret⟩
             (GateReply.answer ((GateReply.machine M e).runFrom w
               (GateReply.initial M e ((σ, q, (Iter.path stack).map Fin.val),
-                (((w.length, b, 0, 0, m, 0, r * m), (p, 2 ^ m, (k * 3 + 1) * r),
+                ((⟨w.length, b, 0, 0, m, 0, r * m⟩, (p, 2 ^ m, (k * 3 + 1) * r),
                   List.ofFn (fun a => p + (Cslib.BitString.blocksEquiv.symm
                     (fun j => S (Cslib.TreeEval.Ary.reg fr.target j)) a).val), limit), r))) U))
           rw [hstate]
@@ -148,7 +148,7 @@ theorem exists_first_reply_correct {k q s p r m : ℕ} {Q : Type} [Finite Q] [Fa
             (Fact.out : p.Prime).pos
           change (GateReply.encState ((GateReply.machine M e).runFrom w
             (GateReply.initial M e ((σ, q, (Iter.path stack).map Fin.val),
-              (((w.length, b, 0, 0, m, 0, r * m), (p, 2 ^ m, (k * 3 + 1) * r),
+              ((⟨w.length, b, 0, 0, m, 0, r * m⟩, (p, 2 ^ m, (k * 3 + 1) * r),
                 List.ofFn (fun a => p + (Cslib.BitString.blocksEquiv.symm
                   (fun j => S (Cslib.TreeEval.Ary.reg fr.target j)) a).val), limit), r))) t)).length
               ≤ _

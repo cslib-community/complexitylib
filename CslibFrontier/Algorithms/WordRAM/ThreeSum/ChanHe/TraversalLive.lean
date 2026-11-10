@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalAdmitted
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalEmissionFrame
+public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStackFrame
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.TraversalStep
 
 /-!
@@ -44,30 +45,10 @@ theorem live_transition {a : Arena} {w : ℕ} {target : List Node}
       ExecWithin (w + 2) body x y (visitTime a.n a.m a.N + 314) ∧
       s.Invariant a w target y ∧ s.work < (Cursor.mk (e :: es) ns).work := by
   obtain ⟨p, hp, hstack, hl, hframe, hpr⟩ := pop_entry x e es h2 hcap h.stack
-  have preg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
-      p.regs i = x.regs i := hpr i (Or.inl hi') (Or.inr hi)
-  have ph : p.regs heap = x.regs heap := preg _ (by decide) (by decide)
-  have pc : p.regs outputCount = ns.length := (preg _ (by decide) (by decide)).trans h.count
-  have hc : a.Controls p := h.controls.congr (by
-    intro i hi
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-    exact preg i (by omega) (by omega))
-  have frame (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : p.mem q = x.mem q := by
-    apply hframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    omega
-  have gap : a.capacity ≤ a.floor - a.stack := by
-    have ht := ha.2.1
-    have hh := ha.2.2.1
-    omega
-  have oldStored (d : Entry) (hd : d ∈ e :: es) : d.Stored p.mem :=
-    (h.stored d hd).of_stack_frame ((h.around d hd).mono_capacity gap) hframe
-  have oldEnds (d : Entry) (hd : d ∈ e :: es) (j : Fin 3) :
-      d.source j + (d.data j).length ≤ p.regs heap := by rw [ph]; exact h.ends d hd j
-  have oldBitmap : a.Bitmap p.mem := by
-    intro q hq
-    rw [frame _ (Or.inl (by have := ha.1; omega))]
-    exact h.bitmap q hq
+  obtain ⟨ph, pc, hc, frame, gap, oldStored, oldEnds, oldBitmap, hfloor⟩ :=
+    Arena.preserved_of_stack_frame x p ha h.controls h.bitmap h.stored h.around h.ends h.floor
+      hframe (fun i hi hi' => hpr i (Or.inl hi') (Or.inr hi))
+  replace pc : p.regs outputCount = ns.length := pc.trans h.count
   have oldOutput : StoredNodes a.U a.N a.table ns p.mem := by
     apply h.output.congr
     · intro q hq _
@@ -91,7 +72,6 @@ theorem live_transition {a : Arena} {w : ℕ} {target : List Node}
     change ns.length + (Cursor.mk (e :: es) ns).work ≤ a.outputCapacity at hb
     have hh := ha.2.2.1
     omega
-  have hfloor : a.floor ≤ p.regs heap := by rw [ph]; exact h.floor
   have hheap : p.regs heap ≤ a.ceiling := by
     rw [ph]
     have hb := h.heapBudget

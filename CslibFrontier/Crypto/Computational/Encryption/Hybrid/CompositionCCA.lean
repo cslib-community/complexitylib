@@ -582,8 +582,8 @@ private theorem eval_kemCCARealGame_hiddenBit (E : SymmetricCipher)
         (ProbComp.eval (kemCCARealGame keyGen encaps decaps
           (hybridToKEMCCA E F decBound adversary bit) n)).map (fun guess => guess ^^ bit)) := by
   simp only [kemCCARealGame, kemRealGameWith, kemCCAContinuation, hybridToKEMCCAHiddenBit,
-    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret,
-    OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
+    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret_eq_runWith,
+    OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.runWith_sample,
     ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind, Function.comp_def,
     OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind, PMF.map_bind, PMF.pure_map]
   rw [PMF.bind_comm]
@@ -603,8 +603,8 @@ private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
           (hybridToKEMCCA E F decBound adversary bit) n)).map (fun guess => guess ^^ bit)) := by
   simp only [kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, kemCCAContinuation,
     hybridToKEMCCAHiddenBit, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind, StateT.run_bind,
-    ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind,
+    ProbOracleComp.eval_run_interpret_eq_runWith, OracleComp.interpret_bind, StateT.run_bind,
+    ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind,
     Function.comp_def, OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind,
     PMF.map_bind, PMF.pure_map]
   conv_rhs => rw [PMF.bind_comm]

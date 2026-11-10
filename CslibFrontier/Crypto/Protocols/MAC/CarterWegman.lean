@@ -599,7 +599,7 @@ theorem oneTimeStrongGame_eq_oneTimeGame (seed : PMF K) (hash : K → M → Y)
     (forger : OneTimeForger M Y) :
     oneTimeStrongGame seed hash forger = oneTimeGame seed hash forger := by
   dsimp only [oneTimeStrongGame, oneTimeGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  congr 1; funext k; congr 1; funext r; congr 1; funext m; congr 1; funext p
+  congr 1 with k : 1; congr 1 with r : 1; congr 1 with m : 1; congr 1 with p : 1
   rw [decide_ne_pair_and_verify_eq]
 
 /-- Reformulation of `oneTimeGame` via `bind_uniform_sign`: the queried message `m`, uniform tag
@@ -631,9 +631,9 @@ theorem oneTimeGame_eq_bind_uniform (seed : PMF K) (hash : K → M → Y)
         PMF.pure (decide (p.1 ≠ m) && verify hash k r p.1 p.2)
   simp only [h1]
   rw [PMF.bind_comm seed forger.query]
-  congr 1; funext m
+  congr 1 with m : 1
   rw [PMF.bind_comm seed (PMF.uniformOfFintype Y)]
-  congr 1; funext t
+  congr 1 with t : 1
   rw [PMF.bind_comm seed (forger.forge m t)]
 
 /-- **One-time Carter–Wegman EUF-CMA security** ([BonehShoup2023], Section 7.6, Lemma 7.11 and
@@ -822,7 +822,7 @@ theorem counterStrongGame_eq_counterSlotGame (seed : PMF K) (hash : K → M → 
     (forger : CounterForger M Y) :
     counterStrongGame seed hash forger = counterSlotGame seed hash forger := by
   dsimp only [counterStrongGame, counterSlotGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  congr 1; funext k; congr 1; funext s; congr 1; funext res
+  congr 1 with k : 1; congr 1 with s : 1; congr 1 with res : 1
   rw [checkCounterSUF_eq_checkCounterSlot]
 
 /-- Issued-counter global-message-freshness EUF-CMA success probability is at most issued-slot
@@ -931,7 +931,7 @@ theorem maskedOneTimeStrongGame_eq_maskedOneTimeGame (seed : PMF K) (padDist : P
       maskedOneTimeGame seed padDist hash forger := by
   dsimp only [maskedOneTimeStrongGame, maskedOneTimeGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure]
-  congr 1; funext k; congr 1; funext r; congr 1; funext m; congr 1; funext p
+  congr 1 with k : 1; congr 1 with r : 1; congr 1 with m : 1; congr 1 with p : 1
   rw [decide_ne_pair_and_verify_eq]
 
 /-- The induced pad distinguisher `Y → PMF Bool` that samples `k ← seed`, simulates the one-time
@@ -1139,9 +1139,9 @@ theorem prfOneTimeGame_le {n : ℕ} {seed : PMF K} {hash : K → M → BitString
           (ProbComp.eval (prfIdealGame (prfPadDistinguisher test) n)) : ℝ) := by
   refine prfOneTimeGame_le_of_distinguisher hh hε family forger (prfPadDistinguisher test) ?_ ?_
   · rw [eval_prfRealGame_prfPadDistinguisher]
-    congr 1; funext r; exact (htest r).symm
+    congr 1 with r : 1; exact (htest r).symm
   · rw [eval_prfIdealGame_prfPadDistinguisher]
-    congr 1; funext r; exact (htest r).symm
+    congr 1 with r : 1; exact (htest r).symm
 
 /-- **Exact single-query PRF-pad reduction for `prfOneTimeStrongGame`** in the one-query,
 fixed-nonce case (after [BonehShoup2023], Section 7.4); admissibility (`IsOraclePPT encBool`) and
@@ -1545,7 +1545,7 @@ theorem maskedCounterStrongGame_eq_maskedCounterSlotGame (seed : PMF K)
       maskedCounterSlotGame seed padSeqDist hash forger := by
   dsimp only [maskedCounterStrongGame, maskedCounterSlotGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure]
-  congr 1; funext k; congr 1; funext padSeq; congr 1; funext s; congr 1; funext res
+  congr 1 with k : 1; congr 1 with padSeq : 1; congr 1 with s : 1; congr 1 with res : 1
   rw [checkCounterSUF_eq_checkCounterSlot]
 
 theorem maskedCounterGame_le_maskedCounterSlotGame (seed : PMF K) (padSeqDist : PMF (ℕ → Y))
@@ -1588,7 +1588,7 @@ theorem counterPadSeqDistinguisher_congr (seed : PMF K) (hash : K → M → Y)
     counterPadSeqDistinguisher seed hash forger padSeq₁ =
       counterPadSeqDistinguisher seed hash forger padSeq₂ := by
   dsimp only [counterPadSeqDistinguisher, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  congr 1; funext k; congr 1; funext s
+  congr 1 with k : 1; congr 1 with s : 1
   rw [run_interpret_counterSeqHandler_congr hash k (hforger s) []
     (fun i _ hi => hpad i (by simpa using hi))]
 
@@ -1606,9 +1606,9 @@ theorem uniform_bind_counterPadSeqDistinguisher
   dsimp only [counterPadSeqDistinguisher, counterSlotGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure]
   rw [PMF.bind_comm (PMF.uniformOfFintype (ι → Y)) seed]
-  congr 1; funext k
+  congr 1 with k : 1
   rw [PMF.bind_comm (PMF.uniformOfFintype (ι → Y)) forger.coins]
-  congr 1; funext s
+  congr 1 with s : 1
   rw [← PMF.bind_bind,
     uniform_bind_run_interpret_counterSeqHandler hash k nonce (hforger s) []
       (fun i _ hi j _ hj heq => hinj i (by simpa using hi) j (by simpa using hj) heq)]
@@ -1725,7 +1725,7 @@ theorem eval_prfRealGame_prfMultiPadDistinguisher {n : ℕ} (seed : PMF K)
     List.length_nil, Nat.zero_add, pure_bind, ProbOracleComp.interpret_sample,
     BitString.eval_sampleList]
   simp only [show ProbComp.unifFin = OracleComp.query from rfl, OracleComp.interpret_query_eq_self]
-  congr 1; funext key
+  congr 1 with key : 1
   rw [← htest]
   exact counterPadSeqDistinguisher_congr seed hash hforger fun i hi =>
     ofList_getD_map_range_take n (Q n) (fun j => prfOracle family n key (nonce n j)) hi
@@ -2294,7 +2294,7 @@ theorem probOracleComp_uniform_bind_run_interpret_nonceFnHandler {α β : Type}
         simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
           OracleComp.sumHandler, StateT.lift]
         rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (ProbComp.unifOracle m)]
-        congr 1; funext i
+        congr 1 with i : 1
         exact ih i tr
       | inr q =>
         simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
@@ -2325,7 +2325,7 @@ theorem probOracleComp_uniform_bind_run_interpret_nonceFnHandler {α β : Type}
                 (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                   (nonceFnHandler hash k fn)) (cont t)).run tr').bind
                 fun res => post res.1 res.2 fn)]
-          congr 1; funext t
+          congr 1 with t : 1
           exact ih t (tr ++ [(q, t)])
     · have hlhs (table : N → Y) :
           ((OracleComp.interpret
@@ -3079,7 +3079,7 @@ theorem eval_prfRealGame_prfNonceToPrfDistinguisher
     · simp [OracleComp.interpret_map, ProbOracleComp.interpret_query]
     · simp
   rw [hhandler]
-  congr 1; funext out
+  congr 1 with out : 1
   simp only [PMF.pure_map, encPair_apply, encBits_apply, unframe_frame_append,
     dropFrame_frame_append, hprfLen]
   congr 1
@@ -3318,7 +3318,7 @@ theorem eval_prfIdealGame_prfNonceToPrfDistinguisher_le
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
       fun table _ => ?_
-    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith]
     exact eval_cwNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
       (adversary n []) [] [] (List.Sublist.refl [])
   refine hle.trans ?_
@@ -3526,14 +3526,14 @@ theorem probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler {α β : 
       simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
         OracleComp.sumHandler, StateT.lift]
       rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (ProbComp.unifOracle num)]
-      congr 1; funext i
+      congr 1 with i : 1
       exact ih i tr
     | inr m =>
       by_cases hnodup : (tr.map (fun e => e.1.2)).Nodup
       · simp only [pmf_norm, OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
         OracleComp.sumHandler, randomNonceFnHandler, randomNonceSimHandler]
         rw [PMF.bind_comm (PMF.uniformOfFintype (N → Y)) (PMF.uniformOfFintype N)]
-        congr 1; funext x
+        congr 1 with x : 1
         by_cases hx : x ∈ tr.map (fun e => e.1.2)
         · have hnot (t : Y) : ¬ ((tr ++ [((m, x), t)]).map (fun e => e.1.2)).Nodup :=
             not_nodup_map_append_of_mem m t hx
@@ -3561,7 +3561,7 @@ theorem probOracleComp_uniform_bind_run_interpret_randomNonceFnHandler {α β : 
                 (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
                   (randomNonceFnHandler hash k fn)) (cont (x, t))).run tr').bind
                 fun res => post res.1 res.2 fn)]
-          congr 1; funext t
+          congr 1 with t : 1
           exact ih (x, t) (tr ++ [((m, x), t)])
       · have hlhs (table : N → Y) :
             ((OracleComp.interpret
@@ -4510,8 +4510,8 @@ theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
   refine PMF.bind_congr_on_support _ _ _ fun prfKey hprfKey => ?_
   rw [BitString.eval_sampleList] at hprfKey
   have hprfLen : prfKey.length = n := BitString.length_of_mem_support_uniformList hprfKey
-  rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.eval_run_interpret]
+  rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   have hstep :
       (fun request state =>
         ProbComp.eval
@@ -4798,7 +4798,7 @@ theorem eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
       fun table _ => ?_
-    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret]
+    rw [interpret_deterministic_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith]
     exact eval_cwRandomNonceLogHandler_randomFunctionOracle_le msgLen hash n k table
       (adversary n []) [] [] (List.Sublist.refl [])
   refine hle.trans ?_

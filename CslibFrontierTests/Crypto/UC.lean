@@ -63,7 +63,7 @@ theorem eval_exec_askParty (b : Bool) {AdvQ AdvR : Type}
     ProbOracleComp.sample_pure, corruptRouter, Finset.notMem_empty, ↓dreduceIte, bind_pure_comp,
     map_pure, Fin.isValue, StateT.lift, Machine.runFrom_map, Machine.runFrom_query, Prod.map_apply,
     id_eq, Machine.closeProgram_pure, ProbComp.eval_map]
-  calc _ = PMF.map (Function.const _ b) _ := by congr 1; funext a; cases b <;> rfl
+  calc _ = PMF.map (Function.const _ b) _ := by congr 1 with a : 1; cases b <;> rfl
     _ = PMF.pure b := PMF.map_const _ _
 
 /-- When party `0` is corrupted, the environment cannot reach it: the router answers `none`, so
@@ -79,7 +79,7 @@ theorem eval_exec_askParty_corrupt (b : Bool) {AdvQ AdvR : Type}
     bind_pure_comp, StateT.lift, Machine.runFrom_map, Machine.runFrom_query, ↓reduceIte,
     Functor.map_map, Machine.closeProgram_map, Machine.closeProgram_pure,
     ProbComp.eval_bind, ProbComp.eval_map]
-  calc _ = PMF.bind _ (fun _ => PMF.pure false) := by congr 1; funext a; exact PMF.pure_map _ _
+  calc _ = PMF.bind _ (fun _ => PMF.pure false) := by congr 1 with a : 1; exact PMF.pure_map _ _
     _ = PMF.pure false := PMF.bind_const _ _
 
 /-- Every simulator loses: `askParty` tells `bitFunc true` from `bitFunc false` with certainty. -/

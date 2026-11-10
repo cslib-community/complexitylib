@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Fagin.Layout
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitArithmetic
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # First-order access to the native structure encoding
@@ -87,10 +88,7 @@ private theorem realize_frameEnd {α : Type*}
     (hdom : ∀ j : Fin B, dom.Realize ![j] ↔ (j : ℕ) < len) :
     (v.frameEnd dom base last).Realize env ↔
       (base.realize env).val + 2 * len + 1 = (last.realize env).val := by
-  simp only [frameEnd, Formula.realize_iExs, Formula.realize_inf,
-    FO.realize_isFirstOut hlt hlen hdom, realize_scaleEq, realize_addEq,
-    Term.realize_var, Term.realize_relabel, realize_one_val, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr, and_assoc]
+  fo_simp [frameEnd, FO.realize_isFirstOut hlt hlen hdom, Function.comp_def, and_assoc]
   constructor
   · rintro ⟨u, hu, hd, hb, he⟩
     change (base.realize env).val + (u 1).val = (u 2).val at hb
@@ -109,10 +107,7 @@ private theorem realize_frameBit {α : Type*}
     (v.frameBit dom bit base pos).Realize env ↔
       ∃ j < w.length, (pos.realize env).val = (base.realize env).val + 2 * j ∨
         (w[j]? = some true ∧ (pos.realize env).val = (base.realize env).val + 2 * j + 1) := by
-  simp only [frameBit, Formula.realize_iExs, Formula.realize_inf, FO.realize_atVar,
-    realize_scaleEq, realize_addEq, Formula.realize_sup, Formula.realize_equal,
-    Term.realize_var, Term.realize_relabel, realize_one_val, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr, Fin.ext_iff, and_assoc]
+  fo_simp [frameBit, Function.comp_def, Fin.ext_iff, and_assoc]
   constructor
   · rintro ⟨u, hd, hs, hb, he⟩
     change (base.realize env).val + (u 1).val = (u 2).val at hb
@@ -241,13 +236,12 @@ private theorem realize_prefixEnd {a : EncodedStructure} (ha : v.WellFormed a)
       rw [ha.length_table]
       exact Iff.rfl
     rw [prefixEnd, dite_eq_left hm']
-    simp only [Formula.realize_iExs, Formula.realize_inf]
+    fo_simp
     constructor
     · rintro ⟨u, hu, hf⟩
       have hb := (ih (Nat.le_of_lt hm') _ (Sum.elim env u)).mp hu
       have he := (realize_frameEnd _ _ _ _ _ hlen hlt hdom).mp hf
-      simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-        Sum.elim_inl, Sum.elim_inr] at hb he
+      fo_simp [Function.comp_def] at hb he
       change (u ()).val + 2 * (v.table a (v.symbol i)).length + 1 =
         (last.realize env).val at he
       rw [show m + 1 = i.val + 1 from rfl, encStructurePrefix_succ, List.length_append,
@@ -259,8 +253,7 @@ private theorem realize_prefixEnd {a : EncodedStructure} (ha : v.WellFormed a)
       let u : Unit → Fin B := fun _ => ⟨(v.encStructurePrefix a m).length, hp⟩
       refine ⟨u, (ih (Nat.le_of_lt hm') _ _).mpr rfl, ?_⟩
       apply (realize_frameEnd _ _ _ _ _ hlen hlt hdom).mpr
-      simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-        Sum.elim_inl, Sum.elim_inr]
+      fo_simp [Function.comp_def]
       simpa only [show m + 1 = i.val + 1 from rfl, encStructurePrefix_succ,
         List.length_append, length_frame, Nat.add_assoc] using he
 
@@ -321,16 +314,14 @@ private theorem realize_prefixBit {a : EncodedStructure} (ha : v.WellFormed a)
     · rintro ⟨u, hu, hf⟩
       have hb := (v.realize_prefixEnd ha hB (Nat.le_of_lt hm') _ _).mp hu
       have hf' := (realize_frameBit _ _ _ _ _ _ hdom hbit).mp hf
-      simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-        Sum.elim_inl, Sum.elim_inr] at hb hf'
+      fo_simp [Function.comp_def] at hb hf'
       rw [← hb] at hf'
       exact (shifted_frame_true_iff _ _ _).mpr hf'
     · intro hf
       let u : Unit → Fin B := fun _ => ⟨(v.encStructurePrefix a m).length, hp⟩
       refine ⟨u, (v.realize_prefixEnd ha hB (Nat.le_of_lt hm') _ _).mpr rfl, ?_⟩
       apply (realize_frameBit _ _ _ _ _ _ hdom hbit).mpr
-      simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-        Sum.elim_inl, Sum.elim_inr]
+      fo_simp [Function.comp_def]
       exact (shifted_frame_true_iff _ _ _).mp hf
 
 /-- The direct first-order input-bit formula recognizes precisely the set bits of the existing
