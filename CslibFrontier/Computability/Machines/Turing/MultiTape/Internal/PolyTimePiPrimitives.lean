@@ -20,7 +20,7 @@ head and tail codec machines; finite runtime dispatch retains the full captured 
 branch. The direct proofs introduce no default inhabitant requirement on the value or index type.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α Index Value : Type} {input : α ↪ List Bool} {enc : Value ↪ List Bool}

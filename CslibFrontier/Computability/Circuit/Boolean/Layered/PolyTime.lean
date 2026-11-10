@@ -32,7 +32,7 @@ the specified fallback without running for time proportional to the numerical in
   row width in unary, retaining the input width for an empty schedule.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Layered
 

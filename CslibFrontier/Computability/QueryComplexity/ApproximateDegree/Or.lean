@@ -45,7 +45,7 @@ The disjunction `OR_n` of `n` bits has approximate degree `Θ(√n)` [NisanSzege
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Polynomial.Chebyshev
 

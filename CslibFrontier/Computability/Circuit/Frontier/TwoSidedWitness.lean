@@ -36,7 +36,7 @@ The probabilistic existence argument is in `CslibFrontier.Computability.Circuit.
 see [Alon and Spencer, *The Probabilistic Method*][AlonSpencer2016].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

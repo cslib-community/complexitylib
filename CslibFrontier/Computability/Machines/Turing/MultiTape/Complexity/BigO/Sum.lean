@@ -28,7 +28,7 @@ encoded input length, without any finite-domain or inhabitance assumption on eit
 Uses Christian Reitwiessner's native degree/resource calculus (`ComputableInO.append`).
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInO
 

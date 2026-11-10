@@ -84,7 +84,7 @@ counting folds a counter directly instead of constructing the matching sublist.
   binary words and framed lists of encoded bits, also after an arbitrary binary embedding.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 

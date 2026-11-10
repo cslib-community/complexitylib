@@ -54,7 +54,7 @@ sweeping until the first blank would not find them all.
   functions are tidily computable.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

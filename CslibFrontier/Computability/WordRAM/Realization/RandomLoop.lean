@@ -32,7 +32,7 @@ most `n * R` `rand` calls on every path. Its law is the law of the loop's run.
 The rule is original infrastructure over the existing native loop and `ExecRandLaw`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM.Realization
 

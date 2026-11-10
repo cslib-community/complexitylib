@@ -42,7 +42,7 @@ multiplicity. These certificates assemble into the complete reduction in
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.CookLevin
 

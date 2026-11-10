@@ -51,7 +51,7 @@ Computability/Probabilistic/Adaptive.lean on the cslib `crypto` branch at
 `5ff69ca93402e7c947208dc56396d6d86203ccd8` to strict oracle PPT.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

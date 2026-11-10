@@ -69,7 +69,7 @@ reductions (`PromiseProblem.PolyTimeReducible.mem_PromiseBPP`,
 * [O. Goldreich, *On promise problems: a survey*][Goldreich2006]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

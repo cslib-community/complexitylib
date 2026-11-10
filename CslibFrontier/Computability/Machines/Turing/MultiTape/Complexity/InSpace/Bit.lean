@@ -31,7 +31,7 @@ numeric algorithms can reuse it without depending on tree evaluation.
 * [N. Immerman, *Descriptive Complexity*, proof of Theorem 3.1][Immerman1999].
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

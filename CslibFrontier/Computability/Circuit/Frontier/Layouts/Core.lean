@@ -40,7 +40,7 @@ By the density of cores (`Cslib.Circuits.Frontier.Multigraph.core_density`),
   at most `3 d β₁ / (2d - 3)` edges.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier.Multigraph.Compression
 

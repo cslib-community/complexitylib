@@ -35,7 +35,7 @@ These are deductions from the counting product algebra of
 The results concern the encoded verifier classes; they do not assert adaptive oracle closure.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -45,7 +45,7 @@ depending only on `ε`.
 * `Cslib.Circuits.Frontier.averageCaseBound_two`: the average-case claim `AverageCaseBound 2`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

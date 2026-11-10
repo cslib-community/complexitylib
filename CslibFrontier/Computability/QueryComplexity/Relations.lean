@@ -80,7 +80,7 @@ With `C(f) ≤ s(f) bs(f) ≤ bs(f)²` it gives `D(f) ≤ s(f) bs(f)² ≤ bs(f)
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

@@ -52,7 +52,7 @@ Reckhow][CookReckhow1973].
 * [S. A. Cook and R. A. Reckhow, *Time bounded random access machines*][CookReckhow1973]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM
 

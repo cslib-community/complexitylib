@@ -35,7 +35,7 @@ Adapts Computability/Probabilistic/Tape.lean from the cslib `crypto` branch at
 instead of fixed finite tags.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

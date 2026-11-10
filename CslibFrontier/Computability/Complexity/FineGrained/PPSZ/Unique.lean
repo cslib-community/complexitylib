@@ -55,7 +55,7 @@ This is the analogue, for w-implication, of the finite-depth bound of
 * [D. Scheder, *PPSZ is better than you think*][Scheder2021]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.PPSZ
 

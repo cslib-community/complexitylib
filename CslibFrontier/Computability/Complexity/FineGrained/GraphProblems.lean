@@ -84,7 +84,7 @@ statements; the reductions and size bounds behind them are unconditional.
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -64,7 +64,7 @@ contradiction instance are library adaptations to the executable graph API.
 * [T. Holenstein, *Parallel repetition: simplifications and the no-signaling case*][Holenstein2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.PCP.Encoded.LabelCoverRepetition
 

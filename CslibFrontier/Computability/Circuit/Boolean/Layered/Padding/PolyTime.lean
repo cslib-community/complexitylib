@@ -30,7 +30,7 @@ schedules longer than the target.
   and append the actual copy layers in uniform polynomial time.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Layered
 

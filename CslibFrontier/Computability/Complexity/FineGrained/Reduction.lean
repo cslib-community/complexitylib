@@ -61,7 +61,7 @@ obtained this way hold vacuously. The transfer theorems are unconditional.
   S. Saurabh, *Parameterized Algorithms*][CyganEtAl2015]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

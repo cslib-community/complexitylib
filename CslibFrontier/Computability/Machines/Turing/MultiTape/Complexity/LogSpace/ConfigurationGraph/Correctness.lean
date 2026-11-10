@@ -30,7 +30,7 @@ view fits the radix, so the graph is exact without any space bound on the source
 * `Turing.MultiTapeNTM.ConfigurationGraph.not_overflow_of_fits`: conversely.
 -/
 
-@[expose] public section
+public section
 
 open Cslib.Turing
 

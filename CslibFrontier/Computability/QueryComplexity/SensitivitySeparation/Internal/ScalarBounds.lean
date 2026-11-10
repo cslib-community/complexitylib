@@ -35,7 +35,7 @@ while the joint profile `v` is at most `ε * L * (3 ^ n - 1)`.
   [Schlesinger2026Sensitivity] at revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.QueryComplexity.SensitivitySeparation
 

@@ -33,7 +33,7 @@ when `P = NP` for every encoding of instances (`Cslib.Complexity.SAT_mem_P_iff`,
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

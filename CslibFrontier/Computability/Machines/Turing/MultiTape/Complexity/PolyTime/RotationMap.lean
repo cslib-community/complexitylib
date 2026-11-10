@@ -48,7 +48,7 @@ theorem for a varying field size or tower depth.
   constant-degree expanders*][ReingoldVadhanWigderson2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

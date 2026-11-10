@@ -23,7 +23,7 @@ Like the direct binary-addition rule, this is a named certificate: it does not a
 binary branch to goals with an undetermined intermediate encoding.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Raise a binary natural to a unary exponent using direct captured multiplication. -/

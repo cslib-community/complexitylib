@@ -35,7 +35,7 @@ extended by the same number of strings, so the fractions of right answers are un
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

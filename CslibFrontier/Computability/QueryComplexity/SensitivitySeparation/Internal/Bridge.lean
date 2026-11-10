@@ -35,7 +35,7 @@ the empty block never changes the value of a function.
 * [N. Nisan, *CREW PRAMs and decision trees*][Nisan1991]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.QueryComplexity.SensitivitySeparation.Internal
 

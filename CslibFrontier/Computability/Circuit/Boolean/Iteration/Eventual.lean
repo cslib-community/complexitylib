@@ -44,7 +44,7 @@ bounds the time to construct them.
   *Square-root circuit bounds for iterated functions*][Schlesinger2026IteratedFunctions].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Iteration
 

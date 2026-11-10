@@ -36,7 +36,7 @@ by the caller.
   `Turing.MultiTapeNTM.ConfigurationGraph.startID_budget`: the size and the start of the graph.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeNTM.ConfigurationGraph
 

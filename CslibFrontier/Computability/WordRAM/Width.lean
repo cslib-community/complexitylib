@@ -27,7 +27,7 @@ and programs that compose them.
 These determinism and representation lemmas are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM
 

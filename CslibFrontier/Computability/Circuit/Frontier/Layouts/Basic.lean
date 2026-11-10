@@ -35,7 +35,7 @@ the absorption of logarithmic error terms into the layout hypothesis.
   the layout hypothesis.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

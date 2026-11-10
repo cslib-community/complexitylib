@@ -49,7 +49,7 @@ bit of the computation, including its input and workspace.
   first-time and halting-time bounds have the constants `3120000` and `3000000`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Iteration
 

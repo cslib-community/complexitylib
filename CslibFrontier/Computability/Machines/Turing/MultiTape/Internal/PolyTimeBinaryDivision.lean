@@ -23,7 +23,7 @@ schoolbook certificate. Division uses direct bit, pair, append and full-prefix f
 retaining binary magnitudes throughout.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Truncated binary subtraction, reusing the shared charged schoolbook certificate.

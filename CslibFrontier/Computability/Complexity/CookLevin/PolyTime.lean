@@ -32,7 +32,7 @@ machine and polynomial work for every encoded instance.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 2.3.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.CookLevin
 
