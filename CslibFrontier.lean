@@ -5413,8 +5413,12 @@ public import CslibFrontier.Logics.Propositional.CSP.BinaryDigits
 public import CslibFrontier.Logics.Propositional.CSP.Boolean
 public import CslibFrontier.Logics.Propositional.CSP.CNFTemplate
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
+public import CslibFrontier.Logics.Propositional.CSP.Edge.DAG
+public import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
+public import CslibFrontier.Logics.Propositional.CSP.Edge.DAGSurgery
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Defects
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk
+public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 public import CslibFrontier.Logics.Propositional.CSP.ExactlyOne
 public import CslibFrontier.Logics.Propositional.CSP.HardCore
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence
