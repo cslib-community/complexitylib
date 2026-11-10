@@ -354,7 +354,31 @@ constraints, actual returned paths, odd unsatisfiable units, repeated constraint
 empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
 prefix is invalid. The routine takes an improving comparison labeling as input: finding that
 labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
-Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+The full solver and planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+For explicit tables, import `CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting`.
+In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
+two occurrence-bit buffers and the excluded starting variable. `encInput` frames the CSP and
+both buffers; the final excluded variable is binary without an additional frame. Table arities,
+source names and output walk indices are binary. Internal scan positions are unary.
+`computableInPolyTime_run` proves ordinary native polynomial time in the complete encoded input,
+including malformed tables and buffers. Iteration depends on actual lists, never the largest name.
+
+`run_eq` identifies the finite output with the existing mathematical routine whenever both buffer
+lengths equal the occurrence count. `run_spec` additionally takes the edge-instance and even
+relation hypotheses, valid original/comparison labels and a strict defect improvement; it returns
+an actual existing `Walk`, its decoder equation, augmentation correctness and the combined
+half-Hamming exchange bound. `none` is a helper failure or width rejection, not an unsatisfiability
+answer. [Native augmentation tests](../../CslibFrontierTests/EdgeCSPAugmentingNative.lean) exercise
+returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
+The supplied improving comparison remains necessary; forest/blossom search and the full solver
+are still open.
+
+The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
+`occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
+`PolyTime.CSP.Occurrence` supplies `encOccurrenceRecord` and
+`computableInPolyTime_occurrences` without importing graph construction. Both incidence graphs
+and the native augmentation compiler use that same enumeration and certificate.
 
 ## Algebraic proof systems
 
@@ -476,10 +500,48 @@ width-guarded interpretations reject malformed scopes. [Crossover clients](../..
 check every standardized shape, both first-gadget outcomes, explicit witnesses and rejected
 boundary tuples, while retaining the existing CNF crossover tests.
 
-These are finite relation semantics. They do not prove planar embedding/substitution,
-normalization from a failed delta-matroid condition (the source's omitted Lemma 6 proof),
-a hardness theorem or a new native runtime certificate. These obligations remain part of
+These Figure 1 results concern finite relation semantics. Geometric realization and substitution,
+a hardness theorem and a new native runtime certificate remain part of
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Ordered normalization from a cyclic exchange failure
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Normalization`. For any arity `n`,
+`Normalization.exists_construction` takes a nonempty self-complementary relation
+`R : Set (Fin n → Bool)` whose `cyclicDifferenceRelation R` is not an even delta-matroid.
+It proves `4 ≤ n` and supplies a `Construction R`. Nonemptiness is essential: failure caused
+solely by an empty relation supplies no exchange witness. This is an original reconstruction
+of the combinatorial argument omitted from Dvořák–Kupec, ICALP 2015, §4, printed p. 440,
+Lemma 6; it does not yet prove that lemma's planar-expressibility conclusion.
+
+The construction chooses a feasible twist and a cyclic starting port, then records a finite
+`Program n 4`. The only reductions are adjacent identification, including the last-to-first
+edge, and a cap at arity at least six that identifies old ports 1 and 3 and hides old port 2.
+The latter retains free order `0,1,4,…`. Adjacent identification conditions the removed cyclic
+difference to zero; the cap conditions old differences 1 and 2 to agree. The exact formulas
+in `BitString.CyclicDifference.Boundary` rule out new forbidden pairs during the descent.
+Cyclic rotations preserve orientation; no arbitrary port permutation is used.
+
+`Construction.target` is standardized in the final four-port order. `Construction.gadget`
+executes the trace on an actual `PPGadget` over two symbols: the original `R` and binary
+disequality. Its initial body contains one `R` literal and one or two disequalities per port.
+Subsequent steps only relabel scopes; every cap adds one fresh auxiliary. No constants or
+equality symbol are added. `Construction.body_bounds` gives at most `1+2n` constraints and
+`5n` total scope occurrences; `Construction.numAux_bound` gives at most `3n-4` allocated
+auxiliaries, including unused labels. `Program.reductions_bound` counts nonrotation operations,
+not the length of an arbitrary trace.
+
+`CSP.PrimitivePositive.Operations` supplies the reusable `PPGadget.relabelFree` and
+`PPGadget.substitute` operations, preserving exact scope widths and existential semantics.
+The [normalization tests](../../CslibFrontierTests/PlanarNormalization.lean) exercise failed-exchange
+families at arities 6, 8 and 12, repeated caps, a feasible-quartet finish, proper-support
+compression, rotation, wraparound deletion, actual auxiliary witnesses and empty/nullary guards.
+The guide composes the construction with its gadget and size bounds using ordinary imports.
+
+These are combinatorial and finite-semantic bounds. Relation decisions and a chosen construction
+are fixed-relation data; no uniform native runtime or binary encoded-size bound is asserted.
+Geometric realization of the recorded operations, ordered planar substitution, hardness and
+completion of the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Three resolution representations
 
