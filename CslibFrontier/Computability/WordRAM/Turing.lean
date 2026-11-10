@@ -613,7 +613,6 @@ theorem Program.ComputesInTime.turingComputableInPolyTime
       (fun a w => logWidth k (size a) ≤ w) f) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn encNat := by
   have hlog : PolyBounded (fun a => (encIn a).length) (fun a => logWidth k (size a)) := by
-    unfold logWidth
     growth_poly
   obtain ⟨width, hwidth, hge⟩ := exists_unary_majorant
     (hlog.add (hencode.polyBounded_length (encMid := encList encNat)))
