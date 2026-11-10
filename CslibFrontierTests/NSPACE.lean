@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 import CslibFrontier.Computability.Complexity.Problems.STCON.Completeness
 
 /-!
@@ -15,6 +16,11 @@ The Immerman–Szelepcsényi theorem for nondeterministic space
 space, none of which needs a constructibility hypothesis. The classes are nonvacuous: directed
 `s`–`t` connectivity is in `NSPACE(log₂ n)` and in `NSPACE(n)`, and so is its complement. `NL` is
 `NSPACE(log₂ n)`, and `NL = coNL` remains its special case.
+
+Nondeterministic space within deterministic exponential time
+(`Cslib.Complexity.exists_mem_DTIME_of_mem_NSPACE`) is instantiated at a bound below `log₂ n`, at
+logarithmic space and at linear space, again without constructibility, and applied to directed
+connectivity and its complement.
 -/
 
 namespace CslibFrontierTests.NSPACE
@@ -46,5 +52,27 @@ example : STCONᶜ ∈ NSPACE encSTCON id := compl_mem_NSPACE Nat.log2_le_self s
 
 example : STCON ∈ coNSPACE encSTCON id :=
   (NSPACE_eq_coNSPACE (s := id) Nat.log2_le_self) ▸ stcon_mem_linear
+
+/-! ### Nondeterministic space within deterministic exponential time -/
+
+/-- Any bound, even one below `log₂ n`: the time keeps the `log₂ n` term. -/
+example {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ NSPACE enc fun _ => 0) :
+    ∃ c, A ∈ DTIME enc fun n => 2 ^ (c * (Nat.log2 n + 0 + 1)) :=
+  exists_mem_DTIME_of_mem_NSPACE h
+
+/-- Directed connectivity is in `DTIME(2 ^ O(log₂ n))`. -/
+example : ∃ c, STCON ∈ DTIME encSTCON fun n => 2 ^ (c * Nat.log2 n) :=
+  exists_mem_DTIME_of_mem_NSPACE_of_log2_le (fun _ => le_rfl) stcon_mem_log
+
+/-- The complement of directed connectivity is in `DTIME(2 ^ O(n))`, through
+Immerman–Szelepcsényi. -/
+example : ∃ c, STCONᶜ ∈ DTIME encSTCON fun n => 2 ^ (c * id n) :=
+  exists_mem_DTIME_of_mem_NSPACE_of_log2_le Nat.log2_le_self
+    (compl_mem_NSPACE Nat.log2_le_self stcon_mem_linear)
+
+/-- `NSPACE(n) ⊆ DTIME(2 ^ O(n))`, problem by problem. -/
+example {α : Type} {enc : α ↪ List Bool} {A : Set α} (h : A ∈ NSPACE enc id) :
+    ∃ c, A ∈ DTIME enc fun n => 2 ^ (c * n) :=
+  exists_mem_DTIME_of_mem_NSPACE_of_log2_le Nat.log2_le_self h
 
 end CslibFrontierTests.NSPACE

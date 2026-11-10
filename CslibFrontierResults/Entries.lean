@@ -30,6 +30,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
@@ -197,6 +198,25 @@ register_result "alternation-aspace-dtime" where
     deterministic decision within c₁·2^(c·(log₂ n + s(n) + 1)) + c₂ steps, or 2^(c·s(n)) when \
     log₂ n ≤ s(n); no constructibility hypothesis; the converse inclusion is not included; \
     arbitrary injective encodings."
+
+register_result "nspace-dtime" where
+  title := "Nondeterministic space s is within deterministic time 2^O(s)"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak09, theorem := unverified, locator := "Theorem 4.3" },
+    { paper := Sipser2013, theorem := unverified, locator := "Section 8.4" }
+  ]
+  theorems := [
+    Cslib.Complexity.exists_mem_DTIME_of_mem_NSPACE,
+    Cslib.Complexity.exists_mem_DTIME_of_mem_NSPACE_of_log2_le,
+    Turing.MultiTapeNTM.RecognizesInSpace.mem_DTIME
+  ]
+  scope := "One finite-state binary nondeterministic multi-tape machine per problem with \
+    work space c₁·s(n) + c₂ along every computation prefix; the recognizer form permits \
+    nonterminating branches. DTIME is deterministic decision within \
+    c₁·2^(c·(log₂ n + s(n) + 1)) + c₂ steps, or 2^(c·s(n)) when log₂ n ≤ s(n); no \
+    constructibility hypothesis, unlike the source's space-constructible S; arbitrary \
+    injective encodings."
 
 register_result "reingold" where
   title := "Reingold: undirected reachability is in L"

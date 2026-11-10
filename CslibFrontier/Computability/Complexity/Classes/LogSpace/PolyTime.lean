@@ -8,16 +8,16 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Reachability
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
+import CslibFrontier.Computability.Complexity.Classes.Time.TwoPow
 
 /-!
 # Nondeterministic logarithmic space is within polynomial time
 
-A nondeterministic machine within logarithmic space has polynomially many reachable views: a view
-other than its input is described by a code of length `O(log n)`
-(`Turing.MultiTapeNTM.length_coreCode_le`). It accepts exactly when a halted view with output
-`[true]` is reachable from its initial view, which breadth-first search decides in polynomial time
-(`Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`). So `NL ⊆ P`
+A nondeterministic machine within space `s` is decided deterministically within time
+`2 ^ O(log₂ n + s)` by breadth-first search through its reachable views
+(`Turing.MultiTapeNTM.RecognizesInSpace.mem_DTIME`). Within logarithmic space this time is
+polynomial (`Cslib.Complexity.DTIME_two_pow_mul_log2_succ_subset`). So `NL ⊆ P`
 [Sipser, Section 8.5][Sipser2013], and with `Cslib.Complexity.L_subset_NL` the chain
 `L ⊆ NL ⊆ P`.
 
@@ -33,7 +33,7 @@ other than its input is described by a code of length `O(log n)`
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.1][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -47,10 +47,10 @@ breadth-first search through the polynomially many reachable views. -/
 theorem mem_P_of_recognizesInSpace {k : ℕ} {State : Type} [Finite State]
     {ntm : MultiTapeNTM k Bool State} {A : Set α} {c : ℕ}
     (h : ntm.RecognizesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1)) : A ∈ P enc := by
-  obtain ⟨rounds, hrounds, hpoly⟩ :=
-    ntm.exists_computableInPolyTime_searchAccepts (enc := enc) fun a => (h a).1
-  exact ⟨_, hpoly, fun a =>
-    (h a).2.trans (MultiTapeNTM.searchAccepts_iff (h a).1 (hrounds a)).symm⟩
+  obtain ⟨d, hd⟩ := h.mem_DTIME (s := fun n => c * (Nat.log2 n + 1))
+  refine mem_P_iff_exists_mem_DTIME.mpr ⟨_, DTIME_two_pow_mul_log2_succ_subset (d * (c + 1))
+    (DTIME_mono (fun n => le_of_eq ?_) hd)⟩
+  ring_nf
 
 /-- **Nondeterministic logarithmic space is within polynomial time**: breadth-first search
 through the polynomially many reachable views decides acceptance. -/

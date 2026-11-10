@@ -23,6 +23,8 @@ the simulated machine. These lemmas put such a bound into the shape `2 ^ O(log�
   into the exponent's factor.
 * `Cslib.Complexity.DTIME_two_pow_log2_add_subset`: above logarithmic space, the logarithm is
   absorbed.
+* `Cslib.Complexity.DTIME_two_pow_mul_log2_succ_subset`: in logarithmic space, the bound is
+  polynomial.
 -/
 
 public section
@@ -52,5 +54,18 @@ theorem DTIME_two_pow_log2_add_subset {c : ℕ} {s : ℕ → ℕ} (hs : ∀ n, N
       ≤ 2 ^ (2 * c * s n + c) := Nat.pow_le_pow_right (by omega) (by nlinarith [hs n])
     _ = 2 ^ c * 2 ^ (2 * c * s n) := by rw [pow_add, Nat.mul_comm]
     _ ≤ 2 ^ c * 2 ^ (2 * c * s n) + 2 ^ c := Nat.le_add_right _ _
+
+/-- **In logarithmic space, the bound is polynomial**:
+`DTIME (2 ^ (d * (log₂ n + 1))) ⊆ DTIME (n ^ d)`, since `2 ^ log₂ n ≤ n`. -/
+theorem DTIME_two_pow_mul_log2_succ_subset (d : ℕ) :
+    DTIME enc (fun n => 2 ^ (d * (Nat.log2 n + 1))) ⊆ DTIME enc fun n => n ^ d := by
+  refine DTIME_mono_of_le_mul_add (C := 2 ^ d) fun n => ?_
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  calc 2 ^ (d * (Nat.log2 n + 1))
+      = 2 ^ d * (2 ^ Nat.log2 n) ^ d := by ring
+    _ ≤ 2 ^ d * n ^ d :=
+        Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (Nat.log2_self_le hn.ne') d)
+    _ ≤ 2 ^ d * n ^ d + 2 ^ d := Nat.le_add_right _ _
 
 end Cslib.Complexity
