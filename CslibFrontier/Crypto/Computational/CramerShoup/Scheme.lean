@@ -1756,9 +1756,12 @@ theorem advantage_cramerShoupGame3Half_game4_le
   · simp only [hvalid, Bool.false_eq_true, ↓reduceIte, PMF.bind_const, Game.advantage_self, zero_le]
 
 /-- **Game 3 $\to$ Game 4 bound** (Games 4 $\to$ 5 of [BonehShoup2023], Section 12.5.3,
-equations (12.26)–(12.27), printed pp. 492–493, using Lemma 12.8, printed p. 488): replacing both
-Phase 1 and Phase 2 decryption oracles with their DH-restricted counterparts changes the game
-advantage by at most `(Q₁ + Q₂) / m`. -/
+equations (12.26)–(12.27), printed pp. 492–493, using Lemma 12.8, printed p. 488): if `isElem`
+accepts exactly the encodings of group elements, every supported group has order at least `m > 0`,
+and Phase 1 and Phase 2 make at most `Q₁` and `Q₂` queries on honest inputs
+(`HonestPhase1QueryBound`, `HonestPhase2QueryBound`), then replacing both Phase 1 and Phase 2
+decryption oracles with their DH-restricted counterparts changes the game advantage by at most
+`(Q₁ + Q₂) / m`. -/
 theorem advantage_cramerShoupGame3_game4_le
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
     (encodeAD : F.Desc × AD → List Bool)
@@ -1825,7 +1828,8 @@ theorem cramerShoupGame5_false_eq_true
 
 /-- **Game 4 $\to$ Game 5 bound** (Games 5 $\to$ 6 of [BonehShoup2023], Section 12.5.3, with the
 non-DH-triple step of its Game 3 folded in; equations (12.23) and (12.28), printed pp. 492–493,
-using Lemma 12.6, printed p. 486): whenever `γ ≠ α * β`,
+using Lemma 12.6, printed p. 486): suppose `isElem` accepts exactly the encodings of group elements
+and every supported group has order at least `m > 0`. Whenever `γ ≠ α * β`,
 `projHash F d (δ - α * τ) τ (β • g) (γ • g) + m` is uniformly distributed over `F.Carrier d` by
 `uniform_projHash_fiber_add` (Lemma 12.6), so `cramerShoupGame4` and `cramerShoupGame5` differ
 only on the event `γ = α * β` of probability `1 / F.order d ≤ 1 / m`. -/

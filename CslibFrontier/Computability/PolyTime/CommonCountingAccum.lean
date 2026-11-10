@@ -1284,7 +1284,10 @@ theorem recoverOuterJetSumModPowTwo_eq {J ℓ : ℕ} {Ω count : ℤ} {nodes : L
   rw [recoverOuterJetSumModPowTwo, hsum]; exact Int.modPowTwo_eq_of_dvd_sub hcount₀ hcount₁ hdvd
 
 /-- Outer-round accumulation plus Cramer count recovery from supplied cleared group payloads at
-the distinct `nodes`. Suppose `Γ ≠ 0` and, for `u < ℓ`, the `u`th coefficient of the accumulated
+the distinct `nodes`. Suppose `Γ ≠ 0` and, for each round `idx < T_rounds` and node `i`,
+`evalRound (nodeCtx i, idx)` returns the weight `w idx` and payloads `H_int i idx g` that are the
+`Γ ^ m_group idx g`-scaled outer Taylor jets of `P_rat idx g` at `nodes[i]`, with
+`∑ g, m_group idx g = m`. Suppose also that, for `u < ℓ`, the `u`th coefficient of the accumulated
 polynomial `∑ idx < T_rounds, w idx • ∏ g, P_rat idx g` has degree below `nodes.length * J` and
 value `H_zero u` at `0`. Then `recoverOuterJetSumModPowTwo` with scale `Γ ^ m`, applied to the
 `streamOuterJetAccum` outputs, returns the `count` with `0 ≤ count < 2 ^ ℓ` and

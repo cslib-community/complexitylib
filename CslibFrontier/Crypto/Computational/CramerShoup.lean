@@ -655,10 +655,10 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
 
 /-- **Game 2 $\to$ Game 3 bound** (the collision-rejection hop into Game 4 of [BonehShoup2023],
 Section 12.5.3, equations (12.24)–(12.25), printed p. 492, adapted to $\mathcal{E}_{\mathrm{MCS}}$
-with associated data): the distinguishing advantage between `cramerShoupGame2` and
-`cramerShoupGame3` is bounded by the collision-finding success probability of
-`cramerShoupMsgToCollisionFinder` plus `9 / 2 ^ n` (from the nine approximate `sampleModNat`
-exponent draws in `cramerShoupMsgToCollisionFinder`). -/
+with associated data): if `isElem` accepts exactly the encodings of group elements, the
+distinguishing advantage between `cramerShoupGame2` and `cramerShoupGame3` is bounded by the
+collision-finding success probability of `cramerShoupMsgToCollisionFinder` plus `9 / 2 ^ n` (from
+the nine approximate `sampleModNat` exponent draws in `cramerShoupMsgToCollisionFinder`). -/
 theorem advantage_cramerShoupGame2_game3_le
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
     (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
@@ -1406,14 +1406,15 @@ theorem advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le
     adversary bit n
 
 /-- **Theorem 12.9 & Exercise 12.27 via `Encryption.INDCCA2ADOn`**: for any associated-data
-encoding `encAD : AD ↪ List Bool` and polynomial-time group description family `d : ℕ → F.Desc`,
-the probabilistic polynomial-time Multiplicative Cramer–Shoup encryption scheme with associated
-data `(cramerShoupKeyGenProb d, cramerShoupADEncryptProb encAD H d, cramerShoupADDecryptOpt H
-isElem d)` satisfies the native `Encryption.INDCCA2ADOn` notion with respect to the
-group-membership admissibility predicate `cramerShoupValid isElem d` under DDH and collision
-resistance of `cramerShoupHashMod H`, both for the point-mass setup `fun n => PMF.pure (d n)`, and
-a positive lower bound `m n ≤ F.order (d n)` with `1 / m n` negligible. The group at parameter `n`
-is the fixed description `d n`; it is not sampled. -/
+encoding `encAD : AD ↪ List Bool`, polynomial-time group description family `d : ℕ → F.Desc`, and
+polynomial-time `H` and `isElem` such that `isElem` accepts exactly the encodings of group
+elements, the probabilistic polynomial-time Multiplicative Cramer–Shoup encryption scheme with
+associated data `(cramerShoupKeyGenProb d, cramerShoupADEncryptProb encAD H d,
+cramerShoupADDecryptOpt H isElem d)` satisfies the native `Encryption.INDCCA2ADOn` notion with
+respect to the group-membership admissibility predicate `cramerShoupValid isElem d` under DDH and
+collision resistance of `cramerShoupHashMod H`, both for the point-mass setup
+`fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)` with `1 / m n`
+negligible. The group at parameter `n` is the fixed description `d n`; it is not sampled. -/
 theorem DDH.indcca2ADOn_cramerShoup
     {F : PrimeOrderGroupFamily}
     {AD : Type} (encAD : AD ↪ List Bool)
@@ -1478,13 +1479,14 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
     adversary.toADUnit bit n
 
 /-- **Theorem 12.9 & Exercise 12.27 via `Encryption.INDCCA2On`**: for any polynomial-time group
-description family `d : ℕ → F.Desc`, the probabilistic polynomial-time Cramer–Shoup encryption
-scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d, cramerShoupDecryptOpt H isElem d)`
-satisfies the native `Encryption.INDCCA2On` notion with respect to the group-membership
-admissibility predicate `cramerShoupValid isElem d` under DDH and collision resistance of
-`cramerShoupHashMod H`, both for the point-mass setup `fun n => PMF.pure (d n)`, and a positive
-lower bound `m n ≤ F.order (d n)` with `1 / m n` negligible. The group at parameter `n` is the
-fixed description `d n`; it is not sampled. -/
+description family `d : ℕ → F.Desc` and polynomial-time `H` and `isElem` such that `isElem`
+accepts exactly the encodings of group elements, the probabilistic polynomial-time Cramer–Shoup
+encryption scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d,
+cramerShoupDecryptOpt H isElem d)` satisfies the native `Encryption.INDCCA2On` notion with respect
+to the group-membership admissibility predicate `cramerShoupValid isElem d` under DDH and
+collision resistance of `cramerShoupHashMod H`, both for the point-mass setup
+`fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)` with `1 / m n`
+negligible. The group at parameter `n` is the fixed description `d n`; it is not sampled. -/
 theorem DDH.indcca2On_cramerShoup
     {F : PrimeOrderGroupFamily}
     {H : F.Desc × List Bool → List Bool}
@@ -1514,13 +1516,15 @@ theorem DDH.indcca2On_cramerShoup
 /-- **Batch-challenge multi-challenge CCA security of Multiplicative Cramer–Shoup
 (`Encryption.INDCCA2MultiOn`)** (batch-challenge specialization of [BonehShoup2023], Theorem 12.1,
 together with Theorem 12.9 and Exercise 12.27, printed pp. 468, 490–491, 521–522): for any
-polynomial-time group description family `d : ℕ → F.Desc`, the probabilistic polynomial-time
-Cramer–Shoup encryption scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d,
-cramerShoupDecryptOpt H isElem d)` satisfies the two-phase batch-challenge multi-challenge
-`Encryption.INDCCA2MultiOn` notion with respect to `cramerShoupValid isElem d` under DDH and
-collision resistance of `cramerShoupHashMod H`, both for the point-mass setup
-`fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)` with `1 / m n`
-negligible. The group at parameter `n` is the fixed description `d n`; it is not sampled. -/
+polynomial-time group description family `d : ℕ → F.Desc` and polynomial-time `H` and `isElem`
+such that `isElem` accepts exactly the encodings of group elements, the probabilistic
+polynomial-time Cramer–Shoup encryption scheme `(cramerShoupKeyGenProb d,
+cramerShoupEncryptProb H d, cramerShoupDecryptOpt H isElem d)` satisfies the two-phase
+batch-challenge multi-challenge `Encryption.INDCCA2MultiOn` notion with respect to
+`cramerShoupValid isElem d` under DDH and collision resistance of `cramerShoupHashMod H`, both for
+the point-mass setup `fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)`
+with `1 / m n` negligible. The group at parameter `n` is the fixed description `d n`; it is not
+sampled. -/
 theorem DDH.indcca2MultiOn_cramerShoup
     {F : PrimeOrderGroupFamily}
     {H : F.Desc × List Bool → List Bool}

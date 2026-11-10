@@ -34,7 +34,7 @@ degree.
   bounds on a clocked run from per-round bounds and a bound on the visited states.
 * `Cslib.GenericRAM.FiniteState.transport_inO_of_hasDegree`: whole-run transport with time
   `O(… + (steps + 1) · (X ^ D + (log steps + 1) ^ 2))`, where `X = 2 |cfg| + B + 2` and `B` bounds
-  the encoded step outcomes.
+  the encoded step outcomes, for runs that halt within `steps` instructions.
 
 ## References
 

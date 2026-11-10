@@ -48,10 +48,11 @@ the theorem's running-time clause:
    * `Scheme.modLinkAdversary` and `Leveled.modLeveledAdversary` replace exact finite-range index
      sampling by strict-PPT modular sampling via `ProbComp.sampleModNat`, certified uniform strict
      PPT (`Scheme.isPPT_modLinkAdversary`, `Leveled.isPPT_modLeveledAdversary`); no such
-     certificate is proved for the two exact adversaries. The resulting bound multiplies the exact
-     loss factor by the sum of the base advantage and a statistical tail
+     certificate is proved for the two exact adversaries. When `0 < budget n`, `0 < capacity n`
+     and all supported base secret keys share one length at most `capacity n`, the resulting bound
+     multiplies the exact loss factor by the sum of the base advantage and a statistical tail
      (`Leveled.advantage_scheme_le_modLeveledAdversary`). With `2 * n` coins per sample that tail
-     is at most `2 / 2 ^ n` when `3 + 2 * budget n + capacity n ≤ 2 ^ n`
+     is at most `2 / 2 ^ n` when also `3 + 2 * budget n + capacity n ≤ 2 ^ n`
      (`Leveled.advantage_scheme_le_modLeveledAdversary_two_mul`).
 
 2. **Explicit polynomial artifact-length and saved-state bounds, and coin-count formulas**:
@@ -591,8 +592,9 @@ theorem advantage_le_of_triangle_both_div {g₀ g₁ m₀ m₁ : Game} {a b : �
   exact hstep2.trans_eq (by ring)
 
 /-- Concrete key-chain hybrid advantage bound via the strict-PPT `modLinkAdversary` reduction:
-the key-chain advantage is at most `(depth n : ℝ≥0) * capacity n` times the sum of
-`modLinkAdversary`'s base advantage and the modular-sampling statistical tail
+when every base secret key in the support of `E.keyGen n` has the same length
+`width ≤ capacity n`, the key-chain advantage is at most `(depth n : ℝ≥0) * capacity n` times the
+sum of `modLinkAdversary`'s base advantage and the modular-sampling statistical tail
 `2 * (depth n + capacity n) / 2 ^ (coins n)`. -/
 theorem publicKeyChainHybrid_advantage_le_modLinkAdversary
     (coins depth capacity : ℕ → ℕ)
@@ -979,7 +981,8 @@ theorem succProbability_exactLeveledAdversary (E : Scheme) (depth capacity : ℕ
   linarith
 
 /-- Signed chosen-message gap of the leveled scheme in terms of `exactLeveledAdversary` when
-`0 < budget n` and `0 < capacity n`, with exact factor `3 * (2 * budget n : ℝ) * capacity n`
+`0 < budget n`, `0 < capacity n`, and every base secret key in the support of `E.keyGen n` has
+the same length `width ≤ capacity n`, with exact factor `3 * (2 * budget n : ℝ) * capacity n`
 ([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in the loss;
 the running-time clause is not formalized). -/
 theorem gap_exactLeveledAdversary (E : Scheme) (budget capacity : ℕ → ℕ)
@@ -1014,7 +1017,8 @@ theorem gap_exactLeveledAdversary (E : Scheme) (budget capacity : ℕ → ℕ)
 
 /-- Exact unsigned concrete-security identity for the depth-budgeted scheme `scheme D budget` via
 `exactLeveledAdversary` ([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in
-the loss; the running-time clause is not formalized): when `0 < budget n` and `0 < capacity n`,
+the loss; the running-time clause is not formalized): when `0 < budget n`, `0 < capacity n`, and
+every base secret key in the support of `E.keyGen n` has the same length `width ≤ capacity n`,
 the advantage equals `3 * (2 * budget n : ℝ≥0) * capacity n` times the base advantage of
 `exactLeveledAdversary`, eliminating the `dyadicSize` rounding factor of
 `advantage_scheme_eq_leveledAdversary`. -/
@@ -1273,7 +1277,8 @@ theorem advantage_exactLeveledAdversary_modLeveledAdversary_le (E : Scheme)
     exact zero_le
 
 /-- Concrete Gentry Theorem 4 advantage bound for `scheme D budget` via the strict-PPT modular
-reduction `modLeveledAdversary`: when `0 < budget n` and `0 < capacity n`, the scheme advantage is
+reduction `modLeveledAdversary`: when `0 < budget n`, `0 < capacity n`, and every base secret key
+in the support of `E.keyGen n` has the same length `width ≤ capacity n`, the scheme advantage is
 bounded by the exact factor `3 * (2 * budget n : ℝ≥0) * capacity n` times the sum of
 `modLeveledAdversary`'s base advantage and the `sampleModNat` statistical tail
 `2 * (3 + 2 * budget n + capacity n) / 2 ^ (coins n)`. -/
@@ -1300,10 +1305,11 @@ theorem advantage_scheme_le_modLeveledAdversary {E : Scheme}
         (fun n => 2 * budget n) capacity adversary true n))
     zero_le
 
-/-- `2 * n`-coin specialization of `advantage_scheme_le_modLeveledAdversary`: when
-`3 + 2 * budget n + capacity n ≤ 2 ^ n`, sampling each coordinate with `2 * n` coins via
-`sampleModNat` bounds the statistical tail by `2 / 2 ^ n`, so the scheme advantage is at most
-`3 * (2 * budget n : ℝ≥0) * capacity n` times the sum of the base advantage and `2 / 2 ^ n`. -/
+/-- `2 * n`-coin specialization of `advantage_scheme_le_modLeveledAdversary`: under that
+theorem's hypotheses and `3 + 2 * budget n + capacity n ≤ 2 ^ n`, sampling each coordinate with
+`2 * n` coins via `sampleModNat` bounds the statistical tail by `2 / 2 ^ n`, so the scheme
+advantage is at most `3 * (2 * budget n : ℝ≥0) * capacity n` times the sum of the base advantage
+and `2 / 2 ^ n`. -/
 theorem advantage_scheme_le_modLeveledAdversary_two_mul {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -1454,9 +1460,9 @@ theorem polynomiallyBounded_leveledGuessCoinBudget
 /-- Polynomial artifact-length, component replay and native-efficiency witnesses for the
 leveled reduction motivated by [Gentry2009], Section 2, Theorem 4, p. 171. These witnesses do not
 assert the source's multiplicative runtime comparison.
-Given uniform strict-PPT certificates for `E.keyGen`, `E.encrypt`, and `adversary`, and
-polynomial-time unary certificates for `budget` and `capacity`, there exist explicit polynomial
-bounds:
+Given uniform strict-PPT certificates for `E.keyGen`, `E.encrypt`, and `adversary`,
+polynomial-time unary certificates for `budget` and `capacity`, and supported base secret keys
+all of length `width n ≤ capacity n`, there exist explicit polynomial bounds:
 * `pkBound n = c_kg * (n + 1) ^ d_kg` on base key lengths and key-generation coin count,
 * `ctBound n = c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc` on base ciphertext lengths and coin
   count,
