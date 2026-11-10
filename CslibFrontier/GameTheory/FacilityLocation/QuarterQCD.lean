@@ -54,9 +54,9 @@ namespace Cslib.FacilityLocation.QuarterQCD
 
 /-- Expected true-location cost of the normalized quarter-QCD lottery. -/
 @[expose] noncomputable def cost (a b c t : ℝ) : ℝ :=
-  let w := weights a b c
-  (w.1 * circleDist a t + w.2.1 * circleDist b t + w.2.2 * circleDist c t) /
-    (w.1 + w.2.1 + w.2.2)
+  let (firstWeight, secondWeight, thirdWeight) := weights a b c
+  (firstWeight * circleDist a t + secondWeight * circleDist b t +
+    thirdWeight * circleDist c t) / (firstWeight + secondWeight + thirdWeight)
 
 /-- Social cost of placing the facility at `t`. -/
 @[expose] def socialCost (a b c t : ℝ) : ℝ :=

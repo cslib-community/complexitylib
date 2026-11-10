@@ -2265,7 +2265,9 @@ weights/targets. The unary declaration accounts for unused declared variables in
 it must not be replaced by a succinct binary declaration without revisiting the resource claim.
 `parse_eq_some_iff` accepts exactly canonical encodings, including canonical signed integers.
 
-`admit d` computes declaration/strict-positive-weight checks and normalized minimized demands.
+`coefficient` names the signed weight of a serialized occurrence; `WellFormed` and the
+refinement hypotheses use it without exposing the nested tuple layout. `admit d` computes
+declaration/strict-positive-weight checks and normalized minimized demands.
 Signed targets and empty rows are retained. Contradictory intervals have truncated demand zero
 and are rejected by the existing compiler. `recode` caps binary indices at the declaration before
 unary conversion, has a polynomial machine certificate even on invalid inputs, and is the

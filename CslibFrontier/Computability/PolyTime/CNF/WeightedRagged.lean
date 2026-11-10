@@ -44,15 +44,19 @@ abbrev Input := ℕ × List BinaryNormalization.Input
 /-- The existing writer's encoding, after safe unary-index conversion. -/
 abbrev encLegacy := encPair encUnary (encList BinaryNormalization.encInput)
 
+/-- Signed binary coefficient of an occurrence, independent of its variable and polarity. -/
+abbrev coefficient : Entry → ℤ | (_, (_, weight)) => weight
+
 /-- Source structural validity, without any common row-length condition. -/
 @[expose] def WellFormed (x : Input) : Prop :=
-  ∀ row ∈ x.2, ∀ e ∈ row.1, e.1 < x.1 ∧ 0 < e.2.2
+  ∀ row ∈ x.2, ∀ e ∈ row.1, e.1 < x.1 ∧ 0 < coefficient e
 
 /-- Check one occurrence against the declaration and the strict positive-weight requirement. -/
-@[expose] def entryOK (q : ℕ × Entry) : Bool := decide (q.2.1 < q.1) && decide (0 < q.2.2.2)
+@[expose] def entryOK : ℕ × Entry → Bool
+  | (declared, (index, (_, weight))) => decide (index < declared) && decide (0 < weight)
 /-- Check every occurrence in one row; an empty row passes structural validation. -/
-@[expose] def rowOK (q : ℕ × BinaryNormalization.Input) : Bool :=
-  q.2.1.all fun e => entryOK (q.1, e)
+@[expose] def rowOK : ℕ × BinaryNormalization.Input → Bool
+  | (declared, (entries, _)) => entries.all fun e => entryOK (declared, e)
 /-- Actual declaration and positive-weight admission. -/
 @[expose] def shape (x : Input) : Bool := x.2.all fun row => rowOK (x.1, row)
 
@@ -84,10 +88,11 @@ private theorem rowOK_polytime : ComputableInPolyTime rowOK
   exact allWithInput (by unfold encInput; fun_prop) (rowOK_polytime.comp hctx)
 
 /-- Saturate before unary conversion, so even a huge invalid binary index has polynomial cost. -/
-@[expose] def recodeEntry (q : ℕ × Entry) : Entry := (min q.1 q.2.1, q.2.2)
+@[expose] def recodeEntry : ℕ × Entry → Entry
+  | (declared, (index, signedWeight)) => (min declared index, signedWeight)
 /-- Safely recode the occurrences of one row and keep its signed target. -/
-@[expose] def recodeRow (q : ℕ × BinaryNormalization.Input) : BinaryNormalization.Input :=
-  (q.2.1.map fun e => recodeEntry (q.1, e), q.2.2)
+@[expose] def recodeRow : ℕ × BinaryNormalization.Input → BinaryNormalization.Input
+  | (declared, (entries, target)) => (entries.map fun e => recodeEntry (declared, e), target)
 /-- Total safe conversion to the existing encoding, preserving every occurrence and row. -/
 @[expose] def recode (x : Input) : Input := (x.1, x.2.map fun row => recodeRow (x.1, row))
 
@@ -203,10 +208,10 @@ instance (x : Input) (σ : Fin x.1 → Bool) : Decidable (Holds x σ) :=
 
 /-- Refine a checked list without padding or changing any index, coefficient or target. -/
 @[expose] def refineRow (n : ℕ) (p : BinaryNormalization.Input)
-    (h : ∀ e ∈ p.1, e.1 < n ∧ 0 < e.2.2) : Occurrences n p.1.length where
+    (h : ∀ e ∈ p.1, e.1 < n ∧ 0 < coefficient e) : Occurrences n p.1.length where
   var j := ⟨p.1[j.val].1, (h _ (List.getElem_mem j.isLt)).1⟩
-  sign j := p.1[j.val].2.1
-  weight j := p.1[j.val].2.2.toNat
+  sign j := let (_, (polarity, _)) := p.1[j.val]; polarity
+  weight j := (coefficient p.1[j.val]).toNat
   positive j := by
     have hp := (h _ (List.getElem_mem j.isLt)).2
     omega
@@ -214,7 +219,7 @@ instance (x : Input) (σ : Fin x.1 → Bool) : Decidable (Holds x σ) :=
 
 /-- Refinement serializes to the exact original list, including the empty list. -/
 theorem ofOccurrences_refineRow (n : ℕ) (p : BinaryNormalization.Input)
-    (h : ∀ e ∈ p.1, e.1 < n ∧ 0 < e.2.2) :
+    (h : ∀ e ∈ p.1, e.1 < n ∧ 0 < coefficient e) :
     ofOccurrences (refineRow n p h) = p := by
   apply Prod.ext
   · apply List.ext_getElem
@@ -227,6 +232,7 @@ theorem ofOccurrences_refineRow (n : ℕ) (p : BinaryNormalization.Input)
       · rfl
       change (p.1[i].2.2.toNat : ℤ) = p.1[i].2.2
       have hp := (h _ (List.getElem_mem hj)).2
+      change 0 < p.1[i].2.2 at hp
       omega
   · rfl
 

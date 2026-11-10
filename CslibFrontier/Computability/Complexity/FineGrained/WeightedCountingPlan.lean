@@ -54,8 +54,8 @@ open Turing.MultiTapeTM Cslib.Complexity
 
 /-- The declared query selected from the tagged output; direct answers use an unused fallback. -/
 @[expose] def counterInput (beta : Bool) (p : Output) : ℕ × CNF ℕ :=
-  let q := p.getRight?.getD (0, ([], []))
-  (q.1, if beta then q.2.2 else q.2.1)
+  let (declared, (positive, negative)) := p.getRight?.getD (0, ([], []))
+  (declared, if beta then negative else positive)
 
 /-- Read the tag before counting: direct outputs require no calls, and query outputs require two
 calls followed by binary subtraction. The existence theorem instantiates the native counter. -/
