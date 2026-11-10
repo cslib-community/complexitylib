@@ -491,6 +491,19 @@ additionally checks support of the postprocessed real key. Tests expose the fail
 KEM premise, and show that a perfect zero-width KEM with the insecure echo DEM remains insecure.
 Arbitrary message-space extension and stronger KEM query schedules remain separate.
 
+For the Diffie–Hellman random-oracle KEM of [katzlindell20][katzlindell20] (Construction 12.19,
+Theorem 12.22), import
+[`DiffieHellman/GapCDH.lean`](../../CslibFrontier/Crypto/Computational/DiffieHellman/GapCDH.lean).
+It states the Gap-CDH game `PrimeOrderGroupFamily.gapCDHGame` (CDH with a
+decisional Diffie–Hellman oracle, §12.4.4), the KEM `dhKEMEncaps` / `dhKEMDecaps`
+with correctness `dhKEMDecaps_encaps`, and the IND-CCA game `dhKEMCCAGame` with a random-oracle
+hash and a decapsulation oracle that refuses the challenge.
+`advantage_dhKEMCCAGame_le` bounds the advantage of a deterministic oracle adversary by the
+success probability of the explicit reduction `dhKEMToGapCDH`, with no additive term. The bound
+is for one fixed group and an arbitrary finite key sampler; the asymptotic polynomial-time
+statement is not yet proved. Checked clients are in
+[`CslibFrontierTests/Crypto/GapCDH.lean`](../../CslibFrontierTests/Crypto/GapCDH.lean).
+
 For explicit-coin public-key encryption and modular Fujisaki–Okamoto KEM transforms ([hhk17][hhk17],
 ePrint 2017/604 full version dated 2 November 2021), import
 [`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean).
