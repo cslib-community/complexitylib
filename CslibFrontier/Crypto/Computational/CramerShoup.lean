@@ -1020,7 +1020,7 @@ theorem DDH.cramerShoupMsgINDCCA2
       have := hpk_le hd α δ δ₁ δ₂; dsimp only [Q₁]; gcongr)
     ?_
   intro d hd α β γ δ τ δ₁ δ₂ ξ choiceOut hchoice mElem
-  rw [ProbOracleComp.eval_run_interpret] at hchoice
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith] at hchoice
   have hpk := hpk_le hd α δ δ₁ δ₂
   have hst : choiceOut.1.2.length ≤ Lst n :=
     (hstate n _ Unit _ () choiceOut.2 choiceOut.1 hchoice).trans (by dsimp only [Lst]; gcongr)

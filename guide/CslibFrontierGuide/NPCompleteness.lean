@@ -52,6 +52,9 @@ import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
+import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -89,6 +92,9 @@ import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
+import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom
+import CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -891,7 +897,8 @@ example : ComputableInPolyTime (fun input => (run input).isSome)
 mathematical routine when buffer widths match.
 {name}`Cslib.Complexity.CSP.EdgeAugmenting.run_spec` supplies an actual augmenting
 walk and the combined exchange bound given a valid improving comparison.
-A `none` output does not establish unsatisfiability. Finding the comparison remains open.
+A `none` output does not establish unsatisfiability. The fresh forest search below
+uses only the base labeling and stops at its first blossom or augmentation.
 The complete behavioral clients are in `CslibFrontierTests/EdgeCSPAugmentingNative.lean`.
 
 
@@ -934,8 +941,83 @@ example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
 
 Arbitrary f-walk reversal need not preserve prefix validity, even for even
 delta-matroid relations. Operation tests give a counterexample. These results
-still leave forest construction/Lemma 34, whole-blossom search, native cost and
-the full planar dichotomy open.
+feed the fresh forest search below. Whole-blossom contraction/lifting, native
+recursive solving and the full planar dichotomy remain open.
+
+
+# Fresh Forest Search
+
+{name}`Cslib.Logic.PL.CSP.Forest.search` starts from the actual defective variables,
+without an improving comparison. Its positional log keeps copied constraints and
+zero-based timestamps. It stops at exhaustion, an augmentation or a blossom.
+{name}`Cslib.Logic.PL.CSP.Forest.search_terminal_isFDAG` proves both terminal DAG
+invariants from the edge-instance condition and base validity, without evenness.
+
+The three outcome theorems add even delta-matroid constraints, permitting odd
+local common parity. Exhaustion certifies genuine optimality:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
+    (hF : EdgeInstance F) (hf : ValidLabeling sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) {es : Log F}
+    (hr : search sem f = .exhausted es) : IsOptimalLabeling sem f :=
+  search_exhausted_isOptimalLabeling sem f hF hf hM hr
+```
+
+An actual returned augmentation is prefix-valid, its flip is valid, and it removes
+exactly two defects:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
+    (hF : EdgeInstance F) (hf : ValidLabeling sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) {m : Meeting F}
+    (hr : search sem f = .augment m) :
+    m.walk.IsAugmenting sem f ∧ ValidLabeling sem (m.walk.flip f) ∧
+      (defects (m.walk.flip f)).card + 2 = (defects f).card :=
+  search_augment_correct sem f hF hf hM hr
+```
+
+A blossom result certifies the data actually computed by the extractor. Preparation
+preserves validity and defect count. Its cycle has distinct copied steps, and
+the actual timestamps are distinct:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.Forest in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool)
+    (hF : EdgeInstance F) (hf : ValidLabeling sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) {m : Meeting F}
+    (hr : search sem f = .blossom m) :
+    ∃ b, m.blossomData = some b ∧ b.cycle.IsBlossom sem (b.prepare.flip f) ∧
+      b.times.Nodup ∧ ValidLabeling sem (b.prepare.flip f) ∧
+      (defects (b.prepare.flip f)).card = (defects f).card := by
+  obtain ⟨b, hb, hbl, hv, hd⟩ := search_blossom_correct sem f hF hf hM hr
+  have ht := search_trace sem f hF
+  rw [hr] at ht
+  exact ⟨b, hb, hbl, ht.blossom_times_nodup hb, hv, hd⟩
+```
+
+No supplied forest/event invariant or finite universe of variable names is needed.
+Both variable and constraint least-common-ancestor cases are proved.
+{name}`Cslib.Logic.PL.CSP.Walk.DistinctCopies` forbids sharing a copied node
+between cycle steps; original constraints may recur at different timestamps.
+The graph union alone admits an invalid-prefix counterexample, checked in
+`CslibFrontierTests/EdgeCSPBlossomCopies.lean`. The cycle certificate also retains
+the pivot, feasibility and no shortcuts;
+its validity does not follow from reversing an arbitrary f-walk. Exhaustion uses
+an alternative exchange-counting proof of KKR Lemma 45. The preparation proof uses
+chronological prefix transfer and Lemma 37 rerooting.
+
+Complete actual-run clients are in `CslibFrontierTests/EdgeCSPForestEvents.lean`,
+`CslibFrontierTests/EdgeCSPForestTerminal.lean` and
+`CslibFrontierTests/EdgeCSPForestOptimality.lean`. They include nonempty preparation,
+repeated original constraints, timestamp zero, odd parity and sparse labels.
+This layer proves fresh-search correctness. Native compilation, whole-blossom
+contraction/lifting, recursive solving and the full planar dichotomy remain separate.
 
 
 # Finite Crossover Gadget Semantics
@@ -1001,3 +1083,45 @@ This is an original combinatorial reconstruction of the omitted argument behind
 Dvořák–Kupec Lemma 6, not its full planar-expressibility conclusion. Geometric
 realization and the full planar theorem remain open. Complete nonvacuous clients
 are in `CslibFrontierTests/PlanarNormalization.lean`.
+
+
+# Original-Language Nonselfdual Gadgets
+
+{name}`Cslib.Logic.PL.CSP.NonSelfDual.exists_oneHotGadget` constructs an actual
+one-in-three gadget over the original language. It requires absence of all six
+common Schaefer polymorphisms and of unary complement. Pins and disequality are
+derived internally, and the language relations may have arbitrary arity:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {Rel : Type} (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬HasSchaeferPolymorphism arity sem)
+    (hn : ¬HasPolymorphism arity sem (fun a : Fin 1 → Bool => !(a 0))) :
+    Nonempty (PPGadget arity sem (oneHotRelation (Fin 3))) :=
+  NonSelfDual.exists_oneHotGadget h hn
+```
+
+Disequality needs only the first hypothesis, including when unary complement
+preserves the language:
+
+```lean
+open Cslib.Logic.PL.CSP in
+example {Rel : Type} (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬HasSchaeferPolymorphism arity sem) :
+    Nonempty (PPGadget arity sem RelationMinor.disequality) :=
+  RelationMinor.exists_disequalityGadget h
+```
+
+{name}`Cslib.Logic.PL.CSP.RelationMinor.Construction.gadget` interprets each finite
+ordered construction tree on actual original-language bodies. The final triangle
+appends a ternary body and three NAND bodies on `(0,1)`, `(1,2)`, `(2,0)`; each use
+receives fresh auxiliaries. Projection retains survivor order, and cyclic rotation
+retains orientation. The arbitrary-arity parity and majority minor arguments are
+original reconstructions of the proof omitted from Dvořák–Kupec Lemma 4, printed
+pp. 438–439. The constants descent follows Lemma 3, pp. 437–438.
+
+This proves finite primitive-positive semantics. Witness selection is fixed-language
+data, without a uniform preprocessing bound. Geometric realization, ordered planar
+substitution, native hardness transfer and the full dichotomy remain open. Complete
+clients, including a one-symbol language without primitive pins or disequality,
+are in `CslibFrontierTests/PlanarConstructionGadget.lean`.
