@@ -436,6 +436,38 @@ exact chosen-message advantage `1` whenever `z ∈ jacobiNegSet p q`
 
 For the RSA least-significant-bit experiment and algebraic attacks on plain RSA, import [`RSALeastSignificantBit.lean`](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean) and [`RSAAttacks.lean`](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean) ([katzlindell20][katzlindell20], §9.2.5, pp. 334–336, §12.5.1, pp. 436–440, and §12.5.3, pp. 443–445; checked instances are in [`CslibFrontierTests/Crypto/RSALeastSignificantBit.lean`](../../CslibFrontierTests/Crypto/RSALeastSignificantBit.lean) and [`CslibFrontierTests/Crypto/RSAAttacks.lean`](../../CslibFrontierTests/Crypto/RSAAttacks.lean)). `rsaLSBGame` samples `desc ← gen n` and a uniform residue `x ← Fin desc.modulus` (matching `rsaInversionGame` rather than `(ZMod N)ˣ`), and `RSAHardCoreLSB gen` asks every uniform strict-PPT predictor on `(1^n, ((N, e), rsaEval N e x))` to have negligible `Game.guessingAdvantage` for `x.testBit 0`. For odd `N`, `two_pow_mul_mod_mod_two` equates the parity of `2 ^ k * x % N` (`k ≠ 0`) with that of `⌊2 ^ k * x / N⌋`, `lsbRecover_lsbQueries` recovers `x` from the parities of the preimages of the `m` doubling queries `2 ^ (k * e) * y % N` once `N ≤ 2 ^ m`, and `lsbInverter` wins `rsaInversionGame` with probability `1` given a predictor that is always correct on the modulus (`eval_lsbInverter`, `succProbability_rsaInversionGame_lsbInverter`; the noisy reconstruction of Theorem 12.31 for predictors with small bias and a PPT certificate for `lsbInverter` are not formalized). `RSAAttacks.lean` proves plain-RSA multiplicative malleability (`rsaEval_mul`, `rsaInvert_rsaEval_mul`), common-modulus recovery of units under coprime exponents via `zmodIntPow` (`commonModulusAttack_rsaEval`), unreduced short-message and pairwise-coprime CRT broadcast `e`-th root recovery (`rsaEval_eq_pow_of_pow_lt`, `eq_of_pow_eq_rsaEval`, `chineseRemainderOfList_rsaEval_eq_pow`, `eq_of_pow_eq_chineseRemainderOfList_rsaEval`), factoring `N` from `(N, φ(N))` (`factorOfTotient_eq`, `RSADesc.factorOfTotient_eq`), and the deterministic steps `RSADesc.pow_mul_sub_one_modEq_one` and `RSADesc.gcd_sub_one_proper` of Corollary 9.51 without claiming the randomized factoring bound.
 
+### Elliptic curves over finite fields and Hasse's bound
+
+Import [`EllipticCurve/Hasse.lean`](../../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/Hasse.lean)
+(`CslibFrontier.Foundations.AlgebraicGeometry.EllipticCurve.Hasse`). This is mathematics with no
+machine model, group-law algorithm or running time. A curve is Mathlib's `WeierstrassCurve F`, and
+its points are the type `W.toAffine.Point`: the point at infinity together with the nonsingular
+affine solutions of the Weierstrass equation. The number of points is
+`Nat.card W.toAffine.Point`, which is finite over a finite field. The instance `[W.IsElliptic]`
+says that the discriminant `W.Δ` is a unit. For a concrete curve over `ZMod p`, prove `W.Δ ≠ 0`
+by `decide` and build the instance as `⟨isUnit_iff_ne_zero.2 h⟩`.
+
+- **Odd characteristic.** For a finite field `F` with `ringChar F ≠ 2` and `q = Fintype.card F`,
+  `WeierstrassCurve.natCard_point_eq` gives `#E(F) = q + 1 + S`, where `S` is the character sum
+  `WeierstrassCurve.cubicCharSum` of the cubic obtained by completing the square.
+  `WeierstrassCurve.hasse_bound` gives `(#E(F) - (q + 1))² ≤ 4 q` in `ℤ`, and
+  `WeierstrassCurve.abs_natCard_point_sub_le` gives the real form `|#E(F) - (q + 1)| ≤ 2 √q`. The
+  proof adapts Manin's elementary argument [manin56][manin56]; the implementation notes of
+  [`ManinHeight.lean`](../../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/ManinHeight.lean)
+  say how the Lean steps correspond to his paper.
+- **Prime fields `ZMod p`, including `p = 2`.** Completing the square needs `2 ≠ 0`, so the
+  general theorem excludes characteristic two. `WeierstrassCurve.hasse_bound_zmod` states
+  `p + 1 - 2 √p ≤ #E ≤ p + 1 + 2 √p` for every prime `p` (Theorem 9.72 of
+  [katzlindell20][katzlindell20]); for `p = 2` it uses the direct count
+  `WeierstrassCurve.natCard_point_zmod_two` (`1 ≤ #E ≤ 5`). Other fields of characteristic two are
+  not covered.
+
+The [checked client](../../CslibFrontierTests/Foundations/AlgebraicGeometry/EllipticCurveHasse.lean)
+counts the points of `y² = x³ + 3x + 3` over `ZMod 7` (Example 9.69 of
+[katzlindell20][katzlindell20]), of `y² + y = x³` over `ZMod 2`, and of two curves over `ZMod 5`
+that attain both ends of the bound, and applies each form of the theorem to them. Build it with
+`lake build CslibFrontierTests.Foundations.AlgebraicGeometry.EllipticCurveHasse`.
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit. `Encryption.advantage (gameOn valid keyGen encrypt adversary) n` names the advantage between the two sides of the experiment at parameter `n`, and `INDCPAOn` asks that it be negligible for every admissible adversary; bounds on other two-sided encryption experiments, such as the DEM and CCA games, are stated with the same name.
@@ -700,5 +732,6 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [hill99]: ../sources.md#hill99
 [holenstein06]: ../sources.md#holenstein06
 [katzlindell20]: ../sources.md#katzlindell20
+[manin56]: ../sources.md#manin56
 [naoryung89]: ../sources.md#naoryung89
 [rompel90]: ../sources.md#rompel90
