@@ -16,9 +16,11 @@ public import CslibFrontier.Computability.GenericRAM.Native.Degree
 When every primitive certificate of a RAM model has degree `D ≥ 3`
 (`Model.NativePrimitives.HasDegree`), one step of the native finite-state simulator has degree `D`
 in the encoded runtime configuration and state. The `3` is the sparse-memory scan, which is cubic in
-the encoded memory (`SparseMemory.scanTime_le_cube`). A clocked run of `n` steps through states of
-encoded length at most `B` therefore costs `O(|input| + (n + 1) · ((B + 1) ^ D + (log n + 1) ^ 2))`
-machine steps, and whole-run transport inherits this bound with every constant outside the degree.
+the encoded memory (`SparseMemory.scanTime_le_cube`). A clocked run of `n` steps under the runtime
+configuration `k`, whose step outcomes have encoded length at most `B`, therefore costs
+`O(|input| + (n + 1) · (X ^ D + (log n + 1) ^ 2))` machine steps, where `X = 2 |k| + B + 2` bounds
+the encoded loop states plus one. Whole-run transport inherits this bound with every constant
+outside the degree.
 
 These are the degree analogues of the `*_isPolynomial` lemmas of
 `CslibFrontier.Computability.GenericRAM.Simulation.Run`, which give polynomial bounds of unnamed
@@ -31,7 +33,8 @@ degree.
 * `Cslib.GenericRAM.FiniteState.runTime_le`, `Cslib.GenericRAM.FiniteState.runSpace_le`: explicit
   bounds on a clocked run from per-round bounds and a bound on the visited states.
 * `Cslib.GenericRAM.FiniteState.transport_inO_of_hasDegree`: whole-run transport with time
-  `O(… + (steps + 1) · ((B + 1) ^ D + (log steps + 1) ^ 2))`.
+  `O(… + (steps + 1) · (X ^ D + (log steps + 1) ^ 2))`, where `X = 2 |cfg| + B + 2` and `B` bounds
+  the encoded step outcomes, for runs that halt within `steps` instructions.
 
 ## References
 
@@ -83,7 +86,9 @@ theorem moveCertificate_hasDegree (enc : M.Encoding) (N : M.NativePrimitives enc
     (some_hasDegree _ (setCertificate_hasDegree enc c d value hc hv))
     (const_hasDegree none hD)
 
-/-- The raw sparse-memory lookup is cubic in time and linear in space. -/
+/-- The certificate of the raw sparse-memory lookup has degree `D` for every `D ≥ 3`: time and
+space bounds of degree `D` and encoded output of linear length. The cubic time and linear space
+bounds behind it are `SparseMemory.readTime_le_cube` and `SparseMemory.readSpace_le_linear`. -/
 theorem readRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     (⟨SparseMemory.readTime enc.address enc.value, SparseMemory.readSpace enc.address enc.value,
       SparseMemory.read_inO enc.address enc.value⟩ :
@@ -96,7 +101,9 @@ theorem readRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     ⟨32, fun q => ?_⟩ (by omega)
   simpa only [pow_one] using SparseMemory.readSpace_le_linear enc.address enc.value q
 
-/-- The raw sparse-memory update is cubic in time and linear in space. -/
+/-- The certificate of the raw sparse-memory update has degree `D` for every `D ≥ 3`: time and
+space bounds of degree `D` and encoded output of linear length. The cubic time and linear space
+bounds behind it are `SparseMemory.writeTime_le_cube` and `SparseMemory.writeSpace_le_linear`. -/
 theorem writeRaw_hasDegree (enc : M.Encoding) (hD : 3 ≤ D) :
     (⟨SparseMemory.writeTime enc.address enc.value, SparseMemory.writeSpace enc.address enc.value,
       SparseMemory.insert_inO enc.address enc.value⟩ :
