@@ -13,6 +13,7 @@ public import CslibFrontier.Languages.Probabilistic.Iteration
 public import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Bounded adaptive loops of clean oracle phases
@@ -126,15 +127,13 @@ theorem iterate_spec {initial : α → σ} {count : α → ℕ}
   let bound (a : α) : ℕ := 2 * count a + 1 + size a
   let roundTime (a : α) : ℕ := cB * (bound a + 1) ^ dB
   let loopTime (a : α) : ℕ := (count a + 1) * (roundTime a + 10 * bound a + 23) + 8 * bound a + 17
+  -- Kept for the `growth_poly` in `hloopPoly`, which elaborates faster with them in context.
   have hboundPoly : PolyBounded (fun a => (input a).length) bound :=
     ((PolyBounded.const 2).mul hcountPoly |>.add (.const 1)).add hsize
   have hroundPoly : PolyBounded (fun a => (input a).length) roundTime :=
     PolyBounded.comp (size' := id) (v := fun n => cB * (n + 1) ^ dB)
       (.of_forall_le cB dB fun _ => le_rfl) hboundPoly
-  have hloopPoly : PolyBounded (fun a => (input a).length) loopTime :=
-    (((hcountPoly.add (.const 1)).mul
-      ((hroundPoly.add ((PolyBounded.const 10).mul hboundPoly)).add (.const 23))).add
-        ((PolyBounded.const 8).mul hboundPoly)).add (.const 17)
+  have hloopPoly : PolyBounded (fun a => (input a).length) loopTime := by growth_poly
   have hfinal : IsTidyOraclePPTOn input encode
       (fun a => (fun final => (0, final)) <$> OracleComp.iterate (count a) step (initial a)) := by
     refine of_polyBounded ((machine.iterateWhile true).tidyComp prepare true)
