@@ -162,13 +162,16 @@ polynomial envelope does not certify a particular word width or a fixed degree.
 
 When a final statement uses one constant as both coefficient and degree, import
 [`ResourceBounds.Polynomial.Envelope`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/ResourceBounds/Polynomial/Envelope.lean)
-and apply `PolyBounded.exists_le_self_pow` after composing the polynomial overhead. It supplies
-`u a ≤ K * size a ^ K` at every positive size; size zero is excluded, so add a constant to the
-chosen size when the contract includes empty inputs. Keep any exponential time factor outside
-this polynomial envelope. The
-[native packet resource proofs](../../CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
-combine polynomial preprocessing/postprocessing this way while retaining their separate
-exponential time and polynomial space conclusions.
+and apply `PolyBounded.exists_le_succ_pow` after composing the polynomial overhead. It supplies
+`u a ≤ K' * (size a + 1) ^ K'` at every input for every `K'` above some `K`, so a final constant
+such as `K + K₀` can also absorb other parts of the bound; the
+[truncated contraction algorithm](../../CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/TruncatedAlgorithm.lean)
+widens its exponential factor's constant this way. `PolyBounded.exists_le_self_pow` gives
+`u a ≤ K * size a ^ K` instead, at positive sizes only; add a constant to the chosen size when the
+contract includes empty inputs. Keep any exponential time factor outside this polynomial envelope.
+The [native packet resource proofs](../../CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
+use `exists_le_self_pow` to combine polynomial preprocessing/postprocessing while retaining their
+separate exponential time and polynomial space conclusions.
 
 Pure lookup in `frame u ++ v` uses the small
 [`Encodings.Frame.Lookup`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/Frame/Lookup.lean)

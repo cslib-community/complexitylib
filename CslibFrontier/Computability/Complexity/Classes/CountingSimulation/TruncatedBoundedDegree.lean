@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.TruncatedEntry
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolynomialEntries
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 
 /-!
 # Polynomial truncation on bounded-degree networks
@@ -84,15 +85,13 @@ theorem truncBoundedDegreeCertificate_bound
   let M := (k + 1) ^ 10 + 2
   let F : ℕ → ℕ := fun n => pg n + KT * (n + 1) ^ KT + KD * 2 ^ M * (n + 1) ^ KD
   have hFp : PolyBounded id F := by growth_poly
-  obtain ⟨aF, dF, hF⟩ := hFp.exists_le
-  refine ⟨aF + dF + KT, fun P ℓ r G hs hrows hv hk hP hPD hℓ hℓD => ?_⟩
+  obtain ⟨KF, hF⟩ := hFp.exists_le_succ_pow
+  refine ⟨KF + KT, fun P ℓ r G hs hrows hv hk hP hPD hℓ hℓD => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length
   set X := 2 ^ (KT * G.numEdges / Nat.sqrt (Nat.log 2 G.numEdges))
   have hX : 1 ≤ X := Nat.one_le_two_pow
-  have hFp' : F n ≤ (aF + dF + KT) * (n + 1) ^ (aF + dF + KT) :=
-    (hF n).trans (Nat.mul_le_mul (by omega)
-      (Nat.pow_le_pow_right (by omega) (by omega)))
-  have hX' : X ≤ 2 ^ ((aF + dF + KT) * G.numEdges / Nat.sqrt (Nat.log 2 G.numEdges)) :=
+  have hFp' : F n ≤ (KF + KT) * (n + 1) ^ (KF + KT) := hF _ (Nat.le_add_right _ _) n
+  have hX' : X ≤ 2 ^ ((KF + KT) * G.numEdges / Nat.sqrt (Nat.log 2 G.numEdges)) :=
     Nat.pow_le_pow_right (by norm_num)
       (Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega)))
   have hgt : (NativeCertificate.ofPolyTime (truncSmallSize_polyTime k)).time (P, ℓ, r, G) ≤
