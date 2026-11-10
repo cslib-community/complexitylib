@@ -145,14 +145,14 @@ variable (H : K × Bool → T → K × Bool) (tw : Slot C → T) (x : Fin n → 
 /-- The CCR query for a slot, from the labels `E` the evaluator holds on input `x`: `(A_a, t, p_b)`
 for the generator half and `(A_b, t', v_a)` for the evaluator half. -/
 @[expose] def slotQuery (E : Wire n C.size → K × Bool) (s : Slot C) : (K × Bool) × T × Bool :=
-  if s.2 then (E (right C s.1.1), tw s, C.program.trace interpretation x (left C s.1.1))
-  else (E (left C s.1.1), tw s,
-    (E (right C s.1.1)).2 + C.program.trace interpretation x (right C s.1.1))
+  if s.2 then (E (right C s.gate), tw s, C.program.trace interpretation x (left C s.gate))
+  else (E (left C s.gate), tw s,
+    (E (right C s.gate)).2 + C.program.trace interpretation x (right C s.gate))
 
 /-- The part of a slot's ciphertext the evaluator computes from its own labels: `H(A_a, t)` for
 the generator half and `H(A_b, t') + A_a` for the evaluator half. -/
 @[expose] def slotKnown (E : Wire n C.size → K × Bool) (s : Slot C) : K × Bool :=
-  if s.2 then H (E (right C s.1.1)) (tw s) + E (left C s.1.1) else H (E (left C s.1.1)) (tw s)
+  if s.2 then H (E (right C s.gate)) (tw s) + E (left C s.gate) else H (E (left C s.gate)) (tw s)
 
 /-- The reduction's ciphertext for a slot, with oracle `f`, from the labels `E`. -/
 @[expose] def entry (f : (K × Bool) × T × Bool → K × Bool) (E : Wire n C.size → K × Bool)
@@ -171,8 +171,8 @@ theorem slotQuery_injective (htw : Function.Injective tw) (E : Wire n C.size →
   htw (by rw [← slotQuery_snd_fst C tw x E s, h, slotQuery_snd_fst])
 
 theorem entry_congr (f : (K × Bool) × T × Bool → K × Bool) {E E' : Wire n C.size → K × Bool}
-    (s : Slot C) (hl : E (left C s.1.1) = E' (left C s.1.1))
-    (hr : E (right C s.1.1) = E' (right C s.1.1)) :
+    (s : Slot C) (hl : E (left C s.gate) = E' (left C s.gate))
+    (hr : E (right C s.gate) = E' (right C s.gate)) :
     entry C H tw x f E s = entry C H tw x f E' s := by
   simp only [entry, slotKnown, slotQuery, hl, hr]
 
@@ -197,7 +197,7 @@ theorem evalLabels_oracleTable (f : (K × Bool) × T × Bool → K × Bool) (X :
 
 /-- Tables agreeing on the gates below `k` give the same labels on the wires below `n + k`. -/
 theorem evalLabels_congr (X : Fin n → K × Bool) {ct ct' : Slot C → K × Bool} (k : ℕ)
-    (hct : ∀ s : Slot C, (s.1.1 : ℕ) < k → ct s = ct' s) (w : Wire n C.size)
+    (hct : ∀ s : Slot C, (s.gate : ℕ) < k → ct s = ct' s) (w : Wire n C.size)
     (hw : w.toNat < n + k) : evalLabels C H tw ct X w = evalLabels C H tw ct' X w := by
   have hE : evalStep C H tw ct X (evalLabels C H tw ct X) = evalLabels C H tw ct X :=
     (isLocal_evalStep_const C H tw ct X).isFixed_iterate 0
@@ -217,7 +217,7 @@ theorem evalLabels_congr (X : Fin n → K × Bool) {ct ct' : Slot C → K × Boo
         rw [Wire.toNat_gate] at hN hk
         have hl := toNat_left_lt C g
         have hr := toNat_right_lt C g
-        exact evalStep_gate_congr C H tw X g (fun h b => hct _ (by dsimp only; omega))
+        exact evalStep_gate_congr C H tw X g (fun h b => hct _ (by dsimp only [Slot.gate]; omega))
           (ih _ (by omega) (by omega)) (ih _ (by omega) (by omega))
   exact key _ w (Nat.lt_succ_self _) hw
 
@@ -260,7 +260,7 @@ theorem entry_circularLabel_activeLabel (H : K × Bool → T → K × Bool) (tw 
   have hz := add_self_label hK
   have hb : ∀ c d : Bool, c + d + d = c := by decide
   obtain ⟨⟨g, h⟩, b⟩ := s
-  simp only [entry, slotKnown, slotQuery, garbleTable, activeLabel]
+  simp only [entry, slotKnown, slotQuery, garbleTable, activeLabel, Slot.gate]
   generalize C.program.trace interpretation x (left C g) = vl
   generalize C.program.trace interpretation x (right C g) = vr
   cases b <;>
@@ -314,8 +314,8 @@ the evaluator holds with the table `ct` built so far, and keep `ct` elsewhere. -
 noncomputable def gateStep (X : Fin n → K × Bool) (k : ℕ) (ct : Slot C → K × Bool) :
     ProbOracleComp (fun _ : (K × Bool) × T × Bool => K × Bool) (Slot C → K × Bool) := do
   let O ← ProbOracleComp.tabulate (slotQuery C tw x (evalLabels C H tw ct X))
-    (Finset.univ.filter fun s : Slot C => (s.1.1 : ℕ) = k).toList
-  return fun s => if (s.1.1 : ℕ) = k then slotKnown C H tw (evalLabels C H tw ct X) s + O s
+    (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) = k).toList
+  return fun s => if (s.gate : ℕ) = k then slotKnown C H tw (evalLabels C H tw ct X) s + O s
     else ct s
 
 /-- The table built from the gates below `k`. -/
@@ -330,7 +330,7 @@ noncomputable def tableRun (X : Fin n → K × Bool) :
 def detRun (f : (K × Bool) × T × Bool → K × Bool) (X : Fin n → K × Bool) :
     ℕ → Slot C → K × Bool
   | 0 => 0
-  | k + 1 => fun s => if (s.1.1 : ℕ) = k then entry C H tw x f (evalLabels C H tw
+  | k + 1 => fun s => if (s.gate : ℕ) = k then entry C H tw x f (evalLabels C H tw
       (detRun f X k) X) s else detRun f X k s
 
 theorem interpret_tableRun (f : (K × Bool) × T × Bool → K × Bool) (X : Fin n → K × Bool)
@@ -344,11 +344,11 @@ theorem interpret_tableRun (f : (K × Bool) × T × Bool → K × Bool) (X : Fin
       ProbOracleComp.interpret_tabulate, OracleComp.interpret_pure]
     congr 1
     funext s
-    by_cases h : (s.1.1 : ℕ) = k <;> simp [detRun, entry, h]
+    by_cases h : (s.gate : ℕ) = k <;> simp [detRun, entry, h]
 
 theorem detRun_eq (f : (K × Bool) × T × Bool → K × Bool) (X : Fin n → K × Bool) :
     detRun C H tw x f X C.size = oracleTable C H tw x f X := by
-  have key : ∀ k (s : Slot C), (s.1.1 : ℕ) < k →
+  have key : ∀ k (s : Slot C), (s.gate : ℕ) < k →
       detRun C H tw x f X k s = oracleTable C H tw x f X s := by
     intro k
     induction k with
@@ -358,12 +358,12 @@ theorem detRun_eq (f : (K × Bool) × T × Bool → K × Bool) (X : Fin n → K 
       simp only [detRun]
       split_ifs with hk
       · rw [oracleTable, ← evalLabels_oracleTable]
-        have hl := toNat_left_lt C s.1.1
-        have hr := toNat_right_lt C s.1.1
+        have hl := toNat_left_lt C s.gate
+        have hr := toNat_right_lt C s.gate
         exact entry_congr C H tw x f s (evalLabels_congr C H tw X k ih _ (by omega))
           (evalLabels_congr C H tw X k ih _ (by omega))
       · exact ih s (by omega)
-  exact funext fun s => key _ s s.1.1.isLt
+  exact funext fun s => key _ s s.gate.isLt
 
 end Table
 

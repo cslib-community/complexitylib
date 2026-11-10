@@ -359,7 +359,7 @@ theorem View.run_simulateWith (H : MixedModulusHash T μ ℓ) (tw : ℕ → T)
 /-- Against a fixed oracle `f`, the value the reduction encrypts in the row of input value `x` of
 a projection gate with tweak `t` reading a wire with active label `W` and value `v`: `H(t, W)`
 for `x = v`, and otherwise the reply to the query `(t, W, x - v, φ x - φ v)`. -/
-def rowsWith (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.2.1) (H : MixedModulusHash T μ ℓ)
+def rowsWith (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.target) (H : MixedModulusHash T μ ℓ)
     (t : T) {i j : ι} (W : Label μ ℓ i) (v : ZMod (μ i)) (φ : Projection μ i j) (x : ZMod (μ i)) :
     Label μ ℓ j :=
   if x = v then H t i W j else f (t, ⟨i, j, W, x - v, φ x - φ v⟩)
@@ -367,7 +367,7 @@ def rowsWith (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.2.1) (H : Mixe
 /-- The reduction's run against a fixed oracle `f`, from gate number `k` on, given the active
 labels `A` and values `V` of the wires so far: the tables and the active labels of the output
 wires that it builds. -/
-def reduceWith (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.2.1) (H : MixedModulusHash T μ ℓ)
+def reduceWith (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.target) (H : MixedModulusHash T μ ℓ)
     (tw : ℕ → T) : {Γ Θ : List ι} → ℕ → (C : MixedModulusCircuit μ (Projection μ) Γ Θ) →
       Env (Label μ ℓ) Γ → Env (Residue μ) Γ → Tables ℓ C × Env (Label μ ℓ) Θ
   | _, _, _, .output outs, A, _ => (PUnit.unit, A.gather outs)
@@ -481,7 +481,8 @@ theorem reduceWith_ccrOracle (H : MixedModulusHash T μ ℓ) (tw : ℕ → T)
       · rw [hx, add_sub_cancel_right]
       · have hx' : V.get a • offset δ i + (x - V.get a) • offset δ i = x • offset δ i := by
           rw [← add_smul, add_sub_cancel]
-        simp only [ccrOracle, get_encode]
+        simp only [ccrOracle, CCRInput.source, CCRInput.target, CCRInput.label, CCRInput.a,
+          CCRInput.b, get_encode]
         rw [add_assoc, hx', sub_smul, add_sub_assoc]
     have hτ : ((encode δ E V).get a).2 - V.get a = (E.get a).2 := by
       rw [get_encode, snd_add_smul_offset, add_sub_cancel_right]
@@ -533,7 +534,7 @@ theorem map_encode_uniformOfFintype (δ : ∀ i, Fin (ℓ i) → ZMod (μ i)) (V
 omit [Fintype ι] [DecidableEq ι] [∀ i, NeZero (μ i)] in
 /-- Interpreting the queries of a projection gate against a fixed oracle `f` reads `rowsWith f`
 on the listed values. -/
-theorem interpret_queryRows (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.2.1)
+theorem interpret_queryRows (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.target)
     (H : MixedModulusHash T μ ℓ) (t : T) {i j : ι} (W : Label μ ℓ i) (v : ZMod (μ i))
     (φ : Projection μ i j) (xs : List (ZMod (μ i))) :
     OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun q => (pure (f q) : ProbComp _))
@@ -562,7 +563,7 @@ theorem interpret_queryRows (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2
 
 omit [Fintype ι] [DecidableEq ι] in
 /-- Interpreting the adaptive reduction against a fixed oracle `f` is its run `reduceWith f`. -/
-theorem interpret_reduceM (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.2.1)
+theorem interpret_reduceM (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.target)
     (H : MixedModulusHash T μ ℓ) (tw : ℕ → T) {Γ Θ : List ι} (k : ℕ)
     (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (A : Env (Label μ ℓ) Γ)
     (V : Env (Residue μ) Γ) :
@@ -580,7 +581,7 @@ theorem interpret_reduceM (f : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.2
 omit [Fintype ι] [DecidableEq ι] [∀ i, NeZero (μ i)] in
 /-- **Locality**: the reduction's run from gate `k` on reads the oracle only at the tweaks of the
 remaining gates. -/
-theorem reduceWith_congr {f g : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.2.1}
+theorem reduceWith_congr {f g : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.target}
     (H : MixedModulusHash T μ ℓ) (tw : ℕ → T) {Γ Θ : List ι} (k : ℕ)
     (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (A : Env (Label μ ℓ) Γ)
     (V : Env (Residue μ) Γ)
@@ -861,7 +862,7 @@ private theorem mem_filterMap_getRight_queryRows (H : MixedModulusHash T μ ℓ)
 tweak is the tweak of one of these gates, and a query is determined by its tweak, source sort,
 label and multiplier `a`. -/
 private def GoodQueries (tw : ℕ → T) (k n : ℕ) (qs : List (T × CCRInput μ ℓ)) : Prop :=
-  (∀ q ∈ qs, q.2.2.2.2.1 ≠ 0 ∧ ∃ m, k ≤ m ∧ m < k + n ∧ q.1 = tw m) ∧
+  (∀ q ∈ qs, q.2.a ≠ 0 ∧ ∃ m, k ≤ m ∧ m < k + n ∧ q.1 = tw m) ∧
     ∀ q ∈ qs, ∀ q' ∈ qs, ccrKey q = ccrKey q' → q = q'
 
 private theorem goodQueries_append (tw : ℕ → T) (k n : ℕ) {i j : ι} (W : Label μ ℓ i)
