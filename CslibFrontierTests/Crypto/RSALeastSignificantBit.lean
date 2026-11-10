@@ -23,8 +23,6 @@ example : 2 ^ 3 * 5 % 33 % 2 = 2 ^ 3 * 5 / 33 % 2 :=
 example : 2 ^ (2 * 3) * rsaEval 33 3 5 % 33 = rsaEval 33 3 (2 ^ 2 * 5 % 33) :=
   two_pow_mul_rsaEval 33 3 2 5
 
-example : lsbDigits [true, false, true, true] = 11 := by decide
-
 /-! ### Recovering a preimage from parities
 
 The toy instance `N = 33`, `e = 3`, `d = 7` hides `x = 5` as `y = 26`. The parity oracle that
