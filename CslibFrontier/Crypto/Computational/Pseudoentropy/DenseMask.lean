@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Basic
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Masking
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Crypto.Computational.Pseudoentropy.Selection
 import CslibFrontier.Crypto.Computational.Pseudoentropy.SequenceLearner
@@ -210,8 +211,7 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
         let value ← pair.latentSample n
         (fun answer => answer == value.2) <$>
           adversary (n, advice n) i (pair.encode n value.1)) := by
-    simp only [predictionGame, ProbComp.eval_bind, pair.eval_sample, PMF.bind_map,
-      pair.eval_latentSample, ProbComp.eval_map, ProbComp.eval_pure]
+    simp only [pmf_norm, predictionGame, pair.eval_sample, pair.eval_latentSample]
     rfl
   rw [hlaw] at hhard
   change (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤ _ at hhard

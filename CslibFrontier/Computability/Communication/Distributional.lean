@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Communication.Randomized
+import CslibFrontier.Foundations.Data.ENat.IInf
 import CslibFrontier.Probability.Minimax
-import Mathlib.Order.SuccPred.ENat
 
 /-!
 # Distributional complexity and Yao's minimax principle
@@ -84,14 +84,8 @@ theorem le_distributionalComplexity_iff {k : ℕ∞} :
 theorem distributionalComplexity_le_iff {k : ℕ} :
     distributionalComplexity ε R ν ≤ k ↔
       ∃ p : Protocol X Y Z, p.distributionalError ν R ≤ ε ∧ p.depth ≤ k := by
-  refine ⟨fun h => ?_, fun ⟨p, hp, hk⟩ =>
-    (distributionalComplexity_le_depth hp).trans (by exact_mod_cast hk)⟩
-  by_contra! hlt
-  have : ((k + 1 : ℕ) : ℕ∞) ≤ distributionalComplexity ε R ν :=
-    le_distributionalComplexity_iff.mpr fun p hp => by exact_mod_cast hlt p hp
-  have := this.trans h
-  norm_cast at this
-  omega
+  simp only [distributionalComplexity, ENat.iInf_natCast_le_natCast_iff, Subtype.exists,
+    exists_prop]
 
 /-- Allowing more error makes a relation easier. -/
 theorem distributionalComplexity_anti (hε : ε ≤ ε') :

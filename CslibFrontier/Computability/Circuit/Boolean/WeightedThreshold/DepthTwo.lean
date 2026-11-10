@@ -315,9 +315,7 @@ theorem sum_sub_mul_decide_le (f : ℤ → ℤ) {ℓ u : ℤ} {L : ℕ}
   | succ L ih =>
     rw [Fin.sum_univ_castSucc]
     by_cases hle : u ≤ ℓ + L
-    · have hlast : ¬ (ℓ + (Fin.last L : ℕ) + 1 ≤ u) := by
-        simp only [Fin.val_last]
-        omega
+    · have hlast : ¬ (ℓ + (Fin.last L : ℕ) + 1 ≤ u) := by grind
       simp only [Fin.val_castSucc, hlast, decide_false, Bool.toNat_false, Nat.cast_zero, mul_zero,
         add_zero]
       exact ih hlo hle

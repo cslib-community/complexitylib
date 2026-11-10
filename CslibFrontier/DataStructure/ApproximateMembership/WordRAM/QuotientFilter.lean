@@ -343,8 +343,7 @@ theorem extractSeed_remInitData (base w w₀ n : ℕ) (x : Data rQF) (γ : ℕ) 
   have htop : ReducedKWise.extractTop base w₀ (remInitData base w w₀ n x γ).mem =
       ReducedKWise.extractTop base w₀ x.mem := by
     dsimp only [ReducedKWise.extractTop]
-    congr 1
-    funext idx
+    congr 1 with idx : 1
     dsimp only [Tabulation.extractSlice, remInitData, Data.write, Data.set]
     have hne : base + idx.val ≠ remSeedAddr base w w₀ n := by
       have := idx.isLt
@@ -354,8 +353,7 @@ theorem extractSeed_remInitData (base w w₀ n : ℕ) (x : Data rQF) (γ : ℕ) 
   have hbot : ReducedKWise.extractBot base w₀ b b 5 (remInitData base w w₀ n x γ).mem =
       ReducedKWise.extractBot base w₀ b b 5 x.mem := by
     dsimp only [ReducedKWise.extractBot]
-    congr 1
-    funext idx
+    congr 1 with idx : 1
     dsimp only [Tabulation.extractSlice, remInitData, Data.write, Data.set]
     have hne : base + 1 + idx.val ≠ remSeedAddr base w w₀ n := by
       have hlt := idx.isLt
@@ -420,8 +418,7 @@ theorem map_extractFilterSeed_eval_sampleSeedsComp (base w w₀ n : ℕ) (x₂ :
         (fun z1 =>
           (PMF.uniformOfFintype (RemSeed w₀)).map
             (fun γ => (ReducedKWise.extractSeed base w₀ b b 5 z1.1.mem, γ))) := by
-    congr 1
-    funext z1
+    congr 1 with z1 : 1
     exact hinner z1
   rw [hbind]
   have hmap_bind :

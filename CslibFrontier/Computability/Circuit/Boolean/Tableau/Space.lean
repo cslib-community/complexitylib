@@ -206,6 +206,14 @@ theorem blockSize_inSpace :
   budget_natAdd (colStart_inSpace (k := k) (State := State) hT hin)
     (budget_natMul (numCols_inSpace hT hin) (budget_const _ hin))
 
+omit [DecidableEq State] in
+/-- Computing the output wire `outWire k State (n x) (T x)` within space budget `Bs`. -/
+theorem outWire_inSpace {n : α → ℕ} (hn : ComputableInSpace n encIn encNat Bs) :
+    ComputableInSpace (fun x => outWire k State (n x) (T x)) encIn encNat Bs :=
+  budget_natAdd (budget_natAdd (budget_natAdd hn (budget_const 2 hin))
+    (budget_natMul hT (blockSize_inSpace (k := k) (State := State) hT hin)))
+    (budget_natAdd (gfStart_inSpace (k := k) (State := State) hT hin) (budget_const _ hin))
+
 /-- Explicit finite enumeration of `ColSel`. -/
 instance : FinEnum ColSel :=
   FinEnum.ofList [.same, .prev, .next, .last] fun x => by cases x <;> decide

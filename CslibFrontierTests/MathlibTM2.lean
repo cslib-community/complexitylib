@@ -100,16 +100,14 @@ private lemma constant_nil (v : Bool) :
     constantMachine.step (constantCfg [] v) = some (haltList constantMachine [(0 : Fin 1)]) := by
   apply congrArg some
   change TM2.Cfg.mk _ _ _ = TM2.Cfg.mk _ _ _
-  congr 1
-  funext k
+  congr 1 with k : 1
   cases k <;> rfl
 
 private lemma constant_cons (a : Fin 4) (xs : List (Fin 4)) (v : Bool) :
     constantMachine.step (constantCfg (a :: xs) v) = some (constantCfg xs true) := by
   apply congrArg some
   change TM2.Cfg.mk _ _ _ = TM2.Cfg.mk _ _ _
-  congr 1
-  funext k
+  congr 1 with k : 1
   cases k <;> rfl
 
 private lemma constant_iterate (xs : List (Fin 4)) (v : Bool) :
@@ -135,8 +133,7 @@ private noncomputable def constantComputer :
     refine ⟨⟨xs.length + 1, ?_⟩, by simp⟩
     have hi : initList constantMachine xs = constantCfg xs false := by
       change TM2.Cfg.mk _ _ _ = TM2.Cfg.mk _ _ _
-      congr 1
-      funext k
+      congr 1 with k : 1
       cases k <;> rfl
     simp only [Equiv.refl, id_eq, Option.map_some]
     change (fun s : Option constantMachine.Cfg => s.bind constantMachine.step)^[xs.length + 1]

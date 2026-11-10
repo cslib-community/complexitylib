@@ -226,9 +226,7 @@ theorem short_remainder_circuit (k m T : ℕ) (hT : T < 2 ^ m) :
       (if decide (word x = (0 : BitVec k)) then (0 : BitVec k) else r x) =
         word (remainder T x) := by
     rw [remainder_word]
-    have hzero : word x = (0 : BitVec k) ↔ (word x).toNat = 0 := by
-      rw [← BitVec.toNat_inj]
-      simp
+    have hzero : word x = (0 : BitVec k) ↔ (word x).toNat = 0 := by grind
     simp only [decide_eq_true_eq, hzero]
     split_ifs with h0
     · simp
@@ -437,7 +435,7 @@ theorem variable_time_counter_iff_remainder (m k : ℕ) :
           fun j : Fin m => x (Fin.natAdd (k + k) j) := by
         funext j; simp [init]
       have hinit_k : word (fun i : Fin k => init x (Fin.natAdd m i)) = a x := by
-        congr 1; funext i; simp [init]
+        congr 1 with i : 1; simp [init]
       rw [hinit_m, hinit_k]
       simp only [Nat.ne_of_gt hpos, ite_false, BitVec.toNat_ofNat,
         Nat.mod_eq_of_lt ((Nat.mod_lt _ hpos).trans (a x).isLt)]

@@ -797,25 +797,9 @@ theorem IOPRoundByRoundKnowledgeSoundness.rel_iopExtract_of_goodSteps
       goodStep x ((List.ofFn fun i : Fin r => (oracles i, chals i)).take j.val)
         (oracles j) (chals j))
     (hver : iopVerify iop x chals oracles = true) :
-    rel x (iopExtract x oracles) := by
-  refine hks.extract_of_doomed x oracles chals ?_ hver
-  set tr := List.ofFn fun j : Fin r => (oracles j, chals j)
-  have hlen : tr.length = r := List.length_ofFn
-  suffices ∀ m ≤ r, doomed x (tr.take m) by
-    simpa only [← hlen, List.take_length] using this r le_rfl
-  intro m hm
-  induction m with
-  | zero =>
-    simpa only [List.take_zero] using hks.init_doomed x
-  | succ m ih =>
-    have hmr : m < r := hm
-    have hmlen : m < tr.length := by simpa only [hlen] using hmr
-    rw [List.take_succ_eq_append_getElem hmlen]
-    have hget : tr[m] = (oracles ⟨m, hmr⟩, chals ⟨m, hmr⟩) := by
-      simp [tr]
-    rw [hget]
-    exact hks.step_doomed x (tr.take m) (oracles ⟨m, hmr⟩) (chals ⟨m, hmr⟩)
-      (ih hmr.le) (hsteps ⟨m, hmr⟩)
+    rel x (iopExtract x oracles) :=
+  hks.extract_of_doomed x oracles chals
+    (doomed_ofFn_of_goodSteps (hks.init_doomed x) (hks.step_doomed x) oracles chals hsteps) hver
 
 end RBRKnowledge
 
@@ -869,8 +853,7 @@ theorem run_interpret_bcsMemoize {Stmt Chal β : Type} [DecidableEq Stmt] [Decid
           (.inl msg) h]
       change (((BitString.uniformList σ).map (fun v => (v, (msg, v) :: tr_MT))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, bcsOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with
@@ -891,8 +874,7 @@ theorem run_interpret_bcsMemoize {Stmt Chal β : Type} [DecidableEq Stmt] [Decid
           (.inr fsq) h]
       change (((PMF.uniformOfFintype Chal).map (fun v => (v, (fsq, v) :: tr_FS))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, bcsOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with

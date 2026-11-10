@@ -13,6 +13,7 @@ public import CslibFrontier.Languages.Probabilistic.QueryCount
 public import CslibFrontier.Probability.HashFamily
 public import CslibFrontier.Probability.HashFamily.Uniform
 public import Mathlib.Data.Fintype.Perm
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.RandomPermutation
 import CslibFrontier.Languages.Probabilistic.Simulation
@@ -438,10 +439,8 @@ private theorem realRoundHandler_map_fst (f₁ : G → G) (p : G × G)
     (st : List ((Bool × G) × G) × Bool) :
     (realRoundHandler f₁ p st).map (fun (ans, st') => (ans, st'.1)) =
       lazyRoundHandler f₁ p st.1 := by
-  simp only [realRoundHandler, lazyRoundHandler, feistel3Query, OracleComp.interpret_bind,
-    OracleComp.interpret_query, OracleComp.interpret_pure,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-    PMF.map_bind, PMF.pure_map]
+  simp only [pmf_norm, realRoundHandler, lazyRoundHandler, feistel3Query, OracleComp.interpret_bind,
+    OracleComp.interpret_query, OracleComp.interpret_pure]
   rfl
 
 private theorem feistel3FixedGame_eq_realRoundHandler (f₁ : G → G)
@@ -464,8 +463,7 @@ private theorem feistel3FixedGame_eq_realRoundHandler (f₁ : G → G)
     OracleComp.interpret_interpret _ _ _
   rw [hcomp] at hlazy
   have hlazy' := congrArg (PMF.map Prod.fst) hlazy.symm
-  simp only [Probability.PMF.monad_bind_eq_bind, PMF.map_comp, Function.comp_def,
-    PMF.map_bind] at hlazy'
+  simp only [pmf_norm] at hlazy'
   rw [hlazy']
   have htable (table : Bool × G → G) :
       (OracleComp.interpret (fun q => PMF.pure (table q))
@@ -492,8 +490,7 @@ private theorem feistel3FixedGame_eq_realRoundHandler (f₁ : G → G)
     (fun d : PMF ((G → G) × (G → G)) =>
       d.bind fun fg => OracleComp.interpret (fun p => PMF.pure (feistel3 f₁ fg.1 fg.2 p)) program)
     hunif.symm
-  simpa only [feistel3FixedGame, splitBoolTable, Equiv.coe_fn_mk, PMF.bind_map,
-    PMF.bind_bind, Function.comp_def, PMF.monad_bind_eq_bind] using hbind
+  simpa only [pmf_norm, feistel3FixedGame, splitBoolTable, Equiv.coe_fn_mk] using hbind
 
 omit [AddGroup G] [Fintype G] [Nonempty G] in
 private theorem lookup_true_cons_false (u v : G) (y₂ : G) (cache : List ((Bool × G) × G)) :
@@ -540,9 +537,8 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
               (memoize (fun _ : Bool × G => PMF.uniformOfFintype G) (true, v)
                 (((false, p.1 + f₁ p.2), -p.2 + v) :: cache)).bind fun x =>
                   PMF.pure ((v, p.1 + f₁ p.2 + x.1), (x.2, (cache.lookup (true, v)).isSome)) := by
-        simp only [realRoundHandler, memoize_of_none _ _ _ hu,
-          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          PMF.bind_bind, PMF.pure_bind, hu, Option.isSome_none, Bool.false_or]
+        simp only [pmf_norm, realRoundHandler, memoize_of_none _ _ _ hu, hu, Option.isSome_none,
+          Bool.false_or]
         conv_rhs =>
           rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.addLeft p.2), PMF.bind_map]
         simp only [addLeft_apply, neg_add_cancel_left, Function.comp_def,
@@ -555,10 +551,8 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
                   (((true, v), -(p.1 + f₁ p.2) + w) ::
                     ((false, p.1 + f₁ p.2), -p.2 + v) :: cache,
                     (cache.lookup (true, v)).isSome)) := by
-        simp only [idealRoundHandler, hu, Option.isSome_none, Bool.false_or,
-          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          ← Probability.PMF.uniformOfFintype_prod, PMF.bind_bind, PMF.bind_map,
-          Function.comp_def]
+        simp only [pmf_norm, idealRoundHandler, hu, Option.isSome_none, Bool.false_or,
+          ← Probability.PMF.uniformOfFintype_prod]
       rw [hreal, hideal, PMF.bind_apply, PMF.bind_apply]
       refine tsum_congr fun v => congrArg (_ * ·) ?_
       cases hv : cache.lookup (true, v) with
@@ -591,8 +585,7 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
         have hv' : (((false, p.1 + f₁ p.2), -p.2 + v) :: cache).lookup (true, v) = none := by
           rw [lookup_true_cons_false, hv]
         rw [memoize_of_none _ _ _ hv']
-        simp only [Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          PMF.bind_bind, PMF.pure_bind]
+        simp only [pmf_norm]
         have heq_w :
             (PMF.uniformOfFintype G).bind (fun y₃ =>
               PMF.pure ((v, p.1 + f₁ p.2 + y₃),
@@ -676,12 +669,9 @@ private theorem run_idealRoundHandler_memoize {α : Type} (f₁ : G → G)
       exact ih r qc
     | none =>
       rw [memoize_of_none _ _ _ h, memoize_of_none _ _ _ h]
-      simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-        OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
-        Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-        PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
-      simp only [StateT.run, idealRoundHandler, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+      simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+        OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure]
+      simp only [pmf_norm, StateT.run, idealRoundHandler]
       refine congrArg (PMF.bind _) (funext fun vw => ?_)
       exact ih vw ((p, vw) :: qc)
 
@@ -1534,9 +1524,8 @@ and any `l₀, l₁, r₀ : G`. -/
 theorem eval_feistel3_feistel3CCAAttack (f₁ f₂ f₃ : G → G) (l₀ l₁ r₀ : G) :
     OracleComp.interpret (feistelStrongOracle (feistel3 f₁ f₂ f₃))
       (feistel3CCAAttack l₀ l₁ r₀) = PMF.pure true := by
-  simp only [feistel3CCAAttack, feistelStrongOracle, feistel3_apply, feistel3_symm_apply,
-    OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
+  simp only [pmf_norm, feistel3CCAAttack, feistelStrongOracle, feistel3_apply, feistel3_symm_apply,
+    OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure]
   have h1 :
       (l₁ - l₀ + (l₀ + f₁ r₀ + f₃ (r₀ + f₂ (l₀ + f₁ r₀)))) - f₃ (r₀ + f₂ (l₀ + f₁ r₀)) =
         l₁ + f₁ r₀ := by
@@ -1555,10 +1544,9 @@ ciphertext, so *every* bidirectional permutation `π : G × G ≃ G × G` is acc
 theorem eval_feistelStrongOracle_feistel3CCAAttack_self (π : G × G ≃ G × G) (l₀ r₀ : G) :
     OracleComp.interpret (feistelStrongOracle π) (feistel3CCAAttack l₀ l₀ r₀) =
       PMF.pure true := by
-  simp only [feistel3CCAAttack, feistelStrongOracle, sub_self, zero_add, Prod.mk.eta,
+  simp only [pmf_norm, feistel3CCAAttack, feistelStrongOracle, sub_self, zero_add, Prod.mk.eta,
     Equiv.symm_apply_apply, decide_true, OracleComp.interpret_bind, OracleComp.interpret_query,
-    OracleComp.interpret_pure, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
+    OracleComp.interpret_pure]
 
 omit [Nonempty G] in
 /-- At `l₀ = l₁`, the permutation-ideal game `idealStrongGame` accepts `feistel3CCAAttack l₀ l₀ r₀`
@@ -1595,9 +1583,8 @@ theorem eval_feistelStrongOracle_swap_feistel3CCAAttack_eq_false {l₀ l₁ l₂
   have hB2 : (l₁, r₀) ≠ (l₂, r₀) := fun h => h12 (congrArg Prod.fst h)
   have hne : -l₀ + r₀ ≠ -l₁ + r₀ := fun h =>
     h01 (neg_inj.mp (add_right_cancel h))
-  simp only [feistel3CCAAttack, feistelStrongOracle, Equiv.symm_swap,
+  simp only [pmf_norm, feistel3CCAAttack, feistelStrongOracle, Equiv.symm_swap,
     OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.pure_bind,
     Equiv.swap_apply_of_ne_of_ne hA1 hA2, Equiv.swap_apply_of_ne_of_ne hB1 hB2,
     Equiv.swap_apply_left, decide_eq_false hne]
 
@@ -1683,10 +1670,8 @@ theorem eval_independentTableStrongGame_feistel3CCAAttack (l₀ l₁ r₀ : G) :
             let lr₂ := decTable (vw₀.1, (l₁ - l₀) + vw₀.2)
             PMF.pure (decide (-vw₀.1 + lr₂.2 = -vw₁.1 + r₀)) := by
     rw [independentTableStrongGame, Probability.PMF.monad_bind_eq_bind, hprod]
-    simp only [feistel3CCAAttack, splitBoolTable, Equiv.coe_fn_symm_mk,
+    simp only [pmf_norm, feistel3CCAAttack, splitBoolTable, Equiv.coe_fn_symm_mk,
       OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
-      Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-      PMF.bind_map, PMF.bind_bind, PMF.pure_bind, Function.comp_def,
       Bool.cond_false, Bool.cond_true]
   rw [hsplit]
   have hinner (encTable : G × G → G × G) :
@@ -1820,9 +1805,7 @@ theorem idealStrongGame_feistel3CCAAttack_true_le {l₀ l₁ : G} (r₀ : G) (h0
         OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
         StateT.run_bind, StateT.run_pure]
       dsimp only [StateT.run, RandomPermutation.forgetfulAnswer]
-      simp only [List.lookup, beq_eq_false_iff_ne.mpr hp10,
-        Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-        PMF.bind_map, PMF.map_bind, PMF.pure_map, Function.comp_def]
+      simp only [pmf_norm, List.lookup, beq_eq_false_iff_ne.mpr hp10]
       rfl
     rw [hrun, PMF.bind_apply]
     have hvw₀ (vw₀ : G × G) :
@@ -2274,16 +2257,12 @@ private theorem realRoundHandler4_map_fst (f₁ f₄ : G → G)
   rcases st with ⟨cache, bad⟩
   cases q with
   | forward p =>
-    simp only [realRoundHandler4, lazyRoundHandler4, feistel4Query,
-      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
-      Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-      PMF.map_bind, PMF.pure_map]
+    simp only [pmf_norm, realRoundHandler4, lazyRoundHandler4, feistel4Query,
+      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure]
     rfl
   | inverse wz =>
-    simp only [realRoundHandler4, lazyRoundHandler4, feistel4Query,
-      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
-      Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-      PMF.map_bind, PMF.pure_map]
+    simp only [pmf_norm, realRoundHandler4, lazyRoundHandler4, feistel4Query,
+      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure]
     rfl
 
 private theorem feistel4StrongFixedGame_eq_realRoundHandler4 (f₁ f₄ : G → G)
@@ -2309,8 +2288,7 @@ private theorem feistel4StrongFixedGame_eq_realRoundHandler4 (f₁ f₄ : G → 
     OracleComp.interpret_interpret _ _ _
   rw [hcomp] at hlazy
   have hlazy' := congrArg (PMF.map Prod.fst) hlazy.symm
-  simp only [Probability.PMF.monad_bind_eq_bind, PMF.map_comp, Function.comp_def,
-    PMF.map_bind] at hlazy'
+  simp only [pmf_norm] at hlazy'
   rw [hlazy']
   have htable (table : Bool × G → G) :
       (OracleComp.interpret (fun q => PMF.pure (table q))
@@ -2343,8 +2321,7 @@ private theorem feistel4StrongFixedGame_eq_realRoundHandler4 (f₁ f₄ : G → 
       d.bind fun fg =>
         OracleComp.interpret (feistelStrongOracle (feistel4 f₁ fg.1 fg.2 f₄)) program)
     hunif.symm
-  simpa only [feistel4StrongFixedGame, splitBoolTable, Equiv.coe_fn_mk, PMF.bind_map,
-    PMF.bind_bind, Function.comp_def, PMF.monad_bind_eq_bind] using hbind
+  simpa only [pmf_norm, feistel4StrongFixedGame, splitBoolTable, Equiv.coe_fn_mk] using hbind
 
 /-- Ideal 4-round handler with bad flag: on `.forward p` draws `wz ← PMF.uniformOfFintype (G × G)`
 and reconstructs `v = wz.2 - f₄ wz.1`, `y₂ = -p.2 + v`, `y₃ = -u + wz.1`; on `.inverse wz` draws
@@ -2412,112 +2389,43 @@ private def inverseOutEquiv (f₁ : G → G) : G × G ≃ G × G where
   left_inv := fun ⟨u, r⟩ => by simp
   right_inv := fun ⟨l, r⟩ => by simp
 
-private theorem realRoundHandler4_forward_of_none (f₁ f₄ : G → G) (p : G × G)
-    (cache : List ((Bool × G) × G)) (hu : cache.lookup (false, p.1 + f₁ p.2) = none) :
-    realRoundHandler4 f₁ f₄ (.forward p) (cache, false) =
-      (PMF.uniformOfFintype G).bind fun v =>
-        (memoize (fun _ : Bool × G => PMF.uniformOfFintype G) (true, v)
-          (((false, p.1 + f₁ p.2), -p.2 + v) :: cache)).bind fun x =>
-            PMF.pure ((p.1 + f₁ p.2 + x.1, v + f₄ (p.1 + f₁ p.2 + x.1)),
-              (x.2, (cache.lookup (true, v)).isSome)) := by
-  simp only [realRoundHandler4, memoize_of_none _ _ _ hu,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, hu, Option.isSome_none, Bool.false_or]
-  conv_rhs =>
-    rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.addLeft p.2), PMF.bind_map]
-  simp only [addLeft_apply, neg_add_cancel_left, Function.comp_def,
-    Probability.PMF.uniformOfFintype_map_equiv]
+/-- On a forward query, the 4-round real handler is the 3-round real handler followed by the
+output bijection `forwardOutEquiv f₄`. -/
+private theorem realRoundHandler4_forward (f₁ f₄ : G → G) (p : G × G)
+    (st : List ((Bool × G) × G) × Bool) :
+    realRoundHandler4 f₁ f₄ (.forward p) st =
+      (realRoundHandler f₁ p st).map fun x => (forwardOutEquiv f₄ x.1, x.2) := by
+  rcases st with ⟨cache, bad⟩
+  simp only [pmf_norm, realRoundHandler4, realRoundHandler, forwardOutEquiv, Equiv.coe_fn_mk]
 
-private theorem idealRoundHandler4_forward_of_none (f₁ f₄ : G → G) (p : G × G)
-    (cache : List ((Bool × G) × G)) (hu : cache.lookup (false, p.1 + f₁ p.2) = none) :
-    idealRoundHandler4 f₁ f₄ (.forward p) (cache, false) =
-      (PMF.uniformOfFintype G).bind fun v =>
-        (PMF.uniformOfFintype G).bind fun w =>
-          PMF.pure ((w, v + f₄ w),
-            (((true, v), -(p.1 + f₁ p.2) + w) ::
-              ((false, p.1 + f₁ p.2), -p.2 + v) :: cache,
-              (cache.lookup (true, v)).isSome)) := by
-  simp only [idealRoundHandler4, hu, Option.isSome_none, Bool.false_or,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure]
-  rw [← Probability.PMF.uniformOfFintype_map_equiv (forwardOutEquiv f₄),
-    ← Probability.PMF.uniformOfFintype_prod, PMF.bind_map, PMF.bind_bind]
-  simp only [forwardOutEquiv, Equiv.coe_fn_mk, add_sub_cancel_right,
-    PMF.bind_map, Function.comp_def]
+/-- On a forward query, the 4-round ideal handler is the 3-round ideal handler followed by the
+output bijection `forwardOutEquiv f₄`. -/
+private theorem idealRoundHandler4_forward (f₁ f₄ : G → G) (p : G × G)
+    (st : List ((Bool × G) × G) × Bool) :
+    idealRoundHandler4 f₁ f₄ (.forward p) st =
+      (idealRoundHandler f₁ p st).map fun x => (forwardOutEquiv f₄ x.1, x.2) := by
+  rcases st with ⟨cache, bad⟩
+  simp only [pmf_norm, idealRoundHandler4, idealRoundHandler]
+  conv_lhs => rw [← Probability.PMF.uniformOfFintype_map_equiv (forwardOutEquiv f₄), PMF.bind_map]
+  simp only [forwardOutEquiv, Equiv.coe_fn_mk, add_sub_cancel_right, Function.comp_def]
 
+/-- The forward 4-round handlers agree on good states: both are the 3-round handlers followed by
+the same output bijection. -/
 private theorem agree_roundHandler4_forward (f₁ f₄ : G → G) (p : G × G)
     (cache cache' : List ((Bool × G) × G)) (ans : G × G) :
     realRoundHandler4 f₁ f₄ (.forward p) (cache, false) (ans, (cache', false)) =
       idealRoundHandler4 f₁ f₄ (.forward p) (cache, false) (ans, (cache', false)) := by
-  cases hu : cache.lookup (false, p.1 + f₁ p.2) with
-  | some y₂₀ =>
-    have hreal0 :
-        realRoundHandler4 f₁ f₄ (.forward p) (cache, false) (ans, (cache', false)) = 0 := by
-      refine (PMF.apply_eq_zero_iff _ _).mpr fun hmem => ?_
-      simp only [realRoundHandler4, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
-        PMF.mem_support_pure_iff] at hmem
-      obtain ⟨⟨y₂, c₁⟩, -, ⟨y₃, c₂⟩, -, heq⟩ := hmem
-      have h1 := congrArg (fun x => x.2.2) heq
-      simp [hu] at h1
-    have hideal0 :
-        idealRoundHandler4 f₁ f₄ (.forward p) (cache, false) (ans, (cache', false)) = 0 := by
-      refine (PMF.apply_eq_zero_iff _ _).mpr fun hmem => ?_
-      simp only [idealRoundHandler4, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
-        PMF.mem_support_pure_iff] at hmem
-      obtain ⟨wz, -, heq⟩ := hmem
-      have h1 := congrArg (fun x => x.2.2) heq
-      simp [hu] at h1
-    rw [hreal0, hideal0]
-  | none =>
-    rw [realRoundHandler4_forward_of_none f₁ f₄ p cache hu,
-      idealRoundHandler4_forward_of_none f₁ f₄ p cache hu, PMF.bind_apply, PMF.bind_apply]
-    refine tsum_congr fun v => congrArg (_ * ·) ?_
-    cases hv : cache.lookup (true, v) with
-    | some y₃₀ =>
-      simp only [Option.isSome_some]
-      have h1 :
-          ((memoize (fun _ : Bool × G => PMF.uniformOfFintype G) (true, v)
-            (((false, p.1 + f₁ p.2), -p.2 + v) :: cache)).bind fun x =>
-              PMF.pure ((p.1 + f₁ p.2 + x.1, v + f₄ (p.1 + f₁ p.2 + x.1)), (x.2, true)))
-            (ans, (cache', false)) = 0 := by
-        refine (PMF.apply_eq_zero_iff _ _).mpr fun hmem => ?_
-        rw [PMF.mem_support_bind_iff] at hmem
-        obtain ⟨⟨y₃, c₂⟩, -, hmem'⟩ := hmem
-        rw [PMF.mem_support_pure_iff] at hmem'
-        exact Bool.noConfusion (congrArg (fun x => x.2.2) hmem')
-      have h2 :
-          ((PMF.uniformOfFintype G).bind fun w =>
-            PMF.pure ((w, v + f₄ w),
-              (((true, v), -(p.1 + f₁ p.2) + w) ::
-                ((false, p.1 + f₁ p.2), -p.2 + v) :: cache, true)))
-            (ans, (cache', false)) = 0 := by
-        refine (PMF.apply_eq_zero_iff _ _).mpr fun hmem => ?_
-        rw [PMF.mem_support_bind_iff] at hmem
-        obtain ⟨w, -, hmem'⟩ := hmem
-        rw [PMF.mem_support_pure_iff] at hmem'
-        exact Bool.noConfusion (congrArg (fun x => x.2.2) hmem')
-      rw [h1, h2]
-    | none =>
-      simp only [Option.isSome_none]
-      have hv' : (((false, p.1 + f₁ p.2), -p.2 + v) :: cache).lookup (true, v) = none := by
-        rw [lookup_true_cons_false, hv]
-      rw [memoize_of_none _ _ _ hv']
-      simp only [Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-        PMF.bind_bind, PMF.pure_bind]
-      have heq_w :
-          (PMF.uniformOfFintype G).bind (fun y₃ =>
-            PMF.pure ((p.1 + f₁ p.2 + y₃, v + f₄ (p.1 + f₁ p.2 + y₃)),
-              (((true, v), y₃) :: ((false, p.1 + f₁ p.2), -p.2 + v) :: cache, false))) =
-          (PMF.uniformOfFintype G).bind (fun w =>
-            PMF.pure ((w, v + f₄ w),
-              (((true, v), -(p.1 + f₁ p.2) + w) ::
-                ((false, p.1 + f₁ p.2), -p.2 + v) :: cache, false))) := by
-        conv_rhs =>
-          rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.addLeft (p.1 + f₁ p.2)),
-            PMF.bind_map]
-        simp only [addLeft_apply, neg_add_cancel_left, Function.comp_def]
-      exact DFunLike.congr_fun heq_w (ans, (cache', false))
+  have hinj : Function.Injective fun x : (G × G) × (List ((Bool × G) × G) × Bool) =>
+      (forwardOutEquiv f₄ x.1, x.2) := by
+    intro x y h
+    simp only [Prod.mk.injEq, EmbeddingLike.apply_eq_iff_eq] at h
+    exact Prod.ext h.1 h.2
+  obtain ⟨vw, rfl⟩ := (forwardOutEquiv f₄).surjective ans
+  rw [realRoundHandler4_forward, idealRoundHandler4_forward,
+    Probability.PMF.map_apply_of_injective _ hinj (vw, (cache', false)),
+    Probability.PMF.map_apply_of_injective _ hinj (vw, (cache', false))]
+  exact (identicalUntilBad_roundHandler f₁).agree p (cache, false) (by simp) vw (cache', false)
+    (by simp)
 
 private theorem realRoundHandler4_inverse_of_none (f₁ f₄ : G → G) (wz : G × G)
     (cache : List ((Bool × G) × G)) (hv : cache.lookup (true, wz.2 - f₄ wz.1) = none) :
@@ -2527,9 +2435,8 @@ private theorem realRoundHandler4_inverse_of_none (f₁ f₄ : G → G) (wz : G 
           (((true, wz.2 - f₄ wz.1), -u + wz.1) :: cache)).bind fun x =>
             PMF.pure ((u - f₁ (wz.2 - f₄ wz.1 - x.1), wz.2 - f₄ wz.1 - x.1),
               (x.2, (cache.lookup (false, u)).isSome)) := by
-  simp only [realRoundHandler4, memoize_of_none _ _ _ hv,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind, hv, Option.isSome_none, Bool.false_or]
+  simp only [pmf_norm, realRoundHandler4, memoize_of_none _ _ _ hv, hv, Option.isSome_none,
+    Bool.false_or]
   conv_rhs =>
     rw [← Probability.PMF.uniformOfFintype_map_equiv (subLeftEquiv wz.1), PMF.bind_map]
   simp only [subLeftEquiv_apply, neg_sub, sub_add_cancel, Function.comp_def,
@@ -2610,8 +2517,7 @@ private theorem agree_roundHandler4_inverse (f₁ f₄ : G → G) (wz : G × G)
       have hu' : (((true, wz.2 - f₄ wz.1), -u + wz.1) :: cache).lookup (false, u) = none := by
         rw [lookup_false_cons_true, hu]
       rw [memoize_of_none _ _ _ hu']
-      simp only [Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-        PMF.bind_bind, PMF.pure_bind]
+      simp only [pmf_norm]
       have heq_r :
           (PMF.uniformOfFintype G).bind (fun y₂ =>
             PMF.pure ((u - f₁ (wz.2 - f₄ wz.1 - y₂), wz.2 - f₄ wz.1 - y₂),
@@ -2827,12 +2733,9 @@ private theorem map_run_idealRoundHandler4_bidirDedupStep {α : Type} (f₁ f₄
       | none =>
         rw [RandomPermutation.bidirDedupStep_forward_of_none h,
           RandomPermutation.forgetfulAnswer_forward_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
-          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          PMF.bind_bind, PMF.pure_bind, PMF.map_bind, PMF.bind_map]
-        simp only [StateT.run, idealRoundHandler4, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure]
+        simp only [pmf_norm, StateT.run, idealRoundHandler4]
         exact congrArg (PMF.bind _) (funext fun wz => ih wz (hst.forward p wz))
     | inverse wz =>
       cases h : RandomPermutation.invLookup qc wz with
@@ -2845,12 +2748,9 @@ private theorem map_run_idealRoundHandler4_bidirDedupStep {α : Type} (f₁ f₄
       | none =>
         rw [RandomPermutation.bidirDedupStep_inverse_of_none h,
           RandomPermutation.forgetfulAnswer_inverse_of_none h]
-        simp only [OracleComp.interpret_bind, OracleComp.interpret_query,
-          OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
-          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-          PMF.bind_bind, PMF.pure_bind, PMF.map_bind, PMF.bind_map]
-        simp only [StateT.run, idealRoundHandler4, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, Function.comp_def]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure]
+        simp only [pmf_norm, StateT.run, idealRoundHandler4]
         exact congrArg (PMF.bind _) (funext fun p => ih p (hst.inverse p wz))
 
 private theorem map_fst_run_idealRoundHandler4 (f₁ f₄ : G → G)
@@ -2918,45 +2818,28 @@ and range entries. -/
 private def IsGoodCache4 (Q : ℕ) (c : RandomPermutation.Cache (G × G)) : Prop :=
   c.Pairwise (fun x y => x.1 ≠ y.1) ∧ c.Pairwise (fun x y => x.2 ≠ y.2) ∧ c.length ≤ Q
 
-private theorem tsum_uniform_toOuterMeasure_hasUCollision_le
-    (d : PMF (Bool × RandomPermutation.Cache (G × G))) (Q : ℕ) :
-    (∑' f₁ : G → G, PMF.uniformOfFintype (G → G) f₁ *
-      d.toOuterMeasure
-        {x | IsGoodCache4 Q x.2 ∧ hasUCollision f₁ x.2 = true}) ≤
+omit [AddGroup G] in
+/-- Averaged over a uniform `f : G → G`, a good `Q`-bounded cache has a collision `coll f` with
+probability at most `Q.choose 2 / |G|`, given that bound with `c.length` for each good cache `c`. -/
+private theorem tsum_uniform_toOuterMeasure_goodCollision_le (Q : ℕ)
+    (coll : (G → G) → RandomPermutation.Cache (G × G) → Bool)
+    (hcoll : ∀ c, IsGoodCache4 Q c →
+      (PMF.uniformOfFintype (G → G)).toOuterMeasure {f | coll f c = true} ≤
+        c.length.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹)
+    (d : PMF (Bool × RandomPermutation.Cache (G × G))) :
+    (∑' f : G → G, PMF.uniformOfFintype (G → G) f *
+      d.toOuterMeasure {x | IsGoodCache4 Q x.2 ∧ coll f x.2 = true}) ≤
       Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ := by
   refine tsum_toOuterMeasure_of_pointwise_le (PMF.uniformOfFintype (G → G)) d
-    (fun f₁ x => IsGoodCache4 Q x.2 ∧ hasUCollision f₁ x.2 = true) _ fun x => ?_
+    (fun f x => IsGoodCache4 Q x.2 ∧ coll f x.2 = true) _ fun x => ?_
   by_cases hg : IsGoodCache4 Q x.2
   · have hsub :
-        {f₁ : G → G | IsGoodCache4 Q x.2 ∧ hasUCollision f₁ x.2 = true} ⊆
-          {f₁ : G → G | hasUCollision f₁ x.2 = true} := fun _ h => h.2
-    exact (MeasureTheory.measure_mono hsub).trans
-      ((toOuterMeasure_hasUCollision_le isDeltaUniversalHash_uniformOfFintype hg.1).trans
-        (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr (Nat.choose_le_choose 2 hg.2.2)) zero_le))
-  · have hemp :
-        {f₁ : G → G | IsGoodCache4 Q x.2 ∧ hasUCollision f₁ x.2 = true} = ∅ := by
-      ext f₁
-      simp [hg]
-    simp [hemp]
-
-private theorem tsum_uniform_toOuterMeasure_hasVCollision4_le
-    (d : PMF (Bool × RandomPermutation.Cache (G × G))) (Q : ℕ) :
-    (∑' f₄ : G → G, PMF.uniformOfFintype (G → G) f₄ *
-      d.toOuterMeasure
-        {x | IsGoodCache4 Q x.2 ∧ hasVCollision4 f₄ x.2 = true}) ≤
-      Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ := by
-  refine tsum_toOuterMeasure_of_pointwise_le (PMF.uniformOfFintype (G → G)) d
-    (fun f₄ x => IsGoodCache4 Q x.2 ∧ hasVCollision4 f₄ x.2 = true) _ fun x => ?_
-  by_cases hg : IsGoodCache4 Q x.2
-  · have hsub :
-        {f₄ : G → G | IsGoodCache4 Q x.2 ∧ hasVCollision4 f₄ x.2 = true} ⊆
-          {f₄ : G → G | hasVCollision4 f₄ x.2 = true} := fun _ h => h.2
-    exact (MeasureTheory.measure_mono hsub).trans
-      ((toOuterMeasure_hasVCollision4_le hg.2.1).trans
-        (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr (Nat.choose_le_choose 2 hg.2.2)) zero_le))
-  · have hemp :
-        {f₄ : G → G | IsGoodCache4 Q x.2 ∧ hasVCollision4 f₄ x.2 = true} = ∅ := by
-      ext f₄
+        {f : G → G | IsGoodCache4 Q x.2 ∧ coll f x.2 = true} ⊆ {f | coll f x.2 = true} :=
+      fun _ h => h.2
+    exact (MeasureTheory.measure_mono hsub).trans ((hcoll x.2 hg).trans
+      (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr (Nat.choose_le_choose 2 hg.2.2)) zero_le))
+  · have hemp : {f : G → G | IsGoodCache4 Q x.2 ∧ coll f x.2 = true} = ∅ := by
+      ext f
       simp [hg]
     simp [hemp]
 
@@ -3020,8 +2903,9 @@ private theorem tsum_uniform_toOuterMeasure_hasCollision4_le
             {x | IsGoodCache4 Q x.2 ∧ hasVCollision4 f₄ x.2 = true}) +
           (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹ := by
           simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, unif.tsum_coe, one_mul]
-      _ ≤ _ := add_le_add (add_le_add le_rfl (tsum_uniform_toOuterMeasure_hasVCollision4_le d Q))
-          le_rfl
+      _ ≤ _ := add_le_add (add_le_add le_rfl
+          (tsum_uniform_toOuterMeasure_goodCollision_le Q hasVCollision4
+            (fun _ hg => toOuterMeasure_hasVCollision4_le hg.2.1) d)) le_rfl
   calc ∑' f₁, unif f₁ * ∑' f₄, unif f₄ * d.toOuterMeasure {x | hasCollision4 f₁ f₄ x.2 = true}
       ≤ ∑' f₁, unif f₁ *
         (d.toOuterMeasure
@@ -3037,7 +2921,9 @@ private theorem tsum_uniform_toOuterMeasure_hasCollision4_le
     _ ≤ Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ +
         Q.choose 2 * (Fintype.card G : ℝ≥0∞)⁻¹ +
         (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹ :=
-        add_le_add (add_le_add (tsum_uniform_toOuterMeasure_hasUCollision_le d Q) le_rfl) le_rfl
+        add_le_add (add_le_add (tsum_uniform_toOuterMeasure_goodCollision_le Q hasUCollision
+          (fun _ hg => toOuterMeasure_hasUCollision_le isDeltaUniversalHash_uniformOfFintype hg.1)
+          d) le_rfl) le_rfl
     _ = 2 * (Q.choose 2 : ℝ≥0∞) * (Fintype.card G : ℝ≥0∞)⁻¹ +
         (Q.choose 2 : ℝ≥0∞) * (Fintype.card (G × G) : ℝ≥0∞)⁻¹ := by ring
 

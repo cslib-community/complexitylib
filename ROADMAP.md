@@ -1,7 +1,7 @@
 # Roadmap
 
-The directions Complexitylib aims to cover, grouped by area.
-This file lists directions only: status, progress and completion notes live on the linked issues and pull requests, module docstrings describe what is proved, and the [README](README.md) and the curated formal abstracts present completed results.
+The directions cslib-frontier aims to cover, grouped by area.
+This file lists directions only: status, progress and completion notes live on the linked issues and pull requests, module docstrings describe what is proved, and the [results inventory](results/README.md) collects completed named results.
 A PR edits this file only when it opens or closes a direction.
 Each entry states its direction's scope in at most a few sentences, one sentence per line.
 A direction leaves this file only when it is completed or deliberately dropped, and there is no deferred tier.
@@ -107,7 +107,7 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
   The homomorphic property of Definition 15.14 needs an exact or statistical-closeness formulation, since its exact distributional condition fails for the implemented sampler.
 - **Garbled circuits and Yao's protocol** ([#3236](https://github.com/cslib-community/cslib-frontier/issues/3236)): Prove exact correctness and concrete simulation privacy of point-and-permute garbling for arbitrary-basis circuits, with privacy bounded by the sum of `n + size` PRF advantages.
   Prove semi-honest security of Yao's two-party protocol, with oblivious transfer realized by a protocol through an advantage-preserving composition theorem instead of an ideal batched OT oracle, and an asymptotic PPT statement from a word-level pseudorandom function.
-  Extensions are output to both parties, free-XOR and half-gates.
+  Extensions are output to both parties, and polynomial-time free-XOR and half-gates privacy.
 - **General**: Reusable adaptive reductions, public-key encryption, universal-instance zero knowledge, hard-core predicates and hardness amplification, and connections to learning and average-case hardness.
 
 ### Zero-knowledge proof systems toward libzk ([#643](https://github.com/cslib-community/cslib-frontier/issues/643))
@@ -185,18 +185,19 @@ Containments, separations, closure properties, complete problems and reductions 
   Koucký–Mertz–Pyne–Sami's [*Collapsing Catalytic Classes*](https://arxiv.org/abs/2504.08444) with its parameter ranges and oracle promises: `CL = CNL = CPrL = CBPL`, compress-or-compute simulation, catalytic Savitch and complementation, randomized space–catalyst tradeoffs, hierarchy collapses and lossy-space consequences.
 - **Robust catalytic extensions** ([#2521](https://github.com/cslib-community/cslib-frontier/issues/2521)): the Koucký–Mertz–Sami [robust catalytic extensions](https://arxiv.org/abs/2605.09648), tracked separately from KMPS.
   Their broader collapse is conditional on an explicit circuit-hardness assumption, and their resetting-error and time regimes are kept distinct from the unconditional KMPS results.
-- **Randomized logspace** ([#459](https://github.com/cslib-community/cslib-frontier/issues/459), [#474](https://github.com/cslib-community/cslib-frontier/issues/474)): two-sided `BPL` amplification, the random-walk proof of `USTCON ∈ RL`, Nisan's generator with its read-once fooling theorem ([#3187](https://github.com/cslib-community/cslib-frontier/issues/3187)), space-efficient computation and configuration-graph bridge, `BPL ⊆ L²`, and Saks–Zhou's `BPL ⊆ L^{3/2}`.
-  The Saks–Zhou iteration as pure mathematics is [#3247](https://github.com/cslib-community/cslib-frontier/issues/3247), a milestone of [#474](https://github.com/cslib-community/cslib-frontier/issues/474).
-  The preprint route to native `RL = L` is [#1444](https://github.com/cslib-community/cslib-frontier/issues/1444), with its estimator in [#1721](https://github.com/cslib-community/cslib-frontier/issues/1721).
+- **Classical randomized-space proof reuse** ([#1444](https://github.com/cslib-community/cslib-frontier/issues/1444)): audit and simplify the existing `RL ⊆ NL ⊆ DSPACE(log² n)` proof in [LogSpace/Savitch.lean](CslibFrontier/Computability/Complexity/Classes/LogSpace/Savitch.lean).
+  Reuse support semantics, midpoint reachability, compact configuration graphs and native space simulation; share lemmas and refactor real clients while preserving encodings and workspace bounds.
+  `RL = L` remains unresolved; this classical-first milestone has no preprint-estimator dependency.
+- **Further classical randomized logspace** ([#459](https://github.com/cslib-community/cslib-frontier/issues/459)): two-sided `BPL` amplification, the random-walk proof of `USTCON ∈ RL`, Nisan's generator with its read-once fooling theorem ([#3187](https://github.com/cslib-community/cslib-frontier/issues/3187)), space-efficient computation and configuration-graph bridge, `BPL ⊆ DSPACE(log² n)`, and Saks–Zhou's `BPL ⊆ DSPACE(log^{3/2} n)`.
+  The Saks–Zhou iteration as pure mathematics is [#3247](https://github.com/cslib-community/cslib-frontier/issues/3247); these two-sided results are separate from the one-sided Savitch milestone.
 - **Reingold:** a symmetric-machine model of SL, and the edge-list encoding of USTCON by a logspace reduction.
 - **Williams's `TIME[t] ⊆ SPACE[√(t log t)]`** ([#888](https://github.com/cslib-community/cslib-frontier/issues/888)): the native inclusion for arbitrary injective input encodings and every `t(n) ≥ n`, without time constructibility, via Tree Evaluation.
-  The paper's time–space separation corollaries (including for linear space), a curated headline abstract with independent review, Cook–Mertz malformed-input handling and the refined `O(ℓ + H log(ℓ + 2))` bound are [#2855](https://github.com/cslib-community/cslib-frontier/issues/2855).
+  The paper's time–space separation corollaries (including for linear space), Cook–Mertz malformed-input handling and the refined `O(ℓ + H log(ℓ + 2))` bound are [#2855](https://github.com/cslib-community/cslib-frontier/issues/2855).
 - **Time–space lower bounds for nondeterministic linear time** ([#2896](https://github.com/cslib-community/cslib-frontier/issues/2896)): the Arora–Barak bound `NTIME(n) ⊄ TISP(n^1.2, n^0.2)` by virtual padding and the Lipton–Viglas `n^(√2 − ε)` form, from the speedup and slowdown lemmas for `TISP` and `Σ₂TIME`.
   Beyond these: the textbook `√(t·s)` speedup, the golden-ratio deterministic bound of Fortnow, Lipton, van Melkebeek and Viglas, and the transfer to SAT through a quasi-linear-size Cook–Levin reduction.
 - **Alternating classes:** alternating time and space classes and bounded-alternation characterizations of PH; sharp bounds for sublinear space, distinct from polynomial-space simulation.
 - **Alternating logspace, `P ⊆ AL`** ([#2873](https://github.com/cslib-community/cslib-frontier/issues/2873)): play the circuit-value game on the tableau of a polynomial-time machine in logarithmic space.
   This needs a word game machine whose round reads the input from the input tape and keeps only the `O(log n)`-bit wire claim on its work tape.
-  The direction includes adding `AL = P` to the alternation abstract.
 - **Pebble games and space lower bounds** ([#2995](https://github.com/cslib-community/cslib-frontier/issues/2995)): black, black-white and reversible pebbling on digraphs, with exact prices and register evaluation.
   The direction covers Bennett's game on paths ([#3163](https://github.com/cslib-community/cslib-frontier/issues/3163)), Li–Tromp–Vitányi's reachable-configuration characterization and erasure and time–space trade-offs, including whether `3 ^ k` is optimal for `k + 1` pebbles ([#3199](https://github.com/cslib-community/cslib-frontier/issues/3199)), the Hopcroft–Paul–Valiant `O(n / log n)` bound with the matching Paul–Tarjan–Celoni family, and Gilbert–Tarjan and Lengauer–Tarjan trade-offs.
 - **Deeper consequences of a Boolean-hierarchy collapse:** Kadin's sparse `S` with `coNP ⊆ NP^S`, and the collapse of `PH` into `P^{NP^{NP}[O(log n)]} ⊆ Δ₃ᴾ`, which follows from results of Wagner and of Chang and Kadin, not from Kadin's 1988 argument (see his erratum).
@@ -272,7 +273,7 @@ In dependency order:
 - **Nondefinability applications** ([locality track](https://github.com/cslib-community/cslib-frontier/issues/3015), [#3483](https://github.com/cslib-community/cslib-frontier/issues/3483)): game-free locality proofs for connectivity, acyclicity and being a tree; transitive closure and reachability, with an exponential lower bound on the locality radius and FO ⊊ FO(TC) on unordered graphs; then Libkin's balanced binary trees and same generation, planarity, Hamiltonicity and `k`-colorability for `k ≥ 3`.
 - **Undecidability in the finite** ([#2886](https://github.com/cslib-community/cslib-frontier/issues/2886)): Trakhtenbrot's theorem over any vocabulary with a binary relation symbol (Libkin, Theorem 9.2), transferred from raw relational sentences to Mathlib's `L.Sentence` through a computable `Primcodable` bridge.
 - **Logic and automata on words** ([#2885](https://github.com/cslib-community/cslib-frontier/issues/2885)): Büchi–Elgot–Trakhtenbrot (MSO = regular on finite words), FO[<] ⊊ MSO, and FO[<] = star-free = aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is [#3075](https://github.com/cslib-community/cslib-frontier/issues/3075) and FO ⇒ star-free, by composition of rank-`k` types, is [#3469](https://github.com/cslib-community/cslib-frontier/issues/3469)), with decidability of first-order definability for regular languages.
-  Homomorphic-image closure of regular languages (upstream to cslib), the non-elementary formula-to-automaton lower bound, Büchi's theorem for ω-words (S1S), and MSO on finite trees (Thatcher–Wright, Doner) and infinite trees (Rabin, S2S).
+  Homomorphic-image closure of regular languages (upstream to CSLib), the non-elementary formula-to-automaton lower bound, Büchi's theorem for ω-words (S1S), and MSO on finite trees (Thatcher–Wright, Doner) and infinite trees (Rabin, S2S).
 - **Asymptotic probabilities** ([#2967](https://github.com/cslib-community/cslib-frontier/issues/2967)): 0-1 laws for `G(n, 1/2)` and for uniform structures over finite relational vocabularies, extended to constant edge probabilities, unlabelled structures and classes defined by parametric axioms such as the simple-graph axioms.
   Then the Kolaitis–Vardi laws for fixed-point and finite-variable infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit initialization, auxiliary relations and domain conventions; invariant-preservation rules and reachability in DynFO as a target.
@@ -312,8 +313,8 @@ Define logspace and DLOGTIME uniformity with explicit gate-address, direct-conne
   Also W[2]-completeness of Dominating Set, short Turing machine acceptance, `W[P]` and the A-hierarchy.
 - **Exact exponential algorithms** ([#3013](https://github.com/cslib-community/cslib-frontier/issues/3013)): the Bellman–Held–Karp dynamic program for TSP, correct against brute force in `n² · 2ⁿ` unit-cost operations and deciding `TSP` and `HamCycle`, and inclusion–exclusion counting of Hamiltonian paths (Karp; Bax) in `2ⁿ · poly(n)` time and polynomial space, with the space bound in a model that measures it.
   Also machine-level certificates for these algorithms, and further exact algorithms such as subset convolution and inclusion–exclusion colouring.
-- **Exponential-time SAT** ([#894](https://github.com/cslib-community/cslib-frontier/issues/894)): Schöning, PPZ and PPSZ on the randomized word RAM with exact laws, amplification and time bounds, and a curated abstract for Schöning.
-  PPZ and PPSZ abstracts and the uniform `o(n)` forms of the PPSZ bounds, with `w` growing in `n`, are optional.
+- **Exponential-time SAT** ([#894](https://github.com/cslib-community/cslib-frontier/issues/894)): Schöning, PPZ and PPSZ on the randomized word RAM with exact laws, amplification and time bounds.
+  The uniform `o(n)` forms of the PPSZ bounds, with `w` growing in `n`, are optional.
   Also further fine-grained reductions and consequences of ETH, SETH and other named hypotheses.
 - **APSP class** ([#3076](https://github.com/cslib-community/cslib-frontier/issues/3076)): equivalences of APSP with the (min,+) product, negative triangle, minimum-weight cycle, replacement paths, metricity and (min,+) product verification (Vassilevska Williams–Williams), and with radius and median (Abboud–Grandoni–Vassilevska Williams, SODA 2015).
   Also `-∞` weights, general (min,⊙) structures and output-sensitive listing (Vassilevska Williams–Williams Theorem 4.3) for negative triangle, word-RAM realizations with bit-length costs and Kerr's `Ω(n³)` bound for (min,+) straight-line programs; Bellman–Ford with negative-cycle reporting is [#3053](https://github.com/cslib-community/cslib-frontier/issues/3053).
@@ -555,8 +556,7 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 - **Chain decompositions** ([#3371](https://github.com/cslib-community/cslib-frontier/issues/3371)): for finite posets, Mirsky's theorem, Dilworth's theorem by Fulkerson's reduction to König's theorem, and a Hopcroft–Karp minimum chain cover with an `O(n^{5/2})` charged bound.
   Also the Greene–Kleitman theorem on `k`-chain and `k`-antichain families, Dilworth's theorem for infinite posets of finite width by compactness, the perfection of comparability graphs and their complements, weighted versions, a sparse entry point that charges building the comparability lists, and a RAM-model or Turing-machine realization of the chain-cover solver.
 - **Global minimum cut** ([#3369](https://github.com/cslib-community/cslib-frontier/issues/3369)): Karger's and Karger–Stein's contraction algorithms with their per-cut bounds and the `C(n, 2)` bound on the number of minimum cuts ([#3489](https://github.com/cslib-community/cslib-frontier/issues/3489)), and Stoer–Wagner via maximum adjacency orderings in `O(n³)` and `O(n m + n² log n)` time and over real weights.
-  Also Nagamochi–Ibaraki sparse certificates, Karger's near-linear algorithm, the `O((2n)^(2α))` bound on `α`-minimal cuts, the enumeration and cactus representation of all minimum cuts, and Queyranne's symmetric submodular minimization.
-  Derive the untracked Karger theorems from the block-tracking ones ([#3539](https://github.com/cslib-community/cslib-frontier/issues/3539)).
+  Also Nagamochi–Ibaraki sparse certificates for `k`-edge-connectivity, Karger's near-linear algorithm, the `O((2n)^(2α))` bound on `α`-minimal cuts, the enumeration and cactus representation of all minimum cuts, and Queyranne's symmetric submodular minimization.
 - **Gomory–Hu trees** ([#3422](https://github.com/cslib-community/cslib-frontier/issues/3422)): existence of cut-equivalent trees, flow-equivalence, the minimum-cut triangle inequality and the `n - 1` bound on distinct minimum-cut values, and Gusfield's construction with `n - 1` Edmonds–Karp calls and a charged running time ([#3285](https://github.com/cslib-community/cslib-frontier/issues/3285), [#3320](https://github.com/cslib-community/cslib-frontier/issues/3320)).
   The construction should return the tree's edge weights from the maximum-flow values, and the theory should cover real-valued capacities.
 - **Push–relabel maximum flow** ([#3373](https://github.com/cslib-community/cslib-frontier/issues/3373)): preflows, valid labelings, optimality at termination with a gap minimum cut, and the operation bounds of the generic Goldberg–Tarjan algorithm with an executable scheduler.
@@ -589,6 +589,9 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
   Also NP-hardness of the decision version (Karp, within [#2904](https://github.com/cslib-community/cslib-frontier/issues/2904)), even with unit weights by reduction from vertex cover, and a polynomial-time certificate for the heuristic with an executable shortest-path oracle.
 - **Metric k-center** ([#3281](https://github.com/cslib-community/cslib-frontier/issues/3281)): Gonzalez's farthest-first 2-approximation with a machine-level running time, and its matching hardness: the combinatorial dominating-set gap, NP-completeness of dominating set on encoded graphs ([#3416](https://github.com/cslib-community/cslib-frontier/issues/3416)), and that a polynomial-time `ρ`-approximation with `ρ < 2` implies `P = NP` ([#3515](https://github.com/cslib-community/cslib-frontier/issues/3515)).
   Also the Hochbaum–Shmoys threshold algorithm, k-supplier and k-median.
+- **State-space search** ([#3669](https://github.com/cslib-community/cslib-frontier/issues/3669)): search problems and two-player games given implicitly by actions, results and goal or terminal tests, as in Russell and Norvig's *Artificial Intelligence: A Modern Approach*.
+  Generic best-first search over an abstract frontier with its uninformed instances, A* with admissible and consistent heuristics, and minimax with alpha-beta pruning.
+  Costs are node expansions and generations counted in CSLib's query model, including the bound that A* with a consistent heuristic expands each state at most once.
 
 ### Sorting and selection
 
@@ -601,7 +604,7 @@ Coordinate native graph-algorithm work with [CSLib's graph-algorithm directions]
 
 - **Competitive-analysis framework:** request sequences, online strategies, offline optima and competitive ratios with additive constants, distinguishing deterministic and randomized strategies and oblivious and adaptive adversaries.
   Compare algorithms in the same action and cost model, including initialization.
-- **Adaptive search trees** ([#3143](https://github.com/cslib-community/cslib-frontier/issues/3143)): for splay trees, the Access Lemma with arbitrary positive weights, the Balance, Static Optimality, Static Finger and Working Set theorems with explicit constants, the update bounds (insertion, deletion, join and split), Sleator–Tarjan's Unified Theorem and Cole's Dynamic Finger theorem; and a BST access-and-rotation model with Wilber-style lower bounds.
+- **Adaptive search trees** ([#3143](https://github.com/cslib-community/cslib-frontier/issues/3143)): for splay trees, the Access Lemma with arbitrary positive weights, the Balance, Static Optimality, Static Finger and Working Set theorems with explicit constants, the update bounds, Sleator–Tarjan's Unified Theorem and Cole's Dynamic Finger theorem; and a BST access-and-rotation model with Wilber-style lower bounds.
   State dynamic optimality as a conjectural research target with explicit strategy and sequence quantifiers.
 - **Beyond deterministic ski rental and list update** ([#3057](https://github.com/cslib-community/cslib-frontier/issues/3057), [#3492](https://github.com/cslib-community/cslib-frontier/issues/3492)): randomized strategies against oblivious and adaptive adversaries; randomized ski rental with the tight discrete ratio `1/(1 - (1 - 1/B)^B) ≤ e/(e-1)` (upper and lower bounds), continuous-time ski rental, and the asymptotic `e/(e-1)` lower bound with an additive constant; randomized list update (BIT, COMB) and list update with insertions and deletions.
   Also randomized paging (marking, `H_k`), which needs a behavioural or bounded-horizon variant of countably supported randomized strategies.
@@ -703,7 +706,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 
 - **Efficient universal simulation** ([#800](https://github.com/cslib-community/cslib-frontier/issues/800)): A universal function that runs in time `O(N + poly(D, M) · (t + 1) log(t + 2))`, for encoded input length `N`, description length `D` and largest input symbol `M`, with a storage bound in terms of the simulated machine's space rather than its time.
   Both a clocked form and an unclocked form that runs until the simulated machine halts are in scope.
-- **Plain computability** ([#862](https://github.com/cslib-community/cslib-frontier/issues/862)): Complete the plain calculus ([#608](https://github.com/cslib-community/cslib-frontier/issues/608)), delete the tidy calculus, keeping only a machine-level kernel inside the Machines layer, and switch the abstract bridges to the shared predicate.
+- **Plain computability** ([#862](https://github.com/cslib-community/cslib-frontier/issues/862)): Complete the plain calculus ([#608](https://github.com/cslib-community/cslib-frontier/issues/608)) and delete the tidy calculus, keeping only a machine-level kernel inside the Machines layer.
 - **Certificate APIs and automation** ([#1155](https://github.com/cslib-community/cslib-frontier/issues/1155)): Predictable certificate search, with fixed heartbeat budgets on regression goals, failures that name the subterm lacking a certificate, and cheap syntax-directed composition for glue code, using Cook–Levin and GGM as regression clients.
   Improve configuration views, tape partitions and handoff identities only where several clients benefit, keeping machine transitions out of global simp.
 - **Certificate coverage** ([#1155](https://github.com/cslib-community/cslib-frontier/issues/1155)): Infer encodings for ordinary functional expressions through constructor, projection, lookup and composition rules, and generalize list, bounded-table, cache and nested-loop invariants where clients need them.
@@ -711,7 +714,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **Certified PRG stretching** ([#2784](https://github.com/cslib-community/cslib-frontier/issues/2784)): Certify PRG stretching with seed length, rounds and generator cost kept separate.
   A related target is the adaptive arbitrary-word cipher with its hash-then-MAC/EtM construction ([#2749](https://github.com/cslib-community/cslib-frontier/issues/2749)).
 - **Mathlib TM2:** Sublinear work-space comparisons and a linear-space forward simulation.
-- **Single-tape lower bounds** ([#2884](https://github.com/cslib-community/cslib-frontier/issues/2884)): Crossing-sequence lower bounds for cslib `SingleTapeTM` deciders, including the quadratic palindrome lower bound with a matching `O(n²)` single-tape decider.
+- **Single-tape lower bounds** ([#2884](https://github.com/cslib-community/cslib-frontier/issues/2884)): Crossing-sequence lower bounds for CSLib `SingleTapeTM` deciders, including the quadratic palindrome lower bound with a matching `O(n²)` single-tape decider.
   A linear-time multi-tape palindrome decider gives the one-tape/two-tape time separation.
   The gap theorem that single-tape deciders in time `o(n log n)` accept only regular languages ([#2965](https://github.com/cslib-community/cslib-frontier/issues/2965)), and its nondeterministic analogue under the accept measure.
 - **Generic RAM:** Uniform arbitrary-program dispatch with general width-selection and input-fit theorems, and simulation of operations by programs over smaller bases.
@@ -735,6 +738,12 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **Perfect hashing** ([#3276](https://github.com/cslib-community/cslib-frontier/issues/3276)): the static FKS two-level table over typed cells, with 3-probe lookups, at most `5n + 2` cells, and construction in expected `O(n)` seed draws and hash evaluations.
   Its word-RAM realization with `w`-bit seeds and headers, charged bucketing and layout, an unbounded Las Vegas construction and a bridge to `w`-bit cell probes.
   FKS's `k x mod p mod s` family with its `n + o(n)` refinement and deterministic construction, dynamic perfect hashing (Dietzfelbinger et al.), and the Fredman–Komlós lower bound on the description size of perfect hash families.
+- **Ropes** ([#3670](https://github.com/cslib-community/cslib-frontier/issues/3670)): a persistent sequence over an arbitrary element type, stored as an AVL-balanced binary tree with bounded non-empty chunks at its leaves and verified against `List`.
+  Indexing, concatenation by join and positional splitting, with insertion, range erasure, extraction and replacement derived from split and join.
+  Explicit cost bounds in `TimeM` on the same definitions, counting internal nodes inspected and elements copied: join linear in the height difference and split logarithmic in the length.
+- **B-trees** ([#3674](https://github.com/cslib-community/cslib-frontier/issues/3674)): comparison bounds for B-tree operations in CSLib's query model, with linear and binary in-node search, and the `⌈log₂(n + 1)⌉` comparison lower bound for search.
+  Read-only operations behind a node-access oracle, whose query counts equal the node-visit counts.
+  B+-trees, with only separator keys in interior nodes and every entry in a leaf: structure, queries, updates, bulk loading and the same cost bounds.
 
 ### Parallel, external-memory and distributed models
 
@@ -743,7 +752,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **Memory hierarchies:** External-memory and ideal-cache models with explicit capacity and block-size parameters, with scanning, B-tree operations, blocked matrix multiplication and cache-oblivious sorting as clients.
   Connect arithmetic-step, memory-access and cache-miss bounds through concrete realizations, including replacement and initialization conventions.
 - **Distributed complexity:** LOCAL and CONGEST models with explicit identifiers, round, message-size and randomness conventions, with locality lower bounds, communication-to-round reductions and corresponding algorithmic examples.
-  Targets include general graphs with port numbering, Linial's `O(Δ²)` colouring, `(Δ + 1)`-colouring and MIS on bounded-degree graphs, CONGEST message bounds, and randomized LOCAL algorithms such as Luby's MIS.
+  Targets include general graphs with port numbering, Linial's `O(Δ²)` colouring, `(Δ + 1)`-colouring and MIS on bounded-degree graphs, CONGEST message bounds, and randomized LOCAL algorithms.
 - **Luby's MIS** ([#3270](https://github.com/cslib-community/cslib-frontier/issues/3270)): the random-priority variant of Luby's algorithm with Las Vegas correctness, the half-edge removal lemma, `O(log n)` phases except with probability `n^-c`, the expected phase count, and a LOCAL message-passing formalization with `O(log n)` rounds.
   Luby's original marking algorithm with its pairwise-independent analysis and NC derandomization, Ghaffari's `O(log Δ) + poly(log log n)` bound, and the Kuhn–Moscibroda–Wattenhofer lower bounds.
 - **Locality on cycles and paths** ([#3009](https://github.com/cslib-community/cslib-frontier/issues/3009)): Cole–Vishkin colouring, Linial's `log*` lower bound, and round bounds of the form `(log* n) / 2 + c` for 3-colouring and MIS on cycles, with matching upper and lower constants.
@@ -766,13 +775,13 @@ Use a growing, source-pinned sample of papers, including some chosen after an AP
 - **CNF evaluation certificates:** `fun_prop` certificates for evaluating literals, clauses and formulas under a polynomial-time assignment, so that clients stop passing `CNF.eval`, `Clause.eval` and `Literal.eval` to `fun_prop` as unfolding hints.
 - **Indicator-expectation and conversion lemmas:** Factor the indicator-expectation identities from PCP's second-moment calculation, and recurring cardinality and logarithm conversions, once a second client benefits.
 - **Divide-and-conquer recurrences** ([#3042](https://github.com/cslib-community/cslib-frontier/issues/3042)): A master theorem over `ℕ` with explicit constants for inequality recurrences in all three polynomial cases, with `IsBigO` forms, matching `Θ` bounds for equality recurrences, and case 3 under the general regularity condition.
-  Move hand-solved recurrences onto it where the generic constant suffices, keeping cslib's sharper merge-sort bound and the halving lemma, the sharp tool for `b = 2`.
+  Move hand-solved recurrences onto it where the generic constant suffices, keeping CSLib's sharper merge-sort bound and the halving lemma, the sharp tool for `b = 2`.
 
 ### OpenAI math results ([#1002](https://github.com/cslib-community/cslib-frontier/issues/1002))
 
 Review Lance Fortnow's [expository rewrites](https://github.com/fortnow/AI-Papers) of the OpenAI math papers and his [TCS catalogue](https://lance.fortnow.com/openai-math-tcs.htm) of the openai/math release, and extract the in-scope results, both headline theorems and minor lemmas useful in their own right.
-Prove each against Complexitylib's definitions from the cited manuscript's exact statement with its version pinned, labelling unrefereed results; a source formalization is a reference, not evidence.
-The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptation with attribution is permitted; the rewrites state no license and are only read and credited.
+Prove each against cslib-frontier's definitions from the cited manuscript's exact statement with its version pinned, labelling unrefereed results; a source formalization is a reference, not evidence.
+The openai/math formalizations are Apache 2.0, as is cslib-frontier, so adaptation with attribution is permitted; the rewrites state no license and are only read and credited.
 
 - **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)): A `#k`-SAT model counter running in time `2^{O_k(n log log n / √log n)}` at arbitrary density, by recursive tensor contraction.
   The intended route combines the fixed-density bound `2^{O_{k,D}(n / √log n)}` (Theorem D.1 with `ℓ = 1`) with the Lemma D.2 construction, applied natively to the model-counter interface.
@@ -783,5 +792,4 @@ The openai/math formalizations are Apache 2.0, as is Complexitylib, so adaptatio
 ## Documentation and repository
 
 - **The guide** ([#585](https://github.com/cslib-community/cslib-frontier/issues/585)): A chapter per area, including Foundations (bit strings, Fourier analysis, PMF and `ProbComp`, codes), proof complexity, descriptive complexity, and Word RAM and algorithms, reusing checked examples.
-- **Curated formal abstracts:** Improve readability, and compare each changed abstract with its final source statements.
 - **Archive `complexitylib-v1`:** Archive the repository once its remaining work is dispositioned.

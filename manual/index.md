@@ -24,7 +24,7 @@ Use the [model map](model-map.md) to locate an interface, the
 4. What does the available development record show about automation, human direction, agent coordination, review, revisions, timing, build cost, and failures?
 5. What evidence is reproducible and potentially publishable, and what remains a private, incomplete, or observational record?
 
-The coverage unit is a model family or behavior-changing variant, not every mathematical declaration. The census records 3,896 library Lean files and 1,094,225 physical lines, plus 1,230 test files and 76 abstract files. The maintained model map contains 115 machine/class/resource entries, 92 circuit/logic/information-access entries, 33 program/crypto entries and 25 RAM/specification/algorithm entries. The original survey associated those entries with 389 distinct source paths. Entries include interfaces as well as models; the count is not a claim of mathematical independence. Existing scope limitations remain visible.
+The coverage unit is a model family or behavior-changing variant, not every mathematical declaration. The census records 3,896 library Lean files and 1,094,225 physical lines, plus 1,230 test files and 76 formal-abstract files (the abstracts were retired on 2026-11-08). The maintained model map contains 115 machine/class/resource entries, 92 circuit/logic/information-access entries, 33 program/crypto entries and 25 RAM/specification/algorithm entries. The original survey associated those entries with 389 distinct source paths. Entries include interfaces as well as models; the count is not a claim of mathematical independence. Existing scope limitations remain visible.
 
 ## Chapters
 
@@ -32,7 +32,7 @@ The coverage unit is a model family or behavior-changing variant, not every math
 - [Circuits, logic, and information-access models](circuits-logic-and-other-models/index.md): circuits and formulas, algebraic and quantum variants, branching programs, decision/query/communication models, finite-model theory, learning and proof systems.
 - [Probabilistic programs and cryptography](programs-crypto-and-probability/index.md): free programs, oracle/state semantics, native efficiency, security games, reductions and construction theorems.
 - [Algorithms, memory, and data structures](algorithms-and-memory/index.md): RAM variants, costed specifications, refinement, memory/oracle implementations, streaming and online models, memory-access costs, and representative algorithm endpoints.
-- [Design and assurance](design-and-assurance/index.md): architecture, compositional proof APIs, automation, reuse/upstream strategy, testing, trusted boundaries, abstracts and comparator contracts.
+- [Design and assurance](design-and-assurance/index.md): architecture, compositional proof APIs, automation, reuse/upstream strategy, testing, trusted boundaries, the results registry and the retired formal abstracts and comparator contracts.
 - [Automated development history](development-history/index.md): repository chronology, transcript corpus, timing methodology, case studies, validation history and limits of attribution.
 - [Primary sources](sources.md): canonical bibliography and evidence provenance.
 

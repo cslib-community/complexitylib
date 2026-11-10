@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Probabilistic.UniformNat
 import Mathlib.Algebra.Order.Floor.Ring
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Tactic.PolyTime.Init
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # An expanding grid of entropy guesses
@@ -265,10 +266,8 @@ theorem exists_valid (n sourceBits bound : ℕ) {observationEntropy labelEntropy
         mul_le_mul_of_nonneg_right hone hDr.le
     exact_mod_cast (show (second : ℝ) + 4 ≤ D by linarith only [hsecond, hgap', h])
   have hsecond_mod : second < D := by lia
-  have hquot : (first * D + second) / D = first := by
-    rw [Nat.mul_comm first D, Nat.mul_add_div hD, Nat.div_eq_of_lt hsecond_mod, Nat.add_zero]
-  have hrem : (first * D + second) % D = second := by simp only [Nat.mul_add_mod',
-    Nat.mod_eq_of_lt hsecond_mod]
+  have hquot : (first * D + second) / D = first := Nat.mul_add_div_of_lt first hsecond_mod
+  have hrem : (first * D + second) % D = second := Nat.mul_add_mod_of_lt hsecond_mod
   refine ⟨first * D + second, ?_⟩
   constructor
   · simpa only [size, Nat.add_mul, Nat.one_mul] using

@@ -45,7 +45,7 @@ theorem sq_integral_mul_le {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {f
       ∫ x, g x ^ 2 ∂P := by
     have h1 : ∫ x, (t * f x - g x) ^ 2 ∂P =
         ∫ x, ((t * t) * f x ^ 2 + (-2 * t) * (f x * g x) + g x ^ 2) ∂P := by
-      congr 1; funext x; ring
+      congr 1 with x : 1; ring
     have h2 : ∫ x, (t * f x - g x) ^ 2 ∂P = (∫ x, f x ^ 2 ∂P) * (t * t) +
         (-2 * ∫ x, f x * g x ∂P) * t + ∫ x, g x ^ 2 ∂P := by
       rw [h1, integral_add (f := fun x => t * t * f x ^ 2 + -2 * t * (f x * g x))

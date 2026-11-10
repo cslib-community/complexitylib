@@ -218,19 +218,28 @@ theorem not_contains_of_bounds_none {t : Tree d} (hb : t.bounds = none) (x : ℕ
   | leaf b => simp only [bounds] at hb; simp [Contains, hb]
   | node b s c => simp only [bounds] at hb; simp [Contains, hb]
 
+/-- A node that represents some key has an occupied local header. -/
+theorem bounds_isSome_of_contains {t : Tree d} {x : ℕ} (hx : t.Contains x) :
+    t.bounds.isSome = true :=
+  Option.isSome_iff_ne_none.mpr fun hb => not_contains_of_bounds_none hb x hx
+
+/-- The extrema of an occupied valid node: its cached bounds `(m, M)` are ordered, lie in the
+universe, are represented, and bound every represented key. -/
+theorem Valid.extrema_of_bounds {t : Tree d} (h : t.Valid) {m M : ℕ}
+    (hb : t.bounds = some (m, M)) :
+    m ≤ M ∧ M < universeSize d ∧ t.Contains m ∧ t.Contains M ∧
+      ∀ x, t.Contains x → m ≤ x ∧ x ≤ M := by
+  simpa only [Extrema, hb] using h.extrema
+
 /-- An occupied valid node has a represented cached minimum. -/
 theorem Valid.contains_minimum {t : Tree d} (h : t.Valid) {m M : ℕ}
-    (hb : t.bounds = some (m, M)) : t.Contains m := by
-  have he := h.extrema
-  simp only [Extrema, hb] at he
-  exact he.2.2.1
+    (hb : t.bounds = some (m, M)) : t.Contains m :=
+  (h.extrema_of_bounds hb).2.2.1
 
 /-- An occupied valid node has a represented cached maximum. -/
 theorem Valid.contains_maximum {t : Tree d} (h : t.Valid) {m M : ℕ}
-    (hb : t.bounds = some (m, M)) : t.Contains M := by
-  have he := h.extrema
-  simp only [Extrema, hb] at he
-  exact he.2.2.2.1
+    (hb : t.bounds = some (m, M)) : t.Contains M :=
+  (h.extrema_of_bounds hb).2.2.2.1
 
 /-- Division and remainder recover a cluster's coordinates for bounded low parts. -/
 theorem cluster_coordinates {u i y : ℕ} (hu : 0 < u) (hy : y < u) :
@@ -238,6 +247,14 @@ theorem cluster_coordinates {u i y : ℕ} (hu : 0 < u) (hy : y < u) :
   constructor
   · rw [Nat.mul_comm i u, Nat.mul_add_div hu, Nat.div_eq_of_lt hy, Nat.add_zero]
   · exact Nat.mul_add_mod_of_lt hy
+
+/-- Every key of an earlier cluster precedes every key of a later one: with low parts below `u`,
+the cluster index is the high digit of `i * u + a`. -/
+theorem index_lt_index {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
+    i * u + a < j * u + b :=
+  calc i * u + a < (i + 1) * u := by rw [Nat.add_mul, Nat.one_mul]; omega
+    _ ≤ j * u := Nat.mul_le_mul_right u hij
+    _ ≤ j * u + b := Nat.le_add_right _ _
 
 /-- Boolean lookup agrees with the mathematical interpretation of every valid tree. -/
 theorem member_iff_contains {t : Tree d} (ht : t.Valid) (x : ℕ) :

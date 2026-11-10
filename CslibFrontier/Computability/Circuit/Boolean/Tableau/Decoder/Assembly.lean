@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.Tableau.Decoder.Circuit
 import CslibFrontier.Foundations.Data.List.RowMajor
+import CslibFrontier.Foundations.Data.Nat.Div
 import CslibFrontier.Foundations.Data.Nat.Doubling
 import Mathlib.Data.Nat.Size
 
@@ -214,8 +215,7 @@ theorem eval_middle_field {x : List Bool} {n T : ℕ}
         by omega⟩ : Fin (3 * (13 + slotBits k State))) := by ext; simp; omega
     conv_lhs => rw [hw]
     rw [Fin.append_right, Circuit.eval_comp, Circuit.eval_wiring, eval_tableCircuit]
-    congr 1
-    funext i
+    congr 1 with i : 1
     simp [keySel, eval_fieldCircuit]
 
 theorem getElem?_litBits (w : ℕ) (l : Literal ℕ) {i : ℕ} (hi : i < w + 1) :
@@ -302,11 +302,7 @@ theorem ofFn_eval_decoder {x : List Bool} {n T : ℕ} (hn : n < 2 * T) (hx : x.l
       have h₁ : (aWidth (slotBits k State) (colBits T) (timeBits T) x n T +
           r * (13 + slotBits k State) + f - aWidth (slotBits k State) (colBits T) (timeBits T)
             x n T) = r * (13 + slotBits k State) + f := by omega
-      have h₂ : (r * (13 + slotBits k State) + f) / (13 + slotBits k State) = r := by
-        rw [Nat.mul_comm, Nat.mul_add_div (by omega), Nat.div_eq_of_lt hf, Nat.add_zero]
-      have h₃ : (r * (13 + slotBits k State) + f) % (13 + slotBits k State) = f := by
-        rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hf]
-      simp only [h₁, h₂, h₃, hsh]
+      simp only [h₁, Nat.mul_add_div_of_lt r hf, Nat.mul_add_mod_of_lt hf, hsh]
     rw [outBit_congr (ts' := tagSlot sh) (sel' := selOf κ.c0 κ.t0 sh)
       (fun f hf => by rw [htab f (by omega), ite_eq_left hf])
       (fun q hq => by rw [htab _ (by omega), ite_eq_right (by omega), Nat.add_sub_cancel_left])]

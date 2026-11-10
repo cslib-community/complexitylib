@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.Encoding.WidthSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.EncodedTree
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Cases
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 
 /-!
 # Header-only decisions for encoded block-tree roots
@@ -95,7 +96,7 @@ theorem classify_inSpace (e : Q ≃ Fin s) :
   have hshape := budget_finite (encC := encBool)
     (fun pair : Bool × Bool => pair.1 || !pair.2)
     (budget_prod (budget_natIsZero hb) (budget_natEq hlength hwidth))
-  have htag := budget_comp_linear Encoding.NativeDecode.bit_inSpace
+  have htag := budget_comp_linear (bitsGetD false)
     (budget_prod hw (budget_const (encB := encNat) 0 (.refl _)))
   have hrank := budget_comp_linear Encoding.NativeDecode.readNat_inSpace
     (budget_prod hw (budget_prod (budget_const (encB := encNat) 1 (.refl _))
@@ -103,8 +104,8 @@ theorem classify_inSpace (e : Q ≃ Fin s) :
   have hcontrol := budget_comp_linear (Encoding.NativeDecode.state_inSpace e) hrank
   have hhalt := budget_finite (encC := encBool) (Option.isNone : Option Q → Bool) hcontrol
   have hoffset := Encoding.NativeDecode.trackOffset_inSpace (k := k) (s := s)
-  have hfirst := budget_comp_linear Encoding.NativeDecode.bit_inSpace (budget_prod hw hoffset)
-  have hsecond := budget_comp_linear Encoding.NativeDecode.bit_inSpace
+  have hfirst := budget_comp_linear (bitsGetD false) (budget_prod hw hoffset)
+  have hsecond := budget_comp_linear (bitsGetD false)
     (budget_prod hw (budget_natSucc hoffset))
   have haccept := budget_finite (encC := encBool)
     (fun pair : Bool × Bool => pair.1 && !pair.2) (budget_prod hfirst hsecond)

@@ -61,8 +61,9 @@ it was built from. In particular, exact answers on every database are not `(ε, 
   [DworkRoth2014, Theorem 8.1].
 * `Cslib.Privacy.DifferentiallyPrivate.mul_sum_sum_toOuterMeasure_le`: a private mechanism
   guesses few secret bits on average.
-* `Cslib.Privacy.DifferentiallyPrivate.mul_card_sub_mul_le`: a private mechanism cannot reconstruct
-  a database to within `t` positions with high probability.
+* `Cslib.Privacy.DifferentiallyPrivate.mul_card_sub_mul_le`,
+  `Cslib.Privacy.DifferentiallyPrivate.mul_card_sub_mul_le_real`: a private mechanism cannot
+  reconstruct a database to within `t` positions with high probability.
 * `Cslib.Privacy.DifferentiallyPrivate.mul_card_sub_mul_le_of_subsetCountsWithin`,
   `Cslib.Privacy.DifferentiallyPrivate.card_mul_one_sub_le_of_subsetCountsWithin`: private answers
   to all subset-count queries have distortion linear in the number of rows.
@@ -280,6 +281,45 @@ theorem mul_card_sub_mul_le (h : DifferentiallyPrivate HammingAdjacent G ε δ) 
         h.mul_sum_sum_toOuterMeasure_le
     _ = 2 ^ Fintype.card ι * (Fintype.card ι * (ENNReal.ofReal (Real.exp ε) + δ)) := by ring
 
+/-- **A private mechanism cannot reconstruct**, in real numbers: if `G` is `(ε, δ)`-private for
+Hamming adjacency on databases of `n` rows with `δ ≠ ⊤` and, on every database `d`, `G d` is within
+Hamming distance `r` of `d` with probability at least `q ≥ 0`, then
+`(1 + exp ε) (n - r) q ≤ n (exp ε + δ)`. This is `DifferentiallyPrivate.mul_card_sub_mul_le` for
+`t = ⌊r⌋₊`, moved to `ℝ`. -/
+theorem mul_card_sub_mul_le_real (h : DifferentiallyPrivate HammingAdjacent G ε δ) (hδ : δ ≠ ⊤)
+    {r q : ℝ} (hq0 : 0 ≤ q)
+    (hq : ∀ d, ENNReal.ofReal q ≤ (G d).toOuterMeasure {c | (hammingDist c d : ℝ) ≤ r}) :
+    (1 + Real.exp ε) * (Fintype.card ι - r) * q ≤ Fintype.card ι * (Real.exp ε + δ.toReal) := by
+  rcases lt_or_ge r 0 with hr | hr
+  · -- No database is within a negative distance, so `q = 0`.
+    obtain ⟨d⟩ : Nonempty (ι → Bool) := inferInstance
+    have hempty : {c : ι → Bool | (hammingDist c d : ℝ) ≤ r} = ∅ :=
+      Set.eq_empty_of_forall_notMem fun c hc => (Nat.cast_nonneg _).not_gt (hc.trans_lt hr)
+    have hq' := hq d
+    rw [hempty, MeasureTheory.measure_empty, nonpos_iff_eq_zero, ENNReal.ofReal_eq_zero] at hq'
+    rw [le_antisymm hq' hq0, mul_zero]
+    positivity
+  set t := ⌊r⌋₊
+  have hG := h.mul_card_sub_mul_le (t := t) (q := ENNReal.ofReal q) fun d =>
+    (hq d).trans ((G d).toOuterMeasure.mono fun c hc => Nat.le_floor hc)
+  have hfin : ENNReal.ofReal (Real.exp ε) + δ ≠ ⊤ := ENNReal.add_ne_top.mpr ⟨by simp, hδ⟩
+  have hreal := ENNReal.toReal_mono (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hfin) hG
+  rw [ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_add (by simp)
+    ENNReal.ofReal_ne_top, ENNReal.toReal_add (by simp) hδ, ENNReal.toReal_ofReal hq0,
+    ENNReal.toReal_ofReal (Real.exp_pos ε).le, ENNReal.toReal_natCast, ENNReal.toReal_natCast,
+    ENNReal.toReal_one] at hreal
+  refine le_trans ?_ hreal
+  have hsub : (Fintype.card ι : ℝ) - r ≤ ((Fintype.card ι - t : ℕ) : ℝ) := by
+    have ht : (t : ℝ) ≤ r := Nat.floor_le hr
+    rcases le_total t (Fintype.card ι) with htn | htn
+    · rw [Nat.cast_sub htn]
+      linarith
+    · rw [Nat.sub_eq_zero_of_le htn, Nat.cast_zero]
+      have : (Fintype.card ι : ℝ) ≤ t := by exact_mod_cast htn
+      linarith
+  have h1 : (0 : ℝ) ≤ 1 + Real.exp ε := by positivity
+  gcongr
+
 variable {R : Type v} {M : (ι → Bool) → PMF R}
 
 /-- **Private answers to all subset-count queries are inaccurate.** Let `M` be `(ε, δ)`-private
@@ -292,43 +332,11 @@ theorem mul_card_sub_mul_le_of_subsetCountsWithin (h : DifferentiallyPrivate Ham
     (hδ : δ ≠ ⊤) (ans : R → Finset ι → ℝ) {E q : ℝ} (hq0 : 0 ≤ q)
     (hq : ∀ d, ENNReal.ofReal q ≤ (M d).toOuterMeasure {o | SubsetCountsWithin (ans o) d E}) :
     (1 + Real.exp ε) * (Fintype.card ι - 4 * E) * q ≤
-      Fintype.card ι * (Real.exp ε + δ.toReal) := by
-  classical
-  rcases lt_or_ge E 0 with hE | hE
-  · -- No answers have negative distortion, so `q = 0`.
-    obtain ⟨d⟩ : Nonempty (ι → Bool) := inferInstance
-    have hq' := hq d
-    have hempty : {o | SubsetCountsWithin (ans o) d E} = ∅ :=
-      Set.eq_empty_of_forall_notMem fun o ho => (lt_irrefl _ (hE.trans_le ho.nonneg))
-    rw [hempty, MeasureTheory.measure_empty, nonpos_iff_eq_zero, ENNReal.ofReal_eq_zero] at hq'
-    have hq'' : q = 0 := le_antisymm hq' hq0
-    rw [hq'', mul_zero]
-    positivity
-  set t := ⌊4 * E⌋₊
-  have hG := (h.map fun o => reconstruct E (ans o)).mul_card_sub_mul_le (t := t)
-    (q := ENNReal.ofReal q)
-    fun d => (hq d).trans (by
+      Fintype.card ι * (Real.exp ε + δ.toReal) :=
+  (h.map fun o => reconstruct E (ans o)).mul_card_sub_mul_le_real hδ hq0 fun d =>
+    (hq d).trans (by
       rw [PMF.toOuterMeasure_map_apply]
-      refine (M d).toOuterMeasure.mono fun o ho => ?_
-      have := hammingDist_reconstruct_le ho
-      exact Nat.le_floor this)
-  have hfin : ENNReal.ofReal (Real.exp ε) + δ ≠ ⊤ := ENNReal.add_ne_top.mpr ⟨by simp, hδ⟩
-  have hreal := ENNReal.toReal_mono (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hfin) hG
-  rw [ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_add (by simp)
-    ENNReal.ofReal_ne_top, ENNReal.toReal_add (by simp) hδ, ENNReal.toReal_ofReal hq0,
-    ENNReal.toReal_ofReal (Real.exp_pos ε).le, ENNReal.toReal_natCast, ENNReal.toReal_natCast,
-    ENNReal.toReal_one] at hreal
-  refine le_trans ?_ hreal
-  have hsub : (Fintype.card ι : ℝ) - 4 * E ≤ ((Fintype.card ι - t : ℕ) : ℝ) := by
-    have ht : (t : ℝ) ≤ 4 * E := Nat.floor_le (by linarith)
-    rcases le_total t (Fintype.card ι) with htn | htn
-    · rw [Nat.cast_sub htn]
-      linarith
-    · rw [Nat.sub_eq_zero_of_le htn, Nat.cast_zero]
-      have : (Fintype.card ι : ℝ) ≤ t := by exact_mod_cast htn
-      linarith
-  have h1 : (0 : ℝ) ≤ 1 + Real.exp ε := by positivity
-  gcongr
+      exact (M d).toOuterMeasure.mono fun o ho => hammingDist_reconstruct_le ho)
 
 /-- **Private answers to all subset-count queries have linear distortion.** If an
 `(ε, δ)`-private mechanism for Hamming adjacency on databases of `n` rows answers all subset-count

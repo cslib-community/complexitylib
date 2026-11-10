@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordDecoder
 public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Computational.OneWay
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Tactic.PPT
@@ -117,8 +118,8 @@ theorem wordInverter_eval (f : List Bool → List Bool)
       (invertSigned (fun bits => f (List.ofFn bits)) (fixedPredictor evaluate c d n)
         (fun image => PMF.uniformOfFintype (BitString (coinBudget c d n image.length)))
         (maskCount n (precision degree n)) image).map List.ofFn := by
-  simp only [wordInverter, ProbComp.eval_bind, ProbComp.eval_uniform, BitString.eval_sampleList,
-    ProbComp.eval_pure, invertSigned, invert, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, wordInverter, ProbComp.eval_uniform, BitString.eval_sampleList, invertSigned,
+    invert]
   congr 1 with flip : 1
   rw [uniformList, PMF.bind_map]
   congr 1 with seed : 1
@@ -156,8 +157,7 @@ theorem eval_parityPredictionGame (f : List Bool → List Bool) (adversary : Dis
     ProbComp.eval (parityPredictionGame f adversary n) =
       predictionExperiment (fun bits => f (List.ofFn bits)) (fixedPredictor evaluate c d n)
         (fun image => PMF.uniformOfFintype (BitString (coinBudget c d n image.length))) := by
-  simp only [parityPredictionGame, ProbComp.eval_bind, BitString.eval_sampleList,
-    ProbComp.eval_pure, uniformList, PMF.bind_map, Function.comp_def,
+  simp only [pmf_norm, parityPredictionGame, BitString.eval_sampleList, uniformList,
     ← dotProduct_eq_foldl, predictionExperiment]
   congr 1 with x : 1
   simp_rw [← fixedPredictor_distribution adversary evaluate c d hrealize,
@@ -173,9 +173,8 @@ theorem eval_wordInversionGame (f : List Bool → List Bool)
         (invertSigned (fun bits => f (List.ofFn bits)) (fixedPredictor evaluate c d n)
           (fun image => PMF.uniformOfFintype (BitString (coinBudget c d n image.length)))
           (maskCount n (precision degree n))) := by
-  simp only [inversionGame, ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure,
-    uniformList, PMF.bind_map, Function.comp_def, inversionExperiment, wordInverter_eval,
-    beq_eq_decide]
+  simp only [pmf_norm, inversionGame, BitString.eval_sampleList, uniformList, inversionExperiment,
+    wordInverter_eval, beq_eq_decide]
   rfl
 
 /-- Prediction bias is at most the precision error plus eight times inversion success. -/

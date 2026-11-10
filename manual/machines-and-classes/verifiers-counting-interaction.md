@@ -2,7 +2,7 @@
 
 [Chapter index](index.md) · [Endpoint map](endpoints-and-hierarchies.md)
 
-Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [complexitylib][complexitylib]
+Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [cslib-frontier][complexitylib]
 
 ## Certificates, random seeds, and quantifier alternation
 
@@ -88,10 +88,19 @@ instruction-indexed transcript. Local and halted instructions require the canoni
 bit `false`. Its membership lemma preserves `#P` when the input map is polynomial time and
 both answer counts are in `#P`. When those counts recognize the oracle's yes and no answers
 by positivity, `replayPathCount_pos_iff` identifies exactly the canonical oracle transcript;
-when both counts are at most one, `replayPathCount_le_one` preserves unambiguity. The
-[decision](../../CslibFrontier/Computability/Complexity/Classes/Oracle/Lowness.lean) and
-[counting](../../CslibFrontier/Computability/Complexity/Classes/SharpP/Lowness.lean)
-lowness proofs share this API while retaining their different final sums.
+when both counts are at most one, `replayPathCount_le_one` preserves unambiguity.
+`Cslib.Complexity.replayWeightedSum` weights the path count of every transcript of the clock
+length by a function of the instance and the replayed output, and sums. It stays in `#P` for a
+`#P` weight (`replayWeightedSum_mem_SharpP`), is positive exactly when the weight of the
+canonical replay is (`replayWeightedSum_pos_iff`), and equals that weight for unambiguous counts
+(`replayWeightedSum_eq_of_le_one`). The
+[decision](../../CslibFrontier/Computability/Complexity/Classes/Oracle/Lowness.lean) lowness
+proofs weight by the indicator of a polynomial-time predicate, and the
+[counting](../../CslibFrontier/Computability/Complexity/Classes/SharpP/Lowness.lean) ones by an
+arbitrary `#P` function. They start from
+`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_replayOutput` in
+[`Classes.Oracle.CanonicalReplay`](../../CslibFrontier/Computability/Complexity/Classes/Oracle/CanonicalReplay.lean):
+an `FP^A` output is the canonical replay of one finite oracle machine under one polynomial clock.
 
 For quantifier-alternation simulations of oracle programs, import
 [`Classes.PH.OracleNP`](../../CslibFrontier/Computability/Complexity/Classes/PH/OracleNP.lean).

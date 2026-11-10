@@ -99,16 +99,14 @@ theorem finiteRunFrom_eq (machine : MultiTapeMachine k Symbol State Oracle Choos
     | some state =>
       simp only [finiteStep, h.tapes.state, h.tapes.inputSymbol,
         h.tapes.workTapeSymbols, h.answerSymbols, bind_assoc, runFrom, runConfigFrom, hs, map_bind]
-      congr 1
-      funext action
+      congr 1 with action : 1
       cases action with
       | step action symbol move =>
         simp only [pure_bind]
         exact ih _ _ (h.step action symbol move)
       | query oracle next =>
         simp only [h.queries, bind_assoc, pure_bind, map_bind]
-        congr 1
-        funext answer
+        congr 1 with answer : 1
         exact ih _ _ (h.receive oracle next answer)
 
 /-- Finite blank storage realizes the standard native run, with identical choice and query

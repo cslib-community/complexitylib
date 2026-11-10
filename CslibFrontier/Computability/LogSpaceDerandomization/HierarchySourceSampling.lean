@@ -163,7 +163,7 @@ theorem source_incoming_cost_le (hD : D ≠ 0) (hid : Function.Injective ident)
     simpa only [stageMaximum, PilotTask.value_maximum_last] using hg
   have hc := HP.toHierarchyParams.correctionInput_count_le
     (stageSource D ident r hr) (splitTerminal D ident r) hh.1 hf
-    (by norm_num) (by norm_num) hC hC1 hi hg'
+    (by norm_num) hC hC1 hi hg'
   have hsub : ({w | HP.δ₁ < stageRaw HP D ident r hr C i w y / r.terminal.rate} : Finset V) ⊆
       ({w | HP.δ₁ * r.terminal.rate ≤ stageRaw HP D ident r hr C i w y} : Finset V) := by
     intro w hw
