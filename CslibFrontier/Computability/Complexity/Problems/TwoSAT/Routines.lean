@@ -70,6 +70,36 @@ def skipLitCode (b p exit : ℕ) : List Instr :=
    assign p (add (reg p) (const 8)) b,
    assign p (add (reg p) (const 10)) exit]
 
+/-- **The digit loop** of `skipLitCode` and `signCode`: reading the marker bit at `reg p + 3`
+(at `l`) and moving `p` eight bits on (at `l'`) walks past the remaining digits of a literal to its
+end group, continuing at the end label `e`. -/
+private theorem reaches_digitLoop {l l' e p : ℕ}
+    (hl : P.instr l = read (add (reg p) (const 3)) l' e e)
+    (hl' : P.instr l' = assign p (add (reg p) (const 8)) l) (hp : p ≠ 0) {regs : List ℕ}
+    (hlen : p < regs.length) {pos v : ℕ} {sgn : Bool} (hlit : InfixAt w pos (literalBits v sgn))
+    (hB : ∀ r ∈ regs, r ≤ B) (hend : pos + 8 * v.bits.length + 10 ≤ B) :
+    ∀ k ≤ v.bits.length, P.Reaches w (P.Oblivious B) (l, regs.set p (pos + 8 * k))
+      (e, regs.set p (pos + 8 * v.bits.length)) := by
+  have hBk : ∀ k ≤ v.bits.length, ∀ r ∈ regs.set p (pos + 8 * k), r ≤ B := fun k hk =>
+    List.forall_mem_set_of_forall_mem hB (by omega)
+  intro k hk
+  induction h : v.bits.length - k generalizing k with
+  | zero =>
+    obtain rfl : k = v.bits.length := by omega
+    refine Reaches.oread hl (by simp [Expr.readsChoice, hp]) (hBk _ le_rfl) ?_
+    simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen,
+      hlit.literal_end.2.1, readLabel]
+    exact Reaches.refl _
+  | succ n ih =>
+    have hk' : k < v.bits.length := by omega
+    refine Reaches.oread hl (by simp [Expr.readsChoice, hp]) (hBk _ hk) ?_
+    simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen,
+      (hlit.literal_digit hk').2.1, readLabel]
+    refine Reaches.oassign hl' hp (by simp [Expr.readsChoice, hp]) (hBk _ hk) ?_
+    simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen, List.set_set]
+    rw [show pos + 8 * k + 8 = pos + 8 * (k + 1) by ring]
+    exact ih (k + 1) (by omega) (by omega)
+
 /-- **Skipping a literal.** -/
 theorem reaches_skipLitCode {b p exit : ℕ} (hcode : P.CodeAt b (skipLitCode b p exit))
     (hp : p ≠ 0) {regs : List ℕ} (hlen : p < regs.length) {pos v : ℕ} {sgn : Bool}
@@ -80,38 +110,15 @@ theorem reaches_skipLitCode {b p exit : ℕ} (hcode : P.CodeAt b (skipLitCode b 
   simp only [skipLitCode, codeAt_cons, codeAt_nil, and_true] at hcode
   obtain ⟨h₀, h₁, h₂⟩ := hcode
   rw [show b + 1 + 1 = b + 2 by omega] at h₂
-  have hp' : (reg p).readsChoice = false := by simp [Expr.readsChoice, hp]
   rw [length_literalBits] at hend ⊢
-  have hBk : ∀ k ≤ v.bits.length, ∀ r ∈ regs.set p (pos + 8 * k), r ≤ B := fun k hk =>
-    List.forall_mem_set_of_forall_mem hB (by omega)
-  have loop : ∀ e k, v.bits.length - k = e → k ≤ v.bits.length →
-      P.Reaches w (P.Oblivious B) (b, regs.set p (pos + 8 * k))
-        (exit, regs.set p (pos + (8 * v.bits.length + 10))) := by
-    intro e
-    induction e with
-    | zero =>
-      intro k he hk
-      obtain rfl : k = v.bits.length := by omega
-      refine Reaches.oread h₀ (by simp [Expr.readsChoice, hp]) (hBk _ le_rfl) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen,
-        hlit.literal_end.2.1, readLabel]
-      refine Reaches.oassign h₂ hp (by simp [Expr.readsChoice, hp]) (hBk _ le_rfl) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen, List.set_set]
-      rw [Nat.add_assoc]
-      exact Reaches.refl _
-    | succ e ih =>
-      intro k he hk
-      have hk' : k < v.bits.length := by omega
-      refine Reaches.oread h₀ (by simp [Expr.readsChoice, hp]) (hBk _ hk) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen,
-        (hlit.literal_digit hk').2.1, readLabel]
-      refine Reaches.oassign h₁ hp (by simp [Expr.readsChoice, hp]) (hBk _ hk) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen, List.set_set]
-      rw [show pos + 8 * k + 8 = pos + 8 * (k + 1) by ring]
-      exact ih (k + 1) (by omega) (by omega)
-  have := loop v.bits.length 0 (by omega) (Nat.zero_le _)
-  rw [Nat.mul_zero, Nat.add_zero] at this
-  rwa [show regs.set p pos = regs by rw [← hpos, set_getD_self hlen]] at this
+  have := reaches_digitLoop h₀ h₁ hp hlen hlit hB (by omega) 0 (Nat.zero_le _)
+  rw [Nat.mul_zero, Nat.add_zero, show regs.set p pos = regs by
+    rw [← hpos, set_getD_self hlen]] at this
+  refine this.trans (Reaches.oassign h₂ hp (by simp [Expr.readsChoice, hp])
+    (List.forall_mem_set_of_forall_mem hB (by omega)) ?_)
+  simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen, List.set_set]
+  rw [Nat.add_assoc]
+  exact Reaches.refl _
 
 /-! ### Skipping a clause -/
 
@@ -385,36 +392,14 @@ theorem reaches_signCode {b p t yes no : ℕ} (hcode : P.CodeAt b (signCode b p 
   rw [show b + 1 + 1 = b + 2 by omega] at h₂
   rw [show b + 1 + 1 + 1 = b + 3 by omega] at h₃
   rw [length_literalBits] at hend
-  have hBk : ∀ k ≤ v.bits.length, ∀ r ∈ regs.set t (pos + 8 * k), r ≤ B := fun k hk =>
-    List.forall_mem_set_of_forall_mem hB (by omega)
-  have loop : ∀ e k, v.bits.length - k = e → k ≤ v.bits.length →
-      P.Reaches w (P.Oblivious B) (b + 1, regs.set t (pos + 8 * k))
-        (if sgn then yes else no, regs.set t (pos + 8 * v.bits.length)) := by
-    intro e
-    induction e with
-    | zero =>
-      intro k he hk
-      obtain rfl : k = v.bits.length := by omega
-      refine Reaches.oread h₁ (by simp [Expr.readsChoice, ht]) (hBk _ le_rfl) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen,
-        hlit.literal_end.2.1, readLabel]
-      refine Reaches.oread h₃ (by simp [Expr.readsChoice, ht]) (hBk _ le_rfl) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen,
-        hlit.literal_end.2.2, readLabel]
-      cases sgn <;> exact Reaches.refl _
-    | succ e ih =>
-      intro k he hk
-      have hk' : k < v.bits.length := by omega
-      refine Reaches.oread h₁ (by simp [Expr.readsChoice, ht]) (hBk _ hk) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen,
-        (hlit.literal_digit hk').2.1, readLabel]
-      refine Reaches.oassign h₂ ht (by simp [Expr.readsChoice, ht]) (hBk _ hk) ?_
-      simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen, List.set_set]
-      rw [show pos + 8 * k + 8 = pos + 8 * (k + 1) by ring]
-      exact ih (k + 1) (by omega) (by omega)
   refine Reaches.oassign h₀ ht (by simp [Expr.readsChoice, hp]) hB ?_
-  have := loop v.bits.length 0 (by omega) (Nat.zero_le _)
-  simpa only [eval_reg, hpos, Nat.mul_zero, Nat.add_zero] using this
+  have := reaches_digitLoop h₁ h₂ ht hlen hlit hB hend 0 (Nat.zero_le _)
+  simp only [eval_reg, hpos, Nat.mul_zero, Nat.add_zero] at this ⊢
+  refine this.trans (Reaches.oread h₃ (by simp [Expr.readsChoice, ht])
+    (List.forall_mem_set_of_forall_mem hB (by omega)) ?_)
+  simp only [eval_add, eval_reg, eval_const, List.getD_set_self hlen, hlit.literal_end.2.2,
+    readLabel]
+  cases sgn <;> exact Reaches.refl _
 
 end TwoSAT
 

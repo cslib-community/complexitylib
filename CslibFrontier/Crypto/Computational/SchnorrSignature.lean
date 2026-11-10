@@ -14,9 +14,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.BitString.Counter
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
@@ -594,24 +594,7 @@ theorem negligible_eufCmaGame_schnorrFamilyROMScheme {M : Type} [DecidableEq M]
         (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :
     Negligible fun n =>
       Game.succProbability (eufCmaGame (F.schnorrFamilyROMScheme (d n) (hm n)) (A n)) := by
-  have hpoly₁ : PolynomiallyBounded (fun n => Qs n * (Qs n + Qro n)) := hQs.mul (hQs.add hQro)
-  have hpoly₂ : PolynomiallyBounded (fun n => Qro n + 1) := hQro.add (PolynomiallyBounded.const 1)
-  have hterm₁ : Negligible fun n => (Qs n * (Qs n + Qro n) : ℕ) * (1 / F.order (d n) : ℝ≥0) :=
-    horder.polynomiallyBounded_mul hpoly₁
-  have hterm₂ : Negligible fun n => (Qro n + 1 : ℕ) * (1 / 2 ^ k n : ℝ≥0) :=
-    hchallenge.polynomiallyBounded_mul hpoly₂
-  have hterm₃ : Negligible fun n =>
-      NNReal.sqrt ((Qro n + 1 : ℕ) * Game.succProbability
-        (oneWayGame (schnorrKeyGen (F.generator (d n)))
-          (fun α u => α • F.generator (d n) = u)
-          (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :=
-    Negligible.sqrt (hDL.polynomiallyBounded_mul hpoly₂)
-  refine negligible_of_le ((hterm₁.add hterm₂).add hterm₃) fun n => ?_
-  rw [← NNReal.coe_le_coe, Pi.add_apply, Pi.add_apply, NNReal.coe_add, NNReal.coe_add,
-    NNReal.coe_mul, NNReal.coe_mul, Real.coe_sqrt, NNReal.coe_mul, NNReal.coe_div, NNReal.coe_div,
-    NNReal.coe_one, NNReal.coe_pow, NNReal.coe_ofNat, NNReal.coe_natCast, NNReal.coe_natCast,
-    NNReal.coe_natCast, Nat.cast_mul, Nat.cast_add, Nat.cast_add, Nat.cast_one,
-    mul_one_div, mul_one_div]
-  exact F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
+  negligible using fun n =>
+    F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
 
 end Cslib.Crypto.PrimeOrderGroupFamily

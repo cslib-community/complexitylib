@@ -40,6 +40,8 @@ invariants and growth bounds are part of the claim.
 Before searching, `ppt [f, g]` unfolds the hinted definitions in the goal and inlines the `let`s
 they expose. Every form also unfolds local encoding `let`s and adds the certificates stored in
 fields of local structures as local facts, as `polytime` does.
+On ordinary failure, `ppt` includes one failed compositional attempt when the backend has
+reported one, as `polytime` does.
 
 ## Main definitions
 
@@ -188,7 +190,8 @@ closed goal with the `PPT` and `PolyTime` Aesop rule sets. -/
   unfoldOracleParameter
   Cslib.Tactic.PolyTime.Internal.prepareGoal hints
   let oracle := (← instantiateMVars (← getMainTarget)).consumeMData.isAppOf ``IsOraclePPTOn
-  Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
+  Cslib.Tactic.PolyTime.Internal.withFailureHint "ppt" <|
+      Cslib.Tactic.PolyTime.Internal.withPlainRuleCache do
     if oracle then
       -- Oracle programs are composed as written: Aesop's simp normalization would fuse a
       -- `List.take` into the reply map and so hide the charged query.

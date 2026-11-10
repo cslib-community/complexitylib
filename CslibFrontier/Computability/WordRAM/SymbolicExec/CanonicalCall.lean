@@ -14,7 +14,9 @@ public import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 # Canonical continuations of renamed calls
 
 `WP.of_spec_rename` passes the small returned state to a continuation whose caller state is
-explicitly `Data.extend`. The optional `wram_call … canonical … with …` form uses this rule.
+explicitly `Data.extend`. The optional `wram_call … canonical … with …` form uses this rule; it
+has no exact-count rule, and at a `WP.Exact` goal its error points to the renamed form. The word
+`canonical` is not reserved: importers may still use it as an identifier.
 Outside-bank reads use the original caller; inside-bank reads need the callee's actual output
 or preservation facts. Memory is the callee's returned memory, with no implied memory frame.
 
@@ -66,14 +68,22 @@ simproc ↓ [wram_simps] Data.reduceExtendRegs (Data.regs _ _) := fun e => do
 tactic_extension wramCall
 
 @[tactic_alt wramCall]
-syntax (name := wramCallCanonical) "wram_call " term:max " canonical " term:max " with"
+syntax (name := wramCallCanonical) "wram_call " term:max &" canonical " term:max " with"
   (ppSpace colGt rintroPat)+ : tactic
 
-macro_rules
-  | `(tactic| wram_call $h canonical $hf with $pats*) =>
-    `(tactic| (
-      refine Cslib.WordRAM.WP.of_spec_rename $hf $h ?_
-      rintro $pats*
-      try simp only [Cslib.WordRAM.Data.comap_regs, Cslib.WordRAM.Data.comap_mem] at *))
+elab_rules : tactic
+  | `(tactic| wram_call $h canonical $hf with $pats*) => do
+    let ofSpec ← `(tactic| refine Cslib.WordRAM.WP.of_spec_rename $hf $h ?_)
+    WramCall.run h [ofSpec]
+      (← `(tactic|
+        (rintro $pats*
+         try simp only [Cslib.WordRAM.Data.comap_regs, Cslib.WordRAM.Data.comap_mem] at *)))
+      fun
+      | ``WP => some (m!"For the goal `WP w (c.rename f) x Q`, the contract must have type \
+          `∃ y, ExecWithin w c (x.comap f) y T ∧ P y`, with `hf : f.Injective`.",
+          [(``Exists, ofSpec)])
+      | ``WP.Exact => some (m!"The canonical form has no rule for exact instruction counts; at \
+          a `WP.Exact` goal, use `wram_call h renamed hf with …`.", [])
+      | _ => none
 
 end Cslib.WordRAM
