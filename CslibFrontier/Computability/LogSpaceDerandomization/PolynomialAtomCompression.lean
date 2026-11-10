@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Computability.LogSpaceDerandomization.PolynomialAtomRows.NoOverflow
 public import CslibFrontier.Computability.LogSpaceDerandomization.PolynomialAtomRows.FirstOverflow
 public import CslibFrontier.Computability.LogSpaceDerandomization.PolynomialAtomFalseOverflow
-import Mathlib.Algebra.Order.BigOperators.Expect
+import CslibFrontier.Computability.LogSpaceDerandomization.RowCompression.FalseOverflowNorm
 
 /-!
 # Actual compression comparison and fourth-moment assembly
@@ -100,13 +100,6 @@ theorem exists_compression_root_bound (hθ : 0 < θ) :
       (fun i _ hi => hcapacity i hi) ε hε (fun i hi z hz _ => herr i (hi.trans hjm) z hz)
       (fun i _ hi z hz => herr i hi z hz) y hy)
 
-private theorem add_add_pow_four_le {a b c : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c) :
-    (a + b + c) ^ 4 ≤ 64 * (a ^ 4 + b ^ 4 + c ^ 4) := by
-  have h := add_pow_le ha hb 4
-  have h' := add_pow_le (add_nonneg ha hb) hc 4
-  norm_num at h h'
-  nlinarith [pow_nonneg hc 4]
-
 open Classical in
 /-- The actual final output is bounded by weighted prefix, no-overflow final and true-overflow
 budgets, plus the existing false-overflow raw-prefix charge. The masks and all errors may be
@@ -160,78 +153,18 @@ theorem exists_compression_rowNormPow_le (hθ : 0 < θ) :
   intro Ω V _ _ N u hNu X Y _ _ n K m hK hcapacity Δ a truth ha hfirst hsecond
     hvanish ε εfinal hε hεfinal herr herrfinal
   dsimp only
-  let S := fun σ => ({y | Y σ y} : Finset V)
-  let actual := fun σ x => iterate (S σ) n (fun _ => K)
-    (dyadicFloor η m) (Δ σ x) (a σ x) m
-  let D := fun σ x y => kind.stateRootError θ (S σ) K (actual σ x) ⟨0, truth σ x⟩ y
-  let heavy := fun j σ x =>
-    heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ
-  let F := fun σ x => ∃ j < m,
-    IsFirstOverflow (S σ) n (fun _ => K) (dyadicFloor η m) (Δ σ x) (a σ x) j ∧ ¬heavy j σ x
-  let Pre := fun σ x => ∑ i ∈ range m, dyadicFloor η m i * ε i σ x
-  let No := fun σ x => if ∀ i < m,
-      stepThreshold (S σ) n (fun _ => K) (dyadicFloor η m) (Δ σ x) (a σ x) i ≤
-        dyadicFloor η m i then εfinal σ x else 0
-  let Tail := fun σ x => ∑ j ∈ range m,
-    if IsFirstOverflow (S σ) n (fun _ => K) (dyadicFloor η m) (Δ σ x) (a σ x) j ∧
-      heavy j σ x then ∑ i ∈ Ico j m, (28 : ℝ) ^ (m - i) * ε i σ x else 0
-  have hpre0 (σ : Ω) (x : V) (hx : X σ x) : 0 ≤ Pre σ x :=
-    sum_nonneg fun i hi => mul_nonneg (dyadicFloor_nonneg hη.le _ _) (hε i (mem_range.mp hi) σ x hx)
-  have hno0 (σ : Ω) (x : V) (hx : X σ x) : 0 ≤ No σ x := by
-    dsimp only [No]
-    split_ifs
-    · exact hεfinal σ x hx
-    · exact le_rfl
-  have htail0 (σ : Ω) (x : V) (hx : X σ x) : 0 ≤ Tail σ x := by
-    refine sum_nonneg fun j _ => ?_
-    split_ifs
-    · exact sum_nonneg fun i hi => mul_nonneg (by positivity) (hε i (mem_Ico.mp hi).2 σ x hx)
-    · exact le_rfl
-  have hrow (σ : Ω) (x : V) (hx : X σ x) :
-      (∑ y ∈ S σ, |D σ x y| ^ 4) ≤
-        128 * (K : ℝ) * (A ^ 4 * |Pre σ x| ^ 4 + C ^ 4 * |No σ x| ^ 4 +
-          C ^ 4 * |Tail σ x| ^ 4) +
-        ∑ y ∈ S σ, |if F σ x then D σ x y else 0| ^ 4 := by
-    have hb0 : 0 ≤ 128 * (K : ℝ) * (A ^ 4 * |Pre σ x| ^ 4 + C ^ 4 * |No σ x| ^ 4 +
-        C ^ 4 * |Tail σ x| ^ 4) := by positivity
-    by_cases hf : F σ x
-    · simp only [hf, ↓reduceIte]
-      linarith
-    · have hlocal : ∀ y ∈ S σ, |D σ x y| ≤
-          A * Pre σ x + C * No σ x + C * Tail σ x :=
-        hbound (S σ) n (Δ σ x) (a σ x) (truth σ x) K m (fun j => heavy j σ x)
-          hK (ha σ x hx) (fun y hy => hfirst σ x y hx (mem_filter.mp hy).2)
-          (fun y hy => hsecond σ x y hx (mem_filter.mp hy).2) hcapacity
-          (fun i => ε i σ x) (fun i hi => hε i hi σ x hx)
-          (fun i hi y hy => herr i hi σ x y hx (mem_filter.mp hy).2)
-          (εfinal σ x) (hεfinal σ x hx)
-          (fun y hy => herrfinal σ x y hx (mem_filter.mp hy).2) hf
-      have hs := kind.sum_stateRootError_pow_four_le_of_bound hθ (S σ) hK
-        (actual σ x) ⟨0, truth σ x⟩ hlocal
-      have hp := add_add_pow_four_le (mul_nonneg hA (hpre0 σ x hx))
-        (mul_nonneg hC (hno0 σ x hx)) (mul_nonneg hC (htail0 σ x hx))
-      have hh := mul_le_mul_of_nonneg_left hp (show 0 ≤ 2 * (K : ℝ) by positivity)
-      simp only [abs_of_nonneg (hpre0 σ x hx), abs_of_nonneg (hno0 σ x hx),
-        abs_of_nonneg (htail0 σ x hx), hf, ↓reduceIte, abs_zero,
-        zero_pow (by decide : (4 : ℕ) ≠ 0), sum_const_zero, add_zero]
-      exact hs.trans (by nlinarith only [hh])
-  have hintegrated : rowNormPow 4 N u X Y D ≤
-      128 * (K : ℝ) * (A ^ 4 * vertexNormPow 4 N u X Pre +
-        C ^ 4 * vertexNormPow 4 N u X No + C ^ 4 * vertexNormPow 4 N u X Tail) +
-      rowNormPow 4 N u X Y (fun σ x y => if F σ x then D σ x y else 0) := by
-    unfold rowNormPow vertexNormPow
-    calc
-      _ ≤ (N * u)⁻¹ * 𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V),
-          (128 * (K : ℝ) * (A ^ 4 * |Pre σ x| ^ 4 + C ^ 4 * |No σ x| ^ 4 +
-            C ^ 4 * |Tail σ x| ^ 4) +
-            ∑ y ∈ ({y | Y σ y} : Finset V), |if F σ x then D σ x y else 0| ^ 4) := by
-        refine mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => ?_) (inv_nonneg.mpr hNu)
-        exact sum_le_sum fun x hx => hrow σ x (mem_filter.mp hx).2
-      _ = _ := by
-        simp only [sum_add_distrib, ← mul_sum, expect_add_distrib, ← mul_expect]
-        ring
   have hfalse := kind.rowNormPow_falseFirstOverflowBefore_le hθ hη hη1 hNu X Y n K hK m
     (fun i hi => hK.trans_le (hcapacity i hi)) Δ a truth ha hfirst hvanish
-  exact hintegrated.trans (add_le_add_right hfalse _)
+  refine (rowNormPow_le_three_budgets_add_ite hNu X Y _ _ K A C _ _ _
+    fun σ x hx hf => ?_).trans (add_le_add_right hfalse _)
+  exact kind.sum_stateRootError_pow_four_le_of_bound hθ _ hK _ _
+    (hbound _ n (Δ σ x) (a σ x) (truth σ x) K m
+      (fun j => heavyCountEvent Y univ (fun y => truth σ x y 0) (dyadicFloor η m j) (n j) σ)
+      hK (ha σ x hx) (fun y hy => hfirst σ x y hx (mem_filter.mp hy).2)
+      (fun y hy => hsecond σ x y hx (mem_filter.mp hy).2) hcapacity
+      (fun i => ε i σ x) (fun i hi => hε i hi σ x hx)
+      (fun i hi y hy => herr i hi σ x y hx (mem_filter.mp hy).2)
+      (εfinal σ x) (hεfinal σ x hx)
+      (fun y hy => herrfinal σ x y hx (mem_filter.mp hy).2) hf)
 
 end Cslib.PolynomialAtomRow

@@ -191,13 +191,8 @@ theorem expect_correctionAtom_mul_denseAtom {υ : Type*} [Fintype υ]
           ∑ z, correctionAtom I τ KF Kc f G X Z Zt Q hF ρF g₀ d.1 x z *
             denseAtom Y Yt k hB ρB KB b H d.2 z y =
       ∑ z, (f * Q (G x z / f) * g₀ z) * (b * k (H z y / b)) := by
-  have hSz : ∀ z, ({t | Zt t z} : Finset κ).Nonempty := by
-    intro z
-    have hpos : (0 : ℝ) < dens {t | Zt t z} := by rw [hZπ]; exact hπf
-    refine dens_ne_zero.mp ?_
-    intro hz
-    rw [hz] at hpos
-    norm_num at hpos
+  have hSz (z : V) : ({t | Zt t z} : Finset κ).Nonempty :=
+    dens_ne_zero.mp fun hz => hπf.ne' (by simpa [hz] using (hZπ z).symm)
   have hleft : ∀ z, (𝔼 d ∈ ({s | X s x} : Finset ι) ×ˢ (univ : Finset κ),
       correctionAtom I τ KF Kc f G X Z Zt Q hF ρF g₀ d x z) =
       πf * (Q (G x z / f) * g₀ z) := by
