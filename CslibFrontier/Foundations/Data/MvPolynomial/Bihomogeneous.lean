@@ -166,6 +166,16 @@ theorem finrank_bihomogeneous [StrongRankCondition R] [Fintype σ] (a b : ℕ) :
     Finset.card_finsuppAntidiag_nat_eq_multichoose, Finset.card_finsuppAntidiag_nat_eq_multichoose,
     Fintype.card_subtype, Fintype.card_subtype]
 
+/-- In finitely many variables the slice of bidegree `(a, b)` is finite-dimensional. -/
+instance finite_bihomogeneous [Finite σ] (a b : ℕ) :
+    Module.Finite R (weightedHomogeneousSubmodule R (bidegWeight s) (a, b)) := by
+  classical
+  have := Fintype.ofFinite σ
+  have : Finite {d : σ →₀ ℕ // weight (bidegWeight s) d = (a, b)} :=
+    Finite.of_equiv _ (bidegreeEquiv s a b).symm
+  rw [weightedHomogeneousSubmodule_eq_span]
+  exact Module.Finite.span_of_finite R (Set.finite_range _)
+
 variable {s}
 
 private theorem mixedOp_monomial_mem (d : σ →₀ ℕ) : ∀ (a b : ℕ) (p : MvPolynomial σ R),

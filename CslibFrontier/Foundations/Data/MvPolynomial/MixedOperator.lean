@@ -110,7 +110,6 @@ theorem mixedOp_X_of_neg {i : σ} (h : ¬ s i) (p : MvPolynomial σ R) :
     mixedOp s (X i) p = X i * p := by
   rw [mixedOp_X, mixedGen_of_neg h]
 
-@[simp]
 theorem mixedOp_C (c : R) (p : MvPolynomial σ R) : mixedOp s (C c) p = c • p := by
   rw [← algebraMap_eq, AlgHom.commutes, Module.algebraMap_end_apply]
 
