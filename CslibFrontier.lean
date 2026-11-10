@@ -4354,6 +4354,7 @@ public import CslibFrontier.DataStructure.Stack.Native
 public import CslibFrontier.DataStructure.Stack.Spec
 public import CslibFrontier.DataStructure.StateTransition
 public import CslibFrontier.DataStructure.StateTransition.Amortized
+public import CslibFrontier.DataStructure.StateTransition.ClientSimps.Init
 public import CslibFrontier.DataStructure.StateTransition.Composition
 public import CslibFrontier.DataStructure.StateTransition.CostHoare
 public import CslibFrontier.DataStructure.StateTransition.Hoare
@@ -5862,5 +5863,7 @@ public import CslibFrontier.Tactic.Realize
 public import CslibFrontier.Tactic.Space
 public import CslibFrontier.Tactic.Stateful
 public import CslibFrontier.Tactic.Stateful.Init
+public import CslibFrontier.Tactic.SuppCases
+public import CslibFrontier.Tactic.SuppCases.Init
 public import CslibFrontier.Tactic.Synthesis
 public import CslibFrontier.Tactic.WordRAM
