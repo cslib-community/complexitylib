@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Computability.Interactive.Plain
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.BindFailure
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Sequential composition of interactive reductions

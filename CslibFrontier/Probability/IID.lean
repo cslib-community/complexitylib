@@ -12,6 +12,7 @@ import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Independent draws from a distribution
