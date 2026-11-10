@@ -304,7 +304,7 @@ theorem literalBits_ne_nil (v : ℕ) (b : Bool) : literalBits v b ≠ [] := by
   simp [literalBits]
 
 /-- Bounds survive an update of one register. -/
-macro (name := boundedTac) "bounded_tac" : tactic => `(tactic| (
+local macro (name := boundedTac) "bounded_tac" : tactic => `(tactic| (
   simp only [St.Bounded, bnd] at *
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> omega))
 
