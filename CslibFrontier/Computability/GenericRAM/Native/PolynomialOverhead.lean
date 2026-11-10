@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.GenericRAM.Native.Certificate
-import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Polynomial preprocessing and decoding of native algorithms
@@ -51,7 +50,14 @@ theorem exists_polynomial_overhead (c : NativeCertificate f eb ec)
   let Y : ℕ → ℕ := fun n => aY * (n + 1) ^ dY
   let Q : ℕ → ℕ := fun n => K * (Y n + 1) ^ K
   let F : ℕ → ℕ := fun n => p n + Q n + q (cO * (Q n + 1))
-  have hFp : PolyBounded id F := by growth_poly
+  have hYp : PolyBounded id Y :=
+    (PolyBounded.const aY).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow dY)
+  have hQp : PolyBounded id Q :=
+    (PolyBounded.const K).mul ((hYp.add (PolyBounded.const 1)).pow K)
+  have hFp : PolyBounded id F :=
+    ((PolyBounded.of_polynomiallyBounded id hpp).add hQp).add
+      ((PolyBounded.of_polynomiallyBounded id hqp).comp
+        ((PolyBounded.const cO).mul (hQp.add (PolyBounded.const 1))))
   obtain ⟨aF, dF, hF⟩ := hFp.exists_le
   refine ⟨aF + dF, fun a X hX ht hs => ?_⟩
   set n := (ei a).length
