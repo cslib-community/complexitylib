@@ -131,8 +131,8 @@ theorem eval_runSeq {α : Type} (generator : List Bool → List Bool) (s m : ℕ
         (fun q state =>
           PMF.pure (seqStep (honestReply1 generator m φ) (honestReply2 s φ) q.2 state))
         prog st := by
-  simpa [runSeq, ProbOracleComp.runWith, OracleComp.runWith] using
-    ProbOracleComp.eval_run_interpret
+  simpa [runSeq] using
+    ProbOracleComp.eval_run_interpret_eq_runWith
       (fun q state => pure (seqStep (honestReply1 generator m φ) (honestReply2 s φ) q.2 state))
       prog st
 
@@ -166,14 +166,13 @@ theorem run_gmwSeqProver_fst {α : Type} (generator : List Bool → List Bool) (
     | some st => PMF.pure st
   let oracle' : Unit × List Bool → StateT State' PMF (List Bool) := fun q state =>
     PMF.pure (seqStep (honestReply1 generator m φ) (honestReply2 s φ) q.2 state)
-  have hsim := ProbOracleComp.run_interpret_simulation P.respond oracle' relate
+  have hsim := ProbOracleComp.runWith_simulation P.respond oracle' relate
     (fun q state => by
       cases state <;>
         simp [P, gmwSeqProver, relate, oracle', PMF.bind_map, Function.comp_def]) prog P.init
   have hmap := congrArg (PMF.map Prod.fst) hsim
-  have hlhs : (((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) P.respond)
-        prog).run P.init).bind (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
+  have hlhs : ((ProbOracleComp.runWith P.respond prog P.init).bind
+        (fun (a, s') => (relate s').map (a, ·))).map Prod.fst =
       (P.run prog P.init).map Prod.fst := by
     simp only [pmf_norm, Prover.run]
     have hconst : ∀ x : α × P.State, PMF.map (fun _ : State' => x.1) (relate x.2) = PMF.pure x.1 :=
@@ -181,7 +180,7 @@ theorem run_gmwSeqProver_fst {α : Type} (generator : List Bool → List Bool) (
     simp only [hconst]; rfl
   rw [hlhs] at hmap; rw [hmap]
   simp only [pmf_norm, P, gmwSeqProver, relate]
-  exact congrArg (PMF.bind _) (funext fun coinsList => by rw [eval_runSeq]; rfl)
+  exact congrArg (PMF.bind _) (funext fun coinsList => by rw [eval_runSeq])
 
 /-- The PPT program realizing `gmwSeqProver`'s interaction with a verifier `prog`. -/
 noncomputable def gmwSeqInteract (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
