@@ -211,11 +211,7 @@ theorem recvRank_le_of_propRank_le {μ ν : Matching n} (hν : I.IsStable ν)
   push Not at hlt
   set q := μ.symm r
   have hμq : μ q = r := μ.apply_symm_apply r
-  have hne : ν q ≠ r := by
-    intro hνq
-    have : ν.symm r = q := by rw [← hνq, Equiv.symm_apply_apply]
-    rw [this] at hlt
-    exact lt_irrefl _ hlt
+  have hne : ν q ≠ r := by grind
   have hlt' : I.propRank q r < I.propRank q (ν q) := by
     refine lt_of_le_of_ne (hμq ▸ h q) fun heq => hne ?_
     exact (I.propRank_injective q heq).symm

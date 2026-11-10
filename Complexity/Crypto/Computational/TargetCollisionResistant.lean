@@ -49,12 +49,13 @@ following game with non-negligible probability:
    `H n k m₀ = H n k m₁`.
 
 Unlike full collision resistance (`CollisionResistantOn`), where a single key `k` can be reused
-across every Merkle–Damgård step, domain extension for target collision resistance uses independent
-keys across stages so that the reduction can compute the target compression input at a guessed stage
+across every Merkle–Damgård step, plugging a target collision-resistant compression function with
+one fixed key directly into Merkle–Damgård can fail to give a target collision-resistant hash
+([BonehShoup2023], Section 8.11.3, p. 340). The tree constructions adapted here use independent keys
+across stages so that the reduction can compute the target compression input at a guessed stage
 before receiving the challenge key at that stage ([NaorYung1989], March 13, 1995 manuscript
-revision, Section 2.3; [BonehShoup2023], Section 8.11.3, pp. 339–340; [Goldreich2004],
-Section 6.4.3.2, June 2003 chapter draft Constructions 6.4.24 and 6.4.26, Propositions 6.4.25 and
-6.4.27).
+revision, Section 2.3; [Goldreich2004], Section 6.4.3.2, June 2003 chapter draft Constructions
+6.4.24 and 6.4.26, Propositions 6.4.25 and 6.4.27).
 
 We formalize:
 1. Two-stage target-collision adversaries (`TargetCollisionFinder`, `TargetCollisionFinder.IsPPT`),
@@ -72,11 +73,13 @@ We formalize:
 
 ### Source mapping and finite-parameter boundary
 
-Whereas [BonehShoup2023], Section 8.11.3 presents a linear per-step-key chain (with a pointer to
-logarithmic-key tree hashing on p. 340) and the Naor–Yung (1995 revision, Section 2.3) and Goldreich
-(June 2003 draft, Section 6.4.3.2) tree constructions hash fixed-length block sequences before
-composing with length disambiguation, `uowhfTreeHash` adapts level-keyed binary-tree hashing into a
-single total function on `List Bool`:
+Whereas [BonehShoup2023], Section 8.11.3 (pp. 339–340, Fig. 8.15 and Theorem 8.13) presents a linear
+chain that reuses one compression key `k₁` at every step and XORs one of `1 + log₂ L` masks
+`k₂[ν(i)]` into the chaining value, so that its key is logarithmic in the message length (and
+mentions a tree-based alternative with logarithmic-size keys on p. 340), and the Naor–Yung (1995
+revision, Section 2.3) and Goldreich (June 2003 draft, Section 6.4.3.2) tree constructions hash
+fixed-length block sequences before composing with length disambiguation, `uowhfTreeHash` adapts
+level-keyed binary-tree hashing into a single total function on `List Bool`:
 * `uowhfLeaves` encodes each bit of `msg` as a zero-padded `M`-bit leaf block (`[0^M]` when
   `msg = []`), where `M = blockLen n` satisfies `n ≤ M`;
 * `uowhfTreeLevels` folds `n` fixed binary-tree halving levels under independent subkeys

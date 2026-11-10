@@ -226,8 +226,7 @@ private lemma block_arith {K W b z p X : ℕ} (hW : 1 ≤ W) (hp : p ≤ W) (hX 
         (2 * p + 1 + (2 * X + 1 + (2 * z + 1))) ≤
       (8 * K + 24) * ((b + 1) * (W + 1)) := by
   have hz1 : z + 1 ≤ (z + 1) ^ 2 := Nat.le_self_pow two_ne_zero _
-  have h₁ : (b + 1) * (2 * (K * W) + (z + 1) ^ 2) ≤ (b + 1) * (2 * (K * W) + 4 * W) :=
-    Nat.mul_le_mul_left _ (by omega)
+  have h₁ : (b + 1) * (2 * (K * W) + (z + 1) ^ 2) ≤ (b + 1) * (2 * (K * W) + 4 * W) := by gcongr
   have h₂ : 1 ≤ (b + 1) * (W + 1) := Nat.one_le_iff_ne_zero.mpr (by positivity)
   have h₃ : W + 1 ≤ (b + 1) * (W + 1) := Nat.le_mul_of_pos_left _ (Nat.succ_pos b)
   have h₄ : K * W ≤ K * ((b + 1) * (W + 1)) :=

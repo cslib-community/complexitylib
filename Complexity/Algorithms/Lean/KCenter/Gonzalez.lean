@@ -17,8 +17,9 @@ Gonzalez's algorithm picks a first center and then, `k - 1` times, adds a point 
 the centers chosen so far ([Gonzalez1985]; [WilliamsonShmoys2011], Algorithm 2.1). On a
 symmetric distance with the triangle inequality its radius is at most twice the optimal
 k-center radius ([WilliamsonShmoys2011], Theorem 2.3). The factor `2` cannot be improved in
-polynomial time unless `P = NP`; the combinatorial core of that hardness result is
-`Complexity.Algorithms.Lean.KCenter.DominatingSet`.
+polynomial time unless `P = NP`: the combinatorial core of that hardness result is
+`Complexity.Algorithms.Lean.KCenter.DominatingSet`, and the statement on encoded instances is
+`Cslib.Complexity.P_eq_NP_of_kCenter_approx`.
 
 ## Algorithm and source mapping
 
@@ -189,10 +190,7 @@ theorem nodup_gonzalez [Zero α] (hself : ∀ x, d x x = 0) (hpos : ∀ x y, x �
   induction k with
   | zero => exact List.nodup_nil
   | succ k ih =>
-    have hP : P ≠ [] := by
-      rintro rfl
-      rw [List.toFinset_nil, Finset.card_empty] at hk
-      omega
+    have hP : P ≠ [] := by grind [List.toFinset_nil, Finset.card_empty]
     rw [gonzalez_succ]
     unfold farthestStep
     match hm : P.argmax (centerDist d (gonzalez d P k).toFinset) with

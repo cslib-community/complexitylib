@@ -192,9 +192,7 @@ private theorem sum_drop_take_eq_sum_Ico {α : Type*} [AddCommMonoid α]
         ext x
         simp only [Finset.mem_Ico, Finset.mem_insert]
         omega
-      have hr_not : r ∉ Finset.Ico l r := by
-        simp only [Finset.mem_Ico]
-        omega
+      have hr_not : r ∉ Finset.Ico l r := by grind
       rw [htake, List.drop_append_of_le_length (by rw [hlen_r]; exact hrl),
         List.sum_append, List.sum_singleton, ih (Nat.le_of_lt hrs),
         hico, Finset.sum_insert hr_not, add_comm]
@@ -590,9 +588,7 @@ private theorem buildLoopM_time_eq {α : Type*} [AddCommMonoid α]
     set p := m + lowbit m
     set tree' :=
       if p ≤ n then tree.modify (p - 1) (· + tree[m - 1]'(by omega)) else tree
-    have hsz' : tree'.size = n := by
-      dsimp only [tree']
-      split_ifs <;> simp only [Array.size_modify, hsz]
+    have hsz' : tree'.size = n := by grind
     have hsub := ih (m + 1) hsz' (by omega) (by omega) (by omega)
     omega
 
@@ -661,16 +657,7 @@ private theorem buildLoopM_spec {α : Type*} [AddCommMonoid α]
       refine ⟨hsz', fun idx hidx1 hidx_lt hidx_sz' => ?_,
         fun idx hidx1 hidx_ge hidx_sz' => ?_⟩
       · have hidx_sz : idx ≤ tree.size := by rw [hinv.size_eq, ← hsz']; exact hidx_sz'
-        have htree'_eq : tree'[idx - 1]'(by omega) = tree[idx - 1]'(by omega) := by
-          generalize_proofs pf1 pf2
-          revert pf1
-          dsimp only [tree']
-          split_ifs with hp
-          · intro pf1
-            have hne : p - 1 ≠ idx - 1 := by omega
-            simp only [Array.getElem_modify, hne, ↓reduceIte]
-          · intro _
-            rfl
+        have htree'_eq : tree'[idx - 1]'(by omega) = tree[idx - 1]'(by omega) := by grind
         rw [htree'_eq]
         rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hidx_lt) with hlt | rfl
         · exact hinv.done_eq idx hidx1 hlt hidx_sz
@@ -708,16 +695,7 @@ private theorem buildLoopM_spec {α : Type*} [AddCommMonoid α]
           rw [hfilt_eq, Finset.sum_insert hm_not, add_assoc]
           congr 1
           rw [add_comm]
-        · have htree'_ne : tree'[idx - 1]'(by omega) = tree[idx - 1]'(by omega) := by
-            generalize_proofs pf1 pf2
-            revert pf1
-            dsimp only [tree']
-            split_ifs with hp
-            · intro pf1
-              have hne : p - 1 ≠ idx - 1 := by omega
-              simp only [Array.getElem_modify, hne, ↓reduceIte]
-            · intro _
-              rfl
+        · have htree'_ne : tree'[idx - 1]'(by omega) = tree[idx - 1]'(by omega) := by grind
           rw [htree'_ne, hinv.todo_eq idx hidx1 (by omega) hidx_sz]
           have hfilt_eq : (fenwickChildren idx).filter (· < m + 1) =
               (fenwickChildren idx).filter (· < m) := by

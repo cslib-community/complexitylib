@@ -54,7 +54,9 @@ and hence `(1 - Pe) log₂ |M| ≤ n (1 - h₂(p)) + 1`
 The results hold for every `p ∈ [0, 1]` and every deterministic decoder, not only nearest-codeword
 decoders. With `Cslib.BitString.eventually_exists_code_decodingError_le` they show that
 `1 - h₂(p)` is the capacity of `BSC_p` for `p < 1 / 2`. The strong converse (the error tends to `1`
-above capacity, [Guruswami, Rudra and Sudan, Theorem 6.3.1(2)][GuruswamiRudraSudan2019]), general
+above capacity, [Guruswami, Rudra and Sudan, Theorem 6.3.1(2)][GuruswamiRudraSudan2019]) is in
+`Complexity.Probability.BitString.BinarySymmetricChannel.StrongConverse`, and the capacity theorem
+for every `p` in `Complexity.Probability.BitString.BinarySymmetricChannel.Capacity`. General
 discrete memoryless channels and channels with feedback are not formalized here.
 
 ## Main results
@@ -241,8 +243,7 @@ theorem le_expect_decodingError_of_lt_rate [Fintype M] [Nonempty M] (p : I) {R :
   have hR0 : 0 < R := hC0.trans_lt hR
   rw [div_le_iff₀ (by positivity)]
   by_cases hPe1 : Pe ≤ 1
-  · have h1 : (1 - Pe) * (R * n) ≤ (1 - Pe) * Real.logb 2 (Fintype.card M) :=
-      mul_le_mul_of_nonneg_left hM (sub_nonneg.mpr hPe1)
+  · have h1 : (1 - Pe) * (R * n) ≤ (1 - Pe) * Real.logb 2 (Fintype.card M) := by gcongr
     have hn0 : 0 < n := pos_of_mul_pos_right (by linarith) (sub_pos.mpr hR).le
     refine le_of_mul_le_mul_right ?_ hn0
     linarith

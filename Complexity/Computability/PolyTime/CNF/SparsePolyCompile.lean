@@ -669,8 +669,7 @@ private theorem compileParityRow_prefix_props (φ : CNF ℕ) (row : List Bool) (
           (length_compileClause_le φ[n]).trans (Nat.pow_le_pow_right (by omega) (hφ φ[n] hc_mem))
         calc (xorEquation _ (compileClause φ[n])).length
             ≤ _ + (compileClause φ[n]).length := length_xorEquation_le _ _
-          _ ≤ ((List.range n).countP fun e => row.getD e false) * 2 ^ k + 2 ^ k :=
-              Nat.add_le_add hlen hcl
+          _ ≤ ((List.range n).countP fun e => row.getD e false) * 2 ^ k + 2 ^ k := by gcongr
           _ = (((List.range n).countP fun e => row.getD e false) + (0 + 1)) * 2 ^ k := by ring
     · simpa only [Nat.add_zero] using ⟨hcan, hdeg, hlen⟩
 
@@ -907,7 +906,8 @@ attribute [local irreducible] ComputableInPolyTime
 
 /-- Sparse `𝔽₂` equations with variable indices in binary: the concatenation of the framed
 monomials, each monomial the concatenation of its framed variable indices, each encoded by
-`encNat`. -/
+`encNat`. This is the layout `encList (encList encNat)` of `Cslib.LinearAlgebra.encVarSets` and
+`Cslib.LinearAlgebra.encSchedules`; the name records the role. -/
 abbrev encSparseEquation : List (List ℕ) ↪ List Bool :=
   encList (encList encNat)
 
@@ -1099,8 +1099,7 @@ theorem length_enc_reduceEquation_le (l : List (List ℕ)) :
             List.length_append, le_rfl]
       calc (eEq ((m :: ms).foldl toggleMonomial acc)).length
           ≤ (eEq (toggleMonomial acc m)).length + (eEq ms).length := ih _
-        _ ≤ (eEq acc).length + (frame (eM m)).length + (eEq ms).length :=
-            Nat.add_le_add_right hstep _
+        _ ≤ (eEq acc).length + (frame (eM m)).length + (eEq ms).length := by gcongr
         _ = (eEq acc).length + (eEq (m :: ms)).length := by
             simp only [eEq, encList_cons, List.length_append]; omega
   simpa only [reduceEquation, eEq, encList_nil, List.length_nil, Nat.zero_add] using hred l []

@@ -312,8 +312,7 @@ theorem div_sqrt_clog_le_interpolationScale {n : ℕ} (hn : 16384 ≤ n) :
         2 * ((n : ℝ) * (nu : ℝ) ^ 2 / Real.sqrt (lam : ℝ)) := by
     refine Nat.cast_div_le.trans ?_
     rw [mul_div_assoc', div_le_div_iff₀ (Nat.cast_pos.mpr hsqrt_pos) hsqrt_real_pos]
-    have hmul1 : (n : ℝ) * Real.sqrt (lam : ℝ) ≤ (n : ℝ) * (2 * (lam.sqrt : ℝ)) :=
-      mul_le_mul_of_nonneg_left hsqrt_le (Nat.cast_nonneg n)
+    have hmul1 : (n : ℝ) * Real.sqrt (lam : ℝ) ≤ (n : ℝ) * (2 * (lam.sqrt : ℝ)) := by gcongr
     have hmul2 : (n : ℝ) * (2 * (lam.sqrt : ℝ)) ≤
         2 * ((n : ℝ) * (nu : ℝ) ^ 2) * (lam.sqrt : ℝ) := by
       have : (n : ℝ) ≤ (n : ℝ) * (nu : ℝ) ^ 2 :=

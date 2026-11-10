@@ -82,8 +82,7 @@ private theorem replaceAnswer_map (distribution : Query → PMF Value)
     | some v => simp
     | none =>
       simp only [PMF.map_comp, Function.comp_def]
-      congr 1
-      funext v
+      congr 1 with v : 1
       congr 1
       exact Function.update_comm hq _ _ _
 

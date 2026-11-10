@@ -393,8 +393,7 @@ private theorem select_bounds {count : C × List (List Bool) → ℕ}
         have hm : (encNat j).length ≤ (encNat K).length := by
           simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size hj
         exact hm.trans hlIdx
-      have hsq : ((encNat (runAt j).1).length + 1) ^ 2 ≤ (lIdx L + 1) ^ 2 :=
-        Nat.pow_le_pow_left (by omega) 2
+      have hsq : ((encNat (runAt j).1).length + 1) ^ 2 ≤ (lIdx L + 1) ^ 2 := by gcongr
       have hcbT := (hcb_bounds j hj).1
       have hRJ : cCount.time (c, rows ++ [candRow j]) ≤ R := hR j hj
       change (encPair encNat (encAcc encC) (runAt j)).length +
@@ -573,8 +572,7 @@ theorem computableInO_greedy {count : C × List (List Bool) → ℕ}
     · have hmaxRT : RTO ≤ bOuter L + (K + 1) * (selDom L + R₀) + pApp (bAppIn L) :=
         NativeCertificate.maxRoundTime_le cstep (3 * n) (c, m, P, rows₀) fun i hi =>
           (hstep_b i hi).1
-      have h3n_sq : ((encNat (3 * n)).length + 1) ^ 2 ≤ (3 * L + 1) ^ 2 :=
-        Nat.pow_le_pow_left (by omega) 2
+      have h3n_sq : ((encNat (3 * n)).length + 1) ^ 2 ≤ (3 * L + 1) ^ 2 := by gcongr
       have hper : RTO + MO + ((encNat (3 * n)).length + 1) ^ 2 ≤
           (K + 1) * (outerFixed L + selDom L + R₀) :=
         calc RTO + MO + ((encNat (3 * n)).length + 1) ^ 2

@@ -81,10 +81,8 @@ theorem queries_ninth_blocks (k N Q : ℕ) (hQ : Q * 2 ^ (9 * k) ≤ N ^ 2) :
         mul_le_mul_of_nonneg_left (sum_alpha_ninth_blocks k) (Nat.cast_nonneg _)
     _ = ((Q : ℝ) * (2 : ℝ) ^ (9 * k)) *
         (((72 : ℝ) * (9 / 16 : ℝ) ^ 9) ^ k) := by rw [he]; ring
-    _ ≤ (N : ℝ) ^ 2 * (((72 : ℝ) * (9 / 16 : ℝ) ^ 9) ^ k) :=
-      mul_le_mul_of_nonneg_right hQr (by positivity)
-    _ ≤ (N : ℝ) ^ 2 * (9 / 20 : ℝ) ^ k :=
-      mul_le_mul_of_nonneg_left (pow_le_pow_left₀ (by positivity) hbase _) (by positivity)
+    _ ≤ (N : ℝ) ^ 2 * (((72 : ℝ) * (9 / 16 : ℝ) ^ 9) ^ k) := by gcongr
+    _ ≤ (N : ℝ) ^ 2 * (9 / 20 : ℝ) ^ k := by gcongr
     _ = _ := by ring
 
 /-- The all-tile retained-value count has the same rational decay at the block parameters.

@@ -9,12 +9,13 @@ module
 
 public import Complexity.Computability.Interactive.Security
 public import Complexity.Crypto.Game
+public import Complexity.Probability.StatisticalDistance.CloseTo
 import Complexity.Probability.PMF.Bool
 
 /-!
 # Bridging Boolean game advantage and all-events statistical closeness
 
-`Cslib.Interactive.CloseTo` measures total variation distance in `ℝ≥0∞` on an arbitrary discrete
+`Cslib.Probability.CloseTo` measures total variation distance in `ℝ≥0∞` on an arbitrary discrete
 type `α : Type` without `Fintype` or measurability assumptions, while `Cslib.Crypto.Game.advantage`
 measures the distinguishing advantage in `ℝ≥0` between two Boolean experiments (`Game = PMF Bool`).
 
@@ -47,7 +48,7 @@ ensembles `PMF (List Bool)` and protocol transcripts.
   `Cslib.Crypto.Game.closeTo_iff_forall_coe_advantage_bind_le`,
   `Cslib.Crypto.Game.closeTo_iff_forall_advantage_bind_le`: variational characterizations of
   `CloseTo` via deterministic and randomized Boolean distinguishers.
-* `Cslib.Interactive.CloseTo.bind_right_tsum`: input-dependent error bounds on mixtures
+* `Cslib.Probability.CloseTo.bind_right_tsum`: input-dependent error bounds on mixtures
   under `CloseTo`.
 -/
 
@@ -55,7 +56,7 @@ ensembles `PMF (List Bool)` and protocol transcripts.
 
 namespace Cslib.Crypto.Game
 
-open Interactive
+open Probability
 open scoped ENNReal NNReal
 
 private theorem coe_succProbability_ennreal (game : Game) :
@@ -188,7 +189,7 @@ theorem closeTo_iff_forall_advantage_bind_le {α : Type} {μ ν : PMF α} {ε : 
 
 end Cslib.Crypto.Game
 
-namespace Cslib.Interactive
+namespace Cslib.Probability
 
 open scoped ENNReal
 
@@ -208,4 +209,4 @@ theorem CloseTo.bind_right_tsum {α β : Type} (μ : PMF α) {f g : α → PMF �
     _ = ∑' a, μ a * (g a).toOuterMeasure event + ∑' a, μ a * err a := by
         simp only [mul_add, tsum_add]
 
-end Cslib.Interactive
+end Cslib.Probability

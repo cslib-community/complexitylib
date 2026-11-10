@@ -7,10 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (Mathlib, `Mathlib/Combinatorics/Digraph/MatrixTree.lean`)
 
+public import Complexity.Foundations.Combinatorics.Digraph.Arborescence
 public import Complexity.Foundations.LinearAlgebra.Matrix.Laplacian
 public import Mathlib.Algebra.BigOperators.Finprod
-public import Mathlib.Combinatorics.Digraph.Basic
-public import Mathlib.Logic.Relation
 
 /-!
 # The directed matrix-tree theorem
@@ -23,7 +22,9 @@ in-arborescences `T` rooted at `r`, of the product of the weights `A v w` of the
 `T` (`Digraph.det_laplacian_submatrix_eq_finsum_isInArborescence`). This is Tutte's directed
 matrix-tree theorem [Tutte1948]. A spanning in-arborescence rooted at `r` is a digraph on all of
 `V` in which `r` has no outgoing arc, every other vertex has exactly one outgoing arc, and every
-vertex reaches `r` along arcs (`Digraph.IsInArborescence`). Its arcs point towards the root.
+vertex reaches `r` along arcs (`Digraph.IsInArborescence`, defined with its parent-function
+description in `Complexity.Foundations.Combinatorics.Digraph.Arborescence`). Its arcs point
+towards the root.
 
 For a digraph `G` with adjacency matrix `Digraph.adjMatrix R G`, the reduced Laplacian is the
 out-degree matrix minus the adjacency matrix with the row and column of `r` deleted, and its
@@ -43,21 +44,24 @@ functions that reach `r` correspond to the in-arborescences rooted at `r`, by `T
 
 ## Main definitions
 
-* `Digraph.IsInArborescence`: spanning in-arborescences rooted at a vertex.
 * `Digraph.adjMatrix`: the adjacency matrix of a digraph.
 
 ## Main results
 
 * `Digraph.det_laplacian_submatrix_eq_finsum_isInArborescence`: **the directed matrix-tree
   theorem**, weighted form.
+* `Digraph.det_laplacian_submatrix_eq_finsum_reachable`: the same, as a sum over parent
+  functions.
 * `Digraph.det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence`: the directed
   matrix-tree theorem, counting form.
 
 ## References
 
 * [W. T. Tutte, *The dissection of equilateral triangles into equilateral triangles*][Tutte1948]
-  (the directed matrix-tree theorem is attributed to this paper by secondary sources; theorem
-  locator unverified)
+  (Theorem 3.6, according to [Stanley2013], Chapter 10 notes; the primary source was not
+  inspected)
+* [R. P. Stanley, *Topics in Algebraic Combinatorics*][Stanley2013], Theorem 10.4 (the directed
+  matrix-tree theorem for digraphs with parallel arcs and loops)
 -/
 
 public section
@@ -67,17 +71,6 @@ open Matrix
 namespace Digraph
 
 variable {V : Type*}
-
-/-- `T` is a **spanning in-arborescence rooted at `r`**, an oriented spanning tree with every arc
-directed towards `r`: the root has no outgoing arc, every other vertex has exactly one outgoing
-arc, and every vertex reaches `r` along arcs. -/
-structure IsInArborescence (T : Digraph V) (r : V) : Prop where
-  /-- The root has no outgoing arc. -/
-  not_adj_root : ∀ w, ¬ T.Adj r w
-  /-- Every vertex other than the root has exactly one outgoing arc. -/
-  existsUnique_adj : ∀ v, v ≠ r → ∃! w, T.Adj v w
-  /-- Every vertex reaches the root along arcs. -/
-  reachable : ∀ v, Relation.ReflTransGen T.Adj v r
 
 variable (R : Type*) [Zero R] [One R] in
 /-- The **adjacency matrix** of a digraph: the entry `(v, w)` is `1` if `v → w` is an arc and `0`
@@ -135,53 +128,38 @@ private theorem setOf_adj_toDigraph (f : {v // v ≠ r} → V) :
 
 variable [DecidableEq V]
 
-private theorem reflTransGen_of_iterate (f : {v // v ≠ r} → V) :
-    ∀ (n : ℕ) (v : V), (withRoot f)^[n] v = r → Relation.ReflTransGen (toDigraph f).Adj v r := by
-  intro n
-  induction n with
-  | zero =>
-    intro v hv
-    rw [Function.iterate_zero_apply] at hv
-    rw [hv]
-  | succ n ih =>
-    intro v hv
-    by_cases hvr : v = r
-    · rw [hvr]
-    · rw [Function.iterate_succ_apply] at hv
-      exact Relation.ReflTransGen.head ⟨hvr, (withRoot_of_ne f hvr).symm⟩ (ih _ hv)
+/-- `toDigraph f` is the digraph of the total parent function `withRoot f`. -/
+private theorem toDigraph_eq_parentDigraph (f : {v // v ≠ r} → V) :
+    toDigraph f = parentDigraph r (withRoot f) := by
+  ext v w
+  constructor
+  · rintro ⟨hv, rfl⟩
+    exact ⟨hv, withRoot_of_ne f hv⟩
+  · rintro ⟨hv, rfl⟩
+    exact ⟨hv, (withRoot_of_ne f hv).symm⟩
 
 private theorem exists_iterate_of_reflTransGen (f : {v // v ≠ r} → V) {v : V}
-    (h : Relation.ReflTransGen (toDigraph f).Adj v r) : ∃ n, (withRoot f)^[n] v = r := by
-  induction h using Relation.ReflTransGen.head_induction_on with
-  | refl => exact ⟨0, rfl⟩
-  | head hab _ ih =>
-    obtain ⟨n, hn⟩ := ih
-    obtain ⟨ha, rfl⟩ := hab
-    exact ⟨n + 1, by rw [Function.iterate_succ_apply, withRoot_of_ne f ha, hn]⟩
+    (h : Relation.ReflTransGen (toDigraph f).Adj v r) : ∃ n, (withRoot f)^[n] v = r :=
+  exists_iterate_eq_of_reflTransGen_parentDigraph (toDigraph_eq_parentDigraph f ▸ h)
 
 private theorem isInArborescence_toDigraph {f : {v // v ≠ r} → V} (hf : Acyclic f) :
-    (toDigraph f).IsInArborescence r where
-  not_adj_root _ := fun ⟨h, _⟩ => h rfl
-  existsUnique_adj v hv := ⟨f ⟨v, hv⟩, ⟨hv, rfl⟩, fun _ ⟨_, hw⟩ => hw.symm⟩
-  reachable v := by
-    obtain ⟨n, hn⟩ := hf v
-    exact reflTransGen_of_iterate f n v hn
+    (toDigraph f).IsInArborescence r := by
+  rw [toDigraph_eq_parentDigraph]
+  exact isInArborescence_parentDigraph_iff.mpr hf
 
 private theorem exists_toDigraph_eq {T : Digraph V} (hT : T.IsInArborescence r) :
     ∃ f : {v // v ≠ r} → V, Acyclic f ∧ toDigraph f = T := by
-  choose f hf using fun v : {v // v ≠ r} => (hT.existsUnique_adj v v.2).exists
-  have hTf : toDigraph f = T := by
-    ext v w
-    constructor
-    · rintro ⟨hv, rfl⟩
-      exact hf ⟨v, hv⟩
-    · intro hvw
-      have hv : v ≠ r := fun h => hT.not_adj_root w (h ▸ hvw)
-      exact ⟨hv, (hT.existsUnique_adj v hv).unique (hf ⟨v, hv⟩) hvw⟩
-  refine ⟨f, fun v => ?_, hTf⟩
-  apply exists_iterate_of_reflTransGen
-  rw [hTf]
-  exact hT.reachable v
+  obtain ⟨p, hpr, rfl⟩ := hT.exists_parentDigraph_eq
+  have hwp : withRoot (fun v : {v // v ≠ r} => p v) = p := by
+    funext v
+    by_cases hv : v = r
+    · rw [hv, hpr]
+      simp [withRoot]
+    · exact withRoot_of_ne _ hv
+  refine ⟨fun v => p v, ?_, ?_⟩
+  · rw [Acyclic, hwp]
+    exact isInArborescence_parentDigraph_iff.mp hT
+  · rw [toDigraph_eq_parentDigraph, hwp]
 
 /-- Parent functions that reach `r` are equivalent to in-arborescences rooted at `r`. -/
 private noncomputable def parentEquiv :
@@ -337,6 +315,26 @@ theorem det_laplacian_submatrix_eq_finsum_isInArborescence (A : Matrix V V R) (r
   change _ = ∏ᶠ (p : V × V) (_ : p ∈ {p : V × V | (toDigraph f.1).Adj p.1 p.2}), A p.1 p.2
   rw [setOf_adj_toDigraph, finprod_mem_range (fun a b h => Subtype.ext (congrArg Prod.fst h)),
     finprod_eq_prod_of_fintype]
+
+/-- **The directed matrix-tree theorem**, parent-function form. The determinant of the reduced
+Laplacian is the sum, over the *parent functions* `f` assigning to each vertex `v ≠ r` a vertex
+`f v` such that following `f` leads from every vertex to `r`, of `∏ v, A v (f v)`. -/
+theorem det_laplacian_submatrix_eq_finsum_reachable (A : Matrix V V R) (r : V) :
+    (A.laplacian.submatrix (Subtype.val : {v // v ≠ r} → V) Subtype.val).det =
+      ∑ᶠ (f : {v // v ≠ r} → V)
+        (_ : ∀ v, Relation.ReflTransGen (fun v w => ∃ h : v ≠ r, f ⟨v, h⟩ = w) v r),
+        ∏ i : {v // v ≠ r}, A i (f i) := by
+  classical
+  rw [det_laplacian_submatrix_eq_sum, finsum_eq_sum_of_fintype]
+  refine Finset.sum_congr rfl fun f _ => ?_
+  rw [finsum_eq_if]
+  have hiff : (∀ v, Relation.ReflTransGen (toDigraph f).Adj v r) ↔ Acyclic f :=
+    ⟨fun h v => exists_iterate_of_reflTransGen f (h v),
+      fun h v => (isInArborescence_toDigraph h).reachable v⟩
+  change _ = if ∀ v, Relation.ReflTransGen (toDigraph f).Adj v r then _ else _
+  split_ifs with hf
+  · rw [det_parentMatrix_of_acyclic (hiff.mp hf), mul_one]
+  · rw [det_parentMatrix_of_not_acyclic (mt hiff.mpr hf), mul_zero]
 
 omit [Fintype V] [DecidableEq V] in
 open Classical in

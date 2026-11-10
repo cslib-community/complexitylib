@@ -712,8 +712,7 @@ theorem natAbs_rowEntry_convJet_le {J ℓ MA MB : ℕ} {A B : List (List ℤ)}
             exact Nat.mul_le_mul (hA' j₁ u₁) (hB' (j - j₁) (u - u₁))
       _ = (j + 1) * (u + 1) * (MA * MB) := by
             simp only [Finset.sum_const, Finset.card_range, smul_eq_mul, Nat.mul_assoc]
-      _ ≤ J * ℓ * (MA * MB) :=
-            Nat.mul_le_mul_right _ (Nat.mul_le_mul hj hu)
+      _ ≤ J * ℓ * (MA * MB) := by gcongr <;> omega
   · exact Nat.zero_le _
 
 /-- Binary magnitude-size bound for `convJet`: if stored entries of `A` and `B` have binary
@@ -772,8 +771,9 @@ attribute [local irreducible] ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
-/-- A jet array with its dimensions in unary: the pair `((J, ℓ), A)` of the framed unary `J` and
-`ℓ`, then the array `A` encoded by `encIntTable` with binary entries. -/
+/-- A jet array with its dimensions in unary: the pair `((J, ℓ), A)`. The dimension pair is framed,
+and inside it the unary `J` is framed again before the unary `ℓ`; the array `A` follows, encoded by
+`encIntTable` with binary entries. -/
 abbrev encJetWithDims : (ℕ × ℕ) × List (List ℤ) ↪ List Bool :=
   encPair (encPair encUnary encUnary) encIntTable
 
