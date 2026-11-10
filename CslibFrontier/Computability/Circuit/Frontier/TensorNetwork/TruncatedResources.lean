@@ -230,18 +230,13 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
       (qC.comp hSh)).add (qD.comp hSh)).add
       (qB.comp ((((PolyBounded.const 2).mul hSh).add (PolyBounded.const 1)).add
         PolyBounded.self))).add (qR.comp hSh)
-  obtain ⟨a, d, hUad⟩ := hU.exists_le
-  refine ⟨a + d, fun fl P ℓ r G R Q Yb hcore => ?_⟩
+  obtain ⟨K, hK⟩ := hU.exists_le_succ_pow
+  refine ⟨K, fun fl P ℓ r G R Q Yb hcore => ?_⟩
   set y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T := (fl, P, ℓ, r, G) with hy
   set L := (encEngine encT y).length with hL
   set N := DescribedNetwork.pointCount ℓ G with hN
   set X := L + Yb with hX
-  have hUX : U X ≤ (a + d) * (X + 1) ^ (a + d) := by
-    have h1 := hUad X
-    have h2 : (X + 1) ^ d ≤ (X + 1) ^ (a + d) := Nat.pow_le_pow_right (by omega) (by omega)
-    simp only [id] at h1
-    calc U X ≤ a * (X + 1) ^ d := h1
-      _ ≤ (a + d) * (X + 1) ^ (a + d) := Nat.mul_le_mul (by omega) h2
+  have hUX : U X ≤ K * (X + 1) ^ K := hK _ le_rfl X
   -- Sizes of the states.
   have hNL : N ≤ L * L + 1 := pointCount_le fl P ℓ r G
   have hNX : N ≤ (X + 1) ^ 2 := by
@@ -355,7 +350,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     have hsum : (N + 1) * A + (N + 1) * (2 * S + 2 * (N + 1) ^ 2 + P4 + R) =
         (N + 1) * (A + 2 * S + 2 * (N + 1) ^ 2 + P4 + R) := by ring
     have hC := Nat.mul_le_mul_left (N + 1)
-      (show A + 2 * S + 2 * (N + 1) ^ 2 + P4 + R ≤ (a + d) * (X + 1) ^ (a + d) + R by
+      (show A + 2 * S + 2 * (N + 1) ^ 2 + P4 + R ≤ K * (X + 1) ^ K + R by
         simp only [U] at hUX
         omega)
     omega
@@ -480,8 +475,8 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
   have hTSp : PolyBounded id fun Z => Tf Z + Sf Z := by
     dsimp only [Tf, Sf, Bf, Uf, Af]
     growth_poly
-  obtain ⟨a, d, had⟩ := hTSp.exists_le
-  refine ⟨a + d, fun P ℓ r fl ζ G E ES hE => ?_⟩
+  obtain ⟨K, hK⟩ := hTSp.exists_le_succ_pow
+  refine ⟨K, fun P ℓ r fl ζ G E ES hE => ?_⟩
   set G' := DescribedNetwork.specNet P ℓ fl ζ G with hG'
   set n := (encCore encT (P, fl, r, G')).length with hn
   set Z := n + ES with hZ
@@ -549,9 +544,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
   have hT' := hT.trans (Nat.mul_le_mul hfac (Nat.add_le_add_right hB _))
   have hRt := (bS (P, fl, r, G')).1.trans (mS (show n ≤ Z by omega))
   have hRs := (bS (P, fl, r, G')).2.trans (mS (show n ≤ Z by omega))
-  have h1 := had Z
-  simp only [id] at h1
-  have hK : a * (Z + 1) ^ d ≤ (a + d) * (Z + 1) ^ (a + d) := by gcongr <;> omega
+  have h1 : Tf Z + Sf Z ≤ K * (Z + 1) ^ K := hK _ le_rfl Z
   refine ⟨?_, ?_⟩
   · simp only [directCoreCertificate, NativeCertificate.congr, NativeCertificate.comp_time,
       Function.comp_apply]
@@ -568,16 +561,15 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
       have hT2 : (Z + 2) * 2 ≤ Tf Z := by simp only [Tf]; omega
       have h4 : X * ((Z + 2) * 2 * E) ≤ X * (Tf Z * E) := by gcongr
       omega
-    have hfin : X * (Tf Z * (E + 1)) ≤ (a + d) * (Z + 1) ^ (a + d) * X * (E + 1) := by
-      calc X * (Tf Z * (E + 1)) ≤ X * (a * (Z + 1) ^ d * (E + 1)) :=
+    have hfin : X * (Tf Z * (E + 1)) ≤ K * (Z + 1) ^ K * X * (E + 1) := by
+      calc X * (Tf Z * (E + 1)) ≤ X * (K * (Z + 1) ^ K * (E + 1)) :=
             Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (by omega))
-        _ = a * (Z + 1) ^ d * X * (E + 1) := by ring
-        _ ≤ _ := Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hK)
+        _ = K * (Z + 1) ^ K * X * (E + 1) := by ring
     have hpS : (NativeCertificate.ofPolyTime hcR).time (P, fl, r, G') ≤ pS Z := hRt
     omega
   · simp only [directCoreCertificate, NativeCertificate.congr, NativeCertificate.comp_space,
       Function.comp_apply]
-    have : Sf Z ≤ a * (Z + 1) ^ d := by omega
+    have : Sf Z ≤ K * (Z + 1) ^ K := by omega
     simp only [Sf] at this
     omega
 
@@ -611,8 +603,8 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
   have hTSp : PolyBounded id fun W => Tf W + Sf W := by
     dsimp only [Tf, Sf, Engf, Rf, Yf]
     growth_poly
-  obtain ⟨a, d, had⟩ := hTSp.exists_le
-  refine ⟨a + d, fun P ℓ r G E ES hE => ?_⟩
+  obtain ⟨K, hK⟩ := hTSp.exists_le_succ_pow
+  refine ⟨K, fun P ℓ r G E ES hE => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length with hn
   set W := n + ES with hW
   set X := 2 ^ G.numEdges with hX
@@ -647,9 +639,7 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
       Engf W := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
   have hMt := (bM (P, ℓ, r, G)).1.trans (mM (show n ≤ W by omega))
   have hMs := (bM (P, ℓ, r, G)).2.trans (mM (show n ≤ W by omega))
-  have h1 := had W
-  simp only [id] at h1
-  have hK : a * (W + 1) ^ d ≤ (a + d) * (W + 1) ^ (a + d) := by gcongr <;> omega
+  have h1 : Tf W + Sf W ≤ K * (W + 1) ^ K := hK _ le_rfl W
   refine ⟨?_, ?_⟩
   · simp only [truncDirectCertificate, NativeCertificate.congr, NativeCertificate.comp_time]
     have hTe' := hTe.trans (Nat.mul_le_mul hNy (Nat.add_le_add_right hEng _))
@@ -663,18 +653,17 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
       have e2 : X * (E + 1) * Tf W = X * (E + 1) * (pM W + (Yf W * Yf W + 2) * Engf W) +
           X * (E + 1) * ((Yf W * Yf W + 2) * Rf W) := by simp only [Tf]; ring
       omega
-    have hfin : X * (E + 1) * Tf W ≤ (a + d) * (W + 1) ^ (a + d) * X * (E + 1) := by
-      calc X * (E + 1) * Tf W ≤ X * (E + 1) * (a * (W + 1) ^ d) :=
+    have hfin : X * (E + 1) * Tf W ≤ K * (W + 1) ^ K * X * (E + 1) := by
+      calc X * (E + 1) * Tf W ≤ X * (E + 1) * (K * (W + 1) ^ K) :=
             Nat.mul_le_mul_left _ (by omega)
-        _ ≤ X * (E + 1) * ((a + d) * (W + 1) ^ (a + d)) := Nat.mul_le_mul_left _ hK
-        _ = (a + d) * (W + 1) ^ (a + d) * X * (E + 1) := by ring
+        _ = K * (W + 1) ^ K * X * (E + 1) := by ring
     change (NativeCertificate.ofPolyTime modulusChoice_polyTime).time (P, ℓ, r, G) +
       (engineCertificate _ (directCoreCertificate entry ce)).time (fl, P, ℓ, r, G) ≤ _
     omega
   · simp only [truncDirectCertificate, NativeCertificate.congr, NativeCertificate.comp_space]
     change (NativeCertificate.ofPolyTime modulusChoice_polyTime).space (P, ℓ, r, G) +
       (engineCertificate _ (directCoreCertificate entry ce)).space (fl, P, ℓ, r, G) ≤ _
-    have : Sf W ≤ a * (W + 1) ^ d := by omega
+    have : Sf W ≤ K * (W + 1) ^ K := by omega
     simp only [Sf] at this
     omega
 
