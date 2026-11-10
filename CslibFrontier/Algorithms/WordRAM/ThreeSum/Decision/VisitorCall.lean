@@ -126,13 +126,13 @@ theorem exec_consume {r κ n w N H b : ℕ} (c : Host.Callee r)
         y.regs (controllerRegisters r i) = x.regs (controllerRegisters r i)) ∧
       ∀ p < H, y.mem p = x.mem p := by
   obtain ⟨a, ha, haN, haV, hap, haw, hapr, hac, ham⟩ := exec_prepareHost (w := w) x
-  obtain ⟨hi, hF, hnF, hμ, hsize, hfill, hsqrt, _⟩ := caller_fits hN hH hw
+  obtain ⟨hi, hF, -, hμ, hsize, hfill, hsqrt, _⟩ := caller_fits hN hH hw
   have hw2 : w - 2 + 2 = w := by
     have := (four_le_width κ c.widthCoefficient n).trans hw
     omega
   have hcall := Host.exec_at (w := w - 2) c μ (a.comap (hostRegisters r))
     (haN.trans hlen) (haV.trans hbound) hap (haw.trans hheap) hbelow hvalues
-    (fun i hi => (congrFun ham _).trans (hmem i hi)) hi hF hnF
+    (fun i hi => (congrFun ham _).trans (hmem i hi)) hi hF
     (fun i hi => hμ _ (hvalues i hi))
     (by simpa only [hw2] using hsize) (by simpa only [hw2] using hfill)
     (by simpa only [hw2] using hsqrt) (by simpa only [hw2] using callee_width hN hH hw)

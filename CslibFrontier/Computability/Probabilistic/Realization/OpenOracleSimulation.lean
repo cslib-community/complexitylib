@@ -90,7 +90,7 @@ theorem step_eq_run_interpret (machine : MultiTapePTM k Bool Control Operation)
         ProbOracleComp.interpret_query, StateT.run_map, StateT.run_pure]
     rfl
 
-variable [Finite Control] [DecidableEq External] [Finite External]
+variable [Finite Control] [DecidableEq External]
 
 /-- A handler certified as strict oracle PPT makes one complete interpreter step strict oracle
 PPT. Only the selected transition runs, so a non-query step makes no external call. -/
@@ -105,6 +105,7 @@ theorem isOraclePPTOn_step [Fintype Operation] {input : α ↪ List Bool}
     IsOraclePPTOn (encPair input (encPair encFiniteConfig stateEncoding))
       (encPair encFiniteConfig stateEncoding)
       (fun pair => step machine handler pair.1 pair.2) := by
+  have := hhandler.finite_operations
   unfold step
   apply IsOraclePPTOn.finite_cases (tagEncoding := encFinite (Option Control))
     (branch := fun control (pair : α × (FiniteConfig k Bool Control Operation × State)) =>

@@ -146,124 +146,59 @@ theorem insertBody_exec {d w base key : ℕ} {tree : Tree d} {s : Data 32}
     (hkey : key < universeSize d) (ha : Fits w (base + span d)) :
     ExecWithin w insertBody s (insertNext s base key) 37 := by
   obtain ⟨hz, ho, htwo, hthree, hfour, hfive, hp, hx, _⟩ := hs
-  have h₁ : Fits w (base + 1) := ha.of_le (by have := five_le_span d; omega)
-  have h₂ : Fits w (base + 2) := ha.of_le (by have := five_le_span d; omega)
-  have h₃ : Fits w (base + 3) := ha.of_le (by have := five_le_span d; omega)
+  -- `ram_eval` derives the smaller header bounds `Fits w (base + k)` from this one.
   have h₄ : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
+  -- The early exits read only the header, so split on the cached bounds before the shape.
   have hheader := hr.header
+  rcases hb : tree.bounds with _ | ⟨m, M⟩ <;> rw [hb] at hheader
+  · have he : s.mem base = 0 := hheader.1
+    ram_eval [insertBody, insertNext, writeAt, hp, hx, hz, ho, htwo, he]
+  obtain ⟨he, ⟨hm, hM⟩, hq, hspan⟩ := hheader
+  by_cases heq : key = m
+  · ram_eval [insertBody, insertNext, readAt, hp, hx, hz, ho, he, hm, heq]
   cases tree with
-  | leaf b =>
-    cases b with
-    | none =>
-      have he : s.mem base = 0 := hheader.1
-      ram_eval [insertBody, insertNext, writeAt, hp, hx, hz, ho, htwo, he, h₁, h₂]
-    | some bounds =>
-      obtain ⟨m, M⟩ := bounds
-      obtain ⟨he, ⟨hm, hM⟩, hq, _⟩ := hheader
-      by_cases heq : key = m
-      · ram_eval [insertBody, insertNext, readAt, hp, hx, hz, ho, he, hm, heq, h₁]
-      · by_cases hlt : key < m
-        · by_cases hmx : M < m
-          · ram_eval [insertBody, insertNext, readAt, writeAt, hp, hx, hz, ho, htwo, hthree,
-              he, hm, hM, hq, splitSize, heq, hlt, hmx, h₁, h₂, h₃, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, hp, hx, hz, ho, htwo, hthree,
-              he, hm, hM, hq, splitSize, heq, hlt, hmx, h₁, h₂, h₃, Nat.add_left_cancel_iff]
-        · by_cases hmx : M < key
-          · ram_eval [insertBody, insertNext, readAt, writeAt, hp, hx, hz, ho, htwo, hthree,
-              he, hm, hM, hq, splitSize, heq, hlt, hmx, h₁, h₂, h₃, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, hp, hx, hz, ho, htwo, hthree,
-              he, hm, hM, hq, splitSize, heq, hlt, hmx, h₁, h₂, h₃, Nat.add_left_cancel_iff]
-  | @node d b summary cluster =>
-    cases b with
-    | none =>
-      have he : s.mem base = 0 := hheader.1
-      ram_eval [insertBody, insertNext, writeAt, hp, hx, hz, ho, htwo, he, h₁, h₂]
-    | some bounds =>
-      obtain ⟨m, M⟩ := bounds
-      obtain ⟨he, ⟨hm, hM⟩, hq, hspan⟩ := hheader
-      by_cases heq : key = m
-      · ram_eval [insertBody, insertNext, readAt, hp, hx, hz, ho, he, hm, heq, h₁]
-      · have hsafe := insert_descent_safe (base := base) ht hkey
-        have hqne : universeSize d ≠ 0 := Nat.ne_of_gt (universeSize_pos d)
-        have hbase : Fits w (base + 5) := ha.of_le (by have := five_le_span (d + 1); omega)
-        by_cases hlt : key < m
-        · have hd_eq : max m key = m := max_eq_left (Nat.le_of_lt hlt)
-          have hi : m / universeSize d < universeSize d := by simpa only [hd_eq] using hsafe.1
-          have hlo_lt : m % universeSize d < universeSize d := by simpa only [hd_eq] using hsafe.2.1
-          have hend : base + clusterOffset d (m / universeSize d) + span d ≤
-              base + span (d + 1) := by simpa only [hd_eq] using hsafe.2.2
-          have hu := universeSize_le_span d
-          have hu' := span_le_succ d
-          have hhi : Fits w (m / universeSize d) := ha.of_le (by omega)
-          have hlo : Fits w (m % universeSize d) := ha.of_le (by omega)
-          have hnext : Fits w (m / universeSize d + 1) := ha.of_le (by omega)
-          have hprod : Fits w ((m / universeSize d + 1) * span d) := by
-            apply ha.of_le; dsimp only [clusterOffset] at hend; omega
-          have hchild : Fits w (base + 5 + (m / universeSize d + 1) * span d) := by
-            apply ha.of_le; dsimp only [clusterOffset] at hend; omega
-          have hch1 : Fits w (base + 5 + (m / universeSize d + 1) * span d + 1) := by
-            apply ha.of_le; have := five_le_span d; dsimp only [clusterOffset] at hend; omega
-          have hch2 : Fits w (base + 5 + (m / universeSize d + 1) * span d + 2) := by
-            apply ha.of_le; have := five_le_span d; dsimp only [clusterOffset] at hend; omega
-          let ch := base + 5 + (m / universeSize d + 1) * span d
-          have hch_ne1 : ch ≠ base + 1 := by dsimp only [ch]; omega
-          have hch_ne2 : ch ≠ base + 2 := by dsimp only [ch]; omega
-          by_cases hmx : M < m <;> by_cases hch0 : s.mem ch = 0
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, hch1, hch2, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, hch1, hch2, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, Nat.add_left_cancel_iff]
-        · have hd_eq : max m key = key := max_eq_right (Nat.le_of_not_lt hlt)
-          have hi : key / universeSize d < universeSize d := by simpa only [hd_eq] using hsafe.1
-          have hlo_lt : key % universeSize d < universeSize d := by
-            simpa only [hd_eq] using hsafe.2.1
-          have hend : base + clusterOffset d (key / universeSize d) + span d ≤
-              base + span (d + 1) := by simpa only [hd_eq] using hsafe.2.2
-          have hu := universeSize_le_span d
-          have hu' := span_le_succ d
-          have hhi : Fits w (key / universeSize d) := ha.of_le (by omega)
-          have hlo : Fits w (key % universeSize d) := ha.of_le (by omega)
-          have hnext : Fits w (key / universeSize d + 1) := ha.of_le (by omega)
-          have hprod : Fits w ((key / universeSize d + 1) * span d) := by
-            apply ha.of_le; dsimp only [clusterOffset] at hend; omega
-          have hchild : Fits w (base + 5 + (key / universeSize d + 1) * span d) := by
-            apply ha.of_le; dsimp only [clusterOffset] at hend; omega
-          have hch1 : Fits w (base + 5 + (key / universeSize d + 1) * span d + 1) := by
-            apply ha.of_le; have := five_le_span d; dsimp only [clusterOffset] at hend; omega
-          have hch2 : Fits w (base + 5 + (key / universeSize d + 1) * span d + 2) := by
-            apply ha.of_le; have := five_le_span d; dsimp only [clusterOffset] at hend; omega
-          let ch := base + 5 + (key / universeSize d + 1) * span d
-          have hch_ne1 : ch ≠ base + 1 := by dsimp only [ch]; omega
-          have hch_ne2 : ch ≠ base + 2 := by dsimp only [ch]; omega
-          by_cases hmx : M < key <;> by_cases hch0 : s.mem ch = 0
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, hch1, hch2, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, hch1, hch2, Nat.add_left_cancel_iff]
-          · ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, h₁, h₂, h₃, h₄, hhi, hlo,
-              hnext, hprod, hbase, hchild, Nat.add_left_cancel_iff]
+  | leaf =>
+    -- A leaf updates its extrema in place and stops.
+    by_cases hlt : key < m
+    · by_cases hmx : M < m <;>
+        ram_eval [insertBody, insertNext, readAt, writeAt, hp, hx, hz, ho, htwo, hthree,
+          he, hm, hM, hq, splitSize, heq, hlt, hmx, Nat.add_left_cancel_iff]
+    · by_cases hmx : M < key <;>
+        ram_eval [insertBody, insertNext, readAt, writeAt, hp, hx, hz, ho, htwo, hthree,
+          he, hm, hM, hq, splitSize, heq, hlt, hmx, Nat.add_left_cancel_iff]
+  | @node d b _ _ =>
+    obtain rfl : b = some (m, M) := hb
+    -- The displaced key `max m key` descends. These three bounds cover every value the
+    -- descent writes; `ram_eval` derives the others (the high coordinate, the product,
+    -- `base + 5`, the child header) from them.
+    obtain ⟨hi, hlo_lt, hend⟩ := insert_descent_safe (base := base) ht hkey
+    have hqne : universeSize d ≠ 0 := Nat.ne_of_gt (universeSize_pos d)
+    have hu := universeSize_le_span d
+    have hu' := span_le_succ d
+    have hlo : Fits w (max m key % universeSize d) := ha.of_le (by omega)
+    have hnext : Fits w (max m key / universeSize d + 1) := ha.of_le (by omega)
+    have hch2 : Fits w (base + 5 + (max m key / universeSize d + 1) * span d + 2) := by
+      apply ha.of_le
+      have := five_le_span d
+      dsimp only [clusterOffset] at hend
+      omega
+    by_cases hlt : key < m
+    · rw [max_eq_left (Nat.le_of_lt hlt)] at hlo hnext hch2
+      let ch := base + 5 + (m / universeSize d + 1) * span d
+      have hch_ne1 : ch ≠ base + 1 := by dsimp only [ch]; omega
+      have hch_ne2 : ch ≠ base + 2 := by dsimp only [ch]; omega
+      by_cases hmx : M < m <;> by_cases hch0 : s.mem ch = 0 <;>
+        ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
+          htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
+          heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, Nat.add_left_cancel_iff]
+    · rw [max_eq_right (Nat.le_of_not_lt hlt)] at hlo hnext hch2
+      let ch := base + 5 + (key / universeSize d + 1) * span d
+      have hch_ne1 : ch ≠ base + 1 := by dsimp only [ch]; omega
+      have hch_ne2 : ch ≠ base + 2 := by dsimp only [ch]; omega
+      by_cases hmx : M < key <;> by_cases hch0 : s.mem ch = 0 <;>
+        ram_eval [insertBody, insertNext, readAt, writeAt, coordinates, hp, hx, hz, ho,
+          htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
+          heq, hlt, hmx, hqne, hch0, hch_ne1, hch_ne2, ch, Nat.add_left_cancel_iff]
 
 private theorem insertLoop_finish {d w base key : ℕ} {tree' : Tree d} {s : Data 32}
     (hs : InsertEntry base key s)

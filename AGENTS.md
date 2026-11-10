@@ -190,9 +190,13 @@ concrete and the change is small; otherwise record a specific follow-up with dec
 consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
 Do not expand a bounded PR into an unbounded architectural cleanup.
 
-Do not prove a lemma that the library, Mathlib or core already has, even privately: use it, or make
-a private original public. After a build, `python3 scripts/parallel_defs.py --theorems` lists the
-theorems a change adds or modifies whose statement already exists; CI posts the same notice.
+Do not prove a lemma that the library, CSLib, Mathlib or core already has, even privately or by
+re-deriving it inline inside another proof: use it, or make a private original public. After a
+build, `python3 scripts/parallel_defs.py --theorems` lists the theorems a change adds or modifies
+whose statement already exists; CI posts the same notice. It cannot see a fact re-derived inside a
+proof, so search for an existing lemma first. When a proof you add or change needs a substantial
+argument that another proof makes, derive it once; the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says when a shared lemma pays.
 
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
@@ -433,6 +437,9 @@ Read the actual definitions and statements. For substantive mathematics, explain
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
 Check new and changed statements against [Encodings in statements](#encodings-in-statements).
+Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
+a new copy of an argument the library already makes is a finding when the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 
