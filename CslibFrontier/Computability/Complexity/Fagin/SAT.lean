@@ -58,7 +58,7 @@ reductions, is proved separately.
 * [R. Fagin, *Generalized first-order spectra and polynomial-time recognizable sets*][Fagin1974]
 -/
 
-@[expose] public section
+public section
 
 universe u v
 

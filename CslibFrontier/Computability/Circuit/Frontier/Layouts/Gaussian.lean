@@ -70,7 +70,7 @@ width at most `(p_ρ + O(δ) + O(ε) + O(1/T ^ 2)) h`.
   and normal correlation*][Sheppard1899]
 -/
 
-@[expose] public section
+public section
 
 open Real
 

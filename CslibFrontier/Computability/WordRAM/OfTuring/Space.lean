@@ -36,7 +36,7 @@ by the space bound.
   threshold.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

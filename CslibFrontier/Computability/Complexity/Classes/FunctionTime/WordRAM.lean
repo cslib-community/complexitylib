@@ -43,7 +43,7 @@ classes beyond `P`.
 * [S. A. Cook and R. A. Reckhow, *Time bounded random access machines*][CookReckhow1973]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM
 

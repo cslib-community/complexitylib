@@ -54,7 +54,7 @@ uniform circuit families of `Cslib.Complexity.BQP`.
 * [S. Fenner, *PP-Lowness and a Simple Definition of AWPP*][Fenner2003]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Quantum
 

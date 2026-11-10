@@ -23,7 +23,7 @@ public import CslibFrontier.Logics.Propositional.CNF.Compact.Relabel
 This is an elementary consequence of the existing first-occurrence numbering conventions.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT
 

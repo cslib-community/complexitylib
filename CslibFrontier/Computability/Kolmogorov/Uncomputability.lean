@@ -61,7 +61,7 @@ Following the rest of the library, `K` denotes the plain complexity, which Li an
   Applications*][LiVitanyi2019]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Kolmogorov.DescriptionMethod
 

@@ -44,7 +44,7 @@ modulus.
 * [A. V. Chashkin, *On computing partial Boolean functions*][Chashkin2024]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

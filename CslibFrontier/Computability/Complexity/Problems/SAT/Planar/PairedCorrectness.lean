@@ -30,7 +30,7 @@ determines both crossover inputs and every ordinary ring from the original assig
 These are original composition proofs using the canonical path occupancy certificates.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 

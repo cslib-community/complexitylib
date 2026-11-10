@@ -33,7 +33,7 @@ encoding of instances (`Cslib.Complexity.PH_eq_P_of_NP_subset_P`). Hence `P = NP
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

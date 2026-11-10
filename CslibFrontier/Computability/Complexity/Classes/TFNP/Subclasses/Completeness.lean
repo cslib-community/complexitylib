@@ -40,7 +40,7 @@ words with leading zeros, preserving numerical values rather than merely the exi
   problems*][BeameEtAl1998]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

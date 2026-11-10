@@ -44,7 +44,7 @@ and continuous support semantics.
 The continuous orthogonal layout proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF.Crossover
 

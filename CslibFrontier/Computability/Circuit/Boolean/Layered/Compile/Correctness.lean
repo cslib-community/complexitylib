@@ -26,7 +26,7 @@ This invariant covers unused gates and the input-only initial row.
   circuit evaluation, including depth-zero wiring and repeated outputs.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Layered
 

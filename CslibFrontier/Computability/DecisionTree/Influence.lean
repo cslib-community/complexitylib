@@ -35,7 +35,7 @@ expected value of `sensitivityAt f x` (`BitString.totalInfluence_eq_expect_sensi
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

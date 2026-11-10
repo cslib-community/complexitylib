@@ -21,7 +21,7 @@ it does not allow host computation to change runtime output words for free.
 * `Realizes.result`: preserve the native code under an explicit equality of result encodings.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.WordRAM.Realization
 

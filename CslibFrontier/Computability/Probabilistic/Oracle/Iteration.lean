@@ -40,7 +40,7 @@ Adapts Computability/Probabilistic/Adaptive.lean on the cslib `crypto` branch at
 version of the tidy `iterateWhile` loop instead of presampled coins.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

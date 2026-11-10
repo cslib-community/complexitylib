@@ -36,7 +36,7 @@ The algorithm uses the integer thresholds `⌈log₂ n⌉` in place of `log₂ n
 * [M. Agrawal, N. Kayal, N. Saxena, *PRIMES is in P*][AKS2004]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -42,7 +42,7 @@ and continuous support semantics.
 The paired-terminal modification and its continuous orthogonal certificates are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF.PairedCrossover
 

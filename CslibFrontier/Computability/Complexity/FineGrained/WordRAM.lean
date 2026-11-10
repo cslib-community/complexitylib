@@ -42,7 +42,7 @@ hypothesis `Cslib.Complexity.ETH`, read on the word RAM over `Basis.additive` wi
   every word size above a logarithmic threshold in `L`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.CountingNativeEndpoint
 

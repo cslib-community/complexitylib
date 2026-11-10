@@ -31,7 +31,7 @@ lists `x` with `f x.length x = true`. Reading `x` through `BitString.ofList`, th
 * `Cslib.Complexity.ofSlices_mem_P`: the sufficient direction.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

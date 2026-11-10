@@ -18,7 +18,7 @@ These constructions combine machine witnesses, retaining independent resource an
 degrees, including degree zero. No higher tidy asymptotic calculus is used.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInDegree
 
 variable {α β γ δ : Type*} {encIn : α ↪ List Bool} {encMid : β ↪ List Bool}

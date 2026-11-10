@@ -39,7 +39,7 @@ for an explicit natural multiplier `A'`.
   Proposition 6.4, pp. 43–44.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SubexponentialSAT
 

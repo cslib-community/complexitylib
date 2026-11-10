@@ -39,7 +39,7 @@ Adapted from Computability/Probabilistic/{Realization/Composition,Composition}.l
 and framed pair encoding.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

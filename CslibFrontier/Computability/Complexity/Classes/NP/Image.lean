@@ -29,7 +29,7 @@ reduction, every problem in `NP`.
 * `Cslib.Complexity.image_SAT_mem_NP`: the encodings of the satisfiable formulas.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

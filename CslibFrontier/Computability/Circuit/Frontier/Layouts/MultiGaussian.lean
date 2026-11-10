@@ -36,7 +36,7 @@ the width is at most `vertexCoefficient d · |E| + ξ |V|` for every `ξ > 0`
   of large loopless multigraphs of maximum degree `d`.
 -/
 
-@[expose] public section
+public section
 
 open MeasureTheory ProbabilityTheory Real Set
 open scoped RealInnerProductSpace Interval

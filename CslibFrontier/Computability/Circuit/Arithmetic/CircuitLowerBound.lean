@@ -76,7 +76,7 @@ asymptotic derivation.
   Corollary 27 (p. 31:14)
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Arithmetic
 

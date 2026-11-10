@@ -48,7 +48,7 @@ after halting.
   work-tape head form an interval, and unvisited cells keep their contents.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeNTM
 

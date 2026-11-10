@@ -33,7 +33,7 @@ four times the current one.
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.6][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.InductiveCounting
 

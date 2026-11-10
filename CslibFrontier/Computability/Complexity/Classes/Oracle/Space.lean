@@ -51,7 +51,7 @@ bounded existential quantification (`Cslib.Complexity.setOf_exists_mem_PSPACE`).
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

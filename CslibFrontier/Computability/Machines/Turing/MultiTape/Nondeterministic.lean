@@ -22,7 +22,7 @@ so a run path emits at most one symbol per step.
   step.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing
 

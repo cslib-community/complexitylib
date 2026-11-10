@@ -15,7 +15,7 @@ This is the machine-witness portion of the existing conditional computability pr
 absorbs the finite Boolean code and machine overhead; time and workspace remain independent.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.Internal
 
 /-- Assemble the existing test/composition/conditional machines at independent branch bounds. -/

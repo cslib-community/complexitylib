@@ -27,7 +27,7 @@ arithmetic outputs and identify successor iteration, for clients with fixed work
 * `Turing.MultiTapeTM.ComputableInO.natAdd`: binary addition in quadratic time and linear space.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

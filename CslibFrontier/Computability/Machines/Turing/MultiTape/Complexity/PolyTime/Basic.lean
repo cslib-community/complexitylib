@@ -41,7 +41,7 @@ rules for `fun_prop`.
   disjunction and inequality for plain certificates.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

@@ -66,7 +66,7 @@ This module adds the resulting separations:
 * [R. Kannan, *Circuit-size lower bounds and non-reducibility to sparse sets*][Kannan1982]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

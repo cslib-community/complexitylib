@@ -14,7 +14,7 @@ The existing captured fold retains the original input while appending each callb
 Its prefix bound follows from the list's encoded length and the callback machine's own clock.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 open Cslib
 

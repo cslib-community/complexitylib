@@ -42,7 +42,7 @@ coordinates gives `√deg(f) ≤ s(f)` (`QueryComplexity.sqrt_degree_le_sensitiv
 * [C. Gotsman, N. Linial, *The equivalence of two problems on the cube*][GotsmanLinial1992]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

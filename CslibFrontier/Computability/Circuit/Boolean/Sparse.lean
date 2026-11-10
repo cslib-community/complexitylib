@@ -38,7 +38,7 @@ rather than exactly `n`; its members are in `P/poly` as well (`PPoly.of_mem_SPAR
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 6.1][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

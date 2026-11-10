@@ -35,7 +35,7 @@ Failure remains in the certified program's output.
 * `Cslib.Probability.length_enc_sampleIntegerBox`: a bound for the complete framed output.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

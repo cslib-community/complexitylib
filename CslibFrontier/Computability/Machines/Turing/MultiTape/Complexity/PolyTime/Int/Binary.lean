@@ -58,7 +58,7 @@ the binary length bounds of `Int.size_natAbs_add_le` and `Int.size_natAbs_mul_le
   `.intBin_pow'`, `.intBin_lt'`, `.intBin_le'`: composition rules for `fun_prop`.
 -/
 
-@[expose] public section
+public section
 
 namespace Int
 

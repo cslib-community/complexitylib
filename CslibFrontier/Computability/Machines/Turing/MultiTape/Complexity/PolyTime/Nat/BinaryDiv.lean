@@ -52,7 +52,7 @@ have length at most `word.length`, keeping the encoded pair linearly bounded thr
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 
 

@@ -24,7 +24,7 @@ Only actual trajectory states up to and including the final round must satisfy t
 No unary representation of the runtime count is materialized.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInO
 
 open Internal.BinaryCounter

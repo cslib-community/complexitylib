@@ -36,7 +36,7 @@ arbitrary outputs, without introducing a second family of measures.
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DecisionTree
 

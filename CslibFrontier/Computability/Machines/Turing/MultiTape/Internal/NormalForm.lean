@@ -34,7 +34,7 @@ encoded-output charge, using the same machine's space bound together with its ti
 * `Turing.MultiTapeTM.Internal.NormalForm.inO`: independent charged asymptotic witnesses.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.Internal.NormalForm
 

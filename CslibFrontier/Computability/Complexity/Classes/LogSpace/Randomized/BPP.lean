@@ -46,7 +46,7 @@ The stronger inclusion `BPL ⊆ P`, by exact evaluation of the configuration mat
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 7.7][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

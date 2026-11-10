@@ -41,7 +41,7 @@ the input are stored in logarithmic space.
 * [M. Sipser, *Introduction to the Theory of Computation*, Section 8.4][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

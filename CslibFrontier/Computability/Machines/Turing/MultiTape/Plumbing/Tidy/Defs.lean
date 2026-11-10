@@ -25,7 +25,7 @@ work tapes that has emitted the output, together with the space bound. This is
 * `Turing.MultiTapeTM.computesTidily_iff_runFrom`: a tidy computation, read on runs.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

@@ -35,7 +35,7 @@ products over pairwise disjoint sets of blocks.
   proof here, which connect the two, are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Arithmetic.SPFormula
 

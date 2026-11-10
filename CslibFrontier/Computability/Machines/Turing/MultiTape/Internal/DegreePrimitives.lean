@@ -15,7 +15,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.Deg
 Pair projections reuse the degree certificates supplied by the encoding capability.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInDegree
 universe u
 

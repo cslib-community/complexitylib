@@ -48,7 +48,7 @@ integer operations with `binary_div`, `binary_gcd`, and canonical component expa
   [Schlesinger2026RationalHitting] at revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Rational
 

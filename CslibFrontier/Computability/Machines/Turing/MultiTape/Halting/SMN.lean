@@ -36,7 +36,7 @@ coding rules in `CslibFrontier.Computability.Machines.Turing.MultiTape.Universal
 * [M. Sipser, *Introduction to the Theory of Computation*][Sipser2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.Universal
 
