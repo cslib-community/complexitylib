@@ -61,10 +61,7 @@ theorem toNat_addResidue (d a b : BitVec k)
   have hwide (v : BitVec k) : (v.setWidth (k + 1)).toNat = v.toNat := by
     rw [BitVec.toNat_setWidth, Nat.mod_eq_of_lt
       (v.isLt.trans_le (Nat.pow_le_pow_right (by decide) (Nat.le_succ k)))]
-  have hfit : a.toNat + b.toNat < 2 ^ (k + 1) := by
-    rw [pow_succ]
-    have := d.isLt
-    lia
+  have hfit : a.toNat + b.toNat < 2 ^ (k + 1) := by grind
   have hsum : (a.setWidth (k + 1) + b.setWidth (k + 1)).toNat = a.toNat + b.toNat := by
     rw [BitVec.toNat_add, hwide, hwide, Nat.mod_eq_of_lt hfit]
   unfold addResidue
@@ -72,10 +69,7 @@ theorem toNat_addResidue (d a b : BitVec k)
   split_ifs with hs
   · rw [BitVec.toNat_setWidth, hsum, Nat.mod_eq_of_lt hs,
       Nat.mod_eq_of_lt (hs.trans d.isLt)]
-  · have hle : d.setWidth (k + 1) ≤ a.setWidth (k + 1) + b.setWidth (k + 1) := by
-      change (d.setWidth (k + 1)).toNat ≤ _
-      rw [hwide, hsum]
-      lia
+  · have hle : d.setWidth (k + 1) ≤ a.setWidth (k + 1) + b.setWidth (k + 1) := by grind
     have hsmall : a.toNat + b.toNat - d.toNat < d.toNat := by lia
     rw [BitVec.toNat_setWidth, BitVec.toNat_sub_of_le hle, hsum, hwide,
       Nat.mod_eq_sub_mod (show d.toNat ≤ a.toNat + b.toNat by lia),

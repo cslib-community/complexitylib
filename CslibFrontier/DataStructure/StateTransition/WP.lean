@@ -106,10 +106,8 @@ theorem wp_bind {α β : Type y} (p : D.Client α) (k : α → D.Client β)
       D.valid s o ∧ D.wp charge _ _ _
     rw [ih]
     refine and_congr_right fun _ => Iff.of_eq ?_
-    congr
-    funext a s' t
-    congr
-    funext b s'' t'
+    congr with a s' t : 3
+    congr with b s'' t' : 3
     rw [Nat.add_right_comm]
 
 /-- **The weakest precondition holds exactly when** the run is admissible and `Q` holds of its

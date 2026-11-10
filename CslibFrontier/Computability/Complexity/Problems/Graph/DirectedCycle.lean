@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.Graph
 public import CslibFrontier.Foundations.Relation.Acyclic
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 
 /-!
 # Directed cycles
@@ -31,9 +30,8 @@ Through `Relation.acyclic_iff_forall_nodup_not_cycle_chain`, a graph is acyclic 
 adjacency relation is `Relation.Acyclic`, and through `Relation.acyclic_iff_exists_rank`,
 exactly when its declared vertices can be numbered below their number so that every arc increases
 the number (`Cslib.Complexity.Graph.isDirAcyclic_iff_exists_rank`): a topological numbering. Such
-numberings, listed along the vertex list, are the `NP` certificates of the feedback set problems;
-their encodings are quadratic in the encoding of the graph
-(`Cslib.Complexity.Graph.length_encList_map_le`).
+numberings, listed along the vertex list, are the `NP` certificates of the feedback set problems
+(`Cslib.Complexity.mem_NP_of_colorOf`).
 
 ## Main definitions
 
@@ -49,7 +47,6 @@ their encodings are quadratic in the encoding of the graph
   `Cslib.Complexity.Graph.exists_rank_of_isDirAcyclic`,
   `Cslib.Complexity.Graph.isDirAcyclic_of_rank`: acyclicity through topological numberings.
 * `Cslib.Complexity.Graph.isDirAcyclic_deleteVerts_iff`: removed vertices meet every cycle.
-* `Cslib.Complexity.Graph.length_encList_map_le`: the size of a listed numbering.
 
 ## References
 
@@ -171,20 +168,6 @@ theorem isDirAcyclic_deleteVerts_iff {G : Graph} {R : Finset ℕ} :
   · rintro h c ⟨hne, hnd, hV, hch⟩
     obtain ⟨v, hv, hvR⟩ := h c ⟨hne, hnd, fun v hv => (mem_deleteVerts_fst.1 (hV v hv)).1, hch⟩
     exact (mem_deleteVerts_fst.1 (hV v hv)).2 hvR
-
-/-! ### Listed numberings -/
-
-/-- A numbering listed along the vertex list of a graph with at most `n` listed vertices, whose
-values on the declared vertices are at most `n`, has an encoding of length at most `2 n ^ 2 + n`. -/
-theorem length_encList_map_le {G : Graph} {f : ℕ → ℕ} {n : ℕ} (hG : G.1.length ≤ n)
-    (hf : ∀ v ∈ G.1, f v ≤ n) : (encList encNat (G.1.map f)).length ≤ 2 * n ^ 2 + n := by
-  have hentry : ∀ a ∈ G.1.map f, (encNat a).length ≤ n := by
-    intro a ha
-    obtain ⟨v, hv, rfl⟩ := List.mem_map.1 ha
-    exact (length_encNat_le_self _).trans (hf v hv)
-  have h := length_encList_le encNat _ hentry
-  rw [List.length_map] at h
-  nlinarith
 
 end Graph
 

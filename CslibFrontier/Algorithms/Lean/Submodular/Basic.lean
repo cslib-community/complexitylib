@@ -379,7 +379,7 @@ theorem monotone_modularSum {α : Type*} {β : Type*}
     [AddCommMonoid β] [PartialOrder β] [IsOrderedAddMonoid β]
     {w : α → β} (hw : ∀ x, 0 ≤ w x) :
     Monotone (modularSum w) :=
-  fun _ _ hAB => Finset.sum_le_sum_of_subset_of_nonneg hAB fun x _ _ => hw x
+  Finset.sum_mono_set_of_nonneg hw
 
 /-- Weighted set-coverage function `∑ u ∈ S.biUnion cover, w u`. -/
 @[expose] def weightedCoverage {α : Type*} {U : Type*} {β : Type*} [DecidableEq U] [AddCommMonoid β]

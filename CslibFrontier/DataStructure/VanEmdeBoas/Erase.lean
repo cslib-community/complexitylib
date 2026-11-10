@@ -140,15 +140,9 @@ Section 20.3, p. 554). -/
 @[simp] theorem erase_empty (d x : ℕ) : (empty d).erase x = empty d := by
   cases d <;> rfl
 
-private theorem index_lt_index {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
-    i * u + a < j * u + b := by
-  have h := Nat.mul_le_mul_right u (show i + 1 ≤ j by omega)
-  nlinarith
-
 private theorem singleton_contains_of_bounds_eq {t : Tree d} (ht : t.Valid) {m : ℕ}
     (hb : t.bounds = some (m, m)) (y : ℕ) : t.Contains y ↔ y = m := by
-  have he := ht.extrema
-  simp only [Extrema, hb] at he
+  have he := ht.extrema_of_bounds hb
   constructor
   · intro hy
     have := he.2.2.2.2 y hy
@@ -164,15 +158,13 @@ private theorem empty_of_bounds_eq {t : Tree d} (ht : t.Valid) {m : ℕ}
       ∀ y, ¬(t.withBounds none).Contains y := by
   cases t with
   | leaf b =>
-    simp only [bounds] at hb
-    subst b
+    obtain rfl : b = some (m, m) := hb
     refine ⟨?_, rfl, not_contains_of_bounds_none rfl⟩
     simp [withBounds, Valid, Extrema, bounds, Contains]
   | @node d b s c =>
-    simp only [bounds] at hb
-    subst b
-    obtain ⟨he, hs, hc, ho, hmin⟩ := ht
-    simp only [Extrema, bounds] at he
+    have he := ht.extrema_of_bounds hb
+    obtain rfl : b = some (m, m) := hb
+    obtain ⟨-, hs, hc, ho, hmin⟩ := ht
     have hcb : ∀ i, (c i).bounds = none := by
       intro i
       cases hbi : (c i).bounds with
@@ -224,43 +216,37 @@ private theorem valid_node_of_clusterMax {newMin : ℕ} {s' : Tree d}
     · exact False.elim (hcnone k y hy)
   | some sb =>
     obtain ⟨sm, sM⟩ := sb
-    have hse := hs'.extrema
-    simp only [Extrema, hbs] at hse
+    have hse := hs'.extrema_of_bounds hbs
     let j : Fin (universeSize d) := ⟨sM, hse.2.1⟩
-    have hbj_some : (c' j).bounds.isSome = true := (ho' j).mp hse.2.2.2.1
-    cases hbj : (c' j).bounds with
-    | none => simp [hbj] at hbj_some
-    | some cb =>
-      obtain ⟨cm, cM⟩ := cb
-      have hce := (hc' j).extrema
-      simp only [Extrema, hbj] at hce
-      have hmax : clusterMax newMin s' c' = sM * universeSize d + cM := by
-        simp [clusterMax, maximum, hbs, hse.2.1, j, hbj]
-      rw [hmax]
-      simp only [Extrema, bounds]
-      have hgt : newMin < sM * universeSize d + cM := hexcl j cM hce.2.2.2.1
-      have hM_lt : sM * universeSize d + cM < universeSize (d + 1) := by
-        rw [universeSize_succ]
-        have hmul := Nat.mul_le_mul_right (universeSize d)
-          (show sM + 1 ≤ universeSize d by omega)
-        have hcM_lt := hce.2.1
-        nlinarith
-      refine ⟨hgt.le, hM_lt, ⟨newMin, _, rfl, Or.inl rfl⟩,
-        ⟨newMin, _, rfl, Or.inr ⟨j, cM, hce.2.2.2.1, rfl⟩⟩, ?_⟩
-      intro z hz
-      simp only [contains_node_some] at hz
-      rcases hz with rfl | ⟨k, y, hy, rfl⟩
-      · exact ⟨le_rfl, hgt.le⟩
-      · refine ⟨(hexcl k y hy).le, ?_⟩
-        have hsk : s'.Contains k.val := (ho' k).mpr ((hc' k).bounds_isSome_iff.mpr ⟨y, hy⟩)
-        have hk_le : k.val ≤ sM := (hse.2.2.2.2 k.val hsk).2
-        by_cases hkj : k = j
-        · subst k
-          exact Nat.add_le_add_left (hce.2.2.2.2 y hy).2 (j.val * universeSize d)
-        · have hk_lt : k.val < sM := by
-            have : k.val ≠ sM := fun h => hkj (Fin.ext h)
-            omega
-          exact (index_lt_index ((hc' k).contains_lt hy) hk_lt).le
+    obtain ⟨⟨cm, cM⟩, hbj⟩ := Option.isSome_iff_exists.mp ((ho' j).mp hse.2.2.2.1)
+    have hce := (hc' j).extrema_of_bounds hbj
+    have hmax : clusterMax newMin s' c' = sM * universeSize d + cM := by
+      simp [clusterMax, maximum, hbs, hse.2.1, j, hbj]
+    rw [hmax]
+    simp only [Extrema, bounds]
+    have hgt : newMin < sM * universeSize d + cM := hexcl j cM hce.2.2.2.1
+    have hM_lt : sM * universeSize d + cM < universeSize (d + 1) := by
+      rw [universeSize_succ]
+      have hmul := Nat.mul_le_mul_right (universeSize d)
+        (show sM + 1 ≤ universeSize d by omega)
+      have hcM_lt := hce.2.1
+      nlinarith
+    refine ⟨hgt.le, hM_lt, ⟨newMin, _, rfl, Or.inl rfl⟩,
+      ⟨newMin, _, rfl, Or.inr ⟨j, cM, hce.2.2.2.1, rfl⟩⟩, ?_⟩
+    intro z hz
+    simp only [contains_node_some] at hz
+    rcases hz with rfl | ⟨k, y, hy, rfl⟩
+    · exact ⟨le_rfl, hgt.le⟩
+    · refine ⟨(hexcl k y hy).le, ?_⟩
+      have hsk : s'.Contains k.val := (ho' k).mpr ((hc' k).bounds_isSome_iff.mpr ⟨y, hy⟩)
+      have hk_le : k.val ≤ sM := (hse.2.2.2.2 k.val hsk).2
+      by_cases hkj : k = j
+      · subst k
+        exact Nat.add_le_add_left (hce.2.2.2.2 y hy).2 (j.val * universeSize d)
+      · have hk_lt : k.val < sM := by
+          have : k.val ≠ sM := fun h => hkj (Fin.ext h)
+          omega
+        exact (index_lt_index ((hc' k).contains_lt hy) hk_lt).le
 
 private theorem update_cluster_erase_spec {c : Fin (universeSize d) → Tree d}
     (hc : ∀ k, (c k).Valid) {i : Fin (universeSize d)} {low : ℕ} {t : Tree d}
@@ -369,8 +355,7 @@ private theorem erase_spec {t : Tree d} (ht : t.Valid) (x : ℕ) :
         simp [erase, Contains]
       | some b =>
         obtain ⟨m, M⟩ := b
-        have he := ht.extrema
-        simp only [Extrema, bounds] at he
+        have he := ht.extrema_of_bounds rfl
         by_cases hboth : x = m ∧ x = M
         · rw [erase, ite_eq_left hboth]
           refine ⟨valid_empty 0, fun y => ?_⟩
@@ -407,8 +392,7 @@ private theorem erase_spec {t : Tree d} (ht : t.Valid) (x : ℕ) :
         simp [erase, Contains]
       | some b =>
         obtain ⟨m, M⟩ := b
-        have he := ht.extrema
-        simp only [Extrema, bounds] at he
+        have he := ht.extrema_of_bounds rfl
         by_cases hout : x < m ∨ M < x
         · rw [erase, ite_eq_left hout]
           refine ⟨ht, fun y => ?_⟩
@@ -438,63 +422,57 @@ private theorem erase_spec {t : Tree d} (ht : t.Valid) (x : ℕ) :
                 | none => exact False.elim (not_contains_of_bounds_none hbs kM.val hs_kM)
                 | some sb =>
                   obtain ⟨sm, sM⟩ := sb
-                  have hse := hs.extrema
-                  simp only [Extrema, hbs] at hse
+                  have hse := hs.extrema_of_bounds hbs
                   have hsm_lt : sm < universeSize d := hs.contains_lt hse.2.2.1
                   let i : Fin (universeSize d) := ⟨sm, hsm_lt⟩
-                  have hbi_some : (c i).bounds.isSome = true := (ho i).mp hse.2.2.1
-                  cases hbi : (c i).bounds with
-                  | none => simp [hbi] at hbi_some
-                  | some cb =>
-                    obtain ⟨cm, cM⟩ := cb
-                    have hce := (hc i).extrema
-                    simp only [Extrema, hbi] at hce
-                    let newMin := sm * universeSize d + cm
-                    have hnewMin_mem : (node (some (m, M)) s c).Contains newMin :=
-                      ⟨m, M, rfl, Or.inr ⟨i, cm, hce.2.2.1, rfl⟩⟩
-                    have hnewMin_lt : newMin < universeSize (d + 1) := ht.contains_lt hnewMin_mem
-                    have htarget : eraseTarget m x s c = some ⟨newMin, i, cm⟩ := by
-                      simp [eraseTarget, hxm, minimum, hbs, hsm_lt, i, hbi, newMin]
-                    have hexcl' : ∀ k y, ¬(k = i ∧ y = cm) → (c k).Contains y →
-                        newMin < k.val * universeSize d + y := by
-                      intro k y hne hy
-                      have hsk : s.Contains k.val :=
-                        (ho k).mpr ((hc k).bounds_isSome_iff.mpr ⟨y, hy⟩)
-                      have hik : sm ≤ k.val := (hse.2.2.2.2 k.val hsk).1
-                      by_cases hki : k = i
-                      · subst k
-                        have hyne : y ≠ cm := fun h => hne ⟨rfl, h⟩
-                        have hcmy : cm ≤ y := (hce.2.2.2.2 y hy).1
-                        dsimp only [newMin, i]
+                  obtain ⟨⟨cm, cM⟩, hbi⟩ := Option.isSome_iff_exists.mp ((ho i).mp hse.2.2.1)
+                  have hce := (hc i).extrema_of_bounds hbi
+                  let newMin := sm * universeSize d + cm
+                  have hnewMin_mem : (node (some (m, M)) s c).Contains newMin :=
+                    ⟨m, M, rfl, Or.inr ⟨i, cm, hce.2.2.1, rfl⟩⟩
+                  have hnewMin_lt : newMin < universeSize (d + 1) := ht.contains_lt hnewMin_mem
+                  have htarget : eraseTarget m x s c = some ⟨newMin, i, cm⟩ := by
+                    simp [eraseTarget, hxm, minimum, hbs, hsm_lt, i, hbi, newMin]
+                  have hexcl' : ∀ k y, ¬(k = i ∧ y = cm) → (c k).Contains y →
+                      newMin < k.val * universeSize d + y := by
+                    intro k y hne hy
+                    have hsk : s.Contains k.val :=
+                      (ho k).mpr ((hc k).bounds_isSome_iff.mpr ⟨y, hy⟩)
+                    have hik : sm ≤ k.val := (hse.2.2.2.2 k.val hsk).1
+                    by_cases hki : k = i
+                    · subst k
+                      have hyne : y ≠ cm := fun h => hne ⟨rfl, h⟩
+                      have hcmy : cm ≤ y := (hce.2.2.2.2 y hy).1
+                      dsimp only [newMin, i]
+                      omega
+                    · have hlt : sm < k.val := by
+                        have : k.val ≠ sm := fun h => hki (Fin.ext h)
                         omega
-                      · have hlt : sm < k.val := by
-                          have : k.val ≠ sm := fun h => hki (Fin.ext h)
-                          omega
-                        exact index_lt_index (Nat.lt_of_le_of_lt hce.1 hce.2.1) hlt
-                    have hset_eq : ∀ (s' : Tree d) (c' : Fin (universeSize d) → Tree d) (M' : ℕ),
-                        (∀ k y, (c' k).Contains y ↔ ¬(k = i ∧ y = cm) ∧ (c k).Contains y) →
-                          ∀ y, (node (some (newMin, M')) s' c').Contains y ↔
-                            y ≠ x ∧ (node (some (m, M)) s c).Contains y := by
-                      intro s' c' M' hcs y
-                      simp only [contains_node_some, hcs]
-                      constructor
-                      · rintro (rfl | ⟨k, a, ⟨hne, ha⟩, rfl⟩)
-                        · have hm_lt : m < newMin := hmin i cm hce.2.2.1
-                          exact ⟨by omega, Or.inr ⟨i, cm, hce.2.2.1, rfl⟩⟩
-                        · have hm_lt : m < k.val * universeSize d + a := hmin k a ha
-                          exact ⟨by omega, Or.inr ⟨k, a, ha, rfl⟩⟩
-                      · rintro ⟨hyx, rfl | ⟨k, a, ha, rfl⟩⟩
-                        · exact False.elim (hyx hxm.symm)
-                        · by_cases hka : k = i ∧ a = cm
-                          · rcases hka with ⟨rfl, rfl⟩
-                            exact Or.inl rfl
-                          · exact Or.inr ⟨k, a, ⟨hka, ha⟩, rfl⟩
-                    have hres := erase_cluster_branch (m := m) (M := M) (x := x)
-                      hs hc ho ih hnewMin_lt hbi (fun _ => rfl) hexcl' hset_eq
-                    rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
-                    dsimp only at hres ⊢
-                    rw [hbi]
-                    exact hres
+                      exact index_lt_index (Nat.lt_of_le_of_lt hce.1 hce.2.1) hlt
+                  have hset_eq : ∀ (s' : Tree d) (c' : Fin (universeSize d) → Tree d) (M' : ℕ),
+                      (∀ k y, (c' k).Contains y ↔ ¬(k = i ∧ y = cm) ∧ (c k).Contains y) →
+                        ∀ y, (node (some (newMin, M')) s' c').Contains y ↔
+                          y ≠ x ∧ (node (some (m, M)) s c).Contains y := by
+                    intro s' c' M' hcs y
+                    simp only [contains_node_some, hcs]
+                    constructor
+                    · rintro (rfl | ⟨k, a, ⟨hne, ha⟩, rfl⟩)
+                      · have hm_lt : m < newMin := hmin i cm hce.2.2.1
+                        exact ⟨by omega, Or.inr ⟨i, cm, hce.2.2.1, rfl⟩⟩
+                      · have hm_lt : m < k.val * universeSize d + a := hmin k a ha
+                        exact ⟨by omega, Or.inr ⟨k, a, ha, rfl⟩⟩
+                    · rintro ⟨hyx, rfl | ⟨k, a, ha, rfl⟩⟩
+                      · exact False.elim (hyx hxm.symm)
+                      · by_cases hka : k = i ∧ a = cm
+                        · rcases hka with ⟨rfl, rfl⟩
+                          exact Or.inl rfl
+                        · exact Or.inr ⟨k, a, ⟨hka, ha⟩, rfl⟩
+                  have hres := erase_cluster_branch (m := m) (M := M) (x := x)
+                    hs hc ho ih hnewMin_lt hbi (fun _ => rfl) hexcl' hset_eq
+                  rw [erase, ite_eq_right hout, ite_eq_right heq, htarget]
+                  dsimp only at hres ⊢
+                  rw [hbi]
+                  exact hres
             · -- Deleting `x ≠ m` (`m < x ≤ M`): keep `m` and delete `x % u` from `c (x / u)`.
               have hx_lt : x < universeSize (d + 1) :=
                 Nat.lt_of_le_of_lt (show x ≤ M by omega) he.2.1
@@ -582,12 +560,10 @@ theorem contains_erase {t : Tree d} (ht : t.Valid) (x y : ℕ) :
 private theorem clusterMax_eq_of_valid {m M : ℕ} {s : Tree d}
     {c : Fin (universeSize d) → Tree d} (ht : (node (some (m, M)) s c).Valid) :
     clusterMax m s c = M := by
-  have he := ht.extrema
-  simp only [Extrema, bounds] at he
+  have he := ht.extrema_of_bounds rfl
   have ⟨_, hs, hc, ho, hmin⟩ := ht
   have hv' := valid_node_of_clusterMax (ht.contains_lt he.2.2.1) hs hc ho hmin
-  have he' := hv'.extrema
-  simp only [Extrema, bounds] at he'
+  have he' := hv'.extrema_of_bounds rfl
   have hsame : ∀ z, (node (some (m, clusterMax m s c)) s c).Contains z ↔
       (node (some (m, M)) s c).Contains z := by
     intro z
@@ -616,8 +592,7 @@ theorem erase_eq_of_not_contains {t : Tree d} (ht : t.Valid) {x : ℕ}
       | none => rfl
       | some b =>
         obtain ⟨m, M⟩ := b
-        have he := ht.extrema
-        simp only [Extrema, bounds] at he
+        have he := ht.extrema_of_bounds rfl
         by_cases hout : x < m ∨ M < x
         · rw [erase, ite_eq_left hout]
         · have hxm : x ≠ m := fun h => hx (h ▸ he.2.2.1)

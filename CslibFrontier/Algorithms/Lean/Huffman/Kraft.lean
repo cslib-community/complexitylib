@@ -11,6 +11,7 @@ public import CslibFrontier.Algorithms.Lean.Huffman.Basic
 public import Mathlib.InformationTheory.Coding.Kraft
 public import Mathlib.InformationTheory.Coding.KraftMcMillan
 
+import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.List.Sort
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Ring
@@ -603,14 +604,6 @@ private theorem partition_children_of_ne_nil {α β : Type*} [AddCommMonoid β]
         refine ⟨List.perm_middle.trans (hperm.cons a), ?_⟩
         ac_rfl
 
-private theorem list_sum_nonneg {β : Type*} [AddCommMonoid β] [PartialOrder β]
-    [IsOrderedAddMonoid β] {L : List β} (h : ∀ x ∈ L, 0 ≤ x) : 0 ≤ L.sum := by
-  induction L with
-  | nil => simp
-  | cons x xs ih =>
-    simp only [List.sum_cons]
-    exact add_nonneg (h x List.mem_cons_self) (ih fun y hy => h y (List.mem_cons_of_mem x hy))
-
 /-- On any nonempty prefix-incomparable codebook `pairs`, `treeOfCodebook pairs` succeeds and
 produces a full binary `CodeTree α` with the same leaf multiset and at most the same weighted
 path length under nonnegative weights. -/
@@ -669,7 +662,7 @@ theorem treeOfCodebook_spec {α β : Type*} [AddCommMonoid β] [PartialOrder β]
       have hwR : ∀ p ∈ rightChildren (p₁ :: p₂ :: rest), 0 ≤ w p.1 := fun p hp =>
         hw' (p.1, true :: p.2) (mem_rightChildren_imp hp)
       have hsum_nonneg : 0 ≤ ((p₁ :: p₂ :: rest).map fun p => w p.1).sum := by
-        refine list_sum_nonneg ?_
+        refine List.sum_nonneg ?_
         intro x hx
         rcases List.mem_map.mp hx with ⟨p, hp, rfl⟩
         exact hw' p hp

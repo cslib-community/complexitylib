@@ -88,6 +88,18 @@ theorem isPPTOn_extractWordObservations {α : Type} {input : α ↪ List Bool}
 
 attribute [program_certificate] isPPTOn_extractWordObservations
 
+/-- Matrix hashing of `count` concatenated fixed-width blocks is two-universal: the flat hash
+precomposed with the injective block concatenation. Both statistical transitions hash this way. -/
+private theorem isTwoUniversal_hash_flatten_blocks (count width outputBits : ℕ) :
+    IsTwoUniversal (ProbComp.eval (ProbComp.uniform (BitString (outputBits * (count * width)))))
+      (fun key (values : Fin count → BitString width) =>
+        LinearHash.hash (blocksEquiv (m := outputBits) (k := count * width) key)
+          (ofList (count * width) ((List.ofFn values).map List.ofFn).flatten)) := by
+  simpa only [ProbComp.eval_uniform, List.map_ofFn, Function.comp_def, ← ofFn_blocksEquiv_symm,
+    ofList_ofFn] using
+    (LinearHash.isTwoUniversal_flat (count * width) outputBits).precompose
+      (blocksEquiv (m := count) (k := width)).symm.injective
+
 /-- The first statistical transition with an executable hash and self-delimiting padding.
 Only supported observations need to fit the bound; `exists_observationBound` supplies an efficient
 bound for every PPT sampler. The uniform comparison includes the entire matrix seed. -/
@@ -131,11 +143,7 @@ theorem SamplablePair.SeedRealization.extract_word_observations {pair : Samplabl
     (fun n key values =>
       LinearHash.hash (blocksEquiv (m := outputBits n) (k := count n * (2 * bound n + 1)) key)
         (ofList (count n * (2 * bound n + 1)) (values.map List.ofFn).flatten))
-    (fun n => by
-      simpa only [ProbComp.eval_uniform, List.map_ofFn, Function.comp_def, ← ofFn_blocksEquiv_symm,
-        ofList_ofFn] using
-        (LinearHash.isTwoUniversal_flat (count n * (2 * bound n + 1)) (outputBits n)).precompose
-          (blocksEquiv (m := count n) (k := 2 * bound n + 1)).symm.injective)
+    (fun n => isTwoUniversal_hash_flatten_blocks (count n) (2 * bound n + 1) (outputBits n))
     (by simpa only [hentropy] using hbudget)
     (fun n result => test n (List.ofFn result.1 ++ List.ofFn result.2)) trivial
   apply h.congr
@@ -204,11 +212,7 @@ theorem SamplablePair.SeedRealization.extract_word_seeds {pair : SamplablePair}
     (fun n key values => LinearHash.hash
       (blocksEquiv (m := outputBits n) (k := count n * saved.length n) key)
         (ofList (count n * saved.length n) values.flatten))
-    (fun n => by
-      simpa only [ProbComp.eval_uniform, List.map_ofFn, Function.comp_def, ← ofFn_blocksEquiv_symm,
-        ofList_ofFn] using
-        (LinearHash.isTwoUniversal_flat (count n * saved.length n) (outputBits n)).precompose
-          (blocksEquiv (m := count n) (k := saved.length n)).symm.injective) hbudget
+    (fun n => isTwoUniversal_hash_flatten_blocks (count n) (saved.length n) (outputBits n)) hbudget
     (fun n result => test n (result.1, List.ofFn result.2.1, List.ofFn result.2.2)) trivial
   apply h.congr
   intro n

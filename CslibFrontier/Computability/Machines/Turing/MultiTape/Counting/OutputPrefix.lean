@@ -53,17 +53,18 @@ theorem runList_prependOutput (machine : MultiTapeCTM k Symbol State)
   simpa [interpret_runConfigFrom_eq_map_runList, OracleComp.interpret_map,
     List.map_map, Function.comp_def, Config.emptyOracleEquiv, Config.prependOutput] using hm
 
-/-- A prefix changes no halting decision or clock, provided the transition table is nonblocking. -/
-theorem HaltsWithin.prependOutput {machine : MultiTapeCTM k Symbol State}
-    (hnon : machine.Nonblocking) {fuel : ℕ} {cfg : Cfg k Symbol State input}
-    (h : machine.HaltsWithin fuel cfg) (pre : List Symbol) :
+/-- A prefix changes no halting decision or clock: the machine never reads its output. -/
+theorem HaltsWithin.prependOutput {machine : MultiTapeCTM k Symbol State} {fuel : ℕ}
+    {cfg : Cfg k Symbol State input} (h : machine.HaltsWithin fuel cfg) (pre : List Symbol) :
     machine.HaltsWithin fuel (cfg.prependOutput pre) := by
-  apply haltsWithin_of_halted _ hnon.actions_ne_nil
-  intro final hfinal
-  rw [runList_prependOutput] at hfinal
-  obtain ⟨original, horiginal, rfl⟩ := List.mem_map.mp hfinal
-  change original.state = none
-  exact h.halted_of_mem_runList horiginal
+  induction h with
+  | halt halted => exact .halt halted
+  | @step fuel cfg nonempty next ih =>
+    refine .step nonempty fun index => ?_
+    have happly : (machine.actions cfg)[index].apply (cfg.prependOutput pre) =
+        ((machine.actions cfg)[index].apply cfg).prependOutput pre :=
+      Cfg.ext rfl rfl rfl rfl (by simp [Action.apply])
+    exact happly ▸ ih index
 
 variable (prepare : MultiTapeTM k Symbol State₀) (source : MultiTapeCTM k Symbol State₁)
   (hnon : source.Nonblocking) (input pre : List Symbol) (prepareTime runTime : ℕ)
@@ -71,7 +72,7 @@ variable (prepare : MultiTapeTM k Symbol State₀) (source : MultiTapeCTM k Symb
     wordsCfg input none (fun _ => []) pre)
   (hsource : source.HaltsWithin runTime (source.initialConfig input).tapes)
 
-include hnon hprepare hsource
+include hprepare hsource
 
 /-- Workspace-restoring singleton preparation retains the prefix and every source occurrence. -/
 theorem runList_seq_prependOutput :
@@ -98,20 +99,21 @@ theorem runList_seq_prependOutput :
     have hr : result = wordsCfg input none (fun _ => []) pre := by
       simpa [hfirst] using hresult
     rw [hr, hstart]
-    exact hsource.prependOutput hnon pre
+    exact hsource.prependOutput pre
   change runList ((ofDeterministic prepare).seq source) _
     (Sequential.left source cfg).tapes = _
   rw [runList_seq _ _ _ prepareTime runTime hhalt hsecond, hfirst,
     List.flatMap_singleton, hstart, runList_prependOutput, List.map_map]
   rfl
 
+include hnon in
 /-- The actual prepared-prefix machine halts within the sum of the two charged clocks. -/
 theorem haltsWithin_seq_prependOutput :
     MultiTapeCTM.HaltsWithin ((ofDeterministic prepare).seq source) (prepareTime + runTime)
       (((ofDeterministic prepare).seq source).initialConfig input).tapes := by
   apply haltsWithin_of_halted _ ((nonblocking_ofDeterministic prepare).seq hnon).actions_ne_nil
   intro final hfinal
-  rw [runList_seq_prependOutput prepare source hnon input pre prepareTime runTime
+  rw [runList_seq_prependOutput prepare source input pre prepareTime runTime
     hprepare hsource] at hfinal
   obtain ⟨original, horiginal, rfl⟩ := List.mem_map.mp hfinal
   change original.state.map Sum.inr = none

@@ -63,8 +63,7 @@ theorem uniformList_listRows (count width : ℕ) :
       (PMF.uniformOfFintype (Fin count → BitString width)).map
         (fun rows => List.ofFn (fun i => List.ofFn (rows i))) := by
   rw [← uniformList_blocks count width, PMF.map_comp]
-  congr 1
-  funext word
+  congr 1 with word : 1
   exact listRows_eq_ofFn count width word
 
 /-- XORing a uniform `m`-bit word with any word `r` preserves the uniform distribution; see
@@ -164,8 +163,7 @@ theorem uniformList_replaceRow (width count : ℕ) (j : Fin count) :
     (PMF.uniformOfFintype_update (γ := BitString width) j)
   conv_rhs => rw [← hblocks, ← hupd]
   simp only [uniformList, PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
-  congr 1
-  funext x
+  congr 1 with x : 1
   have hZ := congrArg
     (PMF.map (fun rows : Fin count → BitString width =>
       List.ofFn (blocksEquiv.symm (Function.update rows j x))))

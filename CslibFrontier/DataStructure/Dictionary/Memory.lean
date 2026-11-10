@@ -59,6 +59,11 @@ def decode : ℕ → Option ℕ
 
 @[simp] theorem decode_succ (v : ℕ) : decode (v + 1) = some v := rfl
 
+/-- A nonzero cell decodes to its predecessor. -/
+theorem decode_of_ne_zero {x : ℕ} (hx : x ≠ 0) : decode x = some (x - 1) := by
+  obtain ⟨v, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hx
+  rfl
+
 variable {U : ℕ} (T : Block)
 
 /-- Look up a key: read its cell. -/

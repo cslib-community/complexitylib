@@ -474,8 +474,7 @@ theorem exists_not_reconstructionFails {α η : ℝ} (hη : 0 < η)
     Set.eq_univ_of_forall hall'
   rw [huniv, (PMF.toOuterMeasure_apply_eq_one_iff _ _).2 (Set.subset_univ _)] at h
   rw [three_pow_eq_ofReal_exp, ← ENNReal.ofReal_mul (Real.exp_pos _).le, ← Real.exp_add,
-    ← ENNReal.ofReal_one, ENNReal.ofReal_le_ofReal_iff (Real.exp_pos _).le, ← Real.exp_zero,
-    Real.exp_le_exp] at h
+    ENNReal.one_le_ofReal, Real.one_le_exp_iff] at h
   linarith
 
 namespace DifferentiallyPrivate
@@ -494,34 +493,11 @@ theorem mul_card_sub_mul_le_of_answersWithin (h : DifferentiallyPrivate HammingA
     (ans : R → κ → ℝ) {q : ℝ} (hq0 : 0 ≤ q)
     (hq : ∀ d, ENNReal.ofReal q ≤ (M d).toOuterMeasure {o | AnswersWithin A (ans o) d α η}) :
     (1 + Real.exp ε) * (Fintype.card ι - ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2) * q ≤
-      Fintype.card ι * (Real.exp ε + δ.toReal) := by
-  classical
-  set t := ⌊((⌊α⌋₊ + 1 : ℝ) / η) ^ 2⌋₊
-  have hG := (h.map fun o => reconstructSigned A α η (ans o)).mul_card_sub_mul_le (t := t)
-    (q := ENNReal.ofReal q)
-    fun d => (hq d).trans (by
+      Fintype.card ι * (Real.exp ε + δ.toReal) :=
+  (h.map fun o => reconstructSigned A α η (ans o)).mul_card_sub_mul_le_real hδ hq0 fun d =>
+    (hq d).trans (by
       rw [PMF.toOuterMeasure_map_apply]
-      refine (M d).toOuterMeasure.mono fun o ho => ?_
-      have := hammingDist_reconstructSigned_lt hA ho
-      exact Nat.le_floor this.le)
-  have hfin : ENNReal.ofReal (Real.exp ε) + δ ≠ ⊤ := ENNReal.add_ne_top.mpr ⟨by simp, hδ⟩
-  have hreal := ENNReal.toReal_mono (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hfin) hG
-  rw [ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_mul, ENNReal.toReal_add (by simp)
-    ENNReal.ofReal_ne_top, ENNReal.toReal_add (by simp) hδ, ENNReal.toReal_ofReal hq0,
-    ENNReal.toReal_ofReal (Real.exp_pos ε).le, ENNReal.toReal_natCast, ENNReal.toReal_natCast,
-    ENNReal.toReal_one] at hreal
-  refine le_trans ?_ hreal
-  have hsub : (Fintype.card ι : ℝ) - ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 ≤
-      ((Fintype.card ι - t : ℕ) : ℝ) := by
-    have ht : (t : ℝ) ≤ ((⌊α⌋₊ + 1 : ℝ) / η) ^ 2 := Nat.floor_le (by positivity)
-    rcases le_total t (Fintype.card ι) with htn | htn
-    · rw [Nat.cast_sub htn]
-      linarith
-    · rw [Nat.sub_eq_zero_of_le htn, Nat.cast_zero]
-      have : (Fintype.card ι : ℝ) ≤ t := by exact_mod_cast htn
-      linarith
-  have h1 : (0 : ℝ) ≤ 1 + Real.exp ε := by positivity
-  gcongr
+      exact (M d).toOuterMeasure.mono fun o ho => (hammingDist_reconstructSigned_lt hA ho).le)
 
 /-- **Linearly many `±1` queries defeat private accuracy.** If `3 ln 3 · n < η m`, there are `m`
 `±1` queries on databases of `n` rows with the following property. Every `(ε, δ)`-private

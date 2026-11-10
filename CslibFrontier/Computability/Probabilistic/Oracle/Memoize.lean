@@ -132,8 +132,7 @@ theorem IsOraclePPTOn.memoize {Operation α Key Value : Type} [DecidableEq Opera
   have hlookup : (cache a).lookup (query a) = (found a).map Prod.snd := by
     simp only [found, List.lookup_eq_findSome?, List.find?_eq_findSome?_guard,
       List.map_findSome?]
-    congr 1
-    funext entry
+    congr 1 with entry : 1
     cases h : query a == entry.1 <;> simp [Option.guard, h]
   rw [Cslib.memoize, hlookup]
   cases found a <;> simp only [Option.isSome_none, Option.isSome_some, Option.map_none,

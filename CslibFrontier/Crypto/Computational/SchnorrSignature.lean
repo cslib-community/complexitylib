@@ -18,6 +18,7 @@ import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.BitString.Counter
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Computational Schnorr signatures under the discrete-logarithm assumption
@@ -195,8 +196,8 @@ def schnorrCommitBits (input : F.Desc × List Bool) : List Bool :=
 `F.encode d (r • g)`. -/
 @[simp] theorem schnorrCommitBits_encScalar (d : F.Desc) (r : ZMod (F.order d)) :
     F.schnorrCommitBits (d, F.encScalar d r) = F.encode d (r • F.generator d) := by
-  simp only [schnorrCommitBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits,
-    Nat.foldr_bit_bits, F.smul_encode, ZMod.natCast_zmod_val]
+  simp only [schnorrCommitBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits,
+    F.smul_encode, ZMod.natCast_zmod_val]
 
 /-- **Bit-level Schnorr commitment is computable in polynomial time**. -/
 theorem computableInPolyTime_schnorrCommitBits :
@@ -227,8 +228,7 @@ def schnorrRespondBits (input : F.Desc × List Bool × List Bool × List Bool) :
     (roOut : List Bool) :
     F.schnorrRespondBits (d, F.encScalar d α, F.encScalar d r, roOut) =
       F.encScalar d (r + (ofBits roOut : ZMod (F.order d)) * α) := by
-  simp only [schnorrRespondBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits,
-    Nat.foldr_bit_bits]
+  simp only [schnorrRespondBits, encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits]
   congr 1
   rw [← ZMod.val_natCast (F.order d), Nat.cast_add, Nat.cast_mul, ZMod.natCast_zmod_val,
     ZMod.natCast_zmod_val]
@@ -425,7 +425,7 @@ theorem schnorrSigVerifyBits_schnorrSignCoins (d : F.Desc) (α r : ZMod (F.order
         F.schnorrSignCoins (d, F.encScalar d α, msg, F.encScalar d r, roOut), roOut) =
       true := by
   rw [schnorrSignCoins_encScalar, schnorrSigVerifyBits_encode]
-  simp only [encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits, Nat.foldr_bit_bits,
+  simp only [encScalar, Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits,
     ZMod.natCast_zmod_val, add_smul, mul_smul, decide_true]
 
 /-- Verification compares the supplied commitment with public commitment recovery on all words,

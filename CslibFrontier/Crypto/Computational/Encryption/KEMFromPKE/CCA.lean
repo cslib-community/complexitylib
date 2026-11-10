@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CCA
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -90,13 +91,11 @@ private theorem eval_cca2GameOn_kemToCCAAdversary (keyLen : ℕ → ℕ)
         let k₁ ← BitString.uniformList (keyLen n)
         let ct ← ProbComp.eval (encrypt n keys.1 (if bit then k₁ else k₀))
         ProbComp.eval (kemCCAContinuation decrypt distinguisher n keys.2 keys.1 k₀ ct)) := by
-  simp only [cca2GameOn, kemToCCAAdversary, kemToPKEChoose, kemCCAContinuation,
-    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_sample, BitString.eval_sampleList, PMF.bind_map,
-    PMF.bind_bind, PMF.pure_bind, PMF.monad_bind_eq_bind, Function.comp_def,
-    ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.msgs, encPair_apply, encBits_apply,
-    apply_ite ProbComp.eval]
-  congr 1; funext keys
+  simp only [pmf_norm, cca2GameOn, kemToCCAAdversary, kemToPKEChoose, kemCCAContinuation,
+    ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample,
+    BitString.eval_sampleList, ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.msgs, encPair_apply,
+    encBits_apply, apply_ite ProbComp.eval]
+  congr 1 with keys : 1
   refine PMF.bind_congr_on_support _ _ _ fun k₀ hk₀ => ?_
   refine PMF.bind_congr_on_support _ _ _ fun k₁ hk₁ => ?_
   simp [BitString.length_of_mem_support_uniformList hk₀,
@@ -129,12 +128,11 @@ theorem eval_cca2GameOn_kemToCCAAdversary_true (keyLen : ℕ → ℕ)
       ProbComp.eval (kemCCAIdealGame keyLen keyGen (encryptKeyEncaps keyLen encrypt)
         decrypt distinguisher n) := by
   rw [eval_cca2GameOn_kemToCCAAdversary]
-  simp only [kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, encryptKeyEncaps,
-    ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
-    PMF.bind_bind, PMF.pure_bind, PMF.monad_bind_eq_bind, ↓reduceIte]
-  congr 1; funext keys
+  simp only [pmf_norm, kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, encryptKeyEncaps,
+    BitString.eval_sampleList, ↓reduceIte]
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
-  congr 1; funext k
+  congr 1 with k : 1
   rw [PMF.bind_comm]
 
 /-- Exact loss one in the existing adaptive CCA experiment. There is no correctness premise

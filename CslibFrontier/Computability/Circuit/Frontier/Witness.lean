@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Circuit.Frontier.Rectangle
 public import Mathlib.Analysis.Asymptotics.Defs
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import CslibFrontier.Foundations.Data.BitString.Agree
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
 import CslibFrontier.Foundations.Combinatorics.Hoeffding
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Data.Fintype.Powerset
@@ -246,12 +247,6 @@ end RectangleFree
 /-! ### Sets of small bias -/
 
 section RectangleBias
-
-/-- `2 ^ m ≤ e ^ m`. -/
-private theorem two_pow_le_exp (m : ℕ) : (2 : ℝ) ^ m ≤ exp m := by
-  calc (2 : ℝ) ^ m ≤ exp 1 ^ m :=
-        pow_le_pow_left₀ (by norm_num) (by linarith [add_one_le_exp (1 : ℝ)]) m
-    _ = exp m := by rw [← exp_nat_mul, mul_one]
 
 /-- **Hoeffding's inequality for a random set of inputs.** For a fixed set `T`, the sets
 `{x | f x = true}` whose density on `T` is more than `b` away from `1/2` are at most a

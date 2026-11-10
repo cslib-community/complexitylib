@@ -122,8 +122,7 @@ theorem eval_parallelFamily_apply {k : ℕ} (cs : Fin k → Circuit σ n m) (I :
           apply Fin.ext
           simp [finProdFinEquiv, Nat.mul_comm, Nat.add_comm]]
       rw [Fin.append_right]
-      congr 1
-      funext a
+      congr 1 with a : 1
       apply congrArg x
       apply Fin.ext
       simp [finProdFinEquiv, Nat.mul_comm, Nat.add_comm]

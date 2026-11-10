@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 
 /-!
@@ -657,27 +658,6 @@ theorem paddedMIP_mem_NP (c d : ℕ) : paddedMIP M c d ∈ NP encBits := by
 /-! ### Soundness and completeness of `checkCert` -/
 
 omit [Finite Control] in
-/-- If every element `a ∈ l` has `l.countP (fun b => a == b) = 1`, then `l.Nodup`. -/
-private theorem nodup_of_forall_countP_eq_one {α : Type} [BEq α] [LawfulBEq α] {l : List α}
-    (h : ∀ a ∈ l, l.countP (fun b => a == b) = 1) : l.Nodup := by
-  induction l with
-  | nil => exact List.nodup_nil
-  | cons a rest ih =>
-    rw [List.nodup_cons]
-    have ha := h a List.mem_cons_self
-    simp only [List.countP_cons, beq_self_eq_true, ↓reduceIte] at ha
-    have hcount0 : rest.countP (fun b => a == b) = 0 := by lia
-    have hnotmem : a ∉ rest := by
-      intro hmem
-      have hpos : 0 < rest.countP (fun b => a == b) :=
-        List.countP_pos_iff.mpr ⟨a, hmem, beq_self_eq_true a⟩
-      lia
-    refine ⟨hnotmem, ih fun x hx => ?_⟩
-    have hx_all := h x (List.mem_cons_of_mem a hx)
-    have hne : (x == a) = false := beq_false_of_ne (fun hxa => hnotmem (hxa ▸ hx))
-    simpa [List.countP_cons, hne] using hx_all
-
-omit [Finite Control] in
 /-- **Soundness of `checkCert`**: if `checkCert M c d x cert = true`, then there exists an
 independent family of deterministic provers `D : Fin p → DetProver` whose acceptance probability on
 the `t = c * (x.length + 1) ^ d` coin family exceeds `1 / 2`. -/
@@ -716,13 +696,12 @@ theorem exists_detProver_of_checkCert {c d : ℕ} {x : List Bool} {cert : Cert}
     exact acceptFrom_eq_one_of_accepts M hlen D (fun i => (D i).init) e.2
       (hvalid_cert e he) hacc
   have hnodup_fst : (cert.map Prod.fst).Nodup := by
-    refine nodup_of_forall_countP_eq_one ?_
-    intro r hr
-    rw [List.mem_map] at hr
-    obtain ⟨e, he, rfl⟩ := hr
-    have hcount := h2 e he
-    rw [List.countP_map]
-    exact hcount
+    refine List.nodup_iff_count_eq_one.2 fun r hr => ?_
+    obtain ⟨e, he, rfl⟩ := List.mem_map.1 hr
+    rw [List.count_eq_countP, List.countP_map]
+    refine (List.countP_congr fun e' _ => ?_).trans (h2 e he)
+    simp only [Function.comp_apply, beq_iff_eq]
+    exact eq_comm
   let toFin (r : List Bool) : Fin t → Bool := fun j => r.getD j false
   have hofFn_toFin : ∀ e ∈ cert, List.ofFn (toFin e.1) = e.1 := by
     intro e he
@@ -786,11 +765,7 @@ theorem exists_checkCert_of_detProver {c d : ℕ} (x : List Bool) (D : Fin p →
   have hnodup_good : goodFns.Nodup := Finset.nodup_toList _
   have hnodup_fst : (cert.map Prod.fst).Nodup := by
     rw [show cert.map Prod.fst = goodFns.map List.ofFn by simp [cert, List.map_map]]
-    refine hnodup_good.map_on ?_
-    intro f₁ _ f₂ _ heq
-    funext j
-    have := congrArg (fun l : List Bool => l.getD j false) heq
-    simpa using this
+    exact hnodup_good.map List.ofFn_injective
   refine ⟨cert, ?_, ?_⟩
   · simp only [checkCert, Bool.and_eq_true, List.all_eq_true, beq_iff_eq, decide_eq_true_eq,
       List.mem_range]
@@ -865,14 +840,6 @@ end MIP
 
 /-! ### The unconditional upper bounds `MIP ⊆ NEXP` and `MIP₂ ⊆ NEXP` -/
 
-private theorem natCast_div_le_natCast_div_iff {a b c d : ℕ} (hb : b ≠ 0) (hd : d ≠ 0) :
-    (a : ℝ≥0∞) / b ≤ c / d ↔ a * d ≤ b * c := by
-  rw [ENNReal.div_le_iff_le_mul (Or.inl (by exact_mod_cast hb)) (Or.inl (ENNReal.natCast_ne_top _)),
-    ← ENNReal.mul_div_right_comm, ENNReal.le_div_iff_mul_le (Or.inl (by exact_mod_cast hd))
-      (Or.inl (ENNReal.natCast_ne_top _))]
-  rw [mul_comm (c : ℝ≥0∞)]
-  exact_mod_cast Iff.rfl
-
 variable {α : Type} (enc : α ↪ List Bool)
 
 /-- **`MIP ⊆ NEXP`** [Babai, Fortnow and Lund][BabaiFortnowLund1991],
@@ -945,7 +912,7 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
           _ = (goodCard : ℝ≥0∞) / (2 ^ t : ℕ) := by
                 rw [hsumD, ENNReal.div_eq_inv_mul, hcast]
       rw [show (2 / 3 : ℝ≥0∞) = ((2 : ℕ) : ℝ≥0∞) / ((3 : ℕ) : ℝ≥0∞) by norm_num,
-        natCast_div_le_natCast_div_iff (by norm_num) hpos] at hineq
+        ENNReal.natCast_div_le_natCast_div_iff (by norm_num) hpos] at hineq
       have hpow_pos := Nat.one_le_two_pow (n := t)
       have hlt_card : 2 ^ t < 2 * goodCard := by lia
       obtain ⟨cert, hcheck, hlen⟩ := MIP.exists_checkCert_of_detProver M x D hlt_card
@@ -980,7 +947,7 @@ theorem MIP_subset_NEXP : MIP enc ⊆ NEXP enc := by
                 haccD.symm
           _ ≤ 1 / 3 := hsound
       rw [show (1 / 3 : ℝ≥0∞) = ((1 : ℕ) : ℝ≥0∞) / ((3 : ℕ) : ℝ≥0∞) by norm_num,
-        natCast_div_le_natCast_div_iff hpos (by norm_num)] at hineq
+        ENNReal.natCast_div_le_natCast_div_iff hpos (by norm_num)] at hineq
       lia
   rw [hpre]
   exact preimage_pad_mem_NEXP hNP hf hn

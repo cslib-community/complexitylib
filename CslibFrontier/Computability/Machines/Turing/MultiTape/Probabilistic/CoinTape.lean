@@ -139,8 +139,7 @@ theorem run_interpret_runConfigFrom_eq_coins {OracleState : Type}
     simp only [OracleComp.interpret_bind, StateT.run_bind, PMF.monad_bind_eq_bind,
       run_interpret_runConfigFrom_one machine coin query oracle hcoin, PMF.bind_bind, ih,
       PMF.bind_map, Function.comp_def, runConfigFromCoins_cons]
-    congr 1
-    funext bit
+    congr 1 with bit : 1
     exact PMF.bind_comm _ _ _
 
 /-- Without private state, the clocked run is the average of its fixed-coin programs. -/

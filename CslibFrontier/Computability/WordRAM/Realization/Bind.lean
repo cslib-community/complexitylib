@@ -26,6 +26,7 @@ The retained witness gives the concrete scratch, factor and emitter with the exi
 
 ## Main results
 
+* `bindShared_layout`: both stages' register premises from those of the composite bank.
 * `Realizes.bind`: sequential realization with additive memory and local-work charges.
 * `Realizes.Witness.bind_execWithin`: tighter native budgets on the same supplied emitter.
 -/
@@ -46,6 +47,49 @@ def bindSharedRight {m n₂ l n₁ : ℕ} (i : Fin (l + n₁ + 1)) :
     Fin (m + (l + max n₁ n₂) + 1) :=
   if h : i.val < l then ⟨m + max n₁ n₂ + 1 + i.val, by omega⟩
   else ⟨i.val - l, by omega⟩
+
+/-- The register premises of both stages of a shared-bank bind. If the composite bank `tmp` is
+injective and avoids the sources `src` and the frontier, then the predecessor's bank
+`tmp ∘ bindSharedRight` and the continuation's bank `tmp ∘ bindSharedLeft` are injective. The
+continuation's sources, `src` followed by the predecessor's live answer slots, avoid its bank
+and the frontier. -/
+theorem bindShared_layout {r k m l n₁ n₂ : ℕ} {frontier : Fin r} {src : Fin k → Fin r}
+    {tmp : Fin (m + (l + max n₁ n₂) + 1) → Fin r} (hi : Function.Injective tmp)
+    (hd : ∀ i j, src i ≠ tmp j) (hf : ∀ j, tmp j ≠ frontier) (hs : ∀ i, src i ≠ frontier) :
+    Function.Injective (tmp ∘ bindSharedRight) ∧ Function.Injective (tmp ∘ bindSharedLeft) ∧
+      (∀ i j, Fin.append src (fun a => tmp (bindSharedRight (Fin.castAdd (n₁ + 1) a))) i ≠
+        tmp (bindSharedLeft j)) ∧
+      ∀ i, Fin.append src (fun a => tmp (bindSharedRight (Fin.castAdd (n₁ + 1) a))) i ≠
+        frontier := by
+  have hleft : Function.Injective (tmp ∘ bindSharedLeft) := by
+    intro a b hab
+    have h := congrArg Fin.val (hi hab)
+    exact Fin.ext h
+  have hright : Function.Injective (tmp ∘ bindSharedRight) := by
+    intro a b hab
+    apply Fin.ext
+    have h := congrArg Fin.val (hi hab)
+    have hm₁ := Nat.le_max_left n₁ n₂
+    have ha := a.isLt
+    have hb := b.isLt
+    dsimp only [Function.comp_apply, bindSharedRight] at h
+    split_ifs at h <;> dsimp only at h <;> omega
+  -- The predecessor's live answer sits in the tail, above every slot of the continuation.
+  have hdisjoint (a : Fin l) (b : Fin (m + n₂ + 1)) :
+      tmp (bindSharedRight (Fin.castAdd (n₁ + 1) a)) ≠ tmp (bindSharedLeft b) := by
+    intro hab
+    have h := congrArg Fin.val (hi hab)
+    have hm₂ := Nat.le_max_right n₁ n₂
+    have hb := b.isLt
+    simp only [bindSharedRight, Fin.val_castAdd, dite_eq_left a.isLt, bindSharedLeft] at h
+    omega
+  refine ⟨hright, hleft, fun i j => ?_, fun i => ?_⟩
+  · refine Fin.addCases (fun a => ?_) (fun b => ?_) i
+    · simpa only [Fin.append_left] using hd a (bindSharedLeft j)
+    · simpa only [Fin.append_right] using hdisjoint b j
+  · refine Fin.addCases (fun a => ?_) (fun b => ?_) i
+    · simpa only [Fin.append_left] using hs a
+    · simpa only [Fin.append_right] using hf (bindSharedRight (Fin.castAdd (n₁ + 1) b))
 
 namespace Realizes
 
@@ -119,41 +163,9 @@ theorem Witness.bind_execWithin (hP : Witness B p input answer safeP workP)
   let right : Fin (l + n₁ + 1) → Fin (m + N + 1) := bindSharedRight
   dsimp only
   intro r frontier src tmp hi hd hf hs
-  have hleft : Function.Injective (tmp ∘ left) := by
-    intro a b hab
-    apply Fin.ext
-    have h := congrArg Fin.val (hi hab)
-    exact h
-  have hright : Function.Injective (tmp ∘ right) := by
-    intro a b hab
-    apply Fin.ext
-    have h := congrArg Fin.val (hi hab)
-    have hm₁ := Nat.le_max_left n₁ n₂
-    have ha := a.isLt
-    have hb := b.isLt
-    dsimp only [right, bindSharedRight] at h
-    split_ifs at h <;> dsimp only at h <;> omega
-  have hdisjoint (a : Fin l) (b : Fin (m + n₂ + 1)) :
-      tmp (right (Fin.castAdd (n₁ + 1) a)) ≠ tmp (left b) := by
-    intro hab
-    have h := congrArg Fin.val (hi hab)
-    have hm₂ := Nat.le_max_right n₁ n₂
-    have hb := b.isLt
-    simp only [right, bindSharedRight, Fin.val_castAdd, dite_eq_left a.isLt, left,
-      bindSharedLeft] at h
-    omega
+  obtain ⟨hright, hleft, hnextDisjoint, hnextFrontier⟩ := bindShared_layout hi hd hf hs
   let nextSrc : Fin (k + l) → Fin r :=
     Fin.append src (fun i => tmp (right (Fin.castAdd (n₁ + 1) i)))
-  have hnextDisjoint (i : Fin (k + l)) (j : Fin (m + n₂ + 1)) :
-      nextSrc i ≠ (tmp ∘ left) j := by
-    refine Fin.addCases (fun a => ?_) (fun b => ?_) i
-    · simpa only [nextSrc, Fin.append_left, Function.comp_apply] using hd a (left j)
-    · simpa only [nextSrc, Fin.append_right, Function.comp_apply] using
-        hdisjoint b j
-  have hnextFrontier (i : Fin (k + l)) : nextSrc i ≠ frontier := by
-    refine Fin.addCases (fun a => ?_) (fun b => ?_) i
-    · simpa only [nextSrc, Fin.append_left] using hs a
-    · simpa only [nextSrc, Fin.append_right] using hf (right (Fin.castAdd (n₁ + 1) b))
   obtain ⟨hnwP, hrunP⟩ := hP.code_spec frontier src (tmp ∘ right) hright
     (fun i j => hd i (right j)) (fun j => hf (right j)) hs
   obtain ⟨hnwQ, hrunQ⟩ := hQ.code_spec frontier nextSrc (tmp ∘ left) hleft hnextDisjoint

@@ -93,12 +93,7 @@ theorem intro_subset_counting_new {θ : ℕ → ℕ} (hθ : ∀ r, 1 ≤ θ r)
     {m : ℕ} (hm : m < N) :
     intro (ψ m) (c m) (H m) (b m) ⊆
       countingIntro (ψ m) (c m) (H m) (b m) \ (ψ m ∪ ψ 0) := by
-  have hredm : Reduced (ψ m) := by
-    cases m with
-    | zero => exact hred
-    | succ m =>
-      rw [hstep m (by omega), countingChild_eq_reduce_union]
-      exact reduced_reduce _
+  have hredm := reduced_counting_node N ψ c H b hstep hred hm.le
   intro C hC
   have hCI : C ∈ countingIntro (ψ m) (c m) (H m) (b m) := by
     cases hb : b m with
@@ -219,9 +214,16 @@ theorem mul_card_counting_petalSteps_le_pow {M : ℕ} (hM : 2 ≤ M)
     (hchoice : ∀ i < N, Choice (fun r => M ^ r) (ψ i) (c i) (H i)) (hred : Reduced (ψ 0))
     (hnt : ∀ C ∈ ψ 0, ∀ l ∈ C, Std.Sat.Literal.negate l ∉ C)
     (declared : Finset V) (hsupport : ∀ C ∈ ψ 0, ∀ l ∈ C, l.1 ∈ declared)
-    {j : ℕ} (hj : 1 ≤ j) :
+    {j : ℕ} :
     M * ((range N).filter fun m => b m = true ∧ c m - (H m).card = j).card ≤
       4 * 3 ^ (j - 1) * declared.card := by
+  rcases Nat.eq_zero_or_pos j with rfl | hj
+  · have hempty : ((range N).filter fun m => b m = true ∧ c m - (H m).card = 0) = ∅ := by
+      rw [Finset.filter_eq_empty_iff]
+      intro m hm h
+      have := (hchoice m (mem_range.mp hm)).1.2.1
+      omega
+    simp [hempty]
   have hθ : ∀ r, 1 ≤ M ^ r := fun r => Nat.one_le_pow r M (by omega)
   have hcharge := mul_card_counting_petalSteps_le hθ N ψ c H b hstep
     (fun i hi => (hchoice i hi).1) hred j
@@ -272,9 +274,9 @@ theorem mul_card_counting_B_le {M : ℕ} (hM : 2 ≤ M)
   rw [hfiber, mul_sum]
   calc
     _ ≤ ∑ j ∈ Ico 1 k, 4 * 3 ^ (j - 1) * declared.card := by
-      refine sum_le_sum fun j hj => ?_
+      refine sum_le_sum fun j _ => ?_
       exact mul_card_counting_petalSteps_le_pow hM N ψ c H b hstep hchoice hred hnt
-        declared hsupport (mem_Ico.mp hj).1
+        declared hsupport
     _ = _ := by
       rw [sum_Ico_eq_sum_range]
       simp only [Nat.add_sub_cancel_left, mul_sum, sum_mul, mul_assoc]
