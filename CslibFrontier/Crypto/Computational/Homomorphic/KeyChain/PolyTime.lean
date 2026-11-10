@@ -25,6 +25,11 @@ are encoded in unary. The certificates charge every key, every secret-key bit en
 the complete nested output encoding. They impose no correctness, fixed-width, or security
 assumption.
 
+## Main definitions
+
+* `Cslib.Crypto.Homomorphic.encKeyChainKeys`, `Cslib.Crypto.Homomorphic.encKeyChainLinks`: the
+  encodings of a key chain's key pairs and of its encrypted links.
+
 ## Main results
 
 * `Cslib.Crypto.Homomorphic.Scheme.isPPTOn_generateKeys`: sample all levels of keys.
@@ -47,9 +52,11 @@ word. Every entry is framed, and so is the public key inside it. -/
 abbrev encKeyChainKeys : List (List Bool × List Bool) ↪ List Bool :=
   encList (encPair encBits encBits)
 
-/-- The encrypted links of a key chain, one per pair of adjacent levels: link `i` lists the
-ciphertext words encrypting the bits of `skᵢ` under `pkᵢ₊₁`, one word per bit. Every link is
-framed, and so is every ciphertext word inside it. -/
+/-- The links of a key chain, one per pair of adjacent levels: link `i` lists one ciphertext word
+per bit of `skᵢ`, each encrypted under `pkᵢ₊₁`. Every link is framed, and so is every ciphertext
+word inside it. The honest chain (`encryptKeyLinks`) encrypts the bits of `skᵢ`, the zero chain
+(`encryptZeroKeyLinks`) encrypts as many `false` bits instead, and the hybrid chains of
+`KeyChain.Hybrid` mix honest and zero links. -/
 abbrev encKeyChainLinks : List (List (List Bool)) ↪ List Bool :=
   encList (encList encBits)
 

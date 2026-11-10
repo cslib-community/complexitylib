@@ -84,8 +84,7 @@ noncomputable def identityTest :
   fun _ input => pure (decide (input.2.1 = F.encode d 0 ∧ input.2.2.2 = F.encode d 0))
 
 theorem identityTest_isPPT :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool (fun input => identityTest F d input.1 input.2) := by
+    IsPPTOn F.encDDHInput encBool (fun input => identityTest F d input.1 input.2) := by
   unfold identityTest
   ppt
 
