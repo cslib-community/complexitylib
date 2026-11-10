@@ -131,8 +131,8 @@ Choose the conclusion your client needs:
   exports in [Program](../../CslibFrontier/Computability/WordRAM/Realization/Program.lean).
 
 For each runtime input, prove `k ≤ words.length`, `Fits w (words.length + 1)`,
-`InputFits w words`, the certificate's `safe w d (inputState words)` condition, and
-`Memory.spec`'s `ValidHistory` for that client from `inputState words`. The raw-words rule
+`InputFits w words`, the certificate's `safe w d (Memory.State.init words)` condition, and
+`Memory.spec`'s `ValidHistory` for that client from `Memory.State.init words`. The raw-words rule
 also requires the prefix equality described above; the other two take that equality for
 `raw d` when choosing the program. The resulting instruction bound is
 `C * (memoryCost + work + 1) + 1`, including the executed prefix, body and halt.
