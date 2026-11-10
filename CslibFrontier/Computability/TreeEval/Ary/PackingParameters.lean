@@ -36,6 +36,8 @@ affine in `b`; no uniform constant independent of `d` is asserted.
 
 * `Cslib.TreeEval.Ary.Packed.gateDegree_lt`: the strict unmasking threshold.
 * `Cslib.TreeEval.Ary.Packed.fieldModulus_size_le`: field elements use at most `2m+2` bits.
+* `Cslib.TreeEval.Ary.Packed.chunkCount_mul_framed_fieldModulus_size_le`: shared framed-cell bound.
+* `Cslib.TreeEval.Ary.Packed.chunkCount_mul_parameter_sizes_le`: modulus/alphabet bank cost.
 * `Cslib.TreeEval.Ary.Packed.length_encList_residues_le`: encoded global-register storage.
 
 ## References
@@ -171,6 +173,28 @@ theorem chunkCount_mul_fieldModulus_size_le (hd : 0 < d) (hb : 0 < b) :
         chunkCount d b * (4 * chunkWidth d b) := Nat.mul_le_mul_left _ (by omega)
     _ ≤ 4 * (b + chunkWidth d b) := by nlinarith
 
+/-- Framing each residue with `c` payload copies and one cell marker preserves linear storage.
+The cases `c = 2` and `c = 4` account for the flat and padded bank layouts respectively. -/
+theorem chunkCount_mul_framed_fieldModulus_size_le (hd : 0 < d) (hb : 0 < b) (c : ℕ) :
+    chunkCount d b * (c * (fieldModulus d b).size + 1) ≤
+      (4 * c + 1) * (b + chunkWidth d b) := by
+  have hp := Nat.mul_le_mul_left c (chunkCount_mul_fieldModulus_size_le hd hb)
+  have hr := chunkCount_le hd hb
+  nlinarith
+
+/-- Explicit output-count and alphabet/modulus storage fit one linear bank allowance. -/
+theorem chunkCount_mul_parameter_sizes_le (hd : 0 < d) (hb : 0 < b) :
+    chunkCount d b * ((fieldModulus d b).size +
+      (2 ^ chunkWidth d b).size + 1) ≤ 12 * (b + chunkWidth d b) := by
+  have halphabet := Nat.size_le_size (alphabetSize_lt hd hb).le
+  have hp : 0 < (fieldModulus d b).size :=
+    Nat.size_pos.mpr (fieldModulus_prime d b).pos
+  have hregister := chunkCount_mul_fieldModulus_size_le hd hb
+  have hscalar : (fieldModulus d b).size + (2 ^ chunkWidth d b).size + 1 ≤
+      3 * (fieldModulus d b).size := by omega
+  have h := Nat.mul_le_mul_left (chunkCount d b) hscalar
+  nlinarith
+
 /-- Actual framed binary storage for the `d+1` global registers. All residues, including zero,
 and their list framing are charged. Any list with at most the full register count is allowed. -/
 theorem length_encList_residues_le (hd : 0 < d) (hb : 0 < b) (values : List ℕ)
@@ -183,14 +207,15 @@ theorem length_encList_residues_le (hd : 0 < d) (hb : 0 < b) (values : List ℕ)
     rw [Turing.MultiTapeTM.encNat_apply, Nat.size_eq_bits_len]
     exact Nat.size_le_size (hres v hv).le
   have hlist := Turing.MultiTapeTM.length_encList_le Turing.MultiTapeTM.encNat values hsize
-  have hp := fieldModulus_size_le hd hb
-  have hm := chunkWidth_pos hd hb
-  have hr := chunkCount_mul_lt hd hb
+  have hscalar := chunkCount_mul_framed_fieldModulus_size_le hd hb 2
   calc
     _ ≤ values.length * (2 * (fieldModulus d b).size + 1) := hlist
-    _ ≤ ((d + 1) * chunkCount d b) * (9 * chunkWidth d b) :=
-      Nat.mul_le_mul hlen (by omega)
-    _ ≤ 9 * (d + 1) * (b + chunkWidth d b) := by nlinarith
+    _ ≤ ((d + 1) * chunkCount d b) * (2 * (fieldModulus d b).size + 1) :=
+      Nat.mul_le_mul_right _ hlen
+    _ = (d + 1) * (chunkCount d b * (2 * (fieldModulus d b).size + 1)) :=
+      Nat.mul_assoc ..
+    _ ≤ (d + 1) * (9 * (b + chunkWidth d b)) := Nat.mul_le_mul_left _ hscalar
+    _ = _ := by ring
 
 /-- For a fixed machine's fan-in, the width term is affine in the value length. -/
 theorem chunkWidth_le (d b : ℕ) : chunkWidth d b ≤ d.size + b := by

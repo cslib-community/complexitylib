@@ -381,6 +381,13 @@ theorem code_wiring_eq_map {f : Fin m → Fin n} {g : ℕ → ℕ}
   simpa using
     code_wiring_eq_map (σ := σ) (f := (_root_.id : Fin n → Fin n)) (g := _root_.id) fun _ => rfl
 
+/-- The serialized code of the wiring that keeps the first `m` of `m + k` wires is
+`([], List.range m)`. -/
+theorem code_wiring_castAdd (k : ℕ) :
+    (wiring σ (Fin.castAdd k : Fin m → Fin (m + k))).code = ([], List.range m) := by
+  simpa using code_wiring_eq_map (σ := σ) (f := (Fin.castAdd k : Fin m → Fin (m + k)))
+    (g := _root_.id) fun _ => rfl
+
 /-! ### Binary encodings of circuits over an arbitrary signature -/
 
 section SignatureEncoding

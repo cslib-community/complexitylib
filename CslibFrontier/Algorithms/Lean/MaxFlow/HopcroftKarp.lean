@@ -441,51 +441,25 @@ private theorem bfsInit_foldl (ml : Vector Bool m) (l : List (Fin m))
   | cons x l ih =>
     rw [List.foldl_cons]
     obtain ⟨ih1, ih2⟩ := ih (hkBfsInitStep ml p x)
-    refine ⟨fun u => ?_, fun u => ?_⟩
-    · rw [ih1]
-      by_cases hx : vget ml x = true
-      · have : hkBfsInitStep ml p x = p := by simp [hkBfsInitStep, hx]
-        rw [this]
+    by_cases hx : vget ml x = true
+    · have hstep : hkBfsInitStep ml p x = p := by simp [hkBfsInitStep, hx]
+      rw [hstep] at ih1 ih2 ⊢
+      refine ⟨fun u => ?_, fun u => ?_⟩
+      · rw [ih1 u]
+        by_cases hux : u = x <;> simp [hx, hux]
+      · rw [ih2 u]
+        by_cases hux : u = x <;> simp [hx, hux]
+    · have hx' : vget ml x = false := by simpa using hx
+      have hstep : hkBfsInitStep ml p x = (vset p.1 x (some 0), x :: p.2) := by
+        simp [hkBfsInitStep, hx']
+      rw [hstep] at ih1 ih2 ⊢
+      refine ⟨fun u => ?_, fun u => ?_⟩
+      · rw [ih1 u]
         by_cases hux : u = x
-        · subst hux
-          simp [hx]
-        · simp [hux]
-      · have hx' : vget ml x = false := by simpa using hx
-        have : hkBfsInitStep ml p x = (vset p.1 x (some 0), x :: p.2) := by
-          simp [hkBfsInitStep, hx']
-        rw [this]
-        by_cases hux : u = x
-        · subst hux
-          simp [hx']
+        · subst hux; simp [hx']
         · simp [hux, vget_vset_ne p.1 (some 0) (Ne.symm hux)]
-    · rw [ih2]
-      by_cases hx : vget ml x = true
-      · have : hkBfsInitStep ml p x = p := by simp [hkBfsInitStep, hx]
-        rw [this]
-        constructor
-        · rintro (h | ⟨h1, h2⟩)
-          · exact .inl h
-          · exact .inr ⟨List.mem_cons_of_mem _ h1, h2⟩
-        · rintro (h | ⟨h1, h2⟩)
-          · exact .inl h
-          · rcases List.mem_cons.mp h1 with rfl | h1
-            · simp [hx] at h2
-            · exact .inr ⟨h1, h2⟩
-      · have hx' : vget ml x = false := by simpa using hx
-        have : hkBfsInitStep ml p x = (vset p.1 x (some 0), x :: p.2) := by
-          simp [hkBfsInitStep, hx']
-        rw [this]
-        constructor
-        · rintro (h | ⟨h1, h2⟩)
-          · rcases List.mem_cons.mp h with rfl | h
-            · exact .inr ⟨List.mem_cons_self, hx'⟩
-            · exact .inl h
-          · exact .inr ⟨List.mem_cons_of_mem _ h1, h2⟩
-        · rintro (h | ⟨h1, h2⟩)
-          · exact .inl (List.mem_cons_of_mem _ h)
-          · rcases List.mem_cons.mp h1 with rfl | h1
-            · exact .inl List.mem_cons_self
-            · exact .inr ⟨h1, h2⟩
+      · rw [ih2 u]
+        by_cases hux : u = x <;> simp [hx', hux]
 
 private theorem bfsInit_nodup (ml : Vector Bool m) (l : List (Fin m))
     (p : Vector (Option ℕ) m × List (Fin m)) (hl : l.Nodup) (hp : p.2.Nodup)
@@ -581,37 +555,21 @@ private theorem hkBfsStep_inv {j : ℕ} {u : Fin m} (hu : u ∈ altLeft G (mateM
             exact absurd this (by simp)
           · exact hwi
         refine ⟨fun x i hi => ?_, fun x i hx => ?_, fun x => ?_, fun x hx => ?_, ?_, hs.found⟩
-        · by_cases hxw : x = w
-          · subst hxw
-            rw [vget_vset_self]
-            constructor
-            · intro h
-              simp only [Option.some.injEq] at h
-              omega
-            · intro h
-              have := (hs.exact x i hi).mpr h
-              rw [hd] at this
-              exact absurd this (by simp)
-          · rw [vget_vset_ne _ _ (Ne.symm hxw)]
+        · rcases eq_or_ne x w with rfl | hxw
+          · rw [vget_vset_self]
+            exact ⟨fun h => by simp only [Option.some.injEq] at h; omega,
+              fun h => absurd ((hs.exact x i hi).mpr h) (by simp [hd])⟩
+          · rw [vget_vset_ne _ _ hxw.symm]
             exact hs.exact x i hi
-        · by_cases hxw : x = w
-          · subst hxw
-            rw [vget_vset_self, Option.some.injEq] at hx
-            omega
-          · rw [vget_vset_ne _ _ (Ne.symm hxw)] at hx
-            exact hs.bound x i hx
-        · by_cases hxw : x = w
-          · subst hxw
-            simp
-          · rw [vget_vset_ne _ _ (Ne.symm hxw), hs.next_iff]
-            simp [hxw]
-        · rcases List.mem_cons.mp hx with rfl | hx
-          · exact hwl
-          · exact hs.next_layer x hx
-        · refine List.nodup_cons.mpr ⟨fun h => ?_, hs.nodup⟩
-          have := (hs.next_iff w).mpr h
-          rw [hd] at this
-          exact absurd this (by simp)
+        · rcases eq_or_ne x w with rfl | hxw
+          · rw [vget_vset_self, Option.some.injEq] at hx; omega
+          · exact hs.bound x i (by rwa [vget_vset_ne _ _ hxw.symm] at hx)
+        · rcases eq_or_ne x w with rfl | hxw
+          · simp
+          · simp [vget_vset_ne _ _ hxw.symm, hs.next_iff, hxw]
+        · exact (List.mem_cons.mp hx).elim (· ▸ hwl) (hs.next_layer x)
+        · exact List.nodup_cons.mpr ⟨fun h => by have := (hs.next_iff w).mpr h; simp [hd] at this,
+            hs.nodup⟩
       · rw [ite_eq_right hd]
         exact hs
   · rw [ite_eq_right hG]
@@ -815,13 +773,9 @@ private theorem hkBfsLoopM_spec (hadj : BipAdjValid G adj) (fuel : ℕ) {j : ℕ
     omega
   | succ fuel ih =>
     have hs0 : HKStepInv G (mateMatching mate) j ⟨dist, [], false⟩ :=
-      ⟨hex, fun u i h => by have := hbd u i h; omega,
-        fun u => by
-          simp only [List.not_mem_nil, iff_false]
-          intro h
-          have := hbd u _ h
-          omega,
-        fun u hu => by simp at hu, List.nodup_nil, fun h => by simp at h⟩
+      ⟨hex, fun u i h => Nat.le_succ_of_le (hbd u i h),
+        fun u => ⟨fun h => by have := hbd u _ h; omega, fun h => absurd h List.not_mem_nil⟩,
+        fun u hu => absurd hu List.not_mem_nil, List.nodup_nil, fun h => by simp at h⟩
     have hfrontL : ∀ u ∈ frontier, u ∈ altLeft G (mateMatching mate) j :=
       fun u hu => ((hfront u).mp hu).1
     set s := frontier.foldl (fun s u => (adj u).foldl (hkBfsStep G mate j u) s)
@@ -841,50 +795,38 @@ private theorem hkBfsLoopM_spec (hadj : BipAdjValid G adj) (fuel : ℕ) {j : ℕ
         obtain ⟨i, hij, hwi⟩ := exists_isLayer hw
         rcases Nat.lt_or_eq_of_le hij with hlt | rfl
         · exact altLeft_mono (by omega) hwi.1
-        · have := hcomp w hwi
-          rw [hnil] at this
-          simp at this
-      have hmatched : altRight G (mateMatching mate) j ⊆ matchedRight (mateMatching mate) := by
-        intro t ht
-        by_contra hfree
-        exact hf (hfound t ht hfree)
+        · have := hcomp w hwi; simp [hnil] at this
+      have hmatched : altRight G (mateMatching mate) j ⊆ matchedRight (mateMatching mate) :=
+        fun t ht => by_contra fun hfree => hf (hfound t ht hfree)
       refine ⟨hN, hs.exact, fun h => by simp at h, fun _ => ⟨hstable, hmatched, fun u => ?_⟩⟩
       dsimp only
       constructor
       · intro hd hu
         obtain ⟨i, hij, hui⟩ := exists_isLayer hu
-        rw [(hs.exact u i hij).mpr hui] at hd
-        exact nomatch hd
+        simp [(hs.exact u i hij).mpr hui] at hd
       · intro hu
         cases hd : vget s.dist u with
         | none => rfl
         | some i =>
           exfalso
-          have hb := hs.bound u i hd
-          rcases Nat.lt_or_eq_of_le hb with hlt | heq
+          rcases Nat.lt_or_eq_of_le (hs.bound u i hd) with hlt | rfl
           · exact hu (altLeft_mono (by omega) ((hs.exact u i (by omega)).mp hd).1)
-          · have := (hs.next_iff u).mp (heq ▸ hd)
-            rw [hnil] at this
-            simp at this
+          · have := (hs.next_iff u).mp hd; simp [hnil] at this
     rw [ite_eq_right hne]
-    have hne' : s.next ≠ [] := fun h => hne (by simp [h])
-    obtain ⟨w, hw⟩ := List.exists_mem_of_ne_nil s.next hne'
-    refine ih (fun u i hi => ?_) (fun u i h => hs.bound u i h) (fun u => ?_) hs.nodup ?_ ?_
+    obtain ⟨w, hw⟩ := List.exists_mem_of_ne_nil s.next (fun h => hne (by simp [h]))
+    refine ih (fun u i hi => ?_) (fun u i h => hs.bound u i h)
+      (fun u => ⟨hs.next_layer u, hcomp u⟩) hs.nodup ?_ ?_
     · rcases Nat.lt_or_eq_of_le hi with hlt | rfl
       · exact hs.exact u i (by omega)
       · exact ⟨fun h => hs.next_layer u ((hs.next_iff u).mp h),
           fun h => (hs.next_iff u).mpr (hcomp u h)⟩
-    · exact ⟨hs.next_layer u, hcomp u⟩
     · intro j' hj' t ht
       rcases Nat.lt_or_eq_of_le (Nat.lt_succ_iff.mp hj') with hlt | rfl
       · exact hN j' hlt ht
-      · by_contra hfree
-        exact hf (hfound t ht hfree)
+      · exact by_contra fun hfree => hf (hfound t ht hfree)
     · have hwl := hs.next_layer w hw
-      have hsub : altLeft G (mateMatching mate) j ⊂ altLeft G (mateMatching mate) (j + 1) :=
-        Finset.ssubset_iff_subset_ne.mpr ⟨altLeft_mono (Nat.le_succ j), fun h =>
-          hwl.2 j (Nat.lt_succ_self j) (h ▸ hwl.1)⟩
-      have := Finset.card_lt_card hsub
+      have := Finset.card_lt_card <| Finset.ssubset_iff_subset_ne.mpr
+        ⟨altLeft_mono (Nat.le_add_right j 1), fun h => hwl.2 j (Nat.lt_add_one j) (h ▸ hwl.1)⟩
       omega
 
 theorem hkBfsM_spec (hadj : BipAdjValid G adj) :
@@ -1248,8 +1190,7 @@ private theorem hkDfsLevelM_post
           refine (ih vis hinv).skip (HKVisLe.refl vis) fun q hq => ?_
           rcases hq.cons_cases.2.2 with ⟨hik', _⟩ | ⟨w, hw, _⟩
           · exact ha (hacc.mpr hik')
-          · rw [mem_mateMatching, hm] at hw
-            exact nomatch hw
+          · simp [mem_mateMatching, hm] at hw
       | some w =>
         simp only
         have hwM : (w, v) ∈ mateMatching mate := mem_mateMatching.mpr hm
@@ -1282,12 +1223,11 @@ private theorem hkDfsLevelM_post
           refine (ih vis hinv).skip (HKVisLe.refl vis) fun q hq => ?_
           have hp := hq.of_mate hwM
           refine hb ⟨?_, (hex w (i + 1) hp.le).mpr hp.isLayer⟩
-          cases ha : accept with
-          | false => rfl
-          | true =>
-            have := hacc.mp ha
-            have := hp.le
-            omega
+          by_contra ha
+          have ha' : accept = true := Bool.eq_true_of_not_eq_false ha
+          have := hacc.mp ha'
+          have := hp.le
+          omega
     · -- `(u, v)` is not an edge or `v` was already visited.
       rw [ite_eq_right hc]
       refine (ih vis hinv).skip (HKVisLe.refl vis) fun q hq => ?_
@@ -1385,11 +1325,8 @@ private theorem hkDfsRootsM_spec (hadj : BipAdjValid G adj)
       | none =>
         obtain ⟨hinv', hblk⟩ := hspec.fail rfl
         refine ih hnd' vis' acc hfam hinv' (fun y hy => hroots y (List.mem_cons_of_mem _ hy))
-          fun y hy hyacc => ?_
-        by_cases hyx : y = x
-        · subst hyx
-          exact hblk
-        · exact hmax y (fun h => (List.mem_cons.mp h).elim hyx hy) hyacc
+          fun y hy hyacc => (eq_or_ne y x).elim (· ▸ hblk) fun hyx =>
+            hmax y (fun h => (List.mem_cons.mp h).elim hyx hy) hyacc
       | some p =>
         obtain ⟨q, rfl, hq, hinv'⟩ := hspec.found p rfl
         have hxacc : x ∉ acc.map Prod.fst := fun h =>
@@ -1399,27 +1336,21 @@ private theorem hkDfsRootsM_spec (hadj : BipAdjValid G adj)
         · rw [mem_matchedLeft_iff_mem_map, List.map_append, List.mem_append] at hyacc
           rcases hyacc with hyq | hyacc
           · obtain ⟨e, he, hfst⟩ := List.mem_map.mp hyq
-            rcases hq.mem_left e he with hex' | ⟨e', _, hM'⟩
-            · rw [← hfst, hex'] at hy
-              exact hxus hy
-            · rw [hfst] at hM'
-              exact (isLayer_zero.mp hy0) (mem_matchedLeft.mpr ⟨_, hM'⟩)
+            rcases hq.mem_left e he with hex' | ⟨_, _, hM'⟩
+            · exact hxus (hex' ▸ hfst.symm ▸ hy)
+            · exact (isLayer_zero.mp hy0) (mem_matchedLeft.mpr ⟨_, hfst ▸ hM'⟩)
           · exact hroots y (List.mem_cons_of_mem _ hy) hy0 (mem_matchedLeft_iff_mem_map.mpr hyacc)
-        · by_cases hyx : y = x
-          · subst hyx
-            obtain ⟨v, l, rfl⟩ := hq.head
+        · rcases eq_or_ne y x with rfl | hyx
+          · obtain ⟨v, _, rfl⟩ := hq.head
             exact absurd (mem_matchedLeft.mpr ⟨v, by simp⟩) hyacc
-          · intro p hp
-            exact hmax y (fun h => (List.mem_cons.mp h).elim hyx hy)
+          · exact fun p hp => hmax y (fun h => (List.mem_cons.mp h).elim hyx hy)
               (fun h => hyacc (matchedLeft_subset_append q acc h)) p
               (hp.mono (matchedRight_subset_append q acc))
     · rw [ite_eq_right hd]
       refine ih hnd' vis acc hfam hinv (fun y hy => hroots y (List.mem_cons_of_mem _ hy))
         fun y hy hyacc => ?_
-      by_cases hyx : y = x
-      · subst hyx
-        intro q hq
-        exact hd ((hex y 0 (Nat.zero_le _)).mpr hq.isLayer)
+      rcases eq_or_ne y x with rfl | hyx
+      · exact fun q hq => hd ((hex y 0 (Nat.zero_le _)).mpr hq.isLayer)
       · exact hmax y (fun h => (List.mem_cons.mp h).elim hyx hy) hyacc
 
 /-- The edge list found by one phase is a maximal layered augmentation. -/
@@ -1747,7 +1678,7 @@ private theorem hkLoopM_spec (hadj : BipAdjValid G adj) {C : ℕ}
       rw [ite_eq_right hf]
       simp only [TimeM.ret_pure, TimeM.time_pure]
       obtain ⟨hstable, hsub, hdist⟩ := hb.found_false hf'
-      refine ⟨⟨hM, le_rfl, by rw [Nat.sub_self]; exact .done, b.k, hstable, hsub, hdist⟩, ?_⟩
+      refine ⟨⟨hM, le_rfl, Nat.sub_self n ▸ .done, b.k, hstable, hsub, hdist⟩, ?_⟩
       simp only [Nat.sub_self, Nat.zero_add, Nat.one_mul]
       omega
 
@@ -1766,30 +1697,7 @@ theorem mem_foldl_hkMatchingStep (mate : Vector (Option (Fin m)) r) (l : List (F
   | cons x l ih =>
     rw [List.foldl_cons, ih]
     unfold hkMatchingStep
-    cases hx : vget mate x with
-    | none =>
-      simp only [List.mem_cons]
-      constructor
-      · rintro (h | ⟨h1, h2⟩)
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl h
-        · rw [hx] at h2
-          exact nomatch h2
-        · exact .inr ⟨h1, h2⟩
-    | some w =>
-      simp only [Finset.mem_insert, Prod.mk.injEq, List.mem_cons]
-      constructor
-      · rintro ((⟨rfl, rfl⟩ | h) | ⟨h1, h2⟩)
-        · exact .inr ⟨.inl rfl, hx⟩
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl (.inr h)
-        · rw [hx] at h2
-          exact .inl (.inl ⟨(Option.some.inj h2).symm, rfl⟩)
-        · exact .inr ⟨h1, h2⟩
+    grind
 
 private theorem mem_foldl_hkCoverLeftStep (dist : Vector (Option ℕ) m) (l : List (Fin m))
     (a : Finset (Fin m)) (u : Fin m) :
@@ -1799,28 +1707,7 @@ private theorem mem_foldl_hkCoverLeftStep (dist : Vector (Option ℕ) m) (l : Li
   | cons x l ih =>
     rw [List.foldl_cons, ih]
     unfold hkCoverLeftStep
-    by_cases hx : vget dist x = none
-    · rw [ite_eq_left hx]
-      simp only [Finset.mem_insert, List.mem_cons]
-      constructor
-      · rintro ((rfl | h) | ⟨h1, h2⟩)
-        · exact .inr ⟨.inl rfl, hx⟩
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl (.inr h)
-        · exact .inl (.inl rfl)
-        · exact .inr ⟨h1, h2⟩
-    · rw [ite_eq_right hx]
-      simp only [List.mem_cons]
-      constructor
-      · rintro (h | ⟨h1, h2⟩)
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl h
-        · exact absurd h2 hx
-        · exact .inr ⟨h1, h2⟩
+    grind
 
 private theorem mem_foldl_hkCoverRightStep (mate : Vector (Option (Fin m)) r)
     (dist : Vector (Option ℕ) m) (l : List (Fin r)) (a : Finset (Fin r)) (v : Fin r) :
@@ -1831,46 +1718,7 @@ private theorem mem_foldl_hkCoverRightStep (mate : Vector (Option (Fin m)) r)
   | cons x l ih =>
     rw [List.foldl_cons, ih]
     unfold hkCoverRightStep
-    cases hx : vget mate x with
-    | none =>
-      simp only [List.mem_cons]
-      constructor
-      · rintro (h | ⟨h1, h2⟩)
-        · exact .inl h
-        · exact .inr ⟨.inr h1, h2⟩
-      · rintro (h | ⟨rfl | h1, h2⟩)
-        · exact .inl h
-        · obtain ⟨w, hw, _⟩ := h2
-          rw [hx] at hw
-          exact nomatch hw
-        · exact .inr ⟨h1, h2⟩
-    | some w =>
-      simp only
-      by_cases hd : vget dist w = none
-      · rw [ite_eq_left hd]
-        simp only [List.mem_cons]
-        constructor
-        · rintro (h | ⟨h1, h2⟩)
-          · exact .inl h
-          · exact .inr ⟨.inr h1, h2⟩
-        · rintro (h | ⟨rfl | h1, h2⟩)
-          · exact .inl h
-          · obtain ⟨w', hw', hd'⟩ := h2
-            rw [hx] at hw'
-            rw [← Option.some.inj hw'] at hd'
-            exact absurd hd hd'
-          · exact .inr ⟨h1, h2⟩
-      · rw [ite_eq_right hd]
-        simp only [Finset.mem_insert, List.mem_cons]
-        constructor
-        · rintro ((rfl | h) | ⟨h1, h2⟩)
-          · exact .inr ⟨.inl rfl, w, hx, hd⟩
-          · exact .inl h
-          · exact .inr ⟨.inr h1, h2⟩
-        · rintro (h | ⟨rfl | h1, h2⟩)
-          · exact .inl (.inr h)
-          · exact .inl (.inl rfl)
-          · exact .inr ⟨h1, h2⟩
+    grind
 
 end Extract
 
@@ -1886,17 +1734,19 @@ private theorem hk_round_cost (adj : Fin m → List (Fin r)) :
       7 * m + 3 * r + 1 + 4 * bipAdjSteps adj := by
   omega
 
+private theorem mateMatching_replicate_none :
+    mateMatching (Vector.replicate r (none : Option (Fin m))) = ∅ := by
+  ext e
+  simp [vget_replicate]
+
 private theorem hkLoop_start (hadj : BipAdjValid G adj) :
     HKLoopPost G (Vector.replicate r none) 0
         (hkLoopM G adj (m + 1) 0 (Vector.replicate r none)).ret ∧
       (hkLoopM G adj (m + 1) 0 (Vector.replicate r none)).time ≤
         ((hkLoopM G adj (m + 1) 0 (Vector.replicate r none)).ret.phases - 0 + 1) *
           (7 * m + 3 * r + 1 + 4 * bipAdjSteps adj) := by
-  have h0 : mateMatching (Vector.replicate r (none : Option (Fin m))) = ∅ := by
-    ext e
-    simp [vget_replicate]
   refine hkLoopM_spec hadj (hk_round_cost adj) (m + 1) 0 _ ?_ (by omega)
-  rw [h0]
+  rw [mateMatching_replicate_none]
   exact ⟨by simp, by simp, by simp⟩
 
 /-- **Correctness of Hopcroft–Karp.** `hopcroftKarpM G adj` returns a maximum matching and a
@@ -1908,9 +1758,6 @@ theorem hopcroftKarpM_correct (hadj : BipAdjValid G adj) :
       (hopcroftKarpM G adj).ret.matching.card = (hopcroftKarpM G adj).ret.cover.size ∧
       (hopcroftKarpM G adj).ret.phases ≤ 2 * Nat.sqrt (hopcroftKarpM G adj).ret.matching.card := by
   obtain ⟨hpost, -⟩ := hkLoop_start (G := G) hadj
-  have h0 : mateMatching (Vector.replicate r (none : Option (Fin m))) = ∅ := by
-    ext e
-    simp [vget_replicate]
   simp only [hopcroftKarpM, TimeM.ret_bind, replicateM_ret, foldlTickM_ret, TimeM.ret_pure]
   set st := (hkLoopM G adj (m + 1) 0 (Vector.replicate r none)).ret
   obtain ⟨k, hstable, hsub, hdist⟩ := hpost.closed
@@ -1923,7 +1770,7 @@ theorem hopcroftKarpM_correct (hadj : BipAdjValid G adj) :
       (List.finRange r).foldl (hkCoverRightStep st.mate st.dist) ∅⟩ : VertexCover (Fin m) (Fin r))
       = layerCover G (mateMatching st.mate) k := by
     simp only [layerCover, VertexCover.mk.injEq]
-    constructor
+    refine ⟨?_, ?_⟩
     · ext u
       rw [mem_foldl_hkCoverLeftStep, Finset.mem_sdiff, ← hdist u]
       simp
@@ -1939,7 +1786,7 @@ theorem hopcroftKarpM_correct (hadj : BipAdjValid G adj) :
   obtain ⟨hmax, hmin⟩ := isMaxMatching_isMinVertexCover_of_stable hM hstable hsub
   refine ⟨hmax, hmin, (size_layerCover_of_stable hM hstable hsub).symm, ?_⟩
   have hrun := hpost.run
-  rw [h0, Nat.sub_zero] at hrun
+  rw [mateMatching_replicate_none, Nat.sub_zero] at hrun
   exact hrun.le_two_mul_sqrt hmax
 
 end Main

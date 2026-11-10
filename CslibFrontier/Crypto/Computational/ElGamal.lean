@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -409,9 +410,7 @@ theorem ddhRealGame_elGamalMsgToDDHDistinguisher {Msg : Type}
   simp only [ddhRealGame, elGamalMsgToDDHDistinguisher, elGamalMsgCPAGameOn,
     ddhPk, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind, apply_ite ProbComp.eval, ProbComp.eval_pure, PMF.monad_pure_eq_pure]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  rw [PMF.bind_comm]
-  refine congrArg (PMF.bind _) (funext fun choice => ?_)
+  pmf_swap with d α choice
   split_ifs <;> first | rfl | exact PMF.bind_const _ _
 
 /-- The admissibility predicate `valid` admits only group elements under `encodeMsg`: at every
@@ -438,11 +437,7 @@ theorem ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
     ProbComp.eval_bind,
     PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte, apply_ite ProbComp.eval,
     ProbComp.eval_pure]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  refine congrArg (PMF.bind _) (funext fun β => ?_)
-  rw [PMF.bind_comm, PMF.bind_comm (PMF.uniformOfFintype (ZMod (F.order d)))
-    (ProbComp.eval (adversary.choose n _))]
-  refine congrArg (PMF.bind _) (funext fun choice => ?_)
+  pmf_swap with d α choice β
   by_cases hv : valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 = true
   · obtain ⟨⟨x₀, hx₀⟩, ⟨x₁, hx₁⟩⟩ := hsound n d _ choice.1.1 choice.1.2 hv
@@ -1002,8 +997,7 @@ exactly. -/
       F.hashedElGamalCPAGame setup H adversary bit n := by
   simp only [ddhRealGame, hashedElGamalToDDHDistinguisher, hashedElGamalCPAGame, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the ideal DDH game, `hashedElGamalToDDHDistinguisher` simulates `hashedElGamalIdealDDHGame`
 exactly. -/
@@ -1014,11 +1008,7 @@ exactly. -/
       F.hashedElGamalIdealDDHGame setup H adversary bit n := by
   simp only [ddhIdealGame, hashedElGamalToDDHDistinguisher, hashedElGamalIdealDDHGame,
     ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- `hashedElGamalToDDHDistinguisher` is uniform strict PPT whenever `H` is polynomial time and
 `adversary` is uniform strict PPT. -/
@@ -1099,11 +1089,7 @@ exactly: unfolded, this is the ideal DDH game for `hashedElGamalToDDHDistinguish
       F.hashedElGamalUniformPadGame setup msgLen adversary bit n := by
   simp only [kdfIdealGame, hashedElGamalToKDFDistinguisher, hashedElGamalUniformPadGame,
     ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is: it is
 `hashedElGamalToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/

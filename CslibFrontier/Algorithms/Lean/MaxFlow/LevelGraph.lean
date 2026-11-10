@@ -377,10 +377,8 @@ theorem IsDinitzRun.length_le {T : ℕ} {flows : ℕ → N.Flow} (h : N.IsDinitz
   rcases Nat.eq_zero_or_pos T with rfl | hT
   · exact Nat.zero_le _
   have hst := (h 0 hT).source_ne_sink
-  have hpos : 0 < (flows 0).resDist N.t := by
-    rcases Nat.eq_zero_or_pos ((flows 0).resDist N.t) with h0 | h0
-    · exact absurd ((flows 0).eq_source_of_resDist_eq_zero h0).symm hst
-    · exact h0
+  have hpos : 0 < (flows 0).resDist N.t :=
+    Nat.pos_of_ne_zero fun h0 => hst ((flows 0).eq_source_of_resDist_eq_zero h0).symm
   have hadd := h.resDist_add_le
   have hle := (flows T).resDist_le_card N.t
   omega

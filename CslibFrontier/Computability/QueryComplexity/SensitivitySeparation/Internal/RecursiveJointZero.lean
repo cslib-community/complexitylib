@@ -101,7 +101,7 @@ theorem recursive_joint_zero_at {k r h : ℕ} {I : Type} [Fintype I]
   have hV : V.card ≤ 3 * jointSensitivity F true := by
     calc
       V.card ≤ GC.card * jointSensitivity F true :=
-        card_biUnion_le_mul GC _ _ (fun i hi => by
+        Finset.card_biUnion_le_card_mul GC _ _ (fun i hi => by
           rw [childJointChanges_card]
           have hg := (gateWitness_spec T A.label F q x i hi).2
           exact jointSensitivityAt_le_jointSensitivity F true _ _ _

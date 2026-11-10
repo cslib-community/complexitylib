@@ -496,10 +496,17 @@ theorem eval_final_of_not_exhausts (hne : ∀ c ∈ φ, c ≠ []) {k t : ℕ} {x
 
 /-! ### Budgets -/
 
+/-- A step records at most one resampling, and only while the budget `t` is not used up. -/
+theorem length_trace_step (k t : ℕ) (x : ℕ → Bool) (s : State n φ.length) :
+    (step φ k t x s).trace.length = s.trace.length ∨
+      ((step φ k t x s).trace.length = s.trace.length + 1 ∧ s.trace.length < t) := by
+  rcases move_cases t s with ⟨hm, -⟩ | ⟨c, hm, -, -, -, ht⟩ | ⟨e, st, d, hm, -, -, -, ht⟩ |
+    ⟨e, st, hm, -⟩ | ⟨hm, -⟩ <;>
+    simp only [step, hm, apply, List.length_cons, true_or, true_and] <;> omega
+
 theorem length_trace_le_step (k t : ℕ) (x : ℕ → Bool) (s : State n φ.length) :
     s.trace.length ≤ (step φ k t x s).trace.length := by
-  rcases move_cases t s with ⟨hm, -⟩ | ⟨c, hm, -⟩ | ⟨e, st, d, hm, -⟩ | ⟨e, st, hm, -⟩ |
-    ⟨hm, -⟩ <;> simp only [step, hm, apply, List.length_cons] <;> omega
+  rcases length_trace_step k t x s with h | ⟨h, -⟩ <;> omega
 
 theorem length_trace_run_le (k t : ℕ) (x : ℕ → Bool) (N : ℕ) :
     (run φ k t x N).trace.length ≤ t := by
@@ -507,18 +514,7 @@ theorem length_trace_run_le (k t : ℕ) (x : ℕ → Bool) (N : ℕ) :
   | zero => exact Nat.zero_le _
   | succ N ih =>
     rw [run_succ]
-    rcases move_cases t (run φ k t x N) with ⟨hm, -⟩ | ⟨c, hm, -, -, -, ht⟩ |
-      ⟨e, st, d, hm, -, -, -, ht⟩ | ⟨e, st, hm, -⟩ | ⟨hm, -⟩
-    · simp only [step, hm, apply]
-      exact ih
-    · simp only [step, hm, apply, List.length_cons]
-      omega
-    · simp only [step, hm, apply, List.length_cons]
-      omega
-    · simp only [step, hm, apply]
-      exact ih
-    · simp only [step, hm, apply]
-      exact ih
+    rcases length_trace_step k t x (run φ k t x N) with h | ⟨h, ht⟩ <;> omega
 
 theorem length_trace_final_eq {k t : ℕ} {x : ℕ → Bool} (h : Exhausts φ k t x) :
     (final φ k t x).trace.length = t :=
@@ -543,29 +539,30 @@ theorem run_budget {k t t' : ℕ} (ht : t ≤ t') (x : ℕ → Bool) (N : ℕ) :
         rw [move_eq_move_of_lt (t := t) (t' := t') (Nat.lt_of_not_le hl)
           (lt_of_lt_of_le (Nat.lt_of_not_le hl) ht)]
 
-/-- A run that uses up a budget of `t'` resamplings uses up any budget `t ≤ t'`. -/
-theorem Exhausts.mono {k t t' : ℕ} {x : ℕ → Bool} (ht : t ≤ t') (h : Exhausts φ k t' x) :
-    Exhausts φ k t x := by
+/-- **Budget dichotomy.** For budgets `t ≤ t'`, either the run uses up the budget `t`, or the larger
+budget does not change the final state. -/
+theorem exhausts_or_final_eq {k t t' : ℕ} (ht : t ≤ t') (x : ℕ → Bool) :
+    Exhausts φ k t x ∨ final φ k t' x = final φ k t x := by
   have hf : run φ k t x (fuel φ t') = final φ k t x :=
     run_eq_final (by simp only [fuel]; omega)
   rcases run_budget (k := k) ht x (fuel φ t') with h' | h'
   · rw [hf] at h'
-    exact h'
+    exact Or.inl h'
   · rw [hf] at h'
+    exact Or.inr h'.symm
+
+/-- A run that uses up a budget of `t'` resamplings uses up any budget `t ≤ t'`. -/
+theorem Exhausts.mono {k t t' : ℕ} {x : ℕ → Bool} (ht : t ≤ t') (h : Exhausts φ k t' x) :
+    Exhausts φ k t x :=
+  (exhausts_or_final_eq ht x).elim id fun h' => by
     unfold Exhausts
-    rw [h']
+    rw [← h']
     exact ht.trans h
 
 /-- A run that stops within its budget is not affected by a larger budget. -/
 theorem final_eq_of_not_exhausts {k t t' : ℕ} {x : ℕ → Bool} (ht : t ≤ t')
-    (h : ¬Exhausts φ k t x) : final φ k t' x = final φ k t x := by
-  have hf : run φ k t x (fuel φ t') = final φ k t x :=
-    run_eq_final (by simp only [fuel]; omega)
-  rcases run_budget (k := k) ht x (fuel φ t') with h' | h'
-  · rw [hf] at h'
-    exact absurd h' h
-  · rw [hf] at h'
-    exact h'.symm
+    (h : ¬Exhausts φ k t x) : final φ k t' x = final φ k t x :=
+  (exhausts_or_final_eq ht x).resolve_left h
 
 /-! ### Prefix dependence -/
 

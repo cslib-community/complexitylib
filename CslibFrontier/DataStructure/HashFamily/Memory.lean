@@ -260,10 +260,9 @@ theorem isCostBounded_methods {U : ℕ} (o : HashFamily.Op U) :
   cases o with
   | resample => exact isQueryBounded_fill 0 U
   | eval u =>
-    change OracleComp.IsQueryBounded
-      (PFunctor.FreeM.liftBind (P := ⟨ℕ ⊕ Memory.Op, probOracleSpec Memory.Op.Result⟩)
-        (Sum.inr (Memory.Op.read _)) fun v => pure (Fin.ofNat (2 ^ b) v)) 1
-    exact OracleComp.IsCostBounded.liftBind_iff.mpr ⟨le_rfl, fun _ => .pure _ _⟩
+    rw [methods, OracleComp.liftRight_map]
+    exact (OracleComp.isCostBounded_map_iff _ _ _).mpr
+      (OracleComp.IsCostBounded.query (spec := probOracleSpec Memory.Op.Result) _)
 
 /-- In expectation as well, every operation costs at most its budget of calls. -/
 theorem expectedAmortized {U : ℕ} (hlen : table.length = U) (hb : b ≤ w) :
@@ -358,10 +357,9 @@ theorem isQueryBounded_run {U : ℕ} {α : Type}
     OracleComp.IsQueryBounded (run b U p) (1 + 2 * U + n) := by
   have halloc : OracleComp.IsQueryBounded
       (OracleComp.liftRight (spec₁ := unifSpec) (Memory.allocBlockDirty U)) 1 := by
-    change OracleComp.IsQueryBounded
-      (PFunctor.FreeM.liftBind (P := ⟨ℕ ⊕ Memory.Op, probOracleSpec Memory.Op.Result⟩)
-        (Sum.inr (Memory.Op.allocDirty U)) fun base => pure (⟨base, U⟩ : Block)) 1
-    exact OracleComp.IsCostBounded.liftBind_iff.mpr ⟨le_rfl, fun _ => .pure _ _⟩
+    rw [Memory.allocBlockDirty, OracleComp.liftRight_bind]
+    exact (OracleComp.IsCostBounded.query (spec := probOracleSpec Memory.Op.Result) _).bind
+      (m := 0) fun _ => .pure _ _
   have h := halloc.bind fun table => OracleComp.IsCostBounded.interpret
     (isCostBounded_methods (table := table) (b := b))
     ((OracleComp.IsCostBounded.query (cost := budget U) .resample).bind fun _ => hp)

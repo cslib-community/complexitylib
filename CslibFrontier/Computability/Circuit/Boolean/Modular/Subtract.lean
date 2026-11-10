@@ -49,8 +49,7 @@ private def subtractInputs (w : ℕ) : Circuit signature (w + w) (w + w + 1) :=
       Fin.append (Fin.append a (fun i => !b i)) (fun _ => true) := by
   simp only [subtractInputs, Circuit.eval_append, Circuit.eval_wiring, Circuit.eval_pi,
     Formula.eval_toCircuit, Formula.eval_not, Formula.eval_input, Fin.append_right]
-  congr 2
-  funext i
+  congr 2 with i : 1
   exact Fin.append_left a b i
 
 @[simp] private theorem size_subtractInputs (w : ℕ) : (subtractInputs w).size = w + 1 := by

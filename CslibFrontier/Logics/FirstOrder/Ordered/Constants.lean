@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Interpretation
 public import CslibFrontier.Logics.FirstOrder.Interpretation.Constants
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # Canonical constants as interpreted target symbols
@@ -55,10 +56,10 @@ theorem constants_valid : (constants L).Valid (Fin n) := by
   intro c
   let x : Fin n := (numericStructure (n := n) Fact.out).funMap c Fin.elim0
   refine ⟨forgetEquiv.symm x, ?_, ?_⟩
-  · simp only [constants, Formula.realize_equal, Term.realize_var, Term.realize_func]
+  · fo_simp [constants, Term.realize_func]
     cases c <;> rfl
   · intro y hy
-    simp only [constants, Formula.realize_equal, Term.realize_var, Term.realize_func] at hy
+    fo_simp [constants, Term.realize_func] at hy
     apply Interpretation.Model.ext
     funext i
     cases i
@@ -68,7 +69,7 @@ theorem constants_valid : (constants L).Valid (Fin n) := by
 theorem constants_value_val (c : NumericFunction 0) :
     (((constants L).value (constants_valid (n := n)) c).val ()).val = c.index n := by
   have h := (constants L).value_spec (constants_valid (L := L) (n := n)) c
-  simp only [constants, Formula.realize_equal, Term.realize_var, Term.realize_func] at h
+  fo_simp [constants, Term.realize_func] at h
   exact congrArg Fin.val h
 
 end Cslib.Logic.FO.Ordered

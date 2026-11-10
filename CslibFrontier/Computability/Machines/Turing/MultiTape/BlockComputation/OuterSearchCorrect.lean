@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchCorrect
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.FirstHalt
 
 /-!
@@ -169,40 +170,20 @@ theorem exists_first_decision [Finite Q] (M : MultiTapeTM k Bool Q) (e : Q ≃ F
     · exact runFrom_one_encoding_le M e w.length guess bound none w T rfl hguess hpre hT
         (fun t ht => (hsize t ht).trans
           (candidate_space_le k s Q w.length bound guess hguess)) hnext
-  have haux (n : ℕ) : ∀ guess, guess + n = bound →
-      ∃ T final, final ≤ bound ∧ (machine M e).runFrom w (.inl (w.length, guess, none)) T =
-        .inl (w.length, final, some result) ∧
-        ∀ t ≤ T, (encState ((machine M e).runFrom w (.inl (w.length, guess, none)) t)).length ≤
-          space k s Q w.length bound := by
-    induction n with
-    | zero =>
-      intro guess heq
-      have heq' : guess = bound := by omega
-      obtain ⟨T, hT, hspace⟩ := hstep guess (by omega)
-      refine ⟨T, guess, by omega, ?_, hspace⟩
-      simpa only [heq', hbound] using hT
-    | succ n ih =>
-      intro guess heq
-      obtain ⟨T, hT, hspace⟩ := hstep guess (by omega)
-      cases hv : value guess with
-      | none =>
-        obtain ⟨U, final, hfinal, hU, hUspace⟩ := ih (guess + 1) (by omega)
-        refine ⟨T + U, final, hfinal, ?_, ?_⟩
-        · rw [QueryMachine.runFrom_add, hT, hv, hU]
-        · intro t ht
-          by_cases hbefore : t ≤ T
-          · exact hspace t hbefore
-          · obtain ⟨u, rfl⟩ := Nat.exists_eq_add_of_le (show T ≤ t by omega)
-            rw [QueryMachine.runFrom_add, hT, hv]
-            exact hUspace u (by omega)
-      | some answer =>
-        have hans : some answer = some result := by grind
-        refine ⟨T, guess, by omega, ?_, hspace⟩
-        rw [hv] at hT
-        rw [← hans]
-        exact hT
-  obtain ⟨U, guess, hguess, hrun, hspace⟩ := haux (bound - (w.length + 1)) (w.length + 1)
-    (Nat.add_sub_of_le (Nat.le_max_left _ _))
+  have hlo : (encState (.inl (w.length, w.length + 1, none) : State k Q)).length ≤
+      space k s Q w.length bound := by
+    have := caller_encoding_le w.length bound (w.length + 1) none (Nat.le_max_left _ _)
+    change (encCaller _).length + 1 ≤ _
+    dsimp only [space]
+    omega
+  obtain ⟨U, ⟨-, hnone⟩ | ⟨guess, answer, -, hguess, hv, hrun⟩, hspace⟩ :=
+    QueryMachine.exists_runFrom_search_encoding_le (M := machine M e) (w := w) encState
+      (fun guess => .inl (w.length, guess, none)) value
+      (fun guess answer => .inl (w.length, guess, some answer)) (hi := bound + 1) (by omega) hlo
+      (fun guess _ hguess hv => by simpa only [hv] using hstep guess (by omega))
+      (fun guess answer _ hguess hv => by simpa only [hv] using hstep guess (by omega))
+  · simp only [hnone bound (Nat.le_max_left _ _) (by omega), reduceCtorEq] at hbound
+  rw [Option.some.inj (hv.symm.trans ((hsafe guess).resolve_left (by simp [hv])))] at hrun
   have hU : (machine M e).halted ((machine M e).runFrom w (initial w.length) U) = true := by
     change (machine M e).halted ((machine M e).runFrom w
       (.inl (w.length, w.length + 1, none)) U) = true
@@ -210,7 +191,7 @@ theorem exists_first_decision [Finite Q] (M : MultiTapeTM k Bool Q) (e : Q ≃ F
     rfl
   obtain ⟨T, hle, hT, hpre, hstate⟩ := QueryMachine.exists_first_halt_le
     (machine M e) w (initial w.length) U hU
-  exact ⟨T, guess, hguess, hpre, hstate.trans hrun, hT,
+  exact ⟨T, guess, Nat.le_of_lt_succ hguess, hpre, hstate.trans hrun, hT,
     fun t ht => hspace t (ht.trans hle)⟩
 
 end Turing.MultiTapePTM.BlockComputation.OuterSearch

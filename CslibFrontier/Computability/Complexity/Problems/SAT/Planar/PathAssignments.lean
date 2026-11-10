@@ -12,7 +12,6 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Incidence.Degr
 public import CslibFrontier.Logics.Propositional.CNF.Planar.CrossoverSplit
 import CslibFrontier.Foundations.Data.List.Filter
 import Mathlib.Data.List.GetD
-import Mathlib.Tactic.SplitIfs
 
 /-!
 # Compatible assignments on canonical paths
@@ -246,25 +245,26 @@ theorem ordinary_cell_source_eq {φ : CNF ℕ}
   rw [← Cslib.Logic.PL.map_occurrences]
   exact List.mem_map_of_mem ho
 
-private theorem not_both_straight {r : Route} (hn : r.Nodup) {p : Point} (hp : p ∈ r)
-    (hh : StraightThrough r p (1, 0)) (hv : StraightThrough r p (0, 1)) : False := by
+/-- Two straight passages of a duplicate-free route through the same point are parallel. -/
+private theorem straight_parallel {r : Route} (hn : r.Nodup) {p d e : Point} (hp : p ∈ r)
+    (hd : StraightThrough r p d) (he : StraightThrough r p e) : d = e ∨ d = -e := by
   obtain ⟨k, hk, heq⟩ := List.mem_iff_getElem.mp hp
-  obtain ⟨_, _, hhn⟩ := hh.getD_neighbors hn hk heq
-  obtain ⟨_, _, hvn⟩ := hv.getD_neighbors hn hk heq
-  rcases hhn with ⟨hh, _⟩ | ⟨hh, _⟩ <;> rcases hvn with ⟨hv, _⟩ | ⟨hv, _⟩
+  obtain ⟨_, _, hdn⟩ := hd.getD_neighbors hn hk heq
+  obtain ⟨_, _, hen⟩ := he.getD_neighbors hn hk heq
+  rcases hdn with ⟨hd', _⟩ | ⟨hd', _⟩ <;> rcases hen with ⟨he', _⟩ | ⟨he', _⟩
   all_goals
-    have hx := congrArg Prod.fst (hh.symm.trans hv)
-    simp only [Prod.fst_sub, Prod.fst_add] at hx
+    have h := hd'.symm.trans he'
+    simp only [Prod.ext_iff, Prod.fst_sub, Prod.snd_sub, Prod.fst_add, Prod.snd_add,
+      Prod.fst_neg, Prod.snd_neg] at h ⊢
     omega
 
-/-- The occurrence carrying either coordinate-axis signal at a crossing is unique. -/
+/-- At a crossing, at most one occurrence path goes straight through in a given direction. -/
 theorem crossing_axis_occurrence_eq {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3)
     {o t : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ)
     (ht : t ∈ Cslib.Logic.PL.occurrences φ) {p d : Point}
     (hp : p ∈ crossingSites φ) (hpo : p ∈ occurrencePath φ o)
-    (hpt : p ∈ occurrencePath φ t) (hd : d = (1, 0) ∨ d = (0, 1))
-    (hs : StraightThrough (occurrencePath φ o) p d)
+    (hpt : p ∈ occurrencePath φ t) (hs : StraightThrough (occurrencePath φ o) p d)
     (hts : StraightThrough (occurrencePath φ t) p d) : o = t := by
   by_contra hot
   have hij : (Cslib.Logic.PL.occurrences φ).idxOf o ≠
@@ -277,13 +277,12 @@ theorem crossing_axis_occurrence_eq {φ : CNF ℕ}
     (by simpa only [occurrencePath_eq_unitPath] using hpo)
     (by simpa only [occurrencePath_eq_unitPath] using hpt)
   rw [← occurrencePath_eq_unitPath, ← occurrencePath_eq_unitPath] at hn
-  rcases hd with rfl | rfl
-  · rcases hn with ⟨_, htvert⟩ | ⟨hovert, _⟩
-    · exact not_both_straight (occurrencePath_nodup ht) hpt hts htvert
-    · exact not_both_straight (occurrencePath_nodup ho) hpo hs hovert
-  · rcases hn with ⟨hohor, _⟩ | ⟨_, hthor⟩
-    · exact not_both_straight (occurrencePath_nodup ho) hpo hohor hs
-    · exact not_both_straight (occurrencePath_nodup ht) hpt hthor hts
+  rcases hn with ⟨hoa, hta⟩ | ⟨hoa, hta⟩
+  all_goals
+    have h1 := straight_parallel (occurrencePath_nodup ho) hpo hs hoa
+    have h2 := straight_parallel (occurrencePath_nodup ht) hpt hts hta
+    simp only [Prod.ext_iff, Prod.fst_neg, Prod.snd_neg] at h1 h2
+    omega
 
 open Classical in
 private noncomputable def chosenValue (τ : ℕ → Bool) (P : Occurrence ℕ → Prop) : Bool :=
@@ -320,11 +319,11 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
     exact ordinary_cell_source_eq hw hv ht.1 ho hp ht.2 hpo
   have haxis {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) {p d : Point}
       (hp : p ∈ crossingSites φ) (hpo : p ∈ occurrencePath φ o)
-      (hd : d = (1, 0) ∨ d = (0, 1)) (hs : StraightThrough (occurrencePath φ o) p d) :
+      (hs : StraightThrough (occurrencePath φ o) p d) :
       axis p d = τ o.2.2.1 := by
     apply chosenValue_eq τ _ ⟨ho, hpo, hs⟩
     intro t ht
-    rw [crossing_axis_occurrence_eq hw hv ht.1 ho hp ht.2.1 hpo hd ht.2.2 hs]
+    rw [crossing_axis_occurrence_eq hw hv ht.1 ho hp ht.2.1 hpo ht.2.2 hs]
   let cross (p : Point) : Crossover.SplitVariable → Bool :=
     Classical.choose (Crossover.exists_split_holds (axis p (1, 0)) (axis p (0, 1)))
   have hcross (p : Point) :=
@@ -336,38 +335,17 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
   intro o ho c hc
   unfold wire at hc
   obtain ⟨⟨p, k⟩, hpk, rfl⟩ := List.mem_map.mp hc
-  have hget := List.mem_zipIdx_iff_getElem?.mp hpk
-  obtain ⟨hk, heq⟩ := List.getElem?_eq_some_iff.mp hget
+  obtain ⟨hk, heq⟩ := List.mem_zipIdx' hpk
   have hk' : k < (occurrencePath φ o).length := by
     simp only [List.length_dropLast] at hk
     omega
-  have heq' : (occurrencePath φ o)[k] = p := by
-    rw [← List.getElem_dropLast hk]
-    exact heq
-  have hpo : p ∈ occurrencePath φ o := heq' ▸ List.getElem_mem hk'
-  change (List.dropLast (occurrencePath φ o))[k] = p at heq
-  have hpod : p ∈ (occurrencePath φ o).dropLast := by
-    rw [← heq]
-    exact List.getElem_mem hk
+  have heq' : (occurrencePath φ o)[k] = p := (List.getElem_dropLast hk).symm.trans heq.symm
+  have hpod : p ∈ (occurrencePath φ o).dropLast := List.fst_mem_of_mem_zipIdx hpk
+  have hpo : p ∈ occurrencePath φ o := List.dropLast_subset _ hpod
   by_cases hp : p ∈ crossingSites φ
-  · have hl : side p (p - (1, 0)) = 0 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_sub, Prod.snd_sub]
-      split_ifs <;> first | rfl | omega
-    have hr : side p (p + (1, 0)) = 1 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_add, Prod.snd_add]
-      split_ifs <;> first | rfl | omega
-    have ht : side p (p - (0, 1)) = 2 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_sub, Prod.snd_sub]
-      split_ifs <;> first | rfl | omega
-    have hb : side p (p + (0, 1)) = 3 := by
-      rcases p with ⟨x, y⟩
-      simp only [side, Prod.fst_add, Prod.snd_add]
-      split_ifs <;> first | rfl | omega
+  · obtain ⟨hl, hr, ht, hb⟩ := side_cardinal p
     rcases occurrencePath_crossing_straight hw hv ho hp hpo with hs | hs
-    · have hav := haxis ho hp hpo (Or.inl rfl) hs
+    · have hav := haxis ho hp hpo hs
       have hports := (hcross p).2
       obtain ⟨_, _, hnb⟩ := hs.getD_neighbors (occurrencePath_nodup ho) hk' heq'
       rcases hnb with ⟨hprev, hnext⟩ | ⟨hprev, hnext⟩
@@ -375,7 +353,7 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
         simp only [hprev, hnext, signal, hp, ite_true, hl, hr, Crossover.splitTerminal]
         exact ⟨by simpa only [σ, cross, hports.1, hports.2.1] using hav,
           by simpa only [σ, cross, hports.1, hports.2.1] using hav⟩
-    · have hav := haxis ho hp hpo (Or.inr rfl) hs
+    · have hav := haxis ho hp hpo hs
       have hports := (hcross p).2.2.2
       obtain ⟨_, _, hnb⟩ := hs.getD_neighbors (occurrencePath_nodup ho) hk' heq'
       rcases hnb with ⟨hprev, hnext⟩ | ⟨hprev, hnext⟩

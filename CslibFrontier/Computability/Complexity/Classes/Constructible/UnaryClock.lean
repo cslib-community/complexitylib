@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Constructible
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.OutputToTape
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 import CslibFrontier.Foundations.Data.Nat.Doubling
+import Mathlib.Algebra.Order.Ring.GeomSum
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.TransformsTapes
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 
@@ -19,12 +20,12 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 
 A time-constructible bound `T` is computed in binary within `O(T n)` steps
 (`Cslib.Complexity.TimeConstructible`). Some constructions need a clock in unary instead: a run of
-true cells on a work tape that a machine consumes one cell per step. Converting `T n` exactly
-from binary to unary by counting down takes `O((T n + 1) ^ 2)` steps
-(`Turing.MultiTapeTM.ComputableInO.natToUnary`), which is too slow for linear clocks.
+true cells on a work tape that a machine consumes one cell per step. The exact conversion of
+`T n` from binary to unary (`Turing.MultiTapeTM.ComputableInO.natToUnary`) writes its result on the
+output tape; this file prepares a clock on a work tape instead.
 
-Rounding up to a power of two avoids the conversion. The binary word of `T n` has
-`Nat.size (T n)` digits, and doubling a unary counter once per digit writes
+Rounding up to a power of two keeps the clock a single doubling counter. The binary word of
+`T n` has `Nat.size (T n)` digits, and doubling a unary counter once per digit writes
 `c * 2 ^ Nat.size (T n)` cells. The `i`-th doubling costs `O(c * 2 ^ i)`, so the doublings cost
 `O(c * 2 ^ Nat.size (T n)) = O(T n + 1)` together. The rounded clock lies between
 `c * (T n + 1)` and `c * (2 * T n + 1)` (`Nat.two_pow_size_le`).
@@ -45,14 +46,6 @@ budget of `MultiTape.Plumbing.PrepareClock`.
 public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInO
-
-/-- The geometric sum of powers of two below `2 ^ n`. -/
-private theorem sum_range_two_pow_lt (n : ℕ) : ∑ i ∈ Finset.range n, 2 ^ i < 2 ^ n := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [Finset.sum_range_succ, pow_succ]
-    omega
 
 /-- **`c * 2 ^ l.length` in unary in linear time.** A streaming fold doubles a unary counter once
 per bit of `l`. Round `i` costs `O(c * 2 ^ i)`, so the rounds cost `O(c * 2 ^ l.length)` in total,
@@ -89,7 +82,8 @@ private theorem mul_two_pow_length (c : ℕ) :
   refine of_bounds (hK.of_enc_eq (g := fun l : List Bool => c * 2 ^ l.length)
     fun l => by rw [List.foldl_add_self_eq_mul_two_pow])
     (K * (5 * c₀ + 5) + K * (3 * c₀ + 3) + 1) (fun l => ?_) (fun l => ?_) fun l => ?_
-  · have hsum := sum_range_two_pow_lt l.length
+  · have hsum : ∑ i ∈ Finset.range l.length, 2 ^ i < 2 ^ l.length :=
+      Nat.geomSum_lt le_rfl fun _ => Finset.mem_range.1
     have hs : ∑ i ∈ Finset.range l.length, (5 * c₀ + 4) * (c * 2 ^ i + 1) ≤
         (5 * c₀ + 4) * (c * 2 ^ l.length + l.length) := by
       rw [← Finset.mul_sum, Finset.sum_add_distrib, ← Finset.mul_sum, Finset.sum_const,

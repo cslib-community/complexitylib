@@ -69,11 +69,8 @@ def setupData (s : Data 32) : Data 32 :=
 /-- Constant and traversal setup has exactly twelve native instructions. -/
 private theorem setup_exec {w : ℕ} {s : Data 32} (hw : Fits w 5) :
     Exec w setup s (setupData s) 12 := by
-  have h₁ := hw.of_le (by decide : 1 ≤ 5)
-  have h₂ := hw.of_le (by decide : 2 ≤ 5)
-  have h₃ := hw.of_le (by decide : 3 ≤ 5)
-  have h₄ := hw.of_le (by decide : 4 ≤ 5)
-  ram_eval [setup, setupData, hw, h₁, h₂, h₃, h₄]
+  -- `ram_eval` derives the bounds of the smaller constants from `hw`.
+  ram_eval [setup, setupData]
 
 /-- Setup establishes insertion's entry registers from the caller's root and argument. -/
 private theorem setup_insertEntry (s : Data 32) :

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.PairedPorts
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Composition.SmallSpace
+import CslibFrontier.Foundations.Data.List.OfFnGetD
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
 import Mathlib.Data.Nat.Size
 
@@ -621,31 +622,20 @@ private theorem computableInLogSpace_portGuard (k D d P : ℕ) :
     ((ComputableInLogSpace.fst encNat encNat).comp hap)
   have hlp := computableInLogSpace_natBitLength.comp
     ((ComputableInLogSpace.snd encNat encNat).comp hap)
-  have hln_len : ∃ C, ∀ x : Triple,
-      (encNat (encNat x.1.length).length).length ≤ C * (Nat.log2 (encTriple x).length + 1) := by
-    refine ⟨1, fun ⟨w, a, p⟩ => ?_⟩
-    have hw_le : w.length ≤ (encTriple (w, a, p)).length := by
+  -- each field length fits in the triple, so its bit length is logarithmic
+  have hfield : ∀ g : Triple → ℕ, (∀ x, g x ≤ (encTriple x).length) →
+      ∃ C, ∀ x, (encNat (g x)).length ≤ C * (Nat.log2 (encTriple x).length + 1) :=
+    fun g hg => ⟨1, fun x => by simpa using length_encNat_le_log2 (hg x)⟩
+  have hln_len := hfield (fun x => (encNat x.1.length).length) fun ⟨w, a, p⟩ =>
+    (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans (by
       simp only [encTriple, length_encPair, encBits_apply]
-      omega
-    have hln_le : (encNat w.length).length ≤ (encTriple (w, a, p)).length :=
-      (length_encNat_le_of_lt_two_pow Nat.lt_two_pow_self).trans hw_le
-    simpa using length_encNat_le_log2 hln_le
-  have hla_len : ∃ C, ∀ x : Triple,
-      (encNat (encNat (Prod.fst x.2)).length).length ≤
-        C * (Nat.log2 (encTriple x).length + 1) := by
-    refine ⟨1, fun ⟨w, a, p⟩ => ?_⟩
-    have hla_le : (encNat a).length ≤ (encTriple (w, a, p)).length := by
-      simp only [encTriple, length_encPair]
-      omega
-    simpa using length_encNat_le_log2 hla_le
-  have hlp_len : ∃ C, ∀ x : Triple,
-      (encNat (encNat (Prod.snd x.2)).length).length ≤
-        C * (Nat.log2 (encTriple x).length + 1) := by
-    refine ⟨1, fun ⟨w, a, p⟩ => ?_⟩
-    have hlp_le : (encNat p).length ≤ (encTriple (w, a, p)).length := by
-      simp only [encTriple, length_encPair]
-      omega
-    simpa using length_encNat_le_log2 hlp_le
+      omega)
+  have hla_len := hfield (fun x => (encNat (Prod.fst x.2)).length) fun ⟨w, a, p⟩ => by
+    simp only [encTriple, length_encPair]
+    omega
+  have hlp_len := hfield (fun x => (encNat (Prod.snd x.2)).length) fun ⟨w, a, p⟩ => by
+    simp only [encTriple, length_encPair]
+    omega
   have hlengths := ComputableInLogSpace.pair hln (ComputableInLogSpace.pair hla hlp)
   have hlen_bound := pair_length_log hln_len (pair_length_log hla_len hlp_len)
   have hln_s : ComputableInSpace napLen encNAP encNat fun z => (encNAP z).length :=
@@ -785,12 +775,6 @@ private theorem budget_listGetDOptionBool {α : Type} {enc : α ↪ List Bool} {
   | idx + 1, l, hl =>
     (budget_listGetDOptionBool idx (budget_tail hl)).of_enc_eq fun x => by cases l x <;> rfl
 
-private theorem ofFn_getD_eq_of_length {α : Type*} (d : α) {M : ℕ} {l : List α}
-    (hl : l.length = M) :
-    (List.ofFn fun i : Fin M => l.getD i.val d) = l := by
-  refine List.ext_getElem (by simp [hl]) fun j hj₁ hj₂ => ?_
-  simp [List.getD, List.getElem?_eq_getElem hj₂]
-
 private theorem ge_bound_or_port_ge_of_portGuard_false {k' D d P : ℕ} {w : List Bool} {a p : ℕ}
     (h : portGuard k' D d P (w, a, p) = false) :
     clockedVertexBound (k := k') D d w.length ≤ a ∨ P ≤ p := by
@@ -801,6 +785,23 @@ private theorem ge_bound_or_port_ge_of_portGuard_false {k' D d P : ℕ} {w : Lis
     exact hnot ⟨length_encNat_lt_of_lt_clockedVertexBound ha,
       length_encNat_lt_of_lt_port (Nat.lt_of_not_ge hp)⟩
   · exact Or.inl (Nat.le_of_not_lt ha)
+
+/-- A port lookup that returns `z` outside the clocked box and at ports at least `P` is
+computable in logarithmic space once it is computable on the triples that pass `portGuard`. -/
+private theorem computableInLogSpace_of_portGuard {k' D d P : ℕ} {β : Type}
+    {encB : β ↪ List Bool} {f : Triple → β} (z : β)
+    (hge : ∀ w a p, clockedVertexBound (k := k') D d w.length ≤ a → f (w, a, p) = z)
+    (hport : ∀ w a p, P ≤ p → f (w, a, p) = z)
+    (htrue : ComputableInLogSpace (f ∘ Subtype.val) (encGuardedSub k' D d P) encB) :
+    ComputableInLogSpace f encTriple encB := by
+  refine (ComputableInLogSpace.ite_subtype (computableInLogSpace_portGuard k' D d P) htrue
+    ((ComputableInLogSpace.const z).restrict _)).congr_fun fun ⟨w, a, p⟩ => ?_
+  by_cases hg : portGuard k' D d P (w, a, p) = true
+  · simp [hg]
+  · have hg' := Bool.eq_false_iff.mpr hg
+    rcases ge_bound_or_port_ge_of_portGuard_false hg' with ha | hp
+    · simp [hg', hge w a p ha]
+    · simp [hg', hport w a p hp]
 
 private theorem nap_fields_inSpace {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → NAP}
     (hf : ComputableInSpace f enc encNAP S) :
@@ -818,7 +819,6 @@ theorem computableInLogSpace_clockedOutCount (machine : MultiTapePTM k Bool Stat
     ComputableInLogSpace
       (fun (w, a, p) => clockedOutCount machine D d w a p)
       (encPair encBits (encPair encNat encNat)) encNat := by
-  have hguard := computableInLogSpace_portGuard k D d 2
   have hnap_log := computableInLogSpace_napOfSub k D d 2
   have hnap_len := length_napOfSub_log k D d 2
   have hidxOut_space : ComputableInSpace
@@ -844,18 +844,8 @@ theorem computableInLogSpace_clockedOutCount (machine : MultiTapePTM k Bool Stat
   let f : Triple → ℕ := fun (w, a, p) => clockedOutCount machine D d w a p
   have htrue : ComputableInLogSpace (f ∘ Subtype.val) (encGuardedSub k D d 2) encNat :=
     (comp_logSpace_of_length_log hpack_log hpack_len hcnt_space).congr_fun fun ⟨⟨w, a, p⟩, _⟩ => rfl
-  have hfalse : ComputableInLogSpace
-      ((fun _ : Triple => 0) ∘ Subtype.val)
-      ((Function.Embedding.subtype (fun x => portGuard k D d 2 x = false)).trans encTriple)
-      encNat :=
-    (ComputableInLogSpace.const 0).restrict _
-  refine (ComputableInLogSpace.ite_subtype hguard htrue hfalse).congr_fun fun ⟨w, a, p⟩ => ?_
-  by_cases hg : portGuard k D d 2 (w, a, p) = true
-  · simp [hg, f]
-  · have hg' : portGuard k D d 2 (w, a, p) = false := Bool.eq_false_iff.mpr hg
-    rcases ge_bound_or_port_ge_of_portGuard_false hg' with ha | hp
-    · simp [hg', clockedOutCount_eq_zero_of_ge_bound machine ha p]
-    · simp [hg', clockedOutCount_eq_zero_of_port_ge machine a hp]
+  exact computableInLogSpace_of_portGuard 0 (fun _ _ p ha => clockedOutCount_eq_zero_of_ge_bound
+    machine ha p) (fun _ a _ hp => clockedOutCount_eq_zero_of_port_ge machine a hp) htrue
 
 /-- Outgoing paired-port lookup `clockedOutPort machine D d w a p` is computable in deterministic
 logarithmic space. -/
@@ -863,7 +853,6 @@ theorem computableInLogSpace_clockedOutPort (machine : MultiTapePTM k Bool State
     ComputableInLogSpace
       (fun (w, a, p) => clockedOutPort machine D d w a p)
       (encPair encBits (encPair encNat encNat)) (encOption (encPair encNat encNat)) := by
-  have hguard := computableInLogSpace_portGuard k D d 2
   have hnap_log := computableInLogSpace_napOfSub k D d 2
   have hnap_len := length_napOfSub_log k D d 2
   have hidxOut_space : ComputableInSpace
@@ -928,20 +917,10 @@ theorem computableInLogSpace_clockedOutPort (machine : MultiTapePTM k Bool State
                   (evalPredRecipe rec (radix D w.length) v)]?)
               (predRecipes machine)).length = inPortBound machine := List.length_map _
         dsimp only [Option.getD]
-        rw [ofFn_getD_eq_of_length none hlen_map]
+        rw [List.ofFn_getD_eq_of_length none hlen_map]
     · rfl
-  have hfalse : ComputableInLogSpace
-      ((fun _ : Triple => (none : Option (ℕ × ℕ))) ∘ Subtype.val)
-      ((Function.Embedding.subtype (fun x => portGuard k D d 2 x = false)).trans encTriple)
-      (encOption (encPair encNat encNat)) :=
-    (ComputableInLogSpace.const none).restrict _
-  refine (ComputableInLogSpace.ite_subtype hguard htrue hfalse).congr_fun fun ⟨w, a, p⟩ => ?_
-  by_cases hg : portGuard k D d 2 (w, a, p) = true
-  · simp [hg, f]
-  · have hg' : portGuard k D d 2 (w, a, p) = false := Bool.eq_false_iff.mpr hg
-    rcases ge_bound_or_port_ge_of_portGuard_false hg' with ha | hp
-    · simp [hg', clockedOutPort_eq_none_of_ge_bound machine ha p]
-    · simp [hg', clockedOutPort_eq_none_of_port_ge machine a hp]
+  exact computableInLogSpace_of_portGuard none (fun _ _ p ha => clockedOutPort_eq_none_of_ge_bound
+    machine ha p) (fun _ a _ hp => clockedOutPort_eq_none_of_port_ge machine a hp) htrue
 
 /-- Incoming paired-port lookup `clockedInPort machine D d w b q` is computable in deterministic
 logarithmic space. -/
@@ -950,7 +929,6 @@ theorem computableInLogSpace_clockedInPort (machine : MultiTapePTM k Bool State)
       (fun (w, b, q) => clockedInPort machine D d w b q)
       (encPair encBits (encPair encNat encNat)) (encOption (encPair encNat encNat)) := by
   let P := inPortBound machine
-  have hguard := computableInLogSpace_portGuard k D d P
   have hnap_log := computableInLogSpace_napOfSub k D d P
   have hnap_len := length_napOfSub_log k D d P
   have hv_space : ComputableInSpace
@@ -1010,7 +988,7 @@ theorem computableInLogSpace_clockedInPort (machine : MultiTapePTM k Bool State)
                 (evalPredRecipe rec (radix D w.length)
                   (b % vertexBound (k := k) (radix D w.length)))]?)
             (predRecipes machine)).length = P := List.length_map _
-      rw [ofFn_getD_eq_of_length none hlen_map]
+      rw [List.ofFn_getD_eq_of_length none hlen_map]
       cases hget : (coinInSourcesWithSymbols machine (radix D w.length) w.length
           (b % vertexBound (k := k) (radix D w.length))
           ((predRecipes machine).map fun rec =>
@@ -1020,18 +998,8 @@ theorem computableInLogSpace_clockedInPort (machine : MultiTapePTM k Bool State)
       | none => rfl
       | some u => simp
     · rfl
-  have hfalse : ComputableInLogSpace
-      ((fun _ : Triple => (none : Option (ℕ × ℕ))) ∘ Subtype.val)
-      ((Function.Embedding.subtype (fun x => portGuard k D d P x = false)).trans encTriple)
-      (encOption (encPair encNat encNat)) :=
-    (ComputableInLogSpace.const none).restrict _
-  refine (ComputableInLogSpace.ite_subtype hguard htrue hfalse).congr_fun fun ⟨w, b, q⟩ => ?_
-  by_cases hg : portGuard k D d P (w, b, q) = true
-  · simp [hg, f]
-  · have hg' : portGuard k D d P (w, b, q) = false := Bool.eq_false_iff.mpr hg
-    rcases ge_bound_or_port_ge_of_portGuard_false hg' with hb | hq
-    · simp [hg', clockedInPort_eq_none_of_ge_bound machine hb q]
-    · simp [hg', clockedInPort_eq_none_of_port_ge machine b hq]
+  exact computableInLogSpace_of_portGuard none (fun _ _ q hb => clockedInPort_eq_none_of_ge_bound
+    machine hb q) (fun _ b _ hq => clockedInPort_eq_none_of_port_ge machine b hq) htrue
 
 end PortLogSpace
 

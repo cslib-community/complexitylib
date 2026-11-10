@@ -90,8 +90,8 @@ circuits of `AndreevWindowed` truncate the polarization `φ(u^+_S) + φ(u^-_S) =
   Depth-Two and Depth-Three Threshold Circuits*][KaneWilliams2016], `arXiv:1511.07860v1`,
   Theorem 1.2 (printed p. 2) for the prior `O(n ^ 3 / log n)` depth-two upper bound on the
   balanced specialization; the all-`b, m` quadratic construction formalized here is from
-  [complexitylib#2347](https://github.com/cslib-community/cslib-frontier/issues/2347) and
-  [complexitylib#2812](https://github.com/cslib-community/cslib-frontier/issues/2812).
+  [cslib-frontier#2347](https://github.com/cslib-community/cslib-frontier/issues/2347) and
+  [cslib-frontier#2812](https://github.com/cslib-community/cslib-frontier/issues/2812).
 -/
 
 @[expose] public section
@@ -160,6 +160,10 @@ def andreevParities (b m : ℕ) (w : BitString (2 ^ b + b * m)) : BitString b :=
 theorem andreev_eq_table_parities (b m : ℕ) (w : BitString (2 ^ b + b * m)) :
     andreev b m w = w (andreevTableIndex b m (BitString.equivFin b (andreevParities b m w))) :=
   rfl
+
+/-- `andreevTableIndex b m` is injective. -/
+theorem andreevTableIndex_injective (b m : ℕ) : Function.Injective (andreevTableIndex b m) :=
+  Fin.castAdd_injective (2 ^ b) (b * m)
 
 /-- The unnormalized integer Walsh-Fourier score
 `X_S(w) = ∑_{c : BitString b} χ_S(c) * (1 - 2 * x_c(w))`. -/

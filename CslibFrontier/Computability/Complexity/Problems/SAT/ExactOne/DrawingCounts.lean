@@ -46,13 +46,10 @@ theorem positiveClauseBlock_route_count (φ : CNF ℕ) (d : Graph.OrthogonalDraw
     (i : ℕ) (c : Clause ℕ) {pc : PositivePlacedClause} (hpc : pc ∈ positiveClauseBlock φ d i c) :
     pc.2.2.length = pc.1.length := by
   obtain ⟨⟨cl, j⟩, hj, rfl⟩ := List.mem_map.mp hpc
-  have hj' := List.mem_zipIdx_iff_getElem?.mp hj
-  have hindex : j < (profileFormula (clauseProfile c)).length :=
-    (List.getElem?_eq_some_iff.mp hj').choose
+  obtain ⟨hindex, hcl⟩ := List.mem_zipIdx' hj
   have hbound := profileFormula_length_le (clauseProfile c)
-  have he : (profileFormula (clauseProfile c)).getD j [] = cl := by
-    rw [List.getD_eq_getElem?_getD, hj']
-    rfl
+  have he : (profileFormula (clauseProfile c)).getD j [] = cl :=
+    (List.getD_eq_getElem _ _ hindex).trans hcl.symm
   simpa only [List.length_map, Clause.length_relabel, he] using
     clauseGeometry_incidence_count φ d i c ⟨j, by omega⟩
 

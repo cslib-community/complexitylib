@@ -21,8 +21,10 @@ import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.Union
 
 /-!
 # Fiat–Shamir non-interactive zero-knowledge proofs of knowledge in the random-oracle model
@@ -600,32 +602,14 @@ private theorem toOuterMeasure_lookup_commit_le [DecidableEq Y] [DecidableEq T]
     (hcommit : ∀ t, (P.commit x y).map Prod.fst t ≤ δ) (cache : List ((Y × T) × C)) :
     (P.commit x y).toOuterMeasure {ts | (cache.lookup (y, ts.1)).isSome} ≤
       cache.length * δ := by
-  induction cache with
-  | nil => simp
-  | cons e rest ih =>
-    obtain ⟨⟨y', t'⟩, c⟩ := e
-    calc (P.commit x y).toOuterMeasure
-          {ts | ((((y', t'), c) :: rest).lookup (y, ts.1)).isSome}
-        ≤ (P.commit x y).toOuterMeasure
-          ({ts | ts.1 = t'} ∪ {ts | (rest.lookup (y, ts.1)).isSome}) := by
-          refine (P.commit x y).toOuterMeasure.mono fun ts hts => ?_
-          have hts : ((((y', t'), c) :: rest).lookup (y, ts.1)).isSome = true := hts
-          rw [List.lookup_cons] at hts
-          by_cases h : (y, ts.1) = (y', t')
-          · exact Or.inl (Prod.ext_iff.mp h).2
-          · rw [beq_false_of_ne h] at hts
-            exact Or.inr hts
-      _ ≤ (P.commit x y).toOuterMeasure {ts | ts.1 = t'} +
-          (P.commit x y).toOuterMeasure {ts | (rest.lookup (y, ts.1)).isSome} :=
-          MeasureTheory.measure_union_le _ _
-      _ ≤ δ + rest.length * δ := by
-          refine add_le_add ?_ ih
-          rw [show {ts : T × P.State | ts.1 = t'} = Prod.fst ⁻¹' {t'} from rfl,
-            ← PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_singleton]
-          exact hcommit t'
-      _ = (((y', t'), c) :: rest).length * δ := by
-          rw [List.length_cons, Nat.cast_add, Nat.cast_one]
-          ring
+  refine Probability.PMF.toOuterMeasure_lookup_isSome_le _ _ (fun k => ?_) cache
+  calc (P.commit x y).toOuterMeasure {ts | (y, ts.1) = k}
+      ≤ (P.commit x y).toOuterMeasure (Prod.fst ⁻¹' {k.2}) :=
+        (P.commit x y).toOuterMeasure.mono fun ts (hts : (y, ts.1) = k) =>
+          (congrArg Prod.snd hts : ts.1 = k.2)
+    _ ≤ δ := by
+        rw [← PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_singleton]
+        exact hcommit k.2
 
 /-- Under `UnpredictableCommitments R δ` and `hvalid`, a program with budgets `(Qp, Qro)` raises
 the collision flag of `realFlaggedHandler` with probability at most `Qp * (Qp + Qro) * δ`. -/
@@ -650,43 +634,15 @@ private theorem toOuterMeasure_flag_le_nizk [DecidableEq Y] [DecidableEq T] [Fin
       obtain ⟨x, y⟩ := xy
       rw [Sum.elim_inl, Nat.cast_one, one_mul]
       by_cases hv : valid x y = true
-      · simp only [realFlaggedHandler, hv, ↓reduceIte, PMF.toOuterMeasure_bind_apply]
-        calc ∑' ts, (P.commit x y) ts *
-              ((oracle C (y, ts.1) st.1.1).map fun r =>
-                (some (ts.1, P.respond x y ts.2 r.1),
-                  ((r.2, (y, ts.1) :: st.1.2),
-                    st.2 || (st.1.1.lookup (y, ts.1)).isSome))).toOuterMeasure
-                {out | out.2.2 = true}
-            ≤ ∑' ts, (P.commit x y) ts *
-                {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome}.indicator 1 ts := by
-              refine tsum_le_tsum fun ts => mul_le_mul_of_nonneg_left ?_ zero_le
-              by_cases hts : (st.1.1.lookup (y, ts.1)).isSome
-              · rw [Set.indicator_of_mem
-                  (show ts ∈ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Pi.one_apply]
-                exact Probability.PMF.toOuterMeasure_le_one _ _
-              · rw [Set.indicator_of_notMem
-                  (show ts ∉ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts)]
-                refine le_of_eq ((PMF.toOuterMeasure_apply_eq_zero_iff _ _).mpr ?_)
-                refine Set.disjoint_left.mpr fun out hout hbad => ?_
-                obtain ⟨r, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
-                simp_all
-          _ = (P.commit x y).toOuterMeasure {ts | (st.1.1.lookup (y, ts.1)).isSome} := by
-              rw [PMF.toOuterMeasure_apply]
-              refine tsum_congr fun ts => ?_
-              by_cases hts : (st.1.1.lookup (y, ts.1)).isSome
-              · rw [Set.indicator_of_mem
-                  (show ts ∈ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Set.indicator_of_mem
-                  (show ts ∈ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Pi.one_apply, mul_one]
-              · rw [Set.indicator_of_notMem
-                  (show ts ∉ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  Set.indicator_of_notMem
-                  (show ts ∉ {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} from hts),
-                  mul_zero]
-          _ ≤ st.1.1.length * (δ : ℝ≥0∞) :=
-              toOuterMeasure_lookup_commit_le P (hUnpred x y (hvalid x y hv)) st.1.1
+      · simp only [realFlaggedHandler, hv, ↓reduceIte]
+        refine (Probability.PMF.toOuterMeasure_bind_le_add _ _
+          {ts : T × P.State | (st.1.1.lookup (y, ts.1)).isSome} _ 0
+          fun ts _ hts => le_of_eq ((PMF.toOuterMeasure_apply_eq_zero_iff _ _).mpr
+            (Set.disjoint_left.mpr fun out hout hbad => ?_))).trans ?_
+        · obtain ⟨r, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hout
+          simp_all
+        · rw [add_zero]
+          exact toOuterMeasure_lookup_commit_le P (hUnpred x y (hvalid x y hv)) st.1.1
       · simp only [Bool.not_eq_true] at hv
         simp only [realFlaggedHandler, hv, Bool.false_eq_true, ↓reduceIte,
           PMF.toOuterMeasure_pure_apply]
@@ -1447,26 +1403,13 @@ theorem succProbability_fiatShamirNIZKPokGame_le [DecidableEq Y] [DecidableEq T]
     exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
       FiatShamirNIZK.map_run_le_validIndex _ _ () _ _
         (isCostBounded_liftPlainProve (hQro s)) []
-  have hC := le_add_sqrt_fork A.coins (plainForkingProg P A y) (Classical.arbitrary C)
+  have h := toReal_le_add_sqrt_fork_of_le A.coins (plainForkingProg P A y) (Classical.arbitrary C)
     (fun s => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
-      (isCostBounded_liftPlainProve (hQro s)) [])
-  have hD := fork_plain_le_extractGame (hsound y) A Qro
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hC
+      (isCostBounded_liftPlainProve (hQro s)) []) ENNReal.zero_ne_top (hB.trans le_self_add)
+    (fork_plain_le_extractGame (hsound y) A Qro) (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-  calc (fiatShamirNIZKPokGame P A y true).toReal
-      ≤ (A.coins.bind (fun s =>
-          ((interpret countingUniform (plainForkingProg P A y s)).run 0).bind
-            fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true).toReal :=
-        ENNReal.toReal_mono (PMF.apply_ne_top _ _) hB
-    _ ≤ (Qro + 1 : ℕ) / Fintype.card C +
-          √((Qro + 1 : ℕ) * ((Forking.fork A.coins
-            (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (plainForkingProg P A y))).map
-              Option.isSome true).toReal) := hC
-    _ ≤ _ := by
-        push_cast
-        have hsqrt := Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left
-          (ENNReal.toReal_mono (PMF.apply_ne_top _ _) hD) (by positivity : (0 : ℝ) ≤ Qro + 1))
-        linarith
+  push_cast at h ⊢
+  linarith [ENNReal.toReal_zero]
 
 /-- **Plain ROM proof of knowledge against a key generator** (`oneWayGame` form): averaging over
 `(x, y) ← keyGen`, a cheating prover making at most `Qro` hash calls yields a `oneWayGame`
@@ -1497,9 +1440,6 @@ theorem succProbability_fiatShamirNIZKPokKeyGen_le [DecidableEq Y] [DecidableEq 
     exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
       FiatShamirNIZK.map_run_le_validIndex _ _ () _ _
         (isCostBounded_liftPlainProve (hQro key.2 s)) []
-  have hC := le_add_sqrt_fork first prog (Classical.arbitrary C)
-    (fun (key, s) => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
-      (isCostBounded_liftPlainProve (hQro key.2 s)) [])
   have hD : (Forking.fork first
       (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) prog)).map Option.isSome true ≤
       oneWayGame keyGen R (fun y =>
@@ -1518,21 +1458,13 @@ theorem succProbability_fiatShamirNIZKPokKeyGen_le [DecidableEq Y] [DecidableEq 
     simp only [fiatShamirNIZKExtractGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun res _ => ?_
     cases res <;> simp
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hC
+  have h := toReal_le_add_sqrt_fork_of_le first prog (Classical.arbitrary C)
+    (fun (key, s) => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
+      (isCostBounded_liftPlainProve (hQro key.2 s)) []) ENNReal.zero_ne_top
+    (hB.trans le_self_add) hD (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-  calc ((keyGen.bind fun (_, y) => fiatShamirNIZKPokGame P A y) true).toReal
-      ≤ (first.bind (fun ks => ((interpret countingUniform (prog ks)).run 0).bind
-          fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true).toReal :=
-        ENNReal.toReal_mono (PMF.apply_ne_top _ _) hB
-    _ ≤ (Qro + 1 : ℕ) / Fintype.card C +
-          √((Qro + 1 : ℕ) * ((Forking.fork first
-            (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) prog)).map
-              Option.isSome true).toReal) := hC
-    _ ≤ _ := by
-        push_cast
-        have hsqrt := Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left
-          (ENNReal.toReal_mono (PMF.apply_ne_top _ _) hD) (by positivity : (0 : ℝ) ≤ Qro + 1))
-        linarith
+  push_cast at h ⊢
+  linarith [ENNReal.toReal_zero]
 
 /-- **ROM soundness on false statements**: if `y` has no witness in `R`, any cheating prover making
 at most `Qro` hash calls convinces `fiatShamirNIZKVerify` with probability at most
@@ -1830,27 +1762,15 @@ theorem succProbability_fiatShamirNIZKSimExtGameOn_le [DecidableEq Y] [Decidable
     exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
       FiatShamirNIZK.map_run_le_validIndex P valid src.coins.support_nonempty.some
         (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2
-  have hC := le_add_sqrt_fork first (simForkingProg P src valid admissible A)
+  have h := toReal_le_add_sqrt_fork_of_le first (simForkingProg P src valid admissible A)
     (Classical.arbitrary C)
     (fun s => FiatShamirNIZK.isQueryBounded_forkingProg P valid src.coins.support_nonempty.some
-      (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2)
-  have hD := fork_sim_le_simExtractGame hsound src valid admissible A Qp Qro
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure] at hC
+      (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2) ENNReal.zero_ne_top
+    (hB.trans le_self_add) (fork_sim_le_simExtractGame hsound src valid admissible A Qp Qro)
+    (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-  calc (fiatShamirNIZKSimExtGameOn admissible P simulate valid A true).toReal
-      ≤ (first.bind (fun s =>
-          ((interpret countingUniform (simForkingProg P src valid admissible A s)).run 0).bind
-            fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true).toReal :=
-        ENNReal.toReal_mono (PMF.apply_ne_top _ _) hB
-    _ ≤ (Qro + 1 : ℕ) / Fintype.card C +
-          √((Qro + 1 : ℕ) * ((Forking.fork first
-            (forkingAlgorithm (Classical.arbitrary C) (Qro + 1)
-              (simForkingProg P src valid admissible A))).map Option.isSome true).toReal) := hC
-    _ ≤ _ := by
-        push_cast
-        have hsqrt := Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left
-          (ENNReal.toReal_mono (PMF.apply_ne_top _ _) hD) (by positivity : (0 : ℝ) ≤ Qro + 1))
-        linarith
+  push_cast at h ⊢
+  linarith [ENNReal.toReal_zero]
 
 /-- **Simulation-extractability against simulated proofs** over finite statement and transcript
 types. -/
@@ -1899,14 +1819,8 @@ theorem succProbability_fiatShamirNIZKRealExtGameOn_le [DecidableEq Y] [Decidabl
         (Qp * (Qp + Qro) : ℕ) * (δ : ℝ≥0∞) := by
     simp only [fiatShamirNIZKRealExtGameOn, fiatShamirNIZKSimExtGameOn, PMF.monad_bind_eq_bind,
       PMF.monad_pure_eq_pure]
-    rw [PMF.bind_apply, PMF.bind_apply]
-    calc ∑' s, A.coins s * _ ≤
-          ∑' s, A.coins s * (_ + (Qp * (Qp + Qro) : ℕ) * (δ : ℝ≥0∞)) :=
-          tsum_le_tsum fun s => mul_le_mul_of_nonneg_left
-            (extHandlers_bind_apply_le hvalid hHVZK hUnpred (hA s) post true) zero_le
-      _ = _ := by
-          rw [tsum_congr fun s => mul_add _ _ _, tsum_add, ENNReal.tsum_mul_right,
-            PMF.tsum_coe, one_mul]
+    exact Probability.PMF.bind_apply_le_add_const_on_support _ _ fun s _ =>
+      extHandlers_bind_apply_le hvalid hHVZK hUnpred (hA s) post true
   have hsim := succProbability_fiatShamirNIZKSimExtGameOn_le hsound src valid admissible hA
   have htop : ((Qp * (Qp + Qro) : ℕ) : ℝ≥0∞) * (δ : ℝ≥0∞) ≠ ⊤ :=
     ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.coe_ne_top
