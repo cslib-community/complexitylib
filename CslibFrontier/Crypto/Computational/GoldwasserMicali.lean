@@ -37,6 +37,7 @@ import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.UniformSubset
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Probability.Uniform
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
 import Mathlib.FieldTheory.Finite.Basic
@@ -917,10 +918,7 @@ private theorem distinguishingGame_wordKeyDistinguisher (maxLen : ℕ → ℕ) (
   simp only [distinguishingGame, wordKeyDistinguisher, publicKeyWordGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind,
     apply_ite ProbComp.eval]
-  rw [PMF.bind_comm]
-  refine congrArg (PMF.bind _) (funext fun pk => ?_)
-  rw [PMF.bind_comm]
-  refine congrArg (PMF.bind _) (funext fun bit => congrArg (PMF.bind _) (funext fun choice => ?_))
+  pmf_swap with bit pk choice
   cases validBoundedWords maxLen n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) with
   | false =>
     simp only [Bool.false_eq_true, ↓reduceIte, PMF.monad_pure_eq_pure, PMF.pure_map]
