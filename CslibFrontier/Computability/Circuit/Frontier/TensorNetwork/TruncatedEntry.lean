@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgorithm
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.EntryContraction
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Theorem D.1 at truncation order `ℓ` for entry procedures
@@ -136,11 +137,7 @@ theorem exists_entryAdmissible_specNet (C : ℕ) :
   obtain ⟨cO, -, hcO⟩ := ce.computes
   -- The overhead of specialization, as a polynomial in `s + L'`.
   let f : ℕ → ℕ := fun n => K₁ * (3 * n + 3 + cO * (C * (n + 1) ^ C + 1) + 1) ^ K₁
-  have hf : PolyBounded id f :=
-    (PolyBounded.const K₁).mul (((((PolyBounded.const 3).mul PolyBounded.self).add
-      (PolyBounded.const 3)).add ((PolyBounded.const cO).mul (((PolyBounded.const C).mul
-        ((PolyBounded.self.add (PolyBounded.const 1)).pow C)).add (PolyBounded.const 1)))).add
-      (PolyBounded.const 1) |>.pow K₁)
+  have hf : PolyBounded id f := by growth_poly
   obtain ⟨a, d, had⟩ := hf.exists_le
   refine ⟨C + a + d, fun s P ℓ r fl ζ G hA => ?_⟩
   obtain ⟨hrows, hsm, hmC, hdeg, hent⟩ := hA
