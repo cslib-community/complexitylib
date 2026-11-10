@@ -20,10 +20,12 @@ returns a fresh-looking garbled circuit `gc'` together with one label permutatio
 Applying the permutations to the input labels of `gc` gives the input labels of `gc'`, so an
 evaluator holding an encoding for `gc` can move to `gc'` without the garbler. All randomness is
 explicit: `garble f r` garbles `f` with coins `r`, and `rerand gc r'` rerandomizes with coins `r'`.
-Decoding is folded into `evaluate`. Unlike `Cslib.Crypto.Garbling.Scheme` (`CslibFrontier/Crypto/Primitives/Garbling/Scheme.lean`),
-which is typed by `List Bool`, indexed by a security parameter, and intentionally omits projective
-structure, `RerandomizableGarbling` exposes per-wire label pairs so per-wire permutations can act
-directly on encodings.
+Decoding is folded into `evaluate`.
+Unlike `Cslib.Crypto.Garbling.Scheme`
+(`CslibFrontier/Crypto/Primitives/Garbling/Scheme.lean`), which is typed by `List Bool`,
+indexed by a security parameter, and intentionally omits projective structure,
+`RerandomizableGarbling` exposes per-wire label pairs so per-wire permutations can act directly
+on encodings.
 
 *Randomness composition* (`RandomnessComposition`) says that a rerandomized garbling is itself an
 honest garbling, with coins `explainGb r r'` computed from the garbling coins and the
