@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.WordRAM.ExactLog
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.Tabulation
 public import CslibFrontier.Foundations.FieldTheory.Finite.Trinomial
 public import CslibFrontier.Probability.KWiseIndependent.Trinomial
-import CslibFrontier.Computability.WordRAM.SymbolicExec
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Tactic.Fits
 
@@ -1442,7 +1442,7 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
     intro x_rem sh_x acc s hx_lt hx_bound hacc_lt hfit_sh h1 h2 h4 h5 h6 h7 h8 h9 h10 h11 h12 htab
     have hc : (Cond.lt (9 : Fin 18) 10).Holds s := by
       simp [Cond.Holds, h9, h10]
-    set xc := x_rem &&& (2 ^ b - 1)
+    set xc := x_rem &&& (2 ^ b - 1) with hxc
     have hxc_lt : xc < 2 ^ b := by
       dsimp only [xc]
       rw [Nat.and_two_pow_sub_one_eq_mod]
@@ -1454,56 +1454,8 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
     have hxc_lt2 : xc < 2 ^ (2 * b) := lt_of_lt_of_le hxc_lt hpow_le
     have hfit_xc : Fits w xc := hfit_tabEnd.of_le (by omega)
     have hfit_xc_sh : Fits w (xc <<< b) := hfit_tabEnd.of_le (by omega)
-    set s1 := s.set 13 xc
-    have e1 : Exec w (.op (.exactBin .and 13 11 5) : Code .exact 18) s s1 1 :=
-      exec_exactBin (by simp [h11, h5, xc]) hfit_xc
-    set s2 := s1.set 13 (xc <<< b)
-    have e2 : Exec w (.op (.exactBin .shiftLeft 13 13 4) : Code .exact 18) s1 s2 1 :=
-      exec_exactBin (by simp +decide [s1, h4]) hfit_xc_sh
-    set s3 := s2.set 14 L
-    have e3 : Exec w (.op (.copy 14 6) : Code .exact 18) s2 s3 1 := by
-      simpa +decide [s3, s2, s1, h6] using
-        (Exec.copy (B := .exact) (w := w) (d := 14) (s := 6) (x := s2))
-    set s4 := s3.set 15 u
-    have e4 : Exec w (.op (.copy 15 1) : Code .exact 18) s3 s4 1 := by
-      simpa +decide [s4, s3, s2, s1, h1] using
-        (Exec.copy (B := .exact) (w := w) (d := 15) (s := 1) (x := s3))
-    set s5 := s4.set 16 sh_x
-    have e5 : Exec w (.op (.copy 16 12) : Code .exact 18) s4 s5 1 := by
-      simpa +decide [s5, s4, s3, s2, s1, h12] using
-        (Exec.copy (B := .exact) (w := w) (d := 16) (s := 12) (x := s4))
     have hfit_inner_sh : Fits w (sh_x + 0 + L * b) :=
       hfit_sh.of_le (by omega)
-    obtain ⟨s6, e6, hs6_2, hs6_regs, hs6_mem⟩ :=
-      innerClmulLoop_exec hb hw hfit_tabEnd hx_bound L u 0 acc s5
-        hu_limbs (by simpa using hu_bound) hacc_lt hfit_inner_sh
-        (by simp +decide [s5, s4, s3, s2, s1, h2])
-        (by simp +decide [s5, s4, s3, s2, s1, h4])
-        (by simp +decide [s5, s4, s3, s2, s1, h5])
-        (by simp +decide [s5, s4, s3, s2, s1, h7])
-        (by simp +decide [s5, s4, s3, s2, s1, h8])
-        (by simp +decide [s5, s4, s3, s2, s1, h9])
-        (by simp +decide [s5, s4, s3, s2, xc])
-        (by simp +decide [s5, s4, s3])
-        (by simp +decide [s5, s4])
-        (by simp +decide [s5])
-        htab
-    rw [Nat.add_zero] at hs6_2
-    have hs6_4 : s6.regs 4 = b := by
-      rw [hs6_regs 4 (by decide)]
-      simp +decide [s5, s4, s3, s2, s1, h4]
-    have hs6_8 : s6.regs 8 = 1 := by
-      rw [hs6_regs 8 (by decide)]
-      simp +decide [s5, s4, s3, s2, s1, h8]
-    have hs6_10 : s6.regs 10 = rem_i + 1 := by
-      rw [hs6_regs 10 (by decide)]
-      simp +decide [s5, s4, s3, s2, s1, h10]
-    have hs6_11 : s6.regs 11 = x_rem := by
-      rw [hs6_regs 11 (by decide)]
-      simp +decide [s5, s4, s3, s2, s1, h11]
-    have hs6_12 : s6.regs 12 = sh_x := by
-      rw [hs6_regs 12 (by decide)]
-      simp +decide [s5, s4, s3, s2, s1, h12]
     have hx_shr_lt : x_rem >>> b < 2 ^ (rem_i * b) := shiftRight_lt_two_pow_mul hx_lt
     have hx_shr_bound : (x_rem >>> b) * 2 ^ (sh_x + b) < 2 ^ q :=
       (shiftRight_mul_two_pow_add_le x_rem b sh_x).trans_lt hx_bound
@@ -1518,16 +1470,6 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
     have hfit_rem_i : Fits w rem_i := by
       have : rem_i * 1 ≤ (rem_i + 1) * b := Nat.mul_le_mul (by omega) hb
       exact hfit_sh.of_le (by omega)
-    set s7 := s6.set 11 (x_rem >>> b)
-    have e7 : Exec w (.op (.exactBin .shiftRight 11 11 4) : Code .exact 18) s6 s7 1 :=
-      exec_exactBin (by simp +decide [hs6_11, hs6_4]) hfit_x_shr
-    set s8 := s7.set 12 (sh_x + b)
-    have e8 : Exec w (.op (.exactBin .add 12 12 4) : Code .exact 18) s7 s8 1 :=
-      exec_exactBin (by simp +decide [s7, hs6_12, hs6_4]) hfit_sh_next
-    set s9 := s8.set 10 rem_i
-    have e9 : Exec w (.op (.exactBin .sub 10 10 8) : Code .exact 18) s8 s9 1 :=
-      exec_exactBin (by simp +decide [s8, s7, hs6_10, hs6_8]) hfit_rem_i
-    have hbody := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq e9)))))))
     have hcl_xc_u_lt : clmul xc u <<< sh_x < 2 ^ (2 * q) := by
       rcases eq_or_ne xc 0 with hxc0 | hxc0
       · simp [hxc0]
@@ -1546,48 +1488,9 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
       Nat.xor_lt_two_pow hacc_lt hcl_xc_u_lt
     have hfit_sh' : Fits w (sh_x + b + rem_i * b + L * b) := by
       rwa [show sh_x + b + rem_i * b + L * b = sh_x + (rem_i + 1) * b + L * b by ring]
-    have hs9_low : ∀ r : Fin 18, r.val < 10 ∧ r ≠ 2 → s9.regs r = s.regs r := by
-      intro r ⟨hr_lt, hr2⟩
-      have hr10 : r ≠ 10 := by omega
-      have hr11 : r ≠ 11 := by omega
-      have hr12 : r ≠ 12 := by omega
-      have hr13 : r ≠ 13 := by omega
-      have hr14 : r ≠ 14 := by omega
-      have hr15 : r ≠ 15 := by omega
-      have hr16 : r ≠ 16 := by omega
-      have hr17 : r ≠ 17 := by omega
-      calc s9.regs r = s6.regs r := by
-            simp only [s9, s8, s7, Data.set,
-              Function.update_of_ne hr10, Function.update_of_ne hr11, Function.update_of_ne hr12]
-        _ = s5.regs r := hs6_regs r ⟨hr2, hr14, hr15, hr16, hr17⟩
-        _ = s.regs r := by
-            simp only [s5, s4, s3, s2, s1, Data.set,
-              Function.update_of_ne hr13, Function.update_of_ne hr14,
-              Function.update_of_ne hr15, Function.update_of_ne hr16]
-    have hs9_2 : s9.regs 2 = acc ^^^ (clmul xc u <<< sh_x) := by
-      change s6.regs 2 = acc ^^^ (clmul xc u <<< sh_x)
-      exact hs6_2
-    obtain ⟨y, hrec, hy2, hy_regs, hy_mem⟩ :=
-      ih (x_rem >>> b) (sh_x + b) (acc ^^^ (clmul xc u <<< sh_x)) s9
-        hx_shr_lt hx_shr_bound hacc'_lt hfit_sh'
-        (by rw [hs9_low 1 ⟨by decide, by decide⟩, h1])
-        hs9_2
-        (by rw [hs9_low 4 ⟨by decide, by decide⟩, h4])
-        (by rw [hs9_low 5 ⟨by decide, by decide⟩, h5])
-        (by rw [hs9_low 6 ⟨by decide, by decide⟩, h6])
-        (by rw [hs9_low 7 ⟨by decide, by decide⟩, h7])
-        (by rw [hs9_low 8 ⟨by decide, by decide⟩, h8])
-        (by rw [hs9_low 9 ⟨by decide, by decide⟩, h9])
-        (by simp +decide [s9])
-        (by simp +decide [s9, s8, s7])
-        (by simp +decide [s9, s8])
-        (by rw [show s9.mem = s.mem from hs6_mem]; exact htab)
-    have hiter := Exec.loop_iter hc hbody hrec
-    refine ⟨y, ?_, ?_, ?_, by rw [hy_mem]; exact hs6_mem⟩
-    · simpa only [outerClmulLoop, outerClmulBody,
-        show 1 + (1 + (1 + (1 + (1 + ((11 * L + 2) + (1 + (1 + 1))))))) +
-          ((11 * L + 12) * rem_i + 2) + 2 = (11 * L + 12) * (rem_i + 1) + 2 by ring] using hiter
-    · rw [hy2, Nat.xor_assoc]
+    have hxor : (acc ^^^ (clmul xc u <<< sh_x)) ^^^ (clmul (x_rem >>> b) u <<< (sh_x + b)) =
+        acc ^^^ (clmul x_rem u <<< sh_x) := by
+      rw [Nat.xor_assoc]
       congr 1
       calc (clmul xc u <<< sh_x) ^^^ (clmul (x_rem >>> b) u <<< (sh_x + b))
           = (clmul xc u <<< sh_x) ^^^ ((clmul (x_rem >>> b) u <<< b) <<< sh_x) := by
@@ -1596,8 +1499,32 @@ theorem outerClmulLoop_exec {w tabBase b q L u : ℕ}
             rw [← Nat.shiftLeft_xor_distrib]
         _ = clmul x_rem u <<< sh_x := by
             rw [← clmul_split_left]
-    · intro r hr
-      rw [hy_regs r hr, hs9_low r hr]
+    have hbody : WP.Exact w outerClmulBody s fun z t => t = 11 * L + 10 ∧
+        ∃ y, Exec w outerClmulLoop z y ((11 * L + 12) * rem_i + 2) ∧
+          y.regs 2 = acc ^^^ (clmul x_rem u <<< sh_x) ∧
+          (∀ r : Fin 18, r.val < 10 ∧ r ≠ 2 → y.regs r = s.regs r) ∧ y.mem = s.mem := by
+      unfold outerClmulBody
+      wram_exec [h1, h4, h5, h6, h11, h12, ← hxc]
+      wram_call (innerClmulLoop_exec hb hw hfit_tabEnd hx_bound L u 0 acc _ hu_limbs
+        (by simpa using hu_bound) hacc_lt hfit_inner_sh (by wram_simp [h2]) (by wram_simp [h4])
+        (by wram_simp [h5]) (by wram_simp [h7]) (by wram_simp [h8]) (by wram_simp [h9])
+        (by wram_simp [hxc]) (by wram_simp) (by wram_simp) (by wram_simp) (by exact htab))
+        with s6 ⟨hs6_2, hs6_regs, hs6_mem⟩
+      wram_exec [hs6_regs, h4, h8, h10, h11, h12]
+      exact (ih (x_rem >>> b) (sh_x + b) (acc ^^^ (clmul xc u <<< sh_x)) _ hx_shr_lt hx_shr_bound
+        hacc'_lt hfit_sh' (by wram_simp [hs6_regs, h1]) (by wram_simp [hs6_2, hxc])
+        (by wram_simp [hs6_regs, h4]) (by wram_simp [hs6_regs, h5]) (by wram_simp [hs6_regs, h6])
+        (by wram_simp [hs6_regs, h7]) (by wram_simp [hs6_regs, h8]) (by wram_simp [hs6_regs, h9])
+        (by wram_simp) (by wram_simp) (by wram_simp)
+        (by intro i hi; wram_simp [hs6_mem, htab i hi])).elim
+        fun y ⟨hrec, hy2, hy_regs, hy_mem⟩ => ⟨y, hrec, hy2.trans hxor, fun r hr => by
+          obtain ⟨hr_lt, hr2⟩ := hr
+          rw [hy_regs r ⟨hr_lt, hr2⟩]
+          wram_simp [hs6_regs], hy_mem.trans hs6_mem⟩
+    obtain ⟨z, t, hb, rfl, y, hrec, hy⟩ := hbody
+    refine ⟨y, ?_, hy⟩
+    simpa only [outerClmulLoop, show 11 * L + 10 + ((11 * L + 12) * rem_i + 2) + 2 =
+      (11 * L + 12) * (rem_i + 1) + 2 by ring] using Exec.loop_iter hc hb hrec
 
 /-- 16-instruction straight-line reduction block on `Data 18`: loads `r`, `q = 2 * r`,
 `2 ^ r - 1`, and `2 ^ q - 1` from `base + 0 .. base + 3` into registers `10..13` and replaces `c`
