@@ -50,9 +50,10 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.CountPrime
 
 open Cslib.WordRAM
 
-/-- One actual initialized finite native program, exact modular count and charged subcubic
-execution. The prefix and halting result belong to the same state. All setup, ring arithmetic,
-indexing, copying, recursion/control/return, scan and halt instructions are included.
+/-- One actual initialized finite native program, exact modular count and charged execution
+within `3704*(p+1)^2*(n+1)^2.81` instructions: subcubic in `n`, with an explicit quadratic factor
+in the modulus `p`. The prefix and halting result belong to the same state. All setup, ring
+arithmetic, indexing, copying, recursion/control/return, scan and halt instructions are included.
 The modulus and original-weight bound determine admission; no intermediate certificate is input. -/
 theorem runs_input_subcubic {W n p A : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hp : 0 < p)

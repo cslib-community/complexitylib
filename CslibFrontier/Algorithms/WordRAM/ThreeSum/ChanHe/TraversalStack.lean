@@ -147,7 +147,8 @@ theorem exec_push {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base +
       simp [y, Data.set, Data.write, prepare, List.reverse_cons, hi']
   · exact Modifies.write_of_owns ⟨Nat.le_add_right _ _, Nat.add_lt_add_left hv _⟩ v
 
-/-- A pop from a nonempty stack returns its top in eleven instructions and writes no memory. -/
+/-- A pop from a nonempty stack returns its top in eleven instructions and leaves memory outside
+the reserved block unchanged. -/
 theorem exec_pop {w base capacity : ℕ} (h2 : Fits w 2) (hcap : Fits w (base + capacity))
     {vs : List ℕ} {x : Data 9} {v : ℕ} (hr : Rep w base capacity (v :: vs) x) :
     ∃ y, Exec w program (prepare 1 0 x) y 11 ∧ y.regs out = v ∧
