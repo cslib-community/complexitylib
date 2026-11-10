@@ -13,6 +13,7 @@ public import Cslib.Probability.PMF
 public import Mathlib.Combinatorics.SimpleGraph.Copy
 public import Mathlib.Combinatorics.SimpleGraph.Maps
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SymmDiff
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.RandomPermutation
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
@@ -299,8 +300,8 @@ theorem acceptProb_canonicalTester (n s : ℕ) (hs : s ≤ n) (D : SimpleGraph (
     acceptProb (canonicalTester n s hs D) G =
       ((PMF.uniformOfFintype (Equiv.Perm (Fin n))).toOuterMeasure
         {σ | D (G.comap fun i => σ (Fin.castLE hs i))}).toReal := by
-  rw [acceptProb_eq, canonicalTester, OracleComp.evalWith_bind, evalWith_sample,
-    ProbComp.eval_uniform]
+  rw [acceptProb_eq, canonicalTester, OracleComp.evalWith_bind,
+    ProbOracleComp.evalWith_sumHandler_unifOracle_sample, ProbComp.eval_uniform]
   simp only [OracleComp.evalWith_bind, evalWith_queryInduced, PMF.pure_bind,
     OracleComp.evalWith_pure]
   have h : ((PMF.uniformOfFintype (Equiv.Perm (Fin n))).bind fun σ =>
