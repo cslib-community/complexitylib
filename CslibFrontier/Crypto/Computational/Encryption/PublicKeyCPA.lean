@@ -38,8 +38,9 @@ admissibility predicate `valid` are those of `gameOn`. Messages and oracle queri
 
 * `Cslib.Crypto.Encryption.encryptionOracle`, `Cslib.Crypto.Encryption.runWithEncryption`: the
   encryption oracle and the execution of an oracle program against it.
-* `Cslib.Crypto.Encryption.WordCPAAdversary`, `Cslib.Crypto.Encryption.WordCPAAdversary.IsPPT`:
-  chosen-plaintext adversaries and their uniform strict oracle PPT admissibility.
+* `Cslib.Crypto.Encryption.WordCPAAdversary`, `Cslib.Crypto.Encryption.WordCPAAdversary.IsPPT`,
+  `Cslib.Crypto.Encryption.encEncryptInput`: chosen-plaintext adversaries, their uniform strict
+  oracle PPT admissibility, and the `(1ⁿ, pk, msg)` encryption-input encoding.
 * `Cslib.Crypto.Encryption.cpaOracleGameOn`, `Cslib.Crypto.Encryption.WordINDCPAOracleOn`,
   `Cslib.Crypto.Encryption.WordINDCPAOracle`: the chosen-plaintext experiment and security, the
   latter under the equal-length rule of [KatzLindell2020], Definition 3.21.
@@ -157,6 +158,11 @@ noncomputable def WordCPAAdversary.toAdversary
   guess n state ciphertext :=
     runWithEncryption encrypt n (unframe state) (adversary.guess n (dropFrame state) ciphertext)
 
+/-- Encryption-algorithm input `(1ⁿ, pk, msg)`: the security parameter `n` in unary, then the
+public key and the plaintext, both as bit words. -/
+abbrev encEncryptInput : ℕ × List Bool × List Bool ↪ List Bool :=
+  encPair encUnary (encPair encBits encBits)
+
 /-- Running an oracle PPT program against the encryption oracle is PPT, when the parameter, the
 public key and the program input are computed in polynomial time from the caller's input. -/
 theorem isPPTOn_runWithEncryption {Caller α β : Type} {input : Caller ↪ List Bool}
@@ -164,8 +170,7 @@ theorem isPPTOn_runWithEncryption {Caller α β : Type} {input : Caller ↪ List
     {encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)}
     {param : Caller → ℕ} {pk : Caller → List Bool} {prepare : Caller → α}
     {program : α → WordOracleComp Unit β}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn encEncryptInput encBits (fun p => encrypt p.1 p.2.1 p.2.2))
     (hparam : ComputableInPolyTime param input encUnary)
     (hpk : ComputableInPolyTime pk input encBits)
     (hprepare : ComputableInPolyTime prepare input source)
@@ -224,8 +229,7 @@ public key, when the adversary and the honest encryption algorithm are. -/
 theorem WordCPAAdversary.isPPT_toAdversary
     {encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)}
     {adversary : WordCPAAdversary}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn encEncryptInput encBits (fun p => encrypt p.1 p.2.1 p.2.2))
     (hadversary : adversary.IsPPT) :
     (adversary.toAdversary encrypt).IsPPT := by
   let hp1 := ComputableInPolyTime.fst encUnary encBits
@@ -263,8 +267,7 @@ attacks, for any admissibility predicate ([KatzLindell2020], Proposition 12.3). 
 theorem INDCPAOn.wordINDCPAOracleOn {valid : ℕ → List Bool → List Bool → List Bool → Bool}
     {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn encEncryptInput encBits (fun p => encrypt p.1 p.2.1 p.2.2))
     (hsecure : INDCPAOn valid encBits keyGen encrypt) :
     WordINDCPAOracleOn valid keyGen encrypt := by
   intro adversary hadversary
@@ -275,8 +278,7 @@ theorem INDCPAOn.wordINDCPAOracleOn {valid : ℕ → List Bool → List Bool →
 attacks, under the equal-length rule ([KatzLindell2020], Proposition 12.3). -/
 theorem WordINDCPA.wordINDCPAOracle {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)}
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+    (hencrypt : IsPPTOn encEncryptInput encBits (fun p => encrypt p.1 p.2.1 p.2.2))
     (hsecure : WordINDCPA keyGen encrypt) :
     WordINDCPAOracle keyGen encrypt :=
   INDCPAOn.wordINDCPAOracleOn hencrypt hsecure

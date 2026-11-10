@@ -67,8 +67,7 @@ example : KeyExchange.xorKeyExchange.Correct ∧
 security (`WordINDCPAOracle`) when honest encryption is uniform strict PPT. -/
 example {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encrypt : ℕ → List Bool → List Bool → ProbComp (List Bool)}
-    (henc : IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
-      (fun p => encrypt p.1 p.2.1 p.2.2))
+    (henc : IsPPTOn Encryption.encEncryptInput encBits (fun p => encrypt p.1 p.2.1 p.2.2))
     (hcpa : Encryption.WordINDCPA keyGen encrypt) :
     Encryption.WordINDCPAOracle keyGen encrypt :=
   Encryption.WordINDCPA.wordINDCPAOracle henc hcpa
