@@ -501,11 +501,10 @@ private abbrev encPlantedState : PlantedState ↪ List Bool :=
     (encPair (encList encBits) (encPair (encList encBits) encBool))
 
 /-- The chain state of `certifyPlanted`, encoded as a nested pair: the node path in binary
-(framed), the slot in unary (framed) and the certificates (a list of key/signature word pairs),
+(framed), the slot in unary (framed) and the certificates (key/signature word pairs, `encKeys`),
 framed together, followed by the visited node cache (framed) and the edge-signature cache. -/
 private abbrev encPlantedCert : PlantedCertState ↪ List Bool :=
-  encPair (encPair encBits (encPair encUnary (encList (encPair encBits encBits))))
-    (encPair encNodeCache encEdgeCache)
+  encPair (encPair encBits (encPair encUnary encKeys)) (encPair encNodeCache encEdgeCache)
 
 private theorem length_fst_getD_keys_le (keys : List (List Bool × List Bool)) (idx : ℕ) :
     (keys.getD idx ([], [])).1.length ≤ (encKeys keys).length := by
@@ -875,12 +874,10 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
   · intro a i ⟨⟨node, idx, certs⟩, ⟨visited, edges⟩⟩ hi hinv
     have hle := plantedLoopInv_enc_bounds (hi.trans (Nat.sub_le _ _)) hinv
     dsimp only [plantedLoopInv] at hinv
-    -- `encPlantedCert` spells out the certificate encoding that `hle` calls `encKeys`
-    dsimp only [encKeys] at hle
+    dsimp only at hle
     obtain ⟨hnode, hidx, -⟩ := hinv
     obtain ⟨hcB, hvB, heB⟩ := hle
-    simp only [encKeys, length_encPair, encBits_apply, encUnary_apply, List.length_replicate,
-      hnode]
+    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, hnode]
     omega
 
 /-- Caller tuple for `plantedTreeHandler`: `(((n, vk), target), keys)`. -/
