@@ -1886,6 +1886,7 @@ public import CslibFrontier.Computability.Complexity.Classes.PP.TruthTable
 public import CslibFrontier.Computability.Complexity.Classes.Padding
 public import CslibFrontier.Computability.Complexity.Classes.Padding.NondeterministicPolynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Polynomial
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 public import CslibFrontier.Computability.Complexity.Classes.ParityP
 public import CslibFrontier.Computability.Complexity.Classes.ParityP.Closure
 public import CslibFrontier.Computability.Complexity.Classes.Promise.Basic
@@ -3574,6 +3575,7 @@ public import CslibFrontier.Computability.WordRAM.Allocation
 public import CslibFrontier.Computability.WordRAM.ArrayAppend
 public import CslibFrontier.Computability.WordRAM.ArrayNormalize
 public import CslibFrontier.Computability.WordRAM.Basis
+public import CslibFrontier.Computability.WordRAM.BoundedExec
 public import CslibFrontier.Computability.WordRAM.Call
 public import CslibFrontier.Computability.WordRAM.Compile
 public import CslibFrontier.Computability.WordRAM.Controller
@@ -3637,6 +3639,7 @@ public import CslibFrontier.Computability.WordRAM.Realization.Backend
 public import CslibFrontier.Computability.WordRAM.Realization.BackendFrame
 public import CslibFrontier.Computability.WordRAM.Realization.Basic
 public import CslibFrontier.Computability.WordRAM.Realization.Bind
+public import CslibFrontier.Computability.WordRAM.Realization.BoundedTactic
 public import CslibFrontier.Computability.WordRAM.Realization.Branch
 public import CslibFrontier.Computability.WordRAM.Realization.Client.MemoryStack
 public import CslibFrontier.Computability.WordRAM.Realization.Function
@@ -3658,6 +3661,10 @@ public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 public import CslibFrontier.Computability.WordRAM.RegisterCopy
 public import CslibFrontier.Computability.WordRAM.RegisterFrame
+public import CslibFrontier.Computability.WordRAM.Resizable.Basic
+public import CslibFrontier.Computability.WordRAM.Resizable.Clocked
+public import CslibFrontier.Computability.WordRAM.Resizable.LoopDist
+public import CslibFrontier.Computability.WordRAM.Resizable.Randomized
 public import CslibFrontier.Computability.WordRAM.Sequence
 public import CslibFrontier.Computability.WordRAM.Signed.Arithmetic
 public import CslibFrontier.Computability.WordRAM.Signed.ArrayArithmetic.Body
@@ -4302,6 +4309,7 @@ public import CslibFrontier.DataStructure.Memory.Frame
 public import CslibFrontier.DataStructure.Memory.Record
 public import CslibFrontier.DataStructure.Memory.RecordLink
 public import CslibFrontier.DataStructure.Memory.Region
+public import CslibFrontier.DataStructure.Memory.Resizable
 public import CslibFrontier.DataStructure.Memory.Spec
 public import CslibFrontier.DataStructure.Memory.Triple
 public import CslibFrontier.DataStructure.NearNeighbor.Hamming
