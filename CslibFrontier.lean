@@ -4094,11 +4094,14 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import CslibFrontier.DataStructure.BTree.Basic
 public import CslibFrontier.DataStructure.BTree.Height
+public import CslibFrontier.DataStructure.BTree.Insert
 public import CslibFrontier.DataStructure.BTree.Lookup
 public import CslibFrontier.DataStructure.BTree.MinMax
+public import CslibFrontier.DataStructure.BTree.OfSortedList
 public import CslibFrontier.DataStructure.BTree.PredSucc
 public import CslibFrontier.DataStructure.BTree.Range
 public import CslibFrontier.DataStructure.BTree.Rank
+public import CslibFrontier.DataStructure.BTree.TreeMap
 public import CslibFrontier.DataStructure.CellProbe.Randomized.ObliviousSequence
 public import CslibFrontier.DataStructure.CellProbe.Randomized.StateTransition
 public import CslibFrontier.DataStructure.CellProbe.StateTransition
