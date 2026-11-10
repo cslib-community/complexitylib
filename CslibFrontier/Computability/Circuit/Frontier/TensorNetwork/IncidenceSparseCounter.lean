@@ -172,7 +172,7 @@ theorem exists_countSparse_sharp_certificate (k c : ℕ) (hk : 1 ≤ k) :
     obtain ⟨hs', hn2⟩ := IncidenceBranching.isSparseBranch_of_isReducedBranch hs hn5 hnPow hb
     have hn' : n₀ ≤ n' := by omega
     have hn'le : n' ≤ n := by
-      have he := (IncidenceBranching.IsReducedBranch.le_two_mul (by omega) hs.vars_lt hb).1
+      have he := (IncidenceBranching.IsReducedBranch.le_two_mul (by omega) hb).1
       rw [he]
       exact Nat.sub_le _ _
     have hlen := IncidenceBranching.IsReducedBranch.length_enc_le hb
@@ -192,7 +192,7 @@ theorem exists_countSparse_sharp_certificate (k c : ℕ) (hk : 1 ≤ k) :
   obtain ⟨ht, hspace⟩ := hcs n sys R Q hRQ
   have hE : 1 ≤ E := Nat.one_le_logLogSqrtLogScale (by omega)
   have hS : (IncidenceBranching.branchVars n sys).length ≤ E :=
-    (IncidenceBranching.length_branchVars_le_div_sqrt_log (by omega) hs.vars_lt).trans
+    (IncidenceBranching.length_branchVars_le_div_sqrt_log sys (by omega)).trans
       (Nat.div_sqrt_log_two_le_logLogSqrtLogScale (by omega))
   have hfactor : 2 ^ (IncidenceBranching.branchVars n sys).length + 1 ≤ 2 ^ (E + 1) := by
     calc _ ≤ 2 ^ E + 2 ^ E :=
