@@ -525,7 +525,9 @@ the Boolean axioms, forces `e(G) ≤ 2 d`
 (`Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). Here `e(G)` is
 `Multigraph.minBalancedCut`, the same expansion used in the width bound. The Nullstellensatz form
 follows through `PC.RefutableInDegree.of_ns`
-(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). That Tseitin formulas are hard for
+(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). The sum-of-squares counterpart,
+Grigoriev's bound `e(G) ≤ d` for the `±1` encoding of the Tseitin parity system, is described
+under [Sum-of-squares](#sum-of-squares). That Tseitin formulas are hard for
 polynomial calculus over fields of characteristic `≠ 2` is due to Buss, Grigoriev, Impagliazzo
 and Pitassi (JCSS 2001), and for the Nullstellensatz to Grigoriev (FOCS 1998). Buss and
 Nordström, Handbook of Satisfiability, §7.5.4, record this hardness qualitatively and describe the

@@ -13,6 +13,7 @@ public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.In
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
 public import CslibFrontier.Logics.Propositional.Tseitin
 import CslibFrontier.Foundations.Data.Finset.SymmDiff
+import CslibFrontier.Foundations.Data.Finsupp.OddSupport
 import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 import CslibFrontier.Logics.Propositional.Algebraic.CNF.Parity
 import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
@@ -33,7 +34,10 @@ Nullstellensatz refutation of degree `d` gives a polynomial calculus refutation 
 same bound holds for the Nullstellensatz
 (`Cslib.Logic.PL.Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). On expanders the
 bound is linear in the number of vertices
-(`CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.TseitinExpander`).
+(`CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.TseitinExpander`). The
+sum-of-squares counterpart, for the `±1` encoding of the Tseitin parity system over strictly
+ordered rings, is Grigoriev's bound `e(G) ≤ d`
+(`Cslib.Logic.PL.Tseitin.minBalancedCut_le_of_sos_refutableInDegree`).
 
 **Sources.** That Tseitin formulas are hard for polynomial calculus over fields of characteristic
 other than `2` is due to
@@ -198,41 +202,6 @@ private theorem cutSign_symmDiff (hG : (Multigraph.toSimpleGraph ends).Connected
 
 end Cut
 
-/-! ### Variables of odd degree -/
-
-/-- The variables of odd degree in a monomial. -/
-private def oddSupp (m : E →₀ ℕ) : Finset E := {i ∈ m.support | m i % 2 = 1}
-
-private theorem mem_oddSupp {m : E →₀ ℕ} {i : E} : i ∈ oddSupp m ↔ m i % 2 = 1 := by
-  rw [oddSupp, mem_filter, Finsupp.mem_support_iff, and_iff_right_iff_imp]
-  intro h h0
-  rw [h0] at h
-  exact absurd h (by decide)
-
-@[simp] private theorem oddSupp_zero : oddSupp (0 : E →₀ ℕ) = ∅ := by
-  ext i
-  simp [mem_oddSupp]
-
-/-- A monomial has at most as many variables of odd degree as its degree. -/
-private theorem card_oddSupp_le {p : MvPolynomial E K} {m : E →₀ ℕ} (hm : m ∈ p.support) :
-    #(oddSupp m) ≤ p.totalDegree := by
-  refine le_trans ?_ (le_totalDegree hm)
-  rw [card_eq_sum_ones, Finsupp.sum]
-  refine (sum_le_sum fun i hi => ?_).trans (sum_le_sum_of_subset (filter_subset _ _))
-  have := mem_oddSupp.1 hi
-  omega
-
-private theorem oddSupp_single_add [DecidableEq E] (e : E) (m : E →₀ ℕ) :
-    oddSupp (Finsupp.single e 1 + m) = oddSupp m ∆ {e} := by
-  ext i
-  rw [mem_oddSupp, Finset.mem_symmDiff, mem_oddSupp, mem_singleton, Finsupp.add_apply]
-  by_cases hi : i = e
-  · subst hi
-    simp only [Finsupp.single_eq_same, not_true_eq_false, and_false, false_or, true_and]
-    omega
-  · simp only [Finsupp.single_eq_of_ne hi, hi, zero_add, not_false_eq_true, and_true, false_and,
-      or_false]
-
 /-! ### The change of variables `x ↦ (1 - y) / 2` -/
 
 /-- The change of variables `x ↦ (1 - y) / 2` from `{0, 1}` to `{1, -1}`. -/
@@ -264,13 +233,13 @@ variable [Fintype V] [DecidableEq V] [Fintype E] [DecidableEq E] {ends : E → S
   {χ : V → Bool}
 
 /-- The sign functional at `T`: the linear functional sending each monomial `m` to the sign of
-`oddSupp m ∆ T`. -/
+`m.oddSupport ∆ T`. -/
 private noncomputable def signFunctional (ends : E → Sym2 V) (χ : V → Bool) (T : Finset E) :
     MvPolynomial E K →ₗ[K] K :=
-  (basisMonomials E K).constr K fun m => cutSign ends χ (oddSupp m ∆ T)
+  (basisMonomials E K).constr K fun m => cutSign ends χ (m.oddSupport ∆ T)
 
 private theorem signFunctional_monomial (T : Finset E) (m : E →₀ ℕ) (c : K) :
-    signFunctional ends χ T (monomial m c) = c * cutSign ends χ (oddSupp m ∆ T) := by
+    signFunctional ends χ T (monomial m c) = c * cutSign ends χ (m.oddSupport ∆ T) := by
   have h : monomial m c = c • basisMonomials E K m := by
     rw [coe_basisMonomials, smul_monomial, smul_eq_mul, mul_one]
   rw [h, map_smul, signFunctional, Module.Basis.constr_basis, smul_eq_mul]
@@ -281,12 +250,13 @@ private theorem signFunctional_X_mul (T : Finset E) (e : E) (q : MvPolynomial E 
   induction q using MvPolynomial.induction_on' with
   | monomial m c =>
     rw [X, monomial_mul_monomial, one_mul, signFunctional_monomial, signFunctional_monomial,
-      oddSupp_single_add, symmDiff_assoc, symmDiff_comm {e} T, ← symmDiff_assoc]
+      Finsupp.oddSupport_add, Finsupp.oddSupport_single_one, symmDiff_comm {e} m.oddSupport,
+      symmDiff_assoc, symmDiff_comm {e} T]
   | add p q hp hq => rw [mul_add, map_add, map_add, hp, hq]
 
 private theorem signFunctional_one (T : Finset E) :
     signFunctional ends χ T (1 : MvPolynomial E K) = cutSign ends χ T := by
-  rw [← C_1, C_apply, signFunctional_monomial, one_mul, oddSupp_zero, ← bot_eq_empty,
+  rw [← C_1, C_apply, signFunctional_monomial, one_mul, Finsupp.oddSupport_zero, ← bot_eq_empty,
     bot_symmDiff]
 
 /-- The sign functional at `T` sends a multilinear monomial `∏_{i ∈ t} X i` to the sign of
@@ -311,27 +281,27 @@ private theorem signFunctional_prod_X (T t : Finset E) :
 `q`, then so do those at sets of `d + 1` edges. -/
 private theorem signFunctional_eq_zero (hG : (Multigraph.toSimpleGraph ends).Connected)
     {d k : ℕ} (hd : 2 * d < Multigraph.minBalancedCut ends) (hk : k + 1 ≤ d)
-    {q : MvPolynomial E K} (hq : ∀ m ∈ q.support, #(oddSupp m) ≤ k)
+    {q : MvPolynomial E K} (hq : ∀ m ∈ q.support, #m.oddSupport ≤ k)
     (h0 : ∀ A : Finset E, #A ≤ d → signFunctional ends χ A q = 0) {T : Finset E}
     (hT : #T ≤ d + 1) : signFunctional ends χ T q = 0 := by
-  by_cases hex : ∃ m₀ ∈ q.support, (cutSign ends χ (oddSupp m₀ ∆ T) : K) ≠ 0
+  by_cases hex : ∃ m₀ ∈ q.support, (cutSign ends χ (m₀.oddSupport ∆ T) : K) ≠ 0
   · obtain ⟨m₀, hm₀, hne⟩ := hex
     obtain ⟨U₀, hU₀⟩ := exists_of_cutSign_ne_zero hne
-    have key : ∀ m ∈ q.support, (cutSign ends χ (oddSupp m ∆ T) : K) =
-        cutSign ends χ (oddSupp m ∆ oddSupp m₀) * cutSign ends χ (oddSupp m₀ ∆ T) := by
+    have key : ∀ m ∈ q.support, (cutSign ends χ (m.oddSupport ∆ T) : K) =
+        cutSign ends χ (m.oddSupport ∆ m₀.oddSupport) * cutSign ends χ (m₀.oddSupport ∆ T) := by
       intro m hm
-      have h₁ := card_symmDiff_le (oddSupp m) (oddSupp m₀)
-      have h₂ := card_symmDiff_le (oddSupp m) T
+      have h₁ := card_symmDiff_le m.oddSupport m₀.oddSupport
+      have h₂ := card_symmDiff_le m.oddSupport T
       have hm' := hq m hm
       have hm₀' := hq m₀ hm₀
-      have hsplit : oddSupp m ∆ T = oddSupp m ∆ oddSupp m₀ ∆ (oddSupp m₀ ∆ T) := by
+      have hsplit : m.oddSupport ∆ T = m.oddSupport ∆ m₀.oddSupport ∆ (m₀.oddSupport ∆ T) := by
         rw [symmDiff_assoc, symmDiff_symmDiff_cancel_left]
       rw [hsplit]
       refine cutSign_symmDiff hG hU₀ (by omega) ?_
       rw [← hsplit]
       omega
     have hsum : signFunctional ends χ T q =
-        signFunctional ends χ (oddSupp m₀) q * cutSign ends χ (oddSupp m₀ ∆ T) := by
+        signFunctional ends χ m₀.oddSupport q * cutSign ends χ (m₀.oddSupport ∆ T) := by
       conv_lhs => rw [q.as_sum]
       conv_rhs => rw [q.as_sum]
       rw [map_sum, map_sum, sum_mul]
@@ -507,7 +477,8 @@ theorem minBalancedCut_le_two_mul_of_pc_refutableInDegree (h2 : (2 : K) ≠ 0)
       rwa [totalDegree_mul_of_isDomain (X_ne_zero e) hp0, totalDegree_X, add_comm] at hpd
     have hzero (A : Finset E) (hA : #A ≤ d + 1) : signFunctional ends χ A (toSign p) = 0 :=
       signFunctional_eq_zero hG hd hdeg'
-        (fun m hm => (card_oddSupp_le hm).trans (totalDegree_toSign_le p)) hp hA
+        (fun m hm => ((m.card_oddSupport_le_degree).trans (le_totalDegree hm)).trans
+          (totalDegree_toSign_le p)) hp hA
     rw [signFunctional_toSign_X_mul, hzero T (by omega),
       hzero _ ((card_symmDiff_le T {e}).trans (by rw [card_singleton]; omega)), sub_self,
       mul_zero]
