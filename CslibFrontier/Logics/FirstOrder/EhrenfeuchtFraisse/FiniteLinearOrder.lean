@@ -62,8 +62,9 @@ constants must first be replaced by their defining formulas.
 * [P. G. Kolaitis, *On the expressive power of logics on finite models*][Kolaitis2007], Chapter 2
   of *Finite Model Theory and Its Applications* (the sharp characterization of `n`-equivalent
   finite linear orders).
-* [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 3 (linear orders of
-  size at least `2 ^ n` are indistinguishable in `n` rounds; EVEN is not definable over orders).
+* [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 3: Theorem 3.6 (linear
+  orders of size at least `2 ^ n` are indistinguishable in `n` rounds) and Corollary 3.12 (EVEN
+  is not definable over orders).
 -/
 
 public section

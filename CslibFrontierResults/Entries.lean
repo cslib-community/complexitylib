@@ -60,6 +60,7 @@ import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
+import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
@@ -823,8 +824,10 @@ register_result "trakhtenbrot" where
     many symbols of arity at most three. FinSat asks for some, FinValid for every, finite \
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
-    Libkin's form for a fixed vocabulary with a binary relation symbol is a separate entry; \
-    a computable bridge to Mathlib sentences is not formalized."
+    Corollaries: every r.e. set of finitely valid formulas misses one, so no sound proof \
+    system with a decidable proof relation proves every finitely valid formula. Libkin's \
+    form for a fixed vocabulary with a binary relation symbol is a separate entry; a \
+    computable bridge to Mathlib sentences is not formalized."
 
 register_result "trakhtenbrot-binary" where
   title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
@@ -840,9 +843,11 @@ register_result "trakhtenbrot-binary" where
   ]
   scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
     symbol, no computable procedure is correct for finite satisfiability on the raw \
-    sentences over σ, and the finitely valid sentences over σ are not r.e. Raw \
-    library-local syntax with finite nonempty models; a computable translation from \
-    Mathlib's L.Sentence is not formalized."
+    sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
+    r.e. set of finitely valid sentences misses one over σ, and no sound proof system \
+    with a decidable proof relation proves them all. Raw library-local syntax with finite \
+    nonempty models; a computable translation from Mathlib's L.Sentence is not \
+    formalized."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
@@ -866,7 +871,8 @@ register_result "zero-one-law-graphs" where
     random graph G(n, 1/2) on Fin n. The limit probability is 1 exactly for the \
     consequences of the theory of the random graph and 0 exactly when the negation is one. \
     Consequences: even vertex count and even edge count are not first-order definable. \
-    Other edge probabilities and unlabelled random graphs are not covered."
+    Constant edge probabilities 0 < p < 1 are covered by the entry zero-one-law-binomial; \
+    edge probabilities depending on n and unlabelled random graphs are not covered."
 
 register_result "zero-one-law-rado" where
   title := "The Rado graph and the almost-sure theory of G(n, 1/2)"
@@ -887,6 +893,30 @@ register_result "zero-one-law-rado" where
     in the Rado graph SimpleGraph.radoGraph on ℕ, and almost never otherwise. Structure \
     theory for countable simple graphs: uniqueness among graphs with every extension \
     property, universality for induced embeddings, and self-complementarity."
+
+register_result "zero-one-law-binomial" where
+  title := "The 0-1 law for G(n, p) with constant edge probability"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := AlonSpencer2016, theorem := unverified, locator := unverified },
+    { paper := Fagin1976, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.graph.binomialRandom_zero_one_law,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_one_iff,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_zero_iff,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_one_iff_radoGraph,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_zero_iff_radoGraph,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_one_iff_tendsto_randomGraphProb,
+    Cslib.Logic.FO.graph.not_exists_sentence_of_not_tendsto_binomialRandom
+  ]
+  scope := "First-order sentences of Mathlib's language of graphs under Mathlib's binomial \
+    random graph SimpleGraph.binomialRandom (Fin n) p, labelled, for a fixed real \
+    0 < p < 1. The limit probability is 1 exactly for the consequences of the theory of the \
+    random graph, equivalently for the sentences true in the Rado graph, so the almost-sure \
+    sentences are those of G(n, 1/2) for every such p. At p = 0 and p = 1 the graph is \
+    empty or complete and this characterization fails. Edge probabilities depending on n, \
+    other vocabularies and unlabelled random graphs are not covered."
 
 register_result "zero-one-law-relational" where
   title := "The 0-1 law for finite relational vocabularies"
@@ -967,7 +997,8 @@ register_result "mcnaughton-papert" where
   title := "McNaughton–Papert: first-order definable equals star-free on finite words"
   topic := "descriptive complexity"
   sources := [
-    { paper := Libkin2004, theorem := "Theorem 7.26", locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 7.26",
+      locator := "second half of the proof, pp. 128–129" },
     { paper := McNaughtonPapert1971, theorem := unverified, locator := unverified }
   ]
   theorems := [
@@ -1058,7 +1089,7 @@ register_result "hanf-gaifman-locality" where
   title := "Hanf and Gaifman locality of first-order logic"
   topic := "descriptive complexity"
   sources := [
-    { paper := Libkin2004, theorem := "Theorem 4.12 and Corollary 4.13",
+    { paper := Libkin2004, theorem := "Lemma 4.9, Theorem 4.12 and Corollary 4.13",
       locator := "Sections 4.2–4.3" }
   ]
   theorems := [
@@ -1155,5 +1186,6 @@ register_result "color-refinement" where
     classes. The partition is stable from round |V| - k₀ and is the coarsest equitable \
     partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
-    test is incomplete (equal-order d-regular graphs). No k-dimensional Weisfeiler–Leman, \
-    fractional isomorphism or certified algorithm."
+    test is incomplete (equal-order d-regular graphs). The correspondence with \
+    two-variable counting logic C² is not formalized. No k-dimensional \
+    Weisfeiler–Leman, fractional isomorphism or certified algorithm."
