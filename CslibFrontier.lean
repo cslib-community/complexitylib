@@ -2853,6 +2853,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.PebblingWords
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch
