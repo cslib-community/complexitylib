@@ -11,6 +11,7 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.Transcript
 public import CslibFrontier.Languages.Probabilistic.QueryCount
 
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Query budgets of randomized programs
@@ -143,30 +144,21 @@ theorem transcript_cost_le {cost : Query → ℕ} {program : ProbOracleComp spec
     (transcript.map fun entry => cost entry.1).sum ≤ n := by
   induction h generalizing s s' result transcript with
   | pure a n =>
-    simp only [runWith_pure, PMF.mem_support_pure_iff] at hmem
-    cases hmem
+    supp_cases hmem [runWith_pure]
     simp
   | liftBind q cont n _ ih =>
-    simp only [ProbOracleComp.runWith, OracleComp.runWith, interpret_bind,
-      OracleComp.interpret_query, StateT.run_bind, Probability.PMF.monad_bind_eq_bind,
-      PMF.mem_support_bind_iff] at hmem
-    obtain ⟨⟨a, middle, seen⟩, hfirst, hrest⟩ := hmem
+    supp_cases hmem [ProbOracleComp.runWith, OracleComp.runWith, interpret_bind,
+      OracleComp.interpret_query, StateT.run_bind] with ⟨⟨a, middle, seen⟩, hfirst, hrest⟩
     cases q with
     | inl k =>
-      simp only [sumHandler, StateT.run_lift, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
-        PMF.mem_support_pure_iff] at hfirst
-      obtain ⟨_, -, heq⟩ := hfirst
-      cases heq
+      supp_cases hfirst [sumHandler, StateT.run_lift] with ⟨_, -, rfl, rfl, rfl⟩
       simpa using ih a hrest
     | inr q =>
-      simp only [sumHandler, StateT.run, withTranscript, PMF.mem_support_map_iff] at hfirst
-      obtain ⟨⟨answer, next⟩, -, heq⟩ := hfirst
-      cases heq
+      supp_cases hfirst [sumHandler, StateT.run, withTranscript]
+        with ⟨⟨answer, next⟩, -, rfl, rfl, rfl⟩
       change _ ∈ (runWith _ _ _).support at hrest
-      rw [run_interpret_withTranscript_append, PMF.mem_support_map_iff] at hrest
-      obtain ⟨⟨result', final, fresh⟩, hfresh, heq⟩ := hrest
-      cases heq
+      rw [run_interpret_withTranscript_append] at hrest
+      supp_cases hrest with ⟨⟨result', final, fresh⟩, hfresh, rfl, rfl, rfl⟩
       have := ih answer hfresh
       simp only [List.map_append, List.sum_append, List.map_cons, List.map_nil, List.sum_cons,
         List.sum_nil, Sum.elim_inr]
