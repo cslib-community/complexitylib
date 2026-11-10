@@ -9,7 +9,8 @@ module
 
 public import CslibFrontier.Init
 public import Cslib.Algorithms.Lean.Query.Sort.Merge.Lemmas
-import all Init.Data.List.Sort.Basic
+-- `import all` only for the functional induction principles `List.mergeM.induct` and
+-- `List.mergeSortM.induct`; CSLib does not expose the bodies of these definitions.
 import all Cslib.Algorithms.Lean.Sort.Merge
 
 /-!

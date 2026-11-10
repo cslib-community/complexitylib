@@ -14,7 +14,6 @@ public import CslibFrontier.DataStructure.HashFamily.WordRAM.DoubleTabulation
 public import CslibFrontier.Computability.WordRAM.ExactNotation
 public import CslibFrontier.DataStructure.WordRAM.Randomized.StateTransition
 import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
-import all CslibFrontier.DataStructure.Dictionary.DoubleHashing
 import CslibFrontier.Probability.PMF.Expect
 
 /-!
@@ -317,6 +316,8 @@ theorem val_probePerm {c_exp U n_max : ℕ} (θ : Seed c_exp n_max) (u : Fin U)
     (probePerm θ u i).val =
       ((primaryHash θ u).val + i.val * (strideHash θ u).val) % numBuckets n_max := by
   rcases θ with ⟨⟨T₁, T₂⟩, ⟨S₁, S₂⟩⟩
+  rw [probePerm, DoubleHashing.doubleHashOddStridePerm, DoubleHashing.doubleTabOddStridePerm,
+    DoubleHashing.twoStageOddStridePerm_apply]
   exact DoubleHashing.val_oddStridePerm _ _ u i
 
 @[simp]

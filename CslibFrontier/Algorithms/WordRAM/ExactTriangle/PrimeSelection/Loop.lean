@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Step
 public import CslibFrontier.Foundations.NumberTheory.SqrtPrimeWindow
-import all CslibFrontier.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Minimum
 import all CslibFrontier.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Step
 import Mathlib.Data.Nat.Sqrt
 
@@ -22,6 +21,11 @@ stated execution law for the supplied finite counting code. The law also preserv
 predicate, allowing original matrices and a caller frame to persist across dirty workspace
 reuse. `PrimeSelection.Exec` discharges that law using the actual modular counter; this
 component rule alone does not assume a completed algorithm or complexity result.
+
+The invariant `BestBefore` of `PrimeSelection.Minimum` and the step rule
+`exec_candidate_bestBefore` of `PrimeSelection.Step` are private proof plumbing of the selector;
+this module reads both through `import all` of `PrimeSelection.Step`, which itself reads
+`PrimeSelection.Minimum` through `import all`.
 -/
 
 public section

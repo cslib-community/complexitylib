@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Algorithms.Lean.Query.Select.Defs
 public import CslibFrontier.Foundations.Data.List.OrderStatistic
 public import Cslib.Algorithms.Lean.Query.Sort.Merge.Lemmas
-import all CslibFrontier.Algorithms.Lean.Query.Select.Defs
 
 /-!
 # Correctness of deterministic selection

@@ -2277,6 +2277,14 @@ noncomputable def twoStageOddStridePerm {Θ_top₁ Θ_bot₁ Θ_top₂ Θ_bot₂
     (Θ_top₁ × Θ_bot₁) × (Θ_top₂ × Θ_bot₂) → Fin U → Equiv.Perm (Fin (2 ^ M))
   | ((top₁, bottom₁), (top₂, bottom₂)) => oddStridePerm (H₁ top₁ bottom₁) (H₂ top₂ bottom₂)
 
+theorem twoStageOddStridePerm_apply {Θ_top₁ Θ_bot₁ Θ_top₂ Θ_bot₂ : Type*} {U M : ℕ}
+    (H₁ : Θ_top₁ → Θ_bot₁ → Fin U → Fin (2 ^ M))
+    (H₂ : Θ_top₂ → Θ_bot₂ → Fin U → Fin (2 ^ (M - 1))) (top₁ : Θ_top₁) (bottom₁ : Θ_bot₁)
+    (top₂ : Θ_top₂) (bottom₂ : Θ_bot₂) :
+    twoStageOddStridePerm H₁ H₂ ((top₁, bottom₁), (top₂, bottom₂)) =
+      oddStridePerm (H₁ top₁ bottom₁) (H₂ top₂ bottom₂) := by
+  rfl
+
 /-- **High-Probability Conditioning Bridge for Odd-Stride Double Hashing**:
 if `H₁ top₁` and `H₂ top₂` are `(2 * maxProbeCutoff n_max + 1)`-wise independent whenever
 `Good₁ top₁` and `Good₂ top₂` hold, and the bad top-seed sets `Finset.univ.filter (¬ Goodᵢ ·)`
