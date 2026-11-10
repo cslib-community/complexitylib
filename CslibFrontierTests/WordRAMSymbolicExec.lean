@@ -16,8 +16,8 @@ instruction count; registers and memory hold symbolic values, reads after writes
 addresses reduce, and a conditional the facts do not decide splits; instructions `Op.alu` of other
 bases, such as `Basis.additive`, run too; execution stops at a subprogram, continues from its
 specification and resumes; a loop proved by induction takes one iteration at a time with
-`WP.loop_iter` and `WP.Exact.loop_iter`; and goals of the wrong form, or programs with nothing to execute, fail
-with an explanation. The simplification procedures `Data.reduceRegs` and `Data.reduceMem` read
+`WP.loop_iter` and `WP.Exact.loop_iter`; and goals of the wrong form, or programs with nothing to
+execute, fail with an explanation. The simplification procedures `Data.reduceRegs` and `Data.reduceMem` read
 through writes on their own, also with register names that have free variables and banks separated
 by quantified hypotheses, `Data.reduceWriteMem` unfolds memory that is not read at an address, and
 `wram_bounded` proves the fitting conditions it can.
