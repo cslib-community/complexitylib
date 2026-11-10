@@ -5500,11 +5500,16 @@ public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Transfer
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.UniformStructure
 public import CslibFrontier.Logics.Polymorphism
 public import CslibFrontier.Logics.Polymorphism.BooleanClone
+public import CslibFrontier.Logics.Propositional.Algebraic.Boolean
 public import CslibFrontier.Logics.Propositional.Algebraic.CNF
+public import CslibFrontier.Logics.Propositional.Algebraic.CNF.Boolean
+public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Combination
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.PolynomialCalculus
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Proof
+public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Invariant
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Nullstellensatz
 public import CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Proof
+public import CslibFrontier.Logics.Propositional.Algebraic.SubsetSum
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.Basic
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.CNF
 public import CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.Parity
