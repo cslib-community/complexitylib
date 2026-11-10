@@ -15,10 +15,10 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 # Polynomial-time operations on finite tape storage
 
 The operations of cslib's existing tapes are certified in plain polynomial time
-(`Turing.MultiTapeTM.ComputableInPolyTime`) by composition of list, option and pair operations;
-the tidy forms of the closed operations are derived from them. They charge the complete stored
-tapes and accept any symbol encoding, including infinite or empty alphabets. Finite-control
-interpreters can use these rules without building new tape machines.
+(`Turing.MultiTapeTM.ComputableInPolyTime`) by composition of list, option and pair operations.
+They charge the complete stored tapes and accept any symbol encoding, including infinite or
+empty alphabets. Finite-control interpreters can use these rules without building new tape
+machines.
 
 ## Main results
 
@@ -26,13 +26,13 @@ interpreters can use these rules without building new tape machines.
   retaining the stack's omission of trailing blanks.
 * `Turing.MultiTapeTM.ComputableInPolyTime.biTape_moveLeft`, `.biTape_moveRight`,
   `.biTape_write`, `.biTape_step`: native tape operations with `fun_prop` certificates.
-* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.biTape_mk₁`: load a computed list.
+* `Turing.MultiTapeTM.ComputableInPolyTime.biTape_mk₁`: load a computed list.
 
 ## References
 
 Adapts Computability/Probabilistic/Tape.lean from the cslib `crypto` branch at
-`5ff69ca93402e7c947208dc56396d6d86203ccd8` to the tidy calculus, using arbitrary symbol encodings
-instead of fixed finite tags.
+`5ff69ca93402e7c947208dc56396d6d86203ccd8` to plain polynomial time, using arbitrary symbol
+encodings instead of fixed finite tags.
 -/
 
 @[expose] public section
@@ -154,115 +154,17 @@ theorem biTape_step (action : Option (Option Symbol) × SignType)
   cases write <;> cases move <;>
     simp only [BiTape.step, Option.elim_none, Option.elim_some] <;> fun_prop
 
-end Turing.MultiTapeTM.ComputableInPolyTime
-
-namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
-
-open Cslib.Turing
-
-variable {Symbol α : Type} {input : α ↪ List Bool} {enc : Symbol ↪ List Bool}
-
-/-- Reading the stored list is a change of view of the same encoded bits. -/
-@[fun_prop]
-theorem stackTape_toList (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime StackTape.toList (encStackTape enc) (encList (encOption enc)) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.stackTape_toList enc)
-
-/-- Reading a stack head decodes the first cell, with a blank default. -/
-@[fun_prop]
-theorem stackTape_head (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime StackTape.head (encStackTape enc) (encOption enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.stackTape_head enc)
-
-/-- Removing a stack head is the certified list-tail operation. -/
-@[fun_prop]
-theorem stackTape_tail (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime StackTape.tail (encStackTape enc) (encStackTape enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.stackTape_tail enc)
-
-/-- Prepend a cell without requiring a default symbol or case analysis over the alphabet. -/
-@[fun_prop]
-theorem stackTape_cons {symbol : α → Option Symbol} {tape : α → StackTape Symbol}
-    (hsymbol : ComputableTidilyInPolyTime symbol input (encOption enc))
-    (htape : ComputableTidilyInPolyTime tape input (encStackTape enc)) :
-    ComputableTidilyInPolyTime (fun a => StackTape.cons (symbol a) (tape a)) input
-      (encStackTape enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.stackTape_cons hsymbol.computableInPolyTime
-    htape.computableInPolyTime)
-
-/-- Map symbols to occupied cells with the certified list map. -/
-@[fun_prop]
-theorem stackTape_mapSome (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime StackTape.mapSome (encList enc) (encStackTape enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.stackTape_mapSome enc)
-
-/-- Assemble a tape from its computed head and two sides. -/
-@[fun_prop]
-theorem biTape_mk {head : α → Option Symbol} {left right : α → StackTape Symbol}
-    (hhead : ComputableTidilyInPolyTime head input (encOption enc))
-    (hleft : ComputableTidilyInPolyTime left input (encStackTape enc))
-    (hright : ComputableTidilyInPolyTime right input (encStackTape enc)) :
-    ComputableTidilyInPolyTime (fun a => BiTape.mk (head a) (left a) (right a)) input
-      (encBiTape enc) :=
-  (hhead.prod (hleft.prod hright)).of_enc_eq (fun _ => rfl)
-
-/-- Read the current cell of a computed tape. -/
-@[fun_prop]
-theorem biTape_head (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime BiTape.head (encBiTape enc) (encOption enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.biTape_head enc)
-
-/-- Extract the stored left side. -/
-@[fun_prop]
-theorem biTape_left (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime BiTape.left (encBiTape enc) (encStackTape enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.biTape_left enc)
-
-/-- Extract the stored right side. -/
-@[fun_prop]
-theorem biTape_right (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime BiTape.right (encBiTape enc) (encStackTape enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.biTape_right enc)
-
-/-- Move left by the existing stack operations. -/
-@[fun_prop]
-theorem biTape_moveLeft (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime BiTape.moveLeft (encBiTape enc) (encBiTape enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.biTape_moveLeft enc)
-
-/-- Move right by the existing stack operations. -/
-@[fun_prop]
-theorem biTape_moveRight (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime BiTape.moveRight (encBiTape enc) (encBiTape enc) :=
-  ComputableInPolyTime.tidy (ComputableInPolyTime.biTape_moveRight enc)
-
-/-- Write a computed optional symbol, including blank erasure. -/
-@[fun_prop]
-theorem biTape_write {tape : α → BiTape Symbol} {symbol : α → Option Symbol}
-    (htape : ComputableTidilyInPolyTime tape input (encBiTape enc))
-    (hsymbol : ComputableTidilyInPolyTime symbol input (encOption enc)) :
-    ComputableTidilyInPolyTime (fun a => (tape a).write (symbol a)) input (encBiTape enc) := by
-  unfold BiTape.write
-  fun_prop
-
-/-- Execute a fixed native action, charging the full encoded tape. -/
-@[fun_prop]
-theorem biTape_step (action : Option (Option Symbol) × SignType)
-    {tape : α → BiTape Symbol}
-    (htape : ComputableTidilyInPolyTime tape input (encBiTape enc)) :
-    ComputableTidilyInPolyTime (fun a => (tape a).step action) input (encBiTape enc) :=
-  (ComputableInPolyTime.tidy
-    (ComputableInPolyTime.biTape_step (enc := enc) action ComputableInPolyTime.id')).comp htape
-
 /-- Loading a list constructs a head and two stacks with no default symbol. -/
 @[fun_prop]
 theorem biTape_mk₁ (enc : Symbol ↪ List Bool) :
-    ComputableTidilyInPolyTime BiTape.mk₁ (encList enc) (encBiTape enc) := by
-  have hparts : ComputableTidilyInPolyTime
-      (fun values : List Symbol => BiTape.mk (values.head?) StackTape.nil
-        (StackTape.mapSome values.tail)) (encList enc) (encBiTape enc) := by fun_prop
+    ComputableInPolyTime BiTape.mk₁ (encList enc) (encBiTape enc) := by
+  have hparts : ComputableInPolyTime
+      (fun values : List Symbol => BiTape.mk values.head? StackTape.nil
+        (StackTape.mapSome values.tail)) (encList enc) (encBiTape enc) :=
+    biTape_mk (head? enc) (const StackTape.nil)
+      ((stackTape_mapSome enc).comp (tail (encA := enc)))
   apply hparts.of_enc_eq
   intro values
   cases values <;> rfl
 
-end Turing.MultiTapeTM.ComputableTidilyInPolyTime
+end Turing.MultiTapeTM.ComputableInPolyTime
