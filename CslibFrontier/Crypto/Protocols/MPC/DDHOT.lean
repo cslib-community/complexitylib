@@ -7,19 +7,22 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.DiffieHellman
+public import CslibFrontier.Crypto.Computational.DiffieHellman.Finite
 public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
+import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Event
 
 /-!
 # Three-Message DDH 1-out-of-2 Oblivious Transfer
 
-This module formalizes the three-message 1-out-of-2 oblivious transfer protocol from the Decision
+This module formalizes a three-message 1-out-of-2 oblivious transfer protocol from the Decision
 Diffie-Hellman (DDH) assumption over a finite additive group `G` of exponent dividing `q` generated
-by `g` ([NaorPinkas2001]; [BonehShoup2023], Section 23.5.7, Figure 23.17 and Theorem 23.7),
-expressed as a two-party protocol `ddhOTProtocol` in `Cslib.Crypto.Protocols.MPC` computing
+by `g`, expressed as a two-party protocol `ddhOTProtocol` in `Cslib.Crypto.Protocols.MPC` computing
 `otFunctionality G` (compatible with `batchOTSpec 1 G` from
-`CslibFrontier/Crypto/Protocols/MPC/BatchOT.lean`):
+`CslibFrontier/Crypto/Protocols/MPC/BatchOT.lean`). The protocol is a variant of the DDH-based
+protocol of [BonehShoup2023], Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this
+kind goes back to [NaorPinkas2001]. Its rounds are:
 
 1. **Round 1 (`.message 0 1 G`):** The sender (party `0`) samples `a : ZMod q` and sends
    `u = a.val • g` to the receiver (party `1`).
@@ -34,16 +37,35 @@ expressed as a two-party protocol `ddhOTProtocol` in `Cslib.Crypto.Protocols.MPC
    if the check fails, the sender sends zeros). The receiver decrypts its chosen ciphertext
    `(e_σ, c_σ)` as `c_σ - b.val • e_σ`.
 
+## Differences from Figure 23.17
+
+* In Figure 23.17 the sender samples its first message `d` uniformly from the group, without
+  knowing its discrete logarithm. Here the sender samples `a` and sends `u = a.val • g`, so it
+  knows the discrete logarithm of `u`.
+* Figure 23.17 encrypts both branches with one exponent `β` and one first component `g^β`. Here
+  each branch `i` has its own coins `(rᵢ, sᵢ)` and its own first component
+  `rᵢ.val • g + sᵢ.val • u`.
+* Figure 23.17 has no check. Here the sender checks `w₀ + w₁ = u`, the additive form of the check
+  in [BonehShoup2023], Section 23.5.7.3, Remark 23.6, and sends zeros instead of aborting when the
+  check fails. `ddhOTUncheckedProtocol` omits the check.
+* Theorem 23.7 of [BonehShoup2023] is stated for Figure 23.17. The results below are proved
+  directly for this variant.
+
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.MPC.ddhOTSchedule`: the three-message point-to-point schedule.
 * `Cslib.Crypto.Protocols.MPC.ddhOTProtocol`: the checked three-message DDH OT protocol.
 * `Cslib.Crypto.Protocols.MPC.ddhOTUncheckedProtocol`: the variant omitting the `w₀ + w₁ = u`
   check.
+* `Cslib.Crypto.Protocols.MPC.ddhOTSenderReplyOf`: the honest sender's Round 3 reply in a protocol
+  along `ddhOTSchedule G`, for an arbitrary Round 2 message.
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderSim`, `Cslib.Crypto.Protocols.MPC.ddhOTReceiverSim`: the
   semi-honest simulators for a corrupted sender (`{0}`) and a corrupted receiver (`{1}`).
 * `Cslib.Crypto.Protocols.MPC.ddhOTReduction`: the DDH reduction induced by a receiver
   distinguisher.
+* `Cslib.Crypto.Protocols.MPC.ddhOTUncheckedRealGame`,
+  `Cslib.Crypto.Protocols.MPC.ddhOTUncheckedIdealGame`: the real and ideal games for a malicious
+  receiver against `ddhOTUncheckedProtocol`.
 
 ## Main results
 
@@ -55,15 +77,18 @@ expressed as a two-party protocol `ddhOTProtocol` in `Cslib.Crypto.Protocols.MPC
   advantage zero.
 * `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_ddhOT_receiver_eq`: **computational receiver
   privacy** — a corrupted receiver's distinguishing advantage equals
-  `DDH.advantage g q (ddhOTReduction g q x D)`.
+  `Cslib.Crypto.DDH.advantage g q (ddhOTReduction g q x D)`, the single-instance DDH advantage of
+  `CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean`.
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_unchecked_of_add`,
   `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_zero_of_add_ne`,
   `Cslib.Crypto.Protocols.MPC.ddhOTAttackBothMessages_eq`,
+  `Cslib.Crypto.Protocols.MPC.succProbability_ddhOTUncheckedIdealGame_le`,
   `Cslib.Crypto.Protocols.MPC.ddhOTUnchecked_malicious_receiver_advantage`: **malicious-receiver
-  attack on the unchecked variant** — omitting the check `w₀ + w₁ = u` allows a malicious receiver
-  sending `(b₀.val • g, b₁.val • g)` to recover both `(m₀, m₁)` in a single run, separating the
-  real execution from any simulator that receives only `m_σ` for the fixed query bit `σ` with
-  advantage `1 - (Fintype.card G : ℝ)⁻¹`.
+  attack on the unchecked variant** — a malicious receiver that sends `(b₀.val • g, b₁.val • g)` in
+  Round 2 of `ddhOTUncheckedProtocol` recovers both `(m₀, m₁)` from one run. A simulator that
+  chooses one query bit `τ` and receives only `m_τ` outputs both messages with probability at most
+  `(Fintype.card G : ℝ)⁻¹`, so the advantage against every such simulator is at least
+  `1 - (Fintype.card G : ℝ)⁻¹`.
 
 ## References
 
@@ -111,36 +136,6 @@ private theorem zmod_val_nsmul_sub {q : ℕ} [NeZero q] (hq : ∀ x : G, q • x
     (a b : ZMod q) (x : G) : (a - b).val • x = a.val • x - b.val • x := by
   apply eq_sub_of_add_eq
   rw [← zmod_val_nsmul_add hq (a - b) b x, sub_add_cancel]
-
-/-! ### Per-instance DDH games and advantage -/
-
-namespace DDH
-
-/-- Real DDH game over `(G, g, q)`: samples `a, b ← ZMod q` and feeds
-`(a.val • g, b.val • g, (a * b).val • g)` to `D`. -/
-@[expose] noncomputable def realGame (g : G) (q : ℕ) [NeZero q]
-    (D : G × G × G → ProbComp Bool) : Game :=
-  ProbComp.eval do
-    let a ← ProbComp.uniform (ZMod q)
-    let b ← ProbComp.uniform (ZMod q)
-    D (a.val • g, b.val • g, (a * b).val • g)
-
-/-- Random DDH game over `(G, g, q)`: samples `a, b, c ← ZMod q` and feeds
-`(a.val • g, b.val • g, c.val • g)` to `D`. -/
-@[expose] noncomputable def randomGame (g : G) (q : ℕ) [NeZero q]
-    (D : G × G × G → ProbComp Bool) : Game :=
-  ProbComp.eval do
-    let a ← ProbComp.uniform (ZMod q)
-    let b ← ProbComp.uniform (ZMod q)
-    let c ← ProbComp.uniform (ZMod q)
-    D (a.val • g, b.val • g, c.val • g)
-
-/-- Concrete DDH distinguishing advantage of `D` over `(G, g, q)`. -/
-@[expose] noncomputable def advantage (g : G) (q : ℕ) [NeZero q]
-    (D : G × G × G → ProbComp Bool) : ℝ≥0 :=
-  Game.advantage (realGame g q D) (randomGame g q D)
-
-end DDH
 
 /-! ### 1-out-of-2 Oblivious Transfer functionality and protocol syntax -/
 
@@ -313,8 +308,10 @@ abbrev DDHOTFinal (G : Type) (q : ℕ) (i : Fin 2) : Type :=
       (st.2 (Fin.fin_one_eq_zero j ▸ rfl)))
     i st
 
-/-- **Unchecked three-message DDH OT protocol** omitting the sender's `w₀ + w₁ = u` check
-([BonehShoup2023], Section 23.5.7.3, Remark 23.6). -/
+/-- **Unchecked three-message DDH OT protocol**: `ddhOTProtocol` without the sender's
+`w₀ + w₁ = u` check. [BonehShoup2023], Section 23.5.7.3, Remark 23.6 describes the
+malicious-receiver attack that the check is meant to stop; `ddhOTUncheckedRealGame` runs that
+attack against this protocol. -/
 @[expose] noncomputable def ddhOTUncheckedProtocol (g : G) (q : ℕ) [NeZero q] :
     Protocol 2 noOracleSpec (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) where
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
@@ -324,6 +321,23 @@ abbrev DDHOTFinal (G : Type) (q : ℕ) (i : Fin 2) : Type :=
       (.message (fun st => ddhOTReceiverMsg g st.1.1 st.1.2 (st.2 rfl))
         (.message (fun st => ddhOTSenderReplyUnchecked g st.1.1.1 st.1.1.2 (st.2 rfl))
           (.done ddhOTOutput)))
+
+omit [AddCommGroup G] in
+/-- The honest sender's Round 3 reply in a protocol `proto` along `ddhOTSchedule G`, on input `m`
+and coins `c`, when the receiver's Round 2 message is `w`. The sender's local state is built as in
+`Steps.run`; a malicious receiver may choose `w` freely. -/
+@[expose] def ddhOTSenderReplyOf {q : ℕ}
+    (proto : Protocol 2 noOracleSpec (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G))
+    (m : G × G) (c : DDHOTSenderCoins q) (w : G × G) : (G × G) × (G × G) :=
+  match proto.steps with
+  | .message send₁ (.message _ (.message send₃ _)) =>
+    send₃ (((m, c), fun _ => send₁ (m, c)), fun _ => w)
+
+/-- The Round 3 reply of `ddhOTUncheckedProtocol` is `ddhOTSenderReplyUnchecked`. -/
+theorem ddhOTSenderReplyOf_ddhOTUncheckedProtocol (g : G) (q : ℕ) [NeZero q] (m : G × G)
+    (c : DDHOTSenderCoins q) (w : G × G) :
+    ddhOTSenderReplyOf (ddhOTUncheckedProtocol g q) m c w = ddhOTSenderReplyUnchecked g m c w :=
+  rfl
 
 /-- Malicious Round 2 message `(b₀.val • g, b₁.val • g)` with known discrete logs `(b₀, b₁)`. -/
 @[expose] def ddhOTAttackMsg {q : ℕ} (g : G) (b₀ b₁ : ZMod q) : G × G :=
@@ -376,8 +390,11 @@ theorem ddhOTSenderReply_eq_zero_of_add_ne {q : ℕ} (g : G) (m : G × G)
   rcases c with ⟨a, r₀, s₀, r₁, s₁⟩
   simp only [ddhOTSenderReply, hw, ↓reduceIte]
 
-/-- **Three-message DDH 1-out-of-2 Oblivious Transfer protocol** ([NaorPinkas2001];
-[BonehShoup2023], Section 23.5.7, Figure 23.17 and Theorem 23.7). -/
+/-- **Three-message DDH 1-out-of-2 Oblivious Transfer protocol**: a variant of [BonehShoup2023],
+Section 23.5.7, Figure 23.17, with the check `w₀ + w₁ = u` from Remark 23.6. Unlike in
+Figure 23.17, the sender knows the discrete logarithm `a` of its first message `u = a.val • g`
+and encrypts each branch with its own coins `(rᵢ, sᵢ)`; the module docstring lists the
+differences. -/
 @[expose] noncomputable def ddhOTProtocol (g : G) (q : ℕ) [NeZero q] :
     Protocol 2 noOracleSpec (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) where
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
@@ -548,14 +565,6 @@ theorem realJoint_ddhOT_sender (g : G) (q : ℕ) [NeZero q] (x : (i : Fin 2) →
   simp only [Function.comp_apply, Prod.map, id, restrict_singleton]
   rw [ddhOTReceived_zero]
 
-/-- Reindexing a uniform bind over a finite type by an equivalence `e : α ≃ α`. -/
-private theorem uniformOfFintype_bind_equiv {α β : Type} [Fintype α] [Nonempty α] (e : α ≃ α)
-    (f : α → PMF β) :
-    (PMF.uniformOfFintype α).bind f = (PMF.uniformOfFintype α).bind (fun a => f (e a)) := by
-  ext y
-  simp only [PMF.bind_apply, PMF.uniformOfFintype_apply]
-  exact (Equiv.tsum_eq e (fun a => (Fintype.card α : ENNReal)⁻¹ * f a y)).symm
-
 /-- **Perfect privacy against a corrupted sender**: the ideal joint distribution with
 `ddhOTSenderSim` equals the real joint distribution. -/
 theorem idealJoint_ddhOT_sender (g : G) (q : ℕ) [NeZero q] (hq : ∀ y : G, q • y = 0)
@@ -577,9 +586,9 @@ theorem idealJoint_ddhOT_sender (g : G) (q : ℕ) [NeZero q] (hq : ∀ y : G, q 
         (ddhOTReceiverMsg g σ b (c₀.1.val • g))), otOutputs x))
   cases σ
   · rfl
-  · rw [uniformOfFintype_bind_equiv (Equiv.subLeft c₀.1)]
+  · conv_lhs => rw [← PMF.uniformOfFintype_map_equiv (Equiv.subLeft c₀.1), PMF.bind_map]
     refine congrArg (PMF.bind _) (funext fun b => ?_)
-    simp only [Equiv.subLeft_apply, ddhOTReceiverMsg, ↓reduceIte,
+    simp only [Function.comp_apply, Equiv.subLeft_apply, ddhOTReceiverMsg, ↓reduceIte,
       zmod_val_nsmul_sub hq c₀.1 b g, sub_sub_cancel]
 
 /-- A corrupted sender has advantage zero against every distinguisher. -/
@@ -637,8 +646,9 @@ private theorem bind_unchosen_right {q : ℕ} [NeZero q] (a : ZMod q)
     have hconst : ∀ s₁ : ZMod q,
         (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ => f r₀ s₀ (r₁ + a * s₁)) =
         (PMF.uniformOfFintype (ZMod q)).bind (fun k => f r₀ s₀ k) := fun s₁ => by
-      rw [uniformOfFintype_bind_equiv (Equiv.subRight (a * s₁))]
-      simp only [Equiv.subRight_apply, sub_add_cancel]
+      change (PMF.uniformOfFintype (ZMod q)).bind
+          ((fun k => f r₀ s₀ k) ∘ Equiv.addRight (a * s₁)) = _
+      rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
     simp_rw [hconst]
     ext c
     simp only [PMF.bind_apply, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
@@ -671,8 +681,11 @@ private theorem bind_unchosen_left {q : ℕ} [NeZero q] (a : ZMod q)
       (PMF.uniformOfFintype (ZMod q)).bind (fun k =>
         (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ =>
           (PMF.uniformOfFintype (ZMod q)).bind (fun s₁ => f r₁ s₁ k))) := fun s₀ => by
-    rw [uniformOfFintype_bind_equiv (Equiv.subRight (a * s₀))]
-    simp only [Equiv.subRight_apply, sub_add_cancel]
+    change (PMF.uniformOfFintype (ZMod q)).bind ((fun k =>
+        (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ =>
+          (PMF.uniformOfFintype (ZMod q)).bind (fun s₁ => f r₁ s₁ k))) ∘
+        Equiv.addRight (a * s₀)) = _
+    rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
   simp_rw [hconst]
   ext c
   simp only [PMF.bind_apply, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
@@ -689,8 +702,8 @@ private theorem bind_four_comm {α β : Type} (p : PMF α) (f : α → α → α
     PMF.bind_comm p p (fun r₀ b =>
       p.bind fun s₀ => p.bind fun r₁ => p.bind fun s₁ => f r₀ s₀ r₁ s₁ b)]
 
-/-- The real execution for a corrupted receiver equals `DDH.realGame g q` composed with
-`ddhOTReduction`. -/
+/-- The real execution for a corrupted receiver equals `Cslib.Crypto.DDH.realGame g q` composed
+with `ddhOTReduction`. -/
 theorem real_receiver_eq_ddh_realGame (g : G) (q : ℕ) [NeZero q]
     (hq : ∀ y : G, q • y = 0) (x : (i : Fin 2) → OTIn G i)
     (D : ((i : ({1} : Finset (Fin 2))) →
@@ -773,7 +786,7 @@ variable [Fintype G]
 output `m_σ`, samples `a, b, r, s : ZMod q` and uniform `u', w' : G` for the unchosen branch,
 and constructs `(e_σ, b.val • e_σ + m_σ)` on the chosen branch and `(u', w')` on the unchosen
 branch. -/
-@[expose] noncomputable def ddhOTReceiverSim (g : G) (q : ℕ) [NeZero q] [Nonempty G] :
+@[expose] noncomputable def ddhOTReceiverSim (g : G) (q : ℕ) [NeZero q] :
     CoalitionSimulator (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) {1} :=
   fun xI yI => do
     let σ : Bool := xI ⟨1, Finset.mem_singleton_self 1⟩
@@ -821,9 +834,9 @@ private theorem bind_two_three_comm {α β : Type} (p : PMF α) (f : α → α �
     PMF.bind_comm p p (fun x₁ y₃ => p.bind fun x₂ => f x₁ x₂ _ _ y₃)]
 
 omit [DecidableEq G] in
-/-- The ideal execution for a corrupted receiver equals `DDH.randomGame g q` composed with
-`ddhOTReduction`. -/
-theorem ideal_receiver_eq_ddh_randomGame (g : G) (q : ℕ) [NeZero q] [Nonempty G]
+/-- The ideal execution for a corrupted receiver equals `Cslib.Crypto.DDH.randomGame g q`
+composed with `ddhOTReduction`. -/
+theorem ideal_receiver_eq_ddh_randomGame (g : G) (q : ℕ) [NeZero q]
     (hcard : Fintype.card G = q) (hgen : ∀ y : G, ∃ k : ZMod q, k.val • g = y)
     (x : (i : Fin 2) → OTIn G i)
     (D : ((i : ({1} : Finset (Fin 2))) →
@@ -849,13 +862,14 @@ theorem ideal_receiver_eq_ddh_randomGame (g : G) (q : ℕ) [NeZero q] [Nonempty 
       invFun := fun w => w - m_other + b.val • u'
       left_inv := fun w => by dsimp; rw [add_sub_cancel_right, sub_add_cancel]
       right_inv := fun w => by dsimp; rw [add_sub_cancel_right, sub_add_cancel] }
-  rw [uniformOfFintype_bind_equiv e_shift, ← uniformOfFintype_zmod_bind_nsmul hcard hgen]
+  rw [← PMF.uniformOfFintype_map_equiv e_shift, PMF.bind_map,
+    ← uniformOfFintype_zmod_bind_nsmul hcard hgen]
   rfl
 
 /-- **Computational privacy against a corrupted receiver**: every distinguisher's advantage
 between the ideal joint distribution with `ddhOTReceiverSim` and the real one equals the DDH
 advantage of `ddhOTReduction`. -/
-theorem semiHonestAdvantage_ddhOT_receiver_eq (g : G) (q : ℕ) [NeZero q] [Nonempty G]
+theorem semiHonestAdvantage_ddhOT_receiver_eq (g : G) (q : ℕ) [NeZero q]
     (hcard : Fintype.card G = q) (hgen : ∀ y : G, ∃ k : ZMod q, k.val • g = y)
     (x : (i : Fin 2) → OTIn G i)
     (D : ((i : ({1} : Finset (Fin 2))) →
@@ -868,52 +882,51 @@ theorem semiHonestAdvantage_ddhOT_receiver_eq (g : G) (q : ℕ) [NeZero q] [None
   rw [semiHonestAdvantage, ideal_receiver_eq_ddh_randomGame g q hcard hgen,
     real_receiver_eq_ddh_realGame g q hq, Game.advantage_comm, DDH.advantage]
 
-/-! ### Simultaneous-recovery attack on the unchecked variant -/
+/-! ### Malicious-receiver attack on the unchecked variant -/
 
-/-- Real game for a malicious receiver against the unchecked sender reply
-`ddhOTSenderReplyUnchecked`: for uniformly sampled sender input `(m₀, m₁) ← G × G` and query bit
-`σ : Bool`, tests whether the malicious receiver recovers the unchosen message
-`if σ then m₀ else m₁`. -/
-@[expose] noncomputable def ddhOTUncheckedRealGame (g : G) (q : ℕ) [NeZero q] [Nonempty G]
-    (b₀ b₁ : ZMod q) (σ : Bool) : ProbComp Bool := do
+/-- Real game for a malicious receiver against `ddhOTUncheckedProtocol`. The sender holds uniform
+messages `(m₀, m₁) ← G × G` and coins drawn by the protocol's own sampler. The receiver sends
+`ddhOTAttackMsg g b₀ b₁` in Round 2, gets the sender's Round 3 reply
+`ddhOTSenderReplyOf (ddhOTUncheckedProtocol g q)`, and wins if it recovers both messages. -/
+@[expose] noncomputable def ddhOTUncheckedRealGame (g : G) (q : ℕ) [NeZero q]
+    (b₀ b₁ : ZMod q) : ProbComp Bool := do
   let m₀ ← ProbComp.uniform G
   let m₁ ← ProbComp.uniform G
-  let c₀ ← sampleDDHOTSenderCoins q
-  let recovered := ddhOTAttackBothMessages b₀ b₁
-    (ddhOTSenderReplyUnchecked g (m₀, m₁) c₀ (ddhOTAttackMsg g b₀ b₁))
-  return decide ((if σ then recovered.1 else recovered.2) = (if σ then m₀ else m₁))
+  let c : DDHOTSenderCoins q ← (ddhOTUncheckedProtocol g q).sampleCoins 0
+  let reply :=
+    ddhOTSenderReplyOf (ddhOTUncheckedProtocol g q) (m₀, m₁) c (ddhOTAttackMsg g b₀ b₁)
+  return decide (ddhOTAttackBothMessages b₀ b₁ reply = (m₀, m₁))
 
-omit [AddCommGroup G] in
-/-- Ideal game for any simulator `S : Bool → G → ProbComp (G × G)` that receives only `m_σ` for
-the fixed query bit `σ : Bool`: for uniformly sampled `m₀, m₁ ← G`, `S σ m_σ` receives only
-`m_σ = if σ then m₁ else m₀` and tries to guess the unchosen message `if σ then m₀ else m₁`. -/
-@[expose] noncomputable def ddhOTUncheckedIdealGame [Nonempty G]
-    (S : Bool → G → ProbComp (G × G)) (σ : Bool) : ProbComp Bool := do
+/-- Ideal game for a malicious receiver against oblivious transfer. The simulator `S` first outputs
+a query bit `τ` together with a guessing function, which may share the simulator's randomness. For
+uniform messages `(m₀, m₁) ← G × G` the ideal functionality gives it `if τ then m₁ else m₀`, and
+the simulator wins if its guess equals `(m₀, m₁)`. -/
+@[expose] noncomputable def ddhOTUncheckedIdealGame
+    (S : ProbComp (Bool × (G → ProbComp (G × G)))) : ProbComp Bool := do
+  let s ← S
   let m₀ ← ProbComp.uniform G
   let m₁ ← ProbComp.uniform G
-  let m_σ := if σ then m₁ else m₀
-  let guess ← S σ m_σ
-  return decide ((if σ then guess.1 else guess.2) = (if σ then m₀ else m₁))
+  let pair ← s.2 (if s.1 then m₁ else m₀)
+  return decide (pair = (m₀, m₁))
 
-/-- In `ddhOTUncheckedRealGame`, the malicious receiver recovers the unchosen message with
+/-- In `ddhOTUncheckedRealGame`, the malicious receiver recovers both messages with
 probability `1`. -/
-theorem succProbability_ddhOTUncheckedRealGame (g : G) (q : ℕ) [NeZero q] [Nonempty G]
-    (b₀ b₁ : ZMod q) (σ : Bool) :
-    (Game.succProbability (ProbComp.eval (ddhOTUncheckedRealGame g q b₀ b₁ σ)) : ℝ) = 1 := by
+theorem succProbability_ddhOTUncheckedRealGame (g : G) (q : ℕ) [NeZero q] (b₀ b₁ : ZMod q) :
+    (Game.succProbability (ProbComp.eval (ddhOTUncheckedRealGame g q b₀ b₁)) : ℝ) = 1 := by
+  have hcoins : (ddhOTUncheckedProtocol g q).sampleCoins 0 = sampleDDHOTSenderCoins q := rfl
   rw [Game.coe_succProbability]
-  simp only [ddhOTUncheckedRealGame, ddhOTAttackBothMessages_eq, decide_true,
-    ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_const,
-    PMF.pure_apply, ↓reduceIte, ENNReal.toReal_one]
+  simp only [ddhOTUncheckedRealGame, hcoins,
+    ddhOTSenderReplyOf_ddhOTUncheckedProtocol, ddhOTAttackBothMessages_eq, decide_true,
+    ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_const, PMF.pure_apply, ↓reduceIte,
+    ENNReal.toReal_one]
 
-omit [AddCommGroup G] in
-/-- In `ddhOTUncheckedIdealGame`, any simulator `S` that receives only `m_σ` for the fixed query
-bit `σ` guesses the unchosen message with probability `(Fintype.card G : ℝ)⁻¹`. -/
-theorem succProbability_ddhOTUncheckedIdealGame [Nonempty G]
-    (S : Bool → G → ProbComp (G × G)) (σ : Bool) :
-    (Game.succProbability (ProbComp.eval (ddhOTUncheckedIdealGame S σ)) : ℝ) =
+/-- In `ddhOTUncheckedIdealGame`, every simulator `S` outputs both messages with probability at
+most `(Fintype.card G : ℝ)⁻¹`: the message it does not query is uniform and independent of its
+view. -/
+theorem succProbability_ddhOTUncheckedIdealGame_le
+    (S : ProbComp (Bool × (G → ProbComp (G × G)))) :
+    (Game.succProbability (ProbComp.eval (ddhOTUncheckedIdealGame S)) : ℝ) ≤
       (Fintype.card G : ℝ)⁻¹ := by
-  rw [Game.coe_succProbability]
-  unfold ddhOTUncheckedIdealGame
   have hunit : ∀ x : G,
       ((PMF.uniformOfFintype G).bind (fun y => PMF.pure (decide (x = y)))) true =
         (Fintype.card G : ENNReal)⁻¹ := fun x => by
@@ -923,50 +936,44 @@ theorem succProbability_ddhOTUncheckedIdealGame [Nonempty G]
     · intro y hy
       have hdec : decide (x = y) = false := decide_eq_false hy.symm
       simp [hdec]
+  have hguess : ∀ (x : G) (E : G → Bool), (∀ y, E y = true → x = y) →
+      ((PMF.uniformOfFintype G).bind fun y => PMF.pure (E y)) true ≤
+        (Fintype.card G : ENNReal)⁻¹ := fun x E hE => by
+    rw [← hunit x]
+    exact PMF.map_true_mono _ fun y _ h => decide_eq_true (hE y h)
   have h_ennreal :
-      ProbComp.eval (do
-        let m₀ ← ProbComp.uniform G
-        let m₁ ← ProbComp.uniform G
-        let m_σ := if σ then m₁ else m₀
-        let guess ← S σ m_σ
-        return decide ((if σ then guess.1 else guess.2) = (if σ then m₀ else m₁))) true =
-      (Fintype.card G : ENNReal)⁻¹ := by
-    cases σ
-    · simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-        ProbComp.eval_uniform]
-      have hinner : ∀ m₀ : G,
-          ((PMF.uniformOfFintype G).bind fun m₁ =>
-            (ProbComp.eval (S false m₀)).bind fun guess =>
-              PMF.pure (decide (guess.2 = m₁))) true =
-          (Fintype.card G : ENNReal)⁻¹ := fun m₀ => by
-        rw [PMF.bind_comm]
-        simp only [PMF.bind_apply, hunit, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-      simp only [PMF.bind_apply, hinner, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-    · simp only [↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-        ProbComp.eval_uniform]
-      rw [PMF.bind_comm (PMF.uniformOfFintype G)]
-      have hinner : ∀ m₁ : G,
-          ((PMF.uniformOfFintype G).bind fun m₀ =>
-            (ProbComp.eval (S true m₁)).bind fun guess =>
-              PMF.pure (decide (guess.1 = m₀))) true =
-          (Fintype.card G : ENNReal)⁻¹ := fun m₁ => by
-        rw [PMF.bind_comm]
-        simp only [PMF.bind_apply, hunit, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-      simp only [PMF.bind_apply, hinner, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-  rw [h_ennreal, ENNReal.toReal_inv, ENNReal.toReal_natCast]
+      ProbComp.eval (ddhOTUncheckedIdealGame S) true ≤ (Fintype.card G : ENNReal)⁻¹ := by
+    simp only [ddhOTUncheckedIdealGame, ProbComp.eval_bind, ProbComp.eval_pure,
+      ProbComp.eval_uniform]
+    refine PMF.bind_apply_le_on_support _ fun s _ => ?_
+    obtain ⟨τ, guess⟩ := s
+    cases τ
+    · simp only [Bool.false_eq_true, ↓reduceIte]
+      refine PMF.bind_apply_le_on_support _ fun m₀ _ => ?_
+      rw [PMF.bind_comm]
+      refine PMF.bind_apply_le_on_support _ fun pair _ => ?_
+      refine hguess pair.2 _ fun y h => ?_
+      exact congrArg Prod.snd (of_decide_eq_true h)
+    · simp only [↓reduceIte]
+      rw [PMF.bind_comm]
+      refine PMF.bind_apply_le_on_support _ fun m₁ _ => ?_
+      rw [PMF.bind_comm]
+      refine PMF.bind_apply_le_on_support _ fun pair _ => ?_
+      refine hguess pair.1 _ fun y h => ?_
+      exact congrArg Prod.fst (of_decide_eq_true h)
+  rw [Game.coe_succProbability, ← ENNReal.toReal_natCast, ← ENNReal.toReal_inv]
+  exact ENNReal.toReal_mono (by simp) h_ennreal
 
-/-- **Malicious-receiver separation on the unchecked DDH OT sender reply**: the distinguishing
-advantage between `ddhOTUncheckedRealGame` and `ddhOTUncheckedIdealGame` for any simulator `S`
-that receives only `m_σ` for the fixed query bit `σ` is `1 - (Fintype.card G : ℝ)⁻¹`. -/
-theorem ddhOTUnchecked_malicious_receiver_advantage (g : G) (q : ℕ) [NeZero q] [Nonempty G]
-    (b₀ b₁ : ZMod q) (S : Bool → G → ProbComp (G × G)) (σ : Bool) :
-    (Game.advantage (ProbComp.eval (ddhOTUncheckedRealGame g q b₀ b₁ σ))
-      (ProbComp.eval (ddhOTUncheckedIdealGame S σ)) : ℝ) = 1 - (Fintype.card G : ℝ)⁻¹ := by
-  rw [Game.coe_advantage, succProbability_ddhOTUncheckedRealGame,
-    succProbability_ddhOTUncheckedIdealGame, abs_of_nonneg]
-  have hpos : (1 : ℝ) ≤ (Fintype.card G : ℝ) := by
-    exact_mod_cast Fintype.card_pos
-  have hle : (Fintype.card G : ℝ)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ hpos
-  linarith
+/-- **Malicious-receiver separation for `ddhOTUncheckedProtocol`**: for every simulator `S`, the
+distinguishing advantage between `ddhOTUncheckedRealGame` and `ddhOTUncheckedIdealGame S` is at
+least `1 - (Fintype.card G : ℝ)⁻¹`. -/
+theorem ddhOTUnchecked_malicious_receiver_advantage (g : G) (q : ℕ) [NeZero q] (b₀ b₁ : ZMod q)
+    (S : ProbComp (Bool × (G → ProbComp (G × G)))) :
+    1 - (Fintype.card G : ℝ)⁻¹ ≤
+      (Game.advantage (ProbComp.eval (ddhOTUncheckedRealGame g q b₀ b₁))
+        (ProbComp.eval (ddhOTUncheckedIdealGame S)) : ℝ) := by
+  rw [Game.coe_advantage, succProbability_ddhOTUncheckedRealGame]
+  exact (sub_le_sub_left (succProbability_ddhOTUncheckedIdealGame_le S) 1).trans
+    (le_abs_self _)
 
 end Cslib.Crypto.Protocols.MPC

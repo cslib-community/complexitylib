@@ -20,10 +20,10 @@ cyclic group `ZMod 5` of order `5` with generator `1 : ZMod 5`:
 * `idealJoint_ddhOT_sender` and `semiHonestAdvantage_ddhOT_sender`: unconditional perfect privacy
   (zero distinguishing advantage) against a corrupted sender.
 * `semiHonestAdvantage_ddhOT_receiver_eq`: computational privacy against a corrupted receiver
-  reduced tightly to `DDH.advantage`.
-* `ddhOTUnchecked_malicious_receiver_advantage`: any simulator that receives only `m_σ` for the
-  fixed query bit `σ` falls short of the malicious receiver's simultaneous-recovery success
-  probability on `ZMod 5` by `1 - 5⁻¹`. -/
+  reduced tightly to `Cslib.Crypto.DDH.advantage`.
+* `ddhOTUnchecked_malicious_receiver_advantage`: against `ddhOTUncheckedProtocol`, any simulator
+  that picks one query bit `τ` and receives only `m_τ` falls short of the malicious receiver's
+  simultaneous-recovery success probability on `ZMod 5` by at least `1 - 5⁻¹`. -/
 
 namespace CslibFrontierTests.Crypto.DDHOT
 
@@ -87,11 +87,12 @@ example (x : (i : Fin 2) → OTIn (ZMod 5) i)
       DDH.advantage (1 : ZMod 5) 5 (ddhOTReduction (1 : ZMod 5) 5 x D) :=
   semiHonestAdvantage_ddhOT_receiver_eq (1 : ZMod 5) 5 zmod5_card zmod5_gen x D
 
--- Unchecked malicious-receiver separation against any simulator receiving only m_σ for fixed σ.
-example (b₀ b₁ : ZMod 5) (S : Bool → ZMod 5 → ProbComp (ZMod 5 × ZMod 5)) (σ : Bool) :
-    (Game.advantage (ProbComp.eval (ddhOTUncheckedRealGame (1 : ZMod 5) 5 b₀ b₁ σ))
-      (ProbComp.eval (ddhOTUncheckedIdealGame S σ)) : ℝ) = 1 - (5 : ℝ)⁻¹ := by
+-- Unchecked malicious-receiver separation against any simulator choosing one query bit τ.
+example (b₀ b₁ : ZMod 5) (S : ProbComp (Bool × (ZMod 5 → ProbComp (ZMod 5 × ZMod 5)))) :
+    1 - (5 : ℝ)⁻¹ ≤
+      (Game.advantage (ProbComp.eval (ddhOTUncheckedRealGame (1 : ZMod 5) 5 b₀ b₁))
+        (ProbComp.eval (ddhOTUncheckedIdealGame S)) : ℝ) := by
   simpa [zmod5_card] using
-    ddhOTUnchecked_malicious_receiver_advantage (1 : ZMod 5) 5 b₀ b₁ S σ
+    ddhOTUnchecked_malicious_receiver_advantage (1 : ZMod 5) 5 b₀ b₁ S
 
 end CslibFrontierTests.Crypto.DDHOT

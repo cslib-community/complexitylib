@@ -1010,7 +1010,7 @@ Jakob Nordström. *New Wine into Old Wineskins: A Survey of Some Pebbling Classi
 <a id="np01"></a>
 ## np01
 
-Moni Naor and Benny Pinkas. "Efficient Oblivious Transfer Protocols." *Proceedings of the Twelfth Annual ACM-SIAM Symposium on Discrete Algorithms (SODA 2001)*, 448–457, SIAM, 2001. Bibliographic metadata checked against `references.bib` (`NaorPinkas2001`); the SODA proceedings text was not inspected directly in this pass, so no internal section or theorem numbers from SODA 2001 are cited, and the three-message DDH OT presentation and locators follow [bs23](#bs23), Section 23.5.7 (Figure 23.17, Theorem 23.7, and Remark 23.6, inspected in Version 0.6 on 2026-11-09 UTC).
+Moni Naor and Benny Pinkas. "Efficient Oblivious Transfer Protocols." *Proceedings of the Twelfth Annual ACM-SIAM Symposium on Discrete Algorithms (SODA 2001)*, 448–457, SIAM, 2001. Bibliographic metadata checked against `references.bib` (`NaorPinkas2001`); cited only as general background for DDH-based oblivious transfer without internal SODA 2001 locators (the SODA text was not inspected). The formalized protocol is a variant of [bs23](#bs23), Section 23.5.7, Figure 23.17 with the Remark 23.6 check, known sender exponent, and per-branch `(rᵢ, sᵢ)` randomization, proved directly.
 
 <a id="odifreddi99"></a>
 ## odifreddi99
