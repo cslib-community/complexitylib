@@ -73,6 +73,20 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(chains("theorem t (h : c.1.2 = 0) :\n"
                                 "    ComputableInPolyTime (fun c => step c.1.1 c.1.2) e e := sorry\n"),
                          [".1.2"])
+        # The efficiency exception does not depend on how the predicate's head is qualified;
+        # a nearby chain outside the predicate still counts.
+        for head in ("ComputableInPolyTime", "Turing.MultiTapeTM.ComputableInPolyTime",
+                     "_root_.Turing.MultiTapeTM.ComputableInPolyTime", "ComputableInSpace",
+                     "Turing.MultiTapeTM.ComputableInSpace", "IsPPT", "Cslib.Crypto.IsPPT"):
+            with self.subTest(head=head):
+                self.assertEqual(chains(f"theorem t : {head} (fun c => c.1.2) e e := sorry\n"),
+                                 [])
+                self.assertEqual(chains(f"theorem t (h : c.2.1 = 0) :\n"
+                                        f"    {head} (fun c => c.1.2) e e := sorry\n"),
+                                 [".2.1"])
+        # A qualified name that only ends in an efficiency predicate's prefix is no exception.
+        self.assertEqual(chains("theorem t : Foo.ComputableBar (fun c => c.1.2) := sorry\n"),
+                         [".1.2"])
         # Named accessors are the remedy.
         self.assertEqual(chains("abbrev Ctx.desc (c : Ctx) : D := c.1.1\n"
                                 "def Ctx.cfg : Ctx → C := fun c => c.1.2\n"), [])
