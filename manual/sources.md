@@ -167,7 +167,12 @@ Manuel Blum, Robert W. Floyd, Vaughan Pratt, Ronald L. Rivest and Robert E. Tarj
 <a id="bhr12"></a>
 ## bhr12
 
-Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings (`BellareHoangRogaway2012`). The abstract garbling-scheme framework in `Garbling/{Scheme,Games,Foundations}.lean` follows Sections 3–4 of ePrint 2012/265 (syntax in §3.1, side information in §3.3, the five security games in §§3.4–3.6, invertible side information in §4.1, and the indistinguishability/simulation reductions of Propositions 2 and 3 in §§4.2–4.3), while the concrete point-and-permute circuit garbling in `Garbling/{Basic,Privacy}.lean` cites the garbling-scheme syntax and simulation-based privacy with topology side information at paper level only, because the ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in the pass that added those modules.
+Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuits." *Proceedings of the 2012 ACM Conference on Computer and Communications Security (CCS '12)*, 784–796, 2012. https://doi.org/10.1145/2382196.2382279 . Full version: Cryptology ePrint Archive, Report 2012/265. Bibliographic data from the DOI record and secondary listings (`BellareHoangRogaway2012`). The abstract garbling-scheme framework in `Garbling/{Scheme,Games,Foundations,CircuitInverters}.lean` follows Sections 2.3 and 3–4 of ePrint 2012/265 (conventional Boolean circuits in §2.3, syntax in §3.1, side information in §3.3, the five security games in §§3.4–3.6, the explicit topology and size inverters of Proposition 1 in §4.1, and the indistinguishability/simulation reductions and circuit corollaries of Propositions 2 and 3 and Corollaries 1 and 2 in §§4.2–4.3), while the concrete point-and-permute circuit garbling in `Garbling/{Basic,Privacy}.lean` cites the garbling-scheme syntax and simulation-based privacy with topology side information at paper level only, because the ePrint copy returned HTTP 403 and the ACM page sat behind a bot challenge in the pass that added those modules.
+
+<a id="bhr12b"></a>
+## bhr12b
+
+Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Adaptively Secure Garbling with Applications to One-Time Programs and Secure Outsourcing." *Advances in Cryptology – ASIACRYPT 2012*, LNCS 7658, 134–153, Springer, 2012. https://doi.org/10.1007/978-3-642-34961-4_10 . Full version: Cryptology ePrint Archive, Report 2012/564 (`BellareHoangRogaway2012b`). `Garbling/Adaptive.lean` formalizes the coarse-grained adaptive privacy game `Prv1` of Section 3.1, Figure 2, in which a two-stage adversary first receives `(F, d)` from `Garble(f)` and then adaptively queries `Input(x)` to receive `X` from a stateful two-stage simulator.
 
 <a id="bjkst02"></a>
 ## bjkst02
@@ -188,6 +193,11 @@ Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functi
 ## bm15
 
 Markus Bläser and Bodo Manthey. *Smoothed Complexity Theory*. ACM Transactions on Computation Theory 7(2), Article 6, 2015; preliminary version in MFCS 2012. https://doi.org/10.1145/2656210 ; arXiv:1202.1936. Read in arXiv v2 (29 June 2012) on 2026-11-08. §5, in the paragraph before Theorem 5.2, attributes `DistNP ⊆ Avg-P ⇒ NE = E` to Ben-David, Chor, Goldreich and Luby. Journal metadata checked against the Crossref record.
+
+<a id="bmr16"></a>
+## bmr16
+
+Marshall Ball, Tal Malkin, Mike Rosulek. "Garbling Gadgets for Boolean and Arithmetic Circuits." *Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS '16)*, 565–577, 2016. https://doi.org/10.1145/2976749.2978410 . Full version: Cryptology ePrint Archive, Report 2016/969. Bibliographic data from the DOI record. Read in the ePrint text on 2026-11-09. Locators checked there: Figure 1 (the garbling scheme for mixed-moduli simple circuits, with free addition and constant multiplication and projection gates of at most `m - 1` ciphertexts after choosing `W_j^0 = -H(g, W_i^{-τ}) - φ(-τ)Δ_n`), the oracle `O(g, i, j, X, a, c) = H(g, X + aΔ_{m_i}) + cΔ_{m_j}`, and Definition 1 (mixed-modulus circular correlation robustness against adversaries that query their oracle on distinct `g` values and `a ≠ 0`). Section numbers were not checked.
 
 <a id="bmr90"></a>
 ## bmr90

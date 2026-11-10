@@ -1,4 +1,4 @@
-# Propositional models and resolution proof complexity
+# Propositional models and proof complexity
 
 cslib-frontier represents propositional syntax as concrete finite data and distinguishes satisfiability, derivability and resource-bounded proof objects. This supports reductions, model counting and lower bounds without identifying a proof's length with the time needed to find it. [cslib-frontier][complexitylib]
 
@@ -263,9 +263,36 @@ order. Mirroring a ternary constraint can violate that order. Nullary constraint
 ends, so this order condition is vacuous for them. See [graph rotation tests](../../CslibFrontierTests/RotationSystem.lean)
 and [constraint-order tests](../../CslibFrontierTests/CSPRotationSystem.lean).
 
-Rotations alone do not impose genus zero. These modules prove no planar recognition, geometric
-realization, planar reduction, edge solver or dichotomy. In particular, isolated vertices require
-separate treatment in a future embedding model. The full objective remains [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+A rotation structure alone does not impose genus zero. The finite-certificate layer in
+`Problems.CSP.RotationSystem.Certificate` checks a supplied rotation table: one binary successor
+index for each of the graph's `2m` indexed darts. It checks exact length, declared endpoints,
+permutation and equality of successor orbits with endpoint fibers, then decodes an accepted table
+to the existing rotation structure. Constraint successors must also follow the original cyclic
+scope order. A mirrored ternary rotation can pass the graph check and fail this order check.
+
+`Graph.RotationSystem.NumericalGenusZero` requires `V + F = E + 2` independently in every edge
+component. It counts distinct vertices, listed edges and all face orbits, including singleton
+orbits; every face stays within one component. An isolated declared vertex uses the separate
+point convention `V = 1, E = 0, F = 1`, without creating a dart. The native graph checker is
+`Graph.RotationCertificate.verifyGenusZero`. Its completeness theorem
+`exists_bounded_certificate_iff` requires declared endpoints and supplies a certificate of at most
+`10 * (N + 1)^2` bits, where `N` is the graph's complete `encGraph` bit length.
+
+The native CSP checker `CSP.verifyRotationCertificate` combines numerical genus zero with
+`RespectsArgumentOrder`. `CSP.exists_bounded_rotationCertificate_iff` proves both directions of
+certificate completeness, and `CSP.polyBounded_rotationCertificateBound` bounds its certificate
+size polynomially in the source CSP encoding. `CSP.computableInPolyTime_verifyRotationCertificate`
+uses `encCSPRotationCertificate encRel encV`, pairing the original framed CSP with the framed
+successor table. The native cost proof covers malformed tables and enormous binary labels or
+indices; only actual list lengths fund iteration. See the [graph certificate tests](../../CslibFrontierTests/RotationCertificate.lean)
+and [ordered CSP certificate tests](../../CslibFrontierTests/CSPRotationCertificate.lean).
+
+These are finite encoding and numerical-verification results. Geometric realization, identifying
+the outer face across disconnected components, bare-instance recognition/construction, planar
+duality and the edge solver remain open. Exact relation-arity and satisfiability guards are
+separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
+rotation does not prove that its graph is nonplanar. The full objective remains
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
@@ -328,6 +355,92 @@ empty/nullary cases, sparse labels, and a trail whose final flip is valid but an
 prefix is invalid. The routine takes an improving comparison labeling as input: finding that
 labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
 Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Algebraic proof systems
+
+Nullstellensatz (NS) certificates and Polynomial Calculus (PC) proofs use coefficients in a
+commutative semiring `R`, in the namespaces `Cslib.Logic.PL.NS` and `Cslib.Logic.PL.PC`.
+The caller supplies all input axioms for the chosen encoding and basis. Standard Boolean and
+complementary axioms such as `x² - x` and `x + x̄ - 1` require a ring. In the two proof modules,
+`NS.IsProof.eval_eq_zero` and `PC.IsProof.eval_eq_zero` show that every proved polynomial vanishes
+at any common zero of the inputs. Their `exists_eval_ne_zero` lemmas
+require `Nontrivial R` and show that a refutable system has no common zero.
+[NS proof module](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/Proof.lean),
+[PC proof module](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Proof.lean).
+
+The computable `NS.size` is the sum of products of input and multiplier support sizes, exactly
+the standard NS size `∑ᵢ ‖pᵢ‖ ‖fᵢ‖` in de Rezende et al., §8.1 (STOC 2021, p. 217), where
+`‖p‖` counts nonzero monomials. `PC.size` sums support sizes across all proof lines, counting
+repeated lines separately. `NS.degree` bounds sums of input and multiplier total degrees for
+nonzero multipliers. A nonzero multiplier of a zero input still contributes its degree.
+`PC.degree` is the maximum total degree of a proof line. Both degrees return `0` on empty data.
+The lemmas `NS.degree_le_iff` and `PC.degree_le_iff` recover the term and line bounds. These
+measures concern formal polynomials, so a Boolean or other basis change needs its own resource
+comparison. [de Rezende et al.](https://www.ias.edu/sites/default/files/deRezendeGoNoPiRoSo_Automating.pdf)
+
+`PC.exists_isProof_of_ns` translates an NS certificate for any nonzero target polynomial `q`,
+of size at most `s` and total degree at most `d`, into one PC proof containing `q`, of size at
+most `s² + (d + 1)s` and total degree at most `d`. Under `Nontrivial R`,
+`PC.exists_refutation_of_ns` specializes this to refutations (`q = 1`). Fact 8.1 (p. 218)
+addresses arbitrary target polynomials, including zero, and block degree over fields; here the
+target must be nonzero and only total degree is treated.
+[NS-to-PC simulation](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Nullstellensatz.lean).
+
+For input total degrees at most `d₀`, `PC.RefutableInSize.of_ns` gives PC size at most
+`(d₀ + 1)s² + s` from NS size at most `s`, under the same nontriviality assumption. Its auxiliary
+gap-truncation bound `NS.IsProof.exists_degree_le_mul_size`, proved here, first supplies a
+replacement NS certificate of no larger size and degree at most `d₀` times the original size.
+The replacement discards high-degree cancellation and multipliers of zero inputs.
+
+Over every commutative semiring, `NS.exists_isProof_of_pc` gives a certificate for every PC
+proof line, without a size or degree bound.
+[PC-to-NS conversion](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/PolynomialCalculus.lean).
+
+The clause-only CNF arithmetization uses `Literal.toPolyAssignment` to assign each literal its
+Boolean truth value in the coefficient semiring. Over a ring, positive and negative coordinates
+are `a` and `1 - a`. A clause polynomial multiplies the coordinates of complementary literals,
+so `x ∨ ¬y` becomes `x̄ · y`. These are the twin variables of polynomial calculus resolution
+(PCR), as in [Alekhnovich et al., §4.1, p. 1197](https://doi.org/10.1137/S0097539700366735).
+The identity `Clause.eval_toPoly` gives value `0` for a satisfied
+clause and `1` for a falsified clause. With `Nontrivial R`,
+`CNF.eval_eq_true_iff_forall_eval_toPoly_eq_zero` characterizes satisfaction by the vanishing of
+every clause polynomial at that same Boolean assignment. Arbitrary literal coordinates can give
+a spurious solution to contradictory unit clauses.
+[Pointwise CNF encoding](../../CslibFrontier/Logics/Propositional/Algebraic/CNF.lean).
+
+The checked [proof-system examples](../../CslibFrontierTests/ProofComplexity/AlgebraicProofSystems.lean)
+exercise the simulations over semirings and rings with zero divisors, including a nonconstant
+nonzero target and a satisfiable system with no refutation. The
+[CNF examples](../../CslibFrontierTests/ProofComplexity/AlgebraicCNF.lean) cover both literal
+polarities, the empty clause and spurious zeros at noncomplementary coordinates. Each file
+includes its imports. From the repository root, check them with:
+
+```bash
+scripts/build.sh \
+  CslibFrontierTests.ProofComplexity.AlgebraicProofSystems \
+  CslibFrontierTests.ProofComplexity.AlgebraicCNF
+```
+
+## Finite crossover gadget semantics
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Crossover` for Dvořák–Kupec, ICALP 2015,
+§4, printed pp. 440–441, Figure 1. `BitString.cross` equates opposite ports in cyclic order;
+`nearCross` additionally permits `0001` and `1110`. `IsStandardizedInconsistent` requires
+self-complementarity, inclusion of CROSS, and the source's upper restriction. Its exact
+classification has eight shapes, selected by three optional complementary tuple pairs.
+
+The actual four-constraint `Crossover.figureOneAStandardized` is a `PPGadget` with three
+auxiliaries. Its target is NEAR-CROSS exactly when the input relation contains `0001` or
+`0010`, and CROSS otherwise. The actual two-constraint `Crossover.figureOneB` uses one auxiliary
+and defines CROSS from NEAR-CROSS. Numbered scope positions match the source's diagram;
+width-guarded interpretations reject malformed scopes. [Crossover clients](../../CslibFrontierTests/PlanarCrossover.lean)
+check every standardized shape, both first-gadget outcomes, explicit witnesses and rejected
+boundary tuples, while retaining the existing CNF crossover tests.
+
+These are finite relation semantics. They do not prove planar embedding/substitution,
+normalization from a failed delta-matroid condition (the source's omitted Lemma 6 proof),
+a hardness theorem or a new native runtime certificate. These obligations remain part of
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Three resolution representations
 
@@ -483,7 +596,7 @@ The [checked examples](../../CslibFrontierTests/ProofComplexity/SumOfSquares.lea
 
 ## Known Limitations
 
-This section inventories resolution, including clause space, cutting planes, semantic derivations, Frege proofs, sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates, polynomial calculus, sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [barak-steurer16]: ../sources.md#barak-steurer16
 [beyersdorffgalesilauria10]: ../sources.md#beyersdorffgalesilauria10
