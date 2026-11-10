@@ -5059,6 +5059,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Rigidity
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Rigidity.TotallyRegular
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.SchurComplement
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.SkewDeterminant
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Stochastic
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.StrictUpperTriangular
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.SubmatrixRobust
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.TimeLayer
@@ -5611,6 +5612,7 @@ public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Winnow
 public import CslibFrontier.MachineLearning.OnlineLearning.MultiplicativeUpdate
 public import CslibFrontier.MachineLearning.OnlineLearning.MultiplicativeWeights
 public import CslibFrontier.MachineLearning.OnlineLearning.OnlineGradientDescent
+public import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 public import CslibFrontier.MachineLearning.OnlineLearning.WeightedMajority
 public import CslibFrontier.MachineLearning.OnlineLearning.ZeroSum
 public import CslibFrontier.MachineLearning.PACLearning.AgnosticFiniteClass
