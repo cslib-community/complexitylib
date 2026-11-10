@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.WordRAM.Randomized.Structured
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Exact laws of structured randomized word-RAM programs
@@ -145,8 +146,7 @@ theorem rand {dst src : Fin r} (hfit : Fits w (x.regs src))
   · simpa only [Nat.add_zero] using
       (ProbComp.isQueryBounded_unifFin (x.regs src)).bind fun _ => .pure _ 0
   · intro z hz
-    obtain ⟨k, -, hz'⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    cases OracleComp.eq_of_mem_supportWith_pure hz'
+    supp_cases hz with ⟨k, rfl⟩
     exact ⟨hk k, le_rfl⟩
   · simp only [map_bind, map_pure, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_unifFin]
     rfl
@@ -172,9 +172,7 @@ theorem seq {g : Data r → β} {ν : PMF β} {κ : β → PMF α}
     simpa only [Nat.add_zero] using
       (hstep z₁ hz₁).2.1.bind fun _ => .pure _ 0
   · intro z hz
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+    supp_cases hz with ⟨z₁, hz₁, z₂, hz₂, rfl⟩
     exact ⟨((hstep z₁ hz₁).2.2.1 z₂ hz₂).1,
       Nat.add_le_add (hsup₁ z₁ hz₁).2 ((hstep z₁ hz₁).2.2.1 z₂ hz₂).2⟩
   · rw [← hlaw₁]
@@ -270,9 +268,7 @@ theorem loop_iter {g : Data r → β} {ν : PMF β} {κ : β → PMF α} (hc : c
     simpa only [Nat.add_zero] using
       (hstep z₁ hz₁).2.1.bind fun _ => .pure _ 0
   · intro z hz
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+    supp_cases hz with ⟨z₁, hz₁, z₂, hz₂, rfl⟩
     have h₁' := hsupb z₁ hz₁
     have h₂' := (hstep z₁ hz₁).2.2.1 z₂ hz₂
     exact ⟨h₂'.1, by omega⟩
