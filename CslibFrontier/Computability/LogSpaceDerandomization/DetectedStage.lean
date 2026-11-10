@@ -29,7 +29,7 @@ detector numbers. Then
   (`Matrix.detectorWeight`) [OpenAI2026LogSpace, (4.22)];
 * the overloaded vertices are `O = {x | 1 / 4 < M x}` (`Matrix.overloaded`).
 
-Since `γ` is one through `1 / 2` and `κ` is zero through `1 / 4` and one from `1 / 2`, every
+Since `γ` is one through `1 / 2` and `κ` is zero through `1 / 4` and one above `1 / 2`, every
 column is either fully corrected or overloaded with all copies active, and only overloaded vertices
 have active extra copies. The detector lemma (`Matrix.lt_card_of_lt_columnDetector`) gives each
 overloaded column more than `J / (4 C_π f)` entries above `δ₀ f` in some pilot input, and
@@ -220,8 +220,8 @@ variable [DecidableEq V] [LinearOrder V] {θ L θ₂ : ℝ} {κ χ : ℝ → ℝ
 the final running maximum, correct `C` by `k` steps of the cutoffs `φ y t = c t * γ (M y)`, and
 split the residual `D` with the copy weights `Matrix.detectorWeight κ M` and the overloaded set
 `Matrix.overloaded M`. If the base cutoff satisfies the hypotheses of the factorial truncation
-together with `t - θ₂ f ≤ c t`, `γ` is nonincreasing and one through `1 / 2`, `κ` is zero through
-`1 / 4` and one from `1 / 2`, `2 C_π m k (k + 1) ≤ δ₀ J`, and the copy constants are chosen as in
+together with `t - θ₂ f ≤ c t`, `γ` is one through `1 / 2`, `κ` is zero through `1 / 4` and one
+above `1 / 2`, `2 C_π m k (k + 1) ≤ δ₀ J`, and the copy constants are chosen as in
 `Matrix.copyStage_rates`, then the copy step has entries at most `f / q`, intertwines with its
 projection, and is supported in at most `2 |A|` copies. -/
 theorem detectedStage_rates (hch : RetentionChannels X Y f π cπ Cπ Cpair Cvar)

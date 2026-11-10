@@ -37,7 +37,7 @@ as a code of layers has a depth with costs bounded by summing the costs of the l
 These are original implementation lemmas for the existing circuit semantics.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

@@ -30,7 +30,7 @@ their features vanish. The signature and its costs are re-exported from `SumOfTe
   [S. Schlesinger, *Algebraic circuit formalizations in Complexitylib*][Schlesinger2026Algebraic].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.SumOfTerms
 

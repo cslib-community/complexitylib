@@ -19,7 +19,7 @@ and registration. Its proof reuses the linear streaming conversion certificate, 
 over a growing word. The higher bit-string facade reexports this same declaration.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

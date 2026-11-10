@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram
 public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # First-order model checking in logarithmic space
@@ -244,9 +245,7 @@ private theorem reaches_count {b F : ℕ}
     intro regs he hle _ hB
     have hk : regs.getD 0 0 = a.1 := by omega
     refine ⟨regs, ?_, rfl, hk, hB⟩
-    refine Reaches.read h₀ hB ?_
-    simp only [eval_mul, eval_const, eval_reg, hk, getElem?_encStructure_two_mul_card]
-    exact Reaches.refl _
+    cp_step [hk, getElem?_encStructure_two_mul_card]
   | succ e ih =>
     intro regs he hle hlen hB
     have hlt : regs.getD 0 0 < a.1 := by omega
@@ -254,9 +253,8 @@ private theorem reaches_count {b F : ℕ}
       (by rw [List.getD_set_self hlen]; omega) (by rw [List.getD_set_self hlen]; omega)
       (by simpa using hlen) (List.forall_mem_set_of_forall_mem hB (by omega))
     refine ⟨regs', ?_, by simpa using hlen', h0', hB'⟩
-    refine Reaches.read h₀ hB ?_
-    simp only [eval_mul, eval_const, eval_reg, getElem?_encStructure_two_mul hlt]
-    exact Reaches.assign h₁ hB (by simpa using hreach)
+    cp_step [getElem?_encStructure_two_mul hlt]
+    cp_step
 
 /-- The markers of a table, counted up to `n ^ k`. -/
 private theorem reaches_markers {c i F : ℕ} (hP : P.CodeAt c (tableCode v c i F))
@@ -271,18 +269,13 @@ private theorem reaches_markers {c i F : ℕ} (hP : P.CodeAt c (tableCode v c i 
         ∀ r ∈ regs', r ≤ B := by
   simp only [tableCode, codeAt_cons] at hP
   obtain ⟨-, h₁, h₂, -, h₄, -, -⟩ := hP
-  rw [show c + 1 + 1 = c + 2 by omega] at h₂
-  rw [show c + 1 + 1 + 1 + 1 = c + 4 by omega] at h₄
   intro e
   induction e with
   | zero =>
     intro j regs he hjL hjt h0 h1 h2 hlen hB
     have hj : j = a.1 ^ arityAt v i := by omega
     refine ⟨regs, ?_, rfl, h0, h1, fun _ => h2.trans hj, hB⟩
-    refine Reaches.lt h₁ hB ?_
-    simp only [eval_reg, eval_lenExpr h0, h2, hj, lt_irrefl, ↓reduceIte,
-      show a.1 ^ arityAt v i ≤ a.2[i].length by omega]
-    exact Reaches.refl _
+    cp_step [eval_lenExpr h0, h2, hj, show a.1 ^ arityAt v i ≤ a.2[i].length by omega]
   | succ e ih =>
     intro j regs he hjL hjt h0 h1 h2 hlen hB
     have hjL' : j < a.1 ^ arityAt v i := by omega
@@ -293,22 +286,13 @@ private theorem reaches_markers {c i F : ℕ} (hP : P.CodeAt c (tableCode v c i 
           (List.getD_set_self (by omega)) (by simpa using hlen)
           (List.forall_mem_set_of_forall_mem hB (by omega))
       refine ⟨regs', ?_, by simpa using hlen', h0', h1', h2', hB'⟩
-      refine Reaches.lt h₁ hB ?_
-      simp only [eval_reg, eval_lenExpr h0, h2, hjL', ↓reduceIte]
-      refine Reaches.read h₂ hB ?_
-      simp only [eval_add, eval_mul, eval_const, eval_reg, h1, h2,
-        getElem?_encStructure_tableStart_two_mul hi hjt', readLabel]
-      refine Reaches.assign h₄ hB ?_
-      simp only [eval_add, eval_reg, eval_const, h2]
-      exact hreach
+      cp_step [eval_lenExpr h0, h2, hjL']
+      cp_step [h1, h2, getElem?_encStructure_tableStart_two_mul hi hjt']
+      cp_step [h2]
     · refine ⟨regs, ?_, rfl, h0, h1, fun h => absurd h (by omega), hB⟩
-      refine Reaches.lt h₁ hB ?_
-      simp only [eval_reg, eval_lenExpr h0, h2, hjL', ↓reduceIte]
-      refine Reaches.read h₂ hB ?_
-      simp only [eval_add, eval_mul, eval_const, eval_reg, h1, h2, hjt',
-        getElem?_encStructure_tableStart_two_mul_length hi, readLabel,
-        show ¬ (a.1 ^ arityAt v i ≤ a.2[i].length) by omega, ↓reduceIte]
-      exact Reaches.refl _
+      cp_step [eval_lenExpr h0, h2, hjL']
+      cp_step [h1, h2, hjt', getElem?_encStructure_tableStart_two_mul_length hi,
+        show ¬ (a.1 ^ arityAt v i ≤ a.2[i].length) by omega]
 
 /-- **Checking a table**: from the code of the table at position `i ≤ |tables|`, with the
 cardinality in register `0` and the position of the table in register `1`, the program moves
@@ -325,9 +309,6 @@ private theorem reaches_tableCode {c i F : ℕ} (hP : P.CodeAt c (tableCode v c 
   have hP' := hP
   simp only [tableCode, codeAt_cons] at hP'
   obtain ⟨h₀, h₁, h₂, h₃, -, h₅, -⟩ := hP'
-  rw [show c + 1 + 1 = c + 2 by omega] at h₂
-  rw [show c + 1 + 1 + 1 = c + 3 by omega] at h₃
-  rw [show c + 1 + 1 + 1 + 1 + 1 = c + 5 by omega] at h₅
   have hB₀ : ∀ r ∈ regs.set 2 0, r ≤ B := List.forall_mem_set_of_forall_mem hB (Nat.zero_le _)
   have h0' : (regs.set 2 0).getD 0 0 = a.1 := by rw [List.getD_set_ne (by omega), h0]
   have h1' : (regs.set 2 0).getD 1 0 = tableStart a i := by rw [List.getD_set_ne (by omega), h1]
@@ -346,10 +327,7 @@ private theorem reaches_tableCode {c i F : ℕ} (hP : P.CodeAt c (tableCode v c 
         refine ⟨regs₁, ?_, by simpa using hlen₁, h0₁, fun h => absurd h hok, hB₁⟩
         simp only [hok, ↓reduceIte]
         refine Reaches.assign h₀ hB (hreach₁'.trans ?_)
-        refine Reaches.read h₃ hB₁ ?_
-        simp only [eval_add, eval_mul, eval_const, eval_reg, eval_lenExpr h0₁, h1₁,
-          getElem?_encStructure_tableStart_two_mul hi hlt, readLabel]
-        exact Reaches.refl _
+        cp_step [eval_lenExpr h0₁, h1₁, getElem?_encStructure_tableStart_two_mul hi hlt]
       · -- exactly `n ^ k` bits
         have hok : TableOk v a i := ⟨hi, heq.symm⟩
         have hnext : tableStart a i + 2 * a.1 ^ arityAt v i + 1 = tableStart a (i + 1) := by
@@ -359,12 +337,9 @@ private theorem reaches_tableCode {c i F : ℕ} (hP : P.CodeAt c (tableCode v c 
           List.forall_mem_set_of_forall_mem hB₁ ?_⟩
         · simp only [hok, ↓reduceIte]
           refine Reaches.assign h₀ hB (hreach₁'.trans ?_)
-          refine Reaches.read h₃ hB₁ ?_
-          simp only [eval_add, eval_mul, eval_const, eval_reg, eval_lenExpr h0₁, h1₁, heq,
-            getElem?_encStructure_tableStart_two_mul_length hi, readLabel]
-          refine Reaches.assign h₅ hB₁ ?_
-          simp only [eval_add, eval_mul, eval_const, eval_reg, eval_lenExpr h0₁, h1₁, heq]
-          exact Reaches.refl _
+          cp_step [eval_lenExpr h0₁, h1₁, heq,
+            getElem?_encStructure_tableStart_two_mul_length hi]
+          cp_step [eval_lenExpr h0₁, h1₁, heq]
         · rw [List.getD_set_self (by simp only [List.length_set] at hlen₁; omega), hnext]
         · rw [hnext]
           exact (tableStart_le_length a _).trans hwB
@@ -380,19 +355,12 @@ private theorem reaches_tableCode {c i F : ℕ} (hP : P.CodeAt c (tableCode v c 
       exact getElem?_encStructure_tableStart_length_add a q
     refine ⟨regs.set 2 0, ?_, by simp, h0', fun h => absurd h hok, hB₀⟩
     simp only [hok, ↓reduceIte]
-    refine Reaches.assign h₀ hB ?_
-    refine Reaches.lt h₁ hB₀ ?_
-    simp only [eval_const, eval_reg, eval_lenExpr h0', h2']
+    cp_step
     by_cases hL0 : 0 < a.1 ^ arityAt v i
-    · simp only [hL0, ↓reduceIte]
-      refine Reaches.read h₂ hB₀ ?_
-      simp only [eval_add, eval_mul, eval_const, eval_reg, h1', h2', hend, readLabel]
-      exact Reaches.refl _
-    · simp only [hL0, ↓reduceIte]
-      refine Reaches.read h₃ hB₀ ?_
-      simp only [eval_add, eval_mul, eval_const, eval_reg, eval_lenExpr h0', h1',
-        show a.1 ^ arityAt v i = 0 by omega, hend, readLabel]
-      exact Reaches.refl _
+    · cp_step [eval_lenExpr h0', h2', hL0]
+      cp_step [h1', h2', hend]
+    · cp_step [eval_lenExpr h0', h2', hL0]
+      cp_step [eval_lenExpr h0', h1', show a.1 ^ arityAt v i = 0 by omega, hend]
 
 /-- **Checking the tables**, from the table at position `m` on. -/
 private theorem reaches_tables {b F : ℕ}

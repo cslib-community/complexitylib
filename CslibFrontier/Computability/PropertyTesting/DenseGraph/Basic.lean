@@ -278,13 +278,6 @@ end Far
 def queryAdj {n : ℕ} (u v : Fin n) : ProbOracleComp (pairSpec (Fin n)) Bool :=
   ProbOracleComp.query (u, v)
 
-/-- A uniform coin toss of a tester is distributed as the corresponding `ProbComp`. -/
-theorem evalWith_sample {n : ℕ} (G : SimpleGraph (Fin n)) {α : Type} (p : ProbComp α) :
-    OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle G))
-      (ProbOracleComp.sample (spec := pairSpec (Fin n)) p) = ProbComp.eval p := by
-  rw [ProbOracleComp.sample_eq_liftLeft, OracleComp.evalWith_sumHandler_liftLeft]
-  rfl
-
 /-- The adjacency oracle answers a pair query with the adjacency bit. -/
 theorem evalWith_queryAdj {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (u v : Fin n) :
     OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle (adjOracle G))

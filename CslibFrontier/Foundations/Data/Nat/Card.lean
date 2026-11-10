@@ -23,7 +23,7 @@ The elements of `β ⊕ γ` satisfying a predicate are those of `β` and those o
 * `Nat.card_subtype_eq_add_of_equiv_sum`: counting a subtype along a decomposition into a sum.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

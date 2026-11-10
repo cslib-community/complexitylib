@@ -26,6 +26,7 @@ import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.StatisticalDistance.ClosedForm
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.Nat.Asymptotics
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
 
@@ -1163,12 +1164,7 @@ private theorem dist_coreLHLDist_unifCoreDist_le {k imgLen_k m1 m2 c2 : ℕ}
   have hmid_eq : midCore =
       (seededHash seed1 (side.map f) hash1).bind fun p1 => unif2.map (p1, ·) := by
     simp only [pmf_norm, midCore, stepF, seededHash]
-    have hinner (a : BitString k) :
-        (unif2.bind fun x => seed1.map fun h1 => ((h1, hash1 h1 (f a)), x)) =
-          seed1.bind fun h1 => unif2.map fun x => ((h1, hash1 h1 (f a)), x) :=
-      PMF.bind_comm unif2 seed1 (fun x h1 => PMF.pure ((h1, hash1 h1 (f a)), x))
-    simp_rw [hinner]
-    exact PMF.bind_comm side seed1 _
+    pmf_swap
   have hunif_eq : unifCoreDist k imgLen_k m1 m2 c2 =
       (seed1.bind fun h1 => (PMF.uniformOfFintype (BitString m1)).map (h1, ·)).bind
         fun p1 => unif2.map (p1, ·) := by
@@ -1265,11 +1261,7 @@ private theorem bind_three_comm_fourth_bind {α₁ α₂ α₃ α₄ β : Type*}
     (F : α₁ → α₂ → α₃ → α₄ → PMF β) :
     (p₁.bind fun a₁ => p₂.bind fun a₂ => p₃.bind fun a₃ => p₄.bind fun a₄ => F a₁ a₂ a₃ a₄) =
     (p₄.bind fun a₄ => p₁.bind fun a₁ => p₂.bind fun a₂ => p₃.bind fun a₃ => F a₁ a₂ a₃ a₄) := by
-  rw [PMF.bind_comm p₄ p₁]
-  congr 1; funext a₁
-  rw [PMF.bind_comm p₄ p₂]
-  congr 1; funext a₂
-  exact PMF.bind_comm p₃ p₄ (F a₁ a₂)
+  pmf_swap
 
 private theorem bind_four_comm_fifth_bind {α₁ α₂ α₃ α₄ α₅ β : Type*}
     (p₁ : PMF α₁) (p₂ : PMF α₂) (p₃ : PMF α₃) (p₄ : PMF α₄) (p₅ : PMF α₅)
@@ -1278,9 +1270,7 @@ private theorem bind_four_comm_fifth_bind {α₁ α₂ α₃ α₄ α₅ β : Ty
       p₅.bind fun a₅ => F a₁ a₂ a₃ a₄ a₅) =
     (p₅.bind fun a₅ => p₁.bind fun a₁ => p₂.bind fun a₂ => p₃.bind fun a₃ =>
       p₄.bind fun a₄ => F a₁ a₂ a₃ a₄ a₅) := by
-  have h (a₁ : α₁) := bind_three_comm_fourth_bind p₂ p₃ p₄ p₅ (F a₁)
-  simp_rw [h]
-  exact PMF.bind_comm p₁ p₅ _
+  pmf_swap
 
 private theorem unifCoreDist_bind_pad_append (k imgLen_k m1 m2 c2 padLen : ℕ) :
     ((unifCoreDist k imgLen_k m1 m2 c2).bind fun c =>
@@ -1900,9 +1890,8 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
           (PMF.uniformOfFintype (BitString k)).map fun query =>
             evalBit rows x.val query (x.val ⬝ᵥ query) := by
     dsimp only [p_succ]
-    rw [PMF.bind_uniformOfFintype_update idx, PMF.bind_comm]
-    congr 1; funext rows; simp only [PMF.map, Function.comp_def]; rw [PMF.bind_comm]
-    congr 1; funext x; congr 1; funext query
+    rw [PMF.bind_uniformOfFintype_update idx]
+    pmf_swap with rows x query
     simp only [evalBit, wordChallenge, h1_upd, h2_upd, Function.update_self]
   have hp_curr : p_curr =
       (PMF.uniformOfFintype (Fin c2 → BitString k)).bind fun rows =>
@@ -1910,9 +1899,8 @@ private theorem fiber_step_diff_le {k imgLen_k : ℕ}
           (PMF.uniformOfFintype (BitString k)).bind fun query =>
             (PMF.uniformOfFintype Bool).map (evalBit rows x.val query) := by
     dsimp only [p_curr]
-    rw [PMF.bind_uniformOfFintype_update idx, PMF.bind_comm]
-    congr 1; funext rows; rw [PMF.bind_comm]
-    congr 1; funext x; congr 1; funext query
+    rw [PMF.bind_uniformOfFintype_update idx]
+    pmf_swap with rows x query
     simp only [evalBit, wordChallenge, h1_upd, h2_upd]
   have hpred_eq (r_bit : Bool) (rows : Fin c2 → BitString k) (x : BitString k) :
       (fun query => if evalBit rows x query r_bit then r_bit else !r_bit) =
@@ -2014,16 +2002,7 @@ private theorem bind_two_comm_two {α₁ α₂ β₁ β₂ γ : Type*}
       F a₁ a₂ b₁ b₂) =
     (pb₁.bind fun b₁ => pb₂.bind fun b₂ => pa₁.bind fun a₁ => pa₂.bind fun a₂ =>
       F a₁ a₂ b₁ b₂) := by
-  have h1 (a₁ : α₁) :
-      (pa₂.bind fun a₂ => pb₁.bind fun b₁ => pb₂.bind fun b₂ => F a₁ a₂ b₁ b₂) =
-      pb₁.bind fun b₁ => pb₂.bind fun b₂ => pa₂.bind fun a₂ => F a₁ a₂ b₁ b₂ := by
-    rw [PMF.bind_comm pa₂ pb₁]
-    congr 1; funext b₁
-    exact PMF.bind_comm pa₂ pb₂ (fun a₂ b₂ => F a₁ a₂ b₁ b₂)
-  simp_rw [h1]
-  rw [PMF.bind_comm pa₁ pb₁]
-  congr 1; funext b₁
-  exact PMF.bind_comm pa₁ pb₂ (fun a₁ b₂ => pa₂.bind fun a₂ => F a₁ a₂ b₁ b₂)
+  pmf_swap
 
 private theorem le_two_mul_sum_uniformOfFintype_bool (G : Bool → ℝ) (hG : ∀ p, 0 ≤ G p)
     (pol : Bool) :
@@ -2509,16 +2488,7 @@ private theorem bind_comm_five_inner_map {α₀ α₁ α₂ α₃ α₄ α₅ β
       p₁.bind fun a₁ => p₂.bind fun a₂ => p₃.bind fun a₃ =>
         p₄.bind fun a₄ => p₅.map fun a₅ => H a₁ a₂ a₃ a₄ a₅ b := by
   simp only [pmf_norm, PMF.map]
-  have hinner (a₀ : α₀) :
-      (p₁.bind fun a₁ => p₂.bind fun a₂ => p₃.bind fun a₃ => p₄.bind fun a₄ =>
-        p₅.bind fun a₅ => (q a₀).bind fun a₆ => PMF.pure (H a₁ a₂ a₃ a₄ a₅ (v a₀ a₆))) =
-      (q a₀).bind fun a₆ => p₁.bind fun a₁ => p₂.bind fun a₂ => p₃.bind fun a₃ =>
-        p₄.bind fun a₄ => p₅.bind fun a₅ => PMF.pure (H a₁ a₂ a₃ a₄ a₅ (v a₀ a₆)) := by
-    have h (a₁ : α₁) := bind_four_comm_fifth_bind p₂ p₃ p₄ p₅ (q a₀)
-      fun a₂ a₃ a₄ a₅ a₆ => PMF.pure (H a₁ a₂ a₃ a₄ a₅ (v a₀ a₆))
-    simp_rw [h]
-    exact PMF.bind_comm p₁ (q a₀) _
-  simp_rw [hinner]
+  pmf_swap
 
 /-- Averaging `fiberHybridAcceptDist` over $x_0 \leftarrow S_{k, r}$ collapses the fiber resampling
 and replaces the row-indexed matrix by a flat `BitString (h2Rows * k)` seed. -/
@@ -2665,17 +2635,8 @@ private theorem bind_top_four_eq {α₀ α₁ α₂ α₃ α₄ β : Type*}
       v_seed a₀ a₂ a₃ a₁).bind (fun seed => p₄.map fun a₄ => F₂ seed a₄) := by
   subst hu₁; subst hu₂; subst hz₀
   simp only [pmf_norm]
-  congr 1; funext a₀
-  rw [PMF.bind_comm p₁ p₂]
-  congr 1; funext a₂
-  have hinner (a₁ : α₁) :
-      (p₄.bind fun a₄ => p₃.map fun a₃ => F₁ a₀ (v₁ a₁) (v₂ a₂) [] a₄ a₃) =
-      p₃.bind fun a₃ => p₄.map fun a₄ => F₁ a₀ (v₁ a₁) (v₂ a₂) [] a₄ a₃ :=
-    PMF.bind_comm p₄ p₃ fun a₄ a₃ => PMF.pure _
-  simp_rw [hinner]
-  rw [PMF.bind_comm p₁ p₃]
-  congr 1; funext a₃; congr 1; funext a₁; congr 1; funext a₄
-  exact hF a₀ a₁ a₂ a₃ a₄
+  pmf_swap
+  exact congrArg PMF.pure (hF _ _ _ _ _)
 
 /-- At hybrid step `j = mActual d γ k n`, averaging `fiberHybridAcceptDist` over $S_{k, r(k)}$
 equals the real conditional generator output distribution on `condSeedSet` fed into the twisted

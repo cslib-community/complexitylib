@@ -35,7 +35,7 @@ have `2 s > (7/2 - ε) n` (`Cslib.Circuits.Frontier.eventually_seven_div_two_lt_
   at most three.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

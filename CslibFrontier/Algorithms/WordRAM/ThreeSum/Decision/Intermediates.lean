@@ -26,7 +26,7 @@ all prefixes at every wider admitted width, including all concrete callee scratc
 These native representation bounds are original and reuse the generic width-prefix theorem.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Decision
 

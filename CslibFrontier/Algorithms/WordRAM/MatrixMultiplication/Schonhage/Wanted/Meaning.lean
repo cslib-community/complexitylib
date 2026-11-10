@@ -23,7 +23,7 @@ public import CslibFrontier.Foundations.Data.Finset.OrderedFilter
   exactly the original thin-product query, without a caller-supplied output string.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

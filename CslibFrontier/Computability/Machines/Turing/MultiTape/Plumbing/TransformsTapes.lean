@@ -26,7 +26,7 @@ which Christian Reitwiessner's branch `crei/tidy-universal` states and proves it
 * `Turing.MultiTapeTM.transformsTapes_iff_runFrom`: a tape transformation, read on runs.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

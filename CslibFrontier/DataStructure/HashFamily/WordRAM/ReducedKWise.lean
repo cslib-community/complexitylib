@@ -572,31 +572,20 @@ theorem clmulTabLoop_exec {w tBase t : ℕ}
       change idx >>> p ≤ (idx + 1) >>> p
       rw [Nat.shiftRight_eq_div_pow, Nat.shiftRight_eq_div_pow]
       exact Nat.div_le_div_right (Nat.le_succ idx)
-    have hbody : WP.Exact w clmulTabBody x fun z n => n = 29 ∧
-        ∃ y, Exec w clmulTabLoop z y (31 * rem + 2) ∧ y.regs 0 = x.regs 0 ∧
-          (∀ wIdx < reducedTableWords t w, y.mem (tBase + wIdx) < 2 ^ (2 ^ p * (2 * c))) ∧
-          (∀ i < 2 ^ (2 * c),
-            getLimb (2 * c) (y.mem (tBase + (i >>> p))) (i &&& (2 ^ p - 1)) =
-              clmul (i >>> c) (i &&& (2 ^ c - 1))) ∧
-          ∀ a, (a < tBase + wIdx ∨ tBase + reducedTableWords t w ≤ a) →
-            y.mem a = x.mem a := by
-      unfold clmulTabBody
-      wram_exec [h1, h2, h4, h5, h6, h7, h8, h9, h18, ← hu, ← hv, ← hprevIdx, ← hwIdx,
-        ← hsubIdx, ← hsh, ← hprevWIdx, ← hprevSub, ← hprevSh, ← holdWord, ← hmaskedWord,
-        ← hnewWord, ← hprevWord, hprevWord_limb, clmul_eq_bit_mul_xor]
-      exact (ih (idx + 1) _ (by omega) rfl (by wram_simp [h1]) (by wram_simp) (by wram_simp [h3])
-        (by wram_simp [h4]) (by wram_simp [h5]) (by wram_simp [h6]) (by wram_simp [h7])
-        (by wram_simp [h8]) (by wram_simp [h9]) (by wram_simp [h18])
-        (by simp only [Data.set_mem, Data.write_mem, Function.update_idem]; exact hword')
-        (by simp only [Data.set_mem, Data.write_mem, Function.update_idem]; exact hentry')).elim
-        fun y ⟨hrec, hy0, hyword, hyentry, hyout⟩ =>
-        ⟨y, hrec, hy0.trans (by wram_simp), hyword, hyentry, fun a ha => by
-          rw [hyout a (by omega)]
-          wram_simp⟩
-    obtain ⟨z, n, hb, rfl, y, hrec, hy⟩ := hbody
-    refine ⟨y, ?_, hy⟩
-    simpa only [clmulTabLoop, show 29 + (31 * rem + 2) + 2 = 31 * (rem + 1) + 2 by omega] using
-      Exec.loop_iter hc_hold hb hrec
+    refine WP.Exact.exists_exec (WP.Exact.loop_iter hc_hold ?_)
+    unfold clmulTabBody
+    wram_exec [h1, h2, h4, h5, h6, h7, h8, h9, h18, ← hu, ← hv, ← hprevIdx, ← hwIdx,
+      ← hsubIdx, ← hsh, ← hprevWIdx, ← hprevSub, ← hprevSh, ← holdWord, ← hmaskedWord,
+      ← hnewWord, ← hprevWord, hprevWord_limb, clmul_eq_bit_mul_xor]
+    wram_call (ih (idx + 1) _ (by omega) rfl (by wram_simp [h1]) (by wram_simp) (by wram_simp [h3])
+      (by wram_simp [h4]) (by wram_simp [h5]) (by wram_simp [h6]) (by wram_simp [h7])
+      (by wram_simp [h8]) (by wram_simp [h9]) (by wram_simp [h18])
+      (by simp only [Data.set_mem, Data.write_mem, Function.update_idem]; exact hword')
+      (by simp only [Data.set_mem, Data.write_mem, Function.update_idem]; exact hentry'))
+      with y ⟨hy0, hyword, hyentry, hyout⟩
+    exact ⟨by omega, hy0.trans (by wram_simp), hyword, hyentry, fun a ha => by
+        rw [hyout a (by omega)]
+        wram_simp⟩
 
 /-- **Deterministic execution of `initTableCode w w₀ b b' k`**: establishes `TableRep`, preserves
 `reg 0 = base`, and modifies only `[tabBase base w₀ b b' k, base + space w w₀ b b' k)`. -/

@@ -36,8 +36,8 @@ on inputs long enough to pay for it.
   decoded word length plus one with the full input length in quadratic time and linear space.
 
 The binary arithmetic is polynomial in its bit length, hence linear in its numeric input by
-`ComputableInPolyTime.nat_inO` and `ComputableInPolyTime.natPair_inO`. The quadratic padding
-bound uses `ComputableInO.natToUnary`.
+`ComputableInPolyTime.nat_inO` and `ComputableInPolyTime.natPair_inO`. The padding length is
+written in unary by `ComputableInO.natToUnary`.
 Rounding the length permits repeated unary doubling, whose cost is linear in the output
 length times the number of doublings.
 -/

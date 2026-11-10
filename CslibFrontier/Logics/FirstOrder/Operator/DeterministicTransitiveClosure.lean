@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Logics.FirstOrder.Operator.Quantifiers
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure
 import Cslib.Foundations.Data.Fin.Tuple
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # First-order logic with deterministic tuple transitive closure
@@ -182,9 +183,8 @@ theorem realize_reductFormula (I : Interpretation TC.shape M) {k : ℕ}
     (xs ys : Fin k → M) :
     (reductFormula φ).Realize I ρ (Sum.elim v (TC.pair xs ys)) ↔
       deterministicReduct (fun us ws => φ.Realize I ρ (Sum.elim v (TC.pair us ws))) xs ys := by
-  simp only [reductFormula, Operator.Formula.realize_conj, Operator.Formula.realize_neg,
-    Operator.Formula.realize_exs, Operator.Formula.realize_relabel, Operator.Formula.realize_ofFO,
-    comp_toCandidate, realize_candidateEq, deterministicReduct, not_exists, not_and, not_not]
+  fo_simp [reductFormula, comp_toCandidate, realize_candidateEq, deterministicReduct, not_exists,
+    not_and]
 
 /-- Replace each closure body by its deterministic reduct, translating FO(DTC) to FO(TC). -/
 def toTC : {Γ : List ℕ} → {α : Type w} →

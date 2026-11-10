@@ -28,7 +28,7 @@ weights, as produced by the existing native signed-residue kernel.
   the corresponding edges of the existing finite lopsided instance.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ExactTriangle.MatrixSpec
 

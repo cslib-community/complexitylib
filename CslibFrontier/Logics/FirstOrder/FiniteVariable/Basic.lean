@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Logics.FirstOrder.QuantifierRank
 public import Mathlib.Data.Fintype.Basic
 public import Mathlib.ModelTheory.Semantics
+import CslibFrontier.Foundations.Data.List.FoldrForall
 
 /-!
 # Finite-variable first-order logic
@@ -173,16 +174,18 @@ variable {M : Type w} [L.Structure M]
   change (φ.not.imp ψ).Realize a ↔ _
   simp only [realize_imp, realize_not, or_iff_not_imp_left]
 
-private theorem realize_foldr_inf (l : List (Formula L k)) (a : Fin k → M) :
-    (l.foldr (· ⊓ ·) ⊤).Realize a ↔ ∀ φ ∈ l, φ.Realize a := by
-  induction l with
-  | nil => simp only [List.foldr_nil, realize_top, List.not_mem_nil, false_imp_iff, imp_true_iff]
-  | cons φ l ih => simp only [List.foldr_cons, realize_inf, ih, List.forall_mem_cons]
+/-- A property of formulas that holds of `⊤` and distributes over `⊓` holds of a finite
+conjunction exactly when it holds of every conjunct. -/
+private theorem apply_iInf_iff {β : Type*} [Finite β] {p : Formula L k → Prop}
+    (hinf : ∀ φ ψ, p (φ ⊓ ψ) ↔ p φ ∧ p ψ) (htop : p ⊤) (f : β → Formula L k) :
+    p (iInf f) ↔ ∀ b, p (f b) := by
+  let := Fintype.ofFinite β
+  exact List.apply_foldr_map_univ_toList_iff hinf htop f
 
 @[simp] theorem realize_iInf {β : Type*} [Finite β] (f : β → Formula L k) (a : Fin k → M) :
-    (iInf f).Realize a ↔ ∀ b, (f b).Realize a := by
-  simp only [iInf, realize_foldr_inf, List.mem_map, Finset.mem_toList, Finset.mem_univ, true_and,
-    forall_exists_index, forall_apply_eq_imp_iff]
+    (iInf f).Realize a ↔ ∀ b, (f b).Realize a :=
+  apply_iInf_iff (p := fun φ => φ.Realize a) (fun φ ψ => realize_inf φ ψ a)
+    ((realize_top a).2 trivial) f
 
 @[simp] theorem realize_iSup {β : Type*} [Finite β] (f : β → Formula L k) (a : Fin k → M) :
     (iSup f).Realize a ↔ ∃ b, (f b).Realize a := by
@@ -241,20 +244,12 @@ def quantifierRank : Formula L k → ℕ
   change (φ.not.imp ψ).quantifierRank = _
   rw [quantifierRank_imp, quantifierRank_not]
 
-private theorem quantifierRank_foldr_inf_le {l : List (Formula L k)} {m : ℕ}
-    (h : ∀ φ ∈ l, φ.quantifierRank ≤ m) : (l.foldr (· ⊓ ·) ⊤).quantifierRank ≤ m := by
-  induction l with
-  | nil => simp only [List.foldr_nil, quantifierRank_top, Nat.zero_le]
-  | cons φ l ih =>
-    rw [List.foldr_cons, quantifierRank_inf, max_le_iff]
-    exact ⟨h φ List.mem_cons_self, ih fun ψ hψ => h ψ (List.mem_cons_of_mem _ hψ)⟩
-
 /-- A finite conjunction has quantifier rank at most `m` when each conjunct does. -/
 theorem quantifierRank_iInf_le {β : Type*} [Finite β] {f : β → Formula L k} {m : ℕ}
-    (h : ∀ b, (f b).quantifierRank ≤ m) : (iInf f).quantifierRank ≤ m := by
-  refine quantifierRank_foldr_inf_le fun φ hφ => ?_
-  obtain ⟨b, -, rfl⟩ := List.mem_map.1 hφ
-  exact h b
+    (h : ∀ b, (f b).quantifierRank ≤ m) : (iInf f).quantifierRank ≤ m :=
+  (apply_iInf_iff (p := fun φ => φ.quantifierRank ≤ m)
+    (fun φ ψ => by rw [quantifierRank_inf, max_le_iff])
+    (quantifierRank_top.trans_le (Nat.zero_le m)) f).2 h
 
 /-- A finite disjunction has quantifier rank at most `m` when each disjunct does. -/
 theorem quantifierRank_iSup_le {β : Type*} [Finite β] {f : β → Formula L k} {m : ℕ}
@@ -313,20 +308,12 @@ def freeVars : Formula L k → Finset (Fin k)
   change (φ.not.imp ψ).freeVars = _
   rw [freeVars_imp, freeVars_not]
 
-private theorem freeVars_foldr_inf_subset {l : List (Formula L k)} {S : Set (Fin k)}
-    (h : ∀ φ ∈ l, ↑φ.freeVars ⊆ S) : ↑(l.foldr (· ⊓ ·) ⊤).freeVars ⊆ S := by
-  induction l with
-  | nil => simp only [List.foldr_nil, freeVars_top, Finset.coe_empty, Set.empty_subset]
-  | cons φ l ih =>
-    rw [List.foldr_cons, freeVars_inf, Finset.coe_union, Set.union_subset_iff]
-    exact ⟨h φ List.mem_cons_self, ih fun ψ hψ => h ψ (List.mem_cons_of_mem _ hψ)⟩
-
 /-- The free variables of a finite conjunction lie in `S` when those of each conjunct do. -/
 theorem freeVars_iInf_subset {β : Type*} [Finite β] {f : β → Formula L k} {S : Set (Fin k)}
-    (h : ∀ b, ↑(f b).freeVars ⊆ S) : ↑(iInf f).freeVars ⊆ S := by
-  refine freeVars_foldr_inf_subset fun φ hφ => ?_
-  obtain ⟨b, -, rfl⟩ := List.mem_map.1 hφ
-  exact h b
+    (h : ∀ b, ↑(f b).freeVars ⊆ S) : ↑(iInf f).freeVars ⊆ S :=
+  (apply_iInf_iff (p := fun φ => ↑φ.freeVars ⊆ S)
+    (fun φ ψ => by rw [freeVars_inf, Finset.coe_union, Set.union_subset_iff])
+    (by rw [freeVars_top, Finset.coe_empty]; exact Set.empty_subset S) f).2 h
 
 /-- The free variables of a finite disjunction lie in `S` when those of each disjunct do. -/
 theorem freeVars_iSup_subset {β : Type*} [Finite β] {f : β → Formula L k} {S : Set (Fin k)}

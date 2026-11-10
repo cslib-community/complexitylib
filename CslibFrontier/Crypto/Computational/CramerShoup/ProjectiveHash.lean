@@ -500,13 +500,13 @@ theorem uniform_projHash2_fiber_any_le (d : F.Desc) [DecidableEq (F.Carrier d)]
   let μ := PMF.uniformOfFintype (ZMod (F.order d))
   let hit (q : ZMod (F.order d) × ZMod (F.order d) × ZMod (F.order d) × F.Carrier d)
       (τ₂ : ZMod (F.order d)) : Bool :=
-    decide (projHash2 F d (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂) (δ₂ - α * τ₂) τ₂ q.2.2.1
-      (q.1 • F.generator d) (q.2.1 • F.generator d) = q.2.2.2)
+    let (β', γ', ρ', z') := q
+    decide (projHash2 F d (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂) (δ₂ - α * τ₂) τ₂ ρ'
+      (β' • F.generator d) (γ' • F.generator d) = z')
   induction queries with
   | nil =>
     simp
   | cons q qs ih =>
-    have hq_head : q.2.1 ≠ α * q.1 ∧ q.2.2.1 ≠ ρ := hq q List.mem_cons_self
     have hq_tail : ∀ q' ∈ qs,
         let (β', γ', ρ', _) := q'
         γ' ≠ α * β' ∧ ρ' ≠ ρ :=
@@ -517,12 +517,14 @@ theorem uniform_projHash2_fiber_any_le (d : F.Desc) [DecidableEq (F.Carrier d)]
       simp only [List.any_cons, PMF.map_apply, ← tsum_add]
       refine tsum_le_tsum fun τ₂ => ?_
       cases hit q τ₂ <;> cases qs.any (fun q' => hit q' τ₂) <;> simp
-    have hsingle : (μ.map (hit q)) true = (F.order d : ℝ≥0∞)⁻¹ := by
+    obtain ⟨β', γ', ρ', z'⟩ := q
+    have hq_head : γ' ≠ α * β' ∧ ρ' ≠ ρ := hq _ List.mem_cons_self
+    have hsingle : (μ.map (hit (β', γ', ρ', z'))) true = (F.order d : ℝ≥0∞)⁻¹ := by
       have heq :
-          (μ.map (hit q)) true =
+          (μ.map (hit (β', γ', ρ', z'))) true =
             (μ.map (fun τ₂ =>
-              projHash2 F d (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂) (δ₂ - α * τ₂) τ₂ q.2.2.1
-                (q.1 • F.generator d) (q.2.1 • F.generator d))) q.2.2.2 := by
+              projHash2 F d (δ₁ - α * (ξ - ρ * τ₂)) (ξ - ρ * τ₂) (δ₂ - α * τ₂) τ₂ ρ'
+                (β' • F.generator d) (γ' • F.generator d))) z' := by
         rw [PMF.map_apply, PMF.map_apply]
         refine tsum_congr fun τ₂ => ?_
         dsimp only [hit]
@@ -532,7 +534,7 @@ theorem uniform_projHash2_fiber_any_le (d : F.Desc) [DecidableEq (F.Carrier d)]
         · exfalso; exact h₁ (decide_eq_true h₂.symm).symm
         · rfl
       rw [heq]
-      exact uniform_projHash2_fiber_apply F d hq_head.1 hq_head.2 δ₁ δ₂ ξ q.2.2.2
+      exact uniform_projHash2_fiber_apply F d hq_head.1 hq_head.2 δ₁ δ₂ ξ z'
     refine hor.trans ?_
     rw [hsingle, List.length_cons, Nat.cast_add, Nat.cast_one, ENNReal.add_div, one_div, add_comm]
     exact add_le_add_left (ih hq_tail) _
@@ -556,34 +558,36 @@ def projHash2Equiv (d : F.Desc) {α β γ β' γ' ρ ρ' : ZMod (F.order d)}
     let τ₁ := ξ - ρ * τ₂
     ((δ₁ - α * τ₁, τ₁), (δ₂ - α * τ₂, τ₂))
   left_inv p := by
+    obtain ⟨⟨σ₁, τ₁⟩, σ₂, τ₂⟩ := p
     have hne : γ - α * β ≠ 0 := sub_ne_zero.mpr hγ
     have hne' : γ' - α * β' ≠ 0 := sub_ne_zero.mpr hγ'
     have hneρ : ρ' - ρ ≠ 0 := sub_ne_zero.mpr hρ
     have hξ :
         (γ - α * β)⁻¹ *
-          (β * (p.1.1 + ρ * p.2.1) + γ * (p.1.2 + ρ * p.2.2) -
-            β * (p.1.1 + α * p.1.2 + ρ * (p.2.1 + α * p.2.2))) =
-        p.1.2 + ρ * p.2.2 := by
+          (β * (σ₁ + ρ * σ₂) + γ * (τ₁ + ρ * τ₂) -
+            β * (σ₁ + α * τ₁ + ρ * (σ₂ + α * τ₂))) =
+        τ₁ + ρ * τ₂ := by
       have hsub :
-          β * (p.1.1 + ρ * p.2.1) + γ * (p.1.2 + ρ * p.2.2) -
-            β * (p.1.1 + α * p.1.2 + ρ * (p.2.1 + α * p.2.2)) =
-          (γ - α * β) * (p.1.2 + ρ * p.2.2) := by ring
+          β * (σ₁ + ρ * σ₂) + γ * (τ₁ + ρ * τ₂) -
+            β * (σ₁ + α * τ₁ + ρ * (σ₂ + α * τ₂)) =
+          (γ - α * β) * (τ₁ + ρ * τ₂) := by ring
       rw [hsub, inv_mul_cancel_left₀ hne]
     have hξ' :
         (γ' - α * β')⁻¹ *
-          (β' * (p.1.1 + ρ' * p.2.1) + γ' * (p.1.2 + ρ' * p.2.2) -
-            β' * (p.1.1 + α * p.1.2 + ρ' * (p.2.1 + α * p.2.2))) =
-        p.1.2 + ρ' * p.2.2 := by
+          (β' * (σ₁ + ρ' * σ₂) + γ' * (τ₁ + ρ' * τ₂) -
+            β' * (σ₁ + α * τ₁ + ρ' * (σ₂ + α * τ₂))) =
+        τ₁ + ρ' * τ₂ := by
       have hsub :
-          β' * (p.1.1 + ρ' * p.2.1) + γ' * (p.1.2 + ρ' * p.2.2) -
-            β' * (p.1.1 + α * p.1.2 + ρ' * (p.2.1 + α * p.2.2)) =
-          (γ' - α * β') * (p.1.2 + ρ' * p.2.2) := by ring
+          β' * (σ₁ + ρ' * σ₂) + γ' * (τ₁ + ρ' * τ₂) -
+            β' * (σ₁ + α * τ₁ + ρ' * (σ₂ + α * τ₂)) =
+          (γ' - α * β') * (τ₁ + ρ' * τ₂) := by ring
       rw [hsub, inv_mul_cancel_left₀ hne']
-    have hτ₂ : (ρ' - ρ)⁻¹ * ((p.1.2 + ρ' * p.2.2) - (p.1.2 + ρ * p.2.2)) = p.2.2 := by
-      have hsub : (p.1.2 + ρ' * p.2.2) - (p.1.2 + ρ * p.2.2) = (ρ' - ρ) * p.2.2 := by ring
+    have hτ₂ : (ρ' - ρ)⁻¹ * ((τ₁ + ρ' * τ₂) - (τ₁ + ρ * τ₂)) = τ₂ := by
+      have hsub : (τ₁ + ρ' * τ₂) - (τ₁ + ρ * τ₂) = (ρ' - ρ) * τ₂ := by ring
       rw [hsub, inv_mul_cancel_left₀ hneρ]
     ext <;> dsimp only <;> rw [hξ, hξ', hτ₂] <;> ring
   right_inv q := by
+    obtain ⟨⟨δ₁, δ₂⟩, z, z'⟩ := q
     have hne : γ - α * β ≠ 0 := sub_ne_zero.mpr hγ
     have hne' : γ' - α * β' ≠ 0 := sub_ne_zero.mpr hγ'
     have hneρ : ρ' - ρ ≠ 0 := sub_ne_zero.mpr hρ
@@ -591,20 +595,20 @@ def projHash2Equiv (d : F.Desc) {α β γ β' γ' ρ ρ' : ZMod (F.order d)}
     · dsimp only; ring
     · dsimp only; ring
     · dsimp only
-      set ξ := (γ - α * β)⁻¹ * (q.2.1 - β * (q.1.1 + ρ * q.1.2))
-      set ξ' := (γ' - α * β')⁻¹ * (q.2.2 - β' * (q.1.1 + ρ' * q.1.2))
+      set ξ := (γ - α * β)⁻¹ * (z - β * (δ₁ + ρ * δ₂))
+      set ξ' := (γ' - α * β')⁻¹ * (z' - β' * (δ₁ + ρ' * δ₂))
       set τ₂ := (ρ' - ρ)⁻¹ * (ξ' - ξ)
       have hlin :
-          β * (q.1.1 - α * (ξ - ρ * τ₂) + ρ * (q.1.2 - α * τ₂)) +
+          β * (δ₁ - α * (ξ - ρ * τ₂) + ρ * (δ₂ - α * τ₂)) +
             γ * (ξ - ρ * τ₂ + ρ * τ₂) =
-          β * (q.1.1 + ρ * q.1.2) + (γ - α * β) * ξ := by ring
+          β * (δ₁ + ρ * δ₂) + (γ - α * β) * ξ := by ring
       rw [hlin]
       dsimp only [ξ]
       rw [mul_inv_cancel_left₀ hne]
       ring
     · dsimp only
-      set ξ := (γ - α * β)⁻¹ * (q.2.1 - β * (q.1.1 + ρ * q.1.2))
-      set ξ' := (γ' - α * β')⁻¹ * (q.2.2 - β' * (q.1.1 + ρ' * q.1.2))
+      set ξ := (γ - α * β)⁻¹ * (z - β * (δ₁ + ρ * δ₂))
+      set ξ' := (γ' - α * β')⁻¹ * (z' - β' * (δ₁ + ρ' * δ₂))
       have hτ :
           ξ - ρ * ((ρ' - ρ)⁻¹ * (ξ' - ξ)) + ρ' * ((ρ' - ρ)⁻¹ * (ξ' - ξ)) = ξ' := by
         have hlin :
@@ -613,10 +617,10 @@ def projHash2Equiv (d : F.Desc) {α β γ β' γ' ρ ρ' : ZMod (F.order d)}
         rw [hlin, mul_inv_cancel_left₀ hneρ]
         ring
       have hlin :
-          β' * (q.1.1 - α * (ξ - ρ * ((ρ' - ρ)⁻¹ * (ξ' - ξ))) +
-              ρ' * (q.1.2 - α * ((ρ' - ρ)⁻¹ * (ξ' - ξ)))) +
+          β' * (δ₁ - α * (ξ - ρ * ((ρ' - ρ)⁻¹ * (ξ' - ξ))) +
+              ρ' * (δ₂ - α * ((ρ' - ρ)⁻¹ * (ξ' - ξ)))) +
             γ' * (ξ - ρ * ((ρ' - ρ)⁻¹ * (ξ' - ξ)) + ρ' * ((ρ' - ρ)⁻¹ * (ξ' - ξ))) =
-          β' * (q.1.1 + ρ' * q.1.2) +
+          β' * (δ₁ + ρ' * δ₂) +
             (γ' - α * β') * (ξ - ρ * ((ρ' - ρ)⁻¹ * (ξ' - ξ)) + ρ' * ((ρ' - ρ)⁻¹ * (ξ' - ξ))) := by
         ring
       rw [hlin, hτ]
@@ -640,10 +644,11 @@ theorem projHash2_bijective_of_ne (d : F.Desc) {α β γ β' γ' ρ ρ' : ZMod (
             projHash2 F d σ₁ τ₁ σ₂ τ₂ ρ'
               (β' • F.generator d) (γ' • F.generator d)))) := by
   have hcomp :
-      (fun p : (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d)) =>
-        (projHash2Aux F d p.1.1 p.1.2 p.2.1 p.2.2 (α • F.generator d),
-          (projHash2 F d p.1.1 p.1.2 p.2.1 p.2.2 ρ (β • F.generator d) (γ • F.generator d),
-            projHash2 F d p.1.1 p.1.2 p.2.1 p.2.2 ρ'
+      (fun (((σ₁, τ₁), (σ₂, τ₂)) :
+          (ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d))) =>
+        (projHash2Aux F d σ₁ τ₁ σ₂ τ₂ (α • F.generator d),
+          (projHash2 F d σ₁ τ₁ σ₂ τ₂ ρ (β • F.generator d) (γ • F.generator d),
+            projHash2 F d σ₁ τ₁ σ₂ τ₂ ρ'
               (β' • F.generator d) (γ' • F.generator d)))) =
       (Prod.map
         (Prod.map (fun x : ZMod (F.order d) => x • F.generator d)

@@ -27,7 +27,7 @@ reservations paid for by the strictly decreasing work measure.
 These native composition and invariant proofs are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

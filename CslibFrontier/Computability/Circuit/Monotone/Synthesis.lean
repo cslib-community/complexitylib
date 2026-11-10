@@ -23,7 +23,7 @@ disjunction each cost one gate, as for the De Morgan basis (`Cslib.Circuits.Synt
   `Cslib.Circuits.Synthesis.monotone_or`: the gates of the monotone basis.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Synthesis
 
