@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitSum.Encoding
+import CslibFrontier.Tactic.FirstOrder
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -109,10 +110,7 @@ private theorem realize_leafChecks (m h k : (language L).Term α)
     realize_nodeValue (m.relabel Sum.inl) (h.relabel Sum.inl)
       (fun r => (w r).relabel Sum.inl) (zero L) (.var (.inr ())) z (Sum.elim v u)
       (by simp) (by simpa only [Term.realize_relabel, Function.comp_def, Sum.elim_inl] using hspace)
-  simp only [leafChecks, Formula.realize_iAlls, Formula.realize_imp, Formula.realize_not,
-    Formula.realize_sup, Formula.realize_inf, realize_le, realize_bit,
-    hd, Term.realize_var, Term.realize_relabel, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr, realize_zero_val, realize_one_val, not_le]
+  fo_simp [leafChecks, hd, Function.comp_def, not_le]
   constructor
   · intro hc q hq
     rcases hc (fun _ => q) hq with ⟨hx, hn⟩ | ⟨hx, hn⟩
@@ -139,17 +137,12 @@ private theorem realize_nodeChecks (m h : (language L).Term α)
           (u 0).val (u 6).val (a 1).val ∧
         EncodesNode (m.realize v).val (h.realize v).val (fun r => ((w r).realize v).val)
           (u 2).val (u 1).val (a 2).val ∧ (a 0).val + (a 1).val = (a 2).val := by
-  simp only [nodeChecks, Formula.realize_iAlls, Formula.realize_imp, Formula.realize_inf,
-    Formula.realize_not, realize_addEq, realize_powerOfTwo, realize_le, Term.realize_var,
-    Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr, realize_one_val,
-    not_le, and_assoc]
+  fo_simp [nodeChecks, Function.comp_def, not_le, and_assoc]
   refine forall_congr' fun u => imp_congr_right fun hu => ?_
-  simp only [Formula.realize_iExs]
   refine exists_congr fun a => ?_
   simp (disch := (simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-      Sum.elim_inl, Sum.elim_inr]; lia)) only [Formula.realize_inf, realize_nodeValue,
-    realize_addEq, Term.realize_var, Term.realize_relabel, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr, and_assoc]
+      Sum.elim_inl, Sum.elim_inr]; lia)) only [realize_nodeValue, Term.realize_var,
+    Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr]
 
 omit [Fact (2 ≤ n)] in
 private theorem count_eq_of_checks (m h k x : Fin n) (w : Fin 8 → ℕ)
@@ -229,15 +222,13 @@ private theorem exists_parameters {n : ℕ} (hn : 257 ≤ n) :
 
 private theorem packedFormula_sound (v : Fin 2 → Fin n)
     (hf : (packedFormula L).Realize v) : (v 1).val = (v 0).val.bitIndices.length := by
-  simp only [packedFormula, Formula.realize_iExs, Formula.realize_inf, realize_highestBit,
-    realize_powerOfTwo, Formula.realize_not, realize_le, realize_scaleEq, Term.realize_var,
-    realize_max_val, Sum.elim_inr, not_le, and_assoc] at hf
+  fo_simp [packedFormula, not_le, and_assoc] at hf
   obtain ⟨u, hp, hmax, hk, hhk, hd, hkd, ho, hleaf, hstep, hroot⟩ := hf
   have hspace : 8 * (u (.inl 0)).val < n := by have := (u (.inl 4)).isLt; lia
   rw [realize_leafChecks _ _ _ _ _ _ hspace] at hleaf
   rw [realize_nodeChecks _ _ _ _ hspace] at hstep
   rw [realize_nodeValue _ _ _ _ _ _ _ (by rfl) hspace] at hroot
-  simp only [Term.realize_var, Sum.elim_inl, Sum.elim_inr, realize_zero_val] at hleaf hstep hroot
+  fo_simp at hleaf hstep hroot
   have ht := count_eq_of_checks (u (.inl 1)) (u (.inl 0)) (u (.inl 2)) (v 0)
     (fun r => (u (.inr r)).val) hk hleaf hstep (le_refl _) (by simp) hroot
   have hx : (v 0).val < 2 ^ (2 ^ (u (.inl 1)).val) := by
@@ -266,9 +257,7 @@ private theorem packedFormula_complete (v : Fin 2 → Fin n) (hn : 257 ≤ n)
   have hcount (j q : ℕ) (hj : j ≤ m) : BitString.sumTree (v 0).val.testBit j q < n :=
     lt_of_le_of_lt ((BitString.sumTree_le _ _ _).trans
       (Nat.pow_le_pow_right (by decide) hj)) hk
-  simp only [packedFormula, Formula.realize_iExs, Formula.realize_inf, realize_highestBit,
-    realize_powerOfTwo, Formula.realize_not, realize_le, realize_scaleEq, Term.realize_var,
-    realize_max_val, Sum.elim_inr, not_le, and_assoc]
+  fo_simp [packedFormula, not_le, and_assoc]
   refine ⟨u, hp, hmax, rfl, hhk, rfl, hkd, rfl, ?_, ?_, ?_⟩
   · rw [realize_leafChecks _ _ _ _ _ _ hspace]
     change ∀ q : Fin n, q.val < 2 ^ m →
@@ -315,8 +304,7 @@ private theorem packedFormula_complete (v : Fin 2 → Fin n) (hn : 257 ≤ n)
 private theorem realize_smallFormula (v : Fin 2 → Fin n) :
     (smallFormula L).Realize v ↔
       (v 0).val < 256 ∧ (v 1).val = (v 0).val.bitIndices.length := by
-  simp only [smallFormula, Formula.realize_iSup, Formula.realize_inf, realize_natEq,
-    Term.realize_var]
+  fo_simp [smallFormula]
   constructor
   · rintro ⟨a, ha, hy⟩
     exact ⟨ha ▸ a.isLt, by simpa only [ha] using hy⟩
