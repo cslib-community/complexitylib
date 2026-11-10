@@ -18,9 +18,13 @@ import CslibFrontier.Foundations.Data.BitString.Weight
 Views `word : List Bool` as its support subset `{i : Fin n | ofList n word i = true}` via
 `Cslib.BitString.ofList`, padding short lists with `false` and ignoring indices `≥ n`.
 
+Conversely, `Cslib.BitString.indicatorList` is the word of `n` bits that sets bit `i` exactly
+when `i ∈ S`; on words of length `n` the two conversions are inverse.
+
 ## Main definitions
 
 * `Cslib.BitString.supportOfList`: support subset `{i : Fin n | ofList n word i = true}`.
+* `Cslib.BitString.indicatorList`: the indicator word of a subset of `Fin n`.
 
 ## Main results
 
@@ -28,6 +32,11 @@ Views `word : List Bool` as its support subset `{i : Fin n | ofList n word i = t
   `Cslib.BitString.ofFn_decide_mem_supportOfList`,
   `Cslib.BitString.supportOfList_injective_of_length`,
   `Cslib.BitString.card_supportOfList_of_length`: membership, round-trips, injectivity, and card.
+* `Cslib.BitString.supportOfList_indicatorList`, `Cslib.BitString.indicatorList_supportOfList`,
+  `Cslib.BitString.indicatorList_injective`, `Cslib.BitString.count_true_indicatorList`: the same
+  facts for the indicator word.
+* `Cslib.BitString.indicatorList_insert`, `Cslib.BitString.indicatorList_erase`: adding or
+  removing an element sets or clears its bit.
 -/
 
 @[expose] public section
@@ -64,5 +73,71 @@ theorem card_supportOfList_of_length {n : ℕ} {word : List Bool} (hw : word.len
     (supportOfList n word).card = word.count true := by
   change weight (ofList n word) = word.count true
   simpa only [ofFn_ofList hw] using (count_true_ofFn (ofList n word)).symm
+
+/-- The indicator list of a `k`-element subset of `Fin m` has `k` entries `true`. -/
+theorem count_true_ofFn_decide_mem {m k : ℕ} {S : Finset (Fin m)} (hS : S.card = k) :
+    (List.ofFn fun u : Fin m => decide (u ∈ S)).count true = k := by
+  rw [← card_supportOfList_of_length List.length_ofFn, supportOfList_ofFn_decide, hS]
+
+/-! ### Indicator words -/
+
+/-- The indicator word of `S : Finset (Fin n)`: bit `i` records whether `i ∈ S`. -/
+def indicatorList {n : ℕ} (S : Finset (Fin n)) : List Bool :=
+  List.ofFn fun i => decide (i ∈ S)
+
+variable {n : ℕ}
+
+@[simp] theorem length_indicatorList (S : Finset (Fin n)) : (indicatorList S).length = n := by
+  rw [indicatorList, List.length_ofFn]
+
+@[simp] theorem supportOfList_indicatorList (S : Finset (Fin n)) :
+    supportOfList n (indicatorList S) = S :=
+  supportOfList_ofFn_decide S
+
+/-- Every word of length `n` is the indicator word of its support. -/
+theorem indicatorList_supportOfList {word : List Bool} (hw : word.length = n) :
+    indicatorList (supportOfList n word) = word :=
+  ofFn_decide_mem_supportOfList hw
+
+theorem indicatorList_injective : Function.Injective (indicatorList (n := n)) := fun S T h => by
+  rw [← supportOfList_indicatorList S, h, supportOfList_indicatorList]
+
+@[simp] theorem indicatorList_inj {S T : Finset (Fin n)} :
+    indicatorList S = indicatorList T ↔ S = T :=
+  indicatorList_injective.eq_iff
+
+theorem count_true_indicatorList (S : Finset (Fin n)) : (indicatorList S).count true = S.card :=
+  count_true_ofFn_decide_mem rfl
+
+theorem getD_indicatorList (S : Finset (Fin n)) (i : Fin n) :
+    (indicatorList S).getD i false = decide (i ∈ S) := by
+  simp [indicatorList]
+
+/-- Adding an element sets its bit. -/
+theorem indicatorList_insert (S : Finset (Fin n)) (i : Fin n) :
+    indicatorList (insert i S) = (indicatorList S).set i true := by
+  refine List.ext_getElem (by simp) fun j h₁ h₂ => ?_
+  simp only [indicatorList, List.getElem_ofFn, List.getElem_set, Finset.mem_insert]
+  by_cases h : (i : ℕ) = j
+  · simp [h, Fin.ext_iff]
+  · simp [h, Fin.ext_iff, Ne.symm h]
+
+/-- Removing an element clears its bit. -/
+theorem indicatorList_erase (S : Finset (Fin n)) (i : Fin n) :
+    indicatorList (S.erase i) = (indicatorList S).set i false := by
+  refine List.ext_getElem (by simp) fun j h₁ h₂ => ?_
+  simp only [indicatorList, List.getElem_ofFn, List.getElem_set, Finset.mem_erase]
+  by_cases h : (i : ℕ) = j
+  · simp [h, Fin.ext_iff]
+  · simp [h, Fin.ext_iff, Ne.symm h]
+
+@[simp] theorem indicatorList_empty :
+    indicatorList (∅ : Finset (Fin n)) = List.replicate n false := by
+  simp [indicatorList, List.ofFn_const]
+
+/-- The indicator word of `{i}` is the zero word with bit `i` set. -/
+theorem indicatorList_singleton (i : Fin n) :
+    indicatorList {i} = (List.replicate n false).set i true := by
+  rw [← indicatorList_empty, ← indicatorList_insert, insert_empty_eq]
 
 end Cslib.BitString
