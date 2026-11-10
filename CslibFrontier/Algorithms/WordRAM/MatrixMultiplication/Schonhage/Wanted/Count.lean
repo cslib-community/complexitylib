@@ -21,7 +21,7 @@ import CslibFrontier.Computability.WordRAM.CountingLoop
   by the actual coordinate-loading and tile-index code in linear charged time.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
+import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
@@ -24,11 +25,13 @@ import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
@@ -49,15 +52,20 @@ import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
+import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
+import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
@@ -67,6 +75,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
+import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -147,8 +156,27 @@ register_result "savitch" where
   scope := "Class equality for arbitrary injective encodings. PSPACE is total deterministic \
     decision by one native multi-tape machine in polynomial work space; NPSPACE uses one \
     finite-state nondeterministic machine whose every computation prefix respects a \
-    polynomial space bound and whose branches all halt. Not the parameterized quadratic-space \
-    simulation."
+    polynomial space bound and whose branches all halt. The parameterized quadratic-space \
+    simulation is the separate entry savitch-general."
+
+register_result "savitch-general" where
+  title := "Savitch: NSPACE(s) is contained in DSPACE(s²)"
+  topic := "space complexity"
+  sources := [
+    { paper := Savitch1970, theorem := unverified, locator := unverified },
+    { paper := Sipser2013, theorem := "Theorem 8.5",
+      locator := "Section 8.4, final paragraph (p. 351)" },
+    { paper := AroraBarak09, theorem := "Theorem 4.14", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.NSPACE_subset_DSPACE_sq,
+    Cslib.Complexity.mem_DSPACE_sq_of_recognizesInSpace
+  ]
+  scope := "NSPACE(s) ⊆ DSPACE(s²) for every s with log₂ n ≤ s(n); no constructibility \
+    assumed. One finite-state native nondeterministic machine per problem, work space \
+    c₁·s(n) + c₂ along every computation prefix; the recognizer form permits nonterminating \
+    branches. The deterministic machine halts on every input and reads its input in place; \
+    arbitrary injective encodings."
 
 register_result "alternation" where
   title := "Chandra–Kozen–Stockmeyer: AP equals PSPACE"
@@ -178,6 +206,25 @@ register_result "alternation-apspace-exp" where
   scope := "One finite-state alternating multi-tape machine per problem with least-fixed-point \
     acceptance, polynomial work space along every computation prefix and every branch halting; \
     EXP is deterministic decision within c₁·2^(n^d) + c₂ steps, with any space bound; \
+    arbitrary injective encodings."
+
+register_result "alternation-aspace-dtime" where
+  title := "Chandra–Kozen–Stockmeyer: alternating space s is within deterministic time 2^O(s)"
+  topic := "space complexity"
+  sources := [
+    { paper := ChandraKozenStockmeyer1981, theorem := unverified, locator := "Section 3" },
+    { paper := Sipser2013, theorem := unverified, locator := "Section 10.3" }
+  ]
+  theorems := [
+    Turing.MultiTapeATM.RecognizesInSpace.mem_DTIME,
+    Cslib.Complexity.exists_mem_DTIME_of_mem_ASPACE,
+    Cslib.Complexity.exists_mem_DTIME_of_mem_ASPACE_of_log2_le
+  ]
+  scope := "One finite-state alternating multi-tape machine per problem with least-fixed-point \
+    acceptance and work space s(n) (RecognizesInSpace.mem_DTIME, branches need not halt) or \
+    c₁·s(n) + c₂ with every branch halting (ASPACE) along every computation prefix; DTIME is \
+    deterministic decision within c₁·2^(c·(log₂ n + s(n) + 1)) + c₂ steps, or 2^(c·s(n)) when \
+    log₂ n ≤ s(n); no constructibility hypothesis; the converse inclusion is not included; \
     arbitrary injective encodings."
 
 register_result "reingold" where
@@ -741,6 +788,27 @@ register_result "williams-square-root-space" where
     multitape machines, read-only input and visited-work-cell space; classes absorb \
     affine constants. No time-constructibility or monotonicity hypothesis."
 
+register_result "blum-mansour-swap-regret" where
+  title := "Blum–Mansour reduction from swap regret to external regret"
+  topic := "online learning"
+  sources := [
+    { paper := BlumMansour2007, theorem := "Theorem 5 and Corollary 7", locator := "p. 1313" },
+    { paper := Roughgarden2013CS364A, theorem := "Theorem 2.1",
+      locator := "Lecture 18, Section 2, pp. 3–5" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.OnlineLearning.Experts.swap_regret_le_sum_regret,
+    Cslib.MachineLearning.OnlineLearning.Experts.blumMansour_swap_regret_le,
+    Cslib.MachineLearning.OnlineLearning.Experts.blumMansour_swap_regret_le_sqrt
+  ]
+  scope := "Experts setting with a finite set of n actions and arbitrary real loss sequences. \
+    The reduction assumes the learner plays a stationary vector of the copies' distributions \
+    and that copy j has regret at most R j on the losses scaled by the learner's probability of \
+    j; it then bounds the swap regret against every swapping function by the sum of the R j. \
+    With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
+    2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
+    chosen classically; no running time is charged."
+
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
   topic := "cryptography"
@@ -759,6 +827,36 @@ register_result "gmw-zero-knowledge" where
     protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
     knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
     forms; the relation version preserves R's native witnesses via a Levin reduction."
+
+register_result "nash-existence" where
+  title := "Nash's theorem: every finite game has a mixed Nash equilibrium"
+  topic := "game theory"
+  sources := [
+    { paper := Nash1951, theorem := "Theorem 1", locator := "p. 288" },
+    { paper := Roughgarden2013CS364A, theorem := unverified,
+      locator := "Lecture 13, Section 3.3, p. 5" }
+  ]
+  theorems := [
+    Cslib.GameTheory.CostGame.exists_isMixedNash
+  ]
+  scope := "Finite cost-minimization games: finitely many players, each with a finite nonempty \
+    set of pure strategies and real-valued costs. A mixed Nash equilibrium is a profile of \
+    probability vectors under which no player lowers its expected cost under the product \
+    distribution by a pure deviation. Proved by Brouwer's theorem on products of simplices, \
+    itself derived from the hypergrid Sperner lemma. Nonconstructive: no algorithm or \
+    complexity bound."
+
+register_result "nash-existence-bimatrix" where
+  title := "Every bimatrix game has a Nash equilibrium"
+  topic := "game theory"
+  sources := [
+    { paper := Nash1951, theorem := "Theorem 1", locator := "p. 288" }
+  ]
+  theorems := [
+    Cslib.GameTheory.BimatrixGame.exists_isNash
+  ]
+  scope := "Real payoff matrices over finite nonempty strategy sets, with no nondegeneracy \
+    assumption; derived from the n-player theorem. Nonconstructive."
 
 /-!
 ## Descriptive complexity and finite model theory
@@ -801,8 +899,25 @@ register_result "fo-tc-nl" where
     canonical numeric symbols, on Fin n with n ≥ 2, is in native NL under encStructure; \
     malformed tables and cardinalities below two are rejected. Closure is reflexive \
     transitive closure on tuples of fixed width. Closures under negation are compiled \
-    directly by inductive counting rather than by appeal to NL = coNL. The converse \
-    NL ⊆ FO(TC) is not formalized."
+    directly by inductive counting rather than by appeal to NL = coNL. The converse, \
+    NL ⊆ FO(positive TC), is in the entry immerman-nl-capture."
+
+register_result "immerman-nl-capture" where
+  title := "Immerman: FO(TC) and FO(positive TC) capture NL on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 3.1", locator := unverified },
+    { paper := Immerman1988, theorem := "Corollary 3", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.tcDefinable_iff_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.posTCDefinable_iff_encodedLanguage_mem_NL
+  ]
+  scope := "Canonically ordered finite structures over a finite relational vocabulary, with \
+    universes Fin n, n ≥ 2, and numeric symbols order, BIT, zero, one and maximum computed \
+    from the size. One FO(TC) sentence defines the query iff its source-only encoded language \
+    (encStructure) is in native NL; positive closures suffice. Malformed table shapes and \
+    universes below two are rejected."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
@@ -823,8 +938,8 @@ register_result "trakhtenbrot" where
     many symbols of arity at most three. FinSat asks for some, FinValid for every, finite \
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
-    Libkin's form for a fixed vocabulary with a binary relation symbol is a separate entry; \
-    a computable bridge to Mathlib sentences is not formalized."
+    Libkin's form for a fixed vocabulary with a binary relation symbol and the transfer to \
+    Mathlib sentences are separate entries."
 
 register_result "trakhtenbrot-binary" where
   title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
@@ -841,8 +956,28 @@ register_result "trakhtenbrot-binary" where
   scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
     symbol, no computable procedure is correct for finite satisfiability on the raw \
     sentences over σ, and the finitely valid sentences over σ are not r.e. Raw \
-    library-local syntax with finite nonempty models; a computable translation from \
-    Mathlib's L.Sentence is not formalized."
+    library-local syntax with finite nonempty models; the form for Mathlib's L.Sentence is \
+    the entry trakhtenbrot-sentence."
+
+register_result "trakhtenbrot-sentence" where
+  title := "Trakhtenbrot's theorem for Mathlib sentences"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.rePred_finSat,
+    FirstOrder.Language.Sentence.not_computablePred_finSat,
+    FirstOrder.Language.Sentence.not_rePred_finValid,
+    FirstOrder.Language.Sentence.exists_finValid_unprovable
+  ]
+  scope := "Mathlib L.Sentence over a relational language with finitely many relation \
+    symbols; the negative results need a binary symbol. Sentences are coded by \
+    primcodableRaw, a scoped instance, independent of the symbol encoding up to primitive \
+    recursive equivalence. FinSat and FinValid quantify over finite nonempty structures. \
+    Function symbols, infinite vocabularies and vocabularies whose only non-unary symbols \
+    have arity at least three are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
@@ -1001,6 +1136,51 @@ register_result "ehrenfeucht-fraisse" where
     L.IsRelational; the Hintikka direction needs only finitely many relation symbols. Also: \
     finitely many rank-n formulas up to equivalence, and elementary equivalence as winning \
     every finite game."
+
+register_result "pebble-games-fo-k" where
+  title := "The pebble-game characterization of finite-variable logic FO^k"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := "Theorem 6.10", locator := "Section 6.1, p. 123" },
+    { paper := Libkin2004, theorem := "Theorem 11.5, Proposition 11.8 and Corollary 11.9",
+      locator := "Section 11.2, pp. 216–218" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.pebbleWins_iff_forall_realize_iff,
+    Cslib.Logic.FO.pebbleWinsForever_iff_forall_realize_iff
+  ]
+  scope := "Mathlib first-order languages with finitely many relation symbols; k-variable \
+    formulas reuse variables and have equality and relational atoms. Duplicator wins the \
+    n-round k-pebble game from a position (S, a, b) iff a and b satisfy the same FO^k formulas \
+    of quantifier rank at most n with free variables in S, for arbitrary structures; the \
+    infinite game corresponds to all FO^k formulas on finite structures. Positions are total \
+    assignments, so for k > 0 the statements are vacuous on empty structures. Libkin states \
+    the results for the infinitary logic L^k_∞ω on finite structures; the remark before \
+    Proposition 11.8 reduces rank n to FO^k."
+
+register_result "bijective-pebble-games-c-k" where
+  title := "The bijective pebble-game characterization of finite-variable counting logic C^k"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 4.5",
+      locator := "Section 4.1; the round-indexed form is in the proof of Theorem 5.2" },
+    { paper := Hella1996, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_iff_forall_realize_iff,
+    Cslib.Logic.FO.bijPebbleWinsForever_iff_forall_realize_iff
+  ]
+  scope := "Mathlib first-order languages with finitely many relation symbols, finite \
+    structures; k-variable counting formulas reuse variables and have equality and relational \
+    atoms and the counting quantifiers 'at least m'. Duplicator wins the n-round bijective \
+    k-pebble game (Spoiler picks the pebble, then Duplicator the bijection) from a position \
+    (S, a, b) iff a and b satisfy the same C^k formulas of quantifier rank at most n with free \
+    variables in S; the infinite game corresponds to all C^k formulas. The easy direction holds \
+    for arbitrary structures; the hard direction fails for infinite ones (N and R in the empty \
+    language). Positions are total assignments, so for k > 0 the statements are vacuous on \
+    empty structures. Cai, Furer and Immerman state the characterization on graphs, for the \
+    equivalent game in which the players exchange sets of equal size."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"

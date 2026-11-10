@@ -14,7 +14,8 @@ An actual read-only routine is called in a proper register bank from an arbitrar
 The continuation writes the returned word to memory and preserves the outside register frame.
 The call charges its own instructions; neither a wrong routine nor a smaller total is accepted.
 The same calls with exact-count contracts (`Exec` and `WP.Exact`) charge exactly the callee's
-instructions, and a wrong total count is not accepted.
+instructions, and a wrong total count is not accepted. A failed call names the goal and the
+contracts accepted there.
 -/
 
 namespace CslibFrontierTests.WordRAMCallAutomation
@@ -179,5 +180,54 @@ example {w k : ℕ} {c : Code .standard 4} {x : Data 4}
   wram_call h with y t ht
   wram_exec
   omega
+
+/-! ## Failure messages
+
+When no rule applies, `wram_call` names the goal and the contracts it accepts there, followed by
+Lean's error for the rule that matches the contract or by the contract's type. -/
+
+/--
+error: wram_call: the contract does not apply to the goal
+  WP w readThird x fun x t => t = 2
+The contract must have type `∃ y, ExecWithin w c x y T ∧ P y` or `WP w c x Q'`.
+-/
+#guard_msgs (substring := true) in
+example {w : ℕ} (x : Data 2)
+    (h : ∃ y, ExecWithin w (.op (.copy 0 0) : Code .standard 2) x y 1 ∧ True) :
+    WP w readThird x (fun _ t => t = 2) := by
+  wram_call h with y _
+
+/--
+error: wram_call: the contract does not apply to the goal
+  WP w readThird x fun x t => t = 2
+The contract must have type `∃ y, ExecWithin w c x y T ∧ P y` or `WP w c x Q'`.
+The contract has type
+  WP.Exact w readThird x fun x t => t = 2
+-/
+#guard_msgs in
+example {w : ℕ} (x : Data 2) (h : WP.Exact w readThird x (fun _ t => t = 2)) :
+    WP w readThird x (fun _ t => t = 2) := by
+  wram_call h with y _
+
+/--
+error: wram_call: expected a goal `WP w c x Q` or `WP.Exact w c x Q`, which `wram_exec` leaves
+at a routine, got
+  ∃ y, ExecWithin w readThird x y 2
+-/
+#guard_msgs (whitespace := lax) in
+example {w : ℕ} (x : Data 2) (h : ∃ y, ExecWithin w readThird x y 2 ∧ True) :
+    ∃ y, ExecWithin w readThird x y 2 := by
+  wram_call h with y _
+
+/--
+error: wram_call: the contract does not apply to the goal
+  WP w (Code.rename bank readThird) x fun x t => t = 2
+For the goal `WP w (c.rename f) x Q`, the contract must have type
+`∃ y, ExecWithin w c (x.comap f) y T ∧ P y`, with `hf : f.Injective`.
+-/
+#guard_msgs (whitespace := lax, substring := true) in
+example {w : ℕ} (x : Data 4) (h : ∃ y, ExecWithin w readThird (Data.init []) y 2 ∧ True) :
+    WP w (readThird.rename bank) x (fun _ t => t = 2) := by
+  wram_call h renamed bank_injective with y _
 
 end CslibFrontierTests.WordRAMCallAutomation

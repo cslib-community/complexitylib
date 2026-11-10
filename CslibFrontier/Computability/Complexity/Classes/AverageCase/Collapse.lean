@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Probability.PMF.Finiteness
 
 /-!
 # Collapsing the uniform ensemble at a prefix code
@@ -416,9 +417,7 @@ theorem ensemble_dist_collapse {r : List Bool} (hv : H.valid r = true) :
     unfold hi lo
     ring
   rw [hhi, Nat.cast_add, ENNReal.add_div] at hblock
-  have hne : ((H.lo r : ℕ) : ℝ≥0∞) / ((2 ^ r.length : ℕ) : ℝ≥0∞) ≠ ⊤ :=
-    ENNReal.div_ne_top (ENNReal.natCast_ne_top _) (by positivity)
-  rw [← (ENNReal.add_right_inj hne).mp hblock]
+  rw [← (ENNReal.add_right_inj (by finiteness)).mp hblock]
   have hlen := H.length_header_le hv
   obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le hlen
   rw [hk, Nat.add_sub_cancel_left]

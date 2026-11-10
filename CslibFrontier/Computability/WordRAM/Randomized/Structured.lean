@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.WordRAM.Compile
 public import CslibFrontier.Computability.WordRAM.Randomized.Defs
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Structured randomized word-RAM programs
@@ -151,32 +152,12 @@ theorem unique {c : Code B r} {x : Data r} {m m' : ProbComp (Data r × ℕ)}
 theorem pos {c : Code B r} {x : Data r} {m : ProbComp (Data r × ℕ)}
     (h : ExecRand w c x m) {z : Data r × ℕ} (hz : z ∈ m.support) : 1 ≤ z.2 := by
   induction h generalizing z with
-  | op _ =>
-    cases OracleComp.eq_of_mem_supportWith_pure hz
-    omega
-  | rand _ =>
-    obtain ⟨_, -, hk⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    cases OracleComp.eq_of_mem_supportWith_pure hk
+  | op _ | rand _ | branch_pos _ _ _ | branch_neg _ _ _ | loop_exit _ | loop_iter _ _ _ _ _ =>
+    supp_cases hz
     omega
   | seq _ _ ih₁ _ =>
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, -, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+    supp_cases hz with ⟨z₁, hz₁, z₂, -, rfl⟩
     have := ih₁ hz₁
-    omega
-  | branch_pos _ _ _ =>
-    obtain ⟨z₀, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    omega
-  | branch_neg _ _ _ =>
-    obtain ⟨z₀, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    omega
-  | loop_exit _ =>
-    cases OracleComp.eq_of_mem_supportWith_pure hz
-    omega
-  | loop_iter _ _ _ _ _ =>
-    obtain ⟨z₁, -, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, -, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
     omega
 
 /-- Structured randomized executions preserve word-boundedness on every supported path. -/
@@ -185,33 +166,23 @@ theorem bounded {c : Code B r} {x : Data r} {m : ProbComp (Data r × ℕ)}
     z.1.Bounded w := by
   induction h generalizing z with
   | op ho =>
-    cases OracleComp.eq_of_mem_supportWith_pure hz
+    supp_cases hz
     exact hx.op ho
   | rand hfit =>
-    obtain ⟨k, -, hk⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    cases OracleComp.eq_of_mem_supportWith_pure hk
+    supp_cases hz with ⟨k, rfl⟩
     exact hx.set (hfit.of_le (Nat.le_of_lt_succ k.isLt))
-  | seq _ _ ih₁ ih₂ =>
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+  | seq _ _ ih₁ ih₂ | loop_iter _ _ _ ih₁ ih₂ =>
+    supp_cases hz with ⟨z₁, hz₁, z₂, hz₂, rfl⟩
     have hb₁ := ih₁ hx hz₁
     have hb₂ := ih₂ z₁ hz₁ hb₁ hz₂
     exact hb₂
   | branch_pos _ _ ih | branch_neg _ _ ih =>
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    supp_cases hz with ⟨z₀, hz₀, rfl⟩
     have hb₀ := ih hx hz₀
     exact hb₀
   | loop_exit _ =>
-    cases OracleComp.eq_of_mem_supportWith_pure hz
+    supp_cases hz
     exact hx
-  | loop_iter _ _ _ ihb ihl =>
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
-    have hb₁ := ihb hx hz₁
-    have hb₂ := ihl z₁ hz₁ hb₁ hz₂
-    exact hb₂
 
 /-- A register that `c` does not write retains its value on every supported path. -/
 theorem regs_eq {c : Code B r} {x : Data r} {m : ProbComp (Data r × ℕ)} {i : Fin r}
@@ -219,34 +190,29 @@ theorem regs_eq {c : Code B r} {x : Data r} {m : ProbComp (Data r × ℕ)} {i : 
     z.1.regs i = x.regs i := by
   induction h generalizing z with
   | op ho =>
-    cases OracleComp.eq_of_mem_supportWith_pure hz
+    supp_cases hz
     exact (Exec.op ho).regs_eq hi
   | rand _ =>
-    obtain ⟨k, -, hk⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    cases OracleComp.eq_of_mem_supportWith_pure hk
+    supp_cases hz
     simp only [Data.set_regs, Function.update_of_ne (Ne.symm hi)]
   | seq _ _ ih₁ ih₂ =>
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+    supp_cases hz with ⟨z₁, hz₁, z₂, hz₂, rfl⟩
     have hr₁ := ih₁ hi.1 hz₁
     have hr₂ := ih₂ z₁ hz₁ hi.2 hz₂
     exact hr₂.trans hr₁
   | branch_pos _ _ ih =>
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    supp_cases hz with ⟨z₀, hz₀, rfl⟩
     have hr₀ := ih hi.1 hz₀
     exact hr₀
   | branch_neg _ _ ih =>
-    obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    supp_cases hz with ⟨z₀, hz₀, rfl⟩
     have hr₀ := ih hi.2 hz₀
     exact hr₀
   | loop_exit _ =>
-    cases OracleComp.eq_of_mem_supportWith_pure hz
+    supp_cases hz
     rfl
   | loop_iter _ _ _ ihb ihl =>
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+    supp_cases hz with ⟨z₁, hz₁, z₂, hz₂, rfl⟩
     have hr₁ := ihb hi hz₁
     have hr₂ := ihl z₁ hz₁ hi hz₂
     exact hr₂.trans hr₁
@@ -463,8 +429,7 @@ theorem rand {dst src : Fin r} (hfit : Fits w (x.regs src))
   · simpa only [Nat.add_zero] using
       (ProbComp.isQueryBounded_unifFin (x.regs src)).bind fun _ => .pure _ 0
   · intro z hz
-    obtain ⟨k, -, hz'⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    cases OracleComp.eq_of_mem_supportWith_pure hz'
+    supp_cases hz with ⟨k, rfl⟩
     exact ⟨hk k, le_rfl⟩
 
 /-- Sequencing rule: composes `ExecRandWithin` specs and sums both step and call budgets. -/
@@ -485,9 +450,7 @@ theorem seq (h₁ : ExecRandWithin w c₁ x P T₁ R₁)
     simpa only [Nat.add_zero] using
       (hstep z₁ hz₁).2.1.bind fun _ => .pure _ 0
   · intro z hz
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+    supp_cases hz with ⟨z₁, hz₁, z₂, hz₂, rfl⟩
     have h₁' := hsup₁ z₁ hz₁
     have h₂' := (hstep z₁ hz₁).2.2 z₂ hz₂
     exact ⟨h₂'.1, Nat.add_le_add h₁'.2 h₂'.2⟩
@@ -542,9 +505,7 @@ theorem loop_iter (hc : cond.Holds x)
     simpa only [Nat.add_zero] using
       (hstep z₁ hz₁).2.1.bind fun _ => .pure _ 0
   · intro z hz
-    obtain ⟨z₁, hz₁, hrest⟩ := OracleComp.mem_supportWith_bind_iff.mp hz
-    obtain ⟨z₂, hz₂, hfinal⟩ := OracleComp.mem_supportWith_bind_iff.mp hrest
-    cases OracleComp.eq_of_mem_supportWith_pure hfinal
+    supp_cases hz with ⟨z₁, hz₁, z₂, hz₂, rfl⟩
     have h₁' := hsupb z₁ hz₁
     have h₂' := (hstep z₁ hz₁).2.2 z₂ hz₂
     exact ⟨h₂'.1, by omega⟩

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.USTCON.Reader.Encode
 public import CslibFrontier.Computability.Machines.ReadMachine.Tidy
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
+import CslibFrontier.Tactic.Space
 
 /-!
 # The read machine for undirected connectivity within linear work space
@@ -302,23 +303,7 @@ private theorem hTop :
 private theorem slotRotN_inSpace : ComputableInSpace
     (fun y : Tuple × Bool => slotRotN y.1.2.1.1.1 y.1.2.2.2.1 (y.1.2.2.2.2.1.headD 0) y.2)
     encStepIn (encPair (encPair encNat encNat) encLab) stepBudget := by
-  have ht (d : SlotLabel) := budget_finite (encC := encBool)
-    (fun b : Label ↦ decide (b = slotLabel d)) hHeadLab
-  have hc (d : SlotLabel) := budget_const (encB := encLab) (encIn := encStepIn) (Bs := stepBudget)
-    (slotLabel d) (.refl _)
-  have h := budget_ite (ht (.inl ()))
-    (budget_prod (budget_ite hBit (budget_prod hV₂ hV₁) hVert) hHeadLab)
-    (budget_ite (ht (.inr ((), (), false)))
-      (budget_prod (budget_prod hV₁ (budget_ite (budget_natEq (budget_natSucc hV₂) hN)
-        (budget_const (encB := encNat) 0 (.refl _)) (budget_natSucc hV₂)))
-        (hc (.inr ((), (), true))))
-      (budget_ite (ht (.inr ((), (), true)))
-        (budget_prod
-          (budget_prod hV₁
-            (budget_ite (budget_natIsZero hV₂) (budget_natPred hN) (budget_natPred hV₂)))
-          (hc (.inr ((), (), false))))
-        (budget_prod hVert hHeadLab)))
-  exact h.of_enc_eq fun y ↦ by simp only [slotRotN, decide_eq_true_eq]
+  space [slotRotN]
 
 /-- **The step of the evaluation** within the budget. -/
 private theorem evalStepT_inSpace : ComputableInSpace

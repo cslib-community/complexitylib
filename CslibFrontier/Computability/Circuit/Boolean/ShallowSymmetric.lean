@@ -60,7 +60,7 @@ gate layer.
 * [V. Lecomte, P. Ramakrishnan, *Optimal Shallow Circuits for Majority*][LecomteRamakrishnan2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

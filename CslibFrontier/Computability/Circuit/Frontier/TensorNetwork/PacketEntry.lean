@@ -410,16 +410,9 @@ private theorem map_ringInverse (ψ : R →+* S) {u : R} (hu : IsUnit u) :
 theorem map_crossRatio (ψ : R →+* S) {n : ℕ} (hn : (2 : R) ^ n = 0) {a i : ℕ} (hia : i ≤ a)
     {t d₀ : ℤ} (hcross : ¬ (2 : ℤ) ^ (i + 1) ∣ t - d₀) (ζ : R) :
     ψ (crossRatio a i t d₀ ζ) = crossRatio a i t d₀ (ψ ζ) := by
-  obtain ⟨hvi, ⟨c, hc⟩, -⟩ := two_adic_split hcross
-  have hU : IsUnit ((((t - d₀) / 2 ^ padicValInt 2 (t - d₀) : ℤ) : R) +
-      2 ^ (a + 1 - padicValInt 2 (t - d₀)) * ζ) := by
-    rw [hc, show a + 1 - padicValInt 2 (t - d₀) = a - padicValInt 2 (t - d₀) + 1 by omega,
-      pow_succ]
-    convert isUnit_one_add_two_mul hn ((c : R) + 2 ^ (a - padicValInt 2 (t - d₀)) * ζ) using 1
-    push_cast
-    ring
-  rw [crossRatio, crossRatio, map_mul, map_pow, map_ofNat, map_ringInverse ψ hU, map_add,
-    map_mul, map_pow, map_ofNat, map_intCast]
+  rw [crossRatio, crossRatio, map_mul, map_pow, map_ofNat,
+    map_ringInverse ψ (isUnit_crossRatio_denom hn hia hcross ζ), map_add, map_mul, map_pow,
+    map_ofNat, map_intCast]
 
 /-- Mode coefficients commute with ring homomorphisms when `2` is nilpotent, at a grid point `t`
 of valuation `i ≤ a`. -/

@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.BitString.List
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Naor's bit commitment scheme from pseudorandom generators
@@ -49,6 +50,7 @@ The general public-parameter interface is in `Commitment/Basic`.
   requiring that no two seeds of length `n` open to `false` and `true` with the same commitment.
 * `Cslib.Crypto.naorBindingProb`, `Cslib.Crypto.naorBindingError`: the probability over a uniform
   receiver string `r` of length `length n` that `NaorBinding generator n r` fails.
+* `Cslib.Crypto.encBitOpening`: the encoding of a bit-commitment opening `(b, seed)`.
 * `Cslib.Crypto.BitCommitmentScheme`: a two-message statistically binding, computationally hiding
   bit commitment scheme.
 
@@ -237,13 +239,19 @@ noncomputable def commitmentHidingGame (commit : List Bool → Bool → List Boo
   receiver.guess n state
     (commit r (if bit then b₁ else b₀) seed)
 
+/-- Opening `(b, seed)` of a bit commitment: the committed bit `b`, then the commitment seed as a
+bit word. The bit is framed. A committer takes it after the receiver string `r`, as
+`encPair encBits encBitOpening`, and a verifier after `(1ⁿ, r, c)`. -/
+abbrev encBitOpening : Bool × List Bool ↪ List Bool :=
+  encPair encBool encBits
+
 /-- The commitment-hiding experiment runs in strict PPT on `(n, aux, bit)` whenever `commit` is
 computable in plain polynomial time and `receiver` is strict PPT. -/
 theorem isPPTOn_commitmentHidingGame {commit : List Bool → Bool → List Bool → List Bool}
     {receiver : CommitmentReceiver}
     (hcommit : ComputableInPolyTime
       (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits)
+      (encPair encBits encBitOpening) encBits)
     (hR : receiver.IsPPT) :
     IsPPTOn (encPair encUnary (encPair encBits encBool)) encBool
       (fun ⟨n, aux, bit⟩ => commitmentHidingGame commit receiver aux bit n) := by
@@ -269,7 +277,7 @@ theorem isPPT_commitmentHidingGame {commit : List Bool → Bool → List Bool �
     {receiver : CommitmentReceiver}
     (hcommit : ComputableInPolyTime
       (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits)
+      (encPair encBits encBitOpening) encBits)
     (hR : receiver.IsPPT) (bit : Bool) :
     IsPPT encBool (fun n aux => commitmentHidingGame commit receiver aux bit n) :=
   (isPPTOn_commitmentHidingGame hcommit hR).preprocess
@@ -282,7 +290,7 @@ theorem isPPTOn_commitmentHidingGame_aux {commit : List Bool → Bool → List B
     {receiver : CommitmentReceiver} {aux : ℕ → List Bool}
     (hcommit : ComputableInPolyTime
       (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits)
+      (encPair encBits encBitOpening) encBits)
     (hR : receiver.IsPPT)
     (haux : ComputableInPolyTime aux encUnary encBits) (bit : Bool) :
     IsPPTOn encUnary encBool (fun n => commitmentHidingGame commit receiver (aux n) bit n) :=
@@ -414,8 +422,7 @@ theorem distinguishingGame_uniformList_naorReceiverDistinguisher (m : ℕ)
           ProbComp.eval (receiver.guess n choice.2 c) := by
   unfold distinguishingGame naorReceiverDistinguisher
   simp only [ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  rw [PMF.bind_comm]
-  congr 1 with choice : 1
+  pmf_swap with choice
   have h := congrArg
     (fun p : PMF (List Bool) => p.bind fun c => ProbComp.eval (receiver.guess n choice.2 c))
     (uniformList_map_naorCommit_id m choice.1.1 (if bit then choice.1.2.2 else choice.1.2.1))
@@ -1076,12 +1083,12 @@ structure BitCommitmentScheme where
   /-- `commit` is computable in plain polynomial time. -/
   polyTime_commit :
     ComputableInPolyTime (fun ⟨r, b, seed⟩ => commit r b seed)
-      (encPair encBits (encPair encBool encBits)) encBits
+      (encPair encBits encBitOpening) encBits
   /-- `verify` is computable in plain polynomial time. -/
   polyTime_verify :
     ComputableInPolyTime
       (fun ⟨n, r, c, b, seed⟩ => verify n r c b seed)
-      (encPair encUnary (encPair encBits (encPair encBits (encPair encBool encBits)))) encBool
+      (encPair encUnary (encPair encBits (encPair encBits encBitOpening))) encBool
   /-- Honest commitments have length `commitLength n` when `seed.length = n`. -/
   length_commit : ∀ (n : ℕ) (r : List Bool) (b : Bool) (seed : List Bool),
     seed.length = n → (commit r b seed).length = commitLength n

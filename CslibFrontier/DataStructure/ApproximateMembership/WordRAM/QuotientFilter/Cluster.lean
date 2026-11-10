@@ -283,7 +283,7 @@ theorem encode_mkClusterInput_lt {base w w₀ n k : ℕ}
     WordEncoding.encode (mkClusterInput base w w₀ n k q r opTag) i < 2 ^ w :=
   encode_lt_of_clusterSafe (clusterSafe_mkClusterInput hw₀ hw hfit q r hop) i
 
-/-! ## Section 2: Branchless comparison and bit-packed accessor programs -/
+/-! ## Section 2: Comparison and bit-packed accessor programs -/
 
 @[simp] theorem clientResult_pure {α : Type} (s : Memory.State) (a : α) :
     (Memory.spec 0).clientResult s (pure a) = a := rfl
@@ -291,7 +291,7 @@ theorem encode_mkClusterInput_lt {base w w₀ n k : ℕ}
 theorem clientState_pure {α : Type} (s : Memory.State) (a : α) :
     (Memory.spec 0).clientState s (pure a) = s := rfl
 
-/-- Branchless `<` test returning `(a < b).toNat`. -/
+/-- `<` test returning `(a < b).toNat`. -/
 @[expose] def cmpLtProg (x : ℕ × ℕ) : Memory.Prog ℕ :=
   if x.1 < x.2 then pure 1 else pure 0
 
@@ -316,7 +316,7 @@ theorem clientState_cmpLt (s : Memory.State) (x : ℕ × ℕ) :
   dsimp only [cmpLtProg]
   split_ifs <;> rfl
 
-/-- Branchless `=` test returning `(a = b).toNat`. -/
+/-- `=` test returning `(a = b).toNat`. -/
 @[expose] def cmpEqProg (x : ℕ × ℕ) : Memory.Prog ℕ :=
   if x.1 = x.2 then pure 1 else pure 0
 
@@ -341,7 +341,7 @@ theorem clientState_cmpEq (s : Memory.State) (x : ℕ × ℕ) :
   dsimp only [cmpEqProg]
   split_ifs <;> rfl
 
-/-- Branchless `= 0` test returning `(a = 0).toNat`. -/
+/-- `= 0` test returning `(a = 0).toNat`. -/
 @[expose] def cmpZeroProg (a : ℕ) : Memory.Prog ℕ :=
   if a = 0 then pure 1 else pure 0
 
@@ -366,7 +366,7 @@ theorem clientState_cmpZero (s : Memory.State) (a : ℕ) :
   dsimp only [cmpZeroProg]
   split_ifs <;> rfl
 
-/-- Branchless conditional selector `if 0 < c then t else e`. -/
+/-- Conditional selector `if 0 < c then t else e`. -/
 @[expose] def selectPosProg (x : ℕ × (ℕ × ℕ)) : Memory.Prog ℕ :=
   if 0 < x.1 then pure x.2.1 else pure x.2.2
 
@@ -1608,7 +1608,8 @@ theorem realizes_deleteAfterScan :
 /-! ## Section 7: Unified Cluster Operation `clusterOpProg` -/
 
 /-- Dispatch after `findClusterProg` and `scanClusterProg` based on `d 2`
-(`0 = insert`, `1 = delete`, `2 = query`). -/
+(`0 = insert`, `1 = delete`, `2 = query`). Every value of `d 2` other than `0` and `1` takes the
+query branch. -/
 @[expose] def clusterDispatchProg
     (x : (ClusterInput × (ℕ × (ℕ × ℕ))) × (ℕ × ((ℕ × ℕ) × (ℕ × ℕ)))) : Memory.Prog ℕ :=
   if x.1.1 2 = 0 then

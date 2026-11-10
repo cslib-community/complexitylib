@@ -108,6 +108,13 @@ noncomputable def hierarchy : ∀ l, Matrix (V l) (V l) ℝ
   | 0 => S
   | l + 1 => (P.next (X l) (Y l) (q⁻¹ ^ l) (hierarchy l)).submatrix (e l) (e l)
 
+omit [∀ l, LinearOrder (V l)] in
+theorem hierarchy_zero : hierarchy P e X Y S 0 = S := by rfl
+
+omit [∀ l, LinearOrder (V l)] in
+theorem hierarchy_succ (l : ℕ) : hierarchy P e X Y S (l + 1) =
+    (P.next (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)).submatrix (e l) (e l) := by rfl
+
 /-- The correction `E_l` of stage `l`. -/
 noncomputable def hierarchyCorrection (l : ℕ) : Matrix (V l) (V l) ℝ :=
   P.correction (X l) (Y l) (q⁻¹ ^ l) (hierarchy P e X Y S l)

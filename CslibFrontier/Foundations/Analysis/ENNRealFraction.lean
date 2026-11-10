@@ -22,7 +22,7 @@ natural numbers.
 * `ENNReal.two_div_three_le_natCast_div_two_pow_iff`: `2 / 3 ≤ c / 2 ^ n ↔ 2 * 2 ^ n ≤ 3 * c`.
 -/
 
-@[expose] public section
+public section
 
 open scoped ENNReal
 

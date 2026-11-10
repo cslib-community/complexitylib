@@ -22,11 +22,11 @@ This invariant covers unused gates and the input-only initial row.
 * `Cslib.Circuits.Boolean.Layered.getD_eval_schedule`: every ready wire has its original value.
 * `Cslib.Circuits.Boolean.Layered.wellFormed_compile`: every scheduled reference is valid.
 * `Cslib.Circuits.Boolean.Layered.outputs_valid_compile`: output indices address the final row.
-* `Cslib.Circuits.Boolean.Layered.select_eval_compile`: the ordered outputs equal the original
-  circuit evaluation, including depth-zero wiring and repeated outputs.
+* `Cslib.Circuits.Boolean.Layered.readPositions_eval_compile`: the ordered outputs equal the
+  original circuit evaluation, including depth-zero wiring and repeated outputs.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.Layered
 
@@ -219,11 +219,11 @@ theorem outputs_valid_compile (c : Circuit signature n m) :
   simpa only [length_eval, List.length_ofFn] using h
 
 /-- Compilation preserves every output's Boolean value, in order and with repetitions. -/
-theorem select_eval_compile (c : Circuit signature n m) (x : Fin n → Bool) :
-    select (eval (List.ofFn x) (compile n c.code).1) (compile n c.code).2 =
+theorem readPositions_eval_compile (c : Circuit signature n m) (x : Fin n → Bool) :
+    BitString.readPositions (compile n c.code).2 (eval (List.ofFn x) (compile n c.code).1) =
       List.ofFn (c.eval interpretation x) := by
   simp only [compile, depthCode_code]
-  simp only [select, Circuit.code, List.map_ofFn]
+  simp only [BitString.readPositions, Circuit.code, List.map_ofFn]
   apply congrArg List.ofFn
   funext j
   exact getD_eval_schedule c.program x c.depth (c.outputs j) (output_depth_le c j)

@@ -20,7 +20,7 @@ Fixed-default lookup uses the bare head machine, without an inhabitedness assump
 First occurrence uses the original credited Boolean/counter fold.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 open Cslib Internal.ListIndex
 variable {α : Type} {encA : α ↪ List Bool}

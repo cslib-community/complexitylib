@@ -7,11 +7,12 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate (Mathlib, `Mathlib/Probability/Combinatorics/BinomialRandomGraph/`)
 
-public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
+public import CslibFrontier.Foundations.MeasureTheory.Constructions.SimpleGraph
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
+import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
 import Mathlib.Algebra.Order.Field.GeomSum
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Data.Nat.Choose.Bounds
