@@ -17,38 +17,8 @@
  "CslibFrontier/Computability/Complexity/Classes/IP/TQBF/Words.lean": {
   "encList (encPair encNat encUnary)": 3
  },
- "CslibFrontier/Computability/Complexity/Classes/LogSpace/Randomized/PairedPorts.lean": {
-  "encPair ?1 (encPair encNat encNat)": 3
- },
  "CslibFrontier/Computability/Complexity/Classes/P/WordRAM.lean": {
   "encPair encUnary (encPi encNat)": 4
- },
- "CslibFrontier/Computability/Complexity/Classes/ValiantVazirani/Reduction.lean": {
-  "encList (encList (encPair encVar encBool))": 3
- },
- "CslibFrontier/Computability/Complexity/CookLevin/Clauses.lean": {
-  "encList (encList (encPair encVar encBool))": 8
- },
- "CslibFrontier/Computability/Complexity/Parameterized/ColorCoding.lean": {
-  "encPair encGraph (encList encNat)": 3
- },
- "CslibFrontier/Computability/Complexity/Problems/Hamiltonian.lean": {
-  "encPair encGraph (encPair encNat encNat)": 6
- },
- "CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Directed.lean": {
-  "encPair encGraph (encPair encNat encNat)": 5
- },
- "CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Undirected.lean": {
-  "encPair encGraph (encPair encNat encNat)": 4
- },
- "CslibFrontier/Computability/Complexity/Problems/IntegerProgramming.lean": {
-  "encList (encPair (encList encNat) encNat)": 8
- },
- "CslibFrontier/Computability/Complexity/Problems/OneInThreeSAT.lean": {
-  "encList (encPair encNat encBool)": 3
- },
- "CslibFrontier/Computability/Complexity/Problems/SubsetSum.lean": {
-  "encPair (encList encNat) encNat": 7
  },
  "CslibFrontier/Computability/Interactive/AuxZK.lean": {
   "encPair ?1.index (encPair encBits encBits)": 5
