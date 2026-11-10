@@ -30,9 +30,9 @@ After adding a library file, run `lake exe mk_all` to regenerate the aggregate. 
 scripts/check.sh --quick
 ```
 
-Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It then runs the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. Unsupported or ambiguous changes fall back to the full gate. Quick success is development feedback, not full integration validation.
+Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability ratchet on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. Unsupported or ambiguous changes fall back to the full check. Quick success is development feedback, not full integration validation.
 
-Lean, dependency or build changes need all six gates on the final revision:
+Lean, dependency or build changes need the six Lean gates on the final revision, together with the other required CI checks:
 
 ```bash
 lake build --wfail --iofail
@@ -43,7 +43,7 @@ lake exe lint-style
 lake exe checkInitImports
 ```
 
-`scripts/check.sh` restores available caches and runs the sequence. A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
+`scripts/check.sh` restores available caches and runs every required step of CI's `ci-checks` job that can run locally, with CI's commands: these gates, the Python tooling tests, source hygiene, the encoding readability ratchet, documentation pins, and the tidy statement ratchet, result registry and changed-file lints that read the build outputs. [`scripts/full_check.py`](../../scripts/full_check.py) lists the steps and why the rest stay CI-only. A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
 
 ## Update and review both manuals
 

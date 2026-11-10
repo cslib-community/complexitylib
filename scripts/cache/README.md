@@ -139,7 +139,7 @@ not authorize study activation or complete #1197's net-benefit requirement.
 
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
-check that falls back to all six gates does not download twice. Bare `lake` commands do not
+check that falls back to the full check does not download twice. Bare `lake` commands do not
 bootstrap. Before using Lean MCP diagnostics or another operation that can elaborate/build in a
 cold checkout, restore available outputs with:
 
