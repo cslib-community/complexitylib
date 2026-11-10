@@ -45,8 +45,10 @@ namespace Cslib.Circuits.Frontier.ExplicitTensorNetwork
 
 open Turing.MultiTapeTM ComputableInPolyTime
 
-/-- The encoding of a vertex `(ports, table)` of an explicit network over `ℕ`: its framed list of
-ports, then its framed table, each a list of binary numbers (`encNat`). -/
+/-- The encoding of a vertex `(ports, table)` of an explicit network over `ℕ`: its list of ports,
+framed, then its table, the entries of both framed binary numbers (`encNat`). This is
+`DescribedNetwork.encVertex (encList encNat)`, named here so that clients need not import
+`DescribedContraction`. -/
 abbrev encVertex : List ℕ × List ℕ ↪ List Bool := encPair (encList encNat) (encList encNat)
 
 variable {α : Type} {inp : α ↪ List Bool}

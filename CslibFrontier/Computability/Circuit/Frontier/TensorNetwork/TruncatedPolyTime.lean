@@ -231,9 +231,12 @@ abbrev encCore (encT : T ↪ List Bool) :
 abbrev encEngine (encT : T ↪ List Bool) : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T ↪ List Bool :=
   encPair (encList encNat) (encTrunc encT)
 
-/-- The state `(k, (y, ys))` of the loop of the reduction: the index `k` in binary, the input `y`
-of the reduction (`encEngine`), then the framed values `ys` so far, each an element of `A_P` as its
-framed coefficient list in binary (the layout of `encElems`). -/
+/-- The state `(k, (y, ys))` of the loop of the reduction: the index `k` in binary, framed, the
+input `y` of the reduction (`encEngine`), framed, then the values `ys` so far, each framed, an
+element of `A_P` as its coefficient list of framed binary numbers. The last component is the
+layout of `encElems` but is spelled `encList (encList encNat)` so that the `omega` steps of
+`TruncatedResources`, whose local `encS` notation is this term, see the same atoms; use `encElems`
+once that notation is replaced by this abbrev (#4077). -/
 abbrev encEngineState (encT : T ↪ List Bool) :
     ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) ↪ List Bool :=
   encPair encNat (encPair (encEngine encT) (encList (encList encNat)))
