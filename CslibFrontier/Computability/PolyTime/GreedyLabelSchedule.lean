@@ -542,7 +542,6 @@ theorem constructBalancedSchedules_balanced {E m n Q r : ℕ}
       (∀ t : Fin Q, ∀ g : Fin r,
         occupancy (fun v => a v t) g * r ≤ 2 * n) := by
   dsimp only
-  have hD : 0 < (r ^ Q) ^ 2 := Nat.pow_pos (Nat.pow_pos hr)
   have hE : 0 < E :=
     (by positivity : 0 < 2 * (b + w) * ((r ^ Q) ^ 2) ^ 2).trans_le hincidenceSize
   have hcardB : Fintype.card ((Fin Q → Fin r) × (Fin Q → Fin r)) = (r ^ Q) ^ 2 := by

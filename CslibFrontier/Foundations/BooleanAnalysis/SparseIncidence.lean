@@ -32,7 +32,7 @@ in `ℤ[V]`. This is the coefficient `[z_{i,S}] B̄_i` of the multilinear factor
   most `k (1 + 2 j)` on the cube (`Cslib.BitString.coeff_parityFactor_mem_lowDegree`). Over the
   `a` equations this gives the bound (D.1): below `V ^ ℓ`, every term of the product has at most
   `K = k (a + 2 (ℓ - 1))` incidences (`Cslib.BitString.coeff_incidenceSum_eq_of_le`).
-* **(D.2)**: for `a` equations, scopes `I i` containing the variables of `P i`, `ℓ ≥ 1` and
+* **(D.2)**: for `a` equations, scopes `I i` containing the variables of `P i` and
   `K ≥ k (a + 2 (ℓ - 1))`, the number of common zeros is congruent modulo `2 ^ ℓ` to the sum of the
   coefficients below `V ^ ℓ` of the incidence sum of these coefficients
   (`Cslib.BitString.commonZeroCount_modEq_sumCoeffsBelow_incidenceSum`). The incidence sum is

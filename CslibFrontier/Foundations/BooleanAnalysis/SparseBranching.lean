@@ -33,7 +33,7 @@ This module completes the algebraic and combinatorial infrastructure of Sections
    `(k * R_deg) * (#I + 2 * (ℓ - 1))` (`Cslib.BitString.natDegree_univariateParityCoord_le`,
    `Cslib.BitString.natDegree_univariateParityTruncatedSum_le`). For integer-coefficient
    replacements `q : (ι → Bool) → κ → ι → ℤ[X]`, evaluating at $T = 0$ is congruent to
-   `commonZeroCount I P` modulo $2^\ell$ when `1 ≤ ℓ`
+   `commonZeroCount I P` modulo $2^\ell$
    (`Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount`) and recovers
    `commonZeroCount I P` via `(· % 2 ^ ℓ)` when `Fintype.card ι < ℓ`
    (`Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`). Note that
@@ -86,7 +86,7 @@ This module completes the algebraic and combinatorial infrastructure of Sections
   $\deg_T \le (k R_{\mathrm{deg}})(m_{\mathrm{test}} + 2(\ell - 1))$.
 * `Cslib.BitString.eval_zero_univariateParityTruncatedSum_modEq_commonZeroCount` and
   `Cslib.BitString.emod_eval_zero_univariateParityTruncatedSum_eq_commonZeroCount`: equation (5.5)
-  congruence (for `1 ≤ ℓ`) and exact recovery (for `Fintype.card ι < ℓ`) of `commonZeroCount` at
+  congruence and exact recovery (for `Fintype.card ι < ℓ`) of `commonZeroCount` at
   $T = 0$ under integer-coefficient replacements.
 * `Cslib.BitString.commonZeroCount_eq_sum_relabelRestrictedMonomials`: additive branch decomposition
   of `commonZeroCount` into `commonZeroCount` over the relabeled free-variable cube `ι' → Bool`.
