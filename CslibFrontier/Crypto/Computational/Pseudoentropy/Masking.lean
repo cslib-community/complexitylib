@@ -77,7 +77,7 @@ theorem eval_maskBit (mask : ProbComp Bool) (truth : Bool) :
     ProbComp.eval (maskBit mask truth) = (ProbComp.eval mask).bind
       (fun replace => if replace then PMF.uniformOfFintype Bool else PMF.pure truth) := by
   rw [maskBit, ProbComp.eval_bind]
-  congr 1; funext replace; cases replace <;> simp [ProbComp.eval_uniform]
+  congr 1 with replace : 1; cases replace <;> simp [ProbComp.eval_uniform]
 
 /-- The original label remains with probability `1 - maskProbability / 2`. -/
 theorem eval_maskBit_apply (mask : ProbComp Bool) (truth bit : Bool) :

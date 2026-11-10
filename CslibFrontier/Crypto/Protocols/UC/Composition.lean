@@ -236,8 +236,7 @@ theorem corruptRouter_comp {ιJ : Type} {J : ιJ → Type} (C : Finset (Fin n))
     (M : Machine J (protocolSpec n In Out NetQ NetR)) (P : Machine OracleSpec.empty J) :
     corruptRouter C (M.comp P) = (routeCorrupt C M).comp P := by
   simp only [corruptRouter, routeCorrupt, Machine.comp]
-  congr 1
-  funext q s
+  congr 1 with q s : 2
   rcases q with ⟨i, x⟩ | ⟨i, x⟩ | q
   · by_cases hi : i ∈ C <;> simp only [hi, ↓reduceIte] <;> rfl
   · by_cases hi : i ∈ C <;> simp only [hi, ↓reduceIte]
@@ -483,8 +482,7 @@ private theorem eval_run_sample_bind_swap {ιJ : Type} {J : ιJ → Type} {σ τ
     bind_map_left, map_bind, Machine.closeProgram_bind, Machine.closeProgram_sample,
     ProbOracleComp.sample_bind, ProbOracleComp.sample_pure, bind_assoc, pure_bind,
     Prod.swap_prod_mk, ProbComp.eval_bind]
-  congr 1
-  funext sR
+  congr 1 with sR : 1
   exact PMF.bind_comm _ _ _
 
 variable (C : Finset (Fin n))

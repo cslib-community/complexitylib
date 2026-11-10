@@ -498,7 +498,7 @@ end Queries
 oracle PPT, when the handler is oracle PPT and its replies are bounded by an efficient allowance.
 -/
 private theorem isOraclePPT_interpret_handler {Operation External : Type} [DecidableEq Operation]
-    [FinEnum Operation] [DecidableEq External] [Finite External]
+    [FinEnum Operation] [DecidableEq External]
     {adversary : ℕ → List Bool → WordOracleComp Operation Bool}
     (hadversary : IsOraclePPT encBool adversary)
     {handler : ℕ → Operation × List Bool → WordOracleComp External (List Bool)}

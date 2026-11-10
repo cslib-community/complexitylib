@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameChannel
+import CslibFrontier.Foundations.Data.Finset.Density
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
@@ -187,8 +188,7 @@ uniformly random frame-conditioned channel have the same law as the evaluations 
 theorem dens_eval_comp_affine (E : (ZMod P → Fin H → ZMod P) → Prop) [DecidablePred E] :
     dens {A : FrameChannel P H r | E fun y ↦ A.eval (α * y + β)} =
       dens {A : FrameChannel P H r | E A.eval} := by
-  rw [← IsPairwiseIndependentHash.dens_filter_comp_equiv (FrameChannel.affineSubstEquiv β hα)
-    fun A ↦ E A.eval]
+  rw [← Fintype.dens_filter_comp_equiv (FrameChannel.affineSubstEquiv β hα) fun A ↦ E A.eval]
   simp only [FrameChannel.affineSubstEquiv_apply, FrameChannel.eval_comp_affineSubst]
 
 include hα in
@@ -200,7 +200,7 @@ theorem dens_pi_eval_comp_affine {ι : Type*} [Fintype ι] [DecidableEq ι]
     (E : (ι → ZMod P → Fin H → ZMod P) → Prop) [DecidablePred E] :
     dens {As : ι → FrameChannel P H r | E fun c y ↦ (As c).eval (α * y + β)} =
       dens {As : ι → FrameChannel P H r | E fun c ↦ (As c).eval} := by
-  rw [← IsPairwiseIndependentHash.dens_filter_comp_equiv
+  rw [← Fintype.dens_filter_comp_equiv
     (Equiv.piCongrRight fun _ ↦ FrameChannel.affineSubstEquiv β hα)
     fun As : ι → FrameChannel P H r ↦ E fun c ↦ (As c).eval]
   simp only [Equiv.piCongrRight_apply, Pi.map_apply, FrameChannel.affineSubstEquiv_apply,

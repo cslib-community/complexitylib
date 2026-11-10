@@ -215,8 +215,7 @@ theorem eval_middle_field {x : List Bool} {n T : ℕ}
         by omega⟩ : Fin (3 * (13 + slotBits k State))) := by ext; simp; omega
     conv_lhs => rw [hw]
     rw [Fin.append_right, Circuit.eval_comp, Circuit.eval_wiring, eval_tableCircuit]
-    congr 1
-    funext i
+    congr 1 with i : 1
     simp [keySel, eval_fieldCircuit]
 
 theorem getElem?_litBits (w : ℕ) (l : Literal ℕ) {i : ℕ} (hi : i < w + 1) :

@@ -435,7 +435,7 @@ theorem variable_time_counter_iff_remainder (m k : ℕ) :
           fun j : Fin m => x (Fin.natAdd (k + k) j) := by
         funext j; simp [init]
       have hinit_k : word (fun i : Fin k => init x (Fin.natAdd m i)) = a x := by
-        congr 1; funext i; simp [init]
+        congr 1 with i : 1; simp [init]
       rw [hinit_m, hinit_k]
       simp only [Nat.ne_of_gt hpos, ite_false, BitVec.toNat_ofNat,
         Nat.mod_eq_of_lt ((Nat.mod_lt _ hpos).trans (a x).isLt)]

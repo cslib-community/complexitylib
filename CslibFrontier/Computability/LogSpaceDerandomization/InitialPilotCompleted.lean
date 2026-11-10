@@ -71,7 +71,7 @@ private theorem normalized_range
       rawSteps prepSteps detectorSteps σ x y ∈
       Set.Icc 0 (2 * HP.Q HP.toHierarchyParams.atomCap) := by
   unfold initialPilotNormalized
-  exact correctionRequest_mem_Icc HP D id _ _ _ _ _ σ x y
+  exact selectedRequest_mem_Icc HP D id _ _ _ _ _ σ x y
 
 private theorem true_range
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P) (R : RoleProfile J)
@@ -80,7 +80,7 @@ private theorem true_range
     initialTrueNormalized HP D R ks kt ss st C σ x y ∈
       Set.Icc 0 (2 * HP.Q HP.toHierarchyParams.atomCap) := by
   unfold initialTrueNormalized
-  exact correctionRequest_mem_Icc HP D id _ _ _ _ _ σ x y
+  exact selectedRequest_mem_Icc HP D id _ _ _ _ _ σ x y
 
 /-- The known normalized range pays the actual outer noise at a positive length,
 regardless of the completed RAW, preparation and detector lengths. -/

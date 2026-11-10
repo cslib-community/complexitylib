@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.QueryBounds
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 
 /-!
 # Interactive proofs and the class IP
@@ -283,13 +284,6 @@ private theorem acceptProb_bppVerifier {p : Polynomial ℕ} {V : α × List Bool
     BitString.eval_sampleList]
   exact BitString.uniformList_map_apply _ _ true
 
-private theorem natCast_div_le_natCast_div {a b c d : ℕ} (hb : b ≠ 0) (hd : d ≠ 0)
-    (h : a * d ≤ b * c) : (a : ENNReal) / b ≤ (c : ENNReal) / d := by
-  rw [ENNReal.div_le_iff_le_mul (Or.inl (by exact_mod_cast hb)) (Or.inl (ENNReal.natCast_ne_top _)),
-    ← ENNReal.mul_div_right_comm, ENNReal.le_div_iff_mul_le (Or.inl (by exact_mod_cast hd))
-      (Or.inl (ENNReal.natCast_ne_top _))]
-  exact_mod_cast h.trans_eq (mul_comm b c)
-
 /-- **`BPP ⊆ IP`**, without messages. -/
 theorem BPP_subset_IP (enc : α ↪ List Bool) : BPP enc ⊆ IP enc := by
   rintro A ⟨p, V, hV, hA⟩
@@ -297,15 +291,15 @@ theorem BPP_subset_IP (enc : α ↪ List Bool) : BPP enc ⊆ IP enc := by
     fun a ha P => ?_⟩ <;> rw [acceptProb_bppVerifier]
   · have h := (hA a).1 ha
     unfold BoundedErrorAt at h
-    exact_mod_cast natCast_div_le_natCast_div (a := 2) (b := 3)
-      (d := 2 ^ p.eval (enc a).length) three_ne_zero (pow_pos two_pos _).ne' (by omega)
+    exact_mod_cast (ENNReal.natCast_div_le_natCast_div_iff (a := 2) (b := 3)
+      (d := 2 ^ p.eval (enc a).length) three_ne_zero (pow_pos two_pos _).ne').mpr (by omega)
   · have h := (hA a).2 ha
     unfold BoundedErrorAt at h
     have hsum := Finset.card_filter_add_card_filter_not (s := Finset.univ)
       (fun r : Fin (p.eval (enc a).length) → Bool => V (a, List.ofFn r) = true)
     simp only [Bool.not_eq_true, Finset.card_univ, Fintype.card_fun, Fintype.card_bool,
       Fintype.card_fin] at hsum
-    exact_mod_cast natCast_div_le_natCast_div (c := 1) (d := 3)
-      (b := 2 ^ p.eval (enc a).length) (pow_pos two_pos _).ne' three_ne_zero (by omega)
+    exact_mod_cast (ENNReal.natCast_div_le_natCast_div_iff (c := 1) (d := 3)
+      (b := 2 ^ p.eval (enc a).length) (pow_pos two_pos _).ne' three_ne_zero).mpr (by omega)
 
 end Cslib.Complexity

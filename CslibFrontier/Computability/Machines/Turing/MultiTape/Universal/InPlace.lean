@@ -684,8 +684,8 @@ public lemma length_eSt_le (d : Desc) (x : List ℕ) (t i j : ℕ) :
     gcongr)
   have hpos := (inv_iterate d x (min i t)).1.inputPos
   obtain ⟨hk, hcur⟩ := scan_take x (run d x (min i t)).inputPos 0 j
-  have hr := ComputableTidilyInO.length_encNat_mono (show t - i ≤ t by omega)
-  have hk' := ComputableTidilyInO.length_encNat_mono (hk.trans hpos)
+  have hr := length_encNat_mono (show t - i ≤ t by omega)
+  have hk' := length_encNat_mono (hk.trans hpos)
   simp only [length_encPair, encUnary_apply, List.length_replicate, stateSpace, descLen] at *
   omega
 

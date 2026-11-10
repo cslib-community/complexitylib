@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Interactive.Plain
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 
 /-!
@@ -592,12 +593,6 @@ theorem Spec.Transcript.split_append : ∀ (s₁ s₂ : Spec) (τ₁ : Transcrip
   | _ :: s₁, s₂, τ₁, τ₂ => by
     simp only [Transcript.split, Transcript.append, Spec.Transcript.split_append s₁ s₂ τ₁.2 τ₂]
 
-private theorem toOuterMeasure_bind_le_add {α β : Type} (μ : PMF α) (f : α → PMF β)
-    (t : Set β) (A : Set α) {K : ℝ≥0∞} (h : ∀ a ∉ A, (f a).toOuterMeasure t ≤ K) :
-    (μ.bind f).toOuterMeasure t ≤ μ.toOuterMeasure A + K := by
-  simpa only [compl_compl] using
-    Probability.PMF.toOuterMeasure_bind_failure_le μ f Aᶜ t K fun a _ ha => h a ha
-
 section Compose
 
 /-- The honest run of a composed reduction runs the first reduction, then the second on the
@@ -626,7 +621,8 @@ theorem Reduction.Complete.append {R₁ : Reduction OracleSpec.empty OracleSpec.
   have hl₁ := h₁ x w hxw
   rw [Reduction.run, World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hl₁ ⊢
   rw [plainLaw_run_reductionAppend]
-  refine le_trans (toOuterMeasure_bind_le_add _ _ _ _ fun r₁ hr₁ => ?_) (add_le_add hl₁ le_rfl)
+  refine le_trans (Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ _ fun r₁ _ hr₁ => ?_)
+    (add_le_add hl₁ le_rfl)
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, not_not] at hr₁
   obtain ⟨hout, hrel⟩ := hr₁
   have hl₂ := h₂ r₁.2.1 r₁.2.2 hrel
@@ -663,7 +659,8 @@ theorem Verifier.Sound.append {V₁ : Verifier OracleSpec.empty s₁ S₁ S₂}
   have hl₁ := h₁ x hx _ ((ProverStrategy.split s₁ s₂ ·) <$> P)
   rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hl₁ ⊢
   rw [plainLaw_run_verifierAppend]
-  refine le_trans (toOuterMeasure_bind_le_add _ _ _ _ fun r₁ hr₁ => ?_) (add_le_add hl₁ le_rfl)
+  refine le_trans (Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ _ fun r₁ _ hr₁ => ?_)
+    (add_le_add hl₁ le_rfl)
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, not_exists, not_and] at hr₁
   rw [PMF.toOuterMeasure_map_apply]
   cases hout : V₁.outputOn x r₁.1 with

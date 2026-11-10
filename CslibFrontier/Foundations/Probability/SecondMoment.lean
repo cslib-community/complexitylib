@@ -216,26 +216,50 @@ theorem exists_measurable_comp_restrict {β : Type*} [MeasurableSpace β]
 /-- **Functions of disjoint sets of coordinates are independent** under a product of probability
 measures. -/
 theorem indepFun_pi_of_dependsOn {β γ : Type*} [MeasurableSpace β] [MeasurableSpace γ]
-    {f : (Π i, Ω i) → β} {g : (Π i, Ω i) → γ} (hf : Measurable f) (hg : Measurable g)
+    {f : (Π i, Ω i) → β} {g : (Π i, Ω i) → γ}
     {S T : Set ι} (hfS : DependsOn f S) (hgT : DependsOn g T) (hST : Disjoint S T) :
     IndepFun f g (Measure.pi μ) := by
   classical
   obtain ⟨ω₀⟩ := nonempty_of_isProbabilityMeasure (Measure.pi μ)
-  obtain ⟨f', hf', rfl⟩ := exists_measurable_comp_restrict hf
-    (S := S.toFinset) (by rwa [Set.coe_toFinset]) ω₀
-  obtain ⟨g', hg', rfl⟩ := exists_measurable_comp_restrict hg
-    (S := T.toFinset) (by rwa [Set.coe_toFinset]) ω₀
-  have hind : iIndepFun (fun i (ω : Π i, Ω i) => ω i) (Measure.pi μ) :=
-    iIndepFun_pi (X := fun i => (id : Ω i → Ω i)) fun _ => aemeasurable_id
-  exact (hind.indepFun_finset _ _ (Set.disjoint_toFinset.2 hST)
-    fun i => measurable_pi_apply i).comp hf' hg'
+  let e := MeasurableEquiv.piEquivPiSubtypeProd Ω (· ∈ S)
+  let ν₁ : Measure (Π i : {i // i ∈ S}, Ω i) := Measure.pi fun i => μ i.1
+  let ν₂ : Measure (Π i : {i // i ∉ S}, Ω i) := Measure.pi fun i => μ i.1
+  have he : MeasurePreserving e (Measure.pi μ) (ν₁.prod ν₂) :=
+    measurePreserving_piEquivPiSubtypeProd μ (· ∈ S)
+  let y₀ : Π i : {i // i ∉ S}, Ω i := fun i => ω₀ i.1
+  let x₀ : Π i : {i // i ∈ S}, Ω i := fun i => ω₀ i.1
+  rw [indepFun_iff_measure_inter_preimage_eq_mul]
+  intro A B _ _
+  let C : Set (Π i : {i // i ∈ S}, Ω i) := {x | f (e.symm (x, y₀)) ∈ A}
+  let D : Set (Π i : {i // i ∉ S}, Ω i) := {y | g (e.symm (x₀, y)) ∈ B}
+  have hf_eq : ∀ ω, f ω = f (e.symm ((e ω).1, y₀)) := by
+    intro ω
+    refine hfS fun i hi => ?_
+    simp [e, MeasurableEquiv.piEquivPiSubtypeProd, Equiv.piEquivPiSubtypeProd_symm_apply, hi]
+  have hg_eq : ∀ ω, g ω = g (e.symm (x₀, (e ω).2)) := by
+    intro ω
+    refine hgT fun i hi => ?_
+    have hiS : i ∉ S := Set.disjoint_right.1 hST hi
+    simp [e, MeasurableEquiv.piEquivPiSubtypeProd, Equiv.piEquivPiSubtypeProd_symm_apply, hiS]
+  have hpreA : f ⁻¹' A = e ⁻¹' (C ×ˢ Set.univ) := by
+    ext ω
+    simp [C, hf_eq ω]
+  have hpreB : g ⁻¹' B = e ⁻¹' (Set.univ ×ˢ D) := by
+    ext ω
+    simp [D, hg_eq ω]
+  have hpreAB : f ⁻¹' A ∩ g ⁻¹' B = e ⁻¹' (C ×ˢ D) := by
+    ext ω
+    simp [C, D, hf_eq ω, hg_eq ω]
+  rw [hpreAB, hpreA, hpreB, he.measure_preimage_equiv, he.measure_preimage_equiv,
+    he.measure_preimage_equiv, Measure.prod_prod, Measure.prod_prod, Measure.prod_prod,
+    measure_univ, measure_univ, mul_one, one_mul]
 
 /-- **Events of disjoint sets of coordinates are independent** under a product of probability
 measures. -/
 theorem indepSet_pi_of_dependsOn {A B : Set (Π i, Ω i)} (hA : MeasurableSet A)
     (hB : MeasurableSet B) {S T : Set ι} (hAS : DependsOn (· ∈ A) S) (hBT : DependsOn (· ∈ B) T)
     (hST : Disjoint S T) : IndepSet A B (Measure.pi μ) := by
-  have h := (indepFun_pi_of_dependsOn (μ := μ) (measurable_mem.2 hA) (measurable_mem.2 hB) hAS
+  have h := (indepFun_pi_of_dependsOn (μ := μ) hAS
     hBT hST).measure_inter_preimage_eq_mul {True} {True} (measurableSet_singleton _)
       (measurableSet_singleton _)
   have hpre : ∀ C : Set (Π i, Ω i), (· ∈ C) ⁻¹' {True} = C := fun C => by

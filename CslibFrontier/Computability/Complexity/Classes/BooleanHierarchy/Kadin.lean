@@ -663,21 +663,18 @@ private theorem kadinHardBranch_subset_kadinTarget (hm : m = p₁ + p₂) {r d :
     kadinHardBranch enc p₁ p₂ m E r d D₁ B ⊆ kadinTarget enc p₁ p₂ E := by
   rintro a ⟨s, hs, ⟨hs_notL, hs_hard⟩, hmain⟩ u₁ hu₁
   obtain ⟨w, hw, hwE, hBw⟩ := hmain u₁ hu₁
-  let u₂ := w.take (p₂.eval (enc a).length)
-  let z := w.drop (p₂.eval (enc a).length)
-  have hu₂ : u₂.length = p₂.eval (enc a).length := by simp [u₂, hw]
-  have hz : z.length = (d • m).eval (enc a).length := by simp [z, hw]
-  have hw_eq : u₂ ++ z = w := List.take_append_drop _ _
+  rw [Polynomial.eval_add] at hw
+  obtain ⟨u₂, z, hu₂, hz, rfl⟩ := exists_append_of_length_eq_add hw
+  rw [List.drop_left' hu₂] at hwE
   let y := u₁ ++ u₂
   have hy : y.length = m.eval (enc a).length := by simp [y, hm, hu₁, hu₂]
   have hyz_len : (y ++ z).length = ((1 + d) • m).eval (enc a).length := by
     simp [hy, hz, add_smul, one_smul]
-  have hyz_drop : (y ++ z).drop (m.eval (enc a).length) = z := by simp [← hy]
-  have hnotD₁ : (a, s ++ (y ++ z)) ∉ D₁ := hs_hard (y ++ z) hyz_len (by rwa [hyz_drop])
-  have hsuw_eq : s ++ u₁ ++ w = (s ++ y) ++ z := by simp [y, ← hw_eq, List.append_assoc]
+  have hnotD₁ : (a, s ++ (y ++ z)) ∉ D₁ :=
+    hs_hard (y ++ z) hyz_len (by rwa [List.drop_left' hy])
   have hmemD : (a, (s ++ y) ++ z) ∈ D := by
     rw [hDB]
-    exact ⟨by rwa [← hsuw_eq], by simpa [List.append_assoc] using hnotD₁⟩
+    exact ⟨by simpa [y, List.append_assoc] using hBw, by simpa [List.append_assoc] using hnotD₁⟩
   have hsy_len : (s ++ y).length = ((r + 1) • m).eval (enc a).length := by
     simp [hs, hy, add_smul, one_smul]
   have hnotL_succ : (a, s ++ y) ∉ kadinChain enc m E (r + 1) :=

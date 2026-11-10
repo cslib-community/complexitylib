@@ -362,18 +362,8 @@ program $p$ of length at most $k$ outputs $x$ given $y$ within $2^{k - |p|}$ ste
 theorem condLevinKt_le_natCast_iff_exists_runFor_two_pow {x y : List Bool} {k : ℕ} :
     condLevinKt x y ≤ k ↔
       ∃ p : List Bool, p.length ≤ k ∧
-        x ∈ ((condUniversalTM y).run p).runFor (2 ^ (k - p.length)) := by
-  rw [condLevinKt_le_natCast_iff]
-  constructor
-  · rintro ⟨p, s, hp, hle⟩
-    have hplen : p.length ≤ k := by omega
-    have hclog : Nat.clog 2 s ≤ k - p.length := by omega
-    have hs : s ≤ 2 ^ (k - p.length) := (Nat.clog_le_iff_le_pow one_lt_two).mp hclog
-    exact ⟨p, hplen, condUniversalTMRunFor_mono p y hs hp⟩
-  · rintro ⟨p, hplen, hp⟩
-    refine ⟨p, 2 ^ (k - p.length), hp, ?_⟩
-    rw [Nat.clog_pow _ _ one_lt_two]
-    omega
+        x ∈ ((condUniversalTM y).run p).runFor (2 ^ (k - p.length)) :=
+  condLevinKt_le_natCast_iff.trans DescriptionMethod.exists_runFor_length_add_clog_le_iff
 
 /-! ### Polynomial-time conditional upper bounds ($K^t(F(w, y) \mid y) \le |w| + O(1)$) -/
 

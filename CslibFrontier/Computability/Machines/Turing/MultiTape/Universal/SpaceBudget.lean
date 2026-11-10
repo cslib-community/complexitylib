@@ -234,12 +234,10 @@ private theorem passState_foldS (t i : ℕ) :
     have hP := length_budgetStep_iterate_le d x b (min i t)
     rcases Nat.lt_or_ge i t with h | h
     · rw [show min (i + 1) t = min i t + 1 by omega, Function.iterate_succ_apply']
-      generalize (budgetStep d x b)^[min i t] (init d, []) = P at hP ⊢
       rw [foldEndS, stepAt_scan d x, budgetStep]
       simp only [show t - i ≠ 0 by omega, ↓reduceIte, foldEnd, stepAt_scan d x]
       split_ifs <;> simp only [Prod.mk.injEq, true_and, and_true] <;> omega
     · rw [show min (i + 1) t = min i t by omega]
-      generalize (budgetStep d x b)^[min i t] (init d, []) = P at hP ⊢
       rw [foldEndS, stepAt_scan d x]
       simp only [show t - i = 0 by omega, ↓reduceIte, foldEnd, stepAt_scan d x, Option.toList_none,
         List.append_nil, List.take_of_length_le hP]
@@ -278,8 +276,8 @@ private lemma length_eSSt_le (t i j : ℕ) :
     · exact hb'.trans (le_max_left _ _)
   have hpos : (run d x j').inputPos ≤ x.length + 1 := (inv_iterate d x j').1.inputPos
   obtain ⟨hk, hcur⟩ := scan_take x (run d x j').inputPos 0 j
-  have hr := ComputableTidilyInO.length_encNat_mono (show t - i ≤ t by omega)
-  have hk' := ComputableTidilyInO.length_encNat_mono (hk.trans hpos)
+  have hr := length_encNat_mono (show t - i ≤ t by omega)
+  have hk' := length_encNat_mono (hk.trans hpos)
   have ho := length_encList_le encUnary (((stepOut d x)^[j'] (init d, [])).2.take 2)
     (b := descLen d) fun o ho => by rw [encUnary_apply, List.length_replicate]; exact hval o ho
   have ho' := Nat.mul_le_mul_right (2 * descLen d + 1) hout
@@ -466,7 +464,6 @@ private lemma foldEndS_inO : ComputableTidilyInO foldEndS eSSt eSSt
       generalize (eSt s.1).length = A at *
       have hX : L + 1 ≤ (L + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
       have hA : (A + 1) ^ 3 ≤ (L + 1) ^ 3 := Nat.pow_le_pow_left (by omega) 3
-      generalize (L + 1) ^ 3 = Y at *
       omega
   -- the configuration stays
   have hpos := (h₁.fst'.snd'.of_enc_eq (encOut := eCfgFields)
@@ -490,8 +487,6 @@ private lemma foldEndS_inO : ComputableTidilyInO foldEndS eSSt eSSt
       have hX : (eSSt s).length + 1 ≤ ((eSSt s).length + 1) ^ 3 := Nat.le_self_pow (by norm_num) _
       have hX2 : ((eSSt s).length + 1) ^ 2 ≤ ((eSSt s).length + 1) ^ 3 :=
         Nat.pow_le_pow_right (by omega) (by omega)
-      generalize (eSSt s).length = L at *
-      generalize (L + 1) ^ 3 = Y at *
       omega
   refine ((budgetTest_inO.ite htaken hstay).of_enc_eq (g := foldEndS) fun s => ?_).mono 2
     (fun s => ?_) fun s => ?_
@@ -594,7 +589,6 @@ public theorem computableTidilyInTimeAndSpace_budgetedUniversal : ∃ c,
       omega
     have := length_eSSt_le' d x b t (t - 1 + 1) 0
     simp only [streamState_zero] at this
-    generalize budgetSpace (d, x, t, b) = B at *
     nlinarith
 
 /-- The initial configuration is encoded within `11 * descLen d + 6` bits: the initial state, the

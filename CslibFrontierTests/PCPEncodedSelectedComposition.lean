@@ -5,62 +5,58 @@ Authors: Samuel Schlesinger
 -/
 
 
-import CslibFrontier.Computability.PCP.Encoded.Composition.Enumeration
+import CslibFrontier.Computability.PCP.Encoded.SelectedComposition
 import CslibFrontier.Tactic.PolyTime
 
 /-! Complete constructive enumeration, exact graph semantics, and encoding inference clients. -/
 
-namespace CslibFrontierTests.PCPEncodedCompositionEnumeration
+namespace CslibFrontierTests.PCPEncodedSelectedComposition
 
 open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.PCP.HadamardTester Turing.MultiTapeTM
 
--- The complete empty-alphabet gadget has only 8 coins and 17 queries.
+-- The complete empty-alphabet gadget has 40 selected coins and 6 queries.
 -- We evaluate its endpoints, not the enormous encoded answer tables.
 private def emptyGraph : Graph (Fin 0 → Fin 0 → Bool) :=
   ⟨2, [⟨0, 1, fun _ _ => false⟩]⟩
 
-example : emptyGraph.composeEnumerated.vertices = 33 := by decide
-example : emptyGraph.composeEnumerated.edges.length = 136 := by
-  rw [Graph.length_edges_composeEnumerated]
+example : emptyGraph.composeSelectedEnumerated.vertices = 129 := by decide
+example : emptyGraph.composeSelectedEnumerated.edges.length = 240 := by
+  rw [Graph.length_edges_composeSelectedEnumerated]
   decide
-example : emptyGraph.composeEnumerated.WellFormed := by
-  apply Graph.WellFormed.composeEnumerated
+example : emptyGraph.composeSelectedEnumerated.WellFormed := by
+  apply Graph.WellFormed.composeSelectedEnumerated
   simp [Graph.WellFormed, emptyGraph]
 
-/-- info: (136, 33, true) -/
+/-- info: (240, 129, true) -/
 #guard_msgs in
-#eval (emptyGraph.composeEnumerated.edges.length, emptyGraph.composeEnumerated.vertices,
-  emptyGraph.composeEnumerated.isWellFormed)
+#eval (emptyGraph.composeSelectedEnumerated.edges.length,
+  emptyGraph.composeSelectedEnumerated.vertices, emptyGraph.composeSelectedEnumerated.isWellFormed)
 
 /-- info: false -/
 #guard_msgs in
-#eval (Graph.mk 0 emptyGraph.edges).composeEnumerated.isWellFormed
-
--- The exact interpretation also applies to the empty alphabet.
-example : (emptyGraph.composeEnumerated.toGraph id).unsatVal =
-    (emptyGraph.toGraph id).compose.unsatVal := Graph.unsatVal_composeEnumerated_eq _
+#eval (Graph.mk 0 emptyGraph.edges).composeSelectedEnumerated.isWellFormed
 
 private def falseLoop : Graph (Unit → Unit → Bool) :=
   ⟨1, [⟨0, 0, fun _ _ => false⟩]⟩
 
-example : falseLoop.composeEnumerated.WellFormed := by
-  apply Graph.WellFormed.composeEnumerated
+example : falseLoop.composeSelectedEnumerated.WellFormed := by
+  apply Graph.WellFormed.composeSelectedEnumerated
   simp [Graph.WellFormed, falseLoop]
 
-example : ¬ (falseLoop.composeEnumerated.toGraph id).Satisfiable := by
-  rw [Graph.satisfiable_composeEnumerated_iff]
+example : ¬ (falseLoop.composeSelectedEnumerated.toGraph id).Satisfiable := by
+  rw [Graph.satisfiable_composeSelectedEnumerated_iff]
   rintro ⟨σ, hσ⟩
   exact Bool.false_ne_true (hσ ⟨0, by decide⟩)
 
-example : (falseLoop.toGraph id).unsatVal / 476 ≤
-    (falseLoop.composeEnumerated.toGraph id).unsatVal :=
-  Graph.le_unsatVal_composeEnumerated _
+example : (falseLoop.toGraph id).unsatVal / 840 ≤
+    (falseLoop.composeSelectedEnumerated.toGraph id).unsatVal :=
+  Graph.le_unsatVal_composeSelectedEnumerated _
 
 -- The compact-CNF alphabet has an ordinary Pi Fintype as well as a constructive enumeration.
 local instance : FinEnum Bool := FinEnum.ofList [false, true] (by decide)
 
 example : ComputableInPolyTime
-    (fun g : Graph ((Fin 3 → Bool) → (Fin 3 → Bool) → Bool) => g.composeEnumerated)
+    (fun g : Graph ((Fin 3 → Bool) → (Fin 3 → Bool) → Bool) => g.composeSelectedEnumerated)
     (Graph.encoding (encPi (encPi encBool)))
     (Graph.encoding (encPi (encPi encBool))) := by polytime
 
@@ -70,15 +66,15 @@ variable {α Input : Type} [FinEnum α] {input : Input ↪ List Bool}
   {constraints : (α → α → Bool) ↪ List Bool} (graph : Input → Graph (α → α → Bool))
   (hg : ComputableInPolyTime graph input (Graph.encoding constraints))
 
-example : ComputableInPolyTime (fun x => (graph x).composeEnumerated)
+example : ComputableInPolyTime (fun x => (graph x).composeSelectedEnumerated)
     input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hg; fun_prop)
   fun_prop
 
 example : ComputableInPolyTime
-    (fun x => let g := graph x; g.composeEnumerated)
+    (fun x => let g := graph x; g.composeSelectedEnumerated)
     input (Graph.encoding (encPi (encPi encBool))) := by polytime
 
 end Arbitrary
 
-end CslibFrontierTests.PCPEncodedCompositionEnumeration
+end CslibFrontierTests.PCPEncodedSelectedComposition
