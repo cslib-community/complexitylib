@@ -3806,6 +3806,8 @@ public import CslibFrontier.Crypto.Computational.MerkleSignature.Security
 public import CslibFrontier.Crypto.Computational.MerkleTree
 public import CslibFrontier.Crypto.Computational.MerkleTree.Binding
 public import CslibFrontier.Crypto.Computational.MerkleTree.ROMExtract
+public import CslibFrontier.Crypto.Computational.MillerRabin
+public import CslibFrontier.Crypto.Computational.ModulusGeneration
 public import CslibFrontier.Crypto.Computational.NaorReingold
 public import CslibFrontier.Crypto.Computational.NaorReingold.PRF
 public import CslibFrontier.Crypto.Computational.NaorReingold.Security
@@ -5030,6 +5032,7 @@ public import CslibFrontier.Foundations.NumberTheory.Padics.AdjoinRootReduction
 public import CslibFrontier.Foundations.NumberTheory.Padics.AdjoinRootValuation
 public import CslibFrontier.Foundations.NumberTheory.Padics.RatValuation
 public import CslibFrontier.Foundations.NumberTheory.Primality.EulerLiars
+public import CslibFrontier.Foundations.NumberTheory.Primality.PrimeDensity
 public import CslibFrontier.Foundations.NumberTheory.Primality.RabinMonier
 public import CslibFrontier.Foundations.NumberTheory.Primality.StrongLiars
 public import CslibFrontier.Foundations.NumberTheory.Primality.Witness
