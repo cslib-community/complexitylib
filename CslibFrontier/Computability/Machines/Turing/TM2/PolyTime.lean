@@ -105,7 +105,8 @@ theorem initList_polyTime (tm : FinTM2) [∀ k, Finite (tm.Γ k)] :
       (const (encIn := encList (encFinite (tm.Γ tm.k₀)))
         (encOut := encList (encFinite (tm.Γ k))) [])
 
-/-- Polynomially many source steps have polynomially bounded encoded intermediate states. -/
+/-- The configuration after `p.eval input.length` padded source steps from `initList tm input` is
+polynomial-time computable from the input word, when every stack alphabet is finite. -/
 theorem run_polyTime (tm : FinTM2) [∀ k, Finite (tm.Γ k)] (p : Polynomial ℕ) :
     ComputableInPolyTime
       (fun input => (stepTotal tm.m)^[p.eval input.length] (initList tm input))

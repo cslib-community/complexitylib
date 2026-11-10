@@ -27,10 +27,10 @@ We define standard string encodings for instances of the Succinct Minimum Circui
 (`Cslib.SuccinctMCSP.Instance`) and prove that `SuccinctMCSP` belongs to `NP` under both encodings:
 * `Cslib.SuccinctMCSP.enc`: encodes the arity in unary (`encUnary`), the canonical list of
   input-output samples using `encList (encPair encBits encBool)`, and the threshold in unary
-  (`encUnary`). This is equivalent up to field order and list framing (`t` is implicit in `encList`)
-  to the encoding `⟨1^n, 1^s, 1^t, (x_1, b_1), …, (x_t, b_t)⟩` of
-  [OliveiraPichSanthanam2019, Section 4.1, proof of Theorem 1.4], and the two are computable from
-  each other in polynomial time.
+  (`encUnary`). Up to field order, list framing (`t` is implicit in `encList`) and the order and
+  multiplicity of the samples, this is the encoding `⟨1^n, 1^s, 1^t, (x_1, b_1), …, (x_t, b_t)⟩`
+  of [OliveiraPichSanthanam2019, Section 4.1, proof of Theorem 1.4]. Neither that encoding nor
+  the polynomial-time conversions between the two are formalized here.
 * `Cslib.SuccinctMCSP.encBinary`: encodes the arity in unary, the canonical list of samples, and
   the threshold in binary (`encNat`).
 
@@ -204,10 +204,11 @@ def toRaw : Instance ↪ (ℕ × List (List Bool × Bool)) × ℕ :=
 theorem toRaw_apply (x : Instance) : toRaw x = ((x.arity, rawSamples x), x.threshold) := rfl
 
 /-- Instances of `SuccinctMCSP` encoded by the arity in unary, the framed list of samples, and the
-threshold in unary. This is equivalent up to field order and list framing (`t` is implicit in
-`encList`) to `⟨1^n, 1^s, 1^t, (x_1, b_1), …, (x_t, b_t)⟩` in
-[OliveiraPichSanthanam2019, Section 4.1, proof of Theorem 1.4], and both encodings are computable
-from each other in polynomial time. -/
+threshold in unary. Up to field order, list framing (`t` is implicit in `encList`) and the order
+and multiplicity of the samples, which `rawSamples` lists once each in the order of `enumSamples`,
+this is `⟨1^n, 1^s, 1^t, (x_1, b_1), …, (x_t, b_t)⟩` in
+[OliveiraPichSanthanam2019, Section 4.1, proof of Theorem 1.4]. Neither that encoding nor the
+polynomial-time conversions between the two are formalized here. -/
 def enc : Instance ↪ List Bool :=
   toRaw.trans (encPair (encPair encUnary (encList (encPair encBits encBool))) encUnary)
 
