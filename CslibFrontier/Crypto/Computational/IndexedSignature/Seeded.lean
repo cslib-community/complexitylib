@@ -70,10 +70,10 @@ structure Seeded (S : IndexedSignatureScheme) where
     ProbComp.eval (S.keyGen n) = (BitString.uniformList length).map (keyGenWith n)
   signWith_polyTime : ComputableInPolyTime
     (fun p : (List Bool × ℕ × List Bool) × List Bool => signWith p.1.1 p.1.2.1 p.1.2.2 p.2)
-    (encPair (encPair encBits (encPair encUnary encBits)) encBits) encBits
+    (encPair encIndexedSignInput encBits) encBits
   signBudget_polyTime : ComputableInPolyTime
     (fun p : List Bool × ℕ × List Bool => signBudget p.1 p.2.1 p.2.2)
-    (encPair encBits (encPair encUnary encBits)) encUnary
+    encIndexedSignInput encUnary
   signWith_mem_support : ∀ sk u msg coins,
     signWith sk u msg coins ∈ (ProbComp.eval (S.sign sk u msg)).support
   eval_sign : ∀ sk u msg length, signBudget sk u msg ≤ length →
@@ -110,8 +110,8 @@ theorem exists_signWith (S : IndexedSignatureScheme) :
     ∃ (signWith : List Bool × ℕ × List Bool → List Bool → List Bool)
       (budget : List Bool × ℕ × List Bool → ℕ),
       ComputableInPolyTime (fun p : (List Bool × ℕ × List Bool) × List Bool => signWith p.1 p.2)
-        (encPair (encPair encBits (encPair encUnary encBits)) encBits) encBits ∧
-      ComputableInPolyTime budget (encPair encBits (encPair encUnary encBits)) encUnary ∧
+        (encPair encIndexedSignInput encBits) encBits ∧
+      ComputableInPolyTime budget encIndexedSignInput encUnary ∧
       (∀ a coins,
         let (sk, u, msg) := a
         signWith a coins ∈ (ProbComp.eval (S.sign sk u msg)).support) ∧

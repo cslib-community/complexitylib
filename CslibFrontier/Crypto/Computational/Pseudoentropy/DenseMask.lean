@@ -61,7 +61,7 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (test : ℕ × List Bool → ℕ → List (List Bool × Bool) → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
-      (encList (encPair encBits encBool))) encBool
+      encLabeledSamples) encBool
         (fun ((a, i), samples) => test a i samples))
     {candidates count densityBound inverseGap : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ}
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
@@ -242,8 +242,7 @@ with small distinguishing gap whenever their density is valid. The common eventu
 allows arbitrary choices of index in the proof without supplying that choice to the program. -/
 theorem HasGap.eventually_exists_indexed_mask {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (test : ℕ → ℕ → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encLabeledSamples) encBool
         (fun ((n, i), samples) => test n i samples))
     {candidates count densityBound inverseGap : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ}
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
@@ -281,8 +280,7 @@ bounded below by the configured dyadic rate. The statement exposes no boosting s
 theorem HasGapWithAdvice.eventually_exists_mask {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (test : ℕ × List Bool → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encBits)
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair (encPair encUnary encBits) encLabeledSamples) encBool
         (fun input => test input.1 input.2))
     {count numerator densityBound inverseGap : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)
@@ -320,8 +318,7 @@ gap. The mask may depend on the test and parameter; its positive probabilities a
 bounded below by the configured dyadic rate. The statement exposes no boosting state. -/
 theorem HasGap.eventually_exists_mask {pair : SamplablePair} {gap : ℕ → ℝ}
     (hpair : pair.HasGap gap) (test : ℕ → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair encUnary
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair encUnary encLabeledSamples) encBool
         (fun input => test input.1 input.2))
     {count numerator densityBound inverseGap : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)

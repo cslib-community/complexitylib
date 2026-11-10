@@ -104,33 +104,8 @@
  "CslibFrontier/Crypto/Computational/Hybrid/SavedPrediction.lean": {
   "encList (encPair ?1 encBool)": 3
  },
- "CslibFrontier/Crypto/Computational/IndexedSignature/Seeded.lean": {
-  "encPair encBits (encPair encUnary encBits)": 3
- },
  "CslibFrontier/Crypto/Computational/Kilian.lean": {
   "encPair encBits (encPair ?1 encBits)": 3
- },
- "CslibFrontier/Crypto/Computational/MAC.lean": {
-  "encPair (encPair encBits encBits) encBits": 9,
-  "encPair encBits (encPair encBits encBits)": 3
- },
- "CslibFrontier/Crypto/Computational/Nonuniform/Basic.lean": {
-  "encPair (encPair encUnary encBits) encBits": 4
- },
- "CslibFrontier/Crypto/Computational/Pseudoentropy/DenseMask.lean": {
-  "encList (encPair encBits encBool)": 4
- },
- "CslibFrontier/Crypto/Computational/Pseudoentropy/LabelExtraction.lean": {
-  "encList (encPair encBits encBool)": 4
- },
- "CslibFrontier/Crypto/Computational/Pseudoentropy/WordExtraction.lean": {
-  "encPair (encList encBits) (encPair encBits encBits)": 6
- },
- "CslibFrontier/Crypto/Computational/SchnorrSignature.lean": {
-  "encPair ?1.encDesc (encPair encBits (encPair encBits encBits))": 3
- },
- "CslibFrontier/Crypto/Computational/TCRSignature.lean": {
-  "encPair encUnary (encPair encBits encBits)": 4
  },
  "CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean": {
   "encPair encUnary (encPair encBits encBits)": 9
