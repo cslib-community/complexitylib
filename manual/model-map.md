@@ -313,7 +313,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `online-deterministic` | [Deterministic online competitive problems](algorithms-and-memory/online-and-streaming.md) | online |
 | `count-min-stream` | [Weighted insertion Count-Min sketch](algorithms-and-memory/online-and-streaming.md) | streaming |
 | `native-stream-fold` | [Native input-stream folds](algorithms-and-memory/online-and-streaming.md) | streaming |
-| `cost-game` | [Finite strategic games in cost form, mixed Nash equilibria, potentials and coarse correlated equilibria](algorithms-and-memory/strategic-games.md) | game-theory |
+| `cost-game` | [Finite strategic games in cost form, mixed Nash, correlated and coarse correlated equilibria, potentials](algorithms-and-memory/strategic-games.md) | game-theory |
 | `atomic-congestion-game` | [Atomic congestion games with Rosenthal's potential](algorithms-and-memory/strategic-games.md) | game-theory |
 | `nonatomic-routing` | [Nonatomic selfish routing and Wardrop flows](algorithms-and-memory/strategic-games.md) | game-theory |
 | `hedge-dynamics` | [No-regret (Hedge) dynamics in finite games and their price of anarchy](algorithms-and-memory/strategic-games.md) | game-theory |

@@ -1751,6 +1751,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TimePolylog
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.WordRAM
 public import CslibFrontier.Computability.Complexity.Classes.IP
 public import CslibFrontier.Computability.Complexity.Classes.IP.CoinFixing
@@ -2093,6 +2094,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationR
 public import CslibFrontier.Computability.Complexity.FineGrained.ThreeOccurrenceReduction
 public import CslibFrontier.Computability.Complexity.FineGrained.WideClauseCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.WordRAM
+public import CslibFrontier.Computability.Complexity.Gradel
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.PolyTime
 public import CslibFrontier.Computability.Complexity.HardnessEncoding.Program
 public import CslibFrontier.Computability.Complexity.ImmermanVardi
@@ -2886,6 +2888,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Decode
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.PebblingWords
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch
@@ -3617,6 +3620,7 @@ public import CslibFrontier.Computability.WordRAM.Multiword.Workspace
 public import CslibFrontier.Computability.WordRAM.Native
 public import CslibFrontier.Computability.WordRAM.NativeDegree
 public import CslibFrontier.Computability.WordRAM.Notation
+public import CslibFrontier.Computability.WordRAM.Notation.Init
 public import CslibFrontier.Computability.WordRAM.OfTuring
 public import CslibFrontier.Computability.WordRAM.OfTuring.Space
 public import CslibFrontier.Computability.WordRAM.OutputLowerBound
@@ -5284,6 +5288,7 @@ public import CslibFrontier.GameTheory.SocialChoice.Arrow
 public import CslibFrontier.GameTheory.SocialChoice.GibbardSatterthwaite
 public import CslibFrontier.GameTheory.SocialChoice.Ranking
 public import CslibFrontier.GameTheory.Strategic.Basic
+public import CslibFrontier.GameTheory.Strategic.Correlated
 public import CslibFrontier.GameTheory.Strategic.Hedge
 public import CslibFrontier.GameTheory.Strategic.Mixed
 public import CslibFrontier.GameTheory.Strategic.Nash
@@ -5324,6 +5329,7 @@ public import CslibFrontier.Languages.Probabilistic.QueryCount.Expected
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
 public import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
+public import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation.ExtPermsCard
 public import CslibFrontier.Languages.Probabilistic.Repeat
@@ -5341,6 +5347,8 @@ public import CslibFrontier.Languages.Probabilistic.Traverse.SupportWith
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import CslibFrontier.Languages.Probabilistic.UniformNat.Support
 public import CslibFrontier.Languages.Probabilistic.UntilBad
+public import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
+public import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 public import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 public import CslibFrontier.Languages.Probabilistic.Vector
 public import CslibFrontier.Logics.BooleanClone.Basic
@@ -5673,6 +5681,9 @@ public import CslibFrontier.Logics.SecondOrder.Coloring
 public import CslibFrontier.Logics.SecondOrder.Encoding
 public import CslibFrontier.Logics.SecondOrder.Existential
 public import CslibFrontier.Logics.SecondOrder.Grounding
+public import CslibFrontier.Logics.SecondOrder.Horn
+public import CslibFrontier.Logics.SecondOrder.Horn.LeastFixedPoint
+public import CslibFrontier.Logics.SecondOrder.Horn.Ordered
 public import CslibFrontier.Logics.SecondOrder.IndependentSet
 public import CslibFrontier.Logics.SecondOrder.Projection
 public import CslibFrontier.Logics.SecondOrder.Reduction

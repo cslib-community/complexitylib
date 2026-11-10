@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunProp
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Finite
 
 /-!
 # Finite values and conditions within a fixed workspace budget
@@ -20,13 +21,25 @@ finite type (`budget_decideEq`) or Boolean connectives.
 The rules reach `fun_prop` only where this module is imported, directly or through
 `CslibFrontier.Tactic.Space`. A direct `fun_prop` client that needs them imports this module.
 
-The intermediate encoding of `budget_finite` is not determined by its goal. When the finite value
-is a projection of a hypothesis, state that projection first, for example
+The intermediate encoding of `budget_finite` and `budget_decideEq` is not determined by the goal.
+When no premise determines it, as for a finite function of a component of a finite value,
+`budget_finite_encFinite` and `budget_decideEq_encFinite` pass through the canonical encoding
+`encFinite`. Such a value used as a component of the argument of another finite function, as in
+`g ((r x).opp, b x)`, still needs its encoding stated, for example
 `have := budget_finite (encC := encFinEnum Guard) Ref.guardOf hr`.
+
+`budget_decideEq_encFinite`, conjunctions and disjunctions (`budget_decideAnd`, `budget_decideOr`)
+and comparisons `≤` of numbers (`budget_natLe`) are not registered: each would be tried, and fail,
+on every decidable condition, which doubles the search on small certificates. The `space` tactic
+adds them when a first search without them fails; a direct `fun_prop` client can use
+`attribute [local fun_prop]`.
 
 ## Main results
 
 * `budget_iteProp`, `budget_decideNot`, `budget_decideEq`: decidable conditions within the budget.
+* `budget_finite_encFinite`: a function of a finite value, through its canonical encoding.
+* `budget_decideEq_encFinite`, `budget_decideAnd`, `budget_decideOr`, `budget_natLe`: further
+  conditions, which `space` tries after the registered rules.
 * `budget_boolNot`, `budget_boolAnd`, `budget_boolOr`: Boolean connectives within the budget.
 -/
 
@@ -36,7 +49,8 @@ namespace Turing.MultiTapeTM.ComputableInSpace
 
 attribute [fun_prop] budget_finite budget_finMod
 
-variable {α β : Type} {encIn : α ↪ List Bool} {encB : β ↪ List Bool} {Bs : α → ℕ}
+variable {α β γ : Type} {encIn : α ↪ List Bool} {encB : β ↪ List Bool} {encC : γ ↪ List Bool}
+  {Bs : α → ℕ}
 
 /-- A conditional on a decidable proposition, within the budget. -/
 @[fun_prop]
@@ -80,5 +94,44 @@ theorem budget_boolOr {a b : α → Bool} (ha : ComputableInSpace a encIn encBoo
     (hb : ComputableInSpace b encIn encBool Bs) :
     ComputableInSpace (fun x => a x || b x) encIn encBool Bs :=
   budget_finite (fun p : Bool × Bool => p.1 || p.2) (budget_prod ha hb)
+
+/-- A function of a value of a finite type, through the canonical encoding of the value. -/
+@[fun_prop]
+theorem budget_finite_encFinite {f : α → β} [Finite β] (g : β → γ)
+    (hf : ComputableInSpace f encIn (encFinite β) Bs) :
+    ComputableInSpace (fun x => g (f x)) encIn encC Bs :=
+  budget_finite g hf
+
+/-- Equality of two values of a finite type, through the canonical encoding of the type. Not
+registered with `fun_prop`; `space` tries it after the registered rules. -/
+theorem budget_decideEq_encFinite [Finite β] [DecidableEq β] {f g : α → β}
+    (hf : ComputableInSpace f encIn (encFinite β) Bs)
+    (hg : ComputableInSpace g encIn (encFinite β) Bs) :
+    ComputableInSpace (fun x => decide (f x = g x)) encIn encBool Bs :=
+  budget_decideEq hf hg
+
+/-- The conjunction of two decidable propositions, within the budget. Not registered with
+`fun_prop`; `space` tries it after the registered rules. -/
+theorem budget_decideAnd {p q : α → Prop} [DecidablePred p] [DecidablePred q]
+    (hp : ComputableInSpace (fun x => decide (p x)) encIn encBool Bs)
+    (hq : ComputableInSpace (fun x => decide (q x)) encIn encBool Bs) :
+    ComputableInSpace (fun x => decide (p x ∧ q x)) encIn encBool Bs :=
+  (budget_boolAnd hp hq).of_enc_eq fun x => by simp only [Bool.decide_and]
+
+/-- The disjunction of two decidable propositions, within the budget. Not registered with
+`fun_prop`; `space` tries it after the registered rules. -/
+theorem budget_decideOr {p q : α → Prop} [DecidablePred p] [DecidablePred q]
+    (hp : ComputableInSpace (fun x => decide (p x)) encIn encBool Bs)
+    (hq : ComputableInSpace (fun x => decide (q x)) encIn encBool Bs) :
+    ComputableInSpace (fun x => decide (p x ∨ q x)) encIn encBool Bs :=
+  (budget_boolOr hp hq).of_enc_eq fun x => by simp only [Bool.decide_or]
+
+/-- The comparison `≤` of numbers, within the budget. Not registered with `fun_prop`; `space`
+tries it after the registered rules. -/
+theorem budget_natLe {a b : α → ℕ} (ha : ComputableInSpace a encIn encNat Bs)
+    (hb : ComputableInSpace b encIn encNat Bs) :
+    ComputableInSpace (fun x => decide (a x ≤ b x)) encIn encBool Bs :=
+  (budget_boolNot (budget_natLt hb ha)).of_enc_eq fun x => by
+    simp only [← Nat.not_lt, decide_not]
 
 end Turing.MultiTapeTM.ComputableInSpace
