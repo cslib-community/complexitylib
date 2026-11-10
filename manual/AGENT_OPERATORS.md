@@ -339,7 +339,7 @@ including wraparound and arbitrary seeds. Its exhaustive specification is not
 an efficient machine. `SmallDP.runCertificate` now supplies the small-operand
 algorithm: test proximity to the two modular endpoints, project to
 `min (min s m + size(q) + 3) m`, reuse the actual counting DP, and read counter
-zero in linear time. `SmallProjection.solvable_iff_project` proves the lift;
+zero in linear time. `SmallOperands.solvable_iff_project` proves the lift;
 `SmallDP.original_correct` derives original-input decision correctness, while
 `source_parameter_bounds` charges actual bit time and every-prefix workspace by
 `2^s * P(m+s+q+1)`. The precheck and DP both contribute to the certificate even
