@@ -34,16 +34,17 @@ output trace `(D.run s₀ ops).2`.
   oblivious operation sequences.
 * `Cslib.DataStructure.TranscriptMatches`: alignment predicate `out.map Sigma.fst = ops` between an
   operation sequence and an input-output transcript.
-* `Cslib.DataStructure.ObliviousSequenceSpec.weaken`: monotonicity combinator strengthening
-  `ValidOpSeq` and weakening `Contract`.
+* `Cslib.DataStructure.ObliviousSequenceSpec.weaken`: replaces `ValidOpSeq` and `Contract` by
+  arbitrary predicates, keeping `Op` and `Result`.
 * `Cslib.DataStructure.StateTransitionSpec.toObliviousSequenceSpec`,
   `Cslib.DataStructure.ObliviousSequenceSpec.ofFn`: canonical embeddings of relational and
   deterministic state-transition specifications into `ObliviousSequenceSpec`.
 
 ## Main results
 
-* `Cslib.DataStructure.ObliviousSequenceSpec.contract_weaken`: monotonicity of
-  `ObliviousSequenceSpec.weaken`.
+* `Cslib.DataStructure.ObliviousSequenceSpec.contract_weaken`: a distribution satisfying
+  `S.Contract` on `S.ValidOpSeq` satisfies the contract of `S.weaken V C` on `V`, when `V` implies
+  `S.ValidOpSeq` and `S.Contract` implies `C` on `S.ValidOpSeq`.
 * `Cslib.DataStructure.StateTransitionSpec.toObliviousSequenceSpec_contract_matches`: every
   transcript in the support of a distribution satisfying
   `(D.toObliviousSequenceSpec s₀).Contract ops` matches `ops`.
@@ -116,8 +117,10 @@ variable (S : ObliviousSequenceSpec.{u, v})
 /-- Input-output label pairing an operation with its observation. -/
 abbrev Label : Type (max u v) := Sigma S.Result
 
-/-- Weaken an `ObliviousSequenceSpec` by restricting the admissible operation sequences to
-`ValidOpSeq'` and relaxing the distributional contract to `Contract'`. -/
+/-- Replace the admissible operation sequences of an `ObliviousSequenceSpec` by `ValidOpSeq'` and
+its distributional contract by `Contract'`, keeping `Op` and `Result`. The new predicates need not
+be related to `S`; `contract_weaken` assumes that `ValidOpSeq'` implies `S.ValidOpSeq` and that
+`S.Contract` implies `Contract'` on `S.ValidOpSeq`. -/
 @[expose] def weaken (S : ObliviousSequenceSpec.{u, v})
     (ValidOpSeq' : List S.Op → Prop)
     (Contract' : (ops : List S.Op) → PMF (List (Sigma S.Result)) → Prop) :

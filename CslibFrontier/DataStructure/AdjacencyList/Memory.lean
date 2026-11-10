@@ -55,7 +55,8 @@ open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
 
 /-- Adjacency arrays: the offset of each vertex's list, and the edges, two cells each. -/
 structure Layout where
-  /-- Cell `u` holds the position of the first edge out of `u`; cell `n` the number of edges. -/
+  /-- Cell `u` holds the position of the first edge out of `u`; cell `n` the end of the last
+  list. -/
   offsets : Block
   /-- Edge `j` occupies cells `2 j` (its target) and `2 j + 1` (its weight). -/
   edges : Block
