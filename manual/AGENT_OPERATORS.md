@@ -364,6 +364,15 @@ named program, width, clock and quarter accessors; callback contexts bind their
 components by name. The tuple layouts and resource conclusions are unchanged.
 Theorem 7's pipeline, the small-operand algorithm and the source-rate sparse
 reduction are assembled. Repaired ideal-model clauses remain open in #2527/ROADMAP.
+`AddXNORIdealChain` now defines actual planted-search and both decision experiments,
+with private-coin bidirectional adversaries. Its exact lazy laws reuse independently
+indexed permutation tables and prove validity on supported prefixes, including collisions.
+Do not identify these laws with the false literal frontier simulator in source Lemma 10,
+or infer a security bound from them: preinstalled planted tables depend on the target.
+The next obligation is a genuine planted/independent stopping-event coupling and the
+collision/forest-covering inequalities, using `identicalUntilBad`. The Operator's Manual's
+STOC733 source inventory lists the missing Theorem 8/Corollary 4 security clauses and the
+retained width/MSB qualifications. ALL-main acceptance is not yet warranted.
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.
 The older solvers and their charges remain intact. Binary min/max certificates

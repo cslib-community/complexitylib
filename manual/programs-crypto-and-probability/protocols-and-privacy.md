@@ -1521,6 +1521,82 @@ The parameters satisfy Theorem 8's range. This trace already has a collision
 simulation as written, **not** Theorem 8's inequality; repairing the simulator
 and proving the adversary-quantified lower bound remain open.
 
+The actual ideal experiment is now available in
+[AddXNORIdealChain.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealChain.lean).
+`IdealChain.plantedSearch` samples an independent permutation for each
+$(i,b)\in\mathrm{Fin}(q)\times\mathrm{Bool}$, a uniform seed and a uniform planted
+operator string. It computes the target using those permutations, runs a private-coin
+adaptive adversary with both forward and inverse access, and checks the returned string.
+`IdealChain.decision` supplies the planted and independent-target laws separately.
+The generic [indexed sampler](../../CslibFrontier/Languages/Probabilistic/RandomPermutationFamily.lean)
+reuses `RandomPermutation.answer` and uniform completion: its joint completion theorem
+retains the entire family, and `run_prob_valid` proves valid partial bijections after
+any supported prefix program. `plantedSearch_eq_lazy` and `decision_eq_lazy` prove exact
+laws for the assembled experiments, including planting, adversary private coins and
+verification. This implementation installs the planted path before adversary execution;
+it does not pretend the hidden tables are independent of the public target.
+The [client](../../CslibFrontierTests/AddXNORIdealChain.lean) exercises a three-cycle,
+inverse access, a private-coin adaptive program and the zero-layer boundary.
+
+The repaired *claim to be proved* is precisely Section 6, Theorem 8 (PDF p. 25):
+$q\ge3$, $h=\lceil q/2\rceil$ and $\max(q,4)\le T\le2^{m-3}$ imply success at most
+$3T/2^h+10T^2/2^m+2^{-q}$. Corollary 4 (p. 28) omits the guessing term for
+planted-versus-independent decision advantage. Thus the general query barrier is
+$\Omega(\min(2^{q/2},2^{m/2}))$, specializing to $\Omega(2^{q/2})$ when $m\ge q$.
+The birthday term and the planted, independent-permutation oracle model are essential;
+this is not an unconditional arithmetic-instance or worst-case existence lower bound.
+The further simulator repair required by the checked trace above must replace the
+literal Lemma 10 law, not assume it. The exact experiments now avoid its invalid-table
+behavior, but their eager/lazy laws alone prove no security: the planted/independent
+`identicalUntilBad` coupling, collision and forest-covering bounds, and success analysis
+are still missing. These are distinct from the source's qualified claim and are not
+justified by calling a sampler “repaired”. Here the repair concerns the qualified oracle
+claim and a valid simulation law, not a new arithmetic hardness theorem.
+
+### STOC733 main-result coverage inventory
+
+Locators below refer to the pinned [WangLvShenZhang2027] manuscript's printed PDF pages.
+Names are in `Cslib.Cryptanalysis.AddXNOR` unless a narrower namespace is given.
+“Covered” records the implemented endpoint and the stated qualifications, not a new
+independent whole-paper acceptance verdict. The ideal-chain rows remain incomplete.
+The supporting lemmas cited here explain the main-result bridge; this is not a claim
+that every incidental proof assertion or experimental plot has a separate Lean theorem.
+
+| Source locator | Lean declaration(s) | Status |
+| --- | --- | --- |
+| Theorem 1, p. 9 | `Decision_npComplete` | Covered |
+| Corollary 2, p. 12 | `rational_width_npComplete` | Covered for positive rational exponent |
+| Theorem 2, first clause, pp. 12–13 | `threeSATToAddXNOR_mem_iff`, `threeSATToAddXNOR_width_le` | Covered |
+| Theorem 2, second clause, pp. 12–13 | `Sparsification.source_generation` | Covered with the zero-variable convention below |
+| Theorem 3, pp. 15–16 | `fixedCorrelation_run_product`, `runFactor_cos`, `runFactor_eq_zero_iff`, `abs_fixedCorrelation_runs_le` | Covered |
+| Theorem 4, p. 16 | `averageCorrelation_source` | Covered |
+| Theorem 5(i), p. 17 | `bitCorrelation_run_product` | Covered |
+| Theorem 5(ii), pp. 17–18 | `bitRunFactor_matrix`, `carry_diagonalization`, `bitRunFactor_spectrum`, `carryEigenvalue_cot` | Covered |
+| Theorem 5(iii–iv), pp. 17–18 | `abs_bitRunFactor_le`, `bitDecay_strictAnti`, `tendsto_bitDecay`, `abs_bitCorrelation_le_bit_one` | Covered |
+| Theorem 6, pp. 19–20 | `swap_collision_context` | Covered |
+| Proposition 1, p. 8 | `uniform_mean_solutionCount`, `uniform_solution_probability_le` | Covered |
+| Proposition 2, p. 8 | `plantedLastMass_size_bias`, `plantedMass_size_bias` | Covered for both planting formulations |
+| Proposition 3, p. 19 | `operator_flip_difference`, `operator_flip_ne`, `expected_operator_flip_weight`, `addition_difference_probability` | Covered after the non-MSB correction below; literal parenthetical is false |
+| Proposition 4, pp. 20–21 | `SmallOperands.reachable_card_le`, `SmallAutomatic.original_correct`, `SmallAutomatic.source_parameter_bounds` | Covered, with unrestricted seed |
+| Proposition 5, p. 21 | `meetSearch_sound`, `meetSearch_ne_none_iff`, `DPDissection.source_quarter_depth_bounds` at depth zero | Covered by the source-machine route |
+| Observation 1, pp. 2, 20 | `WordTable.decide_correct`, `Native.encoded_time_space`; also `CounterDP.source_certificate` | Covered by reachable-state machines |
+| Lemma 8, pp. 21–22 | `GroupedQuarter.original_correct`, `CounterDP.source_certificate`, `SourceCounterCounts.quarter_certificate`, `SourceCounterBalance.source_certificate` | Covered, including original-input projection and all counts |
+| Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
+| Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
+| Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
+| Theorem 8, pp. 25–28 | `IdealChain.plantedSearch`, `IdealChain.plantedSearch_eq_lazy`, `IdealChain.plantedProgram_queryBound` | Partial: actual experiment and exact lazy law; security inequality missing |
+| Corollary 4, p. 28 | `IdealChain.decision`, `IdealChain.decision_eq_lazy` | Partial: both actual laws; advantage bound missing |
+
+Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
+balanced yes-instance cannot satisfy width $0$ when $v=0$.
+Proposition 3's preservation probability counts active bits *below* the MSB; its literal
+$2^{-w}$ parenthetical with total Hamming weight fails for an MSB-only difference,
+as the counting/difference client checks. Theorem 7's uniform per-class mean formula
+requires $p\le m$, but its deterministic source-machine endpoint covers $p>m$ too;
+no expectation-of-maximum, concentration or typical-space theorem is claimed.
+Section 7's finite CDCL observations are not formal asymptotic lower bounds.
+Accordingly the main-result inventory does **not** yet support ALL-main acceptance.
+
 The full-paper objective remains open: repaired ideal-model search/decision
 lower bounds are still missing. The source-rate sparse reduction above now
 charges family multiplicity and generation. The full source dissection pipeline, including
