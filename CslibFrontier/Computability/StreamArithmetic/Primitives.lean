@@ -229,26 +229,20 @@ theorem QueryProg.mem_activeQueries_reindexOp {Op₁ : Type u} {Op₂ : Type u'}
   induction p with
   | ret _ => nomatch hev
   | scratchStep _ _ ih => exact ih hev
-  | queryDigit op j l next ih =>
+  | queryDigit op j l _ ih =>
     simp only [reindexOp, activeQueries, List.mem_cons] at hev
     rcases hev with rfl | hev
-    · right
-      exact ⟨op, j, l, List.mem_cons_self, rfl⟩
-    · rcases ih (env (f op) j) hev with ⟨sOp, ls, hs, rfl⟩ | ⟨op', j', l', hd, rfl⟩
-      · left
-        exact ⟨sOp, ls, List.mem_cons_of_mem _ hs, rfl⟩
-      · right
-        exact ⟨op', j', l', List.mem_cons_of_mem _ hd, rfl⟩
-  | queryStruct sOp l next ih =>
+    · exact Or.inr ⟨op, j, l, List.mem_cons_self, rfl⟩
+    · exact (ih (env (f op) j) hev).imp
+        (fun ⟨sOp, ls, hs, h⟩ => ⟨sOp, ls, List.mem_cons_of_mem _ hs, h⟩)
+        (fun ⟨op', j', l', hd, h⟩ => ⟨op', j', l', List.mem_cons_of_mem _ hd, h⟩)
+  | queryStruct sOp l _ ih =>
     simp only [reindexOp, activeQueries, List.mem_cons] at hev
     rcases hev with rfl | hev
-    · left
-      exact ⟨sOp, l, List.mem_cons_self, rfl⟩
-    · rcases ih (sEnv sOp) hev with ⟨sOp', ls, hs, rfl⟩ | ⟨op', j', l', hd, rfl⟩
-      · left
-        exact ⟨sOp', ls, List.mem_cons_of_mem _ hs, rfl⟩
-      · right
-        exact ⟨op', j', l', List.mem_cons_of_mem _ hd, rfl⟩
+    · exact Or.inl ⟨sOp, l, List.mem_cons_self, rfl⟩
+    · exact (ih (sEnv sOp) hev).imp
+        (fun ⟨sOp', ls, hs, h⟩ => ⟨sOp', ls, List.mem_cons_of_mem _ hs, h⟩)
+        (fun ⟨op', j', l', hd, h⟩ => ⟨op', j', l', List.mem_cons_of_mem _ hd, h⟩)
 
 @[simp]
 theorem QueryProg.maxIntrinsicBits_reindexOp {Op₁ : Type u} {Op₂ : Type u'} {Struct : Type v}
@@ -302,14 +296,11 @@ theorem maxIntrinsicBits_pairAvgResProg_le {Struct : Type v} (s : ℕ)
     (env : Fin 2 → ℕ → ℤ) (sEnv : Struct → Bool) :
     (pairAvgResProg s).maxIntrinsicBits env sEnv ≤ s + 46 := by
   simp only [pairAvgResProg]
-  refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-  · have h0 := maxIntrinsicBits_windowPrefixModProg_le (0 : Fin 2) 9 (s + 4) env sEnv
-    omega
-  · refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-    · have h1 := maxIntrinsicBits_windowPrefixModProg_le (1 : Fin 2) 9 (s + 4) env sEnv
-      omega
-    · simp only [QueryProg.maxIntrinsicBits, Nat.max_zero]
-      omega
+  have h0 := maxIntrinsicBits_windowPrefixModProg_le (0 : Fin 2) 9 (s + 4) env sEnv
+  have h1 := maxIntrinsicBits_windowPrefixModProg_le (1 : Fin 2) 9 (s + 4) env sEnv
+  exact (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans <| max_le (by omega) <|
+    (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans <| max_le (by omega) <|
+      by simp only [QueryProg.maxIntrinsicBits, Nat.max_zero]; omega
 
 /-- **Lemma 10.3 (certified pairwise average primitive)** [OpenAI2026LogSpace, Lemma 10.3]. -/
 @[expose] noncomputable def pairAvgPrim {Struct : Type v} (d : ℕ) (hd : 1 ≤ d) :
@@ -578,34 +569,19 @@ theorem intPrefix_neg_eq (x : ℕ → ℤ) (K : ℕ) :
 theorem intPrefix_clipBoundStream_eq {m K : ℕ} (hm4 : 4 ≤ m) (hmK : m ≤ K + 3) :
     intPrefix (clipBoundStream m K) K = (2 : ℤ) ^ m := by
   unfold intPrefix clipBoundStream
-  by_cases hle : m ≤ K
+  rcases (by omega : m ≤ K ∨ m = K + 1 ∨ m = K + 2 ∨ m = K + 3) with hle | rfl | rfl | rfl
   · simp only [hle, ↓reduceIte, ite_mul, one_mul, zero_mul, sum_ite_eq', mem_range]
-    have hlt : K - m < K + 1 := by omega
-    have hsub : K - (K - m) = m := by omega
-    simp [hlt, hsub]
-  · simp only [hle, ↓reduceIte]
-    by_cases h1 : m = K + 1
-    · simp only [h1, ↓reduceIte, ite_mul, zero_mul, sum_ite_eq', mem_range, Nat.zero_lt_succ,
-        Nat.sub_zero]
-      ring
-    · simp only [h1, ↓reduceIte]
-      by_cases h2 : m = K + 2
-      · simp only [h2, ↓reduceIte, ite_mul, zero_mul, sum_ite_eq', mem_range, Nat.zero_lt_succ,
-          Nat.sub_zero]
-        ring
-      · have h3 : m = K + 3 := by omega
-        have hK1 : 1 ≤ K := by omega
-        rcases Nat.exists_eq_add_of_le' hK1 with ⟨K', rfl⟩
-        simp only [h2, ↓reduceIte, sum_range_succ' _ (K' + 1)]
-        rw [sum_range_succ']
-        have hzero : ∑ k ∈ range K',
-            (if k + 1 + 1 = 0 then (6 : ℤ) else if k + 1 + 1 = 1 then 4 else 0) *
-              (2 : ℤ) ^ (K' + 1 - (k + 1 + 1)) = 0 :=
-          sum_eq_zero fun k _ => by simp
-        rw [hzero]
-        simp only [Nat.succ_ne_zero, ↓reduceIte, zero_add, Nat.sub_zero, Nat.add_sub_cancel]
-        rw [h3]
-        ring
+    simp [show K - m < K + 1 by omega, show K - (K - m) = m by omega]
+  · simp only [show ¬ K + 1 ≤ K by omega, ↓reduceIte, ite_mul, zero_mul, sum_ite_eq',
+      mem_range, Nat.zero_lt_succ, Nat.sub_zero]; ring
+  · simp only [show ¬ K + 2 ≤ K by omega, show K + 2 ≠ K + 1 by omega, ↓reduceIte, ite_mul,
+      zero_mul, sum_ite_eq', mem_range, Nat.zero_lt_succ, Nat.sub_zero]; ring
+  · rcases K with _ | K'; · omega
+    simp only [show ¬ K' + 1 + 3 ≤ K' + 1 by omega, show K' + 1 + 3 ≠ K' + 1 + 1 by omega,
+      show K' + 1 + 3 ≠ K' + 1 + 2 by omega, ↓reduceIte]
+    rw [sum_range_succ', sum_range_succ', sum_eq_zero fun k _ => by simp]
+    simp only [Nat.succ_ne_zero, ↓reduceIte, zero_add, Nat.add_sub_cancel, Nat.sub_zero]
+    ring
 
 /-- Mod-16 saturated positive boundary residue `⌊2 ^ (s + 4) / 16⌋ % 16` for `shiftClipApprox`. -/
 @[expose] def posClipRes (s : ℕ) : ℤ :=
@@ -618,29 +594,19 @@ theorem intPrefix_clipBoundStream_eq {m K : ℕ} (hm4 : 4 ≤ m) (hmK : m ≤ K 
 theorem posClipRes_eq (s : ℕ) :
     posClipRes s = ((2 : ℤ) ^ (s + 4) / 16) % 16 := by
   unfold posClipRes
-  rcases s with _ | _ | _ | _ | s
-  · decide
-  · decide
-  · decide
-  · decide
-  · have hlt : ¬ s + 4 < 4 := by omega
-    simp only [hlt, ↓reduceIte]
-    have hp : (2 : ℤ) ^ (s + 4 + 4) = 16 * (16 * (2 : ℤ) ^ s) := by ring
-    rw [hp, Int.mul_ediv_cancel_left _ (by decide), Int.mul_emod_right]
+  rcases s with _ | _ | _ | _ | s <;> first | decide |
+    (simp only [show ¬ s + 4 < 4 by omega, ↓reduceIte];
+     rw [show (2 : ℤ) ^ (s + 4 + 4) = 16 * (16 * (2 : ℤ) ^ s) by ring,
+       Int.mul_ediv_cancel_left _ (by decide), Int.mul_emod_right])
 
 theorem negClipRes_eq (s : ℕ) :
     negClipRes s = ((-((2 : ℤ) ^ (s + 4))) / 16) % 16 := by
   unfold negClipRes
-  rcases s with _ | _ | _ | _ | s
-  · decide
-  · decide
-  · decide
-  · decide
-  · have hlt : ¬ s + 4 < 4 := by omega
-    simp only [hlt, ↓reduceIte]
-    have hp : -((2 : ℤ) ^ (s + 4 + 4)) = 16 * (-(16 * (2 : ℤ) ^ s)) := by ring
-    have hn : -(16 * (2 : ℤ) ^ s) = 16 * (-(2 : ℤ) ^ s) := by ring
-    rw [hp, Int.mul_ediv_cancel_left _ (by decide), hn, Int.mul_emod_right]
+  rcases s with _ | _ | _ | _ | s <;> first | decide |
+    (simp only [show ¬ s + 4 < 4 by omega, ↓reduceIte];
+     rw [show -((2 : ℤ) ^ (s + 4 + 4)) = 16 * (-(16 * (2 : ℤ) ^ s)) by ring,
+       Int.mul_ediv_cancel_left _ (by decide),
+       show -(16 * (2 : ℤ) ^ s) = 16 * (-(2 : ℤ) ^ s) by ring, Int.mul_emod_right])
 
 /-- Mod-16 residue program for `shiftClipApprox v (env ()) s` using at most two 27-state
 constant-bound prefix comparisons and an 8-bit low-residue window [OpenAI2026LogSpace, Lemma 10.7].
@@ -674,61 +640,46 @@ theorem eval_shiftClipResProg {Struct : Type v} (v : ℤ) (s : ℕ)
     set B : ℤ := (2 : ℤ) ^ (s + 4)
     by_cases hsmall : K + 4 ≤ s + 4
     · simp only [hsmall, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg]
-      have habs := abs_intPrefix_le hx K
       have hpow : 16 * (2 : ℤ) ^ K ≤ B := by
         dsimp [B]
-        have h16p : (16 : ℤ) * (2 : ℤ) ^ K = (2 : ℤ) ^ (K + 4) := by ring
-        rw [h16p]
+        rw [show (16 : ℤ) * (2 : ℤ) ^ K = (2 : ℤ) ^ (K + 4) by ring]
         exact pow_le_pow_right₀ (by decide) hsmall
       have hK_pos : (0 : ℤ) < (2 : ℤ) ^ K := by positivity
-      obtain ⟨hlo_abs, hhi_abs⟩ := abs_le.mp habs
-      have hmin : min B (intPrefix (env ()) K) = intPrefix (env ()) K := min_eq_right (by omega)
-      have hmax : max (-B) (intPrefix (env ()) K) = intPrefix (env ()) K := max_eq_right (by omega)
-      rw [hmin, hmax, emod_two_pow_eight_div_sixteen]
-    · simp only [hsmall, ↓reduceIte, QueryProg.eval_bindOverhead]
-      have hmK : s + 4 ≤ K + 3 := by omega
+      obtain ⟨hlo_abs, hhi_abs⟩ := abs_le.mp (abs_intPrefix_le hx K)
+      rw [min_eq_right (by omega), max_eq_right (by omega), emod_two_pow_eight_div_sixteen]
+    · simp only [hsmall, ↓reduceIte, QueryProg.eval_bindOverhead, eval_cmpWithConstProg]
       have hb_sign := clipBoundStream_isSignedStream (s + 4) K
       have hb_pref : intPrefix (clipBoundStream (s + 4) K) K = B :=
-        intPrefix_clipBoundStream_eq (by omega) hmK
-      rw [eval_cmpWithConstProg]
+        intPrefix_clipBoundStream_eq (by omega) (by omega)
+      have hB0 : 0 ≤ B := by dsimp [B]; positivity
       by_cases hcHi : 0 ≤ cmpPrefix (env ()) (clipBoundStream (s + 4) K) K
       · simp only [hcHi, ↓reduceIte, QueryProg.eval, posClipRes_eq]
-        have hge : B ≤ intPrefix (env ()) K := by
-          rw [← hb_pref]
-          exact (cmpPrefix_nonneg_iff hx hb_sign K).mp hcHi
-        have hB0 : 0 ≤ B := by dsimp [B]; positivity
+        have hge : B ≤ intPrefix (env ()) K :=
+          hb_pref ▸ (cmpPrefix_nonneg_iff hx hb_sign K).mp hcHi
         rw [min_eq_left hge, max_eq_right (by omega)]
       · simp only [hcHi, ↓reduceIte, QueryProg.eval_bindOverhead, eval_cmpWithConstProg]
-        have hltHi : intPrefix (env ()) K ≤ B := by
-          have hnot := (cmpPrefix_nonneg_iff hx hb_sign K).not.mp hcHi
-          rw [hb_pref] at hnot
-          omega
+        have hltHi : intPrefix (env ()) K ≤ B :=
+          le_of_not_gt fun hgt => hcHi ((cmpPrefix_nonneg_iff hx hb_sign K).mpr (hb_pref ▸ hgt.le))
         by_cases hcLo : cmpPrefix (env ()) (fun j => -clipBoundStream (s + 4) K j) K ≤ 0
         · simp only [hcLo, ↓reduceIte, QueryProg.eval, negClipRes_eq]
           have hleLo : intPrefix (env ()) K ≤ -B := by
-            have h := (cmpPrefix_nonpos_iff hx hb_sign.neg K).mp hcLo
-            rwa [intPrefix_neg_eq, hb_pref] at h
+            simpa only [intPrefix_neg_eq, hb_pref] using
+              (cmpPrefix_nonpos_iff hx hb_sign.neg K).mp hcLo
           rw [min_eq_right hltHi, max_eq_left hleLo]
         · simp only [hcLo, ↓reduceIte, QueryProg.eval_map, eval_windowPrefixModProg]
-          have hgtLo : -B ≤ intPrefix (env ()) K := by
-            have hnot := (cmpPrefix_nonpos_iff hx hb_sign.neg K).not.mp hcLo
-            rw [intPrefix_neg_eq, hb_pref] at hnot
-            omega
+          have hgtLo : -B ≤ intPrefix (env ()) K := le_of_not_gt fun hlt => hcLo <|
+            (cmpPrefix_nonpos_iff hx hb_sign.neg K).mpr
+              (by rw [intPrefix_neg_eq, hb_pref]; exact hlt.le)
           rw [min_eq_right hltHi, max_eq_right hgtLo, emod_two_pow_eight_div_sixteen]
 
 private theorem shiftClipCutoff_le {d s κ : ℕ} {v : ℤ} (hd : 1 ≤ d)
     (hv : v ≤ ((κ * d : ℕ) : ℤ)) (hneg : ¬ ((s : ℤ) + v + 4 < 0)) :
     ((s : ℤ) + v + 4).toNat ≤ s + (κ + 4) * d := by
-  set K := ((s : ℤ) + v + 4).toNat
-  have hnonneg : 0 ≤ (s : ℤ) + v + 4 := not_lt.mp hneg
-  have hKZ : (K : ℤ) = (s : ℤ) + v + 4 := Int.toNat_of_nonneg hnonneg
-  have h4d : (4 : ℤ) ≤ ((4 * d : ℕ) : ℤ) := by
-    exact_mod_cast Nat.le_mul_of_pos_right 4 hd
-  have hboundZ : (K : ℤ) ≤ ((s + (κ + 4) * d : ℕ) : ℤ) := by
-    rw [Nat.add_mul]
-    push_cast at hv h4d ⊢
-    linarith
-  exact_mod_cast hboundZ
+  have hKZ : (((((s : ℤ) + v + 4).toNat : ℕ) : ℤ)) = (s : ℤ) + v + 4 :=
+    Int.toNat_of_nonneg (not_lt.mp hneg)
+  have h4d : (4 : ℤ) ≤ ((4 * d : ℕ) : ℤ) := Int.ofNat_le.mpr (Nat.le_mul_of_pos_right 4 hd)
+  exact_mod_cast (by rw [Nat.add_mul]; push_cast at hv h4d ⊢; linarith :
+    ((((s : ℤ) + v + 4).toNat : ℕ) : ℤ) ≤ ((s + (κ + 4) * d : ℕ) : ℤ))
 
 /-- **Lemma 10.7 (certified shift-and-clip primitive)** [OpenAI2026LogSpace, Lemma 10.7]:
 computes `max (-1) (min 1 (2 ^ v * streamVal x))` for any integer shift `v ≤ κ * d` with
@@ -879,47 +830,29 @@ theorem balancedAvgDigitProg_emits {Struct : Type v} (r : ℕ)
   | zero =>
     have h0 := hEnv ⟨0, by decide⟩
     have hsum : (∑ i : Fin (2 ^ 0), streamVal (env i)) / (2 : ℝ) ^ 0 =
-        streamVal (env ⟨0, by decide⟩) := by
-      simp
+        streamVal (env ⟨0, by decide⟩) := by simp
     rw [hsum]
     exact ⟨h0.1, rfl, h0.2⟩
   | succ r ih =>
-    obtain ⟨hs0_raw, hval0, hbnd0⟩ :=
-      ih (env := fun idx => env (splitFinPow 0 idx)) (fun idx => hEnv _)
-    obtain ⟨hs1_raw, hval1, hbnd1⟩ :=
-      ih (env := fun idx => env (splitFinPow 1 idx)) (fun idx => hEnv _)
-    set s₀ : ℕ → ℤ := fun u =>
-      (balancedAvgDigitProg r u).eval (fun idx => env (splitFinPow 0 idx)) sEnv
-    set s₁ : ℕ → ℤ := fun u =>
-      (balancedAvgDigitProg r u).eval (fun idx => env (splitFinPow 1 idx)) sEnv
-    set cEnv : Fin 2 → ℕ → ℤ := fun b u =>
-      ((balancedAvgDigitProg r u).reindexOp (splitFinPow b)).eval env sEnv
-    have hc0 : cEnv 0 = s₀ := by
-      ext u
-      exact QueryProg.eval_reindexOp _ _ _ _
-    have hc1 : cEnv 1 = s₁ := by
-      ext u
-      exact QueryProg.eval_reindexOp _ _ _ _
+    let cEnv : Fin 2 → ℕ → ℤ := fun b u =>
+      (balancedAvgDigitProg r u).eval (fun idx => env (splitFinPow b idx)) sEnv
+    obtain ⟨hs0, hval0, hbnd0⟩ := ih (env := fun idx => env (splitFinPow 0 idx)) (fun _ => hEnv _)
+    obtain ⟨hs1, hval1, hbnd1⟩ := ih (env := fun idx => env (splitFinPow 1 idx)) (fun _ => hEnv _)
     have htarget_eq : (∑ i : Fin (2 ^ (r + 1)), streamVal (env i)) / (2 : ℝ) ^ (r + 1) =
         (streamVal (cEnv 0) + streamVal (cEnv 1)) / 2 := by
-      rw [hc0, hc1, hval0, hval1, sum_fin_two_pow_succ]
-      rw [pow_succ]
-      ring
+      rw [hval0, hval1, sum_fin_two_pow_succ, pow_succ]; ring
     have hbound : |(streamVal (cEnv 0) + streamVal (cEnv 1)) / 2| ≤ 1 := by
-      rw [hc0, hc1, hval0, hval1, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
+      rw [hval0, hval1, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
       have htri := abs_add_le
         ((∑ idx : Fin (2 ^ r), streamVal (env (splitFinPow 0 idx))) / (2 : ℝ) ^ r)
         ((∑ idx : Fin (2 ^ r), streamVal (env (splitFinPow 1 idx))) / (2 : ℝ) ^ r)
       linarith [hbnd0, hbnd1]
     have happrox : IsScaledApprox ((streamVal (cEnv 0) + streamVal (cEnv 1)) / 2)
-        (pairAvgApprox (cEnv 0) (cEnv 1)) := by
-      have hs0 : IsSignedStream (cEnv 0) := hc0 ▸ hs0_raw
-      have hs1 : IsSignedStream (cEnv 1) := hc1 ▸ hs1_raw
-      exact pairAvgApprox_isScaledApprox hs0 hs1
+        (pairAvgApprox (cEnv 0) (cEnv 1)) := pairAvgApprox_isScaledApprox hs0 hs1
     have heval : (fun t => (balancedAvgDigitProg (r + 1) t).eval env sEnv) =
         diffDigit (pairAvgApprox (cEnv 0) (cEnv 1)) := by
       ext t
-      simp only [balancedAvgDigitProg, QueryProg.eval_substDigits]
+      simp only [balancedAvgDigitProg, QueryProg.eval_substDigits, QueryProg.eval_reindexOp]
       exact eval_diffDigitProg pairAvgResProg (pairAvgApprox (cEnv 0) (cEnv 1)) hbound happrox
         (fun s => eval_pairAvgResProg s cEnv sEnv) t
     rw [heval, htarget_eq]
@@ -949,26 +882,22 @@ theorem mem_activeQueries_balancedAvgDigitProg {Struct : Type v} (r t : ℕ)
     ∃ op j L, j ≤ t + 4 * r ∧ L ≤ 4 + 50 * r ∧ ev = .digit op j L := by
   induction r generalizing t with
   | zero =>
-    simp only [balancedAvgDigitProg, QueryProg.activeQueries, List.mem_cons] at hev
-    rcases hev with rfl | hev
+    rcases List.mem_cons.mp hev with rfl | hev
     · exact ⟨⟨0, by decide⟩, t, 4, by omega, by omega, rfl⟩
     · nomatch hev
   | succ r ih =>
-    simp only [balancedAvgDigitProg] at hev
     rcases QueryProg.mem_activeQueries_substDigits 4 _ _ env sEnv hev with
       ⟨_, _, hs, _⟩ | ⟨b, u, w, evC, hd, hevC, rfl⟩
     · obtain ⟨_, _, _, _, _, hEq⟩ := mem_activeQueries_diffDigit_pairAvg t _ sEnv hs
       nomatch hEq
     · obtain ⟨_, _, _, hu, hw, hEq⟩ := mem_activeQueries_diffDigit_pairAvg t _ sEnv hd
-      injection hEq with _ _ hw_eq
-      subst hw_eq
+      cases hEq
       rcases QueryProg.mem_activeQueries_reindexOp (splitFinPow b) _ env sEnv hevC with
         ⟨_, _, hsC, _⟩ | ⟨idx, j, l, hdC, rfl⟩
       · obtain ⟨_, _, _, _, _, hEqC⟩ := ih u _ hsC
         nomatch hEqC
       · obtain ⟨_, j', l', hj, hl, hEqC⟩ := ih u _ hdC
-        injection hEqC with _ hj_eq hl_eq
-        subst hj_eq hl_eq
+        cases hEqC
         exact ⟨splitFinPow b idx, j, w + 4 + l, by omega, by omega, rfl⟩
 
 theorem maxIntrinsicBits_balancedAvgDigitProg_le {Struct : Type v} (r t : ℕ)
@@ -976,10 +905,8 @@ theorem maxIntrinsicBits_balancedAvgDigitProg_le {Struct : Type v} (r t : ℕ)
     (balancedAvgDigitProg r t).maxIntrinsicBits env sEnv ≤ t + 54 + 54 * r := by
   induction r generalizing t with
   | zero =>
-    simp only [balancedAvgDigitProg, QueryProg.maxIntrinsicBits, Nat.max_zero]
-    omega
+    simp only [balancedAvgDigitProg, QueryProg.maxIntrinsicBits, Nat.max_zero]; omega
   | succ r ih =>
-    simp only [balancedAvgDigitProg]
     let cEnv : Fin 2 → ℕ → ℤ := fun op u =>
       ((balancedAvgDigitProg r u).reindexOp (splitFinPow op)).eval env sEnv
     apply QueryProg.maxIntrinsicBits_substDigits_le 4 _ _ env sEnv
@@ -989,20 +916,15 @@ theorem maxIntrinsicBits_balancedAvgDigitProg_le {Struct : Type v} (r t : ℕ)
         exact (maxIntrinsicBits_pairAvgResProg_le 0 cEnv sEnv).trans (by omega)
       | succ t =>
         simp only [diffDigitProg]
-        refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-        · have h1 := maxIntrinsicBits_pairAvgResProg_le (t + 1) cEnv sEnv
-          dsimp only [cEnv] at h1
-          omega
-        · refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-          · have h0 := maxIntrinsicBits_pairAvgResProg_le t cEnv sEnv
-            dsimp only [cEnv] at h0
-            omega
-          · simp only [QueryProg.maxIntrinsicBits, Nat.max_zero]
-            omega
+        have h1 := maxIntrinsicBits_pairAvgResProg_le (t + 1) cEnv sEnv
+        have h0 := maxIntrinsicBits_pairAvgResProg_le t cEnv sEnv
+        dsimp only [cEnv] at h1 h0
+        exact (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans <| max_le (by omega) <|
+          (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans <| max_le (by omega) <|
+            by simp only [QueryProg.maxIntrinsicBits, Nat.max_zero]; omega
     · intro b u w hd
-      obtain ⟨_, u', _, hu, hw, hEq⟩ := mem_activeQueries_diffDigit_pairAvg t _ sEnv hd
-      injection hEq with _ hu_eq hw_eq
-      subst hu_eq hw_eq
+      obtain ⟨_, _, _, hu, hw, hEq⟩ := mem_activeQueries_diffDigit_pairAvg t _ sEnv hd
+      cases hEq
       rw [QueryProg.maxIntrinsicBits_reindexOp]
       have hch := ih u (fun idx => env (splitFinPow b idx))
       omega
@@ -1165,23 +1087,18 @@ private theorem eval_bandScanJ {Struct : Type v} (s k i idxJ remJ : ℕ) (acc : 
         (2 : ℤ) ^ (4 + bandMargin k) := by
   set M := (2 : ℤ) ^ (4 + bandMargin k)
   induction remJ generalizing idxJ acc with
-  | zero =>
-    simp [bandScanJ, QueryProg.eval, M]
+  | zero => simp [bandScanJ, QueryProg.eval, M]
   | succ remJ ih =>
-    have hsplit : Ico idxJ (idxJ + (remJ + 1)) =
-        insert idxJ (Ico (idxJ + 1) (idxJ + 1 + remJ)) := by
-      ext j
-      simp only [mem_Ico, mem_insert]
-      omega
-    have hnot : idxJ ∉ Ico (idxJ + 1) (idxJ + 1 + remJ) := by simp
     unfold bandScanJ
     by_cases hwin : inBandWindow s k i idxJ
     · simp only [hwin, ↓reduceIte, QueryProg.eval]
-      rw [ih, hsplit, sum_insert hnot]
+      rw [ih, show idxJ + (remJ + 1) = idxJ + 1 + remJ by omega,
+        sum_eq_sum_Ico_succ_bot (by omega : idxJ < idxJ + 1 + remJ)]
       simp only [rowSumTerm, hwin, ↓reduceIte]
       rw [← add_assoc, Int.add_emod (((acc + _) % M)), Int.emod_emod, ← Int.add_emod]
     · simp only [hwin, ↓reduceIte]
-      rw [ih, hsplit, sum_insert hnot]
+      rw [ih, show idxJ + (remJ + 1) = idxJ + 1 + remJ by omega,
+        sum_eq_sum_Ico_succ_bot (by omega : idxJ < idxJ + 1 + remJ)]
       simp [rowSumTerm, hwin]
 
 private theorem eval_bandScanI {Struct : Type v} (s k idxI remI : ℕ) (acc : ℤ)
@@ -1191,20 +1108,14 @@ private theorem eval_bandScanI {Struct : Type v} (s k idxI remI : ℕ) (acc : �
           ∑ j ∈ range (s + bandMargin k + 1), rowSumTerm (env 0) (env 1) s k i j) %
         (2 : ℤ) ^ (4 + bandMargin k) := by
   set M := (2 : ℤ) ^ (4 + bandMargin k)
-  set N := s + bandMargin k + 1
   induction remI generalizing idxI acc with
-  | zero =>
-    simp [bandScanI, QueryProg.eval, M]
+  | zero => simp [bandScanI, QueryProg.eval, M]
   | succ remI ih =>
-    have hsplit : Ico idxI (idxI + (remI + 1)) =
-        insert idxI (Ico (idxI + 1) (idxI + 1 + remI)) := by
-      ext i
-      simp only [mem_Ico, mem_insert]
-      omega
-    have hnot : idxI ∉ Ico (idxI + 1) (idxI + 1 + remI) := by simp
     simp only [bandScanI, QueryProg.eval_bindOverhead, eval_bandScanJ]
-    rw [Nat.zero_add, ← Finset.range_eq_Ico, ih, hsplit, sum_insert hnot]
-    rw [← add_assoc, Int.add_emod (((acc + _) % M)), Int.emod_emod, ← Int.add_emod]
+    rw [Nat.zero_add, ← Finset.range_eq_Ico, ih,
+      show idxI + (remI + 1) = idxI + 1 + remI by omega,
+      sum_eq_sum_Ico_succ_bot (by omega : idxI < idxI + 1 + remI),
+      ← add_assoc, Int.add_emod (((acc + _) % M)), Int.emod_emod, ← Int.add_emod]
 
 theorem eval_mulResProg {Struct : Type v} (s : ℕ)
     (env : Fin 2 → ℕ → ℤ) (sEnv : Struct → Bool) :
@@ -1216,33 +1127,27 @@ theorem eval_mulResProg {Struct : Type v} (s : ℕ)
     induction rem generalizing step with
     | zero =>
       intro hsum
-      have hstep : step = maxBand s := by omega
-      subst hstep
+      obtain rfl : step = maxBand s := by omega
       rfl
     | succ rem ih =>
       intro hsum
       simp only [bandOuterAux, QueryProg.eval_bindOverhead, eval_bandScanI]
       rw [Nat.zero_add, ← Finset.range_eq_Ico]
       set k := maxBand s - (step + 1)
-      set shift := bandMargin (k + 1) - bandMargin k
-      set M := (2 : ℤ) ^ (4 + bandMargin k)
       have hws : ∑ i ∈ range (s + bandMargin k + 1),
           ∑ j ∈ range (s + bandMargin k + 1), rowSumTerm (env 0) (env 1) s k i j =
           bandWindowSum (env 0) (env 1) s 4 k :=
         (bandWindowSum_eq_double_sum (env 0) (env 1) s k).symm
       rw [hws]
-      have hnext : ((bandFoldMod (env 0) (env 1) s 4 step / (2 : ℤ) ^ shift) % M +
-          bandWindowSum (env 0) (env 1) s 4 k) % M =
+      have hnext : ((bandFoldMod (env 0) (env 1) s 4 step /
+            (2 : ℤ) ^ (bandMargin (k + 1) - bandMargin k)) % (2 : ℤ) ^ (4 + bandMargin k) +
+          bandWindowSum (env 0) (env 1) s 4 k) % (2 : ℤ) ^ (4 + bandMargin k) =
           bandFoldMod (env 0) (env 1) s 4 (step + 1) := by
         simp only [bandFoldMod]
         rw [add_comm, Int.add_emod (bandWindowSum _ _ _ _ _), Int.emod_emod, ← Int.add_emod]
       rw [hnext]
       exact ih (step + 1) (by omega)
-  unfold mulResProg
-  have h0 : (0 : ℤ) = bandFoldMod (env 0) (env 1) s 4 0 := rfl
-  conv_lhs => rw [h0]
-  rw [houter 0 (maxBand s) (Nat.zero_add _), mulResidue_eq_mulApprox_emod]
-  rfl
+  exact (houter 0 (maxBand s) (Nat.zero_add _)).trans (mulResidue_eq_mulApprox_emod _ _ s 4)
 
 private theorem mem_activeQueries_bandScanJ {Struct : Type v} (s k i idxJ remJ : ℕ) (acc : ℤ)
     (env : Fin 2 → ℕ → ℤ) (sEnv : Struct → Bool) {ev : QueryEvent (Fin 2) Struct}
@@ -1287,30 +1192,23 @@ private theorem allowance_bandScanI {Struct : Type v} {d : ℕ} (hd : 1 ≤ d)
     mem_activeQueries_bandScanI s k idxI remI acc env sEnv hev₀
   have hp := mem_bandPairs_of_inBandWindow hwin
   have hidx_le_pair := index_le_clock_add_baseMargin hp
-  have hidx_le : idx ≤ s + 16 := by
-    unfold mulBaseMargin at hidx_le_pair
-    rcases hidx with rfl | rfl <;> omega
   have hdrop : 4 * idx + 3 * bandStart k ≤ 4 * (s + 16) := by
     cases k with
     | zero =>
       simp only [bandStart_zero, mul_zero, add_zero]
-      omega
+      unfold mulBaseMargin at hidx_le_pair; rcases hidx with rfl | rfl <;> omega
     | succ m =>
       have h3 := three_mul_bandStart_le_four_mul_drop hp
-      unfold mulBaseMargin at h3
+      unfold mulBaseMargin at hidx_le_pair h3
       rcases hidx with rfl | rfl <;> omega
   have h2k := ten_add_two_mul_le_bandMargin k
   unfold bandMargin mulBaseMargin at hL h2k
-  have hL_upper : L ≤ 42 + 2 * (bandStart k / 4) := by omega
   have hdiv4 : 8 * (bandStart k / 4) ≤ 3 * bandStart k := by omega
-  refine ⟨?_, ?_⟩
-  · have h16d : 16 ≤ 16 * d := Nat.le_mul_of_pos_right 16 hd
-    omega
-  · have h58d : (58 : ℤ) ≤ ((58 * d : ℕ) : ℤ) := by
-      exact_mod_cast Nat.le_mul_of_pos_right 58 hd
-    have hLZ : ((0 + L : ℕ) : ℤ) ≤ 58 + ((s : ℤ) - (idx : ℤ)) := by omega
-    push_cast at hLZ ⊢
-    linarith
+  have h16d := Nat.le_mul_of_pos_right 16 hd
+  have h58d : (58 : ℤ) ≤ ((58 * d : ℕ) : ℤ) := Int.ofNat_le.mpr (Nat.le_mul_of_pos_right 58 hd)
+  have hLZ : ((0 + L : ℕ) : ℤ) ≤ 58 + ((s : ℤ) - (idx : ℤ)) := by omega
+  exact ⟨by unfold mulBaseMargin at hidx_le_pair; rcases hidx with rfl | rfl <;> omega,
+    by simpa only [Nat.cast_one, one_mul] using hLZ.trans (add_le_add_left h58d _)⟩
 
 theorem allowance_mulResProg {Struct : Type v} {d : ℕ} (hd : 1 ≤ d) (s : ℕ)
     (env : Fin 2 → ℕ → ℤ) (sEnv : Struct → Bool) {ev : QueryEvent (Fin 2) Struct}
@@ -1364,32 +1262,26 @@ private theorem maxIntrinsicBits_bandScanI_le {Struct : Type v} (s k idxI remI :
 theorem maxIntrinsicBits_mulResProg_le {Struct : Type v} {d : ℕ} (hd : 1 ≤ d) (s : ℕ)
     (env : Fin 2 → ℕ → ℤ) (sEnv : Struct → Bool) :
     (mulResProg s).maxIntrinsicBits env sEnv ≤ 76 * (d + s) := by
-  have hpos_mb : 0 < maxBand s := by unfold maxBand; omega
   have houter : ∀ step rem prevFold, step + rem = maxBand s →
       (bandOuterAux s step rem prevFold).maxIntrinsicBits env sEnv ≤ 76 * (d + s) := by
     intro step rem
     induction rem generalizing step with
     | zero =>
-      intro _ _
-      simp only [bandOuterAux, QueryProg.maxIntrinsicBits, Nat.max_zero]
-      omega
+      intro _ _; simp only [bandOuterAux, QueryProg.maxIntrinsicBits, Nat.max_zero]; omega
     | succ rem ih =>
       intro prevFold hsum
       simp only [bandOuterAux]
-      refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-      · rw [Nat.zero_add]
-        set k := maxBand s - (step + 1)
-        have hk_lt : k < maxBand s := by omega
-        have hbs := bandStart_le_of_lt_maxBand hk_lt
-        unfold mulBaseMargin at hbs
-        have hbm : bandMargin k ≤ 16 + (s + 16) / 4 := by
-          unfold bandMargin mulBaseMargin
-          exact Nat.add_le_add_left (Nat.div_le_div_right hbs) 16
-        have hscan := maxIntrinsicBits_bandScanI_le s k 0 (s + bandMargin k + 1)
-          ((prevFold / (2 : ℤ) ^ (bandMargin (k + 1) - bandMargin k)) %
-            (2 : ℤ) ^ (4 + bandMargin k)) env sEnv
-        omega
-      · exact ih (step + 1) _ (by omega)
+      refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans
+        (max_le ?_ (ih _ _ (by omega)))
+      rw [Nat.zero_add]
+      set k := maxBand s - (step + 1)
+      have hbs : bandStart k ≤ s + 16 := bandStart_le_of_lt_maxBand (by omega)
+      have hbm : bandMargin k ≤ 16 + (s + 16) / 4 := by
+        unfold bandMargin mulBaseMargin; exact Nat.add_le_add_left (Nat.div_le_div_right hbs) 16
+      have hscan := maxIntrinsicBits_bandScanI_le s k 0 (s + bandMargin k + 1)
+        ((prevFold / (2 : ℤ) ^ (bandMargin (k + 1) - bandMargin k)) %
+          (2 : ℤ) ^ (4 + bandMargin k)) env sEnv
+      omega
   exact houter 0 (maxBand s) 0 (Nat.zero_add _)
 
 /-- **Lemma 10.4 (certified minimum-index band multiplication primitive)**
@@ -1445,23 +1337,18 @@ theorem eval_intPrefixProg {Op : Type u} {Struct : Type v} (op : Op) (K : ℕ)
   have hsnoc : ∀ cntBits idx rem acc,
       (intPrefixAux op cntBits idx (rem + 1) acc).eval env sEnv =
         2 * (intPrefixAux op cntBits idx rem acc).eval env sEnv + env op (idx + rem) := by
-    intro cntBits idx rem
-    induction rem generalizing idx with
-    | zero => intro acc; simp [intPrefixAux, QueryProg.eval]
+    intro cntBits idx rem acc
+    induction rem generalizing idx acc with
+    | zero => simp [intPrefixAux, QueryProg.eval]
     | succ rem ih =>
-      intro acc
-      conv_lhs => rw [intPrefixAux, QueryProg.eval]
-      rw [ih]
-      have hidx : idx + 1 + rem = idx + (rem + 1) := by omega
-      rw [hidx]
-      rfl
-  unfold intPrefixProg
-  have hrec : ∀ n, (intPrefixAux op K 0 (n + 1) 0).eval env sEnv = intPrefix (env op) n := by
-    intro n
-    induction n with
-    | zero => simp [intPrefixAux, QueryProg.eval, intPrefix_zero]
-    | succ n ih => rw [hsnoc, Nat.zero_add, ih, intPrefix_succ]
-  exact hrec K
+      simpa only [intPrefixAux, QueryProg.eval, show idx + 1 + rem = idx + (rem + 1) by omega] using
+        ih (idx + 1) _
+  suffices hrec : ∀ n, (intPrefixAux op K 0 (n + 1) 0).eval env sEnv = intPrefix (env op) n from
+    hrec K
+  intro n
+  induction n with
+  | zero => simp [intPrefixAux, QueryProg.eval, intPrefix_zero]
+  | succ n ih => rw [hsnoc, Nat.zero_add, ih, intPrefix_succ]
 
 theorem mem_activeQueries_intPrefixProg {Op : Type u} {Struct : Type v} (op : Op) (K : ℕ)
     (env : Op → ℕ → ℤ) (sEnv : Struct → Bool) {ev : QueryEvent Op Struct}
@@ -1474,9 +1361,8 @@ theorem mem_activeQueries_intPrefixProg {Op : Type u} {Struct : Type v} (op : Op
     induction rem generalizing idx with
     | zero => intro _ h; nomatch h
     | succ rem ih =>
-      intro acc h
-      simp only [intPrefixAux, QueryProg.activeQueries, List.mem_cons] at h
-      rcases h with rfl | h
+      intro _ h
+      rcases List.mem_cons.mp h with rfl | h
       · exact ⟨idx, by omega, rfl⟩
       · obtain ⟨j, hj, rfl⟩ := ih (idx + 1) _ h
         exact ⟨j, by omega, rfl⟩
@@ -1491,14 +1377,10 @@ theorem maxIntrinsicBits_intPrefixProg_le {Op : Type u} {Struct : Type v} (op : 
         cntBits + idx + rem + 8 := by
     intro cntBits idx rem
     induction rem generalizing idx with
-    | zero =>
-      intro acc
-      simp only [intPrefixAux, QueryProg.maxIntrinsicBits, Nat.max_zero]
-      omega
+    | zero => intro _; simp only [intPrefixAux, QueryProg.maxIntrinsicBits, Nat.max_zero]; omega
     | succ rem ih =>
-      intro acc
-      simp only [intPrefixAux, QueryProg.maxIntrinsicBits]
-      refine max_le (by omega) ((ih (idx + 1) _).trans (by omega))
+      intro _; simp only [intPrefixAux, QueryProg.maxIntrinsicBits]
+      exact max_le (by omega) ((ih (idx + 1) _).trans (by omega))
   exact (haux K 0 (K + 1) 0).trans (by omega)
 
 /-- Clamp a `K`-place signed-digit integer prefix into the canonical nonnegative range
@@ -1531,42 +1413,32 @@ theorem abs_clipUnitPrefix_div_sub_streamVal_le {x : ℕ → ℤ} (hx : IsSigned
   set M : ℤ := min ((2 : ℤ) ^ K) (max 0 P)
   have hM0 : 0 ≤ M := le_min (by positivity) (le_max_left 0 P)
   have hcast : ((clipUnitPrefix K P : ℕ) : ℝ) = (M : ℝ) := by
-    unfold clipUnitPrefix
-    exact_mod_cast Int.toNat_of_nonneg hM0
-  rw [hcast]
-  have herr := abs_streamVal_sub_streamPrefix_le hx K
-  rw [abs_sub_comm] at herr
+    unfold clipUnitPrefix; exact_mod_cast Int.toNat_of_nonneg hM0
   have h2K_pos : (0 : ℝ) < (2 : ℝ) ^ K := by positivity
-  refine le_trans ?_ herr
+  set V : ℝ := streamVal x * (2 : ℝ) ^ K
+  have hV0 : 0 ≤ V := mul_nonneg hx_mem.1 h2K_pos.le
+  have hVK : V ≤ (2 : ℝ) ^ K := mul_le_of_le_one_left h2K_pos.le hx_mem.2
+  have hMR : (M : ℝ) = min ((2 : ℝ) ^ K) (max 0 (P : ℝ)) := by
+    dsimp only [M]; push_cast; rfl
+  have hm_le : (M : ℝ) ≤ max V (P : ℝ) := by
+    rw [hMR]; exact (min_le_right _ _).trans (max_le_max_right _ hV0)
+  have hle_m : min V (P : ℝ) ≤ (M : ℝ) := by
+    rw [hMR]
+    exact le_min ((min_le_left _ _).trans hVK) ((min_le_right _ _).trans (le_max_right _ _))
+  have hpos_rhs : (P : ℝ) ≤ V + |(P : ℝ) - V| := by linarith [le_abs_self ((P : ℝ) - V)]
+  have hneg_rhs : V - |(P : ℝ) - V| ≤ (P : ℝ) := by linarith [neg_le_abs ((P : ℝ) - V)]
+  have hdiff : |(M : ℝ) - V| ≤ |(P : ℝ) - V| := abs_sub_le_iff.mpr
+    ⟨by linarith [hm_le, max_le (le_add_of_nonneg_right (abs_nonneg ((P : ℝ) - V))) hpos_rhs],
+     by linarith [hle_m, le_min (sub_le_self V (abs_nonneg ((P : ℝ) - V))) hneg_rhs]⟩
+  rw [hcast]
+  refine le_trans ?_ (by simpa only [abs_sub_comm] using abs_streamVal_sub_streamPrefix_le hx K)
   rw [streamPrefix_eq_intPrefix_div]
-  by_cases hP0 : P ≤ 0
-  · have hM_eq : M = 0 := by
-      dsimp only [M]
-      rw [max_eq_left hP0, min_eq_right (by positivity)]
-    have hp_nonpos : (P : ℝ) / (2 : ℝ) ^ K ≤ 0 :=
-      div_nonpos_of_nonpos_of_nonneg (by exact_mod_cast hP0) h2K_pos.le
-    rw [hM_eq, Int.cast_zero, zero_div, abs_of_nonpos (by linarith [hx_mem.1]),
-      abs_of_nonpos (by linarith [hx_mem.1])]
-    linarith
-  · have hP0' : 0 ≤ P := by omega
-    by_cases hPK : (2 : ℤ) ^ K ≤ P
-    · have hM_eq : M = (2 : ℤ) ^ K := by
-        dsimp only [M]
-        rw [max_eq_right hP0', min_eq_left hPK]
-      have hp_ge1 : (1 : ℝ) ≤ (P : ℝ) / (2 : ℝ) ^ K := by
-        rw [le_div_iff₀ h2K_pos, one_mul]
-        exact_mod_cast hPK
-      have hdiv1 : (((2 : ℤ) ^ K : ℤ) : ℝ) / (2 : ℝ) ^ K = 1 := by
-        push_cast
-        exact div_self h2K_pos.ne'
-      rw [hM_eq, hdiv1, abs_of_nonneg (by linarith [hx_mem.2]),
-        abs_of_nonneg (by linarith [hx_mem.2])]
-      linarith
-    · have hPK' : P ≤ (2 : ℤ) ^ K := by omega
-      have hM_eq : M = P := by
-        dsimp only [M]
-        rw [max_eq_right hP0', min_eq_right hPK']
-      rw [hM_eq]
+  rw [show (M : ℝ) / (2 : ℝ) ^ K - streamVal x = ((M : ℝ) - V) / (2 : ℝ) ^ K by
+      simp only [V, sub_div, mul_div_cancel_right₀ _ h2K_pos.ne'],
+    show (P : ℝ) / (2 : ℝ) ^ K - streamVal x = ((P : ℝ) - V) / (2 : ℝ) ^ K by
+      simp only [V, sub_div, mul_div_cancel_right₀ _ h2K_pos.ne'],
+    abs_div, abs_div, abs_of_pos h2K_pos]
+  exact div_le_div_of_nonneg_right hdiff h2K_pos.le
 
 /-- Fixed slack-1 inner recipe computing `(v₀ + v₁ * v₂) / 2` over virtual streams `Fin 3`. -/
 @[expose] noncomputable def recipHalfVirtualRecipe {Struct : Type v} :
@@ -1587,7 +1459,10 @@ private theorem eval_recipHalfVirtualRecipe {Struct : Type v} {x : ℕ → ℤ}
       recipHalfStream x s u := by
   have hα := abs_recipAlpha_le_one hx hx_mem s
   have hβ := abs_recipBeta_le_one hx hx_mem s
-  have hsuff := suffixStream_isSignedStream hx (recipCutoff s)
+  have hpR : |(recipBeta x s : ℝ) * (streamVal x - (recipPrefixRat x s : ℝ))| ≤ 1 := by
+    rw [abs_mul]
+    simpa only [one_mul] using mul_le_mul (by exact_mod_cast hβ : |(recipBeta x s : ℝ)| ≤ 1)
+      ((abs_tail_recipCutoff_le hx s).trans (by norm_num)) (abs_nonneg _) zero_le_one
   have hprod : ∀ r,
       (((varRecipe 1 le_rfl (1 : Fin 3)).mul (varRecipe 1 le_rfl (2 : Fin 3)) rfl).digitProg r).eval
           (recipVirtualEnv x s) sEnv = recipProdStream x s r := by
@@ -1600,27 +1475,14 @@ private theorem eval_recipHalfVirtualRecipe {Struct : Type v} {x : ℕ → ℤ}
         ((if b = 0 then varRecipe 1 le_rfl (1 : Fin 3)
           else varRecipe 1 le_rfl (2 : Fin 3)).digitProg w).eval (recipVirtualEnv x s) sEnv) =
         cEnvMul := by
-      ext b w
-      rcases b with ⟨_ | _ | b, hb⟩
-      · rfl
-      · rfl
-      · omega
+      ext b w; fin_cases b <;> rfl
     rw [hchild]
     have hbmul : |streamVal (cEnvMul 0) * streamVal (cEnvMul 1)| ≤ 1 := by
-      have hc0 : cEnvMul 0 = ratStream (recipBeta x s) := rfl
-      have hc1 : cEnvMul 1 = suffixStream x (recipCutoff s) := rfl
-      rw [hc0, hc1, streamVal_ratStream hβ, streamVal_suffixStream hx, ← recipPrefixRat_cast,
-        abs_mul]
-      have hβR : |(recipBeta x s : ℝ)| ≤ 1 := by exact_mod_cast hβ
-      have heR : |streamVal x - (recipPrefixRat x s : ℝ)| ≤ 1 :=
-        (abs_tail_recipCutoff_le hx s).trans (by norm_num)
-      calc |(recipBeta x s : ℝ)| * |streamVal x - (recipPrefixRat x s : ℝ)|
-          ≤ 1 * 1 := mul_le_mul hβR heR (abs_nonneg _) zero_le_one
-        _ = 1 := one_mul 1
-    have hamul : IsScaledApprox (streamVal (cEnvMul 0) * streamVal (cEnvMul 1))
-        (mulApprox (cEnvMul 0) (cEnvMul 1)) :=
-      mulApprox_isScaledApprox (ratStream_isSignedStream hβ) hsuff
-    exact eval_diffDigitProg mulResProg (mulApprox (cEnvMul 0) (cEnvMul 1)) hbmul hamul
+      simpa only [show cEnvMul 0 = ratStream (recipBeta x s) from rfl,
+        show cEnvMul 1 = suffixStream x (recipCutoff s) from rfl,
+        streamVal_ratStream hβ, streamVal_suffixStream hx, recipPrefixRat_cast] using hpR
+    exact eval_diffDigitProg mulResProg (mulApprox (cEnvMul 0) (cEnvMul 1)) hbmul
+      (mulApprox_isScaledApprox (ratStream_isSignedStream hβ) (suffixStream_isSignedStream hx _))
       (fun t => eval_mulResProg t cEnvMul sEnv) r
   change ((diffDigitProg pairAvgResProg u).substDigits 4 _).eval (recipVirtualEnv x s) sEnv = _
   rw [QueryProg.eval_substDigits]
@@ -1630,36 +1492,20 @@ private theorem eval_recipHalfVirtualRecipe {Struct : Type v} {x : ℕ → ℤ}
       ((if b = 0 then varRecipe 1 le_rfl (0 : Fin 3)
         else ((varRecipe 1 le_rfl (1 : Fin 3)).mul (varRecipe 1 le_rfl (2 : Fin 3)) rfl)).digitProg
           w).eval (recipVirtualEnv x s) sEnv) = cEnvAvg := by
-    ext b w
-    rcases b with ⟨_ | _ | b, hb⟩
-    · rfl
-    · change (((varRecipe 1 le_rfl (1 : Fin 3)).mul (varRecipe 1 le_rfl (2 : Fin 3)) rfl).digitProg
-        w).eval (recipVirtualEnv x s) sEnv = recipProdStream x s w
-      exact hprod w
-    · omega
+    ext b w; fin_cases b; · rfl
+    · exact hprod w
   rw [hchildAvg]
   have hbavg : |(streamVal (cEnvAvg 0) + streamVal (cEnvAvg 1)) / 2| ≤ 1 := by
-    have ha0 : cEnvAvg 0 = ratStream (recipAlpha x s) := rfl
-    have ha1 : cEnvAvg 1 = recipProdStream x s := rfl
-    rw [ha0, ha1, streamVal_ratStream hα, streamVal_recipProdStream hx hx_mem s, abs_div,
+    rw [show cEnvAvg 0 = ratStream (recipAlpha x s) from rfl,
+      show cEnvAvg 1 = recipProdStream x s from rfl,
+      streamVal_ratStream hα, streamVal_recipProdStream hx hx_mem s, abs_div,
       abs_of_pos (by norm_num : (0 : ℝ) < 2)]
     have hαR : |(recipAlpha x s : ℝ)| ≤ 1 := by exact_mod_cast hα
-    have hpR : |(recipBeta x s : ℝ) * (streamVal x - (recipPrefixRat x s : ℝ))| ≤ 1 := by
-      have hβR : |(recipBeta x s : ℝ)| ≤ 1 := by exact_mod_cast hβ
-      have heR : |streamVal x - (recipPrefixRat x s : ℝ)| ≤ 1 :=
-        (abs_tail_recipCutoff_le hx s).trans (by norm_num)
-      rw [abs_mul]
-      calc |(recipBeta x s : ℝ)| * |streamVal x - (recipPrefixRat x s : ℝ)|
-          ≤ 1 * 1 := mul_le_mul hβR heR (abs_nonneg _) zero_le_one
-        _ = 1 := one_mul 1
-    have htri := abs_add_le (recipAlpha x s : ℝ)
-      ((recipBeta x s : ℝ) * (streamVal x - (recipPrefixRat x s : ℝ)))
-    linarith
-  have haavg : IsScaledApprox ((streamVal (cEnvAvg 0) + streamVal (cEnvAvg 1)) / 2)
-      (pairAvgApprox (cEnvAvg 0) (cEnvAvg 1)) :=
-    pairAvgApprox_isScaledApprox (ratStream_isSignedStream hα)
-      (recipProdStream_isSignedStream hx hx_mem s)
-  exact eval_diffDigitProg pairAvgResProg (pairAvgApprox (cEnvAvg 0) (cEnvAvg 1)) hbavg haavg
+    linarith [abs_add_le (recipAlpha x s : ℝ)
+      ((recipBeta x s : ℝ) * (streamVal x - (recipPrefixRat x s : ℝ)))]
+  exact eval_diffDigitProg pairAvgResProg (pairAvgApprox (cEnvAvg 0) (cEnvAvg 1)) hbavg
+    (pairAvgApprox_isScaledApprox (ratStream_isSignedStream hα)
+      (recipProdStream_isSignedStream hx hx_mem s))
     (fun t => eval_pairAvgResProg t cEnvAvg sEnv) u
 
 private theorem recip64Approx_emod_sixteen {x : ℕ → ℤ}
@@ -1667,57 +1513,45 @@ private theorem recip64Approx_emod_sixteen {x : ℕ → ℤ}
     recip64Approx x s % 16 =
       (intPrefix (recipHalfStream x s) (s + 8) % (2 : ℤ) ^ (11 : ℕ)) / 128 := by
   set y := recipHalfStream x s
-  have hy : IsSignedStream y := recipHalfStream_isSignedStream hx hx_mem s
   have hy_val : |streamVal y| ≤ 1 / 8 := by
     rw [streamVal_recipHalfStream hx hx_mem s, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 2)]
     have hmem := recipPrefixRat_mem_Icc hx hx_mem s
     have hα_le : |(recipAlpha x s : ℝ)| ≤ 1 / 12 := by
-      unfold recipAlpha
-      push_cast
+      unfold recipAlpha; push_cast
       have hx0_pos : (0 : ℝ) < (recipPrefixRat x s : ℝ) := by linarith [hmem.1]
       rw [abs_of_pos (by positivity)]
       exact one_div_le_one_div_of_le (by norm_num) (by linarith [hmem.1])
     have hp_le : |(recipBeta x s : ℝ) * (streamVal x - (recipPrefixRat x s : ℝ))| ≤ 3 / 64 := by
-      have hβR : |(recipBeta x s : ℝ)| ≤ 1 := by exact_mod_cast abs_recipBeta_le_one hx hx_mem s
-      have heR := abs_tail_recipCutoff_le hx s
       rw [abs_mul]
-      calc |(recipBeta x s : ℝ)| * |streamVal x - (recipPrefixRat x s : ℝ)|
-          ≤ 1 * (3 / 64) := mul_le_mul hβR heR (abs_nonneg _) (by norm_num)
-        _ = 3 / 64 := one_mul _
-    have htri := abs_add_le (recipAlpha x s : ℝ)
-      ((recipBeta x s : ℝ) * (streamVal x - (recipPrefixRat x s : ℝ)))
-    linarith
-  have hy_err := abs_streamVal_sub_streamPrefix_le (x := y) hy (s + 8)
-  have hpow_ge : (256 : ℝ) ≤ (2 : ℝ) ^ (s + 8) := by
-    calc (256 : ℝ) = (2 : ℝ) ^ (8 : ℕ) := by norm_num
-      _ ≤ (2 : ℝ) ^ (s + 8) := pow_le_pow_right₀ (by norm_num) (by omega)
+      simpa only [one_mul] using mul_le_mul
+        (by exact_mod_cast abs_recipBeta_le_one hx hx_mem s : |(recipBeta x s : ℝ)| ≤ 1)
+        (abs_tail_recipCutoff_le hx s) (abs_nonneg _) zero_le_one
+    linarith [abs_add_le (recipAlpha x s : ℝ)
+      ((recipBeta x s : ℝ) * (streamVal x - (recipPrefixRat x s : ℝ)))]
+  have hy_err :=
+    abs_streamVal_sub_streamPrefix_le (recipHalfStream_isSignedStream hx hx_mem s) (s + 8)
+  have hpow_ge : (256 : ℝ) ≤ (2 : ℝ) ^ (s + 8) :=
+    (by norm_num : (256 : ℝ) = (2 : ℝ) ^ (8 : ℕ)) ▸ pow_le_pow_right₀ (by norm_num) (by omega)
   have herr_le : (6 : ℝ) / (2 : ℝ) ^ (s + 8) ≤ 6 / 256 := by gcongr
   have hpref_le : |streamPrefix y (s + 8)| ≤ 1 / 2 := by
     have htri := abs_sub_le (streamPrefix y (s + 8)) (streamVal y) 0
-    simp only [sub_zero] at htri
-    rw [abs_sub_comm] at hy_err
-    linarith
+    simp only [sub_zero] at htri; rw [abs_sub_comm] at hy_err; linarith
   have hint_le : |intPrefix y (s + 8)| ≤ (2 : ℤ) ^ (s + 7) := by
     rw [streamPrefix_eq_intPrefix_div, abs_div,
       abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ (s + 8)),
       div_le_iff₀ (by positivity)] at hpref_le
-    have hpow7 : (1 / 2 : ℝ) * (2 : ℝ) ^ (s + 8) = (((2 : ℤ) ^ (s + 7) : ℤ) : ℝ) := by
-      push_cast
-      ring
-    rw [hpow7, ← Int.cast_abs] at hpref_le
+    rw [show (1 / 2 : ℝ) * (2 : ℝ) ^ (s + 8) = (((2 : ℤ) ^ (s + 7) : ℤ) : ℝ) by push_cast; ring,
+      ← Int.cast_abs] at hpref_le
     exact_mod_cast hpref_le
   obtain ⟨hlo, hhi⟩ := abs_le.mp hint_le
   unfold recip64Approx shiftClipApprox
-  have hnot_neg : ¬ ((s + 3 : ℕ) : ℤ) + 1 + 4 < 0 := by omega
-  simp only [hnot_neg, ↓reduceIte]
-  have hK : (((s + 3 : ℕ) : ℤ) + 1 + 4).toNat = s + 8 := by omega
-  have hB : (s + 3) + 4 = s + 7 := by omega
-  rw [hK, hB, min_eq_right hhi, max_eq_right hlo, Int.ediv_ediv_of_nonneg (by decide)]
-  have h128 : (16 : ℤ) * 8 = (2 : ℤ) ^ (7 : ℕ) := by decide
-  have h16 : (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) := by decide
-  have h11 : (2 : ℤ) ^ (11 : ℕ) = (2 : ℤ) ^ (4 + 7 : ℕ) := rfl
-  have h7 : (2 : ℤ) ^ (7 : ℕ) = 128 := by decide
-  rw [h128, h16, h11, ediv_two_pow_emod_eq, h7]
+  simp only [show ¬ ((s + 3 : ℕ) : ℤ) + 1 + 4 < 0 by omega, ↓reduceIte]
+  rw [show (((s + 3 : ℕ) : ℤ) + 1 + 4).toNat = s + 8 by omega, show (s + 3) + 4 = s + 7 by omega,
+    min_eq_right hhi, max_eq_right hlo, Int.ediv_ediv_of_nonneg (by decide)]
+  rw [show (16 : ℤ) * 8 = (2 : ℤ) ^ (7 : ℕ) by decide,
+    show (16 : ℤ) = (2 : ℤ) ^ (4 : ℕ) by decide,
+    show (2 : ℤ) ^ (11 : ℕ) = (2 : ℤ) ^ (4 + 7 : ℕ) from rfl,
+    ediv_two_pow_emod_eq, show (2 : ℤ) ^ (7 : ℕ) = 128 by decide]
 
 /-- Outer fixed-depth query program over the 3 virtual reciprocal streams. -/
 @[expose] noncomputable def recipOuterProg {Struct : Type v} (s : ℕ) :
@@ -1792,41 +1626,32 @@ theorem mem_activeQueries_recipOuterProg {Struct : Type v} (s : ℕ)
             ((recipHalfVirtualRecipe (Struct := Struct)).coeffB : ℤ) * ((s : ℤ) - (r : ℤ)) ∧
         ev = .digit op r w := by
   set H := recipHalfVirtualRecipe (Struct := Struct)
-  unfold recipOuterProg at hev
   rcases QueryProg.mem_activeQueries_substDigits 4 _ _ vEnv sEnv hev with
     ⟨_, _, hs, _⟩ | ⟨_, u, w₁, evH, hd, hevH, rfl⟩
-  · rw [QueryProg.activeQueries_map] at hs
-    obtain ⟨_, _, hEq⟩ := mem_activeQueries_windowPrefixModProg () 11 (s + 8) _ sEnv hs
+  · obtain ⟨_, _, hEq⟩ := mem_activeQueries_windowPrefixModProg () 11 (s + 8) _ sEnv
+      (by simpa only [QueryProg.activeQueries_map] using hs)
     nomatch hEq
   · rw [QueryProg.activeQueries_map] at hd
     obtain ⟨u', hu, hEq⟩ := mem_activeQueries_windowPrefixModProg () 11 (s + 8) _ sEnv hd
-    injection hEq with _ hu_eq hw_eq
-    subst hu_eq hw_eq
+    cases hEq
     have hAllH := H.allowance u vEnv sEnv hevH
     have hslack1 : H.slack = 1 := rfl
     rw [hslack1] at hAllH
+    have huZ : (u : ℤ) ≤ (s : ℤ) + 8 := Int.ofNat_le.mpr hu
     cases evH with
     | struct sOp l =>
-      left
-      change (l : ℤ) ≤ ((H.coeffA * 1 : ℕ) : ℤ) + (H.coeffB : ℤ) * (u : ℤ) at hAllH
-      refine ⟨sOp, (22 + 4) + l, ?_, rfl⟩
-      have hleZ : (((22 + 4) + l : ℕ) : ℤ) ≤
-          ((26 + H.coeffA + 8 * H.coeffB + H.coeffB * s : ℕ) : ℤ) := by
-        have huZ : (u : ℤ) ≤ (s : ℤ) + 8 := by exact_mod_cast hu
-        have hmul : (H.coeffB : ℤ) * (u : ℤ) ≤ (H.coeffB : ℤ) * ((s : ℤ) + 8) := by gcongr
-        push_cast at hAllH ⊢
-        linarith
-      exact_mod_cast hleZ
+      have : (H.coeffB : ℤ) * (u : ℤ) ≤ (H.coeffB : ℤ) * ((s : ℤ) + 8) :=
+        mul_le_mul_of_nonneg_left huZ (Nat.cast_nonneg _)
+      have hAllH' : (l : ℤ) ≤ ((H.coeffA * 1 : ℕ) : ℤ) + (H.coeffB : ℤ) * (u : ℤ) := hAllH
+      push_cast at hAllH'
+      exact Or.inl ⟨sOp, 26 + l, by exact_mod_cast (by push_cast; linarith :
+        ((26 + l : ℕ) : ℤ) ≤ ((26 + H.coeffA + 8 * H.coeffB + H.coeffB * s : ℕ) : ℤ)), rfl⟩
     | digit op r l =>
-      right
       obtain ⟨hr, hl⟩ := hAllH
-      refine ⟨op, r, (22 + 4) + l, by omega, ?_, rfl⟩
-      have huZ : (u : ℤ) ≤ (s : ℤ) + 8 := by exact_mod_cast hu
-      have hmul : (H.coeffB : ℤ) * ((u : ℤ) - (r : ℤ)) ≤
-          (H.coeffB : ℤ) * ((s : ℤ) + 8 - (r : ℤ)) :=
+      have : (H.coeffB : ℤ) * ((u : ℤ) - (r : ℤ)) ≤ (H.coeffB : ℤ) * ((s : ℤ) + 8 - (r : ℤ)) :=
         mul_le_mul_of_nonneg_left (by linarith) (Nat.cast_nonneg _)
-      push_cast at hl ⊢
-      linarith
+      push_cast at hl
+      exact Or.inr ⟨op, r, 26 + l, by omega, by push_cast; linarith, rfl⟩
 
 /-- **Lemma 10.5 (certified early-word reciprocal primitive on `[1 / 4, 1]`)**
 [OpenAI2026LogSpace, Lemma 10.5]. Here `[1 / 4, 1]` is the input domain
@@ -2103,17 +1928,13 @@ private theorem eval_countAtLeastProg {Op : Type u} {Struct : Type v}
   | nil => simp [countAtLeastProg, QueryProg.eval]
   | cons w ws ih =>
     have hw : IsSignedStream (env w) := hws w List.mem_cons_self
-    have hws' : ∀ w' ∈ ws, IsSignedStream (env w') :=
-      fun w' hm => hws w' (List.mem_cons_of_mem w hm)
-    simp only [countAtLeastProg, QueryProg.eval_bindOverhead]
-    rw [eval_cmpPrefixProg, ih _ hws']
-    have hcmp := cmpPrefix_nonneg_iff hw hi K
+    simp only [countAtLeastProg, QueryProg.eval_bindOverhead, eval_cmpPrefixProg,
+      ih _ fun w' hm => hws w' (List.mem_cons_of_mem w hm), List.filter_cons]
     by_cases hle : intPrefix (env i) K ≤ intPrefix (env w) K
-    · have hc : 0 ≤ cmpPrefix (env w) (env i) K := hcmp.mpr hle
-      simp only [hc, ↓reduceIte, List.filter_cons, decide_eq_true hle, List.length_cons]
-      omega
-    · have hc : ¬ 0 ≤ cmpPrefix (env w) (env i) K := hcmp.not.mpr hle
-      simp only [hc, ↓reduceIte, List.filter_cons, decide_eq_false hle, Bool.false_eq_true]
+    · simp only [(cmpPrefix_nonneg_iff hw hi K).mpr hle, ↓reduceIte, decide_eq_true hle,
+        List.length_cons]; omega
+    · simp only [(cmpPrefix_nonneg_iff hw hi K).not.mpr hle, ↓reduceIte, decide_eq_false hle,
+        Bool.false_eq_true]
 
 private def optIntPrefix {Op : Type u} (env : Op → ℕ → ℤ) (K : ℕ) : Option Op → ℤ
   | none => 0
@@ -2130,11 +1951,8 @@ private theorem acc_le_foldQualMax {Op : Type u} (P : Op → Prop) [DecidablePre
   induction rem generalizing acc with
   | nil => exact le_rfl
   | cons i rest ih =>
-    simp only [foldQualMax]
-    refine le_trans ?_ (ih _)
-    split_ifs
-    · exact le_max_left _ _
-    · exact le_rfl
+    simp only [foldQualMax]; split_ifs
+    exacts [(le_max_left _ _).trans (ih _), ih _]
 
 private theorem mem_le_foldQualMax {Op : Type u} (P : Op → Prop) [DecidablePred P] (h : Op → ℤ)
     (rem : List Op) (acc : ℤ) {x : Op} (hx : x ∈ rem) (hPx : P x) :
@@ -2155,7 +1973,7 @@ private theorem foldQualMax_le {Op : Type u} (P : Op → Prop) [DecidablePred P]
   | nil => exact hacc
   | cons i rest ih =>
     simp only [foldQualMax]
-    refine ih _ ?_ (fun x hx hPx => hrem x (List.mem_cons_of_mem i hx) hPx)
+    refine ih _ ?_ fun x hx => hrem x (List.mem_cons_of_mem i hx)
     split_ifs with hPi
     · exact max_le hacc (hrem i List.mem_cons_self hPi)
     · exact hacc
@@ -2176,83 +1994,57 @@ private theorem eval_zeroPaddedRankFoldProg_optIntPrefix {Op : Type u} [Decidabl
         foldQualMax P h rem (optIntPrefix env K best) := by
   intro h P
   induction rem generalizing best with
-  | nil =>
-    dsimp only [zeroPaddedRankFoldProg, QueryProg.eval, foldQualMax]
-    exact ⟨hBestMem, rfl⟩
+  | nil => exact ⟨hBestMem, rfl⟩
   | cons i rest ih =>
     have hi_mem : i ∈ items := hSub i List.mem_cons_self
     have hrest_sub : ∀ x ∈ rest, x ∈ items := fun x hx => hSub x (List.mem_cons_of_mem i hx)
     have hi_sign : IsSignedStream (env i) := hEnv i hi_mem
     have hcnt_eq : (countAtLeastProg i K idxBits items 0).eval env sEnv =
         #{w ∈ items.toFinset | h i ≤ h w} := by
-      rw [eval_countAtLeastProg i K idxBits items 0 hi_sign hEnv sEnv, Nat.zero_add]
-      have hnod_f : (items.filter fun w => decide (h i ≤ h w)).Nodup := hNodup.filter _
-      rw [← List.toFinset_card_of_nodup hnod_f]
-      congr 1
-      ext w
-      simp [List.mem_toFinset, mem_filter]
+      rw [eval_countAtLeastProg i K idxBits items 0 hi_sign hEnv sEnv, Nat.zero_add,
+        ← List.toFinset_card_of_nodup (hNodup.filter _)]
+      congr 1; ext w; simp [h, List.mem_toFinset, mem_filter]
     have hcPos_iff : 0 < (cmpWithConstProg i (fun _ => 0) K).eval env sEnv ↔ 0 < h i := by
+      have h0 : intPrefix (fun _ => 0) K = 0 := sum_eq_zero fun _ _ => zero_mul _
       rw [eval_cmpWithConstProg, cmpPrefix_pos_iff hi_sign isSignedStream_zero K,
-        streamPrefix_eq_intPrefix_div, streamPrefix_eq_intPrefix_div]
-      have h0 : intPrefix (fun _ => 0) K = 0 := by
-        unfold intPrefix
-        simp
-      rw [h0, Int.cast_zero, zero_div, div_pos_iff_of_pos_right (by positivity)]
+        streamPrefix_eq_intPrefix_div, streamPrefix_eq_intPrefix_div, h0, Int.cast_zero, zero_div,
+        div_pos_iff_of_pos_right (by positivity)]
       exact Int.cast_pos
     simp only [zeroPaddedRankFoldProg, QueryProg.eval_bindOverhead, hcnt_eq, foldQualMax]
     by_cases hPi : P i
     · have hcnt_ge : k ≤ #{w ∈ items.toFinset | h i ≤ h w} := hPi
       simp only [hcnt_ge, hPi, ↓reduceIte, QueryProg.eval_bindOverhead]
       by_cases hpos : 0 < h i
-      · have hcPos : 0 < (cmpWithConstProg i (fun _ => 0) K).eval env sEnv := hcPos_iff.mpr hpos
-        simp only [hcPos, ↓reduceIte]
+      · simp only [hcPos_iff.mpr hpos, ↓reduceIte]
         cases best with
         | none =>
-          have hmax0 : optIntPrefix env K (some i) = max (optIntPrefix env K none) (h i) := by
-            simp only [optIntPrefix]
-            exact (max_eq_right_of_lt hpos).symm
+          have hmax0 : optIntPrefix env K (some i) = max (optIntPrefix env K none) (h i) :=
+            (max_eq_right_of_lt hpos).symm
           have hres := ih (hSub := hrest_sub) (some i)
-            (fun b hb => by injection hb with hb'; subst hb'; exact hi_mem)
-            (by simp only [optIntPrefix]; exact hpos.le)
+            (fun b hb => by cases hb; exact hi_mem) hpos.le
           rwa [hmax0] at hres
         | some b =>
           simp only [QueryProg.eval_bindOverhead]
           have hb_mem : b ∈ items := hBestMem b rfl
-          have hb_sign : IsSignedStream (env b) := hEnv b hb_mem
           have hcBest_iff : 0 < (cmpPrefixProg i b K).eval env sEnv ↔ h b < h i := by
-            rw [eval_cmpPrefixProg, cmpPrefix_pos_iff hi_sign hb_sign K,
+            rw [eval_cmpPrefixProg, cmpPrefix_pos_iff hi_sign (hEnv b hb_mem) K,
               streamPrefix_eq_intPrefix_div, streamPrefix_eq_intPrefix_div,
               div_lt_div_iff_of_pos_right (by positivity)]
             exact Int.cast_lt
-          set nextBest : Option Op :=
-            if 0 < (cmpPrefixProg i b K).eval env sEnv then some i else some b
-          have hnextMem : ∀ b', nextBest = some b' → b' ∈ items := by
-            intro b' hb'
-            dsimp [nextBest] at hb'
-            split_ifs at hb' with hc
-            · injection hb' with hb'; subst hb'; exact hi_mem
-            · injection hb' with hb'; subst hb'; exact hb_mem
-          have hnextVal : optIntPrefix env K nextBest =
-              max (optIntPrefix env K (some b)) (h i) := by
-            dsimp only [nextBest]
-            by_cases hlt : h b < h i
-            · have hc : 0 < (cmpPrefixProg i b K).eval env sEnv := hcBest_iff.mpr hlt
-              simp only [hc, ↓reduceIte, optIntPrefix]
-              exact (max_eq_right_of_lt hlt).symm
-            · have hc : ¬ 0 < (cmpPrefixProg i b K).eval env sEnv := hcBest_iff.not.mpr hlt
-              simp only [hc, ↓reduceIte, optIntPrefix]
-              exact (max_eq_left (not_lt.mp hlt)).symm
-          have hnextNonneg : 0 ≤ optIntPrefix env K nextBest := by
-            rw [hnextVal]
-            exact hBestNonneg.trans (le_max_left _ _)
-          have hres := ih (hSub := hrest_sub) nextBest hnextMem hnextNonneg
-          rwa [hnextVal] at hres
-      · have hcPos : ¬ 0 < (cmpWithConstProg i (fun _ => 0) K).eval env sEnv :=
-          hcPos_iff.not.mpr hpos
-        simp only [hcPos, ↓reduceIte]
-        have hmax_eq : max (optIntPrefix env K best) (h i) = optIntPrefix env K best :=
-          max_eq_left ((not_lt.mp hpos).trans hBestNonneg)
-        rw [hmax_eq]
+          by_cases hlt : h b < h i
+          · simp only [hcBest_iff.mpr hlt, ↓reduceIte]
+            have hmax : optIntPrefix env K (some i) = max (optIntPrefix env K (some b)) (h i) :=
+              (max_eq_right_of_lt hlt).symm
+            have hres := ih (hSub := hrest_sub) (some i)
+              (fun _ hb => by cases hb; exact hi_mem) hpos.le
+            rwa [hmax] at hres
+          · simp only [hcBest_iff.not.mpr hlt, ↓reduceIte]
+            have hmax : optIntPrefix env K (some b) = max (optIntPrefix env K (some b)) (h i) :=
+              (max_eq_left (not_lt.mp hlt)).symm
+            have hres := ih (hSub := hrest_sub) (some b) hBestMem hBestNonneg
+            rwa [hmax] at hres
+      · simp only [hcPos_iff.not.mpr hpos, ↓reduceIte,
+          max_eq_left ((not_lt.mp hpos).trans hBestNonneg)]
         exact ih (hSub := hrest_sub) best hBestMem hBestNonneg
     · have hcnt_lt : ¬ k ≤ #{w ∈ items.toFinset | h i ≤ h w} := hPi
       simp only [hcnt_lt, hPi, ↓reduceIte]
@@ -2272,9 +2064,9 @@ theorem eval_zeroPaddedRankListResProg {Op : Type u} [DecidableEq Op] {Struct : 
   have hFold_eq_kth : foldQualMax P h items 0 = kthLargest k items.toFinset h := by
     unfold kthLargest
     apply le_antisymm
-    · refine foldQualMax_le P h items 0 _ (le_max' _ _ (mem_insert_self _ _)) fun x hx hPx => ?_
-      exact le_max' _ _ (mem_insert_of_mem
-        (mem_image_of_mem h (mem_filter.mpr ⟨List.mem_toFinset.mpr hx, hPx⟩)))
+    · refine foldQualMax_le P h items 0 _ (le_max' _ _ (mem_insert_self _ _)) fun x hx hPx =>
+        le_max' _ _ (mem_insert_of_mem
+          (mem_image_of_mem h (mem_filter.mpr ⟨List.mem_toFinset.mpr hx, hPx⟩)))
     · refine max'_le _ _ _ fun r hr => ?_
       rcases mem_insert.mp hr with rfl | hr
       · exact acc_le_foldQualMax P h items 0
@@ -2289,16 +2081,13 @@ theorem eval_zeroPaddedRankListResProg {Op : Type u} [DecidableEq Op] {Struct : 
   | none =>
     simp only [QueryProg.eval]
     have hkth0 : kthLargest k items.toFinset h = 0 := by
-      rw [← hFold_eq_kth]
-      simpa only [best, hbest, optIntPrefix] using hFoldVal.symm
+      simpa only [← hFold_eq_kth, best, hbest, optIntPrefix] using hFoldVal.symm
     change 0 = kthLargest k items.toFinset h / 16 % 16
-    rw [hkth0]
-    decide
+    rw [hkth0]; decide
   | some b =>
     simp only [QueryProg.eval_map, eval_windowPrefixModProg]
     have hkth_b : kthLargest k items.toFinset h = intPrefix (env b) K := by
-      rw [← hFold_eq_kth]
-      simpa only [best, hbest, optIntPrefix] using hFoldVal.symm
+      simpa only [← hFold_eq_kth, best, hbest, optIntPrefix] using hFoldVal.symm
     rw [hkth_b, emod_two_pow_eight_div_sixteen]
 
 private theorem mem_activeQueries_countAtLeastProg {Op : Type u} {Struct : Type v}
@@ -2355,8 +2144,8 @@ theorem mem_activeQueries_zeroPaddedRankFoldProg {Op : Type u} {Struct : Type v}
           · cases best with
             | none => exact ih _ hev₂
             | some b =>
-              simp only [QueryProg.activeQueries_bindOverhead, List.mem_append,
-                List.mem_map] at hev₂
+              simp only [QueryProg.activeQueries_bindOverhead,
+                List.mem_append, List.mem_map] at hev₂
               rcases hev₂ with ⟨ev₀, hev₀, rfl⟩ | hev₃
               · obtain ⟨op, j, L, hj, hL, rfl⟩ :=
                   mem_activeQueries_cmpPrefixProg i b K env sEnv hev₀
@@ -2371,40 +2160,27 @@ theorem maxIntrinsicBits_zeroPaddedRankFoldProg_le {Op : Type u} {Struct : Type 
     (zeroPaddedRankFoldProg k items K idxBits rem best).maxIntrinsicBits env sEnv ≤
       4 * idxBits + 6 * K + 18 := by
   induction rem generalizing best with
-  | nil =>
-    simp only [zeroPaddedRankFoldProg, QueryProg.maxIntrinsicBits, Nat.max_zero]
-    omega
+  | nil => simp only [zeroPaddedRankFoldProg, QueryProg.maxIntrinsicBits, Nat.max_zero]; omega
   | cons i rest ih =>
     simp only [zeroPaddedRankFoldProg]
-    refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-    · have hc := maxIntrinsicBits_countAtLeastProg_le i K idxBits items 0 env sEnv
-      omega
-    · split_ifs
-      · refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le ?_ ?_)
-        · have hc := maxIntrinsicBits_cmpWithConstProg_le i (fun _ => 0) K env sEnv
-          omega
-        · split_ifs
-          · cases best with
-            | none => exact ih _
-            | some b =>
-              refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans
-                (max_le ?_ (ih _))
-              have hc := maxIntrinsicBits_cmpPrefixProg_le i b K env sEnv
-              omega
-          · exact ih _
+    have hcnt := maxIntrinsicBits_countAtLeastProg_le i K idxBits items 0 env sEnv
+    refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans (max_le (by omega) ?_)
+    split_ifs
+    · have hconst := maxIntrinsicBits_cmpWithConstProg_le i (fun _ => 0) K env sEnv
+      refine (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans
+        (max_le (by omega) ?_)
+      split_ifs
+      · cases best with
+        | none => exact ih _
+        | some b =>
+          have hcmp := maxIntrinsicBits_cmpPrefixProg_le i b K env sEnv
+          exact (QueryProg.maxIntrinsicBits_bindOverhead_le _ _ _ _ _).trans
+            (max_le (by omega) (ih _))
       · exact ih _
+    · exact ih _
 
-private theorem log_two_le_of_le_two_pow {n m : ℕ} (h : n ≤ 2 ^ m) : Nat.log 2 n ≤ m := by
-  by_contra hgt
-  have hge : m + 1 ≤ Nat.log 2 n := by omega
-  have hne : n ≠ 0 := by
-    intro h0
-    simp [h0] at hge
-  have hp1 : 2 ^ (m + 1) ≤ 2 ^ Nat.log 2 n := Nat.pow_le_pow_right (by decide) hge
-  have hp2 : 2 ^ Nat.log 2 n ≤ n := Nat.pow_log_le_self 2 hne
-  have hp3 : 2 ^ (m + 1) = 2 * 2 ^ m := by ring
-  have hp0 : 0 < 2 ^ m := by positivity
-  omega
+private theorem log_two_le_of_le_two_pow {n m : ℕ} (h : n ≤ 2 ^ m) : Nat.log 2 n ≤ m :=
+  (Nat.log_mono_right h).trans_eq (Nat.log_pow (by decide) m)
 
 /-- **Certified zero-padded detector-rank recipe over a duplicate-free list** (adapting
 [OpenAI2026LogSpace, Lemma 10.6] to the zero-padded `Finset.kthLargest` of Sections 4.2 and 8.2):
