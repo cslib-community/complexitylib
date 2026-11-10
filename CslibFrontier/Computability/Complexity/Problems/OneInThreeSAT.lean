@@ -74,7 +74,7 @@ theorem computableInPolyTime_clause_count :
     ComputableInPolyTime
       (fun p : (CNF ℕ × List Bool) × Clause ℕ =>
         p.2.countP (Literal.eval (SAT.assignment p.1.1 p.1.2)))
-      (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encUnary := by
+      (encPair (encPair encCNF encBits) (encClause encNat)) encUnary := by
   apply ComputableInPolyTime.countPWithInput
   · fun_prop
   · fun_prop [SAT.assignment]
@@ -85,7 +85,7 @@ theorem computableInPolyTime_clause :
     ComputableInPolyTime
       (fun p : (CNF ℕ × List Bool) × Clause ℕ =>
         p.2.evalOne (SAT.assignment p.1.1 p.1.2))
-      (encPair (encPair encCNF encBits) (encList (encPair encNat encBool))) encBool := by
+      (encPair (encPair encCNF encBits) (encClause encNat)) encBool := by
   unfold Clause.evalOne
   exact ComputableInPolyTime.beq computableInPolyTime_clause_count (.const 1)
 
@@ -138,7 +138,7 @@ theorem computableInPolyTime_positiveCheck :
 /-- Exact length and distinctness of a clause are decidable in native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_exactClauseCheck :
-    ComputableInPolyTime exactClauseCheck (encList (encPair encNat encBool)) encBool := by
+    ComputableInPolyTime exactClauseCheck (encClause encNat) encBool := by
   have hvars : ComputableInPolyTime (fun c : Clause ℕ => c.map Prod.fst)
       (encList (encPair encNat encBool)) (encList encNat) := by fun_prop
   have hread (i : ℕ) : ComputableInPolyTime

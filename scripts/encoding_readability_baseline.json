@@ -20,9 +20,6 @@
  "CslibFrontier/Computability/Complexity/Classes/P/WordRAM.lean": {
   "encPair encUnary (encPi encNat)": 4
  },
- "CslibFrontier/Computability/Complexity/Problems/OneInThreeSAT.lean": {
-  "encList (encPair encNat encBool)": 3
- },
  "CslibFrontier/Computability/Interactive/AuxZK.lean": {
   "encPair ?1.index (encPair encBits encBits)": 5
  },
