@@ -22,10 +22,12 @@ and Appendix D.5 (PDF pp.26,36–37), including arbitrary runtime integer size b
 
 ## Main results
 
-* `exists_solver_realEta_certificate`: actual original sets within signed input bounds,
+* `exists_solver_sharp_certificate`, `exists_solver_realEta_certificate`: actual original sets
+  within signed input bounds,
   sharp original-vertex native time and global polynomial workspace.
 * `Minimum.seek_first`, `Minimum.exists_optimal_search`: actual least-successful size and
-  original minimum-word correctness; complete search resource composition is still open.
+  original minimum-word correctness; native composition and closed resource estimates are in
+  `CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationMinimumResources`.
 * `Minimum.exists_attained_optimal_search`: every finite graph returns an actual optimum word.
 -/
 
@@ -97,7 +99,7 @@ open Classical in
 /-- Actual original selection output. Success is exactly existence within the signed bounds;
 every returned word itself encodes such a set. Native resources include normalization, gates,
 all self-reduction calls, checking, original-prefix copying and option-tag writing. -/
-theorem exists_solver_realEta_certificate :
+theorem exists_solver_sharp_certificate :
     ∃ solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output,
       ∃ cs : NativeCertificate solver Signed.encInput TwoBoundary.BinaryFrontend.Witness.encOutput,
       ∃ C e A : ℕ, (∀ x, cs.space x ≤ C * ((Signed.encInput x).length + 1) ^ e) ∧
@@ -105,13 +107,13 @@ theorem exists_solver_realEta_certificate :
         ((solver (Signed.ofGraph G lo hi)).isSome = true ↔ ∃ σ, Feasible G lo hi σ) ∧
         (∀ bits, solver (Signed.ofGraph G lo hi) = some bits → bits.length = n ∧
           Feasible G lo hi (fun u => bits.getD u.val false)) ∧
-        (16 ≤ n → (cs.time (Signed.ofGraph G lo hi) : ℝ) ≤ (C : ℝ) *
-          ((Signed.encInput (Signed.ofGraph G lo hi)).length + 1 : ℕ) ^ e *
-            (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) := by
+        cs.time (Signed.ofGraph G lo hi) ≤ C *
+          ((Signed.encInput (Signed.ofGraph G lo hi)).length + 1) ^ e *
+            2 ^ (A * Nat.logLogSqrtLogScale n) := by
   obtain ⟨solver, cs, C, e, A, hs, h⟩ :=
     TwoBoundary.BinaryFrontend.Witness.exists_source_solver_sharp_certificate
       Signed.encInput construct sourceSize construct_polytime sourceSize_polytime 3 1 954 (by omega)
-  refine ⟨solver, cs, C, e, 6 * A, hs, ?_⟩
+  refine ⟨solver, cs, C, e, A, hs, ?_⟩
   intro n G _ lo hi
   let low := lowerNat lo hi
   let high := upperNat hi
@@ -155,12 +157,31 @@ theorem exists_solver_realEta_certificate :
       change (full.take n).getD u.val false = full.getD u.val false
       simp only [List.getD_eq_getElem?_getD, List.getElem?_take_of_lt u.isLt]
     exact ⟨hlen, he.symm ▸ hm⟩
-  · intro hn16
-    have hR : (cs.time (Signed.ofGraph G lo hi) : ℝ) ≤ (C : ℝ) *
-        ((Signed.encInput (Signed.ofGraph G lo hi)).length + 1 : ℕ) ^ e *
-          (2 : ℝ) ^ (A * Nat.logLogSqrtLogScale n) := by exact_mod_cast ht.2.2
-    exact hR.trans (mul_le_mul_of_nonneg_left
-      (Nat.two_pow_mul_logLogSqrtLogScale_le A hn16) (by positivity))
+  · exact ht.2.2
+
+open Classical in
+/-- Real source eta wrapper for the same actual signed-bound solver. -/
+theorem exists_solver_realEta_certificate :
+    ∃ solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output,
+      ∃ cs : NativeCertificate solver Signed.encInput TwoBoundary.BinaryFrontend.Witness.encOutput,
+      ∃ C e A : ℕ, (∀ x, cs.space x ≤ C * ((Signed.encInput x).length + 1) ^ e) ∧
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ),
+        ((solver (Signed.ofGraph G lo hi)).isSome = true ↔ ∃ σ, Feasible G lo hi σ) ∧
+        (∀ bits, solver (Signed.ofGraph G lo hi) = some bits → bits.length = n ∧
+          Feasible G lo hi (fun u => bits.getD u.val false)) ∧
+        (16 ≤ n → (cs.time (Signed.ofGraph G lo hi) : ℝ) ≤ (C : ℝ) *
+          ((Signed.encInput (Signed.ofGraph G lo hi)).length + 1 : ℕ) ^ e *
+            (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) := by
+  obtain ⟨solver, cs, C, e, A, hs, h⟩ := exists_solver_sharp_certificate
+  refine ⟨solver, cs, C, e, 6 * A, hs, ?_⟩
+  intro n G _ lo hi
+  refine ⟨(h G lo hi).1, (h G lo hi).2.1, ?_⟩
+  intro hn16
+  have hR : (cs.time (Signed.ofGraph G lo hi) : ℝ) ≤ (C : ℝ) *
+      ((Signed.encInput (Signed.ofGraph G lo hi)).length + 1 : ℕ) ^ e *
+        (2 : ℝ) ^ (A * Nat.logLogSqrtLogScale n) := by exact_mod_cast (h G lo hi).2.2
+  exact hR.trans (mul_le_mul_of_nonneg_left
+    (Nat.two_pow_mul_logLogSqrtLogScale_le A hn16) (by positivity))
 
 end Cslib.Logic.PL.IndependentDominationInterval.Signed.Witness
 
@@ -233,7 +254,8 @@ theorem seek_first (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness
       simp only [hp, Option.isSome_none, Bool.false_eq_true] at hh
 
 /-- Search only the original declaration's possible cardinalities. This writes an actual value
-and original word; the complete native resource composition remains a separate obligation. -/
+and original word. The companion `IndependentDominationMinimumResources` module supplies
+the native composition and closed sharp-time/polynomial-workspace estimates. -/
 @[expose] def run (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output)
     (g : IndependentDomination.Input) : Option (ℕ × List Bool) :=
   seek solver g (IndependentDomination.order g)

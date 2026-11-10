@@ -220,4 +220,24 @@ example :
   IndependentDominationInterval.Signed.Witness.Minimum.execute
     (fun (g, lo, hi) => bounded g lo hi) (0, []))
 
+open IndependentDominationInterval.Signed in
+open IndependentDominationInterval.Signed.Witness in
+open IndependentDominationInterval.Signed.Witness.Minimum in
+open Classical in
+/-- Full attaining-output and source-time/global-workspace endpoint, with no runtime premise. -/
+example :
+    ∃ optimize : IndependentDomination.Input → Option (ℕ × List Bool),
+      ∃ cs : NativeCertificate optimize IndependentDomination.encInput encOutput, ∃ C e A : ℕ,
+        (∀ g, cs.space g ≤ C * ((IndependentDomination.encInput g).length + 1) ^ e) ∧
+        ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj],
+          (∃ k bits, optimize (IndependentDomination.ofGraph G) = some (k, bits) ∧
+            bits.length = n ∧ Feasible G k k (fun u => bits.getD u.val false) ∧
+              ∀ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} →
+                G.IsDominatingSet {u | σ u = true} → k ≤ Cslib.BitString.weight σ) ∧
+          (16 ≤ n → (cs.time (IndependentDomination.ofGraph G) : ℝ) ≤ (C : ℝ) *
+            ((IndependentDomination.encInput (IndependentDomination.ofGraph G)).length + 1 : ℕ) ^
+              e *
+              (2 : ℝ) ^ ((A : ℝ) * Real.logLogSqrtLogScale n)) :=
+  IndependentDominationInterval.Signed.Witness.Minimum.exists_optimal_realEta_certificate
+
 end GraphWitnessTests

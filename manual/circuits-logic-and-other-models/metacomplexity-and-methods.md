@@ -864,7 +864,7 @@ bounds and distributions are supplied below. Of the six Corollary 7.4 predicates
 bounds, kernel counting/decision and labeled perfect-matching-cut counting/decision are covered.
 The continuations below cover dominating induced matching and signed-threshold Maximum Induced
 Matching, its complete optimum/witness recovery, Corollary 7.5's full distribution and Upper
-Dominating Set decision. Other predicates' full witness/optimum recovery and Proposition 7.6's
+Dominating Set decision. Other predicates' full witness/optimum recovery is supplied below; Proposition 7.6's
 width-three path-marker refinement remains open; exact width-four counting appears below. The general partition endpoint appears below; ALL-main remains open.
 
 ### Dominating induced matchings with exact edge-domination counts
@@ -1119,7 +1119,7 @@ original-set counter on $5v+a-1$ query variables appears below. The width-three 
 refinement on at most $6v+a-1$ variables remains open. Upper-domination optimum-value and actual witness extraction are supplied below.
 All six Corollary 7.4 decision predicates are now covered in their recorded explicit models;
 Maximum Induced Matching and Upper Domination have full optimum/witness composition, as
-described below; the other four recovery specializations remain open. General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions
+described below; the other four recovery specializations and their resources are supplied below. General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions
 are supplied below. Alternative admission/succinct encodings and the paperwide independent
 audit remain outstanding. These limits keep ALL-main open.
 
@@ -1196,7 +1196,8 @@ oracle; production uses the proved sharp counter and never enumerates a vertex-s
 
 This completes Upper Domination's Corollary 7.4 optimum/witness clause for the recorded encoding.
 The four other recovery specializations are supplied below, including runtime signed bounds
-for independent domination. Its minimum-cardinality optimum/witness composition remains open.
+for independent domination. Its complete minimum-cardinality machine and resources are also
+supplied below.
 General Corollary 7.2 finite/cofinite degree rules and Theorem 7.3 labeled degree partitions
 are supplied below. Proposition 7.6's width-three path-marker refinement, alternative
 encodings/admission and the independent paperwide audit remain open. The initial pair counter is still not an exact unmarked-set counter. ALL-main
@@ -1209,9 +1210,9 @@ Import `CslibFrontier.Computability.Complexity.FineGrained.GraphWitness` and
 These specialize Corollary 7.4 / Appendix D.5 (PDF pp.26,37) to original solutions for
 independent domination, directed kernels, perfect matching cuts and dominating induced matchings.
 The source explicitly includes witness recovery and, where applicable, an optimum threshold.
-Independent domination's **minimum** optimum composition remains open; bounded feasibility
-recovery below does not alone complete that optimization clause. The already supplied MIM and
-Upper Domination optimizers are unchanged.
+Independent domination's **minimum** optimum composition, including its whole-search native
+resource bounds, is supplied below. The already supplied MIM and Upper Domination optimizers
+are unchanged.
 
 `TwoBoundary.BinaryFrontend.Witness.solve` runs the proved native unit-clause self-reduction,
 then checks its actual full word against every original side clause and DNF predicate.
@@ -1302,8 +1303,8 @@ selection/mark enumeration is test-only; production uses the certified sharp cou
 
 This closes the augmented width-four exact-set clause. The source's shared path-marker
 width-three construction on at most $6v+a-1$ variables is still open; ordinary clause splitting
-would add too many variables. Independent-domination optimum recovery and the remaining
-explicit inventory stay open.
+would add too many variables. The remaining refined-construction and encoding/model-transfer
+inventory stays open; independent-domination optimum recovery is completed below.
 Indexed Exact Cover transposition/resources are composed by the executable frontend above.
 This does not complete ALL-main or the independent paperwide audit.
 
@@ -1322,9 +1323,21 @@ for native execution. `Minimum.trajectory` identifies the retained-state iterato
 and `execute_eq_run` proves identical output. `certificate` composes the real solver machine,
 query writer, retained-input update, binary loop counter and tagged value/word output.
 `exists_native_optimal_search` instantiates the production solver and proves attained global
-optimality for that actual finite machine. Its exact bounds use native trajectory maxima;
-closed polynomial-workspace and sharp-time estimates for these maxima remain open.
-The Corollary 7.4 ROADMAP entry is therefore retained.
+optimality for that actual finite machine. `exists_trajectory_bound` derives a polynomial bound
+on every retained state from the actual size solver's certified workspace/output bound, even on
+raw matrix values. Binary exact-size query encodings and retained option/value words are bounded
+before the iterator maxima are estimated. `certificate_space_polyBounded` then bounds the whole
+machine's global peak workspace, including frames, counters and final output.
+
+`exists_optimal_sharp_certificate` charges every actual query, solver call, retained-input update
+and binary output. A polynomial prefactor bounds all round overhead; multiplying by the actual
+number of rounds absorbs the traversal into that prefactor. `exists_optimal_realEta_certificate`
+gives $L^{O(1)}2^{O(\eta(v))}$ time for $v\ge16$, with global polynomial workspace and the attained
+minimum word. The all-size rounded certificate covers small and empty graphs. No bound on output
+size alone is used as a runtime proof, no desired runtime is a premise, and the single-loglog
+exponent is unchanged. This closes the remaining Corollary 7.4 clause for the recorded explicit
+matrix/unary-declaration native model, so only that ROADMAP entry is removed. The refined graph
+constructions and broader encoding/model transfers remain open.
 `exists_attained_optimal_search` proves unconditional finite-graph success, including the empty
 graph: a finite maximal independent set dominates, so the actual search always returns a word.
 No threshold-output or runtime premise is substituted for those obligations.
