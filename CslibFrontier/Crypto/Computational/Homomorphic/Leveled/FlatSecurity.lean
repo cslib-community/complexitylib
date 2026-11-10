@@ -181,7 +181,6 @@ private theorem sum_link_games (E : Scheme) (depth capacity : ℕ → ℕ)
       simp only [dite_eq_left_of_eq_true (eq_true hpos), bind_assoc, ProbComp.eval_bind,
         ProbComp.eval_uniform]
       pmf_swap
-      rfl
     rw [hlaw, Game.succProbability_uniform]
     simp_rw [Game.succProbability_uniform]
     simp only [NNReal.coe_div, NNReal.coe_sum, Fintype.card_fin, NNReal.coe_natCast]

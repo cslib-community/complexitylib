@@ -26,12 +26,30 @@ theory `T` is satisfiable. It has no finite models and is `ℵ₀`-categorical, 
 test it is complete. The transfer theorem `Cslib.Logic.FO.zero_one_law_of_isComplete` then gives the
 0-1 law, and the sentences holding almost surely are exactly the consequences of `T`.
 
+The same holds with a constant probability `0 < p R < 1` for each relation symbol `R`: under the
+random structure `Cslib.Logic.FO.bernoulliStructure p n`, in which every atomic fact `R(t)` holds
+independently with probability `p R`, every sentence has limit probability `0` or `1`
+(`Cslib.Logic.FO.Relational.bernoulliStructure_zero_one_law`), and the almost-sure sentences are
+again the consequences of `T`, so they do not depend on `p`. This is Fagin's proof with only the
+probabilistic step changed; we know of no primary source stating it for per-symbol probabilities
+over arbitrary finite relational vocabularies, so it should be read as an adaptation of [Fagin1976].
+
 The hypothesis that no relation symbol is nullary is needed: a nullary relation symbol holds with
-probability exactly `1/2` for every `n` (`Cslib.Logic.FO.not_zero_one_law_of_nullary`).
+probability exactly `1/2` for every `n` (`Cslib.Logic.FO.not_zero_one_law_of_nullary`), and with
+probability exactly `p R` under `bernoulliStructure p n`
+(`Cslib.Logic.FO.not_zero_one_law_bernoulliStructure_of_nullary`). The hypothesis `0 < p R < 1` is
+needed for the characterization by `T` and for the independence of `p`, not for the 0-1 law
+itself. With `p R = 0` the symbol `R` is empty with probability `1`, so an extension axiom asking
+for an `R`-fact fails with probability `1` for every `n`; with `p R = 1` the symbol is full, and
+one asking for a missing `R`-fact fails likewise. A symbol with `p R ∈ {0, 1}` can be replaced by
+`⊥` or `⊤`, and the law for the remaining symbols then applies; that reduction is not formalized
+here.
 
 For `L = Language.graph` the measure `μₙ` is uniform on directed graphs with loops, so this theorem
 does not specialize to the 0-1 law for the uniform random simple graph `G(n, 1/2)`, which is
-`Cslib.Logic.FO.graph.zero_one_law`.
+`Cslib.Logic.FO.graph.zero_one_law`. Likewise `bernoulliStructure p n` for `Language.graph` is a
+random directed graph with loops, not `G(n, p)`, whose law is
+`Cslib.Logic.FO.graph.binomialRandom_zero_one_law`.
 
 ## Main results
 
@@ -45,6 +63,14 @@ does not specialize to the 0-1 law for the uniform random simple graph `G(n, 1/2
 * `Cslib.Logic.FO.Relational.not_exists_sentence_even_card`,
   `Cslib.Logic.FO.Relational.not_definable_even_card`: an even number of elements is not
   first-order definable.
+* `Cslib.Logic.FO.Relational.bernoulliStructure_zero_one_law`: the 0-1 law for constant
+  probabilities `0 < p R < 1`.
+* `Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_one_iff`,
+  `Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_zero_iff`,
+  `Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_one_iff_uniformStructure`: the
+  almost-sure sentences are the consequences of `T`, for every such `p`.
+* `Cslib.Logic.FO.Relational.not_exists_sentence_of_not_tendsto_bernoulliStructure`:
+  non-definability from the law.
 
 ## References
 
@@ -58,6 +84,7 @@ does not specialize to the 0-1 law for the uniform random simple graph `G(n, 1/2
 public section
 
 open FirstOrder Language Structure Cardinal CategoryTheory Filter
+open scoped unitInterval
 
 namespace Cslib.Logic.FO.Relational
 
@@ -123,5 +150,55 @@ theorem not_definable_even_card :
     @hφ M (inferInstanceAs (Finite (Fin n)))
   rw [Nat.card_fin] at hM
   exact hM.symm
+
+/-! ### Constant probabilities per relation symbol -/
+
+/-- **The 0-1 law for constant probabilities**, an adaptation of Fagin's proof [Fagin1976]. Let
+every relation symbol `R` have a probability `0 < p R < 1`. For every first-order sentence `φ`, the
+probability that `bernoulliStructure p n` satisfies `φ` tends to `0` or to `1`. -/
+theorem bernoulliStructure_zero_one_law {p : (Σ l, L.Relations l) → I}
+    (hp : ∀ R, 0 < (p R : ℝ) ∧ (p R : ℝ) < 1) (φ : L.Sentence) :
+    Tendsto (fun n => sentenceProb (bernoulliStructure p n) φ) atTop (nhds 0) ∨
+      Tendsto (fun n => sentenceProb (bernoulliStructure p n) φ) atTop (nhds 1) :=
+  zero_one_law_of_isComplete _ isComplete_extensionTheory
+    (fun _ => tendsto_sentenceProb_bernoulliStructure_of_mem_extensionTheory hp) φ
+
+/-- For constant probabilities `0 < p R < 1`, a sentence holds almost surely in
+`bernoulliStructure p n` exactly when it is a consequence of the extension theory. -/
+theorem tendsto_sentenceProb_bernoulliStructure_one_iff {p : (Σ l, L.Relations l) → I}
+    (hp : ∀ R, 0 < (p R : ℝ) ∧ (p R : ℝ) < 1) (φ : L.Sentence) :
+    Tendsto (fun n => sentenceProb (bernoulliStructure p n) φ) atTop (nhds 1) ↔
+      extensionTheory L ⊨ᵇ φ :=
+  tendsto_sentenceProb_one_iff_of_isComplete _ isComplete_extensionTheory
+    (fun _ => tendsto_sentenceProb_bernoulliStructure_of_mem_extensionTheory hp) φ
+
+/-- For constant probabilities `0 < p R < 1`, a sentence fails almost surely in
+`bernoulliStructure p n` exactly when the extension theory refutes it. -/
+theorem tendsto_sentenceProb_bernoulliStructure_zero_iff {p : (Σ l, L.Relations l) → I}
+    (hp : ∀ R, 0 < (p R : ℝ) ∧ (p R : ℝ) < 1) (φ : L.Sentence) :
+    Tendsto (fun n => sentenceProb (bernoulliStructure p n) φ) atTop (nhds 0) ↔
+      extensionTheory L ⊨ᵇ φ.not :=
+  tendsto_sentenceProb_zero_iff_of_isComplete _ isComplete_extensionTheory
+    (fun _ => tendsto_sentenceProb_bernoulliStructure_of_mem_extensionTheory hp) φ
+
+/-- **The almost-sure theory does not depend on `p`.** For constant probabilities `0 < p R < 1`, a
+sentence holds almost surely in `bernoulliStructure p n` exactly when it holds almost surely in the
+uniform random structure. -/
+theorem tendsto_sentenceProb_bernoulliStructure_one_iff_uniformStructure
+    {p : (Σ l, L.Relations l) → I} (hp : ∀ R, 0 < (p R : ℝ) ∧ (p R : ℝ) < 1) (φ : L.Sentence) :
+    Tendsto (fun n => sentenceProb (bernoulliStructure p n) φ) atTop (nhds 1) ↔
+      Tendsto (fun n => sentenceProb (uniformStructure n) φ) atTop (nhds 1) := by
+  rw [tendsto_sentenceProb_bernoulliStructure_one_iff hp, tendsto_sentenceProb_one_iff]
+
+/-- For constant probabilities `0 < p R < 1`, if the probability that `bernoulliStructure p n` has
+a property `P` tends neither to `0` nor to `1`, then no first-order sentence agrees with `P` on all
+structures with sufficiently many elements. -/
+theorem not_exists_sentence_of_not_tendsto_bernoulliStructure {p : (Σ l, L.Relations l) → I}
+    (hp : ∀ R, 0 < (p R : ℝ) ∧ (p R : ℝ) < 1) (P : ∀ n, L.Structure (Fin n) → Prop)
+    (h0 : ¬Tendsto (fun n => structProb (bernoulliStructure p n) (P n)) atTop (nhds 0))
+    (h1 : ¬Tendsto (fun n => structProb (bernoulliStructure p n) (P n)) atTop (nhds 1)) :
+    ¬∃ φ : L.Sentence, ∀ᶠ n in atTop,
+      ∀ S : L.Structure (Fin n), @Sentence.Realize L _ S φ ↔ P n S :=
+  not_exists_sentence_of_not_tendsto _ (bernoulliStructure_zero_one_law hp) P h0 h1
 
 end Cslib.Logic.FO.Relational

@@ -60,9 +60,11 @@ Whether a word with index below `n` belongs to the language depends only on the 
   `Cslib.Complexity.Ladner.two_pow_length_word_le`: words and indices are inverse bijections, and
   the word with index `j` has length at most `log₂ (j + 1)`.
 * `Cslib.Complexity.Ladner.universal_desc_of_halted_map`,
-  `Cslib.Complexity.Ladner.exists_index_ge`, `Cslib.Complexity.Ladner.exists_index_runIndexed_eq`:
+  `Cslib.Complexity.Ladner.exists_index_ge`, `Cslib.Complexity.Ladner.exists_index_runIndexed_eq`,
+  `Cslib.Complexity.Ladner.le_clock`, `Cslib.Complexity.Ladner.clock_le_two_pow`:
   the universal function runs a machine from its description, every description has arbitrarily
-  large indices, and so every decider is run by machines with arbitrarily large indices.
+  large indices, so every decider is run by machines with arbitrarily large indices, and the clock
+  dominates fixed polynomials while staying within an exponential bound.
 * `Cslib.Complexity.Ladner.unpad_pad`, `Cslib.Complexity.Ladner.pad_unpad`: padding is undone.
 * `Cslib.Complexity.Ladner.Htable_eq`: the tables hold the values of `H`.
 * `Cslib.Complexity.Ladner.H_le`, `Cslib.Complexity.Ladner.H_le_of_agrees`,
@@ -260,6 +262,21 @@ theorem exists_index_runIndexed_eq {k : ℕ} {State : Type} [Finite State]
 def clock (i l : ℕ) : ℕ := (2 * l + 2) ^ i
 
 theorem one_le_clock (i l : ℕ) : 1 ≤ clock i l := Nat.one_le_pow _ _ (by omega)
+
+/-- For `c + e ≤ i`, `clock i l` dominates `c * (l + 1) ^ e`. -/
+theorem le_clock {c e i : ℕ} (h : c + e ≤ i) (l : ℕ) : c * (l + 1) ^ e ≤ clock i l :=
+  calc c * (l + 1) ^ e ≤ 2 ^ i * (l + 1) ^ i :=
+        Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
+          (Nat.pow_le_pow_right (by omega) (by omega))
+    _ = clock i l := by rw [clock, ← mul_pow]; ring_nf
+
+/-- `clock i l` is at most `2 ^ ((l + 1) * i)`. -/
+theorem clock_le_two_pow (i l : ℕ) : clock i l ≤ 2 ^ ((l + 1) * i) := by
+  rw [clock, pow_mul]
+  refine Nat.pow_le_pow_left ?_ i
+  have h : l + 1 ≤ 2 ^ l := Nat.lt_two_pow_self
+  rw [pow_succ]
+  omega
 
 /-- The machine with index `i`, allowed `clock i l` steps on a word of length `l` but never more
 than `cap`, halts on the `j`-th word with output `[b]` where `b` decides membership in

@@ -19,6 +19,7 @@ import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.QueryCount.Support
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Tactic.SuppCases
 import Mathlib.Data.List.GetD
 
 /-!
@@ -740,8 +741,7 @@ theorem toOuterMeasure_run_micaliMemoize_not_goodState_le [BEq α] {β : Type}
       rcases st with ⟨tr_MT, tr_FS⟩
       cases q with
       | inl msg =>
-        simp only [micaliMemoize, PMF.mem_support_map_iff] at hx
-        obtain ⟨⟨ans, tr_MT'⟩, hmem, rfl⟩ := hx
+        supp_cases hx [micaliMemoize] with ⟨⟨ans, tr_MT'⟩, hmem, rfl⟩
         have hlen := length_le_of_mem_support_memoize _ msg tr_MT hmem
         simp only [micaliMTCost, micaliFSCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul,
           add_zero]
@@ -753,8 +753,7 @@ theorem toOuterMeasure_run_micaliMemoize_not_goodState_le [BEq α] {β : Type}
               push_cast
               ring
       | inr xrt =>
-        simp only [micaliMemoize, PMF.mem_support_map_iff] at hx
-        obtain ⟨⟨ρs, tr_FS'⟩, hmem, rfl⟩ := hx
+        supp_cases hx [micaliMemoize] with ⟨⟨ρs, tr_FS'⟩, hmem, rfl⟩
         have hlen := length_le_of_mem_support_memoize _ xrt tr_FS hmem
         simp only [micaliMTCost, micaliFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul,
           add_zero]
@@ -790,9 +789,8 @@ private theorem allOpenings_of_mem_support_mapM_merkleVerifyProg
     cases ho
   | cons hd tl ih =>
     rcases hd with ⟨a, b, path⟩
-    simp only [List.mapM_cons, run_interpret_bind, run_interpret_pure, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hmem
-    rcases hmem with ⟨⟨c, tr₁⟩, hc, ⟨cs, tr₂⟩, hcs, rfl, rfl⟩
+    supp_cases hmem [List.mapM_cons, run_interpret_bind, run_interpret_pure]
+      with ⟨⟨c, tr₁⟩, hc, ⟨cs, tr₂⟩, hcs, rfl, rfl⟩
     obtain ⟨hsub₁, hnodup₁, hsupp₁, -⟩ :=
       mem_support_run_memoize_invariant dist
         (merkleVerifyProg d root (kilianPosition V x a) [b] path) hnodup hsupp hc
@@ -825,10 +823,8 @@ private theorem allOpenings_of_mem_support_mapM_kilianCheckProg
     cases hp
   | cons hd tl ih =>
     rcases hd with ⟨ρ, answers⟩
-    simp only [List.mapM_cons, kilianCheckProg, run_interpret_bind, run_interpret_pure,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
-      PMF.mem_support_pure_iff] at hmem
-    rcases hmem with ⟨_, ⟨⟨subchecks, tr₁⟩, hsub, rfl⟩, ⟨cs, tr₂⟩, hcs, rfl, rfl⟩
+    supp_cases hmem [List.mapM_cons, kilianCheckProg, run_interpret_bind, run_interpret_pure]
+      with ⟨_, ⟨⟨subchecks, tr₁⟩, hsub, rfl⟩, ⟨cs, tr₂⟩, hcs, rfl, rfl⟩
     obtain ⟨hsub₁, hnodup₁, hsupp₁, -⟩ :=
       mem_support_run_memoize_invariant dist _ hnodup hsupp hsub
     obtain ⟨hsub₂, -, -, -⟩ :=
@@ -855,9 +851,8 @@ theorem allOpeningsQueriedInTrace_of_mem_support_kilianVerifyProg
         (kilianVerifyProg V x root ρs response)).run tr).support)
     {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
     AllOpeningsQueriedInTrace (fun _ => h) [] V tr' x ρs response := by
-  simp only [kilianVerifyProg, run_interpret_bind, run_interpret_pure, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hmem
-  rcases hmem with ⟨⟨checks, tr₁⟩, hchecks, rfl, rfl⟩
+  supp_cases hmem [kilianVerifyProg, run_interpret_bind, run_interpret_pure]
+    with ⟨⟨checks, tr₁⟩, hchecks, rfl, rfl⟩
   have hall := allOpenings_of_mem_support_mapM_kilianCheckProg dist V x root
     (ρs.zip response) hnodup hsupp hchecks hcons
   intro o ho
@@ -898,32 +893,20 @@ private theorem mem_support_run_micaliMemoize_invariant [DecidableEq α]
       (∀ e ∈ st'.2, e.2 ∈ (ProbComp.eval (kilianChallenges V m e.1.1)).support) := by
   induction prog using OracleComp.induction generalizing st with
   | pure a =>
-    simp only [run_interpret_pure, PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff,
-      Prod.mk.injEq] at hmem
-    rcases hmem with ⟨rfl, rfl⟩
+    supp_cases hmem [run_interpret_pure] with ⟨rfl, rfl⟩
     exact ⟨hnodup_MT, hsupp_MT, hnodup_FS, hsupp_FS⟩
   | query_bind q cont ih =>
-    simp only [run_interpret_bind, run_interpret_query, PMF.monad_bind_eq_bind,
-      PMF.mem_support_bind_iff] at hmem
-    rcases hmem with ⟨⟨ans, st₁⟩, hans, hcont⟩
+    supp_cases hmem [run_interpret_bind, run_interpret_query] with ⟨⟨ans, st₁⟩, hans, hcont⟩
     rcases st with ⟨tr_MT, tr_FS⟩
     cases q with
     | inl msg =>
-      simp only [micaliMemoize, PMF.mem_support_map_iff] at hans
-      obtain ⟨⟨ans', tr_MT₁⟩, hmt, hpair⟩ := hans
-      dsimp only at hpair
-      rw [Prod.mk.injEq] at hpair
-      rcases hpair with ⟨rfl, rfl⟩
+      supp_cases hans [micaliMemoize] with ⟨⟨ans', tr_MT₁⟩, hmt, rfl, rfl⟩
       obtain ⟨-, -, hnodup_MT₁, hsupp_MT₁⟩ :=
         mem_support_memoize_nodup (fun _ : List Bool => BitString.uniformList σ) msg
           hnodup_MT hsupp_MT hmt
       exact @ih ans' (tr_MT₁, tr_FS) hnodup_MT₁ hsupp_MT₁ hnodup_FS hsupp_FS hcont
     | inr xrt =>
-      simp only [micaliMemoize, PMF.mem_support_map_iff] at hans
-      obtain ⟨⟨ρs', tr_FS₁⟩, hfs, hpair⟩ := hans
-      dsimp only at hpair
-      rw [Prod.mk.injEq] at hpair
-      rcases hpair with ⟨rfl, rfl⟩
+      supp_cases hans [micaliMemoize] with ⟨⟨ρs', tr_FS₁⟩, hfs, rfl, rfl⟩
       obtain ⟨-, -, hnodup_FS₁, hsupp_FS₁⟩ :=
         mem_support_memoize_nodup
           (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1)) xrt
@@ -949,28 +932,18 @@ theorem not_micaliGoodState_of_mem_support_micaliSoundnessProg [DecidableEq α]
   symm at hwin
   simp only [Bool.and_eq_true, decide_eq_true_eq] at hwin
   obtain ⟨hx_not_L, rfl⟩ := hwin
-  simp only [micaliVerify, run_interpret_bind, PMF.monad_bind_eq_bind,
-    PMF.mem_support_bind_iff] at hMV
-  rcases hMV with ⟨⟨ρs, st₂⟩, hFS_call, hKV⟩
+  supp_cases hMV [micaliVerify, run_interpret_bind] with ⟨⟨ρs, st₂⟩, hFS_call, hKV⟩
   obtain ⟨hnodup_MT₁, hsupp_MT₁, hnodup_FS₁, hsupp_FS₁⟩ :=
     mem_support_run_micaliMemoize_invariant V σ m P (st := ([], [])) List.nodup_nil (by simp)
       List.nodup_nil (by simp) hP
   rcases st₁ with ⟨tr_MT₁, tr_FS₁⟩
-  simp only [liftRight_query, run_interpret_query, micaliMemoize, PMF.mem_support_map_iff]
-    at hFS_call
-  obtain ⟨⟨ρs', tr_FS₂⟩, hfs_mem, hpair⟩ := hFS_call
-  dsimp only at hpair
-  rw [Prod.mk.injEq] at hpair
-  rcases hpair with ⟨rfl, rfl⟩
+  supp_cases hFS_call [liftRight_query, run_interpret_query, micaliMemoize]
+    with ⟨⟨ρs', tr_FS₂⟩, hfs_mem, rfl, rfl⟩
   obtain ⟨hρs_in_FS₂, -, hnodup_FS₂, hsupp_FS₂⟩ :=
     mem_support_memoize_nodup
       (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1)) (x, proof.root)
       hnodup_FS₁ hsupp_FS₁ hfs_mem
-  rw [run_micaliMemoize_liftLeft, PMF.mem_support_map_iff] at hKV
-  obtain ⟨⟨ok', tr_MT₃⟩, hkv_mem, hpair'⟩ := hKV
-  dsimp only at hpair'
-  rw [Prod.mk.injEq] at hpair'
-  rcases hpair' with ⟨rfl, rfl⟩
+  supp_cases hKV [run_micaliMemoize_liftLeft] with ⟨⟨ok', tr_MT₃⟩, hkv_mem, rfl, rfl⟩
   obtain ⟨-, hnodup_MT₃, -, heval⟩ :=
     mem_support_run_memoize_invariant (fun _ : List Bool => BitString.uniformList σ)
       (kilianVerifyProg V x proof.root ρs' proof.response) hnodup_MT₁ hsupp_MT₁ hkv_mem

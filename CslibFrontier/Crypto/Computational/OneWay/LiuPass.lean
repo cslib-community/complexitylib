@@ -18,6 +18,7 @@ import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # One-Way Functions and Average-Case Hardness of Time-Bounded Kolmogorov Complexity
@@ -394,9 +395,7 @@ private theorem condEPPRG_real_threshold_accept_le
     have hy' : List.ofFn y ∈ (pG_dist.map List.ofFn).support :=
       (PMF.mem_support_map_iff _ _ _).mpr ⟨y, hy, rfl⟩
     rw [hpG_map] at hy'
-    obtain ⟨w, hw, hwy⟩ := (PMF.mem_support_map_iff _ _ _).mp hy'
-    obtain ⟨z, hz, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hw
-    obtain ⟨x, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hz
+    supp_cases hy' with ⟨_, ⟨_, ⟨x, -, rfl⟩, rfl⟩, hwy⟩
     have hlen_Gx : (G (List.ofFn x)).length = m₀ := by
       simpa [hm₀_def] using hG_len (List.ofFn x)
     have htrunc_eq : truncGen G (c, List.ofFn x) = List.ofFn y := by

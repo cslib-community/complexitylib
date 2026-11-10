@@ -94,7 +94,6 @@ theorem circuitCheck_eval_execute (C : Circuit (arithSignature F) (p + k) m)
       PMF.uniformOfFintype (CircuitMulGate C → F) := ProbComp.eval_uniform _
   simp only [huniform, ProbOracleComp.interpret_query, OracleComp.sumHandler, PMF.pure_bind]
   pmf_swap
-  rfl
 
 
 omit [Fintype F] in
