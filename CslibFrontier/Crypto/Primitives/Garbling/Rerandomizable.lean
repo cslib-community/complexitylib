@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.Basic
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Rerandomizable garbling schemes
@@ -452,13 +453,7 @@ private theorem bind_uniform_rotate (M : α → δ → β → PMF γ) :
         (PMF.uniformOfFintype β).bind fun c => M a d c) =
       (PMF.uniformOfFintype β).bind fun c => (PMF.uniformOfFintype δ).bind fun d =>
         (PMF.uniformOfFintype α).bind fun a => M a d c := by
-  rw [PMF.bind_comm (PMF.uniformOfFintype α)]
-  calc ((PMF.uniformOfFintype δ).bind fun d => (PMF.uniformOfFintype α).bind fun a =>
-          (PMF.uniformOfFintype β).bind fun c => M a d c)
-      = (PMF.uniformOfFintype δ).bind fun d => (PMF.uniformOfFintype β).bind fun c =>
-          (PMF.uniformOfFintype α).bind fun a => M a d c :=
-        congrArg _ (funext fun d => PMF.bind_comm _ _ _)
-    _ = _ := PMF.bind_comm _ _ _
+  pmf_swap
 
 /-- Two-sample change of variables `(a, b) ↦ (g b a, h b)`. -/
 private theorem bind_bind_uniform_reindex (g : β → α → α) (hg : ∀ b, Function.Bijective (g b))

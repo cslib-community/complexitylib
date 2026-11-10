@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Parity
 public import CslibFrontier.Computability.Circuit.Pi
 public import CslibFrontier.Crypto.Protocols.MPC.CircuitEval
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Multi-Party Protocol Composition, Randomized Wrapper, and Completeness of $\text{OT}_1^4$
@@ -633,7 +634,7 @@ private theorem evalWith_compose_steps_eq_hybrid {m : ℕ} {spec₁ spec₂ : Mu
                 y)) := by
       simp only [pmf_norm, Steps.evalWith_oracle, expandSimSteps, idealJoint, bind_pure_comp]
       refine congrArg (ProbComp.eval (W₁ op q)).bind (funext fun ans => ?_)
-      rw [PMF.bind_comm]
+      pmf_swap
       rfl
     -- 2. Apply subprotocol privacy `hSub op J q` and the induction hypothesis `ih`.
     rw [hlhs, hSub op J q]
@@ -644,9 +645,7 @@ private theorem evalWith_compose_steps_eq_hybrid {m : ℕ} {spec₁ spec₂ : Mu
       Steps.evalWith_mapState, Prod.map_apply, Finset.restrict_def, id_eq]
     refine congrArg (ProbComp.eval (OracleComp.pi (Sub op).sampleCoins)).bind (funext fun c_k => ?_)
     -- Swap the `c_tail` and `r_sub` binds on the RHS so both sides bind `c_tail` then `r_sub`.
-    rw [PMF.bind_comm]
-    refine congrArg (ProbComp.eval (OracleComp.pi (sampleSubCoins Sub rest))).bind
-      (funext fun c_tail => ?_)
+    pmf_swap with c_tail
     have hslot (i : Fin m) (s : Fin (spec₁.arity op)) (hs : parties s = i) :
         (query s (hs.symm ▸ st i), pushTuple parties c_k i s hs) = (q s, c_k s) := by
       subst hs
@@ -916,8 +915,7 @@ private theorem bind_restrict_and_sum_pi_uniform {m : ℕ} (coins : ℕ) {β : T
     rw [eval_pi_uniform_bitString]
     conv_lhs => rw [← PMF.uniformOfFintype_update ℓ, PMF.bind_bind]
     simp only [PMF.bind_map, Function.comp_def, ProbComp.eval_uniform]
-    rw [PMF.bind_comm]
-    refine congrArg (PMF.uniformOfFintype (Fin m → BitString coins)).bind (funext fun r => ?_)
+    pmf_swap with r
     have hsum :
         ((PMF.uniformOfFintype (BitString coins)).bind fun v =>
           k (I.restrict (Function.update r ℓ v)) (∑ j : Fin m, Function.update r ℓ v j)) =
