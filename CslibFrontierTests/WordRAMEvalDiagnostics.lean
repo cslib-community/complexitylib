@@ -111,4 +111,31 @@ example (x : Data 2) : ∃ y, ExecWithin 8 branch x y 5 := by
   apply Exists.intro
   ram_eval [branch]
 
+/-! A simp lemma that does not elaborate is reported as such, without the hint to unfold the
+program. -/
+
+/--
+error: ram_eval: a given simp lemma does not elaborate:
+  Unknown identifier `noSuchLemma`
+-/
+#guard_msgs in
+example (x : Data 2) : ∃ y, ExecWithin 8 two x y 2 := by
+  apply Exists.intro
+  ram_eval [two, noSuchLemma]
+
+/-! Under `try` and `first` the failure is silent, as before, and the next alternative runs. The
+failing attempts change no goal, which the unused-tactic linter would report. -/
+
+set_option linter.unusedTactic false in
+example (x : Data 2) : ∃ y, ExecWithin 8 two x y 2 := by
+  apply Exists.intro
+  try ram_eval
+  ram_eval [two]
+
+set_option linter.unusedTactic false in
+example : 1 = 1 := by
+  first
+  | ram_eval
+  | rfl
+
 end CslibFrontierTests.WordRAMEvalDiagnostics
