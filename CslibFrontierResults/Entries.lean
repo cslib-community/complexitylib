@@ -53,6 +53,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
@@ -1001,6 +1002,27 @@ register_result "ehrenfeucht-fraisse" where
     L.IsRelational; the Hintikka direction needs only finitely many relation symbols. Also: \
     finitely many rank-n formulas up to equivalence, and elementary equivalence as winning \
     every finite game."
+
+register_result "pebble-games-fo-k" where
+  title := "The pebble-game characterization of finite-variable logic FO^k"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := "Theorem 6.10", locator := "Section 6.1, p. 123" },
+    { paper := Libkin2004, theorem := "Theorem 11.5, Proposition 11.8 and Corollary 11.9",
+      locator := "Section 11.2, pp. 216–218" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.pebbleWins_iff_forall_realize_iff,
+    Cslib.Logic.FO.pebbleWinsForever_iff_forall_realize_iff
+  ]
+  scope := "Mathlib first-order languages with finitely many relation symbols; k-variable \
+    formulas reuse variables and have equality and relational atoms. Duplicator wins the \
+    n-round k-pebble game from a position (S, a, b) iff a and b satisfy the same FO^k formulas \
+    of quantifier rank at most n with free variables in S, for arbitrary structures; the \
+    infinite game corresponds to all FO^k formulas on finite structures. Positions are total \
+    assignments, so for k > 0 the statements are vacuous on empty structures. Libkin states \
+    the results for the infinitary logic L^k_∞ω on finite structures; the remark before \
+    Proposition 11.8 reduces rank n to FO^k."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"

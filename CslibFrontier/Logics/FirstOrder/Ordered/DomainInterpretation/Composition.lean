@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation.Certificate
 public import CslibFrontier.Logics.FirstOrder.Ordered.Tuple.Flatten
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # Composition of certified ordered interpretations
@@ -79,8 +80,7 @@ theorem realize_comp_domain (x : Fin (l * k) → Fin M.size) :
     (J.comp C).domain.Realize x ↔
       (∀ j, I.domain.Realize fun i => x (finProdFinEquiv (j, i))) ∧
         (C.onFormula J.domain).Realize fun p => x (finProdFinEquiv p) := by
-  simp only [comp, Formula.realize_inf, Formula.realize_iInf, Formula.realize_relabel,
-    Function.comp_def]
+  fo_simp [comp, Function.comp_def]
 
 private theorem exists_unrank_comp (hI : I.Admissible) :
     ∃ h : (J.comp C).card M = J.card (I.map hI M), ∀ i, (J.comp C).unrank M i =
