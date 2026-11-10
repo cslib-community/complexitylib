@@ -10,6 +10,7 @@ module
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.Basic
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.Tabulation
 public import CslibFrontier.Probability.KWiseIndependent.ReducedLimbs
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import CslibFrontier.Tactic.Fits
 
 /-!
@@ -905,43 +906,16 @@ private theorem resampleSetup1Code_exec {w base w₀ : ℕ} {x : Data 240}
     (hfit_top : Fits w (base + 1))
     (hfit_mask_top : Fits w (2 ^ (w₀ - 1) - 1)) :
     Exec w (resampleSetup1Code w₀) x (resampleSetup1Data base w₀ x) 5 := by
-  have hfit_1 : Fits w 1 := by fits
-  set s1 := x.set 3 base
-  have e1 : Exec w (.op (.copy 3 0) : Code .exact 240) x s1 1 := by
-    simpa [s1, hbase] using (Exec.copy (B := .exact) (w := w) (d := 3) (s := 0) (x := x))
-  set s2 := s1.set 4 1
-  have e2 : Exec w (.op (.const 4 1) : Code .exact 240) s1 s2 1 := Exec.const hfit_1
-  set s3 := s2.set 4 (base + 1)
-  have e3 : Exec w (.op (.exactBin .add 4 0 4) : Code .exact 240) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, hbase]) hfit_top
-  set s4 := s3.set 5 (2 ^ (w₀ - 1) - 1)
-  have e4 : Exec w (.op (.const 5 (2 ^ (w₀ - 1) - 1)) : Code .exact 240) s3 s4 1 :=
-    Exec.const hfit_mask_top
-  set s5 := s4.set 6 1
-  have e5 : Exec w (.op (.const 6 1) : Code .exact 240) s4 s5 1 := Exec.const hfit_1
-  simpa only [resampleSetup1Code, resampleSetup1Data, s5, s4, s3, s2, s1] using
-    e1.seq (e2.seq (e3.seq (e4.seq e5)))
+  unfold resampleSetup1Code resampleSetup1Data
+  wram_exec [hbase]
 
 private theorem resampleSetup2Code_exec {w base w₀ b b' k : ℕ} {x : Data 240}
     (h4 : x.regs 4 = base + 1)
     (hfit_end : Fits w (base + 1 + k * reducedLimbCount (reducedTrinomialStep w₀ b b')))
     (hfit_mask_c : Fits w (2 ^ reducedChunkBits (reducedTrinomialStep w₀ b b') - 1)) :
     Exec w (resampleSetup2Code w₀ b b' k) x (resampleSetup2Data base w₀ b b' k x) 4 := by
-  set t := reducedTrinomialStep w₀ b b'
-  set c := reducedChunkBits t
-  set L := reducedLimbCount t
-  set s1 := x.set 3 (base + 1)
-  have e1 : Exec w (.op (.copy 3 4) : Code .exact 240) x s1 1 := by
-    simpa [s1, h4] using (Exec.copy (B := .exact) (w := w) (d := 3) (s := 4) (x := x))
-  set s2 := s1.set 5 (k * L)
-  have e2 : Exec w (.op (.const 5 (k * L)) : Code .exact 240) s1 s2 1 := Exec.const (by fits)
-  set s3 := s2.set 4 (base + 1 + k * L)
-  have e3 : Exec w (.op (.exactBin .add 4 4 5) : Code .exact 240) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, h4]) hfit_end
-  set s4 := s3.set 5 (2 ^ c - 1)
-  have e4 : Exec w (.op (.const 5 (2 ^ c - 1)) : Code .exact 240) s3 s4 1 := Exec.const hfit_mask_c
-  simpa only [resampleSetup2Code, resampleSetup2Data, s4, s3, s2, s1] using
-    e1.seq (e2.seq (e3.seq e4))
+  unfold resampleSetup2Code resampleSetup2Data
+  wram_exec [h4]
 
 /-- **Exact `ExecRand` execution of `resampleCode w₀ b b' k`**. -/
 theorem resampleCode_execRand {w base w₀ b b' k : ℕ} {x : Data 240}
@@ -1359,42 +1333,10 @@ private theorem halfMulSetupCode_exec {w m : ℕ} (hm : m < w) (x : Data 240)
       ((le_of_lt (and_two_pow_sub_one_lt x' h)).trans (Nat.pow_le_pow_right two_pos h_le))
   have hfit_x1 : Fits w (x' >>> h) :=
     hfit_m.of_le ((Nat.shiftRight_le x' h).trans (le_of_lt hx'_lt))
-  set s1 := x.set 4 α
-  have e1 : Exec w (.op (.load 4 0) : Code .exact 240) x s1 1 := Exec.load
-  set s2 := s1.set 5 (2 ^ m - 1)
-  have e2 : Exec w (.op (.const 5 (2 ^ m - 1)) : Code .exact 240) s1 s2 1 := Exec.const (by fits)
-  set s3 := s2.set 6 h
-  have e3 : Exec w (.op (.const 6 h) : Code .exact 240) s2 s3 1 := Exec.const (by fits)
-  set s4 := s3.set 7 (2 ^ h - 1)
-  have e4 : Exec w (.op (.const 7 (2 ^ h - 1)) : Code .exact 240) s3 s4 1 := Exec.const hfit_mask_h
-  set s5 := s4.set 8 (2 ^ (m - h) - 1)
-  have e5 : Exec w (.op (.const 8 (2 ^ (m - h) - 1)) : Code .exact 240) s4 s5 1 :=
-    Exec.const hfit_mask_mh
-  set s6 := s5.set 9 (2 ^ (m - 2 * h) - 1)
-  have e6 : Exec w (.op (.const 9 (2 ^ (m - 2 * h) - 1)) : Code .exact 240) s5 s6 1 :=
-    Exec.const hfit_mask_m2h
-  set s7 := s6.set 10 (2 * h)
-  have e7 : Exec w (.op (.const 10 (2 * h)) : Code .exact 240) s6 s7 1 := Exec.const (by fits)
-  set s8 := s7.set 11 x'
-  have e8 : Exec w (.op (.exactBin .and 11 1 5) : Code .exact 240) s7 s8 1 :=
-    exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, s2, s1, x']) (by fits)
-  set s9 := s8.set 12 (α &&& (2 ^ h - 1))
-  have e9 : Exec w (.op (.exactBin .and 12 4 7) : Code .exact 240) s8 s9 1 :=
-    exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1]) hfit_α0
-  set s10 := s9.set 13 (α >>> h)
-  have e10 : Exec w (.op (.exactBin .shiftRight 13 4 6) : Code .exact 240) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1]) hfit_α1
-  set s11 := s10.set 14 (x' &&& (2 ^ h - 1))
-  have e11 : Exec w (.op (.exactBin .and 14 11 7) : Code .exact 240) s10 s11 1 :=
-    exec_exactBin (by simp +decide [s10, s9, s8, s7, s6, s5, s4]) hfit_x0
-  set s12 := s11.set 15 (x' >>> h)
-  have e12 : Exec w (.op (.exactBin .shiftRight 15 11 6) : Code .exact 240) s11 s12 1 :=
-    exec_exactBin (by simp +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3]) hfit_x1
-  have hexec :=
-    e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq (e10.seq
-      (e11.seq e12))))))))))
-  refine ⟨s12, hexec, ?_⟩
-  simp +decide [s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1]
+  simp only [h, α, x'] at *
+  unfold halfMulSetupCode
+  wram_exec
+  wram_simp
 
 private theorem halfMulCombineCode_exec {w m α x' : ℕ} (hm : m < w)
     (hα : α < 2 ^ m) (hx' : x' < 2 ^ m) (x : Data 240)
@@ -1440,18 +1382,18 @@ private theorem halfMulCombineCode_exec {w m α x' : ℕ} (hm : m < w)
   have hmul10 : α₁ * x₀ < 2 ^ m := by
     calc α₁ * x₀ < 2 ^ (m - h) * 2 ^ h := Nat.mul_lt_mul'' hα1 hx0
       _ = 2 ^ m := by rw [← pow_add, Nat.sub_add_cancel h_le]
-  set p₀ := (α₀ * x₀) &&& (2 ^ m - 1)
-  set q₁ := (α₀ * x₁) &&& (2 ^ (m - h) - 1)
-  set p₁ := q₁ <<< h
-  set u₁ := (p₀ + p₁) &&& (2 ^ m - 1)
-  set q₂ := (α₁ * x₀) &&& (2 ^ (m - h) - 1)
-  set p₂ := q₂ <<< h
-  set u₂ := (u₁ + p₂) &&& (2 ^ m - 1)
-  set α₁' := α₁ &&& (2 ^ (m - 2 * h) - 1)
-  set x₁' := x₁ &&& (2 ^ (m - 2 * h) - 1)
-  set q₃ := α₁' * x₁'
-  set p₃ := q₃ <<< (2 * h)
-  set u₃ := (u₂ + p₃) &&& (2 ^ m - 1)
+  set p₀ := (α₀ * x₀) &&& (2 ^ m - 1) with hp₀
+  set q₁ := (α₀ * x₁) &&& (2 ^ (m - h) - 1) with hq₁
+  set p₁ := q₁ <<< h with hp₁
+  set u₁ := (p₀ + p₁) &&& (2 ^ m - 1) with hu₁
+  set q₂ := (α₁ * x₀) &&& (2 ^ (m - h) - 1) with hq₂
+  set p₂ := q₂ <<< h with hp₂
+  set u₂ := (u₁ + p₂) &&& (2 ^ m - 1) with hu₂
+  set α₁' := α₁ &&& (2 ^ (m - 2 * h) - 1) with hα₁'
+  set x₁' := x₁ &&& (2 ^ (m - 2 * h) - 1) with hx₁'
+  set q₃ := α₁' * x₁' with hq₃
+  set p₃ := q₃ <<< (2 * h) with hp₃
+  set u₃ := (u₂ + p₃) &&& (2 ^ m - 1) with hu₃
   have hp0 : p₀ < 2 ^ m := and_two_pow_sub_one_lt _ m
   have hq1 : q₁ < 2 ^ (m - h) := and_two_pow_sub_one_lt _ (m - h)
   have hp1 : p₁ < 2 ^ m := by
@@ -1487,86 +1429,11 @@ private theorem halfMulCombineCode_exec {w m α x' : ℕ} (hm : m < w)
           Nat.mul_lt_mul_of_pos_right hq3 (Nat.two_pow_pos (2 * h))
       _ = 2 ^ m := by rw [← pow_add, Nat.sub_add_cancel h2_le]
   have hu3 : u₃ < 2 ^ m := and_two_pow_sub_one_lt _ m
-  set s1 := x.set 3 (α₀ * x₀)
-  have e1 : Exec w (.op (.exactBin .mul 3 12 14) : Code .exact 240) x s1 1 :=
-    exec_exactBin (by simp +decide [h12, h14, α₀, x₀, h]) (by fits)
-  set s2 := s1.set 3 p₀
-  have e2 : Exec w (.op (.exactBin .and 3 3 5) : Code .exact 240) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h5, p₀]) (by fits)
-  set s3 := s2.set 16 (α₀ * x₁)
-  have e3 : Exec w (.op (.exactBin .mul 16 12 15) : Code .exact 240) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, h12, h15, α₀, x₁, h])
-      (by fits)
-  set s4 := s3.set 16 q₁
-  have e4 : Exec w (.op (.exactBin .and 16 16 8) : Code .exact 240) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, h8, q₁, h])
-      (hfit_m.of_le (le_of_lt (lt_of_lt_of_le hq1 (Nat.pow_le_pow_right two_pos (Nat.sub_le m h)))))
-  set s5 := s4.set 16 p₁
-  have e5 : Exec w (.op (.exactBin .shiftLeft 16 16 6) : Code .exact 240) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, s2, s1, h6, p₁, h]) (by fits)
-  set s6 := s5.set 3 (p₀ + p₁)
-  have e6 : Exec w (.op (.exactBin .add 3 3 16) : Code .exact 240) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2]) (by change p₀ + p₁ < 2 ^ w; linarith)
-  set s7 := s6.set 3 u₁
-  have e7 : Exec w (.op (.exactBin .and 3 3 5) : Code .exact 240) s6 s7 1 :=
-    exec_exactBin (by simp +decide [s6, s5, s4, s3, s2, s1, h5, u₁])
-      (by fits)
-  set s8 := s7.set 16 (α₁ * x₀)
-  have e8 : Exec w (.op (.exactBin .mul 16 13 14) : Code .exact 240) s7 s8 1 :=
-    exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, s2, s1, h13, h14, α₁, x₀, h])
-      (by fits)
-  set s9 := s8.set 16 q₂
-  have e9 : Exec w (.op (.exactBin .and 16 16 8) : Code .exact 240) s8 s9 1 :=
-    exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h8, q₂, h])
-      (hfit_m.of_le (le_of_lt (lt_of_lt_of_le hq2 (Nat.pow_le_pow_right two_pos (Nat.sub_le m h)))))
-  set s10 := s9.set 16 p₂
-  have e10 : Exec w (.op (.exactBin .shiftLeft 16 16 6) : Code .exact 240) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1, h6, p₂, h])
-      (by fits)
-  set s11 := s10.set 3 (u₁ + p₂)
-  have e11 : Exec w (.op (.exactBin .add 3 3 16) : Code .exact 240) s10 s11 1 :=
-    exec_exactBin (by simp +decide [s10, s9, s8, s7]) (by change u₁ + p₂ < 2 ^ w; linarith)
-  set s12 := s11.set 3 u₂
-  have e12 : Exec w (.op (.exactBin .and 3 3 5) : Code .exact 240) s11 s12 1 :=
-    exec_exactBin (by simp +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h5, u₂])
-      (by fits)
-  set s13 := s12.set 13 α₁'
-  have e13 : Exec w (.op (.exactBin .and 13 13 9) : Code .exact 240) s12 s13 1 :=
-    exec_exactBin (by simp +decide [s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1, h9,
-      h13, α₁', α₁, h])
-      (hfit_m.of_le (le_of_lt (lt_of_lt_of_le hα1'
-        (Nat.pow_le_pow_right two_pos (Nat.sub_le m (2 * h))))))
-  set s14 := s13.set 15 x₁'
-  have e14 : Exec w (.op (.exactBin .and 15 15 9) : Code .exact 240) s13 s14 1 :=
-    exec_exactBin (by simp +decide [s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1,
-      h9, h15, x₁', x₁, h])
-      (hfit_m.of_le (le_of_lt (lt_of_lt_of_le hx1'
-        (Nat.pow_le_pow_right two_pos (Nat.sub_le m (2 * h))))))
-  set s15 := s14.set 16 q₃
-  have e15 : Exec w (.op (.exactBin .mul 16 13 15) : Code .exact 240) s14 s15 1 :=
-    exec_exactBin (by simp +decide [s14, s13, q₃])
-      (hfit_m.of_le (le_of_lt (lt_of_lt_of_le hq3
-        (Nat.pow_le_pow_right two_pos (Nat.sub_le m (2 * h))))))
-  set s16 := s15.set 16 p₃
-  have e16 : Exec w (.op (.exactBin .shiftLeft 16 16 10) : Code .exact 240) s15 s16 1 :=
-    exec_exactBin (by simp +decide [s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3,
-      s2, s1, h10, p₃, h])
-      (by fits)
-  set s17 := s16.set 3 (u₂ + p₃)
-  have e17 : Exec w (.op (.exactBin .add 3 3 16) : Code .exact 240) s16 s17 1 :=
-    exec_exactBin (by simp +decide [s16, s15, s14, s13, s12])
-      (by change u₂ + p₃ < 2 ^ w; linarith)
-  set s18 := s17.set 3 u₃
-  have e18 : Exec w (.op (.exactBin .and 3 3 5) : Code .exact 240) s17 s18 1 :=
-    exec_exactBin (by simp +decide [s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6,
-      s5, s4, s3, s2, s1, h5, u₃])
-      (by fits)
-  have hexec :=
-    e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq (e9.seq (e10.seq
-      (e11.seq (e12.seq (e13.seq (e14.seq (e15.seq (e16.seq (e17.seq e18))))))))))))))))
-  refine ⟨s18, hexec, ?_⟩
-  simp +decide [s18, s17, s16, s15, s14, s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1,
-    h5, u₃, u₂, u₁, p₃, q₃, α₁', x₁', p₂, q₂, p₁, q₁, p₀, α₀, α₁, x₀, x₁, h, halfMulMod]
+  have hpow_mh : 2 ^ (m - h) ≤ 2 ^ m := Nat.pow_le_pow_right two_pos (Nat.sub_le m h)
+  have hpow_m2h : 2 ^ (m - 2 * h) ≤ 2 ^ m := Nat.pow_le_pow_right two_pos (Nat.sub_le m (2 * h))
+  unfold halfMulCombineCode
+  wram_exec [h5, h6, h8, h9, h10, h12, h13, h14, h15, ← hp₀, ← hq₁, ← hp₁, ← hu₁, ← hq₂, ← hp₂, ← hu₂, ← hα₁', ← hx₁', ← hq₃, ← hp₃, ← hu₃]
+  wram_simp [h5, u₃, u₂, u₁, p₃, q₃, α₁', x₁', p₂, q₂, p₁, q₁, p₀, α₀, α₁, x₀, x₁, h, halfMulMod]
 
 private theorem finishReduceCode_exec {w w₀ b α u : ℕ} (hw₀_pos : 0 < w₀) (hw₀ : w₀ ≤ w)
     (hu : u < 2 ^ w₀) (x : Data 240)
@@ -1584,14 +1451,14 @@ private theorem finishReduceCode_exec {w w₀ b α u : ℕ} (hw₀_pos : 0 < w�
   have hfit_1 : Fits w 1 := by
     have : 2 ^ 1 ≤ 2 ^ w := Nat.pow_le_pow_right two_pos (by omega)
     change 1 < 2 ^ w; omega
-  set p := halfMulMod m α (u &&& (2 ^ m - 1))
+  set p := halfMulMod m α (u &&& (2 ^ m - 1)) with hp
   have hp_lt : p < 2 ^ m := halfMulMod_lt m α _
   have hu_shr_lt : u >>> 1 < 2 ^ m := by
     have : m = w₀ - 1 := rfl
     rw [this]
     exact shiftRight_lt_pow_sub hw₀_pos hu
   have hadd_lt : (u >>> 1) + p < 2 ^ w₀ := by linarith
-  set q := ((u >>> 1) + p) &&& (2 ^ m - 1)
+  set q := ((u >>> 1) + p) &&& (2 ^ m - 1) with hq
   have hq_lt : q < 2 ^ m := and_two_pow_sub_one_lt _ m
   have hq_shl_lt : q <<< 1 < 2 ^ w₀ := by
     rw [Nat.shiftLeft_eq, pow_one]
@@ -1606,36 +1473,11 @@ private theorem finishReduceCode_exec {w w₀ b α u : ℕ} (hw₀_pos : 0 < w�
       _ < 2 ^ w := Nat.lt_two_pow_self
   have hres_lt : oddMulModWord w₀ α u >>> (w₀ - min w₀ (3 * b)) < 2 ^ w :=
     lt_of_le_of_lt (Nat.shiftRight_le _ _) (lt_of_lt_of_le hodd_lt hpow_w0_le)
-  set s1 := x.set 6 1
-  have e1 : Exec w (.op (.const 6 1) : Code .exact 240) x s1 1 := Exec.const hfit_1
-  set s2 := s1.set 11 (u >>> 1)
-  have e2 : Exec w (.op (.exactBin .shiftRight 11 1 6) : Code .exact 240) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, h1]) (by change u >>> 1 < 2 ^ w; linarith)
-  set s3 := s2.set 3 ((u >>> 1) + p)
-  have e3 : Exec w (.op (.exactBin .add 3 11 3) : Code .exact 240) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, h3, p, m]) (lt_of_lt_of_le hadd_lt hpow_w0_le)
-  set s4 := s3.set 3 q
-  have e4 : Exec w (.op (.exactBin .and 3 3 5) : Code .exact 240) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1, h5, q, m]) (by change q < 2 ^ w; linarith)
-  set s5 := s4.set 3 (q <<< 1)
-  have e5 : Exec w (.op (.exactBin .shiftLeft 3 3 6) : Code .exact 240) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, s2, s1]) (lt_of_lt_of_le hq_shl_lt hpow_w0_le)
-  set s6 := s5.set 11 (u &&& 1)
-  have e6 : Exec w (.op (.exactBin .and 11 1 6) : Code .exact 240) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1, h1]) (lt_of_lt_of_le hubit_lt hpow_w0_le)
-  set s7 := s6.set 3 (oddMulModWord w₀ α u)
-  have e7 : Exec w (.op (.exactBin .add 3 11 3) : Code .exact 240) s6 s7 1 :=
-    exec_exactBin (by simp +decide [s6, s5, oddMulModWord, q, p, m])
-      (lt_of_lt_of_le hodd_lt hpow_w0_le)
-  set s8 := s7.set 6 (w₀ - min w₀ (3 * b))
-  have e8 : Exec w (.op (.const 6 (w₀ - min w₀ (3 * b))) : Code .exact 240) s7 s8 1 :=
-    Exec.const hrem_shift_lt
-  set s9 := s8.set 3 (oddMulModWord w₀ α u >>> (w₀ - min w₀ (3 * b)))
-  have e9 : Exec w (.op (.exactBin .shiftRight 3 3 6) : Code .exact 240) s8 s9 1 :=
-    exec_exactBin (by simp +decide [s8, s7]) hres_lt
-  have hexec := e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq e9)))))))
-  refine ⟨s9, hexec, ?_⟩
-  simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1]
+  have hodd_eq : (u &&& 1) + (q <<< 1) = oddMulModWord w₀ α u := by
+    simp [oddMulModWord, q, p, m]
+  unfold finishReduceCode
+  wram_exec [h1, h3, h5, ← hq, hodd_eq]
+  wram_simp
 
 /-- Stage 1 execution: computes
 `oddMulModWord w₀ (x.mem (x.regs 0)) (x.regs 1) >>> (w₀ - min w₀ (3 * b))`
