@@ -17,7 +17,7 @@ import Mathlib.Data.List.GetD
 /-!
 # Sums over ranges, consecutive blocks and residue classes
 
-Small facts about lists of natural numbers.
+Small facts about list sums and lists of natural numbers.
 
 * **Sums over ranges.** A list sum over `List.range n` is the `Finset` sum over `range n`
   (`List.sum_map_range_eq_sum_range`); a list is its entries at `0, …, length - 1`
@@ -67,10 +67,11 @@ theorem map_getD_range {α : Type*} (l : List α) (x : α) :
   simp [List.getElem?_eq_getElem h₂]
 
 /-- A sum over a `flatMap` sums the inner sums. -/
-theorem sum_map_flatMap {α β : Type*} (l : List α) (f : α → List β) (g : β → ℕ) :
+theorem sum_map_flatMap {α β M : Type*} [AddMonoid M] (l : List α) (f : α → List β)
+    (g : β → M) :
     ((l.flatMap f).map g).sum = (l.map fun x => ((f x).map g).sum).sum := by
   induction l with
-  | nil => rfl
+  | nil => simp
   | cons x l ih => simp [List.flatMap_cons, ih]
 
 /-- The length of a filtered list counts its elements satisfying the predicate. -/

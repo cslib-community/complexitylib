@@ -227,6 +227,15 @@ private theorem two_adic_split {n : ℤ} {i : ℕ} (hn : ¬ (2 : ℤ) ^ (i + 1) 
     have h := (padicValInt_dvd_iff (p := 2) (padicValInt 2 n + 1) n).mp (by exact_mod_cast this)
     omega
 
+/-- The cross ratio is even when `2 ^ (i + 1) ∤ t - d₀`: the `2`-adic valuation `v` of `t - d₀`
+is then at most `i`. -/
+private theorem two_dvd_crossRatio {a i : ℕ} {t d₀ : ℤ} (ζ : R)
+    (hcross : ¬ (2 : ℤ) ^ (i + 1) ∣ t - d₀) : (2 : R) ∣ crossRatio a i t d₀ ζ := by
+  have hvi := (two_adic_split hcross).1
+  rw [crossRatio, show i + 1 - padicValInt 2 (t - d₀) = i - padicValInt 2 (t - d₀) + 1 by omega,
+    pow_succ]
+  exact dvd_mul_of_dvd_left (dvd_mul_left _ _) _
+
 /-- In a ring where `2` is nilpotent, `1 + 2 x` is a unit. -/
 private theorem isUnit_one_add_two_mul {p : ℕ} (hp : (2 : R) ^ p = 0) (x : R) :
     IsUnit (1 + 2 * x) :=
@@ -271,10 +280,8 @@ theorem kernelValue_eq_sum (κ : ℤ₍₂₎ →+* R) (ζ : R) {p a i : ℕ} (h
   have hcancel : kernelValue κ ζ a t d * (1 - ρ * j) = kernelValue κ ζ a t d₀ := by grind
   -- The geometric series inverts `1 - ρ j`, as `(ρ j) ^ p = 0`.
   have hnil : (ρ * j) ^ p = 0 := by
-    have : ρ = 2 * (2 ^ (i - v) * Ring.inverse U) := by
-      rw [hρ, show i + 1 - v = i - v + 1 by omega, pow_succ]
-      ring
-    rw [this, mul_assoc, mul_pow, hp, zero_mul]
+    obtain ⟨c, hc⟩ : (2 : R) ∣ ρ := two_dvd_crossRatio ζ hcross
+    rw [hc, mul_assoc, mul_pow, hp, zero_mul]
   have hgeom := mul_neg_geom_sum (ρ * (j : R)) p
   rw [hnil, sub_zero] at hgeom
   calc kernelValue κ ζ a t d
@@ -294,15 +301,9 @@ theorem two_pow_dvd_kernelValue_mul_crossRatio_pow (κ : ℤ₍₂₎ →+* R) (
     (2 : R) ^ (b + 1) ∣ kernelValue κ ζ a t d₀ * crossRatio a i t d₀ ζ ^ b := by
   have hd₀t : d₀ ≠ t := by rintro rfl; exact hcross (by rw [sub_self]; exact dvd_zero _)
   obtain ⟨Q, hQ⟩ := exists_localKernel_eq_two_mul ht hd₀ hd₀t
-  have hvi := (two_adic_split hcross).1
   have hk : kernelValue κ ζ a t d₀ = 2 * Q.eval₂ κ ζ := by
     rw [kernelValue, hQ, eval₂_mul, eval₂_C, map_ofNat]
-  have hρ : crossRatio a i t d₀ ζ = 2 * (2 ^ (i - padicValInt 2 (t - d₀)) *
-      Ring.inverse ((((t - d₀) / 2 ^ padicValInt 2 (t - d₀) : ℤ) : R) +
-        2 ^ (a + 1 - padicValInt 2 (t - d₀)) * ζ)) := by
-    rw [crossRatio, show i + 1 - padicValInt 2 (t - d₀) = i - padicValInt 2 (t - d₀) + 1 by
-      omega, pow_succ]
-    ring
+  obtain ⟨c, hρ⟩ := two_dvd_crossRatio (a := a) ζ hcross
   rw [hk, hρ, mul_pow, pow_succ']
   exact mul_dvd_mul (dvd_mul_right _ _) (dvd_mul_right _ _)
 
@@ -475,11 +476,6 @@ private theorem cauchyValueMatrix_eq_add_sum
     have hy₀lt : slot e' % 2 ^ (i + 1) < 2 ^ (i + 1) := Nat.mod_lt _ (by positivity)
     obtain ⟨y₀, hy₀⟩ : ∃ y₀ : Fin (2 ^ (i + 1)), (y₀ : ℕ) = slot e' % 2 ^ (i + 1) :=
       ⟨⟨_, hy₀lt⟩, rfl⟩
-    have hx' : ((slot e : ℕ) : ℤ) < 2 ^ a := by exact_mod_cast hslot e
-    have hy₀' : ((y₀ : ℕ) : ℤ) < 2 ^ a := by
-      rw [hy₀]
-      exact_mod_cast lt_of_lt_of_le hy₀lt h2a
-    have hy' : ((slot e' : ℕ) : ℤ) < 2 ^ a := by exact_mod_cast hslot e'
     rw [Fintype.sum_prod_type, sum_eq_single (packet e), Fintype.sum_prod_type,
       sum_eq_single y₀]
     · have hcoef : ∀ b : Fin p,
@@ -498,14 +494,9 @@ private theorem cauchyValueMatrix_eq_add_sum
             (((slot e' / 2 ^ (i + 1) : ℕ) : ℤ) : R) ^ b) p,
         cauchyValueMatrix, ite_eq_left hq]
       have hdiv := Nat.mod_add_div (slot e') (2 ^ (i + 1))
-      refine kernelValue_eq_sum κ ζ hp ht ?_ ?_ ?_
+      refine kernelValue_eq_sum κ ζ hp ht (sub_mem_cauchyGrid (hslot e)
+          (lt_of_lt_of_le y₀.isLt h2a)) (sub_mem_cauchyGrid (hslot e) (hslot e')) ?_
         (not_dvd_sub_sub_of_testBit_eq hti hti' y₀.isLt (hb.trans (hbit' _ hy₀.symm))) hia.le
-      · rw [mem_cauchyGrid]
-        push_cast
-        constructor <;> omega
-      · rw [mem_cauchyGrid]
-        push_cast
-        constructor <;> omega
       · have : ((slot e' : ℕ) : ℤ) = ((y₀ : ℕ) : ℤ) +
             2 ^ (i + 1) * ((slot e' / 2 ^ (i + 1) : ℕ) : ℤ) := by
           rw [hy₀]
@@ -613,13 +604,9 @@ theorem two_pow_dvd_cauchyModeCoeff {a : ℕ} (hslot : ∀ e, slot e < 2 ^ a) (h
   unfold cauchyModeCoeff
   split_ifs with h
   · have h2a : 2 ^ (i + 1) ≤ 2 ^ a := Nat.pow_le_pow_right two_pos hia
-    have hx : ((slot e : ℕ) : ℤ) < 2 ^ a := by exact_mod_cast hslot e
-    have hy₀ : ((Z.2.1 : ℕ) : ℤ) < 2 ^ a := by exact_mod_cast lt_of_lt_of_le Z.2.1.isLt h2a
-    refine two_pow_dvd_kernelValue_mul_crossRatio_pow κ ζ ht ?_
+    exact two_pow_dvd_kernelValue_mul_crossRatio_pow κ ζ ht
+      (sub_mem_cauchyGrid (hslot e) (lt_of_lt_of_le Z.2.1.isLt h2a))
       (not_dvd_sub_sub_of_testBit_eq hti hti' Z.2.1.isLt h.2.2) _
-    rw [mem_cauchyGrid]
-    push_cast
-    constructor <;> omega
   · exact dvd_zero _
 
 /-- **The child identity for the Cauchy matrix** ((D.16) of [OpenAI2026ETH] at an interpolation

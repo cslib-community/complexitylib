@@ -13,7 +13,7 @@ public import Mathlib.Data.ZMod.Units
 public import Mathlib.GroupTheory.OrderOfElement
 import CslibFrontier.Foundations.Data.Nat.Totient
 import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.NumberTheory.Multiplicity
+import Mathlib.NumberTheory.Basic
 
 /-!
 # Residues modulo a square
@@ -74,15 +74,9 @@ theorem orderOf_one_add_natCast {N : ℕ} (hN : 0 < N) :
 /-- Adding a multiple of `N` does not change an `N`-th power in `ZMod (N ^ 2)`. -/
 theorem add_natCast_mul_pow_self (N : ℕ) (v k : ZMod (N ^ 2)) :
     (v + (N : ZMod (N ^ 2)) * k) ^ N = v ^ N := by
-  have hdvd := sq_dvd_add_pow_sub_sub ((N : ZMod (N ^ 2)) * k) v N
-  have hN := natCast_mul_self_eq_zero N
-  have hmid : v ^ (N - 1) * (N * k) * (N : ZMod (N ^ 2)) = 0 := by
-    calc v ^ (N - 1) * (N * k) * (N : ZMod (N ^ 2))
-        = v ^ (N - 1) * k * ((N : ZMod (N ^ 2)) * N) := by ring
-      _ = 0 := by rw [hN, mul_zero]
-  rw [mul_pow, pow_two (N : ZMod (N ^ 2)), hN, zero_mul, zero_dvd_iff, hmid, sub_zero,
-    sub_eq_zero] at hdvd
-  exact hdvd
+  have h := dvd_sub_pow_of_dvd_sub (p := N) (a := v + N * k) (b := v) ⟨k, by ring⟩ 1
+  rwa [pow_one, one_add_one_eq_two, pow_two (N : ZMod (N ^ 2)), natCast_mul_self_eq_zero,
+    zero_dvd_iff, sub_eq_zero] at h
 
 /-- The `N`-th power of a natural number in `ZMod (N ^ 2)` depends only on its residue
 modulo `N`. -/

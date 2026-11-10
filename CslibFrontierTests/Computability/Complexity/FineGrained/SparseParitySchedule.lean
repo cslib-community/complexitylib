@@ -78,13 +78,12 @@ example (b : Fin 2 → Bool)
           Real.exp (((16 * 2 + 4 : ℕ) : ℝ) * (2 : ℝ) * rowCost 1 2)) := by
   intro S
   have hfree := testCNF.card_le_two_mul_freeVar_parityRowSystem (k := 2) (W := 1) (b₀ := 96)
-    (s_div := 2) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
-    testEquiv96
+    (s_div := 2) (by decide) (by decide) (by decide) (by decide) (by decide) testEquiv96
   have hscope := testCNF.card_branchAugmentedScope_parityRowSystem_le (k := 2) (W := 1)
     (by decide) (by decide) S testEquiv96 b f
   have hsum := testCNF.sum_branch_domainExaminationBound_parityRowSystem_le
     (β := 1) (k := 2) (W := 1) (b₀ := 96) (s_div := 2)
-    (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide) (by decide) (by decide)
     testEquiv96 (fun _ => 0) (fun _ _ => by positivity)
   exact ⟨hfree.1, hfree.2, hscope, hsum.2⟩
 

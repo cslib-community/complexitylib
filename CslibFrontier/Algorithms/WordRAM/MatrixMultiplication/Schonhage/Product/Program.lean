@@ -218,7 +218,7 @@ end Reg
 @[expose] public def saveGroups : Code .standard 160 :=
   .seq saveOffsets (.seq saveCodes saveOriginals)
 
-/-- One actual load, unsigned doubling and store converts a raw 0/1 matrix entry. -/
+/-- One actual load, unsigned doubling and store converts a raw nonnegative matrix entry. -/
 @[expose] public def bitCopyStep : Code .standard 160 := ram[
   Reg.address ← Reg.source + Reg.index; Reg.value ← *Reg.address; Reg.value ← Reg.value * Reg.two;
   Reg.address ← Reg.four + Reg.index; *Reg.address ← Reg.value; Reg.index ← Reg.index + Reg.one ]
@@ -295,7 +295,8 @@ The bit-input variant executes the conversion instruction at every entry. -/
     (.seq (Wanted.program.rename bank) saveGroups))))
 
 /-- The complete fixed producer/consumer program. `bits=false` takes canonical signed matrix
-words; `bits=true` takes raw unsigned 0/1 words and performs actual per-entry doubling. -/
+words; `bits=true` takes raw unsigned words of nonnegative entries and performs actual per-entry
+doubling. -/
 @[expose] public def program (bits : Bool) : Code .standard 160 :=
   .seq prepareRouting (.seq (prepareMatrices bits)
     (.seq (BandPreparation.program.rename bank) (.seq initializeDirectory

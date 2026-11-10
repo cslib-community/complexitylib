@@ -343,7 +343,7 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
   have hpod : p ∈ (occurrencePath φ o).dropLast := List.fst_mem_of_mem_zipIdx hpk
   have hpo : p ∈ occurrencePath φ o := List.dropLast_subset _ hpod
   by_cases hp : p ∈ crossingSites φ
-  · obtain ⟨hl, hr, ht, hb⟩ := side_cardinal p
+  · obtain ⟨hl, hr, hb, ht⟩ := side_cardinal p
     rcases occurrencePath_crossing_straight hw hv ho hp hpo with hs | hs
     · have hav := haxis ho hp hpo hs
       have hports := (hcross p).2

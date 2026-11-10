@@ -51,6 +51,7 @@ every word with the total decoder `requestDecoder`.
 
 * `Cslib.Crypto.encIndexedSignedMessage`: the encoding of an indexed signed message
   `(u, msg, sig)`.
+* `Cslib.Crypto.encIndexedSignInput`: the encoding of an indexed signing input `(sk, u, msg)`.
 * `Cslib.Crypto.IndexedForger`: adaptive oracle adversary outputting `(u, msg, sig)`.
 * `Cslib.Crypto.IndexedSignatureScheme`: indexed signature scheme with capacity `q(n)`.
 * `Cslib.Crypto.IndexedSignatureScheme.requestDecoder`: the index and message of a request word.
@@ -87,6 +88,11 @@ the message and the signature as bit words. The index and the message are framed
 abbrev encIndexedSignedMessage : ℕ × List Bool × List Bool ↪ List Bool :=
   encPair encUnary (encPair encBits encBits)
 
+/-- Indexed signing input `(sk, u, msg)`: the secret key as a bit word, the index `u` in unary,
+then the message as a bit word. The key and the index are framed. -/
+abbrev encIndexedSignInput : List Bool × ℕ × List Bool ↪ List Bool :=
+  encPair encBits (encPair encUnary encBits)
+
 /-- An adaptive indexed forger receives a unary security parameter and a public key, queries a
 signing oracle on request words `encPair encUnary encBits (u, msg)`, and outputs a candidate
 `(u, msg, sig)`. -/
@@ -110,8 +116,7 @@ structure IndexedSignatureScheme where
   /-- Key generation is uniformly strict PPT in the unary security parameter. -/
   keyGen_ppt : IsPPTOn encUnary (encPair encBits encBits) keyGen
   /-- Signing is uniformly strict PPT in the secret key, the unary index and the message. -/
-  sign_ppt : IsPPTOn (encPair encBits (encPair encUnary encBits)) encBits
-    (fun p => sign p.1 p.2.1 p.2.2)
+  sign_ppt : IsPPTOn encIndexedSignInput encBits (fun p => sign p.1 p.2.1 p.2.2)
   /-- Verification is computable in plain polynomial time on `(pk, u, msg, sig)`. -/
   verify_polyTime : ComputableInPolyTime
     (fun p : List Bool × ℕ × List Bool × List Bool => verify p.1 p.2.1 p.2.2.1 p.2.2.2)
@@ -246,7 +251,7 @@ def IndexedEUFCMA (S : IndexedSignatureScheme) : Prop :=
   Game.Indistinguishable
     (fun adversary n => ProbComp.eval (S.indexedEufCmaGame adversary n))
     (fun _ _ => PMF.pure false)
-    (IsOraclePPT (encPair encUnary (encPair encBits encBits)))
+    (IsOraclePPT encIndexedSignedMessage)
 
 /-- Indexed EUF-CMA security gives negligible forging probability for every oracle-PPT forger. -/
 theorem IndexedEUFCMA.negligible {S : IndexedSignatureScheme} (h : S.IndexedEUFCMA)
