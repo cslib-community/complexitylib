@@ -32,6 +32,7 @@ supplied random coins for a closed machine using an additional work tape.
 * `Turing.MultiTapePTM.replyStep`: one native instruction with a supplied Boolean reply.
 * `Turing.MultiTapePTM.replayConfig`: replay a transcript from the initial configuration.
 * `Turing.MultiTapePTM.replayPrefix`: replay only the given prefix of a transcript.
+* `Turing.MultiTapePTM.encReplayArgs`: the encoding of its input, transcript and unary index.
 * `Turing.MultiTapePTM.oracleReplies`: the canonical instruction-indexed oracle transcript.
 
 ## Main results
@@ -80,6 +81,11 @@ def replayConfig (input answers : List Bool) : FiniteConfig k Bool Control Opera
 def replayPrefix (input answers : List Bool) (index : ℕ) :
     FiniteConfig k Bool Control Operation :=
   machine.replayConfig input (answers.take index)
+
+/-- The arguments of `replayPrefix`: the input and transcript as a pair of bit strings (input
+framed), framed in turn and followed by the instruction index in unary. -/
+abbrev encReplayArgs : (List Bool × List Bool) × ℕ ↪ List Bool :=
+  encPair (encPair encBits encBits) encUnary
 
 /-- The output tape after replaying the entire transcript. -/
 def replayOutput (input answers : List Bool) : List Bool :=
@@ -199,14 +205,14 @@ variable [Finite Control] [Fintype Operation]
 /-- Prefix replay is jointly polynomial-time in input, transcript and unary instruction index. -/
 @[local fun_prop] private theorem replayPrefix_pt : ComputableTidilyInPolyTime
     (fun p : (List Bool × List Bool) × ℕ => machine.replayPrefix p.1.1 p.1.2 p.2)
-    (encPair (encPair encBits encBits) encUnary) encFiniteConfig := by
+    encReplayArgs encFiniteConfig := by
   exact machine.replayConfig_pt.tidy.comp (g := fun p : (List Bool × List Bool) × ℕ =>
     (p.1.1, p.1.2.take p.2)) (by fun_prop)
 
 /-- Prefix replay is jointly polynomial-time in input, transcript and unary instruction index. -/
 @[fun_prop] theorem computableInPolyTime_replayPrefix : ComputableInPolyTime
     (fun p : (List Bool × List Bool) × ℕ => machine.replayPrefix p.1.1 p.1.2 p.2)
-    (encPair (encPair encBits encBits) encUnary) encFiniteConfig :=
+    encReplayArgs encFiniteConfig :=
   machine.replayPrefix_pt.computableInPolyTime
 
 end PolyTime
@@ -229,7 +235,7 @@ variable [Finite Control] [Finite Operation]
 @[fun_prop] theorem replayPrefix_pendingRequest_pt : ComputableInPolyTime
     (fun p : (List Bool × List Bool) × ℕ =>
       machine.pendingRequest (machine.replayPrefix p.1.1 p.1.2 p.2))
-    (encPair (encPair encBits encBits) encUnary) encBits := by
+    encReplayArgs encBits := by
   let _ := Fintype.ofFinite Operation
   exact machine.pendingRequest_pt.comp machine.computableInPolyTime_replayPrefix
 
@@ -237,7 +243,7 @@ variable [Finite Control] [Finite Operation]
 @[fun_prop] theorem replayPrefix_isQuery_pt : ComputableInPolyTime
     (fun p : (List Bool × List Bool) × ℕ =>
       (machine.pendingQuery (machine.replayPrefix p.1.1 p.1.2 p.2)).isSome)
-    (encPair (encPair encBits encBits) encUnary) encBool := by
+    encReplayArgs encBool := by
   let _ := Fintype.ofFinite Operation
   exact (ComputableInPolyTime.of_finite Option.isSome).comp
     (machine.pendingQuery_pt.comp machine.computableInPolyTime_replayPrefix)
