@@ -2,28 +2,35 @@
   {
     "id": "ppt-coin-reverse",
     "document": "workflows/probabilistic-workflows.md",
-    "source_path": "ComplexityTests/PPTTactic.lean",
+    "source_path": "CslibFrontierTests/PPTTactic.lean",
     "snapshot_start_line": 16,
     "snapshot_end_line": 19
   },
   {
     "id": "ppt-callback-scan",
     "document": "workflows/probabilistic-workflows.md",
-    "source_path": "ComplexityTests/PPTTactic.lean",
+    "source_path": "CslibFrontierTests/PPTTactic.lean",
     "snapshot_start_line": 52,
     "snapshot_end_line": 59
   },
   {
+    "id": "ppt-explicit-adversary-call",
+    "document": "workflows/probabilistic-workflows.md",
+    "source_path": "CslibFrontierTests/Crypto/InaccessibleEntropy.lean",
+    "snapshot_start_line": 156,
+    "snapshot_end_line": 165
+  },
+  {
     "id": "oracle-adaptive-prefix",
     "document": "workflows/probabilistic-workflows.md",
-    "source_path": "ComplexityTests/OracleComposition.lean",
+    "source_path": "CslibFrontierTests/OracleComposition.lean",
     "snapshot_start_line": 22,
     "snapshot_end_line": 30
   },
   {
     "id": "synthesis-shared-circuit",
     "document": "workflows/finding-results.md",
-    "source_path": "ComplexityTests/SynthesisBuilder.lean",
+    "source_path": "CslibFrontierTests/SynthesisBuilder.lean",
     "snapshot_start_line": 22,
     "snapshot_end_line": 38
   }

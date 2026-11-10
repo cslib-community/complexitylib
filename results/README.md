@@ -1,18 +1,18 @@
 # Results and reference inventory
 
-The canonical collection is [Entries.lean](../ComplexityResults/Entries.lean): readable Lean
+The canonical collection is [Entries.lean](../CslibFrontierResults/Entries.lean): readable Lean
 commands with real theorem identifiers. This is the initial collection for
-[#2012](https://github.com/cslib-community/complexitylib/issues/2012), not a complete inventory
+[#2012](https://github.com/cslib-community/cslib-frontier/issues/2012), not a complete inventory
 or a claim that every cited paper is fully formalized.
 Initial collection: Christian Reitwiessner, with Codex assistance.
 
-The collector reuses the selected groups in [the abstract catalogue](../abstracts/catalogue.json)
-and adds ten Lean-authored groups: oracle counting lowness, first-order model checking in L,
-NL ⊆ P, PPZ and Schöning success bounds, the OV-to-SAT transfer, native sparsification,
-Williams's square-root-space simulation of deterministic time, and Goldreich–Micali–Wigderson
-zero-knowledge proofs for NP.
-The catalogue continues to own abstract titles, scopes and theorem selections. The bibliography
-remains [references.bib](../references.bib); neither is copied into another authored manifest.
+The collection includes the headline results that the curated formal abstracts selected until
+they were retired on 2026-11-08, registered against the library theorems that the abstracts'
+bridges applied, except the depth-two threshold bounds for Andreev's function: they are original
+results, which wait for a representation (see "Remaining collection work"). Their bibliography
+keys come from the library modules' citations; their source theorem numbers and locators are left
+`unverified`. The bibliography remains [references.bib](../references.bib); it is not copied
+into another authored manifest.
 
 ## Authoring
 
@@ -43,7 +43,7 @@ imports or renamed declarations. The command also rejects private names, non-pro
 repeated IDs/references and theorem lists spanning different defining modules. It derives fully
 qualified names and module ownership; these are not maintained as duplicate strings.
 
-`ComplexityResults` is a separate local documentation library, included in the default
+`CslibFrontierResults` is a separate local documentation library, included in the default
 `lake build` targets. Mathematical modules do not import the registry. Compiled environment
 entries survive imports and are exported by [ExportResults.lean](../scripts/ExportResults.lean).
 JSON is generated output; there is no hand-maintained `registry.json`.
@@ -53,7 +53,7 @@ JSON is generated output; there is no hand-maintained `registry.json`.
 Run from the repository root:
 
 ```bash
-lake build ComplexityResults
+lake build CslibFrontierResults
 python3 scripts/results_registry.py                  # collection and bibliography checks
 python3 scripts/results_registry.py --markdown         # results grouped by topic
 python3 scripts/results_registry.py --papers           # grouped by cited bibliography key
@@ -61,11 +61,9 @@ python3 scripts/results_registry.py --json             # generated combined inve
 python3 scripts/results_registry.py --compiled         # original public-theorem metadata
 ```
 
-The generated Markdown contains declaration links, scope notes, recorded source theorem names
-or numbers, additional locators, bibliography links and optional abstract PDFs. Library entries
-link to API documentation; abstract entries link to their Lean sources, since their modules are
-not part of the published API documentation. Source links follow `main`, so proposed entries
-appear there after integration.
+The generated Markdown contains declaration links into the API documentation, scope notes,
+recorded source theorem names or numbers, additional locators and bibliography links. Links
+follow `main`, so proposed entries appear there after integration.
 
 The reader refuses stale registry outputs before exporting. CI additionally uses the existing
 Lean output reader to check original declaration kind, public visibility and module ownership
@@ -81,22 +79,16 @@ current bibliography by the Python validator, rather than frozen when a Lean mod
   identifier/locator from existing repository documentation. This is not a new independent
   check against the original paper. Generated `source_theorem` and `locator` fields are nullable;
   null corresponds to the explicit Lean `unverified` marker.
-- **`module-citations`**: bibliography keys extracted from an abstract's documentation. They may
-  describe background, definitions, alternative proofs or several results. These context
-  references have no per-theorem source identifier; grouping by them is a discovery aid, not a
-  claim that every theorem formalizes every cited work.
 
-The abstracts retain their checked bridges and review requirements. Reference integrity proves
-neither mathematical correspondence nor completeness. A result's hypotheses and model limits
-remain authoritative. Probability bounds do not imply certified native runtime, and conditional
-results are not unconditional endpoints.
+Reference integrity proves neither mathematical correspondence nor completeness. A result's
+hypotheses and model limits remain authoritative. Probability bounds do not imply certified native
+runtime, and conditional results are not unconditional endpoints.
 
 ## Remaining collection work
 
 Collect precise paper-to-result correspondences and source theorem names/numbers, audit their
 sources, and expand coverage across the library. Algorithms, cryptography, proof complexity,
 circuit bounds, communication and descriptive complexity contain substantial additional results.
-Catalogue entries currently share the topic “selected abstracts”; finer classification remains
-open. Original results without external sources need an explicit representation before adding
+Original results without external sources need an explicit representation before adding
 them. Publication and search are also tracked in #2012. Passing compilation and reference checks
 does not complete these objectives.

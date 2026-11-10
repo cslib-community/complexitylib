@@ -18,12 +18,12 @@ set_option linter.style.header false
 
 Adapted from Mathlib's `scripts/mk_all.lean` by Yaël Dillies and Damiano Testa. The command-line
 options, module-style inference, import sorting and update exit codes follow that script.
-Each library is scanned relative to its configured `srcDir`, so a root such as
-`abstracts/ComplexityAbstracts.lean` imports `ComplexityAbstracts.*`, without an `abstracts` prefix.
+Each library is scanned relative to its configured `srcDir`, so a root such as `src/Lib.lean`
+imports `Lib.*`, without a `src` prefix.
 The shared `Mathlib.Util.GetAllModules` utility supplies discovery and deterministic sorting.
 -/
 
-namespace ComplexityScripts.MkAll
+namespace CslibFrontierScripts.MkAll
 
 open Lean System.FilePath
 
@@ -136,7 +136,7 @@ def mkAll : Cmd := `[Cli|
     module;       "Force module style with public imports; otherwise infer the existing style."
 ]
 
-end ComplexityScripts.MkAll
+end CslibFrontierScripts.MkAll
 
 /-- The entrypoint to the source-directory-aware `lake exe mk_all` command. -/
-def main (args : List String) : IO UInt32 := ComplexityScripts.MkAll.mkAll.validate args
+def main (args : List String) : IO UInt32 := CslibFrontierScripts.MkAll.mkAll.validate args

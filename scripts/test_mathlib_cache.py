@@ -226,7 +226,7 @@ class MathlibCacheTests(unittest.TestCase):
 
 class WorkflowWiringTests(unittest.TestCase):
     def test_only_optional_cache_step_is_relaxed_and_validation_remains(self):
-        for name in ("lean_action_ci.yml", "docs.yml", "comparator.yml"):
+        for name in ("lean_action_ci.yml", "docs.yml"):
             with self.subTest(workflow=name):
                 text = (REPO / ".github/workflows" / name).read_text()
                 install = "      - uses: ./.github/actions/install-lean\n"
@@ -255,25 +255,7 @@ class WorkflowWiringTests(unittest.TestCase):
         docs = (REPO / ".github/workflows/docs.yml").read_text()
         self.assertLess(docs.index("run: scripts/cache/get-missing.sh"),
                         docs.index("      - name: Generate API documentation"))
-        self.assertIn("DISABLE_EQUATIONS=1 lake -d docbuild build Complexity:docs", docs)
-
-    def test_comparator_restores_before_strict_contracts_and_is_manual_only(self):
-        text = (REPO / ".github/workflows/comparator.yml").read_text()
-        self.assertLess(text.index("      - uses: ./.github/actions/install-lean"),
-                        text.index("      - name: Restore Mathlib cache with retries"))
-        self.assertLess(text.index("      - name: Restore Mathlib cache with retries"),
-                        text.index("run: scripts/cache/get-missing.sh"))
-        self.assertLess(text.index("run: scripts/cache/get-missing.sh"),
-                        text.index("      - name: Compare all reviewed contracts"))
-        contract_step = text.split("      - name: Compare all reviewed contracts", 1)[1]
-        self.assertIn("run: python3 scripts/check_comparator.py basic automation sat --negative-control",
-                      contract_step)
-        self.assertNotIn("continue-on-error", contract_step)
-        trigger = text.split("\non:\n", 1)[1].split("\npermissions:", 1)[0]
-        self.assertIn("  workflow_dispatch:", trigger)
-        for event in ("pull_request", "push", "merge_group", "schedule"):
-            with self.subTest(event=event):
-                self.assertNotIn(f"  {event}:", trigger)
+        self.assertIn("DISABLE_EQUATIONS=1 lake -d docbuild build CslibFrontier:docs", docs)
 
 
 if __name__ == "__main__":

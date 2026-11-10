@@ -5,8 +5,8 @@
 # `git config merge.leanagg.driver "python3 scripts/resolve_aggregate_conflict.py %O %A %B"`.
 # GitHub ignores custom drivers (and `merge=union`), and git without the driver configured uses
 # its ordinary text merge. `lake exe mk_all --check` in CI pins the content.
-Complexity.lean merge=leanagg
-abstracts/ComplexityAbstracts.lean merge=leanagg
+CslibFrontier.lean merge=leanagg
+CslibFrontierResults.lean merge=leanagg
 # `references.bib` names the opt-in local driver of `scripts/resolve_bib_conflict.py`, which merges
 # entries by key. Where `merge.bibkeys.driver` is not configured, git uses its ordinary text merge.
 references.bib merge=bibkeys

@@ -108,7 +108,7 @@ class GuideSelectionTests(unittest.TestCase):
         self.assertEqual(self.git(checkout, "rev-list", "--count", "HEAD").stdout.strip(), "1")
 
     def test_missing_base_library_change_does_not_render(self):
-        self.assert_selected("Complexity/Example.lean", "false")
+        self.assert_selected("CslibFrontier/Example.lean", "false")
 
     def test_missing_base_guide_change_renders(self):
         self.assert_selected("guide/Chapter.lean", "true")
@@ -117,7 +117,7 @@ class GuideSelectionTests(unittest.TestCase):
         self.assert_selected("scripts/check_docs.py", "true")
 
     def test_present_base_needs_no_remote(self):
-        checkout, base, head = self.checkout("Complexity/Example.lean", depth=2)
+        checkout, base, head = self.checkout("CslibFrontier/Example.lean", depth=2)
         self.git(checkout, "remote", "remove", "origin")
         result, output = self.run_selector(checkout, base)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -136,7 +136,7 @@ class GuideSelectionTests(unittest.TestCase):
         self.assertEqual(self.git(checkout, "rev-parse", "HEAD").stdout.strip(), head)
 
     def test_manual_run_renders_without_base_or_remote(self):
-        checkout, _, head = self.checkout("Complexity/Example.lean")
+        checkout, _, head = self.checkout("CslibFrontier/Example.lean")
         self.git(checkout, "remote", "remove", "origin")
         result, output = self.run_selector(checkout, "", event="workflow_dispatch")
         self.assertEqual(result.returncode, 0, result.stderr)

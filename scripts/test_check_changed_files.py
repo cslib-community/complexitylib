@@ -38,7 +38,7 @@ def ilean(module: str, decls: list[str], references: list[str] = ()) -> dict:
 
 
 ILEANS = {
-    "Complexity.Demo": ilean("Complexity.Demo",
+    "CslibFrontier.Demo": ilean("CslibFrontier.Demo",
                              ["Demo.thing", "Demo.thing_spec",
                               "_private.Complexity.Demo.0.Demo.privateHelper"],
                              ["Demo.Thing.field"]),
@@ -48,7 +48,7 @@ ILEANS = {
 class DocNameTests(unittest.TestCase):
     def check(self, text: str, ileans: dict = ILEANS) -> list[str]:
         syntax = c.syntax_names('syntax (name := demoTactic) "demo_tactic" : tactic\n')
-        return c.unresolved_doc_names("Complexity/Demo.lean", text, c.known_names(ileans), syntax)
+        return c.unresolved_doc_names("CslibFrontier/Demo.lean", text, c.known_names(ileans), syntax)
 
     def test_listed_names_resolve(self) -> None:
         self.assertEqual(self.check(MODULE + "-/\n"), [])
@@ -65,7 +65,7 @@ class DocNameTests(unittest.TestCase):
         text = ("/-!\n# Demo\n/- Outer /- nested -/ comment -/\n\n"
                 "## Main results\n\n* `Missing.actual`: must be checked.\n-/\n")
         self.assertEqual(self.check(text), [
-            "Complexity/Demo.lean:7: `Missing.actual` is listed in a \"Main …\" section of the "
+            "CslibFrontier/Demo.lean:7: `Missing.actual` is listed in a \"Main …\" section of the "
             "module docstring but names no declaration"])
 
     def test_declaration_docstrings_are_not_module_docs(self) -> None:
@@ -78,7 +78,7 @@ class DocNameTests(unittest.TestCase):
     def test_missing_name_is_reported_once_with_its_line(self) -> None:
         text = MODULE + "\n## Main statements\n\n* `Demo.renamed`, `renamed`: gone.\n-/\n"
         self.assertEqual(self.check(text.replace("`renamed`", "`Demo.renamed`")), [
-            "Complexity/Demo.lean:20: `Demo.renamed` is listed in a \"Main …\" section of the "
+            "CslibFrontier/Demo.lean:20: `Demo.renamed` is listed in a \"Main …\" section of the "
             "module docstring but names no declaration"])
 
     def test_suffix_must_end_on_a_component_boundary(self) -> None:
@@ -132,21 +132,21 @@ Mentions `Ignored.name` in prose.
     def test_ileans_load_only_when_a_listed_name_needs_them(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
-            (root / "Complexity").mkdir()
-            (root / "Complexity/Plain.lean").write_text("/-! # No lists -/\n")
-            (root / "Complexity/Demo.lean").write_text(MODULE + "-/\n")
+            (root / "CslibFrontier").mkdir()
+            (root / "CslibFrontier/Plain.lean").write_text("/-! # No lists -/\n")
+            (root / "CslibFrontier/Demo.lean").write_text(MODULE + "-/\n")
 
             def unavailable() -> dict:
                 raise AssertionError("loaded build outputs")
-            self.assertEqual(c.check_doc_names(root, ["Complexity/Plain.lean"], unavailable), [])
-            errors = c.check_doc_names(root, ["Complexity/Demo.lean"], lambda: ILEANS)
-            self.assertEqual(errors, ["Complexity/Demo.lean:11: `demo_tactic` is listed in a "
+            self.assertEqual(c.check_doc_names(root, ["CslibFrontier/Plain.lean"], unavailable), [])
+            errors = c.check_doc_names(root, ["CslibFrontier/Demo.lean"], lambda: ILEANS)
+            self.assertEqual(errors, ["CslibFrontier/Demo.lean:11: `demo_tactic` is listed in a "
                                       "\"Main …\" section of the module docstring but names no "
                                       "declaration"])
 
 
 class RestatementTests(unittest.TestCase):
-    HEADER = "import Complexity.Demo\n\nnamespace DemoTests\n\n"
+    HEADER = "import CslibFrontier.Demo\n\nnamespace DemoTests\n\n"
 
     def test_restatements_only_fail(self) -> None:
         text = self.HEADER + ("/-- doc -/\nexample (n : Nat) : n = n := @Demo.self_eq\n"
@@ -166,15 +166,47 @@ class RestatementTests(unittest.TestCase):
         self.assertFalse(c.restatement_only(self.HEADER + "example : Foo where\n  x := y\n"))
         self.assertFalse(c.restatement_only(self.HEADER + "example : Nat → Nat\n  | n => n\n"))
 
-    def test_files_without_examples_and_abstract_clients_pass(self) -> None:
+    def test_files_without_examples_pass(self) -> None:
         self.assertFalse(c.restatement_only(self.HEADER + "theorem t : True := trivial\n"))
-        self.assertFalse(c.restatement_only(
-            "import ComplexityAbstracts.DemoAbstract\n\nexample := @Demo.thing\n"))
-        self.assertFalse(c.restatement_only(
-            "open ComplexityAbstracts.DemoAbstract in\nexample := @demoHeadline\n"))
-        # A mention in a comment does not pin anything.
-        self.assertTrue(c.restatement_only(
-            "-- see ComplexityAbstracts\nexample := @Demo.thing\n"))
+
+
+class ExposeSectionTests(unittest.TestCase):
+    HEADER = "module\n-- upstream: candidate\n\npublic import CslibFrontier.Init\n\n"
+
+    def test_a_section_without_definitions_fails(self) -> None:
+        for header in ("@[expose] public section", "@[expose] public noncomputable section",
+                       "@[expose] section Inner", "  @[expose] public meta section"):
+            with self.subTest(header=header):
+                text = self.HEADER + header + "\n\ntheorem t : True := trivial\n"
+                expected = [] if "meta" in header else [6]
+                self.assertEqual(c.noop_expose_sections(text), expected)
+
+    def test_every_header_is_reported(self) -> None:
+        text = (self.HEADER + "@[expose] public section\n\ntheorem t : True := trivial\n\nend\n\n"
+                "@[expose] public section\n\nlemma u : True := trivial\n")
+        self.assertEqual(c.noop_expose_sections(text), [6, 12])
+
+    def test_a_definition_anywhere_keeps_the_header(self) -> None:
+        for decl in ("def f := 1", "private noncomputable def f := 1", "abbrev T := Nat",
+                     "instance : Inhabited Nat := ⟨0⟩", "structure S where\n  x : Nat",
+                     "inductive I | a", "irreducible_def f := 1", "alias g := Nat.succ",
+                     "@[simps] theorem t : True := trivial", "notation \"ω\" => 1",
+                     "theorem t : True := h where h := trivial", "deriving instance Repr for S",
+                     "macro \"go\" : tactic => `(tactic| rfl)", "#eval 1"):
+            with self.subTest(decl=decl):
+                text = self.HEADER + decl + "\n\n@[expose] public section\n\nend\n"
+                self.assertEqual(c.noop_expose_sections(text), [])
+
+    def test_comments_strings_and_identifiers_are_not_definitions(self) -> None:
+        body = ("/-- See `def f`, an `instance`. -/\ntheorem foo_def : True := trivial\n"
+                "-- def g := 1\ntheorem t : \"def\" = \"def\" := rfl\n"
+                "theorem u : True := Foo.def.elim (definedness := trivial)\n")
+        text = self.HEADER + "@[expose] public section\n\n" + body
+        self.assertEqual(c.noop_expose_sections(text), [6])
+
+    def test_plain_sections_pass(self) -> None:
+        self.assertEqual(c.noop_expose_sections(
+            self.HEADER + "public section\n\ntheorem t : True := trivial\n"), [])
 
 
 class ChangedFileTests(unittest.TestCase):
@@ -185,9 +217,9 @@ class ChangedFileTests(unittest.TestCase):
         self.git("init", "-q")
         self.git("config", "user.name", "Fixture")
         self.git("config", "user.email", "fixture@example.invalid")
-        self.write("Complexity/Old.lean", "/-! # Old\n\n## Main results\n\n* `gone`: x\n-/\n")
-        self.write("Complexity/Kept.lean", "def kept := 1\n")
-        self.write("ComplexityTests/Old.lean", "example := @kept\n")
+        self.write("CslibFrontier/Old.lean", "/-! # Old\n\n## Main results\n\n* `gone`: x\n-/\n")
+        self.write("CslibFrontier/Kept.lean", "def kept := 1\n")
+        self.write("CslibFrontierTests/Old.lean", "example := @kept\n")
         self.git("add", ".")
         self.git("commit", "-qm", "base")
         self.git("update-ref", "refs/remotes/origin/main", "HEAD")
@@ -209,28 +241,40 @@ class ChangedFileTests(unittest.TestCase):
         return code, err.getvalue()
 
     def test_only_added_and_modified_files_are_checked(self) -> None:
-        self.write("Complexity/Kept.lean", "def kept := 2\n")
-        self.write("ComplexityTests/New.lean", "example := @kept\n")
-        self.git("add", "ComplexityTests/New.lean")
+        self.write("CslibFrontier/Kept.lean", "def kept := 2\n")
+        self.write("CslibFrontierTests/New.lean", "example := @kept\n")
+        self.git("add", "CslibFrontierTests/New.lean")
         self.git("commit", "-qm", "change")
-        self.write("ComplexityTests/Untracked.lean", "example : True := trivial\n")
+        self.write("CslibFrontierTests/Untracked.lean", "example : True := trivial\n")
         self.git("checkout", "-q", "-b", "side")
-        (self.root / "Complexity/Old.lean").unlink()
+        (self.root / "CslibFrontier/Old.lean").unlink()
         self.assertEqual(c.changed_files(self.root, "origin/main"),
-                         (["ComplexityTests/New.lean", "ComplexityTests/Untracked.lean"],
-                          ["Complexity/Kept.lean"]))
+                         (["CslibFrontierTests/New.lean", "CslibFrontierTests/Untracked.lean"],
+                          ["CslibFrontier/Kept.lean"]))
         code, err = self.run_main()
         self.assertEqual(code, 1)
         self.assertEqual(err.count("ERROR"), 1)
-        self.assertIn("ERROR: ComplexityTests/New.lean: every example only restates", err)
+        self.assertIn("ERROR: CslibFrontierTests/New.lean: every example only restates", err)
+
+    def test_only_changed_files_get_the_expose_lint(self) -> None:
+        noop = "@[expose] public section\n\ntheorem t : True := trivial\n"
+        self.write("CslibFrontier/Untouched.lean", noop)
+        self.git("add", ".")
+        self.git("commit", "-qm", "untouched no-op header")
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("CslibFrontier/Kept.lean", noop)
+        code, err = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertEqual(err.count("ERROR"), 1)
+        self.assertIn("ERROR: CslibFrontier/Kept.lean:1: this `@[expose]` section has no", err)
 
     def test_base_without_merge_base_is_compared_directly(self) -> None:
         self.git("checkout", "-q", "--orphan", "unrelated")
-        self.write("ComplexityTests/Old.lean", "example : 1 + 1 = 2 := rfl\n")
+        self.write("CslibFrontierTests/Old.lean", "example : 1 + 1 = 2 := rfl\n")
         self.git("add", ".")
         self.git("commit", "-qm", "unrelated")
         self.assertEqual(c.changed_files(self.root, "origin/main"),
-                         ([], ["ComplexityTests/Old.lean"]))
+                         ([], ["CslibFrontierTests/Old.lean"]))
 
 
 if __name__ == "__main__":

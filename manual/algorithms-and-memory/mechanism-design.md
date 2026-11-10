@@ -1,17 +1,17 @@
 # Mechanism design
 
-The modules under `Complexity/GameTheory/Mechanism/` formalize sealed-bid mechanisms with
+The modules under `CslibFrontier/GameTheory/Mechanism/` formalize sealed-bid mechanisms with
 quasilinear utilities, following Roughgarden's CS364A lecture notes (2013), Lectures 2–5 and 7.
 They are mathematical models of incentives: allocation and payment rules are arbitrary real
 functions, and no running time is charged. Hardness and approximation of the allocation
 problems, such as knapsack, are separate questions. Preference aggregation without money, starting
 with Arrow's impossibility theorem and the Gibbard–Satterthwaite theorem, is in
-`Complexity/GameTheory/SocialChoice/` and is described
+`CslibFrontier/GameTheory/SocialChoice/` and is described
 [below](#social-choice-arrows-impossibility-theorem).
 
 ## Single-parameter environments
 
-Import `Complexity.GameTheory.Mechanism.Myerson` (or a module above it). In
+Import `CslibFrontier.GameTheory.Mechanism.Myerson` (or a module above it). In
 `Cslib.GameTheory.SingleParameter`, a `Mechanism ι` pairs an allocation rule and a payment rule,
 both of type `(ι → ℝ) → ι → ℝ`. Bidder `i` with valuation `v` facing bids `b` has utility
 `M.utility i v b = v * M.allocation b i - M.payment b i`. The conventions that affect statements
@@ -49,27 +49,27 @@ private lemmas stay one-dimensional, so the same argument applies to any monoton
 
 ## 0-1 rules, Vickrey and knapsack auctions
 
-`Complexity.GameTheory.Mechanism.CriticalBid` treats `IsBinary` rules (`x b i ∈ {0, 1}` on
+`CslibFrontier.GameTheory.Mechanism.CriticalBid` treats `IsBinary` rules (`x b i ∈ {0, 1}` on
 nonnegative profiles). `criticalBid x b i` is the infimum of the winning nonnegative bids, and
 `criticalBidMechanism x` charges it to winners. `criticalBid_mul_eq_myersonPayment` identifies
 these payments with Myerson's. `criticalBid_eq_of_threshold` and `isMonotone_of_threshold`
 compute them from a threshold description.
 
-`Complexity.GameTheory.Mechanism.Vickrey` defines the second-price auction on a linearly
+`CslibFrontier.GameTheory.Mechanism.Vickrey` defines the second-price auction on a linearly
 ordered finite bidder type. The winner is the highest bidder, with ties going to the smallest
 index (`Wins`), and pays `highestOtherBid b i`, which is `0` with a single bidder. The theorems
 `mechanism_isDSIC`, `mechanism_isIR`, `isWelfareMaximizing_allocation` (over
 `singleItemFeasible`) and `mechanism_payment_eq_myersonPayment` are Lecture 2, Claims 4.1–4.2 and
 Theorem 5.1 (1)–(2), and Lecture 3, §6.
 
-`Complexity.GameTheory.Mechanism.Knapsack` defines `knapsackFeasible w W`, the 0-1 vectors with
+`CslibFrontier.GameTheory.Mechanism.Knapsack` defines `knapsackFeasible w W`, the 0-1 vectors with
 `∑ wᵢ xᵢ ≤ W`. `exists_knapsack_isWelfareMaximizing` gives a welfare-maximizing rule whose
 critical-bid mechanism is DSIC and IR with Myerson's payments (Lecture 4, §1.2–1.3). It is an
 existence theorem: it does not choose or analyze an algorithm.
 
 ## General environments and VCG
 
-Import `Complexity.GameTheory.Mechanism.VCG`. In `Cslib.GameTheory`, a `Mechanism ι Ω` chooses
+Import `CslibFrontier.GameTheory.Mechanism.VCG`. In `Cslib.GameTheory`, a `Mechanism ι Ω` chooses
 an outcome in `Ω` from reported valuations `b : ι → Ω → ℝ` and charges payments. Valuations are
 arbitrary real functions for DSIC; `IsIR` assumes `0 ≤ b i` for the truthful agent.
 `groves_isDSIC` proves that a Groves mechanism with a welfare-maximizing outcome rule is DSIC,
@@ -80,7 +80,7 @@ outcomes, `vcg f` uses the Clarke pivot `clarkePivot` (a `Finset.sup'`). `vcg_is
 
 ## Revenue maximization: virtual values and Myerson's optimal auction
 
-Import `Complexity.GameTheory.Mechanism.OptimalAuction` (Lecture 5; Myerson 1981). Valuations are
+Import `CslibFrontier.GameTheory.Mechanism.OptimalAuction` (Lecture 5; Myerson 1981). Valuations are
 independent, bidder `i`'s drawn from `μ i`. Expectations are Bochner integrals over the product
 `Measure.pi μ` of the payments at truthful bids `v`. The revelation principle is not formalized: a
 DSIC mechanism is compared with other DSIC mechanisms, both played truthfully.
@@ -138,7 +138,7 @@ itself still holds, since it does not assume regularity. The checked examples pr
 
 ## Bayes–Nash equilibrium, revenue equivalence and the first-price auction
 
-Import `Complexity.GameTheory.Mechanism.Bayesian` (Hartline, *Mechanism Design and Approximation*,
+Import `CslibFrontier.GameTheory.Mechanism.Bayesian` (Hartline, *Mechanism Design and Approximation*,
 Chapter 2, version of 20 September 2021 [hartline21]). Bidder `i`'s valuation is drawn from `μ i`,
 supported on `[0, h i]`, and bidder `i` bids `β i v` on valuation `v`. The interim rules
 `M.interimAllocation μ β i z` and `M.interimPayment μ β i z` are the expected allocation and payment
@@ -174,7 +174,7 @@ Hartline's interim rules indexed by values are their compositions with `β i`.
   equality of ex post allocations; `IsBayesNash.interimPayment_eq_of_interimAllocation_eq` is the
   type-by-type form.
 
-`Complexity.GameTheory.Mechanism.FirstPrice` defines the first-price auction
+`CslibFrontier.GameTheory.Mechanism.FirstPrice` defines the first-price auction
 (`FirstPrice.mechanism`, Vickrey's winner, who pays its bid) and the strategy
 `uniformBid n v = (n - 1) v / n`. `isBayesNash_uniformBid` proves that for `n` bidders with values
 uniform on `[0, 1]` this is a Bayes–Nash equilibrium. Its expected revenue is `(n - 1) / (n + 1)`
@@ -192,9 +192,9 @@ domination exhibit, for each bid outside the range, a type whose bid does at lea
 
 ## Social choice: Arrow's impossibility theorem
 
-Import `Complexity.GameTheory.SocialChoice.Arrow`. The namespace `Cslib.GameTheory.SocialChoice`
+Import `CslibFrontier.GameTheory.SocialChoice.Arrow`. The namespace `Cslib.GameTheory.SocialChoice`
 models preference aggregation: there are no payments or utilities, only rankings. Voters `V` rank
-alternatives `A`. The preference model below is in `Complexity.GameTheory.SocialChoice.Ranking`,
+alternatives `A`. The preference model below is in `CslibFrontier.GameTheory.SocialChoice.Ranking`,
 which the Arrow module imports publicly.
 
 - `Ranking A` is a strict linear order, given by a relation `Prefers` that is irreflexive,
@@ -250,8 +250,8 @@ To show that a rule escapes it, find the hypothesis that fails. A rule with stri
 
 ## Social choice: the Gibbard–Satterthwaite theorem
 
-Import `Complexity.GameTheory.SocialChoice.GibbardSatterthwaite`. It reuses `Ranking` and `Profile`
-from `Complexity.GameTheory.SocialChoice.Ranking`, and Arrow's theorem. A `SocialChoiceFunction V A`
+Import `CslibFrontier.GameTheory.SocialChoice.GibbardSatterthwaite`. It reuses `Ranking` and `Profile`
+from `CslibFrontier.GameTheory.SocialChoice.Ranking`, and Arrow's theorem. A `SocialChoiceFunction V A`
 maps every profile `V → Ranking A` to one alternative. The definitions, all in
 `SocialChoiceFunction`, are `@[expose]`d:
 
@@ -301,7 +301,7 @@ outcomes, such as the Borda count, must be manipulable.
 
 ## Worked examples
 
-The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) show the following:
+The [checked examples](../../CslibFrontierTests/GameTheory/MechanismDesign.lean) show the following:
 
 - A Vickrey auction on bids `(3, 5, 4)`: bidder `1` wins and pays `4`. With a tie on `(5, 5)`,
   bidder `0` wins.
@@ -312,7 +312,7 @@ The [checked examples](../../ComplexityTests/GameTheory/MechanismDesign.lean) sh
 - Knapsack feasibility holds and fails on small inputs, and the existence theorems are
   nonvacuous.
 
-The [social choice examples](../../ComplexityTests/GameTheory/SocialChoice.lean) are a `module`
+The [social choice examples](../../CslibFrontierTests/GameTheory/SocialChoice.lean) are a `module`
 that uses only the public surface of the Arrow module. Dictatorship is weakly Pareto and IIA, so
 the theorem is not vacuous. Three hypotheses are each tested against a rule that drops it:
 
@@ -326,7 +326,7 @@ the theorem is not vacuous. Three hypotheses are each tested against a rule that
 The examples also apply the theorem to three voters and three alternatives, and to a rule with
 strict social rankings.
 
-The [Gibbard–Satterthwaite examples](../../ComplexityTests/GameTheory/GibbardSatterthwaite.lean)
+The [Gibbard–Satterthwaite examples](../../CslibFrontierTests/GameTheory/GibbardSatterthwaite.lean)
 also use only the public surface. A dictatorship is strategy-proof and onto, so the theorem is not
 vacuous; the theorem is applied to three voters and three alternatives and, in range form, to a rule
 with values in `ℕ`. Majority rule between two alternatives `a` and `b`, ties going to `b`, is
@@ -341,14 +341,14 @@ manipulable. Voter `0` ranks `1 ≻ 0 ≻ 2` and voter `1` ranks `0 ≻ 1 ≻ 2`
 `(3, 3, 0)`, so the outcome is `0`. If voter `0` reports `1 ≻ 2 ≻ 0` instead, the scores are
 `(2, 3, 1)` and the outcome is `1`. Both outcomes are checked by `decide`.
 
-The [optimal-auction examples](../../ComplexityTests/GameTheory/OptimalAuction.lean) use
+The [optimal-auction examples](../../CslibFrontierTests/GameTheory/OptimalAuction.lean) use
 `U[0, 1]`, which has reserve price `1/2`. With two bidders, bids `(0.3, 0.4)` do not sell. On
 `(0.6, 0.2)` bidder `0` pays `1/2`. On `(0.7, 0.9)` bidder `1` pays `0.7`. The plain Vickrey rule
 is not a virtual-welfare maximizer, and Myerson's theorem compares Vickrey with and without the
 reserve, so its hypotheses are satisfiable. The rising density `f(v) = 2v` on `[0, 1]` fails
 `IsRegular` for every choice of `f(0)`, which illustrates the endpoint convention.
 
-The [Bayes–Nash examples](../../ComplexityTests/GameTheory/BayesNash.lean) check that the
+The [Bayes–Nash examples](../../CslibFrontierTests/GameTheory/BayesNash.lean) check that the
 second-price interim rules `x(v) = v`, `p(v) = v²/2` are incentive compatible while a decreasing
 curve is not. In the two-bidder first-price auction, bidding `v / 2` is an equilibrium, a bid of
 `1/4` wins with probability `1/2`, truthful bidding is not an equilibrium, and both auctions earn

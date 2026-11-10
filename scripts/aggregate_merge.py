@@ -3,6 +3,12 @@
 
 All four inputs must be full commit IDs available locally. Git writes only to a temporary
 repository; the inspected repository is read-only. See aggregate_merge.md for the contract.
+
+A prefix whose `.gitattributes` gives `CslibFrontier.lean` the `merge=leanagg` driver, as `main` does,
+can never be `verified`: the temporary repository configures no merge driver, so the ordinary
+tracked-attribute merge is the same text merge as the neutral one, which must conflict. Only a
+prefix that still tracks `merge=union` can reach `verified`. The canonical aggregate check for a
+restack is `scripts/check_restack.py`.
 """
 
 from __future__ import annotations
@@ -20,7 +26,7 @@ import tempfile
 import tomllib
 
 
-AGGREGATE = "Complexity.lean"
+AGGREGATE = "CslibFrontier.lean"
 # scripts/MkAll.lean, module-style branch; intentionally not a general Lean header parser.
 MODULE_HEADER = b"module  -- shake: keep-all --deprecated_module: ignore\n\n"
 COMPONENT = re.compile(r"[A-Za-z_][A-Za-z_0-9]*\Z")  # quick_check.source_modules convention
@@ -118,17 +124,17 @@ def scratch_git(repo: Path, commits: tuple[str, ...]):
 
 
 def canonical(entries: dict[str, dict[str, str]]) -> bytes:
-    """Mirror mk_all's Complexity root: all .lean modules, sorted by module name."""
+    """Mirror mk_all's CslibFrontier root: all .lean modules, sorted by module name."""
     modules = []
     for path, entry in entries.items():
-        if path.startswith("Complexity/") and path.endswith(".lean"):
+        if path.startswith("CslibFrontier/") and path.endswith(".lean"):
             parts = path[:-5].split("/")
             require(all(COMPONENT.fullmatch(part) for part in parts),
                     f"unsupported module path: {path}")
             require(entry["type"] == "blob" and entry["mode"] in {"100644", "100755"},
                     f"nonregular Lean module: {path}")
             modules.append(".".join(parts))
-    require(bool(modules), "empty Complexity library")
+    require(bool(modules), "empty CslibFrontier library")
     return MODULE_HEADER + b"".join(f"public import {name}\n".encode() for name in sorted(modules))
 
 
@@ -138,11 +144,11 @@ def check_aggregate(git: Git, entries: dict, label: str) -> None:
     config = tomllib.loads(git.blob(entries["lakefile.toml"]).decode())
     libraries = config.get("lean_lib", [])
     require(isinstance(libraries, list), f"{label}: invalid Lake libraries")
-    roots = [lib for lib in libraries if isinstance(lib, dict) and lib.get("name") == "Complexity"]
+    roots = [lib for lib in libraries if isinstance(lib, dict) and lib.get("name") == "CslibFrontier"]
     require(config.get("srcDir", ".") == "." and len(roots) == 1 and
             roots[0].get("srcDir", ".") == "." and
-            roots[0].get("roots", ["Complexity"]) == ["Complexity"] and "globs" not in roots[0],
-            f"{label}: unsupported Complexity library layout")
+            roots[0].get("roots", ["CslibFrontier"]) == ["CslibFrontier"] and "globs" not in roots[0],
+            f"{label}: unsupported CslibFrontier library layout")
     require(AGGREGATE in entries and entries[AGGREGATE]["mode"] == "100644",
             f"{label}: missing or nonregular aggregate")
     content = git.blob(entries[AGGREGATE])
@@ -187,9 +193,9 @@ def verify(git: Git, prefix: str, source: str, reviewed_base: str, reviewed_head
                   input_trees={label: git.text("rev-parse", f"{oid}^{{tree}}")
                                           for label, oid in refs.items()})
     empty = git.run("hash-object", "-t", "tree", "--stdin", "-w", data=b"").stdout.decode().strip()
-    # attr.tree must actually disable the tracked union attribute on this Git version.
+    # attr.tree must actually disable the prefix's tracked merge attribute on this Git version.
     attrs = git.run("-c", f"attr.tree={empty}", "check-attr", "-z", "merge", "--", AGGREGATE).stdout
-    require(attrs == b"Complexity.lean\0merge\0unspecified\0", "cannot disable tracked attributes")
+    require(attrs == b"CslibFrontier.lean\0merge\0unspecified\0", "cannot disable tracked attributes")
     status, neutral, conflicts = merge(git, prefix, source, empty)
     report.update(neutral_tree=neutral, conflicts=conflicts)
     require(status == 1 and conflicts == [AGGREGATE],
@@ -206,7 +212,7 @@ def verify(git: Git, prefix: str, source: str, reviewed_base: str, reviewed_head
             "canonicalization changed a nonaggregate entry")
     feature = git.run("diff", "--no-ext-diff", "--no-textconv", "--no-renames", "--binary",
                       "--full-index", reviewed_base, reviewed_head, "--", ".",
-                      ":(exclude)Complexity.lean").stdout
+                      ":(exclude)CslibFrontier.lean").stdout
     require(bool(feature), "reviewed feature has no nonaggregate payload")
     own_paths = sorted(p for p in inventories["reviewed_base"].keys() | inventories["reviewed_head"].keys()
                        if p != AGGREGATE and inventories["reviewed_base"].get(p) !=
@@ -229,7 +235,8 @@ def verify(git: Git, prefix: str, source: str, reviewed_base: str, reviewed_head
                   canonical_aggregate_sha256=hashlib.sha256(content).hexdigest(),
                   canonical_import_count=len(content.splitlines()) - 2)
     # A private canonical tree is not an admission mechanism. The ordinary tracked-attribute
-    # merge, in the target-prefix direction, must produce exactly that tree itself.
+    # merge, in the target-prefix direction, must produce exactly that tree itself. Under a tracked
+    # `merge=leanagg`, with no driver configured here, that is the neutral merge, which conflicts.
     status, default, conflicts = merge(git, prefix, source, prefix)
     report.update(default_merge_tree=default, default_conflicts=conflicts)
     if status != 0 or conflicts or default != candidate:

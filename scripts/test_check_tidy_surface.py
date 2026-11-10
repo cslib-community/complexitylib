@@ -34,7 +34,7 @@ import lean_outputs as lo  # noqa: E402
 
 TIDY = "Turing.MultiTapeTM.ComputableTidilyInPolyTime"
 PLAIN = "Turing.MultiTapeTM.ComputableInPolyTime"
-TIDY_MODULE = "Complexity.Machines.Tidy"
+TIDY_MODULE = "CslibFrontier.Machines.Tidy"
 
 
 def declaration(module: str, name: str, line: int, kind: str = "thm", exported: str = "axiom",
@@ -88,7 +88,7 @@ class FakeLibrary(lo.Library):
 
 class CountingTests(unittest.TestCase):
     def setUp(self) -> None:
-        module = "Complexity.Classes.A"
+        module = "CslibFrontier.Classes.A"
         self.lib = FakeLibrary({module: module_fixture(module, "A")})
 
     def names(self, allowlist: set[str] = frozenset()) -> list[str]:
@@ -97,8 +97,8 @@ class CountingTests(unittest.TestCase):
 
     def test_statements_count_and_proofs_do_not(self) -> None:
         found = c.tidy_statements(self.lib, set())
-        self.assertEqual(list(found), ["Complexity/Classes/A.lean"])
-        self.assertEqual(found["Complexity/Classes/A.lean"][0], ("A.stated", 15, [TIDY]))
+        self.assertEqual(list(found), ["CslibFrontier/Classes/A.lean"])
+        self.assertEqual(found["CslibFrontier/Classes/A.lean"][0], ("A.stated", 15, [TIDY]))
         # `proved` mentions the tidy predicate in its proof only.
         self.assertNotIn("A.proved", self.names())
 
@@ -110,13 +110,13 @@ class CountingTests(unittest.TestCase):
         self.assertNotIn("A.opaqueBody", self.names())
 
     def test_allowlisted_modules_are_exempt(self) -> None:
-        self.assertEqual(self.names({"Complexity/Classes/A.lean"}), [])
-        self.assertEqual(len(self.names({"Complexity/Classes/B.lean"})), 3)
+        self.assertEqual(self.names({"CslibFrontier/Classes/A.lean"}), [])
+        self.assertEqual(len(self.names({"CslibFrontier/Classes/B.lean"})), 3)
 
     def test_generated_constants_do_not_count(self) -> None:
-        key, info, row = declaration("Complexity.Classes.A", "A.exposed_apply", 30,
+        key, info, row = declaration("CslibFrontier.Classes.A", "A.exposed_apply", 30,
                                      tidy=(TIDY,), parent="A.exposed")
-        self.lib.ileans["Complexity.Classes.A"]["references"][key] = info
+        self.lib.ileans["CslibFrontier.Classes.A"]["references"][key] = info
         self.lib.constants[row["n"]] = row
         self.assertNotIn("A.exposed_apply", self.names())
 
@@ -148,10 +148,10 @@ class MainTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.dir = pathlib.Path(tmp.name)
         self.allowlist = self.dir / "allowlist.txt"
-        self.allowlist.write_text("# raw machines\nComplexity/Machines/Raw.lean\n")
+        self.allowlist.write_text("# raw machines\nCslibFrontier/Machines/Raw.lean\n")
         self.baseline = self.dir / "baseline.json"
         self.modules = {m: module_fixture(m, m.rsplit(".", 1)[-1])
-                        for m in ("Complexity.Classes.A", "Complexity.Machines.Raw")}
+                        for m in ("CslibFrontier.Classes.A", "CslibFrontier.Machines.Raw")}
 
     def run_main(self, baseline: dict[str, int] | None, *flags: str) -> tuple[int, str, str]:
         if baseline is not None:
@@ -164,67 +164,67 @@ class MainTests(unittest.TestCase):
         return code, out.getvalue(), err.getvalue()
 
     def test_at_the_baseline_passes(self) -> None:
-        code, out, _ = self.run_main({"Complexity/Classes/A.lean": 3})
+        code, out, _ = self.run_main({"CslibFrontier/Classes/A.lean": 3})
         self.assertEqual(code, 0)
         self.assertIn("3 public tidy statement(s) in 1 module(s)", out)
 
     def test_growth_fails(self) -> None:
-        code, _, err = self.run_main({"Complexity/Classes/A.lean": 2})
+        code, _, err = self.run_main({"CslibFrontier/Classes/A.lean": 2})
         self.assertEqual(code, 1)
-        self.assertIn("Complexity/Classes/A.lean: 3 tidy statement(s), baseline 2", err)
-        self.assertIn("Complexity/Classes/A.lean:15: A.stated mentions " + TIDY, err)
+        self.assertIn("CslibFrontier/Classes/A.lean: 3 tidy statement(s), baseline 2", err)
+        self.assertIn("CslibFrontier/Classes/A.lean:15: A.stated mentions " + TIDY, err)
 
     def test_new_module_with_a_tidy_statement_fails(self) -> None:
-        self.modules["Complexity.Classes.New"] = [
-            declaration("Complexity.Classes.New", "New.ok", 10),
-            declaration("Complexity.Classes.New", "New.bad", 12, tidy=(TIDY,))]
-        code, _, err = self.run_main({"Complexity/Classes/A.lean": 3})
+        self.modules["CslibFrontier.Classes.New"] = [
+            declaration("CslibFrontier.Classes.New", "New.ok", 10),
+            declaration("CslibFrontier.Classes.New", "New.bad", 12, tidy=(TIDY,))]
+        code, _, err = self.run_main({"CslibFrontier/Classes/A.lean": 3})
         self.assertEqual(code, 1)
-        self.assertIn("Complexity/Classes/New.lean: 1 tidy statement(s), baseline 0", err)
-        self.assertNotIn("Complexity/Classes/A.lean", err)
+        self.assertIn("CslibFrontier/Classes/New.lean: 1 tidy statement(s), baseline 0", err)
+        self.assertNotIn("CslibFrontier/Classes/A.lean", err)
 
     def test_missing_baseline_allows_nothing(self) -> None:
         code, _, err = self.run_main(None)
         self.assertEqual(code, 1)
-        self.assertIn("Complexity/Classes/A.lean: 3 tidy statement(s), baseline 0", err)
+        self.assertIn("CslibFrontier/Classes/A.lean: 3 tidy statement(s), baseline 0", err)
 
     def test_stale_baseline_fails(self) -> None:
-        code, _, err = self.run_main({"Complexity/Classes/A.lean": 5, "Complexity/Gone.lean": 1})
+        code, _, err = self.run_main({"CslibFrontier/Classes/A.lean": 5, "CslibFrontier/Gone.lean": 1})
         self.assertEqual(code, 1)
         self.assertIn(c.UPDATE, err)
-        self.assertIn("Complexity/Classes/A.lean: 3 (baseline 5)", err)
-        self.assertIn("Complexity/Gone.lean: 0 (baseline 1)", err)
+        self.assertIn("CslibFrontier/Classes/A.lean: 3 (baseline 5)", err)
+        self.assertIn("CslibFrontier/Gone.lean: 0 (baseline 1)", err)
 
     def test_removed_statement_cannot_come_back(self) -> None:
         # Review 5636914097: removing a tidy statement must not leave reusable allowance.
-        module = "Complexity.Classes.A"
+        module = "CslibFrontier.Classes.A"
         full = self.modules[module]
         self.modules[module] = [e for e in full if not (e[2] and e[2]["n"] == "A.stated")]
-        code, _, err = self.run_main({"Complexity/Classes/A.lean": 3})
+        code, _, err = self.run_main({"CslibFrontier/Classes/A.lean": 3})
         self.assertEqual(code, 1)
-        self.assertIn("Complexity/Classes/A.lean: 2 (baseline 3)", err)
+        self.assertIn("CslibFrontier/Classes/A.lean: 2 (baseline 3)", err)
         self.assertEqual(self.run_main(None, "--update")[0], 0)
-        self.assertEqual(json.loads(self.baseline.read_text()), {"Complexity/Classes/A.lean": 2})
+        self.assertEqual(json.loads(self.baseline.read_text()), {"CslibFrontier/Classes/A.lean": 2})
         self.assertEqual(self.run_main(None)[0], 0)
         self.modules[module] = full
         code, _, err = self.run_main(None)
         self.assertEqual(code, 1)
-        self.assertIn("Complexity/Classes/A.lean: 3 tidy statement(s), baseline 2", err)
+        self.assertIn("CslibFrontier/Classes/A.lean: 3 tidy statement(s), baseline 2", err)
 
     def test_update_lowers_the_baseline(self) -> None:
-        code, _, _ = self.run_main({"Complexity/Classes/A.lean": 5, "Complexity/Gone.lean": 1},
+        code, _, _ = self.run_main({"CslibFrontier/Classes/A.lean": 5, "CslibFrontier/Gone.lean": 1},
                                    "--update")
         self.assertEqual(code, 0)
-        self.assertEqual(json.loads(self.baseline.read_text()), {"Complexity/Classes/A.lean": 3})
+        self.assertEqual(json.loads(self.baseline.read_text()), {"CslibFrontier/Classes/A.lean": 3})
 
     def test_update_does_not_raise_the_baseline_by_default(self) -> None:
-        code, _, err = self.run_main({"Complexity/Classes/A.lean": 2}, "--update")
+        code, _, err = self.run_main({"CslibFrontier/Classes/A.lean": 2}, "--update")
         self.assertEqual(code, 1)
         self.assertIn("--allow-increase", err)
-        self.assertEqual(json.loads(self.baseline.read_text()), {"Complexity/Classes/A.lean": 2})
+        self.assertEqual(json.loads(self.baseline.read_text()), {"CslibFrontier/Classes/A.lean": 2})
         code, _, _ = self.run_main(None, "--update", "--allow-increase")
         self.assertEqual(code, 0)
-        self.assertEqual(json.loads(self.baseline.read_text()), {"Complexity/Classes/A.lean": 3})
+        self.assertEqual(json.loads(self.baseline.read_text()), {"CslibFrontier/Classes/A.lean": 3})
 
     def test_allow_increase_needs_update(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):

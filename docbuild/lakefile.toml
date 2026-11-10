@@ -1,12 +1,12 @@
 # Separate documentation project, following https://github.com/leanprover/doc-gen4.
-# Inherits ../lean-toolchain. Build with: lake -d docbuild build Complexity:docs
+# Inherits ../lean-toolchain. Build with: lake -d docbuild build CslibFrontier:docs
 name = "docbuild"
 version = "0.1.0"
 reservoir = false
 packagesDir = "../.lake/packages"
 
 [[require]]
-name = "complexitylib"
+name = "cslib-frontier"
 path = ".."
 
 [[require]]

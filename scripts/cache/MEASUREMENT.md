@@ -1,7 +1,7 @@
 # Temporary handoff measurement (#1728)
 
 This milestone installs dormant machinery. It authorizes no experiment, activation, repository
-variable change, large snapshot or build-artifact download. [#1197](https://github.com/cslib-community/complexitylib/issues/1197)
+variable change, large snapshot or build-artifact download. [#1197](https://github.com/cslib-community/cslib-frontier/issues/1197)
 remains open for the controlled measurement and net-cost decision. A coordinator must separately
 authorize execution after independent CI/provenance/isolation review. Remove the workflow hooks,
 `scripts/cache_handoff_measurement.py`, its tests and any plan after the study, or by
@@ -47,7 +47,7 @@ windows/quotas and inventory them completely, rather than silently relying on AP
    sources and the unmodified `cache_handoff.source_context` checks. It records source SHA,
    toolchain, dependency pins, input digests, image/platform and selection. A HEAD request must
    show the target's public mapping is absent. Dispatch and already-published targets are excluded.
-2. Normal Actions-cache, toolchain, Mathlib and Complexitylib bootstrap run once. The selected
+2. Normal Actions-cache, toolchain, Mathlib and cslib-frontier bootstrap run once. The selected
    case captures the existing remote-cache helper's output. Before any arm, the driver verifies
    the reported remote revision and Actions matched-key revision are strict ancestors, records
    cold/unknown cases explicitly, and repeats the target-publication check. Source code and pins
