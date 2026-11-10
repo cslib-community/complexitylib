@@ -16,11 +16,12 @@ import Mathlib.RingTheory.PowerSeries.WellKnown
 /-!
 # Factorial moments of weak compositions
 
-A weak composition of `t` into the parts `ι` is a function `M : ι → ℕ` with sum `t`. There are
-`multichoose r t` of them, where `r` is the number of parts. For exponents `d : ι → ℕ` with sum
-`H`, the sum over all weak compositions of the product of falling factorials
-`∏ i, (M i).descFactorial (d i)` is `(∏ i, (d i)!) * choose (t + r - 1) (H + r - 1)`. This is the
-coefficient of `X ^ t` in `∏ i, X ^ d i / (1 - X) ^ (d i + 1)`.
+A weak composition of `t` into a nonempty finite set `S` of parts is a function `M` supported
+in `S` with sum `t`. There are `multichoose r t` of them, where `r` is the number of parts. For
+exponents `d` with sum `H` over `S`, the sum over all weak compositions of the product of
+falling factorials `∏ i ∈ S, (M i).descFactorial (d i)` is
+`(∏ i ∈ S, (d i)!) * choose (t + r - 1) (H + r - 1)`. This is the coefficient of `X ^ t` in
+`∏ i ∈ S, X ^ d i / (1 - X) ^ (d i + 1)`.
 
 Dividing by the number of compositions gives the factorial moment of a uniform weak composition,
 `(∏ i, (d i)!) * ∏ j < H, (t - j) / (r + j)`. The corresponding moment of independent geometric
@@ -31,8 +32,9 @@ one product of falling factorials and without probability theory.
 
 ## Main results
 
-* `Finset.sum_finsuppAntidiag_prod_choose`: the sum of `∏ i, (M i).choose (d i)`.
-* `Finset.sum_finsuppAntidiag_prod_descFactorial`: the sum of `∏ i, (M i).descFactorial (d i)`.
+* `Finset.sum_finsuppAntidiag_prod_choose`: the sum of `∏ i ∈ S, (M i).choose (d i)`.
+* `Finset.sum_finsuppAntidiag_prod_descFactorial`: the sum of
+  `∏ i ∈ S, (M i).descFactorial (d i)`.
 * `Finset.sum_finsuppAntidiag_prod_descFactorial_le`: the upper comparison.
 * `Finset.le_sum_finsuppAntidiag_prod_descFactorial`: the lower comparison.
 
@@ -48,7 +50,7 @@ open PowerSeries Nat
 
 namespace Finset
 
-variable {ι : Type*} [Fintype ι] [DecidableEq ι] [Nonempty ι]
+variable {ι : Type*} [DecidableEq ι] {S : Finset ι}
 
 private theorem coeff_X_pow_mul_invOneSubPow (d j : ℕ) :
     coeff j (X ^ d * (invOneSubPow ℤ (d + 1)).val) = (j.choose d : ℤ) := by
@@ -57,19 +59,19 @@ private theorem coeff_X_pow_mul_invOneSubPow (d j : ℕ) :
   · rw [coeff_mk, Nat.add_sub_cancel' h]
   · rw [Nat.choose_eq_zero_of_lt (not_le.1 h), Nat.cast_zero]
 
-/-- The sum over the weak compositions `M` of `t` of `∏ i, (M i).choose (d i)`. -/
-theorem sum_finsuppAntidiag_prod_choose (t : ℕ) (d : ι → ℕ) :
-    ∑ M ∈ (univ : Finset ι).finsuppAntidiag t, ∏ i, (M i).choose (d i) =
-      (t + Fintype.card ι - 1).choose (∑ i, d i + Fintype.card ι - 1) := by
-  have hr := Fintype.card_pos (α := ι)
-  have hprod : ∏ i, (X ^ d i * (invOneSubPow ℤ (d i + 1)).val) =
-      X ^ (∑ i, d i) * (invOneSubPow ℤ (∑ i, d i + Fintype.card ι - 1 + 1)).val := by
+/-- The sum over the weak compositions `M` of `t` of `∏ i ∈ S, (M i).choose (d i)`. -/
+theorem sum_finsuppAntidiag_prod_choose (hS : S.Nonempty) (t : ℕ) (d : ι → ℕ) :
+    ∑ M ∈ S.finsuppAntidiag t, ∏ i ∈ S, (M i).choose (d i) =
+      (t + S.card - 1).choose (∑ i ∈ S, d i + S.card - 1) := by
+  have hr := hS.card_pos
+  have hprod : ∏ i ∈ S, (X ^ d i * (invOneSubPow ℤ (d i + 1)).val) =
+      X ^ (∑ i ∈ S, d i) * (invOneSubPow ℤ (∑ i ∈ S, d i + S.card - 1 + 1)).val := by
     rw [prod_mul_distrib, prod_pow_eq_pow_sum, ← Units.coe_prod]
     congr 2
     simp_rw [invOneSubPow_eq_inv_one_sub_pow]
     rw [prod_pow_eq_pow_sum]
     congr 1
-    rw [sum_add_distrib, sum_const, card_univ, smul_eq_mul, mul_one]
+    rw [sum_add_distrib, sum_const, smul_eq_mul, mul_one]
     omega
   have h := congrArg (coeff t) hprod
   rw [coeff_prod, coeff_X_pow_mul', invOneSubPow_val_succ_eq_mk_add_choose, coeff_mk] at h
@@ -83,12 +85,12 @@ theorem sum_finsuppAntidiag_prod_choose (t : ℕ) (d : ι → ℕ) :
   · rw [Nat.choose_eq_zero_of_lt (by omega), Nat.cast_zero]
 
 /-- The sum over the weak compositions `M` of `t` of the product of falling factorials
-`∏ i, (M i).descFactorial (d i)`. It is zero when `∑ i, d i > t`. -/
-theorem sum_finsuppAntidiag_prod_descFactorial (t : ℕ) (d : ι → ℕ) :
-    ∑ M ∈ (univ : Finset ι).finsuppAntidiag t, ∏ i, (M i).descFactorial (d i) =
-      (∏ i, (d i)!) * (t + Fintype.card ι - 1).choose (∑ i, d i + Fintype.card ι - 1) := by
+`∏ i ∈ S, (M i).descFactorial (d i)`. It is zero when `∑ i ∈ S, d i > t`. -/
+theorem sum_finsuppAntidiag_prod_descFactorial (hS : S.Nonempty) (t : ℕ) (d : ι → ℕ) :
+    ∑ M ∈ S.finsuppAntidiag t, ∏ i ∈ S, (M i).descFactorial (d i) =
+      (∏ i ∈ S, (d i)!) * (t + S.card - 1).choose (∑ i ∈ S, d i + S.card - 1) := by
   simp_rw [descFactorial_eq_factorial_mul_choose, prod_mul_distrib, ← mul_sum,
-    sum_finsuppAntidiag_prod_choose]
+    sum_finsuppAntidiag_prod_choose hS]
 
 private theorem choose_succ_mul {t r : ℕ} (hr : 0 < r) (H : ℕ) :
     (t + r - 1).choose (H + 1 + r - 1) * (r + H) = (t + r - 1).choose (H + r - 1) * (t - H) := by
@@ -187,28 +189,30 @@ private theorem le_choose {t r : ℕ} (hr : 0 < r) (H : ℕ) (hH : 2 * H ≤ t) 
 
 /-- **Upper comparison of factorial moments.** The sum over the weak compositions of `t` of a
 product of falling factorials is at most the number of compositions times the corresponding
-moment `∏ i, (d i)! * (t / r) ^ d i` of independent geometric variables of mean `t / r`. -/
-theorem sum_finsuppAntidiag_prod_descFactorial_le (t : ℕ) (d : ι → ℕ) :
-    ((∑ M ∈ (univ : Finset ι).finsuppAntidiag t, ∏ i, (M i).descFactorial (d i) : ℕ) : ℝ) ≤
-      (Fintype.card ι).multichoose t *
-        ∏ i, (((d i)! : ℝ) * ((t : ℝ) / Fintype.card ι) ^ d i) := by
-  rw [sum_finsuppAntidiag_prod_descFactorial, prod_mul_distrib, prod_pow_eq_pow_sum, Nat.cast_mul,
-    Nat.cast_prod, mul_left_comm]
+moment `∏ i ∈ S, (d i)! * (t / r) ^ d i` of independent geometric variables of mean `t / r`. -/
+theorem sum_finsuppAntidiag_prod_descFactorial_le (hS : S.Nonempty) (t : ℕ) (d : ι → ℕ) :
+    ((∑ M ∈ S.finsuppAntidiag t, ∏ i ∈ S, (M i).descFactorial (d i) : ℕ) : ℝ) ≤
+      (S.card).multichoose t *
+        ∏ i ∈ S, (((d i)! : ℝ) * ((t : ℝ) / S.card) ^ d i) := by
+  rw [sum_finsuppAntidiag_prod_descFactorial hS, prod_mul_distrib, prod_pow_eq_pow_sum,
+    Nat.cast_mul, Nat.cast_prod, mul_left_comm]
   gcongr
-  exact choose_le Fintype.card_pos _
+  exact choose_le hS.card_pos _
 
-/-- **Lower comparison of factorial moments.** When the total order `H = ∑ i, d i` is at most
-`t / 2`, the sum over the weak compositions of `t` of a product of falling factorials is at
+/-- **Lower comparison of factorial moments.** When the total order `H = ∑ i ∈ S, d i` is at
+most `t / 2`, the sum over the weak compositions of `t` of a product of falling factorials is at
 least `exp (-(H ^ 2 / t) - H ^ 2 / (2 * r))` times the bound of the upper comparison. -/
-theorem le_sum_finsuppAntidiag_prod_descFactorial (t : ℕ) (d : ι → ℕ) (h : 2 * ∑ i, d i ≤ t) :
-    Real.exp (-(((∑ i, d i : ℕ) : ℝ) ^ 2 / t) -
-        ((∑ i, d i : ℕ) : ℝ) ^ 2 / (2 * Fintype.card ι)) *
-      ((Fintype.card ι).multichoose t *
-        ∏ i, (((d i)! : ℝ) * ((t : ℝ) / Fintype.card ι) ^ d i)) ≤
-      ((∑ M ∈ (univ : Finset ι).finsuppAntidiag t, ∏ i, (M i).descFactorial (d i) : ℕ) : ℝ) := by
-  rw [sum_finsuppAntidiag_prod_descFactorial, prod_mul_distrib, prod_pow_eq_pow_sum, Nat.cast_mul,
-    Nat.cast_prod, mul_left_comm _ (∏ i, ((d i)! : ℝ)), mul_left_comm _ (∏ i, ((d i)! : ℝ))]
+theorem le_sum_finsuppAntidiag_prod_descFactorial (hS : S.Nonempty) (t : ℕ) (d : ι → ℕ)
+    (h : 2 * ∑ i ∈ S, d i ≤ t) :
+    Real.exp (-(((∑ i ∈ S, d i : ℕ) : ℝ) ^ 2 / t) -
+        ((∑ i ∈ S, d i : ℕ) : ℝ) ^ 2 / (2 * S.card)) *
+      ((S.card).multichoose t *
+        ∏ i ∈ S, (((d i)! : ℝ) * ((t : ℝ) / S.card) ^ d i)) ≤
+      ((∑ M ∈ S.finsuppAntidiag t, ∏ i ∈ S, (M i).descFactorial (d i) : ℕ) : ℝ) := by
+  rw [sum_finsuppAntidiag_prod_descFactorial hS, prod_mul_distrib, prod_pow_eq_pow_sum,
+    Nat.cast_mul, Nat.cast_prod, mul_left_comm _ (∏ i ∈ S, ((d i)! : ℝ)),
+    mul_left_comm _ (∏ i ∈ S, ((d i)! : ℝ))]
   gcongr
-  exact le_choose Fintype.card_pos _ h
+  exact le_choose hS.card_pos _ h
 
 end Finset
