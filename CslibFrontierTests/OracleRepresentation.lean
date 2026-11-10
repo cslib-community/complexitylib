@@ -62,7 +62,7 @@ example :
       (OracleComp.interpret
         (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) target)
           randomized).run false :=
-  ProbOracleComp.run_interpret_map_response_state (fun _ => Prod.fst) source target Prod.fst
+  ProbOracleComp.runWith_map_response_state (fun _ => Prod.fst) source target Prod.fst
     step randomized (false, true)
 
 -- The same transport, stated with `ProbOracleComp.runWith`.
