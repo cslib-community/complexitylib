@@ -5236,6 +5236,7 @@ public import CslibFrontier.Logics.BooleanClone.Generated
 public import CslibFrontier.Logics.BooleanClone.Post
 public import CslibFrontier.Logics.FirstOrder.Atom
 public import CslibFrontier.Logics.FirstOrder.Basic
+public import CslibFrontier.Logics.FirstOrder.DefinitionalExpansion
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Basic
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 public import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.DefinedGraph
@@ -5303,6 +5304,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Decode
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Multiplication
 public import CslibFrontier.Logics.FirstOrder.Ordered.Reduction
 public import CslibFrontier.Logics.FirstOrder.Ordered.StrictOrder
+public import CslibFrontier.Logics.FirstOrder.Ordered.Successor
 public import CslibFrontier.Logics.FirstOrder.Ordered.TransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Ordered.Tuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.Tuple.Flatten
