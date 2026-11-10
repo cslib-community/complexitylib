@@ -43,9 +43,16 @@ import CslibFrontier.Logics.BooleanClone.Post
 import CslibFrontier.Logics.Propositional.CNF.Majority
 import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
+import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
+import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
+import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
+import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
+import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
+import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -74,9 +81,16 @@ import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.Clique
 import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
+import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
+import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
+import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
+import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
+import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
+import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 import CslibFrontier.Tactic.PolyTime
@@ -749,6 +763,55 @@ rotation to follow the scope's cyclic order. This rotation structure imposes no
 genus-zero condition and supplies no planarity recognizer or solver.
 
 
+# Finite Ordered Rotation Certificates
+
+{name}`Cslib.Complexity.Graph.RotationCertificate` stores one binary successor
+index per indexed dart. Its checker validates a supplied permutation and vertex
+rotation, then checks {name}`Cslib.Complexity.Graph.RotationSystem.NumericalGenusZero`:
+`V + F = E + 2` in each edge component. Faces include fixed-point orbits.
+Isolated vertices use `V = 1, E = 0, F = 1` without inventing darts.
+
+The CSP checker also preserves the actual cyclic scope order. A ternary mirror
+can pass numerical genus zero while failing this order condition:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+example : verifyRotationCertificate
+    ([((), [0, 1, 2])] : CSP Unit ℕ) ⟨[0, 3, 2, 5, 4, 1]⟩ = true :=
+  by decide
+```
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+example : verifyRotationCertificate
+    ([((), [0, 1, 2])] : CSP Unit ℕ) ⟨[0, 5, 2, 1, 4, 3]⟩ = false :=
+  by decide
+```
+
+{name}`Cslib.Complexity.CSP.exists_bounded_rotationCertificate_iff` proves that
+ordered numerical genus-zero rotations exist exactly when a bounded certificate
+is accepted. The explicit graph bound is `10 * (N + 1)^2` bits for the complete
+`encGraph` bit length `N`; its composition with the incidence construction is
+polynomial in the original CSP bit length. The full supplied-certificate checker
+has native polynomial time, including on malformed tables:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP
+  Turing.MultiTapeTM in
+example : ComputableInPolyTime
+    (fun p : CSP Unit ℕ × Graph.RotationCertificate =>
+      verifyRotationCertificate p.1 p.2)
+    (encCSPRotationCertificate encUnit encNat) encBool :=
+  computableInPolyTime_verifyRotationCertificate encUnit encNat
+```
+
+Original variable labels remain binary. Iteration uses actual list lengths,
+never a maximum label or supplied successor index. Nullary port order is
+vacuous; semantic rejection and exact relation arity remain separate guards.
+These theorems do not yet construct a rotation from a bare instance or establish
+geometric/source correspondence, planar duality, an edge solver or the dichotomy.
+
+
 # Delta-Matroid Closure for Local Contraction
 
 {name}`Cslib.BitString.IsDeltaMatroid.comp` and
@@ -799,8 +862,7 @@ For even delta-matroid constraints,
 {name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
 two-phase routine. Its correctness requires an improving valid comparison
 labeling as input; it does not search for that labeling. The combined exchange
-count is bounded by half the initial occurrence Hamming distance. No native
-machine-runtime bound is claimed yet.
+count is bounded by half the initial occurrence Hamming distance.
 
 ```lean
 open Cslib.Logic.PL Cslib.Logic.PL.CSP in
@@ -814,4 +876,172 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 ```
 
 The test module also rejects final-only validity. A complete solver still needs
-DAG/forest/blossom search and the native runtime certificate.
+DAG/forest/blossom search and certification of the complete solver.
+
+
+For explicit tables, {name}`Cslib.Complexity.CSP.EdgeAugmenting.run` takes the CSP,
+two finite occurrence buffers and the excluded start. Its ordinary native certificate
+covers the full framed input, including malformed buffers and sparse binary names:
+
+```lean
+open Cslib.Complexity.CSP.EdgeAugmenting Turing.MultiTapeTM in
+example : ComputableInPolyTime (fun input => (run input).isSome)
+    encInput encBool := by fun_prop
+```
+
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_eq` identifies its output with the
+mathematical routine when buffer widths match.
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_spec` supplies an actual augmenting
+walk and the combined exchange bound given a valid improving comparison.
+A `none` output does not establish unsatisfiability. Finding the comparison remains open.
+The complete behavioral clients are in `CslibFrontierTests/EdgeCSPAugmentingNative.lean`.
+
+
+# Timestamped DAG Search Prerequisites
+
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG` combines base validity with all six KKR
+invariants. Copies use original constraint positions and timestamps; arcs use
+actual argument occurrences. Supported isolated nodes are retained. Finite ranks
+can be made injective without changing any required comparison.
+
+The earliest-copy deletion and rerooting theorems preserve the invariants after
+a feasible pair flip, with the source's leaf and degree hypotheses explicit.
+Rerooting keeps unselected children. The paired-copy theorem gives the directed
+path argument; original constraints may recur at distinct timestamps. Prefix
+validity is a conclusion, not part of the path certificate:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.DAG in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    {sem : Rel → List Bool → Bool} {f : OccurrenceLabeling F Bool}
+    {T : DAG F} {w : Walk F} {time : Occurrence F → ℕ}
+    (hp : DirectedPath T w time) (hT : T.IsFDAG sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) (n : ℕ) :
+    ValidLabeling sem ((w.take n).flip f) := hp.valid_take hT hM n
+```
+
+{name}`Cslib.Logic.PL.CSP.DAG.DirectedPath.isFWalk` also requires distinct
+endpoints and original internal consistency. Lemma 43 is formalized by
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG.flip_walk_of_no_prefix_extension`, using
+actual prefix extensions against every used incidence. Its direct-exchange proof
+handles timestamp zero without adding a smaller timestamp.
+
+For assembly, trail reversal preserves the underlying trail:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
+    (hw : w.IsWalk) : w.reverse.IsWalk := hw.reverse
+```
+
+Arbitrary f-walk reversal need not preserve prefix validity, even for even
+delta-matroid relations. Operation tests give a counterexample. These results
+still leave forest construction/Lemma 34, whole-blossom search, native cost and
+the full planar dichotomy open.
+
+
+# Finite Crossover Gadget Semantics
+
+{name}`Cslib.BitString.cross` equates opposite cyclic ports.
+{name}`Cslib.BitString.nearCross` additionally accepts `0001` and `1110`.
+{name}`Cslib.BitString.IsStandardizedInconsistent` has exactly eight shapes.
+The literal Dvořák–Kupec Figure 1(a) gadget targets CROSS or NEAR-CROSS according
+to which optional complementary pairs occur:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : figureOneARelation (standardizedRelation true false false) =
+    nearCross := figureOneARelation_standardized true false false
+```
+
+{name}`Cslib.Logic.PL.CSP.Crossover.figureOneAStandardized` exposes the selected
+target as an ordinary primitive-positive gadget. Figure 1(b) then defines CROSS
+from NEAR-CROSS using one existential auxiliary:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP.Crossover in
+example : ∃ b, figureOneB.body.eval nearSem
+    (Sum.elim ![false, true, false, true] b) = true :=
+  (figureOneB.correct _).mp (by decide)
+```
+
+Both bodies retain the source diagram's numbered port order and use guarded
+scope widths. These results concern finite semantics; geometric realization,
+planar substitution, hardness and a new native runtime certificate remain open.
+
+
+# Ordered Cyclic-Obstruction Normalization
+
+{name}`Cslib.Logic.PL.CSP.Normalization.exists_construction` treats arbitrary arity.
+Its input relation is nonempty and self-complementary, with a cyclic-difference
+relation failing the even delta-matroid axiom. It proves arity at least four and
+produces an ordered recipe and an actual gadget over the original relation and
+disequality. The finite constraint, scope-occurrence and auxiliary bounds compose:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {n : ℕ} (R : Set (Fin n → Bool)) (hne : R.Nonempty)
+    (hsc : IsSelfComplementary R)
+    (hbad : ¬IsEvenDeltaMatroid (cyclicDifferenceRelation R)) :
+    ∃ Q : Set (Fin 4 → Bool), IsStandardizedInconsistent Q ∧
+      ∃ g : PPGadget (Normalization.arity n) (Normalization.sem R) Q,
+        g.body.length ≤ 1 + 2 * n ∧ g.body.vars.length ≤ 5 * n ∧
+          g.numAux ≤ 3 * n - 4 := by
+  obtain ⟨_, ⟨c⟩⟩ := Normalization.exists_construction R hne hsc hbad
+  exact ⟨c.target, c.standardized, c.gadget, c.body_bounds.1, c.body_bounds.2,
+    c.numAux_bound⟩
+```
+
+The program uses cyclic rotations, adjacent zero-conditioned identifications and
+the specific cap identifying old ports 1 and 3 while hiding old port 2. It keeps
+the resulting free-port order. The initial body contains one original literal and
+one or two disequality spokes per original port; later steps relabel scopes.
+The bounds count constraints, scope occurrences and allocated auxiliaries, including
+unused labels. They assert neither native runtime nor binary encoded size.
+
+This is an original combinatorial reconstruction of the omitted argument behind
+Dvořák–Kupec Lemma 6, not its full planar-expressibility conclusion. Geometric
+realization and the full planar theorem remain open. Complete nonvacuous clients
+are in `CslibFrontierTests/PlanarNormalization.lean`.
+
+
+# Original-Language Nonselfdual Gadgets
+
+{name}`Cslib.Logic.PL.CSP.NonSelfDual.exists_oneHotGadget` constructs an actual
+one-in-three gadget over the original language. It requires absence of all six
+common Schaefer polymorphisms and of unary complement. Pins and disequality are
+derived internally, and the language relations may have arbitrary arity:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP in
+example {Rel : Type} (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬HasSchaeferPolymorphism arity sem)
+    (hn : ¬HasPolymorphism arity sem (fun a : Fin 1 → Bool => !(a 0))) :
+    Nonempty (PPGadget arity sem (oneHotRelation (Fin 3))) :=
+  NonSelfDual.exists_oneHotGadget h hn
+```
+
+Disequality needs only the first hypothesis, including when unary complement
+preserves the language:
+
+```lean
+open Cslib.Logic.PL.CSP in
+example {Rel : Type} (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (h : ¬HasSchaeferPolymorphism arity sem) :
+    Nonempty (PPGadget arity sem RelationMinor.disequality) :=
+  RelationMinor.exists_disequalityGadget h
+```
+
+{name}`Cslib.Logic.PL.CSP.RelationMinor.Construction.gadget` interprets each finite
+ordered construction tree on actual original-language bodies. The final triangle
+appends a ternary body and three NAND bodies on `(0,1)`, `(1,2)`, `(2,0)`; each use
+receives fresh auxiliaries. Projection retains survivor order, and cyclic rotation
+retains orientation. The arbitrary-arity parity and majority minor arguments are
+original reconstructions of the proof omitted from Dvořák–Kupec Lemma 4, printed
+pp. 438–439. The constants descent follows Lemma 3, pp. 437–438.
+
+This proves finite primitive-positive semantics. Witness selection is fixed-language
+data, without a uniform preprocessing bound. Geometric realization, ordered planar
+substitution, native hardness transfer and the full dichotomy remain open. Complete
+clients, including a one-symbol language without primitive pins or disequality,
+are in `CslibFrontierTests/PlanarConstructionGadget.lean`.

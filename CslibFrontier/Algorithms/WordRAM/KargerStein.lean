@@ -3555,15 +3555,20 @@ theorem fastCutHighProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     hmiss.trans (Lean.Karger.fastCutHighProbLaw_failure_le hn hW hmin)⟩
 
 /-- Corollary of `fastCutHighProbProgram_spec`: when `0 < minCut W`, `fastCutHighProbProgram`
-misses `minCut W` with probability at most `1 / n`. -/
+misses `minCut W` with probability at most `1 / n`. For `n < 2` the bound is at least `1`. -/
 theorem fastCutHighProbProgram_failure_le_inv_n {n w : ℕ} {W : Fin n → Fin n → ℕ}
-    (hn : 2 ≤ n) (hW : IsMultigraph W)
+    (hW : IsMultigraph W)
     (hw : logWidth 4 n ≤ w) (htot : Fits w (totalDoubledWeight W))
     (hpos : 0 < minCut W) :
     (evalRand w fastCutHighProbProgram (fastCutHighProbTime n)
         (.init (n :: flattenMatrix W))).toOuterMeasure
         {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
       (1 : ℝ≥0∞) / (n : ℝ≥0∞) := by
+  by_cases hn : n < 2
+  · refine (Probability.PMF.toOuterMeasure_le_one _ _).trans ?_
+    rw [one_div, ENNReal.one_le_inv]
+    exact_mod_cast (by omega : n ≤ 1)
+  replace hn : 2 ≤ n := by omega
   refine ((fastCutHighProbProgram_spec hn hW hw htot).2.2.2 hpos).trans ?_
   apply ENNReal.div_le_div_left
   exact_mod_cast (by omega : n ≤ 2 * n)

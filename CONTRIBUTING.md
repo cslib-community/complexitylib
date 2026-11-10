@@ -72,10 +72,25 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Names follow Mathlib's conventions.
 4. **Automation as API.** Curate `simp`, `grind` and `fun_prop` sets so routine facts follow
    without unfolding; a fact that repeatedly needs plumbing signals a missing lemma or interface.
+   Specifications are interfaces too: when callers re-derive the same frame or invariant after
+   each call to a routine, state the frame in the routine's specification in a form they can
+   apply, such as a `Finset` of written registers, or prove the invariant's transfer across the
+   call once, as a corollary of that specification.
 5. **Definitions and proofs.** Definitions are terms where possible. Proofs keep their logical
    progression visible: `simp only` mid-proof (a `simp` closed at once by `omega`, `linarith` or
    a similar finishing tactic counts as terminal), and no large terminal `simpa` hiding the
-   argument.
+   argument. Do not copy a proof block into another proof. When a proof you add or change needs an
+   argument that another proof makes, first look for an existing lemma in this library, CSLib,
+   Mathlib or core. If there is none and a lemma would make both proofs clearer, state it once and
+   use it in both, `private` if it is plumbing ([Placement and reuse](AGENTS.md#placement-and-reuse)
+   covers proofs in different modules); otherwise leave them. Derive variants, such as a special
+   case or the same result with another constant, from the general result instead of copying and
+   editing its proof. Whether a shared lemma pays is judged on the code: repeated constructions,
+   bounds and changes of variables usually do; a routine side goal of a few lines does only when
+   the lemma states a fact a reader would look up by name, such as a round trip, and replaces a
+   fragile `simpa` or a similar opaque step. A shared lemma pays when each call site can supply
+   its hypotheses directly; one whose hypotheses restate most of what the copied block derives
+   saves nothing.
 6. **Placement.** No duplicates; small topic modules; clients import what they use.
 7. **Documentation.** Definitions and theorems are documented, citing sources; module docstrings
    list the actual public API; each area has a chapter in the guide.

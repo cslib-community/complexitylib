@@ -7,28 +7,31 @@ Authors: Bolton Bailey, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.PCP.Encoded.GenericComposition
+public import CslibFrontier.Computability.PCP.Encoded.AssignmentTester.Enumeration
+public import CslibFrontier.Computability.PCP.Encoded.GenericComposition.Enumeration
 public import CslibFrontier.Computability.PCP.Encoded.SelectedAssignmentTester
 public import CslibFrontier.Computability.PCP.SelectedComposition
 
 /-!
 # Executable composition with the selected assignment tester
 
-The six-query tester supplies an executable realization to the shared graph compiler. Slot
-numbering, edge enumeration, interpretation, and resource accounting use the same implementation
-as conjunction composition. Complete coin and query lists recover mathematical selected
-composition; incomplete lists still give a well-formed graph when the input is well formed.
+The six-query tester supplies an executable realization to the shared graph compiler
+(`Cslib.PCP.AssignmentTester.Implementation`). Composition runs every coin, a choice of one of five
+checks with the Hadamard product coins, and all six queries, enumerated constructively; the
+enumerations are fixed with the alphabet, while the graph and its output tables remain charged
+runtime data. The result is mathematical selected composition, up to an injective numbering.
 
 ## Main definitions
 
 * `Cslib.PCP.Encoded.SelectedHadamardTester.implementation`: executable queries and decisions.
-* `Cslib.PCP.Encoded.Graph.composeSelectedTabulated`: composition with Boolean output tables.
+* `Cslib.PCP.Encoded.Graph.composeSelectedEnumerated`: complete selected composition, with
+  Boolean output tables.
 
 ## Main results
 
-* `Cslib.PCP.Encoded.Graph.isPolyTime_composeSelectedTabulated`: the full construction certificate.
-* `Cslib.PCP.Encoded.Graph.unsatVal_composeSelectedTabulated_eq`: exact interpretation.
-* `Cslib.PCP.Encoded.Graph.le_unsatVal_composeSelectedTabulated`: the `1/840` gap bound.
+* `Cslib.PCP.Encoded.Graph.isPolyTime_composeSelectedEnumerated`: the construction certificate.
+* `Cslib.PCP.Encoded.Graph.satisfiable_composeSelectedEnumerated_iff`: satisfiability transfer.
+* `Cslib.PCP.Encoded.Graph.le_unsatVal_composeSelectedEnumerated`: retention of `1/840` of value.
 
 ## References
 
@@ -40,6 +43,8 @@ composition; incomplete lists still give a well-formed graph when the input is w
 namespace Cslib.PCP.Encoded
 
 open Cslib.PCP.HadamardTester Turing.MultiTapeTM
+
+section Implementation
 
 variable {α : Type} [Fintype α] [DecidableEq α]
 
@@ -56,89 +61,83 @@ theorem SelectedHadamardTester.realizes_implementation :
   query_eq := SelectedHadamardTester.query_eq
   accepts_eq_true := SelectedHadamardTester.accepts_eq_true
 
+end Implementation
+
 namespace Graph
 
 /-- Input, auxiliary-proof, and selected-coin slots in a numbered composition block. -/
 abbrev SelectedComposeSlot (α : Type) : Type :=
   AssignmentTester.ComposeSlot (α → Bool) (LinPos α ⊕ QuadPos α) (Fin 5 × Rand α)
 
-variable {width : ℕ}
+section Enumerated
 
-/-- Compile the selected tester and materialize the constraints over its 128-symbol alphabet. -/
-def composeSelectedTabulated (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) (g : Graph (α → α → Bool)) :
+attribute [local instance] HadamardTester.instFinEnumBool HadamardTester.Rand.finEnum
+
+/-- Constructively number all input, proof, and selected-coin slots. -/
+@[instance_reducible]
+def SelectedComposeSlot.finEnum (α : Type) [FinEnum α] : FinEnum (SelectedComposeSlot α) :=
+  inferInstanceAs (FinEnum (_ ⊕ (_ ⊕ _) ⊕ (_ × _)))
+
+attribute [local instance] SelectedComposeSlot.finEnum
+
+variable {α : Type} [FinEnum α]
+
+/-- Run every selected check and query, then materialize the output constraints. -/
+def composeSelectedEnumerated (g : Graph (α → α → Bool)) :
     Graph (SelectedAlphabet → SelectedAlphabet → Bool) :=
-  SelectedHadamardTester.implementation.composeTabulated number coins queries g
+  SelectedHadamardTester.implementation.composeEnumerated g
 
-/-- The shared compiler charges the graph, every selected query, and the full output tables. -/
+/-- Selected composition accepts any certified input-constraint encoding. -/
 @[fun_prop]
-theorem isPolyTime_composeSelectedTabulated {Input : Type} {input : Input ↪ List Bool}
+theorem isPolyTime_composeSelectedEnumerated {Input : Type} {input : Input ↪ List Bool}
+    {constraintEncoding : (α → α → Bool) ↪ List Bool}
     {graph : Input → Graph (α → α → Bool)}
-    (hgraph : ComputableInPolyTime graph input (encoding encConstraintTable))
-    (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) :
-    ComputableInPolyTime (fun x => (graph x).composeSelectedTabulated number coins queries)
+    (hgraph : ComputableInPolyTime graph input (encoding constraintEncoding)) :
+    ComputableInPolyTime (fun x => (graph x).composeSelectedEnumerated)
       input (encoding encConstraintTable) :=
-  SelectedHadamardTester.implementation.isPolyTime_composeTabulated hgraph number coins queries
+  SelectedHadamardTester.implementation.isPolyTime_composeEnumerated hgraph
 
-/-- The output reserves a fixed block for each old vertex and edge. -/
+/-- Each old vertex and edge reserves a complete local slot block. -/
 @[simp]
-theorem vertices_composeSelectedTabulated (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) (g : Graph (α → α → Bool)) :
-    (g.composeSelectedTabulated number coins queries).vertices =
-      (g.vertices + g.edges.length) * width := rfl
+theorem vertices_composeSelectedEnumerated (g : Graph (α → α → Bool)) :
+    g.composeSelectedEnumerated.vertices =
+      (g.vertices + g.edges.length) * Fintype.card (SelectedComposeSlot α) := by
+  simpa only [composeSelectedEnumerated, Fintype.card_eq_nat_card] using
+    SelectedHadamardTester.implementation.vertices_composeEnumerated g
 
-/-- Every listed coin and query contributes one occurrence for each old edge. -/
+/-- Each old edge occurs once for every selected coin and query pair. -/
 @[simp]
-theorem length_edges_composeSelectedTabulated (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) (g : Graph (α → α → Bool)) :
-    (g.composeSelectedTabulated number coins queries).edges.length =
-      g.edges.length * coins.length * queries.length := by
-  simp only [composeSelectedTabulated, AssignmentTester.Implementation.composeTabulated,
-    length_edges_mapConstraints, AssignmentTester.Implementation.length_edges_compose]
+theorem length_edges_composeSelectedEnumerated (g : Graph (α → α → Bool)) :
+    g.composeSelectedEnumerated.edges.length =
+      g.edges.length * Fintype.card (Fin 5 × Rand α) * 6 := by
+  simpa only [composeSelectedEnumerated, Fintype.card_eq_nat_card, Nat.card_fin] using
+    SelectedHadamardTester.implementation.length_edges_composeEnumerated g
 
-/-- Selected composition preserves endpoint bounds for arbitrary supplied coin and query lists. -/
-theorem WellFormed.composeSelectedTabulated (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) {g : Graph (α → α → Bool)}
-    (hg : g.WellFormed) : (g.composeSelectedTabulated number coins queries).WellFormed :=
-  (wellFormed_mapConstraints_iff _ _).mpr
-    (SelectedHadamardTester.implementation.wellFormed_compose number coins queries hg)
+/-- Complete selected composition preserves endpoint bounds. -/
+theorem WellFormed.composeSelectedEnumerated {g : Graph (α → α → Bool)} (hg : g.WellFormed) :
+    g.composeSelectedEnumerated.WellFormed :=
+  SelectedHadamardTester.implementation.wellFormed_composeEnumerated hg
 
-/-- Complete enumeration gives exactly the value of mathematical selected composition. -/
-theorem unsatVal_composeSelectedTabulated_eq (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) (g : Graph (α → α → Bool))
-    (hcoins : coins.Nodup) (hqueries : queries.Nodup)
-    (hmemCoins : ∀ ω, ω ∈ coins) (hmemQueries : ∀ i, i ∈ queries) :
-    ((g.composeSelectedTabulated number coins queries).toGraph id).unsatVal =
-      (g.toGraph id).composeSelected.unsatVal :=
-  SelectedHadamardTester.implementation.unsatVal_composeTabulated_eq
-    SelectedHadamardTester.realizes_implementation number coins queries g
-    hcoins hqueries hmemCoins hmemQueries
+/-- Complete enumeration realizes the exact selected-composition value. -/
+private theorem unsatVal_composeSelectedEnumerated_eq (g : Graph (α → α → Bool)) :
+    (g.composeSelectedEnumerated.toGraph id).unsatVal = (g.toGraph id).composeSelected.unsatVal :=
+  SelectedHadamardTester.implementation.unsatVal_composeEnumerated_eq
+    SelectedHadamardTester.realizes_implementation g
 
 /-- Complete selected composition preserves satisfiability. -/
-theorem satisfiable_composeSelectedTabulated_iff [Nonempty α]
-    (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) (g : Graph (α → α → Bool))
-    (hcoins : coins.Nodup) (hqueries : queries.Nodup)
-    (hmemCoins : ∀ ω, ω ∈ coins) (hmemQueries : ∀ i, i ∈ queries) :
-    ((g.composeSelectedTabulated number coins queries).toGraph id).Satisfiable ↔
-      (g.toGraph id).Satisfiable :=
-  SelectedHadamardTester.implementation.satisfiable_composeTabulated_iff
+theorem satisfiable_composeSelectedEnumerated_iff [Nonempty α] (g : Graph (α → α → Bool)) :
+    (g.composeSelectedEnumerated.toGraph id).Satisfiable ↔ (g.toGraph id).Satisfiable :=
+  SelectedHadamardTester.implementation.satisfiable_composeEnumerated_iff
     SelectedHadamardTester.realizes_implementation
-    isComplete_selectedAssignmentTester sound_selectedAssignmentTester (by norm_num)
-    number coins queries g hcoins hqueries hmemCoins hmemQueries
+    isComplete_selectedAssignmentTester sound_selectedAssignmentTester (by norm_num) g
 
-/-- The six-query gadget retains at least `1/840` of the input's unsatisfied fraction. -/
-theorem le_unsatVal_composeSelectedTabulated [Nonempty α]
-    (number : SelectedComposeSlot α ≃ Fin width)
-    (coins : List (Fin 5 × Rand α)) (queries : List (Fin 6)) (g : Graph (α → α → Bool))
-    (hcoins : coins.Nodup) (hqueries : queries.Nodup)
-    (hmemCoins : ∀ ω, ω ∈ coins) (hmemQueries : ∀ i, i ∈ queries) :
-    (g.toGraph id).unsatVal / 840 ≤
-      ((g.composeSelectedTabulated number coins queries).toGraph id).unsatVal := by
-  rw [unsatVal_composeSelectedTabulated_eq number coins queries g
-    hcoins hqueries hmemCoins hmemQueries]
+/-- The compiled selected tester retains `1/840` of the input value. -/
+theorem le_unsatVal_composeSelectedEnumerated [Nonempty α] (g : Graph (α → α → Bool)) :
+    (g.toGraph id).unsatVal / 840 ≤ (g.composeSelectedEnumerated.toGraph id).unsatVal := by
+  rw [unsatVal_composeSelectedEnumerated_eq]
   exact ConstraintGraph.le_unsatVal_composeSelected _
+
+end Enumerated
 
 end Graph
 

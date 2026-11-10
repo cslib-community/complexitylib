@@ -30,6 +30,23 @@ The leaves come from the local context:
 * a `PolyBounded size' v` hypothesis at another size applied as `v (g a)`, which leaves the
   substitution `PolyBounded size (fun a => size' (g a))`.
 
+A certificate supplies a leaf only through a lemma, and this module does not import those lemmas,
+so that it stays below the machine layers. For each kind of certificate the proof uses, import
+the module that proves its lemma (names relative to `CslibFrontier.Computability.Machines.Turing`,
+the last one to `CslibFrontier.Computability`):
+
+* `ComputableInPolyTime`, output length: `MultiTape.Internal.PolyTimePrimitives`, which
+  `MultiTape.Complexity.PolyTime.Basic` imports;
+* `ComputableInPolyTime` with `encUnary` output, the value: `MultiTape.Internal.PolyTimeLoops`,
+  which `MultiTape.Complexity.PolyTime.Fold` imports;
+* `ComputableInPolySpace`: `MultiTape.Complexity.PolySpace.Plain`;
+* `ComputableInLogSpace`: `MultiTape.Complexity.LogSpace`;
+* `DegreeBounded`: `MultiTape.ResourceBounds.Degree`;
+* `Cslib.GenericRAM.NativeCertificate`: `GenericRAM.Native.Certificate`.
+
+When a certificate in the context gives no leaf because its lemma is not imported, the failure
+message names the module to import.
+
 Local `let` values, and definitions whose bodies are arithmetic, are unfolded. The tactic proves
 polynomial growth only. Word admission, exact time bounds and signed overflow conditions remain
 separate obligations, and it does not guess an intermediate size measure: a substitution needs
@@ -91,6 +108,11 @@ that unfold to them; from local certificates, through their output-length bound;
 `Cslib.PolynomiallyBounded` functions or `PolyBounded` facts at another size, applied to a
 bounded argument. `growth_poly [h₁, h₂]` adds the facts `h₁` and `h₂`.
 
+A certificate gives a leaf only when the module proving its bound is imported; the module
+docstring lists them, for example `MultiTape.Internal.PolyTimePrimitives` for the output length
+of `ComputableInPolyTime`. When a certificate in the context gives no leaf for this reason, the
+failure names the module to import.
+
 Local `let` values and arithmetic definitions are unfolded. The search follows the syntax of the
 bound without backtracking: a goal outside these rules fails at once and names the term it could
 not bound. `Cslib.PolynomiallyBounded` goals go to `fun_prop`. -/
@@ -102,15 +124,39 @@ namespace Cslib.Tactic.GrowthPoly
 
 open Lean Meta Elab Tactic
 
-/-- Lemmas from a certificate to a `PolyBounded` fact or to another certificate, applied to the
-local hypotheses whose head they match when they are in scope. -/
-private def certificateLemmas : List Name :=
-  [`Turing.MultiTapeTM.ComputableInPolyTime.polyBounded,
-   `Turing.MultiTapeTM.ComputableInPolyTime.polyBounded_length,
-   `Turing.MultiTapeTM.ComputableInPolySpace.polyBounded_length,
-   `Turing.MultiTapeTM.ComputableInLogSpace.polyBounded_length,
-   `Turing.MultiTapeTM.DegreeBounded.polyBounded,
-   `Cslib.GenericRAM.NativeCertificate.polyTime]
+/-- A lemma from a certificate to a `PolyBounded` fact or to another certificate. -/
+private structure CertificateLemma where
+  /-- The lemma, applied to the local hypotheses whose head it matches when it is in scope. -/
+  name : Name
+  /-- The head constant of the certificate it takes, its last explicit hypothesis. -/
+  head : Name
+  /-- The output encoding, the certificate's last argument, that the lemma requires, if any. -/
+  outEnc : Option Name := none
+  /-- The module proving the lemma, named when the lemma is not in scope. -/
+  module : Name
+
+/-- The certificate lemmas, applied when they are in scope. This module does not import them,
+which would make it depend on the machine layers. -/
+private def certificateLemmas : List CertificateLemma :=
+  [{ name := `Turing.MultiTapeTM.ComputableInPolyTime.polyBounded
+     head := `Turing.MultiTapeTM.ComputableInPolyTime
+     outEnc := `Turing.MultiTapeTM.encUnary
+     module := `CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops },
+   { name := `Turing.MultiTapeTM.ComputableInPolyTime.polyBounded_length
+     head := `Turing.MultiTapeTM.ComputableInPolyTime
+     module := `CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimePrimitives },
+   { name := `Turing.MultiTapeTM.ComputableInPolySpace.polyBounded_length
+     head := `Turing.MultiTapeTM.ComputableInPolySpace
+     module := `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain },
+   { name := `Turing.MultiTapeTM.ComputableInLogSpace.polyBounded_length
+     head := `Turing.MultiTapeTM.ComputableInLogSpace
+     module := `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace },
+   { name := `Turing.MultiTapeTM.DegreeBounded.polyBounded
+     head := `Turing.MultiTapeTM.DegreeBounded
+     module := `CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Degree },
+   { name := `Cslib.GenericRAM.NativeCertificate.polyTime
+     head := `Cslib.GenericRAM.NativeCertificate.IsPolynomial
+     module := `CslibFrontier.Computability.GenericRAM.Native.Certificate }]
 
 /-- The facts available to `growth_poly`. -/
 private structure Facts where
@@ -118,6 +164,8 @@ private structure Facts where
   bounds : Array (Expr × Expr) := #[]
   /-- Proofs of `Cslib.PolynomiallyBounded p`, with their `p`. -/
   polys : Array (Expr × Expr) := #[]
+  /-- Certificates that give no fact because their lemma is not in scope, with that lemma. -/
+  unused : Array (Expr × CertificateLemma) := #[]
 
 /-- The size and the bounded function of `PolyBounded size u`. -/
 private def polyBoundedArgs? (e : Expr) : Option (Expr × Expr) :=
@@ -178,11 +226,12 @@ private def applyCertificate? (lem : Name) (h : Expr) : MetaM (Option Expr) := d
   return if pf.hasExprMVar then none else some pf
 
 /-- The facts from the local context and the extra `hints`, with the bounds that certificates
-give, following certificate lemmas at most two steps. -/
+give, following certificate lemmas at most two steps. Certificates whose lemma is not in scope are
+recorded in `unused`. -/
 private def collectFacts (hints : Array Expr) : MetaM Facts := do
   let env ← getEnv
-  let lemmas ← certificateLemmas.filterMapM fun n => do
-    if env.contains n then return (← certificateHead? n).map (n, ·) else return none
+  let (present, absent) := certificateLemmas.partition (env.contains ·.name)
+  let lemmas ← present.filterMapM fun l => return (← certificateHead? l.name).map (l.name, ·)
   let locals ← (← getLCtx).foldlM (init := #[]) fun acc decl =>
     if decl.isImplementationDetail then pure acc else pure (acc.push decl.toExpr)
   let mut facts : Facts := {}
@@ -199,6 +248,10 @@ private def collectFacts (hints : Array Expr) : MetaM Facts := do
       if head == some lemHead then
         if let some pf' ← applyCertificate? lem pf then
           work := work.push (pf', depth - 1)
+    for l in absent do
+      let encOk := l.outEnc.all fun enc => ty.getAppArgs.back?.any (·.isConstOf enc)
+      if head == some l.head && encOk then
+        facts := { facts with unused := facts.unused.push (pf, l) }
   return facts
 
 /-- Replace a local `let` variable or `let` at the head of `e` by its value, and beta reduce. -/
@@ -296,10 +349,13 @@ private def chooseStep (facts : Facts) (goalTy size u : Expr) : MetaM Step := do
     if ← withReducible (isDefEq body (stripId (size.beta #[a]).headBeta)) then
       return .apply ``Turing.MultiTapeTM.PolyBounded.self
     let fail : MetaM Step := do
+      let unused := facts.unused.toList.map fun (pf, l) =>
+        m!"\nThe certificate `{pf}` gives no bound: `{l.name}` is not imported. \
+          Import `{l.module}`."
       throwError "growth_poly: no rule or local fact bounds{indentExpr body}\n\
         by a polynomial in{indentExpr (size.beta #[a]).headBeta}\n\
         Add a `PolyBounded` fact or a certificate for it to the context, or pass one as \
-        `growth_poly [h]`."
+        `growth_poly [h]`.{MessageData.joinSep unused ""}"
     if body.isAppOfArity ``Nat.succ 1 then
       return .change (← mkLambdaFVars #[a] (mkNatAdd body.appArg! (mkNatLit 1)))
     if let some rule := opRule? body then

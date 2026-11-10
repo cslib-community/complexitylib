@@ -351,8 +351,7 @@ theorem toBlocks_append {r : ℕ} (hr : 0 < r) {a : List Bool} (ha : r ∣ a.len
       getElem?_toBlocks, getElem?_toBlocks, List.length_append, hk, Nat.mul_add_div hr]
     simp only [Nat.add_lt_add_iff_left]
     split_ifs
-    · congr 1
-      funext i
+    · congr 1 with i : 1
       rw [List.getD_append_right a b false ((k + d) * r + i) (by rw [hk]; nlinarith), hk,
         show (k + d) * r + i - r * k = d * r + i by
           rw [add_mul, mul_comm k r, Nat.add_assoc, Nat.add_sub_cancel_left]]

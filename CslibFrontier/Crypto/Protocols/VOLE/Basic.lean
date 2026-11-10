@@ -531,8 +531,7 @@ theorem voleSample_w_eq_linear_respond (x v : Fin n → ZMod q) (c : C) :
 theorem voleInTheHeadSigma_eq_linear :
     voleInTheHeadSigma ψ target ι = SigmaProtocol.linear ψ target ι := by
   simp only [voleInTheHeadSigma, SigmaProtocol.linear]
-  congr
-  funext x y v c
+  congr with x y v c : 4
   exact voleSample_w_eq_linear_respond ι x v c
 
 @[simp]

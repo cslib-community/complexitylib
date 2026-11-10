@@ -121,25 +121,17 @@ lemma getD_applyTapes (ts : List Tape) (as : List TapeAct) {i : ℕ} (hi : i < t
 
 lemma length_step_workTapes (d : Desc) (x : List ℕ) (c : SCfg) :
     (step d x c).1.workTapes.length = c.workTapes.length := by
-  rw [step_eq_stepWith, show stepWith d c (inputSymbol x c.inputPos) =
-      stepWith ((d, c), inputSymbol x c.inputPos).1.1 ((d, c), inputSymbol x c.inputPos).1.2
-        ((d, c), inputSymbol x c.inputPos).2 from rfl, stepWith_eq]
-  split_ifs
-  · exact length_applyTapes_eq _ _
-  · rfl
-  · rfl
+  rw [step_eq_stepWith, stepWith]
+  repeat' split
+  all_goals first | rfl | exact length_applyTapes_eq _ _
 
 /-- A step applies an action to every work tape. -/
 lemma step_tape (d : Desc) (x : List ℕ) (c : SCfg) (i : ℕ) :
     ∃ a, (step d x c).1.workTapes.getD i .blank = (c.workTapes.getD i .blank).apply a := by
   rcases Nat.lt_or_ge i c.workTapes.length with hi | hi
-  · rw [step_eq_stepWith, show stepWith d c (inputSymbol x c.inputPos) =
-      stepWith ((d, c), inputSymbol x c.inputPos).1.1 ((d, c), inputSymbol x c.inputPos).1.2
-        ((d, c), inputSymbol x c.inputPos).2 from rfl, stepWith_eq]
-    split_ifs
-    · exact ⟨_, getD_applyTapes _ _ hi⟩
-    · exact ⟨(none, 0), (apply_none _).symm⟩
-    · exact ⟨(none, 0), (apply_none _).symm⟩
+  · rw [step_eq_stepWith, stepWith]
+    repeat' split
+    all_goals first | exact ⟨_, getD_applyTapes _ _ hi⟩ | exact ⟨(none, 0), (apply_none _).symm⟩
   · refine ⟨(none, 0), ?_⟩
     rw [apply_none, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
       (by rw [length_step_workTapes]; exact hi)]

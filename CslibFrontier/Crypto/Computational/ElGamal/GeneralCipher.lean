@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
@@ -385,9 +386,9 @@ theorem hashedElGamalCipherCPAGame_restrict {Msg : Type}
       F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary bit n := by
   simp only [pmf_norm, hashedElGamalCipherCPAGame, hashedElGamalCipherCPAGameOn,
     Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
-  congr 1; funext d
-  congr 1; funext α
-  congr 1; funext choice
+  congr 1 with d : 1
+  congr 1 with α : 1
+  congr 1 with choice : 1
   cases valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 <;>
     simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.bind_const]
@@ -403,9 +404,9 @@ theorem hashedElGamalCipherIdealDDHGame_restrict {Msg : Type}
       F.hashedElGamalCipherIdealDDHGameOn valid setup H encryptSym adversary bit n := by
   simp only [pmf_norm, hashedElGamalCipherIdealDDHGame, hashedElGamalCipherIdealDDHGameOn,
     Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
-  congr 1; funext d
-  congr 1; funext α
-  congr 1; funext choice
+  congr 1 with d : 1
+  congr 1 with α : 1
+  congr 1 with choice : 1
   cases valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 <;>
     simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.bind_const]
@@ -421,9 +422,9 @@ theorem hashedElGamalCipherUniformKeyGame_restrict {Msg : Type}
       F.hashedElGamalCipherUniformKeyGameOn valid setup keyLen encryptSym adversary bit n := by
   simp only [pmf_norm, hashedElGamalCipherUniformKeyGame, hashedElGamalCipherUniformKeyGameOn,
     Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
-  congr 1; funext d
-  congr 1; funext α
-  congr 1; funext choice
+  congr 1 with d : 1
+  congr 1 with α : 1
+  congr 1 with choice : 1
   cases valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 <;>
     simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.bind_const]
@@ -454,8 +455,8 @@ def hashedElGamalCipherToDDHDistinguisher {Msg : Type} (H : F.Desc × List Bool 
       F.hashedElGamalCipherCPAGame setup H encryptSym adversary bit n := by
   simp only [ddhRealGame, hashedElGamalCipherToDDHDistinguisher, hashedElGamalCipherCPAGame,
     hashedElGamalCipherCPAGameOn, ↓reduceIte, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  congr 1; funext d
-  congr 1; funext α
+  congr 1 with d : 1
+  congr 1 with α : 1
   rw [PMF.bind_comm]
 
 /-- In the ideal DDH game, `hashedElGamalCipherToDDHDistinguisher` simulates
@@ -469,8 +470,8 @@ def hashedElGamalCipherToDDHDistinguisher {Msg : Type} (H : F.Desc × List Bool 
   simp only [ddhIdealGame, hashedElGamalCipherToDDHDistinguisher, hashedElGamalCipherIdealDDHGame,
     hashedElGamalCipherIdealDDHGameOn, ddhPk, ↓reduceIte, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
-  congr 1; funext d
-  congr 1; funext α
+  congr 1 with d : 1
+  congr 1 with α : 1
   conv_lhs =>
     enter [2, β]
     rw [PMF.bind_comm]
@@ -595,8 +596,8 @@ def hashedElGamalCipherToKDFDistinguisher {Msg : Type}
   simp only [kdfIdealGame, hashedElGamalCipherToKDFDistinguisher, hashedElGamalCipherUniformKeyGame,
     hashedElGamalCipherUniformKeyGameOn, ddhPk, ↓reduceIte, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
-  congr 1; funext d
-  congr 1; funext α
+  congr 1 with d : 1
+  congr 1 with α : 1
   conv_lhs =>
     enter [2, β]
     rw [PMF.bind_comm]
@@ -1039,10 +1040,10 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
           (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β => k d α β := by
     simp only [hashedElGamalCipherUniformKeyGameOn, PMF.monad_bind_eq_bind,
       PMF.monad_pure_eq_pure, k]
-    congr 1; funext d
-    congr 1; funext α
+    congr 1 with d : 1
+    congr 1 with α : 1
     conv_rhs => rw [PMF.bind_comm]
-    congr 1; funext choice
+    congr 1 with choice : 1
     split_ifs <;> simp only [PMF.bind_const]
   have hdem :
       ProbComp.eval
@@ -1057,13 +1058,13 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
       encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, List.headD_cons,
       List.tail_cons, encodeElGamalPublicKey_eq_encode, k]
     rw [PMF.bind_comm]
-    congr 1; funext d
+    congr 1 with d : 1
     rw [PMF.bind_comm]
-    congr 1; funext a
+    congr 1 with a : 1
     rw [PMF.bind_comm]
-    congr 1; funext b
+    congr 1 with b : 1
     rw [PMF.bind_comm]
-    congr 1; funext choice
+    congr 1 with choice : 1
     by_cases hv :
         valid n (encPair F.encDesc encBits (d, F.encode d ((a : ZMod (F.order d)) • F.generator d)))
           choice.1.1 choice.1.2 = true
@@ -1077,16 +1078,7 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
   rw [hgame2, hdem]
   refine Game.advantage_bind_le_nnreal (ProbComp.eval (setupProb n)) _ _ fun d => ?_
   rw [Game.advantage_comm]
-  refine (Game.advantage_triangle _
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-      (ProbComp.eval (F.sampleExp n d)).bind fun b =>
-        k d α (b : ZMod (F.order d))) _).trans ?_
-  have h1 := F.advantage_bind_sampleExp_le n d (fun α =>
-    (ProbComp.eval (F.sampleExp n d)).bind fun b => k d α (b : ZMod (F.order d)))
-  have h2 := Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _
-    (fun α => F.advantage_bind_sampleExp_le n d (k d α))
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
-    _ = 2 / 2 ^ n := by ring
+  exact F.advantage_bind_sampleExp_pair_le n d (k d)
 
 /-- For each bit `bit : Bool`, the Game 2 distribution `hashedElGamalCipherUniformKeyGameOn` over
 `fun m => ProbComp.eval (setupProb m)` with `keyLen n = n` is within `2 / 2 ^ n` in
