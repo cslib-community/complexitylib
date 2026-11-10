@@ -1,0 +1,373 @@
+file,line,tactic,predicate,today_ok,today_hb,memo_hb,today_memo_prebuilt_hb,front_ok,front_stage_or_error,front_hb_memo_prebuilt
+CslibFrontier/Crypto/Computational/EvenMansour.lean,503,polytime,ComputableInPolyTime,True,4275,6377,435,True,funprop,324
+CslibFrontier/Crypto/Computational/EvenMansour.lean,518,polytime,ComputableInPolyTime,True,4711,3863,851,True,funprop,329
+CslibFrontier/Crypto/Computational/EvenMansour.lean,531,polytime,ComputableInPolyTime,True,4294,3865,433,True,funprop,329
+CslibFrontier/Crypto/Computational/EvenMansour.lean,535,polytime,ComputableInPolyTime,True,4315,3865,452,True,funprop,312
+CslibFrontier/Crypto/Computational/EvenMansour.lean,546,polytime,ComputableInPolyTime,True,5015,3864,1152,True,funprop,331
+CslibFrontier/Crypto/Computational/EvenMansour.lean,566,polytime,ComputableInPolyTime,True,4325,3868,460,True,funprop,309
+CslibFrontier/Crypto/Computational/EvenMansour.lean,583,polytime,ComputableInPolyTime,True,4398,3865,535,True,funprop,324
+CslibFrontier/Crypto/Computational/EvenMansour.lean,568,polytime,ComputableInPolyTime,True,4353,3867,488,True,funprop,317
+CslibFrontier/Crypto/Computational/EvenMansour.lean,584,polytime,ComputableInPolyTime,True,4403,3865,540,True,funprop,324
+CslibFrontier/Crypto/Computational/EvenMansour.lean,597,polytime,ComputableInPolyTime,True,4405,3868,540,True,funprop,324
+CslibFrontier/Crypto/Computational/EvenMansour.lean,598,polytime,ComputableInPolyTime,True,4400,3868,535,True,funprop,324
+CslibFrontier/Crypto/Computational/EvenMansour.lean,610,polytime,ComputableInPolyTime,True,4284,3870,417,True,funprop,309
+CslibFrontier/Crypto/Computational/EvenMansour.lean,610,polytime,ComputableInPolyTime,True,4285,3870,416,True,funprop,309
+CslibFrontier/Crypto/Computational/EvenMansour.lean,659,polytime,ComputableInPolyTime,True,4608,3877,733,True,funprop,309
+CslibFrontier/Crypto/Computational/MerkleTree.lean,815,polytime,ComputableTidilyInPolyTime,True,3998,3779,221,True,funprop,28
+CslibFrontier/Crypto/Computational/MerkleTree.lean,618,polytime,ComputableTidilyInPolyTime,True,4073,6269,323,True,funprop,119
+CslibFrontier/Crypto/Computational/MerkleTree.lean,687,polytime,ComputableTidilyInPolyTime,True,4456,3771,688,True,funprop,449
+CslibFrontier/Crypto/Computational/MerkleTree.lean,820,polytime,ComputableTidilyInPolyTime,True,4039,3780,262,True,funprop,37
+CslibFrontier/Crypto/Computational/MerkleTree.lean,920,polytime,ComputableTidilyInPolyTime,True,18081,3784,14306,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => p.2.1 != p.2.2) |   (encPair |     (encPair encBits,175
+CslibFrontier/Crypto/Computational/MerkleTree.lean,824,polytime,ComputableTidilyInPolyTime,True,4073,3779,296,True,funprop,41
+CslibFrontier/Crypto/Computational/MerkleTree.lean,828,polytime,ComputableTidilyInPolyTime,True,4096,3779,318,True,funprop,35
+CslibFrontier/Crypto/Computational/MerkleTree.lean,839,polytime,ComputableTidilyInPolyTime,True,17839,3779,14057,True,funprop,560
+CslibFrontier/Crypto/Protocols/VOLE/NativePPT.lean,380,ppt,IsPPTOn,True,6509,3871,2660,True,funprop,902
+CslibFrontier/Crypto/Protocols/VOLE/NativePPT.lean,382,ppt,IsPPTOn,True,6437,3870,2568,True,funprop,420
+CslibFrontier/Crypto/Protocols/VOLE/NativePPT.lean,299,polytime,ComputableInPolyTime,True,9901,6395,6052,False,"fun_prop failed, maximum number(64) of steps exceeded",23574
+CslibFrontier/Crypto/Protocols/VOLE/NativePPT.lean,384,ppt,IsPPTOn,True,6521,3870,2652,True,funprop,860
+CslibFrontier/Crypto/Protocols/VOLE/NativePPT.lean,386,ppt,IsPPTOn,True,6714,3871,2846,False,"fun_prop failed, maximum number(64) of steps exceeded",584
+CslibFrontier/Crypto/Protocols/VOLE/NativePPT.lean,305,polytime,ComputableInPolyTime,True,27092,3858,23234,False,"fun_prop failed, maximum number(64) of steps exceeded",12500
+CslibFrontier/Crypto/Protocols/VOLE/NativePPT.lean,317,polytime,ComputableInPolyTime,True,14614,3858,10758,False,"fun_prop failed, maximum number(64) of steps exceeded",950
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/PolyTime.lean,292,ppt,IsPPTOn,True,4978,4005,979,True,funprop,454
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/PolyTime.lean,344,polytime,ComputableTidilyInPolyTime,True,5537,6548,1550,True,funprop,90
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/PolyTime.lean,345,polytime,ComputableTidilyInPolyTime,True,5505,4006,1502,True,funprop,85
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/PolyTime.lean,369,polytime,ComputableTidilyInPolyTime,True,7200,4009,3194,True,funprop,8897
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/PolyTime.lean,370,polytime,ComputableTidilyInPolyTime,True,7470,4009,3464,True,funprop,8924
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/PolyTime.lean,373,polytime,ComputableTidilyInPolyTime,True,7471,4009,3465,True,funprop,8912
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Distributional.lean,365,polytime,ComputableInPolyTime,True,4122,3740,384,True,funprop,289
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Distributional.lean,409,polytime,ComputableInPolyTime,True,4117,3740,401,True,funprop,295
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Distributional.lean,353,polytime,ComputableInPolyTime,True,4168,6236,430,True,funprop,297
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Distributional.lean,398,polytime,ComputableInPolyTime,True,4790,3741,1053,True,funprop,527
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Distributional.lean,383,polytime,ComputableInPolyTime,True,4806,3741,1072,True,funprop,530
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Reduction.lean,356,polytime,ComputableInPolyTime,True,3941,3743,227,True,funprop,305
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Reduction.lean,372,polytime,ComputableInPolyTime,True,3932,3742,193,True,funprop,299
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Reduction.lean,317,polytime,ComputableInPolyTime,True,5254,6237,1516,True,funprop,746
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Reduction.lean,337,polytime,ComputableInPolyTime,True,5236,3742,1497,True,funprop,744
+CslibFrontier/Computability/Complexity/Classes/AverageCase/BoundedHalting.lean,492,polytime,ComputableInPolyTime,True,5695,3858,1860,True,funprop,1723
+CslibFrontier/Computability/Complexity/Classes/AverageCase/BoundedHalting.lean,467,polytime,ComputableInPolyTime,True,10163,6385,6309,True,funprop,6218
+CslibFrontier/Computability/Complexity/Classes/AverageCase/BoundedHalting.lean,448,polytime,ComputableInPolyTime,True,14994,3858,11139,True,funprop,9949
+CslibFrontier/Computability/Complexity/Classes/AverageCase/BoundedHalting.lean,495,polytime,ComputableInPolyTime,True,21011,3858,17157,False,"fun_prop failed, maximum number(64) of steps exceeded",16972
+CslibFrontier/Computability/PCP/Encoded/Constraints.lean,280,polytime,ComputableInPolyTime,True,1381,3141,299,True,funprop,170
+CslibFrontier/Computability/PCP/Encoded/Constraints.lean,310,polytime,ComputableInPolyTime,True,1437,1111,329,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `ComputableInPolyTime (fun p2p3p4 => p2p3p4.1.1 p2p3p4.2.1 p2p3p4.2.2) ?encMid encBool`, |  No theorems found fo",213
+CslibFrontier/Crypto/Computational/GoldwasserMicali.lean,1067,polytime,ComputableTidilyInPolyTime,True,5089,6857,1212,True,funprop,755
+CslibFrontier/Crypto/Computational/GoldwasserMicali.lean,1068,ppt,IsPPTOn,True,43436,3902,39539,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  No theorems found for `Cslib.Crypto.Encryption.AdversaryOf.choose",383
+CslibFrontier/Crypto/Computational/HashAndSign.lean,346,ppt,IsPPTOn,True,15798,6460,11887,True,funprop,439
+CslibFrontier/Crypto/Computational/HashAndSign.lean,357,ppt,IsPPTOn,True,4855,3932,926,True,funprop,402
+CslibFrontier/Crypto/Computational/HashAndSign.lean,368,polytime,ComputableInPolyTime,True,7161,3934,3237,True,funprop,403
+CslibFrontier/Crypto/Computational/HashAndSign.lean,403,polytime,ComputableInPolyTime,True,5060,3935,1126,True,funprop,503
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,347,polytime,ComputableInPolyTime,True,4304,3893,435,True,funprop,317
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,309,polytime,ComputableInPolyTime,True,4446,6430,558,True,funprop,321
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,347,polytime,ComputableInPolyTime,True,4293,3893,404,True,funprop,309
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,309,polytime,ComputableInPolyTime,True,4446,3896,554,True,funprop,321
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,309,polytime,ComputableInPolyTime,True,4323,3895,431,True,funprop,316
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,347,polytime,ComputableInPolyTime,True,4416,3892,526,True,funprop,319
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,347,polytime,ComputableInPolyTime,True,4306,3893,415,True,funprop,314
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,311,ppt,IsPPTOn,True,4424,3895,532,True,named,657
+CslibFrontier/Crypto/Computational/GGM/Reduction.lean,349,ppt,IsPPT,True,5238,3892,1349,True,funprop,688
+CslibFrontierTests/ComputationalCrypto.lean,201,ppt,IsPPT,True,1332,4408,593,True,named,411
+CslibFrontierTests/ComputationalCrypto.lean,203,ppt,IsPPT,True,1507,759,749,True,named,612
+CslibFrontierTests/ComputationalCrypto.lean,209,ppt,IsPPT,True,37214,759,36454,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  No theorems found for `adversary` in order to prove `IsPPTOn ?mid",778
+CslibFrontierTests/ComputationalCrypto.lean,212,ppt,IsPPT,True,1867,759,1109,True,named,1114
+CslibFrontierTests/ComputationalCrypto.lean,221,ppt,IsPPT,True,1892,759,1134,False,no compositional plain certificate: [No theorems found for `adversary` in order to prove `IsPPTOn (encPair encUnary encBits) encBits fun input => adversary input.1 input.2`],798
+CslibFrontierTests/ComputationalCrypto.lean,233,ppt,IsPPT,True,1453,759,695,True,funprop,436
+CslibFrontierTests/ComputationalCrypto.lean,242,ppt,IsPPT,True,1257,760,499,True,named,7
+CslibFrontierTests/ComputationalCrypto.lean,247,ppt,IsPPT,True,1359,760,601,True,funprop,466
+CslibFrontierTests/ComputationalCrypto.lean,263,ppt,IsPPT,True,1352,760,595,False,"fun_prop failed, maximum number(64) of steps exceeded",18844
+CslibFrontierTests/ComputationalCrypto.lean,267,ppt,IsPPT,True,1356,760,600,True,named,15
+CslibFrontierTests/ComputationalCrypto.lean,273,ppt,IsPPT,False,1438,760,681,False,no compositional plain certificate: [Failed to prove necessary assumption `1 = 0` when applying theorem `_private._stdin.0.CslibFrontierTests.ComputationalCrypto.guardedIdentity_ppt._pptOn._@._stdin.3,434
+CslibFrontierTests/ComputationalCrypto.lean,279,ppt,IsPPT,True,1492,760,733,True,named,524
+CslibFrontierTests/ComputationalCrypto.lean,302,ppt,IsPPT,True,1333,760,574,True,named,409
+CslibFrontierTests/ComputationalCrypto.lean,351,ppt,IsPPT,True,1683,761,923,True,named,452
+CslibFrontierTests/ComputationalCrypto.lean,381,ppt,IsPPT,True,1373,761,614,True,named,415
+CslibFrontierTests/AdaptivePPT.lean,222,ppt,IsPPTOn,True,1210,735,496,True,named,5
+CslibFrontierTests/AdaptivePPT.lean,211,ppt,IsPPTOn,True,1409,4380,677,True,funprop,478
+CslibFrontierTests/AdaptivePPT.lean,230,ppt,IsPPTOn,True,1474,735,743,True,named,1029
+CslibFrontierTests/AdaptivePPT.lean,236,ppt,IsPPTOn,True,8179,734,7458,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun n3 => OracleComp.iterate n3 grow []`, |  No theorems found for `Csl",422
+CslibFrontierTests/AdaptivePPT.lean,242,ppt,IsPPTOn,False,4417,734,3685,False,no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encUnary fun n3n5 => OracleComp.iterate n3n5.1 (fun state => pure (2 * state)) ,425
+CslibFrontierTests/AdaptivePPT.lean,250,ppt,IsPPTOn,False,5914,734,5182,False,no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn encUnary encUnary fun n => |    OracleComp.iterate n |      (fun state => do,415
+CslibFrontierTests/AdaptivePPT.lean,262,ppt,IsPPTOn,False,4403,734,3670,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun n3n4 => OracleComp.iterate n3n4.1 n3n4.2 []`, |  No theorems found ",428
+CslibFrontierTests/AdaptivePPT.lean,283,ppt,IsPPTOn,True,1809,734,1078,True,funprop,414
+CslibFrontierTests/AdaptivePPT.lean,310,polytime,ComputableInPolyTime,True,2430,734,1700,True,funprop,1298
+CslibFrontierTests/AdaptivePPT.lean,321,ppt,IsPPTOn,True,2764,735,2031,True,funprop,726
+CslibFrontierTests/AdaptivePPT.lean,344,ppt,IsPPTOn,True,1273,734,540,True,named,403
+CslibFrontierTests/AdaptivePPT.lean,369,ppt,IsPPTOn,True,1529,734,797,True,funprop,502
+CslibFrontierTests/AdaptivePPT.lean,387,ppt,IsPPTOn,True,1448,734,716,True,funprop,448
+CslibFrontierTests/OraclePPTTactic.lean,187,ppt,IsOraclePPTOn,False,1302,4578,427,False,front: oracle goal (today's path is already fun_prop),1
+CslibFrontierTests/OraclePPTTactic.lean,188,ppt,IsOraclePPTOn,True,1583,884,704,False,front: oracle goal (today's path is already fun_prop),0
+CslibFrontierTests/OraclePPTTactic.lean,194,ppt,IsOraclePPTOn,False,4773,884,3896,False,front: oracle goal (today's path is already fun_prop),2
+CslibFrontierTests/OraclePPTTactic.lean,204,ppt,IsOraclePPTOn,True,1622,884,742,False,front: oracle goal (today's path is already fun_prop),0
+CslibFrontierTests/OraclePPTTactic.lean,210,ppt,IsOraclePPT,True,1339,883,459,False,"front: unsupported side goal Cslib.Probability.IsOraclePPT Turing.MultiTapeTM.encBits fun n word => |   List.take n <$> Cslib.ProbOracleComp.query ((), word)",39
+CslibFrontierTests/OraclePPTTactic.lean,219,ppt,IsOraclePPTOn,True,1336,884,457,False,front: oracle goal (today's path is already fun_prop),2
+CslibFrontierTests/OraclePPTTactic.lean,233,ppt,IsOraclePPTOn,True,2173,883,1293,False,front: oracle goal (today's path is already fun_prop),6
+CslibFrontierTests/OraclePPTTactic.lean,247,ppt,IsOraclePPTOn,True,1305,883,424,False,front: oracle goal (today's path is already fun_prop),2
+CslibFrontierTests/OraclePPTTactic.lean,254,polytime,ComputableInPolyTime,True,1726,884,865,True,funprop,460
+CslibFrontierTests/OraclePPTTactic.lean,260,polytime,ComputableInPolyTime,True,1518,884,638,False,no compositional plain certificate: [No theorems found for `_private._stdin.0.CslibFrontierTests.OraclePPTTactic.evenLength` in order to prove `ComputableInPolyTime (fun word => evenLength word) encBi,423
+CslibFrontierTests/OraclePPTTactic.lean,264,polytime,ComputableInPolyTime,False,0,884,1,True,funprop,512
+CslibFrontierTests/OraclePPTTactic.lean,265,polytime,ComputableInPolyTime,True,1474,883,592,True,funprop,512
+CslibFrontierTests/GuideFilterPolyTime.lean,188,polytime,ComputableInPolyTime,True,6422,3120,5360,True,funprop,5242
+CslibFrontierTests/GuideFilterPolyTime.lean,194,polytime,ComputableInPolyTime,True,6394,1085,5312,True,funprop,5206
+CslibFrontierTests/GuideFilterPolyTime.lean,204,polytime,ComputableInPolyTime,True,1527,1085,444,True,funprop,346
+CslibFrontierTests/GuideFilterPolyTime.lean,209,polytime,ComputableInPolyTime,True,6811,1085,5727,True,funprop,5636
+CslibFrontierTests/GuideFilterPolyTime.lean,217,polytime,ComputableInPolyTime,True,1718,1086,636,True,funprop,538
+CslibFrontierTests/GuideFilterPolyTime.lean,226,polytime,ComputableInPolyTime,False,2116,1085,1037,False,no compositional plain certificate: [No theorems found for `_right` in order to prove `ComputableInPolyTime (fun a => _right a) input encNat`],846
+CslibFrontierTests/GuideFilterPolyTime.lean,235,polytime,ComputableInPolyTime,False,2089,1086,1005,False,"no compositional plain certificate: [No theorems found for `_left` in order to prove `ComputableInPolyTime (fun a => _left a) input encNat`, |  No theorems found for `_left` in order to prove `Computa",818
+CslibFrontierTests/AutomationCloudPremises.lean,195,polytime,ComputableInPolyTime,False,11733,4475,9649,False,"fun_prop failed, maximum number(64) of steps exceeded",2562
+CslibFrontierTests/AutomationCloudPremises.lean,210,polytime,ComputableInPolyTime,False,4410,2112,2300,False,"fun_prop failed, maximum number(64) of steps exceeded",599
+CslibFrontierTests/AutomationCloudPremises.lean,225,polytime,ComputableInPolyTime,False,5851,2112,3740,False,"fun_prop failed, maximum number(64) of steps exceeded",701
+CslibFrontierTests/Crypto/MAC.lean,196,ppt,IsPPTOn,True,1381,4548,543,True,named,421
+CslibFrontierTests/Crypto/MAC.lean,197,ppt,IsPPTOn,True,1376,859,519,True,named,422
+CslibFrontierTests/Crypto/MAC.lean,198,polytime,ComputableInPolyTime,True,1353,859,500,True,funprop,414
+CslibFrontierTests/Crypto/MAC.lean,286,ppt,IsPPTOn,True,1381,858,524,True,named,417
+CslibFrontierTests/Crypto/MAC.lean,254,polytime,ComputableInPolyTime,True,1842,859,987,True,funprop,439
+CslibFrontierTests/Crypto/MAC.lean,287,ppt,IsPPTOn,True,1395,859,539,True,named,419
+CslibFrontierTests/Crypto/MAC.lean,288,polytime,ComputableInPolyTime,True,1456,858,600,True,funprop,503
+CslibFrontierTests/Crypto/MAC.lean,307,polytime,ComputableTidilyInPolyTime,True,966,858,111,True,funprop,25
+CslibFrontierTests/Crypto/MAC.lean,440,polytime,ComputableInPolyTime,True,1562,858,706,True,funprop,628
+CslibFrontierTests/Crypto/MAC.lean,307,polytime,ComputableTidilyInPolyTime,True,953,859,96,True,funprop,16
+CslibFrontierTests/Crypto/MAC.lean,309,polytime,ComputableTidilyInPolyTime,True,1275,858,419,True,funprop,116
+CslibFrontierTests/FiniteControl.lean,185,polytime,ComputableInPolyTime,True,2684,4375,1979,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `ComputableInPolyTime (fun pair2pair3 => pair2pair3.1.1 pair2pair3.2) ?encMid encBits`, |  No theorems found for",455
+CslibFrontierTests/FiniteControl.lean,194,polytime,ComputableInPolyTime,False,2274,733,1546,False,"no compositional plain certificate: [No theorems found for `values` in order to prove `ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc`, |  No theorems found for `values` in order ",436
+CslibFrontierTests/FiniteControl.lean,195,polytime,ComputableInPolyTime,False,2343,732,1613,False,"no compositional plain certificate: [No theorems found for `values` in order to prove `ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc`, |  No theorems found for `index` in order t",435
+CslibFrontierTests/FiniteControl.lean,196,polytime,ComputableInPolyTime,True,1454,732,724,False,"no compositional plain certificate: [No theorems found for `values` in order to prove `ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc`, |  No theorems found for `values` in order ",437
+CslibFrontierTests/FiniteControl.lean,205,polytime,ComputableInPolyTime,True,1493,733,762,False,"no compositional plain certificate: [Failed to infer `(?enc₁ : α × (Index → Value) ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.id'`., |  No theorems found for `Prod.sn",515
+CslibFrontierTests/FiniteControl.lean,213,ppt,IsPPTOn,True,1981,733,1252,False,"no compositional plain certificate: [No theorems found for `values` in order to prove `ComputableInPolyTime (fun a0a1 => values a0a1.1 a0a1.2) ?encMid enc`, |  No theorems found for `values` in order ",872
+CslibFrontierTests/FiniteControl.lean,218,polytime,ComputableInPolyTime,True,2691,732,1961,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `ComputableInPolyTime (fun pair2pair3 => pair2pair3.1.1 pair2pair3.2) ?encMid encBits`, |  No theorems found for",451
+CslibFrontierTests/FiniteControl.lean,239,polytime,ComputableInPolyTime,True,6952,732,6221,False,"fun_prop failed, maximum number(64) of steps exceeded",1432
+CslibFrontierTests/FiniteControl.lean,247,polytime,ComputableInPolyTime,True,7878,732,7148,False,"fun_prop failed, maximum number(64) of steps exceeded",836
+CslibFrontierTests/FiniteControl.lean,259,polytime,ComputableInPolyTime,False,2006,733,1276,False,"no compositional plain certificate: [Failed to infer `(?enc₂ : Index × List Value ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.fst'`., |  Failed to infer `(?encB : Inde",892
+CslibFrontierTests/FiniteControl.lean,260,polytime,ComputableInPolyTime,False,3368,733,2637,False,"no compositional plain certificate: [Failed to infer `(?enc₂ : Index × List Value ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.fst'`., |  Failed to infer `(?encB : Inde",903
+CslibFrontierTests/FiniteControl.lean,264,polytime,ComputableInPolyTime,False,2110,733,1379,False,"no compositional plain certificate: [Failed to infer `(?enc₂ : Index × List Value ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.fst'`., |  Failed to infer `(?encB : Inde",915
+CslibFrontierTests/FiniteControl.lean,265,polytime,ComputableInPolyTime,True,3461,733,2730,False,"no compositional plain certificate: [Failed to infer `(?enc₂ : Index × List Value ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.fst'`., |  Failed to infer `(?encB : Inde",1873
+CslibFrontierTests/FiniteControl.lean,284,ppt,IsPPTOn,True,1343,732,613,True,funprop,462
+CslibFrontierTests/FiniteControl.lean,284,ppt,IsPPTOn,True,1341,732,612,True,funprop,462
+CslibFrontierTests/FiniteControl.lean,311,ppt,IsPPTOn,True,1777,731,1047,True,funprop,537
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,300,polytime,ComputableInPolyTime,True,9070,6252,5340,True,funprop,584
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,303,polytime,ComputableInPolyTime,True,9208,3756,5455,True,funprop,582
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,304,polytime,ComputableInPolyTime,True,5538,3756,1784,True,funprop,298
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,305,polytime,ComputableInPolyTime,True,7986,3756,4235,True,funprop,301
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,306,polytime,ComputableInPolyTime,True,5566,3756,1812,True,funprop,303
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,311,polytime,ComputableInPolyTime,True,8034,3756,4286,True,funprop,1417
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,315,polytime,ComputableInPolyTime,True,8052,3758,4297,True,funprop,1416
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,323,polytime,ComputableInPolyTime,True,8098,3756,4341,True,funprop,1424
+CslibFrontier/Computability/Complexity/Classes/AverageCase/Compression.lean,325,polytime,ComputableInPolyTime,True,8210,3756,4458,True,funprop,1427
+CslibFrontierTests/PolyTimeContracts.lean,214,polytime,ComputableTidilyInPolyTime,True,859,3176,486,True,funprop,20
+CslibFrontierTests/PolyTimeContracts.lean,230,polytime,ComputableTidilyInPolyTime,False,1758,396,1373,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime |   (fun x => |     let entries := values x;,371
+CslibFrontierTests/PolyTimeContracts.lean,231,polytime,ComputableTidilyInPolyTime,False,1945,397,1552,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime |   (fun x => |     let entries := values x;,750
+CslibFrontierTests/PolyTimeContracts.lean,232,polytime,ComputableTidilyInPolyTime,True,563,397,168,True,funprop,393
+CslibFrontierTests/PolyTimeContracts.lean,240,polytime,ComputableTidilyInPolyTime,True,531,397,138,True,funprop,45
+CslibFrontierTests/PolyTimeContracts.lean,245,polytime,ComputableTidilyInPolyTime,True,10742,396,10348,True,funprop,10257
+CslibFrontierTests/PolyTimeContracts.lean,249,polytime,ComputableTidilyInPolyTime,True,622,396,228,True,funprop,137
+CslibFrontierTests/PolyTimeContracts.lean,253,polytime,ComputableTidilyInPolyTime,True,7886,396,7492,True,funprop,7399
+CslibFrontierTests/PolyTimeContracts.lean,257,polytime,ComputableTidilyInPolyTime,True,546,397,151,True,funprop,60
+CslibFrontierTests/PolyTimeContracts.lean,265,polytime,ComputableTidilyInPolyTime,False,2922,396,2527,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => (List.range word.length).all (test word)) encBits encBool` |  | Issues:,331
+CslibFrontierTests/PolyTimeContracts.lean,313,polytime,ComputableTidilyInPolyTime,True,544,397,150,True,funprop,47
+CslibFrontierTests/PolyTimeContracts.lean,295,polytime,ComputableTidilyInPolyTime,True,500,397,105,True,funprop,13
+CslibFrontierTests/PolyTimeContracts.lean,346,polytime,ComputableTidilyInPolyTime,True,551,396,157,True,funprop,64
+CslibFrontierTests/PolyTimeContracts.lean,295,polytime,ComputableTidilyInPolyTime,True,486,396,91,True,funprop,15
+CslibFrontierTests/PolyTimeContracts.lean,295,polytime,ComputableTidilyInPolyTime,True,481,397,88,True,funprop,9
+CslibFrontierTests/PolyTimeContracts.lean,295,polytime,ComputableTidilyInPolyTime,True,502,396,108,True,funprop,22
+CslibFrontierTests/PolyTimeContracts.lean,301,polytime,ComputableTidilyInPolyTime,True,1200,396,806,True,funprop,715
+CslibFrontierTests/PolyTimeContracts.lean,382,polytime,ComputableTidilyInPolyTime,False,6352,396,5962,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => (List.foldl step [] word).reverse) encBits encBits` |  | Issues:,253
+CslibFrontierTests/PolyTimeContracts.lean,383,polytime,ComputableTidilyInPolyTime,False,3402,396,3008,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => (List.foldl step [] word).reverse) encBits encBits` |  | Issues:,254
+CslibFrontierTests/PolyTimeContracts.lean,384,polytime,ComputableTidilyInPolyTime,True,5992,397,5598,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => (List.foldl step [] word).reverse) encBits encBits` |  | Issues:,256
+CslibFrontierTests/PolyTimeContracts.lean,395,polytime,ComputableTidilyInPolyTime,True,4670,397,4275,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime |   (fun list => |     let accumulated := List.foldl step [] list;,67
+CslibFrontierTests/PolyTimeContracts.lean,401,polytime,ComputableTidilyInPolyTime,True,474,396,81,True,funprop,9
+CslibFrontierTests/PolyTimeContracts.lean,401,polytime,ComputableTidilyInPolyTime,True,477,396,83,True,funprop,10
+CslibFrontierTests/PolyTimeContracts.lean,401,polytime,ComputableTidilyInPolyTime,True,1034,396,640,True,funprop,463
+CslibFrontierTests/PolyTimeContracts.lean,414,polytime,ComputableTidilyInPolyTime,False,64185,397,63801,False,"fun_prop failed, maximum number(64) of steps exceeded",1365
+CslibFrontierTests/PolyTimeContracts.lean,437,polytime,ComputableTidilyInPolyTime,False,6133,397,5743,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,91
+CslibFrontierTests/PolyTimeContracts.lean,438,polytime,ComputableTidilyInPolyTime,False,6328,397,5932,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,92
+CslibFrontierTests/PolyTimeContracts.lean,439,polytime,ComputableTidilyInPolyTime,False,24973,397,24595,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,71
+CslibFrontierTests/PolyTimeContracts.lean,440,polytime,ComputableTidilyInPolyTime,False,4109,398,3716,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,93
+CslibFrontierTests/PolyTimeContracts.lean,441,polytime,ComputableTidilyInPolyTime,False,3429,397,3032,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,92
+CslibFrontierTests/PolyTimeContracts.lean,442,polytime,ComputableTidilyInPolyTime,False,32764,397,32416,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,93
+CslibFrontierTests/PolyTimeContracts.lean,462,polytime,ComputableTidilyInPolyTime,True,9978,398,9583,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime |   (fun x => |     let entries := list x;,329
+CslibFrontierTests/PolyTimeContracts.lean,466,polytime,ComputableTidilyInPolyTime,True,17333,399,16941,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,109
+CslibFrontierTests/PolyTimeContracts.lean,487,polytime,ComputableTidilyInPolyTime,True,26983,398,26591,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,190
+CslibFrontierTests/PolyTimeContracts.lean,497,polytime,ComputableTidilyInPolyTime,True,27009,397,26589,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (fun state value => step x state value) (initial x) (list x)) input |   stateEncoding` | ,194
+CslibFrontierTests/PolyTimeContracts.lean,505,polytime,ComputableTidilyInPolyTime,True,38765,398,38341,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime |   (fun x => |     let entries := list x;,566
+CslibFrontierTests/PolyTimeContracts.lean,514,polytime,ComputableTidilyInPolyTime,True,38725,398,38319,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (step x) (initial x) (list x)) input stateEncoding` |  | Issues:,191
+CslibFrontierTests/PolyTimeContracts.lean,521,polytime,ComputableTidilyInPolyTime,True,12186,398,11786,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => List.foldl (fun state value => step x state value) (initial x) (list x)) input |   stateEncoding` | ,194
+CslibFrontierTests/PolyTimeContracts.lean,532,polytime,ComputableTidilyInPolyTime,True,12177,398,11787,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime |   (fun x => |     let entries := list x;,566
+CslibFrontierTests/PolyTimeContracts.lean,550,polytime,ComputableTidilyInPolyTime,True,25448,396,25048,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => List.foldl (fun state bit => p.1 ++ bit :: state) [] p.2) (encPair encBits encBits) |   encBits` | ,10211
+CslibFrontierTests/PolyTimeContracts.lean,560,polytime,ComputableTidilyInPolyTime,True,25686,397,25297,False,"fun_prop failed, maximum number(64) of steps exceeded",1515
+CslibFrontierTests/PolyTimeContracts.lean,581,polytime,ComputableTidilyInPolyTime,False,3650,397,3258,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => (step x)^[count x] (initial x)) input stateEncoding` |  | Issues:,88
+CslibFrontierTests/PolyTimeContracts.lean,582,polytime,ComputableTidilyInPolyTime,False,3517,397,3121,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => (step x)^[count x] (initial x)) input stateEncoding` |  | Issues:,88
+CslibFrontierTests/PolyTimeContracts.lean,583,polytime,ComputableTidilyInPolyTime,False,3212,397,2816,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => (step x)^[count x] (initial x)) input stateEncoding` |  | Issues:,64
+CslibFrontierTests/PolyTimeContracts.lean,584,polytime,ComputableTidilyInPolyTime,False,3088,396,2696,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => (step x)^[count x] (initial x)) input stateEncoding` |  | Issues:,89
+CslibFrontierTests/PolyTimeContracts.lean,585,polytime,ComputableTidilyInPolyTime,False,2729,396,2334,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => (step x)^[count x] (initial x)) input stateEncoding` |  | Issues:,89
+CslibFrontierTests/PolyTimeContracts.lean,586,polytime,ComputableTidilyInPolyTime,True,3625,396,3231,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => (step x)^[count x] (initial x)) input stateEncoding` |  | Issues:,90
+CslibFrontierTests/PolyTimeContracts.lean,599,polytime,ComputableTidilyInPolyTime,True,5859,398,5459,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime |   (fun x => |     let update := fun state => step x state;,178
+CslibFrontierTests/PolyTimeContracts.lean,603,polytime,ComputableTidilyInPolyTime,True,4729,397,4335,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun x => (step x)^[count x] (initial x)) input stateEncoding` |  | Issues:,96
+CslibFrontierTests/PolyTimeContracts.lean,613,polytime,ComputableTidilyInPolyTime,True,972,396,577,True,funprop,492
+CslibFrontierTests/PolyTimeContracts.lean,618,polytime,ComputableTidilyInPolyTime,True,8843,396,8442,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => (fun rows => p.1 :: rows)^[p.2] []) (encPair encBits encUnary) (encList encBits)` |  | Issues:,156
+CslibFrontierTests/PPTTactic.lean,181,ppt,IsPPTOn,True,1534,4379,820,True,funprop,526
+CslibFrontierTests/PPTTactic.lean,187,ppt,IsPPTOn,True,1573,736,839,False,"no compositional plain certificate: [No theorems found for `Cslib.ProbComp.uniform` in order to prove `IsPPTOn ?middle encBool fun a => ProbComp.uniform Bool`, |  Failed to infer `(?middle : (Bool → P",628
+CslibFrontierTests/PPTTactic.lean,203,ppt,IsPPTOn,True,6871,737,6150,False,"no compositional plain certificate: [Failed to infer `(?enc₂ : List α ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.fst'`., |  Failed to infer `(?encB : List α ↪ List Bo",1443
+CslibFrontierTests/PPTTactic.lean,212,ppt,IsPPTOn,True,1516,736,781,True,funprop,518
+CslibFrontierTests/PPTTactic.lean,220,ppt,IsPPTOn,False,66500,736,65769,False,"fun_prop failed, maximum number(64) of steps exceeded",1218
+CslibFrontierTests/PPTTactic.lean,228,ppt,IsPPTOn,True,1389,736,655,True,funprop,556
+CslibFrontierTests/PPTTactic.lean,239,ppt,IsPPTOn,False,25932,736,25198,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  No theorems found for `test` in order to prove `IsPPTOn ?middle e",490
+CslibFrontierTests/PPTTactic.lean,240,ppt,IsPPTOn,True,7142,736,6408,False,no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`],495
+CslibFrontierTests/PPTTactic.lean,249,ppt,IsPPTOn,True,3868,736,3134,False,no compositional plain certificate: [],427
+CslibFrontierTests/PPTTactic.lean,258,ppt,IsPPTOn,True,1920,736,1185,False,no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`],457
+CslibFrontierTests/PPTTactic.lean,264,ppt,IsPPTOn,True,1242,735,507,True,funprop,411
+CslibFrontierTests/PPTTactic.lean,276,ppt,IsPPTOn,True,5484,736,4753,False,"no compositional plain certificate: [missing identity rule to prove `IsPPTOn ?middle✝ ?left fun a => a`, |  missing identity rule to prove `IsPPTOn ?middle✝ ?middle fun a => a`, |  Failed to prove nec",1381
+CslibFrontierTests/PPTTactic.lean,283,ppt,IsPPTOn,True,4810,736,4075,False,"no compositional plain certificate: [missing identity rule to prove `IsPPTOn ?middle✝ ?left fun a => a`, |  missing identity rule to prove `IsPPTOn ?middle✝ ?middle fun a => a`, |  Failed to prove nec",706
+CslibFrontierTests/PPTTactic.lean,289,ppt,IsPPTOn,True,5336,736,4602,False,"no compositional plain certificate: [missing identity rule to prove `IsPPTOn ?middle✝ ?left fun a => a`, |  missing identity rule to prove `IsPPTOn ?middle✝ ?middle fun a => a`, |  Failed to prove nec",1362
+CslibFrontierTests/PPTTactic.lean,295,ppt,IsPPTOn,True,4662,736,3928,False,"no compositional plain certificate: [missing identity rule to prove `IsPPTOn ?middle✝ ?left fun a => a`, |  missing identity rule to prove `IsPPTOn ?middle✝ ?middle fun a => a`, |  Failed to prove nec",686
+CslibFrontierTests/PPTTactic.lean,307,ppt,IsPPTOn,True,2378,736,1643,False,no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`],646
+CslibFrontierTests/PPTTactic.lean,317,ppt,IsPPTOn,True,2357,737,1621,False,no compositional plain certificate: [No theorems found for `Prod.snd` in order to prove `IsPPTOn ?middle ?left fun self => self.2`],610
+CslibFrontierTests/PPTTactic.lean,322,ppt,IsPPTOn,True,1649,736,914,True,funprop,782
+CslibFrontierTests/PPTTactic.lean,327,ppt,IsPPTOn,True,1784,736,1050,True,funprop,917
+CslibFrontierTests/PPTTactic.lean,336,ppt,IsPPTOn,True,1401,735,667,True,funprop,437
+CslibFrontierTests/PPTTactic.lean,345,ppt,IsPPTOn,True,1410,735,677,True,funprop,475
+CslibFrontierTests/PPTTactic.lean,349,ppt,IsPPTOn,True,1210,735,476,True,named,5
+CslibFrontierTests/PPTTactic.lean,355,ppt,IsPPTOn,True,1671,736,937,True,funprop,807
+CslibFrontierTests/PPTTactic.lean,377,ppt,IsPPTOn,True,1214,736,478,True,named,29
+CslibFrontierTests/PPTTactic.lean,417,ppt,IsPPTOn,True,3143,744,2400,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  Failed to prove necessary assumption `True` when applying theorem",479
+CslibFrontierTests/PPTTactic.lean,430,ppt,IsPPTOn,True,4420,745,3674,False,"no compositional plain certificate: [Failed to infer `(?enc₂ : β ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.fst'`., |  Failed to infer `(?encB : β ↪ List Bool)` when ",1440
+CslibFrontierTests/PPTTactic.lean,434,ppt,IsPPTOn,False,1248,744,506,False,no compositional plain certificate: [No theorems found for `_sample` in order to prove `IsPPTOn encBits encBool fun a => _sample a`],404
+CslibFrontierTests/PPTTactic.lean,436,ppt,IsPPTOn,False,1337,744,595,False,no compositional plain certificate: [No theorems found for `Cslib.ProbComp.uniform` in order to prove `IsPPTOn encBits (Fin.valEmbedding.trans encNat) fun x => ProbComp.uniform (Fin 3)`],482
+CslibFrontierTests/PPTPlainSource.lean,236,ppt,IsPPTOn,True,4617,6377,789,True,funprop,638
+CslibFrontierTests/PPTPlainSource.lean,236,ppt,IsPPTOn,True,4987,3850,1139,True,funprop,1013
+CslibFrontierTests/PPTPlainSource.lean,237,ppt,IsPPTOn,False,4817,3850,975,False,no compositional plain certificate: [No theorems found for `callback` in order to prove `ComputableInPolyTime (fun a => callback a) encBits encBits`],610
+CslibFrontierTests/PPTPlainSource.lean,238,ppt,IsPPTOn,True,4266,3850,417,True,named,14
+CslibFrontierTests/PPTPlainSource.lean,239,ppt,IsPPTOn,False,4826,3851,977,False,no compositional plain certificate: [No theorems found for `callback` in order to prove `ComputableInPolyTime (fun a => callback a) encBits encBits`],610
+CslibFrontierTests/PPTPlainSource.lean,240,ppt,IsPPTOn,True,4266,3850,417,True,named,14
+CslibFrontierTests/PPTPlainSource.lean,306,ppt,IsPPTOn,True,4241,3850,394,True,named,7
+CslibFrontierTests/PPTPlainSource.lean,307,ppt,IsPPTOn,True,4231,3850,382,True,named,301
+CslibFrontierTests/PPTPlainSource.lean,308,ppt,IsPPTOn,False,4630,3850,783,False,no compositional plain certificate: [No theorems found for `CslibFrontierTests.PPTPlainSource.rawOnlyReverse` in order to prove `ComputableInPolyTime (fun word => rawOnlyReverse word) encBits encBits`,616
+CslibFrontierTests/PPTPlainSource.lean,310,ppt,IsPPTOn,False,4663,3850,814,False,no compositional plain certificate: [No theorems found for `CslibFrontierTests.PPTPlainSource.rawOnlyReverse` in order to prove `ComputableInPolyTime (fun word => rawOnlyReverse word) encBits encBits`,603
+CslibFrontierTests/PPTPlainSource.lean,312,ppt,IsPPTOn,False,4252,3850,403,False,no compositional plain certificate: [No theorems found for `CslibFrontierTests.PPTPlainSource.aliasPure` in order to prove `IsPPTOn encBits encBits fun word => aliasPure rawOnlyReverse word`],300
+CslibFrontierTests/PPTPlainSource.lean,317,ppt,IsPPTOn,False,4247,3849,400,False,no compositional plain certificate: [No theorems found for `CslibFrontierTests.PPTPlainSource.aliasPure` in order to prove `IsPPTOn encBits encBits fun word => aliasPure rawOnlyReverse word`],299
+CslibFrontierTests/PPTPlainSource.lean,345,ppt,IsPPTOn,False,7025,3852,3177,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",320
+CslibFrontierTests/PPTPlainSource.lean,346,ppt,IsPPTOn,False,6532,3852,2683,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",320
+CslibFrontierTests/PPTPlainSource.lean,347,ppt,IsPPTOn,True,6002,3852,2152,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",321
+CslibFrontierTests/PPTPlainSource.lean,350,ppt,IsPPTOn,False,6539,3853,2688,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",321
+CslibFrontierTests/PPTPlainSource.lean,351,ppt,IsPPTOn,True,10648,3852,6798,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",322
+CslibFrontierTests/PPTPlainSource.lean,354,ppt,IsPPTOn,False,6542,3853,2692,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",321
+CslibFrontierTests/PPTPlainSource.lean,355,ppt,IsPPTOn,True,10657,3852,6806,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",322
+CslibFrontierTests/PPTPlainSource.lean,358,ppt,IsPPTOn,False,6533,3852,2683,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",320
+CslibFrontierTests/PPTPlainSource.lean,380,ppt,IsPPTOn,False,4245,3849,397,False,no compositional plain certificate: [No theorems found for `CslibFrontierTests.PPTPlainSource.implicationResult` in order to prove `IsPPTOn encBits encBits fun word => implicationResult word`],299
+CslibFrontierTests/PPTPlainSource.lean,384,ppt,IsPPTOn,False,4245,3850,397,False,no compositional plain certificate: [No theorems found for `CslibFrontierTests.PPTPlainSource.implicationResult` in order to prove `IsPPTOn encBits encBits fun word => implicationResult word`],299
+CslibFrontierTests/PPTPlainSource.lean,391,ppt,IsPPTOn,False,4322,3850,475,False,no compositional plain certificate: [Failed to prove necessary assumption `RawAliasFull rawOnlyReverse encBits encBits` when applying theorem `h : RawAliasFull rawOnlyReverse encBits encBits → Computa,327
+CslibFrontierTests/PPTPlainSource.lean,407,ppt,IsPPTOn,True,4440,3852,590,True,named,320
+CslibFrontierTests/PPTPlainSource.lean,407,ppt,IsPPTOn,True,4471,3852,621,True,funprop,331
+CslibFrontierTests/PPTPlainSource.lean,407,ppt,IsPPTOn,True,4474,3851,625,True,funprop,331
+CslibFrontierTests/PPTPlainSource.lean,408,ppt,IsPPTOn,False,4384,3851,535,False,no compositional plain certificate: [Failed to prove necessary assumption `RawAliasFull rawOnlyReverse encBits encBits` when applying theorem `h : RawAliasFull rawOnlyReverse encBits encBits → IsPPTOn,344
+CslibFrontierTests/PPTPlainSource.lean,409,ppt,IsPPTOn,True,4000,3852,149,True,funprop,319
+CslibFrontierTests/PPTPlainSource.lean,410,ppt,IsPPTOn,False,4282,3852,432,False,no compositional plain certificate: [No theorems found for `CslibFrontierTests.PPTPlainSource.rawOnlyReverse` in order to prove `ComputableInPolyTime (fun word => rawOnlyReverse word) encBits encBits`,319
+CslibFrontierTests/PPTPlainSource.lean,440,polytime,ComputableInPolyTime,True,4264,3851,416,True,named,673
+CslibFrontierTests/ConditionalDispatch.lean,194,polytime,ComputableInPolyTime,True,4117,6361,295,True,funprop,316
+CslibFrontierTests/ConditionalDispatch.lean,205,polytime,ComputableInPolyTime,True,4137,3848,292,True,funprop,1102
+CslibFrontierTests/ConditionalDispatch.lean,231,polytime,ComputableInPolyTime,True,7461,3853,3610,True,funprop,1969
+CslibFrontierTests/ConditionalDispatch.lean,241,polytime,ComputableInPolyTime,False,6059,3848,2217,False,"no compositional plain certificate: [No theorems found for `_guard` in order to prove `ComputableInPolyTime (fun a => _guard a) input ?encB`, |  No theorems found for `_guard` in order to prove `Compu",1055
+CslibFrontierTests/ConditionalDispatch.lean,257,polytime,ComputableInPolyTime,False,141435,3851,137586,False,no compositional plain certificate: [No theorems found for `_yes` in order to prove `ComputableInPolyTime (fun a => _yes a) input output`],2633
+CslibFrontierTests/ConditionalDispatch.lean,269,polytime,ComputableInPolyTime,True,4081,3848,235,True,funprop,310
+CslibFrontierTests/ConditionalDispatch.lean,281,polytime,ComputableInPolyTime,True,3993,3848,147,True,local0,5
+CslibFrontierTests/ConditionalDispatch.lean,291,polytime,ComputableInPolyTime,True,3992,3849,146,True,local0,5
+CslibFrontierTests/ConditionalDispatch.lean,299,polytime,ComputableInPolyTime,True,4233,3845,391,False,"no compositional plain certificate: [No theorems found for `Bool.false` in order to prove `ComputableInPolyTime (fun x => false) ?encMid✝ ?encB`, |  No theorems found for `Bool.false` in order to prov",1096
+CslibFrontierTests/ConditionalDispatch.lean,310,polytime,ComputableInPolyTime,True,4195,3848,348,True,funprop,1058
+CslibFrontierTests/ConditionalDispatch.lean,334,polytime,ComputableInPolyTime,False,6442,3846,2598,False,no compositional plain certificate: [No theorems found for `_private._stdin.0.ConditionalDispatchTests.rawBranch` in order to prove `ComputableInPolyTime (fun word => rawBranch word) encBits encBits`],635
+CslibFrontierTests/ConditionalDispatch.lean,347,polytime,ComputableInPolyTime,False,6418,3847,2573,False,no compositional plain certificate: [Failed to prove necessary assumption `RawBranchAlias rawBranch encBits encBits` when applying theorem `h : RawBranchAlias rawBranch encBits encBits → ComputableInP,1092
+CslibFrontierTests/ConditionalDispatch.lean,361,polytime,ComputableInPolyTime,True,4358,3847,514,True,funprop,326
+CslibFrontierTests/ConditionalDispatch.lean,385,polytime,ComputableInPolyTime,True,4355,3854,504,True,named,35
+CslibFrontierTests/PPTProgramShapes.lean,189,ppt,IsPPTOn,True,4617,6371,793,True,funprop,700
+CslibFrontierTests/PPTProgramShapes.lean,202,ppt,IsPPTOn,True,6318,3847,2480,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",326
+CslibFrontierTests/PPTProgramShapes.lean,211,ppt,IsPPTOn,True,11351,3848,7509,False,"no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word5 => OracleComp.iterate word3word5.1 step word3word5.2`, |",324
+CslibFrontierTests/PPTProgramShapes.lean,225,ppt,IsPPTOn,True,8927,3848,5083,False,no compositional plain certificate: [No theorems found for `Cslib.OracleComp.iterate` in order to prove `IsPPTOn ?middle encBits fun word3word4word5 => |    OracleComp.iterate word3word4word5.1 word3w,332
+CslibFrontierTests/PPTProgramShapes.lean,235,ppt,IsPPTOn,True,8033,3846,4195,False,"no compositional plain certificate: [missing identity rule to prove `IsPPTOn ?middle✝ ?left fun a => a`, |  missing identity rule to prove `IsPPTOn ?middle✝ ?middle fun a => a`, |  Failed to prove nec",1277
+CslibFrontierTests/PPTProgramShapes.lean,245,ppt,IsPPTOn,True,7359,3846,3514,False,"no compositional plain certificate: [missing identity rule to prove `IsPPTOn ?middle✝ ?left fun a => a`, |  missing identity rule to prove `IsPPTOn ?middle✝ ?middle fun a => a`, |  Failed to prove nec",602
+CslibFrontierTests/PolyTimeTactic.lean,185,polytime,ComputableTidilyInPolyTime,True,747,3179,378,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime f input output` |  | Issues:,23
+CslibFrontierTests/PolyTimeTactic.lean,188,polytime,ComputableTidilyInPolyTime,True,736,396,340,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime f encBool encUnary` |  | Issues:,16
+CslibFrontierTests/PolyTimeTactic.lean,193,polytime,ComputableTidilyInPolyTime,True,765,397,371,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime f (encPair (encFinEnum (Fin 7)) encBool) encUnary` |  | Issues:,22
+CslibFrontierTests/PolyTimeTactic.lean,198,polytime,ComputableTidilyInPolyTime,False,569,396,176,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime _f encUnary encBool` |  | Issues:,16
+CslibFrontierTests/PolyTimeTactic.lean,204,polytime,ComputableTidilyInPolyTime,True,775,396,382,True,funprop,289
+CslibFrontierTests/PolyTimeTactic.lean,210,polytime,ComputableTidilyInPolyTime,False,34485,397,34090,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => g (f word) ++ word) encBits encBits` |  | Issues:,32791
+CslibFrontierTests/PolyTimeTactic.lean,211,polytime,ComputableTidilyInPolyTime,True,576,397,183,True,funprop,98
+CslibFrontierTests/PolyTimeTactic.lean,219,polytime,ComputableTidilyInPolyTime,False,3182,397,2790,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => p.1) (encPair encode encUnary) encBits` |  | Issues:,381
+CslibFrontierTests/PolyTimeTactic.lean,220,polytime,ComputableTidilyInPolyTime,True,2859,397,2464,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => p.1) (encPair encode encUnary) encBits` |  | Issues:,383
+CslibFrontierTests/PolyTimeTactic.lean,227,polytime,ComputableTidilyInPolyTime,False,3030,397,2635,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => p.2) (encPair encUnary encode) encBits` |  | Issues:,298
+CslibFrontierTests/PolyTimeTactic.lean,228,polytime,ComputableTidilyInPolyTime,True,2706,397,2311,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => p.2) (encPair encUnary encode) encBits` |  | Issues:,300
+CslibFrontierTests/PolyTimeTactic.lean,233,polytime,ComputableTidilyInPolyTime,True,556,396,162,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits encBits` |  | Issues:,32
+CslibFrontierTests/PolyTimeTactic.lean,237,polytime,ComputableTidilyInPolyTime,True,731,396,338,True,funprop,190
+CslibFrontierTests/PolyTimeTactic.lean,245,polytime,ComputableTidilyInPolyTime,False,3545,397,3153,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => List.foldl step word word) encBits encBits` |  | Issues:,76
+CslibFrontierTests/PolyTimeTactic.lean,246,polytime,ComputableTidilyInPolyTime,False,1641,397,1247,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => List.foldl step word word) encBits encBits` |  | Issues:,77
+CslibFrontierTests/PolyTimeTactic.lean,247,polytime,ComputableTidilyInPolyTime,True,3868,396,3471,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => List.foldl step word word) encBits encBits` |  | Issues:,78
+CslibFrontierTests/PolyTimeTactic.lean,252,polytime,ComputableTidilyInPolyTime,False,573,396,178,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime _f encBits encBits` |  | Issues:,16
+CslibFrontierTests/PolyTimeTactic.lean,256,polytime,ComputableTidilyInPolyTime,False,1560,397,1166,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => List.foldl (fun current x => current ++ current) [true] word) encBits encBits` |  | Issues:,35
+CslibFrontierTests/PolyTimeTactic.lean,258,polytime,ComputableTidilyInPolyTime,False,2314,396,1921,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun n => 2 ^ n) encUnary encUnary` |  | Issues:,865
+CslibFrontierTests/PolyTimeTactic.lean,268,polytime,ComputableTidilyInPolyTime,True,1106,397,713,True,funprop,145
+CslibFrontierTests/PolyTimeTactic.lean,278,polytime,ComputableTidilyInPolyTime,False,733,397,338,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun input => algorithm input.1 input.2.length (input.2 ++ input.2)) |   (encPair encUnary encBits) encBool` | ,135
+CslibFrontierTests/PolyTimeTactic.lean,279,polytime,ComputableTidilyInPolyTime,True,1245,396,851,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun input => algorithm input.1 input.2.length (input.2 ++ input.2)) |   (encPair encUnary encBits) encBool` | ,131
+CslibFrontierTests/PolyTimeTactic.lean,287,polytime,ComputableTidilyInPolyTime,True,616,396,221,True,funprop,21
+CslibFrontierTests/PolyTimeTactic.lean,294,polytime,ComputableTidilyInPolyTime,False,34497,397,34104,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => f word.reverse ++ g word.reverse) encBits encBits` |  | Issues:,32887
+CslibFrontierTests/PolyTimeTactic.lean,295,polytime,ComputableTidilyInPolyTime,True,610,397,216,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => f word.reverse ++ g word.reverse) encBits encBits` |  | Issues:,32932
+CslibFrontierTests/PolyTimeTactic.lean,301,polytime,ComputableTidilyInPolyTime,True,653,397,258,True,funprop,31
+CslibFrontierTests/PolyTimeTactic.lean,306,polytime,ComputableTidilyInPolyTime,True,599,396,205,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => f word.reverse :: g word.reverse) encBits encBits` |  | Issues:,566
+CslibFrontierTests/PolyTimeTactic.lean,312,polytime,ComputableTidilyInPolyTime,True,586,396,193,True,funprop,50
+CslibFrontierTests/PolyTimeTactic.lean,317,polytime,ComputableTidilyInPolyTime,True,599,396,204,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun p => step^[p.2.length] p.2) (encPair encBool encBits) encBits` |  | Issues:,64
+CslibFrontierTests/PolyTimeTactic.lean,325,polytime,ComputableTidilyInPolyTime,True,1639,397,1245,True,funprop,146
+CslibFrontierTests/PolyTimeTactic.lean,330,polytime,ComputableTidilyInPolyTime,True,1422,396,1028,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun n => (fun word => false :: word)^[n] []) encUnary encBits` |  | Issues:,26
+CslibFrontierTests/PolyTimeTactic.lean,337,polytime,ComputableTidilyInPolyTime,True,599,396,205,True,funprop,129
+CslibFrontierTests/PolyTimeTactic.lean,407,polytime,ComputableTidilyInPolyTime,True,475,397,81,True,named,4
+CslibFrontierTests/PolyTimeTactic.lean,410,polytime,ComputableTidilyInPolyTime,True,494,397,100,True,funprop,23
+CslibFrontierTests/PolyTimeTactic.lean,413,polytime,ComputableTidilyInPolyTime,True,482,397,88,True,funprop,41
+CslibFrontierTests/PolyTimeTactic.lean,432,polytime,ComputableTidilyInPolyTime,True,479,397,83,True,named,25
+CslibFrontierTests/PolyTimeTactic.lean,441,polytime,ComputableTidilyInPolyTime,True,492,398,97,True,funprop,9
+CslibFrontierTests/PolyTimeTactic.lean,442,polytime,ComputableTidilyInPolyTime,True,477,398,81,True,funprop,9
+CslibFrontierTests/PolyTimeTactic.lean,443,polytime,ComputableTidilyInPolyTime,True,477,398,81,True,funprop,10
+CslibFrontierTests/PolyTimeTactic.lean,444,polytime,ComputableTidilyInPolyTime,True,716,398,321,True,funprop,237
+CslibFrontierTests/PolyTimeTactic.lean,448,polytime,ComputableTidilyInPolyTime,True,669,398,273,True,funprop,199
+CslibFrontierTests/PolyTimeTactic.lean,459,polytime,ComputableTidilyInPolyTime,True,476,398,82,True,funprop,9
+CslibFrontierTests/PolyTimeTactic.lean,460,polytime,ComputableTidilyInPolyTime,True,478,398,83,True,funprop,10
+CslibFrontierTests/PolyTimeTactic.lean,461,polytime,ComputableTidilyInPolyTime,True,557,398,160,True,funprop,77
+CslibFrontierTests/PolyTimeTactic.lean,465,polytime,ComputableTidilyInPolyTime,True,481,398,84,True,funprop,12
+CslibFrontierTests/PolyTimeTactic.lean,485,polytime,ComputableTidilyInPolyTime,True,549,398,154,True,funprop,26
+CslibFrontierTests/PolyTimeTactic.lean,488,polytime,ComputableTidilyInPolyTime,True,707,398,312,True,funprop,22
+CslibFrontierTests/PolyTimeTactic.lean,494,polytime,ComputableTidilyInPolyTime,True,771,398,375,True,funprop,45
+CslibFrontierTests/PolyTimeTactic.lean,519,polytime,ComputableTidilyInPolyTime,True,20005,397,19611,False,"fun_prop failed, maximum number(64) of steps exceeded",703
+CslibFrontierTests/PolyTimeTactic.lean,532,polytime,ComputableTidilyInPolyTime,True,23443,398,23046,False,"fun_prop failed, maximum number(64) of steps exceeded",1280
+CslibFrontierTests/PolyTimeTactic.lean,546,polytime,ComputableTidilyInPolyTime,True,23497,398,23101,False,"fun_prop failed, maximum number(64) of steps exceeded",1283
+CslibFrontierTests/PolyTimeTactic.lean,554,polytime,ComputableTidilyInPolyTime,False,21988,398,21591,False,"fun_prop failed, maximum number(64) of steps exceeded",691
+CslibFrontierTests/PolyTimeTactic.lean,566,polytime,ComputableTidilyInPolyTime,False,21781,398,21385,False,"fun_prop failed, maximum number(64) of steps exceeded",672
+CslibFrontierTests/PolyTimeTactic.lean,583,polytime,ComputableTidilyInPolyTime,True,23546,398,23152,False,"fun_prop failed, maximum number(64) of steps exceeded",1285
+CslibFrontierTests/PolyTimeTactic.lean,606,polytime,ComputableTidilyInPolyTime,True,23377,398,22981,False,"fun_prop failed, maximum number(64) of steps exceeded",906
+CslibFrontierTests/PolyTimeTactic.lean,610,polytime,ComputableInPolyTime,True,1385,398,990,True,funprop,905
+CslibFrontierTests/PolyTimeTactic.lean,614,polytime,ComputableInPolyTime,True,1559,398,1163,True,funprop,1031
+CslibFrontierTests/PolyTimeTactic.lean,622,polytime,ComputableInPolyTime,True,3122,398,2725,False,"fun_prop failed, maximum number(64) of steps exceeded",2294
+CslibFrontierTests/PolyTimeTactic.lean,627,polytime,ComputableInPolyTime,True,473,398,77,True,funprop,151
+CslibFrontierTests/AutomationAddTrivial.lean,190,polytime,ComputableInPolyTime,True,1468,3140,388,True,funprop,257
+CslibFrontierTests/AutomationAddTrivial.lean,201,polytime,ComputableInPolyTime,True,1455,1104,355,True,funprop,234
+CslibFrontierTests/AutomationAddTrivial.lean,214,polytime,ComputableInPolyTime,False,1646,1104,548,False,"no compositional plain certificate: [Failed to infer `(?enc₂ : List (Edge C) ↪ List Bool)` when applying theorem `Turing.MultiTapeTM.ComputableInPolyTime.fst'`., |  Failed to infer `(?encB : List (Edg",228
+CslibFrontierTests/AutomationAddTrivial.lean,220,polytime,ComputableInPolyTime,False,4133,1104,3031,False,"fun_prop failed, maximum number(64) of steps exceeded",515
+CslibFrontierTests/PolyTimeSearch.lean,189,polytime,ComputableInPolyTime,False,744,3180,370,False,no compositional plain certificate: [No theorems found for `bound` in order to prove `ComputableInPolyTime (fun a => bound a) input encUnary`],164
+CslibFrontierTests/PolyTimeSearch.lean,190,polytime,ComputableInPolyTime,False,1451,400,1053,False,no compositional plain certificate: [],880
+CslibFrontierTests/PolyTimeSearch.lean,191,polytime,ComputableInPolyTime,True,1381,400,984,True,funprop,880
+CslibFrontierTests/PolyTimeSearch.lean,207,polytime,ComputableInPolyTime,True,1632,400,1235,True,funprop,862
+CslibFrontierTests/PolyTimeSearch.lean,207,polytime,ComputableInPolyTime,True,1615,400,1217,True,funprop,1029
+CslibFrontierTests/CookLevinPolyTime.lean,191,polytime,ComputableInPolyTime,True,1244,3262,803,False,"RUNTIME (deterministic) timeout at `whnf`, maximum number of heartbeats (200000) has been reached |  | Note: Use `set_option maxHeartbeats <num>` to set the limit.(invalid MessageData.lazy, missing co",200000
+CslibFrontierTests/CookLevinPolyTime.lean,249,polytime,ComputableInPolyTime,True,1388,465,924,True,funprop,832
+CslibFrontierTests/CookLevinPolyTime.lean,249,polytime,ComputableInPolyTime,True,1825,465,1361,False,"fun_prop failed, maximum number(64) of steps exceeded",1213
+CslibFrontierTests/PolyTimePlain.lean,224,polytime,ComputableTidilyInPolyTime,True,567,405,184,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun word => List.foldl (fun reversed bit => bit :: reversed) [] word) encBits encBits` |  | Issues:,36
+CslibFrontierTests/PolyTimePlain.lean,200,polytime,ComputableInPolyTime,True,662,3193,259,True,funprop,155
+CslibFrontierTests/PolyTimePlain.lean,280,polytime,ComputableInPolyTime,True,8269,408,7862,True,funprop,2188
+CslibFrontierTests/PolyTimePlain.lean,282,polytime,ComputableInPolyTime,True,8381,408,7977,False,"no compositional plain certificate: [No theorems found for `List.nil` in order to prove `ComputableInPolyTime (fun x => []) ?encMid encBits`, |  Failed to infer `(?encMid : List Bool ↪ List Bool)` whe",4579
+CslibFrontierTests/PolyTimePlain.lean,283,polytime,ComputableInPolyTime,True,8266,408,7863,True,funprop,2189
+CslibFrontierTests/PolyTimePlain.lean,286,polytime,ComputableTidilyInPolyTime,True,5932,408,5522,True,funprop,47
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean,634,ppt,IsPPTOn,True,8687,6578,4673,False,"fun_prop failed, maximum number(64) of steps exceeded",1768
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean,1254,polytime,ComputableTidilyInPolyTime,True,13974,4035,9953,False,`fun_prop` was unable to prove `ComputableTidilyInPolyTime (fun a => decide (0 < depth a.1 ∧ 0 < capacity a.1)) (encPair encUnary encBits) encBool` |  | Issues:,1700
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean,1257,polytime,ComputableTidilyInPolyTime,True,12955,4035,8926,True,funprop,435
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean,1259,polytime,ComputableTidilyInPolyTime,True,12957,4035,8930,True,funprop,435
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean,1265,polytime,ComputableTidilyInPolyTime,True,13007,4036,8981,True,funprop,446
+CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean,1266,polytime,ComputableTidilyInPolyTime,True,12977,4035,8941,True,funprop,435
+CslibFrontier/Crypto/Computational/Encryption/PolyTime.lean,240,ppt,IsPPTOn,True,6282,6382,2448,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  No theorems found for `Cslib.Crypto.Encryption.AdversaryOf.choose",442
+CslibFrontier/Crypto/Computational/Encryption/PolyTime.lean,298,polytime,ComputableTidilyInPolyTime,True,4129,3867,267,True,funprop,57
+CslibFrontier/Crypto/Computational/Encryption/PolyTime.lean,272,ppt,IsPPTOn,True,5194,3869,1328,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  No theorems found for `Cslib.Crypto.Encryption.AdversaryOf.choose",353
+CslibFrontier/Crypto/Computational/Encryption/PolyTime.lean,276,ppt,IsPPTOn,True,6469,3869,2602,True,funprop,1340
+CslibFrontier/Crypto/Computational/GoldreichLevin/WordReduction.lean,249,ppt,IsPPTOn,True,4984,6409,1127,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  No theorems found for `adversary` in order to prove `IsPPTOn ?mid",398
+CslibFrontier/Crypto/Computational/GoldreichLevin/WordReduction.lean,279,ppt,IsPPT,True,7539,3884,3658,False,"fun_prop failed, maximum number(64) of steps exceeded",2434
+CslibFrontier/Crypto/Computational/PRGToOneWay.lean,375,polytime,ComputableInPolyTime,True,4315,3920,419,True,funprop,315
+CslibFrontier/Crypto/Computational/PRGToOneWay.lean,253,ppt,IsPPT,True,4692,6453,779,False,"no compositional plain certificate: [No theorems found for `Prod.fst` in order to prove `IsPPTOn ?middle ?left fun self => self.1`, |  No theorems found for `adversary` in order to prove `IsPPTOn (enc",345
+CslibFrontier/Crypto/Computational/PRGToOneWay.lean,377,polytime,ComputableInPolyTime,True,4363,3921,443,True,funprop,329

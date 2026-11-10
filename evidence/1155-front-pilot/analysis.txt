@@ -1,0 +1,13 @@
+calls=372 today-successful=297
+library  polytime n= 72 today p50=  4790 memo p50=  3867 prebuilt-memo p50=  1053 front closes 65/72
+library  ppt      n= 17 today p50=  6437 memo p50=  3895 prebuilt-memo p50=  2568 front closes 9/17
+tests    polytime n=128 today p50=  1474 memo p50=   398 prebuilt-memo p50=   592 front closes 81/128
+tests    ppt      n= 80 today p50=  1784 memo p50=   760 prebuilt-memo p50=   781 front closes 48/80
+polytime: total today=1108315 prebuilt-memo=735918 (-34%)
+   front then fallback, prebuilt memo, front cap=1000: 691816 (-6.0% vs prebuilt-memo today)
+   front then fallback, prebuilt memo, front cap=2000: 691815 (-6.0% vs prebuilt-memo today)
+   front then fallback, prebuilt memo, front cap=None: 958359 (+30.2% vs prebuilt-memo today)
+ppt: total today=435544 prebuilt-memo=249917 (-43%)
+   front then fallback, prebuilt memo, front cap=1000: 244142 (-2.3% vs prebuilt-memo today)
+   front then fallback, prebuilt memo, front cap=2000: 243716 (-2.5% vs prebuilt-memo today)
+   front then fallback, prebuilt memo, front cap=None: 260994 (+4.4% vs prebuilt-memo today)
