@@ -1,6 +1,6 @@
 # Circuits, logic, and information-access models
 
-Complexitylib uses several kinds of computational model for different purposes. A circuit gives a finite composition of semantic operations; a decision tree or communication protocol charges access to information; a logical formula defines a query on a finite structure; a proof object measures a derivation; a learner or tester measures examples or oracle queries. These models often share functions and theorems, but their resource units are not interchangeable. This section surveys their definitions and the principal bridges at source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [complexitylib][complexitylib]
+cslib-frontier uses several kinds of computational model for different purposes. A circuit gives a finite composition of semantic operations; a decision tree or communication protocol charges access to information; a logical formula defines a query on a finite structure; a proof object measures a derivation; a learner or tester measures examples or oracle queries. These models often share functions and theorems, but their resource units are not interchangeable. This section surveys their definitions and the principal bridges at source snapshot `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. [cslib-frontier][complexitylib]
 
 The curated [Model map](../model-map.md) contains **92 entries**, separating changes in semantics or resource accounting while grouping internal proof records under the model they support. The original survey checked 189 principal declaration anchors in 125 distinct cited files. These dated counts describe the editorial selection; they are neither a declaration census of the whole library nor an assertion that there are exactly 92 mathematically distinct models.
 
@@ -13,13 +13,13 @@ The curated [Model map](../model-map.md) contains **92 entries**, separating cha
 | [Networks and finite dynamics](networks-and-iteration.md) | How do graph separators, tensor contractions, nondeterministic paths and function iteration connect? |
 | [Query and communication complexity](query-and-communication.md) | Which information-access costs are charged, including LOCAL rounds and Byzantine agreement, and what lower-bound and simulation theorems use them? |
 | [Finite-model logic](finite-model-logic.md) | How do formulas, interpretations, encodings and native complexity classes meet? |
-| [Propositional proof systems](proof-systems.md) | Which proof objects and measures support resolution lower bounds, interpolation, cutting planes and Frege proofs? |
+| [Propositional proof systems](proof-systems.md) | Which proof objects and measures support resolution lower bounds, interpolation, algebraic proof systems, cutting planes and Frege proofs? |
 | [Learning and property testing](learning-and-testing.md) | Are the proved bounds on samples, queries, or machine time? |
 | [Metacomplexity and lower-bound methods](metacomplexity-and-methods.md) | What are the MCSP variants and conditional barriers, and how are general lower-bound arguments packaged? |
 
 ## Architecture and concrete use
 
-The central reusable layer is upstream CSLib's `Signature`, `Interpretation`, topologically indexed `Program`, and `Circuit`. Complexitylib extends that layer with formulas, weighted costs, semantic synthesis, alternative bases and theorem-specific interfaces. The same circuit program can be interpreted over booleans, formal polynomials or another carrier; meaning-preserving interpretation maps transport evaluation. This reuse supports mathematical variation without duplicating the acyclic graph machinery. [cslib][cslib] See [Circuit](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Circuit/Basic.lean#L46) and [source-relative complexity](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/SourceComplexity.lean).
+The central reusable layer is upstream CSLib's `Signature`, `Interpretation`, topologically indexed `Program`, and `Circuit`. cslib-frontier extends that layer with formulas, weighted costs, semantic synthesis, alternative bases and theorem-specific interfaces. The same circuit program can be interpreted over booleans, formal polynomials or another carrier; meaning-preserving interpretation maps transport evaluation. This reuse supports mathematical variation without duplicating the acyclic graph machinery. [cslib][cslib] See [Circuit](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Circuit/Basic.lean#L46) and [source-relative complexity](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/SourceComplexity.lean).
 
 A representative chain is a fixed first-order sentence over finite relational structures. Its input encoding gives the universe size and relation truth tables. The sentence can be compiled into an unbounded fan-in Boolean formula with constant depth and polynomial size; a separate compilation gives a native logspace decider. Adding positive least fixed points changes the logical model and yields polynomial-time model checking. In the reverse direction, a native polynomial-time machine is represented by a fixed-point tableau, giving the ordered Immerman–Vardi equivalence. The circuit, logic and native-time claims are different links in that chain, not three names for the same implementation. See [finite-model logic](finite-model-logic.md).
 
@@ -43,7 +43,7 @@ A third chain starts with a local-constraint network. A layout exposes a frontie
 | Logic | Usually data complexity of one fixed formula, not combined complexity of formula and structure. |
 | Proof complexity | Lines, tree nodes, or distinct-literal width; not proof-search time. |
 
-These distinctions are visible in the source definitions and model map. In particular, nonuniform families choose a circuit separately at each input length; finite real weights need not have finite bit encodings; a raw total decoder may assign fallback values while the language rejects malformed codes. [complexitylib][complexitylib]
+These distinctions are visible in the source definitions and model map. In particular, nonuniform families choose a circuit separately at each input length; finite real weights need not have finite bit encodings; a raw total decoder may assign fallback values while the language rejects malformed codes. [cslib-frontier][complexitylib]
 
 ## Source evidence and scope
 

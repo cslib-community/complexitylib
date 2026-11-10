@@ -8,10 +8,10 @@ touched. Changes are taken against the merge base of REF (default `origin/main`)
 tree, untracked files included; when there is no merge base, as in CI's shallow checkout, against
 REF itself.
 
-1. Module-doc names. In a changed module under `Complexity/`, each backquoted name that heads a
+1. Module-doc names. In a changed module under `CslibFrontier/`, each backquoted name that heads a
    bullet of a "Main …" section of the module docstring (the names before the bullet's first
-   colon) must name a declaration: one that some library, test or abstract module defines or
-   refers to, matched exactly or as a suffix on a component boundary. Names of tactics, attributes
+   colon) must name a declaration: one that some library or test module defines or refers to,
+   matched exactly or as a suffix on a component boundary. Names of tactics, attributes
    and other syntax that the library declares (`syntax`, `macro`, `elab`,
    `declare_aesop_rule_sets`, `register_simp_attr`) also count, as do the upstream names in
    `UPSTREAM_SYNTAX`. Backquoted text that is not an identifier, such as notation or a pattern
@@ -19,11 +19,10 @@ REF itself.
    (and `lake test`); stale outputs are refused unless `--no-build-check` is given.
    This is a post-build audit; the default freshness probe invokes Lake and may materialize
    dependencies.
-2. Restatement-only tests. A new file under `ComplexityTests/` fails when it has examples and
+2. Restatement-only tests. A new file under `CslibFrontierTests/` fails when it has examples and
    every one of them is `example … := name` (or `:= by exact name`) for a name other than `rfl`,
    `trivial` and the like (`EVALUATION`): such a line only restates a signature, which is not a
-   test (CONTRIBUTING, review criterion 8). A file that imports or names a curated abstract
-   (`ComplexityAbstracts`) is exempt, since restatements pin those.
+   test (CONTRIBUTING, review criterion 8).
 """
 
 from __future__ import annotations
@@ -64,7 +63,6 @@ EXAMPLE = re.compile(r"(?:@\[[^\]\n]*\]\s*)*(?:(?:private|noncomputable)\s+)*exa
 RESTATEMENT = re.compile(rf"(?:by\s+exact\s+)?@?({NAME.pattern})")
 # Bodies that check the statement by evaluation, or prove it outright: concrete tests.
 EVALUATION = {"rfl", "Eq.refl", "Iff.rfl", "HEq.rfl", "le_rfl", "trivial", "True.intro"}
-ABSTRACTS = re.compile(r"\bComplexityAbstracts\b")
 
 
 # --- Changed files ------------------------------------------------------------------------------
@@ -197,7 +195,7 @@ def check_doc_names(root: Path, modules: list[str], load_ileans) -> list[str]:
         return []
     by_last = known_names(load_ileans())
     syntax = set().union(*(syntax_names(p.read_text(encoding="utf-8"))
-                           for p in sorted((root / "Complexity").rglob("*.lean"))))
+                           for p in sorted((root / "CslibFrontier").rglob("*.lean"))))
     return [error for rel, text in texts.items()
             for error in unresolved_doc_names(rel, text, by_last, syntax)]
 
@@ -225,8 +223,6 @@ def example_bodies(text: str) -> list[str | None]:
 
 def restatement_only(text: str) -> bool:
     """Whether a test file has examples and each only restates a declaration's signature."""
-    if ABSTRACTS.search(masks(text)[0]):
-        return False
     matches = [body and RESTATEMENT.fullmatch(body) for body in example_bodies(text)]
     return bool(matches) and all(m and m[1] not in EVALUATION for m in matches)
 
@@ -235,7 +231,7 @@ def check_new_tests(root: Path, added: list[str]) -> list[str]:
     return [f"{rel}: every example only restates a declaration (`example … := name`); test a "
             "concrete instance instead: a small input, a run or a counterexample"
             for rel in added
-            if rel.startswith("ComplexityTests/") and rel.endswith(".lean")
+            if rel.startswith("CslibFrontierTests/") and rel.endswith(".lean")
             and restatement_only((root / rel).read_text(encoding="utf-8"))]
 
 
@@ -251,7 +247,7 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     args = parser.parse_args(argv)
     added, modified = changed_files(root, args.base)
     modules = [rel for rel in added + modified
-               if rel.startswith("Complexity/") and rel.endswith(".lean")]
+               if rel.startswith("CslibFrontier/") and rel.endswith(".lean")]
 
     def load_ileans() -> dict[str, dict]:
         lo.check_outputs(lo.DEFAULT_BUILD_DIR, args.no_build_check)
@@ -263,7 +259,7 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     if errors:
         return 1
     print(f"Changed-file lints passed ({len(modules)} changed library module(s), "
-          f"{sum(rel.startswith('ComplexityTests/') for rel in added)} new test file(s)).")
+          f"{sum(rel.startswith('CslibFrontierTests/') for rel in added)} new test file(s)).")
     return 0
 
 

@@ -1,6 +1,6 @@
 # Prove deterministic resource bounds
 
-Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time claims. Its definition supplies a finite native machine with independently polynomially bounded time and workspace, measured against encoded input length. Each Lean block is a **contextual excerpt** from the current source, requiring its linked original file; these are not newly compiled standalone examples. The excerpts are by Samuel Schlesinger, under the source repository's Apache 2.0 license. [complexitylib][complexitylib]
+Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time claims. Its definition supplies a finite native machine with independently polynomially bounded time and workspace, measured against encoded input length. Each Lean block is a **contextual excerpt** from the current source, requiring its linked original file; these are not newly compiled standalone examples. The excerpts are by Samuel Schlesinger, under the source repository's Apache 2.0 license. [cslib-frontier][complexitylib]
 
 ## Compose a certified function
 
@@ -8,7 +8,7 @@ Use plain `Turing.MultiTapeTM.ComputableInPolyTime` for public polynomial-time c
 
 **Worked example: Swap the arguments of a certified routine**
 
-**Goal:** `ComputableInPolyTime f encIn encOut`. Start with `Complexity.Tactic.PolyTime`, the modules supplying your operations, and `open Turing.MultiTapeTM`. [PolyTimePlainDriver](../../ComplexityTests/PolyTimePlainDriver.lean) also imports `Complexity.Computability.WordRAM.Native` for its arithmetic examples.
+**Goal:** `ComputableInPolyTime f encIn encOut`. Start with `CslibFrontier.Tactic.PolyTime`, the modules supplying your operations, and `open Turing.MultiTapeTM`. [PolyTimePlainDriver](../../CslibFrontierTests/PolyTimePlainDriver.lean) also imports `CslibFrontier.Computability.WordRAM.Native` for its arithmetic examples.
 
 The input obligation in this excerpt is a polynomial-time certificate for `routine` with *binary* pair inputs and binary output:
 
@@ -20,7 +20,7 @@ example (routine : ℕ × ℕ → ℕ)
       (encPair encNat encNat) encNat := by polytime
 ```
 
-Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search.
+Prove certificates for opaque subroutines, then let `fun_prop` compose registered rules or use `polytime` for the richer certificate search. For an explicit `ComputableInDegree … 1 1` contract, import `CslibFrontier.Tactic.Degree` and use `degree`; the [degree workflow](../design-and-assurance/automation.md#preserve-explicit-polynomial-degrees) gives the complete checked client and its limits.
 
 **Result:** argument swapping followed by `routine` is polynomial-time computable under the stated binary encodings. This does not establish any additional functional specification of `routine`.
 
@@ -31,57 +31,57 @@ Prove certificates for opaque subroutines, then let `fun_prop` compose registere
 The [automation reference](../design-and-assurance/automation.md) explains registration and [troubleshooting](troubleshooting.md) handles failures.
 
 For binary sign-magnitude integers, import
-`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary`.
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary`.
 The plain `ComputableInPolyTime.intBin_natAbs`, `intBin_isNeg`, `intBin_signMagnitude`,
 `intBin_prod` and `intBin_pow` rules compose through `fun_prop`; `intBin_pow'` accepts computed
 base and unary exponent certificates. The complete
-[IntBinary client](../../ComplexityTests/RationalHitting/IntBinary.lean) checks composed products, powers,
+[IntBinary client](../../CslibFrontierTests/RationalHitting/IntBinary.lean) checks composed products, powers,
 magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
 the unary exponent encoding merely to make a goal match.
 
 For a padded integer dot product, import
-[PolyTime/Int/DotProduct.lean](../../Complexity/Computability/PolyTime/Int/DotProduct.lean)
+[PolyTime/Int/DotProduct.lean](../../CslibFrontier/Computability/PolyTime/Int/DotProduct.lean)
 and use `ComputableInPolyTime.listDotProduct`. It certifies the existing pure public
 `Mathlib.Tactic.Matrix.ListMatrix.dotProduct`: the cutoff is unary, coefficients are signed
 binary, missing entries are zero, and entries beyond the cutoff are ignored. Runtime still
 charges both complete framed input lists. The operation lives in a Mathlib tactic-support
 file but is ordinary term-level arithmetic, not a meta program.
-The pure [list identities](../../Complexity/Foundations/Data/List/DotProduct.lean) and
-[residue-matrix bridge](../../Complexity/Foundations/Data/ZMod/DotProduct.lean) require neither
+The pure [list identities](../../CslibFrontier/Foundations/Data/List/DotProduct.lean) and
+[residue-matrix bridge](../../CslibFrontier/Foundations/Data/ZMod/DotProduct.lean) require neither
 crypto nor native imports. The former local Lyubashevsky `listDot` duplicate has been removed;
 its verifier, extractor and signer use the same upstream operation. The
-[checked clients](../../ComplexityTests/ListDotProduct.lean) cover padding, truncation, signed
+[checked clients](../../CslibFrontierTests/ListDotProduct.lean) cover padding, truncation, signed
 large coefficients and unchanged verifier outcomes and commitment bytes. This API
 consolidation adds no cryptographic security claim.
 
 Keep a record's encoded tuple layout at its construction boundary. For example,
-[`NativePacket.PacketCtx.mk_polyTime`](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
+[`NativePacket.PacketCtx.mk_polyTime`](../../CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/PacketTerms.lean)
 composes certificates for named fields while preserving the existing encoded words; its
-[packet-construction client](../../Complexity/Computability/Circuit/Frontier/TensorNetwork/NativeChildPolyTime.lean)
+[packet-construction client](../../CslibFrontier/Computability/Circuit/Frontier/TensorNetwork/NativeChildPolyTime.lean)
 does not reconstruct the product tree. The
-[`BranchEvalInput` interface](../../Complexity/Computability/PolyTime/BooleanAnalysis/SparsePolyCounter.lean)
+[`BranchEvalInput` interface](../../CslibFrontier/Computability/PolyTime/BooleanAnalysis/SparsePolyCounter.lean)
 similarly supplies named parameter access and certificates with the original unary/binary
 choices. Use these boundaries when changing a client, and retain its encoded-length bounds.
 
 For a computed optional value, import
-`Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option`.
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option`.
 The shared `ComputableInPolyTime.optionMapWithInput` rule certifies
 `fun x => (value x).map (f x)` from certificates for `value` and the joint callback
 `fun p => f p.1 p.2`. The callback is charged against both the original input and
 the present value; input and output value encodings may differ.
-The [public-import client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeOptionPublicImport.lean)
+The [public-import client](../../CslibFrontierTests/Machines/Turing/MultiTape/Internal/PolyTimeOptionPublicImport.lean)
 checks a captured parameter and an encoding change.
-[Boolean measurement search](../../Complexity/Computability/PolyTime/LinearAlgebra/BooleanMeasurements.lean)
+[Boolean measurement search](../../CslibFrontier/Computability/PolyTime/LinearAlgebra/BooleanMeasurements.lean)
 uses this rule for its optional-result codec, and
-[hybrid CCA composition](../../Complexity/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
+[hybrid CCA composition](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean)
 uses it to postprocess successful decapsulation while preserving rejection.
 
 ## Walk two lists with a collecting fold
 
-Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold`
+Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.ZipFold`
 and open `Turing.MultiTapeTM`. Apply `ComputableInO.zipFold` or
-`ComputableInSpace.zipFold` explicitly. The complete [zipFold clients](../../ComplexityTests/ZipFold.lean)
-show padding, dropping and a time certificate; [subtractSums_inSpace](../../Complexity/Computability/TreeEval/Reader/Cert/Regs.lean)
+`ComputableInSpace.zipFold` explicitly. The complete [zipFold clients](../../CslibFrontierTests/ZipFold.lean)
+show padding, dropping and a time certificate; [subtractSums_inSpace](../../CslibFrontier/Computability/TreeEval/Reader/Cert/Regs.lean)
 uses the space-only rule for register subtraction.
 
 `zipFold f p left right` takes one step for every element of `left`, consuming one
@@ -105,19 +105,19 @@ the joint function, and discharge the prefix bound separately.
 
 ## Certify a loop and its postcondition
 
-**Goal:** a plain computation certificate together with a final invariant. Import `Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration`. The public import exposes [ComputableInPolyTime.iterate_spec](../../Complexity/Computability/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean); its current implementation lives in the machine layer.
+**Goal:** a plain computation certificate together with a final invariant. Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration`. The public import exposes [ComputableInPolyTime.iterate_spec](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean); its current implementation lives in the machine layer.
 
 Supply three computation certificates: the iteration count in unary, the initial state, and the step. Then provide an invariant indexed by original input, iteration number and state. Prove initialization and preservation. Finally, bound the encoded state under that invariant at **every** index up to the count by a `PolyBounded` function of original input length. The mathematical bound itself need not be computable.
 
-The result has two projections: polynomial-time computability of the iterated function, and the invariant at termination. [Ladner’s shrink-loop client](../../Complexity/Computability/Complexity/Classes/Ladner.lean) obtains `hreduce` and `hinv` this way: its invariant preserves satisfiability and bounds the current formula's encoded length. That use is inside the theorem's stated reduction and growth hypotheses, not an unconditional SAT algorithm.
+The result has two projections: polynomial-time computability of the iterated function, and the invariant at termination. [Ladner’s shrink-loop client](../../CslibFrontier/Computability/Complexity/Classes/Ladner.lean) obtains `hreduce` and `hinv` this way: its invariant preserves satisfiability and bounds the current formula's encoded length. That use is inside the theorem's stated reduction and growth hypotheses, not an unconditional SAT algorithm.
 
-For a step capturing a parameter, use `iterateWith_spec` and certify the joint `(parameter, state)` operation. `iterateWith_of_bounded_growth` handles additive encoded-state growth bounded polynomially in the original input. A separate efficient procedure for each fixed parameter does not provide the required uniform joint certificate. A polynomial number of efficient steps also does not bound a state that doubles each time. The [plain loop regression client](../../ComplexityTests/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean) exercises both positive contracts and a failed constant-state bound. When the size obligation fails, inspect the representation and growth argument before changing tactics.
+For a step capturing a parameter, use `iterateWith_spec` and certify the joint `(parameter, state)` operation. `iterateWith_of_bounded_growth` handles additive encoded-state growth bounded polynomially in the original input. A separate efficient procedure for each fixed parameter does not provide the required uniform joint certificate. A polynomial number of efficient steps also does not bound a state that doubles each time. The [plain loop regression client](../../CslibFrontierTests/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean) exercises both positive contracts and a failed constant-state bound. When the size obligation fails, inspect the representation and growth argument before changing tactics.
 
 ## Derandomize an averaging argument
 
 **Goal:** turn an averaging proof that some choice of bits is good into a deterministic
 algorithm with the same quantitative guarantee, then certify its running time. Import
-`Complexity.Foundations.Combinatorics.PessimisticEstimator` and open
+`CslibFrontier.Foundations.Combinatorics.PessimisticEstimator` and open
 `Cslib.PessimisticEstimator`. Describe one round by a branch function
 `branch : R → Bool → S → S` and an estimate `Φ : S → M` of the final cost, for `M` such as `ℕ`
 or `ℝ`; `greedy branch Φ rounds s` takes, in each round, the branch with the smaller estimate,
@@ -132,38 +132,38 @@ bound suffices. The conclusion returns the
 invariant for the final state together with `Φ final ≤ Φ initial`; use the final invariant to
 identify the final estimate with the cost of the constructed object. For exact conditional
 expectations of a real function on the cube, `BitString.expect_le_greedy_fixCoord` in
-`Complexity.Foundations.BooleanAnalysis.GreedyFixing` already does this.
+`CslibFrontier.Foundations.BooleanAnalysis.GreedyFixing` already does this.
 
-[Johnson.lean](../../Complexity/Logics/Propositional/CNF/Johnson.lean) is the satisfiability
+[Johnson.lean](../../CslibFrontier/Logics/Propositional/CNF/Johnson.lean) is the satisfiability
 client. Its state is the partially set formula and the variables set to `true`; its estimate is
 the weight `Σ_c 2 ^ (L - |c|)`. It sets a variable with the resolution module's `CNF.restrict`. Its invariant records
 that the remaining variables are those still to be set and that the partial formula falsifies
-the same number of clauses as the original under any completion. [Johnson/PolyTime.lean](../../Complexity/Logics/Propositional/CNF/Johnson/PolyTime.lean)
+the same number of clauses as the original under any completion. [Johnson/PolyTime.lean](../../CslibFrontier/Logics/Propositional/CNF/Johnson/PolyTime.lean)
 certifies the running time. Because `L` is read from the input formula, the rounds form a fold
 whose step reads the input, certified by `foldlWithInput_of_bounded_growth`. Its growth premise
 uses the fact that setting a variable does not lengthen the encoded formula. The complete
-[JohnsonMaxSAT client](../../ComplexityTests/JohnsonMaxSAT.lean) checks a tight `7 / 8`
+[JohnsonMaxSAT client](../../CslibFrontierTests/JohnsonMaxSAT.lean) checks a tight `7 / 8`
 instance and a formula with an empty clause, where the `1 / 2` bound fails without its
-hypothesis. Build it with `scripts/build.sh ComplexityTests.JohnsonMaxSAT`.
+hypothesis. Build it with `scripts/build.sh CslibFrontierTests.JohnsonMaxSAT`.
 
 When the averaging argument uses only `k`-wise independence, you can search a small sample
 space instead of fixing bits one by one. For satisfiability,
-[KWiseIndependent.lean](../../Complexity/Logics/Propositional/CNF/KWiseIndependent.lean) takes a
+[KWiseIndependent.lean](../../CslibFrontier/Logics/Propositional/CNF/KWiseIndependent.lean) takes a
 family `h` with `IsKWiseIndependentHash k h` and a labelling `e` of the variables that is
 injective on `φ.vars`. `exists_two_pow_mul_countUnsat_le` then gives a seed `i` with
 `2 ^ k * φ.countUnsat (h i ∘ e) ≤ φ.length` whenever every clause has at least `k` distinct
-literals. [ParitySearch.lean](../../Complexity/Logics/Propositional/CNF/ParitySearch.lean)
+literals. [ParitySearch.lean](../../CslibFrontier/Logics/Propositional/CNF/ParitySearch.lean)
 instantiates it for `k ≤ 3` with the three-wise parity hash
 `LinearHash.isKWiseIndependentHash_dotProduct_cons_true`, labelling each variable by the binary
 digits of its position. `paritySearch` folds `betterCandidate` over
 the fewer than `4n` candidate assignments, and
-[ParitySearch/PolyTime.lean](../../Complexity/Logics/Propositional/CNF/ParitySearch/PolyTime.lean)
+[ParitySearch/PolyTime.lean](../../CslibFrontier/Logics/Propositional/CNF/ParitySearch/PolyTime.lean)
 certifies the running time with `foldlWithInput_of_bounded_growth`. Every candidate is a
 sublist of the variable list, which bounds the fold's growth. The
-[ParitySearchMaxSAT client](../../ComplexityTests/ParitySearchMaxSAT.lean) evaluates the
+[ParitySearchMaxSAT client](../../CslibFrontierTests/ParitySearchMaxSAT.lean) evaluates the
 candidate lists. It also shows that the parity space is not four-wise independent and that the
 guarantee fails for clauses of four literals. Build it with
-`scripts/build.sh ComplexityTests.ParitySearchMaxSAT`.
+`scripts/build.sh CslibFrontierTests.ParitySearchMaxSAT`.
 
 **When it fails:** if the round inequality holds only on reachable states, strengthen the
 invariant rather than the estimate. Clauses with complementary literals, for example, make
@@ -175,44 +175,44 @@ does not enlarge the encoded state by more than a polynomial in the input.
 
 **Goal:** an approximation scheme that rounds numbers, solves the rounded instance exactly by
 dynamic programming, and runs in polynomial time. Import
-`Complexity.Algorithms.Lean.Knapsack.PolyTime` (it re-exports `ProfitDP` and `FPTAS`) and open
+`CslibFrontier.Algorithms.Lean.Knapsack.PolyTime` (it re-exports `ProfitDP` and `FPTAS`) and open
 `Cslib.Algorithms.Lean.Knapsack Turing.MultiTapeTM ComputableInPolyTime`.
 
-First prove the exact program correct. [Knapsack/ProfitDP.lean](../../Complexity/Algorithms/Lean/Knapsack/ProfitDP.lean)
+First prove the exact program correct. [Knapsack/ProfitDP.lean](../../CslibFrontier/Algorithms/Lean/Knapsack/ProfitDP.lean)
 folds a table indexed by profit over the items. Its invariant `TableSpec` records the table
 length (total profit plus one), that each entry is a subsequence of the right profit, and that
 each entry weighs at most every subsequence of that profit. Prove the invariant for the initial
 table and for one step, then fold it (`TableSpec.foldl`). Then prove the rounding bound against
-the exact program on the rounded instance: [Knapsack/FPTAS.lean](../../Complexity/Algorithms/Lean/Knapsack/FPTAS.lean)
+the exact program on the rounded instance: [Knapsack/FPTAS.lean](../../CslibFrontier/Algorithms/Lean/Knapsack/FPTAS.lean)
 rounds the values to at most `n * k`, and `sub_one_mul_value_le_fptas` gives
 `(k - 1) * OPT ≤ k * value`.
 
-Then certify the running time, as [Knapsack/PolyTime.lean](../../Complexity/Algorithms/Lean/Knapsack/PolyTime.lean)
+Then certify the running time, as [Knapsack/PolyTime.lean](../../CslibFrontier/Algorithms/Lean/Knapsack/PolyTime.lean)
 does. Certify one step of the table jointly in the table and the item, and pass it to `foldl'`.
 Discharge the fold's states bound at every prefix (`l.take i`) from the invariant: the table has
 total-profit-plus-one entries, each a subsequence of the items. That bound is polynomial only
 when profits are charged in unary, so read them in `encUnary`. The FPTAS computes its rounded
 values in unary from `k` in unary, while weights and the capacity stay in binary.
-[Knapsack/Unary.lean](../../Complexity/Computability/Complexity/Problems/Knapsack/Unary.lean)
+[Knapsack/Unary.lean](../../CslibFrontier/Computability/Complexity/Problems/Knapsack/Unary.lean)
 turns the exact program into `Knapsack ∈ P` for the unary-value encoding.
 
 For a hardness-of-approximation statement in this style, state the algorithm as a function with
 a plain `ComputableInPolyTime` hypothesis, a validity hypothesis and a ratio hypothesis. Derive
 `P = NP` from a known `NPComplete` problem through `NPComplete.P_eq_NP_of_mem_P`, as
-[PCP/Approximation/BinPacking.lean](../../Complexity/Computability/PCP/Approximation/BinPacking.lean)
+[PCP/Approximation/BinPacking.lean](../../CslibFrontier/Computability/PCP/Approximation/BinPacking.lean)
 does from `Partition` and
-[PCP/Approximation/KCenter.lean](../../Complexity/Computability/PCP/Approximation/KCenter.lean)
+[PCP/Approximation/KCenter.lean](../../CslibFrontier/Computability/PCP/Approximation/KCenter.lean)
 does from `DominatingSet`.
 
 Check the clients with
-`scripts/build.sh ComplexityTests.KnapsackFPTAS ComplexityTests.BinPackingApprox`. The
-[KnapsackFPTAS client](../../ComplexityTests/KnapsackFPTAS.lean) checks an instance where the
-scheme is not optimal but meets its bound. The [BinPackingApprox client](../../ComplexityTests/BinPackingApprox.lean)
+`scripts/build.sh CslibFrontierTests.KnapsackFPTAS CslibFrontierTests.BinPackingApprox`. The
+[KnapsackFPTAS client](../../CslibFrontierTests/KnapsackFPTAS.lean) checks an instance where the
+scheme is not optimal but meets its bound. The [BinPackingApprox client](../../CslibFrontierTests/BinPackingApprox.lean)
 shows that an exact, non-polynomial algorithm satisfies the hardness hypotheses other than
 running time, and that First Fit violates the ratio hypothesis.
 
 For a ratio of a greedy packing that pairing cannot give, use a weighting function, as
-[BinPacking/FirstFitWeight.lean](../../Complexity/Algorithms/Lean/BinPacking/FirstFitWeight.lean)
+[BinPacking/FirstFitWeight.lean](../../CslibFrontier/Algorithms/Lean/BinPacking/FirstFitWeight.lean)
 does for First Fit's `17/10`. Keep the weights in `ℕ` by scaling them by `10 * C`, so each case
 of the piecewise weight closes with `split_ifs <;> omega`. Bound the weight of one bin
 (`sum_map_firstFitWeight_le`) and transfer it to a packing with
@@ -222,9 +222,9 @@ its rule: for First Fit, every item of a later bin overflows every earlier bin
 result `ten_mul_length_firstFit_le` gives `10 * FF ≤ 17 * OPT + 8` against every packing, and
 `length_firstFit_le_ceil` gives `FF ≤ ⌈17/10 * OPT⌉`. The absolute bound
 `FF ≤ ⌊17/10 * OPT⌋` of [Dósa and Sgall][dosasgall2013] is not formalized. The
-[BinPackingFirstFitWeight client](../../ComplexityTests/BinPackingFirstFitWeight.lean) checks a bin
+[BinPackingFirstFitWeight client](../../CslibFrontierTests/BinPackingFirstFitWeight.lean) checks a bin
 attaining the weight bound and an instance with `OPT = 9` where First Fit uses `15` bins; check it
-with `scripts/build.sh ComplexityTests.BinPackingFirstFitWeight`. If a case of the weight bounds
+with `scripts/build.sh CslibFrontierTests.BinPackingFirstFitWeight`. If a case of the weight bounds
 does not close under `omega`, check the scaling and whether each breakpoint of the weight is open
 or closed as in the source; if the lower bound fails, check that it uses the algorithm's rule, not
 only pairwise overfull bins.
@@ -244,7 +244,7 @@ the rounding map.
 
 **Worked example: Compose a logspace callback without storing the intermediate word**
 
-**Goal:** `ComputableInLogSpace f encIn encOut`, whose [definition](../../Complexity/Computability/Machines/Turing/MultiTape/Complexity/LogSpace.lean) requires halting and workspace at most `c * (Nat.log2 n + 1)`. Input and append-only output are excluded. Use the `LogSpace.Words` and `LogSpace.CounterProgram.Words` modules under `Complexity.Computability.Machines.Turing.MultiTape.Complexity`, as imported by [LogSpaceFunProp](../../ComplexityTests/LogSpaceFunProp.lean), and open `Turing.MultiTapeTM`.
+**Goal:** `ComputableInLogSpace f encIn encOut`, whose [definition](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace.lean) requires halting and workspace at most `c * (Nat.log2 n + 1)`. Input and append-only output are excluded. Use the `LogSpace.Words` and `LogSpace.CounterProgram.Words` modules under `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity`, as imported by [LogSpaceFunProp](../../CslibFrontierTests/LogSpaceFunProp.lean), and open `Turing.MultiTapeTM`.
 
 Start with a logspace certificate for the callback; the client composes it with concatenation and projections:
 
@@ -271,7 +271,7 @@ This conclusion is different from `ComputableInO`, which additionally charges en
 
 **Worked example: Supply the fields of a class-membership proof**
 
-**Goals:** `A ∈ P enc` or `A ∈ NP enc`. Open [NPCompleteness](../../ComplexityTests/NPCompleteness.lean), which imports `Complexity.Computability.Complexity.Problems.Clique` and `Complexity.Tactic.PolyTime`, and opens `Cslib.Complexity Turing.MultiTapeTM`.
+**Goals:** `A ∈ P enc` or `A ∈ NP enc`. Open [NPCompleteness](../../CslibFrontierTests/NPCompleteness.lean), which imports `CslibFrontier.Computability.Complexity.Problems.Clique` and `CslibFrontier.Tactic.PolyTime`, and opens `Cslib.Complexity Turing.MultiTapeTM`.
 
 A P proof supplies the Boolean decider, its computation certificate, and its membership equivalence:
 
@@ -286,7 +286,7 @@ example : {w : List Bool | w.headD false = true} ∈ NP encBits :=
   P_subset_NP startsTrue_mem_P
 ```
 
-For NP, additionally supply a verifier and a polynomial certificate-length condition. In this API `IsVerifier` requires the witness length to **equal** the polynomial evaluated at encoded input length; use [IsVerifier.of_padding](../../Complexity/Computability/Complexity/Classes/NP.lean) when adapting a bounded-witness presentation. The client reuses the library's Clique theorem:
+For NP, additionally supply a verifier and a polynomial certificate-length condition. In this API `IsVerifier` requires the witness length to **equal** the polynomial evaluated at encoded input length; use [IsVerifier.of_padding](../../CslibFrontier/Computability/Complexity/Classes/NP.lean) when adapting a bounded-witness presentation. The client reuses the library's Clique theorem:
 
 <!-- excerpt: deterministic-np -->
 ```lean
@@ -308,7 +308,7 @@ theorem clique_mem_NP : Clique ∈ NP (encPair encGraph encNat) :=
 
 **Goal:** prove `PolyTimeReducible encA encB A B` from a known hard source problem to the target problem, then combine transferred hardness with NP membership.
 
-Continue in [NPCompleteness](../../ComplexityTests/NPCompleteness.lean), keeping the imports and open declarations above. Build a map from the known hard problem **to** your problem. Prove its cost separately from correctness. Here `complementInstance`, defined and certified immediately above the excerpt in the source file, complements the declared graph and keeps the requested size:
+Continue in [NPCompleteness](../../CslibFrontierTests/NPCompleteness.lean), keeping the imports and open declarations above. Build a map from the known hard problem **to** your problem. Prove its cost separately from correctness. Here `complementInstance`, defined and certified immediately above the excerpt in the source file, complements the declared graph and keeps the requested size:
 
 <!-- excerpt: deterministic-reduction -->
 ```lean
