@@ -52,12 +52,12 @@ theorem uniformComputableInPolyTime {B : Basis} (φ : Basis.exact.Simulates B)
     (hlayout : ∀ w d (j : Fin k), (encode w d).getD j.val 0 = input d j)
     (hspec : ∀ d w, logWidth c (size d) ≤ w → InputFits w (encode w d) →
       k ≤ (encode w d).length ∧ Fits w ((encode w d).length + 1) ∧
-        safe w d (inputState (encode w d)) ∧
-        (Memory.spec w).ValidHistory (inputState (encode w d))
-          ((Memory.spec w).clientHistory (inputState (encode w d)) (p d)) ∧
-        output ((Memory.spec w).clientResult (inputState (encode w d)) (p d)) i = f d ∧
-        memoryCost (p d) (inputState (encode w d)) + work d (inputState (encode w d)) ≤
-          T (size d)) :
+        safe w d (Memory.State.init (encode w d)) ∧
+        (Memory.spec w).ValidHistory (Memory.State.init (encode w d))
+          ((Memory.spec w).clientHistory (Memory.State.init (encode w d)) (p d)) ∧
+        output ((Memory.spec w).clientResult (Memory.State.init (encode w d)) (p d)) i = f d ∧
+        memoryCost (p d) (Memory.State.init (encode w d)) +
+            work d (Memory.State.init (encode w d)) ≤ T (size d)) :
     UniformComputableInPolyTime B f encode size := by
   let r := k + (l + h.scratchSize + 1) + 1
   let fr : Fin r := ⟨0, by omega⟩

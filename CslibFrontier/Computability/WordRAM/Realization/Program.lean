@@ -29,7 +29,6 @@ through `Realizes.exists_refines`; no new execution judgment is introduced here.
 
 * `inputLoads`: a fixed sequence loading consecutive cells into source registers.
 * `inputPrefix`: the native register and frontier installation prefix.
-* `inputState`: the functional memory state of the native list-input convention.
 
 ## Main results
 
@@ -106,10 +105,6 @@ def inputPrefix {r k : ℕ} (frontier ptr : Fin r) (src : Fin k → Fin r) : Cod
       (.seq (.op (.const ptr 1))
         (.seq (.op (.exactBin .add frontier frontier ptr)) (inputLoads ptr src 0))))
 
-/-- The whole input memory, with the first free address immediately after its last word. -/
-def inputState (words : List ℕ) : Memory.State :=
-  ⟨(Data.init words : Data 0).mem, words.length + 1⟩
-
 /-- Argument installation takes at most `2 * k + 5` native instructions. Its memory is unchanged;
 only the frontier, pointer and source registers can change. The frontier-fit premise also pays
 for the constant one and every input address. -/
@@ -118,7 +113,7 @@ theorem inputPrefix_exec {r k w : ℕ} (frontier ptr : Fin r) (src : Fin k → F
     (hd : ∀ i, src i ≠ ptr) (hf : ∀ i, src i ≠ frontier)
     (hk : k ≤ words.length) (hw : Fits w (words.length + 1)) (hin : InputFits w words) :
     ∃ y, ExecWithin w (inputPrefix frontier ptr src) (Data.init words) y (2 * k + 5) ∧
-      y.Bounded w ∧ memoryState frontier y = inputState words ∧
+      y.Bounded w ∧ memoryState frontier y = Memory.State.init words ∧
       (∀ i, y.regs (src i) = words.getD i.val 0) ∧
       ∀ j, j ≠ frontier → j ≠ ptr → (∀ i, src i ≠ j) → y.regs j = 0 := by
   let x : Data r := Data.init words
@@ -204,16 +199,16 @@ theorem exists_init_program (h : Realizes .exact p input output safe work)
           (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
           ∀ (i : Fin l) (w : ℕ) (d : δ),
           k ≤ (raw d).length → Fits w ((raw d).length + 1) → InputFits w (raw d) →
-          safe w d (inputState (raw d)) →
-          (Memory.spec w).ValidHistory (inputState (raw d))
-            ((Memory.spec w).clientHistory (inputState (raw d)) (p d)) →
+          safe w d (Memory.State.init (raw d)) →
+          (Memory.spec w).ValidHistory (Memory.State.init (raw d))
+            ((Memory.spec w).clientHistory (Memory.State.init (raw d)) (p d)) →
           ∃ t, Executes w
               ((Code.seq (inputPrefix frontier (tmp (Fin.last (l + n))) src)
                 (emit frontier src tmp)).program (tmp (Fin.castAdd (n + 1) i)))
               (State.init (raw d))
-              (output ((Memory.spec w).clientResult (inputState (raw d)) (p d)) i) t ∧
-            t ≤ C * (memoryCost (p d) (inputState (raw d)) +
-              work d (inputState (raw d)) + 1) + 1 := by
+              (output ((Memory.spec w).clientResult (Memory.State.init (raw d)) (p d)) i) t ∧
+            t ≤ C * (memoryCost (p d) (Memory.State.init (raw d)) +
+              work d (Memory.State.init (raw d)) + 1) + 1 := by
   obtain ⟨n, C, emit, he⟩ := h
   refine ⟨n, C + (2 * k + 5), emit, ?_⟩
   intro r frontier src tmp hsrc htmp hd hf hs i w d hk hw hin hsafe hv
@@ -229,8 +224,8 @@ theorem exists_init_program (h : Realizes .exact p input output safe work)
   obtain ⟨t, ht, et⟩ := ex.seq ey
   refine ⟨t + 1, ?_, ?_⟩
   · simpa only [State.init, hout i] using et.executes (tmp (Fin.castAdd (n + 1) i))
-  · have hpos : 1 ≤ memoryCost (p d) (inputState (raw d)) +
-        work d (inputState (raw d)) + 1 := by omega
+  · have hpos : 1 ≤ memoryCost (p d) (Memory.State.init (raw d)) +
+        work d (Memory.State.init (raw d)) + 1 := by omega
     have hover := Nat.mul_le_mul_left (2 * k + 5) hpos
     simp only [Nat.mul_one] at hover
     rw [Nat.add_mul]
@@ -311,15 +306,15 @@ theorem exists_init_unit_program {p : δ → Memory.Prog Unit} {output : Unit �
           (∀ j, tmp j ≠ frontier) → (∀ i, src i ≠ frontier) →
           ∀ (w : ℕ) (d : δ),
           k ≤ (raw d).length → Fits w ((raw d).length + 1) → InputFits w (raw d) →
-          safe w d (inputState (raw d)) →
-          (Memory.spec w).ValidHistory (inputState (raw d))
-            ((Memory.spec w).clientHistory (inputState (raw d)) (p d)) →
+          safe w d (Memory.State.init (raw d)) →
+          (Memory.spec w).ValidHistory (Memory.State.init (raw d))
+            ((Memory.spec w).clientHistory (Memory.State.init (raw d)) (p d)) →
           ∃ t, Executes w
               ((Code.seq (inputPrefix frontier (tmp (Fin.last (0 + n))) src)
                 (.seq (emit frontier src tmp) (.op (.const (tmp 0) 0)))).program (tmp 0))
               (State.init (raw d)) 0 t ∧
-            t ≤ C * (memoryCost (p d) (inputState (raw d)) +
-              work d (inputState (raw d)) + 1) + 2 := by
+            t ≤ C * (memoryCost (p d) (Memory.State.init (raw d)) +
+              work d (Memory.State.init (raw d)) + 1) + 2 := by
   obtain ⟨n, C, emit, he⟩ := h.exists_unit_refines
   refine ⟨n, C + (2 * k + 5), emit, ?_⟩
   intro r frontier src tmp hsrc htmp hd hf hs w d hk hw hin hsafe hv
@@ -335,8 +330,8 @@ theorem exists_init_unit_program {p : δ → Memory.Prog Unit} {output : Unit �
   obtain ⟨t, ht, et⟩ := ex.seq ey
   refine ⟨t + 1, ?_, ?_⟩
   · simpa only [State.init, hout] using et.executes (tmp 0)
-  · have hpos : 1 ≤ memoryCost (p d) (inputState (raw d)) +
-        work d (inputState (raw d)) + 1 := by omega
+  · have hpos : 1 ≤ memoryCost (p d) (Memory.State.init (raw d)) +
+        work d (Memory.State.init (raw d)) + 1 := by omega
     have hover := Nat.mul_le_mul_left (2 * k + 5) hpos
     simp only [Nat.mul_one] at hover
     rw [Nat.add_mul]

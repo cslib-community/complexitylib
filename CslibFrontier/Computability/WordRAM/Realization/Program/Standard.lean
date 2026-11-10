@@ -100,17 +100,17 @@ theorem exists_standard_init_program_state_from_words
       ∃ frontier : Fin r, ∃ out : Fin l → Fin r,
       ∀ w d words, (∀ j : Fin k, words.getD j.val 0 = input d j) →
         k ≤ words.length → Fits w (words.length + 1) → InputFits w words →
-        safe w d (inputState words) →
-        (Memory.spec w).ValidHistory (inputState words)
-          ((Memory.spec w).clientHistory (inputState words) (p d)) →
+        safe w d (Memory.State.init words) →
+        (Memory.spec w).ValidHistory (Memory.State.init words)
+          ((Memory.spec w).clientHistory (Memory.State.init words) (p d)) →
         ∃ y n, Runs w prog (State.init words) ⟨pc, y⟩ n ∧
           step w prog ⟨pc, y⟩ =
-            .halt (output ((Memory.spec w).clientResult (inputState words) (p d)) i) ∧
-          memoryState frontier y = (Memory.spec w).clientState (inputState words) (p d) ∧
+            .halt (output ((Memory.spec w).clientResult (Memory.State.init words) (p d)) i) ∧
+          memoryState frontier y = (Memory.spec w).clientState (Memory.State.init words) (p d) ∧
           (∀ j, y.regs (out j) =
-            output ((Memory.spec w).clientResult (inputState words) (p d)) j) ∧
-          n + 1 ≤ C * (memoryCost (p d) (inputState words) +
-            work d (inputState words) + 1) + 1 := by
+            output ((Memory.spec w).clientResult (Memory.State.init words) (p d)) j) ∧
+          n + 1 ≤ C * (memoryCost (p d) (Memory.State.init words) +
+            work d (Memory.State.init words) + 1) + 1 := by
   obtain ⟨n, C, emit, he⟩ := h
   let r := registers k l n
   let frontier : Fin r := standardFrontier
@@ -137,8 +137,8 @@ theorem exists_standard_init_program_state_from_words
   · simpa only [Nat.zero_add, State.init, code] using hr
   · rw [← hout i]
     exact step_halt (by simp [prog, Code.program])
-  · have hpos : 1 ≤ memoryCost (p d) (inputState words) +
-        work d (inputState words) + 1 := by omega
+  · have hpos : 1 ≤ memoryCost (p d) (Memory.State.init words) +
+        work d (Memory.State.init words) + 1 := by omega
     have hover := Nat.mul_le_mul_left (2 * k + 5) hpos
     simp only [Nat.mul_one] at hover
     rw [Nat.add_mul]
@@ -153,17 +153,17 @@ theorem exists_standard_init_program_state (h : Realizes .exact p input output s
     ∃ r C pc : ℕ, ∃ prog : Program .exact r,
       ∃ frontier : Fin r, ∃ out : Fin l → Fin r,
       ∀ w d, k ≤ (raw d).length → Fits w ((raw d).length + 1) → InputFits w (raw d) →
-        safe w d (inputState (raw d)) →
-        (Memory.spec w).ValidHistory (inputState (raw d))
-          ((Memory.spec w).clientHistory (inputState (raw d)) (p d)) →
+        safe w d (Memory.State.init (raw d)) →
+        (Memory.spec w).ValidHistory (Memory.State.init (raw d))
+          ((Memory.spec w).clientHistory (Memory.State.init (raw d)) (p d)) →
         ∃ y n, Runs w prog (State.init (raw d)) ⟨pc, y⟩ n ∧
           step w prog ⟨pc, y⟩ =
-            .halt (output ((Memory.spec w).clientResult (inputState (raw d)) (p d)) i) ∧
-          memoryState frontier y = (Memory.spec w).clientState (inputState (raw d)) (p d) ∧
+            .halt (output ((Memory.spec w).clientResult (Memory.State.init (raw d)) (p d)) i) ∧
+          memoryState frontier y = (Memory.spec w).clientState (Memory.State.init (raw d)) (p d) ∧
           (∀ j, y.regs (out j) =
-            output ((Memory.spec w).clientResult (inputState (raw d)) (p d)) j) ∧
-          n + 1 ≤ C * (memoryCost (p d) (inputState (raw d)) +
-            work d (inputState (raw d)) + 1) + 1 := by
+            output ((Memory.spec w).clientResult (Memory.State.init (raw d)) (p d)) j) ∧
+          n + 1 ≤ C * (memoryCost (p d) (Memory.State.init (raw d)) +
+            work d (Memory.State.init (raw d)) + 1) + 1 := by
   obtain ⟨r, C, pc, prog, frontier, out, he⟩ :=
     h.exists_standard_init_program_state_from_words i
   exact ⟨r, C, pc, prog, frontier, out, fun w d => he w d (raw d) (hlayout d)⟩
@@ -175,13 +175,13 @@ theorem exists_standard_init_program (h : Realizes .exact p input output safe wo
     (i : Fin l) :
     ∃ r C : ℕ, ∃ prog : Program .exact r,
       ∀ w d, k ≤ (raw d).length → Fits w ((raw d).length + 1) → InputFits w (raw d) →
-        safe w d (inputState (raw d)) →
-        (Memory.spec w).ValidHistory (inputState (raw d))
-          ((Memory.spec w).clientHistory (inputState (raw d)) (p d)) →
+        safe w d (Memory.State.init (raw d)) →
+        (Memory.spec w).ValidHistory (Memory.State.init (raw d))
+          ((Memory.spec w).clientHistory (Memory.State.init (raw d)) (p d)) →
         ∃ t, Executes w prog (State.init (raw d))
-            (output ((Memory.spec w).clientResult (inputState (raw d)) (p d)) i) t ∧
-          t ≤ C * (memoryCost (p d) (inputState (raw d)) +
-            work d (inputState (raw d)) + 1) + 1 := by
+            (output ((Memory.spec w).clientResult (Memory.State.init (raw d)) (p d)) i) t ∧
+          t ≤ C * (memoryCost (p d) (Memory.State.init (raw d)) +
+            work d (Memory.State.init (raw d)) + 1) + 1 := by
   obtain ⟨r, C, pc, prog, _, _, he⟩ := h.exists_standard_init_program_state raw hlayout i
   refine ⟨r, C, prog, ?_⟩
   intro w d hk hw hin hsafe hv
