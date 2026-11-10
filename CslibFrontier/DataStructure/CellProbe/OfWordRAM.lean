@@ -1422,7 +1422,13 @@ private theorem simExecStepsRand_induction {B : Basis} {r_ds k_init regCells wCe
       by_cases hq : q ∈ (μ_step t).support
       · have hdec_eq : (decode o q.data.regs).getD default = q.result := by
           simp [(hq_all q hq).2.1]
-        rw [hdec_eq]
+        by_cases ham : am = (q.result, L.pack q.data)
+        · have ham' : am = ((decode o q.data.regs).getD default, L.pack q.data) := by
+            rwa [hdec_eq]
+          rw [ite_eq_left ham', ite_eq_left ham]
+        · have ham' : am ≠ ((decode o q.data.regs).getD default, L.pack q.data) := by
+            rwa [hdec_eq]
+          rw [ite_eq_right ham', ite_eq_right ham]
       · have hq0 : μ_step t q = 0 := (PMF.apply_eq_zero_iff _ _).mpr hq
         simp [hq0]
     refine ⟨?_, ?_⟩
@@ -1465,8 +1471,10 @@ private theorem simExecStepsRand_induction {B : Basis} {r_ds k_init regCells wCe
               P_cp.expectedProbesFrom (L.pack t.data) (o :: ops_rem) =
                 (P_cp.step o).expectedProbes (L.pack t.data) +
                   ∑' q, μ_step t q * P_cp.expectedProbesFrom (L.pack q.data) ops_rem := by
-            rw [Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.expectedProbesFrom_cons,
-              hlaw_t, Probability.PMF.tsum_map_mul]
+            have hc1 :=
+              Cslib.DataStructure.CellProbe.Randomized.StateTransitionImpl.expectedProbesFrom_cons
+                P_cp (L.pack t.data) o ops_rem
+            rw [hc1, hlaw_t, Probability.PMF.tsum_map_mul]
           have hle_t :
               P_cp.expectedProbesFrom (L.pack t.data) (o :: ops_rem) ≤
                 ProbComp.expect (mc t) (fun z => (z.2 : ℝ≥0∞)) + (L.overhead : ℝ≥0∞) +
@@ -1519,11 +1527,12 @@ theorem ObliviousSequenceImpl.exists_cellProbe_of_execRand
       ∃ C_cp : Cslib.DataStructure.CellProbe.Randomized.ObliviousSequenceImpl S P_cp,
         C_cp.initPotential = C.initPotential ∧
         (∀ o, C_cp.charge o = C.charge o + 2 * persistentRegCount P) := by
+  rw [persistentRegCount_eq_persCount]
   let L := standardLayout P.input base C.space w
   let d₀' : Data r_ds := { regs := d₀.regs, mem := fun _ => 0 }
   have hd₀' : d₀'.Bounded w := ⟨hd₀.1, fun _ => fits_zero w⟩
   obtain ⟨ν₀, _, hinv₀, hsupp₀⟩ := C.initFresh_exec hd₀' hfr hpar (fun _ _ => rfl)
-  let ν₀_seq := ν₀.map (SeqOutcome.ofLatentState (Result := S.Result))
+  set ν₀_seq := ν₀.map (SeqOutcome.ofLatentState (Result := S.Result))
   have hsupp_seq : ∀ t ∈ ν₀_seq.support,
       t.data.Bounded w ∧ ∀ a ∉ (Block.mk base C.space).footprint, t.data.mem a = 0 := by
     intro t ht
@@ -1538,12 +1547,14 @@ theorem ObliviousSequenceImpl.exists_cellProbe_of_execRand
           (fun _ regs => C.decode o regs) default (autoRandFuel L P.code (C.encode o)) }
   refine ⟨P_cp, ⟨{
     initPotential := C.initPotential
-    charge := fun o => C.charge o + 2 * persistentRegCount P
+    charge := fun o => C.charge o + 2 * persCount P.input
     contract_runSeq := ?_
     expectedSeqProbes_le := ?_
   }, rfl, fun _ => rfl⟩⟩
   · intro ops hv
     obtain ⟨ν_final, T_ops, hex, hcontract, _⟩ := hfin ops ν₀ hv hinv₀
+    change ExecStepsRand P S C.Latent w base C.space C.encode C.decode ops ν₀_seq ν_final T_ops
+      at hex
     obtain ⟨hlaw, _⟩ :=
       simExecStepsRand_induction L (ν₀_seq.map fun t => L.pack t.data) hex hsupp_seq
     have hrun_eq : (P_cp.runSeq ops).map Prod.fst = ν_final.map SeqOutcome.transcript := by
@@ -1555,38 +1566,45 @@ theorem ObliviousSequenceImpl.exists_cellProbe_of_execRand
       refine tsum_congr fun t => ?_
       by_cases ht : t ∈ ν₀_seq.support
       · have hnil : t.transcript = [] := by
+          dsimp only [ν₀_seq] at ht
           rw [PMF.mem_support_map_iff] at ht
           obtain ⟨_, _, rfl⟩ := ht
           rfl
-        rw [hnil, PMF.map_comp]
-        rfl
+        rw [hnil]
+        simp only [PMF.map_comp]
+        refine congrArg (_ * ·)
+          (congrArg (fun f => (PMF.map f _) out_tr)
+            (funext fun ⟨⟨_, _⟩, _⟩ => rfl))
       · rw [(PMF.apply_eq_zero_iff _ _).mpr ht, zero_mul, zero_mul]
     exact hrun_eq ▸ hcontract
   · intro ops hv
     obtain ⟨ν_final, T_ops, hex, _, hcost⟩ := hfin ops ν₀ hv hinv₀
+    change ExecStepsRand P S C.Latent w base C.space C.encode C.decode ops ν₀_seq ν_final T_ops
+      at hex
     obtain ⟨_, hexp⟩ :=
       simExecStepsRand_induction L (ν₀_seq.map fun t => L.pack t.data) hex hsupp_seq
     rw [Cslib.CellProbe.Randomized.Scheme.expectedSeqProbes_eq_init_tsum]
     dsimp only [P_cp]
     rw [Probability.PMF.tsum_map_mul]
     refine hexp.trans ?_
-    have hsum_eq :
-        ((ops.map fun o => C.charge o + 2 * persistentRegCount P).sum : ℕ) =
-          (ops.map C.charge).sum + 2 * persistentRegCount P * ops.length := by
-      induction ops with
+    have hsum_eq : ∀ l : List S.Op,
+        ((l.map fun o => C.charge o + 2 * persCount P.input).sum : ℕ) =
+          (l.map C.charge).sum + 2 * persCount P.input * l.length := by
+      intro l
+      induction l with
       | nil => simp
       | cons o os ih =>
-        simp only [List.map_cons, List.sum_cons, List.length_cons, ih]
+        rw [List.map_cons, List.map_cons, List.sum_cons, List.sum_cons, List.length_cons, ih]
         ring
-    rw [hsum_eq, Nat.cast_add, Nat.cast_mul]
+    rw [hsum_eq ops, Nat.cast_add, Nat.cast_mul]
     calc T_ops + (L.overhead : ℝ≥0∞) * (ops.length : ℝ≥0∞)
       _ ≤ ((C.initPotential : ℝ≥0∞) + ((ops.map C.charge).sum : ℝ≥0∞)) +
-            ((2 * persistentRegCount P : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞) := by
-          rw [standardLayout_overhead, ← persistentRegCount_eq_persCount]
+            ((2 * persCount P.input : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞) := by
+          rw [standardLayout_overhead]
           exact add_le_add hcost le_rfl
       _ = (C.initPotential : ℝ≥0∞) +
             (((ops.map C.charge).sum : ℝ≥0∞) +
-              ((2 * persistentRegCount P : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by ac_rfl
+              ((2 * persCount P.input : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by ac_rfl
 
 private theorem simExecStepsLasVegas_induction
     {B : Basis} {r_ds k_init regCells wCell w base space : ℕ}

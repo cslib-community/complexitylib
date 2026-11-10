@@ -2243,7 +2243,7 @@ theorem continuing_sum_le_of_almostSurelyHalts {B : Basis} {r w : ℕ} {p : Prog
 /-! #### Halting-limit identification, `ExecProgramDist`, and zero-error fallback -/
 
 /-- Supremum halting probability of `p` from `⟨0, x⟩` at `(vy.1, vy.2)`. -/
-noncomputable def haltedLim {B : Basis} {r : ℕ} (w : ℕ) (p : Program B r) (x : Data r)
+@[expose] noncomputable def haltedLim {B : Basis} {r : ℕ} (w : ℕ) (p : Program B r) (x : Data r)
     (vy : ℕ × Data r) : ℝ≥0∞ :=
   ⨆ K : ℕ, evalRand w p K ⟨0, x⟩ (.halted vy.1 vy.2)
 
