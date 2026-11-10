@@ -349,6 +349,37 @@ Example 10.5 in `(ZMod 31)ˣ`, CRT recombination for `12 = 4 * 3`, and
 
 For composite-modulus number-theoretic hardness assumptions, import [`QuadraticResiduosity.lean`](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [`RSATrapdoor.lean`](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), and [`RabinFactoring.lean`](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) ([katzlindell20][katzlindell20], §§9.2.3–9.2.4, §15.1.1, §§15.4.1–15.4.3, and §§15.5.1–15.5.2; checked examples and reduction clients are in [`CslibFrontierTests/Crypto/QuadraticResiduosity.lean`](../../CslibFrontierTests/Crypto/QuadraticResiduosity.lean), [`CslibFrontierTests/Crypto/RSATrapdoor.lean`](../../CslibFrontierTests/Crypto/RSATrapdoor.lean), and [`CslibFrontierTests/Crypto/RabinFactoring.lean`](../../CslibFrontierTests/Crypto/RabinFactoring.lean)). In [`QuadraticResiduosity.lean`](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean) ([katzlindell20][katzlindell20], Proposition 15.23 and Definition 15.27), quadratic residues reuse Mathlib's `IsSquare` and `Subgroup.square` (`Subgroup.mem_square`, `mem_quadResidueSet_iff`), `jacobiSymbol p q` multiplies the Legendre symbols on `(ZMod (p * q))ˣ`, `jacobiPosSet_eq_disjoint_union` and `card_quadResidueSet_eq_card_positiveNonresidues` partition `J_N^{+1}` into equal-sized `quadResidueSet` (`QR_N`) and `positiveNonresidues` (`QNR_N^{+1}`) for distinct odd primes `p ≠ q`, `blumSqrt p q` inverts squaring on `QR_N` for Blum moduli `IsBlumModulus p q` (`blumSqrt_sq`, `sq_bijOn_quadResidueSet`, `neg_one_mem_positiveNonresidues`), and `QuadraticResiduosityHard` compares `qrRealGame` against `qrIdealGame`. In [`RSATrapdoor.lean`](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean) ([katzlindell20][katzlindell20], Definitions 9.46 and 15.1), `rsaEval N e x = x ^ e % N` and `rsaInvert N d y = y ^ d % N` are certified in polynomial time (`computableInPolyTime_rsaEval`, `computableInPolyTime_rsaInvert`) and proved mutually inverse across all residues `x < N` (`rsaInvert_rsaEval`, `rsaEval_rsaInvert`), inducing bijections both on `Fin N` (`rsaEval_bijective_fin`, including nonunits dividing `p` or `q`) and on `(ZMod N)ˣ` (`rsaEval_bijective_units`), with `rsaInversionGame` sampling `x` uniformly from `Fin desc.modulus` (`RSAOneWay`, whereas Definition 9.46 samples uniformly from `(ZMod N)ˣ`). In [`RabinFactoring.lean`](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) ([katzlindell20][katzlindell20], Definition 9.45, Lemma 15.35, Theorem 15.36, Proposition 15.37, and Theorem 15.38), `rabinOneWay_iff_factoringHard` establishes `RabinOneWay gen ↔ FactoringHard gen` for Blum moduli via explicit certified PPT reductions `factorToRabin` (computing `crtSqrt y a b` from a nontrivial factorization `a * b = N`, with exact loss `1` in `succProbability_factoringGame_le`) and `rabinToFactor` (`rabinOneWay_of_factoringHard`, `factoringHard_of_rabinOneWay`). Across all three modules, generator families (`setup : ℕ → PMF ModulusDesc`, `RSAGen := ℕ → PMF RSADesc`, `BlumGen := ℕ → PMF BlumDesc`) are arbitrary `PMF` families over valid parameter tuples without bundled prime-generation algorithms or bit-length bounds in `n`, and adversaries/reductions use uniform native strict-PPT (`IsPPTOn`) on `(1^n, ...)` with binary `encNat` encodings (charging the full encoded input and sampled/callback output uniformly before `n`). Rather than assuming an exact uniform sampler on `(ZMod N)ˣ`, `rabinInversionGame` and `rabinToFactor` use an original dyadic all-residue sampling variant that draws a uniform `2 * N.bits.length`-bit list `r` (`x = ofBits r < 2^(2 * bits(N))` with `N^2 ≤ 2^(2 * bits(N))`) and squares `x` modulo `N`: `rabinToFactor` checks `1 < gcd(x, N) < N` first and otherwise queries the inverter on `x^2 % N` to return `rabinFactorPair (x + x') N`, yielding the concrete factor-`3` reduction bound `succProbability_rabinInversionGame_le` without modular rejection-sampling error.
 
+For the Miller–Rabin test as a probabilistic program and for random prime and modulus
+generation, import [`MillerRabin.lean`](../../CslibFrontier/Crypto/Computational/MillerRabin.lean)
+and [`ModulusGeneration.lean`](../../CslibFrontier/Crypto/Computational/ModulusGeneration.lean)
+([katzlindell20][katzlindell20], §§9.2.1–9.2.3, Theorems 9.32 and 9.33 and Algorithm 9.34; checked instances
+are in [`CslibFrontierTests/Crypto/MillerRabin.lean`](../../CslibFrontierTests/Crypto/MillerRabin.lean)).
+`millerRabinTest n t` runs `t` independent rounds (`millerRabinRound`), each of which negates the
+coRP verifier `Complexity.MillerRabin.verifier` on `2 |n|` fresh coins. A prime always passes
+(`eval_millerRabinTest_of_prime`), any other `n` passes with probability at most `2⁻ᵗ`
+(`eval_millerRabinTest_le_of_not_prime`, reusing `ZMod.two_mul_card_isStrongLiar_le`), and the test
+is uniform strict PPT on `(n, 1^t)` (`isPPTOn_millerRabinTest`). `randomPrime n` makes up to `3 n²`
+attempts, each drawing a uniform `n`-bit candidate with leading bit `1` (`primeCandidate`) and
+running `n` rounds of the test, and returns `none` when every attempt fails. A returned number is
+not prime with probability at most `3 n² · 2⁻ⁿ` (`toOuterMeasure_randomPrime_not_prime_le`), has
+exactly `n` bits (`mem_support_randomPrime`), and all `n`-bit primes are returned with the same
+probability (`eval_randomPrime_some_eq`); the generator is uniform strict PPT on `1^n`
+(`isPPTOn_randomPrime`). `genModulus n` multiplies two independent outputs into `(N, p, q)`
+(`isPPTOn_genModulus`). Its outputs are not certified, so it is not a `PMF ModulusDesc` or
+`BalancedModulus.Desc` family. The density of the `n`-bit primes ([katzlindell20][katzlindell20],
+Theorem 9.32), proved in
+[`PrimeDensity.lean`](../../CslibFrontier/Foundations/NumberTheory/PrimeDensity.lean)
+(`Nat.two_pow_sub_one_le_three_mul_card_primes`) by Erdős's central binomial argument
+(`Nat.centralBinom_le_pow_card_primes_Ico`, in
+[`CentralBinomPrimes.lean`](../../CslibFrontier/Foundations/NumberTheory/CentralBinomPrimes.lean),
+which `PrimeWindow.lean` shares), makes a
+candidate prime with probability at least `1 / (3 n)` for `n > 1`
+(`inv_three_mul_le_toOuterMeasure_primeCandidate_prime`). So for `n > 1` the generator returns
+`none` with probability at most `2⁻ⁿ` (`eval_randomPrime_none_le_inv_two_pow`), and `genModulus`
+returns an invalid output with probability at most `(6 n² + 2) · 2⁻ⁿ`
+(`toOuterMeasure_genModulus_invalid_le_inv_two_pow`, from the bound
+`toOuterMeasure_genModulus_invalid_le` in terms of the probability that a candidate is not prime).
+
 For composite residuosity and Paillier encryption, import
 [`CompositeResiduosity.lean`](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean) and
 [`Paillier.lean`](../../CslibFrontier/Crypto/Computational/Paillier.lean), and for IND-CPA security

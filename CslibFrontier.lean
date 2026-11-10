@@ -1884,6 +1884,7 @@ public import CslibFrontier.Computability.Complexity.Classes.PP.TruthTable
 public import CslibFrontier.Computability.Complexity.Classes.Padding
 public import CslibFrontier.Computability.Complexity.Classes.Padding.NondeterministicPolynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Polynomial
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 public import CslibFrontier.Computability.Complexity.Classes.ParityP
 public import CslibFrontier.Computability.Complexity.Classes.ParityP.Closure
 public import CslibFrontier.Computability.Complexity.Classes.Promise.Basic
@@ -3572,6 +3573,7 @@ public import CslibFrontier.Computability.WordRAM.Allocation
 public import CslibFrontier.Computability.WordRAM.ArrayAppend
 public import CslibFrontier.Computability.WordRAM.ArrayNormalize
 public import CslibFrontier.Computability.WordRAM.Basis
+public import CslibFrontier.Computability.WordRAM.BoundedExec
 public import CslibFrontier.Computability.WordRAM.Call
 public import CslibFrontier.Computability.WordRAM.Compile
 public import CslibFrontier.Computability.WordRAM.Controller
@@ -3635,6 +3637,7 @@ public import CslibFrontier.Computability.WordRAM.Realization.Backend
 public import CslibFrontier.Computability.WordRAM.Realization.BackendFrame
 public import CslibFrontier.Computability.WordRAM.Realization.Basic
 public import CslibFrontier.Computability.WordRAM.Realization.Bind
+public import CslibFrontier.Computability.WordRAM.Realization.BoundedTactic
 public import CslibFrontier.Computability.WordRAM.Realization.Branch
 public import CslibFrontier.Computability.WordRAM.Realization.Client.MemoryStack
 public import CslibFrontier.Computability.WordRAM.Realization.Function
@@ -3656,6 +3659,10 @@ public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 public import CslibFrontier.Computability.WordRAM.RegisterCopy
 public import CslibFrontier.Computability.WordRAM.RegisterFrame
+public import CslibFrontier.Computability.WordRAM.Resizable.Basic
+public import CslibFrontier.Computability.WordRAM.Resizable.Clocked
+public import CslibFrontier.Computability.WordRAM.Resizable.LoopDist
+public import CslibFrontier.Computability.WordRAM.Resizable.Randomized
 public import CslibFrontier.Computability.WordRAM.Sequence
 public import CslibFrontier.Computability.WordRAM.Signed.Arithmetic
 public import CslibFrontier.Computability.WordRAM.Signed.ArrayArithmetic.Body
@@ -3871,6 +3878,8 @@ public import CslibFrontier.Crypto.Computational.MerkleSignature.Security
 public import CslibFrontier.Crypto.Computational.MerkleTree
 public import CslibFrontier.Crypto.Computational.MerkleTree.Binding
 public import CslibFrontier.Crypto.Computational.MerkleTree.ROMExtract
+public import CslibFrontier.Crypto.Computational.MillerRabin
+public import CslibFrontier.Crypto.Computational.ModulusGeneration
 public import CslibFrontier.Crypto.Computational.NaorReingold
 public import CslibFrontier.Crypto.Computational.NaorReingold.PRF
 public import CslibFrontier.Crypto.Computational.NaorReingold.Security
@@ -4300,6 +4309,7 @@ public import CslibFrontier.DataStructure.Memory.Frame
 public import CslibFrontier.DataStructure.Memory.Record
 public import CslibFrontier.DataStructure.Memory.RecordLink
 public import CslibFrontier.DataStructure.Memory.Region
+public import CslibFrontier.DataStructure.Memory.Resizable
 public import CslibFrontier.DataStructure.Memory.Spec
 public import CslibFrontier.DataStructure.Memory.Triple
 public import CslibFrontier.DataStructure.NearNeighbor.Hamming
@@ -4451,6 +4461,7 @@ public import CslibFrontier.Foundations.Analysis.Convex.FirstOrder
 public import CslibFrontier.Foundations.Analysis.Convex.Strong
 public import CslibFrontier.Foundations.Analysis.ENNRealFraction
 public import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
+public import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 public import CslibFrontier.Foundations.Analysis.ENNRealTsum
 public import CslibFrontier.Foundations.Analysis.Fourier.ZModMultiples
 public import CslibFrontier.Foundations.Analysis.Fourier.ZModProd
@@ -4788,6 +4799,7 @@ public import CslibFrontier.Foundations.Data.BitString.List.LowBits
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
 public import CslibFrontier.Foundations.Data.BitString.List.Positions
 public import CslibFrontier.Foundations.Data.BitString.List.PrefixFree
+public import CslibFrontier.Foundations.Data.BitString.List.Single
 public import CslibFrontier.Foundations.Data.BitString.List.Vote
 public import CslibFrontier.Foundations.Data.BitString.MajorityVote
 public import CslibFrontier.Foundations.Data.BitString.PadBlocks
@@ -5160,6 +5172,7 @@ public import CslibFrontier.Foundations.NumberTheory.AKS.IntegerVariant
 public import CslibFrontier.Foundations.NumberTheory.AKS.Introspective
 public import CslibFrontier.Foundations.NumberTheory.AKS.PerfectPower
 public import CslibFrontier.Foundations.NumberTheory.AKS.SmallR
+public import CslibFrontier.Foundations.NumberTheory.CentralBinomPrimes
 public import CslibFrontier.Foundations.NumberTheory.Harmonic
 public import CslibFrontier.Foundations.NumberTheory.Padics.AdjoinRootDigitLift
 public import CslibFrontier.Foundations.NumberTheory.Padics.AdjoinRootReduction
@@ -5170,6 +5183,7 @@ public import CslibFrontier.Foundations.NumberTheory.Primality.RabinMonier
 public import CslibFrontier.Foundations.NumberTheory.Primality.StrongLiars
 public import CslibFrontier.Foundations.NumberTheory.Primality.Witness
 public import CslibFrontier.Foundations.NumberTheory.PrimeCounting
+public import CslibFrontier.Foundations.NumberTheory.PrimeDensity
 public import CslibFrontier.Foundations.NumberTheory.PrimeWindow
 public import CslibFrontier.Foundations.NumberTheory.SqrtPrimeWindow
 public import CslibFrontier.Foundations.Order.AntitoneSwap
