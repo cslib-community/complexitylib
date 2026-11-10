@@ -455,7 +455,9 @@ Intermediate hybrid games and multi-step couplings across identical distribution
 reordering uniform draws over `ZMod q`) remain explicit choices: `peel_binds` couples identical
 leading distributions in place rather than guessing from bound variable names, so unfold named game
 wrappers and perform any deeper `PMF.bind_comm` / `Game.advantage_bind_comm` reordering before
-peeling. When a trailing sum bound needs cast rewriting or monotonicity (such as `push_cast; ring`
+peeling. For a `PMF.bind` chain, `pmf_hoist q` from
+[Reorder independent samples](#reorder-independent-samples) moves the samples of `q` to the front
+first. When a trailing sum bound needs cast rewriting or monotonicity (such as `push_cast; ring`
 or `gcongr`), `game_trans` leaves that single ground inequality open.
 
 If `peel_binds` reports that leading stages do not match and cannot be aligned by a single
