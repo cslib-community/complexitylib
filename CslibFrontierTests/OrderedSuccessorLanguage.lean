@@ -55,6 +55,12 @@ example (x y : (language (succLanguage L)).Term (Fin 2)) :
     (succ L x y ⊓ (Term.equal x y).not).IsQF := by
   fo_qf
 
+/-- Elimination through a quantifier-free successor definition stays quantifier-free, by
+`isQF_elimSuccWith` in the `fo_qf` rule set. -/
+example {σ : (language L).Formula (Fin 2)} (hσ : σ.IsQF) (x y : (language (succLanguage L)).Term
+    (Fin 2)) : (elimSuccWith σ (succ L x y ⊓ (Term.equal x y).not)).IsQF := by
+  fo_qf
+
 /-! ### Elimination with constants and bound variables -/
 
 /-- `0 + 1 = 1` survives elimination of a successor atom between constants. -/

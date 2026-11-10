@@ -18,6 +18,7 @@ import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.Collision
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -192,17 +193,7 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
       F.withSeed.ddhRealGame (F.seededSetup setup seedLen) distinguisher n := by
   simp only [pmf_norm, ddhRealGame, seededDDHDistinguisher, seededSetup, withSeed,
     Cslib.BitString.eval_sampleList]
-  congr 1 with d : 1
-  change _ =
-    (Cslib.BitString.uniformList (seedLen n d)).bind fun a =>
-      (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-        (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
-          ProbComp.eval (distinguisher n
-            ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-              F.encode d ((α * β) • F.generator d)))
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with α : 1
-  conv_rhs => rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In `ddhIdealGame`, `seededDDHDistinguisher` simulates `F.withSeed.ddhIdealGame` under
 `seededSetup`. -/
@@ -214,20 +205,7 @@ noncomputable def seededDDHDistinguisher (seedLen : ℕ → F.Desc → ℕ)
       F.withSeed.ddhIdealGame (F.seededSetup setup seedLen) distinguisher n := by
   simp only [pmf_norm, ddhIdealGame, seededDDHDistinguisher, seededSetup, withSeed,
     Cslib.BitString.eval_sampleList]
-  congr 1 with d : 1
-  change _ =
-    (Cslib.BitString.uniformList (seedLen n d)).bind fun a =>
-      (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-        (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β =>
-          (PMF.uniformOfFintype (ZMod (F.order d))).bind fun γ =>
-            ProbComp.eval (distinguisher n
-              ((d, a), F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-                F.encode d (γ • F.generator d)))
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with α : 1
-  conv_rhs => rw [PMF.bind_comm]
-  congr 1 with β : 1
-  conv_rhs => rw [PMF.bind_comm]
+  pmf_swap
 
 /-- `seededDDHDistinguisher` is uniform strict PPT whenever `seedLen` is polynomial-time computable
 in unary and `distinguisher` is uniform strict PPT. -/

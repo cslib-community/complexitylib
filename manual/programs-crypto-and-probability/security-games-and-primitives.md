@@ -651,6 +651,31 @@ collision of Exercise 7.24 (`daviesMeyer_collision_of_fixedPoints`); the ideal-c
 Theorem 7.5 is not formalized. Concrete checks are in
 [`CslibFrontierTests/Crypto/Sponge.lean`](../../CslibFrontierTests/Crypto/Sponge.lean).
 
+For fresh-message encryption unforgeability ([katzlindell20][katzlindell20], §5.2, Definition 5.2,
+p. 151, and Exercise 5.5, p. 165), import
+[`Encryption/EncForge.lean`](../../CslibFrontier/Crypto/Computational/Encryption/EncForge.lean).
+`SymmetricCipher.encForgeGame` and `SymmetricCipher.EncForge` test whether a uniform strict
+`IsOraclePPT encBits` adversary can produce a ciphertext decrypting to `some m` for a plaintext `m`
+not queried to `encForgeOracle`. Ciphertext integrity implies `EncForge`
+(`SymmetricCipher.succProbability_encForgeGame_le_ciGame`, `CiphertextIntegrity.encForge`), and
+ordinary fresh-message MAC security (`MACScheme.EUFCMA`, without `SUFCMA` or `E.INDCPA`) already
+suffices for `(encryptThenMAC E M hctLen).EncForge` (`succProbability_encForgeGame_encryptThenMAC_le`,
+`encForge_encryptThenMAC`, Exercise 5.5). The generic authenticated-encryption composition
+separations (Exercises 5.4 and 5.10, pp. 164–165) are in
+[`Encryption/CompositionCounterexamples.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CompositionCounterexamples.lean).
+`SymmetricCipher.tailFallback` (falling back to `E.decrypt n k ct.tail` when direct decryption
+returns `none` and `ct` is non-empty) preserves `INDCPA` and `EncForge` while breaking
+`OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`
+(`SymmetricCipher.tailFallback_counterexample`,
+`PseudorandomFunction.tailFallback_prfEncryptThenMAC_counterexample`, Exercise 5.10); and
+`MACScheme.redundantTag` (accepting `tag` or `tag.tail`) preserves `EUFCMA` while breaking `SUFCMA`,
+so `encryptThenMAC E M.redundantTag hctLen` satisfies `INDCPA` and `EncForge` yet fails
+`CiphertextIntegrity` and `INDCCA` with advantage `1` for every `n ≥ 1`
+(`encryptThenMAC_redundantTag_counterexample`,
+`PseudorandomFunction.prfEncryptThenMACRedundantTag_counterexample`, Exercise 5.4). Concrete
+evaluations and composed `IsPPT` / `IsOraclePPT` checks on `echoFamily` are in
+[`CslibFrontierTests/Crypto/CompositionCounterexamples.lean`](../../CslibFrontierTests/Crypto/CompositionCounterexamples.lean).
+
 ## Authentication, signatures, and state
 
 [SignatureScheme](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Signature.lean#L87) bundles efficient key generation, signing, verification and correctness. The base message space is exactly `n` bits. Its oracle forger chooses signing requests adaptively; ordinary EUF-CMA rejects any message previously signed. [exists_oneWay_iff_exists_oneTimeSignature](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWayToSignature.lean#L882) is the OWF/one-time-signature equivalence via Lamport's construction. Stateless many-time `EUFCMA` `SignatureScheme`s on `n`-bit messages are constructed from any `OneWayPermutation` in [`TCRSignature.lean`](../../CslibFrontier/Crypto/Computational/TCRSignature.lean) (`OneWayPermutation.exists_eufCMA`) and from any general `OneWay` function in [`Rompel.lean`](../../CslibFrontier/Crypto/Computational/Rompel.lean) (`OneWay.exists_eufCMA`, `exists_oneWay_iff_exists_signature`, `exists_oneTimeSignature_iff_exists_signature` [rompel90][rompel90]). For unrestricted bit-string messages (`msg : List Bool`), [`WordSignatureScheme`](../../CslibFrontier/Crypto/Computational/WordSignature.lean) removes the `n`-bit message-length filter from signing, verification and `eufCmaGame` (`WordSignatureScheme.EUFCMA`, strictly stronger than `toSignatureScheme.EUFCMA`). When full collision resistance is available, [`HashAndSign.scheme`](../../CslibFrontier/Crypto/Computational/HashAndSign.lean) (Katz–Lindell 3rd ed., §13.3, Construction 13.3 and Theorem 13.4, pp. 467–468 [katzlindell20][katzlindell20]) fixes a single hash key `s` once in the public and secret keys (`⟨pk₀, s⟩`, `⟨sk₀, s⟩`) so that signatures carry no per-signature hash-key overhead (`HashAndSign.succProbability_eufCmaGame_le`, `SignatureScheme.EUFCMA.wordEUFCMA_hashAndSign`, `SignatureScheme.EUFCMA.wordEUFCMA_of_hashFamily`, `SignatureScheme.EUFCMA.wordEUFCMA_merkleDamgard`, and key-independent collision attack `HashAndSign.not_eufCMA_scheme_of_collision`; concrete checks in [`CslibFrontierTests/Crypto/HashAndSign.lean`](../../CslibFrontierTests/Crypto/HashAndSign.lean)). Under only target collision resistance (UOWHFs), [`TCRSignature.wordScheme`](../../CslibFrontier/Crypto/Computational/TCRSignature/ManyTime.lean) lifts any `SignatureScheme.EUFCMA` scheme by sampling a fresh hash key per signature (`SignatureScheme.EUFCMA.eufCMA_wordScheme`, `OneWayPermutation.exists_wordEUFCMA`; Boneh–Shoup §13.2.1, construction `(13.2)` on p. 533 and Theorem 13.2 on p. 534 [bs23][bs23]), and [`Rompel.lean`](../../CslibFrontier/Crypto/Computational/Rompel.lean) closes the unrestricted-message equivalence from any uniform `OneWay` function (`OneWay.exists_wordEUFCMA`, `exists_oneWay_iff_exists_wordSignature`, `exists_oneTimeSignature_iff_exists_wordSignature` [rompel90][rompel90]).

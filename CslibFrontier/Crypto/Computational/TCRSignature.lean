@@ -27,6 +27,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -1103,11 +1104,7 @@ private theorem iterate_finiteStep_from_empty {k : ℕ} {Control : Type}
               hr0, beq_self_eq_true, Option.isNone_none, Bool.and_self, ↓reduceIte]
             exact (simFold_some machine [] cs (cfg.receive () next []) r.2).2
           simp only [hrhs]
-          rw [PMF.bind_comm]
-          congr 1
-          funext hashKey
-          simp only [_root_.PMF.map, Function.comp_def]
-          exact PMF.bind_comm _ _ _
+          pmf_swap
         · have hrefuse : ¬ (r.1 < 1 ∧ r.1 ∉ ([] : List (ℕ × List Bool)).map Prod.fst) := by
             rintro ⟨hlt, _⟩
             exact hr0 (by omega)
