@@ -675,6 +675,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 
 ### Constructive probabilistic methods
 
+- **Talagrand thinning consequences** ([#4330](https://github.com/cslib-community/cslib-frontier/issues/4330)): instantiate the finite spread/smallness reductions with the thinning corollary from [#2525](https://github.com/cslib-community/cslib-frontier/pull/2525) once it is available on main, deriving Conjectures 7.3 and 7.11 with their source quantifiers and constants.
 - **Moser–Tardos resampling** ([#3096](https://github.com/cslib-community/cslib-frontier/issues/3096)): the algorithmic local lemma from Moser's `k`-SAT entropy compression ([#2879](https://github.com/cslib-community/cslib-frontier/issues/2879)) to the general variable form with parallel and derandomized versions (Theorems 1.2–1.4), the symmetric `e p (d + 1) ≤ 1` and `k`-SAT corollaries, the lopsided form, and native sampling and event-detection costs.
   Build the Kolmogorov form's decoder ([#3043](https://github.com/cslib-community/cslib-frontier/issues/3043)) as a multi-tape machine taking the formula, transferring it to `condPlain`.
 - **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring, MAX-CUT or combinatorial-construction clients of the certified greedy choice rule for pessimistic estimators.

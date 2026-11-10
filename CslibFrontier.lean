@@ -5929,6 +5929,12 @@ public import CslibFrontier.Probability.SmallBias.Correlation
 public import CslibFrontier.Probability.SmallBias.Powering
 public import CslibFrontier.Probability.SmallBias.Random
 public import CslibFrontier.Probability.Split
+public import CslibFrontier.Probability.Spread.Basic
+public import CslibFrontier.Probability.Spread.Duality
+public import CslibFrontier.Probability.Spread.Exceptional
+public import CslibFrontier.Probability.Spread.Selector
+public import CslibFrontier.Probability.Spread.SmallnessDuality
+public import CslibFrontier.Probability.Spread.Talagrand
 public import CslibFrontier.Probability.StatisticalDistance
 public import CslibFrontier.Probability.StatisticalDistance.CloseTo
 public import CslibFrontier.Probability.StatisticalDistance.ClosedForm

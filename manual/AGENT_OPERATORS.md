@@ -53,6 +53,14 @@ For orientation, it is useful to ask an agent to summarize `AGENTS.md` for its a
 point to the relevant manual sections. Require source locations for substantive claims. The
 manuals provide a shared reference when a summary omits something or two agents disagree.
 
+For historical conjectures, ask the worker to verify the primary numbering, quantifiers,
+normalizations and changes of constants before proposing a statement. Distinguish a proved
+reduction from its instantiation. The
+[spread-family workflow](workflows/probabilistic-workflows.md#spread-laws-and-talagrand-smallness)
+records Talagrand's factor-two weak-cover normalization and the thinning dependency needed to
+resolve the conjectures. An unlanded dependency remains a follow-up even when all reductions
+compile; the issue should retain that remaining objective.
+
 ## Read a progress report
 
 Ask for the result and the next decision, rather than a transcript of every tool call. A useful
