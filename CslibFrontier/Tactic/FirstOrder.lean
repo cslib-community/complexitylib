@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Projection
 public import CslibFrontier.Logics.FirstOrder.Reduction.QuantifierFree
+public import CslibFrontier.Tactic.FailureNote
 public import CslibFrontier.Tactic.FirstOrder.Init
 
 /-!
@@ -68,7 +69,8 @@ definition of the relations are unaffected.
 The simprocs unfold a projection of `Interpretation` or `Projection` only when its argument
 unfolds to a structure instance, and a relation definition only when the match on the relation
 symbol reduces, so they never expose auxiliary matchers; for quantifier-freeness, composites are
-unfolded too. Aesop's simplifier is disabled in `fo_qf`: the default simp set would rewrite the
+unfolded too. `fo_qf` and `fo_iso_closed` run one search and differ only in the note added to
+its error on failure. Aesop's simplifier is disabled in it: the default simp set would rewrite the
 formulas whose shape the rules inspect. Relation symbols are split by a safe rule, as Aesop's
 normalisation rules may not produce several goals.
 
@@ -189,19 +191,35 @@ private meta def casesRelationSymbol : TacticM Unit := withMainContext do
     catch _ => pure ()
   throwError "no relation symbol of a concrete vocabulary"
 
+/-- The search shared by `fo_qf` and `fo_iso_closed`: the Aesop rule set `FirstOrder` alone,
+without Aesop's simplifier, appending `note` to its error when it fails. -/
+private meta def searchFirstOrder (note : MessageData) : TacticM Unit :=
+  Cslib.Tactic.withFailureNote note do
+    evalTactic (← `(tactic| aesop (config := { terminal := true, enableSimp := false })
+      (rule_sets := [-default, FirstOrder])))
+
 /-- `fo_qf` proves that a formula, interpretation, projection formula or projection built from the
 usual constructors is quantifier-free, searching the Aesop rule set `FirstOrder`. It fails if it
 cannot close the goal. -/
-macro (name := foQF) "fo_qf" : tactic => `(tactic|
-  aesop (config := { terminal := true, enableSimp := false })
-    (rule_sets := [-default, FirstOrder]))
+syntax (name := foQF) "fo_qf" : tactic
 
 /-- `fo_iso_closed` proves that a class of structures is closed under isomorphism from a lemma
 registered in the Aesop rule set `FirstOrder` or a hypothesis. It runs the same search as `fo_qf`
 and fails if it cannot close the goal. -/
-macro (name := foIsoClosed) "fo_iso_closed" : tactic => `(tactic|
-  aesop (config := { terminal := true, enableSimp := false })
-    (rule_sets := [-default, FirstOrder]))
+syntax (name := foIsoClosed) "fo_iso_closed" : tactic
+
+/-- Elaborate `fo_qf`: the shared search, with a note on failure. -/
+@[tactic foQF] meta def evalFoQF : Tactic := fun _ =>
+  searchFirstOrder m!"fo_qf proves quantifier-freeness from the rules of the Aesop rule set \
+    `FirstOrder` and hypotheses. Unfold a local definition first, assume `IsQF` for an abstract \
+    formula or interpretation, or register a lemma for a new combinator with \
+    `@[aesop safe apply (rule_sets := [FirstOrder])]`."
+
+/-- Elaborate `fo_iso_closed`: the shared search, with a note on failure. -/
+@[tactic foIsoClosed] meta def evalFoIsoClosed : Tactic := fun _ =>
+  searchFirstOrder m!"fo_iso_closed proves `IsoClosed K` from lemmas of the Aesop rule set \
+    `FirstOrder` and hypotheses. Assume it, or prove it for `K` and register the lemma with \
+    `@[aesop safe apply (rule_sets := [FirstOrder])]`."
 
 /-! ### Realization -/
 
