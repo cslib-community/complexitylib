@@ -45,8 +45,6 @@ The generic composition separations stated in terms of `EncForge` are in
   encryption unforgeability experiment and security predicate ([KatzLindell2020], Definition 5.2).
 * `Cslib.Crypto.SymmetricCipher.ciPairOracle`: encryption oracle logging `(msg, ct)` pairs, whose
   two projections recover `encForgeOracle` and `ciEncryptionOracle`.
-* `Cslib.Crypto.etmForgeJointOracle`: encryption oracle for `encryptThenMAC E M hctLen` logging
-  each plaintext with its inner ciphertext, used in the Exercise 5.5 reduction.
 
 ## Main results
 
@@ -207,7 +205,7 @@ private theorem computableTidilyInPolyTime_encForgePost (E : SymmetricCipher) :
       EOut (encList encBits) := by
     dsimp only [EOut]; fun_prop
   have hcontains :=
-    (computableInPolyTime_contains_bits hlist.computableInPolyTime hgetD.computableInPolyTime).tidy
+    (ComputableInPolyTime.contains hlist.computableInPolyTime hgetD.computableInPolyTime).tidy
   exact ComputableTidilyInPolyTime.bool_and.comp
     (hisSome.prod (ComputableTidilyInPolyTime.bool_not.comp hcontains))
 
@@ -377,7 +375,7 @@ end SymmetricCipher
 valid `n`-bit plaintext query `msg` and its inner ciphertext `c ← E.encrypt n ke msg`. Projecting
 `Prod.fst` recovers `(encryptThenMAC E M hctLen).encForgeOracle`, while projecting `Prod.snd`
 recovers the inner ciphertext log of `M.signingOracle km` in `etmToMACForger`. -/
-noncomputable def etmForgeJointOracle (E : SymmetricCipher) (M : MACScheme) (n : ℕ)
+private noncomputable def etmForgeJointOracle (E : SymmetricCipher) (M : MACScheme) (n : ℕ)
     (ke km : List Bool) (request : Unit × List Bool) :
     StateT (List (List Bool × List Bool)) ProbComp (List Bool) :=
   fun queriedPairs =>

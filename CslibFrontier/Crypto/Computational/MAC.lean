@@ -439,15 +439,10 @@ theorem exists_tag_length_bound_of_length_eq (M : MACScheme) :
       ∀ n, ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
         ∀ msg, msg.length = M.msgLen n →
         ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n := by
-  obtain ⟨ck, dk, hlenk⟩ := M.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlens⟩ := M.sign_ppt.length_le
-  refine ⟨fun n => cs * (2 * (ck * (n + 1) ^ dk) + M.msgLen n + 2) ^ ds, by fun_prop,
-    fun n sk hsk msg hmsg tag htag => ?_⟩
-  have hskLen := hlenk n sk hsk
-  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hskLen
-  have h1 := hlens (sk, msg) tag htag
-  simp only [length_encPair, encBits_apply, hmsg] at h1
-  exact h1.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
+  obtain ⟨bound, hpoly, hb⟩ := M.exists_oneTimeTagBound
+  have hlen := M.msgLen_polyTime
+  refine ⟨fun n => bound n (M.msgLen n), by fun_prop,
+    fun n sk hsk msg hmsg tag htag => by simpa only [hmsg] using hb n sk hsk msg tag htag⟩
 
 /-- Full EUF-CMA security implies one-time EUF-CMA security for any `MACScheme`. -/
 theorem EUFCMA.oneTimeEUFCMA {M : MACScheme} (h : M.EUFCMA) : M.OneTimeEUFCMA := by

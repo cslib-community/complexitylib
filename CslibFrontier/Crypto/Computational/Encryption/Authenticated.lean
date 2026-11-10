@@ -279,15 +279,6 @@ private theorem computableTidilyInPolyTime_contains_bits {α : Type} {enc : α �
   funext a
   rw [Bool.eq_iff_iff, List.contains_iff_mem, decide_eq_true_eq]
 
-/-- Membership of a computed bit string in a computed list of bit strings, tested with
-`List.contains`, is polynomial-time computable. -/
-theorem computableInPolyTime_contains_bits {α : Type} {enc : α ↪ List Bool}
-    {list : α → List (List Bool)} {elem : α → List Bool}
-    (hlist : ComputableInPolyTime list enc (encList encBits))
-    (helem : ComputableInPolyTime elem enc encBits) :
-    ComputableInPolyTime (fun a => (list a).contains (elem a)) enc encBool :=
-  .of_tidy (computableTidilyInPolyTime_contains_bits hlist.tidy helem.tidy)
-
 /-- A unary polynomial-time ciphertext bound indexed separately by security parameter and message
 length. The key is sampled at parameter `n`; the bound covers every message of length `ℓ`, even
 outside the cipher's correctness and security domain of `n`-bit messages. -/
