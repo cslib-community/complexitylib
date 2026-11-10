@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash.Shift
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.Uniform
 public import Mathlib.Data.Nat.Log
+import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import CslibFrontier.Tactic.Fits
 
 /-!
@@ -454,22 +455,8 @@ theorem setupCode_exec {w base M : ℕ} {x : Data 6}
     (hfit_end : Fits w (base + 2 ^ M)) (hfit_pow : Fits w (2 ^ M)) :
     Exec w setupCode x (setupData base M x) 5 := by
   have hpos : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-  set d1 := x.set regOut 1
-  have s1 : Exec w (.op (.const regOut 1) : Code .exact 6) x d1 1 := Exec.const (by fits)
-  set d2 := d1.set regT2 (2 ^ M)
-  have s2 : Exec w (.op (.exactBin .shiftLeft regT2 regOut regM) : Code .exact 6) d1 d2 1 :=
-    exec_exactBin (by simp [d1, hM, regOut, regM, Nat.shiftLeft_eq]) hfit_pow
-  set d3 := d2.set regT3 (2 ^ M - 1)
-  have s3 : Exec w (.op (.exactBin .sub regT3 regT2 regOut) : Code .exact 6) d2 d3 1 :=
-    exec_exactBin (by simp [d2, d1, hpos, regT2, regOut]) (by fits)
-  set d4 := d3.set regT1 base
-  have s4 : Exec w (.op (.copy regT1 regBase) : Code .exact 6) d3 d4 1 := by
-    simpa [d3, d2, d1, hbase, regBase, regT1, regT2, regT3, regOut] using
-      (Exec.copy (B := .exact) (w := w) (d := regT1) (s := regBase) (x := d3))
-  set d5 := d4.set regT2 (base + 2 ^ M)
-  have s5 : Exec w (.op (.exactBin .add regT2 regBase regT2) : Code .exact 6) d4 d5 1 :=
-    exec_exactBin (by simp [d4, d3, d2, d1, hbase, regBase, regT1, regT2, regT3, regOut]) hfit_end
-  exact s1.seq (s2.seq (s3.seq (s4.seq s5)))
+  unfold setupCode setupData
+  wram_exec [hbase, hM, Nat.shiftLeft_eq, Nat.one_mul]
 
 /-- **Exact `ExecRand` execution of `RandomTable.resampleCode`**: runs in `5 * 2 ^ M + 7`
 instructions and `2 ^ M` `rand` calls. -/
@@ -919,63 +906,11 @@ theorem setupFromBCode_exec {w base b d M : ℕ} {x : Data 9}
   have hfit_dmul : Fits w (d * 2 ^ b) := hfit_space.of_le (by simp [spaceFromB]; omega)
   have hfit_end : Fits w (base + 4 + d * 2 ^ b) :=
     hfit_space.of_le (by simp [spaceFromB]; omega)
-  set s0 := x.write base b
-  have e1 : Exec w (.op (.store regBase regB) : Code .exact 9) x s0 1 := by
-    simpa [s0, hbase, hb] using
-      (Exec.store (B := .exact) (w := w) (a := regBase) (s := regB) (x := x))
-  set s1 := s0.set regTmp 1
-  have e2 : Exec w (.op (.const regTmp 1) : Code .exact 9) s0 s1 1 := Exec.const (by fits)
-  set s2 := s1.set regPowB (2 ^ b)
-  have e3 : Exec w (.op (.exactBin .shiftLeft regPowB regTmp regB) : Code .exact 9) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, s0, hb, Nat.shiftLeft_eq]) hfit_powB
-  set s3 := s2.set regPtr (base + 1)
-  have e4 : Exec w (.op (.exactBin .add regPtr regBase regTmp) : Code .exact 9) s2 s3 1 :=
-    exec_exactBin (by simp +decide [s2, s1, s0, hbase]) hfit_b1
-  set s4 := s3.write (base + 1) (2 ^ b)
-  have e5 : Exec w (.op (.store regPtr regPowB) : Code .exact 9) s3 s4 1 := by
-    simpa +decide [s4, s3, s2] using
-      (Exec.store (B := .exact) (w := w) (a := regPtr) (s := regPowB) (x := s3))
-  set s5 := s4.set regMaskB (2 ^ b - 1)
-  have e6 : Exec w (.op (.exactBin .sub regMaskB regPowB regTmp) : Code .exact 9) s4 s5 1 :=
-    exec_exactBin (by simp +decide [s4, s3, s2, s1, h1_le_b]) (by fits)
-  set s6 := s5.set regPtr (base + 2)
-  have e7 : Exec w (.op (.exactBin .add regPtr regPtr regTmp) : Code .exact 9) s5 s6 1 :=
-    exec_exactBin (by simp +decide [s5, s4, s3, s2, s1]) hfit_b2
-  set s7 := s6.write (base + 2) (2 ^ b - 1)
-  have e8 : Exec w (.op (.store regPtr regMaskB) : Code .exact 9) s6 s7 1 := by
-    simpa +decide [s7, s6, s5] using
-      (Exec.store (B := .exact) (w := w) (a := regPtr) (s := regMaskB) (x := s6))
-  set s8 := s7.set regEnd (2 ^ M)
-  have e9 : Exec w (.op (.exactBin .shiftLeft regEnd regTmp regOut) : Code .exact 9) s7 s8 1 :=
-    exec_exactBin (by simp +decide [s7, s6, s5, s4, s3, s2, s1, s0, hM, Nat.shiftLeft_eq]) hfit_powM
-  set s9 := s8.set regEnd (2 ^ M - 1)
-  have e10 : Exec w (.op (.exactBin .sub regEnd regEnd regTmp) : Code .exact 9) s8 s9 1 :=
-    exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3, s2, s1, h1_le_M]) (by fits)
-  set s10 := s9.set regPtr (base + 3)
-  have e11 : Exec w (.op (.exactBin .add regPtr regPtr regTmp) : Code .exact 9) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7, s6, s5, s4, s3, s2, s1]) hfit_b3
-  set s11 := s10.write (base + 3) (2 ^ M - 1)
-  have e12 : Exec w (.op (.store regPtr regEnd) : Code .exact 9) s10 s11 1 := by
-    simpa +decide [s11, s10, s9] using
-      (Exec.store (B := .exact) (w := w) (a := regPtr) (s := regEnd) (x := s10))
-  set s12 := s11.set regPtr (base + 4)
-  have e13 : Exec w (.op (.exactBin .add regPtr regPtr regTmp) : Code .exact 9) s11 s12 1 :=
-    exec_exactBin (by simp +decide [s11, s10, s9, s8, s7, s6, s5, s4, s3, s2, s1]) hfit_b4
-  set s13 := s12.set regB d
-  have e14 : Exec w (.op (.const regB d) : Code .exact 9) s12 s13 1 := Exec.const hfit_d
-  set s14 := s13.set regB (d * 2 ^ b)
-  have e15 : Exec w (.op (.exactBin .mul regB regB regPowB) : Code .exact 9) s13 s14 1 :=
-    exec_exactBin (by simp +decide [s13, s12, s11, s10, s9, s8, s7, s6, s5, s4, s3, s2]) hfit_dmul
-  set s15 := s14.set regB (base + 4 + d * 2 ^ b)
-  have e16 : Exec w (.op (.exactBin .add regB regPtr regB) : Code .exact 9) s14 s15 1 :=
-    exec_exactBin (by simp +decide [s14, s13, s12]) hfit_end
-  have hs15 : s15 = setupFromBData base b d M x := by
-    ext i : 2
-    · fin_cases i <;> rfl
-    · rfl
-  rw [hs15] at e16
-  exact e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq (e7.seq (e8.seq
-    (e9.seq (e10.seq (e11.seq (e12.seq (e13.seq (e14.seq (e15.seq e16))))))))))))))
+  unfold setupFromBCode
+  wram_exec [hbase, hb, hM, Nat.shiftLeft_eq, Nat.one_mul]
+  ext i : 2
+  · fin_cases i <;> rfl
+  · rfl
 
 /-- Structured Word-RAM program that initializes a `d`-character simple tabulation table from
 `(base, M, b)` in `(regBase, regOut, regB)`. -/
@@ -1191,43 +1126,8 @@ theorem evalSetupCode_exec {w base b d M : ℕ} {T : Fin (d * 2 ^ b) → Fin (2 
   have hfit_b4 : Fits w (base + 4) := hfit_space.of_le (by simp [spaceFromB])
   have hfit_dmul : Fits w (d * 2 ^ b) := hfit_space.of_le (by simp [spaceFromB]; omega)
   have hfit_end : Fits w (base + 4 + d * 2 ^ b) := hfit_space.of_le (by simp [spaceFromB]; omega)
-  set s0 := x.set regB b
-  have e1 : Exec w (.op (.load regB regBase) : Code .exact 9) x s0 1 := by
-    simpa [s0, hbase, hm0] using
-      (Exec.load (B := .exact) (w := w) (d := regB) (a := regBase) (x := x))
-  set s1 := s0.set regTmp 1
-  have e2 : Exec w (.op (.const regTmp 1) : Code .exact 9) s0 s1 1 := Exec.const (by fits)
-  set s2 := s1.set regPtr (base + 1)
-  have e3 : Exec w (.op (.exactBin .add regPtr regBase regTmp) : Code .exact 9) s1 s2 1 :=
-    exec_exactBin (by simp +decide [s1, s0, hbase]) hfit_b1
-  set s3 := s2.set regPowB (2 ^ b)
-  have e4 : Exec w (.op (.load regPowB regPtr) : Code .exact 9) s2 s3 1 := by
-    simpa +decide [s3, s2, s1, s0, hm1] using
-      (Exec.load (B := .exact) (w := w) (d := regPowB) (a := regPtr) (x := s2))
-  set s4 := s3.set regPtr (base + 2)
-  have e5 : Exec w (.op (.exactBin .add regPtr regPtr regTmp) : Code .exact 9) s3 s4 1 :=
-    exec_exactBin (by simp +decide [s3, s2, s1]) hfit_b2
-  set s5 := s4.set regMaskB (2 ^ b - 1)
-  have e6 : Exec w (.op (.load regMaskB regPtr) : Code .exact 9) s4 s5 1 := by
-    simpa +decide [s5, s4, s3, s2, s1, s0, hm2] using
-      (Exec.load (B := .exact) (w := w) (d := regMaskB) (a := regPtr) (x := s4))
-  set s6 := s5.set regOut 2
-  have e7 : Exec w (.op (.const regOut 2) : Code .exact 9) s5 s6 1 := Exec.const hfit_2
-  set s7 := s6.set regPtr (base + 4)
-  have e8 : Exec w (.op (.exactBin .add regPtr regPtr regOut) : Code .exact 9) s6 s7 1 :=
-    exec_exactBin (by simp +decide [s6, s5, s4]) hfit_b4
-  set s8 := s7.set regOut d
-  have e9 : Exec w (.op (.const regOut d) : Code .exact 9) s7 s8 1 := Exec.const hfit_d
-  set s9 := s8.set regEnd (d * 2 ^ b)
-  have e10 : Exec w (.op (.exactBin .mul regEnd regOut regPowB) : Code .exact 9) s8 s9 1 :=
-    exec_exactBin (by simp +decide [s8, s7, s6, s5, s4, s3]) hfit_dmul
-  set s10 := s9.set regEnd (base + 4 + d * 2 ^ b)
-  have e11 : Exec w (.op (.exactBin .add regEnd regPtr regEnd) : Code .exact 9) s9 s10 1 :=
-    exec_exactBin (by simp +decide [s9, s8, s7]) hfit_end
-  set s11 := s10.set regOut 0
-  have e12 : Exec w (.op (.const regOut 0) : Code .exact 9) s10 s11 1 := Exec.const (by fits)
-  exact e1.seq (e2.seq (e3.seq (e4.seq (e5.seq (e6.seq
-    (e7.seq (e8.seq (e9.seq (e10.seq (e11.seq e12))))))))))
+  unfold evalSetupCode evalSetupData
+  wram_exec [hbase, hm0, hm1, hm2]
 
 /-- Body of `tabLoop` (6 instructions): extracts `ch = regKey &&& regMaskB`, loads
 `T[regPtr + ch]`, XORs into `regOut`, shifts `regKey` right by `regB`, and advances `regPtr` by
