@@ -193,10 +193,7 @@ theorem length_encRegs_packed_le (hd : 0 < d) (hb : 0 < b)
     (encRegs (encPackedField d b) S).length ≤
       9 * (d + 1) * (b + Packed.chunkWidth d b) := by
   have hbank := length_encRegs_le (encPackedField d b) S (length_encPackedField_le d b)
-  have hmul := Packed.chunkCount_mul_fieldModulus_size_le hd hb
-  have hr := Packed.chunkCount_le hd hb
-  have hscalar : Packed.chunkCount d b * (2 * (Packed.fieldModulus d b).size + 1) ≤
-      9 * (b + Packed.chunkWidth d b) := by nlinarith
+  have hscalar := Packed.chunkCount_mul_framed_fieldModulus_size_le hd hb 2
   calc
     _ ≤ (d + 1) * Packed.chunkCount d b * (2 * (Packed.fieldModulus d b).size + 1) :=
       hbank
