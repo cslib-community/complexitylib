@@ -188,7 +188,7 @@ private abbrev encAccumulator (encC : C ↪ List Bool) :=
   encPair encC encResult
 
 private abbrev encCallback (encC : C ↪ List Bool) :=
-  encPair (encPair encUnary encBits) (encAccumulator encC)
+  BooleanFold.encCallbackInput (encAccumulator encC)
 
 private def contextCertificate :
     NativeCertificate (fun p : (ℕ × List Bool) × (C × Option (List Bool)) => p.2.1)

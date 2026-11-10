@@ -259,6 +259,13 @@ abbrev encKilianOpening : KilianOpening ↪ List Bool := encPair encBool (encLis
 /-- The encoding of the prover's last message. -/
 abbrev encKilianResponse : KilianResponse ↪ List Bool := encList (encList encKilianOpening)
 
+/-- The encoding of the triple `(k, x, w)` that Kilian's verifier and honest prover start from:
+the hash key `k` as a bit word, the statement `x` encoded by `enc`, and a bit word `w`, which is
+the committed root for the verifier and the witness table for the honest prover. The key and the
+statement are framed; `w` is not. -/
+abbrev encKilianInput (enc : α ↪ List Bool) : List Bool × α × List Bool ↪ List Bool :=
+  encPair encBits (encPair enc encBits)
+
 section Efficiency
 
 variable {enc : α ↪ List Bool} {c : ℕ} {γ : Type} {encIn : γ ↪ List Bool}
@@ -333,8 +340,7 @@ theorem computableInPolyTime_kilianVerify
     ComputableInPolyTime
       (fun p : (List Bool × α × List Bool) × List (List Bool) × KilianResponse =>
         kilianVerify H V p.1.1 p.1.2.1 p.1.2.2 p.2.1 p.2.2)
-      (encPair (encPair encBits (encPair enc encBits)) (encPair (encList encBits)
-        encKilianResponse)) encBool := by
+      (encPair (encKilianInput enc) (encPair (encList encBits) encKilianResponse)) encBool := by
   have hfst := ComputableInPolyTime.fst (encPair encBits (encPair enc encBits))
     (encPair (encList encBits) encKilianResponse)
   have hsnd := ComputableInPolyTime.snd (encPair encBits (encPair enc encBits))
@@ -396,7 +402,7 @@ theorem computableInPolyTime_kilianCommit
     (hlen : ∀ k x, (H k x).length = k.length) (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime (fun p : List Bool × α × List Bool => kilianCommit H V p.1 p.2.1 p.2.2)
-      (encPair encBits (encPair enc encBits)) encBits := by
+      (encKilianInput enc) encBits := by
   have hk := ComputableInPolyTime.fst encBits (encPair enc encBits)
   have hrest := ComputableInPolyTime.snd encBits (encPair enc encBits)
   have hx := (ComputableInPolyTime.fst enc encBits).comp hrest
@@ -442,7 +448,7 @@ theorem computableInPolyTime_kilianRespond
     ComputableInPolyTime
       (fun p : (List Bool × α × List Bool) × List (List Bool) =>
         kilianRespond H V p.1.1 p.1.2.1 p.1.2.2 p.2)
-      (encPair (encPair encBits (encPair enc encBits)) (encList encBits)) encKilianResponse := by
+      (encPair (encKilianInput enc) (encList encBits)) encKilianResponse := by
   have hfst := ComputableInPolyTime.fst (encPair encBits (encPair enc encBits))
     (encList encBits)
   have hρs := ComputableInPolyTime.snd (encPair encBits (encPair enc encBits))

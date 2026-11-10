@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedEntry
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 
 /-!
@@ -46,11 +47,7 @@ theorem truncDirectCertificate_le_of_isPolynomial
   obtain ⟨Kd, hKd⟩ := truncDirectCertificate_le entry ce
   let E : ℕ → ℕ := fun n => a * 3 ^ d * (n + 1) ^ d
   let F : ℕ → ℕ := fun n => Kd * (n + E n + 1) ^ Kd * (E n + 1)
-  have hEp : PolyBounded id E :=
-    (PolyBounded.const (a * 3 ^ d)).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow d)
-  have hFp : PolyBounded id F :=
-    ((PolyBounded.const Kd).mul (((PolyBounded.self.add hEp).add
-      (PolyBounded.const 1)).pow Kd)).mul (hEp.add (PolyBounded.const 1))
+  have hFp : PolyBounded id F := by growth_poly
   obtain ⟨KF, hF⟩ := hFp.exists_le_succ_pow
   refine ⟨KF, fun P ℓ r G => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length

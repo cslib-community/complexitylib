@@ -94,6 +94,7 @@ theorem computableInPolyTime_wireDepthsCode {α : Type} {input : α ↪ List Boo
     (hgates : ComputableInPolyTime gates input (encList encGate)) :
     ComputableInPolyTime (fun a => wireDepthsCode (inputCount a) (gates a))
       input (encList encUnary) := by
+  -- Not referenced by name: `growth_poly` below reads it from the context.
   have hcount := (length_list encGate).comp hgates
   have hnPoly : PolyBounded (fun a => (input a).length) inputCount := by growth_poly
   have hgPoly : PolyBounded (fun a => (input a).length) (fun a => (gates a).length) := by
@@ -120,6 +121,7 @@ theorem computableInPolyTime_depthCode {α : Type} {input : α ↪ List Bool}
     (hcode : ComputableInPolyTime code input encCode) :
     ComputableInPolyTime (fun a => depthCode (inputCount a) (code a)) input encUnary := by
   have htable := computableInPolyTime_wireDepthsCode hn hcode.fst'
+  -- Not referenced by name: `growth_poly` below reads it from the context.
   have hcount := (length_list encGate).comp hcode.fst'
   have hbound : PolyBounded (fun a => (input a).length) (fun a => (code a).1.length) := by
     growth_poly

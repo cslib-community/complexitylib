@@ -213,23 +213,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
   let Sh : ℕ → ℕ := fun X => 7 * (X + 1) ^ 3
   let U : ℕ → ℕ := fun X => pN X + X + pI X + 3 * Sh X + 3 * ((X + 1) ^ 2 + 1) ^ 2 +
     pA (Sh X) + pC (Sh X) + pD (Sh X) + pB (2 * Sh X + 1 + X) + pR (Sh X)
-  have hSh : PolyBounded id Sh :=
-    (PolyBounded.const 7).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow 3)
-  have qN := PolyBounded.of_polynomiallyBounded id hpN
-  have qI := PolyBounded.of_polynomiallyBounded id hpI
-  have qA := PolyBounded.of_polynomiallyBounded id hpA
-  have qC := PolyBounded.of_polynomiallyBounded id hpC
-  have qD := PolyBounded.of_polynomiallyBounded id hpD
-  have qB := PolyBounded.of_polynomiallyBounded id hpB
-  have qR := PolyBounded.of_polynomiallyBounded id hpR
-  have hU : PolyBounded id U :=
-    (((((((((qN.comp PolyBounded.self).add PolyBounded.self).add
-      (qI.comp PolyBounded.self)).add ((PolyBounded.const 3).mul hSh)).add
-      ((PolyBounded.const 3).mul ((((PolyBounded.self.add (PolyBounded.const 1)).pow 2).add
-        (PolyBounded.const 1)).pow 2))).add (qA.comp hSh)).add
-      (qC.comp hSh)).add (qD.comp hSh)).add
-      (qB.comp ((((PolyBounded.const 2).mul hSh).add (PolyBounded.const 1)).add
-        PolyBounded.self))).add (qR.comp hSh)
+  have hU : PolyBounded id U := by growth_poly
   obtain ⟨K, hK⟩ := hU.exists_le_succ_pow
   refine ⟨K, fun fl P ℓ r G R Q Yb hcore => ?_⟩
   set y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T := (fl, P, ℓ, r, G) with hy
@@ -388,14 +372,7 @@ theorem specEntryCertificate_le :
   obtain ⟨pE, hpE, mE, bE⟩ := exists_mono_poly_cert hcE
   obtain ⟨pH, hpH, mH, bH⟩ := exists_mono_poly_cert horner_polyTime
   let U : ℕ → ℕ := fun Z => pD Z + pE Z + pH (2 * Z + 1)
-  have qD := PolyBounded.of_polynomiallyBounded id hpD
-  have qE := PolyBounded.of_polynomiallyBounded id hpE
-  have qH := PolyBounded.of_polynomiallyBounded id hpH
-  have hU : PolyBounded id U :=
-    ((qD.comp PolyBounded.self).add
-      (qE.comp PolyBounded.self)).add
-      (qH.comp (((PolyBounded.const 2).mul PolyBounded.self).add
-        (PolyBounded.const 1)))
+  have hU : PolyBounded id U := by growth_poly
   obtain ⟨K, hK⟩ := hU.exists_le_succ_pow
   refine ⟨K, fun entry ce t P ℓ fl ζ bs => ?_⟩
   set n := (encPair (encSpecDesc encT) encBits ((t, P, ℓ, fl, ζ), bs)).length with hn
@@ -471,10 +448,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
     K₂ * (2 * Z + 1 + cS * (Z + Uf Z + 1) + Z * (2 * Z + 3) + 1) ^ K₂
   let Tf : ℕ → ℕ := fun Z => pS Z + (Z + 2) * (Bf Z + 2 * Uf Z) + (Z + 2) * 2
   let Sf : ℕ → ℕ := fun Z => pS Z + Bf Z + (Z + Uf Z)
-  have qS := PolyBounded.of_polynomiallyBounded id hpS
-  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z := by
-    dsimp only [Tf, Sf, Bf, Uf, Af]
-    growth_poly
+  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z := by growth_poly
   obtain ⟨K, hK⟩ := hTSp.exists_le_succ_pow
   refine ⟨K, fun P ℓ r fl ζ G E ES hE => ?_⟩
   set G' := DescribedNetwork.specNet P ℓ fl ζ G with hG'
@@ -599,10 +573,7 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
   let Engf : ℕ → ℕ := fun W => K₁ * (Yf W + cD * (Rf W + 1) + 1) ^ K₁
   let Tf : ℕ → ℕ := fun W => pM W + (Yf W * Yf W + 2) * (Engf W + Rf W)
   let Sf : ℕ → ℕ := fun W => pM W + (Engf W + Rf W)
-  have qM := PolyBounded.of_polynomiallyBounded id hpM
-  have hTSp : PolyBounded id fun W => Tf W + Sf W := by
-    dsimp only [Tf, Sf, Engf, Rf, Yf]
-    growth_poly
+  have hTSp : PolyBounded id fun W => Tf W + Sf W := by growth_poly
   obtain ⟨K, hK⟩ := hTSp.exists_le_succ_pow
   refine ⟨K, fun P ℓ r G E ES hE => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length with hn
