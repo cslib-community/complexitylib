@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: local-only (tests of local-only files)
+-- upstream: local-only (tests)
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Nondeterministic
 

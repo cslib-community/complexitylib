@@ -38,6 +38,9 @@ description reaches a halted configuration with the output `[1]`.
 * `Turing.MultiTapeTM.Universal.exists_nStep_of_step`,
   `Turing.MultiTapeTM.Universal.exists_step_of_nStep`: steps of the machine and of its
   description correspond.
+* `Turing.MultiTapeTM.Universal.exists_computationPath_of_reflTransGen`,
+  `Turing.MultiTapeTM.Universal.exists_reflTransGen_of_computationPath`: so do computation paths
+  of the machine and runs of its description.
 * `Turing.MultiTapeTM.Universal.accepts_iff_reflTransGen_nStep`: the machine accepts exactly when
   its description reaches a halted configuration with the output `[1]`.
 -/
@@ -85,39 +88,29 @@ public theorem mem_descN {e : Key × Act} :
   · rintro ⟨q, i, w, a, h, rfl⟩
     exact ⟨q, i, w, a, h, rfl⟩
 
-omit [Finite State] [Finite Symbol] in
-/-- A key of the description determines the state and the read symbols. -/
-lemma key_eq_key_iff {q q' : State} {i i' : Option Symbol} {w w' : Fin k → Option Symbol} :
-    key (eS q) (i.map eY) (Option.map eY ∘ w) = key (eS q') (i'.map eY) (Option.map eY ∘ w') ↔
-      q = q' ∧ i = i' ∧ w = w' := by
-  refine ⟨fun h => ?_, by rintro ⟨rfl, rfl, rfl⟩; rfl⟩
-  cases key_injective eS eY (a₁ := (q, i, w)) (a₂ := (q', i', w')) h
-  exact ⟨rfl, rfl, rfl⟩
-
 /-- **A step of the machine is a step of its description**: from a well-shaped configuration of
 the simulation representing a running configuration, the description can take the renamed step. -/
 public theorem exists_nStep_of_step {input : List Symbol} {c c' : Cfg k Symbol State input}
     (hc : ¬c.Halted) (h : ntm.Step c c') {s : SCfg} {out : List ℕ}
     (hs : s.WellShaped k (input.map eY)) (hsc : s.toCfg k (input.map eY) out = c.map eS eY) :
-    ∃ s', NStep (descN eS eY ntm) (input.map eY) (s, out) (s', out ++ (c'.map eS eY).output.drop
-        out.length) ∧ s'.WellShaped k (input.map eY) ∧
-      s'.toCfg k (input.map eY) (out ++ (c'.map eS eY).output.drop out.length) = c'.map eS eY := by
+    ∃ s', NStep (descN eS eY ntm) (input.map eY) (s, out) (s', (c'.map eS eY).output) ∧
+      s'.WellShaped k (input.map eY) ∧
+      s'.toCfg k (input.map eY) (c'.map eS eY).output = c'.map eS eY := by
   obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp hc
   simp only [MultiTapeNTM.Step, hq] at h
   obtain ⟨a, ha, rfl⟩ := h
   have hout : out = c.output.map eY := congrArg Cfg.output hsc
   have hstate : s.state = some (eS q) := by simpa [SCfg.toCfg, hq] using congrArg Cfg.state hsc
   obtain ⟨happ, hshape⟩ := toCfg_apply hs hstate out (a.map eS eY)
-  have hdrop : out ++ ((a.apply c).map eS eY).output.drop out.length =
-      out ++ (a.map eS eY).output.toList := by
+  have hout' : ((a.apply c).map eS eY).output = out ++ (a.map eS eY).output.toList := by
     simp [hout, Action.apply, Option.toList_map]
   refine ⟨_, ⟨eS q, hstate, _, (mem_descN eS eY ntm).mpr ⟨q, _, _, a, ha, rfl⟩, ?_, ?_⟩,
     hshape, ?_⟩
   · rw [key_toCfg hs out, hsc, Cfg.inputSymbol_map]
     rfl
-  · rw [hdrop]
+  · rw [hout']
     rfl
-  · rw [hdrop]
+  · rw [hout']
     exact happ.trans (by rw [hsc, Action.apply_map])
 
 /-- **A step of the description is a step of the machine**: from a well-shaped configuration of the
@@ -138,7 +131,7 @@ public theorem exists_step_of_nStep {input : List Symbol} {c : Cfg k Symbol Stat
     exact hq'
   obtain ⟨q, hq, rfl⟩ := Option.map_eq_some_iff.mp hstate
   rw [key_toCfg hs out, hsc, Cfg.inputSymbol_map] at hkey
-  obtain ⟨rfl, rfl, rfl⟩ := (key_eq_key_iff eS eY).mp hkey
+  cases key_injective eS eY (a₁ := (p, i, w)) (a₂ := (q, c.inputSymbol, c.workTapeSymbols)) hkey
   obtain ⟨happ, hshape⟩ := toCfg_apply hs hq' out (a.map eS eY)
   refine ⟨a.apply c, ?_, hshape, happ.trans (by rw [hsc, Action.apply_map])⟩
   simp only [MultiTapeNTM.Step, hq]
@@ -189,15 +182,8 @@ public theorem exists_reflTransGen_of_computationPath {input : List Symbol}
     by_cases hhalt : π.last.Halted
     · rw [(MultiTapeNTM.step_of_halt hhalt).mp hc]
       exact ⟨s, hreach, hshape, hs⟩
-    · have hout : π.last.output.map eY ++ (c.map eS eY).output.drop
-          (π.last.output.map eY).length = c.output.map eY := by
-        obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp hhalt
-        simp only [MultiTapeNTM.Step, hq] at hc
-        obtain ⟨a, -, rfl⟩ := hc
-        simp [Action.apply]
-      obtain ⟨s', hstep, hshape', hs'⟩ :=
+    · obtain ⟨s', hstep, hshape', hs'⟩ :=
         exists_nStep_of_step eS eY ntm hhalt hc hshape hs
-      rw [hout] at hstep hs'
       exact ⟨s', hreach.tail hstep, hshape', hs'⟩
 
 /-- **A machine accepts exactly when its description reaches a halted configuration with the output
