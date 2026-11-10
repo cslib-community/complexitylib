@@ -41,8 +41,7 @@ def toResult {r : ℕ} (x : FiniteState.Result Basis.standard.genericModel r) : 
   x.map (Sum.map toTuple id)
 
 /-- Runtime register reads agree with native finite indices. -/
-theorem readReg_fin {r : ℕ} (s : Tuple r) (i : Fin r) : readReg s i.val = (Tuple.registers s) i :=
-  by
+theorem readReg_fin {r : ℕ} (s : Tuple r) (i : Fin r) : readReg s i.val = Tuple.registers s i := by
   simp [readReg, List.getD_eq_getElem?_getD, i.isLt]
 
 /-- Runtime register updates agree with the actual native update. -/

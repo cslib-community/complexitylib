@@ -47,8 +47,9 @@ open NativeCertificate Native.Driver GeneratedRunInput ProgramGeneration
 /-- One runtime-program machine executes the actual compacting loop. -/
 noncomputable def finiteRunCertificate : NativeCertificate
     (fun x : Packet => Interpreter.compactResult
-      (FiniteState.run (GeneratedRunInput.Packet.wordWidth x) (GeneratedRunInput.Packet.program
-        x).parkHalts.toGeneric (GeneratedRunInput.Packet.clock x) x.2))
+      (FiniteState.run (GeneratedRunInput.Packet.wordWidth x)
+        (GeneratedRunInput.Packet.program x).parkHalts.toGeneric
+        (GeneratedRunInput.Packet.clock x) x.2))
     packetEncoding (FiniteState.resultEncoding Basis.standard.encoding) :=
   Interpreter.compactRunCertificate.comp UniformExecution.executionInputCertificate
 

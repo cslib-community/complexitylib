@@ -53,11 +53,11 @@ end NativeInput
 
 /-- The typed interface of the actual encoded-row instruction interpreter. -/
 noncomputable def stepCertificate {r : ℕ} : NativeCertificate
-    (fun x : NativeInput r => FiniteState.step (NativeInput.wordWidth x) (NativeInput.program
-      x).toGeneric x.2)
+    (fun x : NativeInput r =>
+      FiniteState.step (NativeInput.wordWidth x) (NativeInput.program x).toGeneric x.2)
     (nativeInputEncoding r) (FiniteState.resultEncoding Basis.standard.encoding) := by
   let prepare : NativeCertificate
-      (fun x : NativeInput r => (((NativeInput.wordWidth x), ProgramLiterals.serialize
+      (fun x : NativeInput r => ((NativeInput.wordWidth x, ProgramLiterals.serialize
         (NativeInput.program x)), toTuple x.2))
       (nativeInputEncoding r) (inputEncoding r) :=
     linear (ComputableInO.of_eq fun _ => rfl)

@@ -68,8 +68,9 @@ noncomputable def finiteRunCertificate : NativeCertificate
 /-- Actual output state, using the same fault/return fallback as the native endpoint. -/
 def finalState (x : Packet) : FiniteState Basis.standard.genericModel 40 :=
   (FiniteState.continuing
-    (FiniteState.run (GeneratedRunInput.Packet.wordWidth x) (GeneratedRunInput.Packet.program
-      x).parkHalts.toGeneric (GeneratedRunInput.Packet.clock x) x.2)).getD
+    (FiniteState.run (GeneratedRunInput.Packet.wordWidth x)
+      (GeneratedRunInput.Packet.program x).parkHalts.toGeneric
+      (GeneratedRunInput.Packet.clock x) x.2)).getD
       (initState .standard 40 [])
 
 /-- Extract the real final finite state, without assuming successful execution. -/

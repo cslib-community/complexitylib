@@ -72,10 +72,10 @@ theorem prepare_words {m : ℕ} (as bs cs ds : List (BitVec m)) :
 /-- Input framing charges every original word and all four quarter boundaries. -/
 theorem encoding_length (xs : Words) :
     (encoding xs).length =
-      4 * (encList encNat (QuarterLists.first xs)).length + 2 * (encList encNat
-        (QuarterLists.second xs)).length +
-        2 * (encList encNat (QuarterLists.third xs)).length + (encList encNat (QuarterLists.fourth
-          xs)).length + 4 := by
+      4 * (encList encNat (QuarterLists.first xs)).length +
+        2 * (encList encNat (QuarterLists.second xs)).length +
+        2 * (encList encNat (QuarterLists.third xs)).length +
+        (encList encNat (QuarterLists.fourth xs)).length + 4 := by
   simp only [encoding, length_encPair, QuarterLists.first, QuarterLists.second,
     QuarterLists.third, QuarterLists.fourth]
   omega
@@ -102,10 +102,10 @@ theorem encoding_words_le {m : ℕ} (as bs cs ds : List (BitVec m)) :
 /-- Reversal and concatenation preserve the total framed operand length. -/
 theorem prepare_length (xs : Words) :
     (encList encNat (prepare xs)).length =
-      (encList encNat (QuarterLists.first xs)).length + (encList encNat (QuarterLists.second
-        xs)).length +
-        (encList encNat (QuarterLists.third xs)).length + (encList encNat (QuarterLists.fourth
-          xs)).length := by
+      (encList encNat (QuarterLists.first xs)).length +
+        (encList encNat (QuarterLists.second xs)).length +
+        (encList encNat (QuarterLists.third xs)).length +
+        (encList encNat (QuarterLists.fourth xs)).length := by
   simp [prepare, length_encList, List.map_reverse, List.sum_reverse]
   omega
 

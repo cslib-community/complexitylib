@@ -220,32 +220,33 @@ theorem binaryDispatch_polyTime (fs : List BinOp) : PolyTime
 /-- A handler reads its own literal/register/label fields from the runtime row. -/
 def constant {r : ℕ} (x : Context r) : Result r :=
   let v := (Context.row x).getD 2 0
-  if v < 2 ^ (Context.wordWidth x) then next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row
-    x).getD 1 0) v) else none
+  if v < 2 ^ Context.wordWidth x then
+    next (Tuple.counter x.2 + 1) (setReg x.2 ((Context.row x).getD 1 0) v)
+  else none
 /-- Runtime copy, with the standard basis's unmodified move convention. -/
 def copy {r : ℕ} (x : Context r) : Result r :=
-  next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 1 0) (readReg x.2 ((Context.row
-    x).getD 2 0)))
+  next (Tuple.counter x.2 + 1)
+    (setReg x.2 ((Context.row x).getD 1 0) (readReg x.2 ((Context.row x).getD 2 0)))
 /-- Runtime binary ALU selection, retaining operation faults and overflow. -/
 def binary {r : ℕ} (x : Context r) : Result r :=
   (binaryDispatch binaryOps ((Context.row x).getD 1 0)
-    ((Context.wordWidth x), readReg x.2 ((Context.row x).getD 3 0), readReg x.2 ((Context.row
-      x).getD 4 0))).elim none
-    (fun v => next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 2 0) v))
+    (Context.wordWidth x, readReg x.2 ((Context.row x).getD 3 0),
+      readReg x.2 ((Context.row x).getD 4 0))).elim none
+    (fun v => next (Tuple.counter x.2 + 1) (setReg x.2 ((Context.row x).getD 2 0) v))
 /-- Reading the actual runtime physical word width. -/
 def width {r : ℕ} (x : Context r) : Result r :=
-  next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 1 0) (Context.wordWidth x))
+  next (Tuple.counter x.2 + 1) (setReg x.2 ((Context.row x).getD 1 0) (Context.wordWidth x))
 /-- A charged sparse lookup at the runtime source register's address. -/
 def load {r : ℕ} (x : Context r) : Result r :=
-  next ((Tuple.counter x.2) + 1) (setReg x.2 ((Context.row x).getD 1 0)
+  next (Tuple.counter x.2 + 1) (setReg x.2 ((Context.row x).getD 1 0)
     (SparseMemory.read (Tuple.memoryDefault x.2) (readReg x.2 ((Context.row x).getD 2 0))
       (Tuple.memory x.2)))
 /-- A charged sparse update, including bindings whose new value is zero. -/
 def store {r : ℕ} (x : Context r) : Result r :=
   let a := readReg x.2 ((Context.row x).getD 1 0)
   let v := readReg x.2 ((Context.row x).getD 2 0)
-  some (.inl ((Tuple.counter x.2) + 1, (Tuple.registers x.2),
-    (Tuple.memoryDefault x.2), AList.insert (β := fun _ : ℕ => ℕ) a v (Tuple.memory x.2)))
+  some (.inl (Tuple.counter x.2 + 1, Tuple.registers x.2,
+    Tuple.memoryDefault x.2, AList.insert (β := fun _ : ℕ => ℕ) a v (Tuple.memory x.2)))
 /-- A runtime jump label. -/
 def jump {r : ℕ} (x : Context r) : Result r := next ((Context.row x).getD 1 0) x.2
 /-- Runtime equality and branch labels. -/
@@ -390,8 +391,9 @@ noncomputable abbrev inputEncoding (r : ℕ) : Input r ↪ List Bool :=
 
 /-- Fetch the actual row at the binary program counter and execute it. -/
 def step {r : ℕ} (x : Input r) : Result r :=
-  if (Tuple.counter x.2) < (Input.rows x).length then evalRow (((Input.wordWidth x), (Input.rows
-    x).getD (Tuple.counter x.2) []), x.2) else none
+  if Tuple.counter x.2 < (Input.rows x).length then
+    evalRow ((Input.wordWidth x, (Input.rows x).getD (Tuple.counter x.2) []), x.2)
+  else none
 
 /-- Program lookup uses capped binary indexing, so enormous labels do not require unary scans. -/
 theorem step_polyTime {r : ℕ} : PolyTime (step (r := r))

@@ -181,12 +181,12 @@ theorem compact_trajectory_bound {m : ℕ} (p : ℕ) (a : BitVec m)
     let depth := min p (min m (tail.length / 4))
     let x := GeneratedRunInput.packet (prepare (ofWords p a tail))
     Interpreter.compactTrajectoryLength (UniformExecution.executionInput x) ≤
-      2 * (Interpreter.parametersEncoding 40 ((Interpreter.RunInput.parameters
-        (UniformExecution.executionInput x)))).length +
+      2 * (Interpreter.parametersEncoding 40
+        (Interpreter.RunInput.parameters (UniformExecution.executionInput x))).length +
         1 + stateBound 40 (labelBound (GeneratedRunInput.Packet.program x).parkHalts.toGeneric)
           (GeneratedRunInput.Packet.wordWidth x)
-          (CompactExecution.peak depth (QuarterLists.first parts).length (QuarterLists.second
-            parts).length
+          (CompactExecution.peak depth
+            (QuarterLists.first parts).length (QuarterLists.second parts).length
             (QuarterLists.third parts).length (QuarterLists.fourth parts).length
             (computedBalance (p := depth) (QuarterLists.first parts) (QuarterLists.second parts)
               (QuarterLists.third parts) (QuarterLists.fourth parts) a 0)) := by
