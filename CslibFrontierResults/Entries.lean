@@ -46,6 +46,8 @@ import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
 import CslibFrontier.Probability.Extractor.TwoSource
 
@@ -739,3 +741,33 @@ register_result "gmw-zero-knowledge" where
     protocol) with soundness (1/3)^(n+1), NegligibleSoundness, and auxiliary-input zero \
     knowledge in family-indexed, unbounded-auxiliary-input, and Goldreich instance-indexed \
     forms; the relation version preserves R's native witnesses via a Levin reduction."
+
+register_result "nash-existence" where
+  title := "Nash's theorem: every finite game has a mixed Nash equilibrium"
+  topic := "game theory"
+  sources := [
+    { paper := Nash1951, theorem := "Theorem 1", locator := unverified },
+    { paper := Roughgarden2013CS364A, theorem := unverified,
+      locator := "Lecture 13, Section 3.3" }
+  ]
+  theorems := [
+    Cslib.GameTheory.CostGame.exists_isMixedNash
+  ]
+  scope := "Finite cost-minimization games: finitely many players, each with a finite nonempty \
+    set of pure strategies and real-valued costs. A mixed Nash equilibrium is a profile of \
+    probability vectors under which no player lowers its expected cost under the product \
+    distribution by a pure deviation. Proved by Brouwer's theorem on products of simplices, \
+    itself derived from the hypergrid Sperner lemma. Nonconstructive: no algorithm or \
+    complexity bound."
+
+register_result "nash-existence-bimatrix" where
+  title := "Every bimatrix game has a Nash equilibrium"
+  topic := "game theory"
+  sources := [
+    { paper := Nash1951, theorem := "Theorem 1", locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.BimatrixGame.exists_isNash
+  ]
+  scope := "Real payoff matrices over finite nonempty strategy sets, with no nondegeneracy \
+    assumption; derived from the n-player theorem. Nonconstructive."

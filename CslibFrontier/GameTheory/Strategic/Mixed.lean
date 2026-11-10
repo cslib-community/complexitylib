@@ -43,9 +43,12 @@ learner that faces the expected cost vectors has the same regret as the player i
 ## Main results
 
 * `Cslib.GameTheory.sum_productWeight`: the product weights of probability vectors sum to `1`.
+* `Cslib.GameTheory.productWeight_single`: point masses multiply to the point mass at a profile.
 * `Cslib.GameTheory.productDist_sum`: expectations under `productDist` are sums over profiles.
 * `Cslib.GameTheory.CostGame.sum_mul_deviationCost`: averaging the expected cost vector against
   the player's own mixed strategy gives its expected cost.
+* `Cslib.GameTheory.CostGame.deviationCost_update_self`: the expected cost vector of player `i`
+  depends on its own mixed strategy only through its total mass.
 * `Cslib.GameTheory.CostGame.abs_deviationCost_le`: expected costs inherit bounds on the costs.
 
 ## References
@@ -66,10 +69,26 @@ variable {ι : Type*} {S : ι → Type*} [Fintype ι]
 def productWeight (p : ∀ i, S i → ℝ) (s : ∀ i, S i) : ℝ :=
   ∏ i, p i (s i)
 
+/-- Unfolding equation for `productWeight`, whose body is not exposed. -/
+theorem productWeight_def (p : ∀ i, S i → ℝ) (s : ∀ i, S i) :
+    productWeight p s = ∏ i, p i (s i) := by
+  rw [productWeight]
+
 /-- Product weights of nonnegative vectors are nonnegative. -/
 theorem productWeight_nonneg {p : ∀ i, S i → ℝ} (hp : ∀ i a, 0 ≤ p i a) (s : ∀ i, S i) :
     0 ≤ productWeight p s :=
   prod_nonneg fun i _ => hp i (s i)
+
+/-- The product of the point masses at the coordinates of a pure profile `s` is the point mass
+at `s`. -/
+theorem productWeight_single [∀ i, DecidableEq (S i)] (s t : ∀ i, S i) :
+    productWeight (fun i => Pi.single (s i) 1) t = if t = s then 1 else 0 := by
+  rw [productWeight_def]
+  split_ifs with h
+  · subst h
+    exact prod_eq_one fun i _ => Pi.single_eq_same _ _
+  · obtain ⟨i, hi⟩ := Function.ne_iff.1 h
+    exact prod_eq_zero (mem_univ i) (Pi.single_eq_of_ne hi _)
 
 variable [DecidableEq ι]
 
@@ -139,6 +158,25 @@ theorem sum_mul_sum_productWeight_update (p : ∀ i, S i → ℝ) {i : ι} (hp :
         simp only [← mul_sum]
         rw [← sum_mul, hp, one_mul]
 
+/-- If `K` does not depend on coordinate `i`, then averaging `u (s i) * K s` over all profiles `s`
+depends on `u` only through its total mass `∑ b, u b`: after multiplying by `card (S i)`, it is
+`(∑ b, u b) * ∑ s, K s`. The proof is the change of variables `(c, s) ↦ (s i, update s i c)`. -/
+private theorem card_mul_sum_mul_of_update (i : ι) (u : S i → ℝ) (K : (∀ j, S j) → ℝ)
+    (hK : ∀ s b, K (Function.update s i b) = K s) :
+    (Fintype.card (S i) : ℝ) * ∑ s, u (s i) * K s = (∑ b, u b) * ∑ s, K s := by
+  calc (Fintype.card (S i) : ℝ) * ∑ s, u (s i) * K s
+      = ∑ x : S i × (∀ j, S j), u (x.2 i) * K x.2 := by
+        rw [Fintype.sum_prod_type]
+        simp only [sum_const, card_univ, nsmul_eq_mul]
+    _ = ∑ x : S i × (∀ j, S j), u x.1 * K x.2 :=
+        Fintype.sum_equiv
+          ⟨fun x => (x.2 i, Function.update x.2 i x.1),
+            fun x => (x.2 i, Function.update x.2 i x.1), fun x => by simp, fun x => by simp⟩
+          _ _ fun x => by
+            simp only [Equiv.coe_fn_mk, hK]
+    _ = (∑ b, u b) * ∑ s, K s := by
+        rw [Fintype.sum_prod_type, sum_mul_sum]
+
 namespace CostGame
 
 /-- The **expected cost vector** of player `i` against the mixed strategies `p`
@@ -158,6 +196,37 @@ theorem sum_mul_deviationCost (G : CostGame ι S) (p : ∀ i, S i → ℝ) {i : 
     (hp : ∑ a, p i a = 1) :
     ∑ a, p i a * G.deviationCost p i a = ∑ s, productWeight p s * G.cost i s :=
   sum_mul_sum_productWeight_update p hp (G.cost i)
+
+/-- The expected cost vector of player `i` depends on its own mixed strategy only through its
+total mass: replacing `p i` by any `q` of the same total mass does not change it. -/
+theorem deviationCost_update_self (G : CostGame ι S) (p : ∀ i, S i → ℝ) {i : ι} {q : S i → ℝ}
+    (hq : ∑ b, q b = ∑ b, p i b) (a : S i) :
+    G.deviationCost (Function.update p i q) i a = G.deviationCost p i a := by
+  have key : ∀ r : ∀ j, S j → ℝ, (∀ j, j ≠ i → r j = p j) →
+      (Fintype.card (S i) : ℝ) * G.deviationCost r i a = (∑ b, r i b) *
+        ∑ s, (∏ j ∈ univ.erase i, p j (s j)) * G.cost i (Function.update s i a) := by
+    intro r hr
+    have hK : ∀ (s : ∀ j, S j) (b : S i),
+        (∏ j ∈ univ.erase i, p j (Function.update s i b j)) *
+          G.cost i (Function.update (Function.update s i b) i a)
+        = (∏ j ∈ univ.erase i, p j (s j)) * G.cost i (Function.update s i a) := by
+      intro s b
+      rw [Function.update_idem]
+      congr 1
+      exact prod_congr rfl fun j hj => by rw [Function.update_of_ne (ne_of_mem_erase hj)]
+    rw [← card_mul_sum_mul_of_update i (r i)
+      (fun s => (∏ j ∈ univ.erase i, p j (s j)) * G.cost i (Function.update s i a)) hK,
+      deviationCost_def]
+    congr 1
+    refine sum_congr rfl fun s _ => ?_
+    rw [productWeight_def, ← mul_prod_erase univ (fun j => r j (s j)) (mem_univ i), mul_assoc]
+    congr 2
+    exact prod_congr rfl fun j hj => by rw [hr j (ne_of_mem_erase hj)]
+  have : Nonempty (S i) := ⟨a⟩
+  have hcard : (Fintype.card (S i) : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
+  refine mul_left_cancel₀ hcard ?_
+  rw [key _ fun j hj => Function.update_of_ne hj q p, key p fun _ _ => rfl,
+    Function.update_self, hq]
 
 /-- If the costs of player `i` are bounded by `M` in absolute value, so are its expected costs
 against mixed strategies. -/
