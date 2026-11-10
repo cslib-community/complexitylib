@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.Drawi
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.DrawingRoutes
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.DrawingCounts
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.GeometryProfilesPrefix
+import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Logics.Propositional.CNF.Occurrence
 import Mathlib.Data.List.GetD
 import Mathlib.Algebra.BigOperators.Ring.List
@@ -112,8 +113,7 @@ private theorem positiveDrawing_weight (φ : CNF ℕ) (d : Graph.OrthogonalDrawi
     simpa only [positiveClauseBlock, PositivePlacedClause.routes, List.flatMap_map,
       List.map_flatMap, List.map_map, Function.comp_def] using he
   change (((positivePlacedClauses φ d).flatMap fun pc => pc.routes).map weight).sum = _
-  rw [positivePlacedClauses, List.flatMap_assoc, List.map_flatMap]
-  rw [List.flatMap_def, List.sum_flatten, List.map_map]
+  rw [positivePlacedClauses, List.flatMap_assoc, List.sum_map_flatMap]
   apply congrArg List.sum
   apply List.map_congr_left
   intro a _
@@ -236,8 +236,7 @@ private theorem source_edge_weight_sum {φ : CNF ℕ} {d : Graph.OrthogonalDrawi
   calc
     _ = ((Cslib.Logic.PL.occurrences φ).map fun o =>
         weight (d.2.getD (sourceEdgeIndex φ o.1 o.2.1) [])).sum := by
-      rw [Cslib.Logic.PL.occurrences, List.map_flatMap, List.flatMap_def,
-        List.sum_flatten, List.map_map]
+      rw [Cslib.Logic.PL.occurrences, List.sum_map_flatMap]
       simp only [List.map_map, Function.comp_def]
     _ = ((Cslib.Logic.PL.occurrences φ).map fun o =>
         weight (d.2.getD ((Cslib.Logic.PL.occurrences φ).idxOf o) [])).sum := by

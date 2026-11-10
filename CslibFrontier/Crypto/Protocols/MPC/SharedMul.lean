@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.MPC.Basic
 public import CslibFrontier.Probability.PMF.Bind
 public import Mathlib.Algebra.Ring.BooleanRing
+import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
@@ -450,13 +451,6 @@ theorem extractPairShare_receivedPairOfRow {m : ℕ} (p : OrderedPair m) (i : Fi
       rfl
     · simp [h0, h1]
 
-private theorem sum_map_flatMap {α β M : Type} [AddCommMonoid M] (l : List α)
-    (f : α → List β) (g : β → M) :
-    ((l.flatMap f).map g).sum = (l.map fun a => ((f a).map g).sum).sum := by
-  induction l with
-  | nil => rfl
-  | cons a l ih => simp [List.flatMap_cons, ih]
-
 private theorem sum_map_filterMap {α β M : Type} [AddCommMonoid M] (l : List α)
     (f : α → Option β) (g : β → M) :
     ((l.filterMap f).map g).sum =
@@ -470,7 +464,7 @@ private theorem sum_map_orderedPairs {m : ℕ} {M : Type} [AddCommMonoid M]
     (g : OrderedPair m → M) :
     ((orderedPairs m).map g).sum =
       ∑ u : Fin m, ∑ v : Fin m, if h : u < v then g ⟨(u, v), h⟩ else 0 := by
-  rw [orderedPairs, sum_map_flatMap, Fin.sum_univ_def]
+  rw [orderedPairs, List.sum_map_flatMap, Fin.sum_univ_def]
   congr 1
   refine List.map_congr_left fun u _ => ?_
   rw [sum_map_filterMap, Fin.sum_univ_def]
