@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Basic
 public import CslibFrontier.Crypto.Computational.Homomorphic.Evaluation
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Correctness of depth-budgeted homomorphic encryption
@@ -113,8 +114,7 @@ theorem encryptedWires_evaluateCircuit_drop (hE : E.Correct)
       (Layered.padTo inputCount (2 * step) (Layered.compile inputCount c.code).1).length =
         2 * step :=
     Layered.length_padTo_of_le _ _ _ (by rw [Layered.length_compile]; omega)
-  rw [evaluateCircuit, ProbComp.eval_map, PMF.mem_support_map_iff] at houtputs
-  obtain ⟨row, hrow, rfl⟩ := houtputs
+  supp_cases houtputs [evaluateCircuit] with ⟨row, hrow, rfl⟩
   have h := Scheme.encryptedWires_evaluateLayers_drop D hE hwidth hD n (2 * total) (2 * offset) keys
     links (Layered.padTo inputCount (2 * step) (Layered.compile inputCount c.code).1)
     (by omega) hchain (List.ofFn x) inputs hinputs
@@ -160,8 +160,7 @@ theorem freshInputs_tail {budget : ℕ → ℕ} {n : ℕ} {pk bits : List Bool}
   apply h.imp
   intro bit ciphertext hc
   change ciphertext ∈ (ProbComp.eval (encrypt E n pk bit)).support at hc
-  rw [encrypt, ProbComp.eval_map, PMF.mem_support_map_iff] at hc
-  obtain ⟨payload, hpayload, rfl⟩ := hc
+  supp_cases hc [encrypt] with ⟨payload, hpayload, rfl⟩
   exact hpayload
 
 /-- Evaluating one hop of depth at most `step` starting at offset `offset` produces a `true`-tagged
@@ -182,8 +181,7 @@ theorem evaluateHop_spec (hE : E.Correct) (hwidth : E.FixedWidth secretWidth cip
       ciphertext.headD false = true ∧
       E.decrypt n (chain.getD (2 * (offset + step)) ([], [])).2 ciphertext.tail =
         c.2.eval interpretation (BitString.ofList c.1 bits) 0 := by
-  rw [evaluateHop, ProbComp.eval_map, PMF.mem_support_map_iff] at hc
-  obtain ⟨row, hrow, rfl⟩ := hc
+  supp_cases hc [evaluateHop] with ⟨row, hrow, rfl⟩
   simp only [keyPair, publicKeyDecoder_decode_enc] at hrow
   have h := encryptedWires_evaluateCircuit_drop D hE hwidth hD n total offset step chain links c.2
     hstep htotal hchain (BitString.ofList c.1 bits) (inputs.map List.tail)
@@ -311,8 +309,7 @@ theorem encrypt_spec (hE : E.Correct) (hwidth : E.FixedWidth secretWidth ciphert
   obtain ⟨chain, links, hchain, rfl⟩ := (mem_support_keyGen_iff n (budget n) keys).1 hkeys
   have hfirst := E.key_mem_support_of_generatedChain hchain (Nat.zero_le _)
   change ciphertext ∈ (ProbComp.eval (encrypt E n _ bit)).support at hc
-  rw [encrypt, ProbComp.eval_map, PMF.mem_support_map_iff] at hc
-  obtain ⟨payload, hpayload, rfl⟩ := hc
+  supp_cases hc [encrypt] with ⟨payload, hpayload, rfl⟩
   have hpk : (chain.map Prod.fst).getD 0 [] = (chain.getD 0 ([], [])).1 :=
     List.getD_map chain ([], []) Prod.fst
   simp only [keyPair, publicKeyDecoder_decode_enc, hpk] at hpayload
