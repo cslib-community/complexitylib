@@ -5782,6 +5782,7 @@ public import CslibFrontier.Tactic.Fits
 public import CslibFrontier.Tactic.LogSpace
 public import CslibFrontier.Tactic.LogSpace.Init
 public import CslibFrontier.Tactic.OptionMatch
+public import CslibFrontier.Tactic.PMFSwap
 public import CslibFrontier.Tactic.PPT
 public import CslibFrontier.Tactic.PolyTime
 public import CslibFrontier.Tactic.PolyTime.Init

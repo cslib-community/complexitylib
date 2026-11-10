@@ -221,6 +221,24 @@ If the goal is not a word-size bound `Fits w v` or `v < 2 ^ w`, the diagnostic r
 If `omega` fails, the diagnostic shows the unfolded goal with the facts it was given; supply the
 missing bound, for instance on a product or on a value read from memory.
 
+## Reorder independent samples
+
+Two experiments that draw the same independent samples in different orders have the same law.
+Import `CslibFrontier.Tactic.PMFSwap` and, after `simp only [pmf_norm]`, prove the equation with
+`pmf_swap`. It matches the samples of the two sides by their distributions, not their positions,
+moves them to the front with `PMF.bind_comm` and strips them. It closes the goal when the remaining
+continuations agree up to reducible unfolding, trying the matches of repeated distributions within
+a fixed budget; `simp [PMF.bind_comm]` instead loops on two samples of one distribution. Otherwise
+it strips the common samples, first those whose distribution occurs once on each side, and leaves
+the equation of the continuations. `pmf_swap with x y` strips exactly two samples and names them.
+
+When both sides draw the same distributions and differ only in what they return, the goal does
+not determine which sample to strip. Choose it with `pmf_hoist q`, which moves the samples of `q`
+toward the front of their chains anywhere in the goal, or in a hypothesis with `at h`, then strip
+it with `congr 1 with x : 1`. A sample whose distribution mentions an earlier sample never moves
+past it; the diagnostic lists the samples of both sides and marks those dependencies. The
+[checked clients](../../CslibFrontierTests/PMFSwap.lean) cover each form and diagnostic.
+
 ## Proof style as interface maintenance
 
 The project asks for nonterminal `simp only` where later steps depend on the resulting normal form, forbids global simplification attributes on machine transitions, and requires comments and reviewed allowlisting for unusually large heartbeat bounds. These policies address predictable search explosions and fragile proofs. They complement semantic lemmas and named certificates; they do not prove maintainability by themselves. [Proof hygiene](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/AGENTS.md#proof-hygiene)
