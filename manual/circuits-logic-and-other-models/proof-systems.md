@@ -352,9 +352,35 @@ then characterizes optimality without assuming a solver.
 [Augmenting-walk tests](../../CslibFrontierTests/EdgeCSPWalk.lean) include doubled equality
 constraints, actual returned paths, odd unsatisfiable units, repeated constraint positions,
 empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
-prefix is invalid. The routine takes an improving comparison labeling as input: finding that
-labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
-Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+prefix is invalid. This routine takes an improving comparison labeling as input. The fresh
+forest search below instead starts from the base labeling alone and stops at exhaustion,
+augmentation or a blossom. Whole-blossom contraction/lifting, the full solver and planar
+dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+For explicit tables, import `CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting`.
+In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
+two occurrence-bit buffers and the excluded starting variable. `encInput` frames the CSP and
+both buffers; the final excluded variable is binary without an additional frame. Table arities,
+source names and output walk indices are binary. Internal scan positions are unary.
+`computableInPolyTime_run` proves ordinary native polynomial time in the complete encoded input,
+including malformed tables and buffers. Iteration depends on actual lists, never the largest name.
+
+`run_eq` identifies the finite output with the existing mathematical routine whenever both buffer
+lengths equal the occurrence count. `run_spec` additionally takes the edge-instance and even
+relation hypotheses, valid original/comparison labels and a strict defect improvement; it returns
+an actual existing `Walk`, its decoder equation, augmentation correctness and the combined
+half-Hamming exchange bound. `none` is a helper failure or width rejection, not an unsatisfiability
+answer. [Native augmentation tests](../../CslibFrontierTests/EdgeCSPAugmentingNative.lean) exercise
+returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
+The supplied improving comparison remains necessary for this two-phase routine. The fresh search
+below has no comparison input; native compilation of that search and the full solver are outside
+this layer.
+
+The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
+`occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
+`PolyTime.CSP.Occurrence` supplies `encOccurrenceRecord` and
+`computableInPolyTime_occurrences` without importing graph construction. Both incidence graphs
+and the native augmentation compiler use that same enumeration and certificate.
 
 ## Algebraic proof systems
 
@@ -421,6 +447,112 @@ scripts/build.sh \
   CslibFrontierTests.ProofComplexity.AlgebraicCNF
 ```
 
+## Timestamped f-DAGs and local surgery
+
+Import `CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths` for finite incidence DAGs, their
+surgery and directed-path validity. `CSP.DAG` stores actual variable support, positional
+constraint copies paired with timestamps, and occurrence-indexed oriented arcs. Isolated
+nodes are retained. `DAG.IsFDAG` bundles base validity and all six conditions of KKR v6,
+Definition 32, printed pp. 0:15–0:16: supported incidence, unique use of each original incidence,
+variable indegree, distinct timestamps compatible with a topological order, local feasible
+pair moves, and the full same-original-constraint no-shortcut condition. Finite rank ties can
+be broken into an injective numbering. A two-port move cancels when its ports coincide.
+
+For even delta-matroid constraints, `IsFDAG.delete_earliest_pair` proves Lemma 35 with its
+leaf and two-arc degree hypotheses, including exact removal of those arcs. `reroot_earliest`
+proves Lemma 37 when the earliest copy has one incoming leaf-root arc; it retains every
+unselected outgoing child. Both preserve feasibility and no shortcuts after the pair flip.
+Local common parity may be odd. These results operate on positional CSP lists; `EdgeInstance`
+connects that extension to the source's distinct-constraint edge model.
+
+`IsFDAG.valid_flip_of_pairedCopies` proves validity when each copy has exactly two incident
+arcs, at least one incoming. `DirectedPath.valid_flip`, `valid_take` and `valid_flip_meeting`
+specialize this argument to Corollary 36. A path may revisit an original constraint at different
+timestamps; copied nodes do not recur. Every variable-ended prefix flip is valid. The bridge
+`DirectedPath.isFWalk` additionally requires distinct endpoints and original internal-variable
+consistency; these are not hidden in the DAG assumptions.
+
+`IsFDAG.flip_walk_of_no_prefix_extension` proves Lemma 43 for an f-walk disjoint from the DAG's
+variables, with the actual `Walk.take`/`snoc` nonextension test against every used arc, regardless
+of orientation. Its direct local-exchange proof avoids the source proof's temporary smaller
+timestamp and handles timestamp zero. See [DAG tests](../../CslibFrontierTests/EdgeCSPDAG.lean) for repeated
+original constraints, exact deletion, extra-child rerooting, meeting paths, odd parity and failed
+invariants. The fresh search below derives these DAG hypotheses from its actual execution;
+whole-blossom contraction/lifting and the full planar endpoint remain open under
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+`CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations` supplies disjoint linked-trail
+concatenation, trail reversal and f-prefix inheritance. Reversal preserves the underlying
+trail, but arbitrary f-walk reversal can fail even with even delta-matroid constraints.
+The [operation tests](../../CslibFrontierTests/EdgeCSPWalkOperations.lean) exhibit that failure, overlapping
+incidence rejection and why endpoint consistency needs a positive proper prefix.
+
+## Fresh forest search and its three outcomes
+
+Import `CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Blossom` and
+`CslibFrontier.Algorithms.Lean.EdgeCSP.Forest.Optimality`. `Forest.search sem f` executes
+Algorithm 1's chronological forest growth without a supplied improving comparison. Its roots
+are the actual defective variables. Expansions are newest first, timestamps count older
+expansions from zero, and repeated original constraints retain distinct copied nodes. Each
+continuation removes a selected incidence from the finite work list. The result is an exhausted
+log, an augmentation meeting, or a blossom meeting; recursive contraction is a separate step.
+
+`search_terminal_isFDAG` proves Lemma 34 for both the actual partial forest and its terminal
+pruned graph, using only `EdgeInstance` and base-label validity. No even-delta-matroid premise
+is needed here. Pruning removes all current-copy outgoing arcs before inserting the second
+incoming port, while retaining the discovered variables as isolated supported nodes.
+`scan_isFDAG` provides the corresponding partial-scan invariant.
+
+For even delta-matroid constraints, three fresh-run endpoints use the instance hypotheses and
+the actual result equation, deriving forest and event invariants internally:
+
+- `search_exhausted_isOptimalLabeling` proves minimum defect count among all valid labelings.
+  Its alternative counting proof combines local `IsEvenDeltaMatroid.card_disagree_le` with
+  accounting over distinct occurring variables. It needs no finite universe of variable names,
+  comparison labeling or supplied optimality certificate.
+- `search_augment_correct` proves that the returned `m.walk` is augmenting, its flip is valid,
+  and exactly two defects disappear. Prefix validity comes from the two directed ancestries;
+  it does not assume that arbitrary f-walk reversal preserves validity.
+- `search_blossom_correct` proves that the actual `m.blossomData` succeeds. Its preparatory flip
+  is valid and preserves defect count, and its cycle satisfies `Walk.IsBlossom`. The
+  Definition 39 interface includes a closed nonempty incidence trail, defective base,
+  consistent internal variables, distinct copied steps and a complete timestamped f-DAG
+  with feasibility and no shortcuts.
+
+`Walk.DistinctCopies` requires one timestamp per step and no repeated copied constraint
+(position, timestamp). Original constraints may recur at different timestamps.
+`Trace.blossom_times_nodup` derives the stronger distinct-timestamp property for both actual
+extractor outcomes. This makes explicit the two-arm geometry needed by Lemma 40 when it
+invokes Corollary 36. A graph union alone can hide a four-port shared copy. The
+[kernel-checked counterexample](../../CslibFrontierTests/EdgeCSPBlossomCopies.lean) satisfies
+the former union-only conditions but has an invalid proper prefix; its original instance is
+UNSAT while the corresponding table contraction is SAT. A positive actual-search test retains
+a repeated original constraint at distinct times. Search programs and native codes are unchanged.
+
+Both least-common-ancestor cases are covered. A variable ancestor is a defective root and needs
+no preparation. At a constraint ancestor, the computed root path is flipped and the copied
+constraint rerooted, retaining the other child ports. `blossom_metadata` and `blossom_isFDAG`
+certify the actual stored pivot and timestamps. The preparation proof uses chronological prefix
+transfer followed by Lemma 37; it is an alternative to the paper's repeated deletions.
+
+These statements follow KKR v6, Algorithm 1 (printed p. 0:10), Lemma 34 (pp. 0:15–0:16),
+Proposition 38 (p. 0:18), Definition 39/Lemma 41 (pp. 0:19–0:20), and Lemma 45
+(pp. 0:22–0:23). Variables require only decidable equality; local common parity may be odd.
+The reusable `Walk.Subpath`, `Walk.Visits` and `DAGPaths.Preparation` APIs support the actual
+prefix/suffix arguments. `Walk.nodup_edges_snoc` is now public and used by `IsWalk.snoc`.
+Import `CslibFrontier.Foundations.Data.BitString.DeltaMatroid.ExchangeBound` separately to use
+the local disagreement-count lemma directly.
+
+[Forest execution tests](../../CslibFrontierTests/EdgeCSPForest.lean),
+[terminal tests](../../CslibFrontierTests/EdgeCSPForestTerminal.lean),
+[event tests](../../CslibFrontierTests/EdgeCSPForestEvents.lean) and
+[optimality tests](../../CslibFrontierTests/EdgeCSPForestOptimality.lean) cover both ancestor cases,
+nonempty preparation, repeated constraints, timestamp zero, odd parity and sparse binary names.
+The exhausted example with a connected feasible-pair graph still has two unavoidable defects.
+These are mathematical correctness and finite execution results. Native fresh-search cost,
+whole-blossom contraction/lifting and the complete solver/dichotomy remain outside this layer;
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) stays open.
+
 ## Finite crossover gadget semantics
 
 Import `CslibFrontier.Logics.Propositional.CSP.Planar.Crossover` for Dvořák–Kupec, ICALP 2015,
@@ -437,9 +569,84 @@ width-guarded interpretations reject malformed scopes. [Crossover clients](../..
 check every standardized shape, both first-gadget outcomes, explicit witnesses and rejected
 boundary tuples, while retaining the existing CNF crossover tests.
 
-These are finite relation semantics. They do not prove planar embedding/substitution,
-normalization from a failed delta-matroid condition (the source's omitted Lemma 6 proof),
-a hardness theorem or a new native runtime certificate. These obligations remain part of
+These Figure 1 results concern finite relation semantics. Geometric realization and substitution,
+a hardness theorem and a new native runtime certificate remain part of
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Ordered normalization from a cyclic exchange failure
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Normalization`. For any arity `n`,
+`Normalization.exists_construction` takes a nonempty self-complementary relation
+`R : Set (Fin n → Bool)` whose `cyclicDifferenceRelation R` is not an even delta-matroid.
+It proves `4 ≤ n` and supplies a `Construction R`. Nonemptiness is essential: failure caused
+solely by an empty relation supplies no exchange witness. This is an original reconstruction
+of the combinatorial argument omitted from Dvořák–Kupec, ICALP 2015, §4, printed p. 440,
+Lemma 6; it does not yet prove that lemma's planar-expressibility conclusion.
+
+The construction chooses a feasible twist and a cyclic starting port, then records a finite
+`Program n 4`. The only reductions are adjacent identification, including the last-to-first
+edge, and a cap at arity at least six that identifies old ports 1 and 3 and hides old port 2.
+The latter retains free order `0,1,4,…`. Adjacent identification conditions the removed cyclic
+difference to zero; the cap conditions old differences 1 and 2 to agree. The exact formulas
+in `BitString.CyclicDifference.Boundary` rule out new forbidden pairs during the descent.
+Cyclic rotations preserve orientation; no arbitrary port permutation is used.
+
+`Construction.target` is standardized in the final four-port order. `Construction.gadget`
+executes the trace on an actual `PPGadget` over two symbols: the original `R` and binary
+disequality. Its initial body contains one `R` literal and one or two disequalities per port.
+Subsequent steps only relabel scopes; every cap adds one fresh auxiliary. No constants or
+equality symbol are added. `Construction.body_bounds` gives at most `1+2n` constraints and
+`5n` total scope occurrences; `Construction.numAux_bound` gives at most `3n-4` allocated
+auxiliaries, including unused labels. `Program.reductions_bound` counts nonrotation operations,
+not the length of an arbitrary trace.
+
+`CSP.PrimitivePositive.Operations` supplies the reusable `PPGadget.relabelFree` and
+`PPGadget.substitute` operations, preserving exact scope widths and existential semantics.
+The [normalization tests](../../CslibFrontierTests/PlanarNormalization.lean) exercise failed-exchange
+families at arities 6, 8 and 12, repeated caps, a feasible-quartet finish, proper-support
+compression, rotation, wraparound deletion, actual auxiliary witnesses and empty/nullary guards.
+The guide composes the construction with its gadget and size bounds using ordinary imports.
+
+These are combinatorial and finite-semantic bounds. Relation decisions and a chosen construction
+are fixed-relation data; no uniform native runtime or binary encoded-size bound is asserted.
+Geometric realization of the recorded operations, ordered planar substitution, hardness and
+completion of the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Original-language gadgets for the nonselfdual branch
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget`.
+`NonSelfDual.exists_oneHotGadget` gives an actual `PPGadget arity sem
+(BitString.oneHotRelation (Fin 3))` when the language has none of the six common Schaefer
+polymorphisms and unary complement is also not a common polymorphism. Different language
+relations may witness these failures; their arities are unrestricted. Pins and disequality
+are constructed internally, rather than added to the alphabet.
+`RelationMinor.exists_disequalityGadget` needs only absence of the six Schaefer operations,
+so it also applies to self-complementary languages.
+
+`RelationMinor.Construction` records finite ordered recipes. Its atom, projection, adjacent
+equality/disequality deletion, cofactor, single-coordinate flip, cyclic rotation and binary
+intersection constructors retain their intermediate relations and enabling constructions.
+`Construction.gadget` executes this tree over the original alphabet. The reusable
+`PPGadget.atom`, `conj`, `retarget` and port operations preserve exact scope widths and
+existential semantics. Conjunction appends bodies with disjoint auxiliary blocks, including
+when the same gadget is used several times. `NonSelfDual.triangleGadget` appends the ternary
+body and three NAND bodies on ports `(0,1)`, `(1,2)`, `(2,0)`, with fresh auxiliaries for
+each occurrence. Survivor order is retained by projection; a cyclic rotation changes only
+the starting port.
+
+The constants descent follows Dvořák–Kupec, ICALP 2015, §2, printed pp. 437–438, Lemma 3.
+The arbitrary-arity parity and majority minor proofs reconstruct the argument omitted from
+Lemma 4, printed pp. 438–439; they are identified as original reconstructions. Unary pin
+relations are distinct from unary constant operations. The [minor and triangle tests](../../CslibFrontierTests/PlanarNonSelfDual.lean),
+[rotation tests](../../CslibFrontierTests/PlanarNonSelfDualRotation.lean) and
+[interpreter tests](../../CslibFrontierTests/PlanarConstructionGadget.lean) cover actual witnesses,
+rejection, fresh auxiliaries, nullary atoms and malformed widths. In particular, the interpreter
+tests derive the gadgets from a single one-in-three symbol without primitive pins or disequality.
+
+These results prove finite primitive-positive semantics. The selected witnesses are fixed-language
+data; no uniform preprocessing cost is asserted. The recorded recipes and concrete bodies support
+subsequent geometric proofs, but do not establish ordered planar substitution, a native reduction
+or planar hardness. Those obligations and the full solver/dichotomy remain open under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Three resolution representations

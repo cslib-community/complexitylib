@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -31,6 +32,9 @@ bounds the space of every computation path of the nondeterministic machine of th
 every branch to halt. Like `Cslib.Complexity.AP`, the classes are relative to the encoding of
 instances. A time bound gives a space bound
 (`Turing.MultiTapeATM.DecidesInTime.decidesInSpace`), so `AP ⊆ APSPACE`, and `AL ⊆ APSPACE`.
+In terms of the parametric classes `Cslib.Complexity.ASPACE`, `APSPACE` is the union of the
+classes `ASPACE (n ^ k)` (`Cslib.Complexity.mem_APSPACE_iff_exists_mem_ASPACE`) and `AL` is
+`ASPACE (log₂ n)` (`Cslib.Complexity.AL_eq_ASPACE`).
 
 A space-bounded alternating machine is simulated deterministically by evaluating its configuration
 graph bottom-up (`Turing.MultiTapeATM.boundedAccepts`). Under space `s`, at most
@@ -53,6 +57,9 @@ simulation halves of `AL = P` and `APSPACE = EXP`.
 
 ## Main results
 
+* `Cslib.Complexity.mem_APSPACE_iff_exists_mem_ASPACE`: `APSPACE` is the union of the classes
+  `ASPACE (n ^ k)`.
+* `Cslib.Complexity.AL_eq_ASPACE`: `AL` is `ASPACE (log₂ n)`.
 * `Cslib.Complexity.AP_subset_APSPACE`, `Cslib.Complexity.AL_subset_APSPACE`: alternating
   polynomial time and logarithmic space are within alternating polynomial space.
 * `Turing.MultiTapeATM.RecognizesInSpace.mem_P`: alternating logspace recognizers are within
@@ -92,6 +99,28 @@ finitely many states. -/
 def AL (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k Bool State) (c : ℕ),
     atm.DecidesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1)}
+
+/-- **`APSPACE` is the union of the classes `ASPACE (n ^ k)`** [Chandra, Kozen and
+Stockmeyer][ChandraKozenStockmeyer1981]. -/
+theorem mem_APSPACE_iff_exists_mem_ASPACE {A : Set α} :
+    A ∈ APSPACE enc ↔ ∃ k, A ∈ ASPACE enc (· ^ k) := by
+  constructor
+  · rintro ⟨k, State, hfin, atm, s, hs, hA⟩
+    obtain ⟨c, d, hle⟩ := hs.exists_le
+    exact ⟨d, k, State, hfin, atm, c * 2 ^ d, c,
+      hA.mono fun a => (hle a).trans (Nat.mul_add_one_pow_le_two_pow c d _)⟩
+  · rintro ⟨d, k, State, hfin, atm, c₁, c₂, hA⟩
+    exact ⟨k, State, hfin, atm, _, by growth_poly, hA⟩
+
+/-- **`AL` is `ASPACE(log₂ n)`**: the bounds `c * (log₂ n + 1)` and `c₁ * log₂ n + c₂` give the
+same problems. -/
+theorem AL_eq_ASPACE : AL enc = ASPACE enc Nat.log2 := by
+  ext A
+  constructor
+  · rintro ⟨k, State, hfin, atm, c, hA⟩
+    exact ⟨k, State, hfin, atm, c, c, hA.mono fun a => by rw [Nat.mul_add, Nat.mul_one]⟩
+  · rintro ⟨k, State, hfin, atm, c₁, c₂, hA⟩
+    exact ⟨k, State, hfin, atm, c₁ + c₂, hA.mono fun a => by nlinarith⟩
 
 /-- **Alternating polynomial time is within alternating polynomial space**: a decider within time
 `t` decides within space `k * (t + 1)`. -/

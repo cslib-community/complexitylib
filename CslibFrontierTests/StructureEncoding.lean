@@ -35,6 +35,12 @@ example {p q : Point} (h : ePoint p = ePoint q) : p = q := ePoint.injective h
 example : ComputableInDegree (fun p : Point => Point.mk p.x p.y p.z) ePoint ePoint 1 1 := by
   fun_prop (disch := lia)
 
+/-- Reading a generated field retains the caller's budget, including for unary list elements. -/
+example {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → Point}
+    (hf : ComputableInSpace f enc ePoint S) :
+    ComputableInSpace (fun a => (f a).z) enc (encList encUnary) S :=
+  ePoint_z_budget hf
+
 -- Reading fields and rebuilding the structure, with the bounds checked once.
 example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoint
     (fun p => 8 * ((ePoint p).length + 1)) fun p => 8 * ((ePoint p).length + 1) := by
@@ -42,5 +48,94 @@ example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoi
   · simp only [ePoint_apply, length_encPair]
     have := ((List.tail_sublist p.z).flatMap (frame ∘ encUnary)).length_le
     omega
+
+/-! The command resolves the structure through `open`, a parent structure is the single field
+`toParent`, as in the constructor, and the constructor need not be called `mk`. -/
+
+namespace Inner
+
+/-- A structure declared in a namespace. -/
+structure Pair where
+  /-- The first component. -/
+  fst : ℕ
+  /-- The second component. -/
+  snd : Bool
+
+end Inner
+
+/-- A structure extending another, with fields `toPair` and `w`. -/
+structure Triple extends Inner.Pair where
+  /-- The new field. -/
+  w : ℕ
+
+open Inner in
+/-- Pairs, through `open`. -/
+enc_structure ePair : Pair where fst : encNat, snd : encBool
+
+/-- Triples, as the encoded parent and the new field. -/
+enc_structure eTriple : Triple where toPair : ePair, w : encUnary
+
+example (t : Triple) : eTriple t = eTripleFields (t.toPair, t.w) := eTriple_apply t
+
+/-- A structure whose constructor is not called `mk`. -/
+structure Renamed where mkRenamed ::
+  /-- A number. -/
+  n : ℕ
+  /-- A bit. -/
+  b : Bool
+
+/-- Renamed records, as their fields. -/
+enc_structure eRenamed : Renamed where n : encNat, b : encBool
+
+example :
+    ComputableInDegree (fun r : Renamed => Renamed.mkRenamed r.n r.b) eRenamed eRenamed 1 1 := by
+  fun_prop (disch := lia)
+
+/-! The command checks the field list before declaring anything. Each error names the field. -/
+
+/--
+error: enc_structure: `n` is not a field of `Point`; the fields of `Point` in declaration order are `x`, `y`, `z`
+-/
+#guard_msgs in
+enc_structure eUnknown : Point where x : encNat, n : encBits, z : (encList encUnary)
+
+/-- error: enc_structure: field `y` is listed twice -/
+#guard_msgs in
+enc_structure eTwice : Point where x : encNat, y : encBits, y : encBits, z : (encList encUnary)
+
+/--
+error: enc_structure: field `x` must come before `y`; the fields of `Point` in declaration order are `x`, `y`, `z`
+-/
+#guard_msgs in
+enc_structure eOrder : Point where y : encBits, x : encNat, z : (encList encUnary)
+
+/--
+error: enc_structure: missing field `z` of `Point`; the fields of `Point` in declaration order are `x`, `y`, `z`
+-/
+#guard_msgs in
+enc_structure eMissing : Point where x : encNat, y : encBits
+
+/--
+error: enc_structure: missing fields `x`, `z` of `Point`; the fields of `Point` in declaration order are `x`, `y`, `z`
+-/
+#guard_msgs in
+enc_structure eMissingTwo : Point where y : encBits
+
+-- A field inherited from a parent is listed through its parent field.
+/--
+error: enc_structure: `fst` is inherited through the parent field `toPair`, so list `toPair` instead; the fields of `Triple` in declaration order are `toPair`, `w`
+-/
+#guard_msgs in
+enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary
+
+/-- error: enc_structure: `Nat` is not a structure -/
+#guard_msgs in
+enc_structure eNat : Nat where succ : encNat
+
+/-! A failed check declares nothing. -/
+
+/-- error: Unknown identifier `eOrder` -/
+#guard_msgs in
+#check eOrder
 
 end CslibFrontierTests.StructureEncoding

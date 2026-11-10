@@ -31,12 +31,16 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.mem_support_uniformOfFintype`: every value has positive uniform mass.
 * `Cslib.Probability.PMF.uniformOfFintype_finset_map_val`: subtype and finite-set uniform
   laws agree.
+* `Cslib.Probability.PMF.uniformOfFintype_bind_equiv`: reparametrizing a uniform draw by a
+  bijection leaves an experiment unchanged.
 * `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`,
   `Cslib.Probability.PMF.uniformOfFintype_bind_map`: the first component of a uniform pair is
   uniform, and mapping over two independent uniform draws is mapping over a uniform pair.
 * `Cslib.Probability.PMF.uniformOfFintype_pi_map_restrict`,
   `Cslib.Probability.PMF.uniformOfFintype_pi_bind_restrict`: restricting a uniform dependent
   function to a finite subset gives the uniform distribution on that subset.
+* `Cslib.Probability.PMF.uniformOfFintype_bind_bind_adaptiveUpdate`: resampling the value at a
+  point chosen from the function itself.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_map_fst_equiv`,
   `Cslib.Probability.PMF.uniformOfFintype_bind_bind_fst_equiv`: resampling along an equivalence.
 * `Cslib.Probability.PMF.toOuterMeasure_uniformOfFinset`,
@@ -76,6 +80,14 @@ theorem uniformOfFintype_finset_map_val (s : Finset α) [Nonempty s] :
   · simp [Set.indicator_apply]
   · intro b hb
     simp [Set.indicator_apply, Ne.symm hb]
+
+-- Moved from `CslibFrontier/Crypto/Computational/DiffieHellman.lean` (Samuel Schlesinger), where
+-- it was private, so that the garbling and Diffie–Hellman modules share one statement.
+/-- Reparametrizing a uniform draw by a bijection does not change an experiment. -/
+theorem uniformOfFintype_bind_equiv [Fintype α] [Nonempty α] (e : α ≃ α) (f : α → PMF β) :
+    (uniformOfFintype α).bind (fun a => f (e a)) = (uniformOfFintype α).bind f := by
+  change (uniformOfFintype α).bind (f ∘ e) = (uniformOfFintype α).bind f
+  rw [← PMF.bind_map, uniformOfFintype_map_equiv]
 
 variable [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
 
@@ -146,6 +158,22 @@ theorem uniformOfFintype_bind_bind_fst_equiv (e : α × β ≃ γ × δ) (f : γ
   rw [← uniformOfFintype_bind_map_fst_equiv e]
   simp only [PMF.bind_bind, PMF.bind_map]
   rfl
+
+/-- **Adaptive resampling**: a uniform function whose value at a point `p f`, chosen from the
+function itself, is replaced by a fresh uniform value is uniform, provided that replacing that
+value does not move the point. `(f, v) ↦ (Function.update f (p f) v, f (p f))` is an involution. -/
+theorem uniformOfFintype_bind_bind_adaptiveUpdate {ι κ : Type*} [Fintype ι] [DecidableEq ι]
+    [Fintype κ] [Nonempty κ] (p : (ι → κ) → ι)
+    (hp : ∀ f v, p (Function.update f (p f) v) = p f) (g : (ι → κ) → PMF ε) :
+    ((uniformOfFintype (ι → κ)).bind fun f =>
+      (uniformOfFintype κ).bind fun v => g (Function.update f (p f) v)) =
+      (uniformOfFintype (ι → κ)).bind g := by
+  let swap : (ι → κ) × κ → (ι → κ) × κ := fun fv =>
+    (Function.update fv.1 (p fv.1) fv.2, fv.1 (p fv.1))
+  have hswap : Function.Involutive swap := by
+    rintro ⟨f, v⟩
+    simp only [swap, hp, Function.update_self, Function.update_idem, Function.update_eq_self]
+  exact uniformOfFintype_bind_bind_fst_equiv hswap.toPerm g
 
 end Uniform
 

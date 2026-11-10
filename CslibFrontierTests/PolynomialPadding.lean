@@ -54,10 +54,10 @@ example :
   ⟨computableInO_roundedPolynomialPadding (k := 2) (by decide),
     by decide, by decide, by decide⟩
 
-/-- Binary-to-unary conversion now has a quadratic time bound and retains its linear space
-bound, including the zero and nonzero output encodings. -/
+/-- Binary-to-unary conversion has linear time and space bounds, including the zero and nonzero
+output encodings. -/
 theorem binaryToUnary_bound_and_values :
-    ComputableInO (fun n : ℕ => n) encNat encUnary (fun n => (n + 1) ^ 2) (fun n => n) ∧
+    ComputableInO (fun n : ℕ => n) encNat encUnary (fun n => n) (fun n => n) ∧
     encUnary 0 = [] ∧ encUnary 4 = [true, true, true, true] :=
   ⟨ComputableInO.natToUnary, rfl, rfl⟩
 
