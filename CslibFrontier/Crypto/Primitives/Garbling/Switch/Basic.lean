@@ -37,6 +37,11 @@ gates, and each internal wire is written at most once (`SwitchSystem.WellFormed`
 and switches write their output wire, joins write nothing. The garbler of
 `Garbling.Switch.Garble` relies on this order.
 
+The source is Heath's §3.2 (ePrint 2024/139): `SwitchGate` and `SwitchSystem` model the gates of
+Definition 4, and `SwitchSystem.Satisfies` together with propagation models the legality
+distinction of Definition 6 (a legal system has exactly one satisfying assignment, and
+propagation finds it).
+
 This differs from Heath's switch systems in four ways. Heath allows wires of different bit widths
 `ℤ_{2^k}` with modular reduction and division gates between them; this file has a single value
 ring `R` and no width-changing gates. Heath's gates may have several outputs and his affine gates
@@ -68,7 +73,7 @@ results that use it, by an arbitrary satisfying assignment `σ`.
 * [D. Heath, *Efficient Arithmetic in Garbled Circuits*][Heath2024]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Garbling
 
@@ -87,18 +92,26 @@ inductive SwitchGate (n N : ℕ) (R : Type) where
 namespace SwitchGate
 
 /-- The weighted sum `∑ c • a w` of a list of terms. -/
-def termSum {M : Type} [AddCommMonoid M] [SMul R M] (a : Fin n ⊕ Fin N → M)
+@[expose] def termSum {M : Type} [AddCommMonoid M] [SMul R M] (a : Fin n ⊕ Fin N → M)
     (terms : List ((Fin n ⊕ Fin N) × R)) : M :=
   (terms.map fun p => p.2 • a p.1).sum
 
+/-- Weighted sums agree for value maps that agree on every listed wire. -/
+theorem termSum_congr {M : Type} [AddCommMonoid M] [SMul R M] {a a' : Fin n ⊕ Fin N → M}
+    (terms : List ((Fin n ⊕ Fin N) × R)) (h : ∀ p ∈ terms, a p.1 = a' p.1) :
+    termSum a terms = termSum a' terms := by
+  simp only [termSum]
+  congr 1
+  exact List.map_congr_left fun p hp => by rw [h p hp]
+
 /-- The constraint of a gate on an assignment of values to wires. -/
-def Holds [Semiring R] (σ : Fin n ⊕ Fin N → R) : SwitchGate n N R → Prop
+@[expose] def Holds [Semiring R] (σ : Fin n ⊕ Fin N → R) : SwitchGate n N R → Prop
   | affine terms b y => σ (.inr y) = termSum σ terms + b
   | switch x y c => (σ c = 0 ∨ σ c = 1) ∧ (σ c = 0 → σ (.inr y) = σ x)
   | join x y => σ x = σ y
 
 /-- Whether a gate is an open switch under `σ`: a switch whose control value is not `0`. -/
-def isOpen [Zero R] [DecidableEq R] (σ : Fin n ⊕ Fin N → R) : SwitchGate n N R → Bool
+@[expose] def isOpen [Zero R] [DecidableEq R] (σ : Fin n ⊕ Fin N → R) : SwitchGate n N R → Bool
   | switch _ _ c => decide (σ c ≠ 0)
   | _ => false
 
@@ -109,7 +122,7 @@ def reads : SwitchGate n N R → List (Fin n ⊕ Fin N)
   | join x y => [x, y]
 
 /-- The wires known to be defined after a gate, given those defined before it. -/
-def define (D : Set (Fin n ⊕ Fin N)) : SwitchGate n N R → Set (Fin n ⊕ Fin N)
+@[expose] def define (D : Set (Fin n ⊕ Fin N)) : SwitchGate n N R → Set (Fin n ⊕ Fin N)
   | affine _ _ y => insert (.inr y) D
   | switch _ y _ => insert (.inr y) D
   | join _ _ => D
@@ -121,13 +134,13 @@ theorem mem_define_of_mem {D : Set (Fin n ⊕ Fin N)} {w : Fin n ⊕ Fin N} (g :
 
 /-- A gate is well placed after the defined wires `D`: it reads only defined wires, and its
 output, if any, is not yet defined. -/
-def WellPlaced (D : Set (Fin n ⊕ Fin N)) : SwitchGate n N R → Prop
+@[expose] def WellPlaced (D : Set (Fin n ⊕ Fin N)) : SwitchGate n N R → Prop
   | affine terms _ y => (∀ p ∈ terms, p.1 ∈ D) ∧ Sum.inr y ∉ D
   | switch x y c => x ∈ D ∧ c ∈ D ∧ Sum.inr y ∉ D
   | join x y => x ∈ D ∧ y ∈ D
 
 /-- The weighted sum of the known values of the terms, if all are known. -/
-def knownSum {M : Type} [AddCommMonoid M] [SMul R M] (st : Fin n ⊕ Fin N → Option M) :
+@[expose] def knownSum {M : Type} [AddCommMonoid M] [SMul R M] (st : Fin n ⊕ Fin N → Option M) :
     List ((Fin n ⊕ Fin N) × R) → Option M
   | [] => some 0
   | (w, c) :: ts => match st w, knownSum st ts with
@@ -136,7 +149,7 @@ def knownSum {M : Type} [AddCommMonoid M] [SMul R M] (st : Fin n ⊕ Fin N → O
 
 /-- One propagation step through a gate: fill in a value the gate determines from known
 values. A switch is used only when its control value is known to be `0`. -/
-def propagate [Semiring R] [DecidableEq R] (st : Fin n ⊕ Fin N → Option R) :
+@[expose] def propagate [Semiring R] [DecidableEq R] (st : Fin n ⊕ Fin N → Option R) :
     SwitchGate n N R → Fin n ⊕ Fin N → Option R
   | affine terms b y => match st (.inr y), knownSum st terms with
     | none, some s => Function.update st (.inr y) (some (s + b))
@@ -168,43 +181,44 @@ variable {m : ℕ}
 
 /-- `σ` satisfies `S` on input `x`: it agrees with `x` on the input wires and satisfies every
 gate. -/
-def Satisfies [Semiring R] (S : SwitchSystem n m N R) (x : Fin n → R)
+@[expose] def Satisfies [Semiring R] (S : SwitchSystem n m N R) (x : Fin n → R)
     (σ : Fin n ⊕ Fin N → R) : Prop :=
   (∀ i, σ (.inl i) = x i) ∧ ∀ g ∈ S.gates, g.Holds σ
 
 /-- The control bit of each gate under `σ`: whether it is an open switch, that is, a switch whose
 control value is not `0`. -/
+@[expose]
 def controls [Zero R] [DecidableEq R] (S : SwitchSystem n m N R) (σ : Fin n ⊕ Fin N → R) :
     List Bool :=
   S.gates.map (SwitchGate.isOpen σ)
 
 /-- Gates `gs` are well placed in order, starting from the defined wires `D`. -/
-def WellFormedFrom : Set (Fin n ⊕ Fin N) → List (SwitchGate n N R) → Prop
+@[expose] def WellFormedFrom : Set (Fin n ⊕ Fin N) → List (SwitchGate n N R) → Prop
   | _, [] => True
   | D, g :: gs => g.WellPlaced D ∧ WellFormedFrom (g.define D) gs
 
 /-- Every gate reads only input wires and wires written by earlier gates, and every internal
 wire is written at most once. -/
-def WellFormed (S : SwitchSystem n m N R) : Prop :=
+@[expose] def WellFormed (S : SwitchSystem n m N R) : Prop :=
   WellFormedFrom (Set.range Sum.inl) S.gates
 
 /-- The propagation state holding the input and nothing else. -/
-def initState (x : Fin n → R) : Fin n ⊕ Fin N → Option R :=
+@[expose] def initState (x : Fin n → R) : Fin n ⊕ Fin N → Option R :=
   Sum.elim (fun i => some (x i)) fun _ => none
 
 /-- Propagate through the gates `gs` in order. -/
-def sweepGates [Semiring R] [DecidableEq R] :
+@[expose] def sweepGates [Semiring R] [DecidableEq R] :
     List (SwitchGate n N R) → (Fin n ⊕ Fin N → Option R) → Fin n ⊕ Fin N → Option R
   | [], st => st
   | g :: gs, st => sweepGates gs (g.propagate st)
 
 /-- One propagation sweep through all gates of `S`. -/
-def sweep [Semiring R] [DecidableEq R] (S : SwitchSystem n m N R)
+@[expose] def sweep [Semiring R] [DecidableEq R] (S : SwitchSystem n m N R)
     (st : Fin n ⊕ Fin N → Option R) : Fin n ⊕ Fin N → Option R :=
   sweepGates S.gates st
 
 /-- Propagation from the input: one sweep per wire. -/
-def solve [Semiring R] [DecidableEq R] (S : SwitchSystem n m N R) (x : Fin n → R) :
+@[expose] def solve [Semiring R] [DecidableEq R] (S : SwitchSystem n m N R) (x : Fin n → R) :
     Fin n ⊕ Fin N → Option R :=
   S.sweep^[n + N] (initState x)
 

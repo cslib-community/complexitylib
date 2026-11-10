@@ -57,6 +57,12 @@ randomized switch systems whose control bits are close to a fixed distribution, 
 statistical distance of that simulation; that step, and the transfer to adversaries choosing the
 system and input, are not formalized here. Running time is not tracked.
 
+The source is Heath's Appendix A (ePrint 2024/139): Theorem 4 is the obliviousness theorem, and
+the hybrids of Figure 4 replace the hash of each open switch's control label by a fresh label,
+under the Boolean CCR premise of Definition 1 (§2.1). Here those hybrids collapse into one exact
+reduction for the fixed instance, with the arithmetic CCR assumption and the supplied control bits
+as the adaptations stated above.
+
 ## Main definitions
 
 * `Cslib.Crypto.Garbling.CCR.oracle`, `Cslib.Crypto.Garbling.CCR.advantage`: circular
@@ -79,7 +85,7 @@ system and input, are not formalized here. Running time is not tracked.
   Technique*][ChoiKatzKumaresanZhou2012]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Garbling
 
@@ -347,10 +353,8 @@ private theorem interpret_reduceGate_real [DecidableEq R] (H : L → ℕ → L)
   cases g with
   | affine terms b y =>
     refine ⟨_, rfl, hnew y _ _ ?_ hg.2⟩
-    have hsum : termSum A terms = termSum (fun w => wireLabel Δ (K w) (σ w)) terms := by
-      simp only [termSum]
-      congr 1
-      exact List.map_congr_left fun p hp => by rw [hA p.1 (hg.1 p hp)]
+    have hsum : termSum A terms = termSum (fun w => wireLabel Δ (K w) (σ w)) terms :=
+      termSum_congr terms fun p hp => hA p.1 (hg.1 p hp)
     rw [hsum, termSum_wireLabel, wireLabel, hσ, add_smul]
     abel
   | switch x y c =>

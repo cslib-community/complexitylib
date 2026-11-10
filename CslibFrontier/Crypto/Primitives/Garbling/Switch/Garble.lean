@@ -47,6 +47,12 @@ offset of colour `1` and choice of input zero labels.
 Heath's construction attaches hashed output tags to the output wires so that output labels can
 also be authenticated; here output decoding is by colour only.
 
+The source is Heath's §3.3 (ePrint 2024/139): Construction 1 defines the scheme, and Figure 2
+gives the garbling procedure that `garbleGate` follows gate by gate; the evaluator `evalGate`
+follows the runtime label rules of Construction 1. Heath garbles a randomized oblivious switch
+system over several widths `ℤ_{2^k}`; this file garbles one fixed system over one ring `R`, with
+the forward-affine gates and the restrictions described in `Garbling.Switch.Basic`.
+
 ## Main definitions
 
 * `Cslib.Crypto.Garbling.Switch.Material`: the material of one gate.
@@ -67,7 +73,7 @@ also be authenticated; here output decoding is by colour only.
 * [D. Heath, *Efficient Arithmetic in Garbled Circuits*][Heath2024]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Garbling.Switch
 
@@ -76,7 +82,7 @@ open SwitchGate
 variable {n m N : ℕ} {R L : Type} [CommRing R] [AddCommGroup L] [Module R L]
 
 /-- The label of value `v` on a wire with zero label `K0`, for the global offset `Δ`. -/
-def wireLabel (Δ K0 : L) (v : R) : L := K0 + v • Δ
+@[expose] def wireLabel (Δ K0 : L) (v : R) : L := K0 + v • Δ
 
 /-- The material of one garbled gate. -/
 inductive Material (L : Type) where
@@ -89,7 +95,7 @@ inductive Material (L : Type) where
 
 /-- Garble the gate at position `i`, given the zero labels so far: its material and the updated
 zero labels. -/
-def garbleGate (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L) (i : ℕ)
+@[expose] def garbleGate (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L) (i : ℕ)
     (K : Fin n ⊕ Fin N → L) : SwitchGate n N R → Material L × (Fin n ⊕ Fin N → L)
   | affine terms b y => (.none, Function.update K (.inr y) (termSum K terms - b • Δ))
   | switch x y c => (.colour (col (K c)), Function.update K (.inr y) (K x + H (K c) i))
@@ -97,7 +103,7 @@ def garbleGate (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L) (i : ℕ)
 
 /-- Garble the gates `gs`, the first at position `i`: their material and the final zero
 labels. -/
-def garbleGates (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L) :
+@[expose] def garbleGates (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L) :
     ℕ → List (SwitchGate n N R) → (Fin n ⊕ Fin N → L) →
       List (Material L) × (Fin n ⊕ Fin N → L)
   | _, [], K => ([], K)
@@ -120,12 +126,12 @@ structure Garbled (L : Type) (n m : ℕ) where
 
 /-- The zero labels of all wires after garbling `S` with offset `Δ` and input zero labels
 `K`. -/
-def zeroLabels (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L)
+@[expose] def zeroLabels (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L)
     (K : Fin n → L) : Fin n ⊕ Fin N → L :=
   (garbleGates H col Δ 0 S.gates (Sum.elim K 0)).2
 
 /-- Garble `S` with offset `Δ` and input zero labels `K`. -/
-def garbleWith (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L)
+@[expose] def garbleWith (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L)
     (K : Fin n → L) : Garbled L n m where
   material := (garbleGates H col Δ 0 S.gates (Sum.elim K 0)).1
   zero := K
@@ -133,7 +139,7 @@ def garbleWith (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZM
   decoding o := col (zeroLabels S H col Δ K (S.output o))
 
 /-- Garble `S` with a uniform offset of colour `1` and uniform input zero labels. -/
-noncomputable def garble (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2)
+@[expose] noncomputable def garble (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2)
     [Fintype L] [Nonempty {Δ : L // col Δ = 1}] : ProbComp (Garbled L n m) :=
   do
     let Δ ← ProbComp.uniform {Δ : L // col Δ = 1}
@@ -141,12 +147,12 @@ noncomputable def garble (S : SwitchSystem n m N R) (H : L → ℕ → L) (col :
     return garbleWith S H col Δ K
 
 /-- The input labels of input `x`. -/
-def Garbled.encode (G : Garbled L n m) (x : Fin n → R) : Fin n → L :=
+@[expose] def Garbled.encode (G : Garbled L n m) (x : Fin n → R) : Fin n → L :=
   fun i => wireLabel G.delta (G.zero i) (x i)
 
 /-- One evaluation step through the gate at position `i` with material `μ`: fill in a label the
 gate determines from known labels. -/
-def evalGate (H : L → ℕ → L) (col : L →+ ZMod 2) (i : ℕ)
+@[expose] def evalGate (H : L → ℕ → L) (col : L →+ ZMod 2) (i : ℕ)
     (st : Fin n ⊕ Fin N → Option L) :
     SwitchGate n N R → Material L → Fin n ⊕ Fin N → Option L
   | affine terms _ y, _ => match st (.inr y), knownSum st terms with
@@ -167,19 +173,19 @@ def evalGate (H : L → ℕ → L) (col : L →+ ZMod 2) (i : ℕ)
   | _, _ => st
 
 /-- Evaluate through the gates `gs` with their material, the first at position `i`. -/
-def evalGates (H : L → ℕ → L) (col : L →+ ZMod 2) :
+@[expose] def evalGates (H : L → ℕ → L) (col : L →+ ZMod 2) :
     ℕ → List (SwitchGate n N R) → List (Material L) →
       (Fin n ⊕ Fin N → Option L) → Fin n ⊕ Fin N → Option L
   | i, g :: gs, μ :: μs, st => evalGates H col (i + 1) gs μs (evalGate H col i st g μ)
   | _, _, _, st => st
 
 /-- Evaluate a garbled system from input labels `X`: one sweep through the gates per wire. -/
-def evaluate (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2)
+@[expose] def evaluate (S : SwitchSystem n m N R) (H : L → ℕ → L) (col : L →+ ZMod 2)
     (material : List (Material L)) (X : Fin n → L) : Fin n ⊕ Fin N → Option L :=
   (evalGates H col 0 S.gates material)^[n + N] (Sum.elim (fun i => some (X i)) fun _ => none)
 
 /-- Evaluate a garbled system on input `x` and decode each output wire whose label is found. -/
-def Garbled.run (G : Garbled L n m) (S : SwitchSystem n m N R) (H : L → ℕ → L)
+@[expose] def Garbled.run (G : Garbled L n m) (S : SwitchSystem n m N R) (H : L → ℕ → L)
     (col : L →+ ZMod 2) (x : Fin n → R) : Fin m → Option (ZMod 2) :=
   fun o => (evaluate S H col G.material (G.encode x) (S.output o)).map fun Y => col Y + G.decoding o
 
@@ -201,12 +207,6 @@ def AllConsistent (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L) (K : Fin 
   | i, g :: gs, μ :: μs =>
     Consistent H col Δ K i g μ ∧ AllConsistent H col Δ K (i + 1) gs μs
   | _, _, _ => False
-
-private theorem termSum_congr {K K' : Fin n ⊕ Fin N → L} (terms : List ((Fin n ⊕ Fin N) × R))
-    (h : ∀ p ∈ terms, K p.1 = K' p.1) : termSum K terms = termSum K' terms := by
-  simp only [termSum]
-  congr 1
-  exact List.map_congr_left fun p hp => by rw [h p hp]
 
 private theorem garbleGate_eq_on (H : L → ℕ → L) (col : L →+ ZMod 2) (Δ : L) (i : ℕ)
     (K : Fin n ⊕ Fin N → L) {D : Set (Fin n ⊕ Fin N)} {g : SwitchGate n N R}
