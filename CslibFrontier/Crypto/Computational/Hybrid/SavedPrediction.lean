@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Hybrid.Sequence
 public import CslibFrontier.Crypto.Computational.Prediction
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Saving the randomness of a coordinate predictor
@@ -277,10 +278,7 @@ theorem isPolyTime_codeBound {Param : Type} {input : Param ↪ List Bool}
 private theorem length_save {c d width : ℕ} {trial : Bool} {front back code : List Bool}
     (hcode : code ∈ (ProbComp.eval (save c d width trial front back)).support) :
     code.length = 2 * (front.length + back.length) + coinBudget c d width front back + 8 := by
-  rw [save, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hcode
-  obtain ⟨coins, hcoins, hcode⟩ := hcode
-  rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hcode
-  subst code
+  supp_cases hcode [save] with ⟨coins, hcoins, rfl⟩
   have hlength := length_of_mem_support_uniformList (by
     simpa only [eval_sampleList] using hcoins)
   simpa only [Description.length_encoding] using congrArg
@@ -312,8 +310,7 @@ theorem length_splice_le (encoding : α ↪ List Bool) (base : List Bool)
     (hcode : code ∈ (ProbComp.eval
       (splice encoding base replacement original before after c d width trial)).support) :
     code.length ≤ codeBound base.length (before + after) c d width := by
-  simp only [splice, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hcode
-  obtain ⟨front, hfront, back, hback, hcode⟩ := hcode
+  supp_cases hcode [splice] with ⟨front, hfront, back, hback, hcode⟩
   obtain ⟨hfrontLength, hfrontSupport⟩ :=
     (ProbComp.mem_support_replicate_iff _ _ _).mp hfront
   obtain ⟨hbackLength, hbackSupport⟩ :=
@@ -347,17 +344,14 @@ theorem length_sample_le (encoding : α ↪ List Bool) (base : List Bool)
     (hcode : code ∈ (ProbComp.eval
       (sample encoding base replacement original count c d width)).support) :
     code.length ≤ codeBound base.length count c d width := by
-  simp only [sample, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hcode
-  obtain ⟨trial, _, split, _, hcode⟩ := hcode
-  split_ifs at hcode with hsplit
+  supp_cases hcode [sample, apply_ite ProbComp.eval]
+    with ⟨trial, split, -, ⟨hsplit, hcode⟩ | ⟨-, rfl⟩⟩
   · have hsize := length_splice_le encoding base replacement original split
       (count - split - 1) c d width trial hreplacement horiginal hcode
     apply hsize.trans
     dsimp only [codeBound, contextBound]
     gcongr <;> lia
-  · rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hcode
-    subst code
-    simp [codeBound]
+  · simp [codeBound]
 
 /-- A PPT test supplies one fixed efficient evaluator for all saved descriptions. No decoder
 for either the public parameter or observation representation is required. -/
