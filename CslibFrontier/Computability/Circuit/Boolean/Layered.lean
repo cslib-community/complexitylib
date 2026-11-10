@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import CslibFrontier.Foundations.Data.BitString.List.Positions
 import Mathlib.Data.List.GetD
 
 /-!
@@ -21,7 +22,9 @@ all outputs, and the empty program preserves all inputs. Wire indices have binar
 
 The number of scheduled layers counts copies and empty layers too. It is not identified here
 with the depth of a De Morgan circuit. `Layered.Compile` converts ordinary shared circuits into
-exactly two layers per designated-output depth, with output selection as separate wiring.
+exactly two layers per designated-output depth, with output selection as separate wiring:
+`Cslib.BitString.readPositions` reads the designated wires of the final row in order, allowing
+repetitions.
 
 ## Main definitions
 
@@ -32,7 +35,6 @@ exactly two layers per designated-output depth, with output selection as separat
 * `Cslib.Circuits.Boolean.Layered.evalLayer`, `Cslib.Circuits.Boolean.Layered.eval`: evaluation of a
   single layer and of a list of layers.
 * `Cslib.Circuits.Boolean.Layered.outputWidth`: the number of wires in the final row.
-* `Cslib.Circuits.Boolean.Layered.select`: ordered output wiring, allowing repeated wires.
 * `Cslib.Circuits.Boolean.Layered.WellFormed`: all references read the preceding layer.
 * `Cslib.Circuits.Boolean.Layered.encNode`: two tag bits and binary wire indices.
 
@@ -139,14 +141,6 @@ theorem outputWidth_append (inputCount : ℕ) (first second : List (List Node)) 
   induction layers generalizing inputs with
   | nil => rfl
   | cons layer layers ih => simp only [eval_cons, ih, length_evalLayer, outputWidth_cons]
-
-/-- Select output wires in order, allowing repetitions. Selection adds no circuit layer. -/
-def select (inputs : List Bool) (outputs : List ℕ) : List Bool :=
-  outputs.map (inputs.getD · false)
-
-/-- Output selection produces one bit per requested wire index. -/
-@[simp] theorem length_select (inputs : List Bool) (outputs : List ℕ) :
-    (select inputs outputs).length = outputs.length := List.length_map _
 
 /-- Extending a prefix executes precisely its next scheduled layer. -/
 theorem eval_take_succ (inputs : List Bool) (layers : List (List Node)) {i : ℕ}

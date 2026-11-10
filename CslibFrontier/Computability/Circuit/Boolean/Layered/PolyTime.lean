@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.Layered
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Positions
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -18,7 +19,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 Node tags and binary wire indices are read from their actual encoding. Lookups use the binary
 index calculus, which bounds an index before converting it to unary. Invalid references retain
-the specified fallback without running for time proportional to the numerical index.
+the specified fallback without running for time proportional to the numerical index. Reading
+ordered outputs with `Cslib.BitString.readPositions` is polynomial time by
+`Turing.MultiTapeTM.ComputableInPolyTime.bitsReadPositions`, which this module reexports.
 
 ## Main results
 
@@ -27,7 +30,6 @@ the specified fallback without running for time proportional to the numerical in
   `computableInPolyTime_nodeCopy`, `computableInPolyTime_nodeNand`: construct nodes.
 * `Cslib.Circuits.Boolean.Layered.computableInPolyTime_nodeEval`: evaluate one node.
 * `Cslib.Circuits.Boolean.Layered.computableInPolyTime_evalLayer`: evaluate one layer.
-* `Cslib.Circuits.Boolean.Layered.computableInPolyTime_select`: select ordered outputs.
 * `Cslib.Circuits.Boolean.Layered.computableInPolyTime_outputWidth`: compute the final
   row width in unary, retaining the input width for an empty schedule.
 -/
@@ -109,17 +111,6 @@ theorem computableInPolyTime_evalLayer {α : Type} {input : α ↪ List Bool}
   apply ComputableInPolyTime.listToBits.comp
   apply ComputableInPolyTime.mapWithInput hlayer
   apply computableInPolyTime_nodeEval <;> fun_prop
-
-/-- Free output selection is polynomial even for malformed binary indices. -/
-@[fun_prop]
-theorem computableInPolyTime_select {α : Type} {input : α ↪ List Bool}
-    {inputs : α → List Bool} {outputs : α → List ℕ}
-    (hinputs : ComputableInPolyTime inputs input encBits)
-    (houtputs : ComputableInPolyTime outputs input (encList encNat)) :
-    ComputableInPolyTime (fun a => select (inputs a) (outputs a)) input encBits := by
-  apply ComputableInPolyTime.listToBits.comp
-  apply ComputableInPolyTime.mapWithInput houtputs
-  exact ComputableInPolyTime.listGetD_binary false (by fun_prop) (by fun_prop)
 
 /-- Read the last layer's length, or retain the computed input width for an empty schedule. -/
 @[fun_prop]

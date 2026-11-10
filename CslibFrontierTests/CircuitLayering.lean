@@ -18,6 +18,7 @@ semantics of a different raw interpreter.
 namespace CslibFrontierTests.CircuitLayering
 
 open Cslib.Circuits Boolean Boolean.Layered Turing.MultiTapeTM
+open Cslib.BitString (readPositions)
 
 private def deadWiring : Circuit signature 2 3 :=
   (Circuit.ofCode (σ := signature) 2 3
@@ -27,8 +28,8 @@ private def deadWiring : Circuit signature 2 3 :=
 -- Deeper unused gates do not spend a key transition. Ordering and repetitions remain free.
 example : deadWiring.program.depth = 4 ∧ deadWiring.depth = 0 := by decide +kernel
 example : compile 2 deadWiring.code = ([], [1, 0, 1]) := by decide +kernel
-example : select (eval [false, true] (compile 2 deadWiring.code).1)
-    (compile 2 deadWiring.code).2 = [true, false, true] := by decide +kernel
+example : readPositions (compile 2 deadWiring.code).2
+    (eval [false, true] (compile 2 deadWiring.code).1) = [true, false, true] := by decide +kernel
 
 private def noOutputs : Circuit signature 2 0 := ⟨deadWiring.program, Fin.elim0⟩
 
@@ -43,7 +44,7 @@ private def constants : Circuit signature 0 2 :=
 example : WellFormed 0 (compile 0 constants.code).1 ∧
     (compile 0 constants.code).1.length = 2 :=
   ⟨wellFormed_compile constants, by decide +kernel⟩
-example : select (eval [] (compile 0 constants.code).1) (compile 0 constants.code).2 =
+example : readPositions (compile 0 constants.code).2 (eval [] (compile 0 constants.code).1) =
     [false, true] := by decide +kernel
 
 private def disjunction : Circuit signature 2 1 :=
@@ -51,7 +52,7 @@ private def disjunction : Circuit signature 2 1 :=
 
 -- OR needs both scratch slots and both microlevels. Check all four assignments.
 example : ∀ a b : Bool,
-    select (eval [a, b] (compile 2 disjunction.code).1) (compile 2 disjunction.code).2 =
+    readPositions (compile 2 disjunction.code).2 (eval [a, b] (compile 2 disjunction.code).1) =
       [a || b] := by decide +kernel
 
 private def shared : Circuit signature 2 4 :=
@@ -63,17 +64,17 @@ private def shared : Circuit signature 2 4 :=
 -- semantics. Every original gate has a single persistent value slot.
 example : shared.depth = 4 ∧ (compile 2 shared.code).1.length = 8 := by decide +kernel
 example : ∀ a b : Bool,
-    select (eval [a, b] (compile 2 shared.code).1) (compile 2 shared.code).2 =
+    readPositions (compile 2 shared.code).2 (eval [a, b] (compile 2 shared.code).1) =
       let t := a || b
       let u := (t && a) || !t
       [u, t, u, u && a] := by decide +kernel
 
 example (x : Fin 2 → Bool) :
-    select (eval (List.ofFn x) (compile 2 shared.code).1) (compile 2 shared.code).2 =
+    readPositions (compile 2 shared.code).2 (eval (List.ofFn x) (compile 2 shared.code).1) =
       List.ofFn (shared.eval interpretation x) ∧
     ∀ i ∈ (compile 2 shared.code).2,
       i < (eval (List.ofFn x) (compile 2 shared.code).1).length :=
-  ⟨select_eval_compile shared x,
+  ⟨readPositions_eval_compile shared x,
     by simpa only [length_eval, List.length_ofFn] using outputs_valid_compile shared⟩
 
 -- The size bound includes the complete encoded result, including binary repeated selectors.
@@ -93,8 +94,8 @@ example : (compile 0 ([(.or, [2 ^ 100, 2 ^ 101])], [0])).1.length = 2 := by deci
 -- The original raw interpreter defaults a missing argument to false; the compiler's raw
 -- fallback uses wire 0. Correctness is therefore intentionally stated for typed codes.
 example : evalCode interpretation false [true] [(.not, [])] = [true, true] := by decide +kernel
-example : select (eval [true] (compile 1 ([(.not, [])], [1])).1)
-    (compile 1 ([(.not, [])], [1])).2 = [false] := by decide +kernel
+example : readPositions (compile 1 ([(.not, [])], [1])).2
+    (eval [true] (compile 1 ([(.not, [])], [1])).1) = [false] := by decide +kernel
 
 -- One actual native compiler handles varying input and output counts, including invalid code.
 example : ComputableInPolyTime

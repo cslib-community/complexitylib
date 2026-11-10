@@ -270,16 +270,16 @@ theorem boundedError_evaluateCircuit (C : Σ k, Circuit signature k 1) {bits : L
   have hlayers := forall₂_evaluateLayers h (layers := (Layered.compile C.1 C.2.code).1)
     (by simpa only [hbits] using Layered.wellFormed_compile C.2)
   rw [Layered.length_compile] at hlayers
-  have hselect := Layered.select_eval_compile C.2 (BitString.ofList C.1 bits)
+  have hselect := Layered.readPositions_eval_compile C.2 (BitString.ofList C.1 bits)
   rw [hbitsEq] at hselect
   have hone : (Layered.compile C.1 C.2.code).2.length = 1 := by
-    simpa only [Layered.length_select, List.length_ofFn] using congrArg List.length hselect
+    simpa only [BitString.length_readPositions, List.length_ofFn] using congrArg List.length hselect
   obtain ⟨index, hindex⟩ := List.length_eq_one_iff.mp hone
   have hvalid := Layered.outputs_valid_compile C.2 index (by
     rw [hindex]
     exact List.mem_singleton_self index)
   rw [hindex] at hselect
-  simp only [Layered.select, List.map_cons, List.map_nil, List.ofFn_succ, List.ofFn_zero,
+  simp only [BitString.readPositions, List.map_cons, List.map_nil, List.ofFn_succ, List.ofFn_zero,
     List.cons.injEq, and_true] at hselect
   have hwire := hlayers.getD (i := index) (by
     simpa only [Layered.length_eval, hbits] using hvalid) false []
