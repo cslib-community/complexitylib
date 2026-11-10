@@ -52,7 +52,8 @@ linear in the counted value.
   time and space.
 * `Turing.MultiTapeTM.ComputableInO.unaryLe`: the comparison of unary numbers, within
   quadratic time and linear space.
-* `Turing.MultiTapeTM.ComputableInO.natToUnary`: from binary to unary, within linear time and space.
+* `Turing.MultiTapeTM.ComputableInO.natToUnary`: from binary to unary, within time and space
+  linear in the number converted, not in the length of its binary encoding.
 -/
 
 @[expose] public section

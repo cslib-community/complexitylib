@@ -25,8 +25,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNa
 /-!
 # The native machine of the fast contraction algorithm
 
-The stack recursion of `Cslib.Circuits.Frontier.FastContraction.scheme` as one native machine for
-the contraction modulo `2 ^ P` of an explicit network `(r, G)`, with the precision `P` in binary:
+The stack recursion of `Cslib.Circuits.Frontier.FastContraction.scheme`, for a child builder `mk`,
+as one native machine for the contraction modulo `2 ^ P` of an explicit network `(r, G)`, with the
+precision `P` in binary:
 the root descriptors are tables (`T = List ℕ`), read by the entry procedure `tableEntry`. The
 encodings, the leaf certificate (`FastContraction.leafCertificate ce`, from a native certificate
 `ce` of any entry procedure), the root network (`FastContraction.rootNet`) and its polynomial-time
@@ -46,9 +47,12 @@ advance. So the machine runs the recursion for a fixed clock `2 ^ (K₀ (m + p) 
 (`FastContraction.fuel`), and returns the constant coordinate of the root's value when the run has
 returned a value tagged with depth `0`, and direct summation otherwise
 (`FastContraction.fastValue`).
-A value tagged `0` is the root's value for every fuel (`FastContraction.eq_value_of_run`), so the
-result is correct on every well-formed input, whatever the fuel
-(`FastContraction.fastValue_eq`); the clock matters only for the running time.
+A value tagged `0` is the root's value for every fuel (`FastContraction.eq_value_of_run`). So for
+a predicate `WF` on calls, if the step of every well-formed active call is correct
+(`FastContraction.StepCorrect`) and well-formedness passes to the children
+(`FastContraction.WFChildren`), the result is the contraction modulo `2 ^ P` on every input whose
+root call satisfies `WF`, whether or not the clock suffices (`FastContraction.fastValue_eq`); the
+clock matters only for the running time.
 
 ## Main definitions
 
@@ -67,8 +71,9 @@ result is correct on every well-formed input, whatever the fuel
 * `Cslib.Circuits.Frontier.FastContraction.val_rootNet`: the root computes the contraction of `G`.
 * `Cslib.Circuits.Frontier.FastContraction.getD_mod_of_val_eq`: reading off the constant
   coordinate.
-* `Cslib.Circuits.Frontier.FastContraction.fastValue_eq`: the machine is correct on well-formed
-  inputs, for every fuel.
+* `Cslib.Circuits.Frontier.FastContraction.fastValue_eq`: if the step of an active call is correct
+  and well-formedness passes to the children, the machine is correct on the inputs with a
+  well-formed root, whether or not the clock suffices.
 * `Cslib.Circuits.Frontier.FastContraction.root_polyTime`,
   `Cslib.Circuits.Frontier.FastContraction.fuel_polyTime`: the root and the clock in polynomial
   time.
@@ -366,9 +371,9 @@ constant coordinate of a returned root value modulo `2 ^ p` if the run returns a
     fun v => if v.1 = 0 then v.2.getD 0 0 % 2 ^ (ExplicitTensorNetwork.capPrecision q).1
       else q.2.2.contraction % 2 ^ q.1
 
-/-- **The machine is correct on well-formed inputs**, for every fuel. If the step of an active
-call is correct and well-formedness passes to the children, then on every input whose root is
-well-formed the result is the contraction modulo `2 ^ P`. -/
+/-- **The machine is correct on well-formed inputs**, whether or not the clock `fuel` suffices. If
+the step of an active call is correct and well-formedness passes to the children, then on every
+input whose root is well-formed the result is the contraction modulo `2 ^ P`. -/
 theorem fastValue_eq {WF : Call (List ℕ) → Prop} (hstep : StepCorrect tableEntry mk WF)
     (hwf : WFChildren mk WF)
     (q : ℕ × ℕ × ExplicitTensorNetwork ℕ)

@@ -26,8 +26,10 @@ non-isomorphism is in `AM` (`Cslib.Complexity.GraphNonIsomorphism.mem_AM`).
 The proof:
 
 * **`AM` is closed under existential quantification** over polynomially long words
-  (`Cslib.Complexity.mem_AM_of_exists`, the collapse `MAM = AM` of [Babai][Babai1985], in
-  `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification`).
+  (`Cslib.Complexity.mem_AM_of_exists`, by the argument of [Babai][Babai1985], in
+  `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification`; the class equality
+  `MAM = AM` itself is `Cslib.Complexity.AMGameClass_merlin_arthur_merlin`, in
+  `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse`).
 * A problem in `Σ₂` is the projection of a problem in `Π₁ = coNP` on pairs `(a, w₁)`
   (`Cslib.Complexity.exists_mem_PiP_of_mem_SigmaP_succ`), so
   `coNP ⊆ AM` gives `Σ₂ ⊆ AM` (`Cslib.Complexity.SigmaP_two_subset_AM_of_coNP_subset_AM`), and with

@@ -362,10 +362,13 @@ end Tree
 
 /-- The fixed-parameter quantitative depth and leaf-count hypotheses for the
 counting-sparsification tree (a library adaptation of Appendix A.2–A.3, Lemmas A.2–A.3, pp. 46–47
-[OpenAI2026ETH], open for `K ≥ 2`): from any `CountingNormalized K` root formula `ψ` whose
+[OpenAI2026ETH]): from any `CountingNormalized K` root formula `ψ` whose
 occurring variables lie in a finite set `declared` of size `N = declared.card`, every leaf word of
 `rule hM hK` has length at most `L_coeff * N`, and any finset of leaf words has cardinality at
-most `2 ^ (N / B + 1)`. -/
+most `2 ^ (N / B + 1)`. `countingTreeBound_of_budget` proves them with
+`L_coeff = countingDepthCoeff K M` for `2 ≤ M` and `1 ≤ B` under an integer parameter budget, and
+`countingTreeBound_countingThresholdBase` proves them, with the same `L_coeff`, at
+`M = countingThresholdBase K B` for every `1 ≤ B`. -/
 def CountingTreeBound (M K B L_coeff : ℕ) (hM : 1 ≤ M) (hK : 1 ≤ K) : Prop :=
   ∀ (ψ : {ψ : CNF ℕ // CountingNormalized K ψ}) (declared : Finset ℕ),
     (∀ C ∈ ψ.1, ∀ l ∈ C, l.1 ∈ declared) →

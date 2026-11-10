@@ -42,8 +42,11 @@ results in `Cslib.BalancedSchedules` govern the concrete list/integer algorithms
 unencoded typed specification bridges. Total fallback conventions: `wordToSchedule` clamps digits
 `≥ r` and missing positions to `0`; `streamBestSlotLabel` returns `List.replicate Q 0` when
 `r ^ Q = 0`; `clearedPartialCollision`, `updateSlotSchedules`, and `readSlotSchedule` use total
-`List.getD` / `List.set` defaults on out-of-bounds indices; and `scoreDenom` replaces zero
-normalizers `numEdges * C` or `Q * n` by `1`.
+`List.getD` / `List.set` defaults on out-of-bounds indices; `scoreDenom` replaces zero
+normalizers `numEdges * C` or `Q * n` by `1`, and is `0` when `r = 0`; and
+`clearedIncidencePotential` and `clearedGroupPotential` use truncated subtraction in `ℕ`. They and
+`clearedJointScore` are exact cleared numerators for `1 ≤ r` and `K = r ^ Q` on the typed bridge
+lists `edgesOfFin` and `partialScheduleListOfFin`, where no subtraction truncates.
 
 ## Main definitions
 
@@ -263,7 +266,10 @@ def clearedIncidenceCollisions (K : ℕ) (edges : List (ℕ × ℕ))
     clearedPartialCollision K varSched e.2 e'.2 *
       clearedPartialCollision K facSched e.1 e'.1).sum).sum
 
-/-- Cleared-integer numerator of `partialIncidencePotential` over common denominator `K ^ 2`. -/
+/-- `clearedIncidenceCollisions` minus `edges.length ^ 2`, with truncated subtraction in `ℕ`. For
+`1 ≤ r` and `K = r ^ Q`, on `edgesOfFin` and `partialScheduleListOfFin` lists it is the
+cleared-integer numerator of `partialIncidencePotential` over common denominator `K ^ 2`
+(`clearedIncidencePotential_eq_mul`); otherwise the subtraction can truncate to `0`. -/
 def clearedIncidencePotential (K : ℕ) (edges : List (ℕ × ℕ))
     (varSched facSched : List (Option (List ℕ))) : ℕ :=
   clearedIncidenceCollisions K edges varSched facSched - edges.length ^ 2
@@ -275,16 +281,22 @@ def clearedGroupCollisions (n Q r : ℕ) (varSched : List (Option (List ℕ))) :
     ((List.range n).map fun v =>
       ((List.range n).map fun v' => clearedPartialCollision r ct v v').sum).sum).sum
 
-/-- Cleared-integer numerator of `partialGroupPotential` over common denominator `r`. -/
+/-- `clearedGroupCollisions` minus `Q * n ^ 2`, with truncated subtraction in `ℕ`. For `1 ≤ r`, on
+`partialScheduleListOfFin` lists it is the cleared-integer numerator of `partialGroupPotential`
+over common denominator `r`; otherwise the subtraction can truncate to `0`. -/
 def clearedGroupPotential (n Q r : ℕ) (varSched : List (Option (List ℕ))) : ℕ :=
   clearedGroupCollisions n Q r varSched - Q * n ^ 2
 
-/-- Common positive integer denominator clearing `normalizedPartialScore` across all candidate
-evaluations without rational GCD reductions ([OpenAI2026ETH], Lemma 4.5, p. 31). -/
+/-- Common integer denominator clearing `normalizedPartialScore` across all candidate
+evaluations without rational GCD reductions ([OpenAI2026ETH], Lemma 4.5, p. 31). It is positive
+when `1 ≤ r` (`scoreDenom_pos`) and `0` when `r = 0`. -/
 def scoreDenom (numEdges n Q r C : ℕ) : ℕ :=
   (r ^ Q) ^ 2 * max (numEdges * C) 1 * r * max (Q * n) 1
 
-/-- Exact natural-number numerator of `normalizedPartialScore` over `scoreDenom`. -/
+/-- Natural-number numerator of `normalizedPartialScore` over `scoreDenom`: exact for `1 ≤ r` on
+`edgesOfFin` and `partialScheduleListOfFin` lists
+(`normalizedPartialScore_eq_clearedJointScore_div`). It is built from `clearedIncidencePotential`
+and `clearedGroupPotential`, whose subtractions can truncate to `0` otherwise. -/
 def clearedJointScore (n Q r C : ℕ) (edges : List (ℕ × ℕ))
     (varSched facSched : List (Option (List ℕ))) : ℕ :=
   (if edges.length * C = 0 then 0

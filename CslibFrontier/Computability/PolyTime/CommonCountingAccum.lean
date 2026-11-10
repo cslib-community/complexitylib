@@ -1260,9 +1260,12 @@ theorem hermiteRecoverZero_extractCoordNodeJets_eq {J ℓ : ℕ} {Ω H_zero : �
   exact Cslib.Circuits.Rational.hermiteRecoverZero_eq_of_rowEntry hnodup hΩ hdeg hH0 hshape.2
     (rowEntry_extractCoordNodeJets_eq_taylor Ω nodes nodeJets hlen P hclear u)
 
-/-- Full multi-coordinate modular count recovery `S_ℓ(H(0)) ≡ count (mod 2 ^ ℓ)` from `Ω`-scaled
-per-node outer Taylor jets ([OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH],
-eq. (5.5) and Appendix B.3, p. 50). -/
+/-- Full multi-coordinate modular count recovery from `Ω`-scaled per-node outer Taylor jets
+([OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], eq. (5.5) and Appendix B.3,
+p. 50). Suppose `Ω ≠ 0`, `nodeJets` are the `Ω`-scaled outer Taylor jets of `P` at the distinct
+`nodes`, and, for `u < ℓ`, `P.coeff u` has degree below `nodes.length * J` and value `H_zero u` at
+`0`. Then `recoverOuterJetSumModPowTwo` returns the `count` with `0 ≤ count < 2 ^ ℓ` and
+`∑ u, H_zero u ≡ count (mod 2 ^ ℓ)`. -/
 theorem recoverOuterJetSumModPowTwo_eq {J ℓ : ℕ} {Ω count : ℤ} {nodes : List ℤ}
     (hnodup : nodes.Nodup) (hΩ : Ω ≠ 0) (nodeJets : List JetRows)
     (hlen : nodeJets.length = nodes.length) (P : Polynomial (Polynomial ℚ)) (H_zero : Fin ℓ → ℤ)
@@ -1280,8 +1283,12 @@ theorem recoverOuterJetSumModPowTwo_eq {J ℓ : ℕ} {Ω count : ℤ} {nodes : L
       hermiteRecoverZero_extractCoordNodeJets_eq hnodup hΩ nodeJets hlen P hclear u (hdeg u) (hH0 u)
   rw [recoverOuterJetSumModPowTwo, hsum]; exact Int.modPowTwo_eq_of_dvd_sub hcount₀ hcount₁ hdvd
 
-/-- Outer-round accumulation plus Cramer count recovery from supplied cleared group payloads across
-`Q` distinct `nodes`. -/
+/-- Outer-round accumulation plus Cramer count recovery from supplied cleared group payloads at
+the distinct `nodes`. Suppose `Γ ≠ 0` and, for `u < ℓ`, the `u`th coefficient of the accumulated
+polynomial `∑ idx < T_rounds, w idx • ∏ g, P_rat idx g` has degree below `nodes.length * J` and
+value `H_zero u` at `0`. Then `recoverOuterJetSumModPowTwo` with scale `Γ ^ m`, applied to the
+`streamOuterJetAccum` outputs, returns the `count` with `0 ≤ count < 2 ^ ℓ` and
+`∑ u, H_zero u ≡ count (mod 2 ^ ℓ)`. -/
 theorem recoverOuterJetSumModPowTwo_streamOuterJetAccum_eq {α : Type} {J ℓ r m T_rounds : ℕ}
     {Γ count : ℤ} {nodes : List ℤ} (hnodup : nodes.Nodup) (hΓ : Γ ≠ 0)
     (evalRound : α × ℕ → ℤ × List JetRows) (nodeCtx : Fin nodes.length → α)

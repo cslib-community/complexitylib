@@ -148,6 +148,14 @@ Verbatim from [BonehShoup2023], Exercise 12.27 (printed pp. 521–522):
   bridging from `cramerShoupKeyGenProb`, `cramerShoupADEncryptProb`, and `cramerShoupEncryptProb`
   to the ideal games with an additional `8 / 2 ^ n` statistical loss per challenge bit (`16 / 2 ^ n`
   across both bits).
+* **Fixed group description family in the native theorems**: the ideal-game theorems
+  (`DDH.cramerShoupADGroupINDCCA2`, `DDH.cramerShoupGroupINDCCA2`) hold for an arbitrary setup law
+  `setup : ℕ → PMF F.Desc`. The native theorems `DDH.indcca2ADOn_cramerShoup`,
+  `DDH.indcca2On_cramerShoup`, and `DDH.indcca2MultiOn_cramerShoup` instead fix a polynomial-time
+  computable family `d : ℕ → F.Desc`: the group at parameter `n` is `d n` and is not sampled, and
+  DDH and collision resistance are assumed for the point-mass setup `fun n => PMF.pure (d n)`.
+  Their hypotheses therefore make `n ↦ F.order (d n)` a sequence of primes that is computable in
+  polynomial time from the unary parameter and has negligible inverse.
 * **Group-order growth premise**: the asymptotic theorems assume a positive lower bound `m : ℕ → ℕ`
   on the group order `F.order` with `Negligible (fun n => (1 / m n : ℝ≥0))` so that the
   information-theoretic projective-hash and non-DH-triple terms `(2 * Q₁ n + 2 * Q₂ n + 2) / m n`
@@ -645,11 +653,12 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
       rfl
   game_trans using [hadv]
 
-/-- **Game 2 $\to$ Game 3 bound** ([BonehShoup2023], Section 12.5.3, equations (12.24)–(12.25),
-printed p. 492, adapted to $\mathcal{E}_{\mathrm{MCS}}$ with associated data): the distinguishing
-advantage between `cramerShoupGame2` and `cramerShoupGame3` is bounded by the collision-finding
-success probability of `cramerShoupMsgToCollisionFinder` plus `9 / 2 ^ n` (from the nine approximate
-`sampleModNat` exponent draws in `cramerShoupMsgToCollisionFinder`). -/
+/-- **Game 2 $\to$ Game 3 bound** (the collision-rejection hop into Game 4 of [BonehShoup2023],
+Section 12.5.3, equations (12.24)–(12.25), printed p. 492, adapted to $\mathcal{E}_{\mathrm{MCS}}$
+with associated data): the distinguishing advantage between `cramerShoupGame2` and
+`cramerShoupGame3` is bounded by the collision-finding success probability of
+`cramerShoupMsgToCollisionFinder` plus `9 / 2 ^ n` (from the nine approximate `sampleModNat`
+exponent draws in `cramerShoupMsgToCollisionFinder`). -/
 theorem advantage_cramerShoupGame2_game3_le
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
     (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
@@ -1401,9 +1410,10 @@ encoding `encAD : AD ↪ List Bool` and polynomial-time group description family
 the probabilistic polynomial-time Multiplicative Cramer–Shoup encryption scheme with associated
 data `(cramerShoupKeyGenProb d, cramerShoupADEncryptProb encAD H d, cramerShoupADDecryptOpt H
 isElem d)` satisfies the native `Encryption.INDCCA2ADOn` notion with respect to the
-group-membership admissibility predicate `cramerShoupValid isElem d` under DDH, collision
-resistance of `cramerShoupHashMod H`, and a positive group-order lower bound `m n > 0` with
-`1 / m n` negligible. -/
+group-membership admissibility predicate `cramerShoupValid isElem d` under DDH and collision
+resistance of `cramerShoupHashMod H`, both for the point-mass setup `fun n => PMF.pure (d n)`, and
+a positive lower bound `m n ≤ F.order (d n)` with `1 / m n` negligible. The group at parameter `n`
+is the fixed description `d n`; it is not sampled. -/
 theorem DDH.indcca2ADOn_cramerShoup
     {F : PrimeOrderGroupFamily}
     {AD : Type} (encAD : AD ↪ List Bool)
@@ -1471,9 +1481,10 @@ theorem advantage_cca2GameOn_cramerShoupGroupCCA2Game_le
 description family `d : ℕ → F.Desc`, the probabilistic polynomial-time Cramer–Shoup encryption
 scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d, cramerShoupDecryptOpt H isElem d)`
 satisfies the native `Encryption.INDCCA2On` notion with respect to the group-membership
-admissibility predicate `cramerShoupValid isElem d` under DDH, collision resistance of
-`cramerShoupHashMod H`, and a positive group-order lower bound `m n > 0` with `1 / m n`
-negligible. -/
+admissibility predicate `cramerShoupValid isElem d` under DDH and collision resistance of
+`cramerShoupHashMod H`, both for the point-mass setup `fun n => PMF.pure (d n)`, and a positive
+lower bound `m n ≤ F.order (d n)` with `1 / m n` negligible. The group at parameter `n` is the
+fixed description `d n`; it is not sampled. -/
 theorem DDH.indcca2On_cramerShoup
     {F : PrimeOrderGroupFamily}
     {H : F.Desc × List Bool → List Bool}
@@ -1506,9 +1517,10 @@ together with Theorem 12.9 and Exercise 12.27, printed pp. 468, 490–491, 521�
 polynomial-time group description family `d : ℕ → F.Desc`, the probabilistic polynomial-time
 Cramer–Shoup encryption scheme `(cramerShoupKeyGenProb d, cramerShoupEncryptProb H d,
 cramerShoupDecryptOpt H isElem d)` satisfies the two-phase batch-challenge multi-challenge
-`Encryption.INDCCA2MultiOn` notion with respect to `cramerShoupValid isElem d` under DDH, collision
-resistance of `cramerShoupHashMod H`, and a positive group-order lower bound `m n > 0` with
-`1 / m n` negligible. -/
+`Encryption.INDCCA2MultiOn` notion with respect to `cramerShoupValid isElem d` under DDH and
+collision resistance of `cramerShoupHashMod H`, both for the point-mass setup
+`fun n => PMF.pure (d n)`, and a positive lower bound `m n ≤ F.order (d n)` with `1 / m n`
+negligible. The group at parameter `n` is the fixed description `d n`; it is not sampled. -/
 theorem DDH.indcca2MultiOn_cramerShoup
     {F : PrimeOrderGroupFamily}
     {H : F.Desc × List Bool → List Bool}
