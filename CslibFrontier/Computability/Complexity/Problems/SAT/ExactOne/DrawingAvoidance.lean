@@ -28,7 +28,7 @@ a variable point with a clause point; the distinct displayed positions exclude t
 These elementary consequences of occurrence-indexed drawing certificates are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.ExactOne.FormulaDrawing
 

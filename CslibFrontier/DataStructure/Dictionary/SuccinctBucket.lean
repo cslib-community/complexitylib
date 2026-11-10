@@ -706,6 +706,16 @@ def feistelLocalMicro {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
     exact (H i (qOf u)).isLt⟩
 
 omit [Fintype ι] in
+/-- The Feistel XOR only touches the low `bucketBits n_max` bits, so the high bits of
+`feistelMicroHash` are the local micro-bucket `feistelLocalMicro`. -/
+theorem feistelMicroHash_val_div {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
+    (H : ι → Q → Fin (2 ^ totalMicroBits n_max)) (i : ι) (u : Fin U) :
+    (feistelMicroHash n_max qOf H i u).val / 2 ^ bucketBits n_max =
+      (feistelLocalMicro n_max qOf H i u).val := by
+  dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
+  rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u.val), Nat.xor_zero]
+
+omit [Fintype ι] in
 /-- `(feistelMicroHash n_max qOf H i u).val` decomposes into `feistelBucketHash` in the low
 `bucketBits n_max` bits and `feistelLocalMicro` in the high `microBits n_max` bits. -/
 theorem feistelMicroHash_val_eq {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
@@ -713,10 +723,7 @@ theorem feistelMicroHash_val_eq {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
     (feistelMicroHash n_max qOf H i u).val =
       (feistelLocalMicro n_max qOf H i u).val * 2 ^ bucketBits n_max +
         (feistelBucketHash n_max qOf H i u).val := by
-  have hdiv : (feistelMicroHash n_max qOf H i u).val / 2 ^ bucketBits n_max =
-      (feistelLocalMicro n_max qOf H i u).val := by
-    dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
-    rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u.val), Nat.xor_zero]
+  have hdiv := feistelMicroHash_val_div n_max qOf H i u
   have hmod : (feistelMicroHash n_max qOf H i u).val % 2 ^ bucketBits n_max =
       (feistelBucketHash n_max qOf H i u).val := rfl
   have h := Nat.div_add_mod (feistelMicroHash n_max qOf H i u).val (2 ^ bucketBits n_max)
@@ -733,17 +740,9 @@ theorem feistelMicroHash_eq_iff {U : ℕ} (n_max : ℕ) (qOf : Fin U → Q)
         feistelLocalMicro n_max qOf H i u₁ = feistelLocalMicro n_max qOf H i u₂ := by
   constructor
   · intro h
-    have hval := congrArg Fin.val h
-    have hdiv : (feistelMicroHash n_max qOf H i u₁).val / 2 ^ bucketBits n_max =
-        (feistelLocalMicro n_max qOf H i u₁).val := by
-      dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
-      rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u₁.val), Nat.xor_zero]
-    have hdiv2 : (feistelMicroHash n_max qOf H i u₂).val / 2 ^ bucketBits n_max =
-        (feistelLocalMicro n_max qOf H i u₂).val := by
-      dsimp only [feistelMicroHash, feistelXor, feistelLocalMicro]
-      rw [Nat.xor_div_two_pow, Nat.div_eq_of_lt (keyLow_lt (bucketBits n_max) u₂.val), Nat.xor_zero]
     refine ⟨congrArg (projLowBits (bucketBits_le_totalMicroBits n_max)) h, Fin.ext ?_⟩
-    rw [← hdiv, ← hdiv2, hval]
+    rw [← feistelMicroHash_val_div n_max qOf H i u₁, ← feistelMicroHash_val_div n_max qOf H i u₂,
+      h]
   · rintro ⟨hb, hm⟩
     apply Fin.ext
     rw [feistelMicroHash_val_eq, feistelMicroHash_val_eq, hb, hm]
@@ -983,6 +982,20 @@ end ProbabilityBounds
 
 /-! ## Section 4: Cardinality bounds for injective bucket and micro-bucket slot maps -/
 
+/-- Counting core of the slot bounds below: an injective family `f` on `J` of members of `S`
+satisfying `P` has at most `1 + #{x ∈ S.erase u | P x}` elements, the `1` accounting for `u`
+itself. -/
+private theorem card_le_one_add_card_filter_erase {α β : Type*} [DecidableEq α]
+    (J : Finset β) (f : β → α) (hinj : Set.InjOn f J) (S : Finset α) (u : α)
+    (P : α → Prop) [DecidablePred P] (hmem : ∀ j ∈ J, f j ∈ S ∧ P (f j)) :
+    #J ≤ 1 + #{x ∈ S.erase u | P x} := by
+  have hJ : #J ≤ #{x ∈ S | P x} :=
+    card_le_card_of_injOn f (fun j hj => mem_filter.mpr (hmem j hj)) hinj
+  have herase : #{x ∈ S | P x} - 1 ≤ #{x ∈ S.erase u | P x} := by
+    rw [filter_erase]
+    exact pred_card_le_card_erase
+  omega
+
 /-- If a finset `J : Finset ℕ` of local slot indices injects via `keyAt : ℕ → Fin U` into the keys
 of `S` landing in `u`'s micro-bucket, then `#J ≤ 1 + microCollCount n_max qOf H i S u`. -/
 theorem card_microSlots_le {ι Q : Type*} {U n_max : ℕ}
@@ -992,25 +1005,9 @@ theorem card_microSlots_le {ι Q : Type*} {U n_max : ℕ}
     (hinj : Set.InjOn keyAt J)
     (hmem : ∀ j ∈ J, keyAt j ∈ S ∧
       feistelMicroHash n_max qOf H i (keyAt j) = feistelMicroHash n_max qOf H i u) :
-    #J ≤ 1 + microCollCount n_max qOf H i S u := by
-  classical
-  let target : Finset (Fin U) :=
-    insert u {x ∈ S.erase u | feistelMicroHash n_max qOf H i x = feistelMicroHash n_max qOf H i u}
-  have hsub : J.image keyAt ⊆ target := by
-    intro x hx
-    rcases mem_image.mp hx with ⟨j, hj, rfl⟩
-    rcases hmem j hj with ⟨hjS, hjM⟩
-    by_cases hju : keyAt j = u
-    · rw [hju]
-      exact mem_insert_self u _
-    · exact mem_insert_of_mem (mem_filter.mpr ⟨mem_erase.mpr ⟨hju, hjS⟩, hjM⟩)
-  calc #J = #(J.image keyAt) := (card_image_of_injOn hinj).symm
-    _ ≤ #target := card_le_card hsub
-    _ ≤ 1 + microCollCount n_max qOf H i S u := by
-        have := card_insert_le u
-          {x ∈ S.erase u | feistelMicroHash n_max qOf H i x = feistelMicroHash n_max qOf H i u}
-        dsimp only [target, microCollCount] at this ⊢
-        omega
+    #J ≤ 1 + microCollCount n_max qOf H i S u :=
+  card_le_one_add_card_filter_erase J keyAt hinj S u
+    (fun x => feistelMicroHash n_max qOf H i x = feistelMicroHash n_max qOf H i u) hmem
 
 /-- If a bucket contains `c_b` items that inject via `keyAt : Fin c_b → Fin U` into the keys of `S`
 landing in `u`'s Feistel bucket, then the overflow count `c_b - effBucketCap n_max` is at most
@@ -1023,46 +1020,26 @@ theorem bucketOverflow_le {ι Q : Type*} {U n_max c_b : ℕ}
     (hmem : ∀ j : Fin c_b, keyAt j ∈ S ∧
       feistelBucketHash n_max qOf H i (keyAt j) = feistelBucketHash n_max qOf H i u) :
     c_b - effBucketCap n_max ≤ 1 + bucketOvfCount n_max qOf H i S u := by
-  classical
-  let target : Finset (Fin U) :=
-    insert u {x ∈ S.erase u |
-      feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u}
-  have hsub : univ.image keyAt ⊆ target := by
-    intro x hx
-    rcases mem_image.mp hx with ⟨j, _, rfl⟩
-    rcases hmem j with ⟨hjS, hjB⟩
-    by_cases hju : keyAt j = u
-    · rw [hju]
-      exact mem_insert_self u _
-    · exact mem_insert_of_mem (mem_filter.mpr ⟨mem_erase.mpr ⟨hju, hjS⟩, hjB⟩)
-  have hcb : c_b ≤ 1 +
-      #{x ∈ S.erase u | feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u} := by
-    calc c_b = #(univ : Finset (Fin c_b)) := by simp
-      _ = #(univ.image keyAt) := (card_image_of_injective univ hinj).symm
-      _ ≤ #target := card_le_card hsub
-      _ ≤ 1 + #{x ∈ S.erase u |
-          feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u} := by
-        have := card_insert_le u
-          {x ∈ S.erase u | feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u}
-        dsimp only [target] at this ⊢
-        omega
+  have hcb := card_le_one_add_card_filter_erase univ keyAt hinj.injOn S u
+    (fun x => feistelBucketHash n_max qOf H i x = feistelBucketHash n_max qOf H i u)
+    (fun j _ => hmem j)
+  rw [card_univ, Fintype.card_fin] at hcb
   unfold bucketOvfCount
   omega
 
 /-! ## Section 5: Master word-level space accounting (`succinctWords`) -/
 
-/-- **Master succinct word-space bound:** if `n_max ≤ U` and the auxiliary bit budget `B_aux` is at
-most `C_aux * n_max * Dynamic.logLogFactor n_max`, then storing `n_max` quotients of
+/-- **Master succinct word-space bound:** if the auxiliary bit budget `B_aux` is at most
+`C_aux * n_max * Dynamic.logLogFactor n_max`, then storing `n_max` quotients of
 `quotientBits U n_max` bits, `n_max` values of `valBits V` bits, `B_aux` auxiliary bits (with
 additive word overhead `C_pad`), and `C_hdr` header/hash words uses at most
 `Dynamic.succinctWords (C_aux + 5) (C_pad + C_hdr) U V w n_max` words across all `w`. -/
 theorem succinct_space_le_succinctWords {U V w n_max B_aux C_aux C_pad C_hdr : ℕ}
-    (hnU : n_max ≤ U)
     (haux : B_aux ≤ C_aux * n_max * Dynamic.logLogFactor n_max) :
     (n_max * quotientBits U n_max + n_max * valBits V + B_aux + w - 1) / w + C_pad + C_hdr ≤
       Dynamic.succinctWords (C_aux + 5) (C_pad + C_hdr) U V w n_max := by
   unfold Dynamic.succinctWords
-  have hqv := quotient_val_bits_le_optBits (V := V) hnU
+  have hqv := quotient_val_bits_le_optBits (U := U) (V := V) (n := n_max)
   have hnum :
       n_max * quotientBits U n_max + n_max * valBits V + B_aux + w - 1 ≤
         Dynamic.optBits U V n_max + (C_aux + 5) * n_max * Dynamic.logLogFactor n_max + w - 1 := by
@@ -1245,7 +1222,7 @@ theorem globalMetaLen_le_of_bucketBits_pos {n : ℕ} (hb : 0 < bucketBits n) :
 `Values`, the 9 `LocalMeta` sub-arrays of length `totalMicroBuckets n_max`, `GlobalMeta`, and
 `C_hdr` header/hash words is at most `Dynamic.succinctWords 79 (35 + C_hdr) U V w n_max` across
 all `w`. -/
-theorem tableArrays_words_le_succinctWords {U V w n_max C_hdr : ℕ} (hnU : n_max ≤ U) :
+theorem tableArrays_words_le_succinctWords {U V w n_max C_hdr : ℕ} :
     packedWords n_max (quotientBits U n_max) w +
       packedWords n_max (valBits V) w +
       9 * packedWords (totalMicroBuckets n_max) (effBucketPosBits n_max) w +
@@ -1283,7 +1260,7 @@ theorem tableArrays_words_le_succinctWords {U V w n_max C_hdr : ℕ} (hnU : n_ma
       (U := U) (V := V) (w := w) (n_max := n_max)
       (B_aux := localMetaLen n_max * effBucketPosBits n_max +
         globalMetaLen n_max * globalPtrBits n_max)
-      (C_aux := 74) (C_pad := 35) (C_hdr := C_hdr) hnU haux
+      (C_aux := 74) (C_pad := 35) (C_hdr := C_hdr) haux
   have hassoc :
       n_max * quotientBits U n_max + n_max * valBits V +
         localMetaLen n_max * effBucketPosBits n_max +

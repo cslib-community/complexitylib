@@ -115,8 +115,7 @@ private theorem eval_instantiate {n : ℕ} {R : Set (Fin n → Bool)}
       g.body.eval sem (Sum.elim (fun i => σ (2 * scope.getD i.val 0))
         (fun j => σ (2 * (B * index + j.val) + 1))) := by
   simp only [instantiate, PPGadget.template, eval_relabel]
-  congr 1
-  funext x
+  congr 1 with x : 1
   cases x <;> rfl
 
 /-- Correct gadgets preserve satisfiability on well-formed inputs.
@@ -198,12 +197,8 @@ theorem satisfiable_replaceGadgetsGuarded_iff
     (replaceGadgetsGuarded srcArity B (fun r => (gadgets r).template) reject F).Satisfiable sem ↔
       WellFormed srcArity F ∧ F.Satisfiable srcSem := by
   by_cases h : WellFormed srcArity F
-  · simp only [replaceGadgetsGuarded, (validArity_eq_true_iff _ _).mpr h,
-      ↓reduceIte, h, true_and]
-    exact satisfiable_replaceGadgets_iff gadgets B hB F h
-  · have hv : validArity srcArity F = false := Bool.eq_false_iff.mpr fun hv =>
-      h ((validArity_eq_true_iff _ _).mp hv)
-    simp [replaceGadgetsGuarded, hv, h, hreject]
+  · simpa [replaceGadgetsGuarded, h] using satisfiable_replaceGadgets_iff gadgets B hB F h
+  · simp [replaceGadgetsGuarded, h, hreject]
 
 /-- Full guarded correctness for the exact-arity CSP decision predicate. A reject target
 may fail either well-formedness or satisfiability, allowing a fixed malformed constraint. -/
@@ -218,14 +213,10 @@ theorem wellFormed_satisfiable_replaceGadgetsGuarded_iff
         (fun r => (gadgets r).template) reject F).Satisfiable sem) ↔
       WellFormed srcArity F ∧ F.Satisfiable srcSem := by
   by_cases h : WellFormed srcArity F
-  · have hv := (validArity_eq_true_iff srcArity F).mpr h
-    have hw := wellFormed_replaceGadgets B (fun r => (gadgets r).template)
+  · have hw := wellFormed_replaceGadgets B (fun r => (gadgets r).template)
       (fun r => (gadgets r).wellFormed_template) F
-    simp only [replaceGadgetsGuarded, hv, ↓reduceIte, hw, true_and, h]
-    exact satisfiable_replaceGadgets_iff gadgets B hB F h
-  · have hv : validArity srcArity F = false := Bool.eq_false_iff.mpr fun hv =>
-      h ((validArity_eq_true_iff _ _).mp hv)
-    simp [replaceGadgetsGuarded, hv, h, hreject]
+    simpa [replaceGadgetsGuarded, h, hw] using satisfiable_replaceGadgets_iff gadgets B hB F h
+  · simp [replaceGadgetsGuarded, h, hreject]
 
 /-- A fixed malformed target for rejecting invalid source scopes. Any target symbol suffices. -/
 @[expose] def malformedReject (arity : Rel → ℕ) (r : Rel) : CSP Rel ℕ :=

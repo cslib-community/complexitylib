@@ -40,7 +40,7 @@ example :
       clearedPartialCollision 4 [some [1, 0], some [1, 1], none] 0 1 = 0 ∧
       clearedPartialCollision 4 [some [1, 0], some [1, 1], none] 0 2 = 1) := by
   refine ⟨by decide, ⟨by decide, by decide, by decide, ?_⟩, by decide, by decide⟩
-  congr 1; funext j; rw [wordToSchedule_decodeLabelWord_eq_finFunctionFinEquiv_symm]
+  congr 1 with j : 1; rw [wordToSchedule_decodeLabelWord_eq_finFunctionFinEquiv_symm]
 
 -- Concrete 2-variable, 2-factor hypergraph on r = 2, Q = 2: exact rational bridge check.
 private def testEdge : Fin 3 → Fin 2 × Fin 2

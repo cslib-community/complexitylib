@@ -62,8 +62,7 @@ example : bindingGame zeroSender 1 (pure ()) (fun _ => pure (twoOpenings 1)) tru
     simp only [bindingGame, Cslib.Probability.PMF.monad_bind_eq_bind,
       Cslib.Probability.PMF.monad_pure_eq_pure, PMF.pure_bind, senderRun, zeroSender,
       transfer_eq, PMF.map]
-    congr 1
-    funext c
+    congr 1 with c : 1
     cases h : c 0 <;>
       simp [doubleOpens, twoOpenings, Accepts, opening, Fin.forall_fin_one,
         Fin.cons, h]; rfl

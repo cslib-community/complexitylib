@@ -1,6 +1,6 @@
 # Find and apply a result
 
-Search for the contract you need, then inspect the theorem that provides it. The [model map](../model-map.md) routes unfamiliar terminology to source files; the reference chapters explain the representations. Once the goal is fixed, a nearby checked client is usually a better implementation starting point than the library's umbrella import. [complexitylib][complexitylib]
+Search for the contract you need, then inspect the theorem that provides it. The [model map](../model-map.md) routes unfamiliar terminology to source files; the reference chapters explain the representations. Once the goal is fixed, a nearby checked client is usually a better implementation starting point than the library's umbrella import. [cslib-frontier][complexitylib]
 
 ## Follow a name to its usable statement
 
@@ -205,13 +205,13 @@ uncentered output after a nonzero first increment from zero row/default. Run
 `scripts/build.sh --wfail --iofail CslibFrontierTests.NormalizedAtomCapacity`.
 These fixtures do not instantiate all stochastic premises. Lower-child contracts, the full
 recursive hierarchy estimator and native resources/RL remain open; this conditional result
-is not a headline abstract or a class equality.
+is not a class equality.
 
-## Read abstracts, bridges and comparison contracts
+## Read the library statement of a named result
 
-For a named headline such as Fagin's theorem, locate its entry in `abstracts/catalogue.json`, then read [FaginAbstract.lean](../../abstracts/CslibFrontierAbstracts/FaginAbstract.lean). Follow `FaginBridge.fagin` to the library result in [Fagin/Converse.lean](../../CslibFrontier/Computability/Complexity/Fagin/Converse.lean). The presentation exposes finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection. The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
+For a named result such as Fagin's theorem, search the [results inventory](../../results/README.md) and the API documentation, then read the library statement in [Fagin/Converse.lean](../../CslibFrontier/Computability/Complexity/Fagin/Converse.lean). Its input convention, with finite relational vocabularies, unary cardinality, framed relation tables and malformed-input rejection, is documented in [Encoding.lean](../../CslibFrontier/Logics/FirstOrder/Encoding.lean). The library theorem `Cslib.Logic.ESO.definable_iff_queryLanguage_mem_NP` takes an isomorphism-closure hypothesis; its adjacent theorem packages that hypothesis into the equivalence. Choose the form matching your goal and the [finite-model representation](../circuits-logic-and-other-models/finite-model-logic.md).
 
-The abstract is a readable presentation and its bridge proves the connection. The underlying library declaration is normally the reusable API. `#check_abstract` audits dependencies; it does not decide whether the semantics match your application. Likewise, `comparator/` contains selected independently stated contracts and solutions applying library theorems. Its coverage is explicit and limited, so absence from comparator is not a failed theorem check. Read the [assurance reference](../design-and-assurance/assurance.md) when deciding what evidence a result already has, and use the [contribution workflow](contributing.md) for any new proof or representation bridge.
+The library declaration is the reusable API, and its statement is the authoritative contract. An inventory entry records sources and scope; the registry checks the theorem's identity, not whether its semantics match your application. Read the [assurance reference](../design-and-assurance/assurance.md) when deciding what evidence a result already has, and use the [contribution workflow](contributing.md) for any new proof or representation bridge.
 
 [complexitylib]: ../sources.md#complexitylib
 

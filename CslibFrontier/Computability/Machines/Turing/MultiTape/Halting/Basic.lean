@@ -100,6 +100,11 @@ def Desc.Halts (d : Desc) (x : List ℕ) : Prop :=
 def Desc.Computes (d : Desc) (x : List ℕ) (out : List ℕ) : Prop :=
   ∃ t, simulate d x t = (out, true)
 
+/-- A halted configuration is fixed by `stepOut`. -/
+theorem stepOut_of_state_eq_none {d : Desc} {x : List ℕ} {c : SCfg} (h : c.state = none)
+    (out : List ℕ) : stepOut d x (c, out) = (c, out) := by
+  simp [stepOut, step, h]
+
 /-- The machine described by `d` halts exactly when it halts with some output. -/
 theorem Desc.halts_iff_exists_computes {d : Desc} {x : List ℕ} :
     d.Halts x ↔ ∃ o, d.Computes x o :=

@@ -259,9 +259,7 @@ private theorem errors_le {M b σ : ℕ} (hM : 1 ≤ M) (hb : 1 ≤ b)
   set d := M * (2 ^ b - 1) with hd
   set K := 2 * σ + Nat.log 2 (4 * b) + 2 with hK
   set D := 2 ^ (3 * b - b / 4) with hD
-  have hd1 : d + 1 ≤ M * 2 ^ b := by
-    rw [hd, Nat.mul_sub_one]
-    omega
+  have hd1 : d + 1 ≤ M * 2 ^ b := by grind [Nat.mul_sub_one]
   have hq18 : 18 * (d + 1) ≤ q := by
     have h18 : 18 * M ≤ 2 ^ (3 * b) :=
       calc 18 * M ≤ 2 ^ (b / 4) := by omega
@@ -336,9 +334,7 @@ private theorem final_lt {M b σ : ℕ} (hM : 1 ≤ M) (hb : 1 ≤ b)
       _ = 256 * b ^ 2 * 16 ^ σ := by
           rw [mul_pow, mul_pow, ← pow_mul, mul_comm σ 2, pow_mul]
           norm_num
-  have hs : 2 ^ σ + 2 + 1 ≤ 4 * 2 ^ σ := by
-    have : 1 ≤ 2 ^ σ := Nat.one_le_two_pow
-    omega
+  have hs : 2 ^ σ + 2 + 1 ≤ 4 * 2 ^ σ := by grind
   calc 2 ^ 11 * 3 ^ (Nat.log 2 (M * b) + 1) * M * (4 * b) ^ 2 * (2 ^ (4 * b)) ^ 9 *
         4 ^ (2 * σ + Nat.log 2 (4 * b) + 2) * (2 ^ σ + 2 + 1)
       ≤ 2 ^ 11 * (3 * (M * b) ^ 2) * M * (4 * b) ^ 2 * (2 ^ (4 * b)) ^ 9 *

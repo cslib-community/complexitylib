@@ -304,19 +304,14 @@ theorem eventually_mul_complexity_directProduct_le {depth : ℕ → ℕ}
       _ = 4 * (X + 1) * d * ℓ := by ring
       _ ≤ n := hD
   have h9 : 9 * (d * p) ≤ n := le_trans (Nat.mul_le_mul_right _ (by omega)) hdp
-  have hdn : d ≤ n := by
-    have : d ≤ d * p := Nat.le_mul_of_pos_right _ (by omega)
-    omega
+  have hdn : d ≤ n := by grind
   refine mul_complexity_directProduct_le (X := X) (d := d) (p := p) (m := n - d * p)
     (hXdef ▸ two_mul_mul_succ_pow_three_le P) (by omega) (by omega) (by omega) hdp ?_
     (hm₀ _ (by omega)) ?_ f hk
   · calc (X + 1) * d ≤ n * n := Nat.mul_le_mul (by omega) hdn
       _ ≤ (2 * 2 ^ ℓ) * (2 * 2 ^ ℓ) := Nat.mul_le_mul hltℓ.le hltℓ.le
       _ = 2 ^ p := by rw [hpdef]; ring
-  · have hexp : n / 2 + (p * d + (d + d)) ≤ n := by
-      have h4d : 4 * d ≤ d * p := by rw [mul_comm d p]; exact Nat.mul_le_mul_right d (by omega)
-      rw [mul_comm p d]
-      omega
+  · have hexp : n / 2 + (p * d + (d + d)) ≤ n := by grind
     calc 4 * P * n * layerOverhead p n * 2 ^ (p * d + (d + d))
         ≤ 2 ^ (n / 2) * 2 ^ (p * d + (d + d)) :=
           Nat.mul_le_mul_right _ ((Nat.mul_le_mul_left _ (layerOverhead_le p n)).trans hpoly)

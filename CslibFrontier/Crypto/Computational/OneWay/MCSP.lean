@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import CslibFrontier.Languages.Probabilistic.Notation
@@ -300,12 +301,10 @@ of `2 ^ m` bits. -/
 theorem isOraclePPT_mcspDistinguisher (d : ℕ)
     (hV : ComputableInPolyTime V (encPair MCSP.encInstance encBits) encBool) :
     IsOraclePPT encBool (mcspDistinguisher p V d) := by
-  have hV := hV.tidy
   apply IsOraclePPTOn.isOraclePPT
   exact IsOraclePPTOn.bind_with
-    (isOraclePPTOn_queryTable.preprocess (computableInPolyTime_tableQueries d).tidy)
-    ((isPPTOn_mcspRun (.of_tidy hV)).preprocess
-      (computableInPolyTime_tableInstance d)).isOraclePPTOn
+    (isOraclePPTOn_queryTable.preprocess' (computableInPolyTime_tableQueries d))
+    ((isPPTOn_mcspRun hV).preprocess (computableInPolyTime_tableInstance d)).isOraclePPTOn
 
 /-! ### The advantage of the distinguisher -/
 
@@ -337,9 +336,7 @@ threshold `2 ^ m / (5 m)` is at least `c (3 n + 2) ^ c + 2`. -/
 theorem eventually_tableArity (c : ℕ) :
     ∀ᶠ n in Filter.atTop, 0 < n ∧ 16 ≤ tableArity (c + 2) n ∧ tableArity (c + 2) n ≤ n ∧
       c * (3 * n + 2) ^ c + 2 ≤ 2 ^ tableArity (c + 2) n / (5 * tableArity (c + 2) n) := by
-  have htend : Filter.Tendsto (Nat.clog 2) Filter.atTop Filter.atTop :=
-    Filter.tendsto_atTop_atTop.2 fun b => ⟨2 ^ b, fun n hn => by
-      simpa only [Nat.clog_pow 2 b one_lt_two] using Nat.clog_mono_right 2 hn⟩
+  have htend := Nat.tendsto_clog_atTop one_lt_two
   have hlin : ∀ᶠ t in Filter.atTop, 2 * (c + 2) * t < 2 ^ t :=
     PolynomiallyBounded.eventually_lt_two_pow (by fun_prop)
   filter_upwards [htend.eventually_ge_atTop 16, htend.eventually hlin,

@@ -84,11 +84,7 @@ private theorem answerGap_eq {α : Type} {A : Set (α × ℕ)} {g f : α × ℕ 
       ∏ i ∈ range (r a), f (a, i) else 0 := by
   classical
   let v : Fin (r a) → Bool := fun i => decide ((a, i.1) ∈ A)
-  have hg (i : Fin (r a)) : g (a, i) = if v i then f (a, i) else 0 := by
-    by_cases h : (a, i.1) ∈ A
-    · simp [v, h, (hA _).mp h]
-    · simp only [v, decide_eq_false h, Bool.false_eq_true, ↓reduceIte]
-      exact (hR _).resolve_right (fun he => h ((hA _).mpr he))
+  have hg (i : Fin (r a)) : g (a, i) = if v i then f (a, i) else 0 := by grind
   have hp (w : Fin (r a) → Bool) :
       (∏ i ∈ range (r a), if (List.ofFn w).getD i false then g (a, i) else
         f (a, i) - g (a, i)) = if w = v then ∏ i ∈ range (r a), f (a, i) else 0 := by

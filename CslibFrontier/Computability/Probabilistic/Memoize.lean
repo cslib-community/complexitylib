@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Control.Monad.Memoize
 public import CslibFrontier.Computability.Probabilistic.PPT
+public import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -50,8 +51,7 @@ open Turing.MultiTapeTM
 private theorem lookup_eq_map_find {K V : Type} [BEq K] (key : K) (cache : List (K × V)) :
     cache.lookup key = (cache.find? (fun entry => key == entry.1)).map Prod.snd := by
   simp only [List.lookup_eq_findSome?, List.find?_eq_findSome?_guard, List.map_findSome?]
-  congr 1
-  funext entry
+  congr 1 with entry : 1
   cases h : key == entry.1 <;> simp [Option.guard, h]
 
 /-- Cache a certified sampler's results using an ordinary list. Runtime query data, captured
@@ -135,9 +135,7 @@ theorem memoize_cache_size_le {α Key Value : Type} [BEq Key]
     (hcache : ∀ entry ∈ cache,
       (keyEncoding entry.1).length ≤ maxKey ∧ (valueEncoding entry.2).length ≤ maxValue)
     (result : α)
-    (h : (result, cache') ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n))
-        (memoize distribution)) program).run cache).support) :
+    (h : (result, cache') ∈ (ProbOracleComp.runWith (memoize distribution) program cache).support) :
     (encList (encPair keyEncoding valueEncoding) cache').length ≤
       (cache.length + calls) * (4 * maxKey + 2 * maxValue + 3) := by
   obtain ⟨hcount, hentries⟩ := RandomOracle.memoize_cache_bounds_prob distribution program

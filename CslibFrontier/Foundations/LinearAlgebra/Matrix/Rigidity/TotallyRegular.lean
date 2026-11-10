@@ -82,6 +82,68 @@ private theorem two_rpow_neg_le_one_sub {w : ℝ} (hw0 : 0 ≤ w) (hw1 : w ≤ 1
     _ ≤ 1 + 2 * w * (-1 / 2) := h
     _ = 1 - w := by ring
 
+/-- **The numerical core of [Lokam2009], Lemma 2.4.** Let `N` positions be available and
+`s < N / (2 (r + 1)) · log₂ (n / r)` of them be marked, where `n ≤ r 2 ^ (r + 1)`. Then `s < N`
+and `r N ^ (r + 1) < n (N - s) ^ (r + 1)`: with `w = log₂ (n / r) / (2 (r + 1)) ∈ (0, 1 / 2]`,
+`N - s > N (1 - w)` and `(1 - w) ^ (r + 1) ≥ 2 ^ (-log₂ (n / r)) = r / n`. -/
+private theorem lt_and_mul_pow_lt {n r N s : ℕ} (hn : n ≤ r * 2 ^ (r + 1))
+    (hs : (s : ℝ) < N / (2 * (r + 1)) * Real.logb 2 (n / r)) :
+    s < N ∧ (r : ℝ) * N ^ (r + 1) < n * (N - s) ^ (r + 1) := by
+  set L := Real.logb 2 (n / r) with hLdef
+  set w := L / (2 * (r + 1)) with hwdef
+  have hr1 : (0 : ℝ) < 2 * (r + 1) := by positivity
+  have hsw : (s : ℝ) < N * w := by
+    calc (s : ℝ) < N / (2 * (r + 1)) * L := hs
+      _ = N * w := by rw [hwdef]; ring
+  have hs0 : (0 : ℝ) ≤ s := Nat.cast_nonneg _
+  have hN0 : (0 : ℝ) ≤ N := Nat.cast_nonneg _
+  -- The bound is positive, so `r ≥ 1`, `n > r` and `0 < w ≤ 1 / 2`.
+  have hw : 0 < w := by
+    by_contra hw
+    have : (N : ℝ) * w ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hN0 (not_lt.1 hw)
+    linarith
+  have hL : 0 < L := by
+    rw [hwdef] at hw
+    exact (div_pos_iff_of_pos_right hr1).1 hw
+  rcases Nat.eq_zero_or_pos r with rfl | hr
+  · simp [hLdef] at hL
+  have hrpos : (0 : ℝ) < r := by exact_mod_cast hr
+  have hnr : (0 : ℝ) < n / r := by
+    refine lt_of_le_of_ne (by positivity) fun h => ?_
+    rw [hLdef, ← h, Real.logb_zero] at hL
+    exact lt_irrefl _ hL
+  have hnpos : (0 : ℝ) < n := (div_pos_iff_of_pos_right hrpos).1 hnr
+  have hLle : L ≤ r + 1 := by
+    rw [hLdef, Real.logb_le_iff_le_rpow (by norm_num) hnr, div_le_iff₀ hrpos]
+    have : (n : ℝ) ≤ r * 2 ^ (r + 1) := by exact_mod_cast hn
+    calc (n : ℝ) ≤ r * 2 ^ (r + 1) := this
+      _ = (2 : ℝ) ^ ((r : ℝ) + 1) * r := by
+        rw [mul_comm, ← Real.rpow_natCast]; push_cast; ring_nf
+  have hw1 : w ≤ 1 / 2 := by
+    rw [hwdef, div_le_iff₀ hr1]
+    linarith
+  -- `N - s > N (1 - w)` and `(1 - w) ^ (r + 1) ≥ 2 ^ (-L) = r / n`.
+  have hgap : (N : ℝ) * (1 - w) < N - s := by
+    have : (N : ℝ) * (1 - w) = N - N * w := by ring
+    linarith
+  have hrn : (r : ℝ) / n ≤ (1 - w) ^ (r + 1) := by
+    have h2L : (2 : ℝ) ^ (-L) = r / n := by
+      rw [Real.rpow_neg (by norm_num), hLdef, Real.rpow_logb (by norm_num) (by norm_num) hnr,
+        inv_div]
+    calc (r : ℝ) / n = 2 ^ (-L) := h2L.symm
+      _ = ((2 : ℝ) ^ (-(2 * w))) ^ (r + 1) := by
+        rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num), hwdef]
+        congr 1
+        push_cast
+        field_simp
+      _ ≤ (1 - w) ^ (r + 1) :=
+        pow_le_pow_left₀ (Real.rpow_nonneg (by norm_num) _) (two_rpow_neg_le_one_sub hw.le hw1) _
+  refine ⟨by exact_mod_cast (show (s : ℝ) < N by nlinarith), ?_⟩
+  calc (r : ℝ) * N ^ (r + 1) = n * (r / n * N ^ (r + 1)) := by field_simp
+    _ ≤ n * ((1 - w) ^ (r + 1) * N ^ (r + 1)) := by gcongr
+    _ = n * (N * (1 - w)) ^ (r + 1) := by rw [mul_pow]; ring
+    _ < n * (N - s) ^ (r + 1) := by gcongr; nlinarith
+
 variable {α β : Type*} [Fintype α] [Fintype β]
 
 /-- **Untouched rectangles** ([Lokam2009], Lemma 2.4). If fewer than
@@ -110,7 +172,8 @@ theorem exists_disjoint_product_of_card_lt (S : Finset (α × β)) {r : ℕ}
     show Fintype.card α + 1 - (r + 1) = Fintype.card α - r by omega] at hK
   generalize Fintype.card α = m at hrm hK hS
   generalize Fintype.card β = n at hn hK hS
-  -- With `N = (m - r) n` unmarked-able positions: `n (N - |S|) ^ (r + 1) ≤ r N ^ (r + 1)`.
+  -- With `N = (m - r) n` markable positions, Kővári–Sós–Turán gives
+  -- `n (N - |S|) ^ (r + 1) ≤ r N ^ (r + 1)`, which the numerical core contradicts.
   have hmn : m * n = (m - r) * n + r * n := by
     rw [← add_mul, Nat.sub_add_cancel hrm.le]
   rw [show m * n - #S - r * n = (m - r) * n - #S by omega, mul_comm n (m - r)] at hK
@@ -118,74 +181,10 @@ theorem exists_disjoint_product_of_card_lt (S : Finset (α × β)) {r : ℕ}
   generalize hN : (m - r) * n = N at hK hS
   have hNcast : ((m - r : ℕ) : ℝ) * n = N := by exact_mod_cast hN
   rw [hNcast] at hS
-  set L := Real.logb 2 (n / r) with hLdef
-  set w := L / (2 * (r + 1)) with hwdef
-  have hr1 : (0 : ℝ) < 2 * (r + 1) := by positivity
-  have hSw : (#S : ℝ) < N * w := by
-    rw [hwdef, mul_div_assoc'] at *
-    calc (#S : ℝ) < N / (2 * (r + 1)) * L := hS
-      _ = N * L / (2 * (r + 1)) := by ring
-  have hS0 : (0 : ℝ) ≤ #S := Nat.cast_nonneg _
-  have hN0 : (0 : ℝ) ≤ N := Nat.cast_nonneg _
-  -- The bound is positive, so `N > 0`, `r ≥ 1`, `n > r` and `0 < w ≤ 1 / 2`.
-  have hw : 0 < w := by
-    by_contra hw
-    have : (N : ℝ) * w ≤ 0 := mul_nonpos_of_nonneg_of_nonpos hN0 (not_lt.1 hw)
-    linarith
-  have hNpos : (0 : ℝ) < N := by
-    by_contra hN'
-    have : (N : ℝ) = 0 := le_antisymm (not_lt.1 hN') hN0
-    rw [this, zero_mul] at hSw
-    linarith
-  have hL : 0 < L := by
-    rw [hwdef] at hw
-    exact (div_pos_iff_of_pos_right hr1).1 hw
-  rcases Nat.eq_zero_or_pos r with rfl | hr
-  · simp [hLdef] at hL
-  have hnpos : (0 : ℝ) < n := by
-    have : 0 < N := by exact_mod_cast hNpos
-    rw [← hN] at this
-    exact_mod_cast Nat.pos_of_mul_pos_left this
-  have hrpos : (0 : ℝ) < r := by exact_mod_cast hr
-  have hnr : (0 : ℝ) < n / r := div_pos hnpos hrpos
-  have hLle : L ≤ r + 1 := by
-    rw [hLdef, Real.logb_le_iff_le_rpow (by norm_num) hnr, div_le_iff₀ hrpos]
-    have : (n : ℝ) ≤ r * 2 ^ (r + 1) := by exact_mod_cast hn
-    calc (n : ℝ) ≤ r * 2 ^ (r + 1) := this
-      _ = (2 : ℝ) ^ ((r : ℝ) + 1) * r := by
-        rw [mul_comm, ← Real.rpow_natCast]; push_cast; ring_nf
-  have hw1 : w ≤ 1 / 2 := by
-    rw [hwdef, div_le_iff₀ hr1]
-    linarith
-  -- `N - |S| > N (1 - w)` and `(1 - w) ^ (r + 1) ≥ 2 ^ (-L) = r / n`.
-  have hSN : #S < N := by
-    have : (#S : ℝ) < N := by nlinarith
-    exact_mod_cast this
-  have hcast : ((N - #S : ℕ) : ℝ) = N - #S := by rw [Nat.cast_sub hSN.le]
-  have hgap : (N : ℝ) * (1 - w) < N - #S := by
-    have : (N : ℝ) * (1 - w) = N - N * w := by ring
-    linarith
-  have hpow : ((N : ℝ) * (1 - w)) ^ (r + 1) < (N - #S : ℝ) ^ (r + 1) :=
-    pow_lt_pow_left₀ hgap (mul_nonneg hN0 (by linarith)) (Nat.succ_ne_zero r)
-  have hrn : (r : ℝ) / n ≤ (1 - w) ^ (r + 1) := by
-    have h2L : (2 : ℝ) ^ (-L) = r / n := by
-      rw [Real.rpow_neg (by norm_num), hLdef, Real.rpow_logb (by norm_num) (by norm_num) hnr,
-        inv_div]
-    calc (r : ℝ) / n = 2 ^ (-L) := h2L.symm
-      _ = ((2 : ℝ) ^ (-(2 * w))) ^ (r + 1) := by
-        rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num), hwdef]
-        congr 1
-        push_cast
-        field_simp
-      _ ≤ (1 - w) ^ (r + 1) :=
-        pow_le_pow_left₀ (Real.rpow_nonneg (by norm_num) _) (two_rpow_neg_le_one_sub hw.le hw1) _
+  obtain ⟨hSN, hlt⟩ := lt_and_mul_pow_lt hn hS
   have hK' : (n : ℝ) * (N - #S) ^ (r + 1) ≤ r * N ^ (r + 1) := by
-    rw [← hcast]; exact_mod_cast hK
-  have : (r : ℝ) * N ^ (r + 1) < n * (N - #S) ^ (r + 1) := by
-    calc (r : ℝ) * N ^ (r + 1) = n * (r / n * N ^ (r + 1)) := by field_simp
-      _ ≤ n * ((1 - w) ^ (r + 1) * N ^ (r + 1)) := by gcongr
-      _ = n * (N * (1 - w)) ^ (r + 1) := by rw [mul_pow]; ring
-      _ < n * (N - #S) ^ (r + 1) := by gcongr
+    rw [← Nat.cast_sub hSN.le]
+    exact_mod_cast hK
   linarith
 
 end Cslib

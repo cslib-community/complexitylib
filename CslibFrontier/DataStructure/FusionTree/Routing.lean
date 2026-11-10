@@ -25,7 +25,7 @@ stops the search, and a positive rank selects the preceding child pointer.
 See [FredmanWillard1993] for multiway fusion-tree descent.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.FusionTree.Tree
 

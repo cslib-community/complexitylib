@@ -208,44 +208,35 @@ theorem validBank_eq_true (p d r : ℕ) (bank : List ℕ) :
       2 ≤ p ∧ bank.length = (d + 1) * r ∧ ∀ v ∈ bank, p ≤ v := by
   simp [validBank, Bool.and_eq_true, List.all_eq_true, and_assoc]
 
-private theorem padding_mapIdx {p : ℕ} {bank : List ℕ} {f : ℕ → ℕ → ℕ}
-    (hbank : ∀ v ∈ bank, p ≤ v) (hf : ∀ i v, p ≤ v → p ≤ f i v) :
-    ∀ v ∈ bank.mapIdx f, p ≤ v := by
+/-- A cellwise update that keeps every padded cell padded preserves bank validity. -/
+private theorem validBank_mapIdx {p d r : ℕ} {bank : List ℕ} (f : ℕ → ℕ → ℕ)
+    (hbank : validBank p d r bank = true) (hf : ∀ i v, p ≤ v → p ≤ f i v) :
+    validBank p d r (bank.mapIdx f) = true := by
+  obtain ⟨hp, hlen, hpad⟩ := (validBank_eq_true p d r bank).mp hbank
+  refine (validBank_eq_true p d r _).mpr ⟨hp, by simpa only [List.length_mapIdx] using hlen, ?_⟩
   intro v hv
   obtain ⟨i, hi, rfl⟩ := List.mem_mapIdx.mp hv
-  exact hf i bank[i] (hbank _ (List.getElem_mem hi))
+  exact hf i bank[i] (hpad _ (List.getElem_mem hi))
 
 /-- Scaling preserves the encoded-width padding invariant. -/
 theorem validBank_scaleBank (p d r t a : ℕ) (bank : List ℕ)
     (hbank : validBank p d r bank = true) :
     validBank p d r (scaleBank p r t a bank) = true := by
-  obtain ⟨hp, hlen, hpad⟩ := (validBank_eq_true p d r bank).mp hbank
-  apply (validBank_eq_true p d r _).mpr
-  refine ⟨hp, by simpa only [length_scaleBank] using hlen, ?_⟩
-  apply padding_mapIdx hpad
-  intro i v hv
+  refine validBank_mapIdx _ hbank fun i v hv => ?_
   split_ifs <;> omega
 
 /-- A returned value preserves the padding even when some supplied coordinates are missing. -/
 theorem validBank_addBank (p d r t c : ℕ) (values bank : List ℕ)
     (hbank : validBank p d r bank = true) :
     validBank p d r (addBank p r t c values bank) = true := by
-  obtain ⟨hp, hlen, hpad⟩ := (validBank_eq_true p d r bank).mp hbank
-  apply (validBank_eq_true p d r _).mpr
-  refine ⟨hp, by simpa only [length_addBank] using hlen, ?_⟩
-  apply padding_mapIdx hpad
-  intro i v hv
+  refine validBank_mapIdx _ hbank fun i v hv => ?_
   split_ifs <;> omega
 
 /-- A returned extension preserves the padding through a subtractive update. -/
 theorem validBank_subBank (p d r t c : ℕ) (values bank : List ℕ)
     (hbank : validBank p d r bank = true) :
     validBank p d r (subBank p r t c values bank) = true := by
-  obtain ⟨hp, hlen, hpad⟩ := (validBank_eq_true p d r bank).mp hbank
-  apply (validBank_eq_true p d r _).mpr
-  refine ⟨hp, by simpa only [length_subBank] using hlen, ?_⟩
-  apply padding_mapIdx hpad
-  intro i v hv
+  refine validBank_mapIdx _ hbank fun i v hv => ?_
   split_ifs <;> omega
 
 /-- Start one round using the counter's unit, without retaining an enumeration of units. -/

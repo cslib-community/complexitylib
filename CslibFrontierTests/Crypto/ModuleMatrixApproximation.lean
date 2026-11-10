@@ -151,8 +151,7 @@ example : ∃ sample run,
             (fun j i => ((![![-1, 2]] : Fin 1 → Fin 2 → ℤ) j i : ZMod 3))
             (fun j i => ((![![1, -1]] : Fin 1 → Fin 2 → ℤ) j i : ZMod 3)))) := by
       rw [PMF.map_comp]
-      congr 1
-      funext A
+      congr 1 with A : 1
       exact hrun 1 2 3 (by decide) A (![![-1, 2]]) (![![1, -1]])
     rw [hideal] at hc
     simp only [eval_bind, eval_pure]
@@ -189,8 +188,7 @@ private theorem width_zero_scalar :
     eval (sampleModNat 0 3) = PMF.pure 0 := by
   rw [eval_sampleModNat]
   convert PMF.map_const (PMF.uniformOfFintype (Fin 1)) (0 : ℕ) using 1
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp
 
 /-- Width zero, modulus one, and both empty expanded shapes have their actual degenerate laws. -/
@@ -213,8 +211,7 @@ example : ∃ sample,
       (PMF.pi fun _ : Fin 1 => PMF.pi fun _ : Fin 1 => PMF.pi fun _ : Fin 1 =>
         (eval (sampleModNat 4 1)).map (Nat.cast : ℕ → ZMod 1))
       (encList (encList encNat) [[0]]) using 1
-    congr 1
-    funext A
+    congr 1 with A : 1
     have hA : A = 0 := by
       ext i j l
       apply ZMod.val_injective 1

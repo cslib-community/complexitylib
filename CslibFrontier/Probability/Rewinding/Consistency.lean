@@ -21,8 +21,8 @@ and accepts when `acc s r` holds. Each run also *opens* positions `j` to bits `b
 (`opens s r j b`), as a prover opens positions of a committed table. If, at every possible saved
 state, runs that accept while agreeing with a fixed table `π : ℕ → Bool` are rare (probability at
 most `ε`, for every `π`), then an accepting prover must answer inconsistently across runs: rewinding
-the second stage, two runs that both accept and open some position to different bits occur with
-probability `δ` satisfying
+the second stage, two runs that both accept, with some position below `M` opened to `false` by the
+first and to `true` by the second, occur with probability `δ` satisfying
 
 `ε₁ ≤ ε + M * √δ` (`le_add_mul_sqrt_disagreement`),
 
@@ -46,8 +46,8 @@ These are exact statements about experiment laws, with no efficiency claim.
 ## Main definitions
 
 * `Cslib.Probability.Rewinding.acceptance`: one run of the two-stage experiment.
-* `Cslib.Probability.Rewinding.disagreement`: two runs sharing the first stage that both accept and
-  open a common position to different bits.
+* `Cslib.Probability.Rewinding.disagreement`: two runs sharing the first stage that both accept,
+  with a common position below `M` opened to `false` by the first and to `true` by the second.
 
 ## Main results
 
@@ -161,8 +161,8 @@ private theorem toReal_disagreement :
 /-- **Rewinding against a committed table.** Suppose that at every possible saved state `s`,
 every accepting run opens only positions below `M`, and runs that accept while agreeing with any
 fixed table `π` have probability at most `ε`. Then the one-run acceptance probability `ε₁` and the
-probability `δ` that two runs from one saved state both accept and open a position to different
-bits satisfy `ε₁ ≤ ε + M * √δ`.
+probability `δ` that two runs from one saved state both accept, with some position below `M`
+opened to `false` by the first and to `true` by the second, satisfy `ε₁ ≤ ε + M * √δ`.
 
 This is an original packaging of the extraction step in the soundness of Kilian's protocol
 ([BarakGoldreich2001], Lemma 3.5). It concerns experiment laws, with no efficiency claim. -/

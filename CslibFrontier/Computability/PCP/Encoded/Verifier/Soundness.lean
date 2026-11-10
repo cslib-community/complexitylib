@@ -92,13 +92,11 @@ theorem rejectProb_edgeVerifier (width : ℕ) (decode : (Fin width → Bool) →
       _ = ((BitString.uniformList (Nat.clog 2 g.edges.length)).map
             (BitString.boundedBinaryValue g.edges.length)).map (indexVerdict g eval labels) := by
         rw [PMF.map_comp]
-        congr 1
-        funext random
+        congr 1 with random : 1
         exact edgeVerifier_accepts width decode eval g proof random
       _ = _ := by
         rw [BitString.uniformList_boundedBinaryValue, PMF.map_comp]
-        congr 1
-        funext i
+        congr 1 with i : 1
         exact indexVerdict_min g eval labels i.val
   rw [hmap]
   simp [PMF.map_apply, tsum_fintype, PMF.uniformOfFintype_apply, ← Finset.sum_filter,

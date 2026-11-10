@@ -54,7 +54,7 @@ The circuit specializations require the designated output to be a gate.
   and Section 3.1] [ThresholdCircuitRepresentations2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.WeightedThreshold
 

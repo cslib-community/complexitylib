@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Opening
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import CslibFrontier.Probability.StatisticalDistance.Coupling
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Extracting the bit committed through ideal OT
@@ -193,19 +194,11 @@ theorem simulatedOpening_coupled {State Output : Type} (A : Sender State) (k : �
   · simp only [joint, realOpening, Probability.PMF.monad_bind_eq_bind,
       Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
       senderRun_eq, PMF.bind_map]
-    congr 1
-    funext st
-    rw [PMF.bind_comm (PMF.uniformOfFintype (Fin k → Bool))]
-    congr 1
-    funext ⟨ts, final⟩
-    exact PMF.bind_comm _ _ _
+    pmf_swap
+    rfl
   · simp only [joint, simulatedOpening, Probability.PMF.monad_bind_eq_bind,
       Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
-    congr 1
-    funext st
-    congr 1
-    funext ⟨ts, final⟩
-    exact PMF.bind_comm _ _ _
+    pmf_swap
   · simp only [joint, Probability.PMF.monad_bind_eq_bind,
       Probability.PMF.monad_pure_eq_pure]
     apply Probability.PMF.toOuterMeasure_bind_le

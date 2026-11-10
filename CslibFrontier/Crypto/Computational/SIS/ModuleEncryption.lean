@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.SIS.Module
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Tactic.Abel
@@ -87,6 +88,8 @@ ring `R_q = ℤ_q[X] / (X^n + 1)` and modules `R_q^k` ([Regev2009], [Lyubashevsk
 * `Cslib.Crypto.negacyclicMul_comm`, `Cslib.Crypto.rotMatrix_negacyclicMul`,
   `Cslib.Crypto.negacyclicMul_assoc`: commutativity and associativity of negacyclic polynomial
   multiplication.
+* `Cslib.Crypto.sum_abs_rotMatrix_apply`, `Cslib.Crypto.abs_negacyclicMul_le_sum_abs_mul`: rows of
+  the negacyclic matrix are signed rearrangements, giving the `ℓ₁`-`ℓ∞` product bound.
 * `Cslib.Crypto.innerPoly_moduleSISMap_eq`, `Cslib.Crypto.innerPoly_moduleSISMap_add_sub`:
   adjoint identity for `moduleSISMap` and noisy bilinear cancellation.
 * `Cslib.Crypto.decodePolyMsg_encodePolyMsg_add_noise`: bounded-error recovery for
@@ -297,6 +300,28 @@ theorem negacyclicMul_sum {n : ℕ} {R : Type*} [Ring R] {ι : Type*} (s : Finse
   | empty => simp
   | insert i s hi ih =>
     rw [Finset.sum_insert hi, negacyclicMul_add, ih, Finset.sum_insert hi]
+
+/-- Each row of `rotMatrix a` is a signed rearrangement of `a`, so its absolute values sum to
+the `ℓ₁` norm of `a`. -/
+theorem sum_abs_rotMatrix_apply {n : ℕ} (a : Fin n → ℤ) (i : Fin n) :
+    ∑ j, |rotMatrix a i j| = ∑ j, |a j| :=
+  calc ∑ j, |rotMatrix a i j| = ∑ j, |a (negacyclicSwap i j)| :=
+        Finset.sum_congr rfl fun j _ => by
+          rw [rotMatrix_apply_eq_negacyclicSwap]
+          split_ifs <;> simp only [abs_neg]
+    _ = ∑ j, |a j| := (negacyclicSwapEquiv i).sum_comp fun j => |a j|
+
+/-- **`ℓ₁`-`ℓ∞` bound for negacyclic multiplication**: if `‖b‖_∞ ≤ β`, then every coefficient of
+`negacyclicMul a b` has absolute value at most `‖a‖₁ · β`. -/
+theorem abs_negacyclicMul_le_sum_abs_mul {n β : ℕ} {a b : Fin n → ℤ} (hb : ∀ j, |b j| ≤ β)
+    (i : Fin n) : |negacyclicMul a b i| ≤ (∑ j, |a j|) * β :=
+  calc |negacyclicMul a b i|
+      = |∑ j : Fin n, rotMatrix a i j * b j| := rfl
+    _ ≤ ∑ j : Fin n, |rotMatrix a i j * b j| := Finset.abs_sum_le_sum_abs _ _
+    _ ≤ ∑ j : Fin n, |rotMatrix a i j| * β := Finset.sum_le_sum fun j _ => by
+      rw [abs_mul]
+      exact mul_le_mul_of_nonneg_left (hb j) (abs_nonneg _)
+    _ = (∑ j, |a j|) * β := by rw [← Finset.sum_mul, sum_abs_rotMatrix_apply]
 
 /-- Polynomial inner product `⟨b, r⟩ = ∑ j : Fin k, negacyclicMul (b j) (r j)` over
 `R[X] / (X^n + 1)`. -/
@@ -824,7 +849,7 @@ theorem uniformKeyEncryptionLaw_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
     uniformKeyEncryptionLaw k n q noise m =
       (ModuleLWE.sampleLaw (k + 1) k n q noise).map (maskExtendedSampleEquiv m) := by
   unfold uniformKeyEncryptionLaw ModuleLWE.sampleLaw
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map]
+  simp only [pmf_norm]
   congr 1 with r : 1
   have hpk :
       PMF.uniformOfFintype (Matrix (Fin (k + 1)) (Fin k) (Fin n → ZMod q)) =
@@ -832,8 +857,7 @@ theorem uniformKeyEncryptionLaw_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
     (PMF.uniformOfFintype_map_equiv (extendPublicKeyEquiv k n q)).symm
   rw [hpk, PMF.bind_map, PMF.pi_fin_succ k noise]
   congr 1 with pk : 1
-  simp only [Function.comp_def, extendPublicKeyEquiv, Equiv.coe_fn_mk, PMF.bind_bind,
-    PMF.bind_map, extendCiphertext_moduleLWEEncrypt]
+  simp only [pmf_norm, extendPublicKeyEquiv, Equiv.coe_fn_mk, extendCiphertext_moduleLWEEncrypt]
   rfl
 
 /-- Masking the second component of a uniform `(k + 1) × k` Module-LWE sample by
@@ -908,8 +932,8 @@ theorem hybridEncryptionView_eq_sampleLaw_map (k n q : ℕ) [NeZero q]
         (uniformKeyEncryptionLaw k n q noise m).map
           (fun p => (unextendPublicKeyMatrix p.1, unextendCiphertext p.2)) := by
     unfold hybridEncryptionView encryptionViewOfKeyLaw uniformKeyEncryptionLaw
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
-      unextendPublicKeyMatrix_extendPublicKeyMatrix, unextendCiphertext_extendCiphertext]
+    simp only [pmf_norm, unextendPublicKeyMatrix_extendPublicKeyMatrix,
+      unextendCiphertext_extendCiphertext]
     rw [PMF.bind_comm]
   rw [hcomm, uniformKeyEncryptionLaw_eq_sampleLaw_map, PMF.map_comp]
   rfl
@@ -948,14 +972,13 @@ theorem advantage_realEncryptionView_uniform_le {k n q : ℕ} [NeZero q]
       (realEncryptionView k n q noise m).bind D =
         (ModuleLWE.sampleLaw k k n q noise).bind fun pk =>
           (encryptionViewOfKeyLaw (PMF.pure pk) noise m).bind D := by
-    simp only [realEncryptionView, moduleLWEPublicKeyLaw_eq_sampleLaw, encryptionViewOfKeyLaw,
-      PMF.monad_bind_eq_bind, PMF.pure_bind, PMF.bind_bind]
+    simp only [pmf_norm, realEncryptionView, moduleLWEPublicKeyLaw_eq_sampleLaw,
+      encryptionViewOfKeyLaw]
   have hhyb1 :
       (hybridEncryptionView k n q noise m).bind D =
         (PMF.uniformOfFintype (ModuleLWEPublicKey k n q)).bind fun pk =>
           (encryptionViewOfKeyLaw (PMF.pure pk) noise m).bind D := by
-    simp only [hybridEncryptionView, encryptionViewOfKeyLaw, PMF.monad_bind_eq_bind,
-      PMF.pure_bind, PMF.bind_bind]
+    simp only [pmf_norm, hybridEncryptionView, encryptionViewOfKeyLaw]
   have hhyb2 :
       (hybridEncryptionView k n q noise m).bind D =
         (ModuleLWE.sampleLaw (k + 1) k n q noise).bind (D ∘ unextendMaskedSample m) := by

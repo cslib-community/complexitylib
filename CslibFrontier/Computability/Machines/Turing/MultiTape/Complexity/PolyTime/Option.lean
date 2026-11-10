@@ -21,23 +21,27 @@ its fallback may be computed from the input; no inhabitant of the value type is 
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionSome`: construct an optional value.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionGetD`: read an option with a fallback
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionSome`: construct an optional value.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetD`: read an option with a fallback
   supplied as part of the input.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionGetDWithInput`: the composition rule.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionIsSome`: test a computed optional value.
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput`: branch on an optional
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput`: the composition rule.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionIsSome`: test a computed optional value.
+* `Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionElimWithInput`: branch on an optional
   value while retaining the original input, including empty value types.
 
-* `Turing.MultiTapeTM.ComputableInPolyTime.optionMapWithInput`: map an optional value
-  with a callback certified jointly with its captured original input.
+The plain forms `Turing.MultiTapeTM.ComputableInPolyTime.optionSome`, `.optionGetD`,
+`.optionGetDWithInput`, `.optionIsSome` and `.optionElimWithInput` are in
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives`, which
+this file publicly imports. So is `Turing.MultiTapeTM.ComputableInPolyTime.optionMapWithInput`,
+which maps an optional value with a callback certified jointly with its captured original input;
+it has no tidy form here.
 
 ## References
 
 Uses Christian Reitwiessner's option encoding and degree-bounded machine calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
@@ -60,17 +64,8 @@ theorem optionIsSome {value : α → Option β}
 @[fun_prop]
 theorem optionGetD (enc : α ↪ List Bool) :
     ComputableTidilyInPolyTime (fun p : Option α × α => p.1.getD p.2)
-      (encPair (encOption enc) enc) enc := by
-  rcases isEmpty_or_nonempty α with h | h
-  · exact of_finite _
-  · obtain ⟨fallback⟩ := h
-    have h := ((ComputableTidilyInDegree.isSome enc).computableTidilyInPolyTime.comp
-      (fst (encOption enc) enc)).cond
-        ((ComputableTidilyInDegree.getD fallback).computableTidilyInPolyTime.comp
-          (fst (encOption enc) enc)) (snd (encOption enc) enc)
-    convert h using 1
-    funext ⟨value, d⟩
-    cases value <;> rfl
+      (encPair (encOption enc) enc) enc :=
+  (ComputableInPolyTime.optionGetD enc).tidy
 
 /-- Read a computed option with a computed fallback, using their shared value encoding. -/
 @[fun_prop]
@@ -89,19 +84,8 @@ theorem optionElimWithInput {γ : Type} {encC : γ ↪ List Bool}
     (hbody : ComputableTidilyInPolyTime (fun p : α × β => body p.1 p.2)
       (encPair encA encB) encC) :
     ComputableTidilyInPolyTime
-      (fun a => (value a).elim (fallback a) (body a)) encA encC := by
-  rcases isEmpty_or_nonempty β with h | h
-  · convert hfallback using 1
-    funext a
-    cases value a with
-    | none => rfl
-    | some b => exact isEmptyElim b
-  · obtain ⟨b⟩ := h
-    have hget : ComputableTidilyInPolyTime (fun a => (value a).getD b) encA encB :=
-      (ComputableTidilyInDegree.getD b).computableTidilyInPolyTime.comp hvalue
-    convert hvalue.optionIsSome.cond (hbody.comp (id'.prod hget)) hfallback using 1
-    funext a
-    dsimp only [Function.comp_def]
-    cases value a <;> rfl
+      (fun a => (value a).elim (fallback a) (body a)) encA encC :=
+  (ComputableInPolyTime.optionElimWithInput hvalue.computableInPolyTime
+    hfallback.computableInPolyTime hbody.computableInPolyTime).tidy
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime

@@ -15,9 +15,12 @@ public import Mathlib.Data.List.TakeDrop
 
 This is the elementary rebuilding transformation motivated by retroactive data structures
 [Demaine, Iacono, and Langerman][DIL2007]. A timeline edit is followed by an explicit reset and
-replay of the edited history. It is not an efficient rollback algorithm or a historical-query
-interface. Editing an admissible timeline can make later operations invalid, so admissibility
-checks the entire edited history.
+replay of the edited history. It is not an efficient rollback algorithm, and `Retroactive.spec`
+has no query operation, historical or present: every edit returns `Unit`. The correctness of
+`Retroactive.implementation` therefore says only that each edit issues admissible backend calls
+and preserves the representation invariant: the backend stores the edited timeline, and its
+ordinary state is that timeline replayed from the initial state. Editing an admissible timeline
+can make later operations invalid, so admissibility checks the entire edited history.
 
 ## Main definitions
 

@@ -137,9 +137,7 @@ theorem LocalRule.le_iterate_of_isProperColoring {O : Type*} [Fintype O] {n t : 
         rw [show ((m : ℕ) : ZMod n) = (((⟨m, by omega⟩ : Fin (2 * t + 2)) : ℕ) : ZMod n) from rfl,
           hxa]
         congr 1; ext; simp; omega
-      · have hv : (t : ZMod n) + 1 + (j : ZMod n) = ((m + 1 : ℕ) : ZMod n) := by
-          push_cast
-          linear_combination hmz
+      · have hv : (t : ZMod n) + 1 + (j : ZMod n) = ((m + 1 : ℕ) : ZMod n) := by grind
         simp only [window, hv, Fin.tail]
         rw [show ((m + 1 : ℕ) : ZMod n) =
           (((⟨m + 1, by omega⟩ : Fin (2 * t + 2)) : ℕ) : ZMod n) from rfl, hxa]

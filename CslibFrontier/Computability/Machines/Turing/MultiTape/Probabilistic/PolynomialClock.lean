@@ -206,10 +206,7 @@ theorem exists_polynomialClock {k : ℕ} {State Oracle : Type} [Finite State] [D
   let budget := coefficient * (input.length + 1) ^ degree
   let time := cp * (input.length + 1) ^ dp
   let padding := c * (input.length + 1) ^ d - (time + (2 * budget + 1))
-  have htime : time + (2 * budget + 1 + padding) = c * (input.length + 1) ^ d := by
-    have := hbound input
-    dsimp only [time, budget, padding]
-    lia
+  have htime : time + (2 * budget + 1 + padding) = c * (input.length + 1) ^ d := by grind
   have hrun := run_interpret_compile machine prepare coin query oracle coinLaw hcoin input budget
     time padding s (hprepare input)
   rw [htime] at hrun

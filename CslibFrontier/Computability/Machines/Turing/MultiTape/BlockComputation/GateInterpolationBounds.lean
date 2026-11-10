@@ -28,7 +28,7 @@ variable {k s : ℕ} {Q : Type} [Finite Q]
 
 /-- Space charged to one native table call, independent of its assignment counter. -/
 @[expose] noncomputable def calleeSpace (k s : ℕ) (Q : Type) (context : Context) : ℕ :=
-  let (N, b, σ, i, m, chunk, _) := context
+  let ⟨N, b, σ, i, m, chunk, _⟩ := context
   let (positive, negative) := ScheduleRead.origin k 0 (σ, i)
   2 * (SupplierChunk.encContext (m, chunk)).length + 1 + (Encoding.width k s b + 1) +
     (2 * (Gate.encContext (positive, negative, ScheduleRead.fullrow k (σ, i))).length + 2 +
@@ -41,7 +41,7 @@ theorem exists_runFrom_counterGate_bounded {p q r m : ℕ} (M : MultiTapeTM k Bo
     (hb : Encoding.width k s b ≤ r * m) (hm : 0 < m) (chunk : Fin r) :
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
-    let context : Context := (w.length, b, σ, i.val, m, chunk.val, r * m)
+    let context : Context := ⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩
     let params := QueryGate.gateParams (s := 2 ^ m) context x
     ∃ T z, (machine M e).runFrom w (initial params) T =
         .inl (params, (2 ^ m) ^ ((k * 3 + 1) * r), z) ∧
@@ -53,7 +53,7 @@ theorem exists_runFrom_counterGate_bounded {p q r m : ℕ} (M : MultiTapeTM k Bo
           calleeSpace k s Q context + 2 := by
   let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
     (Encoding.encode e) (Encoding.decode e) (i.val + 1)
-  let context : Context := (w.length, b, σ, i.val, m, chunk.val, r * m)
+  let context : Context := ⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩
   let params := QueryGate.gateParams (s := 2 ^ m) context x
   let table := QueryGate.gateTable (by positivity : 0 < 2 ^ m)
     (Packed.packBits hb) (Packed.unpackBits hb) f chunk
@@ -108,7 +108,7 @@ theorem exists_runFrom_gateExtension_bounded {p q r m : ℕ} [Fact p.Prime]
     (hh : ∀ a, h a = (a.val : ZMod p)) :
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
-    let context : Context := (w.length, b, σ, i.val, m, chunk.val, r * m)
+    let context : Context := ⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩
     let params := QueryGate.gateParams (s := 2 ^ m) context x
     ∃ T z, (machine M e).runFrom w (initial params) T =
         .inl (params, (2 ^ m) ^ ((k * 3 + 1) * r), z) ∧

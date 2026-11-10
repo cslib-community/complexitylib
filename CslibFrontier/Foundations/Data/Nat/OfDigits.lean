@@ -20,7 +20,7 @@ The weighted-digit identity is the existing `Nat.ofDigits_ofFn_eq_sum` from fixe
 arithmetic; this module supplies only its bridge to Mathlib's finite-function enumeration.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

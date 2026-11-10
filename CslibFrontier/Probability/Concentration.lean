@@ -32,10 +32,10 @@ statements.
 * `Cslib.Probability.PMF.pi_sum_le_mean_sub`: lower-tail concentration of bounded scores.
 * `Cslib.Probability.PMF.pi_sum_ge_mean_add`: the corresponding upper-tail bound.
 * `Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge`: the two-sided bound.
-* `Cslib.Probability.PMF.uniform_abs_sum_div_sub_expect_ge_le`: the two-sided bound for the
-  empirical average of a `[-1, 1]`-valued function at independent uniform points.
-* `Cslib.Probability.PMF.pi_abs_sum_div_sub_sum_mul_ge_le`: the same bound at independent samples
-  of any distribution.
+* `Cslib.Probability.PMF.pi_abs_sum_div_sub_sum_mul_ge_le`: the two-sided bound for the
+  empirical average of a `[-1, 1]`-valued function at independent samples of any distribution.
+* `Cslib.Probability.PMF.uniform_abs_sum_div_sub_expect_ge_le`: its special case at independent
+  uniform points.
 
 ## References
 
@@ -165,42 +165,6 @@ section Average
 open Finset
 open scoped BigOperators
 
-/-- **Hoeffding's inequality for an empirical average**: the average of a function with values in
-`[-1, 1]` at `m > 0` independent uniform points is off from its mean by at least `γ` with
-probability at most `2 exp (-m γ² / 2)`. -/
-theorem uniform_abs_sum_div_sub_expect_ge_le {m : ℕ} {α : Type*} [Fintype α] [Nonempty α]
-    (s : α → ℝ) (hs : ∀ a, |s a| ≤ 1) (hm : 0 < m) {γ : ℝ} (hγ : 0 ≤ γ) :
-    (PMF.uniformOfFintype (Fin m → α)).toOuterMeasure
-      {ω | γ ≤ |(∑ j, s (ω j)) / m - 𝔼 a, s a|} ≤
-        ENNReal.ofReal (2 * Real.exp (-(m * γ ^ 2) / 2)) := by
-  rw [ENNReal.le_ofReal_iff_toReal_le (toOuterMeasure_ne_top _ _) (by positivity)]
-  have h := pi_sum_abs_sub_mean_ge (fun _ : Fin m => PMF.uniformOfFintype α)
-    (fun _ a => 1 + s a) (bound := 2) (ε := m * γ) (by norm_num)
-    (fun _ a _ => ⟨by linarith [(abs_le.1 (hs a)).1], by linarith [(abs_le.1 (hs a)).2]⟩)
-    (by positivity)
-  rw [pi_uniformOfFintype] at h
-  have hmean : ∑ a, ((PMF.uniformOfFintype α) a).toReal * (1 + s a) = 1 + 𝔼 a, s a := by
-    have hc : (Fintype.card α : ℝ) ≠ 0 := Nat.cast_ne_zero.2 Fintype.card_ne_zero
-    simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast, ← mul_sum,
-      sum_add_distrib, sum_const, card_univ, nsmul_eq_mul, mul_one, expect_eq_sum_div_card]
-    field_simp
-  simp only [hmean, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul] at h
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.2 hm
-  have hevent : {ω : Fin m → α | γ ≤ |(∑ j, s (ω j)) / m - 𝔼 a, s a|} =
-      {ω | m * γ ≤ |∑ j, (1 + s (ω j)) - m * (1 + 𝔼 a, s a)|} := by
-    ext ω
-    have hsum : ∑ j, (1 + s (ω j)) - m * (1 + 𝔼 a, s a) =
-        m * ((∑ j, s (ω j)) / m - 𝔼 a, s a) := by
-      simp only [sum_add_distrib, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one]
-      field_simp
-      ring
-    simp only [Set.mem_ofPred_eq, hsum, abs_mul, abs_of_pos hmR]
-    exact (mul_le_mul_iff_right₀ hmR).symm
-  rw [hevent]
-  refine h.trans_eq ?_
-  congr 2
-  field_simp
-
 /-- **Hoeffding's inequality for an empirical average** under any distribution: the average of a
 function with values in `[-1, 1]` at `m` independent samples of `p` is off from its mean by at
 least `γ` with probability at most `2 exp (-m γ² / 2)`. -/
@@ -239,6 +203,21 @@ theorem pi_abs_sum_div_sub_sum_mul_ge_le {m : ℕ} {α : Type*} [Fintype α] (p 
   refine h.trans_eq ?_
   congr 2
   field_simp
+
+/-- **Hoeffding's inequality for an empirical average**: the average of a function with values in
+`[-1, 1]` at `m` independent uniform points is off from its mean by at least `γ` with
+probability at most `2 exp (-m γ² / 2)`. This is `pi_abs_sum_div_sub_sum_mul_ge_le` for the
+uniform distribution. -/
+theorem uniform_abs_sum_div_sub_expect_ge_le {m : ℕ} {α : Type*} [Fintype α] [Nonempty α]
+    (s : α → ℝ) (hs : ∀ a, |s a| ≤ 1) {γ : ℝ} (hγ : 0 ≤ γ) :
+    (PMF.uniformOfFintype (Fin m → α)).toOuterMeasure
+      {ω | γ ≤ |(∑ j, s (ω j)) / m - 𝔼 a, s a|} ≤
+        ENNReal.ofReal (2 * Real.exp (-(m * γ ^ 2) / 2)) := by
+  have h := pi_abs_sum_div_sub_sum_mul_ge_le (m := m) (PMF.uniformOfFintype α) s hs hγ
+  have hmean : ∑ a, ((PMF.uniformOfFintype α) a).toReal * s a = 𝔼 a, s a := by
+    simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast,
+      expect_eq_sum_div_card, card_univ, inv_mul_eq_div, ← sum_div]
+  rwa [pi_uniformOfFintype, hmean] at h
 
 end Average
 

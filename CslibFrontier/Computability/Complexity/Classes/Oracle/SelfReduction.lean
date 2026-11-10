@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # The self-reduction of `SAT` relative to an oracle
@@ -142,8 +143,7 @@ theorem interpret_searchProgram {A : Set (List Bool)}
     OracleComp.interpret (m := Id) (languageOracle A) (searchProgram prog φ) =
       selfReduce (fun ψ => decide (encCNF ψ ∈ A)) φ := by
   rw [searchProgram, OracleComp.interpret_id_iterate, selfReduce_eq_iterate]
-  congr 1
-  funext answers
+  congr 1 with answers : 1
   exact interpret_searchStepProgram hprog φ answers
 
 /-! ### Polynomial time -/
@@ -212,9 +212,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
   have hcount : ComputableInPolyTime (fun φ : CNF ℕ => φ.vars.length) encCNF encUnary :=
     (ComputableInPolyTime.length_list _).comp computableInPolyTime_vars
   have hsize : PolyBounded (fun φ => (encCNF φ).length)
-      (fun φ => (encUnary φ.vars.length).length * (4 * (encCNF φ).length + 5)) :=
-    hcount.polyBounded_length.mul (((PolyBounded.const 4).mul
-      (PolyBounded.of_forall_le 1 1 fun φ => by simp)).add (.const 5))
+      (fun φ => (encUnary φ.vars.length).length * (4 * (encCNF φ).length + 5)) := by growth_poly
   have hit := IsOraclePPTOn.iterateWith_spec' (input := encCNF)
     (stateEncoding := encList (encPair encNat encBool))
     (count := fun φ => φ.vars.length) (initial := fun _ => [])
@@ -223,9 +221,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
     hcount (ComputableInPolyTime.const []) (isOraclePPTOn_searchStepProgram hprogCert)
     (fun φ i answers => answers.map Prod.fst = φ.vars.take i) (fun _ => rfl)
     (fun φ i answers hi hinv next hnext => by
-      have hlen : answers.length = i := by
-        rw [← List.length_map (f := Prod.fst), hinv, List.length_take]
-        omega
+      have hlen : answers.length = i := by grind [List.length_take]
       unfold searchStepProgram at hnext
       rw [ite_eq_left (by omega), OracleComp.interpret_map] at hnext
       obtain ⟨b, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
@@ -237,9 +233,7 @@ theorem computableInPolyTimeWithOracle_selfReduce (A : Set (List Bool)) :
     (fun φ i answers hi hinv => by
       have hmem : ∀ l ∈ answers, l.1 ∈ φ.vars := fun l hl =>
         List.mem_of_mem_take (hinv ▸ List.mem_map_of_mem hl)
-      have hlen : answers.length ≤ φ.vars.length := by
-        rw [← List.length_map (f := Prod.fst), hinv, List.length_take]
-        omega
+      have hlen : answers.length ≤ φ.vars.length := by grind [List.length_take]
       simp only [encUnary_apply, List.length_replicate]
       exact (length_encList_le_of_mem_vars hmem).trans (Nat.mul_le_mul_right _ hlen))
   refine ⟨searchProgram prog, ?_, fun φ => interpret_searchProgram hprog φ⟩

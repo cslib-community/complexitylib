@@ -55,15 +55,14 @@ theorem run_sample (w : ℕ) (s : Memory.State) :
     (index (s.mem 0 - 1) >>= fun c => OracleComp.liftRight (Memory.read (c + 1))) s = _
   rw [RandomizedSpec.run_bind, RandomizedSpec.run_map, RandomizedSpec.withCoins_run_sample,
     ProbComp.eval_unifFin, PMF.map_comp, PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext c
+  congr 1 with c : 1
   simp only [Function.comp_apply]
   rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized]
   rfl
 
 /-- On the list input, `sample` chooses a position uniformly, retaining repeated values. -/
 theorem run_sample_inputState (w : ℕ) (xs : List ℕ) :
-    ((Memory.spec w).toRandomized.withCoins.run sample (inputState xs)).map Prod.fst =
+    ((Memory.spec w).toRandomized.withCoins.run sample (Memory.State.init xs)).map Prod.fst =
       (Probability.PMF.uniformOfFintype (Fin (xs.length - 1 + 1))).map
         fun c => xs.getD c.val 0 := by
   rw [run_sample, PMF.map_comp]
@@ -122,8 +121,7 @@ theorem realizesRand_sample {δ : Type} {k : ℕ} (input : δ ↪ (Fin k → ℕ
   refine ((hlast.toRand.bind hinner (fun _ _ => 3) (fun _ _ => 1)).congr fun d => ?_).consequence
     ?_
   · unfold sample
-    congr 1
-    funext a
+    congr 1 with a : 1
     rw [appendWords_last]
   · intro w d s _ hs h0
     refine ⟨⟨h0, fun n s' hmem => ?_⟩, le_rfl, le_rfl⟩
@@ -175,7 +173,7 @@ theorem sample_program : ∃ (r : ℕ) (prog : Program .exact r) (T : ℕ),
     fun w xs hxs hw hin => ?_⟩
   have hlen : 1 ≤ xs.length := List.length_pos_iff.mpr hxs
   obtain ⟨hhalt, hcalls, hlaw⟩ := hrun 0 w () xs (fun j => j.elim0) (Nat.zero_le _) hw hin hlen
-    (demonicValid_sample hlen (by simp [inputState])) (observe frontier)
+    (demonicValid_sample hlen (by simp [Memory.State.init])) (observe frontier)
     fun _ _ => rfl
   refine ⟨hhalt, hcalls, fun cfg => (observe frontier cfg).1, ?_⟩
   rw [show (fun cfg => (observe frontier cfg).1) = Prod.fst ∘ observe frontier from rfl,
@@ -235,8 +233,7 @@ theorem run_storeSample (w : ℕ) (s : Memory.State) :
         (s.mem (c.val + 1),
           (⟨Function.update s.mem 0 (s.mem (c.val + 1)), s.frontier⟩ : Memory.State)) := by
   rw [storeSample, RandomizedSpec.run_bind, run_sample, PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext c
+  congr 1 with c : 1
   simp only [Function.comp_apply]
   rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized]
   rfl

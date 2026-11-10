@@ -38,7 +38,7 @@ weak one-way function (`Cslib.Crypto.WeakOneWay`), and therefore by Yao's hardne
 **Model note ($t(n) \ge n + 1$ sufficient clock hypothesis vs. $t(n) > 0$):**
 In [Liu and Pass, Fact 2.1, §2.2, p. 8; Theorem 3.1 (b), §3, p. 9; Theorem 4.1, §4, p. 10 of
 `arXiv:2009.11514v1`][LiuPass2020], the time bound is stated as $t(n) > 0$ under a machine model in
-which outputting an $n$-bit string takes at least $1$ step. Under `complexitylib`'s multi-tape
+which outputting an $n$-bit string takes at least $1$ step. Under cslib-frontier's multi-tape
 Turing machine output convention (`DescriptionMethod.universalTM`), the literal/copy program bound
 supplies a program that prints each $n$-bit string within $n + 1$ steps
 (`Kolmogorov.timeBoundedNat_le_length_add`). This module assumes `∀ n, n + 1 ≤ t n` so that bound

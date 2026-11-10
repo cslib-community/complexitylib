@@ -44,7 +44,7 @@ magnitude is imposed.
   [ThresholdCircuitRepresentations2026]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.WeightedThreshold
 

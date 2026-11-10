@@ -95,8 +95,7 @@ theorem ComputableInPolyTimeWithOracle.of_polyTimeReducible {A B : Set (List Boo
     rw [hH, OracleComp.run_interpret_lift, Functor.map_map]
     simp only [G, OracleComp.interpret_map, OracleComp.interpret_query, id_map', id]
   · rw [OracleComp.interpret_interpret, ← hprogram a]
-    congr 1
-    funext q
+    congr 1 with q : 1
     simp only [G, OracleComp.interpret_map, OracleComp.interpret_query, languageOracle_apply]
     rw [show decide (g q.2 ∈ B) = decide (q.2 ∈ A) from decide_eq_decide.mpr (hgAB q.2).symm]
     rfl

@@ -253,6 +253,32 @@ private theorem testBit_ne_of_min_highestDiff {n w q : ℕ} {keys : Fin n → �
   have heq : highestDiff w (keys i) q = highestDiff w (keys j) q := by grind
   simpa only [heq] using (highestDiff_spec (hbound i) hq (hmiss i)).2.1
 
+/-- Outside the prefix block of the longest-prefix key `j`, a key compares with the query as its
+sketch compares with that of any word `r` in the block, for both inclusive and strict order. -/
+private theorem le_iff_sketch_le_and_lt_of_prefix_ne {n w q cut r : ℕ} {keys : Fin n → ℕ}
+    (hsorted : StrictMono keys) (hbound : ∀ i, keys i < 2 ^ w) {i j : Fin n}
+    (hjprefix : keys j >>> cut = q >>> cut) (hr : r >>> cut = q >>> cut)
+    (hiprefix : keys i >>> cut ≠ q >>> cut) :
+    (keys i ≤ q ↔ sketch (relevantBits w keys) (keys i) ≤ sketch (relevantBits w keys) r) ∧
+      (keys i ≤ q ↔ sketch (relevantBits w keys) (keys i) < sketch (relevantBits w keys) r) := by
+  have hiboundary : keys i >>> cut ≠ r >>> cut := by rwa [hr]
+  rcases lt_or_gt_of_ne (fun h : i = j => hiprefix (h ▸ hjprefix)) with hij | hji
+  · have hshift : keys i >>> cut < q >>> cut := by
+      rw [← hjprefix]
+      exact (Nat.lt_iff_shiftRight_lt_of_ne (fun h => hiprefix (h.trans hjprefix))).mp
+        (hsorted hij)
+    have hlt : keys i < q := (Nat.lt_iff_shiftRight_lt_of_ne hiprefix).mpr hshift
+    have hslt := sketch_lt_query_of_prefix hsorted hbound hij (hjprefix.trans hr.symm) hiboundary
+    exact ⟨iff_of_true hlt.le hslt.le, iff_of_true hlt.le hslt⟩
+  · have hshift : q >>> cut < keys i >>> cut := by
+      rw [← hjprefix]
+      exact (Nat.lt_iff_shiftRight_lt_of_ne (fun h => hiprefix (h.symm.trans hjprefix))).mp
+        (hsorted hji)
+    have hlt : q < keys i := (Nat.lt_iff_shiftRight_lt_of_ne (Ne.symm hiprefix)).mpr hshift
+    have hslt := query_lt_sketch_of_prefix hsorted hbound hji (hjprefix.trans hr.symm) hiboundary
+    exact ⟨iff_of_false (not_le_of_gt hlt) (not_le_of_gt hslt),
+      iff_of_false (not_le_of_gt hlt) (not_lt_of_ge hslt.le)⟩
+
 /-- If the query takes the one branch at its first divergence from a longest-prefix key,
 the true inclusive comparison equals the inclusive sketch comparison at the lower boundary. -/
 private theorem le_iff_sketch_le_lowerBoundary {n w q : ℕ} {keys : Fin n → ℕ}
@@ -271,27 +297,8 @@ private theorem le_iff_sketch_le_lowerBoundary {n w q : ℕ} {keys : Fin n → �
     have hlt : keys i < q := Nat.lt_of_testBit p hi hbit
       (fun b hb => Nat.testBit_eq_of_shiftRight_eq hiprefix (by omega))
     exact iff_of_true hlt.le (sketch_le_lowerBoundary hiprefix hi)
-  · have hiboundary : keys i >>> (p + 1) ≠ lowerBoundary q p >>> (p + 1) := by
-      rwa [(boundary_prefix q p).1]
-    rcases lt_trichotomy i j with hij | rfl | hji
-    · have hshift : keys i >>> (p + 1) < q >>> (p + 1) := by
-        rw [← hjprefix]
-        exact (Nat.lt_iff_shiftRight_lt_of_ne (fun h => hiprefix (h.trans hjprefix))).mp
-          (hsorted hij)
-      have hlt : keys i < q := (Nat.lt_iff_shiftRight_lt_of_ne hiprefix).mpr hshift
-      have hslt := sketch_lt_query_of_prefix hsorted hbound hij
-        (hjprefix.trans (boundary_prefix q p).1.symm) hiboundary
-      exact iff_of_true hlt.le hslt.le
-    · exact False.elim (hiprefix hjprefix)
-    · have hshift : q >>> (p + 1) < keys i >>> (p + 1) := by
-        rw [← hjprefix]
-        exact (Nat.lt_iff_shiftRight_lt_of_ne (fun h => hiprefix (h.symm.trans hjprefix))).mp
-          (hsorted hji)
-      have hlt : q < keys i :=
-        (Nat.lt_iff_shiftRight_lt_of_ne (Ne.symm hiprefix)).mpr hshift
-      have hslt := query_lt_sketch_of_prefix hsorted hbound hji
-        (hjprefix.trans (boundary_prefix q p).1.symm) hiboundary
-      exact iff_of_false (not_le_of_gt hlt) (not_le_of_gt hslt)
+  · exact (le_iff_sketch_le_and_lt_of_prefix_ne hsorted hbound hjprefix
+      (boundary_prefix q p).1 hiprefix).1
 
 /-- If the query takes the zero branch at its first divergence from a longest-prefix key,
 the true inclusive comparison equals the strict sketch comparison at the upper boundary. -/
@@ -312,27 +319,8 @@ private theorem le_iff_sketch_lt_upperBoundary {n w q : ℕ} {keys : Fin n → �
       (fun b hb => (Nat.testBit_eq_of_shiftRight_eq hiprefix (by omega)).symm)
     exact iff_of_false (not_le_of_gt hlt)
       (not_lt_of_ge (upperBoundary_le_sketch hiprefix hi))
-  · have hiboundary : keys i >>> (p + 1) ≠ upperBoundary q p >>> (p + 1) := by
-      rwa [(boundary_prefix q p).2]
-    rcases lt_trichotomy i j with hij | rfl | hji
-    · have hshift : keys i >>> (p + 1) < q >>> (p + 1) := by
-        rw [← hjprefix]
-        exact (Nat.lt_iff_shiftRight_lt_of_ne (fun h => hiprefix (h.trans hjprefix))).mp
-          (hsorted hij)
-      have hlt : keys i < q := (Nat.lt_iff_shiftRight_lt_of_ne hiprefix).mpr hshift
-      have hslt := sketch_lt_query_of_prefix hsorted hbound hij
-        (hjprefix.trans (boundary_prefix q p).2.symm) hiboundary
-      exact iff_of_true hlt.le hslt
-    · exact False.elim (hiprefix hjprefix)
-    · have hshift : q >>> (p + 1) < keys i >>> (p + 1) := by
-        rw [← hjprefix]
-        exact (Nat.lt_iff_shiftRight_lt_of_ne (fun h => hiprefix (h.symm.trans hjprefix))).mp
-          (hsorted hji)
-      have hlt : q < keys i :=
-        (Nat.lt_iff_shiftRight_lt_of_ne (Ne.symm hiprefix)).mpr hshift
-      have hslt := query_lt_sketch_of_prefix hsorted hbound hji
-        (hjprefix.trans (boundary_prefix q p).2.symm) hiboundary
-      exact iff_of_false (not_le_of_gt hlt) (not_lt_of_ge hslt.le)
+  · exact (le_iff_sketch_le_and_lt_of_prefix_ne hsorted hbound hjprefix
+      (boundary_prefix q p).2 hiprefix).2
 
 /-- The second sketch query, with the comparison convention determined by the divergence bit. -/
 def boundaryRank {n : ℕ} (w : ℕ) (keys : Fin n → ℕ) (q : ℕ) (j : Fin n) : ℕ :=

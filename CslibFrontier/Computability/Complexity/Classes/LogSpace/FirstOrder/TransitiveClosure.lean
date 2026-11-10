@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Logics.FirstOrder.Ordered.TransitiveClosure
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step
 
 /-!
 # FO(TC) model checking in nondeterministic logarithmic space
@@ -30,7 +31,8 @@ because NL is closed under complementation ([Immerman1988], Corollary 3; [Szelep
 Here both polarities are compiled directly. A closure at polarity `true` is evaluated by a
 bounded guessed path. A closure at polarity `false` (under an odd number of negations, counted
 afresh inside each closure body) is evaluated by an inductive-counting block whose tests run the
-compiled body at both polarities. The converse inclusion NL ⊆ FO(TC) remains open.
+compiled body at both polarities. The converse inclusion NL ⊆ FO(positive TC), and with it
+FO(TC) = NL, is in `Classes.LogSpace.FirstOrder.TransitiveClosure.Converse`.
 
 ## Main definitions
 
@@ -273,18 +275,8 @@ theorem correct_op (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type} (k : �
     intro us ws t regs₃ hmid
     obtain ⟨⟨hk, hlen, hu, -⟩, hw⟩ := hmid
     rw [hcl]
-    exact ih (by rw [hΓ]; rfl) true hWb _ _ (Sum.elim val (TC.pair us ws))
-      (RelEnv.empty.append ρ) _ _ regs₃ (tcCode_parts hP').2.2.2.2.2.2.1 (by omega)
-      (fun x => by
-        cases x with
-        | inl x => have := hfv x; simp only [Sum.elim_inl]; omega
-        | inr i => have : (i : ℕ) < 2 * k := i.isLt; simp only [Sum.elim_inr]; omega)
-      (by rw [hk.1]; omega) ((hk.2.1 0 hbase).trans h0)
-      (fun x => by
-        cases x with
-        | inl x => simp only [Sum.elim_inl]; exact (hk.2.1 _ (hfv x)).trans (hv x)
-        | inr i => exact getD_pair hu hw i)
-      hk.2.2
+    exact body_correct ih hΓ hWb hbase hfv h0 hv (fun _ _ => Iff.rfl) le_rfl (by omega) true
+      (tcCode_parts hP').2.2.2.2.2.2.1 hk (by rw [hk.1]; omega) hu hw
   obtain ⟨regsI, hrI, hinvI⟩ := loop_init (w := encStructure a) hP' (by omega)
     hE.card_le hregs hsrc
   refine ⟨Sound.of_oblivious hE.one_le hrI ?_, fun hsat => Complete.of_oblivious hrI ?_⟩
@@ -422,9 +414,7 @@ theorem allBranches_decider {φ : Formula (language L) TC.shape [] Empty}
         ⟨fun fv base val => ModelChecker.atomicCompiler_correct hwf fv base val, hB1, hnB,
           by rw [hrej]; rfl, fun s hs h => by simp [hs, hrej] at h⟩
       refine Sound.of_oblivious hB1 (l' := 5 + 6 * v.count) (regs' := regs₁) ?_ ?_
-      · refine Reaches.slt hguard (Nat.zero_le _) hB₁ ?_
-        rw [ite_eq_right (by simp only [Expr.eval_reg, Expr.eval_const, h0₁ hwf]; omega)]
-        exact Reaches.refl _
+      · cp_step [h0₁ hwf]
       have hC := correct hE φ rfl true hwidth (fun e : Empty => e.elim) 3 Empty.elim
         RelEnv.empty (5 + 6 * v.count) (5 + 6 * v.count + len φ true) regs₁ hcomp (by decide)
         (fun e => e.elim) (by rw [hlen₁]; simp) (h0₁ hwf) (fun e => e.elim) hB₁
@@ -434,9 +424,7 @@ theorem allBranches_decider {φ : Formula (language L) TC.shape [] Empty}
         ⟨hwf, hn, (hφ (decoded v a hn)).mpr hsat⟩)
     · refine Sound.of_oblivious hB1 (l' := 6 + 6 * v.count + len φ true) (regs' := regs₁) ?_
         (hreject regs₁ hB₁)
-      refine Reaches.slt hguard (Nat.zero_le _) hB₁ ?_
-      rw [ite_eq_left (by simp only [Expr.eval_reg, Expr.eval_const, h0₁ hwf]; omega)]
-      exact Reaches.refl _
+      cp_step [h0₁ hwf]
   · rw [ite_eq_right hwf]
     exact hreject regs₁ hB₁
 
@@ -470,9 +458,7 @@ theorem accepts_decider {φ : Formula (language L) TC.shape [] Empty}
   have hguardStep : (decider v φ).Reaches (encStructure a)
       ((decider v φ).Oblivious (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ)))
       (4 + 6 * v.count, 0 :: regs₁) (5 + 6 * v.count, 0 :: regs₁) := by
-    refine Reaches.slt hguard (Nat.zero_le _) hB₁ ?_
-    rw [ite_eq_right (by simp only [Expr.eval_reg, Expr.eval_const, h0₁ hwf]; omega)]
-    exact Reaches.refl _
+    cp_step [h0₁ hwf]
   obtain ⟨regs', -, hbr⟩ := Complete.of_reaches hshape hreach₁
     (Complete.of_oblivious hguardStep (hC.2 ((hφ (decoded v a hn)).mp hK)))
   obtain ⟨c', hc'⟩ := hbr false

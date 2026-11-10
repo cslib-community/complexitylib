@@ -129,12 +129,6 @@ private theorem foldlAll {α : Type} (test : α → Bool) (list : List α) (init
   | nil => simp
   | cons a list ih => simp [ih, Bool.and_assoc]
 
-private theorem foldlReverse {α : Type} (word acc : List α) :
-    word.foldl (fun reversed bit => bit :: reversed) acc = word.reverse ++ acc := by
-  induction word generalizing acc with
-  | nil => simp
-  | cons bit word ih => simp [ih, List.reverse_cons, List.append_assoc]
-
 /-- Appending mapped elements in a left fold retains the initial output prefix. -/
 theorem foldlMap {α β : Type} (f : α → β) (list : List α) (acc : List β) :
     list.foldl (fun mapped value => mapped ++ [f value]) acc = acc ++ list.map f := by
@@ -189,11 +183,11 @@ theorem bitsReverse : ComputableInPolyTime List.reverse encBits encBits := by
       simp only [encBits_apply, Nat.pow_one, Nat.one_mul]
       omega) (by
       intro word i _
-      rw [foldlReverse]
+      rw [List.foldl_flip_cons_eq_append']
       simp only [encBits_apply, List.length_append, List.length_reverse,
         List.length_take, List.length_nil, Nat.add_zero]
       exact Nat.min_le_right _ _)
-  simpa only [foldlReverse, List.append_nil, id_eq] using hfold
+  simpa only [List.foldl_flip_cons_eq_append', List.append_nil, id_eq] using hfold
 
 /-- Drop one symbol of an arbitrary word, reusing the existing word-codec machine. -/
 @[fun_prop]
@@ -362,14 +356,14 @@ theorem listReverseWithInput {γ α : Type} {encIn : γ ↪ List Bool} {encA : �
       (step := fun reversed value => value :: reversed) (init := fun _ => []) id' (const [])
       (cons' (snd (encList encA) encA) (fst (encList encA) encA))
       (B := fun l => (encList encA l).length) .self (fun l i _ => by
-        rw [foldlReverse]
+        rw [List.foldl_flip_cons_eq_append']
         simp only [List.append_nil]
         have hp := (List.reverse_perm (l.take i)).flatMap_right (Turing.MultiTapeTM.frame ∘ encA)
         change (((l.take i).reverse).flatMap (Turing.MultiTapeTM.frame ∘ encA)).length ≤
           (l.flatMap (Turing.MultiTapeTM.frame ∘ encA)).length
         rw [hp.length_eq]
         exact ((List.take_sublist i l).flatMap (Turing.MultiTapeTM.frame ∘ encA)).length_le)
-    simpa only [foldlReverse, List.append_nil, id_eq] using hfold
+    simpa only [List.foldl_flip_cons_eq_append', List.append_nil, id_eq] using hfold
   exact hreverse.comp hlist
 
 /-- Enumerate `0, …, n a - 1` for a computed unary bound, fixing the intermediate encoding. -/

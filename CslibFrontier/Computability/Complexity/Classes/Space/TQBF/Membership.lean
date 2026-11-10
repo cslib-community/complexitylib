@@ -339,10 +339,6 @@ theorem length_encState_le {φ : QBF ℕ} {s : State} (h : Good φ s) :
 
 /-! ### The evaluator in polynomial space -/
 
-/-- `x ^ a ≤ x ^ b` for `1 ≤ x` and `a ≤ b`. -/
-private theorem pow_le_pow_of_le {x a b : ℕ} (hx : 1 ≤ x) (hab : a ≤ b) : x ^ a ≤ x ^ b :=
-  Nat.pow_le_pow_right hx hab
-
 /-- **The evaluator in polynomial space.** On a formula whose encoding has length `L`, the
 evaluator is computable within time `O(2 ^ L * (L + 1) ^ e)` and space `O((L + 1) ^ e)`, for
 some fixed `e`. The space charges the input, the stack of at most `L` frames, each storing a token
@@ -381,14 +377,13 @@ theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF enc
       calc (16 * (L + 1) ^ 2 + 1) ^ a ≤ (17 * (L + 1) ^ 2) ^ a :=
             Nat.pow_le_pow_left (by linarith only [Nat.one_le_pow 2 (L + 1) hP]) a
         _ = 17 ^ a * (L + 1) ^ (2 * a) := by rw [Nat.mul_pow, ← pow_mul]
-        _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (pow_le_pow_of_le hP (by omega))
+        _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hP (by omega))
     have hR := hpow d (by omega)
     have hA : ((encState s).length + 1) ^ d₁ ≤ 17 ^ d₁ * (L + 1) ^ E :=
       (Nat.pow_le_pow_left (by omega) d₁).trans (hpow d₁ (by omega))
-    have hM1 : L + 1 ≤ (L + 1) ^ E := by
-      simpa using pow_le_pow_of_le hP (show 1 ≤ E by omega)
-    have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
-    have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
+    have hM1 : L + 1 ≤ (L + 1) ^ E := Nat.le_self_pow (by omega) _
+    have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := Nat.pow_le_pow_right hP (by omega)
+    have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := Nat.pow_le_pow_right hP (by omega)
     have hK : 17 ^ d ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
     have hK₁ : 17 ^ d₁ ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
     have hN : 1 ≤ 2 ^ L := Nat.one_le_two_pow

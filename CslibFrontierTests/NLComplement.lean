@@ -12,6 +12,8 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 namespace CslibFrontierTests.NLComplement
 
 open Turing Turing.MultiTapeTM Turing.InductiveCounting
+open Turing.MultiTapeNTM.ConfigurationGraph (startRadix roundRadix roundRadix_zero
+  le_startRadix card_lt_startRadix)
 
 /-- Concrete finite query models instantiate every hypothesis of the new native compiler. -/
 private theorem finite_query_native {σ : Type} [Finite σ]
@@ -25,8 +27,9 @@ private theorem finite_query_native {σ : Type} [Finite σ]
     (ComputableInSpace.of_finite _)
     (ComputableInSpace.of_finite _)
     (ComputableInSpace.of_finite _)
-    (fun _ => time) hhalt hcorrect
+    (fun _ => M.init) (fun _ => time) hhalt hcorrect
     (fun input : List Bool => Nat.log2 input.length + 1) (fun _ => le_rfl)
+    ((ComputableInSpace.constZero _).mono_le fun _ => Nat.zero_le _)
   refine ⟨Nat.card σ, fun input choices => ?_⟩
   exact (length_encFinite_lt (M.run input choices)).le.trans
     (Nat.le_mul_of_pos_right _ (Nat.succ_pos _))

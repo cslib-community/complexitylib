@@ -50,8 +50,7 @@ private noncomputable def handler (q : Bool × List Bool) : StateT ℕ PMF (List
   fun s => PMF.pure ([q.1], s + 1)
 
 private noncomputable def observe (p : WordOracleComp Bool (List Bool)) (s : ℕ) :=
-  (OracleComp.interpret
-    (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler) p).run s
+  ProbOracleComp.runWith handler p s
 
 -- An actual uniform two-step oracle machine has a certified replay and a joint-law decomposition.
 -- The empty ordinary input still permits a query and a stateful reply.

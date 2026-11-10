@@ -59,7 +59,9 @@ separate.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.factorCoeffs`: the parity factor in `B_{P,ℓ}`.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.rowEntry`, `colEntry`: the group entries.
 * `Cslib.Circuits.Frontier.IncidenceNetwork.incEntry`: the entry procedure.
-* `Cslib.Circuits.Frontier.IncidenceNetwork.encDesc`: the encoding of the descriptors.
+* `Cslib.Circuits.Frontier.IncidenceNetwork.encIncidences`,
+  `Cslib.Circuits.Frontier.IncidenceNetwork.encDesc`: the encodings of incidences and of the
+  descriptors.
 
 ## References
 
@@ -199,8 +201,12 @@ variables selected by no incidence. -/
 
 /-! ### Encoding -/
 
-/-- The encoding of a block: its incidences in binary and its selected number in unary. -/
-abbrev encBlock : Block ↪ List Bool := encPair (encList (encPair encNat encNat)) encUnary
+/-- The encoding of a list of incidences `(t, v)`, each the position `t` of a test in its group
+and a variable `v` of its scope: the framed pairs, both numbers in binary. -/
+abbrev encIncidences : List (ℕ × ℕ) ↪ List Bool := encList (encPair encNat encNat)
+
+/-- The encoding of a block: its incidences (`encIncidences`) and its selected number in unary. -/
+abbrev encBlock : Block ↪ List Bool := encPair encIncidences encUnary
 
 /-- The encoding of a row descriptor: `P` and `ℓ` in unary, then the tests and the blocks. -/
 abbrev encRowDesc : RowDesc ↪ List Bool :=

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Conservative affected-client checks; never a replacement for the six validation gates."""
+"""Conservative affected-client checks; never a replacement for the full check."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import argparse
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 import json
-import os
 from pathlib import Path
 import re
 import subprocess
@@ -20,15 +19,28 @@ class FullCheck(Exception):
     """The change cannot safely use the bounded quick-check path."""
 
 
+ENCODING_RATCHET = (
+    "encoding readability ratchet",
+    [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", "{base}"])
+
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
-# to one runs that check (with `{base}`, the merge base) instead of falling back to all six gates.
+# to one runs that check (with `{base}`, the merge base) instead of falling back to the full check.
 # Any other non-Lean change, including every Python change under `scripts/`, still falls back.
 DATA_CHECKS = {
     # Read only by its ratchet, which needs no build (`.github/workflows/lean_action_ci.yml`).
-    "scripts/encoding_readability_baseline.json": (
-        "encoding readability ratchet",
-        [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", "{base}"]),
+    "scripts/encoding_readability_baseline.json": ENCODING_RATCHET,
 }
+
+# The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the
+# files under these roots (its default selection), the encoding ratchet the modules under
+# `ENCODING_ROOT`. Each takes seconds; the post-build audits need whole-library outputs that quick
+# mode does not build, so they stay in the full check.
+HYGIENE_ROOTS = ("CslibFrontier/", "CslibFrontierTests/")
+ENCODING_ROOT = "CslibFrontier/"
+
+
+# `lake lint` runs this driver; quick mode passes it flags that only Batteries' runLinter accepts.
+LINT_DRIVER = "batteries/runLinter"
 
 
 @dataclass
@@ -36,6 +48,7 @@ class Plan:
     base: str
     targets: list[str]
     checks: list[tuple[str, list[str]]] = field(default_factory=list)  # (label, command)
+    lint: dict[str, list[str]] = field(default_factory=dict)  # lint target -> modules it checks
 
 
 @dataclass
@@ -73,7 +86,7 @@ def imports_from_lean(root: Path, paths: list[str]) -> dict[str, list[str]]:
         raise FullCheck(f"invalid native header-parser response: {error}") from error
 
 
-def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str], set[str]]:
+def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str]]:
     if (root / "lakefile.lean").exists():
         raise FullCheck("dynamic Lake configuration is outside quick-check scope")
     try:
@@ -89,17 +102,10 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str], set[
     physical_sources: set[Path] = set()
     aggregates: set[str] = set()
     roots: set[str] = set()
-    on_demand: set[str] = set()
-    allowed = {"name", "srcDir", "leanOptions", "allowNonModules", "roots", "globs",
-               "defaultFacets"}
+    allowed = {"name", "srcDir", "leanOptions", "allowNonModules", "roots", "globs"}
     for library in libraries:
         if not isinstance(library, dict) or set(library) - allowed:
             raise FullCheck("custom Lake library options need full checks")
-        # Lake reads `defaultFacets` only for a bare build of the library target; `[]` makes that
-        # build nothing. Module targets, which quick mode builds explicitly, are unaffected.
-        on_demand_library = "defaultFacets" in library
-        if on_demand_library and library["defaultFacets"] != []:
-            raise FullCheck("custom Lake library default facets need full checks")
         name = library.get("name", "")
         if not re.fullmatch(r"[A-Za-z_][A-Za-z_0-9]*(\.[A-Za-z_][A-Za-z_0-9]*)*", name):
             raise FullCheck("unsupported library name")
@@ -116,11 +122,6 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str], set[
             raise FullCheck("custom Lake library roots/globs need full checks")
         if globbed and aggregator.exists():
             raise FullCheck(f"glob library {name} also has an aggregator file")
-        if on_demand_library and globbed and not os.path.lexists(directory):
-            # Sources generated on demand (comparator challenges) may be absent. The root stays
-            # registered, so importing one of its modules is a missing local import below.
-            roots.add(name)
-            continue
         if (not globbed and not aggregator.is_file()) or not directory.is_dir():
             raise FullCheck(f"missing library root {name}")
         # rglob does not descend through directory symlinks: reject them explicitly,
@@ -143,9 +144,7 @@ def source_modules(root: Path) -> tuple[dict[str, str], set[str], set[str], set[
                 raise FullCheck("overlapping library source paths need full checks")
             physical_sources.add(path.resolve())
             modules[module] = path.relative_to(root).as_posix()
-            if on_demand_library:
-                on_demand.add(module)
-    return modules, aggregates, roots, on_demand
+    return modules, aggregates, roots
 
 
 def executable_sources(root: Path) -> list[Executable]:
@@ -179,6 +178,44 @@ def executable_sources(root: Path) -> list[Executable]:
     return sources
 
 
+def lint_scope(root: Path, aggregates: set[str], affected: set[str],
+               reverse: dict[str, set[str]]) -> dict[str, list[str]]:
+    """The fewest modules to lint the affected modules through, each with the modules it checks.
+
+    `lake lint` runs the linters on the modules of the default-target libraries. A change can make
+    an argument of an importing client unused, so every affected module of those libraries is
+    listed, not only the changed ones. Linting a module covers the declarations of its package
+    (first name component) throughout its import closure; a module with no affected importer in
+    its own package is therefore linted directly, and covers every listed module it imports. Each
+    listed module is assigned to one such target above it, so no declaration is linted twice.
+    """
+    config = tomllib.loads((root / "lakefile.toml").read_text())
+    driver = config.get("lintDriver")
+    if driver is None:
+        return {}  # No lint gate is configured.
+    if driver != LINT_DRIVER:
+        raise FullCheck(f"lint driver {driver!r} is outside quick-check scope")
+    defaults = config.get("defaultTargets", [])
+    if not isinstance(defaults, list) or any(not isinstance(name, str) for name in defaults):
+        raise FullCheck("invalid default targets")
+    listed = {module for module in affected - aggregates
+              if any(module.startswith(name + ".") for name in defaults)}
+    package = lambda module: module.split(".")[0]
+    above = {module: {consumer for consumer in reverse[module]
+                      if consumer in listed and package(consumer) == package(module)}
+             for module in listed}
+    lint: dict[str, list[str]] = {module: [] for module in listed if not above[module]}
+    for module in sorted(listed):
+        # Every listed importer chain in the package ends at a target, which imports `module`.
+        reached, queue = {module}, deque([module])
+        while queue:
+            for consumer in above[queue.popleft()] - reached:
+                reached.add(consumer)
+                queue.append(consumer)
+        lint[min(reached & lint.keys())].append(module)
+    return dict(sorted(lint.items()))
+
+
 def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     if git(root, "ls-files", "--unmerged", "-z"):
         raise FullCheck("unresolved merge entries")
@@ -201,12 +238,17 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     checks = [(label, [base if part == "{base}" else part for part in command])
               for path, (label, command) in DATA_CHECKS.items() if path in {p for _, p in changes}]
     changes = [(status, path) for status, path in changes if path not in DATA_CHECKS]
-    modules, aggregates, roots, on_demand = source_modules(root)
+    hygiene = sorted(path for _, path in changes if path.startswith(HYGIENE_ROOTS))
+    if hygiene:
+        checks.insert(0, ("source hygiene (changed files)",
+                          [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp",
+                           "--", *hygiene]))
+    ratchet = (ENCODING_RATCHET[0], [base if part == "{base}" else part
+                                     for part in ENCODING_RATCHET[1]])
+    if ratchet not in checks and any(path.startswith(ENCODING_ROOT) for _, path in changes):
+        checks.append(ratchet)
+    modules, aggregates, roots = source_modules(root)
     visible = set(git(root, "ls-files", "-z").split("\0")) | {p for _, p in changes}
-    # Ignored sources of a library with empty default facets are generated inputs, such as the
-    # comparator challenges with their deliberate `sorry`. No gate builds them unless a module
-    # imports them, and such an import is a missing local import below.
-    modules = {m: p for m, p in modules.items() if m not in on_demand or p in visible}
     by_path = {path: module for module, path in modules.items()}
     if set(by_path) - visible:
         raise FullCheck("ignored local Lean source has no reliable Git change record")
@@ -214,6 +256,9 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
     for _, path in changes:
         if path not in by_path:
             raise FullCheck(f"changed Lean source outside known libraries: {path}")
+        # runLinter's `--only-modules` is unsound when a linter itself changes.
+        if "env_linter" in (root / path).read_text(errors="replace"):
+            raise FullCheck(f"changed source mentions a linter: {path}")
         changed.add(by_path[path])
     if changed & aggregates:
         raise FullCheck("a library import aggregate changed")
@@ -249,11 +294,12 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 affected.add(consumer)
                 queue.append(consumer)
     # Traverse aggregates above: a real client importing one must never disappear from the plan.
-    return Plan(base, sorted((affected - aggregates) | executable_targets), checks)
+    return Plan(base, sorted((affected - aggregates) | executable_targets), checks,
+                lint_scope(root, aggregates, affected, reverse))
 
 
 def run_check(root: Path, command: list[str], label: str) -> int:
-    with tempfile.NamedTemporaryFile(prefix="complexitylib-quick-", suffix=".log", delete=False) as log:
+    with tempfile.NamedTemporaryFile(prefix="cslib-frontier-quick-", suffix=".log", delete=False) as log:
         path = Path(log.name)
         try:
             result = subprocess.run(command, cwd=root, stdout=log, stderr=subprocess.STDOUT)
@@ -278,11 +324,13 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
     try:
         plan = make_plan(root, options.base)
     except (FullCheck, OSError, ValueError, TypeError) as error:
-        print(f"Quick check falls back to all six gates: {error}", flush=True)
-        return subprocess.run([str(root / "scripts/check.sh")], cwd=root).returncode
+        print(f"Quick check falls back to the full check: {error}", flush=True)
+        return subprocess.run([str(root / "scripts/check.sh"), "--base", options.base],
+                              cwd=root).returncode
     print(f"Quick check against merge base {plan.base}; {len(plan.targets)} affected build targets.",
           flush=True)
-    print("This is not full validation: global test, lint, style and init-import gates are skipped.", flush=True)
+    print("This is not full validation: lint covers only the affected library modules, and the "
+          "test, style, init-import gates and post-build audits are skipped.", flush=True)
     for label, command in plan.checks:
         status = run_check(root, command, label)
         if status:
@@ -298,7 +346,32 @@ def main(argv: list[str] | None = None, root: Path | None = None) -> int:
         status = run_check(root, ["lake", "build", "--wfail", "--iofail", *batch], "affected modules and clients")
         if status:
             return status
+    status = run_lint(root, plan)
+    if status:
+        return status
     return run_check(root, ["lake", "exe", "mk_all", "--check"], "mk_all --check")
+
+
+def run_lint(root: Path, plan: Plan) -> int:
+    """Lint the affected library modules, as `lake lint` would, after the build has made them.
+
+    Each target gets its own runLinter process: one process importing several environments keeps
+    each one's oleans in memory, growing by gigabytes per target. Every target runs, so one pass
+    reports all failures; each module is checked through exactly one target.
+    """
+    if not plan.lint:
+        return 0
+    print(f"Linting {sum(map(len, plan.lint.values()))} affected library modules through "
+          f"{len(plan.lint)} modules, one process each.", flush=True)
+    failed = 0
+    with tempfile.TemporaryDirectory(prefix="cslib-frontier-lint-") as directory:
+        for index, (target, modules) in enumerate(plan.lint.items()):
+            listing = Path(directory) / f"{index}.txt"
+            listing.write_text("".join(module + "\n" for module in modules))
+            status = run_check(root, ["lake", "lint", "--", "--no-build",
+                                      f"--only-modules={listing}", target], f"lint {target}")
+            failed = failed or status
+    return failed
 
 
 if __name__ == "__main__":

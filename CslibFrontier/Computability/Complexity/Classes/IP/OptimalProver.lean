@@ -286,6 +286,25 @@ private theorem acceptFrom_after_eq (P : Prover Unit) (s : P.State) (p : WordQue
     simp only [ite_true]
     exact acceptFrom_query_bind P s m next
 
+omit [Fintype R] in
+/-- With no rounds left (`D ≤ h.length`), a program of a bounded family sends no further message,
+so a prover makes it accept exactly when it has already accepted. -/
+private theorem acceptFrom_after_of_le (hF : IsBounded F D L) (P : Prover Unit) (s : P.State)
+    (r : R) {h : History} (hD : D ≤ h.length) :
+    acceptFrom P s (after (F r) h) = if outcome (F r) h = .done true then 1 else 0 := by
+  rw [acceptFrom_after_eq P s (F r) h (fun m hm => hF.message r h m hm)]
+  have hnil : ∀ m, outcome (F r) h ≠ .ask m := fun m hm => by
+    have := hF.rounds r h m hm
+    lia
+  rw [Finset.sum_eq_zero fun m _ => ?_, add_zero]
+  refine tsum_eq_zero_iff.mpr fun ys => ?_
+  rw [after_append]
+  unfold outcome at hnil
+  rcases hah : after (F r) h with _ | ⟨b⟩ | ⟨q, next⟩
+  · simp
+  · simp
+  · exact (hnil q.2 (by rw [hah])).elim
+
 /-- **No prover beats the value**, from any history it is in and any of its states: the
 probabilities that `P` makes what remains of the programs accept sum to at most the value, when
 the programs have at most `n` rounds to go. -/
@@ -298,19 +317,8 @@ private theorem sum_acceptFrom_after_le (hF : IsBounded F D L) (P : Prover Unit)
     simp only [value, accepted]
     rw [Finset.card_filter, Nat.cast_sum]
     refine (Finset.sum_le_sum fun r _ => ?_)
-    rw [acceptFrom_after_eq P s (F r) h (fun m hm => hF.message r h m hm)]
-    have hnil : ∀ m, outcome (F r) h ≠ .ask m := fun m hm => by
-      have := hF.rounds r h m hm
-      lia
-    rw [Finset.sum_eq_zero fun m _ => ?_, add_zero]
-    · split_ifs <;> simp
-    · refine tsum_eq_zero_iff.mpr fun ys => ?_
-      rw [after_append]
-      unfold outcome at hnil
-      rcases hah : after (F r) h with _ | ⟨b⟩ | ⟨q, next⟩
-      · simp
-      · simp
-      · exact (hnil q.2 (by rw [hah])).elim
+    rw [acceptFrom_after_of_le hF P s r (by lia)]
+    split_ifs <;> simp
   | succ n ih =>
     simp only [Finset.sum_congr rfl fun r _ => acceptFrom_after_eq P s (F r) h
       (fun m hm => hF.message r h m hm), Finset.sum_add_distrib]
@@ -389,19 +397,8 @@ private theorem sum_acceptFrom_optimalProver_after (hF : IsBounded F D L) (n : �
     simp only [value, accepted]
     rw [Finset.card_filter, Nat.cast_sum]
     refine (Finset.sum_congr rfl fun r _ => ?_)
-    rw [acceptFrom_after_eq (optimalProver F L D) h (F r) h (fun m hm => hF.message r h m hm)]
-    have hnil : ∀ m, outcome (F r) h ≠ .ask m := fun m hm => by
-      have := hF.rounds r h m hm
-      lia
-    rw [Finset.sum_eq_zero fun m _ => ?_, add_zero]
-    · split_ifs <;> simp
-    · refine tsum_eq_zero_iff.mpr fun ys => ?_
-      rw [after_append]
-      unfold outcome at hnil
-      rcases hah : after (F r) h with _ | ⟨b⟩ | ⟨q, next⟩
-      · simp
-      · simp
-      · exact (hnil q.2 (by rw [hah])).elim
+    rw [acceptFrom_after_of_le hF (optimalProver F L D) h r (by lia)]
+    split_ifs <;> simp
   | succ n ih =>
     classical
     simp only [Finset.sum_congr rfl fun r _ => acceptFrom_after_eq (optimalProver F L D) h (F r) h

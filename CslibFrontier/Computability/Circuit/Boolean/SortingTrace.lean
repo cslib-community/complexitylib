@@ -169,8 +169,7 @@ private theorem eval_unchain {a b n r : ℕ} (first : Circuit signature (a * 2 +
       first.eval interpretation (pack (c ∘ Fin.castAdd b)
         (directProductInput (second.eval interpretation (pack (c ∘ Fin.natAdd a) x)))) := by
   simp only [unchain, Circuit.eval_comp, Circuit.eval_append, eval_select, Function.comp_id]
-  congr 1
-  funext i
+  congr 1 with i : 1
   cases i using Fin.addCases with
   | left i =>
     simp [Circuit.eval_wiringOn, layout, pack, flatten,

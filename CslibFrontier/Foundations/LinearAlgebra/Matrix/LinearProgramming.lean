@@ -25,7 +25,9 @@ ordered field `K`, the primal linear program in inequality form maximizes `c ⬝
 Fourier–Motzkin elimination (`Matrix.FourierMotzkin.exists_projection`) and Farkas' lemma
 (`Matrix.not_exists_mulVec_le_iff`), so they hold over every linearly ordered field, including
 `ℚ`. See also [DvorakKolmogorov2024] for an independent Lean 4 formalization of
-linear-programming duality over linearly ordered fields.
+linear-programming duality over linearly ordered fields. The closed `leanprover-community/mathlib4`
+pull requests 7386, 9693, 10026 and 10159 (opened 2023–24) take other approaches to linear
+programming; nothing here is copied from them or from [DvorakKolmogorov2024].
 
 ## Main results
 

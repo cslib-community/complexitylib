@@ -20,7 +20,7 @@ public import Mathlib.Data.List.OfFn
 * `Finset.ofFn_orderEmbOfFin`: values at its ordered positions form its sorted mapped list.
 -/
 
-@[expose] public section
+public section
 
 namespace Finset
 

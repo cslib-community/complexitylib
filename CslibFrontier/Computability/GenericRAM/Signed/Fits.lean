@@ -23,7 +23,7 @@ The envelope itself must fit: the asymmetric signed range still excludes its pos
 This elementary bound is original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.GenericRAM.Signed
 

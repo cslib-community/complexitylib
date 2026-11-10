@@ -249,8 +249,7 @@ theorem setOf_spaceDiagonal_notMem_DSPACE {f G : ℕ → ℕ} (hn : ∀ n, n ≤
       2 * (eDesc (desc eS eBit tm)).length + 1 + pad.length := by
     rw [List.length_append, length_frame]
   have hshort : shortDesc (frame (eDesc (desc eS eBit tm)) ++ pad) = true := by
-    rw [shortDesc, unframe_frame_append, hlen]
-    exact decide_eq_true (by omega)
+    grind [shortDesc, unframe_frame_append]
   generalize hx : frame (eDesc (desc eS eBit tm)) ++ pad = x at hlen hshort
   obtain ⟨⟨⟨h₁, h₂⟩, h₃⟩, h₄⟩ := hN x.length (by omega)
   have hrun := htm x

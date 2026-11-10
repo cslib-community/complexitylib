@@ -213,9 +213,7 @@ theorem exists_card_filter_le_eval {β : Type*} (eval : β → α → Bool)
     obtain ⟨x, hx⟩ := exists_card_le_sixteen_mul_eval eval hm hα hG fun g hg =>
       hmaj g fun i => (mem_filter.mp (hg i)).1
     have hsplit := card_filter_add_card_filter_not (s := G) (fun g => eval g x = f x)
-    have hstep : 16 * #{g ∈ G | eval g x = f x} ≤ 15 * #G := by
-      simp only [← ne_eq] at hsplit
-      omega
+    have hstep : 16 * #{g ∈ G | eval g x = f x} ≤ 15 * #G := by grind
     have key : 16 ^ (k + 1) * #{g ∈ G | eval g x = f x} ≤ 15 ^ (k + 1) * #F :=
       calc 16 ^ (k + 1) * #{g ∈ G | eval g x = f x} =
           16 ^ k * (16 * #{g ∈ G | eval g x = f x}) := by ring

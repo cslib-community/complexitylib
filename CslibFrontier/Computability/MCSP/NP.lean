@@ -327,6 +327,8 @@ theorem isVerifier : IsVerifier encInstance certPolynomial verifier MCSP := by
 
 open ComputableInPolyTime
 
+attribute [local irreducible] ComputableInPolyTime
+
 /-- The verifier on the bits of a truth table, a threshold and a certificate, with the number of
 inputs read from the length of the table: `MCSP.verifier` on raw data
 (`Cslib.MCSP.verifier_eq_tableVerifier`), defined on every list of bits. -/
@@ -517,10 +519,7 @@ theorem computableInPolyTime_checkCertificate_table {α : Type} {encT : List α 
     have hT_enc : 2 * T + 1 ≤ (encIn r).length := by
       have h1 := hlen_le r.1.1
       enc_len [encIn]
-    have hpow : 2 ^ Nat.log 2 T ≤ T + 1 := by
-      rcases Nat.eq_zero_or_pos T with h | h
-      · simp [h]
-      · exact (Nat.pow_log_le_self 2 h.ne').trans (Nat.le_succ T)
+    have hpow : 2 ^ Nat.log 2 T ≤ T + 1 := Nat.pow_log_le_add_one 2 T
     have hlog : 2 * Nat.log 2 T + 1 ≤ 2 * T + 1 := by
       have := Nat.log_le_self 2 T
       omega

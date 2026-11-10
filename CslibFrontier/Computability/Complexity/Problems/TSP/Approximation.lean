@@ -36,6 +36,8 @@ are); the bound does not need that. Entries outside the city range are irrelevan
 ## Main results
 
 * `approxTour_perm`: the tour visits every city exactly once.
+* `exists_map_val_eq_of_perm_range`: a permutation of the cities is a duplicate-free list of all
+  of `Fin n`, which transfers bounds stated for tours over `Fin n`.
 * `tourLength_approxTour_le_two_mul`: on metric matrices, the tour has length at most twice the
   length of any tour.
 * `tourLength_approxTour_le_two_mul_of_mem`: if `(D, b) ∈ TSP` with `D` metric, the tour has
@@ -84,28 +86,26 @@ theorem tourLength_map_val (D : List (List ℕ)) (q : List (Fin D.length)) :
 
 /-- **Feasibility.** The MST tour visits every city exactly once. -/
 theorem approxTour_perm (D : List (List ℕ)) : (approxTour D).Perm (List.range D.length) := by
-  refine (List.perm_ext_iff_of_nodup
-    (((mstTour_perm _).nodup_iff.2 (List.nodup_finRange _)).map Fin.val_injective)
-    List.nodup_range).2 fun x => ?_
-  simp only [List.mem_map, List.mem_range]
-  constructor
-  · rintro ⟨y, -, rfl⟩
-    exact y.isLt
-  · intro hx
-    exact ⟨⟨x, hx⟩, (mstTour_perm _).symm.subset (List.mem_finRange _), rfl⟩
+  rw [approxTour, ← List.map_coe_finRange_eq_range]
+  exact (mstTour_perm _).map Fin.val
+
+/-- A tour given as a permutation of the cities `0, …, n - 1` lists every element of `Fin n`
+exactly once. -/
+theorem exists_map_val_eq_of_perm_range {n : ℕ} {p : List ℕ} (hp : p.Perm (List.range n)) :
+    ∃ q : List (Fin n), q.map Fin.val = p ∧ q.Nodup ∧ ∀ x, x ∈ q := by
+  have hlt : ∀ x ∈ p, x < n := fun x hx => List.mem_range.1 (hp.subset hx)
+  obtain ⟨q, rfl⟩ : ∃ q : List (Fin n), q.map Fin.val = p :=
+    ⟨p.pmap Fin.mk hlt, by simp [List.map_pmap]⟩
+  refine ⟨q, rfl, (hp.nodup_iff.2 List.nodup_range).of_map _, fun x => ?_⟩
+  obtain ⟨y, hy, hyx⟩ := List.mem_map.1 (hp.symm.subset (List.mem_range.2 x.isLt))
+  exact Fin.ext hyx ▸ hy
 
 /-- **The 2-approximation for metric TSP** ([WilliamsonShmoys2011], Section 2.4): on a metric
 matrix, the MST tour has length at most twice the length of any tour, in particular an optimal
 one. -/
 theorem tourLength_approxTour_le_two_mul {D : List (List ℕ)} (hD : IsMetric D) {p : List ℕ}
     (hp : p.Perm (List.range D.length)) : tourLength D (approxTour D) ≤ 2 * tourLength D p := by
-  have hlt : ∀ x ∈ p, x < D.length := fun x hx => List.mem_range.1 (hp.subset hx)
-  obtain ⟨q, rfl⟩ : ∃ q : List (Fin D.length), q.map Fin.val = p :=
-    ⟨p.pmap Fin.mk hlt, by simp [List.map_pmap]⟩
-  have hq : q.Nodup := (hp.nodup_iff.2 List.nodup_range).of_map _
-  have hcov : ∀ x, x ∈ q := fun x => by
-    obtain ⟨y, hy, hyx⟩ := List.mem_map.1 (hp.symm.subset (List.mem_range.2 x.isLt))
-    exact Fin.ext hyx ▸ hy
+  obtain ⟨q, rfl, hq, hcov⟩ := exists_map_val_eq_of_perm_range hp
   rw [approxTour, tourLength_map_val, tourLength_map_val]
   exact cycleCost_mstTour_le_two_mul (fun x y => hD.symm x x.isLt y y.isLt)
     (fun x y z => hD.triangle x x.isLt y y.isLt z z.isLt) hq hcov

@@ -23,12 +23,10 @@ import tarfile
 import tempfile
 from urllib.parse import urlencode
 
-from check_abstract_ci import (
-    WORKFLOW_FILE, WORKFLOW_PATH, Rejected, gh_download_artifact, gh_get, positive, require,
-)
-
 
 ROOT = Path(__file__).resolve().parents[1]
+WORKFLOW_FILE = "lean_action_ci.yml"
+WORKFLOW_PATH = f".github/workflows/{WORKFLOW_FILE}"
 INPUTS = ("lean-toolchain", "lake-manifest.json", "lakefile.toml")
 # Payload bounds. On 2026-11-08 a full build was 101,848 files and 4.64 GB, packing to 1.67 GB;
 # the earlier bounds (100,000 files, 4 GiB, 1 GiB compressed) had silently disabled the handoff,
@@ -40,6 +38,42 @@ MAX_ARCHIVE_BYTES = 4 * 1024 ** 3
 MAX_METADATA_BYTES = 64 * 1024
 # Download budget for an archive of up to MAX_ARCHIVE_BYTES, inside the step's 10 minutes.
 DOWNLOAD_SECONDS = 420
+
+
+class Rejected(RuntimeError):
+    """The available evidence does not authorize reuse."""
+
+
+def gh_get(endpoint: str, *, paginate: bool = False):
+    command = [
+        "gh", "api", "--hostname", "github.com", "--method", "GET",
+        "-H", "Accept: application/vnd.github+json",
+        "-H", "X-GitHub-Api-Version: 2022-11-28", endpoint,
+    ]
+    if paginate:
+        command += ["--paginate", "--slurp"]
+    result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=60)
+    return json.loads(result.stdout)
+
+
+def gh_download_artifact(repository: str, run_id: int, artifact_name: str, destination: Path,
+                         timeout: int = 120) -> None:
+    command = [
+        "gh", "run", "download", str(run_id),
+        "--repo", repository,
+        "--name", artifact_name,
+        "--dir", str(destination),
+    ]
+    subprocess.run(command, check=True, capture_output=True, text=True, timeout=timeout)
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise Rejected(message)
+
+
+def positive(value) -> bool:
+    return type(value) is int and value > 0
 
 
 def digest(path: Path) -> str:

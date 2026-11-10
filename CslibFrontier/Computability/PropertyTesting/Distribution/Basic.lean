@@ -280,8 +280,7 @@ theorem acceptProb₂_bind_pi [Finite α] [Finite β] {k : ℕ} (F : α → PMF 
   rw [acceptProb₂_eq, acceptProb₂_eq, iid_bind, iid_bind]
   simp only [PMF.bind_bind]
   congr 2
-  congr 1
-  funext x
+  congr 1 with x : 1
   rw [PMF.bind_comm]
 
 /-- **Reduction along a randomized map.** If `F` sends every member of `P` into `P'` and every

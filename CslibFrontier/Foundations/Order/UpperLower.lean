@@ -23,7 +23,7 @@ codomain has `0 ≤ 1`, the indicator `A.indicator 1` is therefore antitone
 * `IsLowerSet.antitone_indicator_one`: the indicator of a lower set with value `1` is antitone.
 -/
 
-@[expose] public section
+public section
 
 namespace IsLowerSet
 

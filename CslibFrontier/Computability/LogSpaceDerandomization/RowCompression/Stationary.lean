@@ -144,7 +144,7 @@ theorem stationaryState_defaultValue_le_dyadic (hη : 0 ≤ η)
 /-- The stationary reference constructed from actual preloss preserves its output through
 any initial segment of the remaining schedule. Only earlier groups must avoid overflow. -/
 theorem stationaryContinuation_output_eq_dyadic {K : ℕ} {H : ℝ → ℝ → ℝ → ℝ} {g e : ℝ}
-    (hη : 0 ≤ η) (hK : 0 < K) (m j r : ℕ) (hr : j + r ≤ m)
+    (hK : 0 < K) (m j r : ℕ) (hr : j + r ≤ m)
     (hno : ∀ i < j,
       stepThreshold s n (fun _ => K) (dyadicFloor η m) Δ a i ≤ dyadicFloor η m i)
     (hfirst : ∀ y ∈ s, 0 ≤ truth y 0) (hsecond : ∀ y ∈ s, |truth y 1| ≤ η / 2)
@@ -157,6 +157,7 @@ theorem stationaryContinuation_output_eq_dyadic {K : ℕ} {H : ℝ → ℝ → �
     let c := stationaryContinuation s n K (dyadicFloor η m) Δ a truth j r
     H (c.row y 0) (c.row y 1) (firstRank s K c.defaultValue c.row) =
       H (b.row y 0) (b.row y 1) (firstRank s K b.defaultValue b.row) := by
+  have hη : 0 ≤ η := by linarith [(abs_nonneg _).trans (hsecond y hy)]
   have hj : j ≤ m := (Nat.le_add_right j r).trans hr
   have hb := stationaryState_bounds_dyadic hη m j hj hno hfirst hsecond
   apply reference_iterate_output_eq hη hK hb.1 hb.2 hηg hge hentry hgate hflat r

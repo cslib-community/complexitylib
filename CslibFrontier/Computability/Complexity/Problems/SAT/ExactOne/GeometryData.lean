@@ -13,11 +13,15 @@ public import CslibFrontier.Foundations.Geometry.Orthogonal
 # Local orthogonal drawings for parsimonious exact-one gadgets
 
 The three fixed drawings fit in `[0,180]²`. Their core vertices and routes lie in
-`[20,160]²`; access routes run from designated side midpoints to their terminals.
+`[20,160]²`; access routes run from designated boundary ports to their terminals. The ports are
+on the `y = 0` (north), `x = 0` (west) and `x = 180` (east) sides: the side midpoints for
+`disjunctionGeometry` and `complementGeometry`, and `(80, 0)` for `falseGeometry`.
 The unsigned incidence signatures deliberately leave clause semantics to the logical gadgets.
 
 ## Main definitions
 
+* `LocalIncidence`: an incidence record, read through `clauseIndex`, `variableIndex` and
+  `route`.
 * `LocalGeometry`: finite vertex, incidence, and access data for a local replacement.
 * `disjunctionGeometry`: the four-clause parsimonious disjunction replacement.
 * `falseGeometry`: the three-clause positive gadget with a forced-false exterior terminal.
@@ -37,6 +41,19 @@ open Orthogonal
 
 /-- An incidence records its clause index, variable index, and clause-to-variable route. -/
 abbrev LocalIncidence := ℕ × ℕ × Route
+
+namespace LocalIncidence
+
+/-- The local index of the incident clause. -/
+abbrev clauseIndex (e : LocalIncidence) : ℕ := e.1
+
+/-- The local index of the incident variable. -/
+abbrev variableIndex (e : LocalIncidence) : ℕ := e.2.1
+
+/-- The route from the clause position to the variable position. -/
+abbrev route (e : LocalIncidence) : Route := e.2.2
+
+end LocalIncidence
 
 /-- Finite local replacement data. Variables and clauses have separate zero-based indices.
 `terminalVariables`, `boundaryPorts`, and `accessRoutes` have corresponding orders. -/
@@ -68,8 +85,8 @@ def clausePosition (g : LocalGeometry) (i : ℕ) : Point :=
 
 /-- Permitted contacts of two incidence routes: their shared graph endpoints. -/
 def commonEndpoints (g : LocalGeometry) (e f : LocalIncidence) : List Point :=
-  (if e.1 = f.1 then [g.clausePosition e.1] else []) ++
-    (if e.2.1 = f.2.1 then [g.variablePosition e.2.1] else [])
+  (if e.clauseIndex = f.clauseIndex then [g.clausePosition e.clauseIndex] else []) ++
+    (if e.variableIndex = f.variableIndex then [g.variablePosition e.variableIndex] else [])
 
 end LocalGeometry
 

@@ -260,9 +260,7 @@ theorem length_run_le (δ : Bool × Bool → Bool) (p : Runtime.Input) {t : ℕ}
       dsimp only [width]
       rw [pow_succ, pow_succ]
       omega
-    have hkpow : k < 2 ^ ((encData p.1).length + 3) := by
-      rw [pow_succ]
-      omega
+    have hkpow : k < 2 ^ ((encData p.1).length + 3) := by grind
     have := length_encNat_le_of_lt_two_pow hkpow
     omega
   by_cases hi : t ≤ 2 * (encData p.1).length + 2

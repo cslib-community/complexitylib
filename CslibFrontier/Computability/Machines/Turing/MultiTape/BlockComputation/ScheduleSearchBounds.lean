@@ -119,24 +119,8 @@ theorem assignment_limit_size_le {d B : ℕ} (hd : 0 < d) (hB : 0 < B) :
 theorem selected_point_cost_le {d B : ℕ} (hd : 0 < d) (hB : 0 < B) :
     d * chunkCount d B * (2 * (fieldModulus d B).size + 1) ≤
       17 * d * (B + chunkWidth d B) := by
-  have hp := chunkCount_mul_fieldModulus_size_le hd hB
-  have hr := chunkCount_le hd hB
-  have hscalar : chunkCount d B * (2 * (fieldModulus d B).size + 1) ≤
-      17 * (B + chunkWidth d B) := by nlinarith
+  have hscalar := chunkCount_mul_framed_fieldModulus_size_le hd hB 2
   have h := Nat.mul_le_mul_left d hscalar
-  nlinarith
-
-/-- Explicit output-count and alphabet/modulus storage also fit one linear bank allowance. -/
-theorem selected_bank_cost_le {d B : ℕ} (hd : 0 < d) (hB : 0 < B) :
-    chunkCount d B * ((fieldModulus d B).size +
-      (2 ^ chunkWidth d B).size + 1) ≤ 12 * (B + chunkWidth d B) := by
-  have halphabet := Nat.size_le_size (alphabetSize_lt hd hB).le
-  have hp : 0 < (fieldModulus d B).size :=
-    Nat.size_pos.mpr (fieldModulus_prime d B).pos
-  have hregister := chunkCount_mul_fieldModulus_size_le hd hB
-  have hscalar : (fieldModulus d B).size + (2 ^ chunkWidth d B).size + 1 ≤
-      3 * (fieldModulus d B).size := by omega
-  have h := Nat.mul_le_mul_left (chunkCount d B) hscalar
   nlinarith
 
 /-- Native parameter initialization already supplies a uniform binary metadata-size estimate. -/
@@ -166,7 +150,8 @@ theorem selected_metadataSpace_le (N b σ q d B : ℕ) (hd : 0 < d) (hB : 0 < B)
   have hp := fieldModulus_size_le hd hB
   have hlimit := assignment_limit_size_le hd hB
   simp only [length_encNat_eq_size] at hBsize hmSize
-  simp only [ConcreteSupplier.metadataSpace, QueryGate.encParams, Interpolation.encContext,
+  simp only [ConcreteSupplier.metadataSpace, QueryGate.encParams, Interpolation.encContext_apply,
+    Interpolation.encContextFields,
     encNat3, length_encPair, length_encNat_eq_size, Nat.size_pow]
   have hempty : (encList encNat []).length = 0 := rfl
   rw [hempty]
@@ -176,7 +161,8 @@ private theorem context_le_metadataSpace (N b σ q m alphabet limit p d r : ℕ)
     (ConcreteSupplier.encContext (N, b, σ, q, m, alphabet, limit)).length ≤
       ConcreteSupplier.metadataSpace N b σ q m alphabet limit p d r := by
   simp only [ConcreteSupplier.encContext, ConcreteSupplier.metadataSpace, QueryGate.encParams,
-    Interpolation.encContext, encNat3, length_encPair]
+    Interpolation.encContext_apply,
+    Interpolation.encContextFields, encNat3, length_encPair]
   omega
 
 private theorem log2_le_size (N : ℕ) : Nat.log2 N ≤ N.size := by

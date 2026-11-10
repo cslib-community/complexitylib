@@ -24,7 +24,7 @@ Range index and duplicate-free natural-list length bounds shared across certific
 * `List.length_filter_range_eq_one_iff`: exactly one number below `n` passes a test.
 -/
 
-@[expose] public section
+public section
 
 namespace List
 
