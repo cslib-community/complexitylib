@@ -108,46 +108,6 @@
  "CslibFrontier/Computability/WordRAM/Turing/ListOutput.lean": {
   "encPair encUnary (encPi encNat)": 3
  },
- "CslibFrontier/Crypto/Computational/Commitment.lean": {
-  "encPair encBits (encPair encBool encBits)": 5
- },
- "CslibFrontier/Crypto/Computational/CramerShoup/Reductions.lean": {
-  "encPair encUnary (encPair ?1.encDesc (encPair encBits (encPair encBits encBits)))": 3
- },
- "CslibFrontier/Crypto/Computational/DiffieHellman.lean": {
-  "encPair encBits (encPair encBits encBits)": 3,
-  "encPair encUnary (encPair ?1.encDesc (encPair encBits (encPair encBits encBits)))": 5
- },
- "CslibFrontier/Crypto/Computational/ElGamal.lean": {
-  "encPair encUnary (encPair ?1.encDesc (encPair encBits (encPair encBits encBits)))": 4
- },
- "CslibFrontier/Crypto/Computational/ElGamal/GeneralCipher.lean": {
-  "encPair encUnary (encPair ?1.encDesc (encPair encBits (encPair encBits encBits)))": 4
- },
- "CslibFrontier/Crypto/Computational/Encryption/Hybrid.lean": {
-  "encPair encUnary (encPair encBits (encPair ?1 ?1))": 5,
-  "encPair encUnary (encPair encBits ?1)": 9,
-  "encPair encUnary (encPair encBits encBits)": 6
- },
- "CslibFrontier/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean": {
-  "encPair encUnary (encPair encBits encBits)": 3
- },
- "CslibFrontier/Crypto/Computational/Homomorphic/FixedKey/Security.lean": {
-  "encPair encUnary (encPair encBits encBool)": 3
- },
- "CslibFrontier/Crypto/Computational/Homomorphic/KeyChain/Hybrid/PolyTime.lean": {
-  "encList (encList encBits)": 5,
-  "encList (encPair encBits encBits)": 4
- },
- "CslibFrontier/Crypto/Computational/Homomorphic/KeyChain/PolyTime.lean": {
-  "encList (encPair encBits encBits)": 3
- },
- "CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Bootstrapping.lean": {
-  "encPair encUnary (encPair encBits encBool)": 3
- },
- "CslibFrontier/Crypto/Computational/Homomorphic/Leveled/CoinTape.lean": {
-  "encPair (encPair encBool encBool) encBits": 3
- },
  "CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean": {
   "encPair encUnary (encPair encBits encBool)": 4
  },

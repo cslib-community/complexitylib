@@ -58,9 +58,8 @@ include hencrypt
 @[fun_prop]
 theorem isPPTOn_encryptZeroKeyLinks
     (hn : ComputableInPolyTime n input encUnary)
-    (hkeys : ComputableInPolyTime keys input (encList (encPair encBits encBits))) :
-    IsPPTOn input (encList (encList encBits))
-      (fun a => E.encryptZeroKeyLinks (n a) (keys a)) := by
+    (hkeys : ComputableInPolyTime keys input encKeyChainKeys) :
+    IsPPTOn input encKeyChainLinks (fun a => E.encryptZeroKeyLinks (n a) (keys a)) := by
   -- Pair each input with every adjacent key pair.
   have hpairs : ComputableInPolyTime
       (fun a => ((keys a).zip (keys a).tail).map fun b => (a, b))
@@ -82,9 +81,8 @@ boundaries beyond the supplied list. -/
 theorem isPPTOn_encryptKeyLinksHybrid
     (hn : ComputableInPolyTime n input encUnary)
     (hcut : ComputableInPolyTime cut input encUnary)
-    (hkeys : ComputableInPolyTime keys input (encList (encPair encBits encBits))) :
-    IsPPTOn input (encList (encList encBits))
-      (fun a => E.encryptKeyLinksHybrid (n a) (cut a) (keys a)) := by
+    (hkeys : ComputableInPolyTime keys input encKeyChainKeys) :
+    IsPPTOn input encKeyChainLinks (fun a => E.encryptKeyLinksHybrid (n a) (cut a) (keys a)) := by
   have hfront := isPPTOn_encryptKeyLinks hencrypt hn
     (show ComputableInPolyTime (fun a => (keys a).take (cut a + 1))
       input (encList (encPair encBits encBits)) by fun_prop)
@@ -101,7 +99,7 @@ theorem isPPTOn_publicKeyChainHybrid
     (hn : ComputableInPolyTime n input encUnary)
     (hdepth : ComputableInPolyTime depth input encUnary)
     (hcut : ComputableInPolyTime cut input encUnary) :
-    IsPPTOn input (encPair (encList encBits) (encList (encList encBits)))
+    IsPPTOn input (encPair (encList encBits) encKeyChainLinks)
       (fun a => E.publicKeyChainHybrid (n a) (depth a) (cut a)) := by
   apply (isPPTOn_generateKeys hkeyGen hn hdepth).bind_with
   have hlinks := isPPTOn_encryptKeyLinksHybrid hencrypt
@@ -124,12 +122,12 @@ theorem isPPTOn_encryptKeyLinkHybrid
     {before after : α → List (List Bool × List Bool)}
     {predecessor next : α → List Bool × List Bool}
     (hn : ComputableInPolyTime n input encUnary)
-    (hbefore : ComputableInPolyTime before input (encList (encPair encBits encBits)))
+    (hbefore : ComputableInPolyTime before input encKeyChainKeys)
     (hpredecessor : ComputableInPolyTime predecessor input (encPair encBits encBits))
     (hnext : ComputableInPolyTime next input (encPair encBits encBits))
-    (hafter : ComputableInPolyTime after input (encList (encPair encBits encBits)))
+    (hafter : ComputableInPolyTime after input encKeyChainKeys)
     (hcut : ComputableInPolyTime cut input encUnary) :
-    IsPPTOn input (encList (encList encBits))
+    IsPPTOn input encKeyChainLinks
       (fun a => E.encryptKeyLinkHybrid (n a) (before a) (predecessor a) (next a)
         (after a) (cut a)) := by
   have hfront := isPPTOn_encryptKeyLinks hencrypt hn
@@ -151,13 +149,13 @@ theorem isPPTOn_spliceEncryptedKeyLink
     {before after : α → List (List Bool × List Bool)}
     {predecessor next : α → List Bool × List Bool} {challenge : α → List Bool}
     (hn : ComputableInPolyTime n input encUnary)
-    (hbefore : ComputableInPolyTime before input (encList (encPair encBits encBits)))
+    (hbefore : ComputableInPolyTime before input encKeyChainKeys)
     (hpredecessor : ComputableInPolyTime predecessor input (encPair encBits encBits))
     (hnext : ComputableInPolyTime next input (encPair encBits encBits))
-    (hafter : ComputableInPolyTime after input (encList (encPair encBits encBits)))
+    (hafter : ComputableInPolyTime after input encKeyChainKeys)
     (hcut : ComputableInPolyTime cut input encUnary)
     (hchallenge : ComputableInPolyTime challenge input encBits) :
-    IsPPTOn input (encList (encList encBits))
+    IsPPTOn input encKeyChainLinks
       (fun a => E.spliceEncryptedKeyLink (n a) (before a) (predecessor a) (next a)
         (after a) (cut a) (challenge a)) := by
   have hfront := isPPTOn_encryptKeyLinks hencrypt hn
