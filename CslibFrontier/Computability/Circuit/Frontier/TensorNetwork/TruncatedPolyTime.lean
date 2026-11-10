@@ -52,7 +52,8 @@ Theorem D.1 at truncation order `ℓ` (#1538).
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.encSpecDesc`, `Cslib.Circuits.Frontier.encTrunc`,
-  `Cslib.Circuits.Frontier.encCore`, `Cslib.Circuits.Frontier.encEngine`: encodings.
+  `Cslib.Circuits.Frontier.encCore`, `Cslib.Circuits.Frontier.encEngine`,
+  `Cslib.Circuits.Frontier.encEngineState`: encodings.
 * `Cslib.Circuits.Frontier.specEntryCertificate`: the native evaluator of specialized entries.
 * `Cslib.Circuits.Frontier.engineCertificate`: the reduction around a contraction over `A_P`.
 * `Cslib.Circuits.Frontier.directCoreCertificate`: direct summation over `A_P`.
@@ -94,7 +95,7 @@ variable {encT}
 /-- The first `ℓ` coefficients as constant coefficient lists, from `ℓ` in unary. -/
 theorem constCoeffs_polyTime :
     ComputableInPolyTime (fun q : ℕ × List ℕ => constCoeffs q.1 q.2)
-      (encPair encUnary (encList encNat)) (encList (encList encNat)) := by
+      (encPair encUnary (encList encNat)) encPoly := by
   have hc : ComputableInPolyTime (fun q : (ℕ × List ℕ) × ℕ => q.1.2)
       (encPair (encPair encUnary (encList encNat)) encUnary) (encList encNat) :=
     (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.fst _ _)
@@ -172,7 +173,7 @@ number of points in unary. -/
 theorem digitPoints_polyTime :
     ComputableInPolyTime
       (fun q : ℕ × ℕ => (List.range q.2).map (FastContraction.digits q.1))
-      (encPair encUnary encUnary) (encList (encList encNat)) :=
+      (encPair encUnary encUnary) encElems :=
   ComputableInPolyTime.mapWithInput
     (ComputableInPolyTime.range.comp (ComputableInPolyTime.snd _ _))
     (FastContraction.digits_polyTime.comp
@@ -186,15 +187,14 @@ theorem interpRecover_polyTime :
     ComputableInPolyTime
       (fun ((P, ℓ, fl, pts, ys) : ℕ × ℕ × List ℕ × List (List ℕ) × List (List ℕ)) =>
         interpRecover P ℓ fl pts ys)
-      (encPair encUnary (encPair encUnary (encPair (encList encNat)
-        (encPair (encList (encList encNat)) (encList (encList encNat))))))
+      (encPair encUnary (encPair encUnary (encPair (encList encNat) (encPair encElems encElems))))
       (encList encNat) := by
   let encQ := encPair encUnary (encPair encUnary (encPair (encList encNat)
-    (encPair (encList (encList encNat)) (encList (encList encNat)))))
+    (encPair encElems encElems)))
   have hP := ComputableInPolyTime.fst encUnary (encPair encUnary (encPair (encList encNat)
-    (encPair (encList (encList encNat)) (encList (encList encNat)))))
+    (encPair encElems encElems)))
   have hr := ComputableInPolyTime.snd encUnary (encPair encUnary (encPair (encList encNat)
-    (encPair (encList (encList encNat)) (encList (encList encNat)))))
+    (encPair encElems encElems)))
   have hℓ := (ComputableInPolyTime.fst _ _).comp hr
   have hr' := (ComputableInPolyTime.snd _ _).comp hr
   have hfl := (ComputableInPolyTime.fst _ _).comp hr'
@@ -230,6 +230,13 @@ abbrev encCore (encT : T ↪ List Bool) :
 /-- The input of the reduction: the modulus and the input `(P, ℓ, r, G)`. -/
 abbrev encEngine (encT : T ↪ List Bool) : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T ↪ List Bool :=
   encPair (encList encNat) (encTrunc encT)
+
+/-- The state `(k, (y, ys))` of the loop of the reduction: the index `k` in binary, the input `y`
+of the reduction (`encEngine`), then the framed values `ys` so far, each an element of `A_P` as its
+framed coefficient list in binary (the layout of `encElems`). -/
+abbrev encEngineState (encT : T ↪ List Bool) :
+    ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) ↪ List Bool :=
+  encPair encNat (encPair (encEngine encT) (encList (encList encNat)))
 
 /-- The input `(P, fl, r, G')` of the contraction at the `k`-th digit point, for a modulus `fl` and
 an input `(P, ℓ, r, G)`: `G'` is `G` specialized at that point. -/
@@ -305,7 +312,7 @@ theorem coreInput_polyTime :
     ComputableInPolyTime
       (fun ((k, (y, _)) : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ))) =>
         coreInput y k)
-      (encPair encNat (encPair (encEngine encT) (encList (encList encNat)))) (encCore encT) := by
+      (encEngineState encT) (encCore encT) := by
   have hy := (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd encNat
     (encPair (encEngine encT) (encList (encList encNat))))
   have hk := ComputableInPolyTime.fst encNat (encPair (encEngine encT) (encList (encList encNat)))
@@ -325,8 +332,7 @@ theorem coreInput_polyTime :
 /-- The certificate of one round, from a certificate of the contraction over `A_P`. -/
 @[expose] noncomputable def engineStepCertificate
     (cc : NativeCertificate core (encCore encT) (encList encNat)) :
-    NativeCertificate (engineStep core)
-      (encPair encNat (encPair (encEngine encT) (encList (encList encNat))))
+    NativeCertificate (engineStep core) (encEngineState encT)
       (encPair (encEngine encT) (encList (encList encNat))) :=
   (NativeCertificate.ofPolyTime
       ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))).prod
@@ -338,15 +344,15 @@ theorem coreInput_polyTime :
 /-- Recovery from the final state of the loop is polynomial-time. -/
 theorem engineRecover_polyTime :
     ComputableInPolyTime (engineRecover (T := T))
-      (encPair encNat (encPair (encEngine encT) (encList (encList encNat)))) (encList encNat) := by
-  let encS := encPair encNat (encPair (encEngine encT) (encList (encList encNat)))
+      (encEngineState encT) (encList encNat) := by
+  let encS := encEngineState encT
   have hy : ComputableInPolyTime
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) => p.2.1)
       encS (encEngine encT) :=
     (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)
   have hys : ComputableInPolyTime
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) => p.2.2)
-      encS (encList (encList encNat)) :=
+      encS encElems :=
     (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)
   have hfl : ComputableInPolyTime
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) => p.2.1.1)
@@ -364,7 +370,7 @@ theorem engineRecover_polyTime :
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) =>
         (List.range (DescribedNetwork.pointCount p.2.1.2.2.1 p.2.1.2.2.2.2)).map
           (FastContraction.digits p.2.1.1.length))
-      encS (encList (encList encNat)) :=
+      encS encElems :=
     DescribedNetwork.digitPoints_polyTime.comp
       (((ComputableInPolyTime.length_list _).comp hfl).prod (pointCount_polyTime.comp hy))
   have h := interpRecover_polyTime.comp (hP.prod (hℓ.prod (hfl.prod (hpts.prod hys))))
