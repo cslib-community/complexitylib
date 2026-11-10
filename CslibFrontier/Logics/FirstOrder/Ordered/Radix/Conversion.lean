@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Multiplication
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # Native conversion between scalar and word-valued radices
@@ -86,10 +87,7 @@ theorem realize_convert {d m k : ℕ} (B : (language L).Term α)
     realize_decode (d := d) (B.relabel Sum.inl) x' z' (Sum.elim v w)
       (by simpa only [Term.realize_relabel, Function.comp_def, Sum.elim_inl] using
         Nat.le_of_lt hB)
-  simp only [convert, Formula.realize_inf, realize_digits, Formula.realize_iExs,
-    Formula.realize_iInf, Formula.realize_equal, ha, hm, hd, Term.realize_var,
-    Term.realize_relabel, Function.comp_def, Sum.elim_inl, Sum.elim_inr, Fin.ext_iff,
-    realize_zero_val, realize_one_val, Nat.one_mul, and_assoc]
+  fo_simp [convert, ha, hm, hd, Function.comp_def, Fin.ext_iff, Nat.one_mul, and_assoc]
   constructor
   · rintro ⟨hNdigits, hz, w, hw0, hwe, hs⟩
     refine ⟨hNdigits, hz, ?_⟩

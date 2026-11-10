@@ -1374,7 +1374,7 @@ private theorem run_macLogHandler_eq_signingOracle
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         ((prfMAC family hpoly).signingOracle sk)) prog).run []) := by
-  have hread := ProbOracleComp.run_interpret_readOnly
+  have hread := ProbOracleComp.runWith_readOnly
     (fun request (_ : Unit) => PMF.pure (prfOracle family n sk request.2))
     ((OracleComp.interpret
       (OracleComp.sumHandler
@@ -1382,17 +1382,16 @@ private theorem run_macLogHandler_eq_signingOracle
         (macLogHandler n))
       prog).run []) ()
   have hfst := congrArg (PMF.map Prod.fst) hread
-  simp only [PMF.map_comp, Function.comp_def] at hfst
+  simp only [PMF.map_comp, Function.comp_def, OracleComp.evalWith] at hfst
   rw [show (fun x : (List Bool × List Bool) × List (List Bool) => x) = id from rfl,
     PMF.map_id] at hfst
   simp only [ProbOracleComp.eval_interpret, ProbComp.eval_pure]
-  rw [← hfst, ProbOracleComp.run_interpret_run_interpret, ProbOracleComp.eval_run_interpret]
-  have hsim := ProbOracleComp.run_interpret_map_state
+  rw [← hfst, ProbOracleComp.runWith_run_interpret, ProbOracleComp.eval_run_interpret_eq_runWith]
+  have hsim := ProbOracleComp.runWith_map_state
     (oracle := fun q (state : List (List Bool) × Unit) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (fun request (u : Unit) => (PMF.pure (prfOracle family n sk request.2)).map (·, u)))
-        ((macLogHandler n q).run state.1)).run state.2).map
+      (ProbOracleComp.runWith
+        (fun request (u : Unit) => (PMF.pure (prfOracle family n sk request.2)).map (·, u))
+        ((macLogHandler n q).run state.1) state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
     (oracle' := fun q s => ProbComp.eval ((prfMAC family hpoly).signingOracle sk q s))
     (represent := Prod.fst)
@@ -1521,7 +1520,7 @@ theorem succProbability_prfIdealGame_macToPrfDistinguisher_le (adversary : Forge
       (result, state) ∈ phase1.support →
       ∀ x : BitString n, state.2 x ≠ none → List.ofFn x ∈ state.1 := by
     intro result state hmem
-    refine ProbOracleComp.run_interpret_invariant combinedOracle
+    refine ProbOracleComp.runWith_invariant combinedOracle
       (fun s => ∀ x : BitString n, s.2 x ≠ none → List.ofFn x ∈ s.1)
       ?_ (adversary n []) ([], fun _ => none) (by simp) result state hmem
     intro ⟨⟨⟩, msg⟩ ⟨queried, cache⟩ hstate val ⟨queried', cache'⟩ hstep

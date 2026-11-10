@@ -66,6 +66,15 @@ exact specification with `refine WP.Exact.of_exec h ?_`, or apply an exact contr
 The [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check exact
 counts through a conditional, a wrong count left as a goal and a call to an exact specification.
 
+`wram_exec` stops at a loop. For an exact loop proved by induction, prove the body as
+`WP.Exact w body x fun z t => t = T ∧ ∃ y, Exec w loop z y T' ∧ P y`: run the body with
+`wram_exec`, then close the goal with the induction hypothesis at the state reached, giving `_`
+for that state so that its register facts are proved by `wram_simp` once it is known. Combine the
+two with `Exec.loop_iter`. Pass `← h` for an abbreviation `set v := e with h` so that values
+are read back as `v`. `clmulTabLoop_exec` and `hornerLoop_exec` in
+[`KWise`](../../CslibFrontier/DataStructure/HashFamily/WordRAM/KWise.lean) follow this pattern,
+the second with calls to exact contracts inside the body.
+
 For an injective bank, use `wram_call routine_spec renamed bank_injective with y ⟨post, frame⟩`.
 Here the specification starts from the caller's `Data.comap bank`; `frame` preserves registers
 outside the bank. Memory and register projections of bank views are normalized once. Preparation,
@@ -90,7 +99,8 @@ discharger. `Data.set_set` drops an overwritten register. The
 including two banks separated by quantified hypotheses, a premise-bearing hypothesis left unused,
 and names left unread.
 
-`wram_exec` also runs `Op.alu` instructions through `WP.alu`, for a basis given by a definition,
+`wram_exec` also runs `Op.alu` instructions through `WP.alu` (`WP.Exact.alu` for exact counts),
+for a basis given by a definition,
 such as `Basis.additive` (including `Op.addAdditive`), or for `Basis.standard` written with the
 constructor. `Basis.reduceInterp` unfolds the operation on the argument registers' values, and
 execution continues only when the result is `some v`. The fitting condition `Fits w v` is
@@ -99,7 +109,8 @@ instruction. An operation that does not unfold to `some v` without comparing the
 `Basis.exact` subtraction, stops `wram_exec` with a `could not evaluate` error; write such
 instructions as `Op.exactBin`, which has its own rules. The
 [other-bases examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check additive and
-standard instructions and that failure.
+standard instructions and that failure, and the exact-count examples check both instructions under
+`Exec`.
 
 When a continuation would otherwise rebuild many caller-register equalities, import
 [`SymbolicExec.CanonicalCall`](../../CslibFrontier/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)

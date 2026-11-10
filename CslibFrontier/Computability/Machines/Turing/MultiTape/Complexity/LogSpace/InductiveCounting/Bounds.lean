@@ -54,15 +54,6 @@ private theorem two_pow_size_le (n : ℕ) : 2 ^ n.size ≤ 2 * (n + 1) := by
     rw [show n.size = n.size - 1 + 1 by omega, pow_succ]
     omega
 
-/-- Larger radices have larger ambient graphs. -/
-theorem vertexBound_mono {B B' : ℕ} (h : B ≤ B') :
-    vertexBound (k := k) B ≤ vertexBound (k := k) B' :=
-  Nat.pow_le_pow_left h _
-
-theorem roundRadix_mono (n : ℕ) {j j' : ℕ} (h : j ≤ j') :
-    roundRadix State n j ≤ roundRadix State n j' :=
-  Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by omega) h)
-
 /-- **Rounds stop at a closed one**: a state's round has only unclosed rounds before it. -/
 theorem round_le {J₀ j : ℕ} (hJ₀ : Closed ntm (roundRadix State input.length J₀) input)
     (hj : ∀ i < j, ¬ Closed ntm (roundRadix State input.length i) input) : j ≤ J₀ := by
@@ -228,21 +219,6 @@ round `J₀`: linear in `J₀` and the binary length of `n`. -/
 def storageBound (J₀ n : ℕ) : ℕ :=
   (40 * Fintype.card (Register k) + 4) *
     (2 * J₀ + Nat.log2 n + Fintype.card (Option State) + 4) + 2 * Nat.log2 n + 170
-
-private theorem roundRadix_le_two_pow (n j : ℕ) :
-    roundRadix State n j ≤ 2 ^ (2 * j + Nat.log2 n + Fintype.card (Option State) + 4) := by
-  have hn : n + 2 ≤ 2 ^ (Nat.log2 n + 2) := by
-    have := Nat.lt_log2_self (n := n)
-    rw [pow_succ]
-    omega
-  have h4 : (4 : ℕ) ^ j = 2 ^ (2 * j) := by rw [pow_mul]; norm_num
-  calc roundRadix State n j = 2 ^ (2 * j) * ((n + 2) * 2 ^ (Fintype.card (Option State) + 2)) := by
-        rw [roundRadix, startRadix, h4]
-    _ ≤ 2 ^ (2 * j) * (2 ^ (Nat.log2 n + 2) * 2 ^ (Fintype.card (Option State) + 2)) := by
-        gcongr
-    _ = 2 ^ (2 * j + Nat.log2 n + Fintype.card (Option State) + 4) := by
-        rw [← pow_add, ← pow_add]
-        ring_nf
 
 /-- **Every state allowed by the invariant has a short encoding**, given a closed round. -/
 theorem length_runtime_le {J₀ : ℕ} (hJ₀ : Closed ntm (roundRadix State input.length J₀) input)
