@@ -111,10 +111,12 @@ scoped macro_rules
   | `(tactic| ram_exact_eval [$args,*]) => `(tactic| ram_exact_eval 0 [$args,*])
   | `(tactic| ram_exact_eval $n:num) => `(tactic| ram_exact_eval $n [])
   | `(tactic| ram_exact_eval $n:num [$args,*]) => `(tactic|
-      ram_eval_core "ram_exact_eval" $n
-        [Cslib.WordRAM.Op.eval_exactBin, Cslib.WordRAM.Op.eval_exactWidth,
-          Cslib.WordRAM.Basis.exact_interp_bin, Cslib.WordRAM.Basis.exact_interp_width,
-          Cslib.WordRAM.BinOp.evalExact] [$args,*])
+      ram_eval_core "ram_exact_eval" $n ram_exact_eval_simps [$args,*])
+
+ram_eval_simp_set_for ram_exact_eval_simps
+  [Cslib.WordRAM.Op.eval_exactBin, Cslib.WordRAM.Op.eval_exactWidth,
+    Cslib.WordRAM.Basis.exact_interp_bin, Cslib.WordRAM.Basis.exact_interp_width,
+    Cslib.WordRAM.BinOp.evalExact]
 
 end Cslib.WordRAM
 

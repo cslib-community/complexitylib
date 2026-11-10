@@ -235,6 +235,17 @@ count needs an invariant, such as `ExecWithin.loop_count` in the
 [counting-loop chapter](../algorithms-and-memory/wordram-and-bridges.md#proving-a-constant-cost-counting-loop),
 not a larger `n`.
 
+The two tactics' fixed lemmas form the simp sets `ram_eval_simps` and `ram_exact_eval_simps`,
+which [`Notation`](../../CslibFrontier/Computability/WordRAM/Notation.lean) and
+[`ExactNotation`](../../CslibFrontier/Computability/WordRAM/ExactNotation.lean) fill and index
+once with `ram_eval_simp_set_for`, so a call no longer elaborates the list. Do not tag a lemma
+with either attribute, because that changes every call; pass it as a simp lemma of the call
+instead. To change the fixed list, edit the `ram_eval_simp_set_for` line. The
+[equivalence test](../../CslibFrontierTests/WordRAMEvalSimpSet.lean) then fails until its copy of
+the old literal list is updated to match, and the
+[pinned budget](../../CslibFrontierTests/AutomationRamEval.lean) catches a return of the per-call
+cost.
+
 ## Certify and reuse memory methods
 
 Import `CslibFrontier.Tactic.Realize` for a memory-client goal

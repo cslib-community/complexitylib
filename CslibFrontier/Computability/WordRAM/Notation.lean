@@ -8,7 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.WordRAM.Structured
+public import CslibFrontier.Computability.WordRAM.Notation.Init
 public import CslibFrontier.Tactic.Fits
+public meta import Lean.Elab.Tactic.Simp
 
 /-!
 # Notation for structured word-RAM programs
@@ -58,8 +60,10 @@ identifiers: `ram` and `width` remain ordinary names.
   condition remains undecided (shown), or `omega` cannot prove the instruction bound (shown).
   Under `try` and `first`, which discard the message, it fails without this replay, at the cost of
   the attempt alone. `ram_eval` and `ram_exact_eval` both
-  expand to the internal tactic `ram_eval_core`, which holds the shared simp set and steps; they
-  differ only in the simp lemmas for the instructions of the basis.
+  expand to the internal tactic `ram_eval_core`, which holds the shared steps; they differ only in
+  their simp set, `ram_eval_simps` or `ram_exact_eval_simps`, whose lemmas for the instructions of
+  the basis differ. The sets are filled, and so indexed, once (`ram_eval_simp_set`), so a call
+  indexes only the simp lemmas it is given.
 
 ## References
 
@@ -184,24 +188,63 @@ scoped syntax (name := ramEval) "ram_eval" (ppSpace num)? (" [" Lean.Parser.Tact
   tactic
 
 /-- Internal: the symbolic execution behind `ram_eval` and `ram_exact_eval`. The string names the
-calling tactic in error messages and the number is the loop fuel; the first list holds the simp
-lemmas that evaluate the instructions of the basis, and the second the caller's simp lemmas. -/
-scoped syntax (name := ramEvalCore) "ram_eval_core " str num
-  " [" Lean.Parser.Tactic.simpArg,* "]" " [" Lean.Parser.Tactic.simpArg,* "]" : tactic
+calling tactic in error messages and the number is the loop fuel; the identifier names the simp set
+that evaluates the program, `ram_eval_simps` or `ram_exact_eval_simps`, and the list holds the
+caller's simp lemmas. -/
+scoped syntax (name := ramEvalCore) "ram_eval_core " str num ident
+  " [" Lean.Parser.Tactic.simpArg,* "]" : tactic
 
 scoped macro_rules
   | `(tactic| ram_eval) => `(tactic| ram_eval 0 [])
   | `(tactic| ram_eval [$args,*]) => `(tactic| ram_eval 0 [$args,*])
   | `(tactic| ram_eval $n:num) => `(tactic| ram_eval $n [])
   | `(tactic| ram_eval $n:num [$args,*]) => `(tactic|
-      ram_eval_core "ram_eval" $n
-        [Cslib.WordRAM.Op.eval_bin, Cslib.WordRAM.Op.eval_width,
-          Cslib.WordRAM.Basis.standard_interp_bin, Cslib.WordRAM.Basis.standard_interp_width,
-          Cslib.WordRAM.BinOp.eval] [$args,*])
+      ram_eval_core "ram_eval" $n ram_eval_simps [$args,*])
+
+/-- Internal: `simp +decide only` with the simp set `set` (`ram_eval_simps` or
+`ram_exact_eval_simps`), the simplification procedures of `ram_eval`
+(`Cslib.WordRAM.RamEval.simprocs`), and the given simp lemmas. It is
+`simp +decide only [l₁, …, lₙ, args]` for the lemmas `l₁, …, lₙ` with which `ram_eval_simp_set`
+filled `set`, but it does not index them again. -/
+scoped syntax (name := ramEvalSimp) "ram_eval_simp " ident
+  " [" Lean.Parser.Tactic.simpArg,* "]" : tactic
+
+/-- Internal: fill the empty simp set `set` with the entries that `simp only [names]` builds from
+the simp lemmas and definitions `names`, in their order, so that `ram_eval_simp set [args]` is
+`simp +decide only [names, args]`. Simplification procedures belong in
+`Cslib.WordRAM.RamEval.simprocs`. -/
+scoped syntax (name := ramEvalSimpSet) "ram_eval_simp_set " ident " [" ident,* "]" : command
 
 namespace RamEval
 
 open Lean Meta Elab Tactic
+
+/-- The simplification procedures of `ram_eval` and `ram_exact_eval`, in the order in which they
+are added, with `true` for those that rewrite after visiting the subterms (`post`). They are added
+by name on each call, since the builtin ones cannot be tagged into a simp set in a module. -/
+meta def simprocs : List (Name × Bool) :=
+  [(``Cslib.WordRAM.reduceFits, true), (``reduceIte, false), (``Nat.reduceAdd, true),
+    (``Nat.reduceMul, true), (``Nat.reduceSub, true), (``Nat.reduceDiv, true),
+    (``Nat.reduceMod, true), (``Nat.reducePow, true), (``Nat.reduceAnd, true),
+    (``Nat.reduceOr, true), (``Nat.reduceXor, true), (``Nat.reduceShiftLeft, true),
+    (``Nat.reduceShiftRight, true), (``Nat.reduceLT, true), (``Nat.reduceLeDiff, true),
+    (``Nat.reduceEqDiff, true)]
+
+/-- The simp context of `ram_eval_simp set [args]`, given `stx := simp +decide only [args]`: the
+context that `mkSimpContext` builds for `simp +decide only [l₁, …, lₙ, args]`, where
+`ram_eval_simp_set` filled `set` with `l₁, …, lₙ`, and `simprocs` come among the `lᵢ`. The theorems
+of `set` are taken as indexed, and `args` are elaborated into the same tree, so `simp` searches one
+tree, as it does for the literal list. -/
+meta def mkContext (set : Name) (stx : TSyntax `tactic) : TacticM MkSimpContextResult := do
+  let some ext ← getSimpExtension? set | throwError "ram_eval: unknown simp set `{set}`"
+  let mut procs : Simp.Simprocs := {}
+  for (proc, post) in simprocs do
+    procs ← procs.add proc post
+  let { config, userConfig } ← elabSimpConfig stx.raw[1] (kind := .simp)
+  let ctx ← Simp.mkContext (config := config) (userConfig := userConfig)
+    (simpTheorems := #[← ext.getTheorems]) (← getSimpCongrTheorems)
+  let r ← elabSimpArgs stx.raw[4] ctx (simprocs := #[procs]) (eraseLocal := false) (kind := .simp)
+  return { r with dischargeWrapper := .default }
 
 /-- Run `tac`, restoring the state and returning `false` if it fails. -/
 private meta def succeeds (tac : TSyntax `tactic) : TacticM Bool := do
@@ -271,21 +314,46 @@ end RamEval
 
 open Lean Elab Tactic in
 scoped elab_rules : tactic
-  | `(tactic| ram_eval_core $name:str $n:num [$basis,*] [$args,*]) => do
-    let simpCall ← `(tactic|
-      set_option linter.unusedSimpArgs false in
-      simp +decide only [Cslib.WordRAM.Code.eval, Cslib.WordRAM.Code.evalLoop,
-        Cslib.WordRAM.Op.eval_const, Cslib.WordRAM.Op.eval_copy, Cslib.WordRAM.Op.eval_alu,
-        Cslib.WordRAM.Op.eval_load, Cslib.WordRAM.Op.eval_store, $basis,*,
-        Cslib.WordRAM.Data.put, Cslib.WordRAM.fits_zero, Cslib.WordRAM.reduceFits,
-        Cslib.WordRAM.Cond.holds_eq, Cslib.WordRAM.Cond.holds_lt,
-        Cslib.WordRAM.Data.set_regs, Cslib.WordRAM.Data.set_mem,
-        Cslib.WordRAM.Data.write_regs, Cslib.WordRAM.Data.write_mem, Function.update_self,
-        Function.update_apply, bind, Option.map_some, Option.bind_some, Option.map_none,
-        Option.bind_none, ↓reduceIte, Nat.reduceAdd, Nat.reduceMul, Nat.reduceSub,
-        Nat.reduceDiv, Nat.reduceMod, Nat.reducePow, Nat.reduceAnd, Nat.reduceOr,
-        Nat.reduceXor, Nat.reduceShiftLeft, Nat.reduceShiftRight, Nat.reduceLT,
-        Nat.reduceLeDiff, Nat.reduceEqDiff, $args,*])
+  | `(tactic| ram_eval_simp $set:ident [$args,*]) => withMainContext do withSimpDiagnostics do
+    let r@{ ctx, simprocs, dischargeWrapper, .. } ← RamEval.mkContext set.getId.eraseMacroScopes
+      (← `(tactic| simp +decide only [$args,*]))
+    let stats ← dischargeWrapper.with fun discharge? =>
+      withLoopChecking r do
+        simpLocation ctx simprocs discharge? (.targets #[] true)
+    return stats.diag
+
+-- The entries are those of `elabSimpArgs` for a lemma or definition given by name, built as the
+-- `[simp]` attribute builds them for a global entry, under `withExporting` and with a public prefix
+-- for auxiliary names, so that the auxiliary lemmas of preprocessed statements are public.
+open Lean Meta Elab Command in
+scoped elab_rules : command
+  | `(command| ram_eval_simp_set $set:ident [$names,*]) => do
+    let set := set.getId.eraseMacroScopes
+    let some ext ← liftCoreM (getSimpExtension? set) | throwError "unknown simp set `{set}`"
+    unless (ext.getState (← getEnv)).lemmaNames.isEmpty do
+      throwError "the simp set `{set}` is already filled"
+    let entries ← liftTermElabM <| withDeclNameForAuxNaming (`Cslib.WordRAM.RamEval ++ set) <|
+        withExporting do
+      let mut entries : Array SimpEntry := #[]
+      for builtin in Tactic.simpOnlyBuiltins do
+        entries := entries ++ (← mkSimpTheoremFromConst builtin).map .thm
+      for name in names.getElems do
+        let declName ← realizeGlobalConstNoOverloadWithInfo name
+        if ← Simp.isSimproc declName then
+          throwErrorAt name "`{.ofConstName declName}` is a simproc; add it to \
+            `Cslib.WordRAM.RamEval.simprocs`"
+        if ← isProp (← getConstVal declName).type then
+          entries := entries ++ (← mkSimpTheoremFromConst declName).map .thm
+        else
+          entries := entries ++ (← mkSimpEntryOfDeclToUnfold declName)
+      return entries
+    for entry in entries do
+      ext.add entry .global
+
+open Lean Elab Tactic in
+scoped elab_rules : tactic
+  | `(tactic| ram_eval_core $name:str $n:num $set:ident [$args,*]) => do
+    let simpCall ← `(tactic| ram_eval_simp $set [$args,*])
     try
       evalTactic (← `(tactic|
         first
@@ -308,6 +376,28 @@ scoped elab_rules : tactic
       s.restore
       let some msg := msg? | throw ex
       throwError msg
+
+/-- Internal: fill the simp set `set` of `ram_eval` (`ram_eval_simps`) or `ram_exact_eval`
+(`ram_exact_eval_simps`), given the simp lemmas `basis` that evaluate the instructions of the
+basis. The simplification procedures among the lemmas are `Cslib.WordRAM.RamEval.simprocs`. -/
+scoped syntax (name := ramEvalSimpSetFor) "ram_eval_simp_set_for " ident " [" ident,* "]" : command
+
+scoped macro_rules
+  | `(command| ram_eval_simp_set_for $set:ident [$basis,*]) => `(command|
+      ram_eval_simp_set $set [Cslib.WordRAM.Code.eval, Cslib.WordRAM.Code.evalLoop,
+        Cslib.WordRAM.Op.eval_const, Cslib.WordRAM.Op.eval_copy, Cslib.WordRAM.Op.eval_alu,
+        Cslib.WordRAM.Op.eval_load, Cslib.WordRAM.Op.eval_store, $basis,*,
+        Cslib.WordRAM.Data.put, Cslib.WordRAM.fits_zero,
+        Cslib.WordRAM.Cond.holds_eq, Cslib.WordRAM.Cond.holds_lt,
+        Cslib.WordRAM.Data.set_regs, Cslib.WordRAM.Data.set_mem,
+        Cslib.WordRAM.Data.write_regs, Cslib.WordRAM.Data.write_mem, Function.update_self,
+        Function.update_apply, bind, Option.map_some, Option.bind_some, Option.map_none,
+        Option.bind_none])
+
+ram_eval_simp_set_for ram_eval_simps
+  [Cslib.WordRAM.Op.eval_bin, Cslib.WordRAM.Op.eval_width,
+    Cslib.WordRAM.Basis.standard_interp_bin, Cslib.WordRAM.Basis.standard_interp_width,
+    Cslib.WordRAM.BinOp.eval]
 
 end Cslib.WordRAM
 

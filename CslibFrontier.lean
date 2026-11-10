@@ -3590,6 +3590,7 @@ public import CslibFrontier.Computability.WordRAM.Multiword.Workspace
 public import CslibFrontier.Computability.WordRAM.Native
 public import CslibFrontier.Computability.WordRAM.NativeDegree
 public import CslibFrontier.Computability.WordRAM.Notation
+public import CslibFrontier.Computability.WordRAM.Notation.Init
 public import CslibFrontier.Computability.WordRAM.OfTuring
 public import CslibFrontier.Computability.WordRAM.OfTuring.Space
 public import CslibFrontier.Computability.WordRAM.OutputLowerBound
