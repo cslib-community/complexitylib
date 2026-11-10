@@ -74,9 +74,9 @@ corollaries, see `CslibFrontier.DataStructure.CellProbe.OfWordRAM`.
   of width `max (persCount input) 1 * w`.
 * `Cslib.CellProbe.RegLayout`, `Cslib.CellProbe.standardLayout`, `Cslib.CellProbe.wideLayout`:
   unified cell-layout interface shared by deterministic and randomized simulators.
-* `Cslib.CellProbe.simProgDet`, `Cslib.CellProbe.simProgDetAuto`,
-  `Cslib.CellProbe.simProgRand`: clocked and automatic-fuel deterministic (`ProbeTree`) and
-  buffered randomized (`RandProbeTree`) flat-program simulators.
+* `Cslib.CellProbe.simProgDet`, `Cslib.CellProbe.simProgInitDet`,
+  `Cslib.CellProbe.simProgDetAuto`, `Cslib.CellProbe.simProgRand`: clocked and automatic-fuel
+  deterministic (`ProbeTree`) and buffered randomized (`RandProbeTree`) flat-program simulators.
 * `Cslib.CellProbe.ExecProgramDist`: distributional execution contract for flat `WordRAM.Program`s.
 
 ## Main results
@@ -111,11 +111,11 @@ open scoped ENNReal
 /-! ### 1. Persistent register accounting -/
 
 /-- Subset of registers `i : Fin r` that persist across calls (`input i = false`). -/
-def persRegs {r : ℕ} (input : Fin r → Bool) : Finset (Fin r) :=
+@[expose] def persRegs {r : ℕ} (input : Fin r → Bool) : Finset (Fin r) :=
   Finset.univ.filter fun i => !input i
 
 /-- Number of persistent registers (`input i = false`) under calling-convention mask `input`. -/
-def persCount {r : ℕ} (input : Fin r → Bool) : ℕ :=
+@[expose] def persCount {r : ℕ} (input : Fin r → Bool) : ℕ :=
   (persRegs input).card
 
 @[simp]
@@ -132,7 +132,7 @@ theorem persCount_le {r : ℕ} (input : Fin r → Bool) : persCount input ≤ r 
   (Finset.card_le_univ _).trans_eq (Fintype.card_fin r)
 
 /-- Number of persistent registers (`P.input i = false`) of a `WordRAM.SubroutineCode`. -/
-def persistentRegCount {B : Basis} {r k_init : ℕ} (P : SubroutineCode B r k_init) : ℕ :=
+@[expose] def persistentRegCount {B : Basis} {r k_init : ℕ} (P : SubroutineCode B r k_init) : ℕ :=
   (Finset.univ.filter fun i : Fin r => !P.input i).card
 
 theorem persistentRegCount_eq_persCount {B : Basis} {r k_init : ℕ}
@@ -295,11 +295,11 @@ theorem unpackData_packMem_mem {r : ℕ} {input : Fin r → Bool} {argRegs : Fin
 
 /-- Wide cell bit-width `max (persCount input) 1 * w` packing all persistent registers into `1`
 cell while remaining at least `w` bits wide when `persCount input = 0`. -/
-def wideWidth {r : ℕ} (input : Fin r → Bool) (w : ℕ) : ℕ :=
+@[expose] def wideWidth {r : ℕ} (input : Fin r → Bool) (w : ℕ) : ℕ :=
   max (persCount input) 1 * w
 
 /-- Subroutine specialization `max (persistentRegCount P) 1 * w` of `wideWidth`. -/
-def wideSubroutineWidth {B : Basis} {r k_init : ℕ}
+@[expose] def wideSubroutineWidth {B : Basis} {r k_init : ℕ}
     (P : SubroutineCode B r k_init) (w : ℕ) : ℕ :=
   max (persistentRegCount P) 1 * w
 
@@ -705,6 +705,16 @@ def standardLayout {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
 theorem standardLayout_overhead {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
     (standardLayout input base S w).overhead = 2 * persCount input := by
   simp [RegLayout.overhead, standardLayout, two_mul]
+
+@[simp]
+theorem standardLayout_spillProbes {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
+    (standardLayout input base S w).spillProbes = persCount input := by
+  simp [standardLayout]
+
+theorem standardLayout_validMem {r : ℕ} (input : Fin r → Bool) (base S w : ℕ)
+    (m : Mem (S + persCount input) w) :
+    (standardLayout input base S w).ValidMem m := by
+  simp [standardLayout]
 
 /-- Wide-cell single-spill layout over `S + 1` cells of width `wideWidth input w` (`0` probes for
 reload + spill when `persCount input = 0`, `2` probes when `persCount input > 0`). -/
@@ -1457,6 +1467,57 @@ theorem simProgDet_spec {B : Basis} {r S regCells w wCell : ℕ} {input : Fin r 
     exact Prod.ext rfl hcommit_mem
   · simp only [simProgDet, ProbeTree.probes_bind, L.probes_reload, L.run_reload, hloop_run,
       hcommit_pr, ProbeTree.probes_pure, add_zero, RegLayout.overhead]
+    omega
+
+/-- Clocked deterministic `ProbeTree` initializer simulator: starts from externally supplied
+initial registers `initRegs` (`0` reload probes), runs `K` buffered steps of `p` on zeroed cell
+memory, and on clean halt flushes modified data cells and spills persistent registers in
+`L.spillProbes` probes. -/
+def simProgInitDet {B : Basis} {r S regCells w wCell : ℕ} {input : Fin r → Bool}
+    {base : ℕ} (L : RegLayout r input base S w regCells wCell)
+    (p : Program B r) (initRegs : Fin r → ℕ) (K : ℕ) :
+    ProbeTree (S + regCells) wCell PUnit := do
+  let out ← simLoopDet base p K (.running 0 initRegs (fun _ => none) (fun _ => 0))
+  match out with
+  | .halted _ regs' writeBuf' _ => commitHalted L regs' writeBuf'
+  | _ => pure PUnit.unit
+
+/-- Starting from zeroed cell memory `fun _ => 0` (when `hm₀ : L.ValidMem (fun _ => 0)`), any
+halting run of `p` from `⟨0, { regs := initRegs, mem := fun _ => 0 }⟩` in `n` continuing steps
+(`n + 1 ≤ K`) is simulated by `simProgInitDet` in at most `n + L.spillProbes` cell probes, leaving
+`L.pack t.data` in memory. -/
+theorem simProgInitDet_spec {B : Basis} {r S regCells w wCell : ℕ} {input : Fin r → Bool}
+    {base : ℕ} (L : RegLayout r input base S w regCells wCell)
+    (p : Program B r) (initRegs : Fin r → ℕ)
+    (hm₀ : L.ValidMem (fun _ => 0))
+    (hregs : ∀ i, Fits w (initRegs i))
+    {t : State r} {n v K : ℕ}
+    (hruns : Runs w p ⟨0, { regs := initRegs, mem := fun _ => 0 }⟩ t n)
+    (hhalt : step w p t = .halt v) (hK : n + 1 ≤ K) :
+    (simProgInitDet L p initRegs K).run (fun _ => 0) = (PUnit.unit, L.pack t.data) ∧
+      (simProgInitDet L p initRegs K).probes (fun _ => 0) ≤ n + L.spillProbes := by
+  set m₀ : Mem (S + regCells) wCell := fun _ => 0
+  have hx₀_bdd : ({ regs := initRegs, mem := fun _ => 0 } : Data r).Bounded w :=
+    ⟨hregs, fun _ => fits_zero w⟩
+  have hrec₀ :
+      reconstructData (w := w) base m₀ initRegs (fun _ => none) (fun _ => 0) =
+        { regs := initRegs, mem := fun _ => 0 } := by
+    ext i
+    · rfl
+    · simp only [reconstructData, m₀, Fin.val_zero, Nat.zero_mod]
+      split_ifs <;> rfl
+  obtain ⟨wb', ext', hloop_run, hrec', hloop_pr⟩ :=
+    simLoopDet_of_runs_halt (regCells := regCells) (wCell := wCell) base p hruns hhalt hK m₀
+      hrec₀ hx₀_bdd
+  dsimp only at hloop_run hloop_pr
+  have hdirty0 : dirtyCount (fun _ : Fin S => (none : Option (Fin (2 ^ w)))) = 0 :=
+    dirtyCount_empty S w
+  obtain ⟨hcommit_mem, hcommit_pr⟩ := commitHalted_spec L hm₀ t.data.regs wb' ext'
+  rw [hrec'] at hcommit_mem
+  refine ⟨?_, ?_⟩
+  · simp only [simProgInitDet, ProbeTree.run_bind, hloop_run]
+    exact Prod.ext rfl hcommit_mem
+  · simp only [simProgInitDet, ProbeTree.probes_bind, hloop_run, hcommit_pr]
     omega
 
 /-- Exact halting step count of `p` from `⟨0, L.unpack argRegs m⟩` when a halting run exists, or
@@ -2219,7 +2280,7 @@ faults, has expected instruction count at most `T`, and dominates `μ : PMF (ℕ
 supremum halting probabilities. Because `∑' vy, μ vy = 1` and `∑' vy, haltedLim w p x vy ≤ 1`,
 domination forces exact equality `haltedLim w p x vy = μ vy` (`ExecProgramDist.haltedLim_eq`) and
 almost-sure halting (`ExecProgramDist.almostSurelyHalts`). -/
-def ExecProgramDist {B : Basis} {r : ℕ} (w : ℕ) (p : Program B r) (x : Data r)
+@[expose] def ExecProgramDist {B : Basis} {r : ℕ} (w : ℕ) (p : Program B r) (x : Data r)
     (μ : PMF (ℕ × Data r)) (T : ℝ≥0∞) : Prop :=
   expectedTime w p ⟨0, x⟩ ≤ T ∧
   RandFaultFree w p ⟨0, x⟩ ∧
