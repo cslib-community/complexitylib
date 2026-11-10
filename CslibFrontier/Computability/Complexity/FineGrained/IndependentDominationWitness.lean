@@ -239,9 +239,47 @@ and original word; the complete native resource composition remains a separate o
   seek solver g (IndependentDomination.order g)
 
 open Classical in
-/-- Instantiate the actual proved signed-bound solver: the returned value is the cardinality
-of the returned independent dominating word and is no larger than any other such cardinality.
-This is executable search correctness, not yet a native resource certificate for the search. -/
+/-- Search correctness from a size solver: the returned word attains the least cardinality.
+The production instantiations below discharge both solver hypotheses using the proved backend. -/
+theorem run_correct (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output)
+    (hyes : ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ),
+      (solver (Signed.ofGraph G lo hi)).isSome = true ↔ ∃ σ, Feasible G lo hi σ)
+    (hword : ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ) bits,
+      solver (Signed.ofGraph G lo hi) = some bits → bits.length = n ∧
+        Feasible G lo hi (fun u => bits.getD u.val false)) :
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj],
+        ((run solver (IndependentDomination.ofGraph G)).isSome = true ↔
+          ∃ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} ∧
+            G.IsDominatingSet {u | σ u = true}) ∧
+        ∀ k bits, run solver (IndependentDomination.ofGraph G) = some (k, bits) →
+          bits.length = n ∧ Feasible G k k (fun u => bits.getD u.val false) ∧
+            ∀ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} →
+              G.IsDominatingSet {u | σ u = true} → k ≤ Cslib.BitString.weight σ := by
+  intro n G _
+  constructor
+  · rw [run, seek_isSome]
+    constructor
+    · rintro ⟨k, hk, ht⟩
+      obtain ⟨σ, hi, hd, _⟩ := ((hyes G k k).mp ht)
+      exact ⟨σ, hi, hd⟩
+    · rintro ⟨σ, hi, hd⟩
+      refine ⟨Cslib.BitString.weight σ, ?_, (hyes G _ _).mpr ⟨σ, hi, hd, le_rfl, le_rfl⟩⟩
+      exact Cslib.BitString.weight_le_length σ
+  · intro k bits hb
+    obtain ⟨hk, hw, hj⟩ := seek_first solver (IndependentDomination.ofGraph G) n k bits hb
+    obtain ⟨hlen, hf⟩ := hword G k k bits hw
+    refine ⟨hlen, hf, ?_⟩
+    intro σ hi hd
+    by_contra hn
+    have hh := (hyes G (Cslib.BitString.weight σ) (Cslib.BitString.weight σ)).mpr
+      ⟨σ, hi, hd, le_rfl, le_rfl⟩
+    have hz := hj (Cslib.BitString.weight σ) (by omega)
+    change (solver (Signed.ofGraph G _ _)).isSome = false at hz
+    rw [hz] at hh
+    contradiction
+
+open Classical in
+/-- Actual production solver instantiation of minimum search correctness. -/
 theorem exists_optimal_search :
     ∃ optimize : IndependentDomination.Input → Option (ℕ × List Bool),
       ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj],
@@ -253,29 +291,8 @@ theorem exists_optimal_search :
             ∀ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} →
               G.IsDominatingSet {u | σ u = true} → k ≤ Cslib.BitString.weight σ := by
   obtain ⟨solver, cs, C, e, A, hs, h⟩ := exists_solver_realEta_certificate
-  refine ⟨run solver, ?_⟩
-  intro n G _
-  constructor
-  · rw [run, seek_isSome]
-    constructor
-    · rintro ⟨k, hk, ht⟩
-      obtain ⟨σ, hi, hd, _⟩ := ((h G k k).1.mp ht)
-      exact ⟨σ, hi, hd⟩
-    · rintro ⟨σ, hi, hd⟩
-      refine ⟨Cslib.BitString.weight σ, ?_, (h G _ _).1.mpr ⟨σ, hi, hd, le_rfl, le_rfl⟩⟩
-      exact Cslib.BitString.weight_le_length σ
-  · intro k bits hb
-    obtain ⟨hk, hw, hj⟩ := seek_first solver (IndependentDomination.ofGraph G) n k bits hb
-    obtain ⟨hlen, hf⟩ := (h G k k).2.1 bits hw
-    refine ⟨hlen, hf, ?_⟩
-    intro σ hi hd
-    by_contra hn
-    have hh := (h G (Cslib.BitString.weight σ) (Cslib.BitString.weight σ)).1.mpr
-      ⟨σ, hi, hd, le_rfl, le_rfl⟩
-    have hz := hj (Cslib.BitString.weight σ) (by omega)
-    change (solver (Signed.ofGraph G _ _)).isSome = false at hz
-    rw [hz] at hh
-    contradiction
+  exact ⟨run solver, run_correct solver (fun G _ lo hi => (h G lo hi).1)
+    (fun G _ lo hi => (h G lo hi).2.1)⟩
 
 open Classical in
 private theorem exists_independent_dominating {n : ℕ} (G : SimpleGraph (Fin n)) :
@@ -303,6 +320,33 @@ private theorem exists_independent_dominating {n : ℕ} (G : SimpleGraph (Fin n)
 open Classical in
 /-- Every finite graph, including the empty graph, yields an actual globally minimum word.
 The size is attained by this output, rather than merely by an existential threshold witness. -/
+theorem run_attained (solver : Signed.Input → TwoBoundary.BinaryFrontend.Witness.Output)
+    (hyes : ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ),
+      (solver (Signed.ofGraph G lo hi)).isSome = true ↔ ∃ σ, Feasible G lo hi σ)
+    (hword : ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj] (lo hi : ℤ) bits,
+      solver (Signed.ofGraph G lo hi) = some bits → bits.length = n ∧
+        Feasible G lo hi (fun u => bits.getD u.val false)) :
+      ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj],
+        ∃ k bits, run solver (IndependentDomination.ofGraph G) = some (k, bits) ∧
+          bits.length = n ∧ Feasible G k k (fun u => bits.getD u.val false) ∧
+            ∀ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} →
+              G.IsDominatingSet {u | σ u = true} → k ≤ Cslib.BitString.weight σ := by
+  intro n G _
+  have h := run_correct solver hyes hword G
+  obtain ⟨S, hi, hd⟩ := exists_independent_dominating G
+  have he : ∃ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} ∧
+      G.IsDominatingSet {u | σ u = true} := by
+    refine ⟨fun u => decide (u ∈ S), ?_⟩
+    simpa only [decide_eq_true_eq, Set.ofPred_mem_eq] using And.intro hi hd
+  have hs := h.1.mpr he
+  cases ho : run solver (IndependentDomination.ofGraph G) with
+  | none => simp only [ho, Option.isSome_none, Bool.false_eq_true] at hs
+  | some out =>
+    obtain ⟨k, bits⟩ := out
+    exact ⟨k, bits, rfl, h.2 k bits ho⟩
+
+open Classical in
+/-- Attained minimum from the actual production solver. -/
 theorem exists_attained_optimal_search :
     ∃ optimize : IndependentDomination.Input → Option (ℕ × List Bool),
       ∀ {n : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj],
@@ -310,19 +354,8 @@ theorem exists_attained_optimal_search :
           bits.length = n ∧ Feasible G k k (fun u => bits.getD u.val false) ∧
             ∀ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} →
               G.IsDominatingSet {u | σ u = true} → k ≤ Cslib.BitString.weight σ := by
-  obtain ⟨optimize, h⟩ := exists_optimal_search
-  refine ⟨optimize, ?_⟩
-  intro n G _
-  obtain ⟨S, hi, hd⟩ := exists_independent_dominating G
-  have he : ∃ σ : Fin n → Bool, G.IsIndepSet {u | σ u = true} ∧
-      G.IsDominatingSet {u | σ u = true} := by
-    refine ⟨fun u => decide (u ∈ S), ?_⟩
-    simpa only [decide_eq_true_eq, Set.ofPred_mem_eq] using And.intro hi hd
-  have hs := (h G).1.mpr he
-  cases ho : optimize (IndependentDomination.ofGraph G) with
-  | none => simp only [ho, Option.isSome_none, Bool.false_eq_true] at hs
-  | some out =>
-    obtain ⟨k, bits⟩ := out
-    exact ⟨k, bits, rfl, (h G).2 k bits ho⟩
+  obtain ⟨solver, cs, C, e, A, hs, h⟩ := exists_solver_realEta_certificate
+  exact ⟨run solver, run_attained solver (fun G _ lo hi => (h G lo hi).1)
+    (fun G _ lo hi => (h G lo hi).2.1)⟩
 
 end Cslib.Logic.PL.IndependentDominationInterval.Signed.Witness.Minimum

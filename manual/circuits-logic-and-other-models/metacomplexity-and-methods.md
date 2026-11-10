@@ -1313,12 +1313,21 @@ vertex declaration and retains the first successful value and word. `seek_first`
 least-successful-size invariant. `exists_optimal_search` instantiates the proved signed solver:
 every returned word is an independent dominating set of the returned cardinality, which is no
 larger than any other independent dominating set. Success is equivalent to conventional
-feasibility. The computed graph client checks empty/isolated/path/star inputs; the star returns
-its center, distinguishing minimum independent domination from maximum upper domination.
-This is search correctness only. The full search's encoded iteration/time/workspace composition
-remains open, so the Corollary 7.4 ROADMAP entry is retained.
+feasibility. The computed graph client checks empty/isolated/path/star/clique inputs; the star
+returns its center, distinguishing minimum independent domination from maximum upper domination.
+The complete graph $K_3$ returns a singleton, and native iterator tests reproduce the recursive
+clique and empty-graph outputs.
+Import `CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationMinimumResources`
+for native execution. `Minimum.trajectory` identifies the retained-state iterator with `seek`,
+and `execute_eq_run` proves identical output. `certificate` composes the real solver machine,
+query writer, retained-input update, binary loop counter and tagged value/word output.
+`exists_native_optimal_search` instantiates the production solver and proves attained global
+optimality for that actual finite machine. Its exact bounds use native trajectory maxima;
+closed polynomial-workspace and sharp-time estimates for these maxima remain open.
+The Corollary 7.4 ROADMAP entry is therefore retained.
 `exists_attained_optimal_search` proves unconditional finite-graph success, including the empty
-graph: a finite maximal independent set dominates, so the actual search always returns a word. No threshold-output or runtime premise is substituted for those obligations.
+graph: a finite maximal independent set dominates, so the actual search always returns a word.
+No threshold-output or runtime premise is substituted for those obligations.
 
 ### General fixed finite/cofinite degree rules
 

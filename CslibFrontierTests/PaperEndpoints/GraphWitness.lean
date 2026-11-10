@@ -7,13 +7,14 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (regression tests)
 
-public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationWitness
+public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationMinimumResources
 public import CslibFrontierTests.PaperEndpoints.CardinalityInterval
 meta import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundaryWitness
 meta import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundarySolver
 meta import CslibFrontier.Computability.Complexity.FineGrained.TwoBoundarySourceSolver
 meta import CslibFrontier.Computability.Complexity.FineGrained.GraphWitness
 meta import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationWitness
+meta import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationMinimumResources
 meta import CslibFrontierTests.PaperEndpoints.CardinalityInterval
 
 /-!
@@ -204,5 +205,19 @@ example :
 #eval (minimum (4, [[false, true, true, true], [true, false, false, false],
   [true, false, false, false], [true, false, false, false]]),
   minimum (3, List.replicate 3 (List.replicate 3 false)))
+
+/- A complete graph has optimum one, with an actual singleton output. -/
+/-- info: some (1, [false, false, true]) -/
+#guard_msgs in
+#eval minimum (3, [[false, true, true], [true, false, true], [true, true, false]])
+
+/- The native iterator writes the same actual minimum value and word as recursive search. -/
+/-- info: (some (1, [false, false, true]), some (0, [])) -/
+#guard_msgs in
+#eval (IndependentDominationInterval.Signed.Witness.Minimum.execute
+  (fun (g, lo, hi) => bounded g lo hi)
+    (3, [[false, true, true], [true, false, true], [true, true, false]]),
+  IndependentDominationInterval.Signed.Witness.Minimum.execute
+    (fun (g, lo, hi) => bounded g lo hi) (0, []))
 
 end GraphWitnessTests

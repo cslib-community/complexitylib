@@ -2101,6 +2101,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.GraphProblems
 public import CslibFrontier.Computability.Complexity.FineGrained.GraphWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDomination
 public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationInterval
+public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationMinimumResources
 public import CslibFrontier.Computability.Complexity.FineGrained.IndependentDominationWitness
 public import CslibFrontier.Computability.Complexity.FineGrained.InducedMatching
 public import CslibFrontier.Computability.Complexity.FineGrained.InducedMatchingDistribution
