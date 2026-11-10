@@ -14,8 +14,10 @@ even after a failure, and each is reported as `ok` or `FAIL` with its log.
 `CI_ONLY` lists the remaining steps with the reason each does not run here: advisory notices that
 never fail the job, cache and runner plumbing (`scripts/cache/ensure.sh` restores caches locally),
 and steps that need GitHub context, tokens or secrets. `scripts/test_full_check.py` fails when a
-`ci-checks` step is in none of the three, when a mirrored step's commands, working directory or
-literal environment differ from CI's, or when the mirrored steps are out of CI's order.
+`ci-checks` step is in none of the three; when a mirrored or preflight step's `run` script has a
+line that is neither one of its commands here nor the listed `BASE` plumbing; when such a step sets
+something the local run does not reproduce (another working directory or environment, `shell`,
+`continue-on-error`, a timeout); or when the mirrored steps are out of CI's order.
 """
 
 from __future__ import annotations
@@ -35,8 +37,8 @@ ROOT = Path(__file__).resolve().parent.parent
 
 @dataclass(frozen=True)
 class Step:
-    """A `ci-checks` step: its CI name and the command lines of its `run` script that are not
-    shell plumbing (those starting with `python3`, `lake`, `test` or `command`; see
+    """A `ci-checks` step: its CI name and every line of its `run` script except `set -e` and the
+    computation of CI's base commit, which `BASE` replaces (`PLUMBING` in
     `scripts/test_full_check.py`)."""
     name: str
     commands: tuple[str, ...]
