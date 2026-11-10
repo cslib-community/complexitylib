@@ -636,6 +636,22 @@ nonconstant counter schedule, are in
 and direct checks of the sampling lemmas are in
 [`CslibFrontierTests/BitStringCollision.lean`](../../CslibFrontierTests/BitStringCollision.lean).
 
+For the chosen-plaintext security of random-IV OFB mode, import
+[`Encryption/OFBMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/OFBMode.lean)
+(Katz–Lindell 3rd ed., §3.6.3, Figure 3.8, Definition 3.22, following the proof of Theorem 3.33
+[katzlindell20][katzlindell20]). `ofbCpaGame` is the left-or-right multiple-encryption experiment
+for a keyed block function. A query is a pair of block lists, and a pair whose lengths differ or
+exceed `ℓ` blocks encrypts the empty message (`ofbSelect`, `ofbBlocks`). `ofbReduction` turns an
+adversary into a PRF distinguisher that computes the keystream with its oracle
+(`ofbCpaGame_eq_realGame`, `isQueryBounded_ofbReduction`). If the queries ask at most `K` blocks in
+total (`OracleComp.IsCostBounded (ofbCost ℓ) adversary K`), `advantage_idealGame_ofbReduction_le`
+bounds the distance from fresh uniform ciphertexts by `K * (K + ℓ) / 2^n` using
+`toOuterMeasure_badChain_le`. `advantage_ofbCpaGame_le` then bounds the left-or-right advantage by
+the two PRF advantages plus `2 * K * (K + ℓ) / 2^n`, and
+`advantage_ofbCpaGame_randomFunction_le` gives `2 * K * (K + ℓ) / 2^n` for a uniform random
+function. The reduction is concrete; no PPT statement is made. Concrete checks are in
+[`CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean`](../../CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean).
+
 For hash functions built from a fixed permutation or block cipher, import
 [`Hash/Sponge.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Sponge.lean) and
 [`Hash/BlockCipherCompression.lean`](../../CslibFrontier/Crypto/Primitives/Hash/BlockCipherCompression.lean)
@@ -706,6 +722,18 @@ rather than prepended message lengths (`cbcLengthSuffixAttack_valid`), and ambig
 [`BitString.padBlocks`](../../CslibFrontier/Foundations/Data/BitString/PadBlocks.lean)), with concrete
 four-bit witnesses in
 [`CslibFrontierTests/Crypto/CBCMAC.lean`](../../CslibFrontierTests/Crypto/CBCMAC.lean).
+
+For variable-length messages under CBC-MAC, import
+[`BlockCipher/LengthPrependedCBCMAC.lean`](../../CslibFrontier/Crypto/Primitives/BlockCipher/LengthPrependedCBCMAC.lean)
+(Katz–Lindell 3rd ed., §4.4.1, Figure 4.2, and Exercise 4.18 [katzlindell20][katzlindell20]).
+`lengthPrependedCbcMac` runs basic CBC-MAC on a block-aligned message of at most `L` blocks with
+its encoded block count in front (`prependLength`, `blockCountBlock`). For an injective length
+encoding, no prepended input is a prefix of another (`not_isPrefix_prependLength`), so
+`prependLengthQueries` turns an adaptive distinguisher into a prefix-free CBC-MAC distinguisher.
+`abs_lengthPrependedRealSuccess_sub_lengthPrependedIdealSuccess_le` then bounds its advantage
+against a uniform random function by `q^2 * (L + 1)^2 / 2^n` for `q` queries. Like the prefix-free
+bound, this statement is information-theoretic. Concrete checks are in
+[`CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean`](../../CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean).
 
 For messages of varying length built from a fixed-length `MACScheme`, import
 [`Protocols/MAC/VariableLength.lean`](../../CslibFrontier/Crypto/Protocols/MAC/VariableLength.lean)
