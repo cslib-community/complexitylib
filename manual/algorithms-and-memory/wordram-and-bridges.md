@@ -66,6 +66,15 @@ exact specification with `refine WP.Exact.of_exec h ?_`, or apply an exact contr
 The [symbolic-execution examples](../../CslibFrontierTests/WordRAMSymbolicExec.lean) check exact
 counts through a conditional, a wrong count left as a goal and a call to an exact specification.
 
+`wram_exec` stops at a loop. For an exact loop proved by induction, prove the body as
+`WP.Exact w body x fun z t => t = T ∧ ∃ y, Exec w loop z y T' ∧ P y`: run the body with
+`wram_exec`, then close the goal with the induction hypothesis at the state reached, giving `_`
+for that state so that its register facts are proved by `wram_simp` once it is known. Combine the
+two with `Exec.loop_iter`. Pass `← h` for an abbreviation `set v := e with h` so that values
+are read back as `v`. `clmulTabLoop_exec` and `hornerLoop_exec` in
+[`KWise`](../../CslibFrontier/DataStructure/HashFamily/WordRAM/KWise.lean) follow this pattern,
+the second with calls to exact contracts inside the body.
+
 For an injective bank, use `wram_call routine_spec renamed bank_injective with y ⟨post, frame⟩`.
 Here the specification starts from the caller's `Data.comap bank`; `frame` preserves registers
 outside the bank. Memory and register projections of bank views are normalized once. Preparation,
