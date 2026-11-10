@@ -21,10 +21,11 @@ necessary/sufficient repetition thresholds and harmonic charging. This avoids
 assuming that a risk optimum exists or supplying greedy performance as an input.
 The finite universe is the whole type; use a subtype for a restricted universe.
 
-Only batch construction and its mathematical bill/risk guarantees are proved.
-A native binary implementation/resource certificate, response token-bill and
-latency execution and encoded Set Cover hardness remain separate obligations;
-this is not completion of Theorem 4. `PartialCoverAsymptotics` derives the source
+This module proves mathematical batch construction and bill/risk guarantees.
+`PartialCoverGreedyNative` supplies native threshold/greedy/output composition
+for finite runtime masks and binary rational data. Full native oracle-response
+execution and encoded Set Cover hardness remain separate obligations;
+this is not completion of unrestricted Theorem 4. `PartialCoverAsymptotics` derives the source
 asymptotic approximation corollaries from the numerical factor below.
 
 ## Main results

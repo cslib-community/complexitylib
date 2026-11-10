@@ -25,9 +25,11 @@ decidable exact comparisons. Residual requirements store the source's
 `choose_spec` proves minimum-ratio selection; `batch_spec` proves termination
 and multicover completion within `n*r` calls. `run_bill_le` and `batch_bill_le`
 prove the harmonic comparison with every feasible benchmark batch.
-This concerns deterministic batch construction. The iteration bound is not a
-binary machine time/space certificate. Response-law, latency and hardness
-claims are separate; `PartialCoverGreedy` connects the risk and cost bounds.
+This module concerns deterministic batch construction. `Multicover.Native`
+provides its runtime mask/row encoding, uniform native time/workspace and decoded
+output correspondence. `PartialCoverGreedyNative` composes that machine with
+exact threshold search. Response-law execution and hardness claims are separate;
+`PartialCoverGreedy` connects the mathematical risk and cost bounds.
 
 ## Main definitions
 

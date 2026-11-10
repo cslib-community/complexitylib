@@ -332,10 +332,36 @@ in [the bibliography](../../references.bib). The checked clients are in
   $\delta_n=n^{-\Theta(1)}$ regime. The
   [asymptotic client](../../CslibFrontierTests/StochasticOraclePartialCoverAsymptotics.lean)
   checks fixed failure and the nonconstant budget $\delta_n=1/n$.
-  Native greedy time/space composition remains open: the eligibility/cost scan,
-  residual updates and emitted-batch loop lack a uniform native machine/resource
-  certificate. The separate native threshold certificate above does not compile
-  that greedy planner.
+  [Multicover.Native](../../CslibFrontier/Algorithms/Lean/Multicover/Native.lean)
+  now compiles the eligibility/cost scan, residual updates, repeated greedy loop,
+  reversal and binary-label output. The generic input has unary ground size and
+  repetition count, raw membership masks and binary rational costs; missing mask
+  bits are false and excess bits are ignored. `batch_eq` identifies the actual
+  output with the previously proved greedy batch. All scans, exact rational
+  normalization/comparisons, list work and emitted words are charged.
+  [PartialCoverGreedyNative](../../CslibFrontier/Probability/StochasticOracle/PartialCoverGreedyNative.lean)
+  composes preprocessing of $\delta/n$, native threshold search and that whole planner.
+  Its original input contains no repetition count. `uniform_plan` gives one native
+  machine whose time and workspace have fixed polynomial bounds in $N+r_1$,
+  with $N$ the encoded original-input length and $r_1$ the derived numerical
+  threshold. This is the source's numerical-threshold convention; it does not
+  assert polynomial time in the binary length of $r_1$.
+  Source identifiers are computed from runtime table positions. `labels_lt`
+  proves their range, and `decoded_labels_eq` decodes the emitted sequence against
+  the original oracle table to exactly the source greedy batch (including repeated
+  calls). `risk_bill` transports the risk and approximation bound against every
+  risk-feasible benchmark to this same output, without an optimum premise.
+  Check the complete [native greedy client](../../CslibFrontierTests/StochasticOracleGreedyNative.lean)
+  with `lake build CslibFrontierTests.StochasticOracleGreedyNative`: it derives
+  $r_1=3$ from $q=\delta=1/2$ over three elements, emits `[1,1,1,2,2,2]`, and
+  applies the comparison to a five-cost feasible benchmark. Duplicate serialized
+  row labels demonstrate that table-index construction is performed by the code.
+  The [generic native planner client](../../CslibFrontierTests/StochasticOracleMulticoverNative.lean)
+  also covers earlier-row ties, zero gains, repeated scans, empty ground, zero
+  demand and short/excess masks.
+  This closes native offline planning/resource composition for the stated finite
+  binary-rational representation. Full oracle request/response execution,
+  unrestricted external encodings and source WSC/subinstance codecs remain open.
   Set Cover approximation hardness is tracked in
   [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
   not supplied as a premise.
@@ -844,7 +870,8 @@ behavioral kernels, without a realization/representation theorem for every encod
 selection-only PTM or general measurable alphabets. Native encoded machine resources
 also remain open. The Poisson-binomial domination needed for Lemma 2 and for the
 measurable or unbounded-horizon Theorem 5 is tracked in
-[#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). Theorem 4's native runtime and hardness claims remain open;
+[#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). Theorem 4's native offline greedy runtime is now proved for the finite binary-rational
+representation above; native oracle execution and hardness remain open;
 its asymptotic factors are now proved.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
@@ -982,7 +1009,7 @@ representation required by Theorem 5 and the full two-turn lower optimum in
 Theorem 6. Later sections derive native query epochs and the concrete block controller.
 General response alphabets and external PTM/query encodings, canonical-label
 recovery and arbitrary source-policy compilation remain open.
-The earlier Theorem 4 native resource/hardness gaps remain. ROADMAP preserves
+The remaining Theorem 4 native oracle-execution/encoding and hardness gaps remain. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
 The Agent Operator's Manual needs no change because ownership, human direction,
 review and validation procedures are unchanged. No curated abstract depends on
@@ -1585,7 +1612,7 @@ established. The trace preserves divergent mass and its earlier receipts, but eq
 with a cofinal infinite-instruction path-cost law and real integrability are separate
 obligations. Divergence has no native terminal-world bill.
 
-Theorem 4's native resource/hardness gaps remain. Neither unrestricted
+Theorem 4's native oracle-execution/encoding and hardness gaps remain. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
 changes. The Agent Operator's Manual requires no edit because human direction,
 ownership, review and validation procedures are unchanged.

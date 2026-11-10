@@ -130,6 +130,7 @@ public import CslibFrontier.Algorithms.Lean.MaxFlow.VertexSeparator
 public import CslibFrontier.Algorithms.Lean.MaxFlow.WeightedMatching
 public import CslibFrontier.Algorithms.Lean.MergeSort.Comparator
 public import CslibFrontier.Algorithms.Lean.Multicover.Greedy
+public import CslibFrontier.Algorithms.Lean.Multicover.Native
 public import CslibFrontier.Algorithms.Lean.OptimalBST.Basic
 public import CslibFrontier.Algorithms.Lean.OptimalBST.Knuth
 public import CslibFrontier.Algorithms.Lean.OptimalBST.Yao
@@ -6064,6 +6065,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Selecto
 public import CslibFrontier.Probability.StochasticOracle.PartialCover
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverAsymptotics
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverGreedy
+public import CslibFrontier.Probability.StochasticOracle.PartialCoverGreedyNative
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverRisk
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverThreshold
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverThresholdNative
