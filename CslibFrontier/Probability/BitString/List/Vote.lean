@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Foundations.Data.BitString.List.Vote
 public import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 
 /-!
 # Majority prediction and its training test
@@ -39,8 +40,7 @@ theorem listStrictMajority_error_le {α : Type*} (source : PMF α)
     (votes : α → List Bool) (truth : α → Bool) :
     (source.toOuterMeasure {x | listStrictMajority (votes x) ≠ truth x}).toReal ≤
       (source.toOuterMeasure {x | listVoteMargin (votes x) (truth x) ≤ 0}).toReal := by
-  apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-  apply MeasureTheory.measure_mono
+  apply Probability.PMF.toOuterMeasure_toReal_mono
   intro x hwrong
   by_contra hpositive
   exact hwrong (listStrictMajority_eq_of_pos (lt_of_not_ge hpositive))

@@ -55,4 +55,31 @@ example :
   rw [outputAt_broadcastSteps]
   decide
 
+/-- Concrete pairwise step combinator where sender `s` sends `(rcv.val + 1) * st s` to receiver
+`rcv` and each party `i` sums its received inbox. -/
+def pairwiseWeightedSteps :
+    Steps (fun _ : Fin 3 => ZMod 7) (fun _ : Fin 3 => ZMod 7)
+      (broadcastSchedule 3 noOracleSpec (ZMod 7)) :=
+  pairwiseSteps 3 (fun _ x rcv => (rcv.val + 1 : ZMod 7) * x)
+    (fun _ _ inbox => ∑ s : Fin 3, inbox s)
+
+/-- Evaluating `pairwiseWeightedSteps` in `noOracleWorld` deterministically delivers each party's
+receiver-dependent inbox. -/
+example :
+    pairwiseWeightedSteps.evalWith noOracleWorld sampleState =
+      PMF.pure (fun i =>
+        deliverBroadcast (fun s => (i.val + 1 : ZMod 7) * sampleState s) i) :=
+  evalWith_pairwiseSteps 3 (fun _ x rcv => (rcv.val + 1 : ZMod 7) * x)
+    (fun _ _ inbox => ∑ s : Fin 3, inbox s) noOracleWorld sampleState
+
+/-- Party `1`'s output (`rcv.val + 1 = 2`) sums `2 * 2 + 2 * 5 + 2 * 4 = 1 : ZMod 7`. -/
+example :
+    pairwiseWeightedSteps.outputAt 1 (sampleState 1)
+      (deliverBroadcast (spec := noOracleSpec)
+        (fun s => ((1 : Fin 3).val + 1 : ZMod 7) * sampleState s) 1) =
+      (1 : ZMod 7) := by
+  unfold pairwiseWeightedSteps
+  rw [outputAt_pairwiseSteps]
+  decide
+
 end CslibFrontierTests.Crypto.Broadcast

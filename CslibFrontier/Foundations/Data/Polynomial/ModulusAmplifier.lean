@@ -20,17 +20,14 @@ polynomial `P_ℓ` of Beigel and Tarui [BeigelTarui1994, Section 2.3], refining 
 Hence for every integer modulus `m` and integer `y`,
 `m ∣ y → p_ℓ(y) ≡ 1 (mod m ^ ℓ)` (`Polynomial.parityAmplifier_eval_modEq_one_of_dvd`) and
 `m ∣ y - 1 → p_ℓ(y) ≡ 0 (mod m ^ ℓ)`
-(`Polynomial.parityAmplifier_eval_modEq_zero_of_dvd_sub_one`); `ParityAmplifier` proves the
-`m = 2` case. Composed with Fermat's little theorem, `1 - p_ℓ(z ^ (p - 1))` is the indicator of
+(`Polynomial.parityAmplifier_eval_modEq_zero_of_dvd_sub_one`), both proved in `ParityAmplifier`.
+Composed with Fermat's little theorem, `1 - p_ℓ(z ^ (p - 1))` is the indicator of
 `z ≢ 0 (mod p)` modulo `p ^ ℓ` for a prime `p`
 (`Polynomial.one_sub_parityAmplifier_eval_pow_modEq`); its degree in `z` is at most
 `(2ℓ - 1)(p - 1)` (`Polynomial.natDegree_parityAmplifier_le`).
 
 ## Main results
 
-* `Polynomial.parityAmplifier_eval_modEq_one_of_dvd`,
-  `Polynomial.parityAmplifier_eval_modEq_zero_of_dvd_sub_one`: amplification from modulus `m` to
-  `m ^ ℓ`.
 * `Polynomial.one_sub_parityAmplifier_eval_pow_modEq`: the Fermat-normalized `MOD_p` indicator
   modulo `p ^ ℓ`.
 
@@ -43,33 +40,6 @@ Hence for every integer modulus `m` and integer `y`,
 public section
 
 namespace Polynomial
-
-/-- If `m ∣ y`, then `p_ℓ(y) ≡ 1 (mod m ^ ℓ)`. -/
-theorem parityAmplifier_eval_modEq_one_of_dvd (ℓ : ℕ) {m y : ℤ} (hy : m ∣ y) :
-    (parityAmplifier ℓ).eval y ≡ 1 [ZMOD m ^ ℓ] := by
-  rcases Nat.eq_zero_or_pos ℓ with rfl | hℓ
-  · simp only [pow_zero, Int.modEq_one]
-  rw [Int.modEq_iff_dvd]
-  obtain ⟨q, hq⟩ := X_pow_dvd_one_sub_parityAmplifier hℓ
-  have heval : 1 - (parityAmplifier ℓ).eval y = y ^ ℓ * q.eval y := by
-    have := congr_arg (eval y) hq
-    simpa only [eval_sub, eval_one, eval_mul, eval_pow, eval_X] using this
-  rw [heval]
-  exact dvd_mul_of_dvd_left (pow_dvd_pow_of_dvd hy ℓ) _
-
-/-- If `m ∣ y - 1`, then `p_ℓ(y) ≡ 0 (mod m ^ ℓ)`. -/
-theorem parityAmplifier_eval_modEq_zero_of_dvd_sub_one (ℓ : ℕ) {m y : ℤ} (hy : m ∣ y - 1) :
-    (parityAmplifier ℓ).eval y ≡ 0 [ZMOD m ^ ℓ] := by
-  rw [Int.modEq_iff_dvd, zero_sub, dvd_neg]
-  obtain ⟨q, hq⟩ := one_sub_X_pow_dvd_parityAmplifier ℓ
-  have heval : (parityAmplifier ℓ).eval y = (1 - y) ^ ℓ * q.eval y := by
-    have := congr_arg (eval y) hq
-    simpa only [eval_mul, eval_pow, eval_sub, eval_one, eval_X] using this
-  rw [heval]
-  have h1 : m ∣ 1 - y := by
-    rw [← neg_sub]
-    exact dvd_neg.2 hy
-  exact dvd_mul_of_dvd_left (pow_dvd_pow_of_dvd h1 ℓ) _
 
 /-- **Fermat-normalized modulus amplification.** For a prime `p`, `1 - p_ℓ(z ^ (p - 1))` is
 congruent modulo `p ^ ℓ` to the indicator of `z ≢ 0 (mod p)`. -/

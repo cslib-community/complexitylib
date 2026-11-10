@@ -225,34 +225,18 @@ theorem blandStep_eq_optimal_iff : D.blandStep = .optimal ↔ D.blandEntering = 
 omit [IsStrictOrderedRing K] in
 theorem blandStep_eq_unbounded_iff {s : ι} :
     D.blandStep = .unbounded s ↔ D.blandEntering = some s ∧ D.blandLeaving s = none := by
-  rcases h1 : D.blandEntering with _ | s'
-  · simp only [blandStep, h1, reduceCtorEq, false_and]
-  · rcases h2 : D.blandLeaving s' with _ | r'
-    · simp only [blandStep, h1, h2, Step.unbounded.injEq, Option.some.injEq]
-      constructor
-      · rintro rfl; exact ⟨rfl, h2⟩
-      · rintro ⟨rfl, -⟩; rfl
-    · simp only [blandStep, h1, h2, reduceCtorEq, Option.some.injEq, false_iff, not_and]
-      rintro rfl
-      rw [h2]
-      exact Option.some_ne_none r'
+  unfold blandStep
+  rcases D.blandEntering with _ | s'
+  · simp
+  · rcases h2 : D.blandLeaving s' with _ | r' <;> grind
 
 omit [IsStrictOrderedRing K] in
 theorem blandStep_eq_pivot_iff {r s : ι} :
     D.blandStep = .pivot r s ↔ D.blandEntering = some s ∧ D.blandLeaving s = some r := by
-  rcases h1 : D.blandEntering with _ | s'
-  · simp only [blandStep, h1, reduceCtorEq, false_and]
-  · rcases h2 : D.blandLeaving s' with _ | r'
-    · simp only [blandStep, h1, h2, reduceCtorEq, Option.some.injEq, false_iff, not_and]
-      rintro rfl
-      rw [h2]
-      exact (Option.some_ne_none r).symm
-    · simp only [blandStep, h1, h2, Step.pivot.injEq, Option.some.injEq]
-      constructor
-      · rintro ⟨rfl, rfl⟩; exact ⟨rfl, h2⟩
-      · rintro ⟨rfl, h⟩
-        rw [h2, Option.some.injEq] at h
-        exact ⟨h, rfl⟩
+  unfold blandStep
+  rcases D.blandEntering with _ | s'
+  · simp
+  · rcases h2 : D.blandLeaving s' with _ | r' <;> grind
 
 /-- `D'` arises from `D` by one pivot of Bland's rule. -/
 def BlandPivot (D D' : Dictionary ι K) : Prop :=

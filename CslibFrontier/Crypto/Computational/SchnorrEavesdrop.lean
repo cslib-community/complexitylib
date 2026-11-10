@@ -14,8 +14,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.Repeat
-import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -205,8 +206,7 @@ private theorem eval_schnorrRealTranscript (n : ℕ) (d : F.Desc) (α : ZMod (F.
       (r + ofBits c * α.val) % F.order d =
         ((r : ZMod (F.order d)) + (ofBits c : ZMod (F.order d)) * α).val := by
     rw [← ZMod.val_natCast (F.order d), Nat.cast_add, Nat.cast_mul, ZMod.natCast_zmod_val]
-  simp only [schnorrRealTranscript, ProbComp.eval_bind, ProbComp.eval_pure,
-    BitString.eval_sampleList, PMF.bind_map, Function.comp_def, F.smul_encode, hresp]
+  simp only [pmf_norm, schnorrRealTranscript, BitString.eval_sampleList, F.smul_encode, hresp]
   refine congrArg (PMF.bind _) (funext fun r => ?_)
   rw [← PMF.bind_pure_comp]
   rfl
@@ -387,8 +387,7 @@ theorem advantage_schnorrEavesdropGame_schnorrDirectGame_le
     (setup : ℕ → PMF F.Desc) (k Q : ℕ → ℕ) (A : F.SchnorrEavesdropAdversary) (n : ℕ) :
     Game.advantage (F.schnorrEavesdropGame setup k Q A n)
       (F.schnorrDirectGame setup k (A.toDirect k Q) n) ≤ 2 * Q n / 2 ^ n := by
-  simp only [schnorrEavesdropGame, schnorrDirectGame, SchnorrEavesdropAdversary.toDirect,
-    ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_bind]
+  simp only [pmf_norm, schnorrEavesdropGame, schnorrDirectGame, SchnorrEavesdropAdversary.toDirect]
   refine Game.advantage_bind_le_nnreal (setup n) _ _ fun d => ?_
   refine Game.advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _ fun α => ?_
   exact Game.advantage_bind_le_of_closeTo
@@ -584,17 +583,6 @@ def IsIdealEavesdropSecure (setup : ℕ → PMF F.Desc) (k : ℕ → ℕ) : Prop
     ∀ (A : F.SchnorrEavesdropAdversary), A.IsPPT →
       Negligible fun n => Game.succProbability (F.schnorrIdealEavesdropGame setup k Q A n)
 
-/-- When `Q` is computable in polynomial time on unary inputs, `(Q n : ℝ≥0) / 2 ^ n` is
-negligible. -/
-theorem negligible_div_two_pow_of_polyTime {Q : ℕ → ℕ}
-    (hQ : ComputableInPolyTime Q encUnary encUnary) :
-    Negligible fun n => (Q n : ℝ≥0) / 2 ^ n := by
-  have hpoly : PolynomiallyBounded Q := hQ.tidy.polynomiallyBounded
-  have hgeom : Negligible fun n => (2⁻¹ : ℝ≥0) ^ n :=
-    negligible_geometric (by norm_num)
-  refine (hgeom.polynomiallyBounded_mul hpoly).congr fun n => ?_
-  rw [div_eq_mul_inv, inv_pow]
-
 /-- **Schnorr identification is secure against eavesdropping with ideal honest conversations under
 the discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.5). -/
 theorem negligible_schnorrIdealEavesdropGame {setup : ℕ → PMF F.Desc} (hDL : F.DiscreteLog setup)
@@ -605,20 +593,19 @@ theorem negligible_schnorrIdealEavesdropGame {setup : ℕ → PMF F.Desc} (hDL :
     {A : F.SchnorrEavesdropAdversary} (hA : A.IsPPT) :
     Negligible fun n => Game.succProbability (F.schnorrIdealEavesdropGame setup k Q A n) := by
   have hdir := negligible_schnorrDirectGame hDL hk hkq hchallenge (isPPT_toDirect hk hQ hA)
-  have hsim := negligible_div_two_pow_of_polyTime hQ
-  refine negligible_of_le (hsim.add hdir) fun n => ?_
-  calc Game.succProbability (F.schnorrIdealEavesdropGame setup k Q A n)
-      ≤ Game.advantage (F.schnorrIdealEavesdropGame setup k Q A n)
-          (F.schnorrDirectGame setup k (A.toDirect k Q) n) +
-        Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) := by
-        simpa only [Game.advantage_pure_false] using
-          Game.advantage_triangle
-            (F.schnorrIdealEavesdropGame setup k Q A n)
-            (F.schnorrDirectGame setup k (A.toDirect k Q) n)
-            (PMF.pure false)
-    _ ≤ Q n / 2 ^ n +
-        Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) :=
-      add_le_add (advantage_schnorrIdealEavesdropGame_schnorrDirectGame_le setup k Q A n) le_rfl
+  negligible using fun n =>
+    calc Game.succProbability (F.schnorrIdealEavesdropGame setup k Q A n)
+        ≤ Game.advantage (F.schnorrIdealEavesdropGame setup k Q A n)
+            (F.schnorrDirectGame setup k (A.toDirect k Q) n) +
+          Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) := by
+          simpa only [Game.advantage_pure_false] using
+            Game.advantage_triangle
+              (F.schnorrIdealEavesdropGame setup k Q A n)
+              (F.schnorrDirectGame setup k (A.toDirect k Q) n)
+              (PMF.pure false)
+      _ ≤ (Q n : ℝ≥0) / 2 ^ n +
+          Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) :=
+        add_le_add (advantage_schnorrIdealEavesdropGame_schnorrDirectGame_le setup k Q A n) le_rfl
 
 /-- **Schnorr identification is secure against eavesdropping in the strict-PPT model under the
 discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.5; [KatzLindell2020],
@@ -631,24 +618,20 @@ theorem negligible_schnorrEavesdropGame {setup : ℕ → PMF F.Desc} (hDL : F.Di
     {A : F.SchnorrEavesdropAdversary} (hA : A.IsPPT) :
     Negligible fun n => Game.succProbability (F.schnorrEavesdropGame setup k Q A n) := by
   have hdir := negligible_schnorrDirectGame hDL hk hkq hchallenge (isPPT_toDirect hk hQ hA)
-  have h2Q : ComputableInPolyTime (fun n => 2 * Q n) encUnary encUnary := by
-    have hQ_t := hQ.tidy
-    exact .of_tidy (by fun_prop)
-  have hsim := negligible_div_two_pow_of_polyTime h2Q
-  refine negligible_of_le (hsim.add hdir) fun n => ?_
-  calc Game.succProbability (F.schnorrEavesdropGame setup k Q A n)
-      ≤ Game.advantage (F.schnorrEavesdropGame setup k Q A n)
-          (F.schnorrDirectGame setup k (A.toDirect k Q) n) +
-        Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) := by
-        simpa only [Game.advantage_pure_false] using
-          Game.advantage_triangle
-            (F.schnorrEavesdropGame setup k Q A n)
-            (F.schnorrDirectGame setup k (A.toDirect k Q) n)
-            (PMF.pure false)
-    _ ≤ (2 * Q n : ℕ) / 2 ^ n +
-        Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) := by
-      simpa only [Nat.cast_mul, Nat.cast_ofNat] using
-        add_le_add (advantage_schnorrEavesdropGame_schnorrDirectGame_le setup k Q A n) le_rfl
+  negligible using fun n =>
+    calc Game.succProbability (F.schnorrEavesdropGame setup k Q A n)
+        ≤ Game.advantage (F.schnorrEavesdropGame setup k Q A n)
+            (F.schnorrDirectGame setup k (A.toDirect k Q) n) +
+          Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) := by
+          simpa only [Game.advantage_pure_false] using
+            Game.advantage_triangle
+              (F.schnorrEavesdropGame setup k Q A n)
+              (F.schnorrDirectGame setup k (A.toDirect k Q) n)
+              (PMF.pure false)
+      _ ≤ ((2 * Q n : ℕ) : ℝ≥0) / 2 ^ n +
+          Game.succProbability (F.schnorrDirectGame setup k (A.toDirect k Q) n) := by
+        simpa only [Nat.cast_mul, Nat.cast_ofNat] using
+          add_le_add (advantage_schnorrEavesdropGame_schnorrDirectGame_le setup k Q A n) le_rfl
 
 /-- **Schnorr identification satisfies `IsIdealEavesdropSecure` under the discrete-logarithm
 assumption** ([BonehShoup2023], Theorem 19.5). -/

@@ -38,19 +38,19 @@ abbrev State (k : ℕ) (Q : Type) := RawController.Reply ⊕ GateVector.State k 
 
 /-- Resolve interval metadata and normalize the retained field point. -/
 @[expose] def prepare (k : ℕ) : Args → GateVector.Params :=
-  fun (address, ((N, b, _, _, m, _, stride), (p, alphabet, n), point, limit), count) =>
+  fun (address, (context, (p, alphabet, n), point, limit), count) =>
     let (σ, _, _) := address
-    (((N, b, σ, ImplicitPath.walk k address - 1, m, 0, stride),
+    (({ context with schedule := σ, interval := ImplicitPath.walk k address - 1, chunk := 0 },
       (p, alphabet, n), NormalizePoint.normalize p point, limit), count)
 
 /-- Immediate nongate rejection, paid source padding, or a fresh positive-interval vector. -/
 @[expose] def initial (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) : Args → State k Q :=
   fun (address, params) =>
     let (gateParams, count) := params
-    let ((_, _, _, _, m, _, _), _, _, limit) := gateParams
+    let (context, _, _, limit) := gateParams
     if ImplicitNode.classify k address = 2 then
       if ImplicitPath.walk k address = 0 then
-        .inl (0, InitialVector.values M e (limit, m, count))
+        .inl (0, InitialVector.values M e (limit, context.chunkWidth, count))
       else .inr (GateVector.initial (prepare k (address, params)))
     else .inl (0, [])
 
@@ -90,10 +90,10 @@ theorem prepare_inSpace : ComputableInSpace (prepare k) encArgs GateVector.encPa
   have hparameters := hrest.fst'
   have hpoint := hrest.snd'.fst'
   have hlimit := hrest.snd'.snd'
-  have hN := hc.fst'
-  have hb := hc.snd'.fst'
-  have hm := hc.snd'.snd'.snd'.snd'.fst'
-  have hstride := hc.snd'.snd'.snd'.snd'.snd'.snd'
+  have hN := budget_comp_linear (of_inO Interpolation.encContext_inputLength_inO) hc
+  have hb := budget_comp_linear (of_inO Interpolation.encContext_blockWidth_inO) hc
+  have hm := budget_comp_linear (of_inO Interpolation.encContext_chunkWidth_inO) hc
+  have hstride := budget_comp_linear (of_inO Interpolation.encContext_stride_inO) hc
   have hindex := budget_natSub (budget_comp_linear (ImplicitPath.walk_inSpace k) ha)
     (budget_const (encB := encNat) 1 (.refl _))
   have hnorm := budget_comp_linear NormalizePoint.normalize_inSpace
@@ -113,7 +113,7 @@ theorem initial_inSpace (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s) :
   have hpar := hv.fst'
   have hc := hpar.fst'
   have hlimit := hpar.snd'.snd'.snd'
-  have hm := hc.snd'.snd'.snd'.snd'.fst'
+  have hm := budget_comp_linear (of_inO Interpolation.encContext_chunkWidth_inO) hc
   have hsource := budget_comp_linear (InitialVector.values_inSpace M e)
     (budget_prod hlimit (budget_prod hm hv.snd'))
   have hinl := of_inO (ComputableInO.inl RawController.encReply

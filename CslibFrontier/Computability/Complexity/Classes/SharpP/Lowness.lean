@@ -287,17 +287,17 @@ theorem forall_SharpPWithOracle_eq_SharpP_iff :
     fun ⟨hA_up, hA_coup⟩ _ enc =>
       SharpPWithOracle_eq_SharpP_of_mem_UP_of_mem_coUP hA_up hA_coup enc⟩
 
+/-- `UP ∩ coUP` is nonempty: it contains the empty problem, which is in `P`. This is the
+witness that collapses each union of a class relativized to a low oracle. -/
+private theorem UP_inter_coUP_nonempty : (UP encBits ∩ coUP encBits).Nonempty :=
+  ⟨∅, P_subset_UP empty_mem_P, P_subset_coUP empty_mem_P⟩
+
 /-- **The union of `#P^A` over `A ∈ UP ∩ coUP` is `#P`.** -/
 theorem iUnion_SharpPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, SharpPWithOracle A enc) = SharpP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (SharpPWithOracle_eq_SharpP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro f hf
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    refine Set.mem_iUnion₂.mpr ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, ?_⟩
-    exact SharpP_subset_SharpPWithOracle ∅ enc hf
+    (⋃ A ∈ UP encBits ∩ coUP encBits, SharpPWithOracle A enc) = SharpP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      SharpPWithOracle_eq_SharpP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-! ### Relativized `UP`, `coUP`, `FewP`, `US`, and `SBPWithFixedTarget` -/
 
@@ -532,63 +532,38 @@ theorem SBPWithFixedTarget_eq_SBP_of_mem_UP_of_mem_coUP
 
 /-- **The union of `UP^A` over `A ∈ UP ∩ coUP` is `UP`.** -/
 theorem iUnion_UPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, UPWithOracle A enc) = UP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (UPWithOracle_eq_UP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, UP_subset_UPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, UPWithOracle A enc) = UP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      UPWithOracle_eq_UP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `coUP^A` over `A ∈ UP ∩ coUP` is `coUP`.** -/
 theorem iUnion_coUPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, coUPWithOracle A enc) = coUP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (coUPWithOracle_eq_coUP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, coUP_subset_coUPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, coUPWithOracle A enc) = coUP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      coUPWithOracle_eq_coUP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `FewP^A` over `A ∈ UP ∩ coUP` is `FewP`.** -/
 theorem iUnion_FewPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, FewPWithOracle A enc) = FewP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (FewPWithOracle_eq_FewP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, FewP_subset_FewPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, FewPWithOracle A enc) = FewP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      FewPWithOracle_eq_FewP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `US^A` over `A ∈ UP ∩ coUP` is `US`.** -/
 theorem iUnion_USWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, USWithOracle A enc) = US enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (USWithOracle_eq_US_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, US_subset_USWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, USWithOracle A enc) = US enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      USWithOracle_eq_US_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `SBPWithFixedTarget A` over `A ∈ UP ∩ coUP` is `SBP`.** -/
 theorem iUnion_SBPWithFixedTarget_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, SBPWithFixedTarget A enc) = SBP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (SBPWithFixedTarget_eq_SBP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, SBP_subset_SBPWithFixedTarget ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, SBPWithFixedTarget A enc) = SBP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      SBPWithFixedTarget_eq_SBP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-! ### Exact characterizations of `GapP` and `SPP` oracle lowness (`Low(GapP) = Low(SPP) = SPP`) -/
 
@@ -651,25 +626,15 @@ theorem forall_SPPWithOracle_eq_SPP_iff :
 
 /-- **The union of `GapP^A` over `A ∈ SPP` is `GapP`.** -/
 theorem iUnion_GapPWithOracle_SPP (enc : α ↪ List Bool) :
-    (⋃ A ∈ SPP encBits, GapPWithOracle A enc) = GapP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA => (GapPWithOracle_eq_GapP_of_mem_SPP hA enc).le
-  · intro g hg
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, UP_subset_SPP (P_subset_UP hempty), GapP_subset_GapPWithOracle ∅ enc hg⟩
+    (⋃ A ∈ SPP encBits, GapPWithOracle A enc) = GapP enc :=
+  (Set.iUnion₂_congr fun _ hA => GapPWithOracle_eq_GapP_of_mem_SPP hA enc).trans
+    (Set.biUnion_const ⟨∅, UP_subset_SPP (P_subset_UP empty_mem_P)⟩ _)
 
 /-- **The union of `SPP^A` over `A ∈ SPP` is `SPP`.** -/
 theorem iUnion_SPPWithOracle_SPP (enc : α ↪ List Bool) :
-    (⋃ A ∈ SPP encBits, SPPWithOracle A enc) = SPP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA => (SPPWithOracle_eq_SPP_of_mem_SPP hA enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, UP_subset_SPP (P_subset_UP hempty), SPP_subset_SPPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ SPP encBits, SPPWithOracle A enc) = SPP enc :=
+  (Set.iUnion₂_congr fun _ hA => SPPWithOracle_eq_SPP_of_mem_SPP hA enc).trans
+    (Set.biUnion_const ⟨∅, UP_subset_SPP (P_subset_UP empty_mem_P)⟩ _)
 
 /-- **`FewP` is low for `GapP`** (`GapP^FewP = GapP`, via `FewP ⊆ SPP`). -/
 theorem GapPWithOracle_eq_GapP_of_mem_FewP (hA : A ∈ FewP encBits) (enc : α ↪ List Bool) :

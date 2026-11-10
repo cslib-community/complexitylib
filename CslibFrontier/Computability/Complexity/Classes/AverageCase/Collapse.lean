@@ -12,8 +12,10 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Probability.PMF.Finiteness
 
 /-!
 # Collapsing the uniform ensemble at a prefix code
@@ -280,16 +282,79 @@ theorem cdf_ensemble (y : List Bool) :
   · rintro ⟨h, hr⟩
     exact ⟨(H.binaryValue_collapse_le_iff (Ensemble.uniform.length_eq _ _ hr)).mpr h, hr⟩
 
-theorem collapse_polyTime (hvalid : ComputableInPolyTime H.valid encBits encBool)
-    (hheader : ComputableInPolyTime H.header encBits encBits) :
+theorem collapse_polyTime (hvalid : ComputableInPolyTime H.valid encBits encBool) :
     ComputableInPolyTime H.collapse encBits encBits := by
-  unfold collapse
-  polytime
+  let idx : List Bool → ℕ := fun r =>
+    ((List.range (r.length + 1)).find? (fun k => H.valid (r.take k))).getD 0
+  let findHdr : List Bool → List Bool := fun r => r.take (idx r)
+  have hrange : Turing.MultiTapeTM.ComputableInPolyTime
+      (fun r : List Bool => List.range (r.length + 1)) encBits (encList encUnary) :=
+    (Turing.MultiTapeTM.ComputableInPolyTime.of_tidy
+      Turing.MultiTapeTM.ComputableTidilyInPolyTime.range).comp (by polytime)
+  have hfind : Turing.MultiTapeTM.ComputableInPolyTime
+      (fun r : List Bool => (List.range (r.length + 1)).find? (fun k => H.valid (r.take k)))
+      encBits (encOption encUnary) :=
+    Turing.MultiTapeTM.ComputableInPolyTime.findWithInput hrange (by polytime)
+  have hidx : Turing.MultiTapeTM.ComputableInPolyTime idx encBits encUnary :=
+    .of_tidy (Turing.MultiTapeTM.ComputableTidilyInPolyTime.optionGetDWithInput hfind.tidy
+      (Turing.MultiTapeTM.ComputableInPolyTime.const 0
+        (encIn := encBits) (encOut := encUnary)).tidy)
+  have hfindHdr_pt : Turing.MultiTapeTM.ComputableInPolyTime findHdr encBits encBits := by
+    polytime
+  have hpoly : ComputableInPolyTime (fun r =>
+      if H.valid r then findHdr r ++ List.replicate (r.length - (findHdr r).length) true
+      else r)
+      encBits encBits := by
+    polytime
+  have hfindHdr {r : List Bool} (hv : H.valid r = true) : findHdr r = H.header r := by
+    let L := List.range (r.length + 1)
+    let p : ℕ → Bool := fun k => H.valid (r.take k)
+    have hlen : (H.header r).length ∈ L :=
+      List.mem_range.mpr (Nat.lt_succ_of_le (H.length_header_le hv))
+    obtain ⟨t, ht⟩ := H.header_isPrefix r hv
+    have htake_hdr : r.take (H.header r).length = H.header r :=
+      calc r.take (H.header r).length = (H.header r ++ t).take (H.header r).length := by rw [ht]
+        _ = H.header r := List.take_left
+    have hh := H.valid_of_isPrefix r (H.header r) hv (List.prefix_refl _)
+    have hp_hdr : p (H.header r).length = true := by simp [p, htake_hdr, hh.1]
+    cases hopt : L.find? p with
+    | none =>
+      exact absurd hp_hdr (List.find?_eq_none.mp hopt _ hlen)
+    | some k =>
+      obtain ⟨hp_k, as, bs, hL, hmin⟩ := List.find?_eq_some_iff_append.mp hopt
+      have hk_le_hdr : k ≤ (H.header r).length := by
+        rcases List.mem_append.mp (hL ▸ hlen) with h_as | h_kbs
+        · exfalso
+          have := hmin _ h_as
+          simp [hp_hdr] at this
+        · rcases List.mem_cons.mp h_kbs with h_eq | h_bs
+          · exact h_eq.ge
+          · have hp_pw : (as ++ k :: bs).Pairwise (· < ·) := hL ▸ List.pairwise_lt_range
+            exact (List.rel_of_pairwise_cons (List.pairwise_append.mp hp_pw).2.1 h_bs).le
+      have hdr_le_k : (H.header r).length ≤ k := by
+        have hvp : H.valid (r.take k) = true := hp_k
+        have hp_pref : H.header (r.take k) <+: r :=
+          (H.header_isPrefix _ hvp).trans (List.take_prefix k r)
+        have hhd := (H.valid_of_isPrefix _ r hvp hp_pref).2
+        calc (H.header r).length = (H.header (r.take k)).length := by rw [hhd]
+          _ ≤ (r.take k).length := (H.header_isPrefix _ hvp).length_le
+          _ ≤ k := List.length_take_le k r
+      have hk_eq : k = (H.header r).length := le_antisymm hk_le_hdr hdr_le_k
+      simp [findHdr, idx, L, p, hopt, hk_eq, htake_hdr]
+  have heq : H.collapse = fun r =>
+      if H.valid r then findHdr r ++ List.replicate (r.length - (findHdr r).length) true
+      else r := by
+    funext r
+    by_cases hv : H.valid r = true
+    · simp only [collapse, hv, ite_true, hfindHdr hv]
+    · have hvf : H.valid r = false := Bool.eq_false_iff.mpr hv
+      simp only [collapse, hvf, Bool.false_eq_true, ite_false]
+  rwa [heq]
 
 /-- **The collapsed ensemble is polynomial-time computable** when the header parser is. -/
 theorem pComp_ensemble (hvalid : ComputableInPolyTime H.valid encBits encBool)
     (hheader : ComputableInPolyTime H.header encBits encBits) : H.ensemble.PComp := by
-  have hcoll := H.collapse_polyTime hvalid hheader
+  have hcoll := H.collapse_polyTime hvalid
   refine ⟨H.cdfNum, fun y => 2 ^ y.length, ?_, by polytime, fun _ => by positivity,
     H.cdf_ensemble⟩
   have hc : ComputableInPolyTime (fun y => decide (H.collapse y = y)) encBits encBool :=
@@ -352,9 +417,7 @@ theorem ensemble_dist_collapse {r : List Bool} (hv : H.valid r = true) :
     unfold hi lo
     ring
   rw [hhi, Nat.cast_add, ENNReal.add_div] at hblock
-  have hne : ((H.lo r : ℕ) : ℝ≥0∞) / ((2 ^ r.length : ℕ) : ℝ≥0∞) ≠ ⊤ :=
-    ENNReal.div_ne_top (ENNReal.natCast_ne_top _) (by positivity)
-  rw [← (ENNReal.add_right_inj hne).mp hblock]
+  rw [← (ENNReal.add_right_inj (by finiteness)).mp hblock]
   have hlen := H.length_header_le hv
   obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le hlen
   rw [hk, Nat.add_sub_cancel_left]

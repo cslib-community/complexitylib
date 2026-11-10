@@ -194,11 +194,27 @@ section Mobius
 
 variable [Finite α]
 
+omit [Finite α] in
 open Classical in
 /-- The polynomial identity $\sum_{z \ge x} X (X - 1) \cdots (X - b(z) + 1) = X^{b(x)}$, where
 $b(z)$ is the number of blocks of $z$. -/
 theorem sum_descPochhammer_blocks [Fintype (Setoid α)] (x : Setoid α) :
     ∑ z ∈ {z | x ≤ z}, descPochhammer ℤ (blocks z) = (X : ℤ[X]) ^ blocks x := by
+  have : Finite α := by
+    rcases finite_or_infinite α with hfin | _
+    · exact hfin
+    · exfalso
+      have hinj : Function.Injective (fun a : α => Setoid.ker fun x => x = a) := by
+        intro a b hab
+        by_contra hne
+        obtain ⟨c, hc⟩ := Infinite.exists_notMem_finset ({a, b} : Finset α)
+        simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hc
+        have hrel : (Setoid.ker fun x => x = a) b c := by
+          simp [Setoid.ker_def, Ne.symm hne, hc.1]
+        have hrel' : (Setoid.ker fun x => x = b) b c :=
+          (congrArg (fun s : Setoid α => s b c) hab).mp hrel
+        simp [Setoid.ker_def, hc.2] at hrel'
+      exact (Infinite.of_injective _ hinj).not_finite (Finite.of_fintype (Setoid α))
   refine eq_of_infinite_eval_eq _ _ (Set.infinite_of_injective_forall_mem
     (f := fun t : ℕ => (t : ℤ)) Nat.cast_injective fun t => ?_)
   simp only [Set.mem_ofPred_eq, eval_finsetSum, descPochhammer_eval_eq_descFactorial, eval_pow,

@@ -113,8 +113,7 @@ private theorem tm2_init_eq (v : List ℕ) :
     (TM2.init K'.main (trList v) : TM2.Cfg (fun _ : K' => Γ') UΛ (Option Γ')) =
       PartrecToTM2.init univ v := by
   simp only [TM2.init, PartrecToTM2.init]
-  congr 1
-  funext k
+  congr 1 with k : 1
   cases k <;> rfl
 
 private theorem dom_M₂ (n : ℕ) :

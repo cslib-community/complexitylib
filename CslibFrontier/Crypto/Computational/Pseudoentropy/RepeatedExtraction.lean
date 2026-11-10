@@ -247,8 +247,8 @@ theorem eval_extractLabels_of_subsingleton {Observation Label Seed Output : Type
       Subsingleton.elim result value]
   simp only [pmf_norm, extractLabelsIdeal, OracleComp.replicate_map, extractLabels, bind_pure_comp,
     monad_bind_eq_bind]
-  congr 1; funext samples; rw [PMF.map]
-  congr 1; funext key
+  congr 1 with samples : 1; rw [PMF.map]
+  congr 1 with key : 1
   rw [huniform (hash key (samples.map Prod.snd)), PMF.pure_map]
   rfl
 

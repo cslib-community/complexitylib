@@ -573,8 +573,7 @@ theorem val_directCore_tableEntry (P : ℕ) (fl : List ℕ) (G : ExplicitTensorN
     ExplicitTensorNetwork.entry G
   simp only [Nat.coe_castRingHom] at h
   rw [h]
-  congr 1
-  funext t bs
+  congr 1 with t bs : 2
   exact VertexDesc.val_entry_inl P fl t bs
 
 end EntryContraction

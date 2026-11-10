@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.Reachability.InductiveCounting.Semantics
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.RadixRounds
 
 /-!
 # Feeding the compact native graph to inductive counting
@@ -26,7 +27,6 @@ a space bound only shows that large radices are closed
 
 * `Turing.InductiveCounting.graphEdge`, `Turing.InductiveCounting.graphOverflow`,
   `Turing.InductiveCounting.graphAccepting`: the local tests on an actual input.
-* `Turing.InductiveCounting.startRadix`: the first radix tried.
 * `Turing.InductiveCounting.Closed`: no reachable vertex overflows.
 
 ## Main results
@@ -80,39 +80,7 @@ theorem boundedGraph_eq :
   · intro h
     exact ⟨(graphEdge_bounds ntm B input h).1, (graphEdge_bounds ntm B input h).2, h⟩
 
-variable (State) in
-/-- The first radix tried: above every input position and every finite tag. -/
-def startRadix (n : ℕ) : ℕ := (n + 2) * 2 ^ (Fintype.card (Option State) + 2)
-
-theorem le_startRadix (n : ℕ) : n + 2 ≤ startRadix State n :=
-  Nat.le_mul_of_pos_right _ (Nat.two_pow_pos _)
-
-theorem card_lt_startRadix (n : ℕ) : Fintype.card (Option State) + 3 < startRadix State n := by
-  have hm : 2 ^ (Fintype.card (Option State) + 2) ≤ startRadix State n :=
-    Nat.le_mul_of_pos_left _ (by omega)
-  have hp : 2 ^ (Fintype.card (Option State) + 2) = 4 * 2 ^ Fintype.card (Option State) := by
-    rw [pow_add]
-    ring
-  have h2 := Nat.lt_two_pow_self (n := Fintype.card (Option State))
-  omega
-
 variable {ntm B input}
-
-/-- The initial view fits every radix above the finite tags. -/
-theorem fits_init (hB : Fintype.card (Option State) + 1 < B) :
-    Fits B (registers (ntm.initView input)) := by
-  have hc := (Fintype.equivFin (Option State) (some ntm.q₀)).isLt
-  intro i
-  cases i with
-  | inputPos => change 1 < B; omega
-  | control => exact hc.trans (by omega)
-  | output | head _ | left _ | right _ => change 0 < B; omega
-
-/-- The start vertex lies below the ambient bound of every radix above the finite tags. -/
-theorem startID_lt (hB : Fintype.card (Option State) + 1 < B) :
-    startID ntm B < vertexBound (k := k) B := by
-  have h := vertexID_lt (fits_init (ntm := ntm) (input := []) hB)
-  rwa [vertexID_init] at h
 
 variable (ntm B input) in
 /-- A radix is closed on an input when no vertex reachable in its graph overflows. -/

@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Jacobi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Computability.Probabilistic.Traverse
@@ -36,6 +37,7 @@ import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.UniformSubset
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Probability.Uniform
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
 import Mathlib.FieldTheory.Finite.Basic
@@ -81,7 +83,7 @@ namespace Cslib.Crypto.GoldwasserMicali
 
 open Probability Turing.MultiTapeTM Encryption
 open Paillier (powMod unitOrOne coprime_unitOrOne powMod_of_ne_zero computableInPolyTime_powMod
-  computableInPolyTime_unitOrOne ofBits_encNat unframe_encPair_encNat dropFrame_encPair_encNat)
+  computableInPolyTime_unitOrOne unframe_encPair_encNat dropFrame_encPair_encNat)
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
 local instance (p q : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime] : NeZero (p * q) :=
@@ -444,8 +446,7 @@ theorem decrypt_encrypt {gen : ℕ → ProbComp KeyDesc} {n : ℕ} {keys : List 
     (hct : ct ∈ (ProbComp.eval (encrypt n keys.1 m)).support) :
     decrypt keys.2 ct = m := by
   obtain ⟨k, hkeq⟩ := exists_of_mem_support_keyGen hkeys
-  have hpk : keys.1 = encPair encNat encNat (k.modulus, k.z) := congrArg Prod.fst hkeq
-  have hsk : keys.2 = encPair encNat encNat (k.p, k.q) := congrArg Prod.snd hkeq
+  obtain ⟨hpk, hsk⟩ := Prod.ext_iff.mp hkeq
   obtain ⟨r, hr, rfl⟩ := exists_of_mem_support_encrypt hpk hct
   rw [hsk, decrypt_encPair]
   exact k.decryptNat_ciphertext hr m
@@ -458,8 +459,7 @@ theorem decrypt_mulCiphertexts {gen : ℕ → ProbComp KeyDesc} {n : ℕ} {keys 
     (hct₂ : ct₂ ∈ (ProbComp.eval (encrypt n keys.1 b₂)).support) :
     decrypt keys.2 (mulCiphertexts keys.1 ct₁ ct₂) = (b₁ ^^ b₂) := by
   obtain ⟨k, hkeq⟩ := exists_of_mem_support_keyGen hkeys
-  have hpk : keys.1 = encPair encNat encNat (k.modulus, k.z) := congrArg Prod.fst hkeq
-  have hsk : keys.2 = encPair encNat encNat (k.p, k.q) := congrArg Prod.snd hkeq
+  obtain ⟨hpk, hsk⟩ := Prod.ext_iff.mp hkeq
   obtain ⟨r₁, hr₁, rfl⟩ := exists_of_mem_support_encrypt hpk hct₁
   obtain ⟨r₂, hr₂, rfl⟩ := exists_of_mem_support_encrypt hpk hct₂
   have hr' : ((if b₁ && b₂ then k.z else 1) * r₁ * r₂).Coprime k.modulus :=
@@ -493,6 +493,15 @@ theorem rerandomize_idealEncryptUnit_eq (N : ℕ) [NeZero N] (z r₀ : (ZMod N)�
   conv_rhs => rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.mulLeft r₀), PMF.map_comp]
   congr 1; funext r; simp [mul_pow, mul_assoc]
 
+private theorem mulCiphertextsNat_unit_val {N : ℕ} (u v : (ZMod N)ˣ) :
+    mulCiphertextsNat N u.val.val v.val.val = (u * v).val.val := by
+  simp only [mulCiphertextsNat, Units.val_mul, ZMod.val_mul]
+
+private theorem unitOfCoprime_val {N : ℕ} [NeZero N] (u : (ZMod N)ˣ) :
+    ZMod.unitOfCoprime u.val.val (ZMod.val_coe_unit_coprime u) = u := by
+  ext
+  simp [ZMod.coe_unitOfCoprime]
+
 /-- Word-level ciphertext re-randomization via `mulCiphertexts` with a fresh draw from
 `idealEncrypt N z false`. -/
 theorem rerandomize_idealEncrypt_eq (N : ℕ) [NeZero N] (z r₀ : (ZMod N)ˣ) (m : Bool) :
@@ -501,12 +510,11 @@ theorem rerandomize_idealEncrypt_eq (N : ℕ) [NeZero N] (z r₀ : (ZMod N)ˣ) (
       pure (mulCiphertexts (encPair encNat encNat (N, z.val.val))
         (encNat ((if m then z else 1) * r₀ ^ 2).val.val) ct)) =
       idealEncrypt N z m := by
-  have hval (u v : (ZMod N)ˣ) : mulCiphertextsNat N u.val.val v.val.val = (u * v).val.val := by
-    simp only [mulCiphertextsNat, Units.val_mul, ZMod.val_mul]
   conv_rhs => rw [idealEncrypt, ← rerandomize_idealEncryptUnit_eq N z r₀ m]
   simp only [idealEncrypt, idealEncryptUnit, PMF.map, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, Function.comp_def, Bool.false_eq_true,
-    ↓reduceIte, one_mul, mulCiphertexts, unframe_encPair_encNat, ofBits_encNat, hval]
+    ↓reduceIte, one_mul, mulCiphertexts, unframe_encPair_encNat, ofBits_encNat,
+    mulCiphertextsNat_unit_val]
 
 /-- **Distributional XOR homomorphism on `(ZMod N)ˣ`** ([KatzLindell2020], Exercise 15.11). -/
 theorem idealEncryptUnit_mul_eq (N : ℕ) [NeZero N] (z : (ZMod N)ˣ) (b₁ b₂ : Bool) :
@@ -534,12 +542,10 @@ theorem idealEncrypt_mulCiphertexts_eq (N : ℕ) [NeZero N] (z : (ZMod N)ˣ) (b�
       let ct₂ ← idealEncrypt N z b₂
       pure (mulCiphertexts (encPair encNat encNat (N, z.val.val)) ct₁ ct₂)) =
       idealEncrypt N z (b₁ ^^ b₂) := by
-  have hval (u v : (ZMod N)ˣ) : mulCiphertextsNat N u.val.val v.val.val = (u * v).val.val := by
-    simp only [mulCiphertextsNat, Units.val_mul, ZMod.val_mul]
   conv_rhs => rw [idealEncrypt, ← idealEncryptUnit_mul_eq N z b₁ b₂]
   simp only [idealEncrypt, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
     PMF.map_bind, PMF.pure_map, Function.comp_def, mulCiphertexts, unframe_encPair_encNat,
-    ofBits_encNat, hval]
+    ofBits_encNat, mulCiphertextsNat_unit_val]
 
 /-- When `IsSquare y`, `idealEncryptUnit N y m` is independent of `m`. -/
 theorem idealEncryptUnit_of_isSquare (N : ℕ) [NeZero N] {y : (ZMod N)ˣ} (hy : IsSquare y)
@@ -584,14 +590,11 @@ theorem advantage_encrypt_idealEncrypt_le (d : ModulusDesc) (n : ℕ)
         (encrypt n (encPair encNat encNat (d.p * d.q, y.val.val)) m)).bind k)
       ((idealEncrypt (d.p * d.q) y m).bind k) ≤
       5 / 2 ^ n := by
-  have hy_cop : y.val.val.Coprime (d.p * d.q) := ZMod.val_coe_unit_coprime y
-  have hy_unit : ZMod.unitOfCoprime y.val.val hy_cop = y := by ext; simp [ZMod.coe_unitOfCoprime]
   have hct (u : (ZMod (d.p * d.q))ˣ) :
       ciphertext (d.p * d.q) y.val.val m u.val.val =
         ((if m then y else 1) * u ^ 2).val.val := by
-    have hu_cop : u.val.val.Coprime (d.p * d.q) := ZMod.val_coe_unit_coprime u
-    have hu_unit : ZMod.unitOfCoprime u.val.val hu_cop = u := by ext; simp [ZMod.coe_unitOfCoprime]
-    rw [ciphertext_eq_unit_val hy_cop hu_cop m, hy_unit, hu_unit]
+    rw [ciphertext_eq_unit_val (ZMod.val_coe_unit_coprime y) (ZMod.val_coe_unit_coprime u) m,
+      unitOfCoprime_val, unitOfCoprime_val]
   rw [encrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat]
   simp only [idealEncrypt, idealEncryptUnit, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind, PMF.bind_map, Function.comp_def]
@@ -915,10 +918,7 @@ private theorem distinguishingGame_wordKeyDistinguisher (maxLen : ℕ → ℕ) (
   simp only [distinguishingGame, wordKeyDistinguisher, publicKeyWordGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind,
     apply_ite ProbComp.eval]
-  rw [PMF.bind_comm]
-  refine congrArg (PMF.bind _) (funext fun pk => ?_)
-  rw [PMF.bind_comm]
-  refine congrArg (PMF.bind _) (funext fun bit => congrArg (PMF.bind _) (funext fun choice => ?_))
+  pmf_swap with bit pk choice
   cases validBoundedWords maxLen n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) with
   | false =>
     simp only [Bool.false_eq_true, ↓reduceIte, PMF.monad_pure_eq_pure, PMF.pure_map]
@@ -1070,25 +1070,21 @@ theorem advantage_jacobiAttackAdversary_eq_one (d : ModulusDesc)
       (Encryption.publicKeyGame (PMF.pure pk) encrypt jacobiAttackAdversary true n) = 1 := by
   intro pk
   simp only [jacobiNegSet, Finset.mem_filter, Finset.mem_univ, true_and] at hz
-  have hz_cop : z.val.val.Coprime (d.p * d.q) := ZMod.val_coe_unit_coprime z
-  have hz_unit : ZMod.unitOfCoprime z.val.val hz_cop = z := by ext; simp [ZMod.coe_unitOfCoprime]
   have hjac_ct (bit : Bool) (r : ℕ) :
       jacobiSym (ciphertext (d.p * d.q) z.val.val bit (unitOrOne (d.p * d.q) r) : ℤ)
         (d.p * d.q) = if bit then -1 else 1 := by
     let u := ZMod.unitOfCoprime (unitOrOne (d.p * d.q) r) (coprime_unitOrOne (d.p * d.q) r)
-    rw [ciphertext_eq_unit_val hz_cop (coprime_unitOrOne (d.p * d.q) r) bit, hz_unit,
-      ← jacobiSymbol_eq_jacobiSym d.p d.q ((if bit then z else 1) * u ^ 2)]
+    have hsq : jacobiSymbol d.p d.q (u ^ 2) = 1 :=
+      jacobiSymbol_eq_one_of_isSquare d.p d.q ⟨u, pow_two u⟩
+    rw [ciphertext_eq_unit_val (ZMod.val_coe_unit_coprime z) (coprime_unitOrOne (d.p * d.q) r) bit,
+      unitOfCoprime_val, ← jacobiSymbol_eq_jacobiSym d.p d.q ((if bit then z else 1) * u ^ 2)]
     cases bit
-    · simp only [Bool.false_eq_true, ↓reduceIte, one_mul]
-      exact jacobiSymbol_eq_one_of_isSquare d.p d.q ⟨u, pow_two u⟩
+    · simpa only [Bool.false_eq_true, ↓reduceIte, one_mul] using hsq
     · simp only [↓reduceIte]
       rw [jacobiSymbol_eq_jacobiSym, Units.val_mul, ZMod.val_mul]; push_cast
       rw [← Nat.cast_mul d.p d.q, ← jacobiSym.mod_left, jacobiSym.mul_left,
-        ← jacobiSymbol_eq_jacobiSym d.p d.q z, hz]
-      have hsq1 : jacobiSym ((u ^ 2).val.val : ℤ) (d.p * d.q) = 1 := by
-        rw [← jacobiSymbol_eq_jacobiSym d.p d.q (u ^ 2)]
-        exact jacobiSymbol_eq_one_of_isSquare d.p d.q ⟨u, pow_two u⟩
-      rw [← Units.val_pow_eq_pow_val, hsq1, mul_one]
+        ← jacobiSymbol_eq_jacobiSym d.p d.q z, hz, ← Units.val_pow_eq_pow_val,
+        ← jacobiSymbol_eq_jacobiSym d.p d.q (u ^ 2), hsq, mul_one]
   have hgame (bit : Bool) :
       Encryption.publicKeyGame (PMF.pure pk) encrypt jacobiAttackAdversary bit n =
         PMF.pure bit := by

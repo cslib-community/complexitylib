@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Defs
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Soundness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Foundations.Data.List.FlatMapRange
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
@@ -77,61 +78,6 @@ namespace Diamond
 variable {N : ℕ} {slots : ℕ → ℕ} {M : ℕ} {D : List Detour}
 
 /-! ### Directions satisfying every clause give Hamiltonian paths -/
-
-section Blocks
-
-variable {α : Type*} {R : α → α → Prop} {f : ℕ → List α} {n : ℕ}
-
-/-- Nonempty chains indexed by `0, …, n - 1`, each linked to the next, form a chain. -/
-private theorem isChain_flatMap_range (hne : ∀ a < n, f a ≠ [])
-    (hblock : ∀ a < n, (f a).IsChain R)
-    (hlink : ∀ a, a + 1 < n → ∀ x ∈ (f a).getLast?, ∀ y ∈ (f (a + 1)).head?, R x y) :
-    ((List.range n).flatMap f).IsChain R := by
-  rw [List.flatMap_def, List.isChain_flatten (by simpa using hne)]
-  refine ⟨fun l hl => ?_, ?_⟩
-  · obtain ⟨a, ha, rfl⟩ := List.mem_map.1 hl
-    exact hblock a (List.mem_range.1 ha)
-  · rw [List.isChain_map, List.isChain_range]
-    exact fun a ha => hlink a (by omega)
-
-/-- Nonempty chains indexed by `n - 1, …, 0`, each linked to the previous, form a chain. -/
-private theorem isChain_flatMap_range_reverse (hne : ∀ a < n, f a ≠ [])
-    (hblock : ∀ a < n, (f a).IsChain R)
-    (hlink : ∀ a, a + 1 < n → ∀ x ∈ (f (a + 1)).getLast?, ∀ y ∈ (f a).head?, R x y) :
-    ((List.range n).reverse.flatMap f).IsChain R := by
-  rw [List.flatMap_def, List.isChain_flatten (by simpa using hne)]
-  refine ⟨fun l hl => ?_, ?_⟩
-  · obtain ⟨a, ha, rfl⟩ := List.mem_map.1 hl
-    exact hblock a (List.mem_range.1 (List.mem_reverse.1 ha))
-  · rw [List.isChain_map, List.isChain_reverse, List.isChain_range]
-    exact fun a ha => hlink a (by omega)
-
-private theorem head?_flatMap_range (hn : 0 < n) (h : f 0 ≠ []) :
-    ((List.range n).flatMap f).head? = (f 0).head? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, List.range_succ_eq_map, List.flatMap_cons, List.head?_append_of_ne_nil _ h]
-
-private theorem getLast?_flatMap_range (hn : 0 < n) (h : f (n - 1) ≠ []) :
-    ((List.range n).flatMap f).getLast? = (f (n - 1)).getLast? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, Nat.add_sub_cancel] at h ⊢
-  rw [List.range_succ, List.flatMap_append, List.flatMap_singleton,
-    List.getLast?_append_of_ne_nil _ h]
-
-private theorem head?_flatMap_range_reverse (hn : 0 < n) (h : f (n - 1) ≠ []) :
-    ((List.range n).reverse.flatMap f).head? = (f (n - 1)).head? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, Nat.add_sub_cancel] at h ⊢
-  rw [List.range_succ, List.reverse_append, List.reverse_singleton, List.singleton_append,
-    List.flatMap_cons, List.head?_append_of_ne_nil _ h]
-
-private theorem getLast?_flatMap_range_reverse (hn : 0 < n) (h : f 0 ≠ []) :
-    ((List.range n).reverse.flatMap f).getLast? = (f 0).getLast? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, List.range_succ_eq_map, List.reverse_cons, List.flatMap_append,
-    List.flatMap_singleton, List.getLast?_append_of_ne_nil _ h]
-
-end Blocks
 
 section DirectionsToPath
 
@@ -339,7 +285,7 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
     arc_of_mem_diamondArcs hi he
   unfold rowPath
   split_ifs with hd
-  · refine ⟨isChain_flatMap_range (fun a _ => step_ne_nil a)
+  · refine ⟨List.isChain_flatMap_range (fun a _ => step_ne_nil a)
       (fun a _ => isChain_step fun j hv => ?_)
       (fun a ha => link_step (arc_row_succ hi ha) fun j hv => ?_), ?_, ?_, ?_⟩
     · obtain ⟨hj, rfl, rfl⟩ := (rightVisit_eq_some_iff hD hpick).1 hv
@@ -347,11 +293,11 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
     · obtain ⟨hj, rfl, rfl⟩ := (rightVisit_eq_some_iff hD hpick).1 hv
       exact ((arc_detour (N := N) (slots := slots) hpick hj).1 hd).2
     · intro x hx
-      rw [head?_flatMap_range hpos (step_ne_nil 0), head?_step, Option.mem_some_iff] at hx
+      rw [List.head?_flatMap_range hpos (step_ne_nil 0), head?_step, Option.mem_some_iff] at hx
       subst hx
       exact hdiam _ (by simp [diamondArcs])
     · intro x hx
-      rw [getLast?_flatMap_range hpos (step_ne_nil _)] at hx
+      rw [List.getLast?_flatMap_range hpos (step_ne_nil _)] at hx
       unfold step rightVisit at hx
       rw [show (rowLength slots i - 1) / 3 = slots i by omega, visit_last hD hpick] at hx
       simp only [ite_self, Option.map_none, Option.toList_none, List.getLast?_singleton,
@@ -360,7 +306,7 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
       exact hdiam _ (by simp [diamondArcs])
     · simpa using ⟨0, hpos, step_ne_nil 0⟩
   · have hd' : dir i = false := by simpa using hd
-    refine ⟨isChain_flatMap_range_reverse (fun a _ => step_ne_nil a)
+    refine ⟨List.isChain_flatMap_range_reverse (fun a _ => step_ne_nil a)
       (fun a _ => isChain_step fun j hv => ?_)
       (fun a ha => link_step (arc_row_pred hi ha) fun j hv => ?_), ?_, ?_, ?_⟩
     · obtain ⟨hj, rfl, rfl⟩ := (leftVisit_eq_some_iff hD hpick).1 hv
@@ -369,12 +315,12 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
       obtain rfl : a = 3 * (pick j).2.2.1 + 2 := by omega
       exact ((arc_detour (N := N) (slots := slots) hpick hj).2 hd').2
     · intro x hx
-      rw [head?_flatMap_range_reverse hpos (step_ne_nil _), head?_step,
+      rw [List.head?_flatMap_range_reverse hpos (step_ne_nil _), head?_step,
         Option.mem_some_iff] at hx
       subst hx
       exact hdiam _ (by simp [diamondArcs])
     · intro x hx
-      rw [getLast?_flatMap_range_reverse hpos (step_ne_nil 0)] at hx
+      rw [List.getLast?_flatMap_range_reverse hpos (step_ne_nil 0)] at hx
       simp only [step, leftVisit, lt_irrefl, and_false, ite_false, Option.map_none,
         Option.toList_none, List.getLast?_singleton, Option.mem_def, Option.some.injEq] at hx
       subst hx
@@ -478,14 +424,14 @@ private theorem isDirHamPath_hamPath :
     rcases Nat.eq_zero_or_pos N with h | h
     · simp [h]
     · rw [List.head?_append_of_ne_nil _ (by simpa using ⟨0, h⟩),
-        head?_flatMap_range h (hblock_ne 0)]
+        List.head?_flatMap_range h (hblock_ne 0)]
       rfl
   · -- It ends at the bottom of the last diamond.
     rw [hamPath, List.getLast?_append_of_ne_nil _ (List.cons_ne_nil _ _)]
     rfl
   · -- Consecutive vertices are joined by arcs.
     rw [hamPath, List.isChain_append]
-    refine ⟨isChain_flatMap_range (fun i _ => hblock_ne i) (fun i hi => ?_) (fun i hi => ?_),
+    refine ⟨List.isChain_flatMap_range (fun i _ => hblock_ne i) (fun i hi => ?_) (fun i hi => ?_),
       List.IsChain.singleton _, ?_⟩
     · obtain ⟨hch, hhead, -, -⟩ := rowPath_spec hD hpick hi
       exact List.isChain_cons.2 ⟨hhead, hch⟩
@@ -501,7 +447,7 @@ private theorem isDirHamPath_hamPath :
       rcases Nat.eq_zero_or_pos N with h | h
       · simp [h] at hx
       · obtain ⟨-, -, hlast, hne⟩ := rowPath_spec hD hpick (i := N - 1) (by omega)
-        rw [getLast?_flatMap_range h (hblock_ne _), ← List.singleton_append,
+        rw [List.getLast?_flatMap_range h (hblock_ne _), ← List.singleton_append,
           List.getLast?_append_of_ne_nil _ hne] at hx
         have := hlast x hx
         rwa [Nat.sub_add_cancel h] at this

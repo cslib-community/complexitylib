@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Communication.Randomized
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF
 
 /-!
@@ -102,9 +103,7 @@ theorem Solves.amplify (hμ : μ.Solves ε (fun x y b => f x y = b) A B) (hε : 
   refine le_trans ?_ (PMF.iid_card_ge_le he hε r)
   rw [errorProb, PublicCoin.amplify, PMF.toOuterMeasure_map_apply, PMF.iid_map,
     PMF.toOuterMeasure_map_apply]
-  refine ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-    (PMF.toOuterMeasure_mono _ fun ps hps => ?_)
-  replace hps := hps.1
+  refine PMF.toOuterMeasure_toReal_mono _ fun ps hps => ?_
   simp only [Set.mem_preimage, Set.mem_ofPred_eq, Protocol.run_runAll] at hps ⊢
   simpa [e] using le_card_filter_ne_of_strictMajorityOn_ne (Ne.symm hps)
 

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.KeyChain.Reduction
 public import CslibFrontier.Crypto.Computational.Homomorphic.KeyChain.Hybrid.Game
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -93,8 +94,7 @@ theorem eval_linkAdversaryAt (beforeCount afterCount bitIndex : ℕ → ℕ)
     linkAdversaryAt, chooseLinkAt, bind_assoc, ProbComp.eval_bind]
   by_cases hi : bitIndex n < width
   · rw [ite_eq_left hi]
-    simp only [publicKeyLinkHybrid, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.bind_bind, PMF.pure_bind]
+    simp only [pmf_norm, publicKeyLinkHybrid]
     apply Probability.PMF.bind_congr_on_support
     intro next hnext
     congr 1 with before : 1
@@ -127,9 +127,8 @@ theorem eval_linkAdversary (depth capacity : ℕ → ℕ)
     ProbComp.eval (Encryption.game E.keyGen E.encrypt
       (E.linkAdversary depth capacity test) bit n) =
         E.keyChainHybridGame n (depth n) width (capacity n) (test n) bit := by
-  simp only [Encryption.game, Encryption.gameOn, ↓reduceIte, linkAdversary, bind_assoc,
-    ProbComp.eval_bind, eval_sampleDyadicIndex, PMF.bind_map, Function.comp_def,
-    keyChainHybridGame]
+  simp only [pmf_norm, Encryption.game, Encryption.gameOn, ↓reduceIte, linkAdversary, bind_assoc,
+    eval_sampleDyadicIndex, keyChainHybridGame]
   rw [PMF.bind_comm]
   congr 1 with i : 1
   rw [PMF.bind_comm]

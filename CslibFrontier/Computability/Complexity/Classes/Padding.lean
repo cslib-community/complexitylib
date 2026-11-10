@@ -14,7 +14,7 @@ import CslibFrontier.Computability.Complexity.Classes.NP.GuessVerify
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
-import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.TidyNormalForm
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -428,12 +428,8 @@ theorem preimage_mem_NTIME_of_mem_NP {B : Set (List Bool)} {g : α → List Bool
     rfl
   -- Unpack `B ∈ NP encBits` into a halting fair-coin machine `M_NP`
   obtain ⟨p, V, hV, hVer⟩ := hB
-  let program (x : List Bool) : ProbComp Bool :=
-    (fun w => V (x, w)) <$> BitString.sampleList (p.eval x.length)
-  have hcount : ComputableInPolyTime (fun x : List Bool => p.eval x.length) encBits encUnary :=
-    (ComputableInPolyTime.unary_eval p).comp (ComputableInPolyTime.encoding_length encBits)
-  have hprogram : IsPPTOn encBits encBool program := hcount.sampleList.map_with hV
-  obtain ⟨k₁, State₁, hfinite₁, M_NP, c₁, d₁, heval₂, hhalt₂⟩ := hprogram.exists_halting_machine
+  obtain ⟨k₁, State₁, hfinite₁, M_NP, c₁, d₁, heval₂, hhalt₂⟩ :=
+    (isPPTOn_sampleVerify p hV).exists_halting_machine
   set t₂ : α → ℕ := fun a => c₁ * (t₁ a + 1) ^ d₁
   have ht₂_le (a : α) : c₁ * ((g a).length + 1) ^ d₁ ≤ t₂ a :=
     Nat.mul_le_mul_left c₁ (Nat.pow_le_pow_left (Nat.add_le_add_right (hg_len a) 1) d₁)
@@ -463,14 +459,10 @@ theorem preimage_mem_NTIME_of_mem_NP {B : Set (List Bool)} {g : α → List Bool
       rw [M_pad.eval_comp M_NP false (enc a) (t₁ a) (t₂ a) (hfirst a) (hsecond a),
         hout₁ a, Probability.PMF.monad_bind_eq_bind, PMF.pure_bind,
         M_NP.eval_runClosed_eq_of_halted (g a) (ht₂_le a) (hhalt₂ (g a))]
-    have hsupport := congrArg (fun μ => [true] ∈ μ.support)
-      ((heval₂ (g a)).trans hcomp_eval.symm)
-    simp only [MultiTapePTM.runClosed_eq_map, ProbComp.eval_map, PMF.mem_support_map_iff,
-      program, BitString.eval_sampleList, BitString.mem_support_uniformList_iff, encBool_apply,
-      List.cons.injEq, and_true] at hsupport
-    rw [← hsupport]
-    exact ⟨fun ⟨w, hw, hV⟩ => ⟨true, ⟨w, hw, hV⟩, rfl⟩,
-      fun ⟨_, ⟨w, hw, hV⟩, rfl⟩ => ⟨w, hw, hV⟩⟩
+    -- both sides say that `[true]` is a supported output
+    rw [← singleton_true_mem_support_sampleVerify_iff V (g a),
+      (heval₂ (g a)).trans hcomp_eval.symm, MultiTapePTM.runClosed_eq_map, ProbComp.eval_map,
+      PMF.mem_support_map_iff]
   refine ⟨d₁ + 1, (2 * c₀ + 4 + c₁ * (c₀ + 1) ^ d₁), 0, k₁ + k₀ + 2, _, inferInstance,
     M_comp.toNTM, hdecides.mono fun a => ?_⟩
   set X := T₀ (enc a).length + 1

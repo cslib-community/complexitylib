@@ -304,10 +304,13 @@ theorem demoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     hout2 a (by dsimp only [totalSpace, offGM, offLM, offVal, offQuot] at ha ⊢; omega),
     hout1 a (by dsimp only [totalSpace, offGM, offLM, offVal, offQuot] at ha ⊢; omega)]
 
-private theorem demoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
+/-- Bounds for the reads and writes of `demoteStepProg`, stated on the results of its reads,
+together with the precondition (apart from `DictEnvGen`) of its `appendTailItemProg` call; shared
+by `realizes_demoteStepGen` and `validProg_demoteStep`. -/
+private theorem demoteStep_bounds {U V w₀ n_max h_space base b k : ℕ}
     {s : Memory.State}
     (hw : 0 < w₀)
-    (h : DemoteStepPre U V w₀ n_max h_space w base b k s) :
+    (h : DemoteStepInv U V w₀ n_max h_space base b k s ∧ 0 < bucketBits n_max) :
     let u := (slabSize n_max - 1) - k
     let e_pdel := (Memory.spec 0).clientResult s
       (readGMProg U V w₀ n_max h_space (base, 4 + 3 * b + 2))
@@ -322,19 +325,11 @@ private theorem demoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
     let g_last := e_plast * slabSize n_max + u
     let s3 := (Memory.spec 0).clientState s2
       (readQuotProg U w₀ n_max h_space (base, g_del))
-    let q_del := (Memory.spec 0).clientResult s2
-      (readQuotProg U w₀ n_max h_space (base, g_del))
     let s4 := (Memory.spec 0).clientState s3
-      (readValProg U V w₀ n_max h_space (base, g_del))
-    let v_del := (Memory.spec 0).clientResult s3
       (readValProg U V w₀ n_max h_space (base, g_del))
     let s5 := (Memory.spec 0).clientState s4
       (readQuotProg U w₀ n_max h_space (base, g_last))
-    let q_last := (Memory.spec 0).clientResult s4
-      (readQuotProg U w₀ n_max h_space (base, g_last))
     let s6 := (Memory.spec 0).clientState s5
-      (readValProg U V w₀ n_max h_space (base, g_last))
-    let v_last := (Memory.spec 0).clientResult s5
       (readValProg U V w₀ n_max h_space (base, g_last))
     let e_tnew := (Memory.spec 0).clientResult s6
       (appendTailItemProg U V w₀ n_max h_space (base, b))
@@ -345,17 +340,17 @@ private theorem demoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
     1 ≤ e_nslabs ∧
     g_del < n_max ∧
     g_last < n_max ∧
-    AppendTailItemPre U V w₀ n_max h_space w base b s6 ∧
+    (TailBijection n_max (gmAt base U V w₀ n_max h_space s6.mem)
+        (fun b' => gmAt base U V w₀ n_max h_space s6.mem (gmRIdx b'))
+        (gmAt base U V w₀ n_max h_space s6.mem 1) ∧
+      b < numBuckets n_max ∧
+      gmAt base U V w₀ n_max h_space s6.mem (gmRIdx b) < tailCapPerBucket n_max ∧
+      0 < bucketBits n_max) ∧
     e_tnew ≤ n_max - 1 ∧
     g_tail < n_max ∧
-    q_last < 2 ^ quotientBits U n_max ∧
-    v_last < 2 ^ valBits V ∧
-    q_del < 2 ^ quotientBits U n_max ∧
-    v_del < 2 ^ valBits V ∧
     k + 1 ≤ max n_max 1 := by
-  rcases h with ⟨hdict, ⟨hb, hk, htail, hslab, hrb, hqb_pos, htot⟩, hb_pos⟩
-  intro u e_pdel s1 e_nslabs s2 e_plast g_del g_last
-    s3 q_del s4 v_del s5 q_last s6 v_last e_tnew g_tail
+  rcases h with ⟨⟨hb, hk, htail, hslab, hrb, hqb_pos, htot⟩, hb_pos⟩
+  intro u e_pdel s1 e_nslabs s2 e_plast g_del g_last s3 s4 s5 s6 e_tnew g_tail
   let gm := gmAt base U V w₀ n_max h_space s.mem
   change b < numBuckets n_max at hb
   change k < slabSize n_max at hk
@@ -395,23 +390,11 @@ private theorem demoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
   have ht_lt_n : gm 1 < n_max := by
     have : (gm 0 - 1) * slabSize n_max ≥ 0 := Nat.zero_le _
     omega
-  have hq_del : q_del = quotAt base U w₀ n_max h_space s.mem g_del :=
-    clientResult_readQuotProg s hg_del_lt
-  have hv_del : v_del = valAt base U V w₀ n_max h_space s.mem g_del :=
-    clientResult_readValProg s hg_del_lt
-  have hq_last : q_last = quotAt base U w₀ n_max h_space s.mem g_last :=
-    clientResult_readQuotProg s hg_last_lt
-  have hv_last : v_last = valAt base U V w₀ n_max h_space s.mem g_last :=
-    clientResult_readValProg s hg_last_lt
   refine ⟨by omega, htop_idx_lt, h0_idx_lt, by rw [henslabs]; exact hgm0_pos,
     hg_del_lt, hg_last_lt,
-    by rw [hs6]; exact ⟨hdict, htail, hb, hr_cap, hb_pos⟩,
+    by rw [hs6]; exact ⟨htail, hb, hr_cap, hb_pos⟩,
     by rw [hetnew]; omega,
     by dsimp only [g_tail]; rw [hetnew]; omega,
-    by rw [hq_last]; exact quotAt_lt _ _ _ _ _ _ _,
-    by rw [hv_last]; exact valAt_lt _ _ _ _ _ _ _ _,
-    by rw [hq_del]; exact quotAt_lt _ _ _ _ _ _ _,
-    by rw [hv_del]; exact valAt_lt _ _ _ _ _ _ _ _,
     by omega⟩
 
 theorem realizes_demoteStepGen :
@@ -453,25 +436,25 @@ theorem realizes_demoteStepGen :
     obtain ⟨⟨U, V, w₀, n_max, h_space, hw, hnU, hU, hV, rfl⟩, henv⟩ := h.1
     simpDictParamsWith [demoteStepGenPre_mk, appendTailItemGenPre_mk, appendTailItemGenProg_mk]
   )
-  · exact (demoteStep_bounds hw h).1
+  · exact (demoteStep_bounds hw h.2).1
   · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
-      (le_of_lt (demoteStep_bounds hw h).2.1)
+      (le_of_lt (demoteStep_bounds hw h.2).2.1)
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact h.1
-  · exact (demoteStep_bounds hw h).2.1
-  · exact (demoteStep_bounds hw h).2.2.1
-  · exact (demoteStep_bounds hw h).2.2.2.1
+  · exact (demoteStep_bounds hw h.2).2.1
+  · exact (demoteStep_bounds hw h.2).2.2.1
+  · exact (demoteStep_bounds hw h.2).2.2.2.1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      (le_trans (le_of_lt (demoteStep_bounds hw h).2.2.2.2.1) (le_max_left n_max 1))
+      (le_trans (le_of_lt (demoteStep_bounds hw h.2).2.2.2.2.1) (le_max_left n_max 1))
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      (le_trans (le_of_lt (demoteStep_bounds hw h).2.2.2.2.2.1) (le_max_left n_max 1))
-  · exact (demoteStep_bounds hw h).2.2.2.2.1
-  · exact (demoteStep_bounds hw h).2.2.2.2.2.1
-  · exact (demoteStep_bounds hw h).2.2.2.2.2.2.1
-  · exact (demoteStep_bounds hw h).2.2.2.2.2.2.2.1
-  · exact (demoteStep_bounds hw h).2.2.2.2.2.2.2.2.1
+      (le_trans (le_of_lt (demoteStep_bounds hw h.2).2.2.2.2.2.1) (le_max_left n_max 1))
+  · exact (demoteStep_bounds hw h.2).2.2.2.2.1
+  · exact (demoteStep_bounds hw h.2).2.2.2.2.2.1
+  · exact ⟨h.1, (demoteStep_bounds hw h.2).2.2.2.2.2.2.1⟩
+  · exact (demoteStep_bounds hw h.2).2.2.2.2.2.2.2.1
+  · exact (demoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      (demoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.2.2.2.2
+      (demoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.2
 
 /-! ## Section 2: `DemoteArrInv`, `DemoteLoopInv`, and `demoteSlabProg` -/
 
@@ -766,8 +749,7 @@ def demoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × ℕ
   | succ m ih =>
     unfold iterate
     rw [demoteStepGenProg_mk]
-    congr 1
-    funext s'
+    congr 1 with s' : 1
     exact ih s'
 
 @[simp] theorem demoteLoopGenProg_mk (U V w n_max h_space : ℕ)

@@ -117,35 +117,22 @@ private theorem valid_and_height_splitMin {a : α} {h : ℕ} {l r : AVLTree α}
     exact ⟨⟨hor, hcr, hbr⟩, ha_r, by omega, by omega⟩
   | node b bh ll lr ihl _ =>
     obtain ⟨⟨hol, hor, hl_a, ha_r⟩, ⟨hh, hcl, hcr⟩, ⟨hlr, hrl, hbl, hbr⟩⟩ := ht
-    obtain ⟨⟨hol', hcl', hbl'⟩, hlt, hhi_l, hlo_l⟩ := ihl ⟨hol, hcl, hbl⟩
+    obtain ⟨hv, hlt, hhi_l, hlo_l⟩ := ihl ⟨hol, hcl, hbl⟩
     simp only [cachedHeight_node] at hh hlr hrl
-    have hm_mem : (splitMin b ll lr).1 ∈ elements (.node b bh ll lr) := by
-      rw [elements_splitMin]
-      exact Finset.mem_insert_self _ _
-    have hm : (splitMin b ll lr).1 < a := hl_a _ hm_mem
-    have ho' : Ordered (.node a 0 (splitMin b ll lr).2 r) := by
-      refine ⟨hol', hor, ?_, ha_r⟩
-      intro y hy
-      have hy_mem : y ∈ elements (.node b bh ll lr) := by
-        rw [elements_splitMin]
-        exact Finset.mem_insert_of_mem hy
-      exact hl_a y hy_mem
-    obtain ⟨hb_bal, hb_lo, hb_hi, hb_eq⟩ :=
-      balanced_and_height_balance a hcl' hcr hbl' hbr (by omega) (by omega)
+    have hsep : ∀ y ∈ Insert.insert (splitMin b ll lr).1 (elements (splitMin b ll lr).2), y < a :=
+      elements_splitMin b bh ll lr ▸ hl_a
+    simp only [Finset.mem_insert, forall_eq_or_imp] at hsep
+    obtain ⟨hv', hb⟩ :=
+      valid_and_height_balance a hv ⟨hor, hcr, hbr⟩ hsep.2 ha_r (by omega) (by omega)
     simp only [splitMin]
-    refine ⟨⟨ordered_balance ho', heightConsistent_balance hcl' hcr, hb_bal⟩, ?_, ?_, ?_⟩
-    · intro y hy
-      rw [elements_balance] at hy
-      rcases Finset.mem_insert.mp hy with rfl | hy
-      · exact hm
-      · rcases Finset.mem_union.mp hy with hy | hy
-        · exact hlt y hy
-        · exact lt_trans hm (ha_r y hy)
-    · omega
-    · by_cases hbal1 : r.cachedHeight ≤ (splitMin b ll lr).2.cachedHeight + 1
-      · have heq := hb_eq (by omega) hbal1
-        omega
-      · omega
+    refine ⟨hv', ?_, by omega, by omega⟩
+    intro y hy
+    rw [elements_balance] at hy
+    rcases Finset.mem_insert.mp hy with rfl | hy
+    · exact hsep.1
+    · rcases Finset.mem_union.mp hy with hy | hy
+      · exact hlt y hy
+      · exact lt_trans hsep.1 (ha_r y hy)
 
 private theorem valid_and_height_glue {a : α} {h : ℕ} {l r : AVLTree α}
     (ht : Valid (.node a h l r)) :
@@ -160,24 +147,14 @@ private theorem valid_and_height_glue {a : α} {h : ℕ} {l r : AVLTree α}
     exact ⟨⟨hol, hcl, hbl⟩, by omega, by omega⟩
   | node b bh rl rr =>
     obtain ⟨⟨hol, hor, hl_a, ha_r⟩, ⟨hh, hcl, hcr⟩, ⟨hlr, hrl, hbl, hbr⟩⟩ := ht
-    obtain ⟨⟨hor', hcr', hbr'⟩, hlt, hhi_r, hlo_r⟩ :=
-      valid_and_height_splitMin ⟨hor, hcr, hbr⟩
+    obtain ⟨hv, hlt, hhi_r, hlo_r⟩ := valid_and_height_splitMin ⟨hor, hcr, hbr⟩
     simp only [cachedHeight_node] at hh hlr hrl
-    have ham_mem : (splitMin b rl rr).1 ∈ elements (.node b bh rl rr) := by
-      rw [elements_splitMin]
-      exact Finset.mem_insert_self _ _
-    have ham : a < (splitMin b rl rr).1 := ha_r _ ham_mem
-    have ho' : Ordered (.node (splitMin b rl rr).1 0 l (splitMin b rl rr).2) :=
-      ⟨hol, hor', fun y hy => lt_trans (hl_a y hy) ham, hlt⟩
-    obtain ⟨hb_bal, hb_lo, hb_hi, hb_eq⟩ :=
-      balanced_and_height_balance (splitMin b rl rr).1 hcl hcr' hbl hbr' (by omega) (by omega)
+    have ham : a < (splitMin b rl rr).1 := ha_r _ <| show _ ∈ elements (.node b bh rl rr) from
+      elements_splitMin b bh rl rr ▸ Finset.mem_insert_self _ _
+    obtain ⟨hv', hb⟩ := valid_and_height_balance (splitMin b rl rr).1
+      ⟨hol, hcl, hbl⟩ hv (fun y hy => lt_trans (hl_a y hy) ham) hlt (by omega) (by omega)
     simp only [glue]
-    refine ⟨⟨ordered_balance ho', heightConsistent_balance hcl hcr', hb_bal⟩, ?_, ?_⟩
-    · omega
-    · by_cases hbal1 : l.cachedHeight ≤ (splitMin b rl rr).2.cachedHeight + 1
-      · have heq := hb_eq hbal1 (by omega)
-        omega
-      · omega
+    exact ⟨hv', by omega, by omega⟩
 
 /-- Deletion removes `x` from the represented `Finset α` (including when `x` was absent). -/
 @[simp]
@@ -200,11 +177,8 @@ theorem elements_erase {t : AVLTree α} (ht : Ordered t) (x : α) :
           Finset.erase_union_distrib, Finset.erase_eq_of_notMem hxl]
       · have heq : x = a := le_antisymm (le_of_not_gt hax) (le_of_not_gt hxa)
         subst heq
-        have hx_notMem : x ∉ elements l ∪ elements r := by
-          intro hm
-          rcases Finset.mem_union.mp hm with hm | hm
-          · exact lt_irrefl x (hl_a x hm)
-          · exact lt_irrefl x (ha_r x hm)
+        have hx_notMem : x ∉ elements l ∪ elements r :=
+          SearchTree.Ordered.notMem_elements_union ⟨hol, hor, hl_a, ha_r⟩
         rw [elements_glue, elements_node, Finset.erase_insert hx_notMem]
 
 private theorem valid_and_height_erase {t : AVLTree α} (ht : Valid t) (x : α) :
@@ -216,43 +190,21 @@ private theorem valid_and_height_erase {t : AVLTree α} (ht : Valid t) (x : α) 
   | node a h l r ihl ihr =>
     have hnode := ht
     obtain ⟨⟨hol, hor, hl_a, ha_r⟩, ⟨hh, hcl, hcr⟩, ⟨hlr, hrl, hbl, hbr⟩⟩ := ht
-    simp only [erase]
+    simp only [erase, cachedHeight_node]
     split <;> rename_i hxa
-    · obtain ⟨⟨hol', hcl', hbl'⟩, hhi, hlo⟩ := ihl ⟨hol, hcl, hbl⟩
-      have ho' : Ordered (.node a 0 (erase x l) r) := by
-        refine ⟨hol', hor, ?_, ha_r⟩
-        intro y hy
-        have hy' : y ∈ elements (erase x l) := hy
-        rw [elements_erase hol] at hy'
-        exact hl_a y (Finset.mem_of_mem_erase hy')
-      obtain ⟨hb_bal, hb_lo, hb_hi, hb_eq⟩ :=
-        balanced_and_height_balance a hcl' hcr hbl' hbr (by omega) (by omega)
-      refine ⟨⟨ordered_balance ho', heightConsistent_balance hcl' hcr, hb_bal⟩, ?_, ?_⟩
-      · simp only [cachedHeight_node]
-        omega
-      · simp only [cachedHeight_node]
-        by_cases hbal1 : r.cachedHeight ≤ (erase x l).cachedHeight + 1
-        · have heq := hb_eq (by omega) hbal1
-          omega
-        · omega
+    · obtain ⟨hv, hhi, hlo⟩ := ihl ⟨hol, hcl, hbl⟩
+      have hsep : ∀ y ∈ elements (erase x l), y < a := fun y hy =>
+        hl_a y (Finset.mem_of_mem_erase ((elements_erase hol x).symm ▸ hy))
+      obtain ⟨hv', hb⟩ := valid_and_height_balance a hv ⟨hor, hcr, hbr⟩ hsep ha_r
+        (by omega) (by omega)
+      exact ⟨hv', by omega, by omega⟩
     · split <;> rename_i hax
-      · obtain ⟨⟨hor', hcr', hbr'⟩, hhi, hlo⟩ := ihr ⟨hor, hcr, hbr⟩
-        have ho' : Ordered (.node a 0 l (erase x r)) := by
-          refine ⟨hol, hor', hl_a, ?_⟩
-          intro y hy
-          have hy' : y ∈ elements (erase x r) := hy
-          rw [elements_erase hor] at hy'
-          exact ha_r y (Finset.mem_of_mem_erase hy')
-        obtain ⟨hb_bal, hb_lo, hb_hi, hb_eq⟩ :=
-          balanced_and_height_balance a hcl hcr' hbl hbr' (by omega) (by omega)
-        refine ⟨⟨ordered_balance ho', heightConsistent_balance hcl hcr', hb_bal⟩, ?_, ?_⟩
-        · simp only [cachedHeight_node]
-          omega
-        · simp only [cachedHeight_node]
-          by_cases hbal1 : l.cachedHeight ≤ (erase x r).cachedHeight + 1
-          · have heq := hb_eq hbal1 (by omega)
-            omega
-          · omega
+      · obtain ⟨hv, hhi, hlo⟩ := ihr ⟨hor, hcr, hbr⟩
+        have hsep : ∀ y ∈ elements (erase x r), a < y := fun y hy =>
+          ha_r y (Finset.mem_of_mem_erase ((elements_erase hor x).symm ▸ hy))
+        obtain ⟨hv', hb⟩ := valid_and_height_balance a ⟨hol, hcl, hbl⟩ hv hl_a hsep
+          (by omega) (by omega)
+        exact ⟨hv', by omega, by omega⟩
       · exact valid_and_height_glue hnode
 
 /-- `erase` preserves full AVL validity (`Ordered`, `HeightConsistent`, and `Balanced`). -/

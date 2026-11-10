@@ -413,8 +413,7 @@ theorem ofCodes_copiesCodes_copyEmb (hm : m ≤ W) {gs : List GateCode}
         (Circuit.mapWires · (Circuit.ofCodes m gs)) := by
   rw [Amplify.copiesCodes, Circuit.ofCodes_flatMap, ← List.map_coe_finRange_eq_range,
     List.flatMap_map, List.flatMap_map]
-  congr 1
-  funext j
+  congr 1 with j : 1
   exact Circuit.ofCodes_map_shift _ hgs
 
 /-- The copies of the original register are disjoint. -/

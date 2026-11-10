@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.Graph.DirectedCycle
 public import CslibFrontier.Computability.Complexity.Problems.VertexCover
-import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -117,50 +116,18 @@ private theorem computableInPolyTime_arcOK :
       encBool := by
   have hV : ComputableInPolyTime (fun p : ((Graph × ℕ) × List ℕ) × (ℕ × ℕ) => p.1.1.1.1)
       (encPair (encPair (encPair encGraph encNat) (encList encNat)) (encPair encNat encNat))
-      (encList encNat) := by
-    unfold encGraph
-    fun_prop
-  have hG : ComputableInPolyTime (fun p : ((Graph × ℕ) × List ℕ) × (ℕ × ℕ) => p.1.1.1)
-      (encPair (encPair (encPair encGraph encNat) (encList encNat)) (encPair encNat encNat))
-      encGraph := by
-    fun_prop
-  have hc : ComputableInPolyTime (fun p : ((Graph × ℕ) × List ℕ) × (ℕ × ℕ) => p.1.2)
-      (encPair (encPair (encPair encGraph encNat) (encList encNat)) (encPair encNat encNat))
-      (encList encNat) := by
-    fun_prop
-  have h1 : ComputableInPolyTime (fun p : ((Graph × ℕ) × List ℕ) × (ℕ × ℕ) => p.2.1)
-      (encPair (encPair (encPair encGraph encNat) (encList encNat)) (encPair encNat encNat))
-      encNat := by
-    fun_prop
-  have h2 : ComputableInPolyTime (fun p : ((Graph × ℕ) × List ℕ) × (ℕ × ℕ) => p.2.2)
-      (encPair (encPair (encPair encGraph encNat) (encList encNat)) (encPair encNat encNat))
-      encNat := by
-    fun_prop
-  have hc1 := computableInPolyTime_colorOf_comp hG hc h1
-  have hc2 := computableInPolyTime_colorOf_comp hG hc h2
-  have hm1 := decide_mem hV h1
-  have hm2 := decide_mem hV h2
+      (encList encNat) := Graph.computableInPolyTime_fst (by fun_prop)
   unfold arcOK
   fun_prop
 
 private theorem computableInPolyTime_check :
     ComputableInPolyTime check (encPair (encPair encGraph encNat) (encList encNat)) encBool := by
-  have hE : ComputableInPolyTime (fun x : (Graph × ℕ) × List ℕ => x.1.1.2)
-      (encPair (encPair encGraph encNat) (encList encNat)) (encList (encPair encNat encNat)) := by
-    unfold encGraph
-    fun_prop
-  have hG : ComputableInPolyTime (fun x : (Graph × ℕ) × List ℕ => x.1.1)
-      (encPair (encPair encGraph encNat) (encList encNat)) encGraph := by
-    fun_prop
   have hz : ComputableInPolyTime zeroCount
       (encPair (encPair encGraph encNat) (encList encNat)) encUnary := by
     unfold zeroCount
-    exact countPWithInput (computableInPolyTime_distinctVertices.comp hG) (by fun_prop)
-  have hk : ComputableInPolyTime (fun x : (Graph × ℕ) × List ℕ => x.1.2)
-      (encPair (encPair encGraph encNat) (encList encNat)) encNat := by
-    fun_prop
-  exact bool_and.comp ((binary_le' (unary_to_binary.comp hz) hk).prod
-    (allWithInput hE computableInPolyTime_arcOK))
+    exact countPWithInput (by fun_prop) (by fun_prop)
+  exact bool_and.comp ((binary_le' (unary_to_binary.comp hz) (by fun_prop)).prod
+    (allWithInput (Graph.computableInPolyTime_snd (by fun_prop)) computableInPolyTime_arcOK))
 
 /-- The distinct declared vertices numbered `0` are counted by `zeroCount`. -/
 private theorem zeroCount_eq (x : (Graph × ℕ) × List ℕ) :
@@ -247,27 +214,10 @@ private theorem exists_certifies {G : Graph} {k : ℕ} (h : (G, k) ∈ FeedbackV
 
 /-- `FeedbackVertexSet` belongs to `NP`, with a listed numbering as the witness. -/
 theorem mem_NP : FeedbackVertexSet ∈ NP (encPair encGraph encNat) := by
-  have hset : FeedbackVertexSet = {x | ∃ ρ : List ℕ, Certifies x ρ} := by
-    ext ⟨G, k⟩
-    constructor
-    · intro h
-      obtain ⟨g, -, hg⟩ := exists_certifies h
-      exact ⟨_, hg⟩
-    · rintro ⟨ρ, hρ⟩
-      exact mem_of_certifies hρ
-  rw [hset]
-  refine mem_NP_of_witness (p := 2 * Polynomial.X ^ 2 + Polynomial.X) (.list .nat)
-    computableInPolyTime_check (fun x ρ => check_iff (x, ρ)) ?_
-  rintro ⟨G, k⟩ ρ hρ
-  obtain ⟨g, hgle, hg⟩ := exists_certifies (mem_of_certifies hρ)
-  refine ⟨_, hg, ?_⟩
-  have hN : G.1.length ≤ (encPair encGraph encNat (G, k)).length :=
-    G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k))
-  have h := length_encList_map_le hN fun v hv =>
-    (hgle v hv).trans (G.1.toFinset_card_le.trans hN)
-  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X,
-    Polynomial.eval_ofNat]
-  exact h
+  refine mem_NP_of_colorOf computableInPolyTime_check
+    (fun G k ρ h => mem_of_certifies ((check_iff ((G, k), ρ)).1 h)) fun G k h => ?_
+  obtain ⟨g, hgle, hg⟩ := exists_certifies h
+  exact ⟨g, fun v hv => (hgle v hv).trans G.1.toFinset_card_le, (check_iff ((G, k), _)).2 hg⟩
 
 end FeedbackVertexSet
 

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.FirstOrder.Basic
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # First-order logic with scoped operators
@@ -213,17 +214,14 @@ variable {L : Language.{u, v}} {O : Type s} {shape : O → Shape}
     apply exists_congr
     intro x
     apply iff_of_eq
-    congr 1
-    funext y
+    congr 1 with y : 1
     cases y <;> rfl
   | op o body args ih =>
     simp only [relabel, Realize, Term.realize_relabel]
     simp_rw [ih]
     apply iff_of_eq
-    congr 1
-    funext i δ xs
-    congr 1
-    funext y
+    congr 1 with i δ xs : 3
+    congr 1 with y : 1
     cases y <;> rfl
 
 /-- Disjunction as a derived connective. -/
@@ -238,7 +236,7 @@ variable {L : Language.{u, v}} {O : Type s} {shape : O → Shape}
 @[simp, fo_realize] theorem realize_disj (I : Interpretation shape M)
     (φ ψ : Formula L shape Γ α) (ρ : RelEnv Γ M) (v : α → M) :
     (disj φ ψ).Realize I ρ v ↔ φ.Realize I ρ v ∨ ψ.Realize I ρ v := by
-  simp only [disj, realize_neg, realize_conj]
+  fo_simp [disj]
   tauto
 
 /-- Derived universal quantification has the usual classical semantics. -/

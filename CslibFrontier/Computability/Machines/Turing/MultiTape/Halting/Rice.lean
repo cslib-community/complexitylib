@@ -84,14 +84,6 @@ section Desc
 
 variable {k : ℕ} {S Y : Type} [Fintype S] [Fintype Y] (eS : S ↪ ℕ) (eY : Y ↪ ℕ)
 
-omit [Fintype S] [Fintype Y] in
-private theorem key_map_injective : Function.Injective fun e : S × Option Y × (Fin k → Option Y) =>
-    key (eS e.1) (e.2.1.map eY) (Option.map eY ∘ e.2.2) := by
-  rintro ⟨q, i, w⟩ ⟨q', i', w'⟩ h
-  simp only [key, Key.mk.injEq] at h
-  rw [eS.injective h.1, Option.map_injective eY.injective h.2.1,
-    (Option.map_injective eY.injective).comp_left (List.ofFn_injective h.2.2)]
-
 /-- The transition found in the description of a machine is the renamed transition of the
 machine. -/
 theorem find?_desc (tm : MultiTapeTM k Y S) (q : S) (inp : Option Y) (work : Fin k → Option Y) :
@@ -104,30 +96,10 @@ theorem find?_desc (tm : MultiTapeTM k Y S) (q : S) (inp : Option Y) (work : Fin
     (List.mem_map.mpr ⟨(q, inp, work), Finset.mem_toList.mpr (Finset.mem_univ _), rfl⟩)
     fun e' he' hk => ?_
   obtain ⟨⟨q', i', w'⟩, -, rfl⟩ := List.mem_map.mp he'
-  cases key_map_injective eS eY (a₁ := (q', i', w')) (a₂ := (q, inp, work)) hk
+  cases key_injective eS eY (a₁ := (q', i', w')) (a₂ := (q, inp, work)) hk
   rfl
 
 end Desc
-
-private theorem Tape.read_eq_cellAt_head (t : Tape) : t.read = t.cellAt t.head := by
-  simp only [Tape.read, Tape.cellAt, le_refl, ↓reduceIte, sub_self, Int.toNat_zero]
-  cases t.right <;> rfl
-
-/-- The key read in a well-shaped configuration of the simulation is the key of the configuration
-it represents. -/
-theorem SCfg.key_eq_key_toCfg {k : ℕ} {x : List ℕ} {s : SCfg} (hs : s.WellShaped k x)
-    (out : List ℕ) (q : ℕ) :
-    s.key x q =
-      Universal.key q (s.toCfg k x out).inputSymbol (s.toCfg k x out).workTapeSymbols := by
-  obtain ⟨hk, hp⟩ := hs
-  simp only [SCfg.key, Universal.key, Key.mk.injEq, true_and]
-  constructor
-  · rw [Cfg.inputSymbol_eq_inputAt]
-    simp only [SCfg.toCfg, min_eq_left hp, inputSymbol, inputAt, List.head?_drop]
-  · refine List.ext_getElem (by simp [hk]) fun i h₁ h₂ => ?_
-    have hi : i < s.workTapes.length := by simpa using h₁
-    simp [Cfg.workTapeSymbols, SCfg.toCfg, Tape.read_eq_cellAt_head, List.getD_eq_getElem?_getD,
-      List.getElem?_eq_getElem hi]
 
 /-! ### Dispatching on a computed bit -/
 
@@ -462,7 +434,7 @@ theorem exists_run_of_computesTidily {w : List Bool} {o : List Bool} {t₀ s₀ 
         key (eS q) ((tm.runFrom (tm.initCfg w) t).inputSymbol.map eBit)
           (Option.map eBit ∘ (tm.runFrom (tm.initCfg w) t).workTapeSymbols) := by
       simp only [descRun]
-      rw [SCfg.key_eq_key_toCfg h₂ _, ← h₁, Cfg.inputSymbol_map]
+      rw [key_toCfg h₂ _, ← h₁, Cfg.inputSymbol_map]
       rfl
     refine ⟨eS q, _, hst, by rw [hkey, find?_desc], ?_⟩
     simp [Act.ofAction, h₂.length_workTapes, descRun]
@@ -488,7 +460,7 @@ theorem exists_run_of_computesTidily {w : List Bool} {o : List Bool} {t₀ s₀ 
       have hc := congrFun (congrArg (fun c => c.workTapes ⟨i, hi'⟩) h₁) c.1.workTapes[i].head
       simp only [Cfg.map_workTapes, wordsCfg, tapeOfList_nil, Option.map_none, SCfg.toCfg,
         List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi'', Option.getD_some] at hc
-      simp only [List.getElem_map, List.getElem_replicate, Tape.read_eq_cellAt_head]
+      simp only [List.getElem_map, List.getElem_replicate, Tape.read_eq]
       exact hc.symm
     · have := congrArg Cfg.output h₁
       simp only [Cfg.map_output, wordsCfg, SCfg.toCfg] at this
