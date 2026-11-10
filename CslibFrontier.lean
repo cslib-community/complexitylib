@@ -5813,6 +5813,7 @@ public import CslibFrontier.Probability.PMF
 public import CslibFrontier.Probability.PMF.Bind
 public import CslibFrontier.Probability.PMF.BindFailure
 public import CslibFrontier.Probability.PMF.Chebyshev
+public import CslibFrontier.Probability.PMF.Coin
 public import CslibFrontier.Probability.PMF.Event
 public import CslibFrontier.Probability.PMF.Expect
 public import CslibFrontier.Probability.PMF.Filter
