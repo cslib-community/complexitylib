@@ -53,11 +53,13 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
+import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
@@ -823,8 +825,8 @@ register_result "trakhtenbrot" where
     many symbols of arity at most three. FinSat asks for some, FinValid for every, finite \
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
-    Libkin's form for a fixed vocabulary with a binary relation symbol is a separate entry; \
-    a computable bridge to Mathlib sentences is not formalized."
+    Libkin's form for a fixed vocabulary with a binary relation symbol and the transfer to \
+    Mathlib sentences are separate entries."
 
 register_result "trakhtenbrot-binary" where
   title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
@@ -841,8 +843,28 @@ register_result "trakhtenbrot-binary" where
   scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
     symbol, no computable procedure is correct for finite satisfiability on the raw \
     sentences over σ, and the finitely valid sentences over σ are not r.e. Raw \
-    library-local syntax with finite nonempty models; a computable translation from \
-    Mathlib's L.Sentence is not formalized."
+    library-local syntax with finite nonempty models; the form for Mathlib's L.Sentence is \
+    the entry trakhtenbrot-sentence."
+
+register_result "trakhtenbrot-sentence" where
+  title := "Trakhtenbrot's theorem for Mathlib sentences"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.rePred_finSat,
+    FirstOrder.Language.Sentence.not_computablePred_finSat,
+    FirstOrder.Language.Sentence.not_rePred_finValid,
+    FirstOrder.Language.Sentence.exists_finValid_unprovable
+  ]
+  scope := "Mathlib L.Sentence over a relational language with finitely many relation \
+    symbols; the negative results need a binary symbol. Sentences are coded by \
+    primcodableRaw, a scoped instance, independent of the symbol encoding up to primitive \
+    recursive equivalence. FinSat and FinValid quantify over finite nonempty structures. \
+    Function symbols, infinite vocabularies and vocabularies whose only non-unary symbols \
+    have arity at least three are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
@@ -1001,6 +1023,27 @@ register_result "ehrenfeucht-fraisse" where
     L.IsRelational; the Hintikka direction needs only finitely many relation symbols. Also: \
     finitely many rank-n formulas up to equivalence, and elementary equivalence as winning \
     every finite game."
+
+register_result "pebble-games-fo-k" where
+  title := "The pebble-game characterization of finite-variable logic FO^k"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := "Theorem 6.10", locator := "Section 6.1, p. 123" },
+    { paper := Libkin2004, theorem := "Theorem 11.5, Proposition 11.8 and Corollary 11.9",
+      locator := "Section 11.2, pp. 216–218" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.pebbleWins_iff_forall_realize_iff,
+    Cslib.Logic.FO.pebbleWinsForever_iff_forall_realize_iff
+  ]
+  scope := "Mathlib first-order languages with finitely many relation symbols; k-variable \
+    formulas reuse variables and have equality and relational atoms. Duplicator wins the \
+    n-round k-pebble game from a position (S, a, b) iff a and b satisfy the same FO^k formulas \
+    of quantifier rank at most n with free variables in S, for arbitrary structures; the \
+    infinite game corresponds to all FO^k formulas on finite structures. Positions are total \
+    assignments, so for k > 0 the statements are vacuous on empty structures. Libkin states \
+    the results for the infinitary logic L^k_∞ω on finite structures; the remark before \
+    Proposition 11.8 reduces rank n to FO^k."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"

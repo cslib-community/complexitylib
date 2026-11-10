@@ -322,7 +322,8 @@ theorem exists_computableInO_countPair (F : NetworkFamily encN value Admissible 
       (encPair encBits encUnary) encUnary := computableInPolyTime_paddedTime.comp (by fun_prop)
   let cT : NativeCertificate (fun x : List Bool => T x.length) encBits encNat :=
     ⟨_, _, hT.computableInO⟩
-  let cU : NativeCertificate (fun n : ℕ => n) encNat encUnary := ⟨_, _, ComputableInO.natToUnary⟩
+  let cU : NativeCertificate (fun n : ℕ => n) encNat encUnary :=
+    ⟨_, _, ComputableInO.natToUnary.mono_time 1 (T' := fun n => (n + 1) ^ 2) fun n => by nlinarith⟩
   let cX : NativeCertificate (fun x : List Bool => x) encBits encBits :=
     NativeCertificate.linear (ComputableInO.of_eq fun _ => rfl)
   let cpre : NativeCertificate (fun x : List Bool => (x, c * T x.length)) encBits
