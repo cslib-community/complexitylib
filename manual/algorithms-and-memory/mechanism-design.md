@@ -362,10 +362,19 @@ in the `lowBidRule` example. A failure caused only by negative bids is irrelevan
 rule there, since `Mechanism.IsDSIC.congr` shows that DSIC ignores profiles with a negative
 entry.
 
+## Randomized Facility-Location Mechanisms
+
+The randomized facility-location modules model mechanisms without money that map an `ι`-indexed profile of reported locations on a pseudometric space `(G, [PseudoMetricSpace G] [MeasurableSpace G])` to a facility distribution `ProbabilityMeasure G` ([Procaccia and Tennenholtz][procacciatennenholtz13]).
+
+* [FacilityLocation.Basic](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Basic.lean): defines `socialCost x y := ∑ i, dist (x i) y`, `optSocialCost`, `IsOptimal`, `Mechanism ι G := (ι → G) → ProbabilityMeasure G`, and both the extended nonnegative Lebesgue expected distance `expectedECost μ loc := ∫⁻ y, edist loc y ∂μ` (`ℝ≥0∞`) and the real-valued Bochner integral `expectedCost μ loc := ∫ y, dist loc y ∂μ`. Defining `Mechanism.IsStrategyProof`, `Mechanism.IsWeakGroupStrategyProof`, `Mechanism.IsGroupStrategyProof`, and `Mechanism.HasApproxRatio` against `expectedECost` avoids Bochner integrability's `0`-default on infinite-moment distributions while recovering real-valued equivalences (`isStrategyProof_iff_expectedCost_le`, `hasApproxRatio_iff_expectedSocialCost_le`) whenever `HasFiniteCost` holds. `Mechanism.deterministic` and `Mechanism.ofPMF` embed deterministic rules and finite/countable `PMF` rules into `Mechanism`, and `HasApproxRatio.one_le` shows `1 ≤ α` whenever `G` is nontrivial and `2 ≤ Fintype.card ι`.
+* [FacilityLocation.Dictatorship](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Dictatorship.lean): proves on any pseudometric space (`[OpensMeasurableSpace G]`) that `dictatorship i₀` is strongly group strategyproof (`dictatorship_isGroupStrategyProof`) with approximation ratio `max 1 (Fintype.card ι - 1)` (`dictatorship_hasApproxRatio`), and that `randomDictatorship` (uniform `PMF.uniformOfFintype` over nonempty finite `ι`) is strategyproof (`randomDictatorship_isStrategyProof`) with approximation ratio `2 - 2 / Fintype.card ι` (`randomDictatorship_hasApproxRatio`).
+* [FacilityLocation.Median](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Median.lean): defines `IsOrderStatistic`, `orderStatistic`, `lowerMedian`, and `upperMedian` using sorted multisets and `List.IsOrderStatistic`, proves that every fixed `k`-th `orderStatisticMechanism` on `ℝ` (`k < Fintype.card ι`) is strongly group strategyproof (`orderStatisticMechanism_isGroupStrategyProof`, [Moulin][moulin80]), shows `lowerMedian_isOptimal` and `upperMedian_isOptimal` for `socialCost` on `ℝ`, and concludes that `medianMechanism` is both group strategyproof (`medianMechanism_isGroupStrategyProof`) and `1`-approximate (`medianMechanism_hasApproxRatio_one`, [Procaccia and Tennenholtz][procacciatennenholtz13]). Conversely, `not_isStrategyProof_meanMechanism` shows that `meanMechanism` fails strategyproofness whenever `2 ≤ Fintype.card ι`.
+
+The [facility-location checks](../../CslibFrontierTests/FacilityLocation.lean) verify concrete `medianMechanism` evaluations on `![0, 1, 10]` (cost `10 = optSocialCost < 12`) and even `n = 4` (`![0, 1, 2, 10]`, both `lowerMedian = 1` and `upperMedian = 2` optimal with cost `11`); non-strategyproof counterexamples for `meanMechanism` on `![0, 1, 1]` and the even-`n` midpoint `midpointMedian4` on `![0, 1, 2, 3]`; tightness of ratio `2` for `dictatorship 0` on `Fin 3`; strategyproofness and `(4/3)`-approximation of `randomDictatorship` on `Fin 3` over `ℝ` separated from `IsGroupStrategyProof` (on `![0, 1, 2]` deviating to `![1, 1, 1]`) and `IsWeakGroupStrategyProof` (on the 4-point star metric `Star4`); a continuous uniform `[0, 1]` `ProbabilityMeasure ℝ` evaluation (`expectedCost = 1/4` at `1/2`); and the `constantZero2` counterexample failing every finite approximation ratio.
+
 ## Known Limitations
 
-Only deterministic, sealed-bid mechanisms are covered: dominant-strategy incentive compatibility
-in general, and Bayes–Nash equilibrium for single-parameter mechanisms. Not yet formalized:
+Only deterministic, sealed-bid mechanisms are covered for auctions and VCG: dominant-strategy incentive compatibility in general, and Bayes–Nash equilibrium for single-parameter mechanisms. Not yet formalized:
 the sponsored-search payment formula (Lecture 3, (8)–(9)), the greedy knapsack rule and its
 1/2-approximation (Lecture 4, §2.2, Theorem 2.1), ironing for irregular distributions, regular
 distributions whose virtual valuation is unbounded below at `0` (such as `f(v) = 2v`),
@@ -376,6 +385,8 @@ Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge
 single-parameter mechanisms as general ones (for example VCG specializing to Vickrey), and any
 computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001 and #3173.
 
+For facility location, only single-facility mechanisms optimizing expected social cost (sum of distances) are formalized. Not yet formalized: maximum-cost (egalitarian) objectives, multiple-facility (`k ≥ 2`) location, characterization of strategyproof mechanisms on general metric graphs and trees/cycles (Schummer–Vohra, issue #4327), and impossibility/lower-bound theorems beyond `1 ≤ α`.
+
 For social choice, Arrow's theorem and the Gibbard–Satterthwaite theorem are formalized for strict
 individual rankings. A finite electorate is necessary, but the infinite-electorate counterexample
 built from a nonprincipal ultrafilter (Fishburn 1970) is not formalized. Also not formalized are the
@@ -384,4 +395,6 @@ theorem, and the complexity of winner determination and manipulation. See `ROADM
 #3282.
 
 [hartline21]: ../sources.md#hartline21
+[moulin80]: ../sources.md#moulin80
 [nisan07]: ../sources.md#nisan07
+[procacciatennenholtz13]: ../sources.md#procacciatennenholtz13

@@ -1012,6 +1012,11 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 
 Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
 
+<a id="moulin80"></a>
+## moulin80
+
+Hervé Moulin. "On Strategy-Proofness and Single Peakedness." *Public Choice* 35(4), 437–455, 1980. https://doi.org/10.1007/BF00128122 . Bibliographic metadata checked against `references.bib` (`Moulin1980`) and secondary search summaries on 2026-11-10; the full text was not inspected, so no internal theorem numbers are claimed. Cited in [the mechanism-design chapter](algorithms-and-memory/mechanism-design.md) for the strong group strategyproofness of fixed order-statistic (generalized median) rules on the real line.
+
 <a id="mullersatterthwaite77"></a>
 ## mullersatterthwaite77
 
@@ -1091,6 +1096,11 @@ Giovanni Pighizzini. "Nondeterministic One-Tape Off-Line Turing Machines and The
 ## pohl72
 
 Ira Pohl. "A Sorting Problem and Its CslibFrontier." *Communications of the ACM* 15(6), 462–464, 1972. https://doi.org/10.1145/361405.361423 . Bibliographic data from the DOI record. Cited, following the customary attribution in Knuth §5.3.3 and CLRS §9.1, for the adversary argument showing that `⌈3n/2⌉ - 2` comparisons are necessary and sufficient to find the minimum and maximum of `n` elements. The paper is paywalled and was not inspected, so no theorem number is cited.
+
+<a id="procacciatennenholtz13"></a>
+## procacciatennenholtz13
+
+Ariel D. Procaccia and Moshe Tennenholtz. "Approximate Mechanism Design without Money." *ACM Transactions on Economics and Computation* 1(4), Article 18 (18:1–18:26), 2013 (preliminary version in EC 2009). https://doi.org/10.1145/2542174.2542175 . Bibliographic metadata checked against `references.bib` (`ProcacciaTennenholtz2013`) and secondary search summaries on 2026-11-10; the full text was not inspected, so no internal theorem numbers are claimed. Cited in [the mechanism-design chapter](algorithms-and-memory/mechanism-design.md) for the randomized facility-location framework (strategyproofness, group strategyproofness, expected social cost, approximation ratio, and median optimality on `ℝ`).
 
 <a id="post46"></a>
 ## post46

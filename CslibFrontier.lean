@@ -5274,6 +5274,9 @@ public import CslibFrontier.GameTheory.Congestion.Stability
 public import CslibFrontier.GameTheory.Congestion.StrongNash
 public import CslibFrontier.GameTheory.Mechanism.Bayesian
 public import CslibFrontier.GameTheory.Mechanism.CriticalBid
+public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Basic
+public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
+public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 public import CslibFrontier.GameTheory.Mechanism.FirstPrice
 public import CslibFrontier.GameTheory.Mechanism.Knapsack
 public import CslibFrontier.GameTheory.Mechanism.Myerson
