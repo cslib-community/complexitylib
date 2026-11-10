@@ -29,7 +29,7 @@ last among `S` for a `1 / #S` fraction of the orders
   `1 / #S` fraction of all permutations.
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

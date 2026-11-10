@@ -14,6 +14,13 @@
     "snapshot_end_line": 59
   },
   {
+    "id": "ppt-explicit-adversary-call",
+    "document": "workflows/probabilistic-workflows.md",
+    "source_path": "CslibFrontierTests/Crypto/InaccessibleEntropy.lean",
+    "snapshot_start_line": 156,
+    "snapshot_end_line": 165
+  },
+  {
     "id": "oracle-adaptive-prefix",
     "document": "workflows/probabilistic-workflows.md",
     "source_path": "CslibFrontierTests/OracleComposition.lean",

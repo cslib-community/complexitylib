@@ -45,7 +45,10 @@ class QuickCheckTests(unittest.TestCase):
         path.write_text(text)
 
     def git(self, *args):
-        return subprocess.check_output(["git", *args], cwd=self.root, text=True).strip()
+        # Ignore the user's Git configuration: `tag.gpgsign`, for one, makes `git tag` open an
+        # editor for a message.
+        env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+        return subprocess.check_output(["git", *args], cwd=self.root, env=env, text=True).strip()
 
     def commit(self):
         self.git("add", ".")
@@ -389,12 +392,37 @@ class QuickCheckTests(unittest.TestCase):
         with self.assertRaisesRegex(quick.FullCheck, "overlapping library source"):
             self.plan()
 
-    def test_fallback_runs_default_check_without_quick_argument(self):
+    def test_fallback_runs_full_check_with_the_same_base(self):
         with patch.object(quick, "make_plan", side_effect=quick.FullCheck("unsafe")), \
              patch.object(quick.subprocess, "run") as run:
             run.return_value.returncode = 7
             self.assertEqual(quick.main([], self.root), 7)
-            self.assertEqual(run.call_args.args[0], [str(self.root / "scripts/check.sh")])
+            self.assertEqual(run.call_args.args[0],
+                             [str(self.root / "scripts/check.sh"), "--base", "origin/main"])
+            self.assertEqual(quick.main(["--base", "example-base"], self.root), 7)
+            self.assertEqual(run.call_args.args[0],
+                             [str(self.root / "scripts/check.sh"), "--base", "example-base"])
+
+    def test_changed_library_and_test_files_get_source_checks(self):
+        base = self.git("rev-parse", "HEAD")
+        hygiene = [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp", "--"]
+        ratchet = ("encoding readability ratchet",
+                   [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
+        with patch.object(quick, "HYGIENE_ROOTS", ("Demo/", "DemoTests/")), \
+             patch.object(quick, "ENCODING_ROOT", "Demo/"):
+            self.write("DemoTests/Client.lean", "import Demo.Middle\nexample : Nat := middle + 0\n")
+            self.assertEqual(self.plan().checks, [
+                ("source hygiene (changed files)", [*hygiene, "DemoTests/Client.lean"])])
+            self.write("Demo/Base.lean", "def value : Nat := 2\n")
+            self.assertEqual(self.plan().checks, [
+                ("source hygiene (changed files)",
+                 [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), ratchet])
+            # A changed baseline already selects the ratchet; it runs once.
+            self.write("scripts/encoding_readability_baseline.json", "{}\n")
+            self.assertEqual([label for label, _ in self.plan().checks],
+                             ["source hygiene (changed files)", "encoding readability ratchet"])
+        # The aggregates sit outside both roots, as `CslibFrontier.lean` does.
+        self.assertEqual(quick.HYGIENE_ROOTS, ("CslibFrontier/", "CslibFrontierTests/"))
 
     def test_quick_failure_from_importing_client_is_not_dropped(self):
         self.write("Demo/Base.lean", "def value : Bool := true\n")
@@ -441,7 +469,8 @@ class LocalManualGateTests(unittest.TestCase):
         recorder = ('#!/usr/bin/env python3\nimport json,os,sys\n'
                     'with open(os.environ["QUICK_COMMAND_LOG"], "a") as f:\n'
                     ' f.write(json.dumps([sys.argv[0].split("/")[-1], *sys.argv[1:]])+"\\n")\n')
-        for path in ("bin/lake", "scripts/cache/ensure.sh", "scripts/quick_check.py"):
+        for path in ("bin/lake", "scripts/cache/ensure.sh", "scripts/quick_check.py",
+                     "scripts/full_check.py"):
             self.write(path, recorder)
             (self.root / path).chmod(0o755)
         self.log = self.root / "commands.jsonl"
@@ -464,9 +493,7 @@ class LocalManualGateTests(unittest.TestCase):
                 commands = [json.loads(x) for x in self.log.read_text().splitlines()]
                 self.assertEqual(commands[0], ["ensure.sh"])
                 expected = [["quick_check.py", "--base", "example-base"]] if args else [
-                    ["lake", "build", "--wfail", "--iofail"], ["lake", "exe", "mk_all", "--check"],
-                    ["lake", "test", "--wfail", "--iofail"], ["lake", "lint"],
-                    ["lake", "exe", "lint-style"], ["lake", "exe", "checkInitImports"]]
+                    ["full_check.py", "--base", "origin/main"]]
                 self.assertEqual(commands[1:], expected)
                 self.assertFalse(list(self.root.glob("cslib-frontier-check.*")))
                 self.log.unlink()
@@ -496,8 +523,8 @@ class LocalManualGateTests(unittest.TestCase):
 
 class RepositoryLayoutTests(unittest.TestCase):
     def test_repository_libraries_are_in_quick_scope(self):
-        # An unsupported library layout in the real lakefile sends every quick check to all six
-        # gates; #1729's `defaultFacets = []` once did so unnoticed.
+        # An unsupported library layout in the real lakefile sends every quick check to the full
+        # check; #1729's `defaultFacets = []` once did so unnoticed.
         modules, aggregates, roots = quick.source_modules(REPO)
         self.assertIn("CslibFrontier", aggregates)
         self.assertIn("CslibFrontierResults", aggregates)
@@ -505,8 +532,8 @@ class RepositoryLayoutTests(unittest.TestCase):
         self.assertIn("CslibFrontierTests.Axioms", modules)
 
     def test_repository_lint_driver_is_in_quick_scope(self):
-        # Another lint driver or invalid default targets would send every quick check to all six
-        # gates; the default libraries' modules are linted and the tests are not, as in CI.
+        # Another lint driver or invalid default targets would send every quick check to the full
+        # check; the default libraries' modules are linted and the tests are not, as in CI.
         lint = quick.lint_scope(
             REPO, {"CslibFrontier", "CslibFrontierResults"},
             {"CslibFrontier.A", "CslibFrontierResults.B", "CslibFrontierTests.C"},

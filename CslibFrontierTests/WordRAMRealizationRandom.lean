@@ -62,7 +62,7 @@ theorem run_sample (w : ℕ) (s : Memory.State) :
 
 /-- On the list input, `sample` chooses a position uniformly, retaining repeated values. -/
 theorem run_sample_inputState (w : ℕ) (xs : List ℕ) :
-    ((Memory.spec w).toRandomized.withCoins.run sample (inputState xs)).map Prod.fst =
+    ((Memory.spec w).toRandomized.withCoins.run sample (Memory.State.init xs)).map Prod.fst =
       (Probability.PMF.uniformOfFintype (Fin (xs.length - 1 + 1))).map
         fun c => xs.getD c.val 0 := by
   rw [run_sample, PMF.map_comp]
@@ -173,7 +173,7 @@ theorem sample_program : ∃ (r : ℕ) (prog : Program .exact r) (T : ℕ),
     fun w xs hxs hw hin => ?_⟩
   have hlen : 1 ≤ xs.length := List.length_pos_iff.mpr hxs
   obtain ⟨hhalt, hcalls, hlaw⟩ := hrun 0 w () xs (fun j => j.elim0) (Nat.zero_le _) hw hin hlen
-    (demonicValid_sample hlen (by simp [inputState])) (observe frontier)
+    (demonicValid_sample hlen (by simp [Memory.State.init])) (observe frontier)
     fun _ _ => rfl
   refine ⟨hhalt, hcalls, fun cfg => (observe frontier cfg).1, ?_⟩
   rw [show (fun cfg => (observe frontier cfg).1) = Prod.fst ∘ observe frontier from rfl,

@@ -34,7 +34,7 @@ it, every such edge is at a vertex scoring at least `a + M δ`.
   score.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier.Multigraph
 

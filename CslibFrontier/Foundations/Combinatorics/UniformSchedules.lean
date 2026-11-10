@@ -105,7 +105,6 @@ source coordinate; its diagonal collision contributes one. -/
 theorem expect_potential [DecidableEq L] :
     (𝔼 a : A → L, potential a) =
       (Fintype.card A : ℚ) * (1 - 1 / (Fintype.card L : ℚ)) := by
-  have hL : 0 < Fintype.card L := Fintype.card_pos
   have hrow (i : A) :
       (∑ j : A, if i = j then (1 : ℚ) else 1 / (Fintype.card L : ℚ)) =
         (Fintype.card A : ℚ) / Fintype.card L + 1 - 1 / (Fintype.card L : ℚ) := by
@@ -117,7 +116,7 @@ theorem expect_potential [DecidableEq L] :
     simp only [Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ,
       nsmul_eq_mul, Finset.sum_ite_eq, Finset.mem_univ, ↓reduceIte]
     ring
-  simp_rw [potential_eq_collisions_sub _ hL]
+  simp_rw [potential_eq_collisions_sub]
   rw [Finset.expect_sub_distrib, Fintype.expect_const]
   simp_rw [Finset.expect_sum_comm, expect_schedule_collision]
   simp only [hrow, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
@@ -223,8 +222,7 @@ theorem expect_incidence_potential_le {V F : Type*} [Fintype V] [DecidableEq V]
     (hw : ∀ e : A, #{e' : A | factorOf e' = factorOf e} ≤ w) :
     (𝔼 a : V → L, 𝔼 d : F → L, potential (incidenceLabel varOf factorOf a d)) ≤
       (Fintype.card A : ℚ) * (b + w) := by
-  have hLL : 0 < Fintype.card (L × L) := Fintype.card_pos
-  simp_rw [potential_eq_collisions_sub _ hLL]
+  simp_rw [potential_eq_collisions_sub]
   simp only [Finset.expect_sub_distrib, Fintype.expect_const]
   simp_rw [Finset.expect_sum_comm, expect_incidenceLabel_collision]
   have hconst :
@@ -360,10 +358,8 @@ theorem exists_balanced_schedules {T V F G : Type*}
       (∀ t : T, ∀ g : G,
         occupancy (fun v => a v t) g * Fintype.card G ≤ 2 * Fintype.card V) := by
   cases nonempty_fintype F
-  have hB : 0 < Fintype.card ((T → G) × (T → G)) := Fintype.card_pos
   have hT : 0 < Fintype.card T := Fintype.card_pos
   have hV : 0 < Fintype.card V := Fintype.card_pos
-  have hG : 0 < Fintype.card G := Fintype.card_pos
   have hA : 0 < Fintype.card A := by
     have hpos : 0 < 2 * (b + w) * Fintype.card ((T → G) × (T → G)) ^ 2 := by positivity
     exact hpos.trans_le hincidenceSize
@@ -396,7 +392,7 @@ theorem exists_balanced_schedules {T V F G : Type*}
   have hbounds :=
     incidence_and_group_bounds
       (incidenceLabel varOf factorOf a d₀) (fun t v => a v t) (b + w)
-      hA hB hbw hT hV hG hincidenceSize hgroupSize hpot
+      hA hbw hT hV hincidenceSize hgroupSize hpot
   refine ⟨a, normalizeEmptyFactors factorOf g₀ d₀, ?_, ?_, hbounds.2⟩
   · intro f hf
     exact normalizeEmptyFactors_of_not_exists factorOf g₀ d₀ hf

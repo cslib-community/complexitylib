@@ -43,6 +43,7 @@ the pebble game, is a direct game argument and holds in every language.
 ## Main definitions
 
 * `Cslib.Logic.FO.AtomicIndex.toFiniteVariable`: an atomic index as a `k`-variable formula.
+* `Cslib.Logic.FO.pebbleAtoms`: the atomic facts about the placed pebbles.
 * `Cslib.Logic.FO.PebbleType`, `Cslib.Logic.FO.pebbleType`: `k`-variable rank-`n` types and the
   type of a position.
 * `Cslib.Logic.FO.pebbleAtomicDiagram`, `Cslib.Logic.FO.pebbleHintikka`: the defining formulas of
@@ -50,6 +51,8 @@ the pebble game, is a direct game argument and holds in every language.
 
 ## Main results
 
+* `Cslib.Logic.FO.pebbleAtoms_eq_iff`: equal atomic facts are exactly partial isomorphisms on the
+  placed pebbles.
 * `Cslib.Logic.FO.pebbleType_eq_iff`: equal types are exactly winning positions of the `n`-round
   `k`-pebble game.
 * `Cslib.Logic.FO.realize_pebbleHintikka`: the Hintikka formula of a type defines it.
@@ -138,6 +141,22 @@ theorem partialIsoOn_univ_iff {a : Fin k → M} {b : Fin k → N} :
   rw [partialIsoOn_iff_holds, partialIso_iff_holds]
   simp only [Set.subset_univ, forall_const]
 
+/-- The atomic facts about the pebbles in `S` that hold of `a`: the atomic formulas whose variables
+lie in `S` and that `a` satisfies. -/
+def pebbleAtoms (S : Set (Fin k)) (a : Fin k → M) : Set (AtomicIndex L k) :=
+  {i | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a}
+
+@[simp] theorem mem_pebbleAtoms {S : Set (Fin k)} {a : Fin k → M} {i : AtomicIndex L k} :
+    i ∈ pebbleAtoms S a ↔ ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a :=
+  Iff.rfl
+
+/-- Two positions have the same atomic facts about the pebbles in `S` exactly when those pebbles
+define a partial isomorphism. -/
+theorem pebbleAtoms_eq_iff {S : Set (Fin k)} {a : Fin k → M} {b : Fin k → N} :
+    pebbleAtoms (L := L) S a = pebbleAtoms S b ↔ PartialIsoOn L S a b := by
+  rw [partialIsoOn_iff_holds, Set.ext_iff]
+  simp only [mem_pebbleAtoms, and_congr_right_iff]
+
 /-! ### Types of positions -/
 
 variable (L) in
@@ -159,16 +178,16 @@ instance PebbleType.finite [Finite (Σ l, L.Relations l)] (k : ℕ) : ∀ n, Fin
 /-- The `k`-variable rank-`n` type of the position `(S, a)`: the atomic facts about the placed
 pebbles and, for `n + 1`, the types reached by moving each pebble. -/
 def pebbleType : ∀ (n : ℕ), Set (Fin k) → (Fin k → M) → PebbleType L k n
-  | 0, S, a => {i | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a}
-  | n + 1, S, a => ({i | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a},
+  | 0, S, a => pebbleAtoms S a
+  | n + 1, S, a => (pebbleAtoms S a,
       fun j => Set.range fun c : M => pebbleType n (insert j S) (Function.update a j c))
 
 theorem pebbleType_zero (S : Set (Fin k)) (a : Fin k → M) :
-    pebbleType (L := L) 0 S a = {i | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a} := by
+    pebbleType (L := L) 0 S a = pebbleAtoms S a := by
   rw [pebbleType]
 
 theorem pebbleType_succ {n : ℕ} (S : Set (Fin k)) (a : Fin k → M) :
-    pebbleType (L := L) (n + 1) S a = ({i | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a},
+    pebbleType (L := L) (n + 1) S a = (pebbleAtoms S a,
       fun j => Set.range fun c : M => pebbleType n (insert j S) (Function.update a j c)) := by
   rw [pebbleType]
 
@@ -177,21 +196,16 @@ theorem PebbleType.succ_ext_iff {n : ℕ} {T T' : PebbleType L k (n + 1)} :
     T = T' ↔ T.1 = T'.1 ∧ ∀ j, T.2 j = T'.2 j :=
   Prod.ext_iff.trans (and_congr Iff.rfl funext_iff)
 
-private theorem atomic_eq_iff {S : Set (Fin k)} {a : Fin k → M} {b : Fin k → N} :
-    {i : AtomicIndex L k | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a} =
-        {i | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds b} ↔ PartialIsoOn L S a b := by
-  rw [partialIsoOn_iff_holds, Set.ext_iff]
-  simp only [Set.mem_ofPred_eq, and_congr_right_iff]
-
 /-- Two positions have the same `k`-variable rank-`n` type exactly when Duplicator wins the
 `n`-round `k`-pebble game between them. -/
 theorem pebbleType_eq_iff : ∀ {n : ℕ} {S : Set (Fin k)} {a : Fin k → M} {b : Fin k → N},
     pebbleType (L := L) n S a = pebbleType n S b ↔ PebbleWins L n S a b
   | 0, S, a, b => by
     rw [pebbleWins_zero, pebbleType_zero, pebbleType_zero]
-    exact atomic_eq_iff
+    exact pebbleAtoms_eq_iff
   | n + 1, S, a, b => by
-    rw [pebbleWins_succ, PebbleType.succ_ext_iff, pebbleType_succ, pebbleType_succ, atomic_eq_iff]
+    rw [pebbleWins_succ, PebbleType.succ_ext_iff, pebbleType_succ, pebbleType_succ,
+      pebbleAtoms_eq_iff]
     simp only [Set.Subset.antisymm_iff, Set.range_subset_iff, Set.mem_range, forall_and]
     refine and_congr Iff.rfl (and_congr ?_ ?_)
     · refine forall_congr' fun j => forall_congr' fun c => exists_congr fun d => ?_
@@ -213,11 +227,10 @@ noncomputable def pebbleAtomicDiagram [Finite (Σ l, L.Relations l)] (S : Set (F
 
 theorem realize_pebbleAtomicDiagram [Finite (Σ l, L.Relations l)] (S : Set (Fin k))
     (T : Set (AtomicIndex L k)) (a : Fin k → M) :
-    (pebbleAtomicDiagram S T).Realize a ↔
-      {i | ↑i.toFiniteVariable.freeVars ⊆ S ∧ i.Holds a} = T := by
+    (pebbleAtomicDiagram S T).Realize a ↔ pebbleAtoms S a = T := by
   classical
   simp only [pebbleAtomicDiagram, FiniteVariable.Formula.realize_iInf, Set.ext_iff,
-    Set.mem_ofPred_eq]
+    mem_pebbleAtoms]
   refine forall_congr' fun i => ?_
   by_cases hS : ↑i.toFiniteVariable.freeVars ⊆ S <;> by_cases hT : i ∈ T <;> simp [hS, hT]
 

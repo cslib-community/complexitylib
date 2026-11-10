@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Probability.PMF.Union
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # ROM IND-CCA Games, Eager/Lazy Equivalence, and CPA Reduction for HHK17 `FO-notbot`
@@ -645,8 +646,7 @@ theorem eval_roIndCcaGame_eq_h1 [Fintype M] [Finite R]
       (A (pk, cStar, if b then kRand else kReal))).run
       (RandomOracle.ofList [((false, mStar, cStar), kReal)])).map Prod.fst)]
   congr 1 with rStar : 1
-  symm; rw [PMF.bind_comm]; congr 1 with kReal : 1
-  exact PMF.bind_comm _ _ _
+  pmf_swap
 
 /-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
 decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
@@ -735,10 +735,7 @@ theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT]
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   congr 1; funext ⟨pk, dk⟩
   let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
-  rw [PMF.bind_comm (ProbComp.eval S.sampleMsg)]
-  congr 1 with G : 1
-  rw [← PMF.bind_comm (ProbComp.eval S.sampleMsg)]
-  congr 1 with mStar : 1
+  pmf_swap with G mStar
   set cStar := S.pke.encDet pk mStar (G mStar)
   have hstep (kReal kRand : K) :
       ((OracleComp.interpret (S.h1Handler G dk cStar)

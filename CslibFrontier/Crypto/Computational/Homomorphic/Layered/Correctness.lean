@@ -39,7 +39,7 @@ the endpoint distinction in a depth-budgeted scheme; security remains a separate
   pp. 171--172][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Scheme
 

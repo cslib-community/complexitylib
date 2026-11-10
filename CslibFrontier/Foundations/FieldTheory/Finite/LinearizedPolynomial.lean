@@ -396,7 +396,7 @@ theorem eq_zero_of_linearizedEval_eq_zero {n : ℕ} [NeZero n] {b : ZMod n → F
   · simp
 
 /-- If every element `y` of a subspace `W` satisfies `y ^ 2 ^ k = c * y` with `0 < k < n`, then
-`W` embeds into the proper subfield fixed by the `k`-th power of Frobenius. -/
+`W` has at most as many elements as some proper subfield of `F`. -/
 theorem exists_subfield_card_le [Finite F] {n k : ℕ} (hn : finrank (ZMod 2) F = n) (hk0 : 0 < k)
     (hkn : k < n) (W : Submodule (ZMod 2) F) (c : F) (h : ∀ y ∈ W, y ^ 2 ^ k = c * y) :
     ∃ K : Subfield F, K ≠ ⊤ ∧ Nat.card W ≤ Nat.card K := by
@@ -584,9 +584,9 @@ private theorem coeffPattern_gap [Finite F] {n s d : ℕ} [NeZero n]
   exact absurd ((Nat.pow_le_pow_iff_right (by norm_num)).1 this) (by omega)
 
 /-- **Structural lemma** [BenSassonKopparty2012, Lemma 3.10], for subspaces larger than every
-proper subfield: a subspace `W` of dimension greater than `s`, where every proper subfield
-has at most `2 ^ s` elements, is the image of a linearized function whose coefficient vector has
-the zero pattern `CoeffPattern`. -/
+proper subfield: a subspace `W` of dimension `d` greater than `s`, where every proper subfield
+has at most `2 ^ s` elements, contains the image of a linearized function whose coefficient
+vector has the zero pattern `CoeffPattern n d`. -/
 theorem exists_coeffPattern [Finite F] {n s : ℕ} [NeZero n] (hn : finrank (ZMod 2) F = n)
     (hs : ∀ K : Subfield F, K ≠ ⊤ → Nat.card K ≤ 2 ^ s) (W : Submodule (ZMod 2) F)
     (hsW : s < finrank (ZMod 2) W) :

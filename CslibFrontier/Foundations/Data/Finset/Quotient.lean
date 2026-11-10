@@ -24,7 +24,7 @@ Adapted from [Counting.lean](https://github.com/anthropics/formal-math/blob/16a5
 `anthropics/formal-math@16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
 -/
 
-@[expose] public section
+public section
 
 namespace Finset
 

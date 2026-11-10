@@ -23,7 +23,7 @@ These representation lemmas consume the memory equations returned by the initial
 They neither replace the native grouping code nor supply any input certificate to it.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

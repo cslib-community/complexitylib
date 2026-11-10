@@ -21,7 +21,8 @@ import CslibFrontier.Probability.PMF.Map
 This module packages the bit-packed two-stage quotient filter into a reusable
 `Cslib.DataStructure.WordRAM.Randomized.ObliviousSequenceImpl` certificate realizing
 `Cslib.DataStructure.ApproximateMembership.spec U n ε` on the Word-RAM without any universe-to-table
-restriction `log₂ U ≤ c · log₂ n`.
+restriction `log₂ U ≤ c · log₂ n`. Keys fit in half a word: every certificate assumes `U ≤ 2 ^ w₀`
+with `0 < w₀` and `2 * w₀ ≤ w`.
 
 ## Architecture
 

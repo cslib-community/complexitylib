@@ -74,10 +74,22 @@ conditions, import [PMF/Chebyshev.lean](../../CslibFrontier/Probability/PMF/Cheb
 `∑ a, p(a) (f a − m)² / c²`. Import
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
-satisfying `P` and the remaining coordinates form two independent products.
+satisfying `P` and the remaining coordinates form two independent products. Its corollaries
+`pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
+coordinates satisfying `P`, or reading it along an injection `e` of index types as
+`fun a k => a (e k)`, gives the independent product of the selected factors. Use these instead of
+counting tuples when the factors are not uniform. `pi_map_curry` in
+[Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
+indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
+[Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
+box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+[PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
+`PMF.bernoulli` is deprecated.
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
-rectangles, split off one of two fair bits, and relabel two point masses injectively. Run
+rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex
+and curry independent coins of different biases, and compute the probability that three coins all
+show `true`. Run
 `scripts/build.sh CslibFrontierTests.PMFConditioning`.
 
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
@@ -88,6 +100,23 @@ event (these short names need `open Cslib.Probability`), rather than converting 
 `PMF.toReal_apply_le_one _ true`; the
 [checked examples](../../CslibFrontierTests/ProbabilityNotation.lean) bound a program and a set event.
 Run `scripts/build.sh CslibFrontierTests.ProbabilityNotation`.
+
+Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
+`ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
+[PMF/Finiteness.lean](../../CslibFrontier/Probability/PMF/Finiteness.lean) and discharge each side
+condition with `by finiteness`, in place, instead of assembling it from `ENNReal.add_ne_top`,
+`ENNReal.sum_ne_top` and `PMF.apply_ne_top`. The module makes Mathlib's `finiteness` know that a
+mass `p a`, an event probability `p.toOuterMeasure s` and a finite sum of finite terms are finite;
+Mathlib already covers sums, products, powers, casts and inverses of nonzero terms, and local
+hypotheses. A factor with no such reason, such as an arbitrary `x : ℝ≥0∞`, makes it fail, often
+only after Aesop's rule-application limit; add a hypothesis `x ≠ ∞` or prove that factor
+separately. Each call costs roughly 100 to 700 heartbeats of Aesop search and positivity, so
+where the explicit term is a single `PMF.apply_ne_top _ _` keep the term. To compare success
+probabilities, import [Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
+`apply Game.succProbability_mono` leaves the goal `g₁ true ≤ g₂ true`, without unfolding
+`Game.succProbability`, and `Game.succProbability_le_add_of_advantage_le` turns a bound on
+`Game.advantage g₀ g₁` into `succProbability g₀ ≤ succProbability g₁ + B`. The [checked examples](../../CslibFrontierTests/PMFFiniteness.lean) cover
+each rule and the failure.
 
 ## Count the fair coins used by an exact sampler
 
@@ -1097,6 +1126,24 @@ example (test : List Bool × Bool × ℕ → Bool)
 
 Also check the sampler itself. `ProbComp.uniform (Fin 3)` has exact uniform semantics, but a strictly bounded fair-coin machine cannot give each outcome probability one third. The client deliberately tests that `ppt` does not certify it for free. Use an applicable dyadic sampler or the library's approximate-sampling results, carrying the approximation error into the later probability proof.
 
+`ppt` pays a search cost at every call, even on small goals. When a file certifies many inverters or reductions, or `ppt` fails on an adversary call whose inputs need preparation, compose the rules directly. Start with `IsPPTOn.isPPT`, then bind each sampled word with `(ComputableInPolyTime.sampleList h).bind_with`. Call the adversary through `IsPPT.preprocess`, which takes separate tidy certificates for the parameter and auxiliary input; `ComputableInPolyTime.tidy` converts plain ones. Close the deterministic leaves with `fun_prop`. The more general `IsPPTOn.preprocess` takes one certificate for the pair. Given `.prod` of two projections, it cannot infer the preparation function, so `fun_prop` meets goals with unassigned metavariables. The [InaccessibleEntropy client](../../CslibFrontierTests/Crypto/InaccessibleEntropy.lean) checks this pattern on a small inverter:
+
+<!-- excerpt: ppt-explicit-adversary-call -->
+```lean
+example {A : ℕ → List Bool → ProbComp (List Bool)} (hA : IsPPT encBits A) :
+    IsPPT encBits (fun n y => do
+      let pad ← Cslib.BitString.sampleList n
+      let raw ← A n (y ++ pad)
+      return raw.take n) := by
+  apply IsPPTOn.isPPT
+  refine (ComputableInPolyTime.sampleList (by fun_prop)).bind_with ?_
+  exact (hA.preprocess (ComputableInPolyTime.tidy (by fun_prop))
+    (ComputableInPolyTime.tidy (by fun_prop))).bind_with
+    (ComputableInPolyTime.isPPTOn (by fun_prop))
+```
+
+The inverters in the [InaccessibleEntropy development](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/OneWay.lean) are certified this way. In November 2026 a `ppt` call there cost about 11,000–14,000 heartbeats even on small goals, against a few hundred for the explicit proof. Without the right definition hints, a call could exhaust Aesop's rule limit.
+
 ## Bound a centered-binomial sampler tail
 
 [CenteredBinomial/Concentration.lean](../../CslibFrontier/Languages/Probabilistic/CenteredBinomial/Concentration.lean)
@@ -1152,7 +1199,7 @@ Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on externa
 
 When replacing the external handler with an implementation, open [Oracle/Substitution.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/Substitution.lean). The plain-certificate variant `IsOraclePPTOn.run_interpret_preprocess_open'` requires efficient preparation, initialization and handling, plus an invariant and bounds on reply length and added encoded state. Its `hresources` premise also certifies a uniform unary computation of the resource allowance from the original caller and request; an abstract polynomial bound alone does not supply this certificate. Repeated state doubling explains why “each call is polynomial time” is insufficient.
 
-When the allowance is polynomially bounded but not conveniently computed, apply `IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded` instead (the uniform-clock form is `IsOraclePPT.run_interpret_preprocess_open_of_polyBounded` in [Oracle/Parameter.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/Parameter.lean)). Its `hresources` premise is only `PolyBounded` growth of `resources caller request` in the length of the encoded caller–request pair, so no unary computation of the allowance is needed; both certificate variants are derived from it. The other premises are unchanged: the invariant must still hold for every handler result in the support under every external oracle, and the allowance must still bound each reply and the added encoded state. [`isPPTOn_run_signingOracle`](../../CslibFrontier/Crypto/Computational/WordSignature.lean) is a checked client: it proves the allowance's growth with `growth_poly` from the lengths of the secret key and the request.
+When the allowance is polynomially bounded but not conveniently computed, apply `IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded` instead (the uniform-clock form is `IsOraclePPT.run_interpret_preprocess_open_of_polyBounded` in [Oracle/Parameter.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/Parameter.lean)). Its `hresources` premise is only `PolyBounded` growth of `resources caller request` in the length of the encoded caller–request pair, so no unary computation of the allowance is needed; both certificate variants are derived from it. The other premises are unchanged: the invariant must still hold for every handler result in the support under every external oracle, and the allowance must still bound each reply and the added encoded state. [`isPPTOn_runWithEncryption`](../../CslibFrontier/Crypto/Computational/Encryption/PublicKeyCPA.lean) is a checked client: it proves the allowance's growth with `growth_poly` from the security parameter and the lengths of the public key and the request.
 
 ## Derive adaptive decapsulation security
 

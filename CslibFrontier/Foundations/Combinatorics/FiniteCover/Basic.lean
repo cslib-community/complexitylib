@@ -26,7 +26,7 @@ Density estimates involving exponentials are in the companion `FiniteCover` modu
 * `Cslib.exists_cover_of_scaled_card_lt`: the union bound for covers with integer cardinalities.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
