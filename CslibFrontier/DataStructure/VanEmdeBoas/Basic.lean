@@ -223,19 +223,23 @@ theorem bounds_isSome_of_contains {t : Tree d} {x : ℕ} (hx : t.Contains x) :
     t.bounds.isSome = true :=
   Option.isSome_iff_ne_none.mpr fun hb => not_contains_of_bounds_none hb x hx
 
+/-- The extrema of an occupied valid node: its cached bounds `(m, M)` are ordered, lie in the
+universe, are represented, and bound every represented key. -/
+theorem Valid.extrema_of_bounds {t : Tree d} (h : t.Valid) {m M : ℕ}
+    (hb : t.bounds = some (m, M)) :
+    m ≤ M ∧ M < universeSize d ∧ t.Contains m ∧ t.Contains M ∧
+      ∀ x, t.Contains x → m ≤ x ∧ x ≤ M := by
+  simpa only [Extrema, hb] using h.extrema
+
 /-- An occupied valid node has a represented cached minimum. -/
 theorem Valid.contains_minimum {t : Tree d} (h : t.Valid) {m M : ℕ}
-    (hb : t.bounds = some (m, M)) : t.Contains m := by
-  have he := h.extrema
-  simp only [Extrema, hb] at he
-  exact he.2.2.1
+    (hb : t.bounds = some (m, M)) : t.Contains m :=
+  (h.extrema_of_bounds hb).2.2.1
 
 /-- An occupied valid node has a represented cached maximum. -/
 theorem Valid.contains_maximum {t : Tree d} (h : t.Valid) {m M : ℕ}
-    (hb : t.bounds = some (m, M)) : t.Contains M := by
-  have he := h.extrema
-  simp only [Extrema, hb] at he
-  exact he.2.2.2.1
+    (hb : t.bounds = some (m, M)) : t.Contains M :=
+  (h.extrema_of_bounds hb).2.2.2.1
 
 /-- Division and remainder recover a cluster's coordinates for bounded low parts. -/
 theorem cluster_coordinates {u i y : ℕ} (hu : 0 < u) (hy : y < u) :

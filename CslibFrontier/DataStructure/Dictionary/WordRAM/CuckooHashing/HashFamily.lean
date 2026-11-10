@@ -2300,11 +2300,7 @@ theorem evalSingleCode_execWithin {w base c_exp n_max U M : ℕ}
     have hpow_b_le := DoubleTabulation.two_pow_provableB_le_space c_exp n_max
     have hfit_pow_b : Fits w (2 ^ DoubleTabulation.provableB n_max) :=
       hfit_dt.of_le (by omega)
-    have hq_pos : 0 < Probability.trinomialDeg U M := by
-      dsimp only [Probability.trinomialDeg]
-      positivity
-    have hfit_q : Fits w (2 ^ Probability.trinomialDeg U M) :=
-      Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hfit_q := KWise.fits_two_pow_trinomialDeg hw
     have hfit_pow_M : Fits w (2 ^ M) :=
       hfit_q.of_le (Nat.pow_le_pow_right (by decide) (Probability.le_trinomialDeg U M))
     have hfit_u : Fits w u.val :=

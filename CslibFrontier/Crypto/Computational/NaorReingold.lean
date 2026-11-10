@@ -501,10 +501,10 @@ theorem naorReingoldHybridGame_zero (d : F.Desc) (n : ℕ)
     (Equiv.funUnique (BitString 0) (ZMod (F.order d))).symm
   simp only [naorReingoldHybridGame, naorReingoldRealGame, PMF.monad_bind_eq_bind]
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map]
-  congr 1; funext α₀
+  congr 1 with α₀ : 1
   dsimp only [Function.comp_apply]
-  congr 1; funext α
-  congr 1; funext x
+  congr 1 with α : 1
+  congr 1 with x : 1
   simp [naorReingoldHybridEval, naorReingoldEval, e]
 
 /-- At depth `n`, `naorReingoldHybridGame` is the ideal random-function experiment. -/
@@ -513,7 +513,7 @@ theorem naorReingoldHybridGame_self (d : F.Desc) (n : ℕ)
     (adv : OracleComp (fun _ : BitString n => F.Carrier d) Bool) :
     F.naorReingoldHybridGame d n n adv = F.naorReingoldIdealGame d n adv := by
   simp only [naorReingoldHybridGame, naorReingoldIdealGame, PMF.monad_bind_eq_bind]
-  congr 1; funext B
+  congr 1 with B : 1
   have hfn (α : Fin n → ZMod (F.order d)) :
       F.naorReingoldHybridEval d n B α = fun x => B x • F.generator d := by
     funext x
@@ -580,7 +580,7 @@ theorem multiDDHRealTupleLaw_naorReingoldLevelTest (d : F.Desc) {n : ℕ} (k : �
     Function.comp_def]
   rw [PMF.bind_comm (PMF.uniformOfFintype (ZMod (F.order d)))
     (PMF.uniformOfFintype (BitString k → ZMod (F.order d)))]
-  congr 1; funext B
+  congr 1 with B : 1
   have hfn (α_k : ZMod (F.order d)) (α : Fin n → ZMod (F.order d)) :
       F.naorReingoldTableEval d k hk
         (fun i => (B i • F.generator d, (α_k * B i) • F.generator d)) α =
@@ -611,10 +611,10 @@ theorem multiDDHIdealTupleLaw_naorReingoldLevelTest (d : F.Desc) {n : ℕ} (k : 
   simp only [multiDDHIdealTupleLaw, naorReingoldHybridGame, PMF.monad_bind_eq_bind, PMF.bind_map,
     Function.comp_def]
   rw [← PMF.uniformOfFintype_map_equiv (prefixTableEquiv (ZMod (F.order d)) k), PMF.bind_map]
-  congr 1; funext B
+  congr 1 with B : 1
   dsimp only [Function.comp_apply]
-  congr 1; funext α
-  congr 1; funext x
+  congr 1 with α : 1
+  congr 1 with x : 1
   rw [naorReingoldTableEval, naorReingoldHybridEval]
   have hpref : prefixTableEquiv (ZMod (F.order d)) k B (BitString.zeroExtend (d' := k + 1) x) =
       if x ⟨k, hk⟩ then (B (BitString.zeroExtend (d' := k) x)).2

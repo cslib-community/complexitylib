@@ -55,8 +55,7 @@ noncomputable def Circuit.outputDist (I : Interpretation σ Bool) (C : Circuit �
 theorem Circuit.outputDist_comp (I : Interpretation σ Bool) (C : Circuit σ m p)
     (D : Circuit σ n m) : (C.comp D).outputDist I = (D.outputDist I).map (C.eval I) := by
   rw [outputDist, outputDist, PMF.map_comp]
-  congr 1
-  funext x
+  congr 1 with x : 1
   exact Circuit.eval_comp C D x
 
 /-- **Independent copies of a circuit sample independent copies of its output**, with the `k`
@@ -67,8 +66,7 @@ theorem Circuit.outputDist_replicate (I : Interpretation σ Bool) (C : Circuit �
   rw [outputDist, outputDist, iid_map, iid_uniformOfFintype, PMF.map_comp,
     ← uniformOfFintype_map_equiv (BitString.blocksEquiv (m := k) (k := n) (α := Bool)),
     PMF.map_comp]
-  congr 1
-  funext x
+  congr 1 with x : 1
   apply BitString.blocksEquiv.injective
   simp only [Function.comp_apply, Equiv.apply_symm_apply, eval_replicate,
     BitString.blocksEquiv_apply]

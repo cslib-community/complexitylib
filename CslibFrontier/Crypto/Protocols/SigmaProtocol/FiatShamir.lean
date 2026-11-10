@@ -853,21 +853,6 @@ private theorem fork_le_oneWayGame {P : SigmaProtocol X Y T C Z}
     simp [hR]
 
 omit [DecidableEq C] in
-/-- If every continuation accepts at most `K` more often than another, then so does the whole
-experiment. -/
-private theorem bind_apply_le_add {α β : Type} {μ : PMF α} {f g : α → PMF β} {b : β}
-    {K : ENNReal} (h : ∀ a ∈ μ.support, f a b ≤ g a b + K) :
-    (μ.bind f) b ≤ (μ.bind g) b + K := by
-  simp only [PMF.bind_apply]
-  calc ∑' a, μ a * f a b ≤ ∑' a, μ a * (g a b + K) := by
-        refine tsum_le_tsum fun a => ?_
-        by_cases ha : a ∈ μ.support
-        · exact mul_le_mul_of_nonneg_left (h a ha) zero_le
-        · rw [(PMF.apply_eq_zero_iff _ _).mpr ha, zero_mul, zero_mul]
-    _ = ∑' a, μ a * g a b + K := by
-        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-
-omit [DecidableEq C] in
 /-- **The game hops** for one key and one choice of the forger's coins: the experiment wins at
 most as often as the forking program, with presampled transcripts, plus `Qs · (Qs + Qro) · δ`. -/
 private theorem run_bind_finishGame_le {P : SigmaProtocol X Y T C Z} {keyGen : PMF (X × Y)}
@@ -938,7 +923,8 @@ theorem succProbability_eufCmaGame_le [Nonempty T] [Nonempty Z] [DecidableEq C]
     rw [(eufCmaGame_fiatShamir hashPoint), hfirst]
     simp only [coins, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
       PMF.pure_bind]
-    refine bind_apply_le_add fun key hkey' => bind_apply_le_add fun c _ => ?_
+    refine Probability.PMF.bind_apply_le_add_const_on_support _ _ fun key hkey' =>
+      Probability.PMF.bind_apply_le_add_const_on_support _ _ fun c _ => ?_
     exact (run_bind_finishGame_le hashPoint) hzk (hkey key hkey') (hcommit key hkey') A hA c
   have hQro (y : Y) (s : A.Coins) : IsCostBounded hashCost (A.forge y s) Qro := (hA y s).2
   have hB : first.bind (fun s => ((interpret countingUniform (forkingProgram hashPoint P A s)).run

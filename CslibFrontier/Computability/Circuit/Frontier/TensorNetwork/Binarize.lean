@@ -158,8 +158,7 @@ theorem contraction_binarize {R : Type*} [CommSemiring R] [Fintype U] [Fintype V
     refine Finset.prod_congr rfl fun v _ => ?_
     simp only [binarize]
     rw [ite_eq_left fun e _ => ⟨x e, rfl⟩]
-    congr 1
-    funext e
+    congr 1 with e : 1
     exact (leftInverse_invFun hcode (x e)).symm
 
 end Cslib.Circuits.Frontier.TensorNetwork

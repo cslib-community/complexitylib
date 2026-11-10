@@ -114,8 +114,7 @@ private theorem toRegs_subBank_expected (E : Gate d b → (Fin d → Fin r → Z
     exact Function.update_eq_self t S
   | gate f =>
     simp only [Ary.gateUpdateWith]
-    congr 1
-    funext i
+    congr 1 with i : 1
     rw [hvalues]
     simp only [expectedGate, hread]
 

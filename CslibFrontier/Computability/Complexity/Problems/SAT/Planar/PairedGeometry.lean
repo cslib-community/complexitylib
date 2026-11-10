@@ -98,6 +98,18 @@ theorem boundary_not_mem_openCell (c d : Point) (s : Fin 4) (l : Fin 2) :
   fin_cases s <;> fin_cases l <;>
     norm_num [PairedPorts.boundaryPort, PairedPorts.offset, realPoint] at hp
 
+/-- A point of a translated cell's closed square outside its open square lies on one of the four
+edges, in local coordinates. -/
+private theorem on_edge_of_not_mem_openCell {c : Point} {x : ℝ × ℝ}
+    (hnot : x + realPoint (cellOrigin 120 c) ∉ openCell 120 c) (h₀ : 0 ≤ x.1) (h₁ : x.1 ≤ 240)
+    (h₂ : 0 ≤ x.2) (h₃ : x.2 ≤ 240) : x.1 = 0 ∨ x.1 = 240 ∨ x.2 = 0 ∨ x.2 = 240 := by
+  by_contra h
+  apply hnot
+  rw [mem_openCell_add_origin_iff]
+  push Not at h
+  exact ⟨lt_of_le_of_ne h₀ (Ne.symm h.1), lt_of_le_of_ne h₁ h.2.1,
+    lt_of_le_of_ne h₂ (Ne.symm h.2.2.1), lt_of_le_of_ne h₃ h.2.2.2⟩
+
 /-- Every actual access stays in its closed cell and touches its boundary only at its port. -/
 theorem access_support_cell (sites : List Point) (c q : Point) (l : Fin 2) {p : ℝ × ℝ}
     (hp : p ∈ support (access sites c q l)) :
@@ -113,18 +125,8 @@ theorem access_support_cell (sites : List Point) (c q : Point) (l : Fin 2) {p : 
   · rw [← hx, mem_closedCell_add_origin_iff]
     exact ⟨h₀, h₁, h₂, h₃⟩
   · intro hnot
-    have hn : ¬ (0 < x.1 ∧ x.1 < 240 ∧ 0 < x.2 ∧ x.2 < 240) := by
-      intro h
-      apply hnot
-      rw [← hx, mem_openCell_add_origin_iff]
-      exact h
-    have hboundary : x.1 = 0 ∨ x.1 = 240 ∨ x.2 = 0 ∨ x.2 = 240 := by
-      by_contra h
-      apply hn
-      push Not at h
-      exact ⟨lt_of_le_of_ne h₀ (Ne.symm h.1), lt_of_le_of_ne h₁ h.2.1,
-        lt_of_le_of_ne h₂ (Ne.symm h.2.2.1), lt_of_le_of_ne h₃ h.2.2.2⟩
-    rw [← hx, hb hboundary, boundary, realPoint_add, add_comm]
+    rw [← hx] at hnot
+    rw [← hx, hb (on_edge_of_not_mem_openCell hnot h₀ h₁ h₂ h₃), boundary, realPoint_add, add_comm]
 
 /-- Contacts between accesses in different cells occur at both designated boundary ports. -/
 theorem access_contact_of_distinct_cells (sites otherSites : List Point)
@@ -1528,18 +1530,8 @@ theorem spoke_support_boundary (c : Point) (s : Fin 4) {p : ℝ × ℝ}
   have hlocal : x ∈ support (PairedPorts.spokeRoute s) :=
     (mem_support_translate_iff _ _ _).1 (hx ▸ hp)
   obtain ⟨h₀, h₁, h₂, h₃, hb⟩ := spoke_boundary_isolation hlocal
-  have hn : ¬ (0 < x.1 ∧ x.1 < 240 ∧ 0 < x.2 ∧ x.2 < 240) := by
-    intro h
-    apply hnot
-    rw [← hx, mem_openCell_add_origin_iff]
-    exact h
-  have hboundary : x.1 = 0 ∨ x.1 = 240 ∨ x.2 = 0 ∨ x.2 = 240 := by
-    by_contra h
-    apply hn
-    push Not at h
-    exact ⟨lt_of_le_of_ne h₀ (Ne.symm h.1), lt_of_le_of_ne h₁ h.2.1,
-      lt_of_le_of_ne h₂ (Ne.symm h.2.2.1), lt_of_le_of_ne h₃ h.2.2.2⟩
-  rw [← hx, hb hboundary, boundary, realPoint_add, add_comm]
+  rw [← hx] at hnot
+  rw [← hx, hb (on_edge_of_not_mem_openCell hnot h₀ h₁ h₂ h₃), boundary, realPoint_add, add_comm]
 
 private inductive SpokePiece (φ : CNF ℕ) : Route → Point → Fin 4 → Prop where
   | final {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :

@@ -318,6 +318,18 @@ theorem length_loopEncoding_iterate_round (enc : M.Encoding) (p : Program M r) (
       2 * (enc.config k).length + 1 + (resultEncoding enc (run k p j s)).length := by
   rw [iterate_round_inl, length_encPair]
 
+/-- The encoded loop states of the first `n` rounds, plus one, are bounded by `2 |k| + B + 2` when
+the outcomes of those rounds have encoded length at most `B`. Shared by `runTime_le` and
+`runSpace_le`. -/
+private theorem length_loopEncoding_iterate_round_le (enc : M.Encoding) (p : Program M r) {n : ℕ}
+    {k : M.Config} {s : FiniteState M r} {B : ℕ}
+    (hB : ∀ j ≤ n, (resultEncoding enc (run k p j s)).length ≤ B) (j : ℕ) (hj : j ≤ n) :
+    (loopEncoding enc ((round p)^[j] (k, Option.some (.inl s)))).length + 1 ≤
+      2 * (enc.config k).length + B + 2 := by
+  have := hB j hj
+  rw [length_loopEncoding_iterate_round]
+  omega
+
 /-- **Explicit clocked run time.** If every round costs at most `C (ℓ + 1) ^ D` on a loop state of
 encoded length `ℓ`, and the outcomes of the first `n` steps have encoded length at most `B`, then
 `n` clocked steps cost at most `3 |input| + (n + 1) (C X ^ D + X + (|n| + 1) ^ 2)`, where
@@ -329,18 +341,13 @@ theorem runTime_le (enc : M.Encoding) (N : M.NativePrimitives enc) (p : Program 
     runTime enc N p (n, (k, s)) ≤ 3 * (runInputEncoding enc (n, (k, s))).length +
       (n + 1) * (C * (2 * (enc.config k).length + B + 2) ^ D +
         (2 * (enc.config k).length + B + 2) + ((encNat n).length + 1) ^ 2) := by
+  have hloop := length_loopEncoding_iterate_round_le enc p hB
   have hT := maxRoundTime_le (roundCertificate enc N p) n (k, Option.some (.inl s))
-    (R := C * (2 * (enc.config k).length + B + 2) ^ D) fun j hj => by
-      refine (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left ?_ D))
-      have := hB j hj
-      rw [length_loopEncoding_iterate_round]
-      omega
+    (R := C * (2 * (enc.config k).length + B + 2) ^ D) fun j hj =>
+      (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left (hloop j hj) D))
   have hL := maxStateLength_le (encPair enc.config (resultEncoding enc)) (round p) n
     (k, Option.some (.inl s))
-    (B := 2 * (enc.config k).length + B + 2) fun j hj => by
-      have := hB j hj
-      rw [length_loopEncoding_iterate_round]
-      omega
+    (B := 2 * (enc.config k).length + B + 2) fun j hj => (Nat.le_succ _).trans (hloop j hj)
   have hsum := Nat.mul_le_mul_left (n + 1) (Nat.add_le_add_right (Nat.add_le_add hT hL)
     (((encNat n).length + 1) ^ 2))
   simp only [runTime, runCertificate, congr_time, snd_time, iterate_time, initLoopCertificate,
@@ -355,18 +362,13 @@ theorem runSpace_le (enc : M.Encoding) (N : M.NativePrimitives enc) (p : Program
     runSpace enc N p (n, (k, s)) ≤ 3 * (runInputEncoding enc (n, (k, s))).length +
       C * (2 * (enc.config k).length + B + 2) ^ D + (2 * (enc.config k).length + B + 2) +
         (encNat n).length := by
+  have hloop := length_loopEncoding_iterate_round_le enc p hB
   have hS := maxRoundSpace_le (roundCertificate enc N p) n (k, Option.some (.inl s))
-    (Q := C * (2 * (enc.config k).length + B + 2) ^ D) fun j hj => by
-      refine (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left ?_ D))
-      have := hB j hj
-      rw [length_loopEncoding_iterate_round]
-      omega
+    (Q := C * (2 * (enc.config k).length + B + 2) ^ D) fun j hj =>
+      (hround _).trans (Nat.mul_le_mul_left C (Nat.pow_le_pow_left (hloop j hj) D))
   have hL := maxStateLength_le (encPair enc.config (resultEncoding enc)) (round p) n
     (k, Option.some (.inl s))
-    (B := 2 * (enc.config k).length + B + 2) fun j hj => by
-      have := hB j hj
-      rw [length_loopEncoding_iterate_round]
-      omega
+    (B := 2 * (enc.config k).length + B + 2) fun j hj => (Nat.le_succ _).trans (hloop j hj)
   simp only [runSpace, runCertificate, congr_space, snd_space, iterate_space, initLoopCertificate,
     prod_space, fst_space, snd_space, some_space, inl_space, linear_space]
   omega

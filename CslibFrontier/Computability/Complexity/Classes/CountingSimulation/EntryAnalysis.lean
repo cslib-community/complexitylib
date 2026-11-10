@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.EntryContractionMachine
+import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ShapeBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
@@ -125,6 +126,25 @@ theorem le_normalizedPrecision_root {m P : ℕ} (hm : 0 < m) :
     omega
   exact hp.trans (Nat.mul_le_mul_right _ hq)
 
+/-- **The root call's schedule constant.** With `m` edges, `D + 2 ≤ m` and normalized precision
+`q ≤ D m`, the guarded root call is on the schedule for the constant `C = q / m + 1 ≤ D + 1`, so the
+schedule's certificate for all constants up to `D + 1` at scale `m` covers `C`. This is the entry
+counterpart of the explicit root's constant in `CountingSimulation.FastAnalysis`; the roots and
+their schedule lemmas differ (logarithmic rather than capped precision). -/
+private theorem activeBounds_onSchedule_rootCall {P D C r : ℕ} {G : DescribedNetwork T}
+    (hg : EntryContraction.guard (P, modulus G.numEdges, r, G) = true) (hm : D + 2 ≤ G.numEdges)
+    (hq : normalizedPrecision G.numEdges P ≤ D * G.numEdges)
+    (hC : C = normalizedPrecision G.numEdges P / G.numEdges + 1)
+    (hA : ∀ C' ≤ D + 1, ∀ d M p, Active C' G.numEdges d M p →
+      ActiveBounds C' G.numEdges d M p) :
+    (∀ d M p, Active C G.numEdges d M p → ActiveBounds C G.numEdges d M p) ∧
+      OnSchedule C G.numEdges (rootCall (P, modulus G.numEdges, r, G)) := by
+  subst hC
+  have hC1 : normalizedPrecision G.numEdges P / G.numEdges + 1 ≤ D + 1 :=
+    Nat.add_le_add_right (Nat.div_le_of_le_mul (by rw [Nat.mul_comm]; exact hq)) 1
+  have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < G.numEdges)
+  exact ⟨hA _ hC1, onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC⟩
+
 /-- **The clock is subexponential on admissible inputs**: with `s ≤ m ≤ C s` edges and precision
 `P ≤ D s (⌊log₂ s⌋ + 1)`, it is at most `2 ^ (K₀ (C + D) s / √⌊log₂ s⌋)`. -/
 theorem clock_le {C D s P r : ℕ} {fl : List ℕ} {G : DescribedNetwork T} (hs : 2 ≤ s)
@@ -160,45 +180,18 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
   set x₀ := rootCall (P, fl, r, G) with hx₀
   set m := G.numEdges with hm
   set n := (encInput encT (P, fl, r, G)).length with hn
-  set Y := n + 1 with hY
   have hparts := length_parts_le_encInput (encT := encT) P fl r G
   have hmv := DescribedNetwork.length_numEdges_vertices_le (encT := encT) G
   rw [← hn] at hparts
   have hfl : fl = modulus m := by
     simp only [EntryContraction.guard, decide_eq_true_eq] at hg
     exact hg.1
-  have hsh := FastContraction.Reach.shape (x₀ := x₀) rfl rfl (wf_rootCall hg) hy
-  set Z := 2 ^ 14 * Y ^ 8 with hZ
-  have hY1 : 1 ≤ Y := by omega
-  have hmY : m + 1 ≤ Y := by omega
-  have hY3 : Y ≤ Y ^ 3 := Nat.le_self_pow (by norm_num) _
-  have hY8 : Y ^ 3 ≤ Y ^ 8 := Nat.pow_le_pow_right hY1 (by norm_num)
-  have hY2 : Y ^ 2 ≤ Y ^ 3 := Nat.pow_le_pow_right hY1 (by norm_num)
-  have hm2 : m ^ 2 ≤ Y ^ 2 := Nat.pow_le_pow_left (by omega) 2
-  have hm5 : (m + 1) ^ 5 ≤ Y ^ 5 := Nat.pow_le_pow_left hmY 5
-  have hPm : x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1 ≤ 41 * Y ^ 3 := by
-    change P + (m + 1) * (40 * m ^ 2) + 1 ≤ 41 * Y ^ 3
-    have : (m + 1) * (40 * m ^ 2) ≤ Y * (40 * Y ^ 2) := Nat.mul_le_mul hmY (by omega)
-    have : Y * (40 * Y ^ 2) = 40 * Y ^ 3 := by ring
-    omega
-  have hZ1 : 256 * (x₀.edges + 1) ^ 5 * (x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1) +
-      x₀.fl.length ≤ Z := by
-    have h1 : 256 * (x₀.edges + 1) ^ 5 * (x₀.prec + (x₀.edges + 1) * (40 * x₀.edges ^ 2) + 1) ≤
-        256 * Y ^ 5 * (41 * Y ^ 3) := Nat.mul_le_mul (Nat.mul_le_mul_left _ hm5) hPm
-    have h2 : 256 * Y ^ 5 * (41 * Y ^ 3) = 10496 * Y ^ 8 := by ring
-    have h3 : x₀.fl.length ≤ 32 * Y ^ 8 := by
-      change fl.length ≤ 32 * Y ^ 8
-      omega
-    omega
-  have hZ2 : x₀.net.vertices.length + (x₀.edges + 1) * x₀.edges ^ 2 + (encNat x₀.rows).length ≤
-      Z := by
-    have : (x₀.edges + 1) * x₀.edges ^ 2 ≤ Y * Y ^ 2 := Nat.mul_le_mul hmY hm2
-    have : Y * Y ^ 2 = Y ^ 3 := by ring
+  have hn2 : n + 1 ≤ (n + 1) ^ 2 := Nat.le_self_pow (by norm_num) _
+  have hV : x₀.net.vertices.length + (encNat x₀.rows).length ≤ 2 * (n + 1) := by
     have hV : x₀.net.vertices.length = G.vertices.length := List.length_map _
-    change _ + _ + (encNat r).length ≤ Z
+    change _ + (encNat r).length ≤ _
     omega
-  have hR₀ : ∀ w ∈ x₀.net.vertices,
-      (VertexDesc.enc encT w.2).length ≤ 200 * (Z + 1) ^ 2 := by
+  have hR₀ : ∀ w ∈ x₀.net.vertices, (VertexDesc.enc encT w.2).length ≤ n + 1 := by
     intro w hw
     change w ∈ List.map _ G.vertices at hw
     obtain ⟨u, hu, rfl⟩ := List.mem_map.mp hw
@@ -206,28 +199,17 @@ theorem entry_length_le_of_reach {x : ℕ × List ℕ × ℕ × DescribedNetwork
     simp only [Sum.elim_inl]
     have h1 := G.length_vertex_le (encT := encT) hu
     simp only [DescribedNetwork.encVertex, length_encPair] at h1
-    have : Z ≤ (Z + 1) ^ 2 := (Nat.le_succ Z).trans (Nat.le_self_pow (by norm_num) _)
     omega
-  obtain ⟨hc, hv, hf⟩ := hsh.length_le entry rfl rfl rfl hZ1 hZ2
+  obtain ⟨hc, hv, hf⟩ := (FastContraction.Reach.shape (x₀ := x₀) rfl rfl (wf_rootCall hg)
+    hy).length_le_pow entry rfl rfl rfl (show m + 1 ≤ n + 1 by omega)
+    (show P + 1 ≤ n + 1 by omega) hV (show fl.length ≤ 32 * (n + 1) ^ 2 by omega)
     (fun z hz => by
       change z ∈ fl at hz
       rw [hfl] at hz
       exact le_one_of_mem_modulus hz) hR₀
-  -- `1000 (Z + 1) ^ 3 ≤ 2 ^ 55 (n + 1) ^ 24`.
-  have hfin : 1000 * (Z + 1) ^ 3 ≤ 2 ^ 55 * Y ^ 24 := by
-    have h1 : Z + 1 ≤ 2 ^ 15 * Y ^ 8 := by
-      have : 1 ≤ Y ^ 8 := Nat.one_le_pow _ _ hY1
-      omega
-    have h2 : (Z + 1) ^ 3 ≤ (2 ^ 15 * Y ^ 8) ^ 3 := Nat.pow_le_pow_left h1 3
-    have h3 : (2 ^ 15 * Y ^ 8) ^ 3 = 2 ^ 45 * Y ^ 24 := by ring
-    rw [h3] at h2
-    have h4 : 1000 * (2 ^ 45 * Y ^ 24) ≤ 2 ^ 55 * Y ^ 24 := by
-      rw [← Nat.mul_assoc]
-      exact Nat.mul_le_mul_right _ (by norm_num)
-    exact (Nat.mul_le_mul_left 1000 h2).trans h4
-  refine ⟨hc.trans hfin, fun a ⟨_, ha, c, _, hac⟩ => ?_, hv.trans hfin⟩
+  refine ⟨hc, fun a ⟨_, ha, c, _, hac⟩ => ?_, hv⟩
   rw [hac]
-  exact (hf ha _ c).trans hfin
+  exact hf ha _ c
 
 /-! ### The leaves -/
 
@@ -254,37 +236,14 @@ theorem entry_reach_facts (C D : ℕ) : ∃ s₀, ∀ (s P r : ℕ) (G : Describ
     (wf_rootCall hg) hy
   have hsc : y.scale = m := hsh.scale_eq
   refine ⟨hsc, hsc ▸ hsh.edges_le, fun hs₀ => ⟨?_, fun hl => ?_⟩⟩
-  · have hbd := hsh.bound_add_depth_le
-    change y.bound + y.depth ≤ (m + 1) + 0 at hbd
-    have hprec : y.prec ≤ P + y.depth * (40 * m ^ 2) := hsh.prec_le
-    have : y.depth * (40 * m ^ 2) ≤ (m + 1) * (40 * m ^ 2) := Nat.mul_le_mul_right _ (by omega)
-    have hlog : Nat.log 2 m + 1 ≤ m := Nat.log_lt_self 2 (by omega)
+  · have hlog : Nat.log 2 m + 1 ≤ m := Nat.log_lt_self 2 (by omega)
     have hp₂ : P ≤ D * m ^ 2 := hp₀.trans (by
       calc D * m * (Nat.log 2 m + 1) ≤ D * m * m := Nat.mul_le_mul_left _ hlog
         _ = D * m ^ 2 := by ring)
-    have h4 : D * m ^ 2 + (m + 1) * (40 * m ^ 2) ≤ m ^ 4 := by
-      have hm81 : D + 81 ≤ m := by omega
-      have h1 : D * m ^ 2 ≤ m ^ 3 := by
-        calc D * m ^ 2 ≤ m * m ^ 2 := Nat.mul_le_mul_right _ (by omega)
-          _ = m ^ 3 := by ring
-      have h2 : 81 * m ^ 3 ≤ m ^ 4 := by
-        rw [pow_succ m 3, mul_comm (m ^ 3) m]
-        exact Nat.mul_le_mul_right _ (by omega)
-      have h3 : m * m ≤ m ^ 3 := by nlinarith
-      have h4 : m ^ 2 ≤ m ^ 3 := Nat.pow_le_pow_right (by omega) (by norm_num)
-      have e : (m + 1) * (40 * m ^ 2) = 40 * m ^ 3 + 40 * m ^ 2 := by ring
-      have h5 : m * m = m ^ 2 := by ring
-      omega
     rw [hsc]
-    omega
-  · have hm2 : D + 2 ≤ m := by omega
-    have hC1 : normalizedPrecision m P / m + 1 ≤ D + 1 := by
-      have := Nat.div_le_div_right (c := m) hq₀
-      rw [Nat.mul_div_cancel _ (by omega)] at this
-      omega
-    have hB := hsA m (by omega) (normalizedPrecision m P / m + 1) hC1
-    have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < m)
-    have h := hy.onSchedule hB (onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC)
+    exact hsh.prec_le_pow_four rfl rfl (show D + 81 ≤ m by omega) hp₂
+  · obtain ⟨hB, hroot⟩ := activeBounds_onSchedule_rootCall hg (by omega) hq₀ rfl (hsA m (by omega))
+    have h := hy.onSchedule hB hroot
     rw [hsc]
     exact h.edges_le_leafSize hB hl
 
@@ -463,14 +422,10 @@ theorem exists_entryAnalysis
         H ≤ m + 1 := by
     by_cases hs₀ : max sA (D + 2) ≤ s
     · have hm2 : D + 2 ≤ m := by omega
-      have hC1 : normalizedPrecision m P / m + 1 ≤ D + 1 := by
-        have := Nat.div_le_div_right (c := m) hq₀
-        rw [Nat.mul_div_cancel _ (by omega)] at this
-        omega
-      have hB := hsA m (by omega) (normalizedPrecision m P / m + 1) hC1
-      have hpC := le_normalizedPrecision_root (P := P) (by omega : 0 < m)
-      obtain ⟨N, H, he, hN, hH⟩ := FastContraction.exists_eval_onSchedule entry hB
-        (onSchedule_rootCall_logPrecision hg (Nat.le_add_left 1 _) hpC) rfl (by omega)
+      obtain ⟨hB, hroot⟩ :=
+        activeBounds_onSchedule_rootCall hg hm2 hq₀ rfl (hsA m (by omega))
+      obtain ⟨N, H, he, hN, hH⟩ := FastContraction.exists_eval_onSchedule entry hB hroot rfl
+        (by omega)
       exact ⟨N, H, he, fun _ => two_mul_sub_one_le_fuel hm2 hq₀ hN,
         hH.trans ((Nat.log_lt_self 2 (by omega)).le.trans (Nat.le_succ _))⟩
     · obtain ⟨N, H, he, hH⟩ := FastContraction.exists_eval_reachInv (ev := entry) (mk := nativeMk)

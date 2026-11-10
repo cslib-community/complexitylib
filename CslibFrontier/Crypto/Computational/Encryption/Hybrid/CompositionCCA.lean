@@ -153,8 +153,7 @@ private theorem interpret_substituted_unit {α : Type}
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (fun request s => pure (reply request, s))) program := by
   rw [OracleComp.interpret_interpret]
-  congr 1
-  funext q
+  congr 1 with q : 1
   cases q with
   | inl m =>
     simp only [OracleComp.sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
@@ -194,15 +193,13 @@ private theorem run_hybridKEMCCAContinuation (E : SymmetricCipher)
     StateT.run_bind]
   rw [hchoose]
   simp only [bind_assoc]
-  congr 1
-  funext choice
+  congr 1 with choice : 1
   by_cases hv : ((ChoiceOut.msg₀ choice.1).length == n &&
       (ChoiceOut.msg₁ choice.1).length == n) = true
   · simp only [hv, ↓reduceIte, OracleComp.interpret_bind, StateT.run_bind,
       ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift,
       ProbComp.unifFin, OracleComp.interpret_query_eq_self, bind_map_left, bind_assoc]
-    congr 1
-    funext ctD
+    congr 1 with ctD : 1
     have hguess := interpret_substituted_unit
       (cca2Phase2Oracle encBits decaps n sk ctK)
       (fun request => if request.2 == encPair encBits encBits (ctK, ctD) then pure []
@@ -252,8 +249,7 @@ theorem eval_kemCCAIdealGame_hybridToKEMCCA (E : SymmetricCipher)
   intro kc _
   rw [← hlaw, PMF.bind_map]
   simp only [BitString.eval_sampleList]
-  congr 1
-  funext raw
+  congr 1 with raw : 1
   simp only [kemCCAContinuation, hybridToKEMCCA, encPair_apply, encBits_apply,
     unframe_frame_append, dropFrame_frame_append]
   exact congrArg ProbComp.eval
@@ -335,8 +331,7 @@ theorem eval_kemCCARealGame_hybridToKEMCCA (E : SymmetricCipher)
   rw [PMF.bind_congr_on_support _ _ _ hfixed]
   simp only [cca2GameOn, ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind]
   rw [PMF.bind_comm]
-  congr 1
-  funext choice
+  congr 1 with choice : 1
   by_cases hv : ((ChoiceOut.msg₀ choice.1).length == n &&
       (ChoiceOut.msg₁ choice.1).length == n) = true
   · simp only [hv, ↓reduceIte, hybridEncrypt, ProbComp.eval_bind, ProbComp.eval_map,
@@ -592,8 +587,7 @@ private theorem eval_kemCCARealGame_hiddenBit (E : SymmetricCipher)
     ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind, Function.comp_def,
     OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind, PMF.map_bind, PMF.pure_map]
   rw [PMF.bind_comm]
-  congr 1
-  funext keys
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
 
 private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
@@ -614,11 +608,9 @@ private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
     Function.comp_def, OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind,
     PMF.map_bind, PMF.pure_map]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext keys
+  congr 1 with keys : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1
-  funext kc
+  congr 1 with kc : 1
   rw [PMF.bind_comm]
 
 /-- Exact signed real-world selector identity, before taking any absolute values. -/

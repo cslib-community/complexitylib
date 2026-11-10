@@ -331,8 +331,8 @@ theorem eval_demKeyGame_restrict {Msg : Type} (valid : ℕ → List Bool → Msg
       ProbComp.eval (demKeyGameOn valid keyLen encryptSym adversary bit n) := by
   simp only [demKeyGame, demKeyGameOn, AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval]
-  congr 1; funext k
-  congr 1; funext choice
+  congr 1 with k : 1
+  congr 1 with choice : 1
   cases valid n [] choice.1.1 choice.1.2 <;>
     simp [PMF.bind_const]
 
@@ -866,7 +866,7 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
     hybridToKEMDistinguisher, game, gameOn, ↓reduceIte, hybridEncrypt,
     encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1; funext keys
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
 
 /-- In the ideal KEM experiment, `hybridToKEMDistinguisher` reproduces the intermediate game
@@ -883,7 +883,7 @@ experiment `Encryption.game keyGen (hybridEncrypt encaps encryptSym)`. -/
   simp only [kemIdealGame, kemIdealGameWith, kemRealGameWith,
     hybridToKEMDistinguisher, hybridIdealGame, encPair_apply,
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind]
-  congr 1; funext keys
+  congr 1 with keys : 1
   conv_lhs =>
     rhs; ext encapsulated
     rw [PMF.bind_comm]
@@ -904,9 +904,9 @@ game `hybridIdealGame`. -/
     encBits_apply, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     unframe_frame_append, dropFrame_frame_append]
   rw [PMF.bind_comm]
-  congr 1; funext keys
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
-  congr 1; funext choice
+  congr 1 with choice : 1
   rw [PMF.bind_comm]
 
 /-- In the real KEM experiment, `hybridToKEMHiddenBitDistinguisher` averages the two hybrid
@@ -928,10 +928,10 @@ theorem eval_kemRealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type}
     ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
     PMF.bind_bind, PMF.pure_bind, PMF.map_bind]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext keys
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
+  congr 1 with choice : 1
   rw [PMF.bind_comm]
   rfl
 
@@ -954,15 +954,15 @@ theorem eval_kemIdealGame_hybridToKEMHiddenBitDistinguisher {Msg : Type} (keyLen
     encBits_apply, unframe_frame_append, dropFrame_frame_append, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext keys
+  congr 1 with keys : 1
   conv_lhs =>
     rhs; ext encapsulated
     rw [PMF.bind_comm]
   rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
+  congr 1 with choice : 1
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext encapsulated
+  congr 1 with encapsulated : 1
   rw [PMF.bind_comm]
   rfl
 
@@ -1124,9 +1124,9 @@ theorem eval_demKeyGame_hybridToDEMAdversary_restrict {Msg : Type} (keyLen : ℕ
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
     apply_ite ProbComp.eval, encPair_apply, encBits_apply, unframe_frame_append,
     dropFrame_frame_append]
-  congr 1; funext k
-  congr 1; funext keys
-  congr 1; funext choice
+  congr 1 with k : 1
+  congr 1 with keys : 1
+  congr 1 with choice : 1
   rw [hpk n keys.1]
   cases valid n [] choice.1.1 choice.1.2 <;>
     simp only [Bool.false_eq_true, ↓reduceIte, List.headD_cons, List.tail_cons, PMF.bind_const]
@@ -1219,10 +1219,10 @@ theorem eval_demGame_otpEncrypt_false_eq_true {n : ℕ} (hn : 1 ≤ n) (adversar
     Function.comp_def, PMF.pure_bind, List.headD_cons, Bool.false_eq_true, ↓reduceIte]
   rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext tail
+  congr 1 with tail : 1
   rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
+  congr 1 with choice : 1
   ext out
   simp only [PMF.bind_apply, PMF.uniformOfFintype_apply, Fintype.card_bool, tsum_bool]
   cases choice.1.1 <;> cases choice.1.2 <;>
@@ -1318,7 +1318,7 @@ theorem eval_demKeyGame_otpKeyWordEncrypt_false_eq_true (keyLen : ℕ → ℕ) (
     ProbComp.eval_pure, BitString.eval_sampleList, PMF.pure_bind, Bool.false_eq_true]
   rw [PMF.bind_comm]
   conv_rhs => rw [PMF.bind_comm]
-  congr 1; funext choice
+  congr 1 with choice : 1
   exact (hpad choice.1.1 choice.2).trans (hpad choice.1.2 choice.2).symm
 
 /-- Every word adversary has exact advantage `0` in

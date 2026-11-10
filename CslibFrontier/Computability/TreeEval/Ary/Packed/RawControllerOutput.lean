@@ -215,8 +215,7 @@ theorem decode_packBits {b m p r t : ℕ} (hb : b ≤ r * m) (hm : 0 < m)
     (hbank : ∀ i : Fin r, bank.getD (t * r + i) 0 % p = (packBits hb v i).val) :
     decode ((b, m, p, r, t), bank) = List.ofFn v := by
   rw [decode_eq _ hvalid]
-  congr 1
-  funext j
+  congr 1 with j : 1
   rw [bit_eq_unpackBits hb hm bank (packBits hb v) hbank j, unpackBits_packBits]
 
 /-- The canonical physical bank decodes any target that actually contains the packed word. -/

@@ -40,13 +40,6 @@ private theorem linearFlag : ComputableTidilyInLinearTimeAndSpace flagWord encBo
   funext c
   cases c <;> rfl
 
-private theorem blankBoundary {k : ℕ} {V C : Fin k} (hVC : V ≠ C) (v : List Bool) :
-    passTapes V C v [] = Function.update (fun _ => []) V v := by
-  funext l
-  by_cases hl : l = C
-  · subst hl; simp [passTapes, hVC.symm]
-  · simp [passTapes, hl]
-
 private theorem le_of_add_le8 {a₁ a₂ a₃ a₄ a₅ a₆ a₇ : ℕ} {m : ℕ}
     (h : a₁ + a₂ + a₃ + a₄ + a₅ + a₆ + a₇ ≤ m) :
     a₁ ≤ m ∧ a₂ ≤ m ∧ a₃ ≤ m ∧ a₄ ≤ m ∧ a₅ ≤ m ∧ a₆ ≤ m ∧ a₇ ≤ m := by
@@ -285,7 +278,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
     have hlen := hscan a M.init (M.reachable_init _) false 0 (Nat.zero_le _)
     simp only [streamState_zero] at hlen
     refine ⟨_, (hI₀ a).imp (fun _ _ h => h)
-      (fun _ _ _ _ _ ⟨hw, he⟩ => ⟨by simpa [B, flagWord, blankBoundary hVC] using hw, he⟩)
+      (fun _ _ _ _ _ ⟨hw, he⟩ => ⟨by simpa [B, flagWord, passTapes_nil hVC] using hw, he⟩)
       le_rfl (le_trans ?_ (hG a (k := 10) (by omega)))⟩
     have := hU_bounds hlen false
     have := hsmall a
@@ -394,7 +387,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
         rw [hw', hw]
         rw [show Function.update (B s flag) C [] = passTapes V C v [] by
           simp only [B, passTapes, Function.update_idem, v]]
-        exact blankBoundary hVC v, he⟩)
+        exact passTapes_nil hVC v, he⟩)
       le_rfl le_rfl
     have hfinish := (hF₀ ((s, 0, none) : PassState σ)).imp
       (Q' := fun _ _ ws' e => ws' = Function.update (fun _ => []) V v ∧ e = [M.accept s])
