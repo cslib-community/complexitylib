@@ -15,10 +15,11 @@ import Mathlib.Tactic.Linarith
 /-!
 # Binary sizes of sums, products, powers, and factorials
 
-These pure facts are moved unchanged from the binary arithmetic facade. They retain their
+Most of these pure facts are moved unchanged from the binary arithmetic facade. They retain their
 qualified names without depending on a machine calculus. The bounds `Nat.size_add_le`,
 `Nat.size_add_le_max` and `Nat.size_le_self` on the binary lengths of sums and of a number itself
-also serve the logarithmic terms of Kolmogorov complexity.
+also serve the logarithmic terms of Kolmogorov complexity. `Nat.log2_le_size` compares the
+floor binary logarithm with the binary length.
 -/
 
 @[expose] public section
@@ -68,5 +69,11 @@ theorem size_add_le_max (m n : ℕ) : (m + n).size ≤ max m.size n.size + 1 := 
 /-- A binary length is at most the number itself. -/
 theorem size_le_self (n : ℕ) : n.size ≤ n :=
   Nat.size_le.2 Nat.lt_two_pow_self
+
+/-- The floor binary logarithm is at most the binary length. -/
+theorem log2_le_size (n : ℕ) : Nat.log2 n ≤ n.size := by
+  by_cases hz : n = 0
+  · subst n; decide
+  · exact ((Nat.log2_lt hz).mpr (Nat.lt_size_self n)).le
 
 end Nat

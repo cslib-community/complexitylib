@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.Driver
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearchCorrect
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
+import CslibFrontier.Foundations.Data.Nat.BinarySize
 
 /-!
 # Scanning and entering the increasing-guess simulation
@@ -139,11 +140,6 @@ theorem exists_first_decision {M : MultiTapeTM k Bool Q} {A : ℕ → ℕ → �
       dsimp only [space]
       omega
 
-private theorem log2_le_size (N : ℕ) : Nat.log2 N ≤ N.size := by
-  by_cases hz : N = 0
-  · subst N; decide
-  · exact ((Nat.log2_lt hz).mpr (Nat.lt_size_self N)).le
-
 /-- The complete driver storage is linear in any common bound `X` on the evaluator allowance,
 the binary block width and the horizon of every guess through the largest one. -/
 theorem space_le_of_le (k : ℕ) (A : ℕ → ℕ → ℕ → ℕ) (P : OuterSearch.Parameters) (N τ X : ℕ)
@@ -151,7 +147,7 @@ theorem space_le_of_le (k : ℕ) (A : ℕ → ℕ → ℕ → ℕ) (P : OuterSea
       A N (P.blockWidth guess) (P.horizon guess) + (P.blockWidth guess).size +
         P.horizon guess ≤ X) :
     space k A P N τ ≤ 64 * (k + 2) * (X + N.size + (max (N + 1) τ).size + 1) := by
-  have hlog := log2_le_size N
+  have hlog := Nat.log2_le_size N
   have hcandidate : OuterSearch.candidateSpace k A P N (max (N + 1) τ) ≤
       32 * N.size + (32 * k + 48) * X + 50 := by
     apply Finset.sup_le

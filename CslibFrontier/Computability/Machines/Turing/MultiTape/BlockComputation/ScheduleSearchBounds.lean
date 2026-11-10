@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.InitializedEvaluatorCorrect
 import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
+import CslibFrontier.Foundations.Data.Nat.BinarySize
 
 /-!
 # Quantitative selected-parameter bounds for schedule search
@@ -182,11 +183,6 @@ private theorem context_le_metadataSpace (N b σ q m alphabet limit p d r : ℕ)
     Interpolation.encContextFields, encNat3, length_encPair]
   omega
 
-private theorem log2_le_size (N : ℕ) : Nat.log2 N ≤ N.size := by
-  by_cases hz : N = 0
-  · subst N; decide
-  · exact ((Nat.log2_lt hz).mpr (Nat.lt_size_self N)).le
-
 /-- One selected candidate has linear bank storage and logarithmic storage per tree level. -/
 theorem initialized_allowance_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N b σ q : ℕ, 0 < b →
     InitializedEvaluator.allowance k s Q N b σ q ≤
@@ -262,7 +258,7 @@ theorem initialized_allowance_le (k s : ℕ) (Q : Type) : ∃ C, ∀ N b σ q : 
       _ ≤ d * (r * (2 * p.size + 1)) := Nat.le_mul_of_pos_left _ hd
       _ = d * r * (2 * p.size + 1) := by ring
       _ ≤ P * R := hpoint
-  have hlog := log2_le_size N
+  have hlog := Nat.log2_le_size N
   have hsmall : b + Nat.log2 N + Nat.card (Option Q) + Nat.card OutputTrack + 1 ≤
       (Nat.card (Option Q) + Nat.card OutputTrack + 3) * R := by
     have hc := Nat.le_mul_of_pos_right
