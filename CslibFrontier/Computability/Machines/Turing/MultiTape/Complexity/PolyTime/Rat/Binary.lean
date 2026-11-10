@@ -81,7 +81,7 @@ theorem ratBin_mkRat : ComputableInPolyTime (fun p : ℤ × ℕ => mkRat p.1 p.2
   have hn : ComputableInPolyTime normalizePair (encPair encIntBin encNat)
       (encPair encIntBin encNat) := by
     unfold normalizePair
-    fun_prop (config := { maxSteps := 64 })
+    fun_prop (config := { maxSteps := 128 })
   refine of_tidy (hn.tidy.of_enc_eq ?_)
   intro p
   change encPair encIntBin encNat ((mkRat p.1 p.2).num,(mkRat p.1 p.2).den) = _
