@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Renfei Zhou. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Renfei Zhou
 -/
 
 module
@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.WordRAM.GhostLoop
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 public import CslibFrontier.Computability.WordRAM.RegisterCopy
 import CslibFrontier.Computability.WordRAM.SymbolicExec
+import CslibFrontier.DataStructure.Memory.Frame
 
 /-!
 # Bounded memory-client loops
@@ -508,4 +509,274 @@ theorem iterateRuntime (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l 
   (Witness.iterateRuntime input output (Witness.ofRealizes h)).toRealizes
 
 end Realizes
+
+namespace RealizesBounded
+
+/-- Frontier-bounded realization of runtime-bounded `iterate`. -/
+theorem iterateRuntime (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ))
+    {body : δ × σ → Memory.Prog σ}
+    {safe : ℕ → (δ × σ) → Memory.State → Prop}
+    {work : (δ × σ) → Memory.State → ℕ}
+    (h : RealizesBounded .exact body (appendWords input output) output safe work) :
+    RealizesBounded .exact (fun ((d, a), fuel) => iterate body d fuel a)
+      (((appendWords input output).prodMap
+        (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
+          (Fin.appendEquiv (k + l) 1).toEmbedding) output
+      (fun w ((d, a), fuel) s => iterationSafe body safe w d fuel a s)
+      (fun ((d, a), fuel) s => iterationWork body work d fuel a s) := by
+  obtain ⟨n, C, emit, he⟩ := h
+  refine ⟨l + n + 3, C + 2 * l + 8, loopEmit emit, ?_⟩
+  intro r frontier src tmp hi hd hf hs
+  let st : Fin l → Fin r := fun i => tmp (stateSlot i)
+  let ctr := tmp (counterSlot l n)
+  let zero := tmp (zeroSlot l n)
+  let one := tmp (oneSlot l n)
+  let bt : Fin (l + n + 1) → Fin r := fun i => tmp (bodySlot i)
+  let env : Fin k → Fin r := fun i => src ⟨i.val, by omega⟩
+  let bs := Fin.append env st
+  have hst : Function.Injective st := fun i j hij =>
+    Fin.ext (congrArg (fun j : Fin (l + (l + n + 3) + 1) => j.val) (hi hij))
+  have hbt : Function.Injective bt := by
+    intro i j hij
+    apply Fin.ext
+    have hh := congrArg Fin.val (hi hij)
+    dsimp only [bodySlot] at hh
+    omega
+  have hbdis : ∀ i j, bs i ≠ bt j := by
+    intro i j
+    refine Fin.addCases (fun i => ?_) (fun i => ?_) i
+    · simpa only [bs, Fin.append_left] using hd (⟨i.val, by omega⟩ : Fin (k + l + 1)) (bodySlot j)
+    · simp only [bs, Fin.append_right]
+      intro hij
+      have hh := congrArg Fin.val (hi hij)
+      dsimp only [stateSlot, bodySlot] at hh
+      omega
+  have hbf : ∀ j, bt j ≠ frontier := fun j => hf _
+  have hbs : ∀ i, bs i ≠ frontier := by
+    intro i
+    refine Fin.addCases (fun i => ?_) (fun i => ?_) i
+    · simpa only [bs, Fin.append_left] using hs (⟨i.val, by omega⟩ : Fin (k + l + 1))
+    · simpa only [bs, Fin.append_right] using hf (stateSlot i)
+  obtain ⟨hnw, hrun⟩ := he frontier bs bt hbt hbdis hbf hbs
+  have houtdis : ∀ i j : Fin l, bt (Fin.castAdd (n + 1) i) ≠ st j := by
+    intro i j hij
+    have hh := congrArg Fin.val (hi hij)
+    dsimp only [bodySlot, stateSlot] at hh
+    omega
+  have hct : ctr ≠ zero := fun hij => by
+    have := congrArg Fin.val (hi hij); simp [counterSlot, zeroSlot] at this
+  have hco : ctr ≠ one := fun hij => by
+    have := congrArg Fin.val (hi hij); simp [counterSlot, oneSlot] at this
+  have hzo : zero ≠ one := fun hij => by
+    have := congrArg Fin.val (hi hij); simp [zeroSlot, oneSlot] at this
+  have hregbt (a : Fin (l + (l + n + 3) + 1)) (ha : a.val < l + 3) :
+      ∀ j, bt j ≠ tmp a := by
+    intro j hij
+    have hh := congrArg Fin.val (hi hij)
+    dsimp only [bodySlot] at hh
+    omega
+  have hregst (a : Fin (l + (l + n + 3) + 1)) (ha : l ≤ a.val) :
+      ∀ i, st i ≠ tmp a := by
+    intro i hij
+    have hh := congrArg Fin.val (hi hij)
+    dsimp only [stateSlot] at hh
+    omega
+  refine ⟨by simpa [loopEmit, loopBody, Code.ReadsWidth, Op.ReadsWidth, Op.exactBin,
+    copyBank_not_readsWidth] using hnw, ?_⟩
+  rintro w ⟨⟨d₀, a₀⟩, fuel⟩ x hx hin hsafe hv
+  let s₀ := memoryState frontier x
+  let L_end := ((Memory.spec 0).clientState s₀ (iterate body d₀ fuel a₀)).frontier
+  have henv (i : Fin k) : x.regs (env i) = input d₀ i := by
+    have hh : x.regs (src (Fin.castAdd 1 (Fin.castAdd l i))) = input d₀ i := by
+      simpa [appendWords, Fin.appendEquiv] using
+        congrFun hin (Fin.castAdd 1 (Fin.castAdd l i))
+    have hidx : Fin.castAdd 1 (Fin.castAdd l i) = (⟨i.val, by omega⟩ : Fin (k + l + 1)) :=
+      Fin.ext rfl
+    rw [hidx] at hh
+    exact hh
+  have hstate (i : Fin l) : x.regs (src ⟨k + i.val, by omega⟩) = output a₀ i := by
+    have hh : x.regs (src (Fin.castAdd 1 (Fin.natAdd k i))) = output a₀ i := by
+      simpa [appendWords, Fin.appendEquiv] using
+        congrFun hin (Fin.castAdd 1 (Fin.natAdd k i))
+    have hidx : Fin.castAdd 1 (Fin.natAdd k i) = (⟨k + i.val, by omega⟩ : Fin (k + l + 1)) :=
+      Fin.ext rfl
+    rw [hidx] at hh
+    exact hh
+  have hfuel : x.regs (src ⟨k + l, by omega⟩) = fuel := by
+    have hh : x.regs (src (Fin.natAdd (k + l) 0)) = fuel := by
+      simpa [Fin.appendEquiv] using congrFun hin (Fin.natAdd (k + l) 0)
+    have hidx : Fin.natAdd (k + l) 0 = (⟨k + l, by omega⟩ : Fin (k + l + 1)) := by
+      apply Fin.ext; simp
+    rw [hidx] at hh
+    exact hh
+  obtain ⟨a, ha, ham, has, haf⟩ := copyBank_execBounded
+    (fun i : Fin l => src ⟨k + i.val, by omega⟩) st zero hst
+    (fun _ _ => hd _ _) w L_end x
+  let b := a.set ctr fuel
+  let z := b.set zero 0
+  have hafuel : a.regs (src ⟨k + l, by omega⟩) = fuel := by
+    rw [haf _ (fun _ => (hd _ _).symm)]
+    exact hfuel
+  have hc : ExecBounded (B := .exact) w L_end (.op (.copy ctr (src ⟨k + l, by omega⟩))) a b 1 := by
+    simpa only [hafuel] using
+      (ExecBounded.copy (B := .exact) (w := w) (L := L_end) (d := ctr)
+        (s := src ⟨k + l, by omega⟩) (x := a))
+  have hz : ExecBounded (B := .exact) w L_end (.op (.const zero 0)) b z 1 :=
+    ExecBounded.const (fits_zero w)
+  let I : ℕ → (σ × Memory.State) → Data r → Prop := fun j q y =>
+    y.Bounded w ∧ memoryState frontier y = q.2 ∧
+    ((Memory.spec 0).clientState q.2 (iterate body d₀ j q.1)).frontier ≤ L_end ∧
+    (∀ i, y.regs (env i) = input d₀ i) ∧ (∀ i, y.regs (st i) = output q.1 i) ∧
+    y.regs ctr = j ∧ y.regs zero = 0 ∧ iterationSafe body safe w d₀ j q.1 q.2 ∧
+    (Memory.spec w).ValidHistory q.2
+      ((Memory.spec w).clientHistory q.2 (iterate body d₀ j q.1)) ∧
+    ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i
+  have hIz : I fuel (a₀, s₀) z := by
+    refine ⟨(ha.seq (hc.seq hz)).bounded hx, ?_, le_rfl, ?_, ?_, ?_, ?_, hsafe, hv, ?_⟩
+    · apply Memory.State.ext
+      · exact ham
+      · change (b.set zero 0).regs frontier = x.regs frontier
+        rw [show (b.set zero 0).regs frontier = b.regs frontier from
+          Function.update_of_ne (hf (zeroSlot l n)).symm _ _,
+          show b.regs frontier = a.regs frontier from
+            Function.update_of_ne (hf (counterSlot l n)).symm _ _,
+          haf frontier (fun i => hf _)]
+    · intro i
+      simp only [z, b, Data.set]
+      rw [Function.update_of_ne (hd _ _), Function.update_of_ne (hd _ _),
+        haf _ (fun _ => (hd _ _).symm)]
+      exact henv i
+    · intro i
+      simp only [z, b, Data.set]
+      rw [Function.update_of_ne (hregst _ (by simp [zeroSlot]) i),
+        Function.update_of_ne (hregst _ (by simp [counterSlot]) i), has]
+      exact hstate i
+    · simp [z, b, Data.set, hct]
+    · simp [z, Data.set]
+    · intro i hif htmp
+      simp only [z, b, Data.set]
+      rw [Function.update_of_ne (htmp _).symm,
+        Function.update_of_ne (htmp _).symm, haf _ (fun _ => htmp _)]
+  have hbody : ∀ j q y, I (j + 1) q y →
+      (Cond.lt zero ctr).Holds y ∧ ∃ y',
+        ExecBounded w L_end (loopBody emit frontier src tmp) y y'
+          (C * (memoryCost (body (d₀, q.1)) q.2 + work (d₀, q.1) q.2 + 1) + (l + 3)) ∧
+        I j (iterationStep body d₀ q) y' := by
+    intro j q y hIy
+    obtain ⟨hyb, hym, hL, hye, hys, hyc, hyz, hysafe, hyv, hyframe⟩ := hIy
+    refine ⟨by simp [Cond.Holds, hyz, hyc], ?_⟩
+    have hvparts := (validHistory_bind w (body (d₀, q.1)) (iterate body d₀ j) q.2).mp hyv
+    have hinbody : y.regs ∘ bs = (appendWords input output) (d₀, q.1) := by
+      funext i
+      refine Fin.addCases (fun i => ?_) (fun i => ?_) i
+      · simpa [bs, appendWords, Fin.appendEquiv] using hye i
+      · simpa [bs, appendWords, Fin.appendEquiv] using hys i
+    obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d₀, q.1) y hyb hinbody
+      (hym ▸ hysafe.1) (hym ▸ hvparts.1)
+    rw [hym] at hu hum huo
+    rw [clientState_width] at hum
+    simp only [clientResult_width] at huo
+    have hstep_eq :
+        ((Memory.spec 0).clientState q.2 (iterate body d₀ (j + 1) q.1)) =
+        ((Memory.spec 0).clientState ((Memory.spec 0).clientState q.2 (body (d₀, q.1)))
+          (iterate body d₀ j ((Memory.spec 0).clientResult q.2 (body (d₀, q.1))))) := by
+      simp only [iterate, StateTransitionSpec.clientState, StateTransitionSpec.clientResult,
+        ← PFunctor.FreeM.bind_eq_bind, StateTransitionSpec.runClient_bind]
+    have hL' : ((Memory.spec 0).clientState (iterationStep body d₀ q).2
+        (iterate body d₀ j (iterationStep body d₀ q).1)).frontier ≤ L_end := by
+      dsimp only [iterationStep]
+      rw [← hstep_eq]
+      exact hL
+    have hu_le : u.regs frontier ≤ L_end := by
+      have hum_fr := congrArg Memory.State.frontier hum
+      change u.regs frontier = ((Memory.spec 0).clientState q.2 (body (d₀, q.1))).frontier at hum_fr
+      rw [hum_fr]
+      exact (Memory.frontier_le_clientState (w := 0)
+        ((Memory.spec 0).clientState q.2 (body (d₀, q.1)))
+        (iterate body d₀ j ((Memory.spec 0).clientResult q.2 (body (d₀, q.1))))).trans hL'
+    obtain ⟨v, hv', hvm, hvs, hvf⟩ := copyBank_execBounded
+      (fun i : Fin l => bt (Fin.castAdd (n + 1) i)) st zero hst houtdis w L_end u
+    have hvctr : v.regs ctr = j + 1 := by
+      rw [hvf _ (hregst _ (by simp [counterSlot])),
+        huf _ (hf _) (hregbt _ (by simp [counterSlot]))]
+      exact hyc
+    have hvzero : v.regs zero = 0 := by
+      rw [hvf _ (hregst _ (by simp [zeroSlot])),
+        huf _ (hf _) (hregbt _ (by simp [zeroSlot]))]
+      exact hyz
+    have h1 : Fits w 1 := (hyb.1 ctr).of_le (by omega)
+    let t := v.set one 1
+    let y' := t.set ctr j
+    have ht : ExecBounded (B := .exact) w L_end (.op (.const one 1)) v t 1 :=
+      ExecBounded.const h1
+    have htc : t.regs ctr = j + 1 := by
+      rw [show t.regs ctr = v.regs ctr from Function.update_of_ne hco _ _]
+      exact hvctr
+    have htone : t.regs one = 1 := by simp [t, Data.set]
+    have hjfit : Fits w j := (hyb.1 ctr).of_le (by omega)
+    have hdec : ExecBounded w L_end (.op (.exactBin .sub ctr ctr one)) t y' 1 := by
+      refine ExecBounded.op trivial ?_
+      rw [Op.eval_exactBin, htc, htone]
+      simp only [BinOp.evalExact, Nat.le_add_left, ↓reduceIte, Nat.add_sub_cancel,
+        Option.bind_some]
+      exact Data.put_of_fits hjfit
+    refine ⟨y', ((hu.mono_bound hu_le).seq (hv'.seq (ht.seq hdec))).mono (by omega), ?_⟩
+    refine ⟨((hu.mono_bound hu_le).seq (hv'.seq (ht.seq hdec))).bounded hyb, ?_, hL',
+      ?_, ?_, ?_, ?_, hysafe.2, ?_, ?_⟩
+    · apply Memory.State.ext
+      · exact hvm.trans (congrArg Memory.State.mem hum)
+      · change (t.set ctr j).regs frontier = _
+        rw [show (t.set ctr j).regs frontier = t.regs frontier from
+          Function.update_of_ne (hf (counterSlot l n)).symm _ _,
+          show t.regs frontier = v.regs frontier from
+            Function.update_of_ne (hf (oneSlot l n)).symm _ _,
+          hvf frontier (fun i => hf _)]
+        exact congrArg Memory.State.frontier hum
+    · intro i
+      simp only [y', t, Data.set]
+      rw [Function.update_of_ne (hd _ _), Function.update_of_ne (hd _ _),
+        hvf _ (fun _ => (hd _ _).symm), huf _ (hs _) (fun _ => (hd _ _).symm)]
+      exact hye i
+    · intro i
+      simp only [y', t, Data.set]
+      rw [Function.update_of_ne (hregst _ (by simp [counterSlot]) i),
+        Function.update_of_ne (hregst _ (by simp [oneSlot]) i), hvs, huo]
+      rfl
+    · simp [y', Data.set]
+    · simp [y', t, Data.set, hct.symm, hzo, hvzero]
+    · have hrest := hvparts.2
+      rw [clientState_width w, clientResult_width w] at hrest
+      exact hrest
+    · intro i hif htmp
+      simp only [y', t, Data.set]
+      rw [Function.update_of_ne (htmp _).symm, Function.update_of_ne (htmp _).symm,
+        hvf _ (fun _ => htmp _), huf _ hif (fun _ => htmp _)]
+      exact hyframe i hif htmp
+  obtain ⟨y, hy, hIy⟩ := ExecBounded.loop_invariant_state_additive I (iterationStep body d₀)
+    (fun q => memoryCost (body (d₀, q.1)) q.2 + work (d₀, q.1) q.2)
+    (fun q y hI => by simp [Cond.Holds, hI.2.2.2.2.2.1, hI.2.2.2.2.2.2.1]) hbody hIz
+  have hsum := iterationSum_eq body work d₀ fuel a₀ s₀
+  have hsumC := congrArg (C * ·) hsum
+  have hfinal := iterate_result_state body d₀ fuel a₀ s₀
+  rw [← hfinal] at hIy
+  obtain ⟨_, hym, _, _, hys, _, _, _, _, hyf⟩ := hIy
+  have hy_fr : y.regs frontier = L_end := congrArg Memory.State.frontier hym
+  have hwhole := ha.seq (hc.seq (hz.seq hy))
+  rw [← hy_fr] at hwhole
+  have hcount : fuel ≤ memoryCost (iterate body d₀ fuel a₀) s₀ +
+      iterationWork body work d₀ fuel a₀ s₀ := by omega
+  have hscaled := Nat.mul_le_mul_left (l + 5) (Nat.add_le_add_right hcount 1)
+  refine ⟨y, hwhole.mono ?_, ?_, ?_, hyf⟩
+  · change _ ≤ (C + 2 * l + 8) *
+      (memoryCost (iterate body d₀ fuel a₀) s₀ + iterationWork body work d₀ fuel a₀ s₀ + 1)
+    nlinarith [hsumC, hscaled]
+  · change memoryState frontier y = (Memory.spec w).clientState s₀ (iterate body d₀ fuel a₀)
+    rw [clientState_width w]
+    exact hym
+  · intro i
+    change y.regs (st i) = output ((Memory.spec w).clientResult s₀ (iterate body d₀ fuel a₀)) i
+    rw [clientResult_width w]
+    exact hys i
+
+end RealizesBounded
 end Cslib.WordRAM.Realization
