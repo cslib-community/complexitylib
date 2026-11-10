@@ -40,7 +40,7 @@ stateful external-oracle runs (`MultiTapePTM.runOracle`).
   specializations to oracle fair-coin runs.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeMachine
 

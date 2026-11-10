@@ -10,6 +10,7 @@ module
 public import Mathlib.Data.Finset.Lattice.Fold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.OuterSearch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleSearchSpace
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 
 /-!
@@ -79,44 +80,13 @@ theorem runFrom_one_encoding_le {k s : ℕ} {Q : Type} [Finite Q]
     (t : ℕ) (ht : t ≤ T + 2) :
     (encState ((machine M e).runFrom w (.inl (N, guess, result)) t)).length ≤
       space k s Q N A := by
-  let c : CallerState := (N, guess, result)
-  let start := ScheduleSearch.initial (k := k) (Q := Q)
-    (N, BalancedParameters.blockWidth guess, BalancedParameters.horizon guess)
-  have hcaller := caller_encoding_le N A guess result hguess
-  have hreq : request (k := k) (Q := Q) c = some start := by
-    simp only [request, c, hpending, ↓reduceIte, start, parameters]
-  have hlive : caller.halted c = false := by
-    simp only [caller, c, hpending, Bool.not_true]
-  by_cases hzero : t = 0
-  · subst t
-    change (encCaller c).length + 1 ≤ _
-    dsimp only [space, c, start] at hnext ⊢
-    omega
-  by_cases hfinal : t = T + 2
-  · subst t
-    rw [show (machine M e).runFrom w (.inl c) (T + 2) =
-        .inl (resume c ((ScheduleSearch.machine M e).runFrom w start T)) from
-      QueryMachine.withCalls_runFrom_call caller (ScheduleSearch.machine M e)
-        request resume w c start T hlive hreq hpre hhalt]
-    change (encCaller (resume c
-      ((ScheduleSearch.machine M e).runFrom w start T))).length + 1 ≤ _
-    dsimp only [space, c, start] at hnext ⊢
-    omega
-  have hentry : (machine M e).runFrom w (.inl c) 1 = .inr (c, start) :=
-    QueryMachine.withCalls_step_call caller (ScheduleSearch.machine M e)
-      request resume w c start hlive hreq
-  rw [show t = 1 + (t - 1) by omega, QueryMachine.runFrom_add, hentry]
-  have hpref := QueryMachine.withCalls_runFrom_subroutine_prefix caller
-    (ScheduleSearch.machine M e) request resume w c start (t - 1)
-    (fun u hu => hpre u (by omega))
-  rw [show (machine M e).runFrom w (.inr (c, start)) (t - 1) =
-      .inr (c, (ScheduleSearch.machine M e).runFrom w start (t - 1)) from hpref]
-  have hcallee := hsize (t - 1) (by omega)
-  change (encSum encCaller (encPair encCaller ScheduleSearch.encState)
-    (.inr (c, (ScheduleSearch.machine M e).runFrom w start (t - 1)))).length ≤ _
-  rw [QueryMachine.withCalls_encoding_inr_length]
-  dsimp only [space, c, start] at hcallee ⊢
-  omega
-
+  have hreq : request (k := k) (Q := Q) (N, guess, result) = some (ScheduleSearch.initial
+      (N, BalancedParameters.blockWidth guess, BalancedParameters.horizon guess)) := by
+    simp only [request, hpending, ↓reduceIte, parameters]
+  have hlive : caller.halted (N, guess, result) = false := by
+    simp only [caller, hpending, Bool.not_true]
+  exact QueryMachine.withCalls_runFrom_call_encoding_le caller (ScheduleSearch.machine M e)
+    request resume w encCaller ScheduleSearch.encState hlive hreq hpre hhalt
+    (caller_encoding_le N A guess result hguess) hnext hsize t ht
 
 end Turing.MultiTapePTM.BlockComputation.OuterSearch

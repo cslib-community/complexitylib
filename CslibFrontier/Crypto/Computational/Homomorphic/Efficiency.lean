@@ -38,7 +38,7 @@ separate hypotheses and are proved in `Homomorphic.Refresh`.
 * [C. Gentry, *Fully homomorphic encryption using ideal lattices*][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Scheme
 

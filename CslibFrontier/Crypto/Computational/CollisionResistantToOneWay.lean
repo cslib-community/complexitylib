@@ -19,6 +19,7 @@ import CslibFrontier.Probability.Guessing.Leakage
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Probability.PMF.Finiteness
 
 /-!
 # One-way functions from collision-resistant hash families
@@ -220,8 +221,7 @@ theorem succProbability_inversionGame_le {H : List Bool → List Bool → List B
       · rw [hguess, beq_self_eq_true]
         exact le_add_left le_rfl
   unfold Game.succProbability
-  refine (ENNReal.toNNReal_mono (ENNReal.add_ne_top.2 ⟨PMF.apply_ne_top _ _, ENNReal.coe_ne_top⟩)
-    key).trans_eq ?_
+  refine (ENNReal.toNNReal_mono (by finiteness) key).trans_eq ?_
   rw [ENNReal.toNNReal_add (PMF.apply_ne_top _ _) ENNReal.coe_ne_top, ENNReal.toNNReal_coe]
 
 end CollisionResistantToOneWay

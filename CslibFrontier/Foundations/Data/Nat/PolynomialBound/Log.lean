@@ -33,7 +33,7 @@ written as one digit, that is `max n.size 1`, which unlike `Nat.size n` is posit
 * `Cslib.polynomiallyBounded_mul_log2_add_one`: `O(log n)` is polynomially bounded.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

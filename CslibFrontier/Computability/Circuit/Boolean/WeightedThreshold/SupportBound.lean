@@ -152,98 +152,6 @@ private theorem cut_deficit_lt_of_rectangleFree (p : Program signature n g)
     rw [← hreadout, hv x hx y hy]
   rcases card_lt_or_card_lt_of_rectangleFree hf U P Q (readout v) hmono with h | h <;> omega
 
-private theorem residual_deficit_lt (p : Program signature n g)
-    (readout : (Fin g → Bool) → Bool) {f : Cslib.BooleanFunction n} {K k : ℕ}
-    (hreadout : ∀ x, readout (p.eval interpretation x) = f x)
-    (hf : ∀ b : Bool, Frontier.RectangleFree {x | f x = b} K) (hK : K ≤ 2 ^ k)
-    (F : Finset (Fin n)) (U : Finset ↥Fᶜ) :
-    (U.card : ℝ) - (univ.filter fun gate : inputGates p =>
-      ¬ Disjoint (residualSupport p F gate.val) U).card < k ∨
-      (Uᶜ.card : ℝ) - (univ.filter fun gate : inputGates p =>
-        ¬ Disjoint (residualSupport p F gate.val) Uᶜ).card < k := by
-  classical
-  let V : Finset (Fin n) := U.image Subtype.val
-  have hV : V.card = U.card := card_image_of_injective _ Subtype.val_injective
-  have hFV : Disjoint F V := by
-    rw [disjoint_left]
-    intro i hiF hiV
-    obtain ⟨j, _, rfl⟩ := mem_image.mp hiV
-    exact (mem_compl.mp j.property) hiF
-  have hcards : V.card + F.card ≤ n := by
-    rw [← card_union_of_disjoint hFV.symm]
-    simpa using card_le_univ (V ∪ F)
-  have hVc : Vᶜ.card - F.card = Uᶜ.card := by grind [card_compl, Fintype.card_coe, Fintype.card_fin]
-  have hleft (gate : Fin g) :
-      (inputSupport p gate ∩ V ⊆ ∅) ↔ Disjoint (residualSupport p F gate) U := by
-    constructor
-    · intro h
-      rw [disjoint_left]
-      intro i hi hiU
-      simpa using h (mem_inter.mpr
-        ⟨(mem_residualSupport p F gate i).mp hi, mem_image.mpr ⟨i, hiU, rfl⟩⟩)
-    · intro h i hi
-      obtain ⟨j, hj, rfl⟩ := mem_image.mp (mem_inter.mp hi).2
-      exact False.elim ((disjoint_left.mp h)
-        ((mem_residualSupport p F gate j).mpr (mem_inter.mp hi).1) hj)
-  have hright (gate : Fin g) :
-      (inputSupport p gate ∩ Vᶜ ⊆ F) ↔ Disjoint (residualSupport p F gate) Uᶜ := by
-    constructor
-    · intro h
-      rw [disjoint_left]
-      intro i hi hiU
-      have hiV : i.val ∈ Vᶜ := by
-        rw [mem_compl]
-        intro hiV
-        obtain ⟨j, hj, hji⟩ := mem_image.mp hiV
-        have : j = i := Subtype.ext hji
-        exact (mem_compl.mp hiU) (this ▸ hj)
-      exact (mem_compl.mp i.property)
-        (h (mem_inter.mpr ⟨(mem_residualSupport p F gate i).mp hi, hiV⟩))
-    · intro h i hi
-      by_contra hiF
-      let j : ↥Fᶜ := ⟨i, mem_compl.mpr hiF⟩
-      have hjU : j ∈ Uᶜ := by
-        rw [mem_compl]
-        intro hj
-        exact (mem_compl.mp (mem_inter.mp hi).2) (mem_image.mpr ⟨j, hj, rfl⟩)
-      exact (disjoint_left.mp h)
-        ((mem_residualSupport p F gate j).mpr (mem_inter.mp hi).1) hjU
-  have hmem (gate : Fin g) (W : Finset ↥Fᶜ)
-      (h : ¬ Disjoint (residualSupport p F gate) W) : gate ∈ inputGates p := by
-    apply (mem_inputGates_iff_inputSupport_nonempty p gate).mpr
-    by_contra hempty
-    have hempty' : inputSupport p gate = ∅ := not_nonempty_iff_eq_empty.mp hempty
-    apply h
-    rw [disjoint_left]
-    intro i hi _
-    have hi' := (mem_residualSupport p F gate i).mp hi
-    simp [hempty'] at hi'
-  have hLc : (univ.filter fun j => ¬ inputSupport p j ∩ V ⊆ ∅).card =
-      (univ.filter fun gate : inputGates p =>
-        ¬ Disjoint (residualSupport p F gate.val) U).card := by
-    simp_rw [hleft]
-    exact (card_filter_inputGates p _ (fun gate => hmem gate U)).symm
-  have hRc : (univ.filter fun j => ¬ inputSupport p j ∩ Vᶜ ⊆ F).card =
-      (univ.filter fun gate : inputGates p =>
-        ¬ Disjoint (residualSupport p F gate.val) Uᶜ).card := by
-    simp_rw [hright]
-    exact (card_filter_inputGates p _ (fun gate => hmem gate Uᶜ)).symm
-  have h := cut_deficit_lt_of_rectangleFree p readout hreadout hf hK V ∅ F
-  rw [card_empty, Nat.sub_zero, hV, hVc, hLc, hRc] at h
-  rcases h with h | h
-  · left
-    have h' : (U.card : ℝ) <
-        (univ.filter fun gate : inputGates p =>
-          ¬ Disjoint (residualSupport p F gate.val) U).card + k :=
-      by exact_mod_cast h
-    linarith
-  · right
-    have h' : (Uᶜ.card : ℝ) <
-        (univ.filter fun gate : inputGates p =>
-          ¬ Disjoint (residualSupport p F gate.val) Uᶜ).card + k :=
-      by exact_mod_cast h
-    linarith
-
 private theorem disjoint_deficit_lt (p : Program signature n g)
     (readout : (Fin g → Bool) → Bool) {f : Cslib.BooleanFunction n} {K k : ℕ}
     (hreadout : ∀ x, readout (p.eval interpretation x) = f x)
@@ -320,6 +228,24 @@ private theorem residual_disjoint_deficit_lt (p : Program signature n g)
   have h := disjoint_deficit_lt p readout hreadout hf hK
     (U.image Subtype.val) (V.image Subtype.val) himage
   simpa only [card_image_of_injective _ Subtype.val_injective, htouch] using h
+
+private theorem residual_deficit_lt (p : Program signature n g)
+    (readout : (Fin g → Bool) → Bool) {f : Cslib.BooleanFunction n} {K k : ℕ}
+    (hreadout : ∀ x, readout (p.eval interpretation x) = f x)
+    (hf : ∀ b : Bool, Frontier.RectangleFree {x | f x = b} K) (hK : K ≤ 2 ^ k)
+    (F : Finset (Fin n)) (U : Finset ↥Fᶜ) :
+    (U.card : ℝ) - (univ.filter fun gate : inputGates p =>
+      ¬ Disjoint (residualSupport p F gate.val) U).card < k ∨
+      (Uᶜ.card : ℝ) - (univ.filter fun gate : inputGates p =>
+        ¬ Disjoint (residualSupport p F gate.val) Uᶜ).card < k := by
+  rcases residual_disjoint_deficit_lt p readout hreadout hf hK F U Uᶜ disjoint_compl_right
+    with h | h
+  · have h' := (Nat.cast_lt (α := ℝ)).mpr h
+    push_cast at h'
+    exact Or.inl (by linarith)
+  · have h' := (Nat.cast_lt (α := ℝ)).mpr h
+    push_cast at h'
+    exact Or.inr (by linarith)
 
 /-- After fixing `F`, bounded incidence gives a support-sensitive lower bound. Only effective
 coefficients on original input coordinates are counted. -/

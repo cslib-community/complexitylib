@@ -37,7 +37,7 @@ combination of such monomials that vanishes at every point has zero coefficients
   [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
 -/
 
-@[expose] public section
+public section
 
 namespace FiniteField
 

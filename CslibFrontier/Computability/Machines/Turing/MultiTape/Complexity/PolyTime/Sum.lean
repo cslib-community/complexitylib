@@ -25,7 +25,7 @@ assumption on either summand.
 * `Turing.MultiTapeTM.ComputableInPolyTime.sumInl`, `.sumInr`: tagged sum construction.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

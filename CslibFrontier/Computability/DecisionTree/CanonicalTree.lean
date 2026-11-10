@@ -19,7 +19,7 @@ Let `F` be a formula in disjunctive normal form and `ρ` a restriction (partial 
 (`DNF.firstTerm`), queries its free variables (`DNF.queried`), and continues under `ρ` extended by
 the answers; when nothing is left to query, `F` is constant under `ρ` and the tree outputs its value
 (`DNF.canonicalTree`, `DNF.eval_canonicalTree`). Its depth is at most the largest number of
-variables it queries on an input (`DNF.depth_canonicalTree_le`, `DNF.pathLength`), which is what
+queries it makes on an input (`DNF.depth_canonicalTree_le`, `DNF.pathLength`), which is what
 the switching lemma bounds [Hastad1986], [Razborov1995], [Jukna, Chapter 12][Jukna2012].
 
 ## Main definitions
@@ -153,7 +153,9 @@ def canonicalTree (ρ : PartialAssignment ι) : DecisionTree ι Bool :=
 termination_by #ρ.free
 decreasing_by exact this
 
-/-- The number of variables the canonical tree queries on the input `x`. -/
+/-- The number of queries the canonical tree makes on the input `x`: the sum of the lengths of
+`DNF.queried` over the successive restrictions. A free variable occurring several times in the
+queried term is counted once per occurrence. -/
 def pathLength (ρ : PartialAssignment ι) (x : ι → Bool) : ℕ :=
   if h : F.queried ρ = [] then 0
   else

@@ -41,7 +41,7 @@ significant bit first), as well as `Nat.ofBits` and `Nat.testBit`, without addin
   `equivFin n` coordinates.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

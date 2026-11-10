@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Probabilistic.Fold
 import CslibFrontier.Computability.Probabilistic.Finite
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -428,10 +429,10 @@ private def splitOTMulCompose {m : ℕ} :
     splitPairsOTReceived parties i (orderedPairs m) (splitOTMulCompose a b i) r
 
 /-- Serialize party `i`'s Step 1 received share messages along
-`GMWCircuit.msgSchedule (BitString N) L`. -/
+`msgSchedule (BitString N) L`. -/
 private def encPairsMsgReceived {m N : ℕ} (i : Fin m) :
     (L : List (Fin m × Fin m)) →
-      (otMulCompose (GMWCircuit.msgSchedule (spec := sharedMulSpec m) (BitString N) L)).Received i →
+      (otMulCompose (msgSchedule (spec := sharedMulSpec m) (BitString N) L)).Received i →
       List Bool
   | [], () => []
   | p :: L, (r_head, r_tail) =>
@@ -510,7 +511,7 @@ def encGMWPartyView (m coins n k : ℕ)
         ((Cslib.BitString.blocksEquiv (α := Bool) (m := N) (k := m - 1)).symm
           circuitCoins),
        encOTSubCoins _ i otSubCoins)),
-     (encPairsMsgReceived i (GMWCircuit.allPairs m) r_in,
+     (encPairsMsgReceived i (allPairs m) r_in,
       (encOTOracleAnswers _ i v.received,
        encOutCoordsMsgReceived i (GMWCircuit.outCoords m k) r_out)))
 
@@ -3249,25 +3250,25 @@ private theorem simSharedMulSteps_oracle_done {m : ℕ} [NeZero m] {S β : Type}
 
 /-! #### Sub-part 4C.2: Step 1 (`inputShareSteps`) Equivalence -/
 
-/-- Unit subcoins for party `i` along `GMWCircuit.msgSchedule Msg L` under `otMulCompose`. -/
+/-- Unit subcoins for party `i` along `msgSchedule Msg L` under `otMulCompose`. -/
 private def unitOTMsgSubCoins {m : ℕ} {Msg : Type} (i : Fin m) :
     (L : List (Fin m × Fin m)) →
       Schedule.SubCoins (spec₁ := sharedMulSpec 2)
         (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
         (Schedule.compose (fun _ => multiPartyMulSchedule m)
-          (GMWCircuit.msgSchedule (spec := sharedMulSpec m) Msg L)) i
+          (msgSchedule (spec := sharedMulSpec m) Msg L)) i
   | [] => ()
   | _ :: L => unitOTMsgSubCoins i L
 
-/-- Received transcript for party `i` along `otMulCompose (GMWCircuit.msgSchedule Msg L)`
+/-- Received transcript for party `i` along `otMulCompose (msgSchedule Msg L)`
 constructed from `inbox_i`. -/
 private def receivedOTMsgScheduleOfInbox {m : ℕ} {Msg : Type}
     (i : Fin m) (inbox_i : Fin m → Msg) :
     (L : List (Fin m × Fin m)) →
-      (otMulCompose (GMWCircuit.msgSchedule (spec := sharedMulSpec m) Msg L)).Received i
+      (otMulCompose (msgSchedule (spec := sharedMulSpec m) Msg L)).Received i
   | [] => ()
   | p :: L =>
-    (GMWCircuit.receivedMsgOfInbox (spec := ot14Spec) p i inbox_i,
+    (receivedMsgOfInbox (spec := ot14Spec) p i inbox_i,
      receivedOTMsgScheduleOfInbox i inbox_i L)
 
 @[simp] private theorem encOTSubCoins_msgSchedule {m : ℕ} {Msg : Type}
@@ -3275,20 +3276,20 @@ private def receivedOTMsgScheduleOfInbox {m : ℕ} {Msg : Type}
     (c : Schedule.SubCoins (spec₁ := sharedMulSpec 2)
       (fun _ : Unit => Fin.cases Bool (fun _ => Unit))
       (Schedule.compose (fun _ => multiPartyMulSchedule m)
-        (GMWCircuit.msgSchedule (spec := sharedMulSpec m) Msg L)) i) :
+        (msgSchedule (spec := sharedMulSpec m) Msg L)) i) :
     encOTSubCoins
       (Schedule.compose (fun _ => multiPartyMulSchedule m)
-        (GMWCircuit.msgSchedule (spec := sharedMulSpec m) Msg L)) i c = [] := by
+        (msgSchedule (spec := sharedMulSpec m) Msg L)) i c = [] := by
   induction L with
   | nil => rfl
   | cons _ _ ih => exact ih c
 
 @[simp] private theorem encOTOracleAnswers_msgSchedule {m : ℕ} {Msg : Type}
     (L : List (Fin m × Fin m)) (i : Fin m)
-    (r : (otMulCompose (GMWCircuit.msgSchedule (spec := sharedMulSpec m) Msg L)).Received i) :
+    (r : (otMulCompose (msgSchedule (spec := sharedMulSpec m) Msg L)).Received i) :
     encOTOracleAnswers
       (Schedule.compose (fun _ => multiPartyMulSchedule m)
-        (GMWCircuit.msgSchedule (spec := sharedMulSpec m) Msg L)) i r = [] := by
+        (msgSchedule (spec := sharedMulSpec m) Msg L)) i r = [] := by
   induction L with
   | nil => rfl
   | cons _ _ ih => exact ih r.2
@@ -3313,53 +3314,55 @@ private def receivedOTMsgScheduleOfInbox {m : ℕ} {Msg : Type}
   rfl
 
 private theorem runSharedMulSteps_msgStepsWith {m : ℕ} {Msg : Type} [AddCommMonoid Msg]
-    {Out : Fin m → Type} (finish : (i : Fin m) → (Fin m → Msg) → Out i)
-    (L : List (Fin m × Fin m)) (st : (i : Fin m) → (Fin m → Msg) × (Fin m → Msg)) :
-    runSharedMulSteps (GMWCircuit.msgStepsWith (spec := sharedMulSpec m) finish L) st =
+    {State Out : Fin m → Type} (send : (i : Fin m) → State i → Fin m → Msg)
+    (finish : (i : Fin m) → State i → (Fin m → Msg) → Out i)
+    (L : List (Fin m × Fin m)) (st : (i : Fin m) → State i × (Fin m → Msg)) :
+    runSharedMulSteps (msgStepsWith (spec := sharedMulSpec m) send finish L) st =
       pure (fun i => unitOTMsgSubCoins i L,
-        fun i => receivedOTMsgScheduleOfInbox i (fun s => (st s).1 i) L,
-        fun i => (GMWCircuit.msgStepsWith (spec := sharedMulSpec m) finish L).outputAt i (st i)
-          (GMWCircuit.receivedScheduleOfInbox (spec := sharedMulSpec m) i
-            (fun s => (st s).1 i) L)) := by
+        fun i => receivedOTMsgScheduleOfInbox i (fun s => send s (st s).1 i) L,
+        fun i => (msgStepsWith (spec := sharedMulSpec m) send finish L).outputAt i (st i)
+          (receivedScheduleOfInbox (spec := sharedMulSpec m) i
+            (fun s => send s (st s).1 i) L)) := by
   induction L generalizing st with
   | nil => rfl
   | cons p L ih =>
-    simp only [GMWCircuit.msgStepsWith, runSharedMulSteps_message, runSharedMulSteps_mapState,
-      ih, pure_bind, GMWCircuit.deliverMessage_eq_receivedMsgOfInbox (fun s => (st s).1) p,
-      GMWCircuit.receivedScheduleOfInbox, receivedOTMsgScheduleOfInbox, unitOTMsgSubCoins,
+    simp only [msgStepsWith, runSharedMulSteps_message, runSharedMulSteps_mapState,
+      ih, pure_bind, deliverMessage_eq_receivedMsgOfInbox (fun s => send s (st s).1) p,
+      receivedScheduleOfInbox, receivedOTMsgScheduleOfInbox, unitOTMsgSubCoins,
       Steps.outputAt, Steps.outputAt_mapState]
     rfl
 
 private theorem runSharedMulSteps_inputShareSteps {m N : ℕ}
     (xr : Fin m → BitString N) (c : Fin m → Fin N → Fin (m - 1) → Bool) :
     runSharedMulSteps (GMWCircuit.inputShareSteps m N) (fun i => (xr i, c i)) =
-      pure (fun i => unitOTMsgSubCoins i (GMWCircuit.allPairs m),
+      pure (fun i => unitOTMsgSubCoins i (allPairs m),
         fun i => receivedOTMsgScheduleOfInbox i
-          (fun s => GMWCircuit.shareInputBits m N (xr s) (c s) i) (GMWCircuit.allPairs m),
+          (fun s => GMWCircuit.shareInputBits m N (xr s) (c s) i) (allPairs m),
         fun i => Cslib.BitString.blocksEquiv.symm
           (fun s => GMWCircuit.shareInputBits m N (xr s) (c s) i)) := by
-  simp only [GMWCircuit.inputShareSteps, GMWCircuit.allToAllStepsWith,
+  simp only [GMWCircuit.inputShareSteps, allToAllStepsWith,
     runSharedMulSteps_mapState, runSharedMulSteps_msgStepsWith]
   congr 1
   refine Prod.ext rfl (Prod.ext rfl (funext fun i => ?_))
   have hout := GMWCircuit.outputAt_inputShareSteps xr c i
-  simpa only [GMWCircuit.inputShareSteps, GMWCircuit.allToAllStepsWith,
+  simpa only [GMWCircuit.inputShareSteps, allToAllStepsWith,
     GMWCircuit.deliverInputShares, Steps.outputAt_mapState] using hout
 
 private theorem simSharedMulSteps_msgStepsWith {m : ℕ} [NeZero m] {Msg : Type} [AddCommMonoid Msg]
-    {Out : Fin m → Type} (I : Finset (Fin m))
-    (finish : (i : Fin m) → (Fin m → Msg) → Out i)
+    {State Out : Fin m → Type} (I : Finset (Fin m))
+    (send : (i : Fin m) → State i → Fin m → Msg)
+    (finish : (i : Fin m) → State i → (Fin m → Msg) → Out i)
     (L : List (Fin m × Fin m))
-    (stI : (i : I) → (Fin m → Msg) × (Fin m → Msg))
+    (stI : (i : I) → State i.1 × (Fin m → Msg))
     (inboxI : (i : I) → Fin m → Msg) :
-    simSharedMulSteps I (GMWCircuit.msgStepsWith (spec := sharedMulSpec m) finish L) stI
-      (fun i => GMWCircuit.receivedScheduleOfInbox (spec := sharedMulSpec m) i.1 (inboxI i) L) =
+    simSharedMulSteps I (msgStepsWith (spec := sharedMulSpec m) send finish L) stI
+      (fun i => receivedScheduleOfInbox (spec := sharedMulSpec m) i.1 (inboxI i) L) =
     pure (fun i =>
       (unitOTMsgSubCoins i.1 L, receivedOTMsgScheduleOfInbox i.1 (inboxI i) L)) := by
   induction L generalizing stI with
   | nil => rfl
   | cons p L ih =>
-    simp only [GMWCircuit.msgStepsWith, GMWCircuit.receivedScheduleOfInbox,
+    simp only [msgStepsWith, receivedScheduleOfInbox,
       receivedOTMsgScheduleOfInbox, unitOTMsgSubCoins,
       simSharedMulSteps_message, simSharedMulSteps_mapState, ih, map_pure]
     rfl
@@ -3370,12 +3373,12 @@ private theorem simSharedMulSteps_inputShareSteps {m N : ℕ} [NeZero m]
     (inboxI : (i : I) → Fin m → BitString N) :
     simSharedMulSteps I (GMWCircuit.inputShareSteps m N) stI
       (fun i =>
-        GMWCircuit.receivedScheduleOfInbox (spec := sharedMulSpec m) i.1 (inboxI i)
-          (GMWCircuit.allPairs m)) =
+        receivedScheduleOfInbox (spec := sharedMulSpec m) i.1 (inboxI i)
+          (allPairs m)) =
     pure (fun i =>
-      (unitOTMsgSubCoins i.1 (GMWCircuit.allPairs m),
-       receivedOTMsgScheduleOfInbox i.1 (inboxI i) (GMWCircuit.allPairs m))) := by
-  simp only [GMWCircuit.inputShareSteps, GMWCircuit.allToAllStepsWith,
+      (unitOTMsgSubCoins i.1 (allPairs m),
+       receivedOTMsgScheduleOfInbox i.1 (inboxI i) (allPairs m))) := by
+  simp only [GMWCircuit.inputShareSteps, allToAllStepsWith,
     simSharedMulSteps_mapState, simSharedMulSteps_msgStepsWith]
 
 private theorem encPairsMsgReceived_append_receivedOTMsgScheduleOfInbox {m N : ℕ} (i : Fin m)
@@ -3400,13 +3403,13 @@ private theorem encPairsMsgReceived_map_pair {m N : ℕ} (i s : Fin m)
   | nil => rfl
   | cons r R ih =>
     change
-      (if h : i = r then List.ofFn (GMWCircuit.receivedMsgOfInbox (s, r) i inbox_i h) else []) ++
+      (if h : i = r then List.ofFn (receivedMsgOfInbox (s, r) i inbox_i h) else []) ++
         encPairsMsgReceived i (R.map fun r => (s, r))
           (receivedOTMsgScheduleOfInbox i inbox_i (R.map fun r => (s, r))) =
       (if i = r then List.ofFn (inbox_i s) else []) ++
         (R.map fun r => if i = r then List.ofFn (inbox_i s) else []).flatten
     rw [ih]
-    by_cases h : i = r <;> simp [h, GMWCircuit.receivedMsgOfInbox]
+    by_cases h : i = r <;> simp [h, receivedMsgOfInbox]
 
 private theorem flatten_map_ite_eq {α : Type} [DecidableEq α] (i : α) (val : List Bool) :
     ∀ {R : List α}, R.Nodup →
@@ -3424,8 +3427,8 @@ private theorem flatten_map_ite_eq {α : Type} [DecidableEq α] (i : α) (val : 
 
 private theorem encPairsMsgReceived_allPairs {m N : ℕ} (i : Fin m)
     (inbox_i : Fin m → BitString N) :
-    encPairsMsgReceived i (GMWCircuit.allPairs m)
-      (receivedOTMsgScheduleOfInbox i inbox_i (GMWCircuit.allPairs m)) =
+    encPairsMsgReceived i (allPairs m)
+      (receivedOTMsgScheduleOfInbox i inbox_i (allPairs m)) =
     List.ofFn (Cslib.BitString.blocksEquiv.symm inbox_i) := by
   have hS : ∀ S : List (Fin m),
       encPairsMsgReceived i (S.flatMap fun s => (List.finRange m).map fun r => (s, r))
@@ -3447,7 +3450,7 @@ private theorem encPairsMsgReceived_allPairs {m N : ℕ} (i : Fin m)
         encPairsMsgReceived_map_pair,
         flatten_map_ite_eq i (List.ofFn (inbox_i s)) (List.nodup_finRange m)]
       simp [List.mem_finRange]
-  rw [GMWCircuit.allPairs, hS, Cslib.BitString.ofFn_blocksEquiv_symm, List.ofFn_eq_map]
+  rw [allPairs, hS, Cslib.BitString.ofFn_blocksEquiv_symm, List.ofFn_eq_map]
 
 private theorem step1SenderShare_ofFn {m N : ℕ} (xr_s : BitString N)
     (c_s : Fin N → Fin (m - 1) → Bool) (i : Fin m) :
@@ -3766,9 +3769,7 @@ private theorem eval_simSharedMulSteps_progSteps {m n g : ℕ} [NeZero m] (I : F
       I.restrict_def, simSharedMulSteps_append, Steps.outputAt_append, bind_pure_comp]
     refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun r_p hr_p => ?_
     have hw := hsum_p r_p hr_p
-    rw [PMF.bind_comm]
-    refine congrArg (PMF.bind (ProbComp.eval (simSharedMulSteps I (GMWCircuit.progSteps m p)
-      (I.restrict st) (I.restrict r_p)))) (funext fun sub₁ => ?_)
+    pmf_swap with sub₁
     rw [← simSharedMulSteps_lineSteps I x_flat p line
       (fun i => (GMWCircuit.progSteps m p).outputAt i (st i) (r_p i)) hw
       (fun i => encOTSubCoins _ i.1 (sub₁ i).1)
@@ -4659,8 +4660,7 @@ private theorem eval_simSharedMulSteps_outCoordsSteps {m k : ℕ} [NeZero m]
         (simSharedMulSteps_singleCoordSteps I coord L a_table y_acc ans)
     simp only [bind_map_left, Functor.map_map] at hstep1
     simp_rw [hstep1, ProbComp.eval_bind]
-    rw [PMF.bind_comm]
-    refine congrArg (PMF.bind _) (funext fun r => ?_)
+    pmf_swap with r
     let mul := simSharedMulPure m I
       (fun s => (a_table s coord.1 coord.2, GMWCircuit.constShare true s)) ans r
     have hih := congrArg
@@ -4868,14 +4868,14 @@ private theorem encGMWPartyView_of_join {m coins n k : ℕ}
          joinOTSubCoins (GMWCircuit.inputShareSchedule m (n + coins))
            (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program ++
              GMWCircuit.outputSchedule m k) i
-           (unitOTMsgSubCoins i (GMWCircuit.allPairs m))
+           (unitOTMsgSubCoins i (allPairs m))
            (joinOTSubCoins
              (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program)
              (GMWCircuit.outputSchedule m k) i c_prog c_out))),
        joinOTMulCompose (GMWCircuit.inputShareSchedule m (n + coins))
          (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program ++
            GMWCircuit.outputSchedule m k) i
-         (receivedOTMsgScheduleOfInbox i inbox_i (GMWCircuit.allPairs m))
+         (receivedOTMsgScheduleOfInbox i inbox_i (allPairs m))
          (joinOTMulCompose
            (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program)
            (GMWCircuit.outputSchedule m k) i r_prog r_out)⟩ =
@@ -5159,10 +5159,10 @@ private theorem eval_simSharedMulSteps_gmwCircuitSim {m coins n k : ℕ} [NeZero
         (fun i => (Fin.append (xI i) (rI i), c₁ i.1))
         (fun i => GMWCircuit.deliverInputShares xr c₁ i.1) =
       pure (fun i : I =>
-        (unitOTMsgSubCoins i.1 (GMWCircuit.allPairs m),
+        (unitOTMsgSubCoins i.1 (allPairs m),
          receivedOTMsgScheduleOfInbox i.1
            (fun s => GMWCircuit.shareInputBits m (n + coins) (xr s) (c₁ s) i.1)
-           (GMWCircuit.allPairs m))) :=
+           (allPairs m))) :=
     simSharedMulSteps_inputShareSteps I _ _
   have hout1_at (i : I) :
       (GMWCircuit.inputShareSteps m (n + coins)).outputAt i.1

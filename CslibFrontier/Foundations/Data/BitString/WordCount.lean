@@ -360,8 +360,9 @@ theorem card_filter_forall_apply_mem {ι X : Type*} [Fintype ι] [DecidableEq ι
   rw [himg, hcard, Finset.filter_not, himg, Finset.card_sdiff_of_subset (subset_univ _), hcard,
     card_univ]
 
-/-- **The union bound for random strings**: if each `x` is bad for at most a `2 ^ (-e')` fraction
-of the random strings, some `x` of length `M` is bad for at most a `2 ^ (M - e')` fraction. -/
+/-- **The union bound for random strings**: if each `x` of length `M` is bad for at most a
+`2 ^ (-e')` fraction of the random strings, then the random strings for which some `x` is bad
+are at most a `2 ^ (M - e')` fraction. -/
 theorem two_pow_mul_card_filter_exists_le {R M e' : ℕ}
     {Bad : (Fin R → Bool) → (Fin M → Bool) → Prop}
     [∀ r x, Decidable (Bad r x)]

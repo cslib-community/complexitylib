@@ -26,7 +26,11 @@ classes are closed under complement, intersection and union.
 
 A class `K` of `L`-structures is first-order reducible to a class `K'` of `L'`-structures
 (`FO.Reduces K K'`) when some first-order interpretation `I` of `L'` in `L` satisfies
-`M ∈ K ↔ I.Model M ∈ K'` for every finite `M` [Immerman, Definition 2.11][Immerman1999].
+`M ∈ K ↔ I.Model M ∈ K'` for every finite `M`. This reducibility is order-free: the structures
+have no built-in order or numeric predicates, the formulas of `I` use only the symbols of `L` and
+equality, and the empty and the one-element structures are among the `M`. It is the order-free
+counterpart of first-order reducibility of ordered queries, `Cslib.Logic.FO.Ordered.Reduces`
+[Immerman, Definition 2.11][Immerman1999].
 Reducibility is reflexive and transitive on classes closed under isomorphism
 [Immerman, Exercise 2.15][Immerman1999], and first-order definability is closed under it: if `K'`
 is defined by `φ`, then `K` is defined by the pullback of `φ`
@@ -44,7 +48,8 @@ structure is not set apart.
 
 * `Cslib.Logic.IsoClosed`: closure of a class of structures under isomorphism of finite structures.
 * `Cslib.Logic.FO.Definable`: first-order definability of a class of finite structures.
-* `Cslib.Logic.FO.Reduces`: first-order reducibility between classes of finite structures.
+* `Cslib.Logic.FO.Reduces`: order-free first-order reducibility between classes of finite
+  structures.
 
 ## Main results
 
@@ -162,7 +167,10 @@ instance {ι : Type*} [Finite ι] (I : Interpretation L L' ι) (M : Type w) [L.S
 
 /-- A class `K` of `L`-structures is **first-order reducible** to a class `K'` of `L'`-structures
 when some first-order interpretation of `L'` in `L` maps the finite members of `K` into `K'` and
-the other finite `L`-structures outside `K'` [Immerman, Definition 2.11][Immerman1999]. -/
+the other finite `L`-structures outside `K'`. The structures have no built-in order or numeric
+predicates, and every finite `L`-structure is covered, the empty one included: this is the
+order-free counterpart of first-order reducibility of ordered queries,
+`Cslib.Logic.FO.Ordered.Reduces` [Immerman, Definition 2.11][Immerman1999]. -/
 def Reduces (K : Set (Bundled.{w} L.Structure)) (K' : Set (Bundled.{w} L'.Structure)) : Prop :=
   ∃ (ι : Type) (_ : Finite ι) (I : Interpretation L L' ι),
     ∀ (M : Bundled.{w} L.Structure) [Finite M],

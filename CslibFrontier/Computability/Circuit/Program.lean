@@ -32,7 +32,7 @@ wires that reads the inputs and satisfies the equation of every gate is the trac
 * `Program.eq_trace_of_forall_gate`: the trace is the unique solution of the gate equations.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.BallPath
 public import CslibFrontier.Logics.FirstOrder.Locality.Hanf
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Basic.Finite.Sum
 import Mathlib.Order.Interval.Finset.Fin
 import Mathlib.Order.SuccPred.Nat
@@ -442,15 +443,12 @@ def distLE : ℕ → Language.graph.Formula (Fin 2)
 
 theorem realize_distLE_zero {M : Type*} [Language.graph.Structure M] (x y : M) :
     (distLE 0).Realize ![x, y] ↔ x = y ∨ RelMap adj ![x, y] := by
-  simp only [distLE, Formula.realize_sup, Formula.realize_equal, Formula.realize_rel₂,
-    Term.realize_var]
-  rfl
+  fo_simp [distLE]
 
 theorem realize_distLE_succ {M : Type*} [Language.graph.Structure M] (k : ℕ) (x y : M) :
     (distLE (k + 1)).Realize ![x, y] ↔
       ∃ z, (distLE k).Realize ![x, z] ∧ (distLE k).Realize ![z, y] := by
-  simp only [distLE, Formula.Realize, BoundedFormula.realize_ex, BoundedFormula.realize_inf,
-    BoundedFormula.realize_relabel]
+  fo_simp [distLE, Formula.Realize]
   refine exists_congr fun z => and_congr ?_ ?_ <;>
   · apply iff_of_eq
     congr 1

@@ -65,7 +65,7 @@ example :
       (fun x => (x.length + 1) * (x.length + 1) ^ 2)
       (fun x => (x.length + 1) * (x.length + 1) ^ 2) :=
   ⟨(timeConstructible_two_pow.succ_mul fun _ => Nat.lt_two_pow_self.le).spaceConstructible,
-    ((timeConstructible_succ_pow (k := 2) (by decide)).succ_mul fun n =>
+    ((timeConstructible_succ_pow 2).succ_mul fun n =>
       (Nat.le_succ n).trans (Nat.le_self_pow (by decide) _)).computableInO⟩
 
 /-- `L` and `PSPACE` through `DSPACE`, instantiated on `Set.univ` and `oddOnes`. -/

@@ -217,31 +217,8 @@ theorem sum_circuitBottomUnforcedConstCount_blockLiveSet_le {κ τ : Type*}
     (∑ σ : κ → τ, ∑ w : Fin n → Bool,
       (circuitBottomUnforcedConstCount c (blockLiveSet blockVar σ) w : ℝ)) ≤
       (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-        (4 * (1 / (Fintype.card τ : ℝ)) * (c.size : ℝ) * Real.sqrt (n : ℝ)) := by
-  classical
-  have hswap : (∑ σ : κ → τ, ∑ w : Fin n → Bool,
-      (circuitBottomUnforcedConstCount c (blockLiveSet blockVar σ) w : ℝ)) =
-      ∑ k ∈ circuitBottomGates c, ∑ σ : κ → τ, (#{w : Fin n → Bool | ¬ ForcedToConst
-        (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
-        (blockLiveSet blockVar σ) w} : ℝ) := by
-    simp_rw [circuitBottomUnforcedConstCount, ← sum_boole]
-    exact (sum_congr rfl fun _ _ => sum_comm).trans sum_comm
-  rw [hswap]
-  have hgate (k : Fin c.size) : (∑ σ : κ → τ, (#{w : Fin n → Bool | ¬ ForcedToConst
-      (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
-      (blockLiveSet blockVar σ) w} : ℝ)) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-        (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (n : ℝ)) := by
-    refine (sum_card_not_forcedToConst_blockLiveSet_le blockVar hinj _ _).trans ?_
-    rw [Fintype.card_fin]
-    refine mul_le_mul_of_nonneg_left
-      (mul_le_mul_of_nonneg_left (Real.sqrt_le_sqrt ?_) (by positivity)) (by positivity)
-    exact_mod_cast (card_le_univ _).trans_eq (by simp)
-  refine (sum_le_sum fun k _ => hgate k).trans ?_
-  rw [sum_const, nsmul_eq_mul]
-  have hcard : (#(circuitBottomGates c) : ℝ) ≤ (c.size : ℝ) := by
-    exact_mod_cast card_circuitBottomGates_le_size c
-  nlinarith [(by positivity : (0 : ℝ) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-    (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (n : ℝ)))]
+        (4 * (1 / (Fintype.card τ : ℝ)) * (c.size : ℝ) * Real.sqrt (n : ℝ)) :=
+  sum_card_filter_not_forcedToConst_blockLiveSet_le c (circuitBottomGates c) blockVar hinj
 
 /-- Averaging `circuitBottomUnforcedAtMostOneCount c (blockLiveSet blockVar σ) w` over all block
 selections `σ : κ → τ` and assignments `w : Fin n → Bool` gives at most
@@ -253,33 +230,7 @@ theorem sum_circuitBottomUnforcedAtMostOneCount_blockLiveSet_le {κ τ : Type*}
     (∑ σ : κ → τ, ∑ w : Fin n → Bool,
       (circuitBottomUnforcedAtMostOneCount c (blockLiveSet blockVar σ) w : ℝ)) ≤
       (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n * (4 * (c.wireCount : ℝ) *
-        (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))) := by
-  classical
-  have hswap : (∑ σ : κ → τ, ∑ w : Fin n → Bool,
-      (circuitBottomUnforcedAtMostOneCount c (blockLiveSet blockVar σ) w : ℝ)) =
-      ∑ k ∈ circuitBottomGates c, ∑ σ : κ → τ, (#{w : Fin n → Bool | ¬ ForcedToAtMostOne
-        (ltfEval (inputWeight c.program k) (c.program.lines k).op.threshold)
-        (blockLiveSet blockVar σ) w} : ℝ) := by
-    simp_rw [circuitBottomUnforcedAtMostOneCount, ← sum_boole]
-    exact (sum_congr rfl fun _ _ => sum_comm).trans sum_comm
-  rw [hswap]
-  refine (sum_le_sum fun k _ =>
-    sum_card_not_forcedToAtMostOne_blockLiveSet_le blockVar hinj _ _).trans ?_
-  rw [Fintype.card_fin]
-  have hwire : (∑ k ∈ circuitBottomGates c,
-      (#(ltfSupport (inputWeight c.program k)) : ℝ)) ≤ (c.wireCount : ℝ) := by
-    simp_rw [ltfSupport_inputWeight_eq_inputSupport]
-    exact_mod_cast (sum_le_univ_sum_of_nonneg fun _ => Nat.zero_le _).trans
-      c.inputWireCount_le_wireCount
-  have hfactor : (∑ k ∈ circuitBottomGates c, (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-      (4 * (#(ltfSupport (inputWeight c.program k)) : ℝ) *
-        (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ)))) =
-      (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-        (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))) *
-        ∑ k ∈ circuitBottomGates c, (#(ltfSupport (inputWeight c.program k)) : ℝ) := by
-    rw [mul_sum]; exact sum_congr rfl fun k _ => by ring
-  rw [hfactor]
-  nlinarith [(by positivity : (0 : ℝ) ≤ (Fintype.card (κ → τ) : ℝ) * (2 : ℝ) ^ n *
-    (4 * (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))))]
+        (1 / (Fintype.card τ : ℝ)) * Real.sqrt (1 / (Fintype.card τ : ℝ))) :=
+  sum_card_filter_not_forcedToAtMostOne_blockLiveSet_le c (circuitBottomGates c) blockVar hinj
 
 end Cslib.Circuits.Boolean.WeightedThreshold

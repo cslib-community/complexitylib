@@ -30,7 +30,7 @@ These certificates assume arguments installed in registers. They neither load an
 nor initialize its representation. The heap's existing source correctness remains separate.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
 

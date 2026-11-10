@@ -790,7 +790,7 @@ theorem ValidRoot.frame_tree {n : ℕ} {st st' : RawState n} {T : FHTree n}
       ⟨h.2.2.2.2.2, hl.1, hl.2, Iff.rfl⟩),
     hr.2.2.2.2.2.trans hT.2.1, hr.2.1.trans hT.2.2⟩
 
-/-- Framing `ValidRoot st none T` when all seven vertex arrays agree on `T.nodes`. -/
+/-- Framing `ValidRoot st none T` when all eight vertex arrays agree on `T.nodes`. -/
 theorem ValidRoot.frame_nodes {n : ℕ} {st st' : RawState n} {T : FHTree n}
     (hT : ValidRoot st none T)
     (h : ∀ u ∈ T.nodes,
@@ -983,7 +983,7 @@ theorem SlotInv.done_of_cleared {n sz maxDeg : ℕ} {st : RawState n} {slotTrees
 
 /-! ## Lemmas for `decreaseKey` -/
 
-/-- Inside a valid root tree `T` with `Nodup` nodes, `st.par u = 0` holds iff `u = T.root`. -/
+/-- Inside a valid root tree `T`, `st.par u = 0` holds iff `u = T.root`. -/
 theorem ValidRoot.par_eq_zero_iff_root {n : ℕ} {st : RawState n} {pending : Option (Fin n)}
     {T : FHTree n} (hT : ValidRoot st pending T) {u : Fin n} (hu : u ∈ T.nodes) :
     st.par u = 0 ↔ u = T.root := by

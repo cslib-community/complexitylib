@@ -128,9 +128,13 @@ theorem length_encState (cut i : ℕ) (suffix : List Bool) (halt : Bool) :
   simp only [encState, encData, length_encPair, encBits_apply, encBool_apply, List.length_singleton]
   omega
 
-/-- The native accessor uses the stored-state budget plus an input-position counter. The
-original input is not part of the charged workspace. This theorem supplies actual multi-tape
-machines, using the query-machine compiler, rather than assuming an access certificate. -/
+/-- For each fixed stored data `d`, the answer bit `answer d (x.getD d.2.2 false)` is computable
+from `x` within work space `c * ((encState (d, false)).length + Nat.log2 x.length + 1)`, where the
+machine, the time bound and the constant `c` may all depend on `d`. The original input is not
+part of the charged workspace. This theorem supplies actual multi-tape machines, using the
+query-machine compiler, rather than assuming an access certificate. One machine and one constant
+for all data, read from the input tape, are given by
+`Turing.VirtualWord.Runtime.access_inSpace`. -/
 theorem access_inSpace (d : Data) :
     ∃ t c, ComputableInTimeAndSpace
       (fun x : List Bool => answer d (x.getD d.2.2 false)) encBits encBool t

@@ -28,8 +28,9 @@ share a single hardwired lookup dictionary `a ↦ T % a` over the `2 ^ k - 1` po
 `r ≤ 2 ^ (k + k)` (`batched_counter_power`). Conversely, one block of a batched circuit computes the
 single power with no extra gates (`counterPower_of_batched`), and whenever the power is not the
 identity every block requires its own output gate (`counterBatch_size_ge_of_ne_id`). Together with
-the counting lower bound for `counterStep k`, this yields matching `Ω(2 ^ k / k + r)` and
-`O(k ^ 3 * (2 ^ k + r))` bounds for batched modular-counter powers (`batched_hard_counter_power`).
+the counting lower bound for `counterStep k`, this yields, for every `k ≥ 64`, an exponent `T` whose
+batched power has `Ω(2 ^ k / k + r)` and `O(k ^ 3 * (2 ^ k + r))` bounds for all
+`0 < r ≤ 2 ^ (k + k)`, a factor polynomial in `k` apart (`batched_hard_counter_power`).
 
 ## Main definitions
 
