@@ -22,7 +22,7 @@ also serve the logarithmic terms of Kolmogorov complexity. `Nat.log2_eq_size_sub
 binary length to `⌊log₂ n⌋`.
 -/
 
-@[expose] public section
+public section
 namespace Nat
 
 /-- The binary length of a product is at most the binary lengths of the factors together. -/
