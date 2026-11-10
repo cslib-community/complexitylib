@@ -80,21 +80,18 @@ theorem PolyTimeOneOneReducible.polyTimeReducible (h : PolyTimeOneOneReducible e
 @[refl]
 theorem PolyTimeOneOneReducible.refl (encA : α ↪ List Bool) (A : Set α) :
     PolyTimeOneOneReducible encA encA A A :=
-  ⟨id, ⟨ComputableInPolyTime.id', Function.injective_id⟩, fun _ => Iff.rfl⟩
+  ManyOneReducibleBy.refl ⟨ComputableInPolyTime.id', Function.injective_id⟩ A
 
 /-- One-one reductions compose. -/
 @[trans]
 theorem PolyTimeOneOneReducible.trans (hAB : PolyTimeOneOneReducible encA encB A B)
     (hBC : PolyTimeOneOneReducible encB encC B C) : PolyTimeOneOneReducible encA encC A C :=
-  let ⟨f, ⟨hf, hfi⟩, hA⟩ := hAB
-  let ⟨g, ⟨hg, hgi⟩, hB⟩ := hBC
-  ⟨g ∘ f, ⟨hg.comp hf, hgi.comp hfi⟩, fun a => (hA a).trans (hB (f a))⟩
+  ManyOneReducibleBy.trans (fun _ _ hf hg => ⟨hg.1.comp hf.1, hg.2.comp hf.2⟩) hAB hBC
 
 /-- A one-one reduction from `A` to `B` is one from `Aᶜ` to `Bᶜ`. -/
 theorem PolyTimeOneOneReducible.compl (h : PolyTimeOneOneReducible encA encB A B) :
     PolyTimeOneOneReducible encA encB Aᶜ Bᶜ :=
-  let ⟨f, hf, hA⟩ := h
-  ⟨f, hf, fun a => not_congr (hA a)⟩
+  ManyOneReducibleBy.compl h
 
 /-- `P` is closed under one-one reductions. -/
 theorem PolyTimeOneOneReducible.mem_P (h : PolyTimeOneOneReducible encA encB A B)
@@ -130,21 +127,18 @@ theorem LogSpaceOneOneReducible.polyTimeOneOneReducible
 @[refl]
 theorem LogSpaceOneOneReducible.refl (encA : α ↪ List Bool) (A : Set α) :
     LogSpaceOneOneReducible encA encA A A :=
-  ⟨id, ⟨ComputableInLogSpace.id, Function.injective_id⟩, fun _ => Iff.rfl⟩
+  ManyOneReducibleBy.refl ⟨ComputableInLogSpace.id, Function.injective_id⟩ A
 
 /-- Logspace one-one reductions compose. -/
 @[trans]
 theorem LogSpaceOneOneReducible.trans (hAB : LogSpaceOneOneReducible encA encB A B)
     (hBC : LogSpaceOneOneReducible encB encC B C) : LogSpaceOneOneReducible encA encC A C :=
-  let ⟨f, ⟨hf, hfi⟩, hA⟩ := hAB
-  let ⟨g, ⟨hg, hgi⟩, hB⟩ := hBC
-  ⟨g ∘ f, ⟨hg.comp hf, hgi.comp hfi⟩, fun a => (hA a).trans (hB (f a))⟩
+  ManyOneReducibleBy.trans (fun _ _ hf hg => ⟨hg.1.comp hf.1, hg.2.comp hf.2⟩) hAB hBC
 
 /-- A logspace one-one reduction from `A` to `B` is one from `Aᶜ` to `Bᶜ`. -/
 theorem LogSpaceOneOneReducible.compl (h : LogSpaceOneOneReducible encA encB A B) :
     LogSpaceOneOneReducible encA encB Aᶜ Bᶜ :=
-  let ⟨f, hf, hA⟩ := h
-  ⟨f, hf, fun a => not_congr (hA a)⟩
+  ManyOneReducibleBy.compl h
 
 /-- `L` is closed under logspace one-one reductions. -/
 theorem LogSpaceOneOneReducible.mem_L (h : LogSpaceOneOneReducible encA encB A B)

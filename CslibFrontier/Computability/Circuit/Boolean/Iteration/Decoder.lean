@@ -74,11 +74,7 @@ theorem hitValue_spec (f : BitString n → BitString n) (T K d : ℕ) (x : BitSt
     (hd : d ≤ K) (hK : K < 2 ^ w) (hT : K ≤ T) :
     hitValue f K (BitVec.ofNat w d) (f^[T - K] (f^[d] x)) = f^[T] x := by
   have he : (BitVec.ofNat w K - BitVec.ofNat w d).toNat = K - d := by
-    rw [BitVec.toNat_sub_of_le]
-    · simp only [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hK, Nat.mod_eq_of_lt (hd.trans_lt hK)]
-    · change (BitVec.ofNat w d).toNat ≤ (BitVec.ofNat w K).toNat
-      simpa only [BitVec.toNat_ofNat, Nat.mod_eq_of_lt hK,
-        Nat.mod_eq_of_lt (hd.trans_lt hK)] using hd
+    grind [BitVec.toNat_sub_of_le, BitVec.toNat_ofNat]
   rw [hitValue, selectBits_of_toNat_lt _ _ (by rw [he]; omega)]
   simp only [he, ← Function.iterate_add_apply]
   congr 1

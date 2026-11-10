@@ -11,12 +11,9 @@ public import CslibFrontier.Crypto.Computational.Signature
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
-import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PPT
@@ -63,8 +60,8 @@ any security parameter:
 * `Cslib.Crypto.WordSignatureScheme.isPPTOn_run_signingOracle`,
   `Cslib.Crypto.WordSignatureScheme.isPPTOn_eufCmaGame`,
   `Cslib.Crypto.WordSignatureScheme.isPPT_eufCmaGame`: uniform strict PPT certificates for the
-  signing-oracle execution and full EUF-CMA experiment, proved directly in the plain polynomial-time
-  calculus.
+  signing-oracle execution and full EUF-CMA experiment, in the plain polynomial-time calculus. The
+  execution certificate is `SignatureScheme.isPPTOn_run_signingOracleOf` applied to `sign_ppt`.
 * `Cslib.Crypto.WordSignatureScheme.succProbability_toSignatureScheme_eufCmaGame_le`,
   `Cslib.Crypto.WordSignatureScheme.EUFCMA.toSignatureScheme`: `WordSignatureScheme.EUFCMA` implies
   `SignatureScheme.EUFCMA` on the induced `n`-bit `SignatureScheme`.
@@ -168,74 +165,8 @@ theorem isPPTOn_run_signingOracle (S : WordSignatureScheme) {adversary : Forger}
       (fun ⟨n, pk, sk⟩ =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-            (S.signingOracle sk)) (adversary n pk)).run []) := by
-  obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
-  let Caller := ℕ × (List Bool × List Bool)
-  let encCaller : Caller ↪ List Bool := encPair encUnary (encPair encBits encBits)
-  let HIn := Caller × ((Unit × List Bool) × List (List Bool))
-  let encHIn : HIn ↪ List Bool :=
-    encPair encCaller (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
-  have hhandler : IsPPTOn encHIn (encPair encBits (encList encBits))
-      (fun pair : HIn => S.signingOracle pair.1.2.2 pair.2.1 pair.2.2) := by
-    have hsk : ComputableInPolyTime (fun pair : HIn => pair.1.2.2) encHIn encBits :=
-      (ComputableInPolyTime.fst _ _).snd'.snd'
-    have hreq : ComputableInPolyTime (fun pair : HIn => pair.2.1.2) encHIn encBits :=
-      (ComputableInPolyTime.snd _ _).fst'.snd'
-    have hqueried : ComputableInPolyTime (fun pair : HIn => pair.2.2) encHIn (encList encBits) :=
-      (ComputableInPolyTime.snd _ _).snd'
-    have hsign := S.isPPTOn_sign_comp hsk hreq
-    have hpost : ComputableInPolyTime
-        (fun q : HIn × List Bool => (q.2, q.1.2.1.2 :: q.1.2.2))
-        (encPair encHIn encBits) (encPair encBits (encList encBits)) := by
-      have hqIn := ComputableInPolyTime.fst encHIn encBits
-      have hqSig := ComputableInPolyTime.snd encHIn encBits
-      exact hqSig.prod ((hqIn.trans hreq).cons' (hqIn.trans hqueried))
-    exact hsign.bind_with
-      (second := fun (pair : HIn) sig => pure (sig, pair.2.1.2 :: pair.2.2))
-      hpost.isPPTOn
-  have hprepare : ComputableInPolyTime (fun caller : Caller => (caller.1, caller.2.1))
-      encCaller (encPair encUnary encBits) :=
-    (ComputableInPolyTime.fst _ _).prod (ComputableInPolyTime.snd _ _).fst'
-  have hinitial : ComputableInPolyTime (fun _ : Caller => ([] : List (List Bool)))
-      encCaller (encList encBits) :=
-    ComputableInPolyTime.const []
-  have hresources : ComputableInPolyTime
-      (fun pair : Caller × List Bool =>
-        c * (2 * pair.1.2.2.length + pair.2.length + 2) ^ d + 2 * pair.2.length + 2)
-      (encPair encCaller encBits) encUnary := by
-    have hskLen : ComputableInPolyTime (fun pair : Caller × List Bool => pair.1.2.2.length)
-        (encPair encCaller encBits) encUnary :=
-      ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.fst _ _).snd'.snd'
-    have hqLen : ComputableInPolyTime (fun pair : Caller × List Bool => pair.2.length)
-        (encPair encCaller encBits) encUnary :=
-      ComputableInPolyTime.length_bits.comp (ComputableInPolyTime.snd _ _)
-    have htwoSk := (ComputableInPolyTime.const 2).unary_mul' hskLen
-    have htwoQ := (ComputableInPolyTime.const 2).unary_mul' hqLen
-    have hinner := (htwoSk.unary_add' hqLen).unary_add' (.const 2)
-    have hpow := (ComputableInPolyTime.const c).unary_mul'
-      ((ComputableInPolyTime.unary_pow d).comp hinner)
-    exact (hpow.unary_add' htwoQ).unary_add' (.const 2)
-  refine ((hadversary.run_interpret_preprocess_open' (External := Empty)
-    (handler := fun (caller : Caller) request state =>
-      ProbOracleComp.sample (S.signingOracle caller.2.2 request state))
-    (prepare := fun caller : Caller => (caller.1, caller.2.1))
-    (initial := fun _ : Caller => ([] : List (List Bool)))
-    (resources := fun (caller : Caller) query =>
-      c * (2 * caller.2.2.length + query.length + 2) ^ d + 2 * query.length + 2)
-    hprepare hhandler.isOraclePPTOn hinitial
-    (fun _ _ => True) (fun _ => trivial) hresources
-    (fun caller request queried _ result hresult => ?_)).congr
-      fun caller _ _ _ => ?_).isPPTOn
-  · have hsupp := (ProbOracleComp.support_sample _).subset hresult
-    simp only [signingOracle, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hsupp
-    obtain ⟨sig, hsig, rfl⟩ := hsupp
-    have hsigLen := hlen (caller.2.2, request.2) sig hsig
-    simp only [encBits_apply, length_encPair] at hsigLen
-    refine ⟨trivial, by lia, ?_⟩
-    simp only [encList_cons, List.length_append, length_frame, encBits_apply]
-    lia
-  · rw [ProbOracleComp.sample_run_interpret]
+            (S.signingOracle sk)) (adversary n pk)).run []) :=
+  SignatureScheme.isPPTOn_run_signingOracleOf S.sign_ppt hadversary
 
 /-- Run the complete unrestricted-message EUF-CMA experiment on its unary security parameter for
 any oracle-PPT forger. -/

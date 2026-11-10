@@ -22,7 +22,7 @@ countdown. The loop has no supplied exponentiation instruction or resource oracl
 The controller proof and its charged bound are original.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing
 

@@ -29,7 +29,7 @@ polynomial [Arora and Barak, Theorem 6.21][AroraBarak09].
 * [C. E. Shannon, *The synthesis of two-terminal switching circuits*][Shannon1949]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 
@@ -46,9 +46,7 @@ theorem PPoly.exists_not_mem : ∃ L : Language Bool, L ∉ PPoly := by
   obtain ⟨d, hd⟩ := hL
   obtain ⟨n, hnN, hn1, hnd, hpow⟩ := ((eventually_ge_atTop N).and ((eventually_ge_atTop 1).and
     (hd.and (Nat.eventually_mul_pow_le_pow 2 (d + 1) one_lt_two)))).exists
-  have hhard : (2 : ℝ) ^ n / n < complexity interpretation (single (hard n)) := by
-    simp only [hard, dite_eq_left hnN]
-    exact Classical.choose_spec (hN n hnN)
+  have hhard : (2 : ℝ) ^ n / n < complexity interpretation (single (hard n)) := by grind
   have hslice : (Language.ofSlices hard).slice n = hard n := Language.slice_ofSlices hard n
   simp only [hslice] at hnd
   have hn0 : (0 : ℝ) < n := by exact_mod_cast hn1

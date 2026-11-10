@@ -303,36 +303,22 @@ The number of auxiliary basis labels `β : AuxLabel Q r` with `antisymCount β =
 theorem card_filter_antisymCount_eq (Q r j : ℕ) :
     #(univ.filter (fun β : AuxLabel Q r => antisymCount β = j)) =
       Q.choose j * (r * (r - 1) / 2) ^ j * (r * (r + 1) / 2) ^ (Q - j) := by
-  have hbiUnion :
-      univ.filter (fun β : AuxLabel Q r => antisymCount β = j) =
-        ((univ : Finset (Fin Q)).powersetCard j).biUnion
-          (fun S => univ.filter (fun β : AuxLabel Q r => antisymSlots β = S)) := by
-    ext β
-    rw [mem_filter, mem_biUnion]
-    simp only [mem_univ, true_and, mem_powersetCard, subset_univ, mem_filter,
-      antisymCount_eq_card_antisymSlots]
-    constructor
-    · intro hj
-      exact ⟨antisymSlots β, hj, rfl⟩
-    · rintro ⟨S, hj, rfl⟩
-      exact hj
-  rw [hbiUnion, card_biUnion]
-  · have hsum :
-        (∑ S ∈ (univ : Finset (Fin Q)).powersetCard j,
-          #(univ.filter (fun β : AuxLabel Q r => antisymSlots β = S))) =
-        ∑ S ∈ (univ : Finset (Fin Q)).powersetCard j,
-          (#(antisymPairs r) ^ j * #(symPairs r) ^ (Q - j)) := by
-      refine sum_congr rfl fun S hS => ?_
-      rw [mem_powersetCard] at hS
-      rw [card_filter_antisymSlots_eq, hS.2]
-    rw [hsum, sum_const, card_powersetCard, card_univ, Fintype.card_fin, smul_eq_mul,
-      card_antisymPairs, card_symPairs, mul_assoc]
-  · intro S₁ _ S₂ _ hne
-    change Disjoint _ _
-    rw [disjoint_left]
-    intro β hβ₁ hβ₂
-    rw [mem_filter] at hβ₁ hβ₂
-    exact hne (hβ₁.2.symm.trans hβ₂.2)
+  -- Partition the labels with `j` antisymmetric slots by their slot set `S`, `#S = j`.
+  rw [card_eq_sum_card_fiberwise (f := antisymSlots) (t := (univ : Finset (Fin Q)).powersetCard j)
+    fun β hβ => by
+      rw [mem_coe, mem_filter] at hβ
+      exact mem_coe.2 (mem_powersetCard.2 ⟨subset_univ _, hβ.2⟩)]
+  have hfiber : ∀ S ∈ (univ : Finset (Fin Q)).powersetCard j,
+      #{β ∈ univ.filter (fun β : AuxLabel Q r => antisymCount β = j) | antisymSlots β = S} =
+        #(antisymPairs r) ^ j * #(symPairs r) ^ (Q - j) := by
+    intro S hS
+    rw [mem_powersetCard] at hS
+    rw [filter_filter, ← hS.2, ← card_filter_antisymSlots_eq]
+    congr 1
+    refine filter_congr fun β _ => and_iff_right_of_imp fun h => ?_
+    rw [antisymCount_eq_card_antisymSlots, h]
+  rw [sum_congr rfl hfiber, sum_const, card_powersetCard, card_univ, Fintype.card_fin,
+    smul_eq_mul, card_antisymPairs, card_symPairs, mul_assoc]
 
 /-- **Lemma 4.1 exact measurement row count (p. 28)**:
 The number of measurement indices in `measurementIndices Q r A₀ R` is the sum over
@@ -342,26 +328,19 @@ theorem card_measurementIndices_eq (Q r A₀ R : ℕ) :
     #(measurementIndices Q r A₀ R) =
       ∑ j ∈ (range (Q + 1)).filter (fun j => j < A₀ ∨ A₀ + R ≤ j),
         Q.choose j * (r * (r - 1) / 2) ^ j * (r * (r + 1) / 2) ^ (Q - j) := by
-  let J := (range (Q + 1)).filter (fun j => j < A₀ ∨ A₀ + R ≤ j)
-  have hbiUnion :
-      measurementIndices Q r A₀ R =
-        J.biUnion (fun j => univ.filter (fun β : AuxLabel Q r => antisymCount β = j)) := by
-    ext β
-    rw [measurementIndices, mem_filter, mem_biUnion]
-    simp only [J, mem_univ, true_and, mem_filter, mem_range, mem_Ico]
-    constructor
-    · intro hβ
-      refine ⟨antisymCount β, ⟨Nat.lt_succ_of_le (antisymCount_le β), by omega⟩, rfl⟩
-    · rintro ⟨j, ⟨_, hj⟩, rfl⟩
-      omega
-  rw [hbiUnion, card_biUnion]
-  · refine sum_congr rfl fun j _ => card_filter_antisymCount_eq Q r j
-  · intro j₁ _ j₂ _ hne
-    change Disjoint _ _
-    rw [disjoint_left]
-    intro β hβ₁ hβ₂
-    rw [mem_filter] at hβ₁ hβ₂
-    exact hne (hβ₁.2.symm.trans hβ₂.2)
+  -- Partition the measurement indices by their antisymmetric count `j`.
+  rw [card_eq_sum_card_fiberwise (f := antisymCount)
+    (t := (range (Q + 1)).filter (fun j => j < A₀ ∨ A₀ + R ≤ j)) fun β hβ => by
+      rw [mem_coe, measurementIndices, mem_filter, mem_Ico] at hβ
+      rw [mem_coe, mem_filter, mem_range]
+      exact ⟨Nat.lt_succ_of_le (antisymCount_le β), by omega⟩]
+  refine sum_congr rfl fun j hj => ?_
+  rw [mem_filter] at hj
+  rw [← card_filter_antisymCount_eq, measurementIndices, filter_filter]
+  congr 1
+  refine filter_congr fun β _ => and_iff_right_of_imp fun h => ?_
+  rw [h, mem_Ico]
+  omega
 
 /-- The binomial tail probability `Pr[W ∉ {A₀, ..., A₀ + R - 1}]` for
 `W ∼ Bin(Q, (r - 1) / (2 * r))` from Lemma 4.1 and equation (4.8) (p. 28). -/

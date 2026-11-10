@@ -121,16 +121,8 @@ private theorem step_inSpace :
 together with the position of its head. -/
 theorem machine_resourceCertificate :
     ∃ T, machine.toStepMachine.ResourceCertificate (encPair encState encNat)
-    (ReadMachine.stateT encState T stateBudget) (ReadMachine.stateS encState stateBudget) := by
-  obtain ⟨T₁, h₁⟩ := halt_inSpace.exists_inO
-  obtain ⟨T₂, h₂⟩ := addr_inSpace.exists_inO
-  obtain ⟨T₃, h₃⟩ := step_inSpace.exists_inO
-  let T : State → ℕ := fun s => T₁ s + T₂ s + T₃ (s, false) + T₃ (s, true)
-  exact ⟨T, ReadMachine.toStepMachine_resourceCertificate
-    (h₁.mono_le (fun s => by simp only [T]; omega)
-    fun _ => le_rfl) (h₂.mono_le (fun s => by simp only [T]; omega) fun _ => le_rfl)
-    (h₃.mono_le (fun p => by rcases p with ⟨s, _ | _⟩ <;> simp only [T] <;> omega)
-      fun _ => le_rfl)⟩
+    (ReadMachine.stateT encState T stateBudget) (ReadMachine.stateS encState stateBudget) :=
+  ReadMachine.exists_toStepMachine_resourceCertificate halt_inSpace addr_inSpace step_inSpace
 
 end Reader
 

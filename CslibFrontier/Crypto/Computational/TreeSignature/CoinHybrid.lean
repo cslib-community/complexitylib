@@ -21,7 +21,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
@@ -67,8 +69,7 @@ budget together with a polynomial-time bounded-search left inverse (`coinParamIn
   coins at that secret only (`treeGameWith_congr`).
 * `Cslib.Crypto.TreeSignature.eval_coinRealGame_treeCoinAdversary`,
   `Cslib.Crypto.TreeSignature.eval_coinIdealGame_treeCoinAdversary`: the exact simulation.
-* `Cslib.Crypto.Game.succProbability_le_add_advantage`,
-  `Cslib.Crypto.TreeSignature.succProbability_treeGame_le`,
+* `Cslib.Crypto.TreeSignature.succProbability_treeGame_le`,
   `Cslib.Crypto.TreeSignature.succProbability_treeGame_le_prf`: the hybrid bound by the coin-game
   and PRF advantages at `N n`.
 * `Cslib.Crypto.TreeSignature.isOraclePPT_treeCoinAdversary`: the coin adversary is strict oracle
@@ -130,8 +131,7 @@ theorem eval_treeGame (coins : List Bool → List Bool → ℕ → List Bool) (a
     ProbComp.eval (treeGame S T depth keyLen coins adversary n) =
       (BitString.uniformList (keyLen n)).bind fun k =>
         ProbComp.eval (treeGameWith S T depth coins k adversary n) := by
-  simp only [treeGame, treeGameWith, keyGen, ProbComp.eval_bind, ProbComp.eval_pure,
-    BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind]
+  simp only [pmf_norm, treeGame, treeGameWith, keyGen, BitString.eval_sampleList]
 
 /-- The scheme's EUF-CMA game is `treeGame`. -/
 theorem eufCmaGame_scheme {coins : List Bool → List Bool → ℕ → List Bool}
@@ -345,8 +345,8 @@ include hc in
 theorem evalDet_simulateTreeGame (adversary : Forger) (n : ℕ) (k : List Bool) :
     evalDet c (simulateTreeGame S T depth adversary n) =
       ProbComp.eval (treeGameWith S T depth (coinsOf c) k adversary n) := by
-  simp only [simulateTreeGame, treeGameWith, evalDet_bind, evalDet_pure, evalDet_nodeKeyO hc n k,
-    PMF.pure_bind, ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret]
+  simp only [pmf_norm, simulateTreeGame, treeGameWith, evalDet_bind, evalDet_pure,
+    evalDet_nodeKeyO hc n k, ProbOracleComp.eval_run_interpret]
   refine congrArg (fun p => PMF.bind p _) ?_
   rw [evalDet, OracleComp.map_run_interpret (OracleComp.isMonadHom_evalWith
     (OracleComp.sumHandler ProbComp.unifOracle (fun r : Unit × List Bool => PMF.pure (c r.2))))]
@@ -486,12 +486,6 @@ section Bound
 
 variable {S T depth N}
 
-/-- A game's success is at most another's plus their advantage. -/
-theorem _root_.Cslib.Crypto.Game.succProbability_le_add_advantage (game1 game2 : Game) :
-    Game.succProbability game1 ≤ Game.succProbability game2 + Game.advantage game1 game2 := by
-  rw [← NNReal.coe_le_coe, NNReal.coe_add, Game.advantage, coe_nndist, NNReal.dist_eq]
-  linarith [le_abs_self ((Game.succProbability game1 : ℝ) - Game.succProbability game2)]
-
 variable (family : List Bool → List Bool → List Bool) {inv : ℕ → ℕ} (hinv : ∀ n, inv (N n) = n)
 
 include hinv in
@@ -505,7 +499,7 @@ theorem succProbability_treeGame_le (adversary : Forger) (n : ℕ) :
           (ProbComp.eval (coinRealGame family (treeCoinAdversary S T depth N inv adversary) (N n)))
           (ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n))) := by
   rw [eval_coinRealGame_treeCoinAdversary family hinv, eval_coinIdealGame_treeCoinAdversary hinv]
-  exact Game.succProbability_le_add_advantage _ _
+  exact Game.succProbability_le_add_of_advantage_le le_rfl
 
 include hinv in
 /-- **From pseudorandom to random coins, in PRF advantage**: the hybrid loss equals the PRF

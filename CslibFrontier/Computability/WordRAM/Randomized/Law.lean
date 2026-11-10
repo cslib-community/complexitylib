@@ -221,8 +221,7 @@ theorem rand_seq {dst src : Fin r} {y : Fin (x.regs src + 1) → Data r} (hfit :
       exact of_execWithin (h₂ k) (hP k))
   refine (h.congr_law ?_).mono (fun _ h => h) le_rfl le_rfl
   rw [PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext k
+  congr 1 with k : 1
   simp only [Function.comp_apply, κ, Data.set_regs, Function.update_self, k.isLt, ↓reduceDIte]
 
 /-- Taking the positive branch adds one instruction and keeps the law. -/

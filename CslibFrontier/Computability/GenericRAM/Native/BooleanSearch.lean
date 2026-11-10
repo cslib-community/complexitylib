@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.GenericRAM.Native.BooleanFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Lists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 
 /-!
 # Streaming first-match search on Boolean words
@@ -152,12 +153,7 @@ variable {encC : C ↪ List Bool}
 
 private theorem length_enc_words (word : List Bool) :
     (encList encBool word).length = 3 * word.length := by
-  induction word with
-  | nil => rfl
-  | cons b word ih =>
-    simp only [encList_cons, List.length_append, length_frame, encBool_apply,
-      List.length_cons, List.length_nil, ih]
-    omega
+  simp [length_encList, Nat.mul_comm]
 
 /-- A prefix stores at most one width-sized result, including the option tag and list framing. -/
 theorem length_prefix_result_le (test : C × List Bool → Bool) (p : C × ℕ) (j : ℕ) :

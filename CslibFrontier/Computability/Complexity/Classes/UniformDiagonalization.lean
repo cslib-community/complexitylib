@@ -310,8 +310,8 @@ private theorem computableInPolyTime_witnessAt :
         disagree (approxA dA p.1.1 (word p.2) p.1.1.length)
           (approxF dF p.1.2 (word p.2) p.1.1.length))
       (encPair (encPair (encList encUnary) encUnary) encUnary) encBool := by
-  have hdA : ComputableInPolyTime dA encBool eDesc := .of_tidy (.of_finite dA)
-  have hdF : ComputableInPolyTime dF encBool eDesc := .of_tidy (.of_finite dF)
+  have hdA : ComputableInPolyTime dA encBool eDesc := .of_finite dA
+  have hdF : ComputableInPolyTime dF encBool eDesc := .of_finite dF
   have hside := computableInPolyTime_side
   have hd := computableInPolyTime_disagree
   unfold approxA approxF

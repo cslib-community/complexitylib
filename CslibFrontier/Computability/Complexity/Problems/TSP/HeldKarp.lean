@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Lean.TSP.HeldKarp
 public import CslibFrontier.Computability.Complexity.Problems.TSP
-import Mathlib.Data.List.Rotate
 
 /-!
 # Deciding `TSP` by the Bellman–Held–Karp algorithm
@@ -22,8 +21,8 @@ This file connects the Bellman–Held–Karp dynamic program
 An instance `(D, b)` with `D.length = n + 1` has the cities `0, …, n` at distances
 `TSP.dist D i j`, and it belongs to `TSP` when some ordering of all cities has closed tour length
 at most `b`. The tour length is the closed-walk cost `cycleCost (dist D)`
-(`TSP.tourLength_eq_cycleCost`), which is invariant under rotation (`cycleCost_rotate`), so such a
-tour can be taken to start at city `0`, which is the normal form `heldKarp` optimizes over.
+(`TSP.tourLength_eq_cycleCost`), which is invariant under rotation (`cycleCost_append_comm`), so
+such a tour can be taken to start at city `0`, which is the normal form `heldKarp` optimizes over.
 `TSP.heldKarpDecide` therefore decides `TSP` in at most `(n - 1)² · 2ⁿ⁻¹` ticks on `n` cities,
 in the unit-cost model of `heldKarp`: one tick per addition-and-comparison of natural numbers,
 whatever their bit length. Composing with the reduction `HamCycle.toTSP` decides Hamiltonian
@@ -82,10 +81,8 @@ theorem mem_TSP_iff_heldKarp_le {D : List (List ℕ)} {b n : ℕ} (hn : D.length
     rw [hn] at hp
     obtain ⟨A, B, rfl⟩ := List.append_of_mem (hp.symm.subset (List.mem_range.2 (Nat.succ_pos n)))
     have hp' : (0 :: (B ++ A)).Perm (List.range (n + 1)) := List.perm_append_comm.symm.trans hp
-    have hrot : tourLength D (A ++ 0 :: B) = tourLength D (0 :: (B ++ A)) := by
-      rw [tourLength_eq_cycleCost, tourLength_eq_cycleCost,
-        ← cycleCost_rotate (dist D) (A ++ 0 :: B) A.length, List.rotate_append_length_eq]
-      rfl
+    have hrot : tourLength D (A ++ 0 :: B) = tourLength D (0 :: (B ++ A)) :=
+      cycleCost_append_comm (dist D) A (0 :: B)
     have hnd := hp'.nodup_iff.2 List.nodup_range
     have hpos : ∀ x ∈ B ++ A, x ≠ 0 := fun x hx h => (List.nodup_cons.1 hnd).1 (h ▸ hx)
     have hR : ∀ x ∈ B ++ A, x - 1 < n := fun x hx => by

@@ -287,7 +287,7 @@ allows. -/
 public lemma stepBound_mono {D N j D' N' j' : ℕ} (hD : D ≤ D') (hN : N ≤ N') (hj : j ≤ j') :
     stepBound D N j ≤ stepBound D' N' j' := by
   unfold stepBound ctxBound cfgBound tapeBound
-  have hbits := ComputableTidilyInO.length_encNat_mono (Nat.add_le_add_right hN 1)
+  have hbits := length_encNat_mono (Nat.add_le_add_right hN 1)
   gcongr
 
 public lemma length_eCtx_le (x : List ℕ) {j : ℕ} {c : SCfg} (h : Inv (descLen d) x.length j c) :
@@ -313,7 +313,7 @@ public theorem stepTime_iterate_le (x : List ℕ) (j : ℕ) :
   have hE := table_le d
   have hp := hinv.inputPos
   have hL := length_eCtx_le d x hinv
-  have hbits := ComputableTidilyInO.length_encNat_mono
+  have hbits := length_encNat_mono
     (show cfg.inputPos ≤ (encList encUnary x).length + 1 by omega)
   unfold stepTime stepBound
   dsimp only [Ctx.desc, Ctx.input, Ctx.cfg]

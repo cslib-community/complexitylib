@@ -368,57 +368,39 @@ theorem toOuterMeasure_badChain_le :
   | [], ks => by simp [goodChain]
   | b :: bs, ks => by
     classical
-    rw [List.length_cons, PMF.toOuterMeasure_bind_apply]
+    rw [List.length_cons]
     set C : ℝ≥0∞ :=
       ((bs.length * (ks.length + 1 + bs.length) : ℕ) : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹
     set S0 : Set (BitString n) := {iv | iv + b ∈ ks}
-    have hpt (iv : BitString n) :
-        (PMF.uniformOfFintype (BitString n)) iv *
-          ((uniformBlocks (n := n) (bs.length + 1)).map (iv, ·)).toOuterMeasure
+    refine le_trans (Probability.PMF.toOuterMeasure_bind_failure_le _ _ S0ᶜ _ C
+      fun iv _ hiv => ?_) ?_
+    · rw [uniformBlocks_succ, PMF.map_bind]
+      have hnotMem : iv + b ∉ ks := hiv
+      have hih := toOuterMeasure_badChain_le bs ((iv + b) :: ks)
+      have hle :
+          ((PMF.uniformOfFintype (BitString n)).bind fun u =>
+            ((uniformBlocks (n := n) bs.length).map (u :: ·)).map (iv, ·)).toOuterMeasure
             {p : BitString n × List (BitString n) | ¬goodChain ks p.1 (b :: bs) p.2} ≤
-        (PMF.uniformOfFintype (BitString n)) iv * (S0.indicator 1 iv + C) := by
-      refine mul_le_mul_of_nonneg_left ?_ zero_le
-      rw [uniformBlocks_succ, PMF.map_bind]
-      by_cases hiv : iv ∈ S0
-      · rw [Set.indicator_of_mem hiv, Pi.one_apply]
-        exact (Probability.PMF.toOuterMeasure_le_one _ _).trans le_self_add
-      · rw [Set.indicator_of_notMem hiv, zero_add]
-        have hnotMem : iv + b ∉ ks := hiv
-        have hih := toOuterMeasure_badChain_le bs ((iv + b) :: ks)
-        have hle :
-            ((PMF.uniformOfFintype (BitString n)).bind fun u =>
-              ((uniformBlocks (n := n) bs.length).map (u :: ·)).map (iv, ·)).toOuterMeasure
-              {p : BitString n × List (BitString n) | ¬goodChain ks p.1 (b :: bs) p.2} ≤
-            ((PMF.uniformOfFintype (BitString n)).bind fun u =>
-              (uniformBlocks (n := n) bs.length).map (u, ·)).toOuterMeasure
-              {p : BitString n × List (BitString n) | ¬goodChain ((iv + b) :: ks) p.1 bs p.2} := by
-          rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
-          refine tsum_le_tsum fun u => mul_le_mul_of_nonneg_left ?_ zero_le
-          rw [PMF.map_comp, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply]
-          refine MeasureTheory.measure_mono fun us hus => ?_
-          simp only [Set.mem_preimage, Function.comp_apply, Set.mem_ofPred_eq,
-            goodChain, hnotMem, not_false_eq_true, true_and] at hus ⊢
-          exact hus
-        exact hle.trans (by simpa [C, add_assoc, add_comm 1] using hih)
-    calc ∑' iv, (PMF.uniformOfFintype (BitString n)) iv *
-          ((uniformBlocks (n := n) (bs.length + 1)).map (iv, ·)).toOuterMeasure
-            {p : BitString n × List (BitString n) | ¬goodChain ks p.1 (b :: bs) p.2}
-        ≤ ∑' iv, (PMF.uniformOfFintype (BitString n)) iv * (S0.indicator 1 iv + C) :=
-          tsum_le_tsum hpt
-      _ = (PMF.uniformOfFintype (BitString n)).toOuterMeasure S0 + C := by
-          simp only [mul_add]
-          rw [tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-            PMF.toOuterMeasure_apply]
-          congr 1
-          refine tsum_congr fun iv => ?_
-          by_cases h : iv ∈ S0 <;> simp [h]
-      _ ≤ (ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ + C :=
-          add_le_add (BitString.toOuterMeasure_addRight_mem_list_le ks b) le_rfl
-      _ ≤ ((bs.length + 1) * (ks.length + (bs.length + 1)) : ℕ) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-          simp only [C, ← add_mul]
-          gcongr
-          norm_cast
-          nlinarith
+          ((PMF.uniformOfFintype (BitString n)).bind fun u =>
+            (uniformBlocks (n := n) bs.length).map (u, ·)).toOuterMeasure
+            {p : BitString n × List (BitString n) | ¬goodChain ((iv + b) :: ks) p.1 bs p.2} := by
+        rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
+        refine tsum_le_tsum fun u => mul_le_mul_of_nonneg_left ?_ zero_le
+        rw [PMF.map_comp, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_map_apply]
+        refine MeasureTheory.measure_mono fun us hus => ?_
+        simp only [Set.mem_preimage, Function.comp_apply, Set.mem_ofPred_eq,
+          goodChain, hnotMem, not_false_eq_true, true_and] at hus ⊢
+        exact hus
+      exact hle.trans (by simpa [C, add_assoc, add_comm 1] using hih)
+    · rw [compl_compl]
+      calc (PMF.uniformOfFintype (BitString n)).toOuterMeasure S0 + C
+          ≤ (ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ + C :=
+            add_le_add (BitString.toOuterMeasure_addRight_mem_list_le ks b) le_rfl
+        _ ≤ ((bs.length + 1) * (ks.length + (bs.length + 1)) : ℕ) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
+            simp only [C, ← add_mul]
+            gcongr
+            norm_cast
+            nlinarith
 /-! ### IV-reuse, predictable-IV, and elementary encryption-mode counterexamples -/
 private theorem zipWith_add_zipWith_add_same :
     ∀ (ks ms₀ ms₁ : List (BitString n)),

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.FineGrained.CircuitCounting
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionCounting
 import CslibFrontier.Computability.Circuit.FanIn
+import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Foundations.Data.Nat.SqrtLog.Shifted
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -102,13 +103,8 @@ private theorem shiftedCount_inO {α : Type} {encA : α ↪ List Bool}
   all_goals
     set Y : ℕ := (encA x).length + 1
     have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
-    have hφ_len' : (encCNF (φ x)).length + 1 ≤ (p + 1) * Y ^ q := by
-      have h1 : (encCNF (φ x)).length ≤ p * Y ^ q := hφ_len x
-      have h2 : 1 ≤ Y ^ q := Nat.one_le_pow q Y hY1
-      nlinarith
-    have hφ_b₀ : ((encCNF (φ x)).length + 1) ^ b₀ ≤ (p + 1) ^ b₀ * Y ^ (q * b₀) := by
-      calc ((encCNF (φ x)).length + 1) ^ b₀ ≤ ((p + 1) * Y ^ q) ^ b₀ := by gcongr
-        _ = (p + 1) ^ b₀ * Y ^ (q * b₀) := by rw [mul_pow, pow_mul]
+    have hφ_pow := Nat.add_one_pow_le_of_le_mul_pow hY1 (hφ_len x)
+    have hφ_b₀ : ((encCNF (φ x)).length + 1) ^ b₀ ≤ (p + 1) ^ b₀ * Y ^ (q * b₀) := hφ_pow b₀
     have hSpair : Y ^ d₂ + (Y ^ d₁ + ((encCNF (φ x)).length + 1) ^ b₀) ≤
         (2 + (p + 1) ^ b₀) * Y ^ B₁ := by
       have hd₂ : Y ^ d₂ ≤ Y ^ B₁ := Nat.pow_le_pow_right hY1 (by omega)
@@ -129,17 +125,13 @@ private theorem shiftedCount_inO {α : Type} {encA : α ↪ List Bool}
             ≤ c_pair * ((3 + (p + 1) ^ b₀) * Y ^ B₁) + Y ^ B₁ :=
               Nat.add_le_add (h1.trans (Nat.mul_le_mul_left c_pair h3)) hYB₁
           _ = M * Y ^ B₁ := by ring
-      calc ((encPair encNat encNat (2 ^ shift x, countCNF (φ x))).length + 1) ^ d₃
-          ≤ (M * Y ^ B₁) ^ d₃ := Nat.pow_le_pow_left h2 d₃
-        _ = M ^ d₃ * Y ^ (B₁ * d₃) := by rw [mul_pow, pow_mul]
+      exact Nat.pow_le_pow_mul_pow_of_le_mul_pow h2 d₃
   · -- time
     set e : ℕ := B₁ + q * e₀ + B₁ * d₃
     set N : ℕ := G x
     have hN1 : 1 ≤ N := hG1 x
-    have hφ_e₀ : ((encCNF (φ x)).length + 1) ^ e₀ ≤ (p + 1) ^ e₀ * Y ^ e := by
-      calc ((encCNF (φ x)).length + 1) ^ e₀ ≤ ((p + 1) * Y ^ q) ^ e₀ := by gcongr
-        _ = (p + 1) ^ e₀ * Y ^ (q * e₀) := by rw [mul_pow, pow_mul]
-        _ ≤ (p + 1) ^ e₀ * Y ^ e := Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hY1 (by omega))
+    have hφ_e₀ : ((encCNF (φ x)).length + 1) ^ e₀ ≤ (p + 1) ^ e₀ * Y ^ e :=
+      (hφ_pow e₀).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hY1 (by omega)))
     have hsub : F (φ x) * ((encCNF (φ x)).length + 1) ^ e₀ ≤ (p + 1) ^ e₀ * (N * Y ^ e) := by
       calc F (φ x) * ((encCNF (φ x)).length + 1) ^ e₀ ≤ N * ((p + 1) ^ e₀ * Y ^ e) :=
             Nat.mul_le_mul (hG x) hφ_e₀

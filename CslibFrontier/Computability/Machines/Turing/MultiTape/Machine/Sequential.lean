@@ -128,8 +128,7 @@ theorem runConfigFrom_one (cfg : Config k Symbol State₀ Oracle input)
   | some state =>
     simp only [runConfigFrom, left, Cfg.mapState, hs, Option.elim_some,
       Cfg.inputSymbol, seq, hchoose, bind_map_left, map_bind]
-    congr 1
-    funext action
+    congr 1 with action : 1
     cases action <;> simp [leftAction, left, Config.step, Config.receive, Turing.Action.apply,
       Cfg.mapState]
 
@@ -148,8 +147,7 @@ theorem toTM_seq (first : MultiTapeMachine k Symbol State₀ Empty Id)
     (second : MultiTapeMachine k Symbol State₁ Empty Id) :
     (first.seq second).toTM = first.toTM.seq second.toTM := by
   simp only [toTM, MultiTapeTM.seq, MultiTapeTM.tr_ofTr, MultiTapeMachine.seq]
-  congr 1
-  funext state symbol work
+  congr 1 with state symbol work : 3
   cases state with
   | inl state =>
     dsimp only

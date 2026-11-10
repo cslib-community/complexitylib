@@ -57,8 +57,7 @@ theorem interpret_tabulate {m : Type → Type*} [Monad m] [LawfulMonad m]
   | cons p ps ih =>
     simp only [tabulate, OracleComp.interpret_bind, interpret_query, ih, pure_bind,
       OracleComp.interpret_pure]
-    congr 1
-    funext p'
+    congr 1 with p' : 1
     by_cases h : p' = p
     · subst h
       simp

@@ -34,6 +34,7 @@ inequalities behind multiplicative Chernoff bounds and the Johnson–Lindenstrau
 * `Real.one_add_le_exp_sub_sq_div_two_add_cube_div_three`: `1 + x ≤ exp (x - x² / 2 + x³ / 3)` for
   `0 ≤ x`.
 * `Real.exp_neg_two_le_one_third`: `exp (-2) ≤ 1 / 3`.
+* `Real.two_pow_le_exp`: `2 ^ n ≤ exp n`.
 * `Real.one_sub_pow_le_exp`: `(1 - p) ^ R ≤ exp (-c)` for `p ≤ 1` and `c ≤ R p`.
 * `Real.pow_le_one_third`: `p ^ k ≤ 1 / 3` for `0 ≤ p ≤ 1 - δ` and `2 ≤ δ k`.
 -/
@@ -70,6 +71,11 @@ theorem one_add_le_exp_sub_sq_div_two_add_cube_div_three {x : ℝ} (hx : 0 ≤ x
 theorem exp_neg_two_le_one_third : exp (-2) ≤ 1 / 3 := by
   rw [exp_neg, inv_le_comm₀ (exp_pos 2) (by norm_num)]
   linarith [add_one_le_exp 2]
+
+/-- `2 ^ n ≤ exp n`, since `2 ≤ exp 1`. -/
+theorem two_pow_le_exp (n : ℕ) : (2 : ℝ) ^ n ≤ exp n :=
+  (pow_le_pow_left₀ (by norm_num) (by linarith [add_one_le_exp 1]) n).trans_eq
+    (by rw [← exp_nat_mul, mul_one])
 
 /-- `(1 - p) ^ R ≤ exp (-c)` once `c ≤ R p`. -/
 theorem one_sub_pow_le_exp {p c : ℝ} {R : ℕ} (hp1 : p ≤ 1) (hc : c ≤ R * p) :

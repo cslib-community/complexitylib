@@ -233,8 +233,7 @@ theorem childEdgeList_eq :
     List.map_map, List.map_map]
   congr 1
   · rw [← List.ofFn_getElem_eq_map]
-    congr 1
-    funext j
+    congr 1 with j : 1
     simp only [childEdgeEquiv, childVertexEquiv, Equiv.symm_trans_apply,
       finSumFinEquiv_symm_castLE, Equiv.sumCongr_symm, Equiv.sumCongr_apply, Sum.map_inl,
       Sum.map_inr, childSrc, childTgt, Sum.elim_inl, Equiv.trans_apply, finSumFinEquiv_apply_left,
@@ -242,8 +241,7 @@ theorem childEdgeList_eq :
       rankEquiv_symm_apply_val, Equiv.refl_apply, Function.comp_apply, count_take_ofFn,
       Fin.getElem_fin]
   · rw [← List.ofFn_getElem_eq_map]
-    congr 1
-    funext j
+    congr 1 with j : 1
     simp only [childEdgeEquiv, childVertexEquiv, Equiv.symm_trans_apply,
       finSumFinEquiv_symm_apply_natAdd, Equiv.sumCongr_symm, Equiv.sumCongr_apply, Sum.map_inr,
       childSrc, childTgt, Sum.elim_inr, Sum.map_inl, Equiv.trans_apply,
@@ -303,10 +301,7 @@ private theorem computableInPolyTime_countTake {γ : Type} {encIn : γ ↪ List 
       (hg.comp (ComputableInPolyTime.fst _ _))
   have h := ComputableInPolyTime.countPWithInput (test := fun x a => decide (a = g x)) htake htest
   refine h.of_enc_eq fun x => ?_
-  have htk : (groups x).take (min (groups x).length (v x)) = (groups x).take (v x) := by
-    rcases le_total (groups x).length (v x) with hle | hle
-    · rw [min_eq_left hle, List.take_length, List.take_of_length_le hle]
-    · rw [min_eq_right hle]
+  have htk : (groups x).take (min (groups x).length (v x)) = (groups x).take (v x) := by grind
   rw [htk, List.count]
   congr 2
 

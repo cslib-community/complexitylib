@@ -49,7 +49,8 @@ Fiat–Shamir challenge queries:
    For any false statement `x ∉ L` and any fixed Merkle root `rt` (which determines the extracted
    PCP proof `micaliExtractProof V tr x rt` from `tr`), a fresh challenge draw
    `ρs ← kilianChallenges V m x` makes `V` accept on all `m` repetitions with probability at most
-   `(1 / 2) ^ m` (`toOuterMeasure_kilianChallenges_accepts_le`). Across at most `Q_FS` queries to
+   `(1 / 2) ^ m` (`toOuterMeasure_kilianChallenges_accepts_le`, shared with Kilian soundness in
+   `CslibFrontier.Crypto.Computational.Kilian.Soundness`). Across at most `Q_FS` queries to
    the lazy Fiat–Shamir oracle, the probability that any queried `(x, rt)` with `x ∉ L` passes all
    `m` PCP repetitions against `micaliExtractProof V tr x rt` is at most `Q_FS * (1 / 2) ^ m`.
    Combining this bound with `toOuterMeasure_run_memoize_not_traceCollisionFree_le` bounds a
@@ -99,8 +100,7 @@ NP witnesses to compact PCP tables are not established here.
   `Cslib.Crypto.not_traceCollisionFree_or_accepts_of_micaliVerifyPure`,
   `Cslib.Crypto.exists_collision_of_micaliVerifyPure_of_rejects`: pure fixed-trace soundness and
   dual collision extraction for Micali verification.
-* `Cslib.Crypto.toOuterMeasure_kilianChallenges_accepts_le`,
-  `Cslib.Crypto.toOuterMeasure_run_memoize_not_fsTraceSound_le`,
+* `Cslib.Crypto.toOuterMeasure_run_memoize_not_fsTraceSound_le`,
   `Cslib.Crypto.toOuterMeasure_twoStageMicali_le`: Fiat–Shamir challenge union bound and two-stage
   ROM soundness bound.
 * `Cslib.Crypto.micaliExtractProof_cons_of_ne`: invariance of extracted PCP proofs under
@@ -282,38 +282,6 @@ theorem exists_collision_of_micaliVerifyPure_of_rejects
   exact exists_collision_of_extractLeafFromTrace_ne hcons hpath_o hver_o hne
 
 /-! ### Part 2: Fiat–Shamir Challenge Union Bound & Two-Stage ROM Soundness -/
-
-/-- One PCP repetition accepts a fixed candidate proof `π` of a statement `x` with soundness
-bound `2 * acceptCount ... ≤ 2 ^ V.coins x` with probability at most `1 / 2` in `ℝ≥0∞`. -/
-theorem toOuterMeasure_sampleList_accepts_le (V : PCPVerifier α) {x : α} {π : List Bool}
-    (hsound : 2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x) :
-    (ProbComp.eval (BitString.sampleList (V.coins x))).toOuterMeasure
-      {ρ | V.accepts x π ρ = true} ≤ 1 / 2 := by
-  have hmap : (ProbComp.eval (BitString.sampleList (V.coins x))).toOuterMeasure
-      {ρ | V.accepts x π ρ = true} =
-      ((BitString.uniformList (V.coins x)).map fun ρ => V.accepts x π ρ) true := by
-    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
-      BitString.eval_sampleList]
-    rfl
-  rw [hmap, uniformList_acceptCount (V := fun y => V.accepts y.1 π y.2),
-    ENNReal.div_le_iff_le_mul (Or.inl (by positivity)) (Or.inl (by finiteness))]
-  calc (acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) : ℝ≥0∞)
-      = 1 / 2 * (2 * (acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) : ℝ≥0∞)) := by
-        rw [← mul_assoc, ENNReal.div_mul_cancel (by norm_num) (by norm_num), one_mul]
-    _ ≤ 1 / 2 * (2 : ℝ≥0∞) ^ V.coins x := by
-        gcongr
-        exact_mod_cast hsound
-
-/-- Across `m` independent PCP challenge strings `kilianChallenges V m x`, a fixed candidate proof
-`π` for `x` with per-repetition soundness error `≤ 1 / 2` is accepted on all `m` repetitions with
-probability at most `(1 / 2) ^ m`. -/
-theorem toOuterMeasure_kilianChallenges_accepts_le (V : PCPVerifier α) (m : ℕ) {x : α}
-    {π : List Bool}
-    (hsound : 2 * acceptCount (fun y => V.accepts y.1 π y.2) x (V.coins x) ≤ 2 ^ V.coins x) :
-    (ProbComp.eval (kilianChallenges V m x)).toOuterMeasure
-      {ρs | ∀ ρ ∈ ρs, V.accepts x π ρ = true} ≤ (1 / 2) ^ m := by
-  rw [kilianChallenges, ProbComp.toOuterMeasure_replicate_forall]
-  exact pow_le_pow_left' (toOuterMeasure_sampleList_accepts_le V hsound) m
 
 /-- A Fiat–Shamir query-answer trace `tr_FS` has no accepting false-statement entry relative to the
 Merkle trace `tr` if for every recorded `((x, rt), ρs) ∈ tr_FS` with `x ∉ L`, the PCP verifier `V`
@@ -596,8 +564,7 @@ theorem run_interpret_micaliMemoize [DecidableEq α] (V : PCPVerifier α) (σ m 
           (.inl msg) h]
       change (((BitString.uniformList σ).map (fun v => (v, (msg, v) :: tr_MT))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, micaliOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with
@@ -619,8 +586,7 @@ theorem run_interpret_micaliMemoize [DecidableEq α] (V : PCPVerifier α) (σ m 
       change (((ProbComp.eval (kilianChallenges V m x)).map
         (fun v => (v, ((x, rt), v) :: tr_FS))).map _).map _ = _
       simp only [PMF.map_comp, Function.comp_def, micaliOracleDist]
-      congr 2
-      funext v
+      congr 2 with v : 1
       simp only [Prod.mk.injEq, true_and]
       funext q
       cases q with

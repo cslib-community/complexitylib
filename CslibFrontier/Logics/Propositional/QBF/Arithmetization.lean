@@ -385,6 +385,18 @@ def vars : ArithQBF V → List V
   | .bin _ e₁ e₂ => vars e₁ ++ vars e₂
   | .op _ v e => v :: vars e
 
+/-- Assignments agreeing on the variables of `op o v e` agree on the variables of `e` after both
+set `v` to the same value. -/
+private theorem update_agree {β : Type*} {r r' : V → β} {o : Operator} {v : V} {e : ArithQBF V}
+    (h : ∀ w ∈ (op o v e).vars, r w = r' w) (b : β) :
+    ∀ w ∈ e.vars, Function.update r v b w = Function.update r' v b w := by
+  intro w hw
+  by_cases hwv : w = v
+  · subst hwv
+    simp only [Function.update_self]
+  · rw [Function.update_of_ne hwv, Function.update_of_ne hwv]
+    exact h w (List.mem_cons_of_mem v hw)
+
 /-- The value of a formula depends only on the values of its variables. -/
 theorem eval_congr {r r' : V → R} (h : ∀ w ∈ e.vars, r w = r' w) : e.eval r = e.eval r' := by
   induction e generalizing r r' with
@@ -396,14 +408,7 @@ theorem eval_congr {r r' : V → R} (h : ∀ w ∈ e.vars, r w = r' w) : e.eval 
     rw [eval_bin, eval_bin, ih₁ fun w hw => h w (List.mem_append_left _ hw),
       ih₂ fun w hw => h w (List.mem_append_right _ hw)]
   | op o v e ih =>
-    have hupd (b : R) : ∀ w ∈ e.vars, Function.update r v b w = Function.update r' v b w := by
-      intro w hw
-      by_cases hwv : w = v
-      · subst hwv
-        simp only [Function.update_self]
-      · rw [Function.update_of_ne hwv, Function.update_of_ne hwv]
-        exact h w (List.mem_cons_of_mem v hw)
-    rw [eval_op, eval_op, h v List.mem_cons_self, ih (hupd 0), ih (hupd 1)]
+    rw [eval_op, eval_op, h v List.mem_cons_self, ih (update_agree h 0), ih (update_agree h 1)]
 
 /-- The restriction of a formula to a variable depends only on the values of its variables. -/
 theorem restrict_congr {r r' : V → R} (x : V) (h : ∀ w ∈ e.vars, r w = r' w) :
@@ -417,15 +422,8 @@ theorem restrict_congr {r r' : V → R} (x : V) (h : ∀ w ∈ e.vars, r w = r' 
     simp only [restrict, ih₁ fun w hw => h w (List.mem_append_left _ hw),
       ih₂ fun w hw => h w (List.mem_append_right _ hw)]
   | op o v e ih =>
-    have hupd (b : R) : ∀ w ∈ e.vars, Function.update r v b w = Function.update r' v b w := by
-      intro w hw
-      by_cases hwv : w = v
-      · subst hwv
-        simp only [Function.update_self]
-      · rw [Function.update_of_ne hwv, Function.update_of_ne hwv]
-        exact h w (List.mem_cons_of_mem v hw)
-    simp only [restrict, h v List.mem_cons_self, ih (hupd 0), ih (hupd 1),
-      eval_congr e (hupd 0), eval_congr e (hupd 1)]
+    simp only [restrict, h v List.mem_cons_self, ih (update_agree h 0), ih (update_agree h 1),
+      eval_congr e (update_agree h 0), eval_congr e (update_agree h 1)]
 
 /-! ### Values on `0`-`1` points -/
 
@@ -467,13 +465,12 @@ private theorem eval_cond (σ : V → Bool) :
     simp only [Bool.cond_false, Bool.cond_true] at h0 h1
     rw [eval_op, ← h0, ← h1, ih, ih]
     cases o
-    · simp only [toQBF, QBF.eval_ex, Operator.apply]
+    case ex | all =>
+      simp only [toQBF, QBF.eval_ex, QBF.eval_all, Operator.apply]
       cases e.toQBF.eval (Function.update σ v false) <;>
         cases e.toQBF.eval (Function.update σ v true) <;> simp
-    · simp only [toQBF, QBF.eval_all, Operator.apply]
-      cases e.toQBF.eval (Function.update σ v false) <;>
-        cases e.toQBF.eval (Function.update σ v true) <;> simp
-    · simp only [toQBF, Operator.apply]
+    case lin =>
+      simp only [toQBF, Operator.apply]
       cases hσ : σ v
       · rw [← hσ, Function.update_eq_self]
         simp only [hσ, Bool.cond_false, sub_zero, one_mul, zero_mul, add_zero]
@@ -594,10 +591,8 @@ omit [DecidableEq V] in
   | top => rfl
   | bot => rfl
   | not φ ih => rw [arithmetize, ArithQBF.toQBF, ih]
-  | and φ ψ ihφ ihψ => rw [arithmetize, ArithQBF.toQBF, ihφ, ihψ]
-  | or φ ψ ihφ ihψ => rw [arithmetize, ArithQBF.toQBF, ihφ, ihψ]
-  | ex v φ ih => rw [arithmetize, toQBF_lins, ArithQBF.toQBF, ih]
-  | all v φ ih => rw [arithmetize, toQBF_lins, ArithQBF.toQBF, ih]
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ => rw [arithmetize, ArithQBF.toQBF, ihφ, ihψ]
+  | ex v φ ih | all v φ ih => rw [arithmetize, toQBF_lins, ArithQBF.toQBF, ih]
 
 /-- **The arithmetization is faithful on `0`-`1` points.** -/
 theorem eval_arithmetize (xs : List V) (φ : QBF V) (σ : V → Bool) :
@@ -623,16 +618,10 @@ theorem degBound_arithmetize_eq_zero {xs : List V} {x : V} (hx : x ∉ xs) {φ :
   | top => rfl
   | bot => rfl
   | not φ ih => exact ih hφ
-  | and φ ψ ihφ ihψ =>
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
     simp only [vars, List.mem_append, not_or] at hφ
     simp only [arithmetize, degBound, ihφ hφ.1, ihψ hφ.2]
-  | or φ ψ ihφ ihψ =>
-    simp only [vars, List.mem_append, not_or] at hφ
-    simp only [arithmetize, degBound, ihφ hφ.1, ihψ hφ.2]
-  | ex v φ ih =>
-    simp only [vars, List.mem_cons, not_or] at hφ
-    simp [arithmetize, degBound_lins, hx, degBound, Ne.symm hφ.1, ih hφ.2]
-  | all v φ ih =>
+  | ex v φ ih | all v φ ih =>
     simp only [vars, List.mem_cons, not_or] at hφ
     simp [arithmetize, degBound_lins, hx, degBound, Ne.symm hφ.1, ih hφ.2]
 
@@ -650,38 +639,28 @@ theorem degBound_arithmetize_le {xs : List V} {φ : QBF V} (hxs : ∀ v ∈ φ.v
     simp only [arithmetize, degBound, size]
     have := ih hxs
     omega
-  | and φ ψ ihφ ihψ =>
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
     simp only [vars, List.mem_append] at hxs
     have := ihφ fun v hv => hxs v (Or.inl hv)
     have := ihψ fun v hv => hxs v (Or.inr hv)
     simp only [arithmetize, degBound, size]
     omega
-  | or φ ψ ihφ ihψ =>
-    simp only [vars, List.mem_append] at hxs
-    have := ihφ fun v hv => hxs v (Or.inl hv)
-    have := ihψ fun v hv => hxs v (Or.inr hv)
-    simp only [arithmetize, degBound, size]
-    omega
-  | ex v φ ih =>
-    rw [arithmetize, degBound_lins]
+  | ex v φ ih | all v φ ih =>
     by_cases hx : x ∈ xs
-    · simp only [hx, ↓reduceIte, size]
+    · simp only [arithmetize, degBound_lins, hx, ↓reduceIte, size]
       omega
-    · have hxv : x ∉ (ex v φ).vars := fun h => hx (hxs x h)
-      have := degBound_arithmetize_eq_zero hx hxv
-      rw [arithmetize, degBound_lins] at this
-      simp only [hx, ↓reduceIte] at this ⊢
-      omega
-  | all v φ ih =>
-    rw [arithmetize, degBound_lins]
-    by_cases hx : x ∈ xs
-    · simp only [hx, ↓reduceIte, size]
-      omega
-    · have hxv : x ∉ (all v φ).vars := fun h => hx (hxs x h)
-      have := degBound_arithmetize_eq_zero hx hxv
-      rw [arithmetize, degBound_lins] at this
-      simp only [hx, ↓reduceIte] at this ⊢
-      omega
+    · exact (degBound_arithmetize_eq_zero hx fun h => hx (hxs x h)).trans_le (Nat.zero_le _)
+
+/-- A quantifier over the arithmetization of `φ` has degree at most `2 * size φ` in every variable.
+-/
+private theorem degBound_op_arithmetize_le {xs : List V} {φ : QBF V}
+    (hxs : ∀ v ∈ φ.vars, v ∈ xs) (o : Operator) (ho : o.degMul ≤ 2) (v x : V) :
+    (ArithQBF.op o v (φ.arithmetize xs)).degBound x ≤ 2 * φ.size := by
+  have hs := one_le_size φ
+  simp only [degBound]
+  split_ifs
+  · omega
+  · exact Nat.mul_le_mul ho (degBound_arithmetize_le hxs x)
 
 /-- The rounds of a quantifier and of the linearizations after it cost at most
 `(2 * |xs| + 1) * size φ` for the body `φ`. -/
@@ -691,14 +670,7 @@ private theorem roundDegree_arithmetize_op_le {xs : List V} {φ : QBF V}
       (2 * xs.length + 1) * φ.size + (φ.arithmetize xs).roundDegree := by
   have hdeg := degBound_arithmetize_le hxs
   have hs := one_le_size φ
-  have hD : ∀ x, (ArithQBF.op o v (φ.arithmetize xs)).degBound x ≤ 2 * φ.size := by
-    intro x
-    simp only [degBound]
-    split_ifs
-    · omega
-    · have := hdeg x
-      exact (Nat.mul_le_mul ho this)
-  refine (roundDegree_lins_le _ xs hD (by omega)).trans ?_
+  refine (roundDegree_lins_le _ xs (degBound_op_arithmetize_le hxs o ho v) (by omega)).trans ?_
   simp only [ArithQBF.roundDegree]
   have := hdeg v
   nlinarith
@@ -714,7 +686,7 @@ theorem roundDegree_arithmetize_le {xs : List V} {φ : QBF V} (hxs : ∀ v ∈ �
   | not φ ih =>
     simp only [arithmetize, ArithQBF.roundDegree, size]
     exact (ih hxs).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (Nat.le_succ _) 2))
-  | and φ ψ ihφ ihψ =>
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
     simp only [vars, List.mem_append] at hxs
     have h₁ := ihφ fun v hv => hxs v (Or.inl hv)
     have h₂ := ihψ fun v hv => hxs v (Or.inr hv)
@@ -722,25 +694,10 @@ theorem roundDegree_arithmetize_le {xs : List V} {φ : QBF V} (hxs : ∀ v ∈ �
     refine (Nat.add_le_add h₁ h₂).trans ?_
     rw [← Nat.mul_add]
     exact Nat.mul_le_mul_left _ (by nlinarith [Nat.zero_le (φ.size * ψ.size)])
-  | or φ ψ ihφ ihψ =>
-    simp only [vars, List.mem_append] at hxs
-    have h₁ := ihφ fun v hv => hxs v (Or.inl hv)
-    have h₂ := ihψ fun v hv => hxs v (Or.inr hv)
-    simp only [arithmetize, ArithQBF.roundDegree, size]
-    refine (Nat.add_le_add h₁ h₂).trans ?_
-    rw [← Nat.mul_add]
-    exact Nat.mul_le_mul_left _ (by nlinarith [Nat.zero_le (φ.size * ψ.size)])
-  | ex v φ ih =>
+  | ex v φ ih | all v φ ih =>
     simp only [vars, List.mem_cons] at hxs
     have hxs' : ∀ w ∈ φ.vars, w ∈ xs := fun w hw => hxs w (Or.inr hw)
-    refine (roundDegree_arithmetize_op_le hxs' .ex (le_refl _) v).trans ?_
-    refine (Nat.add_le_add_left (ih hxs') _).trans ?_
-    rw [← Nat.mul_add, size]
-    exact Nat.mul_le_mul_left _ (by nlinarith)
-  | all v φ ih =>
-    simp only [vars, List.mem_cons] at hxs
-    have hxs' : ∀ w ∈ φ.vars, w ∈ xs := fun w hw => hxs w (Or.inr hw)
-    refine (roundDegree_arithmetize_op_le hxs' .all (le_refl _) v).trans ?_
+    refine (roundDegree_arithmetize_op_le hxs' _ (by decide) v).trans ?_
     refine (Nat.add_le_add_left (ih hxs') _).trans ?_
     rw [← Nat.mul_add, size]
     exact Nat.mul_le_mul_left _ (by nlinarith)
@@ -754,24 +711,12 @@ theorem mem_vars_arithmetize {xs : List V} {φ : QBF V} {w : V}
   | top => exact absurd h List.not_mem_nil
   | bot => exact absurd h List.not_mem_nil
   | not φ ih => exact ih h
-  | and φ ψ ihφ ihψ =>
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
     simp only [arithmetize, ArithQBF.vars, List.mem_append] at h
     rcases h with h | h
     · exact (ihφ h).imp_left fun h => List.mem_append_left _ h
     · exact (ihψ h).imp_left fun h => List.mem_append_right _ h
-  | or φ ψ ihφ ihψ =>
-    simp only [arithmetize, ArithQBF.vars, List.mem_append] at h
-    rcases h with h | h
-    · exact (ihφ h).imp_left fun h => List.mem_append_left _ h
-    · exact (ihψ h).imp_left fun h => List.mem_append_right _ h
-  | ex v φ ih =>
-    rcases mem_vars_lins _ h with h | h
-    · exact Or.inr h
-    · rw [ArithQBF.vars, List.mem_cons] at h
-      rcases h with rfl | h
-      · exact Or.inl List.mem_cons_self
-      · exact (ih h).imp_left (List.mem_cons_of_mem v)
-  | all v φ ih =>
+  | ex v φ ih | all v φ ih =>
     rcases mem_vars_lins _ h with h | h
     · exact Or.inr h
     · rw [ArithQBF.vars, List.mem_cons] at h
@@ -790,16 +735,10 @@ theorem ops_arithmetize_le (xs : List V) (φ : QBF V) :
   | not φ ih =>
     simp only [arithmetize, ArithQBF.ops, size]
     exact ih.trans (Nat.mul_le_mul_left _ (Nat.le_succ _))
-  | and φ ψ ihφ ihψ =>
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
     simp only [arithmetize, ArithQBF.ops, size]
     nlinarith
-  | or φ ψ ihφ ihψ =>
-    simp only [arithmetize, ArithQBF.ops, size]
-    nlinarith
-  | ex v φ ih =>
-    simp only [arithmetize, ArithQBF.ops_lins, ArithQBF.ops, size]
-    nlinarith
-  | all v φ ih =>
+  | ex v φ ih | all v φ ih =>
     simp only [arithmetize, ArithQBF.ops_lins, ArithQBF.ops, size]
     nlinarith
 
@@ -815,50 +754,20 @@ theorem maxRoundDegree_arithmetize_le {xs : List V} {φ : QBF V} (hxs : ∀ v �
     simp only [arithmetize, ArithQBF.maxRoundDegree, size]
     have := ih hxs
     omega
-  | and φ ψ ihφ ihψ =>
+  | and φ ψ ihφ ihψ | or φ ψ ihφ ihψ =>
     simp only [vars, List.mem_append] at hxs
     have := ihφ fun v hv => hxs v (Or.inl hv)
     have := ihψ fun v hv => hxs v (Or.inr hv)
     simp only [arithmetize, ArithQBF.maxRoundDegree, size]
     omega
-  | or φ ψ ihφ ihψ =>
-    simp only [vars, List.mem_append] at hxs
-    have := ihφ fun v hv => hxs v (Or.inl hv)
-    have := ihψ fun v hv => hxs v (Or.inr hv)
-    simp only [arithmetize, ArithQBF.maxRoundDegree, size]
-    omega
-  | ex v φ ih =>
+  | ex v φ ih | all v φ ih =>
     simp only [vars, List.mem_cons] at hxs
     have hxs' : ∀ w ∈ φ.vars, w ∈ xs := fun w hw => hxs w (Or.inr hw)
-    have hdeg := degBound_arithmetize_le hxs'
     have hs := one_le_size φ
-    have hD : ∀ x, (ArithQBF.op .ex v (φ.arithmetize xs)).degBound x ≤ 2 * φ.size := by
-      intro x
-      simp only [degBound, Operator.degMul]
-      split_ifs
-      · omega
-      · have := hdeg x
-        omega
-    refine (maxRoundDegree_lins_le _ xs hD (by omega)).trans (max_le (by rw [size]; omega) ?_)
+    refine (maxRoundDegree_lins_le _ xs (degBound_op_arithmetize_le hxs' _ (by decide) v)
+      (by omega)).trans (max_le (by rw [size]; omega) ?_)
     simp only [ArithQBF.maxRoundDegree, size]
-    have := hdeg v
-    have := ih hxs'
-    omega
-  | all v φ ih =>
-    simp only [vars, List.mem_cons] at hxs
-    have hxs' : ∀ w ∈ φ.vars, w ∈ xs := fun w hw => hxs w (Or.inr hw)
-    have hdeg := degBound_arithmetize_le hxs'
-    have hs := one_le_size φ
-    have hD : ∀ x, (ArithQBF.op .all v (φ.arithmetize xs)).degBound x ≤ 2 * φ.size := by
-      intro x
-      simp only [degBound, Operator.degMul]
-      split_ifs
-      · omega
-      · have := hdeg x
-        omega
-    refine (maxRoundDegree_lins_le _ xs hD (by omega)).trans (max_le (by rw [size]; omega) ?_)
-    simp only [ArithQBF.maxRoundDegree, size]
-    have := hdeg v
+    have := degBound_arithmetize_le hxs' v
     have := ih hxs'
     omega
 

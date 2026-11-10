@@ -32,7 +32,7 @@ arbitrary. Compilation and cost accounting remain those of native contextual sim
   [S. Schlesinger, *Algebraic circuit formalizations in Complexitylib*][Schlesinger2026Algebraic].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Fusion
 

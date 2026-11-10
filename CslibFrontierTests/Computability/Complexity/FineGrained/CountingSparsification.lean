@@ -23,7 +23,7 @@ Concrete execution trace and edge-case tests for `Cslib.Complexity.CountingSpars
   `k = 0` and `k = 2`), the empty-clause formula `[[]]`, and formulas exceeding width `k`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.Tests
 

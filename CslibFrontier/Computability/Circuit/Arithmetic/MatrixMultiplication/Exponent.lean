@@ -422,8 +422,7 @@ private theorem synthesis_blockProd {α β : Matrix (Fin r) (Fin v × Fin v) K} 
     Synthesis (arithInterpretation K) s (Set.range (blockProd α β ν)) C.size := by
   have := Synthesis.circuit (I := arithInterpretation K) C (encInputs α β ν) hs
   refine this.mono Set.Subset.rfl (le_of_eq ?_) le_rfl
-  congr 1
-  funext t x
+  congr 1 with t x : 2
   simp only [blockProd]
   rw [← congrFun (hC (encode α ν (leftMatrix x)) (encode β ν (rightMatrix x))) t]
   rfl

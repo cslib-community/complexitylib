@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Foundations.Data.Nat.Log
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.ToReal
 
 /-!
@@ -366,7 +367,7 @@ private theorem condEPPRG_real_threshold_accept_le
       pG_dist.map List.ofFn =
         (((PMF.uniformOfFinset E_n hE_n).map List.ofFn).map G).map (List.take m) := by
     simp only [pG_dist, p_full, PMF.map_comp, Function.comp_def]
-    congr 1; funext x
+    congr 1 with x : 1
     have hlen_Gx : (G (List.ofFn x)).length = m₀ := by
       simpa [hm₀_def] using hG_len (List.ofFn x)
     simp [BitString.ofFn_ofList, hlen_Gx, hm_le_m₀]
@@ -376,8 +377,7 @@ private theorem condEPPRG_real_threshold_accept_le
       (pG_dist.map List.ofFn).bind fun y =>
         (ProbComp.eval (H y)).map fun v => decide (m - k - g_err ≤ v) := by
     rw [hpG_map]
-    simp only [PMF.bind_map, thresholdDistinguisher, ProbComp.eval_map, ← hm₀_def, ← hm_def,
-      hthr_eq, Function.comp_def]
+    simp only [pmf_norm, thresholdDistinguisher, ← hm₀_def, ← hm_def, hthr_eq]
   set B : ℝ := (n : ℝ) - (α : ℝ) * (Nat.log 2 n : ℝ) - (c : ℝ) with hB_def
   have hB3 : 3 ≤ B := by
     have hlog_real : ((γ : ℝ) + 5) + (α : ℝ) * (Nat.log 2 n : ℝ) ≤ (n : ℝ) := by

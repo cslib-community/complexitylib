@@ -23,8 +23,8 @@ The input tape is read-only and the output tape write-only. Neither definition i
 bound on the resource function; hierarchy theorems state the lower bounds they need separately.
 
 The shared length and arithmetic routines give concrete constructible bounds, without importing
-any hierarchy theorem. The length of a word in binary
-(`Turing.MultiTapeTM.ComputableInO.lengthNat`) and the bounds on binary digits
+any hierarchy theorem. The length of a word in binary, computed in linear time
+(`Turing.MultiTapeTM.ComputableInO.lengthNat`), and the bounds on binary digits
 (`Turing.MultiTapeTM.exists_pow_length_encNat_le`) are in
 `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible`; unary word
 length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableInO.lengthUnary`).
@@ -38,7 +38,9 @@ length is supplied by the quantitative API (`Turing.MultiTapeTM.ComputableInO.le
 
 * `Cslib.Complexity.TimeConstructible.spaceConstructible`: time constructibility implies
   space constructibility.
-* `Cslib.Complexity.timeConstructible_two_pow`,
+* `Cslib.Complexity.timeConstructible_const`, `Cslib.Complexity.timeConstructible_id`,
+  `Cslib.Complexity.timeConstructible_succ`,
+  `Cslib.Complexity.timeConstructible_two_pow`,
   `Cslib.Complexity.timeConstructible_two_pow_two_pow`,
   `Cslib.Complexity.timeConstructible_succ_pow`,
   `Cslib.Complexity.TimeConstructible.succ`,
@@ -112,6 +114,21 @@ theorem TimeConstructible.succ {t : ℕ → ℕ} (ht : TimeConstructible t) :
   have hlen := length_encNat_le (t x.length)
   omega
 
+/-- Constant bounds are time-constructible. -/
+theorem timeConstructible_const (c : ℕ) : TimeConstructible fun _ => c := by
+  obtain ⟨t, h⟩ := computableInTimeAndSpace_of_const (α := List Bool) (encIn := encBits)
+    (encOut := encNat) c
+  exact ⟨t, fun _ => 0, h.mono (fun _ => Nat.le_add_left _ _) fun _ => le_rfl⟩
+
+/-- `n` is time-constructible: count the length of the word in binary, in linear time. -/
+theorem timeConstructible_id : TimeConstructible fun n => n :=
+  TimeConstructible.of_computableInO 1 ComputableInO.lengthNat (s := fun n => n)
+    (fun _ => by omega) fun _ => le_rfl
+
+/-- `n + 1` is time-constructible. -/
+theorem timeConstructible_succ : TimeConstructible fun n => n + 1 :=
+  timeConstructible_id.succ
+
 /-- `2 ^ n` is time-constructible: its binary digits are `n` zeros followed by a one. -/
 theorem timeConstructible_two_pow : TimeConstructible (2 ^ ·) :=
   TimeConstructible.of_computableInO 1
@@ -165,9 +182,15 @@ private theorem cube_add_le (u v : ℕ) : (u + v) ^ 3 ≤ 8 * (u ^ 3 + v ^ 3) :=
     have h₂ : (2 * u) ^ 3 = 8 * u ^ 3 := by ring
     omega
 
+/-- A power of the number of binary digits of `m` is linear in any bound `M + 1` on `m`. -/
+private theorem exists_pow_length_encNat_le_of_le (d : ℕ) :
+    ∃ C, ∀ m M, m ≤ M + 1 → ((encNat m).length + 1) ^ d ≤ C * M + C := by
+  obtain ⟨C, hC⟩ := exists_pow_length_encNat_le d
+  exact ⟨2 * C, fun m M hm => (hC m).trans (by nlinarith)⟩
+
 /-- If `f n` is computed in binary from words of length `n` within time `O((n + 1) * f n)` and
 `n ≤ f n`, then `(n + 1) * f n` is time-constructible: writing the length of the word in binary
-takes time `O(n ^ 2)`, and the product time polylogarithmic in the factors. -/
+takes linear time, and the product time polylogarithmic in the factors. -/
 theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List Bool → ℕ}
     {S : ℕ → ℕ} (c : ℕ)
     (hf : ComputableInO (fun x : List Bool => f x.length) encBits encNat T
@@ -176,40 +199,27 @@ theorem TimeConstructible.succ_mul_of_computableInO {f : ℕ → ℕ} {T : List 
     TimeConstructible fun n => (n + 1) * f n := by
   have hlen := ComputableInO.natSucc.comp ComputableInO.lengthNat
   have h := computableInDegree_mul.inO.comp (hlen.prod hf)
-  obtain ⟨C, hC⟩ := exists_pow_length_encNat_le 3
-  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
+  obtain ⟨C, hC⟩ := exists_pow_length_encNat_le_of_le 3
+  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le_of_le 2
   refine TimeConstructible.of_computableInO (150 * C + C₂ + c + 10) h (fun x => ?_)
     (s := fun n =>
-    n + 1 + ((encNat n).length + 1) + S n + (2 * (encNat (n + 1)).length + 1 +
+    n + ((encNat n).length + 1) + S n + (2 * (encNat (n + 1)).length + 1 +
       (encNat (f n)).length + 1) ^ 3) fun x => ?_
   · simp only [Function.comp_apply, length_encPair]
     have hTx := hT x
     set n := x.length
     have hfn := hn n
     have h₁ : (n + 1) ^ 2 ≤ 2 * ((n + 1) * f n) + 1 := by nlinarith
-    have h₂ : ((encNat n).length + 1) ^ 2 ≤ C₂ * ((n + 1) * f n) + C₂ := by
-      have := hC₂ n
-      have : C₂ * (n + 1) ≤ C₂ * ((n + 1) * f n + 1) := Nat.mul_le_mul_left _ (by nlinarith)
-      have e : C₂ * ((n + 1) * f n + 1) = C₂ * ((n + 1) * f n) + C₂ := by ring
-      omega
-    have h₃ : f n ≤ (n + 1) * f n := Nat.le_mul_of_pos_left _ (by omega)
+    have h₂ : f n ≤ (n + 1) * f n := Nat.le_mul_of_pos_left _ (by omega)
+    have h₃ := hC₂ n ((n + 1) * f n) (by omega)
     have h₄ := cube_add_le (2 * ((encNat (n + 1)).length + 1)) ((encNat (f n)).length + 1)
     have h₅ : (2 * ((encNat (n + 1)).length + 1)) ^ 3 = 8 * ((encNat (n + 1)).length + 1) ^ 3 := by
       ring
-    have h₆ := hC (n + 1)
-    have h₇ := hC (f n)
+    have h₆ := hC (n + 1) ((n + 1) * f n) (by omega)
+    have h₇ := hC (f n) ((n + 1) * f n) (by omega)
     have h₈ : (2 * (encNat (n + 1)).length + 1 + (encNat (f n)).length + 1) ^ 3 ≤
         (2 * ((encNat (n + 1)).length + 1) + ((encNat (f n)).length + 1)) ^ 3 :=
       Nat.pow_le_pow_left (by omega) 3
-    have h₉ : C * (n + 1 + 1) ≤ C * ((n + 1) * f n) + 2 * C := by
-      have : n + 1 + 1 ≤ (n + 1) * f n + 2 := by nlinarith
-      have := Nat.mul_le_mul_left C this
-      have e : C * ((n + 1) * f n + 2) = C * ((n + 1) * f n) + 2 * C := by ring
-      omega
-    have h₁₀ : C * (f n + 1) ≤ C * ((n + 1) * f n) + C := by
-      have := Nat.mul_le_mul_left C (Nat.add_le_add_right h₃ 1)
-      have e : C * ((n + 1) * f n + 1) = C * ((n + 1) * f n) + C := by ring
-      omega
     have e : (150 * C + C₂ + c + 10) * ((n + 1) * f n) =
         150 * (C * ((n + 1) * f n)) + C₂ * ((n + 1) * f n) + c * ((n + 1) * f n) +
           10 * ((n + 1) * f n) := by
@@ -225,30 +235,20 @@ theorem TimeConstructible.succ_mul {f : ℕ → ℕ} (hf : TimeConstructible f) 
     have : f x.length ≤ (x.length + 1) * f x.length := Nat.le_mul_of_pos_left _ (by omega)
     omega) hn
 
-/-- `(n + 1) ^ 2` is time-constructible. -/
-theorem timeConstructible_succ_sq : TimeConstructible fun n => (n + 1) ^ 2 := by
-  have hlen := ComputableInO.natSucc.comp ComputableInO.lengthNat
-  obtain ⟨C₂, hC₂⟩ := exists_pow_length_encNat_le 2
-  have h := TimeConstructible.succ_mul_of_computableInO (f := fun n => n + 1)
-    (S := fun n => n + 1 + ((encNat n).length + 1)) (C₂ + 2) hlen (fun x => by
-      have := hC₂ x.length
-      have e : (C₂ + 2) * ((x.length + 1) * (x.length + 1)) =
-          C₂ * ((x.length + 1) * (x.length + 1)) + 2 * ((x.length + 1) * (x.length + 1)) := by
-        ring
-      have : C₂ * (x.length + 1) ≤ C₂ * ((x.length + 1) * (x.length + 1)) :=
-        Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega))
-      nlinarith) fun n => Nat.le_succ n
-  simpa only [sq] using h
-
-/-- `(n + 1) ^ k` is time-constructible for `k ≥ 2`. -/
-theorem timeConstructible_succ_pow {k : ℕ} (hk : 2 ≤ k) :
-    TimeConstructible fun n => (n + 1) ^ k := by
-  induction k, hk using Nat.le_induction with
-  | base => exact timeConstructible_succ_sq
-  | succ k hk ih =>
+/-- `(n + 1) ^ k` is time-constructible. -/
+theorem timeConstructible_succ_pow (k : ℕ) : TimeConstructible fun n => (n + 1) ^ k := by
+  rcases k with _ | k
+  · simpa using timeConstructible_const 1
+  induction k with
+  | zero => simpa using timeConstructible_succ
+  | succ k ih =>
     have h := ih.succ_mul fun n =>
       (Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)
     simpa only [pow_succ', mul_comm] using h
+
+/-- `(n + 1) ^ 2` is time-constructible. -/
+theorem timeConstructible_succ_sq : TimeConstructible fun n => (n + 1) ^ 2 :=
+  timeConstructible_succ_pow 2
 
 /-! ### Space-constructible bounds -/
 
@@ -309,11 +309,8 @@ theorem spaceConstructible_const (c : ℕ) : SpaceConstructible fun _ => c := by
   exact ⟨0, fun _ => t, h.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
 
 /-- `(n + 1) ^ k` is space-constructible. -/
-theorem spaceConstructible_succ_pow (k : ℕ) : SpaceConstructible fun n => (n + 1) ^ k := by
-  rcases k with _ | _ | k
-  · simpa using spaceConstructible_const 1
-  · simpa using spaceConstructible_succ
-  · exact (timeConstructible_succ_pow (by omega)).spaceConstructible
+theorem spaceConstructible_succ_pow (k : ℕ) : SpaceConstructible fun n => (n + 1) ^ k :=
+  (timeConstructible_succ_pow k).spaceConstructible
 
 /-- `2 ^ n` is space-constructible. -/
 theorem spaceConstructible_two_pow : SpaceConstructible (2 ^ ·) :=

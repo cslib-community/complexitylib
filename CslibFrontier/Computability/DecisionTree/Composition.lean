@@ -132,8 +132,7 @@ theorem substitute_bind (t : DecisionTree ι β) (k : β → DecisionTree ι γ)
   | leaf => rfl
   | node i left right ihl ihr =>
     simp only [node_bind, substitute_node, bind_assoc]
-    congr 1
-    funext b
+    congr 1 with b : 1
     cases b <;> simp [ihl, ihr]
 
 /-- Nested query substitutions associate, so subroutines may be compiled in stages. -/
@@ -144,8 +143,7 @@ theorem substitute_assoc (t : DecisionTree ι β) (s : ι → DecisionTree κ Bo
   | leaf => rfl
   | node i left right ihl ihr =>
     rw [substitute_node, substitute_bind, substitute_node]
-    congr 1
-    funext b
+    congr 1 with b : 1
     cases b <;> simp [ihl, ihr]
 
 /-- Query substitution evaluates the outer tree on the answers supplied by the inner trees. -/
@@ -164,8 +162,7 @@ theorem Computes.substitute {t : DecisionTree ι β} {f : (ι → Bool) → β}
     (t.substitute s).Computes (fun x => f (fun i => g i x)) := by
   intro x
   rw [eval_substitute, ht]
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact hs i x
 
 /-- Exact cost of substitution: charge each outer query the cost of its subroutine on the

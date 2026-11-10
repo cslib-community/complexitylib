@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Communication.Randomized
 import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.Data.ENat.IInf
 import CslibFrontier.Probability.PMF.Event
 
 /-!
@@ -154,14 +155,7 @@ theorem le_uppComplexity_iff {k : ℕ∞} :
 theorem uppComplexity_le_iff {k : ℕ} :
     uppComplexity R A B ≤ k ↔
       ∃ a b, ∃ P : PrivateCoin a b X Y Z, P.SolvesUnbounded R A B ∧ P.depth ≤ k := by
-  refine ⟨fun h => ?_, fun ⟨a, b, P, hP, hk⟩ =>
-    (uppComplexity_le_depth hP).trans (by exact_mod_cast hk)⟩
-  by_contra! hlt
-  have : ((k + 1 : ℕ) : ℕ∞) ≤ uppComplexity R A B :=
-    le_uppComplexity_iff.mpr fun a b P hP => by exact_mod_cast hlt a b P hP
-  have := this.trans h
-  norm_cast at this
-  omega
+  simp only [uppComplexity, ENat.iInf_le_natCast_iff, Nat.cast_le, Subtype.exists, exists_prop]
 
 /-- **Unbounded error is the limit of bounded error**: the unbounded-error complexity is the
 infimum of the private-coin complexities with error `ε` over all `ε < 1 / 2`

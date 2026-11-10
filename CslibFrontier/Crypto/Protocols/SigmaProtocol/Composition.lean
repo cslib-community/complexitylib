@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 
 /-!
@@ -103,8 +104,7 @@ theorem andProof_transcript (x : X₀ × X₁) (y : Y₀ × Y₁) (c : C) :
       let a ← P₀.transcript x.1 y.1 c
       let b ← P₁.transcript x.2 y.2 c
       return ((a.1, b.1), (a.2, b.2)) := by
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, transcript, andProof,
-    PMF.map_bind, PMF.pure_map, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, transcript, andProof]
 
 /-- Theorem 19.18 of [BonehShoup2023]: completeness. -/
 theorem andProof_complete (h₀ : P₀.Complete R₀) (h₁ : P₁.Complete R₁) :
@@ -217,8 +217,7 @@ theorem orProof_transcript_inl (x : X₀) (y : Y₀ × Y₁) (c : C) :
       let b ← simulate₁ y.2 c₁
       let a ← P₀.transcript x y.1 (c - c₁)
       return ((a.1, b.1), c - c₁, a.2, b.2) := by
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, transcript, orProof,
-    PMF.map_bind, PMF.pure_map, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, transcript, orProof]
 
 /-- With a witness for the second statement, the OR prover simulates the first side at a
 uniform challenge and answers honestly on the second side. -/
@@ -228,8 +227,7 @@ theorem orProof_transcript_inr (x : X₁) (y : Y₀ × Y₁) (c : C) :
       let a ← simulate₀ y.1 c₀
       let b ← P₁.transcript x y.2 (c - c₀)
       return ((a.1, b.1), c₀, a.2, b.2) := by
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, transcript, orProof,
-    PMF.map_bind, PMF.pure_map, PMF.bind_map, Function.comp_def]
+  simp only [pmf_norm, transcript, orProof]
 
 /-- Theorem 19.19 of [BonehShoup2023]: completeness. It uses that both simulators output
 accepting conversations. -/

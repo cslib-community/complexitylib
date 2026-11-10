@@ -167,8 +167,8 @@ theorem sessionProgram_length {Output : Type} (k : ℕ)
     (program : WordOracleComp SenderOperation Output) (out : Output) (s : Session)
     (h : (out, s) ∈ (ProbComp.eval (sessionProgram k program)).support) :
     s.tables.length ≤ k ∧ (s.sealed = true → s.tables.length = k) := by
-  simp only [sessionProgram, ProbOracleComp.eval_run_interpret, ProbComp.eval_pure] at h
-  apply ProbOracleComp.run_interpret_invariant _
+  simp only [sessionProgram, ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure] at h
+  apply ProbOracleComp.runWith_invariant _
     (fun s : Session => s.tables.length ≤ k ∧ (s.sealed = true → s.tables.length = k))
     (fun request st hst value next hnext => ?_) program .initial (by simp [Session.initial])
     out s h
@@ -183,15 +183,15 @@ private theorem eval_realSenderHandler {Output : Type} (k : ℕ) (choices : List
         (realSenderHandler k choices)) program).run (.initial, [])) =
       (ProbComp.eval (sessionProgram k program)).map (fun (out, s) =>
         (out, s, selectedBits s.tables choices)) := by
-  rw [ProbOracleComp.eval_run_interpret]
-  have h := ProbOracleComp.run_interpret_map_state
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith]
+  have h := ProbOracleComp.runWith_map_state
     (fun request (s : Session) => PMF.pure ([], s.advance k request))
     (fun request st => ProbComp.eval (realSenderHandler k choices request st))
     (fun s => (s, selectedBits s.tables choices))
     (fun request s => by
       rw [realSenderHandler_selected k choices hchoices request s]
       simp) program .initial
-  simpa only [sessionProgram, ProbOracleComp.eval_run_interpret, ProbComp.eval_pure,
+  simpa only [sessionProgram, ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure,
     Session.initial, selectedBits, List.zip_nil_left, List.map_nil] using h.symm
 
 private theorem eval_idealSenderHandler {Output : Type} (k : ℕ) (choices : List Bool)
@@ -201,14 +201,14 @@ private theorem eval_idealSenderHandler {Output : Type} (k : ℕ) (choices : Lis
         (idealSenderHandler k choices)) program).run (.initial, .idle)) =
       (ProbComp.eval (sessionProgram k program)).map (fun (out, s) =>
         (out, s, s.idealStore k choices (selectedBits s.tables choices))) := by
-  rw [ProbOracleComp.eval_run_interpret]
-  have h := ProbOracleComp.run_interpret_map_state
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith]
+  have h := ProbOracleComp.runWith_map_state
     (fun request (s : Session) => PMF.pure ([], s.advance k request))
     (fun request st => ProbComp.eval (idealSenderHandler k choices request st))
     (fun s => (s, s.idealStore k choices (selectedBits s.tables choices)))
     (fun request s => by rw [idealSenderHandler_store]; simp)
     program .initial
-  simpa only [sessionProgram, ProbOracleComp.eval_run_interpret, ProbComp.eval_pure,
+  simpa only [sessionProgram, ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure,
     Session.initial, Session.idealStore, Bool.false_eq_true, ite_false] using h.symm
 
 /-- Real execution factors through the choice-independent complete sender session. The

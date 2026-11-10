@@ -27,6 +27,11 @@ satisfied exactly when all its clause polynomials vanish at that same assignment
 correspondence is pointwise at those Boolean and complementary coordinates; the encoding
 constructs only the clause polynomials.
 
+This is the twin-variable clause encoding used in polynomial calculus resolution (PCR)
+[AlekhnovichBenSassonRazborovWigderson2002, §4.1, p. 1197]. Here the coordinates record literal
+truth values and clause polynomials multiply their complements. The Boolean and complementarity
+axioms of PCR are not adjoined; `Literal.toPolyAssignment` supplies their intended values directly.
+
 ## Main definitions
 
 * `Cslib.Logic.PL.Literal.toPolyAssignment`: lift a Boolean assignment to literal truth values.
@@ -40,6 +45,12 @@ constructs only the clause polynomials.
   to vanishing at the corresponding assignment.
 * `Cslib.Logic.PL.CNF.eval_eq_true_iff_forall_eval_toPoly_eq_zero`: CNF satisfaction is equivalent
   to the vanishing of all clause polynomials at that same assignment.
+
+## References
+
+* [M. Alekhnovich, E. Ben-Sasson, A. A. Razborov, A. Wigderson,
+  *Space Complexity in Propositional Calculus*, §4.1,
+  p. 1197][AlekhnovichBenSassonRazborovWigderson2002]
 -/
 
 public section

@@ -1,7 +1,7 @@
-# Complexitylib Operator's Manual
+# cslib-frontier Operator's Manual
 
 This is the substantial manual for humans or agents using, changing and reviewing the
-Complexitylib codebase. It explains models, tactics, proof interfaces, design and development
+cslib-frontier codebase. It explains models, tactics, proof interfaces, design and development
 procedures. It assumes basic Lean literacy; a human should be able to follow the workflows
 with a text editor, Git, Python and Lake. AI tools are optional.
 

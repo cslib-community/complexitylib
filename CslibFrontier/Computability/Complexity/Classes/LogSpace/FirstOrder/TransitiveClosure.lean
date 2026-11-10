@@ -30,7 +30,8 @@ because NL is closed under complementation ([Immerman1988], Corollary 3; [Szelep
 Here both polarities are compiled directly. A closure at polarity `true` is evaluated by a
 bounded guessed path. A closure at polarity `false` (under an odd number of negations, counted
 afresh inside each closure body) is evaluated by an inductive-counting block whose tests run the
-compiled body at both polarities. The converse inclusion NL ⊆ FO(TC) remains open.
+compiled body at both polarities. The converse inclusion NL ⊆ FO(positive TC), and with it
+FO(TC) = NL, is in `Classes.LogSpace.FirstOrder.TransitiveClosure.Converse`.
 
 ## Main definitions
 
@@ -273,18 +274,8 @@ theorem correct_op (hE : Env v a P B Post R) {Γ : List ℕ} {α : Type} (k : �
     intro us ws t regs₃ hmid
     obtain ⟨⟨hk, hlen, hu, -⟩, hw⟩ := hmid
     rw [hcl]
-    exact ih (by rw [hΓ]; rfl) true hWb _ _ (Sum.elim val (TC.pair us ws))
-      (RelEnv.empty.append ρ) _ _ regs₃ (tcCode_parts hP').2.2.2.2.2.2.1 (by omega)
-      (fun x => by
-        cases x with
-        | inl x => have := hfv x; simp only [Sum.elim_inl]; omega
-        | inr i => have : (i : ℕ) < 2 * k := i.isLt; simp only [Sum.elim_inr]; omega)
-      (by rw [hk.1]; omega) ((hk.2.1 0 hbase).trans h0)
-      (fun x => by
-        cases x with
-        | inl x => simp only [Sum.elim_inl]; exact (hk.2.1 _ (hfv x)).trans (hv x)
-        | inr i => exact getD_pair hu hw i)
-      hk.2.2
+    exact body_correct ih hΓ hWb hbase hfv h0 hv (fun _ _ => Iff.rfl) le_rfl (by omega) true
+      (tcCode_parts hP').2.2.2.2.2.2.1 hk (by rw [hk.1]; omega) hu hw
   obtain ⟨regsI, hrI, hinvI⟩ := loop_init (w := encStructure a) hP' (by omega)
     hE.card_le hregs hsrc
   refine ⟨Sound.of_oblivious hE.one_le hrI ?_, fun hsat => Complete.of_oblivious hrI ?_⟩

@@ -11,8 +11,8 @@ on:
 # A new run for a pull request cancels that pull request's superseded run. Push runs on `main`
 # share `lean-ci-main` without `cancel-in-progress`: the active `main` run finishes and uploads the
 # `.lake` and remote caches, while intermediate `main` pushes are replaced by the latest `main` tip
-# while pending (which is also the only revision `abstracts.yml` and `scripts/check_abstract_ci.py`
-# publish). Merge-queue groups and manual runs each use their own run id so all of them complete.
+# while pending. Merge-queue groups and manual runs each use their own run id so all of them
+# complete.
 concurrency:
   group: >-
     lean-ci-${{
@@ -113,6 +113,22 @@ jobs:
       - name: "Encoding readability report"
         if: github.event_name != 'pull_request'
         run: python3 -B scripts/check_encoding_readability.py --report
+      # Advisory only: tactic blocks on lines a pull request adds or changes that repeat a block
+      # of another proof in the same file or directory nearly verbatim (#3725). Candidates go to
+      # the job summary and appear as notices; the step never fails the job. Sources only: no
+      # Lean, so it runs before the build. Its tests run with the Python tests above. See
+      # scripts/proof_copies.py. The base is the first parent of the merge commit, as above.
+      - name: "Repeated-proof-block notice (advisory)"
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
+          BASE=${BASE:-$RECORDED_BASE}
+          git fetch --no-tags --depth=1 origin "$BASE"
+          python3 -B scripts/proof_copies.py --base "$BASE" --github
       # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
       # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
       # pins. Checking here makes a root cslib or Mathlib bump without matching lockfile updates
@@ -275,7 +291,7 @@ jobs:
           python3 -B -m unittest scripts/test_parallel_defs.py
       # Advisory only: backticked Lean names in the PR description that the checked-out merge
       # commit does not declare (renamed or dropped while the PR evolved). It reads the sources of
-      # the library, the tests, the abstracts, `.lake/packages` and the toolchain, so it runs after
+      # the library, the tests, `.lake/packages` and the toolchain, so it runs after
       # the build; names that the base declared are marked as removed by the PR. Findings go to the
       # job summary and a notice; the step never fails the job. The body is the event payload's,
       # i.e. as of the latest push; after editing the description, run

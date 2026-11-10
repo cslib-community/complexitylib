@@ -285,8 +285,7 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
   have hMapply (i : Fin t) (k : Fin (metaWidth ℓ b copies)) :
       M (finProdFinEquiv (i, k)) = metadata bits C place (a i) k := by
     rw [hM, blockMap_apply]
-    congr 1
-    funext k
+    congr 1 with k : 1
     simp only [directProductInput, prefixWires, Function.comp_apply, Equiv.symm_apply_apply, ha]
   have h1 : (lookupStage bits C place t w).eval interpretation x = Fin.append M x := by
     simp only [lookupStage, Circuit.eval_append, Circuit.eval_comp, Circuit.eval_wiring,
@@ -298,8 +297,7 @@ theorem lineSums_eval_recoveryCircuit (scalar : Fin s ≃ {c : K // c ≠ 0})
   have h2 : (scheduleStage sched p w copies).eval interpretation (Fin.append M x) = W := by
     simp only [scheduleStage, Circuit.eval_append, Circuit.eval_comp, Circuit.eval_wiring]
     rw [hW, ← hlines]
-    congr 2
-    funext y
+    congr 2 with y : 1
     obtain ⟨⟨i, k⟩, rfl⟩ := finProdFinEquiv.surjective y
     simp only [Function.comp_apply, Fin.append_left, hMapply, metadata,
       targetBits, blocksEquiv_symm_apply, Equiv.symm_apply_apply, htargets]

@@ -16,7 +16,7 @@ open Cslib Cslib.PCP Cslib.PCP.Encoded Cslib.PCP.HadamardTester Turing.MultiTape
 local notation "Alphabet" => (Bool × (Fin 6 → Bool))
 local notation "Constraint" => (Alphabet → Alphabet → Bool)
 
-variable {D Input : Type} [Fintype D] [DecidableEq D] {width : ℕ}
+variable {D Input : Type} [FinEnum D]
   {input : Input ↪ List Bool} {label : D ↪ List Bool} {graph : Input → Graph Constraint}
   (hgraph : ComputableInPolyTime graph input (Graph.encoding (encPi (encPi encBool))))
   (hwellFormed : ∀ x, (graph x).WellFormed)
@@ -25,12 +25,10 @@ variable {D Input : Type} [Fintype D] [DecidableEq D] {width : ℕ}
     (((family n).rot (v, d)).1.val, ((family n).rot (v, d)).2))
   (hcost : ComputableInPolyTime rotate
     (encPair encUnary (encPair encUnary label)) (encPair encUnary label))
-  (fallback : Constraint) (T q : ℕ) [NeZero q] (walks : List (Graph.PowerLabel D T q))
-  (number : Graph.SelectedComposeSlot (Graph.PowerAlphabet D Alphabet T) ≃ Fin width)
-  (coins : List (Fin 5 × Rand (Graph.PowerAlphabet D Alphabet T))) (queries : List (Fin 6))
+  (fallback : Constraint) (T q : ℕ) [NeZero q]
 
 example : ComputableInPolyTime
-    (fun x => Graph.amplifyIter fallback rotate T q walks number coins queries
+    (fun x => Graph.amplifyIter fallback rotate T q
       (Nat.clog 2 (graph x).edges.length) (graph x))
     input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hcost; fun_prop)
@@ -39,14 +37,14 @@ example : ComputableInPolyTime
 
 example : ComputableInPolyTime (fun x =>
     let g := graph x
-    Graph.amplifyIter fallback rotate T q walks number coins queries (Nat.clog 2 g.edges.length) g)
+    Graph.amplifyIter fallback rotate T q (Nat.clog 2 g.edges.length) g)
     input (Graph.encoding (encPi (encPi encBool))) := by
   fail_if_success (clear hcost; polytime)
   fail_if_success (clear hgraph; polytime)
   polytime
 
 example (g : Graph Constraint) :
-    Graph.amplifyIter fallback rotate T q walks number coins queries 0 g = g := by
+    Graph.amplifyIter fallback rotate T q 0 g = g := by
   unfold Graph.amplifyIter
   rfl
 

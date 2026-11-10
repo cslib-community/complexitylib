@@ -151,6 +151,14 @@ theorem AllowanceBound.shift_clock_up {Op : Type u} {Struct : Type v} {d a b c t
     (h : AllowanceBound d a b c (t + k) ev) :
     AllowanceBound d (a + b * k) b (c + k) t ev := by
   have hkd : k ≤ k * d := Nat.le_mul_of_pos_right k hd
+  have hbk : (b : ℤ) * (k : ℤ) ≤ (((b * k) * d : ℕ) : ℤ) := by
+    have hnat : b * k ≤ (b * k) * d := Nat.le_mul_of_pos_right _ hd
+    exact_mod_cast hnat
+  have hcast : (((a + b * k) * d : ℕ) : ℤ) =
+      ((a * d : ℕ) : ℤ) + (((b * k) * d : ℕ) : ℤ) := by
+    push_cast [Nat.add_mul]
+    ring
+  have htk : ((t + k : ℕ) : ℤ) = (t : ℤ) + (k : ℤ) := by push_cast; ring
   cases ev with
   | digit op j L =>
     obtain ⟨hj, hL⟩ := h
@@ -158,26 +166,10 @@ theorem AllowanceBound.shift_clock_up {Op : Type u} {Struct : Type v} {d a b c t
     · calc j ≤ t + k + c * d := hj
         _ ≤ t + (c * d + k * d) := by omega
         _ = t + (c + k) * d := by rw [Nat.add_mul]
-    · have hbk : (b : ℤ) * (k : ℤ) ≤ (((b * k) * d : ℕ) : ℤ) := by
-        have hnat : b * k ≤ (b * k) * d := Nat.le_mul_of_pos_right _ hd
-        exact_mod_cast hnat
-      have hcast : (((a + b * k) * d : ℕ) : ℤ) =
-          ((a * d : ℕ) : ℤ) + (((b * k) * d : ℕ) : ℤ) := by
-        push_cast [Nat.add_mul]
-        ring
-      have htk : ((t + k : ℕ) : ℤ) = (t : ℤ) + (k : ℤ) := by push_cast; ring
-      rw [htk] at hL
+    · rw [htk] at hL
       rw [hcast]
       linarith
   | struct sOp L =>
-    have hbk : (b : ℤ) * (k : ℤ) ≤ (((b * k) * d : ℕ) : ℤ) := by
-      have hnat : b * k ≤ (b * k) * d := Nat.le_mul_of_pos_right _ hd
-      exact_mod_cast hnat
-    have hcast : (((a + b * k) * d : ℕ) : ℤ) =
-        ((a * d : ℕ) : ℤ) + (((b * k) * d : ℕ) : ℤ) := by
-      push_cast [Nat.add_mul]
-      ring
-    have htk : ((t + k : ℕ) : ℤ) = (t : ℤ) + (k : ℤ) := by push_cast; ring
     change (L : ℤ) ≤ ((a * d : ℕ) : ℤ) + (b : ℤ) * ((t + k : ℕ) : ℤ) at h
     rw [htk] at h
     change (L : ℤ) ≤ (((a + b * k) * d : ℕ) : ℤ) + (b : ℤ) * (t : ℤ)

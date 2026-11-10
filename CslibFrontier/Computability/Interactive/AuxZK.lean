@@ -756,9 +756,8 @@ theorem Reduction.plainLaw_run_liftFirst
   simp only [Reduction.liftFirst, Verifier.liftFirst, bind_assoc, plainLaw_bind, PMF.map_bind]
   congr 1
   funext st
-  rw [← plainLaw_bind, plainLaw_bindLeaf_run]
-  simp only [plainLaw_pure, PMF.pure_map]
-  exact PMF.bind_pure_comp _ _
+  rw [← plainLaw_bind]
+  exact plainLaw_bindLeaf_pure_run _ _ _ _
 
 /-- Plain-model execution law of `R₂.liftSecond`. -/
 theorem Reduction.plainLaw_run_liftSecond
@@ -771,9 +770,8 @@ theorem Reduction.plainLaw_run_liftSecond
   simp only [Reduction.liftSecond, Verifier.liftSecond, bind_assoc, plainLaw_bind, PMF.map_bind]
   congr 1
   funext st
-  rw [← plainLaw_bind, plainLaw_bindLeaf_run]
-  simp only [plainLaw_pure, PMF.pure_map]
-  exact PMF.bind_pure_comp _ _
+  rw [← plainLaw_bind]
+  exact plainLaw_bindLeaf_pure_run _ _ _ _
 
 /-- `R₁.liftFirst` preserves completeness with the same error. -/
 theorem Reduction.Complete.liftFirst
@@ -953,15 +951,8 @@ theorem Verifier.KnowledgeSound.seqProd
     have hlaw₁ : plainLaw (P₁ >>= runStrategy s₁ V₁.samplers) =
         (plainLaw ((ProverStrategy.split s₁ s₂ ·) <$> P >>= runStrategy s₁ V₁.samplers)).bind
           fun r₁ => (plainLaw (runStrategy s₂ V₂.samplers r₁.2)).map
-            fun r₂ => (r₁.1, r₂.2.1) := by
-      simp only [P₁, bind_assoc, plainLaw_bind, PMF.bind_bind]
-      congr 1
-      funext st₁
-      rw [← plainLaw_bind, plainLaw_bindLeaf_run]
-      congr 1
-      funext r₁
-      rw [plainLaw_map, PMF.map_comp]
-      rfl
+            fun r₂ => (r₁.1, r₂.2.1) :=
+      plainLaw_split_bindLeaf_run s₁ s₂ V₁.samplers V₂.samplers P fun _ r₂ => r₂.2.1
     rw [hlaw₁] at hl₁
     refine le_trans (le_of_eq ?_) hl₁
     rw [PMF.toOuterMeasure_bind_apply, PMF.toOuterMeasure_bind_apply]
@@ -979,11 +970,8 @@ theorem Verifier.KnowledgeSound.seqProd
     have hl₂ := h₂ x₂ P₂
     rw [World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hl₂
     have hlaw₂ : plainLaw (P₂ >>= runStrategy s₂ V₂.samplers) =
-        (plainLaw (runStrategy s₂ V₂.samplers r₁.2)).map fun r₂ => (r₂.1, r₂.2.2) := by
-      simp only [P₂]
-      rw [plainLaw_bindLeaf_run]
-      simp only [plainLaw_pure, PMF.pure_map]
-      exact PMF.bind_pure_comp _ _
+        (plainLaw (runStrategy s₂ V₂.samplers r₁.2)).map fun r₂ => (r₂.1, r₂.2.2) :=
+      plainLaw_bindLeaf_pure_run s₂ V₂.samplers r₁.2 fun _ wOut => wOut.2
     rw [hlaw₂, PMF.toOuterMeasure_map_apply] at hl₂
     convert hl₂ using 2
     ext r₂

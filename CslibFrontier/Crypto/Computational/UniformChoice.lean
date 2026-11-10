@@ -12,6 +12,8 @@ public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Game.Hybrid
+import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -96,12 +98,10 @@ theorem eval_bind_test (bound : ℕ) (real ideal source : ProbComp (List Bool))
         let index ← PMF.uniformOfFintype (Fin (dyadicSize bound))
         ProbComp.eval (calibratedTest (real >>= adversary index.val)
           (ideal >>= adversary index.val) (source >>= adversary index.val))) := by
-  simp only [test, ProbComp.eval_bind, eval_sampleDyadicIndex, PMF.monad_bind_eq_bind, PMF.bind_map,
-    Function.comp_def]
-  rw [PMF.bind_comm]
-  congr 1 with index : 1
+  simp only [pmf_norm, test, eval_sampleDyadicIndex]
+  pmf_swap with index
   simp only [calibratedTest, ProbComp.eval_bind, ProbComp.eval_map, map_bind]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- Averaging calibrated tests averages their squared advantages without sign cancellation. -/
 theorem advantage_eq (bound : ℕ) (real ideal : ProbComp (List Bool))

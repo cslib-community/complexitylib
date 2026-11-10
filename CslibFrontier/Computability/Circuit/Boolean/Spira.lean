@@ -96,8 +96,7 @@ theorem exists_split (hσ : ∀ op, σ.Arity op ≤ 2) {L : ℕ} (hL : 2 ≤ L) 
           fun K => by rw [input_last_substLast, add_comm]⟩
     refine ⟨G, gate op (Function.update (fun j => (args j).lift) a C), ?_, h₁, h₂, fun K => ?_⟩
     · rw [gate_substLast]
-      congr 1
-      funext j
+      congr 1 with j : 1
       by_cases hj : j = a
       · subst hj
         simpa using hC
@@ -162,8 +161,7 @@ private theorem exists_depthWith_eq_zero (F : Formula signature n) (hF : F.leafS
       (Function.update (fun j => (args j).eval interpretation fun _ => false) b v),
       fun x => ?_, Nat.le_zero.1 ((depthWith_postcomp_le _ _).trans hd.le)⟩
     rw [eval_postcomp, hG, eval_gate]
-    congr 1
-    funext j
+    congr 1 with j : 1
     by_cases hj : j = b
     · subst hj
       simp

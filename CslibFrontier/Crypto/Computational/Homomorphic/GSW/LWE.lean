@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.Correctness
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # The decision-LWE distribution of generated GSW public keys
@@ -56,9 +57,7 @@ the generated secret nor asserts that any parameter or error family is computati
 theorem eval_keyGen_publicMatrix (n m w η : ℕ) :
     (ProbComp.eval (keyGen n m w η)).map Prod.fst =
       LWE.publicMatrixLaw n m w (noiseLaw w η) := by
-  simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure, eval_sampleKeyInputs,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    PMF.map_bind, PMF.pure_map, LWE.publicMatrixLaw]
+  simp only [pmf_norm, keyGen, eval_sampleKeyInputs, LWE.publicMatrixLaw]
   rw [← eval_errorVector_mod m w η]
   simp only [PMF.bind_map, Function.comp_def]
   rfl

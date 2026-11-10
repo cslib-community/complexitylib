@@ -46,12 +46,7 @@ lemma output_upperCapped (ζ d v r : ℝ) :
     dsimp only [T]
     linarith [le_max_right ((HP.k:ℝ)+1) HP.θ₂, HP.θ_lt_θ₂]
   have he : HP.toHierarchyParams.atomCutoff d = HP.toHierarchyParams.atomCutoff (min T d) := by
-    simp only [HierarchyParams.atomCutoff]
-    by_cases hd : d ≤ T
-    · rw [min_eq_right hd]
-    · have hTd : T ≤ d := (not_le.mp hd).le
-      rw [min_eq_left hTd, max_eq_right (hT.le.trans hTd), min_eq_left hTd,
-        max_eq_right hT.le, min_self]
+    grind [HierarchyParams.atomCutoff, min_self]
   by_cases hr : r ≤ T
   · change output HP ζ d v r = output HP ζ (min T d) v (min T r)
     simp only [output, he, min_eq_right hr]

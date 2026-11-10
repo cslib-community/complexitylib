@@ -367,6 +367,12 @@ private theorem countP_fst_flatMap_taggedRun {U b f : ℕ} (S : Finset (Fin U))
       occBefore_succ, hocc m (by omega)]
     cases hrun : bucketRun S quot rem (probeSlot b o m) <;> simp
 
+/-- Split `List.range n` around an index `a < n`: the indices below `a`, then `a`, then the
+indices above it. -/
+theorem range_eq_split {a n : ℕ} (ha : a < n) :
+    List.range n = List.range a ++ [a] ++ (List.range (n - (a + 1))).map (a + 1 + ·) := by
+  rw [← List.range_succ, ← List.range_add, Nat.add_sub_of_le ha]
+
 private theorem flatMap_taggedRun_split {U b f : ℕ} (S : Finset (Fin U))
     (quot : Fin U → Fin (2 ^ b)) (rem : Fin U → Fin (2 ^ f)) (o : Fin (2 ^ b))
     {m ℓ : ℕ} (hm : m ≤ ℓ) :
@@ -781,6 +787,20 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
   have hℓ_le_S : ℓ ≤ #S := hinv.clusterLen_le_card hS_lt q
   have hcard_J : #(S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) = ℓ :=
     hinv.card_filter_quot_mem_cyclicInterval_eq hS_lt q
+  -- A single overloaded scale `r` with `k₀ ≤ 2 ^ r` already bounds `k₀` by the sum.
+  have key : ∀ r ∈ Finset.Icc 1 b₀, k₀ ≤ 2 ^ r → scaleOverload b₀ h (S.erase u) u r i →
+      (k₀ : ℝ) ≤ ∑ r ∈ Finset.Icc 1 b₀,
+        (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
+    intro r hr hk_le hov
+    calc (k₀ : ℝ) ≤ (2 ^ r : ℝ) := by exact_mod_cast hk_le
+      _ = (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
+          simp [hov]
+      _ ≤ _ := by
+          refine Finset.single_le_sum
+            (f := fun r =>
+              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
+            (fun r _ => ?_) hr
+          split_ifs <;> positivity
   by_cases hk₀ : 1 ≤ k₀
   · by_cases ht_pos : 1 ≤ t
     · set j := Nat.log 2 k₀ + 1
@@ -819,16 +839,7 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
           simp only [Finset.mem_filter] at hx ⊢
           exact ⟨hx.1, hsub hx.2⟩
         omega
-      calc (k₀ : ℝ) ≤ (2 ^ j : ℝ) := by exact_mod_cast hk₀_lt_2j.le
-        _ = (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
-            simp [hov]
-        _ ≤ ∑ r ∈ Finset.Icc 1 b₀,
-              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-            refine Finset.single_le_sum
-              (f := fun r =>
-                (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
-              (fun r _ => ?_) hj_mem
-            split_ifs <;> positivity
+      exact key j hj_mem hk₀_lt_2j.le hov
     · have ht0 : t = 0 := by omega
       have hfull_q : st.isFull q = false := by
         have h1 := hinv.isFull_probeSlot_fwdLen hS_lt q
@@ -873,18 +884,7 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
           simp only [Finset.mem_filter] at hx ⊢
           exact ⟨hx.1, hsub hx.2⟩
         omega
-      calc (k₀ : ℝ) ≤ (2 ^ j : ℝ) := by
-            have : k₀ ≤ 2 ^ j := by omega
-            exact_mod_cast this
-        _ = (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
-            simp [hov]
-        _ ≤ ∑ r ∈ Finset.Icc 1 b₀,
-              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-            refine Finset.single_le_sum
-              (f := fun r =>
-                (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
-              (fun r _ => ?_) hj_mem
-            split_ifs <;> positivity
+      exact key j hj_mem (by omega) hov
   · have hk0 : k₀ = 0 := by omega
     rw [hk0, Nat.cast_zero]
     refine Finset.sum_nonneg fun r _ => ?_
@@ -934,12 +934,8 @@ theorem IntervalValid.queryCluster_eq_true_iff {U b f : ℕ} {S : Finset (Fin U)
       (((List.range ℓ).map (fun i => st.remAt (probeSlot b o i))).drop S_a).take
           (bucketRun S quot rem (probeSlot b o a)).length =
         bucketRun S quot rem (probeSlot b o a) := by
-    have hr :
-        List.range ℓ = List.range a ++ (a :: (List.range (ℓ - (a + 1))).map (a + 1 + ·)) := by
-      have h1 :
-          List.range ℓ = List.range (a + 1) ++ (List.range (ℓ - (a + 1))).map (a + 1 + ·) := by
-        rw [← List.range_add, Nat.add_sub_of_le ha1]
-      rw [h1, List.range_succ, List.append_assoc, List.singleton_append]
+    have hr := range_eq_split ha
+    rw [List.append_assoc, List.singleton_append] at hr
     rw [hrem_list, hr, List.flatMap_append, List.flatMap_cons]
     have hlen_pref :
         ((List.range a).flatMap (fun j => bucketRun S quot rem (probeSlot b o j))).length =

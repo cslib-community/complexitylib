@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Foundations.Data.List.Counting
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Size
 
@@ -267,10 +268,9 @@ theorem decodeReply_encodeReply {D : ℕ} {l : List ℕ} (hl : ∀ a ∈ l, a < 
     decodeReply p D ((encodeReply p l).take (replyLimit p D)) =
       (List.range (D + 1)).map fun i => l.getD i 0 := by
   have hlength : (encodeReply p l).length ≤ replyLimit p D := by
-    have : (encodeReply p l).length = l.length * width p := by
-      simp only [encodeReply, List.length_flatMap]
-      rw [List.map_congr_left fun a ha => BitString.length_binaryWord (lt_two_pow_width (hl a ha)),
-        List.map_const', List.sum_replicate, smul_eq_mul]
+    have : (encodeReply p l).length = l.length * width p :=
+      List.length_flatMap_of_forall_length_eq fun a ha =>
+        BitString.length_binaryWord (lt_two_pow_width (hl a ha))
     rw [this, replyLimit]
     exact Nat.mul_le_mul_right _ hlen
   rw [List.take_of_length_le hlength, decodeReply, BitString.listRows, List.map_map]

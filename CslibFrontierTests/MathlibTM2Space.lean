@@ -132,8 +132,7 @@ private noncomputable abbrev clearComputer :
     refine ⟨xs.length + 1, ?_⟩
     have hinit : initList clearMachine xs = clearCfg xs false := by
       change TM2.Cfg.mk _ _ _ = TM2.Cfg.mk _ _ _
-      congr 1
-      funext k
+      congr 1 with k : 1
       cases k <;> rfl
     change (fun s : Option clearMachine.Cfg => s.bind clearMachine.step)^[xs.length + 1]
       (some (initList clearMachine (List.map id xs))) = some (haltList clearMachine [])

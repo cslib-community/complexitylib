@@ -37,7 +37,7 @@ Adapts Computability/Probabilistic/OracleSimulation.lean on the cslib `crypto` b
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the shared `OracleComp.interpret` interface.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

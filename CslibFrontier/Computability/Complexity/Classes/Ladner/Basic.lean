@@ -60,8 +60,9 @@ Whether a word with index below `n` belongs to the language depends only on the 
   `Cslib.Complexity.Ladner.two_pow_length_word_le`: words and indices are inverse bijections, and
   the word with index `j` has length at most `log₂ (j + 1)`.
 * `Cslib.Complexity.Ladner.universal_desc_of_halted_map`,
-  `Cslib.Complexity.Ladner.exists_index_ge`: the universal function runs a machine from its
-  description, and every description has arbitrarily large indices.
+  `Cslib.Complexity.Ladner.exists_index_ge`, `Cslib.Complexity.Ladner.exists_index_runIndexed_eq`:
+  the universal function runs a machine from its description, every description has arbitrarily
+  large indices, and so every decider is run by machines with arbitrarily large indices.
 * `Cslib.Complexity.Ladner.unpad_pad`, `Cslib.Complexity.Ladner.pad_unpad`: padding is undone.
 * `Cslib.Complexity.Ladner.Htable_eq`: the tables hold the values of `H`.
 * `Cslib.Complexity.Ladner.H_le`, `Cslib.Complexity.Ladner.H_le_of_agrees`,
@@ -238,6 +239,22 @@ theorem exists_index_ge (d : Desc) (B : ℕ) :
   have h₂ : B < 2 ^ ((frame (eDesc d)).length + B) :=
     Nat.lt_two_pow_self.trans_le (Nat.pow_le_pow_right (by omega) (by omega))
   omega
+
+open Turing in
+/-- **A decider is run by machines with arbitrarily large indices.** A finite binary machine
+halting within time `t x` with output `[f x]` is described at some index `i ≥ B`, which halts on
+`x` with output `[eBit (f x)]` when allowed at least `t x` steps. -/
+theorem exists_index_runIndexed_eq {k : ℕ} {State : Type} [Finite State]
+    (tm : MultiTapeTM k Bool State) {f : List Bool → Bool} {t : List Bool → ℕ}
+    (h : ∀ x, (tm.runFrom (tm.initCfg x) (t x)).Halted ∧
+      (tm.runFrom (tm.initCfg x) (t x)).output = [f x]) (B : ℕ) :
+    ∃ i, B ≤ i ∧ ∀ x T, t x ≤ T → runIndexed i x T = ([eBit (f x)], true) := by
+  have := Fintype.ofFinite State
+  obtain ⟨i, hi, hdesc⟩ :=
+    exists_index_ge (desc ((Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding) eBit tm) B
+  refine ⟨i, hi, fun x T hT => ?_⟩
+  rw [runIndexed, hdesc]
+  exact universal_desc_of_halted _ tm h hT
 
 /-- The clock of the machine with index `i` on inputs of length `l`. -/
 def clock (i l : ℕ) : ℕ := (2 * l + 2) ^ i

@@ -71,7 +71,7 @@ private theorem normalized_range
       rawSteps prepSteps detectorSteps σ x y ∈
       Set.Icc 0 (2 * HP.Q HP.toHierarchyParams.atomCap) := by
   unfold initialPilotNormalized
-  exact correctionRequest_mem_Icc HP D id _ _ _ _ _ σ x y
+  exact selectedRequest_mem_Icc HP D id _ _ _ _ _ σ x y
 
 private theorem true_range
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (D : ZMod P) (R : RoleProfile J)
@@ -80,7 +80,7 @@ private theorem true_range
     initialTrueNormalized HP D R ks kt ss st C σ x y ∈
       Set.Icc 0 (2 * HP.Q HP.toHierarchyParams.atomCap) := by
   unfold initialTrueNormalized
-  exact correctionRequest_mem_Icc HP D id _ _ _ _ _ σ x y
+  exact selectedRequest_mem_Icc HP D id _ _ _ _ _ σ x y
 
 /-- The known normalized range pays the actual outer noise at a positive length,
 regardless of the completed RAW, preparation and detector lengths. -/
@@ -181,9 +181,10 @@ theorem initialPilotCompleted_error
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Positive-tolerance accuracy toward the genuine canonical FIRST pilot correction.
-The outer range budget and length are fixed before invoking normalized-child allocation;
-its RAW and detector tolerances are in turn fixed before completing their actual calls.
-All regularity constants are selected for fixed HP before the prime and requests.
+The outer length is the explicit `initialPilotOuterSteps` at a tolerance depending only
+on ε, the rate exponent and HP. For each instance there exist positive RAW and detector
+lengths, with preparation parameter one, meeting the bound; they are quantified after
+every other argument, so they may depend on all of them.
 This proves an ordinary fourth-moment error in parent matrix units, for a common
 source/rank/usage rate and one covering dense bin. It is not recursive closure. -/
 theorem initialPilotCompleted_accuracy

@@ -61,8 +61,8 @@ theorem writeRead_native : ∃ r C pc : ℕ, ∃ prog : Program .exact r,
     rcases ha with rfl | rfl
     · exact h3.of_le (by decide)
     · exact hv
-  have hvalid : (Memory.spec w).ValidHistory (inputState [1, v])
-      ((Memory.spec w).clientHistory (inputState [1, v]) (writeRead (1, v))) := by
+  have hvalid : (Memory.spec w).ValidHistory (Memory.State.init [1, v])
+      ((Memory.spec w).clientHistory (Memory.State.init [1, v]) (writeRead (1, v))) := by
     change (1 < 3 ∧ Fits w v) ∧ 1 < 3 ∧ True
     exact ⟨⟨by decide, hv⟩, by decide, trivial⟩
   obtain ⟨y, n, hr, hh, hm, hout, hn⟩ := he w (1, v)
@@ -120,8 +120,8 @@ theorem graphHeader_native : ∃ r C pc : ℕ, ∃ prog : Program .exact r,
     readHeader_realizes.exists_standard_init_program_state_from_words 0
   refine ⟨r, C, pc, prog, frontier, out 0, ?_⟩
   intro w G hw hin
-  have hvalid : (Memory.spec w).ValidHistory (inputState G.encode)
-      ((Memory.spec w).clientHistory (inputState G.encode) (Memory.read 1)) := by
+  have hvalid : (Memory.spec w).ValidHistory (Memory.State.init G.encode)
+      ((Memory.spec w).clientHistory (Memory.State.init G.encode) (Memory.read 1)) := by
     change 1 < G.encode.length + 1 ∧ True
     rw [G.encode_length]
     exact ⟨by omega, trivial⟩

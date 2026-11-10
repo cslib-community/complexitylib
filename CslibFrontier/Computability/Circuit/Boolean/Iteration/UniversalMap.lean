@@ -147,6 +147,17 @@ def prodMap {m k : ℕ} (U : BitString m → BitString m) (P : BitString k → B
     (z : BitString (m + k)) : BitString (m + k) :=
   Fin.append (U (fun i => z (Fin.castAdd k i))) (P (fun i => z (Fin.natAdd m i)))
 
+/-- Iterating a product map on a concatenation iterates each factor on its half. -/
+private theorem prodMap_iterate_append {m k : ℕ} (U : BitString m → BitString m)
+    (P : BitString k → BitString k) (T : ℕ) (x : BitString m) (y : BitString k) :
+    (prodMap U P)^[T] (Fin.append x y) = Fin.append (U^[T] x) (P^[T] y) := by
+  induction T generalizing x y with
+  | zero => rfl
+  | succ T ih =>
+    have h : prodMap U P (Fin.append x y) = Fin.append (U x) (P y) := by simp [prodMap]
+    rw [Function.iterate_succ_apply, h, ih]
+    simp only [Function.iterate_succ_apply]
+
 /-- Each power of a product map is at least as hard as the same power of its second factor: fix the
 first factor's input and read the second factor's outputs. -/
 theorem prodMap_power_circuit {m k : ℕ} (U : BitString m → BitString m)
@@ -157,26 +168,14 @@ theorem prodMap_power_circuit {m k : ℕ} (U : BitString m → BitString m)
   let a : BitString m := fun _ => false
   let place : Fin (m + k) → Fin k ⊕ Bool :=
     Fin.append (fun _ : Fin m => Sum.inr false) Sum.inl
-  have hpl (y : BitString k) : ∀ b : BitString m, (∀ i, b i = false) →
-      hardwired place y = Fin.append b y := by
-    intro b hb
+  have hpl (y : BitString k) : hardwired place y = Fin.append a y := by
     funext j
     induction j using Fin.addCases with
-    | left i => simp [hardwired, place, hb]
+    | left i => simp [hardwired, place, a]
     | right i => simp [hardwired, place]
-  have hsim : ∀ (T : ℕ) (y : BitString k),
-      (prodMap U P)^[T] (Fin.append a y) = Fin.append (U^[T] a) (P^[T] y) := by
-    intro T
-    induction T with
-    | zero => intro y; rfl
-    | succ T ih =>
-      intro y
-      rw [Function.iterate_succ_apply', ih y, Function.iterate_succ_apply',
-        Function.iterate_succ_apply']
-      simp [prodMap]
   obtain ⟨d, hd, hs⟩ := exists_hardwired_projection u place (Fin.natAdd m)
   refine ⟨d, fun y => ?_, hs⟩
-  rw [hd y, hu, hpl y a (fun _ => rfl), hsim T y]
+  rw [hd y, hu, hpl y, prodMap_iterate_append]
   funext i
   simp
 
@@ -194,19 +193,9 @@ theorem prodMap_power_circuit_left {m k : ℕ} (U : BitString m → BitString m)
     induction j using Fin.addCases with
     | left i => simp [hardwired, place]
     | right i => simp [hardwired, place, a]
-  have hsim : ∀ (T : ℕ) (y : BitString m),
-      (prodMap U P)^[T] (Fin.append y a) = Fin.append (U^[T] y) (P^[T] a) := by
-    intro T
-    induction T with
-    | zero => intro y; rfl
-    | succ T ih =>
-      intro y
-      rw [Function.iterate_succ_apply', ih y, Function.iterate_succ_apply',
-        Function.iterate_succ_apply']
-      simp [prodMap]
   obtain ⟨d, hd, hs⟩ := exists_hardwired_projection u place (Fin.castAdd k)
   refine ⟨d, fun y => ?_, hs⟩
-  rw [hd y, hu, hpl y, hsim T y]
+  rw [hd y, hu, hpl y, prodMap_iterate_append]
   funext i
   simp
 

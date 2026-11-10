@@ -386,11 +386,11 @@ example :
   rw [← hrec, hcount]
   rfl
 
-/-- Concrete check of `CNF.max_initialRowWeightBound_greedyRowListLength` at `B = 2, m = 8`. -/
+/-- Concrete check of `max_initialRowWeightBound_greedyRowListLength` at `B = 2, m = 8`. -/
 example :
     max (initialRowWeightBound 2 8) (greedyRowListLength 2 8) =
       320000 * 2 ^ 2 * (3 + 1) ^ 3 := by
-  rw [CNF.max_initialRowWeightBound_greedyRowListLength]
+  rw [max_initialRowWeightBound_greedyRowListLength]
   decide
 
 /-- Empty CNF on `Fin 16384` used to witness

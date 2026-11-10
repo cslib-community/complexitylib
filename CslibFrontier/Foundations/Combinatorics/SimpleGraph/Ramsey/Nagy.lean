@@ -86,13 +86,9 @@ theorem indepSetFree_nagyGraph : (nagyGraph α).IndepSetFree (Fintype.card α + 
     have hle : #(i.1.1 ∩ j.1.1) ≤ 3 := (card_le_card inter_subset_left).trans_eq i.1.2
     have hne3 : #(i.1.1 ∩ j.1.1) ≠ 3 := by
       intro h3
-      apply hne
-      apply Subtype.ext
-      have h1 : i.1.1 ∩ j.1.1 = i.1.1 :=
-        eq_of_subset_of_card_le inter_subset_left (by rw [h3, i.1.2])
-      have h2 : i.1.1 ∩ j.1.1 = j.1.1 :=
-        eq_of_subset_of_card_le inter_subset_right (by rw [h3, j.1.2])
-      rw [← h1, h2]
+      have hsub : i.1.1 ⊆ j.1.1 :=
+        inter_eq_left.1 (eq_of_subset_of_card_le inter_subset_left (by rw [h3, i.1.2]))
+      exact hne (Subtype.ext (eq_of_subset_of_card_le hsub (by rw [i.1.2, j.1.2])))
     rcases (by omega : #(i.1.1 ∩ j.1.1) = 0 ∨ #(i.1.1 ∩ j.1.1) = 2) with h0 | h2
     · rw [h0]; exact Even.zero
     · rw [h2]; exact even_two

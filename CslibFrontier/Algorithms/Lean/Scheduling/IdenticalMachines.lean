@@ -12,9 +12,9 @@ public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Data.Fin.Tuple.Basic
 public import Mathlib.Data.Fintype.Pi
+import CslibFrontier.Foundations.Data.List.ArgMin
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.GetD
-import Mathlib.Data.List.MinMax
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -340,13 +340,8 @@ simultaneous claims go to the processor of smaller index). -/
 def argminFin [NeZero m] (f : Fin m → α) : Fin m :=
   ((List.finRange m).argmin f).getD 0
 
-theorem argminFin_le [NeZero m] (f : Fin m → α) (i : Fin m) : f (argminFin f) ≤ f i := by
-  unfold argminFin
-  cases h : (List.finRange m).argmin f with
-  | none =>
-    rw [List.argmin_eq_none] at h
-    exact absurd h (List.ne_nil_of_mem (List.mem_finRange i))
-  | some x => exact List.le_of_mem_argmin (List.mem_finRange i) h
+theorem argminFin_le [NeZero m] (f : Fin m → α) (i : Fin m) : f (argminFin f) ≤ f i :=
+  List.getD_argmin_le (List.mem_finRange i) 0
 
 end ArgMin
 

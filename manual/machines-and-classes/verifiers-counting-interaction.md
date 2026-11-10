@@ -2,7 +2,7 @@
 
 [Chapter index](index.md) · [Endpoint map](endpoints-and-hierarchies.md)
 
-Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [complexitylib][complexitylib]
+Many class definitions are predicates over deterministic functions, accepted-witness counts, or oracle programs. Their efficiency clauses point back to finite binary native machines. This gives a common proof interface without identifying different quantifier orders, counting conventions, or prover capabilities. [cslib-frontier][complexitylib]
 
 ## Certificates, random seeds, and quantifier alternation
 
@@ -12,9 +12,9 @@ Many class definitions are predicates over deterministic functions, accepted-wit
 
 [BPP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BPP.lean#L163) and [RP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/RP.lean#L143) use the same native deterministic verifier with a uniform seed of exactly polynomial length. BPP's fractions are expressed through finite accepted-seed counts, with thresholds two thirds and one third. RP has no false positives and accepts a yes instance on at least half of its seeds. `coRP` complements the language. Explicit amplification and coin-tape/PTM bridges connect these presentations to probabilistic execution.
 
-A worked one-sided-error client is the Miller–Rabin test in [MillerRabin.lean](../../CslibFrontier/Computability/Complexity/Problems/Primes/MillerRabin.lean). Its verifier reads `2 |n|` random bits on the binary input `n` and reduces them to a base in `[1, n - 1]`. [decidesWithOneSidedError](../../CslibFrontier/Computability/Complexity/Problems/Primes/MillerRabin.lean#L268) charges the bias of reducing a uniform word modulo `n - 1` against the strong-liar bound [two_mul_card_isStrongLiar_le](../../CslibFrontier/Foundations/NumberTheory/Primality/StrongLiars.lean#L222), which gives [primes_mem_coRP](../../CslibFrontier/Computability/Complexity/Problems/Primes/MillerRabin.lean#L321). The sharper Rabin–Monier bound [four_mul_card_isStrongLiar_le](../../CslibFrontier/Foundations/NumberTheory/Primality/RabinMonier.lean#L343), at most `φ(n) / 4` strong liars for odd composite `n ≠ 9` (attributed in the module docstring to Rabin and to Monier, 1980), is not needed for the `1/2` error of `RP`. The same membership follows from AKS through `P_subset_coRP`; the client is there to exhibit the verifier and its error count, not to give a new route to the class membership.
+A worked one-sided-error client is the Miller–Rabin test in [MillerRabin.lean](../../CslibFrontier/Computability/Complexity/Problems/Primes/MillerRabin.lean). Its verifier reads `2 |n|` random bits on the binary input `n` and reduces them to a base in `[1, n - 1]`. [decidesWithOneSidedError](../../CslibFrontier/Computability/Complexity/Problems/Primes/MillerRabin.lean#L268) charges the bias of reducing a uniform word modulo `n - 1` against the strong-liar bound [two_mul_card_isStrongLiar_le](../../CslibFrontier/Foundations/NumberTheory/Primality/StrongLiars.lean#L217), which gives [primes_mem_coRP](../../CslibFrontier/Computability/Complexity/Problems/Primes/MillerRabin.lean#L321). The sharper Rabin–Monier bound [four_mul_card_isStrongLiar_le](../../CslibFrontier/Foundations/NumberTheory/Primality/RabinMonier.lean#L334), at most `φ(n) / 4` strong liars for odd composite `n ≠ 9` (attributed in the module docstring to Rabin and to Monier, 1980), is not needed for the `1/2` error of `RP`. The same membership follows from AKS through `P_subset_coRP`; the client is there to exhibit the verifier and its error count, not to give a new route to the class membership.
 
-The Solovay–Strassen test compares `a ^ ((n - 1) / 2)` with the Jacobi symbol `J(a | n)` modulo `n`; its Euler-liar bound is [two_mul_card_eulerLiars_le](../../CslibFrontier/Foundations/NumberTheory/Primality/EulerLiars.lean#L152). The symbol itself is certified by [binary_jacobiSym](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Jacobi.lean#L287): Mathlib's `jacobiSym` on binary naturals, with a binary signed result, for every `a` and `n` (even `n` and `n = 0` included). The proof runs the reciprocity reductions as a counted loop of `2 * Nat.size n` steps, each of which at least halves `a * n` ([jacobiReadout_iterate_jacobiStep](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Jacobi.lean#L244)), and `intBin_jacobiSym` extends it to a signed numerator. [JacobiPolyTime](../../CslibFrontierTests/JacobiPolyTime.lean) composes it into the Solovay–Strassen comparison and runs the loop on concrete inputs. The Solovay–Strassen `coRP` verifier is not yet stated ([#2958](https://github.com/cslib-community/cslib-frontier/issues/2958)).
+The Solovay–Strassen test compares `a ^ ((n - 1) / 2)` with the Jacobi symbol `J(a | n)` modulo `n`; its Euler-liar bound is [two_mul_card_eulerLiars_le](../../CslibFrontier/Foundations/NumberTheory/Primality/EulerLiars.lean#L147). The symbol itself is certified by [binary_jacobiSym](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Jacobi.lean#L287): Mathlib's `jacobiSym` on binary naturals, with a binary signed result, for every `a` and `n` (even `n` and `n = 0` included). The proof runs the reciprocity reductions as a counted loop of `2 * Nat.size n` steps, each of which at least halves `a * n` ([jacobiReadout_iterate_jacobiStep](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Jacobi.lean#L244)), and `intBin_jacobiSym` extends it to a signed numerator. [JacobiPolyTime](../../CslibFrontierTests/JacobiPolyTime.lean) composes it into the Solovay–Strassen comparison and runs the loop on concrete inputs. The Solovay–Strassen `coRP` verifier is not yet stated ([#2958](https://github.com/cslib-community/cslib-frontier/issues/2958)).
 
 [ZPP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/ZPP.lean#L19) changes the result type to `Option Bool`. A returned Boolean is always correct; at least half of all seeds yield an answer. The remaining seeds return `none`. The source proves `ZPP = RP ∩ coRP`. Expected polynomial running time is not modeled by this definition, and no equivalence with an expected-time operational semantics is claimed here.
 
@@ -88,10 +88,19 @@ instruction-indexed transcript. Local and halted instructions require the canoni
 bit `false`. Its membership lemma preserves `#P` when the input map is polynomial time and
 both answer counts are in `#P`. When those counts recognize the oracle's yes and no answers
 by positivity, `replayPathCount_pos_iff` identifies exactly the canonical oracle transcript;
-when both counts are at most one, `replayPathCount_le_one` preserves unambiguity. The
-[decision](../../CslibFrontier/Computability/Complexity/Classes/Oracle/Lowness.lean) and
-[counting](../../CslibFrontier/Computability/Complexity/Classes/SharpP/Lowness.lean)
-lowness proofs share this API while retaining their different final sums.
+when both counts are at most one, `replayPathCount_le_one` preserves unambiguity.
+`Cslib.Complexity.replayWeightedSum` weights the path count of every transcript of the clock
+length by a function of the instance and the replayed output, and sums. It stays in `#P` for a
+`#P` weight (`replayWeightedSum_mem_SharpP`), is positive exactly when the weight of the
+canonical replay is (`replayWeightedSum_pos_iff`), and equals that weight for unambiguous counts
+(`replayWeightedSum_eq_of_le_one`). The
+[decision](../../CslibFrontier/Computability/Complexity/Classes/Oracle/Lowness.lean) lowness
+proofs weight by the indicator of a polynomial-time predicate, and the
+[counting](../../CslibFrontier/Computability/Complexity/Classes/SharpP/Lowness.lean) ones by an
+arbitrary `#P` function. They start from
+`Cslib.Complexity.ComputableInPolyTimeWithOracle.exists_replayOutput` in
+[`Classes.Oracle.CanonicalReplay`](../../CslibFrontier/Computability/Complexity/Classes/Oracle/CanonicalReplay.lean):
+an `FP^A` output is the canonical replay of one finite oracle machine under one polynomial clock.
 
 For quantifier-alternation simulations of oracle programs, import
 [`Classes.PH.OracleNP`](../../CslibFrontier/Computability/Complexity/Classes/PH/OracleNP.lean).

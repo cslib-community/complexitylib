@@ -43,8 +43,8 @@ abbrev State (k : ℕ) (Q : Type) :=
 /-- Change only the output-coordinate field of actual interpolation metadata. -/
 @[expose] def setChunk : QueryGate.Params Interpolation.Context → ℕ →
     QueryGate.Params Interpolation.Context :=
-  fun ((N, b, σ, i, m, _, stride), parameters, point, limit) chunk =>
-    ((N, b, σ, i, m, chunk, stride), parameters, point, limit)
+  fun (context, parameters, point, limit) chunk =>
+    ({ context with chunk := chunk }, parameters, point, limit)
 
 /-- Initialize one coordinate's interpolation from the caller's actual stored parameters. -/
 @[expose] def start : CallerState → Interpolation.State k Q :=
@@ -105,12 +105,12 @@ theorem setChunk_inSpace : ComputableInSpace (fun a => setChunk a.1 a.2)
   have hchunk := snd (QueryGate.encParams Interpolation.encContext) encNat
   have hctx := hpar.fst'
   have hrest := hpar.snd'
-  have hN := hctx.fst'
-  have hb := hctx.snd'.fst'
-  have hσ := hctx.snd'.snd'.fst'
-  have hi := hctx.snd'.snd'.snd'.fst'
-  have hm := hctx.snd'.snd'.snd'.snd'.fst'
-  have hstride := hctx.snd'.snd'.snd'.snd'.snd'.snd'
+  have hN := budget_comp_linear (of_inO Interpolation.encContext_inputLength_inO) hctx
+  have hb := budget_comp_linear (of_inO Interpolation.encContext_blockWidth_inO) hctx
+  have hσ := budget_comp_linear (of_inO Interpolation.encContext_schedule_inO) hctx
+  have hi := budget_comp_linear (of_inO Interpolation.encContext_interval_inO) hctx
+  have hm := budget_comp_linear (of_inO Interpolation.encContext_chunkWidth_inO) hctx
+  have hstride := budget_comp_linear (of_inO Interpolation.encContext_stride_inO) hctx
   exact (budget_prod
     (budget_prod hN (budget_prod hb (budget_prod hσ (budget_prod hi
       (budget_prod hm (budget_prod hchunk hstride)))))) hrest).of_enc_eq fun _ => rfl

@@ -173,10 +173,7 @@ theorem length_encPair_iterate_gcdStep_le (p : ℕ × ℕ) (i : ℕ) :
   have hmax := max_iterate_gcdStep_le p i
   have h₁ : (gcdStep^[i] p).1 ≤ max p.1 p.2 := (le_max_left _ _).trans hmax
   have h₂ : (gcdStep^[i] p).2 ≤ max p.1 p.2 := (le_max_right _ _).trans hmax
-  have hm : (max p.1 p.2).size ≤ p.1.size + p.2.size := by
-    rcases le_total p.1 p.2 with h | h
-    · rw [max_eq_right h]; lia
-    · rw [max_eq_left h]; lia
+  have hm : (max p.1 p.2).size ≤ p.1.size + p.2.size := by grind
   have hs₁ : ((gcdStep^[i] p).1).size ≤ p.1.size + p.2.size := (Nat.size_le_size h₁).trans hm
   have hs₂ : ((gcdStep^[i] p).2).size ≤ p.1.size + p.2.size := (Nat.size_le_size h₂).trans hm
   simp only [length_encPair, encNat_apply, Nat.size_eq_bits_len] at hs₁ hs₂ ⊢

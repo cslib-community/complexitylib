@@ -157,9 +157,7 @@ theorem majorityPolynomial_bounds {g : ℤ} {m e : ℕ}
       (3 * g ≤ (2 : ℤ) ^ m → (2 : ℤ) ^ e * H ≤ D) := by
   classical
   let V : BitString m → Bool := fun x => decide (BitString.binaryValue (List.ofFn x) < g.toNat)
-  have hg : g.toNat ≤ 2 ^ m := by
-    rw [Int.toNat_le]
-    exact_mod_cast h1
+  have hg : g.toNat ≤ 2 ^ m := by grind
   have hv : #{x | V x = true} = g.toNat := by
     simpa only [V, decide_eq_true_eq] using BitString.card_filter_binaryValue_lt hg
   have htot : #{x | V x = true} + #{x | V x = false} = 2 ^ m := by
@@ -190,10 +188,7 @@ theorem majorityPolynomial_bounds {g : ℤ} {m e : ℕ}
   rw [← hM]
   refine ⟨⟨by positivity, by exact_mod_cast hMle⟩, ?_, ?_⟩
   · intro hy
-    have hv' : 2 * 2 ^ m ≤ 3 * #{x | V x = true} := by
-      rw [hv]
-      exact_mod_cast (show 2 * (2 : ℤ) ^ m ≤ 3 * (g.toNat : ℤ) by
-        simpa only [Int.toNat_of_nonneg h0] using hy)
+    have hv' : 2 * 2 ^ m ≤ 3 * #{x | V x = true} := by grind
     have htail := BitString.two_pow_mul_card_filter_card_filter_block_le (e := e) rfl
       (fun x => V x = true) hv'
     have hc : (#{x : BitString (2 * (6 * e) * m) |
@@ -209,11 +204,7 @@ theorem majorityPolynomial_bounds {g : ℤ} {m e : ℕ}
         (2 : ℤ) ^ (2 * (6 * e) * m) := by exact_mod_cast htail
     rwa [hc] at htail'
   · intro hn
-    have hv' : 2 * 2 ^ m ≤ 3 * #{x | V x = false} := by
-      have hn' : 3 * g.toNat ≤ 2 ^ m := by
-        exact_mod_cast (show 3 * (g.toNat : ℤ) ≤ (2 : ℤ) ^ m by
-          simpa only [Int.toNat_of_nonneg h0] using hn)
-      lia
+    have hv' : 2 * 2 ^ m ≤ 3 * #{x | V x = false} := by grind
     have htail := BitString.two_pow_mul_card_filter_card_filter_block_le (e := e) rfl
       (fun x => V x = false) hv'
     have hsub : M ≤ #{x : BitString (2 * (6 * e) * m) |

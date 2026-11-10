@@ -83,8 +83,7 @@ theorem exists_natDegree_le_eval_eq_of_mem_reedMuller {f : (Fin m → F) → F}
   refine ⟨P.eval₂ Polynomial.C fun i => Polynomial.C (v i) * Polynomial.X + Polynomial.C (x i),
     (FiniteField.natDegree_eval₂_line_le P v x).trans hP, fun t => ?_⟩
   rw [FiniteField.eval_eval₂_line]
-  congr 2
-  funext i
+  congr 2 with i : 1
   exact add_comm _ _
 
 /-- **Line sums of Reed–Muller codewords.** For `d + 1 < q`, the values of a codeword of the

@@ -50,7 +50,7 @@ complexity all equal `n`. The measures are those of [BuhrmanDeWolf2002].
   a survey*][BuhrmanDeWolf2002]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
@@ -228,9 +228,7 @@ theorem certificateComplexityFor_threshold_one_right_true (hn : 1 ≤ n) :
 theorem certificateComplexityFor_threshold_one_right_false :
     certificateComplexityFor (threshold n 1) false = n := by
   refine le_antisymm (Finset.sup_le fun x _ => certificateComplexityAt_le_card _ x) ?_
-  have hx : threshold n 1 (fun _ => false) = false := by
-    rw [threshold_one_right]
-    simp
+  have hx : threshold n 1 (fun _ => false) = false := by grind [threshold_one_right]
   exact certificateComplexityAt_threshold_one_right.ge.trans
     (certificateComplexityAt_le_certificateComplexityFor hx)
 

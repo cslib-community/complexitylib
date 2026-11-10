@@ -12,6 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame.Loo
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
 import CslibFrontier.Foundations.Data.Nat.Bits
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 
 /-!
 # Uniform runtime virtual-word access
@@ -155,12 +156,9 @@ theorem decode_inSpace : ComputableInSpace decode encBits encData (fun w => w.le
     (budget_prod (budget_comp_linear hu hd)
       (budget_comp_linear hn (budget_comp_linear hd hd)))
 
-private theorem reverse_inSpace : ComputableInSpace List.reverse encBits encBits
-    (fun w => w.length) := of_inO ComputableInDegree.bitsReverse.inO_one
-
 private theorem header_inSpace : ComputableInSpace (fun s : State => decode s.header.reverse)
     encState encData (fun s => (encState s).length) :=
-  budget_comp_linear decode_inSpace (budget_comp_linear reverse_inSpace (fst _ _).fst')
+  budget_comp_linear decode_inSpace (budget_comp_linear bitsReverse (fst _ _).fst')
 
 /-- The runtime address is added to the original-word offset only after initialization. -/
 theorem query_inSpace : ComputableInSpace machine.query encState encNat

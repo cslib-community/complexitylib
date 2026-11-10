@@ -119,10 +119,7 @@ theorem WellFormed.restrict (hC : C.WellFormed) {x : ℕ} {ℓ : Lit} (hx : x �
     · exact hC.out_live i hi
     · exact hlive i hi
   · obtain ⟨val, hu, heq⟩ := hC.solvable (Function.update u x (ℓ.eval u))
-    have hvx : val x = ℓ.eval val := by
-      rw [hu x hx, Function.update_self]
-      exact hℓeval _ _ fun j hj => by
-        rw [hu j (Finset.mem_of_mem_erase hj), Function.update_of_ne (Finset.ne_of_mem_erase hj)]
+    have hvx : val x = ℓ.eval val := by grind
     refine ⟨val, fun j hj => ?_, fun e he => (Equation.holds_subst hvx).2 (heq e he)⟩
     rw [hu j (Finset.mem_of_mem_erase hj), Function.update_of_ne (Finset.ne_of_mem_erase hj)]
   · have hold : ∀ w : ℕ → Bool, (C.restrict x ℓ).EqnsHold w →

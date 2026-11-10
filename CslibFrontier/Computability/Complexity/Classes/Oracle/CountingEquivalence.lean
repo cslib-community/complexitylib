@@ -43,7 +43,7 @@ encoded classes. The result is a uniform polynomial-time simulation, not merely 
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

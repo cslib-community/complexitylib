@@ -197,9 +197,7 @@ def edgeVertex (e : ℕ × ℕ) : ℕ := 2 * Nat.pair e.1 e.2 + 5
 /-- Distinct edges have distinct vertices. -/
 theorem edgeVertex_injective : Function.Injective edgeVertex := by
   intro e e' h
-  have h' : Nat.pair e.1 e.2 = Nat.pair e'.1 e'.2 := by
-    simp only [edgeVertex] at h
-    omega
+  have h' : Nat.pair e.1 e.2 = Nat.pair e'.1 e'.2 := by grind [edgeVertex]
   rw [Nat.pair_eq_pair] at h'
   exact Prod.ext h'.1 h'.2
 

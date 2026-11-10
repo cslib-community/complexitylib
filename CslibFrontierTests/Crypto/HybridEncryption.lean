@@ -543,8 +543,8 @@ theorem wordINDCPA_lengthOnly : WordINDCPA toyKeyGen lengthOnlyEncrypt := by
         lengthOnlyEncrypt adversary true n) := by
     simp only [gameOn, toyKeyGen, lengthOnlyEncrypt, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.pure_bind, apply_ite ProbComp.eval]
-    congr 1; funext keys
-    congr 1; funext choice
+    congr 1 with keys : 1
+    congr 1 with choice : 1
     by_cases hlen : choice.1.1.length = choice.1.2.length <;> simp [hlen]
   simp [heq]
 

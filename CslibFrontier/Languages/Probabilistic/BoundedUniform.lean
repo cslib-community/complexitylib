@@ -84,8 +84,7 @@ theorem sampleBoundedIndex_eq_binary (bound : ℕ) :
     sampleBoundedIndex bound = (min bound ·) <$> sampleBinaryNat (Nat.log 2 bound + 1) := by
   unfold sampleBoundedIndex sampleBinaryNat
   rw [Functor.map_map]
-  congr 1
-  funext word
+  congr 1 with word : 1
   exact BitString.boundedBinaryValue_eq bound word
 
 /-- A capped draw has equal mass at each valid index. -/

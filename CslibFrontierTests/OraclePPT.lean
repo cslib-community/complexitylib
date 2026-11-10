@@ -163,7 +163,7 @@ private theorem requestHead_isOraclePPTOn : IsOraclePPTOn encBits encBits reques
 
 -- Parameterization retains the concrete client's external call and its entire private-state law.
 private theorem requestHead_isOraclePPT : IsOraclePPT encBits (fun _ word => requestHead word) :=
-  IsOraclePPTOn.isOraclePPT (IsOraclePPTOn.query_take () (.const []) (.const 1))
+  IsOraclePPTOn.isOraclePPT (IsOraclePPTOn.query_take' () (.const []) (.const 1))
 
 -- The resource contracts derive uniform query budgets for `requestHead` on the empty input.
 example :
@@ -285,7 +285,7 @@ example : ¬ IsOraclePPTOn encBits encBits
   obtain ⟨c, d, hbound⟩ := h.length_le
   let reply := List.replicate (c + 1) false
   have hlength := hbound [] Unit (fun _ s => PMF.pure (reply, s)) () () reply (by
-    simp [StateT.run])
+    simp)
   simp only [encBits, Function.Embedding.coe_refl, id_eq, List.length_nil, Nat.zero_add, one_pow,
     Nat.mul_one, reply, List.length_replicate] at hlength
   lia

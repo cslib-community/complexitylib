@@ -316,9 +316,12 @@ theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     hout2 a (by dsimp only [totalSpace, offGM, offLM, offVal, offQuot] at ha ⊢; omega),
     hout1 a (by dsimp only [totalSpace, offGM, offLM, offVal, offQuot] at ha ⊢; omega)]
 
-private theorem promoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
+/-- Bounds for the reads and writes of `promoteStepProg`, stated on the results of its reads,
+together with the precondition of its `removeLastTailItemProg` call; shared by
+`realizes_promoteStepGen` and `validProg_promoteStep`. -/
+private theorem promoteStep_bounds {U V w₀ n_max h_space base b k : ℕ}
     {s : Memory.State} (hw : 0 < w₀)
-    (h : PromoteStepPre U V w₀ n_max h_space w base b k s) :
+    (h : PromoteStepInv U V w₀ n_max h_space base b k s ∧ 0 < bucketBits n_max) :
     let u := (slabSize n_max - 1) - k
     let r_top := slabSize n_max + u
     let ptr_u_idx := gmTailPtrBase n_max + (b * tailCapPerBucket n_max + u)
@@ -354,7 +357,7 @@ private theorem promoteStep_bounds {U V w₀ n_max h_space w base b k : ℕ}
       (gmAt base U V w₀ n_max h_space s_wv.mem 1) ∧
     1 ≤ gmAt base U V w₀ n_max h_space s_wv.mem (gmRIdx b) ∧
     k + 1 ≤ max n_max 1 := by
-  rcases h with ⟨_, ⟨hb, hk_lt, htail, _, hrb_eq, htot⟩, hb_pos⟩
+  rcases h with ⟨⟨hb, hk_lt, htail, _, hrb_eq, htot⟩, hb_pos⟩
   have hb0 : bucketBits n_max ≠ 0 := by omega
   have hK_pos : 0 < slabSize n_max := slabSize_pos n_max
   have hTcap : tailCapPerBucket n_max = 2 * slabSize n_max := by
@@ -446,29 +449,29 @@ theorem realizes_promoteStepGen :
     simpDictParamsWith [promoteStepGenPre_mk, removeLastTailItemGenPre_mk,
       removeLastTailItemGenProg_mk]
   )
-  · exact (promoteStep_bounds hw h).1
+  · exact (promoteStep_bounds hw h.2).1
   · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
-      ((promoteStep_bounds hw h).2.1.trans (tailCapPerBucket_le_globalMetaLen h.2.2))
+      ((promoteStep_bounds hw h.2).2.1.trans (tailCapPerBucket_le_globalMetaLen h.2.2))
   · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
-      (le_of_lt (promoteStep_bounds hw h).2.2.1)
+      (le_of_lt (promoteStep_bounds hw h.2).2.2.1)
   · exact h.1
-  · exact (promoteStep_bounds hw h).2.2.1
+  · exact (promoteStep_bounds hw h.2).2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2 hw hnU hU
-      (le_of_lt (promoteStep_bounds hw h).2.2.2.1)
-  · exact (promoteStep_bounds hw h).2.2.2.1
-  · exact (promoteStep_bounds hw h).2.2.2.2.1
-  · exact (promoteStep_bounds hw h).2.2.2.2.2.1
-  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.1
+      (le_of_lt (promoteStep_bounds hw h.2).2.2.2.1)
+  · exact (promoteStep_bounds hw h.2).2.2.2.1
+  · exact (promoteStep_bounds hw h.2).2.2.2.2.1
+  · exact (promoteStep_bounds hw h.2).2.2.2.2.2.1
+  · exact (promoteStep_bounds hw h.2).2.2.2.2.2.2.1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      (le_trans (le_of_lt (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.1)
+      (le_trans (le_of_lt (promoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.2.1)
         (le_max_left n_max 1))
-  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.2.1
-  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.1
-  · exact ⟨h.1, (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.2.1, h.2.1.1,
-      (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.2.2.1, h.2.2⟩
-  · exact (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.1
+  · exact (promoteStep_bounds hw h.2).2.2.2.2.2.2.2.1
+  · exact (promoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.1
+  · exact ⟨h.1, (promoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.2.2.1, h.2.1.1,
+      (promoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.2.2.2.1, h.2.2⟩
+  · exact (promoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.2.1
   · exact fits_of_le_max_n_one h.1 hw hnU hU
-      (promoteStep_bounds hw h).2.2.2.2.2.2.2.2.2.2.2.2
+      (promoteStep_bounds hw h.2).2.2.2.2.2.2.2.2.2.2.2.2
 
 /-! ## Section 2: `PromoteArrInv`, `PromoteLoopInv`, and `promoteSlabProg` -/
 
@@ -834,8 +837,7 @@ def promoteLoopProg (U V w n_max h_space : ℕ) (d : ((ℕ × ℕ) × ℕ) × �
   | succ m ih =>
     unfold iterate
     rw [promoteStepGenProg_mk]
-    congr 1
-    funext s'
+    congr 1 with s' : 1
     exact ih s'
 
 @[simp] theorem promoteLoopGenProg_mk (U V w n_max h_space : ℕ)
@@ -995,11 +997,8 @@ theorem slotOf_gmPushSlab_preserve {α : Type*} {n_max b : ℕ} {gm₀ gm : ℕ 
       have hu_lt : u < slabSize n_max := by dsimp only [u]; omega
       have hu_cap : u < tailCapPerBucket n_max := by
         unfold tailCapPerBucket; rw [ite_eq_right hb0]; omega
-      have hd_lt : b * tailCapPerBucket n_max + u < maxTailItems n_max := by
-        unfold maxTailItems
-        have h1 : (b + 1) * tailCapPerBucket n_max ≤ numBuckets n_max * tailCapPerBucket n_max :=
-          Nat.mul_le_mul_right _ hb
-        nlinarith
+      have hd_lt : b * tailCapPerBucket n_max + u < maxTailItems n_max :=
+        mul_tailCapPerBucket_add_lt_maxTailItems hb hu_cap
       have hptr_tail : gmPushSlab n_max gm b (gmTailPtrIdx n_max b u) =
           gm (gmTailPtrIdx n_max b u) :=
         hf.2.2.2.1 _ (by unfold gmTailPtrIdx gmTailPtrFlatIdx; omega)
@@ -1033,11 +1032,8 @@ theorem slotOf_gmPushSlab_preserve {α : Type*} {n_max b : ℕ} {gm₀ gm : ℕ 
         have hr'_cap : j - gm₀ (gmQIdx b') * slabSize n_max < tailCapPerBucket n_max :=
           lt_of_lt_of_le hr'_lt (htail.r_le b' hb')
         have hd'_lt : b' * tailCapPerBucket n_max + (j - gm₀ (gmQIdx b') * slabSize n_max) <
-            maxTailItems n_max := by
-          unfold maxTailItems
-          have h1 : (b' + 1) * tailCapPerBucket n_max ≤
-              numBuckets n_max * tailCapPerBucket n_max := Nat.mul_le_mul_right _ hb'
-          nlinarith
+            maxTailItems n_max :=
+          mul_tailCapPerBucket_add_lt_maxTailItems hb' hr'_cap
         rw [hf.2.2.2.1 _ (by unfold gmTailPtrIdx gmTailPtrFlatIdx; omega)
           (by unfold gmTailPtrIdx gmTailPtrFlatIdx gmSlabMetaBase gmTailOwnerBase; omega)]
     rw [hslot_eq]

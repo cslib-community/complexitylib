@@ -161,8 +161,7 @@ theorem affineFactor_congr_baseline [Fintype ι] {σ : Type*}
       ∑ i : ι, (rows v i).eval t * bitVal A (x' i)) :
     affineFactor Φ rows t x = affineFactor Φ rows t x' := by
   simp only [affineFactor]
-  congr 1
-  funext v
+  congr 1 with v : 1
   exact affineInput_congr_baseline (h v)
 
 /-! ### Coefficient total-degree bounds -/

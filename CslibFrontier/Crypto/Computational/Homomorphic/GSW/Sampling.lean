@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Basic
 public import CslibFrontier.Languages.Probabilistic.CenteredBinomial
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import CslibFrontier.Languages.Probabilistic.Vector
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
@@ -128,8 +129,7 @@ theorem eval_sampleKeyInputs (n m w η : ℕ) :
       let publicPart ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
       let error ← ProbComp.eval (OracleComp.replicateFin m (sampleCenteredBinomial η))
       pure (KeyInputs.mk secret publicPart error)) := by
-  simp only [sampleKeyInputs, ProbComp.eval_bind, ProbComp.eval_pure,
-    eval_sampleVector, eval_sampleMatrix, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, sampleKeyInputs, eval_sampleVector, eval_sampleMatrix]
 
 /-- Every secret and public part is possible; the exact error restriction is coordinatewise. -/
 theorem mem_support_sampleKeyInputs_iff (n m w η : ℕ) (inputs : KeyInputs n m w) :
