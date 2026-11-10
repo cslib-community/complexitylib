@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Probability.BitString.List
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Naor's bit commitment scheme from pseudorandom generators
@@ -414,8 +415,7 @@ theorem distinguishingGame_uniformList_naorReceiverDistinguisher (m : ℕ)
           ProbComp.eval (receiver.guess n choice.2 c) := by
   unfold distinguishingGame naorReceiverDistinguisher
   simp only [ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  rw [PMF.bind_comm]
-  congr 1 with choice : 1
+  pmf_swap with choice
   have h := congrArg
     (fun p : PMF (List Bool) => p.bind fun c => ProbComp.eval (receiver.guess n choice.2 c))
     (uniformList_map_naorCommit_id m choice.1.1 (if bit then choice.1.2.2 else choice.1.2.1))
