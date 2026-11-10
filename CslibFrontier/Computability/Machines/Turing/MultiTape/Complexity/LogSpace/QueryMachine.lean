@@ -320,7 +320,7 @@ theorem passFinish_inSpace
     (hfinish : ComputableInSpace M'.finish encS' encBits fun s => (encS' s).length) :
     ComputableInSpace (passFinish M') (encPass encS') encBits
       fun q => (encPass encS' q).length :=
-  budget_comp_linear hfinish (fst _ _)
+  budget_comp_linear (f := fun q : PassState σ' => q.1) hfinish (fst _ _)
 
 end Parts
 
