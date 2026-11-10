@@ -48,8 +48,7 @@ theorem programAtoms_append (p : Program σ n g) (feed : Fin m → Wire n g)
   | gate q line ih =>
     rw [Program.append, programAtoms_gate, programAtoms_gate, Fin.append_snoc, ih]
     congr 1
-    congr 1
-    funext a
+    congr 1 with a : 1
     exact p.trace_append_appendedWire feed I input q (line.wires a)
 
 /-- Composition lists the inner circuit's atoms first, then the outer circuit's atoms

@@ -21,6 +21,7 @@ public import Mathlib.Data.Nat.Log
 ## Main results
 
 * `NatLog.exec`: the floor logarithm with a logarithmic charged instruction bound.
+* `NatLog.shiftLoop_exec`: the same logarithm by right shifts, on any three registers.
 -/
 
 @[expose] public section
@@ -105,5 +106,56 @@ theorem exec_rename {r w : ℕ} (f : Fin 4 → Fin r) (hf : f.Injective) (x : Da
       y.regs (f one) = 1 ∧ y.regs (f two) = 2 := by
   obtain ⟨y, hy, hpost, -⟩ := ExecWithin.rename_post hf (exec (x.comap f) h2 hn hout)
   exact ⟨y, hy, hpost⟩
+
+/-- Halving by right shifts on any three distinct registers: from `rem = n ≥ 1` and `idx = 0`,
+`while one < rem do [rem ← rem >>> one; idx ← idx + one]` leaves `idx = Nat.log 2 n` within
+`4 * Nat.log 2 n + 2` instructions. Memory and every register other than `rem` and `idx` are
+unchanged. `Cslib.WordRAM.ExactLog.log2Loop` is the exact-basis counterpart. -/
+theorem shiftLoop_exec {r w n : ℕ} {one rem idx : Fin r} (hor : one ≠ rem) (hoi : one ≠ idx)
+    (hri : rem ≠ idx) {x : Data r} (hn : 1 ≤ n) (hone : x.regs one = 1) (hrem : x.regs rem = n)
+    (hidx : x.regs idx = 0) (hn_fit : Fits w n) (hlg_fit : Fits w (Nat.log 2 n)) :
+    ∃ y, ExecWithin (B := .standard) w
+        (.loop (.lt one rem) ram[rem ← rem >>> one; idx ← idx + one]) x y
+        (4 * Nat.log 2 n + 2) ∧
+      y.mem = x.mem ∧ y.regs idx = Nat.log 2 n ∧
+      ∀ i, i ≠ rem → i ≠ idx → y.regs i = x.regs i := by
+  let I (y : Data r) : Prop :=
+    y.mem = x.mem ∧ (∀ i, i ≠ rem → i ≠ idx → y.regs i = x.regs i) ∧
+    1 ≤ y.regs rem ∧ y.regs rem ≤ n ∧ y.regs idx + Nat.log 2 (y.regs rem) = Nat.log 2 n
+  have hbody : ∀ y, I y → (Cond.lt one rem).Holds y →
+      ∃ z, ExecWithin (B := .standard) w ram[rem ← rem >>> one; idx ← idx + one] y z 2 ∧
+        I z ∧ Nat.log 2 (z.regs rem) < Nat.log 2 (y.regs rem) := by
+    intro y ⟨hym, hyf, hyr_ge, hyr_le, hy_sum⟩ hc
+    have hy1 : y.regs one = 1 := (hyf one hor hoi).trans hone
+    have hgt1 : 1 < y.regs rem := by simpa [Cond.holds_lt, hy1] using hc
+    have hshr_eq : y.regs rem >>> 1 = y.regs rem / 2 := by
+      rw [Nat.shiftRight_eq_div_pow, pow_one]
+    have hlog_step : Nat.log 2 (y.regs rem) = Nat.log 2 (y.regs rem / 2) + 1 :=
+      Nat.log_of_one_lt_of_le (by decide) (by omega)
+    let z₁ := y.set rem (y.regs rem / 2)
+    have h1 : z₁.regs one = 1 := by simp only [z₁, Data.set_regs, Function.update_of_ne hor, hy1]
+    have hi : z₁.regs idx = y.regs idx := by
+      simp only [z₁, Data.set_regs, Function.update_of_ne hri.symm]
+    have e1 : ExecWithin (B := .standard) w ram[rem ← rem >>> one] y z₁ 1 := by
+      simpa [z₁, BinOp.eval, hy1, hshr_eq] using
+        ExecWithin.bin (f := .shiftRight) (d := rem) (i := rem) (j := one) (x := y)
+          (by simpa [BinOp.eval, hy1, hshr_eq] using hn_fit.of_le (by omega))
+    have e2 := ExecWithin.bin (f := .add) (d := idx) (i := idx) (j := one) (x := z₁)
+      (by simpa [BinOp.eval, hi, h1] using hlg_fit.of_le (by omega))
+    simp only [BinOp.eval, hi, h1] at e2
+    refine ⟨_, e1.seq e2, ⟨hym, fun i hir hii => ?_, ?_, ?_, ?_⟩, ?_⟩
+    · simp only [z₁, Data.set_regs, Function.update_of_ne hii, Function.update_of_ne hir]
+      exact hyf i hir hii
+    all_goals simp only [z₁, Data.set_regs, Function.update_self, Function.update_of_ne hri]
+    all_goals omega
+  have hx : I x := ⟨rfl, fun _ _ _ => rfl, by omega, hrem.le, by rw [hidx, hrem, zero_add]⟩
+  obtain ⟨y, he, ⟨hym, hyf, hyr_ge, _, hy_sum⟩, hnc⟩ :=
+    ExecWithin.loop_invariant I (fun y => Nat.log 2 (y.regs rem)) hbody hx
+  have hy1 : y.regs one = 1 := (hyf one hor hoi).trans hone
+  have hyr_eq1 : y.regs rem = 1 := by
+    have : ¬(1 < y.regs rem) := by simpa [Cond.holds_lt, hy1] using hnc
+    omega
+  rw [hyr_eq1, Nat.log_one_right, add_zero] at hy_sum
+  exact ⟨y, he.mono (by rw [hrem]; omega), hym, hy_sum, hyf⟩
 
 end Cslib.Algorithms.WordRAM.NatLog

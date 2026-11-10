@@ -56,7 +56,9 @@ public noncomputable def multiPassTM (I : MultiTapeTM K Bool SI) (pass : MultiTa
 @[expose] public def passTapes (V C : Fin K) (v c : List Bool) : Fin K → List Bool :=
   Function.update (Function.update (fun _ => []) V v) C c
 
-lemma passTapes_nil (hVC : V ≠ C) (v : List Bool) :
+-- vendored: `passTapes_nil` is public for `NondeterministicQueryMachine/Routines`.
+/-- With a blank flag, the tapes between passes hold only the state. -/
+public lemma passTapes_nil (hVC : V ≠ C) (v : List Bool) :
     passTapes V C v [] = Function.update (fun _ => []) V v := by
   funext l
   by_cases hl : l = C

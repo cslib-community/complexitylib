@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import Mathlib.Analysis.SpecialFunctions.Exp
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.Concentration
 
 /-!
@@ -126,8 +127,7 @@ theorem replicate_failure_pow {α : Type} (source : ProbComp α) (good : α → 
   simp only [OracleComp.countTrue, OracleComp.replicate_map, Functor.map_map, eval_map,
     PMF.toOuterMeasure_map_apply] at h
   refine le_trans ?_ h
-  apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-  apply MeasureTheory.measure_mono
+  apply Probability.PMF.toOuterMeasure_toReal_mono
   intro values hbad
   have hzero : (values.map (fun value => decide (good value))).count true = 0 := by
     rw [List.count_eq_zero]
@@ -147,8 +147,7 @@ private theorem testProbabilityLT_error_le_deviation (count numerator denominato
   have hc : (0 : ℝ) < count := by exact_mod_cast hcount
   have hd : (0 : ℝ) < denominator := by exact_mod_cast hdenominator
   rw [OracleComp.testProbabilityLT, eval_map, PMF.toOuterMeasure_map_apply]
-  apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-  apply MeasureTheory.measure_mono
+  apply Probability.PMF.toOuterMeasure_toReal_mono
   intro successes hbad
   have hcompare : successes * denominator < count * numerator ↔
       (successes : ℝ) / count < (numerator : ℝ) / denominator := by
@@ -204,8 +203,7 @@ theorem testProbabilityLT_error_pow_of_bounds
       numerator denominator program)).toOuterMeasure
         {below | ¬ if below then (eval program true).toReal ≤ upper
           else lower ≤ (eval program true).toReal}).toReal ≤ (1 / 2 : ℝ) ^ confidence := by
-  refine (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    (MeasureTheory.measure_mono ?_)).trans
+  refine (Probability.PMF.toOuterMeasure_toReal_mono _ ?_).trans
       (testProbabilityLT_error_pow confidence inverseTolerance numerator denominator
         htolerance hdenominator program)
   intro below hbad

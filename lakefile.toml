@@ -39,12 +39,6 @@ rev = "254e30e6d4299c51323aaeaf5f51a4763b375d4a"
 name = "CslibFrontier"
 
 [[lean_lib]]
-name = "CslibFrontierAbstracts"
-srcDir = "abstracts"
-leanOptions = {weak.linter.style.header = false}
-allowNonModules = true
-
-[[lean_lib]]
 name = "CslibFrontierResults"
 leanOptions = {weak.linter.style.header = false}
 allowNonModules = true
@@ -69,18 +63,3 @@ supportInterpreter = true
 name = "checkInitImports"
 srcDir = "scripts"
 root = "CheckInitImports"
-
-# Optional statement-comparison suites; neither is a default target.
-[[lean_lib]]
-name = "CslibFrontierComparator"
-srcDir = "comparator"
-roots = []
-globs = ["CslibFrontierComparator.+"]
-
-# Generated children are explicit comparator inputs, never default build targets or aggregates.
-[[lean_lib]]
-name = "CslibFrontierComparatorChallenges"
-srcDir = "comparator"
-roots = []
-globs = ["CslibFrontierComparatorChallenges.+"]
-defaultFacets = []

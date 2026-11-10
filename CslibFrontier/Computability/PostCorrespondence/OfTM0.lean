@@ -272,13 +272,7 @@ theorem mem_dominoes [Fintype Γ] [Fintype Λ] {M : TM0.Machine Γ Λ} {d : Domi
     d ∈ dominoes M ↔ Rule M d ∨ ∃ x, d = copy x := by
   simp only [dominoes, List.mem_append, Finset.mem_toList, Set.Finite.mem_toFinset,
     Set.mem_ofPred_eq, List.mem_map, Finset.mem_univ, true_and]
-  constructor
-  · rintro (h | ⟨x, rfl⟩)
-    · exact Or.inl h
-    · exact Or.inr ⟨x, rfl⟩
-  · rintro (h | ⟨x, rfl⟩)
-    · exact Or.inl h
-    · exact Or.inr ⟨x, rfl⟩
+  exact or_congr_right (exists_congr fun _ => eq_comm)
 
 /-- The MPCP instance simulating `M` on input `l`: the start domino is `⟨[], ⊢ q₀ l ⊣⟩`. -/
 noncomputable def mInstance [Fintype Γ] [Fintype Λ] (M : TM0.Machine Γ Λ) (l : List Γ) :

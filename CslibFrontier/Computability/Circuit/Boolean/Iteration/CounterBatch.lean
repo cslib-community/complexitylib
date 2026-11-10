@@ -322,8 +322,7 @@ theorem counterPower_of_batched (T : ℕ) (member : Fin r)
     funext y
     change c.eval interpretation (init y) _ = ModulusCounter.power T y bit
     rw [hc, counterBatchPower_apply]
-    congr 1
-    funext b
+    congr 1 with b : 1
     simp [counterBlock, init]
   obtain ⟨out, ho, hs⟩ := (h.mono Set.Subset.rfl hout le_rfl).exists_circuit_outputs
   exact ⟨out, ho, hs⟩

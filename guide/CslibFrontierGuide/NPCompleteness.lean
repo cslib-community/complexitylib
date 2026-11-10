@@ -263,9 +263,7 @@ CookLevin.SAT_npComplete : NPComplete encCNF SAT
 
 Its hardness half ({name}`CookLevin.SAT_npHard`) encodes the computation of any polynomial-time
 verifier as a formula. Unsatisfiability, its complement, is coNP-complete
-({name}`CookLevin.UNSAT_coNPComplete`). The
-[Cook–Levin abstract](https://github.com/cslib-community/cslib-frontier/blob/main/abstracts/CslibFrontierAbstracts/CookLevinAbstract.lean)
-restates the theorem together with every definition it depends on.
+({name}`CookLevin.UNSAT_coNPComplete`).
 
 # The Catalogue
 %%%

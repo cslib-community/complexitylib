@@ -1178,17 +1178,6 @@ private theorem extend_kwiseMap_regs {y : Data 18} {x : Data 24} {j : Fin 24} (h
   dsimp only [kwiseMap, Fin.val_castLE] at hj
   omega
 
-private theorem fits_q_of_hw {w U n_max : ℕ}
-    (hw : 2 * trinomialDeg U (tableLog n_max) ≤ w) :
-    Fits w (2 ^ trinomialDeg U (tableLog n_max)) := by
-  set q := trinomialDeg U (tableLog n_max)
-  have hq_pos : 2 ≤ q := by
-    dsimp only [q, trinomialDeg]
-    have : 1 ≤ 3 ^ trinomialStep U (tableLog n_max) := Nat.one_le_pow _ 3 (by decide)
-    omega
-  change 2 ^ q < 2 ^ w
-  exact (Nat.pow_lt_pow_iff_right one_lt_two).mpr (by omega)
-
 private theorem fits_max_U_add_one_of_hw {w U n_max : ℕ}
     (hw : 2 * trinomialDeg U (tableLog n_max) ≤ w) :
     Fits w (max U 2 + 1) := by
@@ -1223,7 +1212,7 @@ private theorem fits_tableLog_of_hw {w U n_max : ℕ}
     le_trinomialDeg U (tableLog n_max)
   have hlt : trinomialDeg U (tableLog n_max) < 2 ^ trinomialDeg U (tableLog n_max) :=
     Nat.lt_two_pow_self
-  exact (fits_q_of_hw hw).of_le (by omega)
+  exact (KWise.fits_two_pow_trinomialDeg hw).of_le (by omega)
 
 private theorem fits_max_n_max_of_space {w base n_max : ℕ}
     (hfit : Fits w (base + space n_max)) :
@@ -1276,7 +1265,7 @@ theorem initSetup_exec {U V n_max w base : ℕ} {x₁ : Data rLP}
   have hfit_U1 : Fits w (max U 2 + 1) := fits_max_U_add_one_of_hw hw
   have hfit_U : Fits w U := fits_U_of_hw hw
   have hfit_M : Fits w (tableLog n_max) := fits_tableLog_of_hw hw
-  have hfit_q : Fits w (2 ^ trinomialDeg U (tableLog n_max)) := fits_q_of_hw hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   set x₀ : Data 18 := x₁.comap kwiseMap
   have hx₀_0 : x₀.regs 0 = base := hb
   set s1 := x₀.set 1 n_max

@@ -94,58 +94,34 @@ of the earlier vectors and is orthogonal to that span. -/
 theorem eq_gramSchmidt_of_sub_mem_of_mem_orthogonal {f : ι → E} {i : ι} {v : E}
     (hsub : v - f i ∈ span 𝕜 (f '' Set.Iio i)) (horth : v ∈ (span 𝕜 (f '' Set.Iio i))ᗮ) :
     v = gramSchmidt 𝕜 f i := by
-  set K := span 𝕜 (f '' Set.Iio i)
-  have hK : v - gramSchmidt 𝕜 f i ∈ K := by
-    have := sub_mem hsub (gramSchmidt_sub_mem_span_Iio 𝕜 f i)
-    rwa [sub_sub_sub_cancel_right] at this
-  have hKo : v - gramSchmidt 𝕜 f i ∈ Kᗮ :=
-    sub_mem horth (gramSchmidt_mem_orthogonal_span_Iio 𝕜 f i)
-  have h0 : v - gramSchmidt 𝕜 f i = 0 := by
-    have := K.inf_orthogonal_eq_bot
-    have hmem : v - gramSchmidt 𝕜 f i ∈ K ⊓ Kᗮ := ⟨hK, hKo⟩
-    rw [this] at hmem
-    exact hmem
-  exact sub_eq_zero.1 h0
+  have hK : v - gramSchmidt 𝕜 f i ∈ span 𝕜 (f '' Set.Iio i) := by
+    rw [← sub_sub_sub_cancel_right v (gramSchmidt 𝕜 f i) (f i)]
+    exact sub_mem hsub (gramSchmidt_sub_mem_span_Iio 𝕜 f i)
+  have hKo := sub_mem horth (gramSchmidt_mem_orthogonal_span_Iio 𝕜 f i)
+  exact sub_eq_zero.1 (disjoint_def.1 (orthogonal_disjoint _) _ hK hKo)
+
+/-- Two families whose prefixes before `j` and `i` span the same subspace, and whose vectors
+`g j` and `f i` differ by an element of it, have the same Gram–Schmidt vector there. -/
+private theorem gramSchmidt_eq_of_span_eq {ι' : Type*} [LinearOrder ι'] [LocallyFiniteOrderBot ι']
+    {f : ι → E} {g : ι' → E} {i : ι} {j : ι'}
+    (hspan : span 𝕜 (g '' Set.Iio j) = span 𝕜 (f '' Set.Iio i))
+    (hsub : g j - f i ∈ span 𝕜 (f '' Set.Iio i)) : gramSchmidt 𝕜 g j = gramSchmidt 𝕜 f i := by
+  refine eq_gramSchmidt_of_sub_mem_of_mem_orthogonal ?_ ?_
+  · rw [← sub_add_sub_cancel _ (g j)]
+    exact add_mem (hspan ▸ gramSchmidt_sub_mem_span_Iio 𝕜 g j) hsub
+  · exact hspan ▸ gramSchmidt_mem_orthogonal_span_Iio 𝕜 g j
 
 /-- Changing each vector by an element of the span of the earlier ones does not change the
 Gram–Schmidt orthogonalization. -/
 theorem gramSchmidt_eq_of_sub_mem_span {f g : ι → E}
     (h : ∀ i, g i - f i ∈ span 𝕜 (f '' Set.Iio i)) : gramSchmidt 𝕜 g = gramSchmidt 𝕜 f := by
-  -- first, the spans of the prefixes agree
-  have hspan : ∀ i, span 𝕜 (g '' Set.Iio i) = span 𝕜 (f '' Set.Iio i) := by
-    have hfg : ∀ i, f i ∈ span 𝕜 (g '' Set.Iic i) := by
-      intro i
-      refine wellFounded_lt.induction (C := fun i => f i ∈ span 𝕜 (g '' Set.Iic i)) i ?_
-      intro i ih
-      · have hle : span 𝕜 (f '' Set.Iio i) ≤ span 𝕜 (g '' Set.Iic i) := by
-          rw [span_le]
-          rintro _ ⟨j, hj, rfl⟩
-          exact span_mono (Set.image_mono (Set.Iic_subset_Iic.2 (le_of_lt hj))) (ih j hj)
-        have : f i = g i - (g i - f i) := by abel
-        rw [this]
-        exact sub_mem (subset_span ⟨i, Set.mem_Iic.2 le_rfl, rfl⟩) (hle (h i))
-    intro i
-    apply le_antisymm
-    · rw [span_le]
-      rintro _ ⟨j, hj, rfl⟩
-      have : g j = f j + (g j - f j) := by abel
-      rw [this]
-      refine add_mem (subset_span ⟨j, hj, rfl⟩) ?_
-      exact span_mono (Set.image_mono (Set.Iio_subset_Iio (le_of_lt hj))) (h j)
-    · rw [span_le]
-      rintro _ ⟨j, hj, rfl⟩
-      refine span_mono ?_ (hfg j)
-      rintro _ ⟨k, hk, rfl⟩
-      exact ⟨k, lt_of_le_of_lt hk hj, rfl⟩
   funext i
-  symm
-  refine eq_gramSchmidt_of_sub_mem_of_mem_orthogonal ?_ ?_
-  · rw [hspan]
-    have : gramSchmidt 𝕜 f i - g i = (gramSchmidt 𝕜 f i - f i) - (g i - f i) := by abel
-    rw [this]
-    exact sub_mem (gramSchmidt_sub_mem_span_Iio 𝕜 f i) (h i)
-  · rw [hspan]
-    exact gramSchmidt_mem_orthogonal_span_Iio 𝕜 f i
+  induction i using WellFoundedLT.induction with
+  | _ i ih =>
+    -- the outputs before `i` agree, hence so do the spans of the inputs before `i`
+    refine gramSchmidt_eq_of_span_eq ?_ (h i)
+    rw [← span_gramSchmidt_Iio 𝕜 g, ← span_gramSchmidt_Iio 𝕜 f,
+      Set.image_congr (s := Set.Iio i) ih]
 
 variable (𝕜) in
 /-- The Gram–Schmidt coefficient `μᵢⱼ = ⟪f*ⱼ, fᵢ⟫ / ‖f*ⱼ‖²` of [LenstraLenstraLovasz1982], (1.2). -/
@@ -184,15 +160,13 @@ theorem gramSchmidtCoeff_eq_zero_of_lt (f : ι → E) {j l : ι} (hjl : j < l) :
 variable (𝕜) in
 /-- Orthogonalization does not increase lengths: `‖f*ᵢ‖ ≤ ‖fᵢ‖`. -/
 theorem norm_gramSchmidt_le (f : ι → E) (i : ι) : ‖gramSchmidt 𝕜 f i‖ ≤ ‖f i‖ := by
-  have horth := gramSchmidt_mem_orthogonal_span_Iio 𝕜 f i
-  rw [mem_orthogonal'] at horth
-  have h0 := horth _ (neg_mem (gramSchmidt_sub_mem_span_Iio 𝕜 f i))
-  rw [neg_sub] at h0
-  have hdecomp : f i = gramSchmidt 𝕜 f i + (f i - gramSchmidt 𝕜 f i) := by abel
-  have hpy := norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero (𝕜 := 𝕜) _ _ h0
-  rw [← hdecomp] at hpy
-  nlinarith [norm_nonneg (f i), norm_nonneg (gramSchmidt 𝕜 f i),
-    sq_nonneg ‖f i - gramSchmidt 𝕜 f i‖]
+  -- Cauchy–Schwarz applied to `‖f*ᵢ‖² = ⟪f*ᵢ, fᵢ⟫`
+  have hcs := norm_inner_le_norm (𝕜 := 𝕜) (gramSchmidt 𝕜 f i) (f i)
+  rw [inner_gramSchmidt_self_right, norm_pow, RCLike.norm_ofReal, abs_norm, sq] at hcs
+  rcases (norm_nonneg (gramSchmidt 𝕜 f i)).eq_or_lt with h0 | hpos
+  · rw [← h0]
+    exact norm_nonneg _
+  · exact le_of_mul_le_mul_left hcs hpos
 
 /-- `⟪f*ᵢ, ∑ⱼ cⱼ fⱼ⟫ = cᵢ ‖f*ᵢ‖²` for integer coefficients that vanish above `i`. -/
 theorem inner_gramSchmidt_sum_zsmul [Fintype ι] (f : ι → E) (c : ι → ℤ) {i : ι}
@@ -247,13 +221,11 @@ theorem exists_norm_gramSchmidt_le_of_mem_span_int [Finite ι] {f : ι → E} {x
 /-- Gram–Schmidt vectors depend only on the vectors up to their index. -/
 theorem gramSchmidt_congr_Iic {f g : ι → E} {i : ι} (h : ∀ j ≤ i, f j = g j) :
     gramSchmidt 𝕜 f i = gramSchmidt 𝕜 g i := by
-  have himg : g '' Set.Iio i = f '' Set.Iio i :=
-    Set.image_congr fun j hj => (h j (le_of_lt hj)).symm
-  refine eq_gramSchmidt_of_sub_mem_of_mem_orthogonal ?_ ?_
-  · rw [himg, ← h i le_rfl]
-    exact gramSchmidt_sub_mem_span_Iio 𝕜 f i
-  · rw [himg]
-    exact gramSchmidt_mem_orthogonal_span_Iio 𝕜 f i
+  have himg : f '' Set.Iio i = g '' Set.Iio i :=
+    Set.image_congr fun j hj => h j (le_of_lt hj)
+  refine gramSchmidt_eq_of_span_eq (congrArg _ himg) ?_
+  rw [h i le_rfl, sub_self]
+  exact zero_mem _
 
 /-- Gram–Schmidt commutes with restriction along an order embedding onto an initial segment. -/
 theorem gramSchmidt_comp {ι' : Type*} [LinearOrder ι'] [LocallyFiniteOrderBot ι']
@@ -269,12 +241,9 @@ theorem gramSchmidt_comp {ι' : Type*} [LinearOrder ι'] [LocallyFiniteOrderBot 
     · intro hj
       obtain ⟨j', rfl⟩ := hlow (le_of_lt hj) ⟨i, rfl⟩
       exact ⟨j', he.lt_iff_lt.1 hj, rfl⟩
-  symm
-  refine eq_gramSchmidt_of_sub_mem_of_mem_orthogonal ?_ ?_
-  · rw [himg]
-    exact gramSchmidt_sub_mem_span_Iio 𝕜 f (e i)
-  · rw [himg]
-    exact gramSchmidt_mem_orthogonal_span_Iio 𝕜 f (e i)
+  refine gramSchmidt_eq_of_span_eq (congrArg _ himg) ?_
+  rw [Function.comp_apply, sub_self]
+  exact zero_mem _
 
 /-- The Gram determinant is the product of the squared lengths of the Gram–Schmidt vectors. -/
 theorem det_gram_eq_prod_norm_gramSchmidt_sq [Fintype ι] [DecidableEq ι] (f : ι → E) :

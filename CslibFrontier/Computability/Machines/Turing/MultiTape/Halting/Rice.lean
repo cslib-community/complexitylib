@@ -109,10 +109,6 @@ theorem find?_desc (tm : MultiTapeTM k Y S) (q : S) (inp : Option Y) (work : Fin
 
 end Desc
 
-private theorem Tape.read_eq_cellAt_head (t : Tape) : t.read = t.cellAt t.head := by
-  simp only [Tape.read, Tape.cellAt, le_refl, ↓reduceIte, sub_self, Int.toNat_zero]
-  cases t.right <;> rfl
-
 /-- The key read in a well-shaped configuration of the simulation is the key of the configuration
 it represents. -/
 theorem SCfg.key_eq_key_toCfg {k : ℕ} {x : List ℕ} {s : SCfg} (hs : s.WellShaped k x)
@@ -126,7 +122,7 @@ theorem SCfg.key_eq_key_toCfg {k : ℕ} {x : List ℕ} {s : SCfg} (hs : s.WellSh
     simp only [SCfg.toCfg, min_eq_left hp, inputSymbol, inputAt, List.head?_drop]
   · refine List.ext_getElem (by simp [hk]) fun i h₁ h₂ => ?_
     have hi : i < s.workTapes.length := by simpa using h₁
-    simp [Cfg.workTapeSymbols, SCfg.toCfg, Tape.read_eq_cellAt_head, List.getD_eq_getElem?_getD,
+    simp [Cfg.workTapeSymbols, SCfg.toCfg, Tape.read_eq, List.getD_eq_getElem?_getD,
       List.getElem?_eq_getElem hi]
 
 /-! ### Dispatching on a computed bit -/
@@ -488,7 +484,7 @@ theorem exists_run_of_computesTidily {w : List Bool} {o : List Bool} {t₀ s₀ 
       have hc := congrFun (congrArg (fun c => c.workTapes ⟨i, hi'⟩) h₁) c.1.workTapes[i].head
       simp only [Cfg.map_workTapes, wordsCfg, tapeOfList_nil, Option.map_none, SCfg.toCfg,
         List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi'', Option.getD_some] at hc
-      simp only [List.getElem_map, List.getElem_replicate, Tape.read_eq_cellAt_head]
+      simp only [List.getElem_map, List.getElem_replicate, Tape.read_eq]
       exact hc.symm
     · have := congrArg Cfg.output h₁
       simp only [Cfg.map_output, wordsCfg, SCfg.toCfg] at this

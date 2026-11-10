@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.Schoening.Scan
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # A multiword counter on the word RAM
@@ -223,7 +224,7 @@ theorem ofDigits_divDigits_zero {d : ℕ} (hd : 0 < d) (ds : List ℕ) :
   have h := ofDigits_divDigits d 0 ds
   have hr := divDigits_rem_lt hd hd ds
   rw [Nat.zero_mul, Nat.add_zero] at h
-  rw [← h, Nat.add_comm, Nat.add_mul_div_right _ _ hd, Nat.div_eq_of_lt hr, Nat.zero_add]
+  rw [← h, Nat.mul_add_div_of_lt _ hr]
 
 @[simp]
 theorem length_decDigits (ds : List ℕ) : (decDigits ds).length = ds.length := by

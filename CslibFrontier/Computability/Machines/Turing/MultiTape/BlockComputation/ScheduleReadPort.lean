@@ -74,19 +74,13 @@ theorem providerPort_inSpace (k c : ℕ) :
   have hi := ht.fst'
   have hd := ht.snd'
   have hsearch := search_inSpace k c
-  have hget : ComputableInSpace (fun o : Option ℕ => o.getD 0)
-      (encOption encNat) encNat (fun o => (encOption encNat o).length) :=
-    of_inO (ComputableInDegree.getD (enc₁ := encNat) 0).inO_one
-  have hisSome : ComputableInSpace (fun o : Option ℕ => o.isSome)
-      (encOption encNat) encBool (fun o => (encOption encNat o).length) :=
-    of_inO (ComputableInDegree.isSome encNat).inO_one
-  have hj := budget_comp_linear hget hsearch
+  have hj := budget_optionGetD 0 hsearch
   have hp := budget_comp_linear (port_inSpace k c)
     (budget_prod hs (budget_prod hi (budget_prod hd hj)))
   have hsome := budget_finite (encC := encOption (encFinite (Fin 3))) some hp
   have hnone := budget_const (encB := encOption (encFinite (Fin 3))) none
     (show (fun a => (encSearchArgs a).length) ≼ fun a => (encSearchArgs a).length from .refl _)
-  refine (budget_ite (budget_comp_linear hisSome hsearch) hsome hnone).of_enc_eq ?_
+  refine (budget_ite (budget_optionIsSome hsearch) hsome hnone).of_enc_eq ?_
   rintro ⟨σ, i, δ⟩
   cases ht : search k c (σ, i, δ) <;> simp [providerPort, ht]
 

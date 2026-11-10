@@ -1291,17 +1291,10 @@ theorem elements_erase {t : BinaryTree α} (ht : Ordered t) (x : α) :
     | node r' l' R' =>
       dsimp only
       have ho' : Ordered (.node r' l' R') := hs ▸ ho
-      obtain ⟨_, _, hlr', hrR'⟩ := id ho'
       rw [hs] at he
       split <;> rename_i hxr <;> dsimp only
       · subst hxr
-        rw [elements_join]
-        have hnotMem : x ∉ elements l' ∪ elements R' := by
-          intro hmem
-          rcases Finset.mem_union.mp hmem with hmem | hmem
-          · exact lt_irrefl x (hlr' x hmem)
-          · exact lt_irrefl x (hrR' x hmem)
-        rw [← he, elements, Finset.erase_insert hnotMem]
+        rw [elements_join, ← he, elements, Finset.erase_insert ho'.notMem_elements_union]
       · have hxnot : x ∉ elements (.node a l r) := by
           intro hxmem
           have hroot := rootKey_splay_of_mem ht hxmem

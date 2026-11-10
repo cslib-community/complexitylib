@@ -31,7 +31,7 @@ This gives a monotone, one-Lipschitz correction ramp with
 The definitions specialize to exact rational arithmetic; this is not a machine-space bound.
 
 This is an alternative rational witness for the ramp conditions in
-[OpenAI2026LogSpace, Section 4.1, (4.2)], adapted to the fourth-moment workstream of complexitylib
+[OpenAI2026LogSpace, Section 4.1, (4.2)], adapted to the fourth-moment workstream of cslib-frontier
 issue #1721. The pinned preprint requires eighth-root regularity and gives a piecewise-polynomial
 example; this module proves fourth-root regularity for the displayed rational construction.
 

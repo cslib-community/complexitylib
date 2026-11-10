@@ -552,19 +552,8 @@ theorem exists_entryAdmissible_of_isPolynomial
   rw [← hB]
   have hB1 : 1 ≤ B := by omega
   -- The argument of the procedure is at most `3 B`.
-  have hq : (encPair encT encBits (v.2, bs)).length + 1 ≤ 3 * B := by
-    have h1 := length_le_encList_of_mem (encPair (encList encNat) encT) hv
-    have h2 : (encList (encPair (encList encNat) encT) G.vertices).length ≤
-        (DescribedNetwork.encDescribed encT G).length := by
-      change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-        (G.numEdges, G.vertices)).length
-      rw [length_encPair]
-      dsimp only
-      omega
-    have h3 := length_le_length_encList encNat v.1
-    rw [length_encPair] at h1 ⊢
-    change 2 * (encT v.2).length + 1 + bs.length + 1 ≤ 3 * B
-    omega
+  have hq : (encPair encT encBits (v.2, bs)).length + 1 ≤ 3 * B :=
+    (G.length_entryInput_le hv hbs).trans (by omega)
   have hpow {c d : ℕ} : c * ((encPair encT encBits (v.2, bs)).length + 1) ^ d ≤
       c * 3 ^ d * B ^ d := by
     rw [Nat.mul_assoc, ← Nat.mul_pow]
@@ -584,8 +573,7 @@ theorem val_directCore_tableEntry (P : ℕ) (fl : List ℕ) (G : ExplicitTensorN
     ExplicitTensorNetwork.entry G
   simp only [Nat.coe_castRingHom] at h
   rw [h]
-  congr 1
-  funext t bs
+  congr 1 with t bs : 2
   exact VertexDesc.val_entry_inl P fl t bs
 
 end EntryContraction

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.LinearPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatLength
@@ -21,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantita
 import CslibFrontier.Foundations.Data.BitString.ShortWords
 import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.BitString.Counter
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.Linarith
 
@@ -60,6 +62,8 @@ into `List Bool`.
 * `Turing.MultiTapeNTM.LogSquareSavitch.wordEdge`: the edges of the graph on words, given the
   input bit at the source.
 * `Turing.MultiTapeNTM.LogSquareSavitch.machine`: the deterministic query machine.
+* `Turing.MultiTapeNTM.LogSquareSavitch.Runtime`: named runtime fields with generated encodings
+  and certificates, preserving the framed words of the simulation.
 
 ## Main results
 
@@ -184,9 +188,7 @@ theorem reflTransGen_sink_iff (hstart : startID ntm B < vertexBound (k := k) B) 
           ofBits_lowBits (hlt.2.trans hW)]
         rw [show edgeWithSymbol ntm B w.length a b w[queryIndex (k := k) B a]? = true from hab,
           Bool.true_or]
-    have hu' : u < vertexBound (k := k) B := by
-      simp only [bad, Bool.and_eq_true] at hb
-      exact lt_vertexBound_of_valid hb.1.1
+    have hu' : u < vertexBound (k := k) B := by grind
     refine (key u hu).1.tail ⟨length_lowBits _ _, List.length_replicate, ?_⟩
     simp only [inputEdge, wordEdge, ofBits_lowBits (hu'.trans hW), hb, Bool.true_and,
       Bool.or_eq_true]
@@ -229,12 +231,52 @@ the input bit read last. -/
 abbrev encParam : ℕ × ℕ × Option Bool ↪ List Bool :=
   encPair encNat (encPair encNat (encOption encBool))
 
-/-- The states of the machine: the input counter, which becomes the input length; whether the
-recursion has started; and a round of the recursion, with its parameter and width. -/
-abbrev Runtime := ℕ × Bool × ((ℕ × ℕ × Option Bool) × ℕ) × Savitch.State
+/-- Edge-test parameters, with the input bit read last. -/
+structure EdgeParams where
+  /-- Radix used to encode the simulated machine registers. -/
+  radix : ℕ
+  /-- Length of the original read-only input. -/
+  inputLength : ℕ
+  /-- Input bit just read, or `none` beyond the input. -/
+  symbol : Option Bool
 
-/-- The encoding of the states of the machine. -/
-abbrev encRuntime : Runtime ↪ List Bool := encPair encNat (encPair encBool (encRound encParam))
+/-- The parameters and unary vertex width share one frame. -/
+structure RoundSetup where
+  /-- Parameters shared by all edge tests in this round. -/
+  params : EdgeParams
+  /-- Bit width of vertices, stored in unary. -/
+  width : ℕ
+
+/-- A round of midpoint recursion. -/
+structure SimulationRound where
+  /-- Edge-test parameters and vertex width. -/
+  setup : RoundSetup
+  /-- Current continuation stack and recursion register. -/
+  recursion : Savitch.State
+
+/-- The input counter, startup flag, and current simulation round. -/
+structure Runtime where
+  /-- Number of input bits counted; the input length after startup. -/
+  counter : ℕ
+  /-- Whether input counting has finished and recursion has started. -/
+  started : Bool
+  /-- Current midpoint-recursion round. -/
+  round : SimulationRound
+
+/-- Binary radix and input length followed by the optional input bit, in field order. -/
+enc_structure encEdgeParams : EdgeParams where
+  radix : encNat, inputLength : encNat, symbol : (encOption encBool)
+/-- Framed edge parameters followed by the unary vertex width. -/
+enc_structure encRoundSetup : RoundSetup where params : encEdgeParams, width : encUnary
+/-- Framed round setup followed by the encoded recursion state. -/
+enc_structure encSimulationRound : SimulationRound where setup : encRoundSetup, recursion : encState
+/-- Binary counter, startup bit and simulation round, in field order. -/
+enc_structure encRuntime : Runtime where
+  counter : encNat, started : encBool, round : encSimulationRound
+
+/-- Enter the named runtime representation at the generic Savitch round boundary. -/
+def SimulationRound.ofRound (q : ((ℕ × ℕ × Option Bool) × ℕ) × Savitch.State) :
+    SimulationRound := ⟨⟨⟨q.1.1.1, q.1.1.2.1, q.1.1.2.2⟩, q.1.2⟩, q.2⟩
 
 /-- The first round of the recursion on inputs of length `n`, for the radix `(n + 2) ^ D`: the
 call at depth `W` from the start vertex to the sink. The start vertex is written as the binary
@@ -255,29 +297,32 @@ variable (k) in
 /-- The input bit to read: the next input position while counting, then the input head of the
 source of the pending call. -/
 noncomputable def query (s : Runtime) : ℕ :=
-  if s.2.1 then queryIndex (k := k) s.2.2.1.1.1 (ofBits (callSource s.2.2.2)) else s.1
+  if s.started then
+    queryIndex (k := k) s.round.setup.params.radix (ofBits (callSource s.round.recursion))
+  else s.counter
 
 /-- A step of the machine, given the input bit read: count the input until its end, then start
 the recursion, then run its rounds with the bit read as the input bit of the edge test. -/
 noncomputable def next (D : ℕ) (p : Runtime × Option Bool) : Runtime :=
-  if p.1.2.1 then
-    (p.1.1, true, roundStep (paramEdge ntm)
-      (((p.1.2.2.1.1.1, p.1.2.2.1.1.2.1, p.2), p.1.2.2.1.2), p.1.2.2.2))
-  else if p.2.isSome then (p.1.1 + 1, false, p.1.2.2)
-  else (p.1.1, true, initRound ntm D p.1.1)
+  if p.1.started then
+    ⟨p.1.counter, true, .ofRound (roundStep (paramEdge ntm)
+      (((p.1.round.setup.params.radix, p.1.round.setup.params.inputLength, p.2),
+        p.1.round.setup.width), p.1.round.recursion))⟩
+  else if p.2.isSome then ⟨p.1.counter + 1, false, p.1.round⟩
+  else ⟨p.1.counter, true, .ofRound (initRound ntm D p.1.counter)⟩
 
 /-- The machine halts once the recursion has returned. -/
 def halted (s : Runtime) : Bool :=
-  s.2.1 && s.2.2.2.stack.isEmpty && !s.2.2.2.reg.toPair.1.isSome
+  s.started && s.round.recursion.stack.isEmpty && !s.round.recursion.reg.toPair.1.isSome
 
 /-- The answer: the value returned by the recursion. -/
-def finish (s : Runtime) : List Bool := [s.2.2.2.reg.toPair.2]
+def finish (s : Runtime) : List Bool := [s.round.recursion.reg.toPair.2]
 
 /-- **The deterministic simulation**, as a query machine: count the input, then run Savitch's
 recursion on the graph on words of the radix `(n + 2) ^ D`, reading the input bit of each edge
 test. -/
 noncomputable def machine (D : ℕ) : QueryMachine Runtime where
-  init := (0, false, idle)
+  init := ⟨0, false, .ofRound idle⟩
   query := query k
   next := next ntm D
   emit _ := []
@@ -309,12 +354,13 @@ theorem output_eq (t : ℕ) : (machine ntm D).output w t = finish ((machine ntm 
   split <;> rfl
 
 /-- While counting, the machine holds the number of input bits read. -/
-theorem run_of_le {t : ℕ} (ht : t ≤ w.length) : (machine ntm D).run w t = (t, false, idle) := by
+theorem run_of_le {t : ℕ} (ht : t ≤ w.length) :
+    (machine ntm D).run w t = ⟨t, false, .ofRound idle⟩ := by
   induction t with
   | zero => rfl
   | succ t ih =>
     rw [QueryMachine.run_succ, ih (by omega)]
-    have hread : (machine ntm D).read w (t, false, idle) = some w[t] := by
+    have hread : (machine ntm D).read w ⟨t, false, .ofRound idle⟩ = some w[t] := by
       simp [QueryMachine.read, machine, query,
         List.getElem?_eq_getElem (show t < w.length by omega)]
     rw [QueryMachine.step, hread]
@@ -322,9 +368,10 @@ theorem run_of_le {t : ℕ} (ht : t ≤ w.length) : (machine ntm D).run w t = (t
 
 /-- At the end of the input, the machine starts the recursion. -/
 theorem run_length_succ :
-    (machine ntm D).run w (w.length + 1) = (w.length, true, initRound ntm D w.length) := by
+    (machine ntm D).run w (w.length + 1) =
+      ⟨w.length, true, .ofRound (initRound ntm D w.length)⟩ := by
   rw [QueryMachine.run_succ, run_of_le w le_rfl]
-  have hread : (machine ntm D).read w (w.length, false, idle) = none := by
+  have hread : (machine ntm D).read w ⟨w.length, false, .ofRound idle⟩ = none := by
     simp [QueryMachine.read, machine, query]
   rw [QueryMachine.step, hread]
   simp [machine, halted, next]
@@ -332,9 +379,10 @@ theorem run_length_succ :
 /-- **The machine runs the recursion** on the graph on words of the input, with the input bit of
 each edge test read at the source of its call. -/
 theorem exists_run_add (j : ℕ) : ∃ symbol, (machine ntm D).run w (w.length + 1 + j) =
-    (w.length, true, (((radix D w.length, w.length, symbol), vertexWidth k (radix D w.length)),
+    ⟨w.length, true, .ofRound
+      (((radix D w.length, w.length, symbol), vertexWidth k (radix D w.length)),
       (Savitch.step (inputEdge ntm (radix D w.length) w) (vertexWidth k (radix D w.length)))^[j]
-        (initRound ntm D w.length).2)) := by
+        (initRound ntm D w.length).2)⟩ := by
   induction j with
   | zero => exact ⟨none, run_length_succ w⟩
   | succ j ih =>
@@ -342,14 +390,14 @@ theorem exists_run_add (j : ℕ) : ∃ symbol, (machine ntm D).run w (w.length +
     set st := (Savitch.step (inputEdge ntm (radix D w.length) w)
       (vertexWidth k (radix D w.length)))^[j] (initRound ntm D w.length).2
     rw [← Nat.add_assoc, QueryMachine.run_succ, ih, Function.iterate_succ_apply']
-    by_cases hh : halted (w.length, true, (((radix D w.length, w.length, symbol),
-        vertexWidth k (radix D w.length)), st)) = true
+    by_cases hh : halted ⟨w.length, true, .ofRound (((radix D w.length, w.length, symbol),
+        vertexWidth k (radix D w.length)), st)⟩ = true
     · refine ⟨symbol, ?_⟩
       have hst : ∃ b, st = ⟨[], .ret b⟩ := by
         obtain ⟨stack, (⟨i, u, v⟩ | b)⟩ := st
-        · simp [halted, Reg.toPair] at hh
-        · simp only [halted, Bool.true_and, Bool.and_eq_true, List.isEmpty_iff,
-            Bool.not_eq_eq_eq_not, Bool.not_true] at hh
+        · simp [halted, SimulationRound.ofRound, Reg.toPair] at hh
+        · simp only [halted, SimulationRound.ofRound, Bool.true_and, Bool.and_eq_true,
+            List.isEmpty_iff, Bool.not_eq_eq_eq_not, Bool.not_true] at hh
           exact ⟨b, by rw [hh.1]⟩
       obtain ⟨b, hb⟩ := hst
       have hfix : Savitch.step (inputEdge ntm (radix D w.length) w)
@@ -359,9 +407,10 @@ theorem exists_run_add (j : ℕ) : ∃ symbol, (machine ntm D).run w (w.length +
       simp only [show (machine ntm D).halted _ = true from hh, ↓reduceIte]
     · refine ⟨w[queryIndex (k := k) (radix D w.length) (ofBits (callSource st))]?, ?_⟩
       simp only [Bool.not_eq_true] at hh
-      simp only [QueryMachine.step, machine, hh, Bool.false_eq_true, ↓reduceIte,
-        QueryMachine.read, query, next, roundStep, paramEdge]
-      congr 3
+      simp only [QueryMachine.step, machine, hh, Bool.false_eq_true, ↓reduceIte]
+      simp only [
+        QueryMachine.read, query, next, roundStep, paramEdge, SimulationRound.ofRound, ↓reduceIte]
+      congr 2
       refine step_congr fun u v hreg => ?_
       simp [inputEdge, callSource, hreg, Reg.toPair]
 
@@ -447,7 +496,8 @@ theorem length_encRuntime_run_le
   rcases le_or_gt t w.length with ht | ht
   · rw [run_of_le w ht]
     have h₁ := length_encNat_le_log2 ht
-    rw [encRuntime, length_encPair, length_encPair, encBool_apply, List.length_singleton, hI]
+    change (encPair encNat (encPair encBool (encRound encParam)) (t, false, idle)).length ≤ _
+    rw [length_encPair, length_encPair, encBool_apply, List.length_singleton, hI]
     generalize Nat.log2 w.length = L at *
     generalize D * Fintype.card (Register k) = R
     have hLL : L + 1 ≤ (L + 1) ^ 2 := Nat.le_self_pow (by omega) _
@@ -462,7 +512,9 @@ theorem length_encRuntime_run_le
     have hB := length_encNat_radix_le D w.length
     have hW := vertexWidth_radix_le (k := k) D w.length
     have hsym : (encOption encBool symbol).length ≤ 2 := by cases symbol <;> simp
-    simp only [encRuntime, encRound, encParam, length_encPair, encBool_apply, encUnary_apply,
+    simp only [encRuntime_apply, encSimulationRound_apply, encRoundSetup_apply, encEdgeParams_apply,
+      encRuntimeFields, encSimulationRoundFields, encRoundSetupFields, encEdgeParamsFields,
+      SimulationRound.ofRound, length_encPair, encBool_apply, encUnary_apply,
       List.length_singleton, List.length_replicate]
     generalize Nat.log2 w.length = L at *
     generalize D * Fintype.card (Register k) = R at *
@@ -495,28 +547,6 @@ section Parts
 
 open ComputableInSpace
 
-/-- A function computed by a finite transducer is computable in linear space. -/
-theorem transducer_inSpace {Q : Type} [Finite Q] (τ : Transducer Bool Q) {α β : Type}
-    {encIn : α ↪ List Bool} {encOut : β ↪ List Bool} {f : α → β}
-    (h : ∀ a, encOut (f a) = τ.run τ.q₀ (encIn a)) :
-    ComputableInSpace f encIn encOut fun a => (encIn a).length :=
-  of_inO (ComputableInO.of_linear (ComputableInDegree.of_transducer τ h))
-
-/-- Whether an option holds a value, in linear space. -/
-theorem isSome_inSpace {β : Type} (e : β ↪ List Bool) :
-    ComputableInSpace (fun o : Option β => o.isSome) (encOption e) encBool
-      fun o => (encOption e o).length :=
-  of_inO (ComputableInDegree.isSome e).inO_one
-
-/-- The binary length of a number, in unary, in linear space. -/
-theorem size_inSpace : ComputableInSpace Nat.size encNat encUnary fun x => (encNat x).length :=
-  ((of_inO ComputableInO.lengthUnary).of_encIn_eq Nat.bits fun _ => rfl).of_enc_eq fun x => by
-    rw [Nat.size_eq_bits_len]
-
-/-- The value of a word, in linear space. -/
-theorem ofBits_inSpace : ComputableInSpace ofBits encBits encNat fun l => (encBits l).length :=
-  of_inO ComputableInO.bitsToNat
-
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ}
 
 /-- The fields of a state of the recursion, as pairs. -/
@@ -529,70 +559,51 @@ theorem stateFields_inSpace :
 /-- The stack, within a budget. -/
 theorem budget_stack {st : α → Savitch.State} (h : ComputableInSpace st enc encState S) :
     ComputableInSpace (fun a => (st a).stack) enc (encList encFrame) S :=
-  (budget_comp_lin (fst _ _) (.refl _) (budget_comp_linear stateFields_inSpace h)).of_enc_eq
-    fun _ => rfl
+  (budget_comp_linear stateFields_inSpace h).fst'
 
 /-- The register as a pair, within a budget. -/
 theorem budget_reg {st : α → Savitch.State} (h : ComputableInSpace st enc encState S) :
     ComputableInSpace (fun a => (st a).reg.toPair) enc (encPair (encOption encCall) encBool) S :=
-  (budget_comp_lin (snd _ _) (.refl _) (budget_comp_linear stateFields_inSpace h)).of_enc_eq
-    fun _ => rfl
+  (budget_comp_linear stateFields_inSpace h).snd'
 
 /-- The value of the source of the pending call, within a budget. -/
 theorem budget_callSource {st : α → Savitch.State} (h : ComputableInSpace st enc encState S) :
     ComputableInSpace (fun a => ofBits (callSource (st a))) enc encNat S := by
-  have hreg := budget_reg h
-  have hopt := budget_comp_lin (fst _ _) (.refl _) hreg
-  have hcall := budget_comp_linear
-    (of_inO
-      (ComputableInDegree.optionGetD encCall ((0, [], []) : ℕ × List Bool × List Bool)).inO_one)
-    hopt
-  have hu := budget_comp_lin (fst _ _) (.refl _) (budget_comp_lin (snd _ _) (.refl _) hcall)
-  exact (budget_comp_linear ofBits_inSpace hu).of_enc_eq fun _ => rfl
-
-/-- The projections of a state of the machine, within a budget. -/
-theorem budget_runtime {s : α → Runtime} (h : ComputableInSpace s enc encRuntime S) :
-    ComputableInSpace (fun a => (s a).1) enc encNat S ∧
-    ComputableInSpace (fun a => (s a).2.1) enc encBool S ∧
-    ComputableInSpace (fun a => (s a).2.2) enc (encRound encParam) S ∧
-    ComputableInSpace (fun a => (s a).2.2.1.1.1) enc encNat S ∧
-    ComputableInSpace (fun a => (s a).2.2.1.1.2.1) enc encNat S ∧
-    ComputableInSpace (fun a => (s a).2.2.1.2) enc encUnary S ∧
-    ComputableInSpace (fun a => (s a).2.2.2) enc encState S := by
-  have hrest := budget_comp_lin (snd _ _) (.refl _) h
-  have hround := budget_comp_lin (snd _ _) (.refl _) hrest
-  have hpw := budget_comp_lin (fst _ _) (.refl _) hround
-  have hparam := budget_comp_lin (fst _ _) (.refl _) hpw
-  exact ⟨budget_comp_lin (fst _ _) (.refl _) h, budget_comp_lin (fst _ _) (.refl _) hrest, hround,
-    budget_comp_lin (fst _ _) (.refl _) hparam,
-    budget_comp_lin (fst _ _) (.refl _) (budget_comp_lin (snd _ _) (.refl _) hparam),
-    budget_comp_lin (snd _ _) (.refl _) hpw, budget_comp_lin (snd _ _) (.refl _) hround⟩
+  exact budget_comp_linear (of_inO ComputableInO.bitsToNat)
+    (budget_optionGetD (0, [], []) (budget_reg h).fst').snd'.fst'
 
 /-- The input position to read, in space linear in the state. -/
 theorem query_inSpace :
     ComputableInSpace (query k) encRuntime encNat fun s => (encRuntime s).length := by
-  obtain ⟨hk, hstarted, -, hB, -, -, hst⟩ := budget_runtime (ComputableInSpace.of_inO
-    (ComputableInO.of_eq (encIn := encRuntime) (encMid := encRuntime) (f := id) fun _ => rfl))
-  exact (budget_ite hstarted (queryIndex_budget (k := k) hB (budget_callSource hst)) hk).of_enc_eq
+  have hid : ComputableInSpace id encRuntime encRuntime (fun s => (encRuntime s).length) :=
+    of_inO (ComputableInO.of_eq fun _ => rfl)
+  have hsetup := encSimulationRound_setup_budget (encRuntime_round_budget hid)
+  have hB := encEdgeParams_radix_budget (encRoundSetup_params_budget hsetup)
+  have hst := encSimulationRound_recursion_budget (encRuntime_round_budget hid)
+  exact (budget_ite (encRuntime_started_budget hid)
+    (queryIndex_budget (k := k) hB (budget_callSource hst))
+    (encRuntime_counter_budget hid)).of_enc_eq
     fun _ => rfl
 
 /-- The halting test, in space linear in the state. -/
 theorem halted_inSpace :
     ComputableInSpace halted encRuntime encBool fun s => (encRuntime s).length := by
-  obtain ⟨-, hstarted, -, -, -, -, hst⟩ := budget_runtime (ComputableInSpace.of_inO
-    (ComputableInO.of_eq (encIn := encRuntime) (encMid := encRuntime) (f := id) fun _ => rfl))
-  have hempty := budget_isEmpty (budget_stack hst)
-  have hsome := budget_comp_linear (isSome_inSpace encCall)
-    (budget_comp_lin (fst _ _) (.refl _) (budget_reg hst))
+  have hid : ComputableInSpace id encRuntime encRuntime (fun s => (encRuntime s).length) :=
+    of_inO (ComputableInO.of_eq fun _ => rfl)
+  have hst := encSimulationRound_recursion_budget (encRuntime_round_budget hid)
+  have hreg := budget_reg hst
   exact (budget_finite (fun p : Bool × Bool × Bool => p.1 && p.2.1 && !p.2.2)
-    (budget_prod hstarted (budget_prod hempty hsome))).of_enc_eq fun _ => rfl
+    (budget_prod (encRuntime_started_budget hid)
+      (budget_prod (budget_isEmpty (budget_stack hst))
+        (budget_optionIsSome hreg.fst')))).of_enc_eq fun _ => rfl
 
 /-- The answer, in space linear in the state. -/
 theorem finish_inSpace :
     ComputableInSpace finish encRuntime encBits fun s => (encRuntime s).length := by
-  obtain ⟨-, -, -, -, -, -, hst⟩ := budget_runtime (ComputableInSpace.of_inO
-    (ComputableInO.of_eq (encIn := encRuntime) (encMid := encRuntime) (f := id) fun _ => rfl))
-  exact (budget_comp_lin (snd _ _) (.refl _) (budget_reg hst)).of_enc_eq fun _ => rfl
+  have hid : ComputableInSpace id encRuntime encRuntime (fun s => (encRuntime s).length) :=
+    of_inO (ComputableInO.of_eq fun _ => rfl)
+  have hst := encSimulationRound_recursion_budget (encRuntime_round_budget hid)
+  exact (budget_reg hst).snd'.of_enc_eq fun _ => rfl
 
 /-- The edge test of the graph on words, in linear space. -/
 theorem paramEdge_inSpace : ComputableInSpace
@@ -601,20 +612,22 @@ theorem paramEdge_inSpace : ComputableInSpace
     fun q => (encPair encParam (encPair encBits encBits) q).length := by
   have hp := fst encParam (encPair encBits encBits)
   have huv := snd encParam (encPair encBits encBits)
-  have hB := budget_comp_lin (fst _ _) (.refl _) hp
-  have hrest := budget_comp_lin (snd _ _) (.refl _) hp
-  have hn := budget_comp_lin (fst _ _) (.refl _) hrest
-  have hsym := budget_comp_lin (snd _ _) (.refl _) hrest
-  have hu := budget_comp_lin (fst _ _) (.refl _) huv
-  have hv := budget_comp_lin (snd _ _) (.refl _) huv
-  have hvalU := budget_comp_linear ofBits_inSpace hu
-  have hvalV := budget_comp_linear ofBits_inSpace hv
+  have hB := hp.fst'
+  have hrest := hp.snd'
+  have hn := hrest.fst'
+  have hsym := hrest.snd'
+  have hu := huv.fst'
+  have hv := huv.snd'
+  have hvalU := budget_comp_linear (of_inO ComputableInO.bitsToNat) hu
+  have hvalV := budget_comp_linear (of_inO ComputableInO.bitsToNat) hv
   have hin : (fun q : (ℕ × ℕ × Option Bool) × List Bool × List Bool =>
       (encPair encParam (encPair encBits encBits) q).length) ≼ _ := .refl _
   have he := edgeWithSymbol_budget ntm hB hn hvalU hvalV hsym hin
   have hb := bad_budget (k := k) (State := State) hB hn hvalU hin
-  have hall := budget_comp_linear (transducer_inSpace (encIn := encBits) (encOut := encBool)
-    (f := fun l : List Bool => l.all id) Savitch.allT fun l => by rw [Savitch.allT_run]; rfl) hv
+  have hall := budget_comp_linear
+    (of_inO (.of_linear (.of_transducer (encIn := encBits) (encMid := encBool)
+      (f := fun l : List Bool => l.all id) Savitch.allT fun l => by
+        rw [Savitch.allT_run]; rfl))) hv
   exact (budget_finite (fun p : Bool × Bool × Bool => p.1 || (p.2.1 && p.2.2))
     (budget_prod he (budget_prod hb hall))).of_enc_eq fun _ => rfl
 
@@ -641,7 +654,7 @@ theorem initRound_inSpace (D : ℕ) : ComputableInSpace (initRound ntm D) encNat
   have hB : ComputableInSpace (fun n => radix D n) encNat encNat fun n => (encNat n).length :=
     (budget_natPow (budget_natAdd hn (budget_const 2 hin)) hin D).of_enc_eq fun _ => rfl
   have hN := vertexBound_budget (k := k) hB hin
-  have hW₀ := budget_comp_linear size_inSpace hN
+  have hW₀ := budget_comp_linear natSizeUnary hN
   have hW : ComputableInSpace (fun n => vertexWidth k (radix D n)) encNat encUnary
       fun n => (encNat n).length := hW₀.of_enc_eq fun _ => rfl
   have hstart := startID_budget ntm hB hin
@@ -657,9 +670,7 @@ theorem initRound_inSpace (D : ℕ) : ComputableInSpace (initRound ntm D) encNat
   have hsrc := budget_comp_linear (of_inO ComputableInDegree.bitsDropLast.inO_one) hbits
   have hsink : ComputableInSpace (fun n => List.replicate (vertexWidth k (radix D n)) true) encNat
       encBits fun n => (encNat n).length := hW.of_enc_eq fun _ => rfl
-  have hcall := budget_comp_linear
-    (of_inO (ComputableInDegree.optionSome (enc₁ := encCall) (enc := encOption encCall)).inO_one)
-    (budget_prod hW (budget_prod hsrc hsink))
+  have hcall := budget_optionSome (budget_prod hW (budget_prod hsrc hsink))
   have hstate : ComputableInSpace (fun n => (initRound ntm D n).2) encNat encState
       fun n => (encNat n).length :=
     (budget_prod (budget_const (encB := encList encFrame) [] hin)
@@ -675,15 +686,29 @@ theorem next_inSpace (D : ℕ) : ComputableInSpace (next ntm D)
       ≼ _ := .refl _
   have hs := fst encRuntime (encOption encBool)
   have hsym := snd encRuntime (encOption encBool)
-  obtain ⟨hk, hstarted, hround, hB, hn, hW, hst⟩ := budget_runtime hs
+  have hk := encRuntime_counter_budget hs
+  have hstarted := encRuntime_started_budget hs
+  have hround := encRuntime_round_budget hs
+  have hsetup := encSimulationRound_setup_budget hround
+  have hparams := encRoundSetup_params_budget hsetup
+  have hB := encEdgeParams_radix_budget hparams
+  have hn := encEdgeParams_inputLength_budget hparams
+  have hW := encRoundSetup_width_budget hsetup
+  have hst := encSimulationRound_recursion_budget hround
   have hq := budget_prod (budget_prod (budget_prod hB (budget_prod hn hsym)) hW) hst
-  have hA := budget_prod hk (budget_prod (budget_const (encB := encBool) true hin)
-    (budget_comp_linear (roundStep_inSpace ntm) hq))
-  have hC := budget_prod (budget_natSucc hk) (budget_prod
-    (budget_const (encB := encBool) false hin) hround)
-  have hI := budget_prod hk (budget_prod (budget_const (encB := encBool) true hin)
-    (budget_comp_linear (initRound_inSpace ntm D) hk))
-  have hsome := budget_comp_linear (isSome_inSpace encBool) hsym
+  have hconvert : ComputableInSpace SimulationRound.ofRound (encRound encParam)
+      encSimulationRound (fun q => (encRound encParam q).length) :=
+    of_inO (ComputableInO.of_eq fun _ => rfl)
+  have hstep := budget_comp_linear hconvert (budget_comp_linear (roundStep_inSpace ntm) hq)
+  have hinit := budget_comp_linear hconvert (budget_comp_linear (initRound_inSpace ntm D) hk)
+  have hA := budget_comp_linear (of_inO encRuntime_mk_deg.inO_one)
+    (budget_prod hk (budget_prod (budget_const (encB := encBool) true hin) hstep))
+  have hC := budget_comp_linear (of_inO encRuntime_mk_deg.inO_one)
+    (budget_prod (budget_natSucc hk)
+      (budget_prod (budget_const (encB := encBool) false hin) hround))
+  have hI := budget_comp_linear (of_inO encRuntime_mk_deg.inO_one)
+    (budget_prod hk (budget_prod (budget_const (encB := encBool) true hin) hinit))
+  have hsome := budget_optionIsSome hsym
   exact (budget_ite hstarted hA (budget_ite hsome hC hI)).of_enc_eq fun _ => rfl
 
 end Parts

@@ -131,8 +131,7 @@ theorem block_eval_xorMixStage (c : Bool) {j n : ℕ} (r : BitString j)
     | last =>
       simp only [xorMixStageWire, Fin.cases_zero, Fin.lastCases_last]
       rw [trace_xorChainProgram, BitString.parityComplete, Fin.snoc_last]
-      congr 2
-      funext a
+      congr 2 with a : 1
       simp
     | cast i' =>
       simp [xorMixStageWire, BitString.parityComplete]
@@ -193,8 +192,7 @@ theorem outputDist_xorMixCircuit {n m : ℕ} (C₀ C₁ : Circuit signature n m)
       ((Equiv.prodCongr (Equiv.refl _)
         (BitString.blocksEquiv (m := j + 1) (k := n) (α := Bool)).symm).trans
         (Fin.appendEquiv j ((j + 1) * n))), PMF.map_comp]
-  congr 1
-  funext p
+  congr 1 with p : 1
   obtain ⟨r, d⟩ := p
   apply BitString.blocksEquiv.injective
   have happ : (Fin.appendEquiv j ((j + 1) * n)) (r, BitString.blocksEquiv.symm d) =

@@ -55,11 +55,9 @@ theorem mem_external_of_mem_edgeCut {B : c.blocks} {e : E} (he : e ∈ G.edgeCut
   intro h
   exact he (by rw [h])
 
-variable [Finite E]
-
 /-- In a saturated compression, the ends of an edge of the quotient have at least `d + 3` edges
 between them: more than `d` edges leave their union, and the edges between them are counted
-twice. -/
+twice. The relevant cuts are finite because saturation bounds their unions from below. -/
 theorem Saturated.add_three_le_ncard_incidenceSet_quotient (hc : c.Saturated) (e : c.external) :
     d + 3 ≤ (c.quotient.incidenceSet (c.quotient.src e)).ncard +
       (c.quotient.incidenceSet (c.quotient.tgt e)).ncard := by
@@ -70,11 +68,33 @@ theorem Saturated.add_three_le_ncard_incidenceSet_quotient (hc : c.Saturated) (e
     refine ⟨e.1, ?_, ?_⟩ <;> rw [mem_edgeCut_block]
     · exact fun h => hne (h.mp rfl).symm
     · exact fun h => hne (h.mpr rfl)
-  have hsum := G.ncard_edgeCut_union_add (c.disjoint_of_ne hne)
   have hlt := hc _ B.2 _ B'.2 (fun h => hne (Subtype.ext h)) hjoin
-  have hpos := hjoin.ncard_pos
+  -- Some edge `f` leaves `B ∪ B'`, joining a block `Y ∈ {B, B'}` to a block `C ∉ {B, B'}`.
+  obtain ⟨f, hf⟩ := nonempty_of_ncard_ne_zero (s := G.edgeCut ({v | v ∈ B.1} ∪ {v | v ∈ B'.1}))
+    (by omega)
+  simp only [mem_edgeCut, mem_union, mem_ofPred_eq, c.mem_iff_blockOf_eq] at hf
+  obtain ⟨Y, C, hY, hCB, hCB', hYC⟩ : ∃ Y C : c.blocks, (Y = B ∨ Y = B') ∧ C ≠ B ∧ C ≠ B' ∧
+      (G.edgeCut {v | v ∈ Y.1} ∩ G.edgeCut {v | v ∈ C.1}).Nonempty := by
+    by_cases hs : c.blockOf (G.src f) = B ∨ c.blockOf (G.src f) = B'
+    · refine ⟨c.blockOf (G.src f), c.blockOf (G.tgt f), hs, fun h => ?_, fun h => ?_, f, ?_, ?_⟩ <;>
+        (try rw [mem_edgeCut_block]) <;> grind
+    · refine ⟨c.blockOf (G.tgt f), c.blockOf (G.src f), by tauto, fun h => hs (.inl h),
+        fun h => hs (.inr h), f, ?_, ?_⟩ <;> rw [mem_edgeCut_block] <;> grind
+  -- The cuts of `B` and `B'` lie in two cuts bounded by saturation, so they are finite.
+  have hYC' := hc _ Y.2 _ C.2 (fun h => by grind [Subtype.ext h]) hYC
+  have hfin : (G.edgeCut {v | v ∈ B.1} ∪ G.edgeCut {v | v ∈ B'.1}).Finite := by
+    refine ((finite_of_ncard_ne_zero (s := G.edgeCut ({v | v ∈ B.1} ∪ {v | v ∈ B'.1}))
+      (by omega)).union (finite_of_ncard_ne_zero (s := G.edgeCut ({v | v ∈ Y.1} ∪ {v | v ∈ C.1}))
+      (by omega))).subset fun g hg => ?_
+    simp only [mem_edgeCut, mem_union, mem_ofPred_eq, c.mem_iff_blockOf_eq] at hg ⊢
+    rcases hY with rfl | rfl <;> grind
+  have hsum := G.ncard_edgeCut_union_add (c.disjoint_of_ne hne)
+    (hfin.subset subset_union_left) (hfin.subset subset_union_right)
+  have hpos := (ncard_pos (hfin.subset (inter_subset_left.trans subset_union_left))).mpr hjoin
   rw [c.ncard_incidenceSet_quotient, c.ncard_incidenceSet_quotient]
   omega
+
+variable [Finite E]
 
 /-- In a saturated compression of a connected multigraph into at least two blocks, every block
 has at least three edges in the quotient. -/
@@ -87,9 +107,7 @@ theorem Saturated.three_le_ncard_incidenceSet_quotient (hc : c.Saturated)
   have hs := c.quotient_maxDegreeLE (c.quotient.src e')
   have ht := c.quotient_maxDegreeLE (c.quotient.tgt e')
   have hi : c.quotient.src e' = B ∨ c.quotient.tgt e' = B := by
-    rw [mem_edgeCut_block] at he
-    simp only [quotient_src, quotient_tgt]
-    tauto
+    grind [mem_edgeCut_block, quotient_src, quotient_tgt]
   rcases hi with h | h <;> rw [h] at hsum <;> omega
 
 /-- A saturated compression of a connected multigraph into at least two blocks has at least as
@@ -117,9 +135,7 @@ theorem Saturated.mul_card_external_le (hc : c.Saturated) (hG : G.toSimpleGraph.
   rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card] at hdens
   have hcard := c.card_add_card_external_le
   have hconn := G.card_le_card_add_one_of_connected hG
-  have hβ : Nat.card E + 1 ≤ G.cycleRank + Nat.card V := by
-    rw [cycleRank]
-    omega
+  have hβ : Nat.card E + 1 ≤ G.cycleRank + Nat.card V := by grind [cycleRank]
   -- Some block of the core has between three and `d` edges, so `d = k + 3`.
   obtain ⟨k, rfl⟩ : ∃ k, d = k + 3 := by
     obtain ⟨B⟩ := (Nat.card_pos_iff.mp (by omega : 0 < Nat.card c.blocks)).1

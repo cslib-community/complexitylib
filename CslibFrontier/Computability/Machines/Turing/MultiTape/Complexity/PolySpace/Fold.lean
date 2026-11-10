@@ -77,7 +77,7 @@ theorem natFold [Inhabited α] [Inhabited β]
       ((PolyBounded.const 2).mul hcount.polyBounded_length)).add hbound).add (PolyBounded.const 2)
   have hrun := iterate hcount hstart hadvance hsize (fun x k hk => by
     rw [iterate_advance]
-    have hi := ComputableTidilyInO.length_encNat_mono hk
+    have hi := length_encNat_mono hk
     have ha := hstates x k hk
     simp only [length_encPair]
     omega)

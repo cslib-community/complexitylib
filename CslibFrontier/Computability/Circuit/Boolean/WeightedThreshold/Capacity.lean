@@ -15,6 +15,7 @@ public import Mathlib.Logic.Equiv.Prod
 import Mathlib.Combinatorics.Pigeonhole
 import Mathlib.Data.Fintype.Card
 import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.PowClog
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -314,17 +315,7 @@ theorem BlockDecomposition.two_pow_lt_mul_cost {K : ℕ}
     (BlockKind.qcost_pos _).ne')
   set a := Nat.clog 2 (K * Dp) with hadef
   have ha1 : K * Dp ≤ 2 ^ a := Nat.le_pow_clog one_lt_two _
-  have ha2 : 2 ^ a < 2 * (K * Dp) := by
-    rcases Nat.lt_or_ge 1 (K * Dp) with h1 | h1
-    · have hlt := Nat.pow_pred_clog_lt_self one_lt_two h1
-      have hpos : 0 < a := Nat.clog_pos one_lt_two h1
-      rw [← hadef] at hlt
-      have : 2 ^ a = 2 * 2 ^ a.pred := by
-        rw [← pow_succ', Nat.pred_eq_sub_one, Nat.sub_add_cancel hpos]
-      omega
-    · have hone : K * Dp = 1 := le_antisymm h1 (Nat.mul_pos hK hDp)
-      rw [hadef, hone]
-      simp
+  have ha2 : 2 ^ a < 2 * (K * Dp) := Nat.pow_clog_lt_mul one_lt_two (Nat.mul_pos hK hDp).ne'
   have hpos : 0 < 2 * K * Dq := by positivity
   have key : 2 ^ a * (2 * K * Dq) < 2 ^ n := by
     calc 2 ^ a * (2 * K * Dq) < 2 * (K * Dp) * (2 * K * Dq) :=

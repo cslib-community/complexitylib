@@ -257,11 +257,7 @@ theorem validProg_resolveIndexedSlot {U V w n_max h_space : ℕ} {d : (ℕ × �
         Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm, ← hcap]; exact hj_cap)
       exact validProg_bind (validProg_readGM hw (gmSlabDirIdx_lt hb_pos hb hs_dir))
         (validProg_pure _)
-    · unfold bCount at hj_bc
-      simp only [hb0, ↓reduceIte, hb, gmQIdx] at hj_bc
-      have hr_lt : d.2 - gmAt d.1.1 U V w n_max h_space s.mem (4 + 3 * d.1.2) * slabSize n_max <
-          gmAt d.1.1 U V w n_max h_space s.mem (gmRIdx d.1.2) := by omega
-      have hr_cap := lt_of_lt_of_le hr_lt (hinv.multi_r_bounds hb_pos d.1.2 hb).1.le
+    · obtain ⟨-, hr_cap⟩ := hinv.tailOffset_lt hb_pos hb hj_bc hns
       exact validProg_bind (validProg_readGM hw (gmTailPtrIdx_lt hb_pos hb hr_cap))
         (validProg_pure _)
 
@@ -310,22 +306,7 @@ theorem validProg_removeLastTailItem {U V w n_max h_space : ℕ} {d : ℕ × ℕ
   have hr_del_cap : r_del < tailCapPerBucket n_max := lt_of_lt_of_le hr_del_lt (htail.r_le d.2 hb)
   have ht_del_lt : t_del < gm 1 := htail.ptr_lt d.2 hb r_del hr_del_lt
   have ht_last_lt : t_last < gm 1 := by omega
-  have hvalid_last := htail.owner_valid t_last ht_last_lt
-  dsimp only at hvalid_last
-  change d_last / tailCapPerBucket n_max < numBuckets n_max ∧
-    d_last % tailCapPerBucket n_max < gm (gmRIdx (d_last / tailCapPerBucket n_max)) ∧
-    gm (gmTailPtrFlatIdx n_max d_last) = t_last at hvalid_last
-  rcases hvalid_last with ⟨hb_last, hr_last, _⟩
-  have hr_last_cap : d_last % tailCapPerBucket n_max < tailCapPerBucket n_max :=
-    lt_of_lt_of_le hr_last (htail.r_le _ hb_last)
-  have hd_last_lt : d_last < maxTailItems n_max := by
-    have hdiv_mod := Nat.div_add_mod d_last (tailCapPerBucket n_max)
-    rw [Nat.mul_comm] at hdiv_mod
-    unfold maxTailItems
-    have h1 : (d_last / tailCapPerBucket n_max + 1) * tailCapPerBucket n_max ≤
-        numBuckets n_max * tailCapPerBucket n_max :=
-      Nat.mul_le_mul_right _ hb_last
-    nlinarith
+  have hd_last_lt : d_last < maxTailItems n_max := htail.owner_lt_maxTailItems ht_last_lt
   have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
   have hptr_del_lt : gmTailPtrBase n_max + (d.2 * tailCapPerBucket n_max + r_del) <
       globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_del_cap
@@ -409,18 +390,7 @@ theorem validProg_gmPushSlab {U V w n_max h_space : ℕ} {d : ℕ × ℕ} {s : M
       gmSlabMetaBase n_max + 4 * gmAt d.1 U V w n_max h_space s.mem (4 + 3 * d.2 + 2) + 3 <
         globalMetaLen n_max := by
     intro hq_pos
-    have h1 : gmAt d.1 U V w n_max h_space s.mem (gmQIdx d.2) - 1 <
-        gmAt d.1 U V w n_max h_space s.mem (gmQIdx d.2) := by
-      unfold gmQIdx; omega
-    have htop_eq := hslab.top_eq d.2 hb
-      (gmAt d.1 U V w n_max h_space s.mem (gmQIdx d.2) - 1) h1 (Nat.sub_add_cancel hq_pos)
-    have htop_lt : gmAt d.1 U V w n_max h_space s.mem (4 + 3 * d.2 + 2) <
-        gmAt d.1 U V w n_max h_space s.mem 0 := by
-      change gmAt d.1 U V w n_max h_space s.mem (gmSlabTopIdx d.2) <
-        gmAt d.1 U V w n_max h_space s.mem 0
-      rw [htop_eq]
-      exact hslab.ptr_lt d.2 hb _ h1
-    exact gmSlabAboveIdx_lt hb_pos (lt_trans htop_lt hp_lt)
+    exact gmSlabAboveIdx_lt hb_pos ((hslab.top_lt hb hq_pos).trans hp_lt)
   exact validProg_gmPushSlab_aux hw hnU hU _ _ _
     (gmQIdx_lt hb_pos hb)
     (by unfold globalMetaLen; omega)
@@ -442,17 +412,10 @@ theorem validProg_gmUnlinkTopSlab {U V w n_max h_space : ℕ} {d : ℕ × ℕ} {
     ValidProg w (dictFrontier U V w n_max h_space d.1) s
       (gmUnlinkTopSlabProg U V w n_max h_space d) := by
   let gm := gmAt d.1 U V w n_max h_space s.mem
-  let q_b := gm (gmQIdx d.2)
   let p_del := gm (gmSlabTopIdx d.2)
   have hq_idx_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have htop_idx_lt : 4 + 3 * d.2 + 2 < globalMetaLen n_max := gmSlabTopIdx_lt hb_pos hb
-  have htop_eq := hslab.top_eq d.2 hb (q_b - 1)
-    (by dsimp only [q_b, gm]; omega)
-    (by dsimp only [q_b, gm]; omega)
-  have hp_del_lt : p_del < gm 0 := by
-    dsimp only [p_del, gm]
-    rw [htop_eq]
-    exact hslab.ptr_lt d.2 hb (q_b - 1) (by dsimp only [q_b, gm]; omega)
+  have hp_del_lt : p_del < gm 0 := hslab.top_lt hb hq_pos
   have hp_del_cap : p_del < maxFullSlabs n_max := lt_of_lt_of_le hp_del_lt hslab.nslabs_le
   have hbel_idx_lt : gmSlabMetaBase n_max + 4 * p_del + 2 < globalMetaLen n_max :=
     gmSlabBelowIdx_lt hb_pos hp_del_cap
@@ -702,13 +665,25 @@ theorem validProg_promoteLoop {U V w n_max h_space : ℕ} {d : ((ℕ × ℕ) × 
   exact validProg_iterate d.2 d.1.2 s
     (fun a' s' h => validProg_promoteStep (x := (d.1.1, a')) hw hnU hU hV hb_pos h.2.1) hsafe
 
+/-- The parameter bounds recorded by `DictEnvGen` for concrete parameters `mkDictParams`. -/
+private theorem dictEnvGen_mk_bounds {w' U V w n_max h_space base : ℕ}
+    (h : DictEnvGen w' (mkDictParams U V w n_max h_space) base) :
+    0 < w ∧ n_max ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w := by
+  obtain ⟨U', V', w₀, n', _, hw, hnU, hU, hV, heq⟩ := h.params
+  have hU' : U = U' := by simpa using congrArg dpU heq
+  have hV' : V = V' := by simpa using congrArg dpV heq
+  have hw' : w = w₀ := by simpa using congrArg dpW heq
+  have hn' : n_max = n' := by simpa using congrArg dpNMax heq
+  subst hU' hV' hw' hn'
+  exact ⟨hw, hnU, hU, hV⟩
+
 theorem validProg_promoteSlab {U V w n_max h_space : ℕ} {d : ℕ × ℕ} {s : Memory.State}
-    (hw : 0 < w) (hnU : n_max ≤ U) (hU : U < 2 ^ w) (hV : V ≤ 2 ^ w)
     (hb_pos : 0 < bucketBits n_max)
     (hdenv : DictEnvGen w (mkDictParams U V w n_max h_space) d.1)
     (hpre : PromoteSlabInv U V w n_max h_space d.1 d.2 s) :
     ValidProg w (dictFrontier U V w n_max h_space d.1) s
       (promoteSlabProg U V w n_max h_space d) := by
+  obtain ⟨hw, hnU, hU, hV⟩ := dictEnvGen_mk_bounds hdenv
   obtain ⟨hloopK, _, hsafe⟩ :=
     iterate_promoteStepProg_spec (w := w) hw hb_pos (slabSize n_max) 0 s
       (by omega) (promoteLoopInv_zero hpre)
@@ -746,11 +721,9 @@ theorem validProg_demoteStep {U V w n_max h_space : ℕ} {x : (ℕ × ℕ) × �
   have hb0 : bucketBits n_max ≠ 0 := by omega
   have hK_pos : 0 < slabSize n_max := slabSize_pos n_max
   let u := (slabSize n_max - 1) - k
-  have htop_eq := hslab.top_eq b hb (gm (gmQIdx b) - 1) (by omega) (by omega)
   let p_del := gm (gmSlabTopIdx b)
   let p_last := gm 0 - 1
-  have hp_del_lt : p_del < gm 0 := by
-    dsimp only [p_del]; rw [htop_eq]; exact hslab.ptr_lt b hb (gm (gmQIdx b) - 1) (by omega)
+  have hp_del_lt : p_del < gm 0 := hslab.top_lt hb hqb_pos
   have htop_idx_lt : 4 + 3 * b + 2 < globalMetaLen n_max := gmSlabTopIdx_lt hb_pos hb
   have h0_idx_lt : 0 < globalMetaLen n_max := by unfold globalMetaLen; omega
   let g_del := p_del * slabSize n_max + u
@@ -921,7 +894,7 @@ theorem validProg_pushBackSlot {U V w n_max h_space : ℕ}
       refine ⟨hb, htail1, hslab1, by rw [hrb1, hc], fun b'' hb'' hne => ?_, by omega⟩
       rw [(hother1 b'' hb'' hne).1, (hother1 b'' hb'' hne).2]
       exact hinv.multi_r_bounds hb_pos b'' hb''
-    exact validProg_promoteSlab (d := (base', b')) hw hnU hU hV hb_pos hdenv hpre_prom
+    exact validProg_promoteSlab (d := (base', b')) hb_pos hdenv hpre_prom
 
 theorem validProg_popBackSlot {U V w n_max h_space : ℕ}
     {d : ℕ × ℕ} {s : Memory.State}
@@ -1143,12 +1116,12 @@ theorem validProg_searchMicroChain {U V w n_max h_space : ℕ}
     hw (searchMicroChainProg_spec henv hb hm hinv hchain hc_lt).2.2.1
 
 theorem validProg_resolveOvfStep {U V w n_max h_space : ℕ}
-    (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
     {d : (ℕ × ℕ) × (ℕ × ℕ)} {s : Memory.State}
     (hpre : ResolveOvfStepPre U V w n_max h_space w d s) :
     ValidProg w (dictFrontier U V w n_max h_space d.1.1) s
       (resolveOvfStepProg U V w n_max h_space d) := by
-  rcases hpre with ⟨_, hb, hj_bc, hinv, hp, _⟩
+  rcases hpre with ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩
+  have hw : 0 < w := (dictEnvGen_mk_bounds henv).1
   have hb0 : bucketBits n_max ≠ 0 := by omega
   have hK : 0 < slabSize n_max := slabSize_pos n_max
   have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
@@ -1164,17 +1137,11 @@ theorem validProg_resolveOvfStep {U V w n_max h_space : ℕ}
     have hp_eq := hp hj_slab
     have hs_lt : d.2.1 / slabSize n_max <
         gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) :=
-      Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm])
-    have hp_lt_max : d.2.2 < maxFullSlabs n_max := by
-      rw [hp_eq]
-      exact lt_of_lt_of_le (hslab.ptr_lt d.1.2 hb _ hs_lt) hslab.nslabs_le
+      (Nat.div_lt_iff_lt_mul hK).2 hj_slab
+    have hp_lt_max : d.2.2 < maxFullSlabs n_max := hp_eq ▸ hslab.ptr_lt_maxFullSlabs hb hs_lt
     exact validProg_bind (validProg_readGM hw (gmSlabAboveIdx_lt hb_pos hp_lt_max))
       (validProg_pure _)
-  · unfold bCount at hj_bc
-    simp only [hb0, ↓reduceIte, hb] at hj_bc
-    have hr_lt : d.2.1 - gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) * slabSize n_max <
-        gmAt d.1.1 U V w n_max h_space s.mem (gmRIdx d.1.2) := by omega
-    have hr_cap := lt_of_lt_of_le hr_lt (hinv.multi_r_bounds hb_pos d.1.2 hb).1.le
+  · obtain ⟨-, hr_cap⟩ := hinv.tailOffset_lt hb_pos hb hj_bc hj_tail
     exact validProg_bind (validProg_readGM hw (gmTailPtrIdx_lt hb_pos hb hr_cap))
       (validProg_pure _)
 
@@ -1188,7 +1155,7 @@ theorem validProg_ovfStep {U V w n_max h_space : ℕ}
   unfold ovfStepProg
   simp only [pure_bind]
   refine validProg_bind
-    (validProg_resolveOvfStep (d := (x.1.1, x.2.1.1.1)) hw hb_pos
+    (validProg_resolveOvfStep (d := (x.1.1, x.2.1.1.1))
       ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩) ?_
   rw [clientState_resolveOvfStepProg,
     (clientResult_resolveOvfStepProg (d := (x.1.1, x.2.1.1.1)) s hb_pos hb hj_bc hinv hp).1]
@@ -1219,7 +1186,6 @@ theorem validProg_initOvfSearch {U V w n_max h_space : ℕ}
     ValidProg w (dictFrontier U V w n_max h_space d.1) s
       (initOvfSearchProg U V w n_max h_space d) := by
   have hb0 : bucketBits n_max ≠ 0 := by omega
-  have hK : 0 < slabSize n_max := slabSize_pos n_max
   have hq_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have hr_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
   have hbc_eq : gmAt d.1 U V w n_max h_space s.mem (4 + 3 * d.2) * slabSize n_max +
@@ -1238,24 +1204,8 @@ theorem validProg_initOvfSearch {U V w n_max h_space : ℕ}
   refine validProg_ite (fun hcap_q => ?_) (fun _ => validProg_pure _)
   have hcap_eq : min n_max (effBucketCap n_max) = effBucketCap n_max := by omega
   rw [hcap_eq] at hcap_c hcap_q
-  have hdir_pos := dirSlabsPerBucket_pos_of_pos hb_pos
-  have hcap_dir := effBucketCap_eq_dirSlabs_mul_slabSize hb_pos
-  have hdir_lt_q : dirSlabsPerBucket n_max <
-      gmAt d.1 U V w n_max h_space s.mem (4 + 3 * d.2) :=
-    (Nat.mul_lt_mul_right hK).mp (by rwa [← hcap_dir])
-  have hslab := hinv.multi_slab hb_pos
-  have hs_last_dir : dirSlabsPerBucket n_max - 1 < dirSlabsPerBucket n_max := by omega
-  have hs_last_q : dirSlabsPerBucket n_max - 1 <
-      gmAt d.1 U V w n_max h_space s.mem (gmQIdx d.2) := by
-    unfold gmQIdx; omega
-  have hdir_idx_lt : gmSlabDirBase n_max + d.2 * dirSlabsPerBucket n_max +
-      (dirSlabsPerBucket n_max - 1) < globalMetaLen n_max :=
-    gmSlabDirIdx_lt hb_pos hb hs_last_dir
-  have hp_prev_eq := hslab.dir_eq d.2 hb (dirSlabsPerBucket n_max - 1) hs_last_q hs_last_dir
-  unfold gmSlabDirIdx at hp_prev_eq
-  have hp_prev_lt_max : slabPtrOf n_max (gmAt d.1 U V w n_max h_space s.mem) d.2
-      (dirSlabsPerBucket n_max - 1) < maxFullSlabs n_max :=
-    lt_of_lt_of_le (hslab.ptr_lt d.2 hb _ hs_last_q) hslab.nslabs_le
+  obtain ⟨hdir_idx_lt, hp_prev_eq, hp_prev_lt_max⟩ :=
+    hinv.lastDirSlab_ptr hb_pos hb hcap_q.le
   refine validProg_bind (validProg_readGM hw hdir_idx_lt) ?_
   rw [clientState_readGMProg, clientResult_readGMProg s hdir_idx_lt, hp_prev_eq]
   exact validProg_bind (validProg_readGM hw (gmSlabAboveIdx_lt hb_pos hp_prev_lt_max))
@@ -1285,10 +1235,11 @@ theorem validProg_searchOverflow {U V w n_max h_space : ℕ}
       (validProg_pure _)
 
 theorem validProg_searchBucket {U V w n_max h_space : ℕ}
-    (hw : 0 < w) {d : ((ℕ × ℕ) × ℕ) × ℕ} {s : Memory.State}
+    {d : ((ℕ × ℕ) × ℕ) × ℕ} {s : Memory.State}
     (hpre : SearchMicroChainPre U V w n_max h_space w d s) :
     ValidProg w (dictFrontier U V w n_max h_space d.1.1.1) s
       (searchBucketProg U V w n_max h_space d) := by
+  have hw : 0 < w := (dictEnvGen_mk_bounds hpre.1).1
   obtain ⟨L, hchain, hc_lt⟩ := hpre.2.2.2.2
   unfold searchBucketProg
   simp only [pure_bind]
@@ -1305,7 +1256,7 @@ theorem validProg_queryBody {U V w n_max h_space : ℕ}
   obtain ⟨L, hchain, hc_lt⟩ := hpre.2.2.2.2
   unfold queryBodyProg
   simp only [pure_bind]
-  refine validProg_bind (validProg_searchBucket hw hpre) ?_
+  refine validProg_bind (validProg_searchBucket hpre) ?_
   have hsb := searchBucketProg_spec hpre.1 hpre.2.1 hpre.2.2.1 hpre.2.2.2.1 hchain hc_lt
   rw [hsb.1]
   refine validProg_ite (fun hf1 => ?_) (fun _ => validProg_pure _)
@@ -1416,7 +1367,7 @@ theorem validProg_insertBody {U V w n_max h_space : ℕ}
   obtain ⟨L, hchain, hc_lt⟩ := hsb_pre.2.2.2.2
   unfold insertBodyProg
   simp only [pure_bind]
-  refine validProg_bind (validProg_searchBucket (d := (d.1.1, d.2)) hw hsb_pre) ?_
+  refine validProg_bind (validProg_searchBucket (d := (d.1.1, d.2)) hsb_pre) ?_
   have hsb := searchBucketProg_spec hsb_pre.1 hsb_pre.2.1 hsb_pre.2.2.1 hsb_pre.2.2.2.1 hchain hc_lt
   rw [hsb.1]
   refine validProg_ite (fun hf1 => ?_) (fun _ => ?_)
@@ -1440,7 +1391,7 @@ theorem validProg_deletePrep {U V w n_max h_space : ℕ}
   obtain ⟨L, hchain, hc_lt⟩ := hpre.2.2.2.2
   unfold deletePrepProg
   simp only [pure_bind]
-  refine validProg_bind (validProg_searchBucket (d := d) hw hpre) ?_
+  refine validProg_bind (validProg_searchBucket (d := d) hpre) ?_
   have hsb := searchBucketProg_spec hpre.1 hpre.2.1 hpre.2.2.1 hpre.2.2.2.1 hchain hc_lt
   rw [hsb.1]
   refine validProg_ite (fun hf1 => ?_) (fun _ => validProg_pure _)
