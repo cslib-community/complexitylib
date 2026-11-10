@@ -1361,61 +1361,17 @@ private theorem initLimbsCode_exec {w t r_val : ℕ} (hc_lt : 2 * reducedChunkBi
           (Nat.pow_le_pow_right two_pos (by omega)))
       have hfit_shr : Fits w (r_val >>> ((i + 1) * c)) :=
         lt_of_le_of_lt (Nat.shiftRight_le _ _) hr
-      set s1 := z.set 10 c
-      have e1 : Exec w (.op (.const 10 c) : Code .exact 240) z s1 1 := Exec.const hfit_c
-      set s2 := s1.set 11 (2 ^ c - 1)
-      have e2 : Exec w (.op (.const 11 (2 ^ c - 1)) : Code .exact 240) s1 s2 1 :=
-        Exec.const hfit_mask_c
-      set s3 := s2.set (xReg i) (getLimb c r_val i)
-      have e3 : Exec w (.op (.exactBin .and (xReg i) 3 11) : Code .exact 240) s2 s3 1 :=
-        exec_exactBin (by simp +decide [s2, s1, hz3, getLimb]) hfit_limb
-      set s4 := s3.set 3 (r_val >>> ((i + 1) * c))
-      have hshr_eq : (s3.regs 3) >>> (s3.regs 10) = r_val >>> ((i + 1) * c) := by
-        have h3_s3 : s3.regs 3 = r_val >>> (i * c) := by
-          dsimp only [s3, s2, s1, Data.set]
-          rw [Function.update_of_ne (xReg_ne_low i (r := 3) (by decide)).symm]
-          simp +decide [hz3]
-        have h10_s3 : s3.regs 10 = c := by
-          dsimp only [s3, s2, s1, Data.set]
-          rw [Function.update_of_ne (xReg_ne_low i (r := 10) (by decide)).symm]
-          simp +decide
-        rw [h3_s3, h10_s3, ← Nat.shiftRight_add, ← Nat.succ_mul]
-      have e4 : Exec w (.op (.exactBin .shiftRight 3 3 10) : Code .exact 240) s3 s4 1 :=
-        exec_exactBin (by simp [hshr_eq]) hfit_shr
-      set s5 := s4.set (accReg i) 0
-      have e5 : Exec w (.op (.const (accReg i) 0) : Code .exact 240) s4 s5 1 := Exec.const (by fits)
-      refine ⟨s5, e1.seq (e2.seq (e3.seq (e4.seq e5))), ?_, ?_, ?_, ?_, ?_⟩
-      · dsimp only [s5, s4, s3, s2, s1, Data.set]
-        rw [Function.update_of_ne (accReg_ne_low i (r := 0) (by decide)).symm,
-          Function.update_of_ne (by decide : (0 : Fin 240) ≠ 3),
-          Function.update_of_ne (xReg_ne_low i (r := 0) (by decide)).symm,
-          Function.update_of_ne (by decide : (0 : Fin 240) ≠ 11),
-          Function.update_of_ne (by decide : (0 : Fin 240) ≠ 10), hz0]
-      · dsimp only [s5, s4, Data.set]
-        rw [Function.update_of_ne (accReg_ne_low i (r := 3) (by decide)).symm, Function.update_self]
-      · intro m hm
-        dsimp only [s5, s4, s3, s2, s1, Data.set]
-        rw [Function.update_of_ne (xReg_ne_accReg m i),
-          Function.update_of_ne (xReg_ne_low m (r := 3) (by decide))]
-        rcases eq_or_ne m i with rfl | hne
-        · exact Function.update_self _ _ _
-        · have hm54 : m < 54 := by omega
-          rw [Function.update_of_ne (xReg_ne_of_ne hm54 hi54 hne),
-            Function.update_of_ne (xReg_ne_low m (r := 11) (by decide)),
-            Function.update_of_ne (xReg_ne_low m (r := 10) (by decide))]
-          exact hzx m (by omega)
-      · intro m hm
-        dsimp only [s5, s4, s3, s2, s1, Data.set]
-        rcases eq_or_ne m i with rfl | hne
-        · exact Function.update_self _ _ _
-        · have hm54 : m < 54 := by omega
-          rw [Function.update_of_ne (accReg_ne_of_ne hm54 hi54 hne),
-            Function.update_of_ne (accReg_ne_low m (r := 3) (by decide)),
-            Function.update_of_ne (xReg_ne_accReg i m).symm,
-            Function.update_of_ne (accReg_ne_low m (r := 11) (by decide)),
-            Function.update_of_ne (accReg_ne_low m (r := 10) (by decide))]
-          exact hza m (by omega)
-      · exact hzmem) hP0
+      unfold initLimbStep
+      wram_exec [hz3, show r_val >>> (i * c) &&& (2 ^ c - 1) = getLimb c r_val i from rfl,
+        show r_val >>> (i * c) >>> c = r_val >>> ((i + 1) * c) by
+          rw [← Nat.shiftRight_add, ← Nat.succ_mul]]
+      refine ⟨by wram_simp [hz0], by wram_simp, fun m hm => ?_, fun m hm => ?_, hzmem⟩
+      · rcases eq_or_ne m i with rfl | hne
+        · wram_simp
+        · wram_simp [hzx m (by omega)]
+      · rcases eq_or_ne m i with rfl | hne
+        · wram_simp
+        · wram_simp [hza m (by omega)]) hP0
   exact ⟨y, hy_exec, hy0, hyx, hya, hymem⟩
 
 /-- Stage 2b of `evalCode` (`8` instructions): loads table/chunk constants into `regs 4..9` and
