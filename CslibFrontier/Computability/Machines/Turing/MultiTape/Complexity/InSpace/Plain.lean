@@ -163,8 +163,9 @@ theorem ite {α β : Type*} {encIn : α ↪ List Bool} {encB : β ↪ List Bool}
   let ⟨_, hg⟩ := hg.exists_inO
   of_inO (hc.ite hf hg)
 
-/-- A fixed output needs no work cells: its length is absorbed into the constant factor, so the
-bound weakens to any other bound by `mono_le`. -/
+/-- A fixed output is computed within constant workspace, even when its input is unbounded: the
+zero envelope is realized within `c * (0 + 1)` cells, as in `ComputableInO.constZero`, and weakens
+to any other bound by `mono_le`. -/
 theorem constZero {α β : Type*} {encIn : α ↪ List Bool} {encB : β ↪ List Bool} (b : β) :
     ComputableInSpace (fun _ : α => b) encIn encB fun _ => 0 :=
   of_inO (ComputableInO.constZero b)
