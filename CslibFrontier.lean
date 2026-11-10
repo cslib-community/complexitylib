@@ -5728,6 +5728,7 @@ public import CslibFrontier.Probability.ApproximateCounting.Relative
 public import CslibFrontier.Probability.BitString
 public import CslibFrontier.Probability.BitString.AffineHash
 public import CslibFrontier.Probability.BitString.AffineHash.ThreeWise
+public import CslibFrontier.Probability.BitString.AffineHash.Word
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Achievability
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Capacity
