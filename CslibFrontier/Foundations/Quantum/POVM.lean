@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Foundations.Quantum.Measurement
 public import Mathlib.Analysis.Matrix.Order
 public import Mathlib.LinearAlgebra.Matrix.Kronecker
-public import Mathlib.LinearAlgebra.UnitaryGroup
+import CslibFrontier.Foundations.Analysis.InnerProductSpace.PiL2
 
 /-!
 # Positive-operator-valued measurements
@@ -27,10 +27,11 @@ jointly perform the Kronecker product POVM `E_a ⊗ F_b` (`Cslib.Quantum.POVM.kr
 
 A *`±1` observable* is a Hermitian matrix `O` with `O² = 1`. It is the projective measurement with
 outcome `false` on the `+1` eigenspace and `true` on the `-1` eigenspace, with effects `(1 ± O)/2`
-(`Cslib.Quantum.POVM.ofObservable`), the convention `0 ↦ +1`, `1 ↦ -1` of
-[Cleve, Høyer, Toner, Watrous, §2][CleveHoyerTonerWatrous2004]. Conversely, every two-outcome POVM
-`M` has the observable `E_false - E_true` (`Cslib.Quantum.POVM.observable`), which is a contraction
-even when `M` is not projective (`Cslib.Quantum.POVM.posSemidef_one_sub_observable_mul_self`).
+(`Cslib.Quantum.POVM.ofObservable`, `Cslib.Quantum.POVM.ofObservable_effect`), the convention
+`0 ↦ +1`, `1 ↦ -1` of [Cleve, Høyer, Toner, Watrous, §2][CleveHoyerTonerWatrous2004]. Conversely,
+every two-outcome POVM `M` has the observable `E_false - E_true` (`Cslib.Quantum.POVM.observable`),
+which is a contraction even when `M` is not projective
+(`Cslib.Quantum.POVM.posSemidef_one_sub_observable_mul_self`).
 
 ## Main definitions
 
@@ -51,9 +52,6 @@ even when `M` is not projective (`Cslib.Quantum.POVM.posSemidef_one_sub_observab
   `±1` observables.
 * `Cslib.Quantum.POVM.posSemidef_one_sub_observable_mul_self`: `O² ≤ 1` for the observable `O` of
   any two-outcome POVM.
-* `Cslib.Quantum.norm_toLp_mulVec_le_of_posSemidef`: a matrix `M` with `Mᴴ M ≤ 1` does not increase
-  norms.
-* `Cslib.Quantum.mem_unitaryGroup_of_isHermitian_of_mul_self`: a `±1` observable is unitary.
 
 ## References
 
@@ -69,12 +67,6 @@ open Matrix Finset
 open scoped Kronecker ComplexOrder
 
 variable {ι κ ι' A B : Type*}
-
-/-- The squared norm of a state as a quadratic form: `ψ† ψ = ‖ψ‖²`. -/
-theorem star_dotProduct_self_eq_norm_sq [Fintype ι] (ψ : EuclideanSpace ℂ ι) :
-    star ψ.ofLp ⬝ᵥ ψ.ofLp = (‖ψ‖ : ℂ) ^ 2 := by
-  rw [dotProduct_comm, ← EuclideanSpace.inner_eq_star_dotProduct, inner_self_eq_norm_sq_to_K]
-  rfl
 
 /-- The expectation `v† M v` of a positive semidefinite matrix is real. -/
 private theorem ofReal_re_of_posSemidef [Fintype ι] {M : Matrix ι ι ℂ} (hM : M.PosSemidef)
@@ -122,18 +114,19 @@ theorem sum_prob (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) : ∑ a, M.prob ψ
   apply Complex.ofReal_injective
   push_cast
   simp_rw [ofReal_prob]
-  rw [← dotProduct_sum, ← sum_mulVec, M.sum_effect, one_mulVec, star_dotProduct_self_eq_norm_sq]
+  rw [← dotProduct_sum, ← sum_mulVec, M.sum_effect, one_mulVec,
+    EuclideanSpace.star_dotProduct_self_eq_norm_sq]
 
 /-- The outcome distribution of measuring the unit state `ψ` with `M`. -/
-@[expose] noncomputable def measure (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) :
+noncomputable def measure (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) :
     PMF A :=
   PMF.ofFintype (fun a => ENNReal.ofReal (M.prob ψ a)) <| by
     rw [← ENNReal.ofReal_sum_of_nonneg fun a _ => M.prob_nonneg ψ a, sum_prob, hψ, one_pow,
       ENNReal.ofReal_one]
 
 @[simp] theorem measure_apply (M : POVM A ι) (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) (a : A) :
-    M.measure ψ hψ a = ENNReal.ofReal (M.prob ψ a) :=
-  rfl
+    M.measure ψ hψ a = ENNReal.ofReal (M.prob ψ a) := by
+  rw [measure, PMF.ofFintype_apply]
 
 /-- The trivial measurement that always reports the outcome `a`. -/
 @[expose] noncomputable def const [DecidableEq A] (a : A) : POVM A ι where
@@ -148,7 +141,8 @@ theorem prob_const [DecidableEq A] (a : A) (ψ : EuclideanSpace ℂ ι) (a' : A)
     (const a : POVM A ι).prob ψ a' = if a' = a then ‖ψ‖ ^ 2 else 0 := by
   simp only [prob, const]
   split_ifs
-  · rw [one_mulVec, star_dotProduct_self_eq_norm_sq, ← Complex.ofReal_pow, Complex.ofReal_re]
+  · rw [one_mulVec, EuclideanSpace.star_dotProduct_self_eq_norm_sq, ← Complex.ofReal_pow,
+      Complex.ofReal_re]
   · rw [zero_mulVec, dotProduct_zero, Complex.zero_re]
 
 end Basic
@@ -219,7 +213,7 @@ variable [Fintype ι] [DecidableEq ι]
 /-- The two-outcome projective measurement of a **`±1` observable** `O` (Hermitian, `O² = 1`): the
 effects are `(1 + O)/2` for `false` (eigenvalue `+1`) and `(1 - O)/2` for `true` (eigenvalue `-1`)
 [Cleve, Høyer, Toner, Watrous, §2][CleveHoyerTonerWatrous2004]. -/
-@[expose] noncomputable def ofObservable (O : Matrix ι ι ℂ) (hO : O.IsHermitian) (hO2 : O * O = 1) :
+noncomputable def ofObservable (O : Matrix ι ι ℂ) (hO : O.IsHermitian) (hO2 : O * O = 1) :
     POVM Bool ι where
   effect b := bif b then (2⁻¹ : ℂ) • (1 - O) else (2⁻¹ : ℂ) • (1 + O)
   posSemidef b := by
@@ -244,9 +238,14 @@ effects are `(1 + O)/2` for `false` (eigenvalue `+1`) and `(1 - O)/2` for `true`
 theorem isHermitian_observable (M : POVM Bool ι) : M.observable.IsHermitian :=
   (M.posSemidef false).isHermitian.sub (M.posSemidef true).isHermitian
 
+@[simp] theorem ofObservable_effect (O : Matrix ι ι ℂ) (hO : O.IsHermitian) (hO2 : O * O = 1)
+    (b : Bool) :
+    (ofObservable O hO hO2).effect b = bif b then (2⁻¹ : ℂ) • (1 - O) else (2⁻¹ : ℂ) • (1 + O) := by
+  simp only [ofObservable]
+
 theorem observable_ofObservable (O : Matrix ι ι ℂ) (hO : O.IsHermitian) (hO2 : O * O = 1) :
     (ofObservable O hO hO2).observable = O := by
-  simp only [observable, ofObservable, Bool.cond_true, Bool.cond_false]
+  simp only [observable, ofObservable_effect, Bool.cond_true, Bool.cond_false]
   module
 
 /-- The observable `O = E_false - E_true` of any two-outcome POVM satisfies `O² ≤ 1`, because
@@ -269,25 +268,6 @@ theorem posSemidef_one_sub_observable_mul_self (M : POVM Bool ι) :
 end Observable
 
 end POVM
-
-/-- A `±1` observable (Hermitian, `O² = 1`) is unitary. -/
-theorem mem_unitaryGroup_of_isHermitian_of_mul_self [Fintype ι] [DecidableEq ι]
-    {O : Matrix ι ι ℂ} (hO : O.IsHermitian) (hO2 : O * O = 1) : O ∈ unitaryGroup ι ℂ := by
-  rw [mem_unitaryGroup_iff, star_eq_conjTranspose, hO.eq, hO2]
-
-/-- A matrix `M` with `Mᴴ M ≤ 1` does not increase norms: `‖M ψ‖ ≤ ‖ψ‖`. -/
-theorem norm_toLp_mulVec_le_of_posSemidef [Fintype ι] [DecidableEq ι] {M : Matrix ι ι ℂ}
-    (hM : (1 - Mᴴ * M).PosSemidef) (ψ : EuclideanSpace ℂ ι) :
-    ‖(WithLp.toLp 2 (M *ᵥ ψ.ofLp) : EuclideanSpace ℂ ι)‖ ≤ ‖ψ‖ := by
-  have h0 := (Complex.nonneg_iff.mp (hM.dotProduct_mulVec_nonneg ψ.ofLp)).1
-  have hMv := star_dotProduct_self_eq_norm_sq (WithLp.toLp 2 (M *ᵥ ψ.ofLp))
-  rw [WithLp.ofLp_toLp] at hMv
-  have hMM : star ψ.ofLp ⬝ᵥ ((Mᴴ * M) *ᵥ ψ.ofLp) =
-      star (M *ᵥ ψ.ofLp) ⬝ᵥ (M *ᵥ ψ.ofLp) := by
-    rw [← mulVec_mulVec, dotProduct_mulVec, star_mulVec]
-  rw [sub_mulVec, one_mulVec, dotProduct_sub, hMM, hMv, star_dotProduct_self_eq_norm_sq,
-    ← Complex.ofReal_pow, ← Complex.ofReal_pow, ← Complex.ofReal_sub, Complex.ofReal_re] at h0
-  exact (sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).mp (by linarith)
 
 /-- Relabelling the basis along `e` preserves expectations `v† M v`. -/
 theorem star_dotProduct_submatrix_mulVec [Fintype ι] [Fintype ι'] (e : ι ≃ ι')

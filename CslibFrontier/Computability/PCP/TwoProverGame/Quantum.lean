@@ -96,7 +96,7 @@ noncomputable def answers (S : QuantumStrategy X Y A B ι κ) (x : X) (y : Y) : 
 theorem answers_apply (S : QuantumStrategy X Y A B ι κ) (x : X) (y : Y) (a : A) (b : B) :
     S.answers x y (a, b) = ENNReal.ofReal
       (star S.state.ofLp ⬝ᵥ (((S.alice x).effect a ⊗ₖ (S.bob y).effect b) *ᵥ S.state.ofLp)).re :=
-  rfl
+  POVM.measure_apply _ _ _ _
 
 /-- The probability `⟨ψ|X_x^a ⊗ Y_y^b|ψ⟩` that the players answer `(a, b)` on questions `(x, y)`:
 the outcome probability of the product POVM. -/

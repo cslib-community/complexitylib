@@ -5,6 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.PCP.TwoProverGame.Tsirelson
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Basic
+import CslibFrontier.Foundations.LinearAlgebra.Matrix.UnitaryGroup
 
 /-! # Quantum strategies for CHSH and Tsirelson's bound
 
@@ -36,7 +38,7 @@ theorem flip_mul_self : flip * flip = 1 := by
 
 -- A `±1` observable is unitary.
 example : flip ∈ unitaryGroup (Fin 2) ℂ :=
-  mem_unitaryGroup_of_isHermitian_of_mul_self isHermitian_flip flip_mul_self
+  isHermitian_flip.mem_unitaryGroup_of_mul_self flip_mul_self
 
 -- The projective measurement of a `±1` observable recovers the observable.
 example : (POVM.ofObservable flip isHermitian_flip flip_mul_self).observable = flip :=
@@ -45,7 +47,7 @@ example : (POVM.ofObservable flip isHermitian_flip flip_mul_self).observable = f
 -- The identity is the observable of the measurement that always answers `false`.
 example : (POVM.ofObservable (1 : Matrix (Fin 2) (Fin 2) ℂ) isHermitian_one (mul_one 1)).effect
     true = 0 := by
-  simp [POVM.ofObservable]
+  simp
 
 -- The trivial measurement reports its outcome with certainty on a unit state.
 example : (POVM.const true : POVM Bool (Fin 2)).prob (ket 0) true = 1 := by
@@ -85,8 +87,7 @@ example (x y : Bool) :
 
 -- Bob's EPR observables are `±1` observables, hence unitary.
 example (y : Bool) : chshBobObservable y ∈ unitaryGroup Bool ℂ :=
-  mem_unitaryGroup_of_isHermitian_of_mul_self (isHermitian_chshBobObservable y)
-    (chshBobObservable_mul_self y)
+  (isHermitian_chshBobObservable y).mem_unitaryGroup_of_mul_self (chshBobObservable_mul_self y)
 
 -- On questions `(1, 1)` the EPR answers are anticorrelated.
 example : chshEPR.correlation true true = -(√2 / 2) := by
@@ -106,15 +107,15 @@ example : (3 / 4 : ℝ) ≤ chsh.quantumValue := value_chsh ▸ chsh.value_le_qu
 -- Tsirelson's bound: no quantum strategy wins CHSH with certainty.
 example : chsh.quantumValue < 1 := by
   refine quantumValue_chsh_le.trans_lt ?_
-  rw [cos_sq_pi_div_eight]
+  rw [Real.cos_sq_pi_div_eight]
   nlinarith [Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ 2), Real.sqrt_nonneg 2]
 
 -- The entangled value of CHSH in closed form, and a numerical check: it exceeds `0.85`.
 example : chsh.quantumValue = 1 / 2 + √2 / 4 := by
-  rw [quantumValue_chsh, cos_sq_pi_div_eight]
+  rw [quantumValue_chsh, Real.cos_sq_pi_div_eight]
 
 example : (0.85 : ℝ) < chsh.quantumValue := by
-  rw [quantumValue_chsh, cos_sq_pi_div_eight]
+  rw [quantumValue_chsh, Real.cos_sq_pi_div_eight]
   nlinarith [Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ 2), Real.sqrt_nonneg 2]
 
 end CslibFrontierTests.Tsirelson

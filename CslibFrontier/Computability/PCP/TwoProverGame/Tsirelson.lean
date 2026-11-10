@@ -12,6 +12,9 @@ public import CslibFrontier.Computability.PCP.TwoProverGame.Quantum
 public import CslibFrontier.Foundations.Quantum.Bell
 public import CslibFrontier.Foundations.Quantum.Pauli
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
+import CslibFrontier.Foundations.Analysis.InnerProductSpace.CHSH
+import CslibFrontier.Foundations.Analysis.InnerProductSpace.PiL2
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Basic
 
 /-!
 # Tsirelson's bound for the CHSH game
@@ -27,7 +30,7 @@ by `2√2` (`Cslib.PCP.QuantumStrategy.chsh_correlation_le`). The proof is the v
 `u_x = (A_x ⊗ 1)ψ` and `v_y = (1 ⊗ B_y)ψ`, the correlation is `Re ⟨u_x, v_y⟩`, every vector has
 norm at most `1` because `A_x² ≤ 1` and `B_y² ≤ 1` for any two-outcome POVM, and
 `Re⟨u₀, v₀ + v₁⟩ + Re⟨u₁, v₀ - v₁⟩ ≤ ‖v₀ + v₁‖ + ‖v₀ - v₁‖ ≤ 2√2` by Cauchy–Schwarz and the
-parallelogram law (`Cslib.PCP.TwoProverGame.chsh_re_inner_le`). Hence every quantum strategy wins
+parallelogram law (`chsh_re_inner_le`). Hence every quantum strategy wins
 CHSH with probability at most `1/2 + √2/4 = cos²(π/8)`
 (`Cslib.PCP.TwoProverGame.quantumWinProb_chsh_le`, `Cslib.PCP.TwoProverGame.quantumValue_chsh_le`)
 [Cleve, Høyer, Toner, Watrous, §3.1][CleveHoyerTonerWatrous2004].
@@ -58,7 +61,6 @@ covers every POVM directly.
 
 * `Cslib.PCP.TwoProverGame.quantumWinProb_chsh`: the CHSH winning probability in terms of the
   correlations.
-* `Cslib.PCP.TwoProverGame.chsh_re_inner_le`: the CHSH inequality for vectors of norm at most `1`.
 * `Cslib.PCP.QuantumStrategy.chsh_correlation_le`: Tsirelson's inequality.
 * `Cslib.PCP.TwoProverGame.quantumValue_chsh_le`: the entangled value of CHSH is at most
   `cos²(π/8)`.
@@ -139,45 +141,13 @@ private theorem norm_bob_le (S : QuantumStrategy X Y Bool Bool ι κ) (y : Y) :
     ← mul_kronecker_mul, mul_one, ← one_kronecker_one, ← kronecker_sub]
   exact PosSemidef.one.kronecker (S.bob y).posSemidef_one_sub_observable_mul_self
 
-end QuantumStrategy
-
-namespace TwoProverGame
-
-/-- The **CHSH inequality for vectors**: for vectors `u₀, u₁, v₀, v₁` of norm at most `1` in an
-inner product space, `Re⟨u₀,v₀⟩ + Re⟨u₀,v₁⟩ + Re⟨u₁,v₀⟩ - Re⟨u₁,v₁⟩ ≤ 2√2`. -/
-theorem chsh_re_inner_le {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
-    {u₀ u₁ v₀ v₁ : E} (hu₀ : ‖u₀‖ ≤ 1) (hu₁ : ‖u₁‖ ≤ 1) (hv₀ : ‖v₀‖ ≤ 1) (hv₁ : ‖v₁‖ ≤ 1) :
-    RCLike.re (inner 𝕜 u₀ v₀) + RCLike.re (inner 𝕜 u₀ v₁) + RCLike.re (inner 𝕜 u₁ v₀) -
-      RCLike.re (inner 𝕜 u₁ v₁) ≤ 2 * √2 := by
-  have h₀ : RCLike.re (inner 𝕜 u₀ v₀) + RCLike.re (inner 𝕜 u₀ v₁) ≤ ‖v₀ + v₁‖ := by
-    rw [← map_add, ← inner_add_right]
-    exact (re_inner_le_norm u₀ _).trans (mul_le_of_le_one_left (norm_nonneg _) hu₀)
-  have h₁ : RCLike.re (inner 𝕜 u₁ v₀) - RCLike.re (inner 𝕜 u₁ v₁) ≤ ‖v₀ - v₁‖ := by
-    rw [← map_sub, ← inner_sub_right]
-    exact (re_inner_le_norm u₁ _).trans (mul_le_of_le_one_left (norm_nonneg _) hu₁)
-  have hpar := parallelogram_law_with_norm 𝕜 v₀ v₁
-  have hv₀' : ‖v₀‖ ^ 2 ≤ 1 := pow_le_one₀ (norm_nonneg _) hv₀
-  have hv₁' : ‖v₁‖ ^ 2 ≤ 1 := pow_le_one₀ (norm_nonneg _) hv₁
-  have hs : (2 * √2) ^ 2 = 8 := by rw [mul_pow, Real.sq_sqrt zero_le_two]; norm_num
-  have hab : ‖v₀ + v₁‖ + ‖v₀ - v₁‖ ≤ 2 * √2 := by
-    refine (sq_le_sq₀ (by positivity) (by positivity)).mp ?_
-    rw [hs]
-    nlinarith [sq_nonneg (‖v₀ + v₁‖ - ‖v₀ - v₁‖)]
-  linarith
-
-end TwoProverGame
-
-namespace QuantumStrategy
-
-variable {X Y ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ] [DecidableEq κ]
-
 /-- **Tsirelson's inequality** [Cirel'son][Cirelson1980]: the CHSH expression of the correlations
 of any quantum strategy with binary answers is at most `2√2`. -/
 theorem chsh_correlation_le (S : QuantumStrategy X Y Bool Bool ι κ) (x₀ x₁ : X) (y₀ y₁ : Y) :
     S.correlation x₀ y₀ + S.correlation x₀ y₁ + S.correlation x₁ y₀ - S.correlation x₁ y₁ ≤
       2 * √2 := by
   simp only [correlation_eq_re_inner]
-  exact TwoProverGame.chsh_re_inner_le (S.norm_alice_le x₀) (S.norm_alice_le x₁)
+  exact chsh_re_inner_le (S.norm_alice_le x₀) (S.norm_alice_le x₁)
     (S.norm_bob_le y₀) (S.norm_bob_le y₁)
 
 end QuantumStrategy
@@ -205,15 +175,11 @@ theorem quantumWinProb_chsh {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Finty
   simp only [QuantumStrategy.prob_eq] at h1 h2 h3 h4 h5 h6 h7 h8
   linarith
 
-theorem cos_sq_pi_div_eight : Real.cos (π / 8) ^ 2 = 1 / 2 + √2 / 4 := by
-  rw [Real.cos_pi_div_eight, div_pow, Real.sq_sqrt (by positivity)]
-  ring
-
 /-- **Tsirelson's bound**: every quantum strategy wins CHSH with probability at most `cos²(π/8)`. -/
 theorem quantumWinProb_chsh_le {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
     [DecidableEq κ] (S : QuantumStrategy Bool Bool Bool Bool ι κ) :
     chsh.quantumWinProb S ≤ Real.cos (π / 8) ^ 2 := by
-  rw [quantumWinProb_chsh, cos_sq_pi_div_eight]
+  rw [quantumWinProb_chsh, Real.cos_sq_pi_div_eight]
   linarith [S.chsh_correlation_le false true false true]
 
 /-- The entangled value of CHSH is at most `cos²(π/8)`. -/
@@ -292,7 +258,7 @@ theorem correlation_chshEPR (x y : Bool) :
 
 /-- The EPR strategy wins CHSH with probability `cos²(π/8)`. -/
 theorem quantumWinProb_chsh_chshEPR : chsh.quantumWinProb chshEPR = Real.cos (π / 8) ^ 2 := by
-  rw [quantumWinProb_chsh, cos_sq_pi_div_eight]
+  rw [quantumWinProb_chsh, Real.cos_sq_pi_div_eight]
   simp only [correlation_chshEPR, Bool.and_true, Bool.and_false, Bool.cond_true, Bool.cond_false]
   ring
 
@@ -305,7 +271,7 @@ theorem quantumValue_chsh : chsh.quantumValue = Real.cos (π / 8) ^ 2 :=
 /-- Entanglement strictly helps in CHSH: the classical value `3/4` is less than the entangled value
 `cos²(π/8)`. -/
 theorem value_chsh_lt_quantumValue_chsh : chsh.value < chsh.quantumValue := by
-  rw [value_chsh, quantumValue_chsh, cos_sq_pi_div_eight]
+  rw [value_chsh, quantumValue_chsh, Real.cos_sq_pi_div_eight]
   nlinarith [Real.sq_sqrt (zero_le_two : (0 : ℝ) ≤ 2), Real.sqrt_nonneg 2]
 
 end TwoProverGame

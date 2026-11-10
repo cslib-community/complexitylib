@@ -11,7 +11,7 @@ public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.Foundations.Data.BitString.Sign
 public import CslibFrontier.Foundations.Quantum.DensityMatrix
 import CslibFrontier.Foundations.BooleanAnalysis.HadamardRectangles
-import CslibFrontier.Foundations.Quantum.POVM
+import CslibFrontier.Foundations.LinearAlgebra.Matrix.UnitaryGroup
 
 /-!
 # Pauli strings and the Pauli twirl
@@ -122,10 +122,10 @@ theorem pauliZPow_mul_self (b : ι → Bool) : pauliZPow b * pauliZPow b = 1 := 
   rw [← Complex.ofReal_mul, signVal_mul_self, Complex.ofReal_one]
 
 theorem pauliXPow_mem_unitaryGroup (a : ι → Bool) : pauliXPow a ∈ unitaryGroup (ι → Bool) ℂ :=
-  mem_unitaryGroup_of_isHermitian_of_mul_self (pauliXPow_isHermitian a) (pauliXPow_mul_self a)
+  (pauliXPow_isHermitian a).mem_unitaryGroup_of_mul_self (pauliXPow_mul_self a)
 
 theorem pauliZPow_mem_unitaryGroup (b : ι → Bool) : pauliZPow b ∈ unitaryGroup (ι → Bool) ℂ :=
-  mem_unitaryGroup_of_isHermitian_of_mul_self (pauliZPow_isHermitian b) (pauliZPow_mul_self b)
+  (pauliZPow_isHermitian b).mem_unitaryGroup_of_mul_self (pauliZPow_mul_self b)
 
 /-- Pauli strings are unitary. -/
 theorem pauliString_mem_unitaryGroup (a b : ι → Bool) :
