@@ -75,9 +75,9 @@ private def parentField? (env : Environment) (s n : Name) : Option Name :=
     | some parent => (getStructureFieldsFlattened env parent).contains n
     | none => false
 
-/-- Check that `fs` lists every field of the structure `S` once, in declaration order, and report
-the first unknown, repeated, misplaced or missing field otherwise. -/
-private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Unit := do
+/-- The structure that `S` names, after checking that `fs` lists every field of it once, in
+declaration order; report the first unknown, repeated, misplaced or missing field otherwise. -/
+private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Name := do
   let s ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo S
   let env ← getEnv
   unless isStructure env s do
@@ -105,12 +105,15 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Unit := do
     let names := MessageData.joinSep (missing.toList.map fun n => m!"`{n}`") ", "
     throwErrorAt S "enc_structure: missing {if missing.size = 1 then "field" else "fields"} \
       {names} of `{sName}`; {order}"
+  return s
 
 /-- Elaborate `enc_structure`: the encoding, its unfolding lemma and its rules. -/
 @[command_elab encStructure] def elabEncStructure : CommandElab := fun stx => do
   let `($[$doc:docComment]? enc_structure $eS:ident : $S:ident where $[$fs:ident : $es:term],*) :=
     stx | throwUnsupportedSyntax
-  checkFields S fs
+  let s ← checkFields S fs
+  -- the constructor, which need not be called `mk`
+  let ctor := mkCIdent (getStructureCtor (← getEnv) s).name
   let name := eS.getId
   let (fields, encoding, fieldsOf, cmds) ← liftMacroM do
     let a := mkIdent `a
@@ -157,7 +160,7 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Unit := do
       t ← `(($t).2)
     if i + 1 < n then t ← `(($t).1)
     return t
-  let mkApp : Term := Syntax.mkApp (mkIdent (S.getId ++ `mk)) comps
+  let mkApp : Term := Syntax.mkApp ctor comps
   elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_deg"):ident :
     ComputableInDegree (fun $p => $mkApp) $fields $eS 1 1 :=
       ComputableInDegree.of_eq fun _ => rfl))
@@ -176,7 +179,7 @@ private def checkFields (S : Ident) (fs : Array Ident) : CommandElabM Unit := do
     sumS ← `($(SN i) $x:ident + $sumS)
     prod ← `(ComputableInO.prod $(hN i) $prod)
   let args ← (Array.range n).mapM fun i => (`($(xN i) $x:ident) : CommandElabM Term)
-  let appl : Term := Syntax.mkApp (mkIdent (S.getId ++ `mk)) args
+  let appl : Term := Syntax.mkApp ctor args
   let γ := mkIdent `γ
   let encIn := mkIdent `encIn
   let mut binders : TSyntaxArray ``Lean.Parser.Term.bracketedBinder := #[]

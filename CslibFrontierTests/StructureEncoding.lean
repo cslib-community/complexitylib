@@ -49,8 +49,8 @@ example : ComputableInO (fun p : Point => Point.mk p.x p.y p.z.tail) ePoint ePoi
     have := ((List.tail_sublist p.z).flatMap (frame ∘ encUnary)).length_le
     omega
 
-/-! The command resolves the structure through `open`, and a parent structure is the single field
-`toParent`, as in the constructor. -/
+/-! The command resolves the structure through `open`, a parent structure is the single field
+`toParent`, as in the constructor, and the constructor need not be called `mk`. -/
 
 namespace Inner
 
@@ -76,6 +76,20 @@ enc_structure ePair : Pair where fst : encNat, snd : encBool
 enc_structure eTriple : Triple where toPair : ePair, w : encUnary
 
 example (t : Triple) : eTriple t = eTripleFields (t.toPair, t.w) := eTriple_apply t
+
+/-- A structure whose constructor is not called `mk`. -/
+structure Renamed where mkRenamed ::
+  /-- A number. -/
+  n : ℕ
+  /-- A bit. -/
+  b : Bool
+
+/-- Renamed records, as their fields. -/
+enc_structure eRenamed : Renamed where n : encNat, b : encBool
+
+example :
+    ComputableInDegree (fun r : Renamed => Renamed.mkRenamed r.n r.b) eRenamed eRenamed 1 1 := by
+  fun_prop (disch := lia)
 
 /-! The command checks the field list before declaring anything. Each error names the field. -/
 
