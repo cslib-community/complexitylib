@@ -36,6 +36,7 @@ configuration graph, which has polynomially many vertices [Sipser, Section 8.4][
 ## Main definitions
 
 * `Turing.MultiTapeNTM.viewSucc`: the views a running view steps to.
+* `Turing.MultiTapeNTM.acceptingView`: the test for a halted view with output `[true]`.
 * `Turing.MultiTapeNTM.searchAccepts`: breadth-first search for an accepting view.
 
 ## Main results
@@ -74,12 +75,15 @@ noncomputable def viewSucc (finite : FiniteCfg k Bool State) : List (FiniteCfg k
   | some state => (ntm.actions state finite.inputSymbol finite.workTapeSymbols).map
       fun action => (finite.step action).summarizeOutput
 
+/-- An accepting view: halted, with output `[true]`. -/
+def acceptingView (finite : FiniteCfg k Bool State) : Bool :=
+  decide (finite.state = none) && decide (finite.output = [true])
+
 open scoped Classical in
 /-- **Breadth-first acceptance**: run `rounds` rounds of breadth-first search through the views
-from the initial view on `input`, and test for a halted view with output `[true]`. -/
+from the initial view on `input`, and test for an accepting view. -/
 noncomputable def searchAccepts (rounds : ℕ) (input : List Bool) : Bool :=
-  (Cslib.Reachability.search ntm.viewSucc rounds (ntm.initView input)).any
-    fun finite => decide (finite.state = none) && decide (finite.output = [true])
+  (Cslib.Reachability.search ntm.viewSucc rounds (ntm.initView input)).any acceptingView
 
 variable {ntm}
 
@@ -141,7 +145,7 @@ theorem searchAccepts_iff {input : List Bool} {s rounds : ℕ} (hs : ntm.RunsInS
         Relation.ReflTransGen ntm.ViewStep (ntm.initView input) finite :=
     mem_search_iff hs hrounds
   rw [accepts_iff_reflTransGen_viewStep, searchAccepts]
-  simp only [List.any_eq_true, Bool.and_eq_true, decide_eq_true_eq, hmem]
+  simp only [List.any_eq_true, acceptingView, Bool.and_eq_true, decide_eq_true_eq, hmem]
 
 end Turing.MultiTapeNTM
 
@@ -223,6 +227,15 @@ theorem computableInPolyTime_viewSucc :
         ComputableInPolyTime.finiteCfg_summarizeOutput.comp
           (ComputableInPolyTime.finiteCfg_step action)
 
+/-- **The accepting test is polynomial-time.** -/
+theorem computableInPolyTime_acceptingView :
+    ComputableInPolyTime (acceptingView (k := k) (State := State)) encFiniteCfg encBool :=
+  ComputableInPolyTime.bool_and.comp
+    (((ComputableInPolyTime.of_finite fun state : Option State =>
+        decide (state = none)).comp ComputableInPolyTime.finiteCfg_state).prod
+    (ComputableInPolyTime.decide_eq' ComputableInPolyTime.finiteCfg_output
+      (ComputableInPolyTime.const [true])))
+
 /-- Under a logarithmic space bound, the number of rounds that decides acceptance is at most a
 polynomial in the input length. -/
 private theorem rounds_le (k : ℕ) (State : Type) (c n : ℕ) :
@@ -297,16 +310,7 @@ theorem exists_computableInPolyTime_searchAccepts {α : Type} {enc : α ↪ List
         (c * (Nat.log2 (enc a).length + 1)) + 1) ≤ rounds a) ∧
       ComputableInPolyTime (fun a => ntm.searchAccepts (rounds a) (enc a)) enc encBool := by
   obtain ⟨rounds, hrounds, hsearch⟩ := exists_computableInPolyTime_search hs
-  refine ⟨rounds, hrounds, ?_⟩
-  have htest : ComputableInPolyTime
-      (fun finite : FiniteCfg k Bool State =>
-        decide (finite.state = none) && decide (finite.output = [true])) encFiniteCfg encBool :=
-    ComputableInPolyTime.bool_and.comp
-      (((ComputableInPolyTime.of_finite fun state : Option State =>
-          decide (state = none)).comp ComputableInPolyTime.finiteCfg_state).prod
-      (ComputableInPolyTime.decide_eq' ComputableInPolyTime.finiteCfg_output
-        (ComputableInPolyTime.const [true])))
-  exact ComputableInPolyTime.anyWithInput hsearch
-    (htest.comp (ComputableInPolyTime.snd _ _))
+  exact ⟨rounds, hrounds, ComputableInPolyTime.anyWithInput hsearch
+    (computableInPolyTime_acceptingView.comp (ComputableInPolyTime.snd _ _))⟩
 
 end Turing.MultiTapeNTM
