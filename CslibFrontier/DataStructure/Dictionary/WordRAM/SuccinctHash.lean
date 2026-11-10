@@ -288,7 +288,7 @@ theorem space_le_succinctWords {U V w n_max : ℕ}
     space U V w n_max ≤ Dynamic.succinctWords 81 213 U V w n_max := by
   have hh := hashSpace_le hw hnU hU
   have htab := totalSpace_le_succinctWords (U := U) (V := V) (w := w) (n_max := n_max)
-    (h_space := hashSpace U w n_max) hnU
+    (h_space := hashSpace U w n_max)
   have h12345 := div_add_packedWords_le
     (Dynamic.optBits U V n_max + 79 * n_max * Dynamic.logLogFactor n_max) 35
     (2 * n_max) 1 w
@@ -1088,19 +1088,19 @@ private theorem dispatch_spec {U V w₀ n_max w base : ℕ}
     (henv : DictEnvGen w (mkDictParams U V w₀ n_max (hashSpace U w₀ n_max)) base)
     (θ : QuotHashSeed U n_max) {s_abs : Dictionary.State U} {s : Memory.State}
     (hinv : DictStateInv U V w₀ n_max base θ s_abs s) (u : Fin U) :
-    let h_q := hValOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val)
-    (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1)) =
-        feistelBucket (bucketBits n_max) (hValOfSeed U n_max θ) u.val ∧
-      u.val >>> bucketBits n_max = keyQuotient (bucketBits n_max) u.val ∧
-      h_q >>> bucketBits n_max = mOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val) ∧
-      feistelBucket (bucketBits n_max) (hValOfSeed U n_max θ) u.val < numBuckets n_max ∧
-      mOfSeed U n_max θ (keyQuotient (bucketBits n_max) u.val) < numMicroPerBucket n_max ∧
+    let q := keyQuotient (bucketBits n_max) u.val
+    let h_q := hValOfSeed U n_max θ q
+    let b := feistelBucket (bucketBits n_max) (hValOfSeed U n_max θ) u.val
+    let m := mOfSeed U n_max θ q
+    (h_q &&& (2 ^ bucketBits n_max - 1)) ^^^ (u.val &&& (2 ^ bucketBits n_max - 1)) = b ∧
+      u.val >>> bucketBits n_max = q ∧ h_q >>> bucketBits n_max = m ∧
+      b < numBuckets n_max ∧ m < numMicroPerBucket n_max ∧
       QueryWithHashPre U V w₀ n_max w ((base, u.val), h_q) s := by
-  intro h_q
+  intro q h_q b m
   obtain ⟨L, hb_inv⟩ := hinv.hbucket
   have hb_eq := and_mask_xor_eq_feistelBucket (bucketBits n_max) u.val h_q
   have hb_lt := feistelBucket_lt (bucketBits n_max) (hValOfSeed U n_max θ) u.val
-  have hm_lt := mOfSeed_lt U n_max θ (keyQuotient (bucketBits n_max) u.val)
+  have hm_lt := mOfSeed_lt U n_max θ q
   refine ⟨hb_eq, Nat.shiftRight_eq_div_pow u.val (bucketBits n_max), rfl, hb_lt, hm_lt, hwf,
     u.isLt, hValOfSeed_lt U n_max θ _, ?_⟩
   dsimp only

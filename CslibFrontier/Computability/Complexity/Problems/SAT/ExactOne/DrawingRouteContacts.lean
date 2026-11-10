@@ -98,7 +98,7 @@ theorem positiveStem_foreign_exterior_disjoint {φ : CNF ℕ}
 def positiveIncidenceVariable (φ : CNF ℕ) (i : ℕ) (c : Clause ℕ)
     (e : LocalIncidence) : CNF.PositiveExactOneCompile.Variable ℕ :=
   profileVariableMap i (CNF.PositiveExactOneCompile.signedOffset φ i) c
-    ((profileVariables (clauseProfile c)).getD e.2.1 (.inl (.inl 0)))
+    ((profileVariables (clauseProfile c)).getD e.variableIndex (.inl (.inl 0)))
 
 /-- Actual emitted incidences have their specified local clause and globally shared variable
 endpoints. Private variables resolve through the actual finite position table. -/
@@ -108,12 +108,13 @@ theorem positiveIncidenceRoute_endpoints {φ : CNF ℕ} {d : Graph.OrthogonalDra
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile φ[i])))
     {e : LocalIncidence} (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) :
     (positiveIncidenceRoute φ d i φ[i] e).head? =
-        some (positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).clausePosition e.1) ∧
+        some (positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).clausePosition e.clauseIndex) ∧
       (positiveIncidenceRoute φ d i φ[i] e).getLast? =
         some (positiveVariablePoint φ d (positiveIncidenceVariable φ i φ[i] e)) := by
   have hstem := positiveStem_regular hd hi φ[i] h he
   have hends := collaredProfile_incidence_endpoints _ h (clausePorts_spec hd hi).1 he
-  have hv : e.2.1 < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
+  have hv :
+      e.variableIndex < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
     simpa only [collaredPrefixGeometry, List.length_map, List.length_zipIdx] using hends.2.1
   have hlen : (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length =
       (profileVariables (clauseProfile φ[i])).length := by
@@ -156,7 +157,7 @@ theorem mem_support_positiveIncidenceRoute_iff {φ : CNF ℕ} {d : Graph.Orthogo
     {z : ℝ × ℝ} :
     z ∈ support (positiveIncidenceRoute φ d i φ[i] e) ↔
       z ∈ support (positiveStem φ d i e) ∨
-        ∃ j, (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) =
+        ∃ j, (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) =
           .inl (.inl j) ∧ z ∈ support (positiveExterior φ d i j) := by
   unfold positiveIncidenceRoute
   split
@@ -222,13 +223,14 @@ theorem positiveIncidence_source_lookup {φ : CNF ℕ} {d : Graph.OrthogonalDraw
     (hi : i < φ.length)
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile φ[i])))
     {e : LocalIncidence} (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) {j : ℕ}
-    (hget : (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) =
+    (hget : (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) =
       .inl (.inl j)) :
     j < φ[i].length ∧ j < 3 ∧
-      e.2.1 ∈ (profilePrefixGeometry (clauseProfile φ[i])).terminalVariables ∧
+      e.variableIndex ∈ (profilePrefixGeometry (clauseProfile φ[i])).terminalVariables ∧
       positiveIncidenceVariable φ i φ[i] e = .inl (.inl (φ[i].getD j (0, true)).1) := by
   have hends := collaredProfile_incidence_endpoints _ h (clausePorts_spec hd hi).1 he
-  have hv : e.2.1 < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
+  have hv :
+      e.variableIndex < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
     simpa only [collaredPrefixGeometry, List.length_map, List.length_zipIdx] using hends.2.1
   have hm := profile_source_lookup _ hv hget
   have hj : j < φ[i].length := lt_of_lt_of_le hm.1 (profileSource_length_le φ[i])
@@ -244,12 +246,12 @@ theorem clauseGeometry_shared_variable_auxiliary {φ : CNF ℕ} {d : Graph.Ortho
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile φ[i])))
     {e f : LocalIncidence} (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes)
     (hf : f ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) (hne : e ≠ f)
-    (hv : e.2.1 = f.2.1) :
-    ∀ j, (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) ≠
+    (hv : e.variableIndex = f.variableIndex) :
+    ∀ j, (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) ≠
       .inl (.inl j) := by
   intro j hj
   have hmeta := positiveIncidence_source_lookup hd hi h he hj
-  have ht : f.2.1 ∈ (profilePrefixGeometry (clauseProfile φ[i])).terminalVariables :=
+  have ht : f.variableIndex ∈ (profilePrefixGeometry (clauseProfile φ[i])).terminalVariables :=
     hv ▸ hmeta.2.2.1
   have hn := collaredProfile_other_terminal_not_mem_support _ h (clausePorts_spec hd hi).1
     he hf hne ht
@@ -263,10 +265,10 @@ theorem positiveIncidenceVariable_auxiliary_point {φ : CNF ℕ} {d : Graph.Orth
     (hi : i < φ.length)
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile φ[i])))
     {e : LocalIncidence} (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes)
-    (ha : ∀ n, (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) ≠
+    (ha : ∀ n, (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) ≠
       Sum.inl (Sum.inl n)) :
     positiveVariablePoint φ d (positiveIncidenceVariable φ i φ[i] e) =
-      positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).variablePosition e.2.1 := by
+      positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).variablePosition e.variableIndex := by
   have hends := collaredProfile_incidence_endpoints _ h (clausePorts_spec hd hi).1 he
   have hlen : (clauseGeometry φ d i φ[i]).variablePositions.length =
       (profileVariables (clauseProfile φ[i])).length := by
@@ -276,7 +278,7 @@ theorem positiveIncidenceVariable_auxiliary_point {φ : CNF ℕ} {d : Graph.Orth
     (List.mem_zipIdx_iff_getElem?.mpr (List.getElem?_eq_some_iff.mpr ⟨hi, rfl⟩))
     (by
       have hvi := hends.2.1
-      change e.2.1 < (clauseGeometry φ d i φ[i]).variablePositions.length at hvi
+      change e.variableIndex < (clauseGeometry φ d i φ[i]).variablePositions.length at hvi
       omega) ha
 
 private theorem clauseGeometry_source_lookup_injective {φ : CNF ℕ}
@@ -286,9 +288,9 @@ private theorem clauseGeometry_source_lookup_injective {φ : CNF ℕ}
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile φ[i])))
     {e f : LocalIncidence} (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes)
     (hf : f ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) {j : ℕ}
-    (heget : (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) =
+    (heget : (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) =
       .inl (.inl j))
-    (hfget : (profileVariables (clauseProfile φ[i])).getD f.2.1 (.inl (.inl 0)) =
+    (hfget : (profileVariables (clauseProfile φ[i])).getD f.variableIndex (.inl (.inl 0)) =
       .inl (.inl j)) : e = f := by
   obtain ⟨a, ha, rfl⟩ := List.mem_map.mp he
   obtain ⟨b, hb, rfl⟩ := List.mem_map.mp hf
@@ -310,8 +312,9 @@ theorem positiveIncidenceRoute_contacts {φ : CNF ℕ} {d : Graph.OrthogonalDraw
     (hf : f ∈ (clauseGeometry φ d j φ[j]).incidenceRoutes) (hne : (i, e) ≠ (j, f))
     {z : ℝ × ℝ} (hz : z ∈ support (positiveIncidenceRoute φ d i φ[i] e))
     (hw : z ∈ support (positiveIncidenceRoute φ d j φ[j] f)) :
-    (i = j ∧ e.1 = f.1 ∧
-      z = realPoint (positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).clausePosition e.1)) ∨
+    (i = j ∧ e.clauseIndex = f.clauseIndex ∧
+      z = realPoint
+        (positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).clausePosition e.clauseIndex)) ∨
       (positiveIncidenceVariable φ i φ[i] e = positiveIncidenceVariable φ j φ[j] f ∧
         z = realPoint (positiveVariablePoint φ d (positiveIncidenceVariable φ i φ[i] e))) := by
   rw [mem_support_positiveIncidenceRoute_iff hd hi (h i hi) he] at hz

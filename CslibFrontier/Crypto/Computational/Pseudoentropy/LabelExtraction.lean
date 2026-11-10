@@ -66,7 +66,7 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
     (test : ∀ (a : ℕ × List Bool) i,
       List (List Bool) × Seed a.1 i × Output a.1 i → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
-      (encList (encPair encBits encBool))) encBool
+      encLabeledSamples) encBool
         (fun ((a, i), samples) => extractLabels (seed a.1 i) (hash a.1 i)
           samples >>= test a i))
     {candidates count densityBound : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ} {slack : ℕ → ℝ}
@@ -170,11 +170,9 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
 
 private theorem preprocess_indexed_test
     (F : ℕ → ℕ → List (List Bool × Bool) → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encLabeledSamples) encBool
       (fun ((n, i), samples) => F n i samples)) :
-    IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
-      (encList (encPair encBits encBool))) encBool
+    IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encLabeledSamples) encBool
       (fun ((a, i), samples) => F a.1 i samples) :=
   let eS := encList (encPair encBits encBool)
   let p0 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) eS
@@ -193,8 +191,7 @@ theorem HasGap.indexed_extracted_advantage_negligible {pair : SamplablePair} {ga
     [∀ n i, Nonempty (Output n i)] (seed : ∀ n i, ProbComp (Seed n i))
     (hash : ∀ n i, Seed n i → List Bool → Output n i)
     (test : ∀ n i, List (List Bool) × Seed n i × Output n i → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encLabeledSamples) encBool
         (fun ((n, i), samples) => extractLabels (seed n i) (hash n i)
           samples >>= test n i))
     {candidates count densityBound : ℕ → ℕ} {numerator : ℕ → ℕ → ℕ} {slack : ℕ → ℝ}
@@ -246,7 +243,7 @@ theorem HasGapWithAdvice.extract_indexed_labels {pair : SamplablePair} {gap : �
     (test : ∀ (a : ℕ × List Bool) i,
       List (List Bool) × Seed a.1 i × BitString (outputBits a.1 i) → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
-      (encList (encPair encBits encBool))) encBool
+      encLabeledSamples) encBool
         (fun ((a, i), samples) => extractLabels (seed a.1 i) (hash a.1 i)
           samples >>= test a i))
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)
@@ -304,8 +301,7 @@ theorem HasGap.extract_indexed_labels {pair : SamplablePair} {gap : ℕ → ℝ}
     (seed : ∀ n i, ProbComp (Seed n i))
     (hash : ∀ n i, Seed n i → List Bool → BitString (outputBits n i))
     (test : ∀ n i, List (List Bool) × Seed n i × BitString (outputBits n i) → ProbComp Bool)
-    (htest : IsPPTOn (encPair (encPair encUnary encUnary)
-      (encList (encPair encBits encBool))) encBool
+    (htest : IsPPTOn (encPair (encPair encUnary encUnary) encLabeledSamples) encBool
         (fun ((n, i), samples) => extractLabels (seed n i) (hash n i)
           samples >>= test n i))
     (hcandidates : ComputableInPolyTime candidates encUnary encUnary)

@@ -412,7 +412,7 @@ theorem exec_siftDown {r : ℕ} (frontier : Fin r) (src : Fin 6 → Fin r)
     (hf : ∀ j, tmp j ≠ frontier) (hs : ∀ i, src i ≠ frontier)
     {w n S k : ℕ} (L : BinaryHeap.Memory.Layout n) (x : Data r)
     (hx : x.Bounded w) (hin : x.regs ∘ src = inputWords ((⟨n, L⟩, S), k))
-    (hA : L.arrays.Allocated (memoryState frontier x)) (hk : 1 ≤ k) (hkS : k ≤ S)
+    (hA : L.arrays.Allocated (memoryState frontier x)) (hkS : k ≤ S)
     (hshape : HeapShape n L.base S x.mem) (hord : DownOrdered (heapEntry n L.base x.mem) S k) :
     ∃ y, ExecWithin w (realizes_siftDown.code frontier src tmp) x y
         (10 * realizes_siftDown.factor * (Nat.log 2 n + 1)) ∧
@@ -426,7 +426,7 @@ theorem exec_siftDown {r : ℕ} (frontier : Fin r) (src : Fin 6 → Fin r)
     rw [hin] at h
     exact h
   obtain ⟨hv, hc, hpost⟩ := triple_iff.mp
-    (BinaryHeap.Memory.siftDown_triple hn hA hk hkS hshape hord)
+    (BinaryHeap.Memory.siftDown_triple hn hA hkS hshape hord)
   have hI : Safe w (((⟨n, L⟩ : HeapLayout), S), k) (memoryState frontier x) :=
     ⟨hn, hA, hshape, hkS⟩
   obtain ⟨y, hy, hm, _, hframe⟩ :=

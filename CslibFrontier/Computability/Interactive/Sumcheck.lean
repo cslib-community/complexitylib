@@ -11,7 +11,6 @@ public import CslibFrontier.Computability.Interactive.Sequential
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.PolynomialAgreement
-import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.MvPolynomial.Degrees
 public import Mathlib.Algebra.Polynomial.Eval.Defs

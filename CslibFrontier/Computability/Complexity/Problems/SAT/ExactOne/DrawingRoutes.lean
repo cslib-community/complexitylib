@@ -60,10 +60,10 @@ theorem clauseGeometry_incidence_points_bounds {φ : CNF ℕ} {d : Graph.Orthogo
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d) {i : ℕ}
     (hi : i < φ.length) (c : Clause ℕ) {e : LocalIncidence}
     (he : e ∈ (clauseGeometry φ d i c).incidenceRoutes) :
-    ∀ q ∈ e.2.2, 0 ≤ q.1 ∧ q.1 ≤ 540000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 540000 := by
+    ∀ q ∈ e.route, 0 ≤ q.1 ∧ q.1 ≤ 540000 ∧ 0 ≤ q.2 ∧ q.2 ≤ 540000 := by
   have hs := (clausePorts_spec hd hi).1
   obtain ⟨f, hf, rfl⟩ := List.mem_map.mp he
-  dsimp only
+  dsimp only [LocalIncidence.route]
   split_ifs with ht
   · exact collarPrefixRoute_points_bounds hs _
       (profile_prefix_incidence_points_bounds (clauseProfile c) f hf)
@@ -84,7 +84,7 @@ theorem inPointBox_translate_iff (c v : Point) (radius : ℕ) (p : ℝ × ℝ) :
 
 /-- The translated local prefix used by an actual output incidence. -/
 def positiveStem (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) (i : ℕ)
-    (e : LocalIncidence) : Route := translate (positiveBoxOrigin φ d i) e.2.2
+    (e : LocalIncidence) : Route := translate (positiveBoxOrigin φ d i) e.route
 
 /-- Every real point of a local prefix lies in its source clause's closed replacement box. -/
 theorem positiveStem_in_box {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
@@ -96,7 +96,7 @@ theorem positiveStem_in_box {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
   rw [positiveStem, support_translate] at hp
   obtain ⟨q, hq, rfl⟩ := hp
   rw [add_comm (positiveBoxOrigin φ d i) positiveTranslation, inPointBox_translate_iff]
-  apply support_inPointBox_of_points (r := e.2.2) ?_ hq
+  apply support_inPointBox_of_points (r := e.route) ?_ hq
   intro a ha
   have hb := clauseGeometry_incidence_points_bounds hd hi c he a ha
   norm_num [inPointBox, positiveTranslation, positiveRadius, realPoint]
@@ -155,36 +155,40 @@ theorem collaredProfile_incidence_endpoints (p : ClauseProfile)
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry p))
     {s : PortAssignment} (hs : s.Distinct) {e : LocalIncidence}
     (he : e ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes) :
-    e.1 < (collaredPrefixGeometry (profilePrefixGeometry p) s).clausePositions.length ∧
-      e.2.1 < (collaredPrefixGeometry (profilePrefixGeometry p) s).variablePositions.length ∧
-      e.2.2.head? = some ((collaredPrefixGeometry (profilePrefixGeometry p) s).clausePosition e.1) ∧
-      e.2.2.getLast? =
-        some ((collaredPrefixGeometry (profilePrefixGeometry p) s).variablePosition e.2.1) := by
+    e.clauseIndex < (collaredPrefixGeometry (profilePrefixGeometry p) s).clausePositions.length ∧
+      e.variableIndex <
+        (collaredPrefixGeometry (profilePrefixGeometry p) s).variablePositions.length ∧
+      e.route.head? =
+        some ((collaredPrefixGeometry (profilePrefixGeometry p) s).clausePosition e.clauseIndex) ∧
+      e.route.getLast? =
+        some ((collaredPrefixGeometry (profilePrefixGeometry p) s).variablePosition
+          e.variableIndex) := by
   obtain ⟨f, hf, rfl⟩ := List.mem_map.mp he
   have hfend := LocalGeometry.prefix_incidence_endpoints h hf
   refine ⟨by simpa only [collaredPrefixGeometry, List.length_map] using hfend.1,
     by simpa only [collaredPrefixGeometry, List.length_map, List.length_zipIdx] using hfend.2.1,
     ?_, ?_⟩
   · rw [collared_clausePoint _ _ hfend.1]
-    have hhead : (collarRoute (collarReflected s) f.2.2).head? =
+    have hhead : (collarRoute (collarReflected s) f.route).head? =
         some (collarPoint (collarReflected s) ((profilePrefixGeometry p).clausePosition f.1)) := by
       rw [collarRoute_eq_map, List.head?_map, hfend.2.2.1, Option.map_some]
-    dsimp only
+    dsimp only [LocalIncidence.route]
     split_ifs <;> first | exact head_join_of_some hhead | exact hhead
   · rw [collared_variablePoint _ _ hfend.2.1]
-    dsimp only
+    dsimp only [LocalIncidence.route]
     split_ifs with ht
     · have hend := hfend.2.2.2
-      rw [profile_prefix_terminal_endpoint p f.2.1 ht] at hend
-      have hleft : (collarRoute (collarReflected s) f.2.2).getLast? =
+      rw [profile_prefix_terminal_endpoint p f.variableIndex ht] at hend
+      have hleft : (collarRoute (collarReflected s) f.route).getLast? =
           some (collarInnerPort (collarReflected s)
-            (terminalIndex (profilePrefixGeometry p) f.2.1)) := by
+            (terminalIndex (profilePrefixGeometry p) f.variableIndex)) := by
         rw [collarRoute_eq_map, List.getLast?_map, hend, Option.map_some,
           collarPoint_innerTemplatePort]
-      have hright := ((collar_check s hs).2 (terminalIndex (profilePrefixGeometry p) f.2.1)).2.1
+      have hright :=
+        ((collar_check s hs).2 (terminalIndex (profilePrefixGeometry p) f.variableIndex)).2.1
       rw [collarPrefixRoute, last_join hleft (by simpa only [List.head?_reverse] using hright),
         List.getLast?_reverse]
-      exact ((collar_check s hs).2 (terminalIndex (profilePrefixGeometry p) f.2.1)).1
+      exact ((collar_check s hs).2 (terminalIndex (profilePrefixGeometry p) f.variableIndex)).1
     · rw [collarRoute_eq_map, List.getLast?_map, hfend.2.2.2, Option.map_some]
 
 /-- The actual translated local incidence is proper and simple, with its prescribed endpoints.
@@ -196,9 +200,10 @@ theorem positiveStem_regular {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     {e : LocalIncidence} (he : e ∈ (clauseGeometry φ d i c).incidenceRoutes) :
     IsOrthogonal (positiveStem φ d i e) ∧ IsSimple (positiveStem φ d i e) ∧
       (positiveStem φ d i e).head? =
-        some (positiveBoxOrigin φ d i + (clauseGeometry φ d i c).clausePosition e.1) ∧
+        some (positiveBoxOrigin φ d i + (clauseGeometry φ d i c).clausePosition e.clauseIndex) ∧
       (positiveStem φ d i e).getLast? =
-        some (positiveBoxOrigin φ d i + (clauseGeometry φ d i c).variablePosition e.2.1) := by
+        some (positiveBoxOrigin φ d i +
+          (clauseGeometry φ d i c).variablePosition e.variableIndex) := by
   have hs := (clausePorts_spec hd hi).1
   have hept := collaredProfile_incidence_endpoints (clauseProfile c) h hs he
   refine ⟨(isOrthogonal_translate_iff _ _).2
@@ -254,7 +259,8 @@ theorem positiveIncidenceRoute_regular {φ : CNF ℕ} {d : Graph.OrthogonalDrawi
   have hstem := positiveStem_regular hd hi φ[i] h he
   have hends := collaredProfile_incidence_endpoints (clauseProfile φ[i]) h
     (clausePorts_spec hd hi).1 he
-  have hv : e.2.1 < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
+  have hv :
+      e.variableIndex < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
     simpa only [collaredPrefixGeometry, List.length_map, List.length_zipIdx] using hends.2.1
   unfold positiveIncidenceRoute
   split
@@ -282,7 +288,7 @@ theorem collaredProfile_routes_contact (p : ClauseProfile)
     {s : PortAssignment} (hs : s.Distinct) {e f : LocalIncidence}
     (he : e ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes)
     (hf : f ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes)
-    (hne : e ≠ f) {z : ℝ × ℝ} (hz : z ∈ support e.2.2) (hw : z ∈ support f.2.2) :
+    (hne : e ≠ f) {z : ℝ × ℝ} (hz : z ∈ support e.route) (hw : z ∈ support f.route) :
     ∃ q ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).commonEndpoints e f,
       z = realPoint q := by
   obtain ⟨a, ha, rfl⟩ := List.mem_map.mp he
@@ -345,9 +351,9 @@ theorem collaredProfile_variable_not_mem_support (p : ClauseProfile)
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry p))
     {s : PortAssignment} (hs : s.Distinct) {e : LocalIncidence}
     (he : e ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes)
-    (v : Fin (profilePrefixGeometry p).variablePositions.length) (hv : v.val ≠ e.2.1) :
+    (v : Fin (profilePrefixGeometry p).variablePositions.length) (hv : v.val ≠ e.variableIndex) :
     realPoint ((collaredPrefixGeometry (profilePrefixGeometry p) s).variablePosition v) ∉
-      support e.2.2 := by
+      support e.route := by
   obtain ⟨a, ha, rfl⟩ := List.mem_map.mp he
   rw [collared_variablePoint _ _ v.isLt]
   by_cases ht : v.val ∈ (profilePrefixGeometry p).terminalVariables
@@ -361,9 +367,9 @@ theorem collaredProfile_clause_not_mem_support (p : ClauseProfile)
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry p))
     {s : PortAssignment} (hs : s.Distinct) {e : LocalIncidence}
     (he : e ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes)
-    (j : Fin (profilePrefixGeometry p).clausePositions.length) (hj : j.val ≠ e.1) :
+    (j : Fin (profilePrefixGeometry p).clausePositions.length) (hj : j.val ≠ e.clauseIndex) :
     realPoint ((collaredPrefixGeometry (profilePrefixGeometry p) s).clausePosition j) ∉
-      support e.2.2 := by
+      support e.route := by
   obtain ⟨a, ha, rfl⟩ := List.mem_map.mp he
   rw [collared_clausePoint _ _ j.isLt]
   exact profileCollarRoute_clause_not_mem_support p h hs ha j hj
@@ -374,9 +380,9 @@ theorem collaredProfile_other_terminal_not_mem_support (p : ClauseProfile)
     {s : PortAssignment} (hs : s.Distinct) {e f : LocalIncidence}
     (he : e ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes)
     (hf : f ∈ (collaredPrefixGeometry (profilePrefixGeometry p) s).incidenceRoutes)
-    (hne : e ≠ f) (ht : f.2.1 ∈ (profilePrefixGeometry p).terminalVariables) :
-    realPoint ((collaredPrefixGeometry (profilePrefixGeometry p) s).variablePosition f.2.1) ∉
-      support e.2.2 := by
+    (hne : e ≠ f) (ht : f.variableIndex ∈ (profilePrefixGeometry p).terminalVariables) :
+    realPoint ((collaredPrefixGeometry (profilePrefixGeometry p) s).variablePosition
+      f.variableIndex) ∉ support e.route := by
   obtain ⟨a, ha, rfl⟩ := List.mem_map.mp he
   obtain ⟨b, hb, rfl⟩ := List.mem_map.mp hf
   have hv : b.2.1 ≠ a.2.1 := by
@@ -395,15 +401,16 @@ theorem positiveStem_other_terminal_not_mem_support {φ : CNF ℕ}
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile c)))
     {e f : LocalIncidence} (he : e ∈ (clauseGeometry φ d i c).incidenceRoutes)
     (hf : f ∈ (clauseGeometry φ d i c).incidenceRoutes) (hne : e ≠ f)
-    (ht : f.2.1 ∈ (profilePrefixGeometry (clauseProfile c)).terminalVariables) :
-    realPoint (positiveBoxOrigin φ d i + (clauseGeometry φ d i c).variablePosition f.2.1) ∉
+    (ht : f.variableIndex ∈ (profilePrefixGeometry (clauseProfile c)).terminalVariables) :
+    realPoint (positiveBoxOrigin φ d i +
+      (clauseGeometry φ d i c).variablePosition f.variableIndex) ∉
       support (positiveStem φ d i e) := by
   have hn := collaredProfile_other_terminal_not_mem_support _ h (clausePorts_spec hd hi).1
     he hf hne ht
   intro hz
   rw [positiveStem, support_translate] at hz
   obtain ⟨x, hx, hxp⟩ := hz
-  have hx' : x = realPoint ((clauseGeometry φ d i c).variablePosition f.2.1) := by
+  have hx' : x = realPoint ((clauseGeometry φ d i c).variablePosition f.variableIndex) := by
     apply add_right_cancel (b := realPoint (positiveBoxOrigin φ d i))
     simpa only [realPoint_add, add_comm (realPoint (positiveBoxOrigin φ d i))] using hxp
   exact hn (hx' ▸ hx)
@@ -416,11 +423,12 @@ theorem positiveStem_other_exterior_disjoint {φ : CNF ℕ} {d : Graph.Orthogona
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile φ[i])))
     {e f : LocalIncidence} (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes)
     (hf : f ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) (hne : e ≠ f) {j : ℕ}
-    (hget : (profileVariables (clauseProfile φ[i])).getD f.2.1 (.inl (.inl 0)) =
+    (hget : (profileVariables (clauseProfile φ[i])).getD f.variableIndex (.inl (.inl 0)) =
       .inl (.inl j)) :
     Disjoint (support (positiveStem φ d i e)) (support (positiveExterior φ d i j)) := by
   have hends := collaredProfile_incidence_endpoints _ h (clausePorts_spec hd hi).1 hf
-  have hv : f.2.1 < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
+  have hv :
+      f.variableIndex < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
     simpa only [collaredPrefixGeometry, List.length_map, List.length_zipIdx] using hends.2.1
   have hm := profile_source_lookup _ hv hget
   let j' : Fin 3 := ⟨j, hm.2.1⟩
@@ -429,7 +437,7 @@ theorem positiveStem_other_exterior_disjoint {φ : CNF ℕ} {d : Graph.Orthogona
   intro z hz hw
   have hzport := positiveExterior_box_contact hd hi j' hj hw
     (positiveStem_in_box hd hi φ[i] he hz)
-  have hpoint : (clauseGeometry φ d i φ[i]).variablePosition f.2.1 =
+  have hpoint : (clauseGeometry φ d i φ[i]).variablePosition f.variableIndex =
       collarOuterPort ((clausePorts φ d i).side j') := by
     rw [hm.2.2.1, clauseGeometry_source_point φ d i φ[i] j' hm.1]
   apply positiveStem_other_terminal_not_mem_support hd hi φ[i] h he hf hne hm.2.2.2.1
@@ -443,12 +451,13 @@ theorem positiveIncidenceRoute_join_endpoints {φ : CNF ℕ} {d : Graph.Orthogon
     (hi : i < φ.length)
     (h : LocalGeometry.PrefixCheck (profilePrefixGeometry (clauseProfile φ[i])))
     {e : LocalIncidence} (he : e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes) {j : ℕ}
-    (hget : (profileVariables (clauseProfile φ[i])).getD e.2.1 (.inl (.inl 0)) =
+    (hget : (profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0)) =
       .inl (.inl j)) :
     ∃ q : Point, (positiveStem φ d i e).getLast? = some q ∧
       (positiveExterior φ d i j).head? = some q := by
   have hends := collaredProfile_incidence_endpoints _ h (clausePorts_spec hd hi).1 he
-  have hv : e.2.1 < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
+  have hv :
+      e.variableIndex < (profilePrefixGeometry (clauseProfile φ[i])).variablePositions.length := by
     simpa only [collaredPrefixGeometry, List.length_map, List.length_zipIdx] using hends.2.1
   have hm := profile_source_lookup _ hv hget
   let j' : Fin 3 := ⟨j, hm.2.1⟩

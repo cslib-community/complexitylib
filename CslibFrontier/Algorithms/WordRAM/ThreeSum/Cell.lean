@@ -320,7 +320,8 @@ private theorem exec_AC {w N b d q r c t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (
 
 /-- All index computations, three guarded loads, optional signed negation, stores and argument
 preparation take at most 128 native instructions. The final halt is excluded. Input cells precede
-all destinations; the three writes occur in AB, BC, AC order. -/
+the AB and BC destinations, and the AC destination may alias the input; the three writes occur
+in AB, BC, AC order. -/
 theorem exec_step {w N b ab bc ac q t s : ℕ} {μ : ℕ → ℤ} {F : ℤ} (x : Data 28)
     (hcell : x.regs cell = q) (ht : x.regs side = t) (hs : x.regs inst = s)
     (hab : x.regs matAB = ab) (hbc : x.regs matBC = bc) (hac : x.regs matAC = ac)

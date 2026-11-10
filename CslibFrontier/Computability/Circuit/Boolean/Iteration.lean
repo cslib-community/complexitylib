@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Iteration.Decoder
 public import CslibFrontier.Foundations.Combinatorics.FunctionalGraph.Checkpoints
 public import Mathlib.Data.Nat.Log
 public import Mathlib.Data.Fintype.EquivFin
+import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
 
@@ -47,6 +48,8 @@ the checkpoints are chosen nonconstructively, so nothing here bounds the time to
 
 ## Main results
 
+* `Cslib.Circuits.Boolean.Iteration.exists_computesOn_iterate_of_cover`: the construction for any
+  prefix length `K` and checkpoint set covering every orbit within `K` steps.
 * `Cslib.Circuits.Boolean.Iteration.fixed_power_on`: the invariant-set bound with constant 40000.
 * `Cslib.Circuits.Boolean.Iteration.fixed_power`: the bound on all states.
 
@@ -174,6 +177,37 @@ theorem construction_cost (n s M L d : ℕ) (hL : 0 < L) (hd : d ≤ n + 2)
   nlinarith [Nat.zero_le (L * n ^ 3), Nat.zero_le (M * n ^ 3),
     Nat.zero_le (M * n ^ 2), Nat.zero_le (L * n ^ 2), Nat.zero_le (L * s)]
 
+/-- **The fixed-power circuit for a checkpoint cover.** Let `K ≤ T` and `|H| + K + 1 ≤ 2 ^ w`. If
+the orbit of every state of `X` repeats among its first `K` states or reaches a checkpoint of `H`
+in fewer than `K` steps, then the circuit of `exists_fixedOutput` with the checkpoints `H` agrees
+with `f^[T]` on `X`. Its sorting depth `d` satisfies `d ≤ w` and `2 ^ d ≤ 2 (|H| + K + 1)`. -/
+theorem exists_computesOn_iterate_of_cover (c : Circuit signature n n) (T K : ℕ)
+    (X : Set (BitString n)) (H : Finset (BitString n)) (hKT : K ≤ T)
+    (hHK : H.card + K + 1 ≤ 2 ^ w)
+    (hcover : ∀ x ∈ X, FunctionalGraph.Repeats (c.eval interpretation) x K ∨
+      ∃ t < K, (c.eval interpretation)^[t] x ∈ H) :
+    ∃ (out : Circuit signature n n) (d : ℕ),
+      out.ComputesOn interpretation X (c.eval interpretation)^[T] ∧ d ≤ w ∧
+      2 ^ d ≤ 2 * (H.card + K + 1) ∧
+      out.size ≤ 2 + 5 * K * c.size + (18 * d ^ 2 + 30) * 2 ^ d * (Record.width n w + 1) +
+        1000 * (K + 1) * (n + w + 1) ^ 2 := by
+  let f := c.eval interpretation
+  let cp : Fin H.card → BitString n := fun j => (H.equivFin.symm j).val
+  let d := Nat.clog 2 (H.card + K + 1)
+  have hcapacity : H.card + (K + 1) ≤ BitonicSort.arity d := by
+    simpa only [BitonicSort.arity_eq_two_pow, d, Nat.add_assoc] using
+      Nat.le_pow_clog Nat.one_lt_two (H.card + K + 1)
+  have hfit : K < 2 ^ w := by omega
+  obtain ⟨out, hout, hsize⟩ := exists_fixedOutput (w := w) c T K d cp
+  refine ⟨out, d, fun x hx => ?_, Nat.clog_le_of_le_pow hHK,
+    Nat.pow_clog_le_mul Nat.one_lt_two (by omega), hsize⟩
+  rw [hout x]
+  apply reconstruct_spec f T K cp x _ _ hfit hKT
+  apply Record.detect_sorted_witness f T K d cp x hcapacity hfit
+  rcases hcover x hx with ⟨i, j, hij, hj, heq⟩ | ⟨t, ht, hmem⟩
+  · exact Or.inr ⟨i, j, hij, hj.le, heq⟩
+  · exact Or.inl ⟨t, ht.le, H.equivFin ⟨f^[t] x, hmem⟩, by simp [cp]⟩
+
 /-- **Fixed powers on an invariant set.** If `c` maps the finite set `S` into itself, then for
 every exponent `T` and every `0 < L ≤ 2 ^ n` some circuit of size at most
 `40000 * powerBudget n c.size S.card L` agrees with `T` applications of `c` on `S`. -/
@@ -191,40 +225,17 @@ theorem fixed_power_on (n : ℕ) (c : Circuit signature n n) (S : Finset (BitStr
     unfold powerBudget
     nlinarith [Nat.zero_le ((n + 1) ^ 3 * (L + S.card / L + 1))]
   obtain ⟨H, hHS, hcard, hcover⟩ := FunctionalGraph.exists_checkpoints f S hS hL
-  let cp : Fin H.card → BitString n := fun j => (H.equivFin.symm j).val
-  let d := Nat.clog 2 (H.card + 2 * L + 1)
-  have hcapacity : H.card + (2 * L + 1) ≤ BitonicSort.arity d := by
-    simpa only [BitonicSort.arity_eq_two_pow, d, Nat.add_assoc] using
-      Nat.le_pow_clog Nat.one_lt_two (H.card + 2 * L + 1)
   have hN : H.card ≤ 2 ^ n := by
     simpa only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool] using
       Finset.card_le_univ H
-  have hd : d ≤ n + 2 := by
-    apply Nat.clog_le_of_le_pow
-    simp only [Nat.pow_succ]
-    have := Nat.one_le_two_pow (n := n)
-    omega
-  have hR : 2 ^ d ≤ 2 * (H.card + 2 * L + 1) := by
-    have hpos : 0 < d := Nat.clog_pos (by decide) (by omega)
-    have hp := Nat.pow_pred_clog_lt_self Nat.one_lt_two
-      (show 1 < H.card + 2 * L + 1 by omega)
-    have hpow : 2 ^ d = 2 ^ (d - 1) * 2 := by rw [← Nat.pow_succ, show (d - 1).succ = d by omega]
-    rw [hpow]
-    change 2 ^ (d - 1) < _ at hp
-    omega
-  have hfit : 2 * L < 2 ^ (n + 2) := by grind
-  obtain ⟨out, hout, hsize⟩ := exists_fixedOutput (w := n + 2) c T (2 * L) d cp
-  refine ⟨out, fun x hx => ?_, ?_⟩
-  · rw [hout x]
-    apply reconstruct_spec f T (2 * L) cp x _ _ hfit (by omega)
-    apply Record.detect_sorted_witness f T (2 * L) d cp x hcapacity hfit
-    rcases hcover x hx with ⟨i, j, hij, hj, heq⟩ | ⟨t, ht, hmem⟩
-    · exact Or.inr ⟨i, j, hij, by omega, heq⟩
-    · exact Or.inl ⟨t, ht.le, H.equivFin ⟨f^[t] x, hmem⟩, by simp [cp]⟩
-  · have hc : H.card ≤ S.card / L := (Nat.le_div_iff_mul_le hL).mpr hcard
-    apply hsize.trans ((construction_cost n c.size H.card L d hL hd hR).trans ?_)
-    unfold powerBudget
-    gcongr
+  obtain ⟨out, d, hout, hd, hR, hsize⟩ := exists_computesOn_iterate_of_cover (w := n + 2) c T
+    (2 * L) S H (by omega) (by rw [Nat.pow_succ, Nat.pow_succ]; omega) fun x hx =>
+      (hcover x hx).imp_left fun ⟨i, j, hij, hj, heq⟩ => ⟨i, j, hij, by omega, heq⟩
+  refine ⟨out, hout, ?_⟩
+  have hc : H.card ≤ S.card / L := (Nat.le_div_iff_mul_le hL).mpr hcard
+  apply hsize.trans ((construction_cost n c.size H.card L d hL hd hR).trans ?_)
+  unfold powerBudget
+  gcongr
 
 /-- The invariant-set fixed-power bound holds with universal constant `40000`. -/
 theorem fixedPowerOnBound : FixedPowerOnBound := ⟨40000, fixed_power_on⟩

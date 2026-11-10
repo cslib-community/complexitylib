@@ -82,39 +82,16 @@ theorem active_mass_fixed_power (n : ℕ) (c : Circuit signature n n) (T L : ℕ
     unfold powerBudget
     nlinarith [Nat.zero_le ((n + 1) ^ 3 * (L + (activeVertices f L).card / L + 1))]
   obtain ⟨H, -, hcard, hcover⟩ := exists_active_checkpoints f L hL
-  let cp : Fin H.card → BitString n := fun j => (H.equivFin.symm j).val
-  let d := Nat.clog 2 (H.card + 4 * L + 1)
-  have hcapacity : H.card + (4 * L + 1) ≤ BitonicSort.arity d := by
-    simpa only [BitonicSort.arity_eq_two_pow, d, Nat.add_assoc] using
-      Nat.le_pow_clog Nat.one_lt_two (H.card + 4 * L + 1)
   have hN : H.card ≤ 2 ^ n := by
     simpa only [Fintype.card_fun, Fintype.card_fin, Fintype.card_bool] using
       Finset.card_le_univ H
-  have hd : d ≤ n + 3 := by
-    apply Nat.clog_le_of_le_pow
-    simp only [Nat.pow_succ]
-    have := Nat.one_le_two_pow (n := n)
-    omega
-  have hR : 2 ^ d ≤ 2 * (H.card + 4 * L + 1) := by
-    have hpos : 0 < d := Nat.clog_pos (by decide) (by omega)
-    have hp := Nat.pow_pred_clog_lt_self Nat.one_lt_two
-      (show 1 < H.card + 4 * L + 1 by omega)
-    have hpow : 2 ^ d = 2 ^ (d - 1) * 2 := by rw [← Nat.pow_succ, show (d - 1).succ = d by omega]
-    rw [hpow]
-    change 2 ^ (d - 1) < _ at hp
-    omega
-  have hfit : 4 * L < 2 ^ (n + 3) := by grind
-  obtain ⟨out, hout, hsize⟩ := exists_fixedOutput (w := n + 3) c T (4 * L) d cp
-  refine ⟨out, fun x => ?_, ?_⟩
-  · rw [hout x]
-    apply reconstruct_spec f T (4 * L) cp x _ _ hfit (by omega)
-    apply Record.detect_sorted_witness f T (4 * L) d cp x hcapacity hfit
-    rcases hcover x with ⟨i, j, hij, hj, heq⟩ | ⟨t, ht, hmem⟩
-    · exact Or.inr ⟨i, j, hij, by omega, heq⟩
-    · exact Or.inl ⟨t, ht.le, H.equivFin ⟨f^[t] x, hmem⟩, by simp [cp]⟩
-  · have hc : H.card ≤ (activeVertices f L).card / L := (Nat.le_div_iff_mul_le hL).mpr hcard
-    apply hsize.trans ((active_construction_cost n c.size H.card L d hL hd hR).trans ?_)
-    unfold powerBudget
-    gcongr
+  obtain ⟨out, d, hout, hd, hR, hsize⟩ := exists_computesOn_iterate_of_cover (w := n + 3) c T
+    (4 * L) Set.univ H (by omega) (by rw [Nat.pow_succ, Nat.pow_succ, Nat.pow_succ]; omega)
+    fun x _ => hcover x
+  refine ⟨out, fun x => hout (Set.mem_univ x), ?_⟩
+  have hc : H.card ≤ (activeVertices f L).card / L := (Nat.le_div_iff_mul_le hL).mpr hcard
+  apply hsize.trans ((active_construction_cost n c.size H.card L d hL hd hR).trans ?_)
+  unfold powerBudget
+  gcongr
 
 end Cslib.Circuits.Boolean.Iteration

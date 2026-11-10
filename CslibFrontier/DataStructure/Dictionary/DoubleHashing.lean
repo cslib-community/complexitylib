@@ -33,6 +33,17 @@ with key universe size `U`, table bit-width `M` (`m = 2 ^ M` slots), and maximum
 Tabulation (`[Thorup2013]`, Theorem 1(a) and Lemma 2) with `c` characters of `b` bits
 (`U ≤ 2 ^ (c * b)`) or polynomial universe exponent `c_exp` (`U ≤ max n_max 4 ^ c_exp`).
 
+Under the hypotheses of the cited theorems, the expected probe count is at most `2` under
+$(2 L + 1)$-wise independence (`expect_probeCount_oddStride_of_kWiseIndependent`) and at most `3`
+under Double Tabulation with an explicit code bound
+(`expect_probeCount_oddStride_doubleTab_of_codeBound_le`). For the exponent `c_exp`, the bound `3`
+needs `doubleTabThreshold c_exp ≤ n_max` (`expect_probeCount_oddStride_doubleTab_le`), where
+`doubleTabThreshold c_exp = 2 ^ (2 * doubleTabMinB c_exp) ≥ 2 ^ 25088`. Below the threshold the
+proof uses only the deterministic bound `probeCount ≤ n_max + 1` (`probeCount_le_add_one`), valid
+for every probe permutation family representing the table; together the two cases give
+`max (doubleTabThreshold c_exp : ℝ≥0∞) 3` for every `n_max`
+(`expect_probeCount_oddStride_unconditional_le`).
+
 ## Source statements and notation mapping
 
 * **J. P. Schmidt and A. Siegel ([SchmidtSiegel1990], STOC 1990, pp. 224–234; extended NYU Courant
@@ -117,7 +128,7 @@ Tabulation (`[Thorup2013]`, Theorem 1(a) and Lemma 2) with `c` characters of `b`
   `Cslib.DataStructure.Dictionary.DoubleHashing.expect_probeCount_oddStride_unconditional_le`:
   expected probe
   count $\le 3$ under Double Tabulation for $n_{\max} \ge \mathrm{doubleTabThreshold}\ c_{\exp}$,
-  and $\le \max(\mathrm{doubleTabThreshold}\ c_{\exp}, 3)$ unconditionally across all $n_{\max}$.
+  and $\le \max(\mathrm{doubleTabThreshold}\ c_{\exp}, 3)$ for all $n_{\max}$.
 
 ## References
 
@@ -2570,12 +2581,13 @@ theorem expect_probeCount_oddStride_doubleTab_le
   PMF.tsum_uniformOfFintype_le_of_sum_le
     (sum_probeCount_oddStride_doubleTab_le hge hU hm hrep hdom u)
 
-/-- **Unconditional `O_{c_exp}(1)` Expected Probe-Count Bound for All Capacities `n_max : ℕ`**:
-combining the deterministic full-cycle pigeonhole bound
-`probeCount ≤ n_max + 1 ≤ doubleTabThreshold c_exp` for `n_max < doubleTabThreshold c_exp` with the
-Double Tabulation bound `≤ 3` for `doubleTabThreshold c_exp ≤ n_max` yields expected probe count at
-most `max (doubleTabThreshold c_exp : ℝ≥0∞) 3 = doubleTabThreshold c_exp` unconditionally for every
-`n_max : ℕ`. -/
+/-- **`O_{c_exp}(1)` Expected Probe-Count Bound without a Threshold on `n_max : ℕ`**:
+whenever `U ≤ max n_max 4 ^ c_exp` and `32 * max n_max 4 ≤ 2 ^ M`, combining the deterministic
+full-cycle pigeonhole bound `probeCount ≤ n_max + 1 ≤ doubleTabThreshold c_exp` for
+`n_max < doubleTabThreshold c_exp` with the Double Tabulation bound `≤ 3` for
+`doubleTabThreshold c_exp ≤ n_max` yields expected probe count at most
+`max (doubleTabThreshold c_exp : ℝ≥0∞) 3 = doubleTabThreshold c_exp` for every `n_max : ℕ`. Below
+the threshold the bound uses no independence property of Double Tabulation. -/
 theorem expect_probeCount_oddStride_unconditional_le
     {c_exp n_max U M : ℕ}
     (hU : U ≤ max n_max 4 ^ c_exp) (hm : 32 * max n_max 4 ≤ 2 ^ M)

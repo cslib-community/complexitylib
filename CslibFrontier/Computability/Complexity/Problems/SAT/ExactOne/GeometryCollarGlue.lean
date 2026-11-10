@@ -363,9 +363,10 @@ def collaredPrefixGeometry (g : LocalGeometry) (s : PortAssignment) : LocalGeome
     else collarPoint (collarReflected s) pi.1
   clausePositions := g.clausePositions.map (collarPoint (collarReflected s))
   incidenceRoutes := g.incidenceRoutes.map fun e =>
-    (e.1, e.2.1,
-      if e.2.1 ∈ g.terminalVariables then collarPrefixRoute s (terminalIndex g e.2.1) e.2.2
-      else collarRoute (collarReflected s) e.2.2)
+    (e.clauseIndex, e.variableIndex,
+      if e.variableIndex ∈ g.terminalVariables then
+        collarPrefixRoute s (terminalIndex g e.variableIndex) e.route
+      else collarRoute (collarReflected s) e.route)
   terminalVariables := g.terminalVariables
   boundaryPorts := g.terminalVariables.zipIdx.map fun vi =>
     collarOuterPort (s.side ⟨vi.2 % 3, Nat.mod_lt _ (by decide)⟩)

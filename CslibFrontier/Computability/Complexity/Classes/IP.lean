@@ -16,7 +16,7 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.QueryBounds
-import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 
 /-!
@@ -268,10 +268,8 @@ private noncomputable def bppVerifier (enc : α ↪ List Bool) (p : Polynomial �
 /-- The verifier without messages of a polynomial-time decider is strict oracle PPT. -/
 private theorem isOraclePPTOn_bppVerifier {p : Polynomial ℕ} {V : α × List Bool → Bool}
     (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
-    IsOraclePPTOn enc encBool (bppVerifier enc p V) := by
-  have hcount : ComputableInPolyTime (fun a => p.eval (enc a).length) enc encUnary := by
-    fun_prop
-  exact (IsPPTOn.map_with (f := fun a r => V (a, r)) hcount.sampleList hV).isOraclePPTOn
+    IsOraclePPTOn enc encBool (bppVerifier enc p V) :=
+  (isPPTOn_sampleVerify p hV).isOraclePPTOn
 
 /-- The verifier without messages accepts every prover with the fraction of accepted random
 strings. -/

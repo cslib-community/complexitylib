@@ -142,7 +142,7 @@ theorem successorDescentBody_exec {d w stackBase₀ sp₀ base query : ℕ} {tre
     ExecWithin w successorDescentBody s (successorDescentNext s sp₀ base query) 42 := by
   obtain ⟨hz, ho, htwo, hthree, hfour, hfive, _, hsp_eq, hp, hx, _⟩ := hs
   -- `ram_eval` derives the smaller header bounds `Fits w (base + k)` from this one.
-  have h₄ : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
+  have hbase4 : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
   -- The early exits read only the header, so split on the cached bounds before the shape.
   have hheader := hr.header
   rcases hb : tree.bounds with _ | ⟨m, M⟩ <;> rw [hb] at hheader
@@ -290,9 +290,9 @@ theorem successorUnwindBody_summary_exec {d w stackBase₀ sp₀ base j cm : ℕ
     Nat.add_sub_assoc, Nat.add_zero]
 
 /-- Closing one frame-pushing descent step: the body run `he` from `s` to `next`, the recursive
-descent `hs₁` from `next` with its frame `hframe₁`, the push frame `hnext_away`, and the
-unwind step `hbody` popping the pushed frame into `s₃` combine into the descent/unwind
-certificate at `sp₀`. -/
+descent `hs₁` from `next` with its frame `hframe₁`, the push step's frame `hnext_away`, and the
+unwind step `hbody` popping the pushed frame into `successorUnwindNext s₂ sp₀`, whose `out`
+register holds `ans` by `hout`, combine into the descent/unwind certificate at `sp₀`. -/
 private theorem successor_push_close {d w stackBase₀ sp₀ base query ans childAns : ℕ}
     {s next s₁ s₂ : Data 32} (hs : SuccessorEntry stackBase₀ sp₀ base query s)
     (hsp_le : stackBase₀ ≤ sp₀)
@@ -304,13 +304,15 @@ private theorem successor_push_close {d w stackBase₀ sp₀ base query ans chil
     (hunwind₁ : ∀ z T, ExecWithin w successorUnwind s₂ z T →
       ExecWithin w successorUnwind s₁ z (21 * d + T))
     (hbody : ExecWithin w successorUnwindBody s₂ (successorUnwindNext s₂ sp₀) 19)
-    (hs₃ : UnwindState stackBase₀ sp₀ ans s₁.mem (successorUnwindNext s₂ sp₀)) :
+    (hout : (successorUnwindNext s₂ sp₀).regs out = ans) :
     ∃ s₁ s₃, ExecWithin w successorDescent s s₁ (44 * (d + 1 + 1) + 2) ∧
       (∀ a, a < sp₀ ∨ sp₀ + 4 * (d + 1) ≤ a → s₁.mem a = s.mem a) ∧
       UnwindState stackBase₀ sp₀ ans s₁.mem s₃ ∧
       ∀ z T, ExecWithin w successorUnwind s₃ z T →
         ExecWithin w successorUnwind s₁ z (21 * (d + 1) + T) := by
-  refine ⟨s₁, _, (he.loop_iter (cond := .lt zero runFlag) ?_ hs₁).mono (by omega), ?_, hs₃, ?_⟩
+  obtain ⟨hz, ho, hfive, hsb, hsp, hfound, hmem⟩ := successorUnwindNext_preserved hs₂
+  refine ⟨s₁, _, (he.loop_iter (cond := .lt zero runFlag) ?_ hs₁).mono (by omega), ?_,
+    ⟨hz, ho, hfive, hsb, hsp, hfound, hout, hmem⟩, ?_⟩
   · simp only [Cond.holds_lt, hs.zero_eq, hs.runFlag_eq]
     decide
   · intro a ha'
@@ -537,10 +539,8 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
                   have hsp4_fit : Fits w (sp₀ + 4) := hfit.of_le (by omega)
                   have hbody := successorUnwindBody_summary_exec hs₂ hk_mem hpay_mem hqv_mem
                     htv_mem hj hcm_s₁ hcm_lt ha hsp4_fit
-                  have hpres₃ := successorUnwindNext_preserved hs₂
-                  refine successor_push_close hs hsp_le he hs₁ hframe₁ hnext_away hs₂ hunwind₁ hbody
-                    ⟨hpres₃.1, hpres₃.2.1, hpres₃.2.2.1, hpres₃.2.2.2.1, hpres₃.2.2.2.2.1,
-                      hpres₃.2.2.2.2.2.1, ?_, hpres₃.2.2.2.2.2.2⟩
+                  refine successor_push_close hs hsp_le he hs₁ hframe₁ hnext_away hs₂ hunwind₁
+                    hbody ?_
                   simp +decide [successorUnwindNext, hs₂.mem_eq, hs₂.out_eq,
                     hk_mem, hpay_mem, hqv_mem, htv_mem, hcm_s₁, hans_eq]
               · simp [hj] at hans'
@@ -646,10 +646,7 @@ private theorem successor_some_spec {d w stackBase₀ sp₀ base query ans : ℕ
                 exact ha.of_le (by omega)
               have hbody := successorUnwindBody_cluster_exec hs₂ hk_mem hpay_mem hqv_mem
                 htv_mem hsp4_fit hout_fit
-              have hpres₃ := successorUnwindNext_preserved hs₂
-              refine successor_push_close hs hsp_le he hs₁ hframe₁ hnext_away hs₂ hunwind₁ hbody
-                ⟨hpres₃.1, hpres₃.2.1, hpres₃.2.2.1, hpres₃.2.2.2.1, hpres₃.2.2.2.2.1,
-                  hpres₃.2.2.2.2.2.1, ?_, hpres₃.2.2.2.2.2.2⟩
+              refine successor_push_close hs hsp_le he hs₁ hframe₁ hnext_away hs₂ hunwind₁ hbody ?_
               simp +decide [successorUnwindNext, hs₂.mem_eq, hs₂.out_eq, hk_mem, hpay_mem, hans_eq]
             · -- Summary descent branch when `cM ≤ lo`
               have hlo_mx : ¬query % universeSize d < s.mem (ch + 2) := by

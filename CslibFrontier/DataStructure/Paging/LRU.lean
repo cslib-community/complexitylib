@@ -161,23 +161,20 @@ theorem toFinset_lruNext_of_mem {k : Nat} {q : List α} {p : α} (hp : p ∈ q) 
     · exact Or.inl hxp
     · exact Or.inr ((List.mem_erase_of_ne hxp).mpr hx)
 
-/-- For `0 < k`, `p` always resides in `lruNext k q p`. -/
-theorem mem_lruNext {k : Nat} (hk : 0 < k) (q : List α) (p : α) :
-    p ∈ lruNext k q p := by
-  unfold lruNext
-  split
-  · exact List.mem_cons_self
-  · cases k with
-    | zero => omega
-    | succ k' =>
-      simp only [List.take_succ_cons, List.mem_cons, true_or]
-
 /-- On a miss with `0 < k`, `lruNext` prepends `p` to the `k - 1` most recent pages. -/
 private theorem lruNext_of_notMem {k : Nat} (hk : 0 < k) {q : List α} {p : α} (hp : p ∉ q) :
     lruNext k q p = p :: q.take (k - 1) := by
   cases k with
   | zero => omega
   | succ k' => simp only [lruNext, hp, ↓reduceIte, List.take_succ_cons, Nat.add_sub_cancel]
+
+/-- For `0 < k`, `p` always resides in `lruNext k q p`. -/
+theorem mem_lruNext {k : Nat} (hk : 0 < k) (q : List α) (p : α) :
+    p ∈ lruNext k q p := by
+  by_cases hp : p ∈ q
+  · simp only [lruNext, hp, ↓reduceIte, List.mem_cons_self]
+  · rw [lruNext_of_notMem hk hp]
+    exact List.mem_cons_self
 
 /-- Every page in `lruNext k q p` comes from `insert p q.toFinset`. -/
 theorem toFinset_lruNext_subset {k : Nat} (q : List α) (p : α) :

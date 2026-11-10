@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Probability.PMF.Expect
@@ -400,10 +401,8 @@ private theorem card_filter_not_injective_div_le (n : ℕ) :
           _ ≤ n ^ 2 * D ^ n := hbound
           _ = D ^ n * (n * n) := by ring
       exact Nat.le_of_mul_le_mul_right this (Nat.mul_pos hn hn)
-  rw [ENNReal.div_le_iff (by exact_mod_cast (pow_pos hDpos n).ne') (by simp), one_div,
-    ← ENNReal.div_eq_inv_mul,
-    ENNReal.le_div_iff_mul_le (Or.inl (by norm_num)) (Or.inl (by norm_num))]
-  exact_mod_cast key
+  exact_mod_cast (ENNReal.natCast_div_le_natCast_div_iff (a := bad) (c := 1)
+    (pow_pos hDpos n).ne' (by norm_num : (16 : ℕ) ≠ 0)).mpr (by simpa using key)
 
 /-- Two deterministic views of a uniform sample that agree up to a relabeling of the sample
 outside a set of bad samples are close: their expectations of `[0, 1]`-valued functions differ by

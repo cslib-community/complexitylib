@@ -54,7 +54,8 @@ theorem profileGeometry_clause_length (p : ClauseProfile) :
 
 /-- Every incidence appears once, in actual output-clause and literal-position order. -/
 theorem profileGeometry_signature (p : ClauseProfile) :
-    ((profileGeometry p).incidenceRoutes.map fun e => (e.1, e.2.1)) = profileSignature p := by
+    ((profileGeometry p).incidenceRoutes.map fun e => (e.clauseIndex, e.variableIndex)) =
+      profileSignature p := by
   fin_cases p <;> decide +kernel
 
 /-- Exposed variables are precisely the source slots, in source literal order. -/
@@ -67,7 +68,7 @@ theorem profileGeometry_terminals (p : ClauseProfile) :
 /-- Each source placeholder has a single internal incidence, ready for exterior splicing. -/
 theorem profileGeometry_terminal_degree (p : ClauseProfile) :
     ∀ v ∈ (profileGeometry p).terminalVariables,
-      ((profileGeometry p).incidenceRoutes.map fun e => e.2.1).count v = 1 := by
+      ((profileGeometry p).incidenceRoutes.map fun e => e.variableIndex).count v = 1 := by
   fin_cases p <;> decide +kernel
 
 /-- The actual composed gadgets have at most twenty-two clauses and sixty-six incidences. -/
