@@ -245,6 +245,7 @@ public import CslibFrontier.Algorithms.Reachability.InductiveCounting.Semantics
 public import CslibFrontier.Algorithms.Reachability.Reingold
 public import CslibFrontier.Algorithms.Reachability.ReingoldEval
 public import CslibFrontier.Algorithms.Reachability.Savitch
+public import CslibFrontier.Algorithms.Reachability.SavitchWalk
 public import CslibFrontier.Algorithms.Reachability.ShortestWalk
 public import CslibFrontier.Algorithms.ShortestPaths.FloydWarshall
 public import CslibFrontier.Algorithms.ShortestPaths.NegativeTriangle
@@ -2757,6 +2758,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Injective
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.InputTable
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Radix
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.RadixRounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.ReadSymbol
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Routines
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Tape
@@ -2856,6 +2858,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.S
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Savitch
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.SavitchWalk
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.SpaceInTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Translate
@@ -4692,6 +4695,7 @@ public import CslibFrontier.Foundations.Data.BitString.Convolution
 public import CslibFrontier.Foundations.Data.BitString.Counter
 public import CslibFrontier.Foundations.Data.BitString.CoverCoding
 public import CslibFrontier.Foundations.Data.BitString.CyclicDifference
+public import CslibFrontier.Foundations.Data.BitString.CyclicDifference.Boundary
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Basic
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Composition
 public import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
@@ -5273,6 +5277,8 @@ public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Definability
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Positive
+public import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Tuple
+public import CslibFrontier.Logics.FirstOrder.Operator.Tuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.Addition
 public import CslibFrontier.Logics.FirstOrder.Ordered.Basic
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitArithmetic
@@ -5290,6 +5296,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.DomainInterpreta
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Encoding
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
+public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.TransitiveClosure
 public import CslibFrontier.Logics.FirstOrder.Ordered.Interpretation
 public import CslibFrontier.Logics.FirstOrder.Ordered.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication
@@ -5447,8 +5454,18 @@ public import CslibFrontier.Logics.Propositional.CSP.Occurrence
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Enumeration
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
 public import CslibFrontier.Logics.Propositional.CSP.Permanent
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Constants
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Construction
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Construction.Gadget
 public import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
+public import CslibFrontier.Logics.Propositional.CSP.Planar.NonSelfDual
+public import CslibFrontier.Logics.Propositional.CSP.Planar.Normalization
+public import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree
+public import CslibFrontier.Logics.Propositional.CSP.Planar.OneInThree.Gadget
+public import CslibFrontier.Logics.Propositional.CSP.Planar.RelationMinor
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive
+public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Composition
+public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import CslibFrontier.Logics.Propositional.CSP.Table
 public import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 public import CslibFrontier.Logics.Propositional.CSP.ToBoolean
