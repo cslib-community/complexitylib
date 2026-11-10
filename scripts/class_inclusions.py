@@ -41,8 +41,21 @@ CIRCUIT = {
     "AC⁰": "AC0", "ACC⁰": "ACC0", "TC⁰": "TC0", "NC¹": "NC_one", "AC¹": "AC_one",
     "NC²": "NC_two", "P/poly": "PPoly",
 }
-# Classes that equal their complement, and the complement pairs among the rest.
-CO_CLOSED = {"L", "NL", "P", "ZPP", "BPP", "PH", "BQP", "PP", "P^#P", "PSPACE", "IP", "EXP"}
+# Classes that equal their complement, with the reason, and the complement pairs among the rest.
+CO_CLOSED = {
+    "L": "deterministic; swap accepting and rejecting states",
+    "NL": "Immerman 1988 (`Immerman1988`); Szelepcsényi 1987 (`Szelepcsenyi1987`)",
+    "P": "deterministic; swap accepting and rejecting states",
+    "ZPP": "swap the two definite answers",
+    "BPP": "the error bound is symmetric",
+    "PH": "each level Σₖᵖ has complement Πₖᵖ ⊆ Σₖ₊₁ᵖ",
+    "BQP": "the error bound is symmetric",
+    "PP": "Gill 1977, after making the acceptance probability never exactly one half",
+    "P^#P": "deterministic machine with an oracle; swap its answers",
+    "PSPACE": "deterministic; swap accepting and rejecting states",
+    "IP": "IP = PSPACE (Shamir 1992), which is closed under complement",
+    "EXP": "deterministic; swap accepting and rejecting states",
+}
 COMPLEMENT = {"NP": "coNP", "coNP": "NP", "RP": "coRP", "coRP": "RP"}
 
 # Instances of parametric theorems: (A, relation, B, declaration as applied).
@@ -229,6 +242,11 @@ def render() -> str:
     sources = ["| Fact | Source |", "|---|---|"]
     for a, relation, b, source in LITERATURE:
         sources.append(f"| {a} {'⊆' if relation == 'subset' else '⊄'} {b} | {source} |")
+    sources += ["", "Complements are used only for these classes, which are closed under "
+                "complement, and for the pairs NP/coNP and RP/coRP.", "",
+                "| Class | Why it is closed under complement |", "|---|---|"]
+    for name, source in CO_CLOSED.items():
+        sources.append(f"| {name} | {source} |")
     return "\n".join([
         "# Inclusions between complexity classes",
         "",

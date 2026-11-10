@@ -187,6 +187,23 @@ These unconditional results, closed under chaining and complements, decide every
 | NC² ⊆ P/poly | by definition |
 | ACC⁰ ⊄ AC⁰ | parity is not in AC⁰ (Furst–Saxe–Sipser 1984, `FurstSaxeSipser1984`; Ajtai 1983, `Ajtai1983`) |
 
+Complements are used only for these classes, which are closed under complement, and for the pairs NP/coNP and RP/coRP.
+
+| Class | Why it is closed under complement |
+|---|---|
+| L | deterministic; swap accepting and rejecting states |
+| NL | Immerman 1988 (`Immerman1988`); Szelepcsényi 1987 (`Szelepcsenyi1987`) |
+| P | deterministic; swap accepting and rejecting states |
+| ZPP | swap the two definite answers |
+| BPP | the error bound is symmetric |
+| PH | each level Σₖᵖ has complement Πₖᵖ ⊆ Σₖ₊₁ᵖ |
+| BQP | the error bound is symmetric |
+| PP | Gill 1977, after making the acceptance probability never exactly one half |
+| P^#P | deterministic machine with an oracle; swap its answers |
+| PSPACE | deterministic; swap accepting and rejecting states |
+| IP | IP = PSPACE (Shamir 1992), which is closed under complement |
+| EXP | deterministic; swap accepting and rejecting states |
+
 ## Regenerating
 
 Run `python3 scripts/class_inclusions.py` after adding an inclusion theorem, and `python3 scripts/class_inclusions.py --check` to test whether this page is current. New theorems named `A_subset_B`, `A_ssubset_B`, `A_eq_B` or `A_not_subset_B` between classes of a grid appear automatically. The script refuses to write a page on which the library proves something the literature layer calls open or false.
