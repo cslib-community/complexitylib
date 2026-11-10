@@ -110,6 +110,39 @@ theorem mixedOp_X_of_neg {i : σ} (h : ¬ s i) (p : MvPolynomial σ R) :
     mixedOp s (X i) p = X i * p := by
   rw [mixedOp_X, mixedGen_of_neg h]
 
+/-- The operator of a product of variables outside `s` is multiplication by that product. -/
+theorem mixedOp_prod_X_of_neg {ι : Type*} (T : Finset ι) (c : ι → σ) (hc : ∀ t ∈ T, ¬ s (c t))
+    (p : MvPolynomial σ R) : mixedOp s (∏ t ∈ T, X (c t)) p = (∏ t ∈ T, X (c t)) * p := by
+  classical
+  induction T using Finset.induction_on with
+  | empty => simp
+  | insert t T ht ih =>
+    rw [Finset.prod_insert ht, map_mul, Module.End.mul_apply,
+      ih fun t' h => hc t' (Finset.mem_insert_of_mem h),
+      mixedOp_X_of_neg (hc t (Finset.mem_insert_self _ _)), mul_assoc]
+
+/-- The operator of a product of distinct variables in `s` maps the monomial `M` to the monomial
+`M - ∑ t ∈ T, single (c t) 1`, with coefficient the product of the exponents `M (c t)`. -/
+theorem mixedOp_prod_X_monomial_of_pos {ι : Type*} (T : Finset ι) (c : ι → σ)
+    (hc : ∀ t ∈ T, s (c t)) (hinj : Set.InjOn c T) (M : σ →₀ ℕ) (a : R) :
+    mixedOp s (∏ t ∈ T, X (c t)) (monomial M a) =
+      monomial (M - ∑ t ∈ T, Finsupp.single (c t) 1) (a * ∏ t ∈ T, (M (c t) : R)) := by
+  classical
+  induction T using Finset.induction_on with
+  | empty => simp
+  | insert t T ht ih =>
+    have h0 : (∑ t' ∈ T, Finsupp.single (c t') 1 : σ →₀ ℕ) (c t) = 0 := by
+      rw [Finsupp.finsetSum_apply]
+      refine Finset.sum_eq_zero fun t' ht' => Finsupp.single_eq_of_ne' fun h => ht ?_
+      rwa [hinj (Finset.mem_insert_self _ _) (Finset.mem_insert_of_mem ht') h.symm]
+    rw [Finset.prod_insert ht, map_mul, Module.End.mul_apply,
+      ih (fun t' h => hc t' (Finset.mem_insert_of_mem h))
+        (hinj.mono (Finset.coe_subset.2 (Finset.subset_insert _ _))),
+      mixedOp_X_of_pos (hc t (Finset.mem_insert_self _ _)), pderiv_monomial, Finsupp.tsub_apply,
+      h0, tsub_zero, Finset.sum_insert ht, Finset.prod_insert ht, tsub_tsub, add_comm]
+    congr 1
+    ring
+
 theorem mixedOp_C (c : R) (p : MvPolynomial σ R) : mixedOp s (C c) p = c • p := by
   rw [← algebraMap_eq, AlgHom.commutes, Module.algebraMap_end_apply]
 

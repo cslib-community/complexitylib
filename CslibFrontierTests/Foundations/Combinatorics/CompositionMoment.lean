@@ -25,13 +25,13 @@ open Finset
 /-- The first parts of the weak compositions of `2` into two parts add up to `3`. -/
 theorem sum_first_part :
     ∑ M ∈ (univ : Finset (Fin 2)).finsuppAntidiag 2, ∏ i, (M i).descFactorial (![1, 0] i) = 3 := by
-  rw [sum_finsuppAntidiag_prod_descFactorial]
+  rw [sum_finsuppAntidiag_prod_descFactorial univ_nonempty]
   simp [Fin.prod_univ_two, Fin.sum_univ_two]
 
 example (t : ℕ) (d : Fin 2 → ℕ) :
     ((∑ M ∈ (univ : Finset (Fin 2)).finsuppAntidiag t, ∏ i, (M i).descFactorial (d i) : ℕ) : ℝ) ≤
-      (Fintype.card (Fin 2)).multichoose t *
-        ∏ i, (((d i).factorial : ℝ) * ((t : ℝ) / Fintype.card (Fin 2)) ^ d i) :=
-  sum_finsuppAntidiag_prod_descFactorial_le t d
+      (univ : Finset (Fin 2)).card.multichoose t *
+        ∏ i, (((d i).factorial : ℝ) * ((t : ℝ) / (univ : Finset (Fin 2)).card) ^ d i) :=
+  sum_finsuppAntidiag_prod_descFactorial_le univ_nonempty t d
 
 end CslibFrontierTests.CompositionMoment

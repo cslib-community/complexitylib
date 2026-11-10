@@ -85,6 +85,15 @@ theorem finrank_weightedHomogeneousSubmodule [StrongRankCondition R]
 
 end Slice
 
+/-- Taking a weighted homogeneous component commutes with a change of coefficient ring. -/
+theorem weightedHomogeneousComponent_map {S M : Type*} [CommSemiring S] [AddCommMonoid M]
+    (w : σ → M) (m : M) (f : R →+* S) (p : MvPolynomial σ R) :
+    weightedHomogeneousComponent w m (map f p) = map f (weightedHomogeneousComponent w m p) := by
+  classical
+  ext d
+  rw [coeff_weightedHomogeneousComponent, coeff_map, coeff_map,
+    coeff_weightedHomogeneousComponent, apply_ite f, map_zero]
+
 variable (s : σ → Prop) [DecidablePred s]
 
 /-- The weight whose weighted degree is the bidegree: the variables in `s` have weight `(1, 0)`
@@ -152,6 +161,13 @@ noncomputable def bidegreeEquiv [Fintype σ] [DecidableEq σ] (a b : ℕ) :
     refine Prod.ext (Subtype.ext ?_) (Subtype.ext ?_) <;>
       simp [Finsupp.filter_add, hf', hg', hf0, hg0]
 
+/-- In finitely many variables there are finitely many monomials of a given bidegree. -/
+instance finite_bidegree [Finite σ] (ab : ℕ × ℕ) :
+    Finite {d : σ →₀ ℕ // weight (bidegWeight s) d = ab} := by
+  classical
+  have := Fintype.ofFinite σ
+  exact Finite.of_equiv _ (bidegreeEquiv s ab.1 ab.2).symm
+
 /-- The dimension of the slice of bidegree `(a, b)`: the number of monomials of degree `a` in the
 variables in `s`, times the number of monomials of degree `b` in the other variables. -/
 theorem finrank_bihomogeneous [StrongRankCondition R] [Fintype σ] (a b : ℕ) :
@@ -159,8 +175,6 @@ theorem finrank_bihomogeneous [StrongRankCondition R] [Fintype σ] (a b : ℕ) :
       Nat.multichoose (Fintype.card {i // s i}) a *
         Nat.multichoose (Fintype.card {i // ¬ s i}) b := by
   classical
-  have : Finite {d : σ →₀ ℕ // weight (bidegWeight s) d = (a, b)} :=
-    Finite.of_equiv _ (bidegreeEquiv s a b).symm
   rw [finrank_weightedHomogeneousSubmodule, Nat.card_congr (bidegreeEquiv s a b), Nat.card_prod,
     Nat.card_eq_fintype_card, Nat.card_eq_fintype_card, Fintype.card_coe, Fintype.card_coe,
     Finset.card_finsuppAntidiag_nat_eq_multichoose, Finset.card_finsuppAntidiag_nat_eq_multichoose,
@@ -169,10 +183,6 @@ theorem finrank_bihomogeneous [StrongRankCondition R] [Fintype σ] (a b : ℕ) :
 /-- In finitely many variables the slice of bidegree `(a, b)` is finite-dimensional. -/
 instance finite_bihomogeneous [Finite σ] (a b : ℕ) :
     Module.Finite R (weightedHomogeneousSubmodule R (bidegWeight s) (a, b)) := by
-  classical
-  have := Fintype.ofFinite σ
-  have : Finite {d : σ →₀ ℕ // weight (bidegWeight s) d = (a, b)} :=
-    Finite.of_equiv _ (bidegreeEquiv s a b).symm
   rw [weightedHomogeneousSubmodule_eq_span]
   exact Module.Finite.span_of_finite R (Set.finite_range _)
 

@@ -955,11 +955,20 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.Adjugate
 public import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.CircuitRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.DegreeEstimates
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FirstMoment
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FourPath
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ImmRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Path
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.PathCount
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.PathMatrix
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ProductRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.RankMeasure
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.RankMeasureMap
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Schedule
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.SecondMoment
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.SliceSum
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum.LayerWeight
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum.Runs
@@ -4589,6 +4598,7 @@ public import CslibFrontier.Foundations.Combinatorics.Bregman
 public import CslibFrontier.Foundations.Combinatorics.BudgetTuples
 public import CslibFrontier.Foundations.Combinatorics.CentralBinomial
 public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
+public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
@@ -4954,6 +4964,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinear
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjectionProd
+public import CslibFrontier.Foundations.Data.MvPolynomial.SliceMatrix
 public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
 public import CslibFrontier.Foundations.Data.Nat.ArithmeticProgression
