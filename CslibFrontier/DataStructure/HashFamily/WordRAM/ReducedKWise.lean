@@ -1025,10 +1025,6 @@ private theorem xReg_ne_prodReg (m d : ℕ) : xReg m ≠ prodReg d := by
 private theorem accReg_ne_prodReg (m d : ℕ) : accReg m ≠ prodReg d := by
   intro h; have := congrArg Fin.val h; dsimp only [accReg, prodReg] at this; omega
 
-private theorem xReg_ne_of_ne {m₁ m₂ : ℕ} (h1 : m₁ < 54) (h2 : m₂ < 54) (hne : m₁ ≠ m₂) :
-    xReg m₁ ≠ xReg m₂ := by
-  intro h; have := congrArg Fin.val h; dsimp only [xReg] at this; omega
-
 private theorem accReg_ne_of_ne {m₁ m₂ : ℕ} (h1 : m₁ < 54) (h2 : m₂ < 54) (hne : m₁ ≠ m₂) :
     accReg m₁ ≠ accReg m₂ := by
   intro h; have := congrArg Fin.val h; dsimp only [accReg] at this; omega
