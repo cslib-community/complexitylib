@@ -112,8 +112,8 @@ theorem sum_ncard_incidenceSet_mul [Fintype V] [Fintype E] (hl : G.Loopless) (w 
   simp [Finset.sum_add_distrib]
 
 /-- **The density of cores.** In a loopless multigraph of maximum degree `d` in which every
-vertex has at least three edges and the ends of every edge have at least `d + 3` edges between
-them, counted with multiplicity, `3 d |V| ≤ (d + 3) |E|`. -/
+vertex has at least three edges and the degrees of the ends of every edge sum to at least `d + 3`,
+`3 d |V| ≤ (d + 3) |E|`. -/
 theorem core_density [Fintype V] [Fintype E] (hl : G.Loopless) {d : ℕ}
     (hlo : ∀ v, 3 ≤ (G.incidenceSet v).ncard) (hhi : G.MaxDegreeLE d)
     (hadj : ∀ e, d + 3 ≤ (G.incidenceSet (G.src e)).ncard + (G.incidenceSet (G.tgt e)).ncard) :

@@ -33,8 +33,10 @@ The same invariance argument, applied to total computable decoders, shows that
 constant (`exists_complexity_universal_comp_le`).
 
 The statements use the `ℕ`-valued complexity, which is the genuine plain complexity for the
-universal method (`natCast_complexity_universal`). The `ℕ∞`-valued complexity does not tend to
-`⊤` along the cofinite filter (`not_tendsto_ecomplexity_universal`), because it is never `⊤`.
+universal method (`natCast_complexity_universal`). The `ℕ∞`-valued complexity is never `⊤`, so it
+does not tend to `atTop` along the cofinite filter (`not_tendsto_ecomplexity_universal`): on `ℕ∞`
+the filter `atTop` is the principal filter of `{⊤}`. For every `k` it is at least `k` at all but
+finitely many arguments (`eventually_natCast_le_ecomplexity`).
 Following the rest of the library, `K` denotes the plain complexity, which Li and Vitányi write
 `C`, reserving `K` for the prefix complexity.
 
@@ -85,8 +87,11 @@ theorem tendsto_complexity_universal : Tendsto universal.complexity atTop atTop 
   refine (universal.eventually_natCast_le_ecomplexity k).mono fun x hx => ?_
   rwa [← natCast_complexity_universal, Nat.cast_le] at hx
 
-/-- The `ℕ∞`-valued complexity under the universal method does not tend to `⊤`, since it is never
-`⊤`; this is why `tendsto_complexity_universal` is stated for the `ℕ`-valued complexity. -/
+/-- The `ℕ∞`-valued complexity under the universal method does not tend to `atTop` along the
+cofinite filter, because it is never `⊤`: on `ℕ∞` the filter `atTop` is the principal filter of
+`{⊤}`. For each `k` it is still at least `k` at all but finitely many arguments
+(`eventually_natCast_le_ecomplexity`), which gives `tendsto_complexity_universal` for the
+`ℕ`-valued complexity. -/
 theorem not_tendsto_ecomplexity_universal :
     ¬ Tendsto universal.ecomplexity cofinite atTop := fun h =>
   let ⟨x, hx⟩ := (tendsto_atTop.1 h ⊤).exists
