@@ -133,6 +133,20 @@ example : (Set.univ : Set (List Bool)) ∈ AL encBits ∧
     ⟨1, Unit, inferInstance, writeEmit, _, PolyBounded.const _,
       decidesInTime_writeEmit.decidesInSpace⟩⟩
 
+/-- `AL` is `ASPACE (log₂ n)` and `APSPACE` the union of the classes `ASPACE (n ^ k)`: the
+universal logspace decider gives `∅ ∈ ASPACE log₂`, and the one-tape machine, within space `2`,
+gives `Set.univ ∈ ASPACE (n ^ 0)`, hence `Set.univ ∈ APSPACE`. -/
+example : (∅ : Set (List Bool)) ∈ ASPACE encBits Nat.log2 ∧
+    (Set.univ : Set (List Bool)) ∈ ASPACE encBits (· ^ 0) ∧
+    (Set.univ : Set (List Bool)) ∈ APSPACE encBits := by
+  have hempty : (∅ : Set (List Bool)) ∈ AL encBits :=
+    ⟨0, Unit, inferInstance, emitMove true, 0, decidesInSpace_empty⟩
+  have huniv : (Set.univ : Set (List Bool)) ∈ ASPACE encBits (· ^ 0) :=
+    ⟨1, Unit, inferInstance, writeEmit, 2, 0,
+      decidesInTime_writeEmit.decidesInSpace.mono fun _ => by simp⟩
+  rw [← AL_eq_ASPACE]
+  exact ⟨hempty, huniv, mem_APSPACE_iff_exists_mem_ASPACE.mpr ⟨0, huniv⟩⟩
+
 /-! ### A machine whose move `false` loops -/
 
 /-- The machine with one state whose move `false` loops back to it and whose move `true` halts

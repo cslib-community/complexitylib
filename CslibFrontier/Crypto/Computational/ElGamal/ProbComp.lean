@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
+import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
 import CslibFrontier.Crypto.Game.FourHop
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
@@ -249,26 +250,6 @@ theorem isPPTOn_kemToKDFDistinguisher {distinguisher : Distinguisher}
   F.isPPTOn_kemToDDHDistinguisher (H := fun p => p.2) (ComputableInPolyTime.snd F.encDesc encBits)
     hD
 
-private theorem advantage_bind_sampleExp_pair_le (d : F.Desc) (n : ℕ)
-    (k : ZMod (F.order d) → ZMod (F.order d) → Game) :
-    Game.advantage
-      ((ProbComp.eval (F.sampleExp n d)).bind fun a =>
-        (ProbComp.eval (F.sampleExp n d)).bind fun b =>
-          k (a : ZMod (F.order d)) (b : ZMod (F.order d)))
-      ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-        (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β => k α β) ≤
-      2 / 2 ^ n := by
-  refine (Game.advantage_triangle _
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-      (ProbComp.eval (F.sampleExp n d)).bind fun b =>
-        k α (b : ZMod (F.order d))) _).trans ?_
-  have h1 := F.advantage_bind_sampleExp_le n d (fun α =>
-    (ProbComp.eval (F.sampleExp n d)).bind fun b => k α (b : ZMod (F.order d)))
-  have h2 := advantage_bind_le_nnreal (PMF.uniformOfFintype (ZMod (F.order d))) _ _
-    (fun α => F.advantage_bind_sampleExp_le n d (k α))
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
-    _ = 2 / 2 ^ n := by ring
-
 private theorem advantage_eval_kemRealGame_ddhRealGame_le
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (distinguisher : Distinguisher) (n : ℕ) :
@@ -300,7 +281,7 @@ private theorem advantage_eval_kemRealGame_ddhRealGame_le
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
     simp only [ddhRealGame, kemToDDHDistinguisher, PMF.monad_bind_eq_bind, PMF.pure_bind, k]
   rw [hreal, hddh]
-  exact F.advantage_bind_sampleExp_pair_le (d n) n k
+  exact F.advantage_bind_sampleExp_pair_le n (d n) k
 
 private theorem advantage_kdfIdealGame_eval_kemIdealGame_le (keyLen : ℕ → ℕ)
     (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
@@ -336,7 +317,7 @@ private theorem advantage_kdfIdealGame_eval_kemIdealGame_le (keyLen : ℕ → �
         (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
     simp only [kdfIdealGame, kemToKDFDistinguisher, PMF.monad_bind_eq_bind, PMF.pure_bind, k]
   rw [Game.advantage_comm, hideal, hkdf]
-  exact F.advantage_bind_sampleExp_pair_le (d n) n k
+  exact F.advantage_bind_sampleExp_pair_le n (d n) k
 
 /-- **Quantitative KEM IND-CPA bound for Hashed ElGamal**: the KEM distinguishing advantage of
 `distinguisher` against `(elGamalKeyGenProb d, hashedElGamalEncapsProb H d)` is bounded by the DDH
@@ -546,62 +527,48 @@ theorem advantage_gameOn_elGamalMsgCPAGameOn_le {Msg : Type}
         (gameOn valid (F.elGamalKeyGenProb d) (F.elGamalEncryptProb encodeMsg d) adversary bit n))
       (F.elGamalMsgCPAGameOn valid encodeMsg (fun m => PMF.pure (d m)) adversary bit n) ≤
       2 / 2 ^ n := by
-  let innerB (α : ZMod (F.order (d n))) (choice : (Msg × Msg) × List Bool)
-      (β : ZMod (F.order (d n))) : Game :=
-    let m := if bit then choice.1.2 else choice.1.1
-    let ct := encPair encBits encBits
-      (F.encode (d n) (β • F.generator (d n)),
-        F.add (d n, F.encode (d n) ((α * β) • F.generator (d n)), encodeMsg (d n) m))
-    ProbComp.eval (adversary.guess n choice.2 ct)
-  let innerA (useExactB : Bool) (α : ZMod (F.order (d n))) : Game :=
+  let k (α β : ZMod (F.order (d n))) : Game :=
     let pk := encPair F.encDesc encBits (d n, F.encode (d n) (α • F.generator (d n)))
     (ProbComp.eval (adversary.choose n pk)).bind fun choice =>
       if valid n pk choice.1.1 choice.1.2 then
-        if useExactB then
-          (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerB α choice)
-        else
-          (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
-            innerB α choice (b : ZMod (F.order (d n)))
+        let m := if bit then choice.1.2 else choice.1.1
+        let ct := encPair encBits encBits
+          (F.encode (d n) (β • F.generator (d n)),
+            F.add (d n, F.encode (d n) ((α * β) • F.generator (d n)), encodeMsg (d n) m))
+        ProbComp.eval (adversary.guess n choice.2 ct)
       else
         PMF.pure false
   have hgame0 :
       ProbComp.eval
         (gameOn valid (F.elGamalKeyGenProb d) (F.elGamalEncryptProb encodeMsg d) adversary bit n) =
       (ProbComp.eval (F.sampleExp n (d n))).bind fun a =>
-        innerA false (a : ZMod (F.order (d n))) := by
+        (ProbComp.eval (F.sampleExp n (d n))).bind fun b =>
+          k (a : ZMod (F.order (d n))) (b : ZMod (F.order (d n))) := by
     simp only [gameOn, elGamalKeyGenProb, elGamalEncryptProb, ProbComp.eval_bind,
       ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval,
-      encodeElGamalPublicKey_eq_encode, innerA, innerB]
-    refine congrArg _ (funext fun a => congrArg _ (funext fun choice => ?_))
+      encodeElGamalPublicKey_eq_encode, k]
+    congr 1 with a : 1
+    conv_rhs => rw [PMF.bind_comm]
+    congr 1 with choice : 1
     by_cases hv : valid n
         (encPair F.encDesc encBits
           (d n, F.encode (d n) ((a : ZMod (F.order (d n))) • F.generator (d n))))
         choice.1.1 choice.1.2 = true
-    · simp only [hv, ↓reduceIte, Bool.false_eq_true, dropFrame_encPair_encBits,
-        encodeElGamalEncrypt, F.smul_encode, smul_smul, mul_comm _ (a : ZMod (F.order (d n)))]
-    · simp only [hv, Bool.false_eq_true, ↓reduceIte]
+    · simp only [hv, ↓reduceIte, dropFrame_encPair_encBits, encodeElGamalEncrypt, F.smul_encode,
+        smul_smul, mul_comm _ (a : ZMod (F.order (d n)))]
+    · simp only [hv, Bool.false_eq_true, ↓reduceIte, PMF.bind_const]
   have hgame1 :
       F.elGamalMsgCPAGameOn valid encodeMsg (fun m => PMF.pure (d m)) adversary bit n =
-      (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerA true) := by
+      (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun α =>
+        (PMF.uniformOfFintype (ZMod (F.order (d n)))).bind fun β => k α β := by
     simp only [elGamalMsgCPAGameOn, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind,
-      innerA, innerB, ↓reduceIte]
+      k]
+    congr 1 with α : 1
+    conv_rhs => rw [PMF.bind_comm]
+    congr 1 with choice : 1
+    split_ifs <;> simp only [PMF.bind_const]
   rw [hgame0, hgame1]
-  refine (Game.advantage_triangle _
-    ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerA false)) _).trans ?_
-  have h1 := F.advantage_bind_sampleExp_le n (d n) (innerA false)
-  have h2 : Game.advantage
-      ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerA false))
-      ((PMF.uniformOfFintype (ZMod (F.order (d n)))).bind (innerA true)) ≤ 1 / 2 ^ n := by
-    refine advantage_bind_le_nnreal _ _ _ fun α => ?_
-    dsimp only [innerA]
-    refine advantage_bind_le_nnreal _ _ _ fun choice => ?_
-    by_cases hv : valid n (encPair F.encDesc encBits (d n, F.encode (d n) (α • F.generator (d n))))
-        choice.1.1 choice.1.2 = true
-    · simp only [hv, ↓reduceIte, Bool.false_eq_true]
-      exact F.advantage_bind_sampleExp_le n (d n) (innerB α choice)
-    · simp only [hv, Bool.false_eq_true, ↓reduceIte, Game.advantage_self, zero_le]
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n := add_le_add h1 h2
-    _ = 2 / 2 ^ n := by ring
+  exact F.advantage_bind_sampleExp_pair_le n (d n) k
 
 /-- **Multiplicative ElGamal satisfies `Encryption.INDCPAOn` under DDH** ([BonehShoup2023],
 Exercise 11.5(a), p. 459): for any polynomial-time group description family `d : ℕ → F.Desc`,
