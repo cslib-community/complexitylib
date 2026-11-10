@@ -3269,6 +3269,7 @@ public import CslibFrontier.Computability.Pebbling.Pyramid
 public import CslibFrontier.Computability.Pebbling.Reversible
 public import CslibFrontier.Computability.Pebbling.ReversiblePath
 public import CslibFrontier.Computability.Pebbling.ReversiblePathReachable
+public import CslibFrontier.Computability.Pebbling.Words
 public import CslibFrontier.Computability.PolyTime.BitString.InitialTestsSearch
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceCounter
 public import CslibFrontier.Computability.PolyTime.BooleanAnalysis.BoundedIncidenceExactness
@@ -3986,6 +3987,8 @@ public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.CRT
 public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.ConstantDivision
 public import CslibFrontier.Crypto.Primitives.Garbling.BMR16
 public import CslibFrontier.Crypto.Primitives.Garbling.Basic
+public import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHot
+public import CslibFrontier.Crypto.Primitives.Garbling.BinaryToOneHotObliviousness
 public import CslibFrontier.Crypto.Primitives.Garbling.CircuitInverters
 public import CslibFrontier.Crypto.Primitives.Garbling.CorrelationRobust
 public import CslibFrontier.Crypto.Primitives.Garbling.Foundations
@@ -3994,6 +3997,7 @@ public import CslibFrontier.Crypto.Primitives.Garbling.Games
 public import CslibFrontier.Crypto.Primitives.Garbling.HalfGates
 public import CslibFrontier.Crypto.Primitives.Garbling.HalfGates.Privacy
 public import CslibFrontier.Crypto.Primitives.Garbling.MixedModulus
+public import CslibFrontier.Crypto.Primitives.Garbling.OneHot
 public import CslibFrontier.Crypto.Primitives.Garbling.Privacy
 public import CslibFrontier.Crypto.Primitives.Garbling.Rerandomizable
 public import CslibFrontier.Crypto.Primitives.Garbling.Scheme
@@ -4350,6 +4354,7 @@ public import CslibFrontier.DataStructure.Stack.Native
 public import CslibFrontier.DataStructure.Stack.Spec
 public import CslibFrontier.DataStructure.StateTransition
 public import CslibFrontier.DataStructure.StateTransition.Amortized
+public import CslibFrontier.DataStructure.StateTransition.ClientSimps.Init
 public import CslibFrontier.DataStructure.StateTransition.Composition
 public import CslibFrontier.DataStructure.StateTransition.CostHoare
 public import CslibFrontier.DataStructure.StateTransition.Hoare
@@ -4936,6 +4941,7 @@ public import CslibFrontier.Foundations.Data.Nat.MasterTheoremAsymptotics
 public import CslibFrontier.Foundations.Data.Nat.Morton
 public import CslibFrontier.Foundations.Data.Nat.OddMulMod
 public import CslibFrontier.Foundations.Data.Nat.OfDigits
+public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Choose
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 public import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Log
@@ -5851,6 +5857,7 @@ public import CslibFrontier.Tactic.FirstOrder.Init
 public import CslibFrontier.Tactic.Fits
 public import CslibFrontier.Tactic.LogSpace
 public import CslibFrontier.Tactic.LogSpace.Init
+public import CslibFrontier.Tactic.Negligible
 public import CslibFrontier.Tactic.OptionMatch
 public import CslibFrontier.Tactic.PMFSwap
 public import CslibFrontier.Tactic.PPT
@@ -5860,5 +5867,7 @@ public import CslibFrontier.Tactic.Realize
 public import CslibFrontier.Tactic.Space
 public import CslibFrontier.Tactic.Stateful
 public import CslibFrontier.Tactic.Stateful.Init
+public import CslibFrontier.Tactic.SuppCases
+public import CslibFrontier.Tactic.SuppCases.Init
 public import CslibFrontier.Tactic.Synthesis
 public import CslibFrontier.Tactic.WordRAM

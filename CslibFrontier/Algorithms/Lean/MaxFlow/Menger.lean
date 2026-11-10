@@ -304,28 +304,13 @@ private theorem splitNetwork_cap_ft (u v : V) :
     (splitNetwork G s t).cap (u, false) (v, true) = if u = v ∧ u ≠ s ∧ u ≠ t then 1 else 0 := by
   simp [splitNetwork]
 
-omit [Fintype V] in
-private theorem splitNetwork_cap_tt (u v : V) :
-    (splitNetwork G s t).cap (u, true) (v, true) = 0 := by
-  simp [splitNetwork]
+private theorem split_flow_eq_zero (f : (splitNetwork G s t).Flow) {x y : V × Bool}
+    (h : (splitNetwork G s t).cap x y = 0) : f x y = 0 :=
+  Nat.eq_zero_of_le_zero (h ▸ f.le_cap x y)
 
-omit [Fintype V] in
-private theorem splitNetwork_cap_ff (u v : V) :
-    (splitNetwork G s t).cap (u, false) (v, false) = 0 := by
-  simp [splitNetwork]
-
-
-private theorem split_flow_tt (f : (splitNetwork G s t).Flow) (u v : V) :
-    f (u, true) (v, true) = 0 := by
-  have := f.le_cap (u, true) (v, true)
-  rw [splitNetwork_cap_tt] at this
-  omega
-
-private theorem split_flow_ff (f : (splitNetwork G s t).Flow) (u v : V) :
-    f (u, false) (v, false) = 0 := by
-  have := f.le_cap (u, false) (v, false)
-  rw [splitNetwork_cap_ff] at this
-  omega
+private theorem split_flow_same (f : (splitNetwork G s t).Flow) (u v : V) (b : Bool) :
+    f (u, b) (v, b) = 0 :=
+  split_flow_eq_zero f (by cases b <;> simp [splitNetwork])
 
 private theorem split_flow_ft_le (f : (splitNetwork G s t).Flow) (v : V) :
     f (v, false) (v, true) ≤ 1 := by
@@ -335,16 +320,12 @@ private theorem split_flow_ft_le (f : (splitNetwork G s t).Flow) (v : V) :
 
 private theorem split_flow_ft_ne (f : (splitNetwork G s t).Flow) {u v : V}
     (h : ¬ (u = v ∧ u ≠ s ∧ u ≠ t)) :
-    f (u, false) (v, true) = 0 := by
-  have := f.le_cap (u, false) (v, true)
-  simp only [splitNetwork_cap_ft, h, ↓reduceIte] at this
-  omega
+    f (u, false) (v, true) = 0 :=
+  split_flow_eq_zero f (by simp [splitNetwork_cap_ft, h])
 
 private theorem split_flow_tf_zero (f : (splitNetwork G s t).Flow) {u v : V} (h : ¬ G.Adj u v) :
-    f (u, true) (v, false) = 0 := by
-  have := f.le_cap (u, true) (v, false)
-  simp only [splitNetwork_cap_tf, h, ↓reduceIte] at this
-  omega
+    f (u, true) (v, false) = 0 :=
+  split_flow_eq_zero f (by simp [splitNetwork_cap_tf, h])
 
 omit [DecidableEq V] in
 private theorem sum_split {M : Type*} [AddCommMonoid M] (g : V × Bool → M) :
@@ -352,64 +333,46 @@ private theorem sum_split {M : Type*} [AddCommMonoid M] (g : V × Bool → M) :
   rw [Fintype.sum_prod_type, ← Finset.sum_add_distrib]
   exact Finset.sum_congr rfl fun w _ => Fintype.sum_bool _
 
+private theorem split_conserve (f : (splitNetwork G s t).Flow) (v : V) (b : Bool)
+    (hs : (v, b) ≠ (s, true)) (ht : (v, b) ≠ (t, false)) :
+    ∑ w, f (w, !b) (v, b) = ∑ w, f (v, b) (w, !b) := by
+  have hc := f.conserve (v, b) hs ht
+  change ∑ x, f x (v, b) = ∑ y, f (v, b) y at hc
+  rw [sum_split, sum_split (fun y => f (v, b) y)] at hc
+  cases b <;> simp only [Bool.not_false, Bool.not_true, split_flow_same,
+    Finset.sum_const_zero, add_zero, zero_add] at hc ⊢ <;> exact hc
+
 /-- Flow entering the tail copy `(v, false)` all comes from head copies and leaves through the
 splitting arc. -/
 private theorem split_inflow (f : (splitNetwork G s t).Flow) {v : V} (hvt : v ≠ t) :
     ∑ u, f (u, true) (v, false) = f (v, false) (v, true) := by
-  have hc := f.conserve (v, false) (by simp [splitNetwork_s]) (by simp [splitNetwork_t, hvt])
-  have h1 : ∑ x, f x (v, false) = ∑ u, f (u, true) (v, false) + ∑ u, f (u, false) (v, false) :=
-    sum_split _
-  have h2 : ∑ y, f (v, false) y = ∑ w, f (v, false) (w, true) + ∑ w, f (v, false) (w, false) :=
-    sum_split _
-  have h3 : ∑ u, f (u, false) (v, false) = 0 :=
-    Finset.sum_eq_zero fun u _ => split_flow_ff f u v
-  have h4 : ∑ w, f (v, false) (w, false) = 0 :=
-    Finset.sum_eq_zero fun w _ => split_flow_ff f v w
-  have h5 : ∑ w, f (v, false) (w, true) = f (v, false) (v, true) := by
-    refine Finset.sum_eq_single v (fun w _ hw => split_flow_ft_ne f ?_) (by simp)
-    exact fun h => hw h.1.symm
-  change ∑ x, f x (v, false) = ∑ y, f (v, false) y at hc
-  omega
+  have hc : ∑ u, f (u, true) (v, false) = ∑ w, f (v, false) (w, true) := by
+    simpa using split_conserve f v false (by simp) (by simp [hvt])
+  rw [hc]
+  exact Finset.sum_eq_single v (fun w _ hw => split_flow_ft_ne f fun h => hw h.1.symm) (by simp)
 
 /-- Flow leaving the head copy `(u, true)` all goes to tail copies and enters through the
 splitting arc. -/
 private theorem split_outflow (f : (splitNetwork G s t).Flow) {u : V} (hus : u ≠ s) :
     ∑ v, f (u, true) (v, false) = f (u, false) (u, true) := by
-  have hc := f.conserve (u, true) (by simp [splitNetwork_s, hus]) (by simp [splitNetwork_t])
-  have h1 : ∑ x, f x (u, true) = ∑ w, f (w, true) (u, true) + ∑ w, f (w, false) (u, true) :=
-    sum_split _
-  have h2 : ∑ y, f (u, true) y = ∑ v, f (u, true) (v, true) + ∑ v, f (u, true) (v, false) :=
-    sum_split _
-  have h3 : ∑ w, f (w, true) (u, true) = 0 :=
-    Finset.sum_eq_zero fun w _ => split_flow_tt f w u
-  have h4 : ∑ v, f (u, true) (v, true) = 0 :=
-    Finset.sum_eq_zero fun v _ => split_flow_tt f u v
-  have h5 : ∑ w, f (w, false) (u, true) = f (u, false) (u, true) := by
-    refine Finset.sum_eq_single u (fun w _ hw => split_flow_ft_ne f ?_) (by simp)
-    exact fun h => hw h.1
-  change ∑ x, f x (u, true) = ∑ y, f (u, true) y at hc
-  omega
+  have hc : ∑ w, f (w, false) (u, true) = ∑ v, f (u, true) (v, false) := by
+    simpa using split_conserve f u true (by simp [hus]) (by simp)
+  rw [← hc]
+  exact Finset.sum_eq_single u (fun w _ hw => split_flow_ft_ne f fun h => hw h.1) (by simp)
 
 /-- Each arc of `G` carries at most one unit, except possibly a direct arc `s → t`. -/
 private theorem split_thru (f : (splitNetwork G s t).Flow) (hadj : ¬ G.Adj s t) (u v : V) :
     f (u, true) (v, false) ≤ 1 := by
   by_cases hvt : v = t
   · by_cases hus : u = s
-    · have := split_flow_tf_zero f hadj
-      rw [hvt, hus]
-      omega
-    · have hle : f (u, true) (v, false) ≤ ∑ w, f (u, true) (w, false) :=
-        Finset.single_le_sum (f := fun w => f (u, true) (w, false)) (fun _ _ => Nat.zero_le _)
-          (Finset.mem_univ v)
-      have := split_outflow f hus
-      have := split_flow_ft_le f u
-      omega
-  · have hle : f (u, true) (v, false) ≤ ∑ w, f (w, true) (v, false) :=
-      Finset.single_le_sum (f := fun w => f (w, true) (v, false)) (fun _ _ => Nat.zero_le _)
-        (Finset.mem_univ u)
-    have := split_inflow f hvt
-    have := split_flow_ft_le f v
-    omega
+    · rw [hvt, hus, split_flow_tf_zero f hadj]
+      exact Nat.zero_le 1
+    · exact (Finset.single_le_sum (f := fun w => f (u, true) (w, false))
+        (fun _ _ => Nat.zero_le _) (Finset.mem_univ v)).trans
+        ((split_outflow f hus).le.trans (split_flow_ft_le f u))
+  · exact (Finset.single_le_sum (f := fun w => f (w, true) (v, false))
+      (fun _ _ => Nat.zero_le _) (Finset.mem_univ u)).trans
+      ((split_inflow f hvt).le.trans (split_flow_ft_le f v))
 
 end Split
 
@@ -440,10 +403,9 @@ theorem exists_internallyDisjoint_eq_isVertexCut [Finite V] (G : Digraph V) {s t
     rw [Network.Flow.mem_reachableCut_iff] at hu ⊢
     refine hu.tail ?_
     have h1 := split_thru f hadj u v
-    have h2 : (splitNetwork G s t).cap (u, true) (v, false) = 2 := by
-      simp only [splitNetwork_cap_tf, huv, ↓reduceIte]
     change 0 < ((splitNetwork G s t).cap (u, true) (v, false) - f (u, true) (v, false)) +
       f (v, false) (u, true)
+    simp only [splitNetwork_cap_tf, huv, ↓reduceIte]
     omega
   obtain ⟨T, hT⟩ : ∃ T : Finset V, ∀ v, v ∈ T ↔
       (v, false) ∈ f.reachableCut ∧ (v, true) ∉ f.reachableCut :=
@@ -456,20 +418,16 @@ theorem exists_internallyDisjoint_eq_isVertexCut [Finite V] (G : Digraph V) {s t
     obtain ⟨e, he, hSe, hSe'⟩ := exists_mem_pathArcs_boundary
       (fun v => (v, false) ∈ f.reachableCut ∨ v = s) hps hpt (Or.inr rfl)
       (by rintro (h | h); exacts [htR h, hst h.symm])
-    have hnb : (e.2, false) ∉ f.reachableCut := fun h => hSe' (Or.inl h)
-    have hna : (e.1, true) ∉ f.reachableCut := fun h => hnb (hprop _ _ (hadjp e he) h)
+    have hna : (e.1, true) ∉ f.reachableCut := fun h => hSe' (Or.inl (hprop _ _ (hadjp e he) h))
     refine ⟨e.1, fst_mem_of_mem_pathArcs he, (hT _).mpr ⟨?_, hna⟩⟩
-    rcases hSe with h | h
-    · exact h
-    · exact absurd (h ▸ hsR) hna
+    exact hSe.elim id fun h => absurd (h ▸ hsR) hna
   -- `|T|` is bounded by the capacity of the reachable cut.
   have hTcap : T.card ≤ (splitNetwork G s t).cutCapacity f.reachableCut := by
     have hsub : T.image (fun v => ((v, false), (v, true))) ⊆
         f.reachableCut ×ˢ (Finset.univ \ f.reachableCut) := by
       intro x hx
       obtain ⟨v, hv, rfl⟩ := Finset.mem_image.mp hx
-      have := (hT v).mp hv
-      simp [this.1, this.2]
+      simpa using (hT v).mp hv
     have hone : ∀ v ∈ T, (splitNetwork G s t).cap (v, false) (v, true) = 1 := by
       grind [splitNetwork_cap_ft]
     calc T.card = ∑ v ∈ T, (splitNetwork G s t).cap (v, false) (v, true) := by
@@ -477,14 +435,13 @@ theorem exists_internallyDisjoint_eq_isVertexCut [Finite V] (G : Digraph V) {s t
       _ = ∑ x ∈ T.image (fun v => ((v, false), (v, true))),
             (splitNetwork G s t).cap x.1 x.2 := by
           rw [Finset.sum_image]
-          intro x _ y _ hxy
-          simpa using hxy
+          intro _ _ _ _ h
+          simpa using h
       _ ≤ ∑ x ∈ f.reachableCut ×ˢ (Finset.univ \ f.reachableCut),
             (splitNetwork G s t).cap x.1 x.2 :=
           Finset.sum_le_sum_of_subset hsub
       _ = (splitNetwork G s t).cutCapacity f.reachableCut := by
-          rw [Finset.sum_product]
-          rfl
+          rw [Finset.sum_product]; rfl
   -- Project `f` to a flow on the unit network of `G`.
   let g : (unitNetwork G s t).Flow :=
     { toFun := fun u v => f (u, true) (v, false)
@@ -496,19 +453,14 @@ theorem exists_internallyDisjoint_eq_isVertexCut [Finite V] (G : Digraph V) {s t
       conserve := fun v hvs hvt => by
         show ∑ u, f (u, true) (v, false) = ∑ w, f (v, true) (w, false)
         rw [split_inflow f hvt, split_outflow f hvs] }
-  have hg : ∀ u v, g u v = f (u, true) (v, false) := fun _ _ => rfl
   have hgval : g.value = f.value := by
     have hout : ∑ y, (f (s, true) y : ℤ) = ∑ w, (f (s, true) (w, false) : ℤ) := by
-      rw [sum_split]
-      simp [split_flow_tt]
+      rw [sum_split]; simp [split_flow_same]
     have hin : ∑ x, (f x (s, true) : ℤ) = 0 := by
-      rw [sum_split]
-      refine (add_eq_zero_iff_of_nonneg (Finset.sum_nonneg fun _ _ => by omega)
-        (Finset.sum_nonneg fun _ _ => by omega)).mpr ⟨?_, ?_⟩
-      · exact Finset.sum_eq_zero fun w _ => by simp [split_flow_tt]
-      · refine Finset.sum_eq_zero fun w _ => ?_
-        rw [split_flow_ft_ne f (fun h => h.2.1 h.1)]
-        simp
+      refine Finset.sum_eq_zero fun ⟨w, b⟩ _ => ?_
+      cases b
+      · simp [split_flow_ft_ne f (fun h => h.2.1 h.1)]
+      · simp [split_flow_same]
     have hin' : ∑ u, (f (u, true) (s, false) : ℤ) = 0 := by
       have h := split_inflow f hst
       rw [split_flow_ft_ne f (fun h => h.2.1 rfl)] at h
@@ -517,22 +469,19 @@ theorem exists_internallyDisjoint_eq_isVertexCut [Finite V] (G : Digraph V) {s t
       (∑ y, (f (s, true) y : ℤ)) - ∑ x, (f x (s, true) : ℤ)
     rw [hout, hin, hin']
   obtain ⟨P, hP, hcount⟩ := g.exists_flowPaths
-  have hPdi : ∀ i, IsDipath G s t (P i) := by
-    intro i
-    obtain ⟨hnd, hs, ht, hpos⟩ := hP i
-    refine ⟨hnd, hs, ht, fun e he => ?_⟩
-    by_contra hne
-    have h1 := hpos e he
-    rw [hg, split_flow_tf_zero f hne] at h1
-    exact absurd h1 (lt_irrefl 0)
+  have hPdi : ∀ i, IsDipath G s t (P i) := fun i =>
+    ⟨(hP i).1, (hP i).2.1, (hP i).2.2.1, fun e he => by
+      by_contra hne
+      have h1 := (hP i).2.2.2 e he
+      change 0 < f (e.1, true) (e.2, false) at h1
+      rw [split_flow_tf_zero f hne] at h1
+      exact absurd h1 (lt_irrefl 0)⟩
   have hPdisj : InternallyDisjoint s t P := by
     intro i j hij v hvi hvj
     by_contra hv
     rw [not_or] at hv
-    have hhead : ∀ l, (P l).head? ≠ some v := fun l h => hv.1 (by
-      have := (hP l).2.1
-      rw [h] at this
-      exact Option.some.inj this)
+    have hhead : ∀ l, (P l).head? ≠ some v := fun l h =>
+      hv.1 (Option.some.inj (h.symm.trans (hP l).2.1))
     have hle := card_filter_mem_le_sum P v hhead (fun u w => g u w) (fun u => hcount u v)
     have h1 : ∑ u, g u v = f (v, false) (v, true) := split_inflow f hv.2
     have h2 := split_flow_ft_le f v

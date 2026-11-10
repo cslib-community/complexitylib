@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.TreeSignature.CoinHybrid
 public import CslibFrontier.Crypto.Computational.CollisionResistant
 public import CslibFrontier.Crypto.Computational.OneWay
+public import CslibFrontier.Crypto.Negligible.Dyadic
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -29,7 +30,6 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Computational.MerkleSignature.Security
 import CslibFrontier.Crypto.Computational.OneWayToPRF
-import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -39,6 +39,7 @@ import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Tactic.Negligible
 
 /-!
 # Security of stateless tree signatures
@@ -4472,13 +4473,6 @@ theorem succProbability_eufCmaGame_scheme_le (S : IndexedSignatureScheme) (T : S
     _ ≤ (_ + _) + _ := add_le_add hideal le_rfl
     _ = _ := by ring
 
-/-- Any depth schedule satisfying `n ≤ depth n` makes `(1 : ℝ≥0) / 2 ^ depth n` negligible. -/
-theorem negligible_inv_two_pow_of_le {depth : ℕ → ℕ} (h : ∀ n, n ≤ depth n) :
-    Negligible (fun n => (1 : ℝ≥0) / 2 ^ depth n) := by
-  refine negligible_of_le (negligible_geometric (ratio := 2⁻¹) (by norm_num)) fun n => ?_
-  rw [one_div, inv_pow]
-  exact inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (h n))
-
 private theorem exists_sigCap_polyTime (S : IndexedSignatureScheme) :
     ∃ sigCap : ℕ → ℕ,
       ComputableInPolyTime sigCap encUnary encUnary ∧
@@ -4515,9 +4509,6 @@ theorem eufCMA_scheme_of_inv (S : IndexedSignatureScheme) (hS : S.IndexedEUFCMA)
   obtain ⟨sigCap, hsigCapPoly, hsigCap⟩ := exists_sigCap_polyTime S
   obtain ⟨ck, dk, hkgLen⟩ := S.keyGen_ppt.length_le
   simp only [encUnary_apply, List.length_replicate] at hkgLen
-  obtain ⟨cd, dd, hdd⟩ := hdepth.polyBounded_length.exists_le
-  simp only [encUnary_apply, List.length_replicate] at hdd
-  have hdepthPB : PolynomiallyBounded depth := PolynomiallyBounded.of_forall_le cd dd hdd
   apply SignatureScheme.EUFCMA.of_negligible
   intro adversary hA
   obtain ⟨εPrf, hεPrfNeg, hprfLe⟩ :=
@@ -4527,46 +4518,36 @@ theorem eufCMA_scheme_of_inv (S : IndexedSignatureScheme) (hS : S.IndexedEUFCMA)
   have hQPoly : ComputableInPolyTime Q encUnary encUnary := by
     dsimp only [Q]
     fun_prop
-  have hQPB : PolynomiallyBounded Q := by
-    dsimp only [Q]
-    fun_prop
   let slotBound (n : ℕ) : ℕ := Q n * depth n
   have hslotPoly : ComputableInPolyTime slotBound encUnary encUnary :=
     hQPoly.unary_mul' hdepth
-  have hdyadicPB : PolynomiallyBounded (fun n => dyadicSize (slotBound n)) :=
-    dyadicSize_polynomiallyBounded.comp (hQPB.mul hdepthPB)
   have hForgerPPT := isOraclePPT_indexedForger S hdepth hslotPoly hsigCapPoly hA
   have hIdxNeg := hS.negligible (indexedForger S depth slotBound sigCap adversary) hForgerPPT
-  have hCollNeg : Negligible (fun n => ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n)) :=
-    hdepthNeg.polynomiallyBounded_mul (hQPB.pow 2)
-  have htotNeg : Negligible (fun n =>
+  have hbound : ∀ n,
+      Game.succProbability
+        (ProbComp.eval
+          ((scheme S T (prfCoins family) N depth (computableInPolyTime_prfCoins hF.polyTime)
+            hN hdepth hcap hdepth_pos).eufCmaGame adversary n)) ≤
       (dyadicSize (slotBound n) : ℝ≥0) * Game.succProbability
         (ProbComp.eval
           (S.indexedEufCmaGame (indexedForger S depth slotBound sigCap adversary) n)) +
-      ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n) + εPrf n) :=
-    ((hIdxNeg.polynomiallyBounded_mul hdyadicPB).add hCollNeg).add hεPrfNeg
-  refine negligible_of_le htotNeg fun n => ?_
-  rw [eufCmaGame_scheme]
-  have hqBound : ∀ root ∈ (ProbComp.eval (S.keyGen n)).support,
-      (adversary n (encPair encUnary encBits (n, root.1))).IsQueryBounded (Q n) := by
-    intro root hroot
-    have hrk : root.1.length ≤ ck * (n + 1) ^ dk := by
-      have := (length_le_encPair_left encBits encBits root).trans (hkgLen n root hroot)
-      simpa only [encBits_apply] using this
-    have hpkLen : (encPair encUnary encBits (n, root.1)).length = 2 * n + 1 + root.1.length := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-    have hleQ : cq * (n + (encPair encUnary encBits (n, root.1)).length + 2) ^ dq ≤ Q n :=
-      Nat.mul_le_mul_left cq (Nat.pow_le_pow_left (by omega) dq)
-    exact (hqb n _).1.mono hleQ
-  have hideal := succProbability_treeIdealGame_le S T depth N slotBound sigCap (hcap n)
-    (hdepth_pos n) (hwidth n) (hkgBudget n) (hsgBudget n) le_rfl (hsigCap n) adversary hqBound
-  have hcollLe : (Q n ^ 2 : ℝ≥0) / 2 ^ (depth n + 1) ≤
-      ((Q n ^ 2 : ℕ) : ℝ≥0) * ((1 : ℝ≥0) / 2 ^ depth n) := by
-    rw [Nat.cast_pow, div_eq_mul_inv, one_div]
-    exact mul_le_mul_of_nonneg_left
-      (inv_anti₀ (by positivity) (pow_le_pow_right₀ (by norm_num) (Nat.le_succ _))) zero_le
-  exact (hprfLe n).trans
-    (add_le_add (hideal.trans (add_le_add le_rfl hcollLe)) le_rfl)
+      (Q n ^ 2 : ℝ≥0) / 2 ^ (depth n + 1) + εPrf n := fun n => by
+    rw [eufCmaGame_scheme]
+    have hqBound : ∀ root ∈ (ProbComp.eval (S.keyGen n)).support,
+        (adversary n (encPair encUnary encBits (n, root.1))).IsQueryBounded (Q n) := by
+      intro root hroot
+      have hrk : root.1.length ≤ ck * (n + 1) ^ dk := by
+        have := (length_le_encPair_left encBits encBits root).trans (hkgLen n root hroot)
+        simpa only [encBits_apply] using this
+      have hpkLen : (encPair encUnary encBits (n, root.1)).length = 2 * n + 1 + root.1.length := by
+        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+      have hleQ : cq * (n + (encPair encUnary encBits (n, root.1)).length + 2) ^ dq ≤ Q n :=
+        Nat.mul_le_mul_left cq (Nat.pow_le_pow_left (by omega) dq)
+      exact (hqb n _).1.mono hleQ
+    have hideal := succProbability_treeIdealGame_le S T depth N slotBound sigCap (hcap n)
+      (hdepth_pos n) (hwidth n) (hkgBudget n) (hsgBudget n) le_rfl (hsigCap n) adversary hqBound
+    exact (hprfLe n).trans (add_le_add hideal le_rfl)
+  negligible using hbound
 
 /-- **Stateless EUF-CMA security of `TreeSignature.scheme` at `coinParam budget`**
 ([BonehShoup2023], Section 14.6.3, Theorem 14.6): instantiating the PRF parameter at
