@@ -253,6 +253,13 @@ example (x : Data 240) (m : ℕ) :
       x.regs ⟨20 + (m + 1) % 54, by omega⟩ := by
   wram_simp
 
+/-- A literal next to a name with no known value is still left unread. -/
+example (x : Data 240) (j : Fin 240) (h : (x.set 10 5).regs j = 0) :
+    ((x.set 10 5).write 3 4).regs j = 0 := by
+  wram_simp
+  guard_target =ₛ (x.set 10 5).regs j = 0
+  exact h
+
 /-- Names the procedure cannot compare are left: a read of `j` after setting `i`. -/
 example {r : ℕ} (x : Data r) (i j : Fin r) (p : ℕ) (h : (x.set i 1).regs j = 0) :
     ((x.set i 1).write p 2).regs j = 0 := by
