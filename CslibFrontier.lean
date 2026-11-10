@@ -3132,6 +3132,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.In
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.LookupRun
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Machine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Nondeterministic
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.NondeterministicBudget
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.ResourceBound
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Space

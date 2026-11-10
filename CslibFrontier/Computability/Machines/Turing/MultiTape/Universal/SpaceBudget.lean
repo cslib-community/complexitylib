@@ -103,7 +103,9 @@ public abbrev eInS : Desc × List ℕ × ℕ × ℕ ↪ List Bool :=
 
 variable (d : Desc) (x : List ℕ) (b : ℕ)
 
-lemma take_two_append_take_two (o e : List ℕ) : (o.take 2 ++ e).take 2 = (o ++ e).take 2 := by
+/-- Keeping the first two symbols before appending more keeps the first two symbols. -/
+public lemma take_two_append_take_two (o e : List ℕ) :
+    (o.take 2 ++ e).take 2 = (o ++ e).take 2 := by
   simp only [List.take_append, List.take_take, List.length_take]
   congr 2
   omega
@@ -306,7 +308,7 @@ lemma take_two_deg : ComputableTidilyInDegree (fun l : List ℕ => l.take 2) (en
   rcases l with _ | ⟨a, _ | ⟨c, l⟩⟩ <;> rfl
 
 /-- The first two symbols of a list followed by an optional symbol, in linear time and space. -/
-lemma keepTwo_deg : ComputableTidilyInDegree
+public lemma keepTwo_deg : ComputableTidilyInDegree
     (fun p : List ℕ × Option ℕ => (p.1 ++ p.2.toList).take 2)
     (encPair (encList encUnary) eSym) (encList encUnary) 1 1 := by
   have hsingle : ComputableTidilyInDegree (fun n : ℕ => [n]) encUnary (encList encUnary) 1 1 :=
@@ -593,7 +595,7 @@ public theorem computableTidilyInTimeAndSpace_budgetedUniversal : ∃ c,
 
 /-- The initial configuration is encoded within `11 * descLen d + 6` bits: the initial state, the
 input head at `1` and blank work tapes. -/
-private lemma length_eCfg_init_le : (eCfg (init d)).length ≤ 11 * descLen d + 6 := by
+public lemma length_eCfg_init_le : (eCfg (init d)).length ≤ 11 * descLen d + 6 := by
   have hq : d.q₀ ≤ descLen d := by
     simp only [descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]; omega
   have hk : d.tapes ≤ descLen d := by
