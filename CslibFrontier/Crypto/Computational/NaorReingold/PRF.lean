@@ -887,7 +887,8 @@ private theorem negligible_naorReingoldHashedGame_const_pure {F : PrimeOrderGrou
           (fun k _ => adv k []) n) := by
   have hadv_aux : IsOraclePPT encBool (fun k (_ : List Bool) => adv k []) :=
     (hadv.on.preprocess'
-      ((ComputableInPolyTime.fst encUnary encBits).prod (ComputableInPolyTime.const []))).isOraclePPT
+      ((ComputableInPolyTime.fst encUnary encBits).prod
+        (ComputableInPolyTime.const []))).isOraclePPT
   obtain ⟨cD, eD, hdesc_b⟩ := hdesc.tidy.polyBounded_length.exists_le
   have hdesc_poly : PolynomiallyBounded (fun n => cD * (n + 1) ^ eD) :=
     (PolynomiallyBounded.const cD).mul ((PolynomiallyBounded.id.add (.const 1)).pow eD)
