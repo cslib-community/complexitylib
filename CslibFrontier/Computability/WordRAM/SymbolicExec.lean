@@ -486,9 +486,11 @@ meta def discharge (tac : Simp.Discharge) (p : Expr) : SimpM (Option Expr) := do
   if let some h ← assumption? p then return some h
   tac p
 
-/-- The value of the register name `i : Fin n`, and whether it unfolds to a constructor `⟨k, _⟩`, as
+/-- The value of the register name `i : Fin n`, and whether it is known: a literal `k` when the name
+evaluates to one, as `(3 : Fin 4)` does, or `k` when it unfolds to a constructor `⟨k, _⟩`, as
 `Fin.castAdd`, `Fin.natAdd` and abbreviations such as `⟨k + 9, _⟩` do; otherwise `i.val`. -/
 private meta def finVal (n i : Expr) : MetaM (Expr × Bool) := do
+  if let some k ← regValue? n i then return (mkNatLit k, true)
   let i' ← whnfD i
   if i'.isAppOfArity ``Fin.mk 3 then return (i'.getArg! 1, true)
   return (mkApp2 (mkConst ``Fin.val) n i, false)

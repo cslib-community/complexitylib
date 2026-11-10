@@ -246,6 +246,13 @@ example {r : ℕ} (x : Data (r + 3)) (i : Fin r) :
     ((x.set (i.castAdd 3) 5).set ⟨r + 1, by omega⟩ 6).regs (i.castAdd 3) = 5 := by
   wram_simp
 
+/-- A literal register name is compared with a name that unfolds to `⟨k, _⟩` by its value, as for a
+bank `⟨20 + m % 54, _⟩` next to scratch registers `10` and `11`. -/
+example (x : Data 240) (m : ℕ) :
+    (((x.set 10 5).set ⟨20 + m % 54, by omega⟩ 6).set 11 7).regs ⟨20 + (m + 1) % 54, by omega⟩ =
+      x.regs ⟨20 + (m + 1) % 54, by omega⟩ := by
+  wram_simp
+
 /-- Names the procedure cannot compare are left: a read of `j` after setting `i`. -/
 example {r : ℕ} (x : Data r) (i j : Fin r) (p : ℕ) (h : (x.set i 1).regs j = 0) :
     ((x.set i 1).write p 2).regs j = 0 := by
