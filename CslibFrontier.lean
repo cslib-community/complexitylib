@@ -3277,6 +3277,7 @@ public import CslibFrontier.Computability.PCP.TwoProverGame.Tsirelson
 public import CslibFrontier.Computability.Pebbling.Basic
 public import CslibFrontier.Computability.Pebbling.BinaryTree
 public import CslibFrontier.Computability.Pebbling.Blocking
+public import CslibFrontier.Computability.Pebbling.Descending
 public import CslibFrontier.Computability.Pebbling.Map
 public import CslibFrontier.Computability.Pebbling.Path
 public import CslibFrontier.Computability.Pebbling.Pyramid
