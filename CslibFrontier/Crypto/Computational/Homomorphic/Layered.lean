@@ -71,9 +71,9 @@ Output order and repetitions are exactly those of the index list. -/
 theorem EncryptedWires.select {n : ℕ} {sk bits : List Bool} {inputs : List (List Bool)}
     (h : E.EncryptedWires ciphertextWidth n sk bits inputs) {outputs : List ℕ}
     (houtputs : ∀ i ∈ outputs, i < bits.length) :
-    E.EncryptedWires ciphertextWidth n sk (Layered.select bits outputs)
+    E.EncryptedWires ciphertextWidth n sk (BitString.readPositions outputs bits)
       (outputs.map (inputs.getD · [])) := by
-  simp only [EncryptedWires, Layered.select, List.forall₂_map_left_iff,
+  simp only [EncryptedWires, BitString.readPositions, List.forall₂_map_left_iff,
     List.forall₂_map_right_iff, List.forall₂_same]
   exact fun i hi => h.getD (houtputs i hi)
 

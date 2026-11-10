@@ -26,6 +26,11 @@ constant on the induced combinatorial rectangle:
 * If a gate's input support is contained in `A ∪ B`, its weighted input sum vanishes on `P × Q`,
   and neither side is shrunk.
 
+The public statements use `A` and `B` only in the size bounds
+`2 ^ (|U| - |A|) ≤ |P| · 2 ^ t` and `2 ^ (|Uᶜ| - |B|) ≤ |Q| · 2 ^ t'`, where `t` counts the gates
+whose input support meets `U \ A` and `t'` those whose input support meets `Uᶜ \ B`. They do not
+assert that the points of `P` and `Q` are `false` on `A` and `B`.
+
 Specializing `A = ∅` and `B = ∅` gives the general median-cut rectangle lemma
 (`exists_rectangle_of_cut`), the cut theorem (`lt_of_split`), and the balanced cut-weight bound
 `n ≤ 2 * ((inputGates p).card + k)` (`le_two_mul_add`). Specializing to gates that do not cross
@@ -407,10 +412,11 @@ private theorem cutInv_all (prog : Program signature n g) (U A B : Finset (Fin n
 /-! ### Rectangle extraction and cut bounds -/
 
 /-- **Unified median-cut and coordinate-fixing rectangle extraction.** For any split `U` and
-sets `A` and `B` of coordinates fixed to `false` on `U` and `Uᶜ` respectively, there is a
-combinatorial rectangle `P × Q` on which the entire gate-evaluation vector `p.eval interpretation`
-is constant, with `P` losing at most `|A|` coordinates initially and one factor of `2` per gate
-whose support on `U` is not contained in `A` (and symmetrically for `Q`). -/
+sets `A` and `B` of coordinates, there is a combinatorial rectangle `P × Q` on which the entire
+gate-evaluation vector `p.eval interpretation` is constant, with `P` losing at most `|A|`
+coordinates initially and one factor of `2` per gate whose support on `U` is not contained in `A`
+(and symmetrically for `Q`, `Uᶜ` and `B`). The sets `A` and `B` enter only these size bounds: the
+conclusion does not assert that the points of `P` and `Q` are `false` on `A` and `B`. -/
 theorem exists_rectangle_of_cut_with_fixed (p : Program signature n g)
     (U A B : Finset (Fin n)) :
     ∃ (P : Finset (U → Bool)) (Q : Finset (↥Uᶜ → Bool)) (v : Fin g → Bool),
@@ -441,9 +447,10 @@ theorem exists_rectangle_of_cut (p : Program signature n g)
   · simpa [subset_empty, nonempty_iff_ne_empty] using hQ
 
 /-- **Coordinate-split rectangle extraction.** When every gate's input support is contained in
-`U` or in `Uᶜ`, fixing the coordinates in `A` and `B` to `false` yields a monochromatic rectangle
-`P × Q` that loses at most one factor of `2` per gate on `U` with support not contained in `A`
-(and symmetrically for `Uᶜ` and `B`). -/
+`U` or in `Uᶜ`, for any sets `A` and `B` of coordinates there is a monochromatic rectangle
+`P × Q` with `P` losing at most `|A|` coordinates initially and one factor of `2` per gate with
+support contained in `U` but not in `A` (and symmetrically for `Q`, `Uᶜ` and `B`). The conclusion
+does not assert that the points of `P` and `Q` are `false` on `A` and `B`. -/
 theorem exists_rectangle_of_split (p : Program signature n g)
     (readout : (Fin g → Bool) → Bool) {f : Cslib.BooleanFunction n}
     (hreadout : ∀ x, readout (p.eval interpretation x) = f x)

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitSum
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.Multiplication
+import CslibFrontier.Tactic.FirstOrder
 
 /-!
 # Native multiplication columns
@@ -77,9 +78,7 @@ contributing to column `j` of the product of `x` and `y`. -/
 theorem realize_columnWord (x y j w : (language L).Term α) (v : α → Fin n) :
     (columnWord L x y j w).Realize v ↔ (w.realize v).val =
       BitString.mulColumnWord (x.realize v).val (y.realize v).val (j.realize v).val := by
-  simp only [columnWord, Formula.realize_iAlls, Formula.realize_iff, Formula.realize_inf,
-    Formula.realize_iExs, realize_bit, realize_addEq, Term.realize_var, Term.realize_relabel,
-    Function.comp_def, Sum.elim_inl, Sum.elim_inr]
+  fo_simp [columnWord, Function.comp_def]
   constructor
   · intro hf
     apply Nat.eq_of_testBit_eq
@@ -121,9 +120,7 @@ private theorem realize_subst_bitSum {β : Type*} (x y : (language L).Term β) (
 theorem realize_columnCount (x y j a : (language L).Term α) (v : α → Fin n) :
     (columnCount L x y j a).Realize v ↔ (a.realize v).val =
       BitString.mulColumn (x.realize v).val (y.realize v).val (j.realize v).val := by
-  simp only [columnCount, Formula.realize_iExs, Formula.realize_inf, realize_columnWord,
-    realize_subst_bitSum, Term.realize_var, Term.realize_relabel,
-    Function.comp_def, Sum.elim_inl, Sum.elim_inr]
+  fo_simp [columnCount, realize_subst_bitSum, Function.comp_def]
   constructor
   · rintro ⟨u, hu, ha⟩
     simpa only [hu, BitString.mulColumn] using ha
@@ -142,10 +139,7 @@ theorem realize_carryStep (x y z i c c' : (language L).Term α) (v : α → Fin 
         ((z.realize v).val.testBit (i.realize v).val).toNat + 2 * (c'.realize v).val ∧
       (c.realize v).val +
         BitString.mulColumn (x.realize v).val (y.realize v).val (i.realize v).val < n := by
-  simp only [carryStep, Formula.realize_iExs, Formula.realize_inf, Formula.realize_sup,
-    Formula.realize_not, realize_columnCount, realize_addEq, realize_scaleEq, realize_bit,
-    Formula.realize_equal, Term.realize_var, Term.realize_relabel, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr, realize_one_val, and_assoc, Fin.ext_iff]
+  fo_simp [carryStep, Function.comp_def, and_assoc, Fin.ext_iff]
   constructor
   · rintro ⟨u, ha, hc, hd, hs⟩
     have hn := (u 1).isLt

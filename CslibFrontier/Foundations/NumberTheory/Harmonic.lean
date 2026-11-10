@@ -54,7 +54,7 @@ adaptations for the word-RAM analysis.
   Algorithms*][CLRS2009], Appendix A.2, pp. 1153–1154.
 -/
 
-@[expose] public section
+public section
 
 /-- Every harmonic number is nonnegative. -/
 theorem harmonic_nonneg (n : ℕ) : 0 ≤ harmonic n :=

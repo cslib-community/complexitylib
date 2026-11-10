@@ -244,7 +244,7 @@ theorem not_weakOneWay_of_inverse {f : List Bool → List Bool}
 /-- Constant functions are not weakly one-way: the empty word is always a preimage. -/
 theorem not_weakOneWay_const (word : List Bool) : ¬ WeakOneWay (fun _ => word) :=
   not_weakOneWay_of_inverse (fun _ _ => [])
-    (ComputableTidilyInPolyTime.const []).isPPT (fun _ => rfl)
+    (ComputableInPolyTime.const []).isPPT (fun _ => rfl)
 
 /-! ### Output-length normalization for weak one-way functions -/
 

@@ -174,18 +174,13 @@ theorem toFinset_heavyVarList_eq_heavyVars (n b₀ : ℕ) (sys : List (List (Lis
   ext v; simp only [List.mem_toFinset, mem_heavyVarList_iff, heavyVars, Finset.mem_filter,
     Finset.mem_range, varIncidence_eq_varDegree]
 
-/-- **Markov heavy-variable bound (§5.5, p. 38)**: for `0 < b₀` and variables `< n`,
+/-- **Markov heavy-variable bound (§5.5, p. 38)**: for `0 < b₀`,
 `(heavyVarList n b₀ sys).length ≤ (sys.map fun eq => (equationVars eq).length).sum / b₀`. -/
-theorem length_heavyVarList_le_div {n b₀ : ℕ} {sys : List (List (List ℕ))}
-    (hb₀ : 0 < b₀) (hvars : ∀ eq ∈ sys, ∀ m ∈ eq, ∀ v ∈ m, v < n) :
+theorem length_heavyVarList_le_div (n : ℕ) (sys : List (List (List ℕ))) {b₀ : ℕ} (hb₀ : 0 < b₀) :
     (heavyVarList n b₀ sys).length ≤ (sys.map fun eq => (equationVars eq).length).sum / b₀ := by
   rw [← List.toFinset_card_of_nodup (nodup_heavyVarList n b₀ sys),
     toFinset_heavyVarList_eq_heavyVars]
-  have hU : ∀ i ∈ (Finset.univ : Finset (Fin sys.length)),
-      (equationVars sys[i]).toFinset ⊆ Finset.range n := fun i _ v hv => by
-    obtain ⟨m, hm, hvm⟩ := mem_equationVars.mp (List.mem_toFinset.mp hv)
-    exact Finset.mem_range.mpr (hvars sys[i] (List.getElem_mem i.2) m hm v hvm)
-  refine (card_heavyVars_le_div _ _ _ hb₀ hU).trans (Nat.div_le_div_right (le_of_eq ?_))
+  refine (card_heavyVars_le_div _ _ _ hb₀).trans (Nat.div_le_div_right (le_of_eq ?_))
   rw [totalIncidence, ← List.toFinset_finRange, List.sum_toFinset _ (List.nodup_finRange _)]
   conv_rhs => rw [← (List.ofFn_eq_map.symm.trans (List.ofFn_getElem (xs := sys))), List.map_map]
   exact congrArg List.sum (List.map_congr_left fun i _ => by simp only [Function.comp_apply,

@@ -25,7 +25,7 @@ Adapted selectively from
 Source pin: `16a5ce41304fcdaea4e0be7c132e1c361dc26da5`.
 -/
 
-@[expose] public section
+public section
 
 /-- For `0 < x < 1`, `∑ i ∈ Ico m n, x ^ i < x ^ m / (1 - x)`. Mathlib's
 `geom_sum_Ico_le_of_lt_one` has `≤`, for `0 ≤ x`. -/

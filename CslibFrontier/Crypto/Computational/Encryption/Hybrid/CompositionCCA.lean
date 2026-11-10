@@ -582,8 +582,8 @@ private theorem eval_kemCCARealGame_hiddenBit (E : SymmetricCipher)
         (ProbComp.eval (kemCCARealGame keyGen encaps decaps
           (hybridToKEMCCA E F decBound adversary bit) n)).map (fun guess => guess ^^ bit)) := by
   simp only [kemCCARealGame, kemRealGameWith, kemCCAContinuation, hybridToKEMCCAHiddenBit,
-    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret,
-    OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
+    ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret_eq_runWith,
+    OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.runWith_sample,
     ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind, Function.comp_def,
     OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind, PMF.map_bind, PMF.pure_map]
   rw [PMF.bind_comm]
@@ -603,8 +603,8 @@ private theorem eval_kemCCAIdealGame_hiddenBit (E : SymmetricCipher)
           (hybridToKEMCCA E F decBound adversary bit) n)).map (fun guess => guess ^^ bit)) := by
   simp only [kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, kemCCAContinuation,
     hybridToKEMCCAHiddenBit, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbOracleComp.eval_run_interpret, OracleComp.interpret_bind, StateT.run_bind,
-    ProbOracleComp.run_interpret_sample, ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind,
+    ProbOracleComp.eval_run_interpret_eq_runWith, OracleComp.interpret_bind, StateT.run_bind,
+    ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map, PMF.bind_bind,
     Function.comp_def, OracleComp.interpret_pure, StateT.run_pure, PMF.pure_bind,
     PMF.map_bind, PMF.pure_map]
   conv_rhs => rw [PMF.bind_comm]
@@ -734,7 +734,7 @@ theorem hybrid_indcca2On (E : SymmetricCipher)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
     (hdecaps : ComputableInPolyTime (fun ⟨n, sk, ct⟩ => decaps n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      (encKeyedInput encBits) (encOption encBits))
     (hF : ComputableInPolyTime (fun p : ℕ × List Bool => F p.1 p.2)
       (encPair encUnary encBits) encBits)
     (hlaw : ∀ n, (BitString.uniformList (keyLen n)).map (F n) = ProbComp.eval (E.keyGen n))
@@ -770,7 +770,7 @@ theorem exists_hybridCCA_reductions (E : SymmetricCipher)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
     (hdecaps : ComputableInPolyTime (fun ⟨n, sk, ct⟩ => decaps n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      (encKeyedInput encBits) (encOption encBits))
     (hF : ComputableInPolyTime (fun p : ℕ × List Bool => F p.1 p.2)
       (encPair encUnary encBits) encBits)
     (hlaw : ∀ n, (BitString.uniformList (keyLen n)).map (F n) = ProbComp.eval (E.keyGen n))
@@ -823,7 +823,7 @@ theorem isPPTOn_hybridCCAGame (E : SymmetricCipher)
     (hencaps : IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p => encaps p.1 p.2))
     (hdecaps : ComputableInPolyTime (fun ⟨n, sk, ct⟩ => decaps n sk ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits))
+      (encKeyedInput encBits) (encOption encBits))
     (hF : ComputableInPolyTime (fun p : ℕ × List Bool => F p.1 p.2)
       (encPair encUnary encBits) encBits)
     {adversary : WordCCA2Adversary} (hA : adversary.IsPPT) (bit : Bool) :

@@ -676,7 +676,7 @@ theorem cmpBuffered_pos_iff {s u : ℕ → ℤ} (hs : IsSignedStream s) (hu : Is
 
 /-- Truncation error of the buffered test at place `K = M + R + 7`, at scale `2 ^ M`: the
 scaled prefix is within the slack `(3 / 64) / 2 ^ R` of the scaled value. -/
-private theorem abs_two_pow_mul_streamPrefix_sub_le {M R : ℕ} {x : ℕ → ℤ}
+private theorem abs_two_pow_mul_streamPrefix_sub_le (M R : ℕ) {x : ℕ → ℤ}
     (hx : IsSignedStream x) :
     |(2 : ℝ) ^ M * streamPrefix x (M + R + 7) - (2 : ℝ) ^ M * streamVal x| ≤
       (3 / 64) / (2 : ℝ) ^ R := by
@@ -710,8 +710,8 @@ theorem bufferedTest_eq_true_of_two_mul_lt {M R : ℕ} {s u : ℕ → ℤ}
     bufferedTest M R s u = true := by
   unfold bufferedTest
   rw [decide_eq_true_eq, cmpBuffered_pos_iff hs hu]
-  have hs_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hs
-  have hu_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hu
+  have hs_err := abs_two_pow_mul_streamPrefix_sub_le M R hs
+  have hu_err := abs_two_pow_mul_streamPrefix_sub_le M R hu
   rw [← hsVal] at hs_err
   rw [← huVal] at hu_err
   have hscaled : (2 : ℝ) ^ M * (3 * streamPrefix u (M + R + 7)) <
@@ -731,8 +731,8 @@ theorem bufferedTest_eq_false_of_le {M R : ℕ} {s u : ℕ → ℤ}
   rw [decide_eq_false_iff_not]
   intro hlt_raw
   have hlt := (cmpBuffered_pos_iff hs hu (M + R + 7)).mp hlt_raw
-  have hs_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hs
-  have hu_err := abs_two_pow_mul_streamPrefix_sub_le (M := M) (R := R) hu
+  have hs_err := abs_two_pow_mul_streamPrefix_sub_le M R hs
+  have hu_err := abs_two_pow_mul_streamPrefix_sub_le M R hu
   rw [← hsVal] at hs_err
   rw [← huVal] at hu_err
   have hmul_lt := mul_lt_mul_of_pos_left hlt (by positivity : (0 : ℝ) < (2 : ℝ) ^ M)

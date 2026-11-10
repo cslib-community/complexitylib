@@ -24,7 +24,8 @@ equivalence changes none of the quantities below (`Multigraph.card_incidence_com
 `Multigraph.minBalancedCut_comp`, ...).
 
 The multigraph is connected when its underlying simple graph (`Multigraph.toSimpleGraph`) is, that
-is, exactly when an edge leaves every nonempty set of vertices other than the set of all vertices
+is, exactly when it has a vertex and an edge leaves every nonempty set of vertices other than the
+set of all vertices
 (`Multigraph.connected_toSimpleGraph_iff`). The least number of edges between a set of between a
 third and two thirds of the vertices and its complement (`Multigraph.minBalancedCut`) is the
 *expansion* `e(G)` of [Ben-Sasson and Wigderson][BenSassonWigderson2001], which bounds the width

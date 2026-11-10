@@ -50,12 +50,12 @@ private theorem marked_above : ∀ y ∈ (univ : Finset (Fin 4)), y ∈ ({0} : F
 
 private theorem original_rank : firstRank univ 3 (1 / 2) original = 2 := by
   rw [firstRank_eq_sentinelFirst (marked := {0}) (L := 100) (R := 2)
-    (by norm_num) (by norm_num) (by norm_num) marked_above modified_rank.le]
+    (by norm_num) marked_above modified_rank.le]
   exact modified_rank
 
 private theorem original_threshold : threshold univ 3 1 (1 / 2) original = 2 := by
   rw [threshold_eq_sentinelFirst (marked := {0}) (L := 100) (R := 2)
-    (by norm_num) (by norm_num) (by norm_num) marked_above modified_threshold.le]
+    (by norm_num) marked_above modified_threshold.le]
   exact modified_threshold
 
 private theorem modified_default : newDefault univ 3 3 1 (1 / 2) modified = 2 := by
@@ -66,8 +66,7 @@ private theorem modified_default : newDefault univ 3 3 1 (1 / 2) modified = 2 :=
 
 private theorem original_default : newDefault univ 3 3 1 (1 / 2) original = 2 := by
   rw [newDefault_eq_sentinelFirst (marked := {0}) (L := 100) (R := 2)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    marked_above modified_rank.le modified_threshold.le]
+    (by norm_num) marked_above modified_rank.le modified_threshold.le]
   exact modified_default
 
 -- Both ranks meet the ceiling exactly; the old default is neither zero nor the new default.
@@ -79,15 +78,14 @@ example : firstRank univ 3 (1 / 2) original = 2 ∧
 -- This is the actual commutation theorem, with every structural hypothesis discharged.
 example (y : Fin 4) : sentinelFirst {0} 100 (update univ 3 3 1 (1 / 2) original) y =
     update univ 3 3 1 (1 / 2) modified y := by
-  exact sentinelFirst_update (R := 2) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) marked_high modified_rank.le modified_threshold.le (mem_univ y)
+  exact sentinelFirst_update (R := 2) (by norm_num) marked_high modified_rank.le
+    modified_threshold.le (mem_univ y)
 
 -- Both channels of the marked entry survive, even though its second coordinate is negative.
 example : update univ 3 3 1 (1 / 2) original 0 = ![1000000, -17] ∧
     update univ 3 3 1 (1 / 2) modified 0 = ![100, -17] := by
   have h := update_eq_self_of_mem_sentinelFirst (K := 3) (R := 2)
-    (by norm_num) (by norm_num) (by norm_num) marked_high modified_threshold.le
-    (mem_univ 0) (mem_singleton_self 0)
+    (by norm_num) marked_high modified_threshold.le (mem_univ 0) (mem_singleton_self 0)
   refine ⟨h.1, h.2.trans ?_⟩
   funext ν
   fin_cases ν <;> norm_num [sentinelFirst, original]
@@ -110,14 +108,13 @@ example : original 2 1 = -1 ∧ original 3 0 = -1 ∧
 
 -- The rank bound proves the strict capacity of the marked set, rather than assuming it.
 example : #({0} : Finset (Fin 4)) < 3 :=
-  card_marked_lt_of_sentinelFirst (R := 2) (w := original) (by norm_num) (by norm_num)
+  card_marked_lt_of_sentinelFirst (R := 2) (w := original) (by norm_num)
     (by norm_num : (2 : ℝ) < 100) (subset_univ _) modified_rank.le
 
 -- Arbitrarily large positive replacement values cannot defeat zero padding when K > #s.
 example : kthLargest 3 univ (![(-4 : ℝ), 1000000] : Fin 2 → ℝ) = 0 := by
   have h := kthLargest_eq_of_eq_or_gt (k := 3) (s := univ) (t := (0 : ℝ))
     (f := (![-4, 1000000] : Fin 2 → ℝ)) (g := (![-4, 10] : Fin 2 → ℝ))
-    (by norm_num) (by norm_num)
     (fun y _ => by fin_cases y <;> norm_num)
     (by norm_num [kthLargest, Fin.univ_succ, filter_insert, filter_singleton])
   rw [h]

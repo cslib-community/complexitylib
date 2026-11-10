@@ -172,27 +172,50 @@ variable {d : ℕ}
           1 + predecessorVisits s i.val
       else 1
 
+private theorem one_add_le_succ {d a : ℕ} (h : a ≤ d + 1) : 1 + a ≤ d + 1 + 1 := by omega
+
+private theorem visits_le_of_step (f : {d : ℕ} → Tree d → ℕ → ℕ)
+    (h0 : ∀ (t : Tree 0) x, f t x = 1)
+    (hnone : ∀ (k : ℕ) (s : Tree k) (c : Fin (universeSize k) → Tree k) (x : ℕ),
+      f (.node none s c) x = 1)
+    (hsome : ∀ (k m M : ℕ) (s : Tree k) (c : Fin (universeSize k) → Tree k) (x : ℕ),
+      (∀ (t : Tree k) y, f t y ≤ k + 1) → f (.node (some (m, M)) s c) x ≤ k + 1 + 1)
+    (t : Tree d) (x : ℕ) : f t x ≤ d + 1 := by
+  induction d generalizing x with
+  | zero => rw [h0 t x]
+  | succ d ih =>
+    cases t with
+    | node b s c =>
+      cases b with
+      | none => rw [hnone]; exact Nat.le_add_left 1 _
+      | some b => exact hsome d b.1 b.2 s c x ih
+
+private theorem two_branch_visits_le {d : ℕ} {f : Tree d → ℕ → ℕ}
+    (ih : ∀ t x, f t x ≤ d + 1) (p q r : Prop) [Decidable p] [Decidable q] [Decidable r]
+    (k : r → Prop) [∀ h, Decidable (k h)] (sub : r → Tree d) (low : ℕ) (s : Tree d) (hi : ℕ) :
+    (if p then 1 else if q then 1 else if h : r then
+      if k h then 1 + f (sub h) low else 1 + f s hi
+    else 1) ≤ d + 1 + 1 := by
+  split_ifs with hp hq hr hk
+  · exact Nat.le_add_left 1 _
+  · exact Nat.le_add_left 1 _
+  · exact one_add_le_succ (ih (sub hr) low)
+  · exact one_add_le_succ (ih s hi)
+  · exact Nat.le_add_left 1 _
+
 /-- `minimum` performs `1 ≤ d + 1` active calls. -/
 theorem minimumVisits_le (t : Tree d) : t.minimumVisits ≤ d + 1 :=
   Nat.succ_le_succ (Nat.zero_le d)
 
 /-- `member` performs at most `d + 1` active recursive calls. -/
-theorem memberVisits_le (t : Tree d) (x : ℕ) : t.memberVisits x ≤ d + 1 := by
-  induction d generalizing x with
-  | zero => cases t; exact le_rfl
-  | succ d ih =>
-    cases t with
-    | node b s c =>
-      cases b with
-      | none => exact Nat.succ_le_succ (Nat.zero_le _)
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        simp only [memberVisits]
-        split_ifs with hm hi
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · have := ih (c ⟨x / universeSize d, hi⟩) (x % universeSize d)
-          omega
-        · exact Nat.succ_le_succ (Nat.zero_le _)
+theorem memberVisits_le (t : Tree d) (x : ℕ) : t.memberVisits x ≤ d + 1 :=
+  visits_le_of_step memberVisits (fun (.leaf _) _ => rfl) (fun _ _ _ _ => rfl)
+    (fun _ _ _ _ _ _ ih => by
+      simp only [memberVisits]
+      split_ifs
+      · exact Nat.le_add_left 1 _
+      · exact one_add_le_succ (ih _ _)
+      · exact Nat.le_add_left 1 _) t x
 
 /-- Inserting into an empty node performs only `1` active call at any depth. -/
 theorem insertVisits_of_bounds_none {t : Tree d} (hb : t.bounds = none) (x : ℕ) :
@@ -205,29 +228,16 @@ theorem insertVisits_of_bounds_none {t : Tree d} (hb : t.bounds = none) (x : ℕ
     rfl
 
 /-- `insert` performs at most `d + 1` active recursive calls. -/
-theorem insertVisits_le (t : Tree d) (x : ℕ) : t.insertVisits x ≤ d + 1 := by
-  induction d generalizing x with
-  | zero => cases t; exact le_rfl
-  | succ d ih =>
-    cases t with
-    | node b s c =>
-      cases b with
-      | none => exact Nat.succ_le_succ (Nat.zero_le _)
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        simp only [insertVisits]
-        split_ifs with hm hi
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · cases (c ⟨max m x / universeSize d, hi⟩).bounds with
-          | none =>
-            dsimp only
-            have := ih s (max m x / universeSize d)
-            omega
-          | some _ =>
-            dsimp only
-            have := ih (c ⟨max m x / universeSize d, hi⟩) (max m x % universeSize d)
-            omega
-        · exact Nat.succ_le_succ (Nat.zero_le _)
+theorem insertVisits_le (t : Tree d) (x : ℕ) : t.insertVisits x ≤ d + 1 :=
+  visits_le_of_step insertVisits (fun (.leaf _) _ => rfl) (fun _ _ _ _ => rfl)
+    (fun _ _ _ s c _ ih => by
+      simp only [insertVisits]
+      split_ifs with hm hi
+      · exact Nat.le_add_left 1 _
+      · cases (c ⟨_, hi⟩).bounds with
+        | none => exact one_add_le_succ (ih s _)
+        | some _ => exact one_add_le_succ (ih (c _) _)
+      · exact Nat.le_add_left 1 _) t x
 
 /-- Deleting from a singleton node (`bounds = some (m, m)`) performs only `1` active call at any
 depth. -/
@@ -241,82 +251,37 @@ theorem eraseVisits_of_bounds_eq {t : Tree d} {m : ℕ} (hb : t.bounds = some (m
     simp [eraseVisits]
 
 /-- `erase` performs at most `d + 1` active recursive calls. -/
-theorem eraseVisits_le (t : Tree d) (x : ℕ) : t.eraseVisits x ≤ d + 1 := by
-  induction d generalizing x with
-  | zero => cases t; exact le_rfl
-  | succ d ih =>
-    cases t with
-    | node b s c =>
-      cases b with
-      | none => exact Nat.succ_le_succ (Nat.zero_le _)
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        simp only [eraseVisits]
-        split_ifs with hout heq
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · cases eraseTarget m x s c with
-          | none =>
-            dsimp only
-            exact Nat.succ_le_succ (Nat.zero_le _)
-          | some tgt =>
-            obtain ⟨newMin, i, low⟩ := tgt
-            dsimp only
-            cases (c i).bounds with
-            | none =>
-              dsimp only
-              exact Nat.succ_le_succ (Nat.zero_le _)
-            | some cb =>
-              obtain ⟨cm, cM⟩ := cb
-              dsimp only
-              split_ifs
-              · have := ih s i.val
-                omega
-              · exact Nat.succ_le_succ (Nat.zero_le _)
-              · have := ih (c i) low
-                omega
+theorem eraseVisits_le (t : Tree d) (x : ℕ) : t.eraseVisits x ≤ d + 1 :=
+  visits_le_of_step eraseVisits (fun (.leaf _) _ => rfl) (fun _ _ _ _ => rfl)
+    (fun _ m _ s c x ih => by
+      simp only [eraseVisits]
+      split_ifs
+      · exact Nat.le_add_left 1 _
+      · exact Nat.le_add_left 1 _
+      · rcases eraseTarget m x s c with _ | ⟨_, i, low⟩
+        · exact Nat.le_add_left 1 _
+        · dsimp only
+          rcases (c i).bounds with _ | ⟨cm, cM⟩
+          · exact Nat.le_add_left 1 _
+          · dsimp only
+            split_ifs
+            · exact one_add_le_succ (ih s _)
+            · exact Nat.le_add_left 1 _
+            · exact one_add_le_succ (ih (c _) _)) t x
 
 /-- `successor` performs at most `d + 1` active recursive calls. -/
-theorem successorVisits_le (t : Tree d) (x : ℕ) : t.successorVisits x ≤ d + 1 := by
-  induction d generalizing x with
-  | zero => cases t; exact le_rfl
-  | succ d ih =>
-    cases t with
-    | node b s c =>
-      cases b with
-      | none => exact Nat.succ_le_succ (Nat.zero_le _)
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        simp only [successorVisits]
-        split_ifs with hm hM hi hc
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · have := ih (c ⟨x / universeSize d, hi⟩) (x % universeSize d)
-          omega
-        · have := ih s (x / universeSize d)
-          omega
-        · exact Nat.succ_le_succ (Nat.zero_le _)
+theorem successorVisits_le (t : Tree d) (x : ℕ) : t.successorVisits x ≤ d + 1 :=
+  visits_le_of_step successorVisits (fun (.leaf _) _ => rfl) (fun _ _ _ _ => rfl)
+    (fun _ _ _ _ _ _ ih => by
+      simp only [successorVisits]
+      exact two_branch_visits_le ih _ _ _ _ _ _ _ _) t x
 
 /-- `predecessor` performs at most `d + 1` active recursive calls. -/
-theorem predecessorVisits_le (t : Tree d) (x : ℕ) : t.predecessorVisits x ≤ d + 1 := by
-  induction d generalizing x with
-  | zero => cases t; exact le_rfl
-  | succ d ih =>
-    cases t with
-    | node b s c =>
-      cases b with
-      | none => exact Nat.succ_le_succ (Nat.zero_le _)
-      | some b =>
-        obtain ⟨m, M⟩ := b
-        simp only [predecessorVisits]
-        split_ifs with hM hm hi hc
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · exact Nat.succ_le_succ (Nat.zero_le _)
-        · have := ih (c ⟨x / universeSize d, hi⟩) (x % universeSize d)
-          omega
-        · have := ih s (x / universeSize d)
-          omega
-        · exact Nat.succ_le_succ (Nat.zero_le _)
+theorem predecessorVisits_le (t : Tree d) (x : ℕ) : t.predecessorVisits x ≤ d + 1 :=
+  visits_le_of_step predecessorVisits (fun (.leaf _) _ => rfl) (fun _ _ _ _ => rfl)
+    (fun _ _ _ _ _ _ ih => by
+      simp only [predecessorVisits]
+      exact two_branch_visits_le ih _ _ _ _ _ _ _ _) t x
 
 /-- Mathematical finite-set observation in `Fin (universeSize d)`. -/
 @[expose] def finElements (t : Tree d) : Finset (Fin (universeSize d)) :=
@@ -415,26 +380,20 @@ theorem finPredecessor_eq_some_iff {t : Tree d} (ht : t.Valid)
     (x y : Fin (universeSize d)) :
     t.finPredecessor x = some y ↔
       y ∈ t.finElements ∧ y < x ∧ ∀ z ∈ t.finElements, z < x → z ≤ y := by
-  constructor
-  · intro h
-    unfold finPredecessor at h
-    cases hp : t.predecessor x.val with
-    | none => simp [hp] at h
-    | some w =>
-      simp only [hp] at h
-      split_ifs at h with hw
-      cases h
-      have hspec := (predecessor_eq_some_iff ht x.val w).mp hp
-      simp only [mem_finElements_iff ht]
-      exact ⟨hspec.1, hspec.2.1, fun z hz hzx => hspec.2.2 z.val hz hzx⟩
-  · rintro ⟨hy, hyx, hmax⟩
-    rw [mem_finElements_iff ht] at hy
-    have hp : t.predecessor x.val = some y.val := by
-      rw [predecessor_eq_some_iff ht]
-      refine ⟨hy, hyx, fun z hz hzx => ?_⟩
-      let z' : Fin (universeSize d) := ⟨z, ht.contains_lt hz⟩
-      exact hmax z' ((mem_finElements_iff ht z').mpr hz) hzx
-    simp [finPredecessor, hp, y.isLt]
+  cases hp : t.predecessor x.val with
+  | none =>
+    simp only [finPredecessor, hp, reduceCtorEq, false_iff, mem_finElements_iff ht,
+      not_and, not_forall, not_le]
+    exact fun hy hyx =>
+      absurd ((predecessor_eq_none_iff ht x.val).mp hp y.val hy) (not_le_of_gt hyx)
+  | some w =>
+    have hspec := (predecessor_eq_some_iff ht x.val w).mp hp
+    have hw : w < universeSize d := ht.contains_lt hspec.1
+    simp only [finPredecessor, hp, dite_eq_left hw, Option.some.injEq, mem_finElements_iff ht]
+    refine ⟨?_, fun ⟨hy, hyx, hmax⟩ => Fin.ext <|
+      Nat.le_antisymm (hmax ⟨w, hw⟩ hspec.1 hspec.2.1) (hspec.2.2 y.val hy hyx)⟩
+    rintro rfl
+    exact ⟨hspec.1, hspec.2.1, fun z hz hzx => hspec.2.2 z.val hz hzx⟩
 
 /-- `finPredecessor` returns `none` iff every element of `t.finElements` is at least `x`. -/
 theorem finPredecessor_eq_none_iff {t : Tree d} (ht : t.Valid) (x : Fin (universeSize d)) :

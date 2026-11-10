@@ -39,8 +39,9 @@ rejected, and both public observations, commit-final sender state and auxiliary 
 * `openPairs_decodeOpening`: exact list checker semantics, including malformed lengths.
 * `eval_senderClosedProgram`: exact interpretation in the existing phased-world experiment.
 * `senderClosedProgram_coupled`: joint simulation error `2⁻⌈k/2⌉`.
-* `senderClosedProgram_coupled_two_mul`, `senderClosedProgram_negligible_error`: geometric
-  negligible error on the concrete growing schedule `k = 2n`.
+* `senderClosedProgram_coupled_two_mul`: joint simulation error `2⁻ⁿ` on the concrete growing
+  schedule `k = 2n`.
+* `senderClosedProgram_negligible_error`: that error bound, as a function of `n`, is negligible.
 * `senderIdealProgram_schedule`, `senderIdealProgram_queryBound`: the four actual public calls.
 
 This is an original fixed-schedule single-session program refinement, not a universal realization
@@ -278,7 +279,9 @@ theorem senderClosedProgram_coupled_two_mul
   have hcount : 2 * n - (2 * n) / 2 = n := by omega
   simpa only [hcount] using senderClosedProgram_coupled choose receive (2 * n) st finish
 
-/-- The actual majority-extraction error along the schedule `k = 2n` is negligible. -/
+/-- The error bound `2⁻¹ ^ (k - k / 2)` of `senderClosedProgram_coupled`, taken in `ℝ≥0` along the
+schedule `k = 2n`, is a negligible function of `n`. This is a statement about the bound alone; the
+coupling at that schedule is `senderClosedProgram_coupled_two_mul`. -/
 theorem senderClosedProgram_negligible_error :
     Crypto.Negligible (fun n => (2 : ℝ≥0)⁻¹ ^ (2 * n - (2 * n) / 2)) := by
   have hcount (n : ℕ) : 2 * n - (2 * n) / 2 = n := by omega

@@ -220,6 +220,8 @@ def ScanResult (σ : Fin n → Bool) (φ : CNF (Fin n)) (mem : ℕ → ℕ) (e f
   | none => fnd = 0
   | some c => fnd = 1 ∧ HoldsList cptr (encodeClause c) mem ∧ cptr + c.length + 1 ≤ e
 
+/-- The cons equation of `firstUnsat`: `List.find?_cons` with the match on `!c.eval σ` stated as an
+`if`, the form the scan proofs rewrite with. -/
 theorem firstUnsat_cons (σ : Fin n → Bool) (c : Clause (Fin n)) (φ : CNF (Fin n)) :
     firstUnsat (c :: φ) σ = if c.eval σ then firstUnsat φ σ else some c := by
   cases h : c.eval σ <;> simp [firstUnsat, h]

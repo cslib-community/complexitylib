@@ -44,7 +44,7 @@ This is the forward counting-machine construction. The shared native machine, bi
 finite-storage simulation and certified calculus retain their source credits in their modules.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeCTM
 

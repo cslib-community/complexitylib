@@ -45,7 +45,7 @@ branch at `5ff69ca`.
 * [L. Trevisan, *CS276 Lecture 12: Goldreich–Levin*][Trevisan2009GL]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
