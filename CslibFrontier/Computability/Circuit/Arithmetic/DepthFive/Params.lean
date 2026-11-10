@@ -184,6 +184,12 @@ theorem Good.β_pos (hp : p.Good) : 0 < p.β := by
 theorem Good.q_pos (hp : p.Good) : 0 < p.q :=
   Real.rpow_pos_of_pos hp.α_pos _
 
+theorem Good.one_le_sqrt (hp : p.Good) : 1 ≤ √(p.n : ℝ) :=
+  Real.one_le_sqrt.2 (by exact_mod_cast hp.n_pos)
+
+theorem Good.inv_α_le (hp : p.Good) : p.α⁻¹ ≤ √(p.n : ℝ) :=
+  inv_le_of_inv_le₀ (zero_lt_one.trans_le hp.one_le_sqrt) hp.α_ge
+
 end Params
 
 end Cslib.Circuits.DepthFive
