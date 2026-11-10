@@ -55,10 +55,10 @@ strings, so it cannot express a predicate of a uniform residue under generated R
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 12.5.3 (Theorem 12.31, the least significant bit is hard-core for RSA).
+  Section 12.5.3, pp. 443–445 (Theorem 12.31 and the noiseless doubling inversion).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -69,7 +69,7 @@ open Probability Turing.MultiTapeTM
 /-- The RSA least-significant-bit experiment: sample `desc ← gen n` and a uniform `x ← Fin N`,
 pass `(pk, x ^ e % N)` to the predictor and test whether it returns the least significant bit
 `x.testBit 0` of `x`. -/
-noncomputable def rsaLSBGame (gen : RSAGen) (A : ℕ → RSAPublicKey × ℕ → ProbComp Bool)
+@[expose] noncomputable def rsaLSBGame (gen : RSAGen) (A : ℕ → RSAPublicKey × ℕ → ProbComp Bool)
     (n : ℕ) : Game := do
   let desc ← gen n
   have : NeZero desc.modulus := ⟨Nat.ne_of_gt desc.modulus_pos⟩
@@ -80,7 +80,7 @@ noncomputable def rsaLSBGame (gen : RSAGen) (A : ℕ → RSAPublicKey × ℕ →
 /-- The least significant bit is hard-core for RSA relative to `gen`: every uniform strict PPT
 predictor receiving `(1^n, ((N, e), y))` guesses the least significant bit of the preimage with
 negligible bias from one half. -/
-def RSAHardCoreLSB (gen : RSAGen) : Prop :=
+@[expose] def RSAHardCoreLSB (gen : RSAGen) : Prop :=
   ∀ A : ℕ → RSAPublicKey × ℕ → ProbComp Bool,
     IsPPTOn (encPair encUnary (encPair encRSAPublicKey encNat)) encBool
       (fun input => A input.1 input.2) →
@@ -109,15 +109,15 @@ theorem two_pow_mul_rsaEval (N e k x : ℕ) :
   rw [← Nat.pow_mod, mul_pow, ← pow_mul, Nat.mul_mod_mod]
 
 /-- The public doubling queries `2 ^ (k * e) * y % N` for `k = 1, …, m`. -/
-def lsbQueries (N e y m : ℕ) : List ℕ :=
+@[expose] def lsbQueries (N e y m : ℕ) : List ℕ :=
   (List.range m).map fun k => 2 ^ ((k + 1) * e) * y % N
 
 /-- The value of a list of binary digits read most significant first. -/
-def lsbDigits (bits : List Bool) : ℕ :=
+@[expose] def lsbDigits (bits : List Bool) : ℕ :=
   bits.foldl (fun value bit => 2 * value + bit.toNat) 0
 
 /-- Recover `x` from `q = ⌊2 ^ m * x / N⌋` as `⌈q * N / 2 ^ m⌉`. -/
-def lsbRecover (N m : ℕ) (bits : List Bool) : ℕ :=
+@[expose] def lsbRecover (N m : ℕ) (bits : List Bool) : ℕ :=
   (lsbDigits bits * N + 2 ^ m - 1) / 2 ^ m
 
 private theorem toNat_decide_mod_two (v : ℕ) : (decide (v % 2 = 1)).toNat = v % 2 := by
@@ -171,7 +171,7 @@ theorem lsbRecover_lsbQueries {N e x m : ℕ} (hN : Odd N) (hx : x < N) (hm : N 
 
 /-- The inverter built from a least-significant-bit predictor `A`: on `(pk, y)` with `pk = (N, e)`,
 run `A` on the `N.size` doubling queries and round the value of the answers. -/
-noncomputable def lsbInverter (A : ℕ → RSAPublicKey × ℕ → ProbComp Bool) (n : ℕ)
+@[expose] noncomputable def lsbInverter (A : ℕ → RSAPublicKey × ℕ → ProbComp Bool) (n : ℕ)
     (input : RSAPublicKey × ℕ) : ProbComp ℕ := do
   let bits ← (lsbQueries input.1.N input.1.e input.2 input.1.N.size).mapM
     fun query => A n (input.1, query)

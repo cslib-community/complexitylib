@@ -65,11 +65,12 @@ not attributed to a particular locator in [KatzLindell2020].
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020],
-  Section 12.5.1 (plain RSA encryption and its attacks for small messages and for one message
-  sent to several receivers) and Section 9.2.5 (Corollary 9.51).
+  Section 12.5.1, pp. 436–440 (plain RSA encryption Construction 12.26 and its attacks for
+  small messages and for one message sent to several receivers) and Section 9.2.5, pp. 334–336
+  (Corollary 9.51, p. 336).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -96,7 +97,7 @@ theorem rsaInvert_rsaEval_mul (desc : RSADesc) (m s : ℕ) :
 
 /-- The integer power `x ^ k` of a residue `x : ZMod N`, computed as `(x⁻¹) ^ (-k)` with
 Mathlib's `ZMod.inv` when `k < 0`. -/
-def zmodIntPow {N : ℕ} (x : ZMod N) (k : ℤ) : ZMod N :=
+@[expose] def zmodIntPow {N : ℕ} (x : ZMod N) (k : ℤ) : ZMod N :=
   if 0 ≤ k then x ^ k.toNat else x⁻¹ ^ (-k).toNat
 
 /-- On units, `zmodIntPow` is the group integer power. -/
@@ -113,7 +114,7 @@ theorem zmodIntPow_units {N : ℕ} (u : (ZMod N)ˣ) (k : ℤ) :
 /-- The common-modulus attack on plain RSA: given encryptions `c₁, c₂` of one message under the
 same modulus `N` and exponents `e₁, e₂`, output `c₁ ^ a * c₂ ^ b` in `ZMod N`, where
 `a = Nat.gcdA e₁ e₂` and `b = Nat.gcdB e₁ e₂` are Bézout coefficients. -/
-def commonModulusAttack (N e₁ e₂ c₁ c₂ : ℕ) : ZMod N :=
+@[expose] def commonModulusAttack (N e₁ e₂ c₁ c₂ : ℕ) : ZMod N :=
   zmodIntPow (c₁ : ZMod N) (Nat.gcdA e₁ e₂) * zmodIntPow (c₂ : ZMod N) (Nat.gcdB e₁ e₂)
 
 /-- The common-modulus attack recovers the residue of every message `m` coprime to `N` (so `m`
@@ -172,7 +173,7 @@ theorem eq_of_pow_eq_chineseRemainderOfList_rsaEval {ι : Type*} {N : ι → ℕ
 
 /-- The factors of `N` computed from `N` and `φ = φ(N)`: with `s = N + 1 - φ` (which is `p + q`)
 and `r = ⌊√(s ^ 2 - 4 * N)⌋` (which is `|p - q|`), output `((s + r) / 2, (s - r) / 2)`. -/
-def factorOfTotient (N φ : ℕ) : ℕ × ℕ :=
+@[expose] def factorOfTotient (N φ : ℕ) : ℕ × ℕ :=
   ((N + 1 - φ + Nat.sqrt ((N + 1 - φ) ^ 2 - 4 * N)) / 2,
     (N + 1 - φ - Nat.sqrt ((N + 1 - φ) ^ 2 - 4 * N)) / 2)
 
