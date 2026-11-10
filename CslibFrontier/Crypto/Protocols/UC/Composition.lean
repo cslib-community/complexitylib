@@ -78,8 +78,6 @@ sessions in one step.
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.UC.Machine.runFrom_map_state`: a state representation that commutes with
-  every activation commutes with every run.
 * `Cslib.Crypto.Protocols.UC.corruptRouter_comp`: routing in front of a composition routes the outer
   machine.
 * `Cslib.Crypto.Protocols.UC.exec_compose_dummy`,
@@ -130,25 +128,6 @@ theorem runFrom_interpret_of_forward (M : Machine I E)
     funext q s
     exact h q s
   rw [runFrom, OracleComp.interpret_interpret, hforward, OracleComp.run_interpret_stateless]
-
-/-- A state representation `f` that commutes with every activation commutes with every run. -/
-theorem runFrom_map_state (M₁ M₂ : Machine I E) (f : M₂.State → M₁.State)
-    (h : ∀ q s, (M₁.handle q).run (f s) = Prod.map _root_.id f <$> (M₂.handle q).run s)
-    (program : ProbOracleComp E α) (s : M₂.State) :
-    M₁.runFrom program (f s) = Prod.map _root_.id f <$> M₂.runFrom program s := by
-  induction program using OracleComp.induction generalizing s with
-  | pure a => rfl
-  | query_bind q cont ih =>
-    have hq : (M₁.handler q).run (f s) = Prod.map _root_.id f <$> (M₂.handler q).run s := by
-      cases q with
-      | inl k =>
-        change (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k))).run (f s) =
-          Prod.map _root_.id f <$> (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k))).run s
-        simp only [StateT.run_lift, bind_pure_comp, Functor.map_map]
-        rfl
-      | inr e => exact h e s
-    rw [runFrom_bind, runFrom_bind, runFrom_call, runFrom_call, hq, bind_map_left, map_bind]
-    exact bind_congr fun x => ih x.1 x.2
 
 end Machine
 

@@ -257,7 +257,7 @@ Ran Canetti, Yevgeniy Dodis, Rafael Pass and Shabsi Walfish. *Universally Compos
 <a id="cf01"></a>
 ## cf01
 
-Ran Canetti and Marc Fischlin. *Universally Composable Commitments*. CRYPTO 2001, Lecture Notes in Computer Science 2139, 19–40, 2001; full version Cryptology ePrint Archive 2001/055. https://doi.org/10.1007/3-540-44647-8_2 .
+Ran Canetti and Marc Fischlin. *Universally Composable Commitments*. CRYPTO 2001, Lecture Notes in Computer Science 2139, 19–40, 2001; full version Cryptology ePrint Archive 2001/055. https://doi.org/10.1007/3-540-44647-8_2 . Section 2.2, Figure 2 (`F_com`, p. 10) and Section 3, Theorem 6 (p. 12) were checked against the full version, Cryptology ePrint Archive 2001/055.
 
 <a id="cgks98"></a>
 ## cgks98
