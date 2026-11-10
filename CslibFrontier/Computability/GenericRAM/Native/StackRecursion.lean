@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 import CslibFrontier.Tactic.OptionMatch
 
 /-!
@@ -568,15 +569,11 @@ theorem exists_stepCertificate_le (h : R.PolyTime encX encA encY)
     ((PolyBounded.const 6).mul PolyBounded.self)).add (PolyBounded.const 1)
   have hS := ((((ht.2.add hp.2).add hs.2).add ((PolyBounded.const 2).mul hc.2)).add
     ((PolyBounded.const 6).mul PolyBounded.self)).add (PolyBounded.const 1)
-  obtain ⟨cT, dT, hcT⟩ := hT.exists_le
-  obtain ⟨cS, dS, hcS⟩ := hS.exists_le
-  refine ⟨cT + cS + dT + dS, fun σ => ?_⟩
-  have hmono {c d : ℕ} (hc : c ≤ cT + cS + dT + dS) (hd : d ≤ cT + cS + dT + dS) :
-      c * ((encState encX encA encY σ).length + 1) ^ d ≤
-        (cT + cS + dT + dS) * ((encState encX encA encY σ).length + 1) ^ (cT + cS + dT + dS) :=
-    Nat.mul_le_mul hc (Nat.pow_le_pow_right (Nat.succ_pos _) hd)
-  have hT' := (hcT σ).trans (hmono (by omega) (by omega))
-  have hS' := (hcS σ).trans (hmono (by omega) (by omega))
+  obtain ⟨KT, hKT⟩ := hT.exists_le_succ_pow
+  obtain ⟨KS, hKS⟩ := hS.exists_le_succ_pow
+  refine ⟨KT + KS, fun σ => ?_⟩
+  have hT' := hKT (KT + KS) (Nat.le_add_right KT KS) σ
+  have hS' := hKS (KT + KS) (Nat.le_add_left KS KT) σ
   rcases σ with ⟨st, _ | x, v⟩
   · rw [stepCertificate_time, stepCertificate_space]
     simp only [leafCost, isLeafCall, Option.elim, Bool.false_eq_true, ite_false, Nat.add_zero]
