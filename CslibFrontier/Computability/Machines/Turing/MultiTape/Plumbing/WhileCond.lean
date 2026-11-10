@@ -7,10 +7,9 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
 -- vendored: `spaceUsed` is the space of a run path since cslib #1133 and #1122
--- vendored: the body of `whileCond` is exposed for the run law on arbitrary configurations in
--- `Plumbing/RunsBetween`
 -- vendored: `whileCond` combines `tm` with a test machine through `combine`, as cslib #1151 builds
--- `repeatUntilBlank`
+-- `repeatUntilBlank`; the body of the test is exposed for the run law on arbitrary configurations
+-- in `Plumbing/RunsBetween`
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WhileInput
 

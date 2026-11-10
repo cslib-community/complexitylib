@@ -8,6 +8,8 @@ module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 -- `exists_runPath_seq_space_le` is from cslib PR #1111 @3441fa81.
 -- vendored: `space_seq_le` is stated with the space of run paths since cslib #1122
+-- vendored: the runs of `seq` are stated with `Cfg.mapState` and `handOver` since cslib #1151, and
+-- `exists_runPath_seq_space_le` drops the halting of the second path, as `exists_runPath_seq` does
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.Sequential
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.TapeLemmas
