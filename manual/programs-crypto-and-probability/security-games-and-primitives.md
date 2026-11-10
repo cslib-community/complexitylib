@@ -434,6 +434,38 @@ polynomial-time `maxLen` (`advantage_publicKeyWordGame_le_qr`, factor-`2` QR los
 exact chosen-message advantage `1` whenever `z ∈ jacobiNegSet p q`
 (`advantage_jacobiAttackAdversary_eq_one`), witnessing the necessity of `J_N(z) = +1`.
 
+### Elliptic curves over finite fields and Hasse's bound
+
+Import [`EllipticCurve/Hasse.lean`](../../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/Hasse.lean)
+(`CslibFrontier.Foundations.AlgebraicGeometry.EllipticCurve.Hasse`). This is mathematics with no
+machine model, group-law algorithm or running time. A curve is Mathlib's `WeierstrassCurve F`, and
+its points are the type `W.toAffine.Point`: the point at infinity together with the nonsingular
+affine solutions of the Weierstrass equation. The number of points is
+`Nat.card W.toAffine.Point`, which is finite over a finite field. The instance `[W.IsElliptic]`
+says that the discriminant `W.Δ` is a unit. For a concrete curve over `ZMod p`, prove `W.Δ ≠ 0`
+by `decide` and build the instance as `⟨isUnit_iff_ne_zero.2 h⟩`.
+
+- **Odd characteristic.** For a finite field `F` with `ringChar F ≠ 2` and `q = Fintype.card F`,
+  `WeierstrassCurve.natCard_point_eq` gives `#E(F) = q + 1 + S`, where `S` is the character sum
+  `WeierstrassCurve.cubicCharSum` of the cubic obtained by completing the square.
+  `WeierstrassCurve.hasse_bound` gives `(#E(F) - (q + 1))² ≤ 4 q` in `ℤ`, and
+  `WeierstrassCurve.abs_natCard_point_sub_le` gives the real form `|#E(F) - (q + 1)| ≤ 2 √q`. The
+  proof adapts Manin's elementary argument [manin56][manin56]; the implementation notes of
+  [`ManinHeight.lean`](../../CslibFrontier/Foundations/AlgebraicGeometry/EllipticCurve/ManinHeight.lean)
+  say how the Lean steps correspond to his paper.
+- **Prime fields `ZMod p`, including `p = 2`.** Completing the square needs `2 ≠ 0`, so the
+  general theorem excludes characteristic two. `WeierstrassCurve.hasse_bound_zmod` states
+  `p + 1 - 2 √p ≤ #E ≤ p + 1 + 2 √p` for every prime `p` (Theorem 9.72 of
+  [katzlindell20][katzlindell20]); for `p = 2` it uses the direct count
+  `WeierstrassCurve.natCard_point_zmod_two` (`1 ≤ #E ≤ 5`). Other fields of characteristic two are
+  not covered.
+
+The [checked client](../../CslibFrontierTests/Foundations/AlgebraicGeometry/EllipticCurveHasse.lean)
+counts the points of `y² = x³ + 3x + 3` over `ZMod 7` (Example 9.69 of
+[katzlindell20][katzlindell20]), of `y² + y = x³` over `ZMod 2`, and of two curves over `ZMod 5`
+that attain both ends of the bound, and applies each form of the theorem to them. Build it with
+`lake build CslibFrontierTests.Foundations.AlgebraicGeometry.EllipticCurveHasse`.
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit. `Encryption.advantage (gameOn valid keyGen encrypt adversary) n` names the advantage between the two sides of the experiment at parameter `n`, and `INDCPAOn` asks that it be negligible for every admissible adversary; bounds on other two-sided encryption experiments, such as the DEM and CCA games, are stated with the same name.
@@ -698,5 +730,6 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [hill99]: ../sources.md#hill99
 [holenstein06]: ../sources.md#holenstein06
 [katzlindell20]: ../sources.md#katzlindell20
+[manin56]: ../sources.md#manin56
 [naoryung89]: ../sources.md#naoryung89
 [rompel90]: ../sources.md#rompel90
