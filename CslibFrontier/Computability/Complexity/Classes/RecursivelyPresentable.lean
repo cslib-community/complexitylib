@@ -25,8 +25,12 @@ differences.
 
 This module isolates the two predicates and their basic closure properties from the delayed
 diagonalization construction of
-`CslibFrontier.Computability.Complexity.Classes.UniformDiagonalization`, so presentations of other
-classes and polynomial-time degrees need not import that construction.
+`CslibFrontier.Computability.Complexity.Classes.UniformDiagonalization`, while
+`CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.PolyTime` presents `P`,
+polynomial-time transducers, and lower `≤ₘᵖ`-cones without importing that construction. As a
+result, `CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.Classes` need not
+import delayed diagonalization; `CslibFrontier.Computability.Complexity.Classes.Ladner.Density`
+imports `UniformDiagonalization` to construct intermediate degrees.
 
 ## Main definitions
 
@@ -36,6 +40,8 @@ classes and polynomial-time degrees need not import that construction.
 
 ## Main results
 
+* `Cslib.Complexity.exists_notMem_and_mem_of_notMem_P`: a problem outside `P` has both a non-member
+  and a member.
 * `Cslib.Complexity.ClosedUnderFiniteVariation.infinite_symmDiff`: a set outside a class closed
   under finite variations is infinitely different from every member.
 * `Cslib.Complexity.ClosedUnderFiniteVariation.compl`,
@@ -70,6 +76,16 @@ is not recursively presentable. -/
 different from one of its members. -/
 @[expose] def ClosedUnderFiniteVariation {α : Type} (C : Set (Set α)) : Prop :=
   ∀ ⦃L L' : Set α⦄, L ∈ C → (L ∆ L').Finite → L' ∈ C
+
+/-- A problem outside `P` is neither `∅` nor `Set.univ`, so it has a non-member and a member. -/
+theorem exists_notMem_and_mem_of_notMem_P {α : Type} {enc : α ↪ List Bool} {B : Set α}
+    (hB : B ∉ P enc) : (∃ y₀, y₀ ∉ B) ∧ (∃ y₁, y₁ ∈ B) := by
+  refine ⟨?_, ?_⟩
+  · by_contra h
+    exact hB ((Set.eq_univ_of_forall fun y => not_not.mp fun hy => h ⟨y, hy⟩) ▸ univ_mem_P)
+  · by_contra h
+    have heq : B = ∅ := Set.ext fun y => ⟨fun hy => absurd ⟨y, hy⟩ h, False.elim⟩
+    exact hB (heq ▸ empty_mem_P)
 
 /-- A set outside a class closed under finite variations is infinitely different from each of its
 members. -/

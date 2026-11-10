@@ -661,10 +661,12 @@ register_result "ladner-density" where
     Cslib.Complexity.exists_mem_NP_between_of_notMem_P
   ]
   scope := "Problems on binary words (encBits); total deterministic multi-tape polynomial-time \
-    many-one reductions. Between any two decidable problems A <ₘᵖ B on bit words (respectively \
-    in NP) with B ∉ P, there is a decidable problem C (respectively in NP) strictly between \
-    them; if P ≠ NP, every NP-complete language on bit words has an NP-intermediate language \
-    strictly below it. The hypothesis B ∉ P is required (∅ <ₘᵖ {[true]} has no intermediate)."
+    many-one reductions. Between any two problems A <ₘᵖ B on bit words with B decidable \
+    (respectively A, B in NP) and B ∉ P, there is a decidable problem C (respectively in NP) \
+    strictly between them; if P ≠ NP, every NP-complete language on bit words has an \
+    NP-intermediate language strictly below it. Many-one (≤ₘᵖ) order and non-reductions only; \
+    Ladner's polynomial-time Turing (≤ᵀᵖ) non-reduction and ≤ᵀᵖ-density forms are not included. \
+    The hypothesis B ∉ P is required (∅ <ₘᵖ {[true]} has no intermediate)."
 
 register_result "ppz-success" where
   title := "PPZ success probability for k-SAT"

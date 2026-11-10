@@ -1887,6 +1887,7 @@ public import CslibFrontier.Computability.Complexity.Classes.RP
 public import CslibFrontier.Computability.Complexity.Classes.RP.Closure
 public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable
 public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.Classes
+public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.PolyTime
 public import CslibFrontier.Computability.Complexity.Classes.RepeatedTrials
 public import CslibFrontier.Computability.Complexity.Classes.SBP
 public import CslibFrontier.Computability.Complexity.Classes.SBP.Amplification
@@ -2281,6 +2282,7 @@ public import CslibFrontier.Computability.Complexity.Problems.XORSAT.Dense
 public import CslibFrontier.Computability.Complexity.ProofSystem
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Reduction.Autoreducibility
+public import CslibFrontier.Computability.Complexity.Reduction.Equiv
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism.Conjecture
 public import CslibFrontier.Computability.Complexity.Reduction.Isomorphism.Paddable

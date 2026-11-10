@@ -146,7 +146,7 @@ example : ∃ A C : Set (List Bool),
   obtain ⟨A, hdecA, hAP, hABH, hBHA⟩ :=
     exists_isDecidable_notMem_P_lt BoundedHalting.isDecidable BoundedHalting.notMem_P
   obtain ⟨C, hdecC, hAC, hCA, hCBH, hBHC⟩ :=
-    exists_isDecidable_between_of_notMem_P hdecA BoundedHalting.isDecidable
+    exists_isDecidable_between_of_notMem_P BoundedHalting.isDecidable
       BoundedHalting.notMem_P hABH hBHA
   obtain ⟨⟨a₀, ha₀⟩, ⟨a₁, ha₁⟩⟩ := exists_notMem_and_mem_of_notMem_P hAP
   refine ⟨A, C, hdecA, hdecC, hAP, fun hCP => hAP (hAC.mem_P hCP),

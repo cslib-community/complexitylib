@@ -8,9 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.GenericRAM.Native.BooleanSearch
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Computable.Defs
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Computable
 
 /-!
 # Bounded existential search with independent resources
@@ -24,6 +26,9 @@ the specification, not stored by the native machine.
 
 * `Turing.MultiTapeTM.ComputableInO.exists_bits`: streamed existential search with independent
   test-time and test-space bounds, plus polynomial bookkeeping.
+* `Turing.MultiTapeTM.IsComputable.exists_bits`, `Turing.MultiTapeTM.IsComputable.forall_bits`:
+  bounded existential and universal search over words of exact unary length preserve
+  `IsComputable`.
 
 -/
 
@@ -99,5 +104,35 @@ theorem ComputableInO.exists_bits {C : Type} {encC : C ↪ List Bool}
     (hpost.of_enc_eq fun p => congrArg encBool (heq p).symm).mono_le ?_ ?_⟩
   · intro p; dsimp only [Function.comp_apply]; exact Nat.mul_le_mul_left _ (by omega)
   · intro p; dsimp only [Function.comp_apply]; omega
+
+/-- Bounded existential search over words of exact unary length preserves `IsComputable`. -/
+theorem IsComputable.exists_bits {C : Type} {encC : C ↪ List Bool}
+    {test : C × List Bool → Bool} (htest : IsComputable test (encPair encC encBits) encBool) :
+    IsComputable (fun p : C × ℕ => (Cslib.BitString.enumList p.2).any fun w => test (p.1, w))
+      (encPair encC encUnary) encBool := by
+  obtain ⟨Tf, Sf, hc⟩ := htest
+  have hcO : ComputableInO test (encPair encC encBits) encBool Tf Sf :=
+    ⟨1, hc.mono (fun _ => by omega) fun _ => by omega,
+      fun x => by cases test x <;> (simp only [encBool_apply, List.length_singleton]; omega)⟩
+  let T : C × ℕ → ℕ := fun p => listMax (fun w => Tf (p.1, w)) (Cslib.BitString.enumList p.2)
+  let S : C × ℕ → ℕ := fun p => listMax (fun w => Sf (p.1, w)) (Cslib.BitString.enumList p.2)
+  obtain ⟨_, _, _, hsearch, -⟩ := ComputableInO.exists_bits hcO (T := T) (S := S)
+    (fun p w hw => le_listMax (f := fun w => Tf (p.1, w)) (Cslib.BitString.mem_enumList.mpr hw))
+    (fun p w hw => le_listMax (f := fun w => Sf (p.1, w)) (Cslib.BitString.mem_enumList.mpr hw))
+  exact hsearch.isComputable
+
+/-- Bounded universal search over words of exact unary length preserves `IsComputable`. -/
+theorem IsComputable.forall_bits {C : Type} {encC : C ↪ List Bool}
+    {test : C × List Bool → Bool} (htest : IsComputable test (encPair encC encBits) encBool) :
+    IsComputable (fun p : C × ℕ => (Cslib.BitString.enumList p.2).all fun w => test (p.1, w))
+      (encPair encC encUnary) encBool := by
+  have hnot := (IsComputable.of_finite (encIn := encBool) (encMid := encBool) Bool.not).comp
+    (((IsComputable.of_finite (encIn := encBool) (encMid := encBool) Bool.not).comp
+      htest).exists_bits)
+  convert hnot using 1
+  funext p
+  apply Bool.eq_iff_iff.mpr
+  simp only [Function.comp_apply, List.all_eq_true, Bool.not_eq_true', List.any_eq_false]
+  exact forall₂_congr fun x _ => by cases test (p.1, x) <;> decide
 
 end Turing.MultiTapeTM

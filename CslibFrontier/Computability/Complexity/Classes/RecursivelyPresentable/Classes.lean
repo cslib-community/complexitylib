@@ -13,10 +13,10 @@ public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresenta
 public import CslibFrontier.Computability.Complexity.Classes.Space
 import CslibFrontier.Computability.Complexity.Classes.EXP.Decidable
 import CslibFrontier.Computability.Complexity.Classes.Inclusions
-import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 import CslibFrontier.Computability.Complexity.Classes.Oracle.TQBF
 import CslibFrontier.Computability.Complexity.Classes.PH.Closure
 import CslibFrontier.Computability.Complexity.Classes.PH.Projection
+import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.Space.Closure
 import CslibFrontier.Computability.Complexity.Problems.BoundedHalting
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
@@ -247,12 +247,7 @@ private theorem exists_clock_ge (ps : List (Polynomial ℕ)) :
   refine ⟨c + e, fun p hp n => ?_⟩
   have hsum : ps.sum.eval n ≤ c * (n + 1) ^ e := by
     simpa only [encUnary_apply, List.length_replicate] using hle n
-  calc p.eval n ≤ ps.sum.eval n := eval_le_sum hp n
-    _ ≤ c * (n + 1) ^ e := hsum
-    _ ≤ 2 ^ (c + e) * (n + 1) ^ (c + e) :=
-        Nat.mul_le_mul ((Nat.lt_two_pow_self (n := c + e)).le.trans' (by omega))
-          (Nat.pow_le_pow_right (by omega) (by omega))
-    _ = Ladner.clock (c + e) n := by rw [Ladner.clock, ← mul_pow]; ring_nf
+  exact (eval_le_sum hp n).trans (hsum.trans (Ladner.le_clock le_rfl n))
 
 private theorem mem_SigmaP_encBits_iff {k : ℕ} {A : Set (List Bool)} :
     A ∈ SigmaP k encBits ↔
@@ -648,22 +643,12 @@ private theorem isComputable_phPresent :
     IsComputable phPresent (encPair (encPair encUnary encUnary) encBits) encBool := by
   let E₀ := encPair (encPair encUnary encUnary) encBits
   let E₁ := encPair E₀ encUnary
-  have hexp₁ : ComputableInPolyTime
-      (fun p : (ℕ × ℕ) × List Bool => (p.2.length + 1) * p.1.2.unpair.1) E₀ encUnary := by
-    fun_prop
-  obtain ⟨_, _, hpad₁, -⟩ := hexp₁.exists_computableInO_unary_two_pow
-  have hstage₁_raw := (isComputable_id E₀).prod (enc := E₁) hpad₁.isComputable
-  have hclockStep : ComputableInPolyTime
-      (fun q : ((ℕ × ℕ) × List Bool) × ℕ =>
-        (q.1, Ladner.capPow (2 * q.1.2.length + 2) q.1.1.2.unpair.1 q.2)) E₁ E₁ := by
-    fun_prop
+  have hclockArgs : ComputableInPolyTime
+      (fun p : (ℕ × ℕ) × List Bool => (p.1.2.unpair.1, p.2.length))
+      E₀ (encPair encUnary encUnary) := by fun_prop
   have hstage₁ : IsComputable
-      (fun p : (ℕ × ℕ) × List Bool => (p, Ladner.clock p.1.2.unpair.1 p.2.length)) E₀ E₁ := by
-    convert hclockStep.isComputable.comp hstage₁_raw using 1
-    funext p
-    have hc := UniformDiagonalization.clock_le_two_pow p.1.2.unpair.1 p.2.length
-    rw [Ladner.clock] at hc
-    simp only [Function.comp_apply, id_eq, Ladner.capPow, Ladner.clock, min_eq_left hc]
+      (fun p : (ℕ × ℕ) × List Bool => (p, Ladner.clock p.1.2.unpair.1 p.2.length)) E₀ E₁ :=
+    (isComputable_id E₀).prod (enc := E₁) (Ladner.isComputable_clock.comp hclockArgs.isComputable)
   let exp₂ : (((ℕ × ℕ) × List Bool) × ℕ) → ℕ := fun r =>
     r.1.1.1 * r.2 + (2 * r.1.2.length + 2 + r.1.1.1 * r.2) * r.1.1.2.unpair.2 + 1
   have hexp₂ : ComputableInPolyTime exp₂ E₁ encUnary := by
@@ -698,7 +683,7 @@ private theorem isComputable_phPresent :
         rw [heq]
         simp only [E, exp₂]
         omega
-      exact (UniformDiagonalization.clock_le_two_pow _ _).trans
+      exact (Ladner.clock_le_two_pow _ _).trans
         (Nat.pow_le_pow_right (by decide) hexp_le)
     exact UniformDiagonalization.pIndexedCap_eq_pIndexed_of_le hclk
   simp only [phEvalCap, s, htable, phPresent, M]
