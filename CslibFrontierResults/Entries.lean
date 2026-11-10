@@ -1054,8 +1054,9 @@ register_result "zero-one-law-relational" where
     the same almost-sure sentences for every such p. That extension is an adaptation of \
     Fagin's proof made here; no primary source for it was found, and none of the listed \
     sources is claimed for it. With p R equal to 0 or 1 the characterization by the \
-    extension theory fails, although the 0-1 law survives (the symbol is a.s. empty or full). \
-    Unlabelled structures and probabilities depending on n are not covered."
+    extension theory fails, although the 0-1 law still holds by replacing the symbol with \
+    ⊥ or ⊤ (it is a.s. empty or full); that reduction is not formalized. Unlabelled \
+    structures and probabilities depending on n are not covered."
 
 register_result "buchi-elgot-trakhtenbrot" where
   title := "Büchi–Elgot–Trakhtenbrot: MSO-definable languages are the regular languages"

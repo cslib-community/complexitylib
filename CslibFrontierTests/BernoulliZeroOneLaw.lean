@@ -14,8 +14,8 @@ The law for the language of graphs at edge probability `1/3` (random directed gr
 with a sentence of limit `1` and one of limit `0`; exact probabilities of atomic facts; the bridge
 to the uniform random structure at `p = 1/2`; and the two hypotheses. With `p = 0` or `p = 1` the
 almost-sure sentences are no longer the consequences of the extension theory (the 0-1 law itself
-survives, since the symbol is then empty or full), and a nullary relation symbol of probability
-`1/3` breaks the law.
+still holds, since the symbol is then a.s. empty or full and can be replaced by `⊥` or `⊤`; that
+reduction is not formalized), and a nullary relation symbol of probability `1/3` breaks the law.
 -/
 
 namespace CslibFrontierTests.BernoulliZeroOneLaw
