@@ -354,7 +354,31 @@ constraints, actual returned paths, odd unsatisfiable units, repeated constraint
 empty/nullary cases, sparse labels, and a trail whose final flip is valid but an intermediate
 prefix is invalid. The routine takes an improving comparison labeling as input: finding that
 labeling, or finding an augmenting walk without it, still needs the DAG/forest/blossom search.
-Its native runtime certificate and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+The full solver and planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+For explicit tables, import `CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting`.
+In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
+two occurrence-bit buffers and the excluded starting variable. `encInput` frames the CSP and
+both buffers; the final excluded variable is binary without an additional frame. Table arities,
+source names and output walk indices are binary. Internal scan positions are unary.
+`computableInPolyTime_run` proves ordinary native polynomial time in the complete encoded input,
+including malformed tables and buffers. Iteration depends on actual lists, never the largest name.
+
+`run_eq` identifies the finite output with the existing mathematical routine whenever both buffer
+lengths equal the occurrence count. `run_spec` additionally takes the edge-instance and even
+relation hypotheses, valid original/comparison labels and a strict defect improvement; it returns
+an actual existing `Walk`, its decoder equation, augmentation correctness and the combined
+half-Hamming exchange bound. `none` is a helper failure or width rejection, not an unsatisfiability
+answer. [Native augmentation tests](../../CslibFrontierTests/EdgeCSPAugmentingNative.lean) exercise
+returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
+The supplied improving comparison remains necessary; forest/blossom search and the full solver
+are still open.
+
+The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
+`occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
+`PolyTime.CSP.Occurrence` supplies `encOccurrenceRecord` and
+`computableInPolyTime_occurrences` without importing graph construction. Both incidence graphs
+and the native augmentation compiler use that same enumeration and certificate.
 
 ## Algebraic proof systems
 
@@ -420,6 +444,45 @@ scripts/build.sh \
   CslibFrontierTests.ProofComplexity.AlgebraicProofSystems \
   CslibFrontierTests.ProofComplexity.AlgebraicCNF
 ```
+
+## Timestamped f-DAGs and local surgery
+
+Import `CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths` for finite incidence DAGs, their
+surgery and directed-path validity. `CSP.DAG` stores actual variable support, positional
+constraint copies paired with timestamps, and occurrence-indexed oriented arcs. Isolated
+nodes are retained. `DAG.IsFDAG` bundles base validity and all six conditions of KKR v6,
+Definition 32, printed pp. 0:15–0:16: supported incidence, unique use of each original incidence,
+variable indegree, distinct timestamps compatible with a topological order, local feasible
+pair moves, and the full same-original-constraint no-shortcut condition. Finite rank ties can
+be broken into an injective numbering. A two-port move cancels when its ports coincide.
+
+For even delta-matroid constraints, `IsFDAG.delete_earliest_pair` proves Lemma 35 with its
+leaf and two-arc degree hypotheses, including exact removal of those arcs. `reroot_earliest`
+proves Lemma 37 when the earliest copy has one incoming leaf-root arc; it retains every
+unselected outgoing child. Both preserve feasibility and no shortcuts after the pair flip.
+Local common parity may be odd. These results operate on positional CSP lists; `EdgeInstance`
+connects that extension to the source's distinct-constraint edge model.
+
+`IsFDAG.valid_flip_of_pairedCopies` proves validity when each copy has exactly two incident
+arcs, at least one incoming. `DirectedPath.valid_flip`, `valid_take` and `valid_flip_meeting`
+specialize this argument to Corollary 36. A path may revisit an original constraint at different
+timestamps; copied nodes do not recur. Every variable-ended prefix flip is valid. The bridge
+`DirectedPath.isFWalk` additionally requires distinct endpoints and original internal-variable
+consistency; these are not hidden in the DAG assumptions.
+
+`IsFDAG.flip_walk_of_no_prefix_extension` proves Lemma 43 for an f-walk disjoint from the DAG's
+variables, with the actual `Walk.take`/`snoc` nonextension test against every used arc, regardless
+of orientation. Its direct local-exchange proof avoids the source proof's temporary smaller
+timestamp and handles timestamp zero. See [DAG tests](../../CslibFrontierTests/EdgeCSPDAG.lean) for repeated
+original constraints, exact deletion, extra-child rerooting, meeting paths, odd parity and failed
+invariants. Algorithm 1's forest/Lemma 34, blossom search, native runtime and the full planar
+endpoint remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+`CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations` supplies disjoint linked-trail
+concatenation, trail reversal and f-prefix inheritance. Reversal preserves the underlying
+trail, but arbitrary f-walk reversal can fail even with even delta-matroid constraints.
+The [operation tests](../../CslibFrontierTests/EdgeCSPWalkOperations.lean) exhibit that failure, overlapping
+incidence rejection and why endpoint consistency needs a positive proper prefix.
 
 ## Finite crossover gadget semantics
 

@@ -45,7 +45,10 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
+import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
+import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
@@ -78,7 +81,10 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
+import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
+import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Operations
 import CslibFrontier.Logics.Propositional.CSP.Table.DeltaMatroid
 import CslibFrontier.Logics.Propositional.CSP.Planar.Crossover
 import CslibFrontier.Foundations.Data.BitString.CyclicDifference
@@ -852,8 +858,7 @@ For even delta-matroid constraints,
 {name}`Cslib.Logic.PL.CSP.EdgeInstance.augmentingWalk` is a total deterministic
 two-phase routine. Its correctness requires an improving valid comparison
 labeling as input; it does not search for that labeling. The combined exchange
-count is bounded by half the initial occurrence Hamming distance. No native
-machine-runtime bound is claimed yet.
+count is bounded by half the initial occurrence Hamming distance.
 
 ```lean
 open Cslib.Logic.PL Cslib.Logic.PL.CSP in
@@ -867,7 +872,68 @@ example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 ```
 
 The test module also rejects final-only validity. A complete solver still needs
-DAG/forest/blossom search and the native runtime certificate.
+DAG/forest/blossom search and certification of the complete solver.
+
+
+For explicit tables, {name}`Cslib.Complexity.CSP.EdgeAugmenting.run` takes the CSP,
+two finite occurrence buffers and the excluded start. Its ordinary native certificate
+covers the full framed input, including malformed buffers and sparse binary names:
+
+```lean
+open Cslib.Complexity.CSP.EdgeAugmenting Turing.MultiTapeTM in
+example : ComputableInPolyTime (fun input => (run input).isSome)
+    encInput encBool := by fun_prop
+```
+
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_eq` identifies its output with the
+mathematical routine when buffer widths match.
+{name}`Cslib.Complexity.CSP.EdgeAugmenting.run_spec` supplies an actual augmenting
+walk and the combined exchange bound given a valid improving comparison.
+A `none` output does not establish unsatisfiability. Finding the comparison remains open.
+The complete behavioral clients are in `CslibFrontierTests/EdgeCSPAugmentingNative.lean`.
+
+
+# Timestamped DAG Search Prerequisites
+
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG` combines base validity with all six KKR
+invariants. Copies use original constraint positions and timestamps; arcs use
+actual argument occurrences. Supported isolated nodes are retained. Finite ranks
+can be made injective without changing any required comparison.
+
+The earliest-copy deletion and rerooting theorems preserve the invariants after
+a feasible pair flip, with the source's leaf and degree hypotheses explicit.
+Rerooting keeps unselected children. The paired-copy theorem gives the directed
+path argument; original constraints may recur at distinct timestamps. Prefix
+validity is a conclusion, not part of the path certificate:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Logic.PL.CSP.DAG in
+example {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
+    {sem : Rel → List Bool → Bool} {f : OccurrenceLabeling F Bool}
+    {T : DAG F} {w : Walk F} {time : Occurrence F → ℕ}
+    (hp : DirectedPath T w time) (hT : T.IsFDAG sem f)
+    (hM : EdgeInstance.EvenConstraints sem F) (n : ℕ) :
+    ValidLabeling sem ((w.take n).flip f) := hp.valid_take hT hM n
+```
+
+{name}`Cslib.Logic.PL.CSP.DAG.DirectedPath.isFWalk` also requires distinct
+endpoints and original internal consistency. Lemma 43 is formalized by
+{name}`Cslib.Logic.PL.CSP.DAG.IsFDAG.flip_walk_of_no_prefix_extension`, using
+actual prefix extensions against every used incidence. Its direct-exchange proof
+handles timestamp zero without adding a smaller timestamp.
+
+For assembly, trail reversal preserves the underlying trail:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP in
+example {Rel V : Type} {F : CSP Rel V} {w : Walk F}
+    (hw : w.IsWalk) : w.reverse.IsWalk := hw.reverse
+```
+
+Arbitrary f-walk reversal need not preserve prefix validity, even for even
+delta-matroid relations. Operation tests give a counterexample. These results
+still leave forest construction/Lemma 34, whole-blossom search, native cost and
+the full planar dichotomy open.
 
 
 # Finite Crossover Gadget Semantics
