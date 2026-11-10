@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Deterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.FairCoin.Clocked
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunPropFinite
 
 /-!
 # Local paired ports for fair-coin compact and clocked configuration graphs
@@ -516,8 +517,8 @@ theorem stepTargetWithSymbol_budget (tm : MultiTapeTM k Bool State)
     | cons t ts ih =>
       have hnxt := nextRegisters_budget hn hr hin t.2.2.2
       have hpack := pack_inSpace hB hnxt hin
-      have hpred := and_inSpace
-        (and_inSpace (matchesEntry_budget hn hr hs hin t) (fitsB_budget hB hnxt hin))
+      have hpred := budget_boolAnd
+        (budget_boolAnd (matchesEntry_budget hn hr hs hin t) (fitsB_budget hB hnxt hin))
         (valid_budget (k := k) (State := State) hB hn hpack hin)
       exact (budget_ite hpred (budget_optionSome hpack) ih).of_enc_eq fun a => by
         dsimp only [findStepTarget, stepEntryPred]
@@ -1336,8 +1337,8 @@ theorem clockedOutCountWithSymbol_budget (machine : MultiTapePTM k Bool State)
   have hN := vertexBound_budget (k := k) hB hin
   have hT := budget_natMul htwo (budget_natPow (budget_natMul htwo (budget_natSucc hn)) hin d)
   have hM := clockedVertexBound_budget (k := k) D d hn hin
-  have hcond := and_inSpace (budget_natLt ha hM)
-    (and_inSpace (budget_natLt hp htwo) (budget_natLt (budget_natDiv ha hN) hT))
+  have hcond := budget_boolAnd (budget_natLt ha hM)
+    (budget_boolAnd (budget_natLt hp htwo) (budget_natLt (budget_natDiv ha hN) hT))
   have hu := budget_natMod ha hN
   have houtList := coinOutTargetsWithSymbol_budget machine hB hn hu hsym hin
   have hvOpt := getElem?_budget 2 (fun _ => length_coinOutTargetsWithSymbol_le ..) houtList hp hin
@@ -1368,8 +1369,8 @@ theorem clockedOutPortWithSymbols_budget (machine : MultiTapePTM k Bool State)
   have hN := vertexBound_budget (k := k) hB hin
   have hT := budget_natMul htwo (budget_natPow (budget_natMul htwo (budget_natSucc hn)) hin d)
   have hM := clockedVertexBound_budget (k := k) D d hn hin
-  have hcond := and_inSpace (budget_natLt ha hM)
-    (and_inSpace (budget_natLt hp htwo) (budget_natLt (budget_natDiv ha hN) hT))
+  have hcond := budget_boolAnd (budget_natLt ha hM)
+    (budget_boolAnd (budget_natLt hp htwo) (budget_natLt (budget_natDiv ha hN) hT))
   have hu := budget_natMod ha hN
   have houtList := coinOutTargetsWithSymbol_budget machine hB hn hu hsymOut hin
   have hvOpt := getElem?_budget 2 (fun _ => length_coinOutTargetsWithSymbol_le ..) houtList hp hin
@@ -1406,8 +1407,8 @@ theorem clockedInPortWithSymbols_budget (machine : MultiTapePTM k Bool State)
     budget_natPow (budget_natAdd hn htwo) hin D
   have hN := vertexBound_budget (k := k) hB hin
   have hM := clockedVertexBound_budget (k := k) D d hn hin
-  have hcond := and_inSpace (budget_natLt hb hM)
-    (and_inSpace (budget_natLt hq (budget_const (inPortBound machine) hin))
+  have hcond := budget_boolAnd (budget_natLt hb hM)
+    (budget_boolAnd (budget_natLt hq (budget_const (inPortBound machine) hin))
       (budget_natLt (budget_const 0 hin) (budget_natDiv hb hN)))
   have hv := budget_natMod hb hN
   have hinList := coinInSourcesWithSymbols_ofFn_budget machine inSymAt hB hn hv hinSym hin
