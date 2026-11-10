@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Containers
 public import CslibFrontier.Cryptanalysis.AddXNORClassJoin
 public import CslibFrontier.Cryptanalysis.AddXNORClassStreaming
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.MinMax
 public import CslibFrontier.Computability.GenericRAM.Native.StreamingFold
 import all CslibFrontier.Cryptanalysis.AddXNORClassJoin
 import all CslibFrontier.Cryptanalysis.AddXNORClassStreaming
@@ -777,22 +778,6 @@ noncomputable def tableCertificate : NativeCertificate table encoding
     (ComputableTidilyInPolyTime.listReverse recEncoding))
   exact NativeCertificate.congr (reverse.comp loop) (fun _ => rfl)
 
-private theorem minimum_polyTime : ComputableInPolyTime
-    (fun q : ℕ × ℕ => min q.1 q.2) recEncoding encNat := by
-  have choose : ComputableTidilyInPolyTime (fun q : ℕ × ℕ => decide (q.1 ≤ q.2))
-      recEncoding encBool := by
-    apply ComputableTidilyInPolyTime.binary_le' <;> fun_prop
-  exact .of_tidy ((choose.cond (.fst _ _) (.snd _ _)).of_enc_eq (fun q => by
-    by_cases h : q.1 ≤ q.2 <;> simp [h, Nat.min_def]))
-
-private theorem maximum_polyTime : ComputableInPolyTime
-    (fun q : ℕ × ℕ => max q.1 q.2) recEncoding encNat := by
-  have choose : ComputableTidilyInPolyTime (fun q : ℕ × ℕ => decide (q.1 ≤ q.2))
-      recEncoding encBool := by
-    apply ComputableTidilyInPolyTime.binary_le' <;> fun_prop
-  exact .of_tidy ((choose.cond (.snd _ _) (.fst _ _)).of_enc_eq (fun q => by
-    by_cases h : q.1 ≤ q.2 <;> simp [h, Nat.max_def]))
-
 /-- Count both directions and reduce their minimum directly into one scalar maximum.
 The actual encoded streaming loop sums class costs and takes callback/prefix maxima;
 no table construction, reversal or whole-table polynomial callback is executed. -/
@@ -802,8 +787,9 @@ noncomputable def balanceCertificate : NativeCertificate balance encoding encNat
     .linear (.of_eq (fun _ => rfl))
   let selected := original.fst.fst.prod original.snd
   let both := ((countOn false).comp selected).prod ((countOn true).comp selected)
-  let smaller := (NativeCertificate.ofPolyTime minimum_polyTime).comp both
-  let round := (NativeCertificate.ofPolyTime maximum_polyTime).comp (original.fst.snd.prod smaller)
+  let smaller := (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_min).comp both
+  let round := (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_max).comp
+    (original.fst.snd.prod smaller)
   let loop := NativeCertificate.foldlStream encoding encNat encNat
     (fun input current g => max current (min (count input false g) (count input true g))) round
   let generation := (Classical.choose_spec SortedQuarterMachine.indices_computable).2.2

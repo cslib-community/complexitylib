@@ -48,8 +48,8 @@ private noncomputable def roundCertificate : NativeCertificate
   let selected := original.fst.fst.prod original.snd
   let both := ((ClassBalance.countOn false).comp selected).prod
     ((ClassBalance.countOn true).comp selected)
-  let smaller := (NativeCertificate.ofPolyTime ClassBalance.minimum_polyTime).comp both
-  exact (NativeCertificate.ofPolyTime ClassBalance.maximum_polyTime).comp
+  let smaller := (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_min).comp both
+  exact (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_max).comp
     (original.fst.snd.prod smaller)
 
 private theorem round_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Monotone P ∧
@@ -59,10 +59,10 @@ private theorem round_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Mo
         (encNat (ClassBalance.count input true g)).length+1 ≤ B →
       roundCertificate.time ((input, current), g)+roundCertificate.space ((input, current), g) ≤
         ProducerResources.countAllowance input g+P B := by
-  obtain ⟨A, hA, mA, minimum⟩ := exists_mono_poly_cert ClassBalance.minimum_polyTime
+  obtain ⟨A, hA, mA, minimum⟩ := exists_mono_poly_cert ComputableInPolyTime.binary_min
   obtain ⟨D, hD, mD, minWire⟩ :=
-    exists_mono_poly ClassBalance.minimum_polyTime.polyBounded_length
-  obtain ⟨C, hC, mC, maximum⟩ := exists_mono_poly_cert ClassBalance.maximum_polyTime
+    exists_mono_poly ComputableInPolyTime.binary_min.polyBounded_length
+  obtain ⟨C, hC, mC, maximum⟩ := exists_mono_poly_cert ComputableInPolyTime.binary_max
   let P := fun B => 2*A (4*B)+2*C (4*B+D (4*B))+100*B
   refine ⟨P, by dsimp only [P]; fun_prop, ?_, ?_⟩
   · intro a b hab
@@ -100,11 +100,11 @@ private theorem round_bounds : ∃ P : ℕ → ℕ, PolynomiallyBounded P ∧ Mo
         10*(roundEncoding ((input, current), g)).length+
         12*(encPair ClassBalance.encoding encNat (input, g)).length+
         ProducerResources.countAllowance input g+
-        (NativeCertificate.ofPolyTime ClassBalance.minimum_polyTime).time counts+
-        (NativeCertificate.ofPolyTime ClassBalance.minimum_polyTime).space counts+
-        (NativeCertificate.ofPolyTime ClassBalance.maximum_polyTime).time
+        (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_min).time counts+
+        (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_min).space counts+
+        (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_max).time
           (current, min counts.1 counts.2)+
-        (NativeCertificate.ofPolyTime ClassBalance.maximum_polyTime).space
+        (NativeCertificate.ofPolyTime ComputableInPolyTime.binary_max).space
           (current, min counts.1 counts.2) := by
       dsimp only [roundCertificate, ClassBalance.countOn, NativeCertificate.comp,
         NativeCertificate.congr, NativeCertificate.prod, NativeCertificate.fst,

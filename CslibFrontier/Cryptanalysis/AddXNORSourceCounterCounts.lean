@@ -35,7 +35,8 @@ preparation/projection/DP/output temporaries are charged simultaneously.
 * `quarter_certificate`: $O^*(2^k)$ before full-state class enumeration, since `d ≤ k`.
 
 Source: [WangLvShenZhang2027], Lemma 8/Theorem 7, PDF pp. 21–22.
-The scalar balance scan and installation into the dissection solver remain separate.
+`SourceCounterBalance` scans these arrays. `DPDissection` composes the prepass
+with search, using the identification proved in `BalanceCompatibility`.
 -/
 
 public section

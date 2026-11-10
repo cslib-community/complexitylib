@@ -28,8 +28,11 @@ the small-state index writer. Inverse execution consumes operands in reverse.
 The table returned on the output tape contains every state count, including zeros.
 
 This realizes the reachable-state counter recurrence used in
-[WangLvShenZhang2027], Lemma 8 (PDF pp. 21–22). The faster balance prepass and its
-composition with the dissection solver remain separate objectives.
+[WangLvShenZhang2027], Lemma 8 (PDF pp. 21–22). `SourceCounterBalance` supplies the
+faster scalar prepass; `DPDissection` installs it before the complete source search.
+
+The whole-DP normalization `CounterDP.source_certificate` is in the
+`AddXNORCounterDPResources` module.
 
 ## Main definitions
 
@@ -41,7 +44,6 @@ composition with the dissection solver remain separate objectives.
 * `run_words`: exact complete counter tables, without an assumed execution conclusion.
 * `prefix_wire`: original-width physical storage at every operand prefix.
 * `runCertificate_bounds`: actual summed-clock/maximum-workspace composition.
-* `CounterDP.source_certificate` in `AddXNORCounterDPResources` normalizes the whole DP.
 -/
 
 public section

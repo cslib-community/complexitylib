@@ -2610,6 +2610,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.K
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinBatchCallbackBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.KeyJoinStream
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.PairMaxMin
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixPartition
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.RadixSort
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Algorithms.SortedMatch
@@ -2882,6 +2883,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Jacobi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.MinMax
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime
@@ -3724,6 +3726,7 @@ public import CslibFrontier.Computability.WordRAM.Turing.ListOutput
 public import CslibFrontier.Computability.WordRAM.Turing.Overhead
 public import CslibFrontier.Computability.WordRAM.Width
 public import CslibFrontier.Cryptanalysis.AddXNOR
+public import CslibFrontier.Cryptanalysis.AddXNORBalanceCompatibility
 public import CslibFrontier.Cryptanalysis.AddXNORBalanceResources
 public import CslibFrontier.Cryptanalysis.AddXNORBatchLoopResources
 public import CslibFrontier.Cryptanalysis.AddXNORBatchResources
@@ -3740,6 +3743,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORClassJoin
 public import CslibFrontier.Cryptanalysis.AddXNORClassStreaming
 public import CslibFrontier.Cryptanalysis.AddXNORClasses
 public import CslibFrontier.Cryptanalysis.AddXNORCompactExecution
+public import CslibFrontier.Cryptanalysis.AddXNORCounterBalanceScan
 public import CslibFrontier.Cryptanalysis.AddXNORCounterDP
 public import CslibFrontier.Cryptanalysis.AddXNORCounterDPResources
 public import CslibFrontier.Cryptanalysis.AddXNORCounterInitialization
@@ -3748,6 +3752,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORCounterProjection
 public import CslibFrontier.Cryptanalysis.AddXNORCounterPull
 public import CslibFrontier.Cryptanalysis.AddXNORCounterSerialization
 public import CslibFrontier.Cryptanalysis.AddXNORCounting
+public import CslibFrontier.Cryptanalysis.AddXNORDPDissection
 public import CslibFrontier.Cryptanalysis.AddXNORDecay
 public import CslibFrontier.Cryptanalysis.AddXNORDecision
 public import CslibFrontier.Cryptanalysis.AddXNORDifference
@@ -3823,6 +3828,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORSortedMeet
 public import CslibFrontier.Cryptanalysis.AddXNORSortedQuarterMachine
 public import CslibFrontier.Cryptanalysis.AddXNORSortedRecords
 public import CslibFrontier.Cryptanalysis.AddXNORSource
+public import CslibFrontier.Cryptanalysis.AddXNORSourceCounterBalance
 public import CslibFrontier.Cryptanalysis.AddXNORSourceCounterCounts
 public import CslibFrontier.Cryptanalysis.AddXNORSourceQuarter
 public import CslibFrontier.Cryptanalysis.AddXNORSourceResources

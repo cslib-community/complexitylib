@@ -32,7 +32,9 @@ charged. The input is not an already-projected instance or a supplied table.
 * `source_certificate`: actual bit time and every-prefix workspace, including projection.
 
 This composes the low-bit counting route of [WangLvShenZhang2027], Lemma 8,
-PDF pp. 21–22. The source quarter/balance-prepass composition is separate.
+PDF pp. 21–22. `SourceCounterCounts` composes the original source quarters with
+this machine. `SourceCounterBalance` supplies the scalar scan; `DPDissection`
+installs it before search; `BalanceCompatibility` proves the final balance-parameter bridge.
 -/
 
 public section

@@ -318,14 +318,23 @@ application. `CounterProjection.runCertificate` now projects the full-width inpu
 inside the machine. `SourceCounterCounts.quarter_certificate` composes source
 preparation and both actual projected DPs, charging simultaneous count arrays
 and all temporaries before any full-state class enumeration. Reuse these routes
-rather than a semantic table or a generic polynomial in its full wire. The scalar
-max/min balance scan and installation into the dissection solver remain open;
-polynomial-time `List.zip` or repeated table lookups do not give that sharp bound.
-Do not promote pair/batch traversal sums or unnormalized machine profiles to
-sharp source TM bounds. The global worst-case inequalities are now proved for the
-sorted-list source certificate; the source fast prepass and other main clauses
-remain open. The old solvers and
-all their charges remain intact; the new direct route bypasses their interpreter.
+rather than a semantic table or a generic polynomial in its full wire.
+`CounterBalanceScan` tags numeric keys, radix-sorts, pairs and folds binary
+min/max; `SourceCounterBalance` composes it with the actual all-count producer.
+`BalanceCompatibility.original_balance` proves agreement with the search's
+computed balance through injective packed words and the inverse conjugacy.
+`DPDissection` now runs the quarter-time scalar prepass before the approved whole
+search/readback pipeline. Its whole-run bounds use the returned scalar;
+`source_parameter_bounds` puts the fixed polynomial in original word width and
+operand count. `original_classBalance_admitted` identifies the paper's requested
+balance when the depth fits the word width and quarter size. Keep these typed
+input/depth conventions visible; no expected class mean controls the maximum.
+Theorem 7's source pipeline is assembled. The small-operand, multiplicity,
+sparsification and repaired ideal-model clauses remain open in #2527/ROADMAP.
+Do not promote an older pair/batch bound, unnormalized machine profile, native
+live support or generic polynomial in a whole list to this source bit theorem.
+The older solvers and their charges remain intact. Binary min/max certificates
+now live in `PolyTime.Nat.MinMax`, reused by the old and DP balance paths.
 
 ## Correct course and hand work over
 

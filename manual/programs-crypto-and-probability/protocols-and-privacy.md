@@ -2476,7 +2476,7 @@ with an overlarge requested class depth. These are not sharp whole-run bounds:
 $T_c,S_c$ still include unnormalized window scan/cut/division, retained/group
 emission and internal class-search lifetimes. Regenerated counts fit the
 half-exponential total time but do not prove the source's faster quarter-time
-reachable-state-DP all-count prepass, which remains open.
+reachable-state-DP all-count prepass; the later `DPDissection` route supplies it.
 
 [`AddXNORSearchResources.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSearchResources.lean)
 normalizes the actual class-pair and full-state producers, using the approved
@@ -2538,8 +2538,9 @@ quarter-plus-balance bounds for the sum of complete callback allowances and each
 all-prefix workspace. Scalar factors use original widths; the dictionary contributes linearly
 through actual computed capacity, amortized over labels.
 These are callback-phase bounds. The enclosing setup/loop and retained/ambient
-composition is supplied by the following resource endpoint. Source reachable-state-DP all-count/fast
-prepass and the other paper objectives remain open.
+composition is supplied by the following resource endpoint. The later
+`DPDissection` route supplies the reachable-state-DP all-count/fast prepass;
+other paper objectives remain open.
 
 The binary layouts in these public APIs use documented reducible names: `encNatPairList`
 frames each binary pair (whose second coordinate is unframed), `encNatPairOption` uses
@@ -2594,9 +2595,9 @@ this correctness and both resource inequalities for arbitrary typed source input
 as well as arithmetic hit/miss, backward retention and empty/zero-width cases.
 
 These are the whole solver's worst-case time/space bounds, not the complete
-source Theorem 7: the faster quarter-time balance prepass remains unproved. The
-reachable-state all-count DP is now proved below. The old association-list/cubic-filter interpreter is
-unchanged; the resource theorem uses the assembled sorted-list route. Other
+source Theorem 7 by themselves: the faster DP prepass is absent from this older
+route. The complete `DPDissection` pipeline is proved below. The old
+association-list/cubic-filter interpreter is unchanged; the resource theorem uses the assembled sorted-list route. Other
 small-operand, multiplicity, sparsification and ideal-model paper objectives also
 remain open.
 
@@ -2655,8 +2656,9 @@ even stream with exactly two records per state, including zeros and equal counts
 
 The output of this single pass is a counter list in numeric state order. The
 complete initialization/indexing/operand-loop composition is described below;
-the faster balance prepass remains separate. The older `WordTable.entries` uses
-recursive low-bit-child order; that order is kept distinct. The checked clients include actual forward and inverse updates,
+the faster balance prepass is in the `DPDissection` route below. The older
+`WordTable.entries` uses recursive low-bit-child order; that order is kept
+distinct. The checked clients include actual forward and inverse updates,
 zero width, zero counters, collisions and non-self-inverse addition. From the
 repository root run
 `lake build CslibFrontierTests.AddXNORCounterPairing --wfail --iofail`.
@@ -2723,15 +2725,52 @@ $2^{\lfloor q/4\rfloor}P(I+1)$ before any full-state class list is generated.
 The bound includes both count arrays simultaneously, original-input/cut copies,
 projection, DP callback/sort/arithmetic buffers and output.
 
-This finishes original-input projection and the faster all-count producer.
-A resource-faithful scalar max/min scan of the two arrays to obtain $\mu_d$,
-its equality with the solver's computed balance, and installation of this prepass
-into the dissection solver remain open. A generic polynomial-time `List.zip` or
-repeated per-class lookup would not supply the required sharp scan bound. The
-existing whole-run solver and its theorem are unchanged; source Theorem 7 and
-the other recorded paper clauses are not claimed complete. Build the integrated
-high-bit, non-self-inverse, zero-depth, empty and residual-quarter clients with
-`lake build CslibFrontierTests.AddXNORCounterProjection --wfail --iofail`.
+The scalar scan and complete source pipeline are now in
+[`AddXNORCounterBalanceScan.lean`](../../CslibFrontier/Cryptanalysis/AddXNORCounterBalanceScan.lean),
+[`AddXNORSourceCounterBalance.lean`](../../CslibFrontier/Cryptanalysis/AddXNORSourceCounterBalance.lean)
+and [`AddXNORDPDissection.lean`](../../CslibFrontier/Cryptanalysis/AddXNORDPDissection.lean).
+The scan puts a side bit on each numeric state key, uses the approved runtime
+radix sorter and adjacent-payload writer to align the two counters, then folds
+binary minimum/maximum with one scalar accumulator. It uses no repeated table
+lookup or whole-remaining-list callback. Its time and every-prefix workspace are
+$2^d$ times a polynomial in key/counter bit widths, derived from original inputs.
+`SourceCounterBalance.source_certificate` includes the actual projection/count
+producer and proves $2^{\lfloor q/4\rfloor}P(I+1)$ time and peak space for the
+returned scalar, before any full-state class enumeration.
+
+[`AddXNORBalanceCompatibility.lean`](../../CslibFrontier/Cryptanalysis/AddXNORBalanceCompatibility.lean)
+proves that the search's generated populations equal those DP entries. The proof
+uses the packed operator payloads' injectivity, so colliding states retain their
+indexed multiplicities. The backward comparison uses the proved inverse-chain
+reversal/complement identity. It does not replace a forward dictionary with a
+backward retention construction. `original_balance` then identifies the actual
+DP scalar with the balance controlling the approved per-class search.
+
+`DPDissection.sourceCertificate` executes this faster DP scalar prepass and then
+the complete approved class search, including retention/orientation, restarted
+probing/reuse, control and original witness decoding. The older balance-output
+branch is bypassed. `original_correct` proves witness soundness and exhaustive
+misses; `original_classBalance` identifies the returned balance with the original
+half-chain populations at the computed depth. On admitted depths $p\le m$ and
+$p\le\lfloor q/4\rfloor$, `original_classBalance_admitted` gives exactly $\mu_p$.
+`sourceCertificate_bounds` charges whole-run time and simultaneous peak space in
+this same returned value; `source_parameter_bounds` normalizes its polynomial in
+original width $m$ and operand count $q=N-1$:
+$2^{\lfloor q/2\rfloor}P(m+q+1)$ time and
+$(2^{\lfloor q/4\rfloor}+\mu_d)P(m+q+1)$ space. This supplies the source Theorem 7
+algorithm on the well-formed typed-input model, with the documented computed
+cap $d$ (and $d=p$ on admitted depths). Counts, arithmetic, sorting, intermediate
+copies, callback/state/control tapes and output are charged at every prefix.
+No resource or execution conclusion is supplied as an endpoint premise.
+
+The earlier sorted-list solver and its certificate remain available. The source
+Theorem 7 pipeline is now assembled; small-operand, multiplicity, sparsification
+and repaired ideal-model clauses remain open, so this does not complete the
+paper or the ALL-main objective. Per-class expectations still do not bound the
+expected maximum balance or give a typical-space theorem. Build the integrated
+large-binary-counter, colliding/zero-count, empty/residual-quarter and complete
+witness/miss clients with
+`lake build CslibFrontierTests.AddXNORCounterBalanceScan --wfail --iofail`.
 
 The installed fallback is checked by
 [`CslibFrontierTests/AddXNORClassBatches.lean`](../../CslibFrontierTests/AddXNORClassBatches.lean),
