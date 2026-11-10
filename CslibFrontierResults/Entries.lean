@@ -25,6 +25,7 @@ import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
@@ -875,8 +876,25 @@ register_result "fo-tc-nl" where
     canonical numeric symbols, on Fin n with n ≥ 2, is in native NL under encStructure; \
     malformed tables and cardinalities below two are rejected. Closure is reflexive \
     transitive closure on tuples of fixed width. Closures under negation are compiled \
-    directly by inductive counting rather than by appeal to NL = coNL. The converse \
-    NL ⊆ FO(TC) is not formalized."
+    directly by inductive counting rather than by appeal to NL = coNL. The converse, \
+    NL ⊆ FO(positive TC), is in the entry immerman-nl-capture."
+
+register_result "immerman-nl-capture" where
+  title := "Immerman: FO(TC) and FO(positive TC) capture NL on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 3.1", locator := unverified },
+    { paper := Immerman1988, theorem := "Corollary 3", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.tcDefinable_iff_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.posTCDefinable_iff_encodedLanguage_mem_NL
+  ]
+  scope := "Canonically ordered finite structures over a finite relational vocabulary, with \
+    universes Fin n, n ≥ 2, and numeric symbols order, BIT, zero, one and maximum computed \
+    from the size. One FO(TC) sentence defines the query iff its source-only encoded language \
+    (encStructure) is in native NL; positive closures suffice. Malformed table shapes and \
+    universes below two are rejected."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"

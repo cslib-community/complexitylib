@@ -1786,6 +1786,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Ladner.Stages
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.ConfigurationGraph
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Formula
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reduction
@@ -1794,6 +1795,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Transducer
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Compile
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Counting
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Loop
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
@@ -2779,6 +2781,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Radix
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.RadixRounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.ReadSymbol
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Registers
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Routines
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.Tape
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Configurations
@@ -5198,6 +5201,7 @@ public import CslibFrontier.Foundations.Quantum.TensorPower
 public import CslibFrontier.Foundations.Relation.Acyclic
 public import CslibFrontier.Foundations.Relation.InductiveCounting
 public import CslibFrontier.Foundations.Relation.RelatesWithinSteps
+public import CslibFrontier.Foundations.Relation.Transport
 public import CslibFrontier.Foundations.RingTheory.AdjoinRoot
 public import CslibFrontier.Foundations.RingTheory.CyclicIntRing
 public import CslibFrontier.Foundations.RingTheory.CyclicIntRing.Coefficients
@@ -5346,6 +5350,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.BitSum
 public import CslibFrontier.Logics.FirstOrder.Ordered.BitSum.Encoding
 public import CslibFrontier.Logics.FirstOrder.Ordered.Constants
 public import CslibFrontier.Logics.FirstOrder.Ordered.DeterministicTransitiveClosure
+public import CslibFrontier.Logics.FirstOrder.Ordered.Division
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation.Certificate
 public import CslibFrontier.Logics.FirstOrder.Ordered.DomainInterpretation.Composition
