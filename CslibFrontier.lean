@@ -4402,6 +4402,7 @@ public import CslibFrontier.Foundations.Analysis.Asymptotics.CostBound
 public import CslibFrontier.Foundations.Analysis.Asymptotics.Exponential
 public import CslibFrontier.Foundations.Analysis.BernoulliInequality
 public import CslibFrontier.Foundations.Analysis.Brouwer
+public import CslibFrontier.Foundations.Analysis.Brouwer.Simplex
 public import CslibFrontier.Foundations.Analysis.Calculus.Taylor
 public import CslibFrontier.Foundations.Analysis.Convex.Ellipsoid
 public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation
@@ -5191,6 +5192,7 @@ public import CslibFrontier.Foundations.RingTheory.RootsOfUnity.Principal
 public import CslibFrontier.Foundations.Syntax.PrefixParser
 public import CslibFrontier.GameTheory.Bimatrix.Basic
 public import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
+public import CslibFrontier.GameTheory.Bimatrix.Existence
 public import CslibFrontier.GameTheory.Bimatrix.LemkeHowson
 public import CslibFrontier.GameTheory.Congestion.Affine
 public import CslibFrontier.GameTheory.Congestion.Basic
@@ -5212,12 +5214,14 @@ public import CslibFrontier.GameTheory.Mechanism.SingleParameter
 public import CslibFrontier.GameTheory.Mechanism.VCG
 public import CslibFrontier.GameTheory.Mechanism.Vickrey
 public import CslibFrontier.GameTheory.Mechanism.VirtualValue
+public import CslibFrontier.GameTheory.MixedStrategy
 public import CslibFrontier.GameTheory.SocialChoice.Arrow
 public import CslibFrontier.GameTheory.SocialChoice.GibbardSatterthwaite
 public import CslibFrontier.GameTheory.SocialChoice.Ranking
 public import CslibFrontier.GameTheory.Strategic.Basic
 public import CslibFrontier.GameTheory.Strategic.Hedge
 public import CslibFrontier.GameTheory.Strategic.Mixed
+public import CslibFrontier.GameTheory.Strategic.Nash
 public import CslibFrontier.GameTheory.Strategic.NoRegret
 public import CslibFrontier.GameTheory.Strategic.Potential
 public import CslibFrontier.GameTheory.Strategic.Smooth

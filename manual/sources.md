@@ -1022,6 +1022,11 @@ Zsigmond Nagy. “A Constructive Estimation of the Ramsey Numbers” (in Hungari
 
 Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptographic Applications.” *Proceedings of the Twenty-First Annual ACM Symposium on Theory of Computing (STOC 1989)*, 33–43, 1989. https://doi.org/10.1145/73007.73011 . Authors' revised manuscript (March 13, 1995): https://www.wisdom.weizmann.ac.il/~naor/PAPERS/uowhf.ps (§2, §2.3, §3 and §4).
 
+<a id="nash51"></a>
+## nash51
+
+John Nash. "Non-Cooperative Games." *Annals of Mathematics* 54(2), 286–295, 1951. https://doi.org/10.2307/1969529 . Bibliographic data from the DOI record. Theorem 1 ("every finite game has an equilibrium point") and its proof by Brouwer's theorem were checked on printed p. 288 of the scan at https://www.cs.upc.edu/~ia/nash51.pdf during the agent review of [#4105](https://github.com/cslib-community/cslib-frontier/pull/4105) on 2026-11-10.
+
 <a id="nisan07"></a>
 ## nisan07
 
