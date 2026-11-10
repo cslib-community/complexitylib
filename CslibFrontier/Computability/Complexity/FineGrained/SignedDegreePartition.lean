@@ -48,7 +48,8 @@ theorem normalize_polytime : ComputableInPolyTime normalize encInput
   (ComputableInPolyTime.fst _ _).prod
     (SignedClassBounds.normalize_polytime.comp (ComputableInPolyTime.snd _ _))
 
-private theorem normalize_ofGraph {n q : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj]
+/-- Canonical signed normalization preserves the graph and each label position. -/
+theorem normalize_ofGraph {n q : ℕ} (G : SimpleGraph (Fin n)) [DecidableRel G.Adj]
     (lo hi : Fin q → ℤ) : normalize (ofGraph G lo hi) = Bounded.BinaryFrontend.ofGraph G
       (fun i => (SignedClassBounds.pair (lo i, hi i)).1)
       (fun i => (SignedClassBounds.pair (lo i, hi i)).2) := by

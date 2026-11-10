@@ -2857,4 +2857,16 @@ source real eta clock for at least 16 vertices. Both signed bounds vary in binar
 negative upper bounds and contradictions use the same proved original-count correspondence.
 The checked client is `CslibFrontierTests.PaperEndpoints.SignedDegreePartition`; its tiny
 original-label oracle tests the actual normalization/counter pipeline, including 512-bit bounds.
-Signed optimization and broader raw/succinct/model transfers remain open. No entry is removed.
+`CslibFrontier.Computability.Complexity.FineGrained.SignedDegreePartitionOptimum` composes the
+same normalizer with the actual unsigned optimizer. `optimal_iff` transports absence, returned
+vector multiplicities, attainment and global min/max comparisons against all signed-feasible
+partitions. `exists_optimal_finiteCofinite_certificate` supplies the complete native source-clock
+and polynomial-workspace endpoint, with every binary bound varying at runtime.
+
+`CslibFrontier.Computability.Complexity.FineGrained.SignedSigmaRho` similarly supplies exact set
+counts and attained min/max cardinalities for every fixed finite/cofinite rule pair. It reuses
+scalar signed normalization and the actual unsigned machines; no auxiliary assignment or runtime
+is supplied. Both count and optimum endpoints include empty graphs and contradictory intervals.
+`CslibFrontierTests.PaperEndpoints.SignedDegreeRuleOptimum` executes the normalization, tiny
+original-label counting, distribution, scans and optional scalar reconstruction on negative,
+512-bit, exact-size and empty cases. Raw/succinct/model transfers remain open in ROADMAP.
