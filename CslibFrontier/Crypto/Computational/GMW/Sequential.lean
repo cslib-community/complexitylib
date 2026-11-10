@@ -32,12 +32,20 @@ import CslibFrontier.Probability.PMF.Map
 # Sequential soundness amplification for the 3-copy GMW zero-knowledge protocol
 
 This module sequentially composes `k n` independent executions of the 3-copy masked-3SAT GMW
-protocol (`CslibFrontier.Crypto.Computational.GMW.Protocol`), amplifying soundness error from `1 /
-3`
-to `(1 / 3) ^ (k n)` against arbitrary unbounded stateful provers while preserving perfect
-completeness (`acceptProb = 1`) and computational zero-knowledge against arbitrary uniform strict
-oracle PPT malicious verifiers whenever `k` is polynomially bounded (`ComputableInPolyTime k
-encUnary encUnary`).
+protocol (`CslibFrontier.Crypto.Computational.GMW.Protocol`), where `generator` maps seeds of
+length `m` to words of length `length m`. Perfect completeness (`acceptProb = 1`) is preserved for
+every `k`. If `3 * m + 1 ≤ length m` for all `m`, the soundness error drops from `1 / 3` to
+`(1 / 3) ^ (k n)` against arbitrary unbounded stateful provers, again for every `k`.
+
+Computational zero-knowledge is proved in
+`CslibFrontier.Crypto.Computational.GMW.Sequential.Simulator`, which builds `gmwSeqSimulator` from
+the single-session attempt and machine-slicing primitives of Sections 2 and 3 below. It holds
+against arbitrary uniform strict oracle PPT malicious verifiers when the map `f` from instances to
+formulas is computable in polynomial time and `k` is computable in polynomial time in unary
+(`ComputableInPolyTime k encUnary encUnary`), and it is conditional: under `PseudorandomGenerator`
+it covers instance, witness and auxiliary-input families computable in polynomial time from the
+unary parameter, and under `AdvicePRG` it covers arbitrary such families of polynomially bounded
+length. In both cases the witnesses are valid `ThreeSAT` witnesses.
 
 ## Main definitions
 
