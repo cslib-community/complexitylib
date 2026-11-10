@@ -77,6 +77,8 @@ with `b + 1 < p_t`; the one with `b + 1 = p_t` has weight `p_t` and drops out of
   `2`.
 * `Cslib.Circuits.Frontier.localKernel_mul_eq`: the exact relation between the kernels at `d₀`
   and `d₀ + 2 ^ (i + 1) j`.
+* `Cslib.Circuits.Frontier.isUnit_crossRatio_denom`: the element the cross ratio inverts is a unit
+  when `2` is nilpotent.
 * `Cslib.Circuits.Frontier.kernelValue_eq_sum`: the geometric expansion (D.12).
 * `Cslib.Circuits.Frontier.two_pow_dvd_kernelValue_mul_crossRatio_pow`: its coefficients are
   divisible by `2 ^ (b + 1)`.
@@ -236,10 +238,19 @@ private theorem two_dvd_crossRatio {a i : ℕ} {t d₀ : ℤ} (ζ : R)
     pow_succ]
   exact dvd_mul_of_dvd_left (dvd_mul_left _ _) _
 
-/-- In a ring where `2` is nilpotent, `1 + 2 x` is a unit. -/
-private theorem isUnit_one_add_two_mul {p : ℕ} (hp : (2 : R) ^ p = 0) (x : R) :
-    IsUnit (1 + 2 * x) :=
-  IsNilpotent.isUnit_one_add ⟨p, by rw [mul_pow, hp, zero_mul]⟩
+/-- Write `t - d₀ = 2 ^ v u₀` with `u₀` odd. If `2` is nilpotent, `2 ^ (i + 1) ∤ t - d₀` and
+`i ≤ a`, then the element `u₀ + 2 ^ (a + 1 - v) ζ` that `crossRatio a i t d₀ ζ` inverts is a unit:
+`v ≤ i ≤ a`, so it is `1` plus a nilpotent multiple of `2`. -/
+theorem isUnit_crossRatio_denom {p a i : ℕ} (hp : (2 : R) ^ p = 0) (hia : i ≤ a) {t d₀ : ℤ}
+    (hcross : ¬ (2 : ℤ) ^ (i + 1) ∣ t - d₀) (ζ : R) :
+    IsUnit ((((t - d₀) / 2 ^ padicValInt 2 (t - d₀) : ℤ) : R) +
+      2 ^ (a + 1 - padicValInt 2 (t - d₀)) * ζ) := by
+  obtain ⟨hvi, ⟨c, hc⟩, -⟩ := two_adic_split hcross
+  rw [hc, show a + 1 - padicValInt 2 (t - d₀) = a - padicValInt 2 (t - d₀) + 1 by omega, pow_succ]
+  convert (IsNilpotent.isUnit_one_add (r := 2 * ((c : R) + 2 ^ (a - padicValInt 2 (t - d₀)) * ζ))
+    ⟨p, by rw [mul_pow, hp, zero_mul]⟩) using 1
+  push_cast
+  ring
 
 /-- **The geometric expansion (D.12).** Let `2 ^ p = 0` in `R`, and let `d₀` and
 `d = d₀ + 2 ^ (i + 1) j` be grid points of `2 ^ a` slots with `2 ^ (i + 1) ∤ t - d₀` and `i ≤ a`.
@@ -251,7 +262,8 @@ theorem kernelValue_eq_sum (κ : ℤ₍₂₎ →+* R) (ζ : R) {p a i : ℕ} (h
     (hcross : ¬ (2 : ℤ) ^ (i + 1) ∣ t - d₀) (hia : i ≤ a) :
     kernelValue κ ζ a t d =
       ∑ b ∈ range p, kernelValue κ ζ a t d₀ * crossRatio a i t d₀ ζ ^ b * (j : R) ^ b := by
-  obtain ⟨hvi, hodd, hsplit⟩ := two_adic_split hcross
+  obtain ⟨hvi, -, hsplit⟩ := two_adic_split hcross
+  have hU := isUnit_crossRatio_denom hp hia hcross ζ
   set v := padicValInt 2 (t - d₀)
   set u₀ := (t - d₀) / 2 ^ v
   have h : kernelValue κ ζ a t d * ((u₀ : R) + 2 ^ (a + 1 - v) * ζ - 2 ^ (i + 1 - v) * j) =
@@ -263,15 +275,6 @@ theorem kernelValue_eq_sum (κ : ℤ₍₂₎ →+* R) (ζ : R) {p a i : ℕ} (h
     exact h
   -- The unit `U = u₀ + 2 ^ (a + 1 - v) ζ`.
   set U : R := (u₀ : R) + 2 ^ (a + 1 - v) * ζ
-  have hU : IsUnit U := by
-    obtain ⟨c, hc⟩ := hodd
-    have : U = 1 + 2 * ((c : R) + 2 ^ (a - v) * ζ) := by
-      simp only [U, hc]
-      rw [show a + 1 - v = a - v + 1 by omega, pow_succ]
-      push_cast
-      ring
-    rw [this]
-    exact isUnit_one_add_two_mul hp _
   set ρ := crossRatio a i t d₀ ζ
   have hρ : ρ = 2 ^ (i + 1 - v) * Ring.inverse U := rfl
   have hUρ : U * ρ = 2 ^ (i + 1 - v) := by
