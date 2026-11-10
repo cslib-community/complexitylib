@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.Propositional.CSP
+public import CslibFrontier.Foundations.Data.BitString.List.Single
 import Mathlib.Data.List.Count
 import Mathlib.Data.List.Nodup
 
@@ -250,53 +251,11 @@ theorem sem_contract_reference {table : Table} {reference : List Bool} {position
     simpa only [canContract, Bool.and_eq_true] using h
   exact ⟨reference, (sem_eq_true.mp hg.1).2, by simp, by simp⟩
 
-/-- One-hot rows, indexed by a position strictly below the width. -/
-@[expose] def oneHot (width index : ℕ) : List Bool :=
-  (List.range width).map fun j => decide (index = j)
-
-/-- A one-hot row at position zero starts with `true`. -/
-theorem oneHot_succ_zero (width : ℕ) :
-    oneHot (width + 1) 0 = true :: List.replicate width false := by
-  simp [oneHot, List.range_succ_eq_map, List.map_map, Function.comp_def]
-
-/-- Shifting the selected position prepends a zero. -/
-theorem oneHot_succ_succ (width index : ℕ) :
-    oneHot (width + 1) (index + 1) = false :: oneHot width index := by
-  simp [oneHot, List.range_succ_eq_map, List.map_map, Function.comp_def]
-
-/-- A valid one-hot row has precisely one true coordinate. -/
-theorem count_true_oneHot {width index : ℕ} (h : index < width) :
-    (oneHot width index).count true = 1 := by
-  induction width generalizing index with
-  | zero => omega
-  | succ width ih =>
-    cases index with
-    | zero => simp [oneHot_succ_zero, List.count_replicate]
-    | succ index => simpa [oneHot_succ_succ] using ih (by omega)
-
-/-- Every row with exactly one true coordinate is a one-hot row. -/
-theorem exists_oneHot_of_count_true {row : List Bool} (h : row.count true = 1) :
-    ∃ index < row.length, oneHot row.length index = row := by
-  induction row with
-  | nil => simp at h
-  | cons bit row ih =>
-    cases bit with
-    | false =>
-      have ht : row.count true = 1 := by simpa using h
-      obtain ⟨index, hi, hr⟩ := ih ht
-      exact ⟨index + 1, by simpa using Nat.succ_lt_succ hi,
-        by simpa only [List.length_cons, oneHot_succ_succ] using congrArg (false :: ·) hr⟩
-    | true =>
-      have ht : true ∉ row := List.count_eq_zero.mp (by simpa using h)
-      have hr : row = List.replicate row.length false := List.eq_replicate_of_mem
-        (fun bit hb => by cases bit <;> simp_all)
-      exact ⟨0, by simp, by simp only [List.length_cons, oneHot_succ_zero, ← hr]⟩
-
 /-- Explicit exactly-one table. The scope's length supplies the output-size resource;
 its entries need not be distinct, since this constructs only a relation, not a CSP scope guard. -/
 @[expose] def exactlyOne {V : Type*} (scope : List V) : Table :=
   { arity := scope.length
-    rows := (List.range scope.length).map (oneHot scope.length) }
+    rows := (List.range scope.length).map (BitString.listSingle scope.length) }
 
 /-- Exactly-one stores one row per connector. -/
 @[simp] theorem length_rows_exactlyOne {V : Type*} (scope : List V) :
@@ -306,7 +265,7 @@ its entries need not be distinct, since this constructs only a relation, not a C
 /-- Exactly-one tables have the declared width. -/
 @[simp] theorem wellFormed_exactlyOne {V : Type*} (scope : List V) :
     (exactlyOne scope).wellFormed = true := by
-  simp [wellFormed, exactlyOne, oneHot]
+  simp [wellFormed, exactlyOne, BitString.listSingle]
 
 /-- Exactly-one semantics, independently of row ordering and the names in the supplied scope. -/
 theorem sem_exactlyOne_eq_true {V : Type*} (scope : List V) (row : List Bool) :
@@ -316,9 +275,9 @@ theorem sem_exactlyOne_eq_true {V : Type*} (scope : List V) (row : List Bool) :
   constructor
   · intro h
     obtain ⟨index, hi, rfl⟩ := List.mem_map.mp h
-    exact ⟨by simp [oneHot], count_true_oneHot (List.mem_range.mp hi)⟩
+    exact ⟨by simp [BitString.listSingle], BitString.count_true_listSingle (List.mem_range.mp hi)⟩
   · rintro ⟨hw, hc⟩
-    obtain ⟨index, hi, hr⟩ := exists_oneHot_of_count_true hc
+    obtain ⟨index, hi, hr⟩ := BitString.exists_listSingle_of_count_true hc
     exact List.mem_map.mpr ⟨index, List.mem_range.mpr (hw ▸ hi), hw ▸ hr⟩
 
 /-- The connector relation is nonempty precisely when there is a connector. -/
@@ -334,7 +293,7 @@ theorem exists_sem_exactlyOne {V : Type*} (scope : List V) :
     apply (rows_exactlyOne_ne_nil scope).mp
     exact List.ne_nil_of_mem (sem_eq_true.mp hr).2
   · intro h
-    refine ⟨oneHot scope.length 0, sem_eq_true.mpr ⟨wellFormed_exactlyOne scope, ?_⟩⟩
+    refine ⟨BitString.listSingle scope.length 0, sem_eq_true.mpr ⟨wellFormed_exactlyOne scope, ?_⟩⟩
     exact List.mem_map.mpr ⟨0, List.mem_range.mpr h, rfl⟩
 
 end Table

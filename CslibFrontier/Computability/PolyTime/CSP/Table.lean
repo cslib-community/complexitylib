@@ -214,9 +214,9 @@ theorem computableInPolyTime_tableContract :
 
 /-- One-hot row generation uses unary width and index. -/
 theorem computableInPolyTime_tableOneHot :
-    ComputableInPolyTime (fun p : ℕ × ℕ => oneHot p.1 p.2)
+    ComputableInPolyTime (fun p : ℕ × ℕ => Cslib.BitString.listSingle p.1 p.2)
       (encPair encUnary encUnary) (encList encBool) := by
-  unfold oneHot
+  unfold Cslib.BitString.listSingle
   fun_prop
 
 /-- Exactly-one generation is polynomial in the framed scope list, with binary variable names. -/
@@ -226,7 +226,8 @@ theorem computableInPolyTime_tableExactlyOne :
   have harity := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_to_binary).comp
     hwidth
   have hrows : ComputableInPolyTime
-      (fun scope : List ℕ => (List.range scope.length).map (oneHot scope.length))
+      (fun scope : List ℕ =>
+        (List.range scope.length).map (Cslib.BitString.listSingle scope.length))
       (encList encNat) (encList (encList encBool)) := by
     apply ComputableInPolyTime.mapWithInput (by fun_prop)
     exact computableInPolyTime_tableOneHot.comp
