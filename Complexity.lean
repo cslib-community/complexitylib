@@ -3860,6 +3860,8 @@ public import Complexity.Crypto.Computational.PseudorandomFunction.TruthTable
 public import Complexity.Crypto.Computational.PseudorandomGenerator
 public import Complexity.Crypto.Computational.PseudorandomPermutation
 public import Complexity.Crypto.Computational.QuadraticResiduosity
+public import Complexity.Crypto.Computational.RSAAttacks
+public import Complexity.Crypto.Computational.RSALeastSignificantBit
 public import Complexity.Crypto.Computational.RSATrapdoor
 public import Complexity.Crypto.Computational.RabinFactoring
 public import Complexity.Crypto.Computational.Rompel
