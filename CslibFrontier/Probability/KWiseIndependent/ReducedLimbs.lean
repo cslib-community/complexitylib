@@ -17,8 +17,9 @@ implementation of the two-stage universe-reduced `k`-wise independent hash famil
 (`Cslib.DataStructure.HashFamily.WordRAM.ReducedKWise`):
 
 1. **Overflow-free full-word multiply-shift (`halfMulMod`, `oddMulModWord`)**: computes
-   `(2 * α + 1) * x % 2 ^ w₀ / 2 ^ (w₀ - R)` for any `0 < w₀ ≤ w` using only `< 2 ^ w₀`
-   intermediate products and sums, avoiding any `2 * w₀ ≤ w` restriction.
+   `(2 * α + 1) * x % 2 ^ w₀ / 2 ^ (w₀ - R)` for any `0 < w₀ ≤ w`. When `α < 2 ^ (w₀ - 1)` and
+   `x < 2 ^ w₀`, every intermediate product and sum is `< 2 ^ w₀`, avoiding any `2 * w₀ ≤ w`
+   restriction.
 2. **Exact limb factorization of `2 * 3 ^ t` (`reducedChunkBits`, `reducedHalfLimbs`,
    `reducedLimbCount`)**: decomposes any `2 * 3 ^ t`-bit element of `TrinomialField t` into
    `reducedLimbCount t = 2 * 3 ^ min t 3 ≤ 54` limbs of `reducedChunkBits t = 3 ^ (t - 3)` bits
@@ -64,8 +65,8 @@ open Finset Polynomial
 
 /-! ## Section 1: Overflow-free full-word `multiplyShiftReduced` arithmetic -/
 
-/-- Computes `(α * (x' % 2 ^ m)) % 2 ^ m` using only intermediate products and sums `< 2 ^ (m + 1)`
-by splitting `m` at `h = m / 2`. -/
+/-- Computes `(α * (x' % 2 ^ m)) % 2 ^ m` by splitting `m` at `h = m / 2`. Whenever `α < 2 ^ m` and
+`x' < 2 ^ m`, every intermediate product and sum is `< 2 ^ (m + 1)`. -/
 @[expose] def halfMulMod (m α x' : ℕ) : ℕ :=
   let h := m / 2
   let α₀ := α &&& (2 ^ h - 1)

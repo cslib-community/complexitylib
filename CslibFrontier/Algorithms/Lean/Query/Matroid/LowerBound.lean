@@ -43,9 +43,9 @@ Consider the all-loops oracle `IndepQuery.loopyOracle` (`S = ∅`), which implem
   and `Matroid.uniqueBaseOn {e}`.
 * `Cslib.Query.IsMatroidBasisAlg`: specification of a `FreeM (IndepQuery α)` basis-finding
   algorithm.
-* `Cslib.Query.IsMaxCardIndepAlg`: weaker specification requiring only an independent output of
-  maximum cardinality in `{x | x ∈ xs}` (satisfied by both basis algorithms and unit-weight
-  independent-set maximizers).
+* `Cslib.Query.IsMaxCardIndepAlg`: weaker specification (satisfied by both basis algorithms and
+  unit-weight independent-set maximizers) requiring only an independent output at least as large
+  as every independent subset of `{x | x ∈ xs}`; the output need not lie in `{x | x ∈ xs}`.
 
 ## Main results
 
@@ -168,7 +168,7 @@ structure IsMaxCardIndepAlg [DecidableEq α]
   indep : ∀ (xs : List α) (M : Matroid α) (oracle : {ι : Type} → IndepQuery α ι → ι),
     IndepQuery.ImplementsMatroid oracle M →
     M.Indep (((alg xs).eval oracle : Finset α) : Set α)
-  /-- The output has maximum cardinality among all independent subsets of `{x | x ∈ xs}`. -/
+  /-- The output is at least as large as every independent subset of `{x | x ∈ xs}`. -/
   card_max : ∀ (xs : List α) (M : Matroid α) (oracle : {ι : Type} → IndepQuery α ι → ι),
     IndepQuery.ImplementsMatroid oracle M →
     ∀ I : Finset α, M.Indep (I : Set α) → (I : Set α) ⊆ {x | x ∈ xs} →
@@ -284,7 +284,9 @@ theorem IsMaxCardIndepAlg.length_le_countQueries [DecidableEq α]
   exact halg.card_toFinset_le_countQueries xs
 
 /-- On an infinite ground type `α`, any `IsMaxCardIndepAlg` has query complexity lower bound `n`
-(`LowerBound alg List.length id`). -/
+(`LowerBound alg List.length id`). `LowerBound` asks only for some input and some oracle forcing
+that many queries; the oracle need not implement a matroid. For the matroid oracle
+`IndepQuery.loopyOracle` the bound is `IsMaxCardIndepAlg.length_le_countQueries`. -/
 theorem IsMaxCardIndepAlg.lowerBound_infinite [DecidableEq α] [Infinite α]
     {alg : List α → FreeM (IndepQuery α) (Finset α)} (halg : IsMaxCardIndepAlg alg) :
     LowerBound alg List.length id := by
@@ -313,7 +315,10 @@ theorem IsMatroidBasisAlg.length_le_countQueries [DecidableEq α]
 
 /-- Any correct `IsMatroidBasisAlg` on an infinite ground type has query lower bound `id`,
 matching `matroidGreedySelect_upperBound`, `matroidGreedyMaxBasis_upperBound`, and
-`matroidGreedyMinBasis_upperBound` with exact leading constant `1`. -/
+`matroidGreedyMinBasis_upperBound` with exact leading constant `1`. `LowerBound` asks only for
+some input and some oracle forcing that many queries; the oracle need not implement a matroid.
+For the matroid oracle `IndepQuery.loopyOracle` the bound is
+`IsMatroidBasisAlg.length_le_countQueries`. -/
 theorem IsMatroidBasisAlg.lowerBound_infinite [DecidableEq α] [Infinite α]
     {alg : List α → FreeM (IndepQuery α) (Finset α)} (halg : IsMatroidBasisAlg alg) :
     LowerBound alg List.length id :=

@@ -25,8 +25,8 @@ import Mathlib.Tactic.Ring
 # Composing step-machine resource certificates
 
 The composition `g.comp f` retains resource certificates: its halting test and its step take the
-time of those of `f` and `g` plus a polynomial in the size of the state, and the space of those of
-`f` and `g` plus the size of the state.
+time of those of `f` and `g` plus a polynomial in the space of those of `f` and the size of the
+state, and the space of those of `f` and `g` plus the size of the state.
 
 ## Main definitions
 

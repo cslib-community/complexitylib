@@ -1630,7 +1630,7 @@ noncomputable def prfCounterSlotGame (seed : PMF K) (family : List Bool → List
 
 /-- The multi-query fresh-nonce PRF-masked Carter–Wegman issued-counter EUF-CMA experiment
 (after [BonehShoup2023], Section 7.5, Theorem 7.10), where the signer's counter schedule `nonce`
-fixes the nonces and `checkCounterGlobal` accepts only issued counter indices
+fixes the nonces and `checkCounterEUF` accepts only issued counter indices
 (`pads[idx]? = some r`), rejecting unissued `idx`. -/
 noncomputable def prfCounterGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
     (n : ℕ) (nonce : ℕ → List Bool) (hash : K → M → BitString n)
@@ -1639,7 +1639,7 @@ noncomputable def prfCounterGame (seed : PMF K) (family : List Bool → List Boo
 
 /-- The multi-query fresh-nonce PRF-masked Carter–Wegman issued-slot strong SUF-CMA experiment
 (after [BonehShoup2023], Section 7.5, Theorem 7.10), where the signer's counter schedule `nonce`
-fixes the nonces and `checkCounterStrong` accepts only issued counter indices
+fixes the nonces and `checkCounterSUF` accepts only issued counter indices
 (`pads[idx]? = some r`), rejecting unissued `idx`. -/
 noncomputable def prfCounterStrongGame (seed : PMF K) (family : List Bool → List Bool → List Bool)
     (n : ℕ) (nonce : ℕ → List Bool) (hash : K → M → BitString n)

@@ -17,8 +17,9 @@ import Mathlib.Tactic.Ring
 /-!
 # Absorbing the complete cubic logarithmic box coefficient
 
-The finite native ledger has degree three in tensor depth. A single threshold per fixed
-original weight exponent absorbs that full coefficient into every positive real input power.
+The finite native ledger has degree three in tensor depth. For each fixed original weight
+exponent `κ ≥ 1` and each fixed real `ε > 0`, that full coefficient `costCoefficient κ n` is at
+most `n ^ ε` for all sufficiently large `n`.
 -/
 
 public section

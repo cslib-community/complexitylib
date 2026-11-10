@@ -15,16 +15,17 @@ public import Mathlib.Data.Nat.Size
 /-!
 # Arithmetic in binary within linear work space
 
-Binary addition reexports the linear zip-transducer certificate, weakened to time quadratic in
-the encoded input length and linear charged workspace. The remaining facts bound lengths of
-arithmetic outputs and identify successor iteration, for clients with fixed workspace budgets.
+The facts here bound lengths of arithmetic outputs and identify successor iteration, for clients
+with fixed workspace budgets. The certificate of binary addition,
+`Turing.MultiTapeTM.ComputableInO.natAdd`, is in `Internal/BinaryAddition`, which this file
+publicly imports: it is the linear zip-transducer certificate, weakened to time quadratic in the
+encoded input length and linear charged workspace.
 
 ## Main results
 
 * `Turing.MultiTapeTM.length_encNat_add_le_add`, `.length_encNat_mul_le`: lengths of sums and
   products in binary. Monotonicity, `Turing.MultiTapeTM.length_encNat_mono`, is in
   `Internal/BinarySizeFacts`.
-* `Turing.MultiTapeTM.ComputableInO.natAdd`: binary addition in quadratic time and linear space.
 -/
 
 @[expose] public section

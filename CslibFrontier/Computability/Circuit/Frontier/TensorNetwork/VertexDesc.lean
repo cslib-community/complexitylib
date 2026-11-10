@@ -57,8 +57,9 @@ The entry procedure of tables has a polynomial native certificate (`tableEntryCe
 ## Main results
 
 * `Cslib.Circuits.Frontier.VertexDesc.val_entry_inl`: a table entry is read as a constant.
-* `Cslib.Circuits.Frontier.VertexDesc.map_val_entry_inr`: a packet entry is the packet entry in
-  every ring receiving `A_p` with `2` nilpotent.
+* `Cslib.Circuits.Frontier.VertexDesc.map_val_entry_inr`: the entry of a packet descriptor with
+  `L = 2 ^ a`, `i < a`, `2 ^ (i + 1)` tiles, a grid point of valuation `i` and port slots below
+  `2 ^ a` is `packetEntry` in every ring receiving `A_p` with `2` nilpotent.
 * `Cslib.Circuits.Frontier.VertexDesc.entryCertificate_le`: the time and space of the evaluator.
 
 ## References
@@ -134,10 +135,13 @@ theorem val_entry_inl (p : ℕ) (fl table : List ℕ) (bs : List Bool) :
       Finset.sum_eq_zero fun i _ => by rw [List.getD_cons_succ, List.getD_nil]; simp]
     simp
 
-/-- **A packet entry in every ring receiving `A_p`.** Along a ring map `ψ` from `A_p`, at the
-precision `p` of the packet, to a ring in which `2` is nilpotent, the entry of a packet descriptor
-at the bits on its ports is `packetEntry` at any ring map `κ : ℤ_(2) → S`, the image of the
-interpolation value, the dense exponents, and the row and column ports read from the bits. -/
+/-- **A packet entry in every ring receiving `A_p`.** Let the context of a packet descriptor have
+`L = 2 ^ a` slots, a digit `i < a`, `2 ^ (i + 1)` tiles and a grid point `t` of
+`cauchyGrid (2 ^ a)` divisible by `2 ^ i` and not by `2 ^ (i + 1)`, and let the slots of its ports
+lie below `2 ^ a`. Along a ring map `ψ` from `A_p`, at the precision `p` of the packet, to a ring
+in which `2` is nilpotent, the entry of the descriptor at the bits on its ports is `packetEntry`
+at any ring map `κ : ℤ_(2) → S`, the image of the interpolation value, the dense exponents, and
+the row and column ports read from the bits. -/
 theorem map_val_entry_inr {S : Type*} [CommRing S] (ev : T → List Bool → List ℕ)
     (d : PacketDesc) (bs : List Bool) (ψ : Ring d.1.p d.1.fl →+* S) {n : ℕ}
     (hn : (2 : S) ^ n = 0) (κ : ℤ₍₂₎ →+* S)

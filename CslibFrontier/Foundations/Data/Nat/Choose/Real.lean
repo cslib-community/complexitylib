@@ -39,8 +39,8 @@ generating-function bound, motivated by the geometric thresholds in Appendix A.3
 * `Cslib.sum_choose_le_two_pow_div_add_one`: its natural-number rounded form.
 * `Cslib.le_mul_logb_of_two_pow_le_sum_choose_sq`: the logarithmic consequence.
 * `Cslib.mul_rpow_le_of_two_pow_le_sum_choose_sq`: the rearranged size lower bound.
-* `Real.exists_one_le_and_mul_pow_le_pow`: a polynomial is eventually below an exponential with base
-  `r > 1`.
+* `Real.exists_one_le_and_mul_pow_le_pow`: for a base `r > 1`, some natural number `α ≥ 1` has
+  `C * α ^ d ≤ r ^ α`.
 
 ## References
 
@@ -263,7 +263,7 @@ namespace Real
 
 open Filter
 
-/-- A polynomial is eventually below an exponential with base `r > 1`. -/
+/-- For a base `r > 1`, some natural number `α ≥ 1` satisfies `C * α ^ d ≤ r ^ α`. -/
 theorem exists_one_le_and_mul_pow_le_pow (C : ℝ) (d : ℕ) {r : ℝ} (hr : 1 < r) :
     ∃ α : ℕ, 1 ≤ α ∧ C * (α : ℝ) ^ d ≤ r ^ α := by
   have hlim := tendsto_pow_const_div_const_pow_of_one_lt d hr

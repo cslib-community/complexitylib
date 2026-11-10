@@ -48,8 +48,9 @@ Write `d = (k - 2) i + e` with `e < k - 2`. A path of `i + d` down-steps and `i`
 `0` from `d` within `ki + e ≤ 3d` steps (`choose_mul_le_hit`). The middle weight
 `C(ki, i) (k - 1)^{ki - i}` is the largest of the `ki + 1` terms of `((k - 1) + 1)^{ki}`
 (`pow_le_choose_mul`), which gives `hit k (3 d) d ≥ ((k - 1)/k)^{k - 3} (k - 1)^{-d} / (3 d + 1)`
-(`inv_le_hit`). Averaging `(k - 1)^{-dist}` over a uniform start gives `(k / (2(k - 1)))^n`, a
-product over the coordinates (`sum_pow_hammingDist`).
+(`inv_le_hit`). Summing `(k - 1)^{-dist}` over all `2^n` starts gives `(k / (k - 1))^n`, a product
+over the coordinates (`sum_pow_hammingDist`), so its average over a uniform start is
+`(k / (2(k - 1)))^n`.
 
 ## Main definitions
 
@@ -528,7 +529,7 @@ theorem hit_le_succeedProb (hk : 1 ≤ k) {φ : CNF V} {σs : V → Bool} (hs : 
 /-! ### Schöning's bound -/
 
 omit [DecidableEq V] in
-/-- Averaging `q^{dist(σ, τ)}` over all assignments `σ` gives `(1 + q)^n`, a product over the
+/-- Summing `q^{dist(σ, τ)}` over all assignments `σ` gives `(1 + q)^n`, a product over the
 coordinates. -/
 theorem sum_pow_hammingDist [DecidableEq V] (q : ℝ) (τ : V → Bool) :
     ∑ σ : V → Bool, q ^ hammingDist σ τ = (1 + q) ^ Fintype.card V := by

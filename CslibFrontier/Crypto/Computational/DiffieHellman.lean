@@ -47,14 +47,15 @@ Section 10.11, Exercises 10.8–10.9, pp. 425–426; `ddhRerandomizeLaw_real` an
 original single-invocation worst-case-to-average-case DDH distinguishing reduction using
 `ProbComp.sampleModNat` (`ddhSampleModExponents`, `ddhSelfReduceDistinguisher`,
 `ddhWorstCaseGame`, `advantage_ddhRerandomizeGame_ddhWorstCaseGame_le`,
-`advantage_ddhRealGame_le_ddhWorstCaseGame`, `ddh_of_worstCase`), and the worst-case DDH decider
-of [BonehShoup2023], Section 10.11, Exercise 10.10 (p. 426; `ddhRealRefTuple`, `ddhIdealRefTuple`,
-`ddhAmplifiedDecider`, `isPPTOn_ddhAmplifiedDecider`, `ddhAmplifiedDecider_error_le_pow`,
-`negligible_ddhAmplifiedDecider_error`), which amplifies an average-case distinguisher with
-inverse-polynomial advantage via repeated random self-reduction trials and a Chernoff/Hoeffding
-tail bound (`ProbComp.countTrue_average_deviation_pow`) so that it correctly decides every input
-tuple `(α • g, β • g, γ • g)` except with negligible error probability. The Diffie–Hellman
-assumptions are hypotheses, not theorems.
+`advantage_ddhRealGame_le_ddhWorstCaseGame`, and its corollary `ddh_of_worstCase`, which assumes
+that one fixed real DDH tuple family and one fixed non-DDH tuple family are indistinguishable), and
+the worst-case DDH decider of [BonehShoup2023], Section 10.11, Exercise 10.10 (p. 426;
+`ddhRealRefTuple`, `ddhIdealRefTuple`, `ddhAmplifiedDecider`, `isPPTOn_ddhAmplifiedDecider`,
+`ddhAmplifiedDecider_error_le_pow`, `negligible_ddhAmplifiedDecider_error`), which amplifies an
+average-case distinguisher with inverse-polynomial advantage via repeated random self-reduction
+trials and a Chernoff/Hoeffding tail bound (`ProbComp.countTrue_average_deviation_pow`) so that it
+correctly decides every input tuple `(α • g, β • g, γ • g)` except with negligible error
+probability. The Diffie–Hellman assumptions are hypotheses, not theorems.
 
 ## Main definitions
 
@@ -108,9 +109,13 @@ assumptions are hypotheses, not theorems.
   `Cslib.Crypto.PrimeOrderGroupFamily.dist_sampleModZModLaw_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhSelfReduceDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRerandomizeGame_ddhWorstCaseGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRealGame_le_ddhWorstCaseGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.ddh_of_worstCase`: original single-invocation
-  worst-case-to-average-case DDH distinguishing reduction.
+  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_ddhRealGame_le_ddhWorstCaseGame`: original
+  single-invocation worst-case-to-average-case DDH distinguishing reduction, bounding the
+  average-case advantage of a distinguisher by the advantage of `ddhSelfReduceDistinguisher` on
+  any fixed real / non-DDH pair of tuple families plus `6 / 2 ^ n`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.ddh_of_worstCase`: `DDH` from indistinguishability, against
+  all uniform strict PPT distinguishers, of one fixed real DDH tuple family and one fixed non-DDH
+  tuple family.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_ddhAmplifiedDecider`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider_error_le_pow`,
   `Cslib.Crypto.PrimeOrderGroupFamily.ddhAmplifiedDecider_correct_ge_one_sub_pow`,
@@ -1015,9 +1020,13 @@ theorem advantage_ddhRealGame_le_ddhWorstCaseGame (setup : ℕ → PMF F.Desc)
         6 / 2 ^ n := by
       ring
 
-/-- **Average-case DDH from worst-case DDH via `ddhSelfReduceDistinguisher`** (original): if a
-worst-case real DDH tuple family is indistinguishable from a worst-case non-DDH tuple family for
-all uniform strict PPT distinguishers, then `F.DDH setup` holds. -/
+/-- **Average-case DDH from one fixed pair of tuple families via `ddhSelfReduceDistinguisher`**
+(original): if, for one fixed real DDH tuple family
+`(α d • g, β d • g, (α d * β d) • g)` and one fixed non-DDH tuple family
+`(α' d • g, β' d • g, γ' d • g)`, every uniform strict PPT distinguisher has negligible advantage
+between the two `ddhWorstCaseGame`s, then `F.DDH setup` holds. The hypothesis fixes the two
+families before quantifying over distinguishers; it is not the statement that every distinguisher
+fails on some tuple. -/
 theorem ddh_of_worstCase {setup : ℕ → PMF F.Desc}
     (α β α' β' γ' : ∀ d : F.Desc, ZMod (F.order d))
     (hγ' : ∀ᶠ n in Filter.atTop, ∀ d ∈ (setup n).support, γ' d ≠ α' d * β' d)

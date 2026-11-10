@@ -427,8 +427,10 @@ noncomputable def callValues (rec : ContractionOracle B) (N : TensorNetwork B Bo
 
 open Classical in
 /-- **One active call** (§D.4.7): interpolate and recover (`recoverFromValues`) the values
-`callValues` computed from the oracle. The recovered value lies in `B` when the oracle is correct
-(`exists_callValue_eq_add`); otherwise the call returns zero. -/
+`callValues` computed from the oracle. The call returns the recovered value when it lies in `B`,
+and zero when it does not. For a correct oracle, and parameters and points meeting the hypotheses
+of `exists_callValue_eq_add`, the recovered value lies in `B` and the call returns the contraction
+modulo `2 ^ p`. -/
 noncomputable def callValue (rec : ContractionOracle B) (N : TensorNetwork B Bool V E)
     (side : V → Bool) (hsrc : ∀ e, side (N.src e) = true) (htgt : ∀ e, side (N.tgt e) = false)
     {a r : ℕ} (Q : PacketPacking.Packing N.src N.tgt a r) (p u h : ℕ) (hua : u ≤ a) {n : ℕ}

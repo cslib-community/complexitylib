@@ -19,9 +19,9 @@ formulas. Higher computability-calculus theorems remain in the original facade.
 
 namespace Turing.MultiTapeTM
 
-/-- A finite-state transducer with input and output alphabet `Symbol` and states `Q`. In state `q`
-on the symbol `a` it moves to `(step q a).1` and emits `(step q a).2`; at the end of the input it
-emits `final q`. -/
+/-- A transducer with input and output alphabet `Symbol` and states `Q`, which need not be finite.
+In state `q` on the symbol `a` it moves to `(step q a).1` and emits `(step q a).2`; at the end of
+the input it emits `final q`. -/
 public structure Transducer (Symbol Q : Type*) where
   /-- The initial state. -/
   q₀ : Q

@@ -571,8 +571,8 @@ private theorem focus_splayUp_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y
 
 /-- **Access Lemma (general key-weight form)** ([SleatorTarjan1985b], Section 2, Lemma 1, p. 658;
 Section 3, p. 664): on any non-empty `Ordered` tree `t` and any query `x` (present or absent),
-there exists a splayed key `u ∈ elements t` (equal to `x` if `x ∈ elements t`) such that the
-amortized `splayTime` of `splay x t` is at most `3 log₂(W / w(u)) + 1`. -/
+there exists a key `u ∈ elements t` (equal to `x` if `x ∈ elements t`, and otherwise unspecified)
+such that the amortized `splayTime` of `splay x t` is at most `3 log₂(W / w(u)) + 1`. -/
 theorem exists_mem_splay_splayTime_amortized_le {w : α → ℝ} (hw : ∀ y, 0 < w y)
     {t : BinaryTree α} (ht : Ordered t) (hne : t ≠ .nil) (x : α) :
     ∃ u ∈ elements t, (x ∈ elements t → u = x) ∧

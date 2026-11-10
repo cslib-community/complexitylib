@@ -235,14 +235,16 @@ Channels may already include fixed copy-symbol padding and inherited suffixes. -
    ⟨.normalized i, source, some midpoint, some midpoint⟩,
    ⟨.previousReward, midpoint, none, none⟩]
 
-/-- Every call of the raw input is a computed earlier constructor. -/
+/-- The task of every request in `inputRequests` is a child of `input i`, so it has smaller rank
+(`rank_lt_of_mem_children`). -/
 theorem inputRequest_mem_children {Role Suffix : Type*}
     {source midpoint terminal : Channel Role Suffix} {i k : ℕ} {r : Request Role Suffix}
     (hr : r ∈ inputRequests source midpoint terminal i) : r.task ∈ (input i).children k := by
   simp only [inputRequests, List.mem_cons, List.not_mem_nil, or_false] at hr
   rcases hr with rfl | rfl | rfl <;> simp [children]
 
-/-- Every call in the actual stochastic reward recipe precedes its projected answer. -/
+/-- The task of every request in `rewardRequests` is a child of `projectedReward (i + 1)`, so it
+has smaller rank (`rank_lt_of_mem_children`). -/
 theorem rewardRequest_mem_children {Role Suffix : Type*}
     {source broadSource midpoint : Channel Role Suffix} {i k : ℕ} {r : Request Role Suffix}
     (hr : r ∈ rewardRequests source broadSource midpoint i) :

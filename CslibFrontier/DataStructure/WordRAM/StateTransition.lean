@@ -497,8 +497,8 @@ theorem seq_runsOps (C : StateTransitionImpl P D w base params s₀)
   · intro o regs i hi
     simp [SubroutineBase.prepareRegs, hi]
 
-/-- Standalone flat-program operation-sequence theorem with `O(1)` fresh initialization on zeroed
-`[base, base + C.space)`. -/
+/-- Standalone flat-program operation-sequence theorem with fresh initialization on zeroed
+`[base, base + C.space)`: `P.initFreshProg` runs at most `C.initTime` steps before its `halt`. -/
 theorem run_ops_exact_fresh (C : StateTransitionImpl P D w base params s₀)
     {d₀ : Data r_ds} (hd₀ : d₀.Bounded w)
     (hfr : d₀.regs P.frontierReg = base)
@@ -527,8 +527,9 @@ theorem run_ops_exact_fresh (C : StateTransitionImpl P D w base params s₀)
   exact ⟨_, x₀, t_init, tr, s_fin, z, t_ops, hruns₀, ⟨_, hhalt₀⟩, hmod₀, hruns_ops,
     hops, htr, hr_z, ht_init, by omega⟩
 
-/-- Standalone flat-program operation-sequence theorem with `O(space)` reusable initialization on
-arbitrary `w`-bounded memory. -/
+/-- Standalone flat-program operation-sequence theorem with reusable initialization on arbitrary
+`w`-bounded memory: `P.initClearProg` runs at most `C.initTime + 4 * C.space + 6` steps before its
+`halt`. -/
 theorem run_ops_exact_reusable (C : StateTransitionImpl P D w base params s₀)
     {d₀ : Data r_ds} (hd₀ : d₀.Bounded w)
     (hfr : d₀.regs P.frontierReg = base)

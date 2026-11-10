@@ -247,7 +247,8 @@ private theorem branches_step {s : Config} (hr : (P.instr s.1).readsChoice = fal
     withChoice (P.step w s) c' by simp [withChoice]] at this
 
 /-- **One branch through deterministic code** that does not read register `0`: the
-deterministic run, ending with any choice when it takes a step. -/
+deterministic run from `s` to `s'`, ending with any choice `c'` when `s ≠ s'` and with the
+initial choice `c` when `s = s'`. -/
 theorem branches_of_reaches {R : Config → Prop} {s s' : Config} (h : P.Reaches w R s s')
     (hR : ∀ x, R x → (P.instr x.1).readsChoice = false ∧ (P.instr x.1).IsStep)
     (c c' : Bool) (hc : s = s' → c = c') :

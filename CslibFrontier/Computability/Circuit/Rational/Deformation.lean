@@ -412,7 +412,7 @@ lemma lift_smul (c : K) (R : Matrix (ZMod d) (ZMod d) K[X]) :
   intro b _
   ring
 
-/-- The original matrix pencil evaluated on the supplied blocks. -/
+/-- The three-parameter lift `lift χ` as a `K`-linear map. -/
 def linear : Matrix (ZMod d) (ZMod d) K[X] →ₗ[K]
     Matrix (ZMod d) (ZMod d) (MvPolynomial (Fin 3) K) where
   toFun := lift χ

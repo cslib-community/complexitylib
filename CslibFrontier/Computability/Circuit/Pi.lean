@@ -15,8 +15,9 @@ import Mathlib.Algebra.BigOperators.Fin
 # Circuits side by side
 
 `Circuit.pi cs` runs the single-output circuits `cs j` on the same inputs and lists their outputs
-(`Circuit.eval_pi`); its size is the sum of their sizes (`Circuit.size_pi`) and its depth the
-largest of their depths (`Circuit.depth_pi_le`), also with costs (`Circuit.depthWith_pi_le`).
+(`Circuit.eval_pi`); its size is the sum of their sizes (`Circuit.size_pi`) and its depth is at
+most the largest of their depths (`Circuit.depth_pi_le`), also with costs
+(`Circuit.depthWith_pi_le`).
 
 ## Main definitions
 
@@ -26,7 +27,8 @@ largest of their depths (`Circuit.depth_pi_le`), also with costs (`Circuit.depth
 ## Main results
 
 * `Cslib.Circuits.Circuit.eval_pi`, `Cslib.Circuits.Circuit.size_pi`,
-  `Cslib.Circuits.Circuit.depth_pi_le`: the function, size and depth of circuits side by side.
+  `Cslib.Circuits.Circuit.depth_pi_le`: the function, the size and an upper bound on the depth of
+  circuits side by side.
 * `Cslib.Circuits.Circuit.depth_oneGate`, `Cslib.Circuits.Circuit.fanInAtMost_oneGate`: one gate
   has depth one, and fan-in the arity of its operation.
 * `Cslib.Circuits.Circuit.depthWith_pi_le`, `Cslib.Circuits.Circuit.depthWith_oneGate`: the same

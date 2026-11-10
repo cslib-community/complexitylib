@@ -366,7 +366,7 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
   · intro p _
     exact PairedCrossover.eval_canonicalExtension _ _
 
-/-- Compatible local assignments satisfy the actual output exactly when the source holds. -/
+/-- Compatible local assignments satisfy the actual output if the source holds. -/
 theorem eval_rawFormula_of_compatible {φ : CNF ℕ} (τ : ℕ → Bool) (σ : Variable → Bool)
     (hcompat : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
       ∀ c ∈ wire (crossingSites φ) (occurrencePath φ o), ∀ lane,

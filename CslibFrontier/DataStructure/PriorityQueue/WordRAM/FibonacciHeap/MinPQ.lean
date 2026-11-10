@@ -351,8 +351,8 @@ def rawEncode {n_max : ℕ} : PriorityQueue.MinPQ.Op n_max → Fin rMinPQ → �
   | .extractMin => fun i => if i = tag2 then 1 else 0
 
 /-- Register encoding for `PriorityQueue.MinPQ.Op n_max` bounded by `U` on `decreaseKey`
-so `arguments_fit` holds on arbitrary states; coincides with `rawEncode` on every represented
-state (`encode_eq_rawEncode_of_rep`). -/
+so `arguments_fit` holds on arbitrary states; coincides with `rawEncode` on every operation
+valid in a represented state (`encode_eq_rawEncode_of_rep`). -/
 def encode {n_max : ℕ} (U : ℕ) : PriorityQueue.MinPQ.Op n_max → Fin rMinPQ → ℕ
   | .decreaseKey h u' => fun i =>
       if i = tag1 then 1 else if i = tag0 then 1

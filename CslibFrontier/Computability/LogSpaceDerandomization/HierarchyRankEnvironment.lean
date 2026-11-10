@@ -655,8 +655,10 @@ theorem explicitDense_nonzero (D : ZMod P) (hD : D ≠ 0) (role : Fin J)
   simpa only [rate, pow_zero, inv_one, one_pow, Matrix.one_apply_eq, div_one, one_mul,
     cutoff, polynomialSwitch4_of_ge (by norm_num : (1: ℝ) / 2 < 1) le_rfl] using hh
 
-/-- Every valid natural padded identifier below the finite horizon stays below
-P before reduction, so modular equality does not identify distinct such integers. -/
+/-- For `N ≤ H.maxIdentifier + 1`, `D ≠ 0` and one fixed suffix, padding in `ZMod P` is injective
+on the naturals below `N`: these unpadded naturals are below `P`, so their casts are distinct, and
+`CopyPadding.identifier_injective` applies. That a padded natural stays below `P` is the separate
+`padNat_lt_prime`, under its own bound on the padded range. -/
 theorem bounded_identifier_injective (H : Horizon P) {N : ℕ} (hN : N ≤ H.maxIdentifier + 1)
     {D : ZMod P} (hD : D ≠ 0) (suffix : List (ZMod P)) :
     Function.Injective (fun x : Fin N => CopyPadding.identifier D suffix (x: ZMod P)) := by
