@@ -52,6 +52,8 @@ arbitrary reply (`IsRun`).
   references and assignments of values to the wires of a context.
 * `Cslib.Crypto.Garbling.MixedModulus.MixedModulusCircuit`, `.eval`: mixed-modulus circuits with
   `Add_m`, `Mult_c` and `Proj_φ` gates and their evaluation.
+* `Cslib.Crypto.Garbling.MixedModulus.CCRInput`: a CCR query without its tweak, read through
+  `source`, `target`, `label`, `a` and `b`.
 * `Cslib.Crypto.Garbling.MixedModulus.ccrOracle`, `.ccrRealGame`, `.ccrIdealGame`, `.ccrAdvantage`:
   the mixed-modulus circular correlation robustness experiments.
 * `Cslib.Crypto.Garbling.MixedModulus.IsRun`: the runs of an oracle program.
@@ -228,8 +230,29 @@ variable (T : Type) (μ ℓ : ι → ℕ)
 `b ∈ ℤ_{μ j}`. -/
 abbrev CCRInput : Type := Σ i j : ι, Label μ ℓ i × ZMod (μ i) × ZMod (μ j)
 
+namespace CCRInput
+
+variable {μ ℓ}
+
+/-- The source sort `i`. -/
+abbrev source (r : CCRInput μ ℓ) : ι := r.1
+
+/-- The target sort `j`. -/
+abbrev target (r : CCRInput μ ℓ) : ι := r.2.1
+
+/-- The label `X` of the source sort. -/
+abbrev label (r : CCRInput μ ℓ) : Label μ ℓ r.source := r.2.2.1
+
+/-- The multiplier `a ∈ ℤ_{μ i}` of the source offset. -/
+abbrev a (r : CCRInput μ ℓ) : ZMod (μ r.source) := r.2.2.2.1
+
+/-- The multiplier `b ∈ ℤ_{μ j}` of the target offset. -/
+abbrev b (r : CCRInput μ ℓ) : ZMod (μ r.target) := r.2.2.2.2
+
+end CCRInput
+
 /-- The oracle interface: a query with tweak in `T` is answered by a label of its target sort. -/
-abbrev ccrSpec : T × CCRInput μ ℓ → Type := fun q => Label μ ℓ q.2.2.1
+abbrev ccrSpec : T × CCRInput μ ℓ → Type := fun q => Label μ ℓ q.2.target
 
 /-- A tweakable mixed-modulus hash `H(g, X)`: a tweak, a label of a source sort and a target
 sort give a label of the target sort. -/
@@ -243,18 +266,19 @@ variable {T μ ℓ}
 /-- The real mixed-modulus CCR oracle `𝒪_Δ(g, X, a, b) = H(g, X + a Δ_i) + b Δ_j`, for offsets
 `Δ_i = (δ_i, 1)`. -/
 def ccrOracle (H : MixedModulusHash T μ ℓ) (δ : ∀ i, Fin (ℓ i) → ZMod (μ i))
-    (q : T × CCRInput μ ℓ) : Label μ ℓ q.2.2.1 :=
-  H q.1 q.2.1 (q.2.2.2.1 + q.2.2.2.2.1 • offset δ q.2.1) q.2.2.1 + q.2.2.2.2.2 • offset δ q.2.2.1
+    (q : T × CCRInput μ ℓ) : Label μ ℓ q.2.target :=
+  H q.1 q.2.source (q.2.label + q.2.a • offset δ q.2.source) q.2.target +
+    q.2.b • offset δ q.2.target
 
 /-- The part of a query that must determine the whole query in a legal run: the tweak, the source
 sort, the label `X` and the multiplier `a`. -/
 def ccrKey (q : T × CCRInput μ ℓ) : T × Σ i : ι, Label μ ℓ i × ZMod (μ i) :=
-  (q.1, ⟨q.2.1, q.2.2.2.1, q.2.2.2.2.1⟩)
+  (q.1, ⟨q.2.source, q.2.label, q.2.a⟩)
 
 /-- A legal list of queries: no query has `a = 0`, and two queries with the same tweak, source
 sort, label and multiplier `a` are equal. -/
 def CCRLegal (qs : List (T × CCRInput μ ℓ)) : Prop :=
-  (∀ q ∈ qs, q.2.2.2.2.1 ≠ 0) ∧ ∀ q ∈ qs, ∀ q' ∈ qs, ccrKey q = ccrKey q' → q = q'
+  (∀ q ∈ qs, q.2.a ≠ 0) ∧ ∀ q ∈ qs, ∀ q' ∈ qs, ccrKey q = ccrKey q' → q = q'
 
 /-- A legal adversary makes a legal list of oracle queries along every run, whatever its private
 coins and the oracle's replies: the oracle queries are the right components of the requests. -/
@@ -271,7 +295,7 @@ noncomputable def ccrRealGame (H : MixedModulusHash T μ ℓ) (B : CCRAdversary 
 
 variable (T μ ℓ) in
 /-- A reply for each query with a fixed tweak. -/
-abbrev CCRTable : Type := (r : CCRInput μ ℓ) → Label μ ℓ r.2.1
+abbrev CCRTable : Type := (r : CCRInput μ ℓ) → Label μ ℓ r.target
 
 variable [Fintype T] [DecidableEq T]
 

@@ -43,7 +43,8 @@ the labels of an input holds, on every wire, the label of the bit that wire carr
 
 * `Cslib.Crypto.Garbling.HalfGates.signature`, `Cslib.Crypto.Garbling.HalfGates.interpretation`:
   the XOR–AND basis.
-* `Cslib.Crypto.Garbling.HalfGates.Slot`: the two ciphertext slots of each AND gate.
+* `Cslib.Crypto.Garbling.HalfGates.Slot`: the two ciphertext slots of each AND gate, with
+  `Slot.gate` its gate.
 * `Cslib.Crypto.Garbling.HalfGates.garbleWith`, `Cslib.Crypto.Garbling.HalfGates.garble`:
   half-gates garbling with given and with uniform randomness.
 * `Cslib.Crypto.Garbling.HalfGates.evaluate`, `Cslib.Crypto.Garbling.HalfGates.Garbled.run`: the
@@ -128,6 +129,9 @@ theorem trace_gate (I : Fin n → Bool) (g : Fin C.size) :
 /-- A ciphertext slot: an AND gate and one of its halves, `false` for the generator half and
 `true` for the evaluator half. XOR gates have no slots. -/
 abbrev Slot : Type := {g : Fin C.size // op C g = .and} × Bool
+
+/-- The AND gate of a slot. -/
+abbrev Slot.gate (p : Slot C) : Fin C.size := p.1.1
 
 /-- **Two ciphertexts per AND gate**: the garbled table has `2 * #AND` entries. -/
 theorem card_slot :
@@ -239,8 +243,8 @@ theorem evalStep_gate_congr (H : K × Bool → T → K × Bool) (tw : Slot C →
 the labels of its gate's arguments, is local. -/
 theorem isLocal_evalStep (H : K × Bool → T → K × Bool) (tw : Slot C → T)
     (tab : (Wire n C.size → K × Bool) → Slot C → K × Bool) (X : Fin n → K × Bool)
-    (htab : ∀ A B (p : Slot C), A (left C p.1.1) = B (left C p.1.1) →
-      A (right C p.1.1) = B (right C p.1.1) → tab A p = tab B p) :
+    (htab : ∀ A B (p : Slot C), A (left C p.gate) = B (left C p.gate) →
+      A (right C p.gate) = B (right C p.gate) → tab A p = tab B p) :
     IsLocal fun A => evalStep C H tw (tab A) X A := by
   intro A B w hAB
   cases w with
@@ -253,8 +257,8 @@ theorem isLocal_evalStep (H : K × Bool → T → K × Bool) (tw : Slot C → T)
 /-- The garbled table for zero labels `W`: the generator and evaluator halves of each AND gate. -/
 def garbleTable (H : K × Bool → T → K × Bool) (tw : Slot C → T) (Δ : K × Bool)
     (W : Wire n C.size → K × Bool) (p : Slot C) : K × Bool :=
-  if p.2 then evCt H Δ (tw p) (W (left C p.1.1)) (W (right C p.1.1))
-  else genCt H Δ (tw p) (W (left C p.1.1)) (W (right C p.1.1))
+  if p.2 then evCt H Δ (tw p) (W (left C p.gate)) (W (right C p.gate))
+  else genCt H Δ (tw p) (W (left C p.gate)) (W (right C p.gate))
 
 /-- The zero labels: input zero labels `Z`, free XOR, and at each AND gate the evaluator's label on
 the zero labels of its arguments. -/
