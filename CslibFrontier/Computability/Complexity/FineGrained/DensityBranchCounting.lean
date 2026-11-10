@@ -22,7 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
-# One model counter with both bounds of Theorem 1.1
+# One model counter with the fixed-density bound of Theorem 1.1 and the interpolation-scale bound
 
 For every fixed clause width `k`, one machine computes the number of satisfying assignments
 `CNF.modelCount φ` of every formula `φ` whose clauses have at most `k` literals, in polynomial
@@ -231,10 +231,10 @@ private theorem exists_contractionCounter (k : ℕ) :
   · exact (Nat.le_mul_of_pos_left _ (Nat.two_pow_pos A)).trans
       (Nat.mul_le_mul_left _ (Nat.le_succ _))
 
-/-- **One model counter with both bounds of Theorem 1.1.** For each clause width `k`, one machine
-computes `φ.modelCount` on every formula `φ` whose clauses have at most `k` literals, in
-polynomial space, and its time function `T` satisfies, for `n` variables, `m` clauses and
-encoding length `L`:
+/-- **One model counter with the fixed-density bound of Theorem 1.1 and the interpolation-scale
+bound.** For each clause width `k`, one machine computes `φ.modelCount` on every formula `φ`
+whose clauses have at most `k` literals, in polynomial space, and its time function `T`
+satisfies, for `n` variables, `m` clauses and encoding length `L`:
 
 * on every formula, `T φ ≤ ⌈2 ^ (A ρ(n))⌉ (L + 1) ^ e`, where `ρ = interpolationScale`;
 * when `m ≤ threshold n = n ⌈log₂ ⌈log₂ n⌉⌉`,

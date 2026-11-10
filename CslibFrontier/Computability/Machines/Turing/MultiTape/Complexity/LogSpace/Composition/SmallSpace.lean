@@ -243,7 +243,7 @@ public theorem iterate_cstep (hhalt : ∀ r, (run df x r).state = none ↔ uf �
       have hnh : (run df x r).state.isNone = false := by
         rw [Bool.eq_false_iff, ne_eq, Option.isNone_iff_eq_none, hhalt]
         omega
-      simp only [G, cstep, hnh, Bool.false_eq_true, ↓reduceIte, ← step_eq_stepWith, run_succ']
+      simp only [G, cstep, hnh, Bool.false_eq_true, ↓reduceIte, ← step_eq_stepWith, run_succ]
       simp [emitCount, List.range_succ]
   induction q generalizing r with
   | zero => exact hinner 0 (by rw [Nat.zero_mul]; rfl) r hr
@@ -253,7 +253,7 @@ public theorem iterate_cstep (hhalt : ∀ r, (run df x r).state = none ↔ uf �
     rw [show (q + 1) * (uf + 1) = q * (uf + 1) + uf + 1 by ring, Function.iterate_succ_apply', h]
     have hh : (run df x uf).state.isNone = true := by
       simpa [Option.isNone_iff_eq_none] using (hhalt uf).mpr le_rfl
-    simp only [G, cstep, hh, ↓reduceIte, gSym_halted dg df x y uf hy, ← step_eq_stepWith, run_succ']
+    simp only [G, cstep, hh, ↓reduceIte, gSym_halted dg df x y uf hy, ← step_eq_stepWith, run_succ]
     rfl
 
 /-- What the composition emits after `q` steps of `g` and `r ≤ uf` steps of `f`: the bit `g`

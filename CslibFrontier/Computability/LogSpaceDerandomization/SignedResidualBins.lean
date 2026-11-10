@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.LogSpaceDerandomization.RoutedHierarchyBins
-import all CslibFrontier.Computability.LogSpaceDerandomization.HierarchyParams
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -63,20 +62,6 @@ variable {q cπ Cπ Cpair Cvar : ℝ} (P : HierarchyParams q cπ Cπ Cpair Cvar)
   [∀ s v, Decidable (X s v)] [∀ s v, Decidable (Y s v)]
   {f : ℝ} {C : Matrix V V ℝ}
 
-/-- Public application bound for the actual residual, from the finite correction sequence. -/
-theorem residual_le_mul (hf : 0 < f) (hC : ∀ x y, 0 ≤ C x y)
-    (hCf : ∀ x y, C x y ≤ f) (hC1 : C *ᵥ 1 ≤ 1) (x y : V) :
-    P.residual X Y f C x y ≤ ((P.k : ℝ) + 1) * f := by
-  exact cutoffCorrection_residual_le_mul hC (P.phi_nonneg hf) (P.phi_le hf)
-    (P.θf_nonneg hf) hCf hf.le hC1 P.k x y
-
-/-- Actual residual row mass is at most one, directly from correction nonnegativity. -/
-theorem residual_sum_le_one (hf : 0 < f)
-    (hC1 : C *ᵥ 1 ≤ 1) (x : V) : ∑ y, P.residual X Y f C x y ≤ 1 := by
-  have hE := cutoffCorrectionIter_nonneg (C := C) (P.phi_nonneg (X := X) (Y := Y) (C := C) hf) P.k
-  have hm := (correction_mulVec_one_le hE hC1 x).trans (hC1 x)
-  simpa only [residual, correction, mulVec, dotProduct, Pi.one_apply, mul_one] using hm
-
 /-- The true residual fits a fixed top cap when the top scale is one. The bound follows
 from the hierarchy input bounds (each residual entry is nonnegative with row mass at most one),
 not from a desired mean or error estimate. -/
@@ -87,9 +72,7 @@ theorem boundedRoutedBinCutoff_residual (hf : 0 < f)
     boundedRoutedBinCutoff χ b ((P.k : ℝ) + 2) i route
         (CorrectionRowRecipe.residual C (P.correction X Y f C) (P.correction X Y f C) C x y / b i) =
       routedBinCutoff χ b i route (P.residual X Y f C x y / b i) := by
-  rw [CorrectionRowRecipe.residual_eq]
-  change boundedRoutedBinCutoff χ b ((P.k : ℝ) + 2) i route
-      (P.residual X Y f C x y / b i) = _
+  rw [CorrectionRowRecipe.residual_eq, ← P.residual_eq]
   have hd := div_nonneg (P.residual_nonneg (X := X) (Y := Y) hf hC x y) (hb i).le
   by_cases hi : i = 0
   · subst i
@@ -174,9 +157,12 @@ variable {Ζ : Type*} [Fintype Ζ]
   {b : ℝ} {k : ℝ → ℝ}
   (L : P.CorrectionSampling X Y Xs Mid Midt f C i)
 
-/-- One direct/product bin contribution and the special negative correction. Summing bins
-includes the negative correction exactly once. Earlier tables are whole functions; negative
-and product-left factors have distinct endpoint/midpoint roles and usage slices. -/
+/-- One direct/product bin contribution plus the whole special negative correction, which
+does not depend on the bin scale `b`; summing this sample over several bins counts that
+correction once per bin. Bin assembly with a single negative correction uses the separate
+`HierarchyTask.rawPositiveSample` and `HierarchyTask.rawNegativeSample`. Earlier tables are
+whole functions; negative and product-left factors have distinct endpoint/midpoint roles
+and usage slices. -/
 @[expose] noncomputable def residualSample
     (Ya Yt Nt : Ω → V → Prop)
     [∀ s v, Decidable (Ya s v)] [∀ s v, Decidable (Yt s v)] [∀ s v, Decidable (Nt s v)]
@@ -213,9 +199,11 @@ theorem residualSample_eq_raw
   rw [heq]
   ring
 
-/-- All three signed means follow from primitive laws on the actual tuples. This is one
-bin contribution; the partition API sums positive contributions and `-E` is included once.
-No independence of estimated factors is asserted. -/
+/-- All three signed means follow from primitive laws on the actual tuples. This is the mean
+of one bin sample: the direct and product terms carry the cutoff `k` at scale `b`, and the
+whole `-E` is included, where `E` is correction iterate `i + 1`. Summing these means over
+several bins therefore repeats `-E` once per bin. No independence of estimated factors is
+asserted. -/
 theorem expect_residualSample
     (B : DenseSamplingLaws Yr Ya Yt k b 1)
     (N : P.CorrectionSampling X Y Xs Nr Nt f C i)
@@ -302,7 +290,7 @@ theorem value_true {q cπ Cπ Cpair Cvar : ℝ}
       denseAtom Y Yt (boundedRoutedBinCutoff χ b cap i route) h ρ K (b i)
         (P.residual X₀ Y₀ f C) σ.2 x y := by
   dsimp only [value]
-  rw [CorrectionRowRecipe.residual_eq]
+  rw [CorrectionRowRecipe.residual_eq, P.residual_eq]
   exact DenseRowRecipe.normalized_eq_denseAtom _ _ _ _ _ _ _ _ _ _ _ _ hx
 
 /-- True conditional mean for the actual residual client. Input bounds and the cap are

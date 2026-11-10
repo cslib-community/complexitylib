@@ -43,7 +43,7 @@ No correctness, key or noise hypothesis is used.
 * [C. Gentry, A. Sahai and B. Waters, Section 3.3][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW
 

@@ -62,7 +62,7 @@ variable set `declared` of size `N = declared.card`:
   Appendix A.3 (pp. 46–47)][OpenAI2026ETH]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.ClauseSet.Sparsification
 

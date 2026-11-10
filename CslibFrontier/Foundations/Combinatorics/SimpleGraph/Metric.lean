@@ -38,7 +38,7 @@ radius `r` at most `(D + 1) ^ r` (`SimpleGraph.card_edist_le_le`). The closed ba
 * `SimpleGraph.card_edist_le_le`: the ball bound `(D + 1) ^ r`.
 -/
 
-@[expose] public section
+public section
 
 open Finset
 

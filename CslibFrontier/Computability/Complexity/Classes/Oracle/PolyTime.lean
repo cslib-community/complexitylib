@@ -38,7 +38,7 @@ per instruction, and the clock is polynomial, so the run is polynomial-time
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

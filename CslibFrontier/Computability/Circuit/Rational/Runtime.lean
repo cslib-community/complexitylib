@@ -73,7 +73,7 @@ and `w = inputWord n s` (and `none` otherwise), and `hittingGenerator` emits
 ## References
 
 * Adapted from OpenAI's formalization [OpenAI2026RationalHitting] at revision
-  adc7f1241b42e322a6451854ab7e4b4c146bf787 (files
+  adc7f1241b42e322a6451854ab7e4b4c146bf78a (files
   lean/OAI/Computability/RationalHitting/GridEnumeration.lean and PolynomialTime.lean), via the
   complexitylib port [Schlesinger2026RationalHitting] at revision
   add0aca8ee0d71e68969f2cb45cf91554a50f787.

@@ -194,6 +194,11 @@ Robert G. Bland. "New Finite Pivoting Rules for the Simplex Method." *Mathematic
 
 Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functions*. Journal of the ACM 14(2), 322–336, 1967. https://doi.org/10.1145/321386.321395 . Bibliographic metadata checked on 2026-11-07; the manual attributes only the two axioms, recursive relatedness and the speed-up theorem to this paper. The manual also mentions the customary attribution of the measure-independent theorem on arbitrarily complex functions to this paper (and to Rabin, 1960); that attribution and any theorem locator are unverified.
 
+<a id="blummansour07"></a>
+## blummansour07
+
+Avrim Blum and Yishay Mansour. "From External to Internal Regret." *Journal of Machine Learning Research* 8, 1307–1324, 2007. https://www.jmlr.org/papers/v8/blum07a.html . Read in the JMLR PDF on 2026-11-10. Locators checked there: the definition of swap regret as regret against all `N^N` modification rules (§2, p. 1311), Definition 2 (`ε`-correlated equilibrium) and Theorem 3 (`R/T`-correlated equilibria from swap regret `R`, p. 1311), the reduction with stationary `p = pQ` and Definition 4 (§3, p. 1312), and Theorem 5 (swap regret at most `∑ i, R_i`) with Corollaries 6 and 7 (`O(N √(T log N))` and `O(√(T N log N))`, p. 1313). The paper scales losses to `[0, 1]`; the library's Hedge-based bound uses losses in `[-1, 1]` and the second-order Hedge bound, which gives `2 √(T N ln N)` with explicit constants.
+
 <a id="bm15"></a>
 ## bm15
 
@@ -692,6 +697,16 @@ Carl Hierholzer. “Ueber die Möglichkeit, einen Linienzug ohne Wiederholung un
 
 Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudorandom Generator from Any One-Way Function.” *SIAM Journal on Computing* 28(4), 1364–1396, 1999. https://doi.org/10.1137/S0097539793244708 . Publisher abstract checked; full article not independently audited.
 
+<a id="hk21"></a>
+## hk21
+
+David Heath, Vladimir Kolesnikov. “One Hot Garbling.” *ACM CCS 2021*, 574–593. https://doi.org/10.1145/3460120.3484764 . Full version: Cryptology ePrint Archive, Paper 2022/798, https://eprint.iacr.org/2022/798 . The ePrint full text was read in this pass for §4.1 (p. 10): the binary-to-one-hot conversion expands a GGM tree, sending two encrypted values per level and a final correction, `2(n − 1) + 1` ciphertexts in all. Cited as the origin of one-hot garbling. The library's single-ciphertext construction is the one of [heath24](#heath24), not this one, and its obliviousness reduction is original rather than a transcription of this paper's proof.
+
+<a id="hkn24"></a>
+## hkn24
+
+David Heath, Vladimir Kolesnikov, Lucien K. L. Ng. “Garbled Circuit Lookup Tables with Logarithmic Number of Ciphertexts.” *EUROCRYPT 2024*. Full version: Cryptology ePrint Archive, Paper 2024/369, https://eprint.iacr.org/2024/369 . The ePrint full text was read in this pass for Definition 1 (circular correlation robustness, following Zahur–Rosulek–Evans, with `Δ ∈ 1{0,1}^{κ−1}`), Figure 1 (p. 10, the interface of one-hot garbling, credited to [hk21](#hk21); it states `(2n − 1)κ` bits, the count of [hk21](#hk21), whereas Theorem 1 uses the `(n − 1)κ` of [heath24](#heath24)), Lemma 1 and the display after it (`T(f)ᵀ · H(x) = f(x)` and its garbled form), Theorem 1 (p. 19, cost `2ⁿm + (n − 1)κ + nmκ` per gate, matching the cost breakdown on p. 20) and the proof of Theorem 3 (obliviousness; the `n − 1` one-hot rows are simulated by uniform strings, as shown in [hk21](#hk21)).
+
 <a id="hmu06"></a>
 ## hmu06
 
@@ -766,6 +781,11 @@ Svante Janson, Tomasz Łuczak and Andrzej Ruciński. *Random Graphs*. Wiley-Inte
 ## johnsonlindenstrauss84
 
 William B. Johnson, Joram Lindenstrauss. “Extensions of Lipschitz Mappings into a Hilbert Space.” In *Conference in Modern Analysis and Probability (New Haven, Conn., 1982)*, Contemporary Mathematics 26, 189–206. American Mathematical Society, 1984. https://doi.org/10.1090/conm/026/737400 . Bibliographic data from the DOI record; the manual attributes only the existence of low-distortion linear embeddings of `n` points into `O(log n / ε²)` dimensions to this paper.
+
+<a id="jrr25"></a>
+## jrr25
+
+Jake Januzelli, Mike Rosulek, Lawrence Roy. "Lower Bounds for Garbled Circuits from Shannon-Type Information Inequalities." *Advances in Cryptology – CRYPTO 2025*, 2025. Full version: Cryptology ePrint Archive, Paper 2025/876, https://eprint.iacr.org/2025/876 . Bibliographic metadata from the ePrint record; the paper's numbered lemmas were not checked against the full text. Cited at topic level as motivation for the generic one-world conditional-entropy transfer and Fano size bound; the paper's multi-world gate-specific Shannon-type inequalities and single-gate random-oracle model are not formalized.
 
 <a id="kargerstein96"></a>
 ## kargerstein96
@@ -1037,6 +1057,11 @@ Noam Nisan and Avi Wigderson. *Hardness vs Randomness*. Journal of Computer and 
 
 Jakob Nordström. *New Wine into Old Wineskins: A Survey of Some Pebbling Classics with Supplemental Results*, manuscript version of 25 March 2015. https://www.jakobnordstrom.se/docs/publications/PebblingSurveyTMP.pdf . Definition 1.1 (black pebble game), Proposition 2.5 (sliding), Theorem 4.1 (complete binary trees), Definition 4.5 and Theorem 4.8 (pyramids) were checked.
 
+<a id="np01"></a>
+## np01
+
+Moni Naor and Benny Pinkas. "Efficient Oblivious Transfer Protocols." *Proceedings of the Twelfth Annual ACM-SIAM Symposium on Discrete Algorithms (SODA 2001)*, 448–457, SIAM, 2001. Bibliographic metadata checked against `references.bib` (`NaorPinkas2001`); cited only as general background for DDH-based oblivious transfer without internal SODA 2001 locators (the SODA text was not inspected). The formalized protocol is a variant of [bs23](#bs23), Section 23.5.7, Figure 23.17 with the Remark 23.6 check, known sender exponent, and per-branch `(rᵢ, sᵢ)` randomization, proved directly.
+
 <a id="odifreddi99"></a>
 ## odifreddi99
 
@@ -1140,7 +1165,7 @@ Tim Roughgarden. *The Price of Anarchy is Independent of the Network Topology*. 
 <a id="roughgarden13cs364a"></a>
 ## roughgarden13cs364a
 
-Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford University, Fall 2013. https://theory.stanford.edu/~tim/f13/f13.html . Lecture #17, "No-Regret Dynamics" (18 November 2013), was consulted on 2026-11-07 for Definition 1.2, §3, Proposition 3.1, Remark 3.2, Corollary 3.3 and footnote 1. Lecture #9, "Beyond Quasi-Linearity" (21 October 2013), was consulted on 2026-11-08 for §3 (the top trading cycle algorithm, Theorems 3.1 and 3.2). Its core is defined by strict blocking, for which only the existence half of Theorem 3.2 holds; a checked three-agent market in `CslibFrontierTests/HousingMarket.lean` has a second core allocation. Lecture #11, "Selfish Routing and the Price of Anarchy" (28 October 2013), was consulted on 2026-11-08 for Definition 3.2, the Pigou bound (2), Theorem 3.3, Table 1 and the proof in §5. Lecture #15, "Best-Case and Strong Nash Equilibria" (11 November 2013), was consulted on 2026-11-08 for §1.2 (network cost-sharing games, displays (1) and (2)), §1.3 (VHS or Betamax, Figure 1), §1.4 (the opt-out example, Figure 2), Theorem 2.1, the remark after it that the opt-out example rules out a smaller factor, and displays (3) and (4). Exercise Set #7, Exercise 55 (`C(f)/2 ≤ Φ(f) ≤ C(f)` for affine atomic selfish routing), was consulted on the same day. Lecture #15 §3 (Definition 3.1, Theorem 3.2 and its proof, displays (5)–(8), and the remark that the opt-out equilibrium is strong), §4 and Figure 4, and Exercise Set #8, Exercise 67 (strong Nash equilibria for a common source and sink), were consulted on the same day for the strong Nash equilibrium modules. Exercise 67 asks for a one-to-one correspondence between strong Nash equilibria and minimum-cost outcomes. The library proves it for fair cost-sharing games in which all players share the strategy set and the resource map (a profile is a strong Nash equilibrium if and only if it has minimum social cost), together with its stated consequences, existence and a price of anarchy of `1`. Lecture #19, "Pure Nash Equilibria and PLS-Completeness" (2 December 2013), was consulted on 2026-11-08 for §2.2 (abstract local search problems), the PLS-membership argument of §3 with formula (1), and Theorem 3.1.
+Tim Roughgarden. *CS364A: Algorithmic Game Theory*, lecture notes, Stanford University, Fall 2013. https://theory.stanford.edu/~tim/f13/f13.html . Lecture #17, "No-Regret Dynamics" (18 November 2013), was consulted on 2026-11-07 for Definition 1.2, §3, Proposition 3.1, Remark 3.2, Corollary 3.3 and footnote 1. Lecture #9, "Beyond Quasi-Linearity" (21 October 2013), was consulted on 2026-11-08 for §3 (the top trading cycle algorithm, Theorems 3.1 and 3.2). Its core is defined by strict blocking, for which only the existence half of Theorem 3.2 holds; a checked three-agent market in `CslibFrontierTests/HousingMarket.lean` has a second core allocation. Lecture #11, "Selfish Routing and the Price of Anarchy" (28 October 2013), was consulted on 2026-11-08 for Definition 3.2, the Pigou bound (2), Theorem 3.3, Table 1 and the proof in §5. Lecture #15, "Best-Case and Strong Nash Equilibria" (11 November 2013), was consulted on 2026-11-08 for §1.2 (network cost-sharing games, displays (1) and (2)), §1.3 (VHS or Betamax, Figure 1), §1.4 (the opt-out example, Figure 2), Theorem 2.1, the remark after it that the opt-out example rules out a smaller factor, and displays (3) and (4). Exercise Set #7, Exercise 55 (`C(f)/2 ≤ Φ(f) ≤ C(f)` for affine atomic selfish routing), was consulted on the same day. Lecture #15 §3 (Definition 3.1, Theorem 3.2 and its proof, displays (5)–(8), and the remark that the opt-out equilibrium is strong), §4 and Figure 4, and Exercise Set #8, Exercise 67 (strong Nash equilibria for a common source and sink), were consulted on the same day for the strong Nash equilibrium modules. Exercise 67 asks for a one-to-one correspondence between strong Nash equilibria and minimum-cost outcomes. The library proves it for fair cost-sharing games in which all players share the strategy set and the resource map (a profile is a strong Nash equilibrium if and only if it has minimum social cost), together with its stated consequences, existence and a price of anarchy of `1`. Lecture #19, "Pure Nash Equilibria and PLS-Completeness" (2 December 2013), was consulted on 2026-11-08 for §2.2 (abstract local search problems), the PLS-membership argument of §3 with formula (1), and Theorem 3.1. Lecture #18, "From External Regret to Swap Regret and the Minimax Theorem" (20 November 2013), was consulted on 2026-11-10 for Definition 1.2 (swap regret, p. 2), Theorem 2.1 and its proof (the black-box reduction, pp. 3–5) and the stationarity equation (7) (p. 5).
 
 <a id="roughgarden15"></a>
 ## roughgarden15
@@ -1331,6 +1356,11 @@ R. Ryan Williams. *Simulating Time With Square-Root Space*. arXiv:2502.17779v1 (
 ## williamsonshmoys11
 
 David P. Williamson and David B. Shmoys. *The Design of Approximation Algorithms*. Cambridge University Press, 2011. https://doi.org/10.1017/CBO9780511921735 . Section 1.6 (Algorithm 1.2, Theorems 1.11 and 1.12) and the Chapter 1 Chapter Notes attribution of the greedy set-cover analysis to Chvátal (Mathematics of Operations Research 4(3), 233–235, 1979, https://doi.org/10.1287/moor.4.3.233) were checked against the authors' electronic edition at https://www.designofapproxalgs.com on 2026-11-07, as were Section 2.4 (Lemma 2.10, Theorems 2.11 and 2.12) and the Chapter 2 Chapter Notes, which attribute nearest addition and its analysis to Rosenkrantz, Stearns and Lewis (1977) and call the double-tree algorithm folklore. The handshake argument, Theorem 2.13 (Christofides' algorithm is a 3/2-approximation) and its proof, and the Chapter 2 Notes attribution to Christofides (reference [73]) were checked against the same edition on 2026-11-08, as were Exercise 2.5 (the MST 2-approximation for Steiner tree, metric part (a) and metric completion part (b)), Section 12.3 and the Chapter 12 Notes attribution of the factor-2 Steiner heuristic to Moore via Gilbert and Pollak (reference [130]). Section 2.2 (Algorithm 2.1, Theorems 2.3 and 2.4) and the Chapter 2 Chapter Notes, which attribute the k-center algorithm and analysis to Gonzalez (Theoretical Computer Science 38, 293–306, 1985, https://doi.org/10.1016/0304-3975(85)90224-5), an alternative 2-approximation to Hochbaum and Shmoys (Mathematics of Operations Research 10(2), 180–184, 1985, https://doi.org/10.1287/moor.10.2.180) and Theorem 2.4 to Hsu and Nemhauser (Discrete Applied Mathematics 1(3), 209–215, 1979, https://doi.org/10.1016/0166-218X(79)90044-1), were checked against the same electronic edition on 2026-11-08; the three original papers were not checked.
+
+<a id="winter16"></a>
+## winter16
+
+Andreas Winter. "Tight Uniform Continuity Bounds for Quantum Entropies: Conditional Entropy, Relative Entropy Distance and Energy Constraints." *Communications in Mathematical Physics* 347(1), 291–313, 2016. https://doi.org/10.1007/s00220-016-2609-8 . Cited at topic level for the classical special case of the conditional-entropy continuity bound with observation-independent modulus `(1 + ε) h₂(ε / (1 + ε))`; no specific theorem or lemma number from the journal text is claimed.
 
 <a id="yannakakis91"></a>
 ## yannakakis91

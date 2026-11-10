@@ -189,15 +189,12 @@ private theorem zLoopM_spec (s : Array α) (i l r : ℕ) (z : Array ℕ) (hi1 : 
     have hbox : i < r → min (List.lcpLen s.toList (s.toList.drop (i - l))) (r - i) =
         min (List.lcpLen s.toList (s.toList.drop i)) (r - i) := by
       intro hir
-      obtain ⟨_, hA2, hA3⟩ :=
+      obtain ⟨_, _, hA3⟩ :=
         List.le_lcpLen_iff.mp (show r - l ≤ List.lcpLen s.toList (s.toList.drop l) by omega)
-      simp only [List.length_drop, Array.length_toList] at hA2
       apply List.min_lcpLen_eq_of_take_eq
-      · simp only [List.length_drop, Array.length_toList]; omega
-      · simp only [List.length_drop, Array.length_toList]; omega
-      · have e1 : s.toList.drop i = (s.toList.drop l).drop (i - l) := by
-          rw [List.drop_drop]; congr 1; omega
-        rw [e1, List.take_drop, List.take_drop, show i - l + (r - i) = r - l by omega, hA3]
+      have e1 : s.toList.drop i = (s.toList.drop l).drop (i - l) := by
+        rw [List.drop_drop]; congr 1; omega
+      rw [e1, List.take_drop, List.take_drop, show i - l + (r - i) = r - l by omega, hA3]
     have hzil : i < r → z.getD (i - l) 0 = List.lcpLen s.toList (s.toList.drop (i - l)) := by
       intro hir
       rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem (by omega), Option.getD_some]

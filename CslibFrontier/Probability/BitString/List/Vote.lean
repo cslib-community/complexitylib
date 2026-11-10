@@ -31,7 +31,7 @@ Crypto/Computational/Pseudoentropy/Boosting/Vote.lean on the cslib `crypto` bran
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

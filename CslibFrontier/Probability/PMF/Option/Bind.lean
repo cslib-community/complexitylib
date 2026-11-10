@@ -21,7 +21,7 @@ failure contribution is retained separately, without conditioning or renormaliza
 * `bind_option_apply_of_some`: propagate a scaled successful-part law through `PMF.bind`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 
