@@ -3592,6 +3592,7 @@ public import CslibFrontier.Computability.WordRAM.Realization.Backend
 public import CslibFrontier.Computability.WordRAM.Realization.BackendFrame
 public import CslibFrontier.Computability.WordRAM.Realization.Basic
 public import CslibFrontier.Computability.WordRAM.Realization.Bind
+public import CslibFrontier.Computability.WordRAM.Realization.BoundedTactic
 public import CslibFrontier.Computability.WordRAM.Realization.Branch
 public import CslibFrontier.Computability.WordRAM.Realization.Client.MemoryStack
 public import CslibFrontier.Computability.WordRAM.Realization.Function

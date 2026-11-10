@@ -127,7 +127,8 @@ partial def translateRealizesProof (shadowMap : Std.HashMap FVarId FVarId) (e : 
   | _ => e
 
 open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
-/-- Extend `realize` to `RealizesBounded` goals without editing `Tactic/Realize.lean`. -/
+/-- Extend `realize` to `RealizesBounded` goals without editing
+`CslibFrontier/Tactic/Realize.lean`. -/
 elab_rules : tactic | `(tactic| realize) => withMainContext do
   let goal ← getMainGoal
   let target ← instantiateMVars (← whnfR (← goal.getType))

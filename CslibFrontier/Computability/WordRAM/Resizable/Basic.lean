@@ -146,12 +146,10 @@ theorem Bounded.zero_above {w : ℕ} {x : RData r} (hx : x.Bounded w) {a : ℕ} 
     x.mem a = 0 := hx.2.2 a ha
 theorem Bounded.set {w : ℕ} {x : RData r} (hx : x.Bounded w) {i : Fin r} {v : ℕ}
     (hv : Fits w v) : (x.set i v).Bounded w := ⟨hx.1.set hv, hx.2.1, hx.2.2⟩
-
 theorem Bounded.write {w : ℕ} {x : RData r} (hx : x.Bounded w) {a v : ℕ}
     (ha : a < x.frontier) (hv : Fits w v) : (x.write a v).Bounded w := by
   refine ⟨⟨hx.1.1, fun b => ?_⟩, hx.2.1, fun b hb => ?_⟩
-  · dsimp only [RData.write, RData.toData]
-    by_cases hba : b = a
+  · dsimp only [RData.write, RData.toData]; by_cases hba : b = a
     · subst hba; simpa using hv
     · simpa [Function.update_of_ne hba] using hx.1.2 b
   · dsimp only [RData.write] at hb ⊢
@@ -169,7 +167,6 @@ def DemonicGrow (w L k : ℕ) (mem mem' : ℕ → ℕ) : Prop :=
 /-- Zero-word growth is the identity transition on any memory zeroed above `L`. -/
 theorem DemonicGrow.zero (w L : ℕ) {mem : ℕ → ℕ} (hz : ∀ a, L ≤ a → mem a = 0) :
     DemonicGrow w L 0 mem mem := ⟨fun _ _ => rfl, fun _ hlo hhi => absurd hhi (by omega), hz⟩
-
 /-- Composing a `k`-word demonic growth from `L` with a `1`-word demonic growth from `L + k`. -/
 theorem DemonicGrow.trans_one {w L k : ℕ} {mem₀ mem₁ mem₂ : ℕ → ℕ}
     (h₁ : DemonicGrow w L k mem₀ mem₁) (h₂ : DemonicGrow w (L + k) 1 mem₁ mem₂) :
@@ -179,7 +176,6 @@ theorem DemonicGrow.trans_one {w L k : ℕ} {mem₀ mem₁ mem₂ : ℕ → ℕ}
   by_cases hlt : a < L + k
   · rw [h₂.1 a hlt]; exact h₁.2.1 a hlo hlt
   · exact h₂.2.1 a (by omega) (by omega)
-
 /-- Zero-initializing `[L, L + k)` via `clear mem L k` satisfies `DemonicGrow` when zero above. -/
 theorem demonicGrow_clear (w L k : ℕ) (mem : ℕ → ℕ) (hz : ∀ a, L ≤ a → mem a = 0) :
     DemonicGrow w L k mem (clear mem L k) := by
@@ -187,19 +183,16 @@ theorem demonicGrow_clear (w L k : ℕ) (mem : ℕ → ℕ) (hz : ∀ a, L ≤ a
     fun a ha => ?_⟩
   · rw [clear_of_owns ⟨hlo, hhi⟩]; exact fits_zero w
   · rw [clear_of_not_owns (by simp only [Block.Owns]; omega)]; exact hz a (by omega)
-
 /-- `DemonicGrow w x.frontier k` preserves `RData.Bounded w` when `Fits w (x.frontier + k)`. -/
 theorem RData.Bounded.grow {w : ℕ} {x : RData r} (hx : x.Bounded w) {dst : Fin r} {k : ℕ}
     {mem' : ℕ → ℕ} (hfit : Fits w (x.frontier + k))
     (hgrow : DemonicGrow w x.frontier k x.mem mem') :
     (⟨Function.update x.regs dst x.frontier, mem', x.frontier + k⟩ : RData r).Bounded w := by
   refine ⟨⟨fun i => ?_, fun a => ?_⟩, hfit, hgrow.2.2⟩
-  · dsimp only [RData.toData]
-    by_cases hid : i = dst
+  · dsimp only [RData.toData]; by_cases hid : i = dst
     · subst hid; simpa using hx.frontier_fits
     · simpa [Function.update_of_ne hid] using hx.regs_fits i
-  · dsimp only [RData.toData]
-    by_cases hlt : a < x.frontier
+  · dsimp only [RData.toData]; by_cases hlt : a < x.frontier
     · rw [hgrow.1 a hlt]; exact hx.mem_fits a
     · by_cases hmid : a < x.frontier + k
       · exact hgrow.2.1 a (by omega) hmid
@@ -210,12 +203,10 @@ theorem RData.Bounded.shrink {w : ℕ} {x : RData r} (hx : x.Bounded w) {k : ℕ
     (hk : k ≤ x.frontier) :
     (⟨x.regs, clear x.mem (x.frontier - k) k, x.frontier - k⟩ : RData r).Bounded w := by
   refine ⟨⟨hx.1.1, fun a => ?_⟩, hx.2.1.of_le (Nat.sub_le _ _), fun a ha => ?_⟩
-  · dsimp only [RData.toData]
-    by_cases hown : (Block.mk (x.frontier - k) k).Owns a
+  · dsimp only [RData.toData]; by_cases hown : (Block.mk (x.frontier - k) k).Owns a
     · rw [clear_of_owns hown]; exact fits_zero w
     · rw [clear_of_not_owns hown]; exact hx.mem_fits a
-  · dsimp only at ha ⊢
-    by_cases hlt : a < x.frontier
+  · dsimp only at ha ⊢; by_cases hlt : a < x.frontier
     · exact clear_of_owns (by simp only [Block.Owns]; omega)
     · rw [clear_of_not_owns (by simp only [Block.Owns]; omega)]; exact hx.zero_above (by omega)
 
@@ -371,9 +362,7 @@ theorem head {i : RInstr B r} (h : p.Contains base (i :: q)) : p[base]? = some i
 end RProgram.Contains
 
 /-- Whether a flat resizable instruction inspects the ambient word width `w`. -/
-def RInstr.ReadsWidth : RInstr B r → Prop
-  | .op o => o.ReadsWidth | _ => False
-
+def RInstr.ReadsWidth : RInstr B r → Prop | .op o => o.ReadsWidth | _ => False
 /-- Map a basis simulation across a flat resizable instruction. -/
 def RInstr.mapSimulates (φ : B.Simulates B') : RInstr B r → RInstr B' r
   | .op o => .op (o.mapSimulates φ) | .jump t => .jump t | .branch c t => .branch c t
@@ -384,19 +373,12 @@ def RInstr.mapSimulates (φ : B.Simulates B') : RInstr B r → RInstr B' r
 conditionals, while loops, uniform random sampling (`rand`), single-word demonic `grow`, and
 single-word `shrink`. -/
 inductive RCode (B : Basis) (r : ℕ) where
-  /-- Bounds-checked data instruction. -/
   | op (o : Op B r)
-  /-- Sequential composition. -/
   | seq (c₁ c₂ : RCode B r)
-  /-- Conditional branch on register comparison `c`. -/
   | branch (c : Cond r) (pos neg : RCode B r)
-  /-- While loop on register comparison `c`. -/
   | loop (c : Cond r) (body : RCode B r)
-  /-- Uniform random sample from `[0, regs src]` into `dst`. -/
   | rand (dst src : Fin r)
-  /-- Grow `[0, frontier)` by `1` word to `[0, frontier + 1)`, storing old `frontier` in `dst`. -/
   | grow (dst : Fin r)
-  /-- Shrink `[0, frontier)` by `1` word (`1 ≤ frontier`), zeroing cell `frontier - 1`. -/
   | shrink
   deriving DecidableEq
 
@@ -415,16 +397,14 @@ def ofCode : Code B r → RCode B r
 
 /-- Assemble a structured `RCode B r` at instruction index `pc`. -/
 def assemble : RCode B r → ℕ → RProgram B r
-  | .op o, _ => [.op o]
+  | .op o, _ => [.op o] | .rand dst src, _ => [.rand dst src]
+  | .grow dst, _ => [.grow dst] | .shrink, _ => [.shrink]
   | .seq c₁ c₂, pc => c₁.assemble pc ++ c₂.assemble (pc + c₁.size)
   | .branch c pos neg, pc =>
     .branch c (pc + neg.size + 2) :: neg.assemble (pc + 1) ++
       .jump (pc + neg.size + pos.size + 2) :: pos.assemble (pc + neg.size + 2)
   | .loop c body, pc =>
     .branch c (pc + 2) :: .jump (pc + body.size + 3) :: body.assemble (pc + 2) ++ [.jump pc]
-  | .rand dst src, _ => [.rand dst src]
-  | .grow dst, _ => [.grow dst]
-  | .shrink, _ => [.shrink]
 
 /-- Assembling `c : RCode B r` at any base index produces `c.size` flat instructions. -/
 @[simp] theorem length_assemble (c : RCode B r) (pc : ℕ) : (c.assemble pc).length = c.size := by
@@ -454,17 +434,14 @@ def mapSimulates (φ : B.Simulates B') : RCode B r → RCode B' r
 
 @[simp] theorem size_mapSimulates (φ : B.Simulates B') (c : RCode B r) :
     (c.mapSimulates φ).size = c.size := by induction c <;> simp_all [mapSimulates, size]
-
 theorem mapSimulates_ofCode (φ : B.Simulates B') (c : Code B r) :
     (ofCode c).mapSimulates φ = ofCode (c.mapSimulates φ) := by
   induction c <;> simp_all [ofCode, mapSimulates, Code.mapSimulates]
-
 theorem readsWidth_of_mapSimulates (φ : B.Simulates B') {c : RCode B r}
     (h : (c.mapSimulates φ).ReadsWidth) : c.ReadsWidth := by
   induction c with
   | op o => exact Op.readsWidth_of_mapSimulates φ h
-  | seq _ _ ih₁ ih₂ => exact h.imp ih₁ ih₂
-  | branch _ _ _ ihp ihn => exact h.imp ihp ihn
+  | seq _ _ ih₁ ih₂ | branch _ _ _ ih₁ ih₂ => exact h.imp ih₁ ih₂
   | loop _ _ ih => exact ih h
   | rand _ _ | grow _ | shrink => exact h
 
@@ -547,6 +524,15 @@ theorem seq_eq {c₁ c₂ : RCode B r} {y : RData r} {T₁ T₂ : ℕ} {P : RDat
     RDemonicExec w L_peak (.seq c₁ c₂) x (T₁ + T₂) P :=
   h₁.seq fun _ hy => hy ▸ h₂
 
+theorem grow_seq {dst : Fin r} {c : RCode B r} {T : ℕ} {P : RData r → Prop}
+    (hL : x.frontier + 1 ≤ L_peak) (hf : Fits w (x.frontier + 1))
+    (hc : ∀ m, DemonicGrow w x.frontier 1 x.mem m →
+      RDemonicExec w L_peak c ⟨Function.update x.regs dst x.frontier, m, x.frontier + 1⟩ T P) :
+    RDemonicExec w L_peak (.seq (.grow dst) c) x (1 + T) P :=
+  RDemonicExec.seq (Q := fun z => ∃ m, DemonicGrow w x.frontier 1 x.mem m ∧
+      z = ⟨Function.update x.regs dst x.frontier, m, x.frontier + 1⟩)
+    (RDemonicExec.grow hL hf fun m hm => ⟨m, hm, rfl⟩) fun _ ⟨m, hm, h⟩ => h ▸ hc m hm
+
 theorem const {d : Fin r} {v : ℕ} (hL : x.frontier ≤ L_peak) (hv : Fits w v) :
     RDemonicExec (B := B) w L_peak (.op (.const d v)) x 1 (· = x.set d v) :=
   .op hL (RData.put_of_fits hv) rfl
@@ -575,8 +561,8 @@ theorem loop {cond : Cond r} {body : RCode B r} (xs : ℕ → RData r) (k T : �
   induction k generalizing xs with
   | zero => rw [Nat.zero_mul, Nat.zero_add]; exact .loop_exit hL_end hk rfl
   | succ k ih =>
-    refine (RDemonicExec.loop_iter (hc 0 (by omega)) (hbody 0 (by omega)) fun y hy => ?_).mono
-      (by rw [Nat.succ_mul]; omega) fun _ h => h
+    refine (RDemonicExec.loop_iter (T₂ := k * (T + 2) + 2) (hc 0 (by omega)) (hbody 0 (by omega))
+      fun y hy => ?_).mono (by rw [Nat.succ_mul]; omega) fun _ h => h
     subst hy; exact ih (fun i => xs (i + 1)) hL_end (fun i hi => hc (i + 1) (by omega)) hk
       (fun i hi => hbody (i + 1) (by omega))
 
@@ -695,7 +681,7 @@ private theorem write_zero_demonicGrow_one {w L : ℕ} {mem mem' : ℕ → ℕ}
     (hz : ∀ a, L ≤ a → mem a = 0) (hg : DemonicGrow w L 1 mem mem') :
     Function.update mem' L 0 = mem := by
   funext a; by_cases ha : a = L
-  · subst ha; simp [hz L le_rfl]
+  · subst ha; exact (Function.update_self ..).trans (hz a le_rfl).symm
   · rw [Function.update_of_ne ha]; rcases lt_trichotomy a L with hlt | rfl | hgt
     · exact hg.1 a hlt
     · exact absurd rfl ha
@@ -714,14 +700,13 @@ private theorem clear_shrink_step {m : ℕ → ℕ} {f i : ℕ} (hi : i < f) :
 def growDirtyCode (count result cur idx zero one : Fin r) : RCode .exact r :=
   .seq (.op (.const zero 0)) <| .seq (.op (.const one 1)) <|
   .branch (.lt zero count)
-    (.seq (.grow result) <| .seq (.op (.const idx 1)) <|
-      .loop (.lt idx count) (.seq (.grow cur) (.op (.exactBin .add idx idx one))))
+    (.seq (.seq (.grow result) (.op (.const idx 1)))
+      (.loop (.lt idx count) (.seq (.grow cur) (.op (.exactBin .add idx idx one)))))
     (.op (.copy zero zero))
 
 theorem growDirtyCode_not_readsWidth (count result cur idx zero one : Fin r) :
     ¬(growDirtyCode count result cur idx zero one).ReadsWidth := by
   simp [growDirtyCode, RCode.ReadsWidth, Op.ReadsWidth, Op.exactBin]
-
 /-- **Derived `Θ(k + 1)` demonic growth (`growDirtyCode_exec`).** -/
 theorem growDirtyCode_exec {w L_peak : ℕ} {count result cur idx zero one : Fin r} {x : RData r}
     (hx : x.Bounded w) (hd : [count, result, cur, idx, zero, one].Nodup) (h1 : Fits w 1)
@@ -731,28 +716,29 @@ theorem growDirtyCode_exec {w L_peak : ℕ} {count result cur idx zero one : Fin
       y.Bounded w ∧ DemonicGrow w f k x.mem y.mem ∧ y.frontier = f + k ∧
         y.regs result = (if k = 0 then x.regs result else f) ∧
         ∀ j, j ≠ result → j ≠ cur → j ≠ idx → j ≠ zero → j ≠ one → y.regs j = x.regs j := by
-  intro f k; have hL0 : f ≤ L_peak := by omega
-  have hfk : Fits w k := hx.regs_fits count
-  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or,
+  intro f k; have hfk : Fits w k := hx.regs_fits count
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or, ← ne_eq,
     List.nodup_nil, and_true] at hd
   obtain ⟨⟨hcr, hcc, hci, hcz, hco⟩, ⟨hrc, hri, hrz, hro⟩, ⟨hci', hcz', hco'⟩,
     ⟨hiz, hio⟩, hzo, -⟩ := hd
-  refine (RDemonicExec.const hL0 (fits_zero w)).seq_eq
-    ((RDemonicExec.const hL0 h1).seq_eq ?_) |>.mono (T₂ := 4 * k + 5) ?_ fun _ h => h
-  swap; · omega
+  refine RDemonicExec.mono (T₁ := 1 + (1 + (4 * k + 3))) ?_ (by omega) fun _ h => h
+  refine RDemonicExec.seq_eq (RDemonicExec.const (by omega) (fits_zero w)) ?_
+  refine RDemonicExec.seq_eq (RDemonicExec.const (by simp only [RData.set_frontier]; omega) h1) ?_
   set x₂ := (x.set zero 0).set one 1
   have hx₂_k : x₂.regs count = k := by
     simp [x₂, Function.update_of_ne hco, Function.update_of_ne hcz, k]
-  have hx₂_z : x₂.regs zero = 0 := by simp [x₂, Function.update_of_ne hzo.symm]
+  have hx₂_z : x₂.regs zero = 0 := by simp [x₂, Function.update_of_ne hzo]
   by_cases hk0 : k = 0
   · refine (RDemonicExec.branch_neg (T := 1) (by simp [Cond.Holds, hx₂_z, hx₂_k, hk0])
-      (RDemonicExec.copy hL0)).mono (by omega) ?_
+      (RDemonicExec.copy (by simp only [x₂, RData.set_frontier]; omega))).mono (by omega) ?_
     rintro _ rfl
-    refine ⟨((hx.set (fits_zero w)).set h1).set (fits_zero w), ?_, by simp [x₂, f, hk0],
-      by simp [x₂, hk0, Function.update_of_ne hrz.symm, Function.update_of_ne hro.symm],
+    refine ⟨((hx.set (fits_zero w)).set h1).set (hx₂_z.symm ▸ fits_zero w), ?_,
+      by simp [x₂, f, hk0],
+      by simp [x₂, hk0, Function.update_of_ne hrz, Function.update_of_ne hro,
+        Function.update_of_ne hzo],
       fun j _ _ _ hjz hjo => by simp [x₂, RData.set, Function.update_of_ne hjz,
-        Function.update_of_ne hjo]⟩
-    simpa [hk0] using DemonicGrow.zero w f hx.zero_above
+        Function.update_of_ne hjo, Function.update_of_ne hzo]⟩
+    simpa [x₂, hk0] using DemonicGrow.zero w f (mem := x.mem) fun _ ha => hx.zero_above ha
   · have hpos : 0 < k := Nat.pos_of_ne_zero hk0
     refine (RDemonicExec.branch_pos (T := 4 * k + 1) (by simp [Cond.Holds, hx₂_z, hx₂_k, hpos])
       ?_).mono (by omega) fun _ h => h
@@ -763,46 +749,48 @@ theorem growDirtyCode_exec {w L_peak : ℕ} {count result cur idx zero one : Fin
         ∀ j, j ≠ result → j ≠ cur → j ≠ idx → j ≠ zero → j ≠ one → z.regs j = x.regs j
     have eg₁ : RDemonicExec (B := .exact) w L_peak
         (.seq (.grow result) (.op (.const idx 1))) x₂ 2 (P 0) := by
-      refine (RDemonicExec.grow (by dsimp [x₂]; omega) (hw.of_le (by dsimp [x₂]; omega))
-        fun m₁ hm₁ => ⟨m₁, hm₁, rfl⟩).seq fun x₃ ⟨m₁, hm₁, h3⟩ => ?_
-      subst h3
-      refine (RDemonicExec.const (by dsimp [x₂]; omega) h1).mono le_rfl ?_
+      refine RDemonicExec.grow_seq (T := 1) (by simp only [x₂, RData.set_frontier]; omega)
+        (hw.of_le (by simp only [x₂, RData.set_frontier]; omega)) fun m₁ hm₁ => ?_
+      refine (RDemonicExec.const (by simp only [x₂, RData.set_frontier]; omega) h1).mono le_rfl ?_
       rintro _ rfl
-      refine ⟨(((hx.set (fits_zero w)).set h1).grow (hw.of_le (by omega)) hm₁).set h1, hm₁, rfl,
-        by simp [x₂, RData.set, Function.update_of_ne hiz.symm, Function.update_of_ne hrz,
-          Function.update_of_ne hzo.symm],
-        by simp [x₂, RData.set, Function.update_of_ne hio.symm, Function.update_of_ne hro],
-        by simp [RData.set, Function.update_of_ne hci.symm, Function.update_of_ne hcr.symm, hx₂_k],
-        by simp [RData.set, Function.update_of_ne hri], by simp [RData.set],
+      refine ⟨(((hx.set (fits_zero w)).set h1).grow
+          (hw.of_le (by simp only [RData.set_frontier]; omega)) hm₁).set h1, hm₁, rfl,
+        by simp [x₂, RData.set, Function.update_of_ne hiz.symm, Function.update_of_ne hrz.symm,
+          Function.update_of_ne hzo],
+        by simp [x₂, RData.set, Function.update_of_ne hio.symm, Function.update_of_ne hro.symm],
+        by simp [RData.set, Function.update_of_ne hci, Function.update_of_ne hcr, hx₂_k],
+        by simp [RData.set, Function.update_of_ne hri, x₂, f], by simp [RData.set],
         fun j hjr _ hji hjz hjo => by simp [x₂, RData.set, Function.update_of_ne hjr,
           Function.update_of_ne hji, Function.update_of_ne hjz, Function.update_of_ne hjo]⟩
-    refine (eg₁.seq fun x₄ hx₄ => RDemonicExec.loop_rel P (k - 1) 2
-      (fun i hi z hz => by simp only [Cond.Holds, hz.2.2.2.2.2.2.2.1, hz.2.2.2.2.2.1]; omega)
-      (fun z hz => ⟨by rw [hz.2.2.1]; omega,
-        by simp only [Cond.Holds, hz.2.2.2.2.2.2.2.1, hz.2.2.2.2.2.1]; omega⟩)
-      (fun i hi z hz => ?_) hx₄).mono (by omega) fun y hy => ?_
-    · obtain ⟨hzb, hzg, hzfr, hzz, hzo', hzk, hzr, hzi, hzrem⟩ := hz
-      refine (RDemonicExec.grow (by rw [hzfr]; omega) (hw.of_le (by rw [hzfr]; omega))
-        fun m' hm' => ⟨m', hm', rfl⟩).seq fun z₁ ⟨m', hm', h1_eq⟩ => ?_
-      subst h1_eq
+    refine RDemonicExec.mono (P := P (k - 1)) (T₁ := 2 + ((k - 1) * (2 + 2) + 2)) ?_ (by omega)
+      fun y hy => ?_
+    · refine eg₁.seq fun x₄ hx₄ => RDemonicExec.loop_rel (cond := .lt idx count) P (k - 1) 2
+        (fun i hi z hz => by
+          rw [Cond.Holds, RData.toData_regs, hz.2.2.2.2.2.2.2.1, hz.2.2.2.2.2.1]; omega)
+        (fun z hz => ⟨by rw [hz.2.2.1]; omega, by
+          rw [Cond.Holds, RData.toData_regs, hz.2.2.2.2.2.2.2.1, hz.2.2.2.2.2.1]; omega⟩)
+        (fun i hi z hz => ?_) hx₄
+      obtain ⟨hzb, hzg, hzfr, hzz, hzo', hzk, hzr, hzi, hzrem⟩ := hz
+      refine RDemonicExec.grow_seq (T := 1) (by rw [hzfr]; omega)
+        (hw.of_le (by rw [hzfr]; omega)) fun m' hm' => ?_
       have hfit_i : Fits w (i + 1 + 1) := hfk.of_le (by omega)
-      refine (RDemonicExec.exactBin (v := i + 1 + 1) (by rw [hzfr]; omega)
+      refine (RDemonicExec.exactBin (v := i + 1 + 1) (by dsimp only; rw [hzfr]; omega)
         (by simp [BinOp.evalExact, Function.update_of_ne hci'.symm,
-          Function.update_of_ne hco', hzi, hzo']) hfit_i).mono le_rfl ?_
+          Function.update_of_ne hco'.symm, hzi, hzo']) hfit_i).mono le_rfl ?_
       rintro _ rfl
       have hgm : DemonicGrow w f (i + 1 + 1) x.mem m' := hzg.trans_one (hzfr ▸ hm')
-      refine ⟨(hzb.grow (hw.of_le (by rw [hzfr]; omega)) hm').set hfit_i, hgm, by omega,
-        by simp [RData.set, Function.update_of_ne hiz.symm, Function.update_of_ne hcz', hzz],
-        by simp [RData.set, Function.update_of_ne hio.symm, Function.update_of_ne hco', hzo'],
-        by simp [RData.set, Function.update_of_ne hci.symm, Function.update_of_ne hcc.symm, hzk],
+      refine ⟨(hzb.grow (hw.of_le (by rw [hzfr]; omega)) hm').set hfit_i, hgm,
+        by rw [RData.set_frontier]; dsimp only; omega,
+        by simp [RData.set, Function.update_of_ne hiz.symm, Function.update_of_ne hcz'.symm, hzz],
+        by simp [RData.set, Function.update_of_ne hio.symm, Function.update_of_ne hco'.symm, hzo'],
+        by simp [RData.set, Function.update_of_ne hci, Function.update_of_ne hcc, hzk],
         by simp [RData.set, Function.update_of_ne hri, Function.update_of_ne hrc, hzr],
         by simp [RData.set],
         fun j hjr hjc hji hjz hjo => by simp [RData.set, Function.update_of_ne hjc,
           Function.update_of_ne hji, hzrem j hjr hjc hji hjz hjo]⟩
     · obtain ⟨hyb, hyg, hyfr, -, -, -, hyr, -, hyrem⟩ := hy
       have hk1 : k - 1 + 1 = k := by omega
-      rw [hk1] at hyg hyfr
-      exact ⟨hyb, hyg, hyfr, by simp [hk0, hyr], hyrem⟩
+      exact ⟨hyb, hk1 ▸ hyg, hk1 ▸ hyfr, by simp [hk0, hyr], hyrem⟩
 
 /-- Deterministic post-state of `growZeroCode`. -/
 def growZeroPost (count result cur idx zero one : Fin r) (x : RData r) : RData r :=
@@ -816,52 +804,53 @@ and immediately zeroing each newly grown word in `5 * count + 6` instructions. -
 def growZeroCode (count result cur idx zero one : Fin r) : RCode .exact r :=
   .seq (.op (.const zero 0)) <| .seq (.op (.const one 1)) <| .seq (.op (.const idx 0)) <|
   .branch (.lt zero count)
-    (.seq (.grow result) <| .seq (.op (.store result zero)) <| .seq (.op (.const idx 1)) <|
-     .seq (.loop (.lt idx count)
-       (.seq (.grow cur) <| .seq (.op (.store cur zero)) (.op (.exactBin .add idx idx one)))) <|
-          (.op (.const cur 0)))
+    (.seq (.seq (.grow result) (.seq (.op (.store result zero)) (.op (.const idx 1))))
+      (.seq (.loop (.lt idx count)
+        (.seq (.grow cur) (.seq (.op (.store cur zero)) (.op (.exactBin .add idx idx one)))))
+        (.op (.const cur 0))))
     (.op (.const cur 0))
 
 theorem growZeroCode_not_readsWidth (count result cur idx zero one : Fin r) :
     ¬(growZeroCode count result cur idx zero one).ReadsWidth := by
   simp [growZeroCode, RCode.ReadsWidth, Op.ReadsWidth, Op.exactBin]
-
 /-- **Derived `Θ(k + 1)` zero-initialized growth (`growZeroCode_exec`).** -/
 theorem growZeroCode_exec {w L_peak : ℕ} {count result cur idx zero one : Fin r} {x : RData r}
     (hx : x.Bounded w) (hd : [count, result, cur, idx, zero, one].Nodup) (h1 : Fits w 1)
     (hL_peak : x.frontier + x.regs count ≤ L_peak) (hw : Fits w (x.frontier + x.regs count)) :
     RDemonicExec w L_peak (growZeroCode count result cur idx zero one) x (5 * x.regs count + 6)
       (· = growZeroPost count result cur idx zero one x) := by
-  set f := x.frontier; set k := x.regs count; have hL0 : f ≤ L_peak := by omega
-  have hfk : Fits w k := hx.regs_fits count
-  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or,
+  set f := x.frontier; set k := x.regs count; have hfk : Fits w k := hx.regs_fits count
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or, ← ne_eq,
     List.nodup_nil, and_true] at hd
   obtain ⟨⟨hcr, hcc, hci, hcz, hco⟩, ⟨hrc, hri, hrz, hro⟩, ⟨hci', hcz', hco'⟩,
     ⟨hiz, hio⟩, hzo, -⟩ := hd
-  refine ((RDemonicExec.const hL0 (fits_zero w)).seq_eq <| (RDemonicExec.const hL0 h1).seq_eq <|
-    (RDemonicExec.const hL0 (fits_zero w)).seq_eq ?_).mono (T₂ := 5 * k + 6) ?_ fun _ h => h
-  swap; · omega
+  refine RDemonicExec.mono (T₁ := 1 + (1 + (1 + (5 * k + 3)))) ?_ (by omega) fun _ h => h
+  refine RDemonicExec.seq_eq (RDemonicExec.const (by omega) (fits_zero w)) ?_
+  refine RDemonicExec.seq_eq (RDemonicExec.const (by simp only [RData.set_frontier]; omega) h1) ?_
+  refine RDemonicExec.seq_eq
+    (RDemonicExec.const (by simp only [RData.set_frontier]; omega) (fits_zero w)) ?_
   set x₃ := ((x.set zero 0).set one 1).set idx 0
   have hx₃_k : x₃.regs count = k := by
-    simp [x₃, Function.update_of_ne hci.symm, Function.update_of_ne hco,
-      Function.update_of_ne hcz, k]
+    simp [x₃, Function.update_of_ne hci, Function.update_of_ne hco, Function.update_of_ne hcz, k]
   have hx₃_z : x₃.regs zero = 0 := by
-    simp [x₃, Function.update_of_ne hiz.symm, Function.update_of_ne hzo.symm]
+    simp [x₃, Function.update_of_ne hiz.symm, Function.update_of_ne hzo]
   by_cases hk0 : k = 0
-  · refine (RDemonicExec.branch_neg (T := 1) (by simp [Cond.Holds, hx₃_z, hx₃_k, hk0])
-      (RDemonicExec.const hL0 (fits_zero w))).mono (by omega) ?_
+  · have hk0' : x.regs count = 0 := hk0
+    refine (RDemonicExec.branch_neg (T := 1) (by simp [Cond.Holds, hx₃_z, hx₃_k, hk0])
+      (RDemonicExec.const (by simp only [x₃, RData.set_frontier]; omega)
+        (fits_zero w))).mono (by omega) ?_
     rintro _ rfl; ext j
     · by_cases hjc : j = cur
       · subst hjc; simp [growZeroPost]
       · by_cases hji : j = idx
-        · subst hji; simp [x₃, growZeroPost, hk0, Function.update_of_ne hci']
+        · subst hji; simp [x₃, RData.set, growZeroPost, hk0', Function.update_of_ne hci'.symm]
         · by_cases hjr : j = result
-          · subst hjr; simp [x₃, growZeroPost, hk0, Function.update_of_ne hrc,
+          · subst hjr; simp [x₃, growZeroPost, hk0', Function.update_of_ne hrc,
               Function.update_of_ne hri, Function.update_of_ne hro, Function.update_of_ne hrz]
           · simp [x₃, growZeroPost, RData.set, Function.update_of_ne hjc, Function.update_of_ne hji,
               Function.update_of_ne hjr]
     · rfl
-    · simp [x₃, growZeroPost, f, k, hk0]
+    · simp [x₃, growZeroPost, hk0']
   · have hpos : 0 < k := Nat.pos_of_ne_zero hk0
     refine (RDemonicExec.branch_pos (T := 5 * k + 2) (by simp [Cond.Holds, hx₃_z, hx₃_k, hpos])
       ?_).mono (by omega) fun _ h => h
@@ -872,50 +861,58 @@ theorem growZeroCode_exec {w L_peak : ℕ} {count result cur idx zero one : Fin 
     have eg₀ : RDemonicExec (B := .exact) w L_peak
         (.seq (.grow result) (.seq (.op (.store result zero)) (.op (.const idx 1)))) x₃ 3
         (· = xs 0) := by
-      refine (RDemonicExec.grow (by dsimp [x₃]; omega) (hw.of_le (by dsimp [x₃]; omega))
-        fun m₁ hm₁ => ⟨m₁, hm₁, rfl⟩).seq fun x₄ ⟨m₁, hm₁, h4⟩ => ?_
-      subst h4
-      refine ((RDemonicExec.store (by dsimp [x₃]; omega) (by simp [x₃, f])).seq_eq
-        (RDemonicExec.const (by dsimp [x₃]; omega) h1)).mono le_rfl ?_
+      refine RDemonicExec.grow_seq (T := 1 + 1) (by simp only [x₃, RData.set_frontier]; omega)
+        (hw.of_le (by simp only [x₃, RData.set_frontier]; omega)) fun m₁ hm₁ => ?_
+      refine RDemonicExec.seq_eq (T₂ := 1) (RDemonicExec.store
+        (by simp only [x₃, RData.set_frontier]; omega) (by simp [x₃])) ?_
+      refine (RDemonicExec.const
+        (by simp only [x₃, RData.write_frontier, RData.set_frontier]; omega) h1).mono le_rfl ?_
       rintro _ rfl; ext j
       · by_cases hji : j = idx
         · subst hji; simp [xs, RData.set, RData.write]
         · by_cases hjr : j = result
-          · subst hjr; simp [xs, baseRegs, RData.set, RData.write, Function.update_of_ne hji]
+          · subst hjr; simp [xs, baseRegs, x₃, RData.set, RData.write, Function.update_of_ne hji, f]
           · simp [xs, baseRegs, x₃, RData.set, RData.write, Function.update_of_ne hji,
               Function.update_of_ne hjr]
-      · simp only [xs, RData.set, RData.write, Function.update_self,
-          Function.update_of_ne hrz, hx₃_z]
-        exact congrFun (write_zero_demonicGrow_one hx.zero_above hm₁) j
-      · rfl
-    have hloop := RDemonicExec.loop (L_peak := L_peak) (cond := .lt idx count) xs (k - 1) 3
-      (by simp only [xs]; omega)
+      · simp only [xs, RData.set, RData.write, Function.update_self, Function.update_of_ne hrz.symm,
+          hx₃_z]
+        exact congrFun (write_zero_demonicGrow_one (mem := x.mem)
+          (fun _ ha => hx.zero_above ha) hm₁) j
+      · simp [xs, x₃, f]
+    have hloop := RDemonicExec.loop (B := .exact) (w := w) (L_peak := L_peak)
+      (cond := .lt idx count)
+      (body := .seq (.grow cur) (.seq (.op (.store cur zero)) (.op (.exactBin .add idx idx one))))
+      xs (k - 1) 3
+      (by change f + (k - 1 + 1) ≤ L_peak; omega)
       (fun i hi => by
         have hcnt : (xs i).regs count = k := by
-          by_cases hi0 : i = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hci.symm,
-            Function.update_of_ne hcc.symm, Function.update_of_ne hcr.symm,
+          by_cases hi0 : i = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hci,
+            Function.update_of_ne hcc, Function.update_of_ne hcr,
             Function.update_of_ne hco, Function.update_of_ne hcz, k]
-        simp only [Cond.Holds, RData.toData_regs, hcnt, xs, Function.update_self]; omega)
+        rw [Cond.Holds, RData.toData_regs, hcnt]; simp only [xs, Function.update_self]; omega)
       (by
         have hcnt : (xs (k - 1)).regs count = k := by
-          by_cases hi0 : k - 1 = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hci.symm,
-            Function.update_of_ne hcc.symm, Function.update_of_ne hcr.symm,
+          by_cases hi0 : k - 1 = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hci,
+            Function.update_of_ne hcc, Function.update_of_ne hcr,
             Function.update_of_ne hco, Function.update_of_ne hcz, k]
-        simp only [Cond.Holds, RData.toData_regs, hcnt, xs, Function.update_self]; omega)
+        rw [Cond.Holds, RData.toData_regs, hcnt]; simp only [xs, Function.update_self]; omega)
       fun i hi => by
         have hz_i : (xs i).regs zero = 0 := by
-          by_cases hi0 : i = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hiz,
-            Function.update_of_ne hcz', Function.update_of_ne hrz, Function.update_of_ne hzo.symm]
+          by_cases hi0 : i = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hiz.symm,
+            Function.update_of_ne hcz'.symm, Function.update_of_ne hrz.symm,
+            Function.update_of_ne hzo]
         have ho_i : (xs i).regs one = 1 := by
-          by_cases hi0 : i = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hio,
-            Function.update_of_ne hco', Function.update_of_ne hro]
-        refine (RDemonicExec.grow (by simp only [xs]; omega) (hw.of_le (by simp only [xs]; omega))
-          fun m' hm' => ⟨m', hm', rfl⟩).seq fun z₁ ⟨m', hm', h1_eq⟩ => ?_
-        subst h1_eq
-        refine ((RDemonicExec.store (by simp only [xs]; omega) (by simp [xs])).seq_eq
-          (RDemonicExec.exactBin (v := i + 1 + 1) (by simp only [xs]; omega)
-            (by simp [BinOp.evalExact, RData.write, Function.update_of_ne hci'.symm,
-              Function.update_of_ne hco', xs, ho_i]) (hfk.of_le (by omega)))).mono le_rfl ?_
+          by_cases hi0 : i = 0 <;> simp [xs, baseRegs, hi0, Function.update_of_ne hio.symm,
+            Function.update_of_ne hco'.symm, Function.update_of_ne hro.symm]
+        refine RDemonicExec.grow_seq (T := 1 + 1) (by change f + (i + 1) + 1 ≤ L_peak; omega)
+          (hw.of_le (by change f + (i + 1) + 1 ≤ f + k; omega)) fun m' hm' => ?_
+        refine RDemonicExec.seq_eq (T₂ := 1) (RDemonicExec.store
+          (by change f + (i + 1) + 1 ≤ L_peak; omega) (by simp [xs])) ?_
+        refine (RDemonicExec.exactBin (v := i + 1 + 1)
+          (by simp only [RData.write_frontier]; change f + (i + 1) + 1 ≤ L_peak; omega)
+          (by simp only [BinOp.evalExact, RData.write_regs, Function.update_of_ne hci'.symm,
+            Function.update_of_ne hco'.symm, ho_i]; simp [xs])
+          (hfk.of_le (by omega))).mono le_rfl ?_
         rintro _ rfl; ext j
         · by_cases hji : j = idx
           · subst hji; simp [xs, RData.set, RData.write]
@@ -923,22 +920,26 @@ theorem growZeroCode_exec {w L_peak : ℕ} {count result cur idx zero one : Fin 
             · subst hjc; simp [xs, RData.set, RData.write, Function.update_of_ne hji]
             · by_cases hi0 : i = 0 <;> simp [xs, RData.set, RData.write, hi0,
                 Function.update_of_ne hji, Function.update_of_ne hjc]
-        · simp only [xs, RData.set, RData.write, Function.update_self,
-            Function.update_of_ne hcz', hz_i]
-          exact congrFun (write_zero_demonicGrow_one (fun a ha => hx.zero_above (by omega)) hm') j
-        · simp only [xs]; omega
-    refine (eg₀.seq_eq (hloop.seq_eq (RDemonicExec.const (by simp only [xs]; omega)
-      (fits_zero w)))).mono (by omega) ?_
-    rintro _ rfl; have hk1 : k - 1 + 1 = k := by omega
-    ext j
-    · by_cases hjc : j = cur
-      · subst hjc; simp [growZeroPost, RData.set]
-      · by_cases hji : j = idx
-        · subst hji; simp [xs, growZeroPost, RData.set, hk1, Function.update_of_ne hjc]
-        · by_cases hj0 : k - 1 = 0 <;> simp [xs, baseRegs, growZeroPost, RData.set, hj0, hk0,
-            Function.update_of_ne hjc, Function.update_of_ne hji, f, k]
-    · rfl
-    · simp [xs, growZeroPost, hk1, f, k]
+        · simp only [RData.set_mem, RData.write_mem, Function.update_self,
+            Function.update_of_ne hcz'.symm, hz_i]
+          exact congrFun (write_zero_demonicGrow_one (mem := x.mem)
+            (fun a ha => hx.zero_above (by change f + (i + 1) ≤ a at ha; omega)) hm') j
+        · dsimp only [xs, RData.set, RData.write]; omega
+    refine RDemonicExec.mono (P := (· = (xs (k - 1)).set cur 0))
+      (T₁ := 3 + ((k - 1) * (3 + 2) + 2 + 1)) ?_ (by omega) ?_
+    · refine eg₀.seq_eq (hloop.seq_eq ?_)
+      exact RDemonicExec.const (by change f + (k - 1 + 1) ≤ L_peak; omega) (fits_zero w)
+    · rintro _ rfl; have hk1 : x.regs count - 1 + 1 = x.regs count := by omega
+      have hk0' : x.regs count ≠ 0 := hk0; apply RData.ext
+      · funext j; by_cases hjc : j = cur
+        · subst hjc; simp [growZeroPost, RData.set]
+        · by_cases hji : j = idx
+          · subst hji; simp [xs, growZeroPost, RData.set, k, hk1, Function.update_of_ne hjc]
+          · by_cases hj0 : x.regs count - 1 = 0 <;>
+              simp [xs, baseRegs, growZeroPost, RData.set, k, f, hj0, hk0',
+                Function.update_of_ne hjc, Function.update_of_ne hji]
+      · rfl
+      · simp [xs, growZeroPost, RData.set, k, f, hk1]
 
 /-- Deterministic post-state of `shrinkCode`. -/
 def shrinkPost (count idx zero one : Fin r) (x : RData r) : RData r :=
@@ -954,7 +955,6 @@ def shrinkCode (count idx zero one : Fin r) : RCode .exact r :=
 theorem shrinkCode_not_readsWidth (count idx zero one : Fin r) :
     ¬(shrinkCode count idx zero one).ReadsWidth := by
   simp [shrinkCode, RCode.ReadsWidth, Op.ReadsWidth, Op.exactBin]
-
 /-- **Derived `Θ(k + 1)` multi-word shrink (`shrinkCode_exec`).** -/
 theorem shrinkCode_exec {w L_peak : ℕ} {count idx zero one : Fin r} {x : RData r}
     (hx : x.Bounded w) (hd : [count, idx, zero, one].Nodup) (h1 : Fits w 1)
@@ -962,35 +962,37 @@ theorem shrinkCode_exec {w L_peak : ℕ} {count idx zero one : Fin r} {x : RData
     RDemonicExec w L_peak (shrinkCode count idx zero one) x (4 * x.regs count + 5)
       (· = shrinkPost count idx zero one x) := by
   set f := x.frontier; set k := x.regs count; have hfk : Fits w k := hx.regs_fits count
-  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or,
+  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or, ← ne_eq,
     List.nodup_nil, and_true] at hd
   obtain ⟨⟨hci, hcz, hco⟩, ⟨hiz, hio⟩, hzo, -⟩ := hd
   let baseRegs := Function.update (Function.update x.regs zero 0) one 1
   let xs (i : ℕ) : RData r :=
     ⟨Function.update baseRegs idx i, clear x.mem (f - i) i, f - i⟩
-  have hloop := RDemonicExec.loop (L_peak := L_peak) (cond := .lt idx count) xs k 2
-    (by simp only [xs]; omega)
+  have hloop := RDemonicExec.loop (B := .exact) (w := w) (L_peak := L_peak) (cond := .lt idx count)
+    (body := .seq .shrink (.op (.exactBin .add idx idx one))) xs k 2
+    (by change f - k ≤ L_peak; omega)
     (fun i hi => by
-      simp [Cond.Holds, xs, baseRegs, Function.update_of_ne hci.symm,
+      simp [Cond.Holds, xs, baseRegs, Function.update_of_ne hci,
         Function.update_of_ne hco, Function.update_of_ne hcz, k, hi])
-    (by simp [Cond.Holds, xs, baseRegs, Function.update_of_ne hci.symm,
+    (by simp [Cond.Holds, xs, baseRegs, Function.update_of_ne hci,
       Function.update_of_ne hco, Function.update_of_ne hcz, k])
     fun i hi => by
-      refine (RDemonicExec.shrink (by simp only [xs]; omega) (by simp only [xs]; omega) rfl).seq_eq
-        ((RDemonicExec.exactBin (v := i + 1) (by dsimp only; omega)
-          (by simp [BinOp.evalExact, xs, baseRegs, Function.update_of_ne hio.symm])
-          (hfk.of_le (by omega))).mono le_rfl ?_)
+      refine RDemonicExec.seq_eq (T₂ := 1) (RDemonicExec.shrink (x := xs i)
+        (by change f - i ≤ L_peak; omega) (by change 1 ≤ f - i; omega) rfl) ?_
+      refine (RDemonicExec.exactBin (v := i + 1) (by change f - i - 1 ≤ L_peak; omega)
+        (by simp [BinOp.evalExact, xs, baseRegs, Function.update_of_ne hio.symm])
+        (hfk.of_le (by omega))).mono le_rfl ?_
       rintro _ rfl; ext j
       · simp [xs, RData.set]
       · exact congrFun (clear_shrink_step (by omega)) j
-      · dsimp only [xs, RData.set]; omega
-  refine ((RDemonicExec.const hL_peak (fits_zero w)).seq_eq <|
-    (RDemonicExec.const hL_peak h1).seq_eq <|
-    (RDemonicExec.const hL_peak (fits_zero w)).seq_eq ?_).mono (by omega) ?_
-  · convert hloop using 2; ext j
-    · simp [xs, baseRegs, RData.set]
-    · simp [xs, clear]
-    · rfl
-  · rintro _ rfl; rfl
+      · change f - i - 1 = f - (i + 1); omega
+  refine RDemonicExec.mono (P := (· = xs k)) (T₁ := 1 + (1 + (1 + (k * (2 + 2) + 2)))) ?_
+    (by omega) fun _ h => h
+  refine RDemonicExec.seq_eq (RDemonicExec.const hL_peak (fits_zero w)) ?_
+  refine RDemonicExec.seq_eq
+    (RDemonicExec.const (by simp only [RData.set_frontier]; exact hL_peak) h1) ?_
+  refine RDemonicExec.seq_eq
+    (RDemonicExec.const (by simp only [RData.set_frontier]; exact hL_peak) (fits_zero w)) ?_
+  convert hloop using 2; ext j <;> simp [xs, baseRegs, RData.set, clear, f]
 
 end Cslib.WordRAM.Resizable

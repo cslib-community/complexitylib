@@ -20,10 +20,10 @@ Concrete end-to-end checks for Milestone M1 of the word-granular **Resizable Wor
 (`Cslib.WordRAM.Resizable`, `Cslib.WordRAM.BoundedExec`, and
 `Cslib.DataStructure.Memory.Resizable`):
 
-1. `by realize` synthesizing `RealizesBounded` directly (without modifying `Tactic/Realize.lean`) on
-   both sequential read/write/arithmetic code (`addToNext`) and `iterate` pointer chasing
-   (`chaseProg`), while keeping existing `Realizes` goals intact, and lifting directly to
-   `RDemonicExec` and `ExecRProgramDist` via `RDemonicExec.of_realizesBounded`.
+1. `by realize` synthesizing `RealizesBounded` directly (without modifying
+   `CslibFrontier/Tactic/Realize.lean`) on both sequential read/write/arithmetic code (`addToNext`)
+   and `iterate` pointer chasing (`chaseProg`), while keeping existing `Realizes` goals intact, and
+   lifting directly to `RDemonicExec` and `ExecRProgramDist` via `RDemonicExec.of_realizesBounded`.
 2. Single-word `.grow` / `.shrink` primitives (including boundary faults at `frontier = 0` and
    `¬Fits w (frontier + 1)`), derived `Θ(k + 1)` bulk resize subroutines `growDirtyCode`,
    `growZeroCode`, and `shrinkCode`, and adversarial `DemonicGrow` erased by `growZeroCode`,
@@ -61,7 +61,8 @@ def addToNext (d : ℕ × ℕ) : Memory.Prog ℕ := do
   Memory.write (d.1 + 1) (v + d.2)
   Memory.read (d.1 + 1)
 
-/-- `by realize` synthesizes `RealizesBounded` directly without touching `Tactic/Realize.lean`. -/
+/-- `by realize` synthesizes `RealizesBounded` directly without touching
+`CslibFrontier/Tactic/Realize.lean`. -/
 theorem addToNext_realizesBounded :
     RealizesBounded .exact addToNext pairWords singleWord
       (fun w d s => Fits w (d.1 + 1) ∧ Fits w (s.mem d.1 + d.2))
@@ -229,9 +230,8 @@ every demonic growth choice on `[x.frontier, x.frontier + 1)`. -/
 theorem oneWordGrowShrink_exec {w L_peak : ℕ} {x : RData 2}
     (hx : x.Bounded w) (hL : x.frontier + 1 ≤ L_peak) (hfit : Fits w (x.frontier + 1)) :
     RDemonicExec (B := .exact) w L_peak (.seq (.grow 0) .shrink) x 2 (· = x.set 0 x.frontier) := by
-  refine (RDemonicExec.grow hL hfit fun mem' hgrow => ⟨mem', hgrow, rfl⟩).seq ?_
-  rintro _ ⟨mem', hgrow, rfl⟩
-  refine RDemonicExec.shrink hL (by omega) ?_
+  refine RDemonicExec.grow_seq (T := 1) hL hfit fun mem' hgrow => ?_
+  refine RDemonicExec.shrink hL (Nat.le_add_left 1 x.frontier) ?_
   ext a
   · rfl
   · simp only [RData.set_mem, Nat.add_sub_cancel]
@@ -310,9 +310,9 @@ theorem growSampleShrinkCode_standard_execRProgramDist {w : ℕ} {x : RData 7}
     fin_cases i <;> simp only [x₂, growZeroPost, RData.toData_regs, x₁, RData.set_regs]
     · simpa using hfit4
     · simpa using hx.frontier_fits
-    · simpa using fits_zero w
+    · simp
     · simpa using hfit4
-    · simpa using fits_zero w
+    · simp
     · simpa using h1
     · simpa using hx.regs_fits 6
   have d_rand : ExecRCodeDist (B := .exact) w (.rand 6 0) x₂
