@@ -3964,6 +3964,10 @@ public import CslibFrontier.Crypto.Primitives.BlockCipher.CBCMAC
 public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Crypto.Primitives.CorrelationRobust
 public import CslibFrontier.Crypto.Primitives.Garbling.Adaptive
+public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.AffineLabel
+public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.BitComposition
+public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.CRT
+public import CslibFrontier.Crypto.Primitives.Garbling.Arithmetic.ConstantDivision
 public import CslibFrontier.Crypto.Primitives.Garbling.BMR16
 public import CslibFrontier.Crypto.Primitives.Garbling.Basic
 public import CslibFrontier.Crypto.Primitives.Garbling.CircuitInverters
@@ -4875,6 +4879,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
 public import CslibFrontier.Foundations.Data.Nat.ArithmeticProgression
 public import CslibFrontier.Foundations.Data.Nat.Asymptotics
+public import CslibFrontier.Foundations.Data.Nat.BigOperators
 public import CslibFrontier.Foundations.Data.Nat.BinarySize
 public import CslibFrontier.Foundations.Data.Nat.Bits
 public import CslibFrontier.Foundations.Data.Nat.Bitwise.Carry
@@ -4897,6 +4902,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.Real
 public import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 public import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
 public import CslibFrontier.Foundations.Data.Nat.ClogPow
+public import CslibFrontier.Foundations.Data.Nat.ConstantDivision
 public import CslibFrontier.Foundations.Data.Nat.Div
 public import CslibFrontier.Foundations.Data.Nat.Doubling
 public import CslibFrontier.Foundations.Data.Nat.Factorial
@@ -4923,6 +4929,7 @@ public import CslibFrontier.Foundations.Data.Nat.Power
 public import CslibFrontier.Foundations.Data.Nat.Prime
 public import CslibFrontier.Foundations.Data.Nat.Primrec
 public import CslibFrontier.Foundations.Data.Nat.Radix
+public import CslibFrontier.Foundations.Data.Nat.Radix.Digit
 public import CslibFrontier.Foundations.Data.Nat.Radix.Measurement
 public import CslibFrontier.Foundations.Data.Nat.RadixUpdate
 public import CslibFrontier.Foundations.Data.Nat.RecursionTree
