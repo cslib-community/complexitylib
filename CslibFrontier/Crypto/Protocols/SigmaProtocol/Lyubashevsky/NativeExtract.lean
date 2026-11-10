@@ -171,8 +171,7 @@ theorem lyubashevskyExtractList_eq_extract (n m k q : ℕ)
       List.ofFn (fun i : Fin (m + k) =>
         lyubashevskyExtract n m k q y w c z c' z' (finSumFinEquiv.symm i)) := by
   rw [lyubashevskyExtractList_ofFn]
-  congr 1
-  funext i
+  congr 1 with i : 1
   cases i using Fin.addCases <;> simp [lyubashevskyExtract, lyubashevskyChallenge]
 
 /-- The complete word program agrees exactly with the named typed extractor, including absent

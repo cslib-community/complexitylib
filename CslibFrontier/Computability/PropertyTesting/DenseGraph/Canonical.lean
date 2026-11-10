@@ -13,6 +13,7 @@ public import Cslib.Probability.PMF
 public import Mathlib.Combinatorics.SimpleGraph.Copy
 public import Mathlib.Combinatorics.SimpleGraph.Maps
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SymmDiff
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.RandomPermutation
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
@@ -299,8 +300,8 @@ theorem acceptProb_canonicalTester (n s : ℕ) (hs : s ≤ n) (D : SimpleGraph (
     acceptProb (canonicalTester n s hs D) G =
       ((PMF.uniformOfFintype (Equiv.Perm (Fin n))).toOuterMeasure
         {σ | D (G.comap fun i => σ (Fin.castLE hs i))}).toReal := by
-  rw [acceptProb_eq, canonicalTester, OracleComp.evalWith_bind, evalWith_sample,
-    ProbComp.eval_uniform]
+  rw [acceptProb_eq, canonicalTester, OracleComp.evalWith_bind,
+    ProbOracleComp.evalWith_sumHandler_unifOracle_sample, ProbComp.eval_uniform]
   simp only [OracleComp.evalWith_bind, evalWith_queryInduced, PMF.pure_bind,
     OracleComp.evalWith_pure]
   have h : ((PMF.uniformOfFintype (Equiv.Perm (Fin n))).bind fun σ =>
@@ -570,8 +571,7 @@ private theorem complete_bind_eq_answer_bind [Nonempty (Fin n)] {c : Cache (Fin 
   rw [show ((complete c).bind fun π => F (π u) π) =
       ((complete c).map fun π => (evalPerm π (.forward u), π)).bind fun p => F p.1 p.2 by
     rw [PMF.bind_map]; rfl, ← answer_complete (.forward u) c hc, PMF.bind_bind]
-  congr 1
-  funext p
+  congr 1 with p : 1
   obtain ⟨a, c'⟩ := p
   simp only [PMF.bind_map]
   rfl
@@ -628,8 +628,7 @@ private theorem toOuterMeasure_good_le [NeZero n] {P : SimpleGraph (Fin n) → P
               OracleComp.evalWith ⟪G.comap π⟫ (cont (decide (G.Adj p₁.1 p₂.1))) := by
         calc _ = (complete c).bind fun π =>
                 OracleComp.evalWith ⟪G.comap π⟫ (cont (decide (G.Adj (π u) (π v)))) := by
-              congr 1
-              funext π
+              congr 1 with π : 1
               rw [OracleComp.evalWith_bind, OracleComp.evalWith_query,
                 OracleComp.sumHandler_inr, adjOracle_apply, PMF.pure_bind]
               rfl

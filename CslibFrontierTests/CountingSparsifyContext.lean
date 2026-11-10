@@ -14,6 +14,7 @@ namespace CslibFrontierTests.CountingSparsifyContext
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Cslib.Complexity
 open Cslib.Complexity.CountingSparsify Turing.MultiTapeTM
+open Cslib.Complexity.Sparsify (rounds)
 
 /-- With the threshold base as the context, the context search is the existing search at that base,
 so the existing correctness theorems apply to each input. -/

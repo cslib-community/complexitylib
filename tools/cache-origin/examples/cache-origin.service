@@ -1,5 +1,5 @@
 [Unit]
-Description=Draft Complexitylib cache publisher
+Description=Draft cslib-frontier cache publisher
 RequiresMountsFor=/srv/cache-origin
 AssertPathIsMountPoint=/srv/cache-origin
 OnFailure=cache-origin-alert@%n.service

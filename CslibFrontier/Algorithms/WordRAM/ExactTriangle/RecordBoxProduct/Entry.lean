@@ -32,17 +32,10 @@ open RecordProduct
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 
-/-- The complete real producer, using its original low bank. -/
-@[expose] def produce : Code .standard 320 := Instances.program.rename producerBank
-
-/-- One fixed initialized composition; selecting the first record costs one actual instruction. -/
+/-- One fixed initialized composition of the record producer `RecordProduct.produce` with the
+record consumer; selecting the first record costs one actual instruction. -/
 @[expose] def entryProgram : Code .standard 320 :=
   .seq produce (.seq (.op (.const Reg.ordinal 0)) program)
-
-private theorem producerBank_injective : Function.Injective producerBank := by
-  intro i j h
-  apply Fin.ext
-  exact congrArg (fun k : Fin 320 => k.val) h
 
 /-- Complete initialized structured execution. The actual producer execution is a conclusion,
 and its same native memory supplies the coordinate list consumed by the composed adapter. -/

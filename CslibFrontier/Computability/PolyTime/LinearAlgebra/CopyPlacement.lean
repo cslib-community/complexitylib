@@ -1145,9 +1145,6 @@ private theorem cp_take : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.t
 private theorem cp_count : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.count p.2)
     (encPair (encList encNat) encNat) encUnary := by fun_prop
 
-private theorem cp_intBin_sum : ComputableInPolyTime List.sum (encList encIntBin) encIntBin := by
-  fun_prop
-
 /-- Compositional plain polynomial-time certificate for `fiberRanks`. -/
 @[fun_prop] theorem computableInPolyTime_fiberRanksWithInput {Input : Type}
     {encIn : Input ↪ List Bool} {labels : Input → List ℕ}
@@ -1230,7 +1227,7 @@ private theorem ite_eq_and_intBin {Q : Type} {encQ : Q ↪ List Bool} {a₁ a₂
     ComputableInPolyTime
       (fun x => pullbackMeasurementRow (n x) (placements x) (incVars x) (copyIdx x) (auxRow x))
       encIn (encList encIntBin) := by
-  unfold pullbackMeasurementRow; apply mapWithInput (range.comp hn); apply cp_intBin_sum.comp
+  unfold pullbackMeasurementRow; apply mapWithInput (range.comp hn); apply intBin_sum.comp
   apply mapWithInput ((zip (encPair encNat encNat) encNat).comp
     ((hpl.comp (fst encIn encUnary)).prod (hinc.comp (fst encIn encUnary))))
   have hxin : ComputableInPolyTime (fun q : (Input × ℕ) × ((ℕ × ℕ) × ℕ) => q.1.1)
@@ -1322,7 +1319,7 @@ unary). -/
   have hzip0 := (zip (encPair encNat encNat) encNat).comp (hpl.prod hinc)
   have hxin_vk : ComputableInPolyTime (fun vk : (Input × ℕ) × ℕ => vk.1.1)
       (encPair (encPair encIn encUnary) encUnary) encIn := (fst encIn encUnary).comp (fst _ _)
-  apply cp_intBin_sum.comp; apply mapWithInput (hzip0.comp hxin_vk)
+  apply intBin_sum.comp; apply mapWithInput (hzip0.comp hxin_vk)
   have hxin := hxin_vk.comp (fst (encPair (encPair encIn encUnary) encUnary)
     (encPair (encPair encNat encNat) encNat))
   have hpoly : ComputableInPolyTime _ _ (encList encIntBin) :=

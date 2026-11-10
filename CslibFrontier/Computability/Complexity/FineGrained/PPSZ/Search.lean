@@ -235,9 +235,7 @@ theorem wImplied_iff_test (φ : CNF (Fin n)) (w : ℕ) (τ : Fin n → Option Bo
       rw [mem_sections_replicate] at hcs
       exact ⟨cs, hcs.2, hcs.1.le, hsat⟩
   have hdec : ∀ cs : CNF (Fin n), ¬SatExt ρ cs ↔ (!cs.sections.any (compatible ρ)) = true := by
-    intro cs
-    rw [satExt_iff]
-    simp
+    grind [satExt_iff]
   unfold WImplied
   simp only [hone, impliedTest, Bool.or_eq_true, beq_iff_eq, List.any_eq_true, ← hρ, ← hdec]
   constructor

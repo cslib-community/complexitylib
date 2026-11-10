@@ -26,7 +26,7 @@ types need no inhabitant assumption.
 * `ComputableInPolyTime.optionMapWithInput`: map a computed option with a captured callback.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 variable {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}

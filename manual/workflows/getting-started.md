@@ -1,6 +1,6 @@
 # Get oriented and build
 
-Start with the kind of claim you want Lean to check. A running Lean function, an equality of probability distributions, and a polynomial-time certificate answer different questions. Complexitylib connects these layers through explicit theorems. Open a client that proves the kind of statement you need, then follow its imports and encodings. [complexitylib][complexitylib]
+Start with the kind of claim you want Lean to check. A running Lean function, an equality of probability distributions, and a polynomial-time certificate answer different questions. cslib-frontier connects these layers through explicit theorems. Open a client that proves the kind of statement you need, then follow its imports and encodings. [cslib-frontier][complexitylib]
 
 ## Prerequisites and the checkout's version
 
@@ -45,11 +45,9 @@ The package is `cslib-frontier`; imports start with `CslibFrontier.`. Most decla
 | `CslibFrontier/` | Definitions, semantics, resource predicates and theorems |
 | `CslibFrontierTests/` | Small clients, edge cases, failure guards and regressions |
 | `guide/` | Explanatory chapters with Lean examples |
-| `abstracts/CslibFrontierAbstracts/` | Selected readable statements and their bridges |
-| `abstracts/catalogue.json` | Headline selection, not the whole API |
-| `results/` | Result and reference inventory beyond the selected abstracts |
+| `results/` and `CslibFrontierResults/` | Checked inventory of named results and their sources, linked to the API documentation |
 | `ROADMAP.md` | Outstanding directions and incomplete endpoints |
-| `UPSTREAM.md` and source markers | CSLib coordination and local-copy status |
+| `-- upstream:` markers and `CONTRIBUTING.md` (Upstreaming) | Local-copy status and live CSLib/Mathlib coordination |
 
 Import a topic module or tactic module first. `import CslibFrontier` imports the entire library and is usually unnecessary for a small client. The [architecture reference](../design-and-assurance/architecture.md) explains the layers.
 
@@ -163,9 +161,9 @@ and assumptions. Their identity is checked against current source by the manual 
 that check is not standalone elaboration. [Historical hosted validation](../development-history/timings.md)
 has its own dated scope and cannot validate later changes.
 
-## Use Complexitylib from your own project
+## Use cslib-frontier from your own project
 
-Match your project's `lean-toolchain` to the chosen Complexitylib revision. Choose a full commit SHA deliberately; `git rev-parse HEAD` in that checkout prints it.
+Match your project's `lean-toolchain` to the chosen cslib-frontier revision. Choose a full commit SHA deliberately; `git rev-parse HEAD` in that checkout prints it.
 In a TOML Lake project, add this template, replacing the placeholder with that SHA:
 
 ```toml
@@ -175,6 +173,6 @@ git = "https://github.com/cslib-community/cslib-frontier"
 rev = "<the-full-commit-SHA-you-selected>"
 ```
 
-Run `lake update cslib-frontier` and `lake build` from your project. If you directly require CSLib or Mathlib too, align them with the chosen manifest and include their package names in the update command when changing their pins. Commit the resulting manifest, Lake configuration and toolchain together. Updating only Complexitylib leaves other direct dependencies locked. See the [external-project instructions](../../README.md#use-from-another-lean-project).
+Run `lake update cslib-frontier` and `lake build` from your project. If you directly require CSLib or Mathlib too, align them with the chosen manifest and include their package names in the update command when changing their pins. Commit the resulting manifest, Lake configuration and toolchain together. Updating only cslib-frontier leaves other direct dependencies locked. See the [external-project instructions](../../README.md#use-from-another-lean-project).
 
 [complexitylib]: ../sources.md#complexitylib

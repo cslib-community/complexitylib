@@ -32,13 +32,14 @@ variable {k s : ℕ} {Q : Type}
 theorem start_sumState {p r m : ℕ} (e : Q ≃ Fin s) (N b σ i chunk stride : ℕ)
     (x : Fin (k * 3 + 1) → Fin r → ZMod p) (table : ℕ → ℕ) (j : ℕ) :
     start (k := k) e (QueryGate.sumState
-      (QueryGate.gateParams (s := 2 ^ m) (N, b, σ, i, m, chunk, stride) x) table j) =
+      (QueryGate.gateParams (s := 2 ^ m) (⟨N, b, σ, i, m, chunk, stride⟩ : Context) x) table j) =
       SupplierChunk.prepare e ((m, chunk),
         (N, b, σ, i, (2 ^ m) ^ ((k * 3 + 1) * r), j, stride)) := by
   change SupplierChunk.prepare e ((m, chunk),
     (N, b, σ, i, (2 ^ m) ^ ((k * 3 + 1) * r),
       (QueryGate.sumState
-        (QueryGate.gateParams (s := 2 ^ m) (N, b, σ, i, m, chunk, stride) x) table j).2.1,
+        (QueryGate.gateParams (s := 2 ^ m)
+            (⟨N, b, σ, i, m, chunk, stride⟩ : Context) x) table j).2.1,
       stride)) = _
   rw [QueryGate.sumState_counter]
 
@@ -53,7 +54,7 @@ theorem table_supplier {p q r m : ℕ} (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin
     let table := QueryGate.gateTable (by positivity : 0 < 2 ^ m)
       (Packed.packBits hb) (Packed.unpackBits hb) f chunk
     let params := QueryGate.gateParams (s := 2 ^ m)
-      (w.length, b, σ, i.val, m, chunk.val, r * m) x
+      (⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩ : Context) x
     ∀ j < (2 ^ m) ^ ((k * 3 + 1) * r), ∃ T,
       (∀ t < T, (SupplierChunk.machine M e).halted ((SupplierChunk.machine M e).runFrom w
         (start e (QueryGate.sumState params table j)) t) = false) ∧
@@ -80,7 +81,7 @@ theorem exists_runFrom_counterGate {p q r m : ℕ} (M : MultiTapeTM k Bool Q)
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
     let params := QueryGate.gateParams (s := 2 ^ m)
-      (w.length, b, σ, i.val, m, chunk.val, r * m) x
+      (⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩ : Context) x
     ∃ T z, (machine M e).runFrom w (initial params) T =
         .inl (params, (2 ^ m) ^ ((k * 3 + 1) * r), z) ∧
       (z : ZMod p) = Packed.counterGateExtension (by positivity : 0 < 2 ^ m)
@@ -89,10 +90,10 @@ theorem exists_runFrom_counterGate {p q r m : ℕ} (M : MultiTapeTM k Bool Q)
   let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
     (Encoding.encode e) (Encoding.decode e) (i.val + 1)
   let params := QueryGate.gateParams (s := 2 ^ m)
-    (w.length, b, σ, i.val, m, chunk.val, r * m) x
+    (⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩ : Context) x
   obtain ⟨T, z, hrun, hz⟩ := QueryGate.exists_runFrom_counterGateExtension
     (by positivity : 0 < 2 ^ m)
-    (w.length, b, σ, i.val, m, chunk.val, r * m)
+    (⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩ : Context)
     (Packed.packBits hb) (Packed.unpackBits hb) f x chunk
     (SupplierChunk.machine M e) (start e) (SupplierChunk.answer M e) w
     (table_supplier M e w b σ i x hb hm chunk)
@@ -118,7 +119,7 @@ theorem exists_runFrom_gateExtension {p q r m : ℕ} [Fact p.Prime]
     let f := codeGate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ)
       (Encoding.encode e) (Encoding.decode e) (i.val + 1)
     let params := QueryGate.gateParams (s := 2 ^ m)
-      (w.length, b, σ, i.val, m, chunk.val, r * m) x
+      (⟨w.length, b, σ, i.val, m, chunk.val, r * m⟩ : Context) x
     ∃ T z, (machine M e).runFrom w (initial params) T =
         .inl (params, (2 ^ m) ^ ((k * 3 + 1) * r), z) ∧
       (z : ZMod p) = Packed.gateExtension h (Packed.packBits hb) (Packed.unpackBits hb)

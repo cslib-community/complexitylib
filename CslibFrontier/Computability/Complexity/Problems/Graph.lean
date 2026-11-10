@@ -425,8 +425,8 @@ theorem isVerifier_verifyOrdering {α : Type} {enc : α ↪ List Bool} {V : α �
     exact ⟨_, hnd, hmem, hP⟩
 
 /-- Testing whether a list lists every vertex of another exactly once is polynomial-time. -/
-@[local fun_prop]
-private theorem computableInPolyTime_enumeratesBool :
+@[fun_prop]
+theorem computableInPolyTime_enumeratesBool :
     ComputableInPolyTime (fun x : List ℕ × List ℕ => enumeratesBool x.1 x.2)
       (encPair (encList encNat) (encList encNat)) encBool := by
   unfold enumeratesBool

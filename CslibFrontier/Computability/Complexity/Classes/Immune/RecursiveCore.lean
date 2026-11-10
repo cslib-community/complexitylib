@@ -149,30 +149,14 @@ theorem requirement_mem_P (e : ℕ) : requirement e ∈ P encBits := by
   unfold clock
   fun_prop
 
-/-- **Every problem in `P` is a requirement**, with arbitrarily large indices: the clock
-`(2 l + 2) ^ e` of an index `e` of its polynomial-time decider with `e ≥ c + d` exceeds the time
-bound `c (l + 1) ^ d`. -/
+/-- **Every problem in `P` is a requirement**, with arbitrarily large indices: machines of
+arbitrarily large index decide it within their clock (`Ladner.exists_index_of_mem_P`). -/
 theorem exists_requirement_eq {B : Set (List Bool)} (hB : B ∈ P encBits) (N : ℕ) :
     ∃ e, N ≤ e ∧ requirement e = B := by
-  obtain ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩ := mem_P.mp hB
-  have := Fintype.ofFinite State
-  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x.length)).Halted ∧
-      (tm.runFrom (tm.initCfg x) (t x.length)).output = [f x] :=
-    (htm x).runFrom_of_le le_rfl
-  obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.mp ht
-  obtain ⟨e, he, hdesc⟩ := exists_index_ge (desc eS eBit tm) (N + c + d)
-  refine ⟨e, by omega, Set.ext fun w => ?_⟩
-  have hc : c ≤ 2 ^ e :=
-    (Nat.lt_two_pow_self (n := c)).le.trans (Nat.pow_le_pow_right (by omega) (by omega))
-  have hd : (w.length + 1) ^ d ≤ (w.length + 1) ^ e := Nat.pow_le_pow_right (by omega) (by omega)
-  have hle : t w.length ≤ clock e w.length := by
-    calc t w.length ≤ c * (w.length + 1) ^ d := hcd _
-      _ ≤ 2 ^ e * (w.length + 1) ^ e := Nat.mul_le_mul hc hd
-      _ = clock e w.length := by rw [clock, ← mul_pow]; ring_nf
-  simp only [requirement, Set.mem_ofPred_eq, runIndexed, hdesc]
-  rw [universal_desc_of_halted eS tm (t := fun x => t x.length) hrun hle, Prod.mk.injEq,
-    List.singleton_inj, and_iff_left rfl, (hf w)]
+  obtain ⟨f, hf, e, he, hrun⟩ := exists_index_of_mem_P hB N
+  refine ⟨e, he, Set.ext fun w => ?_⟩
+  simp only [requirement, Set.mem_ofPred_eq]
+  rw [hrun w, Prod.mk.injEq, List.singleton_inj, and_iff_left rfl, (hf w)]
   exact ⟨fun h => eBit.injective h, fun h => h ▸ rfl⟩
 
 /-! ### The stages -/

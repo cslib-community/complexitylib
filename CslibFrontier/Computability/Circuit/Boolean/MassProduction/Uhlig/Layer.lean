@@ -237,8 +237,7 @@ theorem complexity_directProduct_two_mul_le {B : ℕ}
     refine decoded_eq f s i x _ (by simp) fun j => ?_
     rw [Fin.append_right, Circuit.eval_parallelFamily_apply, hbank j]
     simp only [directProduct, resource]
-    congr 2
-    funext k
+    congr 2 with k : 1
     simp only [directProductInput, Equiv.symm_apply_apply, routedBit]
     split <;> rfl
   · have hbankSize : ∑ j, (bank j).size ≤ (2 ^ p + 1) * B := by

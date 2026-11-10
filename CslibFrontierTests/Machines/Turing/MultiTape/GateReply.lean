@@ -33,7 +33,7 @@ def reader : MultiTapeTM 1 Bool (Fin 1) := MultiTapeTM.ofTr 0 fun _ input _ =>
 
 /-- Paid seven-coordinate parameters with deliberately padded raw point coordinates. -/
 def params : GateVector.Params :=
-  (((1, 1, 99, 99, 2, 99, 14), (17, 4, 28), [17, 18, 33], 2 ^ 14), 7)
+  ((⟨1, 1, 99, 99, 2, 99, 14⟩, (17, 4, 28), [17, 18, 33], 2 ^ 14), 7)
 
 /-- Observe completed immediate replies without collapsing active interpolation states. -/
 def immediate : GateReply.State 1 (Fin 1) → Option (ℕ × List ℕ) :=
@@ -54,7 +54,7 @@ example : immediate (GateReply.initial reader code ((0, 2, []), params)) =
     none := by decide
 
 example : GateReply.prepare 1 ((0, 2, []), params) =
-    (((1, 1, 0, 1, 2, 0, 14), (17, 4, 28), [0, 1, 16], 2 ^ 14), 7) := rfl
+    ((⟨1, 1, 0, 1, 2, 0, 14⟩, (17, 4, 28), [0, 1, 16], 2 ^ 14), 7) := rfl
 
 example : (GateReply.machine reader code).halted
     (GateReply.initial reader code ((0, 2, [1]), params)) = true := by decide

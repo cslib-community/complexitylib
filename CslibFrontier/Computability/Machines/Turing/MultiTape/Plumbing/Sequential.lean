@@ -31,7 +31,7 @@ by equations.
   the two paths combined.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

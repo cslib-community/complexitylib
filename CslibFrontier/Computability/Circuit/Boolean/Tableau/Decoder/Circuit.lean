@@ -567,20 +567,22 @@ theorem ofBits_keyWire {idx : ℕ} (hidx : idx < 2 ^ (4 + (s + cb + tb))) (hs : 
     apply Nat.div_lt_of_lt_mul
     calc idx < 2 ^ (4 + (s + cb + tb)) := hidx
       _ = 16 * 2 ^ (s + cb + tb) := by rw [Nat.pow_add]
-  have hpmod : idx / 2 ^ 4 % 2 ^ (s + cb + tb) = idx / 16 := Nat.mod_eq_of_lt hp
   have h1 : 1 < 2 ^ (s + cb + tb) := Nat.one_lt_two_pow (by omega)
   have hcv (gt : Bool) (K : ℕ) (e : Bool) (hK : K < 2 ^ (s + cb + tb)) :
       cmp gt (idx / 2 ^ (4 + s) % 2 ^ cb % 2 ^ (s + cb + tb)) (K % 2 ^ (s + cb + tb)) e =
         cmp gt (colOf s cb (idx / 16)) K e := by
-    rw [div_mod_eq_colOf, Nat.mod_eq_of_lt (by omega), Nat.mod_eq_of_lt hK]
+    rw [div_mod_eq_colOf]
+    exact cmp_mod_of_lt (by omega) hK
   have htv (gt : Bool) (K : ℕ) (e : Bool) (hK : K < 2 ^ (s + cb + tb)) :
       cmp gt (idx / 2 ^ (4 + s + cb) % 2 ^ tb % 2 ^ (s + cb + tb)) (K % 2 ^ (s + cb + tb)) e =
         cmp gt (timeOf s cb (idx / 16)) K e := by
-    rw [div_mod_eq_timeOf hidx, Nat.mod_eq_of_lt (by omega), Nat.mod_eq_of_lt hK]
+    rw [div_mod_eq_timeOf hidx]
+    exact cmp_mod_of_lt (by omega) hK
   have hpv (gt : Bool) (K : ℕ) (e : Bool) (hK : K < 2 ^ (s + cb + tb)) :
       cmp gt (idx / 2 ^ 4 % 2 ^ (s + cb + tb) % 2 ^ (s + cb + tb)) (K % 2 ^ (s + cb + tb)) e =
         cmp gt (idx / 16) K e := by
-    rw [Nat.mod_mod, hpmod, Nat.mod_eq_of_lt hK]
+    rw [Nat.mod_mod]
+    exact cmp_mod_of_lt hp hK
   have hc0 : bitAt (fun i : Fin (4 + s + 14) =>
       fieldVal s cb tb x n T idx (keyWire s cb tb i)) (4 + s) =
       chainVal (chain s cb tb x.length n T 0) idx (s + cb + tb) := by

@@ -44,11 +44,7 @@ theorem parse_inSpace (e : Q ≃ Fin s) :
       (fun p => (NativeDecode.encArgs p).length) := by
   let empty : RawResult k Q := (none, fun _ => 0, .empty, fun _ => [])
   have hp := NativeDecode.parse_inSpace (k := k) e
-  have hget : ComputableInSpace (fun x : Option (RawResult k Q) => x.getD empty)
-      (encOption encRawResult) encRawResult
-      (fun x => (encOption encRawResult x).length) :=
-    of_inO (ComputableInDegree.getD (enc₁ := encRawResult) empty).inO_one
-  have hr := budget_comp_linear hget hp
+  have hr := budget_optionGetD empty hp
   have hinput := budget_prod (fst encNat encBits)
     (budget_prod (budget_const (encB := encBool) true (.refl _)) hr)
   have hout := budget_comp_linear (NativeEncode.serialize_bits_inSpace e) hinput

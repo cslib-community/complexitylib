@@ -177,9 +177,9 @@ of accessible preimage sets (`[HHRVW2020]`, Section 3.2, Definition 3.9, p. 15).
   ∑ x : α, ((PMF.uniformOfFintype α) x).toReal * Real.logb 2 #(L x)
 
 theorem accessibleSetExpectation_nonneg {α : Type*} [Fintype α] [Nonempty α]
-    {L : α → Finset α} (hne : ∀ x, (L x).Nonempty) : 0 ≤ accessibleSetExpectation L :=
-  sum_nonneg fun x _ => mul_nonneg ENNReal.toReal_nonneg
-    (Real.logb_nonneg (by norm_num) (by exact_mod_cast card_pos.mpr (hne x)))
+    (L : α → Finset α) : 0 ≤ accessibleSetExpectation L :=
+  sum_nonneg fun _ _ => mul_nonneg ENNReal.toReal_nonneg
+    (div_nonneg (Real.log_natCast_nonneg _) (Real.log_nonneg one_le_two))
 
 private theorem sub_div_le_logb_sub {a b : ℝ} (ha : 1 ≤ a) (hab : a ≤ b) :
     (b - a) / b ≤ Real.logb 2 b - Real.logb 2 a := by

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.BallPath
 public import CslibFrontier.Logics.FirstOrder.Locality.Hanf
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Basic.Finite.Sum
 import Mathlib.Order.Interval.Finset.Fin
 import Mathlib.Order.SuccPred.Nat
@@ -299,14 +300,13 @@ theorem not_exists_formula_transGen :
     ¬ ∃ φ : Language.graph.Formula (Fin 2), ∀ (M : Type u) [Finite M]
       [Language.graph.Structure M] (a b : M),
       φ.Realize ![a, b] ↔ Relation.TransGen (fun x y : M => RelMap adj ![x, y]) a b := by
+  -- `φ(x, y) ∨ x = y` would then define the reflexive–transitive closure.
   rintro ⟨φ, hφ⟩
-  set N := 2 * 3 ^ (quantifierRank φ + 1) + 1
-  let := @Equiv.inducedStructure Language.graph (Fin N) (ULift.{u} (Fin N))
-    (relStructure (· ⋖ ·)) Equiv.ulift.symm
-  have := card_le_of_realize_iff_transGen (N := N) (φ := φ) fun a b => by
-    rw [← realize_ulift, hφ]
-    exact ⟨fun h => h.lift ULift.down fun _ _ h => h, fun h => h.lift ULift.up fun _ _ h => h⟩
-  omega
+  refine not_exists_formula_reflTransGen.{u} ⟨φ ⊔ (Term.var 0).equal (Term.var 1), ?_⟩
+  intro M _ _ a b
+  rw [Relation.reflTransGen_iff_eq_or_transGen, Formula.realize_sup, hφ, Formula.realize_equal]
+  simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one]
+  exact or_comm.trans (or_congr_left eq_comm)
 
 /-! ### Undirected reachability -/
 
@@ -443,15 +443,12 @@ def distLE : ℕ → Language.graph.Formula (Fin 2)
 
 theorem realize_distLE_zero {M : Type*} [Language.graph.Structure M] (x y : M) :
     (distLE 0).Realize ![x, y] ↔ x = y ∨ RelMap adj ![x, y] := by
-  simp only [distLE, Formula.realize_sup, Formula.realize_equal, Formula.realize_rel₂,
-    Term.realize_var]
-  rfl
+  fo_simp [distLE]
 
 theorem realize_distLE_succ {M : Type*} [Language.graph.Structure M] (k : ℕ) (x y : M) :
     (distLE (k + 1)).Realize ![x, y] ↔
       ∃ z, (distLE k).Realize ![x, z] ∧ (distLE k).Realize ![z, y] := by
-  simp only [distLE, Formula.Realize, BoundedFormula.realize_ex, BoundedFormula.realize_inf,
-    BoundedFormula.realize_relabel]
+  fo_simp [distLE, Formula.Realize]
   refine exists_congr fun z => and_congr ?_ ?_ <;>
   · apply iff_of_eq
     congr 1

@@ -273,10 +273,12 @@ theorem three_pow_modulusExp_le (m : ℕ) : 3 ^ modulusExp m ≤ (4 * Nat.log 2 
 theorem modulus_polyTime : ComputableInPolyTime modulus encUnary (encList encNat) := by
   have hb := ComputableInPolyTime.unary_to_binary
   have hlog := ComputableInPolyTime.binary_log_two.comp hb
-  have hE : ComputableInPolyTime (fun m => 3 ^ modulusExp m) encUnary encUnary := by
-    refine ComputableInPolyTime.binary_to_unary_bounded
-      (ComputableInPolyTime.binary_pow.comp ((ComputableInPolyTime.const 3).prod
-        modulusExp_polyTime))
+  -- Elaborated without an expected type: unifying `?f ∘ ?g` with `fun m => 3 ^ modulusExp m`
+  -- before the arguments are known fails only after unfolding `ComputableInPolyTime`.
+  have hpow := ComputableInPolyTime.binary_pow.comp
+    ((ComputableInPolyTime.const 3).prod modulusExp_polyTime)
+  have hE : ComputableInPolyTime (fun m => 3 ^ modulusExp m) encUnary encUnary :=
+    ComputableInPolyTime.binary_to_unary_bounded hpow
       ((ComputableInPolyTime.unary_pow 2).comp (ComputableInPolyTime.unary_add'
         (ComputableInPolyTime.unary_mul' (ComputableInPolyTime.const 4) hlog)
         (ComputableInPolyTime.const 2))) three_pow_modulusExp_le
@@ -386,7 +388,7 @@ theorem fastValue_eq {WF : Call (List ℕ) → Prop} (hstep : StepCorrect tableE
             val (ExplicitTensorNetwork.capPrecision q).1
               (modulus (ExplicitTensorNetwork.capPrecision q).2.2.numEdges)
               (VertexDesc.entry tableEntry t bs) :=
-        hy ▸ val_value tableEntry mk hstep hwf _ hroot
+        hy ▸ val_value tableEntry mk hstep hwf (root (ExplicitTensorNetwork.capPrecision q)) hroot
       rw [val_rootNet] at hval
       rw [getD_mod_of_val_eq (modulus_ne_nil _) hval]
       exact ExplicitTensorNetwork.contraction_mod_two_pow_min q.1 q.2.2

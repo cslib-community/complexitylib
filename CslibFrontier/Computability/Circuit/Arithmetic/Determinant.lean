@@ -46,8 +46,6 @@ Nothing here places it in `VP` or proves Valiant's `VNP`-completeness of the per
 
 * `Cslib.Circuits.Arithmetic.genericMatrix_eq_map_rename`: the generic matrix is Mathlib's
   matrix of variables renamed to row-major order.
-* `Cslib.Circuits.Arithmetic.det_eq_birdDetSpec`: Bird's algorithm computes the determinant over
-  every commutative ring.
 * `Cslib.Circuits.Arithmetic.totalDegree_det_genericMatrix_le`: the generic determinant has degree
   at most `n`.
 * `Cslib.Circuits.Arithmetic.exists_circuit_det`: a circuit with at most `3 * n ^ 4 + 4` gates;
@@ -74,19 +72,6 @@ namespace Cslib.Circuits.Arithmetic
 open MvPolynomial
 
 universe u
-
-/-! ### Bird's algorithm over a commutative ring -/
-
-section Bird
-
-variable {R : Type*} [CommRing R] {n : ℕ}
-
-/-- Bird's algorithm in matrix form computes the determinant over every commutative ring
-[Bird2011]. The shared bridge restates Mathlib's private matrix-specification theorem. -/
-theorem det_eq_birdDetSpec (A : Matrix (Fin n) (Fin n) R) : A.det = BirdDet.Spec.birdDet A :=
-  (Bird.spec_eq_det A).symm
-
-end Bird
 
 /-! ### The generic matrix and the determinant family -/
 
@@ -248,7 +233,7 @@ private theorem synthesis_det (n : ℕ) :
         (Synthesis.arith_mul (Set.mem_insert _ _) (Set.mem_insert_of_mem _ rfl))
     refine ((synthesis_stages k).trans hlast).mono Set.Subset.rfl
       (Set.singleton_subset_iff.mpr (funext fun x => ?_)) ?_
-    · rw [det_eq_birdDetSpec, BirdDet.Spec.birdDetSpec_succ]
+    · rw [← Bird.spec_eq_det, BirdDet.Spec.birdDetSpec_succ]
       simp
     · have : k * (k + 2) ≤ (k + 1) ^ 2 := by nlinarith
       nlinarith

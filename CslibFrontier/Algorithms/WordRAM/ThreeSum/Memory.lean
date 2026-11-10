@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.ThreeSum.Convolution
 public import CslibFrontier.Computability.WordRAM.Signed.Arithmetic
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Memory layout of the Convolution-3SUM graph builder
@@ -139,15 +140,13 @@ theorem matrices_filled (A : Args) (mem : ℕ → ℕ)
         encode (weightBC A.N A.s A.values A.filler b c) ∧
     A.filled mem (A.t * A.t) (A.ac + a.val * A.t + c.val) =
         encode (weightAC A.N A.s A.values A.filler a c) := by
-  have ht : 0 < A.t := Nat.pos_of_ne_zero (by intro h; have := a.isLt; omega)
   have hcell (i j : Fin A.t) : i.val * A.t + j.val < A.t * A.t := by
     have := Nat.mul_le_mul_right A.t (Nat.succ_le_of_lt i.isLt)
     rw [Nat.succ_mul] at this
     omega
-  have hdiv (i j : Fin A.t) : (i.val * A.t + j.val) / A.t = i.val := by
-    rw [Nat.mul_comm i.val A.t, Nat.mul_add_div ht, Nat.div_eq_of_lt j.isLt, Nat.add_zero]
-  have hmod (i j : Fin A.t) : (i.val * A.t + j.val) % A.t = j.val := by
-    simp [Nat.add_mod, Nat.mod_eq_of_lt j.isLt]
+  have hdiv (i j : Fin A.t) : (i.val * A.t + j.val) / A.t = i.val :=
+    Nat.mul_add_div_of_lt _ j.isLt
+  have hmod (i j : Fin A.t) : (i.val * A.t + j.val) % A.t = j.val := Nat.mul_add_mod_of_lt j.isLt
   have hAB := hcell a b
   have hBC := hcell b c
   have hAC := hcell a c

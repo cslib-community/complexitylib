@@ -22,7 +22,7 @@ The returned unsigned pointer names the code array. Other addresses are explicit
 the original headers, and the complete original input and outside memory are preserved.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

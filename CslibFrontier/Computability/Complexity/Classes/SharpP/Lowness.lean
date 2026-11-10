@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.ModP.GapP
 public import CslibFrontier.Computability.Complexity.Classes.SBP
 public import CslibFrontier.Computability.Complexity.Classes.US
 public import CslibFrontier.Computability.Complexity.Classes.WPP.Lowness
+import CslibFrontier.Computability.Complexity.Classes.Oracle.CanonicalReplay
 import CslibFrontier.Computability.Complexity.Classes.Oracle.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Aggregation
 import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
@@ -18,7 +19,6 @@ import CslibFrontier.Computability.Complexity.Classes.SharpP.OracleReplay
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Oracle
-import Mathlib.Data.List.OfFn
 
 /-!
 # Oracle lowness of `#P`, `UP ∩ coUP`, `SPP`, and modular counting classes
@@ -135,70 +135,6 @@ variable {α β : Type} {enc : α ↪ List Bool} {output : β ↪ List Bool} {A 
 
 /-! ### Unsigned step-certified oracle replay and `#P` precomposition with `FP^(UP ∩ coUP)` -/
 
-section Replay
-
-variable {tapes : ℕ} {Control Operation : Type} [DecidableEq Operation]
-
-/-- The `#P` sum over all transcripts of length `T a` weighted by an outer `#P` function `F` of the
-replayed output. -/
-private def replayWeightedSum (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) (T : α → ℕ) (fYes fNo : List Bool → ℕ)
-    (F : α × List Bool → ℕ) (a : α) : ℕ :=
-  ∑ w : Fin (T a) → Bool,
-    replayPathCount machine input fYes fNo (a, List.ofFn w) *
-      F (a, machine.replayOutput (input a) (List.ofFn w))
-
-private theorem replayWeightedSum_mem_SharpP [Finite Control] [Finite Operation]
-    (machine : MultiTapePTM tapes Bool Control Operation) {input : α → List Bool}
-    {T : α → ℕ} {fYes fNo : List Bool → ℕ} {F : α × List Bool → ℕ}
-    (hinput : ComputableInPolyTime input enc encBits)
-    (hT : ComputableInPolyTime T enc encUnary)
-    (hYes : fYes ∈ SharpP encBits) (hNo : fNo ∈ SharpP encBits)
-    (hF : F ∈ SharpP (encPair enc encBits)) :
-    replayWeightedSum machine input T fYes fNo F ∈ SharpP enc := by
-  have hpath := replayPathCount_mem_SharpP machine hinput hYes hNo
-  have hpair : ComputableInPolyTime
-      (fun x : α × List Bool => (input x.1, x.2))
-      (encPair enc encBits) (encPair encBits encBits) := by fun_prop
-  have hout : (fun x : α × List Bool => F (x.1, machine.replayOutput (input x.1) x.2)) ∈
-      SharpP (encPair enc encBits) :=
-    SharpP.comp_mem hF ((ComputableInPolyTime.fst enc encBits).prod
-      (machine.computableInPolyTime_replayOutput.comp hpair))
-  exact SharpP.sum_bits_mem (SharpP.mul_mem hpath hout) hT
-
-private theorem replayWeightedSum_eq_of_le_one
-    (machine : MultiTapePTM tapes Bool Control Operation)
-    (input : α → List Bool) (T : α → ℕ) {fYes fNo : List Bool → ℕ} {g : List Bool → Bool}
-    (hYes_le : ∀ q, fYes q ≤ 1) (hNo_le : ∀ q, fNo q ≤ 1)
-    (hYes : ∀ q, g q = true ↔ 0 < fYes q) (hNo : ∀ q, g q = false ↔ 0 < fNo q)
-    (F : α × List Bool → ℕ) (a : α) :
-    replayWeightedSum machine input T fYes fNo F a =
-      F (a, machine.replayOutput (input a) (machine.oracleReplies g (T a) (input a))) := by
-  have hlen : (machine.oracleReplies g (T a) (input a)).length = T a :=
-    machine.length_oracleReplies g (T a) (input a)
-  let w₀ : Fin (T a) → Bool :=
-    fun i => (machine.oracleReplies g (T a) (input a))[i.val]'(by omega)
-  have hw₀ : List.ofFn w₀ = machine.oracleReplies g (T a) (input a) :=
-    (List.ofFn_congr hlen.symm _).trans List.ofFn_getElem
-  unfold replayWeightedSum
-  rw [Finset.sum_eq_single w₀]
-  · have hpos : 0 < replayPathCount machine input fYes fNo (a, List.ofFn w₀) := by
-      rw [replayPathCount_pos_iff machine input hYes hNo, List.length_ofFn]
-      exact hw₀
-    have hle := replayPathCount_le_one machine input hYes_le hNo_le (a, List.ofFn w₀)
-    have heq : replayPathCount machine input fYes fNo (a, List.ofFn w₀) = 1 := by omega
-    rw [heq, one_mul, hw₀]
-  · intro w _ hw
-    have hnot : ¬0 < replayPathCount machine input fYes fNo (a, List.ofFn w) := by
-      rw [replayPathCount_pos_iff machine input hYes hNo, List.length_ofFn, ← hw₀]
-      exact fun h => hw (List.ofFn_injective h)
-    have hz : replayPathCount machine input fYes fNo (a, List.ofFn w) = 0 := by omega
-    rw [hz, zero_mul]
-  · intro hmem
-    exact False.elim (hmem (mem_univ w₀))
-
-end Replay
-
 open Classical in
 /-- **`#P` precomposition with encoded `FP^(UP ∩ coUP)` outputs.** If `A ∈ UP ∩ coUP`,
 `f : α → β` is computable in polynomial time relative to `A`, and `F : α × List Bool → ℕ` belongs to
@@ -211,33 +147,26 @@ theorem SharpP.encoded_comp_mem_of_computableInPolyTimeWithOracle
     (fun a => F (a, output (f a))) ∈ SharpP enc := by
   obtain ⟨fYes, hYes_mem, hYes_le, hYes_iff⟩ := hA_up
   obtain ⟨fNo, hNo_mem, hNo_le, hNo_iff⟩ := hA_coup
-  obtain ⟨program, hcert, hprogram⟩ := hf
-  obtain ⟨tapes, m, machine, c, d, hrun⟩ := hcert.exists_fin_run_pure_false
-  let g : List Bool → Bool := fun q => decide (q ∈ A)
-  have hYes' (q : List Bool) : g q = true ↔ 0 < fYes q := by
+  obtain ⟨tapes, m, machine, p, hout⟩ := hf.exists_replayOutput
+  have hYes' (q : List Bool) : decide (q ∈ A) = true ↔ 0 < fYes q := by
     have hle := hYes_le q
     rw [show (0 < fYes q) ↔ fYes q = 1 by omega]
-    simp only [g, decide_eq_true_eq, hYes_iff q]
-  have hNo' (q : List Bool) : g q = false ↔ 0 < fNo q := by
+    simp only [decide_eq_true_eq, hYes_iff q]
+  have hNo' (q : List Bool) : decide (q ∈ A) = false ↔ 0 < fNo q := by
     have hle := hNo_le q
     rw [show (0 < fNo q) ↔ fNo q = 1 by omega]
-    simp only [g, decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo_iff q]
-  let T : α → ℕ := fun a => c * ((enc a).length + 1) ^ d
-  have hT : ComputableInPolyTime T enc encUnary :=
-    ((ComputableInPolyTime.unary_eval (Polynomial.C c * (Polynomial.X + 1) ^ d)).comp
-      (ComputableInPolyTime.encoding_length enc)).of_enc_eq fun a => by simp [T]
+    simp only [decide_eq_false_iff_not, ← Set.mem_compl_iff, hNo_iff q]
+  let T : α → ℕ := fun a => p.eval (enc a).length
+  have hT : ComputableInPolyTime T enc encUnary := by
+    dsimp only [T]
+    fun_prop
   have hinput : ComputableInPolyTime (fun a : α => enc a) enc encBits :=
     ComputableInPolyTime.id'
   have hmem := replayWeightedSum_mem_SharpP machine hinput hT hYes_mem hNo_mem hF
   convert hmem using 1
   funext a
   rw [replayWeightedSum_eq_of_le_one machine (fun a => enc a) T hYes_le hNo_le hYes' hNo' F a,
-    machine.replayOutput_oracleReplies g (T a) (enc a)]
-  have hrun_a := hrun a (languageOracle A)
-  rw [hprogram a] at hrun_a
-  change F (a, output (f a)) = _
-  rw [← hrun_a]
-  rfl
+    hout a]
 
 /-- **`#P` precomposition with word-valued `FP^(UP ∩ coUP)` functions.** -/
 theorem SharpP.comp_mem_of_computableInPolyTimeWithOracle
@@ -358,17 +287,17 @@ theorem forall_SharpPWithOracle_eq_SharpP_iff :
     fun ⟨hA_up, hA_coup⟩ _ enc =>
       SharpPWithOracle_eq_SharpP_of_mem_UP_of_mem_coUP hA_up hA_coup enc⟩
 
+/-- `UP ∩ coUP` is nonempty: it contains the empty problem, which is in `P`. This is the
+witness that collapses each union of a class relativized to a low oracle. -/
+private theorem UP_inter_coUP_nonempty : (UP encBits ∩ coUP encBits).Nonempty :=
+  ⟨∅, P_subset_UP empty_mem_P, P_subset_coUP empty_mem_P⟩
+
 /-- **The union of `#P^A` over `A ∈ UP ∩ coUP` is `#P`.** -/
 theorem iUnion_SharpPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, SharpPWithOracle A enc) = SharpP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (SharpPWithOracle_eq_SharpP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro f hf
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    refine Set.mem_iUnion₂.mpr ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, ?_⟩
-    exact SharpP_subset_SharpPWithOracle ∅ enc hf
+    (⋃ A ∈ UP encBits ∩ coUP encBits, SharpPWithOracle A enc) = SharpP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      SharpPWithOracle_eq_SharpP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-! ### Relativized `UP`, `coUP`, `FewP`, `US`, and `SBPWithFixedTarget` -/
 
@@ -603,63 +532,38 @@ theorem SBPWithFixedTarget_eq_SBP_of_mem_UP_of_mem_coUP
 
 /-- **The union of `UP^A` over `A ∈ UP ∩ coUP` is `UP`.** -/
 theorem iUnion_UPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, UPWithOracle A enc) = UP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (UPWithOracle_eq_UP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, UP_subset_UPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, UPWithOracle A enc) = UP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      UPWithOracle_eq_UP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `coUP^A` over `A ∈ UP ∩ coUP` is `coUP`.** -/
 theorem iUnion_coUPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, coUPWithOracle A enc) = coUP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (coUPWithOracle_eq_coUP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, coUP_subset_coUPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, coUPWithOracle A enc) = coUP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      coUPWithOracle_eq_coUP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `FewP^A` over `A ∈ UP ∩ coUP` is `FewP`.** -/
 theorem iUnion_FewPWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, FewPWithOracle A enc) = FewP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (FewPWithOracle_eq_FewP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, FewP_subset_FewPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, FewPWithOracle A enc) = FewP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      FewPWithOracle_eq_FewP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `US^A` over `A ∈ UP ∩ coUP` is `US`.** -/
 theorem iUnion_USWithOracle_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, USWithOracle A enc) = US enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (USWithOracle_eq_US_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, US_subset_USWithOracle ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, USWithOracle A enc) = US enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      USWithOracle_eq_US_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-- **The union of `SBPWithFixedTarget A` over `A ∈ UP ∩ coUP` is `SBP`.** -/
 theorem iUnion_SBPWithFixedTarget_UP_inter_coUP (enc : α ↪ List Bool) :
-    (⋃ A ∈ UP encBits ∩ coUP encBits, SBPWithFixedTarget A enc) = SBP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA =>
-      (SBPWithFixedTarget_eq_SBP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, ⟨P_subset_UP hempty, P_subset_coUP hempty⟩, SBP_subset_SBPWithFixedTarget ∅ enc hL⟩
+    (⋃ A ∈ UP encBits ∩ coUP encBits, SBPWithFixedTarget A enc) = SBP enc :=
+  (Set.iUnion₂_congr fun _ hA =>
+      SBPWithFixedTarget_eq_SBP_of_mem_UP_of_mem_coUP hA.1 hA.2 enc).trans
+    (Set.biUnion_const UP_inter_coUP_nonempty _)
 
 /-! ### Exact characterizations of `GapP` and `SPP` oracle lowness (`Low(GapP) = Low(SPP) = SPP`) -/
 
@@ -722,25 +626,15 @@ theorem forall_SPPWithOracle_eq_SPP_iff :
 
 /-- **The union of `GapP^A` over `A ∈ SPP` is `GapP`.** -/
 theorem iUnion_GapPWithOracle_SPP (enc : α ↪ List Bool) :
-    (⋃ A ∈ SPP encBits, GapPWithOracle A enc) = GapP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA => (GapPWithOracle_eq_GapP_of_mem_SPP hA enc).le
-  · intro g hg
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, UP_subset_SPP (P_subset_UP hempty), GapP_subset_GapPWithOracle ∅ enc hg⟩
+    (⋃ A ∈ SPP encBits, GapPWithOracle A enc) = GapP enc :=
+  (Set.iUnion₂_congr fun _ hA => GapPWithOracle_eq_GapP_of_mem_SPP hA enc).trans
+    (Set.biUnion_const ⟨∅, UP_subset_SPP (P_subset_UP empty_mem_P)⟩ _)
 
 /-- **The union of `SPP^A` over `A ∈ SPP` is `SPP`.** -/
 theorem iUnion_SPPWithOracle_SPP (enc : α ↪ List Bool) :
-    (⋃ A ∈ SPP encBits, SPPWithOracle A enc) = SPP enc := by
-  apply Set.Subset.antisymm
-  · exact Set.iUnion₂_subset fun A hA => (SPPWithOracle_eq_SPP_of_mem_SPP hA enc).le
-  · intro L hL
-    have hempty : (∅ : Set (List Bool)) ∈ P encBits :=
-      ⟨fun _ => false, .const false, fun _ => by simp⟩
-    exact Set.mem_iUnion₂.mpr
-      ⟨∅, UP_subset_SPP (P_subset_UP hempty), SPP_subset_SPPWithOracle ∅ enc hL⟩
+    (⋃ A ∈ SPP encBits, SPPWithOracle A enc) = SPP enc :=
+  (Set.iUnion₂_congr fun _ hA => SPPWithOracle_eq_SPP_of_mem_SPP hA enc).trans
+    (Set.biUnion_const ⟨∅, UP_subset_SPP (P_subset_UP empty_mem_P)⟩ _)
 
 /-- **`FewP` is low for `GapP`** (`GapP^FewP = GapP`, via `FewP ⊆ SPP`). -/
 theorem GapPWithOracle_eq_GapP_of_mem_FewP (hA : A ∈ FewP encBits) (enc : α ↪ List Bool) :

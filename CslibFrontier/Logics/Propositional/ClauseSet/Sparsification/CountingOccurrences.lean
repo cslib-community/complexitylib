@@ -34,7 +34,7 @@ asserted here.
 * `Cslib.Logic.PL.ClauseSet.Sparsification.card_counting_newContaining_lt`: marked-present bound.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.ClauseSet.Sparsification
 

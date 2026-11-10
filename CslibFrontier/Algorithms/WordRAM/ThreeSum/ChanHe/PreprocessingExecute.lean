@@ -18,6 +18,9 @@ import all CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.PreprocessingSetup
 Starting from the complete frontend's actual output, the native program computes its shared
 prime table and reservations, then executes every actual descriptor and recursion tree.
 
+The stage contracts of `PreprocessingSetup` and the forest invariant of `PreprocessingLoop` are
+private to those proof-only companions; this module reads them through `import all`.
+
 ## Main results
 
 * `afterFrontend_exec`: the complete native suffix has exact finite node output and charged cost.
@@ -25,7 +28,7 @@ prime table and reservations, then executes every actual descriptor and recursio
 The native composition proofs are original. No runtime algorithm or fit advice is supplied.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing
 

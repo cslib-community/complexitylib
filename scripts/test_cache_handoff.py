@@ -505,6 +505,16 @@ class HandoffTests(unittest.TestCase):
         self.assertIn("100%25%0Ax", line)
         self.assertNotIn("\n", line)
 
+    def test_transport_only_uses_get_and_paginates(self):
+        with patch.object(subprocess, "run") as invoke:
+            invoke.return_value.stdout = "[]"
+            handoff.gh_get("repos/example/repo/actions/runs", paginate=True)
+        command = invoke.call_args.args[0]
+        self.assertIn("GET", command)
+        self.assertIn("--paginate", command)
+        self.assertIn("--slurp", command)
+        self.assertEqual(command[command.index("--hostname") + 1], "github.com")
+
     def test_default_download_uses_the_handoff_budget(self):
         with patch.object(handoff, "gh_download_artifact") as download:
             handoff.download_handoff("o/r", 7, "lean-build-x", Path("/tmp/d"))

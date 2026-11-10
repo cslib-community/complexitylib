@@ -106,42 +106,34 @@ lemma Tape.Covered.length_le {t : Tape} {V : Finset ℤ} (h : t.Covered V) :
 
 /-! ### A step on a single work tape -/
 
-lemma apply_none (t : Tape) : t.apply (none, 0) = t := rfl
-
 lemma getD_applyTapes (ts : List Tape) (as : List TapeAct) {i : ℕ} (hi : i < ts.length) :
     (applyTapes ts as).getD i .blank = (ts.getD i .blank).apply (as.getD i (none, 0)) := by
   induction ts generalizing as i with
   | nil => simp at hi
   | cons t ts ih =>
     rcases as with _ | ⟨a, as⟩
-    · rcases i with _ | i <;> simp [applyTapes, apply_none, List.getD_eq_getElem?_getD]
+    · rcases i with _ | i <;> simp [applyTapes, Tape.apply_none_zero, List.getD_eq_getElem?_getD]
     · rcases i with _ | i
       · simp [applyTapes]
       · simpa [applyTapes] using ih as (by simpa using hi)
 
 lemma length_step_workTapes (d : Desc) (x : List ℕ) (c : SCfg) :
     (step d x c).1.workTapes.length = c.workTapes.length := by
-  rw [step_eq_stepWith, show stepWith d c (inputSymbol x c.inputPos) =
-      stepWith ((d, c), inputSymbol x c.inputPos).1.1 ((d, c), inputSymbol x c.inputPos).1.2
-        ((d, c), inputSymbol x c.inputPos).2 from rfl, stepWith_eq]
-  split_ifs
-  · exact length_applyTapes_eq _ _
-  · rfl
-  · rfl
+  rw [step_eq_stepWith, stepWith]
+  repeat' split
+  all_goals first | rfl | exact length_applyTapes_eq _ _
 
 /-- A step applies an action to every work tape. -/
 lemma step_tape (d : Desc) (x : List ℕ) (c : SCfg) (i : ℕ) :
     ∃ a, (step d x c).1.workTapes.getD i .blank = (c.workTapes.getD i .blank).apply a := by
   rcases Nat.lt_or_ge i c.workTapes.length with hi | hi
-  · rw [step_eq_stepWith, show stepWith d c (inputSymbol x c.inputPos) =
-      stepWith ((d, c), inputSymbol x c.inputPos).1.1 ((d, c), inputSymbol x c.inputPos).1.2
-        ((d, c), inputSymbol x c.inputPos).2 from rfl, stepWith_eq]
-    split_ifs
-    · exact ⟨_, getD_applyTapes _ _ hi⟩
-    · exact ⟨(none, 0), (apply_none _).symm⟩
-    · exact ⟨(none, 0), (apply_none _).symm⟩
+  · rw [step_eq_stepWith, stepWith]
+    repeat' split
+    all_goals first
+      | exact ⟨_, getD_applyTapes _ _ hi⟩
+      | exact ⟨(none, 0), (Tape.apply_none_zero _).symm⟩
   · refine ⟨(none, 0), ?_⟩
-    rw [apply_none, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
+    rw [Tape.apply_none_zero, List.getD_eq_default _ _ hi, List.getD_eq_default _ _
       (by rw [length_step_workTapes]; exact hi)]
 
 lemma head_apply (t : Tape) (a : TapeAct) :
@@ -166,7 +158,8 @@ variable (d : Desc) (x : List ℕ)
 /-- The number of work-tape cells visited by the simulation up to step `j`. -/
 @[expose] public def simSpace (j : ℕ) : ℕ := ∑ i ∈ Finset.range d.tapes, (visited d x j i).card
 
-lemma run_succ (j : ℕ) : run d x (j + 1) = (step d x (run d x j)).1 := by
+/-- One more step of the simulation. -/
+public lemma run_succ (j : ℕ) : run d x (j + 1) = (step d x (run d x j)).1 := by
   simp only [run, Function.iterate_succ_apply', stepOut]
 
 lemma visited_mono {j j' : ℕ} (h : j ≤ j') (i : ℕ) : visited d x j i ⊆ visited d x j' i :=
@@ -262,7 +255,7 @@ public theorem length_eCfg_le_space (j : ℕ) :
   obtain ⟨hinv, -, -⟩ := inv_iterate d x j
   have hk := length_run_workTapes d x j
   have h₁ := length_eSym_le hinv.state
-  have h₂ := ComputableTidilyInO.length_encNat_mono hinv.inputPos
+  have h₂ := length_encNat_mono hinv.inputPos
   have h₃ : (encList eTape (run d x j).workTapes).length ≤
       ∑ i ∈ Finset.range d.tapes, (2 * (3 * (2 * descLen d + 5) * (visited d x j i).card) + 1) := by
     rw [length_encList_eq_sum, hk]

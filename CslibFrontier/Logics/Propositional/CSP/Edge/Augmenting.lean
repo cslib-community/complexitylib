@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk
+public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Enumeration
 import CslibFrontier.Foundations.Data.BitString.DeltaMatroid.Operations
 
 /-!
@@ -24,7 +25,6 @@ the source's hypothesis that this variable is inconsistent; it may be the termin
 
 ## Main definitions
 
-* `incidenceList`: deterministic typed positional incidence scan.
 * `EdgeInstance.repair`, `EdgeInstance.buildWalk`: the two clocked exchange phases.
 * `EdgeInstance.augmentingWalk`: their total, choice-free composition.
 
@@ -44,23 +44,6 @@ open scoped symmDiff
 
 variable {Rel V : Type*} {F : CSP Rel V} [DecidableEq V]
 
-/-- Positional incidences in constraint order and then argument order. This is a typed view of
-`CSP.occurrences`, without choosing representatives or identifying repeated constraints. -/
-@[expose] def incidenceList (F : CSP Rel V) : List (Occurrence F) :=
-  (List.ofFn fun i : Fin F.length =>
-    List.ofFn fun j : Fin F[i].2.length => (⟨i, j⟩ : Occurrence F)).flatten
-
-omit [DecidableEq V] in
-/-- Every incidence appears in the deterministic scan. -/
-theorem mem_incidenceList (o : Occurrence F) : o ∈ incidenceList F := by
-  rcases o with ⟨i, j⟩
-  exact List.mem_flatten.mpr ⟨_, List.mem_ofFn.mpr ⟨i, rfl⟩,
-    List.mem_ofFn.mpr ⟨j, rfl⟩⟩
-
-instance (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool) :
-    Decidable (ValidLabeling sem f) :=
-  inferInstanceAs (Decidable (∀ i : Fin F.length,
-    sem F[i].1 (localTuple f i) = true))
 
 namespace EdgeInstance
 

@@ -227,8 +227,7 @@ theorem eval_graft (l : List ι) (k : (ι → Bool) → DecisionTree ι β) (a x
     have : (graft (i :: l) k a).eval x = (graft l k (Function.update a i (x i))).eval x := by
       cases hx : x i <;> simp [graft, hx]
     rw [this, ih]
-    congr 2
-    funext j
+    congr 2 with j : 1
     by_cases hj : j ∈ l
     · simp [hj]
     · by_cases hji : j = i
@@ -262,8 +261,8 @@ theorem depth_queryAll_le (f : (ι → Bool) → β) (l : List ι) (a : ι → B
 
 end Graft
 
-/-- Over finitely many variables, every function has a decision tree that queries each variable
-once. -/
+/-- Over finitely many variables, every function is computed by a decision tree of depth at most
+the number of variables. -/
 theorem exists_computes [Fintype ι] (f : (ι → Bool) → β) :
     ∃ t : DecisionTree ι β, t.Computes f ∧ t.depth ≤ Fintype.card ι := by
   classical

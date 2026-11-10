@@ -120,9 +120,7 @@ theorem count_ofLowDegree_mod {D : ℕ} {c : (T → Bool) → ℤ} (hc : c ∈ l
     (ofLowDegree D M c out).count x % M = (c x % M).toNat := by
   have h : ((ofLowDegree D M c out).count x : ℤ) % M = c x % M :=
     natCast_count_ofLowDegree_modEq hc hM out x
-  have h' : (((ofLowDegree D M c out).count x % M : ℕ) : ℤ) = c x % M := by
-    rw [Int.natCast_mod]
-    exact h
+  have h' : (((ofLowDegree D M c out).count x % M : ℕ) : ℤ) = c x % M := by grind
   rw [← h', Int.toNat_natCast]
 
 /-- **What the canonical circuit computes**: `out` of the least residue of `c x` modulo `M`, for

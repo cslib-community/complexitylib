@@ -23,6 +23,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Discrete-logarithm collision-resistant hash families
@@ -303,13 +304,7 @@ theorem succProbability_collisionGameFor_groupHash_le_discreteLogGame
         n (d, F.encode d (α • F.generator d)) pair.1 pair.2 = true
   · have hextract :=
       F.pedersenExtractNat_eq_of_isCollisionFor_groupHash blockLen n d α (hsize d hd) hcoll
-    have hbits : ((ofBits (pedersenExtractNat (F.order d)
-        (ofBits (pair.1.take (blockLen d))) (ofBits (pair.1.drop (blockLen d)))
-        (ofBits (pair.2.take (blockLen d))) (ofBits (pair.2.drop (blockLen d)))).bits : ℕ) :
-        ZMod (F.order d)) = α := by
-      unfold ofBits
-      rwa [Nat.foldr_bit_bits]
-    simp [hcoll, hbits]
+    simp [hcoll, hextract]
   · simp [Bool.eq_false_iff.mpr hcoll]
 
 /-- `groupHashToDLAdversary` is uniform strict PPT whenever `blockLen` is computable in polynomial

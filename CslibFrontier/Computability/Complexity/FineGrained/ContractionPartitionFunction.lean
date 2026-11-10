@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.CSPNetworkPolyTime
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionCounting
 public import CslibFrontier.Logics.Propositional.CSP.HardCore
+import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ContractionCall
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -130,22 +131,6 @@ noncomputable def certificate : NativeCertificate (count k W wt) (encCSP encRel 
       (NativeCertificate.ofPolyTime (computableInPolyTime_contractionInput encRel k W wt hwt)))
     (NativeCertificate.ofPolyTime (computableInPolyTime_fallback encRel))).congr fun _ => rfl
 
-private theorem certificate_time (F : CSP Rel ℕ) : (certificate encRel k W wt hwt).time F =
-    (NativeCertificate.ofPolyTime (computableInPolyTime_guard encRel k)).time F +
-      if guard k F then
-          (NativeCertificate.ofPolyTime
-            (computableInPolyTime_contractionInput encRel k W wt hwt)).time F +
-            fastContractionAlgorithm.certificate.time (contractionInput k W wt F)
-        else (NativeCertificate.ofPolyTime (computableInPolyTime_fallback encRel)).time F := rfl
-
-private theorem certificate_space (F : CSP Rel ℕ) : (certificate encRel k W wt hwt).space F =
-    (NativeCertificate.ofPolyTime (computableInPolyTime_guard encRel k)).space F +
-      if guard k F then
-          (NativeCertificate.ofPolyTime
-            (computableInPolyTime_contractionInput encRel k W wt hwt)).space F +
-            fastContractionAlgorithm.certificate.space (contractionInput k W wt F)
-        else (NativeCertificate.ofPolyTime (computableInPolyTime_fallback encRel)).space F := rfl
-
 omit encRel hwt
 
 /-! ### Correctness -/
@@ -236,125 +221,25 @@ theorem exists_partitionFunctionCounter (encRel : Rel ↪ List Bool) (k W : ℕ)
         (fun F => 2 ^ (A * (F.vars.length + 1) / Nat.sqrt (Nat.log 2 (F.numVars + 2))) *
           ((encCSP encRel encNat F).length + 1) ^ e)
         (fun F => ((encCSP encRel encNat F).length + 1) ^ b) := by
-  obtain ⟨K, hK⟩ := fastContractionAlgorithm.bound (k + 4) (W + 1)
-  have hg := NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_guard encRel k)
-  have hp := NativeCertificate.ofPolyTime_isPolynomial
-    (computableInPolyTime_contractionInput encRel k W wt hwt)
-  have hf := NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_fallback encRel)
-  obtain ⟨cg, dg, htg⟩ := hg.1.exists_le
-  obtain ⟨cg', dg', hsg⟩ := hg.2.exists_le
-  obtain ⟨cp, dp, htp⟩ := hp.1.exists_le
-  obtain ⟨cp', dp', hsp⟩ := hp.2.exists_le
-  obtain ⟨cf, df, htf⟩ := hf.1.exists_le
-  obtain ⟨cf', df', hsf⟩ := hf.2.exists_le
-  obtain ⟨p, q, hlen⟩ :=
-    (computableInPolyTime_contractionInput encRel k W wt hwt).polyBounded_length.exists_le
-  set e := dg + dp + df + q * K
-  set b := dg' + dp' + df' + q * K
-  refine ⟨count k W wt, 3 * K, e, b, fun F hk => count_eq hW hk,
-    (certificate encRel k W wt hwt).computes.mono
-      (cg + cp + cf + K * (p + 1) ^ K + cg' + cp' + cf' + 1) (fun F => ?_) (fun F => ?_)⟩
-  all_goals
-    set Y := (encCSP encRel encNat F).length + 1 with hY
-    have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
-    have hpow {d d' : ℕ} (h : d ≤ d') : Y ^ d ≤ Y ^ d' := Nat.pow_le_pow_right hY1 h
-    have hn' : ((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-        (contractionInput k W wt F)).length + 1 ≤ (p + 1) * Y ^ q := by
-      have h1 := hlen F
-      have h2 : 1 ≤ Y ^ q := Nat.one_le_pow _ _ hY1
-      rw [← hY] at h1
-      nlinarith
-    have hn'K : (((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-        (contractionInput k W wt F)).length + 1) ^ K ≤ (p + 1) ^ K * Y ^ (q * K) := by
-      calc _ ≤ ((p + 1) * Y ^ q) ^ K := Nat.pow_le_pow_left hn' K
-        _ = _ := by rw [mul_pow, pow_mul]
-  · -- time
-    set E := 3 * K * (F.vars.length + 1) / Nat.sqrt (Nat.log 2 (F.numVars + 2))
-    have h2E : 1 ≤ 2 ^ E := Nat.one_le_two_pow
-    set Z := 2 ^ E * Y ^ e
-    have hZ {d : ℕ} (h : d ≤ e) : Y ^ d ≤ Z :=
-      (hpow h).trans (Nat.le_mul_of_pos_left _ h2E)
-    have htg' : (NativeCertificate.ofPolyTime (computableInPolyTime_guard encRel k)).time F ≤
-        cg * Z := (htg F).trans (Nat.mul_le_mul_left _ (hZ (by omega)))
-    have htp' : (NativeCertificate.ofPolyTime
-        (computableInPolyTime_contractionInput encRel k W wt hwt)).time F ≤ cp * Z :=
-      (htp F).trans (Nat.mul_le_mul_left _ (hZ (by omega)))
-    have htf' : (NativeCertificate.ofPolyTime (computableInPolyTime_fallback encRel)).time F ≤
-        cf * Z := (htf F).trans (Nat.mul_le_mul_left _ (hZ (by omega)))
-    have htc : guard k F = true →
-        fastContractionAlgorithm.certificate.time (contractionInput k W wt F) ≤
-          K * (p + 1) ^ K * Z := by
-      intro hgF
-      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hgF
+  obtain ⟨K, h⟩ := fastContractionAlgorithm.expTimePolySpace_branch
+    (computableInPolyTime_guard encRel k) (computableInPolyTime_contractionInput encRel k W wt hwt)
+    (computableInPolyTime_fallback encRel) (k + 4) (W + 1) (fun F => 3 * F.vars.length)
+    fun F hg => by
+      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
       have h1 : 1 ≤ F.length := List.length_pos_iff.mpr hne
       have hm := CSP.length_le_length_vars fun c hc => (hcl c hc).1
-      have hnN : F.numVars ≤ F.vars.length := List.toFinset_card_le _
-      have hb := (hK (3 * F.vars.length) (precision W F) (cspNetwork k wt F) (by omega)
-        (by rw [precision]; nlinarith) (by rw [precision])
-        (explicitAdmissible_cspNetwork hgF)).1
+      dsimp only [contractionInput, precision]
+      exact ⟨by omega, by nlinarith, le_rfl, explicitAdmissible_cspNetwork hg⟩
+  have hc := h (fun F => 3 * K * (F.vars.length + 1) / Nat.sqrt (Nat.log 2 (F.numVars + 2)))
+    fun F hg => by
+      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
+      have h1 : 1 ≤ F.length := List.length_pos_iff.mpr hne
+      have hm := CSP.length_le_length_vars fun c hc => (hcl c hc).1
       have hexp := ContractionCounting.exponent_le (K := K) (k := 1) (m := F.vars.length)
-        (by omega) (by omega) hnN
-      rw [Nat.mul_one] at hexp
-      calc fastContractionAlgorithm.certificate.time (contractionInput k W wt F)
-          ≤ K * ((p + 1) ^ K * Y ^ (q * K)) * 2 ^ E := by
-            refine hb.trans ?_
-            exact Nat.mul_le_mul (Nat.mul_le_mul_left _ hn'K)
-              (Nat.pow_le_pow_right (by norm_num) hexp)
-        _ ≤ K * (p + 1) ^ K * Z := by
-            have := hpow (show q * K ≤ e by omega)
-            calc K * ((p + 1) ^ K * Y ^ (q * K)) * 2 ^ E
-                = K * (p + 1) ^ K * (2 ^ E * Y ^ (q * K)) := by ring
-              _ ≤ K * (p + 1) ^ K * Z := Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ this)
-    rw [certificate_time]
-    generalize hKP : K * (p + 1) ^ K = KP at htc
-    have hC : ∀ c, c ≤ cg + cp + cf + KP + cg' + cp' + cf' + 1 →
-        c * Z ≤ (cg + cp + cf + KP + cg' + cp' + cf' + 1) * (Z + 1) := fun c hc =>
-      (Nat.mul_le_mul_right _ hc).trans (Nat.mul_le_mul_left _ (Nat.le_succ _))
-    split
-    · next hgF =>
-      calc _ ≤ cg * Z + (cp * Z + KP * Z) := Nat.add_le_add htg' (Nat.add_le_add htp' (htc hgF))
-        _ = (cg + cp + KP) * Z := by ring
-        _ ≤ _ := hC _ (by omega)
-    · calc _ ≤ cg * Z + cf * Z := Nat.add_le_add htg' htf'
-        _ = (cg + cf) * Z := by ring
-        _ ≤ _ := hC _ (by omega)
-  · -- space
-    have hsg' : (NativeCertificate.ofPolyTime (computableInPolyTime_guard encRel k)).space F ≤
-        cg' * Y ^ b := (hsg F).trans (Nat.mul_le_mul_left _ (hpow (by omega)))
-    have hsp' : (NativeCertificate.ofPolyTime
-        (computableInPolyTime_contractionInput encRel k W wt hwt)).space F ≤ cp' * Y ^ b :=
-      (hsp F).trans (Nat.mul_le_mul_left _ (hpow (by omega)))
-    have hsf' : (NativeCertificate.ofPolyTime (computableInPolyTime_fallback encRel)).space F ≤
-        cf' * Y ^ b := (hsf F).trans (Nat.mul_le_mul_left _ (hpow (by omega)))
-    have hsc : guard k F = true →
-        fastContractionAlgorithm.certificate.space (contractionInput k W wt F) ≤
-          K * (p + 1) ^ K * Y ^ b := by
-      intro hgF
-      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hgF
-      have h1 : 1 ≤ F.length := List.length_pos_iff.mpr hne
-      have hm := CSP.length_le_length_vars fun c hc => (hcl c hc).1
-      have hb := (hK (3 * F.vars.length) (precision W F) (cspNetwork k wt F) (by omega)
-        (by rw [precision]; nlinarith) (by rw [precision])
-        (explicitAdmissible_cspNetwork hgF)).2
-      refine hb.trans ?_
-      calc K * _ ≤ K * ((p + 1) ^ K * Y ^ (q * K)) := Nat.mul_le_mul_left _ hn'K
-        _ ≤ K * (p + 1) ^ K * Y ^ b := by
-            rw [← Nat.mul_assoc]
-            exact Nat.mul_le_mul_left _ (hpow (by omega))
-    rw [certificate_space]
-    generalize hKP : K * (p + 1) ^ K = KP at hsc
-    have hC : ∀ c, c ≤ cg + cp + cf + KP + cg' + cp' + cf' + 1 →
-        c * Y ^ b ≤ (cg + cp + cf + KP + cg' + cp' + cf' + 1) * (Y ^ b + 1) := fun c hc =>
-      (Nat.mul_le_mul_right _ hc).trans (Nat.mul_le_mul_left _ (Nat.le_succ _))
-    split
-    · next hgF =>
-      calc _ ≤ cg' * Y ^ b + (cp' * Y ^ b + KP * Y ^ b) :=
-            Nat.add_le_add hsg' (Nat.add_le_add hsp' (hsc hgF))
-        _ = (cg' + cp' + KP) * Y ^ b := by ring
-        _ ≤ _ := hC _ (by omega)
-    · calc _ ≤ cg' * Y ^ b + cf' * Y ^ b := Nat.add_le_add hsg' hsf'
-        _ = (cg' + cf') * Y ^ b := by ring
-        _ ≤ _ := hC _ (by omega)
+        (by omega) (by omega) (List.toFinset_card_le F.vars)
+      rwa [Nat.mul_one] at hexp
+  obtain ⟨e, he⟩ := hc.computableInO
+  exact ⟨count k W wt, 3 * K, e, e, fun F hk => count_eq hW hk, he⟩
 
 /-- **Weighted `#CSP` on bounded-degree instances.** For each arity bound `k` and weight bound
 `W`, one machine computes `F.partitionFunction wt` on every instance `F` whose constraints have

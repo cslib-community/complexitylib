@@ -115,8 +115,7 @@ theorem Circuit.aeval_polynomial {R : Type*} [CommSemiring R] [Algebra K R]
       (arithInterpretationWith K (algebraMap K R)) :=
     ⟨aeval x, fun op args => by cases op <;> simp [arithInterpretationWith]⟩
   refine (congrFun (c.map_eval h X) j).trans ?_
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact aeval_X x i
 
 /-- Substituting polynomials for the variables of the polynomial computed by a circuit is
@@ -326,8 +325,7 @@ theorem polynomial_comp_projectionCircuit (c : Circuit (arithSignature K) m p)
     (ρ : Fin m → Fin n ⊕ K) (j : Fin p) :
     (c.comp (projectionCircuit ρ)).polynomial j = projection ρ (c.polynomial j) := by
   rw [projection, Circuit.aeval_polynomial_mvPolynomial, Circuit.polynomial, Circuit.eval_comp]
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact eval_projectionCircuit _ ρ X i
 
 /-! ### The class VP -/

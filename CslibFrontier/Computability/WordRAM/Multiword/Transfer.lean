@@ -265,10 +265,8 @@ theorem exec_assemble {w : ℕ} (hw : 2 ≤ w) (as : List (Fin (r + 4)))
       y.regs d = value (radix w) x as ∧ Frame x y [base, zero, d] ∧
       ∀ i, IsDigit i → i ≠ d → y.regs i = x.regs i := by
   let z := Workspace.setupResult w x
-  have hval : value (radix w) z as = value (radix w) x as := by
-    unfold value
-    congr 1
-    exact List.map_congr_left fun i hi => Workspace.setup_digit w x (hin i hi)
+  have hval : value (radix w) z as = value (radix w) x as :=
+    value_congr fun i hi => Workspace.setup_digit w x (hin i hi)
   have hbase : z.regs base = radix w := by
     simp [z, Workspace.setupResult, base, zero]
   obtain ⟨u, heu, huv, hum, hup⟩ := exec_accumulate hw as hin z hbase

@@ -290,12 +290,6 @@ private theorem mem_ones {v : List Bool} {i : ℕ} : i ∈ ones v ↔ v[i]? = so
   · intro h
     exact ⟨(true, i), ⟨h, rfl⟩, rfl⟩
 
-/-- Testing every element of a fixed list is polynomial-time when each test is. -/
-private theorem computableInPolyTime_all_const {γ ι : Type} {encIn : γ ↪ List Bool} (l : List ι)
-    {test : γ → ι → Bool} (h : ∀ i ∈ l, ComputableInPolyTime (fun x => test x i) encIn encBool) :
-    ComputableInPolyTime (fun x => l.all (test x)) encIn encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.allConst l fun i hi => (h i hi).tidy)
-
 /-- **The Hausdorff sets of a bounded truth-table reduction reduce conjunctively to tally
 problems**, when the target of the reduction does. Here `r`, `q` and `d` are the query count, the
 queries and the truth table of a reduction making at most `k` queries, and the target `B` has a
@@ -345,7 +339,7 @@ theorem exists_polyTimeCTTReducible_hausdorff {α β : Type} {encA : α ↪ List
     have hall : ComputableInPolyTime (fun a => ((p.1 :: p.2).zip p.2).all fun e =>
         decide (List.Forall₂ (· ≤ ·) e.2 e.1 ∧ e.2 ≠ e.1) && (d (a, e.2) != d (a, e.1)))
         encA encBool :=
-      computableInPolyTime_all_const _ fun e _ => by fun_prop
+      allConst _ fun e _ => by fun_prop
     fun_prop
   obtain ⟨A₁, h₁⟩ := exists_polyTimeCTTReducible_encUnary_of_mem_P
     (L := {a | valid p a = true}) (mem_P.2 ⟨valid p, hpoly, fun _ => Iff.rfl⟩)

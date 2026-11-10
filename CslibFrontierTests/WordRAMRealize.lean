@@ -180,9 +180,9 @@ theorem roundTrip_program : ∃ n C : ℕ,
     (by intro d i; fin_cases i <;> rfl)
   refine ⟨n, C, emit, fun frontier src tmp hsrc htmp hd hf hs i w c v hc1 hc hv => ?_⟩
   have h3 : Fits w 3 := hc.of_le (by omega)
-  have hvalid : (Memory.spec w).ValidHistory (inputState [c, v])
-      ((Memory.spec w).clientHistory (inputState [c, v]) (roundTrip (c, v))) := by
-    change (Memory.spec w).ValidHistory (inputState [c, v])
+  have hvalid : (Memory.spec w).ValidHistory (Memory.State.init [c, v])
+      ((Memory.spec w).clientHistory (Memory.State.init [c, v]) (roundTrip (c, v))) := by
+    change (Memory.spec w).ValidHistory (Memory.State.init [c, v])
       [.alloc 1, .allocDirty c, .read 3, .write 4 v, .write 3 1, .read 3, .read 4, .write 3 0]
     refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, trivial⟩
     · change Fits w (3 + 1)
@@ -203,7 +203,7 @@ theorem roundTrip_program : ∃ n C : ℕ,
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hx
       rcases hx with rfl | rfl
       exacts [hc.of_le (by omega), hv]⟩
-    (hc.of_le (by simp [inputState]; omega)) hvalid
+    (hc.of_le (by simp [Memory.State.init]; omega)) hvalid
   exact ⟨t, ht, hle.trans (by rfl)⟩
 
 /-! ## Performance guards

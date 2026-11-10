@@ -40,7 +40,7 @@ two field elements is one gate; the oracle queries are accounted for separately.
   [SudanTrevisanVadhan2001]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Synthesis
 

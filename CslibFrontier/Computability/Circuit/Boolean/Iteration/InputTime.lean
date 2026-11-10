@@ -147,10 +147,8 @@ theorem synthesis_batched_binary_powering (f : BitString n → BitString n) (C :
         (Or.inl (Or.inl (hb member ⟨j, hj⟩)))
     have he : (⋃ member, wires fun x => if bits x member ⟨j, hj⟩ then
         f^[2 ^ j] (state j x member) else state j x member) = q (j + 1) := by
-      congr 1
-      funext member
-      congr 1
-      funext x
+      congr 1 with member : 1
+      congr 1 with x : 1
       exact (iterate_toNat_word_mod_two_pow_succ f (bits x member) hj (init x member)).symm
     rw [he] at hmux
     refine (hpow.trans hmux).mono Set.Subset.rfl Set.Subset.rfl ?_

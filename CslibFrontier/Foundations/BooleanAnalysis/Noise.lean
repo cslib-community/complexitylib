@@ -62,7 +62,8 @@ over a mask of rate `p` (`BitString.bernoulliAverage_chi`).
   coordinates.
 * `Cslib.BitString.expect_mul_noiseOp_comm`: the noise operator is self-adjoint.
 * `Cslib.BitString.noiseStability_eq_sum`: the Fourier formula for the noise stability
-  [O'Donnell, Theorem 2.49][ODonnell2014].
+  [O'Donnell, Theorem 2.49][ODonnell2014], and `Cslib.BitString.noiseStability_derivative_eq_sum`
+  for the noise stability of a derivative.
 * `Cslib.BitString.sq_expect_le_noiseStability`, `Cslib.BitString.noiseStability_le_expect_sq`,
   `Cslib.BitString.noiseStability_mono`: the noise stability lies between the squared mean and the
   second moment, increasingly in `ρ`.
@@ -223,17 +224,24 @@ theorem noiseStability_eq_sum (ρ : ℝ) (f : (ι → Bool) → ℝ) :
     noiseStability ρ f = ∑ S, ρ ^ #S * fourierCoeff f S ^ 2 := by
   simp only [noiseStability, expect_mul_noiseOp_eq_sum, sq]
 
-/-- **The noise stability of a derivative**: `ρ Stab_ρ[Dᵢ f]` weighs the squared coefficient of
-`f` on each set containing `i` by `ρ` to the size of the set. -/
-theorem mul_noiseStability_derivative (ρ : ℝ) (i : ι) (f : (ι → Bool) → ℝ) :
-    ρ * noiseStability ρ (derivative i f) = ∑ S with i ∈ S, ρ ^ #S * fourierCoeff f S ^ 2 := by
-  rw [noiseStability_eq_sum, sum_filter_mem_eq_sum_filter_notMem i, sum_filter, mul_sum]
+/-- **The Fourier formula for the noise stability of a derivative**:
+`Stab_ρ[Dᵢ f] = ∑_{S ∋ i} ρ ^ (|S| - 1) f̂(S) ^ 2`. -/
+theorem noiseStability_derivative_eq_sum (ρ : ℝ) (i : ι) (f : (ι → Bool) → ℝ) :
+    noiseStability ρ (derivative i f) = ∑ S with i ∈ S, ρ ^ (#S - 1) * fourierCoeff f S ^ 2 := by
+  rw [noiseStability_eq_sum, sum_filter_mem_eq_sum_filter_notMem i, sum_filter]
   refine sum_congr rfl fun T _ => ?_
   rw [fourierCoeff_derivative]
   split_ifs with hT
   · simp
-  · rw [card_insert_of_notMem hT, pow_succ]
-    ring
+  · rw [card_insert_of_notMem hT, Nat.add_sub_cancel]
+
+/-- **The noise stability of a derivative**: `ρ Stab_ρ[Dᵢ f]` weighs the squared coefficient of
+`f` on each set containing `i` by `ρ` to the size of the set. -/
+theorem mul_noiseStability_derivative (ρ : ℝ) (i : ι) (f : (ι → Bool) → ℝ) :
+    ρ * noiseStability ρ (derivative i f) = ∑ S with i ∈ S, ρ ^ #S * fourierCoeff f S ^ 2 := by
+  rw [noiseStability_derivative_eq_sum, mul_sum]
+  refine sum_congr rfl fun S hS => ?_
+  rw [← mul_assoc, ← pow_succ', Nat.sub_add_cancel (card_pos.2 ⟨i, (mem_filter.1 hS).2⟩)]
 
 /-- At `ρ = 1` the noise stability is the second moment. -/
 theorem noiseStability_one (f : (ι → Bool) → ℝ) : noiseStability 1 f = 𝔼 x, f x ^ 2 := by

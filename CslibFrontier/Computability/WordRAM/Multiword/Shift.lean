@@ -49,10 +49,8 @@ variable {r : ℕ}
 
 private theorem value_frame {β : ℕ} {x y : Data (r + 4)}
     {ds as : List (Fin (r + 4))} (hf : Frame x y ds)
-    (ha : ∀ i ∈ as, i ∉ ds ∧ IsDigit i) : value β y as = value β x as := by
-  unfold value
-  congr 1
-  exact List.map_congr_left fun i hi =>
+    (ha : ∀ i ∈ as, i ∉ ds ∧ IsDigit i) : value β y as = value β x as :=
+  value_congr fun i hi =>
     hf.2 i (ha i hi).1 (digit_ne (ha i hi).2).1 (digit_ne (ha i hi).2).2.1
 
 /-- One division digit. `base` is the radix, `zero` the divisor, and `total` the shift. -/
@@ -353,10 +351,7 @@ private theorem exec_dispatch {w : ℕ} (hw : 2 ≤ w)
         (by simpa [z, base, total] using hb) (by simpa [z, zero, total] using hz)
         (by simpa [z] using hs.of_le (Nat.sub_le (x.regs total) (w / 2)))
         (fun i hi => by rw [hza i hi]; exact ha i (by simp [hi]))
-      have hzv : value (radix w) z as = value (radix w) x as := by
-        unfold value
-        congr 1
-        exact List.map_congr_left hza
+      have hzv : value (radix w) z as = value (radix w) x as := value_congr hza
       have hdrop : value (radix w) x (a :: as) >>> (w / 2) = value (radix w) x as := by
         rw [Nat.shiftRight_eq_div_pow]
         change (x.regs a + radix w * value (radix w) x as) / radix w = _
@@ -412,10 +407,7 @@ theorem exec {w : ℕ} (hw : 2 ≤ w)
   obtain ⟨y, he, hyb, hyv, hyf⟩ := exec_dispatch hw as ds hlen hin hout hnd hdis z
     (by simp [z, base, total, zero]) (by simp [z, zero, total]) (by simpa [z] using hs)
     (fun i hi => by rw [hzi i (hin i hi)]; exact ha i hi)
-  have hzv : value (radix w) z as = value (radix w) x as := by
-    unfold value
-    congr 1
-    exact List.map_congr_left fun i hi => hzi i (hin i hi)
+  have hzv : value (radix w) z as = value (radix w) x as := value_congr fun i hi => hzi i (hin i hi)
   have hf := frame_trans hzf hyf
   refine ⟨y, ?_, hyb, ?_, hf, ?_⟩
   · unfold program

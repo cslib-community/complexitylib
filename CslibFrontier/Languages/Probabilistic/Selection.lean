@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.Iteration
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Languages.Probabilistic.Concentration
 
 /-!
@@ -188,15 +189,13 @@ theorem selectBest_error_le (count trials : ℕ) (hcount : 0 < count)
       rw [OracleComp.selectStep, eval_map, PMF.toOuterMeasure_map_apply]
       rw [hstate.1]
       refine le_trans ?_ (hestimate i hi)
-      apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-      apply MeasureTheory.measure_mono
+      apply Probability.PMF.toOuterMeasure_toReal_mono
       intro successes hbad
       by_contra haccurate
       exact hbad (hstate.update successes (le_of_lt (lt_of_not_ge haccurate))))
   rw [OracleComp.selectBest, eval_map, PMF.toOuterMeasure_map_apply]
   refine le_trans ?_ hrun
-  apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-  apply MeasureTheory.measure_mono
+  apply Probability.PMF.toOuterMeasure_toReal_mono
   rintro ⟨next, best, count⟩ hbad hstate
   obtain ⟨_, _, hchosen, hall⟩ := hstate
   obtain ⟨hindex, hselected⟩ := hchosen hcount
@@ -260,8 +259,7 @@ theorem selectFrom_error_pow {α : Type} (values : List α) (hvalues : 0 < value
   simp only [OracleComp.selectFrom, bind_pure_comp, eval_map, PMF.toOuterMeasure_map_apply]
   refine le_trans ?_ (selectBest_error_pow values.length confidence inverseTolerance hvalues
     htolerance (fun i => test (values[i]?.getD fallback)))
-  apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-  apply MeasureTheory.measure_mono
+  apply Probability.PMF.toOuterMeasure_toReal_mono
   intro chosen hbad hgood
   obtain ⟨hchosen, hbest⟩ := hgood
   apply hbad
@@ -301,8 +299,7 @@ theorem sampleBest_error_pow {α : Type} (source : ProbComp α) (test : α → P
         test fallback
       rw [hlength] at h
       refine le_trans ?_ h
-      apply ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-      apply MeasureTheory.measure_mono
+      apply Probability.PMF.toOuterMeasure_toReal_mono
       intro chosen hbad hchosen
       obtain ⟨value, hmem, hvalue⟩ := hgood
       have := hchosen.2 value hmem

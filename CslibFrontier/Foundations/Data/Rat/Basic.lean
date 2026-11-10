@@ -30,7 +30,7 @@ denominator.
 * `Rat.decide_num_divInt_lt_zero`: unconditional numerator sign bit.
 -/
 
-@[expose] public section
+public section
 
 namespace Rat
 

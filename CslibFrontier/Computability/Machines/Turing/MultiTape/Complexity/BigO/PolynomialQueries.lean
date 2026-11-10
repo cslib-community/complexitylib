@@ -38,6 +38,25 @@ open Cslib.GenericRAM
 
 variable {α β γ : Type} {ei : α ↪ List Bool} {eq : β ↪ List Bool} {eo : γ ↪ List Bool}
 
+/-- A computation within time `T x * U x` and space `V x`, for `U` and `V` polynomial in the
+length `n` of the encoded input, runs within time `O(T x * (n + 1) ^ d)` and space
+`O((n + 1) ^ d)` for some `d`. -/
+private theorem exists_of_common_factor {f : α → γ} {Tm Sm T U V : α → ℕ}
+    (h : ComputableInO f ei eo Tm Sm) (htime : ∀ x, Tm x ≤ T x * U x)
+    (hspace : ∀ x, Sm x ≤ V x) (hU : PolyBounded (fun x => (ei x).length) U)
+    (hV : PolyBounded (fun x => (ei x).length) V) :
+    ∃ d : ℕ, ComputableInO f ei eo (fun x => T x * ((ei x).length + 1) ^ d)
+      (fun x => ((ei x).length + 1) ^ d) := by
+  obtain ⟨k, d, hk⟩ := (hU.add hV).exists_le
+  refine ⟨d, h.mono k (fun x => ?_) (fun x => ?_)⟩
+  · calc Tm x ≤ T x * U x := htime x
+      _ ≤ T x * (k * ((ei x).length + 1) ^ d) :=
+        Nat.mul_le_mul_left _ ((Nat.le_add_right _ _).trans (hk x))
+      _ = k * (T x * ((ei x).length + 1) ^ d) := by ring
+      _ ≤ k * (T x * ((ei x).length + 1) ^ d + 1) := Nat.mul_le_mul_left _ (Nat.le_succ _)
+  · exact (hspace x).trans (((Nat.le_add_left _ _).trans (hk x)).trans
+      (Nat.mul_le_mul_left _ (Nat.le_succ _)))
+
 /-- Compute a polynomial-size list of answers while preserving the common running-time factor.
 The constants `e`, `b`, and the resulting `d` are fixed before the input `x`. -/
 theorem polynomial_queries {answer : α × β → γ} {queries : α → List β}
@@ -84,10 +103,9 @@ theorem polynomial_queries {answer : α × β → γ} {queries : α → List β}
       ((hQ.add (PolyBounded.const 1)).mul (((hL.add hQ).add hO).add (hB.pow e)))
   have hV : PolyBounded L V :=
     (((((hL.add hL).add hcq.2).add hL).add hQ).add hO).add (hB.pow b)
-  obtain ⟨k, d, hk⟩ := (hU.add hV).exists_le
   have hmap := ha.mapWith
     (ComputableInO.of_eq (encIn := ei) (encMid := ei) fun _ => rfl) cq.computes
-  refine ⟨d, hmap.mono k (fun x => ?_) (fun x => ?_)⟩
+  refine exists_of_common_factor hmap (U := U) (V := V) (fun x => ?_) (fun x => ?_) hU hV
   · have hmax : listMax (fun q => T x * ((encPair ei eq (x, q)).length + 1) ^ e)
         (queries x) ≤ T x * B x ^ e :=
       listMax_le fun q hq => Nat.mul_le_mul_left _
@@ -99,27 +117,18 @@ theorem polynomial_queries {answer : α × β → γ} {queries : α → List β}
         T x * (L x + Q x + O x + B x ^ e) := by
       have := Nat.le_mul_of_pos_left (L x + Q x + O x) (hT x)
       nlinarith
-    have hbound : L x + L x + cq.time x + ((queries x).length + 1) *
-        (L x + Q x + O x + listMax
-          (fun q => T x * ((encPair ei eq (x, q)).length + 1) ^ e) (queries x)) ≤
-        T x * U x := by
-      calc _ ≤ L x + L x + cq.time x +
-            (Q x + 1) * (L x + Q x + O x + T x * B x ^ e) := by
-              gcongr
-        _ ≤ T x * (L x + L x + cq.time x) +
-            (Q x + 1) * (T x * (L x + Q x + O x + B x ^ e)) :=
-              Nat.add_le_add hfirst (Nat.mul_le_mul_left _ hbody)
-        _ = T x * U x := by dsimp [U]; ring
-    have hpoly : U x ≤ k * (L x + 1) ^ d := (Nat.le_add_right _ _).trans (hk x)
-    have h := hbound.trans (Nat.mul_le_mul_left (T x) hpoly)
-    dsimp [L, Q, O] at h
-    nlinarith
+    calc _ ≤ L x + L x + cq.time x +
+          (Q x + 1) * (L x + Q x + O x + T x * B x ^ e) := by
+            gcongr
+      _ ≤ T x * (L x + L x + cq.time x) +
+          (Q x + 1) * (T x * (L x + Q x + O x + B x ^ e)) :=
+            Nat.add_le_add hfirst (Nat.mul_le_mul_left _ hbody)
+      _ = T x * U x := by dsimp [U]; ring
   · have hmax : listMax (fun q => ((encPair ei eq (x, q)).length + 1) ^ b)
         (queries x) ≤ B x ^ b :=
       listMax_le fun q hq => Nat.pow_le_pow_left (hquery x q hq) b
-    have hpoly : V x ≤ k * (L x + 1) ^ d := (Nat.le_add_left _ _).trans (hk x)
-    dsimp [V, L, Q, O] at hpoly
-    nlinarith
+    dsimp only [V, L, Q, O]
+    omega
 
 /-- Polynomial postprocessing of a polynomial-space result preserves the common time factor.
 The producer itself need not run in polynomial time. -/
@@ -139,21 +148,10 @@ theorem polynomial_postprocessing {f : α → β} {g : β → γ} {T : α → �
     exact ((PolyBounded.const c).mul ((hLp.pow b).add (PolyBounded.const 1))).mono hc
   have htime : PolyBounded L (fun x => cg.time (f x)) := hcg.1.comp hlen
   have hspace : PolyBounded L (fun x => cg.space (f x)) := hcg.2.comp hlen
-  let P := fun x => (L x + 1) ^ e + cg.time (f x) + (L x + 1) ^ b + cg.space (f x)
-  have hP : PolyBounded L P := (((hLp.pow e).add htime).add (hLp.pow b)).add hspace
-  obtain ⟨k, d, hk⟩ := hP.exists_le
-  refine ⟨d, (cg.computes.comp hf).mono k (fun x => ?_) (fun x => ?_)⟩
-  · have hscale := Nat.le_mul_of_pos_left (cg.time (f x)) (hT x)
-    have hp : (L x + 1) ^ e + cg.time (f x) ≤ P x := by dsimp [P]; omega
-    calc T x * (L x + 1) ^ e + cg.time (f x)
-        ≤ T x * ((L x + 1) ^ e + cg.time (f x)) := by
-          rw [Nat.mul_add]
-          exact Nat.add_le_add_left hscale _
-      _ ≤ T x * P x := Nat.mul_le_mul_left _ hp
-      _ ≤ T x * (k * (L x + 1) ^ d) := Nat.mul_le_mul_left _ (hk x)
-      _ = k * (T x * (L x + 1) ^ d) := by ring
-      _ ≤ k * (T x * (L x + 1) ^ d + 1) := Nat.mul_le_mul_left _ (Nat.le_succ _)
-  · have hp : (L x + 1) ^ b + cg.space (f x) ≤ P x := by dsimp [P]; omega
-    exact (hp.trans (hk x)).trans (Nat.mul_le_mul_left _ (Nat.le_succ _))
+  refine exists_of_common_factor (cg.computes.comp hf)
+    (U := fun x => (L x + 1) ^ e + cg.time (f x)) (fun x => ?_) (fun _ => le_rfl)
+    ((hLp.pow e).add htime) ((hLp.pow b).add hspace)
+  rw [Nat.mul_add]
+  exact Nat.add_le_add_left (Nat.le_mul_of_pos_left _ (hT x)) _
 
 end Turing.MultiTapeTM.ComputableInO

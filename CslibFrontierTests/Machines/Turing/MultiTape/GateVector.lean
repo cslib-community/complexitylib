@@ -35,7 +35,7 @@ def haltedControl : MultiTapeTM 0 Bool (Fin 1) := MultiTapeTM.ofTr 0 fun _ _ _ =
 
 /-- Three requested coordinates with an empty interpolation assignment range. -/
 def params : GateVector.Params :=
-  (((1, 1, 2, 0, 1, 0, 13), (17, 2, 13), List.replicate 13 0, 0), 3)
+  ((⟨1, 1, 2, 0, 1, 0, 13⟩, (17, 2, 13), List.replicate 13 0, 0), 3)
 
 /-- Observe completed prefixes while distinguishing an active interpolation call. -/
 def observe : GateVector.State 0 (Fin 1) → Option (ℕ × List ℕ) :=

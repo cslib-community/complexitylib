@@ -220,8 +220,7 @@ def consEdge {k : ℕ} (d : Edge (β → γ)) (e : Edge ((Fin k → β) → Fin 
 theorem repEdge_cons {k : ℕ} (d : Edge (β → γ)) (e : Fin k → Edge (β → γ)) :
     repEdge (Fin.cons d e : Fin (k + 1) → Edge (β → γ)) = consEdge d (repEdge e) := by
   simp only [repEdge, consEdge, tupleCode, Fin.cons_zero]
-  congr 1
-  funext a i
+  congr 1 with a i : 2
   refine Fin.cases ?_ (fun j => ?_) i <;> simp [Fin.tail]
 
 /-- The edges of the `(k + 1)`-fold repetition, by prepending each edge to each edge of the
@@ -229,10 +228,8 @@ theorem repEdge_cons {k : ℕ} (d : Edge (β → γ)) (e : Fin k → Edge (β �
 theorem edges_pow_succ (k : ℕ) (g : Graph (β → γ)) :
     (pow (k + 1) g).edges = g.edges.flatMap fun d => (pow k g).edges.map (consEdge d) := by
   simp only [edges_pow, tuples, List.map_flatMap, List.map_map]
-  congr 1
-  funext d
-  congr 1
-  funext e
+  congr 1 with d : 1
+  congr 1 with e : 1
   exact repEdge_cons d e
 
 /-- The repetition of a well-formed instance is well formed: the numbers of tuples of declared
@@ -364,9 +361,7 @@ theorem one_sub_unsatVal_pow_le_value_pow [Finite β] [Finite γ] [Nonempty β] 
   let hb : (Fin k → Fin N) → Fin k → γ := fun y => (τ (tupleCode k fun i => y i)).2
   refine le_trans ?_ (((game g hg N hN).pow k).winProb_le_value ha hb)
   have : Nonempty (Fin g.edges.length) := ⟨⟨0, List.length_pos_iff.mpr hg⟩⟩
-  have hpow : (pow k g).edges ≠ [] := by
-    rw [← List.length_pos_iff, length_edges_pow]
-    exact pow_pos (List.length_pos_iff.mpr hg) k
+  have hpow : (pow k g).edges ≠ [] := by grind [length_edges_pow]
   have hq : ((game g hg N hN).pow k).questions =
       (Probability.PMF.uniformOfFintype (Fin k → Fin g.edges.length)).map fun t =>
         (fun i => (⟨(g.edges.get (t i)).src, (hN _ (List.get_mem _ _)).1⟩ : Fin N),

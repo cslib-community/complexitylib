@@ -1,6 +1,6 @@
 # Reductions and information access
 
-Reduction interfaces determine which computation may translate instances and how answers from the target problem may be used. Complexitylib separates these choices: total many-one maps, invertible or length-increasing maps, nonadaptive truth tables, adaptive word-oracle programs, and parameter-sensitive resource-transfer rules. Their encodings and query conventions are part of their semantics. This page surveys interfaces rather than enumerating reductions between individual problems. [complexitylib][complexitylib]
+Reduction interfaces determine which computation may translate instances and how answers from the target problem may be used. cslib-frontier separates these choices: total many-one maps, invertible or length-increasing maps, nonadaptive truth tables, adaptive word-oracle programs, and parameter-sensitive resource-transfer rules. Their encodings and query conventions are part of their semantics. This page surveys interfaces rather than enumerating reductions between individual problems. [cslib-frontier][complexitylib]
 
 ## Many-one maps and strengthened interfaces
 
