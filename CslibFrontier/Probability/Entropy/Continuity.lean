@@ -167,23 +167,20 @@ theorem condEntropyModulus_monotoneOn : MonotoneOn condEntropyModulus (Set.Icc 0
 
 /-- The coin showing `true` with probability `d / (1 + d)`. -/
 private noncomputable def mixCoin (d : ℝ) (hd : 0 ≤ d) : PMF Bool :=
-  PMF.ofFintype (fun b => ENNReal.ofReal (cond b (d / (1 + d)) (1 / (1 + d)))) (by
-    have h1 : (1 + d) ≠ 0 := by linarith
-    rw [Fintype.sum_bool, Bool.cond_true, Bool.cond_false,
-      ← ENNReal.ofReal_add (div_nonneg hd (by linarith)) (div_nonneg zero_le_one (by linarith)),
-      ← add_div, add_comm, div_self h1, ENNReal.ofReal_one])
+  coin ⟨d / (1 + d), div_nonneg hd (by linarith), (div_le_one (by linarith)).2 (by linarith)⟩
 
 private theorem mixCoin_true (d : ℝ) (hd : 0 ≤ d) : (mixCoin d hd true).toReal = d / (1 + d) := by
-  rw [mixCoin, PMF.ofFintype_apply, Bool.cond_true,
-    ENNReal.toReal_ofReal (div_nonneg hd (by linarith))]
+  rw [mixCoin, coin_apply_toReal, ite_eq_left rfl]
 
 private theorem mixCoin_false (d : ℝ) (hd : 0 ≤ d) : (mixCoin d hd false).toReal = 1 / (1 + d) := by
-  rw [mixCoin, PMF.ofFintype_apply, Bool.cond_false,
-    ENNReal.toReal_ofReal (div_nonneg zero_le_one (by linarith))]
+  have h1 : 1 + d ≠ 0 := by positivity
+  rw [mixCoin, coin_apply_toReal, ite_eq_right Bool.false_ne_true]
+  field_simp
+  ring
 
 private theorem mul_entropy_mixCoin (d : ℝ) (hd : 0 ≤ d) :
     (1 + d) * entropy (mixCoin d hd) = condEntropyModulus d := by
-  rw [entropy_bool, mixCoin_true, condEntropyModulus, mul_div_assoc]
+  rw [mixCoin, entropy_coin, condEntropyModulus, mul_div_assoc]
 
 /-- The mixture of `R₀` and `R₁` with weights `1 / (1 + d)` and `d / (1 + d)`. -/
 private noncomputable def mix (d : ℝ) (hd : 0 ≤ d) (R₀ R₁ : PMF Ω) : PMF Ω :=
