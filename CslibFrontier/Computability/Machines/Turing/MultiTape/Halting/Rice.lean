@@ -334,7 +334,7 @@ theorem applyTapes_append_of_length_le {ts us : List Tape} {as : List TapeAct}
   induction ts generalizing as with
   | nil =>
     rw [List.length_eq_zero_iff.mp (Nat.le_zero.mp h)]
-    simp [applyTapes_nil, applyTapes]
+    simp [applyTapes_nil_right, applyTapes]
   | cons t ts ih =>
     cases as with
     | nil => simp [applyTapes]
@@ -392,8 +392,8 @@ theorem iterate_runCfg {x : List ℕ} (hx : inputSymbol x 1 ∈ bitSyms) {u : �
       rfl] at hf
     rw [Function.iterate_one, stepOut, step_of_find? rfl hf]
     simp only [init, dispatch, descRun, Function.iterate_zero, id, runCfg, desc, Option.elim_some,
-      Act.apply, moveInput, List.replicate_succ, applyTapes, applyTapes_nil, Option.toList_none,
-      List.append_nil, List.replicate_add]
+      Act.apply, moveInput, List.replicate_succ, applyTapes, applyTapes_nil_right,
+      Option.toList_none, List.append_nil, List.replicate_add]
     rfl
   | succ t ih =>
     obtain ⟨q, e, hq, he, hlen⟩ := hrun t (by omega)
@@ -512,7 +512,7 @@ theorem Desc.computes_dispatch {k : ℕ} {S : Type} [Fintype S] (eS : S ↪ ℕ)
       simp only [SCfg.key, List.map_cons, hrest]
       rfl] at hf
     rw [stepOut, step_of_find? rfl hf]
-    simp only [Act.apply, moveInput, applyTapes, applyTapes_nil, Option.toList_none,
+    simp only [Act.apply, moveInput, applyTapes, applyTapes_nil_right, Option.toList_none,
       List.append_nil, redirectCfg, init, Option.map_some]
     refine congrArg₂ _ (congrArg₂ _ rfl (congrArg₂ _ rfl (congrArg₂ _ ?_ ?_))) rfl
     · rfl
