@@ -24,6 +24,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Uniform
+import CslibFrontier.Probability.PMF.Finiteness
 
 /-!
 # Unconditional `2n - 2` `B₂`-circuit size lower bound for pseudorandom functions
@@ -1278,11 +1279,7 @@ theorem BooleanPRF.negligible_complexity_lt_two_mul_sub_two {D : ∀ n, PMF (Boo
     refine tsum_le_tsum fun f => ?_
     rw [← mul_add]
     exact mul_le_mul_of_nonneg_left (hpt f) zero_le
-  have hfin :
-      booleanPRFRealGame D isolatedVarDistinguisher n true +
-        booleanPRFRealGame D criticalPathDistinguisher n true ≠ ⊤ :=
-    ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _, PMF.apply_ne_top _ _⟩
-  have hnn := ENNReal.toNNReal_mono hfin htsum
+  have hnn := ENNReal.toNNReal_mono (by finiteness) htsum
   simpa only [Game.succProbability,
     ENNReal.toNNReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)] using hnn
 

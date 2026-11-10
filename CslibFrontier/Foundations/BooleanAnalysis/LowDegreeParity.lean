@@ -39,7 +39,7 @@ Every function on these inputs therefore agrees with one of degree at most `|ι|
   complexity*][Smolensky1987]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

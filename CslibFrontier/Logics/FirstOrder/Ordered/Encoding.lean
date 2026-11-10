@@ -219,8 +219,8 @@ private theorem realize_prefixEnd {a : EncodedStructure} (ha : v.WellFormed a)
   | zero =>
     have hn : a.1 < B := (card_le_length_encStructure a).trans_lt hB
     rw [prefixEnd, realize_frameEnd _ _ _ _ a.1 hn hlt (fun _ => Iff.rfl)]
-    simp only [realize_zero_val, Nat.zero_add, encStructurePrefix_zero, length_frame,
-      encUnary_apply, List.length_replicate]
+    fo_simp [Nat.zero_add, encStructurePrefix_zero, length_frame, encUnary_apply,
+      List.length_replicate]
   | succ m ih =>
     have hm' : m < v.count := by omega
     let i : Fin v.count := ⟨m, hm'⟩
@@ -285,10 +285,10 @@ private theorem realize_prefixBit {a : EncodedStructure} (ha : v.WellFormed a)
         (⊤ : v.inputLanguage.Formula (Fin 1)).Realize ![j] ↔
           (encUnary a.1)[j.val]? = some true := by
       have hj' : j.val < a.1 := by simpa using hj
-      simp only [encUnary_apply, Formula.realize_top, List.getElem?_replicate, ite_eq_left hj']
+      fo_simp [encUnary_apply, List.getElem?_replicate, ite_eq_left hj']
     have hf := realize_frameBit v.elementDomain ⊤ (zero v.powerLanguage) pos env
       (encUnary a.1) hdom hbit
-    simp only [realize_zero_val, Nat.zero_add] at hf
+    fo_simp [Nat.zero_add] at hf
     simpa only [prefixBit, encStructurePrefix_zero] using
       hf.trans (frame_true_iff _ _).symm
   | succ m ih =>
@@ -306,7 +306,7 @@ private theorem realize_prefixBit {a : EncodedStructure} (ha : v.WellFormed a)
       rw [← WellFormed.length_table v ha (v.symbol i)]
       simp [hj]
     rw [prefixBit, dite_eq_left hm', Formula.realize_sup, Formula.realize_iExs]
-    simp only [Formula.realize_inf]
+    fo_simp
     rw [show m + 1 = i.val + 1 from rfl,
       encStructurePrefix_succ, append_true_iff]
     apply or_congr (ih (Nat.le_of_lt hm') pos env)

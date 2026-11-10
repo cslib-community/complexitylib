@@ -33,7 +33,7 @@ needed.
   [GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString.SubsetSum
 

@@ -29,7 +29,7 @@ Adapts Computability/Probabilistic/Clock.lean on the cslib `crypto` branch at
 tidy functional budget generation.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapePTM
 

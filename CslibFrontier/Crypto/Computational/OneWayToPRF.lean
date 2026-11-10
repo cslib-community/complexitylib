@@ -35,7 +35,7 @@ on the cslib `crypto` branch at
 nonnegative game API.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 

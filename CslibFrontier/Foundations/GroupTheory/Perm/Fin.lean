@@ -27,7 +27,7 @@ The values of `finRotate n` and of its inverse are the successor and the predece
 * `val_finRotate`, `val_finRotate_symm`: `finRotate n` and its inverse in values.
 -/
 
-@[expose] public section
+public section
 
 /-- The successor of `finRotate`, in values. -/
 theorem val_finRotate {n : ℕ} (i : Fin n) :

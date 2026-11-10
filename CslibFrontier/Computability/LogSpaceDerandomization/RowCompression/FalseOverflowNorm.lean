@@ -20,7 +20,8 @@ import Mathlib.Tactic.Ring
 
 This module factors out the row-error-agnostic false-first-overflow fourth-moment charge and the
 finite-union mask bound used to bound normalized fourth-power row norms from
-`Cslib.RowCompression.one_le_sum_clippedError_pow_of_firstOverflow_dyadic`.
+`Cslib.RowCompression.one_le_sum_clippedError_pow_of_firstOverflow_dyadic`, together with the
+three-budget integration step that the compression assemblies combine with that charge.
 
 ## Main results
 
@@ -30,6 +31,9 @@ finite-union mask bound used to bound normalized fourth-power row norms from
   output charge at a specified group for any row-wise bounded error.
 * `Cslib.rowNormPow_ite_exists_le_sum`: bounds a fourth-power row norm under an existential mask
   over `range m` by the sum of the single-index masked norms.
+* `Cslib.rowNormPow_le_three_budgets_add_ite`: rows outside an event, with a `2K`-support
+  three-budget fourth-moment bound, pay the integrated budgets; rows on the event remain as a
+  masked norm.
 
 ## References
 
@@ -87,6 +91,61 @@ theorem rowNormPow_ite_exists_le_sum {N u : ℝ} (hNu : 0 ≤ N * u)
     _ = _ := by simp only [hswap, expect_sum_comm, mul_sum]
 
 end ExistentialMask
+
+section BudgetAssembly
+
+variable {Ω V : Type*} [Fintype Ω] [Fintype V]
+
+private theorem add_add_pow_four_le (a b c : ℝ) :
+    (a + b + c) ^ 4 ≤ 64 * (a ^ 4 + b ^ 4 + c ^ 4) := by
+  have h4 : Even 4 := ⟨2, rfl⟩
+  have h1 := h4.add_pow_le (a := a + b) (b := c)
+  have h2 := h4.add_pow_le (a := a) (b := b)
+  norm_num at h1 h2
+  nlinarith [h4.pow_nonneg c]
+
+/-- Rows outside an event `F` whose fourth moment is at most `2 * K` times the fourth power of
+a three-budget envelope `A * Pre + C * No + C * Tail` pay the integrated budgets; rows on `F`
+are kept as an `F`-masked remainder. -/
+theorem rowNormPow_le_three_budgets_add_ite {N u : ℝ} (hNu : 0 ≤ N * u)
+    (X Y : Ω → V → Prop) [∀ σ x, Decidable (X σ x)] [∀ σ y, Decidable (Y σ y)]
+    (F : Ω → V → Prop) [∀ σ x, Decidable (F σ x)] (D : Ω → V → V → ℝ) (K : ℕ) (A C : ℝ)
+    (Pre No Tail : Ω → V → ℝ)
+    (hD : ∀ σ x, X σ x → ¬F σ x →
+      ∑ y ∈ ({y | Y σ y} : Finset V), |D σ x y| ^ 4 ≤
+        2 * (K : ℝ) * (A * Pre σ x + C * No σ x + C * Tail σ x) ^ 4) :
+    rowNormPow 4 N u X Y D ≤
+      128 * (K : ℝ) * (A ^ 4 * vertexNormPow 4 N u X Pre +
+        C ^ 4 * vertexNormPow 4 N u X No + C ^ 4 * vertexNormPow 4 N u X Tail) +
+      rowNormPow 4 N u X Y (fun σ x y => if F σ x then D σ x y else 0) := by
+  have hrow (σ : Ω) (x : V) (hx : X σ x) :
+      ∑ y ∈ ({y | Y σ y} : Finset V), |D σ x y| ^ 4 ≤
+        128 * (K : ℝ) * (A ^ 4 * |Pre σ x| ^ 4 + C ^ 4 * |No σ x| ^ 4 +
+          C ^ 4 * |Tail σ x| ^ 4) +
+        ∑ y ∈ ({y | Y σ y} : Finset V), |if F σ x then D σ x y else 0| ^ 4 := by
+    by_cases hf : F σ x
+    · simp only [hf, ↓reduceIte, le_add_iff_nonneg_left]
+      positivity
+    · simp only [hf, ↓reduceIte, abs_zero, zero_pow (by decide : (4 : ℕ) ≠ 0), sum_const_zero,
+        add_zero]
+      refine (hD σ x hx hf).trans ?_
+      have hS := add_add_pow_four_le (A * Pre σ x) (C * No σ x) (C * Tail σ x)
+      have h4 : Even 4 := ⟨2, rfl⟩
+      rw [h4.pow_abs, h4.pow_abs, h4.pow_abs, ← mul_pow, ← mul_pow, ← mul_pow]
+      exact (mul_le_mul_of_nonneg_left hS (by positivity)).trans_eq (by ring)
+  unfold rowNormPow vertexNormPow
+  calc
+    _ ≤ (N * u)⁻¹ * 𝔼 σ, ∑ x ∈ ({x | X σ x} : Finset V),
+        (128 * (K : ℝ) * (A ^ 4 * |Pre σ x| ^ 4 + C ^ 4 * |No σ x| ^ 4 +
+          C ^ 4 * |Tail σ x| ^ 4) +
+          ∑ y ∈ ({y | Y σ y} : Finset V), |if F σ x then D σ x y else 0| ^ 4) := by
+      refine mul_le_mul_of_nonneg_left (expect_le_expect fun σ _ => ?_) (inv_nonneg.mpr hNu)
+      exact sum_le_sum fun x hx => hrow σ x (mem_filter.mp hx).2
+    _ = _ := by
+      simp only [sum_add_distrib, ← mul_sum, expect_add_distrib, ← mul_expect]
+      ring
+
+end BudgetAssembly
 
 namespace RowCompression
 
