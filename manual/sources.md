@@ -42,7 +42,7 @@ Noga Alon, Yossi Matias, Mario Szegedy. “The Space Complexity of Approximating
 <a id="alonspencer2016"></a>
 ## alonspencer2016
 
-Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2016. ISBN 978-1-119-06195-3. Bibliographic data from the library bibliography. The section locators used for the second moment method and random graphs (Chapter 4: §4.3 for the bound `Pr[X = 0] ≤ Var X / (E X) ^ 2`, §4.4 for random graphs and threshold functions) were taken from secondary tables of contents and from an agent review, which placed the bound at Theorem 4.3.1. The book was not inspected in this pass, and the library cites section numbers only.
+Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2016. ISBN 978-1-119-06195-3. Bibliographic data from the library bibliography. The section locators used for the second moment method and random graphs (Chapter 4: §4.3 for the bound `Pr[X = 0] ≤ Var X / (E X) ^ 2`, §4.4 for random graphs and threshold functions) were taken from secondary tables of contents and from an agent review, which placed the bound at Theorem 4.3.1. The book was not inspected in this pass, and the library cites section numbers only. The 0-1 law for `G(n, p)` with constant `0 < p < 1` is cited at §10.4 ("Zero–One Laws", Chapter 10 "Random Graphs") from secondary tables of contents, consulted on 2026-11-10; one secondary summary placed it at §10.7 instead, so this locator is unverified and no theorem number is cited.
 
 <a id="alonyusterzwick1995"></a>
 ## alonyusterzwick1995

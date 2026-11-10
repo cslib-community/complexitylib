@@ -72,7 +72,8 @@ At `p = 1/2`, `G(n, p)` is the uniform random graph `Cslib.Logic.FO.graph.random
 * [Y. V. Glebskiĭ, D. I. Kogan, M. I. Liogon'kiĭ and V. A. Talanov, *Range and degree of
   realizability of formulas in the restricted predicate calculus*]
   [GlebskiiKoganLiogonkiiTalanov1969]
-* [N. Alon, J. H. Spencer, *The Probabilistic Method*, Section 10.4][AlonSpencer2016]
+* [N. Alon, J. H. Spencer, *The Probabilistic Method*, Section 10.4][AlonSpencer2016] (locator from
+  secondary sources, unverified)
 * [L. Libkin, *Elements of Finite Model Theory*][Libkin2004], Chapter 12.
 -/
 

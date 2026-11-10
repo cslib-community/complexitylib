@@ -37,7 +37,8 @@ upper bound `(1 - min (p, 1 - p) ^ k) ^ (|V| - k)` that follows from it.
 ## References
 
 * [R. Fagin, *Probabilities on finite models*][Fagin1976]
-* [N. Alon, J. H. Spencer, *The Probabilistic Method*, Section 10.4][AlonSpencer2016]
+* [N. Alon, J. H. Spencer, *The Probabilistic Method*, Section 10.4][AlonSpencer2016] (locator from
+  secondary sources, unverified)
 -/
 
 public section
