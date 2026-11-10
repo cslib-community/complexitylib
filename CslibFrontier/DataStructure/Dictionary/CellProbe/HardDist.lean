@@ -86,6 +86,8 @@ page `p + 1`).
   U.choose n * V ^ n`.
 * `Cslib.DataStructure.Dictionary.CellProbe.validHistory_of_mem_support_insertQueryDeleteDist`,
   `Cslib.DataStructure.Dictionary.CellProbe.validHistory_of_mem_support_insertDeleteDist`,
+  `Cslib.DataStructure.Dictionary.CellProbe.length_of_mem_support_insertQueryDeleteDist`,
+  `Cslib.DataStructure.Dictionary.CellProbe.length_of_mem_support_insertDeleteDist`,
   `Cslib.DataStructure.Dictionary.CellProbe.not_isQuery_of_mem_support_insertDeleteDist`:
   admissibility, lengths (`4 * n` and `3 * n`), and absence of queries in `insertDeleteDist`.
 * `Cslib.DataStructure.Dictionary.CellProbe.map_run_take_insertQueryDeleteDist`,
@@ -262,6 +264,13 @@ theorem dictOfKeySetVals_orderEmbOfFin {U V n : ℕ}
     (OrderIso.symm_apply_eq (K.1.orderIsoOfFin K.2)).mpr (Subtype.ext rfl)
   rw [hiso]
 
+@[simp]
+theorem dictOfKeySetVals_eq_none_of_notMem {U V n : ℕ}
+    (K : { K : Finset (Fin U) // K.card = n }) (vals : Fin n → Fin V)
+    {u : Fin U} (hu : u ∉ K.1) :
+    dictOfKeySetVals K vals u = none := by
+  simp [dictOfKeySetVals, hu]
+
 /-- Canonical bijection between size-`n`, `V`-bounded dictionary states (`SizedDict U V n`) and
 pairs `(K, vals)` consisting of a size-`n` key subset `K ⊆ Fin U` and its ordered value vector
 `vals : Fin n → Fin V`. -/
@@ -301,6 +310,24 @@ def sizedDictEquiv (U V n : ℕ) :
     dsimp only
     simp only [hemb (Dictionary.dom (dictOfKeySetVals K vals)) hdom _,
       dictOfKeySetVals_orderEmbOfFin, Option.get_some]
+
+@[simp]
+theorem sizedDictEquiv_fst (U V n : ℕ) (s : SizedDict U V n) :
+    ((sizedDictEquiv U V n s).1 : Finset (Fin U)) = Dictionary.dom s.1 := by
+  rfl
+
+@[simp]
+theorem some_val_sizedDictEquiv_snd (U V n : ℕ) (s : SizedDict U V n) (i : Fin n) :
+    some ((sizedDictEquiv U V n s).2 i : ℕ) =
+      s.1 ((Dictionary.dom s.1).orderEmbOfFin s.2.1 i) :=
+  Option.some_get
+    (Dictionary.mem_dom_iff_isSome.mp ((Dictionary.dom s.1).orderEmbOfFin_mem s.2.1 i))
+
+@[simp]
+theorem sizedDictEquiv_symm_coe (U V n : ℕ)
+    (kv : { K : Finset (Fin U) // K.card = n } × (Fin n → Fin V)) :
+    ((sizedDictEquiv U V n).symm kv).1 = dictOfKeySetVals kv.1 kv.2 := by
+  rfl
 
 instance instFintypeSizedDict (U V n : ℕ) : Fintype (SizedDict U V n) :=
   Fintype.ofEquiv _ (sizedDictEquiv U V n).symm
@@ -482,14 +509,14 @@ theorem windowDict_coe {U V n : ℕ} (keys : Fin (2 * n) ↪ Fin U) (vals : Fin 
   rfl
 
 /-- Initial phase of `n` key-value insertions `keys 0, …, keys (n - 1)`. -/
-def initInsertSeq {U V n : ℕ} (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) :
+@[expose] def initInsertSeq {U V n : ℕ} (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) :
     List (Dynamic.Op U) :=
   (List.finRange n).map fun i =>
     .insert (keys ⟨i.1, by omega⟩) (vals ⟨i.1, by omega⟩).1
 
 /-- Single three-step `[query, delete, insert]` meta-operation `j : Fin n` from `Distribution 1`
 ([LiLiangYuZhou2023], Section 3, p. 11 / PDF p. 12). -/
-def queryDeleteInsertMetaOp {U V n : ℕ}
+@[expose] def queryDeleteInsertMetaOp {U V n : ℕ}
     (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) (j : Fin n) :
     List (Dynamic.Op U) :=
   [.query (keys ⟨j.1, by omega⟩),
@@ -498,7 +525,7 @@ def queryDeleteInsertMetaOp {U V n : ℕ}
 
 /-- Single two-step `[delete, insert]` update-only meta-operation `j : Fin n`
 ([LiLiangYuZhou2023], Section 8, p. 28 / PDF p. 29). -/
-def deleteInsertMetaOp {U V n : ℕ}
+@[expose] def deleteInsertMetaOp {U V n : ℕ}
     (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) (j : Fin n) :
     List (Dynamic.Op U) :=
   [.delete (keys ⟨j.1, by omega⟩),
@@ -506,14 +533,14 @@ def deleteInsertMetaOp {U V n : ℕ}
 
 /-- Full `4 * n`-operation sequence for `Distribution 1`: `n` initial insertions followed by `n`
 `[query, delete, insert]` meta-operations. -/
-def insertQueryDeleteSeq {U V n : ℕ}
+@[expose] def insertQueryDeleteSeq {U V n : ℕ}
     (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) :
     List (Dynamic.Op U) :=
   initInsertSeq keys vals ++ (List.finRange n).flatMap (queryDeleteInsertMetaOp keys vals)
 
 /-- Full `3 * n`-operation update-only sequence: `n` initial insertions followed by `n`
 `[delete, insert]` meta-operations (containing zero `.query` operations). -/
-def insertDeleteSeq {U V n : ℕ}
+@[expose] def insertDeleteSeq {U V n : ℕ}
     (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) :
     List (Dynamic.Op U) :=
   initInsertSeq keys vals ++ (List.finRange n).flatMap (deleteInsertMetaOp keys vals)
@@ -762,6 +789,63 @@ theorem take_insertDeleteSeq {U V n t : ℕ}
   rw [insertDeleteSeq, hlen, List.take_append,
     List.take_of_length_le (Nat.le_add_right _ _), Nat.add_sub_cancel_left,
     take_mul_flatMap 2 _ _ (fun _ => rfl) t]
+
+@[simp]
+theorem take_init_insertQueryDeleteSeq {U V n : ℕ}
+    (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) :
+    (insertQueryDeleteSeq keys vals).take n = initInsertSeq keys vals := by
+  simpa using take_insertQueryDeleteSeq (t := 0) keys vals
+
+@[simp]
+theorem take_init_insertDeleteSeq {U V n : ℕ}
+    (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) :
+    (insertDeleteSeq keys vals).take n = initInsertSeq keys vals := by
+  simpa using take_insertDeleteSeq (t := 0) keys vals
+
+private theorem drop_take_of_take_add {α : Type*} {xs pref mid : List α} {a b : ℕ}
+    (htake : xs.take (a + b) = pref ++ mid) (ha : pref.length = a) (hb : mid.length = b) :
+    (xs.drop a).take b = mid := by
+  have hsplit : xs.take (a + b) = xs.take a ++ (xs.drop a).take b := List.take_add
+  have hpref_le : a ≤ xs.length := by
+    have hlen := congrArg List.length htake
+    rw [List.length_take, List.length_append, ha, hb] at hlen
+    omega
+  have hlen_a : (xs.take a).length = a := List.length_take_of_le hpref_le
+  exact List.append_inj_right' (hsplit.symm.trans htake)
+    (by
+      have htot := congrArg List.length (hsplit.symm.trans htake)
+      rw [List.length_append, List.length_append, hlen_a, ha, hb] at htot
+      omega)
+
+/-- Elementary slice `[n + 3 * j, n + 3 * (j + 1))` of `insertQueryDeleteSeq` recovers
+`queryDeleteInsertMetaOp keys vals j`. -/
+@[simp]
+theorem drop_take_insertQueryDeleteSeq {U V n : ℕ}
+    (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) (j : Fin n) :
+    ((insertQueryDeleteSeq keys vals).drop (n + 3 * j.1)).take 3 =
+      queryDeleteInsertMetaOp keys vals j := by
+  have htake := take_insertQueryDeleteSeq (t := j.1 + 1) keys vals
+  have hidx : n + 3 * (j.1 + 1) = (n + 3 * j.1) + 3 := by ring
+  rw [hidx, finRange_take_succ j.2, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
+    List.append_nil, ← List.append_assoc] at htake
+  refine drop_take_of_take_add htake ?_ rfl
+  rw [List.length_append, length_initInsertSeq, length_flatMap_const 3 _ _ (fun _ => rfl),
+    List.length_take, List.length_finRange, min_eq_left j.2.le]
+
+/-- Elementary slice `[n + 2 * j, n + 2 * (j + 1))` of `insertDeleteSeq` recovers
+`deleteInsertMetaOp keys vals j`. -/
+@[simp]
+theorem drop_take_insertDeleteSeq {U V n : ℕ}
+    (keys : Fin (2 * n) ↪ Fin U) (vals : Fin (2 * n) → Fin V) (j : Fin n) :
+    ((insertDeleteSeq keys vals).drop (n + 2 * j.1)).take 2 =
+      deleteInsertMetaOp keys vals j := by
+  have htake := take_insertDeleteSeq (t := j.1 + 1) keys vals
+  have hidx : n + 2 * (j.1 + 1) = (n + 2 * j.1) + 2 := by ring
+  rw [hidx, finRange_take_succ j.2, List.flatMap_append, List.flatMap_cons, List.flatMap_nil,
+    List.append_nil, ← List.append_assoc] at htake
+  refine drop_take_of_take_add htake ?_ rfl
+  rw [List.length_append, length_initInsertSeq, length_flatMap_const 2 _ _ (fun _ => rfl),
+    List.length_take, List.length_finRange, min_eq_left j.2.le]
 
 /-- Every `insertQueryDeleteSeq` is an admissible history for `Dynamic.spec U V n`. -/
 theorem validHistory_insertQueryDeleteSeq {U V n : ℕ}

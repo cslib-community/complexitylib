@@ -575,4 +575,50 @@ theorem mixMem_replay_and_recovery_example :
     directDictScheme.toIndexed 0 m_bef ops_A S_B S_B Finset.inter_subset_left ?_
   decide
 
+/-- Cross-module check of symbolic and concrete meta-operation slicing, `sizedDictEquiv` equations,
+`geomMetaTree` / `iterLogMetaTree` horizon/height APIs, and
+`mem_badCells_of_seg_preMem_ne_node_preMem`. -/
+theorem cross_module_slicing_equiv_and_preMem_checks :
+    let keys : Fin 4 ↪ Fin 4 := Function.Embedding.refl (Fin 4)
+    let vals : Fin 4 → Fin 2 := fun _ => 0
+    (∀ {U V n : ℕ} (k : Fin (2 * n) ↪ Fin U) (v : Fin (2 * n) → Fin V) (j : Fin n),
+      elemSlice n 3 (insertQueryDeleteSeq k v) j.1 (j.1 + 1) = queryDeleteInsertMetaOp k v j ∧
+      elemSlice n 2 (insertDeleteSeq k v) j.1 (j.1 + 1) = deleteInsertMetaOp k v j) ∧
+    elemSlice 2 3 (insertQueryDeleteSeq (n := 2) keys vals) 1 2 =
+      [.query 1, .delete 1, .insert 3 0] ∧
+    elemSlice 2 2 (insertDeleteSeq (n := 2) keys vals) 1 2 =
+      [.delete 1, .insert 3 0] ∧
+    ((sizedDictEquiv 4 2 2 (windowDict (n := 2) keys vals 0 (by omega))).1 : Finset (Fin 4)) =
+      Dictionary.dom (windowDict (n := 2) keys vals 0 (by omega)).1 ∧
+    (geomMetaTree 8 1).horizon = 8 ∧
+    (iterLogMetaTree 8 2 1).horizon = 8 ∧
+    ((1 ≤ (geomMetaTree 8 1).height) ↔ (geomMetaTree 8 1).blockSize 1 ≤ 4) ∧
+    (0 : Fin 2) ∈ fourSegTree.badCells threeHitScheme 0 1 [(), (), (), ()] 0 0 := by
+  refine ⟨fun k v j => ⟨by simp [elemSlice], by simp [elemSlice]⟩,
+    by simpa [elemSlice, queryDeleteInsertMetaOp] using
+      drop_take_insertQueryDeleteSeq (n := 2) (Function.Embedding.refl (Fin 4))
+        (fun _ => (0 : Fin 2)) ⟨1, by decide⟩,
+    by simpa [elemSlice, deleteInsertMetaOp] using
+      drop_take_insertDeleteSeq (n := 2) (Function.Embedding.refl (Fin 4))
+        (fun _ => (0 : Fin 2)) ⟨1, by decide⟩,
+    by simp, by simp, by simp, le_height_geomMetaTree_iff (by omega) 1 1, ?_⟩
+  let ops : List Unit := [(), (), (), ()]
+  have hb0 : fourSegTree.blockSize 0 = 1 := fourSegTree.blockSize_zero
+  have hb1 : fourSegTree.blockSize 1 = 4 := by
+    rw [fourSegTree.blockSize_succ 0, hb0]; rfl
+  have hseg2 :
+      (0 : Fin 2) ∈ fourSegTree.segProbedCells threeHitScheme 0 1 ops 0 0 ⟨2, by decide⟩ := by
+    simp only [MetaTree.segProbedCells, MetaTree.nodeProbedCells, MetaTree.nodeStart,
+      MetaTree.nodeStop, hb0]
+    decide
+  have hpre_ne :
+      memAt threeHitScheme ops
+        (0 + 1 * fourSegTree.nodeStart 0 (0 * fourSegTree.fanout 1 + 2)) 0 ≠
+      memAt threeHitScheme ops
+        (0 + 1 * fourSegTree.nodeStart 1 0) 0 := by
+    simp only [MetaTree.nodeStart, hb0, hb1]
+    decide
+  exact fourSegTree.mem_badCells_of_seg_preMem_ne_node_preMem threeHitScheme 0 1 ops 0 0
+    ⟨2, by decide⟩ hseg2 hpre_ne
+
 end CslibFrontierTests.DictLowerBoundDist
