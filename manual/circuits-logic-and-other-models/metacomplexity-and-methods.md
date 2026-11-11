@@ -43,7 +43,7 @@ The Liu–Pass equivalence between one-way functions and mild average-case hardn
 
 The [implementation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Magnification.lean) explicitly maps this version to the cited McKay–Murray–Williams lemma/theorem and explains its stronger lower-bound premise and restricted scope. It uses fixed-threshold witness certificates, binary subcube merging and a polynomial-hierarchy collapse. It should not be cited as every search, oracle or fine quantitative formulation of magnification in the literature.
 
-Oliveira and Santhanam's formula magnification [oliveirasanthanam2018][oliveirasanthanam2018] is in [FormulaMagnification.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification.lean) and its submodules [StretchedExponential.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/StretchedExponential.lean), [Subexponential.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/Subexponential.lean) and [AverageCase.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/AverageCase.lean). Each theorem assumes a De Morgan formula lower bound, measured by leaf size, for approximate `(1, 1 - 1/k)`-MCSP (`ApproxMCSP`) or for one-sided average-case MCSP. The NP language is succinct MCSP. Source locators refer to ECCC TR18-139.
+Oliveira and Santhanam's formula magnification [oliveirasanthanam2018][oliveirasanthanam2018] is in [FormulaMagnification.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification.lean) and its submodules [StretchedExponential.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/StretchedExponential.lean), [Subexponential.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/Subexponential.lean), [AverageCase.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/AverageCase.lean) and [SublinearAverageCase.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/SublinearAverageCase.lean). Each theorem assumes a lower bound, measured by leaf size, either for De Morgan formulas computing approximate `(1, 1 - 1/k)`-MCSP (`ApproxMCSP`) or one-sided average-case MCSP, or for ternary zero-error devices solving MCSP on most truth tables. The NP language is succinct MCSP. Source locators refer to ECCC TR18-139.
 
 | Registry ID | Source | Hypothesis scale | Conclusion |
 |---|---|---|---|
@@ -51,8 +51,11 @@ Oliveira and Santhanam's formula magnification [oliveirasanthanam2018][oliveiras
 | `formula-magnification-stretched` | Theorem 17(ii) | leaf size `N^(1+ε)` at arbitrarily large `N`; polynomially bounded parameters | some δ > 0 and NP language whose formula size is not `O(2^(m^δ))` |
 | `formula-magnification-subexp` | Theorem 17(iii) | leaf size `2^(n + n/d)` or `N^(1+ε)`; subexponential parameters | `NP ⊄ Formula[poly]` |
 | `formula-magnification-average-case` | Theorem 27, one-sided | leaf size `2^(n/d)` for formulas accepting every yes-instance and at most `2^(2^n - n)` tables | `NP ⊄ Formula[poly]`, weaker than the source's `2^Ω(n)` |
+| `formula-magnification-ternary` | Theorem 5, Definition 43 | `o(N)` total leaves for ternary zero-error devices (unknown mask and answer formula) solving `MCSP[⌊2^√n⌋]`, answering `?` on at most a `1/n` fraction for every large n | `NP ⊄ Formula[poly]` |
 
-The average-case form covers formulas only, not the ternary zero-error devices of Theorem 5.
+[SublinearAverageCase.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/SublinearAverageCase.lean) states Theorem 5 for ternary zero-error devices ([ZeroErrorAverageCase.lean](../../CslibFrontier/Computability/MCSP/ZeroErrorAverageCase.lean)) at the threshold `⌊2^√n⌋`: if no device family with `o(N)` total leaves solves `MCSP[⌊2^√n⌋]` while answering `?` on at most a `1/n` fraction of truth tables for every large n (Definition 43), then `NP ⊄ Formula[poly]`. The section 1.2 form, with `?` on at most half of the tables, is a corollary, and a library generalization takes any subexponential threshold.
+
+[Locality.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/Locality.lean) (registry ID `formula-magnification-locality`) proves the MCSP `[OS18]` bullet of Proposition 63 of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam [chenhiraharaoliveirapichrajgopalsanthanam2020][chenhiraharaoliveirapichrajgopalsanthanam2020]: the reduction above is local. For `n ≤ s(n)` and `δ > 0`, `MCSP[(s, 0), (s, δ)]` on `N`-bit truth tables is in their class `[N, poly(s/δ), 1]–Formula[N·poly(s/δ)]` (`LocalFormulaClass`, Definition 11, in [OracleFormula.lean](../../CslibFrontier/Computability/Circuit/Boolean/OracleFormula.lean)). The formula is a conjunction of at most `N` oracle gates. Each gate reads constants and input bits that encode a succinct-MCSP instance sampling the truth table at fixed seed points, so no oracle gate feeds another. A single succinct-MCSP oracle serves every length. Only formulas are covered, not the DAG `[q, ℓ, a]–Circuit` classes, the other bullets of Proposition 63, or the locality barrier (Theorem 59).
 
 ## Consequences of NP-hardness of MCSP
 
@@ -61,6 +64,8 @@ The average-case form covers formulas only, not the ternary zero-error devices o
 ## Anti-checkers
 
 An anti-checker for `f` against a family `F` is a set of inputs on which every member of `F` differs from `f` (`IsAntiChecker` in [AntiChecker.lean](../../CslibFrontier/Computability/MCSP/AntiChecker.lean), registry ID `anti-checker`) [liptonyoung1994][liptonyoung1994] [oliveirapichsanthanam2019][oliveirapichsanthanam2019]. `exists_isAntiChecker` gives one of at most `16 b` inputs against a family of fewer than `2^b` functions on at most `2^m` inputs, if `m > 0` and no `m` members have `f` as strict majority. `exists_lt_complexityOn` and `exists_ofFunction_notMem` specialize this to circuits and to Succinct MCSP no-instances. Counting ordered tuples gives the share `1/16`, where the source counts sets and gets `1/(2m)`. [AntiChecker/Certificate.lean](../../CslibFrontier/Computability/MCSP/AntiChecker/Certificate.lean) counts circuit certificates instead of functions. Both are nonuniform existence results.
+
+[AntiChecker/Threshold.lean](../../CslibFrontier/Computability/MCSP/AntiChecker/Threshold.lean) chooses the inputs explicitly. Its greedy asks an oracle, in round `u = R - 1, …, 0`, whether the `ℓ`-th power of the number of descriptions still consistent with the samples is about `2^u`, and appends the first input on which the answer is yes. The oracle must be a two-sided threshold oracle (`IsThresholdOracle`): a yes guarantees fewer than `2^(u+1)`, a yes at `u = 0` guarantees none, and fewer than `2^u/(u+1)` forces a yes. `consistent_greedy_eq_empty` refutes every description in `L ℓ + 1` rounds when the family has at most `2^L` members, every nonempty subfamily is refuted on a sixteenth of its members by some input, and `4 (L ℓ + 1) 15^ℓ ≤ 16^ℓ`, which `ℓ = L + 200` satisfies. `isThresholdOracle_hashOracle` builds such an oracle from covering by `u + 1` affine hash functions ([Covering.lean](../../CslibFrontier/Probability/PairwiseIndependentHash/Covering.lean)), and `isAntiChecker_hashAntiChecker` applies it to valid circuit certificates. This is the library's own deterministic route, not the proof of Oliveira, Pich and Santhanam's Lemma 4.1: it uses no randomized approximate counting and no final listing. Circuits for the oracle and for the selection are not formalized.
 
 ## Hardness versus randomness
 
@@ -143,14 +148,14 @@ The baseline survey at `13e6a319` inspected the conditional statements, truth-ta
 The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/issues/798) and the ROADMAP's Kolmogorov and metacomplexity entries list the remaining directions. A selection of those not formalized:
 
 - Liu–Pass Theorem 3.1 (c) in the near-linear range `t(n) ≥ (1 + ε) n`, which needs a rate-1 efficient conditional EP-PRG.
-- The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1), which needs approximate counting by circuits; only existence is proved.
-- The rounded `2^√n`, ternary zero-error-device form of Oliveira–Santhanam Theorem 5.
+- The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1). Existence and the greedy against a threshold oracle are proved, but circuits for the oracle and the selection are not ([#4383](https://github.com/cslib-community/cslib-frontier/issues/4383)).
 - NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
-- The minimum formula size problem (MFSP) as a separate problem, and the locality barrier of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam.
+- The minimum formula size problem (MFSP) as a separate problem, and the locality barrier (Theorem 59) of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam; of their Proposition 63, only the MCSP `[OS18]` bullet is formalized.
 - Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.
 
 [alonbabaisuzuki1991]: ../sources.md#alonbabaisuzuki1991
 [alonspencer2016]: ../sources.md#alonspencer2016
+[chenhiraharaoliveirapichrajgopalsanthanam2020]: ../sources.md#chenhiraharaoliveirapichrajgopalsanthanam2020
 [complexitylib]: ../sources.md#complexitylib
 [erdos1947]: ../sources.md#erdos1947
 [erdosszekeres1935]: ../sources.md#erdosszekeres1935
