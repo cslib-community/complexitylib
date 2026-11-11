@@ -25,9 +25,10 @@ For any explicit-coin PKE `P` with messages `Fin n → Bool`, `leakyPKE P` appen
 `Dec(sk, (c, some i))` returns the constant message with value `m i`, where `m = Dec(sk, c)`. The
 encryption algorithm, and hence the IND-CPA experiment, is unchanged
 (`leakyPKE_indCpaAdvantage`), and so are `δ`-correctness and `γ`-spreadness
-(`leakyPKE_deltaCorrect`, `leakyPKE_gammaSpread`). With the check, `Scheme.indCcaRomAdvantage_le`
-therefore applies to `leakyPKE P` with the hypotheses of `P`: a tagged ciphertext `(c, some i)` is
-never an encryption of anything, so decapsulation rejects it.
+(`leakyPKE_deltaCorrect`, `leakyPKE_gammaSpread`). With the re-encryption check in place, a tagged
+ciphertext `(c, some i)` is never an encryption of any message (`encT_leakyPKE`), so `decT`
+rejects it and `Scheme.decapsNotBot` outputs the fallback key `H(true, dk.fallback, (c, some i))`
+(`decapsNotBot_leakyPKE_some`).
 
 Without the check (`Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`), the adversary `leakAdv`
 recovers the challenge message bit by bit: it compares the decapsulation of `(c*, some i)` with
@@ -55,8 +56,10 @@ probability `1 / |K|`.
 
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_indCpaAdvantage`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_deltaCorrect`,
-  `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_gammaSpread`: `leakyPKE P` has the IND-CPA
-  advantages, correctness and spreadness of `P`.
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.leakyPKE_gammaSpread`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.decapsNotBot_leakyPKE_some`: `leakyPKE P` preserves the
+  IND-CPA advantages, correctness, and spreadness of `P`, and `Scheme.decapsNotBot` rejects tagged
+  ciphertexts `(c, some i)` via the re-encryption check.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.advantage_eagerNoCheckGame_leakAdv`: without the
   re-encryption check, `leakAdv` breaks IND-CCA security of `FO-notbot` over `leakyPKE P`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.roQueryBounds_leakAdv`: `leakAdv` makes no `G` queries
@@ -134,6 +137,20 @@ theorem leakyPKE_dec_some {P : ExplicitCoinPKE PK SK (Fin n → Bool) R CT} {sk 
     {m : Fin n → Bool} (h : P.dec sk c = some m) (i : Fin n) :
     (leakyPKE P).dec sk (c, some i) = some fun _ => m i := by
   simp [leakyPKE, h]
+
+/-- With the re-encryption check of `T`, `Scheme.decapsNotBot` over `leakyPKE P` rejects every
+tagged ciphertext `(c, some i)` and returns the fallback key `H(true, dk.fallback, (c, some i))`. -/
+theorem decapsNotBot_leakyPKE_some [DecidableEq CT]
+    (P : ExplicitCoinPKE PK SK (Fin n → Bool) R CT)
+    (sampleMsg : ProbComp (Fin n → Bool)) (sampleKey : ProbComp K)
+    (G : (Fin n → Bool) → R)
+    (H : Bool × (Fin n → Bool) × (CT × Option (Fin n)) → K)
+    (dk : ImplicitSK PK SK (Fin n → Bool)) (c : CT) (i : Fin n) :
+    (⟨leakyPKE P, sampleMsg, sampleKey⟩ :
+      Scheme PK SK (Fin n → Bool) R (CT × Option (Fin n)) K).decapsNotBot G H dk (c, some i) =
+      H (true, dk.fallback, (c, some i)) :=
+  Scheme.decapsNotBot_of_reencrypt_ne _ G H dk (c, some i) fun _ _ henc => by
+    simpa [encT_leakyPKE] using congrArg Prod.snd henc
 
 end Leaky
 
