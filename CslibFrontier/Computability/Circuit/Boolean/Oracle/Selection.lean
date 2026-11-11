@@ -58,7 +58,8 @@ variable {p : ℕ}
     (Circuit.wiring σ select).program.cost cost = 0 :=
   rfl
 
-@[simp] theorem Circuit.cost_oneGate (cost : σ.Op → ℕ) (op : σ.Op) (args : Fin (σ.Arity op) → Fin n) :
+@[simp] theorem Circuit.cost_oneGate (cost : σ.Op → ℕ) (op : σ.Op)
+    (args : Fin (σ.Arity op) → Fin n) :
     (Circuit.oneGate op args).program.cost cost = cost op :=
   Nat.zero_add _
 
@@ -342,10 +343,12 @@ theorem depthWith_chain_le {σ : Signature} {K₀ w : ℕ}
     exact Nat.add_le_add (h R) ih
 
 theorem fanInAtMost_chain {σ : Signature} {K₀ w : ℕ}
-    (step : ∀ r, Circuit σ (K₀ + w * r) (K₀ + w * r + w)) {f : ℕ}
-    (h : ∀ r, (step r).FanInAtMost f) (R : ℕ) : (chain step R).FanInAtMost f := by
+    (step : ∀ r, Circuit σ (K₀ + w * r) (K₀ + w * r + w)) {f R : ℕ}
+    (h : ∀ r < R, (step r).FanInAtMost f) : (chain step R).FanInAtMost f := by
   induction R with
   | zero => exact Circuit.fanInAtMost_wiring _ _
-  | succ R ih => exact (Circuit.fanInAtMost_wiring _ _).comp ((h R).comp ih)
+  | succ R ih =>
+    exact (Circuit.fanInAtMost_wiring _ _).comp
+      ((h R R.lt_succ_self).comp (ih fun r hr => h r (hr.trans R.lt_succ_self)))
 
 end Cslib.Circuits.Boolean
