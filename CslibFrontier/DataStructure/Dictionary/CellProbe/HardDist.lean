@@ -287,22 +287,27 @@ theorem dictOfKeySetVals_eq_none_of_notMem {U V n : ℕ}
     dictOfKeySetVals K vals u = none := by
   simp [dictOfKeySetVals, hu]
 
+/-- Domain-cardinality proof carried by `s : SizedDict U V n`. -/
+theorem SizedDict.card_dom {U V n : ℕ} (s : SizedDict U V n) :
+    (Dictionary.dom s.1).card = n :=
+  s.2.1
+
 /-- Canonical bijection between size-`n`, `V`-bounded dictionary states (`SizedDict U V n`) and
 pairs `(K, vals)` consisting of a size-`n` key subset `K ⊆ Fin U` and its ordered value vector
 `vals : Fin n → Fin V`. -/
 def sizedDictEquiv (U V n : ℕ) :
     SizedDict U V n ≃ { K : Finset (Fin U) // K.card = n } × (Fin n → Fin V) where
-  toFun s :=
-    (⟨Dictionary.dom s.1, s.2.1⟩,
+  toFun := fun ⟨dict, hcard, hval⟩ =>
+    (⟨Dictionary.dom dict, hcard⟩,
      fun i =>
-       let u := (Dictionary.dom s.1).orderEmbOfFin s.2.1 i
-       have his : (s.1 u).isSome :=
-         Dictionary.mem_dom_iff_isSome.mp ((Dictionary.dom s.1).orderEmbOfFin_mem s.2.1 i)
-       ⟨(s.1 u).get his, s.2.2 u ((s.1 u).get his) (Option.some_get his).symm⟩)
-  invFun kv :=
-    ⟨dictOfKeySetVals kv.1 kv.2,
-     (congrArg Finset.card (dom_dictOfKeySetVals kv.1 kv.2)).trans kv.1.2,
-     valuesBounded_dictOfKeySetVals kv.1 kv.2⟩
+       let u := (Dictionary.dom dict).orderEmbOfFin hcard i
+       have his : (dict u).isSome :=
+         Dictionary.mem_dom_iff_isSome.mp ((Dictionary.dom dict).orderEmbOfFin_mem hcard i)
+       ⟨(dict u).get his, hval u ((dict u).get his) (Option.some_get his).symm⟩)
+  invFun := fun ⟨⟨K, hK⟩, vals⟩ =>
+    ⟨dictOfKeySetVals ⟨K, hK⟩ vals,
+     (congrArg Finset.card (dom_dictOfKeySetVals ⟨K, hK⟩ vals)).trans hK,
+     valuesBounded_dictOfKeySetVals ⟨K, hK⟩ vals⟩
   left_inv := fun ⟨s, hcard, hval⟩ => by
     apply Subtype.ext
     funext u
@@ -335,9 +340,9 @@ theorem sizedDictEquiv_fst (U V n : ℕ) (s : SizedDict U V n) :
 @[simp]
 theorem some_val_sizedDictEquiv_snd (U V n : ℕ) (s : SizedDict U V n) (i : Fin n) :
     some ((sizedDictEquiv U V n s).2 i : ℕ) =
-      s.1 ((Dictionary.dom s.1).orderEmbOfFin s.2.1 i) :=
+      s.1 ((Dictionary.dom s.1).orderEmbOfFin s.card_dom i) :=
   Option.some_get
-    (Dictionary.mem_dom_iff_isSome.mp ((Dictionary.dom s.1).orderEmbOfFin_mem s.2.1 i))
+    (Dictionary.mem_dom_iff_isSome.mp ((Dictionary.dom s.1).orderEmbOfFin_mem s.card_dom i))
 
 @[simp]
 theorem sizedDictEquiv_symm_coe (U V n : ℕ)
@@ -593,8 +598,9 @@ windows `(permKeys keys delPerm, permVals vals delPerm)` from the initial insert
 def reparamDelPermEquiv (U V n : ℕ) :
     (((Fin (2 * n) ↪ Fin U) × (Fin (2 * n) → Fin V)) × Equiv.Perm (Fin n)) ≃
       (((Fin (2 * n) ↪ Fin U) × (Fin (2 * n) → Fin V)) × Equiv.Perm (Fin n)) where
-  toFun p := ((permKeys p.1.1 p.2, permVals p.1.2 p.2), p.2)
-  invFun q := ((permKeys q.1.1 q.2.symm, permVals q.1.2 q.2.symm), q.2)
+  toFun := fun ⟨⟨keys, vals⟩, delPerm⟩ => ((permKeys keys delPerm, permVals vals delPerm), delPerm)
+  invFun := fun ⟨⟨keys, vals⟩, delPerm⟩ =>
+    ((permKeys keys delPerm.symm, permVals vals delPerm.symm), delPerm)
   left_inv := fun ⟨⟨keys, vals⟩, delPerm⟩ => by
     refine Prod.ext (Prod.ext (Function.Embedding.ext fun m => ?_) (funext fun m => ?_)) rfl
     · simp [permKeys, ← liftDelPerm_symm]
@@ -1262,7 +1268,8 @@ theorem insertQueryDeleteDist_eq_uniformOfFintype_map {U V n : ℕ} (hU : 2 * n 
     letI : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
     insertQueryDeleteDist U V n hU hV =
       (PMF.uniformOfFintype (((Fin (2 * n) ↪ Fin U) × (Fin (2 * n) → Fin V)) ×
-        Equiv.Perm (Fin n))).map (fun p => insertQueryDeleteSeq p.1.1 p.1.2 p.2) :=
+        Equiv.Perm (Fin n))).map
+        (fun ⟨⟨keys, vals⟩, delPerm⟩ => insertQueryDeleteSeq keys vals delPerm) :=
   sampleHardDist_eq_uniformOfFintype_map hU hV insertQueryDeleteSeq
 
 theorem insertDeleteDist_eq_uniformOfFintype_map {U V n : ℕ} (hU : 2 * n ≤ U) (hV : 1 ≤ V) :
@@ -1270,7 +1277,8 @@ theorem insertDeleteDist_eq_uniformOfFintype_map {U V n : ℕ} (hU : 2 * n ≤ U
     letI : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
     insertDeleteDist U V n hU hV =
       (PMF.uniformOfFintype (((Fin (2 * n) ↪ Fin U) × (Fin (2 * n) → Fin V)) ×
-        Equiv.Perm (Fin n))).map (fun p => insertDeleteSeq p.1.1 p.1.2 p.2) :=
+        Equiv.Perm (Fin n))).map
+        (fun ⟨⟨keys, vals⟩, delPerm⟩ => insertDeleteSeq keys vals delPerm) :=
   sampleHardDist_eq_uniformOfFintype_map hU hV insertDeleteSeq
 
 private theorem mem_support_sampleHardDist_iff {U V n : ℕ} (hU : 2 * n ≤ U) (hV : 1 ≤ V)
