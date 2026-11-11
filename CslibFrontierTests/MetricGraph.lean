@@ -10,6 +10,7 @@ module
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Basic
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Bipartite
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Realization
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Subdivision
 import Mathlib.Tactic.FinCases
@@ -445,5 +446,17 @@ example (x y : MetricGraph (realizationEuclideanGraph asymTri)) :
     have hc : Nat.card asymTri.graph.edgeSet ≤ 3 := nat_card_fin3_edges_le
     omega
   · exact fun z i => realizationMap_vertex_rational asymTri asymTri_rational z i
+
+/-- Direct client of `dist_map_le_of_edgePoint_dist_le`: checking non-expansiveness along each
+dart suffices to deduce global `1`-Lipschitzness on `MetricGraph asymTri`. -/
+example (p q : MetricGraph asymTri) :
+    dist (dist (vertex 0 : MetricGraph asymTri) p) (dist (vertex 0 : MetricGraph asymTri) q) ≤
+      dist p q := by
+  refine dist_map_le_of_edgePoint_dist_le (fun x => dist (vertex 0 : MetricGraph asymTri) x)
+    (fun d s t => ?_) p q
+  rw [Real.dist_eq, dist_comm (vertex 0 : MetricGraph asymTri) (edgePoint d s),
+    dist_comm (vertex 0 : MetricGraph asymTri) (edgePoint d t)]
+  exact (abs_dist_sub_le (edgePoint d s) (edgePoint d t) (vertex 0)).trans
+    ((dist_edgePoint_self_le d s t).trans_eq (mul_comm _ _))
 
 end CslibFrontierTests.MetricGraph

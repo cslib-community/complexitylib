@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/MetricGraph/Realization.lean`)
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Subdivision
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
 public import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Tactic.Linarith
 
@@ -796,121 +797,9 @@ theorem realizationMap_edgePoint_dist [Finite V] (W : WeightedGraph V)
 
 theorem realizationMap_dist_le [Finite V] (W : WeightedGraph V)
     (p q : MetricGraph (realizationSubdivision W)) :
-    dist (realizationMap W p) (realizationMap W q) ≤ dist p q := by
-  have hWalk : ∀ {x y : { z : MetricGraph W // z ∈ realizationPoints W }}
-      (w : (realizationSubdivision W).graph.Walk x y),
-      dist (realizationMap W (vertex x)) (realizationMap W (vertex y)) ≤
-        walkLength (realizationSubdivision W).weight w := by
-    intro x y w
-    induction w with
-    | nil =>
-      rw [dist_self]
-      simp only [walkLength_nil, le_refl]
-    | cons hadj w' ih =>
-      let d' : (realizationSubdivision W).graph.Dart := ⟨(_, _), hadj⟩
-      have hstep : dist (realizationMap W (vertex d'.fst)) (realizationMap W (vertex d'.snd)) =
-          (realizationSubdivision W).weight s(d'.fst, d'.snd) :=
-        realizationMap_edge_dist W d'
-      rw [walkLength_cons]
-      exact (dist_triangle _ (realizationMap W (vertex d'.snd)) _).trans
-        (add_le_add hstep.le ih)
-  have hVertex : ∀ x y : { z : MetricGraph W // z ∈ realizationPoints W },
-      dist (realizationMap W (vertex x)) (realizationMap W (vertex y)) ≤
-        dist (vertex x : MetricGraph (realizationSubdivision W)) (vertex y) := by
-    intro x y
-    rw [dist_vertex]
-    obtain ⟨w, -, hw⟩ := exists_isPath_walkLength_eq_vertexDist
-      (realizationSubdivision W).weight_nonneg ((realizationSubdivision W).connected x y)
-    rw [← hw]
-    exact hWalk w
-  have hEnd : ∀ (d' : (realizationSubdivision W).graph.Dart) (r : unitInterval),
-      dist (realizationMap W (edgePoint d' r)) (realizationMap W (vertex d'.fst)) ≤
-        (r : ℝ) * (realizationSubdivision W).weight d'.edge ∧
-      dist (realizationMap W (edgePoint d' r)) (realizationMap W (vertex d'.snd)) ≤
-        (1 - (r : ℝ)) * (realizationSubdivision W).weight d'.edge := by
-    intro d' r
-    constructor
-    · rw [← edgePoint_zero d', realizationMap_edgePoint_dist,
-        show ((0 : unitInterval) : ℝ) = 0 from rfl, sub_zero, abs_of_nonneg r.2.1]
-    · rw [← edgePoint_one d', realizationMap_edgePoint_dist,
-        show ((1 : unitInterval) : ℝ) = 1 from rfl, abs_sub_comm,
-        abs_of_nonneg (unitInterval.one_sub_nonneg r)]
-  have hVia : ∀ (d₁' : (realizationSubdivision W).graph.Dart) (r₁ : unitInterval)
-      (d₂' : (realizationSubdivision W).graph.Dart) (r₂ : unitInterval),
-      dist (realizationMap W (edgePoint d₁' r₁)) (realizationMap W (edgePoint d₂' r₂)) ≤
-        min
-          (min ((r₁ : ℝ) * (realizationSubdivision W).weight d₁'.edge +
-                  vertexDist (realizationSubdivision W).graph
-                    (realizationSubdivision W).weight d₁'.fst d₂'.fst +
-                  (r₂ : ℝ) * (realizationSubdivision W).weight d₂'.edge)
-               ((r₁ : ℝ) * (realizationSubdivision W).weight d₁'.edge +
-                  vertexDist (realizationSubdivision W).graph
-                    (realizationSubdivision W).weight d₁'.fst d₂'.snd +
-                  (1 - (r₂ : ℝ)) * (realizationSubdivision W).weight d₂'.edge))
-          (min ((1 - (r₁ : ℝ)) * (realizationSubdivision W).weight d₁'.edge +
-                  vertexDist (realizationSubdivision W).graph
-                    (realizationSubdivision W).weight d₁'.snd d₂'.fst +
-                  (r₂ : ℝ) * (realizationSubdivision W).weight d₂'.edge)
-               ((1 - (r₁ : ℝ)) * (realizationSubdivision W).weight d₁'.edge +
-                  vertexDist (realizationSubdivision W).graph
-                    (realizationSubdivision W).weight d₁'.snd d₂'.snd +
-                  (1 - (r₂ : ℝ)) * (realizationSubdivision W).weight d₂'.edge)) := by
-    intro d₁' r₁ d₂' r₂
-    obtain ⟨h10, h11⟩ := hEnd d₁' r₁
-    obtain ⟨h20, h21⟩ := hEnd d₂' r₂
-    have step : ∀ a b : { z // z ∈ realizationPoints W },
-        dist (realizationMap W (edgePoint d₁' r₁)) (realizationMap W (edgePoint d₂' r₂)) ≤
-          dist (realizationMap W (edgePoint d₁' r₁)) (realizationMap W (vertex a)) +
-          vertexDist (realizationSubdivision W).graph (realizationSubdivision W).weight a b +
-          dist (realizationMap W (edgePoint d₂' r₂)) (realizationMap W (vertex b)) := by
-      intro a b
-      have hv := (hVertex a b).trans_eq (dist_vertex _ _)
-      have htri := dist_triangle4 (realizationMap W (edgePoint d₁' r₁))
-        (realizationMap W (vertex a)) (realizationMap W (vertex b))
-        (realizationMap W (edgePoint d₂' r₂))
-      rw [dist_comm (realizationMap W (vertex b))] at htri
-      linarith
-    refine le_min (le_min ?_ ?_) (le_min ?_ ?_) <;>
-      linarith [step d₁'.fst d₂'.fst, step d₁'.fst d₂'.snd,
-        step d₁'.snd d₂'.fst, step d₁'.snd d₂'.snd]
-  induction p using ind_simple with
-  | vertex x =>
-    induction q using ind_simple with
-    | vertex y => exact hVertex x y
-    | edgePoint d' r =>
-      rw [dist_vertex_edgePoint]
-      obtain ⟨h0, h1⟩ := hEnd d' r
-      rw [dist_comm] at h0 h1
-      have hv0 := (hVertex x d'.fst).trans_eq (dist_vertex _ _)
-      have hv1 := (hVertex x d'.snd).trans_eq (dist_vertex _ _)
-      refine le_min ?_ ?_ <;> linarith [
-        dist_triangle (realizationMap W (vertex x)) (realizationMap W (vertex d'.fst))
-          (realizationMap W (edgePoint d' r)),
-        dist_triangle (realizationMap W (vertex x)) (realizationMap W (vertex d'.snd))
-          (realizationMap W (edgePoint d' r))]
-  | edgePoint d₁' r₁ =>
-    induction q using ind_simple with
-    | vertex y =>
-      rw [dist_edgePoint_vertex]
-      obtain ⟨h0, h1⟩ := hEnd d₁' r₁
-      have hv0 := (hVertex d₁'.fst y).trans_eq (dist_vertex _ _)
-      have hv1 := (hVertex d₁'.snd y).trans_eq (dist_vertex _ _)
-      refine le_min ?_ ?_ <;> linarith [
-        dist_triangle (realizationMap W (edgePoint d₁' r₁)) (realizationMap W (vertex d₁'.fst))
-          (realizationMap W (vertex y)),
-        dist_triangle (realizationMap W (edgePoint d₁' r₁)) (realizationMap W (vertex d₁'.snd))
-          (realizationMap W (vertex y))]
-    | edgePoint d₂' r₂ =>
-      by_cases he : d₁'.edge = d₂'.edge
-      · rcases (dart_edge_eq_iff d₁' d₂').mp he with rfl | hsym
-        · rw [dist_edgePoint_edgePoint_same]
-          exact le_min (realizationMap_edgePoint_dist W d₁' r₁ r₂).le (hVia d₁' r₁ d₁' r₂)
-        · subst hsym
-          rw [← edgePoint_symm d₂' r₂, dist_edgePoint_edgePoint_same]
-          exact le_min (realizationMap_edgePoint_dist W d₂'.symm r₁ (unitInterval.symm r₂)).le
-            (hVia d₂'.symm r₁ d₂'.symm (unitInterval.symm r₂))
-      · rw [dist_edgePoint_edgePoint_of_edge_ne he]
-        exact hVia d₁' r₁ d₂' r₂
+    dist (realizationMap W p) (realizationMap W q) ≤ dist p q :=
+  dist_map_le_of_edgePoint_dist_le (realizationMap W)
+    (fun d' r₁ r₂ => (realizationMap_edgePoint_dist W d' r₁ r₂).le) p q
 
 theorem continuous_realizationMap [Finite V] (W : WeightedGraph V) :
     Continuous (realizationMap W) :=

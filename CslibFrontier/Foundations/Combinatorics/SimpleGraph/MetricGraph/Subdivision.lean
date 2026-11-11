@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/MetricGraph/Subdivision.lean`)
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
 import Mathlib.Data.Finset.Max
 import Mathlib.Tactic.Linarith
 
@@ -646,128 +647,20 @@ private noncomputable def subdivideToMetric {B : Finset (MetricGraph W)}
 private theorem subdivideToMetric_dist_le [Finite V] {B : Finset (MetricGraph W)}
     (hV : ∀ v : V, vertex v ∈ B) (p q : MetricGraph (subdivide W B hV)) :
     dist (subdivideToMetric hV p) (subdivideToMetric hV q) ≤ dist p q := by
-  have hend : ∀ (d' : (subdivide W B hV).graph.Dart) (r : unitInterval),
-      dist (edgePoint (subDartOrigin d')
-          (interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le))
-        d'.fst.1 ≤ (r : ℝ) * (subdivide W B hV).weight d'.edge ∧
-      dist (edgePoint (subDartOrigin d')
-          (interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le))
-        d'.snd.1 ≤ (1 - (r : ℝ)) * (subdivide W B hV).weight d'.edge := by
-    intro d' r
-    have hsp := subDart_spec d'
-    have hmem := interpUnit_mem_Icc (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le
-    rw [subDart_weight d']
-    constructor
-    · have hdeq : dist (edgePoint (subDartOrigin d')
-          (interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le)) d'.fst.1 =
-          dist (edgePoint (subDartOrigin d')
-            (interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le))
-            (edgePoint (subDartOrigin d') (subDartStart d')) := by rw [hsp.2.1]
-      rw [hdeq]
-      refine (dist_edgePoint_self_le _ _ _).trans_eq ?_
-      have heq : |(interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le : ℝ) -
-          subDartStart d'| = (r : ℝ) * ((subDartEnd d' : ℝ) - subDartStart d') := by
-        rw [abs_of_nonneg (sub_nonneg.mpr hmem.1)]
-        change ((1 - (r : ℝ)) * subDartStart d' + r * subDartEnd d') - subDartStart d' = _
-        ring
-      rw [heq]; ring
-    · have hdeq : dist (edgePoint (subDartOrigin d')
-          (interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le)) d'.snd.1 =
-          dist (edgePoint (subDartOrigin d')
-            (interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le))
-            (edgePoint (subDartOrigin d') (subDartEnd d')) := by rw [hsp.2.2.1]
-      rw [hdeq]
-      refine (dist_edgePoint_self_le _ _ _).trans_eq ?_
-      have heq : |(interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le : ℝ) -
-          subDartEnd d'| = (1 - (r : ℝ)) * ((subDartEnd d' : ℝ) - subDartStart d') := by
-        rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr hmem.2)]
-        change (subDartEnd d' : ℝ) - ((1 - (r : ℝ)) * subDartStart d' + r * subDartEnd d') = _
-        ring
-      rw [heq]; ring
-  have hsame : ∀ (d' : (subdivide W B hV).graph.Dart) (r₁ r₂ : unitInterval),
-      dist (subdivideToMetric hV (edgePoint d' r₁)) (subdivideToMetric hV (edgePoint d' r₂)) ≤
-        |(r₁ : ℝ) - r₂| * (subdivide W B hV).weight d'.edge := by
-    intro d' r₁ r₂
-    simp only [subdivideToMetric, lift_edgePoint]
-    rw [subDart_weight d']
-    refine (dist_edgePoint_self_le _ _ _).trans_eq ?_
-    have heq : |(interpUnit (subDartStart d') (subDartEnd d') r₁ (subDartStart_lt_end d').le : ℝ) -
-        (interpUnit (subDartStart d') (subDartEnd d') r₂ (subDartStart_lt_end d').le : ℝ)| =
-        |(r₁ : ℝ) - r₂| * ((subDartEnd d' : ℝ) - subDartStart d') := by
-      change |((1 - (r₁ : ℝ)) * subDartStart d' + r₁ * subDartEnd d') -
-          ((1 - (r₂ : ℝ)) * subDartStart d' + r₂ * subDartEnd d')| = _
-      have hsub : ((1 - (r₁ : ℝ)) * subDartStart d' + r₁ * subDartEnd d') -
-          ((1 - (r₂ : ℝ)) * subDartStart d' + r₂ * subDartEnd d') =
-          ((r₁ : ℝ) - r₂) * ((subDartEnd d' : ℝ) - subDartStart d') := by ring
-      rw [hsub, abs_mul, abs_of_nonneg (sub_nonneg.mpr (subDartStart_lt_end d').le)]
-    rw [heq]; ring
-  have hvia : ∀ (d₁' : (subdivide W B hV).graph.Dart) (r₁ : unitInterval)
-      (d₂' : (subdivide W B hV).graph.Dart) (r₂ : unitInterval),
-      dist (subdivideToMetric hV (edgePoint d₁' r₁)) (subdivideToMetric hV (edgePoint d₂' r₂)) ≤
-        min
-          (min ((r₁ : ℝ) * (subdivide W B hV).weight d₁'.edge +
-                  vertexDist (subdivide W B hV).graph (subdivide W B hV).weight d₁'.fst d₂'.fst +
-                  (r₂ : ℝ) * (subdivide W B hV).weight d₂'.edge)
-               ((r₁ : ℝ) * (subdivide W B hV).weight d₁'.edge +
-                  vertexDist (subdivide W B hV).graph (subdivide W B hV).weight d₁'.fst d₂'.snd +
-                  (1 - (r₂ : ℝ)) * (subdivide W B hV).weight d₂'.edge))
-          (min ((1 - (r₁ : ℝ)) * (subdivide W B hV).weight d₁'.edge +
-                  vertexDist (subdivide W B hV).graph (subdivide W B hV).weight d₁'.snd d₂'.fst +
-                  (r₂ : ℝ) * (subdivide W B hV).weight d₂'.edge)
-               ((1 - (r₁ : ℝ)) * (subdivide W B hV).weight d₁'.edge +
-                  vertexDist (subdivide W B hV).graph (subdivide W B hV).weight d₁'.snd d₂'.snd +
-                  (1 - (r₂ : ℝ)) * (subdivide W B hV).weight d₂'.edge)) := by
-    intro d₁' r₁ d₂' r₂
-    simp only [subdivideToMetric, lift_edgePoint, vertexDist_subdivide]
-    obtain ⟨h10, h11⟩ := hend d₁' r₁
-    obtain ⟨h20, h21⟩ := hend d₂' r₂
-    let u₁ := interpUnit (subDartStart d₁') (subDartEnd d₁') r₁ (subDartStart_lt_end d₁').le
-    let u₂ := interpUnit (subDartStart d₂') (subDartEnd d₂') r₂ (subDartStart_lt_end d₂').le
-    have step : ∀ a b : { z : MetricGraph W // z ∈ B },
-        dist (edgePoint (subDartOrigin d₁') u₁) (edgePoint (subDartOrigin d₂') u₂) ≤
-          dist (edgePoint (subDartOrigin d₁') u₁) a.1 + dist a.1 b.1 +
-          dist (edgePoint (subDartOrigin d₂') u₂) b.1 := fun a b => by
-      rw [dist_comm (edgePoint (subDartOrigin d₂') u₂) b.1]
-      exact dist_triangle4 (edgePoint (subDartOrigin d₁') u₁) a.1 b.1
-        (edgePoint (subDartOrigin d₂') u₂)
-    refine le_min (le_min ?_ ?_) (le_min ?_ ?_) <;>
-      linarith [step d₁'.fst d₂'.fst, step d₁'.fst d₂'.snd,
-        step d₁'.snd d₂'.fst, step d₁'.snd d₂'.snd]
-  induction p using ind_simple with
-  | vertex x =>
-    induction q using ind_simple with
-    | vertex y =>
-      simp only [subdivideToMetric, lift_vertex, dist_vertex, vertexDist_subdivide, le_refl]
-    | edgePoint d' r =>
-      simp only [subdivideToMetric, lift_vertex, lift_edgePoint, dist_vertex_edgePoint,
-        vertexDist_subdivide]
-      let u := interpUnit (subDartStart d') (subDartEnd d') r (subDartStart_lt_end d').le
-      obtain ⟨h0, h1⟩ := hend d' r
-      rw [dist_comm _ d'.fst.1] at h0
-      rw [dist_comm _ d'.snd.1] at h1
-      refine le_min ?_ ?_ <;> linarith [dist_triangle x.1 d'.fst.1 (edgePoint (subDartOrigin d') u),
-        dist_triangle x.1 d'.snd.1 (edgePoint (subDartOrigin d') u)]
-  | edgePoint d₁' r₁ =>
-    induction q using ind_simple with
-    | vertex y =>
-      simp only [subdivideToMetric, lift_vertex, lift_edgePoint, dist_edgePoint_vertex,
-        vertexDist_subdivide]
-      let u₁ := interpUnit (subDartStart d₁') (subDartEnd d₁') r₁ (subDartStart_lt_end d₁').le
-      obtain ⟨h0, h1⟩ := hend d₁' r₁
-      refine le_min ?_ ?_ <;>
-        linarith [dist_triangle (edgePoint (subDartOrigin d₁') u₁) d₁'.fst.1 y.1,
-          dist_triangle (edgePoint (subDartOrigin d₁') u₁) d₁'.snd.1 y.1]
-    | edgePoint d₂' r₂ =>
-      by_cases he : d₁'.edge = d₂'.edge
-      · rcases (dart_edge_eq_iff d₁' d₂').mp he with rfl | hsym
-        · rw [dist_edgePoint_edgePoint_same]
-          exact le_min (hsame d₁' r₁ r₂) (hvia d₁' r₁ d₁' r₂)
-        · subst hsym
-          rw [← edgePoint_symm d₂' r₂, dist_edgePoint_edgePoint_same]
-          exact le_min (hsame d₂'.symm r₁ (unitInterval.symm r₂))
-            (hvia d₂'.symm r₁ d₂'.symm (unitInterval.symm r₂))
-      · rw [dist_edgePoint_edgePoint_of_edge_ne he]
-        exact hvia d₁' r₁ d₂' r₂
+  refine dist_map_le_of_edgePoint_dist_le (subdivideToMetric hV) (fun d' r₁ r₂ => ?_) p q
+  simp only [subdivideToMetric, lift_edgePoint]
+  rw [subDart_weight d']
+  refine (dist_edgePoint_self_le _ _ _).trans_eq ?_
+  have heq : |(interpUnit (subDartStart d') (subDartEnd d') r₁ (subDartStart_lt_end d').le : ℝ) -
+      (interpUnit (subDartStart d') (subDartEnd d') r₂ (subDartStart_lt_end d').le : ℝ)| =
+      |(r₁ : ℝ) - r₂| * ((subDartEnd d' : ℝ) - subDartStart d') := by
+    change |((1 - (r₁ : ℝ)) * subDartStart d' + r₁ * subDartEnd d') -
+        ((1 - (r₂ : ℝ)) * subDartStart d' + r₂ * subDartEnd d')| = _
+    have hsub : ((1 - (r₁ : ℝ)) * subDartStart d' + r₁ * subDartEnd d') -
+        ((1 - (r₂ : ℝ)) * subDartStart d' + r₂ * subDartEnd d') =
+        ((r₁ : ℝ) - r₂) * ((subDartEnd d' : ℝ) - subDartStart d') := by ring
+    rw [hsub, abs_mul, abs_of_nonneg (sub_nonneg.mpr (subDartStart_lt_end d').le)]
+  rw [heq]; ring
 
 private theorem subInterval_outside_of_mem {B : Finset (MetricGraph W)}
     {hV : ∀ v : V, vertex v ∈ B} (d' : (subdivide W B hV).graph.Dart)
