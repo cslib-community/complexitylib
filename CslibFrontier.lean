@@ -5089,6 +5089,11 @@ public import CslibFrontier.Foundations.Geometry.Orthogonal.Separation
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Simple
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Subdivision
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Trim
+public import CslibFrontier.Foundations.Geometry.Polyhedra
+public import CslibFrontier.Foundations.Geometry.Polyhedra.Complex
+public import CslibFrontier.Foundations.Geometry.Polyhedra.PiecewiseLinear
+public import CslibFrontier.Foundations.Geometry.Polyhedra.PiecewiseQuadratic
+public import CslibFrontier.Foundations.Geometry.Polyhedra.Polytope
 public import CslibFrontier.Foundations.GroupTheory.Perm.Fin
 public import CslibFrontier.Foundations.GroupTheory.Perm.FiveCycle
 public import CslibFrontier.Foundations.GroupTheory.Perm.Fixing
