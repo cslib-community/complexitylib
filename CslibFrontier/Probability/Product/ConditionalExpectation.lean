@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.Product
+import CslibFrontier.Probability.Minimax
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Filter
 import CslibFrontier.Probability.PMF.ToReal
@@ -203,30 +204,16 @@ theorem exists_condExpect_insert_le (p : ∀ i, PMF (α i)) (f : (∀ i, α i) �
     {fixed : Finset ι} {i : ι} (hi : i ∉ fixed) (x : ∀ i, α i) :
     ∃ a ∈ (p i).support,
       condExpect p f (insert i fixed) (Function.update x i a) ≤ condExpect p f fixed x := by
-  by_contra! hgt
-  have hsum_one : ∑ a : α i, (p i a).toReal = 1 := sum_toReal (p i)
-  obtain ⟨a₀, ha₀⟩ : ∃ a₀ : α i, a₀ ∈ (p i).support := p i |>.support_nonempty
-  have ha₀_pos : 0 < (p i a₀).toReal :=
-    ENNReal.toReal_pos ((PMF.mem_support_iff _ _).mp ha₀) (PMF.apply_ne_top _ _)
-  have hle_term : ∀ a : α i,
-      (p i a).toReal * condExpect p f fixed x ≤
-        (p i a).toReal * condExpect p f (insert i fixed) (Function.update x i a) := by
-    intro a
-    by_cases ha : a ∈ (p i).support
-    · exact mul_le_mul_of_nonneg_left (hgt a ha).le ENNReal.toReal_nonneg
-    · have hp0 : p i a = 0 := by simpa [PMF.mem_support_iff] using ha
-      simp [hp0]
-  have hlt_a₀ :
-      (p i a₀).toReal * condExpect p f fixed x <
-        (p i a₀).toReal * condExpect p f (insert i fixed) (Function.update x i a₀) :=
-    mul_lt_mul_of_pos_left (hgt a₀ ha₀) ha₀_pos
-  have hlt_sum :
-      ∑ a : α i, (p i a).toReal * condExpect p f fixed x <
-        ∑ a : α i, (p i a).toReal *
-          condExpect p f (insert i fixed) (Function.update x i a) :=
-    Finset.sum_lt_sum (fun a _ => hle_term a) ⟨a₀, Finset.mem_univ a₀, hlt_a₀⟩
-  rw [← Finset.sum_mul, hsum_one, one_mul, sum_mul_condExpect_insert p f hi x] at hlt_sum
-  exact lt_irrefl _ hlt_sum
+  obtain ⟨a, ha_supp, hle⟩ := Convexity.StdSimplex.exists_mem_support_le_sum_mul
+    (toStdSimplex (p i)) (fun b => condExpect p f (insert i fixed) (Function.update x i b))
+  have ha : a ∈ (p i).support := by
+    rw [Finsupp.mem_support_iff, weights_toStdSimplex] at ha_supp
+    by_contra hnot
+    exact ha_supp (by simp [(PMF.apply_eq_zero_iff (p i) a).mpr hnot])
+  refine ⟨a, ha, hle.trans_eq ?_⟩
+  rw [Finsupp.sum_fintype _ _ (fun _ => zero_mul _)]
+  simp only [weights_toStdSimplex]
+  exact sum_mul_condExpect_insert p f hi x
 
 /-- **Method of conditional expectations (maximization step)**: for any free coordinate `i ∉ fixed`,
 some supported value `a ∈ (p i).support` satisfies

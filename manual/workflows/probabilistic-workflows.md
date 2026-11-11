@@ -192,7 +192,9 @@ import [DDGTree/Rejection.lean](../../CslibFrontier/Probability/DDGTree/Rejectio
 for the `ProbComp` programs (`sampleBlockTrials`, `sampleSeededTrials`, `sampleBlockCapped`), and
 [Computability/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Computability/Probabilistic/RejectionSampling.lean)
 for strict `IsPPTOn` certificates (`isPPTOn_sampleSeededTrials`, `isPPTOn_sampleBlockTrials`,
-`isPPTOn_sampleBlockCapped`) when `trials` and `width` are computed in `encUnary`. On the unbounded
+`isPPTOn_sampleBlockCapped`) when `trials` and `width` are computed in `encUnary`, the `attempt`
+decoder is polynomial-time on input-and-block pairs, and (`sampleBlockCapped`) the `fallback` map
+is polynomial-time. On the unbounded
 side, `spec.toDDGTree` satisfies `run_toDDGTree` (`n / width` trials after `n` fair bits), generates
 the target law when `0 < width` and `acceptProb ≠ 0` (`toDDGTree_generates`), and reads
 `width / acceptProb` fair bits in expectation (`expectedFlips_toDDGTree`, including `⊤` when

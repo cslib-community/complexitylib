@@ -108,11 +108,11 @@ theorem computableInPolyTime_run
     (hrounds : ComputableInPolyTime G.rounds encI encL)
     (hinit : ComputableInPolyTime G.init encI encS)
     (hbranch : ComputableInPolyTime
-      (fun p : ((I × S) × R) × Bool => G.branch p.1.1.1 p.1.2 p.2 p.1.1.2)
+      (fun (((input, state), round), choice) => G.branch input round choice state)
       (encBranchInput encI encS encR) encS)
-    (hestimate : ComputableInPolyTime (fun p : I × S => G.estimate p.1 p.2)
+    (hestimate : ComputableInPolyTime (fun (input, state) => G.estimate input state)
       (encPair encI encS) encM)
-    (hle : ComputableInPolyTime (fun p : M × M => decide (p.1 ≤ p.2))
+    (hle : ComputableInPolyTime (fun (m₁, m₂) => decide (m₁ ≤ m₂))
       (encPair encM encM) encBool)
     {growth : I → ℕ} (hpoly : PolyBounded (fun x => (encI x).length) growth)
     (hgrowth : ∀ x s r b, r ∈ G.rounds x →
@@ -120,27 +120,28 @@ theorem computableInPolyTime_run
     ComputableInPolyTime G.run encI encS := by
   let encStep := encPair (encPair encI encS) encR
   have hid : ComputableInPolyTime id encStep encStep := id'
-  have hx : ComputableInPolyTime (fun q : (I × S) × R => q.1.1) encStep encI :=
+  have hx : ComputableInPolyTime (fun ((input, _state), _round) => input) encStep encI :=
     (fst (encPair encI encS) encR).fst'
   have hbr (b : Bool) : ComputableInPolyTime
-      (fun q : (I × S) × R => G.branch q.1.1 q.2 b q.1.2) encStep encS :=
+      (fun ((input, state), round) => G.branch input round b state) encStep encS :=
     hbranch.comp (hid.prod (const b))
   have hest (b : Bool) : ComputableInPolyTime
-      (fun q : (I × S) × R => G.estimate q.1.1 (G.branch q.1.1 q.2 b q.1.2)) encStep encM :=
+      (fun ((input, state), round) =>
+        G.estimate input (G.branch input round b state)) encStep encM :=
     hestimate.comp (hx.prod (hbr b))
   have hcmp : ComputableInPolyTime
-      (fun q : (I × S) × R =>
-        decide (G.estimate q.1.1 (G.branch q.1.1 q.2 true q.1.2) ≤
-          G.estimate q.1.1 (G.branch q.1.1 q.2 false q.1.2)))
+      (fun ((input, state), round) =>
+        decide (G.estimate input (G.branch input round true state) ≤
+          G.estimate input (G.branch input round false state)))
       encStep encBool :=
     hle.comp ((hest true).prod (hest false))
   have hstep : ComputableInPolyTime
-      (fun q : (I × S) × R =>
-        if G.estimate q.1.1 (G.branch q.1.1 q.2 true q.1.2) ≤
-            G.estimate q.1.1 (G.branch q.1.1 q.2 false q.1.2) then
-          G.branch q.1.1 q.2 true q.1.2
+      (fun ((input, state), round) =>
+        if G.estimate input (G.branch input round true state) ≤
+            G.estimate input (G.branch input round false state) then
+          G.branch input round true state
         else
-          G.branch q.1.1 q.2 false q.1.2)
+          G.branch input round false state)
       encStep encS := by
     simpa only [decide_eq_true_eq] using ite hcmp (hbr true) (hbr false)
   refine foldlWithInput_of_bounded_growth hinit ⟨hrounds, hstep, inferInstance, inferInstance⟩
@@ -165,9 +166,9 @@ theorem computableInPolyTime_run_nat
     (hrounds : ComputableInPolyTime G.rounds encI encL)
     (hinit : ComputableInPolyTime G.init encI encS)
     (hbranch : ComputableInPolyTime
-      (fun p : ((I × S) × R) × Bool => G.branch p.1.1.1 p.1.2 p.2 p.1.1.2)
+      (fun (((input, state), round), choice) => G.branch input round choice state)
       (encBranchInput encI encS encR) encS)
-    (hestimate : ComputableInPolyTime (fun p : I × S => G.estimate p.1 p.2)
+    (hestimate : ComputableInPolyTime (fun (input, state) => G.estimate input state)
       (encPair encI encS) encNat)
     {growth : I → ℕ} (hpoly : PolyBounded (fun x => (encI x).length) growth)
     (hgrowth : ∀ x s r b, r ∈ G.rounds x →
@@ -191,11 +192,11 @@ theorem run_polyTime_spec
     (hrounds : ComputableInPolyTime G.rounds encI encL)
     (hinit : ComputableInPolyTime G.init encI encS)
     (hbranch : ComputableInPolyTime
-      (fun p : ((I × S) × R) × Bool => G.branch p.1.1.1 p.1.2 p.2 p.1.1.2)
+      (fun (((input, state), round), choice) => G.branch input round choice state)
       (encBranchInput encI encS encR) encS)
-    (hestimate : ComputableInPolyTime (fun p : I × S => G.estimate p.1 p.2)
+    (hestimate : ComputableInPolyTime (fun (input, state) => G.estimate input state)
       (encPair encI encS) encM)
-    (hle : ComputableInPolyTime (fun p : M × M => decide (p.1 ≤ p.2))
+    (hle : ComputableInPolyTime (fun (m₁, m₂) => decide (m₁ ≤ m₂))
       (encPair encM encM) encBool)
     {growth : I → ℕ} (hpoly : PolyBounded (fun x => (encI x).length) growth)
     (hgrowth : ∀ x s r b, r ∈ G.rounds x →
@@ -221,11 +222,11 @@ theorem run_polyTime_spec_of_add_le [AddCommMonoid M] [IsOrderedCancelAddMonoid 
     (hrounds : ComputableInPolyTime G.rounds encI encL)
     (hinit : ComputableInPolyTime G.init encI encS)
     (hbranch : ComputableInPolyTime
-      (fun p : ((I × S) × R) × Bool => G.branch p.1.1.1 p.1.2 p.2 p.1.1.2)
+      (fun (((input, state), round), choice) => G.branch input round choice state)
       (encBranchInput encI encS encR) encS)
-    (hestimate : ComputableInPolyTime (fun p : I × S => G.estimate p.1 p.2)
+    (hestimate : ComputableInPolyTime (fun (input, state) => G.estimate input state)
       (encPair encI encS) encM)
-    (hle : ComputableInPolyTime (fun p : M × M => decide (p.1 ≤ p.2))
+    (hle : ComputableInPolyTime (fun (m₁, m₂) => decide (m₁ ≤ m₂))
       (encPair encM encM) encBool)
     {growth : I → ℕ} (hpoly : PolyBounded (fun x => (encI x).length) growth)
     (hgrowth : ∀ x s r b, r ∈ G.rounds x →

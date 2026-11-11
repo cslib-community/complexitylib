@@ -171,8 +171,10 @@ ticks per round); `CostedProductDerandomizer` extends this to general finite pro
 [Product/ConditionalExpectation.lean](../../CslibFrontier/Probability/Product/ConditionalExpectation.lean)).
 On multi-tape Turing machines, `PolyTimeGreedyInput` (`computableInPolyTime_run`,
 `computableInPolyTime_run_nat`, `run_polyTime_spec`) discharges `foldlWithInput_of_bounded_growth`
-from polynomial-time `rounds`, `init`, `branch` (on `encBranchInput`), `estimate`, and an additive
-per-round encoded-state growth bound. Weighted `MaxCut` instantiates both layers in
+from polynomial-time `rounds`, `init`, `branch` (on `encBranchInput`), `estimate`, order comparison
+on estimator values `M` (`hle`, supplied automatically for binary `ℕ` by
+`computableInPolyTime_run_nat`), and an additive per-round encoded-state growth bound. Weighted
+`MaxCut` instantiates both layers in
 [MaxCut/Derandomized.lean](../../CslibFrontier/Algorithms/Lean/MaxCut/Derandomized.lean) and
 [Problems/MaxCut/Derandomized.lean](../../CslibFrontier/Computability/Complexity/Problems/MaxCut/Derandomized.lean),
 proving the deterministic `1 / 2`-approximation `cutWeight_le_two_mul_derandomizedCutSide`, the
