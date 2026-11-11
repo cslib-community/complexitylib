@@ -56,9 +56,9 @@ size at the polynomially bounded arities of the queries, shows the converse
   bounds on its size and depth.
 * `Cslib.Circuits.Boolean.PPolyOracle_subset_PPoly`, `Cslib.Circuits.Boolean.PPolyOracle_eq_PPoly`:
   `P/poly` relative to a language in `P/poly` is `P/poly`.
-* `Cslib.Circuits.Boolean.fanInAtMost_mapOp_toOracle`, `cost_mapOp_toOracle`,
-  `depthWith_mapOp_toOracle`: a De Morgan circuit in the oracle basis has fan-in two and no oracle
-  gates.
+* `Cslib.Circuits.Boolean.fanInAtMost_mapOp_toOracle`,
+  `Cslib.Circuits.Boolean.cost_mapOp_toOracle`, `Cslib.Circuits.Boolean.depthWith_mapOp_toOracle`:
+  a De Morgan circuit in the oracle basis has fan-in two and no oracle gates.
 
 ## References
 

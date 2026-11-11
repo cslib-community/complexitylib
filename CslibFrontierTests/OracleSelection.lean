@@ -33,19 +33,19 @@ private def querySrc (n E : ℕ) (y : Fin (2 ^ n)) : Fin (n + 1 + E) → Source 
 
 /-- The toy round on the table and `E` earlier-selection wires, with default `(0, T 0)`. -/
 private def toyRound (n E : ℕ) : Circuit oracleSignature (2 ^ n + E) (2 ^ n + E + (n + 1)) :=
-  round (querySrc n E) (pairSrc n E) (pairSrc n E ⟨0, Nat.two_pow_pos n⟩)
+  selectionRound (querySrc n E) (pairSrc n E) (pairSrc n E ⟨0, Nat.two_pow_pos n⟩)
 
 private theorem val_pairSrc (n E : ℕ) (y : Fin (2 ^ n)) (x : BitString (2 ^ n + E)) :
-    (fun b => (pairSrc n E y b).val x) = Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y) := by
+    substitute (pairSrc n E y) x = Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y) := by
   funext b
-  induction b using Fin.lastCases <;> simp [pairSrc]
+  induction b using Fin.lastCases <;> simp [pairSrc, substitute]
 
 /-- Every round emits a pair `(y, T y)`. -/
 private theorem toyRound_pair (n E : ℕ) (O : Language Bool) (x : BitString (2 ^ n + E)) :
     ∃ y : Fin (2 ^ n),
-      roundSel O (querySrc n E) (pairSrc n E) (pairSrc n E ⟨0, Nat.two_pow_pos n⟩) x =
+      selectedWord O (querySrc n E) (pairSrc n E) (pairSrc n E ⟨0, Nat.two_pow_pos n⟩) x =
         Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y) :=
-  roundSel_prop
+  selectedWord_prop
     (P := fun v => ∃ y : Fin (2 ^ n), v = Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y))
     O _ _ _ x ⟨_, val_pairSrc n E _ x⟩ fun y _ => ⟨y, val_pairSrc n E y x⟩
 
@@ -56,9 +56,9 @@ private def toyChain (n R : ℕ) : Circuit oracleSignature (2 ^ n) (2 ^ n + (n +
 private theorem eval_toyRound (n : ℕ) (O : Language Bool) (r : ℕ)
     (y : BitString (2 ^ n + (n + 1) * r)) :
     (toyRound n ((n + 1) * r)).eval (oracleInterpretation O) y =
-      Fin.append y (roundSel O (querySrc n _) (pairSrc n _) (pairSrc n _ ⟨0, Nat.two_pow_pos n⟩)
+      Fin.append y (selectedWord O (querySrc n _) (pairSrc n _) (pairSrc n _ ⟨0, Nat.two_pow_pos n⟩)
         y) :=
-  eval_round _ _ _ O y
+  eval_selectionRound _ _ _ O y
 
 /-- **Every block of the accumulation is a pair `(y, T y)` of the input table `T`.** -/
 example (n R : ℕ) (O : Language Bool) (T : BitString (2 ^ n)) {r : ℕ} (hr : r < R) :
@@ -83,12 +83,12 @@ example (n R : ℕ) : (toyChain n R).program.cost OracleOp.queryWeight = R * 2 ^
 /-- `R` rounds have at most `R` oracle gates on any path. -/
 example (n R : ℕ) : (toyChain n R).depthWith OracleOp.queryWeight ≤ R := by
   simpa [toyChain, toyRound] using
-    Circuit.depthWith_accumulate_le _ _ (fun r => depthWith_round_le _ _ _) R
+    Circuit.depthWith_accumulate_le _ _ (fun r _ => depthWith_selectionRound_le _ _ _)
 
 /-- Each round has `2 + 2 ^ n` gates besides its multiplexers, so `R` rounds have at most
 `R * (2 ^ n * (3 * n + 7))` gates. -/
 example (n R : ℕ) : (toyChain n R).size ≤ R * (2 ^ n * (3 * n + 7)) := by
-  simp only [toyChain, Circuit.size_accumulate, toyRound, size_round, Finset.sum_const,
+  simp only [toyChain, Circuit.size_accumulate, toyRound, size_selectionRound, Finset.sum_const,
     Finset.card_range, smul_eq_mul]
   refine Nat.mul_le_mul_left R ?_
   have : 1 ≤ 2 ^ n := Nat.one_le_two_pow
@@ -96,7 +96,7 @@ example (n R : ℕ) : (toyChain n R).size ≤ R * (2 ^ n * (3 * n + 7)) := by
 
 /-- Round `r` reads at most `n + 1 + (n + 1) * r` wires per oracle gate. -/
 example (n R : ℕ) : (toyChain n R).FanInAtMost (max (n + 1 + (n + 1) * R) 2) :=
-  Circuit.fanInAtMost_accumulate _ fun _ hr => (fanInAtMost_round _ _ _).mono <|
+  Circuit.fanInAtMost_accumulate _ fun _ hr => (fanInAtMost_selectionRound _ _ _).mono <|
     max_le_max (Nat.add_le_add_left (Nat.mul_le_mul_left _ hr.le) _) le_rfl
 
 end CslibFrontierTests.OracleSelection

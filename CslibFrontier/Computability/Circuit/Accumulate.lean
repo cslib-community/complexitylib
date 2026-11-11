@@ -77,8 +77,8 @@ theorem cost_program_accumulate (cost : σ.Op → ℕ) (R : ℕ) :
       cost_program_wiring, Nat.add_zero]
 
 /-- Rounds of weighted depth at most `D` accumulate to weighted depth at most `R * D`. -/
-theorem depthWith_accumulate_le (cost : σ.Op → ℕ) {D : ℕ} (h : ∀ r, (step r).depthWith cost ≤ D)
-    (R : ℕ) : (accumulate step R).depthWith cost ≤ R * D := by
+theorem depthWith_accumulate_le (cost : σ.Op → ℕ) {D R : ℕ}
+    (h : ∀ r < R, (step r).depthWith cost ≤ D) : (accumulate step R).depthWith cost ≤ R * D := by
   induction R with
   | zero => simp [accumulate]
   | succ R ih =>
@@ -87,7 +87,7 @@ theorem depthWith_accumulate_le (cost : σ.Op → ℕ) {D : ℕ} (h : ∀ r, (st
     rw [depthWith_wiring, Nat.zero_add]
     refine (depthWith_comp_le _ _ _).trans ?_
     rw [Nat.succ_mul, Nat.add_comm (R * D)]
-    exact Nat.add_le_add (h R) ih
+    exact Nat.add_le_add (h R R.lt_succ_self) (ih fun r hr => h r (hr.trans R.lt_succ_self))
 
 /-- Rounds of fan-in at most `f` accumulate to fan-in at most `f`. -/
 theorem fanInAtMost_accumulate {f R : ℕ} (h : ∀ r < R, (step r).FanInAtMost f) :

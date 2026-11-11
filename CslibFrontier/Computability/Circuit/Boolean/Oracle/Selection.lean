@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Accumulate
 public import CslibFrontier.Computability.Circuit.Boolean.Comparison
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle
+public import CslibFrontier.Computability.Circuit.Boolean.Substitution
 public import CslibFrontier.Computability.Circuit.Pi
 
 /-!
@@ -17,20 +18,21 @@ public import CslibFrontier.Computability.Circuit.Pi
 
 A *selection round* asks the oracle about `N` candidates side by side and keeps the word of the
 first accepted candidate, or a default word when none is accepted. Each query word and each
-candidate word is read from *sources* (`Boolean.Source`): input wires or constants. So a
+candidate word is read from *sources* (`Boolean.Source`): input wires or constants. A word of
+sources is a substitution, so it reads the word `Boolean.substitute ρ x` from the input `x`. So a
 candidate can mix fixed bits, such as its own index, with input bits, such as a truth-table entry
 or the output of an earlier round. The default word is read from sources too, so it can be made
 correct for the inputs it reads.
 
-`Boolean.round src word dflt` is this round as an oracle circuit that keeps its inputs and appends
-the selected word. It has `N` oracle gates, all at oracle depth one, and its other gates are a
-chain of multiplexers (`Boolean.selectFirst`). Rounds compose with `Circuit.accumulate`, where
-each round reads the inputs and the words of all earlier rounds; `Boolean.eval_round` has the
-shape that `Circuit.eval_accumulate_block` consumes.
+`Boolean.selectionRound src word dflt` is this round as an oracle circuit that keeps its inputs
+and appends the selected word. Its queries have length `q`. It has `N` oracle gates, all at oracle
+depth one, and its other gates are a chain of multiplexers (`Boolean.selectFirst`). Rounds compose
+with `Circuit.accumulate`, where each round reads the inputs and the words of all earlier rounds;
+`Boolean.eval_selectionRound` has the shape that `Circuit.eval_accumulate_block` consumes.
 
 The selected word is the first accepted candidate's, or the default when none is accepted
-(`Boolean.roundSel_spec`). In particular, a property of words that every accepted candidate
-and the default satisfy holds for the selected word (`Boolean.roundSel_prop`).
+(`Boolean.selectedWord_spec`). In particular, a property of words that every accepted candidate
+and the default satisfy holds for the selected word (`Boolean.selectedWord_prop`).
 
 ## Main definitions
 
@@ -39,18 +41,20 @@ and the default satisfy holds for the selected word (`Boolean.roundSel_prop`).
 * `Cslib.Circuits.Boolean.Source`, `Cslib.Circuits.Boolean.constLayer`,
   `Cslib.Circuits.Boolean.queryLayer`: sources of words, the two constant gates, and oracle gates
   side by side.
-* `Cslib.Circuits.Boolean.round`, `Cslib.Circuits.Boolean.roundSel`: one selection round and the
-  word it selects.
+* `Cslib.Circuits.Boolean.selectionRound`, `Cslib.Circuits.Boolean.selectedWord`: one selection
+  round and the word it selects.
 
 ## Main results
 
 * `Cslib.Circuits.Boolean.firstSel_spec`, `Cslib.Circuits.Boolean.firstSel_prop`: the first
   accepted candidate, or the default.
-* `Cslib.Circuits.Boolean.eval_round`, `Cslib.Circuits.Boolean.roundSel_spec`,
-  `Cslib.Circuits.Boolean.roundSel_prop`: the semantics of a round.
-* `Cslib.Circuits.Boolean.size_round`, `Cslib.Circuits.Boolean.cost_program_round`,
-  `Cslib.Circuits.Boolean.depthWith_round_le`, `Cslib.Circuits.Boolean.fanInAtMost_round`: a round
-  has `N` oracle gates, oracle depth at most one and fan-in at most `max q 2`.
+* `Cslib.Circuits.Boolean.eval_selectionRound`, `Cslib.Circuits.Boolean.selectedWord_spec`,
+  `Cslib.Circuits.Boolean.selectedWord_prop`: the semantics of a round.
+* `Cslib.Circuits.Boolean.size_selectionRound`,
+  `Cslib.Circuits.Boolean.cost_program_selectionRound`,
+  `Cslib.Circuits.Boolean.depthWith_selectionRound_le`,
+  `Cslib.Circuits.Boolean.fanInAtMost_selectionRound`: a round has `N` oracle gates, oracle depth
+  at most one and fan-in at most `max q 2`.
 -/
 
 public section
@@ -133,17 +137,9 @@ def selectFirst (dflt : Fin w → Fin K) :
 
 /-! ### Sources, constants and oracle gates -/
 
-/-- A source of one bit of a word: one of `K` input wires, or a constant. -/
+/-- A source of one bit of a word: one of `K` input wires, or a constant. A word of sources
+`ρ : Fin w → Source K` is a substitution, and reads the word `substitute ρ x` from the input `x`. -/
 abbrev Source (K : ℕ) := Fin K ⊕ Bool
-
-/-- The bit a source carries on the input `x`. -/
-@[expose] def Source.val (x : BitString K) : Source K → Bool
-  | .inl i => x i
-  | .inr b => b
-
-@[simp] theorem Source.val_inl (x : BitString K) (i : Fin K) : Source.val x (.inl i) = x i := rfl
-
-@[simp] theorem Source.val_inr (x : BitString K) (b : Bool) : Source.val x (.inr b) = b := rfl
 
 /-- The wire carrying a source after `constLayer`. -/
 def Source.idx : Source K → Fin (K + 2)
@@ -157,12 +153,13 @@ def constLayer (K : ℕ) : Circuit oracleSignature K (K + 2) :=
     ((Circuit.oneGate (σ := oracleSignature) (OracleOp.base (.const false)) Fin.elim0).append
       (Circuit.oneGate (σ := oracleSignature) (OracleOp.base (.const true)) Fin.elim0))
 
+/-- After `constLayer`, the wire of a source carries the bit that the source reads. -/
 @[simp] theorem eval_constLayer_idx (O : Language Bool) (x : BitString K) (s : Source K) :
-    (constLayer K).eval (oracleInterpretation O) x s.idx = s.val x := by
+    (constLayer K).eval (oracleInterpretation O) x s.idx = s.elim x id := by
   rcases s with i | _ | _
-  · simp [constLayer, Source.idx, Source.val, Circuit.eval_append, Fin.append_left]
+  · simp [constLayer, Source.idx, Circuit.eval_append, Fin.append_left]
   all_goals
-    simp only [constLayer, Source.idx, Source.val, Circuit.eval_append, Fin.append_right]
+    simp only [constLayer, Source.idx, Circuit.eval_append, Fin.append_right]
     rfl
 
 @[simp] theorem size_constLayer (K : ℕ) : (constLayer K).size = 2 := by
@@ -193,8 +190,9 @@ def queryLayer (src : Fin N → Fin q → Source K) : Circuit oracleSignature (K
 @[simp] theorem eval_queryLayer (src : Fin N → Fin q → Source K) (O : Language Bool)
     (x : BitString K) (i : Fin N) :
     (queryLayer src).eval (oracleInterpretation O) ((constLayer K).eval (oracleInterpretation O) x)
-        i = O.slice q fun a => (src i a).val x := by
+        i = O.slice q (substitute (src i) x) := by
   simp [queryLayer]
+  rfl
 
 @[simp] theorem size_queryLayer (src : Fin N → Fin q → Source K) : (queryLayer src).size = N := by
   simp [queryLayer]
@@ -217,7 +215,7 @@ theorem fanInAtMost_queryLayer (src : Fin N → Fin q → Source K) : (queryLaye
 /-- **One selection round.** Candidate `i` is accepted when the oracle accepts the word read from
 the sources `src i`. The round keeps its inputs and appends the word read from `word i` for the
 first accepted candidate `i`, or the word read from `dflt` when none is accepted. -/
-def round (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
+def selectionRound (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
     (dflt : Fin w → Source K) : Circuit oracleSignature K (K + w) :=
   (Circuit.id oracleSignature K).append
     (((selectFirst (K := K + 2 + N) (fun b => Fin.castAdd N (dflt b).idx)
@@ -225,61 +223,66 @@ def round (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Sourc
       toOracle).comp
       (((Circuit.id oracleSignature (K + 2)).append (queryLayer src)).comp (constLayer K)))
 
-/-- The word that `round src word dflt` selects on the input `x` under the oracle `O`. -/
-noncomputable def roundSel (O : Language Bool) (src : Fin N → Fin q → Source K)
+/-- The word that `selectionRound src word dflt` selects on the input `x` under the oracle `O`. -/
+noncomputable def selectedWord (O : Language Bool) (src : Fin N → Fin q → Source K)
     (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) (x : BitString K) : BitString w :=
-  firstSel (fun b => (dflt b).val x) (fun i => O.slice q fun a => (src i a).val x)
-    (fun i b => (word i b).val x)
+  firstSel (substitute dflt x) (fun i => O.slice q (substitute (src i) x))
+    (fun i => substitute (word i) x)
 
 /-- A round keeps its inputs and appends the selected word. -/
-@[simp] theorem eval_round (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
-    (dflt : Fin w → Source K) (O : Language Bool) (x : BitString K) :
-    (round src word dflt).eval (oracleInterpretation O) x =
-      Fin.append x (roundSel O src word dflt x) := by
-  rw [round, Circuit.eval_append, Circuit.eval_wiring, Circuit.eval_comp, Circuit.eval_comp,
-    Circuit.eval_append, Circuit.eval_wiring, Circuit.eval_mapOp (I := interpretation),
-    eval_selectFirst]
-  simp only [roundSel, Function.comp_def, Fin.append_left, Fin.append_right, eval_constLayer_idx,
-    eval_queryLayer, id]
+@[simp] theorem eval_selectionRound (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) (O : Language Bool)
+    (x : BitString K) :
+    (selectionRound src word dflt).eval (oracleInterpretation O) x =
+      Fin.append x (selectedWord O src word dflt x) := by
+  rw [selectionRound, Circuit.eval_append, Circuit.eval_wiring, Circuit.eval_comp,
+    Circuit.eval_comp, Circuit.eval_append, Circuit.eval_wiring,
+    Circuit.eval_mapOp (I := interpretation), eval_selectFirst]
+  simp only [selectedWord, Function.comp_def, Fin.append_left, Fin.append_right, id,
+    eval_constLayer_idx, eval_queryLayer]
+  rfl
 
 /-- **The word a round selects.** Either the oracle accepts some candidate's query and the selected
 word is that of the first such candidate, or it accepts none and the selected word is the
 default. -/
-theorem roundSel_spec (O : Language Bool) (src : Fin N → Fin q → Source K)
+theorem selectedWord_spec (O : Language Bool) (src : Fin N → Fin q → Source K)
     (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) (x : BitString K) :
-    (∃ i, O.slice q (fun a => (src i a).val x) = true ∧
-        (∀ j < i, O.slice q (fun a => (src j a).val x) = false) ∧
-        roundSel O src word dflt x = fun b => (word i b).val x) ∨
-      ((∀ i, O.slice q (fun a => (src i a).val x) = false) ∧
-        roundSel O src word dflt x = fun b => (dflt b).val x) :=
+    (∃ i, O.slice q (substitute (src i) x) = true ∧
+        (∀ j < i, O.slice q (substitute (src j) x) = false) ∧
+        selectedWord O src word dflt x = substitute (word i) x) ∨
+      ((∀ i, O.slice q (substitute (src i) x) = false) ∧
+        selectedWord O src word dflt x = substitute dflt x) :=
   firstSel_spec _ _ _
 
 /-- A property of words that the default and every accepted candidate's word have holds for the
 word a round selects. -/
-theorem roundSel_prop {P : BitString w → Prop} (O : Language Bool)
+theorem selectedWord_prop {P : BitString w → Prop} (O : Language Bool)
     (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K)
-    (x : BitString K) (hd : P fun b => (dflt b).val x)
-    (hacc : ∀ i, O.slice q (fun a => (src i a).val x) = true → P fun b => (word i b).val x) :
-    P (roundSel O src word dflt x) :=
+    (x : BitString K) (hd : P (substitute dflt x))
+    (hacc : ∀ i, O.slice q (substitute (src i) x) = true → P (substitute (word i) x)) :
+    P (selectedWord O src word dflt x) :=
   firstSel_prop hd hacc
 
 /-- A round has `2` constant gates, `N` oracle gates and `N` multiplexers of width `w`. -/
-@[simp] theorem size_round (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
-    (dflt : Fin w → Source K) : (round src word dflt).size = 2 + N + N * (3 * w + 1) := by
-  simp [round]
+@[simp] theorem size_selectionRound (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
+    (selectionRound src word dflt).size = 2 + N + N * (3 * w + 1) := by
+  simp [selectionRound]
 
 /-- A round has `N` oracle gates. -/
-@[simp] theorem cost_program_round (src : Fin N → Fin q → Source K)
+@[simp] theorem cost_program_selectionRound (src : Fin N → Fin q → Source K)
     (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
-    (round src word dflt).program.cost OracleOp.queryWeight = N := by
-  rw [round, Circuit.cost_program_append, Circuit.cost_program_comp, Circuit.cost_program_comp,
-    Circuit.cost_program_append, cost_mapOp_toOracle, cost_program_queryLayer,
-    cost_program_constLayer, Circuit.cost_program_wiring, Circuit.cost_program_wiring]
+    (selectionRound src word dflt).program.cost OracleOp.queryWeight = N := by
+  rw [selectionRound, Circuit.cost_program_append, Circuit.cost_program_comp,
+    Circuit.cost_program_comp, Circuit.cost_program_append, cost_mapOp_toOracle,
+    cost_program_queryLayer, cost_program_constLayer, Circuit.cost_program_wiring,
+    Circuit.cost_program_wiring]
   simp
 
 /-- A round has at most one oracle gate on any path. -/
-theorem depthWith_round_le (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
-    (dflt : Fin w → Source K) : (round src word dflt).depthWith OracleOp.queryWeight ≤ 1 := by
+theorem depthWith_selectionRound_le (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
+    (selectionRound src word dflt).depthWith OracleOp.queryWeight ≤ 1 := by
   refine (Circuit.depthWith_append_le _ _ _).trans (max_le (by simp) ?_)
   refine (Circuit.depthWith_comp_le _ _ _).trans ?_
   rw [depthWith_mapOp_toOracle, Nat.zero_add]
@@ -288,8 +291,9 @@ theorem depthWith_round_le (src : Fin N → Fin q → Source K) (word : Fin N �
   exact (Circuit.depthWith_append_le _ _ _).trans (max_le (by simp) (depthWith_queryLayer_le src))
 
 /-- A round has fan-in at most `max q 2`. -/
-theorem fanInAtMost_round (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
-    (dflt : Fin w → Source K) : (round src word dflt).FanInAtMost (max q 2) :=
+theorem fanInAtMost_selectionRound (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) :
+    (selectionRound src word dflt).FanInAtMost (max q 2) :=
   (Circuit.fanInAtMost_wiring _ _).append <|
     ((Circuit.fanInAtMost_mapOp _ _).2
         ((Circuit.fanInAtMost_two _).mono (le_max_right _ _))).comp <|

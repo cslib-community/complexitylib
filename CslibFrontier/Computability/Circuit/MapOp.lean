@@ -185,6 +185,18 @@ theorem Circuit.Computes.mapOp [φ.Preserves I J] {c : Circuit σ n m}
 
 /-! ### Costs and weighted depths -/
 
+/-- Reindexing along `Fin.cast` keeps a sum. -/
+private theorem sum_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
+    ∑ a : Fin k, f (Fin.cast h a) = ∑ j, f j := by
+  subst h
+  rfl
+
+/-- Reindexing along `Fin.cast` keeps a supremum. -/
+private theorem sup_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
+    (Finset.univ.sup fun a : Fin k => f (Fin.cast h a)) = Finset.univ.sup f := by
+  subst h
+  rfl
+
 /-- The translated program costs, under `cost`, what the program costs under `cost ∘ φ`. -/
 theorem Program.cost_mapOp (p : Program σ n g) (cost : τ.Op → ℕ) :
     (p.mapOp φ).cost cost = p.cost (cost ∘ φ) :=
@@ -196,11 +208,7 @@ instance Signature.Hom.preserves_depthInterpretation (cost : τ.Op → ℕ) :
   interpret_eq op x := by
     simp only [depthInterpretation, Fin.foldl_max_eq_max_sup, Function.comp_apply]
     congr 2
-    have h := φ.arity_eq op
-    refine le_antisymm (Finset.sup_le fun i _ => Finset.le_sup (f := x) (Finset.mem_univ _))
-      (Finset.sup_le fun i _ => ?_)
-    have hi := Finset.le_sup (f := fun a => x (Fin.cast h a)) (Finset.mem_univ (Fin.cast h.symm i))
-    simpa using hi
+    exact sup_cast (φ.arity_eq op) x
 
 /-- The translated program has, under `cost`, the gate depths of the program under `cost ∘ φ`. -/
 theorem Program.depthsWith_mapOp (p : Program σ n g) (cost : τ.Op → ℕ) :
@@ -232,18 +240,6 @@ arguments. -/
 @[simp] theorem Formula.mapOp_gate (op : σ.Op) (args : Fin (σ.Arity op) → Formula σ n) :
     (Formula.gate op args).mapOp φ =
       .gate (φ op) fun a => (args (Fin.cast (φ.arity_eq op) a)).mapOp φ :=
-  rfl
-
-/-- Reindexing along `Fin.cast` keeps a sum. -/
-private theorem sum_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
-    ∑ a : Fin k, f (Fin.cast h a) = ∑ j, f j := by
-  subst h
-  rfl
-
-/-- Reindexing along `Fin.cast` keeps a supremum. -/
-private theorem sup_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
-    (Finset.univ.sup fun a : Fin k => f (Fin.cast h a)) = Finset.univ.sup f := by
-  subst h
   rfl
 
 /-- The translated formula has the same depth when `φ op` costs what `op` does. -/
