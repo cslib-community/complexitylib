@@ -37,7 +37,7 @@ with a specified residue distribution. Its public sample is the binary encoding 
 * [C. Peikert, *A Decade of Lattice Cryptography*][Peikert2016]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -47,11 +47,13 @@ open scoped _root_.Matrix
 namespace PrimeLWE
 
 /-- Encode a `ZMod q` element. -/
+@[expose]
 def encZMod (q : ℕ) : ZMod q ↪ List Bool :=
   ⟨fun a => encIntBin (ZMod.cast a),
     encIntBin.injective.comp (Function.LeftInverse.injective ZMod.intCast_zmod_cast)⟩
 
 /-- Encode a `ZMod q` vector. -/
+@[expose]
 def encZModVec (n q : ℕ) : (Fin n → ZMod q) ↪ List Bool :=
   ⟨fun v => encList (encZMod q) (List.ofFn v), by
     intro u v huv
@@ -63,6 +65,7 @@ def encZModVec (n q : ℕ) : (Fin n → ZMod q) ↪ List Bool :=
     exact hi⟩
 
 /-- Encode a matrix over `ZMod q`. -/
+@[expose]
 def encMatrix (n m q : ℕ) : Matrix (Fin n) (Fin m) (ZMod q) ↪ List Bool :=
   ⟨fun M => encList (encList (encZMod q))
       (List.ofFn fun i : Fin n => List.ofFn fun j : Fin m => M i j), by
@@ -75,12 +78,14 @@ def encMatrix (n m q : ℕ) : Matrix (Fin n) (Fin m) (ZMod q) ↪ List Bool :=
     exact hij⟩
 
 /-- The deterministic LWE public matrix `[A * s + e | A]` modulo `q`. -/
+@[expose]
 def publicMatrix {n m q : ℕ} (A : Matrix (Fin m) (Fin n) (ZMod q))
     (s : Fin n → ZMod q) (e : Fin m → ZMod q) :
     Matrix (Fin m) (Fin (n + 1)) (ZMod q) :=
   fun i => Fin.cons ((A *ᵥ s) i + e i) (A i)
 
 /-- Draw the public matrix `[A * s + e | A]`. -/
+@[expose]
 noncomputable def publicMatrixLaw (n m q : ℕ) [Fact (Nat.Prime q)]
     (noise : PMF (ZMod q)) : PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod q)) := do
   let secret ← PMF.uniformOfFintype (Fin n → ZMod q)
@@ -110,6 +115,7 @@ theorem uniform_bind_publicMatrix {n m q : ℕ} [Fact (Nat.Prime q)] (s : Fin n 
   rfl
 
 /-- Draw the public matrix `[A * s + e | A]` where `s` is drawn from the error distribution. -/
+@[expose]
 noncomputable def publicMatrixLawErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)]
     (noise : PMF (ZMod q)) : PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod q)) := do
   let secret ← PMF.pi (fun _ : Fin n => noise)
@@ -118,12 +124,14 @@ noncomputable def publicMatrixLawErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)]
   return publicMatrix publicPart secret error
 
 /-- The prime LWE real ensemble. -/
+@[expose]
 noncomputable def realEnsemble (n m : ℕ → ℕ) (q : ℕ → ℕ)
     [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) (security : ℕ) : PMF (List Bool) :=
   (publicMatrixLaw (n security) (m security) (q security) (noise security)).map (encMatrix _ _ _)
 
 /-- The prime LWE real ensemble with error secret. -/
+@[expose]
 noncomputable def realEnsembleErrorSecret (n m : ℕ → ℕ) (q : ℕ → ℕ)
     [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) (security : ℕ) : PMF (List Bool) :=
@@ -131,12 +139,14 @@ noncomputable def realEnsembleErrorSecret (n m : ℕ → ℕ) (q : ℕ → ℕ)
     (encMatrix _ _ _)
 
 /-- The uniform ensemble for prime modulus. -/
+@[expose]
 noncomputable def uniformEnsemble (n m : ℕ → ℕ) (q : ℕ → ℕ)
     [∀ security, Fact (Nat.Prime (q security))] (security : ℕ) : PMF (List Bool) :=
   (PMF.uniformOfFintype
     (Matrix (Fin (m security)) (Fin (n security + 1)) (ZMod (q security)))).map (encMatrix _ _ _)
 
 /-- The prime search LWE game. -/
+@[expose]
 noncomputable def searchGame (n m q : ℕ) [Fact (Nat.Prime q)] (noise : PMF (ZMod q))
     (adversary : List Bool → ProbComp (List Bool)) : Game := do
   let secret ← PMF.uniformOfFintype (Fin n → ZMod q)
@@ -147,6 +157,7 @@ noncomputable def searchGame (n m q : ℕ) [Fact (Nat.Prime q)] (noise : PMF (ZM
   return guessWord = encZModVec n q secret
 
 /-- The prime search LWE game with secret drawn from the error distribution. -/
+@[expose]
 noncomputable def searchGameErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)] (noise : PMF (ZMod q))
     (adversary : List Bool → ProbComp (List Bool)) : Game := do
   let secret ← PMF.pi (fun _ : Fin n => noise)
@@ -158,6 +169,7 @@ noncomputable def searchGameErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)] (nois
 
 
 /-- Search LWE hypothesis for prime modulus. -/
+@[expose]
 def SearchLWE (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
@@ -166,12 +178,14 @@ def SearchLWE (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))
         (noise security) (adversary security)))
 
 /-- Decision LWE hypothesis for prime modulus. -/
+@[expose]
 def DecisionLWE (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ComputationallyIndistinguishable (PrimeLWE.realEnsemble n m q noise)
     (PrimeLWE.uniformEnsemble n m q)
 
 /-- Search LWE hypothesis with error secret. -/
+@[expose]
 def SearchLWEErrorSecret (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
@@ -180,6 +194,7 @@ def SearchLWEErrorSecret (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q
         (noise security) (adversary security)))
 
 /-- Decision LWE hypothesis with error secret. -/
+@[expose]
 def DecisionLWEErrorSecret (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ComputationallyIndistinguishable (PrimeLWE.realEnsembleErrorSecret n m q noise)

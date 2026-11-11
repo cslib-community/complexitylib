@@ -6,6 +6,8 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Crypto.Computational.LWE.NormalForm
+import CslibFrontier.Crypto.Computational.LWE.SearchToDecision
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
@@ -3105,31 +3107,40 @@ register_result "lwe-normal-form-decision" where
   title := "Reduction of general Decision LWE to Decision LWE in normal form"
   topic := "cryptography"
   sources := [
-    { paper := ApplebaumCashPeikertSahai2009, theorem := "Lemma 2", locator := "Section 3.1" }
+    { paper := Peikert2016, theorem := "Section 4.2.1", locator := "Page 23" }
   ]
   theorems := [
     Cslib.Crypto.PrimeLWE.decisionNormalForm
   ]
-  scope := "Concrete distinguishing advantage bound showing that if Decision LWE is hard with uniform secrets, it is also hard when the secret is drawn from the error distribution (normal form), proved for arbitrary prime moduli via `decisionNormalForm`."
+  scope := "Concrete distinguishing advantage bound showing that if Decision LWE is hard
+    with uniform secrets, it is also hard when the secret is drawn from the error
+    distribution (normal form), proved for prime moduli via `decisionNormalForm`."
 
 register_result "lwe-normal-form-search" where
   title := "Reduction of general Search LWE to Search LWE in normal form"
   topic := "cryptography"
   sources := [
-    { paper := ApplebaumCashPeikertSahai2009, theorem := "Lemma 2", locator := "Section 3.1" }
+    { paper := Peikert2016, theorem := "Section 4.2.1", locator := "Page 23" }
   ]
   theorems := [
     Cslib.Crypto.PrimeLWE.searchNormalForm
   ]
-  scope := "Concrete success probability bound showing that if Search LWE is hard with uniform secrets, it is also hard when the secret is drawn from the error distribution (normal form), proved for arbitrary prime moduli via `searchNormalForm`."
+  scope := "Concrete success probability bound showing that if Search LWE is hard with
+    uniform secrets, it is also hard when the secret is drawn from the error
+    distribution (normal form), proved for prime moduli via `searchNormalForm`."
 
 register_result "lwe-search-to-decision" where
   title := "Search-to-Decision reduction for LWE"
   topic := "cryptography"
   sources := [
-    { paper := Regev2005, theorem := unverified, locator := unverified }
+    { paper := Regev2009, theorem := "Lemma 4.1-4.2", locator := "Pages 30-31" }
   ]
   theorems := [
     Cslib.Crypto.PrimeLWE.searchToDecision
   ]
-  scope := "Concrete Search-to-Decision reduction showing that an adversary breaking Decision LWE over a prime modulus can be used to construct a solver for Search LWE. The result bounds the success probability using Chernoff-Hoeffding bounds and a union bound over coordinate trials. The asymptotic PPT (IsPPTOn) SearchLWE -> DecisionLWE corollary is not proved because uniform ZMod q sampling for non-powers-of-2 is not perfectly PPT."
+  scope := "Concrete Search-to-Decision reduction showing that an adversary breaking
+    Decision LWE over a prime modulus can be used to construct a solver for Search LWE.
+    The result bounds the success probability using Chernoff-Hoeffding bounds and a
+    union bound over coordinate trials. The asymptotic PPT (IsPPTOn) SearchLWE ->
+    DecisionLWE corollary is not proved because uniform ZMod q sampling for
+    non-powers-of-2 is not perfectly PPT."

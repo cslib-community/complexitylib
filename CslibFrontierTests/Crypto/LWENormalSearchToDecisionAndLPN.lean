@@ -7,16 +7,27 @@ namespace CslibFrontierTests.Crypto.LWENormalSearchToDecisionAndLPN
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.PrimeLWE
 
 /--
-info: 'Cslib.Crypto.PrimeLWE.decisionNormalForm' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Cslib.Crypto.PrimeLWE.decisionNormalForm' depends on axioms: [propext, Classical.choice,
+Quot.sound]
 -/
 #guard_msgs in
 #print axioms decisionNormalForm
 
 /--
-info: 'Cslib.Crypto.PrimeLWE.searchNormalForm' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Cslib.Crypto.PrimeLWE.searchNormalForm' depends on axioms: [propext, Classical.choice,
+Quot.sound]
 -/
 #guard_msgs in
 #print axioms searchNormalForm
 
-end CslibFrontierTests.Crypto.LWENormalSearchToDecisionAndLPN
 
+
+
+
+/--
+info: 'Cslib.Crypto.SearchLPN' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms Cslib.Crypto.SearchLPN
+
+end CslibFrontierTests.Crypto.LWENormalSearchToDecisionAndLPN

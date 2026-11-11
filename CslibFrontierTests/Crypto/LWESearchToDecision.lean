@@ -54,13 +54,15 @@ example (adversary : List Bool → ProbComp Bool) (N : ℕ) :
   exact_mod_cast searchToDecision adversary N
 
 /--
-info: 'Cslib.Crypto.PrimeLWE.searchToDecision' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Cslib.Crypto.PrimeLWE.searchToDecision' depends on axioms: [propext, Classical.choice,
+Quot.sound]
 -/
 #guard_msgs in
 #print axioms searchToDecision
 
 /--
-info: 'Cslib.Crypto.PrimeLWE.pi_estimatorLaw_guessSecret_ne_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Cslib.Crypto.PrimeLWE.pi_estimatorLaw_guessSecret_ne_le' depends on axioms: [propext,
+Classical.choice, Quot.sound]
 -/
 #guard_msgs in
 #print axioms pi_estimatorLaw_guessSecret_ne_le

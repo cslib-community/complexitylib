@@ -59,8 +59,8 @@ statement is given here.
 ## References
 
 * [O. Regev, *On lattices, learning with errors, random linear codes, and cryptography*][Regev2009],
-  Lemma 4.2.
-* [C. Peikert, *A Decade of Lattice Cryptography*][Peikert2016], Section 4.2.
+  Lemmas 4.1 and 4.2 (model mapping via averaged advantage).
+* [C. Peikert, *A Decade of Lattice Cryptography*][Peikert2016], Section 4.2.1.
 -/
 
 public section

@@ -31,6 +31,10 @@ and a bottom block `A₂`. When `A₁` is invertible it outputs the `m` samples
 uniform secret `s` cancels. Otherwise it gives up. The loss is the probability that a uniform
 `n × n` matrix is singular.
 
+The reduction provides finite bounds on the distinguishing advantage and success probability.
+Because `gaussInv?` currently computes the matrix inverse using an adjugate matrix rather than a
+polynomial-time algorithm, the asymptotic PPT (`IsPPTOn`) statement is not formalized.
+
 ## Main definitions
 
 * `Cslib.Crypto.PrimeLWE.reduceNormalDecision`: The reduction algorithm for Decision LWE.
@@ -45,7 +49,8 @@ uniform secret `s` cancels. Otherwise it gives up. The loss is the probability t
 ## References
 
 * [O. Regev, *On lattices, learning with errors, random linear codes, and cryptography*][Regev2009]
-* [C. Peikert, *A Decade of Lattice Cryptography*][Peikert2016]
+* [C. Peikert, *A Decade of Lattice Cryptography*][Peikert2016], Section 4.2.1 for the reduction
+  transpose and singularity loss mapping.
 -/
 
 public section
@@ -65,7 +70,10 @@ def decodeMatrix (n m q : ℕ) (word : List Bool) : Matrix (Fin n) (Fin m) (ZMod
   let lstlst := (frames word).map (fun r => (frames r).map (fun w => (decodeIntBin w : ZMod q)))
   fun i j => (lstlst.getD i.val []).getD j.val 0
 
-/-- The inverse of a square matrix over `ZMod q`, or `none` when it is singular. -/
+/-- The inverse of a square matrix over `ZMod q`, or `none` when it is singular.
+This definition uses determinants and adjugates rather than a native polynomial-time recursive
+Gaussian elimination certificate. It supports exact finite-game semantic bounds but does not
+currently provide an executable `IsPPT` reduction bridge. -/
 def gaussInv? {n q : ℕ} [Fact (Nat.Prime q)] (A : Matrix (Fin n) (Fin n) (ZMod q)) :
     Option (Matrix (Fin n) (Fin n) (ZMod q)) :=
   let d := A.det
@@ -199,6 +207,7 @@ private theorem map_neg_mul_inv (A1 : Matrix (Fin n) (Fin n) (ZMod q)) (hA1 : A1
       right_inv := fun A2' => by simp [Matrix.mul_assoc, Matrix.mul_nonsing_inv _ hu] }
   exact PMF.uniformOfFintype_map_equiv e
 
+omit [Fact (Nat.Prime q)] in
 private theorem publicMatrix_tail {k : ℕ} (A : Matrix (Fin k) (Fin n) (ZMod q))
     (s : Fin n → ZMod q) (e : Fin k → ZMod q) :
     (fun i j => publicMatrix A s e i (Fin.succ j)) = A := by
