@@ -95,23 +95,6 @@ theorem countQueries_insertRestQ_le (rest : List (Triple α β)) (B : ℕ)
 
 
 
-theorem countQueries_insertOrSplitQ_le (h : IsWF t tr) :
-    (insertOrSplitQ t k v tr).countQueries orderOracle ≤ 2 * t * tr.height := by
-  induction h with
-  | leaf =>
-    simp [insertOrSplitQ, insertOrSplitM]
-  | node h_len h_first h_rest ih_first ih_rest =>
-    simp only [insertOrSplitQ, insertOrSplitM, FreeM.countQueries_bind,
-      FreeM.countQueries_pure, add_zero]
-    have B_bound := ih_first
-    have h_max : ∀ c ∈ rest.map Triple.child, (insertOrSplitQ t k v c).countQueries orderOracle ≤ 2 * t * first.height := by
-      intro c hc
-      have hc_wf : IsWF t c := by
-        -- we need to get it from h_rest
-        sorry
-      sorry
-    sorry
-
 
 
 @[simp] theorem countQueries_insertOrSplitQ_leaf :
@@ -119,15 +102,20 @@ theorem countQueries_insertOrSplitQ_le (h : IsWF t tr) :
   simp [insertOrSplitQ, insertOrSplitM]
 
 theorem countQueries_insertOrSplitQ_node_le (first : BTree α β) (rest : List (Triple α β)) (B : ℕ)
-    (h_cost : ∀ c ∈ (node first rest).children, (insertOrSplitQ t k v c).countQueries orderOracle ≤ B) :
+    (h_cost : ∀ c ∈ (node first rest).children,
+        (insertOrSplitQ t k v c).countQueries orderOracle ≤ B) :
     (insertOrSplitQ t k v (.node first rest)).countQueries orderOracle ≤ rest.length + 1 + B := by
   simp [insertOrSplitQ, insertOrSplitM, FreeM.countQueries_bind]
-  cases h_eval : (insertRestM t LEQuery.ask (pure ()) k v rest).eval orderOracle <;> simp [FreeM.countQueries_map]
-  · have h_first : (insertOrSplitQ t k v first).countQueries orderOracle ≤ B := by apply h_cost; simp
-    have h_none := countQueries_insertRestQ_le_of_ret_none rest (by simpa [insertRestQ] using h_eval)
+  cases h_eval : (insertRestM t LEQuery.ask (pure ()) k v rest).eval orderOracle <;>
+    simp [FreeM.countQueries_map]
+  · have h_first : (insertOrSplitQ t k v first).countQueries orderOracle ≤ B := by
+      apply h_cost; simp
+    have h_none := countQueries_insertRestQ_le_of_ret_none rest
+      (by simpa [insertRestQ] using h_eval)
     simp only [insertRestQ, insertOrSplitQ] at h_first h_none ⊢
     omega
-  · have h_rest : ∀ c ∈ rest.map Triple.child, (insertOrSplitQ t k v c).countQueries orderOracle ≤ B := by
+  · have h_rest : ∀ c ∈ rest.map Triple.child,
+        (insertOrSplitQ t k v c).countQueries orderOracle ≤ B := by
       intro c hc
       apply h_cost
       simp [hc]
@@ -143,7 +131,8 @@ theorem countQueries_insertOrSplitQ_le (h : IsWF t tr) :
 
 theorem countQueries_insertQ_le (h : IsWF t tr) :
     (insertQ t k v tr).countQueries orderOracle ≤ 2 * t * tr.height := by
-  simp [insertQ, insertM, insertOrSplitQ, FreeM.countQueries_map]
+  simp only [insertQ, insertM, FreeM.countQueries_bind, FreeM.countQueries_pure,
+      add_zero]
   exact countQueries_insertOrSplitQ_le h
 
 end Cslib.DataStructure.BTree
