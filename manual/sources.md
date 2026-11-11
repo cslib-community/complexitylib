@@ -536,6 +536,11 @@ Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of 
 
 Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the ACM* 45(4), 634–652, 1998. https://doi.org/10.1145/285055.285059 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the Set Cover hardness threshold framework using separating partition gadgets.
 
+<a id="feldman87"></a>
+## feldman87
+
+Paul Feldman. "A Practical Scheme for Non-interactive Verifiable Secret Sharing." *Proceedings of the 28th Annual Symposium on Foundations of Computer Science (FOCS 1987)*, 427–437, 1987. https://doi.org/10.1109/SFCS.1987.4 . Bibliographic metadata checked via web search records (IEEE Xplore / DBLP); primary text was not directly inspected, and numbered internal theorem/section locators are not claimed beyond standard protocol attribution. Cited for Feldman's homomorphic-commitment verifiable secret sharing scheme (`CslibFrontier/Crypto/Protocols/SecretSharing/Feldman.lean`).
+
 <a id="fgms20"></a>
 ## fgms20
 
