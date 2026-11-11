@@ -2175,6 +2175,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Clique
 public import CslibFrontier.Computability.Complexity.Problems.Clique.OfAdj
 public import CslibFrontier.Computability.Complexity.Problems.CliqueCover
 public import CslibFrontier.Computability.Complexity.Problems.Coloring
+public import CslibFrontier.Computability.Complexity.Problems.Copositivity
 public import CslibFrontier.Computability.Complexity.Problems.CountingSAT
 public import CslibFrontier.Computability.Complexity.Problems.DominatingSet
 public import CslibFrontier.Computability.Complexity.Problems.EUThreeSAT
@@ -2616,6 +2617,7 @@ public import CslibFrontier.Computability.MCSP.FormulaMagnification
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
+public import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 public import CslibFrontier.Computability.MCSP.HardnessConsequences
 public import CslibFrontier.Computability.MCSP.Magnification
 public import CslibFrontier.Computability.MCSP.NP
@@ -2626,6 +2628,7 @@ public import CslibFrontier.Computability.MCSP.Shannon
 public import CslibFrontier.Computability.MCSP.Succinct
 public import CslibFrontier.Computability.MCSP.SuccinctNP
 public import CslibFrontier.Computability.MCSP.SuccinctNP.Words
+public import CslibFrontier.Computability.MCSP.ZeroErrorAverageCase
 public import CslibFrontier.Computability.Machines.ReadMachine.Basic
 public import CslibFrontier.Computability.Machines.ReadMachine.StepMachine
 public import CslibFrontier.Computability.Machines.ReadMachine.Tidy
@@ -4498,6 +4501,10 @@ public import CslibFrontier.Foundations.Algebra.DFT
 public import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 public import CslibFrontier.Foundations.Algebra.GeometricTail
 public import CslibFrontier.Foundations.Algebra.Module.ZLattice.CoefficientFiber
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Isolation
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RatPoly
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
 public import CslibFrontier.Foundations.Algebra.Shear
 public import CslibFrontier.Foundations.Algebra.Tropical
 public import CslibFrontier.Foundations.AlgebraicGeometry.EllipticCurve.Hasse
@@ -4774,6 +4781,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.IndepNum
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.LovaszTheta
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Metric
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OddCycleTransversal
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Pentagon
@@ -5146,6 +5154,11 @@ public import CslibFrontier.Foundations.Geometry.Orthogonal.Separation
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Simple
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Subdivision
 public import CslibFrontier.Foundations.Geometry.Orthogonal.Trim
+public import CslibFrontier.Foundations.Geometry.Polyhedra
+public import CslibFrontier.Foundations.Geometry.Polyhedra.Complex
+public import CslibFrontier.Foundations.Geometry.Polyhedra.PiecewiseLinear
+public import CslibFrontier.Foundations.Geometry.Polyhedra.PiecewiseQuadratic
+public import CslibFrontier.Foundations.Geometry.Polyhedra.Polytope
 public import CslibFrontier.Foundations.GroupTheory.Perm.Doubled
 public import CslibFrontier.Foundations.GroupTheory.Perm.Fin
 public import CslibFrontier.Foundations.GroupTheory.Perm.FiveCycle
@@ -5163,6 +5176,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BranchingProgramDet
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CauchyBinet
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.ClosedSubmatrix
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CoinStep
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.CutRank
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Derivation
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.EndpointIncidence
