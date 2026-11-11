@@ -245,7 +245,7 @@ theorem mem_MaxTwoSAT_toMaxTwoSAT_iff (φ : CNF ℕ) :
   by_cases hall : (φ.all fun c => c.length == 3) = true
   · have h3 : ∀ c ∈ φ, c.length = 3 := by simpa using hall
     have hzip : ∀ c j, (c, j) ∈ φ.zipIdx → ∃ a b d : Literal ℕ, c = [a, b, d] := fun c j hp =>
-      List.length_eq_three.1 (h3 c (List.mem_of_getElem? (List.mem_zipIdx_iff_getElem?.1 hp)))
+      List.length_eq_three.1 (h3 c (List.fst_mem_of_mem_zipIdx hp))
     simp only [toMaxTwoSAT, hall, ↓reduceIte, mem_MaxTwoSAT_iff, countP_flatMap_clauseGadget]
     constructor
     · rintro ⟨-, σ, hσ⟩

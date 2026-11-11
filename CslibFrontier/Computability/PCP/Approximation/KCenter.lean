@@ -238,9 +238,7 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
   · rintro ⟨⟨hk, hpos⟩, hdom⟩
     refine ⟨hk, (centerLabels A G k).toFinset, fun v hv => ?_, fun v hv => ?_, ?_⟩
     · obtain ⟨i, -, rfl⟩ := mem_centerLabels.1 (List.mem_toFinset.1 hv)
-      have hi : (i : ℕ) < G.distinctVertices.length := by simpa using i.2
-      rw [List.getD_eq_getElem _ _ hi]
-      exact Graph.mem_distinctVertices.1 (List.getElem_mem hi)
+      exact G.vertexEquiv_apply (Fin.cast (length_domMatrix G) i) ▸ (G.vertexEquiv _).2
     · simpa only [List.mem_toFinset] using hdom v hv
     · rw [hfs]
       refine Finset.card_image_le.trans ?_
@@ -273,20 +271,15 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
     have hk0 : 0 < k := hpos.resolve_left (by omega)
     have : NeZero (domMatrix G).length := ⟨by simp only [length_domMatrix]; omega⟩
     let f : Fin (domMatrix G).length → ℕ := fun i => G.distinctVertices.getD i 0
-    have hf : ∀ i : Fin (domMatrix G).length, ∃ h : (i : ℕ) < G.distinctVertices.length,
-        f i = G.distinctVertices[(i : ℕ)] := fun i => by
-      have h : (i : ℕ) < G.distinctVertices.length := by simpa using i.2
-      exact ⟨h, List.getD_eq_getElem _ _ h⟩
-    have hfinj : Function.Injective f := by
-      intro i j hij
-      obtain ⟨hi, hfi⟩ := hf i
-      obtain ⟨hj, hfj⟩ := hf j
-      rw [hfi, hfj, G.nodup_distinctVertices.getElem_inj_iff] at hij
-      exact Fin.ext hij
-    have hsurj : ∀ u ∈ G.distinctVertices, ∃ i : Fin (domMatrix G).length, f i = u := by
-      intro u hu
-      obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hu
-      exact ⟨⟨i, by simpa using hi⟩, (hf ⟨i, by simpa using hi⟩).2⟩
+    -- `f` is `Graph.vertexEquiv` after reindexing by `length_domMatrix`
+    let e := (finCongr (length_domMatrix G)).trans G.vertexEquiv
+    have hfe (i : Fin (domMatrix G).length) : f i = e i :=
+      (G.vertexEquiv_apply (Fin.cast (length_domMatrix G) i)).symm
+    have hfinj : Function.Injective f := fun i j h =>
+      e.injective (Subtype.ext ((hfe i).symm.trans (h.trans (hfe j))))
+    have hsurj : ∀ u ∈ G.distinctVertices, ∃ i : Fin (domMatrix G).length, f i = u := fun u hu =>
+      let ⟨i, hi⟩ := e.surjective ⟨u, Graph.mem_distinctVertices.1 hu⟩
+      ⟨i, (hfe i).trans (congrArg Subtype.val hi)⟩
     let T : Finset (Fin (domMatrix G).length) := Finset.univ.filter fun i => f i ∈ S
     have hT : T.card ≤ k := by
       refine le_trans ?_ hSk
@@ -294,10 +287,7 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
         (hfinj.injOn)
     have hTdom : (indexGraph G).IsDominatingSet T := by
       refine SimpleGraph.isDominatingSet_iff.2 fun i => ?_
-      have hfiV : f i ∈ G.1 := by
-        obtain ⟨hi, hfi⟩ := hf i
-        rw [hfi]
-        exact Graph.mem_distinctVertices.1 (List.getElem_mem hi)
+      have hfiV : f i ∈ G.1 := hfe i ▸ (e i).2
       rcases hS (f i) hfiV with h | ⟨s, hs, hadj⟩
       · exact Or.inl (by simpa [T] using h)
       · obtain ⟨j, rfl⟩ := hsurj s (Graph.mem_distinctVertices.2 (hSV s hs))

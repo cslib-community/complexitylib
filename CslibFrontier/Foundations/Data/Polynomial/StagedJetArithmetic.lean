@@ -203,24 +203,6 @@ private theorem sum_fin_zero_left {M : Type*} [AddCommMonoid M] {N : ℕ} (k : F
     have hne : (a : ℕ) ≠ 0 := fun h => ha (Fin.ext h)
     simp only [hne, ↓reduceIte, sum_const_zero]
 
-private theorem sum_fin_zero_right {M : Type*} [AddCommMonoid M] {N : ℕ} (k : Fin N)
-    (f : Fin N → M) :
-    (∑ a : Fin N, ∑ b ∈ univ.filter (fun b : Fin N => (a : ℕ) + (b : ℕ) = (k : ℕ)),
-      if (b : ℕ) = 0 then f a else 0) = f k := by
-  let z : Fin N := ⟨0, Nat.zero_lt_of_lt k.isLt⟩
-  rw [Fintype.sum_eq_single k]
-  · simp only [sum_filter]
-    rw [Fintype.sum_eq_single z]
-    · simp only [z, Nat.add_zero, ↓reduceIte]
-    · intro b hb
-      have hne : (b : ℕ) ≠ 0 := fun h => hb (Fin.ext h)
-      simp only [hne, ↓reduceIte, ite_self]
-  · intro a ha
-    refine sum_eq_zero fun b hb => ?_
-    simp only [mem_filter] at hb
-    have hne : (b : ℕ) ≠ 0 := fun hb0 => ha (Fin.ext (by omega))
-    simp only [hne, ↓reduceIte]
-
 private theorem sum_prod_assoc_left {J ℓ : ℕ} {M : Type*} [AddCommMonoid M]
     (p₁ p₂ p₃ q : Fin J × Fin ℓ) (x : M) :
     (∑ p₁₂ : Fin J × Fin ℓ,
@@ -249,35 +231,38 @@ private theorem sum_prod_assoc_left {J ℓ : ℕ} {M : Type*} [AddCommMonoid M]
     · rfl
     · rfl
 
-private theorem sum_prod_assoc_right {J ℓ : ℕ} {M : Type*} [AddCommMonoid M]
-    (p₁ p₂ p₃ q : Fin J × Fin ℓ) (x : M) :
-    (∑ p₂₃ : Fin J × Fin ℓ,
-      if (p₁.1 : ℕ) + (p₂₃.1 : ℕ) = (q.1 : ℕ) ∧ (p₁.2 : ℕ) + (p₂₃.2 : ℕ) = (q.2 : ℕ) then
-        if (p₂.1 : ℕ) + (p₃.1 : ℕ) = (p₂₃.1 : ℕ) ∧ (p₂.2 : ℕ) + (p₃.2 : ℕ) = (p₂₃.2 : ℕ) then x
+/-- A double convolution `conv (conv A B) C` as one sum over three index pairs whose
+coordinates add up to `(j, u)`. -/
+private theorem conv_conv_eq_prod_sum {J ℓ : ℕ} {R : Type*} [Semiring R]
+    (A B C : JetTable J ℓ R) (j : Fin J) (u : Fin ℓ) :
+    conv (conv A B) C j u =
+      ∑ p₁ : Fin J × Fin ℓ, ∑ p₂ : Fin J × Fin ℓ, ∑ p₃ : Fin J × Fin ℓ,
+        if (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧
+            (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) then
+          A p₁.1 p₁.2 * B p₂.1 p₂.2 * C p₃.1 p₃.2
+        else 0 := by
+  rw [conv_eq_prod_sum]
+  simp only [conv_eq_prod_sum, sum_mul, ite_mul, zero_mul, ite_sum_zero]
+  rw [sum_comm]
+  trans ∑ p₃ : Fin J × Fin ℓ, ∑ p₁ : Fin J × Fin ℓ, ∑ p₂ : Fin J × Fin ℓ,
+      ∑ p₁₂ : Fin J × Fin ℓ,
+        if (p₁₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧ (p₁₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) then
+          if (p₁.1 : ℕ) + (p₂.1 : ℕ) = (p₁₂.1 : ℕ) ∧ (p₁.2 : ℕ) + (p₂.2 : ℕ) = (p₁₂.2 : ℕ) then
+            A p₁.1 p₁.2 * B p₂.1 p₂.2 * C p₃.1 p₃.2
+          else 0
         else 0
-      else 0) =
-      if (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (q.1 : ℕ) ∧
-          (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (q.2 : ℕ) then x else 0 := by
-  by_cases h : (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (q.1 : ℕ) ∧
-      (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (q.2 : ℕ)
-  · let p₂₃₀ : Fin J × Fin ℓ :=
-      (⟨(p₂.1 : ℕ) + (p₃.1 : ℕ), by omega⟩, ⟨(p₂.2 : ℕ) + (p₃.2 : ℕ), by omega⟩)
-    rw [Fintype.sum_eq_single p₂₃₀]
-    · have h' : (p₁.1 : ℕ) + ((p₂.1 : ℕ) + (p₃.1 : ℕ)) = (q.1 : ℕ) ∧
-          (p₁.2 : ℕ) + ((p₂.2 : ℕ) + (p₃.2 : ℕ)) = (q.2 : ℕ) := ⟨by omega, by omega⟩
-      simp only [p₂₃₀, h.1, h.2, h'.1, h'.2, and_self, ↓reduceIte]
-    · intro p₂₃ hp₂₃
-      have hne : ¬((p₂.1 : ℕ) + (p₃.1 : ℕ) = (p₂₃.1 : ℕ) ∧
-          (p₂.2 : ℕ) + (p₃.2 : ℕ) = (p₂₃.2 : ℕ)) :=
-        fun ⟨h1, h2⟩ => hp₂₃ (Prod.ext (Fin.ext h1.symm) (Fin.ext h2.symm))
-      simp only [hne, ↓reduceIte, ite_self]
-  · simp only [h, ↓reduceIte]
-    refine sum_eq_zero fun p₂₃ _ => ?_
-    split_ifs with h1 h2
-    · exfalso
-      exact h ⟨by omega, by omega⟩
-    · rfl
-    · rfl
+  · refine sum_congr rfl fun p₃ _ => ?_
+    rw [sum_comm]
+    exact sum_congr rfl fun p₁ _ => sum_comm
+  · trans ∑ p₃ : Fin J × Fin ℓ, ∑ p₁ : Fin J × Fin ℓ, ∑ p₂ : Fin J × Fin ℓ,
+        if (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧
+            (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) then
+          A p₁.1 p₁.2 * B p₂.1 p₂.2 * C p₃.1 p₃.2
+        else 0
+    · exact sum_congr rfl fun p₃ _ => sum_congr rfl fun p₁ _ => sum_congr rfl fun p₂ _ =>
+        sum_prod_assoc_left p₁ p₂ p₃ (j, u) _
+    · rw [sum_comm]
+      exact sum_congr rfl fun p₁ _ => sum_comm
 
 private theorem sum_fin_filter_add_eq_antidiagonal {M : Type*} [AddCommMonoid M] {N : ℕ}
     (k : Fin N) (f : ℕ → ℕ → M) :
@@ -304,6 +289,18 @@ section CommRing
 
 variable {J ℓ : ℕ} {R : Type*} [CommRing R]
 
+theorem conv_comm (A B : JetTable J ℓ R) : conv A B = conv B A := by
+  ext j u
+  rw [conv_eq_prod_sum, conv_eq_prod_sum, sum_comm]
+  refine sum_congr rfl fun p₂ _ => sum_congr rfl fun p₁ _ => ?_
+  by_cases h : (p₁.1 : ℕ) + (p₂.1 : ℕ) = (j : ℕ) ∧ (p₁.2 : ℕ) + (p₂.2 : ℕ) = (u : ℕ)
+  · have h' : (p₂.1 : ℕ) + (p₁.1 : ℕ) = (j : ℕ) ∧ (p₂.2 : ℕ) + (p₁.2 : ℕ) = (u : ℕ) :=
+      ⟨by omega, by omega⟩
+    simp only [h, h', and_self, ↓reduceIte, mul_comm]
+  · have h' : ¬((p₂.1 : ℕ) + (p₁.1 : ℕ) = (j : ℕ) ∧ (p₂.2 : ℕ) + (p₁.2 : ℕ) = (u : ℕ)) :=
+      by omega
+    simp only [h, h', ↓reduceIte]
+
 theorem const_conv (c : R) (A : JetTable J ℓ R) : conv (const c) A = smul c A := by
   ext j u
   rw [conv_apply, smul_apply]
@@ -320,19 +317,7 @@ theorem const_conv (c : R) (A : JetTable J ℓ R) : conv (const c) A = smul c A 
   rw [sum_fin_zero_left j (fun j₂ => c * A j₂ u), smul_eq_mul]
 
 theorem conv_const (A : JetTable J ℓ R) (c : R) : conv A (const c) = smul c A := by
-  ext j u
-  rw [conv_apply, smul_apply]
-  have inner_u : ∀ j₁ j₂ : Fin J,
-      (∑ u₁ : Fin ℓ, ∑ u₂ ∈ univ.filter (fun u₂ : Fin ℓ => (u₁ : ℕ) + (u₂ : ℕ) = (u : ℕ)),
-        A j₁ u₁ * (const c : JetTable J ℓ R) j₂ u₂) =
-        if (j₂ : ℕ) = 0 then A j₁ u * c else 0 := by
-    intro j₁ j₂
-    by_cases hj : (j₂ : ℕ) = 0
-    · simp only [const_apply, hj, true_and, ↓reduceIte, mul_ite, mul_zero]
-      exact sum_fin_zero_right u (fun u₁ => A j₁ u₁ * c)
-    · simp only [const_apply, hj, false_and, ↓reduceIte, mul_zero, sum_const_zero]
-  simp only [inner_u]
-  rw [sum_fin_zero_right j (fun j₁ => A j₁ u * c), smul_eq_mul, mul_comm]
+  rw [conv_comm, const_conv]
 
 theorem one_conv (A : JetTable J ℓ R) : conv one A = A := by
   rw [one, const_conv]
@@ -340,9 +325,7 @@ theorem one_conv (A : JetTable J ℓ R) : conv one A = A := by
   simp only [smul_apply, one_smul]
 
 theorem conv_one (A : JetTable J ℓ R) : conv A one = A := by
-  rw [one, conv_const]
-  ext j u
-  simp only [smul_apply, one_smul]
+  rw [conv_comm, one_conv]
 
 theorem zero_conv (A : JetTable J ℓ R) : conv zero A = zero := by
   ext j u
@@ -360,72 +343,20 @@ theorem add_conv (A B C : JetTable J ℓ R) : conv (add A B) C = add (conv A C) 
   ext j u
   simp only [conv_apply, add_apply, add_mul, sum_add_distrib]
 
-theorem conv_comm (A B : JetTable J ℓ R) : conv A B = conv B A := by
-  ext j u
-  rw [conv_eq_prod_sum, conv_eq_prod_sum, sum_comm]
-  refine sum_congr rfl fun p₂ _ => sum_congr rfl fun p₁ _ => ?_
-  by_cases h : (p₁.1 : ℕ) + (p₂.1 : ℕ) = (j : ℕ) ∧ (p₁.2 : ℕ) + (p₂.2 : ℕ) = (u : ℕ)
-  · have h' : (p₂.1 : ℕ) + (p₁.1 : ℕ) = (j : ℕ) ∧ (p₂.2 : ℕ) + (p₁.2 : ℕ) = (u : ℕ) :=
-      ⟨by omega, by omega⟩
-    simp only [h, h', and_self, ↓reduceIte, mul_comm]
-  · have h' : ¬((p₂.1 : ℕ) + (p₁.1 : ℕ) = (j : ℕ) ∧ (p₂.2 : ℕ) + (p₁.2 : ℕ) = (u : ℕ)) :=
-      by omega
-    simp only [h, h', ↓reduceIte]
-
 theorem conv_assoc (A B C : JetTable J ℓ R) : conv (conv A B) C = conv A (conv B C) := by
+  -- By commutativity both sides are double convolutions `conv (conv _ _) _`; their triple sums
+  -- agree after cycling the three index pairs.
   ext j u
-  have lhs_eq : conv (conv A B) C j u =
-      ∑ p₁ : Fin J × Fin ℓ, ∑ p₂ : Fin J × Fin ℓ, ∑ p₃ : Fin J × Fin ℓ,
-        if (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧
-            (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) then
-          A p₁.1 p₁.2 * B p₂.1 p₂.2 * C p₃.1 p₃.2
-        else 0 := by
-    rw [conv_eq_prod_sum]
-    simp only [conv_eq_prod_sum, sum_mul, ite_mul, zero_mul, ite_sum_zero]
-    rw [sum_comm]
-    trans ∑ p₃ : Fin J × Fin ℓ, ∑ p₁ : Fin J × Fin ℓ, ∑ p₂ : Fin J × Fin ℓ,
-        ∑ p₁₂ : Fin J × Fin ℓ,
-          if (p₁₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧ (p₁₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) then
-            if (p₁.1 : ℕ) + (p₂.1 : ℕ) = (p₁₂.1 : ℕ) ∧ (p₁.2 : ℕ) + (p₂.2 : ℕ) = (p₁₂.2 : ℕ) then
-              A p₁.1 p₁.2 * B p₂.1 p₂.2 * C p₃.1 p₃.2
-            else 0
-          else 0
-    · refine sum_congr rfl fun p₃ _ => ?_
-      rw [sum_comm]
-      exact sum_congr rfl fun p₁ _ => sum_comm
-    · trans ∑ p₃ : Fin J × Fin ℓ, ∑ p₁ : Fin J × Fin ℓ, ∑ p₂ : Fin J × Fin ℓ,
-          if (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧
-              (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) then
-            A p₁.1 p₁.2 * B p₂.1 p₂.2 * C p₃.1 p₃.2
-          else 0
-      · exact sum_congr rfl fun p₃ _ => sum_congr rfl fun p₁ _ => sum_congr rfl fun p₂ _ =>
-          sum_prod_assoc_left p₁ p₂ p₃ (j, u) _
-      · rw [sum_comm]
-        exact sum_congr rfl fun p₁ _ => sum_comm
-  have rhs_eq : conv A (conv B C) j u =
-      ∑ p₁ : Fin J × Fin ℓ, ∑ p₂ : Fin J × Fin ℓ, ∑ p₃ : Fin J × Fin ℓ,
-        if (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧
-            (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) then
-          A p₁.1 p₁.2 * (B p₂.1 p₂.2 * C p₃.1 p₃.2)
-        else 0 := by
-    rw [conv_eq_prod_sum]
-    simp only [conv_eq_prod_sum, mul_sum, mul_ite, mul_zero, ite_sum_zero]
-    refine sum_congr rfl fun p₁ _ => ?_
-    trans ∑ p₂ : Fin J × Fin ℓ, ∑ p₃ : Fin J × Fin ℓ, ∑ p₂₃ : Fin J × Fin ℓ,
-        if (p₁.1 : ℕ) + (p₂₃.1 : ℕ) = (j : ℕ) ∧ (p₁.2 : ℕ) + (p₂₃.2 : ℕ) = (u : ℕ) then
-          if (p₂.1 : ℕ) + (p₃.1 : ℕ) = (p₂₃.1 : ℕ) ∧ (p₂.2 : ℕ) + (p₃.2 : ℕ) = (p₂₃.2 : ℕ) then
-            A p₁.1 p₁.2 * (B p₂.1 p₂.2 * C p₃.1 p₃.2)
-          else 0
-        else 0
-    · rw [sum_comm]
-      exact sum_congr rfl fun p₂ _ => sum_comm
-    · exact sum_congr rfl fun p₂ _ => sum_congr rfl fun p₃ _ =>
-        sum_prod_assoc_right p₁ p₂ p₃ (j, u) _
-  rw [lhs_eq, rhs_eq]
-  refine sum_congr rfl fun p₁ _ => sum_congr rfl fun p₂ _ => sum_congr rfl fun p₃ _ => ?_
-  split_ifs
-  · exact mul_assoc _ _ _
-  · rfl
+  rw [conv_comm A (conv B C), conv_conv_eq_prod_sum, conv_conv_eq_prod_sum, sum_comm]
+  refine sum_congr rfl fun p₂ _ => ?_
+  rw [sum_comm]
+  refine sum_congr rfl fun p₃ _ => sum_congr rfl fun p₁ _ => ?_
+  have h : (p₁.1 : ℕ) + (p₂.1 : ℕ) + (p₃.1 : ℕ) = (j : ℕ) ∧
+        (p₁.2 : ℕ) + (p₂.2 : ℕ) + (p₃.2 : ℕ) = (u : ℕ) ↔
+      (p₂.1 : ℕ) + (p₃.1 : ℕ) + (p₁.1 : ℕ) = (j : ℕ) ∧
+        (p₂.2 : ℕ) + (p₃.2 : ℕ) + (p₁.2 : ℕ) = (u : ℕ) := by
+    omega
+  exact if_congr h (mul_rotate _ _ _) rfl
 
 instance instCommRing : CommRing (JetTable J ℓ R) where
   zero := zero
@@ -829,29 +760,15 @@ theorem l1Norm_mul_vPow_le (A : JetTable J ℓ ℤ) (s : ℕ) :
     ((Nat.mul_le_mul_left _ (l1Norm_vPow_le s)).trans (Nat.mul_one _).le)
 
 theorem l1Norm_sum_le {ι : Type*} (s : Finset ι) (F : ι → JetTable J ℓ ℤ) :
-    l1Norm (∑ i ∈ s, F i) ≤ ∑ i ∈ s, l1Norm (F i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp only [sum_empty, l1Norm_zero, le_rfl]
-  | insert a s ha ih =>
-    rw [sum_insert ha, sum_insert ha]
-    exact (l1Norm_add_le _ _).trans (Nat.add_le_add_left ih _)
+    l1Norm (∑ i ∈ s, F i) ≤ ∑ i ∈ s, l1Norm (F i) :=
+  le_sum_of_subadditive l1Norm l1Norm_zero.le l1Norm_add_le s F
 
 theorem l1Norm_prod_le {ι : Type*} (s : Finset ι) (F : ι → JetTable J ℓ ℤ) :
-    l1Norm (∏ i ∈ s, F i) ≤ ∏ i ∈ s, l1Norm (F i) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simpa only [prod_empty] using l1Norm_one_le
-  | insert a s ha ih =>
-    rw [prod_insert ha, prod_insert ha]
-    exact (l1Norm_mul_le _ _).trans (Nat.mul_le_mul_left _ ih)
+    l1Norm (∏ i ∈ s, F i) ≤ ∏ i ∈ s, l1Norm (F i) :=
+  le_prod_of_submultiplicative l1Norm l1Norm_one_le l1Norm_mul_le s F
 
 theorem l1Norm_pow_le (A : JetTable J ℓ ℤ) (m : ℕ) : l1Norm (A ^ m) ≤ l1Norm A ^ m := by
-  induction m with
-  | zero => simpa only [pow_zero] using l1Norm_one_le
-  | succ m ih =>
-    rw [pow_succ, pow_succ]
-    exact (l1Norm_mul_le _ _).trans (Nat.mul_le_mul_right _ ih)
+  simpa only [prod_const, card_range] using l1Norm_prod_le (range m) fun _ => A
 
 end L1Norm
 

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Boosting.Selection
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Tactic.PPT
 
 /-!

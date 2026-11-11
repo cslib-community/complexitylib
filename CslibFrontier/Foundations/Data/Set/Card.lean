@@ -31,7 +31,7 @@ import Mathlib.Algebra.Order.BigOperators.Group.Finset
   finitely many fibers with at least `n ≠ 0` elements, and at most `s.ncard / n` of them.
 -/
 
-@[expose] public section
+public section
 
 namespace Set
 

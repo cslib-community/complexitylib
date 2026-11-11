@@ -172,10 +172,7 @@ theorem mem_certificates_iff (machine : MultiTapeCTM k Symbol State)
   · rintro ⟨hlen, hdecode⟩
     obtain ⟨⟨choices, final⟩, hdecode⟩ := Option.isSome_iff_exists.mp hdecode
     obtain ⟨hrun, hhalt, hword⟩ := machine.decodeCertificate_sound hdecode
-    have hbound : choices.length ≤ fuel := by
-      have := congrArg List.length hword
-      simp only [List.length_append, List.length_replicate, hlen] at this
-      lia
+    have hbound : choices.length ≤ fuel := by grind
     refine Finset.mem_image.mpr ⟨choices,
       (machine.mem_branches_iff cfg fuel choices).mpr ⟨hbound, final, hrun, hhalt⟩, ?_⟩
     simpa only [padCertificate, hlen] using hword.symm

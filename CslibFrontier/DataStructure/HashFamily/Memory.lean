@@ -260,10 +260,9 @@ theorem isCostBounded_methods {U : ℕ} (o : HashFamily.Op U) :
   cases o with
   | resample => exact isQueryBounded_fill 0 U
   | eval u =>
-    change OracleComp.IsQueryBounded
-      (PFunctor.FreeM.liftBind (P := ⟨ℕ ⊕ Memory.Op, probOracleSpec Memory.Op.Result⟩)
-        (Sum.inr (Memory.Op.read _)) fun v => pure (Fin.ofNat (2 ^ b) v)) 1
-    exact OracleComp.IsCostBounded.liftBind_iff.mpr ⟨le_rfl, fun _ => .pure _ _⟩
+    rw [methods, OracleComp.liftRight_map]
+    exact (OracleComp.isCostBounded_map_iff _ _ _).mpr
+      (OracleComp.IsCostBounded.query (spec := probOracleSpec Memory.Op.Result) _)
 
 /-- In expectation as well, every operation costs at most its budget of calls. -/
 theorem expectedAmortized {U : ℕ} (hlen : table.length = U) (hb : b ≤ w) :
@@ -292,9 +291,8 @@ theorem run_eq_link {U : ℕ} {α : Type} (p : OracleComp (HashFamily.Result (U 
     StateTransitionSpec.run_toRandomized, PMF.pure_bind]
   rfl
 
-/-- **The law of a client run from allocation**: a uniform table, then the client against the
-random function. -/
-theorem run_eq (hb : b ≤ w) {U : ℕ} {α : Type}
+/-- `run_eq` at word sizes that fit `b`-bit words, where the refinement applies. -/
+private theorem run_eq_of_le (hb : b ≤ w) {U : ℕ} {α : Type}
     (p : OracleComp (HashFamily.Result (U := U) (2 ^ b)) α) (s : Memory.State) :
     ((Memory.spec w).toRandomized.withCoins.run (run b U p) s).map Prod.fst =
       (Probability.PMF.uniformOfFintype (Fin U → Fin (2 ^ b))).bind fun θ =>
@@ -312,28 +310,38 @@ theorem run_eq (hb : b ≤ w) {U : ℕ} {α : Type}
         rfl
     _ = _ := by rw [hlaw, run_resample_bind_seedSpec, PMF.map_bind]
 
+/-- **The law of a client run from allocation**: a uniform table, then the client against the
+random function. The law does not depend on the word size `w`, which only constrains
+admissibility. -/
+theorem run_eq {U : ℕ} {α : Type}
+    (p : OracleComp (HashFamily.Result (U := U) (2 ^ b)) α) (s : Memory.State) :
+    ((Memory.spec w).toRandomized.withCoins.run (run b U p) s).map Prod.fst =
+      (Probability.PMF.uniformOfFintype (Fin U → Fin (2 ^ b))).bind fun θ =>
+        ((tableSpec U b).run p θ).map Prod.fst :=
+  run_eq_of_le (w := b) le_rfl p s
+
 /-- **The memory-level `evalOps` theorem.** From any memory state, the transcript law of the
 oblivious client of `ops`, run after allocating and filling the table, is
 `HashFamily.evalOps` of the random function. -/
-theorem run_obliviousClient (hb : b ≤ w) {U : ℕ} (ops : List (HashFamily.Op U))
+theorem run_obliviousClient {U : ℕ} (ops : List (HashFamily.Op U))
     (s : Memory.State) :
     ((Memory.spec w).toRandomized.withCoins.run
         (run b U ((tableSpec U b).obliviousClient ops)) s).map Prod.fst =
       HashFamily.evalOps (Probability.PMF.uniformOfFintype (Fin U → Fin (2 ^ b)))
         (fun θ u => θ u) ops := by
-  rw [run_eq hb, HashFamily.evalOps]
+  rw [run_eq, HashFamily.evalOps]
   exact congrArg _ (funext fun θ => run_obliviousClient_seedSpec _ _ θ ops)
 
 /-- **The `kWiseSpec` contract over memory.** A uniform table is `k`-wise independent for every
 `k` (`Probability.isKWiseIndependentHash_id`). So on every oblivious operation sequence with at
 most `k` distinct keys per epoch, the transcript law of the run from allocation meets
 `HashFamily.kWiseSpec`: it is the ideal transcript law. -/
-theorem kWiseSpec_contract_run (hb : b ≤ w) {k U : ℕ} {ops : List (HashFamily.Op U)}
+theorem kWiseSpec_contract_run {k U : ℕ} {ops : List (HashFamily.Op U)}
     (hv : HashFamily.BoundedEpochKeys k ops) (s : Memory.State) :
     (HashFamily.kWiseSpec k U (2 ^ b)).Contract ops
       (((Memory.spec w).toRandomized.withCoins.run
         (run b U ((tableSpec U b).obliviousClient ops)) s).map Prod.fst) := by
-  rw [run_obliviousClient hb]
+  rw [run_obliviousClient]
   exact HashFamily.kWiseSpec_contract_evalOps (Probability.isKWiseIndependentHash_id k) hv
 
 /-- Every memory call of the run is admissible when the table and `b`-bit words fit. -/
@@ -358,10 +366,9 @@ theorem isQueryBounded_run {U : ℕ} {α : Type}
     OracleComp.IsQueryBounded (run b U p) (1 + 2 * U + n) := by
   have halloc : OracleComp.IsQueryBounded
       (OracleComp.liftRight (spec₁ := unifSpec) (Memory.allocBlockDirty U)) 1 := by
-    change OracleComp.IsQueryBounded
-      (PFunctor.FreeM.liftBind (P := ⟨ℕ ⊕ Memory.Op, probOracleSpec Memory.Op.Result⟩)
-        (Sum.inr (Memory.Op.allocDirty U)) fun base => pure (⟨base, U⟩ : Block)) 1
-    exact OracleComp.IsCostBounded.liftBind_iff.mpr ⟨le_rfl, fun _ => .pure _ _⟩
+    rw [Memory.allocBlockDirty, OracleComp.liftRight_bind]
+    exact (OracleComp.IsCostBounded.query (spec := probOracleSpec Memory.Op.Result) _).bind
+      (m := 0) fun _ => .pure _ _
   have h := halloc.bind fun table => OracleComp.IsCostBounded.interpret
     (isCostBounded_methods (table := table) (b := b))
     ((OracleComp.IsCostBounded.query (cost := budget U) .resample).bind fun _ => hp)

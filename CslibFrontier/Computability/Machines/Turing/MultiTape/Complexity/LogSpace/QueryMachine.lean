@@ -430,13 +430,7 @@ theorem computableInSpace {α β : Type} {enc : α ↪ List Bool} {encOut : β �
   have hlenP (a : α) (i : ℕ) :
       (encPass encS (passState ((M.init, 0, none) : PassState σ) (passNext M) (passEnd M)
         (enc a) i)).length ≤ K * S a := by
-    rw [hP]
-    refine (length_encPass_le encS _).trans ?_
-    have h₁ := hS' a i
-    have := hS1 a
-    simp only [encNat_apply, Nat.zero_bits, List.length_nil]
-    rw [hK]
-    nlinarith
+    simpa only [streamState_zero] using hlenQ a i (Nat.zero_le _)
   -- the passes
   have hpass (a : α) : ∀ i ≤ time a - 1,
       (passCont M) (passState ((M.init, 0, none) : PassState σ) (passNext M) (passEnd M) (enc a)

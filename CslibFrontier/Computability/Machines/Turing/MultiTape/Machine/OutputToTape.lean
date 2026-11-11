@@ -139,8 +139,7 @@ theorem runConfigFrom_outputToTape (fuel : ℕ) (cfg : Config k Symbol State Ora
     simp only [runConfigFrom, OutputToTape.config_state, hs, OutputToTape.config_inputSymbol,
       OutputToTape.config_workTapeSymbols, OutputToTape.config_answerSymbols, outputToTape_tr,
       hchoose, bind_map_left, map_bind]
-    congr 1
-    funext a
+    congr 1 with a : 1
     cases a <;> simp [OutputToTape.instruction, OutputToTape.step_config,
       OutputToTape.receive_config]
 
@@ -158,8 +157,7 @@ omit hchoose in
 theorem toTM_outputToTape (machine : MultiTapeMachine k Symbol State Empty Id) :
     machine.outputToTape.toTM = machine.toTM.outputToTape := by
   simp only [toTM, MultiTapeTM.outputToTape, MultiTapeTM.tr_ofTr, outputToTape]
-  congr 1
-  funext state symbol work
+  congr 1 with state symbol work : 3
   cases machine.tr state symbol (fun i => work i.castSucc) Empty.elim with
   | step a symbol move => rfl
   | query oracle next => exact oracle.elim

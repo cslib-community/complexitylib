@@ -110,14 +110,12 @@ private theorem decrease_source (d : Fin 4 → ℕ) :
         (decreaseKey (d 0) (d 2) (d 3)) := by
   simp only [decreasePrefix, DataStructure.link, decreaseKey, PFunctor.FreeM.liftM_bind,
     bind_assoc]
-  congr 1
-  funext pv
+  congr 1 with pv : 1
   by_cases hpv : pv = 0
   · simp only [hpv, ite_true, ne_eq, not_true_eq_false, ite_false, pure_bind]
   · simp only [hpv, ite_false, ne_eq, not_false_eq_true, ite_true, pure_bind]
     simp only [PFunctor.FreeM.liftM_bind, bind_assoc]
-    congr 1
-    funext kp
+    congr 1 with kp : 1
     by_cases hlt : IndexedMinPQ.RawPrioLT (d 2, d 3) (pv - 1, kp) <;>
       simp only [hlt, ite_true, ite_false, cutCascade, DataStructure.link,
         PFunctor.FreeM.liftM_bind, bind_assoc, pure_bind]

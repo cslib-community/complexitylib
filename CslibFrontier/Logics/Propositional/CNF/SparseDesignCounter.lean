@@ -67,7 +67,12 @@ with the Section 4 algebraic replacement design specialization of Sections 5.3�
    (`CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy`,
    `CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_greedy`), with
    `max D₀ P` simplified unconditionally to `D₀ = initialRowWeightBound B φ.length`
-   (`CNF.max_initialRowWeightBound_greedyRowListLength`).
+   (`Cslib.BitString.max_initialRowWeightBound_greedyRowListLength`).
+   These identities use the designs only through their value at `T = 0`
+   (`eval_zero_designReplacementScaledIntMap`), which is all that
+   `commonZeroCount_eq_sum_branch_emod_ediv_cleared` requires of a replacement family. The set
+   `S`, the designs `D b` and the factor embeddings `emb b` are arbitrary, and no hypothesis
+   relates the design scopes to the branch equations.
 
 ## Main definitions
 
@@ -96,9 +101,8 @@ with the Section 4 algebraic replacement design specialization of Sections 5.3�
 * `Cslib.Logic.PL.CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design`,
   `Cslib.Logic.PL.CNF.numPassing_eq_sum_branch_emod_ediv_design`,
   `Cslib.Logic.PL.CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy`,
-  `Cslib.Logic.PL.CNF.max_initialRowWeightBound_greedyRowListLength`,
   `Cslib.Logic.PL.CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_greedy`:
-  end-to-end `ReplacementDesign` recovery of `commonZeroCount`, `numPassing`, and
+  branch-summed `ReplacementDesign` recovery at `T = 0` of `commonZeroCount`, `numPassing`, and
   `φ.modelCountOn Finset.univ`.
 
 ## References
@@ -403,7 +407,7 @@ theorem CNF.coeffNorm1_univariateClearedParityCoord_branchParityRowSystem_le
 
 end BranchDesignBounds
 
-/-! ### 3. End-to-end `ReplacementDesign` recovery of `commonZeroCount`, `numPassing`, and `#F` -/
+/-! ### 3. `ReplacementDesign` recovery at `T = 0` of `commonZeroCount`, `numPassing`, and `#F` -/
 
 section DesignRecovery
 
@@ -431,10 +435,13 @@ theorem CNF.emod_ediv_eval_zero_branchParityRowSystem_design_eq_commonZeroCount
     (fun j _ _M hM => CNF.card_mem_branchParityRowSystem_le hk rows S e b j hM)
 
 /-- **§5.4–5.5 & §6 (branch-summed `ReplacementDesign` recovery of `commonZeroCount` on
-`φ.parityRowSystem rows`)**: when every clause of `φ` has width at most `k`, summing the per-branch
-`ReplacementDesign` modular residues of `univariateClearedParityTruncatedSum` at shared precision
-`branchPrecision (Fintype.card V)` across all `b ∈ branchAssignments S` recovers
-`commonZeroCount univ (φ.parityRowSystem rows)`. -/
+`φ.parityRowSystem rows`)**: when every clause of `φ` has width at most `k`, evaluating
+`univariateClearedParityTruncatedSum` at `T = 0`, dividing by `clearedProductDenom`, reducing
+modulo `2 ^ branchPrecision (Fintype.card V)` and summing over `b ∈ branchAssignments S` recovers
+`commonZeroCount univ (φ.parityRowSystem rows)`. This holds for any `S`, `e`, designs `D b` and
+factor embeddings `emb b`: the designs enter only through their value at `T = 0`
+(`eval_zero_designReplacementScaledIntMap`), and no hypothesis relates their scopes to the branch
+equations. -/
 theorem CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design
     {F : (V → Bool) → Type*} [∀ b, Fintype (F b)] {φ : CNF V} {k : ℕ}
     (hk : ∀ c ∈ φ, c.length ≤ k) (rows : List (Fin φ.length → Bool))
@@ -516,26 +523,6 @@ theorem CNF.modelCountOn_eq_sum_branch_emod_ediv_design_greedy
   exact CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design hk
     (A (3 * Fintype.card V)) S e scope D emb
 
-/-- For all `B, m : ℕ`, the Lemma 6.2 greedy list length
-`P = 20000 * B ^ 2 * (Nat.log 2 m + 1) ^ 2` is at most the Lemma 6.1 initial row weight bound
-`D₀ = 320000 * B ^ 2 * (Nat.log 2 m + 1) ^ 3`. -/
-theorem CNF.greedyRowListLength_le_initialRowWeightBound (B m : ℕ) :
-    greedyRowListLength B m ≤ initialRowWeightBound B m := by
-  unfold greedyRowListLength initialRowWeightBound
-  have h1 : 20000 * B ^ 2 ≤ 320000 * B ^ 2 :=
-    Nat.mul_le_mul_right (B ^ 2) (by decide)
-  have h2 : (Nat.log 2 m + 1) ^ 2 ≤ (Nat.log 2 m + 1) ^ 3 :=
-    Nat.pow_le_pow_right (Nat.succ_pos _) (by decide)
-  exact Nat.mul_le_mul h1 h2
-
-/-- Consequently `max (initialRowWeightBound B m) (greedyRowListLength B m)` simplifies to
-`initialRowWeightBound B m`. -/
-@[simp]
-theorem CNF.max_initialRowWeightBound_greedyRowListLength (B m : ℕ) :
-    max (initialRowWeightBound B m) (greedyRowListLength B m) =
-      initialRowWeightBound B m :=
-  max_eq_left (CNF.greedyRowListLength_le_initialRowWeightBound B m)
-
 /-- **Lemmas 6.1–6.2 & §§5.4–5.5, 6.3 (end-to-end initial + greedy parity-test compilation and
 branch-summed `ReplacementDesign` recovery of `φ.modelCountOn Finset.univ`)**: for any width-`≤ k`
 CNF `φ` on `n = Fintype.card V ≥ 1` variables with `φ.length ≤ B * n` (`B ≥ 1`), there exist
@@ -592,7 +579,7 @@ theorem CNF.exists_initialTests_modelCountOn_eq_sum_branch_emod_ediv_design_gree
   · obtain ⟨hlen_i, hj⟩ := hbounds i hi
     refine ⟨hlen_i, fun j => ?_⟩
     obtain ⟨hM, hcard, hscope⟩ := hj j
-    rw [CNF.max_initialRowWeightBound_greedyRowListLength] at hcard hscope
+    rw [max_initialRowWeightBound_greedyRowListLength] at hcard hscope
     exact ⟨hM, hcard, hscope⟩
   · rw [← hcount]
     exact CNF.commonZeroCount_parityRowSystem_eq_sum_branch_emod_ediv_design hk

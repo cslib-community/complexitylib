@@ -36,7 +36,7 @@ become rules in the same compositional form, for example `fun x => F (g x)` from
   the bounds of the option.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInO
 

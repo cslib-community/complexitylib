@@ -265,9 +265,7 @@ private theorem synthesis_success
     Synthesis interpretation src
       (Set.range fun e : Fin r => fun x => success hk bits scalar menu x e)
       (r * (bitonicSortCircuit (id : Fin 1 → Fin 1) p false).size) := by
-  have hpos : 0 < arity p := by
-    rw [arity_eq_two_pow]
-    exact Nat.two_pow_pos p
+  have hpos : 0 < arity p := by grind [arity_eq_two_pow]
   let j₀ : Fin (arity p) := ⟨(arity p + 1) / 2 - 1, by lia⟩
   have hentry (e : Fin r) : Synthesis interpretation src
       (Set.range fun _ : Unit => fun x => success hk bits scalar menu x e)

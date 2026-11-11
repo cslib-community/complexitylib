@@ -111,7 +111,7 @@ variable {enc : α ↪ List Bool} {L : Set α}
 theorem P_subset_PWithPPOracle : P enc ⊆ PWithPPOracle enc := by
   rintro L ⟨g, hg, hL⟩
   have hempty : (∅ : Set α) ∈ PP enc :=
-    BPP_subset_PP (P_subset_BPP ⟨fun _ => false, .const false, fun _ => by simp⟩)
+    BPP_subset_PP (P_subset_BPP empty_mem_P)
   exact ⟨α, enc, ∅, hempty, .of_polyTime hg fun _ _ => hL⟩
 
 /-- **`PP ⊆ P^PP`**: the program asks the oracle about its instance, with one query. -/

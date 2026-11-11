@@ -40,7 +40,7 @@ Adapted from Probability/HashIsolation.lean on the cslib `crypto` branch at
 
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

@@ -31,7 +31,7 @@ The bridges to `Matrix.atomPrep` and `Matrix.auxScore` use their existing zero-p
 
 These results instantiate the scalar laws in the stationary-reference portion of
 [OpenAI2026LogSpace, Lemma 8.2] for the three pre-incoming row functions of Section 5.5.
-They belong to the fourth-moment adaptation in complexitylib issue #1721; the pinned paper
+They belong to the fourth-moment adaptation in cslib-frontier issue #1721; the pinned paper
 uses eighth roots. Normalized main atoms, incoming-gate assembly, enumeration, post-overflow
 stability, and a machine-space certificate remain separate.
 
@@ -191,7 +191,7 @@ variable {n : ℕ → ℕ} {Δ : ℕ → ι → Fin 2 → ℝ} {a : State ι} {t
 
 /-- The constructed stationary reference preserves each actual polynomial row output through
 the remaining compression schedule. Scalar support, gate, flatness, and margin laws are proved. -/
-theorem stationaryContinuation_eval_eq (hθ : 0 < θ) (hη : 0 ≤ η) (hmargin : η ≤ θ / 10000)
+theorem stationaryContinuation_eval_eq (hθ : 0 < θ) (hmargin : η ≤ θ / 10000)
     (hK : 0 < K) (m j r : ℕ) (hr : j + r ≤ m)
     (hno : ∀ i < j,
       stepThreshold s n (fun _ => K) (dyadicFloor η m) Δ a i ≤ dyadicFloor η m i)
@@ -202,7 +202,7 @@ theorem stationaryContinuation_eval_eq (hθ : 0 < θ) (hη : 0 ≤ η) (hmargin 
     kind.eval θ (c.row y 0) (firstRank s K c.defaultValue c.row) =
       kind.eval θ (b.row y 0) (firstRank s K b.defaultValue b.row) := by
   exact stationaryContinuation_output_eq_dyadic (H := fun x _ q => kind.eval θ x q)
-    hη hK m j r hr hno hfirst hsecond hn (kind.scale_lt_gateThreshold hθ hmargin)
+    hK m j r hr hno hfirst hsecond hn (kind.scale_lt_gateThreshold hθ hmargin)
     (kind.three_mul_gateThreshold_lt_entryThreshold hθ)
     (fun _ _ _ hx => kind.eval_eq_zero_of_entry_le hθ hx)
     (fun _ _ _ hq => kind.eval_eq_zero_of_rank_ge hθ hq)
@@ -243,7 +243,7 @@ theorem exists_stationaryContinuation_root_bound (hθ : 0 < θ) (hη : 0 < η)
     (fun x v q x' v' q' _ _ _ _ => (hroot x q x' q').trans
       (mul_le_mul_of_nonneg_left (by linarith [abs_nonneg (v - v')]) hL)) y hy
   dsimp only
-  rw [kind.stationaryContinuation_eval_eq hθ hη.le hmargin hK m j r hr hno hfirst hsecond hn y hy]
+  rw [kind.stationaryContinuation_eval_eq hθ hmargin hK m j r hr hno hfirst hsecond hn y hy]
   simpa only [mul_assoc] using hbound
 
 end PolynomialAtomRow

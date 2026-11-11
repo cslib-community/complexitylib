@@ -109,7 +109,7 @@ Turing-machine space certificate.
 * [OpenAI, *Exact Derandomization of Logarithmic Space: L = RL = BPL*][OpenAI2026LogSpace],
   Section 9.6, Lemma 9.9 (`lem:fp-catalytic`) and Section 11.4, Lemma 11.9 (`lem:ctrl-equality`)
   for the excursion restoration principle and `ZMod 2` key test; the two-stage deterministic
-  `addSqDist` + `keyTest` composition and bit-budget bounds here are original to `complexitylib`.
+  `addSqDist` + `keyTest` composition and bit-budget bounds here are original to cslib-frontier.
 -/
 
 public section
@@ -555,9 +555,7 @@ theorem innerDigits_le {B n C_N : ℕ} (hn : n ≤ C_N * B) :
     innerDigits B n ≤ Nat.log 2 (C_N + 1) + 11 := by
   have hk₁ := outerAccBits_le hn
   have hq₂ : 0 < innerChunkBits B := by simp [innerChunkBits]
-  have hq₁_le : outerChunkBits B ≤ 3 * innerChunkBits B := by
-    rw [innerChunkBits]
-    omega
+  have hq₁_le : outerChunkBits B ≤ 3 * innerChunkBits B := by grind [innerChunkBits]
   rw [innerDigits, Nat.ceilDiv_le_iff hq₂]
   nlinarith
 
@@ -572,9 +570,7 @@ theorem vertexCatBits_le {B n C_N : ℕ} (hn : n ≤ C_N * B) :
     have := Nat.log_le_self 2 B
     rw [outerChunkBits]
     omega
-  have hq₂_le_B : innerChunkBits B ≤ B + 1 := by
-    have : innerChunkBits B ≤ outerChunkBits B := by rw [innerChunkBits]; omega
-    omega
+  have hq₂_le_B : innerChunkBits B ≤ B + 1 := by grind [innerChunkBits]
   -- Stage 1 bit bound: `(ℓ₁ + 1) * k₁ ≤ (c + 5) * (C_N + 2) * (B + 1)`.
   have hk₁_le : outerAccBits B n ≤ (c + 5) * outerChunkBits B := by
     have : outerAccBits B n ≤ 3 * outerChunkBits B + c + 2 := outerAccBits_le hn
@@ -592,9 +588,7 @@ theorem vertexCatBits_le {B n C_N : ℕ} (hn : n ≤ C_N * B) :
   -- Stage 2 bit bound and Stage 3 table bound via `k₂ ≤ 2 * q₂ + d`.
   have hℓ₂ : innerDigits B n ≤ c + 11 := innerDigits_le hn
   have hlog_ℓ₂ : Nat.log 2 (innerDigits B n) ≤ Nat.log 2 (c + 11) := Nat.log_mono_right hℓ₂
-  have hk₂ : innerAccBits B n ≤ 2 * innerChunkBits B + d := by
-    rw [innerAccBits]
-    omega
+  have hk₂ : innerAccBits B n ≤ 2 * innerChunkBits B + d := by grind [innerAccBits]
   have hk₂_lin : innerAccBits B n ≤ (d + 2) * (B + 1) := by
     nlinarith
   have hstage2 : (innerDigits B n + 1) * innerAccBits B n ≤ (c + 12) * (d + 2) * (B + 1) := by
@@ -603,15 +597,11 @@ theorem vertexCatBits_le {B n C_N : ℕ} (hn : n ≤ C_N * B) :
       _ = (c + 12) * (d + 2) * (B + 1) := by ring
   have hpow_q₂ : 2 ^ (2 * innerChunkBits B) ≤ 4 * (B + 1) := by
     by_cases hlog : Nat.log 2 B ≤ 1
-    · have hq₂_eq : innerChunkBits B = 1 := by
-        rw [innerChunkBits, outerChunkBits]
-        omega
+    · have hq₂_eq : innerChunkBits B = 1 := by grind [innerChunkBits, outerChunkBits]
       rw [hq₂_eq]
       omega
     · have hB0 : B ≠ 0 := by intro h0; subst h0; simp at hlog
-      have h2q₂ : 2 * innerChunkBits B ≤ Nat.log 2 B := by
-        rw [innerChunkBits, outerChunkBits]
-        omega
+      have h2q₂ : 2 * innerChunkBits B ≤ Nat.log 2 B := by grind [innerChunkBits, outerChunkBits]
       calc 2 ^ (2 * innerChunkBits B)
           ≤ 2 ^ Nat.log 2 B := Nat.pow_le_pow_right (by decide) h2q₂
         _ ≤ B := Nat.pow_log_le_self 2 hB0

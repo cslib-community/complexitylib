@@ -121,8 +121,7 @@ theorem initialTrueNormalized_mean
       (PilotRowRecipe.maximum 0 (initialTrueDetector HP D R k k ss st C)) σ x y
     refine Eq.trans ?_ ht
     unfold initialTrueNormalized
-    congr 1
-    funext τ
+    congr 1 with τ : 1
     simp only [CorrectionRowRecipe.preparation, splitSource, splitTerminal,
       terminalSplit, Equiv.trans_apply, Equiv.prodComm_apply, Equiv.piSplitAt_apply,
       r, gridChannel, coordinate, semanticSide_grid, X, Y, id_eq, Prod.swap_prod_mk]

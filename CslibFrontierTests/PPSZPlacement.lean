@@ -86,8 +86,7 @@ that a fixed element is included. -/
 example {U : Finset ℕ} {v : ℕ} (hv : v ∈ U) (r : ℝ) : bernoulliProb U r (fun S => v ∈ S) = r := by
   rw [bernoulliProb_eq_bernoulliAverage]
   refine Eq.trans ?_ (Cslib.BitString.bernoulliAverage_coordinate r (⟨v, hv⟩ : U))
-  congr 1
-  funext s
+  congr 1 with s : 1
   have h : v ∈ ({i | s i} : Finset U).map (Function.Embedding.subtype (· ∈ U)) ↔ s ⟨v, hv⟩ := by
     simp [hv]
   simp only [h]

@@ -137,9 +137,7 @@ theorem runFrom_clearShadowed_pairEmb (hm : m₀ ≠ m₁) {C : Cfg (k + k) Symb
     · exact h.pos_castAdd
     · exact h.pos_natAdd
   rw [runFrom_extendTapes, hview, runFrom_clearShadowed hm h.insert_eq h.blank]
-  have hne : i.addNat k ≠ Fin.castAdd k i := by
-    rw [← Fin.natAdd_eq_addNat]
-    exact (Fin.castAdd_ne_natAdd i i).symm
+  have hne : i.addNat k ≠ Fin.castAdd k i := by grind
   refine Cfg.ext rfl rfl ?_ ?_ rfl <;> funext j <;>
     simp only [embed, partialInv_pairEmb, clearedCfg, List.mem_singleton, Cfg.withState,
       pairIdx_eq_iff] <;>

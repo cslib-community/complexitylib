@@ -26,7 +26,7 @@ The variable occurrences `F.vars` of a CSP instance, their number, and the auxil
   variables from unary to binary.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.CSP
 

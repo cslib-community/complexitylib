@@ -6,7 +6,7 @@ Authors: Anton Kovsharov
 
 module
 
-public import CslibFrontier.Computability.PolyTime.CNF.GreedyParitySearch
+public import CslibFrontier.Computability.PolyTime.CNF.GreedyParityContext
 
 public section
 

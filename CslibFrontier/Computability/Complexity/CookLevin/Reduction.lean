@@ -17,10 +17,10 @@ public import Mathlib.Logic.Equiv.Nat
 
 Let `A` be a problem in `NP`, verified by `V` with certificates of length `p` of the instance
 length, where `V` is computed by the machine `tm` in time `c * (n + 1) ^ d`. The reduction maps
-an instance `a` to the tableau of `tm` on inputs `encode (a, w) = delimit (encode a) ++ w`, for
-the unknown certificate `w` of length `p (encode a).length`, unrolled for exactly the number of
-steps `tm` is allowed on such inputs. Its variables are then renamed injectively to natural
-numbers.
+an instance `a` to the tableau of `tm` on inputs
+`encPair enc encBits (a, w) = frame (enc a) ++ w`, for the unknown certificate `w` of length
+`p (enc a).length`, unrolled for exactly the number of steps `tm` is allowed on such inputs. Its
+variables are then renamed injectively to natural numbers.
 
 `reduce_mem_SAT_iff` says that the reduction is correct: `reduce tm p c d enc a` is satisfiable
 exactly when `a ∈ A`. It only uses that the run of `tm` on `frame (enc a) ++ w` has halted by the

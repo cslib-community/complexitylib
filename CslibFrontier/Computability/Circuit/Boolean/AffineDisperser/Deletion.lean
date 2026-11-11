@@ -110,10 +110,7 @@ theorem Valid.unit_delete {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffin
   have hparams : S'.params = insert Q (S.params.erase x) := rfl
   have hpairs : S'.pairs = S.pairs := rfl
   have hsize : S'.size + 1 = S.size := dropEqn_size hdrop
-  have hm : S'.m = S.m := by
-    simp only [m, hparams]
-    rw [Finset.card_insert_of_notMem fun h => hQp (Finset.mem_of_mem_erase h),
-      Finset.card_erase_add_one hxp]
+  have hm : S'.m = S.m := by grind [m]
   have hq : S'.q = S.q := by simp [q, hpairs]
   have ha' : S'.a = S.a := by simp only [a, hm, hq]
   have hchildren : ∀ z, S'.children z = (S.children z).erase (.inr e) := fun z => by

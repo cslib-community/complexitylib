@@ -66,7 +66,7 @@ for circuits computing `k`-clique are their instances.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 14.3][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Monotone
 

@@ -97,68 +97,46 @@ theorem memberBody_exec {d w base query : ℕ} {tree : Tree d} {s : Data 32}
     (ha : Fits w (base + span d)) :
     ExecWithin w memberBody s (memberNext s base query) 26 := by
   obtain ⟨hz, ho, htwo, hthree, hfour, hfive, hp, hx, _, _⟩ := hs
-  have h₁ : Fits w (base + 1) := ha.of_le (by have := five_le_span d; omega)
-  have h₂ : Fits w (base + 2) := ha.of_le (by have := five_le_span d; omega)
-  have h₃ : Fits w (base + 3) := ha.of_le (by have := five_le_span d; omega)
-  have h₄ : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
+  -- `ram_eval` derives the smaller header bounds `Fits w (base + k)` from this one.
+  have hbase4 : Fits w (base + 4) := ha.of_le (by have := five_le_span d; omega)
+  -- The early exits read only the header, so split on the cached bounds before the shape.
   have hheader := hr.header
-  cases tree with
-  | leaf b =>
-    cases b with
-    | none =>
-      have he : s.mem base = 0 := hheader.1
-      ram_eval [memberBody, memberNext, hp, hx, hz, he]
-    | some bounds =>
-      obtain ⟨m, M⟩ := bounds
-      obtain ⟨he, ⟨hm, hM⟩, hq, _⟩ := hheader
-      by_cases heq : query = m
-      · ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, he, hm, heq, h₁]
-      · by_cases heq' : query = M
-        · have hneM : M ≠ m := by simpa only [heq'] using heq
-          ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo, he, hm, hM,
-            heq, heq', hneM, h₁, h₂]
-        · by_cases hlt : query < M
-          · ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo, hthree,
-              he, hm, hM, hq, splitSize, heq, heq', hlt, h₁, h₂, h₃]
-          · ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo,
-              he, hm, hM, heq, heq', hlt, h₁, h₂]
-  | @node d b summary cluster =>
-    cases b with
-    | none =>
-      have he : s.mem base = 0 := hheader.1
-      ram_eval [memberBody, memberNext, hp, hx, hz, he]
-    | some bounds =>
-      obtain ⟨m, M⟩ := bounds
-      obtain ⟨he, ⟨hm, hM⟩, hq, hspan⟩ := hheader
-      by_cases heq : query = m
-      · ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, he, hm, heq, h₁]
-      · by_cases heq' : query = M
-        · have hneM : M ≠ m := by simpa only [heq'] using heq
-          ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo, he, hm, hM,
-            heq, heq', hneM, h₁, h₂]
-        · by_cases hlt : query < M
-          · have hsafe := member_descent_safe ht hr (by simpa only [hM] using hlt)
-            have hi := hsafe.1
-            have hu := universeSize_le_span d
-            have hu' := span_le_succ d
-            have hhi : Fits w (query / universeSize d) := ha.of_le (by omega)
-            have hlo : Fits w (query % universeSize d) := ha.of_le (by omega)
-            have hnext : Fits w (query / universeSize d + 1) := ha.of_le (by omega)
-            have hprod : Fits w ((query / universeSize d + 1) * span d) := by
-              apply ha.of_le
-              dsimp only [clusterOffset] at hsafe
-              omega
-            have hbase : Fits w (base + 5) := ha.of_le (by have := five_le_span (d+1); omega)
-            have hchild : Fits w (base + 5 + (query / universeSize d + 1) * span d) := by
-              apply ha.of_le
-              dsimp only [clusterOffset] at hsafe
-              omega
-            have hqne : universeSize d ≠ 0 := Nat.ne_of_gt (universeSize_pos d)
-            ram_eval [memberBody, memberNext, readAt, coordinates, hp, hx, hz, ho,
-              htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
-              heq, heq', hlt, hqne, h₁, h₂, h₃, h₄, hhi, hlo, hnext, hprod, hbase, hchild]
-          · ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo,
-              he, hm, hM, heq, heq', hlt, h₁, h₂]
+  rcases hb : tree.bounds with _ | ⟨m, M⟩ <;> rw [hb] at hheader
+  · have he : s.mem base = 0 := hheader.1
+    ram_eval [memberBody, memberNext, hp, hx, hz, he]
+  obtain ⟨he, ⟨hm, hM⟩, hq, hspan⟩ := hheader
+  by_cases heq : query = m
+  · ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, he, hm, heq]
+  by_cases heq' : query = M
+  · have hneM : M ≠ m := by simpa only [heq'] using heq
+    ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo, he, hm, hM,
+      heq, heq', hneM]
+  by_cases hlt : query < M
+  · -- Below the maximum, a leaf stops and a node descends into the query's cluster.
+    cases tree with
+    | leaf =>
+      ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo, hthree,
+        he, hm, hM, hq, splitSize, heq, heq', hlt]
+    | @node d b _ _ =>
+      obtain rfl : b = some (m, M) := hb
+      have hsafe := member_descent_safe ht hr (by simpa only [hM] using hlt)
+      have hi := hsafe.1
+      have hu := universeSize_le_span d
+      have hu' := span_le_succ d
+      -- The other written values (the high coordinate, the product, `base + 5`) are
+      -- bounded by these, so `ram_eval` derives their bounds.
+      have hlo : Fits w (query % universeSize d) := ha.of_le (by omega)
+      have hnext : Fits w (query / universeSize d + 1) := ha.of_le (by omega)
+      have hchild : Fits w (base + 5 + (query / universeSize d + 1) * span d) := by
+        apply ha.of_le
+        dsimp only [clusterOffset] at hsafe
+        omega
+      have hqne : universeSize d ≠ 0 := Nat.ne_of_gt (universeSize_pos d)
+      ram_eval [memberBody, memberNext, readAt, coordinates, hp, hx, hz, ho,
+        htwo, hthree, hfour, hfive, he, hm, hM, hq, hspan, splitSize, childSpan,
+        heq, heq', hlt, hqne]
+  · ram_eval [memberBody, memberNext, readAt, hp, hx, hz, ho, htwo,
+      he, hm, hM, heq, heq', hlt]
 
 /-- Constant registers are preserved by a membership iteration. -/
 private theorem memberNext_constants {base query : ℕ} {s : Data 32}
@@ -179,9 +157,7 @@ theorem member_eq_false_of_max_lt {d m M query : ℕ} {tree : Tree d}
     tree.member query = false := by
   have hnot : ¬tree.Contains query := by
     intro hc
-    have he := ht.extrema
-    simp only [Tree.Extrema, hb] at he
-    have := (he.2.2.2.2 query hc).2
+    have := ((ht.extrema_of_bounds hb).2.2.2.2 query hc).2
     omega
   cases he : tree.member query
   · rfl

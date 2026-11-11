@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # The coupling inequality and approximate couplings

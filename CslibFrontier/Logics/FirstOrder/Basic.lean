@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Tactic.FirstOrder.Init
 public import Mathlib.ModelTheory.Semantics
 public import Mathlib.SetTheory.Cardinal.Finite
+import CslibFrontier.Tactic.FirstOrder.Simp
 
 /-!
 # First-order formula and sentence combinators
@@ -78,7 +79,7 @@ free variables. -/
 @[simp, fo_realize]
 theorem realize_closeAll {M : Type w} [L.Structure M] (V : Type) [Finite V] (φ : L.Formula V) :
     (closeAll V φ).Realize M ↔ ∀ v : V → M, φ.Realize v := by
-  simp only [closeAll, Sentence.Realize, Formula.realize_iAlls, Formula.realize_relabel]
+  fo_simp [closeAll, Sentence.Realize]
   refine forall_congr' fun v => ?_
   have h : (Sum.elim (default : Empty → M) v ∘ Sum.inr) = v := by
     funext x; rfl
@@ -89,7 +90,7 @@ free variables. -/
 @[simp, fo_realize]
 theorem realize_closeEx {M : Type w} [L.Structure M] (V : Type) [Finite V] (φ : L.Formula V) :
     (closeEx V φ).Realize M ↔ ∃ v : V → M, φ.Realize v := by
-  simp only [closeEx, Sentence.Realize, Formula.realize_iExs, Formula.realize_relabel]
+  fo_simp [closeEx, Sentence.Realize]
   refine exists_congr fun v => ?_
   have h : (Sum.elim (default : Empty → M) v ∘ Sum.inr) = v := by
     funext x; rfl
@@ -283,8 +284,7 @@ theorem realize_isFirstOut {inDom : L.Formula (Fin 1)} {M : ℕ} (hMB : M < B)
     (hdom : ∀ j : Fin B, inDom.Realize ![j] ↔ (j : ℕ) < M) {V : Type*}
     (v : V → Fin B) (u : V) :
     (isFirstOut r inDom u).Realize v ↔ (v u : ℕ) = M := by
-  simp only [isFirstOut, Formula.realize_inf, Formula.realize_not, Formula.realize_iAlls,
-    Formula.realize_imp, realize_atVar, Sum.elim_inl, Sum.elim_inr, realize_lt hlt, hdom]
+  fo_simp [isFirstOut, realize_lt hlt, hdom]
   constructor
   · rintro ⟨hge, hlt_all⟩
     by_contra hne
@@ -335,8 +335,7 @@ open scoped Classical in
 theorem realize_truthTableSentence {m : ℕ} (φ : Fin m → L.Sentence)
     (P : (Fin m → Bool) → Prop) :
     M ⊨ truthTableSentence φ P ↔ P (fun i => decide (M ⊨ φ i)) := by
-  simp only [truthTableSentence, Sentence.Realize, Formula.Realize, BoundedFormula.realize_iSup,
-    BoundedFormula.realize_iInf, Subtype.exists]
+  fo_simp [truthTableSentence, Sentence.Realize, Formula.Realize, Subtype.exists]
   have hiff (s : Fin m → Bool) (i : Fin m) :
       BoundedFormula.Realize (if s i = true then φ i else ∼(φ i))
         (default : Empty → M) default ↔ s i = decide (M ⊨ φ i) := by

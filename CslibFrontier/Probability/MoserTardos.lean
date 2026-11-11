@@ -270,17 +270,24 @@ private theorem count_le_iSup_passCount (A : ι → Set (∀ v, α v))
         sum_congr rfl fun S hS => (ite_eq_left (hW S hS).2).symm
     _ ≤ _ := sum_le_sum_of_subset_of_nonneg (fun S hS => (hW S hS).1) fun _ _ _ => zero_le
 
-omit [Fintype V] in
-private theorem measurable_passCount (A : ι → Set (∀ v, α v)) (hAm : ∀ i, MeasurableSet (A i))
-    (i : ι) (H : ℕ) : Measurable (passCount vbl A i H) := by
-  classical
-  unfold passCount
-  refine Finset.measurable_sum _ fun S _ => ?_
+omit [Fintype V] [DecidableEq ι] [Fintype ι] in
+open scoped Classical in
+/-- Each summand of `passCount`, the indicator that a structure is proper and passes its check, is
+measurable in the table. -/
+private theorem measurable_ite_proper_and_check (A : ι → Set (∀ v, α v))
+    (hAm : ∀ i, MeasurableSet (A i)) (S : Finset (ι × ℕ)) :
+    Measurable fun T : ∀ p : V × ℕ, α p.1 =>
+      if Proper vbl S ∧ Check vbl A S T then (1 : ℝ≥0∞) else 0 := by
   by_cases hS : Proper vbl S
   · simp only [hS, true_and]
     exact Measurable.ite (measurableSet_check vbl A hAm S) measurable_const measurable_const
   · simp only [hS, false_and, ite_false]
     exact measurable_const
+
+omit [Fintype V] in
+private theorem measurable_passCount (A : ι → Set (∀ v, α v)) (hAm : ∀ i, MeasurableSet (A i))
+    (i : ι) (H : ℕ) : Measurable (passCount vbl A i H) :=
+  Finset.measurable_sum _ fun S _ => measurable_ite_proper_and_check vbl A hAm S
 
 private theorem lintegral_passCount_le (A : ι → Set (∀ v, α v)) (hAm : ∀ i, MeasurableSet (A i))
     (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V)) (Γ : ι → Finset ι)
@@ -305,15 +312,10 @@ private theorem lintegral_passCount_le (A : ι → Set (∀ v, α v)) (hAm : ∀
     · simp only [hS, false_and, ite_false, lintegral_zero]
       exact zero_le
   simp only [passCount]
-  rw [lintegral_finsetSum _ fun S _ => ?_]
-  · refine (sum_le_sum hterm).trans ?_
-    rw [← ENNReal.ofReal_sum_of_nonneg fun S _ => prod_nonneg fun p _ => hy0 _]
-    exact ENNReal.ofReal_le_ofReal (sum_prod_shapes_le vbl Γ hΓ hx hy0 hP i H)
-  · by_cases hS : Proper vbl S
-    · simp only [hS, true_and]
-      exact Measurable.ite (measurableSet_check vbl A hAm S) measurable_const measurable_const
-    · simp only [hS, false_and, ite_false]
-      exact measurable_const
+  rw [lintegral_finsetSum _ fun S _ => measurable_ite_proper_and_check vbl A hAm S]
+  refine (sum_le_sum hterm).trans ?_
+  rw [← ENNReal.ofReal_sum_of_nonneg fun S _ => prod_nonneg fun p _ => hy0 _]
+  exact ENNReal.ofReal_le_ofReal (sum_prod_shapes_le vbl Γ hΓ hx hy0 hP i H)
 
 private theorem lintegral_iSup_passCount_le (A : ι → Set (∀ v, α v))
     (hAm : ∀ i, MeasurableSet (A i)) (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V))

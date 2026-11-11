@@ -12,7 +12,7 @@ public import CslibFrontier.Logics.Propositional.CNF
 public import Mathlib.InformationTheory.Hamming
 public import CslibFrontier.Probability.PMF
 import CslibFrontier.Foundations.Data.BitString.Hamming
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity

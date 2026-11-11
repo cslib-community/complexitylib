@@ -310,8 +310,7 @@ private lemma sum_coordinates (x : ι → F K) (hx : x ∈ U) :
   classical
   have hx := b.span_eq.ge hx
   obtain ⟨c, rfl⟩ := (Submodule.mem_span_range_iff_exists_fun (F K)).mp hx
-  congr 1
-  funext j
+  congr 1 with j : 1
   simp only [map_sum, map_smul, b.pairing, smul_eq_mul, mul_ite,
     mul_one, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ite_true]
 

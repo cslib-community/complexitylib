@@ -182,10 +182,8 @@ private theorem small_game (bit : Bool) :
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, small_response]
   simp only [hpublic, hcoins, PMF.bind_map, Function.comp_def]
   simp only [PMF.bind_const]
-  congr 1
-  funext a
-  congr 1
-  funext r
+  congr 1 with a : 1
+  congr 1 with r : 1
   cases a <;> cases r <;> rfl
 
 -- Exact acceptance probabilities check that retaining the correlated nonce matters.

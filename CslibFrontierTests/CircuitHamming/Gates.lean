@@ -107,8 +107,7 @@ theorem median_proj : median (fun x : BitString 3 => x 0) (fun x => x 1) (fun x 
     majority 3 := by
   funext x
   rw [median_apply_eq_majority]
-  congr 1
-  funext i
+  congr 1 with i
   fin_cases i <;> rfl
 
 /-- Majority is between any two projections (`2 + 2 = 4`) and minimizes total distance to the

@@ -73,6 +73,15 @@ namespace Cslib.Logic.FO.TC
   funext i
   simp only [right, pair, Fin.cast_cast, Fin.cast_eq_self, Fin.append_right]
 
+/-- A closure tuple is the concatenation of its source and target tuples. -/
+@[simp] theorem pair_left_right {A : Type*} {k : ℕ} (xs : Fin (2 * k) → A) :
+    pair (left xs) (right xs) = xs := by
+  funext i
+  have h := congrFun (Fin.append_castAdd_natAdd
+    (f := fun j : Fin (k + k) => xs (Fin.cast (Nat.two_mul k).symm j))) (Fin.cast (Nat.two_mul k) i)
+  simp only [Fin.cast_cast, Fin.cast_eq_self] at h
+  exact h
+
 /-- Tuple closure binds two tuples and no relation variables. -/
 @[expose] def shape (k : ℕ) : Shape where
   arity := 2 * k
