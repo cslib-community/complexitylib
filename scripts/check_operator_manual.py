@@ -3,10 +3,12 @@
 
 Relative `File.lean#L<n>` links must also start on a declaration, attribute, docstring or (for
 ranges) section header, and an inline link whose text names a declaration of the linked file
-(`[Ns.name](…#L<n>)`) must start on that declaration's header. This does not fetch URLs, elaborate
-Lean, audit mathematical meaning, check links whose text names no declaration of the linked file
-(prose, a file, a module, a declaration that moved elsewhere), or assert that historical evidence
-describes the current checkout. Run from any working directory.
+(`[Ns.name](…#L<n>)`) must start on that declaration's header. Pass `--fix-anchors` to repoint
+drifted `[Ns.name](File.lean#Ln)` links at the declaration's current header start line before
+running the check. This does not fetch URLs, elaborate Lean, audit mathematical meaning, check
+links whose text names no declaration of the linked file (prose, a file, a module, a declaration
+that moved elsewhere), or assert that historical evidence describes the current checkout. Run from
+any working directory.
 """
 from __future__ import annotations
 
@@ -187,15 +189,10 @@ def declarations(lines: list[str]) -> dict[str, list[tuple[int, int]]]:
     return found
 
 
-def link_texts(text: str) -> list[tuple[str, str]]:
-    """`(display text, URL)` of each inline Markdown link, found as `links()` finds them.
-
-    Fenced code and code spans are skipped, so code showing a link is not a link, while a
-    code-formatted label (`` [`name`](…) ``) keeps its text. An optional `<…>` around the URL is
-    dropped.
-    """
-    found, fence = [], None
-    for line in text.splitlines():
+def _iter_inline_links(text: str):
+    """Yield `(line_index, display, url, url_start, url_end)` for non-code inline links."""
+    fence = None
+    for line_idx, line in enumerate(text.splitlines()):
         match = FENCE.match(line)
         if fence is not None:
             if match and match[1][0] == fence[0] and len(match[1]) >= len(fence):
@@ -206,9 +203,20 @@ def link_texts(text: str) -> list[tuple[str, str]]:
             continue
         # Blank out code spans, keeping offsets, and read each label from the original line.
         masked = CODE_SPAN.sub(lambda span: " " * len(span[0]), line)
-        found.extend((line[link.start(1):link.end(1)], link[2] or link[3])
-                     for link in INLINE_LINK.finditer(masked))
-    return found
+        for link in INLINE_LINK.finditer(masked):
+            url_group = 2 if link[2] is not None else 3
+            yield (line_idx, line[link.start(1):link.end(1)], link[url_group],
+                   link.start(url_group), link.end(url_group))
+
+
+def link_texts(text: str) -> list[tuple[str, str]]:
+    """`(display text, URL)` of each inline Markdown link, found as `links()` finds them.
+
+    Fenced code and code spans are skipped, so code showing a link is not a link, while a
+    code-formatted label (`` [`name`](…) ``) keeps its text. An optional `<…>` around the URL is
+    dropped.
+    """
+    return [(display, url) for _, display, url, _, _ in _iter_inline_links(text)]
 
 
 def names_declaration(text: str, name: str) -> bool:
@@ -217,13 +225,12 @@ def names_declaration(text: str, name: str) -> bool:
     return text == name or text.endswith("." + name) or name.endswith("." + text)
 
 
-def misnamed_anchor(display: str, module: str, fragment: str,
-                    found: dict[str, list[tuple[int, int]]]) -> list[int] | None:
-    """Header starts of the declaration the link text names, if the `L<a>[-L<b>]` fragment
-    misses all of them; `None` when the anchor is right or the text names no declaration."""
+def named_headers(display: str, module: str,
+                  found: dict[str, list[tuple[int, int]]]) -> list[tuple[int, int]]:
+    """Header spans `(first, last)` in `found` matching link `display`, or `[]`."""
     text = display.strip().strip("`").removeprefix("_root_.")
     if text.endswith((".lean", ".md")):
-        return None
+        return []
     # An exact name match takes precedence, so `[toX]` and `[Complete.toX]` stay distinct when
     # the file declares both, and `[Foo](…/Foo.lean#L…)` is checked when `Foo.lean` declares
     # `Foo`. Otherwise text naming the linked module is not checked, and qualified matches keep
@@ -232,11 +239,19 @@ def misnamed_anchor(display: str, module: str, fragment: str,
     headers = found.get(text)
     if not headers:
         if module == text or module.endswith("." + text):
-            return None
+            return []
         shared = {name: min(text.count("."), name.removeprefix("_root_.").count("."))
                   for name in found if names_declaration(text, name)}
         headers = [header for name, spans in found.items()
                    if name in shared and shared[name] == max(shared.values()) for header in spans]
+    return headers or []
+
+
+def misnamed_anchor(display: str, module: str, fragment: str,
+                    found: dict[str, list[tuple[int, int]]]) -> list[int] | None:
+    """Header starts of the declaration the link text names, if the `L<a>[-L<b>]` fragment
+    misses all of them; `None` when the anchor is right or the text names no declaration."""
+    headers = named_headers(display, module, found)
     bounds = [int(n) for n in re.findall(r"\d+", fragment)]
     # Line 1 links the whole file.
     if not headers or bounds[0] == 1 or any(
@@ -434,18 +449,92 @@ def check(repo: Path, manual: Path | None = None) -> dict:
             "external_links_fetched": False, "historical_revision_checked": False}
 
 
-def main() -> int:
+def fix_anchors(repo: Path, manual: Path | None = None) -> list[dict[str, str]]:
+    """Repoint drifted single-line `[Ns.name](File.lean#Ln)` links to the declaration's current
+    header start line when uniquely identified.
+
+    Leaves valid anchors, whole-file (`#L1`) and range (`#La-Lb`) links, allowlisted
+    `STALE_SOURCE_ANCHORS`, links whose text names no declaration, and ambiguous multiple-match
+    declarations unchanged.
+    """
+    repo = repo.resolve()
+    manual = (manual or repo / "manual").resolve()
+    documents = sorted(p for p in manual.rglob("*.md")
+                       if not EXCLUDED.intersection(p.relative_to(manual).parts))
+    file_lines: dict[Path, list[str]] = {}
+    sources: dict[Path, dict[str, list[tuple[int, int]]]] = {}
+    fixed: list[dict[str, str]] = []
+    for doc in documents:
+        original = doc.read_text()
+        raw_lines = original.splitlines(keepends=True)
+        edits: list[tuple[int, int, int, str]] = []
+        for line_idx, display, url, url_start, url_end in _iter_inline_links(original):
+            parsed = urlsplit(html.unescape(url))
+            fragment = unquote(parsed.fragment)
+            if parsed.scheme or parsed.netloc or not parsed.path.endswith(".lean") or \
+                    not re.fullmatch(r"L\d+", fragment):
+                continue
+            start = int(fragment[1:])
+            if start == 1:
+                continue
+            target = (doc.parent / unquote(parsed.path)).resolve()
+            if not within(target, repo) or not target.is_file():
+                continue
+            rel_target = target.relative_to(repo).as_posix()
+            if (rel_target, start) in STALE_SOURCE_ANCHORS or "#" not in url:
+                continue
+            prefix, raw_frag = url.rsplit("#", 1)
+            if raw_frag != fragment:
+                continue
+            if target not in file_lines:
+                target_lines = target.read_text().splitlines()
+                file_lines[target] = target_lines
+                sources[target] = declarations(target_lines)
+            target_lines = file_lines[target]
+            found = sources[target]
+            module = target.relative_to(repo).with_suffix("").as_posix().replace("/", ".")
+            if source_anchor_error(fragment, target_lines) is None and \
+                    misnamed_anchor(display, module, fragment, found) is None:
+                continue
+            headers = named_headers(display, module, found)
+            if len(headers) != 1:
+                continue
+            new_frag = f"L{headers[0][0]}"
+            if new_frag == fragment:
+                continue
+            edits.append((line_idx, url_start, url_end, f"{prefix}#{new_frag}"))
+            fixed.append({
+                "document": doc.relative_to(manual).as_posix(),
+                "display": display,
+                "target": rel_target,
+                "old": fragment,
+                "new": new_frag,
+            })
+        if edits:
+            for line_idx, start_col, end_col, new_url in reversed(edits):
+                line = raw_lines[line_idx]
+                raw_lines[line_idx] = line[:start_col] + new_url + line[end_col:]
+            doc.write_text("".join(raw_lines))
+    return fixed
+
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=ROOT)
     parser.add_argument("--manual", type=Path, help="Manual root (default: REPO/manual)")
     parser.add_argument("--output", type=Path, help="Optional JSON result path")
-    args = parser.parse_args()
+    parser.add_argument("--fix-anchors", action="store_true",
+                        help="Repoint drifted `[Ns.name](File.lean#Ln)` links to current headers")
+    args = parser.parse_args(argv)
+    fixes = fix_anchors(args.repo, args.manual) if args.fix_anchors else None
     result = check(args.repo, args.manual)
+    if fixes is not None:
+        result["fixed_anchors"] = fixes
     encoded = json.dumps(result, indent=2) + "\n"
     if args.output:
         args.output.write_text(encoded)
     print(encoded, end="")
-    return bool(result["errors"])
+    return int(bool(result["errors"]))
 
 
 if __name__ == "__main__":

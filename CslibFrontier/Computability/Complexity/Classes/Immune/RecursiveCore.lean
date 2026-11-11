@@ -15,9 +15,9 @@ import CslibFrontier.Computability.Complexity.Classes.Ladner.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.Ladner.Stages
 import CslibFrontier.Computability.Complexity.Classes.P.Closure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 import Mathlib.Data.Set.Finite.List
 
@@ -186,7 +186,7 @@ def stageBit (T : List Bool) : Bool :=
     refuted d e T.length || !memReq e T.length (word T.length)
 
 /-- The table of the decisions of the first `n` stages. -/
-def table (n : ℕ) : List Bool := (fun T => T ++ [stageBit d T])^[n] []
+def table (n : ℕ) : List Bool := List.courseOfValues (stageBit d) n
 
 /-- Stage `n` selects the `n`-th word. -/
 def selects (n : ℕ) : Bool := stageBit d (table d n)
@@ -234,30 +234,19 @@ private theorem computableInPolyTime_stageBit :
   fun_prop
 
 theorem table_succ (n : ℕ) : table d (n + 1) = table d n ++ [selects d n] := by
-  rw [table, Function.iterate_succ_apply']
+  rw [table, List.courseOfValues_succ]
   rfl
 
-theorem table_eq (n : ℕ) : table d n = (List.range n).map (selects d) := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [table_succ, List.range_succ, List.map_append, ← ih]; rfl
+theorem table_eq (n : ℕ) : table d n = (List.range n).map (selects d) :=
+  List.courseOfValues_eq (stageBit d) n
 
 @[simp]
-theorem length_table (n : ℕ) : (table d n).length = n := by
-  simp [table_eq]
+theorem length_table (n : ℕ) : (table d n).length = n :=
+  List.length_courseOfValues (stageBit d) n
 
 /-- **The stage tables are polynomial-time** in their length, in unary. -/
 theorem computableInPolyTime_table : ComputableInPolyTime (table d) encUnary encBits :=
-  ComputableInPolyTime.iterate (encIn := encUnary) (encState := encBits)
-    (count := fun n => n) (init := fun _ => []) (step := fun T => T ++ [stageBit d T])
-    (by fun_prop) (by fun_prop) (by have := computableInPolyTime_stageBit d; fun_prop)
-    (bound := fun n => n)
-    (.of_forall_le 1 1 fun n => by
-      simp only [encUnary_apply, List.length_replicate, pow_one]; omega)
-    (fun n i hi => by
-      change (table d i).length ≤ n
-      rw [length_table]
-      exact hi)
+  .bitsCourseOfValues (computableInPolyTime_stageBit d)
 
 /-- **The stage decisions are polynomial-time** in the stage, in unary. -/
 theorem computableInPolyTime_selects : ComputableInPolyTime (selects d) encUnary encBool := by
