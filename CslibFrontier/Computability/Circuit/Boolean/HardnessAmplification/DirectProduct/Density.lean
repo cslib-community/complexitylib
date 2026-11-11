@@ -9,7 +9,9 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Decode
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.Miss
+import CslibFrontier.Foundations.Data.Finset.Markov
 import CslibFrontier.Foundations.Data.Fintype.AgreeOn
+import CslibFrontier.Foundations.Probability.TwoStage
 import Mathlib.Combinatorics.Enumerative.DoubleCounting
 
 /-!
@@ -25,8 +27,9 @@ The per-seed theorem `card_filter_dpDecode_err_le_ge` assumes two things about a
 the consistent tuples have density at least `δ / 2`, and at most an `ε / 64` fraction of them
 have `ε k / 64` or more disagreements with `f`. This module shows that a `δ / 4` fraction of the
 pairs `(P, b₀)`, with `P` an `s`-subset, satisfy both, provided `C'` agrees with `f ^ k` on a `δ`
-fraction of tuples. It then counts the seeds `(P, b₀, v)` that decode well. The density step has
-two parts. A seed whose class among the agreeing tuples is small is rare
+fraction of tuples. It then counts the seeds `(P, b₀, v)` that decode well by two-stage counting
+(`Cslib.Probability.mul_le_card_filter_product`): each good pair has half of the trial vectors.
+The density step has two parts. A seed whose class among the agreeing tuples is small is rare
 (`card_filter_card_filter_agree_lt_le`). A consistent tuple of an agreeing seed disagrees with
 `f` only outside `P`, and a random `s`-subset rarely misses `ε k / 64` positions, so heavy
 consistent tuples are rare (`sum_sum_card_heavy_le`, via
@@ -292,13 +295,9 @@ theorem sum_card_filter_good_ge (C' : (Fin k → U) → Fin k → V) (f : U → 
     intro P hPs
     have hPc : #Pᶜ = k - s := by
       rw [card_compl, Fintype.card_fin, (mem_powersetCard.1 hPs).2]
-    rw [← nsmul_eq_mul]
-    refine (card_nsmul_le_sum _ _ _ fun b hb => ?_).trans
-      (sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun _ _ _ => by positivity)
-    simp only [mem_filter, not_le] at hb
-    obtain ⟨-, hdense, htail⟩ := hb
+    refine card_filter_mul_le_sum _ _ _ (fun _ _ => by positivity) fun _ _ ⟨hdense, htail⟩ => ?_
     rw [hPc] at hdense
-    exact le_trans (mul_le_mul_of_nonneg_left hdense (by positivity)) htail.le
+    exact (mul_le_mul_of_nonneg_left hdense (by positivity)).trans (not_le.1 htail).le
   have hB := sum_sum_card_heavy_le C' f s hk (ε / 64)
   have hc : 0 < ε / 64 * (δ / 2 * (Fintype.card U : ℝ) ^ (k - s)) := by positivity
   have hT : ∑ P ∈ univ.powersetCard s,
@@ -342,48 +341,38 @@ theorem card_filter_seed_dpDecode_err_le_ge (C' : (Fin k → U) → Fin k → V)
         fun (P, b₀, v) => (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U) := by
   classical
   have hsk' : s ≤ k := by omega
-  have hgood := sum_card_filter_good_ge C' f hε hδ hε1 hδ1 hG hsk' hs
-  have hcount : (#((univ.powersetCard s ×ˢ
-        (univ : Finset ((Fin k → U) × (Fin m → Trial U k)))).filter fun (P, b₀, v) =>
-          (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U) : ℝ) =
-      ∑ P ∈ univ.powersetCard s, ∑ b₀ : Fin k → U,
-        (#{v : Fin m → Trial U k |
-          (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U} : ℝ) := by
-    rw [card_filter, ← univ_product_univ, sum_product, Nat.cast_sum]
-    refine sum_congr rfl fun P _ => ?_
-    rw [sum_product, Nat.cast_sum]
-    refine sum_congr rfl fun b₀ _ => ?_
-    rw [card_filter, Nat.cast_sum]
-  rw [hcount]
   have hlog : Real.log (4 / δ) ≤ Real.log (512 / (ε * δ ^ 2)) := by
     have hεδ : 0 < ε * δ ^ 2 := by positivity
     refine Real.log_le_log (by positivity) ?_
     rw [div_le_div_iff₀ hδ hεδ]
     nlinarith [mul_le_mul hε1 hδ1 hδ.le zero_le_one]
+  -- a `δ / 4` fraction of the pairs `(P, b₀)` are good, and each good pair has half of the trials
+  let good : Finset (Fin k) × (Fin k → U) → Prop := fun (P, b₀) => b₀ ∈ agreeing C' f ∧
+    δ / 2 * Fintype.card U ^ #Pᶜ ≤ #(consistent C' P b₀) ∧
+    (#{y ∈ consistent C' P b₀ | ε / 64 * k ≤ #(disagreements C' f y)} : ℝ) ≤
+      ε / 64 * #(consistent C' P b₀)
+  have hgood : δ / 4 * k.choose s * Fintype.card U ^ k ≤
+      #{Pb ∈ univ.powersetCard s ×ˢ univ | good Pb} := by
+    refine (sum_card_filter_good_ge C' f hε hδ hε1 hδ1 hG hsk' hs).trans_eq ?_
+    rw [card_filter, sum_product, Nat.cast_sum]
+    exact sum_congr rfl fun P _ => by rw [← card_filter]; congr 2; ext; simp [good]
+  have hpairs := Probability.mul_le_card_filter_product (univ.powersetCard s ×ˢ univ) univ good
+    (fun Pb v => (#{x | dpDecode C' dflt Pb.1 Pb.2 v x ≠ f x} : ℝ) ≤ ε * Fintype.card U)
+    (ρ₂ := (Fintype.card (Trial U k) : ℝ) ^ m / 2) (by positivity) hgood
+    fun ⟨P, b₀⟩ hP ⟨_, hdense, htail⟩ => by
+      have hPc : #Pᶜ = k - s := by
+        rw [card_compl, Fintype.card_fin, (mem_powersetCard.1 (mem_product.1 hP).1).2]
+      refine card_filter_dpDecode_err_le_ge C' f dflt P b₀ m hε hδ hε1 hδ1 (by omega) ?_ hm
+        hdense htail
+      rw [hPc]
+      calc 64 / ε * Real.log (4 / δ) ≤ 64 / ε * Real.log (512 / (ε * δ ^ 2)) :=
+            mul_le_mul_of_nonneg_left hlog (by positivity)
+        _ ≤ s := hs
+        _ ≤ (k - s : ℕ) := by exact_mod_cast (by omega : s ≤ k - s)
   calc δ / 8 * k.choose s * Fintype.card U ^ k * Fintype.card (Trial U k) ^ m
       = δ / 4 * k.choose s * Fintype.card U ^ k * ((Fintype.card (Trial U k) : ℝ) ^ m / 2) := by
         ring
-    _ ≤ (∑ P ∈ univ.powersetCard s, (#{b₀ ∈ agreeing C' f |
-        δ / 2 * Fintype.card U ^ #Pᶜ ≤ #(consistent C' P b₀) ∧
-        (#{y ∈ consistent C' P b₀ | ε / 64 * k ≤ #(disagreements C' f y)} : ℝ) ≤
-          ε / 64 * #(consistent C' P b₀)} : ℝ)) *
-        ((Fintype.card (Trial U k) : ℝ) ^ m / 2) :=
-        mul_le_mul_of_nonneg_right hgood (by positivity)
-    _ ≤ _ := by
-        rw [sum_mul]
-        refine sum_le_sum fun P hP => ?_
-        have hPc : #Pᶜ = k - s := by
-          rw [card_compl, Fintype.card_fin, (mem_powersetCard.1 hP).2]
-        rw [← nsmul_eq_mul]
-        refine (card_nsmul_le_sum _ _ _ fun b₀ hb₀ => ?_).trans
-          (sum_le_sum_of_subset_of_nonneg (subset_univ _) fun _ _ _ => by positivity)
-        obtain ⟨-, hdense, htail⟩ := mem_filter.1 hb₀
-        refine card_filter_dpDecode_err_le_ge C' f dflt P b₀ m hε hδ hε1 hδ1 (by omega) ?_ hm
-          hdense htail
-        rw [hPc]
-        calc 64 / ε * Real.log (4 / δ) ≤ 64 / ε * Real.log (512 / (ε * δ ^ 2)) :=
-              mul_le_mul_of_nonneg_left hlog (by positivity)
-          _ ≤ s := hs
-          _ ≤ (k - s : ℕ) := by exact_mod_cast (by omega : s ≤ k - s)
+    _ ≤ _ := hpairs
+    _ = _ := congrArg Nat.cast <| card_equiv (Equiv.prodAssoc _ _ _) fun _ => by simp
 
 end Cslib.Circuits.Boolean.DirectProduct

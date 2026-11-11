@@ -375,7 +375,7 @@ private `cachedAnswer` and the facts about it below put both directions in this 
 
 /-- The recorded answer to `q` in `cache`: its image for a forward query, its preimage for an
 inverse query. -/
-private def cachedAnswer (cache : Cache α) : PermQuery α → Option α
+def cachedAnswer (cache : Cache α) : PermQuery α → Option α
   | .forward x => cache.lookup x
   | .inverse y => invLookup cache y
 
@@ -840,7 +840,7 @@ private theorem card_extPerms_cons_eq_of_unusedDomain {cache : Cache α} (y : α
 
 /-- The answers still available to a query that misses `cache`: `unusedRange cache` for a forward
 query and `unusedDomain cache` for an inverse query. -/
-private def freshAnswers (cache : Cache α) : PermQuery α → Finset α
+def freshAnswers (cache : Cache α) : PermQuery α → Finset α
   | .forward _ => unusedRange cache
   | .inverse _ => unusedDomain cache
 
@@ -1200,7 +1200,7 @@ theorem run_interpret_forgetfulAnswer_liftForward {β : Type}
 /-- Forgetful lazy handler instrumented with a `bad` flag that records whether a fresh draw fell
 outside `freshAnswers`: a forward draw collided with `ran(cache)` or an inverse draw collided with
 `dom(cache)`. -/
-private noncomputable def forgetfulWithBad (q : PermQuery α) :
+noncomputable def forgetfulWithBad (q : PermQuery α) :
     StateT (Cache α × Bool) PMF α := fun (cache, bad) =>
   match cachedAnswer cache q with
   | some a => PMF.pure (a, (cache, bad))
@@ -1211,7 +1211,7 @@ private noncomputable def forgetfulWithBad (q : PermQuery α) :
 /-- Coupled exact lazy handler with a `bad` flag: draw a candidate uniformly from `α`; if it lies in
 `freshAnswers` (`unusedRange` for a forward query, `unusedDomain` for an inverse one), use it
 directly, and otherwise set `bad := true` and resample with `answer`. -/
-private noncomputable def exactWithBad (q : PermQuery α) :
+noncomputable def exactWithBad (q : PermQuery α) :
     StateT (Cache α × Bool) PMF α := fun (cache, bad) =>
   match cachedAnswer cache q with
   | some a => PMF.pure (a, (cache, bad))
@@ -1222,7 +1222,7 @@ private noncomputable def exactWithBad (q : PermQuery α) :
     else
       (answer q cache).map fun (a, cache') => (a, (cache', true))
 
-private theorem forgetfulWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool) :
+theorem forgetfulWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool) :
     (forgetfulWithBad q st).map (fun (a, st') => (a, st'.1)) = forgetfulAnswer q st.1 := by
   rcases st with ⟨cache, bad⟩
   cases h : cachedAnswer cache q with
@@ -1239,7 +1239,7 @@ private theorem run_interpret_forgetfulWithBad_map_fst {β : Type}
   OracleComp.run_interpret_map_state forgetfulWithBad forgetfulAnswer Prod.fst
     forgetfulWithBad_map_fst program (cache, bad)
 
-private theorem exactWithBad_preserve_isPartialBijection (q : PermQuery α) (st : Cache α × Bool)
+theorem exactWithBad_preserve_isPartialBijection (q : PermQuery α) (st : Cache α × Bool)
     (hst : IsPartialBijection st.1) (a : α) (st' : Cache α × Bool)
     (hmem : (a, st') ∈ (exactWithBad q st).support) :
     IsPartialBijection st'.1 := by
@@ -1261,7 +1261,7 @@ private theorem exactWithBad_preserve_isPartialBijection (q : PermQuery α) (st 
       obtain ⟨_, rfl⟩ := Prod.mk.inj heq
       exact answer_preserve_isPartialBijection q cache hst b cache' hmem'
 
-private theorem exactWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool)
+theorem exactWithBad_map_fst (q : PermQuery α) (st : Cache α × Bool)
     (hst : IsPartialBijection st.1) :
     (exactWithBad q st).map (fun (a, st') => (a, st'.1)) = answer q st.1 := by
   rcases st with ⟨cache, bad⟩
@@ -1291,7 +1291,7 @@ private theorem run_interpret_exactWithBad_map_fst {β : Type}
     exactWithBad_map_fst program (cache, bad) hcache
 
 /-- `exactWithBad` and `forgetfulWithBad` are identical until `bad = true`. -/
-private theorem identicalUntilBad_exactWithBad_forgetfulWithBad :
+theorem identicalUntilBad_exactWithBad_forgetfulWithBad :
     IdenticalUntilBad (spec := PermOracleSpec α) exactWithBad forgetfulWithBad
       (fun st : Cache α × Bool => st.2 = true) where
   agree q st hst a st' hst' := by
@@ -1350,11 +1350,11 @@ private theorem identicalUntilBad_exactWithBad_forgetfulWithBad :
 
 /-- Over an `n`-query-bounded program starting from `(cache, false)`, `forgetfulWithBad` reaches
 `bad = true` with probability at most `(n * cache.length + n.choose 2) * |α|⁻¹`. -/
-private theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
+theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     {program : OracleComp (PermOracleSpec α) β} {n : ℕ}
     (hn : IsQueryBounded program n) (cache : Cache α) :
     ((OracleComp.interpret forgetfulWithBad program).run (cache, false)).toOuterMeasure
-      {x | x.2.2 = true} ≤
+      {x | let (_, _, bad) := x; bad = true} ≤
       (n * cache.length + n.choose 2 : ℕ) * (Fintype.card α : ℝ≥0∞)⁻¹ := by
   refine OracleComp.toOuterMeasure_bad_choose_two_le (bad := fun st : Cache α × Bool => st.2 = true)
     (fun st : Cache α × Bool => st.1.length)
@@ -1366,8 +1366,10 @@ private theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     | some a => simp [forgetfulWithBad, hq, PMF.toOuterMeasure_pure_apply]
     | none =>
       have hpre : (fun a : α => (a, (PermQuery.toCacheEntry ⟨q, a⟩ :: c,
-          false || decide (a ∉ freshAnswers c q)))) ⁻¹'
-          {x : α × (Cache α × Bool) | x.2.2 = true} = {a : α | a ∉ freshAnswers c q} := by
+          false || decide (a ∉ freshAnswers c q))))
+          ⁻¹'
+          {x : α × (Cache α × Bool) | let (_, _, bad) := x; bad = true} =
+          {a : α | a ∉ freshAnswers c q} := by
         ext a
         simp
       have hcard : (Finset.univ.filter fun a : α => a ∉ freshAnswers c q).card ≤ c.length := by
@@ -1512,7 +1514,7 @@ theorem toOuterMeasure_forgetfulAnswer_le_pairwise_and_length_le_add {β : Type}
     q.toOuterMeasure ((fun x : β × (Cache α × Bool) => (x.1, x.2.1)) ⁻¹'
       {x | (x.2.Pairwise (fun a b => a.1 ≠ b.1) ∧
         x.2.Pairwise (fun a b => a.2 ≠ b.2) ∧ x.2.length ≤ Q) ∧ P x.2}) +
-      q.toOuterMeasure {x | x.2.2 = true}
+      q.toOuterMeasure {x | let (_, _, bad) := x; bad = true}
   simp only [PMF.toOuterMeasure_apply, ← tsum_add]
   refine tsum_le_tsum fun ⟨a, c, b⟩ => ?_
   by_cases hmem : (a, (c, b)) ∈ q.support

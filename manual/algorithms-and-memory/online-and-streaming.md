@@ -204,6 +204,14 @@ The results:
 
 The [test file](../../CslibFrontierTests/NearNeighbor.lean) runs the query on `Fin 8` with two bit-extraction tables. With `T ≤ 2` two far candidates exhaust the budget; with `T = 3` the near point is returned. It also runs `queryRepeat`, evaluates `e⁻¹ + 1/3 < 1` and `(e⁻¹ + 1/3)^10 < 0.03`, computes `numHashes 16 (1/2) = 4`, and instantiates the Hamming-space theorem on three words in `Fin 8 → Bool`.
 
+Continuous-seed LSH and continuous-metric near neighbours build on this interface using probability measures and `Measure.pi`:
+
+- **Measure-theoretic LSH and `(c, r)`-ANN.** [LocalitySensitiveHash/Measure.lean](../../CslibFrontier/Probability/LocalitySensitiveHash/Measure.lean) defines `measureCollisionProb`, bridges discrete laws (`measureCollisionProb_toMeasure`), proves Charikar's triangle inequality (`measureCollisionProb_triangle`) for measurable events, and lifts AND, OR, and banded amplification to `Measure.pi`. [DataStructure/NearNeighbor/MeasureLSH.lean](../../CslibFrontier/DataStructure/NearNeighbor/MeasureLSH.lean) carries `measureReal_query_eq_none_le`, `measureReal_query_andHash_eq_none_le`, `measureReal_query_numTables_eq_none_le`, and `measureReal_queryRepeat_numTables_eq_none_le` over to arbitrary `IsProbabilityMeasure` seeds via `mul_meas_ge_le_lintegral`.
+- **SimHash (angular / cosine).** [LocalitySensitiveHash/SimHash.lean](../../CslibFrontier/Probability/LocalitySensitiveHash/SimHash.lean) defines Charikar's random-hyperplane sign hash `simHash` [charikar02][charikar02] over `stdGaussian E` (and i.i.d. `gaussianReal 0 1` coordinates in `measureCollisionProb_simHash_pi`). For nonzero vectors `u` and `v`, Sheppard's formula gives exact collision probability `1 − θ(u, v)/π` (`measureCollisionProb_simHash`) and `1 − arccos ⟪u, v⟫/π` on unit vectors, yielding angular and cosine sensitivity. [NearNeighbor/Angular.lean](../../CslibFrontier/DataStructure/NearNeighbor/Angular.lean) deduces `ρ ≤ 1/c` (`rho_simHash_le`), `numTables_simHash_lt`, and the `(c, θ)`-angular guarantee `measureReal_query_simHash_eq_none_le`, with `0 < θ`, `1 < c` and `c * θ < π` on the nonzero-vector domain.
+- **`p`-stable LSH (`p = 2` and `p = 1`).** [Foundations/Probability/Cauchy.lean](../../CslibFrontier/Foundations/Probability/Cauchy.lean) proves scaling and `1`-stability (`pi_cauchyMeasure_map_dotProduct`) for `cauchyMeasure`. [LocalitySensitiveHash/PStable.lean](../../CslibFrontier/Probability/LocalitySensitiveHash/PStable.lean) formalizes the shifted interval quantization `intervalFloorHash` [datar04][datar04] over `uniformInterval r` with positive bucket width `r`, proving exact bucket collision `max 0 (1 − |x − y|/r)` (`measureReal_uniformInterval_floor_eq`), the Fubini integral `measureCollisionProb_intervalFloorHash`, strict positivity and strict monotonicity for continuous positive densities, Gaussian `p = 2` Euclidean collision probability (`measureCollisionProb_p2StableHash`, integral representation `p2StableProb_eq_integral`, and closed form `p2StableProb_eq_sub`), and Cauchy `p = 1` `ℓ₁` collision probability (`measureCollisionProb_p1StableHash` and `p1StableProb_eq`). [NearNeighbor/PStable.lean](../../CslibFrontier/DataStructure/NearNeighbor/PStable.lean) establishes `ρ < 1` and the `e⁻¹ + 1/3` `(c, d)`-near-neighbour guarantees for both `ℓ₂` and `ℓ₁`, with positive bucket width, `0 < d` and `1 < c`.
+
+The [continuous LSH test file](../../CslibFrontierTests/LSHContinuous.lean) exercises discrete-to-measure bridging, Charikar's triangle inequality, `Measure.pi` banding, concrete `SimHash` values (`1/2` orthogonal, `3/4` at `π/4`) with a non-sensitivity counterexample, Cauchy `1`-stability (`3X₀ − 4X₁ ~ Cauchy(0, 7)`), `p1StableProb 1 1 = 1/2 − log 2 / π`, `p2StableHash`, and all three continuous `(c, r)`-ANN bounds.
+
 ## Native streaming folds
 
 [CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Machines/Turing/MultiTape/Complexity/Streaming.lean) gives actual machine-backed scans of raw bit strings through Christian Reitwiessner's streaming backend. A round holds an encoded accumulator and one input bit instead of copying the remaining input list. Time sums the round computation, old/new state encoding sizes and control; workspace takes a peak bound and charges retained accumulators. Read-only input and write-only output are excluded from work-tape space.
@@ -249,7 +257,7 @@ The locality-sensitive hashing modules prove probabilistic statements only. The 
 - a dictionary from hash values to buckets, its word-RAM lookup time, the `n^ρ` query time, and the time to build the tables;
 - the cost of one hash evaluation or distance test, and the bits needed to store the seeds;
 - dynamic insertions and deletions, and the reduction from approximate nearest neighbour to the `(c, r)` problem;
-- SimHash, p-stable LSH, and LSH lower bounds;
+- p-stable LSH for exponents `p ∈ (0, 2) \ {1, 2}`, and LSH lower bounds;
 - MinHash over smaller min-wise independent families: it uses a uniform permutation of the whole universe.
 
 The Johnson–Lindenstrauss development covers only dense `±1` matrices: the sparse `{-√3, 0, √3}` distribution of Achlioptas, Gaussian and spherical projections, fast and sparse JL transforms, the optimal Larsen–Nelson lower bound, a `ProbComp` sampler and any native cost for applying the projection are not formalized.
@@ -277,6 +285,7 @@ Online bin packing is modelled by `OnlinePacker`, not through `Problem`/`DetStra
 [complexitylib]: ../sources.md#complexitylib
 [cormode05]: ../sources.md#cormode05
 [dasguptagupta03]: ../sources.md#dasguptagupta03
+[datar04]: ../sources.md#datar04
 [gupta23]: ../sources.md#gupta23
 [harpeledindykmotwani12]: ../sources.md#harpeledindykmotwani12
 [indykmotwani98]: ../sources.md#indykmotwani98

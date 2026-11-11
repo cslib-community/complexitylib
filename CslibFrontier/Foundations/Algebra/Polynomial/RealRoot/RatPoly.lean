@@ -251,7 +251,7 @@ theorem ofCoeffList_shiftZero (k : ℕ) (bs : List ℚ) :
     ofCoeffList (shiftZero k bs) = X ^ k * ofCoeffList bs := by
   rw [shiftZero, ofCoeffList_append, ofCoeffList_replicate_zero, zero_add, List.length_replicate]
 
-private theorem derivAux_length (k : ℕ) (as : List ℚ) :
+theorem derivAux_length (k : ℕ) (as : List ℚ) :
     (derivAux k as).length = as.length := by
   induction as generalizing k with
   | nil => simp only [derivAux, List.length_nil]

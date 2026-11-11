@@ -38,12 +38,14 @@ example : LWE.secretSerialized 1 6 [69, 99] = [true, false, true, false, false, 
   decide +kernel
 
 -- The leading public residue is 3*5-16 = -1, hence 63 modulo64.
-example : LWE.publicMatrixSerialized 1 1 6 ([5], ([[3]], [-16])) =
+example : LWE.publicMatrixSerialized 1 1 6
+    { secret := [5], publicPart := [[3]], error := [-16] } =
     [true, true, true, true, true, true, true, true, false, false, false, false] := by
   decide +kernel
 
 -- Missing numeric entries are zero; excess rows/errors are ignored.
-private def ragged : LWE.SerializedKeyInputs := ([3], ([[2, 5], [], [99]], [-1, 66, 42]))
+private def ragged : LWE.SerializedKeyInputs :=
+  { secret := [3], publicPart := [[2, 5], [], [99]], error := [-1, 66, 42] }
 
 example :
     Cslib.Matrix.binaryEntry 3 3 (LWE.publicMatrixSerialized 2 2 3 ragged) 0 0 = 5 ∧
@@ -64,7 +66,8 @@ example : encryptWithCoinsSerialized 1 0 2 [] true [] =
       false, false, true, false, false, false, false, true] := by
   decide +kernel
 
-example : LWE.publicMatrixSerialized 0 1 3 ([], ([[]], [-1])) = [true, true, true] := by
+example : LWE.publicMatrixSerialized 0 1 3 { secret := [], publicPart := [[]], error := [-1] } =
+    [true, true, true] := by
   decide +kernel
 
 example (n m : ℕ) (inputs : LWE.SerializedKeyInputs) (publicWord : List Bool) (message : Bool)
@@ -90,7 +93,7 @@ private def coins : _root_.Matrix (Fin 2 × Fin 6) (Fin 1) Bool := fun _ _ => tr
 
 private def wordKeys : List Bool × List Bool :=
   (LWE.publicMatrixSerialized 1 1 6 (LWE.serializeKeyInputs keyInputs),
-    LWE.secretSerialized 1 6 (LWE.serializeKeyInputs keyInputs).1)
+    LWE.secretSerialized 1 6 (LWE.serializeKeyInputs keyInputs).secret)
 
 private theorem wordKeys_eq :
     wordKeys = (LWE.serializePublicMatrix keys.1, LWE.serializeSecret keys.2) := by

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.GameTheory.Strategic.Mixed
 public import CslibFrontier.GameTheory.Strategic.NoRegret
 public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.LinearCombination
@@ -217,12 +218,6 @@ theorem hedgeDist_regret (hM : 0 < M) (hc : ∀ i s, |G.cost i s| ≤ M)
     (sum_mul_deviationCost G _ (sum_hedgeProb t i)).symm)) ?_
   simpa only [deviationCost_def] using hedge_regret_le hM hc (hT i) a
 
-private theorem sqrt_mul_div_self {T L : ℝ} (hT : 0 < T) : √(T * L) / T = √(L / T) := by
-  have hs : √T * √T = T := Real.mul_self_sqrt hT.le
-  have hs0 : 0 < √T := Real.sqrt_pos.mpr hT
-  rw [Real.sqrt_mul hT.le, Real.sqrt_div' L hT.le, div_eq_div_iff hT.ne' hs0.ne']
-  linear_combination √L * hs
-
 /-- **Hedge dynamics yield approximate coarse correlated equilibria**: with costs bounded by
 `M > 0` and `ln |S j| ≤ T` for every player `j`, the time average of the first `T > 0` outcome
 distributions of Hedge dynamics satisfies the coarse correlated equilibrium inequalities up to the
@@ -235,7 +230,7 @@ theorem timeAverage_hedgeDist_le_add (hM : 0 < M) (hc : ∀ i s, |G.cost i s| �
         + 2 * M * √(Real.log (Fintype.card (S i)) / T) := by
   have hT' : (0 : ℝ) < T := by exact_mod_cast hT0
   have h := timeAverage_le_add hT0 (hedgeDist_regret hM hc hT) i a
-  rwa [mul_div_assoc, sqrt_mul_div_self hT'] at h
+  rwa [mul_div_assoc, Real.sqrt_mul_div_self hT'] at h
 
 /-- **The price of anarchy of Hedge dynamics**, total form: if `G` is `(λ, μ)`-smooth with
 `μ < 1`, its costs are bounded by `M > 0` and `ln |S i| ≤ T` for every player `i`, then the total
@@ -263,6 +258,6 @@ theorem IsSmooth.timeAverage_hedgeDist_socialCost_le {lam μ : ℝ} (hG : G.IsSm
   have hT' : (0 : ℝ) < T := by exact_mod_cast hT0
   have h := hG.timeAverage_expected_socialCost_le hμ hT0 (hedgeDist_regret hM hc hT) s'
   refine h.trans (le_of_eq ?_)
-  simp only [mul_div_assoc, sqrt_mul_div_self hT', mul_sum]
+  simp only [mul_div_assoc, Real.sqrt_mul_div_self hT', mul_sum]
 
 end Cslib.GameTheory.CostGame
