@@ -25,12 +25,12 @@ independently with replacement (`uniformSamplePMF`) produces a sparse `s`-constr
 `F.score sem x` across all `|D| ^ n` assignments:
 
 1. **Single-assignment Hoeffding tail (`WeightedMaxCSP.sample_score_abs_sub_ge_le`):**
-   for each assignment `x`, the rescaled sample score deviates from `F.score sem x` by at least
-   `δ * m` with probability at most `2 * exp (-2 * s * δ ^ 2)`.
+   for `δ ≥ 0` and each assignment `x`, the rescaled sample score deviates from `F.score sem x` by
+   at least `δ * m` with probability at most `2 * exp (-2 * s * δ ^ 2)`.
 2. **Uniform union bound (`WeightedMaxCSP.exists_sample_score_abs_sub_ge_le`,
    `WeightedMaxCSP.boolean_exists_sample_score_abs_sub_ge_le`,
    `MaxCSPInstance.boolean_exists_sample_score_abs_sub_ge_le`):**
-   uniform deviation `≥ δ * m` at *some* assignment occurs with probability at most
+   for `δ ≥ 0`, uniform deviation `≥ δ * m` at *some* assignment occurs with probability at most
    `|D| ^ n * 2 * exp (-2 * s * δ ^ 2)`, specializing over `Bool` (`|Bool| = 2`) to
    `2 ^ (n + 1) * exp (-2 * s * δ ^ 2)`.
 3. **Deterministic `2 * δ * m` optimality loss (`WeightedMaxCSP.optimum_sub_score_le_two_mul`,
@@ -39,12 +39,12 @@ independently with replacement (`uniformSamplePMF`) produces a sparse `s`-constr
    assignment, the rescaled sample optimum is within `δ * m` of `F.optimum sem` and *every*
    assignment `xHat` maximizing the sampled instance achieves
    `F.optimum sem - F.score sem xHat ≤ 2 * δ * m` (yielding a `(1 - ε)`-approximation whenever
-   `F.optimum sem ≥ α * m` and `2 * δ ≤ ε * α`).
+   `0 < α`, `0 ≤ δ`, `F.optimum sem ≥ α * m`, and `2 * δ ≤ ε * α`).
 4. **Probabilistic loss tail and existence (`MaxCSPInstance.boolean_sample_loss_gt_le`,
    `MaxCSPInstance.exists_boolean_sample_approx`):**
-   over `Bool`, every sampled maximizer achieves loss at most `2 * δ * m` with probability at least
-   `1 - 2 ^ (n + 1) * exp (-2 * s * δ ^ 2)`, guaranteeing a good `s`-constraint subsample whenever
-   `(n + 1) * log 2 < 2 * s * δ ^ 2`.
+   over `Bool` with `δ ≥ 0`, every sampled maximizer achieves loss at most `2 * δ * m` with
+   probability at least `1 - 2 ^ (n + 1) * exp (-2 * s * δ ^ 2)`, guaranteeing a good `s`-constraint
+   subsample whenever `(n + 1) * log 2 < 2 * s * δ ^ 2`.
 
 ## References
 
@@ -289,8 +289,8 @@ theorem optimum_sub_score_le_two_mul [Fintype D] [Inhabited D] (sem : Rel → Li
     mul_le_mul_of_nonneg_left (hmax xStar) hscale_nonneg
   linarith
 
-/-- Multiplicative `(1 - ε)`-approximation corollary when `F.optimum sem ≥ α * m` and
-`2 * δ ≤ ε * α`. -/
+/-- Multiplicative `(1 - ε)`-approximation corollary when `0 < α`, `0 ≤ δ`, `F.optimum sem ≥ α * m`,
+and `2 * δ ≤ ε * α`. -/
 theorem one_sub_mul_optimum_le_score [Fintype D] [Inhabited D] (sem : Rel → List D → Bool)
     (F : WeightedMaxCSP Rel ℕ ℝ) {s : ℕ} (ω : Fin s → Fin F.constraints.length) {δ α ε : ℝ}
     (hα_pos : 0 < α) (hopt : α * (F.constraints.length : ℝ) ≤ F.optimum sem)

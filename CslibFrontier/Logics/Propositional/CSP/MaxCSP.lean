@@ -38,8 +38,9 @@ using documented structures (`MaxConstraint`, `MaxCSPInstance`, `WeightedConstra
    with zero auxiliary variables and preserved width bound `≤ k`.
 3. **Clamped binary finite-domain compilation (`clampedSem`, `MaxCSPInstance.toClampedBoolean`,
    `WeightedMaxCSP.toClampedBoolean`):** compiles any finite-domain `Max-CSP` over `Fin q` (`0 < q`)
-   on `N` declared variables to a Boolean `Max-CSP` on `N * CSP.bitWidth q` variables with the
-   exact same number of constraints and identical optimum, without auxiliary penalty weights.
+   on `N` declared variables with all occurring variables below `N` (`∀ v ∈ F.vars, v < F.numVars`)
+   to a Boolean `Max-CSP` on `N * CSP.bitWidth q` variables with the exact same number of
+   constraints and identical optimum, without auxiliary penalty weights.
 
 ## Main definitions
 
@@ -65,7 +66,7 @@ using documented structures (`MaxConstraint`, `MaxCSPInstance`, `WeightedConstra
   preservation under forbidden-pattern `CSP.toCNF` compilation.
 * `Cslib.Logic.PL.MaxCSPInstance.optimum_toClampedBoolean`,
   `Cslib.Logic.PL.WeightedMaxCSP.optimum_toClampedBoolean`: exact optimum preservation from `Fin q`
-  to Boolean `Max-CSP`.
+  (`0 < q`) to Boolean `Max-CSP` when every occurring variable is below `F.numVars`.
 -/
 
 public section
@@ -121,15 +122,15 @@ theorem eval_ofConstraint (sem : Rel → List D → Bool) (σ : V → D) (c : Co
 theorem eval_relabel (sem : Rel → List D → Bool) (f : V → W) (σ : W → D)
     (c : MaxConstraint Rel V) :
     (c.relabel f).eval sem σ = c.eval sem (σ ∘ f) := by
-  simp only [eval, relabel, List.map_map]
+  rw [← eval_toConstraint, ← eval_toConstraint]
+  exact Constraint.eval_relabel sem f σ c.toConstraint
 
 /-- Constraint evaluation depends only on the values assigned to `c.scope`. -/
 theorem eval_congr {sem : Rel → List D → Bool} {c : MaxConstraint Rel V} {σ τ : V → D}
     (h : ∀ v ∈ c.scope, σ v = τ v) :
     c.eval sem σ = c.eval sem τ := by
-  simp only [eval]
-  congr 1
-  exact List.map_congr_left h
+  rw [← eval_toConstraint, ← eval_toConstraint]
+  exact Constraint.eval_congr (c := c.toConstraint) h
 
 end MaxConstraint
 
