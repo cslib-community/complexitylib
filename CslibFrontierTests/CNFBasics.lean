@@ -186,4 +186,43 @@ example : (DeclaredCNF.ofStdSat stdFinFormula).modelCount = 2 := by
   rw [DeclaredCNF.modelCount_ofStdSat stdFinFormula, CNF.card_eval_ofStdSat_eq_modelCountOn]
   decide
 
+/-! ### Strict `Equiv` transport controls (`equivStdSat`, `restrictModelsEquiv`, `modelsSplitEquiv`)
+-/
+
+example (c : Clause ℕ) : Clause.equivStdSat.symm (Clause.equivStdSat c) = c := by
+  simp
+
+example (φ : CNF ℕ) : CNF.equivStdSat.symm (CNF.equivStdSat φ) = φ := by
+  simp
+
+example
+    (σ : {σ : ↥((Finset.range 3).erase 0) → Bool //
+      (branchingFormula.restrict 0 true).eval
+        (fun u => if h : u ∈ (Finset.range 3).erase 0 then σ ⟨u, h⟩ else false) = true}) :
+    (CNF.restrictModelsEquiv branchingFormula (Finset.range 3) (by decide) true σ).1
+        ⟨0, by decide⟩ = true ∧
+      ((CNF.modelsSplitEquiv branchingFormula (Finset.range 3) (by decide)).symm
+        ⟨(CNF.modelsSplitEquiv branchingFormula (Finset.range 3) (by decide) (Sum.inr σ)).1,
+         (CNF.modelsSplitEquiv branchingFormula (Finset.range 3) (by decide)
+           (Sum.inr σ)).2⟩) =
+        Sum.inr σ := by
+  refine ⟨by simp, ?_⟩
+  have hzero :
+      (CNF.modelsSplitEquiv branchingFormula (Finset.range 3) (by decide) (Sum.inr σ)).1
+        ⟨0, by decide⟩ = true := by
+    simp
+  rw [CNF.modelsSplitEquiv_symm_of_eq_true _ _ _ _ hzero]
+  congr 1
+  ext ⟨u, hu⟩
+  simp
+
+example
+    (σ : {σ : ↥((Finset.range 3).erase 0) → Bool //
+      (branchingFormula.restrict 0 false).eval
+        (fun u => if h : u ∈ (Finset.range 3).erase 0 then σ ⟨u, h⟩ else false) = true})
+    (h1 : 1 ∈ Finset.range 3) :
+    (CNF.restrictModelsEquiv branchingFormula (Finset.range 3) (by decide) false σ).1 ⟨1, h1⟩ =
+      σ.1 ⟨1, by decide⟩ := by
+  simp
+
 end CslibFrontierTests.CNFBasics

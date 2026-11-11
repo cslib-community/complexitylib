@@ -68,11 +68,17 @@ variable {α β : Type*}
   simp [Clause.toStdSat, Clause.ofStdSat]
 
 /-- List clauses and `Std.Sat.CNF.Clause` are in exact bijection. -/
-def Clause.equivStdSat : Clause α ≃ Std.Sat.CNF.Clause α where
+@[expose] def Clause.equivStdSat : Clause α ≃ Std.Sat.CNF.Clause α where
   toFun := Clause.toStdSat
   invFun := Clause.ofStdSat
   left_inv := Clause.ofStdSat_toStdSat
   right_inv := Clause.toStdSat_ofStdSat
+
+@[simp] theorem Clause.equivStdSat_apply (c : Clause α) :
+    Clause.equivStdSat c = c.toStdSat := rfl
+
+@[simp] theorem Clause.equivStdSat_symm_apply (c : Std.Sat.CNF.Clause α) :
+    Clause.equivStdSat.symm c = Clause.ofStdSat c := rfl
 
 @[simp] theorem Clause.mem_toStdSat {c : Clause α} {l : Literal α} :
     l ∈ c.toStdSat ↔ l ∈ c := by
@@ -103,11 +109,17 @@ def Clause.equivStdSat : Clause α ≃ Std.Sat.CNF.Clause α where
     Clause.toStdSat_ofStdSat, List.map_id', Array.toArray_toList]
 
 /-- List CNF formulas and `Std.Sat.CNF` are in exact bijection. -/
-def CNF.equivStdSat : CNF α ≃ Std.Sat.CNF α where
+@[expose] def CNF.equivStdSat : CNF α ≃ Std.Sat.CNF α where
   toFun := CNF.toStdSat
   invFun := CNF.ofStdSat
   left_inv := CNF.ofStdSat_toStdSat
   right_inv := CNF.toStdSat_ofStdSat
+
+@[simp] theorem CNF.equivStdSat_apply (φ : CNF α) :
+    CNF.equivStdSat φ = φ.toStdSat := rfl
+
+@[simp] theorem CNF.equivStdSat_symm_apply (f : Std.Sat.CNF α) :
+    CNF.equivStdSat.symm f = CNF.ofStdSat f := rfl
 
 @[simp] theorem CNF.mem_toStdSat {φ : CNF α} {c : Std.Sat.CNF.Clause α} :
     c ∈ φ.toStdSat ↔ Clause.ofStdSat c ∈ φ := by

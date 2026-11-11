@@ -107,10 +107,10 @@ For interoperability and generic solver/branching APIs over `CNF`, import
 [Simplification](../../CslibFrontier/Logics/Propositional/CNF/Simplification.lean), and
 [UnitPropagation](../../CslibFrontier/Logics/Propositional/CNF/UnitPropagation.lean). `CNF.toStdSat`
 and `CNF.ofStdSat` give exact bijections with `Std.Sat.CNF` preserving `Sat`, `Unsat`, relabeling,
-`Std.Sat.CNF.relabelFin`, and exact `Fintype.card` vs `modelCountOn`/`modelCount` on
-`Std.Sat.CNF (Fin n)`. `CNF.restrict` splits models via the explicit bijection
-`CNF.restrictModelsEquiv` and gives additive branching (`CNF.modelCountOn_eq_add_restrict`) plus
-length and occurrence bounds; `CNF.unitPropagate` performs fuel-bounded structural propagation
+`Std.Sat.CNF.relabelFin`, and exact `Fintype.card` vs `modelCountOn`/`modelCount` on `Std.Sat.CNF (Fin n)` (bundled as
+`Clause.equivStdSat` and `CNF.equivStdSat`). `CNF.restrict` splits models via the explicit
+bijections `CNF.restrictModelsEquiv` and `CNF.modelsSplitEquiv` and gives additive branching
+(`CNF.modelCountOn_eq_add_restrict`) plus length and occurrence bounds; `CNF.unitPropagate` performs fuel-bounded structural propagation
 while conserving satisfiability and model counts (`CNF.modelCountOn_unitPropagate`,
 `CNF.modelCount_unitPropagate`); and `CNF.Sparsification` width-free lemmas track evaluation,
 scaling, total literal counts, and occurrences under `removeTautologies`, `dedup`, `dedupClauses`,
