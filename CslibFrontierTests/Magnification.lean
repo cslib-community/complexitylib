@@ -38,7 +38,8 @@ example : agreesOnPoint 2 0 [true] [false, false] [false, false] [false, false] 
 -- A concrete yes-instance of `CircuitMinMergeLanguage` at `n = 1, s = 0, p = [], j = 0`:
 -- both child certificates `[false]` compute `x ↦ x 0` on `[false]` and `[true]`, and `[false]` is
 -- the unique valid size-0 certificate on 1 input.
-example : (((1, 0), ([], 0)), [true, false, true, false]) ∈ CircuitMinMergeLanguage := by
+example : (⟨⟨1, 0, [], 0⟩, [true, false, true, false]⟩ : MergeInput) ∈
+    CircuitMinMergeLanguage := by
   refine ⟨rfl, rfl, [false], ⟨⟨rfl, by decide, fun x hx => ?_⟩, fun w' hw' hmerged => ?_⟩, rfl⟩
   · rcases List.length_eq_one_iff.1 hx with ⟨b, rfl⟩
     cases b <;> decide
@@ -48,7 +49,8 @@ example : (((1, 0), ([], 0)), [true, false, true, false]) ∈ CircuitMinMergeLan
 -- A concrete no-instance of `CircuitMinMergeLanguage` at `n = 1, s = 0, p = [], j = 1`:
 -- both children are valid (`ok₀ = ok₁ = true`), and the unique valid size-0 certificate on 1 input
 -- is `w = [false]`, whose bit `j - 1 = 0` is `false`.
-example : (((1, 0), ([], 1)), [true, false, true, false]) ∉ CircuitMinMergeLanguage := by
+example : (⟨⟨1, 0, [], 1⟩, [true, false, true, false]⟩ : MergeInput) ∉
+    CircuitMinMergeLanguage := by
   rintro ⟨_, _, w, ⟨⟨hwlen, hvalid, _⟩, _⟩, hbit⟩
   rcases List.length_eq_one_iff.1 hwlen with ⟨b, rfl⟩
   cases b
@@ -56,8 +58,25 @@ example : (((1, 0), ([], 1)), [true, false, true, false]) ∉ CircuitMinMergeLan
   · exact Bool.false_ne_true hvalid
 
 -- A concrete no-instance of `CircuitMinMergeLanguage` when a child validity bit is `false`.
-example : (((1, 0), ([], 0)), [false, false, true, false]) ∉ CircuitMinMergeLanguage := by
+example : (⟨⟨1, 0, [], 0⟩, [false, false, true, false]⟩ : MergeInput) ∉
+    CircuitMinMergeLanguage := by
   rintro ⟨hok₀, _⟩
   exact Bool.false_ne_true hok₀
+
+example {h₁ h₂ : MergeHeader} (ha : h₁.arity = h₂.arity) (hs : h₁.size = h₂.size)
+    (hp : h₁.subcube = h₂.subcube) (hj : h₁.bitIndex = h₂.bitIndex) : h₁ = h₂ :=
+  MergeHeader.ext ha hs hp hj
+
+example {a₁ a₂ : MergeInput} (hh : a₁.header = a₂.header) (hc : a₁.childStates = a₂.childStates) :
+    a₁ = a₂ :=
+  MergeInput.ext hh hc
+
+example : ComputableInPolyTime
+    (fun a : MergeInput =>
+      MergeInput.mk
+        (MergeHeader.mk a.header.arity a.header.size a.header.subcube a.header.bitIndex)
+        a.childStates)
+    encMerge encMerge := by
+  fun_prop
 
 end Cslib.MCSP.Tests.Magnification

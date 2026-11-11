@@ -69,8 +69,8 @@ abbrev System := AffineSystem ℕ
   (vs.map fun w => Decidable.decide (w = v)).sum
 
 /-- Compress occurring labels, keeping one Boolean coefficient for each label. -/
-@[expose] def compile (F : System) : ℕ × Dense.System :=
-  ((labels F).length, F.map fun e => ((labels F).map (coefficient e.1), e.2))
+@[expose] def compile (F : System) : Dense.Input :=
+  ⟨(labels F).length, F.map fun e => ⟨(labels F).map (coefficient e.1), e.2⟩⟩
 
 /-- Native dense Gaussian elimination after compression of binary variable labels. -/
 @[expose] def solve (F : System) : Bool := Dense.decide (compile F)
@@ -93,7 +93,7 @@ theorem length_labels_le (F : System) :
   (List.eraseDupsBy_sublist _).length_le
 
 /-- Every compiled row has exactly the declared width. -/
-theorem width_compile (F : System) : Dense.Width (compile F).1 (compile F).2 := by
+theorem width_compile (F : System) : Dense.Width (compile F).width (compile F).rows := by
   intro r hr
   obtain ⟨e, _, rfl⟩ := List.mem_map.mp hr
   exact List.length_map _
@@ -140,7 +140,7 @@ theorem dot_compile_row (F : System) (e : AffineEquation ℕ) (he : e ∈ F) (a 
 
 /-- The compiler preserves the satisfaction relation on every assignment. -/
 theorem holds_compile (F : System) (a : ℕ → Bool) :
-    Dense.Holds (compile F).2 ((labels F).map a) ↔ F.Holds a := by
+    Dense.Holds (compile F).rows ((labels F).map a) ↔ F.Holds a := by
   constructor
   · intro h e he
     have hh := h _ (List.mem_map.mpr ⟨e, he, rfl⟩)
@@ -174,7 +174,7 @@ private theorem exists_assignment {l : List ℕ} (hl : l.Nodup) {a : List Bool}
 
 /-- Sparse satisfiability is equivalent to satisfiability of the compressed dense system. -/
 theorem satisfiable_compile_iff (F : System) :
-    Dense.Satisfiable (compile F).1 (compile F).2 ↔ Satisfiable F := by
+    Dense.Satisfiable (compile F).width (compile F).rows ↔ Satisfiable F := by
   constructor
   · rintro ⟨a, ha, h⟩
     obtain ⟨f, hf⟩ := exists_assignment (nodup_labels F) ha
@@ -208,14 +208,19 @@ private theorem sum_polyTime :
     fun_prop
   exact sum_polyTime.comp hbits
 
+section
+open scoped _root_.Cslib.Complexity.XORSAT.Dense
+
 /-- Label compression is itself a native polynomial-time computation. Binary labels are only
 compared, never expanded into a table indexed by their numerical value. -/
 theorem compile_polyTime : ComputableInPolyTime compile encoding Dense.encInput := by
-  have hvars := labels_polyTime.tidy
-  apply ComputableInPolyTime.of_tidy
-  unfold compile Dense.encInput Dense.encSystem Dense.encRow
+  have hvars := labels_polyTime
+  have hcoeff := coefficient_polyTime.computableInPolyTime
+  unfold compile
   unfold encoding equationEncoding at hvars ⊢
   fun_prop
+
+end
 
 /-- Ordinary XOR-SAT is decided in polynomial time by native multi-tape machines. -/
 theorem solve_polyTime : ComputableInPolyTime solve encoding encBool :=

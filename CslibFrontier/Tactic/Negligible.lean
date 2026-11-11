@@ -416,6 +416,107 @@ private meta def normalizeNegligibleForms : TacticM Unit := withMainContext do
               one_mul, mul_inv, ← inv_pow] at $ident:ident))
         catch _ => pure ()
 
+/-- Replace occurrences in `e` matching `pat` at `.instances` transparency (without unfolding `def`
+games) by `replacement`, descending only through `ℝ≥0` arithmetic combinators (`+`, `*`, `/`, `^`,
+`⁻¹`, `NNReal.sqrt`, `Finset.sum`). -/
+private meta partial def replaceAtInstances (pat replacement e : Expr) : MetaM (Expr × Bool) := do
+  if !e.hasLooseBVars then
+    if ← withNewMCtxDepth (withReducibleAndInstances (isDefEq e pat)) then
+      return (replacement, true)
+  let c := e.cleanupAnnotations
+  for opName in #[``HAdd.hAdd, ``HMul.hMul, ``HDiv.hDiv] do
+    if c.isAppOfArity opName 6 then
+      let args := c.getAppArgs
+      let (l', ml) ← replaceAtInstances pat replacement args[4]!
+      let (r', mr) ← replaceAtInstances pat replacement args[5]!
+      if ml || mr then
+        let pre := mkApp4 c.getAppFn args[0]! args[1]! args[2]! args[3]!
+        return (mkApp2 pre l' r', true)
+      else
+        return (e, false)
+  if c.isAppOfArity ``HPow.hPow 6 then
+    let args := c.getAppArgs
+    let (b', mb) ← replaceAtInstances pat replacement args[4]!
+    if mb then
+      let pre := mkApp4 c.getAppFn args[0]! args[1]! args[2]! args[3]!
+      return (mkApp2 pre b' args[5]!, true)
+    else
+      return (e, false)
+  if c.isAppOfArity ``Inv.inv 3 then
+    let args := c.getAppArgs
+    let (a', ma) ← replaceAtInstances pat replacement args[2]!
+    if ma then
+      return (mkApp (mkApp2 c.getAppFn args[0]! args[1]!) a', true)
+    else
+      return (e, false)
+  if c.isAppOfArity ``DFunLike.coe 6 then
+    let args := c.getAppArgs
+    let (a', ma) ← replaceAtInstances pat replacement args[5]!
+    if ma then
+      return (mkApp c.appFn! a', true)
+    else
+      return (e, false)
+  if c.isAppOfArity ``Finset.sum 5 then
+    let args := c.getAppArgs
+    let f := args[4]!
+    if let .forallE idxName dom _ _ ← whnf (← inferType f) then
+      let (f', mf) ← withLocalDeclD idxName dom fun i => do
+        let (body', mb) ← replaceAtInstances pat replacement (mkApp f i).headBeta
+        if mb then return (← mkLambdaFVars #[i] body', true) else return (f, false)
+      if mf then
+        return (mkApp (mkApp4 c.getAppFn args[0]! args[1]! args[2]! args[3]!) f', true)
+  return (e, false)
+
+/-- Abstract local `Negligible g` hypotheses whose pointwise value `g n` appears in the goal (up to
+`.instances` transparency) into fresh local variables `(fn : ℕ → ℝ≥0) (hfn : Negligible fn)` so
+`fun_prop` never unfolds distinct `def` games during leaf unification. -/
+private meta def abstractNegligibleHypotheses : TacticM Unit := withMainContext do
+  let mut gGoal ← getMainGoal
+  let candIds ← gGoal.withContext do
+    let mut ids : Array FVarId := #[]
+    for decl in ← getLCtx do
+      if decl.isImplementationDetail || decl.isLet then continue
+      let ty ← whnfR (← instantiateMVars decl.type)
+      unless ty.consumeMData.isAppOfArity ``Cslib.Crypto.Negligible 1 do continue
+      if ty.consumeMData.appArg!.eta.isFVar then continue
+      ids := ids.push decl.fvarId
+    return ids
+  for fvarId in candIds do
+    gGoal ← gGoal.withContext do
+      let some decl := (← getLCtx).find? fvarId | return gGoal
+      let ty ← whnfR (← instantiateMVars decl.type)
+      unless ty.consumeMData.isAppOfArity ``Cslib.Crypto.Negligible 1 do return gGoal
+      let gFn := ty.consumeMData.appArg!
+      let target := (← instantiateMVars (← gGoal.getType)).consumeMData
+      unless target.isAppOfArity ``Cslib.Crypto.Negligible 1 do return gGoal
+      let targetFn ← Core.betaReduce (← etaExpand target.appArg!)
+      let .lam paramName paramDom curBody _ := targetFn | return gGoal
+      let fnTy ← mkArrow (mkConst ``Nat) (mkConst ``NNReal)
+      let absRes? ← withLocalDeclD (decl.userName.appendAfter "_fn") fnTy fun fnFVar => do
+        let (newLam, matched) ← withLocalDeclD paramName paramDom fun n => do
+          let pat := (mkApp gFn n).headBeta
+          let (body', m) ← replaceAtInstances pat (mkApp fnFVar n) (curBody.instantiate1 n)
+          return (← mkLambdaFVars #[n] body', m)
+        if !matched then return none
+        let newTarget := mkApp (mkConst ``Cslib.Crypto.Negligible) newLam
+        let absPred ← mkLambdaFVars #[fnFVar] newTarget
+        let negFnTy := mkApp (mkConst ``Cslib.Crypto.Negligible) fnFVar
+        let forallProp ← withLocalDeclD decl.userName negFnTy fun hfn => do
+          mkForallFVars #[fnFVar, hfn] newTarget
+        return some (absPred, forallProp)
+      let some (absPred, forallProp) := absRes? | return gGoal
+      let instTarget := (mkApp absPred gFn).headBeta
+      unless ← withNewMCtxDepth (withReducibleAndInstances (isDefEq target instTarget)) do
+        return gGoal
+      let gGoal' ← gGoal.replaceTargetDefEq instTarget
+      let negGFnTy := mkApp (mkConst ``Cslib.Crypto.Negligible) gFn
+      let hProof ← mkExpectedTypeHint decl.toExpr negGFnTy
+      let mvar ← mkFreshExprSyntheticOpaqueMVar forallProp
+      gGoal'.assign (mkApp2 mvar gFn hProof)
+      let (_, gNext) ← mvar.mvarId!.introNP 2
+      try gNext.clear fvarId catch _ => pure gNext
+  replaceMainGoal [gGoal]
+
 /-- Apply a pointwise or eventual upper bound `hle` in `ℝ≥0` or `ℝ`. -/
 private meta def applyBound (eventually : Bool) (hle : TSyntax `term) : TacticM Unit := do
   let saved ← saveState
@@ -484,6 +585,8 @@ meta def evalNegligible : Tactic := fun stx => focus <| withMainContext do
   prepareNegligibleContext
   if (← getUnsolvedGoals).isEmpty then return
   normalizeNegligibleForms
+  if (← getUnsolvedGoals).isEmpty then return
+  abstractNegligibleHypotheses
   if (← getUnsolvedGoals).isEmpty then return
   let residualGoal ← getMainGoal
   try
