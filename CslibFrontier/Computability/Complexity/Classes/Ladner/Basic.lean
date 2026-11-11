@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Ma
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import CslibFrontier.Foundations.Data.List.Append
+public import CslibFrontier.Foundations.Data.List.CourseOfValues
 import CslibFrontier.Foundations.Data.Nat.Bits
 import Mathlib.Data.Nat.Size
 
@@ -302,9 +303,8 @@ noncomputable def Hstep (T : List ℕ) : ℕ :=
     ∀ j < T.length, Agrees (fun m => T.getD m 0) T.length i j}
 
 /-- The table of the first `n` values of the exponent function. -/
-noncomputable def Htable : ℕ → List ℕ
-  | 0 => []
-  | n + 1 => Htable n ++ [Hstep (Htable n)]
+noncomputable def Htable : ℕ → List ℕ :=
+  List.courseOfValues Hstep
 
 /-- **The exponent function of Ladner's language.** -/
 noncomputable def H (n : ℕ) : ℕ := Hstep (Htable n)
@@ -313,20 +313,16 @@ noncomputable def H (n : ℕ) : ℕ := Hstep (Htable n)
 noncomputable def SATH : Set (List Bool) := padSAT H
 
 /-- **The tables hold the values of `H`.** -/
-theorem Htable_eq (n : ℕ) : Htable n = (List.range n).map H := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [Htable, List.range_succ, List.map_append, ← ih]; rfl
+theorem Htable_eq (n : ℕ) : Htable n = (List.range n).map H :=
+  List.courseOfValues_eq Hstep n
 
 @[simp]
-theorem length_Htable (n : ℕ) : (Htable n).length = n := by
-  simp [Htable_eq]
+theorem length_Htable (n : ℕ) : (Htable n).length = n :=
+  List.length_courseOfValues Hstep n
 
 theorem agrees_Htable_iff {n i j : ℕ} (hj : j < n) :
     Agrees (fun m => (Htable n).getD m 0) n i j ↔ Agrees H n i j :=
-  agrees_congr fun m hm => by
-    rw [Htable_eq, List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range (by omega)]
-    rfl
+  agrees_congr fun _ hm => List.getD_courseOfValues Hstep 0 (hm.trans hj)
 
 theorem H_eq (n : ℕ) :
     H n = sInf {i | i = Nat.log 2 (Nat.log 2 n) ∨ ∀ j < n, Agrees H n i j} := by
