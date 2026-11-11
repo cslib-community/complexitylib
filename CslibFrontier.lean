@@ -2641,6 +2641,7 @@ public import CslibFrontier.Computability.LogSpaceDerandomization.StochasticAtom
 public import CslibFrontier.Computability.LogSpaceDerandomization.TrueSampleMeans
 public import CslibFrontier.Computability.MCSP.AntiChecker
 public import CslibFrontier.Computability.MCSP.AntiChecker.Certificate
+public import CslibFrontier.Computability.MCSP.AntiChecker.Efficient
 public import CslibFrontier.Computability.MCSP.AntiChecker.Generator
 public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle
 public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle.PolyTime
@@ -2654,6 +2655,7 @@ public import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponenti
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 public import CslibFrontier.Computability.MCSP.HardnessConsequences
 public import CslibFrontier.Computability.MCSP.Magnification
+public import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Circuit
@@ -4625,6 +4627,7 @@ public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Sqrt
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Basic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Bounds
 public import CslibFrontier.Foundations.Analysis.SpecificLimits.DescFactorial
+public import CslibFrontier.Foundations.Analysis.SpecificLimits.PolyLtPow
 public import CslibFrontier.Foundations.BooleanAnalysis.AffineDegree
 public import CslibFrontier.Foundations.BooleanAnalysis.Affinity
 public import CslibFrontier.Foundations.BooleanAnalysis.Anticoncentration
