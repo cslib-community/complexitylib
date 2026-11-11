@@ -12,6 +12,9 @@ public import CslibFrontier.Crypto.Computational.LWE.PrimeModulus
 public import CslibFrontier.Crypto.Game.Hybrid
 
 public import Mathlib.Algebra.Field.ZMod
+public import CslibFrontier.Languages.Probabilistic.Basic
+public import CslibFrontier.Languages.Probabilistic.Repeat
+public import CslibFrontier.Languages.Probabilistic.Concentration
 
 /-!
 # Search to Decision LWE
@@ -127,5 +130,197 @@ def shiftErrorEquiv {m q : ℕ} [Fact (Nat.Prime q)] (e : Fin m → ZMod q)
       e i + c * (c⁻¹ * (r' i - e i)) = e i + (c * c⁻¹) * (r' i - e i) := by rw [← mul_assoc]
       _ = e i + 1 * (r' i - e i) := by rw [h]
       _ = r' i := by ring
+
+open Cslib Cslib.Probability Cslib.ProbComp
+
+/-- The self-reduction for LWE Decision. -/
+noncomputable def lweSelfReduceDistinguisher {n m q : ℕ} [Fact (Nat.Prime q)]
+    (distinguisher : Matrix (Fin m) (Fin (n + 1)) (ZMod q) → ProbComp Bool)
+    (P : Matrix (Fin m) (Fin (n + 1)) (ZMod q)) (j : Fin n) (g : ZMod q) : ProbComp Bool := do
+  let r ← ProbComp.uniform (Fin m → ZMod q)
+  distinguisher (shiftCoordinate P j g r)
+
+/-- Coordinate-wise search from decision. -/
+noncomputable def lweSearchCoordinate {n m q : ℕ} [Fact (Nat.Prime q)]
+    (distinguisher : Matrix (Fin m) (Fin (n + 1)) (ZMod q) → ProbComp Bool)
+    (invEps : ℕ) (P : Matrix (Fin m) (Fin (n + 1)) (ZMod q)) (j : Fin n) : ProbComp (ZMod q) := do
+  let N := (n + 3) * (7 * invEps) ^ 2
+  let cIdeal ← OracleComp.countTrue N (do
+    let U ← ProbComp.uniform (Matrix (Fin m) (Fin (n + 1)) (ZMod q))
+    distinguisher U)
+  let counts ← List.mapM (fun (g : ZMod q) => do
+    let cIn ← OracleComp.countTrue N (lweSelfReduceDistinguisher distinguisher P j g)
+    return (g, cIn)) (List.finRange q)
+  let best := counts.foldl (fun (best_g, best_diff) (g, cIn) =>
+    let diff := if cIn ≥ cIdeal then cIn - cIdeal else cIdeal - cIn
+    if diff > best_diff then (g, diff) else (best_g, best_diff)) (0, 0)
+  return best.1
+
+/-- Recursive helper to search all coordinates. -/
+noncomputable def lweSearchDeciderAux {n m q : ℕ} [Fact (Nat.Prime q)]
+    (distinguisher : Matrix (Fin m) (Fin (n + 1)) (ZMod q) → ProbComp Bool)
+    (invEps : ℕ) (P : Matrix (Fin m) (Fin (n + 1)) (ZMod q)) :
+    (k : ℕ) → (hk : k ≤ n) → ProbComp (Fin k → ZMod q)
+  | 0, _ => pure (fun _ => 0)
+  | k + 1, hk => do
+    let s ← lweSearchDeciderAux distinguisher invEps P k (Nat.le_of_succ_le hk)
+    let g ← lweSearchCoordinate distinguisher invEps P ⟨k, hk⟩
+    return fun j => (if h : j.val < k then s ⟨j.val, h⟩ else g : ZMod q)
+
+/-- The full empirical distinguishing reduction. -/
+noncomputable def lweSearchDecider {n m q : ℕ} [Fact (Nat.Prime q)]
+    (distinguisher : Matrix (Fin m) (Fin (n + 1)) (ZMod q) → ProbComp Bool)
+    (invEps : ℕ) (P : Matrix (Fin m) (Fin (n + 1)) (ZMod q)) : ProbComp (Fin n → ZMod q) :=
+  lweSearchDeciderAux distinguisher invEps P n (Nat.le_refl n)
+
+
+
+theorem lweSelfReduce_real {n m q : ℕ} [Fact (Nat.Prime q)]
+    (distinguisher : Matrix (Fin m) (Fin (n + 1)) (ZMod q) → ProbComp Bool)
+    (s : Fin n → ZMod q) (e : Fin m → ZMod q) (j : Fin n) (g : ZMod q) (hg : g = s j) :
+    ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+      eval (lweSelfReduceDistinguisher distinguisher (publicMatrix A s e) j g)) =
+    ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+      eval (distinguisher (publicMatrix A s e))) := by
+  simp_rw [lweSelfReduceDistinguisher, eval_bind, eval_uniform, shiftCoordinate_eq_LWE]
+  have hs1 (r : Fin m → ZMod q) :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i))))
+        =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) :=
+    PMF.uniformOfFintype_bind_equiv (shiftMatrixEquiv j r)
+      (fun A => eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i))))
+  have hs2 :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+          eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i))))
+        =
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i)))) :=
+    PMF.bind_comm _ _ _
+  rw [hs2]
+  have hs3 :
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i))))
+        =
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) := by
+    congr 1
+    funext r
+    exact hs1 r
+  rw [hs3]
+  have hs4 :
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+          eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) :=
+    PMF.bind_comm _ _ _
+  rw [hs4]
+  have hg0 : g - s j = 0 := sub_eq_zero.mpr hg
+  simp_rw [hg0, zero_mul, add_zero]
+  have hs5 (A : Matrix (Fin m) (Fin n) (ZMod q)) :
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun _ =>
+        eval (distinguisher (publicMatrix A s e))) =
+      eval (distinguisher (publicMatrix A s e)) :=
+    PMF.bind_const _ _
+  have hs6 :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun _ =>
+          eval (distinguisher (publicMatrix A s e))) =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        eval (distinguisher (publicMatrix A s e))) := by
+    congr 1
+    funext A
+    exact hs5 A
+  exact hs6
+
+theorem lweSelfReduce_ideal {n m q : ℕ} [Fact (Nat.Prime q)]
+    (distinguisher : Matrix (Fin m) (Fin (n + 1)) (ZMod q) → ProbComp Bool)
+    (s : Fin n → ZMod q) (e : Fin m → ZMod q) (j : Fin n) (g : ZMod q) (hg : g ≠ s j) :
+    ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+      eval (lweSelfReduceDistinguisher distinguisher (publicMatrix A s e) j g)) =
+    ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+      (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun v =>
+        eval (distinguisher (publicMatrix A s v))) := by
+  simp_rw [lweSelfReduceDistinguisher, eval_bind, eval_uniform, shiftCoordinate_eq_LWE]
+  have hs1 (r : Fin m → ZMod q) :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i))))
+        =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) :=
+    PMF.uniformOfFintype_bind_equiv (shiftMatrixEquiv j r)
+      (fun A => eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i))))
+  have hs2 :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+          eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i))))
+        =
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i)))) :=
+    PMF.bind_comm _ _ _
+  rw [hs2]
+  have hs3 :
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher
+          (publicMatrix (fun i c => if c = j then A i c + r i else A i c) 
+        s (fun i => e i + (g - s j) * r i))))
+        =
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) := by
+    congr 1
+    funext r
+    exact hs1 r
+  rw [hs3]
+  have hs4 :
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+          eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+          eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) :=
+    PMF.bind_comm _ _ _
+  rw [hs4]
+  have hs5 (A : Matrix (Fin m) (Fin n) (ZMod q)) :
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+        eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) =
+      ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun v =>
+        eval (distinguisher (publicMatrix A s v))) :=
+    PMF.uniformOfFintype_bind_equiv (shiftErrorEquiv e (g - s j) (sub_ne_zero.mpr hg))
+      (fun v => eval (distinguisher (publicMatrix A s v)))
+  have hs6 :
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun r =>
+          eval (distinguisher (publicMatrix A s (fun i => e i + (g - s j) * r i)))) =
+      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun v =>
+          eval (distinguisher (publicMatrix A s v))) := by
+    congr 1
+    funext A
+    exact hs5 A
+  exact hs6
 
 end Cslib.Crypto.PrimeLWE
