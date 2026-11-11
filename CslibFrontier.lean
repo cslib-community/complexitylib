@@ -5305,6 +5305,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Derivation
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.EndpointIncidence
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Farkas
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.FourierMotzkin
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GaussJordan
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GrenetPermanent
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.HessianPermanent
