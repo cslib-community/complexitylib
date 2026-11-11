@@ -390,7 +390,7 @@ def dummyStackSpec :
     StackAccumulationSpec encUnary (encFinEnum Unit) encNat encNat encNat encNat where
   defaultNode := 0
   initCtx _ := ()
-  initStack _ := []
+  initStack _ := [0]
   initAcc _ := 0
   rounds n := 2 ^ n
   isLeaf _ := true
@@ -398,7 +398,7 @@ def dummyStackSpec :
   expand _ := []
   combine _ := 0
   computableInPolyTime_initCtx := .const ()
-  computableInPolyTime_initStack := .const []
+  computableInPolyTime_initStack := .const [0]
   computableInPolyTime_initAcc := .const 0
   computableInPolyTime_rounds := ComputableTidilyInPolyTime.binary_two_pow.computableInPolyTime
   computableInPolyTime_isLeaf := .const true
@@ -425,7 +425,7 @@ example : ∃ c e : ℕ, ∃ Space : ℕ → ℕ,
       intro a i hi
       cases i with
       | zero =>
-        have heq : (dummyStackSpec.step id)^[0] (dummyStackSpec.initState a) = ⟨(), [], 0⟩ := rfl
+        have heq : (dummyStackSpec.step id)^[0] (dummyStackSpec.initState a) = ⟨(), [0], 0⟩ := rfl
         rw [heq]
         exact (by decide)
       | succ j =>
@@ -438,20 +438,26 @@ example : ∃ c e : ℕ, ∃ Space : ℕ → ℕ,
       intro a i hi st H
       cases i with
       | zero =>
-        cases H.1
+        have heq : st = ⟨(), [0], 0⟩ := rfl
+        rw [heq]
+        exact (by decide)
       | succ j =>
-        have heq : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := rfl
-        rw [heq] at H
+        have heq : st = (dummyStackSpec.step id)^[j + 1] (dummyStackSpec.initState a) := rfl
+        have heq2 : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := heq
+        rw [heq2] at H
         rw [StackAccumulationSpec.iterate_step_empty] at H
         cases H.1)
     (by
       intro a i hi st H
       cases i with
       | zero =>
-        cases H.1
+        have heq : st = ⟨(), [0], 0⟩ := rfl
+        rw [heq]
+        exact le_rfl
       | succ j =>
-        have heq : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := rfl
-        rw [heq] at H
+        have heq : st = (dummyStackSpec.step id)^[j + 1] (dummyStackSpec.initState a) := rfl
+        have heq2 : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := heq
+        rw [heq2] at H
         rw [StackAccumulationSpec.iterate_step_empty] at H
         cases H.1)
   exact h
