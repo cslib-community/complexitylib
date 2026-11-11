@@ -255,7 +255,7 @@ theorem timeConstructible_succ_sq : TimeConstructible fun n => (n + 1) ^ 2 :=
 /-- A bound `s` is space-constructible when some machine with a binary alphabet and finitely many
 states computes `s n` in binary from any word of length `n` within space `O(s n)`, halting
 [Sipser, Definition 9.1][Sipser2013]. Unlike [Sipser, Definition 9.1][Sipser2013], `s n ≥ log n`
-is not required here; the space hierarchy theorem asks for `n ≤ s n`. -/
+is not required here; the space hierarchy theorem asks for `⌊log₂ n⌋ ≤ s n` separately. -/
 def SpaceConstructible (s : ℕ → ℕ) : Prop :=
   ∃ c : ℕ, ∃ t : ℕ → ℕ, ComputableInTimeAndSpaceOfLength (fun x : List Bool => s x.length) encBits
     encNat t fun n => c * s n + c

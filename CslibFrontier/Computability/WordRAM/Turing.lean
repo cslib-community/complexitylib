@@ -562,7 +562,7 @@ output. The simulating machine computes the width, the input words and a step bu
 initial memory and runs the finite-state simulator; all of this is charged. -/
 theorem Program.ComputesInTime.turingComputableInPolyTime_of_width
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {p : Program B r} {encode : ℕ → α → List ℕ} {time : α → ℕ → ℕ}
     {allowed : α → ℕ → Prop} {f : α → ℕ}
     (h : p.ComputesInTime encode time allowed f) {width : α → ℕ}
@@ -605,7 +605,7 @@ The simulating machine chooses a word size polynomial in `|encIn a|`, at least
 `logWidth k (size a)` and the encoded length of the input words, so the input fits. -/
 theorem Program.ComputesInTime.turingComputableInPolyTime
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {p : Program B r} {encode : α → List ℕ} {size f : α → ℕ} {T : ℕ → ℕ} {k : ℕ}
     (hT : PolynomiallyBounded T) (hsize : PolyBounded (fun a => (encIn a).length) size)
     (hencode : Turing.MultiTapeTM.ComputableInPolyTime encode encIn (encList encNat))
@@ -625,7 +625,7 @@ width-independent word encoding computable in polynomial time and a size measure
 bounded in the encoded input length. -/
 theorem UniformComputableInPolyTime.turingComputableInPolyTime
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {encode : α → List ℕ} {size f : α → ℕ}
     (h : UniformComputableInPolyTime B f (fun _ => encode) size)
     (hsize : PolyBounded (fun a => (encIn a).length) size)

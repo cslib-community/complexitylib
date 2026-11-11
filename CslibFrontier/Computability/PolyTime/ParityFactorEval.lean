@@ -1044,8 +1044,7 @@ theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
   have hp1 := fst encIn encUnary; have hi := snd encIn encUnary
   exact mapWithInput (range.comp' ((of_tidy ComputableTidilyInPolyTime.unary_max).comp'
       ((length_listIntBin hp).prod (length_listIntBin hq))))
-    (of_tidy (ComputableTidilyInPolyTime.intBin_add'
-      (listGetDWithInput (hp.comp' hp1) hi 0).tidy (listGetDWithInput (hq.comp' hp1) hi 0).tidy))
+    (intBin_add' (listGetDWithInput (hp.comp' hp1) hi 0) (listGetDWithInput (hq.comp' hp1) hi 0))
 
 /-- Polynomial-time certificate for `cauchyCoeff`. -/
 @[fun_prop] theorem computableInPolyTime_cauchyCoeff {p q : α → List ℤ} {k : α → ℕ}
@@ -1090,7 +1089,7 @@ theorem polyNorm1_le_two_pow_encList (l : List ℤ) :
     have hab := h1.snd'
     exact (cons' hab.snd' h1.fst').prod
       ((snd _ _).prod
-        (.of_tidy (ComputableTidilyInPolyTime.intBin_add' hab.fst'.tidy hab.snd'.tidy)))
+        (intBin_add' hab.fst' hab.snd'))
   let bound (L : ℕ) : ℕ := 2 * (L * (4 * L + 5)) + 6 * L + 8
   have hpoly : PolyBounded (fun x => (encIn x).length)
       (fun x => bound (encList encIntBin (p x)).length) := by growth_poly
@@ -1124,9 +1123,8 @@ private theorem taylorInvOneSubPow_polytime {ℓ : α → ℕ}
   have hstep : ComputableInPolyTime ParityFactorEval.prefixSumPoly
       (encList encIntBin) (encList encIntBin) :=
     mapWithInput (range.comp' (length_listIntBin id'))
-      (of_tidy (ComputableTidilyInPolyTime.intBin_sum.comp
-        (ComputableTidilyInPolyTime.listTakeWithInput (fst _ _).tidy
-          (unary_add' (snd _ _) (const 1)).tidy)))
+      (intBin_sum.comp (of_tidy (ComputableTidilyInPolyTime.listTakeWithInput (fst _ _).tidy
+        (unary_add' (snd _ _) (const 1)).tidy)))
   let bound (k : ℕ) : ℕ := k * (4 * k + 5)
   have hpoly : PolyBounded (fun x => (encIn x).length) (fun x => bound (ℓ x)) := by growth_poly
   refine (iterate hcnt hinit hstep hpoly fun x i hi => ?_).of_enc_eq fun _ => rfl
@@ -1272,7 +1270,7 @@ private theorem parityFactorCols_polytime {J ℓ : α → ℕ} {Δ : α → ℤ}
       encIn (encList (encList encIntBin)) := by
   have hcoeffs := computableInPolyTime_parityLinearCoeffs hℓ
   have hyT := computableInPolyTime_truncZJet hJ hyJet
-  have hnegΔ := (of_tidy ComputableTidilyInPolyTime.intBin_neg).comp' hΔ
+  have hnegΔ := intBin_neg.comp' hΔ
   have hhJet := computableInPolyTime_mulZJet hJ hyT
     (computableInPolyTime_polyAdd hyT (singleton_intBin_polytime hnegΔ))
   have hp1 : ComputableInPolyTime (Prod.fst (α := α) (β := ℕ))
