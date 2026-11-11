@@ -31,15 +31,15 @@ for the first accepted trial, or a default.
 **Per-seed analysis.** `card_filter_dpDecode_err_le_ge` fixes `P` and `b₀` and shows that at
 least half of the trial vectors give a hypothesis with error at most `ε #U`. It assumes that the
 tuples consistent with the seed have density at least `δ / 2` and that at most an `ε / 64`
-fraction of them disagree with `f` in `ε k / 64` or more positions. Discharging these hypotheses
-for many seeds is left to a later stacked change, the module
+fraction of them disagree with `f` in `ε k / 64` or more positions. The module
 `CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Density`
-(#4451 M6.3b1b). Until it lands, no decoding guarantee follows from this module alone, and the
-density headline and M6.3 remain open. The analysis follows the shape of IJKW's Lemmas 3.8–3.10.
-Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`, `(16 / δ) log (8 / ε)`) are ours, derived for
-the tuple formulation; they are not IJKW's. The parameter roles are swapped relative to IJKW's
-Theorem 1.2: `ε` here is their output error `δ`, and `δ` here is their agreement `ε`. The tuple
-form also omits their Algorithm 1 lookup that answers `x = aᵢ` with the corresponding output.
+discharges these hypotheses for a `δ / 4` fraction of seeds and proves the counting headline. The
+decoder's circuit size, and with it M6.3 of #4451, remains open. The analysis follows the shape
+of IJKW's Lemmas 3.8–3.10. Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`,
+`(16 / δ) log (8 / ε)`) are ours, derived for the tuple formulation; they are not IJKW's. The
+parameter roles are swapped relative to IJKW's Theorem 1.2: `ε` here is their output error `δ`,
+and `δ` here is their agreement `ε`. The tuple form also omits their Algorithm 1 lookup that
+answers `x = aᵢ` with the corresponding output.
 
 ## Main definitions
 
@@ -457,8 +457,7 @@ on the slice of `b₀` and at most an `ε / 64` fraction of them have `ε k / 64
 disagreements. If `k ≤ 2 #Pᶜ`, `#Pᶜ ≥ (64 / ε) log (4 / δ)` and `m ≥ (16 / δ) log (8 / ε)`, then the
 errors of the decoder, summed over inputs and trial vectors, are at most `ε #U N ^ m / 2`.
 These constants are ours (derived for the tuple formulation), not IJKW's. The two seed hypotheses
-are to be discharged for many seeds in a later stacked change, the module
-`DirectProduct.Density` (#4451 M6.3b1b); until then the density headline and M6.3 remain open. -/
+are discharged for a `δ / 4` fraction of seeds in the module `DirectProduct.Density`. -/
 theorem sum_card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f : U → V) (dflt : V)
     (P : Finset (Fin k)) (b₀ : Fin k → U) (m : ℕ) {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
     (hε1 : ε ≤ 1) (hδ1 : δ ≤ 1) (hk : k ≤ 2 * #Pᶜ) (hw : 64 / ε * Real.log (4 / δ) ≤ #Pᶜ)
@@ -591,8 +590,7 @@ theorem sum_card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f :
 /-- **A good seed decodes well for half of the trial vectors.** Under the hypotheses of
 `sum_card_filter_dpDecode_ne_le`, at least half of the trial vectors `v` give a hypothesis
 `dpDecode C' dflt P b₀ v` that differs from `f` on at most `ε #U` inputs. The two seed hypotheses
-are to be discharged for many seeds in a later stacked change, the module
-`DirectProduct.Density` (#4451 M6.3b1b); until then the density headline and M6.3 remain open. -/
+are discharged for a `δ / 4` fraction of seeds in the module `DirectProduct.Density`. -/
 theorem card_filter_dpDecode_err_le_ge (C' : (Fin k → U) → Fin k → V) (f : U → V) (dflt : V)
     (P : Finset (Fin k)) (b₀ : Fin k → U) (m : ℕ) {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
     (hε1 : ε ≤ 1) (hδ1 : δ ≤ 1) (hk : k ≤ 2 * #Pᶜ) (hw : 64 / ε * Real.log (4 / δ) ≤ #Pᶜ)
