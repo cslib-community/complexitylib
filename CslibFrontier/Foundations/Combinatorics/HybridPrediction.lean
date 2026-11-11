@@ -192,16 +192,29 @@ private theorem hits_top (E : ∀ t, Z t → Bool) (D : (∀ t, Z t × Bool) →
   rw [h]
   exact hD z b
 
-/-- **Predicting a masked channel.** Let `0 < T` and let `D` recover `b` from the pairs
-`(z t, E t (z t) + b)`, `t < T`, for every choice of the inputs `z` and the bit `b`. Then for some
-channel `t`, some pairs `base` and some trial bit `y₀`, the guess `y₀ + D (update base t (z, y₀))`
-equals `E t z` for at least a `1 / 2 + 1 / (2 T)` fraction of the inputs `z ∈ Z t`. -/
-theorem exists_card_add_decode_update_eq (hT : 0 < T) [∀ t, Nonempty (Z t)]
+/-- **Predicting a masked channel.** Let `D` recover `b` from the pairs `(z t, E t (z t) + b)`,
+`t < T`, for every choice of the inputs `z` and the bit `b`. Then for some channel `t`, some pairs
+`base` and some trial bit `y₀`, the guess `y₀ + D (update base t (z, y₀))` equals `E t z` for at
+least a `1 / 2 + 1 / (2 T)` fraction of the inputs `z ∈ Z t`. There is a channel: with none, `D`
+would return both bits on its one input. -/
+theorem exists_card_add_decode_update_eq [∀ t, Nonempty (Z t)]
     (E : ∀ t, Z t → Bool) (D : (∀ t, Z t × Bool) → Bool)
     (hD : ∀ (z : ∀ t, Z t) b, D (fun t => (z t, E t (z t) + b)) = b) :
     ∃ (t : Fin T) (base : ∀ t, Z t × Bool) (y₀ : Bool),
       Fintype.card (Z t) * (T + 1) ≤
         2 * T * #{z : Z t | y₀ + D (update base t (z, y₀)) = E t z} := by
+  -- With no channels, `D` would return both bits on its one input.
+  have hT : 0 < T := by
+    refine Nat.pos_of_ne_zero fun hT0 => ?_
+    subst hT0
+    have h₀ := hD (fun t => t.elim0) false
+    have h₁ := hD (fun t => t.elim0) true
+    have : (fun t : Fin 0 => ((fun t => t.elim0 : ∀ t, Z t) t,
+        E t ((fun t => t.elim0 : ∀ t, Z t) t) + false)) =
+        fun t => ((fun t => t.elim0 : ∀ t, Z t) t, E t ((fun t => t.elim0 : ∀ t, Z t) t) + true) :=
+      funext fun t => t.elim0
+    rw [this] at h₀
+    exact Bool.false_ne_true (h₀.symm.trans h₁)
   -- The hybrid gaps telescope.
   have hsumG : 2 * ∑ i, guesses E D i = (T + 1) * Fintype.card (Sample Z) := by
     have h1 := sum_congr rfl fun i (_ : i ∈ (univ : Finset (Fin T))) => guesses_step E D i

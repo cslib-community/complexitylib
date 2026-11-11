@@ -41,25 +41,32 @@ the deeper vertices lies in `A p.1`.
   assignment after a log and the validity of a log on a table.
 * `Cslib.Probability.MoserTardos.Adj`: labels that are equal or share a variable (the paper's
   inclusive neighbourhood `Γ⁺`).
-* `Cslib.Probability.MoserTardos.witness`: the witness structure of a step.
-* `Cslib.Probability.MoserTardos.Check`, `Cslib.Probability.MoserTardos.Proper`: the check of a
-  structure on a table, and properness (no two vertices on one level share a variable).
-* `Cslib.Probability.MoserTardos.shapes`: the finite set of structures rooted at `i` of depth at
-  most `H` in which each vertex is adjacent to a vertex one level up.
+* `Cslib.Probability.MoserTardos.witness`, `Cslib.Probability.MoserTardos.witnessRel`: the witness
+  structure of a step with respect to `Adj vbl` or a general relation `R`.
+* `Cslib.Probability.MoserTardos.Check`, `Cslib.Probability.MoserTardos.Proper`,
+  `Cslib.Probability.MoserTardos.ProperRel`: the check of a structure on a table, and properness
+  (no two vertices on one level are related).
+* `Cslib.Probability.MoserTardos.shapes`, `Cslib.Probability.MoserTardos.shapesRel`: the finite set
+  of structures rooted at `i` of depth at most `H` in which each vertex is related to a vertex one
+  level up.
+* `Cslib.Probability.MoserTardos.RootedRel`: root-and-parent invariant of a witness structure.
 
 ## Main results
 
 * `Cslib.Probability.MoserTardos.check_witness`: if `i :: w` is a valid log on `T`, the witness
   structure of the step passes its check on `T` (the coupling of [MoserTardos2010, Lemma 2.1]).
-* `Cslib.Probability.MoserTardos.proper_witness`: witness structures are proper, in the
-  level-independence sense proved in [MoserTardos2010, Lemma 2.1(i)].
-* `Cslib.Probability.MoserTardos.exists_witnesses`: the steps labelled `i` of a valid log give
-  that many distinct proper structures in `shapes`, all passing their checks.
+* `Cslib.Probability.MoserTardos.proper_witness`, `Cslib.Probability.MoserTardos.proper_witnessRel`:
+  witness structures are proper, in the level-independence sense proved in
+  [MoserTardos2010, Lemma 2.1(i)].
+* `Cslib.Probability.MoserTardos.exists_witnesses`,
+  `Cslib.Probability.MoserTardos.exists_witnessesRel`: the steps labelled `i` of a valid log give
+  that many distinct proper structures in `shapes` / `shapesRel`.
 * `Cslib.Probability.MoserTardos.depthUses_ne`: on a proper structure, distinct vertices whose
   labels share a variable read different samples of it.
-* `Cslib.Probability.MoserTardos.sum_prod_shapes_le`: under the local-lemma hypothesis, the
-  products `∏ p ∈ S, y p.1` sum over `shapes vbl i H` to at most `x i / (1 - x i)`
-  [MoserTardos2010, Section 3].
+* `Cslib.Probability.MoserTardos.sum_prod_shapes_le`,
+  `Cslib.Probability.MoserTardos.sum_prod_shapesRel_le`: under the local-lemma hypothesis, the
+  products `∏ p ∈ S, y p.1` sum over `shapes vbl i H` / `shapesRel R i H` to at most
+  `x i / (1 - x i)` [MoserTardos2010, Section 3].
 
 The paper bounds this sum by comparing a Galton–Watson process with the witness trees. We prove it
 by induction on the depth: the factor `∏ B ∈ Γ⁺ C, (1 - x B)⁻¹` charged to each label `C` on the
@@ -102,6 +109,14 @@ theorem current_apply (T : ∀ p : V × ℕ, α p.1) (w : List ι) (v : V) :
     current vbl T w v = T (v, uses vbl w v) := by
   rw [current]
 
+theorem uses_nil (v : V) : uses vbl [] v = 0 := by
+  simp [uses]
+
+theorem uses_cons (i : ι) (w : List ι) (v : V) :
+    uses vbl (i :: w) v = uses vbl w v + if v ∈ vbl i then 1 else 0 := by
+  unfold uses
+  by_cases h : v ∈ vbl i <;> simp [h]
+
 theorem isLog_nil (A : ι → Set (∀ v, α v)) (T : ∀ p : V × ℕ, α p.1) : IsLog vbl A T [] := by
   rw [IsLog]
   trivial
@@ -137,57 +152,151 @@ end Log
 
 section Structure
 
-variable [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V)
-
 /-- Labels `i` and `j` are equal or share a variable. -/
-def Adj (i j : ι) : Prop := i = j ∨ ¬Disjoint (vbl i) (vbl j)
+def Adj (vbl : ι → Finset V) (i j : ι) : Prop :=
+  i = j ∨ ¬Disjoint (vbl i) (vbl j)
 
-instance (i j : ι) : Decidable (Adj vbl i j) :=
+instance [DecidableEq ι] [DecidableEq V] (vbl : ι → Finset V) (i j : ι) :
+    Decidable (Adj vbl i j) :=
   inferInstanceAs (Decidable (i = j ∨ ¬Disjoint (vbl i) (vbl j)))
 
-omit [DecidableEq V] [DecidableEq ι] in
-theorem adj_comm {i j : ι} : Adj vbl i j ↔ Adj vbl j i := by
+theorem adj_comm (vbl : ι → Finset V) {i j : ι} :
+    Adj vbl i j ↔ Adj vbl j i := by
   unfold Adj
   rw [eq_comm, disjoint_comm]
 
-omit [DecidableEq V] [DecidableEq ι] in
-theorem adj_of_mem {i j : ι} {v : V} (hi : v ∈ vbl i) (hj : v ∈ vbl j) : Adj vbl i j :=
+theorem adj_refl (vbl : ι → Finset V) (i : ι) : Adj vbl i i :=
+  Or.inl rfl
+
+theorem adj_of_mem (vbl : ι → Finset V) {i j : ι} {v : V}
+    (hi : v ∈ vbl i) (hj : v ∈ vbl j) : Adj vbl i j :=
   Or.inr (Finset.not_disjoint_iff.2 ⟨v, hi, hj⟩)
 
-/-- One more than the deepest depth of a vertex of `S` adjacent to `j`, or `0` if there is
-none. -/
-private def level (j : ι) (S : Finset (ι × ℕ)) : ℕ :=
-  (S.filter fun p => Adj vbl p.1 j).sup fun p => p.2 + 1
+theorem adj_iff (vbl : ι → Finset V) {i j : ι} :
+    Adj vbl i j ↔ i = j ∨ ¬Disjoint (vbl i) (vbl j) := by
+  rw [Adj]
 
-/-- Attach `j` one level below the deepest vertex adjacent to it, if there is one. -/
-private def push (j : ι) (S : Finset (ι × ℕ)) : Finset (ι × ℕ) :=
-  if level vbl j S = 0 then S else insert (j, level vbl j S) S
+/-- One more than the deepest depth of a vertex of `S` related to `j` under `R`, or `0` if there
+is none. -/
+def levelRel (R : ι → ι → Prop) [DecidableRel R] (j : ι) (S : Finset (ι × ℕ)) : ℕ :=
+  (S.filter fun p => R p.1 j).sup fun p => p.2 + 1
+
+/-- Attach `j` one level below the deepest vertex of `S` related to `j` under `R`, if there is
+one. -/
+def pushRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (j : ι)
+    (S : Finset (ι × ℕ)) : Finset (ι × ℕ) :=
+  if levelRel R j S = 0 then S else insert (j, levelRel R j S) S
+
+/-- The witness structure of the step labelled `i` with earlier history `w` (latest first) with
+respect to dependency relation `R` [MoserTardos2010, Section 2, Section 6]. -/
+def witnessRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (i : ι) (w : List ι) :
+    Finset (ι × ℕ) :=
+  w.foldl (fun S j => pushRel R j S) {(i, 0)}
+
+/-- A structure is `R`-proper if distinct vertices on one level are not `R`-related. -/
+def ProperRel (R : ι → ι → Prop) (S : Finset (ι × ℕ)) : Prop :=
+  ∀ p ∈ S, ∀ q ∈ S, p ≠ q → p.2 = q.2 → ¬R p.1 q.1
 
 /-- The witness structure of the step labelled `i` with earlier history `w` (latest first): the
 `(label, depth)` pairs of the witness tree of [MoserTardos2010, Section 2]. -/
-def witness (i : ι) (w : List ι) : Finset (ι × ℕ) :=
-  w.foldl (fun S j => push vbl j S) {(i, 0)}
-
-/-- The number of vertices of `S` strictly deeper than `p` whose label contains `v`: the samples
-of `v` consumed before vertex `p` in the check of `S`. -/
-def depthUses (S : Finset (ι × ℕ)) (p : ι × ℕ) (v : V) : ℕ :=
-  #(S.filter fun q => p.2 < q.2 ∧ v ∈ vbl q.1)
-
-/-- The check of the structure `S` passes on the table `T`: processing the vertices from the
-deepest level up, each vertex `p` finds `A p.1` occurring on the next samples of its variables. -/
-def Check (A : ι → Set (∀ v, α v)) (S : Finset (ι × ℕ)) (T : ∀ p : V × ℕ, α p.1) : Prop :=
-  ∀ p ∈ S, (fun v => T (v, depthUses vbl S p v)) ∈ A p.1
-
-omit [DecidableEq ι] in
-theorem check_iff {A : ι → Set (∀ v, α v)} {S : Finset (ι × ℕ)} {T : ∀ p : V × ℕ, α p.1} :
-    Check vbl A S T ↔ ∀ p ∈ S, (fun v => T (v, depthUses vbl S p v)) ∈ A p.1 := by
-  rw [Check]
+def witness [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V) (i : ι) (w : List ι) :
+    Finset (ι × ℕ) :=
+  witnessRel (Adj vbl) i w
 
 /-- A structure is proper if distinct vertices on one level are not adjacent. This is the level
 independence established in the proof of [MoserTardos2010, Lemma 2.1(i)]; it implies the paper's
 properness (distinct children of a vertex receive distinct labels). -/
-def Proper (S : Finset (ι × ℕ)) : Prop :=
-  ∀ p ∈ S, ∀ q ∈ S, p ≠ q → p.2 = q.2 → ¬Adj vbl p.1 q.1
+def Proper (vbl : ι → Finset V) (S : Finset (ι × ℕ)) : Prop :=
+  ProperRel (Adj vbl) S
+
+theorem witness_eq_witnessRel [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V) (i : ι)
+    (w : List ι) : witness vbl i w = witnessRel (Adj vbl) i w := by
+  rw [witness]
+
+theorem proper_iff_properRel (vbl : ι → Finset V) (S : Finset (ι × ℕ)) :
+    Proper vbl S ↔ ProperRel (Adj vbl) S := by
+  rw [Proper]
+
+theorem witnessRel_nil (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (i : ι) :
+    witnessRel R i [] = {(i, 0)} := by
+  rw [witnessRel, List.foldl_nil]
+
+theorem witnessRel_append_singleton (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι]
+    (i : ι) (w : List ι) (j : ι) :
+    witnessRel R i (w ++ [j]) = pushRel R j (witnessRel R i w) := by
+  rw [witnessRel, List.foldl_append, List.foldl_cons, List.foldl_nil, witnessRel]
+
+theorem witnessRel_cons_of_not_rel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι]
+    {i j : ι} (hij : ¬R i j) (w : List ι) :
+    witnessRel R i (j :: w) = witnessRel R i w := by
+  have hl : levelRel R j {(i, 0)} = 0 := by
+    rw [levelRel, filter_singleton, ite_eq_right hij, sup_empty]
+    rfl
+  rw [witnessRel, List.foldl_cons, pushRel, ite_eq_left hl, witnessRel]
+
+theorem lt_levelRel {R : ι → ι → Prop} [DecidableRel R] {j : ι} {S : Finset (ι × ℕ)}
+    {q : ι × ℕ} (hq : q ∈ S) (h : R q.1 j) : q.2 < levelRel R j S :=
+  Nat.lt_of_succ_le (le_sup (f := fun p : ι × ℕ => p.2 + 1) (mem_filter.2 ⟨hq, h⟩))
+
+theorem levelRel_eq_zero {R : ι → ι → Prop} [DecidableRel R] {j : ι} {S : Finset (ι × ℕ)}
+    (h : levelRel R j S = 0) {q : ι × ℕ} (hq : q ∈ S) : ¬R q.1 j := fun ha => by
+  have := lt_levelRel hq ha
+  omega
+
+theorem levelRel_eq_zero_iff {R : ι → ι → Prop} [DecidableRel R] {j : ι} {S : Finset (ι × ℕ)} :
+    levelRel R j S = 0 ↔ ∀ q ∈ S, ¬R q.1 j := by
+  refine ⟨fun h q hq => levelRel_eq_zero h hq, fun h => ?_⟩
+  rw [levelRel, filter_eq_empty_iff.2 fun q hq => h q hq, sup_empty]
+  rfl
+
+theorem levelRel_notMem {R : ι → ι → Prop} [DecidableRel R] (hRr : ∀ i, R i i)
+    (j : ι) (S : Finset (ι × ℕ)) : (j, levelRel R j S) ∉ S := fun hm =>
+  lt_irrefl _ (lt_levelRel (R := R) (j := j) (q := (j, levelRel R j S)) hm (hRr j))
+
+theorem pushRel_of_eq_zero {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    {j : ι} {S : Finset (ι × ℕ)} (h : levelRel R j S = 0) : pushRel R j S = S := by
+  rw [pushRel, ite_eq_left h]
+
+theorem pushRel_of_ne_zero {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    {j : ι} {S : Finset (ι × ℕ)} (h : levelRel R j S ≠ 0) :
+    pushRel R j S = insert (j, levelRel R j S) S := by
+  rw [pushRel, ite_eq_right h]
+
+theorem levelRel_insert_of_not_rel {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    {a b : ι} (hab : ¬R a b) (l : ℕ) (S : Finset (ι × ℕ)) :
+    levelRel R b (insert (a, l) S) = levelRel R b S := by
+  rw [levelRel, filter_insert, ite_eq_right hab, levelRel]
+
+theorem pushRel_comm_of_not_rel {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    {a b : ι} (hab : ¬R a b) (hba : ¬R b a) (S : Finset (ι × ℕ)) :
+    pushRel R a (pushRel R b S) = pushRel R b (pushRel R a S) := by
+  by_cases ha : levelRel R a S = 0 <;> by_cases hb : levelRel R b S = 0
+  · simp [pushRel, ha, hb]
+  · rw [pushRel_of_eq_zero ha, pushRel_of_ne_zero hb,
+      pushRel_of_eq_zero (by rw [levelRel_insert_of_not_rel hba, ha])]
+  · rw [pushRel_of_eq_zero hb, pushRel_of_ne_zero ha,
+      pushRel_of_eq_zero (by rw [levelRel_insert_of_not_rel hab, hb])]
+  · rw [pushRel_of_ne_zero hb, pushRel_of_ne_zero ha,
+      pushRel_of_ne_zero (by rwa [levelRel_insert_of_not_rel hba]),
+      pushRel_of_ne_zero (by rwa [levelRel_insert_of_not_rel hab]),
+      levelRel_insert_of_not_rel hba, levelRel_insert_of_not_rel hab, insert_comm]
+
+/-- The number of vertices of `S` strictly deeper than `p` whose label contains `v`: the samples
+of `v` consumed before vertex `p` in the check of `S`. -/
+def depthUses [DecidableEq V] (vbl : ι → Finset V) (S : Finset (ι × ℕ)) (p : ι × ℕ) (v : V) :
+    ℕ :=
+  #(S.filter fun q => p.2 < q.2 ∧ v ∈ vbl q.1)
+
+/-- The check of the structure `S` passes on the table `T`: processing the vertices from the
+deepest level up, each vertex `p` finds `A p.1` occurring on the next samples of its variables. -/
+def Check [DecidableEq V] (vbl : ι → Finset V) (A : ι → Set (∀ v, α v)) (S : Finset (ι × ℕ))
+    (T : ∀ p : V × ℕ, α p.1) : Prop :=
+  ∀ p ∈ S, (fun v => T (v, depthUses vbl S p v)) ∈ A p.1
+
+theorem check_iff [DecidableEq V] (vbl : ι → Finset V) {A : ι → Set (∀ v, α v)}
+    {S : Finset (ι × ℕ)} {T : ∀ p : V × ℕ, α p.1} :
+    Check vbl A S T ↔ ∀ p ∈ S, (fun v => T (v, depthUses vbl S p v)) ∈ A p.1 := by
+  rw [Check]
 
 end Structure
 
@@ -209,46 +318,35 @@ private theorem check_of_shift_of_not_adj (A : ι → Set (∀ v, α v))
   simp only [shift]
   rw [ite_eq_right (Finset.disjoint_left.1 hdisj (Finset.mem_coe.1 hv)), add_zero]
 
-private theorem lt_level {j : ι} {S : Finset (ι × ℕ)} {q : ι × ℕ} (hq : q ∈ S)
-    (h : Adj vbl q.1 j) : q.2 < level vbl j S :=
-  Nat.lt_of_succ_le (le_sup (f := fun p : ι × ℕ => p.2 + 1) (mem_filter.2 ⟨hq, h⟩))
-
-private theorem level_eq_zero {j : ι} {S : Finset (ι × ℕ)} (h : level vbl j S = 0) {q : ι × ℕ}
-    (hq : q ∈ S) : ¬Adj vbl q.1 j := fun ha => by
-  have := lt_level vbl hq ha
-  omega
-
-private theorem level_notMem (j : ι) (S : Finset (ι × ℕ)) : (j, level vbl j S) ∉ S := fun hm =>
-  lt_irrefl _ (lt_level vbl (j := j) (q := (j, level vbl j S)) hm (Or.inl rfl))
-
 private theorem depthUses_push_old {j : ι} {S : Finset (ι × ℕ)} {p : ι × ℕ} (hp : p ∈ S) {v : V}
     (hv : v ∈ vbl p.1) :
-    depthUses vbl (insert (j, level vbl j S) S) p v =
+    depthUses vbl (insert (j, levelRel (Adj vbl) j S) S) p v =
       depthUses vbl S p v + if v ∈ vbl j then 1 else 0 := by
   unfold depthUses
   rw [filter_insert]
   by_cases hvj : v ∈ vbl j
-  · have hlt : p.2 < level vbl j S := lt_level vbl hp (adj_of_mem vbl hv hvj)
+  · have hlt : p.2 < levelRel (Adj vbl) j S := lt_levelRel hp (adj_of_mem vbl hv hvj)
     rw [ite_eq_left ⟨hlt, hvj⟩,
-      card_insert_of_notMem (fun hm => level_notMem vbl j S (mem_filter.1 hm).1), ite_eq_left hvj]
+      card_insert_of_notMem (fun hm => levelRel_notMem (adj_refl vbl) j S (mem_filter.1 hm).1),
+      ite_eq_left hvj]
   · rw [ite_eq_right (fun h => hvj h.2), ite_eq_right hvj, add_zero]
 
 private theorem depthUses_push_new {j : ι} {S : Finset (ι × ℕ)} {v : V} (hv : v ∈ vbl j) :
-    depthUses vbl (insert (j, level vbl j S) S) (j, level vbl j S) v = 0 := by
+    depthUses vbl (insert (j, levelRel (Adj vbl) j S) S) (j, levelRel (Adj vbl) j S) v = 0 := by
   unfold depthUses
   rw [card_eq_zero, filter_eq_empty_iff]
   intro q hq ⟨hlt, hqv⟩
   rcases mem_insert.1 hq with rfl | hq
   · exact lt_irrefl _ hlt
-  · exact lt_asymm hlt (lt_level vbl hq (adj_of_mem vbl hqv hv))
+  · exact lt_asymm hlt (lt_levelRel hq (adj_of_mem vbl hqv hv))
 
 private theorem check_push (A : ι → Set (∀ v, α v))
     (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V)) {j : ι} {S : Finset (ι × ℕ)}
     {T : ∀ p : V × ℕ, α p.1} (hj : current vbl T [] ∈ A j)
-    (h : Check vbl A S (shift vbl j T)) : Check vbl A (push vbl j S) T := by
-  unfold push
+    (h : Check vbl A S (shift vbl j T)) : Check vbl A (pushRel (Adj vbl) j S) T := by
+  unfold pushRel
   split_ifs with h0
-  · exact check_of_shift_of_not_adj vbl A hA (fun q hq => level_eq_zero vbl h0 hq) h
+  · exact check_of_shift_of_not_adj vbl A hA (fun q hq => levelRel_eq_zero h0 hq) h
   intro p hp
   rcases mem_insert.1 hp with rfl | hp
   · refine (hA j (fun v hv => ?_)).mp hj
@@ -268,7 +366,7 @@ theorem check_witness (A : ι → Set (∀ v, α v))
   induction w using List.reverseRecOn with
   | nil =>
     intro T h p hp
-    rw [witness, List.foldl_nil, mem_singleton] at hp
+    rw [witness, witnessRel_nil, mem_singleton] at hp
     subst hp
     refine (hA i (fun v _ => ?_)).mp h.1
     have h0 : depthUses vbl {(i, 0)} (i, 0) v = 0 := by
@@ -277,39 +375,37 @@ theorem check_witness (A : ι → Set (∀ v, α v))
       intro q hq hlt
       rw [mem_singleton.1 hq] at hlt
       exact lt_irrefl _ hlt.1
-    simp only [current, uses, List.filter_nil, List.length_nil, witness, List.foldl_nil]
-    rw [h0]
+    simp only [current, uses, List.filter_nil, List.length_nil]
+    rw [witness, witnessRel_nil, h0]
   | append_singleton w j ih =>
     intro T h
     rw [← List.cons_append, isLog_append] at h
-    rw [witness, List.foldl_append, List.foldl_cons, List.foldl_nil]
+    rw [witness, witnessRel_append_singleton]
     exact check_push vbl A hA h.1 (ih _ h.2)
 
 end Coupling
 
 section Proper
 
-variable [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V)
-
-private theorem proper_push {j : ι} {S : Finset (ι × ℕ)} (hS : Proper vbl S) :
-    Proper vbl (push vbl j S) := by
-  unfold push
+private theorem properRel_push {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    (hRs : ∀ {i j}, R i j → R j i) {j : ι} {S : Finset (ι × ℕ)} (hS : ProperRel R S) :
+    ProperRel R (pushRel R j S) := by
+  unfold pushRel
   split_ifs with h0
   · exact hS
-  have key : ∀ q ∈ S, q.2 = level vbl j S → ¬Adj vbl q.1 j := fun q hq he ha =>
-    (lt_level vbl hq ha).ne he
+  have key : ∀ q ∈ S, q.2 = levelRel R j S → ¬R q.1 j := fun q hq he ha =>
+    (lt_levelRel hq ha).ne he
   intro p hp q hq hpq he
   rcases mem_insert.1 hp with rfl | hp <;> rcases mem_insert.1 hq with rfl | hq
   · exact absurd rfl hpq
-  · rw [adj_comm]
-    exact key q hq he.symm
+  · exact fun ha => key q hq he.symm (hRs ha)
   · exact key p hp he
   · exact hS p hp q hq hpq he
 
-/-- Witness structures are proper, in the level-independence sense of `Proper`
-[MoserTardos2010, Lemma 2.1(i)]. -/
-theorem proper_witness (i : ι) (w : List ι) : Proper vbl (witness vbl i w) := by
-  unfold witness
+/-- Witness structures for a symmetric relation `R` are `R`-proper. -/
+theorem proper_witnessRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι]
+    (hRs : ∀ {i j}, R i j → R j i) (i : ι) (w : List ι) : ProperRel R (witnessRel R i w) := by
+  unfold witnessRel
   induction w using List.reverseRecOn with
   | nil =>
     intro p hp q hq hpq
@@ -317,14 +413,19 @@ theorem proper_witness (i : ι) (w : List ι) : Proper vbl (witness vbl i w) := 
     exact absurd (hp.trans hq.symm) hpq
   | append_singleton w j ih =>
     rw [List.foldl_append, List.foldl_cons, List.foldl_nil]
-    exact proper_push vbl ih
+    exact properRel_push hRs ih
 
-omit [DecidableEq ι] in
+/-- Witness structures are proper, in the level-independence sense of `Proper`
+[MoserTardos2010, Lemma 2.1(i)]. -/
+theorem proper_witness [DecidableEq V] [DecidableEq ι] (vbl : ι → Finset V) (i : ι)
+    (w : List ι) : Proper vbl (witness vbl i w) :=
+  proper_witnessRel (Adj vbl) (fun h => (adj_comm vbl).1 h) i w
+
 /-- On a proper structure, distinct vertices whose labels both contain `v` read different samples
 of `v`. -/
-theorem depthUses_ne {S : Finset (ι × ℕ)} (hS : Proper vbl S) {p q : ι × ℕ} (hp : p ∈ S)
-    (hq : q ∈ S) (hpq : p ≠ q) {v : V} (hvp : v ∈ vbl p.1) (hvq : v ∈ vbl q.1) :
-    depthUses vbl S p v ≠ depthUses vbl S q v := by
+theorem depthUses_ne [DecidableEq V] (vbl : ι → Finset V) {S : Finset (ι × ℕ)}
+    (hS : Proper vbl S) {p q : ι × ℕ} (hp : p ∈ S) (hq : q ∈ S) (hpq : p ≠ q) {v : V}
+    (hvp : v ∈ vbl p.1) (hvq : v ∈ vbl q.1) : depthUses vbl S p v ≠ depthUses vbl S q v := by
   have key : ∀ {a b : ι × ℕ}, a ∈ S → b ∈ S → a.2 < b.2 → v ∈ vbl b.1 →
       depthUses vbl S b v < depthUses vbl S a v := by
     intro a b ha hb hlt hvb
@@ -339,27 +440,31 @@ theorem depthUses_ne {S : Finset (ι × ℕ)} (hS : Proper vbl S) {p q : ι × �
   · exact (key hq hp h hvp).ne
 
 /-- The number of vertices of `S` labelled `i`. -/
-private def labelCount (i : ι) (S : Finset (ι × ℕ)) : ℕ := #(S.filter fun p => p.1 = i)
+private def labelCount [DecidableEq ι] (i : ι) (S : Finset (ι × ℕ)) : ℕ :=
+  #(S.filter fun p => p.1 = i)
 
-private theorem labelCount_push_self {i : ι} {S : Finset (ι × ℕ)} (h : 0 < labelCount i S) :
-    labelCount i (push vbl i S) = labelCount i S + 1 := by
+private theorem labelCount_pushRel_self {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    (hRr : ∀ i, R i i) {i : ι} {S : Finset (ι × ℕ)} (h : 0 < labelCount i S) :
+    labelCount i (pushRel R i S) = labelCount i S + 1 := by
   obtain ⟨q, hq⟩ := card_pos.1 h
   rw [mem_filter] at hq
-  have hl : q.2 < level vbl i S := lt_level vbl hq.1 (Or.inl hq.2)
-  unfold push labelCount
+  have hl : q.2 < levelRel R i S := lt_levelRel hq.1 (hq.2 ▸ hRr i)
+  unfold pushRel labelCount
   rw [ite_eq_right (by omega), filter_insert, ite_eq_left rfl,
-    card_insert_of_notMem (fun hm => level_notMem vbl i S (mem_filter.1 hm).1)]
+    card_insert_of_notMem (fun hm => levelRel_notMem hRr i S (mem_filter.1 hm).1)]
 
-private theorem labelCount_push_ne {i j : ι} (hij : j ≠ i) (S : Finset (ι × ℕ)) :
-    labelCount i (push vbl j S) = labelCount i S := by
-  unfold push labelCount
+private theorem labelCount_pushRel_ne {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    {i j : ι} (hij : j ≠ i) (S : Finset (ι × ℕ)) :
+    labelCount i (pushRel R j S) = labelCount i S := by
+  unfold pushRel labelCount
   split_ifs
   · rfl
   · rw [filter_insert, ite_eq_right hij]
 
-private theorem labelCount_witness (i : ι) (w : List ι) :
-    labelCount i (witness vbl i w) = w.count i + 1 := by
-  unfold witness
+private theorem labelCount_witnessRel {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι]
+    (hRr : ∀ i, R i i) (i : ι) (w : List ι) :
+    labelCount i (witnessRel R i w) = w.count i + 1 := by
+  unfold witnessRel
   induction w using List.reverseRecOn with
   | nil =>
     simp only [List.foldl_nil, List.count_nil, zero_add, labelCount]
@@ -368,73 +473,93 @@ private theorem labelCount_witness (i : ι) (w : List ι) :
     rw [List.foldl_append, List.foldl_cons, List.foldl_nil, List.count_append]
     by_cases hj : j = i
     · subst hj
-      rw [labelCount_push_self vbl (by omega), ih, List.count_singleton_self]
-    · rw [labelCount_push_ne vbl hj, ih, List.count_singleton]
+      rw [labelCount_pushRel_self hRr (by omega), ih, List.count_singleton_self]
+    · rw [labelCount_pushRel_ne hj, ih, List.count_singleton]
       simp [hj]
 
 end Proper
 
 section Shapes
 
-variable [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V)
-
 /-- The labels on level `l` of `S`. -/
-private def lvl (S : Finset (ι × ℕ)) (l : ℕ) : Finset ι :=
+private def lvl [DecidableEq ι] (S : Finset (ι × ℕ)) (l : ℕ) : Finset ι :=
   (S.filter fun p => p.2 = l).image Prod.fst
 
-/-- The labels adjacent to some label of `I`, including those of `I`. -/
-private def nbr (I : Finset ι) : Finset ι := univ.filter fun j => ∃ i ∈ I, Adj vbl i j
+/-- The labels `R`-related to some label of `I`. -/
+private def nbrRel (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
+    (I : Finset ι) : Finset ι :=
+  univ.filter fun j => ∃ i ∈ I, R i j
+
+/-- The structures rooted at `i` of depth at most `H` in which every label on level `l + 1` is
+`R`-related to some label on level `l`. -/
+def shapesRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι] (i : ι) :
+    ℕ → Finset (Finset (ι × ℕ))
+  | 0 => {{(i, 0)}}
+  | H + 1 => (shapesRel R i H).biUnion fun S =>
+      (nbrRel R (lvl S H)).powerset.image fun J => S ∪ J.image fun j => (j, H + 1)
 
 /-- The structures rooted at `i` of depth at most `H` in which every label on level `l + 1` is
 adjacent to some label on level `l`. They include all witness structures rooted at `i` of depth
 at most `H`. -/
-def shapes (i : ι) : ℕ → Finset (Finset (ι × ℕ))
-  | 0 => {{(i, 0)}}
-  | H + 1 => (shapes i H).biUnion fun S =>
-      (nbr vbl (lvl S H)).powerset.image fun J => S ∪ J.image fun j => (j, H + 1)
+def shapes [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V) (i : ι) (H : ℕ) :
+    Finset (Finset (ι × ℕ)) :=
+  shapesRel (Adj vbl) i H
 
-theorem shapes_mono (i : ι) (H : ℕ) : shapes vbl i H ⊆ shapes vbl i (H + 1) := fun S hS => by
-  rw [shapes, mem_biUnion]
+theorem shapes_eq_shapesRel [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V)
+    (i : ι) (H : ℕ) : shapes vbl i H = shapesRel (Adj vbl) i H := by
+  rw [shapes]
+
+theorem shapesRel_mono (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    (i : ι) (H : ℕ) : shapesRel R i H ⊆ shapesRel R i (H + 1) := fun S hS => by
+  rw [shapesRel, mem_biUnion]
   exact ⟨S, hS, mem_image.2 ⟨∅, empty_mem_powerset _, by simp⟩⟩
 
-/-- The members of `shapes vbl i H` have depth at most `H`. -/
-theorem le_of_mem_shapes {i : ι} : ∀ {H : ℕ} {S : Finset (ι × ℕ)}, S ∈ shapes vbl i H →
-    ∀ p ∈ S, p.2 ≤ H
+theorem shapes_mono [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V)
+    (i : ι) (H : ℕ) : shapes vbl i H ⊆ shapes vbl i (H + 1) :=
+  shapesRel_mono (Adj vbl) i H
+
+/-- The members of `shapesRel R i H` have depth at most `H`. -/
+theorem le_of_mem_shapesRel {R : ι → ι → Prop} [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    {i : ι} : ∀ {H : ℕ} {S : Finset (ι × ℕ)}, S ∈ shapesRel R i H → ∀ p ∈ S, p.2 ≤ H
   | 0, S, hS, p, hp => by
-    rw [shapes, mem_singleton] at hS
+    rw [shapesRel, mem_singleton] at hS
     subst hS
     rw [mem_singleton.1 hp]
   | H + 1, S, hS, p, hp => by
-    rw [shapes, mem_biUnion] at hS
+    rw [shapesRel, mem_biUnion] at hS
     obtain ⟨S₀, hS₀, hS⟩ := hS
     obtain ⟨J, -, rfl⟩ := mem_image.1 hS
     rcases mem_union.1 hp with hp | hp
-    · exact (le_of_mem_shapes hS₀ p hp).trans (Nat.le_succ H)
+    · exact (le_of_mem_shapesRel hS₀ p hp).trans (Nat.le_succ H)
     · obtain ⟨j, -, rfl⟩ := mem_image.1 hp
       exact le_rfl
 
-omit [Fintype ι] in
-/-- A structure rooted at `i` in which every vertex below the root has an adjacent parent one
+/-- The members of `shapes vbl i H` have depth at most `H`. -/
+theorem le_of_mem_shapes [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V)
+    {i : ι} {H : ℕ} {S : Finset (ι × ℕ)} (hS : S ∈ shapes vbl i H) : ∀ p ∈ S, p.2 ≤ H :=
+  le_of_mem_shapesRel hS
+
+/-- A structure rooted at `i` in which every vertex below the root has an `R`-related parent one
 level up. -/
-private structure Rooted (i : ι) (S : Finset (ι × ℕ)) : Prop where
+structure RootedRel (R : ι → ι → Prop) (i : ι) (S : Finset (ι × ℕ)) : Prop where
   root : (i, 0) ∈ S
   zero : ∀ p ∈ S, p.2 = 0 → p = (i, 0)
-  parent : ∀ p ∈ S, p.2 ≠ 0 → ∃ q ∈ S, q.2 + 1 = p.2 ∧ Adj vbl q.1 p.1
+  parent : ∀ p ∈ S, p.2 ≠ 0 → ∃ q ∈ S, q.2 + 1 = p.2 ∧ R q.1 p.1
 
-omit [Fintype ι] in
-private theorem exists_of_level_ne_zero {j : ι} {S : Finset (ι × ℕ)} (h : level vbl j S ≠ 0) :
-    ∃ q ∈ S, q.2 + 1 = level vbl j S ∧ Adj vbl q.1 j := by
-  have hne : (S.filter fun p => Adj vbl p.1 j).Nonempty := by
+theorem exists_of_levelRel_ne_zero {R : ι → ι → Prop} [DecidableRel R] {j : ι}
+    {S : Finset (ι × ℕ)} (h : levelRel R j S ≠ 0) :
+    ∃ q ∈ S, q.2 + 1 = levelRel R j S ∧ R q.1 j := by
+  have hne : (S.filter fun p => R p.1 j).Nonempty := by
     by_contra hc
     rw [not_nonempty_iff_eq_empty] at hc
-    exact h (by rw [level, hc, sup_empty]; rfl)
+    exact h (by rw [levelRel, hc, sup_empty]; rfl)
   obtain ⟨q, hq, he⟩ := exists_mem_eq_sup _ hne fun p : ι × ℕ => p.2 + 1
   rw [mem_filter] at hq
   exact ⟨q, hq.1, he.symm, hq.2⟩
 
-omit [Fintype ι] in
-private theorem rooted_witness (i : ι) (w : List ι) : Rooted vbl i (witness vbl i w) := by
-  unfold witness
+theorem rooted_witnessRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι]
+    (i : ι) (w : List ι) : RootedRel R i (witnessRel R i w) := by
+  unfold witnessRel
   induction w using List.reverseRecOn with
   | nil =>
     refine ⟨by simp, fun p hp _ => by simpa using hp, fun p hp hp0 => ?_⟩
@@ -442,7 +567,7 @@ private theorem rooted_witness (i : ι) (w : List ι) : Rooted vbl i (witness vb
     exact absurd (by rw [hp]) hp0
   | append_singleton w j ih =>
     rw [List.foldl_append, List.foldl_cons, List.foldl_nil]
-    unfold push
+    unfold pushRel
     split_ifs with h0
     · exact ih
     refine ⟨mem_insert_of_mem ih.root, fun p hp hp0 => ?_, fun p hp hp0 => ?_⟩
@@ -450,14 +575,14 @@ private theorem rooted_witness (i : ι) (w : List ι) : Rooted vbl i (witness vb
       · exact absurd hp0 h0
       · exact ih.zero p hp hp0
     · rcases mem_insert.1 hp with rfl | hp
-      · obtain ⟨q, hq, he, ha⟩ := exists_of_level_ne_zero vbl h0
+      · obtain ⟨q, hq, he, ha⟩ := exists_of_levelRel_ne_zero h0
         exact ⟨q, mem_insert_of_mem hq, he, ha⟩
       · obtain ⟨q, hq, he, ha⟩ := ih.parent p hp hp0
         exact ⟨q, mem_insert_of_mem hq, he, ha⟩
 
-omit [Fintype ι] in
-private theorem witness_le (i : ι) (w : List ι) : ∀ p ∈ witness vbl i w, p.2 ≤ w.length := by
-  unfold witness
+theorem witnessRel_le (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] (i : ι) (w : List ι) :
+    ∀ p ∈ witnessRel R i w, p.2 ≤ w.length := by
+  unfold witnessRel
   induction w using List.reverseRecOn with
   | nil =>
     intro p hp
@@ -467,34 +592,35 @@ private theorem witness_le (i : ι) (w : List ι) : ∀ p ∈ witness vbl i w, p
     rw [List.foldl_append, List.foldl_cons, List.foldl_nil, List.length_append,
       List.length_singleton]
     intro p hp
-    unfold push at hp
+    unfold pushRel at hp
     split_ifs at hp
     · exact (ih p hp).trans (Nat.le_succ _)
     · rcases mem_insert.1 hp with rfl | hp
       · exact Finset.sup_le fun p hp => Nat.succ_le_succ (ih p (mem_filter.1 hp).1)
       · exact (ih p hp).trans (Nat.le_succ _)
 
-private theorem mem_shapes {i : ι} : ∀ (H : ℕ) {S : Finset (ι × ℕ)}, Rooted vbl i S →
-    (∀ p ∈ S, p.2 ≤ H) → S ∈ shapes vbl i H
+theorem mem_shapesRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    {i : ι} : ∀ (H : ℕ) {S : Finset (ι × ℕ)}, RootedRel R i S → (∀ p ∈ S, p.2 ≤ H) →
+    S ∈ shapesRel R i H
   | 0, S, hS, hH => by
-    rw [shapes, mem_singleton]
+    rw [shapesRel, mem_singleton]
     refine eq_singleton_iff_unique_mem.2 ⟨hS.root, fun p hp => hS.zero p hp ?_⟩
     have := hH p hp
     omega
   | H + 1, S, hS, hH => by
     set S' := S.filter fun p => p.2 ≤ H with hS'
-    have hR : Rooted vbl i S' := by
+    have hR : RootedRel R i S' := by
       refine ⟨mem_filter.2 ⟨hS.root, Nat.zero_le _⟩, fun p hp => hS.zero p (mem_filter.1 hp).1,
         fun p hp hp0 => ?_⟩
       obtain ⟨q, hq, he, ha⟩ := hS.parent p (mem_filter.1 hp).1 hp0
       exact ⟨q, mem_filter.2 ⟨hq, by have := (mem_filter.1 hp).2; omega⟩, he, ha⟩
-    have hmem := mem_shapes H hR fun p hp => (mem_filter.1 hp).2
-    rw [shapes, mem_biUnion]
+    have hmem := mem_shapesRel R H hR fun p hp => (mem_filter.1 hp).2
+    rw [shapesRel, mem_biUnion]
     refine ⟨S', hmem, mem_image.2 ⟨lvl S (H + 1), mem_powerset.2 fun j hj => ?_, ?_⟩⟩
     · obtain ⟨p, hp, rfl⟩ := mem_image.1 hj
       rw [mem_filter] at hp
       obtain ⟨q, hq, he, ha⟩ := hS.parent p hp.1 (by omega)
-      rw [nbr, mem_filter]
+      rw [nbrRel, mem_filter]
       refine ⟨mem_univ _, q.1, mem_image.2 ⟨q, mem_filter.2 ⟨mem_filter.2 ⟨hq, by omega⟩,
         by omega⟩, rfl⟩, ha⟩
     · ext p
@@ -511,18 +637,20 @@ private theorem mem_shapes {i : ι} : ∀ (H : ℕ) {S : Finset (ι × ℕ)}, Ro
           have := hH p hp
           exact Prod.ext rfl (show H + 1 = p.2 by omega)
 
-/-- **Witness structures of a log.** If `w` is a valid log on `T` of length at most `H`, there
-are `w.count i` distinct structures in `shapes vbl i H`, all proper and passing their checks on
-`T`: the witness structures of the steps labelled `i` [MoserTardos2010, Section 2]. -/
-theorem exists_witnesses (A : ι → Set (∀ v, α v))
-    (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V)) (T : ∀ p : V × ℕ, α p.1) (i : ι) (H : ℕ)
-    (w : List ι) (hw : IsLog vbl A T w) (hl : w.length ≤ H) :
+/-- Given a reflexive, symmetric relation `R` and any tail-closed predicate `P` on logs, the
+steps labelled `i` of a log `w` of length at most `H` yield `w.count i` distinct `R`-proper
+structures in `shapesRel R i H`, each witnessed by a tail `i :: u` of `w`. -/
+theorem exists_witnessesRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    (hRr : ∀ i, R i i) (hRs : ∀ {i j}, R i j → R j i) (i : ι) (H : ℕ) (w : List ι)
+    (hl : w.length ≤ H) (P : List ι → Prop) (hP_tail : ∀ a u, P (a :: u) → P u) (hw : P w) :
     ∃ W : Finset (Finset (ι × ℕ)), #W = w.count i ∧
-      ∀ S ∈ W, S ∈ shapes vbl i H ∧ Proper vbl S ∧ Check vbl A S T := by
-  suffices h : ∀ w : List ι, IsLog vbl A T w → w.length ≤ H →
+      ∀ S ∈ W, S ∈ shapesRel R i H ∧ ProperRel R S ∧
+        ∃ u : List ι, S = witnessRel R i u ∧ P (i :: u) := by
+  suffices h : ∀ w : List ι, P w → w.length ≤ H →
       ∃ W : Finset (Finset (ι × ℕ)), #W = w.count i ∧
         (∀ S ∈ W, labelCount i S ≤ w.count i) ∧
-        ∀ S ∈ W, S ∈ shapes vbl i H ∧ Proper vbl S ∧ Check vbl A S T by
+        ∀ S ∈ W, S ∈ shapesRel R i H ∧ ProperRel R S ∧
+          ∃ u : List ι, S = witnessRel R i u ∧ P (i :: u) by
     obtain ⟨W, hcard, -, hW⟩ := h w hw hl
     exact ⟨W, hcard, hW⟩
   intro w
@@ -533,56 +661,74 @@ theorem exists_witnesses (A : ι → Set (∀ v, α v))
     have hl' : w.length ≤ H := by
       simp only [List.length_cons] at hl
       omega
-    obtain ⟨W, hcard, hlab, hsub⟩ := ih ((isLog_cons vbl).1 h).2 hl'
+    obtain ⟨W, hcard, hlab, hsub⟩ := ih (hP_tail j w h) hl'
     by_cases hj : j = i
     · subst hj
-      have hnew : witness vbl j w ∉ W := fun hm => by
+      have hnew : witnessRel R j w ∉ W := fun hm => by
         have := hlab _ hm
-        rw [labelCount_witness] at this
+        rw [labelCount_witnessRel hRr] at this
         omega
-      refine ⟨insert (witness vbl j w) W, ?_, fun S hS => ?_, fun S hS => ?_⟩
+      refine ⟨insert (witnessRel R j w) W, ?_, fun S hS => ?_, fun S hS => ?_⟩
       · rw [card_insert_of_notMem hnew, hcard, List.count_cons_self]
       · rw [List.count_cons_self]
         rcases mem_insert.1 hS with rfl | hS
-        · rw [labelCount_witness]
+        · rw [labelCount_witnessRel hRr]
         · exact (hlab S hS).trans (Nat.le_succ _)
       · rcases mem_insert.1 hS with rfl | hS
-        · exact ⟨mem_shapes vbl H (rooted_witness vbl j w)
-            fun p hp => (witness_le vbl j w p hp).trans hl', proper_witness vbl j w,
-            check_witness vbl A hA j w T h⟩
+        · exact ⟨mem_shapesRel R H (rooted_witnessRel R j w)
+            fun p hp => (witnessRel_le R j w p hp).trans hl',
+            proper_witnessRel R hRs j w, ⟨w, rfl, h⟩⟩
         · exact hsub S hS
     · refine ⟨W, ?_, fun S hS => ?_, hsub⟩
       · rw [hcard, List.count_cons_of_ne hj]
       · rw [List.count_cons_of_ne hj]
         exact hlab S hS
 
+/-- **Witness structures of a log.** If `w` is a valid log on `T` of length at most `H`, there
+are `w.count i` distinct structures in `shapes vbl i H`, all proper and passing their checks on
+`T`: the witness structures of the steps labelled `i` [MoserTardos2010, Section 2]. -/
+theorem exists_witnesses [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V)
+    (A : ι → Set (∀ v, α v)) (hA : ∀ i, DependsOn (· ∈ A i) (vbl i : Set V))
+    (T : ∀ p : V × ℕ, α p.1) (i : ι) (H : ℕ) (w : List ι) (hw : IsLog vbl A T w)
+    (hl : w.length ≤ H) :
+    ∃ W : Finset (Finset (ι × ℕ)), #W = w.count i ∧
+      ∀ S ∈ W, S ∈ shapes vbl i H ∧ Proper vbl S ∧ Check vbl A S T := by
+  obtain ⟨W, hcard, hW⟩ := exists_witnessesRel (Adj vbl) (adj_refl vbl)
+    (fun h => (adj_comm vbl).1 h) i H w hl (IsLog vbl A T)
+    (fun a u h => ((isLog_cons vbl).1 h).2) hw
+  refine ⟨W, hcard, fun S hS => ?_⟩
+  obtain ⟨hsh, hpr, u, rfl, hu⟩ := hW S hS
+  exact ⟨hsh, hpr, check_witness vbl A hA i u T hu⟩
+
 end Shapes
 
 section Counting
 
-variable [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V)
+private theorem mem_nbrRel_self (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
+    (hRr : ∀ i, R i i) (B : ι) : B ∈ nbrRel R {B} :=
+  mem_filter.2 ⟨mem_univ _, B, mem_singleton_self B, hRr B⟩
 
-private theorem mem_nbr_self (B : ι) : B ∈ nbr vbl {B} :=
-  mem_filter.2 ⟨mem_univ _, B, mem_singleton_self B, Or.inl rfl⟩
-
-private theorem nbr_insert (C : ι) (I : Finset ι) :
-    nbr vbl (insert C I) = nbr vbl {C} ∪ nbr vbl I := by
+private theorem nbrRel_insert (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    (C : ι) (I : Finset ι) :
+    nbrRel R (insert C I) = nbrRel R {C} ∪ nbrRel R I := by
   ext B
-  simp [nbr]
+  simp [nbrRel]
 
-omit [DecidableEq V] [Fintype ι] in
-private theorem prod_union_le_mul {s t : Finset ι} {f : ι → ℝ} (hf : ∀ i, 1 ≤ f i) :
+private theorem prod_union_le_mul [DecidableEq ι] {s t : Finset ι} {f : ι → ℝ}
+    (hf : ∀ i, 1 ≤ f i) :
     ∏ i ∈ s ∪ t, f i ≤ (∏ i ∈ s, f i) * ∏ i ∈ t, f i := by
   rw [← prod_union_inter]
   exact le_mul_of_one_le_right (prod_nonneg fun i _ => zero_le_one.trans (hf i))
     (one_le_prod₀ fun i _ => hf i)
 
-private theorem prod_nbr_le {f : ι → ℝ} (hf : ∀ i, 1 ≤ f i) (I : Finset ι) :
-    ∏ B ∈ nbr vbl I, f B ≤ ∏ C ∈ I, ∏ B ∈ nbr vbl {C}, f B := by
+private theorem prod_nbrRel_le (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
+    {f : ι → ℝ} (hf : ∀ i, 1 ≤ f i) (I : Finset ι) :
+    ∏ B ∈ nbrRel R I, f B ≤ ∏ C ∈ I, ∏ B ∈ nbrRel R {C}, f B := by
+  classical
   induction I using Finset.induction_on with
-  | empty => simp [nbr]
+  | empty => simp [nbrRel]
   | insert C I hC ih =>
-    rw [nbr_insert, prod_insert hC]
+    rw [nbrRel_insert, prod_insert hC]
     exact (prod_union_le_mul hf).trans (mul_le_mul_of_nonneg_left ih
       (prod_nonneg fun i _ => zero_le_one.trans (hf i)))
 
@@ -598,9 +744,9 @@ private theorem sum_biUnion_le_of_nonneg {κ β : Type*} [DecidableEq β] (s : F
     have h0 : 0 ≤ ∑ b ∈ t a ∩ s.biUnion t, f b := sum_nonneg fun b _ => hf b
     linarith
 
-omit [Fintype ι] in
-private theorem lvl_union_image {S : Finset (ι × ℕ)} {H : ℕ} (hS : ∀ p ∈ S, p.2 ≤ H)
-    (J : Finset ι) : lvl (S ∪ J.image fun j => (j, H + 1)) (H + 1) = J := by
+private theorem lvl_union_image [DecidableEq ι] {S : Finset (ι × ℕ)} {H : ℕ}
+    (hS : ∀ p ∈ S, p.2 ≤ H) (J : Finset ι) :
+    lvl (S ∪ J.image fun j => (j, H + 1)) (H + 1) = J := by
   ext j
   simp only [lvl, mem_image, mem_filter, mem_union]
   constructor
@@ -611,9 +757,8 @@ private theorem lvl_union_image {S : Finset (ι × ℕ)} {H : ℕ} (hS : ∀ p �
   · intro hj
     exact ⟨(j, H + 1), ⟨Or.inr ⟨j, hj, rfl⟩, rfl⟩, rfl⟩
 
-omit [DecidableEq V] [Fintype ι] in
-private theorem disjoint_image_level {S : Finset (ι × ℕ)} {H : ℕ} (hS : ∀ p ∈ S, p.2 ≤ H)
-    (J : Finset ι) : Disjoint S (J.image fun j => (j, H + 1)) := by
+private theorem disjoint_image_level [DecidableEq ι] {S : Finset (ι × ℕ)} {H : ℕ}
+    (hS : ∀ p ∈ S, p.2 ≤ H) (J : Finset ι) : Disjoint S (J.image fun j => (j, H + 1)) := by
   rw [Finset.disjoint_left]
   intro p hp hq
   obtain ⟨j, -, rfl⟩ := mem_image.1 hq
@@ -621,9 +766,10 @@ private theorem disjoint_image_level {S : Finset (ι × ℕ)} {H : ℕ} (hS : �
   omega
 
 /-- `∏ B ∈ Γ⁺ C, (1 - x B)⁻¹`, the weight charged to a label `C` on the deepest level. -/
-private noncomputable def zf (x : ι → ℝ) (C : ι) : ℝ := ∏ B ∈ nbr vbl {C}, (1 - x B)⁻¹
+private noncomputable def zfRel (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
+    (x : ι → ℝ) (C : ι) : ℝ :=
+  ∏ B ∈ nbrRel R {C}, (1 - x B)⁻¹
 
-omit [DecidableEq V] [DecidableEq ι] [Fintype ι] in
 private theorem one_le_inv_one_sub {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (B : ι) :
     1 ≤ (1 - x B)⁻¹ := by
   have h0 := (hx B).1
@@ -631,107 +777,126 @@ private theorem one_le_inv_one_sub {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico
   rw [one_le_inv₀ (by linarith)]
   linarith
 
-private theorem one_le_zf {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (C : ι) :
-    1 ≤ zf vbl x C :=
+private theorem one_le_zfRel (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
+    {x : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (C : ι) : 1 ≤ zfRel R x C :=
   one_le_prod₀ fun B _ => one_le_inv_one_sub hx B
 
-private theorem one_add_le_inv {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1)
-    (hyz : ∀ B, y B * zf vbl x B ≤ x B / (1 - x B)) (B : ι) :
-    1 + y B * zf vbl x B ≤ (1 - x B)⁻¹ := by
+private theorem one_add_le_inv (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
+    {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1)
+    (hyz : ∀ B, y B * zfRel R x B ≤ x B / (1 - x B)) (B : ι) :
+    1 + y B * zfRel R x B ≤ (1 - x B)⁻¹ := by
   have h1 := (hx B).2
   have : 1 + x B / (1 - x B) = (1 - x B)⁻¹ := by
     field_simp
     ring
   linarith [hyz B]
 
-/-- The generating-function induction behind [MoserTardos2010, Section 3]: charging the deepest
-level with the weights `zf`, the weighted sum over `shapes vbl i H` is at most
+/-- The generating-function induction behind [MoserTardos2010, Section 3, Section 6]: charging
+the deepest level with `zfRel R`, the weighted sum over `shapesRel R i H` is at most
 `x i / (1 - x i)`. -/
-private theorem sum_shapes_le {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (hy : ∀ i, 0 ≤ y i)
-    (hyz : ∀ B, y B * zf vbl x B ≤ x B / (1 - x B)) (i : ι) :
-    ∀ H, ∑ S ∈ shapes vbl i H, (∏ p ∈ S, y p.1) * ∏ C ∈ lvl S H, zf vbl x C ≤
+private theorem sum_shapesRel_le (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (hy : ∀ i, 0 ≤ y i)
+    (hyz : ∀ B, y B * zfRel R x B ≤ x B / (1 - x B)) (i : ι) :
+    ∀ H, ∑ S ∈ shapesRel R i H, (∏ p ∈ S, y p.1) * ∏ C ∈ lvl S H, zfRel R x C ≤
       x i / (1 - x i)
   | 0 => by
     have hl : lvl ({(i, 0)} : Finset (ι × ℕ)) 0 = {i} := by
       simp [lvl, filter_singleton]
-    rw [shapes, sum_singleton, hl, prod_singleton, prod_singleton]
+    rw [shapesRel, sum_singleton, hl, prod_singleton, prod_singleton]
     exact hyz i
   | H + 1 => by
-    have hnn : ∀ S : Finset (ι × ℕ), ∀ l, 0 ≤ (∏ p ∈ S, y p.1) * ∏ C ∈ lvl S l, zf vbl x C :=
+    have hnn : ∀ S : Finset (ι × ℕ), ∀ l,
+        0 ≤ (∏ p ∈ S, y p.1) * ∏ C ∈ lvl S l, zfRel R x C :=
       fun S l => mul_nonneg (prod_nonneg fun p _ => hy _)
-        (prod_nonneg fun C _ => zero_le_one.trans (one_le_zf vbl hx C))
+        (prod_nonneg fun C _ => zero_le_one.trans (one_le_zfRel R hx C))
     refine (sum_biUnion_le_of_nonneg _ _ fun S => hnn S (H + 1)).trans ?_
     refine (sum_le_sum fun S _ => sum_image_le_of_nonneg fun S _ => hnn S (H + 1)).trans ?_
-    refine le_trans (sum_le_sum fun S hS => ?_) (sum_shapes_le hx hy hyz i H)
-    have hle := le_of_mem_shapes vbl hS
-    calc ∑ J ∈ (nbr vbl (lvl S H)).powerset,
+    refine le_trans (sum_le_sum fun S hS => ?_) (sum_shapesRel_le R hx hy hyz i H)
+    have hle := le_of_mem_shapesRel hS
+    calc ∑ J ∈ (nbrRel R (lvl S H)).powerset,
           (∏ p ∈ S ∪ J.image (fun j => (j, H + 1)), y p.1) *
-            ∏ C ∈ lvl (S ∪ J.image fun j => (j, H + 1)) (H + 1), zf vbl x C
-        = ∑ J ∈ (nbr vbl (lvl S H)).powerset,
-            (∏ p ∈ S, y p.1) * ∏ j ∈ J, (y j * zf vbl x j) := by
+            ∏ C ∈ lvl (S ∪ J.image fun j => (j, H + 1)) (H + 1), zfRel R x C
+        = ∑ J ∈ (nbrRel R (lvl S H)).powerset,
+            (∏ p ∈ S, y p.1) * ∏ j ∈ J, (y j * zfRel R x j) := by
           refine sum_congr rfl fun J _ => ?_
           rw [prod_union (disjoint_image_level hle J),
             prod_image fun a _ b _ h => congrArg Prod.fst h, lvl_union_image hle,
             prod_mul_distrib, mul_assoc]
-      _ = (∏ p ∈ S, y p.1) * ∏ B ∈ nbr vbl (lvl S H), (1 + y B * zf vbl x B) := by
+      _ = (∏ p ∈ S, y p.1) * ∏ B ∈ nbrRel R (lvl S H), (1 + y B * zfRel R x B) := by
           rw [← mul_sum, prod_one_add]
-      _ ≤ (∏ p ∈ S, y p.1) * ∏ B ∈ nbr vbl (lvl S H), (1 - x B)⁻¹ := by
+      _ ≤ (∏ p ∈ S, y p.1) * ∏ B ∈ nbrRel R (lvl S H), (1 - x B)⁻¹ := by
           refine mul_le_mul_of_nonneg_left (prod_le_prod₀ (fun B _ => ?_)
-            fun B _ => one_add_le_inv vbl hx hyz B) (prod_nonneg fun p _ => hy _)
-          exact add_nonneg zero_le_one (mul_nonneg (hy B) (zero_le_one.trans (one_le_zf vbl hx B)))
-      _ ≤ (∏ p ∈ S, y p.1) * ∏ C ∈ lvl S H, zf vbl x C :=
-          mul_le_mul_of_nonneg_left (prod_nbr_le vbl (one_le_inv_one_sub hx) _)
+            fun B _ => one_add_le_inv R hx hyz B) (prod_nonneg fun p _ => hy _)
+          exact add_nonneg zero_le_one
+            (mul_nonneg (hy B) (zero_le_one.trans (one_le_zfRel R hx B)))
+      _ ≤ (∏ p ∈ S, y p.1) * ∏ C ∈ lvl S H, zfRel R x C :=
+          mul_le_mul_of_nonneg_left (prod_nbrRel_le R (one_le_inv_one_sub hx) _)
             (prod_nonneg fun p _ => hy _)
 
-/-- The events other than `B` sharing a variable with `B`. -/
-private def nbhd (B : ι) : Finset ι := univ.filter fun C => C ≠ B ∧ ¬Disjoint (vbl B) (vbl C)
+/-- The events other than `B` related to `B` under `R`. -/
+private def nbhdRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    (B : ι) : Finset ι :=
+  univ.filter fun C => C ≠ B ∧ R B C
 
-private theorem nbr_singleton (B : ι) : nbr vbl {B} = insert B (nbhd vbl B) := by
+private theorem nbrRel_singleton (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    (hRr : ∀ i, R i i) (B : ι) : nbrRel R {B} = insert B (nbhdRel R B) := by
   ext C
   by_cases h : C = B
   · subst h
-    simp [nbr, nbhd, Adj]
-  · simp [nbr, nbhd, Adj, h, Ne.symm h]
+    simp [nbrRel, nbhdRel, hRr]
+  · simp [nbrRel, nbhdRel, h]
 
-/-- The local-lemma hypothesis, for any `Γ` containing the variable-sharing neighbours, gives the
-bound on the weighted roots used by `sum_shapes_le`. -/
-private theorem mul_zf_le {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (Γ : ι → Finset ι)
-    (hΓ : ∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i)
+private theorem mul_zfRel_le (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
+    (hRr : ∀ i, R i i) {x y : ι → ℝ} (hx : ∀ i, x i ∈ Set.Ico 0 1) (Γ : ι → Finset ι)
+    (hΓ : ∀ i j, j ≠ i → R i j → j ∈ Γ i)
     (hy : ∀ B, y B ≤ x B * ∏ C ∈ Γ B, (1 - x C)) (B : ι) :
-    y B * zf vbl x B ≤ x B / (1 - x B) := by
+    y B * zfRel R x B ≤ x B / (1 - x B) := by
+  classical
   have hpos : ∀ C, 0 < 1 - x C := fun C => by linarith [(hx C).2]
-  have hsub : nbhd vbl B ⊆ Γ B := fun C hC => by
-    simp only [nbhd, mem_filter, mem_univ, true_and] at hC
+  have hsub : nbhdRel R B ⊆ Γ B := fun C hC => by
+    simp only [nbhdRel, mem_filter, mem_univ, true_and] at hC
     exact hΓ B C hC.1 hC.2
-  have hΓle : ∏ C ∈ Γ B, (1 - x C) ≤ ∏ C ∈ nbhd vbl B, (1 - x C) :=
+  have hΓle : ∏ C ∈ Γ B, (1 - x C) ≤ ∏ C ∈ nbhdRel R B, (1 - x C) :=
     prod_le_prod_of_subset_of_le_one₀ hsub (fun C _ => (hpos C).le)
       fun C _ _ => by linarith [(hx C).1]
-  have hnot : B ∉ nbhd vbl B := by simp [nbhd]
-  have hz : zf vbl x B = (1 - x B)⁻¹ * (∏ C ∈ nbhd vbl B, (1 - x C))⁻¹ := by
-    rw [zf, nbr_singleton, prod_insert hnot, prod_inv_distrib]
-  have hP : 0 < ∏ C ∈ nbhd vbl B, (1 - x C) := prod_pos fun C _ => hpos C
-  have hz0 : 0 ≤ zf vbl x B := zero_le_one.trans (one_le_zf vbl hx B)
-  calc y B * zf vbl x B
-      ≤ (x B * ∏ C ∈ nbhd vbl B, (1 - x C)) * zf vbl x B :=
+  have hnot : B ∉ nbhdRel R B := by simp [nbhdRel]
+  have hz : zfRel R x B = (1 - x B)⁻¹ * (∏ C ∈ nbhdRel R B, (1 - x C))⁻¹ := by
+    rw [zfRel, nbrRel_singleton R hRr, prod_insert hnot, prod_inv_distrib]
+  have hP : 0 < ∏ C ∈ nbhdRel R B, (1 - x C) := prod_pos fun C _ => hpos C
+  have hz0 : 0 ≤ zfRel R x B := zero_le_one.trans (one_le_zfRel R hx B)
+  calc y B * zfRel R x B
+      ≤ (x B * ∏ C ∈ nbhdRel R B, (1 - x C)) * zfRel R x B :=
         mul_le_mul_of_nonneg_right ((hy B).trans
           (mul_le_mul_of_nonneg_left hΓle (hx B).1)) hz0
     _ = x B / (1 - x B) := by
         rw [hz]
         field_simp
 
+/-- **The generalized counting bound** [MoserTardos2010, Section 3, Section 6]. For any reflexive
+dependency relation `R`, under `y i ≤ x i ∏ j ∈ Γ i, (1 - x j)` where `Γ i` contains every other
+`j` with `R i j`, the products `∏ p ∈ S, y p.1` over `S ∈ shapesRel R i H` sum to at most
+`x i / (1 - x i)`. -/
+theorem sum_prod_shapesRel_le (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+    (hRr : ∀ i, R i i) (Γ : ι → Finset ι) (hΓ : ∀ i j, j ≠ i → R i j → j ∈ Γ i) {x y : ι → ℝ}
+    (hx : ∀ i, x i ∈ Set.Ico 0 1) (hy0 : ∀ i, 0 ≤ y i)
+    (hy : ∀ i, y i ≤ x i * ∏ j ∈ Γ i, (1 - x j)) (i : ι) (H : ℕ) :
+    ∑ S ∈ shapesRel R i H, ∏ p ∈ S, y p.1 ≤ x i / (1 - x i) := by
+  refine le_trans (sum_le_sum fun S _ => ?_)
+    (sum_shapesRel_le R hx hy0 (mul_zfRel_le R hRr hx Γ hΓ hy) i H)
+  exact le_mul_of_one_le_right (prod_nonneg fun p _ => hy0 _)
+    (one_le_prod₀ fun C _ => one_le_zfRel R hx C)
+
 /-- **The counting bound** [MoserTardos2010, Section 3]. Under the local-lemma hypothesis
 `y i ≤ x i ∏ j ∈ Γ i, (1 - x j)`, where `Γ i` contains every other event sharing a variable with
 `A i`, the products `∏ p ∈ S, y p.1` over the structures `S ∈ shapes vbl i H` sum to at most
 `x i / (1 - x i)`, for every depth `H`. -/
-theorem sum_prod_shapes_le (Γ : ι → Finset ι)
-    (hΓ : ∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i) {x y : ι → ℝ}
+theorem sum_prod_shapes_le [DecidableEq V] [DecidableEq ι] [Fintype ι] (vbl : ι → Finset V)
+    (Γ : ι → Finset ι) (hΓ : ∀ i j, j ≠ i → ¬Disjoint (vbl i) (vbl j) → j ∈ Γ i) {x y : ι → ℝ}
     (hx : ∀ i, x i ∈ Set.Ico 0 1) (hy0 : ∀ i, 0 ≤ y i)
     (hy : ∀ i, y i ≤ x i * ∏ j ∈ Γ i, (1 - x j)) (i : ι) (H : ℕ) :
-    ∑ S ∈ shapes vbl i H, ∏ p ∈ S, y p.1 ≤ x i / (1 - x i) := by
-  refine le_trans (sum_le_sum fun S _ => ?_)
-    (sum_shapes_le vbl hx hy0 (mul_zf_le vbl hx Γ hΓ hy) i H)
-  exact le_mul_of_one_le_right (prod_nonneg fun p _ => hy0 _)
-    (one_le_prod₀ fun C _ => one_le_zf vbl hx C)
+    ∑ S ∈ shapes vbl i H, ∏ p ∈ S, y p.1 ≤ x i / (1 - x i) :=
+  sum_prod_shapesRel_le (Adj vbl) (adj_refl vbl) Γ
+    (fun i j hne hadj => hΓ i j hne (hadj.resolve_left hne.symm)) hx hy0 hy i H
 
 end Counting
 
