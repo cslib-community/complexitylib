@@ -62,7 +62,7 @@ open Cslib.Complexity Cslib.Complexity.PromiseProblem Cslib.PartialMCSP.FromCMMS
 
 /-- **`GapCMMSA` reduces to partial MCSP** by a polynomial-time randomized reduction with one-sided
 error, for an odd `k`, a bias `δ₀ ≤ 1/2` with `(1 - 2 δ₀)^k ≤ 1/(2 Δ²)` and a gap `g` large enough
-for the soundness count. -/
+for the soundness count. This is a library result (issue #4362, route B). -/
 theorem rpReducible_GapCMMSA_PartialMCSP {Δ k P : ℕ} (hP : 0 < P) (hk : Odd k) {δ₀ g : ℝ}
     (hδ₀ : 0 ≤ δ₀) (hδ₀' : δ₀ ≤ 1 / 2) (hkδ : (1 - 2 * δ₀) ^ k ≤ 1 / (2 * Δ ^ 2))
     (hg : 8 * (1 + 2 / P) * Real.log 2 < g * (Real.log 2 - Real.binEntropy δ₀)) :

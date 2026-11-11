@@ -34,7 +34,7 @@ The proof composes the NP-hardness of `GapCMMSA Δ g 1`, from the library's labe
 - `Evaluator` and `EvaluatorPolyTime` compute the table from explicit truth tables in polynomial time.
 - `Seeded` reads the functions from the random string and supplies the generic step `rpReducible_of_seeded`. The planned NP-hardness of `MINKTStar` ([#4447](https://github.com/cslib-community/cslib-frontier/issues/4447)) reuses it.
 
-The statement is Hirahara's; the construction and its analysis are the library's own (route B of #4362), not a transcription of his proof. The soundness count uses the crude circuit-counting bound, with constant 8 where the design review of #4362 has 4; this only changes the gap `g`. The inapproximability and average-case forms of Theorem I.2 are not formalized.
+The statement is Hirahara's; the construction and its analysis are the library's own (route B of [#4362](https://github.com/cslib-community/cslib-frontier/issues/4362)), not a transcription of his proof. The soundness count bounds the number of small circuits crudely, which puts the constant 8 in its gap condition `8 (1 + 2/P) log 2 < g (log 2 - H(δ₀))`; a sharper count would lower it, but only the gap `g` changes, and `exists_hard_params` chooses `g`. The inapproximability and average-case forms of Theorem I.2 are not formalized.
 
 ## Time-bounded Kolmogorov complexity
 
