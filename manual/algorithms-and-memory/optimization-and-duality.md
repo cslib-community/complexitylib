@@ -113,10 +113,19 @@ The [checked examples](../../CslibFrontierTests/Copositivity.lean) verify Motzki
 [fmptw15]: ../sources.md#fmptw15
 [kleeminty72]: ../sources.md#kleeminty72
 [knuth1994]: ../sources.md#knuth1994
+## Exact rational linear algebra via Bareiss–Jordan elimination
+
+For polynomial-time rational Gaussian and Gauss–Jordan elimination without intermediate rational coefficient blowup ([Schrijver 1986][schrijver86], Section 3.2, Theorem 3.2, pp. 29–30, and Section 3.3, Theorem 3.3, Corollary 3.3a, and Equations (28)–(30), pp. 32–35), use the three-layer Bareiss–Jordan stack:
+
+- Pure matrix theory lives in [`Matrix/Bareiss.lean`](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/Bareiss.lean). Over any commutative ring `R`, `Matrix.pivotDet` and `Matrix.bareissMatrix` track the minor-scaled intermediate table after pivoting on row list `S : Fin k → Fin m` and column list `C : Fin k → Fin n`; over a field, `Matrix.pivotDet_mul_bareissMatrix_snoc` proves the Sylvester–Bareiss update identity and `Matrix.isReducedRowEchelon_rrefOfBareiss` characterizes `Matrix.rrefOfBareiss` together with its pivot indices, `Matrix.linearIndependent_kernelBasisVec`, `Matrix.span_kernelBasisVec`, and `Matrix.mulVec_solveVec_eq_iff_exists_mulVec_eq`. Over `ℤ`, `Matrix.pivotDet_dvd_bareissStep_int`, `Matrix.abs_bareissMatrix_le`, and `Matrix.abs_pivotDet_le` establish exact integer divisibility and Hadamard/stage entry bounds.
+- Executable row-denominator-cleared elimination over `ℚ` lives in [`BareissElimination.lean`](../../CslibFrontier/Algorithms/LinearAlgebra/BareissElimination.lean), exposing `rationalElim`, `ratRref`, `ratRank`, `ratRowBasis`, `ratKernelBasis`, and `ratSolve` over `IntTable` / `RatTable` / `LinearSystemInput`, verified unconditionally (including ragged or zero-row/zero-column tables) by `rationalElim_wellFormed`, `rationalElim_spec`, `ratRref_isReducedRowEchelon`, `ratRank_eq`, `ratSolve_spec`, `rationalElim_entry_bounds`, and `ratSolve_entry_bounds`. Unlike Schrijver's normalized rational elimination, this layer clears row denominators upfront and maintains fraction-free minor-scaled Jordan updates over `ℤ` bounded by the Hadamard/factorial `stageEntryBound`.
+- Multi-tape Turing machine polynomial-time certificates live in [`RationalElimination.lean`](../../CslibFrontier/Computability/PolyTime/LinearAlgebra/RationalElimination.lean), proving `ComputableInPolyTime` for `rationalElim`, `ratRref`, `ratRank`, `ratRowBasis`, `ratKernelBasis`, and `ratSolve` (`rationalElim_computableInPolyTime`, `ratSolve_computableInPolyTime`) using structured `enc_structure` codecs (`IntTable.enc`, `RatTable.enc`, `BareissState.enc`, `RationalElimResult.enc`, `LinearSystemInput.enc`, `LinearSolveResult.enc`) with explicit unary dimension headers and framed signed-binary/rational entries to bound native multi-tape time and workspace even on malformed or oversized-header tables. [Checked examples](../../CslibFrontierTests/BareissElimination.lean) exercise full-rank fractional matrices, rank-deficient and overdetermined systems, row and kernel bases, inconsistent systems, zero/ragged inputs, and strict `module` polynomial-time instantiation.
+
 [lll82]: ../sources.md#lll82
 [lovasz1979]: ../sources.md#lovasz1979
 [motzkinstraus1965]: ../sources.md#motzkinstraus1965
 [murtykabadi1987]: ../sources.md#murtykabadi1987
 [regev04]: ../sources.md#regev04
+[schrijver86]: ../sources.md#schrijver86
 [shannon1956]: ../sources.md#shannon1956
 [yannakakis91]: ../sources.md#yannakakis91

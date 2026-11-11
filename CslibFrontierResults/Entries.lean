@@ -9,6 +9,7 @@ import CslibFrontierResults.Registry
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
+import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -47,6 +48,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Det
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
@@ -79,10 +81,13 @@ import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
+import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
+import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
+import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
@@ -133,6 +138,8 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
+import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -724,6 +731,29 @@ register_result "partial-mcsp" where
     N = 2^m, with explicit unary or binary size-threshold encodings and De Morgan all-gate or \
     binary-gate cost. Conditional: the library also refutes ETH (subexponential-sat), so the \
     premise is false; the implications remain valid."
+
+register_result "partial-mcsp-rp-hard" where
+  title := "Hirahara: Partial MCSP is NP-hard under randomized reductions"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Hirahara2022, theorem := "Theorem I.2",
+      locator := "p. 971, \"In particular\"" }
+  ]
+  theorems := [
+    Cslib.PartialMCSP.rpHard,
+    Cslib.PartialMCSP.rpHard_encBinary,
+    Cslib.PartialMCSP.rpReducible_GapCMMSA_PartialMCSP,
+    Cslib.PartialMCSP.NP_subset_BPP_of_mem_BPP,
+    Cslib.PartialMCSP.NP_subset_coRP_of_mem_coRP
+  ]
+  scope := "Every NP language reduces to PartialMCSP (the partial truth table, then the size \
+    threshold in unary, or in binary for rpHard_encBinary) by a polynomial-time randomized \
+    many-one reduction with one-sided error: yes maps to yes always, no to no with probability \
+    at least 2/3. Library route: from the library's GapCMMSA Δ g 1 (NP-hard via label cover) by \
+    the library's own seeded construction and analysis; the source fixes the statement, not the \
+    proof. The inapproximability and average-case forms of Theorem I.2 are not formalized. \
+    The BPP and coRP inclusions are conditional on PartialMCSP being in BPP or coRP; they follow \
+    from the reduction and are not stated separately in the source."
 
 register_result "multi-mcsp-np-hard" where
   title := "Ilango–Loff–Oliveira: Multi-output MCSP is NP-hard under randomized reductions"
@@ -2423,10 +2453,33 @@ register_result "formula-magnification-locality" where
   scope := "MCSP[(s, 0), (s, δ)] on N = 2^n-bit truth tables is computed by De Morgan formulas \
     with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
     N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
-    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: no bullet of Proposition 63 is proved \
-    for the [q, ℓ, a]-Circuit classes (LocalCircuitClass), and the other bullets and the \
-    locality barrier (Theorem 59) are not formalized here; the Gap-MCSP [OPS19] bullet is \
-    registered, with explicit counts, as gap-mcsp-oracle-circuits."
+    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: for the [q, ℓ, a]-Circuit classes \
+    (LocalCircuitClass) the Gap-MCSP [OPS19] bullet is registered as gap-mcsp-oracle-circuits \
+    and the MCSP [MMW19] bullet as mmw-merge-tree-locality; the other bullets of Proposition 63 \
+    and the locality barrier (Theorem 59) are not formalized."
+
+register_result "mmw-merge-tree-locality" where
+  title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: the McKay–Murray–Williams merge tree \
+    puts MCSP[s] in [O(N/s), O(s⁴), O(n/log s)]-Circuit[O(N/s)] for n ≤ s ≤ N"
+  topic := "meta-complexity"
+  sources := [
+    { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+      theorem := "Proposition 63, [MMW19] MCSP bullet",
+      locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
+  ]
+  theorems := [
+    Cslib.MCSP.localCircuitClass_MCSP
+  ]
+  scope := "Unconditional. Whenever n ≤ s(n) and 2 ≤ s(n) for every n, MCSP[s] (no gap) is in \
+    LocalCircuitClass (Definition 11) at input length m, with n = log₂ m: at most 128m/s(n) + 1 \
+    oracle gates, each of fan-in at most 12·s(n)^4, at most n/⌊log₂ s(n)⌋ + 1 oracle gates on any \
+    path, and at most 129m/s(n) + 3 gates (all gates counted). The circuits are the explicit \
+    merge tree MergeTree.mmwCircuit, with ⌊log₂ s⌋ bits per level, under one fixed oracle, \
+    MergeTree.oracle, for all lengths; no bound on the oracle's complexity is claimed. The bounds \
+    read as the source's O(N/s) and O(n/log s) when also s(n) ≤ 2^n. Deviations: the source \
+    assumes only a constructive s(n) ≤ 2^n/poly(n); n ≤ s(n) and 2 ≤ s(n) exclude s(n) < n, the \
+    exact bounds need no upper bound on s, and constructivity is not formalized (the class is \
+    nonuniform)."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
@@ -2501,14 +2554,17 @@ register_result "gap-mcsp-oracle-circuits" where
       locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
   ]
   theorems := [
-    Cslib.MCSP.exists_oracleCircuit_gapMCSP
+    Cslib.MCSP.exists_oracleCircuit_gapMCSP,
+    Cslib.MCSP.localCircuitClass_gapMCSP
   ]
   scope := "Unconditional. Whenever n·s₁ + 2 + 2n(n + 2) ≤ s₂ at length n, one oracle circuit on \
     N = 2^n inputs with the fixed oracle antiCheckerOracle accepts the yes-instances of \
     Gap-MCSP[s₁, s₂] and rejects its no-instances. It has at most 5000·N·s₂^5 gates, at most \
     610·N·s₂^4 + 1 oracle gates, fan-in at most 5000·s₂^5 and at most 610·s₂^4 + 1 oracle gates \
-    on any path. The [q, ℓ, a]-Circuit class is not defined, so the bounds are stated directly; \
-    the gap condition replaces the source's constructive s(n) ≤ 2^n/poly(n)."
+    on any path. localCircuitClass_gapMCSP states this in the class LocalCircuitClass \
+    (Definition 11) at input length m with n = log₂ m, the gap condition holding at every n; its \
+    size bound has a + 1 for input length 0, which has no instances. The gap condition replaces \
+    the source's constructive s(n) ≤ 2^n/poly(n)."
 
 register_result "natural-proofs" where
   title := "Razborov–Rudich: subexponentially secure generators rule out natural proofs \
@@ -2527,6 +2583,63 @@ register_result "natural-proofs" where
     P/poly-natural property is useful against P/poly. The generator tests are nonuniform \
     circuits reading the 2k-bit outputs; the barrier's derived tests read whole truth tables \
     of the GGM keyed family. The generator family is a hypothesis, not a constructed object."
+
+register_result "nw-reconstruction-learner" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
+    membership-query weak learner, one run"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 2.11",
+      locator := "Section 2.4" },
+    { paper := NisanWigderson1994, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.nwLearner_learns_of_dens,
+    Cslib.MachineLearning.UniformLearning.nwLearner_learns,
+    Cslib.MachineLearning.UniformLearning.div_two_mul_le_dens_uniformError_nwLearner_le,
+    Cslib.MachineLearning.UniformLearning.nwLearner_queriesAtMost,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_nwLearner_le
+  ]
+  scope := "One run of the reconstruction, in a library form. For an (l, n, a)-design with m > 0 \
+    blocks and a deterministic test accepting at least a delta fraction of m-bit strings but \
+    no output of the generator of any f in the class, the learner built from the negated test \
+    learns the class under the uniform distribution with membership queries, error \
+    1/2 - delta/(2m) and success probability delta/(2m) over a uniform trial. This is the \
+    delta-dense natural-property case; nwLearner_learns covers a distinguisher of any \
+    advantage eps, where the source takes advantage above 1/5, and advantage eps/(2m) \
+    replaces 1/L (the source's L is the output length m). It makes at most \
+    m 2^a queries, and every hypothesis has De Morgan circuit size at most that of the test \
+    plus m (2^a (2a + 3) + 1) + 1. The running time of the learner is not certified. Repeating \
+    runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is the entry \
+    nw-reconstruction-best-of."
+
+register_result "nw-reconstruction-best-of" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning from a distinguisher for the \
+    Nisan–Wigderson generator"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 2.11",
+      locator := "p. 10:9" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns,
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns_of_dens,
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_queriesAtMost,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_bestOf_nwLearner_le
+  ]
+  scope := "Theorem 2.11 in a library form. For an (l, n, a)-design with m > 0 blocks and a \
+    deterministic test that accepts outputs of the generator of each f in the class with \
+    probability at least eps > 0 more than uniform m-bit strings, best-of-k selection on t \
+    uniform sample points over the reconstruction learner built from the test learns the class \
+    under the uniform distribution with membership queries, error 1/2 - eps/(4m) and confidence \
+    1 - eta, when eps/(2m) <= 1, log(2/eta) <= (eps/(2m)) k and 8 log(4k/eta) <= t (eps/(2m))^2. \
+    Any advantage eps > 0 replaces the source's advantage above 1/5, error 1/2 - eps/(4m) \
+    replaces 1/2 - 1/L (the source's L is the output length m), and explicit k and t replace \
+    poly(L). bestOf_nwLearner_learns_of_dens is the natural-property special case: a test \
+    accepting at least a delta > 0 fraction of m-bit strings but no generator output, used \
+    through its negation, which has advantage at least delta. It makes at most k m 2^a + t \
+    queries, and every hypothesis has the De Morgan circuit bound of one run. The running time \
+    of the learner is not certified."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
@@ -2641,6 +2754,31 @@ register_result "tfnp-sopl-eopl-collapse" where
     transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
     EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
     are not formalized."
+
+register_result "tfnp-eopl-sopl-promised-normalization" where
+  title := "Promised-source normalization for EOPL and SOPL (Fearnley et al. Definition 9)"
+  topic := "structural complexity"
+  sources := [
+    { paper := FearnleyGordonMehtaSavani2020, theorem := "Definition 9",
+      locator := "Section 2 (arXiv:1811.03841v1)" }
+  ]
+  theorems := [
+    Cslib.Complexity.promisedPotentialLine_normalized,
+    Cslib.Complexity.exists_normalizedPotentialBound,
+    Cslib.Complexity.endOfPotentialLinePromisedRel_normalized_iff,
+    Cslib.Complexity.sinkOfPotentialLinePromisedRel_normalized_iff,
+    Cslib.Complexity.endOfPotentialLineRel_searchReducible_promised_normalized,
+    Cslib.Complexity.promised_normalized_searchReducible_endOfPotentialLineRel,
+    Cslib.Complexity.endOfPotentialLineViolationRel_searchReducible_promised_normalized,
+    Cslib.Complexity.mem_EOPL_iff_promised_bounded,
+    Cslib.Complexity.mem_SOPL_iff_promised_bounded
+  ]
+  scope := "Uniform polynomial-time (n + 1)-bit normalization for EOPL and SOPL families over \
+    any injective encoding enc : α ↪ List Bool, enforcing P(0^(n+1)) = 0^(n+1) ≠ S(0^(n+1)) and \
+    V(0^(n+1)) = 0 with V'(1 u) = V u + 1, unary potential bit-bound 2^(m + 1), pure (R1)/(R2) \
+    solution relations without a failed-promise fallback, and failed-promise back-maps via \
+    potentialLineBack. Presented on uniform families rather than canonical circuit codes; UEOPL \
+    and CLS are not formalized."
 
 register_result "goemans-williamson-max2sat" where
   title := "Goemans–Williamson α-approximation rounding for MAX-2SAT (α > 0.87856)"
@@ -2773,3 +2911,53 @@ register_result "unique-games-perfect-completeness" where
     empty so every unique game vacuously has unsatVal = 0 and GapUniqueGames (Fin 0) 1 s \
     has no no-instances, while no graph is satisfiable. This fixes L rather than taking it \
     as part of the input."
+
+register_result "bareiss-rational-elimination" where
+  title := "Exact rational Bareiss–Jordan Gaussian elimination and entry bounds"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.2; Theorem 3.3; Corollary 3.3a; Equations (28)–(30)",
+      locator := "Section 3.2, pp. 29–30; Section 3.3, pp. 32–35" }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_spec,
+    Cslib.LinearAlgebra.ratRref_isReducedRowEchelon,
+    Cslib.LinearAlgebra.ratRank_eq,
+    Cslib.LinearAlgebra.ratSolve_spec,
+    Cslib.LinearAlgebra.rationalElim_entry_bounds,
+    Cslib.LinearAlgebra.ratSolve_entry_bounds
+  ]
+  scope := "Executable row-denominator-cleared fraction-free Bareiss–Jordan elimination over ℚ \
+    built on Sylvester–Bareiss minor elimination over ℤ (RREF, exact rank, linearly independent \
+    spanning row and kernel bases, canonical linear system solving, and Hadamard/factorial entry \
+    and denominator bit-length bounds via stageEntryBound). Local adaptation: clears row \
+    denominators upfront and tracks fraction-free minor-scaled Jordan updates with a \
+    factorial/Hadamard bound rather than Schrijver's normalized rational elimination \
+    (Section 3.3, pp. 32–35). Bounded milestone of Issue #3672 (circulant spectra and fibre-sum \
+    bounds remain open there)."
+
+register_result "bareiss-rational-elimination-polytime" where
+  title := "Polynomial-time multi-tape Turing certificates for rational Gaussian elimination"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.3; Corollary 3.3a (ii), (iv), (v)",
+      locator := "Section 3.3, pp. 32–35" }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRref_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRank_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRowBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratKernelBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratSolve_computableInPolyTime
+  ]
+  scope := "Native Turing.MultiTapeTM.ComputableInPolyTime certificates for rationalElim, \
+    ratRref, ratRank, ratRowBasis, ratKernelBasis, and ratSolve. Local adaptations: uses \
+    row-denominator-cleared fraction-free Bareiss–Jordan integer updates and structured \
+    enc_structure codecs with explicit unary matrix dimensions and framed signed-binary/rational \
+    entries to certify native multi-tape time and workspace bounds unconditionally (including on \
+    ragged or oversized-header inputs), whereas Schrijver Section 3.3 analyzes normalized \
+    rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
+    (circulant spectra and fibre-sum bounds remain open there)."
