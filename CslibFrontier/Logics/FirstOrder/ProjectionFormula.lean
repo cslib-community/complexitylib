@@ -49,7 +49,8 @@ machine resource bound, is implicit in this definition.
   structures.
 * `Cslib.Logic.FO.ProjectionFormula.existsUnique_case`: the numeric cases partition assignments.
 * `Cslib.Logic.FO.ProjectionFormula.realize_iff_exists_case`: disjoint-case normal form.
-* `Cslib.Logic.FO.ProjectionFormula.realize_subst`: truth-preserving substitution.
+* `Cslib.Logic.FO.ProjectionFormula.realize_subst`,
+  `Cslib.Logic.FO.ProjectionFormula.realize_subst_of_isQF`: truth-preserving substitution.
 * `Cslib.Logic.FO.ProjectionFormula.realize_relabel`: variable renaming preserves realization.
 
 ## References
@@ -329,6 +330,23 @@ theorem IsQF.subst {N' L' : Language} {p : ProjectionFormula N L α} (h : p.IsQF
   induction p with
   | leaf l => exact hliteral l
   | branch g _ _ ihy ihn => exact ⟨hguard g h.1, ihy h.2.1, ihn h.2.2⟩
+
+/-- Correct substitutions of quantifier-free numeric tests and input literals preserve truth on
+quantifier-free projection formulas. -/
+theorem realize_subst_of_isQF {N' L' : Language} {M' : Type*}
+    [N.Structure M] [L.Structure M] [N'.Structure M'] [L'.Structure M']
+    {p : ProjectionFormula N L α} (hp : p.IsQF)
+    (guard : N.Formula α → N'.Formula β)
+    (literal : InputLiteral L α → ProjectionFormula N' L' β)
+    (x : α → M) (y : β → M')
+    (hguard : ∀ g, g.IsQF → ((guard g).Realize y ↔ g.Realize x))
+    (hliteral : ∀ l, (literal l).toFormula.Realize y ↔ l.Realize x) :
+    (p.subst guard literal).toFormula.Realize y ↔ p.toFormula.Realize x := by
+  induction p with
+  | leaf l => simpa [subst, toFormula] using hliteral l
+  | branch g yes no ihy ihn =>
+    rcases hp with ⟨hg, hyes, hno⟩
+    fo_simp [subst, toFormula, hguard g hg, ihy hyes, ihn hno]
 
 /-- The finitely many leaf occurrences of a projection formula. Distinct occurrences remain
 distinct even when they carry the same literal. -/

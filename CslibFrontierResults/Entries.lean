@@ -1093,7 +1093,7 @@ register_result "immerman-l-capture" where
     universes below two are rejected."
 
 register_result "ordered-projection-reducibility" where
-  title := "Immerman–Landau: ordered first-order projections compose and refine FO reductions"
+  title := "Immerman–Landau: ordered FO and QF projections compose and refine FO reductions"
   topic := "descriptive complexity"
   sources := [
     { paper := ImmermanLandau1995, theorem := "Proposition 3.7", locator := "Section 3" },
@@ -1104,6 +1104,7 @@ register_result "ordered-projection-reducibility" where
     Cslib.Logic.FO.Ordered.ProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.ProjectionReduces.reduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.projectionReduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.reduces
   ]
@@ -1112,9 +1113,11 @@ register_result "ordered-projection-reducibility" where
     trees of numeric guards with constants or single signed input literals at the leaves; \
     first-order projections allow guards over order, BIT, 0, 1 and max, while quantifier-free \
     projections require quantifier-free guards over order, non-wrapping successor, 0 and max \
-    without BIT. Transitivity of quantifier-free projections and projection-completeness \
-    endpoints are not yet formalized here; the logspace encoding lift at encStructure is proved \
-    separately in Classes.LogSpace.FirstOrder.Ordered.Projection."
+    without BIT. Both IsProjectionMap and IsQFProjectionMap contain the identity and are \
+    closed under composition (with BIT-free quantifier-free guard pullback via \
+    QFNumeric.onFullTuple); projection-completeness endpoints are not yet formalized here, and \
+    the logspace encoding lift at encStructure is proved separately in \
+    Classes.LogSpace.FirstOrder.Ordered.Projection."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
