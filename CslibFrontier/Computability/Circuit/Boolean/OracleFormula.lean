@@ -47,9 +47,10 @@ by a formula.
 
 * `Cslib.Circuits.Boolean.OracleFormula.queryCount_mapOp_toOracle` and its companions: a De Morgan
   formula has no oracle gates.
-* `Cslib.Circuits.Boolean.OracleFormula.eval_query`, `OracleFormula.eval_all`: the semantics of
-  oracle gates on De Morgan formulas and of conjunctions, with the measures of both.
-* `Cslib.Circuits.Boolean.LocalFormulaClass.mono`: the classes grow with their parameters.
+* `Cslib.Circuits.Boolean.OracleFormula.eval_query_eq_true_iff`, `OracleFormula.eval_all`: the
+  semantics of oracle gates on De Morgan formulas and of conjunctions, with the measures of both.
+* `Cslib.Circuits.Boolean.LocalFormulaClass.mono`, `LocalFormulaClass.anti`: the classes grow with
+  their parameters and shrink with their promise sets.
 
 ## References
 
