@@ -958,6 +958,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.DegreeEst
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FirstMoment
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FourPath
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ImmRank
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Path
