@@ -55,13 +55,14 @@ section TSPPolytope
 
 /-- Every vertex pair along a bijection `σ : Fin |V| ≃ V` at step `i` and `i + 1` is distinct
 when `3 ≤ |V|`. -/
-theorem tourEdge_mem_top_edgeSet {V : Type*} [Fintype V] [DecidableEq V]
+theorem tourEdge_mem_top_edgeSet {V : Type*} [Fintype V]
     (hV : 3 ≤ Fintype.card V) (σ : Fin (Fintype.card V) ≃ V) (i : Fin (Fintype.card V)) :
     s(σ i, σ (i + ⟨1, by omega⟩)) ∈ (⊤ : SimpleGraph V).edgeSet := by
   rw [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj, ne_eq, EmbeddingLike.apply_eq_iff_eq]
   intro h
   have hval := congrArg Fin.val h
   rw [Fin.val_add] at hval
+  dsimp only at hval
   by_cases hwrap : i.1 + 1 = Fintype.card V
   · rw [hwrap, Nat.mod_self] at hval
     omega
@@ -69,7 +70,7 @@ theorem tourEdge_mem_top_edgeSet {V : Type*} [Fintype V] [DecidableEq V]
     omega
 
 /-- The edge set in `K_V` traced by the cyclic ordering `σ : Fin |V| ≃ V`. -/
-def tourEdgeSet {V : Type*} [Fintype V] [DecidableEq V]
+@[expose] def tourEdgeSet {V : Type*} [Fintype V] [DecidableEq V]
     (σ : Fin (Fintype.card V) ≃ V) (hV : 3 ≤ Fintype.card V) :
     Finset ↥(⊤ : SimpleGraph V).edgeSet :=
   Finset.univ.image fun i => ⟨s(σ i, σ (i + ⟨1, by omega⟩)), tourEdge_mem_top_edgeSet hV σ i⟩
@@ -115,13 +116,12 @@ theorem tspPolytope_inter_subgraph_eq
     simp only [dotProduct, c, tspVertex]
     have hterm : ∀ e : ↥(⊤ : SimpleGraph V).edgeSet,
         (if e.1 ∈ G.edgeSet then (0 : K) else -1) * (if e ∈ F then 1 else 0) =
-          -(if e ∈ F ∧ e.1 ∉ G.edgeSet then (1 : K) else 0) := fun e => by
+          -(if e ∈ (F.filter fun e => e.1 ∉ G.edgeSet) then (1 : K) else 0) := fun e => by
       by_cases hg : e.1 ∈ G.edgeSet <;> by_cases hf : e ∈ F <;>
-        simp only [hg, hf, not_true_eq_false, not_false_eq_true, and_self, and_true, and_false,
-          ↓reduceIte, mul_one, mul_zero, zero_mul, neg_zero]
+        simp only [Finset.mem_filter, hg, hf, not_true_eq_false, not_false_eq_true, and_self,
+          and_false, false_and, ↓reduceIte, mul_one, mul_zero, neg_zero]
     simp only [hterm, Finset.sum_neg_distrib, Finset.sum_boole, Finset.filter_mem_eq_inter,
       Finset.univ_inter]
-    rfl
   have hvalid : ∀ F : {F // IsTourEdgeSet F}, c ⬝ᵥ tspVertex K F.1 ≤ 0 := fun F => by
     rw [hdot]
     exact neg_nonpos.2 (Nat.cast_nonneg _)
@@ -134,11 +134,11 @@ theorem tspPolytope_inter_subgraph_eq
   ext x
   simp only [Set.mem_image, Set.mem_ofPred_eq, Set.mem_range, Subtype.exists]
   constructor
-  · rintro ⟨_, ⟨F, hF, rfl⟩, hFx, rfl⟩
+  · rintro ⟨F, hF, hFx, rfl⟩
     rw [htight ⟨F, hF⟩] at hFx
     exact ⟨F, hFx, rfl⟩
   · rintro ⟨F, hFG, rfl⟩
-    refine ⟨tspVertex K F, ⟨F, hFG.1, rfl⟩, ?_, rfl⟩
+    refine ⟨F, hFG.1, ?_, rfl⟩
     exact (htight ⟨F, hFG.1⟩).2 hFG
 
 end TSPPolytope
@@ -155,7 +155,6 @@ inductive SplitV (W : Type*) [DecidableEq W] (v₀ : W) (pad : ℕ) : Type _
   | vIn (w : W)
   | vMid (w : W) (k : Fin (splitMidLen v₀ pad w))
   | vOut (w : W)
-  deriving DecidableEq
 
 private def splitVEquiv {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) :
     SplitV W v₀ pad ≃ W ⊕ (Σ w : W, Fin (splitMidLen v₀ pad w)) ⊕ W where
@@ -170,9 +169,17 @@ private def splitVEquiv {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) :
   left_inv x := by cases x <;> rfl
   right_inv x := by rcases x with w | ⟨w, k⟩ | w <;> rfl
 
-instance {W : Type*} [Fintype W] [DecidableEq W] (v₀ : W) (pad : ℕ) :
+@[no_expose] instance {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) :
+    DecidableEq (SplitV W v₀ pad) :=
+  (splitVEquiv v₀ pad).decidableEq
+
+@[no_expose] instance {W : Type*} [Fintype W] [DecidableEq W] (v₀ : W) (pad : ℕ) :
     Fintype (SplitV W v₀ pad) :=
   Fintype.ofEquiv _ (splitVEquiv v₀ pad).symm
+
+instance {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) :
+    Nonempty (SplitV W v₀ pad) :=
+  ⟨.vIn v₀⟩
 
 private theorem sum_splitMidLen {W : Type*} [Fintype W] [DecidableEq W] (v₀ : W) (pad : ℕ) :
     ∑ w : W, splitMidLen v₀ pad w = Fintype.card W + pad := by
@@ -183,8 +190,8 @@ private theorem sum_splitMidLen {W : Type*} [Fintype W] [DecidableEq W] (v₀ : 
       by_cases h : w = v₀
       · simp only [h, ↓reduceIte]; omega
       · simp only [h, ↓reduceIte, add_zero]
-  rw [hsplit, Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_one,
-    Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
+  rw [hsplit, Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_one]
+  simp only [Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
 
 /-- `SplitV W v₀ pad` has `3 * |W| + pad` vertices. -/
 theorem card_splitV {W : Type*} [Fintype W] [DecidableEq W] (v₀ : W) (pad : ℕ) :
@@ -211,21 +218,33 @@ private def splitAdjRel {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ)
 def paddedSplitGraph {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ)
     (adjD : W → W → Prop) : SimpleGraph (SplitV W v₀ pad) where
   Adj := splitAdjRel v₀ pad adjD
-  symm u v h := by
-    cases u <;> cases v <;> simp only [splitAdjRel] at h ⊢ <;> tauto
-  loopless u h := by
+  symm := ⟨fun u v h => by
+    cases u <;> cases v <;> simp only [splitAdjRel] at h ⊢ <;> tauto⟩
+  loopless := ⟨fun u h => by
     cases u <;> simp only [splitAdjRel] at h
-    omega
+    omega⟩
 
 private theorem splitMidLen_pos {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) (w : W) :
     0 < splitMidLen v₀ pad w := by
   dsimp only [splitMidLen]
   split_ifs <;> omega
 
+/-- `τ : Fin |W| ≃ W` is a directed Hamiltonian tour of `(W, adjD)`. -/
+@[expose] def IsDirTour {W : Type*} [Fintype W] [Nonempty W] (adjD : W → W → Prop)
+    (τ : Fin (Fintype.card W) ≃ W) : Prop :=
+  ∀ t : Fin (Fintype.card W), adjD (τ t) (τ (t + 1))
+
+/-- Every edge between `vOut u` and `vIn w` belongs to the complete graph on `SplitV W v₀ pad`. -/
+theorem splitV_top_edge_vOut_vIn {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) (u w : W) :
+    s(SplitV.vOut u, SplitV.vIn w) ∈ (⊤ : SimpleGraph (SplitV W v₀ pad)).edgeSet := by
+  rw [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj]
+  intro h
+  cases h
+
 /-- Every directed Hamiltonian tour of `(W, adjD)` lifts to a subgraph tour of
 `paddedSplitGraph v₀ pad adjD` matching the inter-gadget arcs. -/
-theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀ : W) (pad : ℕ)
-    (adjD : W → W → Prop) (hW : 2 ≤ Fintype.card W)
+theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [Nonempty W] [DecidableEq W]
+    (v₀ : W) (pad : ℕ) (adjD : W → W → Prop) (hW : 2 ≤ Fintype.card W)
     (τ : Fin (Fintype.card W) ≃ W) (hτ : IsDirTour adjD τ) :
     ∃ F : Finset ↥(⊤ : SimpleGraph (SplitV W v₀ pad)).edgeSet,
       IsSubgraphTour (paddedSplitGraph v₀ pad adjD) F ∧
@@ -234,6 +253,7 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
           ∃ t : Fin (Fintype.card W), τ t = u ∧ τ (t + 1) = w) := by
   classical
   let m := Fintype.card W
+  have : NeZero m := ⟨by omega⟩
   let t₀ : Fin m := τ.symm v₀
   let τ' : Fin m ≃ W :=
     { toFun := fun t => τ (t₀ + t)
@@ -250,6 +270,12 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
     ht (τ'.injective (h.trans hτ'0.symm))
   have hM_card : Fintype.card (SplitV W v₀ pad) = 3 * m + pad := card_splitV v₀ pad
   have hM3 : 3 ≤ Fintype.card (SplitV W v₀ pad) := by omega
+  have h1_m : (1 : Fin m).1 = 1 := by
+    rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
+  have h1_pad : (1 : Fin (3 * m + pad)).1 = 1 := by
+    rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
+  have h1_M : (1 : Fin (Fintype.card (SplitV W v₀ pad))).1 = 1 := by
+    rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
   let splitPos : W → ℕ := fun w => if τ'.symm w = 0 then 0 else 3 * (τ'.symm w).1 + pad
   have hpos_v0 : splitPos v₀ = 0 := by simp only [splitPos, hτ'_symm0, ↓reduceIte]
   let fromSplit : SplitV W v₀ pad → Fin (3 * m + pad) := fun x =>
@@ -263,7 +289,13 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
         · have hw : w ≠ v₀ := fun he => h (he ▸ hτ'_symm0)
           have hk := k.2; simp only [splitMidLen, hw, ↓reduceIte] at hk; omega⟩
     | .vOut w => ⟨splitPos w + 1 + splitMidLen v₀ pad w, by
-        dsimp only [splitPos, splitMidLen]; split_ifs with h hw hw <;> omega⟩
+        dsimp only [splitPos, splitMidLen]
+        have hlt : (τ'.symm w).1 < m := (τ'.symm w).2
+        by_cases hw : w = v₀
+        · subst hw
+          simp only [hτ'_symm0, ↓reduceIte]; omega
+        · have h : τ'.symm w ≠ 0 := fun he => hw (τ'.symm.injective (he.trans hτ'_symm0.symm))
+          simp only [h, hw, ↓reduceIte]; omega⟩
   let toSplit : Fin (3 * m + pad) → SplitV W v₀ pad := fun i =>
     if h0 : i.1 = 0 then .vIn v₀
     else if h1 : i.1 < pad + 2 then
@@ -283,7 +315,7 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
         · have ht : τ'.symm w ≠ 0 := fun h => hw (τ'.symm.injective (h.trans hτ'_symm0.symm))
           have ht1 : 1 ≤ (τ'.symm w).1 := Nat.pos_of_ne_zero fun h => ht (Fin.ext h)
           dsimp only [fromSplit, splitPos, toSplit]
-          rw [if_neg ht]
+          simp only [ht, ↓reduceIte]
           have hj : 3 * (τ'.symm w).1 + pad - (pad + 3) = 3 * ((τ'.symm w).1 - 1) := by omega
           have h0 : ¬ 3 * (τ'.symm w).1 + pad = 0 := by omega
           have h1 : ¬ 3 * (τ'.symm w).1 + pad < pad + 2 := by omega
@@ -291,53 +323,48 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
           simp only [h0, h1, h2, ↓reduceDIte, hj, Nat.mul_div_right _ (by omega : 0 < 3),
             Nat.mul_mod_right, ↓reduceIte]
           congr 1
-          rw [← Fin.ext_iff] at *
-          have hsub : (τ'.symm w).1 - 1 + 1 = (τ'.symm w).1 := by omega
-          simp only [Fin.ext hsub, Equiv.apply_symm_apply]
+          have hlt : (τ'.symm w).1 < m := (τ'.symm w).2
+          have hfin : (⟨(τ'.symm w).1 - 1 + 1, by omega⟩ : Fin m) = τ'.symm w :=
+            Fin.ext (by dsimp only; omega)
+          rw [hfin, Equiv.apply_symm_apply]
     | vMid w k =>
         by_cases hw : w = v₀
         · subst hw
           have hk := k.2; simp only [splitMidLen, ↓reduceIte] at hk
-          dsimp only [fromSplit, toSplit]
-          rw [hpos_v0]
+          simp only [fromSplit, hpos_v0, toSplit]
           have h0 : ¬ 0 + 1 + k.1 = 0 := by omega
           have h1 : 0 + 1 + k.1 < pad + 2 := by omega
           simp only [h0, h1, ↓reduceDIte, Nat.add_sub_cancel_left]
-          congr 1
-          exact Fin.ext (by omega)
         · have ht : τ'.symm w ≠ 0 := fun h => hw (τ'.symm.injective (h.trans hτ'_symm0.symm))
           have ht1 : 1 ≤ (τ'.symm w).1 := Nat.pos_of_ne_zero fun h => ht (Fin.ext h)
           have hk := k.2; simp only [splitMidLen, hw, ↓reduceIte] at hk
           have hk0 : k.1 = 0 := by omega
-          dsimp only [fromSplit, splitPos, toSplit]
-          rw [if_neg ht, hk0]
-          have hj : 3 * (τ'.symm w).1 + pad + 1 + 0 - (pad + 3) =
-              3 * ((τ'.symm w).1 - 1) + 1 := by omega
-          have h0 : ¬ 3 * (τ'.symm w).1 + pad + 1 + 0 = 0 := by omega
-          have h1 : ¬ 3 * (τ'.symm w).1 + pad + 1 + 0 < pad + 2 := by omega
-          have h2 : ¬ 3 * (τ'.symm w).1 + pad + 1 + 0 = pad + 2 := by omega
-          simp only [h0, h1, h2, ↓reduceDIte, hj]
-          have hdiv : (3 * ((τ'.symm w).1 - 1) + 1) / 3 = (τ'.symm w).1 - 1 := by omega
-          have hmod : (3 * ((τ'.symm w).1 - 1) + 1) % 3 = 1 := by omega
-          simp only [hmod, One.one_ne_zero, ↓reduceIte, hdiv]
-          have hfin : (⟨(τ'.symm w).1 - 1 + 1, by omega⟩ : Fin m) = τ'.symm w :=
-            Fin.ext (by omega)
-          rw [hfin, Equiv.apply_symm_apply]
-          congr 1
-          exact Fin.ext (by simp [hk0])
+          have hlt : (τ'.symm w).1 < m := (τ'.symm w).2
+          have hval : (fromSplit (.vMid w k)).1 = 3 * (τ'.symm w).1 + pad + 1 := by
+            simp only [fromSplit, splitPos, ht, ↓reduceIte, hk0, add_zero]
+          dsimp only [toSplit]
+          split_ifs with h0 h1 h2 hmod0 hmod1
+          · exfalso; omega
+          · exfalso; omega
+          · exfalso; omega
+          · exfalso; omega
+          · have hfin : (⟨((fromSplit (.vMid w k)).1 - (pad + 3)) / 3 + 1, by omega⟩ : Fin m) =
+                τ'.symm w := Fin.ext (by dsimp only; omega)
+            have hmid_eq : ∀ u, u = w → ∀ a : Fin (splitMidLen v₀ pad u), a.1 = 0 →
+                SplitV.vMid u a = SplitV.vMid w k := fun u hu a ha => by
+              subst hu; congr 1; exact Fin.ext (ha.trans hk0.symm)
+            exact hmid_eq _ (by rw [hfin, Equiv.apply_symm_apply]) _ rfl
+          · exfalso; omega
     | vOut w =>
         by_cases hw : w = v₀
-        · subst hw
-          dsimp only [fromSplit, toSplit, splitMidLen]
-          rw [hpos_v0, if_pos rfl]
-          have h0 : ¬ 0 + 1 + (pad + 1) = 0 := by omega
-          have h1 : ¬ 0 + 1 + (pad + 1) < pad + 2 := by omega
-          have h2 : 0 + 1 + (pad + 1) = pad + 2 := by omega
-          simp only [h0, h1, h2, ↓reduceDIte]
+        · rw [hw]
+          have hval : (fromSplit (.vOut v₀)).1 = pad + 2 := by
+            simp only [fromSplit, hpos_v0, splitMidLen, ↓reduceIte]; omega
+          dsimp only [toSplit]
+          split_ifs with h0 h1 <;> first | rfl | omega
         · have ht : τ'.symm w ≠ 0 := fun h => hw (τ'.symm.injective (h.trans hτ'_symm0.symm))
           have ht1 : 1 ≤ (τ'.symm w).1 := Nat.pos_of_ne_zero fun h => ht (Fin.ext h)
-          dsimp only [fromSplit, splitPos, splitMidLen, toSplit]
-          rw [if_neg ht, if_neg hw]
+          simp only [fromSplit, splitPos, splitMidLen, toSplit, ht, hw, ↓reduceIte]
           have hj : 3 * (τ'.symm w).1 + pad + 1 + 1 - (pad + 3) =
               3 * ((τ'.symm w).1 - 1) + 2 := by omega
           have h0 : ¬ 3 * (τ'.symm w).1 + pad + 1 + 1 = 0 := by omega
@@ -347,52 +374,55 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
           have hdiv : (3 * ((τ'.symm w).1 - 1) + 2) / 3 = (τ'.symm w).1 - 1 := by omega
           have hmod : (3 * ((τ'.symm w).1 - 1) + 2) % 3 = 2 := by omega
           simp only [hmod, show (2 : ℕ) ≠ 0 by omega, show (2 : ℕ) ≠ 1 by omega, ↓reduceIte, hdiv]
+          have hlt : (τ'.symm w).1 < m := (τ'.symm w).2
           have hfin : (⟨(τ'.symm w).1 - 1 + 1, by omega⟩ : Fin m) = τ'.symm w :=
-            Fin.ext (by omega)
+            Fin.ext (by dsimp only; omega)
           rw [hfin, Equiv.apply_symm_apply]
   have hright : ∀ i, fromSplit (toSplit i) = i := fun i => by
+    have hi : i.1 < 3 * m + pad := i.2
     dsimp only [toSplit]
     split_ifs with h0 h1 h2 hmod0 hmod1
     · ext; simp only [fromSplit, hpos_v0]; exact h0.symm
     · ext; simp only [fromSplit, hpos_v0]; omega
     · ext; simp only [fromSplit, hpos_v0, splitMidLen, ↓reduceIte]; omega
     · have ht0 : (⟨(i.1 - (pad + 3)) / 3 + 1, by omega⟩ : Fin m) ≠ 0 := by
-        intro h; have := congrArg Fin.val h; simp at this; omega
+        intro h; have := congrArg Fin.val h; simp only [Fin.val_zero] at this; omega
       ext
-      simp only [fromSplit, splitPos, Equiv.symm_apply_apply, ht0, ↓reduceIte]
+      simp only [fromSplit, splitPos, Equiv.symm_apply_apply, ht0, ↓reduceIte, Fin.val_mk]
       omega
     · have ht0 : (⟨(i.1 - (pad + 3)) / 3 + 1, by omega⟩ : Fin m) ≠ 0 := by
-        intro h; have := congrArg Fin.val h; simp at this; omega
+        intro h; have := congrArg Fin.val h; simp only [Fin.val_zero] at this; omega
       ext
-      simp only [fromSplit, splitPos, Equiv.symm_apply_apply, ht0, ↓reduceIte]
+      simp only [fromSplit, splitPos, Equiv.symm_apply_apply, ht0, ↓reduceIte, Fin.val_mk]
       omega
     · have ht0 : (⟨(i.1 - (pad + 3)) / 3 + 1, by omega⟩ : Fin m) ≠ 0 := by
-        intro h; have := congrArg Fin.val h; simp at this; omega
+        intro h; have := congrArg Fin.val h; simp only [Fin.val_zero] at this; omega
       have hne : τ' ⟨(i.1 - (pad + 3)) / 3 + 1, by omega⟩ ≠ v₀ := hτ'_ne ht0
       ext
-      simp only [fromSplit, splitPos, splitMidLen, Equiv.symm_apply_apply, ht0, hne, ↓reduceIte]
+      simp only [fromSplit, splitPos, splitMidLen, Equiv.symm_apply_apply, ht0, hne, ↓reduceIte,
+        Fin.val_mk]
       omega
-  let eFin : Fin (Fintype.card (SplitV W v₀ pad)) ≃ Fin (3 * m + pad) := Fin.castOrderIso hM_card
+  let eFin : Fin (Fintype.card (SplitV W v₀ pad)) ≃ Fin (3 * m + pad) := finCongr hM_card
   let eSplit : SplitV W v₀ pad ≃ Fin (3 * m + pad) := ⟨fromSplit, toSplit, hleft, hright⟩
   let σ : Fin (Fintype.card (SplitV W v₀ pad)) ≃ SplitV W v₀ pad :=
-    eFin.toEquiv.trans eSplit.symm
+    eFin.trans eSplit.symm
   have hσ_succ : ∀ i : Fin (3 * m + pad),
       (paddedSplitGraph v₀ pad adjD).Adj (toSplit i) (toSplit (i + 1)) := fun i => by
     have hmod_succ : (i + 1).1 = if i.1 + 1 = 3 * m + pad then 0 else i.1 + 1 := by
       have hlt : i.1 < 3 * m + pad := i.2
-      simp only [Fin.val_add, Fin.val_one' (by omega : 1 < 3 * m + pad)]
+      simp only [Fin.val_add, h1_pad]
       split_ifs with h
       · rw [h, Nat.mod_self]
       · exact Nat.mod_eq_of_lt (by omega)
     dsimp only [paddedSplitGraph, toSplit]
     by_cases h0 : i.1 = 0
     · have h1 : ¬ i.1 + 1 = 3 * m + pad := by omega
-      have ha : (i + 1).1 = 1 := by rw [hmod_succ, if_neg h1, h0]
-      simp only [h0, ↓reduceDIte, ha, One.one_ne_zero, show 1 < pad + 2 by omega, splitAdjRel,
+      have ha : (i + 1).1 = 1 := by rw [hmod_succ, ite_eq_right h1, h0]
+      simp only [h0, ↓reduceDIte, ha, Nat.one_ne_zero, show 1 < pad + 2 by omega, splitAdjRel,
         Nat.sub_self, and_self]
     · by_cases h1 : i.1 < pad + 1
       · have hm1 : ¬ i.1 + 1 = 3 * m + pad := by omega
-        have ha : (i + 1).1 = i.1 + 1 := by rw [hmod_succ, if_neg hm1]
+        have ha : (i + 1).1 = i.1 + 1 := by rw [hmod_succ, ite_eq_right hm1]
         have hlt2 : i.1 < pad + 2 := by omega
         have hlt2' : i.1 + 1 < pad + 2 := by omega
         have ha0 : i.1 + 1 ≠ 0 := by omega
@@ -400,62 +430,67 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
         left; omega
       · by_cases h1' : i.1 = pad + 1
         · have hm1 : ¬ i.1 + 1 = 3 * m + pad := by omega
-          have ha : (i + 1).1 = pad + 2 := by rw [hmod_succ, if_neg hm1, h1']
-          have hlt2 : i.1 < pad + 2 := by omega
-          simp only [h0, hlt2, ↓reduceDIte, ha, show pad + 2 ≠ 0 by omega,
-            show ¬ pad + 2 < pad + 2 by omega, splitAdjRel, splitMidLen, h1']
-          exact ⟨rfl, rfl⟩
+          have ha : (i + 1).1 = pad + 2 := by rw [hmod_succ, ite_eq_right hm1, h1']
+          simp only [h1', show pad + 1 ≠ 0 by omega, show pad + 1 < pad + 2 by omega, ↓reduceDIte,
+            ha, show pad + 2 ≠ 0 by omega, show ¬ pad + 2 < pad + 2 by omega, splitAdjRel,
+            splitMidLen, ↓reduceIte, Nat.add_sub_cancel]
+          trivial
         · by_cases h2 : i.1 = pad + 2
           · have hm1 : ¬ i.1 + 1 = 3 * m + pad := by omega
-            have ha : (i + 1).1 = pad + 3 := by rw [hmod_succ, if_neg hm1, h2]
-            simp only [h0, h1, h2, ↓reduceDIte, show ¬ pad + 2 < pad + 2 by omega,
-              ha, show pad + 3 ≠ 0 by omega, show ¬ pad + 3 < pad + 2 by omega,
+            have ha : (i + 1).1 = pad + 3 := by rw [hmod_succ, ite_eq_right hm1, h2]
+            simp only [h2, show pad + 2 ≠ 0 by omega, show ¬ pad + 2 < pad + 2 by omega,
+              ↓reduceDIte, ha, show pad + 3 ≠ 0 by omega, show ¬ pad + 3 < pad + 2 by omega,
               show pad + 3 ≠ pad + 2 by omega, Nat.sub_self, Nat.zero_div, Nat.zero_mod,
-              splitAdjRel]
-            simpa only [hτ'0] using hτ'_adj 0
+              ↓reduceIte, splitAdjRel]
+            have h01 : (0 + 1 : Fin m) = ⟨1, by omega⟩ :=
+              Fin.ext (by rw [zero_add, h1_m])
+            simpa only [hτ'0, h01] using hτ'_adj 0
           · have hge : pad + 3 ≤ i.1 := by omega
             have hlt1 : ¬ i.1 < pad + 2 := by omega
             by_cases hlast : i.1 + 1 = 3 * m + pad
-            · have ha : (i + 1).1 = 0 := by rw [hmod_succ, if_pos hlast]
+            · have ha : (i + 1).1 = 0 := by rw [hmod_succ, ite_eq_left hlast]
               have hj : i.1 - (pad + 3) = 3 * (m - 1) - 1 := by omega
               have hmod2 : (i.1 - (pad + 3)) % 3 = 2 := by omega
               have hdiv : (i.1 - (pad + 3)) / 3 + 1 = m - 1 := by omega
               simp only [h0, hlt1, h2, ↓reduceDIte, ha, hmod2,
-                show (2 : ℕ) ≠ 0 by omega, show (2 : ℕ) ≠ 1 by omega, splitAdjRel]
+                show (2 : ℕ) ≠ 0 by omega, show (2 : ℕ) ≠ 1 by omega, ↓reduceIte, splitAdjRel]
               have hm_eq : (⟨(i.1 - (pad + 3)) / 3 + 1, by omega⟩ : Fin m) + 1 = 0 := by
-                ext; simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), hdiv, Fin.val_zero]
+                ext; simp only [Fin.val_add, h1_m, hdiv, Fin.val_zero]
                 rw [show m - 1 + 1 = m by omega, Nat.mod_self]
               have hgoal := hτ'_adj ⟨(i.1 - (pad + 3)) / 3 + 1, by omega⟩
               rwa [hm_eq, hτ'0] at hgoal
-            · have ha : (i + 1).1 = i.1 + 1 := by rw [hmod_succ, if_neg hlast]
+            · have ha : (i + 1).1 = i.1 + 1 := by rw [hmod_succ, ite_eq_right hlast]
               have ha0 : i.1 + 1 ≠ 0 := by omega
               have ha1 : ¬ i.1 + 1 < pad + 2 := by omega
               have ha2 : i.1 + 1 ≠ pad + 2 := by omega
               let j := i.1 - (pad + 3)
+              have hj_def : i.1 - (pad + 3) = j := rfl
               have hj' : i.1 + 1 - (pad + 3) = j + 1 := by omega
               rcases Nat.mod_lt j (by omega : 0 < 3) with hmod
               have hcases : j % 3 = 0 ∨ j % 3 = 1 ∨ j % 3 = 2 := by omega
               rcases hcases with hr | hr | hr
               · have hdiv' : (j + 1) / 3 = j / 3 := by omega
                 have hmod' : (j + 1) % 3 = 1 := by omega
-                simp only [h0, hlt1, h2, ↓reduceDIte, ha, ha0, ha1, ha2, hj', hr, hdiv', hmod',
-                  One.one_ne_zero, splitAdjRel, and_self]
+                simp only [h0, hlt1, h2, ↓reduceDIte, ha, ha0, ha1, ha2, hj_def, hj', hr,
+                  hdiv', hmod', Nat.one_ne_zero, ↓reduceIte, splitAdjRel, and_self]
               · have hdiv' : (j + 1) / 3 = j / 3 := by omega
                 have hmod' : (j + 1) % 3 = 2 := by omega
                 have ht0 : (⟨j / 3 + 1, by omega⟩ : Fin m) ≠ 0 := by
-                  intro h; have := congrArg Fin.val h; simp at this; omega
-                simp only [h0, hlt1, h2, ↓reduceDIte, ha, ha0, ha1, ha2, hj', hr, hdiv', hmod',
-                  One.one_ne_zero, show (2 : ℕ) ≠ 0 by omega, show (2 : ℕ) ≠ 1 by omega,
-                  splitAdjRel, splitMidLen, hτ'_ne ht0]
-                exact ⟨rfl, rfl⟩
+                  intro h; have := congrArg Fin.val h
+                  simp only [Fin.val_zero] at this; omega
+                simp only [h0, hlt1, h2, ↓reduceDIte, ha, ha0, ha1, ha2, hj_def, hj', hr,
+                  hdiv', hmod', Nat.one_ne_zero, show (2 : ℕ) ≠ 0 by omega,
+                  show (2 : ℕ) ≠ 1 by omega, ↓reduceIte, splitAdjRel, splitMidLen, hτ'_ne ht0]
+                trivial
               · have hdiv' : (j + 1) / 3 = j / 3 + 1 := by omega
                 have hmod' : (j + 1) % 3 = 0 := by omega
-                simp only [h0, hlt1, h2, ↓reduceDIte, ha, ha0, ha1, ha2, hj', hr, hdiv', hmod',
-                  show (2 : ℕ) ≠ 0 by omega, show (2 : ℕ) ≠ 1 by omega, ↓reduceIte, splitAdjRel]
+                simp only [h0, hlt1, h2, ↓reduceDIte, ha, ha0, ha1, ha2, hj_def, hj', hr,
+                  hdiv', hmod', show (2 : ℕ) ≠ 0 by omega, show (2 : ℕ) ≠ 1 by omega,
+                  ↓reduceIte, splitAdjRel]
                 have hfin : (⟨j / 3 + 1 + 1, by omega⟩ : Fin m) =
                     ⟨j / 3 + 1, by omega⟩ + 1 := by
                   ext
-                  simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m)]
+                  simp only [Fin.val_add, h1_m]
                   exact (Nat.mod_eq_of_lt (by omega)).symm
                 rw [hfin]
                 exact hτ'_adj ⟨j / 3 + 1, by omega⟩
@@ -463,92 +498,113 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
       (paddedSplitGraph v₀ pad adjD).Adj (σ k) (σ (k + 1)) := fun k => by
     have hk : eFin (k + 1) = eFin k + 1 := by
       ext
-      simp only [eFin, Fin.coe_orderIso_apply, Fin.cast_val_eq_self, Fin.val_add,
-        Fin.val_one' (by omega : 1 < Fintype.card (SplitV W v₀ pad)),
-        Fin.val_one' (by omega : 1 < 3 * m + pad), hM_card]
+      simp only [eFin, finCongr_apply, Fin.val_cast, Fin.val_add, h1_M, h1_pad, hM_card]
     simp only [σ, Equiv.trans_apply, eSplit, Equiv.coe_fn_symm_mk, hk]
     exact hσ_succ (eFin k)
+  have h1_M_eq : (⟨1, by omega⟩ : Fin (Fintype.card (SplitV W v₀ pad))) = 1 :=
+    Fin.ext h1_M.symm
+  have hwrap : ∀ t : Fin m,
+      fromSplit (.vOut (τ' t)) + 1 = fromSplit (.vIn (τ' (t + 1))) := fun t => by
+    ext
+    dsimp only [fromSplit, splitPos, splitMidLen]
+    by_cases ht0 : t = 0
+    · subst ht0
+      have h1 : (1 : Fin m) ≠ 0 := by
+        intro h; have := congrArg Fin.val h
+        rw [h1_m, Fin.val_zero] at this; omega
+      have hsymm1 : τ'.symm (τ' 1) = 1 := Equiv.symm_apply_apply _ _
+      simp only [hτ'0, hτ'_symm0, ↓reduceIte, zero_add, hsymm1, h1, Fin.val_add, h1_pad, h1_m]
+      rw [Nat.mod_eq_of_lt (by omega)]
+      omega
+    · have hne := hτ'_ne ht0
+      have ht1 : 1 ≤ t.1 := Nat.pos_of_ne_zero fun h => ht0 (Fin.ext h)
+      have ht_lt : t.1 < m := t.2
+      by_cases hlast : t.1 + 1 = m
+      · have ht0' : t + 1 = 0 := Fin.ext (by
+          simp only [Fin.val_add, h1_m, Fin.val_zero]
+          rw [hlast, Nat.mod_self])
+        simp only [ht0, hne, ↓reduceIte, ht0', Fin.val_add, h1_pad, Equiv.symm_apply_apply]
+        rw [show 3 * t.1 + pad + 1 + 1 + 1 = 3 * m + pad by omega, Nat.mod_self]
+      · have ht0' : t + 1 ≠ 0 := fun h => by
+          have := congrArg Fin.val h
+          simp only [Fin.val_add, h1_m, Fin.val_zero] at this
+          rw [Nat.mod_eq_of_lt (by omega)] at this; omega
+        have ht1' : (t + 1).1 = t.1 + 1 := by
+          simp only [Fin.val_add, h1_m]
+          exact Nat.mod_eq_of_lt (by omega)
+        simp only [ht0, hne, ↓reduceIte, ht0', Fin.val_add, h1_pad, Equiv.symm_apply_apply, ht1']
+        rw [Nat.mod_eq_of_lt (by omega)]
+        omega
   refine ⟨tourEdgeSet σ hM3, ⟨⟨hM3, σ, rfl⟩, fun e he => ?_⟩, fun u w => ?_⟩
   · rw [tourEdgeSet, Finset.mem_image] at he
     obtain ⟨k, _, rfl⟩ := he
+    dsimp only
+    rw [h1_M_eq]
     exact (SimpleGraph.mem_edgeSet _).2 (hσ_adj k)
-  · simp only [tourEdgeSet, Finset.mem_image, Finset.mem_univ, true_and, Subtype.ext_iff]
+  · simp only [tourEdgeSet, h1_M_eq, Finset.mem_image, Finset.mem_univ, true_and, Subtype.ext_iff]
     constructor
     · rintro ⟨k, hk⟩
-      have hadj := hσ_adj k
       have hk_eq : (σ k = .vOut u ∧ σ (k + 1) = .vIn w) ∨
           (σ k = .vIn w ∧ σ (k + 1) = .vOut u) := by
         simpa only [Sym2.eq_iff] using hk
       have hnot_rev : ¬ (σ k = .vIn w ∧ σ (k + 1) = .vOut u) := by
         rintro ⟨h1, h2⟩
         have hk1 : eFin (k + 1) = eFin k + 1 := by
-          ext; simp only [eFin, Fin.coe_orderIso_apply, Fin.cast_val_eq_self, Fin.val_add,
-            Fin.val_one' (by omega : 1 < Fintype.card (SplitV W v₀ pad)),
-            Fin.val_one' (by omega : 1 < 3 * m + pad), hM_card]
+          ext
+          simp only [eFin, finCongr_apply, Fin.val_cast, Fin.val_add, h1_M, h1_pad, hM_card]
         simp only [σ, Equiv.trans_apply, eSplit, Equiv.coe_fn_symm_mk, hk1] at h1 h2
         have heq1 := congrArg fromSplit h1
         have heq2 := congrArg fromSplit h2
         rw [hright] at heq1 heq2
         have hpos1 := congrArg Fin.val heq1
         have hpos2 := congrArg Fin.val heq2
-        dsimp only [fromSplit, splitPos, splitMidLen] at hpos1 hpos2
-        have hstep : (eFin k + 1).1 = if (eFin k).1 + 1 = 3 * m + pad then 0 else (eFin k).1 + 1 := by
-          simp only [Fin.val_add, Fin.val_one' (by omega : 1 < 3 * m + pad)]
+        have hstep : (eFin k + 1).1 =
+            if (eFin k).1 + 1 = 3 * m + pad then 0 else (eFin k).1 + 1 := by
+          have hk_lt : (eFin k).1 < 3 * m + pad := (eFin k).2
+          simp only [Fin.val_add, h1_pad]
           split_ifs with h <;> [rw [h, Nat.mod_self]; exact Nat.mod_eq_of_lt (by omega)]
-        split_ifs at hpos1 hpos2 hstep <;> omega
+        rw [hpos1] at hstep
+        by_cases hw : w = v₀ <;> by_cases hu : u = v₀
+        · subst hw hu
+          simp only [fromSplit, hpos_v0, splitMidLen, ↓reduceIte] at hstep hpos2
+          rw [ite_eq_right (by omega)] at hstep
+          omega
+        · subst hw
+          have htu : τ'.symm u ≠ 0 := fun h => hu (τ'.symm.injective (h.trans hτ'_symm0.symm))
+          have htu1 : 1 ≤ (τ'.symm u).1 := Nat.pos_of_ne_zero fun h => htu (Fin.ext h)
+          simp only [fromSplit, hpos_v0, splitPos, splitMidLen, htu, hu, ↓reduceIte] at hstep hpos2
+          rw [ite_eq_right (by omega)] at hstep
+          omega
+        · subst hu
+          have htw : τ'.symm w ≠ 0 := fun h => hw (τ'.symm.injective (h.trans hτ'_symm0.symm))
+          have htw1 : 1 ≤ (τ'.symm w).1 := Nat.pos_of_ne_zero fun h => htw (Fin.ext h)
+          simp only [fromSplit, splitPos, splitMidLen, htw, hτ'_symm0, ↓reduceIte] at hstep hpos2
+          split_ifs at hstep <;> omega
+        · have htw : τ'.symm w ≠ 0 := fun h => hw (τ'.symm.injective (h.trans hτ'_symm0.symm))
+          have htw1 : 1 ≤ (τ'.symm w).1 := Nat.pos_of_ne_zero fun h => htw (Fin.ext h)
+          have htu : τ'.symm u ≠ 0 := fun h => hu (τ'.symm.injective (h.trans hτ'_symm0.symm))
+          have htu1 : 1 ≤ (τ'.symm u).1 := Nat.pos_of_ne_zero fun h => htu (Fin.ext h)
+          simp only [fromSplit, splitPos, splitMidLen, htw, htu, hu, ↓reduceIte] at hstep hpos2
+          split_ifs at hstep <;> omega
       rcases hk_eq with ⟨hu, hw⟩ | hbad
-      · have hwrap : ∀ t : Fin m, (⟨splitPos (τ' t) + 1 + splitMidLen v₀ pad (τ' t), by
-            dsimp only [splitPos, splitMidLen]; split_ifs <;> omega⟩ : Fin (3 * m + pad)) + 1 =
-            ⟨splitPos (τ' (t + 1)), by dsimp only [splitPos]; split_ifs <;> omega⟩ := by
-          intro t
-          ext
-          dsimp only [splitPos, splitMidLen]
-          simp only [Fin.val_add, Fin.val_one' (by omega : 1 < 3 * m + pad),
-            Fin.val_one' (by omega : 1 < m), Equiv.symm_apply_apply]
-          by_cases ht0 : t = 0
-          · subst ht0
-            have h1 : (0 + 1 : Fin m) ≠ 0 := by
-              intro h; have := congrArg Fin.val h
-              simp only [zero_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero] at this; omega
-            have ht1 : (1 : Fin m).1 = 1 := Fin.val_one' (by omega : 1 < m)
-            simp only [↓reduceIte, hτ'0, zero_add, h1, ht1]
-            exact Nat.mod_eq_of_lt (by omega)
-          · have hne := hτ'_ne ht0
-            have ht1 : 1 ≤ t.1 := Nat.pos_of_ne_zero fun h => ht0 (Fin.ext h)
-            by_cases hlast : t.1 + 1 = m
-            · have ht0' : t + 1 = 0 := Fin.ext (by
-                simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero]
-                rw [hlast, Nat.mod_self])
-              simp only [ht0, hne, ↓reduceIte, ht0']
-              rw [show 3 * t.1 + pad + 1 + 1 + 1 = 3 * m + pad by omega, Nat.mod_self]
-            · have ht0' : t + 1 ≠ 0 := fun h => by
-                have := congrArg Fin.val h
-                simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero] at this
-                rw [Nat.mod_eq_of_lt (by omega)] at this; omega
-              have ht1' : (t + 1).1 = t.1 + 1 := by
-                simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m)]
-                exact Nat.mod_eq_of_lt (by omega)
-              simp only [ht0, hne, ↓reduceIte, ht0', ht1']
-              rw [Nat.mod_eq_of_lt (by omega)]
-              omega
-        have hk' := congrArg eSplit hu
+      · have hk' := congrArg eSplit hu
         have hk'' := congrArg eSplit hw
         have hku : eFin k = fromSplit (.vOut u) := by
-          simpa only [σ, Equiv.trans_apply, Equiv.apply_symm_apply] using hk'
+          simpa only [σ, Equiv.trans_apply, Equiv.apply_symm_apply, eSplit, Equiv.coe_fn_mk]
+            using hk'
         have hkw : eFin (k + 1) = fromSplit (.vIn w) := by
-          simpa only [σ, Equiv.trans_apply, Equiv.apply_symm_apply] using hk''
+          simpa only [σ, Equiv.trans_apply, Equiv.apply_symm_apply, eSplit, Equiv.coe_fn_mk]
+            using hk''
         have hk1 : eFin (k + 1) = eFin k + 1 := by
-          ext; simp only [eFin, Fin.coe_orderIso_apply, Fin.cast_val_eq_self, Fin.val_add,
-            Fin.val_one' (by omega : 1 < Fintype.card (SplitV W v₀ pad)),
-            Fin.val_one' (by omega : 1 < 3 * m + pad), hM_card]
+          ext; simp only [eFin, finCongr_apply, Fin.val_cast, Fin.val_add, h1_M, h1_pad, hM_card]
         rw [hk1, hku] at hkw
         let tu := τ'.symm u
         have htu : τ' tu = u := τ'.apply_symm_apply u
         have hwrap_u := hwrap tu
         rw [htu] at hwrap_u
-        have heq_in : eSplit.symm (fromSplit (.vIn (τ' (tu + 1)))) =
-            eSplit.symm (fromSplit (.vIn w)) := by
-          dsimp only [fromSplit] at hwrap_u hkw ⊢
+        have heq_in : eSplit.symm (eSplit (.vIn (τ' (tu + 1)))) =
+            eSplit.symm (eSplit (.vIn w)) := by
+          dsimp only [eSplit, Equiv.coe_fn_mk]
           rw [← hwrap_u, hkw]
         simp only [Equiv.symm_apply_apply, SplitV.vIn.injEq] at heq_in
         refine ⟨t₀ + tu, ?_, ?_⟩
@@ -558,7 +614,8 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
       · exact absurd hbad hnot_rev
     · rintro ⟨t, rfl, rfl⟩
       let t' : Fin m := t - t₀
-      have ht'1 : τ' t' = τ t := by simp only [τ', t', Equiv.coe_fn_mk, add_sub_cancel]
+      have ht'1 : τ' t' = τ t := by
+        simp only [τ', t', Equiv.coe_fn_mk, show t₀ + (t - t₀) = t by abel]
       have ht'2 : τ' (t' + 1) = τ (t + 1) := by
         simp only [τ', t', Equiv.coe_fn_mk, show t₀ + (t - t₀ + 1) = t + 1 by abel]
       let k : Fin (Fintype.card (SplitV W v₀ pad)) := eFin.symm (fromSplit (.vOut (τ' t')))
@@ -568,49 +625,137 @@ theorem paddedSplitTour_of_dirTour {W : Type*} [Fintype W] [DecidableEq W] (v₀
         simp only [σ, k, Equiv.trans_apply, Equiv.apply_symm_apply, eSplit, Equiv.coe_fn_symm_mk,
           hleft]
       have hk1 : eFin (k + 1) = eFin k + 1 := by
-        ext; simp only [eFin, Fin.coe_orderIso_apply, Fin.cast_val_eq_self, Fin.val_add,
-          Fin.val_one' (by omega : 1 < Fintype.card (SplitV W v₀ pad)),
-          Fin.val_one' (by omega : 1 < 3 * m + pad), hM_card]
+        ext; simp only [eFin, finCongr_apply, Fin.val_cast, Fin.val_add, h1_M, h1_pad, hM_card]
       have hstep : eFin k + 1 = fromSplit (.vIn (τ' (t' + 1))) := by
         simp only [k, Equiv.apply_symm_apply]
-        ext
-        dsimp only [fromSplit, splitPos, splitMidLen]
-        simp only [Fin.val_add, Fin.val_one' (by omega : 1 < 3 * m + pad),
-          Fin.val_one' (by omega : 1 < m), Equiv.symm_apply_apply]
-        by_cases ht0 : t' = 0
-        · subst ht0
-          have h1 : (0 + 1 : Fin m) ≠ 0 := by
-            intro h; have := congrArg Fin.val h
-            simp only [zero_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero] at this; omega
-          simp only [↓reduceIte, hτ'0, zero_add, h1, Fin.val_one' (by omega : 1 < m)]
-          exact Nat.mod_eq_of_lt (by omega)
-        · have hne := hτ'_ne ht0
-          have ht1 : 1 ≤ t'.1 := Nat.pos_of_ne_zero fun h => ht0 (Fin.ext h)
-          by_cases hlast : t'.1 + 1 = m
-          · have ht0' : t' + 1 = 0 := Fin.ext (by
-              simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero]
-              rw [hlast, Nat.mod_self])
-            simp only [ht0, hne, ↓reduceIte, ht0']
-            rw [show 3 * t'.1 + pad + 1 + 1 + 1 = 3 * m + pad by omega, Nat.mod_self]
-          · have ht0' : t' + 1 ≠ 0 := fun h => by
-              have := congrArg Fin.val h
-              simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero] at this
-              rw [Nat.mod_eq_of_lt (by omega)] at this; omega
-            have ht1' : (t' + 1).1 = t'.1 + 1 := by
-              simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m)]
-              exact Nat.mod_eq_of_lt (by omega)
-            simp only [ht0, hne, ↓reduceIte, ht0', ht1']
-            rw [Nat.mod_eq_of_lt (by omega)]
-            omega
+        exact hwrap t'
       have hsk1 : σ (k + 1) = .vIn (τ (t + 1)) := by
         rw [← ht'2]
         simp only [σ, Equiv.trans_apply, hk1, hstep, eSplit, Equiv.coe_fn_symm_mk, hleft]
-      ext
-      simp only [hsk, hsk1]
+      rw [hsk, hsk1]
+
+private theorem tourEdgeSet_reverse {V : Type*} [Fintype V] [Nonempty V] [DecidableEq V]
+    (σ : Fin (Fintype.card V) ≃ V) (hV : 3 ≤ Fintype.card V) :
+    tourEdgeSet
+      { toFun := fun i => σ (-i)
+        invFun := fun v => -(σ.symm v)
+        left_inv := fun i => by simp only [Equiv.symm_apply_apply, neg_neg]
+        right_inv := fun v => by simp only [neg_neg, Equiv.apply_symm_apply] } hV =
+      tourEdgeSet σ hV := by
+  have h1_eq : (⟨1, by omega⟩ : Fin (Fintype.card V)) = 1 :=
+    Fin.ext (by rw [Fin.val_one']; exact (Nat.mod_eq_of_lt (by omega)).symm)
+  ext ⟨e, he⟩
+  simp only [tourEdgeSet, h1_eq, Finset.mem_image, Finset.mem_univ, true_and, Subtype.mk.injEq,
+    Equiv.coe_fn_mk]
+  constructor
+  · rintro ⟨i, hi⟩
+    refine ⟨-(i + 1), ?_⟩
+    rw [show -(i + 1) + 1 = -i by abel, Sym2.eq_swap]
+    exact hi
+  · rintro ⟨j, hj⟩
+    refine ⟨-(j + 1), ?_⟩
+    rw [show -(-(j + 1) + 1) = j by abel, show -(-(j + 1)) = j + 1 by abel, Sym2.eq_swap]
+    exact hj
+
+private theorem tourEdgeSet_shift {V : Type*} [Fintype V] [Nonempty V] [DecidableEq V]
+    (σ : Fin (Fintype.card V) ≃ V) (hV : 3 ≤ Fintype.card V) (s : Fin (Fintype.card V)) :
+    tourEdgeSet
+      { toFun := fun i => σ (s + i)
+        invFun := fun v => σ.symm v - s
+        left_inv := fun i => by simp only [Equiv.symm_apply_apply, add_sub_cancel_left]
+        right_inv := fun v => by simp only [add_sub_cancel, Equiv.apply_symm_apply] } hV =
+      tourEdgeSet σ hV := by
+  have h1_eq : (⟨1, by omega⟩ : Fin (Fintype.card V)) = 1 :=
+    Fin.ext (by rw [Fin.val_one']; exact (Nat.mod_eq_of_lt (by omega)).symm)
+  ext ⟨e, he⟩
+  simp only [tourEdgeSet, h1_eq, Finset.mem_image, Finset.mem_univ, true_and, Subtype.mk.injEq,
+    Equiv.coe_fn_mk]
+  constructor
+  · rintro ⟨i, hi⟩
+    refine ⟨s + i, ?_⟩
+    rw [add_assoc]
+    exact hi
+  · rintro ⟨j, hj⟩
+    refine ⟨j - s, ?_⟩
+    rwa [show s + (j - s) = j by abel, show s + (j - s + 1) = j + 1 by abel]
+
+private theorem adj_Fin_add_one_ne_sub_one {M : ℕ} [NeZero M] (hM : 3 ≤ M) (i : Fin M) :
+    i - 1 ≠ i + 1 := by
+  intro h
+  have h1 : (1 : Fin M).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
+  have hsum : i + (1 + 1) = i + 0 := by
+    calc
+      i + (1 + 1) = i + 1 + 1 := (add_assoc i 1 1).symm
+      _ = i - 1 + 1 := by rw [← h]
+      _ = i + 0 := by rw [sub_add_cancel, add_zero]
+  have h20 : (1 + 1 : Fin M) = 0 := add_left_cancel hsum
+  have hv := congrArg Fin.val h20
+  rw [Fin.val_add, h1, Fin.val_zero, Nat.mod_eq_of_lt (by omega)] at hv
+  omega
+
+private def midPrev {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) (w : W)
+    (k : Fin (splitMidLen v₀ pad w)) : SplitV W v₀ pad :=
+  if h : k.1 = 0 then .vIn w else .vMid w ⟨k.1 - 1, by omega⟩
+
+private def midNext {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ) (w : W)
+    (k : Fin (splitMidLen v₀ pad w)) : SplitV W v₀ pad :=
+  if h : k.1 + 1 = splitMidLen v₀ pad w then .vOut w
+  else .vMid w ⟨k.1 + 1, by have := k.2; omega⟩
+
+private theorem adj_vMid_iff {W : Type*} [DecidableEq W] (v₀ : W) (pad : ℕ)
+    (adjD : W → W → Prop) (w : W) (k : Fin (splitMidLen v₀ pad w)) (x : SplitV W v₀ pad) :
+    (paddedSplitGraph v₀ pad adjD).Adj (.vMid w k) x ↔
+      x = midPrev v₀ pad w k ∨ x = midNext v₀ pad w k := by
+  have hk_lt : k.1 < splitMidLen v₀ pad w := k.2
+  have hvMid_eq : ∀ {w₁ w₂ k₁ k₂},
+      SplitV.vMid (W := W) (v₀ := v₀) (pad := pad) w₁ k₁ = .vMid w₂ k₂ →
+        w₁ = w₂ ∧ k₁.1 = k₂.1 := by
+    rintro _ _ _ _ ⟨⟩
+    exact ⟨rfl, rfl⟩
+  cases x with
+  | vIn u =>
+      simp only [paddedSplitGraph, splitAdjRel, midPrev, midNext]
+      by_cases h0 : k.1 = 0 <;> simp only [h0, ↓reduceDIte] <;>
+        split_ifs <;> simp only [or_false, SplitV.vIn.injEq, eq_comm, and_true, and_false]
+  | vMid u k' =>
+      simp only [paddedSplitGraph, splitAdjRel]
+      constructor
+      · rintro ⟨hwu, hstep⟩
+        subst hwu
+        rcases hstep with hstep | hstep
+        · right
+          simp only [midNext, show ¬ k.1 + 1 = splitMidLen v₀ pad w by have := k'.2; omega,
+            ↓reduceDIte]
+          congr 1
+          exact Fin.ext hstep.symm
+        · left
+          simp only [midPrev, show ¬ k.1 = 0 by omega, ↓reduceDIte]
+          congr 1
+          exact Fin.ext (by dsimp only; omega)
+      · rintro (h | h)
+        · by_cases h0 : k.1 = 0
+          · simp only [midPrev, h0, ↓reduceDIte] at h
+            cases h
+          · simp only [midPrev, h0, ↓reduceDIte] at h
+            obtain ⟨hwu, hval⟩ := hvMid_eq h
+            subst hwu
+            exact ⟨rfl, Or.inr (by dsimp only at hval; omega)⟩
+        · by_cases hlast : k.1 + 1 = splitMidLen v₀ pad w
+          · simp only [midNext, hlast, ↓reduceDIte] at h
+            cases h
+          · simp only [midNext, hlast, ↓reduceDIte] at h
+            obtain ⟨hwu, hval⟩ := hvMid_eq h
+            subst hwu
+            exact ⟨rfl, Or.inl (by dsimp only at hval; omega)⟩
+  | vOut u =>
+      simp only [paddedSplitGraph, splitAdjRel, midPrev, midNext]
+      by_cases hlast : k.1 + 1 = splitMidLen v₀ pad w <;> simp only [hlast, ↓reduceDIte] <;>
+        split_ifs <;> simp only [or_false, false_or, SplitV.vOut.injEq, eq_comm, and_true,
+          and_false]
 
 /-- Every undirected tour of `paddedSplitGraph v₀ pad adjD` (`|W| ≥ 2`) induces a directed
 Hamiltonian tour of `(W, adjD)` matching the inter-gadget arcs. -/
-theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W]
+theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [Nonempty W] [DecidableEq W]
     (v₀ : W) (pad : ℕ) (adjD : W → W → Prop) (hW : 2 ≤ Fintype.card W)
     {F : Finset ↥(⊤ : SimpleGraph (SplitV W v₀ pad)).edgeSet}
     (hF : IsSubgraphTour (paddedSplitGraph v₀ pad adjD) F) :
@@ -623,9 +768,13 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
   let M := Fintype.card (SplitV W v₀ pad)
   have hM_card : M = 3 * Fintype.card W + pad := card_splitV v₀ pad
   have hMpos : 0 < M := by omega
+  have h1_M : (1 : Fin M).1 = 1 := by
+    rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
+  have h1_M_eq : (⟨1, by omega⟩ : Fin M) = 1 := Fin.ext h1_M.symm
   have hadj0 : ∀ i : Fin M, (paddedSplitGraph v₀ pad adjD).Adj (σ₀ i) (σ₀ (i + 1)) := fun i =>
-    (SimpleGraph.mem_edgeSet _).1 (hsub ⟨s(σ₀ i, σ₀ (i + 1)), tourEdge_mem_top_edgeSet hM3 σ₀ i⟩
-      (Finset.mem_image.2 ⟨i, Finset.mem_univ _, rfl⟩))
+    (SimpleGraph.mem_edgeSet _).1 (hsub ⟨s(σ₀ i, σ₀ (i + 1)), by
+      rw [← h1_M_eq]; exact tourEdge_mem_top_edgeSet hM3 σ₀ i⟩
+      (Finset.mem_image.2 ⟨i, Finset.mem_univ _, Subtype.ext (by dsimp only; rw [h1_M_eq])⟩))
   let mid0 : SplitV W v₀ pad := .vMid v₀ ⟨0, splitMidLen_pos v₀ pad v₀⟩
   let k0 : Fin M := σ₀.symm mid0
   have hk0_eq : σ₀ k0 = mid0 := σ₀.apply_symm_apply mid0
@@ -670,27 +819,29 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
   have hσ1 : σ 1 = mid0 := by
     simpa only [σ, Equiv.coe_fn_mk, sub_add_cancel] using hk₁_eq
   have hadj : ∀ i : Fin M, (paddedSplitGraph v₀ pad adjD).Adj (σ i) (σ (i + 1)) := fun i =>
-    (SimpleGraph.mem_edgeSet _).1 (hsub ⟨s(σ i, σ (i + 1)), tourEdge_mem_top_edgeSet hM3 σ i⟩
-      (htour ▸ Finset.mem_image.2 ⟨i, Finset.mem_univ _, rfl⟩))
+    (SimpleGraph.mem_edgeSet _).1 (hsub ⟨s(σ i, σ (i + 1)), by
+      rw [← h1_M_eq]; exact tourEdge_mem_top_edgeSet hM3 σ i⟩
+      (by
+        rw [← htour]
+        exact Finset.mem_image.2 ⟨i, Finset.mem_univ _, Subtype.ext (by dsimp only; rw [h1_M_eq])⟩))
   let finOf : ℕ → Fin M := fun n => ⟨n % M, Nat.mod_lt _ hMpos⟩
   let stepNat : ℕ → SplitV W v₀ pad := fun n => σ (finOf n)
   have hfin_succ : ∀ n : ℕ, finOf (n + 1) = finOf n + 1 := fun n => by
     ext
-    simp only [finOf, Fin.val_add, Fin.val_one' (by omega : 1 < M)]
-    exact Nat.add_mod n 1 M
+    simp only [finOf, Fin.val_add, h1_M, Nat.mod_add_mod]
   have hstep_adj : ∀ n : ℕ, (paddedSplitGraph v₀ pad adjD).Adj (stepNat n) (stepNat (n + 1)) :=
     fun n => by
     dsimp only [stepNat]
     rw [hfin_succ n]
     exact hadj (finOf n)
   have hstep_ne2 : ∀ n : ℕ, stepNat (n + 2) ≠ stepNat n := fun n h => by
-    have h2 : finOf (n + 2) = finOf n + 2 := by
-      rw [show n + 2 = (n + 1) + 1 by rfl, hfin_succ, hfin_succ, add_assoc, one_add_one_eq_two]
-    have hfeq : finOf n + 2 = finOf n := by
-      rw [← h2]; exact σ.injective h
-    have h0 : (2 : Fin M) = 0 := add_left_eq_self.1 (add_comm (finOf n) 2 ▸ hfeq)
+    have h2 : finOf (n + 2) = finOf n + (1 + 1) := by
+      rw [show n + 2 = (n + 1) + 1 by rfl, hfin_succ, hfin_succ, add_assoc]
+    have hfeq : finOf n + (1 + 1) = finOf n + 0 := by
+      rw [← h2, add_zero]; exact σ.injective h
+    have h0 : (1 + 1 : Fin M) = 0 := add_left_cancel hfeq
     have hv := congrArg Fin.val h0
-    simp only [Fin.val_two' (by omega : 2 < M), Fin.val_zero] at hv
+    rw [Fin.val_add, h1_M, Fin.val_zero, Nat.mod_eq_of_lt (by omega)] at hv
     omega
   have hblock_walk : ∀ (t : ℕ) (w : W),
       stepNat t = .vIn w → stepNat (t + 1) = .vMid w ⟨0, splitMidLen_pos v₀ pad w⟩ →
@@ -699,54 +850,48 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
         ∃ w', adjD w w' ∧ stepNat (t + 2 + splitMidLen v₀ pad w) = .vIn w' ∧
           stepNat (t + 3 + splitMidLen v₀ pad w) = .vMid w' ⟨0, splitMidLen_pos v₀ pad w'⟩ := by
     intro t w ht0 ht1
-    have hmid : ∀ k (hk : k < splitMidLen v₀ pad w),
-        stepNat (t + 1 + k) = .vMid w ⟨k, hk⟩ := by
+    have hmid_pair : ∀ k (hk : k < splitMidLen v₀ pad w),
+        stepNat (t + 1 + k) = .vMid w ⟨k, hk⟩ ∧
+        stepNat (t + k) = midPrev v₀ pad w ⟨k, hk⟩ := by
       intro k
       induction k with
-      | zero => intro _; exact ht1
+      | zero =>
+          intro _
+          exact ⟨ht1, by simpa only [add_zero, midPrev, ↓reduceDIte] using ht0⟩
       | succ k ih =>
           intro hk1
           have hk : k < splitMidLen v₀ pad w := by omega
-          have hcur := ih hk
+          obtain ⟨hcur, hprev_eq⟩ := ih hk
           have hnb := hstep_adj (t + 1 + k)
           rw [hcur] at hnb
           rcases (adj_vMid_iff v₀ pad adjD w ⟨k, hk⟩ _).1 hnb with hprev | hnext
           · exfalso
-            have hprev_eq : stepNat (t + k) = midPrev v₀ pad w ⟨k, hk⟩ := by
-              cases k with
-              | zero => simpa only [add_zero, midPrev, ↓reduceDIte] using ht0
-              | succ k' =>
-                  have ih' := ih (by omega)
-                  simpa only [midPrev, Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
-                    Nat.add_sub_cancel, add_assoc] using ih'
-            exact hstep_ne2 (t + k) (by simpa only [add_assoc] using hprev.trans hprev_eq.symm)
-          · dsimp only [midNext] at hnext
-            rw [dif_neg (by omega)] at hnext
-            simpa only [add_assoc] using hnext
+            rw [show t + 1 + k + 1 = t + k + 2 by omega] at hprev
+            exact hstep_ne2 (t + k) (hprev.trans hprev_eq.symm)
+          · simp only [midNext, show ¬ k + 1 = splitMidLen v₀ pad w by omega, ↓reduceDIte] at hnext
+            refine ⟨by simpa only [add_assoc] using hnext, ?_⟩
+            rw [show t + (k + 1) = t + 1 + k by omega]
+            simpa only [midPrev, Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
+              Nat.add_sub_cancel] using hcur
+    have hmid : ∀ k (hk : k < splitMidLen v₀ pad w), stepNat (t + 1 + k) = .vMid w ⟨k, hk⟩ :=
+      fun k hk => (hmid_pair k hk).1
     have hout : stepNat (t + 1 + splitMidLen v₀ pad w) = .vOut w := by
       let k := splitMidLen v₀ pad w - 1
       have hk : k < splitMidLen v₀ pad w := by have := splitMidLen_pos v₀ pad w; omega
-      have hcur := hmid k hk
+      obtain ⟨hcur, hprev_eq⟩ := hmid_pair k hk
       have hnb := hstep_adj (t + 1 + k)
       rw [hcur] at hnb
       have hk_last : k + 1 = splitMidLen v₀ pad w := by have := splitMidLen_pos v₀ pad w; omega
       rcases (adj_vMid_iff v₀ pad adjD w ⟨k, hk⟩ _).1 hnb with hprev | hnext
       · exfalso
-        have hprev_eq : stepNat (t + k) = midPrev v₀ pad w ⟨k, hk⟩ := by
-          cases k with
-          | zero => simpa only [add_zero, midPrev, ↓reduceDIte] using ht0
-          | succ k' =>
-              have ih' := hmid k' (by omega)
-              simpa only [midPrev, Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceDIte,
-                Nat.add_sub_cancel, add_assoc] using ih'
         have heq := hprev.trans hprev_eq.symm
         rw [show t + 1 + k + 1 = t + k + 2 by omega] at heq
         exact hstep_ne2 (t + k) heq
-      · dsimp only [midNext] at hnext
-        rw [dif_pos hk_last] at hnext
+      · simp only [midNext, hk_last, ↓reduceDIte] at hnext
         rwa [show t + 1 + splitMidLen v₀ pad w = t + 1 + k + 1 by omega]
     have hnb_out := hstep_adj (t + 1 + splitMidLen v₀ pad w)
-    rw [hout] at hnb_out
+    rw [hout, show t + 1 + splitMidLen v₀ pad w + 1 = t + 2 + splitMidLen v₀ pad w by omega]
+      at hnb_out
     have hne_out : stepNat (t + 2 + splitMidLen v₀ pad w) ≠
         .vMid w ⟨splitMidLen v₀ pad w - 1, by have := splitMidLen_pos v₀ pad w; omega⟩ := by
       rw [show t + 2 + splitMidLen v₀ pad w = (t + splitMidLen v₀ pad w) + 2 by omega,
@@ -763,12 +908,13 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
           exfalso
           rw [hx] at hnb_out
           dsimp only [paddedSplitGraph, splitAdjRel] at hnb_out
-          rcases hnb_out with ⟨rfl, hk'⟩
-          have hk'eq : (⟨splitMidLen v₀ pad u - 1, by
-              have := splitMidLen_pos v₀ pad u; omega⟩ : Fin (splitMidLen v₀ pad u)) = k' :=
-            Fin.ext (by omega)
-          rw [← hx, hk'eq] at hne_out
-          exact hne_out rfl
+          rcases hnb_out with ⟨hwu, hk'⟩
+          subst hwu
+          have hk'eq : (⟨splitMidLen v₀ pad w - 1, by
+              have := splitMidLen_pos v₀ pad w; omega⟩ : Fin (splitMidLen v₀ pad w)) = k' :=
+            Fin.ext (by dsimp only; omega)
+          rw [← hk'eq] at hx
+          exact hne_out hx
       | vOut u =>
           exfalso
           rw [hx] at hnb_out
@@ -779,10 +925,14 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
       let m0 : SplitV W v₀ pad := .vMid w' ⟨0, splitMidLen_pos v₀ pad w'⟩
       let r := σ.symm m0
       have hr : σ r = m0 := σ.apply_symm_apply m0
-      have hr_plus := (adj_vMid_iff v₀ pad adjD w' ⟨0, splitMidLen_pos v₀ pad w'⟩ _).1
-        (by rw [← hr]; exact hadj r)
-      have hr_minus := (adj_vMid_iff v₀ pad adjD w' ⟨0, splitMidLen_pos v₀ pad w'⟩ _).1
-        (by rw [← hr]; have h := (hadj (r - 1)).symm; rwa [show r - 1 + 1 = r by abel] at h)
+      have hadj_r : (paddedSplitGraph v₀ pad adjD).Adj m0 (σ (r + 1)) := by
+        rw [← hr]; exact hadj r
+      have hadj_rm : (paddedSplitGraph v₀ pad adjD).Adj m0 (σ (r - 1)) := by
+        rw [← hr]; have h := (hadj (r - 1)).symm; rwa [show r - 1 + 1 = r by abel] at h
+      have hr_plus :=
+        (adj_vMid_iff v₀ pad adjD w' ⟨0, splitMidLen_pos v₀ pad w'⟩ (σ (r + 1))).1 hadj_r
+      have hr_minus :=
+        (adj_vMid_iff v₀ pad adjD w' ⟨0, splitMidLen_pos v₀ pad w'⟩ (σ (r - 1))).1 hadj_rm
       have hne_r : σ (r - 1) ≠ σ (r + 1) :=
         fun h => adj_Fin_add_one_ne_sub_one hM3 r (σ.injective h)
       have hprev_w' : midPrev v₀ pad w' ⟨0, splitMidLen_pos v₀ pad w'⟩ = .vIn w' := by
@@ -813,19 +963,27 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
               _ = r := add_sub_cancel_right _ _
           rw [hsub, hr]
         rw [hout] at hbad
+        dsimp only [m0] at hbad
         cases hbad
     exact ⟨hmid, hout, w', hww', hw', hw'1⟩
   let BlockState := {p : ℕ × W //
     stepNat p.1 = .vIn p.2 ∧ stepNat (p.1 + 1) = .vMid p.2 ⟨0, splitMidLen_pos v₀ pad p.2⟩}
   let initBlock : BlockState :=
-    ⟨(0, v₀), by simpa only [stepNat, finOf, Nat.zero_mod, Fin.mk_zero] using hσ0,
-      by simpa only [stepNat, finOf, zero_add, Nat.mod_eq_of_lt (by omega : 1 < M)] using hσ1⟩
+    ⟨(0, v₀), by
+      have h0 : finOf 0 = 0 := Fin.ext (by simp only [finOf, Nat.zero_mod, Fin.val_zero])
+      simpa only [stepNat, h0] using hσ0,
+      by
+        have h1f : finOf (0 + 1) = 1 :=
+          Fin.ext (by simp only [finOf, zero_add, h1_M, Nat.mod_eq_of_lt (by omega : 1 < M)])
+        simpa only [stepNat, h1f] using hσ1⟩
   let nextBlock (s : BlockState) :
       {s' : BlockState // s'.1.1 = s.1.1 + 2 + splitMidLen v₀ pad s.1.2 ∧ adjD s.1.2 s'.1.2} :=
     let h := hblock_walk s.1.1 s.1.2 s.2.1 s.2.2
     let w' := Classical.choose h.2.2
     let hw' := Classical.choose_spec h.2.2
-    ⟨⟨(s.1.1 + 2 + splitMidLen v₀ pad s.1.2, w'), hw'.2.1, hw'.2.2⟩, rfl, hw'.1⟩
+    ⟨⟨(s.1.1 + 2 + splitMidLen v₀ pad s.1.2, w'), hw'.2.1,
+      by rw [show s.1.1 + 2 + splitMidLen v₀ pad s.1.2 + 1 =
+          s.1.1 + 3 + splitMidLen v₀ pad s.1.2 by omega]; exact hw'.2.2⟩, rfl, hw'.1⟩
   let seq : ℕ → BlockState := Nat.rec initBlock fun _ s => (nextBlock s).1
   let pos : ℕ → ℕ := fun r => (seq r).1.1
   let vert : ℕ → W := fun r => (seq r).1.2
@@ -834,9 +992,9 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
   have hsum_pos : ∀ k, pos k = ∑ r ∈ Finset.range k, (2 + splitMidLen v₀ pad (vert r)) := by
     intro k
     induction k with
-    | zero => simp only [pos, seq, initBlock, Finset.range_zero, Finset.sum_empty]
+    | zero => rfl
     | succ k ih =>
-        rw [Finset.sum_range_succ, ← ih, (hseq_step k).1]
+        rw [Finset.sum_range_succ, ← ih, (hseq_step k).1, Nat.add_assoc]
   have htotal_sum : ∑ w : W, (2 + splitMidLen v₀ pad w) = M := by
     rw [hM_card, Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ, smul_eq_mul,
       sum_splitMidLen]
@@ -858,7 +1016,8 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
             · exact absurd heq (hinj r₁ r₂ h hr₂)
             · rfl
             · exact absurd heq.symm (hinj r₂ r₁ h hr₁)
-          rw [hsum_pos k, ← Finset.sum_image (g := vert) him_inj]
+          have him_sum := Finset.sum_image (f := fun w => 2 + splitMidLen v₀ pad w) him_inj
+          rw [hsum_pos k, ← him_sum]
           have hsub_ne : (Finset.range k).image vert ≠ Finset.univ := by
             intro heq
             have hcard := congrArg Finset.card heq
@@ -870,7 +1029,8 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
           obtain ⟨w_out, hw_out⟩ := hex
           have hsub_erase : (Finset.range k).image vert ⊆ Finset.univ.erase w_out :=
             fun w hw => Finset.mem_erase.2 ⟨fun hweq => hw_out (hweq ▸ hw), Finset.mem_univ w⟩
-          have hsum_le := Finset.sum_le_sum_of_subset hsub_erase
+          have hsum_le := Finset.sum_le_sum_of_subset (f := fun w => 2 + splitMidLen v₀ pad w)
+            hsub_erase
           have herase := Finset.add_sum_erase Finset.univ (fun w => 2 + splitMidLen v₀ pad w)
             (Finset.mem_univ w_out)
           have hpos_out := splitMidLen_pos v₀ pad w_out
@@ -883,6 +1043,7 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
             have hfin2 : finOf (pos r₂) = ⟨pos r₂, hpos_k⟩ := Fin.ext (Nat.mod_eq_of_lt hpos_k)
             have hneq_fin : (⟨pos r₁, hr1_lt⟩ : Fin M) ≠ ⟨pos r₂, hpos_k⟩ := fun h => by
               have hval := congrArg Fin.val h
+              dsimp only at hval
               have hmono : ∀ a b : ℕ, a < b → pos a < pos b := fun a b hab => by
                 induction b with
                 | zero => exact absurd hab (Nat.not_lt_zero _)
@@ -897,13 +1058,16 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
             apply σ.injective
             rw [← hfin1, ← hfin2]
             change stepNat (pos r₁) = stepNat (pos r₂)
-            rw [(seq r₁).2.1, (seq r₂).2.1, heq]
+            rw [(seq r₁).2.1, (seq r₂).2.1]
+            exact congrArg SplitV.vIn heq
           · exact hinj r₁ r₂ hr12 (by omega)
         · rcases Nat.lt_succ_iff_lt_or_eq.1 hr with hr' | rfl
           · exact hlt r hr'
           · exact hpos_k
   obtain ⟨hvert_inj, hpos_lt⟩ := hwalk_lt (Fintype.card W) le_rfl
   let m := Fintype.card W
+  have h1_m : (1 : Fin m).1 = 1 := by
+    rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
   let τFun : Fin m → W := fun t => vert t.1
   have hτ_inj : Function.Injective τFun := fun t₁ t₂ heq => by
     rcases lt_trichotomy t₁.1 t₂.1 with h | h | h
@@ -912,39 +1076,41 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
     · exact absurd heq.symm (hvert_inj t₂.1 t₁.1 h t₁.2)
   let τ : Fin m ≃ W := Equiv.ofBijective τFun
     ((Fintype.bijective_iff_injective_and_card _).2 ⟨hτ_inj, Fintype.card_fin m⟩)
+  have hτ_apply : ∀ x : Fin m, τ x = vert x.1 := fun _ => rfl
   have him_univ : (Finset.range m).image vert = Finset.univ := by
     refine Finset.eq_univ_of_card _ ?_
     rw [Finset.card_image_of_injOn (fun r₁ hr₁ r₂ hr₂ heq => by
       rw [Finset.coe_range, Set.mem_Iio] at hr₁ hr₂
-      exact congrArg Fin.val (hτ_inj (t₁ := ⟨r₁, hr₁⟩) (t₂ := ⟨r₂, hr₂⟩) heq)),
-      Finset.card_range, Finset.card_univ]
+      exact congrArg Fin.val (@hτ_inj ⟨r₁, hr₁⟩ ⟨r₂, hr₂⟩ heq)),
+      Finset.card_range]
   have hpos_m : pos m = M := by
-    rw [hsum_pos m, ← Finset.sum_image (g := vert) (fun r₁ hr₁ r₂ hr₂ heq => by
-      rw [Finset.coe_range, Set.mem_Iio] at hr₁ hr₂
-      exact congrArg Fin.val (hτ_inj (t₁ := ⟨r₁, hr₁⟩) (t₂ := ⟨r₂, hr₂⟩) heq)),
-      him_univ, htotal_sum]
+    have him_sum := Finset.sum_image (f := fun w => 2 + splitMidLen v₀ pad w) (g := vert)
+      (fun r₁ hr₁ r₂ hr₂ heq => by
+        rw [Finset.coe_range, Set.mem_Iio] at hr₁ hr₂
+        exact congrArg Fin.val (@hτ_inj ⟨r₁, hr₁⟩ ⟨r₂, hr₂⟩ heq))
+    rw [hsum_pos m, ← him_sum, him_univ, htotal_sum]
   have hvert_m : vert m = vert 0 := by
     have hstep_m : stepNat (pos m) = stepNat 0 := by
       simp only [stepNat, hpos_m, finOf, Nat.mod_self, Nat.zero_mod]
     have hv := (seq m).2.1.symm.trans (hstep_m.trans (seq 0).2.1)
-    cases hv
-    rfl
+    exact SplitV.vIn.inj hv
   have hdir : IsDirTour adjD τ := fun t => by
-    dsimp only [τ, Equiv.coe_fn_mk, τFun]
+    rw [hτ_apply, hτ_apply]
     by_cases hlast : t.1 + 1 = m
     · have ht0 : t + 1 = 0 := Fin.ext (by
-        simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero]
+        simp only [Fin.val_add, h1_m, Fin.val_zero]
         rw [hlast, Nat.mod_self])
-      rw [ht0, Fin.val_zero, ← hvert_m, ← hlast]
-      exact (hseq_step t.1).2
+      rw [ht0, Fin.val_zero]
+      have hstep' := (hseq_step t.1).2
+      rwa [hlast, hvert_m] at hstep'
     · have ht1 : (t + 1).1 = t.1 + 1 := by
-        simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m)]
+        simp only [Fin.val_add, h1_m]
         exact Nat.mod_eq_of_lt (by omega)
       rw [ht1]
       exact (hseq_step t.1).2
   refine ⟨τ, hdir, fun u w => ?_⟩
   rw [← htour]
-  simp only [tourEdgeSet, Finset.mem_image, Finset.mem_univ, true_and, Subtype.ext_iff]
+  simp only [tourEdgeSet, h1_M_eq, Finset.mem_image, Finset.mem_univ, true_and, Subtype.ext_iff]
   constructor
   · rintro ⟨i, hi⟩
     have hfind : ∀ k ≤ m, i.1 < pos k → ∃ r, r < k ∧ pos r ≤ i.1 ∧ i.1 < pos (r + 1) := by
@@ -952,7 +1118,7 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
       induction k with
       | zero =>
           intro _ hlt0
-          have h0 : pos 0 = 0 := by simp only [pos, seq, initBlock]
+          have h0 : pos 0 = 0 := rfl
           omega
       | succ k ih =>
           intro hk hlt
@@ -962,7 +1128,8 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
           · exact ⟨k, Nat.lt_succ_self k, by omega, hlt⟩
     obtain ⟨r, hr, hlo, hhi⟩ := hfind m le_rfl (hpos_m ▸ i.2)
     have hfin_i : i = finOf i.1 := Fin.ext (Nat.mod_eq_of_lt i.2).symm
-    have hfin_i1 : i + 1 = finOf (i.1 + 1) := by rw [hfin_i, hfin_succ]
+    have hfin_i1 : i + 1 = finOf (i.1 + 1) :=
+      Fin.ext (by dsimp only [finOf]; rw [Fin.val_add, h1_M])
     have hσi : σ i = stepNat i.1 := by dsimp only [stepNat]; rw [← hfin_i]
     have hσi1 : σ (i + 1) = stepNat (i.1 + 1) := by dsimp only [stepNat]; rw [← hfin_i1]
     rw [hσi, hσi1] at hi
@@ -996,7 +1163,7 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
           have hs2 : stepNat (i.1 + 1) = .vOut (vert r) := by
             rw [show i.1 + 1 = pos r + 1 + splitMidLen v₀ pad (vert r) by omega]; exact hwalk.2.1
           rw [hs1, hs2, Sym2.eq_iff] at hi
-          rcases hi with ⟨_, h⟩ | ⟨_, h⟩ <;> cases h
+          rcases hi with ⟨_, h⟩ | ⟨h, _⟩ <;> cases h
         · have hlast : i.1 = pos r + 1 + splitMidLen v₀ pad (vert r) := by omega
           have hs1 : stepNat i.1 = .vOut (vert r) := by rw [hlast]; exact hwalk.2.1
           have hs2 : stepNat (i.1 + 1) = .vIn (vert (r + 1)) := by
@@ -1005,16 +1172,16 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
           rw [hs1, hs2, Sym2.eq_iff] at hi
           rcases hi with ⟨hu, hw⟩ | ⟨hbad, _⟩
           · refine ⟨⟨r, hr⟩, ?_, ?_⟩
-            · dsimp only [τ, Equiv.coe_fn_mk, τFun]; cases hu; rfl
-            · dsimp only [τ, Equiv.coe_fn_mk, τFun]
+            · rw [hτ_apply]; cases hu; rfl
+            · rw [hτ_apply]
               by_cases hr1 : r + 1 = m
               · have hwrap : (⟨r, hr⟩ + 1 : Fin m) = 0 := Fin.ext (by
-                  simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero]
+                  simp only [Fin.val_add, h1_m, Fin.val_zero]
                   rw [hr1, Nat.mod_self])
                 rw [hwrap, Fin.val_zero, ← hvert_m, ← hr1]
                 cases hw; rfl
               · have hnext : (⟨r, hr⟩ + 1 : Fin m).1 = r + 1 := by
-                  simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m)]
+                  simp only [Fin.val_add, h1_m]
                   exact Nat.mod_eq_of_lt (by omega)
                 rw [hnext]
                 cases hw; rfl
@@ -1024,33 +1191,31 @@ theorem exists_dirTour_of_paddedSplitTour {W : Type*} [Fintype W] [DecidableEq W
       have := hpos_lt t.1 t.2
       have hstep := (hseq_step t.1).1
       by_cases hlast : t.1 + 1 = m
-      · omega
+      · rw [hlast, hpos_m] at hstep; omega
       · have := hpos_lt (t.1 + 1) (by omega); omega⟩
     refine ⟨i, ?_⟩
     have hfin_i : i = finOf i.1 := Fin.ext (Nat.mod_eq_of_lt i.2).symm
-    have hfin_i1 : i + 1 = finOf (i.1 + 1) := by rw [hfin_i, hfin_succ]
+    have hfin_i1 : i + 1 = finOf (i.1 + 1) :=
+      Fin.ext (by dsimp only [finOf]; rw [Fin.val_add, h1_M])
     have hσi : σ i = .vOut (τ t) := by
-      dsimp only [τ, Equiv.coe_fn_mk, τFun]
-      rw [hfin_i]
+      rw [hτ_apply, hfin_i]
       exact (hblock_walk (pos t.1) (vert t.1) (seq t.1).2.1 (seq t.1).2.2).2.1
     have hσi1 : σ (i + 1) = .vIn (τ (t + 1)) := by
       rw [hfin_i1]
       change stepNat (i.1 + 1) = .vIn (τ (t + 1))
       have hipos : i.1 + 1 = pos (t.1 + 1) := by dsimp only [i]; rw [(hseq_step t.1).1]; omega
-      rw [hipos]
-      dsimp only [τ, Equiv.coe_fn_mk, τFun]
+      rw [hipos, hτ_apply]
       by_cases hlast : t.1 + 1 = m
       · have hwrap : t + 1 = 0 := Fin.ext (by
-          simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m), Fin.val_zero]
+          simp only [Fin.val_add, h1_m, Fin.val_zero]
           rw [hlast, Nat.mod_self])
         rw [hwrap, Fin.val_zero, ← hvert_m, ← hlast]
         exact (seq (t.1 + 1)).2.1
       · have hnext : (t + 1).1 = t.1 + 1 := by
-          simp only [Fin.val_add, Fin.val_one' (by omega : 1 < m)]
+          simp only [Fin.val_add, h1_m]
           exact Nat.mod_eq_of_lt (by omega)
         rw [hnext]
         exact (seq (t.1 + 1)).2.1
-    ext
-    simp only [hσi, hσi1]
+    rw [hσi, hσi1]
 
 end SplitGraph
