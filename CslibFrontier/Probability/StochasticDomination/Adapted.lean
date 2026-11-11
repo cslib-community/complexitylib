@@ -51,8 +51,11 @@ bound only on `{ω | adaptedCount A t ω < r}`.
   `Cslib.Probability.adaptedCount_real_Iio_le_binomial`: active-before-target (`count < r`)
   domination and uniform binomial tail bounds.
 * `Cslib.Probability.traj_adaptedCount_stochasticallyDominates_poissonBinomial`,
-  `Cslib.Probability.trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`:
-  specializations to `ProbabilityTheory.Kernel.traj` and `Kernel.trajMeasure`.
+  `Cslib.Probability.poissonBinomial_stochasticallyDominates_traj_adaptedCount`,
+  `Cslib.Probability.trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `Cslib.Probability.poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`:
+  lower- and upper-envelope specializations to `ProbabilityTheory.Kernel.traj` and
+  `Kernel.trajMeasure`.
 * `Cslib.Probability.PMF.seqCount_stochasticallyDominates_poissonBinomial`,
   `Cslib.Probability.PMF.seqCount_active_toReal_Iio_le`: sequential finite-horizon `PMF`
   domination.
@@ -483,6 +486,17 @@ theorem poissonBinomial_stochasticallyDominates_adaptedCount {Ω : Type*} [m : M
   rw [pbValue_zero_Ici_eq_real, integral_indicator_Ici_adaptedCount ℱ hA] at hmain
   exact Ici_le_of_measureReal_le hmain
 
+/-- If `adaptedCount A n ω < r` and `B t` agrees with `A t` at `ω` for every `t < n` where
+`adaptedCount A t ω < r`, then `adaptedCount B n ω = adaptedCount A n ω`. -/
+theorem adaptedCount_congr_of_lt {Ω : Type*} {A B : ℕ → Set Ω} {r n : ℕ} {ω : Ω}
+    (hlt : adaptedCount A n ω < r)
+    (hiff : ∀ t < n, adaptedCount A t ω < r → (ω ∈ B t ↔ ω ∈ A t)) :
+    adaptedCount B n ω = adaptedCount A n ω := by
+  refine Finset.sum_congr rfl fun t ht => ?_
+  rw [Finset.mem_range] at ht
+  have ht_lt : adaptedCount A t ω < r := (adaptedCount_mono A ω ht.le).trans_lt hlt
+  by_cases hmem : ω ∈ A t <;> simp [hiff t ht ht_lt, hmem]
+
 private theorem adaptedCount_min_eq_of_union {Ω : Type*} (A : ℕ → Set Ω) (r n : ℕ) (ω : Ω) :
     min (adaptedCount A n ω) r =
       min (adaptedCount (fun t => A t ∪ {ω' | r ≤ adaptedCount A t ω'}) n ω) r := by
@@ -496,14 +510,8 @@ private theorem adaptedCount_min_eq_of_union {Ω : Type*} (A : ℕ → Set Ω) (
   · have hreach' : r ≤ adaptedCount A' n ω := hreach.trans hle
     rw [min_eq_right hreach, min_eq_right hreach']
   · have hlt : adaptedCount A n ω < r := not_le.mp hreach
-    have heq : adaptedCount A' n ω = adaptedCount A n ω := by
-      refine Finset.sum_congr rfl fun t ht => ?_
-      rw [Finset.mem_range] at ht
-      have ht_lt : adaptedCount A t ω < r := (adaptedCount_mono A ω ht.le).trans_lt hlt
-      have hnot : ω ∉ {ω' | r ≤ adaptedCount A t ω'} := not_le.mpr ht_lt
-      by_cases hmem : ω ∈ A t
-      · simp [A', hmem]
-      · simp [A', hmem, hnot]
+    have heq : adaptedCount A' n ω = adaptedCount A n ω :=
+      adaptedCount_congr_of_lt hlt fun t _ ht => by simp [A', not_le.mpr ht]
     rw [heq]
 
 private theorem adaptedCount_min_eq_of_inter {Ω : Type*} (A : ℕ → Set Ω) (r n : ℕ) (ω : Ω) :
@@ -521,13 +529,9 @@ private theorem adaptedCount_min_eq_of_inter {Ω : Type*} (A : ℕ → Set Ω) (
   · have hnot : adaptedCount A n ω < r := by
       by_contra hc
       have hge : r ≤ adaptedCount A n ω := not_lt.mp hc
-      have heq_lt :
-          ∀ t < n, adaptedCount A t ω < r → adaptedCount A'' t ω = adaptedCount A t ω := by
-        intro t ht htr
-        refine Finset.sum_congr rfl fun s hs => ?_
-        rw [Finset.mem_range] at hs
-        have hsr : adaptedCount A s ω < r := (adaptedCount_mono A ω hs.le).trans_lt htr
-        by_cases hmem : ω ∈ A s <;> simp [A'', hmem, hsr]
+      have heq_lt (t : ℕ) (htr : adaptedCount A t ω < r) :
+          adaptedCount A'' t ω = adaptedCount A t ω :=
+        adaptedCount_congr_of_lt htr fun s _ hs => by simp [A'', hs]
       have hex : ∃ t ≤ n, r ≤ adaptedCount A t ω := ⟨n, le_rfl, hge⟩
       have ht₀_spec := Nat.find_spec hex
       cases hfind : Nat.find hex with
@@ -543,8 +547,7 @@ private theorem adaptedCount_min_eq_of_inter {Ω : Type*} (A : ℕ → Set Ω) (
           have hmin : ¬ (t₁ ≤ n ∧ r ≤ adaptedCount A t₁ ω) :=
             Nat.find_min hex (by rw [hfind]; exact Nat.lt_succ_self t₁)
           exact hmin ⟨Nat.le_of_succ_le ht₀_spec.1, not_lt.mp hc₁⟩
-        have hA''t₁ : adaptedCount A'' t₁ ω = adaptedCount A t₁ ω :=
-          heq_lt t₁ (Nat.lt_of_succ_le ht₀_spec.1) ht₁_lt
+        have hA''t₁ : adaptedCount A'' t₁ ω = adaptedCount A t₁ ω := heq_lt t₁ ht₁_lt
         have hstep : adaptedCount A'' (t₁ + 1) ω = adaptedCount A (t₁ + 1) ω := by
           rw [adaptedCount_succ, adaptedCount_succ, hA''t₁]
           by_cases hmem : ω ∈ A t₁ <;> simp [A'', hmem, ht₁_lt]
@@ -554,11 +557,8 @@ private theorem adaptedCount_min_eq_of_inter {Ω : Type*} (A : ℕ → Set Ω) (
             _ = adaptedCount A'' (t₁ + 1) ω := hstep.symm
             _ ≤ adaptedCount A'' n ω := adaptedCount_mono A'' ω ht₀_spec.1
         exact absurd hr_A'' hreach
-    have heq : adaptedCount A'' n ω = adaptedCount A n ω := by
-      refine Finset.sum_congr rfl fun t ht => ?_
-      rw [Finset.mem_range] at ht
-      have ht_lt : adaptedCount A t ω < r := (adaptedCount_mono A ω ht.le).trans_lt hnot
-      by_cases hmem : ω ∈ A t <;> simp [A'', hmem, ht_lt]
+    have heq : adaptedCount A'' n ω = adaptedCount A n ω :=
+      adaptedCount_congr_of_lt hnot fun t _ ht => by simp [A'', ht]
     rw [heq]
 
 /-- Extending an `ℱ (t + 1)`-measurable event `E` by `Sᶜ` (`S` `ℱ t`-measurable) lifts an
@@ -756,26 +756,22 @@ theorem shiftFiltration_apply {Ω : Type*} [m : MeasurableSpace Ω] (ℱ : Filtr
     shiftFiltration ℱ a t = ℱ (a + t) :=
   rfl
 
-private theorem traj_shiftFiltration_condExp_indicator_eq
+/-- Conditional expectation of a measurable event indicator under `Kernel.traj κ a x₀` at time
+`b ≥ a` equals the `Kernel.traj κ b` real probability at `Preorder.frestrictLe b x`. -/
+theorem traj_condExp_indicator_eq
     {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
     (κ : (n : ℕ) → Kernel (Π i : Finset.Iic n, X i) (X (n + 1)))
-    [∀ n, IsMarkovKernel (κ n)] {a t : ℕ} (x₀ : Π i : Finset.Iic a, X i)
-    {E : Set (Π n, X n)} (hEm : MeasurableSet[Filtration.piLE (a + t + 1)] E) :
-    (Kernel.traj κ a x₀)[E.indicator (fun _ => (1 : ℝ)) |
-        shiftFiltration Filtration.piLE a t] =ᵐ[Kernel.traj κ a x₀]
-      fun x => (Kernel.traj κ (a + t) (Preorder.frestrictLe (a + t) x)).real E := by
-  have hE : MeasurableSet E := Filtration.piLE.le (a + t + 1) _ hEm
+    [∀ n, IsMarkovKernel (κ n)] {a b : ℕ} (hab : a ≤ b) (x₀ : Π i : Finset.Iic a, X i)
+    {E : Set (Π n, X n)} (hE : MeasurableSet E) :
+    (Kernel.traj κ a x₀)[E.indicator (fun _ => (1 : ℝ)) | Filtration.piLE b] =ᵐ[
+        Kernel.traj κ a x₀]
+      fun x => (Kernel.traj κ b (Preorder.frestrictLe b x)).real E := by
   have hint : Integrable (E.indicator (1 : (Π n, X n) → ℝ)) (Kernel.traj κ a x₀) :=
     (integrable_const 1).indicator hE
-  have htraj := Kernel.condExp_traj (κ := κ) (a := a) (b := a + t) (Nat.le_add_right a t)
-    (x₀ := x₀) hint
+  have htraj := Kernel.condExp_traj (κ := κ) (a := a) (b := b) hab (x₀ := x₀) hint
   filter_upwards [htraj] with x hx
-  have hx' :
-      (Kernel.traj κ a x₀)[E.indicator (1 : (Π n, X n) → ℝ) | Filtration.piLE (a + t)] x =
-        ∫ y, E.indicator (1 : (Π n, X n) → ℝ) y
-          ∂Kernel.traj κ (a + t) (Preorder.frestrictLe (a + t) x) := hx
-  rw [integral_indicator_one hE] at hx'
-  exact hx'
+  rw [integral_indicator_one hE] at hx
+  exact hx
 
 private theorem hA_shiftFiltration {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
     {a : ℕ} {A : ℕ → Set (Π n, X n)}
@@ -800,7 +796,9 @@ theorem traj_adaptedCount_stochasticallyDominates_poissonBinomial
   refine adaptedCount_stochasticallyDominates_poissonBinomial
     (shiftFiltration Filtration.piLE a) (hA_shiftFiltration hA) ps ?_
   intro t ht
-  filter_upwards [traj_shiftFiltration_condExp_indicator_eq κ x₀ (hA t), hp t ht] with x hx hpx
+  have hce := traj_condExp_indicator_eq κ (Nat.le_add_right a t) x₀
+    (Filtration.piLE.le (a + t + 1) _ (hA t))
+  filter_upwards [hce, hp t ht] with x hx hpx
   exact hpx.trans_eq hx.symm
 
 /-- Upper-envelope specialization of `poissonBinomial_stochasticallyDominates_adaptedCount` to
@@ -818,8 +816,64 @@ theorem poissonBinomial_stochasticallyDominates_traj_adaptedCount
   refine poissonBinomial_stochasticallyDominates_adaptedCount
     (shiftFiltration Filtration.piLE a) (hA_shiftFiltration hA) ps ?_
   intro t ht
-  filter_upwards [traj_shiftFiltration_condExp_indicator_eq κ x₀ (hA t), hp t ht] with x hx hpx
+  have hce := traj_condExp_indicator_eq κ (Nat.le_add_right a t) x₀
+    (Filtration.piLE.le (a + t + 1) _ (hA t))
+  filter_upwards [hce, hp t ht] with x hx hpx
   exact hx.trans_le hpx
+
+private theorem measurable_traj_real {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
+    (κ : (n : ℕ) → Kernel (Π i : Finset.Iic n, X i) (X (n + 1)))
+    [∀ n, IsMarkovKernel (κ n)] {A : ℕ → Set (Π n, X n)}
+    (hA : ∀ t, MeasurableSet[Filtration.piLE (t + 1)] (A t)) (t : ℕ) :
+    Measurable fun x => (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t) :=
+  ENNReal.measurable_toReal.comp
+    ((Kernel.measurable_coe _ (Filtration.piLE.le (t + 1) _ (hA t))).comp
+      (Preorder.measurable_frestrictLe t))
+
+private noncomputable abbrev trajInitMeasure {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
+    (μ₀ : Measure (X 0)) : Measure (Π i : Finset.Iic 0, X i) :=
+  μ₀.map (MeasurableEquiv.piUnique fun i : Finset.Iic 0 => X i).symm
+
+private instance trajInitMeasure_isProbability {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
+    (μ₀ : Measure (X 0)) [IsProbabilityMeasure μ₀] :
+    IsProbabilityMeasure (trajInitMeasure μ₀) :=
+  ⟨by
+    rw [trajInitMeasure, Measure.map_apply (MeasurableEquiv.measurable _) MeasurableSet.univ,
+      Set.preimage_univ, measure_univ]⟩
+
+private theorem trajMeasure_ae_traj {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
+    (μ₀ : Measure (X 0))
+    (κ : (n : ℕ) → Kernel (Π i : Finset.Iic n, X i) (X (n + 1)))
+    [∀ n, IsMarkovKernel (κ n)] (n : ℕ) {Q : (t : ℕ) → t < n → (Π n, X n) → Prop}
+    (hQm : ∀ t (ht : t < n), MeasurableSet {x | ¬ Q t ht x})
+    (hq : ∀ t (ht : t < n), ∀ᵐ x ∂Kernel.trajMeasure μ₀ κ, Q t ht x) :
+    ∀ᵐ x₀ ∂trajInitMeasure μ₀,
+      ∀ t (ht : t < n), ∀ᵐ x ∂Kernel.traj κ 0 x₀, Q t ht x := by
+  rw [ae_all_iff]
+  intro t
+  rw [ae_all_iff]
+  intro ht
+  have hzero : (Kernel.trajMeasure μ₀ κ) {x | ¬ Q t ht x} = 0 := ae_iff.mp (hq t ht)
+  change ((Kernel.traj κ 0) ∘ₘ trajInitMeasure μ₀) {x | ¬ Q t ht x} = 0 at hzero
+  rw [Measure.bind_apply (hQm t ht) (Kernel.traj κ 0).measurable.aemeasurable,
+    lintegral_eq_zero_iff (Kernel.measurable_coe (Kernel.traj κ 0) (hQm t ht))] at hzero
+  filter_upwards [hzero] with x₀ hx₀
+  exact ae_iff.mpr hx₀
+
+private theorem trajMeasure_map_apply {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
+    (μ₀ : Measure (X 0))
+    (κ : (n : ℕ) → Kernel (Π i : Finset.Iic n, X i) (X (n + 1)))
+    [∀ n, IsMarkovKernel (κ n)] {f : (Π n, X n) → ℕ} (hf : Measurable f)
+    {U : Set ℕ} (hU : MeasurableSet U) :
+    ((Kernel.trajMeasure μ₀ κ).map f) U =
+      ∫⁻ x₀, ((Kernel.traj κ 0 x₀).map f) U ∂trajInitMeasure μ₀ := by
+  rw [Measure.map_apply hf hU]
+  have hbind : (Kernel.trajMeasure μ₀ κ) (f ⁻¹' U) =
+      ∫⁻ x₀, (Kernel.traj κ 0 x₀) (f ⁻¹' U) ∂trajInitMeasure μ₀ := by
+    change ((Kernel.traj κ 0) ∘ₘ trajInitMeasure μ₀) (f ⁻¹' U) = _
+    exact Measure.bind_apply (hf hU) (Kernel.traj κ 0).measurable.aemeasurable
+  rw [hbind]
+  exact lintegral_congr fun x₀ => (Measure.map_apply hf hU).symm
 
 /-- Specialization of `adaptedCount_stochasticallyDominates_poissonBinomial` to
 `ProbabilityTheory.Kernel.trajMeasure μ₀ κ` for events measurable at step `t + 1`. -/
@@ -836,63 +890,58 @@ theorem trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial
       (PMF.poissonBinomial ps).toMeasure := by
   have hm : Measurable (adaptedCount A ps.length) :=
     (measurable_adaptedCount Filtration.piLE hA ps.length).mono (Filtration.piLE.le _) le_rfl
-  rw [stochasticallyDominates_nat_iff_Ici]
-  intro r
-  let μ₀' : Measure (Π i : Finset.Iic 0, X i) :=
-    μ₀.map (MeasurableEquiv.piUnique fun i : Finset.Iic 0 => X i).symm
-  have htraj_meas : Kernel.trajMeasure μ₀ κ = (Kernel.traj κ 0) ∘ₘ μ₀' := rfl
-  have hdom_point (x₀ : Π i : Finset.Iic 0, X i)
-      (hpx₀ : ∀ t (ht : t < ps.length), ∀ᵐ x ∂Kernel.traj κ 0 x₀,
-        (ps[t] : ℝ) ≤ (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t)) :
-      (PMF.poissonBinomial ps).toMeasure (Set.Ici r) ≤
-        ((Kernel.traj κ 0 x₀).map (adaptedCount A ps.length)) (Set.Ici r) := by
-    refine (adaptedCount_stochasticallyDominates_poissonBinomial Filtration.piLE hA ps ?_).Ici_le r
-    intro t ht
-    have hAtm : MeasurableSet (A t) := Filtration.piLE.le (t + 1) _ (hA t)
-    have hint : Integrable ((A t).indicator (1 : (Π n, X n) → ℝ)) (Kernel.traj κ 0 x₀) :=
-      (integrable_const 1).indicator hAtm
-    have hce :
-        (Kernel.traj κ 0 x₀)[(A t).indicator (fun _ => (1 : ℝ)) | Filtration.piLE t] =ᵐ[
-            Kernel.traj κ 0 x₀]
-          fun x => (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t) := by
-      have htraj := Kernel.condExp_traj (κ := κ) (a := 0) (b := t) (Nat.zero_le t) (x₀ := x₀) hint
-      filter_upwards [htraj] with x hx
-      rw [integral_indicator_one hAtm] at hx
-      exact hx
-    filter_upwards [hce, hpx₀ t ht] with x hx hpx
-    exact hpx.trans_eq hx.symm
-  have hae_x₀ :
-      ∀ᵐ x₀ ∂μ₀', ∀ t (ht : t < ps.length), ∀ᵐ x ∂Kernel.traj κ 0 x₀,
-        (ps[t] : ℝ) ≤ (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t) := by
-    rw [ae_all_iff]
-    intro t
-    rw [ae_all_iff]
-    intro ht
-    have hS : MeasurableSet {x : Π n, X n |
-        ¬ (ps[t] : ℝ) ≤ (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t)} := by
-      have hAtm : MeasurableSet (A t) := Filtration.piLE.le (t + 1) _ (hA t)
-      have hreal_meas :
-          Measurable fun x => (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t) :=
-        ENNReal.measurable_toReal.comp
-          ((Kernel.measurable_coe _ hAtm).comp (Preorder.measurable_frestrictLe t))
-      exact (measurableSet_le measurable_const hreal_meas).compl
-    have hzero : (Kernel.trajMeasure μ₀ κ) {x |
-        ¬ (ps[t] : ℝ) ≤ (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t)} = 0 :=
-      ae_iff.mp (hp t ht)
-    rw [htraj_meas, Measure.bind_apply hS (Kernel.traj κ 0).measurable.aemeasurable] at hzero
-    rw [lintegral_eq_zero_iff (Kernel.measurable_coe (Kernel.traj κ 0) hS)] at hzero
-    filter_upwards [hzero] with x₀ hx₀
-    exact ae_iff.mpr hx₀
-  rw [Measure.map_apply hm measurableSet_Ici, htraj_meas,
-    Measure.bind_apply (hm measurableSet_Ici) (Kernel.traj κ 0).measurable.aemeasurable]
+  have hae_x₀ := trajMeasure_ae_traj μ₀ κ ps.length
+    (fun t _ => (measurableSet_le measurable_const (measurable_traj_real κ hA t)).compl) hp
+  intro U hUm hU
+  rw [trajMeasure_map_apply μ₀ κ hm hUm]
   calc
-    (PMF.poissonBinomial ps).toMeasure (Set.Ici r)
+    (PMF.poissonBinomial ps).toMeasure U
       = ∫⁻ _ : Π i : Finset.Iic 0, X i,
-          (PMF.poissonBinomial ps).toMeasure (Set.Ici r) ∂μ₀' := by simp
-    _ ≤ ∫⁻ x₀, Kernel.traj κ 0 x₀ (adaptedCount A ps.length ⁻¹' Set.Ici r) ∂μ₀' := by
+          (PMF.poissonBinomial ps).toMeasure U ∂trajInitMeasure μ₀ := by
+        rw [lintegral_const, measure_univ, mul_one]
+    _ ≤ ∫⁻ x₀, ((Kernel.traj κ 0 x₀).map (adaptedCount A ps.length)) U ∂trajInitMeasure μ₀ := by
         refine lintegral_mono_ae ?_
         filter_upwards [hae_x₀] with x₀ hx₀
-        simpa [Measure.map_apply hm measurableSet_Ici] using hdom_point x₀ hx₀
+        refine (adaptedCount_stochasticallyDominates_poissonBinomial Filtration.piLE hA ps
+          fun t ht => ?_) U hUm hU
+        have hce := traj_condExp_indicator_eq κ (Nat.zero_le t) x₀
+          (Filtration.piLE.le (t + 1) _ (hA t))
+        filter_upwards [hce, hx₀ t ht] with x hx hpx
+        exact hpx.trans_eq hx.symm
+
+/-- Upper-envelope specialization of `poissonBinomial_stochasticallyDominates_adaptedCount` to
+`ProbabilityTheory.Kernel.trajMeasure μ₀ κ` for events measurable at step `t + 1`. -/
+theorem poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount
+    {X : ℕ → Type*} [∀ n, MeasurableSpace (X n)]
+    (μ₀ : Measure (X 0)) [IsProbabilityMeasure μ₀]
+    (κ : (n : ℕ) → Kernel (Π i : Finset.Iic n, X i) (X (n + 1)))
+    [∀ n, IsMarkovKernel (κ n)]
+    {A : ℕ → Set (Π n, X n)}
+    (hA : ∀ t, MeasurableSet[Filtration.piLE (t + 1)] (A t)) (ps : List I)
+    (hp : ∀ t (ht : t < ps.length), ∀ᵐ x ∂Kernel.trajMeasure μ₀ κ,
+      (Kernel.traj κ t (Preorder.frestrictLe t x)).real (A t) ≤ (ps[t] : ℝ)) :
+    StochasticallyDominates (PMF.poissonBinomial ps).toMeasure
+      ((Kernel.trajMeasure μ₀ κ).map (adaptedCount A ps.length)) := by
+  have hm : Measurable (adaptedCount A ps.length) :=
+    (measurable_adaptedCount Filtration.piLE hA ps.length).mono (Filtration.piLE.le _) le_rfl
+  have hae_x₀ := trajMeasure_ae_traj μ₀ κ ps.length
+    (fun t _ => (measurableSet_le (measurable_traj_real κ hA t) measurable_const).compl) hp
+  intro U hUm hU
+  rw [trajMeasure_map_apply μ₀ κ hm hUm]
+  calc
+    ∫⁻ x₀, ((Kernel.traj κ 0 x₀).map (adaptedCount A ps.length)) U ∂trajInitMeasure μ₀
+      ≤ ∫⁻ _ : Π i : Finset.Iic 0, X i,
+          (PMF.poissonBinomial ps).toMeasure U ∂trajInitMeasure μ₀ := by
+        refine lintegral_mono_ae ?_
+        filter_upwards [hae_x₀] with x₀ hx₀
+        refine (poissonBinomial_stochasticallyDominates_adaptedCount Filtration.piLE hA ps
+          fun t ht => ?_) U hUm hU
+        have hce := traj_condExp_indicator_eq κ (Nat.zero_le t) x₀
+          (Filtration.piLE.le (t + 1) _ (hA t))
+        filter_upwards [hce, hx₀ t ht] with x hx hpx
+        exact hx.trans_le hpx
+    _ = (PMF.poissonBinomial ps).toMeasure U := by
+        rw [lintegral_const, measure_univ, mul_one]
 
 end KernelTraj
 

@@ -424,6 +424,192 @@ theorem trajMeasure_stopCount_hittingTime_mean_le :
   have hdiv : ((2 : ℕ) : ℝ) / (pHalf : ℝ) = 4 := by norm_num [pHalf, mkUnit]
   rwa [hdiv] at h
 
+theorem trajMeasure_noniid_upper_dom :
+    StochasticallyDominates
+      (Cslib.Probability.PMF.poissonBinomial [pThreeFourths, pThreeFourths]).toMeasure
+      ((Kernel.trajMeasure (X := BoolSeq) (Cslib.Probability.PMF.coin pTwoThirds).toMeasure
+          (boolMarkovKernel pHalf pThreeFourths)).map
+        (adaptedCount succTrueEvent [pThreeFourths, pThreeFourths].length)) := by
+  refine poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount (X := BoolSeq)
+    (Cslib.Probability.PMF.coin pTwoThirds).toMeasure (boolMarkovKernel pHalf pThreeFourths)
+    measurableSet_succTrueEvent [pThreeFourths, pThreeFourths] fun t ht => ?_
+  refine ae_of_all _ fun x => ?_
+  rw [boolMarkovKernel_traj_real]
+  rcases t with _ | _ | t
+  · split_ifs <;> norm_num [pHalf, pThreeFourths, mkUnit]
+  · split_ifs <;> norm_num [pHalf, pThreeFourths, mkUnit]
+  · simp only [List.length_cons, List.length_nil] at ht
+    omega
+
+theorem adaptedCount_real_Iio_le_binomial_check
+    (z₀ : Π i : Finset.Iic 0, BoolSeq i) :
+    (Kernel.traj (X := BoolSeq) (boolMarkovKernel pHalf pThreeFourths) 0 z₀).real
+        {x | adaptedCount succTrueEvent 2 x < 2} ≤
+      (ProbabilityTheory.binomial 2 pHalf).real (Set.Iio 2) := by
+  refine adaptedCount_real_Iio_le_binomial (Filtration.piLE (X := BoolSeq))
+    measurableSet_succTrueEvent 2 2 pHalf fun t _ => ?_
+  refine ae_restrict_of_ae ?_
+  have hce := traj_condExp_indicator_eq (boolMarkovKernel pHalf pThreeFourths)
+    (Nat.zero_le t) z₀ (Filtration.piLE.le (t + 1) _ (measurableSet_succTrueEvent t))
+  filter_upwards [hce] with x hx
+  have hle : (pHalf : ℝ) ≤ (Kernel.traj (boolMarkovKernel pHalf pThreeFourths) t
+      (Preorder.frestrictLe t x)).real (succTrueEvent t) := by
+    rw [boolMarkovKernel_traj_real]
+    split_ifs <;> norm_num [pHalf, pThreeFourths, mkUnit]
+  exact hle.trans_eq hx.symm
+
+theorem poissonBinomial_lintegral_le_check :
+    ∫⁻ n : ℕ, (n : ℝ≥0∞)
+        ∂(Cslib.Probability.PMF.poissonBinomial [pThird, pHalf]).toMeasure ≤
+      ∫⁻ n : ℕ, (n : ℝ≥0∞)
+        ∂(Cslib.Probability.PMF.poissonBinomial [pHalf, pTwoThirds]).toMeasure := by
+  have hdom :
+      StochasticallyDominates
+        (Cslib.Probability.PMF.poissonBinomial [pHalf, pTwoThirds]).toMeasure
+        (Cslib.Probability.PMF.poissonBinomial [pThird, pHalf]).toMeasure :=
+    (Cslib.Probability.PMF.poissonBinomial_stochasticallyDominates_of_forall₂
+      (.cons (by norm_num [pHalf, pThird, mkUnit])
+        (.cons (by norm_num [pTwoThirds, pHalf, mkUnit]) .nil))).toMeasure
+  exact hdom.lintegral_le measurable_from_top fun _ _ h => Nat.cast_le.mpr h
+
+theorem poissonBinomial_integral_le_check :
+    let f : ℕ → ℝ := fun n => if n = 0 then -1 else if n = 1 then 0 else 1
+    ∫ n : ℕ, f n
+        ∂(Cslib.Probability.PMF.poissonBinomial [pThird, pHalf]).toMeasure ≤
+      ∫ n : ℕ, f n
+        ∂(Cslib.Probability.PMF.poissonBinomial [pHalf, pTwoThirds]).toMeasure := by
+  intro f
+  have hf_mono : Monotone f := by
+    intro a b hab
+    simp only [f]
+    split_ifs
+    all_goals first | omega | norm_num
+  have hf_bound (p : PMF ℕ) : Integrable f p.toMeasure :=
+    Integrable.of_bound (measurable_from_top.aestronglyMeasurable) 1
+      (ae_of_all _ fun n => by
+        simp only [f, Real.norm_eq_abs]
+        split_ifs <;> norm_num)
+  have hdom :
+      StochasticallyDominates
+        (Cslib.Probability.PMF.poissonBinomial [pHalf, pTwoThirds]).toMeasure
+        (Cslib.Probability.PMF.poissonBinomial [pThird, pHalf]).toMeasure :=
+    (Cslib.Probability.PMF.poissonBinomial_stochasticallyDominates_of_forall₂
+      (.cons (by norm_num [pHalf, pThird, mkUnit])
+        (.cons (by norm_num [pTwoThirds, pHalf, mkUnit]) .nil))).toMeasure
+  exact hdom.integral_le measurable_from_top hf_mono (hf_bound _) (hf_bound _)
+
+theorem measure_bind_poissonBinomial_dom :
+    StochasticallyDominates
+      ((Measure.dirac (2 : ℕ)).bind fun a =>
+        (Cslib.Probability.PMF.poissonBinomial (List.replicate a pTwoThirds)).toMeasure)
+      ((Measure.dirac (1 : ℕ)).bind fun a =>
+        (Cslib.Probability.PMF.poissonBinomial (List.replicate a pHalf)).toMeasure) := by
+  have hμν : StochasticallyDominates (Measure.dirac (2 : ℕ)) (Measure.dirac (1 : ℕ)) := by
+    intro U _ hU
+    by_cases h1 : (1 : ℕ) ∈ U
+    · simp [h1, hU (by omega : 1 ≤ 2) h1]
+    · simp [h1]
+  refine hμν.bind measurable_from_top measurable_from_top (fun a => ?_) (fun a₁ a₂ hle => ?_)
+  · rw [Cslib.Probability.PMF.toMeasure_poissonBinomial_replicate,
+      Cslib.Probability.PMF.toMeasure_poissonBinomial_replicate]
+    exact binomial_stochasticallyDominates_of_le a (by norm_num [pTwoThirds, pHalf, mkUnit])
+  · rw [Cslib.Probability.PMF.toMeasure_poissonBinomial_replicate,
+      Cslib.Probability.PMF.toMeasure_poissonBinomial_replicate]
+    exact binomial_stochasticallyDominates_of_nat_le hle pTwoThirds
+
+theorem map_pi_half_third_apply_two :
+    (((Cslib.Probability.PMF.pi fun i : Fin [pHalf, pThird].length =>
+        Cslib.Probability.PMF.coin [pHalf, pThird][i]).map
+        (fun f => ∑ i : Fin [pHalf, pThird].length, if f i then 1 else 0)) 2).toReal =
+      1 / 6 := by
+  rw [← Cslib.Probability.PMF.poissonBinomial_eq_map_pi [pHalf, pThird],
+    show (2 : ℕ) = 1 + 1 from rfl, Cslib.Probability.PMF.poissonBinomial_cons_succ_toReal,
+    Cslib.Probability.PMF.poissonBinomial_eq_zero_of_lt (ps := [pThird]) (by decide),
+    show (1 : ℕ) = 0 + 1 from rfl, Cslib.Probability.PMF.poissonBinomial_cons_succ_toReal,
+    Cslib.Probability.PMF.poissonBinomial_eq_zero_of_lt (ps := []) (by decide),
+    Cslib.Probability.PMF.poissonBinomial_nil]
+  simp only [PMF.pure_apply, ↓reduceIte, ENNReal.toReal_zero, ENNReal.toReal_one]
+  norm_num [pHalf, pThird, mkUnit]
+
+theorem tsum_mul_poissonBinomial_half_third :
+    ∑' k : ℕ, (k : ℝ) * (Cslib.Probability.PMF.poissonBinomial [pHalf, pThird] k).toReal =
+      5 / 6 := by
+  rw [Cslib.Probability.PMF.tsum_mul_poissonBinomial]
+  norm_num [pHalf, pThird, mkUnit]
+
+theorem truncatedHittingTime_strictly_distinct_and_mean_le
+    (z₀ : Π i : Finset.Iic 0, BoolSeq i) :
+    let τ : (Π n, BoolSeq n) → WithTop ℕ :=
+      fun x => min (countHittingTime succTrueEvent 2 x) (3 : WithTop ℕ)
+    let P := Kernel.traj (X := BoolSeq) (stopCountKernel 2 pHalf pThreeFourths) 0 z₀
+    τ (fun _ => false) ≠ countHittingTime succTrueEvent 2 (fun _ => false) ∧
+      ((∀ᵐ x ∂P, τ x ≠ ⊤) ∧
+        Integrable (fun x => (((τ x).untopD 0 : ℕ) : ℝ)) P ∧
+        ∫ x, (((τ x).untopD 0 : ℕ) : ℝ) ∂P ≤ 4) := by
+  intro τ P
+  have hneq : τ (fun _ => false) ≠ countHittingTime succTrueEvent 2 (fun _ => false) := by
+    have hgt : ∀ n : ℕ, (n : WithTop ℕ) < countHittingTime succTrueEvent 2 (fun _ => false) := by
+      intro n
+      rw [lt_countHittingTime_iff]
+      have hz : adaptedCount succTrueEvent n (fun _ => false) = 0 :=
+        Finset.sum_eq_zero fun t _ => by simp [succTrueEvent]
+      omega
+    have htop : countHittingTime succTrueEvent 2 (fun _ => false) = ⊤ := by
+      by_contra hne
+      cases hc : countHittingTime succTrueEvent 2 (fun _ => false) with
+      | top => exact hne hc
+      | coe m =>
+        have hm := hgt m
+        rw [hc] at hm
+        exact lt_irrefl _ hm
+    simp [τ, htop]
+  refine ⟨hneq, ?_⟩
+  have hstop : IsStoppingTime (Filtration.piLE (X := BoolSeq)) τ := by
+    intro n
+    have hσ := isStoppingTime_countHittingTime (Filtration.piLE (X := BoolSeq))
+      measurableSet_succTrueEvent 2 n
+    have hset : {ω | τ ω ≤ WithTop.some n} =
+        {ω | countHittingTime succTrueEvent 2 ω ≤ WithTop.some n} ∪
+          if 3 ≤ n then Set.univ else ∅ := by
+      ext ω
+      simp only [τ, Set.mem_ofPred_eq, Set.mem_union, min_le_iff]
+      by_cases hn : 3 ≤ n
+      · simp [hn]
+      · simp [hn]
+    change MeasurableSet[Filtration.piLE n] {ω | τ ω ≤ WithTop.some n}
+    rw [hset]
+    refine hσ.union ?_
+    split_ifs
+    · exact @MeasurableSet.univ _ (Filtration.piLE n)
+    · exact @MeasurableSet.empty _ (Filtration.piLE n)
+  have hle : ∀ n x, 2 ≤ adaptedCount succTrueEvent n x → τ x ≤ (n : WithTop ℕ) :=
+    fun n x hr => min_le_of_left_le ((countHittingTime_le_iff succTrueEvent 2 n x).mpr hr)
+  have hp : ∀ t : ℕ, (fun _ => (pHalf : ℝ)) ≤ᵐ[P.restrict {x | (t : WithTop ℕ) < τ x}]
+      P[(succTrueEvent t).indicator (fun _ => (1 : ℝ)) | Filtration.piLE t] := by
+    intro t
+    have hce := traj_condExp_indicator_eq (stopCountKernel 2 pHalf pThreeFourths)
+      (Nat.zero_le t) z₀ (Filtration.piLE.le (t + 1) _ (measurableSet_succTrueEvent t))
+    have hrest := ae_restrict_of_ae (s := {x | (t : WithTop ℕ) < τ x}) hce
+    have hsub : {x | (t : WithTop ℕ) < τ x} ⊆ {x | adaptedCount succTrueEvent t x < 2} := by
+      intro x hx
+      change adaptedCount succTrueEvent t x < 2
+      rw [← lt_countHittingTime_iff]
+      exact (lt_min_iff.mp hx).1
+    filter_upwards [hrest, ae_restrict_mem ((Filtration.piLE.le t _
+      (hstop.measurableSet_gt t)))] with x hx hmem
+    have hlt : adaptedCount succTrueEvent t x < 2 := hsub hmem
+    have hlb : (pHalf : ℝ) ≤ (Kernel.traj (stopCountKernel 2 pHalf pThreeFourths) t
+        (Preorder.frestrictLe t x)).real (succTrueEvent t) := by
+      rw [measureReal_def, succTrueEvent, traj_apply_succ_true]
+      refine stopCountKernel_ge_of_lt (by norm_num [pHalf, pThreeFourths, mkUnit]) ?_
+      rwa [histCount_frestrictLe]
+    exact hlb.trans_eq hx.symm
+  have hmean := stoppingTime_mean_le_of_adaptedCount_le (Filtration.piLE (X := BoolSeq))
+    measurableSet_succTrueEvent (r := 2) (p := pHalf) (by norm_num [pHalf, mkUnit])
+    hstop hle hp
+  have hdiv : ((2 : ℕ) : ℝ) / (pHalf : ℝ) = 4 := by norm_num [pHalf, mkUnit]
+  rwa [hdiv] at hmean
+
 end KernelTrajAndStoppingTests
 
 end CslibFrontierTests.StochasticDomination

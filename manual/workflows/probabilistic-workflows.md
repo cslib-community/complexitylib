@@ -2208,8 +2208,9 @@ probabilities satisfy lower or upper bounds.
   (`adaptedCount_real_Iio_le_binomial`), specializations to Ionescu–Tulcea trajectories
   (`traj_adaptedCount_stochasticallyDominates_poissonBinomial`,
   `poissonBinomial_stochasticallyDominates_traj_adaptedCount`,
-  `trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`), and finite-horizon sequential
-  `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
+  `trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
+  sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
   `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
@@ -2220,10 +2221,12 @@ probabilities satisfy lower or upper bounds.
   `traj_countHittingTime_mean_le`, `trajMeasure_countHittingTime_mean_le`).
 
 The checked [`StochasticDomination.lean` clients](../../CslibFrontierTests/StochasticDomination.lean)
-verify concrete `ℕ`/`ℝ`/`Bool` order inequalities, exact heterogeneous `poissonBinomial` masses,
-`ProbabilityTheory.binomial` comparison, a state-dependent sequential `PMF` process, and a
-non-i.i.d. target-stopped `Kernel.trajMeasure` process whose success probability drops to `0` once
-`r = 2` successes are reached while still satisfying `𝔼[τ_2] ≤ 4`. Run
-`scripts/build.sh CslibFrontierTests.StochasticDomination` from the repository root to check them.
+verify concrete `ℕ`/`ℝ`/`Bool` order inequalities (`lintegral_le`, `integral_le`, `bind`), exact
+heterogeneous `poissonBinomial` masses and means, `ProbabilityTheory.binomial` comparison, a
+state-dependent sequential `PMF` process, lower/upper `Kernel.trajMeasure` envelopes, a
+target-stopped `Kernel.trajMeasure` process whose success probability drops to `0` once `r = 2`
+successes are reached while satisfying `𝔼[τ_2] ≤ 4`, and a truncated stopping time strictly
+distinct from `countHittingTime`. Run `scripts/build.sh CslibFrontierTests.StochasticDomination` from
+the repository root to check them.
 Instantiating these theorems on oracle-program executions remains open until the stochastic-oracle
 semantics ([#2530](https://github.com/cslib-community/cslib-frontier/pull/2530)) lands on `main`.

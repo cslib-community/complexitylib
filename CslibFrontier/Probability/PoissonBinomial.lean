@@ -228,40 +228,16 @@ theorem poissonBinomial_eq_map_pi (ps : List I) :
     have hcons :
         (pi fun i : Fin (p :: ps).length => coin (p :: ps)[i]) =
           (coin p).bind fun b => (pi fun i : Fin ps.length => coin ps[i]).map (Fin.cons b) := by
-      ext f
-      rw [pi_apply]
-      have hprod :
-          (∏ i : Fin (p :: ps).length, coin (p :: ps)[i] (f i)) =
-            coin p (f 0) * ∏ i : Fin ps.length, coin ps[i] (f i.succ) := by
-        simpa [List.length_cons] using
-          (Fin.prod_univ_succ fun i : Fin (ps.length + 1) => coin (p :: ps)[i] (f i))
-      rw [hprod, PMF.bind_apply, tsum_fintype, Fintype.sum_bool]
-      have hbranch (b : Bool) :
-          ((pi fun i : Fin ps.length => coin ps[i]).map (Fin.cons b)) f =
-            if b = f 0 then pi (fun i : Fin ps.length => coin ps[i]) (Fin.tail f) else 0 := by
-        rw [PMF.map_apply]
-        by_cases hb : b = f 0
-        · simp only [hb, ↓reduceIte]
-          rw [tsum_eq_single (Fin.tail f)]
-          · have hfg : Fin.cons (f 0) (Fin.tail f) = f := by
-              ext i
-              exact Fin.cases rfl (fun _ => rfl) i
-            simp [hfg]
-          · intro g hg
-            have hne : f ≠ Fin.cons (f 0) g := by
-              intro heq
-              apply hg
-              ext i
-              simpa [Fin.tail] using (congrFun heq i.succ).symm
-            simp [hne]
-        · simp only [hb, ↓reduceIte]
-          refine (tsum_congr fun g => ?_).trans tsum_zero
-          have hne : f ≠ Fin.cons b g := by
-            intro heq
-            exact hb (by simpa using congrFun heq.symm 0)
-          simp [hne]
-      rw [hbranch true, hbranch false]
-      cases h0 : f 0 <;> simp [pi_apply, Fin.tail]
+      let e := Fin.consEquiv (fun _ : Fin (ps.length + 1) => Bool)
+      calc
+        _ = ((coin p).bind fun b =>
+              (pi fun i : Fin ps.length => coin ps[i]).map (b, ·)).map e := by
+          ext f
+          rw [map_equiv_apply, bind_map_prodMk_apply, pi_apply, pi_apply]
+          simpa [e, Fin.consEquiv, Fin.tail, List.length_cons] using
+            (Fin.prod_univ_succ fun i : Fin (ps.length + 1) => coin (p :: ps)[i] (f i))
+        _ = _ := by
+          simp [PMF.map_bind, PMF.map_comp, Function.comp_def, e, Fin.consEquiv]
     rw [hcons]
     conv_rhs => rw [PMF.map_bind]
     refine congr_arg (PMF.bind (coin p)) (funext fun b => ?_)

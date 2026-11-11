@@ -120,44 +120,14 @@ private theorem measurable_withTop_nat_of_stoppingTime {Ω : Type*} [m : Measura
       simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_compl_iff, Set.mem_iUnion,
         Set.mem_ofPred_eq, not_exists]
       cases hω : τ ω with
-      | top => exact ⟨fun _ n => by simp, fun _ => rfl⟩
+      | top => simp
       | coe k =>
-        exact ⟨fun h => by simp at h, fun hk => absurd (hk k) (by simp)⟩
+        exact ⟨fun h => absurd h WithTop.coe_ne_top,
+          fun hk => absurd le_rfl (hk k)⟩
     rw [hset]
     exact (MeasurableSet.iUnion fun n => ℱ.le n _ (hτ.measurableSet_le n)).compl
   | coe n =>
-    cases n with
-    | zero =>
-      have hset : τ ⁻¹' {WithTop.some 0} = {ω | τ ω ≤ (0 : WithTop ℕ)} := by
-        ext ω
-        simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_ofPred_eq]
-        cases hω : τ ω with
-        | top => simp
-        | coe k =>
-          simp only [WithTop.coe_eq_coe]
-          rw [show (0 : WithTop ℕ) = WithTop.some 0 from rfl, WithTop.coe_le_coe]
-          exact ⟨fun h => h.le, Nat.le_zero.mp⟩
-      rw [hset]
-      exact ℱ.le 0 _ (hτ.measurableSet_le 0)
-    | succ n =>
-      have hset :
-          τ ⁻¹' {WithTop.some (n + 1)} =
-            {ω | τ ω ≤ ((n + 1 : ℕ) : WithTop ℕ)} \ {ω | τ ω ≤ (n : WithTop ℕ)} := by
-        ext ω
-        simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_sdiff, Set.mem_ofPred_eq,
-          not_le]
-        rw [show ((n + 1 : ℕ) : WithTop ℕ) = WithTop.some (n + 1) from by simp,
-          show (n : WithTop ℕ) = WithTop.some n from by simp]
-        cases hω : τ ω with
-        | top =>
-          exact ⟨fun h => False.elim (WithTop.top_ne_coe h),
-            fun ⟨h, _⟩ => absurd h (not_le_of_gt (WithTop.coe_lt_top _))⟩
-        | coe k =>
-          simp only [WithTop.coe_eq_coe, WithTop.coe_le_coe, WithTop.coe_lt_coe]
-          omega
-      rw [hset]
-      exact (ℱ.le (n + 1) _ (hτ.measurableSet_le (n + 1))).diff
-        (ℱ.le n _ (hτ.measurableSet_le n))
+    exact ℱ.le n _ (hτ.measurableSet_eq_of_countable n)
 
 /-- If the real survival series `∑' n, P.real {n < τ}` converges under a finite measure `P`,
 then `τ ≠ ⊤` a.e., `(τ ·).untopD 0` is integrable, and
@@ -168,14 +138,13 @@ theorem integral_untopD_eq_tsum_real_lt {Ω : Type*} [MeasurableSpace Ω] (P : M
     (∀ᵐ ω ∂P, τ ω ≠ ⊤) ∧
       Integrable (fun ω => (((τ ω).untopD 0 : ℕ) : ℝ)) P ∧
       ∫ ω, (((τ ω).untopD 0 : ℕ) : ℝ) ∂P = ∑' n : ℕ, P.real {ω | (n : WithTop ℕ) < τ ω} := by
+  have heq : (fun n : ℕ => P {ω | (n : WithTop ℕ) < τ ω}) =
+      fun n : ℕ => (Real.toNNReal (P.real {ω | (n : WithTop ℕ) < τ ω}) : ℝ≥0∞) := by
+    ext n
+    change P {ω | (n : WithTop ℕ) < τ ω} = ENNReal.ofReal (P.real {ω | (n : WithTop ℕ) < τ ω})
+    rw [measureReal_def, ENNReal.ofReal_toReal (measure_ne_top P _)]
   have hlt_top : ∫⁻ ω, withTopToENNReal (τ ω) ∂P < ⊤ := by
     rw [lintegral_withTopToENNReal P hτ]
-    have heq : (fun n : ℕ => P {ω | (n : WithTop ℕ) < τ ω}) =
-        fun n : ℕ => (Real.toNNReal (P.real {ω | (n : WithTop ℕ) < τ ω}) : ℝ≥0∞) := by
-      ext n
-      change P {ω | (n : WithTop ℕ) < τ ω} = ENNReal.ofReal (P.real {ω | (n : WithTop ℕ) < τ ω})
-      rw [measureReal_def, ENNReal.ofReal_toReal (measure_ne_top P _)]
-    change (∑' n : ℕ, P {ω | (n : WithTop ℕ) < τ ω}) < ⊤
     rw [heq, ← ENNReal.coe_tsum hs.toNNReal]
     exact ENNReal.coe_lt_top
   have hmw : Measurable withTopToENNReal := fun s _ => (Set.to_countable _).measurableSet
@@ -216,11 +185,6 @@ theorem integral_untopD_eq_tsum_real_lt {Ω : Type*} [MeasurableSpace Ω] (P : M
       exact lintegral_zero
     rw [hneg, ENNReal.toReal_zero, sub_zero, lintegral_congr_ae hpos_ae,
       lintegral_withTopToENNReal P hτ]
-    have heq : (fun n : ℕ => P {ω | (n : WithTop ℕ) < τ ω}) =
-        fun n : ℕ => (Real.toNNReal (P.real {ω | (n : WithTop ℕ) < τ ω}) : ℝ≥0∞) := by
-      ext n
-      change P {ω | (n : WithTop ℕ) < τ ω} = ENNReal.ofReal (P.real {ω | (n : WithTop ℕ) < τ ω})
-      rw [measureReal_def, ENNReal.ofReal_toReal (measure_ne_top P _)]
     rw [heq, ← ENNReal.coe_tsum hs.toNNReal, ENNReal.coe_toReal, NNReal.coe_tsum]
     exact tsum_congr fun n => Real.coe_toNNReal _ measureReal_nonneg
   exact ⟨hae_ne, hint, hint_eq⟩
@@ -371,23 +335,9 @@ theorem traj_countHittingTime_mean_le {X : ℕ → Type*} [∀ n, MeasurableSpac
       exact hA t)
     hp_pos ?_
   intro t
-  have hAtm : MeasurableSet (A t) := Filtration.piLE.le (a + t + 1) _ (hA t)
-  have hint : Integrable ((A t).indicator (fun _ => (1 : ℝ))) (Kernel.traj κ a x₀) :=
-    (integrable_const 1).indicator hAtm
-  have hce :
-      (Kernel.traj κ a x₀)[(A t).indicator (fun _ => (1 : ℝ)) |
-          shiftFiltration Filtration.piLE a t] =ᵐ[Kernel.traj κ a x₀]
-        fun x => (Kernel.traj κ (a + t) (Preorder.frestrictLe (a + t) x)).real (A t) := by
-    have htraj := Kernel.condExp_traj (κ := κ) (a := a) (b := a + t) (Nat.le_add_right a t)
-      (x₀ := x₀) hint
-    filter_upwards [htraj] with x hx
-    change (Kernel.traj κ a x₀)[(A t).indicator (1 : (Π n, X n) → ℝ) |
-        Filtration.piLE (a + t)] x =
-      ∫ y, (A t).indicator (1 : (Π n, X n) → ℝ) y
-        ∂Kernel.traj κ (a + t) (Preorder.frestrictLe (a + t) x) at hx
-    rw [integral_indicator_one hAtm] at hx
-    exact hx
-  have hce_rest := ae_restrict_of_ae (s := {x | adaptedCount A t x < r}) hce
+  have hce_rest := ae_restrict_of_ae (s := {x | adaptedCount A t x < r})
+    (traj_condExp_indicator_eq κ (Nat.le_add_right a t) x₀
+      (Filtration.piLE.le (a + t + 1) _ (hA t)))
   filter_upwards [hce_rest, hp t] with x hx hpx
   exact hpx.trans_eq hx.symm
 
@@ -471,12 +421,8 @@ theorem trajMeasure_countHittingTime_mean_le {X : ℕ → Type*} [∀ n, Measura
     intro x hx
     change (n : WithTop ℕ) < countHittingTime A r x at hx
     rw [lt_countHittingTime_iff] at hx
-    have heq : adaptedCount A' n x = adaptedCount A n x := by
-      refine Finset.sum_congr rfl fun t ht => ?_
-      rw [Finset.mem_range] at ht
-      have hlt : adaptedCount A t x < r := (adaptedCount_mono A x ht.le).trans_lt hx
-      have hnot : ¬ r ≤ adaptedCount A t x := not_le.mpr hlt
-      by_cases hAt : x ∈ A t <;> simp [A', hAt, hnot]
+    have heq : adaptedCount A' n x = adaptedCount A n x :=
+      adaptedCount_congr_of_lt hx fun t _ ht => by simp [A', not_le.mpr ht]
     change adaptedCount A' n x < r
     rwa [heq]
   exact real_lt_le_binomial_of_dom_replicate
