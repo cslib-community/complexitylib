@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
+import Mathlib.Algebra.Order.Floor.Semifield
 
 /-!
 # Tests for Gap-MCSP magnification near linear size
@@ -28,7 +29,9 @@ example (β : ℝ) (n : ℕ) :
       (∀ T : BitString (2 ^ n), List.ofFn T ∈
         GapMCSP.noSet (fun m : ℕ => ⌊(2 : ℝ) ^ (β * m)⌋₊) →
         (GapMCSP.yesSet (fun m : ℕ => ⌊(2 : ℝ) ^ (β * m)⌋₊)).slice (2 ^ n) T = false) :=
-  slice_yesSet_separates (floor_div_ten_mul_le (by positivity) n)
+  slice_yesSet_separates (by
+    rw [show (10 * (n : ℝ)) = ((10 * n : ℕ) : ℝ) by push_cast; ring, Nat.floor_div_natCast]
+    exact Nat.div_le_self _ _)
 
 -- A hardness assumption for every `β ∈ (0, β₀)` gives the hypothesis of Theorem 1.4, and with it
 -- `P ≠ NP`.

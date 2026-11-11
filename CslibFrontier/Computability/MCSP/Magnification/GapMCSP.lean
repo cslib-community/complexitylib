@@ -12,6 +12,7 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Order.Filter.AtTopBot.Basic
 public import Mathlib.Topology.Order.Basic
 import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
+import Mathlib.Algebra.Order.Floor.Semifield
 import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
@@ -51,8 +52,6 @@ thresholds, only `s₁ ≤ s₂`.
 ## Main results
 
 * `Cslib.MCSP.slice_yesSet_separates`: the slice of `MCSP[s₂]` separates `Gap-MCSP[s₁, s₂]`.
-* `Cslib.MCSP.floor_div_ten_mul_le`: the yes-threshold `⌊x/(10n)⌋₊` is at most the no-threshold
-  `⌊x⌋₊`.
 * `Cslib.MCSP.exists_gapMCSP_separator_of_NP_subset_PPoly`: under `NP ⊆ P/poly`, `Gap-MCSP[s₁, s₂]`
   has separators of size `2^n·c·(n + s₂ n + 1)^c`.
 * `Cslib.MCSP.not_NP_subset_PPoly_of_gapMCSP_hard`: OPS Theorem 1.4, through the MMW merge tree.
@@ -185,15 +184,10 @@ private theorem eventually_bound_lt_rpow (c : ℕ) {β ε : ℝ} (hβ : 0 < β)
       rw [mul_comm (_ * _ * _) ((a ^ n) ^ c)]
       gcongr
 
-/-- `⌊x / (10 n)⌋₊ ≤ ⌊x⌋₊` for `x ≥ 0`: the yes-threshold of OPS Theorem 1.4 is at most its
-no-threshold. -/
-theorem floor_div_ten_mul_le {x : ℝ} (hx : 0 ≤ x) (n : ℕ) :
-    ⌊x / (10 * n)⌋₊ ≤ ⌊x⌋₊ := by
-  rcases Nat.eq_zero_or_pos n with rfl | hn
-  · simp
-  · refine Nat.floor_le_floor (div_le_self hx ?_)
-    have : (1 : ℝ) ≤ n := by exact_mod_cast hn
-    linarith
+/-- `⌊x / (10 n)⌋₊ ≤ ⌊x⌋₊`: the yes-threshold of OPS Theorem 1.4 is at most its no-threshold. -/
+private theorem floor_div_ten_mul_le (x : ℝ) (n : ℕ) : ⌊x / (10 * n)⌋₊ ≤ ⌊x⌋₊ := by
+  rw [show (10 * (n : ℝ)) = ((10 * n : ℕ) : ℝ) by push_cast; ring, Nat.floor_div_natCast]
+  exact Nat.div_le_self _ _
 
 /-! ### OPS Theorem 1.4 -/
 
@@ -225,7 +219,7 @@ theorem not_NP_subset_PPoly_of_gapMCSP_hard {ε : ℝ} (hε : 0 < ε)
   obtain ⟨N₀, hN₀⟩ := eventually_atTop.1 (eventually_bound_lt_rpow c hβ hcβ)
   obtain ⟨n, hn, hhardn⟩ := hhard N₀
   obtain ⟨F, hF, hyes, hno⟩ := hsep (fun m => ⌊(2 : ℝ) ^ (β * m) / (10 * m)⌋₊)
-    (fun m => ⌊(2 : ℝ) ^ (β * m)⌋₊) n (floor_div_ten_mul_le (by positivity) n)
+    (fun m => ⌊(2 : ℝ) ^ (β * m)⌋₊) n (floor_div_ten_mul_le _ n)
   have hFr : (complexity interpretation (single F) : ℝ) ≤
       ((2 ^ n * c * (n + ⌊(2 : ℝ) ^ (β * n)⌋₊ + 1) ^ c : ℕ) : ℝ) := by
     exact_mod_cast hF
