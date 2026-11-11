@@ -460,7 +460,7 @@ register_result "constant-depth-mod-p" where
     size count every gate, including NOT and constants; nonuniform."
 
 register_result "middle-slice-mod-two" where
-  title := "Razborov: a middle slice is in P but not in AC⁰[2]"
+  title := "Razborov's rank method: a middle slice is in P but not in AC⁰[2]"
   topic := "circuit complexity"
   sources := [
     { paper := Razborov1987, theorem := unverified, locator := unverified },
