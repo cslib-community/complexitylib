@@ -91,8 +91,8 @@ open ClauseSet.Sparsification (threshold base one_le_threshold BranchingRule)
 /-- The states of the search: a stack of formulas and an accumulator. -/
 abbrev State : Type := List (CNF ℕ) × Bool
 
-/-- States encoded as framed tuples. -/
-private abbrev encState : State ↪ List Bool := encPair (encList encCNF) encBool
+/-- The pending CNF list is framed first; the Boolean accumulator is unframed. -/
+abbrev encState : State ↪ List Bool := encPair (encList encCNF) encBool
 
 /-- One step of the depth-first search of the sparsification tree, for width `K` and the
 thresholds `threshold K α`: a sparse formula on top of the stack is popped and the decider `g` is
@@ -118,7 +118,7 @@ def search (K α k M : ℕ) (g : CNF ℕ → Bool) (φ : CNF ℕ) : Bool :=
 variable {K α : ℕ} (hK : 1 ≤ K) (hα : 1 ≤ α)
 
 /-- The list-level branching rule for width `K` and the thresholds `threshold K α`. -/
-private abbrev rule : BranchingRule (threshold K α) ℕ {ψ : CNF ℕ // Normalized K ψ} :=
+abbrev rule : BranchingRule (threshold K α) ℕ {ψ : CNF ℕ // Normalized K ψ} :=
   CNF.Sparsification.rule (one_le_threshold hK hα) K
 
 include hK hα in
@@ -160,7 +160,8 @@ private theorem iterate_step_nil (g : CNF ℕ → Bool) (n : ℕ) (acc : Bool) :
 
 /-! ### The root -/
 
-private theorem normalized_root {k : ℕ} (hkK : k ≤ K) (φ : CNF ℕ) : Normalized K (root k φ) := by
+/-- Guarding and normalizing the input produces a normalized root of the requested width. -/
+theorem normalized_root {k : ℕ} (hkK : k ≤ K) (φ : CNF ℕ) : Normalized K (root k φ) := by
   unfold root
   split_ifs with h
   · simp only [List.all_eq_true, decide_eq_true_eq] at h
@@ -186,10 +187,11 @@ private theorem length_root_le (k : ℕ) (φ : CNF ℕ) : (root k φ).length ≤
   · exact Nat.zero_le _
 
 /-- The root as a state of the list-level rule. -/
-private def rootState {k : ℕ} (hkK : k ≤ K) (φ : CNF ℕ) : {ψ : CNF ℕ // Normalized K ψ} :=
+def rootState {k : ℕ} (hkK : k ≤ K) (φ : CNF ℕ) : {ψ : CNF ℕ // Normalized K ψ} :=
   ⟨root k φ, normalized_root hkK φ⟩
 
-private theorem mem_vars_of_mem_root {k : ℕ} {φ : CNF ℕ} :
+/-- Root clauses use only variables occurring in the original formula. -/
+theorem mem_vars_of_mem_root {k : ℕ} {φ : CNF ℕ} :
     ∀ C ∈ (root k φ).toClauseSet, ∀ l ∈ C, l.1 ∈ φ.vars.toFinset := by
   intro C hC l hl
   obtain ⟨C', hC', rfl⟩ := mem_toClauseSet.mp hC
@@ -208,7 +210,7 @@ variable {k : ℕ} (hkK : k ≤ K) {φ : CNF ℕ} {w : List Bool}
 include hK hα hkK
 
 /-- Every clause of a state of the tree has its literals in a clause of the formula. -/
-private theorem exists_of_mem_walk (hw : (rule hK hα).tree.IsNodeWord (rootState hkK φ) w)
+theorem exists_of_mem_walk (hw : (rule hK hα).tree.IsNodeWord (rootState hkK φ) w)
     {C : Clause ℕ} (hC : C ∈ ((rule hK hα).tree.walk (rootState hkK φ) w).1) :
     ∃ D ∈ φ, C.toFinset ⊆ D.toFinset := by
   obtain ⟨D', hD', hCD'⟩ := BranchingRule.refines_walk (one_le_threshold hK hα) hw
@@ -232,7 +234,7 @@ private theorem length_walk_le (hw : (rule hK hα).tree.IsNodeWord (rootState hk
 
 /-- **The leaves are small.** The sparse states of the tree have at most `c * n + 1` clauses, for
 `c = occBound K α`. -/
-private theorem length_walk_le_of_isSparse (hw : (rule hK hα).tree.IsNodeWord (rootState hkK φ) w)
+theorem length_walk_le_of_isSparse (hw : (rule hK hα).tree.IsNodeWord (rootState hkK φ) w)
     (hs : isSparse (threshold K α) K ((rule hK hα).tree.walk (rootState hkK φ) w).1 = true) :
     ((rule hK hα).tree.walk (rootState hkK φ) w).1.length ≤ occBound K α * φ.numVars + 1 := by
   set ψ := (rule hK hα).tree.walk (rootState hkK φ) w
@@ -246,7 +248,7 @@ private theorem length_walk_le_of_isSparse (hw : (rule hK hα).tree.IsNodeWord (
   exact List.mem_toFinset.mpr (List.mem_map.mpr ⟨l, List.mem_flatten.mpr ⟨D, hD, hl'⟩, rfl⟩)
 
 /-- The states of the tree from a formula of width `k` have width `k`. -/
-private theorem length_le_of_mem_walk (hφ : ∀ c ∈ φ, c.length ≤ k)
+theorem length_le_of_mem_walk (hφ : ∀ c ∈ φ, c.length ≤ k)
     (hw : (rule hK hα).tree.IsNodeWord (rootState hkK φ) w) {C : Clause ℕ}
     (hC : C ∈ ((rule hK hα).tree.walk (rootState hkK φ) w).1) : C.length ≤ k := by
   obtain ⟨D, hD, hCD⟩ := exists_of_mem_walk hK hα hkK hw hC
@@ -263,11 +265,32 @@ def LeafBound (K α M : ℕ) : Prop :=
   ∀ N : ℕ, ∑ j ∈ Finset.range ((K - 1) * N / α + 1),
     (N * (K * base K α ^ (2 * K))).choose j ≤ 2 ^ (N / M + 1)
 
+/-- Convert a real binomial-tail bound at rate `1 / M` to the integer round-count bound. -/
+theorem leafBound_of_real {K α M : ℕ} (hM : 0 < M)
+    (hcount : ∀ N : ℕ, (∑ j ∈ Finset.range ((K - 1) * N / α + 1),
+      (N * (K * ClauseSet.Sparsification.base K α ^ (2 * K))).choose j : ℝ) ≤
+        2 ^ ((1 / M : ℝ) * N)) : LeafBound K α M := by
+  have hMpos : (0 : ℝ) < M := by exact_mod_cast hM
+  intro N
+  have h₁ := hcount N
+  have h₂ : (1 / M : ℝ) * N ≤ ((N / M + 1 : ℕ) : ℝ) := by
+    have hlt : N < M * (N / M + 1) := by
+      have := Nat.mod_lt N hM
+      have := Nat.div_add_mod N M
+      nlinarith
+    have : (N : ℝ) < M * ((N / M + 1 : ℕ) : ℝ) := by exact_mod_cast hlt
+    rw [one_div_mul_eq_div, div_le_iff₀ hMpos]
+    linarith
+  have h₃ : (2 : ℝ) ^ ((1 / M : ℝ) * N) ≤ 2 ^ (N / M + 1) := by
+    rw [← Real.rpow_natCast]
+    exact Real.rpow_le_rpow_of_exponent_le (by norm_num) h₂
+  exact_mod_cast h₁.trans h₃
+
 open Classical in
 /-- **The run of the search.** After the rounds, the stack is empty and the accumulator records
 whether the decider accepts a leaf of the tree. Meanwhile the stack holds at most
 `n K X ^ (2 K) + 1` states of the tree. -/
-private theorem iterate_step {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M) (g : CNF ℕ → Bool)
+theorem iterate_step {k M : ℕ} (hkK : k ≤ K) (hM : LeafBound K α M) (g : CNF ℕ → Bool)
     (φ : CNF ℕ) :
     (step K α g)^[rounds M φ] ([root k φ], false) =
       ([], decide (∃ w, (rule hK hα).tree.IsLeafWord (rootState hkK φ) w ∧
@@ -429,12 +452,12 @@ end PolyTime
 /-! ### Sizes -/
 
 /-- A bound on the length of the encoded states of the tree. -/
-private def nodeBound (K α : ℕ) (φ : CNF ℕ) : ℕ :=
+def nodeBound (K α : ℕ) (φ : CNF ℕ) : ℕ :=
   (φ.length + φ.numVars * (K * base K α ^ (2 * K))) *
     (2 * (K * (2 * (encCNF φ).length + 1)) + 1)
 
 /-- A bound on the length of the encoded states of the search. -/
-private def stateBound (K α : ℕ) (φ : CNF ℕ) : ℕ :=
+def stateBound (K α : ℕ) (φ : CNF ℕ) : ℕ :=
   2 * ((φ.numVars * (K * base K α ^ (2 * K)) + 1) * (2 * nodeBound K α φ + 1)) + 2
 
 private theorem length_encLiteral_le {φ : CNF ℕ} {D : Clause ℕ} (hD : D ∈ φ) {l : Literal ℕ}
@@ -446,7 +469,8 @@ section Sizes
 variable {k : ℕ} (hkK : k ≤ K) {φ : CNF ℕ}
 include hK hα hkK
 
-private theorem length_encCNF_walk_le {w : List Bool}
+/-- Every reached normalized formula fits the original-input node wire bound. -/
+theorem length_encCNF_walk_le {w : List Bool}
     (hw : (rule hK hα).tree.IsNodeWord (rootState hkK φ) w) :
     (encCNF ((rule hK hα).tree.walk (rootState hkK φ) w).1).length ≤ nodeBound K α φ := by
   set ψ := (rule hK hα).tree.walk (rootState hkK φ) w
@@ -457,7 +481,8 @@ private theorem length_encCNF_walk_le {w : List Bool}
   obtain ⟨D, hD, hCD⟩ := exists_of_mem_walk hK hα hkK hw hC
   exact length_encLiteral_le hD (List.mem_toFinset.mp (hCD (List.mem_toFinset.mpr hl)))
 
-private theorem length_encState_le {stk : List {ψ : CNF ℕ // Normalized K ψ}} {acc : Bool}
+/-- A bounded stack of reached nodes fits the polynomial pending-stack wire bound. -/
+theorem length_encState_le {stk : List {ψ : CNF ℕ // Normalized K ψ}} {acc : Bool}
     (hstk : stk.length ≤ φ.numVars * (K * base K α ^ (2 * K)) + 1)
     (hmem : ∀ t ∈ stk, ∃ w, (rule hK hα).tree.IsNodeWord (rootState hkK φ) w ∧
       (rule hK hα).tree.walk (rootState hkK φ) w = t) :
@@ -716,20 +741,7 @@ theorem exists_decidableInExpTime_numVars_of_length (k : ℕ) {ε : ℝ} (hε : 
     linarith
   obtain ⟨α, hα, hcount⟩ :=
     ClauseSet.Sparsification.exists_sum_choose_le hK (ε := 1 / M) (by positivity)
-  have hLB : Sparsify.LeafBound K α M := fun N => by
-    have h₁ := hcount N
-    have h₂ : (1 / M : ℝ) * N ≤ ((N / M + 1 : ℕ) : ℝ) := by
-      have hlt : N < M * (N / M + 1) := by
-        have := Nat.mod_lt N (show 0 < M by exact_mod_cast hMpos)
-        have := Nat.div_add_mod N M
-        nlinarith
-      have : (N : ℝ) < M * ((N / M + 1 : ℕ) : ℝ) := by exact_mod_cast hlt
-      rw [one_div_mul_eq_div, div_le_iff₀ hMpos]
-      linarith
-    have h₃ : (2 : ℝ) ^ ((1 / M : ℝ) * N) ≤ 2 ^ (N / M + 1) := by
-      rw [← Real.rpow_natCast]
-      exact Real.rpow_le_rpow_of_exponent_le (by norm_num) h₂
-    exact_mod_cast h₁.trans h₃
+  have hLB := Sparsify.leafBound_of_real (by exact_mod_cast hMpos) hcount
   refine ⟨Sparsify.occBound K α, fun δ hδ h => ?_⟩
   obtain ⟨e, h⟩ := h
   obtain ⟨g, t, c, hg, hgA, ht⟩ := h.exists_computableInO

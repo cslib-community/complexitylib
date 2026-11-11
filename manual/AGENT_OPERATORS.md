@@ -131,7 +131,309 @@ warning, trust CI
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.
 Coordinators check both against the final change. A reasoned finding of no impact is valid;
-an unchecked box or a passing build is not a usability review.
+an unchecked box or a passing build is not a usability review. When reviewing
+resource results, inspect what is counted: a simultaneous bound at every actual
+execution prefix, total historical allocation and a class-average estimate have
+different meanings. Preserve the stated machine model when reporting a milestone;
+a native RAM word bound alone does not supply a multitape bit-time theorem. A separately proved
+bit codec also needs a charged connection to its producing machine; an already
+serialized codec input is a material calling convention, not a full simulation.
+A concrete fixed-program simulator may charge input conversion and memory extraction
+while its machine and constants still depend on scalar parameters. Check whether
+programs/headers are runtime encoded inputs or fixed parameters, and keep sparse
+stored bindings distinct from live nonzero support before transferring resource bounds.
+A uniform code/width/clock/input-state generator does not itself supply one bit machine
+that dispatches the generated program at runtime. Ask for both the generation certificate
+and the runtime execution certificate before reporting a uniform algorithm.
+For example, `AddXNORUniformExecution.original_machine` quantifies one machine before
+all original inputs; `Interpreter.clocked_resources` charges its full encoded
+prefix trajectory and binary clock. Its uniformity proof does not turn native live
+support into a bound on retained sparse zero bindings or supply source sorted-list
+asymptotics. The separate compacting implementation now really deletes those
+bindings and derives a prefix encoding bound; that still does not bound internal
+interpreter/scan workspace sharply. Check the executed normalization and transient
+workspace, not just the retained wire. `AddXNORSource` computes the source's single
+operand list cut, seed and zero target, with explicit projection caps. Keep sharp
+bit time/peak space and the other remaining objectives visible in handoffs. The separate
+`RadixSort.computable` now certifies uniform streaming radix sorting with time
+linear in materialized record count times polynomial width overhead and peak
+space charging complete lists and per-record buffers. Its source record bridge
+preserves packed witnesses and collisions, but does not charge generation,
+counting, class access or reuse. The alternative streaming compactor is not wired
+into `CompactExecution`; preserve that path's cubic filter charge. A sorted-list
+component is progress toward the source model, not its global resource theorem.
+`SourceQuarter.run`
+now composes actual original-input preparation, projected first-quarter generation,
+packed-chain evaluation and sorting. Its quarter time/peak-space certificate
+charges every generated prefix and bit-machine temporary. It supplies a sharp
+quarter component, not full class enumeration or a whole-instance witness/miss
+endpoint. Keep inverse generation, class counts/matching, smaller-side retention,
+reuse/release and global computed-balance bit resources explicit in the next handoff.
+`SortedMeet.original_machine` now supplies an interpreter-free full-state
+whole-input witness/miss route using actual forward generation and reversed,
+complemented inverse generation. Its sorted tagged matcher preserves packed
+witnesses through collisions and proves exhaustive misses. Inspect
+`sourceCertificate` for the composed preparation, arrays, tagging/sort/scan,
+callback temporaries and decoded output charges. Both half lists are materialized;
+the projection parameter does not choose smaller retained classes in this route.
+Do not report its general composed profiles as sharp global source bounds or
+as the class-count/orientation/deletion/reuse algorithm. Reuse this actual
+matching stage when integrating bounded class batches; keep simultaneous full
+state/payload storage and transient workspace charged. The old compacting
+interpreter's cubic filter has not changed.
+`ClassStreaming.run` now executes a count-only maximum prepass, computed smaller-side
+retention, actual radix sorting of that class and singly evaluated opposite-side
+probing. Only the input, counter and optional hit pass between classes. Its
+original-input machine returns the computed maximum and decoded witness/miss;
+list-prefix and physical wire bounds are proved from actual occurrence counts.
+Keep those retained-value bounds separate from the composed callbacks' polynomial
+auxiliary-workspace charges. This route rescans half words for every class and
+uses linear retained-list lookup, so it is not the source's efficient projected
+quarter-join/count-table realization. Handoffs must retain that time gap and the
+unproved sharp global bit peak-space bound, even though full half-space arrays
+are absent from this implementation.
+
+`BatchedAccess.run` now sorts/matches bounded opposite-side batches with capacity
+computed as retained count plus one, then clears them, including a final partial
+flush. Retention and buffer insertion use structural linear machines; polynomial
+callbacks operate on scalars or original-input/single-record data. Its actual
+uniform original-input certificate includes all phase buffers and readback.
+Do not turn the amortized record-volume bound into a bit-time theorem: the
+current counter machine copies captured retained state and the growing buffer,
+so the pair-count envelope can persist through copying even without per-record
+lookup. Repeated class/count scans and the simultaneous global bit-resource proof
+also remain open. Preserve these charges when requesting producer/consumer fusion
+or persistent retained tapes; the old implementations have not changed.
+
+`GroupedQuarter.run` now executes original-input quarter preparation/generation,
+sorting and one-pass equal-key grouping. The group writer holds only a previous
+key and emits nested frames directly; its actual prefix/callback bounds avoid a
+growing-group accumulator. Its input/output quarter volume is still charged,
+with a proved quarter-scale uniform time/space bound. Do not equate first-quarter
+buckets with complete two-quarter classes or their maximum balance.
+`ClassJoin` composes quarter-query generation and grouping with counted
+occurrence joins. `ClassBalance` now derives unique complete half words, exact
+forward/backward counter counts and the computed balance, then generates only
+the count-selected smaller class. `JoinedDissection.run` is the assembled
+original-input route through generated retention, opposite-quarter batch probing,
+fixed outer release/iteration and original witness readback. Its correctness and
+returned balance are proved; use both complete new clients linked in the
+Operator's Manual when handing it over. The installed count certificate now
+feeds the sorted quarter records directly to `KeyCount.run`, bypassing grouped
+materialization in both directions. Its one-key/three-counter state has proved
+near-linear record bit time and small callback prefix space, including binary
+count widths. Retention now uses `KeyJoinStream.join_computable`: actual side
+filters and nested streaming charge run replays to emitted pairs, avoiding the
+whole-group polynomial join callback. Its charged prefix space includes filtered
+runs, current group, callback tapes and materialized class output; the selected
+join volume is derived from quarter sizes and computed balance. These phase
+bounds do not establish the whole solver bound. `JoinedProbe` now consumes actual
+opposite quarter groups with nested occurrence folds and immediate full-state
+batch feeds, avoiding per-class half-space scans. The solver now selects a direct
+whole-class match when computed counts bound its larger list by retained size
+plus a quarter allowance; it does not materialize an arbitrary larger class.
+Empty retained dictionaries skip opposite generation by matcher soundness. Its
+certificate uses the encoded streaming kernel with actual finite-prefix maxima,
+not supplied completion/resource assumptions. `sum_pairVisits` bounds total
+class pair population by the two half populations; it is not a bit-time theorem.
+The installed fallback now uses `ClassBatches`: completed row-aligned windows
+are generated without retained dictionary/growing-buffer callback state, matched,
+and released. Use the complete restarted-batch client alongside the original-input
+client; the old online consumer remains available as a separate component.
+
+The actual solver balance prepass now streams one scalar maximum of computed
+count minima; no count table/reversal/reduction is executed. Its derived prefix
+bit width and equality with the table-defined balance are checked. The direct
+branch removes per-pair dictionary/buffer copies for fitting classes and has a
+quarter-plus-balance logical prefix wire bound. The source allowance is at most
+`11*2^k`. Preparation, half-array construction and final decoding have proved polynomial physical-input
+resource bounds on the actual searched output. These are boundary phases only.
+
+Keep its resource limits visible: separate count-table and retained/live-buffer prefix
+encodings have derived bounds, but actual machine profiles also charge
+repeated quarter/count generation, per-batch retained-parameter copies and all
+callback tapes. Capacity includes quarter volume; `copyAllowance` and
+`sum_restartCopyWork` derive the global repeated-input volume, while
+`restart_prefix_wire` derives logical dictionary/output prefix wire. Neither is
+a closed global bit-time/auxiliary-space theorem. Each
+consumer list is read once; time sums actual rounds, while space takes actual
+callback/prefix-state/token maxima and separately charges returned state. The
+all-class search uses that same fixed kernel with actually generated index data,
+whose `2^p(2p+1)` wire is quarter scale at the capped source depth. Class work is
+summed and only a found pair survives a released class. The remaining bound
+normalization must still bound actual count/quarter/window/full-state callbacks
+in scalar widths, with simultaneous lifetimes. `SortedMatchBounds.runCertificate_bounds`
+and `MatcherResources.original_restart_bounds` now close the installed fallback matching
+component: actual tagging/sorting/scan clocks, argument copies, all-class/batch
+clock sum and every matching-prefix workspace are bounded in original physical
+widths. Build the complete restarted client for this result; it includes both
+orientations and non-unit-width collision records. These are matching-only
+profiles, not a global source resource theorem.
+`ProducerResources` additionally normalizes installed quarter-generation/sort/count
+allowances in physical scalar widths. Its all-class count phase and counts repeated
+at every generated restart label include real recomputation. It also sums actual
+full-state reconstruction allowances and bounds each reconstruction prefix, deriving
+pair widths from original quarter witnesses. Reuse these results with the matcher
+bounds; do not redo them or charge those phases as unit-cost input volume. The
+window scan/cut/division, retained/group emission and internal class-search
+control/ambient frames still need complete normalization.
+`WholeRunResources.sourceCertificate_bounds` now composes the actual original-input
+certificate through decoding. Its residual costs are explicitly the installed balance
+certificate and the sum/max of installed class searches, with only original-input-width
+polynomial and class-label overhead. The outer loop's captured state/copies/labels are
+charged using `NativeCertificate.foldlStream_bounds`; its workspace uses prefix maxima,
+and parked witness widths are derived from original soundness. `BalanceResources`
+now normalizes the complete installed scalar prepass, including both count callbacks,
+min/max, label generation, copies and every prefix. At the actual source cut it fits
+half-exponential time and quarter-exponential workspace in original input widths.
+`sourceCertificate_search_bounds` composes this into the unchanged whole run; only
+class-search sum/max remain explicit costs in that envelope. `SearchResources` now
+normalizes generated class pairs/full states and selected direct searches, including
+orientation/materialization and both producer/matcher temporaries. Its whole-source
+composition leaves only the selected restarted-search sum/max explicit, including
+classes skipped after hits. The installed emitter/window envelopes in
+`StreamingEmitBounds` and `KeyJoinBatchBounds` now sum actual group wires and
+bound scalar states at every prefix. Their cumulative population potential pays
+emissions from remaining capacity plus quarter records scanned. Use these with
+the complete batch client; do not reintroduce maximum group size times group
+count. `KeyJoinBatchCallbackBounds` now normalizes the installed count/division/filter/cut/cross
+profiles in scalar/record widths. `RestartResources.original_window_bounds` derives those
+widths from original source operands and generated labels; `original_window_sum` and
+`source_window_bounds` close the all-class window phase using computed capacity/balance.
+`BatchResources.matchLabelCertificate_bounds` now composes those windows with actual
+count/division, quarter regeneration/sort, reconstruction, matcher and retained-context
+frames. `source_label_bounds` sums complete guarded callbacks over all generated labels
+in both computed orientations; its space bound covers every callback prefix, including
+padding/missing branches. `BatchLoopResources.runCertificate_bounds` now charges the
+actual label setup/fold control and derives parked witness widths from matching
+soundness. Its time is label count times capacity times an original-width polynomial;
+space charges capacity once, including all prefix/control/callback tapes.
+`SourceResources.source_restart_bounds` composes retained preparation and ambient frames,
+then `sourceCertificate_bounds` closes the actual whole original-input bit time and
+space using the approved DIRECT, balance and whole-run envelopes. Use this endpoint
+and the complete batch client; do not repeat completed stages or substitute record
+volume, native live support or a generic polynomial in a whole retained list.
+The setup/round factoring preserves the installed loop profiles and execution route.
+Public binary pair containers and fold inputs now use documented reducible encoding names
+(`encNatPairList`, `encNatPairOption`, `encFoldStep`); Subset-Sum inputs use `encSubsetSum`.
+Run the changed-module encoding ratchet against the PR base; do not exempt new modules
+by raising the baseline. These names preserve layout and do not introduce defaults.
+Orientation recomputes counts; no cached-size oracle is input. The faster source
+reachable-state-DP machine now initializes, loops and returns all counts in both
+directions. Its original-width resource normalization is in
+`CounterDP.source_certificate`; its input is already projected for the source
+application. `CounterProjection.runCertificate` now projects the full-width input
+inside the machine. `SourceCounterCounts.quarter_certificate` composes source
+preparation and both actual projected DPs, charging simultaneous count arrays
+and all temporaries in this separate count-producing component. Reuse these routes
+rather than a semantic table or a generic polynomial in its full wire.
+`CounterBalanceScan` tags numeric keys, radix-sorts, pairs and folds binary
+min/max; `SourceCounterBalance` composes it with the actual all-count producer.
+`BalanceCompatibility.original_balance` proves agreement with the search's
+computed balance through injective packed words and the inverse conjugacy.
+`DPDissection` now runs the quarter-time scalar prepass before the approved whole
+search/readback pipeline. Its whole-run bounds use the returned scalar;
+`source_parameter_bounds` puts the fixed polynomial in original word width and
+operand count. `DPDissection.source_quarter_depth_bounds` (in
+`AddXNORSourceDepth`) removes the word-width premise throughout the source range
+`p ≤ tail.length/4`; `original_classBalance_quarter` identifies the requested
+balance even for `p > m`. `classBalance_min_width` proves that wider labels add
+only empty classes; it does not lift modular operations to a larger width.
+The per-class uniform expectation still needs `p ≤ m`. Keep that distinction
+visible; no expected class mean controls the maximum. The prepass-first order
+is a property of the certificate composition, not a separate allocation-order theorem.
+`SmallOperands.reachable_card_le` now proves Proposition 4's population bound,
+including wraparound and arbitrary seeds. Its exhaustive specification is not
+an efficient machine. `SmallDP.runCertificate` now supplies the small-operand
+algorithm: test proximity to the two modular endpoints, project to
+`min (min s m + size(q) + 3) m`, reuse the actual counting DP, and read counter
+zero in linear time. `SmallOperands.solvable_iff_project` proves the lift;
+`SmallDP.original_correct` derives original-input decision correctness, while
+`source_parameter_bounds` charges actual bit time and every-prefix workspace by
+`2^s * P(m+s+q+1)`. The precheck and DP both contribute to the certificate even
+on rejection. Do not replace linear readback with a generic polynomial in the
+exponential table, or substitute the old full-width `2^m` array bound.
+`SmallAutomatic` additionally computes the maximum operand bit length, excluding
+the seed, from the original instance. Its original-input certificate includes
+that polynomial scan/setup, needs no magnitude advice, and derives
+`2^s * P(m+q+1)` time/space for any source magnitude bound satisfied by the operands.
+Its correctness theorem has no small-operand premise.
+`AddXNORSparsification` returns an actual list of reduced sparse leaves with
+exact $2^{\eta v}$ population and disjunctive correctness. Width is $C(v+1)$
+generally and $Cv$ for $v\ge1$; keep the width-zero yes-input obstruction
+explicit. In `AddXNORSparsificationResources`, `Sparsification.source_generation`
+composes a localized branching machine and streaming digit map, proving native time and
+charged space $O(\lceil2^{\eta v}\rceil Q(L))$ in original encoded length $L$.
+Its fixed quadratic round factor permits choosing $M$ before the thresholds;
+no polynomial is applied to the exponential output accumulator. The older
+generic `certificate` has a different, unnormalized allowance and must not be
+used as the source-rate implementation. Public packet/source statements now use
+named program, width, clock and quarter accessors; callback contexts bind their
+components by name. The tuple layouts and resource conclusions are unchanged.
+Theorem 7's pipeline, the small-operand algorithm and the source-rate sparse
+reduction are assembled. The sharp ideal-model search constants are proved below.
+`AddXNORIdealChain` now defines actual planted-search and both decision experiments,
+with private-coin bidirectional adversaries. Its exact lazy laws reuse independently
+indexed permutation tables and prove validity on supported prefixes, including collisions.
+Do not identify these laws with the false Lemma 10 simulation claim,
+or infer a security bound from them: preinstalled planted tables depend on the target.
+In `AddXNORIdealCut`, `IdealChain.source_uniform_splice` proves the planted joint law
+by a reversible single-cut image swap, with no collision-free or simulation premise. `AddXNORIdealCoupling`
+instantiates `identicalUntilBad` on concrete visible readers and identifies both source
+worlds. `decision_advantage_le_visibleBad` and `search_comparison` charge their actual
+visible stopping event; `verifiedAdversary_queryBound` counts only $T+q$ calls for search
+and verification. `AddXNORIdealLedger` now derives actual fresh ledgers from the indexed
+sampler, with exact cache/output laws and at most one new entry per external call.
+`AddXNORIdealReplay` now retains the full hidden family and visible log, with exact joint
+completion/erasure laws. `Reveal.cutHit_bridge` proves that a hit forces a collision during
+the actual hidden reveal or a hidden side already covered by the old ledger. `CutBounds`
+keeps before/after ledgers separate; `Covering` derives the projected hidden-word marginals.
+All $q$ auxiliary calls are charged. Thus `Security.source_corollary_four` proves the
+literal Corollary 4 decision bound under the source hypotheses, with internal collision
+coefficient $8$ instead of $10$.
+
+Search verification is now proved too: independent-target acceptance forces a collision,
+and `Reveal.source_independent_verification` bounds the original-input averaged game.
+`Security.source_search_rate` composes the actual verifier and reveal at horizon $T+2q$.
+Its unrounded bound already implies the literal source inequality at $q=20,m=40,T=100$,
+although its $6,26$ normalization does not do so nontrivially.
+`SearchUnion.coarse_source_search_rate` now charges independent verification and cut detection
+as a single union in the same executed ledger, removing the separate $8T^2/2^m$ allowance.
+`SearchUnion.coarse_source_search_bound` therefore gives $6T/2^{\lceil q/2\rceil}+18T^2/2^m$
+under all source hypotheses. Covering still uses $T+q$ calls, and the reveal adds $q$ more.
+The strengthened unrounded bound still exceeds the source expression at $q=21,m=40,T=100$.
+The checked client records both comparisons without permutation-space enumeration.
+
+`VerificationCovering` now derives the actual walk's level-specific birth counts. Each
+nonempty computed rooted witness ends at a forward birth carrying its last label. Native
+verification adds at most one relevant forward birth and no reverse-view forward births.
+`Forest.selected_add_reverse_le` shows that forward births at the cut layer and reverse-view
+births at the next layer are disjoint parts of the adversary's ledger, so both covering
+counts share its single budget. The worst case puts that budget on the shorter backward side,
+and the full-range bound becomes $R(2^m,T+2q)+1/2^h+T/2^{q-h}$.
+
+`VerificationCovering.source_search_sharp` proves $3T/2^h+10T^2/2^m$ for **every** chain
+length under the exact source hypotheses, and `VerificationCovering.source_theorem_eight` adds
+the source's $2^{-q}$ to give literal Theorem 8. Nonvacuity forces $2^m\ge10T^2$. For
+$T\ge12$ the actual rate fits $10T^2/2^m$; for $9\le T\le11$ the covering slack
+$(T-1)/2^h\ge1/8$ absorbs the excess; smaller $T$ is vacuous. Neither the source's false
+Lemma 10 nor the guessing term is used. The coupling still charges all reveal calls.
+When a counting bound seems to need one more allowance, first check whether two counts
+share a budget before building a joint probability argument; that settled this case.
+The Operator's Manual inventory records Theorem 8 as covered.
+The guessed hidden-endpoint client continues to show why old collision/covering alone is
+insufficient without a charged reveal.
+
+The former audit decomposition (`Guessing`, `PlantedUniqueness`) and its open
+`RemainingCharge` premise were removed once Theorem 8 no longer depended on them.
+The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
+`coarse_source_search_bound`; the best unconditional bounds are in `VerificationCovering`.
+No deprecated aliases are retained.
+
+Do not promote an older pair/batch bound, unnormalized machine profile, native
+live support or generic polynomial in a whole list to this source bit theorem.
+The older solvers and their charges remain intact. Binary min/max certificates
+now live in `PolyTime.Nat.MinMax`, reused by the old and DP balance paths.
 
 ## Correct course and hand work over
 

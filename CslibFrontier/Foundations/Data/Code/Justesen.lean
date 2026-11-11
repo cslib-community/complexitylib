@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Foundations.Data.Code.HammingBallBounds
 public import CslibFrontier.Foundations.Data.Code.AsymptoticallyGood
 public import CslibFrontier.Foundations.Data.Code.Concatenation
 public import CslibFrontier.Foundations.Data.Code.ReedSolomon
@@ -16,7 +17,6 @@ public import Mathlib.Algebra.GroupWithZero.Units.Fintype
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Prod
 import CslibFrontier.Foundations.Data.BitString.Weight
-import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 import Mathlib.FieldTheory.Finiteness
 
 /-!
@@ -110,12 +110,6 @@ theorem sub_card_mul_le_sum_hammingNorm {S : Finset σ} {g : σ → κ → β} (
     _ ≤ ∑ u ∈ S, hammingNorm (g u) := sum_le_sum_of_subset (filter_subset _ S)
 
 end Weights
-
-/-- **A binomial estimate** for the size of a Hamming ball: `V * 4 ^ ℓ ≤ 4 ^ r * 5 ^ ℓ` for
-`V = ∑_{j ≤ r} C(ℓ, j)`, derived from `Cslib.sum_range_choose_mul_pow_le`. -/
-theorem sum_range_choose_mul_four_pow_le (ℓ r : ℕ) :
-    (∑ j ∈ range (r + 1), ℓ.choose j) * 4 ^ ℓ ≤ 4 ^ r * 5 ^ ℓ :=
-  sum_range_choose_mul_pow_le 4 ℓ r
 
 /-! ### The Wozencraft encoding -/
 
@@ -229,26 +223,6 @@ theorem card_justesenCode (φ : F ≃+ BitString b) {K : ℕ} (hK : K ≤ Fintyp
     Module.card_eq_pow_finrank (K := F),
     finrank_reedSolomon Units.val_injective (by rwa [Fintype.card_units]), card_eq_two_pow φ,
     ← pow_mul]
-
-/-- For `s ≥ 1`, the Hamming ball of radius `s` in `32 s` bits has at most `2 ^ (16 s - 2)`
-words. -/
-private theorem sum_range_choose_two_mul_sixteen_mul_le {s : ℕ} (hs : 1 ≤ s) :
-    ∑ j ∈ range (s + 1), (2 * (16 * s)).choose j ≤ 2 ^ (16 * s - 2) := by
-  have h := sum_range_choose_mul_four_pow_le (2 * (16 * s)) s
-  have hconst : 4 * (4 * 5 ^ 32) ≤ 2 ^ 80 := by norm_num
-  have hlhs : 4 * (4 ^ s * 5 ^ (2 * (16 * s))) ≤ 2 ^ (80 * s) := by
-    calc 4 * (4 ^ s * 5 ^ (2 * (16 * s))) ≤ 4 ^ s * (4 ^ s * 5 ^ (2 * (16 * s))) :=
-          Nat.mul_le_mul_right _ (Nat.le_self_pow (by omega) 4)
-      _ = (4 * (4 * 5 ^ 32)) ^ s := by
-          rw [show 2 * (16 * s) = 32 * s by ring, pow_mul, mul_pow, mul_pow]
-      _ ≤ (2 ^ 80) ^ s := Nat.pow_le_pow_left hconst s
-      _ = 2 ^ (80 * s) := (pow_mul _ _ _).symm
-  have h4 : 4 ^ (2 * (16 * s)) * 2 ^ (16 * s - 2) * 4 = 2 ^ (80 * s) := by
-    rw [show (4 : ℕ) = 2 ^ 2 by rfl, ← pow_mul, mul_assoc, ← pow_add, ← pow_add]
-    congr 1
-    omega
-  have h4pos : 0 < 4 ^ (2 * (16 * s)) := by positivity
-  nlinarith
 
 /-- **The relative distance of Justesen codes at rate at least `1 / 4`** [Justesen1972]. Let `s ≥ 1`
 and let `F` be a field written as `b = 16 * s` bits, which then has `2 ^ (16 * s)` elements. The
