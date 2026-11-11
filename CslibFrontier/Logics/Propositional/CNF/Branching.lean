@@ -172,7 +172,8 @@ theorem CoversModels.modelCountOn_le_sum [DecidableEq V] {φ : CNF V} {branches 
       (if φ.eval (extDeclared declared σ) then 1 else 0) ≤
         (branches.map fun ψ : CNF V => if ψ.eval (extDeclared declared σ) then 1 else 0).sum := by
     intro σ
-    rw [← (by simp only [List.countP_eq_length_filter, List.length_filter_eq_sum]) (fun ψ : CNF V => ψ.eval (extDeclared declared σ)) branches]
+    rw [← List.length_filter_eq_sum branches (fun ψ : CNF V => ψ.eval (extDeclared declared σ)),
+      ← List.countP_eq_length_filter]
     cases heval : φ.eval (extDeclared declared σ)
     · simp only [Bool.false_eq_true, ↓reduceIte, Nat.zero_le]
     · simp only [↓reduceIte]
@@ -191,7 +192,8 @@ theorem PartitionsModels.modelCountOn_eq_sum [DecidableEq V] {φ : CNF V} {branc
       (if φ.eval (extDeclared declared σ) then 1 else 0) =
         (branches.map fun ψ : CNF V => if ψ.eval (extDeclared declared σ) then 1 else 0).sum := by
     intro σ
-    rw [← (by simp only [List.countP_eq_length_filter, List.length_filter_eq_sum]) (fun ψ : CNF V => ψ.eval (extDeclared declared σ)) branches]
+    rw [← List.length_filter_eq_sum branches (fun ψ : CNF V => ψ.eval (extDeclared declared σ)),
+      ← List.countP_eq_length_filter]
     exact (h _).symm
   calc
     ∑ σ : declared → Bool, (if φ.eval (extDeclared declared σ) then 1 else 0)
