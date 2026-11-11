@@ -10,6 +10,8 @@ module
 import CslibFrontier.Crypto.Protocols.MPC.ComputationalComposition
 import CslibFrontier.Crypto.Protocols.MPC.Malicious
 
+set_option linter.privateModule false
+
 /-!
 # MPC Computational and Malicious Tests
 
@@ -42,18 +44,24 @@ Classical.choice, Quot.sound]
 #guard_msgs in
 #print axioms naive_without_abort_failure
 
-noncomputable def myCoinS (_x : (i : (I0 : Finset (Fin 2))) → Unit) :
-    ProbComp (((i : (I0 : Finset (Fin 2))) → Unit) ×
-      (((i : (I0 : Finset (Fin 2))) → (if (i:Fin 2) = 0 then Unit else Bool)) → Bool × Unit)) :=
+noncomputable def myCoinS (_x : (i : ({0} : Finset (Fin 2))) → Unit) :
+    ProbComp (((i : ({0} : Finset (Fin 2))) → Unit) ×
+      (((i : ({0} : Finset (Fin 2))) →
+        (if (i:Fin 2) = 0 then Unit else Bool)) → Bool × Unit)) :=
   return (fun _ => (), fun _ => (true, ()))
 
 example :
-    ProbComp.eval (maliciousIdealWithAbort coinTossPrivateFunc I0 (fun _ => ()) myCoinS) =
-      ProbComp.eval (maliciousIdeal (adversaryAborts coinTossPrivateFunc I0) I0 (fun i => ((), fun _ _ => true))
+    ProbComp.eval (maliciousIdealWithAbort coinTossPrivateFunc {0} (fun _ => ()) myCoinS) =
+      ProbComp.eval (maliciousIdeal (adversaryAborts coinTossPrivateFunc {0}) {0}
+        (fun _ => ((), fun _ _ => true))
         (fun x_I => do
-          let (x_I_prime, S_out) ← myCoinS x_I
-          return (x_I_prime, fun y_I => S_out y_I))) :=
-  adversaryAborts_characterization coinTossPrivateFunc I0 (by decide) (fun _ => ()) myCoinS
+          let (x_I_prime, S_out) ← myCoinS (fun i => (x_I i).1)
+          return (fun i => (x_I_prime i, fun _ y_I => (S_out y_I).1), fun y_I =>
+            if h : ∀ i, (y_I i).isSome then
+              (S_out (fun i => Option.get _ (h i))).2
+            else ()))) :=
+  adversaryAborts_characterization coinTossPrivateFunc {0}
+    (Finset.singleton_nonempty 0) (fun _ => ()) myCoinS
 
 example :
   ¬ (∃ (S : ((i : I0) → Unit) → ProbComp (((i : I0) → Unit) × (((i : I0) →
@@ -66,20 +74,26 @@ example :
             return extractBoolFromBiased y)) :=
   naive_without_abort_failure
 
-example {m : ℕ} {In Out : Fin m → Type}
-    {D : ((i : Fin m) → Out i) → ProbComp Bool}
-    {P_sub : Functionality m In Out}
-    {π : Protocol m In Out}
-    {x : (i : Fin m) → In i}
-    {c : Fin m → Type}
-    {C : Protocol m (fun i => c i × In i) Out}
-    {h_len : (C.subcalls x).length > 0}
-    {ε_out ε_sub : ℝ}
-    (h_out : C.outerDistinguisherAdvantage P_sub x D ≤ ε_out)
-    (h_sub : C.subcallDistinguisherAdvantage π P_sub x D ≤ ε_sub) :
-    |ProbComp.eval (C.realExecution π x) true -
-     ProbComp.eval (C.idealExecution P_sub x) true| ≤
-    ε_out + (C.subcalls x).length * ε_sub :=
-  semiHonestAdvantage_compose_le h_out h_sub
+open scoped NNReal
+
+example {m : ℕ} {spec₁ spec₂ : MultiOracleSpec}
+    {sc₁ : Schedule m spec₁} {In Coins₁ Out : Fin m → Type}
+    (P : Protocol m spec₁ sc₁ In Coins₁ Out)
+    (W₁ : MultiOracleWorld spec₁) (W₂ : MultiOracleWorld spec₂)
+    (f : Functionality m In Out)
+    (S₁ : (I : Finset (Fin m)) → CoalitionSimulator sc₁ In Coins₁ Out I)
+    {sc₂ : (op : spec₁.Op) → Schedule (spec₁.arity op) spec₂}
+    {Coins₂ : (op : spec₁.Op) → Fin (spec₁.arity op) → Type}
+    (Sub : (op : spec₁.Op) →
+      Protocol (spec₁.arity op) spec₂ (sc₂ op) (spec₁.Query op) (Coins₂ op) (spec₁.Answer op))
+    (S₂ : (op : spec₁.Op) → (J : Finset (Fin (spec₁.arity op))) →
+      CoalitionSimulator (sc₂ op) (spec₁.Query op) (Coins₂ op) (spec₁.Answer op) J)
+    (I : Finset (Fin m)) (x : (i : Fin m) → In i)
+    (D : ((i : I) → PartyView In (Schedule.ComposedCoins Coins₂ Coins₁ sc₁)
+        (Schedule.compose sc₂ sc₁) i) × ((i : Fin m) → Out i) → ProbComp Bool)
+    (ε_out ε_sub : ℝ≥0)
+    (hout : semiHonestAdvantage P W₁ f I (S₁ I) x (composeDistinguisher P S₂ I x D) ≤ ε_out)
+    (hsub : ∀ op J q D_sub, semiHonestAdvantage (Sub op) W₂ (W₁ op) J (S₂ op J) q D_sub ≤ ε_sub) :=
+  semiHonestAdvantage_compose_le P W₁ W₂ f S₁ Sub S₂ I x D ε_out ε_sub hout hsub
 
 end CslibFrontierTests.Crypto.MPCComputationalAndMalicious
