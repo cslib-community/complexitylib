@@ -2309,8 +2309,10 @@ register_result "nw-reconstruction-learner" where
     blocks and a deterministic test accepting at least a delta fraction of m-bit strings but \
     no output of the generator of any f in the class, the learner built from the negated test \
     learns the class under the uniform distribution with membership queries, error \
-    1/2 - delta/(2m) and success probability delta/(2m) over a uniform trial; any delta \
-    replaces the source's 1/5, and advantage delta/(2m) replaces 1/L. It makes at most \
+    1/2 - delta/(2m) and success probability delta/(2m) over a uniform trial. This is the \
+    delta-dense natural-property case; nwLearner_learns covers a distinguisher of any \
+    advantage eps, where the source takes advantage above 1/5, and advantage eps/(2m) \
+    replaces 1/L (the source's L is the output length m). It makes at most \
     m 2^a queries, and every hypothesis has De Morgan circuit size at most that of the test \
     plus m (2^a (2a + 3) + 1) + 1. The running time of the learner is not certified. Repeating \
     poly(m) runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is not \
