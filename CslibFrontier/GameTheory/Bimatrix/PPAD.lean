@@ -31,6 +31,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.PolyTime.Int.Table
+import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.BinarySize
 import Mathlib.Data.List.GetD
 
@@ -733,17 +734,9 @@ private lemma encWitness_eq_pairs (x y : List ℚ) :
       (x.map (fun q => (q.num, q.den)), y.map (fun q => (q.num, q.den)))
   simp only [encPair_apply, hmap]
 
-private lemma sum_map_range_fin {R : Type*} [AddCommMonoid R] (k : ℕ) (f : ℕ → R) :
-    ((List.range k).map f).sum = ∑ i : Fin k, f i.1 := by
-  have hlen : ((List.range k).map f).length = k := by simp
-  rw [← fin_sum_getD_eq_list_sum ((List.range k).map f) 0 hlen]
-  refine Finset.sum_congr rfl fun i _ => ?_
-  rw [List.getD_eq_getElem?_getD, List.getElem?_map,
-    List.getElem?_range i.2, Option.map_some, Option.getD_some]
-
 private lemma dotProduct_eq_fin_sum (k : ℕ) (a b : List ℤ) :
     ListMatrix.dotProduct k a b = ∑ i : Fin k, a.getD i.1 0 * b.getD i.1 0 := by
-  rw [ListMatrix.dotProduct_eq_sum_map_range, sum_map_range_fin]
+  rw [ListMatrix.dotProduct_eq_sum_map_range, List.sum_map_range]
 
 private lemma clearScale_pos (c : BimatrixCode) : 0 < clearScale c := by
   have hprod : ∀ M : List (List ℚ),
@@ -953,6 +946,30 @@ private lemma brCheck_iff {D mix : ℤ} {pays : List ℤ} {k : ℕ} (hk : pays.l
     simpa only [List.getD_eq_getElem?_getD, getElem?_pos pays i hi, Option.getD_some] using
       h ⟨i, hi'⟩
 
+private lemma bilinear_dotProduct_eq_cast {m n : ℕ} (xl yl : List (ℤ × ℕ)) (pv : List ℤ)
+    (C : ℚ) (M : Fin m → Fin n → ℚ)
+    (hxl_c : xl.all isCanonicalNonnegPair = true) (hxl_len : xl.length = m)
+    (hpv : ∀ a : Fin m, (pv.getD a.1 0 : ℚ) =
+      C * (vecProdDen yl : ℚ) * ∑ j : Fin n, M a j * (yl.map mkRatOfPair).getD j.1 0) :
+    ((ListMatrix.dotProduct m (scaleVecNum (vecProdDen xl) xl) pv : ℤ) : ℚ) =
+      (vecProdDen xl : ℚ) * C * (vecProdDen yl : ℚ) *
+        ∑ a : Fin m, ∑ j : Fin n,
+          (xl.map mkRatOfPair).getD a.1 0 * M a j * (yl.map mkRatOfPair).getD j.1 0 := by
+  rw [dotProduct_eq_fin_sum]
+  push_cast
+  calc
+    ∑ a : Fin m, ((scaleVecNum (vecProdDen xl) xl).getD a.1 0 : ℚ) * (pv.getD a.1 0 : ℚ)
+      = ∑ a : Fin m, ((vecProdDen xl : ℚ) * (xl.map mkRatOfPair).getD a.1 0) *
+          (C * (vecProdDen yl : ℚ) *
+            ∑ j : Fin n, M a j * (yl.map mkRatOfPair).getD j.1 0) := by
+          refine Finset.sum_congr rfl fun a _ => ?_
+          rw [scaleVecNum_getD_cast hxl_c hxl_len a, hpv a]
+    _ = (vecProdDen xl : ℚ) * C * (vecProdDen yl : ℚ) *
+          ∑ a : Fin m, ∑ j : Fin n,
+            (xl.map mkRatOfPair).getD a.1 0 * M a j * (yl.map mkRatOfPair).getD j.1 0 := by
+          simp only [Finset.mul_sum]
+          refine Finset.sum_congr rfl fun a _ => Finset.sum_congr rfl fun j _ => by ring
+
 private lemma mix1_eq_cast {c : BimatrixCode} (hc : c.WellFormed)
     {xl yl : List (ℤ × ℕ)} (hxl_c : xl.all isCanonicalNonnegPair = true)
     (hyl_c : yl.all isCanonicalNonnegPair = true)
@@ -961,24 +978,9 @@ private lemma mix1_eq_cast {c : BimatrixCode} (hc : c.WellFormed)
         (pay1Vec c yl) : ℤ) : ℚ) =
       (vecProdDen xl : ℚ) * (clearScale c : ℚ) * (vecProdDen yl : ℚ) *
         ∑ a : Fin c.rows, ∑ j : Fin c.cols,
-          (xl.map mkRatOfPair).getD a.1 0 * c.toMatA a j * (yl.map mkRatOfPair).getD j.1 0 := by
-  rw [dotProduct_eq_fin_sum]
-  push_cast
-  calc
-    ∑ a : Fin c.rows,
-        ((scaleVecNum (vecProdDen xl) xl).getD a.1 0 : ℚ) * ((pay1Vec c yl).getD a.1 0 : ℚ)
-      = ∑ a : Fin c.rows,
-          ((vecProdDen xl : ℚ) * (xl.map mkRatOfPair).getD a.1 0) *
-            ((clearScale c : ℚ) * (vecProdDen yl : ℚ) *
-              ∑ j : Fin c.cols, c.toMatA a j * (yl.map mkRatOfPair).getD j.1 0) := by
-          refine Finset.sum_congr rfl fun a _ => ?_
-          rw [scaleVecNum_getD_cast hxl_c hxl_len a, pay1Vec_getD_cast hc hyl_c hyl_len a]
-    _ = (vecProdDen xl : ℚ) * (clearScale c : ℚ) * (vecProdDen yl : ℚ) *
-          ∑ a : Fin c.rows, ∑ j : Fin c.cols,
-            (xl.map mkRatOfPair).getD a.1 0 * c.toMatA a j *
-              (yl.map mkRatOfPair).getD j.1 0 := by
-          simp only [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun a _ => Finset.sum_congr rfl fun j _ => by ring
+          (xl.map mkRatOfPair).getD a.1 0 * c.toMatA a j * (yl.map mkRatOfPair).getD j.1 0 :=
+  bilinear_dotProduct_eq_cast xl yl (pay1Vec c yl) (clearScale c) c.toMatA
+    hxl_c hxl_len (pay1Vec_getD_cast hc hyl_c hyl_len)
 
 private lemma mix2_eq_cast {c : BimatrixCode} (hc : c.WellFormed)
     {xl yl : List (ℤ × ℕ)} (hxl_c : xl.all isCanonicalNonnegPair = true)
@@ -989,24 +991,55 @@ private lemma mix2_eq_cast {c : BimatrixCode} (hc : c.WellFormed)
       (vecProdDen yl : ℚ) * (clearScale c : ℚ) * (vecProdDen xl : ℚ) *
         ∑ i : Fin c.rows, ∑ b : Fin c.cols,
           (xl.map mkRatOfPair).getD i.1 0 * c.toMatB i b * (yl.map mkRatOfPair).getD b.1 0 := by
-  rw [dotProduct_eq_fin_sum]
-  push_cast
-  calc
-    ∑ b : Fin c.cols,
-        ((scaleVecNum (vecProdDen yl) yl).getD b.1 0 : ℚ) * ((pay2Vec c xl).getD b.1 0 : ℚ)
-      = ∑ b : Fin c.cols,
-          ((vecProdDen yl : ℚ) * (yl.map mkRatOfPair).getD b.1 0) *
-            ((clearScale c : ℚ) * (vecProdDen xl : ℚ) *
-              ∑ i : Fin c.rows, (xl.map mkRatOfPair).getD i.1 0 * c.toMatB i b) := by
-          refine Finset.sum_congr rfl fun b _ => ?_
-          rw [scaleVecNum_getD_cast hyl_c hyl_len b, pay2Vec_getD_cast hc hxl_c hxl_len b]
-    _ = (vecProdDen yl : ℚ) * (clearScale c : ℚ) * (vecProdDen xl : ℚ) *
-          ∑ b : Fin c.cols, ∑ i : Fin c.rows,
-            (xl.map mkRatOfPair).getD i.1 0 * c.toMatB i b *
-              (yl.map mkRatOfPair).getD b.1 0 := by
-          simp only [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun b _ => Finset.sum_congr rfl fun i _ => by ring
-    _ = _ := by rw [Finset.sum_comm]
+  rw [bilinear_dotProduct_eq_cast yl xl (pay2Vec c xl) (clearScale c) (fun b i => c.toMatB i b)
+      hyl_c hyl_len (fun b => by
+        rw [pay2Vec_getD_cast hc hxl_c hxl_len b]
+        refine congrArg _ (Finset.sum_congr rfl fun i _ => mul_comm _ _)),
+      Finset.sum_comm]
+  refine congrArg _ (Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun b _ => by ring)
+
+private lemma all_mkRatOfPair_nonneg {l : List (ℤ × ℕ)}
+    (hl : l.all isCanonicalNonnegPair = true) : ∀ q ∈ l.map mkRatOfPair, 0 ≤ q := by
+  intro q hq
+  rcases List.mem_map.1 hq with ⟨pq, hpq, rfl⟩
+  have hpqc := (List.all_eq_true.1 hl) pq hpq
+  simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq] at hpqc
+  exact div_nonneg (by exact_mod_cast hpqc.1.1) (by exact_mod_cast Nat.zero_le pq.2)
+
+private lemma sum_map_mkRatOfPair_eq_one {n : ℕ} {l : List (ℤ × ℕ)}
+    (hl_c : l.all isCanonicalNonnegPair = true) (hl_len : l.length = n)
+    (hsum : (scaleVecNum (vecProdDen l) l).sum = vecProdDen l) :
+    (l.map mkRatOfPair).sum = 1 := by
+  have hD : (0 : ℚ) < (vecProdDen l : ℚ) := by exact_mod_cast vecProdDen_pos hl_c
+  have hsQ : ((scaleVecNum (vecProdDen l) l).sum : ℚ) = (vecProdDen l : ℚ) := by
+    exact_mod_cast hsum
+  rw [← fin_sum_getD_eq_list_sum (scaleVecNum (vecProdDen l) l) 0
+    (n := n) (by simp [scaleVecNum, hl_len])] at hsQ
+  push_cast at hsQ
+  have hsum' : ∑ i : Fin n, (vecProdDen l : ℚ) * (l.map mkRatOfPair).getD i.1 0 =
+      (vecProdDen l : ℚ) := by
+    have hcongr : ∑ i : Fin n, ((scaleVecNum (vecProdDen l) l).getD i.1 0 : ℚ) =
+        ∑ i : Fin n, (vecProdDen l : ℚ) * (l.map mkRatOfPair).getD i.1 0 :=
+      Finset.sum_congr rfl fun i _ => scaleVecNum_getD_cast hl_c hl_len i
+    exact hcongr.symm.trans hsQ
+  rw [← Finset.mul_sum] at hsum'
+  have hfin : ∑ i : Fin n, (l.map mkRatOfPair).getD i.1 0 = 1 :=
+    mul_left_cancel₀ hD.ne' (by simpa only [mul_one] using hsum')
+  rw [← fin_sum_getD_eq_list_sum (l.map mkRatOfPair) 0 (n := n) (by simp [hl_len]), hfin]
+
+private lemma list_sum_eq_one_of_div {k : ℕ} {v : List ℚ} {num : List ℤ}
+    (hv_len : v.length = k) (hnum_len : num.length = k) (hpos : 0 < num.sum)
+    (hget : ∀ i : Fin k, v.getD i.1 0 = (num.getD i.1 0 : ℚ) / (num.sum : ℚ)) :
+    v.sum = 1 := by
+  rw [← fin_sum_getD_eq_list_sum v 0 hv_len]
+  have hne0 : (num.sum : ℚ) ≠ 0 := by exact_mod_cast hpos.ne'
+  calc ∑ i : Fin k, v.getD i.1 0
+      = ∑ i : Fin k, (num.getD i.1 0 : ℚ) / (num.sum : ℚ) :=
+        Finset.sum_congr rfl fun i _ => hget i
+    _ = (∑ i : Fin k, (num.getD i.1 0 : ℚ)) / (num.sum : ℚ) := by rw [Finset.sum_div]
+    _ = (num.sum : ℚ) / (num.sum : ℚ) := by
+        rw [← Int.cast_sum, fin_sum_getD_eq_list_sum num 0 hnum_len]
+    _ = 1 := div_self hne0
 
 private lemma verifiesDecoded_iff {c : BimatrixCode} (hc : c.WellFormed)
     (w : List Bool) (dec : List (ℤ × ℕ) × List (ℤ × ℕ)) :
@@ -1031,50 +1064,10 @@ private lemma verifiesDecoded_iff {c : BimatrixCode} (hc : c.WellFormed)
     have hDc : (0 : ℚ) < (clearScale c : ℚ) := by exact_mod_cast clearScale_pos c
     have hxlen : x.length = c.rows := by simp [x, hdx]
     have hylen : y.length = c.cols := by simp [y, hdy]
-    have hxnn : ∀ q ∈ x, 0 ≤ q := by
-      intro q hq
-      rcases List.mem_map.1 hq with ⟨pq, hpq, rfl⟩
-      have hpqc := (List.all_eq_true.1 hcx) pq hpq
-      simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq] at hpqc
-      exact div_nonneg (by exact_mod_cast hpqc.1.1) (by exact_mod_cast Nat.zero_le pq.2)
-    have hynn : ∀ q ∈ y, 0 ≤ q := by
-      intro q hq
-      rcases List.mem_map.1 hq with ⟨pq, hpq, rfl⟩
-      have hpqc := (List.all_eq_true.1 hcy) pq hpq
-      simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq] at hpqc
-      exact div_nonneg (by exact_mod_cast hpqc.1.1) (by exact_mod_cast Nat.zero_le pq.2)
-    have hxsum : x.sum = 1 := by
-      have hsxQ : ((scaleVecNum (vecProdDen dec.1) dec.1).sum : ℚ) = (vecProdDen dec.1 : ℚ) := by
-        exact_mod_cast hsx
-      rw [← fin_sum_getD_eq_list_sum (scaleVecNum (vecProdDen dec.1) dec.1) 0
-        (n := c.rows) (by simp [scaleVecNum, hdx])] at hsxQ
-      push_cast at hsxQ
-      have hsum' :
-          ∑ i : Fin c.rows, (vecProdDen dec.1 : ℚ) * x.getD i.1 0 = (vecProdDen dec.1 : ℚ) := by
-        have hcongr : ∑ i : Fin c.rows, ((scaleVecNum (vecProdDen dec.1) dec.1).getD i.1 0 : ℚ) =
-            ∑ i : Fin c.rows, (vecProdDen dec.1 : ℚ) * x.getD i.1 0 :=
-          Finset.sum_congr rfl fun i _ => scaleVecNum_getD_cast hcx hdx i
-        exact hcongr.symm.trans hsxQ
-      rw [← Finset.mul_sum] at hsum'
-      have hxfin : ∑ i : Fin c.rows, x.getD i.1 0 = 1 :=
-        mul_left_cancel₀ hDx.ne' (by simpa only [mul_one] using hsum')
-      rw [← fin_sum_getD_eq_list_sum x 0 (n := c.rows) hxlen, hxfin]
-    have hysum : y.sum = 1 := by
-      have hsyQ : ((scaleVecNum (vecProdDen dec.2) dec.2).sum : ℚ) = (vecProdDen dec.2 : ℚ) := by
-        exact_mod_cast hsy
-      rw [← fin_sum_getD_eq_list_sum (scaleVecNum (vecProdDen dec.2) dec.2) 0
-        (n := c.cols) (by simp [scaleVecNum, hdy])] at hsyQ
-      push_cast at hsyQ
-      have hsum' :
-          ∑ j : Fin c.cols, (vecProdDen dec.2 : ℚ) * y.getD j.1 0 = (vecProdDen dec.2 : ℚ) := by
-        have hcongr : ∑ j : Fin c.cols, ((scaleVecNum (vecProdDen dec.2) dec.2).getD j.1 0 : ℚ) =
-            ∑ j : Fin c.cols, (vecProdDen dec.2 : ℚ) * y.getD j.1 0 :=
-          Finset.sum_congr rfl fun j _ => scaleVecNum_getD_cast hcy hdy j
-        exact hcongr.symm.trans hsyQ
-      rw [← Finset.mul_sum] at hsum'
-      have hyfin : ∑ j : Fin c.cols, y.getD j.1 0 = 1 :=
-        mul_left_cancel₀ hDy.ne' (by simpa only [mul_one] using hsum')
-      rw [← fin_sum_getD_eq_list_sum y 0 (n := c.cols) hylen, hyfin]
+    have hxnn : ∀ q ∈ x, 0 ≤ q := all_mkRatOfPair_nonneg hcx
+    have hynn : ∀ q ∈ y, 0 ≤ q := all_mkRatOfPair_nonneg hcy
+    have hxsum : x.sum = 1 := sum_map_mkRatOfPair_eq_one hcx hdx hsx
+    have hysum : y.sum = 1 := sum_map_mkRatOfPair_eq_one hcy hdy hsy
     have hmix1 := mix1_eq_cast hc hcx hcy hdx hdy
     have hmix2 := mix2_eq_cast hc hcx hcy hdx hdy
     have hpos1 : (0 : ℚ) < (vecProdDen dec.1 : ℚ) * (clearScale c : ℚ) * (vecProdDen dec.2 : ℚ) :=
@@ -1881,75 +1874,84 @@ private def isFeasibleBasisRows (k d : ℕ) (allRows : List (List ℤ)) (rhsAll 
       let row := (List.range k).map fun j => rowEntry allRows r j
       decide (D.sign * ListMatrix.dotProduct k row cv ≤ |D| * rowEntry [rhsAll] 0 r)
 
+private lemma rowCellC_polytime :
+    ComputableInPolyTime (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.1.1)
+      (encPair (encPair (encPair encBimatrix encIntTable) encUnary) encUnary) encBimatrix :=
+  (fst encBimatrix encIntTable).comp
+    ((fst (encPair encBimatrix encIntTable) encUnary).comp
+      (fst (encPair (encPair encBimatrix encIntTable) encUnary) encUnary))
+
+private lemma rowCellM_polytime :
+    ComputableInPolyTime (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.1.2)
+      (encPair (encPair (encPair encBimatrix encIntTable) encUnary) encUnary) encIntTable :=
+  (snd encBimatrix encIntTable).comp
+    ((fst (encPair encBimatrix encIntTable) encUnary).comp
+      (fst (encPair (encPair encBimatrix encIntTable) encUnary) encUnary))
+
+private lemma rowCellR_polytime :
+    ComputableInPolyTime (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.2)
+      (encPair (encPair (encPair encBimatrix encIntTable) encUnary) encUnary) encUnary :=
+  (snd (encPair encBimatrix encIntTable) encUnary).comp
+    (fst (encPair (encPair encBimatrix encIntTable) encUnary) encUnary)
+
+private lemma rowCellK_polytime :
+    ComputableInPolyTime (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.2)
+      (encPair (encPair (encPair encBimatrix encIntTable) encUnary) encUnary) encUnary :=
+  snd (encPair (encPair encBimatrix encIntTable) encUnary) encUnary
+
+private lemma tabulateSplitRows_polytime {dim : BimatrixCode → ℕ}
+    (hdim : ComputableInPolyTime dim encBimatrix encUnary)
+    {mat : BimatrixCode → List (List ℤ)}
+    (hmat : ComputableInPolyTime mat encBimatrix encIntTable)
+    {entry : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ → ℤ}
+    (hentry : ComputableInPolyTime entry
+      (encPair (encPair (encPair encBimatrix encIntTable) encUnary) encUnary) encIntBin)
+    {g : BimatrixCode → List (List ℤ)}
+    (hg : ∀ c, g c = tabulateTable (c.rows + c.cols) (dim c) fun r k =>
+      entry (((c, mat c), r), k)) :
+    ComputableInPolyTime g encBimatrix encIntTable := by
+  have hwith : ComputableInPolyTime
+      (fun p : BimatrixCode × List (List ℤ) =>
+        tabulateTable (p.1.rows + p.1.cols) (dim p.1) fun r k => entry ((p, r), k))
+      (encPair encBimatrix encIntTable) encIntTable :=
+    computableInPolyTime_tabulateTable
+      (unary_add.comp ((codeRows_polytime.comp (fst encBimatrix encIntTable)).prod
+        (codeCols_polytime.comp (fst encBimatrix encIntTable))))
+      (hdim.comp (fst encBimatrix encIntTable)) hentry
+  exact (hwith.comp ((id' (encIn := encBimatrix)).prod hmat)).of_enc_eq
+    (encD := encIntTable) fun c => congrArg encIntTable (hg c)
+
 @[local fun_prop]
 private theorem allRowsP_polytime :
     ComputableInPolyTime allRowsP encBimatrix encIntTable := by
-  let encB := encPair encBimatrix encIntTable
-  let encR := encPair encB encUnary
-  let encJ := encPair encR encUnary
-  have hwith : ComputableInPolyTime
-      (fun p : BimatrixCode × List (List ℤ) =>
-        tabulateTable (p.1.rows + p.1.cols) p.1.rows fun r i =>
-          if r < p.1.rows then if i = r then -1 else 0 else rowEntry p.2 i (r - p.1.rows))
-      encB encIntTable := by
-    refine computableInPolyTime_tabulateTable
-      (unary_add.comp ((codeRows_polytime.comp (fst encBimatrix encIntTable)).prod
-        (codeCols_polytime.comp (fst encBimatrix encIntTable))))
-      (codeRows_polytime.comp (fst encBimatrix encIntTable)) ?_
-    have hc : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.1.1) encJ encBimatrix :=
-      (fst encBimatrix encIntTable).comp ((fst encB encUnary).comp (fst encR encUnary))
-    have hB : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.1.2) encJ encIntTable :=
-      (snd encBimatrix encIntTable).comp ((fst encB encUnary).comp (fst encR encUnary))
-    have hr : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.2) encJ encUnary :=
-      (snd encB encUnary).comp (fst encR encUnary)
-    have hi : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.2) encJ encUnary :=
-      snd encR encUnary
-    have hm := codeRows_polytime.comp hc
-    have h1 := ite_decide (decide_eq' hi hr)
+  have hentry : ComputableInPolyTime
+      (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ =>
+        if p.1.2 < p.1.1.1.rows then if p.2 = p.1.2 then -1 else 0
+        else rowEntry p.1.1.2 p.2 (p.1.2 - p.1.1.1.rows))
+      (encPair (encPair (encPair encBimatrix encIntTable) encUnary) encUnary) encIntBin := by
+    have hm := codeRows_polytime.comp rowCellC_polytime
+    have h1 := ite_decide (decide_eq' rowCellK_polytime rowCellR_polytime)
       (const (encOut := encIntBin) (-1)) (const (encOut := encIntBin) 0)
-    have h2 := computableInPolyTime_rowEntry hB hi (unary_sub.comp (hr.prod hm))
-    exact ite_decide (unary_lt' hr hm) h1 h2
-  exact (hwith.comp ((id' (encIn := encBimatrix)).prod posMatB_polytime)).of_enc_eq
-    (encD := encIntTable) fun _ => rfl
+    have h2 := computableInPolyTime_rowEntry rowCellM_polytime rowCellK_polytime
+      (unary_sub.comp (rowCellR_polytime.prod hm))
+    exact ite_decide (unary_lt' rowCellR_polytime hm) h1 h2
+  exact tabulateSplitRows_polytime codeRows_polytime posMatB_polytime hentry fun _ => rfl
 
 @[local fun_prop]
 private theorem allRowsQ_polytime :
     ComputableInPolyTime allRowsQ encBimatrix encIntTable := by
-  let encB := encPair encBimatrix encIntTable
-  let encR := encPair encB encUnary
-  let encJ := encPair encR encUnary
-  have hwith : ComputableInPolyTime
-      (fun p : BimatrixCode × List (List ℤ) =>
-        tabulateTable (p.1.rows + p.1.cols) p.1.cols fun r j =>
-          if r < p.1.rows then rowEntry p.2 r j else if j = r - p.1.rows then -1 else 0)
-      encB encIntTable := by
-    refine computableInPolyTime_tabulateTable
-      (unary_add.comp ((codeRows_polytime.comp (fst encBimatrix encIntTable)).prod
-        (codeCols_polytime.comp (fst encBimatrix encIntTable))))
-      (codeCols_polytime.comp (fst encBimatrix encIntTable)) ?_
-    have hc : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.1.1) encJ encBimatrix :=
-      (fst encBimatrix encIntTable).comp ((fst encB encUnary).comp (fst encR encUnary))
-    have hA : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.1.2) encJ encIntTable :=
-      (snd encBimatrix encIntTable).comp ((fst encB encUnary).comp (fst encR encUnary))
-    have hr : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.1.2) encJ encUnary :=
-      (snd encB encUnary).comp (fst encR encUnary)
-    have hj : ComputableInPolyTime
-        (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ => p.2) encJ encUnary :=
-      snd encR encUnary
-    have hm := codeRows_polytime.comp hc
-    have h1 := computableInPolyTime_rowEntry hA hr hj
-    have h2 := ite_decide (decide_eq' hj (unary_sub.comp (hr.prod hm)))
+  have hentry : ComputableInPolyTime
+      (fun p : ((BimatrixCode × List (List ℤ)) × ℕ) × ℕ =>
+        if p.1.2 < p.1.1.1.rows then rowEntry p.1.1.2 p.1.2 p.2
+        else if p.2 = p.1.2 - p.1.1.1.rows then -1 else 0)
+      (encPair (encPair (encPair encBimatrix encIntTable) encUnary) encUnary) encIntBin := by
+    have hm := codeRows_polytime.comp rowCellC_polytime
+    have h1 := computableInPolyTime_rowEntry rowCellM_polytime rowCellR_polytime rowCellK_polytime
+    have h2 := ite_decide
+      (decide_eq' rowCellK_polytime (unary_sub.comp (rowCellR_polytime.prod hm)))
       (const (encOut := encIntBin) (-1)) (const (encOut := encIntBin) 0)
-    exact ite_decide (unary_lt' hr hm) h1 h2
-  exact (hwith.comp ((id' (encIn := encBimatrix)).prod posMatA_polytime)).of_enc_eq
-    (encD := encIntTable) fun _ => rfl
+    exact ite_decide (unary_lt' rowCellR_polytime hm) h1 h2
+  exact tabulateSplitRows_polytime codeCols_polytime posMatA_polytime hentry fun _ => rfl
 
 @[local fun_prop]
 private theorem allRhsP_polytime :
@@ -3436,6 +3438,60 @@ private lemma leaveLabel_mem_inter_unique {κ : Type*} [Fintype κ] [DecidableEq
     rw [hz₀, Finset.mem_singleton] at hr
     exact hr
 
+private lemma decodeT₁_encodeNodes_eq {c : BimatrixCode} {v : List Bool} {L₁ L₂ : List ℕ}
+    (hv : v = encodeNodes c L₁ L₂) (hsort : L₁.Pairwise (· < ·))
+    (hlt : ∀ k ∈ L₁, k < c.rows + c.cols) : decodeT₁ c v = L₁ := by
+  refine (List.perm_of_nodup_nodup_toFinset_eq (decodeT₁_sorted c v).nodup
+    hsort.nodup ?_).eq_of_pairwise
+      (fun _ _ _ _ h1 h2 => False.elim (Nat.lt_asymm h1 h2)) (decodeT₁_sorted c v) hsort
+  ext k
+  simp only [List.mem_toFinset]
+  constructor
+  · intro hk
+    have hklt := decodeT₁_lt c v hk
+    rw [hv] at hk
+    exact (decodeT₁_encodeNodes L₁ L₂ hklt).1 hk
+  · intro hk
+    rw [hv]
+    exact (decodeT₁_encodeNodes L₁ L₂ (hlt k hk)).2 hk
+
+private lemma decodeT₂_encodeNodes_eq {c : BimatrixCode} {v : List Bool} {L₁ L₂ : List ℕ}
+    (hv : v = encodeNodes c L₁ L₂) (hsort : L₂.Pairwise (· < ·))
+    (hlt : ∀ k ∈ L₂, k < c.rows + c.cols) : decodeT₂ c v = L₂ := by
+  refine (List.perm_of_nodup_nodup_toFinset_eq (decodeT₂_sorted c v).nodup
+    hsort.nodup ?_).eq_of_pairwise
+      (fun _ _ _ _ h1 h2 => False.elim (Nat.lt_asymm h1 h2)) (decodeT₂_sorted c v) hsort
+  ext k
+  simp only [List.mem_toFinset]
+  constructor
+  · intro hk
+    have hklt := decodeT₂_lt c v hk
+    rw [hv] at hk
+    exact (decodeT₂_encodeNodes L₁ L₂ hklt).1 hk
+  · intro hk
+    rw [hv]
+    exact (decodeT₂_encodeNodes L₁ L₂ (hlt k hk)).2 hk
+
+private lemma almostComplete_all_range_eq_true (m n : ℕ) (L₁ L₂ : List ℕ)
+    {k₀ : Fin m ⊕ Fin n} (hk₀ : (finSumFinEquiv k₀).1 = 0)
+    (hacl : ∀ k : Fin m ⊕ Fin n, k ≠ k₀ → k ∈ finsetOfList m n L₁ ∨ k ∈ finsetOfList m n L₂) :
+    ((List.range (m + n)).all fun k =>
+      decide (k = 0) || decide (k ∈ L₁) || decide (k ∈ L₂)) = true := by
+  rw [List.all_eq_true]
+  intro k hk
+  rw [List.mem_range] at hk
+  simp only [Bool.or_eq_true, decide_eq_true_eq]
+  by_cases hk0 : k = 0
+  · exact .inl (.inl hk0)
+  · have hk' : finSumFinEquiv.symm ⟨k, hk⟩ ≠ k₀ := fun h => by
+      apply hk0
+      have h1 := congrArg (fun z => (finSumFinEquiv z).1) h
+      simp only [Equiv.apply_symm_apply] at h1
+      exact h1.trans hk₀
+    rcases hacl _ hk' with h1 | h2
+    · exact .inl (.inr (by simpa [Equiv.apply_symm_apply] using mem_finsetOfList.1 h1))
+    · exact .inr (by simpa [Equiv.apply_symm_apply] using mem_finsetOfList.1 h2)
+
 private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNeg : Bool)
     {u : List Bool} (hu : isValidNodeExec c u = true)
     (hact :
@@ -3533,37 +3589,9 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
       refine .inr ⟨rfl, ?_⟩
       exact (vertexAdj_iff_exists_pivotVertex (pertP_nondegenerate hc) (pertP_recession hc)
         p.isVertex_x).2 ⟨l', hl'_in_px, rfl⟩
-    have hv_dec1 : decodeT₁ c v = T₁' := by
-      have hperm : (decodeT₁ c v).Perm T₁' := by
-        refine List.perm_of_nodup_nodup_toFinset_eq (decodeT₁_sorted c v).nodup hT₁'_sort.nodup ?_
-        ext k
-        simp only [List.mem_toFinset]
-        constructor
-        · intro hk
-          have hklt := decodeT₁_lt c v hk
-          rw [hv_eq] at hk
-          exact (decodeT₁_encodeNodes T₁' T₂ hklt).1 hk
-        · intro hk
-          rw [hv_eq]
-          exact (decodeT₁_encodeNodes T₁' T₂ (hT₁'_lt k hk)).2 hk
-      exact hperm.eq_of_pairwise (fun _ _ _ _ h1 h2 => False.elim (Nat.lt_asymm h1 h2))
-        (decodeT₁_sorted c v) hT₁'_sort
-    have hv_dec2 : decodeT₂ c v = T₂ := by
-      have hperm : (decodeT₂ c v).Perm T₂ := by
-        refine List.perm_of_nodup_nodup_toFinset_eq (decodeT₂_sorted c v).nodup
-          (decodeT₂_sorted c u).nodup ?_
-        ext k
-        simp only [List.mem_toFinset]
-        constructor
-        · intro hk
-          have hklt := decodeT₂_lt c v hk
-          rw [hv_eq] at hk
-          exact (decodeT₂_encodeNodes T₁' T₂ hklt).1 hk
-        · intro hk
-          rw [hv_eq]
-          exact (decodeT₂_encodeNodes T₁' T₂ (decodeT₂_lt c u hk)).2 hk
-      exact hperm.eq_of_pairwise (fun _ _ _ _ h1 h2 => False.elim (Nat.lt_asymm h1 h2))
-        (decodeT₂_sorted c v) (decodeT₂_sorted c u)
+    have hv_dec1 : decodeT₁ c v = T₁' := decodeT₁_encodeNodes_eq hv_eq hT₁'_sort hT₁'_lt
+    have hv_dec2 : decodeT₂ c v = T₂ :=
+      decodeT₂_encodeNodes_eq hv_eq (decodeT₂_sorted c u) (fun _ hr => decodeT₂_lt c u hr)
     have hv_valid : isValidNodeExec c v = true := by
       have hlen_v : v.length = 2 * (c.rows + c.cols) := by rw [hv_eq, length_encodeNodes]
       have hf1' : isFeasibleBasisRows c.rows (c.rows + c.cols) (allRowsP c) (allRhsP c) T₁' =
@@ -3575,25 +3603,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
         (isFeasibleBasisRows_iff _ _ (allRowsQ c) (allRhsQ c) (allRowsQ_spec c) (allRhsQ_spec c)
           (decodeT₂_sorted c u) (fun _ hr => decodeT₂_lt c u hr) hlen₂).2 hfb₂
       have hall' : ((List.range (c.rows + c.cols)).all fun k =>
-          decide (k = 0) || decide (k ∈ T₁') || decide (k ∈ T₂)) = true := by
-        rw [List.all_eq_true]
-        intro k hk
-        rw [List.mem_range] at hk
-        simp only [Bool.or_eq_true, decide_eq_true_eq]
-        by_cases hk0 : k = 0
-        · exact .inl (.inl hk0)
-        · have hk' : finSumFinEquiv.symm ⟨k, hk⟩ ≠ k₀ := fun h => by
-            apply hk0
-            have h1 := congrArg (fun z => (finSumFinEquiv z).1) h
-            simp only [Equiv.apply_symm_apply] at h1
-            exact h1
-          rcases hacl_q _ hk' with h1 | h2
-          · exact .inl (.inr (by
-              have hm1 := mem_finsetOfList.1 h1
-              simpa [Equiv.apply_symm_apply] using hm1))
-          · exact .inr (by
-              have hm2 := mem_finsetOfList.1 h2
-              simpa [Equiv.apply_symm_apply] using hm2)
+          decide (k = 0) || decide (k ∈ T₁') || decide (k ∈ T₂)) = true :=
+        almostComplete_all_range_eq_true c.rows c.cols T₁' T₂ (by simp [k₀]) hacl_q
       have hlen₁' : T₁'.length = c.rows := hT₁'_len
       have hlen₂' : T₂.length = c.cols := hlen₂
       simp only [isValidNodeExec, hwb, hlen_v, hv_dec1, hv_dec2, hlen₁', hlen₂', hall', hf1', hf2',
@@ -3787,37 +3798,9 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
       refine .inl ⟨rfl, ?_⟩
       exact (vertexAdj_iff_exists_pivotVertex (pertQ_nondegenerate hc) (pertQ_recession hc)
         p.isVertex_y).2 ⟨l', hl'_in_py, rfl⟩
-    have hv_dec1 : decodeT₁ c v = T₁ := by
-      have hperm : (decodeT₁ c v).Perm T₁ := by
-        refine List.perm_of_nodup_nodup_toFinset_eq (decodeT₁_sorted c v).nodup
-          (decodeT₁_sorted c u).nodup ?_
-        ext k
-        simp only [List.mem_toFinset]
-        constructor
-        · intro hk
-          have hklt := decodeT₁_lt c v hk
-          rw [hv_eq] at hk
-          exact (decodeT₁_encodeNodes T₁ T₂' hklt).1 hk
-        · intro hk
-          rw [hv_eq]
-          exact (decodeT₁_encodeNodes T₁ T₂' (decodeT₁_lt c u hk)).2 hk
-      exact hperm.eq_of_pairwise (fun _ _ _ _ h1 h2 => False.elim (Nat.lt_asymm h1 h2))
-        (decodeT₁_sorted c v) (decodeT₁_sorted c u)
-    have hv_dec2 : decodeT₂ c v = T₂' := by
-      have hperm : (decodeT₂ c v).Perm T₂' := by
-        refine List.perm_of_nodup_nodup_toFinset_eq (decodeT₂_sorted c v).nodup hT₂'_sort.nodup ?_
-        ext k
-        simp only [List.mem_toFinset]
-        constructor
-        · intro hk
-          have hklt := decodeT₂_lt c v hk
-          rw [hv_eq] at hk
-          exact (decodeT₂_encodeNodes T₁ T₂' hklt).1 hk
-        · intro hk
-          rw [hv_eq]
-          exact (decodeT₂_encodeNodes T₁ T₂' (hT₂'_lt k hk)).2 hk
-      exact hperm.eq_of_pairwise (fun _ _ _ _ h1 h2 => False.elim (Nat.lt_asymm h1 h2))
-        (decodeT₂_sorted c v) hT₂'_sort
+    have hv_dec1 : decodeT₁ c v = T₁ :=
+      decodeT₁_encodeNodes_eq hv_eq (decodeT₁_sorted c u) (fun _ hr => decodeT₁_lt c u hr)
+    have hv_dec2 : decodeT₂ c v = T₂' := decodeT₂_encodeNodes_eq hv_eq hT₂'_sort hT₂'_lt
     have hv_valid : isValidNodeExec c v = true := by
       have hlen_v : v.length = 2 * (c.rows + c.cols) := by rw [hv_eq, length_encodeNodes]
       have hf1' : isFeasibleBasisRows c.rows (c.rows + c.cols) (allRowsP c) (allRhsP c) T₁ =
@@ -3829,25 +3812,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
         (isFeasibleBasisRows_iff _ _ (allRowsQ c) (allRhsQ c) (allRowsQ_spec c) (allRhsQ_spec c)
           hT₂'_sort hT₂'_lt hT₂'_len).2 hfb₂'
       have hall' : ((List.range (c.rows + c.cols)).all fun k =>
-          decide (k = 0) || decide (k ∈ T₁) || decide (k ∈ T₂')) = true := by
-        rw [List.all_eq_true]
-        intro k hk
-        rw [List.mem_range] at hk
-        simp only [Bool.or_eq_true, decide_eq_true_eq]
-        by_cases hk0 : k = 0
-        · exact .inl (.inl hk0)
-        · have hk' : finSumFinEquiv.symm ⟨k, hk⟩ ≠ k₀ := fun h => by
-            apply hk0
-            have h1 := congrArg (fun z => (finSumFinEquiv z).1) h
-            simp only [Equiv.apply_symm_apply] at h1
-            exact h1
-          rcases hacl_q _ hk' with h1 | h2
-          · exact .inl (.inr (by
-              have hm1 := mem_finsetOfList.1 h1
-              simpa [Equiv.apply_symm_apply] using hm1))
-          · exact .inr (by
-              have hm2 := mem_finsetOfList.1 h2
-              simpa [Equiv.apply_symm_apply] using hm2)
+          decide (k = 0) || decide (k ∈ T₁) || decide (k ∈ T₂')) = true :=
+        almostComplete_all_range_eq_true c.rows c.cols T₁ T₂' (by simp [k₀]) hacl_q
       have hlen₁' : T₁.length = c.rows := hlen₁
       have hlen₂' : T₂'.length = c.cols := hT₂'_len
       simp only [isValidNodeExec, hwb, hlen_v, hv_dec1, hv_dec2, hlen₁', hlen₂', hall', hf1', hf2',
@@ -4940,28 +4906,10 @@ theorem extractNash_sound {c : BimatrixCode} {u : List Bool}
         (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) := by
       rw [hx_getR, hy_getR]
       exact (isNash_posMat hc _ _).1 hNashPos
-    have hx_sum : x.sum = 1 := by
-      rw [← fin_sum_getD_eq_list_sum x 0 hx_len]
-      have hne0_S1 : (numP_l.sum : ℚ) ≠ 0 := by exact_mod_cast (hS₁_eq ▸ hS₁_pos).ne'
-      calc ∑ i : Fin c.rows, x.getD i.1 0
-          = ∑ i : Fin c.rows, (numP_l.getD i.1 0 : ℚ) / (numP_l.sum : ℚ) :=
-            Finset.sum_congr rfl fun i _ => hxp_spec.2.2 i
-        _ = (∑ i : Fin c.rows, (numP_l.getD i.1 0 : ℚ)) / (numP_l.sum : ℚ) := by
-            rw [Finset.sum_div]
-        _ = (numP_l.sum : ℚ) / (numP_l.sum : ℚ) := by
-            rw [← Int.cast_sum, fin_sum_getD_eq_list_sum numP_l 0 hnumP_len]
-        _ = 1 := div_self hne0_S1
-    have hy_sum : y.sum = 1 := by
-      rw [← fin_sum_getD_eq_list_sum y 0 hy_len]
-      have hne0_S2 : (numQ_l.sum : ℚ) ≠ 0 := by exact_mod_cast (hS₂_eq ▸ hS₂_pos).ne'
-      calc ∑ j : Fin c.cols, y.getD j.1 0
-          = ∑ j : Fin c.cols, (numQ_l.getD j.1 0 : ℚ) / (numQ_l.sum : ℚ) :=
-            Finset.sum_congr rfl fun j _ => hyp_spec.2.2 j
-        _ = (∑ j : Fin c.cols, (numQ_l.getD j.1 0 : ℚ)) / (numQ_l.sum : ℚ) := by
-            rw [Finset.sum_div]
-        _ = (numQ_l.sum : ℚ) / (numQ_l.sum : ℚ) := by
-            rw [← Int.cast_sum, fin_sum_getD_eq_list_sum numQ_l 0 hnumQ_len]
-        _ = 1 := div_self hne0_S2
+    have hx_sum : x.sum = 1 :=
+      list_sum_eq_one_of_div hx_len hnumP_len (hS₁_eq ▸ hS₁_pos) hxp_spec.2.2
+    have hy_sum : y.sum = 1 :=
+      list_sum_eq_one_of_div hy_len hnumQ_len (hS₂_eq ▸ hS₂_pos) hyp_spec.2.2
     have hRatNash : c.IsRationalNash x y :=
       isRationalNash_of_toGame_isNash hx_len hy_len hx_nn hx_sum hy_nn hy_sum hGameNash
     have hex_pairs : extractNash (c, u) = encWitnessPairs (xp, yp) := by

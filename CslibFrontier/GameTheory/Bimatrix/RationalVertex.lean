@@ -1537,32 +1537,24 @@ theorem isNash_clearDenomPos {m n : ℕ} (A B : Matrix (Fin m) (Fin n) ℚ)
   have hD : 0 < D := by
     dsimp only [D]
     exact_mod_cast clearDenomScale_pos A B
-  have hcastA : ∀ i j, ((clearDenomInt A B A i j : ℤ) : ℝ) = D * (A i j : ℝ) := fun i j => by
-    have hdvd := den_dvd_clearDenomScale_left A B i j
-    have hnat : (A i j).den * (clearDenomScale A B / (A i j).den) = clearDenomScale A B :=
-      Nat.mul_div_cancel' hdvd
-    have hden_ne : ((A i j).den : ℝ) ≠ 0 := by exact_mod_cast (A i j).den_nz
-    have hrat : ((A i j : ℚ) : ℝ) = ((A i j).num : ℝ) / ((A i j).den : ℝ) := by
-      exact_mod_cast (Rat.num_div_den (A i j)).symm
-    have hnatR : ((A i j).den : ℝ) * ((clearDenomScale A B / (A i j).den : ℕ) : ℝ) = D := by
+  have hcast : ∀ (M : Matrix (Fin m) (Fin n) ℚ),
+      (∀ i j, (M i j).den ∣ clearDenomScale A B) →
+      ∀ i j, ((clearDenomInt A B M i j : ℤ) : ℝ) = D * (M i j : ℝ) := fun M hd i j => by
+    have hnat : (M i j).den * (clearDenomScale A B / (M i j).den) = clearDenomScale A B :=
+      Nat.mul_div_cancel' (hd i j)
+    have hden_ne : ((M i j).den : ℝ) ≠ 0 := by exact_mod_cast (M i j).den_nz
+    have hrat : ((M i j : ℚ) : ℝ) = ((M i j).num : ℝ) / ((M i j).den : ℝ) := by
+      exact_mod_cast (Rat.num_div_den (M i j)).symm
+    have hnatR : ((M i j).den : ℝ) * ((clearDenomScale A B / (M i j).den : ℕ) : ℝ) = D := by
       dsimp only [D]
       exact_mod_cast hnat
     simp only [clearDenomInt, Int.cast_mul, Int.cast_natCast]
     rw [hrat, ← hnatR]
     field_simp
-  have hcastB : ∀ i j, ((clearDenomInt A B B i j : ℤ) : ℝ) = D * (B i j : ℝ) := fun i j => by
-    have hdvd := den_dvd_clearDenomScale_right A B i j
-    have hnat : (B i j).den * (clearDenomScale A B / (B i j).den) = clearDenomScale A B :=
-      Nat.mul_div_cancel' hdvd
-    have hden_ne : ((B i j).den : ℝ) ≠ 0 := by exact_mod_cast (B i j).den_nz
-    have hrat : ((B i j : ℚ) : ℝ) = ((B i j).num : ℝ) / ((B i j).den : ℝ) := by
-      exact_mod_cast (Rat.num_div_den (B i j)).symm
-    have hnatR : ((B i j).den : ℝ) * ((clearDenomScale A B / (B i j).den : ℕ) : ℝ) = D := by
-      dsimp only [D]
-      exact_mod_cast hnat
-    simp only [clearDenomInt, Int.cast_mul, Int.cast_natCast]
-    rw [hrat, ← hnatR]
-    field_simp
+  have hcastA : ∀ i j, ((clearDenomInt A B A i j : ℤ) : ℝ) = D * (A i j : ℝ) :=
+    hcast A (den_dvd_clearDenomScale_left A B)
+  have hcastB : ∀ i j, ((clearDenomInt A B B i j : ℤ) : ℝ) = D * (B i j : ℝ) :=
+    hcast B (den_dvd_clearDenomScale_right A B)
   let G : BimatrixGame (Fin m) (Fin n) := BimatrixGame.mk (A.map Rat.cast) (B.map Rat.cast)
   let GD : BimatrixGame (Fin m) (Fin n) := BimatrixGame.mk (D • G.A) (D • G.B)
   have hA_eq : (clearDenomPosA A B).map (Int.cast : ℤ → ℝ) =
