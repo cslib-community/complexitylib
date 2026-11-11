@@ -33,10 +33,10 @@ satisfiable and unsatisfiable instances, and applications of these endpoints. Ru
 successful compilation confirms the displayed theorem types and examples.
 
 For maximum 2-satisfiability, import `CslibFrontier.Computability.Complexity.Problems.MaxTwoSAT` and
-use `MaxTwoSAT_npComplete`. An instance `(φ, K)` is encoded by `encPair encCNF encNat`, so the
-target `K` is binary. Every clause has at most two literals, unit clauses included, and clauses
-are counted with multiplicity: `(φ, K) ∈ MaxTwoSAT` when some assignment satisfies at least `K`
-entries of the list `φ`. The [checked examples](../../CslibFrontierTests/MaxTwoSAT.lean) cover the
+use `MaxTwoSAT_npComplete`. An instance `⟨φ, K⟩ : MaxTwoSATInstance` is encoded by `encMaxTwoSAT`,
+so the target `K` is binary. Every clause has at most two literals, unit clauses included, and
+clauses are counted with multiplicity: `⟨φ, K⟩ ∈ MaxTwoSAT` when some assignment satisfies at least
+`K` entries of the list `φ`. The [checked examples](../../CslibFrontierTests/MaxTwoSAT.lean) cover the
 Garey–Johnson–Stockmeyer gadget table, an unsatisfiable 2-CNF formula that is a yes-instance for a
 smaller target, and the reduction on satisfiable and unsatisfiable inputs; check them with
 `scripts/build.sh CslibFrontierTests.MaxTwoSAT`.
