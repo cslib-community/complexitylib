@@ -306,7 +306,9 @@ example : ∃ (HP : FourthRootHierarchyParams 16 1 16 32 8)
     cutoff_zero := fun _ hv => polynomialSwitch4_of_le (by norm_num) hv
     cutoff_range := fun v =>
       ⟨polynomialSwitch4_nonneg _ _ v, polynomialSwitch4_le_one _ _ v⟩
-    rates_antitone := by intros; exact le_rfl
+    rates_antitone := by
+      intro i j hij
+      exact (le_rfl : rate 0 ≤ rate 0)
     rate_ratio := by intro i; norm_num [rate]
     densityCap := 0
     densityCap_nonneg := le_rfl
