@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.St
 public import CslibFrontier.Languages.Probabilistic.Iteration
 public import CslibFrontier.Languages.Probabilistic.Retry
 public import CslibFrontier.Languages.Probabilistic.UniformNat
+public import CslibFrontier.Probability.DDGTree.Rejection
 import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -34,6 +35,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Computability.Probabilistic.Retry
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
+import CslibFrontier.Probability.Option
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Tactic.EncLen
@@ -44,7 +46,7 @@ import CslibFrontier.Tactic.EncLen
 For a one-bit self-reducible witness family (`Cslib.Complexity.SelfReducible`), an exact witness
 counter `count y = (W y).card` yields **exact** prefix bit-by-bit conditional sampling
 [Jerrum, Valiant and Vazirani][JerrumValiantVazirani1986],
-[Sinclair, Lecture 4, Section 4.2.1][Sinclair2025]:
+[Sinclair, Lecture 4, Section 4.2.3][Sinclair2025]:
 
 1. **Exact `PMF` conditional prefix walk (`SelfReducible.exactWalk`, `SelfReducible.exactSample`)**:
    after evaluating `c = count x` once at the root (returning `none` immediately when `c = 0`),
@@ -55,11 +57,13 @@ counter `count y = (W y).card` yields **exact** prefix bit-by-bit conditional sa
    `Option (List Bool)` equals `Cslib.Complexity.uniformWitness (W x)` **identically** (zero
    total-variation error), using at most `1 + R.len x` counter evaluations, all on instances of
    encoded length at most `(enc x).length`.
-2. **Composable fair-bit cost bound (`ExactFinSamplerCost`,
-   `SelfReducible.exactSampleExpectedBits_le`)**: since every witness set satisfies
-   `(W y).card ≤ 2 ^ R.len y` (`SelfReducible.card_le_two_pow_len`), any exact `Fin c` sampler
-   using at most `2 * Nat.clog 2 c` expected fair bits per call uses at most
-   `(R.len x : ℝ) * (R.len x + 1)` expected fair bits across the entire walk (`0` when `W x = ∅`).
+2. **Fair-bit cost of the exact walk (`SelfReducible.exactSampleExpectedBits`,
+   `SelfReducible.exactSampleExpectedBits_le`)**: drawing each index `r : Fin c` with the
+   discrete-distribution-generating tree `Probability.uniformFinTree c`, which generates the
+   uniform distribution on `Fin c` (`Probability.uniformFinTree_generates`) with at most
+   `2 * Nat.clog 2 c` expected fair flips (`Probability.expectedFlips_uniformFinTree_le`), and
+   using `(W y).card ≤ 2 ^ R.len y` (`SelfReducible.card_le_two_pow_len`), the whole walk uses at
+   most `(R.len x : ℝ) * (R.len x + 1)` expected fair flips (`0` when `W x = ∅`).
 3. **Strict PPT and oracle-PPT capped conditional walk (`sampleFinBounded`,
    `SelfReducible.boundedConditionalSample`, `SelfReducible.boundedConditionalOracleSample`)**:
    replacing each unbounded `Fin c` draw by `fuel = q + R.len x` capped trials of
@@ -71,8 +75,6 @@ counter `count y = (W y).card` yields **exact** prefix bit-by-bit conditional sa
 
 ## Main definitions
 
-* `Cslib.Complexity.ExactFinSamplerCost`: exact uniform `Fin n` sampler paired with an expected
-  fair-bit cost bound.
 * `Cslib.Complexity.SelfReducible.exactWalk`, `Cslib.Complexity.SelfReducible.exactSample`:
   exact prefix conditional sampling in `PMF`.
 * `Cslib.Complexity.sampleFinBounded`: capped binary rejection sampler for `[0, c)` in `ProbComp`.
@@ -100,7 +102,7 @@ counter `count y = (W y).card` yields **exact** prefix bit-by-bit conditional sa
 
 * [M. R. Jerrum, L. G. Valiant, V. V. Vazirani, *Random generation of combinatorial structures from
   a uniform distribution*][JerrumValiantVazirani1986]
-* [A. Sinclair, *CS294 Partition Functions*, Lecture 4, Section 4.2.1][Sinclair2025]
+* [A. Sinclair, *CS294 Partition Functions*, Lecture 4, Section 4.2.3][Sinclair2025]
 -/
 
 public section
@@ -110,22 +112,6 @@ open scoped ENNReal
 namespace Cslib.Complexity
 
 open Cslib.ProbComp Cslib.Probability Turing.MultiTapeTM
-
-/-! ### Exact `Fin n` sampler cost interface -/
-
-/-- An exact uniform sampler on positive finite ranges `Fin n` paired with a per-draw expected
-fair-bit cost bound `expectedBits n ≤ 2 * ⌈log₂ n⌉`. -/
-structure ExactFinSamplerCost where
-  /-- Exact distribution on `Fin n` for `n > 0`. -/
-  sample : ∀ n : ℕ, [NeZero n] → PMF (Fin n)
-  /-- Every positive range is sampled uniformly. -/
-  sample_eq_uniform : ∀ (n : ℕ) [NeZero n], sample n = PMF.uniformOfFintype (Fin n)
-  /-- Expected number of fair bits consumed by one draw from `Fin n`. -/
-  expectedBits : ℕ → ℝ
-  /-- Expected bit cost is non-negative. -/
-  expectedBits_nonneg : ∀ n, 0 ≤ expectedBits n
-  /-- Expected bit cost is at most `2 * ⌈log₂ n⌉` on positive ranges. -/
-  expectedBits_le_two_mul_clog : ∀ n, 0 < n → expectedBits n ≤ 2 * (Nat.clog 2 n : ℝ)
 
 /-! ### Capped binary rejection sampler for `[0, c)` -/
 
@@ -185,13 +171,7 @@ theorem eval_sampleFinTrial_some (c r : ℕ) :
 
 private theorem tsum_option_pmf {β : Type} (p : PMF (Option β)) :
     p none + ∑' b : β, p (some b) = 1 := by
-  have htot := p.tsum_coe
-  rw [tsum_eq_add_tsum_ite none, ← (Option.some_injective β).tsum_eq] at htot
-  · simpa only [reduceCtorEq, ↓reduceIte] using htot
-  · intro o ho
-    cases o with
-    | none => simp at ho
-    | some b => exact ⟨b, rfl⟩
+  rw [← tsum_option_eq, PMF.tsum_coe]
 
 /-- Failure probability of `sampleFinTrial c`: `1 - c / 2 ^ c.size` (and `1` at `c = 0`). -/
 theorem eval_sampleFinTrial_none (c : ℕ) :
@@ -309,13 +289,8 @@ theorem eval_sampleFinBounded_some_ge {c : ℕ} (hc : 0 < c) (fuel : ℕ) {r : �
     rw [hcast]
     field_simp
     ring
-  have hgeom : (1 - qr) * (∑ i ∈ Finset.range fuel, qr ^ i) = 1 - qr ^ fuel := by
-    clear hmap
-    induction fuel with
-    | zero => simp
-    | succ k ih =>
-      rw [Finset.sum_range_succ, mul_add, ih]
-      ring
+  have hgeom : (1 - qr) * (∑ i ∈ Finset.range fuel, qr ^ i) = 1 - qr ^ fuel :=
+    mul_neg_geom_sum qr fuel
   have hpow_le : qr ^ fuel ≤ (1 / 2 : ℝ) ^ fuel := pow_le_pow_left₀ hqr_nn hqr_half fuel
   have hreal_ineq : (1 - (1 / 2 : ℝ) ^ fuel) / (c : ℝ) ≤
       ((P : ℝ)⁻¹) * (∑ i ∈ Finset.range fuel, qr ^ i) := by
@@ -815,44 +790,47 @@ theorem mem_exactSampleQueries_length_le (R : SelfReducible enc W) (count : α �
     subst hz
     exact le_refl _
 
-/-- Expected fair-bit cost of `exactWalk` under an `ExactFinSamplerCost` model. -/
-noncomputable def exactWalkExpectedBits (R : SelfReducible enc W) (S : ExactFinSamplerCost)
-    (count : α → ℕ) : ℕ → α → ℕ → ℝ
+/-- Expected fair-flip cost of `exactWalk` when each index `r : Fin c` is drawn with the
+discrete-distribution-generating tree `Probability.uniformFinTree c` (which generates the uniform
+distribution on `Fin c`, `Probability.uniformFinTree_generates`): the expected flips of the tree,
+plus the expected cost of the branch taken. -/
+noncomputable def exactWalkExpectedBits (R : SelfReducible enc W) (count : α → ℕ) :
+    ℕ → α → ℕ → ℝ
   | 0, _, _ => 0
   | n + 1, y, c =>
     if hc : 0 < c then
       let c₁ := count (R.child y true)
       letI : NeZero c := ⟨Nat.ne_of_gt hc⟩
-      S.expectedBits c +
-        ∑ r : Fin c, (S.sample c r).toReal *
+      (Probability.uniformFinTree c).expectedFlips.toReal +
+        ∑ r : Fin c, (PMF.uniformOfFintype (Fin c) r).toReal *
           (if (r : ℕ) < c₁ then
-            exactWalkExpectedBits R S count n (R.child y true) c₁
+            exactWalkExpectedBits R count n (R.child y true) c₁
           else
-            exactWalkExpectedBits R S count n (R.child y false) (c - c₁))
+            exactWalkExpectedBits R count n (R.child y false) (c - c₁))
     else 0
 
-/-- Expected fair-bit cost of `exactSample` under an `ExactFinSamplerCost` model. -/
-noncomputable def exactSampleExpectedBits (R : SelfReducible enc W) (S : ExactFinSamplerCost)
-    (count : α → ℕ) (x : α) : ℝ :=
+/-- Expected fair-flip cost of `exactSample` with `Probability.uniformFinTree` draws. -/
+noncomputable def exactSampleExpectedBits (R : SelfReducible enc W) (count : α → ℕ) (x : α) :
+    ℝ :=
   let c := count x
-  if 0 < c then R.exactWalkExpectedBits S count (R.len x) x c else 0
+  if 0 < c then R.exactWalkExpectedBits count (R.len x) x c else 0
 
-/-- **Expected fair-bit bound for exact prefix sampling.** Under any `ExactFinSamplerCost`
-(`expectedBits c ≤ 2 * ⌈log₂ c⌉`), `exactSample` consumes `0` bits when `W x = ∅` and at most
-`R.len x * (R.len x + 1)` expected fair bits in general. -/
-theorem exactSampleExpectedBits_le (R : SelfReducible enc W) (S : ExactFinSamplerCost)
+/-- **Expected fair-flip bound for exact prefix sampling.** With `Probability.uniformFinTree`
+draws (at most `2 * ⌈log₂ c⌉` expected flips each), `exactSample` consumes `0` flips when
+`W x = ∅` and at most `R.len x * (R.len x + 1)` expected fair flips in general. -/
+theorem exactSampleExpectedBits_le (R : SelfReducible enc W)
     {count : α → ℕ} {x : α}
     (hcount : ∀ z, (enc z).length ≤ (enc x).length → count z = (W z).card) :
-    (W x = ∅ → R.exactSampleExpectedBits S count x = 0) ∧
-      R.exactSampleExpectedBits S count x ≤ (R.len x : ℝ) * (R.len x + 1) := by
+    (W x = ∅ → R.exactSampleExpectedBits count x = 0) ∧
+      R.exactSampleExpectedBits count x ≤ (R.len x : ℝ) * (R.len x + 1) := by
   have hcx : count x = (W x).card := hcount x (le_refl _)
   constructor
   · intro hempty
     simp [exactSampleExpectedBits, hcx, hempty]
   · have hwalk : ∀ n y, R.len y = n →
         (∀ z, (enc z).length ≤ (enc y).length → count z = (W z).card) →
-        0 ≤ R.exactWalkExpectedBits S count n y (W y).card ∧
-          R.exactWalkExpectedBits S count n y (W y).card ≤ (n : ℝ) * (n + 1) := by
+        0 ≤ R.exactWalkExpectedBits count n y (W y).card ∧
+          R.exactWalkExpectedBits count n y (W y).card ≤ (n : ℝ) * (n + 1) := by
       intro n
       induction n with
       | zero =>
@@ -876,25 +854,30 @@ theorem exactSampleExpectedBits_le (R : SelfReducible enc W) (S : ExactFinSample
             (fun z hz => hc_y z (hz.trans (R.length_child_le y hy_pos false)))
           rw [exactWalkExpectedBits, dite_eq_left hpos]
           dsimp only
-          rw [hc1_eq, hc0_eq, S.sample_eq_uniform (W y).card]
+          rw [hc1_eq, hc0_eq]
           constructor
-          · refine add_nonneg (S.expectedBits_nonneg _) (Finset.sum_nonneg fun r _ => ?_)
+          · refine add_nonneg ENNReal.toReal_nonneg (Finset.sum_nonneg fun r _ => ?_)
             refine mul_nonneg ENNReal.toReal_nonneg ?_
             split_ifs <;> assumption
           · have hcard_le : (W y).card ≤ 2 ^ (k + 1) := by
               simpa [hlen] using R.card_le_two_pow_len y
             have hclog : Nat.clog 2 (W y).card ≤ k + 1 :=
               (Nat.clog_le_iff_le_pow (by decide)).mpr hcard_le
-            have hbits : S.expectedBits (W y).card ≤ 2 * ((k + 1 : ℕ) : ℝ) := by
-              calc S.expectedBits (W y).card
-                  ≤ 2 * (Nat.clog 2 (W y).card : ℝ) := S.expectedBits_le_two_mul_clog _ hpos
-                _ ≤ 2 * ((k + 1 : ℕ) : ℝ) := by exact_mod_cast Nat.mul_le_mul_left 2 hclog
+            have hbits : (Probability.uniformFinTree (W y).card).expectedFlips.toReal ≤
+                2 * ((k + 1 : ℕ) : ℝ) := by
+              have h : (Probability.uniformFinTree (W y).card).expectedFlips ≤
+                  ENNReal.ofReal (2 * ((k + 1 : ℕ) : ℝ)) := by
+                refine (Probability.expectedFlips_uniformFinTree_le (W y).card).trans ?_
+                rw [ENNReal.ofReal_mul (by norm_num), ENNReal.ofReal_ofNat,
+                  ENNReal.ofReal_natCast]
+                gcongr
+              exact ENNReal.toReal_le_of_le_ofReal (by positivity) h
             have hsum_le : (∑ r : Fin (W y).card,
                 (PMF.uniformOfFintype (Fin (W y).card) r).toReal *
                   (if (r : ℕ) < (W (R.child y true)).card then
-                    R.exactWalkExpectedBits S count k (R.child y true) (W (R.child y true)).card
+                    R.exactWalkExpectedBits count k (R.child y true) (W (R.child y true)).card
                   else
-                    R.exactWalkExpectedBits S count k (R.child y false)
+                    R.exactWalkExpectedBits count k (R.child y false)
                       (W (R.child y false)).card))
                 ≤ (k : ℝ) * (k + 1) := by
               calc _ ≤ ∑ r : Fin (W y).card,
@@ -910,7 +893,7 @@ theorem exactSampleExpectedBits_le (R : SelfReducible enc W) (S : ExactFinSample
                       Finset.card_univ, nsmul_eq_mul, ENNReal.toReal_inv, ENNReal.toReal_natCast]
                     exact mul_inv_cancel₀ (Nat.cast_ne_zero.mpr (Nat.ne_of_gt hpos))
                 _ = (k : ℝ) * (k + 1) := one_mul _
-            calc S.expectedBits (W y).card + _
+            calc (Probability.uniformFinTree (W y).card).expectedFlips.toReal + _
                 ≤ 2 * ((k + 1 : ℕ) : ℝ) + (k : ℝ) * (k + 1) := add_le_add hbits hsum_le
               _ = ((k + 1 : ℕ) : ℝ) * (((k + 1 : ℕ) : ℝ) + 1) := by push_cast; ring
         · rw [exactWalkExpectedBits, dite_eq_right hpos]
@@ -1021,20 +1004,6 @@ theorem boundedConditionalSample_eq_walk (R : SelfReducible enc W) (count : α �
       R.boundedConditionalWalk count (q + R.len x) (R.len x) x (count x) := by
   rw [boundedConditionalSample, R.map_finish_iterate_conditionalWalkStep]
   simp only [List.reverse_nil, List.nil_append, Option.map_id_fun', id_map]
-
-private theorem one_sub_pow_ge_one_sub_mul {δ : ℝ} (_h0 : 0 ≤ δ) (h1 : δ ≤ 1) (n : ℕ) :
-    1 - (n : ℝ) * δ ≤ (1 - δ) ^ n := by
-  induction n with
-  | zero => simp
-  | succ k ih =>
-    rw [pow_succ]
-    have hnn : 0 ≤ 1 - δ := by linarith
-    calc 1 - ((k + 1 : ℕ) : ℝ) * δ
-        = (1 - (k : ℝ) * δ) * (1 - δ) - (k : ℝ) * δ ^ 2 := by push_cast; ring
-      _ ≤ (1 - (k : ℝ) * δ) * (1 - δ) := by
-          have : 0 ≤ (k : ℝ) * δ ^ 2 := by positivity
-          linarith
-      _ ≤ (1 - δ) ^ k * (1 - δ) := mul_le_mul_of_nonneg_right ih hnn
 
 /-- Pointwise witness probability lower bound for `boundedConditionalWalk`. -/
 theorem le_eval_boundedConditionalWalk_some (R : SelfReducible enc W) {count : α → ℕ}
@@ -1169,7 +1138,9 @@ theorem closeTo_boundedConditionalSample (R : SelfReducible enc W) {count : α �
     have hδ0 : 0 ≤ (1 / 2 : ℝ) ^ (q + ℓ) := by positivity
     have hδ1 : (1 / 2 : ℝ) ^ (q + ℓ) ≤ 1 :=
       (pow_le_pow_left₀ (by positivity) (by norm_num : (1 / 2 : ℝ) ≤ 1) (q + ℓ)).trans (by simp)
-    have hbern := one_sub_pow_ge_one_sub_mul hδ0 hδ1 ℓ
+    have hbern : 1 - (ℓ : ℝ) * (1 / 2 : ℝ) ^ (q + ℓ) ≤ (1 - (1 / 2 : ℝ) ^ (q + ℓ)) ^ ℓ := by
+      have h := one_add_mul_le_pow (a := -(1 / 2 : ℝ) ^ (q + ℓ)) (by linarith) ℓ
+      simpa only [mul_neg, ← sub_eq_add_neg] using h
     have hℓ_le : (ℓ : ℝ) ≤ 2 ^ ℓ := by exact_mod_cast Nat.lt_two_pow_self.le
     have hprod : (ℓ : ℝ) * (1 / 2 : ℝ) ^ (q + ℓ) ≤ (1 / 2 : ℝ) ^ q := by
       rw [pow_add, ← mul_assoc]

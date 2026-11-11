@@ -34,7 +34,9 @@ Covers:
    `SelfReducible.boundedConditionalOracleSample` on a non-dyadic weight-at-most-1 witness family
    (`|W ⟨2, true, true⟩| = 3`), dead instances (`W x = ∅`), and zero-length witnesses
    (`W x = {[]}`), verifying exact `1 / 3` witness probabilities, `≤ 1 + len x` counter queries,
-   expected fair-bit bounds, `IsFPAUS`, `FPAUS` membership, and `IsOraclePPTOn` lifting.
+   expected fair-flip bounds (`exactSampleExpectedBits_le` with `uniformFinTree` draws and
+   `expectedCost_sampleFinBounded_le`), `IsFPAUS`, `FPAUS` membership, and `IsOraclePPTOn`
+   lifting.
 -/
 
 public section
@@ -592,5 +594,23 @@ theorem hammingOne_fpaus_and_oracle_lift (A : Set (List Bool)) :
    hammingOneSelfReducible.exists_oraclePPTSampler_of_oracle_count A
       (computableInPolyTime_hammingOneCount.computableInPolyTimeWithOracle A)
       hammingOneCount_eq_card⟩
+
+/-- Expected fair-flip bounds: with `Probability.uniformFinTree` draws, the exact walk on
+`nonDyadicInst` (`len = 2`) uses at most `2 * 3` expected flips and none on the dead instance
+`⟨2, true, false⟩`, and one capped rejection step on `[0, 3)` costs at most `2 * Nat.size 3`
+expected fair coins. -/
+theorem hammingOne_expected_flips :
+    hammingOneSelfReducible.exactSampleExpectedBits hammingOneCount nonDyadicInst ≤ 2 * (2 + 1) ∧
+    hammingOneSelfReducible.exactSampleExpectedBits hammingOneCount ⟨2, true, false⟩ = 0 ∧
+    OracleComp.expectedCost ProbComp.unifOracle (fun _ => 1) (sampleFinBounded 3 5) ≤
+      2 * (Nat.size 3 : ℝ≥0∞) := by
+  have h := hammingOneSelfReducible.exactSampleExpectedBits_le (count := hammingOneCount)
+    (x := nonDyadicInst) (fun z _ => hammingOneCount_eq_card z)
+  have h' := hammingOneSelfReducible.exactSampleExpectedBits_le (count := hammingOneCount)
+    (x := ⟨2, true, false⟩) (fun z _ => hammingOneCount_eq_card z)
+  refine ⟨?_, h'.1 rfl, expectedCost_sampleFinBounded_le 3 5⟩
+  have hlen : hammingOneSelfReducible.len nonDyadicInst = 2 := rfl
+  rw [hlen] at h
+  exact_mod_cast h.2
 
 end CslibFrontierTests.ThresholdAndExactSampling
