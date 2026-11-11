@@ -29,8 +29,11 @@ procedures for both exact model counting (`cspCountNiceM`, `cspCountRootedM`) an
 Using `SimpleGraph.RootedTreeDecomposition.toNiceTreePruned`, any supplied rooted tree
 decomposition `R` of width `w` is first converted to a nice tree decomposition of width at most `w`
 and size at most `(3 * w + 5) * (card V + 1)`, yielding total `TimeM ℕ` cost at most
-`N.size * (q ^ (w + 1) * poly(w, |F|, totalArity F))` ticks. An `Equiv` bridge extends the
-theorems to arbitrary finite inhabited domains `[Fintype D] [Inhabited D]`.
+`N.size * (q ^ (w + 1) * poly(w, |F|, totalArity F))` inner-loop ticks. The `TimeM` bound
+is a selected-operation milestone for the table loops; it explicitly excludes the uncharged
+recursive overhead of `bagList` list construction and element erasure, the structure normalization
+work of `toNiceTreePruned` computed outside `TimeM`, `sem` evaluations, and unbounded integer
+arithmetic. A bound on all traversal and arithmetic work remains an open objective.
 
 ## Main definitions
 

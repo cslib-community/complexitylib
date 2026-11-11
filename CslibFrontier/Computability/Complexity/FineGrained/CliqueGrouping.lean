@@ -27,9 +27,17 @@ import CslibFrontier.Logics.Propositional.CNF.PolyTime
 # Clause-Grouping Reduction from 3-SAT to Clique and ETH Lower Bounds
 
 This file formalizes the clause-grouping reduction from `ThreeSAT` to `Clique` of Cygan et al.,
-*Parameterized Algorithms* (secondary sources commonly cite it as Theorem 14.21; exact numbering
-was not verified against the primary text). Given a grouping parameter `r ≥ 1` and a 3-CNF formula
-`φ` with `m = φ.length` clauses, partitioning `φ` into `r` blocks of at most
+*Parameterized Algorithms* (2016-05-30 companion PDF,
+https://parameterized-algorithms.mimuw.edu.pl/parameterized-algorithms.pdf).
+The nice-tree definitions and Lemma 7.4 are at printed p.161; Theorem 14.21
+and its proof are at pp.485–487.
+The source proof of Theorem 14.21 groups 3-Coloring vertices and computes a group count from a
+computable `f` to obtain one `2^o(n)` algorithm. This formalization adapts the argument to group
+3-CNF clauses and chooses a fixed `r` separately for each target rate, accommodating arbitrary
+real `f` and the library's `∀ rate ∃ machine` convention for subexponential bounding.
+The generic CSP-counting DP extension is also an adaptation/original implementation.
+Given a grouping parameter `r ≥ 1` and a 3-CNF formula `φ` with `m = φ.length` clauses,
+partitioning `φ` into `r` blocks of at most
 `⌈m / r⌉ = (m + r - 1) / r` clauses yields a graph `G` with at most `r * 2 ^ (3 * ⌈m / r⌉)`
 vertices (one vertex per satisfying partial assignment to a block, with edges between compatible
 assignments in distinct blocks) such that `(G, r) ∈ Clique ↔ φ ∈ ThreeSAT`.
