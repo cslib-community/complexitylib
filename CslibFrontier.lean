@@ -1816,6 +1816,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Formula
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Decider
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Projection
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Output
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Reduction
@@ -2000,6 +2001,7 @@ public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PPA
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLine
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Principles
+public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Sperner
 public import CslibFrontier.Computability.Complexity.Classes.Tally
 public import CslibFrontier.Computability.Complexity.Classes.Time
@@ -5522,6 +5524,8 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Bounds
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Columns
 public import CslibFrontier.Logics.FirstOrder.Ordered.Packing
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection
+public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Composition
+public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Reduction
 public import CslibFrontier.Logics.FirstOrder.Ordered.QFNumeric
 public import CslibFrontier.Logics.FirstOrder.Ordered.Query
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Arithmetic
