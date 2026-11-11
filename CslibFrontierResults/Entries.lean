@@ -81,6 +81,7 @@ import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
+import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
@@ -2453,8 +2454,32 @@ register_result "formula-magnification-locality" where
     with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
     N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
     lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: for the [q, ℓ, a]-Circuit classes \
-    (LocalCircuitClass) the Gap-MCSP [OPS19] bullet is registered as gap-mcsp-oracle-circuits; \
-    the other bullets of Proposition 63 and the locality barrier (Theorem 59) are not formalized."
+    (LocalCircuitClass) the Gap-MCSP [OPS19] bullet is registered as gap-mcsp-oracle-circuits \
+    and the MCSP [MMW19] bullet as mmw-merge-tree-locality; the other bullets of Proposition 63 \
+    and the locality barrier (Theorem 59) are not formalized."
+
+register_result "mmw-merge-tree-locality" where
+  title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: the McKay–Murray–Williams merge tree \
+    puts MCSP[s] in [O(N/s), O(s⁴), O(n/log s)]-Circuit[O(N/s)] for n ≤ s ≤ N"
+  topic := "meta-complexity"
+  sources := [
+    { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+      theorem := "Proposition 63, [MMW19] MCSP bullet",
+      locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
+  ]
+  theorems := [
+    Cslib.MCSP.localCircuitClass_MCSP
+  ]
+  scope := "Unconditional. Whenever n ≤ s(n) and 2 ≤ s(n) for every n, MCSP[s] (no gap) is in \
+    LocalCircuitClass (Definition 11) at input length m, with n = log₂ m: at most 128m/s(n) + 1 \
+    oracle gates, each of fan-in at most 12·s(n)^4, at most n/⌊log₂ s(n)⌋ + 1 oracle gates on any \
+    path, and at most 129m/s(n) + 3 gates (all gates counted). The circuits are the explicit \
+    merge tree MergeTree.mmwCircuit, with ⌊log₂ s⌋ bits per level, under one fixed oracle, \
+    MergeTree.oracle, for all lengths; no bound on the oracle's complexity is claimed. The bounds \
+    read as the source's O(N/s) and O(n/log s) when also s(n) ≤ 2^n. Deviations: the source \
+    assumes only a constructive s(n) ≤ 2^n/poly(n); n ≤ s(n) and 2 ≤ s(n) exclude s(n) < n, the \
+    exact bounds need no upper bound on s, and constructivity is not formalized (the class is \
+    nonuniform)."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
