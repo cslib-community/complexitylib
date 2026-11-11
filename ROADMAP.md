@@ -674,7 +674,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 
 ### Constructive probabilistic methods
 
-- **Moser–Tardos resampling** ([#3096](https://github.com/cslib-community/cslib-frontier/issues/3096)): the algorithmic local lemma from Moser's `k`-SAT entropy compression ([#2879](https://github.com/cslib-community/cslib-frontier/issues/2879)) to the general variable form with parallel and derandomized versions (Theorems 1.2–1.4), the symmetric `e p (d + 1) ≤ 1` and `k`-SAT corollaries, the lopsided form, and native sampling and event-detection costs.
+- **Moser–Tardos resampling** ([#3096](https://github.com/cslib-community/cslib-frontier/issues/3096)): extend the formalized variable-form, symmetric `e p (d + 1) ≤ 1`, Section 6 lopsided and constructive `k`-SAT resampling bounds with parallel and derandomized versions (Theorems 1.3–1.4) and native sampling and event-detection costs.
   Build the Kolmogorov form's decoder ([#3043](https://github.com/cslib-community/cslib-frontier/issues/3043)) as a multi-tape machine taking the formula, transferring it to `condPlain`.
 - **Conditional expectations and pessimistic estimators:** algorithmic alteration, and coloring, MAX-CUT or combinatorial-construction clients of the certified greedy choice rule for pessimistic estimators.
   Preserve the quantitative guarantee when converting an existence argument into a deterministic or randomized algorithm.
