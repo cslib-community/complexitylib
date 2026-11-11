@@ -13,9 +13,11 @@ import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 
-/-! # Averaging square roots over a finite set
+/-! # Square-root averaging and scaling lemmas
 
-Cauchy–Schwarz bounds the mean square root by the square root of an upper bound on the mean.
+Cauchy–Schwarz bounds the mean square root by the square root of an upper bound on the mean
+(`Finset.sum_sqrt_le_card_mul_sqrt`), and `Real.sqrt_mul_div_self` rescales square-root regret
+bounds to time averages.
 -/
 
 public section
@@ -36,3 +38,10 @@ theorem sum_sqrt_le_card_mul_sqrt {ι : Type*} (s : Finset ι) {F : ι → ℝ}
   nlinarith [(by positivity : (0 : ℝ) ≤ #s)]
 
 end Finset
+
+/-- Dividing the square root of `T * L` by `T > 0` yields `√(L / T)`. -/
+theorem Real.sqrt_mul_div_self {T L : ℝ} (hT : 0 < T) : √(T * L) / T = √(L / T) := by
+  have hs : √T * √T = T := Real.mul_self_sqrt hT.le
+  have hs0 : 0 < √T := Real.sqrt_pos.mpr hT
+  rw [Real.sqrt_mul hT.le, Real.sqrt_div' L hT.le, div_eq_div_iff hT.ne' hs0.ne']
+  linear_combination √L * hs

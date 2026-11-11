@@ -1469,7 +1469,7 @@ private theorem wsMatrix_maxDiffNorm_le (S : WeightScheme N) {vA vB : ℝ}
       _ = √(vA * vB) := by ring
   exact hstep1.trans hstep2
 
-/-- **Weighted bounds are at most the spectral adversary** ([Zhang2005], Theorem 6 /
+/-- **Weighted bounds are at most the spectral adversary** (original proof /
 [HoyerLeeSpalek2007]): any `WeightScheme` supported on `{(x, y) | P x ∧ P y ∧ f x ≠ f y}`
 with `0 < S.weightSum` and `mA · loadFst x i ≤ wtFst x`, `mB · loadSnd y i ≤ wtSnd y` satisfies
 `√(mA · mB) ≤ ADV(f)`. -/

@@ -19,10 +19,13 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
@@ -703,13 +706,8 @@ theorem eval_cpaGame_cpaLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ →
       ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
     ProbComp.eval (E.cpaGame (cpaLimitToOneQuery ctBound adversary) bit n) =
       ProbComp.eval (E.cpaOneTimeGame adversary bit n) := by
-  simp only [cpaGame, cpaOneTimeGame, cpaLimitToOneQuery, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [cpaGame, cpaOneTimeGame, cpaLimitToOneQuery, runWith_norm, pmf_norm]
+  refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
   have hsim := ProbOracleComp.runWith_map_state
     (fun request alreadyQueried =>
       ProbComp.eval (E.oneTimeCPAEncryptionOracle n k bit request alreadyQueried))
@@ -1356,13 +1354,8 @@ theorem eval_ciGame_ciLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ → �
       ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
     ProbComp.eval (E.ciGame (ciLimitToOneQuery ctBound adversary) n) =
       ProbComp.eval (E.ciOneTimeGame adversary n) := by
-  simp only [ciGame, ciOneTimeGame, ciLimitToOneQuery, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [ciGame, ciOneTimeGame, ciLimitToOneQuery, runWith_norm, pmf_norm]
+  refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
   have hsim := ProbOracleComp.runWith_map_state
     (fun request queried =>
       ProbComp.eval (E.oneTimeCIEncryptionOracle n k request queried))
@@ -1991,14 +1984,8 @@ theorem eval_ccaGame_ccaLimitToOneEncryptionQuery (E : SymmetricCipher) (ctBound
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     ProbComp.eval (E.ccaGame (ccaLimitToOneEncryptionQuery ctBound decBound adversary) bit n) =
       ProbComp.eval (E.ccaOneTimeGame adversary bit n) := by
-  simp only [ccaGame, ccaOneTimeGame, ccaLimitToOneEncryptionQuery, ProbComp.eval_bind,
-    ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [ccaGame, ccaOneTimeGame, ccaLimitToOneEncryptionQuery, runWith_norm, pmf_norm]
+  refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
   have hsim := ProbOracleComp.runWith_map_state
     (fun request queried =>
       ProbComp.eval (E.oneTimeCCAOracle n k bit request queried))
@@ -2180,13 +2167,8 @@ theorem eval_cpaGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : ℕ → 
       ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
     ProbComp.eval (E.cpaGame (ccaToCPAAdversary ctBound adversary) bit n) =
       ProbComp.eval (E.ccaRejectGame adversary bit n) := by
-  simp only [cpaGame, ccaRejectGame, ccaToCPAAdversary, ProbComp.eval_bind, ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [cpaGame, ccaRejectGame, ccaToCPAAdversary, runWith_norm, pmf_norm]
+  refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
   have hsim := ProbOracleComp.runWith_map_state
     (fun request queried => ProbComp.eval (E.ccaRejectOracle n k bit request queried))
     (fun request state =>
@@ -3183,42 +3165,16 @@ theorem advantage_ccaGame_le (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
       (dyadicSize (Q n) : ℝ) *
         (Game.succProbability
           (ProbComp.eval (E.ciGame (ccaToCIAdversary ctBound Q true adversary) n)) : ℝ) := by
-  have h1 : (Game.advantage (ProbComp.eval (E.ccaGame adversary false n))
-      (ProbComp.eval (E.ccaGame adversary true n)) : ℝ) ≤
-      (Game.advantage (ProbComp.eval (E.ccaGame adversary false n))
-        (ProbComp.eval (E.ccaRejectGame adversary false n)) : ℝ) +
-      (Game.advantage (ProbComp.eval (E.ccaRejectGame adversary false n))
-        (ProbComp.eval (E.ccaGame adversary true n)) : ℝ) := by
-    exact_mod_cast Game.advantage_triangle
-      (ProbComp.eval (E.ccaGame adversary false n))
-      (ProbComp.eval (E.ccaRejectGame adversary false n))
-      (ProbComp.eval (E.ccaGame adversary true n))
-  have h2 : (Game.advantage (ProbComp.eval (E.ccaRejectGame adversary false n))
-      (ProbComp.eval (E.ccaGame adversary true n)) : ℝ) ≤
-      (Game.advantage (ProbComp.eval (E.ccaRejectGame adversary false n))
-        (ProbComp.eval (E.ccaRejectGame adversary true n)) : ℝ) +
-      (Game.advantage (ProbComp.eval (E.ccaRejectGame adversary true n))
-        (ProbComp.eval (E.ccaGame adversary true n)) : ℝ) := by
-    exact_mod_cast Game.advantage_triangle
-      (ProbComp.eval (E.ccaRejectGame adversary false n))
-      (ProbComp.eval (E.ccaRejectGame adversary true n))
-      (ProbComp.eval (E.ccaGame adversary true n))
-  have hcomm : Game.advantage (ProbComp.eval (E.ccaRejectGame adversary true n))
-      (ProbComp.eval (E.ccaGame adversary true n)) =
-      Game.advantage (ProbComp.eval (E.ccaGame adversary true n))
-      (ProbComp.eval (E.ccaRejectGame adversary true n)) := Game.advantage_comm _ _
-  have hcpaEq : Game.advantage (ProbComp.eval (E.ccaRejectGame adversary false n))
-      (ProbComp.eval (E.ccaRejectGame adversary true n)) =
-      Game.advantage (ProbComp.eval (E.cpaGame (ccaToCPAAdversary ctBound adversary) false n))
-      (ProbComp.eval (E.cpaGame (ccaToCPAAdversary ctBound adversary) true n)) := by
-    rw [eval_cpaGame_ccaToCPAAdversary E ctBound adversary false n hctBound,
-      eval_cpaGame_ccaToCPAAdversary E ctBound adversary true n hctBound]
-  rw [hcomm, hcpaEq] at h2
   have hfalse := (advantage_ccaGame_ccaRejectGame_le_sum E ctBound Q adversary false n hq
     hctBound).trans (sum_succProbability_ccaToCIAtIndexAdversary_le E ctBound Q false adversary n)
   have htrue := (advantage_ccaGame_ccaRejectGame_le_sum E ctBound Q adversary true n hq
     hctBound).trans (sum_succProbability_ccaToCIAtIndexAdversary_le E ctBound Q true adversary n)
-  linarith
+  rw [eval_cpaGame_ccaToCPAAdversary E ctBound adversary false n hctBound,
+    eval_cpaGame_ccaToCPAAdversary E ctBound adversary true n hctBound]
+  game_trans
+    [ProbComp.eval (E.ccaRejectGame adversary false n),
+     ProbComp.eval (E.ccaRejectGame adversary true n)]
+    using [hfalse, le_rfl, htrue]
 
 /-- Running `ccaToCIHiddenBitAdversary` in `ciGame` averages `ccaToCIAdversary` uniformly over
 `bit : Bool`. -/
@@ -3308,13 +3264,7 @@ theorem AuthenticatedEncryption.indcca {E : SymmetricCipher} (hAE : E.Authentica
     (isOraclePPT_ccaToCPAAdversary hctBoundPoly hadversary)
   have hciNeg := hci.negligible (ccaToCIHiddenBitAdversary ctBound Q adversary)
     (isOraclePPT_ccaToCIHiddenBitAdversary hctBoundPoly hQPoly hadversary)
-  have hpolyDyadic : PolynomiallyBounded (fun n => 2 * dyadicSize (Q n)) := by
-    dsimp only [Q]; fun_prop
-  have hsumNeg := (hciNeg.polynomiallyBounded_mul hpolyDyadic).add hcpaNeg
-  refine negligible_of_le hsumNeg fun n => ?_
-  rw [← NNReal.coe_le_coe]
-  simpa only [Pi.add_apply, NNReal.coe_add, NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_ofNat,
-    Nat.cast_mul, Nat.cast_ofNat, mul_assoc] using
+  negligible using fun n =>
     advantage_ccaGame_le_two_mul E ctBound Q adversary n (hq n) (hctBound n)
 
 /-! #### Encryption-Query Preservation for Theorem 9.1 Reductions -/
@@ -3544,14 +3494,8 @@ theorem eval_cpaOneTimeGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : �
       ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
     ProbComp.eval (E.cpaOneTimeGame (ccaToCPAAdversary ctBound adversary) bit n) =
       ProbComp.eval (E.ccaOneTimeRejectGame adversary bit n) := by
-  simp only [cpaOneTimeGame, ccaOneTimeRejectGame, ccaToCPAAdversary, ProbComp.eval_bind,
-    ProbComp.eval_pure]
-  apply PMF.bind_congr_on_support
-  intro k hk
-  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
-  rw [ProbOracleComp.runWith_bind]
-  simp only [ProbOracleComp.runWith_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [ProbOracleComp.runWith_run_interpret]
+  simp only [cpaOneTimeGame, ccaOneTimeRejectGame, ccaToCPAAdversary, runWith_norm, pmf_norm]
+  refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
   have hsim := ProbOracleComp.runWith_map_state
     (fun request queried => ProbComp.eval (E.oneTimeCCARejectOracle n k bit request queried))
     (fun request state =>
@@ -4234,45 +4178,18 @@ theorem advantage_ccaOneTimeGame_le (E : SymmetricCipher) (ctBound Q : ℕ → �
       (dyadicSize (Q n) : ℝ) *
         (Game.succProbability
           (ProbComp.eval (E.ciOneTimeGame (ccaToCIAdversary ctBound Q true adversary) n)) : ℝ) := by
-  have h1 : (Game.advantage (ProbComp.eval (E.ccaOneTimeGame adversary false n))
-      (ProbComp.eval (E.ccaOneTimeGame adversary true n)) : ℝ) ≤
-      (Game.advantage (ProbComp.eval (E.ccaOneTimeGame adversary false n))
-        (ProbComp.eval (E.ccaOneTimeRejectGame adversary false n)) : ℝ) +
-      (Game.advantage (ProbComp.eval (E.ccaOneTimeRejectGame adversary false n))
-        (ProbComp.eval (E.ccaOneTimeGame adversary true n)) : ℝ) := by
-    exact_mod_cast Game.advantage_triangle
-      (ProbComp.eval (E.ccaOneTimeGame adversary false n))
-      (ProbComp.eval (E.ccaOneTimeRejectGame adversary false n))
-      (ProbComp.eval (E.ccaOneTimeGame adversary true n))
-  have h2 : (Game.advantage (ProbComp.eval (E.ccaOneTimeRejectGame adversary false n))
-      (ProbComp.eval (E.ccaOneTimeGame adversary true n)) : ℝ) ≤
-      (Game.advantage (ProbComp.eval (E.ccaOneTimeRejectGame adversary false n))
-        (ProbComp.eval (E.ccaOneTimeRejectGame adversary true n)) : ℝ) +
-      (Game.advantage (ProbComp.eval (E.ccaOneTimeRejectGame adversary true n))
-        (ProbComp.eval (E.ccaOneTimeGame adversary true n)) : ℝ) := by
-    exact_mod_cast Game.advantage_triangle
-      (ProbComp.eval (E.ccaOneTimeRejectGame adversary false n))
-      (ProbComp.eval (E.ccaOneTimeRejectGame adversary true n))
-      (ProbComp.eval (E.ccaOneTimeGame adversary true n))
-  have hcomm : Game.advantage (ProbComp.eval (E.ccaOneTimeRejectGame adversary true n))
-      (ProbComp.eval (E.ccaOneTimeGame adversary true n)) =
-      Game.advantage (ProbComp.eval (E.ccaOneTimeGame adversary true n))
-      (ProbComp.eval (E.ccaOneTimeRejectGame adversary true n)) := Game.advantage_comm _ _
-  have hcpaEq : Game.advantage (ProbComp.eval (E.ccaOneTimeRejectGame adversary false n))
-      (ProbComp.eval (E.ccaOneTimeRejectGame adversary true n)) =
-      Game.advantage
-        (ProbComp.eval (E.cpaOneTimeGame (ccaToCPAAdversary ctBound adversary) false n))
-        (ProbComp.eval (E.cpaOneTimeGame (ccaToCPAAdversary ctBound adversary) true n)) := by
-    rw [eval_cpaOneTimeGame_ccaToCPAAdversary E ctBound adversary false n hctBound,
-      eval_cpaOneTimeGame_ccaToCPAAdversary E ctBound adversary true n hctBound]
-  rw [hcomm, hcpaEq] at h2
   have hfalse := (advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum E ctBound Q adversary false n
     hq hctBound).trans
     (sum_succProbability_ciOneTimeGame_ccaToCIAtIndexAdversary_le E ctBound Q false adversary n)
   have htrue := (advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum E ctBound Q adversary true n
     hq hctBound).trans
     (sum_succProbability_ciOneTimeGame_ccaToCIAtIndexAdversary_le E ctBound Q true adversary n)
-  linarith
+  rw [eval_cpaOneTimeGame_ccaToCPAAdversary E ctBound adversary false n hctBound,
+    eval_cpaOneTimeGame_ccaToCPAAdversary E ctBound adversary true n hctBound]
+  game_trans
+    [ProbComp.eval (E.ccaOneTimeRejectGame adversary false n),
+     ProbComp.eval (E.ccaOneTimeRejectGame adversary true n)]
+    using [hfalse, le_rfl, htrue]
 
 /-- Running `ccaToCIHiddenBitAdversary` in `ciOneTimeGame` averages `ccaToCIAdversary` uniformly
 over `bit : Bool`. -/
@@ -4365,13 +4282,7 @@ theorem OneTimeAuthenticatedEncryption.oneTimeINDCCA {E : SymmetricCipher}
     (isOraclePPT_ccaToCPAAdversary hctBoundPoly hadversary)
   have hciNeg := hci.negligible (ccaToCIHiddenBitAdversary ctBound Q adversary)
     (isOraclePPT_ccaToCIHiddenBitAdversary hctBoundPoly hQPoly hadversary)
-  have hpolyDyadic : PolynomiallyBounded (fun n => 2 * dyadicSize (Q n)) := by
-    dsimp only [Q]; fun_prop
-  have hsumNeg := (hciNeg.polynomiallyBounded_mul hpolyDyadic).add hcpaNeg
-  refine negligible_of_le hsumNeg fun n => ?_
-  rw [← NNReal.coe_le_coe]
-  simpa only [Pi.add_apply, NNReal.coe_add, NNReal.coe_mul, NNReal.coe_natCast, NNReal.coe_ofNat,
-    Nat.cast_mul, Nat.cast_ofNat, mul_assoc] using
+  negligible using fun n =>
     advantage_ccaOneTimeGame_le_two_mul E ctBound Q adversary n (hq n) (hctBound n)
 
 end SymmetricCipher

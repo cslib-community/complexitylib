@@ -141,7 +141,8 @@ example : sampleDyadicIntBoxCoins 3 [] = -4 := by decide
 example : sampleDyadicIntBoxCoins 3 [true, true, true] = 3 := by decide
 
 /-- Runtime parameters `(n, m, k, width) = (1, 2, 1, 4)` and `(q, γ, β) = (7, 2, 1)`. -/
-abbrev params : LyubashevskyParams := ((1, 2, 1, 4), (7, 2, 1))
+abbrev params : LyubashevskyParams :=
+  { n := 1, m := 2, k := 1, width := 4, q := 7, γ := 2, β := 1 }
 
 /-- `(S, (A, T))` satisfies `lyubashevskyFamilyRelation (fun _ => 1) params` (`β ≤ γ` and
 `k * 1 ≤ β`). -/
@@ -224,4 +225,65 @@ example (c : BitString params.k) :
     (lyubashevskyFamily_nonAbortSpecialHVZK (fun _ => 1))
     (by decide : lyubashevskyFamilyRelation (fun _ => 1) params S (A, T)) c
 
+example {p q : LyubashevskyParams} (hn : p.n = q.n) (hm : p.m = q.m) (hk : p.k = q.k)
+    (hw : p.width = q.width) (hq : p.q = q.q) (hγ : p.γ = q.γ) (hβ : p.β = q.β) : p = q := by
+  ext <;> assumption
+
+section PolyTimeOpened
+
+open ComputableInPolyTime
+
+example : ComputableInPolyTime LyubashevskyParams.n encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.m encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.k encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.width encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.q encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.γ encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.β encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun x : ℕ × ℕ =>
+      ({ n := x.1, m := x.1, k := x.1, width := x.1, q := x.2, γ := x.2, β := x.2 } :
+        LyubashevskyParams))
+    (encPair encUnary encNat) encLyubashevskyParams := by
+  fun_prop
+
+end PolyTimeOpened
+
 end CslibFrontierTests.Crypto.Lyubashevsky
+
+namespace CslibFrontierTests.Crypto.LyubashevskyUnopened
+
+open Cslib.Crypto.Protocols.SigmaProtocol (LyubashevskyParams encLyubashevskyParams)
+open Turing.MultiTapeTM (ComputableInPolyTime encNat encPair encUnary)
+
+example : ComputableInPolyTime LyubashevskyParams.n encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.m encLyubashevskyParams encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime LyubashevskyParams.q encLyubashevskyParams encNat := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun p : LyubashevskyParams =>
+      ({ n := p.n, m := p.m, k := p.k, width := p.width, q := p.q, γ := p.γ, β := p.β } :
+        LyubashevskyParams))
+    encLyubashevskyParams encLyubashevskyParams := by
+  fun_prop
+
+end CslibFrontierTests.Crypto.LyubashevskyUnopened

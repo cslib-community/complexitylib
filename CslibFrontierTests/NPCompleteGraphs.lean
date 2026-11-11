@@ -319,4 +319,42 @@ example : SAT.toDirHamPath [[(0, false), (1, false), (0, true), (2, false)], [(1
     DirHamPath :=
   (SAT.toDirHamPath_mem_iff _).2 ⟨fun _ => true, rfl⟩
 
+/-! ### Diamond detours -/
+
+example :
+    Diamond.detourArcs { clause := 1, row := 0, slot := 2, leftToRight := true } =
+      [(Diamond.rowNode 0 8, Diamond.clauseNode 1),
+        (Diamond.clauseNode 1, Diamond.rowNode 0 9)] := rfl
+
+example :
+    Diamond.detourArcs ⟨1, 0, 2, false⟩ =
+      [(Diamond.rowNode 0 9, Diamond.clauseNode 1),
+        (Diamond.clauseNode 1, Diamond.rowNode 0 8)] := rfl
+
+example {a b : Diamond.Detour} (h0 : a.clause = b.clause) (h1 : a.row = b.row)
+    (h2 : a.slot = b.slot) (h3 : a.leftToRight = b.leftToRight) : a = b :=
+  Diamond.Detour.ext h0 h1 h2 h3
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.clause)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.row)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.slot)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.leftToRight)
+    Diamond.encDetour encBool := by
+  fun_prop
+
+example :
+    ComputableInPolyTime
+      (fun d : Diamond.Detour => Diamond.Detour.mk d.clause d.row d.slot (!d.leftToRight))
+      Diamond.encDetour Diamond.encDetour := by
+  fun_prop
+
 end CslibFrontierTests.NPCompleteGraphs
