@@ -6270,6 +6270,7 @@ public import CslibFrontier.Tactic.Negligible
 public import CslibFrontier.Tactic.OptionMatch
 public import CslibFrontier.Tactic.PMFSwap
 public import CslibFrontier.Tactic.PPT
+public import CslibFrontier.Tactic.PPT.Init
 public import CslibFrontier.Tactic.PolyTime
 public import CslibFrontier.Tactic.PolyTime.Init
 public import CslibFrontier.Tactic.Realize
