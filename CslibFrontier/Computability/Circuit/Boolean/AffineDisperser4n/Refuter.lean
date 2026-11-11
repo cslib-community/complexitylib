@@ -19,7 +19,7 @@ This module implements the deterministic `poly(n, 2^d)`-time algorithm finding a
 for any full-basis circuit of size `< 4n - 10d` against a `d`-affine disperser.
 -/
 
-public section
+@[expose] public section
 
 namespace Cslib.Circuits.Boolean.AffineDisperser4n
 

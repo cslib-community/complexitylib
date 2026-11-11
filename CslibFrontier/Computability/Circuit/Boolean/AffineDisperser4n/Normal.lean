@@ -461,23 +461,6 @@ theorem Valid.step_of_partnersShareChild {S : State n} {f : BooleanFunction n}
   push Not at hle
   exact hndel (Or.inr (Or.inr (Or.inl ⟨e, he, hle⟩)))
 
-/-- The successor state of Case 3 for the pair `pr` whose members share the child `H`. -/
-@[expose] def partnersShareChildStep (S : State n) (pr : ZeroPair) : ℕ ⊕ ℕ → State n
-  | .inl G =>
-    let φ : Bool → Bool → Bool := fun a b => (S.gate G).op
-      (if (S.gate G).left = .node pr.fst then a else b)
-      (if (S.gate G).right = .node pr.fst then a else b)
-    if φ pr.fstBias false = φ pr.fstBias true then
-      (S.fixConst pr.fst pr.fstBias).deleteGate G (Lit.const (φ pr.fstBias pr.sndBias))
-    else if φ false pr.sndBias = φ true pr.sndBias then
-      (S.fixConst pr.snd pr.sndBias).deleteGate G (Lit.const (φ pr.fstBias pr.sndBias))
-    else
-      (S.restrict pr.fst ⟨.node pr.snd, !(pr.fstBias ^^ pr.sndBias)⟩
-        (S.pairsAvoid pr.fst)).deleteGate G (Lit.const (φ pr.fstBias (!pr.sndBias)))
-  | .inr e =>
-    (S.restrict pr.fst ⟨.node pr.snd, !(pr.fstBias ^^ pr.sndBias)⟩
-      (S.pairsAvoid pr.fst)).deleteConstraint (.inr e)
-
 /-! ### Case 4: Paired parameter in an affine equation -/
 
 /-- A paired parameter occurring in an affine equation (Case 4). -/
@@ -628,7 +611,7 @@ Here `prw` is the pair of `w`, if any, `G` is the constant `c` once `w = b`, and
 of the partner of `p`. -/
 theorem Valid.step_andOnPair_of {S : State n} {f : BooleanFunction n} (hS : S.Valid f)
     (hndeg : ¬ S.DegeneratePair) (hnsh : ¬ S.PartnersShareChild) {G : ℕ} (hG : G ∈ S.gates)
-    (_hnotaff : ¬ IsAffineOp (S.gate G).op) {p w : ℕ} {pr : ZeroPair} (hpr : pr ∈ S.pairs)
+    {p w : ℕ} {pr : ZeroPair} (hpr : pr ∈ S.pairs)
     (hprp : pr.Contains p) (hwpar : w ∈ S.params) (hpw : p ≠ w) (hGp : (S.gate G).Reads p)
     (hGw : (S.gate G).Reads w) {prw : Option ZeroPair} (hprw_none : prw = none → ¬ S.Paired w)
     (hprw_some : ∀ q, prw = some q → q ∈ S.pairs ∧ q.Contains w) {b c : Bool}
@@ -915,10 +898,10 @@ theorem Valid.step_of_andOnPair {S : State n} {f : BooleanFunction n} (hS : S.Va
   have hHr_mem : Hr ∈ S.children (pr.partner p) := by rw [hHr]; exact Finset.mem_singleton_self _
   by_cases hwp : S.Paired w
   · obtain ⟨q, hq, hqw⟩ := hwp
-    exact ⟨_, Valid.step_andOnPair_of hS hndeg hnsh hG hnotaff hpr hprp hwpar hpw hGp hGw
+    exact ⟨_, Valid.step_andOnPair_of hS hndeg hnsh hG hpr hprp hwpar hpw hGp hGw
       (prw := some q) (fun h => nomatch h) (fun _ h => Option.some_injective _ h ▸ ⟨hq, hqw⟩)
       hbc hHr_mem⟩
-  · exact ⟨_, Valid.step_andOnPair_of hS hndeg hnsh hG hnotaff hpr hprp hwpar hpw hGp hGw
+  · exact ⟨_, Valid.step_andOnPair_of hS hndeg hnsh hG hpr hprp hwpar hpw hGp hGw
       (prw := none) (fun _ => hwp) (fun _ h => nomatch h) hbc hHr_mem⟩
 
 /-! ### Normal form -/
