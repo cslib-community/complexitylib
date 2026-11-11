@@ -458,14 +458,14 @@ end BooleanCube
 section Bridges
 
 /-- Normalized generator-multiplicity weight of `Cslib.RotationMap.cubeCayley s`. -/
-@[expose] noncomputable def cubeCayleyWeight {ι : Type*} [DecidableEq ι] [Fintype ι] {d : ℕ}
+@[expose] noncomputable def cubeCayleyWeight {ι : Type*} [Fintype ι] {d : ℕ}
     (s : Fin d → ι → Bool) (g : ι → Bool) : ℝ :=
   (#{j : Fin d | s j = g} : ℝ) / d
 
-/-- The walk operator of `Cslib.RotationMap.cubeCayley s` (`[NeZero d]`) acts as matrix-vector
-multiplication by `Matrix.circulant (cubeCayleyWeight s)`. -/
+/-- The walk operator of `Cslib.RotationMap.cubeCayley s` acts as matrix-vector multiplication by
+`Matrix.circulant (cubeCayleyWeight s)`. -/
 theorem cubeCayley_walk_eq_circulant_mulVec {ι : Type*} [Fintype ι] [DecidableEq ι] {d : ℕ}
-    [NeZero d] (s : Fin d → ι → Bool) (f : (ι → Bool) → ℝ) :
+    (s : Fin d → ι → Bool) (f : (ι → Bool) → ℝ) :
     (Cslib.RotationMap.cubeCayley s).walk f = circulant (cubeCayleyWeight s) *ᵥ f := by
   funext u
   rw [Cslib.RotationMap.walk_apply]
