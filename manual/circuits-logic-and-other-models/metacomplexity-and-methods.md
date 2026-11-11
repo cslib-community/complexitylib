@@ -12,6 +12,7 @@ This chapter points to declarations and modules; it does not restate proofs. The
 | [Instance](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Partial.lean#L91) | Table entries are optional booleans; a circuit must agree at every defined position. |
 | [Instance](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Succinct.lean#L64) | Finite set of input/output samples; one circuit must satisfy all sample constraints. |
 | [GapMCSP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/MCSP/Basic.lean#L270) | Promise separates complexity at most a lower threshold from complexity above an upper threshold. |
+| [MultiMCSP](../../CslibFrontier/Computability/MCSP/Multi.lean) | Arity n, m component tables of `2^n` bits each, threshold s; one circuit of at most s gates has, for each component, a gate or input wire computing it. The basis is a parameter: the constant-free AND/OR/NOT basis of [DeMorgan.lean](../../CslibFrontier/Computability/Circuit/Boolean/DeMorgan.lean) is Ilango, Loff and Oliveira's model, and the basis with constants is a library variant. The encoding writes n, m and s in unary, then the tables component by component. |
 
 “Succinct” here means a sample-set specification, not an arbitrary circuit encoding of a longer truth table. Partial MCSP supplies both the default all-operation count and a binary AND/OR-only cost measure. The library also distinguishes unary and binary threshold encodings. A theorem stated in function arity n may become a qualitatively different bound when expressed in truth-table length `N=2^n`.
 
@@ -146,6 +147,7 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 - Liu–Pass Theorem 3.1 (c) in the near-linear range `t(n) ≥ (1 + ε) n`, which needs a rate-1 efficient conditional EP-PRG.
 - The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1), which needs approximate counting by circuits; only existence is proved.
 - NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
+- NP-hardness of Multi-output MCSP under randomized reductions (Ilango, Loff and Oliveira, CCC 2020); only the problem and its encoding are formalized so far ([#4405](https://github.com/cslib-community/cslib-frontier/issues/4405)).
 - The minimum formula size problem (MFSP) as a separate problem, and the locality barrier of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam.
 - Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.
 
