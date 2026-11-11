@@ -7,11 +7,11 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
-import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
-import CslibFrontier.Foundations.LinearAlgebra.Matrix.EuclideanOpNorm
-import CslibFrontierTests.QuantumAmbainisAdversary
-import CslibFrontierTests.QuantumAdversary
+public import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
+public import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.EuclideanOpNorm
+public import CslibFrontierTests.QuantumAmbainisAdversary
+public import CslibFrontierTests.QuantumAdversary
 
 /-! Kernel-checked clients for `WeightedAdversary` and `SpectralAdversary`:
 - recovery of the unweighted adversary bound via `WeightScheme.ofUnweighted`;
