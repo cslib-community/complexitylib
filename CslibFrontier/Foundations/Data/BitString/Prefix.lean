@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.Data.BitString.Binary
 
 /-!
 # Bit-prefix projection of bit strings as an additive homomorphism
@@ -35,6 +36,8 @@ widely imported `CslibFrontier/Foundations/Data/BitString/Basic.lean`.
   `zeroExtend` is a right inverse to `restrictBitsAddHom hM`, which is therefore surjective.
 * `Cslib.BitString.val_equivFin_restrictBitsAddHom`: the unsigned value of `restrictBitsAddHom hM v`
   is `(equivFin q v).val % 2 ^ M`.
+* `Cslib.BitString.val_equivFin_eq_div_mod_of_testBit`: a bit string read off the binary digits
+  `s, …, s + d - 1` of a number `N` has value `N / 2 ^ s % 2 ^ d`.
 -/
 
 public section
@@ -111,5 +114,19 @@ unsigned integer value modulo `2 ^ M`. -/
 theorem val_equivFin_zeroExtend_of_le {q M : ℕ} (hM : M ≤ q) (v : BitString q) :
     (equivFin M (zeroExtend v)).val = (equivFin q v).val % 2 ^ M := by
   rw [← restrictBitsAddHom_eq_zeroExtend hM v, val_equivFin_restrictBitsAddHom hM v]
+
+/-- **A window of binary digits.** If the bits of `z : BitString d` are the binary digits
+`s, …, s + d - 1` of `N`, then the number of `z` is `N / 2 ^ s % 2 ^ d`. -/
+theorem val_equivFin_eq_div_mod_of_testBit {d s N : ℕ} {z : BitString d}
+    (hz : ∀ i : Fin d, z i = N.testBit (s + i)) :
+    (equivFin d z : ℕ) = N / 2 ^ s % 2 ^ d := by
+  refine Nat.eq_of_testBit_eq fun i => ?_
+  rw [Nat.testBit_mod_two_pow, Nat.testBit_div_two_pow]
+  by_cases hi : i < d
+  · rw [testBit_equivFin z ⟨i, hi⟩, hz, Nat.add_comm s i]
+    simp [hi]
+  · simp only [hi, decide_false, Bool.false_and]
+    exact Nat.testBit_lt_two_pow
+      ((equivFin d z).isLt.trans_le (Nat.pow_le_pow_right (by decide) (by omega)))
 
 end Cslib.BitString

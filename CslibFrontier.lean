@@ -2658,6 +2658,7 @@ public import CslibFrontier.Computability.MCSP.Partial
 public import CslibFrontier.Computability.MCSP.PartialETH
 public import CslibFrontier.Computability.MCSP.PartialHardness.Completeness
 public import CslibFrontier.Computability.MCSP.PartialHardness.Construction
+public import CslibFrontier.Computability.MCSP.PartialHardness.Evaluator
 public import CslibFrontier.Computability.MCSP.PartialHardness.Knowledge
 public import CslibFrontier.Computability.MCSP.PartialNP
 public import CslibFrontier.Computability.MCSP.Shannon
