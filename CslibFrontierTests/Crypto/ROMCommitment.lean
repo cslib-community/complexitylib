@@ -33,14 +33,14 @@ private def detHashHandler {M R Digest : Type} (H : M → R → Digest) :
 
 example :
     (OracleComp.interpret (detHashHandler (fun m r : ℕ => (m + r) % 7)) do
-      let c ← commitOracle 3 5
-      return (c, ← verify 3 c 5, ← verify 4 c 5)).run = (1, true, false) := rfl
+      let (c, r) ← commitOracle 3 5
+      return (c, ← verify 3 c r, ← verify 4 c r)).run = (1, true, false) := rfl
 
 example (m : Fin 4) (r : Fin 8) (cache : List ((Fin 4 × Fin 8) × Fin 16)) :
     (ProbOracleComp.runWith (oracle (Fin 4) (Fin 8) (Fin 16))
       (do
-        let c ← OracleComp.liftRight (spec₁ := unifSpec) (commitOracle m r)
-        OracleComp.liftRight (spec₁ := unifSpec) (verify m c r))
+        let co ← OracleComp.liftRight (spec₁ := unifSpec) (commitOracle m r)
+        OracleComp.liftRight (spec₁ := unifSpec) (verify m co.1 co.2))
       cache).map Prod.fst = PMF.pure true :=
   eval_verify_commitOracle m r cache
 
@@ -79,7 +79,7 @@ example :
           ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩) false)
         (hidingGame (oneQueryHidingAdv (Fin (2 ^ n)) (Fin (2 ^ n)) (Fin (2 ^ n))
           ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩) true) := by
-  haveI (n : ℕ) : Nonempty (Fin (2 ^ n)) := ⟨⟨0, Nat.two_pow_pos n⟩⟩
+  have (n : ℕ) : Nonempty (Fin (2 ^ n)) := ⟨⟨0, Nat.two_pow_pos n⟩⟩
   refine negligible_advantage_hidingGame
     (fun n => oneQueryHidingAdv (Fin (2 ^ n)) (Fin (2 ^ n)) (Fin (2 ^ n))
       ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩)
@@ -102,6 +102,7 @@ example :
       (hidingGame (deterministicHidingAttack (Fin 2) (Fin 4) 0 1) true) = 3 / 4 := by
   rw [advantage_hidingGame_deterministicHidingAttack (by decide : (0 : Fin 2) ≠ 1)]
   norm_num [Fintype.card_fin]
+  exact tsub_eq_of_eq_add (by norm_num)
 
 /-! ### 4. Concrete and asymptotic binding (`bindingGame`) -/
 
@@ -131,7 +132,7 @@ example :
       Game.succProbability
         (bindingGame (oneQueryBindingForger (Fin (2 ^ n)) (Fin (2 ^ n)) (Fin (2 ^ n))
           ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩)) := by
-  haveI (n : ℕ) : Nonempty (Fin (2 ^ n)) := ⟨⟨0, Nat.two_pow_pos n⟩⟩
+  have (n : ℕ) : Nonempty (Fin (2 ^ n)) := ⟨⟨0, Nat.two_pow_pos n⟩⟩
   exact negligible_succProbability_bindingGame
     (fun n => oneQueryBindingForger (Fin (2 ^ n)) (Fin (2 ^ n)) (Fin (2 ^ n))
       ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩ ⟨0, Nat.two_pow_pos n⟩)

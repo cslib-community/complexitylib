@@ -402,7 +402,7 @@ private theorem mem_newPrefix_of_lookup_append {Query Value : Type} [BEq Query] 
 `q₂`-query Stage 2 against `hidingGame adversary b` is within statistical distance `(q₁ + q₂) / |R|`
 of `hidingIdeal adversary`, where the challenge is uniform and independent of `(m₀, m₁)`. -/
 theorem closeTo_hidingGame_hidingIdeal {M R Digest State : Type} [DecidableEq M] [DecidableEq R]
-    [DecidableEq Digest] [Fintype R] [Nonempty R] [Fintype Digest] [Nonempty Digest]
+    [Fintype R] [Nonempty R] [Fintype Digest] [Nonempty Digest]
     (adversary : HidingAdversary M R Digest State) {q₁ q₂ : ℕ}
     (hq₁ : adversary.choose.IsQueryBounded q₁)
     (hq₂ : ∀ st c, (adversary.guess st c).IsQueryBounded q₂) (b : Bool) :
@@ -601,7 +601,7 @@ theorem closeTo_hidingGame_hidingIdeal {M R Digest State : Type} [DecidableEq M]
 before the challenge and at most `q₂` queries after has distinguishing advantage at most
 `2 * (q₁ + q₂) / |R|`. -/
 theorem advantage_hidingGame_le {M R Digest State : Type} [DecidableEq M] [DecidableEq R]
-    [DecidableEq Digest] [Fintype R] [Nonempty R] [Fintype Digest] [Nonempty Digest]
+    [Fintype R] [Nonempty R] [Fintype Digest] [Nonempty Digest]
     (adversary : HidingAdversary M R Digest State) {q₁ q₂ : ℕ}
     (hq₁ : adversary.choose.IsQueryBounded q₁)
     (hq₂ : ∀ st c, (adversary.guess st c).IsQueryBounded q₂) :
@@ -628,7 +628,7 @@ theorem advantage_hidingGame_le {M R Digest State : Type} [DecidableEq M] [Decid
 /-- **Asymptotic ROM hiding**: for any sequence of schemes with `2 ^ n ≤ |R n|` and polynomially
 bounded query schedules `(q₁ n, q₂ n)`, the ROM hiding advantage is `Negligible`. -/
 theorem negligible_advantage_hidingGame {M R Digest State : ℕ → Type}
-    [∀ n, DecidableEq (M n)] [∀ n, DecidableEq (R n)] [∀ n, DecidableEq (Digest n)]
+    [∀ n, DecidableEq (M n)] [∀ n, DecidableEq (R n)]
     [∀ n, Fintype (R n)] [∀ n, Nonempty (R n)] [∀ n, Fintype (Digest n)]
     [∀ n, Nonempty (Digest n)]
     (adversary : ∀ n, HidingAdversary (M n) (R n) (Digest n) (State n))

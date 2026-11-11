@@ -1369,6 +1369,7 @@ theorem succProbability_feldmanSecrecyGame_le_discreteLogGame
     ENNReal.coe_ofNat]
   exact hmem
 
+omit [DecidableEq Party] in
 /-- **Uniform-secret Feldman secrecy from `DiscreteLog`**: if `F.DiscreteLog setup` holds, then
 every uniform strict PPT adversary has negligible success probability in `feldmanSecrecyGame`. -/
 theorem discreteLog_implies_feldmanSecrecy
@@ -1383,6 +1384,7 @@ theorem discreteLog_implies_feldmanSecrecy
     (hadv : IsPPTOn (encFeldmanInput F t I) encBits (fun p => adversary p.1 p.2)) :
     Negligible fun n =>
       Game.succProbability (feldmanSecrecyGame F setup params hthresh I adversary n) := by
+  classical
   have hdl := hDL (feldmanToDLAdversary F params I hI ht adversary)
     (isPPTOn_feldmanToDLAdversary F params hpoint I hI ht adversary hadv)
   have herr : Negligible (fun n => (t : ℝ≥0) / 2 ^ n) := by
@@ -1396,7 +1398,7 @@ theorem discreteLog_implies_feldmanSecrecy
 /-- Dot-notation alias on `F.DiscreteLog setup` for uniform-secret Feldman secrecy. -/
 theorem _root_.Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.feldmanSecrecy
     {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
-    (hDL : F.DiscreteLog setup) {Party : Type} [Fintype Party] [DecidableEq Party] {t : ℕ}
+    (hDL : F.DiscreteLog setup) {Party : Type} [Fintype Party] {t : ℕ}
     (params : ∀ d : F.Desc, Shamir.Params (ZMod (F.order d)) Party)
     (hthresh : ∀ d, (params d).threshold = t)
     (hpoint : ∀ i : Party,
@@ -1405,8 +1407,9 @@ theorem _root_.Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.feldmanSecrecy
     (adversary : ℕ → F.Desc × (Fin (t + 1) → List Bool) × (I → ℕ) → ProbComp (List Bool))
     (hadv : IsPPTOn (encFeldmanInput F t I) encBits (fun p => adversary p.1 p.2)) :
     Negligible fun n =>
-      Game.succProbability (feldmanSecrecyGame F setup params hthresh I adversary n) :=
-  discreteLog_implies_feldmanSecrecy F setup params hthresh hpoint I hI ht hDL adversary hadv
+      Game.succProbability (feldmanSecrecyGame F setup params hthresh I adversary n) := by
+  classical
+  exact discreteLog_implies_feldmanSecrecy F setup params hthresh hpoint I hI ht hDL adversary hadv
 
 end Secrecy
 

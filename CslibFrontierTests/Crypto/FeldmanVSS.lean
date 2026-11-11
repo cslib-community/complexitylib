@@ -42,8 +42,6 @@ local instance : Fact (Nat.Prime (schnorrGroups.order d23)) :=
 local instance : AddCommGroup (schnorrGroups.Carrier d23) := schnorrGroups.addCommGroup d23
 local instance : Module (ZMod (schnorrGroups.order d23)) (schnorrGroups.Carrier d23) :=
   schnorrGroups.module d23
-local instance : DecidableEq (schnorrGroups.Carrier d23) :=
-  schnorrGroups.instDecidableEqCarrier d23
 
 /-- Concrete `(t = 2, n = 4)` Shamir parameters over `ZMod 11` with points `1, 2, 3, 4`. -/
 def params23 : Shamir.Params (ZMod (schnorrGroups.order d23)) (Fin 4) where
@@ -52,17 +50,19 @@ def params23 : Shamir.Params (ZMod (schnorrGroups.order d23)) (Fin 4) where
   point i := ((i.1 + 1 : ℕ) : ZMod (schnorrGroups.order d23))
   point_injective := by
     intro a b hab
-    revert hab
+    revert a b hab
     decide
   point_nonzero := by
     intro i
+    revert i
     decide
 
 /-! ### 1. Honest commitments, verification, and rejection checks -/
 
 private def sampleTail : Shamir.Randomness params23 := ![5, 7]
 
-private noncomputable def sampleCommit : Fin 3 → schnorrGroups.Carrier d23 :=
+private noncomputable def sampleCommit :
+    Fin (params23.threshold + 1) → schnorrGroups.Carrier d23 :=
   feldmanCommit schnorrGroups d23 params23 3 sampleTail
 
 example : sampleCommit 0 = (3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23 :=
@@ -73,11 +73,11 @@ example :
       schnorrGroups.encode d23 (sampleCommit 1) = Nat.bits 9 ∧
       schnorrGroups.encode d23 (sampleCommit 2) = Nat.bits 13 := by
   have h0 := feldmanCommit_zero schnorrGroups d23 params23 3 sampleTail
-  have h1 := feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail 0
-  have h2 := feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail 1
+  have h1 := feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail ⟨0, by decide⟩
+  have h2 := feldmanCommit_succ schnorrGroups d23 params23 3 sampleTail ⟨1, by decide⟩
   change schnorrGroups.encode d23 (sampleCommit 0) = Nat.bits 8 ∧
-    schnorrGroups.encode d23 (sampleCommit (Fin.succ 0)) = Nat.bits 9 ∧
-    schnorrGroups.encode d23 (sampleCommit (Fin.succ 1)) = Nat.bits 13
+    schnorrGroups.encode d23 (sampleCommit (Fin.succ ⟨0, by decide⟩)) = Nat.bits 9 ∧
+    schnorrGroups.encode d23 (sampleCommit (Fin.succ ⟨1, by decide⟩)) = Nat.bits 13
   rw [h0, h1, h2]
   simp only [sampleTail, Matrix.cons_val_zero, Matrix.cons_val_one]
   decide
@@ -108,10 +108,11 @@ example :
 /-! ### 2. Malicious-dealer soundness and share uniqueness -/
 
 /-- Malicious commitment vector corresponding to polynomial `3 + X + 2 X^2 (mod 11)`. -/
-private noncomputable def malCommit : Fin 3 → schnorrGroups.Carrier d23 :=
-  ![(3 : ZMod 11) • schnorrGroups.generator d23,
-    (1 : ZMod 11) • schnorrGroups.generator d23,
-    (2 : ZMod 11) • schnorrGroups.generator d23]
+private noncomputable def malCommit :
+    Fin (params23.threshold + 1) → schnorrGroups.Carrier d23 :=
+  ![(3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23,
+    (1 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23,
+    (2 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23]
 
 -- Verifying coalitions `{0, 1, 2}` (shares `[6, 2, 2]`) and `{1, 2, 3}` (shares `[2, 2, 6]`)
 -- must reconstruct identical secret `3` matching `malCommit 0 = 3 • g`.
@@ -128,13 +129,14 @@ private def σ₂ : S₂ → ZMod (schnorrGroups.order d23)
   | ⟨2, _⟩ => 2
   | ⟨3, _⟩ => 6
 
-private theorem malCommit_eval_eq (j : ZMod 11) (i : Fin 4)
+private theorem malCommit_eval_eq (j : ZMod (schnorrGroups.order d23)) (i : Fin 4)
     (hi : params23.point i = j) :
     (3 + j + 2 * j ^ 2) • schnorrGroups.generator d23 =
-      ∑ k : Fin 3, (params23.point i ^ (k : ℕ)) • malCommit k := by
+      ∑ k : Fin (params23.threshold + 1), (params23.point i ^ (k : ℕ)) • malCommit k := by
   rw [Fin.sum_univ_three, hi]
   simp only [malCommit, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_two,
-    Fin.val_zero, Fin.val_one, Fin.val_two, pow_zero, pow_one, smul_smul]
+    Fin.val_zero, Fin.val_one, Fin.val_two]
+  simp only [pow_zero, one_smul, pow_one, smul_smul]
   rw [← add_smul, ← add_smul]
   congr 1
   ring
@@ -162,14 +164,14 @@ private theorem hver₂ :
 example :
     Shamir.reconstruct params23 S₁ σ₁ = Shamir.reconstruct params23 S₂ σ₂ :=
   feldmanVerify_agree_on_authorized schnorrGroups d23 params23 malCommit
-    (by decide : Shamir.authorized params23 S₁)
-    (by decide : Shamir.authorized params23 S₂)
+    (by simp [Shamir.authorized]; decide)
+    (by simp [Shamir.authorized]; decide)
     hver₁ hver₂
 
 example :
     Shamir.reconstruct params23 S₁ σ₁ = 3 :=
-  reconstruct_eq_of_feldmanVerify_commit_zero schnorrGroups d23 params23 malCommit rfl
-    S₁ (by decide : Shamir.authorized params23 S₁) σ₁ hver₁
+  reconstruct_eq_of_feldmanVerify_commit_zero schnorrGroups d23 params23 malCommit
+    (by simp [malCommit]) S₁ (by simp [Shamir.authorized]; decide) σ₁ hver₁
 
 example (s₁ s₂ : ZMod (schnorrGroups.order d23))
     (h₁ : feldmanVerify schnorrGroups d23 params23 malCommit 0 s₁ = true)
@@ -257,16 +259,19 @@ example :
       (encPair encUnary (encPair schnorrGroups.encDesc (encPair (encPi encBits) (encPi encNat))))
       encBool
       (fun p => feldmanChosenSecretDistinguisher schnorrGroups (Party := Fin 4) (t := 2)
-        (I := {0, 1}) p.1 p.2) ∧
-      ∀ n, Game.advantage
-        (feldmanChosenSecretGame schnorrGroups (fun _ => PMF.pure d23)
-          (fun _ => params23) (fun _ => rfl) {0, 1}
-          (feldmanChosenSecretDistinguisher schnorrGroups) (fun _ => 0) (fun _ => 1) false n)
-        (feldmanChosenSecretGame schnorrGroups (fun _ => PMF.pure d23)
-          (fun _ => params23) (fun _ => rfl) {0, 1}
-          (feldmanChosenSecretDistinguisher schnorrGroups) (fun _ => 0) (fun _ => 1) true n) = 1 :=
-  ⟨isPPTOn_feldmanChosenSecretDistinguisher schnorrGroups,
-    fun n => advantage_feldmanChosenSecretDistinguisher_eq_one schnorrGroups
-      (fun _ => PMF.pure d23) (fun _ => params23) (fun _ => rfl) {0, 1} n⟩
+        (I := ({0, 1} : Finset (Fin 4))) p.1 p.2) :=
+  isPPTOn_feldmanChosenSecretDistinguisher schnorrGroups
+
+example (F : PrimeOrderGroupFamily) (hord : ∀ d, 5 ≤ F.order d) (setup : ℕ → PMF F.Desc)
+    (n : ℕ) :
+    Game.advantage
+      (feldmanChosenSecretGame F setup (familyParams F hord) (fun _ => rfl)
+        ({0, 1} : Finset (Fin 4)) (feldmanChosenSecretDistinguisher F)
+        (fun _ => 0) (fun _ => 1) false n)
+      (feldmanChosenSecretGame F setup (familyParams F hord) (fun _ => rfl)
+        ({0, 1} : Finset (Fin 4)) (feldmanChosenSecretDistinguisher F)
+        (fun _ => 0) (fun _ => 1) true n) = 1 :=
+  advantage_feldmanChosenSecretDistinguisher_eq_one F setup
+    (familyParams F hord) (fun _ => rfl) {0, 1} n
 
 end CslibFrontierTests.Crypto.FeldmanVSS
