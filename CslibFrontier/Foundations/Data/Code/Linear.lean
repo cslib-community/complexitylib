@@ -8,10 +8,10 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Data.Code.Basic
-public import Mathlib.Algebra.Module.Pi
 public import Mathlib.Algebra.Module.Submodule.Defs
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.LinearAlgebra.Dimension.Finrank
+public import Mathlib.LinearAlgebra.Pi
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.FieldTheory.Finiteness
 import Mathlib.LinearAlgebra.Dimension.Constructions
@@ -169,58 +169,56 @@ end KerBounds
 section ExtendAndShorten
 
 /-- Extending a word `z : κ → M` by zero outside the image of an embedding `emb : κ ↪ ι`. -/
-def extend {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
+noncomputable def extend {κ ι M : Type*} [Zero M]
     (emb : κ ↪ ι) (z : κ → M) : ι → M :=
-  fun i => ∑ j : κ, if emb j = i then z j else 0
-
-/-- Pointwise value of `extend emb z` as the indicator sum over `emb`. -/
-theorem extend_apply {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
-    (emb : κ ↪ ι) (z : κ → M) (i : ι) :
-    extend emb z i = ∑ j : κ, if emb j = i then z j else 0 := by
-  rfl
+  Function.extend emb z 0
 
 /-- Extension agrees with `z` on the retained coordinates. -/
 @[simp]
-theorem extend_emb {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
-    (emb : κ ↪ ι) (z : κ → M) (j : κ) : extend emb z (emb j) = z j := by
-  rw [extend, Finset.sum_eq_single j (fun j' _ hj' => by simp [emb.injective.ne hj'])
-    (by simp)]
-  simp
+theorem extend_emb {κ ι M : Type*} [Zero M]
+    (emb : κ ↪ ι) (z : κ → M) (j : κ) : extend emb z (emb j) = z j :=
+  emb.injective.extend_apply z 0 j
 
 /-- Extension vanishes outside the image of `emb`. -/
-theorem extend_of_notMem {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
-    (emb : κ ↪ ι) (z : κ → M) {i : ι} (hi : ∀ j, emb j ≠ i) : extend emb z i = 0 := by
-  simp [extend, hi]
+theorem extend_of_notMem {κ ι M : Type*} [Zero M]
+    (emb : κ ↪ ι) (z : κ → M) {i : ι} (hi : ∀ j, emb j ≠ i) : extend emb z i = 0 :=
+  by simpa only [extend, Pi.zero_apply] using
+    Function.extend_apply' (f := emb) z 0 i (not_exists.2 hi)
+
+/-- Finite-sum representation of `extend emb z` as an indicator sum over `emb`. -/
+theorem extend_eq_sum {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
+    (emb : κ ↪ ι) (z : κ → M) (i : ι) :
+    extend emb z i = ∑ j : κ, if emb j = i then z j else 0 := by
+  by_cases h : ∃ j, emb j = i
+  · rcases h with ⟨j, rfl⟩
+    rw [extend_emb, Finset.sum_eq_single j
+      (fun j' _ hj' => by simp [emb.injective.ne hj']) (by simp)]
+    simp
+  · push Not at h
+    rw [extend_of_notMem emb z h]
+    simp [h]
 
 /-- Zero-extension along an embedding is injective. -/
-theorem extend_injective {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
+theorem extend_injective {κ ι M : Type*} [Zero M]
     (emb : κ ↪ ι) : Function.Injective (extend (M := M) emb) := fun z₁ z₂ h =>
   funext fun j => by simpa only [extend_emb] using congrFun h (emb j)
 
 /-- Zero-extension as an `R`-linear map `(κ → M) →ₗ[R] (ι → M)`. -/
-def extendLinearMap {κ ι : Type*} (R M : Type*) [Fintype κ] [DecidableEq ι]
-    [Semiring R] [AddCommMonoid M] [Module R M] (emb : κ ↪ ι) : (κ → M) →ₗ[R] (ι → M) where
-  toFun := extend emb
-  map_add' x y := funext fun i => by
-    simp only [extend, Pi.add_apply, ← Finset.sum_add_distrib]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    split_ifs <;> simp
-  map_smul' c x := funext fun i => by
-    simp only [extend, Pi.smul_apply, RingHom.id_apply, Finset.smul_sum]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    split_ifs <;> simp
+noncomputable def extendLinearMap {κ ι : Type*} (R M : Type*)
+    [Semiring R] [AddCommMonoid M] [Module R M] (emb : κ ↪ ι) : (κ → M) →ₗ[R] (ι → M) :=
+  Function.ExtendByZero.linearMap R M emb
 
 /-- Applying `extendLinearMap` agrees with `extend`. -/
 @[simp]
-theorem extendLinearMap_apply {κ ι : Type*} (R M : Type*) [Fintype κ] [DecidableEq ι]
+theorem extendLinearMap_apply {κ ι : Type*} (R M : Type*)
     [Semiring R] [AddCommMonoid M] [Module R M] (emb : κ ↪ ι) (z : κ → M) :
     extendLinearMap R M emb z = extend emb z := by
-  change extend emb z = extend emb z
-  rfl
+  ext i
+  exact Function.ExtendByZero.linearMap_apply R M emb z i
 
 /-- Zero-extension preserves Hamming weight. -/
-theorem hammingNorm_extend {κ ι M : Type*} [Fintype κ] [Fintype ι] [DecidableEq ι]
-    [AddCommMonoid M] [DecidableEq M] (emb : κ ↪ ι) (z : κ → M) :
+theorem hammingNorm_extend {κ ι M : Type*} [Fintype κ] [Fintype ι]
+    [Zero M] [DecidableEq M] (emb : κ ↪ ι) (z : κ → M) :
     hammingNorm (extend emb z) = hammingNorm z := by
   simp only [hammingNorm]
   symm
@@ -236,7 +234,7 @@ theorem hammingNorm_extend {κ ι M : Type*} [Fintype κ] [Fintype ι] [Decidabl
     exact hi (extend_of_notMem emb z hnone)
 
 /-- Zero-extension preserves Hamming distance. -/
-theorem hammingDist_extend {κ ι M : Type*} [Fintype κ] [Fintype ι] [DecidableEq ι]
+theorem hammingDist_extend {κ ι M : Type*} [Fintype κ] [Fintype ι]
     [AddCommGroup M] [DecidableEq M] (emb : κ ↪ ι) (z₁ z₂ : κ → M) :
     hammingDist (extend emb z₁) (extend emb z₂) = hammingDist z₁ z₂ := by
   rw [hammingDist_eq_hammingNorm, hammingDist_eq_hammingNorm,
@@ -254,11 +252,13 @@ def punctureLinear {κ ι R M : Type*} [Semiring R] [AddCommMonoid M] [Module R 
   C.map (LinearMap.funLeft R M emb)
 
 /-- Membership in a punctured code `puncture C emb`. -/
+@[simp]
 theorem mem_puncture {κ ι α : Type*} {C : Set (ι → α)} {emb : κ → ι} {y : κ → α} :
     y ∈ puncture C emb ↔ ∃ x ∈ C, x ∘ emb = y :=
   Iff.rfl
 
 /-- Membership in a punctured linear code `punctureLinear C emb`. -/
+@[simp]
 theorem mem_punctureLinear {κ ι R M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
     {C : Submodule R (ι → M)} {emb : κ → ι} {y : κ → M} :
     y ∈ punctureLinear C emb ↔ ∃ x ∈ C, x ∘ emb = y :=
@@ -274,39 +274,41 @@ theorem coe_punctureLinear {κ ι R M : Type*} [Semiring R] [AddCommMonoid M] [M
 
 /-- Shortening a code `C` along an embedding `emb : κ ↪ ι`: words whose zero-extension lies in
 `C`. -/
-def shorten {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
+def shorten {κ ι M : Type*} [Zero M]
     (C : Set (ι → M)) (emb : κ ↪ ι) : Set (κ → M) :=
   {z | extend emb z ∈ C}
 
 /-- Shortening a linear code `C` along `emb : κ ↪ ι`. -/
-def shortenLinear {κ ι R M : Type*} [Fintype κ] [DecidableEq ι] [Semiring R]
+noncomputable def shortenLinear {κ ι R M : Type*} [Semiring R]
     [AddCommMonoid M] [Module R M] (C : Submodule R (ι → M)) (emb : κ ↪ ι) :
     Submodule R (κ → M) :=
   C.comap (extendLinearMap R M emb)
 
 /-- Membership in `shorten C emb` means the zero-extension lies in `C`. -/
 @[simp]
-theorem mem_shorten {κ ι M : Type*} [Fintype κ] [DecidableEq ι] [AddCommMonoid M]
+theorem mem_shorten {κ ι M : Type*} [Zero M]
     (C : Set (ι → M)) (emb : κ ↪ ι) (z : κ → M) :
     z ∈ shorten C emb ↔ extend emb z ∈ C := by
   rfl
 
 /-- Membership in `shortenLinear C emb` means the zero-extension lies in `C`. -/
 @[simp]
-theorem mem_shortenLinear {κ ι R M : Type*} [Fintype κ] [DecidableEq ι] [Semiring R]
+theorem mem_shortenLinear {κ ι R M : Type*} [Semiring R]
     [AddCommMonoid M] [Module R M] (C : Submodule R (ι → M)) (emb : κ ↪ ι) (z : κ → M) :
     z ∈ shortenLinear C emb ↔ extend emb z ∈ C := by
-  rfl
+  simp only [shortenLinear, Submodule.mem_comap, extendLinearMap_apply]
 
 /-- As a set, `shortenLinear C emb` equals `shorten (C : Set (ι → M)) emb`. -/
 @[simp]
-theorem coe_shortenLinear {κ ι R M : Type*} [Fintype κ] [DecidableEq ι] [Semiring R]
+theorem coe_shortenLinear {κ ι R M : Type*} [Semiring R]
     [AddCommMonoid M] [Module R M] (C : Submodule R (ι → M)) (emb : κ ↪ ι) :
-    ((shortenLinear C emb : Submodule R (κ → M)) : Set (κ → M)) = shorten (C : Set (ι → M)) emb :=
-  Set.ext fun _ => Iff.rfl
+    ((shortenLinear C emb : Submodule R (κ → M)) : Set (κ → M)) =
+      shorten (C : Set (ι → M)) emb := by
+  ext z
+  simp only [SetLike.mem_coe, mem_shortenLinear, mem_shorten]
 
 /-- Shortening cannot decrease minimum distance. -/
-theorem le_minDist_shorten {κ ι M : Type*} [Fintype κ] [Fintype ι] [DecidableEq ι]
+theorem le_minDist_shorten {κ ι M : Type*} [Fintype κ] [Fintype ι]
     [AddCommGroup M] [DecidableEq M] (C : Set (ι → M)) (emb : κ ↪ ι) :
     minDist C ≤ minDist (shorten C emb) := by
   refine le_minDist_iff.2 fun z₁ hz₁ z₂ hz₂ hne => ?_

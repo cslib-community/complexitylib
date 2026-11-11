@@ -291,9 +291,7 @@ private theorem card_filter_nonzero_weight_lt (d h : ℕ) :
   refine card_lt_card ⟨fun w hw => ?_, fun hsub => ?_⟩
   · simp only [mem_filter, mem_univ, true_and] at hw ⊢
     exact hw.2
-  · have h0w : weight (0 : Fin d → Bool) = 0 := by
-      rw [weight]
-      exact Finset.card_eq_zero.mpr (Finset.filter_eq_empty_iff.mpr fun _ _ => Bool.false_ne_true)
+  · have h0w : weight (0 : Fin d → Bool) = 0 := by simp [weight_eq_hammingNorm]
     have h0 : (0 : Fin d → Bool) ∈ ({w : Fin d → Bool | weight w ≤ h} : Finset _) := by
       simp only [mem_filter, mem_univ, true_and, h0w, zero_le]
     have h0' := hsub h0

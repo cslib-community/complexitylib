@@ -389,6 +389,7 @@ section Spectral
 
 /-- A function on `L ⊕ R` is *bipartite-balanced* when its averages on `L` and `R` both vanish
 (i.e. orthogonal to both `(1_L, 1_R)` and `(1_L, -1_R)`). -/
+@[expose]
 def IsBipartiteBalanced [Fintype L] [Fintype R] (f : L ⊕ R → ℝ) : Prop :=
   (𝔼 u : L, f (.inl u) = 0) ∧ (𝔼 v : R, f (.inr v) = 0)
 

@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Computability.PolyTime.BitString.TannerSearch
 import CslibFrontier.Foundations.Combinatorics.Expander.BipartiteTanner
 import CslibFrontier.Foundations.Data.BitString.Parity.DotProduct
@@ -11,6 +13,8 @@ import CslibFrontier.Probability.SmallBias.Random
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
+
+set_option linter.privateModule false
 
 /-!
 Nonvacuous kernel-checked tests for:

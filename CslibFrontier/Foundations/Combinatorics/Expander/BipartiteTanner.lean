@@ -609,7 +609,7 @@ theorem relDist_mul_sub_le_hammingNorm_of_submatrix {ιL ιR ι' : Type*}
 `Code.shortenLinear (Code.parityCheckCode (checkMatrix B HL HR)) emb`. -/
 theorem le_minDist_shortenLinear_checkMatrix {ιL ιR ι' : Type*}
     [Fintype L] [Fintype R] [Fintype D] [Fintype ι'] [DecidableEq L] [DecidableEq R]
-    [DecidableEq D] (B : BipartiteRotationMap L R D) [Nonempty D]
+    (B : BipartiteRotationMap L R D) [Nonempty D]
     [CommRing α] [DecidableEq α] (HL : Matrix ιL D α) (HR : Matrix ιR D α)
     {δ lam : ℝ} (hδ : 0 ≤ δ)
     (hHL : ∀ w : D → α, w ≠ 0 → HL *ᵥ w = 0 → δ * Fintype.card D ≤ hammingNorm w)

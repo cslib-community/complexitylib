@@ -9,9 +9,9 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.Expander.Cayley
 public import CslibFrontier.Foundations.Data.BitString.Weight
+public import CslibFrontier.Foundations.Data.Code.Linear
 import CslibFrontier.Foundations.Combinatorics.Expander.BipartiteTanner
 import CslibFrontier.Foundations.Data.BitString.Parity.DotProduct
-import CslibFrontier.Foundations.Data.Code.Linear
 
 /-!
 # Tanner codes on small-bias Cayley graphs
@@ -184,36 +184,12 @@ def shortRow (s : Fin d → Fin ℓ → Bool) (A : Fin c → Fin d → Bool)
   fun e => if (if r.1 then (emb e).1 + s (emb e).2 else (emb e).1) = r.2.1 then
     A r.2.2 (emb e).2 else false
 
-/-- The edge word extending `z` by zero outside the retained edges. -/
-def extend (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (z : Fin m → Bool) :
-    (Fin ℓ → Bool) × Fin d → Bool :=
-  fun p => ∑ e, if emb e = p then z e else 0
-
-/-- The extension agrees with `z` on the retained edges. -/
-theorem extend_emb (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (z : Fin m → Bool) (e : Fin m) :
-    extend emb z (emb e) = z e := by
-  rw [extend, Finset.sum_eq_single e (fun e' _ he' => by simp [emb.injective.ne he'])
-    (by simp)]
-  simp
-
-/-- The extension vanishes off the retained edges. -/
-theorem extend_of_notMem (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (z : Fin m → Bool)
-    {p} (hp : ∀ e, emb e ≠ p) : extend emb z p = 0 := by
-  simp [extend, hp]
-
-/-- Extending by zero preserves the weight. -/
-theorem weight_extend (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (z : Fin m → Bool) :
-    weight (extend emb z) = weight z := by
-  rw [weight_eq_hammingNorm, weight_eq_hammingNorm,
-    show extend emb z = Code.extend emb z from funext fun p => (Code.extend_apply emb z p).symm]
-  exact Code.hammingNorm_extend emb z
-
 /-- A left row of the shortened code checks the left word of the extension. -/
 theorem shortRow_dotProduct_left (s : Fin d → Fin ℓ → Bool) (A : Fin c → Fin d → Bool)
     (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (z : Fin m → Bool) (u : Fin ℓ → Bool) (i : Fin c) :
-    shortRow s A emb (false, u, i) ⬝ᵥ z = A i ⬝ᵥ leftWord (extend emb z) u := by
-  simp only [shortRow, dotProduct, leftWord, extend, Finset.mul_sum, Bool.false_eq_true,
-    ite_false]
+    shortRow s A emb (false, u, i) ⬝ᵥ z = A i ⬝ᵥ leftWord (Code.extend emb z) u := by
+  simp only [shortRow, dotProduct, leftWord, Code.extend_eq_sum, Finset.mul_sum,
+    Bool.false_eq_true, ite_false]
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun e _ => ?_
   rw [Finset.sum_eq_single (emb e).2]
@@ -229,8 +205,8 @@ theorem shortRow_dotProduct_left (s : Fin d → Fin ℓ → Bool) (A : Fin c →
 /-- A right row of the shortened code checks the right word of the extension. -/
 theorem shortRow_dotProduct_right (s : Fin d → Fin ℓ → Bool) (A : Fin c → Fin d → Bool)
     (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (z : Fin m → Bool) (v : Fin ℓ → Bool) (i : Fin c) :
-    shortRow s A emb (true, v, i) ⬝ᵥ z = A i ⬝ᵥ rightWord s (extend emb z) v := by
-  simp only [shortRow, dotProduct, rightWord, extend, Finset.mul_sum, ite_true]
+    shortRow s A emb (true, v, i) ⬝ᵥ z = A i ⬝ᵥ rightWord s (Code.extend emb z) v := by
+  simp only [shortRow, dotProduct, rightWord, Code.extend_eq_sum, Finset.mul_sum, ite_true]
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun e _ => ?_
   rw [Finset.sum_eq_single (emb e).2]
@@ -278,12 +254,14 @@ theorem le_weight_of_shortRow [NeZero d] (s : Fin d → Fin ℓ → Bool) {ε : 
     (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) {z : Fin m → Bool}
     (hz : ∀ r, shortRow s A emb r ⬝ᵥ z = false) (hz0 : z ≠ 0) :
     ((h + 1 : ℕ) : ℝ) * ((h + 1 : ℕ) - ε * d) * 2 ^ ℓ ≤ d * weight z := by
-  have hx : IsWord s A (extend emb z) :=
+  have hx : IsWord s A (Code.extend emb z) :=
     ⟨fun u i => by rw [← shortRow_dotProduct_left]; exact hz _,
       fun v i => by rw [← shortRow_dotProduct_right]; exact hz _⟩
-  have hx0 : extend emb z ≠ 0 := fun h0 => hz0 (funext fun e => by
-    rw [← extend_emb emb z e, h0]; rfl)
-  rw [← weight_extend emb z]
+  have hx0 : Code.extend emb z ≠ 0 := fun h0 => hz0 (funext fun e => by
+    rw [← Code.extend_emb emb z e, h0]; rfl)
+  have hwt : weight (Code.extend emb z) = weight z := by
+    simp only [weight_eq_hammingNorm, Code.hammingNorm_extend]
+  rw [← hwt]
   exact le_weight_of_isWord s hε hs A hA hx hx0
 
 end Tanner

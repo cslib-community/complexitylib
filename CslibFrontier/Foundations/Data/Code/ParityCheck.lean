@@ -119,11 +119,12 @@ theorem lt_minDist_parityCheckCode_iff [DecidableEq R] (H : Matrix κ ι R) {r :
 
 /-- Multiplying `H` by the zero-extension of `z` along `emb` equals multiplying the
 column-restricted matrix `H.submatrix id emb` by `z`. -/
-theorem mulVec_extend {κ' : Type*} [Fintype κ'] [DecidableEq ι] (H : Matrix κ ι R)
+theorem mulVec_extend {κ' : Type*} [Fintype κ'] (H : Matrix κ ι R)
     (emb : κ' ↪ ι) (z : κ' → R) :
     H *ᵥ extend emb z = H.submatrix id emb *ᵥ z := by
+  classical
   ext i
-  simp only [Matrix.mulVec, dotProduct, extend_apply, Finset.mul_sum, Matrix.submatrix_apply,
+  simp only [Matrix.mulVec, dotProduct, extend_eq_sum, Finset.mul_sum, Matrix.submatrix_apply,
     id_eq]
   rw [Finset.sum_comm]
   refine Finset.sum_congr rfl fun j _ => ?_
@@ -134,7 +135,7 @@ theorem mulVec_extend {κ' : Type*} [Fintype κ'] [DecidableEq ι] (H : Matrix �
   · simp
 
 /-- Shortening `parityCheckCode H` along `emb` gives `parityCheckCode (H.submatrix id emb)`. -/
-theorem shortenLinear_parityCheckCode {κ' : Type*} [Fintype κ'] [DecidableEq ι]
+theorem shortenLinear_parityCheckCode {κ' : Type*} [Fintype κ']
     (H : Matrix κ ι R) (emb : κ' ↪ ι) :
     shortenLinear (parityCheckCode H) emb = parityCheckCode (H.submatrix id emb) := by
   ext z
