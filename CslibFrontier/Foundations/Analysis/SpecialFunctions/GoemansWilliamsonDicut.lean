@@ -298,9 +298,10 @@ theorem lt_goemansWilliamsonDicutConstant :
 `S = {(a, b, c) ∈ [0, π]³ | a ≤ b + c ∧ b ≤ a + c ∧ c ≤ a + b ∧ a + b + c ≤ 2π}`
 of [GoemansWilliamson1995, Lemma 7.3.2]. -/
 def DicutAngleSet : Set (ℝ × ℝ × ℝ) :=
-  {p | 0 ≤ p.1 ∧ p.1 ≤ π ∧ 0 ≤ p.2.1 ∧ p.2.1 ≤ π ∧ 0 ≤ p.2.2 ∧ p.2.2 ≤ π ∧
-    p.1 ≤ p.2.1 + p.2.2 ∧ p.2.1 ≤ p.1 + p.2.2 ∧ p.2.2 ≤ p.1 + p.2.1 ∧
-    p.1 + p.2.1 + p.2.2 ≤ 2 * π}
+  {p | match p with
+    | (a, b, c) =>
+      0 ≤ a ∧ a ≤ π ∧ 0 ≤ b ∧ b ≤ π ∧ 0 ≤ c ∧ c ≤ π ∧
+        a ≤ b + c ∧ b ≤ a + c ∧ c ≤ a + b ∧ a + b + c ≤ 2 * π}
 
 /-- Membership characterization for `Real.DicutAngleSet`. -/
 theorem mem_dicutAngleSet_iff {a b c : ℝ} :
@@ -338,7 +339,12 @@ private theorem isCompact_dicutAngleSet : IsCompact DicutAngleSet := by
     rintro ⟨a, b, c⟩ ⟨h1, h2, h3, h4, h5, h6, _⟩
     exact ⟨⟨h1, h2⟩, ⟨h3, h4⟩, ⟨h5, h6⟩⟩
   have hclosed : IsClosed DicutAngleSet := by
-    unfold DicutAngleSet
+    have hset : DicutAngleSet = {p : ℝ × ℝ × ℝ | 0 ≤ p.1 ∧ p.1 ≤ π ∧ 0 ≤ p.2.1 ∧
+        p.2.1 ≤ π ∧ 0 ≤ p.2.2 ∧ p.2.2 ≤ π ∧ p.1 ≤ p.2.1 + p.2.2 ∧
+        p.2.1 ≤ p.1 + p.2.2 ∧ p.2.2 ≤ p.1 + p.2.1 ∧ p.1 + p.2.1 + p.2.2 ≤ 2 * π} := by
+      ext ⟨a, b, c⟩
+      rfl
+    rw [hset]
     simp only [ofPred_and]
     repeat' refine IsClosed.inter ?_ ?_
     all_goals exact isClosed_le (by fun_prop) (by fun_prop)

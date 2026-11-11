@@ -1872,6 +1872,7 @@ register_result "goemans-williamson-max2sat-cnf" where
     CNFs counted by Cslib.Logic.PL.CNF.countP and membership in Cslib.Complexity.MaxTwoSAT \
     under exact stdGaussian expectation; no polynomial-time SDP solver is included."
 
+open Cslib.Algorithms.Lean.MaxDicut in
 register_result "goemans-williamson-maxdicut" where
   title := "Goemans–Williamson β-approximation rounding for MAX-DICUT (β > 0.79607)"
   topic := "algorithms"
@@ -1880,9 +1881,9 @@ register_result "goemans-williamson-maxdicut" where
       locator := "Section 7.3, pp. 1138–1139" }
   ]
   theorems := [
-    Cslib.Algorithms.Lean.MaxDicut.goemansWilliamsonDicutConstant_mul_dicutSdpValue_le_integral,
-    Cslib.Algorithms.Lean.MaxDicut.goemansWilliamsonDicutConstant_mul_dicutValue_le_integral,
-    Cslib.Algorithms.Lean.MaxDicut.goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph
+    goemansWilliamsonDicutConstant_mul_dicutSdpValue_le_integral,
+    goemansWilliamsonDicutConstant_mul_dicutValue_le_integral,
+    goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph
   ]
   scope := "Exact stdGaussian random-hyperplane rounding for triple SDP relaxations (P'') and \
     weighted directed multigraphs with nonnegative weights, achieving \

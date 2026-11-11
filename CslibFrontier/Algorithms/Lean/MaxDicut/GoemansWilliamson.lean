@@ -55,7 +55,8 @@ which is the definition formalized here.
   `goemansWilliamsonDicutConstant_mul_sub_le_integral`,
   `goemansWilliamsonDicutConstant_mul_dicutValue_le_integral`: the `(β, ε)` and exact-optimum
   guarantees for weighted MAX-DICUT with `β > 0.79607`.
-* `goemansWilliamsonConstant_mul_dicutSdpValue_le_integral_of_isBalancedDigraph`,
+* `two_mul_dicutValue_eq_cutValue_of_isBalancedDigraph`,
+  `two_mul_dicutSdpValue_eq_sdpValue_of_isBalancedDigraph`,
   `goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph`: the improved `(α, ε)`
   guarantee (`α > 0.87856`) on balanced (Eulerian) directed graphs.
 
@@ -221,19 +222,19 @@ end TripleGaussian
 -/
 @[expose] noncomputable def tripleCutValue (triples : ι → V × V × V) (c d : ι → ℝ)
     (side : V → Bool) : ℝ :=
-  ∑ e, ((if side (triples e).1 ≠ side (triples e).2.1 ∧
-        side (triples e).2.1 = side (triples e).2.2 then c e else 0) +
-      (if side (triples e).1 = side (triples e).2.1 ∧
-        side (triples e).2.1 = side (triples e).2.2 then d e else 0))
+  ∑ e, match triples e with
+    | (i, j, k) =>
+      (if side i ≠ side j ∧ side j = side k then c e else 0) +
+        (if side i = side j ∧ side j = side k then d e else 0)
 
 /-- Objective of the semidefinite relaxation `(P'')` [GoemansWilliamson1995, Section 7.3],
 normalized by `1 / 4`. -/
 @[expose] noncomputable def tripleSdpValue (triples : ι → V × V × V) (c d : ι → ℝ)
     (v : V → F) : ℝ :=
-  ∑ e, (c e * (1 - ⟪v (triples e).1, v (triples e).2.1⟫ -
-      ⟪v (triples e).1, v (triples e).2.2⟫ + ⟪v (triples e).2.1, v (triples e).2.2⟫) / 4 +
-    d e * (1 + ⟪v (triples e).1, v (triples e).2.1⟫ +
-      ⟪v (triples e).1, v (triples e).2.2⟫ + ⟪v (triples e).2.1, v (triples e).2.2⟫) / 4)
+  ∑ e, match triples e with
+    | (i, j, k) =>
+      c e * (1 - ⟪v i, v j⟫ - ⟪v i, v k⟫ + ⟪v j, v k⟫) / 4 +
+        d e * (1 + ⟪v i, v j⟫ + ⟪v i, v k⟫ + ⟪v j, v k⟫) / 4
 
 /-- At a cut's `±u` vector solution, `tripleSdpValue` equals `tripleCutValue`. -/
 theorem tripleSdpValue_signVector (triples : ι → V × V × V) (c d : ι → ℝ) {u : F}
@@ -241,8 +242,10 @@ theorem tripleSdpValue_signVector (triples : ι → V × V × V) (c d : ι → �
     tripleSdpValue triples c d (signVector u side) = tripleCutValue triples c d side := by
   unfold tripleSdpValue tripleCutValue
   refine Finset.sum_congr rfl fun e _ => ?_
+  rcases triples e with ⟨i, j, k⟩
+  dsimp only
   unfold signVector
-  cases side (triples e).1 <;> cases side (triples e).2.1 <;> cases side (triples e).2.2 <;>
+  cases side i <;> cases side j <;> cases side k <;>
     simp [inner_neg_left, inner_neg_right, hu] <;> ring
 
 /-- If unit vectors `v` are within `ε` of optimal for `tripleSdpValue`, every Boolean cut has value
@@ -427,6 +430,7 @@ private theorem dicutSdpValue_eq_tripleSdpValue (ends : ι → V × V) (w : ι �
     dicutSdpValue ends w v = tripleSdpValue (dicutTriple ends) w 0 v := by
   unfold dicutSdpValue tripleSdpValue dicutTriple
   refine Finset.sum_congr rfl fun e _ => ?_
+  dsimp only
   rw [real_inner_comm (v (some (ends e).1)) (v (some (ends e).2))]
   simp only [Pi.zero_apply]
   ring
