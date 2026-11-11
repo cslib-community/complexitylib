@@ -128,7 +128,7 @@ theorem Valid.preparation_moveAffine {S : State n} {f : BooleanFunction n} (hS :
 /-! ### Case 2: Degenerate paired parameter -/
 
 /-- A paired parameter whose degree is `0` or at least `2` (Case 2). -/
-def DegeneratePair (S : State n) : Prop :=
+@[expose] def DegeneratePair (S : State n) : Prop :=
   ∃ p, S.Paired p ∧ (S.deg p = 0 ∨ 2 ≤ S.deg p)
 
 private theorem Paired.deg_eq_one {S : State n} (hndeg : ¬ S.DegeneratePair) {p : ℕ}
@@ -220,7 +220,7 @@ theorem Valid.step_of_degeneratePair {S : State n} {f : BooleanFunction n} (hS :
 /-! ### Case 3: Partners sharing a child -/
 
 /-- Two paired partners share a child (Case 3). -/
-def PartnersShareChild (S : State n) : Prop :=
+@[expose] def PartnersShareChild (S : State n) : Prop :=
   ∃ pr ∈ S.pairs, (S.children pr.fst ∩ S.children pr.snd).Nonempty
 
 private theorem bool_triangle_aux (f00 f01 f10 f11 α β : Bool) :
@@ -464,7 +464,7 @@ theorem Valid.step_of_partnersShareChild {S : State n} {f : BooleanFunction n}
 /-! ### Case 4: Paired parameter in an affine equation -/
 
 /-- A paired parameter occurring in an affine equation (Case 4). -/
-def PairInSystem (S : State n) : Prop :=
+@[expose] def PairInSystem (S : State n) : Prop :=
   ∃ p, S.Paired p ∧ ∃ e ∈ S.eqns, p ∈ (S.eqn e).terms
 
 /-- Eliminating a paired parameter in an equation (and unit-deleting if its partner's degree
@@ -567,7 +567,7 @@ theorem Valid.step_of_pairInSystem {S : State n} {f : BooleanFunction n} {d : �
 /-! ### Case 5a: Non-affine gate reading a paired parameter and another parameter -/
 
 /-- A non-affine gate reading a paired parameter `p` and another parameter `w ≠ p` (Case 5a). -/
-def AndOnPair (S : State n) : Prop :=
+@[expose] def AndOnPair (S : State n) : Prop :=
   ∃ G ∈ S.gates, ¬ IsAffineOp (S.gate G).op ∧
     ∃ p w, S.Paired p ∧ w ∈ S.params ∧ p ≠ w ∧ (S.gate G).Reads p ∧ (S.gate G).Reads w
 
