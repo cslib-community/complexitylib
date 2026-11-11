@@ -570,12 +570,6 @@ theorem remaining_toFinset_eliminateOrder [Semiring R] [DecidableEq V] (d : ℕ)
         exact ⟨fun ⟨hv, hne⟩ => ⟨hv, fun h => h.elim (fun hEq => hx (hEq ▸ hv)) hne⟩,
           fun ⟨hv, hne⟩ => ⟨hv, fun h => hne (Or.inr h)⟩⟩
 
-private theorem lsbIndex_map_zero (d : ℕ) :
-    ∀ scope : List V, lsbIndex d (scope.map fun _ => 0) = 0
-  | [] => rfl
-  | _ :: xs => by rw [List.map_cons, lsbIndex_cons, lsbIndex_map_zero d xs, Nat.mul_zero,
-      Nat.add_zero]
-
 /-- Once `s.remaining = []`, `s.eval d` equals the pure scalar table product `s.result`. -/
 theorem eval_eq_result_of_remaining_nil [Semiring R] [DecidableEq V] (d : ℕ)
     {s : ElimState R V} (hrem : s.remaining = []) :

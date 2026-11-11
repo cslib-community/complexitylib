@@ -200,6 +200,11 @@ theorem contraction_sampleDescNet_exact :
   rw [← h2, ← ret_eliminateOrderM]
   decide
 
+example :
+    (FactorTable.relabel (fun n => n + 5)
+      ({ scope := [0, 1], entries := #[1, 2, 3, 4] } : FactorTable ℕ ℕ)).scope = [5, 6] := by
+  simp only [FactorTable.relabel_scope, List.map_cons, List.map_nil]
+
 end FactorTablesAndNetworks
 
 section OrderSensitivity

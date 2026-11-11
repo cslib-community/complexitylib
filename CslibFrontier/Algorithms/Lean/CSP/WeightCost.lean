@@ -237,11 +237,6 @@ private theorem intBudgetInvariant_eliminateOrder [DecidableEq V] (d W M₀ : �
       have hres := intBudgetInvariant_eliminateOrder d W M₀ xs (k + 1) (elimVar d x s) hs'
       simpa [eliminateOrder, Nat.add_assoc, Nat.add_comm 1 xs.length] using hres
 
-private theorem lsbIndex_map_zero {V : Type*} (d : ℕ) : ∀ xs : List V,
-    lsbIndex d (xs.map fun _ => 0) = 0
-  | [] => rfl
-  | _ :: xs => by rw [List.map_cons, lsbIndex_cons, lsbIndex_map_zero d xs, mul_zero, zero_add]
-
 private theorem natAbs_prod_entries_le {d W : ℕ}
     {live : List (FactorTable ℤ V)} {buds : List (ℕ × ℕ)}
     (hb : List.Forall₂ (IntBudgetFor d W) live buds) :

@@ -79,6 +79,13 @@ theorem lsbIndex_nil (d : ℕ) : lsbIndex d [] = 0 := rfl
 theorem lsbIndex_cons (d x : ℕ) (xs : List ℕ) :
     lsbIndex d (x :: xs) = x + d * lsbIndex d xs := rfl
 
+/-- Evaluating `lsbIndex` on an all-zero coordinate tuple yields `0`. -/
+@[simp]
+theorem lsbIndex_map_zero {V : Type*} (d : ℕ) : ∀ xs : List V,
+    lsbIndex d (xs.map fun _ => 0) = 0
+  | [] => rfl
+  | _ :: xs => by rw [List.map_cons, lsbIndex_cons, lsbIndex_map_zero d xs, mul_zero, zero_add]
+
 @[simp]
 theorem length_lsbDecode (d len idx : ℕ) : (lsbDecode d len idx).length = len := by
   induction len generalizing idx with
@@ -327,8 +334,16 @@ theorem contraction_append_of_disjoint [CommSemiring R] [DecidableEq V] (d : ℕ
   exact contractionOn_append_of_disjoint d hdisj Finset.Subset.rfl Finset.Subset.rfl
 
 /-- Relabeling factor scopes through a variable equivalence preserves `contractionOn`. -/
-def relabel (e : V → W) (f : FactorTable R V) : FactorTable R W :=
+@[expose] def relabel (e : V → W) (f : FactorTable R V) : FactorTable R W :=
   { scope := f.scope.map e, entries := f.entries }
+
+@[simp]
+theorem relabel_scope (e : V → W) (f : FactorTable R V) :
+    (relabel e f).scope = f.scope.map e := rfl
+
+@[simp]
+theorem relabel_entries (e : V → W) (f : FactorTable R V) :
+    (relabel e f).entries = f.entries := rfl
 
 theorem contractionOn_relabel_equiv [Semiring R] [DecidableEq V] [DecidableEq W] (d : ℕ)
     (e : V ≃ W) (factors : List (FactorTable R V)) (declared : Finset V) :
