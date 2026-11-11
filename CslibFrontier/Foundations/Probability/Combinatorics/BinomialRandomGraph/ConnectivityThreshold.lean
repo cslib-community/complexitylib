@@ -73,15 +73,18 @@ variable {V : Type*}
 
 section IsolatedMoments
 
-private theorem card_biUnion_incidentPairs [Fintype V] [DecidableEq V] (S : Finset V) :
-    #(S.biUnion incidentPairs) = #S * Fintype.card V - #S * (#S + 1) / 2 := by
+private theorem card_biUnion_incident [Fintype V] [DecidableEq V] (S : Finset V) :
+    #(S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v)) = #S * Fintype.card V - #S * (#S + 1) / 2 := by
   induction S using Finset.induction with
   | empty => simp
   | @insert v S hv ih =>
-    rw [Finset.biUnion_insert, Finset.card_union, card_incidentPairs, ih]
-    have hinter : incidentPairs v ∩ S.biUnion incidentPairs = S.image fun w => s(v, w) := by
+    have hcard : #((Finset.univ.erase v).image (Sym2.mk v)) = Fintype.card V - 1 := by
+      rw [Finset.card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
+        Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
+    rw [Finset.biUnion_insert, Finset.card_union, hcard, ih]
+    have hinter : (Finset.univ.erase v).image (Sym2.mk v) ∩ S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v) = S.image fun w => s(v, w) := by
       ext e
-      simp only [Finset.mem_inter, Finset.mem_biUnion, Finset.mem_image, mem_incidentPairs]
+      simp only [Finset.mem_inter, Finset.mem_biUnion, Finset.mem_image, Finset.mem_image]
       constructor
       · rintro ⟨⟨w, -, rfl⟩, u, hu, z, -, heq⟩
         rcases Sym2.eq_iff.mp heq with ⟨hvu, _⟩ | ⟨_, hwu⟩
@@ -90,7 +93,7 @@ private theorem card_biUnion_incidentPairs [Fintype V] [DecidableEq V] (S : Fins
       · rintro ⟨w, hw, rfl⟩
         have hwv : w ≠ v := fun h => hv (h ▸ hw)
         exact ⟨⟨w, hwv, rfl⟩, w, hw, v, hwv.symm, Sym2.eq_swap⟩
-    have hcard_inter : #(incidentPairs v ∩ S.biUnion incidentPairs) = #S := by
+    have hcard_inter : #((Finset.univ.erase v).image (Sym2.mk v) ∩ S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v)) = #S := by
       rw [hinter, Finset.card_image_of_injective _ fun _ _ h => Sym2.congr_right.mp h]
     have hSn : #S + 1 ≤ Fintype.card V := by
       rw [← Finset.card_insert_of_notMem hv]
@@ -111,18 +114,19 @@ theorem binomialRandom_real_forall_isIsolated [Fintype V] (p : I) (S : Finset V)
     G(V, p).real {G | ∀ v ∈ S, G.IsIsolated v} =
       (1 - p : ℝ) ^ (#S * Fintype.card V - #S * (#S + 1) / 2) := by
   classical
-  let t : Finset (Sym2 V) := S.biUnion incidentPairs
+  let t : Finset (Sym2 V) := S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v)
   have hdiag : ∀ e ∈ t, ¬e.IsDiag := by
     intro e he
     obtain ⟨v, _, hev⟩ := Finset.mem_biUnion.mp he
-    exact not_isDiag_of_mem_incidentPairs hev
+    obtain ⟨w, hw, rfl⟩ := Finset.mem_image.1 hev
+    simpa using hw
   have hset : {G : SimpleGraph V | ∀ v ∈ S, G.IsIsolated v} =
       {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} := by
     ext G
     simp only [Set.mem_ofPred_eq, t, Finset.coe_biUnion, Finset.mem_coe,
       Set.disjoint_iUnion_left]
-    exact forall₂_congr fun v _ => isIsolated_iff_disjoint_incidentPairs G v
-  rw [hset, binomialRandom_real_disjoint_edgeSet p t hdiag, card_biUnion_incidentPairs]
+    exact forall₂_congr fun v _ => isIsolated_iff_disjoint_incident G v
+  rw [hset, binomialRandom_real_disjoint_edgeSet p t hdiag, card_biUnion_incident]
 
 end IsolatedMoments
 
@@ -394,20 +398,11 @@ end ThresholdAsymptotics
 
 section ComponentGap
 
-private noncomputable def insidePairs [DecidableEq V] (S : Finset V) :
-    Finset (Sym2 V) :=
-  S.sym2.filter fun e => ¬e.IsDiag
-
-private theorem mem_insidePairs [DecidableEq V] {S : Finset V} {e : Sym2 V} :
-    e ∈ insidePairs S ↔ (∀ u ∈ e, u ∈ S) ∧ ¬e.IsDiag := by
-  simp only [insidePairs, Finset.mem_filter, Finset.mem_sym2_iff]
-
-private theorem card_insidePairs [DecidableEq V] (S : Finset V) :
-    #(insidePairs S) = (#S).choose 2 := by
-  have heq : insidePairs S = S.sym2 \ S.image Sym2.diag := by
+private theorem card_sym2_filter_not_isDiag [DecidableEq V] (S : Finset V) :
+    #(S.sym2.filter (¬ ·.IsDiag)) = (#S).choose 2 := by
+  have heq : S.sym2.filter (¬ ·.IsDiag) = S.sym2 \ S.image Sym2.diag := by
     ext e
-    simp only [insidePairs, Finset.mem_filter, Finset.mem_sdiff, Finset.mem_image,
-      Finset.mem_sym2_iff]
+    simp only [Finset.mem_filter, Finset.mem_sdiff, Finset.mem_image, Finset.mem_sym2_iff]
     constructor
     · rintro ⟨he, hnd⟩
       refine ⟨he, ?_⟩
@@ -415,18 +410,12 @@ private theorem card_insidePairs [DecidableEq V] (S : Finset V) :
       exact hnd (Sym2.diag_isDiag u)
     · rintro ⟨he, hnd⟩
       refine ⟨he, fun hd => ?_⟩
-      induction e using Sym2.ind with
-      | _ a b =>
-        rw [Sym2.mk_isDiag_iff] at hd
-        subst hd
-        exact hnd ⟨a, he a (by simp), rfl⟩
+      obtain ⟨u, rfl⟩ := Sym2.isDiag_iff_exists.mp hd
+      exact hnd ⟨u, by simp, rfl⟩
   have hsub : S.image Sym2.diag ⊆ S.sym2 := by
     intro e he
     obtain ⟨u, hu, rfl⟩ := Finset.mem_image.mp he
-    rw [Finset.mem_sym2_iff]
-    intro v hv
-    simp only [Sym2.diag, Sym2.mem_iff, or_self] at hv
-    exact hv ▸ hu
+    simp only [Finset.mem_sym2_iff, Sym2.mem_iff, true_or, implies_true, hu]
   have hinj : Function.Injective (Sym2.diag : V → Sym2 V) := fun a b h => by
     simp only [Sym2.diag, Sym2.eq_iff, and_self, or_self] at h
     exact h
@@ -435,51 +424,73 @@ private theorem card_insidePairs [DecidableEq V] (S : Finset V) :
   change #S + (#S).choose 2 - #S = (#S).choose 2
   omega
 
-private theorem disjoint_insidePairs_cutPairs [Fintype V] [DecidableEq V] (S : Finset V) :
-    Disjoint (insidePairs S) (cutPairs S) := by
+private theorem disjoint_sym2_filter_not_isDiag_cutPairs [Fintype V] [DecidableEq V] (S : Finset V) :
+    Disjoint (S.sym2.filter (¬ ·.IsDiag)) ((S ×ˢ Sᶜ).image Sym2.mk.uncurry) := by
   rw [Finset.disjoint_left]
   intro e he_in he_cut
-  obtain ⟨u, hu, v, hv, rfl⟩ := mem_cutPairs.mp he_cut
-  exact hv ((mem_insidePairs.mp he_in).1 v (by simp))
+  obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ := Finset.mem_image.mp he_cut
+  exact hv ((Finset.mem_filter.mp he_in).1 v (by simp))
 
 private theorem binomialRandom_real_edgeSet_and_cut [Fintype V] [DecidableEq V] (p : I)
-    (S : Finset V) {t : Finset (Sym2 V)} (ht : t ⊆ insidePairs S) :
+    (S : Finset V) {t : Finset (Sym2 V)} (ht : t ⊆ S.sym2.filter (¬ ·.IsDiag)) :
     G(V, p).real {G | (∀ e ∈ t, e ∈ G.edgeSet) ∧ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} =
       (p : ℝ) ^ #t * (1 - p : ℝ) ^ (#S * (Fintype.card V - #S)) := by
   let b : Sym2 V → Bool := fun e => decide (e ∈ t)
-  have hdisj : Disjoint t (cutPairs S) := (disjoint_insidePairs_cutPairs S).mono_left ht
-  have hdiag : ∀ e ∈ t ∪ cutPairs S, ¬e.IsDiag := by
+  let cP : Finset (Sym2 V) := (S ×ˢ Sᶜ).image Sym2.mk.uncurry
+  have hdisj : Disjoint t (cP) := (disjoint_sym2_filter_not_isDiag_cP).mono_left ht
+  have hdiag : ∀ e ∈ t ∪ cP, ¬e.IsDiag := by
     intro e he
     rcases Finset.mem_union.mp he with het | hec
-    · exact (mem_insidePairs.mp (ht het)).2
-    · exact not_isDiag_of_mem_cutPairs hec
+    · exact (Finset.mem_filter.mp (ht het)).2
+    · obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ := Finset.mem_image.mp hec
+      rintro hd
+      exact hv (Sym2.mk_isDiag_iff.1 hd ▸ hu)
   have hset : {G : SimpleGraph V | (∀ e ∈ t, e ∈ G.edgeSet) ∧ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} =
-      {G | ∀ e ∈ t ∪ cutPairs S, e ∈ G.edgeSet ↔ b e = true} := by
+      {G | ∀ e ∈ t ∪ cP, e ∈ G.edgeSet ↔ b e = true} := by
     ext G
-    simp only [Set.mem_ofPred_eq, ← disjoint_cutPairs_iff G S, Set.disjoint_left, Finset.mem_coe,
-      Finset.mem_union, b, decide_eq_true_eq]
+    simp only [Set.mem_ofPred_eq, Set.disjoint_left, Finset.mem_coe, Finset.mem_union, b, decide_eq_true_eq]
     constructor
-    · rintro ⟨htG, hcutG⟩ e (het | hec)
-      · exact ⟨fun _ => het, fun _ => htG e het⟩
-      · have hnot : e ∉ t := Finset.disjoint_right.mp hdisj hec
-        exact ⟨fun he => False.elim (hcutG hec he), fun ht' => False.elim (hnot ht')⟩
+    · rintro ⟨ht_edge, hcut⟩ e
+      constructor
+      · rintro (het | hec)
+        · exact het
+        · obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ := Finset.mem_image.mp hec
+          exact absurd (hcut u hu v hv) (not_not.mpr ‹_›)
+      · rintro ht_mem
+        exact ht_edge e ht_mem
     · intro h
-      refine ⟨fun e he => (h e (Or.inl he)).2 he, fun e hec heG => ?_⟩
-      have hnot : e ∉ t := Finset.disjoint_right.mp hdisj hec
-      exact hnot ((h e (Or.inr hec)).1 heG)
-  rw [hset, binomialRandom_real_edgePattern p (t ∪ cutPairs S) hdiag b,
+      constructor
+      · intro e he
+        exact (h e (Or.inl he)).mpr (by simp [he])
+      · intro u hu v hv huv
+        have hec : s(u, v) ∈ cP := Finset.mem_image.mpr ⟨(u, v), ⟨hu, hv⟩, rfl⟩
+        have hf := (h (s(u, v)) (Or.inr hec)).mp huv
+        have hnot : ¬ (s(u, v) ∈ t) := by
+          intro hbad
+          exact Finset.disjoint_left.mp hdisj hbad hec
+        simp only [hnot, decide_False] at hf
+  rw [hset, binomialRandom_real_edgePattern p (t ∪ cP) hdiag b,
     Finset.prod_union hdisj]
   have hp1 : ∏ e ∈ t, (if b e = true then (p : ℝ) else 1 - p) = (p : ℝ) ^ #t := by
     have h1 : ∀ e ∈ t, (if b e = true then (p : ℝ) else 1 - p) = (p : ℝ) := fun e he => by
       simp [b, he]
     rw [Finset.prod_congr rfl h1, Finset.prod_const]
-  have hp2 : ∏ e ∈ cutPairs S, (if b e = true then (p : ℝ) else 1 - p) =
+  have hp2 : ∏ e ∈ cP, (if b e = true then (p : ℝ) else 1 - p) =
       (1 - p : ℝ) ^ (#S * (Fintype.card V - #S)) := by
-    have h2 : ∀ e ∈ cutPairs S, (if b e = true then (p : ℝ) else 1 - p) = (1 - p : ℝ) := by
+    have h2 : ∀ e ∈ cP, (if b e = true then (p : ℝ) else 1 - p) = (1 - p : ℝ) := by
       intro e he
       have hnot : e ∉ t := Finset.disjoint_right.mp hdisj he
       simp [b, hnot]
-    rw [Finset.prod_congr rfl h2, Finset.prod_const, card_cutPairs]
+    have hcard_cP : #cP = #S * (Fintype.card V - #S) := by
+      have hinj : Set.InjOn Sym2.mk.uncurry (S ×ˢ Sᶜ : Finset (V × V)) := by
+        rintro ⟨u, v⟩ huv ⟨u', v'⟩ huv' h
+        simp only [Finset.coe_product, Finset.coe_compl, Set.mem_prod, Finset.mem_coe,
+          Set.mem_compl_iff] at huv huv'
+        rcases Sym2.eq_iff.1 h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+        · simp [h1, h2]
+        · exact absurd (h1 ▸ huv.1) huv'.2
+      rw [cP, Finset.card_image_of_injOn hinj, Finset.card_product, Finset.card_compl]
+    rw [Finset.prod_congr rfl h2, Finset.prod_const, hcard_cP]
   rw [hp1, hp2]
 
 /-- Explicit union bound for the event that `G(V, p)` has no isolated vertex yet fails to be
@@ -494,7 +505,7 @@ theorem binomialRandom_real_forall_not_isIsolated_and_not_connected_le [Fintype 
   set n := Fintype.card V
   have hsub : {G : SimpleGraph V | (∀ v, ¬G.IsIsolated v) ∧ ¬G.Connected} ⊆
       ⋃ k ∈ Icc 2 (n / 2), ⋃ S ∈ powersetCard k (univ : Finset V),
-        ⋃ t ∈ powersetCard (k - 1) (insidePairs S),
+        ⋃ t ∈ powersetCard (k - 1) (S.sym2.filter (¬ ·.IsDiag)),
           {G | (∀ e ∈ t, e ∈ G.edgeSet) ∧ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} := by
     intro G ⟨hni, hnc⟩
     obtain ⟨S, hS2, hShalf, hSconn, hScut⟩ :=
@@ -509,10 +520,10 @@ theorem binomialRandom_real_forall_not_isIsolated_and_not_connected_le [Fintype 
           change s(a₁.1, a₂.1) = s(b₁.1, b₂.1) at h
           rcases Sym2.eq_iff.mp h with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> simp [Subtype.ext h1, Subtype.ext h2]
     let t : Finset (Sym2 V) := tS.image f
-    have ht_in : t ⊆ insidePairs S := by
+    have ht_in : t ⊆ S.sym2.filter (¬ ·.IsDiag) := by
       intro e he
       obtain ⟨e', he', rfl⟩ := Finset.mem_image.mp he
-      rw [mem_insidePairs]
+      rw [Finset.mem_filter, Finset.mem_sym2_iff]
       refine ⟨fun u hu => ?_, ?_⟩
       · obtain ⟨x, _, rfl⟩ := Sym2.mem_map.mp hu
         exact x.2
@@ -535,20 +546,20 @@ theorem binomialRandom_real_forall_not_isIsolated_and_not_connected_le [Fintype 
   refine (measureReal_biUnion_finset_le _ _).trans (Finset.sum_le_sum fun k _ => ?_)
   refine (measureReal_biUnion_finset_le _ _).trans ?_
   have hS_bound : ∀ S ∈ (univ : Finset V).powersetCard k,
-      G(V, p).real (⋃ t ∈ (insidePairs S).powersetCard (k - 1),
+      G(V, p).real (⋃ t ∈ (S.sym2.filter (¬ ·.IsDiag)).powersetCard (k - 1),
           {G | (∀ e ∈ t, e ∈ G.edgeSet) ∧ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v}) ≤
         ((k.choose 2).choose (k - 1) : ℝ) * (p : ℝ) ^ (k - 1) * (1 - p : ℝ) ^ (k * (n - k)) := by
     intro S hS
     have hSk := (Finset.mem_powersetCard.mp hS).2
     refine (measureReal_biUnion_finset_le _ _).trans ?_
-    have hterm : ∀ t ∈ (insidePairs S).powersetCard (k - 1),
+    have hterm : ∀ t ∈ (S.sym2.filter (¬ ·.IsDiag)).powersetCard (k - 1),
         G(V, p).real {G | (∀ e ∈ t, e ∈ G.edgeSet) ∧ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} =
           (p : ℝ) ^ (k - 1) * (1 - p : ℝ) ^ (k * (n - k)) := by
       intro t ht
       obtain ⟨ht_in, ht_card⟩ := Finset.mem_powersetCard.mp ht
       rw [binomialRandom_real_edgeSet_and_cut p S ht_in, ht_card, hSk]
     rw [Finset.sum_congr rfl hterm, Finset.sum_const, Finset.card_powersetCard,
-      card_insidePairs, hSk, nsmul_eq_mul, mul_assoc]
+      card_sym2_filter_not_isDiag, hSk, nsmul_eq_mul, mul_assoc]
   refine (Finset.sum_le_sum hS_bound).trans ?_
   rw [Finset.sum_const, Finset.card_powersetCard, Finset.card_univ, nsmul_eq_mul]
   exact le_of_eq (by ring)

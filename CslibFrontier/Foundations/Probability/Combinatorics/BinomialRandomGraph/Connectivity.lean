@@ -81,62 +81,36 @@ namespace SimpleGraph
 
 variable {V : Type*}
 
-/-- The finite set of non-diagonal vertex pairs crossing between `S` and `Sᶜ`. -/
-noncomputable def cutPairs [Fintype V] [DecidableEq V] (S : Finset V) : Finset (Sym2 V) :=
-  (S ×ˢ Sᶜ).image fun x => s(x.1, x.2)
-
-/-- Membership characterization of `cutPairs S`. -/
-theorem mem_cutPairs [Fintype V] [DecidableEq V] {S : Finset V} {e : Sym2 V} :
-    e ∈ cutPairs S ↔ ∃ u ∈ S, ∃ v ∉ S, e = s(u, v) := by
-  simp only [cutPairs, mem_image, mem_product, mem_compl]
-  constructor
-  · rintro ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩
-    exact ⟨u, hu, v, hv, rfl⟩
-  · rintro ⟨u, hu, v, hv, rfl⟩
-    exact ⟨(u, v), ⟨hu, hv⟩, rfl⟩
-
-/-- The number of pairs crossing between `S` and `Sᶜ` is `|S| (|V| - |S|)`. -/
-theorem card_cutPairs [Fintype V] [DecidableEq V] (S : Finset V) :
-    #(cutPairs S) = #S * (Fintype.card V - #S) := by
-  have hinj : Set.InjOn (fun x : V × V => s(x.1, x.2)) (S ×ˢ Sᶜ : Finset (V × V)) := by
-    rintro ⟨u, v⟩ huv ⟨u', v'⟩ huv' h
-    simp only at h
-    simp only [coe_product, coe_compl, Set.mem_prod, mem_coe, Set.mem_compl_iff] at huv huv'
-    rcases Sym2.eq_iff.1 h with ⟨h1, h2⟩ | ⟨h1, h2⟩
-    · simp [h1, h2]
-    · exact absurd (h1 ▸ huv.1) huv'.2
-  rw [cutPairs, card_image_of_injOn hinj, card_product, card_compl]
-
-/-- No pair crossing between `S` and `Sᶜ` is a diagonal loop. -/
-theorem not_isDiag_of_mem_cutPairs [Fintype V] [DecidableEq V] {S : Finset V} {e : Sym2 V}
-    (he : e ∈ cutPairs S) : ¬e.IsDiag := by
-  obtain ⟨u, hu, v, hv, rfl⟩ := mem_cutPairs.mp he
-  intro huv
-  exact hv (Sym2.mk_isDiag_iff.1 huv ▸ hu)
-
-/-- A graph has no edge crossing between `S` and `Sᶜ` iff its edge set is disjoint from
-`cutPairs S`. -/
-theorem disjoint_cutPairs_iff [Fintype V] [DecidableEq V] (G : SimpleGraph V) (S : Finset V) :
-    Disjoint (cutPairs S : Set (Sym2 V)) G.edgeSet ↔ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v := by
-  simp only [Set.disjoint_left, mem_coe, mem_cutPairs]
-  constructor
-  · intro h u hu v hv huv
-    exact h ⟨u, hu, v, hv, rfl⟩ huv
-  · rintro h _ ⟨u, hu, v, hv, rfl⟩ huv
-    exact h u hu v hv huv
-
 /-- `G(V, p)` has no edge between a vertex set `S` and its complement with probability
 `(1 - p) ^ (|S| (|V| - |S|))`. -/
 theorem binomialRandom_real_forall_not_adj [Fintype V] (p : I) (S : Finset V) :
     G(V, p).real {G | ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} =
       (1 - p : ℝ) ^ (#S * (Fintype.card V - #S)) := by
   classical
+  let t : Finset (Sym2 V) := (S ×ˢ Sᶜ).image Sym2.mk.uncurry
   have hset : {G : SimpleGraph V | ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} =
-      {G | Disjoint (cutPairs S : Set (Sym2 V)) G.edgeSet} := by
+      {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} := by
     ext G
-    exact (disjoint_cutPairs_iff G S).symm
-  rw [hset, binomialRandom_real_disjoint_edgeSet p (cutPairs S) fun _ => not_isDiag_of_mem_cutPairs,
-    card_cutPairs]
+    simp only [Set.mem_setOf_eq, Set.disjoint_left, Finset.mem_coe, t, Finset.mem_image,
+      Finset.mem_product, Finset.mem_compl]
+    constructor
+    · intro h e ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩
+      exact h u hu v hv
+    · intro h u hu v hv huv
+      exact h (s(u, v)) ⟨(u, v), ⟨hu, hv⟩, rfl⟩ huv
+  have hdiag : ∀ e ∈ t, ¬e.IsDiag := by
+    rintro _ ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ huv
+    exact hv (Sym2.mk_isDiag_iff.1 huv ▸ hu)
+  have hcard : #t = #S * (Fintype.card V - #S) := by
+    have hinj : Set.InjOn Sym2.mk.uncurry (S ×ˢ Sᶜ : Finset (V × V)) := by
+      rintro ⟨u, v⟩ huv ⟨u', v'⟩ huv' h
+      simp only [Finset.coe_product, Finset.coe_compl, Set.mem_prod, Finset.mem_coe,
+        Set.mem_compl_iff] at huv huv'
+      rcases Sym2.eq_iff.1 h with ⟨h1, h2⟩ | ⟨h1, h2⟩
+      · simp [h1, h2]
+      · exact absurd (h1 ▸ huv.1) huv'.2
+    rw [Finset.card_image_of_injOn hinj, Finset.card_product, Finset.card_compl]
+  rw [hset, binomialRandom_real_disjoint_edgeSet p t hdiag, hcard]
 
 /-- **Union bound over cuts**: `G(V, p)` on `n ≥ 1` vertices is disconnected with probability at
 most `∑_{k = 1}^{⌊n / 2⌋} C(n, k) (1 - p) ^ (k (n - k))`. -/
