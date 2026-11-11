@@ -7,6 +7,7 @@ Authors: Aviv Bar Natan
 module
 -- upstream: candidate
 
+public import CslibFrontier.Init
 public import Mathlib.Algebra.MvPolynomial.Supported
 
 /-!
@@ -24,6 +25,13 @@ substitution that keeps the two sets of variables apart, with no matrix in sight
 ## Main definitions
 
 * `MvPolynomial.SplitRankLE`: a decomposition into `w` products across a split of the variables.
+
+## Main results
+
+* `MvPolynomial.aeval_congr_of_mem_supported`: a substitution into a polynomial in the variables
+  of `s` depends only on the values on `s`.
+* `MvPolynomial.aeval_mem_of_mem_supported`: such a substitution lands in a subalgebra that
+  contains the values on `s`.
 -/
 
 @[expose] public section
@@ -37,5 +45,30 @@ other variables. -/
 def SplitRankLE (U : Set σ) (w : ℕ) (f : MvPolynomial σ R) : Prop :=
   ∃ p q : Fin w → MvPolynomial σ R,
     (∀ i, p i ∈ supported R U) ∧ (∀ i, q i ∈ supported R Uᶜ) ∧ f = ∑ i, p i * q i
+
+section Supported
+
+variable {A : Type*} [CommSemiring A] [Algebra R A] {s : Set σ} {p : MvPolynomial σ R}
+
+/-- A substitution into a polynomial in the variables of `s` depends only on the values of the
+substitution on `s`. -/
+theorem aeval_congr_of_mem_supported (hp : p ∈ supported R s) {g₁ g₂ : σ → A}
+    (h : ∀ i ∈ s, g₁ i = g₂ i) : aeval g₁ p = aeval g₂ p :=
+  eval₂Hom_congr' rfl (fun i hi _ => h i ((mem_supported.1 hp) (Finset.mem_coe.2 hi))) rfl
+
+/-- A substitution into a polynomial in the variables of `s` lands in every subalgebra that
+contains the values of the substitution on `s`. -/
+theorem aeval_mem_of_mem_supported (hp : p ∈ supported R s) (S : Subalgebra R A) {g : σ → A}
+    (hg : ∀ i ∈ s, g i ∈ S) : aeval g p ∈ S := by
+  rw [supported_eq_range_rename] at hp
+  obtain ⟨p', rfl⟩ := hp
+  change aeval g (rename Subtype.val p') ∈ S
+  rw [aeval_rename]
+  induction p' using MvPolynomial.induction_on with
+  | C r => rw [aeval_C]; exact S.algebraMap_mem r
+  | add p q hp hq => rw [map_add]; exact S.add_mem hp hq
+  | mul_X p i hp => rw [map_mul, aeval_X]; exact S.mul_mem hp (hg _ i.2)
+
+end Supported
 
 end MvPolynomial

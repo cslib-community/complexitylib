@@ -24,7 +24,8 @@ it does: `f (X + γ)` has a monomial with fewer than `k` variables
 Generic means that, for every set `Y` of `k` variables, the `2 ^ k` products `∏_{j ∈ T} γ j`,
 `T ⊆ Y`, are linearly independent over the field of coefficients. The point `γ` has coordinates
 in a domain `R` over that field, for instance a polynomial ring; an explicit set of shifts in the
-field itself is obtained from such a point in `HittingSet/ConcentratingShiftSet.lean`.
+field itself is obtained from such a point in
+`CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean`.
 
 This is the case of individual degree one of the support concentration theorem of Forbes,
 Saptharishi and Shpilka [ForbesSaptharishiShpilka2014, Theorem 4.1 with Corollary 3.22], in the
@@ -94,11 +95,6 @@ private theorem coeff_ind_prod_X_add_C [DecidableEq σ] {Y T : Finset σ} (hT : 
       (monomial_sum_one S _).symm, mul_comm, C_mul_monomial, mul_one, coeff_monomial,
       ite_eq_right fun h => hS (ind_injective h)]
   · exact fun h => absurd (mem_powerset.2 hT) h
-
-private theorem aeval_congr_of_mem_supported {A : Type*} [CommSemiring A] [Algebra F A]
-    {s : Set σ} {p : MvPolynomial σ F} (hp : p ∈ supported F s) {g₁ g₂ : σ → A}
-    (h : ∀ i ∈ s, g₁ i = g₂ i) : aeval g₁ p = aeval g₂ p :=
-  eval₂Hom_congr' rfl (fun i hi _ => h i ((mem_supported.1 hp) (mem_coe.2 hi))) rfl
 
 /-- **Small-support concentration under a generic shift.** Let `w < 2 ^ k` and let `γ` be a point
 such that, for every set `Y` of `k` variables, the products of the coordinates of `γ` over the

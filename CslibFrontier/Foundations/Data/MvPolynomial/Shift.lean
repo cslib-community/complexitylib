@@ -7,6 +7,7 @@ Authors: Aviv Bar Natan
 module
 -- upstream: candidate
 
+public import CslibFrontier.Init
 public import Mathlib.Algebra.MvPolynomial.CommRing
 public import Mathlib.Algebra.MvPolynomial.Degrees
 
