@@ -13,19 +13,20 @@ public import CslibFrontier.Computability.Complexity.AffineDisperser
 /-!
 # Explicit `4N - O(N / log N)` circuit lower bound and weight optimality
 
-This module packages two consequences of Theorem 4.1 (`four_mul_le_size_add`):
+This module packages two consequences of `four_mul_le_size_add`:
 
 * **Explicit lower bound in `P`**: applying `four_mul_le_size_add` to `explicitDisperser` and
-  `explicitDisperserLanguage` yields a language in `P` requiring Boolean circuits of size at
-  least `4 * N - 60 * N / (Nat.log 2 N + 1) - 10` for all sufficiently large `N`
+  `explicitDisperserLanguage` yields a language in `P` requiring Boolean circuits (over
+  `fullSignature 2 Bool`, where constants count as gates) of size at least
+  `4 * N - 60 * N / (Nat.log 2 N + 1) - 10` for all sufficiently large `N`
   (`exists_mem_P_eventually_four_mul_sub_le_size`, and in natural numbers
-  `eventually_four_mul_le_size_add_explicitDisperser`). Achieving `4n - O(log n)` (Theorem 1.1 of
-  [Mishra and Santhanam][MishraSanthanam2027]) remains open pending the `O(log n)`-dimension
-  affine disperser (`#4323`).
-* **Remark 4.3 (Optimality of weights `α = 6, β = 4`)**: for any choice of non-negative weights
-  `α` (per used unpaired parameter) and `β` (per pair) satisfying the linear constraints of
-  Lemma 4.2, the leading coefficient `c - α` is at most `4` (`remark_4_3_bound`), and equality
-  forces `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and `α = β + 2` (`remark_4_3_optimal`).
+  `eventually_four_mul_le_size_add_explicitDisperser`). Achieving `4n - O(log n)` (`Theorem 1.1`
+  per issue `#4322`, unverified against [Mishra and Santhanam][MishraSanthanam2027]) remains open
+  pending an `O(log n)`-dimension affine disperser (`#4323`).
+* **Weight optimality (`Remark 4.3` per `#4322`, unverified)**: for any choice of non-negative
+  weights `α` (per used unpaired parameter) and `β` (per pair) satisfying the linear constraints of
+  `Valid.exists_step`, the leading coefficient `c - α` is at most `4` (`remark_4_3_bound`), and
+  equality forces `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and `α = β + 2` (`remark_4_3_optimal`).
 
 ## Main results
 
@@ -43,7 +44,8 @@ This module packages two consequences of Theorem 4.1 (`four_mul_le_size_add`):
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  labels follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section
@@ -52,18 +54,19 @@ namespace Cslib.Circuits.Boolean.AffineDisperser4n
 
 open Filter Cslib.Circuits Cslib.Complexity Cslib.AffineDisperser
 
-/-! ### Remark 4.3: Optimality of the potential weights -/
+/-! ### Optimality of the potential weights (`Remark 4.3` per `#4322`) -/
 
-/-- **Remark 4.3 (upper bound on the coefficient of `n`).** Under the linear constraints from
-degenerate pairs / equations (`α ≤ β + 2`) and pair creation (`c ≤ 2 α - β + 2`), the leading
-coefficient `c - α` cannot exceed `4`. -/
+/-- Upper bound on the coefficient of `n` (label `Remark 4.3` per `#4322`, unverified against
+[MishraSanthanam2027]): under the linear constraints from degenerate pairs / equations
+(`α ≤ β + 2`) and pair creation (`c ≤ 2 α - β + 2`), the leading coefficient `c - α` cannot
+exceed `4`. -/
 theorem remark_4_3_bound {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 2 * α - β + 2) :
     c - α ≤ 4 := by
   linarith
 
-/-- **Remark 4.3 (optimality of `α = 6, β = 4, c = 10`).** Any weight triple `(α, β, c)`
-satisfying the constraints of Lemma 4.2 and achieving `c - α = 4` satisfies `4 ≤ β`, `6 ≤ α`,
-`10 ≤ c`, and `α = β + 2`. -/
+/-- Optimality of `α = 6, β = 4, c = 10` (label `Remark 4.3` per `#4322`, unverified against
+[MishraSanthanam2027]): any weight triple `(α, β, c)` satisfying the constraints and achieving
+`c - α = 4` satisfies `4 ≤ β`, `6 ≤ α`, `10 ≤ c`, and `α = β + 2`. -/
 theorem remark_4_3_optimal {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 2 * β + 2)
     (h₃ : c ≤ 2 * α - β + 2) (h₄ : c - α = 4) :
     4 ≤ β ∧ 6 ≤ α ∧ 10 ≤ c ∧ α = β + 2 :=
@@ -71,7 +74,7 @@ theorem remark_4_3_optimal {α β c : ℚ} (h₁ : α ≤ β + 2) (h₂ : c ≤ 
 
 /-! ### Explicit `4N - O(N / log N)` lower bound for `explicitDisperser` -/
 
-/-- Theorem 4.1 instantiated at `explicitDisperser N`. -/
+/-- The `4n - 10d` lower bound (`four_mul_le_size_add`) instantiated at `explicitDisperser N`. -/
 theorem four_mul_le_size_add_explicitThreshold {N : ℕ}
     (C : Circuit (fullSignature 2 Bool) N 1)
     (hC : C.Computes fullInterpretation (single (explicitDisperser N))) :

@@ -13,15 +13,23 @@ public import CslibFrontier.Computability.Circuit.Boolean.SemiCircuit.OfCircuit
 /-!
 # The `4n - 10d` circuit size lower bound for affine dispersers
 
-This module proves Theorem 4.1 of [Mishra and Santhanam][MishraSanthanam2027]: any general Boolean
-circuit (`fullSignature 2 Bool`) computing a `d`-affine disperser `f` on `n` bits has size at
-least `4 * n - 10 * d`, i.e., `4 * n ≤ C.size + 10 * d`
+This module proves the `4n - 10d` size lower bound (`Theorem 4.1` per issue `#4322`, unverified
+against [Mishra and Santhanam][MishraSanthanam2027] because the submission PDF returned HTTP 1042):
+any general Boolean circuit (`fullSignature 2 Bool`) computing a `d`-affine disperser `f` on `n`
+bits has size at least `4 * n - 10 * d`, i.e., `4 * n ≤ C.size + 10 * d`
 (`Cslib.Circuits.Boolean.AffineDisperser4n.four_mul_le_size_add`).
+
+Circuits are formalized over `fullSignature 2 Bool`, where constant gates also cost a gate; in a
+model with free constants the bound holds a fortiori (`AffineDisperser.lean` uses the same
+convention). This module proves only the size bound and the non-constructive existence of a
+constant affine subspace / disagreeing input (`exists_affine_subspace_const_of_size_lt`,
+`exists_disagreeing_input_of_size_lt`); the deterministic `poly(n, 2^d)`-time refuter clause
+reported on `#4322` remains open (Milestone 4).
 
 The potential of a state (`State.W`) is `s + 4 q + 6 · #{used unpaired parameters}`. Starting from
 the initial state `initialState C` with `a = n`, `s = C.size`, `q = 0`, and
-`W ≤ C.size + 6 * n`, iterating Lemma 4.2 (`State.Valid.exists_step`) establishes
-`10 * S.a ≤ S.W + 10 * d` for every valid state (`State.Valid.ten_mul_a_le`), yielding
+`W ≤ C.size + 6 * n`, iterating `Lemma 4.2` (`State.Valid.exists_step`, label per `#4322`)
+establishes `10 * S.a ≤ S.W + 10 * d` for every valid state (`State.Valid.ten_mul_a_le`), yielding
 `10 * n ≤ C.size + 6 * n + 10 * d`, hence `4 * n ≤ C.size + 10 * d`.
 
 ## Main definitions
@@ -33,17 +41,19 @@ the initial state `initialState C` with `a = n`, `s = C.size`, `q = 0`, and
 
 * `Cslib.Circuits.Boolean.AffineDisperser4n.State.Valid.ten_mul_a_le`: `10 * S.a ≤ S.W + 10 * d`
   for every valid state of a `d`-affine disperser.
-* `Cslib.Circuits.Boolean.AffineDisperser4n.four_mul_le_size_add`: Theorem 4.1,
-  `4 * n ≤ C.size + 10 * d`.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.four_mul_le_size_add`: the `4n - 10d` lower bound
+  `4 * n ≤ C.size + 10 * d` (size-bound clause of `Theorem 4.1` per `#4322`).
 * `Cslib.Circuits.Boolean.AffineDisperser4n.exists_affine_subspace_const_of_size_lt`: any
   circuit with `C.size + 10 * d < 4 * n` is constant on some `d`-dimensional affine subspace.
-* `Cslib.Circuits.Boolean.AffineDisperser4n.exists_disagreeing_input_of_size_lt`: any circuit
-  with `C.size + 10 * d < 4 * n` disagrees with any `d`-affine disperser.
+* `Cslib.Circuits.Boolean.AffineDisperser4n.exists_disagreeing_input_of_size_lt`: non-constructive
+  disagreement witness for any circuit with `C.size + 10 * d < 4 * n` against any `d`-affine
+  disperser.
 
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  labels follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section
@@ -133,8 +143,10 @@ theorem initialState_W_le {n : ℕ} (C : Circuit (fullSignature 2 Bool) n 1) :
       ∑ x ∈ (initialState C).unpaired, weight ((initialState C).deg x) ≤ C.size + 6 * n
   omega
 
-/-- **Theorem 4.1 (`4n - 10d` lower bound).** Any general Boolean circuit computing a `d`-affine
-disperser on `n` bits satisfies `4 * n ≤ C.size + 10 * d`. -/
+/-- Size lower bound `4 * n ≤ C.size + 10 * d` for any `fullSignature 2 Bool` circuit computing a
+`d`-affine disperser on `n` bits (label `Theorem 4.1` per `#4322`, unverified against
+[MishraSanthanam2027]; the `poly(n, 2^d)` refuter clause remains open, and constants count as gates
+under `fullSignature 2 Bool`). -/
 theorem four_mul_le_size_add {n : ℕ} {f : BooleanFunction n} {d : ℕ}
     (hf : IsAffineDisperser f d) (C : Circuit (fullSignature 2 Bool) n 1)
     (hC : C.Computes fullInterpretation (single f)) :

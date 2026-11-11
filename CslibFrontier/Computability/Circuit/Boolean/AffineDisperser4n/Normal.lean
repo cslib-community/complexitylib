@@ -44,7 +44,8 @@ parameter), or else satisfies `State.Normal`:
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  labels follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section
@@ -87,6 +88,14 @@ private theorem bias_partner_eq_of_mem {S : State n} {f : BooleanFunction n} (hS
 private theorem isPartner_unique_right {S : State n} {f : BooleanFunction n} (hS : S.Valid f)
     {u p r : ℕ} (hup : S.IsPartner u r) (hpr : S.IsPartner p r) : u = p :=
   hS.isPartner_unique (IsPartner.symm hup) (IsPartner.symm hpr)
+
+private theorem children_eq_singleton {S : State n} {x : ℕ} {H : ℕ ⊕ ℕ}
+    (hH : H ∈ S.children x) (hle : S.deg x ≤ 1) : S.children x = {H} := by
+  have hpos : 0 < (S.children x).card := Finset.card_pos.2 ⟨H, hH⟩
+  have hcard : (S.children x).card = 1 := by unfold deg at hle; omega
+  obtain ⟨M, hM⟩ := Finset.card_eq_one.1 hcard
+  have h1 := Finset.mem_singleton.1 (hM ▸ hH)
+  rwa [← h1] at hM
 
 /-! ### Moving affine gates -/
 
@@ -142,8 +151,18 @@ theorem Valid.preparation_moveAffine {S : State n} {f : BooleanFunction n} (hS :
 /-! ### Case 2: Degenerate paired parameter -/
 
 /-- A paired parameter whose degree is `0` or at least `2` (Case 2). -/
-@[expose] def DegeneratePair (S : State n) : Prop :=
+def DegeneratePair (S : State n) : Prop :=
   ∃ p, S.Paired p ∧ (S.deg p = 0 ∨ 2 ≤ S.deg p)
+
+private theorem Paired.deg_eq_one {S : State n} (hndeg : ¬ S.DegeneratePair) {p : ℕ}
+    (hp : S.Paired p) : S.deg p = 1 := by
+  have h0 : S.deg p ≠ 0 := fun h => hndeg ⟨p, hp, Or.inl h⟩
+  have h2 : ¬ 2 ≤ S.deg p := fun h => hndeg ⟨p, hp, Or.inr h⟩
+  omega
+
+private theorem Paired.children_eq_singleton {S : State n} (hndeg : ¬ S.DegeneratePair)
+    {p : ℕ} (hp : S.Paired p) {H : ℕ ⊕ ℕ} (hH : H ∈ S.children p) : S.children p = {H} :=
+  State.children_eq_singleton hH (by rw [hp.deg_eq_one hndeg])
 
 /-- Eliminating a degenerate paired parameter gives a valid step with `Δa = 0` and `ΔW ≤ 0`. -/
 theorem Valid.step_of_degeneratePair {S : State n} {f : BooleanFunction n} (hS : S.Valid f)
@@ -219,7 +238,7 @@ theorem Valid.step_of_degeneratePair {S : State n} {f : BooleanFunction n} (hS :
 /-! ### Case 3: Partners sharing a child -/
 
 /-- Two paired partners share a child (Case 3). -/
-@[expose] def PartnersShareChild (S : State n) : Prop :=
+def PartnersShareChild (S : State n) : Prop :=
   ∃ pr ∈ S.pairs, (S.children pr.fst ∩ S.children pr.snd).Nonempty
 
 private theorem bool_triangle_aux (f00 f01 f10 f11 α β : Bool) :
@@ -309,22 +328,8 @@ theorem Valid.step_of_partnersShareChild {S : State n} {f : BooleanFunction n}
   have hpr_ne : p ≠ r := (hS.pair_mem pr hpr).2.2
   have hpp : S.Paired p := ⟨pr, hpr, Or.inl rfl⟩
   have hpr' : S.Paired r := ⟨pr, hpr, Or.inr rfl⟩
-  have hdegp : S.deg p = 1 := by
-    have h0 : S.deg p ≠ 0 := fun h => hndeg ⟨p, hpp, Or.inl h⟩
-    have h2 : ¬ 2 ≤ S.deg p := fun h => hndeg ⟨p, hpp, Or.inr h⟩
-    omega
-  have hdegr : S.deg r = 1 := by
-    have h0 : S.deg r ≠ 0 := fun h => hndeg ⟨r, hpr', Or.inl h⟩
-    have h2 : ¬ 2 ≤ S.deg r := fun h => hndeg ⟨r, hpr', Or.inr h⟩
-    omega
-  have hcpH : S.children p = {H} := by
-    obtain ⟨M, hM⟩ := Finset.card_eq_one.1 hdegp
-    have h1 := Finset.mem_singleton.1 (hM ▸ hHp)
-    rwa [← h1] at hM
-  have hcrH : S.children r = {H} := by
-    obtain ⟨M, hM⟩ := Finset.card_eq_one.1 hdegr
-    have h1 := Finset.mem_singleton.1 (hM ▸ hHr)
-    rwa [← h1] at hM
+  have hcpH : S.children p = {H} := hpp.children_eq_singleton hndeg hHp
+  have hcrH : S.children r = {H} := hpr'.children_eq_singleton hndeg hHr
   rcases H with G | e
   · obtain ⟨hG, hGp⟩ := (SemiCircuit.inl_mem_children _).1 hHp
     obtain ⟨_, hGr⟩ := (SemiCircuit.inl_mem_children _).1 hHr
@@ -439,7 +444,7 @@ theorem Valid.step_of_partnersShareChild {S : State n} {f : BooleanFunction n}
 /-! ### Case 4: Paired parameter in an affine equation -/
 
 /-- A paired parameter occurring in an affine equation (Case 4). -/
-@[expose] def PairInSystem (S : State n) : Prop :=
+def PairInSystem (S : State n) : Prop :=
   ∃ p, S.Paired p ∧ ∃ e ∈ S.eqns, p ∈ (S.eqn e).terms
 
 /-- Eliminating a paired parameter in an equation (and unit-deleting if its partner's degree
@@ -458,18 +463,9 @@ theorem Valid.step_of_pairInSystem {S : State n} {f : BooleanFunction n} {d : �
   have hpp : S.Paired p := ⟨pr, hpr, hprp⟩
   have hpr' : S.Paired r := ⟨pr, hpr, hprr⟩
   have hpr_part : S.IsPartner p r := isPartner_of_contains hpr hprp hprr hrp.symm
-  have hp_ch : S.children p = {.inr e} := by
-    have h0 : S.deg p ≠ 0 := fun h => hndeg ⟨p, hpp, Or.inl h⟩
-    have h2 : ¬ 2 ≤ S.deg p := fun h => hndeg ⟨p, hpp, Or.inr h⟩
-    have hcard : (S.children p).card = 1 := by unfold deg at h0 h2; omega
-    obtain ⟨N, hN⟩ := Finset.card_eq_one.1 hcard
-    have hec : Sum.inr e ∈ S.children p := (SemiCircuit.inr_mem_children _).2 ⟨he, hpe⟩
-    rw [hN, Finset.mem_singleton] at hec
-    rwa [← hec] at hN
-  have hdegr : S.deg r = 1 := by
-    have h0 : S.deg r ≠ 0 := fun h => hndeg ⟨r, hpr', Or.inl h⟩
-    have h2 : ¬ 2 ≤ S.deg r := fun h => hndeg ⟨r, hpr', Or.inr h⟩
-    omega
+  have hp_ch : S.children p = {.inr e} :=
+    hpp.children_eq_singleton hndeg ((SemiCircuit.inr_mem_children _).2 ⟨he, hpe⟩)
+  have hdegr : S.deg r = 1 := hpr'.deg_eq_one hndeg
   obtain ⟨Hr, hHr⟩ := Finset.card_eq_one.1 hdegr
   have hHr_mem : Hr ∈ S.children r := by rw [hHr]; exact Finset.mem_singleton_self _
   have hHr_ne : Hr ≠ .inr e := fun heq => by
@@ -546,7 +542,7 @@ theorem Valid.step_of_pairInSystem {S : State n} {f : BooleanFunction n} {d : �
 /-! ### Case 5a: Non-affine gate reading a paired parameter and another parameter -/
 
 /-- A non-affine gate reading a paired parameter `p` and another parameter `w ≠ p` (Case 5a). -/
-@[expose] def AndOnPair (S : State n) : Prop :=
+def AndOnPair (S : State n) : Prop :=
   ∃ G ∈ S.gates, ¬ IsAffineOp (S.gate G).op ∧
     ∃ p w, S.Paired p ∧ w ∈ S.params ∧ p ≠ w ∧ (S.gate G).Reads p ∧ (S.gate G).Reads w
 
@@ -594,18 +590,9 @@ theorem Valid.step_of_andOnPair {S : State n} {f : BooleanFunction n} (hS : S.Va
     · rw [h1, h2]; exact ⟨hm1, hm2⟩
     · rw [h1, h2]; exact ⟨hm2, hm1⟩
     · exact absurd (h1.symm.trans h2) hrp.symm
-  have hcpG : S.children p = {.inl G} := by
-    have h0 : S.deg p ≠ 0 := fun h => hndeg ⟨p, hpp, Or.inl h⟩
-    have h2 : ¬ 2 ≤ S.deg p := fun h => hndeg ⟨p, hpp, Or.inr h⟩
-    have hcard : (S.children p).card = 1 := by unfold deg at h0 h2; omega
-    obtain ⟨N, hN⟩ := Finset.card_eq_one.1 hcard
-    have hm : Sum.inl G ∈ S.children p := (SemiCircuit.inl_mem_children _).2 ⟨hG, hGp⟩
-    rw [hN, Finset.mem_singleton] at hm
-    rwa [← hm] at hN
-  have hdegr : S.deg r = 1 := by
-    have h0 : S.deg r ≠ 0 := fun h => hndeg ⟨r, hpr', Or.inl h⟩
-    have h2 : ¬ 2 ≤ S.deg r := fun h => hndeg ⟨r, hpr', Or.inr h⟩
-    omega
+  have hcpG : S.children p = {.inl G} :=
+    hpp.children_eq_singleton hndeg ((SemiCircuit.inl_mem_children _).2 ⟨hG, hGp⟩)
+  have hdegr : S.deg r = 1 := hpr'.deg_eq_one hndeg
   obtain ⟨Hr, hHr⟩ := Finset.card_eq_one.1 hdegr
   have hHr_mem : Hr ∈ S.children r := by rw [hHr]; exact Finset.mem_singleton_self _
   have hHr_ne : Hr ≠ .inl G := fun heq => by
@@ -864,13 +851,8 @@ theorem Normal.unpaired_of_mem_terms {S : State n} (hN : S.Normal) {e x : ℕ} (
   by_contra hlt
   push Not at hlt
   have hec : Sum.inr e ∈ S.children x := (SemiCircuit.inr_mem_children _).2 ⟨he, hx⟩
-  have hcard : (S.children x).card = 1 := by
-    have hpos : 0 < (S.children x).card := Finset.card_pos.2 ⟨_, hec⟩
-    unfold deg at hlt
-    omega
-  obtain ⟨M, hM⟩ := Finset.card_eq_one.1 hcard
-  have hMe := Finset.mem_singleton.1 (hM ▸ hec)
-  exact hN.no_deletion (Or.inr (Or.inr (Or.inr ⟨x, hxunp, e, by rwa [← hMe] at hM⟩)))
+  exact hN.no_deletion (Or.inr (Or.inr (Or.inr ⟨x, hxunp, e,
+    children_eq_singleton hec (by omega)⟩)))
 
 /-- Any parameter read by a non-affine gate of a normal state is unpaired with degree at least
 `1`. -/

@@ -46,7 +46,8 @@ Combining with Cases 1–5a gives Lemma 4.2 (`State.Valid.exists_step`).
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  labels follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section
@@ -101,34 +102,6 @@ theorem Valid.minGate_reads {S : State n} {f : BooleanFunction n} (hS : S.Valid 
   have hle := Finset.min'_le S.gates i hi
   omega
 
-/-- Any parameter occurring in an affine representation of an auxiliary variable occurs in some
-affine equation. -/
-private theorem exists_eqn_of_mem_affineIn {S : State n} {f : BooleanFunction n} (hS : S.Valid f)
-    {Q : ℕ} (hQ : Q ∈ S.aux) {c : Bool} {T : Finset ℕ} (haff : S.AffineIn Q c T)
-    {x : ℕ} (hx : x ∈ T) : ∃ e ∈ S.eqns, x ∈ (S.eqn e).terms := by
-  by_contra hno
-  push Not at hno
-  obtain ⟨val₀, _, heq₀⟩ := hS.wf.solvable 0
-  let val₁ := Function.update val₀ x (!val₀ x)
-  have heq₁ : S.EqnsHold val₁ := fun e he => by
-    have h0 := heq₀ e he
-    have hxn : x ∉ (S.eqn e).terms := hno e he
-    unfold Equation.Holds at h0 ⊢
-    rw [Finset.sum_congr rfl fun i hi => by
-      have hix : i ≠ x := fun h => hxn (h ▸ hi)
-      exact Function.update_of_ne hix _ _]
-    exact h0
-  have hQx : Q ≠ x := fun h => hS.wf.notMem_aux_of_mem_params (haff.1 hx) (h ▸ hQ)
-  have h1 := haff.2 val₀ heq₀
-  have h2 := haff.2 val₁ heq₁
-  have hvalQ : val₁ Q = val₀ Q := Function.update_of_ne hQx _ _
-  rw [hvalQ, h1, ← Finset.add_sum_erase T val₀ hx, ← Finset.add_sum_erase T val₁ hx,
-    Finset.sum_congr rfl fun j hj =>
-      Function.update_of_ne (Finset.ne_of_mem_erase hj) _ _] at h2
-  dsimp only [val₁] at h2
-  rw [Function.update_self] at h2
-  cases val₀ x <;> generalize c + ∑ j ∈ T.erase x, val₀ j = s <;> cases s <;> simp at h2
-
 /-- If a gate of a normal state reads distinct inputs `a ≠ b` with `a ∈ S.aux`, then `a`'s
 affine representation contains some unpaired parameter `y ≠ b` of degree at least `2`. -/
 private theorem exists_param_for_swap_of_aux_input {S : State n} {f : BooleanFunction n}
@@ -140,7 +113,8 @@ private theorem exists_param_for_swap_of_aux_input {S : State n} {f : BooleanFun
   · obtain ⟨y, hy⟩ := hne
     have hyb : y ≠ b := Finset.ne_of_mem_erase hy
     have hyT : y ∈ T := Finset.mem_of_mem_erase hy
-    obtain ⟨e, he, hye⟩ := exists_eqn_of_mem_affineIn hS ha haff hyT
+    obtain ⟨e, he, hye⟩ :=
+      haff.mem_terms hS.wf (fun hp => hS.wf.notMem_aux_of_mem_params hp ha) hyT
     obtain ⟨hyunp, hdeg⟩ := hN.unpaired_of_mem_terms he hye (haff.1 hyT)
     exact ⟨y, c, T, haff, hyT, hyb, hyunp, hdeg⟩
   · rw [Finset.not_nonempty_iff_eq_empty] at hne
@@ -456,8 +430,9 @@ private theorem Valid.exists_step_aux {f : BooleanFunction n} {d : ℕ} (hf : Is
             exact hS.step_of_pairCreation hf ha hN hG hnotaff htne hGt₁ hGt₂
               (hmem_par t₁ hGt₁) (hmem_par t₂ hGt₂)
 
-/-- **Lemma 4.2.** If `S` is a valid state for a `d`-affine disperser `f` and `d < S.a`, then there
-is a valid step from `S` strictly reducing `m + s` with `Δa ∈ {0, -1, -2}` and `ΔW ≤ 10 Δa`. -/
+/-- Lemma 4.2 (label per issue `#4322`, unverified against [MishraSanthanam2027]): if `S` is a
+valid state for a `d`-affine disperser `f` and `d < S.a`, then there is a valid step from `S`
+strictly reducing `m + s` with `Δa ∈ {0, -1, -2}` and `ΔW ≤ 10 Δa`. -/
 theorem Valid.exists_step {S : State n} {f : BooleanFunction n} {d : ℕ} (hS : S.Valid f)
     (hf : IsAffineDisperser f d) (ha : d < S.a) : ∃ S', Step f S S' :=
   let k₂ := if hne : S.gates.Nonempty then S.auxIn (S.gates.min' hne) else 0

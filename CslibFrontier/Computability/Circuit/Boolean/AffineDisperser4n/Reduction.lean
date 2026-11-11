@@ -48,7 +48,8 @@ where `k = (S.pairsMeeting F).card`. Deleting any deletable constraint is a step
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  labels follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section

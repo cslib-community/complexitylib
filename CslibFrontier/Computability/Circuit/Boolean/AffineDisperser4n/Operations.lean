@@ -61,7 +61,8 @@ together with validity preservation on `Z(P)`:
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  operation names follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section
@@ -70,10 +71,12 @@ namespace Cslib.Circuits.Boolean.AffineDisperser4n
 
 open Finset Cslib.BitString SemiCircuit
 
-/-! ### Global affinity helpers on `ℕ → Bool` -/
+/-! ### Global affinity helpers on `ℕ → Bool`
 
-/-- Evaluating a literal defines an affine map on `(ℕ → Bool)`. -/
-theorem isAffine_lit_eval_id (ℓ : Lit) : IsAffine (fun val : ℕ → Bool => ℓ.eval val) := by
+The analogous helpers in `AffineDisperser` take `BitString k → ℕ → Bool`, whereas `Transport` acts
+on `ℕ → Bool → ℕ → Bool`; keep these specialized helpers private. -/
+
+private theorem isAffine_lit_eval_id (ℓ : Lit) : IsAffine (fun val : ℕ → Bool => ℓ.eval val) := by
   intro u v w
   obtain ⟨_ | t, c⟩ := ℓ
   · simp only [Lit.eval, Arg.eval_const]
@@ -83,9 +86,7 @@ theorem isAffine_lit_eval_id (ℓ : Lit) : IsAffine (fun val : ℕ → Bool => �
     generalize u t = a; generalize v t = b; generalize w t = e
     revert a b e c; decide
 
-/-- Updating the coordinate `x` of `val` by an affine Boolean function of `val` defines an
-affine map `(ℕ → Bool) → (ℕ → Bool)`. -/
-theorem isAffine_update_id (x : ℕ) {ψ : (ℕ → Bool) → Bool} (hψ : IsAffine ψ) :
+private theorem isAffine_update_id (x : ℕ) {ψ : (ℕ → Bool) → Bool} (hψ : IsAffine ψ) :
     IsAffine (fun val : ℕ → Bool => Function.update val x (ψ val)) := by
   intro u v w
   funext i
@@ -94,9 +95,7 @@ theorem isAffine_update_id (x : ℕ) {ψ : (ℕ → Bool) → Bool} (hψ : IsAff
     simp only [Function.update_self, Pi.add_apply, hψ u v w]
   · simp only [Function.update_of_ne hi, Pi.add_apply]
 
-/-- A constant plus a sum of coordinates and a single coordinate defines an affine map on
-`(ℕ → Bool)`. -/
-theorem isAffine_swap_val (Q : ℕ) (c : Bool) (R : Finset ℕ) :
+private theorem isAffine_swap_val (Q : ℕ) (c : Bool) (R : Finset ℕ) :
     IsAffine (fun val : ℕ → Bool => val Q + c + ∑ j ∈ R, val j) := by
   intro u v w
   simp only [Pi.add_apply, Finset.sum_add_distrib]

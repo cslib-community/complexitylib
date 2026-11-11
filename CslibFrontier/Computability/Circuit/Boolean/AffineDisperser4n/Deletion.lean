@@ -39,7 +39,8 @@ while keeping `Δa = 0` and `ΔW ≤ -1`.
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  deletion labels follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section
@@ -64,35 +65,6 @@ theorem Valid.not_out_reads_param {S : State n} {f : BooleanFunction n} {d : ℕ
   simp only [Lit.eval, hread', Arg.eval_node, Finset.sum_singleton]
   cases S.out.neg <;> cases val x <;> rfl
 
-/-- Any equation containing a parameter `x` contains at least one auxiliary variable whose affine
-representation in terms of parameters depends on `x`. -/
-private theorem exists_aux_depends_of_mem_terms {S : State n} {f : BooleanFunction n}
-    (hS : S.Valid f) {e x : ℕ} (he : e ∈ S.eqns) (hx : x ∈ S.params)
-    (hxe : x ∈ (S.eqn e).terms) :
-    ∃ Q ∈ (S.eqn e).terms, Q ∈ S.aux ∧ ∃ c T, S.AffineIn Q c T ∧ x ∈ T := by
-  by_contra hno
-  push Not at hno
-  obtain ⟨val₀, hval₀, heq₀⟩ := hS.wf.solvable 0
-  obtain ⟨val₁, hval₁, heq₁⟩ := hS.wf.solvable (Function.update val₀ x (!val₀ x))
-  have hmatch : ∀ i ∈ (S.eqn e).terms.erase x, val₁ i = val₀ i := fun i hi => by
-    have hine : i ≠ x := Finset.ne_of_mem_erase hi
-    have himem : i ∈ (S.eqn e).terms := Finset.mem_of_mem_erase hi
-    rcases Finset.mem_union.1 (hS.wf.terms_subset e he himem) with hp | ha
-    · rw [hval₁ i hp, Function.update_of_ne hine, hval₀ i hp]
-    · obtain ⟨c, T, haff⟩ := hS.wf.exists_affineIn ha
-      have hxT : x ∉ T := hno i himem ha c T haff
-      rw [haff.2 val₁ heq₁, haff.2 val₀ heq₀]
-      congr 1
-      refine Finset.sum_congr rfl fun j hj => ?_
-      have hjx : j ≠ x := fun h => hxT (h ▸ hj)
-      rw [hval₁ j (haff.1 hj), Function.update_of_ne hjx]
-  have h1 := heq₀ e he
-  have h2 := heq₁ e he
-  unfold Equation.Holds at h1 h2
-  rw [← Finset.add_sum_erase _ _ hxe] at h1 h2
-  rw [Finset.sum_congr rfl hmatch, hval₁ x hx, Function.update_self, ← h1] at h2
-  cases val₀ x <;> simp at h2
-
 /-- `(D4)` (unit delete): an unpaired parameter `x` with `S.children x = {.inr e}` swaps with an
 auxiliary variable occurring in `e`, and then drops `e` and `x`, lowering `s` and `W` by `1`
 while preserving `m`, `q`, and `a`. -/
@@ -105,7 +77,8 @@ theorem Valid.exists_unit_delete {S : State n} {f : BooleanFunction n} {d : ℕ}
   have hxu : ¬ S.Paired x := (mem_unpaired.1 hx).2
   obtain ⟨he, hxe⟩ := (SemiCircuit.inr_mem_children _).1 (by
     rw [hcx]; exact Finset.mem_singleton_self _)
-  obtain ⟨Q, _, hQaux, c, T, haff, hxT⟩ := exists_aux_depends_of_mem_terms hS he hxpar hxe
+  obtain ⟨Q, hQaux, c, T, haff, hxT⟩ :=
+    SemiCircuit.exists_affineIn_of_mem_terms hS.wf hxpar he hxe
   let S₁ := S.swap x Q c T
   have hswap : S.SwapOK x Q c T := ⟨hxpar, hxu, hQaux, haff, hxT⟩
   have hS₁ : S₁.Valid f := hS.swap hswap

@@ -74,7 +74,8 @@ of gate elimination (`State.Step`) preserves validity, decreases `m + s`, and sa
 ## References
 
 * [O. S. Mishra and R. Santhanam, *An Explicit 4n - O(log n) Size Lower Bound against General
-  Boolean Circuits*][MishraSanthanam2027]
+  Boolean Circuits*][MishraSanthanam2027] (submission PDF inaccessible with HTTP 1042; cited
+  labels and operation names follow issue `#4322` and are unverified against the manuscript)
 -/
 
 public section
@@ -290,7 +291,7 @@ structure Valid (f : BooleanFunction n) : Prop where
 /-! ### Affine embedding helpers -/
 
 /-- Adding a fixed offset assignment preserves affinity of a family. -/
-theorem isAffine_xor_const {k : ℕ} {σ : BitString k → ℕ → Bool} (hσ : IsAffine σ)
+private theorem isAffine_xor_const {k : ℕ} {σ : BitString k → ℕ → Bool} (hσ : IsAffine σ)
     (base : ℕ → Bool) : IsAffine fun u i => σ u i ^^ base i := by
   intro u v w
   funext i
@@ -369,9 +370,9 @@ private theorem locusAssign_rep {f : BooleanFunction n} (hS : S.Valid f)
     rw [ite_eq_right hneq]
     rfl
 
-/-- **Lemma 2.2** of [Mishra and Santhanam][MishraSanthanam2027]: the image `Φ(Z(P))` of the zero
-locus under the parameter map of a valid state contains the image of an injective affine map from
-`BitString a`. -/
+/-- Lemma 2.2 (label per issue `#4322`, unverified against [MishraSanthanam2027]): the image
+`Φ(Z(P))` of the zero locus under the parameter map of a valid state contains the image of an
+injective affine map from `BitString a`. -/
 theorem Valid.exists_affine_embedding {f : BooleanFunction n} (hS : S.Valid f) :
     ∃ g : BitString S.a → BitString n, IsAffine g ∧ Function.Injective g ∧
       ∀ u, ∃ val, S.Consistent val ∧ S.InZeroLocus val ∧ g u = S.phi val := by
