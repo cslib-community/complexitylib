@@ -138,13 +138,6 @@ private theorem computableInPolyTime_unaryOdd :
       cases b <;> split_ifs <;> simp <;> omega
   simpa [encUnary_apply] using (hacc n false).symm
 
-private theorem computableInPolyTime_listTakeWithInput {α γ : Type}
-    {encA : α ↪ List Bool} {encIn : γ ↪ List Bool} {list : γ → List α} {count : γ → ℕ}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (hcount : ComputableInPolyTime count encIn encUnary) :
-    ComputableInPolyTime (fun x => (list x).take (count x)) encIn (encList encA) :=
-  .of_tidy (ComputableTidilyInPolyTime.listTakeWithInput hlist.tidy hcount.tidy)
-
 private theorem computableInPolyTime_listAppend {α γ : Type}
     {encA : α ↪ List Bool} {encIn : γ ↪ List Bool} {left right : γ → List α}
     (hleft : ComputableInPolyTime left encIn (encList encA))
@@ -579,7 +572,8 @@ theorem computableInPolyTime_repeatMsg_dyn {γ : Type} {enc : α ↪ List Bool} 
   have htake : ComputableInPolyTime (fun y : γ × ℕ => toAM ((g y.1).take (j y.1)))
       (encPair encIn encUnary) encAMShape :=
     computableInPolyTime_toAM_dyn
-      (computableInPolyTime_listTakeWithInput (hg.comp hx1) (hj.comp hx1))
+      (.of_tidy (ComputableTidilyInPolyTime.listTakeWithInput (hg.comp hx1).tidy
+        (hj.comp hx1).tidy))
   have hcopy := AMGame.computableInPolyTime_copyTranscript_dyn
     (hT.comp hx1) hi htake (hp.comp hx1)
   have hrow := ComputableInPolyTime.bitsRowWithInput (hρ.comp hx1) hi (hc.comp hx1)
@@ -1542,8 +1536,8 @@ private theorem computableInPolyTime_truncShape {g₀ : ℕ → List (IPMove × 
     computableInPolyTime_unaryOdd.comp hlen
   have htake : ComputableInPolyTime (fun n => (g₀ n).take ((g₀ n).length - 1))
       encUnary encIPShape :=
-    computableInPolyTime_listTakeWithInput hgp₀
-      (ComputableInPolyTime.unary_sub' hlen (ComputableInPolyTime.const 1))
+    .of_tidy (ComputableTidilyInPolyTime.listTakeWithInput hgp₀.tidy
+      (ComputableInPolyTime.unary_sub' hlen (ComputableInPolyTime.const 1)).tidy)
   exact (hodd.ite htake hgp₀).of_enc_eq fun n => by
     simp only [truncShape, decide_eq_true_eq]
 
@@ -1843,34 +1837,6 @@ private theorem computableInPolyTime_gsVAM {enc : α ↪ List Bool} {g₀ : ℕ 
   exact computableInPolyTime_check_dyn hBx hZx hKx hgRepx
     (fun {q} hq => computableInPolyTime_gsReveal hg₁ hρ hR hmsg₀ hdec₁ hq)
     hκx (ComputableInPolyTime.const []) (ComputableInPolyTime.snd _ _)
-
-private theorem two_pow_sub_le {N r ρ : ℕ} (h : 2 ^ r * 2 ^ ρ ≤ 3 ^ r * N) :
-    2 ^ (ρ - r) ≤ N := by
-  have h3 : 3 ^ r ≤ 2 ^ r * 2 ^ r := by
-    rw [← mul_pow]
-    exact Nat.pow_le_pow_left (by norm_num) r
-  rcases le_or_gt r ρ with hr | hr
-  · have : 2 ^ r * (2 ^ r * 2 ^ (ρ - r)) ≤ 2 ^ r * (2 ^ r * N) :=
-      calc 2 ^ r * (2 ^ r * 2 ^ (ρ - r)) = 2 ^ r * 2 ^ ρ := by
-            rw [← pow_add, Nat.add_sub_cancel' hr]
-        _ ≤ 3 ^ r * N := h
-        _ ≤ 2 ^ r * 2 ^ r * N := Nat.mul_le_mul_right _ h3
-        _ = 2 ^ r * (2 ^ r * N) := Nat.mul_assoc _ _ _
-    exact Nat.le_of_mul_le_mul_left (Nat.le_of_mul_le_mul_left this (Nat.two_pow_pos r))
-      (Nat.two_pow_pos r)
-  · have hpos : 0 < 2 ^ r := Nat.two_pow_pos r
-    have : 2 ^ (ρ - r) = 1 := by simp [Nat.sub_eq_zero_of_le hr.le]
-    nlinarith [show 2 ^ r ≤ 2 ^ ρ * 2 ^ r from Nat.le_mul_of_pos_left _ (Nat.two_pow_pos ρ)]
-
-private theorem le_two_pow_sub {x r ρ : ℕ} (h : x * 2 ^ r ≤ 2 ^ ρ) : x ≤ 2 ^ (ρ - r) := by
-  by_cases hr : r ≤ ρ
-  · exact Nat.le_of_mul_le_mul_right
-      (by simpa only [← pow_add, Nat.sub_add_cancel hr] using h) (pow_pos two_pos r)
-  · rcases Nat.eq_zero_or_pos x with rfl | hx
-    · exact Nat.zero_le _
-    · have hlt : 2 ^ ρ < 2 ^ r := Nat.pow_lt_pow_right (by decide) (by omega)
-      have : 2 ^ r ≤ x * 2 ^ r := Nat.le_mul_of_pos_left _ hx
-      omega
 
 /-- **Goldwasser–Sipser for polynomially many rounds (`IP[k(n)] ⊆ AM[k(n) + 2]`)** without
 round collapse: odd-length patterns drop their trailing verifier move into `dec`, while parallel

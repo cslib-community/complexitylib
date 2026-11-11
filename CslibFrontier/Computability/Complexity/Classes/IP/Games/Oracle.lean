@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.BPP
 public import CslibFrontier.Computability.Complexity.Classes.IP
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.PolyRounds
 
+import CslibFrontier.Computability.Complexity.Classes.IP.OptimalProver
 import CslibFrontier.Computability.Complexity.Classes.IP.PSPACE
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
@@ -518,21 +519,6 @@ private theorem after_map {γ δ : Type} (f : γ → δ) (p : WordQueryComp Unit
         Option.map (f <$> ·) (if m = q.2 then Interaction.after (next y) h else none)
       split_ifs
       · exact ih y h
-      · rfl
-
-private theorem after_append {γ : Type} (p : WordQueryComp Unit γ)
-    (h e : Interaction.History) :
-    Interaction.after p (h ++ e) = (Interaction.after p h).bind (Interaction.after · e) := by
-  induction h generalizing p with
-  | nil => simp
-  | cons x h ih =>
-    obtain ⟨m, y⟩ := x
-    cases p with
-    | pure a => rfl
-    | liftBind q next =>
-      simp only [List.cons_append, Interaction.after]
-      split_ifs
-      · exact ih _
       · rfl
 
 private theorem exists_transcript_ge_of_after {γ : Type} (p : WordQueryComp Unit γ)
@@ -1067,7 +1053,7 @@ private theorem trace_sim_eq {enc : α ↪ List Bool} {k : ℕ} {Control : Type}
             subst ho
             have hafter : Interaction.after (F c) (h ++ [(m0, Interaction.decodeWord w)]) =
                 some (cont (Interaction.decodeWord w)) := by
-              rw [after_append, hah]
+              rw [Interaction.after_append, hah]
               change Interaction.after (.liftBind ((), m0) cont)
                   [(m0, Interaction.decodeWord w)] = _
               simp [Interaction.after]
@@ -1977,4 +1963,3 @@ theorem IP_subset_AMPolyRounds {enc : α ↪ List Bool} {A : Set α} (hA : A ∈
     IPPolyQueryBounded_subset_AMPolyRounds hqPoly hq⟩
 
 end Cslib.Complexity
-
