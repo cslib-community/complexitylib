@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: local-only (test driver for the BEST theorem)
+
 import CslibFrontier.Foundations.Combinatorics.Multidigraph.BEST
 
 /-!
@@ -24,6 +27,8 @@ A single loop at `0` next to an isolated vertex `1` has one Eulerian circuit but
 arborescence, so the hypothesis that every vertex has an outgoing arc is needed. A single arc
 `0 → 1` is unbalanced and has no Eulerian circuit.
 -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.BEST
 
@@ -208,5 +213,82 @@ def tgtArc : Fin 1 → Fin 2 := fun _ => 1
 -- The single arc is unbalanced, so it is not an Eulerian circuit.
 example (l : List (Fin 1)) : ¬ IsEulerianCircuit srcArc tgtArc 0 l := fun hl =>
   absurd (hl.card_filter_src_eq 0) (by decide)
+
+section RootIndependence
+
+/-- Doubled `2`-cycle: arcs `0, 1 : 0 → 1` and arcs `2, 3 : 1 → 0`. -/
+private def rotSrc (e : Fin 4) : Fin 2 := if e.1 < 2 then 0 else 1
+
+private def rotTgt (e : Fin 4) : Fin 2 := if e.1 < 2 then 1 else 0
+
+-- Cyclic rotation `IsEulerianCircuit.equivRotate` sends `[0, 2, 1, 3]` to `[2, 1, 3, 0]`,
+-- proving circuit-count and arborescence-count root independence.
+example :
+    (∀ h : Cslib.Multidigraph.IsEulerianCircuit rotSrc rotTgt 0 [0, 2, 1, 3],
+      (Cslib.Multidigraph.IsEulerianCircuit.equivRotate (src := rotSrc) (tgt := rotTgt) 0 2
+        ⟨[0, 2, 1, 3], h⟩).1 = [2, 1, 3, 0]) ∧
+    Nat.card {l : List (Fin 4) // Cslib.Multidigraph.IsEulerianCircuit rotSrc rotTgt 0 l} =
+      Nat.card {l : List (Fin 4) // Cslib.Multidigraph.IsEulerianCircuit rotSrc rotTgt 2 l} ∧
+    Nat.card {f : {v : Fin 2 // v ≠ 0} → Fin 4 //
+        Cslib.Multidigraph.IsInArborescence rotSrc rotTgt 0 f} =
+      Nat.card {f : {v : Fin 2 // v ≠ 1} → Fin 4 //
+        Cslib.Multidigraph.IsInArborescence rotSrc rotTgt 1 f} := by
+  have hbal : ∀ v : Fin 2, (Finset.univ.filter fun e => rotSrc e = v).card =
+      (Finset.univ.filter fun e => rotTgt e = v).card := by
+    intro v; fin_cases v <;> decide
+  refine ⟨fun h => ?_, Cslib.Multidigraph.natCard_isEulerianCircuit_eq rotSrc rotTgt 0 2,
+    Cslib.Multidigraph.natCard_isInArborescence_eq rotSrc rotTgt hbal 0 1⟩
+  rw [Cslib.Multidigraph.IsEulerianCircuit.coe_equivRotate]
+  simp only
+  decide
+
+-- Root independence without positive out-degree: a loop at `0` plus an isolated vertex `1`.
+private def isoSrc (_ : Fin 1) : Fin 2 := 0
+
+example :
+    Nat.card {f : {v : Fin 2 // v ≠ 0} → Fin 1 //
+        Cslib.Multidigraph.IsInArborescence isoSrc isoSrc 0 f} =
+      Nat.card {f : {v : Fin 2 // v ≠ 1} → Fin 1 //
+        Cslib.Multidigraph.IsInArborescence isoSrc isoSrc 1 f} :=
+  Cslib.Multidigraph.natCard_isInArborescence_eq isoSrc isoSrc (fun _ => rfl) 0 1
+
+-- Counterexample showing balance is needed: `2` arcs `0 → 1` and `1` arc `1 → 0` give `1`
+-- arborescence rooted at `0` and `2` rooted at `1`.
+private def unbalSrc (e : Fin 3) : Fin 2 := if e.1 < 2 then 0 else 1
+
+private def unbalTgt (e : Fin 3) : Fin 2 := if e.1 < 2 then 1 else 0
+
+example :
+    Nat.card {f : {v : Fin 2 // v ≠ 0} → Fin 3 //
+        Cslib.Multidigraph.IsInArborescence unbalSrc unbalTgt 0 f} = 1 ∧
+      Nat.card {f : {v : Fin 2 // v ≠ 1} → Fin 3 //
+        Cslib.Multidigraph.IsInArborescence unbalSrc unbalTgt 1 f} = 2 := by
+  have h0 := Cslib.Multidigraph.det_laplacian_arcMatrix_submatrix_eq_natCard_isInArborescence
+    unbalSrc unbalTgt ℤ 0
+  have : Subsingleton {v : Fin 2 // v ≠ 0} := ⟨fun ⟨a, ha⟩ ⟨b, hb⟩ => by
+    fin_cases a <;> fin_cases b <;>
+      first | exact absurd ha (by decide) | exact absurd hb (by decide) | rfl⟩
+  have hdet0 : ((Cslib.Multidigraph.arcMatrix unbalSrc unbalTgt ℤ).laplacian.submatrix
+      (Subtype.val : {v : Fin 2 // v ≠ 0} → Fin 2) Subtype.val).det = 1 := by
+    rw [Matrix.det_eq_elem_of_subsingleton _ ⟨1, by decide⟩, Matrix.submatrix_apply,
+      Matrix.laplacian_apply]
+    simp only [Cslib.Multidigraph.arcMatrix_apply]
+    decide
+  rw [hdet0] at h0
+  have h1 := Cslib.Multidigraph.det_laplacian_arcMatrix_submatrix_eq_natCard_isInArborescence
+    unbalSrc unbalTgt ℤ 1
+  have : Subsingleton {v : Fin 2 // v ≠ 1} := ⟨fun ⟨a, ha⟩ ⟨b, hb⟩ => by
+    fin_cases a <;> fin_cases b <;>
+      first | exact absurd ha (by decide) | exact absurd hb (by decide) | rfl⟩
+  have hdet1 : ((Cslib.Multidigraph.arcMatrix unbalSrc unbalTgt ℤ).laplacian.submatrix
+      (Subtype.val : {v : Fin 2 // v ≠ 1} → Fin 2) Subtype.val).det = 2 := by
+    rw [Matrix.det_eq_elem_of_subsingleton _ ⟨0, by decide⟩, Matrix.submatrix_apply,
+      Matrix.laplacian_apply]
+    simp only [Cslib.Multidigraph.arcMatrix_apply]
+    decide
+  rw [hdet1] at h1
+  exact ⟨by exact_mod_cast h0.symm, by exact_mod_cast h1.symm⟩
+
+end RootIndependence
 
 end CslibFrontierTests.BEST

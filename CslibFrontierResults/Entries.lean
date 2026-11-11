@@ -111,6 +111,7 @@ import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.DataStructure.NearNeighbor.Angular
 import CslibFrontier.DataStructure.NearNeighbor.PStable
+import CslibFrontier.DataStructure.Paging.Marking
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
@@ -3684,6 +3685,29 @@ register_result "yap-collapse" where
     coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
     decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
     from Σ_k ⊆ Π_k/poly are not part of this entry."
+register_result "randomized-marking-paging" where
+  title := "2 H_k-competitiveness of the randomized marking paging algorithm"
+  topic := "algorithms"
+  sources := [
+    { paper := FiatKarpLubyMcGeochSleatorYoung1991,
+      theorem := "Theorem 1",
+      locator := "Section 3" }
+  ]
+  theorems := [
+    Cslib.DataStructure.Paging.expectedCost_markingStrategy_eq,
+    Cslib.DataStructure.Paging.trackerExpectedCost_le_harmonic_mul_cleanCount,
+    Cslib.DataStructure.Paging.cleanCount_le_two_mul_scheduleCost,
+    Cslib.DataStructure.Paging.markingStrategy_expectedCost_le,
+    Cslib.DataStructure.Paging.markingStrategy_isCompetitive,
+    Cslib.DataStructure.Paging.markingStrategy_expectedCost_toReal_le
+  ]
+  scope := "Proves that the randomized marking algorithm (markingStrategy k hk) in the \
+    behavioural online strategy model (Online.BehavioralStrategy) is 2 H_k-competitive with \
+    additive constant 0 against an oblivious adversary from any admissible initial cache \
+    |s₀| ≤ k over any [DecidableEq α] page type. Local adaptations relative to \
+    arXiv:cs/0205038v1 Section 3: allows arbitrary page types α, initializes from any |s₀| ≤ k \
+    via non-evicting warmup while |cache| < k, and bounds clean requests by 2 * OPT directly \
+    against arbitrary (not necessarily lazy) valid offline schedules."
 
 register_result "fujisaki-okamoto-notbot-ind-cca" where
   title := "ROM IND-CCA security of the implicit-rejection Fujisaki–Okamoto transform FO-notbot"

@@ -17,9 +17,10 @@ import Mathlib.Data.List.GetD
 /-!
 # Direct unary comparison and bit-access frontends
 
-These canonical interfaces retain the original word folds: unary subtraction folds predecessor,
-unary-to-binary conversion folds the binary successor, and indexed access folds the word tail
-before using the existing head codec. No higher tidy calculus supplies a plain primitive.
+These canonical interfaces use direct unary iteration (`ComputableInPolyTime.iterate`): unary
+subtraction iterates predecessor, unary-to-binary conversion iterates the binary successor, and
+indexed access iterates the word tail before using the existing head codec. No higher tidy calculus
+supplies a plain primitive.
 -/
 
 public section
@@ -30,22 +31,15 @@ namespace Turing.MultiTapeTM.ComputableInPolyTime
 theorem unary_sub :
     ComputableInPolyTime (fun p : ℕ × ℕ => p.1 - p.2)
       (encPair encUnary encUnary) encUnary := by
-  have hrep (a b : ℕ) : (List.replicate b true).foldl (fun n _ => n - 1) a = a - b := by
-    induction b generalizing a with
-    | zero => rfl
-    | succ b ih => rw [List.replicate_succ, List.foldl_cons, ih]; omega
-  have hfold := foldl' (encA := encBool) (encL := encBits) (encB := encUnary)
-    (list := fun p : ℕ × ℕ => List.replicate p.2 true) (step := fun n _ => n - 1)
-    ((of_eq (f := fun n => List.replicate n true) (encIn := encUnary) (encOut := encBits)
-      fun _ => rfl).comp (snd encUnary encUnary))
-    (fst encUnary encUnary)
-    (ComputableInDegree.unary_pred.computableInPolyTime.comp (fst encUnary encBool))
-    (B := fun p => (encPair encUnary encUnary p).length) .self (fun p i _ => by
-      rw [List.take_replicate, hrep]
+  have h := iterate (count := Prod.snd) (init := Prod.fst) (step := Nat.pred)
+    (snd encUnary encUnary) (fst encUnary encUnary)
+    ComputableInDegree.unary_pred.computableInPolyTime
+    (bound := fun p => (encPair encUnary encUnary p).length) .self (fun p i _ => by
+      rw [Nat.pred_iterate]
       simp only [encPair_apply, encUnary_apply, List.length_append, length_frame,
         List.length_replicate]
       omega)
-  simpa only [hrep] using hfold
+  simpa only [Nat.pred_iterate] using h
 
 /-- Comparison of unary naturals. -/
 @[fun_prop]
@@ -88,29 +82,22 @@ theorem unary_to_binary : ComputableInPolyTime (fun n : ℕ => n) encUnary encNa
   have hsucc := ComputableInO.natSucc.computableInPolyTime
     (PolyBounded.of_forall_le 1 2 (fun _ => by simp))
     (PolyBounded.of_forall_le 1 1 (fun _ => by simp))
-  have h := foldl' (encA := encBool) (encL := encBits) (list := fun n => List.replicate n true)
-    (step := fun n _ => n + 1)
-    (of_eq (encIn := encUnary) (encOut := encBits) fun _ => rfl) (const 0)
-    (hsucc.comp (fst encNat encBool))
-    (B := fun n => (encUnary n).length) .self (fun n i _ => by
-      simpa [List.foldl_const] using (hsize (min i n)).trans (Nat.min_le_right i n))
-  simpa [List.foldl_const] using h
+  have h := iterate (count := fun n => n) (init := fun _ => 0) (step := Nat.succ)
+    id' (const 0) hsucc
+    (bound := fun n => (encUnary n).length) .self (fun n i hi => by
+      simpa [Nat.succ_iterate] using (hsize i).trans hi)
+  simpa [Nat.succ_iterate] using h
 
 private theorem bitsDropUnary :
     ComputableInPolyTime (fun p : List Bool × ℕ => p.1.drop p.2)
       (encPair encBits encUnary) encBits := by
-  have heq (l : List Bool) (n : ℕ) :
-      (List.replicate n true).foldl (fun acc _ => acc.tail) l = l.drop n := by
-    simp [List.foldl_const, List.tail_iterate]
-  have h := foldl' (encA := encBool) (encL := encBits)
-    (list := fun p : List Bool × ℕ => List.replicate p.2 true) (step := fun acc _ => acc.tail)
-    ((of_eq (encIn := encUnary) (encOut := encBits) fun _ => rfl).comp (snd encBits encUnary))
-    (fst encBits encUnary) (bitsTail.comp (fst encBits encBool))
-    (B := fun p => (encPair encBits encUnary p).length) .self (fun p i _ => by
-      rw [List.take_replicate, heq]
+  have h := iterate (count := Prod.snd) (init := Prod.fst) (step := List.tail)
+    (snd encBits encUnary) (fst encBits encUnary) bitsTail
+    (bound := fun p => (encPair encBits encUnary p).length) .self (fun p i _ => by
+      rw [List.tail_iterate]
       simp only [length_encPair, encBits_apply, List.length_drop]
       omega)
-  simpa only [heq] using h
+  simpa only [List.tail_iterate] using h
 
 /-- Read a bit at a unary index with a fixed fallback. Fixing the raw encoding avoids
 guessing a list-encoding instance during compositional proof search. -/

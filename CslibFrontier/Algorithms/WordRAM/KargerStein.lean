@@ -54,8 +54,8 @@ endpoints on `n :: flattenMatrix W`:
    `fastCutHighProbTime n = 2600 * n ^ 2 * (Nat.log 2 n + 15) * (Nat.log 2 n + 2) ^ 2`
    (`O(n ^ 2 log ^ 3 n)`) steps and `fastCutTrials n * (6 * n ^ 2)` `rand` calls with a genuine
    non-trivial cut weight `≥ minCut W`, and misses `minCut W` with probability at most
-   `1 / (2 * n)` (hence at most `1 / n`) whenever `0 < minCut W` (excluded only for proof
-   convenience).
+   `1 / (2 * n)` whenever `0 < minCut W` (and unconditionally at most `1 / n` in
+   `fastCutHighProbProgram_failure_le_inv_n`, without `2 ≤ n` or `0 < minCut W`).
 
 The probability argument is proved once for the oracle client
 `Cslib.Algorithms.Lean.Karger.fastCut`. Native segments observe exactly that client's answer law
@@ -89,7 +89,7 @@ for that bridge; the native recursive and amplification stages consume laws dire
 * `Cslib.Algorithms.WordRAM.Karger.fastCutHighProbProgram_spec`,
   `Cslib.Algorithms.WordRAM.Karger.fastCutHighProbProgram_failure_le_inv_n`: worst-case
   `O(n ^ 2 log ^ 3 n)` step bound, pathwise non-trivial cut realization, `Modifies` frame, and
-  `1 / (2 * n)` (`1 / n`) failure probability upper bound for `fastCutHighProbProgram`
+  `1 / (2 * n)` (unconditional `1 / n`) failure probability upper bound for `fastCutHighProbProgram`
   (the minimum-cut-value part of `[KargerStein1996]`, Section 4, Theorem 4.4; paraphrase).
 
 ## References
@@ -3554,24 +3554,20 @@ theorem fastCutHighProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
   exact ⟨hhalt, hcalls, hpost, fun hmin =>
     hmiss.trans (Lean.Karger.fastCutHighProbLaw_failure_le hn hW hmin)⟩
 
-/-- Corollary of `fastCutHighProbProgram_spec`: when `0 < minCut W`, `fastCutHighProbProgram`
-misses `minCut W` with probability at most `1 / n`. For `n < 2` the bound is at least `1`. -/
+/-- `fastCutHighProbProgram` misses `minCut W` with probability at most `1 / n`, unconditionally
+without `2 ≤ n` or `0 < minCut W`: for `n < 2` the bound `1 / n` is at least `1`, and for `2 ≤ n`
+with `minCut W = 0` every recursive trial outputs `0`. -/
 theorem fastCutHighProbProgram_failure_le_inv_n {n w : ℕ} {W : Fin n → Fin n → ℕ}
     (hW : IsMultigraph W)
-    (hw : logWidth 4 n ≤ w) (htot : Fits w (totalDoubledWeight W))
-    (hpos : 0 < minCut W) :
+    (hw : logWidth 4 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
     (evalRand w fastCutHighProbProgram (fastCutHighProbTime n)
         (.init (n :: flattenMatrix W))).toOuterMeasure
         {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
-      (1 : ℝ≥0∞) / (n : ℝ≥0∞) := by
-  by_cases hn : n < 2
-  · refine (Probability.PMF.toOuterMeasure_le_one _ _).trans ?_
-    rw [one_div, ENNReal.one_le_inv]
-    exact_mod_cast (by omega : n ≤ 1)
-  replace hn : 2 ≤ n := by omega
-  refine ((fastCutHighProbProgram_spec hn hW hw htot).2.2.2 hpos).trans ?_
-  apply ENNReal.div_le_div_left
-  exact_mod_cast (by omega : n ≤ 2 * n)
+      (1 : ℝ≥0∞) / (n : ℝ≥0∞) :=
+  program_failure_le_inv_n fun hn =>
+    ⟨_, _, _, _, fastCutHighProbCode_law hn hW hw htot, fastCutHighProbTime_bound hn,
+      Lean.Karger.fastCutHighProbLaw_failure_le hn hW,
+      Lean.Karger.eq_zero_of_mem_support_fastCutHighProbLaw hn hW⟩
 
 end FastCutHighProb
 

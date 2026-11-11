@@ -52,6 +52,8 @@ running time: pure computation between calls, message sizes and state growth are
 * `Cslib.Crypto.Protocols.UC.Machine.IsBounded.mono`: budgets are monotone.
 * `Cslib.Crypto.Protocols.UC.Machine.isBounded_id`: the forwarding machine makes one call per
   activation.
+* `Cslib.Crypto.Protocols.UC.Machine.isQueryBounded_closeProgram`: closing a program with no
+  imports preserves its call budget.
 
 ## References
 
@@ -194,6 +196,12 @@ theorem isBounded_id (E : ιE → Type) : (Machine.id E).IsBounded 1 := by
   refine ⟨OracleComp.IsCostBounded.pure _ 1, fun q s => ?_⟩
   change ((fun a => (a, s)) <$> ProbOracleComp.query (spec := E) q).IsQueryBounded 1
   exact (OracleComp.isCostBounded_map_iff _ _ _).mpr (OracleComp.IsCostBounded.query _)
+
+/-- Closing a program with no external imports preserves its query budget. -/
+theorem isQueryBounded_closeProgram {program : ProbOracleComp OracleSpec.empty α} {n : ℕ}
+    (h : program.IsQueryBounded n) : (closeProgram program).IsQueryBounded n :=
+  OracleComp.IsCostBounded.interpret
+    (fun q => q.casesOn (fun k => OracleComp.IsCostBounded.query k) fun e => e.elim) h
 
 end Machine
 

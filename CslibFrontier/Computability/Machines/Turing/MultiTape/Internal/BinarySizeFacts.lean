@@ -23,6 +23,18 @@ namespace Turing.MultiTapeTM
 public lemma length_encNat_mono {m n : ℕ} (h : m ≤ n) : (encNat m).length ≤ (encNat n).length := by
   simpa [Nat.size_eq_bits_len] using Nat.size_le_size h
 
+/-- For positive `n`, the next power of two `2 ^ n.size` is at most `2 * n`. -/
+public theorem two_pow_size_le_two_mul {n : ℕ} (hn : 0 < n) : 2 ^ n.size ≤ 2 * n := by
+  have hs : 0 < n.size := Nat.size_pos.mpr hn
+  have hlo : 2 ^ (n.size - 1) ≤ n := Nat.lt_size.mp (by omega)
+  calc
+    2 ^ n.size = 2 ^ (n.size - 1) * 2 := by
+      rw [← pow_succ]
+      congr 1
+      omega
+    _ ≤ n * 2 := Nat.mul_le_mul_right 2 hlo
+    _ = 2 * n := Nat.mul_comm _ _
+
 namespace ComputableTidilyInO
 
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)

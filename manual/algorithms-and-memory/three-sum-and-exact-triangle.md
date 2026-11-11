@@ -28,6 +28,18 @@ For a prepared record, use `RecordProduct.exec_of_output` or
 programs derive their source spans through `RecordProduct.producer_readback` in
 `CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Readback`; that pure module
 also exposes the record data and ordered query decoder. It needs no initialized product run.
+
+For original headers and signed weights, each adapter's `exec_input` uses
+`RecordProduct.prepare_first_input` from
+`CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Initialized`.
+Its `InitializedFirstRecord` certificate supplies the actual producer run and occupied ordinal
+zero. It certifies that selection preserves the producer's memory and that the selected record's
+physical window fits. Use `exec_consumer` to append an adapter with its own certified time bound.
+Preparation already charges the ordinal-selection instruction. `producer_frame` transfers a
+consumer's low-register frame to the original producer
+bank. The concrete entry programs, output locations and complete time bounds stay in their
+respective `Entry` modules.
+
 Use `RecordProduct.NumericBounds` and `RecordWitness.NumericBounds` for numerical width
 and word estimates. The actual all-prefix execution theorems remain in `RecordProduct.SourceBounds` and
 `RecordWitness.SourceBounds`, each following from its real `runs_input` theorem.

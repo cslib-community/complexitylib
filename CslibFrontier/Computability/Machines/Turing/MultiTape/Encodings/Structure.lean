@@ -30,7 +30,10 @@ tuple of its fields, with everything a certificate needs to work with it:
 The rules are `scoped` `fun_prop` rules, so that a program using the structure is assembled by
 `fun_prop` inside the namespace of the declaration.
 
-For a parameterized record, supply explicit parameters and apply its type, for example
+An applied structure type is also accepted: with `variable {n : ℕ}`, write
+`enc_structure eS : S n where ...`. The parameter remains implicit in the generated declarations.
+
+Parameters can also be explicit arguments of the command, for example
 `enc_structure eRecord (α : Type) (eα : α ↪ List Bool) : Record α where value : eα, tag : encBits`.
 The parameters are explicit arguments of every generated declaration, in the same order.
 
@@ -134,6 +137,8 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM Name := do
   let params ← ps.zip pts |>.mapM fun (p, t) => `(bracketedBinder| ($p:ident : $t))
   let applied (id : Ident) : Term := Syntax.mkApp id (ps.map (fun p => (⟨p.raw⟩ : Term)))
   let eSTerm := applied eS
+  -- The annotation fixes implicit section parameters even for a field that does not mention them.
+  let encRef : Term ← `(($eSTerm : $S ↪ List Bool))
   -- Generated locals must not capture an explicit parameter of the same name.
   let freshIdent (base : Name) : CommandElabM Ident := do
     return mkIdent (← withFreshMacroScope <| MonadQuotation.addMacroScope base)
@@ -150,35 +155,34 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM Name := do
     return (fieldsName, enc, tup, (a, n))
   let (a, n) := cmds
   let fieldsTerm := applied fields
-  let lin (e : Term) : CommandElabM Term := `(fun a => List.length ($e a))
-  let linE ← lin eSTerm
+  let linE : Term ← `(fun a => List.length ($encRef a))
   elabCommand (← `(public abbrev $fields:ident $params* := $encoding))
   addDocStringCore ((← getCurrNamespace) ++ fields.getId) s!"The tuple of the fields of `{name}`."
   elabCommand (← `($[$doc:docComment]? @[expose] public def $eS:ident $params* : $S ↪ List Bool :=
     (⟨fun $a => $fieldsOf, fun x y h => by cases x; cases y; simp_all⟩ : $S ↪ _).trans $fieldsTerm))
   elabCommand (← `(@[simp] public theorem $(app name "_apply") $params* ($a : $S) :
-    $eSTerm $a = $fieldsTerm $fieldsOf := rfl))
+    $encRef $a = $fieldsTerm $fieldsOf := rfl))
   let fieldsDeg := app name "_fields_deg"
   let fieldsDegTerm := applied fieldsDeg
   elabCommand (← `(public theorem $fieldsDeg:ident $params* :
-    ComputableInDegree (fun $a : $S => $fieldsOf) $eSTerm $fieldsTerm 1 1 :=
+    ComputableInDegree (fun $a : $S => $fieldsOf) $encRef $fieldsTerm 1 1 :=
       ComputableInDegree.of_eq fun _ => rfl))
   let fieldsPoly : Term ← `((ComputableInPolyTime.of_eq fun _ => rfl :
-    ComputableInPolyTime (fun $a : $S => $fieldsOf) $eSTerm $fieldsTerm))
+    ComputableInPolyTime (fun $a : $S => $fieldsOf) $encRef $fieldsTerm))
   for f in fs, e in es, i in Array.range n do
     let proj := mkCIdent (s ++ f.getId)
     let deg := app name s!"_{f.getId}_deg"
     let degTerm := applied deg
     let body ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
     elabCommand (← `(@[scoped fun_prop] public theorem $deg:ident $params* :
-      ComputableInDegree $proj $eSTerm $e 1 1 := $body))
+      ComputableInDegree $proj $encRef $e 1 1 := $body))
     elabCommand (← `(@[scoped fun_prop] public theorem
       $(app name s!"_{f.getId}_inO"):ident $params* :
-      ComputableInO $proj $eSTerm $e $linE $linE := ComputableInDegree.inO_one $degTerm))
+      ComputableInO $proj $encRef $e $linE $linE := ComputableInDegree.inO_one $degTerm))
     elabCommand (← `(@[scoped fun_prop] public theorem
       $(app name s!"_{f.getId}_budget"):ident $params*
       {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {g : γ → $S}
-      (h : ComputableInSpace g encIn $eSTerm S) :
+      (h : ComputableInSpace g encIn $encRef S) :
       ComputableInSpace (fun a => $proj (g a)) encIn $e S :=
         ComputableInSpace.budget_comp_linear
           (ComputableInSpace.of_inO (ComputableInDegree.inO_one $degTerm)) h))
@@ -186,7 +190,7 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM Name := do
     elabCommand (← `(@[scoped fun_prop] public theorem
       $(app name s!"_{f.getId}_polyTime"):ident $params*
       {γ : Type} {encIn : γ ↪ List Bool} {g : γ → $S}
-      (h : ComputableInPolyTime g encIn $eSTerm) :
+      (h : ComputableInPolyTime g encIn $encRef) :
       ComputableInPolyTime (fun a => $proj (g a)) encIn $e :=
         ComputableInPolyTime.comp $poly h))
   let p ← freshIdent `p
@@ -198,7 +202,7 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM Name := do
     return t
   let mkApp : Term := Syntax.mkApp ctor comps
   elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_deg"):ident $params* :
-    ComputableInDegree (fun $p => $mkApp) $fieldsTerm $eSTerm 1 1 :=
+    ComputableInDegree (fun $p => $mkApp) $fieldsTerm $encRef 1 1 :=
       ComputableInDegree.of_eq fun _ => rfl))
   -- the constructor, adding up the bounds of its arguments
   let names (stem : String) :=
@@ -238,7 +242,7 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM Name := do
   elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_inO"):ident
     $params* {$γ : Type}
     {$encIn : $γ ↪ List Bool} $binders* :
-    ComputableInO (fun $x => $appl) $encIn $eSTerm (fun $x => $sumT) fun $x => $sumS :=
+    ComputableInO (fun $x => $appl) $encIn $encRef (fun $x => $sumT) fun $x => $sumS :=
       ComputableInO.of_enc_eq $prod fun _ => rfl))
   let mut polyBinders : TSyntaxArray ``Lean.Parser.Term.bracketedBinder := #[]
   for j in [0:n] do
@@ -249,7 +253,7 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM Name := do
   elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_polyTime"):ident
     $params* {$γ : Type}
     {$encIn : $γ ↪ List Bool} $polyBinders* :
-    ComputableInPolyTime (fun $x => $appl) $encIn $eSTerm :=
+    ComputableInPolyTime (fun $x => $appl) $encIn $encRef :=
       ComputableInPolyTime.of_enc_eq $prodPoly fun _ => rfl))
   let budget ← freshIdent `budget
   let mut budgetBinders : TSyntaxArray ``Lean.Parser.Term.bracketedBinder := #[]
@@ -264,7 +268,7 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM Name := do
   elabCommand (← `(@[scoped fun_prop] public theorem $(app name "_mk_budget"):ident
     $params* {$γ : Type}
     {$encIn : $γ ↪ List Bool} {$budget : $γ → ℕ} $budgetBinders* :
-    ComputableInSpace (fun $x => $appl) $encIn $eSTerm $budget :=
+    ComputableInSpace (fun $x => $appl) $encIn $encRef $budget :=
       ComputableInSpace.of_enc_eq $budgetProd fun _ => rfl))
 
 end Turing.MultiTapeTM

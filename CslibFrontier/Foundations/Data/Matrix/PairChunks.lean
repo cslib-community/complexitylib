@@ -23,6 +23,8 @@ import Mathlib.Order.Interval.Finset.Fin
 
 ## Main results
 
+* `pairIndex_eq_val_finProdFinEquiv`, `pairIndex_lt`: row-major position matches `finProdFinEquiv`
+  and lies strictly below `n * n`.
 * `card_chunk_le`: each chunk has at most the capacity many pairs.
 * `biUnion_chunk`: all chunks cover the input finite set.
 
@@ -56,6 +58,16 @@ def numChunks {n : ℕ} (S : Finset (Fin n × Fin n)) (cap : ℕ) : ℕ :=
 variable {n : ℕ} {S : Finset (Fin n × Fin n)} {cap : ℕ}
 
 /-! ### Ranks -/
+
+/-- `pairIndex` agrees with the value of `finProdFinEquiv`. -/
+theorem pairIndex_eq_val_finProdFinEquiv (q : Fin n × Fin n) :
+    pairIndex q = (finProdFinEquiv q).val := by
+  simp [pairIndex, finProdFinEquiv, add_comm, mul_comm]
+
+/-- Every matrix index pair has row-major position strictly below `n * n`. -/
+theorem pairIndex_lt (q : Fin n × Fin n) : pairIndex q < n * n := by
+  rw [pairIndex_eq_val_finProdFinEquiv]
+  exact (finProdFinEquiv q).isLt
 
 /-- The position in row-major order determines the pair. -/
 theorem pairIndex_injective : Function.Injective (pairIndex (n := n)) := fun q r h =>
