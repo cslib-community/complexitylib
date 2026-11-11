@@ -115,8 +115,7 @@ private theorem runFrom_leaf {p : ℕ} [Fact p.Prime] {st : List Frame} {v : Fin
     rw [h0, ReadMachine.runFrom_add, h', ReadMachine.runFrom_one]
     simp [ReadMachine.next, machine, step]
   · rw [hS']
-    congr 1
-    funext j
+    congr 1 with j : 1
     simp [embed]
 
 /-- One step of the pass over a table. -/
@@ -201,8 +200,7 @@ private theorem runFrom_update {p : ℕ} [Fact p.Prime] {fr : Frame} {st : List 
     rw [h0, ReadMachine.runFrom_add, h', ReadMachine.runFrom_one]
     simp [ReadMachine.next, machine, step]
   · rw [toState_subtractSums _ _ _ _ (hR _).1, gateUpdate, cast_sgnVal]
-    congr 1
-    funext i
+    congr 1 with i : 1
     congr 2
     rw [hsum i, tableLength, Nat.sum_range_mul_ite_mod _ i.isLt, eval_gatePoly_eq_sum]
     refine Finset.sum_congr rfl fun k _ => ?_

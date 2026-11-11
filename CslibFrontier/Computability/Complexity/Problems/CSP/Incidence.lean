@@ -11,6 +11,7 @@ public import CslibFrontier.Logics.Propositional.CSP.Occurrence
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Incidence
 public import CslibFrontier.Computability.Complexity.Problems.Graph.Ports
 public import CslibFrontier.Computability.PolyTime.CSP.Vars
+public import CslibFrontier.Computability.PolyTime.CSP.Occurrence
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import Mathlib.Data.List.GetD
 
@@ -84,6 +85,17 @@ theorem incidenceGraph_endpoints {e : ℕ × ℕ} (he : e ∈ (incidenceGraph F)
     e.1 ∈ (incidenceGraph F).1 ∧ e.2 ∈ (incidenceGraph F).1 :=
   SAT.incidenceGraph_endpoints he
 
+/-- Every entry of the flattened incidence-endpoint list is a declared graph vertex. -/
+theorem incidenceVertices_declared (F : CSP Rel V) :
+    ∀ v ∈ (incidenceGraph F).incidenceVertices, v ∈ (incidenceGraph F).1 := by
+  intro v hv
+  obtain ⟨e, he, hv⟩ := List.mem_flatMap.mp hv
+  rcases List.mem_cons.mp hv with rfl | hv
+  · exact (incidenceGraph_endpoints he).1
+  · have hv' := List.mem_singleton.mp hv
+    subst v
+    exact (incidenceGraph_endpoints he).2
+
 /-- The two vertex intervals are disjoint, so incidence edges are never loops. -/
 theorem incidenceGraph_loopless {e : ℕ × ℕ} (he : e ∈ (incidenceGraph F).2) : e.1 ≠ e.2 :=
   SAT.incidenceGraph_loopless he
@@ -127,24 +139,6 @@ theorem edgeEndpoint_incidenceEdgeIndex (o : F.Occurrence) (side : Bool) :
       if side then F.numVars + o.1 else F.distinctVars.idxOf o.var := by
   simp only [Graph.edgeEndpoint, List.getD_eq_getElem _ _ (incidenceEdgeIndex_lt o),
     getElem_incidenceEdgeIndex]
-
-/-- A record consists of a unary constraint index paired with a unary scope index and the source
-variable; the outer index and the inner index are framed by `encPair`. -/
-@[expose] def encOccurrenceRecord (encV : V ↪ List Bool) : (ℕ × ℕ × V) ↪ List Bool :=
-  encPair encUnary (encPair encUnary encV)
-
-omit [DecidableEq V] in
-/-- Ordered occurrence enumeration is polynomial-time, with unary positions and binary (or any
-other fixed encoded) source variables. No bound on arity or degree is needed. -/
-@[fun_prop]
-theorem computableInPolyTime_occurrences (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
-    ComputableInPolyTime (CSP.occurrences (Rel := Rel) (V := V))
-      (encCSP encRel encV) (encList (encOccurrenceRecord encV)) := by
-  have ho := Cslib.Logic.PL.computableInPolyTime_occurrences encV
-  have hv := computableInPolyTime_varCNF encRel encV
-  unfold Cslib.Logic.PL.encOccurrence at ho
-  unfold CSP.occurrences encOccurrenceRecord
-  fun_prop
 
 /-- Construct the native graph under framed CSP encoding and binary graph labels. Source
 variables are compared as encoded strings; there is no iteration to their largest name. -/

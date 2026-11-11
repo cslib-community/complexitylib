@@ -293,9 +293,7 @@ theorem adaptiveComposition_toOuterMeasure_le {M : List R → D → PMF R} {x y 
       ENNReal.ofReal (Real.exp (k * ε * Real.tanh (ε / 2) + a * ε)) *
         (adaptiveComposition M k y).toOuterMeasure S +
       (ENNReal.ofReal (Real.exp (-(a ^ 2 / (2 * k)))) + k * δ) := by
-  have hc : 1 ≤ ENNReal.ofReal (Real.exp ε) := by
-    rw [← ENNReal.ofReal_one]
-    exact ENNReal.ofReal_le_ofReal (Real.one_le_exp hε)
+  have hc : 1 ≤ ENNReal.ofReal (Real.exp ε) := ENNReal.one_le_ofReal.mpr (Real.one_le_exp hε)
   choose K L hKP hLQ hKL hLK hsum hmass using fun h => exists_le_of_tsum_tsub_le (M h x) (M h y) hc
     (hxy h) (hyx h)
   have hL1 : ∀ h, ∑' r, L h r ≤ 1 := fun h =>
@@ -373,9 +371,8 @@ theorem DifferentiallyPrivate.advancedComposition_sqrt {Adj : D → D → Prop}
       (k * δ + ENNReal.ofReal δ') := by
   rcases le_or_gt 1 δ' with hδ1 | hδ1
   · intro x y _ S
-    refine (Probability.PMF.toOuterMeasure_le_one _ _).trans (le_add_left (le_add_left ?_))
-    rw [← ENNReal.ofReal_one]
-    exact ENNReal.ofReal_le_ofReal hδ1
+    exact (Probability.PMF.toOuterMeasure_le_one _ _).trans
+      (le_add_left (le_add_left (ENNReal.one_le_ofReal.mpr hδ1)))
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · intro x y _ S
     have h0 : Privacy.adaptiveComposition M 0 x = Privacy.adaptiveComposition M 0 y :=
@@ -454,9 +451,7 @@ theorem DifferentiallyPrivate.advancedComposition_experiment {D' : Type*} {Ω R 
     intro b b' _ S
     by_cases hbb' : b = b'
     · subst hbb'
-      refine le_add_right (le_mul_of_one_le_left' ?_)
-      rw [← ENNReal.ofReal_one]
-      exact ENNReal.ofReal_le_ofReal (Real.one_le_exp hε')
+      exact le_add_right (le_mul_of_one_le_left' (ENNReal.one_le_ofReal.mpr (Real.one_le_exp hε')))
     · exact hne hbb' S
   simpa only [zero_add] using DifferentiallyPrivate.bind_pair hcoins hview
 

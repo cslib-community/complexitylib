@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Interactive.GKR.Summand
 import CslibFrontier.Foundations.FieldTheory.Finite.UnitSum
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.PolynomialAgreement
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 
@@ -220,24 +221,12 @@ theorem lineStep_rbrSound (W : (Fin (C.width i) → Bool) → F) :
           (C.width i : ℝ≥0∞) / Fintype.card F
     by_cases hacc : C.lineAccepts i x q
     · set q' := restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W
-      have hne : q - q' ≠ 0 := by
-        refine sub_ne_zero.mpr fun h => hS ?_
+      have hne : q ≠ q' := fun h => hS <| by
         rw [C.mem_endLang, ← C.combine_restrictLine i W x]
         exact (h ▸ hacc.2).symm
-      classical
-      rw [ProbComp.eval_uniform, Probability.PMF.toOuterMeasure_uniformOfFintype, div_eq_mul_inv]
-      gcongr
-      have hsub : Finset.univ.filter (· ∈ {t | x ∈ C.endLang i W ∨
-          (C.lineAccepts i x q ∧ q.eval t = q'.eval t)}) ⊆ (q - q').roots.toFinset := by
-        intro t ht
-        simp only [Finset.mem_filter, Set.mem_ofPred_eq, Finset.mem_univ, true_and] at ht
-        rcases ht with ht | ht
-        · exact absurd ht hS
-        rw [Multiset.mem_toFinset, Polynomial.mem_roots hne, Polynomial.IsRoot,
-          Polynomial.eval_sub, ht.2, sub_self]
-      exact_mod_cast (Finset.card_le_card hsub).trans ((Multiset.toFinset_card_le _).trans
-        ((Polynomial.card_roots' _).trans ((Polynomial.natDegree_sub_le _ _).trans
-          (max_le hacc.1 (natDegree_restrictLine_le _ _ W)))))
+      rw [ProbComp.eval_uniform]
+      exact Probability.PMF.toOuterMeasure_uniformOfFintype_le_of_eval_eq hne hacc.1
+        (natDegree_restrictLine_le _ _ W) fun _ ht => (ht.resolve_left hS).2
     · simp [hacc, hS]
   · rintro hS ⟨y, hy, hout⟩
     rw [lineStep_outputOn] at hout

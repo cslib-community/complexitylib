@@ -70,8 +70,9 @@ Proposition 3.4):
 * `Cslib.Complexity.SubexponentialSAT.ReplacementParams.threeTermExponent_eq_rowCost`:
   `threeTermExponent` at the Lemma 4.8 schedule equals `rowCost β n`.
 * `Cslib.Complexity.SubexponentialSAT.ReplacementParams.Feasible.exists_replacementDesign`,
-  `Cslib.Complexity.SubexponentialSAT.ReplacementParams. exists_schedule_replacementDesign`:
-  end-to-end Lemma 4.7 + Lemma 4.8 + Proposition 3.4 mathematical assembly.
+  `Cslib.Complexity.SubexponentialSAT.ReplacementParams.exists_schedule_replacementDesign`:
+  existence of a concrete `ReplacementDesign` at the Lemma 4.8 schedule (Lemma 4.7 + Lemma 4.8).
+  The Proposition 3.4 examination bound is `Feasible.domainExaminationBound_le_mul_exp_rowCost`.
 
 ## References
 
@@ -282,8 +283,8 @@ end Feasible
 For every integer `1 ≤ β`, there exists `n₀ ≥ 20` such that for all `n ≥ n₀`,
 `1 ≤ b, w ≤ (Nat.clog 2 n) ^ β`, and any factor scope family `scope : F → Finset (Fin n)` with
 `n ≤ ∑ f, #(scope f) ≤ b * n`, per-variable occurrence `≤ b`, and per-factor width `≤ w`, the
-schedule (4.17) is `Feasible` and admits both a concrete `ReplacementDesign` and an induced
-`Cslib.ReplacementCounting.Design`. -/
+schedule (4.17) is `Feasible` and admits a concrete `ReplacementDesign`. For each `s : Finset F`,
+`Feasible.toCountingDesign` converts the two into a `Cslib.ReplacementCounting.Design`. -/
 theorem exists_schedule_replacementDesign {β : ℕ} (hβ : 1 ≤ β) :
     ∃ n₀ : ℕ, 20 ≤ n₀ ∧ ∀ ⦃n b w : ℕ⦄ {F : Type*} [Fintype F]
       (scope : F → Finset (Fin n)),

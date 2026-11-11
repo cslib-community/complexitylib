@@ -271,7 +271,7 @@ theorem sum_beaverMulShare_eq_mul {R : Type} [CommRing R] {m : ℕ} [NeZero m]
 followed by an all-to-all broadcast of `ZMod p × ZMod p`. -/
 @[expose, reducible] def beaverMulSchedule (p m : ℕ) : Schedule m (beaverTripleSpec p m) :=
   .oracle () (Function.Embedding.refl (Fin m)) ::
-    broadcastSchedule m (beaverTripleSpec p m) (ZMod p × ZMod p)
+    allToAllSchedule m (spec := beaverTripleSpec p m) (ZMod p × ZMod p)
 
 /-- Synchronous `m`-party Beaver online multiplication protocol in the `beaverTripleSpec p m`-hybrid
 model (generalizing [BonehShoup2023], Section 23.2.2 to `m` parties;
@@ -289,7 +289,7 @@ def beaverMulProtocol (p m : ℕ) :
       (State := fun _ => (ZMod p × ZMod p) × Unit)
       (Out := fun _ => ZMod p)
       (op := ()) (parties := Function.Embedding.refl (Fin m))
-      (sc := broadcastSchedule m (beaverTripleSpec p m) (ZMod p × ZMod p))
+      (sc := allToAllSchedule m (spec := beaverTripleSpec p m) (ZMod p × ZMod p))
       (fun _ _ => ())
       (broadcastSteps m (spec := beaverTripleSpec p m)
         (Msg := ZMod p × ZMod p)
@@ -320,7 +320,8 @@ private def beaverViewOf {p m : ℕ} (i : Fin m) (xy_i : ZMod p × ZMod p)
     PartyView (fun _ => ZMod p × ZMod p) (fun _ => Unit) (beaverMulSchedule p m) i where
   input := xy_i
   coins := ()
-  received := (receivedTriple i t_i, deliverBroadcast (spec := beaverTripleSpec p m) msgs i)
+  received := (receivedTriple i t_i,
+    receivedScheduleOfInbox (spec := beaverTripleSpec p m) i msgs (allPairs m))
 
 private theorem evalWith_beaverMulProtocol {p m : ℕ} [NeZero p]
     (xy : Fin m → ZMod p × ZMod p) :

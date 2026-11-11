@@ -41,7 +41,7 @@ for it are not vacuous.
   `Cslib.Circuits.Monotone.edgeCount_le_two_pow_depth`: the resulting size and depth bounds, for
   separating circuits and for circuits computing `k`-clique.
 -/
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

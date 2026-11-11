@@ -82,8 +82,7 @@ theorem IsTidyOraclePPTOn.finiteStep [Fintype Operation] [Finite Control]
     | none => simp only [branch, MultiTapeMachine.finiteStep, hstate]
     | some control =>
       simp only [branch, MultiTapeMachine.finiteStep, hstate, bind_map_left]
-      congr 1
-      funext bit
+      congr 1 with bit : 1
       cases machine.tr control cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols
           bit with
       | step action symbol move => rfl

@@ -118,8 +118,7 @@ theorem runConfigFrom_add (first second : ℕ) (cfg : Config k Symbol State Orac
     | none => simp [runConfigFrom, hs]
     | some state =>
       simp only [Nat.succ_add, runConfigFrom, hs, bind_assoc]
-      congr 1
-      funext action
+      congr 1 with action : 1
       cases action <;> simp [ih, bind_assoc]
 
 /-- Resume a paused execution and then observe its output. -/
@@ -144,8 +143,7 @@ theorem interpret_runConfigFrom {Query' : Type u} {spec' : OracleSpec.{u, 0} Que
     | none => simp [runConfigFrom, hs]
     | some state =>
       simp only [runConfigFrom, hs, OracleComp.interpret_bind]
-      congr 1
-      funext action
+      congr 1 with action : 1
       cases action <;> simp [ih]
 
 /-- Substituting handlers preserves the complete output program. -/

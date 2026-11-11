@@ -189,8 +189,7 @@ theorem depth_from_checkpoints (c : Circuit signature n n) (L : ℕ) (hL : 0 < L
       have hrecord : (word fun bit : Fin W => result x j bit.succ) =
           BitVec.ofNat W (transientDepth f (f^[j.val] x)) := by
         rw [← word_getLsbD (BitVec.ofNat W _)]
-        congr 1
-        funext bit
+        congr 1 with bit : 1
         change lookupOr cp stored _ bit.succ = _
         rw [lookupOr_of_eq stored hcp hi]
         simp only [stored, depthBits, Fin.cons_succ, hi]

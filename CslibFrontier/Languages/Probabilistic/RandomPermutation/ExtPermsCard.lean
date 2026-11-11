@@ -32,7 +32,7 @@ points with probability at most `1 / (|α| (|α| - 1) ⋯ (|α| - k + 1))`. Thes
   `#extPerms * (Fintype.card α).descFactorial k ≤ (Fintype.card α)!` (original).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.RandomPermutation
 

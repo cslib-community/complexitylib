@@ -337,8 +337,7 @@ theorem circuitCheck_complete :
     intro c hc
     rw [← ProbOracleComp.sample]
     simp only [pmf_norm, ProbOracleComp.runWith_sample, ProbComp.eval_uniform]
-    congr 1
-    funext r
+    congr 1 with r : 1
     simp only [circuitVerify_correct C x w y hy c (valid_of_mem_support_voleIdealDist hc) r,
       ite_true]
   rw [hrun]

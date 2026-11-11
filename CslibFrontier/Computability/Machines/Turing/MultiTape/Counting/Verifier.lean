@@ -38,7 +38,7 @@ captured-input construction follows `Computability.Probabilistic.PPT.Capture`, w
 credit recorded there; the present singleton lift retains exact occurrence multiplicity.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeCTM
 
@@ -143,7 +143,7 @@ theorem exists_framedGuess_machine (enc : α ↪ List Bool) (p : Polynomial ℕ)
   · simpa only [eval_add] using haltsWithin_seq_prependOutput prepare runner hnonrunner
       (enc a) (frame (enc a)) _ _ hprep hrunner
   · simp only [eval_add]
-    rw [runList_seq_prependOutput prepare runner hnonrunner (enc a) (frame (enc a))
+    rw [runList_seq_prependOutput prepare runner (enc a) (frame (enc a))
       _ _ hprep hrunner, List.map_map]
     change ((runList runner (sourceClock.eval (enc a).length)
       (runner.initialConfig (enc a)).tapes).map (fun final => frame (enc a) ++ final.output)).Perm _

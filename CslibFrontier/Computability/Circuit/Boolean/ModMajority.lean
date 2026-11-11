@@ -57,7 +57,7 @@ open Finset Unbounded
 
 namespace Unbounded
 
-/-- The count of true arguments that a `MOD_q` gate sees: whether it is divisible by `q`. -/
+/-- The count of true arguments that a `MOD_q` gate sees: whether it is not divisible by `q`. -/
 def modCount (q _ c : ℕ) : Bool :=
   decide (c % q ≠ 0)
 

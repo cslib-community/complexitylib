@@ -65,8 +65,10 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   (proven to satisfy `IsCuckooHashFamily` in
   `Cslib.DataStructure.Dictionary.CuckooHashing.isCuckooHashPair_provableFamily`).
 * `HashPairRep`, `initTableHashPairCode`, `resampleHashPairCode`, `evalHash1Code`, `evalHash2Code`:
-  two-block Word-RAM layout and programs realizing `(evalHash1, evalHash2)` in `O_{c_exp}(1)`
-  instructions and `O_{c_exp}(n_max + 1)` words of space across all `n_max : ℕ`.
+  two-block Word-RAM layout and programs realizing `(evalHash1, evalHash2)` in
+  `O_{c_exp}(n_max + 1)` words of space across all `n_max : ℕ`, and in `O_{c_exp}(1)` instructions
+  per evaluation whenever `U ≤ max n_max 4 ^ c_exp` and
+  `M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5`.
 
 ## Main results
 
@@ -82,8 +84,9 @@ hashing scheme [PaghRodler2004] together with the regime-switched Word-RAM hash 
   providing monotonicity in `(C_walk, C_reh)`.
 * `initTableHashPairCode_execWithin`, `resampleHashPairCode_execRand`, `evalHash1Code_execWithin`,
   `evalHash2Code_execWithin`, `hashPairSpace_le`, `evalHashSteps_le`: Word-RAM correctness,
-  `O_{c_exp}(n_max + 1)` space bound, and `O_{c_exp}(1)` evaluation step bound across all
-  `n_max : ℕ`.
+  `O_{c_exp}(n_max + 1)` space bound across all `n_max : ℕ`, and evaluation step bound
+  `evalHashBound c_exp`, depending only on `c_exp`, whenever `U ≤ max n_max 4 ^ c_exp` and
+  `M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5`.
 
 ## References
 
@@ -2227,8 +2230,11 @@ def evalSingleSteps (c_exp n_max U M : ℕ) : ℕ :=
 def evalHashSteps (c_exp n_max U M : ℕ) : ℕ :=
   evalSingleSteps c_exp n_max U M + 4
 
-/-- Uniform `O_{c_exp}(1)` instruction bound on `evalHashSteps c_exp n_max U M` across all
-`n_max : ℕ`. -/
+/-- Instruction bound on `evalHashSteps c_exp n_max U M` depending only on `c_exp`. It holds for
+all `n_max : ℕ` whenever `U ≤ max n_max 4 ^ c_exp` and
+`M ≤ max c_exp 1 * Nat.clog 2 (max n_max 4) + 5` (`evalHashSteps_le`); below
+`doubleTabThreshold c_exp` it uses `cuckooK n_max ≤ cuckooKBound c_exp`
+(`cuckooK_le_cuckooKBound_of_lt`). -/
 @[expose]
 def evalHashBound (c_exp : ℕ) : ℕ :=
   DoubleTabulation.provableEvalBound c_exp (cuckooKBound c_exp) + 4
@@ -2300,11 +2306,7 @@ theorem evalSingleCode_execWithin {w base c_exp n_max U M : ℕ}
     have hpow_b_le := DoubleTabulation.two_pow_provableB_le_space c_exp n_max
     have hfit_pow_b : Fits w (2 ^ DoubleTabulation.provableB n_max) :=
       hfit_dt.of_le (by omega)
-    have hq_pos : 0 < Probability.trinomialDeg U M := by
-      dsimp only [Probability.trinomialDeg]
-      positivity
-    have hfit_q : Fits w (2 ^ Probability.trinomialDeg U M) :=
-      Nat.pow_lt_pow_right (by decide : 1 < 2) (by omega)
+    have hfit_q := KWise.fits_two_pow_trinomialDeg hw
     have hfit_pow_M : Fits w (2 ^ M) :=
       hfit_q.of_le (Nat.pow_le_pow_right (by decide) (Probability.le_trinomialDeg U M))
     have hfit_u : Fits w u.val :=

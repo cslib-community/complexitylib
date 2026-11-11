@@ -64,13 +64,6 @@ section Runs
 
 variable {d : Desc} {x : List ℕ}
 
-/-- A halted configuration is fixed by `stepOut`. -/
-theorem stepOut_of_state_eq_none {c : SCfg} (h : c.state = none) (out : List ℕ) :
-    stepOut d x (c, out) = (c, out) := by
-  obtain ⟨_ | _, _, _⟩ := c
-  · simp [stepOut, step]
-  · simp at h
-
 /-- Once halted, a run stays where it is. -/
 theorem iterate_stepOut_of_state_eq_none {s : SCfg × List ℕ} {t t' : ℕ}
     (h : ((stepOut d x)^[t] s).1.state = none) (ht : t ≤ t') :
@@ -273,9 +266,6 @@ end VTape
 
 section Tapes
 
-theorem applyTapes_nil (ts : List Tape) : applyTapes ts [] = ts := by
-  cases ts <;> rfl
-
 /-- Actions that neither write nor move leave tapes as they are. -/
 theorem applyTapes_append_idle {preT : List Tape} {pre : List (Option ℕ)}
     (h : pre.length = preT.length) (ts : List Tape) (as : List TapeAct) :
@@ -292,8 +282,8 @@ theorem applyTapes_append_idle {preT : List Tape} {pre : List (Option ℕ)}
 theorem applyTapes_append_take (ts us : List Tape) (as : List TapeAct) :
     applyTapes (ts ++ us) (as.take ts.length) = applyTapes ts as ++ us := by
   induction ts generalizing as with
-  | nil => simp [applyTapes_nil, applyTapes]
-  | cons t ts ih => cases as <;> simp [applyTapes, ih, applyTapes_nil]
+  | nil => simp [applyTapes_nil_right, applyTapes]
+  | cons t ts ih => cases as <;> simp [applyTapes, ih, applyTapes_nil_right]
 
 variable {d : Desc} {xs : List ℕ} {c : SCfg}
 
@@ -513,7 +503,7 @@ theorem iterate_stepOut_rewind {D : Desc} {X : List ℕ} {q next rp : ℕ} {rest
       ⟨.zero, [(none, .pos)], none, some next⟩) (by simp [rewindEntries])
     rw [Function.iterate_one, stepOut,
       step_of_find? (c := ⟨some q, rp, vtape base l w 0 :: rest⟩) (q := q) rfl he]
-    simp only [Act.apply, moveInput, applyTapes, applyTapes_nil, Option.toList_none,
+    simp only [Act.apply, moveInput, applyTapes, applyTapes_nil_right, Option.toList_none,
       List.append_nil]
     rw [show (vtape base l w 0).apply (none, .pos) = vtape base l w (0 + 1) from
       vtape_move_pos (Nat.zero_le _)]
@@ -533,7 +523,7 @@ theorem iterate_stepOut_rewind {D : Desc} {X : List ℕ} {q next rp : ℕ} {rest
         (⟨some q, rp, vtape base l w v :: rest⟩, out) by
         rw [stepOut, step_of_find? (c := ⟨some q, rp, vtape base l w (v + 1) :: rest⟩) (q := q)
           rfl he]
-        simp only [Act.apply, moveInput, applyTapes, applyTapes_nil, Option.toList_none,
+        simp only [Act.apply, moveInput, applyTapes, applyTapes_nil_right, Option.toList_none,
           List.append_nil]
         rw [show (vtape base l w (v + 1)).apply (none, .neg) = vtape base l w v from
           vtape_move_neg (by omega)]]
@@ -685,7 +675,7 @@ theorem iterate_write {j : ℕ} (hj : j ≤ p.length) :
     rw [Function.iterate_one, stepOut_of_mem_prep d p x rfl he (by
       simp [SCfg.key, init, hardwire, List.replicate_succ, Tape.read]) []]
     simp only [init, hardwire, List.replicate_succ, Act.apply, moveInput, applyTapes,
-      applyTapes_nil, Option.toList_none, List.append_nil, Nat.sub_zero, List.take_zero,
+      applyTapes_nil_right, Option.toList_none, List.append_nil, Nat.sub_zero, List.take_zero,
       List.map_nil]
     rw [show Tape.blank = wtape [] from rfl]
     exact congrArg₂ _ (congrArg₂ _ rfl (congrArg₂ _ (wtape_write_move [] _) rfl)) rfl
@@ -706,7 +696,7 @@ theorem iterate_write {j : ℕ} (hj : j ≤ p.length) :
       simp only [SCfg.key, List.map_cons, read_wtape, map_read_replicate_blank, Key.mk.injEq,
         and_true]
       omega) []]
-    simp only [Act.apply, moveInput, applyTapes, applyTapes_nil, Option.toList_none,
+    simp only [Act.apply, moveInput, applyTapes, applyTapes_nil_right, Option.toList_none,
       List.append_nil, SCfg.mk.injEq, Prod.mk.injEq, and_true, true_and]
     refine ⟨?_, ?_⟩
     · rw [hi]
@@ -736,7 +726,7 @@ theorem iterate_copy {j : ℕ} (hj : j ≤ x.length) :
       cases x[j] <;> simp
     rw [← add_assoc, Function.iterate_succ_apply', ih hjl.le, stepOut_of_mem_prep d p x rfl he (by
       simp [SCfg.key, hs]) []]
-    simp only [Act.apply, applyTapes, applyTapes_nil, Option.toList_none, List.append_nil,
+    simp only [Act.apply, applyTapes, applyTapes_nil_right, Option.toList_none, List.append_nil,
       SCfg.mk.injEq, Prod.mk.injEq, and_true, true_and]
     refine ⟨by simp [moveInput, hs], ?_⟩
     rw [show (wtape (some marker :: (p ++ x.take j).map (some ∘ eBit))).apply
@@ -764,7 +754,8 @@ theorem iterate_prepare :
   have hend := stepOut_of_mem_prep d p x (c := ⟨some 4, x.length + 1,
     wtape (vcells ((p ++ x).map eBit)) :: List.replicate d.tapes Tape.blank⟩) rfl he
       (by simp [SCfg.key, hs]) []
-  simp only [Act.apply, moveInput, applyTapes_nil, Option.toList_none, List.append_nil] at hend
+  simp only [Act.apply, moveInput, applyTapes_nil_right, Option.toList_none,
+    List.append_nil] at hend
   have hrw := iterate_stepOut_rewind (D := hardwire d p) (X := x.map eBit) (q := 2)
     (next := 2 * d.q₀ + 1) (rp := x.length + 1) (rest := List.replicate d.tapes Tape.blank)
     (base := 0) (l := []) (w := (p ++ x).map eBit) (fun e he => find?_prep (by

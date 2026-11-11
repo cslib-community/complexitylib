@@ -589,7 +589,7 @@ theorem eval_sufCmaGame_etmToMACForger (E : SymmetricCipher) (M : MACScheme)
                M.verify km pair.1 pair.2))) := by
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample]
     simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-    congr 1; funext ke
+    congr 1 with ke : 1
     simp only [ProbOracleComp.runWith_map, PMF.bind_map, Function.comp_def, Prod.map_fst,
       Prod.map_snd, id_eq]
   simp only [hinner]
@@ -918,7 +918,7 @@ theorem eval_sufOneTimeGame_etmToOneTimeMACForger (E : SymmetricCipher) (M : MAC
                M.verify km pair.1 pair.2))) := by
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample]
     simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
-    congr 1; funext ke
+    congr 1 with ke : 1
     simp only [ProbOracleComp.runWith_map, PMF.bind_map, Function.comp_def, Prod.map_fst,
       Prod.map_snd, id_eq]
   simp only [hinner]
@@ -1517,23 +1517,6 @@ theorem advantage_cpaOneTimeGame_encryptThenMAC_eq (E : SymmetricCipher) (M : MA
 
 /-! #### Asymptotic Security of Encrypt-then-MAC (Boneh–Shoup Theorem 9.2) -/
 
-private theorem exists_mac_tag_length_bound (M : MACScheme) :
-    ∃ tagBound : ℕ → ℕ,
-      ComputableInPolyTime tagBound encUnary encUnary ∧
-      ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
-        ∀ c, c.length = M.msgLen n →
-        ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n := by
-  obtain ⟨ck, dk, hlenKey⟩ := M.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlenSign⟩ := M.sign_ppt.length_le
-  have hmsgLen := M.msgLen_polyTime.tidy
-  refine ⟨fun n => cs * (2 * (ck * (n + 1) ^ dk) + M.msgLen n + 2) ^ ds,
-    .of_tidy (by fun_prop), fun n km hkm c hc tag htag => ?_⟩
-  have hkmLen := hlenKey n km hkm
-  have htagLen := hlenSign (km, c) tag htag
-  simp only [encUnary_apply, List.length_replicate, encBits_apply] at hkmLen
-  simp only [length_encPair, encBits_apply, hc] at htagLen
-  exact htagLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
-
 /-- **SUF-CMA security implies Ciphertext Integrity for Encrypt-then-MAC** ([BonehShoup2023],
 Section 9.4.1, Theorem 9.2, Part 1, printed pp. 367–368): if `M` is strongly unforgeable
 (`M.SUFCMA`), then `encryptThenMAC E M hctLen` satisfies `CiphertextIntegrity`. -/
@@ -1543,7 +1526,7 @@ theorem ciphertextIntegrity_encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
       ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
     (hmac : M.SUFCMA) :
     (encryptThenMAC E M hctLen).CiphertextIntegrity := by
-  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := exists_mac_tag_length_bound M
+  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
   apply SymmetricCipher.CiphertextIntegrity.of_negligible
   intro adversary hadversary
   have hmacNeg := hmac.negligible (etmToMACForger E M tagBound adversary)
@@ -1640,7 +1623,7 @@ theorem oneTimeCiphertextIntegrity_encryptThenMAC (E : SymmetricCipher) (M : MAC
       ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
     (hmac : M.OneTimeSUFCMA) :
     (encryptThenMAC E M hctLen).OneTimeCiphertextIntegrity := by
-  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := exists_mac_tag_length_bound M
+  obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
   apply SymmetricCipher.OneTimeCiphertextIntegrity.of_negligible
   intro adversary hadversary
   have hmacNeg := hmac.negligible (etmToOneTimeMACForger E M tagBound adversary)
@@ -2119,7 +2102,7 @@ private theorem run_prfCipherForgetfulWithBadOracle_map_fst (adversary : OracleD
         simp only [Bool.and_eq_true, beq_iff_eq] at hlenEq
         have hmsgLen : (if bit then dropFrame payload else unframe payload).length = n := by
           cases bit <;> simp [hlenEq]
-        congr 1; funext r
+        congr 1 with r : 1
         have hpad :
             (BitString.uniformList n).map
               (fun pad => (r ++ List.zipWith xor (pad.take n)

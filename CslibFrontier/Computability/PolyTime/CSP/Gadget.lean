@@ -115,8 +115,7 @@ private theorem eval_instantiate {n : ℕ} {R : Set (Fin n → Bool)}
       g.body.eval sem (Sum.elim (fun i => σ (2 * scope.getD i.val 0))
         (fun j => σ (2 * (B * index + j.val) + 1))) := by
   simp only [instantiate, PPGadget.template, eval_relabel]
-  congr 1
-  funext x
+  congr 1 with x : 1
   cases x <;> rfl
 
 /-- Correct gadgets preserve satisfiability on well-formed inputs.

@@ -184,7 +184,7 @@ theorem ddhFixedURerandomizeLaw_ideal (d : F.Desc) {α β γ : ZMod (F.order d)}
       rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
   simp_rw [hσ]
   rw [PMF.bind_comm]
-  congr 1; funext β'
+  congr 1 with β' : 1
   change (PMF.uniformOfFintype (ZMod (F.order d))).bind
     ((fun γ' => PMF.pure (β' • F.generator d, γ' • F.generator d)) ∘
       (Equiv.mulRight₀ (γ - α * β) (sub_ne_zero.mpr hγ)).trans (Equiv.addLeft (α * β'))) = _
@@ -255,7 +255,7 @@ theorem multiDDHRerandomizeLaw_real (d : F.Desc) (ι : Type*) [Fintype ι] [Deci
     ← PMF.uniformOfFintype_prod_map_fst (α := ι → ZMod (F.order d)) (β := ι → ZMod (F.order d)),
     ← PMF.uniformOfFintype_map_equiv e, PMF.map_comp, PMF.map_comp,
     multiDDHRerandomizeLaw]
-  congr 1; funext r; funext i
+  congr 1 with r : 1; funext i
   simp [e, ddhRerandomizeRealTupleEquiv, ddhFixedURerandomize_smul_generator]
 
 /-- On any non-DDH triple `(α • g, β • g, γ • g)` with `γ ≠ α * β`, `multiDDHRerandomizeLaw`
@@ -270,7 +270,7 @@ theorem multiDDHRerandomizeLaw_ideal (d : F.Desc) (ι : Type*) [Fintype ι] [Dec
       (ddhRerandomizeRealCoordEquiv β).trans (ddhRerandomizeSecondCoordEquiv hγ)
   rw [multiDDHIdealTupleLaw, ← PMF.uniformOfFintype_map_equiv e, PMF.map_comp,
     multiDDHRerandomizeLaw]
-  congr 1; funext r; funext i
+  congr 1 with r : 1; funext i
   simp [e, ddhRerandomizeRealCoordEquiv, ddhRerandomizeSecondCoordEquiv,
     ddhFixedURerandomize_smul_generator]
 

@@ -39,7 +39,7 @@ This is the frontend component, not complete Chan–He preprocessing or a subqua
 * `cost_bound`: explicit uniform logarithmic-square instruction bound.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.Frontend
 

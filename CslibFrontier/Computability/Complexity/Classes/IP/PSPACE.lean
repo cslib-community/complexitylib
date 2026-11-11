@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.NatPower
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Data.List.Append
 import CslibFrontier.Tactic.EncLen
 
@@ -58,7 +59,9 @@ values:
   polynomial space (`Cslib.Complexity.Interaction.evaluate_eq`,
   `Cslib.Complexity.Interaction.computableInPolySpace_evaluate`), in exponential time.
 
-The converse inclusion `PSPACE ⊆ IP`, and so `IP = PSPACE`, is not formalized here.
+The converse inclusion `PSPACE ⊆ IP` (`Cslib.Complexity.PSPACE_subset_IP`), and with it
+`IP = PSPACE` (`Cslib.Complexity.IP_eq_PSPACE`), is proved downstream in
+`CslibFrontier.Computability.Complexity.Classes.IP.Shamir`.
 
 ## Main definitions
 
@@ -541,14 +544,6 @@ namespace Cslib.Complexity
 
 open Cslib.Probability Interaction _root_.Turing _root_.Turing.MultiTapeTM
 
-private theorem natCast_div_le_natCast_div_iff {a b c d : ℕ} (hb : b ≠ 0) (hd : d ≠ 0) :
-    (a : ENNReal) / b ≤ c / d ↔ a * d ≤ b * c := by
-  rw [ENNReal.div_le_iff_le_mul (Or.inl (by exact_mod_cast hb)) (Or.inl (ENNReal.natCast_ne_top _)),
-    ← ENNReal.mul_div_right_comm, ENNReal.le_div_iff_mul_le (Or.inl (by exact_mod_cast hd))
-      (Or.inl (ENNReal.natCast_ne_top _))]
-  rw [mul_comm (c : ENNReal)]
-  exact_mod_cast Iff.rfl
-
 variable {α : Type} {enc : α ↪ List Bool} {k : ℕ} {Control : Type}
 
 /-- **The value decides an interactive proof.** If the verifier `V` is realized, against every
@@ -582,14 +577,14 @@ theorem mem_iff_two_pow_lt_value {V : α → WordOracleComp Unit Bool} {A : Set 
     obtain ⟨P, hP⟩ := hA.complete a ha
     have h := hP.trans (hupper P)
     rw [show (2 / 3 : ENNReal) = ((2 : ℕ) : ENNReal) / ((3 : ℕ) : ENNReal) by norm_num,
-      natCast_div_le_natCast_div_iff (by norm_num) hpos] at h
+      ENNReal.natCast_div_le_natCast_div_iff (by norm_num) hpos] at h
     have := Nat.one_le_two_pow (n := t)
     lia
   · intro hlt
     by_contra ha
     have h := hopt ▸ hA.sound a ha (optimalProver _ t t)
     rw [show (1 / 3 : ENNReal) = ((1 : ℕ) : ENNReal) / ((3 : ℕ) : ENNReal) by norm_num,
-      natCast_div_le_natCast_div_iff hpos (by norm_num)] at h
+      ENNReal.natCast_div_le_natCast_div_iff hpos (by norm_num)] at h
     lia
 
 /-- **`IP ⊆ PSPACE`** [Arora and Barak, Chapter 8][AroraBarak09] [Sipser, Section

@@ -15,6 +15,7 @@ import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Data.Fintype.Fin
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Finite-attempt uniform interval and integer-box sampling
@@ -84,8 +85,7 @@ theorem sampleBoundedIndex_eq_binary (bound : ℕ) :
     sampleBoundedIndex bound = (min bound ·) <$> sampleBinaryNat (Nat.log 2 bound + 1) := by
   unfold sampleBoundedIndex sampleBinaryNat
   rw [Functor.map_map]
-  congr 1
-  funext word
+  congr 1 with word : 1
   exact BitString.boundedBinaryValue_eq bound word
 
 /-- A capped draw has equal mass at each valid index. -/
@@ -283,9 +283,8 @@ private theorem option_false {α : Type} (μ : PMF (Option α)) :
 
 private theorem option_success_toReal {α : Type} (μ : PMF (Option α)) :
     ((μ.map Option.isSome) true).toReal = 1 - (μ none).toReal := by
-  have h := (μ.map Option.isSome).tsum_coe
-  have hsum : (μ.map Option.isSome) false + (μ.map Option.isSome) true = 1 := by
-    simpa only [tsum_fintype, Fintype.sum_bool, add_comm] using h
+  have hsum : (μ.map Option.isSome) false + (μ.map Option.isSome) true = 1 :=
+    (add_comm _ _).trans (Probability.PMF.apply_true_add_apply_false _)
   have hreal := congrArg ENNReal.toReal hsum
   rw [ENNReal.toReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _),
     ENNReal.toReal_one, option_false] at hreal

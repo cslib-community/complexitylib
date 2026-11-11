@@ -225,8 +225,7 @@ lemma actualPrefix_twoSignal_second
   convert uncompressed_second_telescope (fun j y => ζ * H j σ x y)
     (fun j y => (F (j + 1) σ x y - (if j = 0 then 0 else F j σ x y)) / rate k)
     (fun _ _ => 0) (by intros; rfl) i y using 1
-  congr 1
-  funext j z ν
+  congr 1 with j z ν : 3
   simp only [firstSignalIncrement, secondSignalIncrement]
   split_ifs <;> ring
 

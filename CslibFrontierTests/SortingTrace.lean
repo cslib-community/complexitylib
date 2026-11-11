@@ -23,8 +23,8 @@ open bitonicSortTraceCircuit
 example {k r v : ℕ} (key : Fin k → Fin r) (d : ℕ) (ascending : Bool)
     (f : BitString r → BitString v) (x : BitString (BitonicSort.arity d * r)) :
     let output := (bitonicSortTraceCircuit key d ascending).eval interpretation x
-    directProductInput ((bitonicUnsortCircuit v d).eval interpretation
-      (pack (controls output) (f ∘ records output))) = f ∘ directProductInput x :=
+    BitString.block ((bitonicUnsortCircuit v d).eval interpretation
+      (pack (controls output) (f ∘ records output))) = f ∘ BitString.block x :=
   eval_bitonicUnsortCircuit_sort key d ascending f x
 
 example {k r : ℕ} (key : Fin k → Fin r) (d : ℕ) (ascending : Bool)
@@ -85,7 +85,7 @@ example (d : ℕ) : (bitonicUnsortCircuit 0 d).size = 0 := by
         (List.ofFn (row ∘ key)).foldl (fun n bit => 2 * n + if bit then 1 else 0) 0
       (List.finRange 256).all fun raw =>
         let input := (BitString.equivFin 8).symm raw
-        let inputRows : Fin 4 → BitString 2 := directProductInput input
+        let inputRows : Fin 4 → BitString 2 := BitString.block input
         let output := (c.evalVector interpretation input).get
         let flags := BitonicSort.sortTrace keyValue 2 ascending inputRows
         let restored := (undo.evalVector interpretation
@@ -120,7 +120,7 @@ example (d : ℕ) : (bitonicUnsortCircuit 0 d).size = 0 := by
     let output := ((bitonicSortTraceCircuit (Fin.elim0 : Fin 0 → Fin 2) 2 ascending).evalVector
       interpretation input).get
     let flags := BitonicSort.sortTrace (fun _ : BitString 2 => (0 : ℕ)) 2 ascending
-      (directProductInput input)
+      (BitString.block input)
     List.ofFn (fun j => List.ofFn (controls output j)) ==
         List.ofFn (fun j => List.ofFn (pairs flags j)) &&
       List.ofFn ((bitonicUnsortCircuit 2 2).evalVector interpretation output).get == List.ofFn input

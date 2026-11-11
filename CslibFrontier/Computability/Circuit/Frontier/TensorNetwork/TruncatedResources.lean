@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNatFrontends
@@ -68,18 +69,6 @@ open Turing.MultiTapeTM Cslib.GenericRAM GaloisRingArith
 variable {T : Type} {encT : T ↪ List Bool}
 
 /-! ### Sizes -/
-
-/-- A list of values, each at most `Yb` bits, is at most `(2 Yb + 1)` bits per value. -/
-private theorem length_encList_le_of_forall {vals : List (List ℕ)} {Yb : ℕ}
-    (h : ∀ v ∈ vals, (encList encNat v).length ≤ Yb) :
-    (encList (encList encNat) vals).length ≤ vals.length * (2 * Yb + 1) := by
-  rw [length_encList]
-  have h' := List.sum_le_length_nsmul (vals.map fun a => 2 * (encList encNat a).length + 1)
-    (2 * Yb + 1) fun x hx => by
-      obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hx
-      have := h v hv
-      omega
-  rwa [List.length_map, smul_eq_mul] at h'
 
 /-- The length of an input `(fl, P, ℓ, r, G)` of the reduction, by components. -/
 theorem length_encEngine (fl : List ℕ) (P ℓ r : ℕ) (G : DescribedNetwork T) :
@@ -160,19 +149,16 @@ theorem length_encCore_coreInput_le (y : List ℕ × ℕ × ℕ × ℕ × Descri
 
 variable (core : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) → List ℕ)
 
-/-- The encoding of the state of the loop: the binary index, the input and the values so far. -/
-local notation "encS" => encPair encNat (encPair (encEngine encT) (encList (encList encNat)))
-
 /-- **The live state of the loop.** After `j` rounds, if each of the first `j` values is at most
 `Yb` bits, the state is at most `2 |j| + 2 n + 2 + j (2 Yb + 1)` bits, for the binary length `|j|`
 of `j` and the length `n` of the input. -/
 theorem length_run_engineStep_le (y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) {j Yb : ℕ}
     (hY : ∀ k < j, (encList encNat (core (coreInput y k))).length ≤ Yb) :
-    (encS (IndexFold.run (engineStep core) j (y, []))).length ≤
+    (encEngineState encT (IndexFold.run (engineStep core) j (y, []))).length ≤
       2 * (encNat j).length + 2 * (encEngine encT y).length + 2 + j * (2 * Yb + 1) := by
   rw [run_engineStep]
-  have h := length_encList_le_of_forall (vals := (List.range j).map fun k => core (coreInput y k))
-    (Yb := Yb) fun v hv => by
+  have h := Turing.MultiTapeTM.length_encList_le (encList encNat)
+    ((List.range j).map fun k => core (coreInput y k)) (b := Yb) fun v hv => by
       obtain ⟨k, hk, rfl⟩ := List.mem_map.mp hv
       exact hY k (List.mem_range.mp hk)
   simp only [List.length_map, List.length_range] at h
@@ -206,11 +192,11 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     ComputableInPolyTime.id'.prod (ComputableInPolyTime.const [])
   have hcA : ComputableInPolyTime
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) => p.2.1)
-      encS (encEngine encT) :=
+      (encEngineState encT) (encEngine encT) :=
     (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)
   have hcC : ComputableInPolyTime
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) => p.2.2)
-      encS (encList (encList encNat)) :=
+      (encEngineState encT) (encList (encList encNat)) :=
     (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)
   have hcB := ComputableInPolyTime.snoc (encList encNat)
   obtain ⟨pN, hpN, mN, bN⟩ := exists_mono_poly_cert hcN
@@ -224,35 +210,14 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
   let Sh : ℕ → ℕ := fun X => 7 * (X + 1) ^ 3
   let U : ℕ → ℕ := fun X => pN X + X + pI X + 3 * Sh X + 3 * ((X + 1) ^ 2 + 1) ^ 2 +
     pA (Sh X) + pC (Sh X) + pD (Sh X) + pB (2 * Sh X + 1 + X) + pR (Sh X)
-  have hSh : PolyBounded id Sh :=
-    (PolyBounded.const 7).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow 3)
-  have qN := PolyBounded.of_polynomiallyBounded id hpN
-  have qI := PolyBounded.of_polynomiallyBounded id hpI
-  have qA := PolyBounded.of_polynomiallyBounded id hpA
-  have qC := PolyBounded.of_polynomiallyBounded id hpC
-  have qD := PolyBounded.of_polynomiallyBounded id hpD
-  have qB := PolyBounded.of_polynomiallyBounded id hpB
-  have qR := PolyBounded.of_polynomiallyBounded id hpR
-  have hU : PolyBounded id U :=
-    (((((((((qN.comp PolyBounded.self).add PolyBounded.self).add
-      (qI.comp PolyBounded.self)).add ((PolyBounded.const 3).mul hSh)).add
-      ((PolyBounded.const 3).mul ((((PolyBounded.self.add (PolyBounded.const 1)).pow 2).add
-        (PolyBounded.const 1)).pow 2))).add (qA.comp hSh)).add
-      (qC.comp hSh)).add (qD.comp hSh)).add
-      (qB.comp ((((PolyBounded.const 2).mul hSh).add (PolyBounded.const 1)).add
-        PolyBounded.self))).add (qR.comp hSh)
-  obtain ⟨a, d, hUad⟩ := hU.exists_le
-  refine ⟨a + d, fun fl P ℓ r G R Q Yb hcore => ?_⟩
+  have hU : PolyBounded id U := by growth_poly
+  obtain ⟨K, hK⟩ := hU.exists_le_succ_pow
+  refine ⟨K, fun fl P ℓ r G R Q Yb hcore => ?_⟩
   set y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T := (fl, P, ℓ, r, G) with hy
   set L := (encEngine encT y).length with hL
   set N := DescribedNetwork.pointCount ℓ G with hN
   set X := L + Yb with hX
-  have hUX : U X ≤ (a + d) * (X + 1) ^ (a + d) := by
-    have h1 := hUad X
-    have h2 : (X + 1) ^ d ≤ (X + 1) ^ (a + d) := Nat.pow_le_pow_right (by omega) (by omega)
-    simp only [id] at h1
-    calc U X ≤ a * (X + 1) ^ d := h1
-      _ ≤ (a + d) * (X + 1) ^ (a + d) := Nat.mul_le_mul (by omega) h2
+  have hUX : U X ≤ K * (X + 1) ^ K := hK _ le_rfl X
   -- Sizes of the states.
   have hNL : N ≤ L * L + 1 := pointCount_le fl P ℓ r G
   have hNX : N ≤ (X + 1) ^ 2 := by
@@ -269,7 +234,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     simp only [Sh, S]
     omega
   have hstate (j : ℕ) (hj : j ≤ N) :
-      (encS (IndexFold.run (engineStep core) j (y, []))).length ≤ S := by
+      (encEngineState encT (IndexFold.run (engineStep core) j (y, []))).length ≤ S := by
     have h := length_run_engineStep_le (encT := encT) core y (j := j) (Yb := Yb)
       fun k hk => (hcore k (by omega)).2.2
     have hj' : (encNat j).length ≤ N := (length_encNat_mono hj).trans (length_encNat_le_self N)
@@ -303,7 +268,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     have hsq := Nat.pow_le_pow_left hidx 2
     have hR := (hcore j hj).1
     rw [run_engineStep] at h1 h2 h3 h4 hs hsq ⊢
-    simp only [Function.comp_apply] at h1 h2 h3 h4 hs hsq ⊢
+    simp only [Function.comp_apply, encEngineState] at h1 h2 h3 h4 hs hsq ⊢
     omega
   have hround_space (j : ℕ) (hj : j ≤ N) :
       (IndexFold.roundCertificate (engineStepCertificate core cc)).space
@@ -322,7 +287,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
       exact (length_encNat_mono hj).trans (length_encNat_le_self N)
     have hQ := (hcore j hj).2.1
     rw [run_engineStep] at h1 h2 h3 h4 hs hidx ⊢
-    simp only [Function.comp_apply] at h1 h2 h3 h4 hs hidx ⊢
+    simp only [Function.comp_apply, encEngineState] at h1 h2 h3 h4 hs hidx ⊢
     omega
   -- The trajectory maxima.
   have hmaxT : NativeCertificate.maxRoundTime
@@ -333,9 +298,10 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
       (IndexFold.roundCertificate (engineStepCertificate core cc)) N (0, y, []) ≤
         S + (N + 1) + pA (Sh X) + pC (Sh X) + pD (Sh X) + pB (2 * Sh X + 1 + X) + Q :=
     NativeCertificate.maxRoundSpace_le _ _ _ fun j hj => hround_space j hj
-  have hmaxL : NativeCertificate.maxStateLength encS (IndexFold.step (engineStep core)) N
-      (0, y, []) ≤ S :=
+  have hmaxL : NativeCertificate.maxStateLength (encEngineState encT)
+      (IndexFold.step (engineStep core)) N (0, y, []) ≤ S :=
     NativeCertificate.maxStateLength_le _ _ _ _ fun j hj => hstate j hj
+  dsimp only [encEngineState] at hmaxL
   -- The pieces outside the loop.
   have hLX : L ≤ X := by omega
   have hNt := (bN y).1.trans (mN hLX)
@@ -361,12 +327,15 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     have hB := Nat.mul_le_mul_left (N + 1) (show
       NativeCertificate.maxRoundTime (IndexFold.roundCertificate (engineStepCertificate core cc))
           N (0, y, []) +
-        NativeCertificate.maxStateLength encS (IndexFold.step (engineStep core)) N (0, y, []) +
-          ((encNat N).length + 1) ^ 2 ≤ 2 * S + 2 * (N + 1) ^ 2 + P4 + R by omega)
+        NativeCertificate.maxStateLength (encEngineState encT)
+          (IndexFold.step (engineStep core)) N (0, y, []) +
+          ((encNat N).length + 1) ^ 2 ≤ 2 * S + 2 * (N + 1) ^ 2 + P4 + R by
+            dsimp only [encEngineState]; omega)
+    dsimp only [encEngineState] at hB
     have hsum : (N + 1) * A + (N + 1) * (2 * S + 2 * (N + 1) ^ 2 + P4 + R) =
         (N + 1) * (A + 2 * S + 2 * (N + 1) ^ 2 + P4 + R) := by ring
     have hC := Nat.mul_le_mul_left (N + 1)
-      (show A + 2 * S + 2 * (N + 1) ^ 2 + P4 + R ≤ (a + d) * (X + 1) ^ (a + d) + R by
+      (show A + 2 * S + 2 * (N + 1) ^ 2 + P4 + R ≤ K * (X + 1) ^ K + R by
         simp only [U] at hUX
         omega)
     omega
@@ -404,22 +373,12 @@ theorem specEntryCertificate_le :
   obtain ⟨pE, hpE, mE, bE⟩ := exists_mono_poly_cert hcE
   obtain ⟨pH, hpH, mH, bH⟩ := exists_mono_poly_cert horner_polyTime
   let U : ℕ → ℕ := fun Z => pD Z + pE Z + pH (2 * Z + 1)
-  have qD := PolyBounded.of_polynomiallyBounded id hpD
-  have qE := PolyBounded.of_polynomiallyBounded id hpE
-  have qH := PolyBounded.of_polynomiallyBounded id hpH
-  have hU : PolyBounded id U :=
-    ((qD.comp PolyBounded.self).add
-      (qE.comp PolyBounded.self)).add
-      (qH.comp (((PolyBounded.const 2).mul PolyBounded.self).add
-        (PolyBounded.const 1)))
-  obtain ⟨a, d, hUad⟩ := hU.exists_le
-  refine ⟨a + d, fun entry ce t P ℓ fl ζ bs => ?_⟩
+  have hU : PolyBounded id U := by growth_poly
+  obtain ⟨K, hK⟩ := hU.exists_le_succ_pow
+  refine ⟨K, fun entry ce t P ℓ fl ζ bs => ?_⟩
   set n := (encPair (encSpecDesc encT) encBits ((t, P, ℓ, fl, ζ), bs)).length with hn
   set Z := n + (encList encNat (entry t bs)).length with hZ
-  have hUZ : U Z ≤ (a + d) * (Z + 1) ^ (a + d) := by
-    have h1 := hUad Z
-    simp only [id] at h1
-    exact h1.trans (Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega)))
+  have hUZ : U Z ≤ K * (Z + 1) ^ K := hK _ le_rfl Z
   have hnZ : n ≤ Z := by omega
   have hH : (encPair encSpecData (encList encNat) ((P, ℓ, fl, ζ), entry t bs)).length ≤
       2 * Z + 1 := by
@@ -490,12 +449,9 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
     K₂ * (2 * Z + 1 + cS * (Z + Uf Z + 1) + Z * (2 * Z + 3) + 1) ^ K₂
   let Tf : ℕ → ℕ := fun Z => pS Z + (Z + 2) * (Bf Z + 2 * Uf Z) + (Z + 2) * 2
   let Sf : ℕ → ℕ := fun Z => pS Z + Bf Z + (Z + Uf Z)
-  have qS := PolyBounded.of_polynomiallyBounded id hpS
-  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z := by
-    dsimp only [Tf, Sf, Bf, Uf, Af]
-    growth_poly
-  obtain ⟨a, d, had⟩ := hTSp.exists_le
-  refine ⟨a + d, fun P ℓ r fl ζ G E ES hE => ?_⟩
+  have hTSp : PolyBounded id fun Z => Tf Z + Sf Z := by growth_poly
+  obtain ⟨K, hK⟩ := hTSp.exists_le_succ_pow
+  refine ⟨K, fun P ℓ r fl ζ G E ES hE => ?_⟩
   set G' := DescribedNetwork.specNet P ℓ fl ζ G with hG'
   set n := (encCore encT (P, fl, r, G')).length with hn
   set Z := n + ES with hZ
@@ -563,9 +519,7 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
   have hT' := hT.trans (Nat.mul_le_mul hfac (Nat.add_le_add_right hB _))
   have hRt := (bS (P, fl, r, G')).1.trans (mS (show n ≤ Z by omega))
   have hRs := (bS (P, fl, r, G')).2.trans (mS (show n ≤ Z by omega))
-  have h1 := had Z
-  simp only [id] at h1
-  have hK : a * (Z + 1) ^ d ≤ (a + d) * (Z + 1) ^ (a + d) := by gcongr <;> omega
+  have h1 : Tf Z + Sf Z ≤ K * (Z + 1) ^ K := hK _ le_rfl Z
   refine ⟨?_, ?_⟩
   · simp only [directCoreCertificate, NativeCertificate.congr, NativeCertificate.comp_time,
       Function.comp_apply]
@@ -582,16 +536,15 @@ theorem directCoreCertificate_le (entry : T → List Bool → List ℕ)
       have hT2 : (Z + 2) * 2 ≤ Tf Z := by simp only [Tf]; omega
       have h4 : X * ((Z + 2) * 2 * E) ≤ X * (Tf Z * E) := by gcongr
       omega
-    have hfin : X * (Tf Z * (E + 1)) ≤ (a + d) * (Z + 1) ^ (a + d) * X * (E + 1) := by
-      calc X * (Tf Z * (E + 1)) ≤ X * (a * (Z + 1) ^ d * (E + 1)) :=
+    have hfin : X * (Tf Z * (E + 1)) ≤ K * (Z + 1) ^ K * X * (E + 1) := by
+      calc X * (Tf Z * (E + 1)) ≤ X * (K * (Z + 1) ^ K * (E + 1)) :=
             Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ (by omega))
-        _ = a * (Z + 1) ^ d * X * (E + 1) := by ring
-        _ ≤ _ := Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hK)
+        _ = K * (Z + 1) ^ K * X * (E + 1) := by ring
     have hpS : (NativeCertificate.ofPolyTime hcR).time (P, fl, r, G') ≤ pS Z := hRt
     omega
   · simp only [directCoreCertificate, NativeCertificate.congr, NativeCertificate.comp_space,
       Function.comp_apply]
-    have : Sf Z ≤ a * (Z + 1) ^ d := by omega
+    have : Sf Z ≤ K * (Z + 1) ^ K := by omega
     simp only [Sf] at this
     omega
 
@@ -621,12 +574,9 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
   let Engf : ℕ → ℕ := fun W => K₁ * (Yf W + cD * (Rf W + 1) + 1) ^ K₁
   let Tf : ℕ → ℕ := fun W => pM W + (Yf W * Yf W + 2) * (Engf W + Rf W)
   let Sf : ℕ → ℕ := fun W => pM W + (Engf W + Rf W)
-  have qM := PolyBounded.of_polynomiallyBounded id hpM
-  have hTSp : PolyBounded id fun W => Tf W + Sf W := by
-    dsimp only [Tf, Sf, Engf, Rf, Yf]
-    growth_poly
-  obtain ⟨a, d, had⟩ := hTSp.exists_le
-  refine ⟨a + d, fun P ℓ r G E ES hE => ?_⟩
+  have hTSp : PolyBounded id fun W => Tf W + Sf W := by growth_poly
+  obtain ⟨K, hK⟩ := hTSp.exists_le_succ_pow
+  refine ⟨K, fun P ℓ r G E ES hE => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length with hn
   set W := n + ES with hW
   set X := 2 ^ G.numEdges with hX
@@ -661,9 +611,7 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
       Engf W := Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
   have hMt := (bM (P, ℓ, r, G)).1.trans (mM (show n ≤ W by omega))
   have hMs := (bM (P, ℓ, r, G)).2.trans (mM (show n ≤ W by omega))
-  have h1 := had W
-  simp only [id] at h1
-  have hK : a * (W + 1) ^ d ≤ (a + d) * (W + 1) ^ (a + d) := by gcongr <;> omega
+  have h1 : Tf W + Sf W ≤ K * (W + 1) ^ K := hK _ le_rfl W
   refine ⟨?_, ?_⟩
   · simp only [truncDirectCertificate, NativeCertificate.congr, NativeCertificate.comp_time]
     have hTe' := hTe.trans (Nat.mul_le_mul hNy (Nat.add_le_add_right hEng _))
@@ -677,18 +625,17 @@ theorem truncDirectCertificate_le (entry : T → List Bool → List ℕ)
       have e2 : X * (E + 1) * Tf W = X * (E + 1) * (pM W + (Yf W * Yf W + 2) * Engf W) +
           X * (E + 1) * ((Yf W * Yf W + 2) * Rf W) := by simp only [Tf]; ring
       omega
-    have hfin : X * (E + 1) * Tf W ≤ (a + d) * (W + 1) ^ (a + d) * X * (E + 1) := by
-      calc X * (E + 1) * Tf W ≤ X * (E + 1) * (a * (W + 1) ^ d) :=
+    have hfin : X * (E + 1) * Tf W ≤ K * (W + 1) ^ K * X * (E + 1) := by
+      calc X * (E + 1) * Tf W ≤ X * (E + 1) * (K * (W + 1) ^ K) :=
             Nat.mul_le_mul_left _ (by omega)
-        _ ≤ X * (E + 1) * ((a + d) * (W + 1) ^ (a + d)) := Nat.mul_le_mul_left _ hK
-        _ = (a + d) * (W + 1) ^ (a + d) * X * (E + 1) := by ring
+        _ = K * (W + 1) ^ K * X * (E + 1) := by ring
     change (NativeCertificate.ofPolyTime modulusChoice_polyTime).time (P, ℓ, r, G) +
       (engineCertificate _ (directCoreCertificate entry ce)).time (fl, P, ℓ, r, G) ≤ _
     omega
   · simp only [truncDirectCertificate, NativeCertificate.congr, NativeCertificate.comp_space]
     change (NativeCertificate.ofPolyTime modulusChoice_polyTime).space (P, ℓ, r, G) +
       (engineCertificate _ (directCoreCertificate entry ce)).space (fl, P, ℓ, r, G) ≤ _
-    have : Sf W ≤ a * (W + 1) ^ d := by omega
+    have : Sf W ≤ K * (W + 1) ^ K := by omega
     simp only [Sf] at this
     omega
 

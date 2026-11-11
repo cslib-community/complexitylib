@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Decider
 public import CslibFrontier.Logics.FirstOrder.Ordered.Basic
 
 /-!
@@ -23,7 +24,8 @@ The input uses `encStructure`: unary cardinality followed by the framed input re
 bound is logarithmic in the full encoded input length; the sentence and vocabulary are fixed.
 This is a theorem at that encoding, with no assertion about raw words outside its image.
 
-The program reuses the existing shape checker and shared quantified control. Terms become native
+The decider is `blockDecider` (shape check, size guard, accept/reject) around the shared
+quantified control. Terms become native
 counter expressions; input relations read their actual table bits, order compares values, and
 BIT uses Christian Reitwiessner's binary digit algorithm, certified in linear work space in the
 binary value and index. The counter-program simulation charges intermediate expression storage.
@@ -37,7 +39,7 @@ remains open.
 
 * `Cslib.Logic.FO.Ordered.queryLanguage`: valid encodings satisfying a fixed ordered sentence.
 * `Cslib.Logic.FO.Ordered.ModelChecker.termExpr`: native values of terms with numeric constants.
-* `Cslib.Logic.FO.Ordered.modelChecker`: the actual counter-program decider.
+* `Cslib.Logic.FO.Ordered.ModelChecker.formulaCode`: the compiled code of a formula.
 
 ## Main results
 
@@ -205,81 +207,22 @@ private theorem reaches_formulaCode {P : CounterProgram} {a : EncodedStructure}
 
 end ModelChecker
 
-open Expr Vocabulary.ModelChecker
-
-/-- The ordered sentence decider: validate the original input tables, reject cardinalities below
-two, evaluate the sentence with native numeric handlers, and emit one Boolean verdict. -/
-def modelChecker (φ : (language L).Sentence) : CounterProgram where
-  code :=
-    let E := 4 + 6 * v.count
-    let A := E + 1 + codeLength φ
-    let F := A + 1
-    shapeCode v 0 E F ++ [.lt (reg 0) (const 2) F (E + 1)] ++
-      ModelChecker.formulaCode v (fun e : Empty => e.elim) 3 φ (E + 1) A F ++ [.accept, .reject]
-  registers := 3 + boundDepth φ
-
 /-- Every fixed canonical ordered first-order query is in `L` at the actual structure encoding.
-The native decider rejects malformed table shapes and sizes zero/one; its numeric symbols are
-computed from the indices, including under quantifiers. -/
+The decider is `blockDecider` around the compiled sentence: it rejects malformed table shapes and
+sizes zero/one; its numeric symbols are computed from the indices, including under quantifiers. -/
 theorem queryLanguage_mem_L (φ : (language L).Sentence) :
-    queryLanguage v φ ∈ Complexity.L encStructure := by
-  classical
-  refine ⟨fun a => decide (a ∈ queryLanguage v φ), ?_, fun a => by simp⟩
-  refine (modelChecker v φ).computableInLogSpace_of_reaches v.maxArity fun a => ?_
-  let E := 4 + 6 * v.count
-  let A := E + 1 + codeLength φ
-  let F := A + 1
-  have hE : (shapeCode v 0 E F).length = E := length_shapeCode v 0 E F
-  have hC := ModelChecker.length_formulaCode v (fun e : Empty => e.elim) 3 φ (E + 1) A F
-  have hcode : (modelChecker v φ).CodeAt 0 (modelChecker v φ).code :=
-    codeAt_of_code_eq (pre := []) (post := []) (by simp)
-  change (modelChecker v φ).CodeAt 0 (shapeCode v 0 E F ++
-    [.lt (reg 0) (const 2) F (E + 1)] ++
-    ModelChecker.formulaCode v (fun e : Empty => e.elim) 3 φ (E + 1) A F ++
-    [.accept, .reject]) at hcode
-  rw [codeAt_append, codeAt_append, codeAt_append] at hcode
-  obtain ⟨⟨⟨hshape, hguard⟩, hcomp⟩, hhalt⟩ := hcode
-  simp only [List.length_append, hE, hC, List.length_singleton, Nat.zero_add]
-    at hguard hcomp hhalt
-  obtain ⟨hacc, hrest⟩ := codeAt_cons.mp hhalt
-  have hrej := (codeAt_cons.mp hrest).1
-  replace hguard := (codeAt_cons.mp hguard).1
-  have hwB := length_le_pow_maxArity v a
-  have hnB := (card_le_length_encStructure a).trans hwB
-  obtain ⟨regs₁, hreach₁, hlen₁, h0₁, hB₁⟩ :=
-    reaches_shapeCode hshape (pow_arityAt_le v a) hwB (List.replicate (3 + boundDepth φ) 0)
-      (by simp) (by simp) (by simp)
-  by_cases hwf : v.WellFormed a
-  · rw [ite_eq_left hwf] at hreach₁
-    have hreachGuard : (modelChecker v φ).Reaches (encStructure a)
-        ((modelChecker v φ).Running (((encStructure a).length + 1) ^ v.maxArity))
-        (E, regs₁) (if a.1 < 2 then F else E + 1, regs₁) := by
-      refine Reaches.lt hguard hB₁ ?_
-      simp only [eval_reg, eval_const, h0₁ hwf]
-      exact Reaches.refl _
-    by_cases hn : 2 ≤ a.1
-    · let _ : Fact (2 ≤ a.1) := ⟨hn⟩
-      rw [ite_eq_right (Nat.not_lt.mpr hn)] at hreachGuard
-      obtain ⟨res, regs₂, hres, hreach₂, -, -, hB₂⟩ :=
-        ModelChecker.reaches_formulaCode hwf hnB (fun e : Empty => e.elim) 3 (by decide)
-          (fun e => e.elim) default φ _ _ _ regs₁ default hcomp (by rw [hlen₁]; simp)
-          (h0₁ hwf) hB₁ (fun e => e.elim) (fun i => i.elim0)
-      refine ⟨(if res then A else F, regs₂), (hreach₁.trans hreachGuard).trans hreach₂, ?_, hB₂⟩
-      have hmem : a ∈ queryLanguage v φ ↔ res = true := by
-        rw [mem_queryLanguage v φ, hres]
-        exact and_iff_right hwf
-      cases res
-      · rw [ite_eq_right Bool.false_ne_true, hrej]
-        simp [hmem]
-      · rw [ite_eq_left rfl, hacc]
-        simp [hmem]
-    · rw [ite_eq_left (Nat.lt_of_not_ge hn)] at hreachGuard
-      refine ⟨(F, regs₁), hreach₁.trans hreachGuard, ?_, hB₁⟩
-      rw [hrej]
-      simp [notMem_queryLanguage_of_lt_two v (Nat.lt_of_not_ge hn) φ]
-  · rw [ite_eq_right hwf] at hreach₁
-    refine ⟨(F, regs₁), hreach₁, ?_, hB₁⟩
-    rw [hrej]
-    simp [queryLanguage, hwf]
+    queryLanguage v φ ∈ Complexity.L encStructure :=
+  mem_L_of_decidingBlock v (k := 0) (s := boundDepth φ)
+    (ModelChecker.length_formulaCode v (fun e : Empty => e.elim) 3 φ)
+    (fun _ h => ⟨h.1, h.2.choose⟩)
+    fun a hwf hn _ b T F regs hP hlen h0 hB => by
+      let _ : Fact (2 ≤ a.1) := ⟨hn⟩
+      obtain ⟨res, regs', hres, hreach, -, -, hB'⟩ :=
+        ModelChecker.reaches_formulaCode hwf (decider_bounds v a 0).2.1 (fun e : Empty => e.elim)
+          3 (by decide) (fun e => e.elim) default φ b T F regs default hP (by omega) h0 hB
+          (fun e => e.elim) (fun i => i.elim0)
+      refine ⟨res, regs', ?_, hreach, hB'⟩
+      rw [mem_queryLanguage v φ, hres]
+      exact (and_iff_right hwf).symm
 
 end Cslib.Logic.FO.Ordered

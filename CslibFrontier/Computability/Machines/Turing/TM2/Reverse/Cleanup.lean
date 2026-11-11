@@ -232,8 +232,7 @@ private theorem stepAux_reverse_nil (v : Control k State) (store : ∀ s : Stack
       haltList (machine q₀ transition) (store .output) := by
   rw [stepAux_reverse, hr]
   change TM2.Cfg.mk none (initialControl q₀) _ = TM2.Cfg.mk none (initialControl q₀) _
-  congr 1
-  funext s
+  congr 1 with s : 1
   cases s with
   | input => simp [machine, ha .input (by simp)]
   | before => simp [machine, ha .before (by simp)]

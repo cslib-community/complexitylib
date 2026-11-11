@@ -9,9 +9,11 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Defs
 public import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.Diamond.Soundness
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Foundations.Data.List.FlatMapRange
 
 /-!
 # Diamond graphs
@@ -25,8 +27,9 @@ choose how many nodes each row has. A diamond graph (`Cslib.Complexity.Diamond.g
   and both ends have arcs to the bottom. Slot `s < slots i` of row `i` is the pair of row nodes
   `3 * s + 2` and `3 * s + 3`, and the nodes `3 * s + 1` separate the pairs;
 * `M` clause nodes;
-* a list of detours `(j, i, s, b)`, each through the node of clause `j` across slot `s` of row `i`:
-  left to right when `b` is true, right to left when it is false.
+* a list of detours (`Cslib.Complexity.Diamond.Detour`), each through clause `d.clause` across
+  `d.slot` of `d.row`: left to right when `d.leftToRight` is true, right to left when it is
+  false.
 
 When the detours across each slot all belong to one clause (`Cslib.Complexity.Diamond.WellFormed`),
 the graph has a Hamiltonian path from the first top to the last bottom exactly when the rows can be
@@ -78,68 +81,13 @@ variable {N : ℕ} {slots : ℕ → ℕ} {M : ℕ} {D : List Detour}
 
 /-! ### Directions satisfying every clause give Hamiltonian paths -/
 
-section Blocks
-
-variable {α : Type*} {R : α → α → Prop} {f : ℕ → List α} {n : ℕ}
-
-/-- Nonempty chains indexed by `0, …, n - 1`, each linked to the next, form a chain. -/
-private theorem isChain_flatMap_range (hne : ∀ a < n, f a ≠ [])
-    (hblock : ∀ a < n, (f a).IsChain R)
-    (hlink : ∀ a, a + 1 < n → ∀ x ∈ (f a).getLast?, ∀ y ∈ (f (a + 1)).head?, R x y) :
-    ((List.range n).flatMap f).IsChain R := by
-  rw [List.flatMap_def, List.isChain_flatten (by simpa using hne)]
-  refine ⟨fun l hl => ?_, ?_⟩
-  · obtain ⟨a, ha, rfl⟩ := List.mem_map.1 hl
-    exact hblock a (List.mem_range.1 ha)
-  · rw [List.isChain_map, List.isChain_range]
-    exact fun a ha => hlink a (by omega)
-
-/-- Nonempty chains indexed by `n - 1, …, 0`, each linked to the previous, form a chain. -/
-private theorem isChain_flatMap_range_reverse (hne : ∀ a < n, f a ≠ [])
-    (hblock : ∀ a < n, (f a).IsChain R)
-    (hlink : ∀ a, a + 1 < n → ∀ x ∈ (f (a + 1)).getLast?, ∀ y ∈ (f a).head?, R x y) :
-    ((List.range n).reverse.flatMap f).IsChain R := by
-  rw [List.flatMap_def, List.isChain_flatten (by simpa using hne)]
-  refine ⟨fun l hl => ?_, ?_⟩
-  · obtain ⟨a, ha, rfl⟩ := List.mem_map.1 hl
-    exact hblock a (List.mem_range.1 (List.mem_reverse.1 ha))
-  · rw [List.isChain_map, List.isChain_reverse, List.isChain_range]
-    exact fun a ha => hlink a (by omega)
-
-private theorem head?_flatMap_range (hn : 0 < n) (h : f 0 ≠ []) :
-    ((List.range n).flatMap f).head? = (f 0).head? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, List.range_succ_eq_map, List.flatMap_cons, List.head?_append_of_ne_nil _ h]
-
-private theorem getLast?_flatMap_range (hn : 0 < n) (h : f (n - 1) ≠ []) :
-    ((List.range n).flatMap f).getLast? = (f (n - 1)).getLast? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, Nat.add_sub_cancel] at h ⊢
-  rw [List.range_succ, List.flatMap_append, List.flatMap_singleton,
-    List.getLast?_append_of_ne_nil _ h]
-
-private theorem head?_flatMap_range_reverse (hn : 0 < n) (h : f (n - 1) ≠ []) :
-    ((List.range n).reverse.flatMap f).head? = (f (n - 1)).head? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, Nat.add_sub_cancel] at h ⊢
-  rw [List.range_succ, List.reverse_append, List.reverse_singleton, List.singleton_append,
-    List.flatMap_cons, List.head?_append_of_ne_nil _ h]
-
-private theorem getLast?_flatMap_range_reverse (hn : 0 < n) (h : f 0 ≠ []) :
-    ((List.range n).reverse.flatMap f).getLast? = (f 0).getLast? := by
-  obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_lt hn
-  rw [Nat.zero_add, List.range_succ_eq_map, List.reverse_cons, List.flatMap_append,
-    List.flatMap_singleton, List.getLast?_append_of_ne_nil _ h]
-
-end Blocks
-
 section DirectionsToPath
 
 variable (N slots M) (dir : ℕ → Bool) (pick : ℕ → Detour)
 
 /-- The clause visited across slot `s` of row `i`: one whose picked detour crosses the slot. -/
 private def visit (i s : ℕ) : Option ℕ :=
-  (List.range M).find? fun j => decide ((pick j).2.1 = i ∧ (pick j).2.2.1 = s)
+  (List.range M).find? fun j => decide ((pick j).row = i ∧ (pick j).slot = s)
 
 /-- The clause visited after row node `a` of row `i` in a rightward traversal: across the slot
 starting at `a`. -/
@@ -250,11 +198,11 @@ private theorem arc_row_pred {i a : ℕ} (hi : i < N) (ha : a + 1 < rowLength sl
     (List.mem_flatMap.2 ⟨a, List.mem_range.2 (by omega), by simp⟩))
 
 variable (hD : WellFormed N slots M D)
-  (hpick : ∀ j < M, pick j ∈ D ∧ (pick j).1 = j ∧ dir (pick j).2.1 = (pick j).2.2.2)
+  (hpick : ∀ j < M, pick j ∈ D ∧ (pick j).clause = j ∧ dir (pick j).row = (pick j).leftToRight)
 include hD hpick
 
 private theorem visit_eq_some_iff {i s j : ℕ} :
-    visit M pick i s = some j ↔ j < M ∧ (pick j).2.1 = i ∧ (pick j).2.2.1 = s := by
+    visit M pick i s = some j ↔ j < M ∧ (pick j).row = i ∧ (pick j).slot = s := by
   constructor
   · intro h
     have hmem := List.mem_of_find?_eq_some h
@@ -280,7 +228,8 @@ private theorem visit_eq_some_iff {i s j : ℕ} :
 /-- A rightward traversal visits clause `j` after row node `a` exactly when `a` starts the slot
 of its picked detour. -/
 private theorem rightVisit_eq_some_iff {i a j : ℕ} :
-    rightVisit M pick i a = some j ↔ j < M ∧ (pick j).2.1 = i ∧ a = 3 * (pick j).2.2.1 + 2 := by
+    rightVisit M pick i a = some j ↔
+      j < M ∧ (pick j).row = i ∧ a = 3 * (pick j).slot + 2 := by
   unfold rightVisit
   split_ifs with h
   · rw [visit_eq_some_iff hD hpick]
@@ -291,7 +240,8 @@ private theorem rightVisit_eq_some_iff {i a j : ℕ} :
 /-- A leftward traversal visits clause `j` after row node `a` exactly when `a` ends the slot of
 its picked detour. -/
 private theorem leftVisit_eq_some_iff {i a j : ℕ} :
-    leftVisit M pick i a = some j ↔ j < M ∧ (pick j).2.1 = i ∧ a = 3 * (pick j).2.2.1 + 3 := by
+    leftVisit M pick i a = some j ↔
+      j < M ∧ (pick j).row = i ∧ a = 3 * (pick j).slot + 3 := by
   unfold leftVisit
   split_ifs with h
   · rw [visit_eq_some_iff hD hpick]
@@ -302,19 +252,19 @@ private theorem leftVisit_eq_some_iff {i a j : ℕ} :
 omit hD in
 /-- The arcs of the picked detour of a clause, in the direction of its row. -/
 private theorem arc_detour {j : ℕ} (hj : j < M) :
-    (dir (pick j).2.1 = true →
-      (rowNode (pick j).2.1 (3 * (pick j).2.2.1 + 2), clauseNode j) ∈ arcs N slots D ∧
-      (clauseNode j, rowNode (pick j).2.1 (3 * (pick j).2.2.1 + 3)) ∈ arcs N slots D) ∧
-    (dir (pick j).2.1 = false →
-      (rowNode (pick j).2.1 (3 * (pick j).2.2.1 + 3), clauseNode j) ∈ arcs N slots D ∧
-      (clauseNode j, rowNode (pick j).2.1 (3 * (pick j).2.2.1 + 2)) ∈ arcs N slots D) := by
+    (dir (pick j).row = true →
+      (rowNode (pick j).row (3 * (pick j).slot + 2), clauseNode j) ∈ arcs N slots D ∧
+      (clauseNode j, rowNode (pick j).row (3 * (pick j).slot + 3)) ∈ arcs N slots D) ∧
+    (dir (pick j).row = false →
+      (rowNode (pick j).row (3 * (pick j).slot + 3), clauseNode j) ∈ arcs N slots D ∧
+      (clauseNode j, rowNode (pick j).row (3 * (pick j).slot + 2)) ∈ arcs N slots D) := by
   obtain ⟨hmem, hcl, hdir⟩ := hpick j hj
   have harc : ∀ e ∈ detourArcs (pick j), e ∈ arcs N slots D := fun e he =>
     List.mem_append_right _ (List.mem_flatMap.2 ⟨pick j, hmem, he⟩)
   refine ⟨fun h => ?_, fun h => ?_⟩
-  · have hb : (pick j).2.2.2 = true := hdir ▸ h
+  · have hb : (pick j).leftToRight = true := hdir ▸ h
     exact ⟨harc _ (by simp [detourArcs, hb, hcl]), harc _ (by simp [detourArcs, hb, hcl])⟩
-  · have hb : (pick j).2.2.2 = false := hdir ▸ h
+  · have hb : (pick j).leftToRight = false := hdir ▸ h
     exact ⟨harc _ (by simp [detourArcs, hb, hcl]), harc _ (by simp [detourArcs, hb, hcl])⟩
 
 /-- No clause is visited across the right end of a row. -/
@@ -339,7 +289,7 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
     arc_of_mem_diamondArcs hi he
   unfold rowPath
   split_ifs with hd
-  · refine ⟨isChain_flatMap_range (fun a _ => step_ne_nil a)
+  · refine ⟨List.isChain_flatMap_range (fun a _ => step_ne_nil a)
       (fun a _ => isChain_step fun j hv => ?_)
       (fun a ha => link_step (arc_row_succ hi ha) fun j hv => ?_), ?_, ?_, ?_⟩
     · obtain ⟨hj, rfl, rfl⟩ := (rightVisit_eq_some_iff hD hpick).1 hv
@@ -347,11 +297,11 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
     · obtain ⟨hj, rfl, rfl⟩ := (rightVisit_eq_some_iff hD hpick).1 hv
       exact ((arc_detour (N := N) (slots := slots) hpick hj).1 hd).2
     · intro x hx
-      rw [head?_flatMap_range hpos (step_ne_nil 0), head?_step, Option.mem_some_iff] at hx
+      rw [List.head?_flatMap_range hpos (step_ne_nil 0), head?_step, Option.mem_some_iff] at hx
       subst hx
       exact hdiam _ (by simp [diamondArcs])
     · intro x hx
-      rw [getLast?_flatMap_range hpos (step_ne_nil _)] at hx
+      rw [List.getLast?_flatMap_range hpos (step_ne_nil _)] at hx
       unfold step rightVisit at hx
       rw [show (rowLength slots i - 1) / 3 = slots i by omega, visit_last hD hpick] at hx
       simp only [ite_self, Option.map_none, Option.toList_none, List.getLast?_singleton,
@@ -360,21 +310,21 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
       exact hdiam _ (by simp [diamondArcs])
     · simpa using ⟨0, hpos, step_ne_nil 0⟩
   · have hd' : dir i = false := by simpa using hd
-    refine ⟨isChain_flatMap_range_reverse (fun a _ => step_ne_nil a)
+    refine ⟨List.isChain_flatMap_reverse_range (fun a _ => step_ne_nil a)
       (fun a _ => isChain_step fun j hv => ?_)
       (fun a ha => link_step (arc_row_pred hi ha) fun j hv => ?_), ?_, ?_, ?_⟩
     · obtain ⟨hj, rfl, rfl⟩ := (leftVisit_eq_some_iff hD hpick).1 hv
       exact ((arc_detour (N := N) (slots := slots) hpick hj).2 hd').1
     · obtain ⟨hj, rfl, ha'⟩ := (leftVisit_eq_some_iff hD hpick).1 hv
-      obtain rfl : a = 3 * (pick j).2.2.1 + 2 := by omega
+      obtain rfl : a = 3 * (pick j).slot + 2 := by omega
       exact ((arc_detour (N := N) (slots := slots) hpick hj).2 hd').2
     · intro x hx
-      rw [head?_flatMap_range_reverse hpos (step_ne_nil _), head?_step,
+      rw [List.head?_flatMap_reverse_range hpos (step_ne_nil _), head?_step,
         Option.mem_some_iff] at hx
       subst hx
       exact hdiam _ (by simp [diamondArcs])
     · intro x hx
-      rw [getLast?_flatMap_range_reverse hpos (step_ne_nil 0)] at hx
+      rw [List.getLast?_flatMap_reverse_range hpos (step_ne_nil 0)] at hx
       simp only [step, leftVisit, lt_irrefl, and_false, ite_false, Option.map_none,
         Option.toList_none, List.getLast?_singleton, Option.mem_def, Option.some.injEq] at hx
       subst hx
@@ -384,9 +334,9 @@ private theorem rowPath_spec {i : ℕ} (hi : i < N) :
 /-- Steps over the nodes of row `i` visit its row nodes and the nodes of the clauses picked
 across it, when each clause is visited after the node at offset `c ≤ 3` of its slot. -/
 private theorem mem_flatMap_step {i v c : ℕ} {o : ℕ → Option ℕ} (hc : c ≤ 3)
-    (ho : ∀ a j, o a = some j ↔ j < M ∧ (pick j).2.1 = i ∧ a = 3 * (pick j).2.2.1 + c) :
+    (ho : ∀ a j, o a = some j ↔ j < M ∧ (pick j).row = i ∧ a = 3 * (pick j).slot + c) :
     (∃ a < rowLength slots i, v ∈ step i o a) ↔ (∃ a < rowLength slots i, v = rowNode i a) ∨
-      (∃ j < M, (pick j).2.1 = i ∧ v = clauseNode j) := by
+      (∃ j < M, (pick j).row = i ∧ v = clauseNode j) := by
   simp only [mem_step]
   constructor
   · rintro ⟨a, ha, rfl | ⟨j, hv, rfl⟩⟩
@@ -397,14 +347,14 @@ private theorem mem_flatMap_step {i v c : ℕ} {o : ℕ → Option ℕ} (hc : c 
     · exact ⟨a, ha, Or.inl rfl⟩
     · have hs := hD.slot_lt _ (hpick j hj).1
       rw [hji] at hs
-      exact ⟨3 * (pick j).2.2.1 + c, by simp only [rowLength]; omega,
+      exact ⟨3 * (pick j).slot + c, by simp only [rowLength]; omega,
         Or.inr ⟨j, (ho _ j).2 ⟨hj, hji, rfl⟩, rfl⟩⟩
 
 /-- The traversal of row `i` visits its row nodes and the nodes of the clauses picked across it.
 -/
 private theorem mem_rowPath {i v : ℕ} :
     v ∈ rowPath slots M dir pick i ↔ (∃ a < rowLength slots i, v = rowNode i a) ∨
-      (∃ j < M, (pick j).2.1 = i ∧ v = clauseNode j) := by
+      (∃ j < M, (pick j).row = i ∧ v = clauseNode j) := by
   unfold rowPath
   split_ifs
   · simp only [List.mem_flatMap, List.mem_range]
@@ -429,7 +379,7 @@ private theorem isDirHamPath_hamPath :
     fun _ => List.cons_ne_nil _ _
   have hmem_block : ∀ {i v}, v ∈ topNode i :: rowPath slots M dir pick i ↔ v = topNode i ∨
       (∃ a < rowLength slots i, v = rowNode i a) ∨
-      (∃ j < M, (pick j).2.1 = i ∧ v = clauseNode j) := by
+      (∃ j < M, (pick j).row = i ∧ v = clauseNode j) := by
     intro i v
     rw [List.mem_cons, mem_rowPath hD hpick]
   refine ⟨?_, fun v => ?_, ?_, ?_, ?_⟩
@@ -478,14 +428,14 @@ private theorem isDirHamPath_hamPath :
     rcases Nat.eq_zero_or_pos N with h | h
     · simp [h]
     · rw [List.head?_append_of_ne_nil _ (by simpa using ⟨0, h⟩),
-        head?_flatMap_range h (hblock_ne 0)]
+        List.head?_flatMap_range h (hblock_ne 0)]
       rfl
   · -- It ends at the bottom of the last diamond.
     rw [hamPath, List.getLast?_append_of_ne_nil _ (List.cons_ne_nil _ _)]
     rfl
   · -- Consecutive vertices are joined by arcs.
     rw [hamPath, List.isChain_append]
-    refine ⟨isChain_flatMap_range (fun i _ => hblock_ne i) (fun i hi => ?_) (fun i hi => ?_),
+    refine ⟨List.isChain_flatMap_range (fun i _ => hblock_ne i) (fun i hi => ?_) (fun i hi => ?_),
       List.IsChain.singleton _, ?_⟩
     · obtain ⟨hch, hhead, -, -⟩ := rowPath_spec hD hpick hi
       exact List.isChain_cons.2 ⟨hhead, hch⟩
@@ -501,7 +451,7 @@ private theorem isDirHamPath_hamPath :
       rcases Nat.eq_zero_or_pos N with h | h
       · simp [h] at hx
       · obtain ⟨-, -, hlast, hne⟩ := rowPath_spec hD hpick (i := N - 1) (by omega)
-        rw [getLast?_flatMap_range h (hblock_ne _), ← List.singleton_append,
+        rw [List.getLast?_flatMap_range h (hblock_ne _), ← List.singleton_append,
           List.getLast?_append_of_ne_nil _ hne] at hx
         have := hlast x hx
         rwa [Nat.sub_add_cancel h] at this
@@ -535,8 +485,14 @@ section PolyTime
 open Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Detours encoded with unary clause, row and slot indices. -/
-abbrev encDetour : Detour ↪ List Bool :=
-  encPair encUnary (encPair encUnary (encPair encUnary encBool))
+enc_structure encDetour : Detour where
+  clause : encUnary,
+  row : encUnary,
+  slot : encUnary,
+  leftToRight : encBool
+
+attribute [fun_prop] encDetour_clause_polyTime encDetour_row_polyTime encDetour_slot_polyTime
+  encDetour_leftToRight_polyTime encDetour_mk_polyTime
 
 /-- The top nodes are computable in polynomial time from unary indices. -/
 @[fun_prop]
@@ -578,7 +534,7 @@ theorem computableInPolyTime_graph {α : Type} {encIn : α ↪ List Bool} {N M :
     unfold diamondArcs rowLength
     fun_prop
   have hdet : ComputableInPolyTime detourArcs encDetour (encList (encPair encNat encNat)) := by
-    unfold detourArcs encDetour
+    unfold detourArcs
     fun_prop
   have harcs : ComputableInPolyTime (fun a => arcs (N a) (slots a) (D a)) encIn
       (encList (encPair encNat encNat)) := by

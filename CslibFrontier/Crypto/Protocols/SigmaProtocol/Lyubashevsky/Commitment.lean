@@ -79,19 +79,15 @@ private theorem intBox_shift_lookup_le {Ω M D : Type} [DecidableEq M]
   let test := fun aw : Matrix (Fin n) (Fin m) (ZMod q) × (Fin n → ZMod q) =>
     (H aw.1).map (fun h => (cache h).lookup (msg h, aw.2 - shift aw.1 h) |>.isSome)
   have hc : CloseTo real ideal
-      (ENNReal.ofReal (Real.sqrt ((q : ℝ) ^ n / ((2 * r + 1 : ℕ) : ℝ) ^ m) / 2)) := by
-    let ε : ℝ≥0 := ⟨Real.sqrt ((q : ℝ) ^ n / ((2 * r + 1 : ℕ) : ℝ) ^ m) / 2, by positivity⟩
-    change CloseTo real ideal (ENNReal.ofReal (ε : ℝ))
-    rw [ENNReal.ofReal_coe_nnreal]
-    exact closeTo_of_dist_le (ε := ε) (dist_intBox_mulVec_le n m q r hr)
+      (ENNReal.ofReal (Real.sqrt ((q : ℝ) ^ n / ((2 * r + 1 : ℕ) : ℝ) ^ m) / 2)) :=
+    closeTo_of_dist_le_ofReal (dist_intBox_mulVec_le n m q r hr)
   have hreal : real.bind test = (do
       let A ← PMF.uniformOfFintype (Matrix (Fin n) (Fin m) (ZMod q))
       let h ← H A
       let y ← uniformOfFinset (intBox (Fin m) r) (intBox_nonempty r)
       return (cache h).lookup (msg h, A *ᵥ (Int.cast ∘ y) - shift A h) |>.isSome) := by
     simp only [pmf_norm, real, test, PMF.map]
-    congr 1
-    funext A
+    congr 1 with A : 1
     exact PMF.bind_comm _ _ _
   have hideal : ideal.bind test = (do
       let A ← PMF.uniformOfFintype (Matrix (Fin n) (Fin m) (ZMod q))
@@ -99,8 +95,7 @@ private theorem intBox_shift_lookup_le {Ω M D : Type} [DecidableEq M]
       let w ← PMF.uniformOfFintype (Fin n → ZMod q)
       return (cache h).lookup (msg h, w - shift A h) |>.isSome) := by
     simp only [pmf_norm, ideal, test, PMF.map]
-    congr 1
-    funext A
+    congr 1 with A : 1
     exact PMF.bind_comm _ _ _
   have hi : (ideal.bind test) true ≤ Q / (q : ℝ≥0∞) ^ n := by
     rw [hideal]

@@ -53,6 +53,8 @@ this form by drawing its coins in advance. The statements are exact; no efficien
 * `Cslib.OracleComp.interpret_uniform_eq`, `Cslib.OracleComp.run_interpret_countingUniform_eq`:
   uniform answers as they come, or presampled.
 * `Cslib.OracleComp.le_add_sqrt_fork`: the forking lemma for oracle programs.
+* `Cslib.OracleComp.toReal_le_add_sqrt_fork_of_le`: the same in the form a reduction uses it, for
+  an event bounded by the acceptance probability and a fork bounded by the reduction's game.
 * `Cslib.OracleComp.mem_support_fork`: both runs of a successful fork ask the same queries up to
   the named one, and answer it differently.
 * `Cslib.OracleComp.take_runWithAnswers`: a program's first `n + 1` queries depend only on its
@@ -376,6 +378,26 @@ theorem le_add_sqrt_fork (first : PMF S)
     rfl
   rw [hacc]
   exact Forking.le_add_sqrt_fork first _
+
+/-- The forking lemma for oracle programs (`le_add_sqrt_fork`) in the form a reduction uses it:
+if an event has probability at most `acc + ε`, where `acc` is the probability that the program
+validly names one of its queries, and forking succeeds with probability at most `succ`, then the
+event has real probability at most `q / |H| + √(q · succ) + ε`. -/
+theorem toReal_le_add_sqrt_fork_of_le (first : PMF S)
+    (program : S → OracleComp (fun _ : Query => H) (Option ℕ × β)) (default : H)
+    {q : ℕ} (hq : ∀ s, (program s).IsQueryBounded q) {p ε succ : ENNReal} (hε : ε ≠ ⊤)
+    (hacc : p ≤ first.bind (fun s => ((interpret countingUniform (program s)).run 0).bind
+      fun run => PMF.pure (validIndex q run.2 (forkNamedPosition run)).isSome) true + ε)
+    (hfork : (Forking.fork first (forkingAlgorithm default q program)).map Option.isSome true ≤
+      succ) (hsucc : succ ≠ ⊤) :
+    p.toReal ≤ q / Fintype.card H + √(q * succ.toReal) + ε.toReal := by
+  have h := le_add_sqrt_fork first program default hq
+  simp only [Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure] at h
+  have hp := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _, hε⟩) hacc
+  rw [ENNReal.toReal_add (PMF.apply_ne_top _ _) hε] at hp
+  have hsqrt := Real.sqrt_le_sqrt (mul_le_mul_of_nonneg_left (ENNReal.toReal_mono hsucc hfork)
+    (Nat.cast_nonneg q))
+  linarith
 
 /-- A successful fork of a program reruns it on the same coins with answers that agree before the
 named position `j` and differ at it. Both runs name `j`, ask the same first `j + 1` queries, and

@@ -189,8 +189,7 @@ private theorem run_eq_of_not_reach (m : M) {w : Wire n s}
         by_contra h
         exact hlive ⟨hs, h⟩
       rw [L.run_gate_of_not_special m x hs, L.run_gate_of_not_special m y hs]
-      congr 1
-      funext a
+      congr 1 with a : 1
       have := a.isLt
       omega
 

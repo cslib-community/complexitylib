@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.PropertyTesting.DenseGraph.Basic
 public import Mathlib.Combinatorics.SimpleGraph.Bipartite
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.SymmDiff
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Vector
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.Product
@@ -671,8 +672,8 @@ private theorem evalWith_sample_replicateFin {n : ℕ} (G : SimpleGraph (Fin n))
       (ProbOracleComp.sample (spec := pairSpec (Fin n))
         (OracleComp.replicateFin k (ProbComp.unifFin n'))) =
       Probability.PMF.uniformOfFintype (Fin k → Fin (n' + 1)) := by
-  rw [evalWith_sample, ProbComp.eval_replicateFin, ProbComp.eval_unifFin,
-    Probability.PMF.pi_uniformOfFintype]
+  rw [ProbOracleComp.evalWith_sumHandler_unifOracle_sample, ProbComp.eval_replicateFin,
+    ProbComp.eval_unifFin, Probability.PMF.pi_uniformOfFintype]
 
 /-- The acceptance probability of a run is the fraction of accepted samples. -/
 theorem acceptProb_bipartiteRun (n' s m : ℕ) (G : SimpleGraph (Fin (n' + 1)))

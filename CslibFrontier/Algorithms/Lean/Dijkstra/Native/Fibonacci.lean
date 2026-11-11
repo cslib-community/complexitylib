@@ -122,12 +122,7 @@ private theorem target_realizes : Realizes .exact targetProgram targetInput
   have he := FibonacciHeap.layout_abs_congr (n := d.1.1.1.1) (base := d.1.1.1.2) (s := s)
     (s' := ⟨Function.update s.mem (d.1.1.2.base + d.1.2) (d.2.1 + d.2.2 + 1), s.frontier⟩) hframe
   have hx0 : s.mem (d.1.1.2.base + d.1.2) ≠ 0 := by assumption
-  have hdecode : Dictionary.Memory.decode (s.mem (d.1.1.2.base + d.1.2)) =
-      some (s.mem (d.1.1.2.base + d.1.2) - 1) := by
-    cases hx : s.mem (d.1.1.2.base + d.1.2) with
-    | zero => exact False.elim (hx0 hx)
-    | succ x => rfl
-  rw [hdecode] at hop
+  rw [Dictionary.Memory.decode_of_ne_zero hx0] at hop
   obtain ⟨⟨old, hOld, hle⟩, hkey⟩ := hop hc
   refine ⟨hwindow, halloc, ⟨d.1.2, hv⟩, K, old, rfl, hK, ?_, ?_, hle, hkey⟩
   · change FibonacciHeap.Inv d.1.1.1.1 K ((FibonacciHeap.layout d.1.1.1.1 d.1.1.1.2).abs

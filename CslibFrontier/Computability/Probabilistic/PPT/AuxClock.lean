@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Basic
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Probabilistic polynomial-time programs clocked in a designated primary input
@@ -537,12 +538,12 @@ private theorem runFrom_takeFromWorkTM (x : List Bool) (K : ℕ) (out₀ : List 
   have hseq₁ := runFrom_seq hcore' rfl hrewW rfl
   let rewI : MultiTapeTM 1 Bool RewindState := (rewindInput Bool).extendTapes (noTapes 1)
   have hrewI_early :
-      rewI.runFrom ((Sequential.rightCfg (State₀ := Unit) mid₂).withState (some rewI.q₀))
+      rewI.runFrom ((mid₂.mapState (Option.map (Sum.inr (α := Unit)))).withState (some rewI.q₀))
         (min K x.length + 2) =
       wordsCfg x none (fun _ => List.replicate K true) (out₀ ++ x.take K) := by
     dsimp only [rewI]
     rw [runFrom_noTapes]
-    have hno : noTapesCfg ((Sequential.rightCfg (State₀ := Unit) mid₂).withState
+    have hno : noTapesCfg ((mid₂.mapState (Option.map (Sum.inr (α := Unit)))).withState
         (some rewI.q₀)) =
         ⟨some (rewindInput Bool).q₀, ⟨min K x.length + 1, by lia⟩,
           Fin.elim0, Fin.elim0, out₀ ++ x.take K⟩ :=
@@ -552,7 +553,8 @@ private theorem runFrom_takeFromWorkTM (x : List Bool) (K : ℕ) (out₀ : List 
     rw [hno, htime, runFrom_rewindInput]
     exact Cfg.ext rfl rfl rfl rfl rfl
   have hrewI :
-      rewI.runFrom ((Sequential.rightCfg (State₀ := Unit) mid₂).withState (some rewI.q₀)) (K + 2) =
+      rewI.runFrom ((mid₂.mapState (Option.map (Sum.inr (α := Unit)))).withState (some rewI.q₀))
+        (K + 2) =
       wordsCfg x none (fun _ => List.replicate K true) (out₀ ++ x.take K) := by
     rw [runFrom_eq_of_halt rewI _ (by lia : min K x.length + 2 ≤ K + 2)
       (by rw [hrewI_early]; rfl), hrewI_early]
@@ -583,8 +585,7 @@ private theorem computesTidily_takePrefixPTM {k : ℕ} {State : Type}
       (fun w' => Function.update (fun _ => []) (Fin.last k) w') (fun _ => []) := by
     refine hbudget.outputToWord_of_le (l := K) ?_ []
     intro OracleState oracle s w' s' hw'
-    simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw'
-    rcases Prod.mk.inj hw' with ⟨rfl, rfl⟩
+    supp_cases hw' [ProbOracleComp.runWith_pure] with ⟨rfl, rfl⟩
     simp
   have hinj₁ : Function.Injective
       (fun w' : List Bool => (Function.update (fun _ : Fin (k + 1) => []) (Fin.last k) w',
@@ -641,8 +642,7 @@ private theorem computesTidily_takePrefixPTM {k : ℕ} {State : Type}
         x (Function.update (fun _ => []) (Fin.last k) w') ([] ++ []) ((3 * K + 5) + 3 * (K + 1))
         (pure (x.take K)) (fun _ _ => []) id := by
     intro w' OracleState oracle s s' hw'
-    simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw'
-    rcases Prod.mk.inj hw' with ⟨rfl, rfl⟩
+    supp_cases hw' [ProbOracleComp.runWith_pure] with ⟨rfl, rfl⟩
     have hseq := hp₂.seq_pure_right hinj₂ hp₃
     have happend : (fun a : List Bool => id a ++ []) = id := by
       funext a
@@ -703,12 +703,10 @@ theorem IsOraclePPTOn.isOraclePPTWithAux_take
     have hcomp := hunframe.comp_of_le (prog₂ := fun w => pure (encUnary (limitFn w)))
       (t₂ := tLimit n) (l := n) true
       (fun OracleState oracle s w s' hw => by
-        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
-        rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
+        supp_cases hw [ProbOracleComp.runWith_pure] with ⟨rfl, rfl⟩
         exact le_rfl)
       (fun w OracleState oracle s s' hw => by
-        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
-        rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
+        supp_cases hw [ProbOracleComp.runWith_pure] with ⟨rfl, rfl⟩
         simpa only [map_pure, encBits_apply, tLimit, n] using htmLimit u)
     simpa only [pure_bind, encUnary_apply, limitFn, K, n] using hcomp
   have htrunc : tmTrunc.ComputesTidily x (tTrunc n)
@@ -730,12 +728,10 @@ theorem IsOraclePPTOn.isOraclePPTWithAux_take
       (prog₂ := fun _ => output <$> program a (z.take (c * (n + 1) ^ d)))
       (t₂ := tProg n) (l := K n) true
       (fun OracleState oracle s w s' hw => by
-        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
-        rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
+        supp_cases hw [ProbOracleComp.runWith_pure] with ⟨rfl, rfl⟩
         exact hwTrunc_len)
       (fun w OracleState oracle s s' hw => by
-        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hw
-        rcases Prod.mk.inj hw with ⟨rfl, rfl⟩
+        supp_cases hw [ProbOracleComp.runWith_pure] with ⟨rfl, rfl⟩
         refine (htmProg (a, z.take (c * (n + 1) ^ d))).mono ?_
         exact Nat.mul_le_mul_left cP (Nat.pow_le_pow_left (Nat.add_le_add_right hwTrunc_len 1) dP))
     rw [pure_bind] at hcomp

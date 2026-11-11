@@ -25,6 +25,7 @@ witnesses read them in this form (`Cslib.Complexity.mem_NP_of_colorOf`).
 ## Main definitions
 
 * `Cslib.Complexity.colorOf`: the color of a vertex in a list of colors.
+* `Cslib.Complexity.encColoredGraph`: graphs with a list of vertex colors.
 
 ## Main results
 
@@ -66,6 +67,10 @@ the entry of `cs` at the first occurrence of `v`, and `0` when there is none. -/
 @[expose]
 def colorOf (G : Graph) (cs : List ℕ) (v : ℕ) : ℕ := cs.getD (G.1.idxOf v) 0
 
+/-- Graphs with vertex colors: the graph (`encGraph`), framed, then the list of colors parallel to
+its vertex list (`Cslib.Complexity.colorOf`), each color framed and in binary. -/
+abbrev encColoredGraph : Graph × List ℕ ↪ List Bool := encPair encGraph (encList encNat)
+
 /-- The list of the colors of the declared vertices under `c` gives every declared vertex its
 color. -/
 @[simp]
@@ -79,7 +84,7 @@ theorem colorOf_map {G : Graph} {c : ℕ → ℕ} {v : ℕ} (hv : v ∈ G.1) :
 @[fun_prop]
 theorem computableInPolyTime_colorOf :
     ComputableInPolyTime (fun p : (Graph × List ℕ) × ℕ => colorOf p.1.1 p.1.2 p.2)
-      (encPair (encPair encGraph (encList encNat)) encNat) encNat := by
+      (encPair encColoredGraph encNat) encNat := by
   unfold colorOf
   fun_prop [Graph.computableInPolyTime_fst]
 
@@ -105,29 +110,30 @@ theorem Graph.length_encList_map_le {G : Graph} {f : ℕ → ℕ} {n : ℕ} (hG 
   nlinarith
 
 /-- **NP membership from a bounded vertex labeling.** Let `check` be polynomial-time on instances
-`(G, b)` paired with a list of vertex labels (`Cslib.Complexity.colorOf`). If every accepted list
-certifies membership in `S`, and every member `(G, b) ∈ S` has a labeling `g` of the declared
-vertices bounded by `G.1.length` whose list `G.1.map g` is accepted by `check`, then
-`S ∈ NP (encPair encGraph encB)`. -/
-theorem mem_NP_of_colorOf {β : Type} {encB : β ↪ List Bool} {S : Set (Graph × β)}
-    {check : (Graph × β) × List ℕ → Bool}
-    (hcheck : ComputableInPolyTime check (encPair (encPair encGraph encB) (encList encNat)) encBool)
-    (hsound : ∀ G b cs, check ((G, b), cs) = true → (G, b) ∈ S)
-    (hcomplete : ∀ G b, (G, b) ∈ S →
-      ∃ g : ℕ → ℕ, (∀ v ∈ G.1, g v ≤ G.1.length) ∧ check ((G, b), G.1.map g) = true) :
-    S ∈ NP (encPair encGraph encB) := by
+`x` paired with a list of vertex labels (`Cslib.Complexity.colorOf`). If every accepted list
+certifies membership in `S`, and every member `x ∈ S` has a labeling `g` of the declared vertices
+`(graph x).1` bounded by `(graph x).1.length` whose list `(graph x).1.map g` is accepted by
+`check`, then `S ∈ NP enc`. -/
+theorem mem_NP_of_colorOf {α : Type} {enc : α ↪ List Bool} (graph : α → Graph) {S : Set α}
+    {check : α × List ℕ → Bool}
+    (hcheck : ComputableInPolyTime check (encPair enc (encList encNat)) encBool)
+    (hlen : ∀ x, (graph x).1.length ≤ (enc x).length)
+    (hsound : ∀ x cs, check (x, cs) = true → x ∈ S)
+    (hcomplete : ∀ x, x ∈ S →
+      ∃ g : ℕ → ℕ, (∀ v ∈ (graph x).1, g v ≤ (graph x).1.length) ∧
+        check (x, (graph x).1.map g) = true) :
+    S ∈ NP enc := by
   have hset : S = {x | ∃ cs : List ℕ, check (x, cs) = true} := by
-    ext ⟨G, b⟩
-    exact ⟨fun h => let ⟨g, _, hg⟩ := hcomplete G b h; ⟨G.1.map g, hg⟩,
-      fun ⟨cs, hcs⟩ => hsound G b cs hcs⟩
+    ext x
+    exact ⟨fun h => let ⟨g, _, hg⟩ := hcomplete x h; ⟨(graph x).1.map g, hg⟩,
+      fun ⟨cs, hcs⟩ => hsound x cs hcs⟩
   rw [hset]
   refine mem_NP_of_witness (p := 2 * Polynomial.X ^ 2 + Polynomial.X) (.list .nat) hcheck
     (fun _ _ => Iff.rfl) ?_
-  rintro ⟨G, b⟩ cs hcs
-  obtain ⟨g, hgle, hg⟩ := hcomplete G b (hsound G b cs hcs)
-  have hN : G.1.length ≤ (encPair encGraph encB (G, b)).length :=
-    G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, b))
-  refine ⟨G.1.map g, hg, ?_⟩
+  rintro x cs hcs
+  obtain ⟨g, hgle, hg⟩ := hcomplete x (hsound x cs hcs)
+  have hN : (graph x).1.length ≤ (enc x).length := hlen x
+  refine ⟨(graph x).1.map g, hg, ?_⟩
   have h := Graph.length_encList_map_le hN fun v hv => (hgle v hv).trans hN
   simpa only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X,
     Polynomial.eval_ofNat] using h

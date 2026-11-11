@@ -53,16 +53,8 @@ theorem norm_inner_sq_add_sq_measureProb_sub_le_one {ι : Type*} [Fintype ι]
   classical
   set p := measureProb ψ S
   set q := measureProb φ S
-  have hp1 : measureProb ψ Sᶜ = 1 - p := by
-    have := measureProb_univ ψ
-    rw [← union_compl S, measureProb, sum_union disjoint_compl_right, hψ] at this
-    change p + measureProb ψ Sᶜ = 1 ^ 2 at this
-    linarith
-  have hq1 : measureProb φ Sᶜ = 1 - q := by
-    have := measureProb_univ φ
-    rw [← union_compl S, measureProb, sum_union disjoint_compl_right, hφ] at this
-    change q + measureProb φ Sᶜ = 1 ^ 2 at this
-    linarith
+  have hp1 : measureProb ψ Sᶜ = 1 - p := by rw [measureProb_compl, hψ, one_pow]
+  have hq1 : measureProb φ Sᶜ = 1 - q := by rw [measureProb_compl, hφ, one_pow]
   -- Cauchy–Schwarz on `S` and on its complement
   have hcs (T : Finset ι) : ‖∑ k ∈ T, (starRingEnd ℂ) (ψ.ofLp k) * φ.ofLp k‖ ≤
       √(measureProb ψ T) * √(measureProb φ T) := by
@@ -146,3 +138,13 @@ theorem one_sub_two_mul_sqrt_nonneg (ε : ℝ) : 0 ≤ 1 - 2 * √(ε * (1 - ε)
   linarith
 
 end Cslib.Quantum
+
+/-- Weighted AM–GM: for `w² ≤ a b` with `a, b, x, y ≥ 0`, `2 w (x y) ≤ a x² + b y²`. -/
+theorem two_mul_mul_le_of_sq_le_mul {w x y a b : ℝ}
+    (hx : 0 ≤ x) (hy : 0 ≤ y) (ha : 0 ≤ a) (hb : 0 ≤ b) (h : w ^ 2 ≤ a * b) :
+    2 * w * (x * y) ≤ a * x ^ 2 + b * y ^ 2 := by
+  have hw : w ≤ √a * √b := (Real.le_sqrt_of_sq_le h).trans_eq (Real.sqrt_mul ha b)
+  calc
+    2 * w * (x * y) ≤ 2 * (√a * x) * (√b * y) := by nlinarith [mul_nonneg hx hy]
+    _ ≤ (√a * x) ^ 2 + (√b * y) ^ 2 := two_mul_le_add_sq _ _
+    _ = a * x ^ 2 + b * y ^ 2 := by simp [mul_pow, Real.sq_sqrt ha, Real.sq_sqrt hb]

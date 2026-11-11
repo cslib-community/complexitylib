@@ -128,8 +128,7 @@ theorem run_singleOracle_independent (P : ι → Prover Unit) (i₀ : ι)
       change ((ProbComp.unifOracle n).map (·, s)).bind _ =
         ((ProbComp.unifOracle n).map (·, s i₀)).bind _
       rw [PMF.bind_map, PMF.bind_map]
-      congr 1
-      funext bit
+      congr 1 with bit : 1
       exact ih bit s
     | inr q =>
       obtain ⟨⟨⟩, msg⟩ := q
@@ -137,8 +136,7 @@ theorem run_singleOracle_independent (P : ι → Prover Unit) (i₀ : ι)
           (fun x => (x.1, Function.update s i₀ x.2))).bind _ =
         (((P i₀).respond ((), msg) (s i₀))).bind _
       rw [PMF.bind_map]
-      congr 1
-      funext x
+      congr 1 with x : 1
       simpa only [Function.comp_apply, Function.update_self] using
         ih x.1 (Function.update s i₀ x.2)
 

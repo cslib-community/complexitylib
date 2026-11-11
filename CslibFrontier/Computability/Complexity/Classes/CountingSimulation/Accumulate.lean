@@ -173,14 +173,17 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
     have hacc := length_encNat_mono (foldl_add_mod_lt (f := fun i => r (c, i)) (hpos c) j).le
     have hj' := length_encNat_mono hj
     enc_len [S, L, lm, lk] at hacc hj' ⊢
-  have hround_time (c : C) (j : ℕ) (hj : j ≤ count c) :
-      cstep.time (IndexFold.run (modSumStep r modulus count) j (c, 0)) ≤ U c + R c := by
+  -- One round costs at most `U c + R c` time and `U c + Q c` space.
+  have hround (c : C) (j : ℕ) (hj : j ≤ count c) :
+      cstep.time (IndexFold.run (modSumStep r modulus count) j (c, 0)) ≤ U c + R c ∧
+        cstep.space (IndexFold.run (modSumStep r modulus count) j (c, 0)) ≤ U c + Q c := by
     have hs := hstate c j hj
     rw [run_modSumStep hj] at hs ⊢
     set acc := (List.range j).foldl (fun acc i => (acc + r (c, i)) % modulus c) 0
     simp only [cstep, yes, NativeCertificate.congr, NativeCertificate.branch_time,
-      NativeCertificate.prod_time, NativeCertificate.comp_time, Function.comp_apply]
-    have h1 := (bT (j, (c, acc))).1.trans (mT hs)
+      NativeCertificate.branch_space, NativeCertificate.prod_time, NativeCertificate.prod_space,
+      NativeCertificate.comp_time, NativeCertificate.comp_space, Function.comp_apply]
+    have h1 := (bT (j, (c, acc))).imp (·.trans (mT hs)) (·.trans (mT hs))
     split_ifs with hlt
     · have hjc : j < count c := of_decide_eq_true hlt
       have hacc_lt : acc < modulus c := foldl_add_mod_lt (hpos c) j
@@ -190,43 +193,16 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
         have := length_encNat_mono hacc_lt.le
         have := length_encNat_mono hrj.le
         enc_len [S', lm] at *
-      have h2 := (bC (j, (c, acc))).1.trans (mC hs)
-      have h3 := (bA (j, (c, acc))).1.trans (mA hs)
-      have h4 := (bW (j, (c, acc))).1.trans (mW hs)
-      have h5 := (bM (j, (c, acc))).1.trans (mM hs)
-      have h6 := (bD (acc, r (c, j), modulus c)).1.trans (mD hq)
+      have h2 := (bC (j, (c, acc))).imp (·.trans (mC hs)) (·.trans (mC hs))
+      have h3 := (bA (j, (c, acc))).imp (·.trans (mA hs)) (·.trans (mA hs))
+      have h4 := (bW (j, (c, acc))).imp (·.trans (mW hs)) (·.trans (mW hs))
+      have h5 := (bM (j, (c, acc))).imp (·.trans (mM hs)) (·.trans (mM hs))
+      have h6 := (bD (acc, r (c, j), modulus c)).imp (·.trans (mD hq)) (·.trans (mD hq))
       have h7 := hR c j hjc
+      have h8 := hQ c j hjc
       simp only [U]
       omega
-    · have h2 := (bN (j, (c, acc))).1.trans (mN hs)
-      simp only [U]
-      omega
-  have hround_space (c : C) (j : ℕ) (hj : j ≤ count c) :
-      cstep.space (IndexFold.run (modSumStep r modulus count) j (c, 0)) ≤ U c + Q c := by
-    have hs := hstate c j hj
-    rw [run_modSumStep hj] at hs ⊢
-    set acc := (List.range j).foldl (fun acc i => (acc + r (c, i)) % modulus c) 0
-    simp only [cstep, yes, NativeCertificate.congr, NativeCertificate.branch_space,
-      NativeCertificate.prod_space, NativeCertificate.comp_space, Function.comp_apply]
-    have h1 := (bT (j, (c, acc))).2.trans (mT hs)
-    split_ifs with hlt
-    · have hjc : j < count c := of_decide_eq_true hlt
-      have hacc_lt : acc < modulus c := foldl_add_mod_lt (hpos c) j
-      have hrj := hr c j hjc
-      have hq : (encPair encNat (encPair encNat encNat)
-          (acc, r (c, j), modulus c)).length ≤ S' c := by
-        have := length_encNat_mono hacc_lt.le
-        have := length_encNat_mono hrj.le
-        enc_len [S', lm] at *
-      have h2 := (bC (j, (c, acc))).2.trans (mC hs)
-      have h3 := (bA (j, (c, acc))).2.trans (mA hs)
-      have h4 := (bW (j, (c, acc))).2.trans (mW hs)
-      have h5 := (bM (j, (c, acc))).2.trans (mM hs)
-      have h6 := (bD (acc, r (c, j), modulus c)).2.trans (mD hq)
-      have h7 := hQ c j hjc
-      simp only [U]
-      omega
-    · have h2 := (bN (j, (c, acc))).2.trans (mN hs)
+    · have h2 := (bN (j, (c, acc))).imp (·.trans (mN hs)) (·.trans (mN hs))
       simp only [U]
       omega
   have hacc_len (c : C) (j : ℕ) (hj : j ≤ count c) :
@@ -237,7 +213,7 @@ theorem exists_computableInO_modSum {encC : C ↪ List Bool}
     enc_len [B, L, lm] at this ⊢
   have hrun := IndexFold.computableInO (NativeCertificate.ofPolyTime hcount)
     (NativeCertificate.ofPolyTime hinit) cstep (fun c => U c + R c) (fun c => U c + Q c) B
-    hround_time hround_space hacc_len
+    (fun c j hj => (hround c j hj).1) (fun c j hj => (hround c j hj).2) hacc_len
   have hout := (ComputableInO.snd encC encNat).comp_linear
     ((ComputableInO.snd encNat (encPair encC encNat)).comp_linear hrun)
   -- Collect the polynomial overhead.

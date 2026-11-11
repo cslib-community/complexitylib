@@ -144,8 +144,7 @@ theorem senderRun_eq {State : Type} (A : Sender State) (k : ℕ) (st : State)
   induction k generalizing st with
   | zero =>
       simp only [senderRun, senderTables_zero, Probability.PMF.monad_pure_eq_pure, PMF.pure_map]
-      congr 2
-      funext i
+      congr 2 with i : 1
       exact Fin.elim0 i
   | succ k ih =>
       simp only [pmf_norm, senderRun, senderTables_succ, transfer_eq, ih]
@@ -153,8 +152,7 @@ theorem senderRun_eq {State : Type} (A : Sender State) (k : ℕ) (st : State)
       funext ⟨t, next⟩
       congr 1
       funext ⟨ts, final⟩
-      congr 2
-      funext i
+      congr 2 with i : 1
       refine Fin.cases ?_ (fun j => ?_) i <;> rfl
 
 /-- Test two candidate openings to opposite bits; `none` is abort. -/

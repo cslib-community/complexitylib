@@ -134,7 +134,7 @@ private theorem Inv.treeOf_adj {E : Set (CEdge V)} (I : Inv f L R E) {x y : V} :
 
 /-- A tree edge other than that of `e` does not cross the label of `e`. -/
 private theorem Inv.mem_iff_of_adj {E : Set (CEdge V)} (I : Inv f L R E) {e : CEdge V}
-    (he : e ∈ E) {x y : V}
+    (he : e ∈ E) ⦃x y : V⦄
     (hxy : (treeOf E).Adj x y) (hne : s(x, y) ≠ s(e.u, e.v)) : x ∈ e.S ↔ y ∈ e.S := by
   obtain ⟨e', he', hends⟩ := I.treeOf_adj.mp hxy
   have hee' : e ≠ e' := by
@@ -145,17 +145,6 @@ private theorem Inv.mem_iff_of_adj {E : Set (CEdge V)} (I : Inv f L R E) {e : CE
   rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
   · exact I.nest e he e' he' hee'
   · exact (I.nest e he e' he' hee').symm
-
-/-- Deleting the edge of `e` from the tree leaves no path across the label of `e`. -/
-private theorem Inv.mem_iff_of_reachable {E : Set (CEdge V)} (I : Inv f L R E) {e : CEdge V}
-    (he : e ∈ E) {x y : V}
-    (h : ((treeOf E).deleteEdges {s(e.u, e.v)}).Reachable x y) : x ∈ e.S ↔ y ∈ e.S := by
-  rw [SimpleGraph.reachable_iff_reflTransGen] at h
-  induction h with
-  | refl => exact Iff.rfl
-  | tail _ hbc ih =>
-    rw [SimpleGraph.deleteEdges_adj, Set.mem_singleton_iff] at hbc
-    exact ih.trans (I.mem_iff_of_adj he hbc.1 hbc.2)
 
 /-- A partial tree on all vertices is a spanning tree. -/
 private theorem Inv.isTree [Fintype V] [Nonempty V] {E : Set (CEdge V)}
@@ -172,9 +161,11 @@ private theorem Inv.isTree [Fintype V] [Nonempty V] {E : Set (CEdge V)}
     rw [SimpleGraph.isBridge_iff]
     have hS := I.edge e he
     rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
-    · exact fun h => hS.right_notMem ((I.mem_iff_of_reachable he h).mp hS.left_mem)
+    · exact fun h => hS.right_notMem
+        ((h.mem_iff_of_forall_adj (I.mem_iff_of_adj he)).mp hS.left_mem)
     · rw [Sym2.eq_swap]
-      exact fun h => hS.right_notMem ((I.mem_iff_of_reachable he h).mpr hS.left_mem)
+      exact fun h => hS.right_notMem
+        ((h.mem_iff_of_forall_adj (I.mem_iff_of_adj he)).mpr hS.left_mem)
 
 end Tree
 
@@ -401,7 +392,7 @@ theorem exists_isGomoryHuTree [Nonempty V] {f : Finset V → β} (hsym : ∀ X, 
   -- No other tree edge crosses `e.S`, so it is the side of the edge of `e` containing `e.u`.
   have hside : edgeSide (treeOf E) e.u e.v = e.S :=
     SimpleGraph.edgeSide_eq_of_forall_adj htree hadj hS.left_mem hS.right_notMem
-      fun _ _ => I.mem_iff_of_adj he
+      (I.mem_iff_of_adj he)
   rcases hends with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
   · rw [hside]
     exact hS

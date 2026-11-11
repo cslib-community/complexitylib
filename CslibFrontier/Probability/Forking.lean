@@ -190,11 +190,9 @@ private theorem forkAt_eq_twice (first : PMF S) (A : S → (Fin q → H) → Opt
   conv_lhs => enter [2, r]; rw [← bind_glue j]
   simp only [splice_glue, glue_self, PMF.bind_const]
   rw [PMF.bind_comm]
-  congr 1
-  funext t'
+  congr 1 with t' : 1
   congr 1 with r : 1
-  congr 1
-  funext r'
+  congr 1 with r' : 1
   congr 1
   simp only [Bool.decide_and, ne_eq, decide_not, Bool.and_assoc]
   rfl

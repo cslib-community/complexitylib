@@ -304,8 +304,8 @@ theorem eval_game_restrict {Msg : Type} (valid : ℕ → List Bool → Msg → M
       ProbComp.eval (gameOn valid keyGen encrypt adversary bit n) := by
   simp only [pmf_norm, game, gameOn, AdversaryOf.restrict, ChoiceOut.msgs, ChoiceOut.msg₀,
     ChoiceOut.msg₁, ↓reduceIte, apply_ite ProbComp.eval]
-  congr 1; funext keys
-  congr 1; funext choice
+  congr 1 with keys : 1
+  congr 1 with choice : 1
   cases valid n keys.1 choice.1.1 choice.1.2 <;>
     simp [PMF.bind_const]
 

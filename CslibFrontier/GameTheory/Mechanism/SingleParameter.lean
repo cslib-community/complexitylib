@@ -12,7 +12,7 @@ public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.Data.Set.Finite.Basic
 public import Mathlib.Order.Monotone.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import Mathlib.Data.Finset.Max
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -219,11 +219,8 @@ arbitrarily. Welfare maximization (`IsWelfareMaximizing`) is the case `φᵢ = i
 allocation `y`. -/
 private theorem sum_update_weight [DecidableEq ι] (φ : ι → ℝ → ℝ) (b y : ι → ℝ) (i : ι) (z : ℝ) :
     ∑ j, φ j (Function.update b i z j) * y j =
-      φ i z * y i + ∑ j ∈ Finset.univ.erase i, φ j (b j) * y j := by
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i), Function.update_self]
-  congr 1
-  refine Finset.sum_congr rfl fun j hj => ?_
-  rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
+      φ i z * y i + ∑ j ∈ Finset.univ.erase i, φ j (b j) * y j :=
+  Finset.sum_apply_update_of_mem (Finset.mem_univ i) (fun j c => φ j c * y j) b z
 
 /-- **Virtual-welfare maximization is monotone** when every `φᵢ` is strictly increasing on
 `[0, ∞)`, whatever the tie-breaking ([Roughgarden2013CS364A], Lecture 5, §3.1). Comparing the

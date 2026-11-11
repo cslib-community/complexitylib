@@ -149,6 +149,19 @@ example : IsPPTOn encBits encBits (aliasPure rawOnlyReverse) := by
   fail_if_success ppt
   exact aliasPure_raw rawOnlyReverse_tidy
 
+-- Conditional guards in `ppt` stay on the plain `ComputableInPolyTime` calculus.
+example (yes no : List Bool → ProbComp (List Bool))
+    (hyes : IsPPTOn encBits encBits yes) (hno : IsPPTOn encBits encBits no) :
+    IsPPTOn encBits encBits
+      (fun word => if (rawOnlyReverse word).isEmpty then yes word else no word) ∧
+    IsPPTOn encBits encBits
+      (fun word => if rawOnlyReverse word = [] then yes word else no word) := by
+  refine ⟨?_, ?_⟩
+  · fail_if_success ppt
+    fun_prop
+  · fail_if_success ppt
+    fun_prop
+
 /-- A reducible client wrapper keeps the actual iteration operation visible to dispatch. -/
 abbrev wrappedIterate {State : Type} (count : ℕ) (step : State → ProbComp State)
     (initial : State) : ProbComp State :=

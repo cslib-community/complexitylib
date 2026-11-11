@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.BallPath
 public import CslibFrontier.Logics.FirstOrder.Locality.Hanf
+import CslibFrontier.Tactic.FirstOrder.Simp
 import Mathlib.Basic.Finite.Sum
 import Mathlib.Order.Interval.Finset.Fin
 import Mathlib.Order.SuccPred.Nat
@@ -53,8 +54,9 @@ graph, and `(Fin N, ⋖)` is the successor relation on `N` points.
   `distLE (k + 1)` (`exists_nbhdIso_realize_distLE`). So any radius that makes all formulas of rank
   `n` Gaifman-local on finite graphs is at least `2 ^ (n - 1)` (`two_pow_le_of_gaifman_radius`),
   against the upper bound `(3 ^ (n + 1) - 1) / 2` of [Libkin, Corollary 4.13][Libkin2004]. The
-  exact value `2 ^ n - 1` of [Libkin, Exercises 4.10 and 4.11 (pp. 63–64)][Libkin2004] is not
-  formalized here.
+  exact values `2 ^ (n - 1) - 1` and `2 ^ n - 1` of
+  [Libkin, Exercises 4.10 and 4.11 (pp. 63–64)][Libkin2004] are proved in
+  `CslibFrontier.Logics.FirstOrder.Locality.Sharp`.
 
 All formulas range over the pure graph vocabulary `FirstOrder.Language.graph`, with no built-in
 order or arithmetic. The constants come from Gaifman's radius; they are not claimed to be sharp.
@@ -299,14 +301,13 @@ theorem not_exists_formula_transGen :
     ¬ ∃ φ : Language.graph.Formula (Fin 2), ∀ (M : Type u) [Finite M]
       [Language.graph.Structure M] (a b : M),
       φ.Realize ![a, b] ↔ Relation.TransGen (fun x y : M => RelMap adj ![x, y]) a b := by
+  -- `φ(x, y) ∨ x = y` would then define the reflexive–transitive closure.
   rintro ⟨φ, hφ⟩
-  set N := 2 * 3 ^ (quantifierRank φ + 1) + 1
-  let := @Equiv.inducedStructure Language.graph (Fin N) (ULift.{u} (Fin N))
-    (relStructure (· ⋖ ·)) Equiv.ulift.symm
-  have := card_le_of_realize_iff_transGen (N := N) (φ := φ) fun a b => by
-    rw [← realize_ulift, hφ]
-    exact ⟨fun h => h.lift ULift.down fun _ _ h => h, fun h => h.lift ULift.up fun _ _ h => h⟩
-  omega
+  refine not_exists_formula_reflTransGen.{u} ⟨φ ⊔ (Term.var 0).equal (Term.var 1), ?_⟩
+  intro M _ _ a b
+  rw [Relation.reflTransGen_iff_eq_or_transGen, Formula.realize_sup, hφ, Formula.realize_equal]
+  simp only [Term.realize_var, Matrix.cons_val_zero, Matrix.cons_val_one]
+  exact or_comm.trans (or_congr_left eq_comm)
 
 /-! ### Undirected reachability -/
 
@@ -443,15 +444,12 @@ def distLE : ℕ → Language.graph.Formula (Fin 2)
 
 theorem realize_distLE_zero {M : Type*} [Language.graph.Structure M] (x y : M) :
     (distLE 0).Realize ![x, y] ↔ x = y ∨ RelMap adj ![x, y] := by
-  simp only [distLE, Formula.realize_sup, Formula.realize_equal, Formula.realize_rel₂,
-    Term.realize_var]
-  rfl
+  fo_simp [distLE]
 
 theorem realize_distLE_succ {M : Type*} [Language.graph.Structure M] (k : ℕ) (x y : M) :
     (distLE (k + 1)).Realize ![x, y] ↔
       ∃ z, (distLE k).Realize ![x, z] ∧ (distLE k).Realize ![z, y] := by
-  simp only [distLE, Formula.Realize, BoundedFormula.realize_ex, BoundedFormula.realize_inf,
-    BoundedFormula.realize_relabel]
+  fo_simp [distLE, Formula.Realize]
   refine exists_congr fun z => and_congr ?_ ?_ <;>
   · apply iff_of_eq
     congr 1
@@ -506,7 +504,7 @@ theorem exists_nbhdIso_realize_distLE (k : ℕ) :
 quantifier rank at most `n` Gaifman-local on finite graphs (as `(3 ^ (n + 1) - 1) / 2` does,
 [Libkin, Corollary 4.13][Libkin2004]), then `ρ (k + 1) ≥ 2 ^ k`. This is Libkin's lower bound
 `lr(d_k) ≥ 2 ^ (k - 1)`; the exact Gaifman rank `2 ^ n - 1` ([Libkin, Exercise 4.11][Libkin2004])
-is not formalized. -/
+is proved in `CslibFrontier.Logics.FirstOrder.Locality.Sharp`. -/
 theorem two_pow_le_of_gaifman_radius {ρ : ℕ → ℕ}
     (hρ : ∀ (n : ℕ) (V : Type) [Finite V] (G : SimpleGraph V) (a b : Fin 2 → V)
       (φ : Language.graph.Formula (Fin 2)), quantifierRank φ ≤ n →

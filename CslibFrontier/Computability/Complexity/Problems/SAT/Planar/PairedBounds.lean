@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathBou
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing
 import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathGeometry
 import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalPath
+import CslibFrontier.Foundations.Data.List.GetD
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith
@@ -100,17 +101,6 @@ private theorem cellBound_clause {φ : CNF ℕ} {i : ℕ} (hi : i < φ.length) :
   simp only [CellBound, Layout.center, Nat.cast_add]
   omega
 
-private theorem crossover_variable_bounds : ∀ v,
-    20 ≤ (PairedCrossover.variablePosition v).1 ∧ (PairedCrossover.variablePosition v).1 ≤ 220 ∧
-      20 ≤ (PairedCrossover.variablePosition v).2 ∧ (PairedCrossover.variablePosition v).2 ≤ 220 :=
-  by decide +kernel
-
-private theorem crossover_clause_bounds : ∀ p ∈ PairedCrossover.clausePositions,
-    20 ≤ p.1 ∧ p.1 ≤ 220 ∧ 20 ≤ p.2 ∧ p.2 ≤ 220 := by decide +kernel
-
-private theorem crossover_core_bounds : ∀ e ∈ PairedCrossover.incidenceRoutes, ∀ p ∈ e.2.2,
-    20 ≤ p.1 ∧ p.1 ≤ 220 ∧ 20 ≤ p.2 ∧ p.2 ≤ 220 := by decide +kernel
-
 private theorem outputBound_variable {φ : CNF ℕ} {v : Variable} (hv : CellBound φ v.1) :
     OutputBound φ (variablePosition v) := by
   apply outputBound_add hv
@@ -120,7 +110,7 @@ private theorem outputBound_variable {φ : CNF ℕ} {v : Variable} (hv : CellBou
     simp only [Sum.elim_inl]
     omega
   | inr w =>
-    have hw := crossover_variable_bounds w
+    have hw := PairedCrossover.variable_bounds w
     simp only [Sum.elim_inr]
     omega
 
@@ -147,10 +137,8 @@ private theorem lastLiteral_bounds {φ : CNF ℕ} {o : Occurrence ℕ}
       ∀ a ∈ (lastLiteral sites (occurrencePath φ o) o.2.2.2).2, OutputBound φ a := by
   let r := occurrencePath φ o
   have hlen : 2 ≤ r.length := PlanarCompile.occurrencePath_length_ge_two ho
-  have hp : CellBound φ (r.getD (r.length - 2) (0, 0)) := by
-    apply cellBound_occurrencePath ho
-    rw [List.getD_eq_getElem _ _ (show r.length - 2 < r.length by omega)]
-    exact List.getElem_mem _
+  have hp : CellBound φ (r.getD (r.length - 2) (0, 0)) :=
+    cellBound_occurrencePath ho (List.getD_mem (0, 0) (show r.length - 2 < r.length by omega))
   have hq : CellBound φ (r.getLastD (0, 0)) := by
     rw [List.getLastD_eq_getLast?, (PlanarCompile.occurrencePath_endpoints ho).2,
       Option.getD_some]
@@ -200,8 +188,7 @@ private theorem ordinaryClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     have hi : ci.2 < OrdinaryRing.clausePositions.length := by
       rw [OrdinaryRing.drawing_sizes.1]
       exact (OrdinaryRing.formula_sizes.1 ▸ (List.mem_zipIdx' hci).1)
-    have hb := OrdinaryRing.clause_bounds _ (List.getElem_mem hi)
-    rw [List.getD_eq_getElem _ _ hi]
+    have hb := OrdinaryRing.clause_bounds _ (List.getD_mem (0, 0) hi)
     omega
   · intro l hl
     obtain ⟨v, _, rfl⟩ := List.mem_map.mp hl
@@ -223,8 +210,7 @@ private theorem crossingClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     have hi : ci.2 < PairedCrossover.clausePositions.length := by
       rw [show PairedCrossover.clausePositions.length = 78 by decide +kernel]
       exact (PairedCrossover.length_formula ▸ (List.mem_zipIdx' hci).1)
-    have hb := crossover_clause_bounds _ (List.getElem_mem hi)
-    rw [List.getD_eq_getElem _ _ hi]
+    have hb := PairedCrossover.clause_bounds _ (List.getD_mem (0, 0) hi)
     omega
   · intro l hl
     obtain ⟨v, _, rfl⟩ := List.mem_map.mp hl
@@ -234,7 +220,7 @@ private theorem crossingClauses_bounds {φ : CNF ℕ} {p : Point} (hp : CellBoun
     obtain ⟨b, hb, rfl⟩ := List.mem_map.mp ha
     rw [add_comm]
     apply outputBound_add hp
-    have h := crossover_core_bounds e (List.mem_filter.mp he).1 b hb
+    have h := PairedCrossover.core_bounds e (List.mem_filter.mp he).1 b hb
     omega
 
 
@@ -381,17 +367,13 @@ private theorem links_stat (sites : List Point) (r : Route) (cost : PlacedClause
     simp [Nat.mul_comm]
   rw [he, length_links, ← Nat.mul_assoc, Nat.mul_comm k 2]
 
-private theorem segments_translate (p : Point) (r : Route) :
-    (translate p r).consecutivePairs.length = r.consecutivePairs.length := by
-  simp [translate, List.consecutivePairs]
-
 private theorem ordinary_route_costs (p : Point) :
     ((ordinaryClauses p).map fun c => c.2.2.length).sum = 16 ∧
       ((ordinaryClauses p).map fun c =>
         (c.2.2.map fun r => r.consecutivePairs.length).sum).sum = 16 ∧
       ((ordinaryClauses p).map fun c => (c.2.2.map wireLength).sum).sum = 800 := by
   simp only [ordinaryClauses, List.map_map, Function.comp_def, List.length_map,
-    segments_translate, wireLength_translate]
+    consecutivePairs_length_translate, wireLength_translate]
   decide +kernel
 
 private theorem crossing_route_costs (p : Point) :
@@ -400,7 +382,7 @@ private theorem crossing_route_costs (p : Point) :
         (c.2.2.map fun r => r.consecutivePairs.length).sum).sum = 407 ∧
       ((crossingClauses p).map fun c => (c.2.2.map wireLength).sum).sum = 2192 := by
   simp only [crossingClauses, List.map_map, Function.comp_def, List.length_map,
-    segments_translate, wireLength_translate]
+    consecutivePairs_length_translate, wireLength_translate]
   decide +kernel
 
 private theorem access_wire_cost (sites : List Point) (p q : Point) (lane : Fin 2) :

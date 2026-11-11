@@ -81,8 +81,7 @@ theorem frame_encClause (c : Clause ℕ) :
   congr 1
   change doubled (c.flatMap fun l => frame (encPair encNat encBool l)) = _
   rw [doubled_flatMap]
-  congr 1
-  funext l
+  congr 1 with l : 1
   simp [frame_eq_doubled, doubled_doubled_doubled, literalBits]
 
 /-- **The flat layout of an encoded formula.** -/

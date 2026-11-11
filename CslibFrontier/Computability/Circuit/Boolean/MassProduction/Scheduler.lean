@@ -80,10 +80,10 @@ private theorem exists_finalOutput_circuit (D L s : ℕ) :
       funext fun x => ?_⟩
     have h := congrFun (congrFun (eval_bitonicSortCircuit labelBit D true (fun i => g i x))
       (Fin.cast h2.symm (rank ip.1))) (lineBit cb.1 cb.2)
-    have hin : directProductInput (fun i => g i x) =
+    have hin : BitString.block (fun i => g i x) =
         fun j f => x (finProdFinEquiv (Fin.cast h2 j, f)) := by
       funext j f
-      simp only [directProductInput, g, Equiv.symm_apply_apply]
+      simp only [BitString.block, g, Equiv.symm_apply_apply]
     rw [hin] at h
     exact h
   obtain ⟨c, hc, hsize⟩ := Synthesis.exists_circuit_outputs

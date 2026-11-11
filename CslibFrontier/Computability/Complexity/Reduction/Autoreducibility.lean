@@ -409,14 +409,6 @@ private theorem computableInLogSpace_of_exists_finite_ne {f : α → β}
   ⟨_, 0, h.mono (fun _ => le_rfl) fun _ => Nat.zero_le _⟩
 
 open scoped Classical in
-private theorem computableInLogSpace_decide_eq (x₀ : α) :
-    ComputableInLogSpace (fun a => decide (a = x₀)) encA encBool := by
-  apply computableInLogSpace_of_exists_finite_ne
-  refine ⟨false, (Set.finite_singleton x₀).subset fun a ha => ?_⟩
-  by_contra h
-  simp [Set.mem_singleton_iff.not.mp h] at ha
-
-open scoped Classical in
 private theorem computableInLogSpace_alt (encA : α ↪ List Bool) (x₀ x₁ : α) :
     ComputableInLogSpace (fun a => if a = x₀ then x₁ else x₀) encA encA := by
   apply computableInLogSpace_of_exists_finite_ne
@@ -466,16 +458,11 @@ theorem LogSpaceManyOneAutoreducible.of_two_mem_two_notMem (hA : A ∈ L encA)
     LogSpaceManyOneAutoreducible encA A := by
   classical
   obtain ⟨d, hd, hAd⟩ := hA
-  -- the verdict and two equality tests, then a finite lookup table
-  let choose : Bool × (Bool × Bool) → α :=
-    fun p => if p.1 then (if p.2.1 then y₁ else y₀) else (if p.2.2 then n₁ else n₀)
-  have hf : ComputableInLogSpace (choose ∘ fun a => (d a, (decide (a = y₀), decide (a = n₀))))
-      encA encA :=
-    (ComputableInLogSpace.of_finite choose).comp (hd.pair
-      ((computableInLogSpace_decide_eq y₀).pair (computableInLogSpace_decide_eq n₀)))
+  have hf : ComputableInLogSpace (twoPointAutoreduction d y₀ y₁ n₀ n₁) encA encA :=
+    ComputableInLogSpace.ite hd (computableInLogSpace_alt encA y₀ y₁)
+      (computableInLogSpace_alt encA n₀ n₁)
   obtain ⟨hne, hmem⟩ := twoPointAutoreduction_spec hAd hy₀ hy₁ hyne hn₀ hn₁ hnne
-  refine ⟨twoPointAutoreduction d y₀ y₁ n₀ n₁, ⟨hf.congr_fun fun a => ?_, hne⟩, hmem⟩
-  simp only [twoPointAutoreduction, choose, Function.comp_apply, decide_eq_true_eq]
+  exact ⟨_, ⟨hf, hne⟩, hmem⟩
 
 /-- A set whose members are all or none of the instances is logspace many-one autoreducible as soon
 as there are two distinct instances: map `x₀` to `x₁` and everything else to `x₀`. -/

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Blocks
 import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Bounds
+import CslibFrontier.Tactic.FirstOrder
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -96,13 +97,10 @@ private theorem realize_parameters (h e s m k : (language L).Term α) (v : α �
       2 * ((h.realize v).val + 1) ≤ (k.realize v).val ∧
       (k.realize v).val + (s.realize v).val ≤ 8 * (h.realize v).val ∧
       ((s.realize v).val + 1) * (s.realize v).val ≤ 16 * (h.realize v).val := by
-  simp only [parameters, Formula.realize_inf, realize_highestBit, realize_powerOfTwo,
-    realize_le, realize_max_val, Fin.le_def, and_assoc]
+  fo_simp [parameters, Fin.le_def, and_assoc]
   refine and_congr_right fun _ => and_congr_right fun _ => and_congr_right fun hs =>
     and_congr_right fun _ => and_congr_right fun _ => and_congr_right fun _ => ?_
-  simp only [Formula.realize_iExs, Formula.realize_inf, realize_scaleEq, realize_addEq,
-    realize_le, realize_shiftLeft, Term.realize_var, Term.realize_relabel, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr, realize_one_val, Fin.le_def, and_assoc]
+  fo_simp [Function.comp_def, Fin.le_def, and_assoc]
   constructor
   · rintro ⟨u, ho, hw, hw2, hkw, ho8, hks, hsize, hs1, hcap, hcap'⟩
     have hn := (u 0).isLt
@@ -130,8 +128,7 @@ private theorem block_end_le {q s k : ℕ} (_hs : 0 < s) (hks : s ∣ k) (hq : q
 
 private theorem packedFormula_sound (v : Fin 3 → Fin n)
     (hf : (packedFormula L).Realize v) : (v 0).val * (v 1).val = (v 2).val := by
-  simp only [packedFormula, Formula.realize_iExs, Formula.realize_inf, realize_parameters,
-    Term.realize_var, Sum.elim_inr, and_assoc] at hf
+  fo_simp [packedFormula, realize_parameters, and_assoc] at hf
   obtain ⟨u, hlo, hhi, hs, hk, he, hsh, hspace, hkw, hks, hcap, hzero, hend, hblocks⟩ := hf
   have hp : 2 ^ (u (.inl 0)).val < n := by lia
   have hspos : 0 < (u (.inl 2)).val := hs ▸ Nat.two_pow_pos _
@@ -143,10 +140,8 @@ private theorem packedFormula_sound (v : Fin 3 → Fin n)
   have hcapn : ((u (.inl 2)).val + 1) * (u (.inl 2)).val < n := by lia
   rw [realize_packedField _ _ _ _ _ _ (by simpa using (show 8 * (u (.inl 0)).val < n by lia))]
     at hzero hend
-  simp only [Term.realize_var, Sum.elim_inr, realize_zero_val] at hzero hend
-  simp only [allBlocks, Formula.realize_iAlls, Formula.realize_imp, Formula.realize_inf,
-    Formula.realize_not, realize_shiftLeft, realize_le, Term.realize_var, Term.realize_relabel,
-    Function.comp_def, Sum.elim_inr, Sum.elim_inl, not_le] at hblocks
+  fo_simp at hzero hend
+  fo_simp [allBlocks, Function.comp_def, not_le] at hblocks
   have hinput (i : Fin 3) : (v i).val < 2 ^ ((u (.inl 0)).val + 1) := by
     have := (v i).isLt
     lia
@@ -164,8 +159,7 @@ private theorem packedFormula_sound (v : Fin 3 → Fin n)
   rw [realize_blockChecks _ _ _ _ _ _ _ _ _ (by simpa using hs)
     (by simpa using hcapn) (by simpa [a] using hjend)
     (by simpa using hwidth) (by simpa using hspace)] at hb
-  simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-    Sum.elim_inl, Sum.elim_inr] at hb
+  fo_simp [Function.comp_def] at hb
   obtain ⟨w, h0, hs', ht⟩ := hb
   refine ⟨fun t => BitString.readPackedField (u (.inl 0)).val (fun r => (w r).val)
     (t * (u (.inl 2)).val) (u (.inl 2)).val, ?_, ?_, ?_⟩
@@ -263,9 +257,9 @@ private theorem packedFormula_complete (v : Fin 3 → Fin n) (hn : 257 ≤ n)
   rw [hck] at hgk
   let u : (Fin 5 ⊕ Fin 8) → Fin n :=
     Sum.elim ![⟨h, hhn⟩, ⟨e, hen⟩, ⟨s, hsn⟩, ⟨m, hmn⟩, ⟨k, hkn⟩] g
-  simp only [packedFormula, Formula.realize_iExs]
+  fo_simp [packedFormula]
   refine ⟨u, ?_⟩
-  simp only [Formula.realize_inf, and_assoc]
+  fo_simp [and_assoc]
   refine ⟨?_, ?_, ?_, ?_⟩
   · rw [realize_parameters]
     exact ⟨hlo, hhi, rfl, rfl, hem, hsh, hspace, hkw, hks, hcap⟩
@@ -273,9 +267,7 @@ private theorem packedFormula_complete (v : Fin 3 → Fin n) (hn : 257 ≤ n)
     simpa [u] using hg0.symm
   · rw [realize_packedField _ _ _ _ _ _ (by simpa [u] using (show 8 * h < n by lia))]
     simpa [u] using hgk.symm
-  · simp only [allBlocks, Formula.realize_iAlls, Formula.realize_imp, Formula.realize_inf,
-      Formula.realize_not, realize_shiftLeft, realize_le, Term.realize_var,
-      Term.realize_relabel, Function.comp_def, Sum.elim_inr, Sum.elim_inl, not_le]
+  · fo_simp [allBlocks, Function.comp_def, not_le]
     intro a ⟨haj, hak⟩
     change (a 0).val * s = (a 1).val at haj
     change (a 1).val < k at hak
@@ -285,8 +277,7 @@ private theorem packedFormula_complete (v : Fin 3 → Fin n) (hn : 257 ≤ n)
     rw [realize_blockChecks _ _ _ _ _ _ _ _ _ (by rfl)
       (by simpa [u] using hcapn) (by simpa [u] using (show (a 1).val + s < n by lia))
       (by simpa [u] using hwidth) (by simpa [u] using hspace)]
-    simp only [Term.realize_var, Term.realize_relabel, Function.comp_def,
-      Sum.elim_inl, Sum.elim_inr]
+    fo_simp [Function.comp_def]
     refine exists_local_carries v (h := h) (s := s) (j := (a 1).val) (g := g)
       hp hspace hcap hspos hcwidth (hinput 0) hprod ?_ ?_
     · rw [← haj]
@@ -307,19 +298,17 @@ no candidate output satisfies it when the product is outside `Fin n`. -/
 @[simp, fo_realize]
 public theorem realize_multiplication (v : Fin 3 → Fin n) :
     (multiplication L).Realize v ↔ (v 0).val * (v 1).val = (v 2).val := by
-  simp only [multiplication, Formula.realize_sup]
+  fo_simp [multiplication]
   constructor
   · rintro (hsmall | hlarge)
-    · simp only [Multiplication.smallFormula, Formula.realize_iSup, Formula.realize_inf,
-        realize_natEq, realize_scaleEq, Term.realize_var] at hsmall
+    · fo_simp [Multiplication.smallFormula] at hsmall
       obtain ⟨a, ha, he⟩ := hsmall
       simpa only [ha] using he
     · exact Multiplication.packedFormula_sound v hlarge
   · intro hprod
     by_cases hx : (v 0).val < 256
     · left
-      simp only [Multiplication.smallFormula, Formula.realize_iSup, Formula.realize_inf,
-        realize_natEq, realize_scaleEq, Term.realize_var]
+      fo_simp [Multiplication.smallFormula]
       exact ⟨⟨(v 0).val, hx⟩, rfl, hprod⟩
     · right
       exact Multiplication.packedFormula_complete v (by have := (v 0).isLt; lia) hprod

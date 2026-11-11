@@ -651,7 +651,8 @@ private theorem toClauseSet_normalize (φ : CNF V) :
   congr 1
   simp [CNF.toClauseSet, List.map_map, Function.comp_def, toFinset_dedup]
 
-/-- **Normalization.** Every formula of width `k` has a normal form with the same solutions. -/
+/-- **Normalization.** If every clause of `φ` has at most `k` literals, then `normalize φ` is in
+normal form for width `k`. -/
 theorem normalized_normalize {k : ℕ} {φ : CNF V} (hφ : ∀ C ∈ φ, C.length ≤ k) :
     Normalized k (normalize φ) := by
   have hsub : normalize φ <+ φ.map dedup :=

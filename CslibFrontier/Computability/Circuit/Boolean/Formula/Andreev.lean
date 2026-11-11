@@ -226,8 +226,7 @@ theorem formulaSize_le_of_andreevBlock_nonempty {h : BooleanFunction b}
   have hbind_computes : (F.bind σ).Computes interpretation h := by
     intro z
     rw [eval_bind, hF, comp_apply, andreev_fill_of_extends hext]
-    congr 1
-    funext j
+    congr 1 with j : 1
     have hblock_eq :
         (fun t => ρ.fill (fun i => (σ i).eval interpretation z) (andreevBlockVar b m j t)) =
           update (y₀ j) (t_fn j) (z j ^^ r j) := by

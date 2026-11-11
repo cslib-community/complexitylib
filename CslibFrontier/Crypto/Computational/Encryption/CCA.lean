@@ -289,8 +289,9 @@ def CCA2AdversaryOf.IsQueryBounded {Msg : Type} (adversary : CCA2AdversaryOf Msg
   (∀ n pk, (adversary.choose n pk).IsQueryBounded (Q₁ n)) ∧
   (∀ n state ct, (adversary.guess n state ct).IsQueryBounded (Q₂ n))
 
-/-- Every strict oracle PPT `CCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries,
-Phase 2 queries, and saved-state length in terms of `(n, pk.length, ct.length)`. -/
+/-- Every strict oracle PPT `CCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries and
+saved-state length in terms of `(n, pk.length)`, and on its Phase 2 queries in terms of
+`(n, state.length, ct.length)` for every input state word `state`. -/
 theorem CCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : CCA2AdversaryOf Msg} (hA : adversary.IsPPT encMsg) :
     ∃ c₁ d₁ c₂ d₂ cs ds : ℕ,
@@ -737,8 +738,8 @@ theorem eval_cca2Game_restrict {Msg Out : Type} (valid : ℕ → List Bool → M
   simp only [cca2Game, cca2GameOn, CCA2AdversaryOf.restrict, ↓reduceIte,
     OracleComp.interpret_bind, OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
     ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval]
-  congr 1; funext keys
-  congr 1; funext choiceOut
+  congr 1 with keys : 1
+  congr 1 with choiceOut : 1
   cases valid n keys.1 choiceOut.1.1.1 choiceOut.1.1.2 <;>
     simp [OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure, PMF.bind_const]
 
@@ -986,8 +987,9 @@ def MultiCCA2AdversaryOf.IsQueryBounded {Msg : Type} (adversary : MultiCCA2Adver
   (∀ n state cts, (adversary.guess n state cts).IsQueryBounded (Q₂ n))
 
 /-- Every strict oracle PPT `MultiCCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries,
-Phase 2 queries, challenge-list length, and saved-state length in terms of
-`(n, pk.length, (encList encBits cts).length)`. -/
+challenge-list length, and saved-state length in terms of `(n, pk.length)`, and on its Phase 2
+queries in terms of `(n, state.length, (encList encBits cts).length)` for every input state word
+`state`. -/
 theorem MultiCCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : MultiCCA2AdversaryOf Msg} (hA : adversary.IsPPT encMsg) :
     ∃ c₁ d₁ c₂ d₂ cs ds : ℕ,
@@ -1432,8 +1434,8 @@ theorem eval_cca2MultiGame_restrict {Msg Out : Type} (valid : ℕ → List Bool 
     OracleComp.interpret_bind, OracleComp.interpret_pure,
     StateT.run_bind, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind,
     PMF.pure_bind, apply_ite ProbComp.eval]
-  congr 1; funext keys
-  congr 1; funext choiceOut
+  congr 1 with keys : 1
+  congr 1 with choiceOut : 1
   cases choiceOut.1.1.all (fun p => valid n keys.1 p.1 p.2) <;>
     simp [OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure, PMF.bind_const]
 
@@ -1558,17 +1560,17 @@ theorem CCA2AdversaryOf.isPPT_toMulti {Msg : Type} {encMsg : Msg ↪ List Bool}
     (adversary.toMulti).IsPPT encMsg where
   choose := by
     let EIn := encPair (encPair encMsg encMsg) encBits
-    have hpair : ComputableTidilyInPolyTime
+    have hpair : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => choice.1) EIn (encPair encMsg encMsg) :=
-      ComputableTidilyInPolyTime.fst _ _
-    have hsingleton : ComputableTidilyInPolyTime
+      ComputableInPolyTime.fst _ _
+    have hsingleton : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => [choice.1])
         EIn (encList (encPair encMsg encMsg)) :=
-      ComputableTidilyInPolyTime.cons' hpair (ComputableTidilyInPolyTime.const [])
-    have hstate : ComputableTidilyInPolyTime
+      ComputableInPolyTime.cons' hpair (ComputableInPolyTime.const [])
+    have hstate : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => choice.2) EIn encBits :=
-      ComputableTidilyInPolyTime.snd _ _
-    exact (hA.choose.on.map (ComputableTidilyInPolyTime.prod hsingleton hstate)).isOraclePPT
+      ComputableInPolyTime.snd _ _
+    exact (hA.choose.on.map' (ComputableInPolyTime.prod hsingleton hstate)).isOraclePPT
   guess := by
     let EGuess := encPair encUnary (encPair encBits (encList encBits))
     have hhead : ComputableInPolyTime
@@ -1611,8 +1613,8 @@ theorem eval_cca2MultiGameOn_toMulti {Msg Out : Type}
   simp only [cca2MultiGameOn, cca2GameOn, CCA2AdversaryOf.toMulti, OracleComp.interpret_map,
     StateT.run_map, ProbComp.eval_bind, ProbComp.eval_map, PMF.bind_map,
     Function.comp_def, List.all_cons, List.all_nil, Bool.and_true]
-  congr 1; funext keys
-  congr 1; funext choiceOut
+  congr 1 with keys : 1
+  congr 1 with choiceOut : 1
   by_cases h : valid n keys.1 choiceOut.1.1.1 choiceOut.1.1.2 = true
   · simp [h, cca2MultiPhase2Oracle_singleton]
   · simp [h]
@@ -2467,7 +2469,7 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
     simp only [ProbComp.eval_bind, hguess]
     cases bit
     · simp only [Bool.false_eq_true, ↓reduceIte, cca2MultiHybridCont, ProbComp.eval_bind]
-      congr 1; funext ctsFront
+      congr 1 with ctsFront : 1
       rw [List.drop_eq_getElem_cons hlt, ← htarget_eq, List.mapM_cons]
       simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
       exact PMF.bind_comm _ _ _
@@ -2475,10 +2477,10 @@ private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
       rw [List.take_add_one, List.getElem?_eq_getElem hlt, Option.toList_some, ← htarget_eq,
         List.mapM_append, List.mapM_cons, List.mapM_nil]
       simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-      congr 1; funext ctsFront
+      congr 1 with ctsFront : 1
       rw [PMF.bind_comm]
-      congr 1; funext ct
-      congr 1; funext ctsBack
+      congr 1 with ct : 1
+      congr 1 with ctsBack : 1
       rw [List.append_assoc, List.singleton_append]
   · simp only [hcond, Bool.false_eq_true, ↓reduceIte, OracleComp.interpret_pure, StateT.run_pure,
       ProbComp.eval_pure, PMF.pure_bind]

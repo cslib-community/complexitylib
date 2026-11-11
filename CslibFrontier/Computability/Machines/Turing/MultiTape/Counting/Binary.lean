@@ -29,6 +29,8 @@ not by its input. Distinct indices remain distinct even when their actions or su
 * `Turing.MultiTapeCTM.card_binaryCertificateAccepts`: binary words preserve exact branch counts.
 * `Turing.MultiTapeCTM.decodeCertificate_indices_lt`: a transition-list bound also bounds every
   index in a successful canonical certificate, including terminal padding.
+* `Turing.MultiTapeCTM.exists_branchWidth`: finite control and alphabet fix one positive block
+  width whose codes cover every transition list.
 
 ## References
 
@@ -189,5 +191,15 @@ theorem card_binaryCertificateAccepts {k : ℕ} {Symbol State : Type*} {input : 
     refine ⟨word, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩, hround⟩
     rw [hround]
     exact hverdict
+
+/-- A finite-control machine over a finite alphabet has one positive block width whose `2 ^ width`
+codes cover every transition list, as `card_binaryCertificateAccepts` requires. -/
+theorem exists_branchWidth {k : ℕ} {Symbol State : Type*} [Finite State] [Finite Symbol]
+    (machine : MultiTapeCTM k Symbol State) :
+    ∃ width : ℕ, 0 < width ∧ ∀ (input : List Symbol) (cfg : Cfg k Symbol State input),
+      (machine.actions cfg).length ≤ 2 ^ width := by
+  obtain ⟨bound, hbound⟩ := machine.exists_branchBound
+  exact ⟨bound + 1, bound.succ_pos, fun input cfg =>
+    (hbound input cfg).trans (Nat.lt_two_pow_self.trans' bound.lt_succ_self).le⟩
 
 end Turing.MultiTapeCTM

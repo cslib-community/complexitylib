@@ -190,6 +190,35 @@ private theorem sum_choose_succ_add (r d : ℕ) :
       ∑ j ∈ Finset.range (r + 1 + 1), (d + 1).choose j := by
   simpa only [BitString.ballSize] using (BitString.ballSize_succ_succ d r).symm
 
+/-- Shared induction behind the rank and energy leaf bounds: if, at every node, one child's
+measure is below the node's measure and the other's is at most the node's measure, then a tree of
+measure at most `r` and depth at most `d` has at most `∑ j ∈ Finset.range (r + 1), d.choose j`
+structural leaves. -/
+private theorem leafCount_le_sum_choose_of_measure (μ : DecisionTree ι β → ℕ)
+    (hμ : ∀ i left right,
+      (μ left + 1 ≤ μ (node i left right) ∧ μ right ≤ μ (node i left right)) ∨
+        (μ left ≤ μ (node i left right) ∧ μ right + 1 ≤ μ (node i left right)))
+    (t : DecisionTree ι β) {r d : ℕ} (hr : μ t ≤ r) (hd : t.depth ≤ d) :
+    t.leafCount ≤ ∑ j ∈ Finset.range (r + 1), d.choose j := by
+  induction t generalizing r d with
+  | leaf =>
+    rw [Finset.sum_range_succ']
+    simp [leafCount]
+  | node i left right ihl ihr =>
+    simp only [depth_node] at hd
+    obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
+    have hnode := hμ i left right
+    obtain ⟨r', rfl⟩ : ∃ r', r = r' + 1 := ⟨r - 1, by omega⟩
+    simp only [leafCount, ← sum_choose_succ_add]
+    -- One child loses a unit of measure; the binomial recurrence absorbs the two subtrees.
+    rcases hnode with ⟨hl, hr'⟩ | ⟨hl, hr'⟩
+    · have := ihl (r := r') (d := d') (by omega) (by omega)
+      have := ihr (r := r' + 1) (d := d') (by omega) (by omega)
+      omega
+    · have := ihl (r := r' + 1) (d := d') (by omega) (by omega)
+      have := ihr (r := r') (d := d') (by omega) (by omega)
+      omega
+
 /-- The Ehrenfeucht–Haussler rank of a binary decision tree: leaves have rank zero, a node
 with unequal child ranks has their maximum, and equal child ranks `r` give rank `r + 1`. -/
 def rank : DecisionTree ι β → ℕ
@@ -264,30 +293,9 @@ theorem two_pow_rank_le_leafCount (t : DecisionTree ι β) : 2 ^ t.rank ≤ t.le
 theorem leafCount_le_sum_choose_of_rank_le (t : DecisionTree ι β) {r d : ℕ}
     (hr : t.rank ≤ r) (hd : t.depth ≤ d) :
     t.leafCount ≤ ∑ j ∈ Finset.range (r + 1), d.choose j := by
-  induction t generalizing r d with
-  | leaf =>
-    rw [Finset.sum_range_succ']
-    simp [leafCount]
-  | node _ left right ihl ihr =>
-    simp only [depth_node] at hd
-    obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
-    have hld : left.depth ≤ d' := by omega
-    have hrd : right.depth ≤ d' := by omega
-    simp only [rank] at hr
-    obtain ⟨r', rfl⟩ : ∃ r', r = r' + 1 := ⟨r - 1, by split_ifs at hr <;> omega⟩
-    by_cases hle : left.rank ≤ right.rank
-    · have hlr : left.rank ≤ r' := by split_ifs at hr <;> omega
-      have hrr : right.rank ≤ r' + 1 := by split_ifs at hr <;> omega
-      have hl := ihl hlr hld
-      have hr' := ihr hrr hrd
-      simp only [leafCount, ← sum_choose_succ_add]
-      omega
-    · have hlr : left.rank ≤ r' + 1 := by split_ifs at hr <;> omega
-      have hrr : right.rank ≤ r' := by split_ifs at hr <;> omega
-      have hl := ihl hlr hld
-      have hr' := ihr hrr hrd
-      simp only [leafCount, ← sum_choose_succ_add]
-      omega
+  refine leafCount_le_sum_choose_of_measure rank (fun i left right => ?_) t hr hd
+  rw [rank_node]
+  split_ifs <;> omega
 
 /-- A decision tree of depth `d` and rank `r` has at most
 `∑ j ∈ Finset.range (r + 1), d.choose j` structural leaves. -/
@@ -398,23 +406,9 @@ theorem energy_le_depth (t : DecisionTree ι β) : t.energy ≤ t.depth := by
 theorem leafCount_le_sum_choose_of_energy_le (t : DecisionTree ι β) {e d : ℕ}
     (he : t.energy ≤ e) (hd : t.depth ≤ d) :
     t.leafCount ≤ ∑ j ∈ Finset.range (e + 1), d.choose j := by
-  induction t generalizing e d with
-  | leaf =>
-    rw [Finset.sum_range_succ']
-    simp [leafCount]
-  | node _ left right ihl ihr =>
-    simp only [depth_node] at hd
-    obtain ⟨d', rfl⟩ : ∃ d', d = d' + 1 := ⟨d - 1, by omega⟩
-    have hld : left.depth ≤ d' := by omega
-    have hrd : right.depth ≤ d' := by omega
-    simp only [energy] at he
-    obtain ⟨e', rfl⟩ : ∃ e', e = e' + 1 := ⟨e - 1, by omega⟩
-    have hle : left.energy ≤ e' + 1 := by omega
-    have hre : right.energy ≤ e' := by omega
-    have hl := ihl hle hld
-    have hr := ihr hre hrd
-    simp only [leafCount, ← sum_choose_succ_add]
-    omega
+  refine leafCount_le_sum_choose_of_measure energy (fun i left right => ?_) t he hd
+  rw [energy_node]
+  omega
 
 /-- A decision tree of depth `d` and energy `e` has at most
 `∑ j ∈ Finset.range (e + 1), d.choose j` structural leaves. -/

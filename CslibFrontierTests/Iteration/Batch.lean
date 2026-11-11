@@ -72,14 +72,14 @@ example (c : Circuit signature 2 2) (T : ℕ) :
     (∃ out : Circuit signature (0 * 2) (0 * 2),
       out.Computes interpretation (blockMap (c.eval interpretation)^[T] 0) ∧
         out.size ≤ 100000 * batchBudget 2 c.size 4 0 1) := by
-  refine ⟨?_, batched_fixed_power c 0 T 1 (by decide) one_pos (by decide)⟩
-  simpa [flip] using batched_fixed_power flip 2 T 1 (by decide) one_pos (by decide)
+  refine ⟨?_, batched_fixed_power c 0 T 1 (by decide) one_pos⟩
+  simpa [flip] using batched_fixed_power flip 2 T 1 (by decide) one_pos
 
 -- Two flips, each with its own time.
 example (m : ℕ) : ∃ out : Circuit signature (2 * (1 + m)) (2 * 1),
     out.Computes interpretation (blockMap (inputTimeIterate (flip.eval interpretation) m) 2) ∧
       out.size ≤ m * (100000 * batchBudget 1 1 2 2 1 + 4 * (2 * 1)) := by
-  simpa [flip] using batched_variable_time flip 2 m 1 (by decide) one_pos (by decide)
+  simpa [flip] using batched_variable_time flip 2 m 1 (by decide) one_pos
 
 -- The balanced batched bounds.
 example (c : Circuit signature 3 3) (T : ℕ) : ∃ out : Circuit signature (2 * 3) (2 * 3),
@@ -105,10 +105,10 @@ example : ∃ out : Circuit signature 6 6,
       ![false, true, false, false, false, true] ∧
     out.size ≤ 16500000 := by
   obtain ⟨out, hout, hs⟩ := batched_fixed_power_on flipTail leftHalf 3 3 1
-    flipTail_invariant (by decide) one_pos (by decide)
+    flipTail_invariant (by decide) one_pos
   refine ⟨out, ?_, by simpa [leftHalf, flipTail, batchBudget] using hs⟩
   have hx : ∀ member : Fin 3,
-      directProductInput ![false, false, false, true, false, false] member ∈ leftHalf := by decide
+      BitString.block ![false, false, false, true, false, false] member ∈ leftHalf := by decide
   exact (hout hx).trans (by decide)
 
 -- A single trajectory recovers `powerBudget`; the promise is proper; the improved budget is
@@ -116,7 +116,7 @@ example : ∃ out : Circuit signature 6 6,
 example :
     batchBudget 2 1 leftHalf.card 1 1 = powerBudget 2 1 leftHalf.card 1 ∧
     (¬∀ member : Fin 3,
-      directProductInput ![true, false, false, true, false, false] member ∈ leftHalf) ∧
+      BitString.block ![true, false, false, true, false, false] member ∈ leftHalf) ∧
     (batchBudget 2 1 leftHalf.card 3 1 = 165 ∧ batchBudget 2 1 4 3 1 = 219) ∧
     flipTail.eval interpretation ![false, false] ∉
       ({![false, false]} : Finset (BitString 2)) :=
@@ -127,18 +127,18 @@ example : ∃ out : Circuit signature 6 6,
       ![false, true, false, true, false, true] ∧
     out.size ≤ 13800000 := by
   obtain ⟨out, hout, hs⟩ := batched_fixed_power_on_prefixes flipTail {![false, false]} 3 3 1
-    (by decide) one_pos (by decide)
+    (by decide) one_pos
   refine ⟨out, ?_, by simpa [flipTail, batchBudget] using hs⟩
   have hx : ∀ member : Fin 3, ∀ i : Fin 1,
       (flipTail.eval interpretation)^[i.val]
-        (directProductInput ![false, false, false, false, false, false] member) ∈
+        (BitString.block ![false, false, false, false, false, false] member) ∈
           ({![false, false]} : Finset (BitString 2)) := by decide
   exact (hout hx).trans (by decide)
 
 -- The optimized theorem keeps the same proper input domain.
 example (T : ℕ) : ∃ out : Circuit signature 6 6,
     out.ComputesOn interpretation
-      {x | ∀ member : Fin 3, directProductInput x member ∈ leftHalf}
+      {x | ∀ member : Fin 3, BitString.block x member ∈ leftHalf}
       (blockMap (flipTail.eval interpretation)^[T] 3) ∧
     (out.size : ℝ) ≤ 300000 * optimizedBatchBudget 2 1 2 3 := by
   simpa [leftHalf, flipTail] using

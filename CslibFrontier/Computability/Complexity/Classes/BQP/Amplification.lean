@@ -257,8 +257,7 @@ theorem ofCodes_copiesCodes {gs : List GateCode} (hgs : ∀ g ∈ gs, WellFormed
       ((List.finRange k).map block).flatMap (Circuit.mapWires · (Circuit.ofCodes w gs)) := by
   rw [copiesCodes, Circuit.ofCodes_flatMap, ← List.map_coe_finRange_eq_range, List.flatMap_map,
     List.flatMap_map]
-  congr 1
-  funext j
+  congr 1 with j : 1
   exact Circuit.ofCodes_map_shift _ hgs
 
 theorem pairwise_block :

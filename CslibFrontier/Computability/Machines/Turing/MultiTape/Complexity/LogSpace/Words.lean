@@ -400,18 +400,27 @@ theorem unaryLeConst (k : ℕ) {r : α → ℕ} (hr : ComputableInLogSpace r enc
   change decide (r a ≤ k) = ((List.replicate (r a) true).drop k).isEmpty
   simp [List.drop_replicate, Nat.sub_eq_zero_iff_le]
 
+/-- Selecting among the logspace computations `fun a => g a j`, `j ≤ k`, by a logspace unary
+index clamped at `k`. -/
+private theorem apply_min (k : ℕ) {r : α → ℕ} {g : α → ℕ → β}
+    (hr : ComputableInLogSpace r encIn encUnary)
+    (hg : ∀ j ≤ k, ComputableInLogSpace (fun a => g a j) encIn encOut) :
+    ComputableInLogSpace (fun a => g a (min (r a) k)) encIn encOut := by
+  induction k with
+  | zero => exact (hg 0 le_rfl).congr_fun fun a => by simp
+  | succ k ih =>
+    refine (ite (unaryLeConst k hr) (ih fun j hj => hg j (by omega))
+      (hg (k + 1) le_rfl)).congr_fun fun a => ?_
+    by_cases h : r a ≤ k
+    · simp [h, Nat.min_eq_left (Nat.le_succ_of_le h)]
+    · have h' : k + 1 ≤ r a := Nat.succ_le_of_lt (Nat.lt_of_not_le h)
+      simp [h, Nat.min_eq_right h']
+
 /-- Evaluating any function `g : ℕ → β` on a unary input clamped at a fixed constant `M` is
 computable in logarithmic space. -/
 theorem unaryBoundedMap (M : ℕ) (g : ℕ → β) :
-    ComputableInLogSpace (fun n => g (min n M)) encUnary encOut := by
-  induction M with
-  | zero => exact (const (g 0)).congr_fun fun n => by simp
-  | succ M ih =>
-    refine (ite (unaryLeConst M .id) ih (const (g (M + 1)))).congr_fun fun n => ?_
-    by_cases h : n ≤ M
-    · simp [h, Nat.min_eq_left (Nat.le_succ_of_le h)]
-    · have h' : M + 1 ≤ n := Nat.succ_le_of_lt (Nat.lt_of_not_le h)
-      simp [h, Nat.min_eq_right h']
+    ComputableInLogSpace (fun n => g (min n M)) encUnary encOut :=
+  apply_min M (g := fun _ j => g j) .id fun j _ => const (g j)
 
 /-! ### Bounded-count batch evaluation -/
 
@@ -436,30 +445,9 @@ theorem map_range_of_le (k : ℕ) {r : α → ℕ} {f : α × ℕ → β}
     (hr : ComputableInLogSpace r encIn encUnary) (hrk : ∀ a, r a ≤ k)
     (hf : ComputableInLogSpace f (encPair encIn encUnary) encOut) :
     ComputableInLogSpace (fun a => (List.range (r a)).map fun i => f (a, i)) encIn
-      (encList encOut) := by
-  induction k generalizing α encIn r f with
-  | zero =>
-    refine (const []).congr_fun fun a => ?_
-    have : r a = 0 := Nat.le_zero.mp (hrk a)
-    simp [this]
-  | succ k ih =>
-    have hle := unaryLeConst k hr
-    have htrue : ComputableInLogSpace
-        ((fun a => (List.range (r a)).map fun i => f (a, i)) ∘ Subtype.val)
-        ((Function.Embedding.subtype (fun a => decide (r a ≤ k) = true)).trans encIn)
-        (encList encOut) :=
-      ih (hr.restrict _) (fun ⟨a, ha⟩ => of_decide_eq_true ha)
-        (hf.comp (pair (fst _ _) (snd _ _)))
-    have hfalse : ComputableInLogSpace
-        ((fun a => (List.range (r a)).map fun i => f (a, i)) ∘ Subtype.val)
-        ((Function.Embedding.subtype (fun a => decide (r a ≤ k) = false)).trans encIn)
-        (encList encOut) := by
-      refine ((map_range_const (k + 1) hf).restrict _).congr_fun fun ⟨a, ha⟩ => ?_
-      have hgt : ¬ r a ≤ k := of_decide_eq_false ha
-      have heq : r a = k + 1 := Nat.le_antisymm (hrk a) (Nat.not_le.mp hgt)
-      simp [heq]
-    refine (ite_subtype hle htrue hfalse).congr_fun fun a => ?_
-    split_ifs <;> rfl
+      (encList encOut) :=
+  (apply_min k (g := fun a j => (List.range j).map fun i => f (a, i)) hr
+    fun j _ => map_range_const j hf).congr_fun fun a => by rw [Nat.min_eq_left (hrk a)]
 
 /-- Evaluating a logspace Boolean family `f : α × ℕ → Bool` at the first `k` indices
 `0, …, k - 1`, for a fixed constant `k`, is computable in logarithmic space. -/
@@ -480,30 +468,9 @@ logarithmic space. -/
 theorem mapToBits_range_of_le (k : ℕ) {r : α → ℕ} {f : α × ℕ → Bool}
     (hr : ComputableInLogSpace r encIn encUnary) (hrk : ∀ a, r a ≤ k)
     (hf : ComputableInLogSpace f (encPair encIn encUnary) encBool) :
-    ComputableInLogSpace (fun a => (List.range (r a)).map fun i => f (a, i)) encIn encBits := by
-  induction k generalizing α encIn r f with
-  | zero =>
-    refine (const []).congr_fun fun a => ?_
-    have : r a = 0 := Nat.le_zero.mp (hrk a)
-    simp [this]
-  | succ k ih =>
-    have hle := unaryLeConst k hr
-    have htrue : ComputableInLogSpace
-        ((fun a => (List.range (r a)).map fun i => f (a, i)) ∘ Subtype.val)
-        ((Function.Embedding.subtype (fun a => decide (r a ≤ k) = true)).trans encIn)
-        encBits :=
-      ih (hr.restrict _) (fun ⟨a, ha⟩ => of_decide_eq_true ha)
-        (hf.comp (pair (fst _ _) (snd _ _)))
-    have hfalse : ComputableInLogSpace
-        ((fun a => (List.range (r a)).map fun i => f (a, i)) ∘ Subtype.val)
-        ((Function.Embedding.subtype (fun a => decide (r a ≤ k) = false)).trans encIn)
-        encBits := by
-      refine ((mapToBits_range_const (k + 1) hf).restrict _).congr_fun fun ⟨a, ha⟩ => ?_
-      have hgt : ¬ r a ≤ k := of_decide_eq_false ha
-      have heq : r a = k + 1 := Nat.le_antisymm (hrk a) (Nat.not_le.mp hgt)
-      simp [heq]
-    refine (ite_subtype hle htrue hfalse).congr_fun fun a => ?_
-    split_ifs <;> rfl
+    ComputableInLogSpace (fun a => (List.range (r a)).map fun i => f (a, i)) encIn encBits :=
+  (apply_min k (g := fun a j => (List.range j).map fun i => f (a, i)) hr
+    fun j _ => mapToBits_range_const j hf).congr_fun fun a => by rw [Nat.min_eq_left (hrk a)]
 
 /-! ### Automation
 

@@ -22,7 +22,7 @@ This stage contract is an internal implementation API; the query code is calcula
 original pair, rather than supplied as a source memory word or an output certificate.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted
 

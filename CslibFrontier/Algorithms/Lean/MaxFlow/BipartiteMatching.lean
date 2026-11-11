@@ -299,6 +299,17 @@ selecting pairs `(u, v)` carrying positive flow ([CLRS2009], Lemma 26.9, p. 733)
 @[expose] def flowToMatching (f : (bipartiteNetwork G).Flow) : Finset (L × R) :=
   Finset.univ.filter fun e => 0 < f (.left e.1) (.right e.2)
 
+/-- Two positive terms of a sum of naturals that is at most `1` are the same term. Shared by the
+left and right uniqueness halves of `isMatching_flowToMatching`. -/
+private theorem eq_of_sum_le_one {ι : Type*} [Fintype ι] {g : ι → ℕ} (hg : ∑ i, g i ≤ 1)
+    {i j : ι} (hi : 0 < g i) (hj : 0 < g j) : i = j := by
+  classical
+  by_contra hne
+  have hsub : ∑ k ∈ ({i, j} : Finset ι), g k ≤ ∑ k, g k :=
+    Finset.sum_le_sum_of_subset (Finset.subset_univ _)
+  rw [Finset.sum_pair hne] at hsub
+  omega
+
 theorem isMatching_flowToMatching (f : (bipartiteNetwork G).Flow) :
     IsMatching G (flowToMatching f) := by
   classical
@@ -314,26 +325,14 @@ theorem isMatching_flowToMatching (f : (bipartiteNetwork G).Flow) :
     · rfl
   · intro u v₁ v₂ hv₁ hv₂
     simp only [flowToMatching, Finset.mem_filter, Finset.mem_univ, true_and] at hv₁ hv₂
-    by_contra hne
-    have hpair : ∑ v ∈ ({v₁, v₂} : Finset R), f (.left u) (.right v) =
-        f (.left u) (.right v₁) + f (.left u) (.right v₂) := Finset.sum_pair hne
-    have hsub : ∑ v ∈ ({v₁, v₂} : Finset R), f (.left u) (.right v) ≤
-        ∑ v : R, f (.left u) (.right v) :=
-      Finset.sum_le_sum_of_subset (Finset.subset_univ _)
-    have hcons := bipartiteFlow_left_conserve f u
-    have hcap : f .source (.left u) ≤ 1 := f.le_cap .source (.left u)
-    omega
+    refine eq_of_sum_le_one (g := fun v => f (.left u) (.right v)) ?_ hv₁ hv₂
+    rw [bipartiteFlow_left_conserve f u]
+    exact f.le_cap .source (.left u)
   · intro u₁ u₂ v hu₁ hu₂
     simp only [flowToMatching, Finset.mem_filter, Finset.mem_univ, true_and] at hu₁ hu₂
-    by_contra hne
-    have hpair : ∑ u ∈ ({u₁, u₂} : Finset L), f (.left u) (.right v) =
-        f (.left u₁) (.right v) + f (.left u₂) (.right v) := Finset.sum_pair hne
-    have hsub : ∑ u ∈ ({u₁, u₂} : Finset L), f (.left u) (.right v) ≤
-        ∑ u : L, f (.left u) (.right v) :=
-      Finset.sum_le_sum_of_subset (Finset.subset_univ _)
-    have hcons := bipartiteFlow_right_conserve f v
-    have hcap : f (.right v) .sink ≤ 1 := f.le_cap (.right v) .sink
-    omega
+    refine eq_of_sum_le_one (g := fun u => f (.left u) (.right v)) ?_ hu₁ hu₂
+    rw [bipartiteFlow_right_conserve f v]
+    exact f.le_cap (.right v) .sink
 
 theorem card_flowToMatching_coe (f : (bipartiteNetwork G).Flow) :
     ((flowToMatching f).card : ℤ) = f.value := by
@@ -534,14 +533,7 @@ theorem cutCapacity_vertexCoverToCut [DecidableEq L] [DecidableEq R]
   rw [bipartiteNetwork_cutCapacity_eq (isCut_vertexCoverToCut C)]
   have hL :
       (∑ u : L, if BipartiteVertex.left u ∉ vertexCoverToCut C then 1 else 0) = C.left.card := by
-    have : (fun u : L => if BipartiteVertex.left u ∉ vertexCoverToCut C then 1 else 0) =
-        fun u : L => if u ∈ C.left then 1 else 0 := by
-      funext u
-      simp [vertexCoverToCut, vertexCoverCutPred]
-    rw [this, ← Finset.sum_filter]
-    have hflt : Finset.univ.filter (fun u : L => u ∈ C.left) = C.left := by ext u; simp
-    rw [hflt]
-    simp
+    simp [vertexCoverToCut, vertexCoverCutPred]
   have hM :
       (∑ u : L, ∑ v : R,
           if BipartiteVertex.left u ∈ vertexCoverToCut C ∧
@@ -556,14 +548,7 @@ theorem cutCapacity_vertexCoverToCut [DecidableEq L] [DecidableEq R]
     · simp [hG]
   have hR :
       (∑ v : R, if BipartiteVertex.right v ∈ vertexCoverToCut C then 1 else 0) = C.right.card := by
-    have : (fun v : R => if BipartiteVertex.right v ∈ vertexCoverToCut C then 1 else 0) =
-        fun v : R => if v ∈ C.right then 1 else 0 := by
-      funext v
-      simp [vertexCoverToCut, vertexCoverCutPred]
-    rw [this, ← Finset.sum_filter]
-    have hflt : Finset.univ.filter (fun v : R => v ∈ C.right) = C.right := by ext v; simp
-    rw [hflt]
-    simp
+    simp [vertexCoverToCut, vertexCoverCutPred]
   rw [hL, hM, hR]
   unfold VertexCover.size
   omega

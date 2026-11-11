@@ -82,8 +82,8 @@ theorem wordINDCCA2_lenEncrypt : WordINDCCA2 constKeyGen lenEncrypt lenDecrypt :
       cca2GameOn (fun _ _ (m₀ m₁ : List Bool) => m₀.length == m₁.length) encBits
         constKeyGen lenEncrypt lenDecrypt adversary true n := by
     simp only [cca2GameOn, lenEncrypt]
-    congr 1; funext keys
-    congr 1; funext choiceOut
+    congr 1 with keys : 1
+    congr 1 with choiceOut : 1
     by_cases hlen : (choiceOut.1.1.1.length == choiceOut.1.1.2.length) = true
     · have hl : choiceOut.1.1.1.length = choiceOut.1.1.2.length := beq_iff_eq.mp hlen
       simp [hl]

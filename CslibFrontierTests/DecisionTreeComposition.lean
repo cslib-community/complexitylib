@@ -65,8 +65,7 @@ example (m n : ℕ) : complexity (parityAnd (fun _ : Fin m => Fin n)) ≤ m * n 
   convert h using 2
   funext x
   unfold parityAnd parity
-  congr 1
-  funext i
+  congr 1 with i : 1
   exact decide_eq_decide.mpr Iff.rfl
 
 -- A nontrivial composition has exactly six queries in the worst case.

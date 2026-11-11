@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -409,9 +410,7 @@ theorem ddhRealGame_elGamalMsgToDDHDistinguisher {Msg : Type}
   simp only [ddhRealGame, elGamalMsgToDDHDistinguisher, elGamalMsgCPAGameOn,
     ddhPk, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind, apply_ite ProbComp.eval, ProbComp.eval_pure, PMF.monad_pure_eq_pure]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  rw [PMF.bind_comm]
-  refine congrArg (PMF.bind _) (funext fun choice => ?_)
+  pmf_swap with d α choice
   split_ifs <;> first | rfl | exact PMF.bind_const _ _
 
 /-- The admissibility predicate `valid` admits only group elements under `encodeMsg`: at every
@@ -438,11 +437,7 @@ theorem ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
     ProbComp.eval_bind,
     PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte, apply_ite ProbComp.eval,
     ProbComp.eval_pure]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  refine congrArg (PMF.bind _) (funext fun β => ?_)
-  rw [PMF.bind_comm, PMF.bind_comm (PMF.uniformOfFintype (ZMod (F.order d)))
-    (ProbComp.eval (adversary.choose n _))]
-  refine congrArg (PMF.bind _) (funext fun choice => ?_)
+  pmf_swap with d α β choice
   by_cases hv : valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 = true
   · obtain ⟨⟨x₀, hx₀⟩, ⟨x₁, hx₁⟩⟩ := hsound n d _ choice.1.1 choice.1.2 hv
@@ -495,7 +490,7 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
       (encPair F.encDesc encMsg) encBits)
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool
       (fun input => F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit input.1
         input.2) := by
@@ -688,7 +683,7 @@ theorem advantage_elGamalCPAGame_le (setup : ℕ → PMF F.Desc)
 /-- `elGamalToDDHDistinguisher` is uniform strict PPT whenever `adversary` is. -/
 theorem isPPTOn_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.elGamalToDDHDistinguisher adversary bit input.1 input.2) :=
   F.isPPTOn_elGamalMsgToDDHDistinguisher
     (ComputableTidilyInPolyTime.const true).computableInPolyTime F.computableInPolyTime_encodeBit hA
@@ -975,8 +970,7 @@ def SecureKDF (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Boo
     (msgLen : ℕ → ℕ) : Prop :=
   Game.Indistinguishable (F.kdfRealGame setup H) (F.kdfIdealGame setup msgLen)
     fun distinguisher =>
-      IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-        encBool (fun input => distinguisher input.1 input.2)
+      IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)
 
 /-- The DDH distinguisher constructed from a Hashed ElGamal IND-CPA adversary ([BonehShoup2023],
 Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, w)`, pass `(d, u)` as the
@@ -1002,8 +996,7 @@ exactly. -/
       F.hashedElGamalCPAGame setup H adversary bit n := by
   simp only [ddhRealGame, hashedElGamalToDDHDistinguisher, hashedElGamalCPAGame, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- In the ideal DDH game, `hashedElGamalToDDHDistinguisher` simulates `hashedElGamalIdealDDHGame`
 exactly. -/
@@ -1014,18 +1007,14 @@ exactly. -/
       F.hashedElGamalIdealDDHGame setup H adversary bit n := by
   simp only [ddhIdealGame, hashedElGamalToDDHDistinguisher, hashedElGamalIdealDDHGame,
     ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- `hashedElGamalToDDHDistinguisher` is uniform strict PPT whenever `H` is polynomial time and
 `adversary` is uniform strict PPT. -/
 theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.hashedElGamalToDDHDistinguisher H adversary bit input.1 input.2) := by
   let encTuple := encPair encBits (encPair encBits encBits)
   let EIn := encPair encUnary (encPair F.encDesc encTuple)
@@ -1099,17 +1088,13 @@ exactly: unfolded, this is the ideal DDH game for `hashedElGamalToDDHDistinguish
       F.hashedElGamalUniformPadGame setup msgLen adversary bit n := by
   simp only [kdfIdealGame, hashedElGamalToKDFDistinguisher, hashedElGamalUniformPadGame,
     ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  conv_lhs =>
-    enter [2, β]
-    rw [PMF.bind_comm]
-  rw [PMF.bind_comm]
+  pmf_swap
 
 /-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is: it is
 `hashedElGamalToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/
 theorem isPPTOn_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdversary}
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+    IsPPTOn F.encDDHInput
       encBool (fun input => F.hashedElGamalToKDFDistinguisher adversary bit input.1 input.2) :=
   F.isPPTOn_hashedElGamalToDDHDistinguisher (H := fun p => p.2)
     (ComputableInPolyTime.snd F.encDesc encBits) hA bit

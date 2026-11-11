@@ -67,7 +67,7 @@ def result (x : Data 5) : Data 5 :=
 
 /-- A fully charged count, preserving memory and all input registers. The width bound covers
 the product, and `n < 2^e` prevents carry between fields in the arithmetic identity. -/
-theorem exec {w e n : ℕ} (f : ℕ → Bool) (x : Data 5) (hn : 0 < n) (hb : n < 2 ^ e)
+theorem exec {w e n : ℕ} (f : ℕ → Bool) (x : Data 5) (hb : n < 2 ^ e)
     (hw : 2 * e * n ≤ w)
     (hf : x.regs flags = packRadix (2 ^ e) n (fun i => (f i).toNat))
     (ho : x.regs ones = packRadix (2 ^ e) n (fun _ => 1))
@@ -75,13 +75,12 @@ theorem exec {w e n : ℕ} (f : ℕ → Bool) (x : Data 5) (hn : 0 < n) (hb : n 
     Exec w code x (result x) 3 ∧
       (result x).regs out = ∑ i ∈ Finset.range n, (f i).toNat ∧
       (result x).mem = x.mem := by
-  have hβ : 1 < 2 ^ e := by omega
   have hp : packRadix (2 ^ e) n (fun i => (f i).toNat) < (2 ^ e) ^ n := by
     apply packRadix_lt
-    intro i _
+    intro i hi
     cases f i <;> simp only [Bool.toNat_false, Bool.toNat_true] <;> omega
   have hones : packRadix (2 ^ e) n (fun _ => 1) < (2 ^ e) ^ n :=
-    packRadix_lt _ (fun _ _ => hβ)
+    packRadix_lt _ (fun _ hi => by omega)
   have hprod : Fits w (x.regs flags * x.regs ones) := by
     rw [hf, ho]
     have hm := Nat.mul_lt_mul_of_lt_of_lt hp hones
@@ -97,7 +96,9 @@ theorem exec {w e n : ℕ} (f : ℕ → Bool) (x : Data 5) (hn : 0 < n) (hb : n 
     hdiv.of_le (Nat.mod_le _ _)
   refine ⟨?_, ?_, rfl⟩
   · ram_eval [code, result, hprod, hdiv, hmod]
-  · simpa only [result, Data.set_regs, Function.update_self, hf, ho, hd, hbase] using
-      countPackedFlags f hn hb
+  · rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp [result, Data.set_regs, hf, packRadix]
+    · simpa only [result, Data.set_regs, Function.update_self, hf, ho, hd, hbase] using
+        countPackedFlags f hn hb
 
 end Cslib.WordRAM.PackedCount

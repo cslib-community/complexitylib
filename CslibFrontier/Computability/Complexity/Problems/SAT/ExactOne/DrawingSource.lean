@@ -314,13 +314,6 @@ theorem exteriorRoute_not_mem_center {G : Graph} {d : Graph.OrthogonalDrawing}
   have he := exteriorRoute_box_contact hd hi hr hp hb
   exact exteriorPort_ne_center k radius hr₀ G d i (realPoint_injective he.symm)
 
-private theorem real_dilation_injective {k : ℕ} (hk : k ≠ 0) :
-    Function.Injective (fun p : ℝ × ℝ => (k : ℝ) • p) := by
-  rintro ⟨ax, ay⟩ ⟨bx, by'⟩ he
-  have hk' : (k : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hk
-  simp only [Prod.smul_mk, smul_eq_mul, Prod.mk.injEq] at he
-  exact Prod.ext (mul_left_cancel₀ hk' he.1) (mul_left_cancel₀ hk' he.2)
-
 /-- Different exterior incidences can meet only at their shared scaled variable endpoint.
 The common source clause endpoint has been removed by the positive-radius cut. -/
 theorem exteriorRoute_contacts {G : Graph} {d : Graph.OrthogonalDrawing}
@@ -335,7 +328,9 @@ theorem exteriorRoute_contacts {G : Graph} {d : Graph.OrthogonalDrawing}
   rw [support_dilateRoute] at hp' hq'
   obtain ⟨q, hq₁, he₁⟩ := hp'
   obtain ⟨r, hr₁, he₂⟩ := hq'
-  have hqr : q = r := real_dilation_injective (by omega : k ≠ 0) (he₁.trans he₂.symm)
+  have hqr : q = r :=
+    smul_right_injective (ℝ × ℝ) (Nat.cast_ne_zero.mpr (by omega) : (k : ℝ) ≠ 0)
+      (he₁.trans he₂.symm)
   subst r
   rw [support_sourceRoute] at hq₁ hr₁
   obtain ⟨v, _, hvi, hvj, hv⟩ := hd.contacts i hi j hj hij q hq₁ hr₁

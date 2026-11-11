@@ -125,18 +125,8 @@ open Cslib.Complexity DescriptionMethod
 program $p$ of length at most $k$ outputs $x$ within $2^{k - |p|}$ steps under `universalTM`. -/
 theorem levinKt_le_natCast_iff_exists_runFor_two_pow {x : List Bool} {k : ℕ} :
     levinKt x ≤ k ↔
-      ∃ p : List Bool, p.length ≤ k ∧ x ∈ (universalTM.run p).runFor (2 ^ (k - p.length)) := by
-  rw [levinKt_le_natCast_iff]
-  constructor
-  · rintro ⟨p, s, hp, hle⟩
-    have hplen : p.length ≤ k := by omega
-    have hclog : Nat.clog 2 s ≤ k - p.length := by omega
-    have hs : s ≤ 2 ^ (k - p.length) := (Nat.clog_le_iff_le_pow one_lt_two).mp hclog
-    exact ⟨p, hplen, universalTMRunFor_mono p hs hp⟩
-  · rintro ⟨p, hplen, hp⟩
-    refine ⟨p, 2 ^ (k - p.length), hp, ?_⟩
-    rw [Nat.clog_pow _ _ one_lt_two]
-    omega
+      ∃ p : List Bool, p.length ≤ k ∧ x ∈ (universalTM.run p).runFor (2 ^ (k - p.length)) :=
+  levinKt_le_natCast_iff.trans exists_runFor_length_add_clog_le_iff
 
 /-- `ℕ`-valued exponential-step characterization of `levinKtNat`. -/
 theorem levinKtNat_le_iff_exists_runFor_two_pow {x : List Bool} {k : ℕ} :

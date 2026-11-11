@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.Interfaces
 public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace
+import CslibFrontier.Foundations.Data.Nat.Power
 
 /-!
 # Calling a contraction algorithm behind a guard
@@ -91,11 +92,8 @@ theorem ContractionAlgorithm.expTimePolySpace_branch
     obtain ⟨hs2, hP1, hPD, hadm⟩ := hs a hga
     obtain ⟨hAt, hAs⟩ := hK (s a) (input a).1 (input a).2 hs2 hP1 hPD hadm
     have hlenK : ((encPair encNat encN (input a)).length + 1) ^ K ≤
-        (p + 1) ^ K * ((enc a).length + 1) ^ (q * K) := by
-      have h1 := hlen a
-      have h2 : 1 ≤ ((enc a).length + 1) ^ q := Nat.one_le_pow _ _ (Nat.succ_pos _)
-      calc _ ≤ ((p + 1) * ((enc a).length + 1) ^ q) ^ K := Nat.pow_le_pow_left (by nlinarith) K
-        _ = _ := by rw [mul_pow, pow_mul]
+        (p + 1) ^ K * ((enc a).length + 1) ^ (q * K) :=
+      Nat.add_one_pow_le_of_le_mul_pow (Nat.succ_pos _) (hlen a) K
     have hqK := hY (e := q * K) (by omega)
     have ta : A.certificate.time (input a) ≤ K * (p + 1) ^ K * (2 ^ E a * Y) :=
       calc A.certificate.time (input a)

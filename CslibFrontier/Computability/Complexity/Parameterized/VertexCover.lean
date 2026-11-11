@@ -304,8 +304,7 @@ private theorem computableInPolyTime_branchBits :
   have heq : (fun s : Cand => (List.range s.1.2).map s.2.testBit) =
       fun s => (List.range s.1.2).map fun j => (encNat s.2).getD j false := by
     funext s
-    congr 1
-    funext j
+    congr 1 with j : 1
     rw [Nat.testBit_eq_inth]
     rfl
   rw [heq]

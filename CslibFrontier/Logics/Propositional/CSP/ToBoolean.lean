@@ -12,6 +12,8 @@ public import CslibFrontier.Foundations.Data.BitString.Binary
 public import CslibFrontier.Foundations.Data.BitString.Counter
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Logics.Propositional.CSP
+import CslibFrontier.Foundations.Data.List.Counting
+import CslibFrontier.Foundations.Data.Nat.Div
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.Log
 
@@ -176,11 +178,6 @@ def CSP.toBoolean (q : ℕ) (N : ℕ) (F : CSP Rel ℕ) : CSP (Option Rel) ℕ :
   (List.range N).map (fun v => (none, CSP.bitScope b v)) ++
   F.map (fun c => (some c.1, c.2.flatMap (CSP.bitScope b)))
 
-private theorem length_flatMap_of_forall_length_eq {α β : Type*} (b : ℕ) (vs : List α)
-    (g : α → List β) (hg : ∀ x ∈ vs, (g x).length = b) :
-    (vs.flatMap g).length = vs.length * b := by
-  rw [List.length_flatMap, List.map_congr_left hg, List.map_const', List.sum_replicate, smul_eq_mul]
-
 /-- The constraint scope length of every clause in the compiled Boolean CSP is bounded by
 `max 1 k * bitWidth q`. -/
 theorem CSP.all_length_le_toBoolean {k q N : ℕ} {F : CSP Rel ℕ}
@@ -194,7 +191,7 @@ theorem CSP.all_length_le_toBoolean {k q N : ℕ} {F : CSP Rel ℕ}
     have : 1 * b ≤ max 1 k * b := Nat.mul_le_mul_right b (le_max_left 1 k)
     simpa using this
   · dsimp only
-    rw [length_flatMap_of_forall_length_eq b _ _ fun v _ => CSP.bitScope_length b v]
+    rw [List.length_flatMap_of_forall_length_eq fun v _ => CSP.bitScope_length b v]
     have hle : c₀.2.length ≤ max 1 k := (hF c₀ hc₀).trans (le_max_right 1 k)
     exact Nat.mul_le_mul_right b hle
 
@@ -248,10 +245,6 @@ private def decodeAssign (q N : ℕ) (hq : 0 < q) (σ : Finset.range (N * CSP.bi
     if h : v * b + j < N * b then σ ⟨v * b + j, Finset.mem_range.mpr h⟩ else false
   CSP.toFin q hq (lsbValue bits)
 
-private theorem div_mul_add (v b j : ℕ) (hj : j < b) : (v * b + j) / b = v := by
-  have hb : 0 < b := by omega
-  rw [Nat.add_comm, Nat.add_mul_div_right _ _ hb, Nat.div_eq_of_lt hj, Nat.zero_add]
-
 /-- Reading the bits of block `v` through the zero-extension of `σ` gives the bit list that
 `decodeAssign` decodes. -/
 private theorem map_extend_bitScope {N b : ℕ} (σ : Finset.range (N * b) → Bool) (v : ℕ) :
@@ -275,7 +268,7 @@ private theorem encodeAssign_block (q N : ℕ) (τ : Finset.range N → Fin q) {
     rw [List.length_map, List.length_range] at hj1
     simp only [List.getElem_map, List.getElem_range, mul_add_lt_mul hv hj1, dite_true]
     dsimp only [encodeAssign]
-    have hdiv : (v * b + j) / b = v := div_mul_add v b j hj1
+    have hdiv : (v * b + j) / b = v := Nat.mul_add_div_of_lt v hj1
     have hmod : (v * b + j) % b = j := Nat.mul_add_mod_of_lt hj1
     have hsub : (⟨(v * b + j) / b, Finset.mem_range.mpr (by rw [hdiv]; exact hv)⟩ :
         Finset.range N) = ⟨v, Finset.mem_range.mpr hv⟩ := Subtype.ext hdiv
@@ -347,7 +340,7 @@ private theorem eval_some_constraint_encodeAssign (q N : ℕ) (hq : 0 < q)
     (τ ⟨v, Finset.mem_range.mpr h⟩).val else 0)
   have hg_len : ∀ v ∈ c.2, (g v).length = b := fun _ _ => length_lowBits _ _
   have hbs_len : (c.2.flatMap g).length = c.2.length * b :=
-    length_flatMap_of_forall_length_eq b c.2 g hg_len
+    List.length_flatMap_of_forall_length_eq hg_len
   have hr : (c.2.flatMap g).length / b = c.2.length := by
     rw [hbs_len, Nat.mul_div_cancel _ hb]
   have hmod : (c.2.flatMap g).length % b = 0 := by

@@ -174,10 +174,6 @@ private lemma tr_toTM (s : State) (x y : Option Bool) :
 
 /-! ### The framed input -/
 
-private lemma length_frame_append (u v : List Bool) :
-    (frame u ++ v).length = 2 * u.length + 1 + v.length := by
-  rw [List.length_append, length_frame]
-
 /-- The inner symbols of `frame u ++ v`: the marker `true` and the symbol `u[i]`. -/
 private lemma inputAt_frame_append (u v : List Bool) {i : ℕ} (hi : i < u.length) :
     inputAt (frame u ++ v) (2 * i + 1) = some true ∧

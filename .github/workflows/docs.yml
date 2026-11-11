@@ -24,9 +24,23 @@ concurrency:
 
 jobs:
   docs:
-    runs-on: ubuntu-latest
+    # ubuntu-latest moved to Ubuntu 26.04 on 2026-10-30, and doc-gen4 has run out of memory there
+    # ("resource exhausted (error code: 12)") on every run since; upstream cslib#1191 pins the same.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Daily source statistics need the complete first-parent history.
+      - uses: actions/cache@v4
+        with:
+          path: tools/stats/.cache
+          key: lean-stats-v1-${{ hashFiles('tools/stats/build.py', 'tools/stats/config.json') }}-${{ github.sha }}-${{ github.run_id }}
+          restore-keys: |
+            lean-stats-v1-${{ hashFiles('tools/stats/build.py', 'tools/stats/config.json') }}-
+      - name: Install pinned Tokei
+        run: bash tools/stats/install-tokei.sh "$RUNNER_TEMP/tokei-bin"
+      - name: Build source history dashboard
+        run: python3 tools/stats/build.py --tokei "$RUNNER_TEMP/tokei-bin/tokei"
       - name: Check documentation pins
         run: python3 scripts/check_docs.py --config-only
       # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
@@ -56,6 +70,8 @@ jobs:
         run: python3 scripts/check_docs.py --trim --guide
       - name: Add the guide to the site
         run: cp -R guide/.lake/build/site/html-multi docbuild/.lake/build/doc/guide
+      - name: Add source history dashboard to the site
+        run: cp -R tools/stats/_site docbuild/.lake/build/doc/stats
       # GitHub Pages serves 404.html for missing paths. It sends API pages that the
       # module-root rename moved to their new addresses.
       - name: Add the not-found page

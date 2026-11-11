@@ -414,43 +414,35 @@ theorem empiricalRademacherComplexity_generalization_bound (D : PMF Z) {m : ℕ}
       {S | ∃ f ∈ F, 𝔼 i, f (S i) + 2 * empiricalRademacherComplexity F S +
         3 * ((b - a) * √(Real.log (2 / δ) / (2 * m))) < ∑ z, (D z).toReal * f z}).toReal ≤
       δ := by
+  -- The expected bound at confidence `δ / 2` has deviation `ε`.
+  have h1 := rademacherComplexity_generalization_bound D hm hab hF (half_pos hδ)
+  rw [one_div_div] at h1
   set P := Probability.PMF.pi fun _ : Fin m => D
   set ε := (b - a) * √(Real.log (2 / δ) / (2 * m))
-  set Φ : (Fin m → Z) → ℝ := fun S =>
-    ⨆ f : F, (∑ z, (D z).toReal * (f : Z → ℝ) z - 𝔼 i, (f : Z → ℝ) (S i))
-  have hB : ∀ f ∈ F, ∀ z, |f z| ≤ max |a| |b| := fun f hf z =>
-    abs_le_max_abs_abs (hF f hf z).1 (hF f hf z).2
-  have hmean : ∑ S, (P S).toReal * Φ S ≤ 2 * rademacherComplexity D F m :=
-    sum_pi_mul_ciSup_sub_le_two_mul_rademacherComplexity D hm hB
   have hε : 0 ≤ ε := mul_nonneg (sub_pos.2 hab).le (Real.sqrt_nonneg _)
   have hexp : Real.exp (-2 * ε ^ 2 / ((b - a) ^ 2 / m)) ≤ δ / 2 := by
     have := exp_neg_two_mul_sq_le hm hab (half_pos hδ)
     rwa [one_div_div] at this
-  have htail1 := (hasBoundedDifferences_ciSup_sub D hm hab.le hF).pi_ge_mean_add (fun _ => D) hε
-  have htail2 := (hasBoundedDifferences_empiricalRademacherComplexity (m := m) hab.le
+  -- McDiarmid's lower tail for `R̂_S(F)` at confidence `δ / 2`.
+  have htail := (hasBoundedDifferences_empiricalRademacherComplexity (m := m) hab.le
     hF).pi_le_mean_sub (fun _ => D) hε
-  rw [sum_div_sq hm] at htail1 htail2
-  rw [← rademacherComplexity_def] at htail2
-  have hsub : {S | ∃ f ∈ F, 𝔼 i, f (S i) + 2 * empiricalRademacherComplexity F S + 3 * ε <
-      ∑ z, (D z).toReal * f z} ⊆ {S | (∑ S', (P S').toReal * Φ S') + ε ≤ Φ S} ∪
+  rw [sum_div_sq hm, ← rademacherComplexity_def] at htail
+  have hsub : {S : Fin m → Z | ∃ f ∈ F, 𝔼 i, f (S i) + 2 * empiricalRademacherComplexity F S +
+      3 * ε < ∑ z, (D z).toReal * f z} ⊆
+      {S | ∃ f ∈ F, 𝔼 i, f (S i) + 2 * rademacherComplexity D F m + ε <
+        ∑ z, (D z).toReal * f z} ∪
         {S | empiricalRademacherComplexity F S ≤ rademacherComplexity D F m - ε} := by
     rintro S ⟨f, hf, hlt⟩
     by_contra hS
-    simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_le] at hS
-    have := le_ciSup (bddAbove_range_sub D hm hB S) ⟨f, hf⟩
-    dsimp only at this
-    change Φ S < (∑ S', (P S').toReal * Φ S') + ε ∧ _ at hS
-    linarith [hS.1, hS.2]
-  calc _ ≤ (P.toOuterMeasure ({S | (∑ S', (P S').toReal * Φ S') + ε ≤ Φ S} ∪
-        {S | empiricalRademacherComplexity F S ≤ rademacherComplexity D F m - ε})).toReal :=
+    simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_exists, not_and, not_lt,
+      not_le] at hS
+    linarith [hS.1 f hf, hS.2]
+  calc _ ≤ (P.toOuterMeasure _).toReal :=
         ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
           (P.toOuterMeasure.mono hsub)
-    _ ≤ (P.toOuterMeasure {S | (∑ S', (P S').toReal * Φ S') + ε ≤ Φ S}).toReal +
-        (P.toOuterMeasure
-          {S | empiricalRademacherComplexity F S ≤ rademacherComplexity D F m - ε}).toReal := by
-        exact ENNReal.toReal_le_add (MeasureTheory.measure_union_le _ _)
+    _ ≤ _ := ENNReal.toReal_le_add (MeasureTheory.measure_union_le _ _)
           (Probability.PMF.toOuterMeasure_ne_top _ _) (Probability.PMF.toOuterMeasure_ne_top _ _)
-    _ ≤ δ / 2 + δ / 2 := add_le_add (htail1.trans hexp) (htail2.trans hexp)
+    _ ≤ δ / 2 + δ / 2 := add_le_add h1 (htail.trans hexp)
     _ = δ := add_halves δ
 
 /-- **Generalization bound for a finite class** with values in `[0, 1]`, through Massart's

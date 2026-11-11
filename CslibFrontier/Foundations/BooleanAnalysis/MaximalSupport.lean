@@ -35,7 +35,7 @@ this supplies the sensitive block used in the decision tree bound `D(f) ≤ deg(
 * [G. Midrijanis, *Exact quantum query complexity for total Boolean functions*][Midrijanis2004]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

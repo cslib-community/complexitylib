@@ -13,17 +13,16 @@ import Mathlib.Algebra.BigOperators.Fin
 import CslibFrontier.Foundations.Data.List.Lookup
 
 /-!
-# Exact bridges for the serialized GSW algorithms
+# Exact bridges for serialized GSW encryption
 
-The executable word algorithms agree with the typed modular formulas, for every serialized
-input under the specified total decoders. The equalities do not require a noise bound or a
-security assumption. Composition with the exact sampling laws retains the complete joint key
-distribution and the encryption distribution.
+The executable ciphertext encryption word algorithm agrees with the typed modular formula for
+every serialized input under the specified total decoders.
 
 ## Main results
 
-* `publicMatrixSerialized_eq`, `encryptWithCoinsSerialized_eq`: exact deterministic bridges.
-* `eval_keyGenSerialized`, `eval_encryptSerialized`: exact probabilistic bridges.
+* `encryptWithCoinsSerialized_eq`: exact deterministic bridge.
+* `eval_encryptSerialized`, `eval_encryptSerialized_serializePublicMatrix`: exact
+  probabilistic bridges.
 
 ## References
 
@@ -31,58 +30,12 @@ distribution and the encryption distribution.
   Conceptually-Simpler, Asymptotically-Faster, Attribute-Based*, Section 3.1][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW
 
 open Probability BitString
 open scoped BigOperators _root_.Matrix
-
-/-- The binary signed-remainder computation returns the canonical leading public residue. -/
-theorem publicRowHead_eq {n m w : ℕ} (inputs : SerializedKeyInputs) (i : Fin m) :
-    publicRowHead n w inputs i.val =
-      (publicMatrix (decodeKeyInputs n m w inputs).publicPart
-        (decodeKeyInputs n m w inputs).secret (decodeKeyInputs n m w inputs).error i 0).val := by
-  unfold publicRowHead publicMatrix LWE.publicMatrix decodeKeyInputs
-  simp only [Fin.cons_zero, _root_.Matrix.mulVec, dotProduct]
-  rw [List.map_range_eq_ofFn, List.sum_ofFn]
-  have h : ((∑ j : Fin n,
-      (inputs.2.1.getD i.val []).getD j.val 0 * inputs.1.getD j.val 0 : ℕ) : ZMod (2 ^ w)) =
-      ∑ j : Fin n, ((inputs.2.1.getD i.val []).getD j.val 0 : ZMod (2 ^ w)) *
-        (inputs.1.getD j.val 0 : ZMod (2 ^ w)) := by simp
-  rw [← h]
-  have hv := congrArg Int.toNat (ZMod.val_intCast (n := 2 ^ w)
-    (((∑ j : Fin n,
-      (inputs.2.1.getD i.val []).getD j.val 0 * inputs.1.getD j.val 0 : ℕ) : ℤ) +
-        inputs.2.2.getD i.val 0))
-  simpa only [Int.toNat_natCast, Int.cast_add, Int.cast_natCast, Nat.cast_pow,
-    Nat.cast_ofNat] using hv.symm
-
-/-- The total public-key computation is exactly the typed public matrix of the decoded inputs. -/
-theorem publicMatrixSerialized_eq (n m w : ℕ) (inputs : SerializedKeyInputs) :
-    publicMatrixSerialized n m w inputs = serializePublicMatrix
-      (publicMatrix (decodeKeyInputs n m w inputs).publicPart
-        (decodeKeyInputs n m w inputs).secret (decodeKeyInputs n m w inputs).error) := by
-  simp only [publicMatrixSerialized, serializePublicMatrix, Cslib.Matrix.toBinary_eq,
-    List.flatMap_def, List.map_range_eq_ofFn, lowBits_eq_ofFn]
-  congr 1
-  apply congrArg List.ofFn
-  funext i
-  rw [List.ofFn_succ]
-  simp only [List.flatten_cons]
-  congr 1
-  · rw [publicRowHead_eq inputs i]
-  · simp [publicMatrix, LWE.publicMatrix, decodeKeyInputs, ZMod.val_natCast]
-
-/-- The total secret computation agrees with the same padded and modularly normalized inputs. -/
-theorem secretSerialized_eq (n w : ℕ) (secret : List ℕ) :
-    secretSerialized n w secret =
-      serializeSecret (fun i : Fin n => (secret.getD i.val 0 : ZMod (2 ^ w))) := by
-  unfold secretSerialized serializeSecret Cslib.Matrix.toBinary
-  rw [ofFn_blocksEquiv_symm]
-  simp only [List.ofFn_succ, List.ofFn_zero, List.flatten_cons, List.flatten_nil,
-    List.append_nil, ofFn_blocksEquiv_symm, List.flatMap_def, List.map_range_eq_ofFn,
-    lowBits_eq_ofFn, ZMod.val_natCast]
 
 /-- A computed ciphertext entry is the canonical residue of the actual modular formula. -/
 theorem encryptEntry_eq (n m w : ℕ) (publicWord : List Bool) (message : Bool)
@@ -119,51 +72,20 @@ theorem encryptWithCoinsSerialized_eq (n m w : ℕ) (publicWord : List Bool) (me
     List.map_range_eq_ofFn, lowBits_eq_ofFn, ofFn_blocksEquiv_symm,
     encryptEntry_eq, decomposeMatrix, bitDecomp]
 
-/-- Canonical sampled inputs produce exactly the original typed public key. -/
-theorem publicMatrixSerialized_serializeKeyInputs {n m w : ℕ} (inputs : KeyInputs n m w) :
-    publicMatrixSerialized n m w (serializeKeyInputs inputs) =
-      serializePublicMatrix (publicMatrix inputs.publicPart inputs.secret inputs.error) := by
-  rw [publicMatrixSerialized_eq, decode_serializeKeyInputs]
-
-/-- Canonical sampled inputs produce exactly the original typed secret key. -/
-theorem secretSerialized_serializeKeyInputs {n m w : ℕ} (inputs : KeyInputs n m w) :
-    secretSerialized n w (serializeKeyInputs inputs).1 = serializeSecret inputs.secret := by
-  rw [secretSerialized_eq]
-  congr 1 with i : 1
-  simp [serializeKeyInputs]
-
 /-- Serialization commutes with the actual typed encryption on canonical inputs. -/
 theorem encryptWithCoinsSerialized_serialize {n m w : ℕ}
     (A : _root_.Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w))) (message : Bool)
     (coins : _root_.Matrix (Fin (n + 1) × Fin w) (Fin m) Bool) :
-    encryptWithCoinsSerialized n m w (serializePublicMatrix A) message (serializeCoins coins) =
+    encryptWithCoinsSerialized n m w (LWE.serializePublicMatrix A) message (serializeCoins coins) =
       serializeCiphertext (encryptWithCoins A message coins) := by
   rw [encryptWithCoinsSerialized_eq, decode_serializeCoins]
-  simp only [serializePublicMatrix, Cslib.Matrix.ofBinary_toBinary]
-
-/-- Every arbitrary input produces the complete declared public word. -/
-theorem length_publicMatrixSerialized (n m w : ℕ) (inputs : SerializedKeyInputs) :
-    (publicMatrixSerialized n m w inputs).length = m * (n + 1) * w := by
-  simp [publicMatrixSerialized, List.length_flatMap, Nat.mul_add, Nat.add_mul,
-    Nat.mul_assoc, Nat.add_comm]
-
-/-- Secret normalization retains exactly the declared number of residue bits. -/
-theorem length_secretSerialized (n w : ℕ) (secret : List ℕ) :
-    (secretSerialized n w secret).length = n * w := by
-  simp [secretSerialized, List.length_flatMap]
+  simp only [LWE.serializePublicMatrix, Cslib.Matrix.ofBinary_toBinary]
 
 /-- Encryption writes every bit of its square ciphertext, on arbitrary input words and coins. -/
 theorem length_encryptWithCoinsSerialized (n m w : ℕ) (publicWord : List Bool) (message : Bool)
     (coins : SerializedCoins) :
     (encryptWithCoinsSerialized n m w publicWord message coins).length = ((n + 1) * w) ^ 2 := by
   simp [encryptWithCoinsSerialized, List.length_flatMap, pow_two, Nat.mul_assoc]
-
-/-- The efficient key sampler retains the typed construction's complete public/secret joint law. -/
-theorem eval_keyGenSerialized (n m w η : ℕ) :
-    ProbComp.eval (keyGenSerialized n m w η) = (ProbComp.eval (keyGen n m w η)).map
-      (fun keys => (serializePublicMatrix keys.1, serializeSecret keys.2)) := by
-  simp only [pmf_norm, keyGenSerialized, keyGen, eval_sampleKeyInputsSerialized,
-    publicMatrixSerialized_serializeKeyInputs, secretSerialized_serializeKeyInputs]
 
 /-- The efficient encryption sampler agrees with typed encryption of every decoded public word. -/
 theorem eval_encryptSerialized (n m w : ℕ) (publicWord : List Bool) (message : Bool) :
@@ -176,9 +98,9 @@ theorem eval_encryptSerialized (n m w : ℕ) (publicWord : List Bool) (message :
 /-- Canonical public words have the exact original typed encryption distribution. -/
 theorem eval_encryptSerialized_serializePublicMatrix {n m w : ℕ}
     (A : _root_.Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w))) (message : Bool) :
-    ProbComp.eval (encryptSerialized n m w (serializePublicMatrix A) message) =
+    ProbComp.eval (encryptSerialized n m w (LWE.serializePublicMatrix A) message) =
       (ProbComp.eval (encrypt A message)).map serializeCiphertext := by
   rw [eval_encryptSerialized]
-  simp only [serializePublicMatrix, Cslib.Matrix.ofBinary_toBinary]
+  simp only [LWE.serializePublicMatrix, Cslib.Matrix.ofBinary_toBinary]
 
 end Cslib.Crypto.Homomorphic.GSW

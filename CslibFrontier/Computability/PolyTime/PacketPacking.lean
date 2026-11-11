@@ -323,8 +323,7 @@ theorem labelWords_eq (hK : r ^ a ≤ m) :
       (partialScheduleListOfFin labels).map (·.getD (List.replicate a 0)) =
         List.ofFn fun v => scheduleToWord (completeLabels labels (fun _ _ => 0) v) := by
     simp only [partialScheduleListOfFin, List.map_ofFn, Function.comp_def, completeLabels]
-    congr 1
-    funext v
+    congr 1 with v : 1
     cases labels v <;> simp only [Option.map_none, Option.getD_none, Option.map_some,
       Option.getD_some, hzero]
   simp only [labelWords, labelPass_eq rowOf colOf hK, toWords, hget, rowLabels, colLabels]

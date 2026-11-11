@@ -94,7 +94,6 @@ theorem scheduled_fineProductMean_le {Γ Υ : Type*} [Fintype Γ] [Fintype Υ]
     [∀ γ x, Decidable (X γ x)] [∀ τ y, Decidable (Ya τ y)] [∀ τ y, Decidable (Yb τ y)]
     [∀ σ z, Decidable (Z σ z)]
     (hN : 0 < N) (hu : 0 < u) (hb : 0 < b) (hba : b ≤ a)
-    (hf : 0 < f) (hπa : 0 < πa) (hπb : 0 < πb) (hπf : 0 < πf)
     (hCa : 0 ≤ Ca) (hcb : 0 < cb) (hupper : πa ≤ Ca * a) (hlower : cb * b ≤ πb)
     (hYaπ : ∀ y, (dens {τ | Ya τ y} : ℝ) = πa)
     (hYbπ : ∀ y, (dens {τ | Yb τ y} : ℝ) = πb) (hsub : ∀ τ y, Yb τ y → Ya τ y)
@@ -131,31 +130,71 @@ theorem scheduled_fineProductMean_le {Γ Υ : Type*} [Fintype Γ] [Fintype Υ]
           (CB * Kr * (C * (2 : ℝ) ^ (-Real.logb 2 c₁ / 2) * payment) ^ 4 +
             CF * Kc * (C * payment) ^ 4)) := by
   dsimp only
+  let payment := (2 : ℝ) ^ (-precision (16 * c) A M i a u - A +
+    (d : ℝ) / (16 * c) + 1 / 16) * scaleMajorant offset
+  let E : (Γ × Υ) → V → V → ℝ := fun σ x y =>
+    (∑ z ∈ ({z | Z σ z} : Finset V), F σ x z * B σ z y) -
+      ∑ z ∈ ({z | Z σ z} : Finset V), F' σ x z * B' σ z y
   have ha := hb.trans_le hba
-  have hprod := Cslib.rowNormPow_fineProductMean_le X Ya Yb Z
-    (by decide : 4 ≠ 0) hN hu hb hba hf hπa hπb hπf hCa hcb hupper hlower
-    hYaπ hYbπ hsub hCF hCB hF hF' hB hB' hFbound hF'bound hBbound hB'bound
-    hleft hleft' hrow hcol hBsupport hB'support
-  have hpayF := scheduled_fine_error_le hA hC M d c i iF hc offset hoffset hiF
-    ha hb hc₁ hbf hu (le_refl u) hscale hleftError
-  have hpayB := scheduled_fine_error_le hA hC M d c i iB hc offset hoffset hiB
-    ha hb (by norm_num : (0 : ℝ) < 1) (by simp) hu huf hscale hrightError
-  simp only [div_self hu.ne', mul_one] at hpayF
-  simp only [Real.logb_one, neg_zero, zero_div, Real.rpow_zero, mul_one] at hpayB
-  refine hprod.trans ?_
-  calc
-    _ = ((f / πf) ^ 4 * (Ca / cb)) *
-        (((4 : ℝ) * ((Kf : ℝ) * CF * CB) ^ ((4 - 1 : ℝ) / 4)) ^ 4 *
-          (2 ^ (2 * (4 - 1)) * (4 : ℝ) ^ 4) *
-          (CB * Kr * ((b / a) ^ 3 * rootDistPow 4 N u (fun σ x => X σ.1 x) Z F F') +
-            CF * Kc * ((b / a) ^ 3 * (f / u) *
-              rootDistPow 4 N f Z (fun σ y => Yb σ.2 y) B B'))) := by
-                norm_num only [Nat.reduceSub, Nat.reduceMul, Nat.cast_ofNat]
-                ring
-    _ ≤ _ := mul_le_mul_of_nonneg_left
-      (mul_le_mul_of_nonneg_left
-        (add_le_add (mul_le_mul_of_nonneg_left hpayF (by positivity))
-          (mul_le_mul_of_nonneg_left hpayB (by positivity))) (by positivity)) (by positivity)
+  have hf : 0 < f := (mul_pos hc₁ hb).trans_le hbf
+  have hπb : 0 < πb := (mul_pos hcb hb).trans_le hlower
+  by_cases hV : Nonempty V
+  swap
+  · have hemp : ∀ γ, ({x | X γ x} : Finset V) = ∅ := fun _ =>
+      filter_eq_empty_iff.mpr fun x _ => (hV ⟨x⟩).elim
+    have hlhs : rowNormPow 4 N u (fun (σ : Γ × Υ) x => X σ.1 x) (fun σ y => Ya σ.2 y)
+        (fun _ x y => conditionalTableMean (fun σ x => X σ.1 x) (fun σ y => Ya σ.2 y)
+          (fun σ x y => (b / a) * (f / πf) * (πa / πb) * E σ x y) x y) = 0 := by
+      simp [rowNormPow, hemp]
+    rw [hlhs]
+    positivity
+  obtain ⟨y₀⟩ := hV
+  have hπa : 0 < πa := by
+    have hle : (dens {τ | Yb τ y₀} : ℝ) ≤ dens {τ | Ya τ y₀} := by
+      exact_mod_cast Finset.dens_le_dens fun τ hτ => by
+        simp only [mem_filter, mem_univ, true_and] at hτ ⊢
+        exact hsub τ y₀ hτ
+    rw [hYbπ y₀, hYaπ y₀] at hle
+    exact hπb.trans_le hle
+  have core (πf' : ℝ) (hπf' : 0 < πf') :
+      rowNormPow 4 N u (fun (σ : Γ × Υ) x => X σ.1 x) (fun σ y => Ya σ.2 y)
+        (fun _ x y => conditionalTableMean (fun (σ : Γ × Υ) x => X σ.1 x)
+          (fun (σ : Γ × Υ) y => Ya σ.2 y)
+          (fun σ x y => (b / a) * (f / πf') * (πa / πb) * E σ x y) x y) ≤
+        ((f / πf') ^ 4 * (Ca / cb)) *
+          (((4 : ℝ) * ((Kf : ℝ) * CF * CB) ^ ((4 - 1 : ℝ) / 4)) ^ 4 *
+            (2 ^ (2 * (4 - 1)) * (4 : ℝ) ^ 4) *
+            (CB * Kr * (C * (2 : ℝ) ^ (-Real.logb 2 c₁ / 2) * payment) ^ 4 +
+              CF * Kc * (C * payment) ^ 4)) := by
+    have hprod := Cslib.rowNormPow_fineProductMean_le X Ya Yb Z
+      (by decide : 4 ≠ 0) hN hu hb hba hf hπa hπb hπf' hCa hcb hupper hlower
+      hYaπ hYbπ hsub hCF hCB hF hF' hB hB' hFbound hF'bound hBbound hB'bound
+      hleft hleft' hrow hcol hBsupport hB'support
+    have hpayF := scheduled_fine_error_le hA hC M d c i iF hc offset hoffset hiF
+      ha hb hc₁ hbf hu (le_refl u) hscale hleftError
+    have hpayB := scheduled_fine_error_le hA hC M d c i iB hc offset hoffset hiB
+      ha hb (by norm_num : (0 : ℝ) < 1) (by simp) hu huf hscale hrightError
+    simp only [div_self hu.ne', mul_one] at hpayF
+    simp only [Real.logb_one, neg_zero, zero_div, Real.rpow_zero, mul_one] at hpayB
+    refine hprod.trans ?_
+    calc
+      _ = ((f / πf') ^ 4 * (Ca / cb)) *
+          (((4 : ℝ) * ((Kf : ℝ) * CF * CB) ^ ((4 - 1 : ℝ) / 4)) ^ 4 *
+            (2 ^ (2 * (4 - 1)) * (4 : ℝ) ^ 4) *
+            (CB * Kr * ((b / a) ^ 3 * rootDistPow 4 N u (fun σ x => X σ.1 x) Z F F') +
+              CF * Kc * ((b / a) ^ 3 * (f / u) *
+                rootDistPow 4 N f Z (fun σ y => Yb σ.2 y) B B'))) := by
+                  norm_num only [Nat.reduceSub, Nat.reduceMul, Nat.cast_ofNat]
+                  ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left
+        (mul_le_mul_of_nonneg_left
+          (add_le_add (mul_le_mul_of_nonneg_left hpayF (by positivity))
+            (mul_le_mul_of_nonneg_left hpayB (by positivity))) (by positivity)) (by positivity)
+  rcases lt_trichotomy πf 0 with hneg | rfl | hπf
+  · simpa only [rowNormPow, conditionalTableMean, div_neg, mul_neg, neg_mul, expect_neg_distrib,
+      abs_neg, (by decide : Even 4).neg_pow] using core (-πf) (neg_pos.mpr hneg)
+  · simp [rowNormPow, conditionalTableMean]
+  · exact core πf hπf
 
 end Cslib.LogSpaceEstimation
 
@@ -177,9 +216,9 @@ theorem scheduled_fine_correctionAtom_denseAtom_mean_le
     (drawF : Γ → ι × κ) (drawB : Υ → υ)
     (G G' H H' : (Γ × Υ) → Matrix V V ℝ) (g g' : (Γ × Υ) → V → ℝ)
     (Ya : Υ → V → Prop) [∀ t y, Decidable (Ya t y)]
-    (hN : 0 < N) (hu : 0 < u) (hf : 0 < f) (hb : 0 < b)
+    (hN : 0 < N) (hu : 0 < u) (hb : 0 < b)
     {a πa πb πf Ca cb AF AB : ℝ} (hba : b ≤ a)
-    (hπa : 0 < πa) (hπb : 0 < πb) (hπf : 0 < πf) (hCa : 0 ≤ Ca) (hcb : 0 < cb)
+    (hCa : 0 ≤ Ca) (hcb : 0 < cb)
     (hupper : πa ≤ Ca * a) (hlower : cb * b ≤ πb)
     (hYaπ : ∀ y, (dens {t | Ya t y} : ℝ) = πa)
     (hYbπ : ∀ y, (dens {t | Yt (drawB t) y} : ℝ) = πb)
@@ -229,6 +268,7 @@ theorem scheduled_fine_correctionAtom_denseAtom_mean_le
   classical
   dsimp only
   intro hleftError hrightBroad
+  have hf : 0 < f := hu.trans_le huf
   have hrightError := (Cslib.rowNormPow_mono_terminal (p := 4) (by positivity : 0 ≤ N * f)
     (X := fun (σ : Γ × Υ) z => Zt (drawF σ.1).2 z)
     (Y := fun σ y => Yt (drawB σ.2) y) (Y' := fun σ y => Y (drawB σ.2) y)
@@ -266,7 +306,7 @@ theorem scheduled_fine_correctionAtom_denseAtom_mean_le
     simpa only [mem_filter, mem_univ, true_and] using hZt t.2 z hzZ
   refine scheduled_fineProductMean_le (fun γ x => X (drawF γ).1 x) Ya
     (fun t y => Yt (drawB t) y) (fun σ z => Zt (drawF σ.1).2 z)
-    hN hu hb hba hf hπa hπb hπf hCa hcb hupper hlower hYaπ hYbπ hsub
+    hN hu hb hba hCa hcb hupper hlower hYaπ hYbπ hsub
     (by positivity) (by positivity)
     (fun σ => correctionAtom_nonneg hQ0 hρF0 hτ0 (hg0 σ) (drawF σ.1))
     (fun σ => correctionAtom_nonneg hQ0 hρF0 hτ0 (hg'0 σ) (drawF σ.1))

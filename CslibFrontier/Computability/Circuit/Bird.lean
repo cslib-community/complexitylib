@@ -41,7 +41,7 @@ No algorithm or resource bound is introduced here.
   [Schlesinger2026RationalHitting], revision add0aca8ee0d71e68969f2cb45cf91554a50f787.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Bird
 

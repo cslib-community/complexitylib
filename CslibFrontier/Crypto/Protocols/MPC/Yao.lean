@@ -298,8 +298,7 @@ theorem yaoDecode_ofGarbled {s : ℕ} {τ : Circuit.Topology (n₀ + n₁) m s} 
     yaoDecode F tw (.ofGarbled G x₀) (fun j => G.encoding (Fin.natAdd n₀ j) (x₁ j)) =
       G.run F tw (Fin.append x₀ x₁) := by
   simp only [yaoDecode, Garbled.run, YaoMessage.ofGarbled]
-  congr 2
-  funext i
+  congr 2 with i : 1
   refine Fin.addCases (fun i => ?_) (fun j => ?_) i <;>
     simp only [Fin.append_left, Fin.append_right, encode]
 

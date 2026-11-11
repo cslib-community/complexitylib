@@ -58,41 +58,14 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
   let T := Host.callerTime (4 * a.N)
     (c.time (Host.sideLength (4 * a.N)) (2 * (n + 2) ^ envelopeExponent κ + 1)) + 8
   obtain ⟨p, hp, hstack, hl, hframe, hpr, hpm⟩ := pop_entry x e es h2 hcap h.stack
-  have preg (i : Fin 128) (hi : 71 ≤ i.val) (hi' : i.val < 96) :
-      p.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) :=
-    hpr i (Or.inl hi') (Or.inr hi)
-  have ph : p.regs (preprocessingRegisters r heap) =
-      x.regs (preprocessingRegisters r heap) := preg _ (by decide) (by decide)
-  have hc : a.Controls (p.comap (preprocessingRegisters r)) := h.controls.congr (by
-    intro i hi
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-    exact preg i (by omega) (by omega))
-  have frame (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) :
-      p.mem q = x.mem q := by
-    apply hframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    omega
-  have gap : a.capacity ≤ a.floor - a.stack := by
-    have ht := ha.2.1
-    have hh := ha.2.2.1
-    omega
-  have oldStored (d : Entry) (hd : d ∈ e :: es) : d.Stored p.mem :=
-    (h.stored d hd).of_stack_frame ((h.around d hd).mono_capacity gap) hframe
-  have oldEnds (d : Entry) (hd : d ∈ e :: es) (j : Fin 3) :
-      d.source j + (d.data j).length ≤ p.regs (preprocessingRegisters r heap) := by
-    rw [ph]
-    exact h.ends d hd j
-  have oldBitmap : a.Bitmap p.mem := by
-    intro q hq
-    rw [frame _ (Or.inl (by have := ha.1; omega))]
-    exact h.bitmap q hq
+  obtain ⟨(ph : p.regs (preprocessingRegisters r heap) = x.regs (preprocessingRegisters r heap)),
+      -, hc, frame, gap, oldStored, oldEnds, oldBitmap, hfloor⟩ :=
+    Arena.preserved_of_stack_frame _ (p.comap (preprocessingRegisters r)) ha h.controls h.bitmap
+      h.stored h.around h.ends h.floor hframe (fun i hi hi' => hpr i (Or.inl hi') (Or.inr hi))
   have hwork : 1 ≤ (Cursor.mk (e :: es) ns).work := by
     have hw := Math.work_pos e.fuel
     change 1 ≤ Math.work e.fuel + Math.potential (es.map Entry.task)
     omega
-  have hfloor : a.floor ≤ p.regs (preprocessingRegisters r heap) := by
-    rw [ph]
-    exact h.floor
   have hbudget : p.regs (preprocessingRegisters r heap) + allocationSize a.n a.m a.N ≤
       a.ceiling := by
     have hb : x.regs (preprocessingRegisters r heap) +

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.WordRAM.Structured
+import CslibFrontier.Computability.WordRAM.SymbolicExec
 
 /-!
 # Native programs in a caller-owned memory window
@@ -97,42 +98,21 @@ theorem readsWidth_compileOp (o : Op .standard r) : (compileOp o).ReadsWidth ↔
 theorem readsWidth_compile (c : Code .standard r) : (compile c).ReadsWidth ↔ c.ReadsWidth := by
   induction c <;> simp_all [compile, Code.ReadsWidth, readsWidth_compileOp]
 
-private theorem bank_ne_base (i : Fin r) : i.castAdd 3 ≠ (Reg.base : Fin (r + 3)) := by
-  intro h
-  have := congrArg Fin.val h
-  simp only [Fin.val_castAdd, Reg.base] at this
-  omega
-
-private theorem bank_ne_modulus (i : Fin r) : i.castAdd 3 ≠ (Reg.modulus : Fin (r + 3)) := by
-  intro h
-  have := congrArg Fin.val h
-  simp only [Fin.val_castAdd, Reg.modulus] at this
-  omega
-
-private theorem bank_ne_address (i : Fin r) : i.castAdd 3 ≠ (Reg.address : Fin (r + 3)) := by
-  intro h
-  have := congrArg Fin.val h
-  simp only [Fin.val_castAdd, Reg.address] at this
-  omega
-
 private theorem view_set (w b : ℕ) (x : Data (r + 3)) (i : Fin r) (v : ℕ) :
     view w b (x.set (i.castAdd 3) v) = (view w b x).set i v := by
   ext j
-  · change Function.update x.regs (i.castAdd 3) v (j.castAdd 3) =
-      Function.update (fun k : Fin r => x.regs (k.castAdd 3)) i v j
+  · change (x.set (i.castAdd 3) v).regs (j.castAdd 3) = ((view w b x).set i v).regs j
     by_cases h : j = i
-    · subst j; simp
-    · have h' : j.castAdd 3 ≠ i.castAdd 3 := by
-        intro he
-        apply h
-        exact Fin.ext (congrArg (fun k : Fin (r + 3) => k.val) he)
-      simp only [Function.update_of_ne h, Function.update_of_ne h']
+    · subst j; wram_simp
+    · wram_simp
+      rfl
   · rfl
 
 private theorem view_address (w b : ℕ) (x : Data (r + 3)) (v : ℕ) :
     view w b (x.set Reg.address v) = view w b x := by
   ext j
-  · exact Function.update_of_ne (bank_ne_address j) _ _
+  · change (x.set Reg.address v).regs (j.castAdd 3) = x.regs (j.castAdd 3)
+    wram_simp
   · rfl
 
 private theorem view_write (w b : ℕ) (x : Data (r + 3)) (a v : ℕ) (hv : Fits w v) :
@@ -159,16 +139,11 @@ theorem Matches.mem {w b : ℕ} {x : Data r} {y : Data (r + 3)}
 private theorem Matches.set {w b : ℕ} {x : Data r} {y : Data (r + 3)}
     (h : Matches w b x y) (i : Fin r) (v : ℕ) :
     Matches w b (x.set i v) (y.set (i.castAdd 3) v) := by
-  refine ⟨by rw [view_set, h.view_eq], ?_, ?_⟩
-  · simpa only [Data.set_regs, Function.update_of_ne (Ne.symm (bank_ne_base i))] using h.base_eq
-  · simpa only [Data.set_regs, Function.update_of_ne (Ne.symm (bank_ne_modulus i))] using
-      h.modulus_eq
+  exact ⟨by rw [view_set, h.view_eq], by wram_simp [h.base_eq], by wram_simp [h.modulus_eq]⟩
 
 private theorem Matches.address {w b : ℕ} {x : Data r} {y : Data (r + 3)}
     (h : Matches w b x y) (v : ℕ) : Matches w b x (y.set Reg.address v) := by
-  refine ⟨by rw [view_address, h.view_eq], ?_, ?_⟩
-  · simpa [Reg.base, Reg.address, Function.update_apply, Fin.mk.injEq] using h.base_eq
-  · simpa [Reg.modulus, Reg.address, Function.update_apply, Fin.mk.injEq] using h.modulus_eq
+  exact ⟨by rw [view_address, h.view_eq], by wram_simp [h.base_eq], by wram_simp [h.modulus_eq]⟩
 
 private theorem Matches.write {w b : ℕ} {x : Data r} {y : Data (r + 3)}
     (h : Matches w b x y) (a v : ℕ) (hv : Fits w v) :
@@ -208,55 +183,21 @@ theorem exec_compileOp {w W b : ℕ} {o : Op .standard r} {x x' : Data r}
     simp only [Op.eval, Option.some.injEq] at he
     subst x'
     have ha : Fits W (b + x.regs a) := hfit.of_le (by have := hx.1 a; unfold Fits at this; omega)
-    let z := y.set Reg.address (b + x.regs a)
-    have hz : Matches w b x z := hxy.address _
-    have had : z.regs Reg.address = b + x.regs a := by simp [z]
-    have h1 : ExecWithin W
-        (.op (.bin .add Reg.address Reg.base (a.castAdd 3))) y z 1 := by
-      simpa only [BinOp.eval, hxy.base_eq, hxy.regs a] using
-        (ExecWithin.bin (f := .add) (d := Reg.address) (i := Reg.base)
-          (j := a.castAdd 3) (x := y) (w := W) (by simpa [hxy.base_eq, hxy.regs a] using ha))
-    let z' := z.set (d.castAdd 3) (y.mem (b + x.regs a))
-    have h2 : ExecWithin (B := .standard) W (.op (.load (d.castAdd 3) Reg.address)) z z' 1 := by
-      simpa only [had, z, Data.set_mem] using
-        (ExecWithin.load (w := W) (B := .standard) (x := z)
-          (d := d.castAdd 3) (a := Reg.address))
-    have hmod : z'.regs Reg.modulus = 2 ^ w := by
-      simpa only [z', Data.set_regs,
-        Function.update_of_ne (Ne.symm (bank_ne_modulus d))] using hz.modulus_eq
-    have hd : z'.regs (d.castAdd 3) = y.mem (b + x.regs a) := by simp [z']
-    have hm : y.mem (b + x.regs a) % 2 ^ w = x.mem (x.regs a) := hxy.mem _
-    have h3 : ExecWithin W
-        (.op (.bin .mod (d.castAdd 3) (d.castAdd 3) Reg.modulus)) z'
-        (z'.set (d.castAdd 3) (x.mem (x.regs a))) 1 := by
-      simpa only [BinOp.eval, hd, hmod, hm] using
-        (ExecWithin.bin (f := .mod) (d := d.castAdd 3) (i := d.castAdd 3)
-          (j := Reg.modulus) (x := z') (w := W)
-          (by simpa only [BinOp.eval, hd, hmod, hm] using (hx.2 (x.regs a)).mono hw))
-    refine ⟨z'.set (d.castAdd 3) (x.mem (x.regs a)), ?_, ?_, fun _ _ => rfl⟩
-    · exact h1.seq (h2.seq h3)
-    · change Matches w b (x.set d _) ((z.set (d.castAdd 3) _).set (d.castAdd 3) _)
-      rw [Data.set_set]
-      exact hz.set d _
+    have hz : Matches w b x (y.set Reg.address (b + x.regs a)) := hxy.address _
+    have hfm : Fits W (x.mem (x.regs a)) := (hx.2 (x.regs a)).mono hw
+    unfold compileOp
+    wram_exec [hxy.base_eq, hxy.regs, hxy.modulus_eq, hxy.mem, ha, hfm]
+    refine ⟨?_, fun _ _ => rfl⟩
+    rw [Data.set_set]
+    exact hz.set d _
   | store a s =>
     simp only [Op.eval, Option.some.injEq] at he
     subst x'
     have ha : Fits W (b + x.regs a) := hfit.of_le (by have := hx.1 a; unfold Fits at this; omega)
-    let z := y.set Reg.address (b + x.regs a)
-    have hz : Matches w b x z := hxy.address _
-    have had : z.regs Reg.address = b + x.regs a := by simp [z]
-    have h1 : ExecWithin W
-        (.op (.bin .add Reg.address Reg.base (a.castAdd 3))) y z 1 := by
-      simpa only [BinOp.eval, hxy.base_eq, hxy.regs a] using
-        (ExecWithin.bin (f := .add) (d := Reg.address) (i := Reg.base)
-          (j := a.castAdd 3) (x := y) (w := W) (by simpa [hxy.base_eq, hxy.regs a] using ha))
-    have h2 : ExecWithin (B := .standard) W (.op (.store Reg.address (s.castAdd 3))) z
-        (z.write (b + x.regs a) (x.regs s)) 1 := by
-      simpa only [had, hz.regs s] using
-        (ExecWithin.store (w := W) (B := .standard) (x := z)
-          (a := Reg.address) (s := s.castAdd 3))
-    refine ⟨z.write (b + x.regs a) (x.regs s), (h1.seq h2).mono (by omega),
-      hz.write _ _ (hx.1 s), ?_⟩
+    have hz : Matches w b x (y.set Reg.address (b + x.regs a)) := hxy.address _
+    unfold compileOp
+    wram_exec [hxy.base_eq, hxy.regs, ha]
+    refine ⟨hz.write _ _ (hx.1 s), ?_⟩
     intro j hj
     have hja : j ≠ b + x.regs a := by
       have := hx.1 a
@@ -342,40 +283,22 @@ private theorem exec_normalizeBankList {w W : ℕ} (is : List (Fin r)) (x : Data
         if j ∈ is then x.regs (j.castAdd 3) % 2 ^ w else x.regs (j.castAdd 3)) := by
   induction is generalizing x with
   | nil =>
-    refine ⟨x.set Reg.address (x.regs Reg.address), ExecWithin.copy, rfl, ?_, ?_, ?_⟩
-    · simp [Reg.base, Reg.address, Fin.mk.injEq]
-    · simpa [Reg.modulus, Reg.address, Function.update_apply, Fin.mk.injEq] using hm
-    · intro j
-      simp only [List.not_mem_nil, ↓reduceIte, Data.set_regs,
-        Function.update_of_ne (bank_ne_address j)]
+    exact ⟨x.set Reg.address (x.regs Reg.address), ExecWithin.copy, rfl, by wram_simp,
+      by wram_simp [hm], fun j => by wram_simp [List.not_mem_nil]⟩
   | cons i is ih =>
     let z := x.set (i.castAdd 3) (x.regs (i.castAdd 3) % 2 ^ w)
-    have hz : z.regs Reg.modulus = 2 ^ w := by
-      simpa only [z, Data.set_regs,
-        Function.update_of_ne (Ne.symm (bank_ne_modulus i))] using hm
-    have h1 : ExecWithin W
-        (.op (.bin .mod (i.castAdd 3) (i.castAdd 3) Reg.modulus)) x z 1 := by
-      simpa only [BinOp.eval, hm] using
-        (ExecWithin.bin (f := .mod) (d := i.castAdd 3) (i := i.castAdd 3)
-          (j := Reg.modulus) (x := x) (w := W)
-          (by simpa only [BinOp.eval, hm] using
-            (show Fits w (x.regs (i.castAdd 3) % 2 ^ w) from
-              Nat.mod_lt _ (Nat.two_pow_pos _)).mono hw))
-    obtain ⟨y, he, hmem, hbase, hmod, hregs⟩ := ih z hz
-    refine ⟨y, ?_, hmem, ?_, hmod, ?_⟩
+    have hfit : Fits W (x.regs (i.castAdd 3) % 2 ^ w) :=
+      (show Fits w (x.regs (i.castAdd 3) % 2 ^ w) from Nat.mod_lt _ (Nat.two_pow_pos _)).mono hw
+    have h1 : ExecWithin W (.op (.bin .mod (i.castAdd 3) (i.castAdd 3) Reg.modulus)) x z 1 := by
+      wram_exec [hm, hfit]
+    obtain ⟨y, he, hmem, hbase, hmod, hregs⟩ := ih z (by wram_simp [z, hm])
+    refine ⟨y, ?_, hmem, by wram_simp [hbase, z], hmod, fun j => ?_⟩
     · simpa only [normalizeBankList, List.length_cons, Nat.add_left_comm] using h1.seq he
-    · simpa only [z, Data.set_regs,
-        Function.update_of_ne (Ne.symm (bank_ne_base i))] using hbase
-    · intro j
-      rw [hregs]
+    · rw [hregs]
       by_cases hji : j = i
       · subst j
         simp [z]
-      · have hji' : j.castAdd 3 ≠ i.castAdd 3 := by
-          intro heq
-          exact hji (Fin.ext (congrArg (fun k : Fin (r + 3) => k.val) heq))
-        simp only [z, Data.set_regs, Function.update_of_ne hji', List.mem_cons,
-          hji, false_or]
+      · wram_simp [z, List.mem_cons, hji, false_or]
 
 /-- Actual register normalization supplies a bounded source view without clearing any memory.
 The base, modulus and every caller memory cell are preserved. -/

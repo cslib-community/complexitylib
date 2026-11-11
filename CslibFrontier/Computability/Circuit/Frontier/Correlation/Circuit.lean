@@ -49,7 +49,7 @@ time along a layout (`Network.exists_ncard_readIn_initial_eq`), some layer has r
   bisection hypothesis on the cut ranks.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

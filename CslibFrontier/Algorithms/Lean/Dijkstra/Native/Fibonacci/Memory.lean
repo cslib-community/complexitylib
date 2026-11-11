@@ -125,16 +125,11 @@ theorem runWord_eq :
         (FibonacciHeap.decreaseKey d.1 v k)) = run := by
   unfold runWord run
   simp only [bind_assoc, pure_bind]
-  congr 1
-  funext n
-  congr 1
-  funext src
-  congr 1
-  funext m
-  congr 1
-  funext T
-  congr 1
-  funext base
+  congr 1 with n : 1
+  congr 1 with src : 1
+  congr 1 with m : 1
+  congr 1 with T : 1
+  congr 1 with base : 1
   by_cases hs : src < n
   · simp only [ite_eq_left hs, dite_eq_left hs]
     exact clientWord_eq_of_erasure (pqMethods n 0 0 base) _ _ _

@@ -242,9 +242,59 @@ private def budget (K : ℕ) (v : N) : ℕ :=
   | .union c => (K - 1) ^ 2 * c.card
   | .product _ _ => (K - 1) ^ 3
 
-section Finite
+private theorem stops_subset_accepted {K : ℕ} {v : N} : P.stops K v ⊆ P.accepted :=
+  fun _ hx => hx.1.mem_accepted hx.1.accepts (eqOn_refl _ _)
 
-variable [Finite ι] [Finite U]
+private theorem finite_values_of_nonempty_contexts (hfin : P.accepted.Finite) {v : N}
+    {c₀ : ↥(P.scope v)ᶜ → U} (hc₀ : c₀ ∈ P.contexts v) : (P.values v).Finite := by
+  classical
+  let e := Equiv.piEquivPiSubtypeProd (· ∈ P.scope v) fun _ => U
+  have hinj : Function.Injective fun y => e.symm (y, c₀) :=
+    e.symm.injective.comp (Prod.mk_left_injective c₀)
+  refine (hfin.subset ?_).of_finite_image hinj.injOn
+  rintro _ ⟨y, hy, rfl⟩
+  refine P.rectangle_subset v ?_
+  change e (e.symm (y, c₀)) ∈ P.values v ×ˢ P.contexts v
+  rw [e.apply_symm_apply]
+  exact ⟨hy, hc₀⟩
+
+private theorem finite_contexts_of_nonempty_values (hfin : P.accepted.Finite) {v : N}
+    {y₀ : ↥(P.scope v) → U} (hy₀ : y₀ ∈ P.values v) : (P.contexts v).Finite := by
+  classical
+  let e := Equiv.piEquivPiSubtypeProd (· ∈ P.scope v) fun _ => U
+  have hinj : Function.Injective fun c => e.symm (y₀, c) :=
+    e.symm.injective.comp (Prod.mk_right_injective y₀)
+  refine (hfin.subset ?_).of_finite_image hinj.injOn
+  rintro _ ⟨c, hc, rfl⟩
+  refine P.rectangle_subset v ?_
+  change e (e.symm (y₀, c)) ∈ P.values v ×ˢ P.contexts v
+  rw [e.apply_symm_apply]
+  exact ⟨hy₀, hc⟩
+
+private theorem finite_values_of_disjoint_occurs (hfin : P.accepted.Finite) {v c w : N}
+    {x₀ : ι → U} (hx₀ : P.Occurs x₀ v) (hx₀_w : (P.scope w).domRestrict x₀ ∈ P.values w)
+    (hsub : P.scope c ⊆ P.scope v) (hdisj : Disjoint (P.scope c) (P.scope w))
+    (hacc : ∀ y : ι → U, (P.scope c).domRestrict y ∈ P.values c →
+      (P.scope w).domRestrict y ∈ P.values w → y ∈ P.accepts v) : (P.values c).Finite := by
+  classical
+  let e := Equiv.piEquivPiSubtypeProd (· ∈ P.scope c) fun _ => U
+  let c₀ := (P.scope c)ᶜ.domRestrict x₀
+  have hinj : Function.Injective fun a => e.symm (a, c₀) :=
+    e.symm.injective.comp (Prod.mk_left_injective c₀)
+  refine (hfin.subset ?_).of_finite_image hinj.injOn
+  rintro _ ⟨a, ha, rfl⟩
+  have h1 : (P.scope c).domRestrict (e.symm (a, c₀)) = a := by
+    change (e (e.symm (a, c₀))).1 = a
+    rw [e.apply_symm_apply]
+  have h2 : (P.scope c)ᶜ.domRestrict (e.symm (a, c₀)) = c₀ := by
+    change (e (e.symm (a, c₀))).2 = c₀
+    rw [e.apply_symm_apply]
+  have hcompl : EqOn (e.symm (a, c₀)) x₀ (P.scope c)ᶜ :=
+    domRestrict_eq_domRestrict_iff.mp h2
+  have hw : (P.scope w).domRestrict (e.symm (a, c₀)) ∈ P.values w := by
+    rwa [show (P.scope w).domRestrict (e.symm (a, c₀)) = (P.scope w).domRestrict x₀ from
+      domRestrict_eq_domRestrict_iff.mpr fun i hi => hcompl (hdisj.notMem_of_mem_right hi)]
+  exact hx₀.mem_accepted (hacc _ (by rwa [h1]) hw) fun i hi => hcompl fun hic => hi (hsub hic)
 
 /-- **The descent stops.** If the accepted set has at least `K > 1` elements, the descent from
 the root along a certificate of an accepted input stops at some node. The rank makes the descent
@@ -252,10 +302,12 @@ finite, even with shared nodes. -/
 theorem exists_mem_stops (hK : 1 < K) (hS : K ≤ P.accepted.ncard) {x : ι → U}
     (hx : x ∈ P.accepted) : ∃ v, x ∈ P.stops K v := by
   classical
+  have hfin : P.accepted.Finite := Set.finite_of_ncard_pos ((by omega : 0 < K).trans_le hS)
   have hroot : K ≤ (P.values P.root).ncard := hS.trans
     (ncard_le_ncard_of_injOn (P.scope P.root).domRestrict (fun _ hy => hy)
       (fun _ _ _ _ h => funext fun i =>
-        domRestrict_eq_domRestrict_iff.mp h (P.scope_root ▸ mem_univ i)))
+        domRestrict_eq_domRestrict_iff.mp h (P.scope_root ▸ mem_univ i))
+      (P.finite_values_of_nonempty_contexts hfin ⟨x, .root hx, rfl⟩))
   -- Take an occurring node of least rank among those accepting at least `K` assignments.
   have hex : ∃ k, ∃ v, P.rank v = k ∧ P.Occurs x v ∧ K ≤ (P.values v).ncard :=
     ⟨_, P.root, rfl, .root hx, hroot⟩
@@ -267,6 +319,7 @@ theorem exists_mem_stops (hK : 1 < K) (hS : K ≤ P.accepted.ncard) {x : ι → 
   refine ⟨v, hxv, hlarge, ?_⟩
   cases hg : P.gate v with
   | leaf =>
+    have := (P.finite_values_of_nonempty_contexts hfin ⟨x, hxv, rfl⟩).to_subtype
     have := ncard_le_one_iff_subsingleton.mpr (P.values_subsingleton v hg)
     omega
   | union c =>
@@ -279,16 +332,28 @@ theorem exists_mem_stops (hK : 1 < K) (hS : K ≤ P.accepted.ncard) {x : ι → 
 /-- For a product node `v` with children `l` and `r`, the number of inputs stopping at `v` is at
 most `(K - 1) ^ 2 * (P.contexts v).ncard`: an input is determined by its parts on the scopes of
 both children and its context. -/
-private theorem ncard_stops_product_le {v l r : N} (hg : P.gate v = .product l r) :
+private theorem ncard_stops_product_le (hfin : P.accepted.Finite) {v l r : N}
+    (hg : P.gate v = .product l r) :
     (P.stops K v).ncard ≤ (K - 1) ^ 2 * (P.contexts v).ncard := by
   by_cases hsmall : (P.values l).ncard < K ∧ (P.values r).ncard < K
   swap
   · simp [stops, hg, hsmall]
+  rcases (P.stops K v).eq_empty_or_nonempty with hemp | ⟨x₀, hx₀⟩
+  · simp [hemp]
+  have hprod₀ := (P.values_product v l r hg x₀).mp hx₀.1.accepts
+  have hvl : (P.values l).Finite := P.finite_values_of_disjoint_occurs hfin hx₀.1 hprod₀.2
+    (P.scope_product v l r hg ▸ subset_union_left) (P.disjoint_product v l r hg)
+    fun y hl hr => (P.values_product v l r hg y).mpr ⟨hl, hr⟩
+  have hvr : (P.values r).Finite := P.finite_values_of_disjoint_occurs hfin hx₀.1 hprod₀.1
+    (P.scope_product v l r hg ▸ subset_union_right) (P.disjoint_product v l r hg).symm
+    fun y hr hl => (P.values_product v l r hg y).mpr ⟨hl, hr⟩
+  have hcv : (P.contexts v).Finite :=
+    P.finite_contexts_of_nonempty_values hfin hx₀.1.accepts
   calc (P.stops K v).ncard
       ≤ (P.values l ×ˢ P.values r ×ˢ P.contexts v).ncard := by
         refine ncard_le_ncard_of_injOn
           (fun x => ((P.scope l).domRestrict x, (P.scope r).domRestrict x,
-            (P.scope v)ᶜ.domRestrict x)) ?_ ?_ (toFinite _)
+            (P.scope v)ᶜ.domRestrict x)) ?_ ?_ (hvl.prod (hvr.prod hcv))
         · rintro x ⟨hx, -, -⟩
           have h := (P.values_product v l r hg x).mp hx.accepts
           exact ⟨h.1, h.2, x, hx, rfl⟩
@@ -305,7 +370,8 @@ private theorem ncard_stops_product_le {v l r : N} (hg : P.gate v = .product l r
 
 /-- **The charge at a node.** If the accepted set is `K`-rectangle-free, the descent stops at a
 node `v` for at most the budget of `v` inputs. -/
-private theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
+private theorem ncard_stops_le (hfin : P.accepted.Finite) (hS : RectangleFree P.accepted K)
+    (v : N) :
     (P.stops K v).ncard ≤ P.budget K v := by
   by_cases hlarge : K ≤ (P.values v).ncard
   swap
@@ -324,24 +390,32 @@ private theorem ncard_stops_le (hS : RectangleFree P.accepted K) (v : N) :
       by_cases hsmall : (P.values u).ncard < K
       swap
       · simp [T, hsmall]
+      rcases (T u).eq_empty_or_nonempty with hemp | ⟨x₀, hx₀, hxu, _⟩
+      · simp [hemp]
+      have hvu : (P.values u).Finite :=
+        P.finite_values_of_nonempty_contexts hfin ⟨x₀, .union hx₀ hg hu hxu, rfl⟩
+      have hcv : (P.contexts v).Finite :=
+        P.finite_contexts_of_nonempty_values hfin hx₀.accepts
       calc (T u).ncard
           ≤ (P.values u ×ˢ P.contexts v).ncard :=
             ncard_le_ncard_of_injOn
               (fun x => ((P.scope u).domRestrict x, (P.scope v)ᶜ.domRestrict x))
               (fun x ⟨hx, hxu, _⟩ => ⟨hxu, x, hx, rfl⟩)
               (fun x _ y _ h => domRestrict_prodMk_injective _ (P.scope_union v c hg u hu ▸ h))
-              (toFinite _)
+              (hvu.prod hcv)
         _ ≤ (K - 1) ^ 2 := by
             rw [ncard_prod, sq]
             exact Nat.mul_le_mul (by omega) hout
     calc (P.stops K v).ncard
-        ≤ (⋃ u ∈ c, T u).ncard := ncard_le_ncard hcover (toFinite _)
+        ≤ (⋃ u ∈ c, T u).ncard := ncard_le_ncard hcover
+            (hfin.subset (iUnion₂_subset fun _ _ _ hx =>
+              hx.1.mem_accepted hx.1.accepts (eqOn_refl _ _)))
       _ ≤ ∑ u ∈ c, (T u).ncard := Finset.set_ncard_biUnion_le _ _
       _ ≤ ∑ _u ∈ c, (K - 1) ^ 2 := Finset.sum_le_sum hT
       _ = P.budget K v := by simp [budget, hg, mul_comm]
   | product l r =>
     calc (P.stops K v).ncard
-        ≤ (K - 1) ^ 2 * (P.contexts v).ncard := P.ncard_stops_product_le hg
+        ≤ (K - 1) ^ 2 * (P.contexts v).ncard := P.ncard_stops_product_le hfin hg
       _ ≤ (K - 1) ^ 2 * (K - 1) := Nat.mul_le_mul_left _ hout
       _ = P.budget K v := by rw [budget, hg, pow_succ (K - 1) 2]
 
@@ -373,13 +447,15 @@ Unions need not be disjoint, and different branches may split the coordinates di
 theorem ncard_accepted_le (hrect : RectangleFree P.accepted K) (hS : K ≤ P.accepted.ncard) :
     P.accepted.ncard ≤ (K - 1) ^ 2 * P.unionEdges + (K - 1) ^ 3 * P.products := by
   have hK : 1 < K := hrect.one_lt <| nonempty_of_ncard_ne_zero (by have := hrect.pos; omega)
+  have hfin : P.accepted.Finite := Set.finite_of_ncard_pos (hrect.pos.trans_le hS)
   calc P.accepted.ncard
       ≤ (⋃ v ∈ (Finset.univ : Finset N), P.stops K v).ncard :=
         ncard_le_ncard (fun x hx => by
           obtain ⟨v, hv⟩ := P.exists_mem_stops hK hS hx
-          exact mem_iUnion₂.mpr ⟨v, Finset.mem_univ v, hv⟩) (toFinite _)
+          exact mem_iUnion₂.mpr ⟨v, Finset.mem_univ v, hv⟩)
+          (hfin.subset (iUnion₂_subset fun _ _ => P.stops_subset_accepted))
     _ ≤ ∑ v, (P.stops K v).ncard := Finset.set_ncard_biUnion_le _ _
-    _ ≤ ∑ v, P.budget K v := Finset.sum_le_sum fun v _ => P.ncard_stops_le hrect v
+    _ ≤ ∑ v, P.budget K v := Finset.sum_le_sum fun v _ => P.ncard_stops_le hfin hrect v
     _ = (K - 1) ^ 2 * P.unionEdges + (K - 1) ^ 3 * P.products := by
       simp only [unionEdges, products, Finset.mul_sum, ← Finset.sum_add_distrib]
       refine Finset.sum_congr rfl fun v _ => ?_
@@ -397,8 +473,6 @@ theorem ncard_accepted_le_size (hrect : RectangleFree P.accepted K)
         P.ncard_accepted_le hrect hS
     _ ≤ (K - 1) ^ 3 * P.unionEdges + (K - 1) ^ 3 * P.products := by gcongr
     _ = (K - 1) ^ 3 * P.size := by rw [size, mul_add]
-
-end Finite
 
 end DecomposableDAG
 

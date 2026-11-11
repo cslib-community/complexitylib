@@ -100,8 +100,7 @@ theorem Reduction.plainLaw_run_bundle {smp : PerChallenge ProbComp s}
   rw [hsmp]
   simp only [Reduction.bundle, Verifier.bundle, bind_assoc, plainLaw_bind]
   rw [PMF.map_bind]
-  congr 1
-  funext st
+  congr 1 with st : 1
   rw [← plainLaw_bind]
   exact plainLaw_bindLeaf_pure_run _ _ _ _
 

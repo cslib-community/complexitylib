@@ -92,10 +92,10 @@ private theorem eval_cca2GameOn_kemToCCAAdversary (keyLen : ℕ → ℕ)
         let ct ← ProbComp.eval (encrypt n keys.1 (if bit then k₁ else k₀))
         ProbComp.eval (kemCCAContinuation decrypt distinguisher n keys.2 keys.1 k₀ ct)) := by
   simp only [pmf_norm, cca2GameOn, kemToCCAAdversary, kemToPKEChoose, kemCCAContinuation,
-    ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_sample,
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_sample,
     BitString.eval_sampleList, ChoiceOut.msg₀, ChoiceOut.msg₁, ChoiceOut.msgs, encPair_apply,
     encBits_apply, apply_ite ProbComp.eval]
-  congr 1; funext keys
+  congr 1 with keys : 1
   refine PMF.bind_congr_on_support _ _ _ fun k₀ hk₀ => ?_
   refine PMF.bind_congr_on_support _ _ _ fun k₁ hk₁ => ?_
   simp [BitString.length_of_mem_support_uniformList hk₀,
@@ -130,9 +130,9 @@ theorem eval_cca2GameOn_kemToCCAAdversary_true (keyLen : ℕ → ℕ)
   rw [eval_cca2GameOn_kemToCCAAdversary]
   simp only [pmf_norm, kemCCAIdealGame, kemIdealGameWith, kemRealGameWith, encryptKeyEncaps,
     BitString.eval_sampleList, ↓reduceIte]
-  congr 1; funext keys
+  congr 1 with keys : 1
   rw [PMF.bind_comm]
-  congr 1; funext k
+  congr 1 with k : 1
   rw [PMF.bind_comm]
 
 /-- Exact loss one in the existing adaptive CCA experiment. There is no correctness premise

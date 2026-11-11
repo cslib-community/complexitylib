@@ -14,6 +14,7 @@ import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.Product.Reindex
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Simulating statistical queries from examples

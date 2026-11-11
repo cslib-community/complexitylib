@@ -134,9 +134,9 @@ def singleQueryDistinguisher : OracleDistinguisher :=
 theorem isOraclePPT_singleQueryDistinguisher : IsOraclePPT encBool singleQueryDistinguisher := by
   have hq : IsOraclePPTOn (encPair encUnary encBits) encBits
       (fun _ : ℕ × List Bool => List.take 1 <$> ProbOracleComp.query ((), [true, true])) :=
-    IsOraclePPTOn.query_take () (by fun_prop) (by fun_prop)
+    IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop)
   unfold singleQueryDistinguisher
-  exact (hq.map_with (by fun_prop)).isOraclePPT
+  exact (hq.map_with' (by fun_prop)).isOraclePPT
 
 theorem isQueryBounded_singleQueryDistinguisher (n : ℕ) (aux : List Bool) :
     (singleQueryDistinguisher n aux).IsQueryBounded 1 := by

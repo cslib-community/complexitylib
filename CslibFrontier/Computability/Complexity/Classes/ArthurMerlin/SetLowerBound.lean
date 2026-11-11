@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin
 public import CslibFrontier.Computability.Complexity.Classes.SBP
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 public import CslibFrontier.Probability.BitString.AffineHash
+public import CslibFrontier.Probability.BitString.AffineHash.Word
 
 import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
@@ -19,7 +20,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
-import CslibFrontier.Computability.Probabilistic.LinearHash
+import CslibFrontier.Computability.Probabilistic.AffineHash
+import CslibFrontier.Foundations.Data.BitString.BlockPower
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Foundations.Data.BitString.WordCount
 
@@ -114,8 +116,10 @@ theorem card_amplifiedSet {N : ℕ} (S : Finset (BitString N)) {T ℓ : ℕ} (h 
     rw [BitString.card_filter_take h fun w => (!w.any fun b => b) = true,
       BitString.card_filter_not_any, mul_one]
   have hblocks : #{u : BitString (5 * N) | ∀ i, BitString.block u i ∈ S} = #S ^ 5 := by
-    rw [show #S ^ 5 = ∏ _i : Fin 5, #S by simp, ← Fintype.card_piFinset]
-    exact card_equiv BitString.blocksEquiv fun u => by simp [Fintype.mem_piFinset]
+    rw [← BitString.card_blockPower]
+    congr 1
+    ext u
+    simp
   simp only [BitString.ofList_ofFn]
   rw [← hblocks, card_filter, sum_mul]
   refine sum_congr rfl fun u _ => ?_
@@ -126,53 +130,13 @@ theorem card_amplifiedSet {N : ℕ} (S : Finset (BitString N)) {T ℓ : ℕ} (h 
 
 /-! ### The verifier -/
 
-/-- The seed of an affine hash to `m` bits of strings of `M` bits, read from `m * M + m` bits: the
-rows of the matrix, then the offset. -/
-def seedEquiv (m M : ℕ) : BitString (m * M + m) ≃ (Fin m → BitString M) × BitString m :=
-  (Fin.appendEquiv (m * M) m).symm.trans (BitString.blocksEquiv.prodCongr (Equiv.refl _))
-
-/-- Whether the affine hash to `m` bits of strings of `M` bits with seed `seed` sends `x` to zero,
-computed on words (`Cslib.BitString.LinearHash.wordHash`): the hash of the matrix part of the seed
-is the offset part. -/
-def hashZero (m M : ℕ) (seed x : List Bool) : Bool :=
-  !(List.zipWith Bool.xor (BitString.LinearHash.wordHash m seed x)
-    (BitString.listRow m M seed)).any fun b => b
-
-/-- On strings of the right lengths, `hashZero` decides whether the affine hash given by the seed
-sends the string to zero. -/
-theorem hashZero_ofFn {m M : ℕ} (r : BitString (m * M + m)) (x : BitString M) :
-    hashZero m M (List.ofFn r) (List.ofFn x) = true ↔
-      BitString.LinearHash.affineHash (seedEquiv m M r) x = 0 := by
-  have hoffset : BitString.listRow m M (List.ofFn r) =
-      List.ofFn ((Fin.appendEquiv _ _).symm r).2 := by
-    rw [List.ofFn_add, BitString.listRow, Nat.mul_comm M,
-      List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn]
-    rfl
-  have hhash : BitString.LinearHash.wordHash m (List.ofFn r) (List.ofFn x) =
-      List.ofFn (BitString.LinearHash.hash
-        (BitString.block ((Fin.appendEquiv _ _).symm r).1) x) := by
-    rw [BitString.LinearHash.wordHash_eq_ofFn, List.ofFn_add, BitString.ofList_ofFn_append]
-    rfl
-  rw [hashZero, hhash, hoffset, ← BitString.ofFn_add, BitString.not_any_ofFn_eq_true_iff]
-  rfl
-
-/-- `hashZero` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_hashZero {β : Type} {encIn : β ↪ List Bool} {m M : β → ℕ}
-    {seed x : β → List Bool} (hm : ComputableInPolyTime m encIn encUnary)
-    (hM : ComputableInPolyTime M encIn encUnary) (hseed : ComputableInPolyTime seed encIn encBits)
-    (hx : ComputableInPolyTime x encIn encBits) :
-    ComputableInPolyTime (fun b => hashZero (m b) (M b) (seed b) (x b)) encIn encBool := by
-  unfold hashZero
-  fun_prop
-
 /-- The Arthur–Merlin verifier of the set lower bound protocol, with element length `N`,
 certificate length `c`, hash length `m`, padding length `T` and padding threshold `ℓ`, where `n` is
 the length of the encoded instance. The string is Arthur's hash seed of `m(n) M(n) + m(n)` bits,
 with `M(n) = 5 N(n) + T(n)`, followed by Merlin's element of `M(n)` bits and five certificates of
 `c(n)` bits. The verifier accepts when the five blocks of the element have accepted certificates,
 the first `ℓ` padding bits are `false` and the element hashes to zero
-(`Cslib.Complexity.SetLowerBound.hashZero`). Bits missing from a short string read as `false`. -/
+(`Cslib.BitString.LinearHash.hashZero`). Bits missing from a short string read as `false`. -/
 def verifier (enc : α ↪ List Bool) (N c m T : Polynomial ℕ) (ℓ : α → ℕ)
     (R : α × List Bool → Bool) (x : α × List Bool) : Bool :=
   let n := (enc x.1).length
@@ -182,7 +146,7 @@ def verifier (enc : α ↪ List Bool) (N c m T : Polynomial ℕ) (ℓ : α → �
   ((List.range 5).all fun i => R (x.1, BitString.listRow (N.eval n) i (e.take (5 * N.eval n)) ++
       BitString.listRow (c.eval n) i (x.2.drop (P + M)))) &&
     (!((e.drop (5 * N.eval n)).take (ℓ x.1)).any fun b => b) &&
-    hashZero (m.eval n) M (x.2.take P) e
+    BitString.LinearHash.hashZero (m.eval n) M (x.2.take P) e
 
 /-- The verifier of the set lower bound protocol is polynomial-time. -/
 @[fun_prop]
@@ -207,7 +171,7 @@ private theorem verifier_ofFn_append {N c m T : Polynomial ℕ} {ℓ : α → �
         ((List.ofFn e).take (5 * N.eval (enc a).length))) i) ++
           List.ofFn (BitString.block z i)) = true) ∧
       (!(((List.ofFn e).drop (5 * N.eval (enc a).length)).take (ℓ a)).any fun b => b) = true ∧
-      BitString.LinearHash.affineHash (seedEquiv _ _ r) e = 0 := by
+      BitString.LinearHash.affineHash (BitString.LinearHash.affineSeedEquiv _ _ r) e = 0 := by
   simp only [verifier, Bool.and_eq_true, List.all_eq_true, List.mem_range]
   generalize (enc a).length = n at r e z ⊢
   have hdrop : (List.ofFn r ++ (List.ofFn e ++ List.ofFn z)).drop
@@ -221,7 +185,8 @@ private theorem verifier_ofFn_append {N c m T : Polynomial ℕ} {ℓ : α → �
   have htake : (List.ofFn r ++ (List.ofFn e ++ List.ofFn z)).take
       (m.eval n * (5 * N.eval n + T.eval n) + m.eval n) = List.ofFn r :=
     List.take_left' List.length_ofFn
-  rw [hdrop, hdrop', htake, List.take_left' List.length_ofFn, hashZero_ofFn, and_assoc]
+  rw [hdrop, hdrop', htake, List.take_left' List.length_ofFn, BitString.LinearHash.hashZero_ofFn,
+    and_assoc]
   refine and_congr ⟨fun h i => ?_, fun h i hi => ?_⟩ Iff.rfl
   · have := h i i.2
     rwa [BitString.listRow_eq_ofFn (count := 5) _ i, BitString.listRow_eq_ofFn (count := 5) _ i,
@@ -239,7 +204,7 @@ theorem exists_verifier_iff {N c m T : Polynomial ℕ} {ℓ : α → ℕ} {R : �
         5 * c.eval (enc a).length),
       verifier enc N c m T ℓ R (a, List.ofFn r ++ List.ofFn y) = true) ↔
       0 ∈ (amplifiedSet (certifiedSet enc N c R a) (T.eval (enc a).length) (ℓ a)).image
-        (BitString.LinearHash.affineHash (seedEquiv _ _ r)) := by
+        (BitString.LinearHash.affineHash (BitString.LinearHash.affineSeedEquiv _ _ r)) := by
   rw [mem_image]
   constructor
   · rintro ⟨y, hy⟩
@@ -267,7 +232,7 @@ private theorem forall_verifier_eq_false_iff (N c m T : Polynomial ℕ) (ℓ : �
       5 * c.eval (enc a).length), verifier enc N c m T ℓ R (a, List.ofFn r ++ List.ofFn y) =
         false) ↔
       0 ∉ (amplifiedSet (certifiedSet enc N c R a) (T.eval (enc a).length) (ℓ a)).image
-        (BitString.LinearHash.affineHash (seedEquiv _ _ r)) := by
+        (BitString.LinearHash.affineHash (BitString.LinearHash.affineSeedEquiv _ _ r)) := by
   rw [← exists_verifier_iff]
   simp
 
@@ -332,7 +297,7 @@ theorem mem_AM_of_card_certifiedSet {N c : Polynomial ℕ} {R : α × List Bool 
   simp only [forall_verifier_eq_false_iff, exists_verifier_iff]
   set n := (enc a).length
   have hh := (BitString.LinearHash.isPairwiseIndependentHash_affineHash
-    (m.eval n) (5 * N.eval n + T.eval n)).comp_seedEquiv (seedEquiv _ _)
+    (m.eval n) (5 * N.eval n + T.eval n)).comp_seedEquiv (BitString.LinearHash.affineSeedEquiv _ _)
   have hbnds := card_amplifiedSet_bounds (certifiedSet enc N c R a) (hKpos a)
     (show T.eval n = m.eval n + 2 by simp [hT, hm])
     (by simp only [hT, Polynomial.eval_add, Polynomial.eval_ofNat]; linarith [hB a])

@@ -227,15 +227,10 @@ theorem parkedOutputCertificate_isPolynomial (L : ℕ)
     (hlen : PolyBounded (fun a => (encIn a).length) (fun a => (parkedOutput L (s a)).length)) :
     (parkedOutputCertificate L c).IsPolynomial := by
   have hv := parkedRegisterCertificate_isPolynomial L c hc (List.finRange r)
-  have hS : PolyBounded (fun a => (encIn a).length)
-      (fun a => (FiniteState.encoding B.encoding (s a)).length) :=
-    (c.polyTime hc).polyBounded_length
   let bound : α → ℕ := fun a =>
     6 * (FiniteState.encoding B.encoding (s a)).length + 2 * W a + 4 +
       (parkedOutput L (s a)).length * (2 * W a + 1)
-  have hB : PolyBounded (fun a => (encIn a).length) bound := by
-    dsimp only [bound]
-    growth_poly
+  have hB : PolyBounded (fun a => (encIn a).length) bound := by growth_poly
   refine congr_isPolynomial _ _ (snd_isPolynomial _ (snd_isPolynomial _
     (iterate_isPolynomial _ _ _ (readCertificate_isPolynomial _ c _ hc hv)
       (prod_isPolynomial _ _ (prod_isPolynomial _ _ hc hc)
@@ -304,7 +299,7 @@ polynomially bounded in `|encIn a|`, then `f` is computable in polynomial time w
 `encList encNat`. -/
 theorem Program.ComputesListInTime.turingComputableInPolyTime_of_width
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {p : Program B r} {encode : ℕ → α → List ℕ} {time : α → ℕ → ℕ}
     {allowed : α → ℕ → Prop} {f : α → List ℕ}
     (h : p.ComputesListInTime encode time allowed f) {width : α → ℕ}
@@ -376,7 +371,7 @@ computable in polynomial time from the bit string `encIn a`, and `size a` and th
 output `encList encNat`. -/
 theorem Program.ComputesListInTime.turingComputableInPolyTime
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {p : Program B r} {encode : α → List ℕ} {size : α → ℕ} {f : α → List ℕ} {T : ℕ → ℕ}
     {k : ℕ} (hT : PolynomiallyBounded T) (hsize : PolyBounded (fun a => (encIn a).length) size)
     (hencode : Turing.MultiTapeTM.ComputableInPolyTime encode encIn (encList encNat))
@@ -385,7 +380,6 @@ theorem Program.ComputesListInTime.turingComputableInPolyTime
       (fun a w => logWidth k (size a) ≤ w) f) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn (encList encNat) := by
   have hlog : PolyBounded (fun a => (encIn a).length) (fun a => logWidth k (size a)) := by
-    unfold logWidth
     growth_poly
   obtain ⟨width, hwidth, hge⟩ := exists_unary_majorant
     (hlog.add (hencode.polyBounded_length (encMid := encList encNat)))
@@ -398,7 +392,7 @@ for a width-independent word encoding computable in polynomial time, a size meas
 length polynomially bounded in the encoded input length. -/
 theorem UniformComputableListInPolyTime.turingComputableInPolyTime
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {encode : α → List ℕ} {size : α → ℕ} {f : α → List ℕ}
     (h : UniformComputableListInPolyTime B f (fun _ => encode) size)
     (hsize : PolyBounded (fun a => (encIn a).length) size)

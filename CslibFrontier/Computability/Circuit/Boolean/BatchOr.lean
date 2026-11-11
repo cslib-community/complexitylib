@@ -96,9 +96,9 @@ private def sourceIndex (h : requests + (sources + padding) = BitonicSort.arity 
 
 private theorem layout_apply (h : requests + (sources + padding) = BitonicSort.arity d)
     (x : BitString input) (i : Fin (requests + (sources + padding))) (bit : Fin (k + 1 + v)) :
-    directProductInput (layout sourceKeys sourceValues queryKeys h x) (Fin.cast h i) bit =
+    layout sourceKeys sourceValues queryKeys h x (finProdFinEquiv (Fin.cast h i, bit)) =
       (rows sourceKeys sourceValues queryKeys i bit).elim x id := by
-  simp [layout, substitution, substitute, directProductInput]
+  simp [layout, substitution, substitute]
 
 private theorem request_key (h : requests + (sources + padding) = BitonicSort.arity d)
     (x : BitString input) (request : Fin requests) :
@@ -178,7 +178,7 @@ theorem eval_withPadding_iff (h : requests + (sources + padding) = BitonicSort.a
         substitute (sourceValues source) x bit = true := by
   simp only [withPadding, Circuit.eval_comp, outputs, Circuit.eval_wiring,
     eval_substituteCircuit, Function.comp_apply, Equiv.symm_apply_apply]
-  change directProductInput
+  change BitString.block
     ((routeValuesCircuit Fin.castSucc (Fin.last k) d v).eval interpretation
       (layout sourceKeys sourceValues queryKeys h x)) (requestIndex h request) bit = true ↔ _
   rw [eval_routeValuesCircuit_value_eq_true_iff Fin.castSucc (Fin.last k) _ _

@@ -24,7 +24,7 @@ all frames, child lists and decisions are computed by the fixed code. The return
 bound permits reuse across tiles without a free dense-directory initialization per call.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery
 

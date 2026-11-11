@@ -116,19 +116,14 @@ private theorem finite_budget_with_deficit_of_cost {n d : ℕ} (hd : 0 < d) {m k
   have hC : 0 < C := by dsimp [C]; positivity
   have hm' : m * (128 * C) ≤ r := (le_div_iff₀ (by positivity)).mp hcost
   have hk' : k * (128 * C) ≤ r := (le_div_iff₀ (by positivity)).mp hkcost
-  have hstep : C * (m + k) ≤ r / 64 := by nlinarith
-  have hpow := pow_le_pow_left₀ (show 0 ≤ C * (m + k) by positivity) hstep d
+  -- raise `64 C (m + k) ≤ n ^ (1 / d)` to the `d`-th power and use `64 ≤ 64 ^ d`
+  have hstep : 64 * (C * (m + k)) ≤ r := by nlinarith
+  have hpow := pow_le_pow_left₀ (by positivity) hstep d
   have hrootpow : r ^ d = (n : ℝ) :=
     Real.rpow_inv_natCast_pow (by positivity) (Nat.ne_of_gt hd)
-  rw [div_pow, hrootpow] at hpow
-  have hden : (64 : ℝ) ≤ (64 : ℝ) ^ d := by
-    simpa only [pow_one] using
-      pow_le_pow_right₀ (by norm_num : (1 : ℝ) ≤ 64) (Nat.succ_le_of_lt hd)
-  have hh : 64 * ((n : ℝ) / (64 : ℝ) ^ d) ≤ n := by
-    rw [← mul_div_assoc]
-    apply (div_le_iff₀ (by positivity)).mpr
-    nlinarith [mul_nonneg (show (0 : ℝ) ≤ n by positivity) (sub_nonneg.mpr hden)]
-  exact (mul_le_mul_of_nonneg_left hpow (by norm_num)).trans hh
+  rw [hrootpow, mul_pow] at hpow
+  have h64 : (64 : ℝ) ≤ 64 ^ d := le_self_pow₀ (by norm_num) (Nat.ne_of_gt hd)
+  exact le_trans (mul_le_mul_of_nonneg_right h64 (by positivity)) hpow
 
 /-! ### The two layers around the threshold of strict majority
 

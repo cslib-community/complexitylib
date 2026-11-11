@@ -173,7 +173,24 @@ def ofList (cache : List (Query × Value)) : Cache (fun _ : Query => Value) :=
 /-- The empty list represents the empty cache. -/
 @[simp] theorem ofList_nil : ofList ([] : List (Query × Value)) = fun _ => none := rfl
 
-variable [LawfulBEq Query] [DecidableEq Query]
+variable [LawfulBEq Query]
+
+/-- At most `cache.length` keys have a value recorded in `cache`. -/
+theorem card_filter_lookup_isSome_le [Fintype Query] (cache : List (Query × Value)) :
+    (Finset.univ.filter fun q : Query => (cache.lookup q).isSome = true).card ≤ cache.length := by
+  classical
+  calc (Finset.univ.filter fun q : Query => (cache.lookup q).isSome = true).card
+      ≤ (cache.map Prod.fst).toFinset.card := by
+        refine Finset.card_le_card fun q hq => ?_
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Option.isSome_iff_exists] at hq
+        obtain ⟨v, hv⟩ := hq
+        obtain ⟨before, after, hlist, _⟩ := List.lookup_eq_some_iff.mp hv
+        have hmem : (q, v) ∈ cache := by simp [hlist]
+        exact List.mem_toFinset.mpr (List.mem_map_of_mem hmem)
+    _ ≤ (cache.map Prod.fst).length := List.toFinset_card_le _
+    _ = cache.length := List.length_map Prod.fst
+
+variable [DecidableEq Query]
 
 /-- Prepending a cache entry updates exactly its key in the represented partial function. -/
 theorem ofList_cons (cache : List (Query × Value)) (q : Query) (value : Value) :
@@ -184,15 +201,11 @@ theorem ofList_cons (cache : List (Query × Value)) (q : Query) (value : Value) 
     simp [ofList]
   · simp [ofList, List.lookup_cons, h, beq_eq_false_iff_ne.mpr h]
 
-/-- The ordinary list-based memoizer implements the mathematical random oracle, preserving the
-result and represented final cache for every adaptive program, even on an infinite query domain. -/
-theorem run_interpret_memoize (distribution : Query → PMF Value)
-    (program : OracleComp (fun _ : Query => Value) α) (cache : List (Query × Value)) :
-    ((OracleComp.interpret (memoize distribution) program).run cache).map
-        (fun (result, cache') => (result, ofList cache')) =
-      (OracleComp.interpret (answer distribution) program).run (ofList cache) := by
-  apply OracleComp.run_interpret_map_state
-  intro q cache
+/-- Mapping the list cache by `ofList` turns one `memoize` call into `answer`. -/
+theorem memoize_map_ofList (distribution : Query → PMF Value) (q : Query)
+    (cache : List (Query × Value)) :
+    (memoize distribution q cache).map (fun (result, cache') => (result, ofList cache')) =
+      answer distribution q (ofList cache) := by
   cases h : cache.lookup q with
   | none =>
     rw [memoize_of_none _ _ _ h, answer_of_none distribution (ofList cache) q h]
@@ -201,6 +214,15 @@ theorem run_interpret_memoize (distribution : Query → PMF Value)
   | some value =>
     rw [memoize_of_some _ _ _ _ h, answer_of_some distribution (ofList cache) q value h]
     exact PMF.pure_map _ _
+
+/-- The ordinary list-based memoizer implements the mathematical random oracle, preserving the
+result and represented final cache for every adaptive program, even on an infinite query domain. -/
+theorem run_interpret_memoize (distribution : Query → PMF Value)
+    (program : OracleComp (fun _ : Query => Value) α) (cache : List (Query × Value)) :
+    ((OracleComp.interpret (memoize distribution) program).run cache).map
+        (fun (result, cache') => (result, ofList cache')) =
+      (OracleComp.interpret (answer distribution) program).run (ofList cache) :=
+  OracleComp.run_interpret_map_state _ _ _ (memoize_map_ofList distribution) program cache
 
 end List
 
@@ -331,6 +353,14 @@ section ListFinite
 variable {Value : Type u} [Fintype Query] [Finite Value]
   [BEq Query] [LawfulBEq Query]
 
+/-- Completing a singleton list cache `[(q₀, v₀)]` fixes coordinate `q₀` to `v₀`. -/
+theorem complete_ofList_singleton [DecidableEq Query] (distribution : Query → PMF Value)
+    (q₀ : Query) (v₀ : Value) :
+    complete distribution (ofList [(q₀, v₀)]) =
+      PMF.pi (Function.update distribution q₀ (PMF.pure v₀)) := by
+  rw [ofList_cons, ofList_nil, complete_update]
+  rfl
+
 /-- An ordinary list-based cache implements eager independent function sampling. -/
 theorem interpret_eq_memoize (distribution : Query → PMF Value)
     (program : OracleComp (fun _ : Query => Value) α) :
@@ -397,6 +427,22 @@ theorem eval_run_interpret_memoize_eq_eager [Fintype Key] [Finite Value]
   rw [interpret_eq_lazy]
   have h := congrArg (PMF.map Prod.fst) (eval_run_interpret_memoize sample program [])
   simpa only [ProbComp.eval_map, PMF.map_comp, Function.comp_def, ofList_nil] using h
+
+/-- Lift a stateful computation on a component cache `C` into a composite state `S`. -/
+def zoomStateT {S C α : Type} {m : Type → Type} [Monad m]
+    (get : S → C) (set : S → C → S) (act : StateT C m α) : StateT S m α := fun s => do
+  let (a, c') ← act (get s)
+  return (a, set s c')
+
+omit [LawfulBEq Key] in
+/-- Evaluating `zoomStateT get set (memoize (fun _ => dist) q)` commutes with `ProbComp.eval`. -/
+theorem eval_zoomStateT_memoize {S : Type}
+    (get : S → List (Key × Value)) (set : S → List (Key × Value) → S)
+    (dist : ProbComp Value) (q : Key) (s : S) :
+    ProbComp.eval (zoomStateT get set (memoize (fun _ => dist) q) s) =
+      (memoize (fun _ => ProbComp.eval dist) q (get s)).map
+        (fun (v, c') => (v, set s c')) := by
+  simp [zoomStateT, ProbComp.eval_memoize, PMF.map]
 
 end Closed
 

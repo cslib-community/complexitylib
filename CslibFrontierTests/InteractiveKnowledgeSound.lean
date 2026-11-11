@@ -88,8 +88,7 @@ theorem sound_of_knowledgeSound [Nonempty WitOut] {V : Verifier OracleSpec.empty
       (plainLaw (P >>= runStrategy s V.samplers)).map
         fun r => (r.1, outputWitness relOut (V.outputOn x r.1)) := by
     simp only [P', bind_assoc, plainLaw_bind, PMF.map_bind]
-    congr 1
-    funext st
+    congr 1 with st : 1
     rw [← plainLaw_bind]
     exact plainLaw_bindLeaf_pure_run _ _ _ _
   have hk := h x P'
@@ -241,8 +240,7 @@ theorem sumcheck_round_hvzk (i : ℕ) :
     simp only [Sumcheck.round, runStrategy, plainLaw_bind, plainLaw_pure, plainLaw_sample,
       PMF.pure_bind, PMF.bind_bind, roundSim, ProbComp.eval_bind, ProbComp.eval_pure]
     rw [← PMF.bind_pure_comp, PMF.bind_bind]
-    congr 1
-    funext z
+    congr 1 with z : 1
     rw [PMF.pure_bind]
     rfl
   rw [hlaw]

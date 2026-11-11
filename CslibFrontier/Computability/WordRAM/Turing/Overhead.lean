@@ -298,7 +298,7 @@ theorem Program.ComputesInTime.computableInO_of_width
       ← hR, ← hK] at hencS ⊢
     linarith
 
-/-- **The additive word RAM with an explicit cubic overhead.** A run of `Basis.additive` within
+/-- **The additive word RAM, with the exponent `3`.** A run of `Basis.additive` within
 `steps a` instructions on `n` input words at word size `w` costs
 `O(|encIn a| + Tw a + Te a + Ts a + (steps a + 1) · ((n + steps a + 1)(w + 1)) ^ 3)` Turing-machine
 steps; see `Program.ComputesInTime.computableInO_of_width`. -/

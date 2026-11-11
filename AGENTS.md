@@ -170,14 +170,20 @@ repository with its own Git object database for such operations.
 Before Git recovery or nonstandard object manipulation, verify the actual Git common directory,
 object alternates, and storage sharing. The experimental repository must not use the shared
 database through a gitfile, alternate object directory, or hard-linked object files. Never delete
-objects, refs, worktree registrations, or metadata belonging to another session.
+objects, refs, worktree registrations, or metadata belonging to another session. Worktrees also
+share one stash stack, so `git stash pop` can apply and drop another session's entry: never push,
+pop, apply or drop stash entries in a shared checkout or its worktrees. Keep work in progress as a
+commit on your own branch or as a patch file in your scratch directory
+([procedure and recovery](manual/workflows/agent-operations.md#isolate-work-and-build-outputs)).
 
 Keep mutable build outputs separate. Integration experiments must be contained so their failure
 cannot damage the user's checkout or another worker's repository.
 
 Machines are shared between agents. Stop only processes and tasks you started, by PID or task
 ID; never use pattern-based kills such as `pkill -f`, which also hit other agents' builds. Keep
-scratch files under a directory or name unique to your agent.
+scratch files under a directory or name unique to your agent. Concurrent Lean builds can
+exhaust the host's file handles before its processors; agree on a limit on concurrent builds
+(see [the troubleshooting chapter](manual/workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 
 ### Placement and reuse
 
@@ -188,9 +194,13 @@ concrete and the change is small; otherwise record a specific follow-up with dec
 consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
 Do not expand a bounded PR into an unbounded architectural cleanup.
 
-Do not prove a lemma that the library, Mathlib or core already has, even privately: use it, or make
-a private original public. After a build, `python3 scripts/parallel_defs.py --theorems` lists the
-theorems a change adds or modifies whose statement already exists; CI posts the same notice.
+Do not prove a lemma that the library, CSLib, Mathlib or core already has, even privately or by
+re-deriving it inline inside another proof: use it, or make a private original public. After a
+build, `python3 scripts/parallel_defs.py --theorems` lists the theorems a change adds or modifies
+whose statement already exists; CI posts the same notice. It cannot see a fact re-derived inside a
+proof, so search for an existing lemma first. When a proof you add or change needs a substantial
+argument that another proof makes, derive it once; the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says when a shared lemma pays.
 
 "Lowest suitable" does not mean the most widely imported file. Adding a public declaration changes
 a module's public interface and can invalidate downstream build artifacts, even for clients that do
@@ -248,16 +258,25 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
-optional caches and runs this sequence. Both full and quick modes require those manual checks;
-CI runs them too, with the tests included in its Python tooling suite. These stdlib-only checks
-need no PDF tools or generated research data. They catch source/link drift and malformed visual
-markup; they do not replace the required review of both manuals' meaning and usability.
-CI runs the same six Lean checks.
-For Lean, dependency or build changes, all six gates must pass on the final source revision before
+optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
+CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
+hygiene, the encoding readability and projection chain ratchets, documentation pins, and the
+post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
+compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
+why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
+context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
+there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+After the Lean gates, full and quick modes also re-elaborate the changed library and test files
+whose outputs Lake restored from the shared local artifact cache, which keeps no warnings
+([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
+Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
+generated research data. They catch source/link drift and malformed visual markup; they do not
+replace the required review of both manuals' meaning and usability.
+For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
 repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-when hosted coverage is unavailable; changes to validation machinery also need direct checks of
-the changed behavior. Required CI and merge-group checks still apply.
+(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
+need direct checks of the changed behavior. Required CI and merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
@@ -266,12 +285,16 @@ any Lean examples introduced; a local whole-library rebuild is unnecessary.
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. Quick mode skips the global test/lint/style/init-import gates and is not full
-validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts and
-ambiguous change/import analysis fall back to all six gates. The one exception is
-`scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
-encoding-readability lint instead. Quick success alone does not satisfy the full validation
-requirement above; documentation-only checks need not invoke quick mode.
+it does not fetch. It also runs source hygiene on the changed library and test files and, when a
+library module changed, the encoding readability and projection chain ratchets: all read only
+sources and take seconds. Quick mode lints only the affected library modules, skips the global
+test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
+not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
+and ambiguous change/import analysis fall back to the full check. The exceptions are the
+ratchet baselines `scripts/encoding_readability_baseline.json` and
+`scripts/projection_chains_baseline.json`, which no Lean gate reads: a change to one runs its
+ratchet instead. Quick success alone does not satisfy the full validation requirement above;
+documentation-only checks need not invoke quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
 `CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -429,7 +452,12 @@ not need a particular agent installation.
 Read the actual definitions and statements. For substantive mathematics, explain briefly what is
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
-Check new and changed statements against [Encodings in statements](#encodings-in-statements).
+Check new and changed statements against
+[Structures for domain objects and records](#structures-for-domain-objects-and-records) and
+[Encodings in statements](#encodings-in-statements).
+Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
+a new copy of an argument the library already makes is a finding when the
+[library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 
@@ -508,6 +536,28 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
 never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
 
+GitHub declines every push to the branch of a PR that is in the merge queue ("protected branch
+hook declined"), even when its entry is `UNMERGEABLE`. Whoever restacks a queued PR, by hand or
+with `--push` below, first removes it with **Remove from queue** on the PR page or:
+
+```bash
+gh api graphql -f id="$(gh pr view <PR> --json id --jq .id)" -f query='
+  mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { mergeQueueEntry { state } } }'
+```
+
+Dequeueing merges nothing, so the author may do it; the new head is queued again only by a
+non-author, once the `check_restack.py` check below passes or the delta is reviewed.
+
+When the only conflicts with `main` are in the aggregates or `references.bib`,
+`python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
+without running the PR's code. It requires the `check_restack.py` check below to pass for the
+current head, merges `origin/main` with both drivers, writes the aggregates as `lake exe mk_all`
+would for the merged tree, and runs the check on the result, both times from a checkout of
+`origin/main`. It refuses any other conflict and is a dry run unless given `--push`, which pushes
+the merge only when the check passes and the PR's branch still points at the head it merged. It
+never queues and never comments: post its result line, and queue the new head under the rules
+below once CI passes.
+
 A branch that forked before the module root was renamed from Complexity to CslibFrontier is
 restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current
 `main`; `--onto` names the restacked head of a lower stacked branch). It merges the rename and
@@ -526,7 +576,9 @@ bibliography merge written by that script, with nothing else changed, passes. Af
 branch, which could change it.
 An approval given while a PR is based on another branch also names that branch's head, and the
 check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
-review did not cover, would carry the approval if the lower PR never landed. Anyone, including
+review did not cover, would carry the approval if the lower PR never landed. Pass that head even
+when the approved head had also merged a newer `main`: the script then replays from the merge of
+the lower head and that `main`, and names it in the result. Anyone, including
 the author, may post the script's result line, which names both heads and the exact command. The
 non-author who queues the new head runs that command again rather than relying on the posted line.
 When the script reports differences, review the paths and diffs it prints as a delta, under the
@@ -550,6 +602,23 @@ express the intended mathematics; explain a non-obvious decision to introduce a 
 Syntactic similarity is a prompt to inspect reuse, not proof that models should be identified.
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
+
+### Structures for domain objects and records
+
+Define domain objects, problem instances, certificates, configurations, and multi-field algorithm
+contexts, states or records as documented `structure`s with named, documented fields—not as tuple
+type synonyms (`abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ`) or bare product types
+in problem sets (`Set (List (ℕ × ℕ) × ℕ × ℕ)`, `Set (Graph × ℕ)`). A `structure` gives every
+component a name and docstring in editor hover and `doc-gen4`, supports dot-notation, prevents
+swapping homogeneous components, and avoids the `.1.2` positional projection chains banned by
+[#1764](https://github.com/cslib-community/cslib-frontier/issues/1764). Encode field-tuple
+structures with `enc_structure` under [Encodings in statements](#encodings-in-statements) below.
+
+Keep plain `Prod` (`×`) where the pair is not a domain record: generic binary combinators,
+mathematical Cartesian products, and uncurried multi-argument function inputs that merely pair an
+instance with a witness or second operand (such as an NP verifier `Instance × List Bool → Bool` or
+a binary operation `α × β → γ`). Existing tuple abbreviations and bare-product problem sets are
+migrated under [#4385](https://github.com/cslib-community/cslib-frontier/issues/4385).
 
 ### Encodings in statements
 
@@ -586,8 +655,9 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    encoding, even where it occurs only once.
 5. **Declare structure encodings with `enc_structure`.** When a structure is encoded as the
    tuple of its fields in declaration order, declare the encoding with `enc_structure`, which
-   generates the embedding, its `_apply` equation and its `fun_prop` certificates, rather than
-   writing a `.trans` embedding and proving the certificates by hand. The
+   generates the embedding, its `_apply` equation and its `fun_prop` certificates (for degree,
+   `ComputableInO`, workspace budgets and `ComputableInPolyTime`), rather than writing a `.trans`
+   embedding and proving the certificates by hand. The
    [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
    shows the declaration and what it generates.
 6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs

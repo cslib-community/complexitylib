@@ -53,7 +53,7 @@ against the monotone model beyond the literature.
   for the approximation theorem instantiated here.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Monotone
 

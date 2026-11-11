@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Un
 public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.ToReal
 
 /-!
 # Fully polynomial randomized approximation schemes
@@ -123,8 +124,7 @@ theorem IsFPRAS.approx {enc : α ↪ List Bool} {f : α → ℕ} {A : α → ℕ
     rw [div_le_iff₀ (by exact_mod_cast hp), ← div_le_iff₀' hε, one_div]
     exact Nat.le_ceil _
   refine le_trans (sub_le_sub_left hpow 1) ((hA.2 x _ _ hp).trans ?_)
-  apply ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
-  apply MeasureTheory.measure_mono
+  apply PMF.toOuterMeasure_toReal_mono
   rintro ⟨num, den⟩ ⟨hden, hle⟩
   refine ⟨hden, hle.trans ?_⟩
   rw [div_eq_mul_one_div, mul_comm]

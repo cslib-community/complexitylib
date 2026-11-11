@@ -339,8 +339,7 @@ theorem runWith_world_liftProver (scheme : Scheme PK SK M Sig Query Digest) (sk 
     ProbOracleComp.runWith (forgerWorldImpl scheme sk) prog cache := by
   simp only [Interactive.liftProver, ← ProbOracleComp.sample_unifFin,
     ProbOracleComp.runWith_interpret_sumHandler]
-  congr 1
-  funext q s
+  congr 1 with q s : 2
   simp [sumHandler]
 
 /-- Running a lifted verifier computation in `world scheme sk` reduces to interpreting it against
@@ -351,8 +350,7 @@ theorem runWith_world_liftVerify (scheme : Scheme PK SK M Sig Query Digest) (sk 
     ProbOracleComp.runWith (world scheme sk).impl (liftVerify (M := M) (Sig := Sig) prog) cache =
     (interpret (oracle Digest) prog).run cache := by
   rw [liftVerify, ProbOracleComp.runWith_interpret, OracleComp.runWith]
-  congr 2
-  funext x s
+  congr 2 with x s : 2
   simp [world, sumHandler]
 
 /-- Running `runLoggedForger (liftOracleForger prog)` against `forgerWorldImpl scheme sk` and

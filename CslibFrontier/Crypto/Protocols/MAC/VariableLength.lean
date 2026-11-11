@@ -16,6 +16,7 @@ import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.BitString
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Variable-length MACs from fixed-length MACs
@@ -458,9 +459,7 @@ private theorem mem_support_blockwiseSigningOracle {n : ℕ} {sk m r : List Bool
     (h : ((r, tags), log') ∈ (ProbComp.eval (M.blockwiseSigningOracle E n sk m log)).support) :
     log' = (m, (r, tags)) :: log ∧ r.length = fieldWidth (M.msgLen n) ∧
       tags ∈ (ProbComp.eval ((blockInputs E (M.msgLen n) r m).mapM (M.sign sk))).support := by
-  rw [eval_blockwiseSigningOracle] at h
-  simp only [PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at h
-  obtain ⟨r', hr', tags', htags', ⟨rfl, rfl⟩, rfl⟩ := h
+  supp_cases h [eval_blockwiseSigningOracle] with ⟨r', hr', tags', htags', ⟨rfl, rfl⟩, rfl⟩
   exact ⟨rfl, BitString.length_of_mem_support_uniformList hr', htags'⟩
 
 private theorem forall₂_of_mem_support_mapM {n : ℕ} {sk : List Bool}
@@ -470,13 +469,10 @@ private theorem forall₂_of_mem_support_mapM {n : ℕ} {sk : List Bool}
     List.Forall₂ (fun x t => M.verify sk x t = true) xs tags := by
   induction xs generalizing tags with
   | nil =>
-    simp only [List.mapM_nil, ProbComp.eval_pure, PMF.mem_support_pure_iff] at htags
-    subst htags
+    supp_cases htags [List.mapM_nil]
     exact .nil
   | cons x xs ih =>
-    simp only [List.mapM_cons, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-      PMF.mem_support_pure_iff] at htags
-    obtain ⟨t, ht, ts, hts, rfl⟩ := htags
+    supp_cases htags [List.mapM_cons] with ⟨t, ht, ts, hts, rfl⟩
     exact .cons (M.verify_sign n sk hsk x (hxs x (by simp)) t ht)
       (ih (fun y hy => hxs y (by simp [hy])) hts)
 
@@ -597,9 +593,7 @@ theorem blockwiseVerify_blockwiseSign {n : ℕ} {sk : List Bool}
     (hm : 0 < m.length ∧ m.length < 2 ^ fieldWidth (M.msgLen n)) {tag : Tag}
     (htag : tag ∈ (ProbComp.eval (M.blockwiseSign fullEncoder n sk m)).support) :
     M.blockwiseVerify fullEncoder n sk m tag = true := by
-  simp only [blockwiseSign, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at htag
-  obtain ⟨r, hr, tags, htags, rfl⟩ := htag
+  supp_cases htag [blockwiseSign, BitString.eval_sampleList] with ⟨r, hr, tags, htags, rfl⟩
   have hrlen := BitString.length_of_mem_support_uniformList hr
   exact M.blockwiseVerify_of_forall₂ fullEncoder hm hrlen (M.forall₂_of_mem_support_mapM hsk _
     (fun x hx => length_of_mem_blockInputs (fun _ _ _ hb => length_fullEncoder hrlen hb) hx)
@@ -753,10 +747,8 @@ probability one. -/
 theorem blockwiseGame_noIndex (n : ℕ) (hw : 3 ≤ fieldWidth (M.msgLen n)) :
     ProbComp.eval (M.blockwiseGame noIndexEncoder M.swapBlocksAdversary n) true = 1 := by
   refine M.blockwiseGame_eq_one noIndexEncoder fun sk hsk out hout => ?_
-  simp only [blockwiseRun, swapBlocksAdversary, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hout
-  obtain ⟨⟨⟨r, tags⟩, log⟩, hq, rfl⟩ := hout
+  supp_cases hout [blockwiseRun, swapBlocksAdversary, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure] with ⟨⟨⟨r, tags⟩, log⟩, hq, rfl⟩
   obtain ⟨rfl, hr, htags⟩ := M.mem_support_blockwiseSigningOracle noIndexEncoder hq
   have h2 := M.forall₂_of_mem_support_mapM hsk _ (fun x hx => length_of_mem_blockInputs
     (fun _ _ _ hb => length_noIndexEncoder hr hb) hx) htags
@@ -775,10 +767,8 @@ probability one. -/
 theorem blockwiseGame_noLength (n : ℕ) (hw : 3 ≤ fieldWidth (M.msgLen n)) :
     ProbComp.eval (M.blockwiseGame noLengthEncoder M.truncateAdversary n) true = 1 := by
   refine M.blockwiseGame_eq_one noLengthEncoder fun sk hsk out hout => ?_
-  simp only [blockwiseRun, truncateAdversary, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hout
-  obtain ⟨⟨⟨r, tags⟩, log⟩, hq, rfl⟩ := hout
+  supp_cases hout [blockwiseRun, truncateAdversary, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure] with ⟨⟨⟨r, tags⟩, log⟩, hq, rfl⟩
   obtain ⟨rfl, hr, htags⟩ := M.mem_support_blockwiseSigningOracle noLengthEncoder hq
   have h2 := M.forall₂_of_mem_support_mapM hsk _ (fun x hx => length_of_mem_blockInputs
     (fun _ _ _ hb => length_noLengthEncoder hr hb) hx) htags
@@ -800,10 +790,9 @@ probability one. -/
 theorem blockwiseGame_noIdentifier (n : ℕ) (hw : 3 ≤ fieldWidth (M.msgLen n)) :
     ProbComp.eval (M.blockwiseGame noIdentifierEncoder M.mixBlocksAdversary n) true = 1 := by
   refine M.blockwiseGame_eq_one noIdentifierEncoder fun sk hsk out hout => ?_
-  simp only [blockwiseRun, mixBlocksAdversary, ProbOracleComp.runWith_bind,
-    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hout
-  obtain ⟨⟨⟨r, tags⟩, log⟩, hq, ⟨⟨r', tags'⟩, log'⟩, hq', rfl⟩ := hout
+  supp_cases hout [blockwiseRun, mixBlocksAdversary, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure]
+    with ⟨⟨⟨r, tags⟩, log⟩, hq, ⟨⟨r', tags'⟩, log'⟩, hq', rfl⟩
   obtain ⟨rfl, hr, htags⟩ := M.mem_support_blockwiseSigningOracle noIdentifierEncoder hq
   obtain ⟨rfl, -, htags'⟩ := M.mem_support_blockwiseSigningOracle noIdentifierEncoder hq'
   have h2 := M.forall₂_of_mem_support_mapM hsk _ (fun x hx => length_of_mem_blockInputs

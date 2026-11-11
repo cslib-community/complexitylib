@@ -157,8 +157,7 @@ theorem expect_walk_pow_add_pow_four_le {f : V → ℝ} (hf : 𝔼 v, f v = 0) (
           ring
       _ ≤ 𝔼 v, q v ^ 2 := sub_le_self _ (sq_nonneg _)
       _ = 𝔼 v, g v ^ 4 := by
-          congr 1
-          funext v
+          congr 1 with v : 1
           rw [hq]
           ring
       _ ≤ 𝔼 v, f v ^ 4 := G.expect_walk_pow_pow_four_le s f

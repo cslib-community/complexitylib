@@ -23,7 +23,8 @@ These shared certificates serve both continuous geometry and logical wire correc
 
 * `Cslib.Complexity.SAT.PlanarCompile.paths_eq_unitPaths`, `.occurrencePath_eq_unitPath`:
   exact agreement with the canonical graph layout.
-* `Cslib.Complexity.SAT.PlanarCompile.occurrence_index_lt`: valid literal-incidence indices.
+* `Cslib.Complexity.SAT.PlanarCompile.occurrence_index_lt`, `.incidenceGraph_edge_idxOf`: valid
+  literal-incidence indices and the edges they select.
 * `Cslib.Complexity.SAT.PlanarCompile.occurrencePath_endpoints`, `.occurrencePath_nodup`:
   actual endpoints and uniqueness of all listed points.
 * `Cslib.Complexity.SAT.PlanarCompile.occurrencePath_unit`, `.occurrencePath_last_unit`:
@@ -39,7 +40,7 @@ These shared certificates serve both continuous geometry and logical wire correc
 These certificates refer to the original canonical path construction in the imported compiler.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT.PlanarCompile
 
@@ -58,6 +59,14 @@ theorem occurrence_index_lt {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
     (Cslib.Logic.PL.occurrences φ).idxOf o < (SAT.incidenceGraph φ).2.length := by
   simpa only [SAT.incidenceGraph, List.length_map] using List.idxOf_lt_length_of_mem ho
+
+/-- The incidence edge indexed by an actual occurrence joins its variable to its clause. -/
+theorem incidenceGraph_edge_idxOf {φ : CNF ℕ} {o : Occurrence ℕ}
+    (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
+    (SAT.incidenceGraph φ).2[(Cslib.Logic.PL.occurrences φ).idxOf o]'(occurrence_index_lt ho) =
+      (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1) := by
+  simp only [SAT.incidenceGraph, List.getElem_map]
+  rw [List.getElem_idxOf (List.idxOf_lt_length_of_mem ho)]
 
 /-- Every actual occurrence path is duplicate-free, without an extra supplied path witness. -/
 theorem occurrencePath_nodup {φ : CNF ℕ} {o : Occurrence ℕ}
@@ -89,10 +98,7 @@ theorem occurrencePath_endpoints {φ : CNF ℕ} {o : Occurrence ℕ}
   have hi := occurrence_index_lt ho
   have h := Graph.unitPath_endpoints (SAT.incidenceGraph φ)
     (fun _ => SAT.incidenceGraph_endpoints) (fun _ => SAT.incidenceGraph_loopless) hi
-  have he : (SAT.incidenceGraph φ).2[(Cslib.Logic.PL.occurrences φ).idxOf o] =
-      (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1) := by
-    simp only [SAT.incidenceGraph, List.getElem_map]
-    rw [List.getElem_idxOf (List.idxOf_lt_length_of_mem ho)]
+  have he := incidenceGraph_edge_idxOf ho
   have hb := SAT.incidenceGraph_bipartite (List.getElem_mem hi)
   rw [he] at hb
   simp only [Graph.edgeEndpoint, Bool.false_eq_true, ↓reduceIte] at h

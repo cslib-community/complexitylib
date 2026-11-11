@@ -27,6 +27,19 @@ with `--approved-base`, or with `--base` when that is not given. For any PR appr
 based on another branch (a stacked PR), pass that branch's head at approval time as
 `--approved-base`. Otherwise the replayed change includes the lower branch's changes, which were
 not reviewed in this PR, and they would carry the approval if the lower PR never landed.
+A stacked PR may also have merged a newer `main` than the lower head before approval. Then the
+change from the lower head alone would include that `main`, and later `main` commits that rewrite
+the same lines would make the replay conflict where the PR changed nothing. So with
+`--approved-base`, APPROVED's merge base with it is compared with APPROVED's merge base with
+`--base`. When one contains the other, the later one is the approved change's base. Otherwise the
+base is the merge of the two, which the result names. Where that merge conflicts, the approved
+head's resolution counts as part of the approved change: such a path passes only when the replay
+leaves it as the new `main` has it, and otherwise needs review as a replay conflict. Conflict
+markers in the base already make a differing resolution conflict in the replay; a conflict without
+markers, such as a file that one side deleted and the other modified, is checked against the new
+`main` directly. The result names those paths too. The lower branch's changes are in
+that base either way, so they are never replayed: when the lower PR never landed, a new head that
+still carries them differs from the replay.
 
 The replay uses the attributes in the new head's base commit (`--attr-source`) and no others: it
 ignores `core.attributesFile` and the system file, and refuses to run when `info/attributes` sets
@@ -159,10 +172,10 @@ def check_local_attributes(root: Path) -> None:
                        "move them aside or run the check in another clone")
 
 
-def driver_config(root: Path) -> list[str]:
+def driver_config(root: Path, scripts: Path | None = None) -> list[str]:
     """`-c` options pinning every merge driver the replay could run: `bibkeys` and `leanagg` run
-    this checkout's resolvers, and every other configured driver reports a conflict without
-    merging."""
+    the resolvers in `scripts` (default this checkout's), and every other configured driver
+    reports a conflict without merging."""
     listed = git(root, "config", "--null", "--name-only", "--get-regexp",
                  r"^merge\..*\.driver$", ok=(0, 1))
     names = {key[len("merge."):-len(".driver")]
@@ -175,8 +188,10 @@ def driver_config(root: Path) -> list[str]:
         raise GitError("a configured merge driver name contains `=` or a newline, so the replay "
                        "cannot disable it; run the check in another clone")
     # Git expands `%` in a driver command, so a literal `%` in a path is doubled.
+    resolvers = ((scripts / BIB_RESOLVER.name, scripts / AGGREGATE_RESOLVER.name) if scripts
+                 else (BIB_RESOLVER, AGGREGATE_RESOLVER))
     python, bib, aggregate = (shlex.quote(str(p)).replace("%", "%%")
-                              for p in (sys.executable, BIB_RESOLVER, AGGREGATE_RESOLVER))
+                              for p in (sys.executable, *resolvers))
     options = ["-c", f"merge.{BIB_DRIVER}.driver={python} {bib} --driver %O %A %B",
                "-c", f"merge.{AGGREGATE_DRIVER}.driver={python} {aggregate} %O %A %B"]
     for name in sorted(names):
@@ -187,9 +202,51 @@ def driver_config(root: Path) -> list[str]:
 def replay(root: Path, approved_base: str, approved: str, onto: str) -> tuple[str, set[str]]:
     """The tree of `approved_base..approved` merged onto `onto`, and the paths that conflicted."""
     check_local_attributes(root)
-    result = git(root, f"--attr-source={onto}", "-c", f"core.attributesFile={os.devnull}",
-                 *MERGE_CONFIG, *driver_config(root), "merge-tree", "--write-tree", "--name-only",
-                 "-z", "--no-messages", f"--merge-base={approved_base}", onto, approved, ok=(0, 1))
+    return merge_tree(root, replay_options(root, onto), f"--merge-base={approved_base}", onto,
+                      approved)
+
+
+def replay_options(root: Path, attributes: str) -> tuple[str, ...]:
+    """The global options of every merge: the attributes in `attributes` and no others, the fixed
+    merge settings and the pinned drivers."""
+    return (f"--attr-source={attributes}", "-c", f"core.attributesFile={os.devnull}",
+            *MERGE_CONFIG, *driver_config(root))
+
+
+def stacked_base(root: Path, lower: str, main_base: str, attributes: str
+                 ) -> tuple[str, tuple[str, str] | None, set[str]]:
+    """The base of an approved stacked head whose merge base with the lower branch is `lower` and
+    with `main` is `main_base`, the two commits merged into it (`None` when it is one of them) and
+    the paths where that merge conflicted.
+
+    When one of `lower` and `main_base` contains the other, the later one is the base: the lower
+    branch's changes stay in the replay unless `main` has them. Otherwise the approved head has
+    merged a `main` that the lower head lacks, and the base is a commit of their merge, which is
+    the approved head without the PR's own change. A conflicted path keeps its markers, if any, so
+    the approved head's resolution of it is part of the replayed change. `main` passes such a path
+    only where the replay leaves it as the new `main` has it. The merge uses the attributes in
+    `attributes`."""
+    if ancestor(root, main_base, lower):
+        return lower, None, set()
+    if ancestor(root, lower, main_base):
+        return main_base, None, set()
+    check_local_attributes(root)
+    merged, conflicts = merge_tree(root, replay_options(root, attributes), lower, main_base)
+    commit = out(root, "-c", "user.name=check_restack", "-c", "user.email=check_restack@invalid",
+                 "commit-tree", merged, "-p", lower, "-p", main_base, "-m",
+                 "check_restack: the approved head without the PR's own change")
+    return commit, (lower, main_base), conflicts
+
+
+def ancestor(root: Path, older: str, newer: str) -> bool:
+    return git(root, "merge-base", "--is-ancestor", older, newer, ok=(0, 1)).returncode == 0
+
+
+def merge_tree(root: Path, options: tuple[str, ...], *args: str) -> tuple[str, set[str]]:
+    """`git merge-tree --write-tree` with the global `options` and the arguments `args`: the tree
+    it writes and the paths that conflicted."""
+    result = git(root, *options, "merge-tree", "--write-tree", "--name-only", "-z", "--no-messages",
+                 *args, ok=(0, 1))
     fields = result.stdout.split(b"\0")
     if not re.fullmatch(rb"[0-9a-f]{40,64}", fields[0]):
         raise GitError("unexpected `git merge-tree` output; Git 2.42 or later is required")
@@ -394,10 +451,21 @@ def main(argv: list[str] | None = None) -> int:
                            "run `git fetch --unshallow origin` first")
         approved_base = merge_base(root, approved_ref, approved)
         new_base = merge_base(root, base, new)
+        merged, base_conflicts = None, set()
+        if args.approved_base:
+            approved_base, merged, base_conflicts = stacked_base(
+                root, approved_base, merge_base(root, base, approved), new_base)
+        origin = (f"the merge of {merged[0][:12]} and {merged[1][:12]}" if merged
+                  else approved_base[:12])
         if tree(root, approved_base) == tree(root, approved):
             raise GitError(f"the approved head {approved[:12]} makes no change relative to "
-                           f"{approved_base[:12]}; check --approved-base")
+                           f"{origin}; check --approved-base")
         replayed, conflicts = replay(root, approved_base, approved, new_base)
+        # A conflicted path of the base merge may carry no markers (a deletion, a binary file), so
+        # the approved head's choice there can look unchanged. It passes only when the replay has
+        # the new `main`'s version.
+        if base_conflicts:
+            conflicts |= base_conflicts & set(changed_paths(root, replayed, tree(root, new_base)))
         new_tree = tree(root, new)
         differing = [] if replayed == new_tree else changed_paths(root, replayed, new_tree)
         if replayed != new_tree and not differing:
@@ -407,8 +475,10 @@ def main(argv: list[str] | None = None) -> int:
     except GitError as error:
         print(f"check_restack: {error}", file=sys.stderr)
         return 2
-    heads = (f"approved {approved[:12]} (from {approved_base[:12]}) replayed onto "
-             f"{new_base[:12]}, new {new[:12]}")
+    if base_conflicts:
+        origin += f", which conflicted in {', '.join(sorted(base_conflicts))}"
+    heads = (f"approved {approved[:12]} (from {origin}) replayed onto {new_base[:12]}, "
+             f"new {new[:12]}")
     # A conflicted path needs review even when the new head matches the replay's tentative content
     # (as when it keeps a file that `main` deleted). Identical trees pass only without conflicts.
     # An aggregate is judged by what `mk_all` writes for the new head instead, where that is known.

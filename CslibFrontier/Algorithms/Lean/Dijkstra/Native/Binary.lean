@@ -112,12 +112,7 @@ private theorem target_realizes : Realizes .exact (fun d : TargetArgs =>
     refine ⟨hv, K, hL, hi', ?_⟩
     rw [he]
     have hx0 : s.mem (d.1.1.2.base + d.1.2) ≠ 0 := by assumption
-    have hdecode : Dictionary.Memory.decode (s.mem (d.1.1.2.base + d.1.2)) =
-        some (s.mem (d.1.1.2.base + d.1.2) - 1) := by
-      cases hx : s.mem (d.1.1.2.base + d.1.2) with
-      | zero => exact False.elim (hx0 hx)
-      | succ x => rfl
-    rw [hdecode] at hop
+    rw [Dictionary.Memory.decode_of_ne_zero hx0] at hop
     exact hop hc
 
 private theorem targetSafe_of_relax_valid (G : Algorithms.WordRAM.Dijkstra.ListInstance)

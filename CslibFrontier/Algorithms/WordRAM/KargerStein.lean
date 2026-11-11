@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 import CslibFrontier.Computability.WordRAM.Call
+import CslibFrontier.Algorithms.WordRAM.NatLog
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
 public import CslibFrontier.Algorithms.WordRAM.Karger.Contract
@@ -3145,54 +3146,10 @@ theorem ksLogLoop_exec {w n : ℕ} {x : Data 24} (hn : 1 ≤ n)
       y.regs one = 1 ∧
       y.regs nOrig = n ∧
       y.regs idx = Nat.log 2 n := by
-  let I (y : Data 24) : Prop :=
-    y.mem = x.mem ∧ y.regs one = 1 ∧ y.regs nOrig = n ∧
-    1 ≤ y.regs rem ∧ y.regs rem ≤ n ∧
-    y.regs idx + Nat.log 2 (y.regs rem) = Nat.log 2 n
-  have hbody : ∀ y, I y → (Cond.lt one rem).Holds y →
-      ∃ z, ExecWithin w ksLogStep y z 2 ∧ I z ∧
-        Nat.log 2 (z.regs rem) < Nat.log 2 (y.regs rem) := by
-    intro y ⟨hym, hy1, hyn, hyr_ge, hyr_le, hy_sum⟩ hc
-    have hgt1 : 1 < y.regs rem := by simpa [Cond.holds_lt, hy1] using hc
-    have hshr_eq : y.regs rem >>> 1 = y.regs rem / 2 := by
-      rw [Nat.shiftRight_eq_div_pow, pow_one]
-    have hlog_step : Nat.log 2 (y.regs rem) = Nat.log 2 (y.regs rem / 2) + 1 :=
-      Nat.log_of_one_lt_of_le (by decide) (by omega)
-    have hdiv_fit : Fits w (y.regs rem / 2) := hn_fit.of_le (by omega)
-    have hidx1_fit : Fits w (y.regs idx + 1) := hlg_fit.of_le (by omega)
-    let z₁ := y.set rem (y.regs rem / 2)
-    let z₂ := z₁.set idx (y.regs idx + 1)
-    have e1 : ExecWithin w ram[rem ← rem >>> one] y z₁ 1 := by
-      simpa [z₁, BinOp.eval, hy1, hshr_eq] using
-        ExecWithin.bin (f := .shiftRight) (d := rem) (i := rem) (j := one) (x := y)
-          (by simpa [BinOp.eval, hy1, hshr_eq] using hdiv_fit)
-    have e2 : ExecWithin w ram[idx ← idx + one] z₁ z₂ 1 := by
-      have hi' : z₁.regs idx = y.regs idx := by simp +decide [z₁]
-      have ho' : z₁.regs one = 1 := by simpa +decide [z₁, Function.update_apply] using hy1
-      simpa [z₂, BinOp.eval, hi', ho'] using
-        ExecWithin.bin (f := .add) (d := idx) (i := idx) (j := one) (x := z₁)
-          (by simpa [BinOp.eval, hi', ho'] using hidx1_fit)
-    refine ⟨z₂, e1.seq e2, ?_, ?_⟩
-    · refine ⟨hym,
-        by simpa +decide [z₂, z₁, Function.update_apply] using hy1,
-        by simpa +decide [z₂, z₁, Function.update_apply] using hyn,
-        by simp +decide [z₂, z₁]; omega,
-        by simp +decide [z₂, z₁]; omega,
-        ?_⟩
-      simp +decide only [z₂, z₁, Data.set_regs, Function.update_apply, ↓reduceIte]
-      omega
-    · simp +decide only [z₂, z₁, Data.set_regs, Function.update_apply, ↓reduceIte]
-      omega
-  have hx : I x := ⟨rfl, hone, hnOrig, by omega, hrem.le, by rw [hidx, hrem, zero_add]⟩
-  obtain ⟨y, he, ⟨hym, hy1, hyn, _, _, hy_sum⟩, hnc⟩ :=
-    ExecWithin.loop_invariant I (fun y => Nat.log 2 (y.regs rem)) hbody hx
-  have hyr_eq1 : y.regs rem = 1 := by
-    have : ¬(1 < y.regs rem) := by simpa [Cond.holds_lt, hy1] using hnc
-    omega
-  have hy_idx : y.regs idx = Nat.log 2 n := by
-    rw [hyr_eq1, Nat.log_one_right, add_zero] at hy_sum
-    exact hy_sum
-  exact ⟨y, he.mono (by rw [hrem]; omega), hym, hy1, hyn, hy_idx⟩
+  obtain ⟨y, he, hm, hidx', hframe⟩ := NatLog.shiftLoop_exec (one := one) (rem := rem)
+    (idx := idx) (by decide) (by decide) (by decide) hn hone hrem hidx hn_fit hlg_fit
+  exact ⟨y, he, hm, (hframe one (by decide) (by decide)).trans hone,
+    (hframe nOrig (by decide) (by decide)).trans hnOrig, hidx'⟩
 
 theorem fastCutHighProbSetup_exec {w n : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hw : logWidth 4 n ≤ w) :
@@ -3291,77 +3248,18 @@ theorem fastCutAmpPost_exec {w i R : ℕ} {x : Data 24}
       y.regs bestVal =
         (if i = 0 then x.regs retVal else min (x.regs retVal) (x.regs bestVal)) := by
   have hi1_fit : Fits w (i + 1) := hR_fit.of_le (by omega)
-  let v_new := x.regs retVal
   let s₁ := (x.set zero 0).set one 1
   have e1 : Exec (B := .standard) w ram[zero ← #0] x (x.set zero 0) 1 :=
     Exec.const (fits_zero w)
   have e2 : Exec (B := .standard) w ram[one ← #1] (x.set zero 0) s₁ 1 :=
     Exec.const h1
-  have hs1_z : s₁.regs zero = 0 := by simp +decide [s₁]
-  have hs1_1 : s₁.regs one = 1 := by simp [s₁]
-  have hs1_rv : s₁.regs retVal = v_new := by
-    simp +decide [s₁, v_new]
-  have hs1_ti : s₁.regs trialIdx = i := by
-    simpa +decide [s₁, Function.update_apply] using hti
-  have hs1_bv : s₁.regs bestVal = x.regs bestVal := by
-    simp +decide [s₁]
-  let best_next := if i = 0 then v_new else min v_new (x.regs bestVal)
-  have hbr : ∃ s₂ : Data 24,
-      ExecWithin (B := .standard) w ram[
-        if trialIdx = zero then [ bestVal ← retVal ]
-        else [ if retVal < bestVal then [ bestVal ← retVal ] else [ zero ← #0 ] ]
-      ] s₁ s₂ 5 ∧
-      s₂.mem = x.mem ∧
-      s₂.regs one = 1 ∧
-      s₂.regs srcBase = x.regs srcBase ∧
-      s₂.regs nOrig = x.regs nOrig ∧
-      s₂.regs numTrials = x.regs numTrials ∧
-      s₂.regs trialIdx = i ∧
-      s₂.regs bestVal = best_next := by
-    by_cases hi0 : i = 0
-    · have hc : (Cond.eq trialIdx zero).Holds s₁ := by simp [Cond.holds_eq, hs1_ti, hs1_z, hi0]
-      have e_pos : ExecWithin (B := .standard) w ram[bestVal ← retVal] s₁
-          (s₁.set bestVal v_new) 1 := by
-        simpa [hs1_rv] using
-          (Exec.copy (B := .standard) (w := w) (d := bestVal) (s := retVal) (x := s₁)).within
-      refine ⟨s₁.set bestVal v_new, (ExecWithin.branch_pos hc e_pos).mono (by omega), rfl,
-        by simp +decide [s₁],
-        by simp +decide [s₁],
-        by simp +decide [s₁],
-        by simp +decide [s₁],
-        by simp +decide [hs1_ti],
-        by simp [best_next, hi0]⟩
-    · have hc : ¬(Cond.eq trialIdx zero).Holds s₁ := by simp [Cond.holds_eq, hs1_ti, hs1_z, hi0]
-      by_cases hlt : v_new < x.regs bestVal
-      · have hc2 : (Cond.lt retVal bestVal).Holds s₁ := by
-          simp [Cond.holds_lt, hs1_rv, hs1_bv, hlt]
-        have e_pos2 : ExecWithin (B := .standard) w ram[bestVal ← retVal] s₁
-            (s₁.set bestVal v_new) 1 := by
-          simpa [hs1_rv] using
-            (Exec.copy (B := .standard) (w := w) (d := bestVal) (s := retVal) (x := s₁)).within
-        have e_in := ExecWithin.branch_pos (neg := ram[zero ← #0]) hc2 e_pos2
-        refine ⟨s₁.set bestVal v_new,
-          (ExecWithin.branch_neg (pos := ram[bestVal ← retVal]) hc e_in).mono (by omega), rfl,
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [hs1_ti],
-          by simp [best_next, hi0, min_eq_left (Nat.le_of_lt hlt)]⟩
-      · have hc2 : ¬(Cond.lt retVal bestVal).Holds s₁ := by
-          simp [Cond.holds_lt, hs1_rv, hs1_bv, hlt]
-        have e_neg2 : ExecWithin (B := .standard) w ram[zero ← #0] s₁ (s₁.set zero 0) 1 :=
-          ExecWithin.const (fits_zero w)
-        have e_in := ExecWithin.branch_neg (pos := ram[bestVal ← retVal]) hc2 e_neg2
-        refine ⟨s₁.set zero 0,
-          (ExecWithin.branch_neg (pos := ram[bestVal ← retVal]) hc e_in).mono (by omega), rfl,
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [hs1_ti],
-          by simp +decide [s₁, best_next, hi0, min_eq_right (Nat.le_of_not_lt hlt)]⟩
-  obtain ⟨s₂, e_br, hm2, ho2, hsb2, hn2, hnt2, hti2, hbv2⟩ := hbr
+  obtain ⟨s₂, e_br, hm2, hbv2, hfr⟩ := minUpdate_exec (w := w) (trial := trialIdx)
+    (zero := zero) (val := retVal) (best := bestVal) (by decide) (x := s₁) (by simp +decide [s₁])
+  have ho2 : s₂.regs one = 1 := by simp +decide [hfr one, s₁]
+  have hsb2 : s₂.regs srcBase = x.regs srcBase := by simp +decide [hfr srcBase, s₁]
+  have hn2 : s₂.regs nOrig = x.regs nOrig := by simp +decide [hfr nOrig, s₁]
+  have hnt2 : s₂.regs numTrials = x.regs numTrials := by simp +decide [hfr numTrials, s₁]
+  have hti2 : s₂.regs trialIdx = i := by simpa +decide [hfr trialIdx, s₁] using hti
   have e_inc : ExecWithin w ram[trialIdx ← trialIdx + one] s₂ (s₂.set trialIdx (i + 1)) 1 := by
     simpa [BinOp.eval, hti2, ho2] using
       ExecWithin.bin (f := .add) (d := trialIdx) (i := trialIdx) (j := one) (x := s₂)
@@ -3371,7 +3269,7 @@ theorem fastCutAmpPost_exec {w i R : ℕ} {x : Data 24}
     by simpa +decide [Function.update_apply] using hn2,
     by simpa +decide [Function.update_apply] using hnt2,
     by simp,
-    by simpa +decide [Function.update_apply] using hbv2⟩
+    by simpa +decide [Function.update_apply, s₁, hti] using hbv2⟩
   unfold fastCutAmpPost
   exact ((e1.within).seq ((e2.within).seq (e_br.seq e_inc))).mono (by omega)
 
@@ -3657,15 +3555,20 @@ theorem fastCutHighProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
     hmiss.trans (Lean.Karger.fastCutHighProbLaw_failure_le hn hW hmin)⟩
 
 /-- Corollary of `fastCutHighProbProgram_spec`: when `0 < minCut W`, `fastCutHighProbProgram`
-misses `minCut W` with probability at most `1 / n`. -/
+misses `minCut W` with probability at most `1 / n`. For `n < 2` the bound is at least `1`. -/
 theorem fastCutHighProbProgram_failure_le_inv_n {n w : ℕ} {W : Fin n → Fin n → ℕ}
-    (hn : 2 ≤ n) (hW : IsMultigraph W)
+    (hW : IsMultigraph W)
     (hw : logWidth 4 n ≤ w) (htot : Fits w (totalDoubledWeight W))
     (hpos : 0 < minCut W) :
     (evalRand w fastCutHighProbProgram (fastCutHighProbTime n)
         (.init (n :: flattenMatrix W))).toOuterMeasure
         {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
       (1 : ℝ≥0∞) / (n : ℝ≥0∞) := by
+  by_cases hn : n < 2
+  · refine (Probability.PMF.toOuterMeasure_le_one _ _).trans ?_
+    rw [one_div, ENNReal.one_le_inv]
+    exact_mod_cast (by omega : n ≤ 1)
+  replace hn : 2 ≤ n := by omega
   refine ((fastCutHighProbProgram_spec hn hW hw htot).2.2.2 hpos).trans ?_
   apply ENNReal.div_le_div_left
   exact_mod_cast (by omega : n ≤ 2 * n)

@@ -35,7 +35,7 @@ barrier `Cslib.Circuits.Boolean.not_isUseful_PPoly_of_isNatural` applies.
 * [O. Goldreich, S. Goldwasser, S. Micali, *How to construct random functions*][GGM1986]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean
 

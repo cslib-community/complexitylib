@@ -20,35 +20,40 @@ import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Tactic.Linarith
 
 /-!
-# Acceptance in logarithmic space by breadth-first search in polynomial time
+# Breadth-first search through the views of a nondeterministic machine
 
-A nondeterministic machine accepts exactly when a halted view with output `[true]` is reachable
-from its initial view (`Turing.MultiTapeNTM.accepts_iff_reflTransGen_viewStep`). Breadth-first
-search through the views (`Cslib.Reachability.search`, along `Turing.MultiTapeNTM.viewSucc`)
-decides this once it has run for as many rounds as there are reachable views
-(`Turing.MultiTapeNTM.searchAccepts_iff`). Under a logarithmic space bound there are polynomially
+A nondeterministic machine accepts exactly when an accepting view
+(`Turing.MultiTapeNTM.acceptingView`: halted, with output `[true]`) is reachable from its initial
+view (`Turing.MultiTapeNTM.accepts_iff_reflTransGen_viewStep`). Breadth-first search through the
+views (`Cslib.Reachability.search`, along `Turing.MultiTapeNTM.viewSucc`) finds exactly the
+reachable views once it has run for as many rounds as there are
+(`Turing.MultiTapeNTM.mem_search_iff`). Under a logarithmic space bound there are polynomially
 many (`Turing.MultiTapeNTM.length_le_of_nodup_reachable`), so a polynomial number of rounds
 suffices, each round is polynomial-time in the views found so far, and these are polynomially
-many views of linear size. The decision is therefore polynomial-time
-(`Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`): reachability in the
-configuration graph, which has polynomially many vertices [Sipser, Section 8.4][Sipser2013].
+many views of linear size. The search is therefore polynomial-time
+(`Turing.MultiTapeNTM.exists_computableInPolyTime_search`): reachability in the configuration
+graph, which has polynomially many vertices [Sipser, Section 8.4][Sipser2013]. The search run
+until no new view appears, under any space bound, is
+`Turing.MultiTapeNTM.reachableViews`.
 
 ## Main definitions
 
 * `Turing.MultiTapeNTM.viewSucc`: the views a running view steps to.
-* `Turing.MultiTapeNTM.searchAccepts`: breadth-first search for an accepting view.
+* `Turing.MultiTapeNTM.acceptingView`: the test for a halted view with output `[true]`.
 
 ## Main results
 
 * `Turing.MultiTapeNTM.reflTransGen_viewSucc_iff`: the successor lists give the reachable views.
 * `Turing.MultiTapeNTM.mem_search_iff`: enough rounds find exactly the reachable views.
-* `Turing.MultiTapeNTM.searchAccepts_iff`: enough rounds decide acceptance.
-* `Turing.MultiTapeNTM.computableInPolyTime_viewSucc`: the successors in polynomial time.
+* `Turing.MultiTapeNTM.computableInPolyTime_viewSucc`,
+  `Turing.MultiTapeNTM.computableInPolyTime_acceptingView`,
+  `Turing.MultiTapeNTM.computableInPolyTime_initView`: the successors, the accepting test and the
+  initial view in polynomial time.
 * `Turing.MultiTapeTM.ComputableInPolyTime.expand`: a round in polynomial time.
+* `Turing.MultiTapeNTM.length_encList_search_le`: under any space bound, the views found by any
+  number of rounds are few and short.
 * `Turing.MultiTapeNTM.exists_computableInPolyTime_search`: under a logarithmic space bound,
   enough rounds of breadth-first search find their views in polynomial time.
-* `Turing.MultiTapeNTM.exists_computableInPolyTime_searchAccepts`: under a logarithmic space
-  bound, enough rounds of breadth-first search run in polynomial time.
 
 ## References
 
@@ -74,12 +79,9 @@ noncomputable def viewSucc (finite : FiniteCfg k Bool State) : List (FiniteCfg k
   | some state => (ntm.actions state finite.inputSymbol finite.workTapeSymbols).map
       fun action => (finite.step action).summarizeOutput
 
-open scoped Classical in
-/-- **Breadth-first acceptance**: run `rounds` rounds of breadth-first search through the views
-from the initial view on `input`, and test for a halted view with output `[true]`. -/
-noncomputable def searchAccepts (rounds : ℕ) (input : List Bool) : Bool :=
-  (Cslib.Reachability.search ntm.viewSucc rounds (ntm.initView input)).any
-    fun finite => decide (finite.state = none) && decide (finite.output = [true])
+/-- An accepting view: halted, with output `[true]`. -/
+def acceptingView (finite : FiniteCfg k Bool State) : Bool :=
+  decide (finite.state = none) && decide (finite.output = [true])
 
 variable {ntm}
 
@@ -128,20 +130,6 @@ theorem mem_search_iff {input : List Bool} {s rounds : ℕ} (hs : ntm.RunsInSpac
   rw [Cslib.Reachability.mem_search_iff (fun views hnodup hreach =>
     length_le_of_nodup_reachable hs hnodup fun f hf =>
       reflTransGen_viewSucc_iff.mp (hreach f hf)) hrounds, reflTransGen_viewSucc_iff]
-
-/-- **Enough rounds decide acceptance**: under a space bound `s`, breadth-first search for at least
-`2 ^ (2 * coreLengthBound k State n s + 1)` rounds finds an accepting view exactly when the
-machine accepts. -/
-theorem searchAccepts_iff {input : List Bool} {s rounds : ℕ} (hs : ntm.RunsInSpace input s)
-    (hrounds : 2 ^ (2 * coreLengthBound k State input.length s + 1) ≤ rounds) :
-    ntm.searchAccepts rounds input = true ↔ ntm.Accepts input := by
-  classical
-  have hmem (finite : FiniteCfg k Bool State) :
-      finite ∈ Cslib.Reachability.search ntm.viewSucc rounds (ntm.initView input) ↔
-        Relation.ReflTransGen ntm.ViewStep (ntm.initView input) finite :=
-    mem_search_iff hs hrounds
-  rw [accepts_iff_reflTransGen_viewStep, searchAccepts]
-  simp only [List.any_eq_true, Bool.and_eq_true, decide_eq_true_eq, hmem]
 
 end Turing.MultiTapeNTM
 
@@ -223,18 +211,51 @@ theorem computableInPolyTime_viewSucc :
         ComputableInPolyTime.finiteCfg_summarizeOutput.comp
           (ComputableInPolyTime.finiteCfg_step action)
 
-/-- Under a logarithmic space bound, the number of rounds that decides acceptance is at most a
-polynomial in the input length. -/
+/-- **The accepting test is polynomial-time.** -/
+theorem computableInPolyTime_acceptingView :
+    ComputableInPolyTime (acceptingView (k := k) (State := State)) encFiniteCfg encBool :=
+  ComputableInPolyTime.bool_and.comp
+    (((ComputableInPolyTime.of_finite fun state : Option State =>
+        decide (state = none)).comp ComputableInPolyTime.finiteCfg_state).prod
+    (ComputableInPolyTime.decide_eq' ComputableInPolyTime.finiteCfg_output
+      (ComputableInPolyTime.const [true])))
+
+/-- Under a logarithmic space bound, the number of rounds that finds every reachable view is at most
+a polynomial in the input length. -/
 private theorem rounds_le (k : ℕ) (State : Type) (c n : ℕ) :
     2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1) ≤
       2 * 2 ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) *
         (n + 1) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) :=
   (two_pow_coreLengthBound_log_le k State c n).trans_eq (by rw [mul_pow, ← mul_assoc])
 
+/-- The initial view of an encoded instance is polynomial-time. -/
+theorem computableInPolyTime_initView {α : Type} (enc : α ↪ List Bool) :
+    ComputableInPolyTime (fun a => ntm.initView (enc a)) enc encFiniteCfg :=
+  ComputableInPolyTime.finiteCfg_init
+    (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) (f := fun a => enc a)
+      fun _ => rfl) ntm.q₀
+
+open scoped Classical in
+/-- **Breadth-first search finds few short views**: under a space bound `s`, any number of rounds
+of the search from the initial view finds at most `2 ^ (2 * coreLengthBound + 1)` views, each
+encoded within `2 * viewLengthBound + 1` bits. -/
+theorem length_encList_search_le {input : List Bool} {s : ℕ} (hs : ntm.RunsInSpace input s)
+    (rounds : ℕ) :
+    (encList encFiniteCfg (Cslib.Reachability.search ntm.viewSucc rounds
+      (ntm.initView input))).length ≤
+        2 ^ (2 * coreLengthBound k State input.length s + 1) *
+          (2 * viewLengthBound k State input.length s + 1) := by
+  have hreach (finite) (hf : finite ∈ Cslib.Reachability.search ntm.viewSucc rounds
+      (ntm.initView input)) : Relation.ReflTransGen ntm.ViewStep (ntm.initView input) finite :=
+    reflTransGen_viewSucc_iff.mp (Cslib.Reachability.reflTransGen_of_mem_search hf)
+  exact (length_encList_le encFiniteCfg _ fun finite hf =>
+    length_encFiniteCfg_le hs (hreach finite hf)).trans <| Nat.mul_le_mul_right _
+      (length_le_of_nodup_reachable hs (Cslib.Reachability.nodup_search rounds _) hreach)
+
 open scoped Classical in
 /-- **Breadth-first search within logarithmic space is polynomial-time.** If every computation
 prefix of `ntm` on every encoded instance `enc a` stays within space `c * (Nat.log2 n + 1)`, then
-for some polynomial number of rounds, at least the bound of `Turing.MultiTapeNTM.searchAccepts_iff`,
+for some polynomial number of rounds, at least the bound of `Turing.MultiTapeNTM.mem_search_iff`,
 the list of views found by breadth-first search from the initial view is polynomial-time in the
 encoded instance. -/
 theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} {c : ℕ}
@@ -254,10 +275,7 @@ theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} 
           (ComputableInPolyTime.const 1)))))
   have hinit : ComputableInPolyTime (fun a => [ntm.initView (enc a)]) enc
       (encList encFiniteCfg) :=
-    ComputableInPolyTime.cons' (ComputableInPolyTime.finiteCfg_init
-      (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) (f := fun a => enc a)
-        fun _ => rfl) ntm.q₀)
-      (ComputableInPolyTime.const [])
+    ComputableInPolyTime.cons' (computableInPolyTime_initView enc) (ComputableInPolyTime.const [])
   -- the found views are polynomially many, each of linear length
   set bound : α → ℕ := fun a => rounds a *
     (2 * viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1)) + 1)
@@ -273,40 +291,9 @@ theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} 
   have hstates : ∀ a, ∀ i ≤ rounds a, (encList encFiniteCfg
       ((Cslib.Reachability.expand ntm.viewSucc)^[i] [ntm.initView (enc a)])).length ≤ bound a := by
     intro a i _
-    have hreach (finite) (hf : finite ∈ Cslib.Reachability.search ntm.viewSucc i
-        (ntm.initView (enc a))) :
-        Relation.ReflTransGen ntm.ViewStep (ntm.initView (enc a)) finite :=
-      reflTransGen_viewSucc_iff.mp (Cslib.Reachability.reflTransGen_of_mem_search hf)
-    have hlen := (length_le_of_nodup_reachable (hs a) (Cslib.Reachability.nodup_search i _)
-      hreach).trans (rounds_le k State c _)
-    refine (length_encList_le encFiniteCfg _ fun finite hf =>
-      length_encFiniteCfg_le (hs a) (hreach finite hf)).trans ?_
-    exact Nat.mul_le_mul_right _ hlen
+    exact (length_encList_search_le (hs a) i).trans
+      (Nat.mul_le_mul_right _ (rounds_le k State c _))
   exact ComputableInPolyTime.iterate hcount hinit
     (ComputableInPolyTime.expand computableInPolyTime_viewSucc) hbound hstates
-
-open scoped Classical in
-/-- **Acceptance within logarithmic space is decided by breadth-first search in polynomial time.**
-If every computation prefix of `ntm` on every encoded instance `enc a` stays within space
-`c * (Nat.log2 n + 1)`, then some polynomial number of rounds suffices for
-`Turing.MultiTapeNTM.searchAccepts_iff`, and breadth-first search for that many rounds is
-polynomial-time in the encoded instance. -/
-theorem exists_computableInPolyTime_searchAccepts {α : Type} {enc : α ↪ List Bool} {c : ℕ}
-    (hs : ∀ a, ntm.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1))) :
-    ∃ rounds : α → ℕ, (∀ a, 2 ^ (2 * coreLengthBound k State (enc a).length
-        (c * (Nat.log2 (enc a).length + 1)) + 1) ≤ rounds a) ∧
-      ComputableInPolyTime (fun a => ntm.searchAccepts (rounds a) (enc a)) enc encBool := by
-  obtain ⟨rounds, hrounds, hsearch⟩ := exists_computableInPolyTime_search hs
-  refine ⟨rounds, hrounds, ?_⟩
-  have htest : ComputableInPolyTime
-      (fun finite : FiniteCfg k Bool State =>
-        decide (finite.state = none) && decide (finite.output = [true])) encFiniteCfg encBool :=
-    ComputableInPolyTime.bool_and.comp
-      (((ComputableInPolyTime.of_finite fun state : Option State =>
-          decide (state = none)).comp ComputableInPolyTime.finiteCfg_state).prod
-      (ComputableInPolyTime.decide_eq' ComputableInPolyTime.finiteCfg_output
-        (ComputableInPolyTime.const [true])))
-  exact ComputableInPolyTime.anyWithInput hsearch
-    (htest.comp (ComputableInPolyTime.snd _ _))
 
 end Turing.MultiTapeNTM

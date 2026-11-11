@@ -174,8 +174,7 @@ theorem runWith_interpret_sumHandler {Query' : Type} {spec' : Query' → Type}
         (OracleComp.sumHandler (fun n => sample (ProbComp.unifFin n)) handler) program) s =
       runWith (fun q => runWith oracle (handler q)) program s := by
   rw [runWith_interpret, runWith]
-  congr 1
-  funext q t
+  congr 1 with q t : 2
   cases q with
   | inl n =>
     simp [OracleComp.sumHandler, StateT.lift, ProbComp.unifOracle, PMF.map, Function.comp_def]

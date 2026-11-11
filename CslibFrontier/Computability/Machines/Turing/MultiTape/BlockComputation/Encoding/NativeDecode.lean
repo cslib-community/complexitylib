@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.NatSize
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
+import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Pi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
@@ -94,22 +95,6 @@ theorem parse_eq_some_iff (e : Q ≃ Fin s) (b : ℕ) (word : List Bool) (raw : 
     simp only [parse, hb, hw, ne_eq, not_true_eq_false, or_self, ↓reduceIte, ht]
 
 
-private theorem wordDrop_inSpace : ComputableInSpace
-    (fun p : List Bool × ℕ => p.1.drop p.2) (encPair encBits encNat) encBits
-    (fun p => (encPair encBits encNat p).length) := by
-  have htail : ComputableInSpace List.tail encBits encBits (fun w => w.length) :=
-    of_inO (.of_linear (ListEncoding.tail encBool))
-  have h := iterate (snd encBits encNat) (fst encBits encNat) htail
-    (Q := fun p => p.1.length) (B := fun p => p.1.length)
-    (fun p i _ => by simp [List.tail_iterate]) (fun p i _ => by simp [List.tail_iterate])
-  refine h.weaken (.of_le_linear 8 8 fun p => ?_) |>.of_enc_eq ?_
-  · enc_len
-  · intro p
-    rw [List.tail_iterate]
-
-private theorem wordReverse_inSpace : ComputableInSpace List.reverse encBits encBits
-    (fun w => w.length) := of_inO ComputableInDegree.bitsReverse.inO_one
-
 /-- Native length measurement of an actual stored bit word. -/
 theorem wordLength_inSpace : ComputableInSpace List.length encBits encNat
     (fun w => w.length) :=
@@ -120,11 +105,11 @@ private theorem wordTake_inSpace : ComputableInSpace
     (fun p => (encPair encBits encNat p).length) := by
   have hw := fst encBits encNat
   have hn := snd encBits encNat
-  have hrev := budget_comp_linear wordReverse_inSpace hw
+  have hrev := budget_comp_linear bitsReverse hw
   have hlen := budget_comp_linear wordLength_inSpace hw
-  have hdrop := budget_comp_linear wordDrop_inSpace
+  have hdrop := budget_comp_linear bitsDrop
     (budget_prod hrev (budget_natSub hlen hn))
-  refine (budget_comp_linear wordReverse_inSpace hdrop).of_enc_eq ?_
+  refine (budget_comp_linear bitsReverse hdrop).of_enc_eq ?_
   intro p
   rw [← List.reverse_take, List.reverse_reverse]
 
@@ -136,7 +121,7 @@ theorem slice_inSpace : ComputableInSpace
   have hw := fst encBits (encPair encNat encNat)
   have hn := snd encBits (encPair encNat encNat)
   exact budget_comp_linear wordTake_inSpace
-    (budget_prod (budget_comp_linear wordDrop_inSpace (budget_prod hw hn.fst')) hn.snd')
+    (budget_prod (budget_comp_linear bitsDrop (budget_prod hw hn.fst')) hn.snd')
 
 /-- Numeric fields use the direct charged binary-word normalization machine. -/
 theorem readNat_inSpace : ComputableInSpace
@@ -144,17 +129,6 @@ theorem readNat_inSpace : ComputableInSpace
     (encPair encBits (encPair encNat encNat)) encNat
     (fun p => (encPair encBits (encPair encNat encNat) p).length) :=
   budget_comp_linear (of_inO ComputableInO.bitsToNat) slice_inSpace
-
-/-- Read one stored bit natively. Header-only root classification uses this without decoding
-windows. -/
-theorem bit_inSpace : ComputableInSpace
-    (fun p : List Bool × ℕ => p.1.getD p.2 false) (encPair encBits encNat) encBool
-    (fun p => (encPair encBits encNat p).length) := by
-  have hhead : ComputableInSpace (fun w : List Bool => w.headD false) encBits encBool
-      (fun w => w.length) := of_inO (.of_linear (ListEncoding.headD false))
-  refine (budget_comp_linear hhead wordDrop_inSpace).of_enc_eq ?_
-  intro p
-  rw [List.getD_eq_getElem?_getD, List.headD_eq_head?_getD, List.head?_drop]
 
 private abbrev Scan := Bool × Bool × List ℕ
 private abbrev encScan : Scan ↪ List Bool := encPair encBool (encPair encBool (encList encNat))
@@ -318,9 +292,9 @@ private theorem payload_inSpace (e : Q ≃ Fin s) : ComputableInSpace
         (budget_natAdd (budget_const (1 + (s + 1).size) (.refl _))
           (budget_natMul (budget_const ((finSuccEquiv k).symm i).val (.refl _)) hsize))
         hsize))) hb
-  have htrack0 := budget_comp_linear bit_inSpace
+  have htrack0 := budget_comp_linear (bitsGetD false)
     (budget_prod hw (trackOffset_inSpace (k := k) (s := s)))
-  have htrack1 := budget_comp_linear bit_inSpace
+  have htrack1 := budget_comp_linear (bitsGetD false)
     (budget_prod hw (budget_natSucc (trackOffset_inSpace (k := k) (s := s))))
   have htrack := budget_finite (encC := encFinite OutputTrack)
     (fun q : Bool × Bool => if q.2 then .other else if q.1 then .accept else .empty)
@@ -424,11 +398,6 @@ private theorem readNat_field {n count : ℕ} (bits : BitString n) (field : BitS
   funext i
   exact hfield i
 
-private theorem getD_ofFn {n : ℕ} (bits : BitString n) (i : ℕ) (hi : i < n) :
-    (List.ofFn bits).getD i false = bits ⟨i, hi⟩ := by
-  rw [List.getD_eq_getElem _ _ (by simpa only [List.length_ofFn] using hi)]
-  simp only [List.getElem_ofFn]
-
 omit [Finite Q] in
 /-- The untyped payload agrees field by field with the explicit semantic codec. -/
 theorem toView_payload (e : Q ≃ Fin s) (b : ℕ) [NeZero b]
@@ -469,7 +438,7 @@ theorem toView_payload (e : Q ≃ Fin s) (b : ℕ) [NeZero b]
   have htrack (i : Fin 2) :
       (List.ofFn bits).getD (trackOffset k s b + i.val) false =
       fstBits (sndBits (sndBits (Fin.tail bits))) i := by
-    rw [getD_ofFn bits _ (by unfold trackOffset; have := i.isLt; omega)]
+    rw [List.getD_ofFn_of_lt bits (by unfold trackOffset; have := i.isLt; omega)]
     simp only [fstBits_apply, sndBits_apply, Fin.tail]
     congr 1
     ext
@@ -540,7 +509,7 @@ theorem parse_ofFn (e : Q ≃ Fin s) (b : ℕ) [NeZero b]
   have hlen : (List.ofFn bits).length = width k s b := List.length_ofFn
   have htag : (List.ofFn bits).headD false = bits ⟨0, width_pos k s b⟩ := by
     rw [List.headD_eq_head?_getD, List.head?_eq_getElem?]
-    exact getD_ofFn bits 0 (width_pos k s b)
+    exact List.getD_ofFn_of_lt bits (width_pos k s b) false
   simp only [parse, NeZero.ne b, hlen, ne_eq, not_true_eq_false, or_self, ↓reduceIte]
   rw [htag]
   by_cases h : bits ⟨0, width_pos k s b⟩ = true
