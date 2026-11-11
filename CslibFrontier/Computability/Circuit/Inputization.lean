@@ -85,6 +85,8 @@ noncomputable def nonInputComponents (g : (Fin n → U) → Fin k → U) :
     Finset ((Fin n → U) → U) :=
   (univ.image fun j x => g x j).filter fun h => ∀ i, h ≠ fun x => x i
 
+/-- A non-input component of `g` is a component of `g` that differs from every input
+projection. -/
 theorem mem_nonInputComponents {g : (Fin n → U) → Fin k → U} {h : (Fin n → U) → U} :
     h ∈ nonInputComponents g ↔ (∃ j, (fun x => g x j) = h) ∧ ∀ i, h ≠ fun x => x i := by
   classical
@@ -116,6 +118,7 @@ noncomputable def Program.componentGates {s : ℕ} (p : Program σ n s) (I : Int
     (g : (Fin n → U) → Fin k → U) : Finset (Fin s) :=
   univ.filter fun t => ∃ j, p.gateFunction I t = fun x => g x j
 
+/-- A component gate is a gate whose function is some component of `g`. -/
 theorem Program.mem_componentGates {s : ℕ} {p : Program σ n s} {I : Interpretation σ U}
     {g : (Fin n → U) → Fin k → U} {t : Fin s} :
     t ∈ p.componentGates I g ↔ ∃ j, p.gateFunction I t = fun x => g x j := by
