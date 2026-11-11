@@ -103,17 +103,30 @@ event (these short names need `open Cslib.Probability`), rather than converting 
 [checked examples](../../CslibFrontierTests/ProbabilityNotation.lean) bound a program and a set event.
 Run `scripts/build.sh CslibFrontierTests.ProbabilityNotation`.
 
+For a Boolean distribution `p : PMF Bool`, import
+[PMF/Bool.lean](../../CslibFrontier/Probability/PMF/Bool.lean) and use
+`PMF.apply_true_add_apply_false p : p true + p false = 1` rather than rewriting with `tsum_bool`
+and `PMF.tsum_coe` by hand. Its real forms are `PMF.toReal_true_add_toReal_false` and
+`PMF.toReal_false_eq_one_sub`. The same module bounds Boolean events written as `(p.map E) true`:
+`PMF.map_true_mono`, `PMF.map_true_le_add` and `PMF.map_any_range_true_le_sum` (a union bound),
+and `PMF.map_not_true` for complements. To compose an event bound through `PMF.bind`, use the
+`PMF.toOuterMeasure_bind_*` lemmas in
+[PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean). The
+[checked examples](../../CslibFrontierTests/PMFBool.lean) recover the mass of `false` from the mass of
+`true`; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
 [PMF/Finiteness.lean](../../CslibFrontier/Probability/PMF/Finiteness.lean) and discharge each side
 condition with `by finiteness`, in place, instead of assembling it from `ENNReal.add_ne_top`,
 `ENNReal.sum_ne_top` and `PMF.apply_ne_top`. The module makes Mathlib's `finiteness` know that a
 mass `p a`, an event probability `p.toOuterMeasure s` and a finite sum of finite terms are finite,
-and that a term is finite given `h : x < _` or `h : ∀ i, f i ≠ ∞`; Mathlib already covers sums,
-products, powers, casts and inverses of nonzero terms, and hypotheses `x ≠ ∞`. A factor with no
-such reason, such as an arbitrary `x : ℝ≥0∞`, makes it fail, often only after Aesop's
-rule-application limit; add a hypothesis `x ≠ ∞` or prove that factor separately. Each call
-costs roughly 100 to 700 heartbeats of Aesop search and positivity, so where the explicit term is
+and lets it apply hypotheses such as `h : ∀ i, f i ≠ ∞`. Mathlib already covers sums, products,
+powers, casts and inverses of nonzero terms, and hypotheses `x ≠ ∞` or `x < _`; the module keeps
+the `x < _` case working alongside its sum rule. A factor with no such reason, such as an arbitrary
+`x : ℝ≥0∞`, makes it fail, often only after Aesop's rule-application limit; add a hypothesis
+`x ≠ ∞` or prove that factor separately. Each successful call costs roughly 100 to 800 heartbeats
+of Aesop search and positivity, so where the explicit term is
 a single `PMF.apply_ne_top _ _` keep the term. To compare success probabilities, import
 [Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
 `apply Game.succProbability_mono` leaves the goal `g₁ true ≤ g₂ true`, without unfolding
@@ -372,7 +385,7 @@ that bounds `(((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}).toReal` for all
 The bounded event is "the copies differ at time `t`", not the source's coupling-time tail, and is
 never larger. The theorem covers time-homogeneous Markovian couplings only, but needs no
 stickiness. To bound the event, `PMF.toOuterMeasure_bind_le_mul_ennreal` from
-[PMF/Event.lean](../../CslibFrontier/Probability/PMF/Event.lean) gives a step-by-step induction. The
+[PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean) gives a step-by-step induction. The
 worked client is [BitString/LazyRandomWalk.lean](../../CslibFrontier/Probability/BitString/LazyRandomWalk.lean):
 for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_lazyRandomWalk_le`
 proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`

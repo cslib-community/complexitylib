@@ -27,6 +27,7 @@ import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 import CslibFrontier.Foundations.NumberTheory.PrimeDensity
 import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Random prime and modulus generation

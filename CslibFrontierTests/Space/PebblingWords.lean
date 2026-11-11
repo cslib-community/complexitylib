@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunProp
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.PebblingWords
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.Reachability
 
@@ -57,8 +58,7 @@ private theorem pathChild_inSpace (a : Fin 1) :
 /-- A pebble bound one above the parameter, in space linear in it. -/
 private theorem succ_inSpace :
     ComputableInSpace (fun p : ℕ => p + 1) encNat encNat fun p => (encNat p).length :=
-  budget_natSucc (of_inO (ComputableInO.of_eq (f := fun p : ℕ => p) (encIn := encNat)
-    (encMid := encNat) fun _ => rfl))
+  budget_natSucc (budget_id (.refl _))
 
 /-- Readiness on the path map, in linear space. -/
 example : ComputableInSpace (fun (p, w, i) => ready (pathChild p) w i)

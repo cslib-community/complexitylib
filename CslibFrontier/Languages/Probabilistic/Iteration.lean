@@ -11,6 +11,7 @@ public import CslibFrontier.Languages.Probabilistic.Semantics
 public import Mathlib.Data.List.OfFn
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Bounded adaptive probabilistic iteration
