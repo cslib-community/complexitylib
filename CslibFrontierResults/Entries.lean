@@ -503,6 +503,22 @@ register_result "constant-depth-mod-p" where
     satisfies 2·2^ℓ ≤ 5·size whenever ℓ ≥ 1 and 100(((p - 1)ℓ)^d + 1)² ≤ n + 1. Depth and \
     size count every gate, including NOT and constants; nonuniform."
 
+register_result "middle-slice-lower-bound-mod-two" where
+  title := "Razborov's rank method: a middle slice is not in AC⁰[2]"
+  topic := "circuit complexity"
+  sources := [
+    { paper := Razborov1987, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two
+  ]
+  scope := "No family of circuits of NOT, unbounded fan-in AND/OR and MOD_2 gates of constant \
+    depth and polynomial size decides the language of bit strings of length n with exactly \
+    ⌈n/2⌉ - ⌊√(n + 1)⌋/10 zeros (nonuniform). Proved through a variant of Razborov's GF(2) \
+    rank property (one square matrix, threshold C(n, a)/2), following Razborov and Rudich's \
+    account (Section 3.2); Razborov's original paper was not checked for its hard function. \
+    Membership in P and the separation are middle-slice-mod-two."
+
 register_result "middle-slice-mod-two" where
   title := "Razborov's rank method: a middle slice is in P but not in AC⁰[2]"
   topic := "circuit complexity"
@@ -522,7 +538,7 @@ register_result "middle-slice-mod-two" where
     size decides it (nonuniform). Proved through a variant of Razborov's GF(2) rank property \
     (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
     sketch, and Razborov's original paper was not checked for its hard function. The lower bound \
-    itself is middleSlice_notMem_AC0Mod_two in the imported module Razborov.MiddleSlice."
+    itself is the separate entry middle-slice-lower-bound-mod-two."
 
 register_result "rank-property-natural-ac0-2" where
   title := "Razborov's rank property is a P/poly-natural property useful against AC⁰[2]"
@@ -2800,7 +2816,8 @@ register_result "cikk-learning-from-dense-test" where
     over; (4) the number of queries is certified, the hypothesis size is bounded in \
     cikk-learner-hypothesis-size, and the running time is not certified; (5) p = 2 only; \
     (6) the test is an arbitrary Boolean function, not a natural property, so the \
-    property-to-learner form of Theorem 5.1 and Corollary 5.4 is not included."
+    property-to-learner form of Theorem 5.1 is not included; Corollary 5.4 for p = 2 is \
+    cikk-learning-ac0-2."
 
 register_result "cikk-learner-hypothesis-size" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the hypotheses of the learner from a \
