@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Erik Demaine. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Erik Demaine
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.ModP.Composite
@@ -23,7 +23,6 @@ example : ModP 12 enc = ModP 6 enc := by
   have hk : 12 ≠ 0 := by decide
   have h : ModP 12 enc = ModP (∏ p ∈ (12 : ℕ).primeFactors, p) enc :=
     ModP_eq_ModP_prod_primeFactors hk
-  -- 12.primeFactors is {2, 3}, product is 6
   have h_prod : (∏ p ∈ (12 : ℕ).primeFactors, p) = 6 := by
     have h_factors : (12 : ℕ).primeFactors = {2, 3} := by
       ext x
@@ -49,5 +48,19 @@ example : ModP 1 enc = { ∅ } := by
   ext A
   simp only [Set.mem_singleton_iff]
   exact mem_ModP_one
+
+/-- The language of lists of booleans where the number of `true` elements is not divisible by 6.
+This acts as a concrete count example for `ModP 6`. -/
+def trueCount (w : List Bool) : ℕ := w.count true
+def notDiv6Lang : Set (List Bool) := {w | trueCount w % 6 ≠ 0}
+
+instance (w : List Bool) : Decidable (w ∈ notDiv6Lang) :=
+  inferInstanceAs (Decidable (trueCount w % 6 ≠ 0))
+
+/-- Concrete evaluation of accepted input: count is 7, 7 % 6 = 1 ≠ 0, so it is accepted. -/
+example : [true, true, true, true, true, true, true] ∈ notDiv6Lang := by decide
+
+/-- Concrete evaluation of rejected input: count is 6, 6 % 6 = 0, so it is rejected. -/
+example : [true, true, true, true, true, true] ∉ notDiv6Lang := by decide
 
 end Cslib.Complexity.Tests
