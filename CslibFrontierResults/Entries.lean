@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
+import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
@@ -492,6 +493,28 @@ register_result "middle-slice-mod-two" where
     size decides it (nonuniform). Proved through a variant of Razborov's GF(2) rank property \
     (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
     sketch, and Razborov's original paper was not checked for its hard function."
+
+register_result "rank-property-natural-ac0-2" where
+  title := "Razborov's rank property is a P/poly-natural property useful against AC⁰[2]"
+  topic := "circuit complexity"
+  sources := [
+    { paper := RazborovRudich1997, theorem := unverified, locator := "Section 3.2, p. 27" },
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 5.3",
+      locator := "p. 10:19; p = 2 property p. 10:20" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.Razborov.isNatural_PPoly_and_isUseful_AC0Mod_two_rankProperty,
+    Cslib.Circuits.Boolean.Razborov.isUseful_AC0Mod_two_rankProperty,
+    Cslib.Circuits.Boolean.Razborov.notMem_rankProperty_rankLength_of_computes,
+    Cslib.Circuits.Boolean.Razborov.rankLength_add_one_le
+  ]
+  scope := "Along the level ⌈n/2⌉ - ⌊√(n + 1)⌋/10, the GF(2) rank property (a variant: one square \
+    matrix, threshold C(n, a)/2) is large, its truth tables are decided by De Morgan circuits of \
+    173·8^n gates (P/poly; size only, depth not certified, not the sources' NC²), and it is useful \
+    against AC⁰[2] (NOT, unbounded fan-in AND/OR and MOD_2 gates; nonuniform). Explicitly, at a \
+    length m with m + 1 ≤ 401·2^(2d(2d+7))·x^(2d), no circuit of depth at most d with at most 2^x \
+    gates computes a function with the property. p = 2 only; the constants are this library's. \
+    The learning consequences (CIKK Theorem 5.1 class form, Corollary 5.4) are not included."
 
 register_result "braverman" where
   title := "Braverman: polylogarithmic independence fools AC⁰"
