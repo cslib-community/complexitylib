@@ -41,8 +41,8 @@ promise problem with no-instances its complement. The models in this library are
 * `Cslib.Circuits.Boolean.OracleModel.LocalClass.mono`, `OracleModel.LocalClass.anti`: the classes
   grow with their parameters and shrink with their promise sets.
 * `Cslib.Circuits.Boolean.OracleModel.LocalClass.of_two_pow`: a promise problem whose instances
-  have lengths that are powers of two is in a local class once each length `2 ^ n` has a device,
-  and every length has a device within the bounds, used at the other lengths.
+  have lengths that are powers of two is in a local class once each length `2 ^ n` has a
+  separating device, and every other length has some device within the bounds.
 
 ## References
 
@@ -117,11 +117,11 @@ theorem LocalClass.anti {q ℓ a S : ℕ → ℕ} {Yes No Yes' No' : Language Bo
 /-- **Instances of power-of-two length.** If every yes- and no-instance has length a power of two,
 such as the truth tables of a property, a promise problem is in a local class once some oracle
 `O` and, at each length `2 ^ n`, a device within the bounds at `2 ^ n` separates the instances of
-that length, provided every length has some device within the bounds; such a device is used at
-the lengths that are not powers of two, where there is nothing to separate. -/
+that length, provided every other length has some device within the bounds; there is nothing to
+separate at those lengths. -/
 theorem LocalClass.of_two_pow {q ℓ a S : ℕ → ℕ} {Yes No : Language Bool} (O : Language Bool)
     (hYes : ∀ w ∈ Yes, ∃ n, w.length = 2 ^ n) (hNo : ∀ w ∈ No, ∃ n, w.length = 2 ^ n)
-    (hdef : ∀ m, ∃ E : M.Device m,
+    (hdef : ∀ m, (¬∃ n, m = 2 ^ n) → ∃ E : M.Device m,
       M.size E ≤ S m ∧ M.queryCount E ≤ q m ∧ M.QueryArityAtMost E (ℓ m) ∧ M.adaptivity E ≤ a m)
     (hpow : ∀ n, ∃ E : M.Device (2 ^ n),
       M.size E ≤ S (2 ^ n) ∧ M.queryCount E ≤ q (2 ^ n) ∧ M.QueryArityAtMost E (ℓ (2 ^ n)) ∧
@@ -133,7 +133,7 @@ theorem LocalClass.of_two_pow {q ℓ a S : ℕ → ℕ} {Yes No : Language Bool}
   by_cases hm : ∃ n, m = 2 ^ n
   · obtain ⟨n, rfl⟩ := hm
     exact hpow n
-  · obtain ⟨E, hS, hq, hℓ, ha⟩ := hdef m
+  · obtain ⟨E, hS, hq, hℓ, ha⟩ := hdef m hm
     refine ⟨E, hS, hq, hℓ, ha, fun x hx => ?_, fun x hx => ?_⟩
     · obtain ⟨n, hn⟩ := hYes _ hx
       exact absurd ⟨n, by simpa using hn⟩ hm

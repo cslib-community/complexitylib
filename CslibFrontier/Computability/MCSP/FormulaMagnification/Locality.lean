@@ -158,7 +158,7 @@ theorem localFormulaClass_approxMCSP {s₁ s₂ k : ℕ → ℕ} (hk : ∀ n, 1 
   refine OracleModel.LocalClass.of_two_pow succinctMCSPOracle
     (fun _ => exists_length_eq_two_pow_of_mem_truthTableLanguage)
     (fun _ => exists_length_eq_two_pow_of_mem_truthTableLanguage)
-    (fun _ => ⟨OracleFormula.tt, ?_⟩) fun n => ?_
+    (fun _ _ => ⟨OracleFormula.tt, ?_⟩) fun n => ?_
   · simp [formulaModel]
   · obtain ⟨E, hS, hq, hℓ, ha, hyes, hno⟩ :=
       exists_oracleFormula_separating_approxMCSP (s₁ := s₁) (hk n) (hs n)
