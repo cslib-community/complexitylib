@@ -185,7 +185,7 @@ theorem eulerianCircuitCount_eq_natCard (G : Graph) (eIdx : ℕ) :
             (G.activeVertices.map fun v => ((G.outdeg v - 1).factorial : ℤ)).prod =
               ((∏ v : {v // v ∈ G.activeVertices},
                 ((Finset.univ.filter fun e => srcAct e = v).card - 1).factorial : ℕ) : ℤ) := by
-          rw [List.prod_map_eq_prod_fin, Nat.cast_prod, ← Equiv.prod_comp eAct]
+          rw [← Fin.prod_univ_fun_getElem, Nat.cast_prod, ← Equiv.prod_comp eAct]
           refine Finset.prod_congr rfl fun i _ => ?_
           have hi : (eAct i).1 = G.activeVertices[i] := rfl
           rw [card_fin_filter_subtype_eq Prod.fst (fun e h => (harcs e h).1) (eAct i), hi]

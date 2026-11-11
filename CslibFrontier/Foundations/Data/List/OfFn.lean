@@ -31,8 +31,6 @@ other keys may repeat. The key order need only be a partial order.
   indices in `Fin xs.length` where `p` holds.
 * `List.sum_map_range`, `List.sum_map_drop_range`, `List.sum_map_drop_range_fin`: sums over
   `List.range n` and its tails as `Fin` or interval sums.
-* `List.prod_map_eq_prod_fin`, `List.sum_map_eq_sum_fin`: list map product and sum rewritten as
-  `Fin` big operators.
 * `Fin.card_lt_of_monotone_of_unique`: a unique value in a monotone array has its index many
   smaller entries.
 * `List.Perm.key_ofFn_eq_of_rank`: a unique key occurs at its rank after sorting.
@@ -82,14 +80,6 @@ theorem List.countP_eq_card_filter_getElem {α : Type*} (xs : List α) (p : α �
 theorem List.sum_map_range {M : Type*} [AddCommMonoid M] (n : ℕ) (f : ℕ → M) :
     ((List.range n).map f).sum = ∑ i : Fin n, f i := by
   rw [← List.map_coe_finRange_eq_range, List.map_map, ← List.ofFn_eq_map, List.sum_ofFn]
-  rfl
-
-/-- Product of a function mapped over a list as a `Finset.prod` over `Fin xs.length`. -/
-@[to_additive
-  /-- Sum of a function mapped over a list as a `Finset.sum` over `Fin xs.length`. -/]
-theorem List.prod_map_eq_prod_fin {α β : Type*} [CommMonoid β] (xs : List α) (f : α → β) :
-    (xs.map f).prod = ∏ i : Fin xs.length, f xs[i] := by
-  rw [← List.ofFn_getElem_eq_map, List.prod_ofFn]
   rfl
 
 /-- A tail of `List.range n`, summed as a list, is the sum over `Finset.Ico lo n`. -/
