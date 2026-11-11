@@ -74,55 +74,6 @@ private def sliceSecond {A B : Type*} (ψ : EuclideanSpace ℂ (A × B)) (a : A)
 @[simp] private theorem sliceSecond_apply {A B : Type*} (ψ : EuclideanSpace ℂ (A × B))
     (a : A) (b : B) : (sliceSecond ψ a).ofLp b = ψ.ofLp (a, b) := rfl
 
-private theorem norm_sq_prod {A B : Type*} [Fintype A] [Fintype B]
-    (ψ : EuclideanSpace ℂ (A × B)) :
-    ‖ψ‖ ^ 2 = ∑ a : A, ‖sliceSecond ψ a‖ ^ 2 := by
-  rw [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type]
-  refine sum_congr rfl fun a _ => ?_
-  rw [EuclideanSpace.norm_sq_eq]
-  rfl
-
-/-- Applying unitaries `F a : ℂ^B₁ ≃ₗᵢ[ℂ] ℂ^B₂` fiberwise over `a : A`. -/
-private noncomputable def fiberIso {A B₁ B₂ : Type*} [Fintype A] [Fintype B₁] [Fintype B₂]
-    (F : A → (EuclideanSpace ℂ B₁ ≃ₗᵢ[ℂ] EuclideanSpace ℂ B₂)) :
-    EuclideanSpace ℂ (A × B₁) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (A × B₂) where
-  toFun ψ := WithLp.toLp 2 fun ⟨a, b⟩ => (F a (sliceSecond ψ a)).ofLp b
-  invFun ψ := WithLp.toLp 2 fun ⟨a, b⟩ => ((F a).symm (sliceSecond ψ a)).ofLp b
-  map_add' ψ₁ ψ₂ := by
-    ext ⟨a, b⟩
-    have h : sliceSecond (ψ₁ + ψ₂) a = sliceSecond ψ₁ a + sliceSecond ψ₂ a := rfl
-    simp only [WithLp.ofLp_add, Pi.add_apply, h, map_add]
-  map_smul' r ψ := by
-    ext ⟨a, b⟩
-    have h : sliceSecond (r • ψ) a = r • sliceSecond ψ a := rfl
-    simp only [PiLp.smul_apply, smul_eq_mul, RingHom.id_apply, h, map_smul]
-  left_inv ψ := by
-    ext ⟨a, b⟩
-    have h : sliceSecond (WithLp.toLp 2 fun ⟨a, b⟩ => (F a (sliceSecond ψ a)).ofLp b) a =
-        F a (sliceSecond ψ a) := rfl
-    simp only [h, LinearIsometryEquiv.symm_apply_apply, sliceSecond_apply]
-  right_inv ψ := by
-    ext ⟨a, b⟩
-    have h :
-        sliceSecond (WithLp.toLp 2 fun ⟨a, b⟩ => ((F a).symm (sliceSecond ψ a)).ofLp b) a =
-          (F a).symm (sliceSecond ψ a) := rfl
-    simp only [h, LinearIsometryEquiv.apply_symm_apply, sliceSecond_apply]
-  norm_map' ψ := by
-    have hsq : ‖(WithLp.toLp 2 fun ⟨a, b⟩ => (F a (sliceSecond ψ a)).ofLp b :
-        EuclideanSpace ℂ (A × B₂))‖ ^ 2 = ‖ψ‖ ^ 2 := by
-      rw [norm_sq_prod, norm_sq_prod]
-      refine sum_congr rfl fun a _ => ?_
-      have h : sliceSecond (WithLp.toLp 2 fun ⟨a, b⟩ => (F a (sliceSecond ψ a)).ofLp b) a =
-          F a (sliceSecond ψ a) := rfl
-      rw [h, (F a).norm_map]
-    exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
-
-@[simp] private theorem fiberIso_apply {A B₁ B₂ : Type*} [Fintype A] [Fintype B₁] [Fintype B₂]
-    (F : A → (EuclideanSpace ℂ B₁ ≃ₗᵢ[ℂ] EuclideanSpace ℂ B₂))
-    (ψ : EuclideanSpace ℂ (A × B₁)) (a : A) (b : B₂) :
-    (fiberIso F ψ).ofLp (a, b) = (F a (sliceSecond ψ a)).ofLp b :=
-  rfl
-
 private noncomputable def reindexProd {P Q : Type*} [Fintype P] [Fintype Q] (e : P ≃ Q) :
     EuclideanSpace ℂ P ≃ₗᵢ[ℂ] EuclideanSpace ℂ Q :=
   LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ e
@@ -131,6 +82,31 @@ private noncomputable def reindexProd {P Q : Type*} [Fintype P] [Fintype Q] (e :
     (ψ : EuclideanSpace ℂ P) (q : Q) :
     (reindexProd e ψ).ofLp q = ψ.ofLp (e.symm q) :=
   rfl
+
+private noncomputable def prodCurryIso (A B : Type*) [Fintype A] [Fintype B] :
+    EuclideanSpace ℂ (A × B) ≃ₗᵢ[ℂ] PiLp 2 (fun _ : A => EuclideanSpace ℂ B) :=
+  (reindexProd (Equiv.sigmaEquivProd A B).symm).trans
+    (LinearIsometryEquiv.piLpCurry ℂ 2 fun _ : A => fun _ : B => ℂ)
+
+/-- Applying unitaries `F a : ℂ^B₁ ≃ₗᵢ[ℂ] ℂ^B₂` fiberwise over `a : A` using Mathlib's
+`LinearIsometryEquiv.piLpCongrLeft`, `piLpCurry`, and `piLpCongrRight`. -/
+private noncomputable def fiberIso {A B₁ B₂ : Type*} [Fintype A] [Fintype B₁] [Fintype B₂]
+    (F : A → (EuclideanSpace ℂ B₁ ≃ₗᵢ[ℂ] EuclideanSpace ℂ B₂)) :
+    EuclideanSpace ℂ (A × B₁) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (A × B₂) :=
+  (prodCurryIso A B₁).trans
+    ((LinearIsometryEquiv.piLpCongrRight 2 F).trans (prodCurryIso A B₂).symm)
+
+@[simp] private theorem fiberIso_apply {A B₁ B₂ : Type*} [Fintype A] [Fintype B₁] [Fintype B₂]
+    (F : A → (EuclideanSpace ℂ B₁ ≃ₗᵢ[ℂ] EuclideanSpace ℂ B₂))
+    (ψ : EuclideanSpace ℂ (A × B₁)) (a : A) (b : B₂) :
+    (fiberIso F ψ).ofLp (a, b) = (F a (sliceSecond ψ a)).ofLp b :=
+  rfl
+
+/-- Conjugate a fiberwise unitary on `A × B` along a coordinate equivalence `e : P ≃ A × B`. -/
+private noncomputable def conjFiberIso {P A B : Type*} [Fintype P] [Fintype A] [Fintype B]
+    (e : P ≃ A × B) (F : A → (EuclideanSpace ℂ B ≃ₗᵢ[ℂ] EuclideanSpace ℂ B)) :
+    EuclideanSpace ℂ P ≃ₗᵢ[ℂ] EuclideanSpace ℂ P :=
+  (reindexProd e).trans ((fiberIso F).trans (reindexProd e).symm)
 
 end FiberHelpers
 
@@ -151,68 +127,24 @@ omit [Fintype ι] [Fintype V] [Fintype W] in
 @[simp] private theorem valSlice_apply (ψ : ValueState ι V W) (i : ι) (w : W) (v : V) :
     (valSlice ψ i w).ofLp v = ψ.ofLp (i, v, w) := rfl
 
-private theorem norm_sq_valueState (ψ : ValueState ι V W) :
-    ‖ψ‖ ^ 2 = ∑ i : ι, ∑ w : W, ‖valSlice ψ i w‖ ^ 2 := by
-  rw [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type]
-  refine sum_congr rfl fun i _ => ?_
-  rw [Fintype.sum_prod_type, sum_comm]
-  refine sum_congr rfl fun w _ => ?_
-  rw [EuclideanSpace.norm_sq_eq]
-  rfl
+private def valueFiberEquiv {ι V W : Type*} : (ι × V × W) ≃ ((ι × W) × V) where
+  toFun | (i, v, w) => ((i, w), v)
+  invFun | ((i, w), v) => (i, v, w)
+  left_inv _ := rfl
+  right_inv _ := rfl
 
 /-- **Value oracle**: given per-symbol unitaries `step : α → (ℂ^V ≃ₗᵢ[ℂ] ℂ^V)` and an input
 `x : ι → α`, applies `step (x i)` to the value register controlled by the query index `i`. -/
-@[expose] noncomputable def valueOracle
+noncomputable def valueOracle
     (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V)) (x : ι → α) :
-    ValueState ι V W ≃ₗᵢ[ℂ] ValueState ι V W where
-  toFun ψ := WithLp.toLp 2 fun ⟨i, v, w⟩ =>
-    (step (x i) (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v
-  invFun ψ := WithLp.toLp 2 fun ⟨i, v, w⟩ =>
-    ((step (x i)).symm (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v
-  map_add' ψ₁ ψ₂ := by
-    ext ⟨i, v, w⟩
-    dsimp only
-    have h : (WithLp.toLp 2 fun v' => (ψ₁ + ψ₂).ofLp (i, v', w)) =
-        (WithLp.toLp 2 fun v' => ψ₁.ofLp (i, v', w)) +
-          (WithLp.toLp 2 fun v' => ψ₂.ofLp (i, v', w)) := rfl
-    rw [PiLp.toLp_apply, PiLp.add_apply, PiLp.toLp_apply, PiLp.toLp_apply, h, map_add,
-      PiLp.add_apply]
-  map_smul' c ψ := by
-    ext ⟨i, v, w⟩
-    dsimp only
-    have h : (WithLp.toLp 2 fun v' => (c • ψ).ofLp (i, v', w)) =
-        c • (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w)) := rfl
-    rw [PiLp.toLp_apply, RingHom.id_apply, PiLp.toLp_apply, PiLp.smul_apply, smul_eq_mul, h,
-      map_smul, PiLp.smul_apply, smul_eq_mul]
-  left_inv ψ := by
-    ext ⟨i, v, w⟩
-    have h : (WithLp.toLp 2 fun v' => (WithLp.toLp 2 fun ⟨i, v, w⟩ =>
-        (step (x i) (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v).ofLp (i, v', w)) =
-        step (x i) (valSlice ψ i w) := rfl
-    simp only [h, LinearIsometryEquiv.symm_apply_apply, valSlice_apply]
-  right_inv ψ := by
-    ext ⟨i, v, w⟩
-    have h : (WithLp.toLp 2 fun v' => (WithLp.toLp 2 fun ⟨i, v, w⟩ =>
-        ((step (x i)).symm (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v).ofLp
-          (i, v', w)) = (step (x i)).symm (valSlice ψ i w) := rfl
-    simp only [h, LinearIsometryEquiv.apply_symm_apply, valSlice_apply]
-  norm_map' ψ := by
-    have hsq : ‖(WithLp.toLp 2 fun ⟨i, v, w⟩ =>
-        (step (x i) (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v :
-        ValueState ι V W)‖ ^ 2 = ‖ψ‖ ^ 2 := by
-      rw [norm_sq_valueState, norm_sq_valueState]
-      refine sum_congr rfl fun i _ => sum_congr rfl fun w _ => ?_
-      have h : valSlice (WithLp.toLp 2 fun ⟨i, v, w⟩ =>
-          (step (x i) (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v) i w =
-          step (x i) (valSlice ψ i w) := rfl
-      rw [h, (step (x i)).norm_map]
-    exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
+    ValueState ι V W ≃ₗᵢ[ℂ] ValueState ι V W :=
+  conjFiberIso valueFiberEquiv fun p : ι × W => step (x p.1)
 
 /-- Coordinate evaluation of `valueOracle step x ψ` at `(i, v, w)`. -/
 @[simp] theorem valueOracle_apply (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
     (x : ι → α) (ψ : ValueState ι V W) (i : ι) (v : V) (w : W) :
     (valueOracle step x ψ).ofLp (i, v, w) =
-      (step (x i) (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v :=
+      (step (x i) (WithLp.toLp 2 fun v' => ψ.ofLp (i, v', w))).ofLp v := by
   rfl
 
 /-- Unitary step arising from a family of permutations `π : α → Equiv.Perm V`, acting as
@@ -412,9 +344,7 @@ private def bvFiberEquiv {N : ℕ} : (Fin N × Bool × V × W) ≃ ((Fin N × W)
 private noncomputable def liftBoolV {N : ℕ}
     (G : EuclideanSpace ℂ (Bool × V) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (Bool × V)) :
     State N (V × W) ≃ₗᵢ[ℂ] State N (V × W) :=
-  (reindexProd (bvFiberEquiv (N := N) (V := V) (W := W))).trans
-    ((fiberIso fun _ : Fin N × W => G).trans
-      (reindexProd (bvFiberEquiv (N := N) (V := V) (W := W))).symm)
+  conjFiberIso (bvFiberEquiv (N := N) (V := V) (W := W)) fun _ : Fin N × W => G
 
 private theorem bvSlice_liftBoolV {N : ℕ}
     (G : EuclideanSpace ℂ (Bool × V) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (Bool × V))
@@ -786,14 +716,12 @@ theorem exists_sim_involution {N : ℕ}
     by_cases hlt : t + 1 < T
     · simp only [hlt, ite_true, pre, LinearIsometry.coe_comp, Function.comp_apply,
         LinearIsometryEquiv.coe_toLinearIsometry]
-      rw [hstep, liftValueIso_embedState]
-      rfl
+      rw [hstep, liftValueIso_embedState, ← runValue]
     · have heq : t + 1 = T := by omega
       subst heq
       simp only [lt_irrefl, ite_false, pre, LinearIsometry.coe_comp, Function.comp_apply,
         LinearIsometryEquiv.coe_toLinearIsometry]
-      rw [hstep, liftValueIso_embedState]
-      rfl
+      rw [hstep, liftValueIso_embedState, ← runValue]
 
 /-! #### 2-query simulation for arbitrary unitary relative step -/
 
@@ -994,8 +922,7 @@ private def boolSwapEquiv (B : Type*) : (Bool × B) ≃ (B × Bool) where
 private noncomputable def liftBoolD {d : ℕ}
     (Q : Fin d → (EuclideanSpace ℂ Bool ≃ₗᵢ[ℂ] EuclideanSpace ℂ Bool)) :
     EuclideanSpace ℂ (Bool × Fin d) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (Bool × Fin d) :=
-  (reindexProd (boolSwapEquiv (Fin d))).trans
-    ((fiberIso Q).trans (reindexProd (boolSwapEquiv (Fin d))).symm)
+  conjFiberIso (boolSwapEquiv (Fin d)) Q
 
 @[simp] private theorem liftBoolD_apply {d : ℕ}
     (Q : Fin d → (EuclideanSpace ℂ Bool ≃ₗᵢ[ℂ] EuclideanSpace ℂ Bool))
@@ -1196,14 +1123,12 @@ theorem exists_sim_value {N : ℕ}
     by_cases hlt : t + 1 < T
     · simp only [hlt, ite_true, pre, LinearIsometry.coe_comp, Function.comp_apply,
         LinearIsometryEquiv.coe_toLinearIsometry]
-      rw [hstep, liftValueIso_embedState]
-      rfl
+      rw [hstep, liftValueIso_embedState, ← runValue]
     · have heq : t + 1 = T := by omega
       subst heq
       simp only [lt_irrefl, ite_false, pre, LinearIsometry.coe_comp, Function.comp_apply,
         LinearIsometryEquiv.coe_toLinearIsometry]
-      rw [hstep, liftValueIso_embedState]
-      rfl
+      rw [hstep, liftValueIso_embedState, ← runValue]
 
 end TwoValueSim
 
