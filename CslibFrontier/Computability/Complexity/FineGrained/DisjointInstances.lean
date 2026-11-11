@@ -578,6 +578,47 @@ private theorem listMax_exp_le (r : DisjointBatchReduction encA encB μA μB)
     (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
   linarith [ht b]
 
+private theorem batch_exp_absorb_le {base itemsLen listLen perItem maxT Cp k e offset : ℕ}
+    {δ X P : ℝ} (hP0 : 0 ≤ P) (hX1 : 1 ≤ X)
+    (hitems : itemsLen ≤ listLen)
+    (hpoly : (base : ℝ) + ((listLen : ℝ) + 1) * ((perItem : ℝ) + ((listLen : ℝ) + 1) ^ e) ≤
+      Cp * P)
+    (hmax : (maxT : ℝ) ≤ k * 2 ^ (δ * offset) * X * ((listLen : ℝ) + 1) ^ e + k) :
+    ((base + (itemsLen + 1) * (perItem + maxT) : ℕ) : ℝ) ≤
+      Cp * (1 + k * 2 ^ (δ * offset) + k) * (X * P) := by
+  have hl_e : ((listLen : ℝ) + 1) * ((listLen : ℝ) + 1) ^ e ≤ Cp * P := by
+    have h0 : (0 : ℝ) ≤ (base : ℝ) + ((listLen : ℝ) + 1) * (perItem : ℝ) := by positivity
+    linarith
+  have hl_1 : ((listLen : ℝ) + 1) ≤ Cp * P := by
+    have hge1 : (1 : ℝ) ≤ ((listLen : ℝ) + 1) ^ e :=
+      one_le_pow₀ (le_add_of_nonneg_left (Nat.cast_nonneg _))
+    nlinarith
+  have hit_len : ((itemsLen : ℝ) + 1) ≤ (listLen : ℝ) + 1 := by
+    exact_mod_cast Nat.add_le_add_right hitems 1
+  have hXP : P ≤ X * P := le_mul_of_one_le_left hP0 hX1
+  have hbase_le : (base : ℝ) + ((itemsLen : ℝ) + 1) * (perItem : ℝ) ≤ Cp * (X * P) := by
+    have h₁ : ((itemsLen : ℝ) + 1) * (perItem : ℝ) ≤
+        ((listLen : ℝ) + 1) * ((perItem : ℝ) + ((listLen : ℝ) + 1) ^ e) := by
+      have : (0 : ℝ) ≤ ((listLen : ℝ) + 1) ^ e := by positivity
+      exact mul_le_mul hit_len (by linarith) (by positivity) (by positivity)
+    have h₂ : (Cp : ℝ) * P ≤ Cp * (X * P) :=
+      mul_le_mul_of_nonneg_left hXP (Nat.cast_nonneg Cp)
+    linarith
+  have hmax_mul : ((itemsLen : ℝ) + 1) * (maxT : ℝ) ≤
+      Cp * (k * 2 ^ (δ * offset) + k) * (X * P) := by
+    have h₁ := mul_le_mul hit_len hmax (by positivity) (by positivity)
+    have h₂ := mul_le_mul_of_nonneg_left hl_e
+      (by positivity : (0 : ℝ) ≤ k * 2 ^ (δ * offset) * X)
+    have h₃ : ((listLen : ℝ) + 1) * k ≤ Cp * k * (X * P) := by
+      have hk := mul_le_mul_of_nonneg_right hl_1 (Nat.cast_nonneg k)
+      have hk' : Cp * P * (k : ℝ) ≤ Cp * (X * P) * k :=
+        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hXP (Nat.cast_nonneg Cp))
+          (Nat.cast_nonneg k)
+      linarith
+    linarith
+  push_cast
+  linarith
+
 /-- **Sequential left-fold resource transfer with bounded live workspace.**
 Evaluating `g : β → γ` sequentially across `(r.toBatch a).items` and folding answers via a
 polynomial-time `combine : δ → γ → δ` whose prefix accumulators stay polynomially bounded in bit
@@ -753,62 +794,29 @@ theorem decidableInExpTime_or (r : DisjointBatchReduction encA encB μA μB)
     have hll : PolyBounded (fun a => (encA a).length) listLen := r.polyBounded_batch_length
     growth_poly
   obtain ⟨Cp, E, hCp⟩ := hpoly.exists_le
-  set K : ℝ := Cp * (1 + k * 2 ^ (δ * r.offset) + k + 1)
+  set K : ℝ := Cp * (1 + k * 2 ^ (δ * r.offset) + k)
   refine DecidableInExpTime.of_computableInO hfold
     (fun a => by
       rw [hAB a, hfold_eq, Bool.false_or, List.any_eq_true]
       exact ⟨fun ⟨b, hb, hB'⟩ => ⟨b, hb, (hgB b).mp hB'⟩,
         fun ⟨b, hb, hg'⟩ => ⟨b, hb, (hgB b).mpr hg'⟩⟩)
     ⌈K⌉₊ E fun a => ?_
-  have hmax_le := r.listMax_exp_le hδ ht a
-  have hitems_le : (r.toBatch a).items.length ≤ listLen a :=
-    SizedListEncoding.length_le (encA := encB) (encL := encList encB) (r.toBatch a).items
   set P : ℝ := (((encA a).length : ℝ) + 1) ^ E
   set X : ℝ := 2 ^ ((r.scale * δ) * μA a)
-  have hX1 : 1 ≤ X := Real.one_le_rpow (by norm_num) (by positivity)
-  have hCp_a : (((encA a).length : ℝ) + 1) ^ dl + (encA a).length +
-      ((listLen a : ℝ) + 1) * (4 + 2 * listLen a + ((listLen a : ℝ) + 1) ^ e) ≤ Cp * P := by
+  have hCp_a : ((((encA a).length + 1) ^ dl + (encA a).length : ℕ) : ℝ) +
+      ((listLen a : ℝ) + 1) * ((4 + 2 * listLen a : ℕ) + ((listLen a : ℝ) + 1) ^ e) ≤ Cp * P := by
     dsimp only [P]
     exact_mod_cast hCp a
-  have hl_e : ((listLen a : ℝ) + 1) * ((listLen a : ℝ) + 1) ^ e ≤ Cp * P := by
-    nlinarith [show (0 : ℝ) ≤ (((encA a).length : ℝ) + 1) ^ dl + (encA a).length +
-      ((listLen a : ℝ) + 1) * (4 + 2 * listLen a) by positivity]
-  have hl_1 : ((listLen a : ℝ) + 1) ≤ Cp * P := by
-    have hge1 : (1 : ℝ) ≤ ((listLen a : ℝ) + 1) ^ e :=
-      one_le_pow₀ (le_add_of_nonneg_left (Nat.cast_nonneg _))
-    nlinarith
-  have hit_len : (((r.toBatch a).items.length : ℝ) + 1) ≤ (listLen a : ℝ) + 1 := by
-    exact_mod_cast Nat.add_le_add_right hitems_le 1
-  have hbase_le : (((encA a).length : ℝ) + 1) ^ dl + (encA a).length +
-      (((r.toBatch a).items.length : ℝ) + 1) * (4 + 2 * listLen a) ≤ Cp * (X * P) := by
-    have h₁ : (((r.toBatch a).items.length : ℝ) + 1) * (4 + 2 * (listLen a : ℝ)) ≤
-        ((listLen a : ℝ) + 1) * (4 + 2 * listLen a + ((listLen a : ℝ) + 1) ^ e) := by
-      have : (0 : ℝ) ≤ ((listLen a : ℝ) + 1) ^ e := by positivity
-      exact mul_le_mul hit_len (by linarith) (by positivity) (by positivity)
-    have h₂ : (Cp : ℝ) * P ≤ Cp * (X * P) := by
-      have : P ≤ X * P := le_mul_of_one_le_left (by positivity) hX1
-      exact mul_le_mul_of_nonneg_left this (Nat.cast_nonneg Cp)
-    linarith
-  have hmax_mul : (((r.toBatch a).items.length : ℝ) + 1) * (listMax t (r.toBatch a).items : ℝ) ≤
-      Cp * (k * 2 ^ (δ * r.offset) + k) * (X * P) := by
-    have h₁ := mul_le_mul hit_len hmax_le (by positivity) (by positivity)
-    have h₂ := mul_le_mul_of_nonneg_left hl_e
-      (by positivity : (0 : ℝ) ≤ k * 2 ^ (δ * r.offset) * X)
-    have h₃ : ((listLen a : ℝ) + 1) * k ≤ Cp * k * (X * P) := by
-      have hk : ((listLen a : ℝ) + 1) * k ≤ Cp * P * k :=
-        mul_le_mul_of_nonneg_right hl_1 (Nat.cast_nonneg k)
-      have hXP : P ≤ X * P := le_mul_of_one_le_left (by positivity) hX1
-      have hk' : Cp * P * (k : ℝ) ≤ Cp * (X * P) * k :=
-        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hXP (Nat.cast_nonneg Cp))
-          (Nat.cast_nonneg k)
-      linarith
-    linarith
+  have habs := batch_exp_absorb_le (by positivity)
+    (Real.one_le_rpow (by norm_num) (by positivity) : 1 ≤ X)
+    (SizedListEncoding.length_le (encA := encB) (encL := encList encB) (r.toBatch a).items)
+    hCp_a (r.listMax_exp_le hδ ht a)
   have htotal : (((((encA a).length + 1) ^ dl + (encA a).length +
       ((r.toBatch a).items.length + 1) * (R a + 1 + listLen a) : ℕ) : ℝ)) ≤ K * (X * P) := by
-    dsimp only [R, K]
-    push_cast
-    have hXP_pos : 0 ≤ X * P := by positivity
-    nlinarith
+    have heq : R a + 1 + listLen a =
+        (4 + 2 * listLen a) + listMax t (r.toBatch a).items := by dsimp only [R]; omega
+    rw [heq]
+    exact habs
   exact htotal.trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))
 
 /-- **Subexponential-time OR transfer over a summed-measure disjoint-instance batch.** -/
@@ -891,72 +899,38 @@ theorem exists_computableInO_cappedSum (r : DisjointBatchReduction encA encB μA
       exact Nat.add_le_add_left (Nat.pow_le_pow_left (by omega) dtot) (S₀ a)
   have hps : ComputableInPolySpace countA encA encNat :=
     ComputableInPolySpace.of_inSpace hS_full (ComputableInSpace.of_inO hout)
-  set K : ℝ := Cp * (2 + k * 2 ^ (δ * r.offset) + k)
+  set K : ℝ := Cp * (1 + k * 2 ^ (δ * r.offset) + k)
   refine ⟨_, _, ⌈K⌉₊, E, hS_full, hout, hps, fun a => ?_⟩
-  have hmax_le := r.listMax_exp_le hδ hTg a
-  have hitems_le : (r.toBatch a).length ≤ listLen a :=
-    SizedListEncoding.length_le (encA := encB) (encL := encList encB) (r.toBatch a).items
   set P : ℝ := (((encA a).length : ℝ) + 1) ^ E
   set X : ℝ := 2 ^ ((r.scale * δ) * μA a)
-  have hX1 : 1 ≤ X := Real.one_le_rpow (by norm_num) (by positivity)
-  have hCp_nat : ((3 * (capBits a + 1) + 3) ^ dtot + cf * ((encA a).length + 1) ^ ef +
-      (listLen a + 1) * (cf * ((encA a).length + 1) ^ ef + (listLen a + 1) ^ e) : ℝ) ≤ Cp * P := by
+  have hCp_nat : ((((3 * (capBits a + 1) + 3) ^ dtot + cf * ((encA a).length + 1) ^ ef : ℕ) : ℝ)) +
+      ((listLen a : ℝ) + 1) *
+        ((cf * ((encA a).length + 1) ^ ef : ℕ) + ((listLen a : ℝ) + 1) ^ e) ≤ Cp * P := by
     dsimp only [P]
     exact_mod_cast hCp a
-  have hpost_le : ((((encCappedNatAcc (((r.toBatch a).items).foldl
-      (fun s b => s.add (countB b)) (CappedNatAcc.init (2 ^ capBits a)))).length + 1) ^ dtot : ℕ) :
-        ℝ) ≤ ((3 * (capBits a + 1) + 3) ^ dtot : ℕ) := by
-    exact_mod_cast Nat.pow_le_pow_left (Nat.add_le_add_right (hacc_fin a) 1) dtot
-  have hl_e : ((listLen a : ℝ) + 1) * ((listLen a : ℝ) + 1) ^ e ≤ Cp * P := by
-    have h0 : (0 : ℝ) ≤ ((3 * (capBits a + 1) + 3) ^ dtot : ℕ) +
-        cf * (((encA a).length : ℝ) + 1) ^ ef +
-        ((listLen a : ℝ) + 1) * (cf * (((encA a).length : ℝ) + 1) ^ ef) := by positivity
-    push_cast at hCp_nat h0
-    linarith
-  have hl_1 : ((listLen a : ℝ) + 1) ≤ Cp * P := by
-    have hge1 : (1 : ℝ) ≤ ((listLen a : ℝ) + 1) ^ e :=
-      one_le_pow₀ (le_add_of_nonneg_left (Nat.cast_nonneg _))
-    nlinarith
-  have hit_len : (((r.toBatch a).length : ℝ) + 1) ≤ (listLen a : ℝ) + 1 := by
-    exact_mod_cast Nat.add_le_add_right hitems_le 1
-  have hbase_le : ((((3 * (capBits a + 1) + 3) ^ dtot : ℕ) : ℝ)) +
-      cf * (((encA a).length : ℝ) + 1) ^ ef +
-      (((r.toBatch a).length : ℝ) + 1) * (cf * (((encA a).length : ℝ) + 1) ^ ef) ≤
-      Cp * (X * P) := by
-    have h₁ : (((r.toBatch a).length : ℝ) + 1) * (cf * (((encA a).length : ℝ) + 1) ^ ef) ≤
-        ((listLen a : ℝ) + 1) * (cf * (((encA a).length : ℝ) + 1) ^ ef +
-          ((listLen a : ℝ) + 1) ^ e) := by
-      have : (0 : ℝ) ≤ ((listLen a : ℝ) + 1) ^ e := by positivity
-      exact mul_le_mul hit_len (by linarith) (by positivity) (by positivity)
-    have h₂ : (Cp : ℝ) * P ≤ Cp * (X * P) := by
-      have : P ≤ X * P := le_mul_of_one_le_left (by positivity) hX1
-      exact mul_le_mul_of_nonneg_left this (Nat.cast_nonneg Cp)
-    push_cast at hCp_nat ⊢
-    linarith
-  have hmax_mul : (((r.toBatch a).length : ℝ) + 1) * (listMax Tg (r.toBatch a).items : ℝ) ≤
-      Cp * (k * 2 ^ (δ * r.offset) + k) * (X * P) := by
-    have h₁ := mul_le_mul hit_len hmax_le (by positivity) (by positivity)
-    have h₂ := mul_le_mul_of_nonneg_left hl_e
-      (by positivity : (0 : ℝ) ≤ k * 2 ^ (δ * r.offset) * X)
-    have h₃ : ((listLen a : ℝ) + 1) * k ≤ Cp * k * (X * P) := by
-      have hk : ((listLen a : ℝ) + 1) * k ≤ Cp * P * k :=
-        mul_le_mul_of_nonneg_right hl_1 (Nat.cast_nonneg k)
-      have hXP : P ≤ X * P := le_mul_of_one_le_left (by positivity) hX1
-      have hk' : Cp * P * (k : ℝ) ≤ Cp * (X * P) * k :=
-        mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hXP (Nat.cast_nonneg Cp))
-          (Nat.cast_nonneg k)
-      linarith
-    linarith
+  have habs := batch_exp_absorb_le (by positivity)
+    (Real.one_le_rpow (by norm_num) (by positivity) : 1 ≤ X)
+    (SizedListEncoding.length_le (encA := encB) (encL := encList encB) (r.toBatch a).items)
+    hCp_nat (r.listMax_exp_le hδ hTg a)
+  have hpost_le : ((encCappedNatAcc (((r.toBatch a).items).foldl
+      (fun s b => s.add (countB b)) (CappedNatAcc.init (2 ^ capBits a)))).length + 1) ^ dtot ≤
+      (3 * (capBits a + 1) + 3) ^ dtot :=
+    Nat.pow_le_pow_left (Nat.add_le_add_right (hacc_fin a) 1) dtot
+  have hnat_le : cf * ((encA a).length + 1) ^ ef +
+      ((r.toBatch a).length + 1) *
+        (cf * ((encA a).length + 1) ^ ef + listMax Tg (r.toBatch a).items) +
+      ((encCappedNatAcc (((r.toBatch a).items).foldl
+        (fun s b => s.add (countB b)) (CappedNatAcc.init (2 ^ capBits a)))).length + 1) ^ dtot ≤
+      ((3 * (capBits a + 1) + 3) ^ dtot + cf * ((encA a).length + 1) ^ ef) +
+        ((r.toBatch a).length + 1) *
+          (cf * ((encA a).length + 1) ^ ef + listMax Tg (r.toBatch a).items) := by omega
   have htotal : ((cf * ((encA a).length + 1) ^ ef +
       ((r.toBatch a).length + 1) *
         (cf * ((encA a).length + 1) ^ ef + listMax Tg (r.toBatch a).items) +
       ((encCappedNatAcc (((r.toBatch a).items).foldl
         (fun s b => s.add (countB b)) (CappedNatAcc.init (2 ^ capBits a)))).length + 1) ^ dtot :
-        ℕ) : ℝ) ≤ K * (X * P) := by
-    dsimp only [K]
-    push_cast at hpost_le hbase_le ⊢
-    have hXP_pos : 0 ≤ X * P := by positivity
-    nlinarith
+        ℕ) : ℝ) ≤ K * (X * P) :=
+    (Nat.cast_le.mpr hnat_le).trans habs
   exact (htotal.trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))).trans
     (le_add_of_nonneg_right (Nat.cast_nonneg _))
 
@@ -1337,8 +1311,7 @@ private theorem stack_exp_absorb {A_ov B_ov R_cnt leafMax Cp : ℝ} {K₀ K₁ M
     (hB : B_ov ≤ Cp * ((L : ℝ) + 1) ^ E)
     (hR : R_cnt ≤ (K₀ * 2 ^ K₁ + 1) * 2 ^ ((1 / M : ℝ) * μ))
     (hleaf : leafMax ≤
-      (⌈(k : ℝ) * ((2 : ℝ) ^ (δ * ((scale * μ + offset : ℕ) : ℝ)) * ((leafLen : ℝ) + 1) ^ e) +
-        k⌉₊ : ℝ))
+      k * ((2 : ℝ) ^ (δ * ((scale * μ + offset : ℕ) : ℝ)) * ((leafLen : ℝ) + 1) ^ e) + (k + 1))
     (hll : ((leafLen : ℝ) + 1) ^ e ≤ Cp * ((L : ℝ) + 1) ^ E) :
     A_ov + R_cnt * (B_ov + leafMax) ≤
       (Cp + (K₀ * 2 ^ K₁ + 1) * (Cp + k * 2 ^ (δ * offset) * Cp + (k + 1))) *
@@ -1356,17 +1329,11 @@ private theorem stack_exp_absorb {A_ov B_ov R_cnt leafMax Cp : ℝ} {K₀ K₁ M
       congr 1
       push_cast
       ring
-    have hrpos : (0 : ℝ) ≤ (2 : ℝ) ^ (δ * ((scale * μ + offset : ℕ) : ℝ)) :=
-      Real.rpow_nonneg (by norm_num) _
-    have hceil := Nat.ceil_lt_add_one (show (0 : ℝ) ≤
-      k * ((2 : ℝ) ^ (δ * ((scale * μ + offset : ℕ) : ℝ)) * ((leafLen : ℝ) + 1) ^ e) + k by
-        exact add_nonneg (mul_nonneg (Nat.cast_nonneg k) (mul_nonneg hrpos (by positivity)))
-          (Nat.cast_nonneg k))
     have hmul := mul_le_mul_of_nonneg_left hll
       (show (0 : ℝ) ≤ k * ((2 : ℝ) ^ (δ * offset) * Y) from
         mul_nonneg (Nat.cast_nonneg k) (mul_nonneg (Real.rpow_nonneg (by norm_num) _)
           (by positivity)))
-    rw [hexp] at hleaf hceil
+    rw [hexp] at hleaf
     have heq1 : (k : ℝ) * ((2 : ℝ) ^ (δ * offset) * Y * ((leafLen : ℝ) + 1) ^ e) =
         k * ((2 : ℝ) ^ (δ * offset) * Y) * ((leafLen : ℝ) + 1) ^ e := by ring
     have heq2 : (k : ℝ) * ((2 : ℝ) ^ (δ * offset) * Y) * (Cp * P) =
@@ -1411,6 +1378,81 @@ private theorem rounds_succ_exp_le {rounds ν μA : α → ℕ} {K₀ K₁ M : �
   have h₅ := mul_le_mul_of_nonneg_left h₂ (by positivity : (0 : ℝ) ≤ K₀ * 2 ^ K₁)
   rw [Nat.cast_succ]
   linarith
+
+private theorem step_cost_le (S : StackAccumulationSpec encA encK encS encB encG encD)
+    {g : β → γ} {F : β → ℕ} {st : StackSearchState κ σ δ} {stateBound ansBound fBound d : ℕ}
+    (hst : (encStackSearchState encK encS encD st).length ≤ stateBound)
+    (hans : st.stack.isEmpty = false ∧ S.isLeaf (S.topNode st) = true →
+      (encG (g (S.leafInstance (S.topNode st)))).length ≤ ansBound)
+    (hf : st.stack.isEmpty = false ∧ S.isLeaf (S.topNode st) = true →
+      F (S.leafInstance (S.topNode st)) ≤ fBound) :
+    ((encStackSearchState encK encS encD st).length + 1) ^ d +
+      (if st.stack.isEmpty = false ∧ S.isLeaf (S.topNode st) = true then
+        F (S.leafInstance (S.topNode st)) +
+          ((encStackSearchState encK encS encD st).length +
+            (encG (g (S.leafInstance (S.topNode st)))).length + 1) ^ d
+      else 0) ≤
+      ((stateBound + 1) ^ d + (stateBound + ansBound + 1) ^ d) + fBound := by
+  have hp1 := Nat.pow_le_pow_left (Nat.add_le_add_right hst 1) d
+  split_ifs with hact
+  · have ha_len := hans hact
+    have hf_le := hf hact
+    have hp2 := Nat.pow_le_pow_left (Nat.add_le_add_right (Nat.add_le_add hst ha_len) 1) d
+    omega
+  · omega
+
+private theorem exists_leafMax_exp_le (S : StackAccumulationSpec encA encK encS encB encG encD)
+    {g : β → γ} {Tg : β → ℕ} {μA : α → ℕ} {μB : β → ℕ} {stateBound : α → ℕ}
+    (hstatePoly : PolyBounded (fun a => (encA a).length) stateBound)
+    {scale offset k e : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
+    (hstate : ∀ a, ∀ i ≤ S.rounds a,
+      (encStackSearchState encK encS encD ((S.step g)^[i] (S.initState a))).length ≤ stateBound a)
+    (hmeas : ∀ a, ∀ i ≤ S.rounds a,
+      let st := (S.step g)^[i] (S.initState a)
+      st.stack.isEmpty = false ∧ S.isLeaf (S.topNode st) = true →
+        μB (S.leafInstance (S.topNode st)) ≤ scale * μA a + offset)
+    (hTg : ∀ b, (Tg b : ℝ) ≤ k * (2 ^ (δ * μB b) * ((encB b).length + 1) ^ e) + k) :
+    ∃ leafLen leafMax : α → ℕ,
+      PolyBounded (fun a => (encA a).length) leafLen ∧
+      (∀ a, (leafMax a : ℝ) ≤
+      k * ((2 : ℝ) ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) * ((leafLen a : ℝ) + 1) ^ e) +
+        (k + 1)) ∧
+      (∀ a, ∀ i ≤ S.rounds a,
+        let st := (S.step g)^[i] (S.initState a)
+        st.stack.isEmpty = false ∧ S.isLeaf (S.topNode st) = true →
+          Tg (S.leafInstance (S.topNode st)) ≤ leafMax a) := by
+  obtain ⟨cl, dl, hleaf_len⟩ := S.computableInPolyTime_leafInstance.polyBounded_length.exists_le
+  let leafLen (a : α) : ℕ :=
+    cl * (2 * stateBound a + (encS S.defaultNode).length + 3) ^ dl
+  let leafMax (a : α) : ℕ :=
+    ⌈(k : ℝ) * (2 ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) * ((leafLen a : ℝ) + 1) ^ e) + k⌉₊
+  have hleafPoly : PolyBounded (fun a => (encA a).length) leafLen := by
+    dsimp only [leafLen]
+    growth_poly
+  have hceil (a : α) : (leafMax a : ℝ) ≤
+      k * ((2 : ℝ) ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) * ((leafLen a : ℝ) + 1) ^ e) +
+        (k + 1) := by
+    set X : ℝ :=
+      (k : ℝ) * (2 ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) * ((leafLen a : ℝ) + 1) ^ e) + k
+    have hlt := Nat.ceil_lt_add_one (by positivity : 0 ≤ X)
+    dsimp only [leafMax, X] at hlt ⊢
+    linarith
+  refine ⟨leafLen, leafMax, hleafPoly, hceil, fun a i hi hact => ?_⟩
+  set st := (S.step g)^[i] (S.initState a)
+  set b := S.leafInstance (S.topNode st)
+  have hm : μB b ≤ scale * μA a + offset := hmeas a i hi hact
+  have hst : (encStackSearchState encK encS encD st).length ≤ stateBound a := hstate a i hi
+  have htn : (encStackNodeInput encK encS (S.topNode st)).length ≤
+      2 * stateBound a + (encS S.defaultNode).length + 2 :=
+    (S.topNode_encLength_le st).trans (by omega)
+  have hblen : (encB b).length ≤ leafLen a :=
+    (hleaf_len (S.topNode st)).trans (Nat.mul_le_mul_left cl (Nat.pow_le_pow_left (by omega) dl))
+  have hexp : (2 : ℝ) ^ (δ * μB b) ≤ 2 ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) :=
+    Real.rpow_le_rpow_of_exponent_le (by norm_num)
+      (mul_le_mul_of_nonneg_left (by exact_mod_cast hm) hδ)
+  have hpow : (((encB b).length : ℝ) + 1) ^ e ≤ ((leafLen a : ℝ) + 1) ^ e := by gcongr
+  refine Nat.cast_le.mp ((hTg b).trans ((?_ : _ ≤ _).trans (Nat.le_ceil _)))
+  gcongr
 
 /-- **Accumulated-time and polynomial-live-workspace transfer for `S.run g`.**
 When the live encoded search state and leaf answers are polynomially bounded along `S.rounds a`
@@ -1477,19 +1519,8 @@ theorem exists_computableInO_run (S : StackAccumulationSpec encA encK encS encB 
             ((encSt ((S.step g)^[i] (S.initState a))).length +
               (encG (g (S.leafInstance (S.topNode ((S.step g)^[i] (S.initState a)))))).length +
               1) ^ d
-        else 0) ≤ stepPoly a + leafMax a := by
-    set st := (S.step g)^[i] (S.initState a)
-    have hst : (encSt st).length ≤ stateBound a := hstate a i hi
-    have hp1 := Nat.pow_le_pow_left (Nat.add_le_add_right hst 1) d
-    split_ifs with hact
-    · have ha_len : (encG (g (S.leafInstance (S.topNode st)))).length ≤ ansBound a :=
-        hans a i hi hact
-      have ht_le : Tg (S.leafInstance (S.topNode st)) ≤ leafMax a := htime a i hi hact
-      have hp2 := Nat.pow_le_pow_left (Nat.add_le_add_right (Nat.add_le_add hst ha_len) 1) d
-      dsimp only [stepPoly]
-      omega
-    · dsimp only [stepPoly]
-      omega
+        else 0) ≤ stepPoly a + leafMax a :=
+    S.step_cost_le (hstate a i hi) (hans a i hi) (htime a i hi)
   have hround_s (a : α) (i : ℕ) (hi : i ≤ S.rounds a) :
       ((encSt ((S.step g)^[i] (S.initState a))).length + 1) ^ d +
         (if ((S.step g)^[i] (S.initState a)).stack.isEmpty = false ∧
@@ -1498,27 +1529,19 @@ theorem exists_computableInO_run (S : StackAccumulationSpec encA encK encS encB 
             ((encSt ((S.step g)^[i] (S.initState a))).length +
               (encG (g (S.leafInstance (S.topNode ((S.step g)^[i] (S.initState a)))))).length +
               1) ^ d
-        else 0) ≤ stepPoly a + sgBound a := by
-    set st := (S.step g)^[i] (S.initState a)
-    have hst : (encSt st).length ≤ stateBound a := hstate a i hi
-    have hp1 := Nat.pow_le_pow_left (Nat.add_le_add_right hst 1) d
-    split_ifs with hact
-    · have ha_len : (encG (g (S.leafInstance (S.topNode st)))).length ≤ ansBound a :=
-        hans a i hi hact
-      have htn : (encStackNodeInput encK encS (S.topNode st)).length ≤
+        else 0) ≤ stepPoly a + sgBound a :=
+    S.step_cost_le (hstate a i hi) (hans a i hi) fun _ => by
+      have hst : (encStackSearchState encK encS encD
+          ((S.step g)^[i] (S.initState a))).length ≤ stateBound a := hstate a i hi
+      have htn :
+          (encStackNodeInput encK encS (S.topNode ((S.step g)^[i] (S.initState a)))).length ≤
           2 * stateBound a + (encS S.defaultNode).length + 2 :=
-        (S.topNode_encLength_le st).trans (by dsimp only [encSt] at hst; omega)
-      have hblen : (encB (S.leafInstance (S.topNode st))).length ≤ leafLen a :=
-        (hleaf_len (S.topNode st)).trans (Nat.mul_le_mul_left cl
-          (Nat.pow_le_pow_left (by omega) dl))
-      have hsg : Sg (S.leafInstance (S.topNode st)) ≤ sgBound a :=
-        (hSg_le _).trans (Nat.mul_le_mul_left cs
-          (Nat.pow_le_pow_left (Nat.add_le_add_right hblen 1) ds))
-      have hp2 := Nat.pow_le_pow_left (Nat.add_le_add_right (Nat.add_le_add hst ha_len) 1) d
-      dsimp only [stepPoly]
-      omega
-    · dsimp only [stepPoly]
-      omega
+        (S.topNode_encLength_le _).trans (by omega)
+      have hblen : (encB (S.leafInstance (S.topNode ((S.step g)^[i] (S.initState a))))).length ≤
+          leafLen a :=
+        (hleaf_len _).trans (Nat.mul_le_mul_left cl (Nat.pow_le_pow_left (by omega) dl))
+      exact (hSg_le _).trans
+        (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (Nat.add_le_add_right hblen 1) ds))
   have hloop := ComputableInO.iterate hn.inO hi.inO hstep hround_t hround_s hstate
   have hwhole := (ha.inO.comp hloop).of_enc_eq (g := S.run g) fun _ => rfl
   let clockLen (a : α) : ℕ := (encNat (S.rounds a)).length
@@ -1581,32 +1604,8 @@ theorem decidableInExpTime_of_stack
   obtain ⟨e, h⟩ := hB
   obtain ⟨g, t, k, hg, hgB, ht⟩ := h.exists_computableInO
   have hspec := hAB g hgB
-  obtain ⟨cl, dl, hleaf_len⟩ := S.computableInPolyTime_leafInstance.polyBounded_length.exists_le
-  let leafLen (a : α) : ℕ :=
-    cl * (2 * stateBound a + (encS S.defaultNode).length + 3) ^ dl
-  let leafMax (a : α) : ℕ :=
-    ⌈(k : ℝ) * (2 ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) * ((leafLen a : ℝ) + 1) ^ e) + k⌉₊
-  have htime (a : α) (i : ℕ) (hi : i ≤ S.rounds a) :
-      ((S.step g)^[i] (S.initState a)).stack.isEmpty = false ∧
-          S.isLeaf (S.topNode ((S.step g)^[i] (S.initState a))) = true →
-        t (S.leafInstance (S.topNode ((S.step g)^[i] (S.initState a)))) ≤ leafMax a := by
-    intro hact
-    set st := (S.step g)^[i] (S.initState a)
-    set b := S.leafInstance (S.topNode st)
-    have hm := (hspec a).2.2 i hi hact
-    have hst : (encStackSearchState encK encS encBool st).length ≤ stateBound a :=
-      (hspec a).2.1 i hi
-    have htn : (encStackNodeInput encK encS (S.topNode st)).length ≤
-        2 * stateBound a + (encS S.defaultNode).length + 2 :=
-      (S.topNode_encLength_le st).trans (by omega)
-    have hblen : (encB b).length ≤ leafLen a :=
-      (hleaf_len (S.topNode st)).trans (Nat.mul_le_mul_left cl (Nat.pow_le_pow_left (by omega) dl))
-    have hexp : (2 : ℝ) ^ (δ * μB b) ≤ 2 ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) :=
-      Real.rpow_le_rpow_of_exponent_le (by norm_num)
-        (mul_le_mul_of_nonneg_left (by exact_mod_cast hm) hδ)
-    have hpow : (((encB b).length : ℝ) + 1) ^ e ≤ ((leafLen a : ℝ) + 1) ^ e := by gcongr
-    refine Nat.cast_le.mp ((ht b).trans ((?_ : _ ≤ _).trans (Nat.le_ceil _)))
-    gcongr
+  obtain ⟨leafLen, leafMax, hleafPoly, hleafMax_le, htime⟩ :=
+    S.exists_leafMax_exp_le hstatePoly hδ (fun a => (hspec a).2.1) (fun a => (hspec a).2.2) ht
   rcases isEmpty_or_nonempty α with hα | hα
   · exact DecidableInExpTime.of_computableInO (.const false)
       (fun a => hα.elim a) 1 0 (fun a => hα.elim a)
@@ -1623,7 +1622,7 @@ theorem decidableInExpTime_of_stack
   obtain ⟨dn, _, hn⟩ := S.computableInPolyTime_rounds.exists_degree
   obtain ⟨di, _, hi⟩ := hinit_pt.exists_degree
   obtain ⟨da, _, ha⟩ := hacc_pt.exists_degree
-  let stepPoly (a : α) : ℕ := (stateBound a + 1) ^ d + (stateBound a + 2) ^ d
+  let stepPoly (a : α) : ℕ := (stateBound a + 1) ^ d + (stateBound a + 1 + 1) ^ d
   have hround (a : α) (i : ℕ) (hi : i ≤ S.rounds a) :
       ((encSt ((S.step g)^[i] (S.initState a))).length + 1) ^ d +
         (if ((S.step g)^[i] (S.initState a)).stack.isEmpty = false ∧
@@ -1632,21 +1631,8 @@ theorem decidableInExpTime_of_stack
             ((encSt ((S.step g)^[i] (S.initState a))).length +
               (encBool (g (S.leafInstance (S.topNode ((S.step g)^[i] (S.initState a)))))).length +
               1) ^ d
-        else 0) ≤ stepPoly a + leafMax a := by
-    set st := (S.step g)^[i] (S.initState a)
-    have hst : (encSt st).length ≤ stateBound a := (hspec a).2.1 i hi
-    have hp1 := Nat.pow_le_pow_left (Nat.add_le_add_right hst 1) d
-    split_ifs with hact
-    · have ht_le : t (S.leafInstance (S.topNode st)) ≤ leafMax a := htime a i hi hact
-      have hp2 : ((encSt st).length +
-          (encBool (g (S.leafInstance (S.topNode st)))).length + 1) ^ d ≤
-          (stateBound a + 2) ^ d := by
-        simp only [encBool_apply, List.length_singleton]
-        exact Nat.pow_le_pow_left (by omega) d
-      dsimp only [stepPoly]
-      omega
-    · dsimp only [stepPoly]
-      omega
+        else 0) ≤ stepPoly a + leafMax a :=
+    S.step_cost_le ((hspec a).2.1 i hi) (fun _ => by simp) (htime a i hi)
   have hloop := ha.inO.comp (ComputableInO.iterate hn.inO hi.inO hstep hround hround
     fun a i hi => (hspec a).2.1 i hi)
   let clockLen (a : α) : ℕ := (encNat (S.rounds a)).length
@@ -1656,7 +1642,7 @@ theorem decidableInExpTime_of_stack
       (fun a => ((encA a).length + 1) ^ dn + ((encA a).length + 1) ^ di +
         (stateBound a + 1) ^ da + (stepPoly a + stateBound a + (clockLen a + 1) ^ 2) +
         (leafLen a + 1) ^ e) := by
-    dsimp only [stepPoly, leafLen]
+    dsimp only [stepPoly]
     growth_poly
   obtain ⟨Cp, E, hCp⟩ := hpoly.exists_le
   set K : ℝ := Cp + (K₀ * 2 ^ K₁ + 1) * (Cp + k * 2 ^ (δ * offset) * Cp + (k + 1))
@@ -1677,9 +1663,8 @@ theorem decidableInExpTime_of_stack
       Cp * ((encA a).length + 1) ^ E by omega)
   have hll : ((leafLen a : ℝ) + 1) ^ e ≤ Cp * (((encA a).length : ℝ) + 1) ^ E := by
     exact_mod_cast (show (leafLen a + 1) ^ e ≤ Cp * ((encA a).length + 1) ^ E by omega)
-  have habs := stack_exp_absorb hδ (Nat.cast_nonneg Cp) (Nat.cast_nonneg _) (Nat.cast_nonneg _)
-    hA hB_ov (rounds_succ_exp_le hrounds hν a)
-    (le_rfl : (leafMax a : ℝ) ≤ _) hll
+  have habs := stack_exp_absorb hδ (Nat.cast_nonneg Cp) (Nat.cast_nonneg _)
+    (Nat.cast_nonneg _) hA hB_ov (rounds_succ_exp_le hrounds hν a) (hleafMax_le a) hll
   have htot : (((((encA a).length + 1) ^ dn + ((encA a).length + 1) ^ di +
       (S.rounds a + 1) * (stepPoly a + leafMax a + stateBound a + (clockLen a + 1) ^ 2) +
       ((encSt ((S.step g)^[S.rounds a] (S.initState a))).length + 1) ^ da : ℕ) : ℝ)) ≤
@@ -1763,33 +1748,8 @@ theorem exists_computableInO_cappedSum_of_stack
       ComputableInPolySpace countA encA encNat ∧
       ∀ a, (T a : ℝ) ≤
         C₀ * (2 ^ ((1 / M + scale * δ) * μA a) * (((encA a).length : ℝ) + 1) ^ E) + C₀ := by
-  obtain ⟨cl, dl, hleaf_len⟩ := S.computableInPolyTime_leafInstance.polyBounded_length.exists_le
-  let leafLen (a : α) : ℕ :=
-    cl * (2 * stateBound a + (encS S.defaultNode).length + 3) ^ dl
-  let leafMax (a : α) : ℕ :=
-    ⌈(k : ℝ) * (2 ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) * ((leafLen a : ℝ) + 1) ^ e) + k⌉₊
-  have htime (a : α) (i : ℕ) (hi : i ≤ S.rounds a) :
-      ((S.step countB)^[i] (S.initState a)).stack.isEmpty = false ∧
-          S.isLeaf (S.topNode ((S.step countB)^[i] (S.initState a))) = true →
-        Tg (S.leafInstance (S.topNode ((S.step countB)^[i] (S.initState a)))) ≤ leafMax a := by
-    intro hact
-    set st := (S.step countB)^[i] (S.initState a)
-    set b := S.leafInstance (S.topNode st)
-    have hm := hmeas a i hi hact
-    have hst : (encStackSearchState encK encS encCappedNatAcc st).length ≤ stateBound a :=
-      hstate a i hi
-    have htn : (encStackNodeInput encK encS (S.topNode st)).length ≤
-        2 * stateBound a + (encS S.defaultNode).length + 2 :=
-      (S.topNode_encLength_le st).trans (by omega)
-    have hblen : (encB b).length ≤ leafLen a :=
-      (hleaf_len (S.topNode st)).trans
-        (Nat.mul_le_mul_left cl (Nat.pow_le_pow_left (by omega) dl))
-    have hexp : (2 : ℝ) ^ (δ * μB b) ≤ 2 ^ (δ * ((scale * μA a + offset : ℕ) : ℝ)) :=
-      Real.rpow_le_rpow_of_exponent_le (by norm_num)
-        (mul_le_mul_of_nonneg_left (by exact_mod_cast hm) hδ)
-    have hpow : (((encB b).length : ℝ) + 1) ^ e ≤ ((leafLen a : ℝ) + 1) ^ e := by gcongr
-    refine Nat.cast_le.mp ((hTg b).trans ((?_ : _ ≤ _).trans (Nat.le_ceil _)))
-    gcongr
+  obtain ⟨leafLen, leafMax, hleafPoly, hleafMax_le, htime⟩ :=
+    S.exists_leafMax_exp_le hstatePoly hδ hstate hmeas hTg
   obtain ⟨cs, es, Space₀, hSpace₀, hrun, _⟩ :=
     S.exists_computableInO_run hg hSg hstatePoly hansPoly hstate hans htime
   obtain ⟨dtot, _, htot_pt⟩ := (encCappedNatAcc_total_polyTime
@@ -1814,9 +1774,7 @@ theorem exists_computableInO_cappedSum_of_stack
     ComputableInPolySpace.of_inSpace hSpacePoly (ComputableInSpace.of_inO hout)
   have hpoly : PolyBounded (fun a => (encA a).length)
       (fun a => cs * ((encA a).length + 1) ^ es + (stateBound a + 1) ^ dtot +
-        (leafLen a + 1) ^ e) := by
-    dsimp only [leafLen]
-    growth_poly
+        (leafLen a + 1) ^ e) := by growth_poly
   obtain ⟨Cp, E, hCp⟩ := hpoly.exists_le
   set K : ℝ := Cp + (K₀ * 2 ^ K₁ + 1) * (Cp + k * 2 ^ (δ * offset) * Cp + (k + 1))
   refine ⟨_, Space, ⌈K⌉₊, E, hSpacePoly, hout, hps, fun a => ?_⟩
@@ -1835,8 +1793,7 @@ theorem exists_computableInO_cappedSum_of_stack
   have hll : ((leafLen a : ℝ) + 1) ^ e ≤ Cp * (((encA a).length : ℝ) + 1) ^ E := by
     exact_mod_cast (show (leafLen a + 1) ^ e ≤ Cp * ((encA a).length + 1) ^ E by omega)
   have habs := stack_exp_absorb hδ (Nat.cast_nonneg Cp) (Nat.cast_nonneg _) (Nat.cast_nonneg _)
-    hA hB_ov (rounds_succ_exp_le hrounds hν a)
-    (le_rfl : (leafMax a : ℝ) ≤ _) hll
+    hA hB_ov (rounds_succ_exp_le hrounds hν a) (hleafMax_le a) hll
   have htot : ((cs * ((encA a).length + 1) ^ es +
       (S.rounds a + 1) * (cs * ((encA a).length + 1) ^ es + leafMax a) +
       ((encCappedNatAcc (S.run countB a)).length + 1) ^ dtot : ℕ) : ℝ) ≤
