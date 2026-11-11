@@ -23,9 +23,10 @@ Concrete, non-vacuous checks exercising:
    `measureCollisionProb_simHash_of_norm_eq_one`, `measureCollisionProb_simHash_pi`,
    `isLocalitySensitive_simHash_inner`, a counterexample showing non-vacuity of sensitivity,
    `rho_simHash_le`, `numTables_simHash_lt`, and `measureReal_query_simHash_eq_none_le`).
-4. Cauchy `1`-stability (`cauchyMeasure_map_const_mul`, `pi_cauchyMeasure_map_dotProduct`) and `p = 1`
-   / `p = 2` `p`-stable LSH (`p2StableProb`, `p1StableProb`, exact values, strict monotonicity,
-   collision laws, `rho_p2Stable_lt_one`, `rho_p1Stable_lt_one`, and both `(c, r)`-ANN bounds).
+4. Cauchy `1`-stability (`cauchyMeasure_map_const_mul`, `pi_cauchyMeasure_map_dotProduct`) and
+   `p = 1` / `p = 2` `p`-stable LSH (`p2StableProb`, `p1StableProb`, exact values, strict
+   monotonicity, collision laws, `rho_p2Stable_lt_one`, `rho_p1Stable_lt_one`, and both
+   `(c, r)`-ANN bounds).
 -/
 
 namespace CslibFrontierTests.LSHContinuous
@@ -250,7 +251,8 @@ example :
       0 < p1StableProb 1 2 ∧ p1StableProb 1 2 < p1StableProb 1 1 := by
   refine ⟨?_, p1StableProb_pos one_pos (by norm_num),
     p1StableProb_strictAnti one_pos one_pos.le one_lt_two⟩
-  rw [p1StableProb_eq one_pos one_pos, div_one, Real.arctan_one, one_pow, mul_one]
+  rw [p1StableProb_eq one_pos one_pos, div_one, Real.arctan_one, one_pow, mul_one,
+    one_add_one_eq_two]
   have hpi : π ≠ 0 := pi_ne_zero
   field_simp
   ring

@@ -1887,11 +1887,12 @@ register_result "p-stable-lsh" where
     Cslib.Probability.measureCollisionProb_p1StableHash,
     Cslib.Probability.p1StableProb_eq
   ]
-  scope := "Shifted interval quantization `floor ((proj a x + b) / r)` with `b ~ uniformInterval r`. \
-    Proves the general Fubini integral, Cauchy `1`-stability for i.i.d. `cauchyMeasure 0 1` \
-    projections, exact Euclidean (`p = 2`, Gaussian) and `l_1` (`p = 1`, Cauchy) collision \
-    formulas including Datar et al.'s integral representation and closed forms, strict \
-    positivity, and strict monotonicity. General `p` in `(0, 2) \\ {1, 2}` is not formalized."
+  scope := "Shifted interval quantization `floor ((proj a x + b) / r)` with `b` drawn from \
+    `uniformInterval r`. Proves the general Fubini integral, Cauchy `1`-stability for i.i.d. \
+    `cauchyMeasure 0 1` projections, exact Euclidean (`p = 2`, Gaussian) and `l_1` (`p = 1`, \
+    Cauchy) collision formulas including Datar et al.'s integral representation and closed \
+    forms, strict positivity, and strict monotonicity. General `p` in `(0, 2) \\ {1, 2}` is \
+    not formalized."
 
 register_result "p-stable-near-neighbor" where
   title := "Approximate near neighbours in l_2 and l_1 via p-stable LSH"
