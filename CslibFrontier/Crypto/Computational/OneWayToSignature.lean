@@ -96,28 +96,14 @@ open Filter ProbComp Probability Turing.MultiTapeTM
 open scoped NNReal ENNReal
 
 private theorem uConstMul {γ : Type} {encIn : γ ↪ List Bool} (c : ℕ) {f : γ → ℕ}
-    (hf : ComputableTidilyInPolyTime f encIn encUnary) :
-    ComputableTidilyInPolyTime (fun a => c * f a) encIn encUnary :=
-  ComputableTidilyInPolyTime.unary_mul.comp ((ComputableTidilyInPolyTime.const c).prod hf)
+    (hf : ComputableInPolyTime f encIn encUnary) :
+    ComputableInPolyTime (fun a => c * f a) encIn encUnary :=
+  ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const c).prod hf)
 
-private theorem computableTidilyInPolyTime_frames {γ : Type} {encIn : γ ↪ List Bool}
-    {w : γ → List Bool} (hw : ComputableTidilyInPolyTime w encIn encBits) :
-    ComputableTidilyInPolyTime (fun a => frames (w a)) encIn (encList encBits) :=
-  computableInDegree_frames.computableInPolyTime.tidy.comp hw
-
-private theorem computableTidilyInPolyTime_encList_bits {γ : Type} {encIn : γ ↪ List Bool}
-    {l : γ → List (List Bool)}
-    (hl : ComputableTidilyInPolyTime l encIn (encList encBits)) :
-    ComputableTidilyInPolyTime (fun a => encList encBits (l a)) encIn encBits :=
-  (ComputableTidilyInPolyTime.of_eq (encIn := encList encBits) (encMid := encBits)
-    fun _ => rfl).comp hl
-
-private theorem listGetDWithInput {γ : Type} {encIn : γ ↪ List Bool}
-    {list : γ → List (List Bool)} {index : γ → ℕ}
-    (hlist : ComputableTidilyInPolyTime list encIn (encList encBits))
-    (hindex : ComputableTidilyInPolyTime index encIn encUnary) (fallback : List Bool) :
-    ComputableTidilyInPolyTime (fun x => (list x).getD (index x) fallback) encIn encBits :=
-  (ComputableTidilyInPolyTime.listGetD (encA := encBits) fallback).comp (hlist.prod hindex)
+private theorem computableInPolyTime_frames {γ : Type} {encIn : γ ↪ List Bool}
+    {w : γ → List Bool} (hw : ComputableInPolyTime w encIn encBits) :
+    ComputableInPolyTime (fun a => frames (w a)) encIn (encList encBits) :=
+  computableInDegree_frames.computableInPolyTime.comp hw
 
 /-! ### Secure digital signatures imply one-way functions -/
 
@@ -146,50 +132,49 @@ private theorem isPPTOn_sigToOwfForgerBody (S : SignatureScheme)
     {evaluate : ℕ → List Bool → List Bool × List Bool}
     (heval : ComputableInPolyTime (fun p : ℕ × List Bool => evaluate p.1 p.2)
       (encPair encUnary encBits) (encPair encBits encBits))
-    {schedule : ℕ → ℕ} (hsched : ComputableTidilyInPolyTime schedule encUnary encUnary)
+    {schedule : ℕ → ℕ} (hsched : ComputableInPolyTime schedule encUnary encUnary)
     {adversary : Inverter} (hadversary : IsPPT encBits adversary) :
     IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
       (fun p : ℕ × List Bool => sigToOwfForgerBody S evaluate schedule adversary p.1 p.2) := by
   unfold sigToOwfForgerBody
   have hidx : IsPPTOn (encPair encUnary encBits) encUnary
       (fun p : ℕ × List Bool => sampleDyadicIndex (schedule (p.1 + 1))) :=
-    isPPTOn_sampleDyadicIndex (.of_tidy (hsched.comp
-      (ComputableTidilyInPolyTime.unary_add.comp
-        ((ComputableTidilyInPolyTime.fst encUnary encBits).prod (.const 1)))))
-  have hprep_cand : ComputableTidilyInPolyTime
+    isPPTOn_sampleDyadicIndex (hsched.comp
+      (ComputableInPolyTime.unary_add.comp
+        ((ComputableInPolyTime.fst encUnary encBits).prod (.const 1))))
+  have hprep_cand : ComputableInPolyTime
       (fun q : (ℕ × List Bool) × ℕ => (q.2, encPair encUnary encBits (q.1.1, q.1.2)))
       (encPair (encPair encUnary encBits) encUnary) (encPair encUnary encBits) :=
-    (ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encUnary).prod
-      ((ComputableTidilyInPolyTime.of_eq (encIn := encPair encUnary encBits) (encMid := encBits)
-        fun _ => rfl).comp (ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encUnary))
+    (ComputableInPolyTime.snd (encPair encUnary encBits) encUnary).prod
+      (ComputableInPolyTime.fst (encPair encUnary encBits) encUnary).encoding_comp
   have hcand : IsPPTOn (encPair (encPair encUnary encBits) encUnary) encBits
       (fun q : (ℕ × List Bool) × ℕ =>
         adversary q.2 (encPair encUnary encBits (q.1.1, q.1.2))) :=
-    hadversary.on.preprocess (ComputableInPolyTime.of_tidy hprep_cand)
-  have hn : ComputableTidilyInPolyTime
+    hadversary.on.preprocess hprep_cand
+  have hn : ComputableInPolyTime
       (fun r : ((ℕ × List Bool) × ℕ) × List Bool => r.1.1.1)
       (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encUnary :=
-    (ComputableTidilyInPolyTime.fst encUnary encBits).comp
-      ((ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encUnary).comp
-        (ComputableTidilyInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits))
-  have hsk : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.fst encUnary encBits).comp
+      ((ComputableInPolyTime.fst (encPair encUnary encBits) encUnary).comp
+        (ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits))
+  have hsk : ComputableInPolyTime
       (fun r : ((ℕ × List Bool) × ℕ) × List Bool => (evaluate r.1.1.1 r.2).2)
       (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encBits :=
-    (ComputableTidilyInPolyTime.snd encBits encBits).comp (heval.tidy.comp
-      (hn.prod (ComputableTidilyInPolyTime.snd
+    (ComputableInPolyTime.snd encBits encBits).comp (heval.comp
+      (hn.prod (ComputableInPolyTime.snd
         (encPair (encPair encUnary encBits) encUnary) encBits)))
-  have hmsg : ComputableTidilyInPolyTime
+  have hmsg : ComputableInPolyTime
       (fun r : ((ℕ × List Bool) × ℕ) × List Bool => List.replicate r.1.1.1 false)
       (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encBits :=
-    (ComputableTidilyInPolyTime.bitsReplicate false).comp hn
+    (ComputableInPolyTime.bitsReplicate false).comp hn
   have hsig : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
       (encPair encBits encBits)
       (fun r : ((ℕ × List Bool) × ℕ) × List Bool => do
         let sig ← S.sign (evaluate r.1.1.1 r.2).2 (List.replicate r.1.1.1 false)
         return (List.replicate r.1.1.1 false, sig)) :=
-    (S.isPPTOn_sign_comp (.of_tidy hsk) (.of_tidy hmsg)).bind_with
-      ((hmsg.comp (ComputableTidilyInPolyTime.fst _ encBits)).prod
-        (ComputableTidilyInPolyTime.snd _ encBits)).isPPTOn
+    (S.isPPTOn_sign_comp hsk hmsg).bind_with
+      ((hmsg.comp (ComputableInPolyTime.fst _ encBits)).prod
+        (ComputableInPolyTime.snd _ encBits)).isPPTOn
   exact hidx.bind_with (hcand.bind_with hsig)
 
 /-- Any digital signature scheme that is existentially unforgeable under one-time chosen-message
@@ -201,25 +186,24 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
   let param (size : ℕ) : ℕ := GeneratorReindex.parameter schedule size
   let f (seed : List Bool) : List Bool :=
     encPair encUnary encBits (param seed.length, (evaluate (param seed.length) seed).1)
-  have hsched : ComputableTidilyInPolyTime schedule encUnary encUnary :=
-    have hsucc := ComputableTidilyInPolyTime.unary_add.comp
-      (ComputableTidilyInPolyTime.id'.prod (.const 1))
-    ComputableTidilyInPolyTime.unary_add.comp
-      ((ComputableTidilyInPolyTime.unary_add.comp
-        ((uConstMul c ((ComputableTidilyInPolyTime.unary_pow d).comp hsucc)).prod .id')).prod
+  have hsched : ComputableInPolyTime schedule encUnary encUnary :=
+    have hsucc := ComputableInPolyTime.unary_add.comp
+      (ComputableInPolyTime.id'.prod (.const 1))
+    ComputableInPolyTime.unary_add.comp
+      ((ComputableInPolyTime.unary_add.comp
+        ((uConstMul c ((ComputableInPolyTime.unary_pow d).comp hsucc)).prod .id')).prod
         (.const 1))
-  have hparam_unary : ComputableTidilyInPolyTime param encUnary encUnary :=
-    (GeneratorReindex.isPolyTime_parameter (.of_tidy hsched) (.of_tidy .id')).tidy
-  have hparam : ComputableTidilyInPolyTime (fun seed : List Bool => param seed.length)
+  have hparam_unary : ComputableInPolyTime param encUnary encUnary :=
+    GeneratorReindex.isPolyTime_parameter hsched .id'
+  have hparam : ComputableInPolyTime (fun seed : List Bool => param seed.length)
       encBits encUnary :=
-    hparam_unary.comp ComputableTidilyInPolyTime.length_bits
-  have hpk : ComputableTidilyInPolyTime
+    hparam_unary.comp ComputableInPolyTime.length_bits
+  have hpk : ComputableInPolyTime
       (fun seed : List Bool => (evaluate (param seed.length) seed).1) encBits encBits :=
-    (ComputableTidilyInPolyTime.fst encBits encBits).comp (heval.tidy.comp (hparam.prod .id'))
-  have hf : ComputableTidilyInPolyTime f encBits encBits :=
-    (ComputableTidilyInPolyTime.of_eq (encIn := encPair encUnary encBits) (encMid := encBits)
-      fun _ => rfl).comp (hparam.prod hpk)
-  refine ⟨f, OneWay.of_inversion_negligible (.of_tidy hf) ?_⟩
+    (ComputableInPolyTime.fst encBits encBits).comp (heval.comp (hparam.prod .id'))
+  have hf : ComputableInPolyTime f encBits encBits :=
+    (hparam.prod hpk).encoding_comp
+  refine ⟨f, OneWay.of_inversion_negligible hf ?_⟩
   intro adversary hadversary
   let forger : Forger := fun n pk =>
     ProbOracleComp.sample (sigToOwfForgerBody S evaluate schedule adversary n pk)
@@ -321,19 +305,19 @@ and check that `f (sigWords[i]) = pkWords[2 * i + msg[i].toNat]` for every `i < 
     (List.range msg.length).all fun i =>
       f (sigWords.getD i []) == pkWords.getD (2 * i + (msg.getD i false).toNat) []
 
-private theorem computableTidilyInPolyTime_lamportSlot {γ : Type} {encIn : γ ↪ List Bool}
+private theorem computableInPolyTime_lamportSlot {γ : Type} {encIn : γ ↪ List Bool}
     {words : γ → List (List Bool)} {msg : γ → List Bool}
-    (hwords : ComputableTidilyInPolyTime words encIn (encList encBits))
-    (hmsg : ComputableTidilyInPolyTime msg encIn encBits) :
-    ComputableTidilyInPolyTime
+    (hwords : ComputableInPolyTime words encIn (encList encBits))
+    (hmsg : ComputableInPolyTime msg encIn encBits) :
+    ComputableInPolyTime
       (fun a : γ × ℕ => (words a.1).getD (2 * a.2 + ((msg a.1).getD a.2 false).toNat) [])
       (encPair encIn encUnary) encBits := by
-  have hp1 := ComputableTidilyInPolyTime.fst encIn encUnary
-  have hi := ComputableTidilyInPolyTime.snd encIn encUnary
-  exact listGetDWithInput (hwords.comp hp1)
-    (ComputableTidilyInPolyTime.unary_add.comp ((uConstMul 2 hi).prod
-      (ComputableTidilyInPolyTime.bool_toUnary.comp
-        (ComputableTidilyInPolyTime.bitsGetDWithInput (hmsg.comp hp1) hi false))))
+  have hp1 := ComputableInPolyTime.fst encIn encUnary
+  have hi := ComputableInPolyTime.snd encIn encUnary
+  exact ComputableInPolyTime.listGetDWithInput (hwords.comp hp1)
+    (ComputableInPolyTime.unary_add.comp ((uConstMul 2 hi).prod
+      ((ComputableInPolyTime.of_finite Bool.toNat).comp
+        (ComputableInPolyTime.bitsGetDWithInput (hmsg.comp hp1) hi false))))
     []
 
 @[program_certificate]
@@ -343,29 +327,27 @@ theorem isPPTOn_lamportKeyGen {f : List Bool → List Bool}
   unfold lamportKeyGen
   have hrep : IsPPTOn encUnary (encList encBits)
       (fun n : ℕ => OracleComp.replicate (2 * n) (BitString.sampleList n)) :=
-    (ComputableInPolyTime.id'.sampleList).replicate (.of_tidy (uConstMul 2 .id'))
-  have hpost : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.id'.sampleList).replicate (uConstMul 2 .id')
+  have hpost : ComputableInPolyTime
       (fun skWords : List (List Bool) => (encList encBits (skWords.map f), encList encBits skWords))
       (encList encBits) (encPair encBits encBits) :=
-    (computableTidilyInPolyTime_encList_bits (ComputableTidilyInPolyTime.map hf.tidy)).prod
-      (computableTidilyInPolyTime_encList_bits .id')
+    (ComputableInPolyTime.map hf).encoding_comp.prod ComputableInPolyTime.id'.encoding_comp
   exact hrep.bind hpost.isPPTOn
 
 @[program_certificate]
 theorem isPPTOn_lamportSign :
     IsPPTOn (encPair encBits encBits) encBits (fun p => lamportSign p.1 p.2) := by
-  have hsk := computableTidilyInPolyTime_frames (ComputableTidilyInPolyTime.fst encBits encBits)
-  have hmsg := ComputableTidilyInPolyTime.snd encBits encBits
-  have hmsg_len := ComputableTidilyInPolyTime.length_bits.comp hmsg
-  have hbody := computableTidilyInPolyTime_encList_bits
-    (ComputableTidilyInPolyTime.mapWithInput (encA := encUnary)
+  have hsk := computableInPolyTime_frames (ComputableInPolyTime.fst encBits encBits)
+  have hmsg := ComputableInPolyTime.snd encBits encBits
+  have hmsg_len := ComputableInPolyTime.length_bits.comp hmsg
+  have hbody := (ComputableInPolyTime.mapWithInput (encA := encUnary)
       (f := fun (p : List Bool × List Bool) i =>
         (frames p.1).getD (2 * i + (p.2.getD i false).toNat) [])
-      (ComputableTidilyInPolyTime.range.comp hmsg_len)
-      (computableTidilyInPolyTime_lamportSlot hsk hmsg))
-  exact (ComputableTidilyInPolyTime.ite'
-    (ComputableTidilyInPolyTime.unary_beq
-      ((ComputableTidilyInPolyTime.length_list encBits).comp hsk)
+      (ComputableInPolyTime.range.comp hmsg_len)
+      (computableInPolyTime_lamportSlot hsk hmsg)).encoding_comp
+  exact (ComputableInPolyTime.ite'
+    (ComputableInPolyTime.unary_beq'
+      ((ComputableInPolyTime.length_list encBits).comp hsk)
       (uConstMul 2 hmsg_len))
     hbody (.const [])).isPPTOn
 
@@ -376,30 +358,30 @@ theorem computableInPolyTime_lamportVerify {f : List Bool → List Bool}
       (fun p : List Bool × List Bool × List Bool => lamportVerify f p.1 p.2.1 p.2.2)
       (encPair encBits (encPair encBits encBits)) encBool := by
   let encIn := encPair encBits (encPair encBits encBits)
-  have hpk := computableTidilyInPolyTime_frames
-    (ComputableTidilyInPolyTime.fst encBits (encPair encBits encBits))
-  have hrest := ComputableTidilyInPolyTime.snd encBits (encPair encBits encBits)
-  have hmsg := (ComputableTidilyInPolyTime.fst encBits encBits).comp hrest
-  have hsig := computableTidilyInPolyTime_frames
-    ((ComputableTidilyInPolyTime.snd encBits encBits).comp hrest)
-  have hmsg_len := ComputableTidilyInPolyTime.length_bits.comp hmsg
-  have hp1 := ComputableTidilyInPolyTime.fst encIn encUnary
-  have hi := ComputableTidilyInPolyTime.snd encIn encUnary
-  have hall := ComputableTidilyInPolyTime.allWithInput (encA := encUnary)
+  have hpk := computableInPolyTime_frames
+    (ComputableInPolyTime.fst encBits (encPair encBits encBits))
+  have hrest := ComputableInPolyTime.snd encBits (encPair encBits encBits)
+  have hmsg := (ComputableInPolyTime.fst encBits encBits).comp hrest
+  have hsig := computableInPolyTime_frames
+    ((ComputableInPolyTime.snd encBits encBits).comp hrest)
+  have hmsg_len := ComputableInPolyTime.length_bits.comp hmsg
+  have hp1 := ComputableInPolyTime.fst encIn encUnary
+  have hi := ComputableInPolyTime.snd encIn encUnary
+  have hall := ComputableInPolyTime.allWithInput (encA := encUnary)
     (test := fun (p : List Bool × List Bool × List Bool) i =>
       f ((frames p.2.2).getD i []) ==
         (frames p.1).getD (2 * i + (p.2.1.getD i false).toNat) [])
-    (ComputableTidilyInPolyTime.range.comp hmsg_len)
-    ((hf.tidy.comp (listGetDWithInput (hsig.comp hp1) hi [])).beq
-      (computableTidilyInPolyTime_lamportSlot hpk hmsg))
-  exact .of_tidy (ComputableTidilyInPolyTime.bool_and.comp
-    ((ComputableTidilyInPolyTime.bool_and.comp
-      ((ComputableTidilyInPolyTime.unary_beq
-        ((ComputableTidilyInPolyTime.length_list encBits).comp hpk)
+    (ComputableInPolyTime.range.comp hmsg_len)
+    ((hf.comp (ComputableInPolyTime.listGetDWithInput (hsig.comp hp1) hi [])).beq
+      (computableInPolyTime_lamportSlot hpk hmsg))
+  exact ComputableInPolyTime.bool_and.comp
+    ((ComputableInPolyTime.bool_and.comp
+      ((ComputableInPolyTime.unary_beq'
+        ((ComputableInPolyTime.length_list encBits).comp hpk)
         (uConstMul 2 hmsg_len)).prod
-        (ComputableTidilyInPolyTime.unary_beq
-          ((ComputableTidilyInPolyTime.length_list encBits).comp hsig)
-          hmsg_len))).prod hall))
+        (ComputableInPolyTime.unary_beq'
+          ((ComputableInPolyTime.length_list encBits).comp hsig)
+          hmsg_len))).prod hall)
 
 @[simp]
 private theorem frames_encList_bits (l : List (List Bool)) :
@@ -538,32 +520,31 @@ theorem isPPTOn_lamportSimKeys {f : List Bool → List Bool}
   unfold lamportSimKeys
   let encQ := encPair (encPair encUnary encBits) encUnary
   let encR := encPair encQ (encList encBits)
-  have hq1 := ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encUnary
-  have hn := (ComputableTidilyInPolyTime.fst encUnary encBits).comp hq1
-  have hj := ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encUnary
+  have hq1 := ComputableInPolyTime.fst (encPair encUnary encBits) encUnary
+  have hn := (ComputableInPolyTime.fst encUnary encBits).comp hq1
+  have hj := ComputableInPolyTime.snd (encPair encUnary encBits) encUnary
   have hfront : IsPPTOn encQ (encList encBits)
       (fun q : (ℕ × List Bool) × ℕ => OracleComp.replicate q.2 (BitString.sampleList q.1.1)) :=
-    (ComputableInPolyTime.of_tidy hn).sampleList.replicate (.of_tidy hj)
-  have hp1 := ComputableTidilyInPolyTime.fst encQ (encList encBits)
+    hn.sampleList.replicate hj
+  have hp1 := ComputableInPolyTime.fst encQ (encList encBits)
   have hn' := hn.comp hp1
-  have hcnt := ComputableTidilyInPolyTime.unary_sub.comp
-    ((ComputableTidilyInPolyTime.unary_sub.comp
+  have hcnt := ComputableInPolyTime.unary_sub.comp
+    ((ComputableInPolyTime.unary_sub.comp
       ((uConstMul 2 hn').prod (hj.comp hp1))).prod (.const 1))
   have hback : IsPPTOn encR (encList encBits)
       (fun r : ((ℕ × List Bool) × ℕ) × List (List Bool) =>
         OracleComp.replicate (2 * r.1.1.1 - r.1.2 - 1) (BitString.sampleList r.1.1.1)) :=
-    (ComputableInPolyTime.of_tidy hn').sampleList.replicate (.of_tidy hcnt)
-  have hs1 := ComputableTidilyInPolyTime.fst encR (encList encBits)
-  have hfront_proj := (ComputableTidilyInPolyTime.snd encQ (encList encBits)).comp hs1
-  have hback_proj := ComputableTidilyInPolyTime.snd encR (encList encBits)
-  have hy_proj := (ComputableTidilyInPolyTime.snd encUnary encBits).comp (hq1.comp (hp1.comp hs1))
-  have hmap_f := ComputableTidilyInPolyTime.map hf.tidy
-  have hpk_list := ComputableTidilyInPolyTime.listAppend' (hmap_f.comp hfront_proj)
-    (ComputableTidilyInPolyTime.cons' hy_proj (hmap_f.comp hback_proj))
-  have hsk_list := ComputableTidilyInPolyTime.listAppend' hfront_proj
-    (ComputableTidilyInPolyTime.cons' (ComputableTidilyInPolyTime.const []) hback_proj)
-  have hpost := (computableTidilyInPolyTime_encList_bits hpk_list).prod
-    (computableTidilyInPolyTime_encList_bits hsk_list)
+    hn'.sampleList.replicate hcnt
+  have hs1 := ComputableInPolyTime.fst encR (encList encBits)
+  have hfront_proj := (ComputableInPolyTime.snd encQ (encList encBits)).comp hs1
+  have hback_proj := ComputableInPolyTime.snd encR (encList encBits)
+  have hy_proj := (ComputableInPolyTime.snd encUnary encBits).comp (hq1.comp (hp1.comp hs1))
+  have hmap_f := ComputableInPolyTime.map hf
+  have hpk_list := ComputableInPolyTime.listAppend' (hmap_f.comp hfront_proj)
+    (ComputableInPolyTime.cons' hy_proj (hmap_f.comp hback_proj))
+  have hsk_list := ComputableInPolyTime.listAppend' hfront_proj
+    (ComputableInPolyTime.cons' (ComputableInPolyTime.const []) hback_proj)
+  have hpost := hpk_list.encoding_comp.prod hsk_list.encoding_comp
   exact hfront.bind_with (hback.bind_with hpost.isPPTOn)
 
 /-- Reduction that inverts `f` on challenge `y` at security parameter `n` by embedding `y` at a
@@ -590,28 +571,27 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
   have hrun_base := (lamportScheme f hf).isPPTOn_run_oneTimeSigningOracle hadversary
   have hj : IsPPTOn (encPair encUnary encBits) encUnary
       (fun p : ℕ × List Bool => sampleDyadicIndex (2 * p.1)) :=
-    isPPTOn_sampleDyadicIndex
-      (.of_tidy (uConstMul 2 (ComputableTidilyInPolyTime.fst encUnary encBits)))
+    isPPTOn_sampleDyadicIndex (uConstMul 2 (ComputableInPolyTime.fst encUnary encBits))
   have hkeys := isPPTOn_lamportSimKeys hf
   let encQ := encPair (encPair encUnary encBits) encUnary
   let encCallIn := encPair encQ (encPair encBits encBits)
   let encOut := encPair (encPair encBits encBits) (encList encBits)
-  have hp1 := ComputableTidilyInPolyTime.fst encQ (encPair encBits encBits)
-  have hq_n := (ComputableTidilyInPolyTime.fst encUnary encBits).comp
-    (ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encUnary)
-  have hq_j := ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encUnary
+  have hp1 := ComputableInPolyTime.fst encQ (encPair encBits encBits)
+  have hq_n := (ComputableInPolyTime.fst encUnary encBits).comp
+    (ComputableInPolyTime.fst (encPair encUnary encBits) encUnary)
+  have hq_j := ComputableInPolyTime.snd (encPair encUnary encBits) encUnary
   have hprep := (hq_n.comp hp1).prod
-    (ComputableTidilyInPolyTime.snd encQ (encPair encBits encBits))
-  have hsig := (ComputableTidilyInPolyTime.snd encBits encBits).comp
-    ((ComputableTidilyInPolyTime.fst (encPair encBits encBits) (encList encBits)).comp
-      (ComputableTidilyInPolyTime.snd encCallIn encOut))
-  have hj_proj := hq_j.comp (hp1.comp (ComputableTidilyInPolyTime.fst encCallIn encOut))
-  have hpost := listGetDWithInput (computableTidilyInPolyTime_frames hsig)
-    ((ComputableTidilyInPolyTime.unary_div_const 2).comp hj_proj) []
-  exact (hj.bind_with (IsPPTOn.ite
-    (ComputableTidilyInPolyTime.unary_lt' hq_j (uConstMul 2 hq_n))
-    (hkeys.bind_with ((hrun_base.preprocess (.of_tidy hprep)).bind_with hpost.isPPTOn))
-    (ComputableTidilyInPolyTime.const []).isPPTOn)).isPPT
+    (ComputableInPolyTime.snd encQ (encPair encBits encBits))
+  have hsig := (ComputableInPolyTime.snd encBits encBits).comp
+    ((ComputableInPolyTime.fst (encPair encBits encBits) (encList encBits)).comp
+      (ComputableInPolyTime.snd encCallIn encOut))
+  have hj_proj := hq_j.comp (hp1.comp (ComputableInPolyTime.fst encCallIn encOut))
+  have hpost := ComputableInPolyTime.listGetDWithInput (computableInPolyTime_frames hsig)
+    ((ComputableInPolyTime.unary_div_const 2).comp hj_proj) []
+  exact (hj.bind_with (IsPPTOn.ite'
+    (ComputableInPolyTime.unary_lt' hq_j (uConstMul 2 hq_n))
+    (hkeys.bind_with ((hrun_base.preprocess hprep).bind_with hpost.isPPTOn))
+    (ComputableInPolyTime.const []).isPPTOn)).isPPT
 
 private theorem map_bool_apply_true {α : Type*} (p : PMF α) (P : α → Bool) :
     (p.map P) true = ∑' a, p a * (if P a then 1 else 0) := by

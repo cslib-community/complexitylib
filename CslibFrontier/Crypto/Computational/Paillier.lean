@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Computational.CompositeResiduosity
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
@@ -185,12 +186,12 @@ theorem computableInPolyTime_powMod {α : Type} {input : α ↪ List Bool} {M x 
     (he : ComputableInPolyTime e input encNat) :
     ComputableInPolyTime (fun a => powMod (M a) (x a) (e a)) input encNat := by
   have hpow := ComputableInPolyTime.binary_powMod hx he
-    (.of_tidy (ComputableTidilyInPolyTime.binary_add'
-      (ComputableTidilyInPolyTime.binary_sub' hM.tidy (ComputableTidilyInPolyTime.const 1))
-      (ComputableTidilyInPolyTime.const 1))) fun _ => Nat.succ_pos _
-  have h := ComputableTidilyInPolyTime.ite_decide (condition := fun a => M a = 0)
-    (ComputableTidilyInPolyTime.decide_eq' hM.tidy (ComputableTidilyInPolyTime.const 0))
-    (ComputableTidilyInPolyTime.const 1) hpow.tidy
+    (ComputableInPolyTime.binary_add'
+      (ComputableInPolyTime.binary_sub' hM (ComputableInPolyTime.const 1))
+      (ComputableInPolyTime.const 1)) fun _ => Nat.succ_pos _
+  have h := ComputableInPolyTime.ite_decide (condition := fun a => M a = 0)
+    (ComputableInPolyTime.decide_eq' hM (ComputableInPolyTime.const 0))
+    (ComputableInPolyTime.const 1) hpow
   have heq : (fun a => powMod (M a) (x a) (e a)) =
       fun a => if M a = 0 then 1 else x a ^ e a % (M a - 1 + 1) := by
     funext a
@@ -199,23 +200,22 @@ theorem computableInPolyTime_powMod {α : Type} {input : α ↪ List Bool} {M x 
     · rfl
     · rw [Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr h0)]
   rw [heq]
-  exact .of_tidy h
+  exact h
 
 /-- `unitOrOne` is computable in polynomial time. -/
 theorem computableInPolyTime_unitOrOne {α : Type} {input : α ↪ List Bool} {N r : α → ℕ}
     (hN : ComputableInPolyTime N input encNat) (hr : ComputableInPolyTime r input encNat) :
     ComputableInPolyTime (fun a => unitOrOne (N a) (r a)) input encNat := by
   unfold unitOrOne
-  exact .of_tidy (ComputableTidilyInPolyTime.ite_decide
-    (ComputableTidilyInPolyTime.decide_eq' (ComputableInPolyTime.binary_gcd' hr hN).tidy
-      (ComputableTidilyInPolyTime.const 1)) hr.tidy (ComputableTidilyInPolyTime.const 1))
+  exact ComputableInPolyTime.ite_decide
+    (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.binary_gcd' hr hN)
+      (ComputableInPolyTime.const 1)) hr (ComputableInPolyTime.const 1)
 
 /-- Squaring is computable in polynomial time. -/
 theorem computableInPolyTime_sq {α : Type} {input : α ↪ List Bool} {N : α → ℕ}
     (hN : ComputableInPolyTime N input encNat) :
     ComputableInPolyTime (fun a => N a ^ 2) input encNat := by
-  simpa only [sq] using
-    (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.binary_mul' hN.tidy hN.tidy))
+  simpa only [sq] using ComputableInPolyTime.binary_mul' hN hN
 
 /-- `ciphertext` is computable in polynomial time. -/
 theorem computableInPolyTime_ciphertext {α : Type} {input : α ↪ List Bool} {N m r : α → ℕ}
@@ -224,12 +224,10 @@ theorem computableInPolyTime_ciphertext {α : Type} {input : α ↪ List Bool} {
     ComputableInPolyTime (fun a => ciphertext (N a) (m a) (r a)) input encNat := by
   have hN2 := computableInPolyTime_sq hN
   have h₁ := computableInPolyTime_powMod hN2
-    (.of_tidy (ComputableTidilyInPolyTime.binary_add' (ComputableTidilyInPolyTime.const 1)
-      hN.tidy)) hm
+    (ComputableInPolyTime.binary_add' (ComputableInPolyTime.const 1) hN) hm
   have h₂ := computableInPolyTime_powMod hN2 hr hN
   unfold ciphertext
-  exact .of_tidy (ComputableTidilyInPolyTime.binary_mod'
-    (ComputableTidilyInPolyTime.binary_mul' h₁.tidy h₂.tidy) hN2.tidy)
+  exact ComputableInPolyTime.binary_mod' (ComputableInPolyTime.binary_mul' h₁ h₂) hN2
 
 /-- `decryptNat` is computable in polynomial time. -/
 theorem computableInPolyTime_decryptNat {α : Type} {input : α ↪ List Bool} {N t c : α → ℕ}
@@ -238,13 +236,13 @@ theorem computableInPolyTime_decryptNat {α : Type} {input : α ↪ List Bool} {
     ComputableInPolyTime (fun a => decryptNat (N a) (t a) (c a)) input encNat := by
   have h₁ := computableInPolyTime_powMod (computableInPolyTime_sq hN) hc ht
   have h₂ := computableInPolyTime_powMod hN ht
-    (.of_tidy (ComputableTidilyInPolyTime.binary_sub' ht.tidy (ComputableTidilyInPolyTime.const 1)))
+    (ComputableInPolyTime.binary_sub' ht (ComputableInPolyTime.const 1))
   unfold decryptNat
-  exact .of_tidy (ComputableTidilyInPolyTime.binary_mod'
-    (ComputableTidilyInPolyTime.binary_mul'
-      (ComputableTidilyInPolyTime.binary_div'
-        (ComputableTidilyInPolyTime.binary_sub' h₁.tidy (ComputableTidilyInPolyTime.const 1))
-        hN.tidy) h₂.tidy) hN.tidy)
+  exact ComputableInPolyTime.binary_mod'
+    (ComputableInPolyTime.binary_mul'
+      (ComputableInPolyTime.binary_div'
+        (ComputableInPolyTime.binary_sub' h₁ (ComputableInPolyTime.const 1))
+        hN) h₂) hN
 
 /-- Forgetting validity does not change the encoding of a description. -/
 private theorem computableInPolyTime_val :
@@ -259,11 +257,11 @@ theorem isPPTOn_keyGen {gen : ℕ → ProbComp Desc} (hgen : IsPPTOn encUnary en
   have hp := hd.fst'
   have hq := hd.snd'
   have hN : ComputableInPolyTime (fun x : ℕ × Desc => x.2.modulus) (encPair encUnary encDesc)
-      encNat := .of_tidy (ComputableTidilyInPolyTime.binary_mul' hp.tidy hq.tidy)
+      encNat := ComputableInPolyTime.binary_mul' hp hq
   have ht : ComputableInPolyTime (fun x : ℕ × Desc => x.2.totient) (encPair encUnary encDesc)
-      encNat := .of_tidy (ComputableTidilyInPolyTime.binary_mul'
-        (ComputableTidilyInPolyTime.binary_sub' hp.tidy (ComputableTidilyInPolyTime.const 1))
-        (ComputableTidilyInPolyTime.binary_sub' hq.tidy (ComputableTidilyInPolyTime.const 1)))
+      encNat := ComputableInPolyTime.binary_mul'
+        (ComputableInPolyTime.binary_sub' hp (ComputableInPolyTime.const 1))
+        (ComputableInPolyTime.binary_sub' hq (ComputableInPolyTime.const 1))
   exact hgen.bind_with (hN.encoding_comp.prod (hN.prod ht).encoding_comp).isPPTOn
 
 /-- `encrypt` is uniformly strict PPT. -/

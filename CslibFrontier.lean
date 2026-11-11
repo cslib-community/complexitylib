@@ -87,6 +87,8 @@ public import CslibFrontier.Algorithms.Lean.GomoryHu.Basic
 public import CslibFrontier.Algorithms.Lean.GomoryHu.Construction
 public import CslibFrontier.Algorithms.Lean.GomoryHu.Existence
 public import CslibFrontier.Algorithms.Lean.GomoryHu.Gusfield
+public import CslibFrontier.Algorithms.Lean.GomoryHu.Oracles
+public import CslibFrontier.Algorithms.Lean.GomoryHu.Real
 public import CslibFrontier.Algorithms.Lean.GomoryHu.WeightedCut
 public import CslibFrontier.Algorithms.Lean.HousingMarket.Basic
 public import CslibFrontier.Algorithms.Lean.HousingMarket.Incentives
@@ -142,6 +144,7 @@ public import CslibFrontier.Algorithms.Lean.MaxFlow.LevelGraph
 public import CslibFrontier.Algorithms.Lean.MaxFlow.Menger
 public import CslibFrontier.Algorithms.Lean.MaxFlow.Preflow
 public import CslibFrontier.Algorithms.Lean.MaxFlow.PushRelabel
+public import CslibFrontier.Algorithms.Lean.MaxFlow.RealFlow
 public import CslibFrontier.Algorithms.Lean.MaxFlow.VertexSeparator
 public import CslibFrontier.Algorithms.Lean.MaxFlow.WeightedMatching
 public import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
@@ -3030,6 +3033,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Positions
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.DPi
@@ -3946,6 +3950,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
 public import CslibFrontier.Crypto.Computational.Encryption.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.CCA.Interleaved
+public import CslibFrontier.Crypto.Computational.Encryption.CTRMode
 public import CslibFrontier.Crypto.Computational.Encryption.Circular
 public import CslibFrontier.Crypto.Computational.Encryption.CompositionCounterexamples
 public import CslibFrontier.Crypto.Computational.Encryption.DecryptionBound
@@ -3958,10 +3963,12 @@ public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CompositionCC
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.DEMCCA
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE
 public import CslibFrontier.Crypto.Computational.Encryption.KEMFromPKE.CCA
+public import CslibFrontier.Crypto.Computational.Encryption.MACThenEncrypt
 public import CslibFrontier.Crypto.Computational.Encryption.OFBMode
 public import CslibFrontier.Crypto.Computational.Encryption.PolyTime
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyCPA
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
+public import CslibFrontier.Crypto.Computational.Encryption.RandomFunctionHybrid
 public import CslibFrontier.Crypto.Computational.Encryption.RealIdealAE
 public import CslibFrontier.Crypto.Computational.EvenMansour
 public import CslibFrontier.Crypto.Computational.Factoring.PollardRho
@@ -4308,6 +4315,13 @@ public import CslibFrontier.Crypto.Protocols.Cipher.FeistelNetworks
 public import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 public import CslibFrontier.Crypto.Protocols.Commitment.World
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Challenge
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Correctness
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Fallback
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Pushforward
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
 public import CslibFrontier.Crypto.Protocols.KEM.MLKEM
 public import CslibFrontier.Crypto.Protocols.MAC.CarterWegman
@@ -4857,6 +4871,7 @@ public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
+public import CslibFrontier.Foundations.Combinatorics.Digraph.Connectivity
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.ErdosSzekeres
 public import CslibFrontier.Foundations.Combinatorics.Expander.AffineFamily
@@ -4952,6 +4967,7 @@ public import CslibFrontier.Foundations.Combinatorics.MajorityVote
 public import CslibFrontier.Foundations.Combinatorics.MajorityVote.Weighted
 public import CslibFrontier.Foundations.Combinatorics.Multidigraph.Arborescence
 public import CslibFrontier.Foundations.Combinatorics.Multidigraph.BEST
+public import CslibFrontier.Foundations.Combinatorics.Multidigraph.Connectivity
 public import CslibFrontier.Foundations.Combinatorics.Multigraph
 public import CslibFrontier.Foundations.Combinatorics.Multigraph.CutSpace
 public import CslibFrontier.Foundations.Combinatorics.PacketPacking
@@ -4973,6 +4989,8 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.EdgeConnectivity
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.VertexConnectivity
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Crown
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CutRank
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.DominatingSet
@@ -4985,10 +5003,12 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Metric
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Basic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Bipartite
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Cycle
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Realization
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Subdivision
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Tree
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OddCycleTransversal
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
@@ -5028,6 +5048,7 @@ public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Contraction
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.MAOrdering
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.MinCutBetween
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Multigraph
+public import CslibFrontier.Foundations.Combinatorics.WeightedCut.RealCut
 public import CslibFrontier.Foundations.Combinatorics.WeightedTail
 public import CslibFrontier.Foundations.Computability.ComputablePred
 public import CslibFrontier.Foundations.Computability.ContextFreeGrammar
@@ -5595,8 +5616,11 @@ public import CslibFrontier.GameTheory.Congestion.StrongNash
 public import CslibFrontier.GameTheory.Mechanism.Bayesian
 public import CslibFrontier.GameTheory.Mechanism.CriticalBid
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Basic
+public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Cycle
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
+public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Interval
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
+public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Tree
 public import CslibFrontier.GameTheory.Mechanism.FirstPrice
 public import CslibFrontier.GameTheory.Mechanism.Knapsack
 public import CslibFrontier.GameTheory.Mechanism.Myerson
