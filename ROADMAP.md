@@ -287,7 +287,7 @@ Define logspace and DLOGTIME uniformity with explicit gate-address, direct-conne
 ### Search, parameterized and fine-grained complexity
 
 - **TFNP:** CLS, further local search, fixed-point and equilibrium problems.
-- **Potential-line classes** ([#3206](https://github.com/cslib-community/cslib-frontier/issues/3206)): `PPADS`, `EOPL`, `SOPL` and `UEOPL` with their easy inclusions, `EOPL = SOPL ∩ PPAD` (Göös et al. 2022, Lemma 4), and `PLS ∩ PPADS ⊆ SOPL` (Lemmas 2–3), giving `SOPL = PLS ∩ PPADS` and `EOPL = PLS ∩ PPAD`.
+- **Unique end of potential line**: `UEOPL` and its inclusions into `EOPL` (Fearnley et al. 2020; Göös et al. 2022).
 - **Sperner's lemma** ([#2999](https://github.com/cslib-community/cslib-frontier/issues/2999), [#3087](https://github.com/cslib-community/cslib-frontier/issues/3087)): the parity form on the triangulated square grid by door-following, with circuit `Sperner2D` in `PPAD` as the end-of-line relation of its door graph, and the `d`-dimensional parity form on the Kuhn-triangulated hypergrid (Chen–Deng–Teng 2009, Corollary 4.3).
   Optionally also the classical form on a triangulated `d`-simplex with general Sperner boundary conditions, and a bridge identifying `Cslib.Sperner.triangles` with the two-dimensional Kuhn triangulation.
 - **`PPAD`-completeness of Sperner and Brouwer** ([#3087](https://github.com/cslib-community/cslib-frontier/issues/3087)): `PPAD` membership of circuit `d`-dimensional Sperner and Brouwer through an oriented door graph, `PPAD`-hardness of two-dimensional Sperner and Brouwer (Chen–Deng), and `PPAD`-completeness of three-dimensional Sperner (Papadimitriou 1994).
