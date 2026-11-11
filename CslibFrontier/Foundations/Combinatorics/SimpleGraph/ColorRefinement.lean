@@ -74,8 +74,9 @@ this instance for a disjoint union `G ⊕g H` but no decidable adjacency instanc
 * `SimpleGraph.Iso.colorHistogram_eq`: isomorphic colored graphs have the same color histograms.
 * `SimpleGraph.isEmpty_iso_of_colorHistogram_ne`: soundness of the color refinement isomorphism
   test.
-* `SimpleGraph.forall_colorHistogram_eq_iff`: histograms agree in every round when they agree in
-  round `|V| + |W|`.
+* `SimpleGraph.forall_refinementColoring_eq_iff`,
+  `SimpleGraph.forall_colorHistogram_eq_iff`: vertex colors or histograms agree in every round when
+  they agree in round `|V| + |W|`.
 * `SimpleGraph.IsRegularOfDegree.colorHistogram_eq`: color refinement does not distinguish two
   `d`-regular graphs of the same order.
 
@@ -195,6 +196,19 @@ theorem colorHistogram_eq [Fintype V] (n : ℕ) :
     G.colorHistogram χ₀ n = (univ : Finset V).val.map (G.refinementColoring χ₀ n) := by
   rw [colorHistogram]
 
+theorem colorHistogram_zero_const [Fintype V] (c : α) :
+    G.colorHistogram (fun _ => c) 0 = Multiset.replicate (Fintype.card V) c := by
+  change (univ : Finset V).val.map (fun _ => c) = Multiset.replicate (Fintype.card V) c
+  rw [Multiset.map_const', Finset.card_val, Finset.card_univ]
+
+theorem colorHistogram_zero_const_eq_iff [Fintype V] [Fintype W] {H : SimpleGraph W}
+    [H.LocallyFinite] (c : α) :
+    G.colorHistogram (fun _ => c) 0 = H.colorHistogram (fun _ => c) 0 ↔
+      Fintype.card V = Fintype.card W := by
+  rw [colorHistogram_zero_const, colorHistogram_zero_const]
+  exact ⟨fun h => by simpa only [Multiset.card_replicate] using congrArg Multiset.card h,
+    fun h => by rw [h]⟩
+
 theorem mem_colorHistogram [Fintype V] {n : ℕ} {c : RefinementColor α n} :
     c ∈ G.colorHistogram χ₀ n ↔ ∃ v, G.refinementColoring χ₀ n v = c := by
   simp only [colorHistogram, Multiset.mem_map, Finset.mem_val, Finset.mem_univ, true_and]
@@ -203,9 +217,10 @@ theorem isEquitable_iff {χ : V → β} : G.IsEquitable χ ↔
     ∀ ⦃v w⦄, χ v = χ w → (G.neighborFinset v).val.map χ = (G.neighborFinset w).val.map χ :=
   Iff.rfl
 
-theorem refineColoring_eq_refineColoring_iff {χ : V → β} {v w : V} :
-    G.refineColoring χ v = G.refineColoring χ w ↔
-      χ v = χ w ∧ (G.neighborFinset v).val.map χ = (G.neighborFinset w).val.map χ :=
+theorem refineColoring_eq_refineColoring_iff {H : SimpleGraph W} [H.LocallyFinite]
+    {χ : V → β} {ψ : W → β} {v : V} {w : W} :
+    G.refineColoring χ v = H.refineColoring ψ w ↔
+      χ v = ψ w ∧ (G.neighborFinset v).val.map χ = (H.neighborFinset w).val.map ψ :=
   Prod.ext_iff
 
 /-- The multiset part of a refined color has as many elements as the vertex has neighbors. -/
@@ -539,6 +554,14 @@ theorem truncate_refinementColoring (χ₀ : V → α) (n k : ℕ) (v : V) :
   | zero => rfl
   | succ k ih => exact ih
 
+/-- Colors that agree in some round agree in every earlier round. -/
+theorem refinementColoring_eq_of_le {H : SimpleGraph W} [H.LocallyFinite] {χ₀ : V → α}
+    {ψ₀ : W → α} {m n : ℕ} (hnm : n ≤ m) {v : V} {w : W}
+    (h : G.refinementColoring χ₀ m v = H.refinementColoring ψ₀ m w) :
+    G.refinementColoring χ₀ n v = H.refinementColoring ψ₀ n w := by
+  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le hnm
+  rw [← truncate_refinementColoring χ₀ n k v, ← truncate_refinementColoring ψ₀ n k w, h]
+
 variable [Fintype V] [Fintype W]
 
 /-- The histogram of round `n + k` determines the histogram of round `n`. -/
@@ -562,6 +585,32 @@ section Completeness
 variable [Fintype V] [Fintype W] {G : SimpleGraph V} [G.LocallyFinite] {H : SimpleGraph W}
   [H.LocallyFinite]
 
+omit [G.LocallyFinite] [H.LocallyFinite] in
+private theorem ker_refinementColoring_sum_le [(G ⊕g H).LocallyFinite] {χ₀ : V → α} {ψ₀ : W → α}
+    {m : ℕ} (hm : Fintype.card V + Fintype.card W ≤ m) :
+    Setoid.ker ((G ⊕g H).refinementColoring (Sum.elim χ₀ ψ₀) (Fintype.card V + Fintype.card W)) ≤
+      Setoid.ker ((G ⊕g H).refinementColoring (Sum.elim χ₀ ψ₀) m) := by
+  have hN : Fintype.card (V ⊕ W) = Fintype.card V + Fintype.card W := Fintype.card_sum
+  rw [ker_stableColoring hN.le, ker_stableColoring (hN.le.trans hm)]
+
+/-- Color refinement distinguishes two vertices of two graphs in some round exactly when it
+distinguishes them in round `|V| + |W|`, the order of the disjoint union. -/
+theorem forall_refinementColoring_eq_iff {χ₀ : V → α} {ψ₀ : W → α} {v : V} {w : W} :
+    (∀ n, G.refinementColoring χ₀ n v = H.refinementColoring ψ₀ n w) ↔
+      G.refinementColoring χ₀ (Fintype.card V + Fintype.card W) v =
+        H.refinementColoring ψ₀ (Fintype.card V + Fintype.card W) w := by
+  classical
+  refine ⟨fun h => h _, fun h m => ?_⟩
+  rcases le_total m (Fintype.card V + Fintype.card W) with hm | hm
+  · exact refinementColoring_eq_of_le hm h
+  let χ : V ⊕ W → α := Sum.elim χ₀ ψ₀
+  have hsum : (G ⊕g H).refinementColoring χ (Fintype.card V + Fintype.card W) (.inl v) =
+      (G ⊕g H).refinementColoring χ (Fintype.card V + Fintype.card W) (.inr w) := by
+    rwa [refinementColoring_sum_inl, refinementColoring_sum_inr]
+  have hm' : (G ⊕g H).refinementColoring χ m (.inl v) =
+      (G ⊕g H).refinementColoring χ m (.inr w) := ker_refinementColoring_sum_le hm hsum
+  rwa [refinementColoring_sum_inl, refinementColoring_sum_inr] at hm'
+
 /-- Color refinement distinguishes two graphs in some round exactly when it distinguishes them in
 round `|V| + |W|`. The proof runs color refinement on the disjoint union, whose partition is stable
 from round `|V| + |W|` on. -/
@@ -571,14 +620,9 @@ theorem forall_colorHistogram_eq_iff {χ₀ : V → α} {ψ₀ : W → α} :
         H.colorHistogram ψ₀ (Fintype.card V + Fintype.card W) := by
   classical
   refine ⟨fun h => h _, fun h m => ?_⟩
-  set N := Fintype.card V + Fintype.card W
-  rcases le_total m N with hm | hm
+  rcases le_total m (Fintype.card V + Fintype.card W) with hm | hm
   · exact colorHistogram_eq_of_le hm h
   let χ : V ⊕ W → α := Sum.elim χ₀ ψ₀
-  have hker : Setoid.ker ((G ⊕g H).refinementColoring χ N) ≤
-      Setoid.ker ((G ⊕g H).refinementColoring χ m) := by
-    have hN : Fintype.card (V ⊕ W) = N := Fintype.card_sum
-    rw [ker_stableColoring hN.le, ker_stableColoring (hN.le.trans hm)]
   have hG : ∀ n, G.colorHistogram χ₀ n =
       (univ : Finset V).val.map ((G ⊕g H).refinementColoring χ n ∘ Sum.inl) := fun n => by
     rw [colorHistogram]
@@ -591,7 +635,7 @@ theorem forall_colorHistogram_eq_iff {χ₀ : V → α} {ψ₀ : W → α} :
     exact funext fun w => (refinementColoring_sum_inr χ n w).symm
   rw [hG, hH, ← Multiset.map_map, ← Multiset.map_map]
   rw [hG, hH, ← Multiset.map_map, ← Multiset.map_map] at h
-  exact Multiset.map_eq_map_of_ker_le hker h
+  exact Multiset.map_eq_map_of_ker_le (ker_refinementColoring_sum_le hm) h
 
 end Completeness
 

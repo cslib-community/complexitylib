@@ -19,7 +19,7 @@ import CslibFrontier.Computability.Probabilistic.AffineHash
 import CslibFrontier.Foundations.Data.BitString.List
 
 /-!
-# The anti-checker oracle has polynomial-size circuits if NP does
+# The anti-checker oracle has polynomial-size circuits on its queries if NP does
 
 Under `NP ⊆ P/poly`, the yes-queries of the anti-checker oracle
 (`Cslib.MCSP.AntiChecker.smallSet`) lie in `P/poly` for their encoding
@@ -49,7 +49,6 @@ and closure under complement gives the yes-queries.
 
 * [R. M. Karp, R. J. Lipton, *Some connections between nonuniform and uniform complexity
   classes*][KarpLipton1980]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
 public section
