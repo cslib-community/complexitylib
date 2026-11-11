@@ -46,6 +46,7 @@ given in binary. The verifier instantiates `MCSP.checkCertificateOn` with the li
 * `Cslib.SuccinctMCSP.sampleFunction`: indicator function of the positive samples.
 * `Cslib.SuccinctMCSP.enumSamples`, `Cslib.SuccinctMCSP.rawSamples`: canonical duplicate-free
   enumeration of an instance's samples.
+* `Cslib.SuccinctMCSP.encArityAndSamples`: encoding of the arity and the sample list.
 * `Cslib.SuccinctMCSP.toRaw`: embedding of `SuccinctMCSP.Instance` into raw data.
 * `Cslib.SuccinctMCSP.enc`, `Cslib.SuccinctMCSP.encBinary`: unary- and binary-threshold encodings.
 * `Cslib.SuccinctMCSP.ofFunctionEncLength`: the exact bit length of
@@ -189,6 +190,12 @@ theorem mem_rawSamples_iff {x : Instance} {p : List Bool × Bool} :
   rw [hall] at hcard
   simpa [rawSamples, List.countP_eq_length_filter] using hcard.symm
 
+/-- Encoding of the arity and the sample list of an instance: the arity in unary (`encUnary`,
+framed) followed by the framed list (`encList`) of samples, each sample an input bit string
+(`encBits`, framed) followed by its output bit (`encBool`). The threshold is not included. -/
+abbrev encArityAndSamples : ℕ × List (List Bool × Bool) ↪ List Bool :=
+  encPair encUnary (encList (encPair encBits encBool))
+
 /-- Embedding a `SuccinctMCSP.Instance` into raw data `((arity, rawSamples), threshold)`. -/
 def toRaw : Instance ↪ (ℕ × List (List Bool × Bool)) × ℕ :=
   ⟨fun x => ((x.arity, rawSamples x), x.threshold), by
@@ -210,21 +217,21 @@ this is `⟨1^n, 1^s, 1^t, (x_1, b_1), …, (x_t, b_t)⟩` in
 [OliveiraPichSanthanam2019, Section 4.1, proof of Theorem 1.4]. Neither that encoding nor the
 polynomial-time conversions between the two are formalized here. -/
 def enc : Instance ↪ List Bool :=
-  toRaw.trans (encPair (encPair encUnary (encList (encPair encBits encBool))) encUnary)
+  toRaw.trans (encPair encArityAndSamples encUnary)
 
 theorem enc_apply (x : Instance) :
     enc x =
-      encPair (encPair encUnary (encList (encPair encBits encBool))) encUnary (toRaw x) :=
+      encPair encArityAndSamples encUnary (toRaw x) :=
   rfl
 
 /-- Instances of `SuccinctMCSP` encoded by the arity in unary, the framed list of samples, and the
 threshold in binary. -/
 def encBinary : Instance ↪ List Bool :=
-  toRaw.trans (encPair (encPair encUnary (encList (encPair encBits encBool))) encNat)
+  toRaw.trans (encPair encArityAndSamples encNat)
 
 theorem encBinary_apply (x : Instance) :
     encBinary x =
-      encPair (encPair encUnary (encList (encPair encBits encBool))) encNat (toRaw x) :=
+      encPair encArityAndSamples encNat (toRaw x) :=
   rfl
 
 private theorem filter_flatMap_ofFunction {n : ℕ} (f : BooleanFunction n)
@@ -295,9 +302,9 @@ private theorem card_samples_le_length_encList (x : Instance) :
 
 private theorem arity_and_card_le_length_enc_of_encT (encT : ℕ ↪ List Bool) (x : Instance) :
     x.arity ≤
-        (encPair (encPair encUnary (encList (encPair encBits encBool))) encT (toRaw x)).length ∧
+        (encPair encArityAndSamples encT (toRaw x)).length ∧
       x.samples.card ≤
-        (encPair (encPair encUnary (encList (encPair encBits encBool))) encT (toRaw x)).length := by
+        (encPair encArityAndSamples encT (toRaw x)).length := by
   have hcard := card_samples_le_length_encList x
   enc_len [toRaw_apply]
 
@@ -325,7 +332,7 @@ theorem verifier_eq (x : Instance) (w : List Bool) :
 private theorem certLength_le_enc_of_encT (encT : ℕ ↪ List Bool) (x : Instance) :
     certLength x.arity (MCSP.sampleBudget x.arity x.samples.card x.threshold) ≤
       MCSP.certPolynomial.eval
-        (encPair (encPair encUnary (encList (encPair encBits encBool))) encT (toRaw x)).length := by
+        (encPair encArityAndSamples encT (toRaw x)).length := by
   obtain ⟨hn, hcard⟩ := arity_and_card_le_length_enc_of_encT encT x
   exact MCSP.certLength_sampleBudget_le hn hcard
 
@@ -370,12 +377,12 @@ theorem isVerifier_encBinary : IsVerifier encBinary MCSP.certPolynomial verifier
 theorem computableInPolyTime_rawVerifier :
     ComputableInPolyTime rawVerifier
       (encPair
-        (encPair (encPair encUnary (encList (encPair encBits encBool))) encNat)
+        (encPair encArityAndSamples encNat)
         encBits)
       encBool := by
   let encSample := encPair encBits encBool
   let encSamples := encList encSample
-  let encIn := encPair (encPair (encPair encUnary encSamples) encNat) encBits
+  let encIn := encPair (encPair encArityAndSamples encNat) encBits
   have hn : ComputableInPolyTime
       (fun r : ((ℕ × List (List Bool × Bool)) × ℕ) × List Bool => r.1.1.1)
       encIn encUnary :=
@@ -417,7 +424,7 @@ theorem computableInPolyTime_verifier_encBinary :
       (fun p : Instance × List Bool => (toRaw p.1, p.2))
       (encPair encBinary encBits)
       (encPair
-        (encPair (encPair encUnary (encList (encPair encBits encBool))) encNat)
+        (encPair encArityAndSamples encNat)
         encBits) :=
     .of_eq fun _ => rfl
   exact computableInPolyTime_rawVerifier.comp hraw
@@ -426,12 +433,11 @@ theorem computableInPolyTime_verifier_encBinary :
 encoding (`encBinary`) is computable in polynomial time. -/
 theorem computableInPolyTime_id_enc_encBinary :
     ComputableInPolyTime id enc encBinary := by
-  let encPairIn := encPair encUnary (encList (encPair encBits encBool))
-  have hraw : ComputableInPolyTime toRaw enc (encPair encPairIn encUnary) :=
+  have hraw : ComputableInPolyTime toRaw enc (encPair encArityAndSamples encUnary) :=
     .of_eq fun _ => rfl
   have hconv : ComputableInPolyTime
       (fun r : (ℕ × List (List Bool × Bool)) × ℕ => (r.1, r.2))
-      (encPair encPairIn encUnary) (encPair encPairIn encNat) :=
+      (encPair encArityAndSamples encUnary) (encPair encArityAndSamples encNat) :=
     (ComputableInPolyTime.fst _ _).prod
       (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _))
   exact (hconv.comp hraw).of_enc_eq fun _ => rfl

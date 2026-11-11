@@ -30,7 +30,7 @@ imports neither `CounterProgram.AllBranches` nor `CounterProgram.Block`.
 ## Main definitions
 
 * `cp_step`, `cp_step [h₁, h₂]`: take one step, simplifying with the simp set `cp_simps` and the
-  given lemmas.
+  given lemmas, and deciding conditional labels by a hypothesis or `omega`.
 -/
 
 public section
@@ -166,6 +166,83 @@ private def undecidedLabel? (tgt : Lean.Expr) : MetaM (Option Lean.Expr) := do
     return some l
   return none
 
+/-- Whether `p` is a comparison `<`, `≤`, `>`, `≥`, `=` or `≠` of natural numbers or integers, or
+its negation, which `omega` may decide. -/
+private def isArith (p : Lean.Expr) : Bool :=
+  let p := if p.isAppOfArity ``Not 1 then p.getArg! 0 else p
+  let cmp := p.isAppOfArity ``LT.lt 4 || p.isAppOfArity ``LE.le 4 ||
+    p.isAppOfArity ``GT.gt 4 || p.isAppOfArity ``GE.ge 4 ||
+    p.isAppOfArity ``Eq 3 || p.isAppOfArity ``Ne 3
+  cmp && ((p.getArg! 0).isConstOf ``Nat || (p.getArg! 0).isConstOf ``Int)
+
+/-- A proof of `p` by `tac`. -/
+private def proveWith (tac : MVarId → TacticM Bool) (p : Lean.Expr) :
+    TacticM (Option Lean.Expr) := do
+  let g ← mkFreshExprSyntheticOpaqueMVar p
+  if ← tac g.mvarId! then return some (← instantiateMVars g)
+  return none
+
+/-- A proof of `p` or of `¬p` by a hypothesis, for a comparison `p` of natural numbers also by a
+hypothesis stating the comparison or its negation the other way around (`b ≤ a` for `¬a < b`).
+`true` marks a proof of `p`. -/
+private def byHyp (p : Lean.Expr) : TacticM (Option (Bool × Lean.Expr)) := do
+  if let some h ← proveWith byAssumption p then return some (true, h)
+  if let some h ← proveWith byAssumption (mkNot p) then return some (false, h)
+  let some (lt, a, b) :=
+      if p.isAppOfArity ``LT.lt 4 then some (true, p.getArg! 2, p.getArg! 3)
+      else if p.isAppOfArity ``LE.le 4 then some (false, p.getArg! 2, p.getArg! 3)
+      else none
+    | return none
+  unless (p.getArg! 0).isConstOf ``Nat do return none
+  -- `¬a < b ↔ b ≤ a` and `¬a ≤ b ↔ b < a`
+  let flip ← if lt then mkAppM ``LE.le #[b, a] else mkAppM ``LT.lt #[b, a]
+  if let some h ← proveWith byAssumption flip then
+    return some (false, ← mkAppM (if lt then ``Nat.not_lt_of_le else ``Nat.not_le_of_lt) #[h])
+  if let some h ← proveWith byAssumption (mkNot flip) then
+    return some (true, ← mkAppM (if lt then ``Nat.lt_of_not_ge else ``Nat.le_of_not_lt) #[h])
+  return none
+
+/-- The equation `ite c t e = t` or `ite c t e = e` for the conditional `l = ite c t e`, when `c`
+or `¬c` is a hypothesis or, for a comparison of numbers, follows by `omega`. -/
+private def decideIte (l : Lean.Expr) : TacticM (Option Lean.Expr) := do
+  let #[α, c, inst, t, e] := l.getAppArgs | return none
+  let eq (pos : Bool) (h : Lean.Expr) : TacticM (Option Lean.Expr) := do
+    return some (mkAppN (mkConst (if pos then ``if_pos else ``if_neg) [← getLevel α])
+      #[c, inst, h, α, t, e])
+  if let some (pos, h) ← byHyp c then return ← eq pos h
+  unless isArith c do return none
+  let tac ← `(tactic| omega)
+  if let some h ← proveWith (closesWith tac) c then return ← eq true h
+  if let some h ← proveWith (closesWith tac) (mkNot c) then return ← eq false h
+  return none
+
+/-- The label of the configuration at argument `i` of a goal `P.Reaches w Q s s'`. -/
+private def labelAt? (tgt : Lean.Expr) (i : Nat) : Option Lean.Expr := do
+  let s ← tgt.getAppArgs[i]?
+  guard (s.isAppOfArity ``Prod.mk 4)
+  return s.getArg! 2
+
+/-- Decide the label `if c then l₁ else l₂` of the source configuration of a goal
+`P.Reaches w Q (l, regs) s'` when `c` or `¬c` is a hypothesis or, for a comparison of numbers,
+follows by `omega`: rewrite it to `l₁` or `l₂`. When `both` is set, decide instead the label of
+either configuration when the label of the other is `l₁` or `l₂`, which can close the goal. Returns
+the goal unchanged otherwise. -/
+private def decideLabel (g : MVarId) (both : Bool) : TacticM MVarId := g.withContext do
+  let mut g := g
+  for i in if both then [3, 4] else [3] do
+    let tgt ← instantiateMVars (← g.getType)
+    let some l := labelAt? tgt i | continue
+    unless l.isAppOfArity ``ite 5 do continue
+    if both then
+      let some other := labelAt? tgt (7 - i) | continue
+      unless other == l.getArg! 3 || other == l.getArg! 4 do continue
+    let some eq ← decideIte l | continue
+    try
+      let r ← g.rewrite tgt eq
+      g ← g.replaceTargetEq r.eNew r.eqProof
+    catch _ => continue
+  return g
+
 /-- Close `g` by `Reaches.refl` or by a hypothesis, when its target has no metavariables. -/
 private def close (g : MVarId) : TacticM Bool := do
   if (← instantiateMVars (← g.getType)).hasMVar then return false
@@ -183,8 +260,14 @@ evaluation of `P.instr l`, then simplifies the configuration after the step and 
 conditionals.
 
 * `cp_step [h₁, h₂]` adds simp lemmas, typically the values of the registers read
-  (`regs.getD 0 0 = n`), the input bit read (`w[k]? = some true`) and the outcome of a
-  comparison, or simprocs such as `Nat.reduceDiv`.
+  (`regs.getD 0 0 = n`) and the input bit read (`w[k]? = some true`), or simprocs such as
+  `Nat.reduceDiv`. A fact about expressions that `cp_simps` evaluates, such as
+  `(const 0).eval regs < e.eval regs ↔ p`, is passed as `↓h`, to apply before they are evaluated.
+
+A conditional label `if c then l₁ else l₂` is decided when `c` or `¬c` is a hypothesis or, for a
+comparison of natural numbers or integers, follows by `omega`: that of the configuration before
+the step, and after the step that of either configuration when the label of the other is `l₁` or
+`l₂`. The goal is then closed when it can be; otherwise it is left with that label decided.
 
 The side conditions of the rule must be proved automatically: a bound `∀ r ∈ regs, r ≤ B` on the
 registers by a hypothesis, or entry by entry for `regs'.set i x` (from a bound on `regs'`) and for
@@ -193,9 +276,8 @@ by a hypothesis, `decide` or `omega`; and `e.readsChoice = false` by evaluation.
 `cp_step` fails and names the rule and the condition. The rules are those of running
 configurations (`Reaches.assign`, `Reaches.lt`, `Reaches.read`), and, when their modules are
 imported, of oblivious configurations (`Reaches.oassign`, `Reaches.olt`, `Reaches.oread`) and of
-shifted instructions (`Reaches.sassign`, `Reaches.slt`). A label that the given lemmas leave as a
-conditional, or as a `match` on the bit read, stops `cp_step` with a diagnostic: split into cases
-and pass the outcome. -/
+shifted instructions (`Reaches.sassign`, `Reaches.slt`). A label left undecided, or as a `match`
+on the bit read, stops `cp_step` with a diagnostic: split into cases first. -/
 syntax (name := cpStep) "cp_step"
   (" [" (Lean.Parser.Tactic.simpStar <|> Lean.Parser.Tactic.simpErase <|>
     Lean.Parser.Tactic.simpLemma),* "]")? : tactic
@@ -211,9 +293,12 @@ elab_rules : tactic
   | `(tactic| cp_step $[[$args,*]]?) => withMainContext do
     let args := args.map (·.getElems.map (·.raw)) |>.getD #[]
     let g ← getMainGoal
+    unless (← whnfR (← instantiateMVars (← g.getType))).isAppOf ``Turing.CounterProgram.Reaches do
+      throwError "cp_step: the goal is not a reachability goal `P.Reaches w Q s s'`{indentExpr
+        (← g.getType)}"
+    let g ← decideLabel g false
+    replaceMainGoal [g]
     let tgt ← instantiateMVars (← g.getType)
-    unless (← whnfR tgt).isAppOf ``Turing.CounterProgram.Reaches do
-      throwError "cp_step: the goal is not a reachability goal `P.Reaches w Q s s'`{indentExpr tgt}"
     let mut found : Option (Name × Array MVarId × MVarId) := none
     for eval in [false, true] do
       for rule in rules do
@@ -223,9 +308,9 @@ elab_rules : tactic
       if found.isSome then break
     if found.isNone then
       if let some l ← undecidedLabel? (← whnfR tgt) then
-        throwError "cp_step: the label{indentExpr l}\nis not decided. Pass the outcome of its \
-          condition or the bit read (`w[i]? = some b`) to `cp_step` as a simp lemma, splitting \
-          into cases first."
+        throwError "cp_step: the label{indentExpr l}\nis not decided. Split into cases on its \
+          condition, which `cp_step` then decides by a hypothesis or `omega`, or pass the bit read \
+          (`w[i]? = some b`) as a simp lemma."
     let some (rule, sides, next) := found
       | throwError "cp_step: no stepping rule applies to{indentExpr tgt}\nIt needs a hypothesis \
           `P.instr l = i` for the label `l`, or a program `P` whose instruction at `l` evaluates, \
@@ -236,7 +321,11 @@ elab_rules : tactic
         throwError "cp_step: could not prove the side condition{indentExpr (← instantiateMVars
           (← side.getType))}\nof `{rule}`. Add it as a hypothesis."
     let gs ← simpNext next args
-    let gs ← gs.filterM fun g => return !(← close g)
+    let gs ← gs.filterMapM fun g => do
+      if ← close g then return none
+      let g' ← decideLabel g true
+      if g' != g && (← close g') then return none
+      return some g'
     replaceMainGoal gs
 
 end Turing.CounterProgram.StepTactic

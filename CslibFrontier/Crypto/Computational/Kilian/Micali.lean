@@ -14,6 +14,7 @@ public import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Micali's Computationally Sound Proofs in the Random Oracle Model
@@ -219,15 +220,10 @@ private theorem mem_support_answer_invariant [DecidableEq ι] (dist : (q : ι) �
       (∀ q' v', cache₁ q' = some v' → v' ∈ (dist q').support) := by
   cases hq : cache q with
   | some v₀ =>
-    rw [RandomOracle.answer_of_some dist cache q v₀ hq, PMF.mem_support_pure_iff,
-      Prod.mk.injEq] at hmem
-    rcases hmem with ⟨rfl, rfl⟩
+    supp_cases hmem [RandomOracle.answer_of_some dist cache q v₀ hq] with ⟨rfl, rfl⟩
     exact ⟨hq, fun _ _ h => h, hsupp⟩
   | none =>
-    rw [RandomOracle.answer_of_none dist cache q hq, PMF.mem_support_map_iff] at hmem
-    rcases hmem with ⟨v, hv, hpair⟩
-    rw [Prod.mk.injEq] at hpair
-    rcases hpair with ⟨rfl, rfl⟩
+    supp_cases hmem [RandomOracle.answer_of_none dist cache q hq] with ⟨v, hv, rfl, rfl⟩
     refine ⟨Function.update_self q (some v) cache, fun q' v' hq' => ?_, fun q' v' hq' => ?_⟩
     · have hne : q' ≠ q := by
         rintro rfl
@@ -256,12 +252,10 @@ theorem mem_support_runWith_answer_invariant [DecidableEq ι] (dist : (q : ι) �
         (∀ q' v', cache' q' = some v' → h q' = v') → res = evalPure h prog) := by
   induction prog using OracleComp.induction generalizing cache with
   | pure a =>
-    simp only [runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
-    rcases hmem with ⟨rfl, rfl⟩
+    supp_cases hmem [runWith_pure] with ⟨rfl, rfl⟩
     exact ⟨fun _ _ h => h, hsupp, fun _ _ => rfl⟩
   | query_bind q cont ih =>
-    simp only [runWith_bind, runWith_query, PMF.mem_support_bind_iff] at hmem
-    rcases hmem with ⟨⟨ans, cache₁⟩, hans, hcont⟩
+    supp_cases hmem [runWith_bind, runWith_query] with ⟨⟨ans, cache₁⟩, hans, hcont⟩
     obtain ⟨hq_ans, hsub₁, hsupp₁⟩ := mem_support_answer_invariant dist q hsupp hans
     obtain ⟨hsub₂, hsupp', heval⟩ := ih ans hsupp₁ hcont
     refine ⟨fun q' v' h => hsub₂ q' v' (hsub₁ q' v' h), hsupp', fun h hh => ?_⟩
@@ -551,14 +545,11 @@ theorem mem_support_run_memoize_invariant {Query : Type} [BEq Query] [LawfulBEq 
       (∀ h : Query → Value, TraceConsistentWith h tr' → res = OracleComp.evalPure h prog) := by
   induction prog using OracleComp.induction generalizing tr with
   | pure a =>
-    simp only [OracleComp.run_interpret_pure, PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff,
-      Prod.mk.injEq] at hmem
-    rcases hmem with ⟨rfl, rfl⟩
+    supp_cases hmem [OracleComp.run_interpret_pure] with ⟨rfl, rfl⟩
     exact ⟨fun _ h => h, hnodup, hsupp, fun _ _ => rfl⟩
   | query_bind q cont ih =>
-    simp only [OracleComp.run_interpret_bind, OracleComp.run_interpret_query,
-      PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff] at hmem
-    rcases hmem with ⟨⟨ans, tr₁⟩, hans, hcont⟩
+    supp_cases hmem [OracleComp.run_interpret_bind, OracleComp.run_interpret_query]
+      with ⟨⟨ans, tr₁⟩, hans, hcont⟩
     obtain ⟨hq_mem, hsub₁, hnodup₁, hsupp₁⟩ :=
       mem_support_memoize_nodup dist q hnodup hsupp hans
     obtain ⟨hsub₂, hnodup', hsupp', heval⟩ := ih ans hnodup₁ hsupp₁ hcont
@@ -579,15 +570,12 @@ private theorem mem_support_foldlM_merkleInputsStepProg (dist : List Bool → PM
     out.1 ≠ [] ∧ ∀ q ∈ out.1.tail, ∃ ans, (q, ans) ∈ tr' := by
   induction path generalizing init tr with
   | nil =>
-    simp only [List.foldlM_nil, OracleComp.run_interpret_pure, PMF.monad_pure_eq_pure,
-      PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
-    rcases hmem with ⟨rfl, rfl⟩
+    supp_cases hmem [List.foldlM_nil, OracleComp.run_interpret_pure] with ⟨rfl, rfl⟩
     exact ⟨hinit, htail_init⟩
   | cons sibling rest ih =>
-    simp only [List.foldlM_cons, merkleInputsStepProg, OracleComp.run_interpret_bind,
-      OracleComp.run_interpret_query, OracleComp.run_interpret_pure, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hmem
-    rcases hmem with ⟨_, ⟨⟨node, tr₁⟩, hnode, rfl⟩, hrest⟩
+    supp_cases hmem [List.foldlM_cons, merkleInputsStepProg, OracleComp.run_interpret_bind,
+      OracleComp.run_interpret_query, OracleComp.run_interpret_pure]
+      with ⟨_, ⟨⟨node, tr₁⟩, hnode, rfl⟩, hrest⟩
     obtain ⟨hq_mem, hsub₁, hnodup₁, hsupp₁⟩ :=
       mem_support_memoize_nodup dist (init.1.headD []) hnodup hsupp hnode
     refine ih _ (List.cons_ne_nil _ _) hnodup₁ hsupp₁ ?_ hrest
@@ -615,11 +603,9 @@ theorem pathQueriedInTrace_of_mem_support_merkleVerifyProg (dist : List Bool →
         (merkleVerifyProg d root i leaf path)).run tr).support)
     {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
     PathQueriedInTrace (fun _ => h) [] tr' i leaf path := by
-  simp only [merkleVerifyProg, merkleRootOfPathProg, merkleInputsProg,
-    OracleComp.run_interpret_bind, OracleComp.run_interpret_query, OracleComp.run_interpret_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hmem
-  rcases hmem with ⟨⟨cand, tr₂⟩, ⟨_, ⟨⟨⟨inputs, pos⟩, tr₁⟩, hfold, rfl⟩, hcand⟩, rfl, rfl⟩
+  supp_cases hmem [merkleVerifyProg, merkleRootOfPathProg, merkleInputsProg,
+    OracleComp.run_interpret_bind, OracleComp.run_interpret_query, OracleComp.run_interpret_pure]
+    with ⟨⟨cand, tr₂⟩, ⟨_, ⟨⟨⟨inputs, pos⟩, tr₁⟩, hfold, rfl⟩, hcand⟩, rfl, rfl⟩
   obtain ⟨hsub₁, hnodup₁, hsupp₁, heval₁⟩ :=
     mem_support_run_memoize_invariant dist (path.foldlM merkleInputsStepProg ([leaf], i))
       hnodup hsupp hfold

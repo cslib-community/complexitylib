@@ -1024,7 +1024,7 @@ private theorem er_intBin_natCast_unary {n : α → ℕ} (hn : CPT n input encUn
   intBin_natCast.comp' (unary_to_binary.comp' hn)
 private theorem er_intBin_add {l r : α → ℤ} (hl : CPT l input encIntBin)
     (hr : CPT r input encIntBin) : CPT (fun a => l a + r a) input encIntBin :=
-  (of_tidy .intBin_add).comp' (hl.prod hr)
+  intBin_add' hl hr
 private theorem er_intBin_sub {l r : α → ℤ} (hl : CPT l input encIntBin)
     (hr : CPT r input encIntBin) : CPT (fun a => l a - r a) input encIntBin := by
   exact intBin_sub.comp' (hl.prod hr)
@@ -1130,7 +1130,7 @@ theorem computableInPolyTime_commonDenom_int {Q R : α → ℕ}
   have hβ2 := (er_decodeAuxDigits_unary hQ2 hr2 (hp2.comp' hs1)).comp' ht1
   have hu2 := (er_decodeAuxDigits_unary hQ2 hr2 hs2).comp' ht1
   exact er_map hidx (er_map (unary_range' (hDlen.comp' hp1))
-    ((of_tidy .intBin_prod).comp' (er_map (unary_range' hQ2)
+    (intBin_prod.comp' (er_map (unary_range' hQ2)
       (er_pairBasisNat (listGetDWithInput hβ2.fst' ht2 0) (listGetDWithInput hβ2.snd' ht2 0)
         (listGetDWithInput hu2.fst' ht2 0) (listGetDWithInput hu2.snd' ht2 0)))))
 private theorem er_fallingOrbitWeights {m A₀ j : α → ℕ}
@@ -1191,10 +1191,10 @@ private theorem er_m0ScaledIntDigits {Q A₀ R : α → ℕ}
   have hd := er_countP (unary_range' hQ) (decide_ne hy1s hu2s)
   have hfacR := er_binary_factorial (unary_sub' hR (.const 1))
   exact horb.ite'
-    ((of_tidy .intBin_sum).comp' (er_map (unary_range' hR)
+    (intBin_sum.comp' (er_map (unary_range' hR)
       (intBin_mul' (intBin_mul'
           (er_intBin_natCast (binary_div.comp' ((hfacR.comp' hp1).prod (er_binary_factorial hp2))))
-          ((of_tidy .intBin_pow).comp'
+          (intBin_pow.comp'
             ((const (-1 : ℤ)).prod (unary_add' (hA₀.comp' hp1) hp2))))
         (listGetDWithInput (er_fallingOrbitWeights (hm.comp' hp1) (hA₀.comp' hp1) hp2)
           (hd.comp' hp1) 0)))) (.const 0)

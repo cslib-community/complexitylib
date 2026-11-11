@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Hybrid.Sequence
 public import CslibFrontier.Crypto.Computational.Prediction
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Saving the randomness of a coordinate predictor
@@ -28,6 +29,7 @@ This avoids requiring an efficient inverse for an arbitrary observation or param
 
 * `Description`, `evaluate`: finite saved data and a total deterministic evaluator.
 * `save`, `splice`, `sample`: sample the context and coins before receiving an observation.
+* `encLabeledExamples`: the encoding of the labeled examples that the test reads.
 * `codeBound`: bound every saved description independently of the source algorithms.
 
 ## Main results
@@ -157,6 +159,12 @@ attribute [program_certificate] isPPTOn_save
 
 variable {α : Type}
 
+/-- A list of labeled examples `(x, b)`, as the coordinate test reads them after its parameter: each
+example is the observation `x` encoded by `encoding` and paired with its label bit `b`, with `x`
+framed. The examples are framed and concatenated in order. -/
+abbrev encLabeledExamples (encoding : α ↪ List Bool) : List (α × Bool) ↪ List Bool :=
+  encList (encPair encoding encBool)
+
 /-- Sample and save the surrounding examples before any target observation is supplied. -/
 noncomputable def splice (sample : α ↪ List Bool) (base : List Bool)
     (replacement original : ProbComp (α × Bool)) (before after : ℕ)
@@ -203,11 +211,10 @@ theorem eval_splice (encoding : α ↪ List Bool) (base : List Bool)
     (replacement original : ProbComp (α × Bool)) (before after c d width : ℕ) (trial : Bool)
     (test : List (α × Bool) → ProbComp Bool) (raw : List Bool → List Bool → List Bool)
     (hrealize : ∀ values budget,
-      c * ((encPair encBits (encList (encPair encoding encBool))
-        (base, values)).length + 1) ^ d ≤ budget →
+      c * ((encPair encBits (encLabeledExamples encoding) (base, values)).length + 1) ^ d ≤
+        budget →
       ProbComp.eval (test values) = (uniformList budget).map (fun coins =>
-        (raw coins (encPair encBits (encList (encPair encoding encBool))
-          (base, values))).headD false))
+        (raw coins (encPair encBits (encLabeledExamples encoding) (base, values))).headD false))
     (observation : α) (hwidth : (encoding observation).length ≤ width) :
     ProbComp.eval ((fun code => evaluate raw code (encoding observation)) <$>
       splice encoding base replacement original before after c d width trial) =
@@ -232,11 +239,10 @@ theorem eval_sample (encoding : α ↪ List Bool) (base : List Bool)
     (replacement original : ProbComp (α × Bool)) (count c d width : ℕ)
     (test : List (α × Bool) → ProbComp Bool) (raw : List Bool → List Bool → List Bool)
     (hrealize : ∀ values budget,
-      c * ((encPair encBits (encList (encPair encoding encBool))
-        (base, values)).length + 1) ^ d ≤ budget →
+      c * ((encPair encBits (encLabeledExamples encoding) (base, values)).length + 1) ^ d ≤
+        budget →
       ProbComp.eval (test values) = (uniformList budget).map (fun coins =>
-        (raw coins (encPair encBits (encList (encPair encoding encBool))
-          (base, values))).headD false))
+        (raw coins (encPair encBits (encLabeledExamples encoding) (base, values))).headD false))
     (observation : α) (hwidth : (encoding observation).length ≤ width) :
     ProbComp.eval ((fun code => evaluate raw code (encoding observation)) <$>
       sample encoding base replacement original count c d width) =
@@ -277,10 +283,7 @@ theorem isPolyTime_codeBound {Param : Type} {input : Param ↪ List Bool}
 private theorem length_save {c d width : ℕ} {trial : Bool} {front back code : List Bool}
     (hcode : code ∈ (ProbComp.eval (save c d width trial front back)).support) :
     code.length = 2 * (front.length + back.length) + coinBudget c d width front back + 8 := by
-  rw [save, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hcode
-  obtain ⟨coins, hcoins, hcode⟩ := hcode
-  rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hcode
-  subst code
+  supp_cases hcode [save] with ⟨coins, hcoins, rfl⟩
   have hlength := length_of_mem_support_uniformList (by
     simpa only [eval_sampleList] using hcoins)
   simpa only [Description.length_encoding] using congrArg
@@ -312,8 +315,7 @@ theorem length_splice_le (encoding : α ↪ List Bool) (base : List Bool)
     (hcode : code ∈ (ProbComp.eval
       (splice encoding base replacement original before after c d width trial)).support) :
     code.length ≤ codeBound base.length (before + after) c d width := by
-  simp only [splice, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hcode
-  obtain ⟨front, hfront, back, hback, hcode⟩ := hcode
+  supp_cases hcode [splice] with ⟨front, hfront, back, hback, hcode⟩
   obtain ⟨hfrontLength, hfrontSupport⟩ :=
     (ProbComp.mem_support_replicate_iff _ _ _).mp hfront
   obtain ⟨hbackLength, hbackSupport⟩ :=
@@ -347,23 +349,20 @@ theorem length_sample_le (encoding : α ↪ List Bool) (base : List Bool)
     (hcode : code ∈ (ProbComp.eval
       (sample encoding base replacement original count c d width)).support) :
     code.length ≤ codeBound base.length count c d width := by
-  simp only [sample, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hcode
-  obtain ⟨trial, _, split, _, hcode⟩ := hcode
-  split_ifs at hcode with hsplit
+  supp_cases hcode [sample, apply_ite ProbComp.eval]
+    with ⟨trial, split, -, ⟨hsplit, hcode⟩ | ⟨-, rfl⟩⟩
   · have hsize := length_splice_le encoding base replacement original split
       (count - split - 1) c d width trial hreplacement horiginal hcode
     apply hsize.trans
     dsimp only [codeBound, contextBound]
     gcongr <;> lia
-  · rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hcode
-    subst code
-    simp [codeBound]
+  · simp [codeBound]
 
 /-- A PPT test supplies one fixed efficient evaluator for all saved descriptions. No decoder
 for either the public parameter or observation representation is required. -/
 theorem exists_evaluator {Param : Type} {input : Param ↪ List Bool} {output : α ↪ List Bool}
     {test : Param → List (α × Bool) → ProbComp Bool}
-    (htest : IsPPTOn (encPair input (encList (encPair output encBool)))
+    (htest : IsPPTOn (encPair input (encLabeledExamples output))
       encBool (fun pair => test pair.1 pair.2)) :
     ∃ (c d : ℕ) (predict : List Bool → List Bool → Bool),
       ComputableInPolyTime (fun pair => predict pair.1 pair.2)
