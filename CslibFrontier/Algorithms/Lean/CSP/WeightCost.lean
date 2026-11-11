@@ -13,7 +13,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Li
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Rat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.TreeEval.Ary.IterativeEncoding
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Foundations.Data.Nat.BinarySize
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Nat.Size
@@ -77,37 +79,10 @@ open Cslib.Logic.PL.CSP Turing.MultiTapeTM
 
 section BitLengthHelpers
 
-private theorem length_encNat_eq (n : ℕ) : (encNat n).length = n.size := by
-  rw [encNat_apply, Nat.size_eq_bits_len]
-
-/-- Binary size of a product is at most the sum of factor binary sizes. -/
-theorem natSize_mul_le (a b : ℕ) : (a * b).size ≤ a.size + b.size := by
-  by_cases ha : a = 0
-  · subst ha; simp
-  · by_cases hb : b = 0
-    · subst hb; simp
-    · rw [Nat.size_le]
-      have ha_lt : a < 2 ^ a.size := Nat.lt_size_self a
-      have hb_lt : b < 2 ^ b.size := Nat.lt_size_self b
-      calc a * b < a * 2 ^ b.size := Nat.mul_lt_mul_of_pos_left hb_lt (Nat.pos_of_ne_zero ha)
-        _ < 2 ^ a.size * 2 ^ b.size :=
-            Nat.mul_lt_mul_of_pos_right ha_lt (Nat.pow_pos (by decide))
-        _ = 2 ^ (a.size + b.size) := (pow_add 2 a.size b.size).symm
-
-/-- Binary size of a power `a ^ k` is at most `k * a.size + 1`. -/
-theorem natSize_pow_le (a k : ℕ) : (a ^ k).size ≤ k * a.size + 1 := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-      rw [pow_succ]
-      calc (a ^ k * a).size ≤ (a ^ k).size + a.size := natSize_mul_le _ _
-        _ ≤ (k * a.size + 1) + a.size := Nat.add_le_add_right ih _
-        _ = (k + 1) * a.size + 1 := by ring
-
 /-- Exact encoded bit length of a rational under `Turing.MultiTapeTM.encRat`. -/
 theorem length_encRat (q : ℚ) :
     (encRat q).length = 2 * (q.num.natAbs.size + 1) + 1 + q.den.size := by
-  rw [encRat_apply, length_encPair, length_encIntBin, length_encNat_eq]
+  rw [encRat_apply, length_encPair, length_encIntBin, length_encNat_eq_size]
 
 /-- Upper bound on `(encRat q).length` in terms of `|q.num|` and `q.den` binary sizes. -/
 theorem length_encRat_le (q : ℚ) {A B : ℕ} (hnum : q.num.natAbs ≤ A) (hden : q.den ≤ B) :
@@ -262,27 +237,18 @@ private theorem intBudgetInvariant_eliminateOrder [DecidableEq V] (d W M₀ : �
       have hres := intBudgetInvariant_eliminateOrder d W M₀ xs (k + 1) (elimVar d x s) hs'
       simpa [eliminateOrder, Nat.add_assoc, Nat.add_comm 1 xs.length] using hres
 
-private theorem natAbs_prod_entries_le {d W : ℕ} :
-    ∀ {live : List (FactorTable ℤ V)} {buds : List (ℕ × ℕ)},
-      List.Forall₂ (IntBudgetFor d W) live buds →
-      (live.map fun (f : FactorTable ℤ V) => f.entries.getD 0 0).prod.natAbs ≤
-        d ^ (buds.map Prod.fst).sum * W ^ (buds.map Prod.snd).sum
-  | _, _, .nil => by simp
-  | f :: fs, b :: bs, .cons hhead hrest => by
-      have hf : (f.entries.getD 0 0).natAbs ≤ d ^ b.1 * W ^ b.2 := by
-        rw [Array.getD]
-        split_ifs with h0
-        · exact hhead _ (Array.getElem_mem_toList h0)
-        · simp
-      have ih := natAbs_prod_entries_le hrest
-      simp only [List.map_cons, List.prod_cons, Int.natAbs_mul, List.sum_cons, pow_add]
-      calc (f.entries.getD 0 0).natAbs *
-              (fs.map fun (g : FactorTable ℤ V) => g.entries.getD 0 0).prod.natAbs
-          ≤ (d ^ b.1 * W ^ b.2) *
-              (d ^ (bs.map Prod.fst).sum * W ^ (bs.map Prod.snd).sum) :=
-            Nat.mul_le_mul hf ih
-        _ = (d ^ b.1 * d ^ (bs.map Prod.fst).sum) *
-              (W ^ b.2 * W ^ (bs.map Prod.snd).sum) := by ring
+private theorem lsbIndex_map_zero {V : Type*} (d : ℕ) : ∀ xs : List V,
+    lsbIndex d (xs.map fun _ => 0) = 0
+  | [] => rfl
+  | _ :: xs => by rw [List.map_cons, lsbIndex_cons, lsbIndex_map_zero d xs, mul_zero, zero_add]
+
+private theorem natAbs_prod_entries_le {d W : ℕ}
+    {live : List (FactorTable ℤ V)} {buds : List (ℕ × ℕ)}
+    (hb : List.Forall₂ (IntBudgetFor d W) live buds) :
+    (live.map fun (f : FactorTable ℤ V) => f.entries.getD 0 0).prod.natAbs ≤
+      d ^ (buds.map Prod.fst).sum * W ^ (buds.map Prod.snd).sum := by
+  have h := prod_natAbs_le_of_forall₂ hb (fun _ => 0)
+  simpa only [FactorTable.evalAt, lsbIndex_map_zero] using h
 
 private theorem natAbs_result_of_intBudget {d W M₀ k : ℕ} (hd : 0 < d)
     (hW : 0 < W) {s : ElimState ℤ V} (hs : IntBudgetInvariant d W M₀ k s) :
@@ -353,9 +319,9 @@ theorem length_encIntBin_entry_eliminateOrder_le [DecidableEq V] {d W : ℕ} (hd
       ≤ (d ^ order.length * W ^ factors.length).size + 1 :=
         Nat.add_le_add_right (Nat.size_le_size hz_le) 1
     _ ≤ ((d ^ order.length).size + (W ^ factors.length).size) + 1 :=
-        Nat.add_le_add_right (natSize_mul_le _ _) 1
+        Nat.add_le_add_right (Nat.size_mul_le _ _) 1
     _ ≤ ((order.length * d.size + 1) + (factors.length * W.size + 1)) + 1 :=
-        Nat.add_le_add_right (Nat.add_le_add (natSize_pow_le _ _) (natSize_pow_le _ _)) 1
+        Nat.add_le_add_right (Nat.add_le_add (Nat.size_pow_le _ _) (Nat.size_pow_le _ _)) 1
     _ = order.length * d.size + factors.length * W.size + 3 := by omega
 
 end IntegerCost
@@ -365,12 +331,6 @@ end IntegerCost
 section FiniteFieldCost
 
 variable {V : Type*}
-
-/-- Every entry of any factor table over `ZMod p` uses at most `p.size` bits under
-`Cslib.TreeEval.Ary.Iter.encField p`. -/
-theorem length_encField_entry_le (p : ℕ) [NeZero p] (y : ZMod p) :
-    (Cslib.TreeEval.Ary.Iter.encField p y).length ≤ p.size :=
-  Cslib.TreeEval.Ary.Iter.length_encField_le p y
 
 /-- Peak encoded bit storage across all live `ZMod p` factor tables during `eliminateOrder` is
 bounded by `peakLiveEntries d order init * p.size` and hence by the intermediate-scope table bound
@@ -766,12 +726,12 @@ theorem length_encRat_cleared_result_le {V : Type*} [DecidableEq V] {d W D : ℕ
     length_encRat_le _ hnum hden
   have h1 : (d ^ order.length * W ^ factorsℤ.length).size ≤
       order.length * d.size + factorsℤ.length * W.size + 2 :=
-    le_trans (natSize_mul_le _ _)
+    le_trans (Nat.size_mul_le _ _)
       (by
-        have ha := natSize_pow_le d order.length
-        have hb := natSize_pow_le W factorsℤ.length
+        have ha := Nat.size_pow_le d order.length
+        have hb := Nat.size_pow_le W factorsℤ.length
         omega)
-  have h2 : (D ^ factorsℤ.length).size ≤ factorsℤ.length * D.size + 1 := natSize_pow_le D _
+  have h2 : (D ^ factorsℤ.length).size ≤ factorsℤ.length * D.size + 1 := Nat.size_pow_le D _
   omega
 
 end RationalCost
@@ -851,7 +811,7 @@ enc_structure encModFactorRecord : ModFactorRecord where
 private theorem length_encList_nat_le (l : List ℕ) {B : ℕ} (h : ∀ x ∈ l, x.size ≤ B) :
     (encList encNat l).length ≤ l.length * (2 * B + 1) := by
   rw [length_encList]
-  simp only [length_encNat_eq]
+  simp only [length_encNat_eq_size]
   revert h
   induction l with
   | nil => intro _; simp
@@ -923,7 +883,7 @@ theorem length_encModFactorRecord_le (rec : ModFactorRecord) {VBits : ℕ}
   have hs := length_encList_nat_le rec.scope hv
   have he := length_encList_nat_le rec.entries fun k hk =>
     Nat.size_le_size (Nat.le_of_lt (hw k hk))
-  rw [length_encNat_eq]
+  rw [length_encNat_eq_size]
   omega
 
 end EncodedRecords

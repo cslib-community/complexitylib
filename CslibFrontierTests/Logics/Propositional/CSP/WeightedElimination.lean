@@ -343,7 +343,7 @@ example : ∀ f ∈ (eliminateOrder 2 [0] (ElimState.ofFactors intFactors [0, 1,
     intFactors [0, 1, 2] [0] (by decide) hf hz
 
 example : (Cslib.TreeEval.Ary.Iter.encField 5 (4 : ZMod 5)).length ≤ (5 : ℕ).size :=
-  length_encField_entry_le 5 (4 : ZMod 5)
+  Cslib.TreeEval.Ary.Iter.length_encField_le 5 (4 : ZMod 5)
 
 example : (encRatFactorRecord sampleRatRec).length ≤
     2 * (sampleRatRec.scope.length * (2 * 1 + 1)) + 1 +
