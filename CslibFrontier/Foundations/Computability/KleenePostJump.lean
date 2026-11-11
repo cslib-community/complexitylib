@@ -49,21 +49,12 @@ namespace Nat.RecursiveIn.KleenePost
 /-- The Turing jump of the empty set, the halting set for partial recursive functions. -/
 def halting : Set ℕ := { c | (Nat.Partrec.Code.eval (ofNat Nat.Partrec.Code c) c).Dom }
 
-/-- Prefix relation on lists characterized via `List.take`. -/
-lemma isPrefix_iff_take_eq {α} (l₁ l₂ : List α) : l₁ <+: l₂ ↔ l₂.take l₁.length = l₁ := by
-  constructor
-  · rintro ⟨t, rfl⟩; simp
-  · intro h
-    have := List.take_append_drop l₁.length l₂
-    rw [h] at this
-    exact ⟨_, this⟩
-
 /-- The list prefix relation is primitive recursive. -/
 lemma list_isPrefix {α} [Primcodable α] :
     PrimrecRel (fun (l₁ l₂ : List α) => l₁ <+: l₂) := by
   have H : PrimrecRel (fun l₁ l₂ : List α => l₂.take l₁.length = l₁) :=
     _root_.Primrec.eq.comp (Primrec.list_take.comp (list_length.comp fst) snd) fst
-  exact H.of_eq fun p => by simp [isPrefix_iff_take_eq]
+  exact H.of_eq fun p => by simp [List.prefix_iff_eq_take, eq_comm]
 
 /-- Boolean decision procedure for `haltsPred`. -/
 def haltsPredDecide (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ) : Bool :=
