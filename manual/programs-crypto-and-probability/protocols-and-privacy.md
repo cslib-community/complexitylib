@@ -1633,15 +1633,43 @@ $T+2q$ horizon gives
 $$
 \Pr[\mathrm{search\ succeeds}]\le \frac{6T}{2^h}+\frac{26T^2}{2^m}
 $$
-(`Security.source_search_bound`). Success at least $1/2$ therefore forces
-$2^h\le24T$ or $2^m\le104T^2$ (`source_search_half_budget`), giving the source's
-$\Omega(\min(2^{q/2},2^{m/2}))$ query barrier and its $m\ge q$ specialization.
-The source's sharper displayed Theorem 8 bound (PDF pp. 25–28),
-$3T/2^h+10T^2/2^m+2^{-q}$, is **not proved**. The deviation is specific: this valid
-comparison couples the $T+q$ verifier and then reveals $q$ hidden edges, enlarging the
-covering allowance and collision horizon. Recovering the source constants needs a tighter
-planted-verification/guessing argument; that argument is not supplied as a premise.
-No counterexample to the sharper inequality is asserted.
+(`Security.source_search_bound`). The unrounded `Security.source_search_rate` is
+incomparable with the source's displayed inequality: it already proves that inequality at
+$q=20,m=40,T=100$, but its numerical right-hand side is larger at $q=21,m=40,T=100$.
+These comparisons are checked, not floating-point evidence.
+
+[AddXNORIdealSearchUnion.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealSearchUnion.lean)
+now removes the separately added verification-collision allowance. The complete stopped
+worlds have the same law for **acceptance or bad**, proved from their equality at good final
+states. Original-world acceptance implies a collision in the same verifier/reveal ledger
+that charges a visible cut hit. Their overlap is therefore charged once. The resulting
+`SearchUnion.source_search_rate` proves the stronger actual bound
+$$
+\Pr[\mathrm{search\ succeeds}]\le
+ R(2^m,T+2q)+\frac{T+q}{2^h}+\frac{T+q}{2^{q-h}},
+$$
+and `SearchUnion.source_search_bound` gives $6T/2^h+18T^2/2^m$ throughout the source
+parameter range. The old $6,26$ theorem and its explicit half-chain/birthday budget
+alternatives remain available. This is a stronger proved bound, not a claim of optimal
+constants for the repaired argument.
+
+The remaining losses are specific. Covering still counts the $T+q$ verifier, so replacing
+$T+q$ by $2T$ doubles its coefficient. Revealing another $q$ hidden edges yields a
+collision horizon $T+2q\le3T$, whose rate is bounded by $18T^2/2^m$.
+Even the strengthened unrounded right-hand side exceeds the source expression at
+$q=21,m=40,T=100$; it does not prove the sharp statement for all parameters.
+The source's Theorem 8 (PDF pp. 25–28), $3T/2^h+10T^2/2^m+2^{-q}$, is still **partial**.
+
+The gap in the source proof is at a named law, not in the numerical union bound alone.
+Its conclusion on p. 28 transfers the $T$-query stopping event and the hidden-word guessing
+event using Lemmas 10–11, and applies Lemma 13 to the frontier sampler's verification.
+The exact Real/planted identity in Lemma 10 is false as written on the checked collision
+trace above. Thus those sampler-specific statements cannot by themselves imply the actual
+planted-search inequality. Repairing that identity by the valid cut law does not establish
+the source's success-without-bad assertion: adversary-chosen hidden-prefix inputs need a
+charged reveal, and off-planted-word verification must still be controlled. A tighter
+joint planted verification/guessing argument could recover the constants, but is not
+proved here or assumed as a premise. No counterexample to Theorem 8 is asserted.
 
 The [security client](../../CslibFrontierTests/AddXNORIdealSecurity.lean) checks the
 important guessed-endpoint case: a one-query visible cut hit with no old collision or
@@ -1682,7 +1710,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.Security.source_search_rate`, `IdealChain.Security.source_search_bound`, `IdealChain.Security.source_search_half_budget` | Same source hypotheses and query barrier; weaker constants $6,26$; literal $3,10,2^{-q}$ inequality still unproved |
+| Theorem 8, pp. 25–28 | `IdealChain.SearchUnion.source_search_rate`, `IdealChain.SearchUnion.source_search_bound`, `IdealChain.Security.source_search_half_budget` | Partial: same source hypotheses and query barrier; stronger constants $6,18$; literal $3,10,2^{-q}$ inequality still unproved throughout the range |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width

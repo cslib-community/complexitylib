@@ -390,14 +390,23 @@ coefficient $8$ instead of $10$.
 Search verification is now proved too: independent-target acceptance forces a collision,
 and `Reveal.source_independent_verification` bounds the original-input averaged game.
 `Security.source_search_rate` composes the actual verifier and reveal at horizon $T+2q$.
-`source_search_bound` gives $6T/2^{\lceil q/2\rceil}+26T^2/2^m$, and
-`source_search_half_budget` gives the same half-chain/birthday query barrier. These are
-honest weaker constants: do not claim Theorem 8's displayed
-$3T/2^h+10T^2/2^m+2^{-q}$ without the still-missing tighter planted-verification/guessing
-argument. The Operator's Manual's STOC733 inventory distinguishes that gap from the proved
-decision inequality and weaker search bound. ALL-main with literal source constants is
-not yet warranted. The checked security client includes a guessed hidden endpoint with no
-old collision/covering, for which charging the actual reveal is essential.
+Its unrounded bound already implies the literal source inequality at $q=20,m=40,T=100$,
+although its $6,26$ normalization does not do so nontrivially.
+`SearchUnion.source_search_rate` now charges independent verification and cut detection
+as a single union in the same executed ledger, removing the separate $8T^2/2^m$ allowance.
+`SearchUnion.source_search_bound` therefore gives $6T/2^{\lceil q/2\rceil}+18T^2/2^m$
+under all source hypotheses. Covering still uses $T+q$ calls, and the reveal adds $q$ more.
+The strengthened unrounded bound still exceeds the source expression at $q=21,m=40,T=100$.
+The checked client records both comparisons without permutation-space enumeration.
+
+Do not claim Theorem 8's displayed $3T/2^h+10T^2/2^m+2^{-q}$ throughout the range.
+The source's p. 28 conclusion uses the false Lemma 10 exact Real/planted law to transfer
+its stopping and guessing events and apply its frontier success argument. The valid cut
+coupling does not supply that tighter planted-verification/guessing lemma. The Operator's
+Manual's inventory retains “Partial” for this exact gap; Corollary 4 is covered. ALL-main
+with literal source constants is not yet warranted. The guessed hidden-endpoint client
+continues to show why old collision/covering alone is insufficient without a charged reveal.
+
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.
 The older solvers and their charges remain intact. Binary min/max certificates
