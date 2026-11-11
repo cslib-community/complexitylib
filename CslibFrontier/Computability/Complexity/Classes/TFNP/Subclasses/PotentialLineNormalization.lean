@@ -366,20 +366,23 @@ theorem normalizedPotential_true (V : α × List Bool → ℕ) (a : α) (u : Lis
   rfl
 
 @[simp]
+theorem normalizedPotentialSucc_false_zeroVertex (n : α → ℕ) (P S : α × List Bool → List Bool)
+    (V : α × List Bool → ℕ) (a : α) :
+    normalizedPotentialSucc n P S V (a, false :: zeroVertex (n a)) = true :: zeroVertex (n a) := by
+  simp [normalizedPotentialSucc]
+
 theorem normalizedPotentialPred_zeroVertex (n : α → ℕ) (P S : α × List Bool → List Bool)
     (V : α × List Bool → ℕ) (a : α) :
     normalizedPotentialPred n P S V (a, zeroVertex (normalizedPotentialWidth n a)) =
       zeroVertex (normalizedPotentialWidth n a) := by
   simp
 
-@[simp]
 theorem normalizedPotentialSucc_zeroVertex (n : α → ℕ) (P S : α × List Bool → List Bool)
     (V : α × List Bool → ℕ) (a : α) :
     normalizedPotentialSucc n P S V (a, zeroVertex (normalizedPotentialWidth n a)) =
       true :: zeroVertex (n a) := by
-  simp [normalizedPotentialSucc]
+  simp
 
-@[simp]
 theorem normalizedPotential_zeroVertex (n : α → ℕ) (V : α × List Bool → ℕ) (a : α) :
     normalizedPotential V (a, zeroVertex (normalizedPotentialWidth n a)) = 0 := by
   simp
