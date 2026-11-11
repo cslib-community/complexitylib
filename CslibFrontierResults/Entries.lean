@@ -2591,7 +2591,9 @@ register_result "bareiss-rational-elimination" where
   title := "Exact rational Bareiss–Jordan Gaussian elimination and entry bounds"
   topic := "algorithms"
   sources := [
-    { paper := Schrijver1986, theorem := unverified, locator := unverified }
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.2; Theorem 3.3; Corollary 3.3a; Equations (28)–(30)",
+      locator := "Section 3.2, pp. 29–30; Section 3.3, pp. 32–35" }
   ]
   theorems := [
     Cslib.LinearAlgebra.rationalElim_spec,
@@ -2601,17 +2603,22 @@ register_result "bareiss-rational-elimination" where
     Cslib.LinearAlgebra.rationalElim_entry_bounds,
     Cslib.LinearAlgebra.ratSolve_entry_bounds
   ]
-  scope := "Executable row-denominator-cleared Bareiss–Jordan elimination over ℚ built on \
-    fraction-free Sylvester–Bareiss minor elimination over ℤ (RREF, exact rank, linearly \
-    independent spanning row and kernel bases, canonical linear system solving, and \
-    polynomial entry/denominator bit-length bounds via stageEntryBound). Bounded milestone \
-    of Issue #3672 (circulant spectra and fibre-sum bounds remain open there)."
+  scope := "Executable row-denominator-cleared fraction-free Bareiss–Jordan elimination over ℚ \
+    built on Sylvester–Bareiss minor elimination over ℤ (RREF, exact rank, linearly independent \
+    spanning row and kernel bases, canonical linear system solving, and Hadamard/factorial entry \
+    and denominator bit-length bounds via stageEntryBound). Local adaptation: clears row \
+    denominators upfront and tracks fraction-free minor-scaled Jordan updates with a \
+    factorial/Hadamard bound rather than Schrijver's normalized rational elimination \
+    (Section 3.3, pp. 32–35). Bounded milestone of Issue #3672 (circulant spectra and fibre-sum \
+    bounds remain open there)."
 
 register_result "bareiss-rational-elimination-polytime" where
   title := "Polynomial-time multi-tape Turing certificates for rational Gaussian elimination"
   topic := "algorithms"
   sources := [
-    { paper := Schrijver1986, theorem := unverified, locator := unverified }
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.3; Corollary 3.3a (ii), (iv), (v)",
+      locator := "Section 3.3, pp. 32–35" }
   ]
   theorems := [
     Cslib.LinearAlgebra.rationalElim_computableInPolyTime,
@@ -2622,7 +2629,10 @@ register_result "bareiss-rational-elimination-polytime" where
     Cslib.LinearAlgebra.ratSolve_computableInPolyTime
   ]
   scope := "Native Turing.MultiTapeTM.ComputableInPolyTime certificates for rationalElim, \
-    ratRref, ratRank, ratRowBasis, ratKernelBasis, and ratSolve with structured \
-    enc_structure codecs using unary matrix dimensions and framed signed-binary/rational \
-    entries. Bounded milestone of Issue #3672 (circulant spectra and fibre-sum bounds \
-    remain open there)."
+    ratRref, ratRank, ratRowBasis, ratKernelBasis, and ratSolve. Local adaptations: uses \
+    row-denominator-cleared fraction-free Bareiss–Jordan integer updates and structured \
+    enc_structure codecs with explicit unary matrix dimensions and framed signed-binary/rational \
+    entries to certify native multi-tape time and workspace bounds unconditionally (including on \
+    ragged or oversized-header inputs), whereas Schrijver Section 3.3 analyzes normalized \
+    rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
+    (circulant spectra and fibre-sum bounds remain open there)."

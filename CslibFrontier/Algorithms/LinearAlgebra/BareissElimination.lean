@@ -13,10 +13,10 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Bareiss
 public import CslibFrontier.Foundations.Data.Nat.BinarySize
 public import CslibFrontier.Foundations.Data.Rat.Basic
 import CslibFrontier.Foundations.Data.List.Lookup
-import Mathlib.Data.Finset.Sort
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.NodupEquivFin
 import Mathlib.LinearAlgebra.Matrix.Diagonal
+import Mathlib.Logic.Equiv.Fintype
 
 /-!
 # Executable Bareiss–Jordan elimination over `ℚ` and coefficient bit-length bounds
@@ -24,6 +24,18 @@ import Mathlib.LinearAlgebra.Matrix.Diagonal
 This module provides executable list-matrix Bareiss–Jordan elimination over `ℤ` and `ℚ`, proved
 equivalent to the minor-scaled Bareiss–Jordan matrix `Matrix.bareissMatrix` from
 `CslibFrontier.Foundations.LinearAlgebra.Matrix.Bareiss`.
+
+## References and local adaptations
+
+* Alexander Schrijver, *Theory of Linear and Integer Programming* (Wiley, 1986), Section 3.2,
+  Theorem 3.2 (pp. 29–30, determinant encoding-size bound) and Section 3.3, Theorem 3.3
+  (pp. 32–33), Corollary 3.3a (pp. 33–34), and the Gauss–Jordan discussion with Equations
+  (28)–(30) (p. 35).
+* **Local adaptation:** Whereas Schrijver's Section 3.3 analyzes normalized rational Gaussian and
+  Gauss–Jordan elimination directly over `ℚ`, this module clears row denominators upfront
+  (`clearDenoms`) and runs fraction-free Sylvester–Bareiss minor-scaled Gauss–Jordan updates over
+  `ℤ` (`bareissElimCols`), bounding all intermediate integer entries and output numerators and
+  denominators via the explicit Hadamard/factorial bound `stageEntryBound`.
 
 ## Main definitions
 
@@ -836,29 +848,6 @@ private theorem ker_mulVecLin_rowScaled {m n : ℕ} {d : Fin m → ℚ} (hd : �
     rw [mul_assoc]
   rw [hsum, mul_eq_zero, or_iff_right (hd i)]
 
-private theorem linearIndependent_rowScaled_iff {m n k : ℕ} {d : Fin m → ℚ} (hd : ∀ i, d i ≠ 0)
-    (A : Matrix (Fin m) (Fin n) ℚ) (S : Fin k → Fin m) :
-    LinearIndependent ℚ (fun a => A (S a)) ↔
-      LinearIndependent ℚ (fun a => rowScaled d A (S a)) := by
-  rw [Fintype.linearIndependent_iff, Fintype.linearIndependent_iff]
-  constructor
-  · intro h c hc a
-    have h' : ∑ b : Fin k, (c b * d (S b)) • A (S b) = 0 := by
-      convert hc using 2 with b
-      ext j
-      change (c b * d (S b)) * A (S b) j = c b * (d (S b) * A (S b) j)
-      rw [mul_assoc]
-    have hb := h (fun b => c b * d (S b)) h' a
-    exact (mul_eq_zero.mp hb).resolve_right (hd (S a))
-  · intro h c hc a
-    have h' : ∑ b : Fin k, (c b * (d (S b))⁻¹) • rowScaled d A (S b) = 0 := by
-      convert hc using 2 with b
-      ext j
-      change (c b * (d (S b))⁻¹) * (d (S b) * A (S b) j) = c b * A (S b) j
-      rw [mul_assoc, inv_mul_cancel_left₀ (hd (S b))]
-    have hb := h (fun b => c b * (d (S b))⁻¹) h' a
-    exact (mul_eq_zero.mp hb).resolve_right (inv_ne_zero (hd (S a)))
-
 private theorem span_rowSel_rowScaled {m n k : ℕ} {d : Fin m → ℚ} (hd : ∀ i, d i ≠ 0)
     (A : Matrix (Fin m) (Fin n) ℚ) (S : Fin k → Fin m) :
     Submodule.span ℚ (Set.range fun a => rowScaled d A (S a)) =
@@ -921,45 +910,6 @@ private theorem map_bareissMatrix_dim {m₁ m₂ n₁ n₂ k : ℕ}
   subst hS' hC' hB' hi' hj'
   rw [← Matrix.map_bareissMatrix (Int.castRingHom ℚ), Matrix.map_apply]
   rfl
-
-private noncomputable def permOfInjective {m k : ℕ} (S : Fin k → Fin m)
-    (hS : Function.Injective S) :
-    { σ : Equiv.Perm (Fin m) //
-      ∀ a : Fin k, σ ⟨a.val, a.isLt.trans_le (by
-        simpa only [Fintype.card_fin] using Fintype.card_le_of_injective S hS)⟩ = S a } := by
-  classical
-  have hkm : k ≤ m := by simpa only [Fintype.card_fin] using Fintype.card_le_of_injective S hS
-  let img := Finset.image S Finset.univ
-  let rest := Finset.univ \ img
-  have hcard : rest.card = m - k := by
-    rw [Finset.card_sdiff, Finset.inter_univ, Finset.card_fin,
-      Finset.card_image_of_injective _ hS, Finset.card_fin]
-  let remb : Fin (m - k) ↪ Fin m := (rest.orderEmbOfFin hcard).toEmbedding
-  have hremb : ∀ x : Fin (m - k), remb x ∈ rest := fun x =>
-    Finset.orderEmbOfFin_mem rest hcard x
-  let f : Fin m → Fin m := fun i =>
-    if hi : i.val < k then S ⟨i.val, hi⟩ else remb ⟨i.val - k, by omega⟩
-  have hinj : Function.Injective f := by
-    intro i₁ i₂ h
-    by_cases hi₁ : i₁.val < k <;> by_cases hi₂ : i₂.val < k
-    · simp only [f, hi₁, hi₂, ↓reduceDIte] at h
-      exact Fin.ext (congrArg (Fin.val : Fin k → ℕ) (hS h))
-    · simp only [f, hi₁, hi₂, ↓reduceDIte] at h
-      have h1 : S ⟨i₁.val, hi₁⟩ ∈ img :=
-        Finset.mem_image.mpr ⟨_, Finset.mem_univ _, rfl⟩
-      have h2 := Finset.mem_sdiff.mp (hremb ⟨i₂.val - k, by omega⟩)
-      exact absurd (h ▸ h1) h2.2
-    · simp only [f, hi₁, hi₂, ↓reduceDIte] at h
-      have h2 : S ⟨i₂.val, hi₂⟩ ∈ img :=
-        Finset.mem_image.mpr ⟨_, Finset.mem_univ _, rfl⟩
-      have h1 := Finset.mem_sdiff.mp (hremb ⟨i₁.val - k, by omega⟩)
-      exact absurd (h.symm ▸ h2) h1.2
-    · simp only [f, hi₁, hi₂, ↓reduceDIte] at h
-      have heq : i₁.val - k = i₂.val - k := congrArg Fin.val (remb.injective h)
-      exact Fin.ext (by omega)
-  have hbij : Function.Bijective f := (Fintype.bijective_iff_injective_and_card f).mpr ⟨hinj, rfl⟩
-  refine ⟨Equiv.ofBijective f hbij, fun a => ?_⟩
-  simp only [Equiv.ofBijective_apply, f, a.isLt, ↓reduceDIte]
 
 private theorem mem_zip_find?_some {xs ys : List ℕ}
     (hlen : xs.length = ys.length) (hy_nodup : ys.Nodup) {c : ℕ} {a : Fin xs.length}
@@ -1110,7 +1060,11 @@ theorem rationalElim_spec (M : RatTable) :
       hinv.echelon_zero a ⟨j.val, j.isLt⟩ hj]
     rfl
   have ⟨hSinj, hCinj⟩ := Matrix.injective_of_pivotDet_ne_zero hΔ
-  obtain ⟨σ, hσ⟩ := permOfInjective S hSinj
+  have hkm : st.pivotRows.length ≤ M.numRows := by
+    simpa only [Fintype.card_fin] using Fintype.card_le_of_injective S hSinj
+  obtain ⟨σ, hσ⟩ := Equiv.Perm.exists_extending_pair
+    (fun a : Fin st.pivotRows.length => (⟨a.val, a.isLt.trans_le hkm⟩ : Fin M.numRows)) S
+    (fun a b hab => Fin.ext (congrArg (Fin.val : Fin M.numRows → ℕ) hab)) hSinj
   have ⟨hUpiv, hUrref⟩ := Matrix.isReducedRowEchelon_rrefOfBareiss hΔ hC hterm hzero σ hσ
   have hrref_eq : res.rref.toMatrix = (Matrix.rrefOfBareiss M' S C).submatrix σ id := by
     ext i j
@@ -1142,9 +1096,7 @@ theorem rationalElim_spec (M : RatTable) :
         (fun _ => rfl) (fun _ => rfl) rfl rfl,
         ← hinv.table_eq (S₀ ⟨i.val, hi⟩) ⟨j.val, j.isLt⟩, hΔ_rat, div_eq_mul_inv, mul_comm]
       rfl
-    · have hkm : st.pivotRows.length ≤ M.numRows := by
-        simpa only [Fintype.card_fin] using Fintype.card_le_of_injective S hSinj
-      have hrow_i : res.rref.rows.getD i.val [] = List.replicate M.numCols 0 := by
+    · have hrow_i : res.rref.rows.getD i.val [] = List.replicate M.numCols 0 := by
         change ((st.pivotRows.map (scaledIntRow st.table st.pivotDet) ++
           List.replicate (M.numRows - st.pivotRows.length)
             (List.replicate M.numCols 0)).getD i.val []) = _
@@ -1187,9 +1139,12 @@ theorem rationalElim_spec (M : RatTable) :
     change st.pivotRows.length = M.toMatrix.rank
     rw [← rank_rowScaled hd M.toMatrix]
     exact (Matrix.rank_eq_of_bareiss_terminal hΔ hterm).symm
-  have hrow_li : LinearIndependent ℚ (fun a : Fin st.pivotRows.length => M.toMatrix (S a)) :=
-    (linearIndependent_rowScaled_iff hd M.toMatrix S).mpr
-      (Matrix.linearIndependent_row_of_pivotDet_ne_zero hΔ)
+  have hrow_li : LinearIndependent ℚ (fun a : Fin st.pivotRows.length => M.toMatrix (S a)) := by
+    refine (LinearIndependent.units_smul_iff (R := ℚ)
+      (fun a : Fin st.pivotRows.length => M.toMatrix (S a))
+      (fun a : Fin st.pivotRows.length =>
+        Units.mk0 (rowMultiplier M (S a) : ℚ) (hd (S a)))).mp ?_
+    exact Matrix.linearIndependent_row_of_pivotDet_ne_zero hΔ
   have hrow_span :
       Submodule.span ℚ (Set.range fun a : Fin st.pivotRows.length => M.toMatrix (S a)) =
       Submodule.span ℚ (Set.range M.toMatrix) := by

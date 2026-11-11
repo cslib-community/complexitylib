@@ -371,23 +371,8 @@ theorem pivotDet_mul_bareissMatrix_snoc {K : Type*} [Field K] (A : Matrix (Fin m
           bareissMatrix A S C p q * bareissMatrix A S C i j -
             bareissMatrix A S C i q * bareissMatrix A S C p j) := by
   have ⟨hSinj, _⟩ := injective_of_pivotDet_ne_zero hΔ
-  have hS'inj : Function.Injective (Fin.snoc S p) := by
-    intro x y hxy
-    induction x using Fin.lastCases with
-    | last =>
-      induction y using Fin.lastCases with
-      | last => rfl
-      | cast b =>
-        simp only [Fin.snoc_last, Fin.snoc_castSucc] at hxy
-        exact absurd hxy.symm (hp b)
-    | cast a =>
-      induction y using Fin.lastCases with
-      | last =>
-        simp only [Fin.snoc_castSucc, Fin.snoc_last] at hxy
-        exact absurd hxy (hp a)
-      | cast b =>
-        simp only [Fin.snoc_castSucc] at hxy
-        exact congrArg Fin.castSucc (hSinj hxy)
+  have hS'inj : Function.Injective (Fin.snoc S p) :=
+    Fin.snoc_injective_of_injective hSinj fun ⟨a, ha⟩ => hp a ha
   have hpq_det : (A.submatrix (Fin.snoc S p) (Fin.snoc C q)).det = bareissMatrix A S C p q :=
     (bareissMatrix_nonPivot A C hp q).symm
   have hM_det : (border (A.submatrix S C) (fun a => A (S a) q) (fun b => A p (C b))

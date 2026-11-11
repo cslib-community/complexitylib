@@ -35,12 +35,19 @@ Multi-tape Turing machine polynomial-time computability (`Turing.MultiTapeTM.Com
 for exact rational elimination (`rationalElim`, `ratRref`, `ratRank`, `ratRowBasis`,
 `ratKernelBasis`) and linear system solving (`ratSolve`).
 
-## Encodings
+## Encodings and local adaptations
 
-All matrix dimension counters (`numRows`, `numCols`, `rank`, `pivotRows`, `pivotCols`,
-`nonPivotCols`) use `encUnary`, matching the dense row-major table layout `encList (encList _)`
-for nonempty matrices and preventing exponential blowup from oversized declared dimensions on
-malformed tables; integer entries use signed binary `encIntBin` and rational entries use `encRat`.
+* Alexander Schrijver, *Theory of Linear and Integer Programming* (Wiley, 1986), Section 3.3,
+  Theorem 3.3 (pp. 32–33), Corollary 3.3a (pp. 33–34), and the Gauss–Jordan discussion with
+  Equations (28)–(30) (p. 35), together with Section 3.2, Theorem 3.2 (pp. 29–30).
+* **Local adaptations:** (1) Instead of Schrijver's normalized rational elimination, the underlying
+  algorithm executes row-denominator-cleared fraction-free Bareiss–Jordan integer updates bounded
+  by the factorial/Hadamard `stageEntryBound`. (2) To certify native multi-tape Turing machine time
+  and workspace bounds (`Turing.MultiTapeTM.ComputableInPolyTime`) unconditionally, all matrix
+  dimension counters (`numRows`, `numCols`, `rank`, `pivotRows`, `pivotCols`, `nonPivotCols`) use
+  explicit `encUnary` headers inside `enc_structure` codecs alongside framed signed-binary
+  (`encIntBin`) and rational (`encRat`) entries, preventing exponential blowup from oversized
+  declared dimensions on malformed or zero-entry tables.
 
 ## Main definitions
 
