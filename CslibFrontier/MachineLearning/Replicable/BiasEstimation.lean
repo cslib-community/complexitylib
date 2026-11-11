@@ -249,6 +249,14 @@ private theorem coinBias_eq_distExpectation (D : PMF Bool) :
     coinBias D = distExpectation D (fun b => if b then (1 : ℝ) else 0) := by
   simp [coinBias, distExpectation]
 
+private theorem replicableBiasProg_toAlgorithm_eq (w : ℝ) (N m : ℕ) [NeZero N] :
+    (replicableBiasProg w N m).toAlgorithm =
+      (replicableMeanProg (fun b : Bool => if b then (1 : ℝ) else 0) w N m).toAlgorithm := by
+  simp only [Program.toAlgorithm, replicableBiasProg, replicableMeanProg, roundGridProg]
+  congr 2
+  ext S i
+  simp [empiricalBias_eq_empiricalMean]
+
 /-- Strong `(w / 2 + δ, 2 * exp (-2 * m * δ^2))`-estimation accuracy of `replicableBiasProg`
 for estimating `coinBias D` across all Bernoulli distributions `D : PMF Bool`. -/
 theorem estimates_replicableBiasProg {w δ : ℝ} (hw : 0 < w) (hδ : 0 ≤ δ) (N m : ℕ)
@@ -262,15 +270,8 @@ theorem estimates_replicableBiasProg {w δ : ℝ} (hw : 0 < w) (hδ : 0 ≤ δ) 
   have hmax : max ((1 : ℝ) - 0) 1 = 1 := by norm_num
   rw [hmax, one_pow, div_one] at hest
   intro D hD
-  have hmarg : (replicableBiasProg w N m).toAlgorithm.marginal D =
-      (replicableMeanProg (fun b : Bool => if b then (1 : ℝ) else 0) w N m).toAlgorithm.marginal
-        D := by
-    simp only [replicableBiasProg, replicableMeanProg, roundGridProg]
-    congr 3
-    ext S i
-    rw [empiricalBias_eq_empiricalMean]
   dsimp only
-  rw [hmarg, coinBias_eq_distExpectation]
+  rw [replicableBiasProg_toAlgorithm_eq, coinBias_eq_distExpectation]
   exact hest D hD
 
 /-- Strong `ρ`-replicability of `replicableBiasProg` across all distributions `D : PMF Bool`. -/
@@ -285,14 +286,7 @@ theorem isReplicable_replicableBiasProg {w δ : ℝ} (hw : 0 < w) (hδ : 0 ≤ �
   have hmax : max ((1 : ℝ) - 0) 1 = 1 := by norm_num
   rw [hmax, one_pow, div_one] at hrep
   intro D hD
-  have hpair : (replicableBiasProg w N m).toAlgorithm.pairedOutput D =
-      (replicableMeanProg (fun b : Bool => if b then (1 : ℝ) else 0) w N m).toAlgorithm.pairedOutput
-        D := by
-    simp only [replicableBiasProg, replicableMeanProg, roundGridProg]
-    congr 4
-    ext S i
-    rw [empiricalBias_eq_empiricalMean]
-  rw [Algorithm.disagreeProb, hpair]
+  rw [replicableBiasProg_toAlgorithm_eq]
   exact hrep D hD
 
 /-- **Replicable coin bias-estimation theorem** [ImpagliazzoLeiPitassiSorrell2022]: for any
@@ -307,27 +301,11 @@ theorem exists_replicableBiasProg {ε ρ β : ℝ} (hε : 0 < ε) (hρ : 0 < ρ)
     cases b <;> simp
   obtain ⟨w, N, m, hN, hm, hw, hrep, hest⟩ :=
     exists_replicableMeanProg (fun b : Bool => if b then (1 : ℝ) else 0) hf hε hρ hβ
-  refine ⟨w, N, m, hN, hm, hw, ?_, ?_⟩
-  · intro D hD
-    have hpair : (replicableBiasProg w N m).toAlgorithm.pairedOutput D =
-        (replicableMeanProg
-          (fun b : Bool => if b then (1 : ℝ) else 0) w N m).toAlgorithm.pairedOutput D := by
-      simp only [replicableBiasProg, replicableMeanProg, roundGridProg]
-      congr 4
-      ext S i
-      rw [empiricalBias_eq_empiricalMean]
-    rw [Algorithm.disagreeProb, hpair]
+  refine ⟨w, N, m, hN, hm, hw, fun D hD => ?_, fun D hD => ?_⟩
+  · rw [replicableBiasProg_toAlgorithm_eq]
     exact hrep D hD
-  · intro D hD
-    have hmarg : (replicableBiasProg w N m).toAlgorithm.marginal D =
-        (replicableMeanProg (fun b : Bool => if b then (1 : ℝ) else 0) w N m).toAlgorithm.marginal
-          D := by
-      simp only [replicableBiasProg, replicableMeanProg, roundGridProg]
-      congr 3
-      ext S i
-      rw [empiricalBias_eq_empiricalMean]
-    dsimp only
-    rw [hmarg, coinBias_eq_distExpectation]
+  · dsimp only
+    rw [replicableBiasProg_toAlgorithm_eq, coinBias_eq_distExpectation]
     exact hest D hD
 
 end CoinBias

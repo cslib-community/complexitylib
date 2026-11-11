@@ -51,7 +51,7 @@ Impagliazzo–Lei–Pitassi–Sorrell [ImpagliazzoLeiPitassiSorrell2022]:
 
 ## Main results
 
-* `Cslib.MachineLearning.Replicable.thresholdRound_disagree_le`: discrete `[a, b]` threshold
+* `Cslib.MachineLearning.Replicable.thresholdRound_disagree_le`: discrete `[a, b)` threshold
   disagreement probability `≤ |x₁ - x₂| / (b - a) + 1 / N`.
 * `Cslib.MachineLearning.Replicable.abs_roundGrid_sub_le`: `|roundGrid w N i x - x| ≤ w / 2`.
 * `Cslib.MachineLearning.Replicable.roundGrid_disagree_le`: periodic grid rounding disagreement
@@ -65,7 +65,9 @@ Impagliazzo–Lei–Pitassi–Sorrell [ImpagliazzoLeiPitassiSorrell2022]:
 
 ## References
 
-* Impagliazzo, Lei, Pitassi, Sorrell (STOC 2022), *Reproducibility in Learning*, Section 2.2.
+* [Impagliazzo, Lei, Pitassi, Sorrell (STOC 2022)][ImpagliazzoLeiPitassiSorrell2022],
+  *Reproducibility in Learning* (paper PDF not directly inspected; rounding bounds and
+  `MeasureTheory.volume` / `ProbComp` formulations are formalized directly in Lean).
 -/
 
 public section

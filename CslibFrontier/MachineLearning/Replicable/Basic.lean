@@ -366,7 +366,7 @@ variable {X : Type u} {Ω : Type v} {α : Type w} {γ : Type z} {m : ℕ}
 
 /-- **Weak (distribution-family) `ρ`-replicability**: `A` is `ρ`-replicable over the distribution
 family `𝒟` if for every `D ∈ 𝒟`, two runs on independent `m`-samples from `D` sharing `A.seed`
-disagree with probability at most `ρ` [ImpagliazzoLeiPitassiSorrell2022, Definition 2.1]. -/
+disagree with probability at most `ρ` [ImpagliazzoLeiPitassiSorrell2022]. -/
 @[expose] def IsReplicableFor (A : Algorithm X Ω α m) (𝒟 : Set (PMF X)) (ρ : ℝ) : Prop :=
   ∀ D ∈ 𝒟, A.disagreeProb D ≤ ρ
 
@@ -375,7 +375,7 @@ abbrev IsReplicableOn (A : Algorithm X Ω α m) (D : PMF X) (ρ : ℝ) : Prop :=
   A.disagreeProb D ≤ ρ
 
 /-- **Strong (distribution-free) `ρ`-replicability**: `A` is `ρ`-replicable under all
-distributions `D : PMF X` [ImpagliazzoLeiPitassiSorrell2022, Definition 2.1]. -/
+distributions `D : PMF X` [ImpagliazzoLeiPitassiSorrell2022]. -/
 abbrev IsReplicable (A : Algorithm X Ω α m) (ρ : ℝ) : Prop :=
   IsReplicableFor A Set.univ ρ
 

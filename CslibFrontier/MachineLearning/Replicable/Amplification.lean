@@ -39,7 +39,12 @@ replicable algorithms [ImpagliazzoLeiPitassiSorrell2022]:
   for any `[DecidableEq α]`, any algorithm that is weakly (or strongly) `ρ₀`-replicable with
   `ρ₀ < 1 / 2` can be amplified to arbitrary `ρ > 0` by sampling `T` candidate seeds, estimating
   collision rates and strict majorities, and picking the first candidate seed whose empirical
-  collision rate crosses a single shared random threshold `i : Fin N`.
+  collision rate crosses a single shared random threshold `i : Fin N`. When the input algorithm
+  also has sufficiently small initial error `β₀ = O(β / T)` (with `β₀ / (a - δ)` union-bounded
+  across the `T` candidate seeds by Markov's inequality in `isAccurateFor_amplifyReplicability`
+  and `exists_amplifyReplicability_accurate`), `amplifyReplicability` also achieves `(good, β)`
+  accuracy; unlike `amplifyFinite`, `pickFirstThresholded` does not assume `β₀ < 1 / (|α| + 1)`
+  and therefore preserves small initial error rather than amplifying error from `≈ 1 / 2`.
 
 ## Main definitions
 
@@ -62,8 +67,11 @@ replicable algorithms [ImpagliazzoLeiPitassiSorrell2022]:
   `Cslib.MachineLearning.Replicable.exists_amplifyFinite`: finite-domain amplification from
   `β₀ < 1 / (|α| + 1)` to arbitrary strong `ρ` and accuracy `β`.
 * `Cslib.MachineLearning.Replicable.disagreeProb_amplifyReplicability_le`,
-  `Cslib.MachineLearning.Replicable.exists_amplifyReplicability`: amplifying `ρ₀ < 1 / 2` to
-  arbitrary `ρ > 0` over any `[DecidableEq α]`.
+  `Cslib.MachineLearning.Replicable.isAccurateFor_amplifyReplicability`,
+  `Cslib.MachineLearning.Replicable.exists_amplifyReplicability`,
+  `Cslib.MachineLearning.Replicable.exists_amplifyReplicability_accurate`: amplifying
+  `ρ₀ < 1 / 2` to arbitrary `ρ > 0` over any `[DecidableEq α]`, with preserved accuracy under
+  `O(β / T)` initial error.
 
 ## References
 
@@ -81,25 +89,6 @@ universe u v w
 open scoped ENNReal
 
 section Helpers
-
-private theorem iid_map_coord {α γ : Type*} :
-    ∀ (n : ℕ) (p : PMF α) (f : α → γ),
-      (Probability.PMF.iid p n).map (fun v j => f (v j)) = Probability.PMF.iid (p.map f) n
-  | 0, _, _ => by
-    simp only [Probability.PMF.iid, PMF.pure_map]
-    exact congrArg PMF.pure (funext fun j => j.elim0)
-  | n + 1, p, f => by
-    have ih := iid_map_coord n p f
-    change (p.bind fun a => (Probability.PMF.iid p n).map (Fin.cons a)).map (fun v j => f (v j)) =
-      (p.map f).bind fun b => (Probability.PMF.iid (p.map f) n).map (Fin.cons b)
-    rw [PMF.map_bind, PMF.bind_map]
-    refine congrArg (PMF.bind p) (funext fun a => ?_)
-    rw [PMF.map_comp]
-    dsimp only [Function.comp_def]
-    rw [← ih, PMF.map_comp]
-    refine congrArg (fun g => PMF.map g (Probability.PMF.iid p n)) ?_
-    funext x j
-    exact Fin.cases rfl (fun _ => rfl) j
 
 private theorem exists_heavy_of_le_tsum_sq {α : Type*} (p : PMF α) {c : ℝ}
     (hle : c ≤ Probability.PMF.collisionProbability p) : ∃ a, c ≤ (p a).toReal := by
@@ -159,13 +148,6 @@ private theorem exp_decay_exists (M : ℝ) {δ : ℝ} (hδ : 0 < δ) {ε : ℝ} 
         mul_le_mul (le_max_left _ _) hexp (Real.exp_pos _).le hB.le
     _ = ε := mul_div_cancel₀ ε hB.ne'
 
-private theorem toOuterMeasure_singleton_toReal {α : Type*} (p : PMF α) (a : α) :
-    (p.toOuterMeasure {a}).toReal = (p a).toReal := by
-  rw [PMF.toOuterMeasure_apply, tsum_eq_single a]
-  · simp
-  · intro b hb
-    simp [hb]
-
 private theorem iid_bad_coord_le {γ : Type*} (q_marg : PMF γ) (bad : γ → Bool) {β₀ : ℝ}
     (hq : ((q_marg.map bad) true).toReal ≤ β₀) (hβ₀ : β₀ ≤ 1 / 2)
     (t : ℕ) {S : Set (Fin (2 * t) → γ)}
@@ -180,7 +162,7 @@ private theorem iid_bad_coord_le {γ : Type*} (q_marg : PMF γ) (bad : γ → Bo
         Probability.PMF.toOuterMeasure_toReal_mono _ hsub
     _ = ((Probability.PMF.iid (q_marg.map bad) (2 * t)).toOuterMeasure
           {w : Fin (2 * t) → Bool | t ≤ (Finset.univ.filter fun j => w j = true).card}).toReal := by
-        rw [← PMF.toOuterMeasure_map_apply, iid_map_coord (2 * t) q_marg bad]
+        rw [← PMF.toOuterMeasure_map_apply, (Probability.PMF.iid_map q_marg bad (2 * t)).symm]
     _ ≤ (4 * β₀ * (1 - β₀)) ^ t := Probability.PMF.iid_card_ge_le hq hβ₀ t
 
 end Helpers
@@ -211,7 +193,7 @@ theorem majorityVote_accurate {A : Algorithm X Ω Bool m} {𝒟 : Set (PMF X)}
   let q : PMF Bool := (A.marginal D).map (fun b => decide (b ≠ target D))
   have hq : (q true).toReal ≤ β₀ := by
     calc (q true).toReal
-        = (q.toOuterMeasure {true}).toReal := (toOuterMeasure_singleton_toReal q true).symm
+        = (q.toOuterMeasure {true}).toReal := by rw [PMF.toOuterMeasure_apply_singleton]
       _ = ((A.marginal D).toOuterMeasure {b | b ≠ target D}).toReal := by
           rw [PMF.toOuterMeasure_map_apply]
           congr 2
@@ -249,16 +231,7 @@ theorem majorityVote_accurate {A : Algorithm X Ω Bool m} {𝒟 : Set (PMF X)}
               Finset.sum_congr rfl fun j _ => by cases v j <;> simp
           _ = 2 * (r + 1) := by simp
       omega
-  calc ((Probability.PMF.iid (A.marginal D) (2 * (r + 1))).toOuterMeasure _).toReal
-      ≤ ((Probability.PMF.iid (A.marginal D) (2 * (r + 1))).toOuterMeasure _).toReal :=
-        Probability.PMF.toOuterMeasure_toReal_mono _ hsub
-    _ = ((Probability.PMF.iid q (2 * (r + 1))).toOuterMeasure
-          {w : Fin (2 * (r + 1)) → Bool |
-            r + 1 ≤ (Finset.univ.filter fun j => w j = true).card}).toReal := by
-        rw [← PMF.toOuterMeasure_map_apply,
-          iid_map_coord (2 * (r + 1)) (A.marginal D) (fun b => decide (b ≠ target D))]
-    _ ≤ (4 * β₀ * (1 - β₀)) ^ (r + 1) :=
-        Probability.PMF.iid_card_ge_le hq hβ₀ (r + 1)
+  exact iid_bad_coord_le (A.marginal D) (fun b => decide (b ≠ target D)) hq hβ₀ (r + 1) hsub
 
 /-- For any Boolean algorithm with error `β₀ < 1 / 2` and any target `β > 0`, taking the majority
 of `2 * (r + 1)` independent repetitions achieves failure probability at most `β`. -/
@@ -291,7 +264,7 @@ theorem medianOfRuns_accurate {A : Algorithm X Ω ℝ m} {𝒟 : Set (PMF X)}
   let q : PMF Bool := (A.marginal D).map (fun y => decide (ε < |y - target D|))
   have hq : (q true).toReal ≤ β₀ := by
     calc (q true).toReal
-        = (q.toOuterMeasure {true}).toReal := (toOuterMeasure_singleton_toReal q true).symm
+        = (q.toOuterMeasure {true}).toReal := by rw [PMF.toOuterMeasure_apply_singleton]
       _ = ((A.marginal D).toOuterMeasure {y | ε < |y - target D|}).toReal := by
           rw [PMF.toOuterMeasure_map_apply]
           congr 2
@@ -653,16 +626,8 @@ theorem isAccurateFor_amplifyFinite [Fintype α] [Nonempty α] [LinearOrder α]
   have hgood_prob : 1 - β₀ ≤ ((A.marginal D).toOuterMeasure (good D)).toReal :=
     (isAccurateFor_iff_prob_good.mp hacc) D hD
   have hsum_good : ((A.marginal D).toOuterMeasure (good D)).toReal =
-      ∑ y : α, if y ∈ good D then (A.marginal D y).toReal else 0 := by
-    rw [PMF.toOuterMeasure_apply]
-    have hfin : ∑' y : α, (good D).indicator (A.marginal D) y =
-        ∑ y : α, (good D).indicator (A.marginal D) y := tsum_fintype _
-    rw [hfin, ENNReal.toReal_sum fun y _ =>
-      ne_top_of_le_ne_top ((A.marginal D).apply_ne_top y) (Set.indicator_le_self _ _ _)]
-    refine Finset.sum_congr rfl fun y _ => ?_
-    by_cases hy : y ∈ good D
-    · simp [hy]
-    · simp [hy]
+      ∑ y : α, if y ∈ good D then (A.marginal D y).toReal else 0 :=
+    Probability.PMF.toOuterMeasure_apply_toReal (A.marginal D) (good D)
   have hβ₀_lt_div : β₀ < (1 - β₀) / M := by linarith
   have hβ₀_nn : 0 ≤ β₀ := ENNReal.toReal_nonneg.trans (hacc D hD)
   have hdiv_pos : 0 < (1 - β₀) / M := by linarith
@@ -684,7 +649,7 @@ theorem isAccurateFor_amplifyFinite [Fintype α] [Nonempty α] [LinearOrder α]
   obtain ⟨y₀, hy₀, hy₀_mass⟩ := hex_heavy
   have hbad_mass : ∀ y ∉ good D, (A.marginal D y).toReal ≤ β₀ := fun y hy => by
     calc (A.marginal D y).toReal
-        = ((A.marginal D).toOuterMeasure {y}).toReal := (toOuterMeasure_singleton_toReal _ _).symm
+        = ((A.marginal D).toOuterMeasure {y}).toReal := by rw [PMF.toOuterMeasure_apply_singleton]
       _ ≤ ((A.marginal D).toOuterMeasure (good D)ᶜ).toReal :=
           Probability.PMF.toOuterMeasure_toReal_mono _ (Set.singleton_subset_iff.mpr hy)
       _ ≤ β₀ := hacc D hD
@@ -899,7 +864,7 @@ private theorem agreeProb_eq_tsum_seedColl (A : Algorithm X Ω α m) (D : PMF X)
       have hset : (fun y₂ : α => (y₁, y₂)) ⁻¹' {p : α × α | p.1 = p.2} = {y₁} := by
         ext y₂
         simp [eq_comm]
-      rw [hset, toOuterMeasure_singleton_toReal, sq]
+      rw [hset, PMF.toOuterMeasure_apply_singleton, sq]
     · intro y₁
       exact ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (Probability.PMF.toOuterMeasure_ne_top _ _)
   rw [Algorithm.agreeProb, hpair, PMF.toOuterMeasure_bind_apply, ENNReal.tsum_toReal_eq]
@@ -1144,6 +1109,50 @@ candidate of the first seed passing `thresholdValue a b N i`. -/
         (seed.1 t)).map
       fun trials => pickFirstThresholded a b N seed.2 trials
 
+private theorem iid_bind_trialRun_block [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
+    (T k₁ k₂ : ℕ) [NeZero k₂] (rs : Fin T → Ω) :
+    ((Probability.PMF.iid D (T * (k₁ * (m + m) + k₂ * m))).bind fun S =>
+      pmfPiFin fun t : Fin T =>
+        trialRun A k₁ k₂ (BitString.block (m := T) (k := k₁ * (m + m) + k₂ * m) S t) (rs t)) =
+      pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂ := by
+  have hm := (PMF.bind_map (Probability.PMF.iid D (T * (k₁ * (m + m) + k₂ * m)))
+    (BitString.block (α := X) (m := T) (k := k₁ * (m + m) + k₂ * m))
+    fun B => pmfPiFin fun t : Fin T => trialRun A k₁ k₂ (B t) (rs t)).symm
+  dsimp only [Function.comp_def] at hm
+  rw [hm, iid_map_block, ← pmfPiFin_const,
+    pmfPiFin_bind (fun _ : Fin T => Probability.PMF.iid D (k₁ * (m + m) + k₂ * m))
+      (fun t b => trialRun A k₁ k₂ b (rs t))]
+  exact congrArg pmfPiFin (funext fun t => iid_bind_trialRun A D (rs t) k₁ k₂)
+
+private theorem marginal_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω α m)
+    (a b : ℝ) (T k₁ k₂ N : ℕ) [NeZero T] [NeZero k₂] [NeZero N] (D : PMF X) :
+    (amplifyReplicability A a b T k₁ k₂ N).marginal D =
+      (pmfPiFin fun _ : Fin T => A.seed).bind fun rs =>
+        (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).bind fun trials =>
+          (Probability.PMF.uniformOfFintype (Fin N)).map fun i =>
+            pickFirstThresholded a b N i trials := by
+  rw [Algorithm.marginal_eq_seed_bind]
+  simp only [amplifyReplicability, PMF.bind_bind, PMF.bind_map, Function.comp_def]
+  refine congrArg (PMF.bind (pmfPiFin fun _ : Fin T => A.seed)) (funext fun rs => ?_)
+  calc ((Probability.PMF.uniformOfFintype (Fin N)).bind fun i =>
+          (Probability.PMF.iid D (T * (k₁ * (m + m) + k₂ * m))).bind fun S =>
+            (pmfPiFin fun t : Fin T =>
+              trialRun A k₁ k₂ (BitString.block (m := T) (k := k₁ * (m + m) + k₂ * m) S t)
+                (rs t)).map fun trials => pickFirstThresholded a b N i trials)
+      = (Probability.PMF.uniformOfFintype (Fin N)).bind fun i =>
+          (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).map fun trials =>
+            pickFirstThresholded a b N i trials := by
+        refine congrArg (PMF.bind (Probability.PMF.uniformOfFintype (Fin N))) (funext fun i => ?_)
+        rw [← PMF.map_bind, iid_bind_trialRun_block A D T k₁ k₂ rs]
+    _ = (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).bind fun trials =>
+          (Probability.PMF.uniformOfFintype (Fin N)).map fun i =>
+            pickFirstThresholded a b N i trials := by
+        change ((Probability.PMF.uniformOfFintype (Fin N)).bind fun i =>
+            (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).bind fun trials =>
+              PMF.pure (pickFirstThresholded a b N i trials)) = _
+        rw [PMF.bind_comm]
+        rfl
+
 private theorem pairedOutput_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω α m)
     (a b : ℝ) (T k₁ k₂ N : ℕ) [NeZero T] [NeZero k₂] [NeZero N] (D : PMF X) :
     (amplifyReplicability A a b T k₁ k₂ N).pairedOutput D =
@@ -1155,19 +1164,7 @@ private theorem pairedOutput_amplifyReplicability [DecidableEq α] (A : Algorith
   simp only [Algorithm.pairedOutput, amplifyReplicability, PMF.bind_bind, PMF.bind_map,
     Function.comp_def]
   refine congrArg (PMF.bind (pmfPiFin fun _ : Fin T => A.seed)) (funext fun rs => ?_)
-  have hpull :
-      ((Probability.PMF.iid D (T * (k₁ * (m + m) + k₂ * m))).bind fun S =>
-        pmfPiFin fun t : Fin T =>
-          trialRun A k₁ k₂ (BitString.block (m := T) (k := k₁ * (m + m) + k₂ * m) S t) (rs t)) =
-      pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂ := by
-    have hm := (PMF.bind_map (Probability.PMF.iid D (T * (k₁ * (m + m) + k₂ * m)))
-      (BitString.block (α := X) (m := T) (k := k₁ * (m + m) + k₂ * m))
-      fun B => pmfPiFin fun t : Fin T => trialRun A k₁ k₂ (B t) (rs t)).symm
-    dsimp only [Function.comp_def] at hm
-    rw [hm, iid_map_block, ← pmfPiFin_const,
-      pmfPiFin_bind (fun _ : Fin T => Probability.PMF.iid D (k₁ * (m + m) + k₂ * m))
-        (fun t b => trialRun A k₁ k₂ b (rs t))]
-    exact congrArg pmfPiFin (funext fun t => iid_bind_trialRun A D (rs t) k₁ k₂)
+  have hpull := iid_bind_trialRun_block A D T k₁ k₂ rs
   have hS (i : Fin N) :
       ((Probability.PMF.iid D (T * (k₁ * (m + m) + k₂ * m))).bind fun S₁ =>
         (Probability.PMF.iid D (T * (k₁ * (m + m) + k₂ * m))).bind fun S₂ =>
@@ -1248,7 +1245,7 @@ private theorem pairedOutput_amplifyReplicability [DecidableEq α] (A : Algorith
         rfl
 
 private theorem trialRunMarginal_single_fail [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
-    (r : Ω) {a δ : ℝ} (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (k₁ k₂ : ℕ) [NeZero k₁] [NeZero k₂] :
+    (r : Ω) {a δ : ℝ} (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (k₁ k₂ : ℕ) [NeZero k₂] :
     ((trialRunMarginal A D r k₁ k₂).toOuterMeasure
       {pr : ℝ × α |
         |pr.1 - seedColl A D r| ≤ δ ∧
@@ -1284,11 +1281,11 @@ private theorem trialRunMarginal_single_fail [DecidableEq α] (A : Algorithm X �
           2 * Real.exp (-2 * (k₂ : ℝ) * δ_maj ^ 2) := by
       let q : PMF Bool := μ.map fun z => decide (z = yStar)
       have hq : (q true).toReal = (μ yStar).toReal := by
-        rw [← toOuterMeasure_singleton_toReal, PMF.toOuterMeasure_map_apply]
+        rw [← PMF.toOuterMeasure_apply_singleton q true, PMF.toOuterMeasure_map_apply]
         have hset : (fun z : α => decide (z = yStar)) ⁻¹' {true} = {yStar} := by
           ext z
           simp
-        rw [hset, toOuterMeasure_singleton_toReal]
+        rw [hset, PMF.toOuterMeasure_apply_singleton]
       have hsub :
           {zs : Fin k₂ → α | strictMajorityCandidate zs (zs ⟨0, NeZero.pos k₂⟩) ≠ yStar} ⊆
           (fun zs : Fin k₂ → α => fun j => decide (zs j = yStar)) ⁻¹'
@@ -1319,7 +1316,8 @@ private theorem trialRunMarginal_single_fail [DecidableEq α] (A : Algorithm X �
             Probability.PMF.toOuterMeasure_toReal_mono _ hsub
         _ = ((Probability.PMF.iid q k₂).toOuterMeasure
               {bs : Fin k₂ → Bool | δ_maj < |empFreq k₂ bs true - (q true).toReal|}).toReal := by
-            rw [← PMF.toOuterMeasure_map_apply, iid_map_coord k₂ μ (fun z => decide (z = yStar))]
+            rw [← PMF.toOuterMeasure_map_apply,
+              (Probability.PMF.iid_map μ (fun z => decide (z = yStar)) k₂).symm]
         _ ≤ 2 * Real.exp (-2 * (k₂ : ℝ) * δ_maj ^ 2) := empFreq_concentrates q k₂ hδ_maj.le true
     have hfail1 :
         (((Probability.PMF.iid collBool k₁).bind fun cs =>
@@ -1404,6 +1402,177 @@ private theorem trialRunMarginal_single_fail [DecidableEq α] (A : Algorithm X �
         exact h1
     exact hfail2.trans (le_add_of_nonneg_right (by positivity))
 
+private theorem seed_markov_err_lt (A : Algorithm X Ω α m) (D : PMF X) (good : Set α)
+    {c β₀ : ℝ} (hc : 0 < c) (hacc : ((A.marginal D).toOuterMeasure goodᶜ).toReal ≤ β₀) :
+    (A.seed.toOuterMeasure
+      {r : Ω | c ≤ ((seedOutput A D r).toOuterMeasure goodᶜ).toReal}).toReal ≤ β₀ / c := by
+  classical
+  let errSeed : Ω → ℝ := fun r => ((seedOutput A D r).toOuterMeasure goodᶜ).toReal
+  have herr_nn : ∀ r : Ω, 0 ≤ errSeed r := fun _ => ENNReal.toReal_nonneg
+  have herr_le : ∀ r : Ω, errSeed r ≤ 1 := fun r => Probability.PMF.toOuterMeasure_toReal_le_one _ _
+  have hm_sum :
+      ((A.marginal D).toOuterMeasure goodᶜ).toReal = ∑' r : Ω, (A.seed r).toReal * errSeed r := by
+    rw [Algorithm.marginal_eq_seed_bind, PMF.toOuterMeasure_bind_apply, ENNReal.tsum_toReal_eq]
+    · refine tsum_congr fun r => ?_
+      rw [ENNReal.toReal_mul]
+      rfl
+    · intro r
+      exact ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (Probability.PMF.toOuterMeasure_ne_top _ _)
+  have hsum_err : Summable fun r : Ω => (A.seed r).toReal * errSeed r :=
+    (Probability.PMF.summable_toReal A.seed).of_nonneg_of_le
+      (fun r => mul_nonneg ENNReal.toReal_nonneg (herr_nn r))
+      (fun r => mul_le_of_le_one_right ENNReal.toReal_nonneg (herr_le r))
+  have hmarkov_sum : Summable fun r : Ω => if c ≤ errSeed r then (A.seed r).toReal else 0 :=
+    (Probability.PMF.summable_toReal A.seed).of_nonneg_of_le
+      (fun r => by split_ifs <;> simp [ENNReal.toReal_nonneg])
+      (fun r => by split_ifs <;> simp [ENNReal.toReal_nonneg])
+  have hmeas_tsum :
+      (A.seed.toOuterMeasure {r : Ω | c ≤ errSeed r}).toReal =
+        ∑' r : Ω, if c ≤ errSeed r then (A.seed r).toReal else 0 := by
+    rw [PMF.toOuterMeasure_apply, ENNReal.tsum_toReal_eq]
+    · refine tsum_congr fun r => ?_
+      by_cases hr : c ≤ errSeed r
+      · simp [Set.indicator_of_mem, hr]
+      · simp [Set.indicator_of_notMem, hr]
+    · intro r
+      exact ne_top_of_le_ne_top (A.seed.apply_ne_top r) (Set.indicator_le_self _ _ _)
+  have hle_sum :
+      (∑' r : Ω, (if c ≤ errSeed r then (A.seed r).toReal else 0) * c) ≤
+        ∑' r : Ω, (A.seed r).toReal * errSeed r := by
+    refine (hmarkov_sum.mul_right c).tsum_le_tsum (fun r => ?_) hsum_err
+    split_ifs with hr
+    · exact mul_le_mul_of_nonneg_left hr ENNReal.toReal_nonneg
+    · rw [zero_mul]
+      exact mul_nonneg ENNReal.toReal_nonneg (herr_nn r)
+  rw [tsum_mul_right, ← hmeas_tsum, ← hm_sum] at hle_sum
+  exact (le_div_iff₀ hc).mpr (hle_sum.trans hacc)
+
+private theorem pmfPiFin_exists_le {Ω : Type*} (p : PMF Ω) (P : Ω → Prop) (bound : ℝ)
+    (hb : 0 ≤ bound) (hP : (p.toOuterMeasure {r | P r}).toReal ≤ bound) :
+    ∀ T : ℕ, ((pmfPiFin fun _ : Fin T => p).toOuterMeasure
+      {rs : Fin T → Ω | ∃ t, P (rs t)}).toReal ≤ (T : ℝ) * bound
+  | 0 => by simp
+  | T + 1 => by
+    rw [pmfPiFin]
+    have ih := pmfPiFin_exists_le p P bound hb hP T
+    have hmul : ((p.bind fun r₀ => (pmfPiFin fun _ : Fin T => p).map (Fin.cons r₀)).toOuterMeasure
+        {rs : Fin (T + 1) → Ω | ∃ t, P (rs t)}).toReal ≤ (T : ℝ) * bound + bound := by
+      refine (Probability.PMF.toOuterMeasure_bind_failure_toReal_le p _ {r | ¬ P r} _
+        (error := (T : ℝ) * bound) (by positivity) ?_).trans ?_
+      · intro r₀ _ hr₀
+        rw [PMF.toOuterMeasure_map_apply]
+        have hsub : Fin.cons r₀ ⁻¹' {rs : Fin (T + 1) → Ω | ∃ t, P (rs t)} ⊆
+            {rs' : Fin T → Ω | ∃ t, P (rs' t)} := by
+          rintro rs' ⟨t, ht⟩
+          refine Fin.cases (fun h0 => absurd h0 hr₀) (fun t' h => ⟨t', h⟩) t ht
+        exact (Probability.PMF.toOuterMeasure_toReal_mono _ hsub).trans ih
+      · have heq : ({r : Ω | ¬ P r} : Set Ω)ᶜ = {r | P r} := by
+          ext r
+          simp
+        rw [heq]
+        linarith [hP]
+    refine hmul.trans_eq ?_
+    push_cast
+    ring
+
+private theorem bad_goodSeeds_le (A : Algorithm X Ω α m) (D : PMF X) {θ_acc : ℝ}
+    (hθ_lt : θ_acc < 1) (T : ℕ) :
+    ((pmfPiFin fun _ : Fin T => A.seed).toOuterMeasure
+      ({rs : Fin T → Ω | ∃ t : Fin T, θ_acc ≤ seedColl A D (rs t)})ᶜ).toReal ≤
+      (A.disagreeProb D / (1 - θ_acc)) ^ T := by
+  have heqc : ({rs : Fin T → Ω | ∃ t : Fin T, θ_acc ≤ seedColl A D (rs t)})ᶜ =
+      {rs : Fin T → Ω | ∀ t : Fin T, seedColl A D (rs t) < θ_acc} := by
+    ext rs
+    simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists, not_le]
+  rw [heqc]
+  have hpow := ENNReal.toReal_mono
+    (ENNReal.pow_ne_top (Probability.PMF.toOuterMeasure_ne_top _ _))
+    (pmfPiFin_forall_lt_le A.seed (fun r => seedColl A D r < θ_acc) T)
+  rw [ENNReal.toReal_pow] at hpow
+  exact hpow.trans (pow_le_pow_left₀ ENNReal.toReal_nonneg (seed_markov_coll_lt A D hθ_lt) T)
+
+private noncomputable def goodTrialsSet (A : Algorithm X Ω α m) (D : PMF X)
+    (a δ : ℝ) {T : ℕ} (rs : Fin T → Ω) : Set (Fin T → ℝ × α) :=
+  {trials | ∀ t : Fin T,
+    |(trials t).1 - seedColl A D (rs t)| ≤ δ ∧
+    (a - δ ≤ seedColl A D (rs t) →
+      ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → (trials t).2 = y)}
+
+private theorem goodTrials_fail_le [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
+    {a δ : ℝ} (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (T k₁ k₂ : ℕ) [NeZero k₂] (rs : Fin T → Ω) :
+    ((pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure
+      (goodTrialsSet A D a δ rs)ᶜ).toReal ≤
+      (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
+        2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) := by
+  have hunion :
+      (goodTrialsSet A D a δ rs)ᶜ =
+      ⋃ t ∈ (Finset.univ : Finset (Fin T)),
+        (fun trials : Fin T → ℝ × α => trials t) ⁻¹'
+          {pr : ℝ × α |
+            |pr.1 - seedColl A D (rs t)| ≤ δ ∧
+            (a - δ ≤ seedColl A D (rs t) →
+              ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → pr.2 = y)}ᶜ := by
+    ext trials
+    simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_forall, Set.mem_iUnion,
+      Finset.mem_univ, Set.mem_preimage, exists_true_left, goodTrialsSet]
+  rw [hunion]
+  have hmeas := MeasureTheory.measure_biUnion_finset_le
+    (μ := (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure)
+    Finset.univ
+    (fun t : Fin T => (fun trials : Fin T → ℝ × α => trials t) ⁻¹'
+      {pr : ℝ × α |
+        |pr.1 - seedColl A D (rs t)| ≤ δ ∧
+        (a - δ ≤ seedColl A D (rs t) →
+          ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → pr.2 = y)}ᶜ)
+  have hreal := ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun _ _ =>
+    Probability.PMF.toOuterMeasure_ne_top _ _) hmeas
+  rw [ENNReal.toReal_sum fun _ _ => Probability.PMF.toOuterMeasure_ne_top _ _] at hreal
+  refine hreal.trans ?_
+  calc ∑ t : Fin T,
+          ((pmfPiFin fun t' : Fin T => trialRunMarginal A D (rs t') k₁ k₂).toOuterMeasure
+            ((fun trials : Fin T → ℝ × α => trials t) ⁻¹' _)).toReal
+      = ∑ t : Fin T, ((trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure _).toReal := by
+        refine Finset.sum_congr rfl fun t _ => ?_
+        rw [← PMF.toOuterMeasure_map_apply, pmfPiFin_map_eval]
+    _ ≤ ∑ _t : Fin T, (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
+          2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) :=
+        Finset.sum_le_sum fun t _ =>
+          trialRunMarginal_single_fail A D (rs t) hδ ha_half k₁ k₂
+    _ = (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
+          2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) := by
+        simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+
+private theorem pickFirstThresholded_eq_heavy [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
+    {a b θ_acc δ : ℝ} (hab : a ≤ b) (hb_acc : b ≤ θ_acc - δ) {T N : ℕ} [NeZero T]
+    {rs : Fin T → Ω} {t₀ : Fin T} (ht₀ : θ_acc ≤ seedColl A D (rs t₀))
+    {trials : Fin T → ℝ × α} (htr : trials ∈ goodTrialsSet A D a δ rs) (i : Fin N) :
+    ∃ tStar : Fin T, ∃ yStar : α,
+      pickFirstThresholded a b N i trials = yStar ∧
+      a - δ ≤ (seedOutput A D (rs tStar) yStar).toReal := by
+  have ht₀_pass : thresholdRound a b N i (trials t₀).1 = true := by
+    have h1 := (abs_sub_le_iff.mp (htr t₀).1).2
+    exact thresholdRound_true_of_right_le hab i (by linarith)
+  have hne : (Finset.univ.filter fun t : Fin T =>
+      thresholdRound a b N i (trials t).1 = true).Nonempty :=
+    ⟨t₀, Finset.mem_filter.mpr ⟨Finset.mem_univ _, ht₀_pass⟩⟩
+  let tStar := (Finset.univ.filter fun t : Fin T =>
+    thresholdRound a b N i (trials t).1 = true).min' hne
+  have hpick : pickFirstThresholded a b N i trials = (trials tStar).2 := by
+    dsimp only [pickFirstThresholded]
+    split_ifs
+    rfl
+  have ht_pass : thresholdRound a b N i (trials tStar).1 = true :=
+    (Finset.mem_filter.mp (Finset.min'_mem _ hne)).2
+  have ht_ge : a ≤ (trials tStar).1 := by
+    by_contra hlt
+    rw [not_le] at hlt
+    exact absurd ht_pass (by rw [thresholdRound_false_of_lt_left hab i hlt]; decide)
+  have hcoll_ge : a - δ ≤ seedColl A D (rs tStar) := by
+    have h2 := (abs_sub_le_iff.mp (htr tStar).1).1
+    linarith
+  obtain ⟨yStar, hyStar⟩ := exists_heavy_of_le_tsum_sq (seedOutput A D (rs tStar)) hcoll_ge
+  exact ⟨tStar, yStar, hpick.trans ((htr tStar).2 hcoll_ge yStar hyStar), hyStar⟩
+
 /-- Disagreement probability upper bound for `amplifyReplicability`: if
 `1 / 2 + δ < a < b ≤ θ_acc - δ` and `θ_acc < 1`, then
 `(amplifyReplicability A a b T k₁ k₂ N).disagreeProb D` is bounded by the bad-seed probability
@@ -1412,7 +1581,7 @@ threshold discretization error `T * (2 * δ / (b - a) + 1 / N)`. -/
 theorem disagreeProb_amplifyReplicability_le [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
     {a b θ_acc δ : ℝ} (hab : a < b) (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a)
     (hb_acc : b ≤ θ_acc - δ) (hθ_lt : θ_acc < 1) (T k₁ k₂ N : ℕ)
-    [NeZero T] [NeZero k₁] [NeZero k₂] [NeZero N] :
+    [NeZero T] [NeZero k₂] [NeZero N] :
     (amplifyReplicability A a b T k₁ k₂ N).disagreeProb D ≤
       (A.disagreeProb D / (1 - θ_acc)) ^ T +
         2 * ((T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
@@ -1430,16 +1599,8 @@ theorem disagreeProb_amplifyReplicability_le [DecidableEq α] (A : Algorithm X �
   let goodSeeds : Set (Fin T → Ω) := {rs | ∃ t : Fin T, θ_acc ≤ seedColl A D (rs t)}
   have hbad_seeds :
       ((pmfPiFin fun _ : Fin T => A.seed).toOuterMeasure goodSeedsᶜ).toReal ≤
-        (A.disagreeProb D / (1 - θ_acc)) ^ T := by
-    have heqc : goodSeedsᶜ = {rs : Fin T → Ω | ∀ t : Fin T, seedColl A D (rs t) < θ_acc} := by
-      ext rs
-      simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_exists, not_le, goodSeeds]
-    rw [heqc]
-    have hpow := ENNReal.toReal_mono
-      (ENNReal.pow_ne_top (Probability.PMF.toOuterMeasure_ne_top _ _))
-      (pmfPiFin_forall_lt_le A.seed (fun r => seedColl A D r < θ_acc) T)
-    rw [ENNReal.toReal_pow] at hpow
-    exact hpow.trans (pow_le_pow_left₀ ENNReal.toReal_nonneg (seed_markov_coll_lt A D hθ_lt) T)
+        (A.disagreeProb D / (1 - θ_acc)) ^ T :=
+    bad_goodSeeds_le A D hθ_lt T
   have hrs_step :
       ∀ rs ∈ goodSeeds,
         (((pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).bind fun trials₁ =>
@@ -1450,50 +1611,11 @@ theorem disagreeProb_amplifyReplicability_le [DecidableEq α] (A : Algorithm X �
           {p : α × α | p.1 ≠ p.2}).toReal ≤
           2 * trialFail + seedFail := by
     intro rs ⟨t₀, ht₀⟩
-    let goodTrials : Set (Fin T → ℝ × α) :=
-      {trials | ∀ t : Fin T,
-        |(trials t).1 - seedColl A D (rs t)| ≤ δ ∧
-        (a - δ ≤ seedColl A D (rs t) →
-          ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → (trials t).2 = y)}
+    let goodTrials := goodTrialsSet A D a δ rs
     have hbad_trials :
         ((pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure
-          goodTrialsᶜ).toReal ≤ trialFail := by
-      have hunion :
-          goodTrialsᶜ =
-          ⋃ t ∈ (Finset.univ : Finset (Fin T)),
-            (fun trials : Fin T → ℝ × α => trials t) ⁻¹'
-              {pr : ℝ × α |
-                |pr.1 - seedColl A D (rs t)| ≤ δ ∧
-                (a - δ ≤ seedColl A D (rs t) →
-                  ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → pr.2 = y)}ᶜ := by
-        ext trials
-        simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_forall, Set.mem_iUnion,
-          Finset.mem_univ, Set.mem_preimage, exists_true_left, goodTrials]
-      rw [hunion]
-      have hmeas := MeasureTheory.measure_biUnion_finset_le
-        (μ := (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure)
-        Finset.univ
-        (fun t : Fin T => (fun trials : Fin T → ℝ × α => trials t) ⁻¹'
-          {pr : ℝ × α |
-            |pr.1 - seedColl A D (rs t)| ≤ δ ∧
-            (a - δ ≤ seedColl A D (rs t) →
-              ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → pr.2 = y)}ᶜ)
-      have hreal := ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun _ _ =>
-        Probability.PMF.toOuterMeasure_ne_top _ _) hmeas
-      rw [ENNReal.toReal_sum fun _ _ => Probability.PMF.toOuterMeasure_ne_top _ _] at hreal
-      refine hreal.trans ?_
-      calc ∑ t : Fin T,
-              ((pmfPiFin fun t' : Fin T => trialRunMarginal A D (rs t') k₁ k₂).toOuterMeasure
-                ((fun trials : Fin T → ℝ × α => trials t) ⁻¹' _)).toReal
-          = ∑ t : Fin T, ((trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure _).toReal := by
-            refine Finset.sum_congr rfl fun t _ => ?_
-            rw [← PMF.toOuterMeasure_map_apply, pmfPiFin_map_eval]
-        _ ≤ ∑ _t : Fin T, (collFail + majFail) :=
-            Finset.sum_le_sum fun t _ =>
-              trialRunMarginal_single_fail A D (rs t) hδ ha_half k₁ k₂
-        _ = trialFail := by
-            dsimp only [trialFail]
-            simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+          goodTrialsᶜ).toReal ≤ trialFail :=
+      goodTrials_fail_le A D hδ ha_half T k₁ k₂ rs
     have htrials_inner :
         ∀ trials₁ ∈ goodTrials,
           (((pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).bind fun trials₂ =>
@@ -1614,14 +1736,121 @@ theorem disagreeProb_amplifyReplicability_le [DecidableEq α] (A : Algorithm X �
   dsimp only [trialFail, seedFail, collFail, majFail] at hfull
   linarith [hfull, hbad_seeds]
 
-/-- **General-domain replicability amplification** [ImpagliazzoLeiPitassiSorrell2022]: over any
-`[DecidableEq α]` output type, any algorithm `A` that is weakly (or strongly) `ρ₀`-replicable on
-`𝒟` with `ρ₀ < 1 / 2` can be amplified to `ρ`-replicability for **any** target `ρ > 0`. -/
-theorem exists_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω α m) {𝒟 : Set (PMF X)}
-    {ρ₀ ρ : ℝ} (hrep : IsReplicableFor A 𝒟 ρ₀) (hρ₀_nonneg : 0 ≤ ρ₀) (hρ₀ : ρ₀ < 1 / 2)
-    (hρ : 0 < ρ) :
-    ∃ (a b : ℝ) (T k₁ k₂ N : ℕ) (_ : NeZero T) (_ : NeZero k₂) (_ : NeZero N),
-      IsReplicableFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 ρ := by
+/-- **Accuracy preservation for `amplifyReplicability`**: under `IsReplicableFor A 𝒟 ρ₀` and
+`IsAccurateFor A 𝒟 good β₀` with `1 / 2 + δ < a < b ≤ θ_acc - δ` and `θ_acc < 1`, the failure
+probability of `amplifyReplicability` is bounded by the bad-seed probability
+`(ρ₀ / (1 - θ_acc)) ^ T`, the Markov union bound `(T : ℝ) * (β₀ / (a - δ))` over the `T`
+candidate seeds, and the per-trial concentration errors. -/
+theorem isAccurateFor_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω α m)
+    {𝒟 : Set (PMF X)} {good : PMF X → Set α} {ρ₀ β₀ a b θ_acc δ : ℝ}
+    (hrep : IsReplicableFor A 𝒟 ρ₀) (hacc : IsAccurateFor A 𝒟 good β₀)
+    (hab : a < b) (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (hb_acc : b ≤ θ_acc - δ)
+    (hθ_lt : θ_acc < 1) (T k₁ k₂ N : ℕ) [NeZero T] [NeZero k₂] [NeZero N] :
+    IsAccurateFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 good
+      ((ρ₀ / (1 - θ_acc)) ^ T + (T : ℝ) * (β₀ / (a - δ)) +
+        (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
+          2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2))) := by
+  intro D hD
+  rw [marginal_amplifyReplicability]
+  have had_pos : 0 < a - δ := by linarith
+  have hβ₀_nn : 0 ≤ β₀ := ENNReal.toReal_nonneg.trans (hacc D hD)
+  let collFail : ℝ := 2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2)
+  let majFail : ℝ := 2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)
+  let trialFail : ℝ := (T : ℝ) * (collFail + majFail)
+  have htf_nn : 0 ≤ trialFail := by positivity
+  let goodSeeds : Set (Fin T → Ω) := {rs | ∃ t : Fin T, θ_acc ≤ seedColl A D (rs t)}
+  let badErrSeeds : Set (Fin T → Ω) :=
+    {rs | ∃ t : Fin T, a - δ ≤ ((seedOutput A D (rs t)).toOuterMeasure (good D)ᶜ).toReal}
+  let goodRS : Set (Fin T → Ω) := goodSeeds ∩ badErrSeedsᶜ
+  have hbad_coll :
+      ((pmfPiFin fun _ : Fin T => A.seed).toOuterMeasure goodSeedsᶜ).toReal ≤
+        (ρ₀ / (1 - θ_acc)) ^ T := by
+    refine (bad_goodSeeds_le A D hθ_lt T).trans ?_
+    exact pow_le_pow_left₀ (div_nonneg (A.disagreeProb_nonneg D) (sub_pos.mpr hθ_lt).le)
+      (div_le_div_of_nonneg_right (hrep D hD) (sub_pos.mpr hθ_lt).le) T
+  have hbad_err :
+      ((pmfPiFin fun _ : Fin T => A.seed).toOuterMeasure badErrSeeds).toReal ≤
+        (T : ℝ) * (β₀ / (a - δ)) :=
+    pmfPiFin_exists_le A.seed
+      (fun r => a - δ ≤ ((seedOutput A D r).toOuterMeasure (good D)ᶜ).toReal)
+      (β₀ / (a - δ)) (div_nonneg hβ₀_nn had_pos.le)
+      (seed_markov_err_lt A D (good D) had_pos (hacc D hD)) T
+  have hgoodRS_c :
+      ((pmfPiFin fun _ : Fin T => A.seed).toOuterMeasure goodRSᶜ).toReal ≤
+        (ρ₀ / (1 - θ_acc)) ^ T + (T : ℝ) * (β₀ / (a - δ)) := by
+    have hsub : goodRSᶜ ⊆ goodSeedsᶜ ∪ badErrSeeds := by
+      intro rs hrs
+      simp only [Set.mem_compl_iff, Set.mem_inter_iff, not_and, not_not, goodRS] at hrs
+      by_cases hg : rs ∈ goodSeeds
+      · exact Or.inr (hrs hg)
+      · exact Or.inl hg
+    have hle := (MeasureTheory.measure_mono (μ := (pmfPiFin fun _ : Fin T => A.seed).toOuterMeasure)
+      hsub).trans (MeasureTheory.measure_union_le goodSeedsᶜ badErrSeeds)
+    have hreal := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr
+      ⟨Probability.PMF.toOuterMeasure_ne_top _ _, Probability.PMF.toOuterMeasure_ne_top _ _⟩) hle
+    rw [ENNReal.toReal_add (Probability.PMF.toOuterMeasure_ne_top _ _)
+      (Probability.PMF.toOuterMeasure_ne_top _ _)] at hreal
+    exact hreal.trans (add_le_add hbad_coll hbad_err)
+  have hrs_step :
+      ∀ rs ∈ goodRS,
+        (((pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).bind fun trials =>
+          (Probability.PMF.uniformOfFintype (Fin N)).map fun i =>
+            pickFirstThresholded a b N i trials).toOuterMeasure (good D)ᶜ).toReal ≤ trialFail := by
+    rintro rs ⟨⟨t₀, ht₀⟩, herr⟩
+    let goodTrials := goodTrialsSet A D a δ rs
+    have hbad_trials :
+        ((pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure
+          goodTrialsᶜ).toReal ≤ trialFail :=
+      goodTrials_fail_le A D hδ ha_half T k₁ k₂ rs
+    refine (Probability.PMF.toOuterMeasure_bind_failure_toReal_le _ _ goodTrials (good D)ᶜ
+      le_rfl fun trials _ htr => ?_).trans (by linarith)
+    rw [PMF.toOuterMeasure_map_apply]
+    have hempty : (fun i : Fin N => pickFirstThresholded a b N i trials) ⁻¹' (good D)ᶜ = ∅ := by
+      ext i
+      simp only [Set.mem_preimage, Set.mem_compl_iff, Set.mem_empty_iff_false, iff_false, not_not]
+      obtain ⟨tStar, yStar, hpick, hyStar⟩ :=
+        pickFirstThresholded_eq_heavy A D hab.le hb_acc ht₀ htr i
+      rw [hpick]
+      by_contra hy_bad
+      have herr_t : ((seedOutput A D (rs tStar)).toOuterMeasure (good D)ᶜ).toReal < a - δ := by
+        by_contra hge
+        rw [not_lt] at hge
+        exact herr ⟨tStar, hge⟩
+      have hle_y : (seedOutput A D (rs tStar) yStar).toReal ≤
+          ((seedOutput A D (rs tStar)).toOuterMeasure (good D)ᶜ).toReal := by
+        calc (seedOutput A D (rs tStar) yStar).toReal
+            = ((seedOutput A D (rs tStar)).toOuterMeasure {yStar}).toReal := by
+              rw [PMF.toOuterMeasure_apply_singleton]
+          _ ≤ ((seedOutput A D (rs tStar)).toOuterMeasure (good D)ᶜ).toReal :=
+              Probability.PMF.toOuterMeasure_toReal_mono _ (Set.singleton_subset_iff.mpr hy_bad)
+      linarith
+    rw [hempty]
+    simp
+  have hfull := Probability.PMF.toOuterMeasure_bind_failure_toReal_le
+    (pmfPiFin fun _ : Fin T => A.seed)
+    (fun rs => (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).bind fun trials =>
+      (Probability.PMF.uniformOfFintype (Fin N)).map fun i =>
+        pickFirstThresholded a b N i trials)
+    goodRS (good D)ᶜ htf_nn (fun rs _ hrs => hrs_step rs hrs)
+  dsimp only [trialFail, collFail, majFail] at hfull
+  linarith [hfull, hgoodRS_c]
+
+/-- **General-domain replicability and accuracy-preserving amplification**: over any
+`[DecidableEq α]`, for any initial `ρ₀ < 1 / 2` and target `ρ, β > 0`, there exist shared-seed
+and trial parameters `(a, b, T, k₁, k₂, N)` together with an initial-error threshold `β₀_req > 0`
+(of order `O(β / T)`) such that any `ρ₀`-replicable algorithm `A` whose error satisfies
+`β₀ ≤ β₀_req` is amplified to `ρ`-replicability while preserving `(good, β)` accuracy. -/
+theorem exists_amplifyReplicability_accurate {ρ₀ ρ β : ℝ} (hρ₀_nonneg : 0 ≤ ρ₀)
+    (hρ₀ : ρ₀ < 1 / 2) (hρ : 0 < ρ) (hβ : 0 < β) :
+    ∃ (a b : ℝ) (T k₁ k₂ N : ℕ) (_ : NeZero T) (_ : NeZero k₁) (_ : NeZero k₂) (_ : NeZero N)
+      (β₀_req : ℝ), 0 < β₀_req ∧
+      ∀ {X : Type u} {Ω : Type v} {α : Type w} {m : ℕ} [DecidableEq α]
+        (A : Algorithm X Ω α m) {𝒟 : Set (PMF X)} {good : PMF X → Set α} {β₀ : ℝ},
+        IsReplicableFor A 𝒟 ρ₀ → IsAccurateFor A 𝒟 good β₀ → β₀ ≤ β₀_req →
+          IsReplicableFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 ρ ∧
+          IsAccurateFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 good β := by
+  let ε : ℝ := min ρ β
+  have hε : 0 < ε := lt_min hρ hβ
   let γ : ℝ := (1 / 2 - ρ₀) / 4
   have hγ : 0 < γ := by positivity
   let a : ℝ := 1 / 2 + γ
@@ -1636,11 +1865,11 @@ theorem exists_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω α m) {
     rw [div_lt_one (sub_pos.mpr hθ_lt)]
     dsimp only [θ_acc, γ]
     linarith
-  obtain ⟨T0, hT0⟩ := exists_pow_lt_of_lt_one (by positivity : 0 < ρ / 4) hq1
+  obtain ⟨T0, hT0⟩ := exists_pow_lt_of_lt_one (by positivity : 0 < ε / 4) hq1
   let T : ℕ := max T0 1
   have hTpos : 0 < T := lt_of_lt_of_le Nat.zero_lt_one (le_max_right _ _)
   have hT_inst : NeZero T := ⟨Nat.ne_of_gt hTpos⟩
-  have hT_pow : q ^ T ≤ ρ / 4 :=
+  have hT_pow : q ^ T ≤ ε / 4 :=
     (pow_le_pow_of_le_one hq0 hq1.le (le_max_left T0 1)).trans hT0.le
   obtain ⟨N, hN_gt⟩ := exists_nat_gt (4 * (T : ℝ) / ρ)
   have hNpos : 0 < N := by
@@ -1665,28 +1894,73 @@ theorem exists_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω α m) {
   let δ_maj : ℝ := (a - δ - 1 / 2) / 2
   have hδ_maj : 0 < δ_maj := by dsimp only [δ_maj]; linarith
   obtain ⟨k₁, hk₁pos, hk₁_bound⟩ := exp_decay_exists (2 * (T : ℝ)) hδ
-    (by positivity : 0 < ρ / 8)
+    (by positivity : 0 < ε / 8)
   have hk₁_inst : NeZero k₁ := ⟨Nat.ne_of_gt hk₁pos⟩
   obtain ⟨k₂, hk₂pos, hk₂_bound⟩ := exp_decay_exists (2 * (T : ℝ)) hδ_maj
-    (by positivity : 0 < ρ / 8)
+    (by positivity : 0 < ε / 8)
   have hk₂_inst : NeZero k₂ := ⟨Nat.ne_of_gt hk₂pos⟩
-  refine ⟨a, b, T, k₁, k₂, N, hT_inst, hk₂_inst, hN_inst, fun D hD => ?_⟩
-  have hbase := disagreeProb_amplifyReplicability_le A D hab hδ.le ha_half hb_acc hθ_lt T k₁ k₂ N
-  have hpow : (A.disagreeProb D / (1 - θ_acc)) ^ T ≤ ρ / 4 := by
-    have hdiv : A.disagreeProb D / (1 - θ_acc) ≤ q :=
-      div_le_div_of_nonneg_right (hrep D hD) (sub_pos.mpr hθ_lt).le
-    exact (pow_le_pow_left₀ (div_nonneg (A.disagreeProb_nonneg D) (sub_pos.mpr hθ_lt).le)
-      hdiv T).trans hT_pow
-  have hseed1 : (T : ℝ) * (2 * δ / (b - a)) ≤ ρ / 4 := by
-    have hle : δ ≤ (ρ / (8 * (T : ℝ))) * (b - a) := min_le_right _ _
-    have hTR : (0 : ℝ) < T := Nat.cast_pos.mpr hTpos
-    calc (T : ℝ) * (2 * δ / (b - a))
-        ≤ (T : ℝ) * (2 * ((ρ / (8 * (T : ℝ))) * (b - a)) / (b - a)) := by gcongr
-      _ = ρ / 4 := by field_simp [hTR.ne', hba.ne']; ring
-  have hseed2 : (T : ℝ) * (2 * δ / (b - a) + 1 / N) =
-      (T : ℝ) * (2 * δ / (b - a)) + (T : ℝ) / N := by ring
-  dsimp only [δ_maj] at hk₂_bound
-  linarith [hbase, hpow, hk₁_bound, hk₂_bound, hseed1, hseed2, hN_bound]
+  let β₀_req : ℝ := (β / 4) * (a - δ) / T
+  have had_pos : 0 < a - δ := by linarith
+  have hTR : (0 : ℝ) < T := Nat.cast_pos.mpr hTpos
+  have hβ₀_req : 0 < β₀_req := by positivity
+  refine ⟨a, b, T, k₁, k₂, N, hT_inst, hk₁_inst, hk₂_inst, hN_inst, β₀_req, hβ₀_req, ?_⟩
+  intro X Ω α m _ A 𝒟 good β₀ hrep hacc hβ₀_le
+  have hε_rho : ε ≤ ρ := min_le_left _ _
+  have hε_beta : ε ≤ β := min_le_right _ _
+  have hrep_out : IsReplicableFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 ρ := by
+    intro D hD
+    have hbase := disagreeProb_amplifyReplicability_le A D hab hδ.le ha_half hb_acc hθ_lt T k₁ k₂ N
+    have hpow : (A.disagreeProb D / (1 - θ_acc)) ^ T ≤ ρ / 4 := by
+      have hdiv : A.disagreeProb D / (1 - θ_acc) ≤ q :=
+        div_le_div_of_nonneg_right (hrep D hD) (sub_pos.mpr hθ_lt).le
+      exact (pow_le_pow_left₀ (div_nonneg (A.disagreeProb_nonneg D) (sub_pos.mpr hθ_lt).le)
+        hdiv T).trans (hT_pow.trans (by linarith))
+    have hseed1 : (T : ℝ) * (2 * δ / (b - a)) ≤ ρ / 4 := by
+      have hle : δ ≤ (ρ / (8 * (T : ℝ))) * (b - a) := min_le_right _ _
+      calc (T : ℝ) * (2 * δ / (b - a))
+          ≤ (T : ℝ) * (2 * ((ρ / (8 * (T : ℝ))) * (b - a)) / (b - a)) := by gcongr
+        _ = ρ / 4 := by field_simp [hTR.ne', hba.ne']; ring
+    have hseed2 : (T : ℝ) * (2 * δ / (b - a) + 1 / N) =
+        (T : ℝ) * (2 * δ / (b - a)) + (T : ℝ) / N := by ring
+    dsimp only [δ_maj] at hk₂_bound
+    linarith [hbase, hpow, hk₁_bound, hk₂_bound, hseed1, hseed2, hN_bound]
+  have hacc_out : IsAccurateFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 good β := by
+    refine (isAccurateFor_amplifyReplicability A hrep hacc hab hδ.le ha_half hb_acc hθ_lt
+      T k₁ k₂ N).mono ?_
+    have h1 : (ρ₀ / (1 - θ_acc)) ^ T ≤ β / 4 := hT_pow.trans (by linarith)
+    have h2 : (T : ℝ) * (β₀ / (a - δ)) ≤ β / 4 := by
+      calc (T : ℝ) * (β₀ / (a - δ))
+          ≤ (T : ℝ) * (β₀_req / (a - δ)) := by gcongr
+        _ = β / 4 := by
+            dsimp only [β₀_req]
+            field_simp [hTR.ne', had_pos.ne']
+    have h_exp1 : (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2)) ≤ β / 8 := by
+      have hnn : 0 ≤ (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2)) := by positivity
+      linarith
+    have h_exp2 :
+        (T : ℝ) * (2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) ≤ β / 8 := by
+      have hnn :
+          0 ≤ (T : ℝ) * (2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) := by
+        positivity
+      dsimp only [δ_maj] at hk₂_bound
+      linarith
+    linarith
+  exact ⟨hrep_out, hacc_out⟩
+
+/-- **General-domain replicability amplification** [ImpagliazzoLeiPitassiSorrell2022]: over any
+`[DecidableEq α]` output type, any algorithm `A` that is weakly (or strongly) `ρ₀`-replicable on
+`𝒟` with `ρ₀ < 1 / 2` can be amplified to `ρ`-replicability for **any** target `ρ > 0`.
+See `exists_amplifyReplicability_accurate` for preserved `(good, β)` accuracy under `O(β / T)`
+initial error. -/
+theorem exists_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω α m) {𝒟 : Set (PMF X)}
+    {ρ₀ ρ : ℝ} (hrep : IsReplicableFor A 𝒟 ρ₀) (hρ₀_nonneg : 0 ≤ ρ₀) (hρ₀ : ρ₀ < 1 / 2)
+    (hρ : 0 < ρ) :
+    ∃ (a b : ℝ) (T k₁ k₂ N : ℕ) (_ : NeZero T) (_ : NeZero k₁) (_ : NeZero k₂) (_ : NeZero N),
+      IsReplicableFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 ρ := by
+  obtain ⟨a, b, T, k₁, k₂, N, hT, hk₁, hk₂, hN, β₀_req, hβ₀_pos, hspec⟩ :=
+    exists_amplifyReplicability_accurate.{u, v, w} hρ₀_nonneg hρ₀ hρ zero_lt_one
+  have hacc_triv : IsAccurateFor A 𝒟 (fun _ => Set.univ) 0 := fun D _ => by simp
+  exact ⟨a, b, T, k₁, k₂, N, hT, hk₁, hk₂, hN, (hspec A hrep hacc_triv hβ₀_pos.le).1⟩
 
 end GeneralDomainAmplification
 

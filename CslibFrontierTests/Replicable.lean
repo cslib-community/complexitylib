@@ -229,6 +229,155 @@ theorem roundGrid_concrete_and_composition :
     intro D hD
     exact (hrep D hD).trans (by norm_num)
 
+section
+
+open Cslib.Probability.PMF
+
+private noncomputable def sampleBoolThresholdProg : Program Bool (Fin 4) Bool 1 :=
+  thresholdProg (3 / 8 : ℝ) (5 / 8 : ℝ) 4 fun S => if S 0 then 3 / 4 else 1 / 4
+
+/-- `thresholdProg` executes deterministically via `Program.exec` outside the interval and obeys
+`thresholdRound_disagree_le` inside `(3 / 8, 5 / 8)`. -/
+theorem thresholdProg_concrete_check :
+    (sampleBoolThresholdProg.exec (fun _ => true)).eval = PMF.pure true ∧
+    (sampleBoolThresholdProg.exec (fun _ => false)).eval = PMF.pure false ∧
+    ((uniformOfFintype (Fin 4)).toOuterMeasure
+        {i | thresholdRound (3 / 8) (5 / 8) 4 i (7 / 16) ≠
+          thresholdRound (3 / 8) (5 / 8) 4 i (9 / 16)}).toReal ≤ 3 / 4 := by
+  refine ⟨?_, ?_, ?_⟩
+  · rw [Program.eval_exec, Algorithm.output, sampleBoolThresholdProg, thresholdProg,
+      Program.toAlgorithm_deterministic]
+    simp only [Algorithm.deterministic, ite_true]
+    have hconst : ∀ i : Fin 4, thresholdRound (3 / 8) (5 / 8) 4 i (3 / 4) = true :=
+      fun i => thresholdRound_true_of_right_le (by norm_num) i (by norm_num)
+    simp only [hconst, PMF.bind_const]
+  · rw [Program.eval_exec, Algorithm.output, sampleBoolThresholdProg, thresholdProg,
+      Program.toAlgorithm_deterministic]
+    simp only [Algorithm.deterministic, Bool.false_eq_true, ↓reduceIte]
+    have hconst : ∀ i : Fin 4, thresholdRound (3 / 8) (5 / 8) 4 i (1 / 4) = false :=
+      fun i => thresholdRound_false_of_lt_left (by norm_num) i (by norm_num)
+    simp only [hconst, PMF.bind_const]
+  · have h := thresholdRound_disagree_le (a := (3 / 8 : ℝ)) (b := 5 / 8)
+      (by norm_num) (N := 4) (7 / 16) (9 / 16)
+    linarith [h]
+
+/-- `continuousRoundGrid` stays within half a bin width and separates `7 / 16` from `1 / 2` on
+a measurable set of `[0, 1)` of Lebesgue measure at most `1 / 4`. -/
+theorem continuousRoundGrid_concrete_check :
+    (∀ u x : ℝ, |continuousRoundGrid (1 / 4) u x - x| ≤ (1 / 4 : ℝ) / 2) ∧
+    continuousRoundGrid (1 / 4) (1 / 8) (7 / 16) ≠
+      continuousRoundGrid (1 / 4) (1 / 8) (1 / 2) ∧
+    MeasureTheory.volume
+        {u | u ∈ Set.Ico 0 1 ∧
+          continuousRoundGrid (1 / 4) u (7 / 16) ≠
+            continuousRoundGrid (1 / 4) u (1 / 2)} ≤
+      ENNReal.ofReal (1 / 4) := by
+  refine ⟨fun u x => abs_continuousRoundGrid_sub_le (w := (1 / 4 : ℝ)) (by norm_num) u x, ?_, ?_⟩
+  · simp only [continuousRoundGrid, continuousRoundGridBin]
+    have hfl1 : (⌊(7 / 16 : ℝ) / (1 / 4) + 1 / 8⌋ : ℤ) = 1 := by
+      rw [Int.floor_eq_iff]; norm_num
+    have hfl2 : (⌊(1 / 2 : ℝ) / (1 / 4) + 1 / 8⌋ : ℤ) = 2 := by
+      rw [Int.floor_eq_iff]; norm_num
+    rw [hfl1, hfl2]
+    norm_num
+  · have h := volume_roundGrid_ne_le (w := (1 / 4 : ℝ)) (by norm_num) (7 / 16) (1 / 2)
+    refine h.trans (ENNReal.ofReal_le_ofReal ?_)
+    norm_num
+
+private theorem uniformFin_bind_toOuterMeasure_le {α : Type} (K : ℕ) [NeZero K]
+    (g : Fin K → PMF α) (s : Set α)
+    (hzero : ∀ r : Fin K, r ≠ 0 → (g r).toOuterMeasure s = 0) :
+    (((uniformOfFintype (Fin K)).bind g).toOuterMeasure s).toReal ≤ 1 / (K : ℝ) := by
+  have hle : ((uniformOfFintype (Fin K)).bind g).toOuterMeasure s ≤ (K : ENNReal)⁻¹ := by
+    rw [PMF.toOuterMeasure_bind_apply]
+    calc
+      ∑' r : Fin K, (uniformOfFintype (Fin K)) r * (g r).toOuterMeasure s
+          ≤ ∑' r : Fin K, if r = 0 then (uniformOfFintype (Fin K)) 0 * 1 else 0 := by
+            refine tsum_le_tsum fun r => ?_
+            by_cases hr : r = 0
+            · subst hr
+              simp only [↓reduceIte]
+              refine mul_le_mul_right ?_ _
+              have hle1 : (g 0).toOuterMeasure s ≤ (g 0).toOuterMeasure Set.univ :=
+                MeasureTheory.OuterMeasure.mono _ (Set.subset_univ _)
+              simpa [PMF.toOuterMeasure_apply, PMF.tsum_coe] using hle1
+            · simp only [hr, ↓reduceIte, hzero r hr, mul_zero, le_refl]
+      _ = (K : ENNReal)⁻¹ := by
+            rw [tsum_ite_eq, mul_one, uniformOfFintype_apply, Fintype.card_fin]
+  have hreal := ENNReal.toReal_mono (by simp [NeZero.ne K]) hle
+  simpa [one_div] using hreal
+
+private noncomputable def constExceptZeroAlg {X α : Type} (K m : ℕ) [NeZero K]
+    (d : α) (f : (Fin m → X) → α) : Algorithm X (Fin K) α m where
+  seed := uniformOfFintype (Fin K)
+  run S r := PMF.pure (if r.val = 0 then f S else d)
+
+private theorem isReplicableFor_constExceptZeroAlg {X α : Type} (K m : ℕ) [NeZero K]
+    (d : α) (f : (Fin m → X) → α) (𝒟 : Set (PMF X)) :
+    IsReplicableFor (constExceptZeroAlg K m d f) 𝒟 (1 / (K : ℝ)) := by
+  intro D _
+  rw [Algorithm.disagreeProb]
+  dsimp [Algorithm.pairedOutput, constExceptZeroAlg]
+  refine uniformFin_bind_toOuterMeasure_le K _ {p : α × α | ¬p.1 = p.2} fun r hr => ?_
+  have hr0 : r.val ≠ 0 := fun h => hr (Fin.ext h)
+  simp only [hr0, ↓reduceIte, PMF.pure_bind, PMF.map, Function.comp_apply, PMF.bind_const]
+  rw [PMF.toOuterMeasure_pure_apply]
+  simp
+
+private theorem isAccurateFor_constExceptZeroAlg {X α : Type} (K m : ℕ) [NeZero K]
+    (d : α) (f : (Fin m → X) → α) (𝒟 : Set (PMF X)) :
+    IsAccurateFor (constExceptZeroAlg K m d f) 𝒟 (fun _ => {d}) (1 / (K : ℝ)) := by
+  intro D _
+  rw [Algorithm.marginal_eq_seed_bind]
+  dsimp [constExceptZeroAlg]
+  refine uniformFin_bind_toOuterMeasure_le K _ ({d}ᶜ) fun r hr => ?_
+  have hr0 : r.val ≠ 0 := fun h => hr (Fin.ext h)
+  simp [hr0, PMF.bind_const, PMF.toOuterMeasure_apply]
+
+/-- Composition operators `Algorithm.pad`, `Algorithm.seqBind`, and `Algorithm.pi` preserve
+replicability, accuracy (for `pad`), and product marginal structure. -/
+theorem composition_pad_seqBind_pi_check :
+    let A : Algorithm Bool (Fin 8) Bool 1 := constExceptZeroAlg 8 1 true fun S => S 0
+    let B : Algorithm Bool (Fin 8) Bool 1 := constExceptZeroAlg 8 1 false fun S => !S 0
+    let F : Fin 2 → Algorithm Bool (Fin 8) Bool 1 := fun j => if j = (0 : Fin 2) then A else B
+    IsReplicableFor (A.pad (by omega : 1 ≤ 3)) {fairCoin} (1 / 8) ∧
+    IsAccurateFor (A.pad (by omega : 1 ≤ 3)) {fairCoin} (fun _ => {true}) (1 / 8) ∧
+    (A.pad (by omega : 1 ≤ 3)).disagreeProb fairCoin = A.disagreeProb fairCoin ∧
+    (A.pad (by omega : 1 ≤ 3)).marginal fairCoin = A.marginal fairCoin ∧
+    IsReplicableFor (A.seqBind (uniformOfFintype (Fin 8)) fun a (S : Fin 1 → Bool) r =>
+      PMF.pure (if r.val = 0 then a && S 0 else true)) {fairCoin} (1 / 4) ∧
+    IsReplicableFor (Algorithm.pi F) {fairCoin} (1 / 4) ∧
+    (Algorithm.pi F).marginal fairCoin =
+      pmfPiFin fun j : Fin 2 => (F j).marginal fairCoin := by
+  intro A B F
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · exact (isReplicableFor_constExceptZeroAlg 8 1 true (fun S => S 0) {fairCoin}).pad (by omega)
+  · exact (isAccurateFor_constExceptZeroAlg 8 1 true (fun S => S 0) {fairCoin}).pad (by omega)
+  · exact A.disagreeProb_pad (by omega) fairCoin
+  · exact A.marginal_pad (by omega) fairCoin
+  · have hA : IsReplicableFor A {fairCoin} (1 / 8) :=
+      isReplicableFor_constExceptZeroAlg 8 1 true (fun S => S 0) {fairCoin}
+    have h2 : ∀ a : Bool,
+        IsReplicableFor
+          ({ seed := uniformOfFintype (Fin 8),
+             run := fun S r => PMF.pure (if r.val = 0 then a && S 0 else true) } :
+            Algorithm Bool (Fin 8) Bool 1) {fairCoin} (1 / 8) :=
+      fun a => isReplicableFor_constExceptZeroAlg 8 1 true (fun S => a && S 0) {fairCoin}
+    have hbind := hA.seqBind (by norm_num : (0 : ℝ) ≤ 1 / 8) h2
+    intro D' hD'
+    exact (hbind D' hD').trans (by norm_num)
+  · have hpi := IsReplicableFor.pi (A := F) (𝒟 := {fairCoin}) (ρ := fun _ => (1 / 8 : ℝ))
+        fun j => by
+      fin_cases j
+      · simpa [F] using isReplicableFor_constExceptZeroAlg 8 1 true (fun S => S 0) {fairCoin}
+      · simpa [F] using isReplicableFor_constExceptZeroAlg 8 1 false (fun S => !S 0) {fairCoin}
+    intro D' hD'
+    refine (hpi D' hD').trans ?_
+    norm_num
+  · exact Algorithm.marginal_pi F fairCoin
+
+end
+
 end RoundingAndComposition
 
 section BiasEstimationTests
@@ -314,9 +463,111 @@ theorem amplifyFinite_from_unreplicable :
 to `1 / 100`-replicability. -/
 theorem amplifyReplicability_int_check {X Ω : Type} {m : ℕ} (A : Algorithm X Ω ℤ m)
     {𝒟 : Set (PMF X)} (hA : IsReplicableFor A 𝒟 (1 / 10)) :
-    ∃ (a b : ℝ) (T k₁ k₂ N : ℕ) (_ : NeZero T) (_ : NeZero k₂) (_ : NeZero N),
+    ∃ (a b : ℝ) (T k₁ k₂ N : ℕ) (_ : NeZero T) (_ : NeZero k₁) (_ : NeZero k₂) (_ : NeZero N),
       IsReplicableFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 (1 / 100) :=
   exists_amplifyReplicability A hA (by norm_num) (by norm_num) (by norm_num)
+
+section
+
+open Cslib.Probability.PMF
+
+private noncomputable def nontrivialIntAlg (K : ℕ) [NeZero K] : Algorithm Bool (Fin K) ℤ 1 :=
+  constExceptZeroAlg K 1 (1 : ℤ) fun S => if S 0 then 1 else 2
+
+private theorem pmf_bind_apply_ge {α β : Type} (p : PMF α) (f : α → PMF β) (a : α) (b : β) :
+    p a * f a b ≤ (p.bind f) b := by
+  rw [PMF.bind_apply]
+  exact le_tsum (fun x => p x * f x b) a
+
+private theorem disagreeProb_nontrivialIntAlg_pos (K : ℕ) [NeZero K] :
+    0 < (nontrivialIntAlg K).disagreeProb fairCoin := by
+  let A := nontrivialIntAlg K
+  have h0 := pmf_bind_apply_ge A.seed
+    (fun r => (iid fairCoin 1).bind fun S₁ => (iid fairCoin 1).bind fun S₂ =>
+      (A.run S₁ r).bind fun y₁ => (A.run S₂ r).map fun y₂ => (y₁, y₂))
+    (0 : Fin K) (1, 2)
+  have h1 := pmf_bind_apply_ge (iid fairCoin 1)
+    (fun S₁ => (iid fairCoin 1).bind fun S₂ =>
+      (A.run S₁ 0).bind fun y₁ => (A.run S₂ 0).map fun y₂ => (y₁, y₂))
+    (fun _ => true) (1, 2)
+  have h2 := pmf_bind_apply_ge (iid fairCoin 1)
+    (fun S₂ => (A.run (fun _ => true) 0).bind fun y₁ =>
+      (A.run S₂ 0).map fun y₂ => (y₁, y₂))
+    (fun _ => false) (1, 2)
+  have hterm : ((A.run (fun _ => true) 0).bind fun y₁ =>
+      (A.run (fun _ => false) 0).map fun y₂ => (y₁, y₂)) (1, 2) = 1 := by
+    simp [A, nontrivialIntAlg, constExceptZeroAlg, PMF.pure_bind, PMF.map]
+  have hS1 : (iid fairCoin 1) (fun _ => true) = (1 / 2 : ENNReal) := by
+    rw [iid_apply, Fin.prod_univ_one]
+    simp [fairCoin]
+  have hS2 : (iid fairCoin 1) (fun _ => false) = (1 / 2 : ENNReal) := by
+    rw [iid_apply, Fin.prod_univ_one]
+    simp [fairCoin]
+  have hK : A.seed 0 = (K : ENNReal)⁻¹ := by
+    simp [A, nontrivialIntAlg, constExceptZeroAlg, uniformOfFintype_apply]
+  have hlower : (K : ENNReal)⁻¹ * ((1 / 2 : ENNReal) * (1 / 2 : ENNReal)) ≤
+      (A.pairedOutput fairCoin) (1, 2) := by
+    rw [hterm, mul_one, hS2] at h2
+    rw [hS1] at h1
+    rw [hK] at h0
+    calc (K : ENNReal)⁻¹ * ((1 / 2 : ENNReal) * (1 / 2 : ENNReal))
+        ≤ (K : ENNReal)⁻¹ * ((1 / 2 : ENNReal) *
+            ((iid fairCoin 1).bind fun S₂ =>
+              (A.run (fun _ => true) 0).bind fun y₁ =>
+                (A.run S₂ 0).map fun y₂ => (y₁, y₂)) (1, 2)) := by
+          gcongr
+      _ ≤ (K : ENNReal)⁻¹ *
+            ((iid fairCoin 1).bind fun S₁ => (iid fairCoin 1).bind fun S₂ =>
+              (A.run S₁ 0).bind fun y₁ => (A.run S₂ 0).map fun y₂ => (y₁, y₂)) (1, 2) := by
+          gcongr
+      _ ≤ (A.pairedOutput fairCoin) (1, 2) := h0
+  have hpos : 0 < (A.pairedOutput fairCoin) (1, 2) := by
+    refine lt_of_lt_of_le ?_ hlower
+    refine ENNReal.mul_pos (ENNReal.inv_ne_zero.mpr (ENNReal.natCast_ne_top K)) ?_
+    exact ne_of_gt (ENNReal.mul_pos (by norm_num) (by norm_num))
+  have hle : (A.pairedOutput fairCoin) (1, 2) ≤
+      (A.pairedOutput fairCoin).toOuterMeasure {p | p.1 ≠ p.2} := by
+    rw [← PMF.toOuterMeasure_apply_singleton]
+    exact MeasureTheory.OuterMeasure.mono _ (Set.singleton_subset_iff.mpr (by norm_num))
+  have hne : (A.pairedOutput fairCoin).toOuterMeasure {p | p.1 ≠ p.2} ≠ ⊤ :=
+    ne_top_of_le_ne_top ENNReal.one_ne_top
+      (le_trans (MeasureTheory.OuterMeasure.mono _ (Set.subset_univ _))
+        (by simp [PMF.toOuterMeasure_apply, PMF.tsum_coe]))
+  rw [Algorithm.disagreeProb]
+  exact ENNReal.toReal_pos (ne_of_gt (lt_of_lt_of_le hpos hle)) hne
+
+/-- Concrete nontrivial algorithm on infinite `[DecidableEq ℤ]` with strictly positive
+disagreement probability simultaneously amplified to `1 / 100`-replicability and `1 / 100`-accuracy
+for outputting `1`. -/
+theorem amplifyReplicability_nontrivialInt_check :
+    ∃ (K : ℕ) (_ : NeZero K) (a b : ℝ) (T k₁ k₂ N : ℕ)
+      (_ : NeZero T) (_ : NeZero k₁) (_ : NeZero k₂) (_ : NeZero N),
+      0 < (nontrivialIntAlg K).disagreeProb fairCoin ∧
+      IsReplicableFor (amplifyReplicability (nontrivialIntAlg K) a b T k₁ k₂ N)
+        {fairCoin} (1 / 100) ∧
+      IsAccurateFor (amplifyReplicability (nontrivialIntAlg K) a b T k₁ k₂ N)
+        {fairCoin} (fun _ => {1}) (1 / 100) := by
+  obtain ⟨a, b, T, k₁, k₂, N, hT, hk₁, hk₂, hN, β₀_req, hβ₀_pos, hspec⟩ :=
+    exists_amplifyReplicability_accurate (ρ₀ := (1 / 4 : ℝ)) (ρ := 1 / 100) (β := 1 / 100)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  obtain ⟨K₀, hK₀⟩ := exists_nat_one_div_lt hβ₀_pos
+  let K := max 4 (K₀ + 1)
+  have : NeZero K := ⟨by omega⟩
+  have hK_ge4 : (4 : ℝ) ≤ K := by exact_mod_cast le_max_left 4 (K₀ + 1)
+  have hK_inv : 1 / (K : ℝ) ≤ β₀_req := by
+    have hle : (K₀ + 1 : ℝ) ≤ K := by exact_mod_cast le_max_right 4 (K₀ + 1)
+    exact (one_div_le_one_div_of_le (by positivity) hle).trans hK₀.le
+  have hrepA : IsReplicableFor (nontrivialIntAlg K) {fairCoin} (1 / 4) := by
+    intro D hD
+    exact (isReplicableFor_constExceptZeroAlg K 1 (1 : ℤ) _ _ D hD).trans
+      (one_div_le_one_div_of_le (by norm_num) hK_ge4)
+  have haccA : IsAccurateFor (nontrivialIntAlg K) {fairCoin} (fun _ => {1}) (1 / K) :=
+    isAccurateFor_constExceptZeroAlg K 1 (1 : ℤ) _ _
+  obtain ⟨hrepAmp, haccAmp⟩ := hspec (nontrivialIntAlg K) hrepA haccA hK_inv
+  exact ⟨K, inferInstance, a, b, T, k₁, k₂, N, hT, hk₁, hk₂, hN,
+    disagreeProb_nontrivialIntAlg_pos K, hrepAmp, haccAmp⟩
+
+end
 
 end AmplificationTests
 
