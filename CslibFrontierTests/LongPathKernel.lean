@@ -114,13 +114,13 @@ example : IsPolyEquivalence encUnary fun p : ℕ × ℕ => decide (p.1 = p.2) :=
 /-- The hypotheses of the cross-composition theorem hold for k-Path: `HamPath` is `NP`-hard and
 OR-cross-composes into k-Path, so the kernel lower bound assumes only `coNP ⊄ NP/poly`. -/
 example : NPHard (encPair encGraph (encPair encNat encNat)) HamPath ∧
-    ORCrossComposes (encPair encGraph (encPair encNat encNat)) HamPath (encPair encGraph encNat)
-      Prod.snd LongPath :=
+    ORCrossComposes (encPair encGraph (encPair encNat encNat)) HamPath encLongPath
+      LongPathInstance.target LongPath :=
   ⟨HamPath_npHard, HamPath.orCrossComposes_LongPath⟩
 
 /-- The kernel lower bound for k-Path, under `coNP ⊄ NP/poly` for formulas. -/
 example (h : ¬ coNP encCNF ⊆ NPPoly encCNF) :
-    ¬ HasPolyKernel (encPair encGraph encNat) Prod.snd LongPath :=
+    ¬ HasPolyKernel encLongPath LongPathInstance.target LongPath :=
   not_hasPolyKernel_LongPath h
 
 end CslibFrontierTests.LongPathKernel
