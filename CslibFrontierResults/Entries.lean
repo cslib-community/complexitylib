@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
@@ -2092,3 +2093,27 @@ register_result "tfnp-sopl-eopl-collapse" where
     transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
     EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
     are not formalized."
+
+register_result "edmonds-optimum-branchings" where
+  title := "Edmonds: optimum branchings and minimum-cost spanning arborescences are in P"
+  topic := "algorithms"
+  sources := [
+    { paper := Edmonds1967Branchings, theorem := "Theorem 1",
+      locator := "Section 3 (Section 2 reduction, Section 4 algorithm and proof)" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_edmondsList,
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_edmondsOutList,
+    Cslib.Algorithms.Lean.Arborescence.computableInPolyTime_optimumBranchingList,
+    Cslib.Algorithms.Lean.Arborescence.minArborescenceDec_mem_P,
+    Cslib.Algorithms.Lean.Arborescence.minOutArborescenceDec_mem_P,
+    Cslib.Algorithms.Lean.Arborescence.maxBranchingDec_mem_P
+  ]
+  scope := "Adjacency matrices in Boolean row-major tables and integer arc weights and \
+    thresholds in binary (encIntBin); roots are binary naturals (encNat). Subtraction-free \
+    contraction keeps intermediate table entries within (n + 1) ^ i · M₀, yielding native \
+    multi-tape P deciders for bounded-cost spanning in- and out-arborescences and \
+    bounded-weight branchings. Related O(n³) TimeM bounds and weight-shift reductions live \
+    in the sibling Arborescence.Table and Arborescence.Branching modules; Edmonds' Theorem 2 \
+    (the branching polytope) and sparse O(m log n) / O(m + n log n) implementations are not \
+    formalized."
