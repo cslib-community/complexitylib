@@ -22,10 +22,6 @@ are discarded, retaining indexed positive entries. Targets above the total map
 to a fixed no-instance. All other inputs use the actual guarded construction,
 including the empty source list and target zero.
 
-## Main definitions
-
-* `subsetSumEncoding`: the framed binary number list followed by its binary target.
-
 ## Main results
 
 * `toAddXNOR_mem_iff`, `toAddXNOR_polyTime`, `Decision_npComplete`:
@@ -43,10 +39,6 @@ namespace Cslib.Cryptanalysis.AddXNOR
 
 open Turing.MultiTapeTM Cslib.Complexity
 open scoped List
-
-/-- Binary Subset-Sum input: a list of individually framed binary numbers, itself framed
-before the unframed binary target. Order, zero entries and repetitions are retained. -/
-abbrev subsetSumEncoding : List ℕ × ℕ ↪ List Bool := encPair (encList encNat) encNat
 
 /-- Natural-number implementation of the alternating gadget operands. -/
 @[expose] def rawGadgets (m : ℕ) (numbers : List ℕ) : List ℕ :=
@@ -154,11 +146,11 @@ theorem positiveNumbers_sublist_iff (numbers : List ℕ) (target : ℕ) :
 
 /-- Total reduction from binary Subset-Sum to balanced Add/XNOR. The word
 width is `4r + size(S) + 3`, where `S` is the sum of the positive source numbers. -/
-@[expose] def toAddXNOR (x : List ℕ × ℕ) : ℕ × List ℕ :=
-  let numbers := positiveNumbers x.1
+@[expose] def toAddXNOR (x : SubsetSumInstance) : ℕ × List ℕ :=
+  let numbers := positiveNumbers x.numbers
   let h := numbers.sum.size
   let m := 4 * numbers.length + h + 3
-  if x.2 ≤ numbers.sum then (m, rawOperands m (h + 1) numbers x.2) else (2, [1, 0])
+  if x.target ≤ numbers.sum then (m, rawOperands m (h + 1) numbers x.target) else (2, [1, 0])
 
 private theorem fixed_no_instance : (2, [1, 0]) ∉ Decision := by
   rintro ⟨_, _, _, bs, hlen, he⟩
@@ -172,13 +164,13 @@ private theorem fixed_no_instance : (2, [1, 0]) ∉ Decision := by
 
 /-- Correctness on every source instance, including zeros, an empty list and
 targets outside the attainable interval. -/
-theorem toAddXNOR_mem_iff (x : List ℕ × ℕ) : toAddXNOR x ∈ Decision ↔ x ∈ SubsetSum := by
+theorem toAddXNOR_mem_iff (x : SubsetSumInstance) : toAddXNOR x ∈ Decision ↔ x ∈ SubsetSum := by
   rw [mem_SubsetSum_iff_sublist]
   unfold toAddXNOR
   dsimp only
   split_ifs with ht
   · rw [rawOperands_mem_Decision _ _ le_rfl (by omega)]
-    · exact positiveNumbers_sublist_iff x.1 x.2
+    · exact positiveNumbers_sublist_iff x.numbers x.target
     · intro s hs
       exact of_decide_eq_true (List.mem_filter.1 hs).2
     · exact Nat.lt_size_self _
@@ -186,7 +178,7 @@ theorem toAddXNOR_mem_iff (x : List ℕ × ℕ) : toAddXNOR x ∈ Decision ↔ x
   · constructor
     · exact fun h => (fixed_no_instance h).elim
     · rintro ⟨chosen, hc, he⟩
-      have hsum : chosen.sum ≤ x.1.sum := hc.sum_le_sum (fun _ _ => Nat.zero_le _)
+      have hsum : chosen.sum ≤ x.numbers.sum := hc.sum_le_sum (fun _ _ => Nat.zero_le _)
       rw [positiveNumbers_sum] at ht
       omega
 
@@ -276,36 +268,38 @@ theorem rawOperands_polyTime :
 /-- The actual total construction is computed in polynomial time under the
 binary Subset-Sum encoding and the explicit unary-width/binary-operand encoding. -/
 @[fun_prop] theorem toAddXNOR_polyTime :
-    ComputableInPolyTime toAddXNOR subsetSumEncoding encInstance := by
-  let input := subsetSumEncoding
-  have hnums : ComputableInPolyTime (fun p : List ℕ × ℕ => positiveNumbers p.1)
+    ComputableInPolyTime toAddXNOR encSubsetSum encInstance := by
+  let input := encSubsetSum
+  have hnums : ComputableInPolyTime (fun p : SubsetSumInstance => positiveNumbers p.numbers)
       input (encList encNat) := by
     unfold positiveNumbers
     fun_prop
-  have hsum : ComputableInPolyTime (fun p : List ℕ × ℕ => (positiveNumbers p.1).sum)
+  have hsum : ComputableInPolyTime (fun p : SubsetSumInstance => (positiveNumbers p.numbers).sum)
       input encNat := by fun_prop
-  have hh : ComputableInPolyTime (fun p : List ℕ × ℕ => (positiveNumbers p.1).sum.size)
+  have hh : ComputableInPolyTime (fun p : SubsetSumInstance => (positiveNumbers p.numbers).sum.size)
       input encUnary := ComputableInPolyTime.binary_size.comp hsum
   have hlen := (ComputableTidilyInPolyTime.length encNat).comp hnums.tidy
   have hm : ComputableInPolyTime
-      (fun p : List ℕ × ℕ => 4 * (positiveNumbers p.1).length + (positiveNumbers p.1).sum.size + 3)
+      (fun p : SubsetSumInstance =>
+        4 * (positiveNumbers p.numbers).length + (positiveNumbers p.numbers).sum.size + 3)
       input encUnary :=
     ComputableInPolyTime.unary_add'
       (ComputableInPolyTime.unary_add'
         (ComputableInPolyTime.unary_mul' (.const 4) (.of_tidy hlen)) hh) (.const 3)
   have hraw : ComputableInPolyTime
-      (fun p : List ℕ × ℕ => rawOperands
-        (4 * (positiveNumbers p.1).length + (positiveNumbers p.1).sum.size + 3)
-        ((positiveNumbers p.1).sum.size + 1) (positiveNumbers p.1) p.2)
+      (fun p : SubsetSumInstance => rawOperands
+        (4 * (positiveNumbers p.numbers).length + (positiveNumbers p.numbers).sum.size + 3)
+        ((positiveNumbers p.numbers).sum.size + 1) (positiveNumbers p.numbers) p.target)
       input (encList encNat) :=
     by
       have harg := ((hm.prod (ComputableInPolyTime.unary_add' hh (.const 1))).prod hnums).prod
-        (ComputableInPolyTime.snd (encList encNat) encNat)
+        (by fun_prop : ComputableInPolyTime (fun p : SubsetSumInstance => p.target) input encNat)
       have h := rawOperands_polyTime.comp harg
       dsimp only [Function.comp_def] at h
       exact h
   have htest : ComputableInPolyTime
-      (fun p : List ℕ × ℕ => decide (p.2 ≤ (positiveNumbers p.1).sum)) input encBool := by
+      (fun p : SubsetSumInstance => decide (p.target ≤ (positiveNumbers p.numbers).sum))
+      input encBool := by
     fun_prop
   have h := htest.ite (hm.prod hraw) (.const (2, [1, 0]))
   unfold toAddXNOR
@@ -316,7 +310,7 @@ binary Subset-Sum encoding and the explicit unary-width/binary-operand encoding.
 /-- Binary Subset-Sum many-one reduces to balanced Add/XNOR by the actual
 constructed operand list. -/
 theorem polyTimeReducible_SubsetSum_AddXNOR :
-    PolyTimeReducible subsetSumEncoding encInstance SubsetSum Decision :=
+    PolyTimeReducible encSubsetSum encInstance SubsetSum Decision :=
   ⟨toAddXNOR, toAddXNOR_polyTime, fun x => (toAddXNOR_mem_iff x).symm⟩
 
 /-- Theorem 1: balanced Add/XNOR is NP-complete under deterministic
@@ -341,7 +335,7 @@ theorem threeSATToAddXNOR_mem_iff (φ : Cslib.Logic.PL.CNF ℕ) :
   toAddXNOR_polyTime.comp ThreeSAT.computableInPolyTime_toSubsetSum
 
 private theorem toAddXNOR_width_le (numbers : List ℕ) (target : ℕ) :
-    (toAddXNOR (numbers, target)).1 ≤ 4 * numbers.length + numbers.sum.size + 3 := by
+    (toAddXNOR ⟨numbers, target⟩).1 ≤ 4 * numbers.length + numbers.sum.size + 3 := by
   unfold toAddXNOR
   dsimp only
   split_ifs
@@ -428,17 +422,18 @@ private theorem sum_size_le_encoding (numbers : List ℕ) :
   exact hsize.trans hlen
 
 /-- Explicit linear construction width in the binary source encoding length. -/
-theorem toAddXNOR_width_le_input (x : List ℕ × ℕ) :
-    (toAddXNOR x).1 ≤ 5 * (subsetSumEncoding x).length + 3 := by
-  have h := toAddXNOR_width_le x.1 x.2
-  change (toAddXNOR x).1 ≤ 4 * x.1.length + x.1.sum.size + 3 at h
-  have hsize := sum_size_le_encoding x.1
-  have hlen := length_le_length_encList encNat x.1
-  rw [length_encPair]
+theorem toAddXNOR_width_le_input (x : SubsetSumInstance) :
+    (toAddXNOR x).1 ≤ 5 * (encSubsetSum x).length + 3 := by
+  have h := toAddXNOR_width_le x.numbers x.target
+  change (toAddXNOR x).1 ≤ 4 * x.numbers.length + x.numbers.sum.size + 3 at h
+  have hsize := sum_size_le_encoding x.numbers
+  have hlen := length_le_length_encList encNat x.numbers
+  rw [encSubsetSum_apply, length_encPair]
+  dsimp only
   omega
 
 /-- Every output of the total reduction is balanced and fitting, even on unsatisfiable inputs. -/
-theorem toAddXNOR_shape (x : List ℕ × ℕ) :
+theorem toAddXNOR_shape (x : SubsetSumInstance) :
     2 ≤ (toAddXNOR x).1 ∧ (toAddXNOR x).2.length = (toAddXNOR x).1 ∧
       ∀ a ∈ (toAddXNOR x).2, a < 2 ^ (toAddXNOR x).1 := by
   have hwidth : 2 ≤ (toAddXNOR x).1 := by
@@ -454,8 +449,8 @@ theorem toAddXNOR_shape (x : List ℕ × ℕ) :
       constructor
       · simp only [List.length_cons, List.length_map]
         have h := subsetOperands_length
-          (4 * (positiveNumbers x.1).length + (positiveNumbers x.1).sum.size + 3)
-          ((positiveNumbers x.1).sum.size + 1) (positiveNumbers x.1) x.2
+          (4 * (positiveNumbers x.numbers).length + (positiveNumbers x.numbers).sum.size + 3)
+          ((positiveNumbers x.numbers).sum.size + 1) (positiveNumbers x.numbers) x.target
         omega
       · intro a ha
         rcases List.mem_cons.1 ha with rfl | ha
@@ -467,10 +462,10 @@ theorem toAddXNOR_shape (x : List ℕ × ℕ) :
 
 /-- Explicit quadratic encoded-output bound; the computation itself has the
 separate machine-level polynomial-time certificate `toAddXNOR_polyTime`. -/
-theorem toAddXNOR_encoding_length_le (x : List ℕ × ℕ) :
+theorem toAddXNOR_encoding_length_le (x : SubsetSumInstance) :
     (encInstance (toAddXNOR x)).length ≤
-      2 * (5 * (subsetSumEncoding x).length + 3) ^ 2 +
-        3 * (5 * (subsetSumEncoding x).length + 3) + 1 := by
+      2 * (5 * (encSubsetSum x).length + 3) ^ 2 +
+        3 * (5 * (encSubsetSum x).length + 3) + 1 := by
   have hvalid := (toAddXNOR_shape x).2
   have hlen := encoded_length_le hvalid.1 hvalid.2
   have hwidth := toAddXNOR_width_le_input x

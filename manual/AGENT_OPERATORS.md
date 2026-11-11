@@ -314,8 +314,8 @@ space using the approved DIRECT, balance and whole-run envelopes. Use this endpo
 and the complete batch client; do not repeat completed stages or substitute record
 volume, native live support or a generic polynomial in a whole retained list.
 The setup/round factoring preserves the installed loop profiles and execution route.
-Public binary pair containers and fold/Subset-Sum inputs now use documented reducible
-encoding names (`encNatPairList`, `encNatPairOption`, `encFoldStep`, `subsetSumEncoding`).
+Public binary pair containers and fold inputs now use documented reducible encoding names
+(`encNatPairList`, `encNatPairOption`, `encFoldStep`); Subset-Sum inputs use `encSubsetSum`.
 Run the changed-module encoding ratchet against the PR base; do not exempt new modules
 by raising the baseline. These names preserve layout and do not introduce defaults.
 Orientation recomputes counts; no cached-size oracle is input. The faster source

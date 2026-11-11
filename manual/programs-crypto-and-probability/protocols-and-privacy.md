@@ -2853,8 +2853,8 @@ other paper objectives remain open.
 The binary layouts in these public APIs use documented reducible names: `encNatPairList`
 frames each binary pair (whose second coordinate is unframed), `encNatPairOption` uses
 an empty word for `none` and a true bit before a `some` pair, `encFoldStep` frames the
-parameter/state pair before the unframed record, and `subsetSumEncoding` frames the
-binary number list before its unframed binary target. They preserve the existing
+parameter/state pair before the unframed record, and the library's `encSubsetSum` frames
+the binary number list before its unframed binary target. They preserve the existing
 encodings without defaults or typeclass selection.
 
 The all-class search uses the same fixed streaming kernel over an actually

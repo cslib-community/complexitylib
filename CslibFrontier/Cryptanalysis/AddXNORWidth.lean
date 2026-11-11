@@ -88,12 +88,12 @@ theorem PowerDecision_mem_NP (a b : ℕ) : PowerDecision a b ∈ NP encInstance 
     wordVerifier_polyTime.tidy)
 
 /-- The padded numerical map for the exponent pair. -/
-@[expose] def toPowerAddXNOR (a b : ℕ) (x : List ℕ × ℕ) : ℕ × List ℕ :=
-  let numbers := positiveNumbers x.1
+@[expose] def toPowerAddXNOR (a b : ℕ) (x : SubsetSumInstance) : ℕ × List ℕ :=
+  let numbers := positiveNumbers x.numbers
   let h := numbers.sum.size
   let t := 4 * numbers.length + h + 3
-  if x.2 ≤ numbers.sum then
-    (t ^ a, rawOperands (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.2)
+  if x.target ≤ numbers.sum then
+    (t ^ a, rawOperands (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.target)
   else (2, [1, 0])
 
 private theorem no_word_instance : (2, [1, 0]) ∉ WordDecision := by
@@ -107,13 +107,13 @@ private theorem no_word_instance : (2, [1, 0]) ∉ WordDecision := by
   cases op <;> simp [eval, step] at he
 
 /-- Correctness of the actual padded construction for every source input. -/
-theorem toPowerAddXNOR_mem_iff (a b : ℕ) (ha : 0 < a) (hb : 0 < b) (x : List ℕ × ℕ) :
+theorem toPowerAddXNOR_mem_iff (a b : ℕ) (ha : 0 < a) (hb : 0 < b) (x : SubsetSumInstance) :
     toPowerAddXNOR a b x ∈ PowerDecision a b ↔ x ∈ SubsetSum := by
   rw [mem_SubsetSum_iff_sublist]
   unfold toPowerAddXNOR
   dsimp only
   split_ifs with ht
-  · let numbers := positiveNumbers x.1
+  · let numbers := positiveNumbers x.numbers
     let h := numbers.sum.size
     let t := 4 * numbers.length + h + 3
     have htpos : 2 ≤ t := by dsimp [t]; omega
@@ -122,43 +122,43 @@ theorem toPowerAddXNOR_mem_iff (a b : ℕ) (ha : 0 < a) (hb : 0 < b) (x : List �
     have hbsize : 4 * numbers.length + 2 ≤ t ^ b := by
       have : 4 * numbers.length + 2 ≤ t := by dsimp [t]; omega
       exact this.trans hb'
-    have hlen : (rawOperands (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.2).length = t ^ b :=
-      by
+    have hlen :
+        (rawOperands (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.target).length = t ^ b := by
       rw [rawOperands_eq]
       simp only [List.length_cons, List.length_map]
-      have hl := subsetOperands_length (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.2
+      have hl := subsetOperands_length (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.target
       omega
     have he : (t ^ a) ^ b = (t ^ b) ^ a := by rw [← pow_mul, ← pow_mul, Nat.mul_comm a b]
     have hshape : powerShape a b
-        (t ^ a, rawOperands (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.2) = true := by
+        (t ^ a, rawOperands (t ^ a) (t ^ b - 4 * numbers.length - 2) numbers x.target) = true := by
       simp only [powerShape, hlen, Bool.and_eq_true, decide_eq_true_eq]
       refine ⟨?_, he.symm.le⟩
       rw [← he]
       exact (pow_lt_pow_iff_left₀ (Nat.zero_le _) (Nat.zero_le _) hb.ne').2 (by omega)
     have hword := rawOperands_mem_WordDecision (q := t ^ b - 4 * numbers.length - 2)
-      numbers x.2 ha' (fun s hs => of_decide_eq_true (List.mem_filter.1 hs).2)
+      numbers x.target ha' (fun s hs => of_decide_eq_true (List.mem_filter.1 hs).2)
       (Nat.lt_size_self _) ht
     change (powerShape a b _ = true ∧ _ ∈ WordDecision) ↔ _
     rw [and_iff_right hshape, hword]
-    exact positiveNumbers_sublist_iff x.1 x.2
+    exact positiveNumbers_sublist_iff x.numbers x.target
   · constructor
     · intro h
       exact (no_word_instance h.2).elim
     · rintro ⟨chosen, hc, he⟩
-      have hsum : chosen.sum ≤ x.1.sum := hc.sum_le_sum (fun _ _ => Nat.zero_le _)
+      have hsum : chosen.sum ≤ x.numbers.sum := hc.sum_le_sum (fun _ _ => Nat.zero_le _)
       rw [positiveNumbers_sum] at ht
       omega
 
 /-- Polynomial time of the padded map for each fixed pair of exponents. -/
 @[fun_prop] theorem toPowerAddXNOR_polyTime (a b : ℕ) :
-    ComputableInPolyTime (toPowerAddXNOR a b) (encPair (encList encNat) encNat) encInstance := by
-  let input := encPair (encList encNat) encNat
-  have hnums : ComputableInPolyTime (fun p : List ℕ × ℕ => positiveNumbers p.1)
+    ComputableInPolyTime (toPowerAddXNOR a b) encSubsetSum encInstance := by
+  let input := encSubsetSum
+  have hnums : ComputableInPolyTime (fun p : SubsetSumInstance => positiveNumbers p.numbers)
       input (encList encNat) := by unfold positiveNumbers; fun_prop
-  have hsum : ComputableInPolyTime (fun p : List ℕ × ℕ => (positiveNumbers p.1).sum)
+  have hsum : ComputableInPolyTime (fun p : SubsetSumInstance => (positiveNumbers p.numbers).sum)
       input encNat := by fun_prop
   have hh := ComputableInPolyTime.binary_size.comp hsum
-  have hlen : ComputableInPolyTime (fun p : List ℕ × ℕ => (positiveNumbers p.1).length)
+  have hlen : ComputableInPolyTime (fun p : SubsetSumInstance => (positiveNumbers p.numbers).length)
       input encUnary := .of_tidy ((ComputableTidilyInPolyTime.length encNat).comp hnums.tidy)
   have ht := ComputableInPolyTime.unary_add'
     (ComputableInPolyTime.unary_add' (ComputableInPolyTime.unary_mul'
@@ -169,17 +169,19 @@ theorem toPowerAddXNOR_mem_iff (a b : ℕ) (ha : 0 < a) (hb : 0 < b) (x : List �
     (ComputableInPolyTime.unary_sub' hN (ComputableInPolyTime.unary_mul'
       (.const 4) hlen)) (.const 2)
   have hraw : ComputableInPolyTime
-      (fun p : List ℕ × ℕ => rawOperands
-        ((4 * (positiveNumbers p.1).length + (positiveNumbers p.1).sum.size + 3) ^ a)
-        ((4 * (positiveNumbers p.1).length + (positiveNumbers p.1).sum.size + 3) ^ b -
-          4 * (positiveNumbers p.1).length - 2) (positiveNumbers p.1) p.2)
+      (fun p : SubsetSumInstance => rawOperands
+        ((4 * (positiveNumbers p.numbers).length + (positiveNumbers p.numbers).sum.size + 3) ^ a)
+        ((4 * (positiveNumbers p.numbers).length + (positiveNumbers p.numbers).sum.size + 3) ^ b -
+          4 * (positiveNumbers p.numbers).length - 2) (positiveNumbers p.numbers) p.target)
       input (encList encNat) := by
-    have harg := ((hM.prod hq).prod hnums).prod (ComputableInPolyTime.snd (encList encNat) encNat)
+    have harg := ((hM.prod hq).prod hnums).prod 
+      (by fun_prop : ComputableInPolyTime (fun p : SubsetSumInstance => p.target) input encNat)
     have h := rawOperands_polyTime.comp harg
     dsimp only [Function.comp_def] at h
     exact h
   have htest : ComputableInPolyTime
-      (fun p : List ℕ × ℕ => decide (p.2 ≤ (positiveNumbers p.1).sum)) input encBool := by fun_prop
+      (fun p : SubsetSumInstance => decide (p.target ≤ (positiveNumbers p.numbers).sum))
+      input encBool := by fun_prop
   have h := htest.ite (hM.prod hraw) (.const (2, [1, 0]))
   unfold toPowerAddXNOR
   dsimp only
