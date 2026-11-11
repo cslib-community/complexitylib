@@ -374,33 +374,25 @@ example :
 tests are nonvacuous. -/
 example :
     (∃ eT eS : ℕ,
-      let encI := Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary
-        (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary Turing.MultiTapeTM.encUnary)
-      Turing.MultiTapeTM.ComputableInO (fun (r, p, q) => TannerSearch.findSmallBiasShiftsCeil r p q)
-        encI (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encBits)
-        (fun (r, p, q) =>
-          2 ^ (TannerSearch.smallBiasCeil r p q * r + r) * ((encI (r, p, q)).length + 1) ^ eT)
-        (fun p => ((encI p).length + 1) ^ eS)) ∧
-    (∃ e : ℕ,
-      let encI := Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary
-        (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary
-          (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary
-            (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary
-              (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary
-                (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encUnary
-                  (Turing.MultiTapeTM.encPair Turing.MultiTapeTM.encNat
-                    Turing.MultiTapeTM.encNat))))))
       Turing.MultiTapeTM.ComputableInO
-        (fun p : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ =>
-          TannerSearch.tannerParityTestsWithBound p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1
-            p.2.2.2.2.2.1 p.2.2.2.2.2.2.1 p.2.2.2.2.2.2.2)
-        encI (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encBits)
-        (fun p =>
-          let r := p.2.2.1
-          let d := p.2.2.2.1
-          let c := p.2.2.2.2.1
-          2 ^ (d * r + r + (c * d + d)) * ((encI p).length + 1) ^ e)
-        (fun p => ((encI p).length + 1) ^ e)) :=
+        (fun q : TannerSearch.SmallBiasCeilParams =>
+          TannerSearch.findSmallBiasShiftsCeil q.r q.p q.q)
+        TannerSearch.encSmallBiasCeilParams
+        (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encBits)
+        (fun q =>
+          2 ^ (TannerSearch.smallBiasCeil q.r q.p q.q * q.r + q.r) *
+            ((TannerSearch.encSmallBiasCeilParams q).length + 1) ^ eT)
+        (fun q => ((TannerSearch.encSmallBiasCeilParams q).length + 1) ^ eS)) ∧
+    (∃ e : ℕ,
+      Turing.MultiTapeTM.ComputableInO
+        (fun q : TannerSearch.TannerParityParams =>
+          TannerSearch.tannerParityTestsWithBound q.maxVerts q.m q.r q.d q.c q.h q.p q.q)
+        TannerSearch.encTannerParityParams
+        (Turing.MultiTapeTM.encList Turing.MultiTapeTM.encBits)
+        (fun q =>
+          2 ^ (q.d * q.r + q.r + (q.c * q.d + q.d)) *
+            ((TannerSearch.encTannerParityParams q).length + 1) ^ e)
+        (fun q => ((TannerSearch.encTannerParityParams q).length + 1) ^ e)) :=
   ⟨TannerSearch.findSmallBiasShiftsCeil_computableInO, TannerSearch.tannerParityTests_computableInO⟩
 
 end CslibFrontierTests.BipartiteTanner

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.GenericRAM.Native.ExpTimePolySpace
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.PolyTime.BitString.InitialTestsSearch
 public import CslibFrontier.Foundations.Data.Nat.CeilDiv
 public import CslibFrontier.Probability.SmallBias.Random
@@ -46,8 +47,12 @@ Unconditional specifications and resource bounds layered on
 ## Main definitions
 
 * `Cslib.Complexity.TannerSearch.smallBiasCeil`: computable ceiling `⌈4 (r + 1) q² / p²⌉`.
-* `Cslib.Complexity.TannerSearch.findSmallBiasShiftsCeil`: shift search at `smallBiasCeil`.
-* `Cslib.Complexity.TannerSearch.tannerParityTests`,
+* `Cslib.Complexity.TannerSearch.SmallBiasCeilParams`,
+  `Cslib.Complexity.TannerSearch.encSmallBiasCeilParams`,
+  `Cslib.Complexity.TannerSearch.findSmallBiasShiftsCeil`: shift search at `smallBiasCeil`.
+* `Cslib.Complexity.TannerSearch.TannerParityParams`,
+  `Cslib.Complexity.TannerSearch.encTannerParityParams`,
+  `Cslib.Complexity.TannerSearch.tannerParityTests`,
   `Cslib.Complexity.TannerSearch.tannerParityTestsWithBound`: end-to-end parity-test builders.
 
 ## Main results
@@ -235,25 +240,45 @@ private theorem smallBiasCeil_polyTime {α : Type} {encIn : α ↪ List Bool} {r
       rw [hp2, hq2]
   rwa [heq] at hdiv
 
-/-- Native `ComputableInO` certificate for `findSmallBiasShiftsCeil` on unary `(r, p, q)`,
-running in time `2 ^ (smallBiasCeil r p q * r + r)` times a polynomial and polynomial space. -/
+/-- Input parameters for `findSmallBiasShiftsCeil`: cube dimension `r` and bias numerator `p` and
+denominator `q` (`ε = p / q`). -/
+structure SmallBiasCeilParams where
+  /-- Dimension `r` of the Boolean cube `Fin r → Bool`. -/
+  r : ℕ
+  /-- Bias numerator `p`. -/
+  p : ℕ
+  /-- Bias denominator `q`. -/
+  q : ℕ
+  deriving DecidableEq, Repr
+
+/-- Unary encoding of `SmallBiasCeilParams`. -/
+enc_structure encSmallBiasCeilParams : SmallBiasCeilParams where
+  r : encUnary, p : encUnary, q : encUnary
+
+/-- Native `ComputableInO` certificate for `findSmallBiasShiftsCeil` on unary
+`SmallBiasCeilParams`, running in time `2 ^ (smallBiasCeil q.r q.p q.q * q.r + q.r)` times a
+polynomial and polynomial space. -/
 theorem findSmallBiasShiftsCeil_computableInO :
     ∃ eT eS : ℕ,
-      let encI := encPair encUnary (encPair encUnary encUnary)
-      ComputableInO (fun (r, p, q) => findSmallBiasShiftsCeil r p q) encI (encList encBits)
-        (fun (r, p, q) =>
-          2 ^ (smallBiasCeil r p q * r + r) * ((encI (r, p, q)).length + 1) ^ eT)
-        (fun p => ((encI p).length + 1) ^ eS) := by
+      ComputableInO
+        (fun q : SmallBiasCeilParams => findSmallBiasShiftsCeil q.r q.p q.q)
+        encSmallBiasCeilParams (encList encBits)
+        (fun q =>
+          2 ^ (smallBiasCeil q.r q.p q.q * q.r + q.r) *
+            ((encSmallBiasCeilParams q).length + 1) ^ eT)
+        (fun q => ((encSmallBiasCeilParams q).length + 1) ^ eS) := by
   obtain ⟨pT, pS, hpT, hpS, hcomp⟩ := findSmallBiasShifts_computableInO
-  let encI := encPair encUnary (encPair encUnary encUnary)
   let encH := encPair encUnary (encPair encUnary (encPair encNat encNat))
-  have hr : ComputableInPolyTime (fun x : ℕ × ℕ × ℕ => x.1) encI encUnary :=
-    fst encUnary (encPair encUnary encUnary)
-  have hpq := snd encUnary (encPair encUnary encUnary)
-  have hd := smallBiasCeil_polyTime hr hpq.fst' hpq.snd'
+  let hId : ComputableInPolyTime (fun x : SmallBiasCeilParams => x)
+      encSmallBiasCeilParams encSmallBiasCeilParams := of_eq fun _ => rfl
+  have hr := encSmallBiasCeilParams_r_polyTime hId
+  have hp := encSmallBiasCeilParams_p_polyTime hId
+  have hq := encSmallBiasCeilParams_q_polyTime hId
+  have hd := smallBiasCeil_polyTime hr hp hq
   have hg : ComputableInPolyTime
-      (fun x : ℕ × ℕ × ℕ => (x.1, smallBiasCeil x.1 x.2.1 x.2.2, x.2.1, x.2.2)) encI encH :=
-    hr.prod (hd.prod ((unary_to_binary.comp hpq.fst').prod (unary_to_binary.comp hpq.snd')))
+      (fun x : SmallBiasCeilParams => (x.r, smallBiasCeil x.r x.p x.q, x.p, x.q))
+      encSmallBiasCeilParams encH :=
+    hr.prod (hd.prod ((unary_to_binary.comp hp).prod (unary_to_binary.comp hq)))
   exact search_computableInO_preprocess hpT hpS
     (a := fun q => q.2.1 * q.1) (b := fun q => q.1) hcomp hg
 
@@ -382,50 +407,56 @@ private theorem two_pow_effectiveCubeDim_le (M r : ℕ) : 2 ^ effectiveCubeDim M
   · exact h
   · rw [pow_zero]; exact le_max_right M 1
 
-/-- End-to-end `ComputableInO` certificate for `tannerParityTestsWithBound` on unary
-`(M, m, r, d, c, h)` and binary `(p, q)`: runs in time `2 ^ (d * r + r + c * d + d)` times a
-polynomial and polynomial space (including the `O(M · c · m)` output). -/
+/-- Input parameters for bounded end-to-end parity-test construction: unary vertex-count upper
+bound `maxVerts`, target block length `m`, cube dimension `r`, degree `d`, local check count `c`,
+local weight parameter `h` (requiring minimum distance `h + 1`), and binary bias `p / q`. -/
+structure TannerParityParams where
+  /-- Unary upper bound `M` clamping `2 ^ r ≤ max M 1`. -/
+  maxVerts : ℕ
+  /-- Shortened target block length `m`. -/
+  m : ℕ
+  /-- Boolean cube dimension `r` (`2 ^ r` vertices per side). -/
+  r : ℕ
+  /-- Regularity / local code block length `d`. -/
+  d : ℕ
+  /-- Number of local parity checks `c` per vertex. -/
+  c : ℕ
+  /-- Local weight threshold `h` (enforcing minimum distance `≥ h + 1`). -/
+  h : ℕ
+  /-- Small-bias numerator `p`. -/
+  p : ℕ
+  /-- Small-bias denominator `q`. -/
+  q : ℕ
+  deriving DecidableEq, Repr
+
+/-- Mixed unary/binary encoding of `TannerParityParams` (`maxVerts, m, r, d, c, h` unary; `p, q`
+binary). -/
+enc_structure encTannerParityParams : TannerParityParams where
+  maxVerts : encUnary, m : encUnary, r : encUnary, d : encUnary,
+  c : encUnary, h : encUnary, p : encNat, q : encNat
+
+/-- End-to-end `ComputableInO` certificate for `tannerParityTestsWithBound` on `TannerParityParams`:
+runs in time `2 ^ (d * r + r + c * d + d)` times a polynomial and polynomial space (including the
+`O(maxVerts · c · m)` output). -/
 theorem tannerParityTests_computableInO :
     ∃ e : ℕ,
-      let encI := encPair encUnary (encPair encUnary (encPair encUnary
-        (encPair encUnary (encPair encUnary (encPair encUnary (encPair encNat encNat))))))
       ComputableInO
-        (fun p : ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ =>
-          tannerParityTestsWithBound p.1 p.2.1 p.2.2.1 p.2.2.2.1 p.2.2.2.2.1
-            p.2.2.2.2.2.1 p.2.2.2.2.2.2.1 p.2.2.2.2.2.2.2)
-        encI (encList encBits)
-        (fun p =>
-          let r := p.2.2.1
-          let d := p.2.2.2.1
-          let c := p.2.2.2.2.1
-          2 ^ (d * r + r + (c * d + d)) * ((encI p).length + 1) ^ e)
-        (fun p => ((encI p).length + 1) ^ e) := by
-  let encI := encPair encUnary (encPair encUnary (encPair encUnary
-    (encPair encUnary (encPair encUnary (encPair encUnary (encPair encNat encNat))))))
-  let P := ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ × ℕ
-  let getM : P → ℕ := fun p => p.1
-  let getm : P → ℕ := fun p => p.2.1
-  let getr : P → ℕ := fun p => p.2.2.1
-  let getd : P → ℕ := fun p => p.2.2.2.1
-  let getc : P → ℕ := fun p => p.2.2.2.2.1
-  let geth : P → ℕ := fun p => p.2.2.2.2.2.1
-  let getp : P → ℕ := fun p => p.2.2.2.2.2.2.1
-  let getq : P → ℕ := fun p => p.2.2.2.2.2.2.2
-  have p1 : ComputableInPolyTime getM encI encUnary := fst _ _
-  have s1 := snd encUnary (encPair encUnary (encPair encUnary
-    (encPair encUnary (encPair encUnary (encPair encUnary (encPair encNat encNat))))))
-  have p2 : ComputableInPolyTime getm encI encUnary := s1.fst'
-  have s2 := s1.snd'
-  have p3 : ComputableInPolyTime getr encI encUnary := s2.fst'
-  have s3 := s2.snd'
-  have p4 : ComputableInPolyTime getd encI encUnary := s3.fst'
-  have s4 := s3.snd'
-  have p5 : ComputableInPolyTime getc encI encUnary := s4.fst'
-  have s5 := s4.snd'
-  have p6 : ComputableInPolyTime geth encI encUnary := s5.fst'
-  have s6 := s5.snd'
-  have p7 : ComputableInPolyTime getp encI encNat := s6.fst'
-  have p8 : ComputableInPolyTime getq encI encNat := s6.snd'
+        (fun q : TannerParityParams =>
+          tannerParityTestsWithBound q.maxVerts q.m q.r q.d q.c q.h q.p q.q)
+        encTannerParityParams (encList encBits)
+        (fun q =>
+          2 ^ (q.d * q.r + q.r + (q.c * q.d + q.d)) * ((encTannerParityParams q).length + 1) ^ e)
+        (fun q => ((encTannerParityParams q).length + 1) ^ e) := by
+  let hId : ComputableInPolyTime (fun x : TannerParityParams => x)
+      encTannerParityParams encTannerParityParams := of_eq fun _ => rfl
+  have p1 := encTannerParityParams_maxVerts_polyTime hId
+  have p2 := encTannerParityParams_m_polyTime hId
+  have p3 := encTannerParityParams_r_polyTime hId
+  have p4 := encTannerParityParams_d_polyTime hId
+  have p5 := encTannerParityParams_c_polyTime hId
+  have p6 := encTannerParityParams_h_polyTime hId
+  have p7 := encTannerParityParams_p_polyTime hId
+  have p8 := encTannerParityParams_q_polyTime hId
   obtain ⟨pT1, pS1, hpT1, hpS1, hcomp1⟩ := findSmallBiasShifts_computableInO
   obtain ⟨c1, hc1⟩ := search_expTimePolySpace hpT1 hpS1
     (a := fun q => q.2.1 * q.1) (b := fun q => q.1) hcomp1 (p3.prod (p4.prod (p7.prod p8)))
@@ -433,49 +464,53 @@ theorem tannerParityTests_computableInO :
   obtain ⟨c2, hc2⟩ := search_expTimePolySpace hpT2 hpS2
     (a := fun q => q.1 * q.2.1) (b := fun q => q.2.1) hcomp2
     (p5.prod (p4.prod (unary_add' p6 (.const 1))))
-  let hId : ComputableInPolyTime (fun x : P => x) encI encI := of_eq fun _ => rfl
   have hcProd := ((NativeCertificate.expTimePolySpace_ofPolyTime hId (fun _ => 0)).prod
     (hc1.prod hc2)).mono (fun _ => by simp only [zero_add]; exact le_rfl)
-  let encMid := encPair encI (encPair (encList encBits) (encList encBits))
-  have hm_m : ComputableInPolyTime (fun x => getm x.1) encMid encUnary := p2.comp' (fst _ _)
-  have hM_m : ComputableInPolyTime (fun x => getM x.1) encMid encUnary := p1.comp' (fst _ _)
-  have hr_m : ComputableInPolyTime (fun x => getr x.1) encMid encUnary := p3.comp' (fst _ _)
-  have hd_m : ComputableInPolyTime (fun x => getd x.1) encMid encUnary := p4.comp' (fst _ _)
-  have hc_m : ComputableInPolyTime (fun x => getc x.1) encMid encUnary := p5.comp' (fst _ _)
+  let encMid := encPair encTannerParityParams (encPair (encList encBits) (encList encBits))
+  have hFst : ComputableInPolyTime
+      (fun x : TannerParityParams × List (List Bool) × List (List Bool) => x.1)
+      encMid encTannerParityParams := fst _ _
+  have hM_m := encTannerParityParams_maxVerts_polyTime hFst
+  have hm_m := encTannerParityParams_m_polyTime hFst
+  have hr_m := encTannerParityParams_r_polyTime hFst
+  have hd_m := encTannerParityParams_d_polyTime hFst
+  have hc_m := encTannerParityParams_c_polyTime hFst
   have hMax_m : ComputableInPolyTime
-      (fun x : P × List (List Bool) × List (List Bool) => max (getM x.1) 1) encMid encUnary := by
+      (fun x : TannerParityParams × List (List Bool) × List (List Bool) => max x.1.maxVerts 1)
+      encMid encUnary := by
     have hite := ite (unary_le' hM_m (.const 1)) (.const 1) hM_m
-    have heq : (fun x : P × List (List Bool) × List (List Bool) =>
-        if decide (getM x.1 ≤ 1) = true then 1 else getM x.1) =
-        (fun x => max (getM x.1) 1) := by
+    have heq : (fun x : TannerParityParams × List (List Bool) × List (List Bool) =>
+        if decide (x.1.maxVerts ≤ 1) = true then 1 else x.1.maxVerts) =
+        (fun x => max x.1.maxVerts 1) := by
       funext x
       simp only [decide_eq_true_eq, max_def]
     rwa [heq] at hite
   have heff_m : ComputableInPolyTime
-      (fun x : P × List (List Bool) × List (List Bool) => effectiveCubeDim (getM x.1) (getr x.1))
+      (fun x : TannerParityParams × List (List Bool) × List (List Bool) =>
+        effectiveCubeDim x.1.maxVerts x.1.r)
       encMid encUnary := by
     have hite := ite (binary_le.comp ((binary_two_pow.comp hr_m).prod
       (unary_to_binary.comp hMax_m))) hr_m (.const 0)
-    have heq : (fun x : P × List (List Bool) × List (List Bool) =>
+    have heq : (fun x : TannerParityParams × List (List Bool) × List (List Bool) =>
         if ((fun p : ℕ × ℕ => decide (p.1 ≤ p.2)) ∘
-          fun a => (((fun k => 2 ^ k) ∘ fun y => getr y.1) a,
-            ((fun n => n) ∘ fun y => max (getM y.1) 1) a)) x = true then
-          getr x.1
+          fun a => (((fun k => 2 ^ k) ∘ fun y => y.1.r) a,
+            ((fun n => n) ∘ fun y => max y.1.maxVerts 1) a)) x = true then
+          x.1.r
         else 0) =
-        (fun x => effectiveCubeDim (getM x.1) (getr x.1)) := by
+        (fun x => effectiveCubeDim x.1.maxVerts x.1.r) := by
       funext x
       simp only [Function.comp_apply, decide_eq_true_eq]
       rfl
     rwa [heq] at hite
-  have hsh_m := (fst (encList encBits) (encList encBits)).comp' (snd encI _)
-  have hlo_m := (snd (encList encBits) (encList encBits)).comp' (snd encI _)
+  have hsh_m := (fst (encList encBits) (encList encBits)).comp' (snd encTannerParityParams _)
+  have hlo_m := (snd (encList encBits) (encList encBits)).comp' (snd encTannerParityParams _)
   have hBuild : ComputableInPolyTime
-      (fun x : P × List (List Bool) × List (List Bool) =>
-        buildShortenedTannerRows (getm x.1) (effectiveCubeDim (getM x.1) (getr x.1))
-          (getd x.1) (getc x.1) x.2.1 x.2.2)
+      (fun x : TannerParityParams × List (List Bool) × List (List Bool) =>
+        buildShortenedTannerRows x.1.m (effectiveCubeDim x.1.maxVerts x.1.r)
+          x.1.d x.1.c x.2.1 x.2.2)
       encMid (encList encBits) :=
     buildShortenedTannerRows_polyTime hm_m heff_m hd_m hc_m hMax_m hsh_m hlo_m
-      fun x => two_pow_effectiveCubeDim_le (getM x.1) (getr x.1)
+      fun x => two_pow_effectiveCubeDim_le x.1.maxVerts x.1.r
   exact (hcProd.comp_ofPolyTime hBuild).computableInO
 
 end EndToEnd
