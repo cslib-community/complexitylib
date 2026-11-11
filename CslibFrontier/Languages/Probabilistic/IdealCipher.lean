@@ -50,14 +50,17 @@ noncomputable def forgetfulAnswer (q : Query Key Block) :
     StateT (Key → Cache Block) PMF Block := fun st =>
   (RandomPermutation.forgetfulAnswer q.2 (st q.1)).map fun (b, c) => (b, Function.update st q.1 c)
 
+/-- Generates a complete tuple of independent random permutations extending the given cache function. -/
 noncomputable def complete (st : Key → Cache Block) : PMF (Key → Equiv.Perm Block) :=
   PMF.pi (fun k => RandomPermutation.complete (st k))
 
+/-- An exact evaluation step for the ideal cipher model, with a bad flag that triggers when a duplicate output is sampled. -/
 noncomputable def exactWithBad (q : Query Key Block) :
     StateT ((Key → Cache Block) × Bool) PMF Block := fun (st, bad) =>
   (RandomPermutation.exactWithBad q.2 (st q.1, bad)).map fun (b, (c, bad')) =>
     (b, (Function.update st q.1 c, bad'))
 
+/-- A forgetful evaluation step for the ideal cipher model, updating the cache and the bad flag. -/
 noncomputable def forgetfulWithBad (q : Query Key Block) :
     StateT ((Key → Cache Block) × Bool) PMF Block := fun (st, bad) =>
   (RandomPermutation.forgetfulWithBad q.2 (st q.1, bad)).map fun (b, (c, bad')) =>
@@ -284,6 +287,7 @@ theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
       rw [h_sum1, h_sum2]
       omega
 
+omit [Fintype Key] in
 theorem exactWithBad_preserve_isPartialBijection (q : Query Key Block)
     (st : (Key → Cache Block) × Bool) (hst : ∀ k, IsPartialBijection (st.1 k)) (a : Block)
     (st' : (Key → Cache Block) × Bool)
@@ -298,6 +302,7 @@ theorem exactWithBad_preserve_isPartialBijection (q : Query Key Block)
   · simp only [Function.update_of_ne h]
     exact hst k
 
+omit [Fintype Key] in
 theorem exactWithBad_map_fst (q : Query Key Block) (st : (Key → Cache Block) × Bool) (hcache : ∀ k, IsPartialBijection (st.1 k)) :
     (exactWithBad q st).map (fun (a, st') => (a, st'.1)) = answer q st.1 := by
   simp only [exactWithBad, answer, PMF.map_comp]
@@ -305,12 +310,14 @@ theorem exactWithBad_map_fst (q : Query Key Block) (st : (Key → Cache Block) �
   rw [PMF.map_comp] at h
   exact h
 
+omit [Fintype Key] in
 theorem forgetfulWithBad_map_fst (q : Query Key Block) (st : (Key → Cache Block) × Bool) :
     (forgetfulWithBad q st).map (fun (a, st') => (a, st'.1)) = forgetfulAnswer q st.1 := by
   simp only [forgetfulWithBad, forgetfulAnswer, PMF.map_comp]
   have h := congrArg (PMF.map (fun (b, c) => (b, Function.update st.1 q.1 c))) (RandomPermutation.forgetfulWithBad_map_fst q.2 (st.1 q.1, st.2))
   rw [PMF.map_comp] at h
   exact h
+omit [Fintype Key] in
 theorem run_interpret_exactWithBad_map_fst {β : Type}
     (program : OracleComp (Spec Key Block) β) (cache : Key → Cache Block) (bad : Bool)
     (hcache : ∀ k, IsPartialBijection (cache k)) :
@@ -323,6 +330,7 @@ theorem run_interpret_exactWithBad_map_fst {β : Type}
     (fun q s hs => exactWithBad_map_fst q s hs)
     program (cache, bad) hcache
 
+omit [Fintype Key] in
 theorem run_interpret_forgetfulWithBad_map_fst {β : Type}
     (program : OracleComp (Spec Key Block) β) (cache : Key → Cache Block) (bad : Bool) :
     ((OracleComp.interpret forgetfulWithBad program).run (cache, bad)).map
