@@ -347,6 +347,15 @@ basis and compute their fuel as a fitting word; guarded loops support both exist
 keep their cutoff as proof data. `iterationWork_zero` reduces a counted loop's zero-body work
 to its fuel.
 
+For a loop repackaged with another environment, use the checked
+[loop transport laws](../../CslibFrontier/Computability/WordRAM/Realization/LoopCongr.lean).
+`iterate_congr` takes equality of the body programs at the two fixed environments;
+`iterationSafe_congr` also takes equivalence of their domains, and `iterationWork_congr` takes
+equality of their charges. The hypotheses cover every loop state, and every memory for domains
+and charges, so the laws follow the actual reached states for any fuel. The
+[succinct search](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctSearch.lean)
+proofs use these same laws for their parameter packaging.
+
 After the fit and safety goals, a remaining budget comparison has the same entry context:
 `w d s hwords hmem hv h`, including input fits, well-formed memory, valid source history and the
 requested domain. Use the invariant in `h` to prove the generated work is within the requested
@@ -356,7 +365,11 @@ check calls, changed memories, selected branches, nested/captured loops and cont
 The [halving client](../../CslibFrontierTests/WordRAMRealizationWhile.lean) uses the frontend for
 one uniform native emitter, including early exit, zero word width and dirty-memory/register
 framing. Run both from the repository root with
-`scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGraded CslibFrontierTests.WordRAMRealizationWhile`.
+
+```bash
+scripts/build.sh --wfail --iofail \
+  CslibFrontierTests.WordRAMRealizeGraded CslibFrontierTests.WordRAMRealizationWhile
+```
 
 Returned choices can also stay inside `pure`, including tuple and option components:
 `pure (min a b, max a b)` and `pure (decide (a = 0))` need no separate source program with
@@ -370,7 +383,10 @@ fitting successor. The complete
 [conditional-result clients](../../CslibFrontierTests/WordRAMRealizeValues.lean) check these cases,
 inactive exact division/subtraction, rejected missing premises, and frontier-bounded
 certificates. Check them from the repository root with
-`scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues`.
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues
+```
 
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
 certificate's basis, output encoding and whether its argument coordinates use

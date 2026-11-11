@@ -3834,6 +3834,7 @@ public import CslibFrontier.Computability.WordRAM.Realization.Glue
 public import CslibFrontier.Computability.WordRAM.Realization.GlueVector
 public import CslibFrontier.Computability.WordRAM.Realization.Grade
 public import CslibFrontier.Computability.WordRAM.Realization.Loop
+public import CslibFrontier.Computability.WordRAM.Realization.LoopCongr
 public import CslibFrontier.Computability.WordRAM.Realization.MemoryBackend
 public import CslibFrontier.Computability.WordRAM.Realization.Module
 public import CslibFrontier.Computability.WordRAM.Realization.Primitive

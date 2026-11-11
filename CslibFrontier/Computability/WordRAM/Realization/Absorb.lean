@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Computability.WordRAM.Realization.Bind
 public import CslibFrontier.Computability.WordRAM.Realization.Branch
 public import CslibFrontier.Computability.WordRAM.Realization.GlueVector
-public import CslibFrontier.Computability.WordRAM.Realization.Loop
+public import CslibFrontier.Computability.WordRAM.Realization.LoopCongr
 public import CslibFrontier.Computability.WordRAM.Realization.Primitive
 
 /-!
@@ -44,10 +44,11 @@ absorption applied. They are the target shapes of the `realize` tactic. Glue tak
   client's reply and next memory.
 * `Realizes.pure₀`: finite-result glue from `GlueComputable` coordinates, with a visible domain
   and an explicit word-fit obligation.
-* `Realizes.iterate₀`, `iterate_comap`: loops whose body begins with a query.
+* `Realizes.iterate₀`: loops whose body begins with a query.
 
 These are derived rules over the existing realization kernel; no execution semantics or
-certificate is added.
+certificate is added. Environment, domain and work transport laws are publicly imported from
+the `LoopCongr` module.
 -/
 
 @[expose] public section
@@ -211,14 +212,6 @@ theorem iterationWork_zero_le {σ : Type} (body : δ × σ → Memory.Prog σ)
       ((Memory.spec 0).clientState s (body (d, a)))
     simp only [iterationWork] at h ⊢
     omega
-
-/-- A loop may receive any function of its environment: it is the loop over the whole
-environment whose body applies that function. -/
-theorem iterate_comap {ε σ : Type} (g : ε → δ) (body : δ × σ → Memory.Prog σ) (e : ε) (n : ℕ)
-    (a : σ) : iterate body (g e) n a = iterate (fun x : ε × σ => body (g x.1, x.2)) e n a := by
-  induction n generalizing a with
-  | zero => rfl
-  | succ n ih => exact congrArg (fun k => (body (g e, a)).bind k) (funext ih)
 
 /-- With trivial body domains, every iteration's domain holds. -/
 @[simp] theorem iterationSafe_true {σ : Type} (body : δ × σ → Memory.Prog σ) (w : ℕ) (d : δ)

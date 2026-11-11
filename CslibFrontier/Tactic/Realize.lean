@@ -1257,7 +1257,7 @@ private partial def realizeOptionSplit (ctx : Ctx) (env : Env) (d : Expr) (atoms
   return { out with proof }
 
 /-- Certify `iterate step D n a`: copy the initial state and fuel, then run over the whole
-environment (`iterate_comap`). Retain iteration work unless a query pays for each iteration. -/
+environment (`iterate_congr`). Retain iteration work unless a query pays for each iteration. -/
 private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
     (σ step D n a : Expr) (output? : Option Expr) : TermElabM Out := do
   unless ctx.exact do throwError "realize: loops are certified in the exact basis"
@@ -1307,23 +1307,13 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
   let work ← certificateWork proof
   let proof ← certify ctx env proof progR out safe work
   if D == d && !captured then return { proof, output := out, safe, work }
-  let g ← mkLambdaFVars #[d] D
-  let eq ← if captured then do
-    -- The adapted step agrees at this fixed environment, not at every possible environment.
-    let ty ← withLocalDeclD `n (mkConst ``Nat) fun n => withLocalDeclD `a σ fun a => do
-      mkForallFVars #[n, a] (← mkEq (← mkAppM ``iterate #[body, d, n, a])
-        (← mkAppM ``iterate #[step, D, n, a]))
-    let h ← Term.withSynthesize <| Term.elabTermEnsuringType (← `(by
-      intro n a
-      induction n generalizing a with
-      | zero => rfl
-      | succ n ih =>
-        simp only [iterate]
-        congr 1 with b : 1
-        exact ih b)) (some ty)
-    mkLambdaFVars #[d] (mkApp2 (← instantiateMVars h) n a)
-  else
-    mkLambdaFVars #[d] (← mkEqSymm (← mkAppM ``iterate_comap #[g, step, d, n, a]))
+  -- The adapted step agrees at this fixed environment, including any captured values.
+  let hbody ← withLocalDeclD `x σ fun x => do
+    let lhs := mkApp body (← mkAppM ``Prod.mk #[d, x])
+    let rhs := mkApp step (← mkAppM ``Prod.mk #[D, x])
+    mkLambdaFVars #[x] (← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs))
+  let eq ← mkLambdaFVars #[d] (← mkAppOptM ``iterate_congr
+    #[env.ty, σ, ← inferType D, body, step, d, D, hbody, n, a])
   let proof ← mkAppM ``Realizes.congr #[proof, eq]
   -- Keep the grade in the original loop's terms, including a captured environment.
   let (proof, work) ← if hq?.isSome then pure (proof, work) else do
@@ -1335,17 +1325,13 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
         mkLambdaFVars #[x, s] (← reducePairs (hB.work.beta #[pair, s]))
     let work' ← withLocalDeclD `s state fun s => do
       mkLambdaFVars #[d, s] (← mkAppM ``iterationWork #[step, clientWork, D, n, a, s])
-    let hb ← withLocalDeclD `x σ fun x => do
-      let lhs := mkApp body (← mkAppM ``Prod.mk #[d, x])
-      let rhs := mkApp step (← mkAppM ``Prod.mk #[D, x])
-      mkLambdaFVars #[x] (← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs))
     let hw ← withLocalDeclD `x σ fun x => withLocalDeclD `s state fun s => do
       let lhs := hB.work.beta #[← mkAppM ``Prod.mk #[d, x], s]
       let rhs := clientWork.beta #[← mkAppM ``Prod.mk #[D, x], s]
       mkLambdaFVars #[x, s] (← mkExpectedTypeHint (← mkEqRefl lhs) (← mkEq lhs rhs))
     let pointwise ← withLocalDeclD `s state fun s => do
       let h ← mkAppOptM ``iterationWork_congr
-        #[env.ty, σ, ← inferType D, body, step, hB.work, clientWork, d, D, hb, hw, n, a, s]
+        #[env.ty, σ, ← inferType D, body, step, hB.work, clientWork, d, D, hbody, hw, n, a, s]
       mkLambdaFVars #[s] (← mkExpectedTypeHint h
         (← mkEq (work.beta #[d, s]) (work'.beta #[d, s])))
     let workEq ← mkAppM ``funext #[← mkLambdaFVars #[d]
@@ -1367,34 +1353,26 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
     let sl ← mkAppM ``iterationSafe #[step, clientSafe, w, D, n, a, s]
     mkLambdaFVars #[w, d, s] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn sl))
   let pointwise ← withLocalDeclD `w nat fun w => withLocalDeclD `s state fun s => do
-    let ty ← withLocalDeclD `n nat fun n => withLocalDeclD `a σ fun a =>
-      withLocalDeclD `s state fun s => do
-        mkForallFVars #[n, a, s] (← mkEq
-          (← mkAppM ``iterationSafe #[body, hB.safe, w, d, n, a, s])
-          (← mkAppM ``iterationSafe #[step, clientSafe, w, D, n, a, s]))
-    let h ← Term.withSynthesize <| Term.elabTermEnsuringType (← `(by
-      intro n a s
-      induction n generalizing a s with
-      | zero => rfl
-      | succ n ih =>
-        simp only [iterationSafe]
-        congr 1
-        exact ih _ _)) (some ty)
+    let hs ← withLocalDeclD `x σ fun x => withLocalDeclD `t state fun t => do
+      let lhs := hB.safe.beta #[w, ← mkAppM ``Prod.mk #[d, x], t]
+      let rhs := clientSafe.beta #[w, ← mkAppM ``Prod.mk #[D, x], t]
+      mkLambdaFVars #[x, t] (← mkExpectedTypeHint (← mkAppOptM ``Iff.rfl #[lhs])
+        (mkApp2 (mkConst ``Iff) lhs rhs))
+    let h ← mkAppOptM ``iterationSafe_congr
+      #[env.ty, σ, ← inferType D, body, step, hB.safe, clientSafe, w, d, D, hbody, hs, n, a, s]
+    let h ← mkAppM ``propext #[h]
     let pair ← mkAppM ``Prod.mk #[d, a]
     let sn ← reducePairs (hN.safe.beta #[w, pair, s])
     let wrap ← withLocalDeclD `p (mkSort Level.zero) fun p =>
       mkLambdaFVars #[p] (mkAnd (hA.safe.beta #[w, d, s]) (mkAnd sn p))
     mkLambdaFVars #[w, d, s] (← mkAppM ``congrArg
-      #[wrap, mkApp3 (← instantiateMVars h) n a s])
+      #[wrap, h])
   let safeEq ← withLocalDeclD `w nat fun w => do
     let hd ← withLocalDeclD `e env.ty fun e => do
       mkLambdaFVars #[e] (← mkAppM ``funext #[mkApp2 pointwise w e])
     mkLambdaFVars #[w] (← mkAppM ``funext #[hd])
   let safeEq ← mkAppM ``funext #[safeEq]
-  let proofTy ← inferType proof
-  let wrap ← withLocalDeclD `safe (← inferType safe) fun s =>
-    mkLambdaFVars #[s] (mkAppN proofTy.getAppFn (proofTy.getAppArgs.set! 8 s))
-  let proof ← mkAppM ``Eq.mp #[← mkAppM ``congrArg #[wrap, safeEq], proof]
+  let proof ← transportField proof safeEq 8
   return { proof, output := out, safe := safe', work }
 
 /-- Certify `boundedWhile G step D n a` for the environment variable `d`.

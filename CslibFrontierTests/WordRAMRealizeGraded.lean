@@ -182,6 +182,24 @@ example (step : (ℕ × ℕ) × ℕ → Memory.Prog ℕ)
         (fun a s => d.1.1 + a.2 + s.mem d.1.2 + 1) () d.2 0 s) := by
   realize
 
+-- Bounded captured calls retain their domain and grade at the original fixed environment.
+example (step : (ℕ × ℕ) × ℕ → Memory.Prog ℕ)
+    (P : ℕ → (ℕ × ℕ) × ℕ → Memory.State → Prop)
+    (work : (ℕ × ℕ) × ℕ → Memory.State → ℕ)
+    (hStep : RealizesBounded .exact step tripleWords word P work) :
+    RealizesBounded .exact
+      (fun d : (ℕ × ℕ) × ℕ => iterate
+        (fun a : Unit × ℕ => step ((d.1.1, d.1.2), a.2)) () d.2 0)
+      tripleWords word
+      (fun w d s => iterationSafe
+        (fun a : Unit × ℕ => step ((d.1.1, d.1.2), a.2))
+        (fun w a s => P w ((d.1.1, d.1.2), a.2) s) w () d.2 0 s)
+      (fun d s => iterationWork
+        (fun a : Unit × ℕ => step ((d.1.1, d.1.2), a.2))
+        (fun a s => work ((d.1.1, d.1.2), a.2) s) () d.2 0 s) := by
+  realize
+  exact h
+
 -- Opaque body grades may depend on every reached accumulator and the changed whole memory.
 example (step : ℕ × ℕ → Memory.Prog ℕ) (work : ℕ × ℕ → Memory.State → ℕ)
     (hStep : Realizes .exact step pairWords word (fun _ _ _ => True) work) :
