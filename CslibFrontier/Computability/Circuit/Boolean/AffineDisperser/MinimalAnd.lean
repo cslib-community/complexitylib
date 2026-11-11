@@ -53,9 +53,11 @@ child.
 
 namespace Cslib.Circuits.Boolean.AffineDisperser
 
-open Finset Cslib.BitString SemiCircuit
+open Finset Cslib.BitString SemiCircuit AffineDisperserCore
 
 namespace State
+
+open AffineDisperserCore.State
 
 variable {n : ℕ} {f : BooleanFunction n}
 
@@ -93,7 +95,7 @@ private theorem Valid.preparation_swap {S : State n} (hS : S.Valid f) {x Q : ℕ
     change (insert Q (S.params.erase x)).card = S.params.card
     rw [Finset.card_insert_of_notMem fun h => hQp (Finset.mem_of_mem_erase h),
       Finset.card_erase_add_one hxp]
-  refine ⟨hS.swap hok, hm, rfl, rfl, ?_⟩
+  refine ⟨Valid.swap hS hok, hm, rfl, rfl, ?_⟩
   have hN : S.params ⊆ insert Q S.params := Finset.subset_insert _ _
   have hN' : S₁.params ⊆ insert Q S.params :=
     Finset.insert_subset_insert _ (Finset.erase_subset _ _)
@@ -102,13 +104,14 @@ private theorem Valid.preparation_swap {S : State n} (hS : S.Valid f) {x Q : ℕ
     intro u _
     by_cases hux : u = x
     · subst hux
-      rw [wt_of_notMem_params (by simp [S₁, hQx.symm]), wt_of_mem hx, weight_of_two_le hxdeg,
-        ite_eq_left rfl, ite_eq_right hQx.symm]
+      rw [wt_of_notMem_params (by simp [S₁, hQx.symm]), wt_of_mem hx, config_weight,
+        weight_of_two_le hxdeg, ite_eq_left rfl, ite_eq_right hQx.symm]
     · rw [ite_eq_right hux]
       by_cases huQ : u = Q
       · subst huQ
         rw [ite_eq_left rfl, wt_of_notMem_params hQp]
-        have := S₁.wt_le_seven u
+        have := S₁.wt_le_bound u
+        rw [config_weightBound] at this
         omega
       · rw [ite_eq_right huQ]
         by_cases hu₁ : u ∈ S₁.unpaired
@@ -121,7 +124,7 @@ private theorem Valid.preparation_swap {S : State n} (hS : S.Valid f) {x Q : ℕ
         · rw [wt_of_notMem hu₁]; omega
   have hW := W_add_le hN hN' _ _ hpt
   rw [Finset.sum_ite_eq_of_mem' _ _ _ (Finset.mem_insert_of_mem hxp),
-    Finset.sum_ite_eq_of_mem' _ _ _ (Finset.mem_insert_self _ _)] at hW
+    Finset.sum_ite_eq_of_mem' _ _ _ (Finset.mem_insert_self _ _), config_cs, config_cq] at hW
   have hs : S₁.s = S.s := rfl
   have hq : S₁.q = S.q := rfl
   omega
@@ -138,7 +141,7 @@ private theorem Valid.preparation_rewire {S : State n} (hS : S.Valid f) {J : ℕ
     intro u hu
     by_cases hu' : u ∈ S.unpaired
     · have hu₁ : u ∈ (S.rewire J g).unpaired := by rwa [unpaired_congr rfl rfl]
-      rw [wt_of_mem hu₁, wt_of_mem hu']
+      rw [wt_of_mem hu₁, wt_of_mem hu', config_weight]
       by_cases hgu : g.Reads u
       · rw [weight_of_two_le (hdeg u hgu hu')]
         have := weight_le_seven ((S.rewire J g).deg u)
@@ -210,7 +213,7 @@ private theorem Valid.not_out_reads_aux {S : State n} {d : ℕ} (hS : S.Valid f)
     (hf : IsAffineDisperser f d) (ha : d < S.a) {v : ℕ} (hv : v ∈ S.aux) : ¬ S.out.Reads v := by
   intro hr
   obtain ⟨c, T, hT⟩ := hS.wf.exists_affineIn hv
-  refine hS.out_not_affine hf ha (c ^^ S.out.neg) hT.1 fun val hval => ?_
+  refine Valid.out_not_affine hS hf ha (c ^^ S.out.neg) hT.1 fun val hval => ?_
   unfold Lit.eval
   unfold Lit.Reads at hr
   rw [hr, Arg.eval_node, hT.2 val hval.1]
@@ -230,14 +233,14 @@ theorem Valid.exists_minGate {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAf
     by_contra hempty
     rw [Finset.not_nonempty_iff_eq_empty] at hempty
     rcases hout : S.out.arg with b | t
-    · refine hS.out_not_affine hf ha (b ^^ S.out.neg) (Finset.empty_subset _) fun val _ => ?_
+    · refine Valid.out_not_affine hS hf ha (b ^^ S.out.neg) (Finset.empty_subset _) fun val _ => ?_
       simp [Lit.eval, hout]
     · have hlive := hS.wf.out_live t hout
       simp only [SemiCircuit.live, Finset.mem_union, hempty, Finset.notMem_empty, or_false]
         at hlive
       rcases hlive with hp | hv
-      · exact hS.not_out_reads_param hf ha hp hout
-      · exact hS.not_out_reads_aux hf ha hv hout
+      · exact Valid.not_out_reads_param hS hf ha hp hout
+      · exact Valid.not_out_reads_aux hS hf ha hv hout
   set G := S.gates.min' hne
   have hG : G ∈ S.gates := Finset.min'_mem _ _
   have hmin : ∀ i, (S.gate G).Reads i → i ∉ S.gates := fun i hi hig =>
@@ -275,7 +278,7 @@ private theorem Valid.exists_param_of_aux_input {S : State n} (hS : S.Valid f) (
   · obtain ⟨x, hxT, hxo⟩ := hTo
     obtain ⟨e, he, hxe⟩ := hT.mem_terms hS.wf hQp hxT
     obtain ⟨hxu, hxdeg⟩ := hN.system_param x (hT.1 hxT) e he hxe
-    obtain ⟨e', he', hQe'⟩ := hS.exists_eqn_of_aux hQ
+    obtain ⟨e', he', hQe'⟩ := Valid.exists_eqn_of_aux hS hQ
     have hQdeg : 2 ≤ S.deg Q := by
       have hsub : ({Sum.inr e', Sum.inl G} : Finset (ℕ ⊕ ℕ)) ⊆ S.children Q := by
         intro w hw
@@ -348,8 +351,8 @@ theorem Valid.exists_preparation_auxIn_lt {S : State n} (hS : S.Valid f) (hN : S
     ∃ S₁ : State n, Preparation f S S₁ ∧ S₁.gates = S.gates ∧ S₁.auxIn < S.auxIn := by
   set G := S.gates.min' hne
   obtain ⟨x, c, T, hT, hxT, hxo, hxu, hxdeg, hQdeg⟩ :=
-    hS.exists_param_of_aux_input hN (Finset.min'_mem _ _) hargs hQ hQo
-  refine ⟨S.swap x Q c T, hS.preparation_swap hxu hxdeg hQ hQdeg hT hxT, rfl, ?_⟩
+    Valid.exists_param_of_aux_input hS hN (Finset.min'_mem _ _) hargs hQ hQo
+  refine ⟨S.swap x Q c T, Valid.preparation_swap hS hxu hxdeg hQ hQdeg hT hxT, rfl, ?_⟩
   set S₁ := S.swap x Q c T
   have hxp := (mem_unpaired.1 hxu).1
   have hQx : Q ≠ x := fun h => hS.wf.notMem_aux_of_mem_params (h ▸ hxp) hQ
@@ -367,7 +370,7 @@ theorem Valid.exists_preparation_auxIn_lt {S : State n} (hS : S.Valid f) (hN : S
       · exact h
     · exact fun h => Or.inr ⟨hQo.symm, h⟩
   rw [auxIn_eq (S := S₁) hne, auxIn_eq hne]
-  change S₁.auxArgs (S.gate G) < S.auxArgs (S.gate G)
+  change auxArgs S₁ (S.gate G) < S.auxArgs (S.gate G)
   rcases hargs with ⟨hlQ, hro⟩ | ⟨hlo, hrQ⟩
   · rw [auxArgs_nodes S₁ hlQ hro, auxArgs_nodes S hlQ hro, ite_eq_right hQ₁, ite_eq_left hQ]
     by_cases hoa : o ∈ S.aux
@@ -417,10 +420,10 @@ theorem Valid.exists_preparation_childIn_lt {S : State n} (hS : S.Valid f)
     · rcases ht with rfl | rfl
       · simp only [env, ite_eq_right htG, ite_true]
       · simp only [env, ite_eq_right htG, ite_eq_right ht12.symm, ite_true]
-  refine ⟨S.rewire K g', hS.preparation_rewire hok fun t ht _ => by
+  refine ⟨S.rewire K g', Valid.preparation_rewire hS hok fun t ht _ => by
     rcases hg'reads t ht with rfl | rfl; exacts [hxdeg, hydeg], rfl, ?_, ?_⟩
   · rw [auxIn_eq (S := S.rewire K g') hne, auxIn_eq hne]
-    change (S.rewire K g').auxArgs ((S.rewire K g').gate G) = S.auxArgs (S.gate G)
+    change auxArgs (S.rewire K g') ((S.rewire K g').gate G) = S.auxArgs (S.gate G)
     rw [show (S.rewire K g').gate G = S.gate G from Function.update_of_ne hKne.symm _ _]
     rfl
   · have hgate : ∀ K', K' ≠ K → (S.rewire K g').gate K' = S.gate K' := fun K' h =>
@@ -537,7 +540,7 @@ theorem Valid.exists_minimalAnd {S : State n} {d : ℕ} (hS : S.Valid f)
   have hGout : ¬ S.out.Reads G := by
     intro hout
     obtain ⟨α, β, γ, hform⟩ := exists_and_form hand
-    refine hS.false_of_fix hf ha hy β ∅ (Finset.empty_subset _) (Finset.notMem_empty _)
+    refine Valid.false_of_fix hS hf ha hy β ∅ (Finset.empty_subset _) (Finset.notMem_empty _)
       (γ ^^ S.out.neg) fun val hval hfix => ?_
     rw [Finset.sum_empty, add_zero] at hfix
     unfold Lit.eval

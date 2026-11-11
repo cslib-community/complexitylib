@@ -90,39 +90,8 @@ deriving DecidableEq, Repr
 /-- Binary encoding of a job as `(time, (deadline, penalty))`. -/
 enc_structure encJob : Job where time : encNat, deadline : encNat, penalty : encNat
 
-namespace Job
-
-/-- Projecting `Job.time` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_time {γ : Type} {encIn : γ ↪ List Bool} {g : γ → Job}
-    (h : ComputableInPolyTime g encIn encJob) :
-    ComputableInPolyTime (fun x => (g x).time) encIn encNat :=
-  ComputableInPolyTime.comp encJob_time_deg.computableInPolyTime h
-
-/-- Projecting `Job.deadline` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_deadline {γ : Type} {encIn : γ ↪ List Bool} {g : γ → Job}
-    (h : ComputableInPolyTime g encIn encJob) :
-    ComputableInPolyTime (fun x => (g x).deadline) encIn encNat :=
-  ComputableInPolyTime.comp encJob_deadline_deg.computableInPolyTime h
-
-/-- Projecting `Job.penalty` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_penalty {γ : Type} {encIn : γ ↪ List Bool} {g : γ → Job}
-    (h : ComputableInPolyTime g encIn encJob) :
-    ComputableInPolyTime (fun x => (g x).penalty) encIn encNat :=
-  ComputableInPolyTime.comp encJob_penalty_deg.computableInPolyTime h
-
-/-- Constructing a `Job` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_mk {γ : Type} {encIn : γ ↪ List Bool} {t d p : γ → ℕ}
-    (ht : ComputableInPolyTime t encIn encNat)
-    (hd : ComputableInPolyTime d encIn encNat)
-    (hp : ComputableInPolyTime p encIn encNat) :
-    ComputableInPolyTime (fun x => (⟨t x, d x, p x⟩ : Job)) encIn encJob :=
-  encJob_mk_deg.computableInPolyTime.comp (ht.prod (hd.prod hp))
-
-end Job
+attribute [fun_prop] encJob_time_polyTime encJob_deadline_polyTime encJob_penalty_polyTime
+  encJob_mk_polyTime
 
 /-- The total penalty of the jobs run in the given order, one after another without idle time,
 from time `s`: a job pays its penalty when it completes after its deadline. -/
@@ -159,35 +128,8 @@ binary. -/
 enc_structure encJobSequencing : JobSequencingInstance where
   jobs : (encList JobSequencing.encJob), bound : encNat
 
-namespace JobSequencingInstance
-
-/-- Projecting `JobSequencingInstance.jobs` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_jobs {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → JobSequencingInstance}
-    (h : ComputableInPolyTime g encIn encJobSequencing) :
-    ComputableInPolyTime (fun x => (g x).jobs) encIn (encList JobSequencing.encJob) :=
-  ComputableInPolyTime.comp encJobSequencing_jobs_deg.computableInPolyTime h
-
-/-- Projecting `JobSequencingInstance.bound` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_bound {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → JobSequencingInstance}
-    (h : ComputableInPolyTime g encIn encJobSequencing) :
-    ComputableInPolyTime (fun x => (g x).bound) encIn encNat :=
-  ComputableInPolyTime.comp encJobSequencing_bound_deg.computableInPolyTime h
-
-/-- Constructing a `JobSequencingInstance` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_mk {γ : Type} {encIn : γ ↪ List Bool}
-    {jobs : γ → List JobSequencing.Job} {bound : γ → ℕ}
-    (hjobs : ComputableInPolyTime jobs encIn (encList JobSequencing.encJob))
-    (hbound : ComputableInPolyTime bound encIn encNat) :
-    ComputableInPolyTime (fun x => (⟨jobs x, bound x⟩ : JobSequencingInstance))
-      encIn encJobSequencing :=
-  encJobSequencing_mk_deg.computableInPolyTime.comp (hjobs.prod hbound)
-
-end JobSequencingInstance
+attribute [fun_prop] encJobSequencing_jobs_polyTime encJobSequencing_bound_polyTime
+  encJobSequencing_mk_polyTime
 
 /-- **Sequencing with deadlines and penalties** [Karp1972]: some order of the jobs has total
 penalty at most the bound. -/

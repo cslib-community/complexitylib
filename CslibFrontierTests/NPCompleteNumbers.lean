@@ -52,8 +52,8 @@ example : Knapsack ∈ NP encKnapsack ∧
     PolyTimeReducible encCNF encKnapsack SAT Knapsack :=
   ⟨Knapsack_npComplete.1, Knapsack_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
-example : ZeroOneIP ∈ NP (encList (encPair (encList encNat) encNat)) ∧
-    PolyTimeReducible encCNF (encList (encPair (encList encNat) encNat)) SAT ZeroOneIP :=
+example : ZeroOneIP ∈ NP encZeroOneIP ∧
+    PolyTimeReducible encCNF encZeroOneIP SAT ZeroOneIP :=
   ⟨ZeroOneIP_npComplete.1, ZeroOneIP_npComplete.2 encCNF SAT SAT.mem_NP⟩
 
 example :
@@ -193,21 +193,21 @@ example : SubsetSum.toKnapsack ([3, 5], 4) ∉ Knapsack := fun h =>
 /-! ### `ZeroOneIP` -/
 
 -- `x₀ + x₁ = 1` and `2 x₀ + 3 x₁ + x₂ = 4` with `x = (0, 1, 1)`.
-example : ZeroOneIP.verifier ([([1, 1], 1), ([2, 3, 1], 4)], [false, true, true]) = true := rfl
-example : [([1, 1], 1), ([2, 3, 1], 4)] ∈ ZeroOneIP :=
+example : ZeroOneIP.verifier ([⟨[1, 1], 1⟩, ⟨[2, 3, 1], 4⟩], [false, true, true]) = true := rfl
+example : ([⟨[1, 1], 1⟩, ⟨[2, 3, 1], 4⟩] : List ZeroOneIP.Equation) ∈ ZeroOneIP :=
   ⟨fun j => decide (j = 1 ∨ j = 2), by decide⟩
-example : [([2], 1)] ∉ ZeroOneIP := by
+example : ([⟨[2], 1⟩] : List ZeroOneIP.Equation) ∉ ZeroOneIP := by
   rintro ⟨x, hx⟩
   have := hx _ (List.mem_singleton_self _)
   cases h : x 0 <;> simp [h] at this
 
 -- The empty system is feasible; an equation without variables must have right-hand side zero.
-example : [] ∈ ZeroOneIP := ⟨fun _ => false, by simp⟩
-example : [([], 1)] ∉ ZeroOneIP := by
+example : ([] : List ZeroOneIP.Equation) ∈ ZeroOneIP := ⟨fun _ => false, by simp⟩
+example : ([⟨[], 1⟩] : List ZeroOneIP.Equation) ∉ ZeroOneIP := by
   rintro ⟨x, hx⟩
   simp at hx
 
-example : SubsetSum.toZeroOneIP ([3, 5], 5) = [([3, 5], 5)] := rfl
+example : SubsetSum.toZeroOneIP ([3, 5], 5) = [⟨[3, 5], 5⟩] := rfl
 
 -- The reduction carries the solvable instance `([3, 5], 8)` to a feasible system, and the
 -- unsolvable `([3, 5], 4)` to an infeasible one.
@@ -215,5 +215,15 @@ example : SubsetSum.toZeroOneIP ([3, 5], 8) ∈ ZeroOneIP :=
   (SubsetSum.toZeroOneIP_mem_iff _).2 (mem_SubsetSum_iff_sublists.2 (by decide))
 example : SubsetSum.toZeroOneIP ([3, 5], 4) ∉ ZeroOneIP := fun h =>
   absurd (mem_SubsetSum_iff_sublists.1 ((SubsetSum.toZeroOneIP_mem_iff _).1 h)) (by decide)
+
+section ZeroOneIPFunProp
+open scoped ZeroOneIP
+
+example : ComputableInPolyTime
+    (fun eqs : List ZeroOneIP.Equation =>
+      eqs.map fun eq => (⟨eq.coeffs, eq.rhs + 1⟩ : ZeroOneIP.Equation))
+    encZeroOneIP encZeroOneIP := by fun_prop
+
+end ZeroOneIPFunProp
 
 end CslibFrontierTests.NPCompleteNumbers
