@@ -213,6 +213,8 @@ theorem step_spec {c : Code} {σ τ : List Bool} {a b : ℕ → Bool}
       rw [hbits]
       exact evaln_mono (prefixOf_prefix _ (le_max_left _ _)) le_rfl hk
 
+/-- The finite-extension construction. Stage `2e + 1` extends the first string against code `e`,
+and stage `2e + 2` extends the second string against code `e`. -/
 @[expose]
 noncomputable def stage : ℕ → List Bool × List Bool
   | 0 => ([], [])

@@ -63,7 +63,7 @@ theorem primrec_recOn' {α σ}
     Primrec (fun a => F a (c a) : α → σ) := by
   intro _ _ _ _ F
   let G₁ : (α × List σ) × ℕ × ℕ → Option σ := fun p =>
-    letI a := p.1.1; letI IH := p.1.2; letI n := p.2.1; letI m := p.2.2
+    letI p1 := p.1; letI p2 := p.2; letI a := p1.1; letI IH := p1.2; letI n := p2.1; letI m := p2.2
     IH[m]?.bind fun s =>
     IH[m.unpair.1]?.bind fun s₁ =>
     IH[m.unpair.2]?.map fun s₂ =>
@@ -129,7 +129,7 @@ theorem primrec_recOn' {α σ}
   simp only [List.length_map, List.length_range, List.getElem?_eq_getElem, hm, m1, m2,
     List.getElem_map, List.getElem_range, Option.bind_some, Option.map_some, G₁, m]
   rw [show ofNat Code (n + 5) = Code.ofNatCode (n + 5) from rfl]
-  simp [Code.ofNatCode]
+  simp only [Code.ofNatCode]
   cases n.bodd <;> cases n.div2.bodd <;> rfl
 
 
@@ -138,19 +138,19 @@ theorem primrec_recOn {α σ}
     (hz : Primrec z) {s : α → σ} (hs : Primrec s) {l : α → σ} (hl : Primrec l) {r : α → σ}
     (hr : Primrec r) {o : α → σ} (ho : Primrec o)
     {pr : α → Code → Code → σ → σ → σ}
-    (hpr : Primrec fun a : α × Code × Code × σ × σ => pr a.1 a.2.1 a.2.2.1 a.2.2.2.1 a.2.2.2.2)
+    (hpr : Primrec fun a : α × Code × Code × σ × σ => let a2 := a.2; let a22 := a2.2; let a222 := a22.2; pr a.1 a2.1 a22.1 a222.1 a222.2)
     {co : α → Code → Code → σ → σ → σ}
-    (hco : Primrec fun a : α × Code × Code × σ × σ => co a.1 a.2.1 a.2.2.1 a.2.2.2.1 a.2.2.2.2)
+    (hco : Primrec fun a : α × Code × Code × σ × σ => let a2 := a.2; let a22 := a2.2; let a222 := a22.2; co a.1 a2.1 a22.1 a222.1 a222.2)
     {pc : α → Code → Code → σ → σ → σ}
-    (hpc : Primrec fun a : α × Code × Code × σ × σ => pc a.1 a.2.1 a.2.2.1 a.2.2.2.1 a.2.2.2.2)
-    {rf : α → Code → σ → σ} (hrf : Primrec fun a : α × Code × σ => rf a.1 a.2.1 a.2.2) :
+    (hpc : Primrec fun a : α × Code × Code × σ × σ => let a2 := a.2; let a22 := a2.2; let a222 := a22.2; pc a.1 a2.1 a22.1 a222.1 a222.2)
+    {rf : α → Code → σ → σ} (hrf : Primrec fun a : α × Code × σ => let a2 := a.2; rf a.1 a2.1 a2.2) :
     let F (a : α) (c : Code) : σ :=
       Code.recOn c (z a) (s a) (l a) (r a) (o a) (pr a) (co a) (pc a) (rf a)
     Primrec fun a => F a (c a) :=
   primrec_recOn' hc hz hs hl hr ho
-    (pr := fun a b => pr a b.1 b.2.1 b.2.2.1 b.2.2.2) (.mk hpr)
-    (co := fun a b => co a b.1 b.2.1 b.2.2.1 b.2.2.2) (.mk hco)
-    (pc := fun a b => pc a b.1 b.2.1 b.2.2.1 b.2.2.2) (.mk hpc)
+    (pr := fun a b => let b2 := b.2; let b22 := b2.2; pr a b.1 b2.1 b22.1 b22.2) (.mk hpr)
+    (co := fun a b => let b2 := b.2; let b22 := b2.2; co a b.1 b2.1 b22.1 b22.2) (.mk hco)
+    (pc := fun a b => let b2 := b.2; let b22 := b2.2; pc a b.1 b2.1 b22.1 b22.2) (.mk hpc)
     (rf := fun a b => rf a b.1 b.2) (.mk hrf)
 
 end Nat.RecursiveIn.Code
@@ -160,7 +160,7 @@ private def lup (L : List (List (Option ℕ))) (p : ℕ × Code) (n : ℕ) := do
   let o ← l[n]?
   o
 
-private theorem hlup : Primrec fun p : _ × (_ × _) × _ => lup p.1 p.2.1 p.2.2 :=
+private theorem hlup : Primrec fun p : _ × (_ × _) × _ => let p2 := p.2; lup p.1 p2.1 p2.2 :=
   Primrec.option_bind
     (Primrec.list_getElem?.comp Primrec.fst (Primrec.encode.comp <| Primrec.fst.comp Primrec.snd))
     (Primrec.option_bind (Primrec.list_getElem?.comp Primrec.snd <| Primrec.snd.comp <|
@@ -212,9 +212,9 @@ private theorem hG : Primrec₂ G := by
   have n := n.comp (Primrec.fst (β := ℕ))
   have k' := Primrec.snd (α := (List ℕ × List (List (Option ℕ))) × ℕ) (β := ℕ)
   have c := Primrec.snd.comp (a.comp <| (Primrec.fst (β := ℕ)).comp (Primrec.fst (β := ℕ)))
-  have σ_expr : Primrec (fun (p : ((List ℕ × List (List (Option ℕ))) × ℕ) × ℕ) => p.1.1.1) :=
+  have σ_expr : Primrec (fun (p : ((List ℕ × List (List (Option ℕ))) × ℕ) × ℕ) => let p1 := p.1; let p11 := p1.1; p11.1) :=
     Primrec.fst.comp (Primrec.fst.comp Primrec.fst)
-  have n_expr : Primrec (fun (p : ((List ℕ × List (List (Option ℕ))) × ℕ) × ℕ) => p.1.2) :=
+  have n_expr : Primrec (fun (p : ((List ℕ × List (List (Option ℕ))) × ℕ) × ℕ) => let p1 := p.1; p1.2) :=
     Primrec.snd.comp Primrec.fst
   have o_σ := Primrec.list_getElem?.comp σ_expr n_expr
   apply
@@ -381,7 +381,7 @@ private theorem evaln_map (σ k c n) :
 
 /-- The `Nat.RecursiveIn.Code.evaln` function is primitive recursive. -/
 theorem primrec_evaln :
-    Primrec fun q : List ℕ × (ℕ × Code) × ℕ => evaln q.1 q.2.1.1 q.2.1.2 q.2.2 :=
+    Primrec fun q : List ℕ × (ℕ × Code) × ℕ => let q2 := q.2; let q21 := q2.1; evaln q.1 q21.1 q21.2 q2.2 :=
   have :
     Primrec₂ fun (σ : List ℕ) (n : ℕ) =>
       let a := ofNat (ℕ × Code) n
