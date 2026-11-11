@@ -165,20 +165,19 @@ private theorem reflTransGen_subtype_iff {α : Type*} {P : α → Prop} {R : α 
     (x y : {a : α // P a}) :
     Relation.ReflTransGen (fun u w => (P u ∧ P w) ∧ R u w) x.val y.val ↔
       Relation.ReflTransGen (fun u w : {a : α // P a} => R u.val w.val) x y := by
-  constructor
-  · intro h
-    have key : ∀ {a b : α}, Relation.ReflTransGen (fun u w => (P u ∧ P w) ∧ R u w) a b →
-        ∀ (ha : P a) (hb : P b),
-          Relation.ReflTransGen (fun u w : {z : α // P z} => R u.val w.val) ⟨a, ha⟩ ⟨b, hb⟩ := by
-      intro a b hab
-      induction hab with
-      | refl => intro ha _; exact .refl
-      | @tail b' c hab' hbc ih =>
-        rcases hbc with ⟨⟨hb', _⟩, hbc'⟩
-        intro ha _
-        exact (ih ha hb').tail hbc'
-    exact key h x.property y.property
-  · exact Relation.ReflTransGen.lift Subtype.val (fun u w h => ⟨⟨u.property, w.property⟩, h⟩) x y
+  have hrange (z : α)
+      (hz : Relation.ReflTransGen (fun u w => (P u ∧ P w) ∧ R u w) x.val z) :
+      ∃ w : {a : α // P a}, w.val = z := by
+    cases hz with
+    | refl => exact ⟨x, rfl⟩
+    | tail _ hstep =>
+      rcases hstep with ⟨⟨_, hzP⟩, _⟩
+      exact ⟨⟨z, hzP⟩, rfl⟩
+  have hrel : (fun u w : {a : α // P a} => (P u.val ∧ P w.val) ∧ R u.val w.val) =
+      fun u w => R u.val w.val :=
+    funext₂ fun u w => propext ⟨fun ⟨_, h⟩ => h, fun h => ⟨⟨u.property, w.property⟩, h⟩⟩
+  rw [← hrel]
+  exact (Relation.reflTransGen_onFun_iff Subtype.val_injective hrange).symm
 
 /-- Pull `Reach` back along a certified ordered domain interpretation into one positive FO(TC)
 sentence over the source language. -/
