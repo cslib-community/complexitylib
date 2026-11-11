@@ -7,6 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 -- `ComputableInTimeAndSpace.exists_no_work_tapes` is from cslib PR #1138 @b1635b2e.
+-- The runs of combined machines are local (candidate): the `runFrom` forms of `combineLeftHom` and
+-- `combineRightHom` from cslib #1151.
 
 public import Cslib.Computability.Machines.Turing.MultiTape.Deterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Space
@@ -18,7 +20,7 @@ The additions of Christian Reitwiessner's branch `crei/tidy-universal` to
 `Cslib.Computability.Machines.Turing.MultiTape.Deterministic`, together with the addition of cslib
 PR #1138: runs one step or one phase at a time, the time bound of a deterministic machine as a
 halted run, the step at which a run halts, the output emitted in `t` steps, and machines computing
-in zero space.
+in zero space. Local additions give the runs of machines built with `combine`.
 
 ## Main definitions
 
@@ -31,6 +33,8 @@ in zero space.
 * `Turing.MultiTapeTM.runsInTime_iff_halted`: a deterministic machine runs in time `t` exactly when
   it has halted after `t` steps.
 * `Turing.MultiTapeTM.exists_haltsAt`: a halted run halts at some step.
+* `Turing.MultiTapeTM.runFrom_combine_left`, `Turing.MultiTapeTM.runFrom_combine_right`: a machine
+  built with `combine` runs as either of its parts.
 * `Turing.MultiTapeTM.length_output_runFrom_le`: in `t` steps a machine emits at most `t` symbols.
 * `Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_no_work_tapes`: a function computable in zero
   space is computable by a machine without work tapes.
@@ -109,6 +113,62 @@ lemma existsUnique_haltsAt {input : List Symbol} {cfg : Cfg k Symbol State input
     (hhalt : (tm.runFrom cfg t).Halted) : ∃! u, tm.HaltsAt cfg u :=
   let ⟨u, _, hu⟩ := exists_haltsAt hhalt
   ⟨u, hu, fun _ h => h.unique hu⟩
+
+/-! ### Runs of combined machines -/
+
+section combine
+
+variable {State₀ State₁ : Type*} {tm₀ : MultiTapeTM k Symbol State₀}
+  {tm₁ : MultiTapeTM k Symbol State₁} {next₀ : Option State₀ → Option (State₀ ⊕ State₁)}
+  {next₁ : Option State₁ → Option (State₀ ⊕ State₁)} {q₀ : State₀ ⊕ State₁}
+
+/-- If `next₀` keeps the live states of `tm₀` in `tm₀`, a step of `tm₀` from a running
+configuration is a step of the combined machine, its states relabeled along `next₀`. -/
+lemma step_combine_left (h : ∀ q, next₀ (some q) = some (.inl q))
+    {cfg : Cfg k Symbol State₀ input} (hcfg : ¬cfg.Halted) :
+    (combine tm₀ tm₁ next₀ next₁ q₀).step (cfg.mapState next₀) = (tm₀.step cfg).mapState next₀ :=
+  step_iff.mp ((combineLeftHom h).map_rel ⟨hcfg, step_iff.mpr rfl⟩)
+
+/-- A step of `tm₁` is a step of the combined machine, if the steps of `tm₁` stay in `tm₁`. -/
+lemma step_combine_right (cfg : Cfg k Symbol State₁ input) :
+    (combine tm₀ tm₁ next₀ (Option.map .inr) q₀).step (cfg.mapState (Option.map .inr)) =
+      (tm₁.step cfg).mapState (Option.map .inr) :=
+  step_iff.mp (combineRightHom.map_rel (step_iff.mpr rfl))
+
+/-- While `tm₀` is running, the combined machine runs as `tm₀`, its states relabeled along `next₀`,
+if `next₀` keeps the live states of `tm₀` in `tm₀`. -/
+lemma runFrom_combine_left (h : ∀ q, next₀ (some q) = some (.inl q))
+    (cfg : Cfg k Symbol State₀ input) {t : ℕ} (hrun : ∀ s < t, ¬(tm₀.runFrom cfg s).Halted) :
+    (combine tm₀ tm₁ next₀ next₁ q₀).runFrom (cfg.mapState next₀) t =
+      (tm₀.runFrom cfg t).mapState next₀ := by
+  induction t with
+  | zero => rfl
+  | succ t ih =>
+    rw [runFrom_succ, runFrom_succ, ih fun s hs => hrun s (by lia),
+      step_combine_left h (hrun t (by lia))]
+
+/-- Up to the step at which `tm₀` halts, the combined machine runs as `tm₀`, its states relabeled
+along `next₀`, if `next₀` keeps the live states of `tm₀` in `tm₀`. -/
+lemma HaltsAt.runFrom_combine_left (h : ∀ q, next₀ (some q) = some (.inl q))
+    {cfg : Cfg k Symbol State₀ input} {u t : ℕ} (hu : tm₀.HaltsAt cfg u) (ht : t ≤ u) :
+    (combine tm₀ tm₁ next₀ next₁ q₀).runFrom (cfg.mapState next₀) t =
+      (tm₀.runFrom cfg t).mapState next₀ :=
+  MultiTapeTM.runFrom_combine_left h cfg fun _ hs => hu.not_halted (hs.trans_le ht)
+
+/-- The combined machine runs as `tm₁`, if the steps of `tm₁` stay in `tm₁`. -/
+lemma runFrom_combine_right (cfg : Cfg k Symbol State₁ input) (t : ℕ) :
+    (combine tm₀ tm₁ next₀ (Option.map .inr) q₀).runFrom (cfg.mapState (Option.map .inr)) t =
+      (tm₁.runFrom cfg t).mapState (Option.map .inr) :=
+  runFrom_map combineRightHom cfg t
+
+/-- A halted configuration of the first machine, relabeled through `handOver q₁`, is the
+configuration in which the second machine starts in `q₁`. -/
+lemma mapState_handOver_of_halted {q₁ : State₁} {cfg : Cfg k Symbol State₀ input}
+    (h : cfg.Halted) :
+    cfg.mapState (handOver q₁) = (cfg.withState (some q₁)).mapState (Option.map .inr) := by
+  simp [Cfg.mapState, Cfg.withState, show cfg.state = none from h]
+
+end combine
 
 /-- In `t` steps the machine emits at most `t` symbols. -/
 lemma length_output_runFrom_le (tm : MultiTapeTM k Symbol State)
