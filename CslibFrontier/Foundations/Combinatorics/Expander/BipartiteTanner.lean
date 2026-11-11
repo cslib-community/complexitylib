@@ -54,10 +54,10 @@ explicit parity-check matrix with row weights at most `|D|`.
 
 ## References
 
-* [M. Sipser, D. A. Spielman, *Expander codes*][SipserSpielman1996]
-* [S. Hoory, N. Linial, A. Wigderson, *Expander graphs and their
-  applications*][HooryLinialWigderson2006]
+* [M. Sipser, D. A. Spielman, *Expander codes*][SipserSpielman1996], IEEE Trans. Inf. Theory 42(6):1710–1722 (1996). Section VI (Lemma 15) supports the minimum distance construction, which this formalization adapts into asymmetric finite-ring multigraph bounds.
+* [S. Hoory, N. Linial, A. Wigderson, *Expander graphs and their applications*][HooryLinialWigderson2006], Bull. Amer. Math. Soc. 43(4):439–561 (2006).
 -/
+
 
 public section
 

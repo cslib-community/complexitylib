@@ -41,8 +41,11 @@ Unconditional specifications and resource bounds layered on
 3. **End-to-end M20 parity-test composition**: `tannerParityTests` pairs `findSmallBiasShifts`,
    `findLocalCheckMatrix`, and `buildShortenedTannerRows`, unconditionally producing at most
    `2 · 2 ^ r · c` rows of weight at most `d` with global relative-distance guarantee
-   `δ * (δ - p / q) * (d * 2 ^ r) ≤ weight z` (`tannerParityTests_spec`,
-   `tannerParityTests_computableInO`).
+   `δ * (δ - p / q) * (d * 2 ^ r) ≤ weight z` (`tannerParityTests_spec`). The exponential-time,
+   polynomial-space resource certificate applies exactly to the bounded wrapper
+   `tannerParityTestsWithBound` (`tannerParityTests_computableInO`), which clamps the
+   dimension to a unary parameter to preserve the polynomial space bound.
+
 
 ## Main definitions
 
