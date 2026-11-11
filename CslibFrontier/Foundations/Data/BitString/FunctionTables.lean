@@ -89,7 +89,8 @@ from the bits `v * B + equivFin y`, for the inputs `y` of `v`'s function in the 
 def decodeTables (B : ℕ) (ℓ : Fin n → ℕ) (r : List Bool) : (v : Fin n) → BooleanFunction (ℓ v) :=
   fun v y => r.getD (v * B + equivFin (ℓ v) y) false
 
-/-- Entry `y` of the table of `v` is bit `v * B + equivFin y` of the list, or `false` past its end. -/
+/-- Entry `y` of the table of `v` is bit `v * B + equivFin y` of the list, or `false` past its
+end. -/
 @[simp]
 theorem decodeTables_apply (B : ℕ) (ℓ : Fin n → ℕ) (r : List Bool) (v : Fin n)
     (y : BitString (ℓ v)) : decodeTables B ℓ r v y = r.getD (v * B + equivFin (ℓ v) y) false := by
