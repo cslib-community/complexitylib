@@ -105,45 +105,6 @@ deriving DecidableEq, Repr
 enc_structure encColorfulPathInstance : ColorfulPathInstance where
   graph : encGraph, colors : (encList encNat), length : encNat
 
-namespace ColorfulPathInstance
-
-/-- Projecting `ColorfulPathInstance.graph` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_graph {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → ColorfulPathInstance}
-    (h : ComputableInPolyTime g encIn encColorfulPathInstance) :
-    ComputableInPolyTime (fun x => (g x).graph) encIn encGraph :=
-  ComputableInPolyTime.comp encColorfulPathInstance_graph_deg.computableInPolyTime h
-
-/-- Projecting `ColorfulPathInstance.colors` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_colors {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → ColorfulPathInstance}
-    (h : ComputableInPolyTime g encIn encColorfulPathInstance) :
-    ComputableInPolyTime (fun x => (g x).colors) encIn (encList encNat) :=
-  ComputableInPolyTime.comp encColorfulPathInstance_colors_deg.computableInPolyTime h
-
-/-- Projecting `ColorfulPathInstance.length` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_length {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → ColorfulPathInstance}
-    (h : ComputableInPolyTime g encIn encColorfulPathInstance) :
-    ComputableInPolyTime (fun x => (g x).length) encIn encNat :=
-  ComputableInPolyTime.comp encColorfulPathInstance_length_deg.computableInPolyTime h
-
-/-- Constructing a `ColorfulPathInstance` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_mk {γ : Type} {encIn : γ ↪ List Bool}
-    {graph : γ → Graph} {colors : γ → List ℕ} {length : γ → ℕ}
-    (hgraph : ComputableInPolyTime graph encIn encGraph)
-    (hcolors : ComputableInPolyTime colors encIn (encList encNat))
-    (hlength : ComputableInPolyTime length encIn encNat) :
-    ComputableInPolyTime (fun x => (⟨graph x, colors x, length x⟩ : ColorfulPathInstance))
-      encIn encColorfulPathInstance :=
-  (hgraph.prod (hcolors.prod hlength)).of_enc_eq fun _ => rfl
-
-end ColorfulPathInstance
-
 /-- **Colorful k-Path** [CyganEtAl2015, Section 5.2]: the instances `⟨G, cs, k⟩` such that `G` has a
 path on `k` vertices whose colors are pairwise distinct and less than `k`; colors are given by a
 list parallel to the vertex list (`Cslib.Complexity.colorOf`). -/
@@ -351,42 +312,6 @@ deriving DecidableEq, Repr
 enc_structure encTableInput : TableInput where
   graph : encGraph, colors : (encList encNat), numSets : encUnary
 
-namespace TableInput
-
-/-- Projecting `TableInput.graph` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_graph {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → TableInput} (h : ComputableInPolyTime g encIn encTableInput) :
-    ComputableInPolyTime (fun x => (g x).graph) encIn encGraph :=
-  ComputableInPolyTime.comp encTableInput_graph_deg.computableInPolyTime h
-
-/-- Projecting `TableInput.colors` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_colors {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → TableInput} (h : ComputableInPolyTime g encIn encTableInput) :
-    ComputableInPolyTime (fun x => (g x).colors) encIn (encList encNat) :=
-  ComputableInPolyTime.comp encTableInput_colors_deg.computableInPolyTime h
-
-/-- Projecting `TableInput.numSets` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_numSets {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → TableInput} (h : ComputableInPolyTime g encIn encTableInput) :
-    ComputableInPolyTime (fun x => (g x).numSets) encIn encUnary :=
-  ComputableInPolyTime.comp encTableInput_numSets_deg.computableInPolyTime h
-
-/-- Constructing a `TableInput` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_mk {γ : Type} {encIn : γ ↪ List Bool}
-    {graph : γ → Graph} {colors : γ → List ℕ} {numSets : γ → ℕ}
-    (hgraph : ComputableInPolyTime graph encIn encGraph)
-    (hcolors : ComputableInPolyTime colors encIn (encList encNat))
-    (hnumSets : ComputableInPolyTime numSets encIn encUnary) :
-    ComputableInPolyTime (fun x => (⟨graph x, colors x, numSets x⟩ : TableInput))
-      encIn encTableInput :=
-  (hgraph.prod (hcolors.prod hnumSets)).of_enc_eq fun _ => rfl
-
-end TableInput
-
 /-- Binary encoding of dynamic-programming tables (`List (List ℕ)`): lists of vertex lists. -/
 abbrev encTable : List (List ℕ) ↪ List Bool := encList (encList encNat)
 
@@ -407,43 +332,11 @@ deriving DecidableEq, Repr
 enc_structure encStepInput : StepInput where
   input : encTableInput, table : encTable, mask : encUnary
 
-namespace StepInput
-
-/-- Projecting `StepInput.input` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_input {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → StepInput} (h : ComputableInPolyTime g encIn encStepInput) :
-    ComputableInPolyTime (fun x => (g x).input) encIn encTableInput :=
-  ComputableInPolyTime.comp encStepInput_input_deg.computableInPolyTime h
-
-/-- Projecting `StepInput.table` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_table {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → StepInput} (h : ComputableInPolyTime g encIn encStepInput) :
-    ComputableInPolyTime (fun x => (g x).table) encIn encTable :=
-  ComputableInPolyTime.comp encStepInput_table_deg.computableInPolyTime h
-
-/-- Projecting `StepInput.mask` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_mask {γ : Type} {encIn : γ ↪ List Bool}
-    {g : γ → StepInput} (h : ComputableInPolyTime g encIn encStepInput) :
-    ComputableInPolyTime (fun x => (g x).mask) encIn encUnary :=
-  ComputableInPolyTime.comp encStepInput_mask_deg.computableInPolyTime h
-
-/-- Constructing a `StepInput` is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_mk {γ : Type} {encIn : γ ↪ List Bool}
-    {input : γ → TableInput} {table : γ → List (List ℕ)} {mask : γ → ℕ}
-    (hinput : ComputableInPolyTime input encIn encTableInput)
-    (htable : ComputableInPolyTime table encIn encTable)
-    (hmask : ComputableInPolyTime mask encIn encUnary) :
-    ComputableInPolyTime (fun x => (⟨input x, table x, mask x⟩ : StepInput))
-      encIn encStepInput :=
-  (hinput.prod (htable.prod hmask)).of_enc_eq fun _ => rfl
-
-end StepInput
-
 end ColorCoding
+
+section
+
+open scoped ColorCoding
 
 open ComputableInPolyTime in
 private theorem computableInPolyTime_entryCapped :
@@ -596,6 +489,8 @@ private theorem computableInPolyTime_colorfulPathExponent :
         (by fun_prop : ComputableInPolyTime (fun x : ColorfulPathInstance => x.graph)
           encColorfulPathInstance encGraph)))
     (by fun_prop)
+
+end
 
 /-- **Colorful k-Path in time `2 ^ O(k)` times a polynomial** [AlonYusterZwick1995, Lemma 3.1]
 [CyganEtAl2015, Lemma 5.5], on multi-tape machines: the dynamic programming over color sets

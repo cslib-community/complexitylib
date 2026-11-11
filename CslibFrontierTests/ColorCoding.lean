@@ -118,4 +118,41 @@ example (h : IndependentSet ∈ FPT (encPair encGraph encNat) Prod.snd) :
     Clique ∈ FPT (encPair encGraph encNat) Prod.snd :=
   Clique_mem_FPT_iff.2 h
 
+-- Compositional `fun_prop` clients using the `enc_structure`-generated rules and
+-- `Cslib.Complexity.ColorCoding` scope.
+example : ComputableInPolyTime (fun x : ColorfulPathInstance => x.length)
+    encColorfulPathInstance encNat := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun x : ColorfulPathInstance × ℕ => (⟨x.1.graph, x.1.colors, x.2⟩ : ColorfulPathInstance))
+    (encPair encColorfulPathInstance encNat) encColorfulPathInstance := by
+  fun_prop
+
+open scoped Cslib.Complexity.ColorCoding in
+example : ComputableInPolyTime
+    (fun x : ColorCoding.StepInput =>
+      (⟨⟨x.input.graph, x.input.colors, x.input.numSets⟩, x.table, x.mask⟩ :
+        ColorCoding.StepInput))
+    ColorCoding.encStepInput ColorCoding.encStepInput := by
+  fun_prop
+
+open scoped Cslib.Complexity.ColorCoding in
+example : ComputableInPolyTime
+    (fun x : ColorfulPathInstance × ℕ =>
+      ColorCoding.table x.1.graph (colorOf x.1.graph x.1.colors) x.2)
+    (encPair encColorfulPathInstance encUnary) ColorCoding.encTable := by
+  have ht : ComputableInPolyTime
+      (fun x : ColorfulPathInstance × ℕ =>
+        (⟨x.1.graph, x.1.colors, x.2⟩ : ColorCoding.TableInput))
+      (encPair encColorfulPathInstance encUnary) ColorCoding.encTableInput := by
+    fun_prop
+  change ComputableInPolyTime
+    (fun x : ColorfulPathInstance × ℕ =>
+      (fun y : ColorCoding.TableInput =>
+        ColorCoding.table y.graph (colorOf y.graph y.colors) y.numSets)
+        ⟨x.1.graph, x.1.colors, x.2⟩)
+    _ _
+  exact ColorCoding.computableInPolyTime_table.comp ht
+
 end CslibFrontierTests.ColorCoding
