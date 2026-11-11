@@ -19,7 +19,7 @@ extraction checks the negative input coordinate at the left blank boundary, zero
 work-head residues. Its native certificate uses the same concrete representation as replay.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.QueryReplayAccess
 

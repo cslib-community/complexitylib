@@ -104,10 +104,10 @@ example :
           (DepthParameters.width 2))).code).1.length ≤ DepthParameters.depthBudget 2 :=
   ⟨DecryptionCircuit.code_eq_code 1 2, DecryptionCircuit.layers_augment_le_depthBudget 2⟩
 
-example : Layered.select (Layered.eval (secret ++ lowerTie)
-    (Layered.compile 18 (DecryptionCircuit.circuit 1 2).code).1)
-    (Layered.compile 18 (DecryptionCircuit.circuit 1 2).code).2 = [true] := by
-  have h := Layered.select_eval_compile (DecryptionCircuit.circuit 1 2)
+example : BitString.readPositions (Layered.compile 18 (DecryptionCircuit.circuit 1 2).code).2
+    (Layered.eval (secret ++ lowerTie)
+      (Layered.compile 18 (DecryptionCircuit.circuit 1 2).code).1) = [true] := by
+  have h := Layered.readPositions_eval_compile (DecryptionCircuit.circuit 1 2)
     (BitString.ofList 18 (secret ++ lowerTie))
   have hv : (DecryptionCircuit.circuit 1 2).eval interpretation
       (BitString.ofList 18 (secret ++ lowerTie)) 0 = true := by

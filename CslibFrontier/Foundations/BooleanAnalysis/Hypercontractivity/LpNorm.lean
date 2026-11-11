@@ -32,7 +32,7 @@ cube over no coordinates it is the absolute value (`BitString.lpNorm_of_isEmpty`
 * [R. O'Donnell, *Analysis of Boolean Functions*][ODonnell2014]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

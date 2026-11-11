@@ -43,7 +43,7 @@ error `δ / 2` and an `m n`-bit seed (`BitString.LinearHash.isStrongExtractor`).
   Function*][HILL1999]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

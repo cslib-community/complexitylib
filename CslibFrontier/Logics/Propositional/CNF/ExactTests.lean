@@ -35,7 +35,7 @@ Both statements are about existence and counts; computing the tests is not treat
 * [OpenAI, *The Exponential Time Hypothesis is False*][OpenAI2026ETH], §§6.1–6.2
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

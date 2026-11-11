@@ -25,7 +25,7 @@ encoded output growth, so these are degree-1/1 certificates. Copy, constant and 
 come from the existing degree calculus.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInDegree
 

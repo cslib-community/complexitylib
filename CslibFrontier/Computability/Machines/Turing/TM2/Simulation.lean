@@ -31,8 +31,8 @@ Halting configurations remain fixed, so a clock may safely run beyond the source
 * `Turing.TM2.stepAux_polyTime`: executing one fixed statement is polynomial-time.
 * `Turing.TM2.stepTotal_polyTime`: one fixed source transition is polynomial-time in the complete
   encoded configuration.
-* `Turing.TM2.stepTotal_stack_bound`: a fixed source transition adds at most a constant number
-  of symbols to any stack.
+* `Turing.TM2.stepTotal_stack_bound`: for a fixed program, one padded transition raises a common
+  bound on all stack lengths by at most a constant.
 * `Turing.TM2.iterate_stepTotal_stack_le`: running `i` padded transitions from `initList` grows
   every stack by at most `C * i` symbols beyond the input length.
 

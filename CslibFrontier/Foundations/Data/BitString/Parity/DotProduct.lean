@@ -34,7 +34,7 @@ kernel of a `4 ^ c`-th of the matrices (`Cslib.BitString.card_kernel_pair`).
   same for two distinct nonzero strings.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 

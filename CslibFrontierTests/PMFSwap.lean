@@ -3,6 +3,7 @@ Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
+import CslibFrontier.Crypto.Game.UntilBad
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Tactic.PMFSwap
 
@@ -151,6 +152,78 @@ not an equation of distributions `PMF α`
 example (m n : ℕ) (h : m = n) : m = n := by
   pmf_swap
 
+/-! ## Naming and closing -/
+
+-- `with` names the stripped samples in the order they occur in the right side. Here `r` has a
+-- single partner and is stripped first, but `a`, the first name, goes to the sample of `p`.
+example (p : PMF α) (r : PMF β) (f : α → α → β → PMF δ) (g : α → β → PMF δ)
+    (h : ∀ a x, (p.bind fun b => f a b x) = g a x) :
+    (p.bind fun a => p.bind fun b => r.bind fun x => f a b x) =
+      p.bind fun a => r.bind fun x => g a x := by
+  pmf_swap with a x
+  exact h a x
+
+/-- A definition that reducible unfolding does not see through. -/
+def twice (a : α) : α × α := (a, a)
+
+-- What remains after stripping is closed when `rfl` proves it, at default transparency.
+example (p : PMF α) (q : PMF β) (f : α → β → α × α → PMF γ) :
+    (p.bind fun a => q.bind fun b => f a b (twice a)) =
+      q.bind fun b => p.bind fun a => f a b (a, a) := by
+  pmf_swap
+
+/-! ## Commutation lemmas -/
+
+section Comm
+
+variable (step : (α → PMF γ) → PMF γ)
+  (hstep : ∀ {ε : Type} (μ : PMF ε) (k : ε → α → PMF γ),
+    (μ.bind fun b => step (k b)) = step fun a => μ.bind fun b => k b a)
+
+include hstep in
+-- A sample moves past the sampler `step`, and the sampler past a sample.
+example (p : PMF β) (q : PMF δ) (f : β → δ → α → PMF γ) :
+    (p.bind fun b => step fun a => q.bind fun d => f b d a) =
+      q.bind fun d => step fun a => p.bind fun b => f b d a := by
+  pmf_swap [hstep]
+
+-- Without the lemma, `step` ends the chain.
+/--
+error: pmf_swap: the two sides have no independent sample in common.
+Left side samples:
+  p
+Right side samples:
+  q
+A sample can move to the front only when its distribution does not depend on earlier samples.
+-/
+#guard_msgs in
+example (p : PMF β) (q : PMF δ) (f : β → δ → α → PMF γ) :
+    (p.bind fun b => step fun a => q.bind fun d => f b d a) =
+      q.bind fun d => step fun a => p.bind fun b => f b d a := by
+  pmf_swap
+
+end Comm
+
+-- A lemma of another form is rejected.
+/--
+error: pmf_swap: PMF.pure_bind is not a commutation lemma for a sampler `F`.
+The expected form is
+  μ.bind (fun b => F (k b)) = F (fun a => μ.bind fun b => k b a)
+for every distribution `μ`.
+-/
+#guard_msgs in
+example (p : PMF α) (q : PMF β) (f : α → β → PMF γ) :
+    (p.bind fun a => q.bind fun b => f a b) = q.bind fun b => p.bind fun a => f a b := by
+  pmf_swap [PMF.pure_bind]
+
+-- The stateless oracle runner of `Crypto/Game/UntilBad.lean` commutes with independent samples.
+open Cslib.Probability Cslib.Crypto in
+example (o : List Bool → List Bool) (prog : WordOracleComp Unit α) (p : PMF β) (q : PMF γ)
+    (next : β → γ → α → Game) :
+    (p.bind fun b => Game.runStatelessOracle o prog fun a => q.bind fun c => next b c a) =
+      q.bind fun c => p.bind fun b => Game.runStatelessOracle o prog (next b c) := by
+  pmf_swap [Game.bind_runStatelessOracle_comm]
+
 /-! ## `pmf_hoist` -/
 
 -- A sample moves to the front inside a probability.
@@ -185,5 +258,38 @@ example (p : PMF α) (q : PMF β) (f g : α → β → PMF γ)
   pmf_hoist q
   congr 1 with b : 1
   exact h b
+
+-- `occ` chooses which of two samples of `c` moves. Here the second sample of `c` on the left
+-- pairs with the first on the right; plain `pmf_swap` would pair the first with the first.
+example (c : PMF α) (f g : α → α → PMF β)
+    (h : ∀ x, (c.bind fun a => f a x) = c.bind fun y => g x y) :
+    (c.bind fun a => c.bind fun b => f a b) = c.bind fun x => c.bind fun y => g x y := by
+  pmf_hoist (occ := 2) c
+  congr 1 with b : 1
+  exact h b
+
+-- Occurrences are counted through the chains in order, the left side before the right.
+/--
+error: pmf_hoist: there is no sample 3 of
+  q
+the chains draw it independently 2 times
+-/
+#guard_msgs in
+example (p : PMF α) (q : PMF β) (f : α → β → PMF Bool) :
+    (p.bind fun a => q.bind fun b => f a b) true =
+      (q.bind fun b => p.bind fun a => f a b) true := by
+  pmf_hoist (occ := 3) q
+
+-- The chosen sample must be able to move.
+/--
+error: pmf_hoist: sample 2 of
+  q
+is already at the front of its chain
+-/
+#guard_msgs in
+example (p : PMF α) (q : PMF β) (f : α → β → PMF Bool) :
+    (p.bind fun a => q.bind fun b => f a b) true =
+      (q.bind fun b => p.bind fun a => f a b) true := by
+  pmf_hoist (occ := 2) q
 
 end CslibFrontierTests.PMFSwap

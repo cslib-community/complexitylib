@@ -15,7 +15,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Crypto.Game.Order

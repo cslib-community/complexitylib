@@ -125,9 +125,9 @@ In [CLRS2009], third edition, Section 11.4:
 Storing an explicit table of independent permutations in `(Equiv.Perm (Fin m)) ^ U` requires
 `U * log₂ (m!)` bits (`Ω(U)` machine words when `U = poly(n_max) ≫ n_max`). To achieve an
 `O(n_max)`-word self-contained Word-RAM dictionary,
-`CslibFrontier/DataStructure/Dictionary/WordRAM/UniformProbing.lean` pairs a 2-universal
-multiply-shift
-primary hash `h₁(u) ∈ Fin (2 ^ M)` with a tabulated odd stride `h₂(u) ∈ Fin (2 ^ M)`
+`CslibFrontier/DataStructure/Dictionary/WordRAM/UniformProbing.lean` pairs a Double Tabulation
+primary hash `h₁(u) ∈ Fin (2 ^ M)` with a Double Tabulation stride index
+`h₂(u) ∈ Fin (2 ^ (M - 1))`, probing with the odd stride `2 * h₂(u) + 1`
 ([CLRS2009], third edition, Section 11.4, "Double hashing", pp. 272–274), reusing the
 open-addressed table invariants proved here.
 
@@ -1112,8 +1112,9 @@ def runTable {U m : ℕ} (hm : 0 < m) (π : Fin U → Equiv.Perm (Fin m))
     (ops : List (Dictionary.Op U)) : Table U m :=
   runTableFrom hm π (emptyTable U m) ops
 
-/-- Under any admissible operation `(Dictionary.spec U V n_max).valid s o` with `n_max ≤ m` and
-`TableRep π s T`, `(otherOccupiedSlots T u).card < m` holds for the operated key `u`. -/
+/-- Under an admissible insertion `(Dictionary.spec U V n_max).valid s (.insert u v)` with
+`n_max ≤ m`, `TableRep π s T` and `(Dictionary.dom s).card ≤ n_max`,
+`(otherOccupiedSlots T u).card < m` holds for the inserted key `u`. -/
 theorem TableRep.card_otherOccupiedSlots_lt_of_valid {U V n_max m : ℕ} (_hm : 0 < m)
     (hcap : n_max ≤ m) {π : Fin U → Equiv.Perm (Fin m)} {s : Dictionary.State U} {T : Table U m}
     (hrep : TableRep π s T) (hs : (Dictionary.dom s).card ≤ n_max)

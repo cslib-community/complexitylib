@@ -285,11 +285,7 @@ theorem BPL_subset_P : BPL enc ⊆ P enc := by
     have htest : ComputableInPolyTime
         (fun finite : FiniteCfg k Bool State =>
           decide (finite.state = none) && decide (finite.output = [true])) encFiniteCfg encBool :=
-      ComputableInPolyTime.bool_and.comp
-        (((ComputableInPolyTime.of_finite fun state : Option State =>
-            decide (state = none)).comp ComputableInPolyTime.finiteCfg_state).prod
-        (ComputableInPolyTime.decide_eq' ComputableInPolyTime.finiteCfg_output
-          (ComputableInPolyTime.const [true])))
+      MultiTapeNTM.computableInPolyTime_acceptingView
     have hcount0 : ComputableInPolyTime (M.viewAcceptCount 0) encFiniteCfg encNat :=
       htest.ite (ComputableInPolyTime.const 1) (ComputableInPolyTime.const 0)
     have htable0 : ComputableInPolyTime

@@ -289,8 +289,9 @@ def CCA2AdversaryOf.IsQueryBounded {Msg : Type} (adversary : CCA2AdversaryOf Msg
   (∀ n pk, (adversary.choose n pk).IsQueryBounded (Q₁ n)) ∧
   (∀ n state ct, (adversary.guess n state ct).IsQueryBounded (Q₂ n))
 
-/-- Every strict oracle PPT `CCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries,
-Phase 2 queries, and saved-state length in terms of `(n, pk.length, ct.length)`. -/
+/-- Every strict oracle PPT `CCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries and
+saved-state length in terms of `(n, pk.length)`, and on its Phase 2 queries in terms of
+`(n, state.length, ct.length)` for every input state word `state`. -/
 theorem CCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : CCA2AdversaryOf Msg} (hA : adversary.IsPPT encMsg) :
     ∃ c₁ d₁ c₂ d₂ cs ds : ℕ,
@@ -986,8 +987,9 @@ def MultiCCA2AdversaryOf.IsQueryBounded {Msg : Type} (adversary : MultiCCA2Adver
   (∀ n state cts, (adversary.guess n state cts).IsQueryBounded (Q₂ n))
 
 /-- Every strict oracle PPT `MultiCCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries,
-Phase 2 queries, challenge-list length, and saved-state length in terms of
-`(n, pk.length, (encList encBits cts).length)`. -/
+challenge-list length, and saved-state length in terms of `(n, pk.length)`, and on its Phase 2
+queries in terms of `(n, state.length, (encList encBits cts).length)` for every input state word
+`state`. -/
 theorem MultiCCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : MultiCCA2AdversaryOf Msg} (hA : adversary.IsPPT encMsg) :
     ∃ c₁ d₁ c₂ d₂ cs ds : ℕ,
@@ -1558,17 +1560,17 @@ theorem CCA2AdversaryOf.isPPT_toMulti {Msg : Type} {encMsg : Msg ↪ List Bool}
     (adversary.toMulti).IsPPT encMsg where
   choose := by
     let EIn := encPair (encPair encMsg encMsg) encBits
-    have hpair : ComputableTidilyInPolyTime
+    have hpair : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => choice.1) EIn (encPair encMsg encMsg) :=
-      ComputableTidilyInPolyTime.fst _ _
-    have hsingleton : ComputableTidilyInPolyTime
+      ComputableInPolyTime.fst _ _
+    have hsingleton : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => [choice.1])
         EIn (encList (encPair encMsg encMsg)) :=
-      ComputableTidilyInPolyTime.cons' hpair (ComputableTidilyInPolyTime.const [])
-    have hstate : ComputableTidilyInPolyTime
+      ComputableInPolyTime.cons' hpair (ComputableInPolyTime.const [])
+    have hstate : ComputableInPolyTime
         (fun choice : (Msg × Msg) × List Bool => choice.2) EIn encBits :=
-      ComputableTidilyInPolyTime.snd _ _
-    exact (hA.choose.on.map (ComputableTidilyInPolyTime.prod hsingleton hstate)).isOraclePPT
+      ComputableInPolyTime.snd _ _
+    exact (hA.choose.on.map' (ComputableInPolyTime.prod hsingleton hstate)).isOraclePPT
   guess := by
     let EGuess := encPair encUnary (encPair encBits (encList encBits))
     have hhead : ComputableInPolyTime

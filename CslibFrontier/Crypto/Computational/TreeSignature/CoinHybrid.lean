@@ -21,11 +21,13 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.Sampling
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Tree signatures: from pseudorandom to random coins
@@ -68,8 +70,7 @@ budget together with a polynomial-time bounded-search left inverse (`coinParamIn
   coins at that secret only (`treeGameWith_congr`).
 * `Cslib.Crypto.TreeSignature.eval_coinRealGame_treeCoinAdversary`,
   `Cslib.Crypto.TreeSignature.eval_coinIdealGame_treeCoinAdversary`: the exact simulation.
-* `Cslib.Crypto.Game.succProbability_le_add_advantage`,
-  `Cslib.Crypto.TreeSignature.succProbability_treeGame_le`,
+* `Cslib.Crypto.TreeSignature.succProbability_treeGame_le`,
   `Cslib.Crypto.TreeSignature.succProbability_treeGame_le_prf`: the hybrid bound by the coin-game
   and PRF advantages at `N n`.
 * `Cslib.Crypto.TreeSignature.isOraclePPT_treeCoinAdversary`: the coin adversary is strict oracle
@@ -486,12 +487,6 @@ section Bound
 
 variable {S T depth N}
 
-/-- A game's success is at most another's plus their advantage. -/
-theorem _root_.Cslib.Crypto.Game.succProbability_le_add_advantage (game1 game2 : Game) :
-    Game.succProbability game1 ≤ Game.succProbability game2 + Game.advantage game1 game2 := by
-  rw [← NNReal.coe_le_coe, NNReal.coe_add, Game.advantage, coe_nndist, NNReal.dist_eq]
-  linarith [le_abs_self ((Game.succProbability game1 : ℝ) - Game.succProbability game2)]
-
 variable (family : List Bool → List Bool → List Bool) {inv : ℕ → ℕ} (hinv : ∀ n, inv (N n) = n)
 
 include hinv in
@@ -505,7 +500,7 @@ theorem succProbability_treeGame_le (adversary : Forger) (n : ℕ) :
           (ProbComp.eval (coinRealGame family (treeCoinAdversary S T depth N inv adversary) (N n)))
           (ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n))) := by
   rw [eval_coinRealGame_treeCoinAdversary family hinv, eval_coinIdealGame_treeCoinAdversary hinv]
-  exact Game.succProbability_le_add_advantage _ _
+  exact Game.succProbability_le_add_of_advantage_le le_rfl
 
 include hinv in
 /-- **From pseudorandom to random coins, in PRF advantage**: the hybrid loss equals the PRF
@@ -713,10 +708,7 @@ private theorem chainInvariant_step (a : (ℕ × List Bool) × (List Bool × Lis
     (next : CertState) (hnext : next ∈ OracleComp.support (certifyStepO S T a.1.1 a.1.2 state)) :
     chainInvariant ck dk cb db cs ds cB dB a (i + 1) next := by
   obtain ⟨hpath, hpk, hsk, hlen, hcerts⟩ := hinv
-  simp only [certifyStepO, OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hnext
-  obtain ⟨child, hchild, σ, hσ, hnext⟩ := hnext
-  have hnext := OracleComp.eq_of_mem_supportWith_pure hnext
-  subst hnext
+  supp_cases hnext [certifyStepO] with ⟨child, hchild, σ, hσ, rfl⟩
   have hchild' := length_le_of_mem_support_nodeKeyO hkg hkb hchild
   have hK : keyBound ck dk cb db a.1.1 ≤ loopKeyBound ck dk cb db a := by
     simp only [loopKeyBound]; omega
@@ -877,9 +869,7 @@ private theorem isOraclePPTOn_signO_aux :
   · intro p sig hsig
     unfold signO at hsig
     split_ifs at hsig with hmsg
-    · simp only [OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hsig
-      obtain ⟨leaf, hleaf, ⟨node, ⟨pk, sk⟩, certs⟩, hc, σ, hσ, hsig⟩ := hsig
-      rw [OracleComp.eq_of_mem_supportWith_pure hsig]
+    · supp_cases hsig with ⟨leaf, hleaf, ⟨node, ⟨pk, sk⟩, certs⟩, hc, σ, hσ, rfl⟩
       change leaf ∈ (ProbOracleComp.sample (BitString.sampleList (depth p.1))).support at hleaf
       rw [ProbOracleComp.support_sample, BitString.eval_sampleList] at hleaf
       have hleafLen := BitString.length_of_mem_support_uniformList hleaf
@@ -935,9 +925,7 @@ private theorem isOraclePPTOn_simulateTreeGame_aux {adversary : Forger}
     ((hc.fst'.prod (hc.fst'.prod hc.snd'.fst').encoding_comp).of_enc_eq fun _ => rfl)
     hhandler (ComputableInPolyTime.const [])
     (fun _ _ => True) (fun _ => trivial) hresources fun c request queried _ result hresult => by
-      simp only [signHandler, OracleComp.support, OracleComp.mem_supportWith_bind_iff] at hresult
-      obtain ⟨sig, hsig, hresult⟩ := hresult
-      rw [OracleComp.eq_of_mem_supportWith_pure hresult]
+      supp_cases hresult [signHandler] with ⟨sig, hsig, rfl⟩
       have hsigLen := hsignBound (c.1, request.2) sig hsig
       dsimp only at hsigLen
       refine ⟨trivial, by change sig.length ≤ _; omega, ?_⟩
