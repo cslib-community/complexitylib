@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
+import CslibFrontier.Foundations.LinearAlgebra.Matrix.EuclideanOpNorm
 import CslibFrontierTests.QuantumAmbainisAdversary
 import CslibFrontierTests.QuantumAdversary
 
@@ -28,31 +29,42 @@ open scoped Matrix
 private def bitPair1 : Finset (BitString 1 × BitString 1) :=
   {(fun _ => true, fun _ => false)}
 
-example : (1 - 2 * √((0 : ℝ) * (1 - 0))) * √((1 : ℕ) * (1 : ℕ)) ≤ 2 * (1 : ℕ) * √(1 : ℕ) :=
-  one_sub_mul_sqrt_le_of_unweighted readBit norm_ψ₀ 1
-    (R := bitPair1) (Finset.singleton_nonempty _)
+example : (1 - 2 * √((0 : ℝ) * (1 - 0))) * √((1 : ℕ) * (1 : ℕ)) ≤ 2 * (1 : ℕ) * √(1 : ℕ) := by
+  have hL : ∀ p ∈ bitPair1, ∀ i, p.1 i ≠ p.2 i →
+      #{q ∈ bitPair1 | q.1 i ≠ q.2 i ∧ q.1 = p.1} *
+        #{q ∈ bitPair1 | q.1 i ≠ q.2 i ∧ q.2 = p.2} ≤ 1 := by
+    intro p hp i hne
+    rcases mem_singleton.1 hp with rfl
+    revert i hne
+    decide
+  let S := WeightScheme.ofUnweighted bitPair1 1 hL
+  have hW : 0 < S.weightSum := by
+    simp [S, WeightScheme.weightSum, WeightScheme.ofUnweighted, bitPair1]
+  have hbd := S.one_sub_mul_sqrt_le_of_load_le readBit norm_ψ₀ 1 hW
+    (δ := 2 * √((0 : ℝ) * (1 - 0))) (mA := 1) (mB := 1)
     (fun p hp => norm_inner_le_two_mul_sqrt_of_measureProb (by rw [norm_run, norm_ψ₀])
       (by rw [norm_run, norm_ψ₀])
-      (by
-        rcases mem_singleton.1 hp with rfl
-        rw [measureProb_readBit]
-        simp [bitVal])
-      (by
-        rcases mem_singleton.1 hp with rfl
-        rw [measureProb_readBit]
-        simp [bitVal])
+      (by rcases mem_singleton.1 hp with rfl; rw [measureProb_readBit]; simp [bitVal])
+      (by rcases mem_singleton.1 hp with rfl; rw [measureProb_readBit]; simp [bitVal])
       (by norm_num))
-    (m := 1) (m' := 1) (L := 1)
-    (fun p hp => by
-      rcases mem_singleton.1 hp with rfl
-      decide)
-    (fun p hp => by
-      rcases mem_singleton.1 hp with rfl
-      decide)
-    (fun p hp i hne => by
-      rcases mem_singleton.1 hp with rfl
-      revert i hne
-      decide)
+    zero_le_one zero_le_one
+    (fun x hx i => by
+      obtain ⟨p, hp, rfl⟩ := mem_image.1 hx
+      have hl := WeightScheme.ofUnweighted_loadFst_le hL p.1 i
+      have hw : S.wtFst p.1 = 1 := by
+        rw [WeightScheme.ofUnweighted_wtFst]
+        rcases mem_singleton.1 hp with rfl
+        rw [bitPair1, filter_singleton, ite_eq_left rfl, card_singleton, Nat.cast_one]
+      simpa [S, hw] using hl)
+    (fun y hy i => by
+      obtain ⟨p, hp, rfl⟩ := mem_image.1 hy
+      have hl := WeightScheme.ofUnweighted_loadSnd_le hL p.2 i
+      have hw : S.wtSnd p.2 = 1 := by
+        rw [WeightScheme.ofUnweighted_wtSnd]
+        rcases mem_singleton.1 hp with rfl
+        rw [bitPair1, filter_singleton, ite_eq_left rfl, card_singleton, Nat.cast_one]
+      simpa [S, hw] using hl)
+  simpa only [Nat.cast_one, Real.sqrt_one, mul_one] using hbd
 
 /-! ### Ambainis's 4-bit function: `λ(f) ≤ s(f) ≤ 2 < 5/2 ≤ ADV(f)` ([Ambainis2006], §4.3) -/
 
@@ -490,74 +502,59 @@ theorem hlsMatrix_isAdversary : IsAdversaryMatrix hlsPromise hlsFun hlsMatrix :=
 private noncomputable def hlsDiffBlockReal (i : Fin 6) : Matrix (Fin 10) (Fin 10) ℝ :=
   Matrix.of fun j k => (hlsDiffBlockInt i j k : ℝ) / 5
 
-private theorem opNorm_toEuclideanCLM_le_one_of_transpose_mul_self
-    (M : Matrix (Fin 10) (Fin 10) ℝ)
-    (hb : ‖Matrix.toEuclideanCLM (𝕜 := ℝ) (Mᵀ * M)‖ ≤ 1) :
-    ‖Matrix.toEuclideanCLM (𝕜 := ℝ) M‖ ≤ 1 := by
-  refine ContinuousLinearMap.opNorm_le_bound _ zero_le_one fun v => ?_
-  rw [one_mul, ← sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)]
-  have hinner : ‖Matrix.toEuclideanCLM (𝕜 := ℝ) M v‖ ^ 2 =
-      inner ℝ v (Matrix.toEuclideanCLM (𝕜 := ℝ) (Mᵀ * M) v) := by
-    rw [← real_inner_self_eq_norm_sq, Matrix.inner_toEuclideanCLM, Matrix.inner_toEuclideanCLM]
-    change (M *ᵥ v.ofLp) ⬝ᵥ (M *ᵥ v.ofLp) = v.ofLp ⬝ᵥ ((Mᵀ * M) *ᵥ v.ofLp)
-    calc (M *ᵥ v.ofLp) ⬝ᵥ (M *ᵥ v.ofLp)
-        = (v.ofLp ᵥ* Mᵀ) ⬝ᵥ (M *ᵥ v.ofLp) := by rw [← Matrix.vecMul_transpose]
-      _ = v.ofLp ⬝ᵥ (Mᵀ *ᵥ (M *ᵥ v.ofLp)) := (Matrix.dotProduct_mulVec _ _ _).symm
-      _ = v.ofLp ⬝ᵥ ((Mᵀ * M) *ᵥ v.ofLp) := by rw [Matrix.mulVec_mulVec]
-  calc ‖Matrix.toEuclideanCLM (𝕜 := ℝ) M v‖ ^ 2
-      = inner ℝ v (Matrix.toEuclideanCLM (𝕜 := ℝ) (Mᵀ * M) v) := hinner
-    _ ≤ ‖v‖ * ‖Matrix.toEuclideanCLM (𝕜 := ℝ) (Mᵀ * M) v‖ := real_inner_le_norm _ _
-    _ ≤ ‖v‖ * (‖Matrix.toEuclideanCLM (𝕜 := ℝ) (Mᵀ * M)‖ * ‖v‖) :=
-        mul_le_mul_of_nonneg_left (ContinuousLinearMap.le_opNorm _ _) (norm_nonneg _)
-    _ ≤ ‖v‖ * (1 * ‖v‖) :=
-        mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_right hb (norm_nonneg _)) (norm_nonneg _)
-    _ = ‖v‖ ^ 2 := by ring
-
 private theorem opNorm_toEuclideanCLM_le_one_of_int_bounds
     (B : Matrix (Fin 10) (Fin 10) ℤ)
     (hrow : ∀ j : Fin 10, ∑ k : Fin 10, |(Bᵀ * B) j k| ≤ 25)
     (hcol : ∀ k : Fin 10, ∑ j : Fin 10, |(Bᵀ * B) j k| ≤ 25) :
     ‖Matrix.toEuclideanCLM (𝕜 := ℝ) (Matrix.of fun j k => (B j k : ℝ) / 5)‖ ≤ 1 := by
   let M : Matrix (Fin 10) (Fin 10) ℝ := Matrix.of fun j k => (B j k : ℝ) / 5
-  refine opNorm_toEuclideanCLM_le_one_of_transpose_mul_self M ?_
-  refine (opNorm_toEuclideanCLM_le_sqrt (Mᵀ * M) zero_le_one zero_le_one
-    (fun j => ?_) (fun k => ?_)).trans (by simp)
-  · have hent : ∀ k, (Mᵀ * M) j k = (((Bᵀ * B) j k : ℤ) : ℝ) / 25 := by
-      intro k
-      simp only [M, Matrix.mul_apply, Matrix.transpose_apply, Matrix.of_apply]
-      calc ∑ l : Fin 10, (B l j : ℝ) / 5 * ((B l k : ℝ) / 5)
-          = (∑ l : Fin 10, (B l j : ℝ) * (B l k : ℝ)) / 25 := by
+  have hent (j k : Fin 10) : (Mᵀ * M) j k = (((Bᵀ * B) j k : ℤ) : ℝ) / 25 := by
+    simp only [M, Matrix.mul_apply, Matrix.transpose_apply, Matrix.of_apply]
+    calc ∑ l : Fin 10, (B l j : ℝ) / 5 * ((B l k : ℝ) / 5)
+        = (∑ l : Fin 10, (B l j : ℝ) * (B l k : ℝ)) / 25 := by
             rw [sum_div]
             refine sum_congr rfl fun l _ => by ring
-        _ = (((∑ l : Fin 10, B l j * B l k : ℤ) : ℝ)) / 25 := by
+      _ = (((∑ l : Fin 10, B l j * B l k : ℤ) : ℝ)) / 25 := by
             simp only [Int.cast_sum, Int.cast_mul]
-    calc ∑ k : Fin 10, |(Mᵀ * M) j k|
-        = (∑ k : Fin 10, |((Bᵀ * B) j k : ℝ)|) / 25 := by
-          rw [sum_div]
-          refine sum_congr rfl fun k _ => by
-            rw [hent k, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 25)]
-      _ ≤ 25 / 25 := by
-          refine div_le_div_of_nonneg_right ?_ (by norm_num)
-          exact_mod_cast hrow j
-      _ = 1 := by norm_num
-  · have hent : ∀ j, (Mᵀ * M) j k = (((Bᵀ * B) j k : ℤ) : ℝ) / 25 := by
-      intro j
-      simp only [M, Matrix.mul_apply, Matrix.transpose_apply, Matrix.of_apply]
-      calc ∑ l : Fin 10, (B l j : ℝ) / 5 * ((B l k : ℝ) / 5)
-          = (∑ l : Fin 10, (B l j : ℝ) * (B l k : ℝ)) / 25 := by
+  have hsum_le (s : Finset (Fin 10)) (g : Fin 10 → ℤ) (hg : ∑ x ∈ s, |g x| ≤ 25) :
+      ∑ x ∈ s, |(g x : ℝ) / 25| ≤ 1 := by
+    calc ∑ x ∈ s, |(g x : ℝ) / 25|
+        = (∑ x ∈ s, |(g x : ℝ)|) / 25 := by
             rw [sum_div]
-            refine sum_congr rfl fun l _ => by ring
-        _ = (((∑ l : Fin 10, B l j * B l k : ℤ) : ℝ)) / 25 := by
-            simp only [Int.cast_sum, Int.cast_mul]
-    calc ∑ j : Fin 10, |(Mᵀ * M) j k|
-        = (∑ j : Fin 10, |((Bᵀ * B) j k : ℝ)|) / 25 := by
-          rw [sum_div]
-          refine sum_congr rfl fun j _ => by
-            rw [hent j, abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 25)]
-      _ ≤ 25 / 25 := by
-          refine div_le_div_of_nonneg_right ?_ (by norm_num)
-          exact_mod_cast hcol k
+            refine sum_congr rfl fun x _ => by
+              rw [abs_div, abs_of_pos (by norm_num : (0 : ℝ) < 25)]
+      _ ≤ 25 / 25 := div_le_div_of_nonneg_right (by exact_mod_cast hg) (by norm_num)
       _ = 1 := by norm_num
+  have hMtM : ‖Matrix.toEuclideanCLM (𝕜 := ℝ) (Mᵀ * M)‖ ≤ 1 := by
+    refine (Matrix.opNorm_toEuclideanCLM_le_sqrt (Mᵀ * M) zero_le_one zero_le_one
+      (fun j => ?_) (fun k => ?_)).trans (by simp)
+    · simpa only [hent j] using hsum_le univ (fun k => (Bᵀ * B) j k) (hrow j)
+    · simpa only [hent] using hsum_le univ (fun j => (Bᵀ * B) j k) (hcol k)
+  open scoped Matrix.Norms.L2Operator in
+  exact by
+    have hsq : ‖M‖ ^ 2 ≤ 1 := by
+      rw [sq, ← Matrix.l2_opNorm_conjTranspose_mul_self M,
+        Matrix.conjTranspose_eq_transpose_of_trivial, ← Matrix.l2_opNorm_toEuclideanCLM (Mᵀ * M)]
+      exact hMtM
+    rw [Matrix.l2_opNorm_toEuclideanCLM]
+    exact (sq_le_one_iff₀ (norm_nonneg M)).1 hsq
+
+private theorem hls_disjoint : Disjoint (image hlsZeroVec univ) (image hlsOneVec univ) := by
+  refine Finset.disjoint_left.2 fun x hx hy => ?_
+  obtain ⟨j, _, rfl⟩ := mem_image.1 hx
+  obtain ⟨k, _, hk⟩ := mem_image.1 hy
+  exact hls_disjoint_dec j k hk.symm
+
+private theorem hls_union :
+    image hlsZeroVec univ ∪ image hlsOneVec univ =
+      univ.filter (fun x => hlsPromiseBool x = true) := by
+  ext x
+  simp only [mem_union, mem_image, mem_univ, true_and, mem_filter]
+  constructor
+  · rintro (⟨j, rfl⟩ | ⟨k, rfl⟩)
+    · exact decide_eq_true (hls_zero_wt_dec j)
+    · exact decide_eq_true (hls_one_wt_dec k)
+  · exact hls_partition_dec x
 
 theorem hlsMatrix_maxDiffNorm_le_one : maxDiffNorm hlsMatrix ≤ 1 := by
   refine (maxDiffNorm_le_iff zero_le_one).2 fun i => ?_
@@ -655,20 +652,9 @@ theorem hlsMatrix_maxDiffNorm_le_one : maxDiffNorm hlsMatrix ≤ 1 := by
     refine sum_eq_zero fun y _ => ?_
     have h0 : hlsPairInt x y = 0 := by simp [hlsPairInt, hx]
     simp [A, Matrix.hadamard_apply, hlsMatrix, h0]
-  have hdisj : Disjoint (image hlsZeroVec univ) (image hlsOneVec univ) := by
-    refine Finset.disjoint_left.2 fun x hx hy => ?_
-    obtain ⟨j, _, rfl⟩ := mem_image.1 hx
-    obtain ⟨k, _, hk⟩ := mem_image.1 hy
-    exact hls_disjoint_dec j k hk.symm
+  have hdisj : Disjoint (image hlsZeroVec univ) (image hlsOneVec univ) := hls_disjoint
   have hunion : image hlsZeroVec univ ∪ image hlsOneVec univ =
-      univ.filter (fun x => hlsPromiseBool x = true) := by
-    ext x
-    simp only [mem_union, mem_image, mem_univ, true_and, mem_filter]
-    constructor
-    · rintro (⟨j, rfl⟩ | ⟨k, rfl⟩)
-      · exact decide_eq_true (hls_zero_wt_dec j)
-      · exact decide_eq_true (hls_one_wt_dec k)
-    · exact hls_partition_dec x
+      univ.filter (fun x => hlsPromiseBool x = true) := hls_union
   have hsum_A : ‖Matrix.toEuclideanCLM (𝕜 := ℝ) A v‖ ^ 2 =
       ‖Matrix.toEuclideanCLM (𝕜 := ℝ) M vO‖ ^ 2 +
         ‖Matrix.toEuclideanCLM (𝕜 := ℝ) Mᵀ vZ‖ ^ 2 := by
@@ -722,22 +708,8 @@ theorem hlsMatrix_maxDiffNorm_le_one : maxDiffNorm hlsMatrix ≤ 1 := by
 theorem hlsMatrix_opNorm_ge : (16 / 5 : ℝ) ≤ ‖Matrix.toEuclideanCLM (𝕜 := ℝ) hlsMatrix‖ := by
   let u : EuclideanSpace ℝ (BitString 6) :=
     WithLp.toLp 2 fun x => if hlsPromiseBool x then 1 / √20 else 0
-  have hdisj : Disjoint (image hlsZeroVec univ) (image hlsOneVec univ) := by
-    refine Finset.disjoint_left.2 fun x hx hy => ?_
-    obtain ⟨j, _, rfl⟩ := mem_image.1 hx
-    obtain ⟨k, _, hk⟩ := mem_image.1 hy
-    exact hls_disjoint_dec j k hk.symm
-  have hunion : image hlsZeroVec univ ∪ image hlsOneVec univ =
-      univ.filter (fun x => hlsPromiseBool x = true) := by
-    ext x
-    simp only [mem_union, mem_image, mem_univ, true_and, mem_filter]
-    constructor
-    · rintro (⟨j, rfl⟩ | ⟨k, rfl⟩)
-      · exact decide_eq_true (hls_zero_wt_dec j)
-      · exact decide_eq_true (hls_one_wt_dec k)
-    · exact hls_partition_dec x
   have hcard : #(univ.filter fun x => hlsPromiseBool x = true) = 20 := by
-    rw [← hunion, card_union_of_disjoint hdisj,
+    rw [← hls_union, card_union_of_disjoint hls_disjoint,
       card_image_of_injective _ (fun j₁ j₂ hj => hls_zero_inj_dec j₁ j₂ hj),
       card_image_of_injective _ (fun k₁ k₂ hk => hls_one_inj_dec k₁ k₂ hk)]
     norm_num
@@ -800,11 +772,11 @@ theorem hlsMatrix_opNorm_ge : (16 / 5 : ℝ) ≤ ‖Matrix.toEuclideanCLM (𝕜 
           ∑ y : BitString 6, (hlsPairInt x y : ℝ) := by
       symm
       refine sum_subset (subset_univ _) fun x _ hx => ?_
-      rw [hunion, mem_filter] at hx
+      rw [hls_union, mem_filter] at hx
       cases hb : hlsPromiseBool x
       · exact hfst x hb
       · exact absurd ⟨mem_univ _, hb⟩ hx
-    rw [hsplit_x, sum_union hdisj,
+    rw [hsplit_x, sum_union hls_disjoint,
       sum_image (fun j₁ _ j₂ _ hj => hls_zero_inj_dec j₁ j₂ hj),
       sum_image (fun k₁ _ k₂ _ hk => hls_one_inj_dec k₁ k₂ hk)]
     simp only [hz_row, ho_row, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul]
@@ -909,70 +881,46 @@ theorem generalAdversary_ternary2_ge_one : 1 ≤ generalAdversary (fun _ => True
     exact ⟨trivial, trivial, hcond.1⟩
   have hmax : maxDiffNorm ternary2Mat ≤ 1 := by
     refine (maxDiffNorm_le_iff zero_le_one).2 fun i => ?_
-    refine (opNorm_toEuclideanCLM_le_sqrt _ zero_le_one zero_le_one
-      (fun x => ?_) (fun y => ?_)).trans (by simp)
-    · have hrow : ∑ y : BitString 2, |(ternary2Mat.hadamard (diffMatrix i)) x y| ≤ 1 := by
-        rw [Finset.sum_eq_single (Function.update x i (!x i))]
-        · simp only [Matrix.hadamard_apply, ternary2Mat, Matrix.of_apply, diffMatrix_apply]
-          split_ifs <;> norm_num
-        · intro y _ hyne
-          by_cases hxi : x i = y i
-          · simp [Matrix.hadamard_apply, diffMatrix_apply, hxi]
-          · have hgt : #{j : Fin 2 | x j ≠ y j} ≠ 1 := by
-              intro h1
-              have heq : y = Function.update x i (!x i) := by
-                ext j
-                by_cases hj : j = i
-                · subst hj; cases hxv : x j <;> simp_all
-                · by_contra hdiff
-                  have hne_j : x j ≠ y j := by
-                    simpa [Function.update_of_ne hj, eq_comm] using hdiff
-                  have h2 : 2 ≤ #{k : Fin 2 | x k ≠ y k} := by
-                    have hsub : ({i, j} : Finset (Fin 2)) ⊆
-                        (univ : Finset (Fin 2)).filter (fun k => x k ≠ y k) := by
-                      intro k hk
-                      simp only [mem_insert, mem_singleton] at hk
-                      rcases hk with rfl | rfl
-                      · exact mem_filter.2 ⟨mem_univ _, hxi⟩
-                      · exact mem_filter.2 ⟨mem_univ _, hne_j⟩
-                    have hcard2 : ({i, j} : Finset (Fin 2)).card = 2 := card_pair (Ne.symm hj)
-                    exact hcard2.symm.trans_le (card_le_card hsub)
-                  omega
-              exact hyne heq
-            simp [Matrix.hadamard_apply, ternary2Mat, hgt]
-        · intro hm; exact absurd (mem_univ _) hm
-      exact hrow
-    · have hcol : ∑ x : BitString 2, |(ternary2Mat.hadamard (diffMatrix i)) x y| ≤ 1 := by
-        rw [Finset.sum_eq_single (Function.update y i (!y i))]
-        · simp only [Matrix.hadamard_apply, ternary2Mat, Matrix.of_apply, diffMatrix_apply]
-          split_ifs <;> norm_num
-        · intro x _ hxne
-          by_cases hxi : x i = y i
-          · simp [Matrix.hadamard_apply, diffMatrix_apply, hxi]
-          · have hgt : #{j : Fin 2 | x j ≠ y j} ≠ 1 := by
-              intro h1
-              have heq : x = Function.update y i (!y i) := by
-                ext j
-                by_cases hj : j = i
-                · subst hj; cases hyv : y j <;> simp_all
-                · by_contra hdiff
-                  have hne_j : x j ≠ y j := by
-                    simpa [Function.update_of_ne hj] using hdiff
-                  have h2 : 2 ≤ #{k : Fin 2 | x k ≠ y k} := by
-                    have hsub : ({i, j} : Finset (Fin 2)) ⊆
-                        (univ : Finset (Fin 2)).filter (fun k => x k ≠ y k) := by
-                      intro k hk
-                      simp only [mem_insert, mem_singleton] at hk
-                      rcases hk with rfl | rfl
-                      · exact mem_filter.2 ⟨mem_univ _, hxi⟩
-                      · exact mem_filter.2 ⟨mem_univ _, hne_j⟩
-                    have hcard2 : ({i, j} : Finset (Fin 2)).card = 2 := card_pair (Ne.symm hj)
-                    exact hcard2.symm.trans_le (card_le_card hsub)
-                  omega
-              exact hxne heq
-            simp [Matrix.hadamard_apply, ternary2Mat, hgt]
-        · intro hm; exact absurd (mem_univ _) hm
-      exact hcol
+    have hrow (x : BitString 2) :
+        ∑ y : BitString 2, |(ternary2Mat.hadamard (diffMatrix i)) x y| ≤ 1 := by
+      rw [Finset.sum_eq_single (Function.update x i (!x i))]
+      · simp only [Matrix.hadamard_apply, ternary2Mat, Matrix.of_apply, diffMatrix_apply]
+        split_ifs <;> norm_num
+      · intro y _ hyne
+        by_cases hxi : x i = y i
+        · simp [Matrix.hadamard_apply, diffMatrix_apply, hxi]
+        · have hgt : #{j : Fin 2 | x j ≠ y j} ≠ 1 := by
+            intro h1
+            have heq : y = Function.update x i (!x i) := by
+              ext j
+              by_cases hj : j = i
+              · subst hj; cases hxv : x j <;> simp_all
+              · by_contra hdiff
+                have hne_j : x j ≠ y j := by
+                  simpa [Function.update_of_ne hj, eq_comm] using hdiff
+                have h2 : 2 ≤ #{k : Fin 2 | x k ≠ y k} := by
+                  have hsub : ({i, j} : Finset (Fin 2)) ⊆
+                      (univ : Finset (Fin 2)).filter (fun k => x k ≠ y k) := by
+                    intro k hk
+                    simp only [mem_insert, mem_singleton] at hk
+                    rcases hk with rfl | rfl
+                    · exact mem_filter.2 ⟨mem_univ _, hxi⟩
+                    · exact mem_filter.2 ⟨mem_univ _, hne_j⟩
+                  have hcard2 : ({i, j} : Finset (Fin 2)).card = 2 := card_pair (Ne.symm hj)
+                  exact hcard2.symm.trans_le (card_le_card hsub)
+                omega
+            exact hyne heq
+          simp [Matrix.hadamard_apply, ternary2Mat, hgt]
+      · intro hm; exact absurd (mem_univ _) hm
+    refine (Matrix.opNorm_toEuclideanCLM_le_sqrt _ zero_le_one zero_le_one hrow fun y => ?_).trans
+      (by simp)
+    have heq (x : BitString 2) : |(ternary2Mat.hadamard (diffMatrix i)) x y| =
+        |(ternary2Mat.hadamard (diffMatrix i)) y x| := by
+      have h1 : ternary2Mat x y = ternary2Mat y x := hsym.apply y x
+      have h2 : diffMatrix i x y = diffMatrix i y x := by
+        simp only [diffMatrix_apply, ne_comm]
+      simp only [Matrix.hadamard_apply, h1, h2]
+    simpa only [heq] using hrow y
   have hge1 : 1 ≤ ‖Matrix.toEuclideanCLM (𝕜 := ℝ) ternary2Mat‖ := by
     let x0 : BitString 2 := fun _ => false
     let y0 : BitString 2 := fun i => decide (i = 0)
@@ -983,7 +931,7 @@ theorem generalAdversary_ternary2_ge_one : 1 ≤ generalAdversary (fun _ => True
       have hcard : #{i : Fin 2 | x0 i ≠ y0 i} = 1 := by decide
       have hfn : ternary2 x0 ≠ ternary2 y0 := by decide
       simp [ternary2Mat, hfn, hcard]
-    exact hent ▸ abs_entry_le_norm_toEuclideanCLM ternary2Mat x0 y0
+    exact hent ▸ Matrix.abs_entry_le_norm_toEuclideanCLM ternary2Mat x0 y0
   by_cases hm0 : maxDiffNorm ternary2Mat = 0
   · have h0 := eq_zero_of_maxDiffNorm_eq_zero hΓ hm0
     rw [h0, map_zero, norm_zero] at hge1

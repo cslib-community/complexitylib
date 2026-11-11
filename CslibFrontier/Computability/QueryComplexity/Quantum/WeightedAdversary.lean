@@ -48,8 +48,11 @@ From the endpoint weights `wtFst x = ∑_{(x, y) ∈ R} w(x, y)` and
   `Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sum_le`: Ambainis's weighted adversary bound.
 * `Cslib.Quantum.WeightScheme.one_sub_mul_sqrt_le_of_load_le` and
   `Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sqrt_le_of_load_le`: Zhang's ratio form.
-* `Cslib.Quantum.one_sub_mul_sqrt_le_of_unweighted`: recovery of the unweighted bound from
-  `WeightScheme.ofUnweighted`.
+* `Cslib.Quantum.WeightScheme.ofUnweighted`, `Cslib.Quantum.WeightScheme.ofUnweighted_wtFst`,
+  `Cslib.Quantum.WeightScheme.ofUnweighted_wtSnd`,
+  `Cslib.Quantum.WeightScheme.ofUnweighted_loadFst_le`,
+  `Cslib.Quantum.WeightScheme.ofUnweighted_loadSnd_le`: unweighted-to-weighted embedding
+  (`Alb₂ ≤ Alb₃`).
 
 ## References
 
@@ -391,69 +394,5 @@ theorem ofUnweighted_loadSnd_le {R : Finset (BitString N × BitString N)} {L : �
   · rw [mul_div_cancel₀ _ (by exact_mod_cast h0)]
 
 end WeightScheme
-
-/-- **Recovery of the unweighted adversary bound** ([Zhang2005], Theorem 5, `Alb₂ ≤ Alb₃`):
-instantiating `WeightScheme.one_sub_mul_sqrt_le_of_load_le` at `WeightScheme.ofUnweighted` yields
-`(1 - δ) √(m m') ≤ 2 T √L`. -/
-theorem one_sub_mul_sqrt_le_of_unweighted (U : ℕ → State N W →ₗᵢ[ℂ] State N W)
-    {ψ₀ : State N W} (hψ₀ : ‖ψ₀‖ = 1) (T : ℕ)
-    {R : Finset (BitString N × BitString N)} (hR : R.Nonempty) {δ : ℝ}
-    (hδ : ∀ p ∈ R, ‖inner ℂ (run U ψ₀ p.1 T) (run U ψ₀ p.2 T)‖ ≤ δ) {m m' L : ℕ}
-    (hm : ∀ p ∈ R, m ≤ #{q ∈ R | q.1 = p.1}) (hm' : ∀ p ∈ R, m' ≤ #{q ∈ R | q.2 = p.2})
-    (hL : ∀ p ∈ R, ∀ i, p.1 i ≠ p.2 i →
-      #{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1} * #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} ≤ L) :
-    (1 - δ) * √(m * m') ≤ 2 * T * √L := by
-  rcases Nat.eq_zero_or_pos L with rfl | hL_pos
-  · simp only [Nat.cast_zero, Real.sqrt_zero, mul_zero]
-    obtain ⟨p, hp⟩ := hR
-    have hsame : p.1 = p.2 := by
-      ext i
-      by_contra hne
-      have h1 : 1 ≤ #{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1} :=
-        card_pos.2 ⟨p, mem_filter.2 ⟨hp, hne, rfl⟩⟩
-      have h2 : 1 ≤ #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} :=
-        card_pos.2 ⟨p, mem_filter.2 ⟨hp, hne, rfl⟩⟩
-      have := hL p hp i hne
-      nlinarith
-    have h1δ : 1 ≤ δ := by
-      have hle := hδ p hp
-      rw [hsame, inner_self_eq_norm_sq_to_K, norm_run, hψ₀] at hle
-      simpa using hle
-    exact mul_nonpos_of_nonpos_of_nonneg (by linarith) (Real.sqrt_nonneg _)
-  · let S := WeightScheme.ofUnweighted R L hL
-    have hW : 0 < S.weightSum := by
-      have hcard : (0 : ℝ) < #R := by exact_mod_cast hR.card_pos
-      simpa [S, WeightScheme.weightSum, WeightScheme.ofUnweighted] using hcard
-    have hsqrtL : 0 < √(L : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hL_pos)
-    have hA : ∀ x ∈ S.R.image Prod.fst, ∀ i,
-        ((m : ℝ) / √L) * S.loadFst x i ≤ S.wtFst x := by
-      intro x hx i
-      obtain ⟨p, hp, rfl⟩ := mem_image.1 hx
-      calc ((m : ℝ) / √L) * S.loadFst p.1 i
-          ≤ ((m : ℝ) / √L) * √L :=
-            mul_le_mul_of_nonneg_left
-              (WeightScheme.ofUnweighted_loadFst_le hL p.1 i) (by positivity)
-        _ = m := div_mul_cancel₀ _ hsqrtL.ne'
-        _ ≤ S.wtFst p.1 := by
-            rw [WeightScheme.ofUnweighted_wtFst]
-            exact_mod_cast hm p hp
-    have hB : ∀ y ∈ S.R.image Prod.snd, ∀ i,
-        ((m' : ℝ) / √L) * S.loadSnd y i ≤ S.wtSnd y := by
-      intro y hy i
-      obtain ⟨p, hp, rfl⟩ := mem_image.1 hy
-      calc ((m' : ℝ) / √L) * S.loadSnd p.2 i
-          ≤ ((m' : ℝ) / √L) * √L :=
-            mul_le_mul_of_nonneg_left
-              (WeightScheme.ofUnweighted_loadSnd_le hL p.2 i) (by positivity)
-        _ = m' := div_mul_cancel₀ _ hsqrtL.ne'
-        _ ≤ S.wtSnd p.2 := by
-            rw [WeightScheme.ofUnweighted_wtSnd]
-            exact_mod_cast hm' p hp
-    have hbd := S.one_sub_mul_sqrt_le_of_load_le U hψ₀ T hW hδ
-      (mA := (m : ℝ) / √L) (mB := (m' : ℝ) / √L) (by positivity) (by positivity) hA hB
-    have hmul : √(((m : ℝ) / √L) * ((m' : ℝ) / √L)) = √(m * m') / √L := by
-      rw [div_mul_div_comm, ← sq, Real.sqrt_div (by positivity), Real.sqrt_sq hsqrtL.le]
-    rw [hmul, mul_div_assoc', div_le_iff₀ hsqrtL] at hbd
-    exact hbd
 
 end Cslib.Quantum

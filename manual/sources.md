@@ -117,7 +117,7 @@ Boaz Barak and David Steurer. *Proofs, beliefs, and algorithms through the lens 
 <a id="barnumsaksszegedy03"></a>
 ## barnumsaksszegedy03
 
-Howard Barnum, Michael E. Saks and Márió Szegedy. "Quantum query complexity and semi-definite programming." *Proceedings of the 18th IEEE Annual Conference on Computational Complexity (CCC 2003)*, 179–193, 2003. https://doi.org/10.1109/CCC.2003.1214419 . Bibliographic metadata checked through search records on 2026-11-11; the full CCC 2003 text was not inspected directly in this pass. Cited via [Høyer, Lee and Špalek 2007](#hoyerleespalek07) (Section 1.1, Definition 1 and Theorem 1) for the nonnegative spectral adversary `ADV(f) = max_{Γ ≥ 0} ‖Γ‖ / max_i ‖Γ ∘ D_i‖`.
+Howard Barnum, Michael E. Saks and Márió Szegedy. "Quantum query complexity and semi-definite programming." *Proceedings of the 18th IEEE Annual Conference on Computational Complexity (CCC 2003)*, 179–193, 2003. https://doi.org/10.1109/CCC.2003.1214419 . Bibliographic metadata checked through search records on 2026-11-11; the full CCC 2003 text was not inspected directly. Cited via [Høyer, Lee and Špalek 2007](#hoyerleespalek07) (Section 1.1, Definition 1 and Theorem 1) for the nonnegative spectral adversary `ADV(f) = max_{Γ ≥ 0} ‖Γ‖ / max_i ‖Γ ∘ D_i‖`.
 
 <a id="barrett26"></a>
 ## barrett26
@@ -1594,7 +1594,7 @@ Daniel H. Younger. "Recognition and Parsing of Context-Free Languages in Time n�
 <a id="zhang05"></a>
 ## zhang05
 
-Shengyu Zhang. "On the power of Ambainis's lower bounds." *Theoretical Computer Science* 339(2–3), 241–256, 2005. https://doi.org/10.1016/j.tcs.2005.01.011 ; open version arXiv:quant-ph/0311060v2, https://arxiv.org/abs/quant-ph/0311060 . Checked in arXiv:quant-ph/0311060v2 on 2026-11-11: Section 1 Definition 1 and Theorem 3 (the general weighted adversary `Alb₃`, proved in `WeightedAdversary.lean`), Section 2 Theorem 5 (`Alb₂ ≤ Alb₃`, proved as `one_sub_mul_sqrt_le_of_unweighted`), and Section 3 Theorem 6 (`Alb₃ ≤ ADV`, proved as `WeightScheme.le_spectralAdversary`). Journal pagination was not inspected directly.
+Shengyu Zhang. "On the power of Ambainis's lower bounds." *Theoretical Computer Science* 339(2–3), 241–256, 2005. https://doi.org/10.1016/j.tcs.2005.01.011 ; open version arXiv:quant-ph/0311060v2, https://arxiv.org/abs/quant-ph/0311060 . Checked in arXiv:quant-ph/0311060v2 on 2026-11-11: Section 1 Definition 1 and Theorem 3 (the general weighted adversary `Alb₃`, proved in `WeightedAdversary.lean`), Section 2 Theorem 5 (`Alb₂ ≤ Alb₃`, realized via `WeightScheme.ofUnweighted` and used to prove `one_sub_mul_sqrt_le_two_mul_mul_sqrt` in `AmbainisAdversary.lean`), and Section 3 Theorem 6 (`Alb₃ ≤ ADV`, proved as `WeightScheme.le_spectralAdversary`). Journal pagination was not inspected directly.
 
 <a id="zivlempel77"></a>
 ## zivlempel77

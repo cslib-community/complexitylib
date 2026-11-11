@@ -2273,14 +2273,16 @@ register_result "quantum-weighted-adversary" where
     Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sum_le,
     Cslib.Quantum.WeightScheme.one_sub_mul_sqrt_le_of_load_le,
     Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sqrt_le_of_load_le,
-    Cslib.Quantum.one_sub_mul_sqrt_le_of_unweighted
+    Cslib.Quantum.WeightScheme.ofUnweighted_loadFst_le,
+    Cslib.Quantum.WeightScheme.ofUnweighted_loadSnd_le
   ]
   scope := "T-query bit-query phase-oracle quantum algorithms over finite workspace, for general \
     promise relations (x, y) with P x ∧ P y ∧ f x ≠ f y and arbitrary finite output alphabets α \
     (using pairwise disjoint measurement regions S_out : α → Finset _). Covers nonnegative \
     WeightScheme (Ambainis's weighted adversary and Zhang's strong Alb₃ method), its reduction \
-    from strong to weak load bounds, and recovery of the unweighted adversary bound (Alb₂). \
-    Spectral matrices and negative weights are in Cslib.Quantum.SpectralAdversary."
+    from strong to weak load bounds, and the WeightScheme.ofUnweighted embedding used in \
+    AmbainisAdversary.lean to derive the unweighted adversary bound (Alb₂). Spectral matrices \
+    and negative weights are in SpectralAdversary.lean."
 
 register_result "quantum-general-adversaries" where
   title := "Spectral and negative-weight quantum adversary lower bounds (ADV and ADV±)"
