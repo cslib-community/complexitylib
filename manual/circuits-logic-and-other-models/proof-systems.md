@@ -210,14 +210,21 @@ Horn/dual-Horn definition (`PL.isPolymorphism_and_iff_exists_hornCNF`,
 system (`PL.isPolymorphism_parity_iff_exists_affineSystem`). These definitions need no auxiliary
 variables and include empty/nullary relations. See the [majority examples](../../CslibFrontierTests/MajorityCNF.lean).
 
-The ordinary solvers are also reusable: `HornSAT.mem_P`, `DualHornSAT.mem_P` and
-`XORSAT.satisfiable_mem_P`. Horn syntax counts positive occurrences, so two copies of a positive
-literal violate the syntax condition; repeated negatives and opposite-polarity tautologies are
-supported. Forward chaining reaches the least-model candidate in `numVars + 1` passes, storing
-filtered occurrences rather than an array indexed by the largest name. Affine equations are
-variable lists paired with Boolean right-hand sides; repeated variables cancel in the Boolean
-ring. Dense Gaussian elimination preserves row count and weakly decreases its complete framed
-state encoding at each column. See the [Horn solver tests](../../CslibFrontierTests/HornSAT.lean)
+The ordinary solvers are also reusable: `TwoSAT.mem_P`
+([TwoSAT/PolyTime.lean](../../CslibFrontier/Computability/Complexity/Problems/TwoSAT/PolyTime.lean)),
+`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.satisfiable_mem_P`. For `TwoSAT`,
+`TwoSAT.assignment` constructs a satisfying assignment in polynomial time on binary CNF encodings
+(`TwoSAT.computableInPolyTime_assignment`, `TwoSAT.eval_assignment_of_mem`) by filtering
+occurrence-bounded implication-graph reachability lists (`TwoSAT.reach`). Horn syntax counts
+positive occurrences, so two copies of a positive literal violate the syntax condition; repeated
+negatives and opposite-polarity tautologies are supported. Forward chaining reaches the pointwise-least
+model in `numVars + 1` passes (`HornSAT.isLeast_assignment`), storing filtered occurrences rather than
+an array indexed by the largest name; `HornSAT.exists_multiple_models` exhibits a satisfiable Horn
+formula whose least model is not the unique satisfying model on its occurring variables. Affine
+equations are variable lists paired with Boolean right-hand sides; repeated variables cancel in the
+Boolean ring. Dense Gaussian elimination preserves row count and weakly decreases its complete framed
+state encoding at each column. See the [SCC and 2-SAT tests](../../CslibFrontierTests/SCCAndTwoSAT.lean),
+[Horn solver tests](../../CslibFrontierTests/HornSAT.lean)
 and [XOR solver tests](../../CslibFrontierTests/XORSAT.lean).
 
 The hard branch `CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` imports all its mathematical
@@ -379,8 +386,9 @@ cancel over `ZMod 2`, while parallel column positions stay distinct. Finite perm
 transport is shared through `CslibFrontier.Foundations.GroupTheory.Perm.Doubled`.
 
 These are combinatorial duality and lifting results, reconstructing the graph prerequisite in
-Dvořák–Kupec, §3, printed p. 439. Geometric realization, bare rotation recognition, native
-compilation, the full cyclic-difference CSP reduction and recursive edge solving remain open
+Dvořák–Kupec, §3, printed p. 439. The checked compiler below supplies the native
+supplied-certificate CSP reduction. Geometric realization, bare rotation recognition and
+recursive edge solving remain open
 under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Ordered incidence-to-polygon rotations
@@ -417,8 +425,50 @@ at its source in `Problems.CSP.Incidence`, with its name and certificate clients
 
 This reconstructs the finite maps behind Dvořák–Kupec's ordered face model, printed p. 434.
 `polygonGraph` is an explicit list construction; abstract rotation/equivalence inverses are
-proof data. Native compilation, geometric realization, bare recognition and the complete
+proof data. The supplied-certificate compiler below supplies a native executable stage.
+Geometric realization, bare recognition and the complete
 planar CSP reduction/solver remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Checked cyclic-difference edge compiler
+
+Import `CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Spec` for
+`Cslib.Complexity.CSP.CyclicCompiler.compile_spec`, and `.Size` for its bounds.
+For a fixed finite Boolean language, call `compile arity sem (F, cert)` on the original
+list CSP and a supplied ordered numerical rotation certificate. The two static hypotheses
+are self-complementarity of every canonical relation and the even-delta-matroid property
+of each **nonempty** relation's cyclic-difference image. Empty symbols are allowed.
+
+The same compiler has ordinary native polynomial time on all raw inputs. Its output is
+an `EdgeInstance`, with exact table/scope widths and nonempty even delta-matroid constraints.
+Target satisfiability is equivalent to source satisfiability together with
+`WellFormed arity F` and `verifyRotationCertificate F cert = true`.
+Malformed scopes, invalid certificates and occurring empty relations reject to two
+incompatible nonempty unary pins. True nullaries disappear internally; false nullaries
+reject. `Primal.Nullary` proves the required face/Euler bridge without a positive-scope
+premise on the source. Repeated arguments, identical constraints and disconnected inputs
+retain positional identity.
+
+Input encoding is `encCSPRotationCertificate encRel encNat`: the framed CSP followed by
+the certificate, whose successor indices are binary. Output uses `encCSP encTable encNat`,
+including explicit rows, binary arities/names and list/pair framing. Language preprocessing
+may depend exponentially on fixed arity; it is not a uniform algorithm on language descriptions.
+White boundaries use width-three parity chains: a boundary of length `k ≥ 4` yields
+`k−2` constraints and `k−3` auxiliaries, avoiding exponential white truth tables.
+
+With `C` source constraints and `M` actual occurrences, every raw output has at most
+`C+M+2` constraints and `4M+2` ports, with names below `2M+1`.
+`polyBounded_length_compile` proves polynomiality of the complete framed output length;
+these counts alone are not its runtime certificate. The [compiler tests](../../CslibFrontierTests/CSPCyclicCompiler.lean)
+execute SAT/UNSAT NAE examples, long boundaries, nullaries, malformed and toroidal rotations,
+and binary labels/indices up to `2^250`.
+
+The compiler reuses the now-public runtime helpers `orbitBool_polyTime`,
+`faceTable_polyTime` and `argumentNextIndex_polyTime`, preserving their statements,
+proofs and local automation. This implements the supplied numerical-certificate stage of
+Dvořák–Kupec §3, printed pp. 439–440, Lemma 5/Corollary 4/Theorem 2; bounded scans and
+parity-chain implementation are original. Geometric realization, bare recognition,
+the edge solver and the full planar dichotomy remain open under
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
@@ -659,9 +709,37 @@ of the `c i` sums to `m`, completeness gives a refutation of degree `n + 1`
 - `v ∧ ¬v`, refuted in degree 1, and the satisfiable formula `v`, which has no refutation.
 
 Run `scripts/build.sh CslibFrontierTests.ProofComplexity.Algebraic` from the repository root to
-check them. Not yet formalized: the matching upper bound of Theorem 4.2, the size lower bounds of
-the same paper, pigeonhole degree lower bounds, and the simulation of bounded-width resolution by
-polynomial calculus.
+check them.
+
+[The algebraic functional pigeonhole encoding](../../CslibFrontier/Logics/Propositional/Algebraic/FunctionalPigeonhole.lean)
+defines `algFPHP m n R` for `m` pigeons and `n` holes over a commutative ring `R` in variables
+`Fin m × Fin n` (`x_{ij} = 1` when pigeon `i` occupies hole `j`, matching the `1`-for-true
+Boolean-cube convention above). It decomposes as
+`algFPHPConstraints m n R ++ boolAxioms (Fin m × Fin n) R`, combining pigeon axioms
+`algFPHPPigeonPoly i := 1 - ∑ j, X (i, j)` (note the opposite sign convention from `pigeonPoly`
+in [SumOfSquares/Pigeonhole](../../CslibFrontier/Logics/Propositional/Algebraic/SumOfSquares/Pigeonhole.lean)),
+functionality axioms `X (i, j) * X (i, j')` (`j < j'`), hole axioms `X (i, j) * X (i', j)`
+(`i < i'`), and the shared Boolean axioms `boolAxioms`. Over any nontrivial commutative ring,
+Boolean solutions correspond bijectively to injective maps `Fin m ↪ Fin n` via `pigeonIndicator`
+(`isBoolSolution_algFPHP_iff`, `boolSolutionEquivEmbedding`); over any integral domain, arbitrary
+common zeros are forced to be `0`/`1`-valued and share the same bijection
+(`eval_algFPHP_eq_zero_iff`, `commonZeroEquivEmbedding`). Consequently, satisfiability holds
+exactly when `m ≤ n` (`exists_isBoolSolution_algFPHP_iff`, `exists_commonZero_algFPHP_iff`),
+polynomial calculus refutability over fields holds iff `n < m`
+(`exists_pc_refutableInDegree_algFPHP_iff`, via `not_pc_refutableInDegree_algFPHP` and
+`pc_refutableInDegree_algFPHP_of_lt`), and when `n = 0 < m`, pigeon `0`'s axiom `algFPHPPigeonPoly`
+is already `1` (`algFPHPPigeonPoly_zero`), giving an explicit degree-`0` refutation over any
+commutative ring (`pc_refutableInDegree_algFPHP_zero`). The
+[checked examples](../../CslibFrontierTests/ProofComplexity/AlgebraicFunctionalPigeonhole.lean)
+verify `algFPHP 1 1`, `algFPHP 2 1` (including an explicit `6`-line degree-`2` PC refutation over
+every commutative ring), `n = 0 < m`, `m = 0`, and roundtrips for `boolSolutionEquivEmbedding` and
+`commonZeroEquivEmbedding`; check them with
+`scripts/build.sh CslibFrontierTests.ProofComplexity.AlgebraicFunctionalPigeonhole`.
+
+Not yet formalized ([Impagliazzo, Pudlák and Sgall][impagliazzopudlaksgall99]; [#3569](https://github.com/cslib-community/cslib-frontier/issues/3569)):
+the matching subset-sum upper bound of Theorem 4.2, the general and `algFPHP` size–degree
+tradeoffs, standard-CNF `FPHP`–`algFPHP` PCR encoding equivalence, pigeonhole degree and size
+lower bounds, and the simulation of bounded-width resolution by polynomial calculus.
 
 ### Tseitin formulas
 
@@ -1117,6 +1195,7 @@ This chapter covers resolution and clause space, cutting planes, semantic deriva
 [cookreckhow79]: ../sources.md#cookreckhow79
 [grigoriev01]: ../sources.md#grigoriev01
 [grigorievhirschpasechnik02]: ../sources.md#grigorievhirschpasechnik02
+[impagliazzopudlaksgall99]: ../sources.md#impagliazzopudlaksgall99
 [mosertardos10]: ../sources.md#mosertardos10
 [schoenebeck08]: ../sources.md#schoenebeck08
 [toran04]: ../sources.md#toran04

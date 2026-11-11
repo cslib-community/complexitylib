@@ -6,15 +6,19 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
+import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -70,7 +74,9 @@ import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
+import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
 import CslibFrontier.Computability.Kolmogorov.MINKTStar.Hardness
@@ -102,6 +108,8 @@ import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.DataStructure.NearNeighbor.Angular
+import CslibFrontier.DataStructure.NearNeighbor.PStable
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
@@ -109,10 +117,12 @@ import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
+import CslibFrontier.GameTheory.Strategic.SwapRegretDynamics
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
@@ -149,12 +159,15 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
+import CslibFrontier.Probability.LocalitySensitiveHash.PStable
+import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
 
 /-!
 # Collected results
@@ -548,7 +561,7 @@ register_result "rank-property-natural-ac0-2" where
     the input length m = rankLength d x, which satisfies m + 1 ≤ 401·2^(2d(2d+7))·x^(2d) for \
     x ≥ 1, no circuit of depth at most d with at most 2^x gates computes a function with the \
     property. p = 2 only; the constants are this library's. \
-    The learning consequences (CIKK Theorem 5.1 class form, Corollary 5.4) are not included."
+    The learning consequence for p = 2 is the separate entry cikk-learning-ac0-2."
 
 register_result "braverman" where
   title := "Braverman: polylogarithmic independence fools AC⁰"
@@ -955,6 +968,38 @@ register_result "hitting-set-derivative-closed" where
     algorithm model, nothing in positive characteristic, and not the source's extension to \
     noncommutative ABPs."
 
+register_result "hitting-set-sparse" where
+  title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BenOrTiwari1988, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_primePowers,
+    Cslib.Circuits.Arithmetic.isHittingSet_powerHittingSet
+  ]
+  scope := "Over a domain of characteristic zero, the s points (p₁ʲ, …, pₙʲ), j < s, of powers \
+    of the first n primes hit every nonzero n-variate polynomial with at most s monomials, \
+    whatever its degree; more generally for any point whose monomials are pairwise distinct. \
+    Zero test only: no interpolation algorithm, no bit complexity, nothing in positive \
+    characteristic."
+
+register_result "hitting-set-lower-bound" where
+  title := "Heintz–Schnorr: hitting sets give lower bounds"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := HeintzSchnorr1980, theorem := unverified, locator := unverified },
+    { paper := Agrawal2005, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.IsHittingSet.exists_notMem,
+    Cslib.Circuits.Arithmetic.exists_ne_zero_forall_eval_eq_zero
+  ]
+  scope := "Over a field, if H is a hitting set for a class and T is a finite set of \
+    monomials with more elements than H, some nonzero polynomial with monomials in T is not \
+    in the class. Existence by a dimension count; the polynomial is not exhibited and its \
+    complexity is not bounded."
+
 /-! ## Further collected results -/
 
 register_result "sharp-p-lowness" where
@@ -1195,6 +1240,28 @@ register_result "correlated-equilibrium-hierarchy" where
     (traffic light, Rock-Paper-Scissors), not stated as library theorems. Swap regret and \
     convergence of learning dynamics are not covered."
 
+register_result "swap-regret-approx-ce" where
+  title := "Approximate Correlated Equilibrium via Swap Regret"
+  topic := "game theory"
+  sources := [
+    { paper := BlumMansour2007, theorem := "Theorem 3 and Corollary 7",
+      locator := "pp. 1311, 1313" },
+    { paper := Roughgarden2013CS364A, theorem := unverified,
+      locator := "Lecture 18, Section 1" }
+  ]
+  theorems := [
+    Cslib.GameTheory.CostGame.timeAverage_productDist_isApproxCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.blumMansourDynamics_eq_blumMansourProb,
+    Cslib.GameTheory.CostGame.blumMansour_isApproxCorrelatedEquilibrium
+  ]
+  scope := "Finite cost-minimization games under full-information expected-cost play over a \
+    fixed known finite horizon T > 0. Shows that swap regret at most R i yields an (R i / T)-\
+    approximate correlated equilibrium, explicitly constructs the coupled multi-player \
+    Blum–Mansour trajectory blumMansourDynamics G T (with Hedge learning rate \
+    √(m_i ln m_i / T)), and proves slack 2 √(m_i ln m_i / T) when costs lie in [-1, 1], \
+    m_i ≥ 2, and T ≥ m_i ln m_i. Does not cover anytime dynamics, sampled play, last-iterate \
+    convergence, or native running time."
+
 register_result "nash-existence-bimatrix" where
   title := "Every bimatrix game has a Nash equilibrium"
   topic := "game theory"
@@ -1206,6 +1273,29 @@ register_result "nash-existence-bimatrix" where
   ]
   scope := "Real payoff matrices over finite nonempty strategy sets, with no nondegeneracy \
     assumption; derived from the n-player theorem. Nonconstructive."
+
+register_result "two-player-nash-ppad" where
+  title := "Two-player rational Nash equilibrium is in PPAD"
+  topic := "game theory"
+  sources := [
+    { paper := Papadimitriou1994PPAD, theorem := unverified, locator := unverified },
+    { paper := Shapley1974, theorem := unverified, locator := unverified },
+    { paper := LemkeHowson1964, theorem := unverified, locator := unverified },
+    { paper := vonStengel2007, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_PPAD,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_TFNP,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_isTotalSearch,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_searchReducible_EndOfLine,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash.isNash
+  ]
+  scope := "Two-player games presented as pairs of rational payoff lists under encBimatrix. \
+    For well-formed nonempty m × n games, BimatrixNash asks for a canonical rational mixed Nash \
+    equilibrium encoded by encWitness within explicit bit-length bound 120·L³ + 400·L + 100 \
+    (malformed inputs admit only []). Proved in PPAD by lexicographic perturbation, \
+    Shapley-oriented Lemke–Howson pivoting, and Cramer rounding; does not prove PPAD-hardness \
+    or an efficient Lemke–Howson solver."
 
 register_result "facility-location-random-dictatorship" where
   title := "Random dictatorship is strategyproof and (2 - 2 / n)-approximate for social cost"
@@ -2832,6 +2922,47 @@ register_result "cikk-learner-hypothesis-size" where
     built; (2) the constants, including the closed form's, are this library's and not tight; \
     (3) size only: depth and the running time of the learner are not certified."
 
+register_result "cikk-learning-ac0-2" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning AC⁰[2] with the rank property, \
+    with quasi-polynomially many membership queries and quasi-polynomial-size hypotheses"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016,
+      theorem := "Theorem 5.1 and Corollary 5.4, p = 2",
+      locator := "p. 10:19 (Theorem 5.1 and its proof); p. 10:20 (Corollary 5.4)" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.learns_cikkLearner_rankTest,
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest,
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest_le,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le_two_pow,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le
+  ]
+  scope := "Corollary 5.4 for p = 2 with queries and hypothesis size counted, for a fixed depth d \
+    and size s. With g = cikkAC0Gap d e n s and l = cikkAC0Len d e n s g, the CIKK learner \
+    (cikk-learning-from-dense-test) whose test accepts the truth tables of the rank property \
+    (rank-property-natural-ac0-2) at input length l learns every function on n bits computed \
+    by a circuit of NOT, unbounded fan-in AND/OR and MOD_2 gates of depth at most d and size at \
+    most s, under the uniform distribution with membership queries, with error 2^-e and \
+    confidence 1 - 2^-h. It makes at most (h+1) 2^(12g + 6e + 59) queries, and \
+    g <= 2^(2D(5D+25)) B^(2D) with D = d + 7 and B = floor(log2(M^2 (s + 6(n+1)^2 + 3))) + 1, \
+    M = 2^(e+10)(3e+42), so for fixed d the number of queries is quasi-polynomial in n, s and \
+    2^e. On every target and seed the hypothesis has a De Morgan circuit with at most \
+    2^(17g + 9e + 76) gates, also quasi-polynomial for fixed d: the rank test's truth-table \
+    circuit (173 * 8^l gates) fed into cikk-learner-hypothesis-size, with l + 2 <= g. Labels: \
+    (1) the rank property is this library's variant (one square matrix, threshold C(n, a)/2, \
+    level sliceLevel) with density 1/2 where Theorem 5.1 assumes largeness 1/5, and its \
+    constructivity is used only as truth-table circuit size, not the source's NC^2; (2) p = 2 \
+    only, where Corollary 5.4 states every prime; (3) queries and De Morgan hypothesis size are \
+    certified, but the source's running-time bound is not; hypothesis depth is not certified, \
+    so the hypotheses are not shown to lie in AC^0[2] (Corollary 5.4's hypotheses are general \
+    circuits too); (4) the target class is nonuniform, fixed by d and s; (5) g and \
+    l are explicit closed forms from the fixed point l + 2 <= g, replacing the source's choice \
+    of L with log L > u^-1(poly); the generator circuits add depth 7, and all constants are \
+    this library's; (6) the deviations of cikk-learning-from-dense-test carry over. The \
+    abstract form of Theorem 5.1, from any natural property useful against a class, is not \
+    included."
+
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
   topic := "Kolmogorov complexity"
@@ -2995,6 +3126,78 @@ register_result "tfnp-eopl-sopl-promised-normalization" where
     solution relations without a failed-promise fallback, and failed-promise back-maps via \
     potentialLineBack. Presented on uniform families rather than canonical circuit codes; UEOPL \
     and CLS are not formalized."
+
+register_result "simhash" where
+  title := "Charikar's SimHash collision law"
+  topic := "algorithms"
+  sources := [
+    { paper := Charikar2002, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Probability.measureCollisionProb_simHash,
+    Cslib.Probability.measureCollisionProb_simHash_of_norm_eq_one,
+    Cslib.Probability.isLocalitySensitive_simHash_inner
+  ]
+  scope := "Random-hyperplane sign hash `simHash r u = decide (0 <= <u, r>)` with seed `r` \
+    drawn from the standard Gaussian measure `stdGaussian E` on a finite-dimensional real \
+    inner product space `E` (and i.i.d. `gaussianReal 0 1` coordinates on `EuclideanSpace`). \
+    Proves exact collision probability `1 - angle u v / pi` on nonzero vectors, cosine-similarity \
+    sensitivity on unit vectors, and Charikar's triangle inequality for measurable collision laws."
+
+register_result "angular-near-neighbor" where
+  title := "Approximate near neighbours in angular distance via SimHash"
+  topic := "algorithms"
+  sources := [
+    { paper := Charikar2002, theorem := unverified, locator := unverified },
+    { paper := IndykMotwani1998, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.DataStructure.NearNeighbor.rho_simHash_le,
+    Cslib.DataStructure.NearNeighbor.measureReal_query_simHash_eq_none_le
+  ]
+  scope := "Static `(c, theta)`-approximate near-neighbour query bound over `Measure.pi` tables of \
+    `k = numHashes` AND-composed SimHash bits (`L = numTables`, stopping rule `T = 3 * L`). \
+    Proves exponent `rho <= 1 / c` and failure probability at most `exp (-1) + 1 / 3` whenever \
+    `0 < theta`, `1 < c`, and `c * theta < pi`. Probabilistic query failure only; word-RAM hash \
+    buckets, seed storage, dynamic updates, and query runtime are not formalized."
+
+register_result "p-stable-lsh" where
+  title := "p-stable LSH collision probabilities for p = 1 and p = 2"
+  topic := "algorithms"
+  sources := [
+    { paper := DatarImmorlicaIndykMirrokni2004, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Probability.measureCollisionProb_p2StableHash,
+    Cslib.Probability.p2StableProb_eq_integral,
+    Cslib.Probability.measureCollisionProb_p1StableHash,
+    Cslib.Probability.p1StableProb_eq
+  ]
+  scope := "Shifted interval quantization `floor ((proj a x + b) / r)` with `b` drawn from \
+    `uniformInterval r`. Proves the general Fubini integral, Cauchy `1`-stability for i.i.d. \
+    `cauchyMeasure 0 1` projections, exact Euclidean (`p = 2`, Gaussian) and `l_1` (`p = 1`, \
+    Cauchy) collision formulas including Datar et al.'s integral representation and closed \
+    forms, strict positivity, and strict monotonicity. General `p` in `(0, 2) \\ {1, 2}` is \
+    not formalized."
+
+register_result "p-stable-near-neighbor" where
+  title := "Approximate near neighbours in l_2 and l_1 via p-stable LSH"
+  topic := "algorithms"
+  sources := [
+    { paper := DatarImmorlicaIndykMirrokni2004, theorem := unverified, locator := unverified },
+    { paper := HarPeledIndykMotwani2012, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.DataStructure.NearNeighbor.rho_p2Stable_lt_one,
+    Cslib.DataStructure.NearNeighbor.measureReal_query_p2Stable_eq_none_le,
+    Cslib.DataStructure.NearNeighbor.rho_p1Stable_lt_one,
+    Cslib.DataStructure.NearNeighbor.measureReal_query_p1Stable_eq_none_le
+  ]
+  scope := "Static `(c, d)`-approximate near-neighbour guarantees over `Measure.pi` AND tables \
+    for Euclidean distance (`p = 2`, `stdGaussian E`) and `l_1` distance (`p = 1`, product \
+    `cauchyMeasure 0 1`), proving sublinear `rho < 1` and query failure at most `exp (-1) + 1 / 3` \
+    when `0 < w`, `0 < d`, and `1 < c`. Probabilistic query failure only; word-RAM hash buckets, \
+    seed storage, dynamic updates, and query runtime are not formalized."
 
 register_result "goemans-williamson-max2sat" where
   title := "Goemans–Williamson α-approximation rounding for MAX-2SAT (α > 0.87856)"
@@ -3223,6 +3426,70 @@ register_result "bareiss-rational-elimination-polytime" where
     rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
     (circulant spectra and fibre-sum bounds remain open there)."
 
+register_result "kosaraju-scc" where
+  title := "Kosaraju's linear-time strongly connected components and condensation order"
+  topic := "algorithms"
+  sources := [
+    { paper := CLRS2009, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.DFS.isSCCCondensation_sccs,
+    Cslib.Algorithms.Lean.DFS.time_sccsM_of_nodup,
+    Cslib.Algorithms.Lean.DFS.IsSCCCondensation.indexComponents_eq_iff,
+    Cslib.Algorithms.Lean.DFS.IsSCCCondensation.indexComponents_le_of_edge
+  ]
+  scope := "Two-pass Kosaraju SCC decomposition on adjacency lists adj : V → List V in TimeM, \
+    returning duplicate-free mutual-reachability components in forward condensation topological \
+    order at exact cost 3 * (|vs| + ∑ v, |adj v|) for duplicate-free vertex lists covering V, \
+    plus O(|V|) component-index lookup. Visited-set membership, insertion, and function-update \
+    array steps are counted as unit-cost operations."
+
+register_result "twosat-linear-timem" where
+  title := "Aspvall–Plass–Tarjan linear-time 2-SAT solver and witness construction in TimeM"
+  topic := "algorithms"
+  sources := [
+    { paper := AspvallPlassTarjan1979, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.TwoSAT.solve_eq_some,
+    Cslib.Algorithms.Lean.TwoSAT.isSome_solve_iff,
+    Cslib.Algorithms.Lean.TwoSAT.time_solveFinM_le,
+    Cslib.Algorithms.Lean.TwoSAT.isSome_solveNat_iff
+  ]
+  scope := "Linear-time 2-SAT decision and satisfying-assignment construction via Kosaraju SCCs \
+    of the implication graph in TimeM (at most 12 * n + 8 * |φ| + 1 steps on CNF (Fin n)), \
+    together with variable compaction connecting solveNat to Cslib.Complexity.TwoSAT."
+
+register_result "twosat-polytime" where
+  title := "Native multi-tape polynomial-time 2-SAT decision and witness construction"
+  topic := "computational complexity"
+  sources := [
+    { paper := AspvallPlassTarjan1979, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.TwoSAT.mem_P,
+    Cslib.Complexity.TwoSAT.eval_assignment_of_mem,
+    Cslib.Complexity.TwoSAT.computableInPolyTime_solve,
+    Cslib.Complexity.TwoSAT.computableInPolyTime_assignment
+  ]
+  scope := "Multi-tape Turing-machine polynomial-time decision and satisfying-assignment \
+    construction for Cslib.Complexity.TwoSAT under binary CNF encoding encCNF, using \
+    occurrence-bounded implication-graph reachability without dense variable-index arrays."
+
+register_result "hornsat-least-model" where
+  title := "Least-model characterization and non-uniqueness for HornSAT"
+  topic := "computational complexity"
+  sources := [
+    { paper := Papadimitriou94, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.HornSAT.assignment_le_of_eval,
+    Cslib.Complexity.HornSAT.isLeast_assignment,
+    Cslib.Complexity.HornSAT.exists_multiple_models
+  ]
+  scope := "Forward-chaining HornSAT.assignment computes the pointwise-least satisfying model \
+    of every satisfiable Horn formula, together with an explicit Horn formula admitting \
+    distinct satisfying assignments on its occurring variables."
 register_result "sperner-2d-ppad-completeness" where
   title := "PPAD-completeness of circuit two-dimensional Sperner (Sperner2D)"
   topic := "structural complexity"

@@ -29,7 +29,7 @@ Adapts the selection identity from Computability/Probabilistic/Finite.lean on th
 `crypto` branch at `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
-@[expose] public section
+public section
 
 /-- An invariant depending on the number of consumed elements holds after every bounded prefix
 fold if it holds initially and is preserved by the next list element. Unlike `List.foldlRecOn`,
@@ -85,3 +85,10 @@ theorem List.foldl_min_add_eq {α : Type*} (cap : ℕ) (f : α → ℕ) {b : ℕ
   | cons x l ih =>
     rw [List.foldl_cons, ih (Nat.min_le_left _ _), List.map_cons, List.sum_cons]
     omega
+
+@[simp] theorem foldl_and_eq_and_all {α : Type*} (p : α → Bool) :
+    ∀ (xs : List α) (init : Bool),
+      xs.foldl (fun ok x => ok && p x) init = (init && xs.all p)
+  | [], init => by simp
+  | x :: xs, init => by
+    rw [List.foldl_cons, foldl_and_eq_and_all, List.all_cons, Bool.and_assoc]

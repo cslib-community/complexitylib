@@ -21,6 +21,8 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PMFSwap
 
 /-!
@@ -686,30 +688,12 @@ theorem advantage_hashedElGamalCipherCPAGameOn_le {Msg : Type}
     ddhIdealGame_hashedElGamalCipherToDDHDistinguisher,
     kdfRealGame_hashedElGamalCipherToKDFDistinguisher,
     kdfIdealGame_hashedElGamalCipherToKDFDistinguisher]
-  have h1 := Game.advantage_triangle
-    (F.hashedElGamalCipherCPAGame setup H encryptSym A' false n)
-    (F.hashedElGamalCipherIdealDDHGame setup H encryptSym A' false n)
-    (F.hashedElGamalCipherCPAGame setup H encryptSym A' true n)
-  have h2 := Game.advantage_triangle
-    (F.hashedElGamalCipherIdealDDHGame setup H encryptSym A' false n)
-    (F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym A' false n)
-    (F.hashedElGamalCipherCPAGame setup H encryptSym A' true n)
-  have h3 := Game.advantage_triangle
-    (F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym A' false n)
-    (F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym A' true n)
-    (F.hashedElGamalCipherCPAGame setup H encryptSym A' true n)
-  have h4 := Game.advantage_triangle
-    (F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym A' true n)
-    (F.hashedElGamalCipherIdealDDHGame setup H encryptSym A' true n)
-    (F.hashedElGamalCipherCPAGame setup H encryptSym A' true n)
-  rw [Game.advantage_comm
-      (F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym A' true n)
-      (F.hashedElGamalCipherIdealDDHGame setup H encryptSym A' true n),
-    Game.advantage_comm
-      (F.hashedElGamalCipherIdealDDHGame setup H encryptSym A' true n)
-      (F.hashedElGamalCipherCPAGame setup H encryptSym A' true n)] at h4
-  exact (h1.trans (add_le_add le_rfl (h2.trans (add_le_add le_rfl
-    (h3.trans (add_le_add le_rfl h4)))))).trans_eq (by ac_rfl)
+  game_trans
+    [F.hashedElGamalCipherIdealDDHGame setup H encryptSym A' false n,
+     F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym A' false n,
+     F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym A' true n,
+     F.hashedElGamalCipherIdealDDHGame setup H encryptSym A' true n]
+    using [le_rfl, le_rfl, le_rfl, le_rfl, le_rfl]
 
 private theorem ddhRealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
@@ -839,12 +823,12 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn {F : PrimeOrderGroupFamily}
         (F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary false n)
         (F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary true n) := by
   have hA' := hA.restrict hvalid
-  have hddh := (hDDH _
-    (F.isPPTOn_hashedElGamalCipherToDDHHiddenBitDistinguisher hH hencryptSym hA')).const_mul 2
-  have hkdf := (hKDF _
-    (F.isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher hencryptSym hA')).const_mul 2
-  exact negligible_of_le ((hddh.add hkdf).add hSym)
-    (F.advantage_hashedElGamalCipherCPAGameOn_le_two_mul valid setup H keyLen encryptSym adversary)
+  have hddh := hDDH _
+    (F.isPPTOn_hashedElGamalCipherToDDHHiddenBitDistinguisher hH hencryptSym hA')
+  have hkdf := hKDF _
+    (F.isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher hencryptSym hA')
+  negligible using
+    F.advantage_hashedElGamalCipherCPAGameOn_le_two_mul valid setup H keyLen encryptSym adversary
 
 /-! ### Reduction from Game 2 (`hashedElGamalCipherUniformKeyGameOn`) to `DEMOneTimeINDCPAOn` -/
 
@@ -1030,7 +1014,7 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
       by_cases hvs : validSym n [] choice.1.1 choice.1.2 = true <;>
         simp only [hv, hvs, Bool.false_eq_true, ↓reduceIte, PMF.bind_const]
   rw [hgame2, hdem]
-  refine Game.advantage_bind_le_nnreal (ProbComp.eval (setupProb n)) _ _ fun d => ?_
+  peel_binds d
   rw [Game.advantage_comm]
   exact F.advantage_bind_sampleExp_pair_le n d (k d)
 
@@ -1083,34 +1067,15 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn {Msg : Typ
     valid validSym setupProb keyLen encryptSym adversary false n hvalid_imp
   have ht := F.advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le
     valid validSym setupProb keyLen encryptSym adversary true n hvalid_imp
-  have htri1 := Game.advantage_triangle
-    (F.hashedElGamalCipherUniformKeyGameOn valid (fun m => ProbComp.eval (setupProb m))
-      keyLen encryptSym adversary false n)
-    (ProbComp.eval
-      (Encryption.demKeyGameOn validSym keyLen encryptSym
-        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-    (F.hashedElGamalCipherUniformKeyGameOn valid (fun m => ProbComp.eval (setupProb m))
-      keyLen encryptSym adversary true n)
-  have htri2 := Game.advantage_triangle
-    (ProbComp.eval
-      (Encryption.demKeyGameOn validSym keyLen encryptSym
-        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-    (ProbComp.eval
-      (Encryption.demKeyGameOn validSym keyLen encryptSym
-        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n))
-    (F.hashedElGamalCipherUniformKeyGameOn valid (fun m => ProbComp.eval (setupProb m))
-      keyLen encryptSym adversary true n)
-  rw [Game.advantage_comm
-    (ProbComp.eval
-      (Encryption.demKeyGameOn validSym keyLen encryptSym
-        (F.hashedElGamalCipherToDEMAdversary setupProb
-          (adversary.restrict valid)) true n))] at htri2
-  have hcomb := htri1.trans (add_le_add hf (htri2.trans (add_le_add le_rfl ht)))
-  calc _ ≤ (2 : ℝ≥0) / 2 ^ n +
-        (Encryption.advantage (Encryption.demKeyGameOn validSym keyLen encryptSym
-          (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
-        2 / 2 ^ n) := hcomb
-    _ = _ := by ring
+  rw [Encryption.advantage]
+  game_trans
+    [ProbComp.eval
+       (Encryption.demKeyGameOn validSym keyLen encryptSym
+         (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n),
+     ProbComp.eval
+       (Encryption.demKeyGameOn validSym keyLen encryptSym
+         (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)]
+    using [hf, le_rfl, ht]
 
 /-- **Quantitative bridge from Game 2 (`hashedElGamalCipherUniformKeyGameOn`) to standalone
 symmetric-cipher security (`Encryption.demGameOn`)**: the Game 2 advantage is bounded by the
@@ -1261,11 +1226,7 @@ theorem negligible_hashedElGamalCipherUniformKeyGameOn_of_demOneTimeKeyINDCPAOn 
   have hA' := hA.restrict hvalid
   have hdem := hDEM (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))
     (F.isPPT_hashedElGamalCipherToDEMAdversary hsetup hA')
-  have herr : Negligible (fun n : ℕ => (4 : ℝ≥0) / 2 ^ n) := by
-    simpa only [div_eq_mul_inv, inv_pow, Nat.cast_ofNat] using
-      (negligible_geometric (ratio := 2⁻¹) (by norm_num)).polynomiallyBounded_mul
-        (p := fun _ => 4) (PolynomiallyBounded.const 4)
-  exact negligible_of_le (hdem.add herr) fun n =>
+  negligible using fun n =>
     F.advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn
       valid validSym setupProb keyLen encryptSym adversary n (hvalid_imp n)
 
