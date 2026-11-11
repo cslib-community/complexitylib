@@ -74,15 +74,15 @@ open Turing.MultiTapeTM ComputableInPolyTime
 /-! ### Problem instances and contraction state structures -/
 
 /-- Row-major Boolean adjacency matrix encoding. -/
-@[expose] abbrev encAdjTable : List (List Bool) ↪ List Bool :=
+abbrev encAdjTable : List (List Bool) ↪ List Bool :=
   encList (encList encBool)
 
 /-- Row-major binary integer weight or cost matrix encoding. -/
-@[expose] abbrev encIntTable : List (List ℤ) ↪ List Bool :=
+abbrev encIntTable : List (List ℤ) ↪ List Bool :=
   encList (encList encIntBin)
 
 /-- Encoding of an optional list of unary vertex indices (`Option (List ℕ)`). -/
-@[expose] abbrev encParentOption : Option (List ℕ) ↪ List Bool :=
+abbrev encParentOption : Option (List ℕ) ↪ List Bool :=
   encOption (encList encUnary)
 
 /-- Instance of the minimum-cost spanning arborescence problem on vertices `0, …, n - 1` (`n =
@@ -1527,7 +1527,7 @@ theorem computableInPolyTime_edmondsTableAuxList :
       length_encPair]
     dsimp only
     dsimp only [L] at hadj_code hcost_code hroot_code hres_code hstack_code
-    dsimp only [polyB]
+    dsimp only [polyB, encAdjTable, encIntTable, encParentOption]
     omega
   have hfin : ComputableInPolyTime
       (fun x : TableAuxInput =>
