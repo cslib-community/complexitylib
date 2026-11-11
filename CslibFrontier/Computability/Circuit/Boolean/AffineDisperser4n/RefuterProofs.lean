@@ -30,7 +30,8 @@ open Cslib.Complexity.XORSAT.Dense Cslib.Circuits Cslib.BitString
 
 theorem applyStep_valid {n} {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
     (choice : StepChoice) (hchoice : chooseStep? S = some choice) :
-    Step f S (applyStep S choice) := by
+    Step f S (applyStep S choice) ∨
+    (Preparation f S (applyStep S choice) ∧ (applyStep S choice).W < S.W) := by
   sorry
 
 theorem refuterLoop_valid {n} {f : BooleanFunction n} {S : State n}
