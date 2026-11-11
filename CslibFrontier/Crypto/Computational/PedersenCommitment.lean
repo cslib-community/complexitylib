@@ -20,6 +20,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Pedersen commitments over a prime-order group family
@@ -304,8 +305,7 @@ theorem pedersenVerify_of_mem_support_pedersenCommitPairLaw (d : F.Desc) (h : F.
   simp only [pedersenCommitPairLaw, PMF.support_map, Set.mem_image] at hco
   rcases hco with ⟨r, -, rfl⟩
   have hr : (ofBits r.val.bits : ZMod (F.order d)) = r := by
-    unfold ofBits
-    rw [Nat.foldr_bit_bits, ZMod.natCast_zmod_val]
+    rw [ofBits_bits, ZMod.natCast_zmod_val]
   simp only [pedersenVerify, Bool.and_eq_true, decide_eq_true_eq, hm.1, hm.2, hr, true_and]
 
 /-- A Pedersen commitment key over `F`: a group description `d : F.Desc` together with a public
@@ -422,24 +422,7 @@ theorem pedersenHidingGame_apply_true_le (setup : ℕ → PMF F.Desc)
           (m : ℝ≥0∞)⁻¹ := add_le_add le_rfl hord
   simp only [CommitmentScheme.hidingGame, pedersenKeyDist,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  rw [PMF.bind_apply, PMF.bind_apply]
-  calc ∑' d, setup n d *
-          ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-            F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₁ n) true
-      ≤ ∑' d, setup n d *
-          (((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-            F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n) true +
-            (m : ℝ≥0∞)⁻¹) := by
-        refine tsum_le_tsum fun d => ?_
-        by_cases hd : d ∈ (setup n).support
-        · exact mul_le_mul_of_nonneg_left (hd_bound d hd) zero_le
-        · have hd0 : setup n d = 0 := by rwa [PMF.mem_support_iff, not_not] at hd
-          simp [hd0]
-    _ = (∑' d, setup n d *
-          ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-            F.pedersenScheme.hidingForKey ⟨d, α • F.generator d⟩ adversary b₂ n) true) +
-        (m : ℝ≥0∞)⁻¹ := by
-        simp only [mul_add, tsum_add, ENNReal.tsum_mul_right, (setup n).tsum_coe, one_mul]
+  exact Probability.PMF.bind_apply_le_add_const_on_support _ true hd_bound
 
 /-- **Unconditional hiding bound for Pedersen commitments**: when every supported group at
 parameter `n` has order at least `m > 0`, any (even computationally unbounded)
@@ -585,12 +568,7 @@ theorem succProbability_pedersenBindingGame_le_discreteLogGame (setup : ℕ → 
     true fun out _ => ?_
   by_cases hcoll : F.pedersenScheme.isBindingCollision ⟨d, α • F.generator d⟩ out = true
   · have hextract := F.pedersenExtractNat_eq_of_isBindingCollision d α hcoll
-    have hbits : ((ofBits (pedersenExtractNat (F.order d)
-        (ofBits out.2.1.1) (ofBits out.2.1.2)
-        (ofBits out.2.2.1) (ofBits out.2.2.2)).bits : ℕ) : ZMod (F.order d)) = α := by
-      unfold ofBits
-      rwa [Nat.foldr_bit_bits]
-    simp [hcoll, hbits]
+    simp [hcoll, hextract]
   · simp [Bool.eq_false_iff.mpr hcoll]
 
 /-- **Polynomial-time discrete-logarithm extraction**: from a group description `d` and two

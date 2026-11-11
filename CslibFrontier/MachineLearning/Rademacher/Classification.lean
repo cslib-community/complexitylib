@@ -12,6 +12,7 @@ public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import CslibFrontier.MachineLearning.Rademacher.Generalization
 public import CslibFrontier.MachineLearning.Rademacher.GrowthFunction
 import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.Product
 
 /-!
@@ -198,8 +199,7 @@ theorem rademacherComplexity_classification_bound [Fintype α] (D : PMF (α × B
         rademacherComplexity (D.map Prod.fst) (signClass C) m +
           √(Real.log (1 / δ) / (2 * m)) < (D.toOuterMeasure {p | h p.1 ≠ p.2}).toReal}).toReal ≤
       δ := by
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono ?_))
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (rademacherComplexity_generalization_bound D hm zero_lt_one (F := bitClass (lossClass C))
       (fun f hf => mem_Icc_of_mem_bitClass hf) hδ)
   rintro S ⟨h, hh, hlt⟩
@@ -221,8 +221,7 @@ theorem empiricalRademacherComplexity_classification_bound [Finite α] (D : PMF 
           3 * √(Real.log (2 / δ) / (2 * m)) < (D.toOuterMeasure {p | h p.1 ≠ p.2}).toReal}).toReal ≤
       δ := by
   have := Fintype.ofFinite α
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono ?_))
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (empiricalRademacherComplexity_generalization_bound D hm zero_lt_one
       (F := bitClass (lossClass C)) (fun f hf => mem_Icc_of_mem_bitClass hf) hδ)
   rintro S ⟨h, hh, hlt⟩
@@ -241,8 +240,7 @@ theorem growthFunction_classification_bound [Finite α] (D : PMF (α × Bool)) {
           √(Real.log (1 / δ) / (2 * m)) < (D.toOuterMeasure {p | h p.1 ≠ p.2}).toReal}).toReal ≤
       δ := by
   have := Fintype.ofFinite α
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono ?_))
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (rademacherComplexity_classification_bound D hm C hδ)
   rintro S ⟨h, hh, hlt⟩
   refine ⟨h, hh, ?_⟩
@@ -262,8 +260,7 @@ theorem vc_classification_bound [Finite α] (D : PMF (α × Bool)) {C : ConceptC
           √(Real.log (1 / δ) / (2 * m)) < (D.toOuterMeasure {p | h p.1 ≠ p.2}).toReal}).toReal ≤
       δ := by
   have := Fintype.ofFinite α
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono ?_))
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (rademacherComplexity_classification_bound D hm C hδ)
   rintro S ⟨h, hh, hlt⟩
   refine ⟨h, hh, ?_⟩
@@ -284,8 +281,7 @@ private theorem empiricalMiscount_div_le [Finite α] (D : PMF (α × Bool)) {m :
       ∀ z, f z ∈ Set.Icc (-1) 0 := by
     rintro f rfl z
     by_cases hz : c z.1 = z.2 <;> simp [hz, bitVal]
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono ?_))
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (rademacherComplexity_generalization_bound D hm (by norm_num) hrange hδ)
   intro S hS
   refine ⟨_, rfl, ?_⟩
@@ -308,13 +304,12 @@ private theorem PACLearning.IsERM.rademacherComplexity_le_add [Fintype α] (D : 
       field_simp, Real.sqrt_mul (by norm_num), Real.sqrt_sq (by norm_num)]
   have h₁ := rademacherComplexity_classification_bound D hm C (half_pos hδ)
   have h₂ := empiricalMiscount_div_le D hm c (half_pos hδ)
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono
-      (s₂ := {S | ∃ h ∈ C, (empiricalMiscount h S : ℝ) / m +
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _
+      (t := {S | ∃ h ∈ C, (empiricalMiscount h S : ℝ) / m +
         rademacherComplexity (D.map Prod.fst) (signClass C) m +
           √(Real.log (1 / (δ / 2)) / (2 * m)) < (D.toOuterMeasure {p | h p.1 ≠ p.2}).toReal} ∪
         {S | (D.toOuterMeasure {p | c p.1 ≠ p.2}).toReal + √(Real.log (1 / (δ / 2)) / (2 * m)) <
-          (empiricalMiscount c S : ℝ) / m}) ?_)) ?_
+          (empiricalMiscount c S : ℝ) / m}) ?_) ?_
   · intro S hS
     by_contra hS'
     simp only [Set.mem_union, Set.mem_ofPred_eq, not_or, not_exists, not_and, not_lt] at hS hS'
@@ -348,8 +343,7 @@ theorem PACLearning.IsERM.rademacherComplexity_agnostic_bound [Fintype α] (D : 
     exact hδ.le
   obtain ⟨c₀, hc₀, hmin⟩ := Set.exists_min_image C
     (fun c => (D.toOuterMeasure {p | c p.1 ≠ p.2}).toReal) (Set.toFinite C) hne
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono ?_))
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (IsERM.rademacherComplexity_le_add D hm hA hc₀ hδ)
   rintro S ⟨c, hc, hlt⟩
   change _ < _
@@ -371,8 +365,7 @@ theorem PACLearning.IsERM.vc_agnostic_bound [Finite α] (D : PMF (α × Bool))
         √(2 * (d * Real.log (Real.exp 1 * m / d)) / m) + √(2 * Real.log (2 / δ) / m) <
           (D.toOuterMeasure {p | A S p.1 ≠ p.2}).toReal}).toReal ≤ δ := by
   have := Fintype.ofFinite α
-  refine le_trans (ENNReal.toReal_mono (Probability.PMF.toOuterMeasure_ne_top _ _)
-    ((Probability.PMF.pi fun _ : Fin m => D).toOuterMeasure.mono ?_))
+  refine le_trans (Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
     (hA.rademacherComplexity_agnostic_bound D hm hδ)
   rintro S ⟨c, hc, hlt⟩
   refine ⟨c, hc, ?_⟩

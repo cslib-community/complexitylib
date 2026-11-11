@@ -123,8 +123,7 @@ theorem pointedRankTypeLanguage_eq (n : ℕ) (τ : FO.RankType (wordLanguage α)
     refine ⟨⟨(wordRankType n (x.take p) Fin.elim0, x[p],
       wordRankType n (x.drop (p + 1)) Fin.elim0), x.take p, x.drop (p + 1), rfl, rfl, ?_⟩, ?_⟩
     · rw [← hp, wordRankType_congr hx.symm]
-      congr 1
-      funext i
+      congr 1 with i : 1
       exact Fin.ext (by simp [Matrix.cons_val_fin_one])
     · refine Language.mem_mul.2 ⟨x.take p ++ [x[p]], Language.mem_mul.2
         ⟨x.take p, rfl, [x[p]], rfl, rfl⟩, x.drop (p + 1), rfl, ?_⟩
@@ -139,8 +138,7 @@ theorem pointedRankTypeLanguage_eq (n : ℕ) (τ : FO.RankType (wordLanguage α)
     refine ⟨⟨y₁.length, by simp⟩, ?_⟩
     rw [← hτ, wordRankType_congr hx.symm]
     refine Eq.trans ?_ (wordRankType_append_cons c (hy₁.trans hu₁.symm) (hy₂.trans hu₂.symm))
-    congr 1
-    funext i
+    congr 1 with i : 1
     exact Fin.ext (by simp [Matrix.cons_val_fin_one])
 
 theorem mem_rankTypeLanguage {n : ℕ} {T : FO.RankType (wordLanguage α) n 0} {w : List α} :

@@ -169,8 +169,7 @@ theorem productDepth_subst (ρ : Fin n → Option (Fin m)) (F : SPFormula K n) :
 theorem polynomial_subst [CommSemiring K] (ρ : Fin n → Option (Fin m)) (F : SPFormula K n) :
     (subst ρ F).polynomial = aeval (fun i => (ρ i).elim 0 X) F.polynomial := by
   rw [aeval_polynomial, algebraMap_eq, polynomial, subst, Formula.eval_bind]
-  congr 1
-  funext i
+  congr 1 with i : 1
   rcases ρ i with _ | j
   · exact polynomial_zero
   · rfl
@@ -191,8 +190,7 @@ theorem IsSetMultilinear.subst {blk : Fin n → Fin d} {blk' : Fin m → Fin d}
   | const a =>
     have h : SPFormula.subst ρ (SPFormula.const a : SPFormula K n) = SPFormula.const a := by
       rw [subst_gate]
-      congr 1
-      funext j
+      congr 1 with j : 1
       exact j.elim0
     rw [h]
     exact .const a

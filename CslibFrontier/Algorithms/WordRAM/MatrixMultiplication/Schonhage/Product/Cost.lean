@@ -35,13 +35,6 @@ The raw-conversion envelope charges a multiplication for every original matrix e
     ((∑ t ∈ Finset.range (numBands L m N ^ 2), tileCharge hm qs t) + 2) +
     (9 * qs.length + 3) + (7 * inputEnd m N qs.length + 10)
 
-private theorem sum_bucket_counts (key : ℕ → ℕ) (Q T : ℕ) :
-    (∑ t ∈ Finset.range T, Nat.count (fun i => key i = t) Q) =
-      Nat.count (fun i => key i < T) Q := by
-  induction T with
-  | zero => simp
-  | succ T ih => rw [Finset.sum_range_succ, ih, CountingSort.count_lt_succ]
-
 private theorem sum_tile_indices (B : ℕ) (f : ℕ × ℕ → ℕ) :
     (∑ t ∈ Finset.range (B ^ 2), f (t / B, t % B)) =
       ∑ p ∈ Finset.range B ×ˢ Finset.range B, f p := by
@@ -65,8 +58,8 @@ public theorem sum_tileCharge {L m N : ℕ} (hm : m ≤ L) (qs : List (Fin N × 
   have hkey (i : ℕ) (hi : i < qs.length) :
       (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) i < numBands L m N ^ 2 :=
     Wanted.tileKey_lt hm _ (Wanted.inputPairs_lt qs i hi).1 (Wanted.inputPairs_lt qs i hi).2
-  have hcount := sum_bucket_counts (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) qs.length
-    (numBands L m N ^ 2)
+  have hcount := CountingSort.sum_count_eq_count_lt
+    (Wanted.tileKey L m N ∘ Wanted.inputPairs qs) qs.length (numBands L m N ^ 2)
   rw [Nat.count_of_forall hkey] at hcount
   simp only [tileCharge, Finset.sum_add_distrib, Finset.sum_const,
     Finset.card_range, smul_eq_mul, ← Finset.mul_sum]

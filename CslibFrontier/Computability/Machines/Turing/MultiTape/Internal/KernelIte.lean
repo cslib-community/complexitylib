@@ -65,7 +65,8 @@ end Ite
 open Ite in
 /-- If `tmc` computes `w` from `x` tidily, `tm₁` computes `y` from `x` tidily when `w` is non-empty
 and `tm₂` does when `w` is empty, then `iteTM tmc tm₁ tm₂` computes `y` from `x` tidily, within the
-bounds of `tmc` plus those of the machine that runs. -/
+bounds of `tmc` plus those of the machine that runs, plus `4 * w.length + 6` steps and
+`3 * w.length + 5 * max k₀ (max k₁ k₂) + 10` cells. -/
 public theorem ComputesTidilyInTimeAndSpace.ite {tmc : MultiTapeTM k₀ Symbol S₀}
     {tm₁ : MultiTapeTM k₁ Symbol S₁} {tm₂ : MultiTapeTM k₂ Symbol S₂} {x w y : List Symbol}
     {tc sc t₁ s₁ t₂ s₂ : ℕ} (hc : tmc.ComputesTidilyInTimeAndSpace x w tc sc)

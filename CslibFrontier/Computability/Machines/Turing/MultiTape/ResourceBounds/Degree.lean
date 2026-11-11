@@ -86,12 +86,7 @@ public theorem comp {size' : β → ℕ} {v : β → ℕ} {g : α → β} (hv : 
   let ⟨c₁, h₁⟩ := hg
   let ⟨c₂, h₂⟩ := hv
   ⟨c₂ * (c₁ + 1) ^ d₂, fun a => by
-    have h : size' (g a) + 1 ≤ (c₁ + 1) * (size a + 1) ^ d₁ := by
-      have := h₁ a
-      dsimp only at this
-      have := Nat.one_le_pow d₁ (size a + 1) (Nat.succ_pos _)
-      rw [Nat.add_one_mul]
-      omega
+    have h : size' (g a) + 1 ≤ (c₁ + 1) * (size a + 1) ^ d₁ := by grind
     refine (h₂ (g a)).trans ((Nat.mul_le_mul_left c₂ (Nat.pow_le_pow_left h d₂)).trans_eq ?_)
     rw [Nat.mul_pow, ← Nat.pow_mul, Nat.mul_assoc]⟩
 

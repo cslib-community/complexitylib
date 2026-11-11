@@ -12,7 +12,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Polynomial
+import Cslib.Foundations.Data.Polynomial.Monotone
 
 /-!
 # Conditional Time-Bounded Kolmogorov Complexity (`K(x | y)`, `K^t(x | y)`, and `Kt(x | y)`)
@@ -353,43 +354,16 @@ outputs $x$ given $y$ within $s$ steps with $|p| + \lceil \log_2 s \rceil \le k$
 theorem condLevinKt_le_natCast_iff {x y : List Bool} {k : ℕ} :
     condLevinKt x y ≤ k ↔
       ∃ (p : List Bool) (s : ℕ),
-        x ∈ ((condUniversalTM y).run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k := by
-  rw [← ENat.lt_add_one_iff (ENat.natCast_ne_top k), condLevinKt, iInf_lt_iff]
-  constructor
-  · rintro ⟨s, hs⟩
-    have hne : condTimeBoundedAt s x y ≠ ⊤ := by
-      intro htop
-      rw [htop, top_add] at hs
-      exact not_top_lt hs
-    obtain ⟨p, hp, hlen⟩ := exists_length_eq_etimeBoundedComplexity hne
-    rw [condTimeBoundedAt, ← hlen, ← Nat.cast_add, ← Nat.cast_add_one, ENat.natCast_lt_natCast,
-      Nat.lt_add_one_iff] at hs
-    exact ⟨p, s, hp, hs⟩
-  · rintro ⟨p, s, hp, hle⟩
-    refine ⟨s, ?_⟩
-    have h1 : condTimeBoundedAt s x y + Nat.clog 2 s ≤
-        (p.length + Nat.clog 2 s : ℕ) := by
-      rw [Nat.cast_add]
-      exact add_le_add_left (etimeBoundedComplexity_le_length hp) _
-    exact h1.trans_lt (by exact_mod_cast Nat.lt_add_one_of_le hle)
+        x ∈ ((condUniversalTM y).run p).runFor s ∧ p.length + Nat.clog 2 s ≤ k :=
+  iInf_etimeBoundedComplexity_add_le_natCast_iff
 
 /-- Exponential-step characterization of `condLevinKt`: $\mathrm{Kt}(x \mid y) \le k$ iff some
 program $p$ of length at most $k$ outputs $x$ given $y$ within $2^{k - |p|}$ steps. -/
 theorem condLevinKt_le_natCast_iff_exists_runFor_two_pow {x y : List Bool} {k : ℕ} :
     condLevinKt x y ≤ k ↔
       ∃ p : List Bool, p.length ≤ k ∧
-        x ∈ ((condUniversalTM y).run p).runFor (2 ^ (k - p.length)) := by
-  rw [condLevinKt_le_natCast_iff]
-  constructor
-  · rintro ⟨p, s, hp, hle⟩
-    have hplen : p.length ≤ k := by omega
-    have hclog : Nat.clog 2 s ≤ k - p.length := by omega
-    have hs : s ≤ 2 ^ (k - p.length) := (Nat.clog_le_iff_le_pow one_lt_two).mp hclog
-    exact ⟨p, hplen, condUniversalTMRunFor_mono p y hs hp⟩
-  · rintro ⟨p, hplen, hp⟩
-    refine ⟨p, 2 ^ (k - p.length), hp, ?_⟩
-    rw [Nat.clog_pow _ _ one_lt_two]
-    omega
+        x ∈ ((condUniversalTM y).run p).runFor (2 ^ (k - p.length)) :=
+  condLevinKt_le_natCast_iff.trans DescriptionMethod.exists_runFor_length_add_clog_le_iff
 
 /-! ### Polynomial-time conditional upper bounds ($K^t(F(w, y) \mid y) \le |w| + O(1)$) -/
 
@@ -408,36 +382,13 @@ theorem exists_condTimeBoundedAt_le_of_computableInPolyTime
         pF.eval (encPair encBits encBits (w, y)).length ≤ t →
           condTimeBoundedAt t (F (w, y)) y ≤ (w.length + c : ℕ) := by
   obtain ⟨tF, sF, htF, _, k, State, hfin, tm, htm⟩ := hF
-  obtain ⟨c_tm, d_tm, hle⟩ := polynomiallyBounded_iff_le.mp htF
+  obtain ⟨pF, hpF⟩ := htF.exists_polynomial_le
   obtain ⟨c_sim, hsim⟩ :=
     exists_etimeBoundedComplexity_condUniversalTM_le_ofMultiTapeTM tm
-  let pF : Polynomial ℕ := Polynomial.C (c_tm + 1) * (Polynomial.X + 1) ^ (d_tm + 1)
-  have hpF_eval (n : ℕ) : pF.eval n = (c_tm + 1) * (n + 1) ^ (d_tm + 1) := by
-    simp [pF]
-  have hpF_ge (n : ℕ) : n + 1 ≤ pF.eval n := by
-    rw [hpF_eval, pow_succ']
-    have hpow : 1 ≤ (n + 1) ^ d_tm := Nat.one_le_pow _ _ (by omega)
-    calc
-      n + 1 = 1 * ((n + 1) * 1) := by ring
-      _ ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) :=
-        Nat.mul_le_mul (by omega) (Nat.mul_le_mul_left _ hpow)
-  have hpF_mono : Monotone pF.eval := by
-    intro a b hab
-    dsimp only
-    rw [hpF_eval, hpF_eval]
-    exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
-  have htF_le (n : ℕ) : tF n ≤ pF.eval n := by
-    rw [hpF_eval, pow_succ']
-    have h1 := hle n
-    have h2 : c_tm * (n + 1) ^ d_tm ≤ (c_tm + 1) * (n + 1) ^ d_tm :=
-      Nat.mul_le_mul_right _ (by omega)
-    have h3 : (c_tm + 1) * (n + 1) ^ d_tm ≤ (c_tm + 1) * ((n + 1) * (n + 1) ^ d_tm) :=
-      Nat.mul_le_mul_left _ (Nat.le_mul_of_pos_left _ (by omega))
-    omega
-  refine ⟨pF, c_sim, hpF_ge, hpF_mono, fun {t} w y ht => ?_⟩
+  refine ⟨pF, c_sim, fun n => (hpF n).1, pF.monotone_eval, fun {t} w y ht => ?_⟩
   have hcomp := htm (w, y)
   have hstep : tF (encPair encBits encBits (w, y)).length ≤ t :=
-    (htF_le _).trans ht
+    (hpF _).2.trans ht
   exact (condTimeBoundedAt_anti hstep).trans
     (hsim _ w y (F (w, y)) hcomp.2.1 hcomp.1)
 
@@ -458,14 +409,12 @@ theorem exists_condTimeBoundedAt_apply_le {f : List Bool → List Bool}
     hf.comp (ComputableInPolyTime.snd encBits encBits)
   obtain ⟨q, c, hq_ge, hq_mono, hbound⟩ :=
     exists_condTimeBoundedAt_le_of_computableInPolyTime hF
+  have hlen (y : List Bool) : (encPair encBits encBits ([], y)).length = y.length + 1 := by
+    simp
   refine ⟨q, c, hq_ge, hq_mono, fun {t} y ht => ?_, fun y => ?_⟩
-  · have hlen : (encPair encBits encBits ([], y)).length = y.length + 1 := by
-      simp
-    simpa using hbound [] y (hlen ▸ ht)
-  · have hlen : (encPair encBits encBits ([], y)).length = y.length + 1 := by
-      simp
-    exact (condPlain_le_condTimeBoundedAt (q.eval (y.length + 1)) (f y) y).trans
-      (by simpa using hbound [] y (hlen ▸ le_rfl))
+  · simpa using hbound [] y (hlen y ▸ ht)
+  · exact (condPlain_le_condTimeBoundedAt (q.eval (y.length + 1)) (f y) y).trans
+      (by simpa using hbound [] y (hlen y ▸ le_rfl))
 
 /-- **Self-conditioning ($K^t(y \mid y) \le O(1)$):** there exist a monotone polynomial `q` and a
 constant `c` such that `condTimeBoundedAt t y y ≤ c` whenever `q.eval (y.length + 1) ≤ t`, and
@@ -493,14 +442,13 @@ theorem exists_condTimeBoundedAt_le_length_add :
   obtain ⟨q, c, hq_ge, hq_mono, hbound⟩ :=
     exists_condTimeBoundedAt_le_of_computableInPolyTime
       (ComputableInPolyTime.fst encBits encBits)
+  have hlen (x y : List Bool) :
+      (encPair encBits encBits (x, y)).length = 2 * x.length + 1 + y.length := by
+    simp
   refine ⟨q, c, hq_ge, hq_mono, fun {t} x y ht => ?_, fun x y => ?_⟩
-  · have hlen : (encPair encBits encBits (x, y)).length = 2 * x.length + 1 + y.length := by
-      simp
-    exact hbound x y (hlen ▸ ht)
-  · have hlen : (encPair encBits encBits (x, y)).length = 2 * x.length + 1 + y.length := by
-      simp
-    exact (condPlain_le_condTimeBoundedAt (q.eval (2 * x.length + 1 + y.length)) x y).trans
-      (hbound x y (hlen ▸ le_rfl))
+  · exact hbound x y (hlen x y ▸ ht)
+  · exact (condPlain_le_condTimeBoundedAt (q.eval (2 * x.length + 1 + y.length)) x y).trans
+      (hbound x y (hlen x y ▸ le_rfl))
 
 /-- Conditional plain complexity `condPlain x y` is always finite. -/
 theorem condPlain_ne_top (x y : List Bool) : condPlain x y ≠ ⊤ := by

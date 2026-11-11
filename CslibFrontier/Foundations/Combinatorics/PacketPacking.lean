@@ -259,11 +259,6 @@ theorem packetData_fst_lt (e : E) :
   have h2 := maxLoad_le_numBlocks_mul rowOf colOf ρ κ
   exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; omega)
 
-/-- Digit `i` of the number of a bit string is its bit `i`. -/
-private theorem testBit_equivFin (bits : Fin a → Bool) (i : Fin a) :
-    (BitString.equivFin a bits : ℕ).testBit i = bits i := by
-  rw [← BitString.equivFin_symm_apply, Equiv.symm_apply_apply]
-
 /-- The orientation digit orients the sorted pair of two symbols. -/
 private theorem pair_eq_orient {α : Type*} [LinearOrder α] (x y : α) (b : Bool) :
     (x, y) = if (if x = y then b else decide (y < x)) then (min x y, max x y).swap
@@ -316,7 +311,7 @@ private theorem orient_injective {α : Type*} [LinearOrder α] {x y x' y' : α} 
     exact congrArg (· + _) (congrArg (2 ^ a * ·) hblock)
   labels_eq := by
     intro e i
-    simp only [Equiv.symm_apply_apply, testBit_equivFin]
+    simp only [Equiv.symm_apply_apply, BitString.testBit_equivFin]
     have hsort : ∀ b : Bool, (fun q : Fin r × Fin r => (min q.1 q.2, max q.1 q.2))
         (if b then (max (ρ (rowOf e) i) (κ (colOf e) i), min (ρ (rowOf e) i) (κ (colOf e) i))
           else (min (ρ (rowOf e) i) (κ (colOf e) i), max (ρ (rowOf e) i) (κ (colOf e) i))) =
@@ -460,8 +455,8 @@ potential of the pairs of labels, `partialIncidencePotential`. (In the conventio
   completeLabels (partialLabels rowOf colOf a r).2 fun _ _ => 0
 
 /-- **The collision potential of the chosen labels.** If every vertex has degree at most `Δ`, the
-potential `Φ = ∑_γ (X_γ - M / D)²` of the pairs of labels is at most `2 M Δ`, its average for
-independent uniform labels. -/
+potential `Φ = ∑_γ (X_γ - M / D)²` of the pairs of labels is at most `2 M Δ`, a bound on its
+average for independent uniform labels. -/
 theorem potential_labels_le {Δ : ℕ} (hrow : ∀ v, #{e | rowOf e = v} ≤ Δ)
     (hcol : ∀ w, #{e | colOf e = w} ≤ Δ) :
     potential (pairLabel rowOf colOf (rowLabels rowOf colOf a r) (colLabels rowOf colOf a r)) ≤
@@ -513,7 +508,7 @@ theorem occupancy_labels_mul_le {Δ : ℕ} (hrow : ∀ v, #{e | rowOf e = v} ≤
     rw [Fintype.card_prod, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin, ← pow_add,
       two_mul]
   rw [← hcard]
-  refine occupancy_mul_card_le_of_variance_bound _ Fintype.card_pos Δ ?_ (hcard ▸ hM) γ
+  refine occupancy_mul_card_le_of_variance_bound _ Δ ?_ (hcard ▸ hM) γ
   exact potential_labels_le rowOf colOf a r hrow hcol
 
 end Labels

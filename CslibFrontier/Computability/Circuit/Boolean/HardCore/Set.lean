@@ -12,9 +12,10 @@ public import Cslib.Computability.Circuit.Boolean.Counting
 public import Mathlib.Analysis.SpecialFunctions.Exp
 import CslibFrontier.Computability.Circuit.Counting
 import CslibFrontier.Foundations.Data.BitString.Basic
-import CslibFrontier.Probability.BitString.BinarySymmetricChannel
 import CslibFrontier.Probability.Concentration
+import CslibFrontier.Probability.PMF.Coin
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Finiteness
 
 /-!
 # Impagliazzo's hard-core lemma: hard-core sets
@@ -146,10 +147,10 @@ theorem exists_finset_card_agree_lt (f : BooleanFunction n) (M : BitString n →
       ∀ g ∈ G, (#{x ∈ H | g x = f x} : ℝ) < a * #H + t := by
   classical
   -- Put `x` in the set with probability `M x`, independently.
-  let coin (x : BitString n) : PMF Bool := flipBit ⟨M x, hM x⟩
+  let coin (x : BitString n) : PMF Bool := Cslib.Probability.PMF.coin ⟨M x, hM x⟩
   let S : PMF (BitString n → Bool) := Cslib.Probability.PMF.pi coin
   have hcoin (x : BitString n) (b : Bool) : (coin x b).toReal = if b then M x else 1 - M x :=
-    flipBit_apply_toReal _ b
+    Cslib.Probability.PMF.coin_apply_toReal _ b
   have hN : (Fintype.card (BitString n) : ℝ) = 2 ^ n := by rw [BitString.card]; push_cast; rfl
   -- The size and the agreement of each predictor, as sums of independent scores.
   let size (b : Bool) : ℝ := if b then 1 else 0
@@ -173,17 +174,13 @@ theorem exists_finset_card_agree_lt (f : BooleanFunction n) (M : BitString n →
         · simp only [score, ite_true]; split_ifs <;> simp) ht
   -- A union bound over the `|G| + 1` events.
   have hunion : (S.toOuterMeasure (bad₀ ∪ ⋃ g ∈ G, bad g)).toReal < 1 := by
-    have hne : S.toOuterMeasure bad₀ + ∑ g ∈ G, S.toOuterMeasure (bad g) ≠ ⊤ :=
-      ENNReal.add_ne_top.mpr ⟨Cslib.Probability.PMF.toOuterMeasure_ne_top _ _,
-        ENNReal.sum_ne_top.mpr fun _ _ => Cslib.Probability.PMF.toOuterMeasure_ne_top _ _⟩
     calc (S.toOuterMeasure (bad₀ ∪ ⋃ g ∈ G, bad g)).toReal
         ≤ (S.toOuterMeasure bad₀ + ∑ g ∈ G, S.toOuterMeasure (bad g)).toReal :=
-          ENNReal.toReal_mono hne ((MeasureTheory.measure_union_le _ _).trans
+          ENNReal.toReal_mono (by finiteness) ((MeasureTheory.measure_union_le _ _).trans
             (add_le_add le_rfl (MeasureTheory.measure_biUnion_finset_le G bad)))
       _ = (S.toOuterMeasure bad₀).toReal + ∑ g ∈ G, (S.toOuterMeasure (bad g)).toReal := by
-          rw [ENNReal.toReal_add (Cslib.Probability.PMF.toOuterMeasure_ne_top _ _)
-            (ENNReal.sum_ne_top.mpr fun _ _ => Cslib.Probability.PMF.toOuterMeasure_ne_top _ _),
-            ENNReal.toReal_sum fun _ _ => Cslib.Probability.PMF.toOuterMeasure_ne_top _ _]
+          rw [ENNReal.toReal_add (by finiteness) (by finiteness),
+            ENNReal.toReal_sum fun _ _ => by finiteness]
       _ ≤ Real.exp (-2 * t ^ 2 / 2 ^ n) + ∑ _g ∈ G, Real.exp (-2 * t ^ 2 / 2 ^ n) :=
           add_le_add hbad₀ (sum_le_sum fun g _ => hbad g)
       _ = (#G + 1) * Real.exp (-2 * t ^ 2 / 2 ^ n) := by rw [sum_const, nsmul_eq_mul]; ring

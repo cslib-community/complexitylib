@@ -88,7 +88,7 @@ theorem workTapePos_runFrom_prepareInput_mem_window (mark : Symbol)
       simp only [Set.mem_Icc] at hrew
       constructor <;> omega
     · simpa only [Function.update_of_ne hj, mid, Cfg.withState] using hheads j
-  have h := forgetState_runFrom_seq (tm₀ := marker) (tm₁ := rewind)
+  have h := withState_runFrom_seq (tm₀ := marker) (tm₁ := rewind)
     (P := fun c => ∀ j, c.workTapePos j ∈ window bound) hmark rfl hP₀ hP₁ steps
   exact h i
 

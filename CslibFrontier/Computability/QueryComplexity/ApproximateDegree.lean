@@ -22,7 +22,8 @@ Exact representation is the case `ε = 0` (`QueryComplexity.approxDegree_zero`),
 `adeg_ε(f) ≤ deg(f) ≤ D(f)` (`QueryComplexity.approxDegree_le_degree`,
 `DecisionTree.approxDegree_le_complexity`). Approximate degree decreases as `ε` grows and vanishes
 from `ε = 1/2` on, where the constant `1/2` is within `ε` of every Boolean function
-(`QueryComplexity.approxDegree_eq_zero_of_le`). Negating the output does not change it.
+(`QueryComplexity.approxDegree_eq_zero_of_le`). By the `sInf ∅ = 0` convention it is also `0` for
+`ε < 0` (`QueryComplexity.approxDegree_eq_zero_of_neg`). Negating the output does not change it.
 
 ## Main definitions
 
@@ -37,6 +38,8 @@ from `ε = 1/2` on, where the constant `1/2` is within `ε` of every Boolean fun
   `adeg_ε(f) ≤ deg(f) ≤ D(f)`.
 * `Cslib.QueryComplexity.approxDegree_antitone`: `adeg_ε(f)` decreases as `ε` grows.
 * `Cslib.QueryComplexity.approxDegree_eq_zero_of_le`: `adeg_ε(f) = 0` for `ε ≥ 1/2`.
+* `Cslib.QueryComplexity.approxDegree_eq_zero_of_neg`: `adeg_ε(f) = 0` for `ε < 0`, where no
+  function qualifies.
 
 ## References
 
@@ -100,16 +103,19 @@ theorem approxDegree_eq_zero_of_le (hε : 1 / 2 ≤ ε) : approxDegree ε f = 0 
   Nat.le_zero.1 (approxDegree_le_of_mem_lowDegree (const_mem_lowDegree 0 (1 / 2)) fun x => by
     cases f x <;> norm_num [abs_of_pos, hε])
 
+/-- For `ε < 0` no function is within `ε` of `f`, so `adeg_ε(f)` is the infimum `0` of the empty
+set. -/
+theorem approxDegree_eq_zero_of_neg (hε : ε < 0) : approxDegree ε f = 0 :=
+  Nat.sInf_eq_zero.2 (Or.inr (Set.eq_empty_of_forall_notMem fun _ ⟨_, _, hp⟩ =>
+    absurd ((abs_nonneg _).trans (hp fun _ => false)) (not_le.2 hε)))
+
 /-- Negating a Boolean function preserves its approximate degree: `1 - p` approximates `!f` as
 well as `p` approximates `f`. -/
 theorem approxDegree_not (ε : ℝ) (f : BooleanFunction n) :
     approxDegree ε (fun x => !f x) = approxDegree ε f := by
   have key (g : BooleanFunction n) : approxDegree ε g ≤ approxDegree ε (fun x => !g x) := by
     rcases lt_or_ge ε 0 with hε | hε
-    · refine (Nat.sInf_eq_zero.2 (Or.inr (Set.eq_empty_of_forall_notMem fun D hD => ?_))).trans_le
-        (Nat.zero_le _)
-      obtain ⟨p, -, hp⟩ := hD
-      exact absurd ((abs_nonneg _).trans (hp fun _ => false)) (not_le.2 hε)
+    · exact (approxDegree_eq_zero_of_neg hε).trans_le (Nat.zero_le _)
     obtain ⟨p, hp, hpg⟩ := exists_mem_lowDegree_approxDegree (f := fun x => !g x) hε
     refine approxDegree_le_of_mem_lowDegree (one_sub_mem_lowDegree hp) fun x => ?_
     have := hpg x

@@ -362,44 +362,32 @@ theorem sorted_countP_bounds {zs : List ℕ} (hsorted : zs.Pairwise (· ≤ ·))
     rw [hsplit, htake0, zero_add]
     exact List.countP_le_length.trans (by simp; omega)
 
-private theorem list_map_sum_eq_sum_range (l : List ℕ) (g : ℕ → ℝ) :
-    (l.map g).sum = ∑ r ∈ Finset.range l.length, g (l.getD r 0) := by
-  induction l with
-  | nil => simp
-  | cons a tl ih =>
-    rw [List.length_cons, Finset.sum_range_succ', List.map_cons, List.sum_cons, ih]
-    simp [add_comm]
+/-- **Averaging over uniform pivots.** For `f` monotone in both arguments, summing
+`f (u.countP (· < piv)) (u.countP (piv < ·))` over the pivots `piv = u[k]` of a list `u` gives at
+most `∑ r < u.length, f r (u.length - 1 - r)`, even when `u` has duplicate keys. -/
+theorem sum_countP_pivot_le {M : Type*} [AddCommMonoid M] [PartialOrder M]
+    [IsOrderedAddMonoid M] (f : ℕ → ℕ → M)
+    (hf : ∀ {a a' b b'}, a ≤ a' → b ≤ b' → f a b ≤ f a' b') (u : List ℕ) :
+    ∑ k : Fin u.length, f (u.countP (· < u[k.val])) (u.countP (u[k.val] < ·)) ≤
+      ∑ r ∈ Finset.range u.length, f r (u.length - 1 - r) := by
+  have hperm : u.Perm u.mergeSort := (List.mergeSort_perm u _).symm
+  have hlen : u.mergeSort.length = u.length := hperm.length_eq.symm
+  let g : ℕ → M := fun piv => f (u.countP (· < piv)) (u.countP (piv < ·))
+  change ∑ k : Fin u.length, g u[k.val] ≤ _
+  rw [Fin.sum_univ_fun_getElem, (hperm.map g).sum_eq, ← Fin.sum_univ_fun_getElem, ← hlen,
+    ← Fin.sum_univ_eq_sum_range]
+  refine Finset.sum_le_sum fun r _ => ?_
+  have hb := sorted_countP_bounds (List.pairwise_mergeSort' (· ≤ ·) u) r.isLt
+  exact hf ((hperm.countP_eq _).trans_le hb.1) ((hperm.countP_eq _).trans_le hb.2)
 
 /-- Expected child `subCost` summed over all `m = u.length` uniform pivot choices is bounded by
 `∑ r < m, (subCost r + subCost (m - 1 - r))`, even in the presence of duplicate keys. -/
 theorem sum_subCost_pivot_le (u : List ℕ) :
     ∑ k : Fin u.length,
       (subCost (u.countP (· < u[k.val])) + subCost (u.countP (u[k.val] < ·))) ≤
-        ∑ r ∈ Finset.range u.length, (subCost r + subCost (u.length - 1 - r)) := by
-  have hperm : u.Perm u.mergeSort := (List.mergeSort_perm u _).symm
-  have hlen : u.mergeSort.length = u.length := hperm.length_eq.symm
-  let g : ℕ → ℝ := fun piv => subCost (u.countP (· < piv)) + subCost (u.countP (piv < ·))
-  have hsum_u : ∑ k : Fin u.length, g u[k.val] = (u.map g).sum := by
-    rw [Finset.sum_fin_eq_sum_range, list_map_sum_eq_sum_range]
-    refine Finset.sum_congr rfl fun r hr => ?_
-    rw [Finset.mem_range] at hr
-    simp [hr, List.getD_eq_getElem?_getD]
-  rw [hsum_u, (hperm.map g).sum_eq, list_map_sum_eq_sum_range, hlen]
-  refine Finset.sum_le_sum fun r hr => ?_
-  rw [Finset.mem_range] at hr
-  have hr_zs : r < u.mergeSort.length := by omega
-  have hgetD : u.mergeSort.getD r 0 = u.mergeSort[r] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hr_zs]
-    rfl
-  have hb := sorted_countP_bounds (List.pairwise_mergeSort' (· ≤ ·) u) hr_zs
-  have hc1 : u.countP (· < u.mergeSort[r]) = u.mergeSort.countP (· < u.mergeSort[r]) :=
-    hperm.countP_eq _
-  have hc2 : u.countP (u.mergeSort[r] < ·) = u.mergeSort.countP (u.mergeSort[r] < ·) :=
-    hperm.countP_eq _
-  dsimp only [g]
-  rw [hgetD, hc1, hc2]
-  have hb2 : u.mergeSort.countP (u.mergeSort[r] < ·) ≤ u.length - 1 - r := hlen ▸ hb.2
-  exact add_le_add (subCost_mono hb.1) (subCost_mono hb2)
+        ∑ r ∈ Finset.range u.length, (subCost r + subCost (u.length - 1 - r)) :=
+  sum_countP_pivot_le (fun a b => subCost a + subCost b)
+    (fun ha hb => add_le_add (subCost_mono ha) (subCost_mono hb)) u
 
 /-! ## Word-size arithmetic (`logWidth 3 n ≤ w`) and work-stack invariants -/
 
@@ -1411,6 +1399,23 @@ private theorem countP_lt_add_gt_le {u : List ℕ} {piv : ℕ} (hpiv : piv ∈ u
         · simp [h1, h2]; omega
         · simp [h1, h2]; omega
 
+/-- Pushing the children `(vlo, vlo + m₁)` and `(vhi - m₂, vhi)` of a popped segment, each only when
+it has at least two elements, adds at most `f m₁ + f m₂` to a sum of nonnegative `f` over the
+segment widths of the stack. -/
+private theorem sum_childStack_le {M : Type*} [AddCommMonoid M] [PartialOrder M]
+    [IsOrderedAddMonoid M] (f : ℕ → M) (hf : ∀ d, 0 ≤ f d) {S₀ S : List (ℕ × ℕ)}
+    {vlo vhi m₁ m₂ : ℕ} (hm₂ : m₂ ≤ vhi - vlo)
+    (hS : S = if 2 ≤ m₂ then (if 2 ≤ m₁ then S₀ ++ [(vlo, vlo + m₁)] else S₀) ++ [(vhi - m₂, vhi)]
+      else (if 2 ≤ m₁ then S₀ ++ [(vlo, vlo + m₁)] else S₀)) :
+    (S.map fun p => f (p.2 - p.1)).sum ≤ (S₀.map fun p => f (p.2 - p.1)).sum + (f m₁ + f m₂) := by
+  have hsub : vhi - (vhi - m₂) = m₂ := by omega
+  subst hS
+  split_ifs <;> try simp only [List.map_append, List.sum_append, List.map_singleton,
+    List.sum_singleton, Nat.add_sub_cancel_left, hsub, add_assoc, le_refl]
+  · exact add_le_add le_rfl (le_add_of_nonneg_left (hf _))
+  · exact add_le_add le_rfl (le_add_of_nonneg_right (hf _))
+  · exact le_add_of_nonneg_right (add_nonneg (hf _) (hf _))
+
 private theorem outerBody_worstCase_step {w : ℕ} {input : List ℕ} {x : Data 16}
     (hI : OuterInv w input x) (hc : (Cond.lt zero sp).Holds x) :
     ∃ T_b R_b, ExecRandWithin w outerBody x
@@ -1449,22 +1454,17 @@ private theorem outerBody_worstCase_step {w : ℕ} {input : List ℕ} {x : Data 
           rw [hd1, hd]
           nlinarith
         omega
-      rw [stepPotential, hread_yk, stepPotential, hstack, List.map_append, List.sum_append,
+      have h := sum_childStack_le (fun d => 20 * d ^ 2) (fun _ => Nat.zero_le _)
+        (by omega : m₂ ≤ vhi - vlo) hread_yk
+      rw [stepPotential, stepPotential, hstack, List.map_append, List.sum_append,
         List.map_singleton, List.sum_singleton, ← hm_def]
-      split_ifs
-      · have hsub2 : vhi - (vhi - m₂) = m₂ := by omega
-        simp only [List.map_append, List.sum_append, List.map_singleton, List.sum_singleton,
-          Nat.add_sub_cancel_left, hsub2]; omega
-      · have hsub2 : vhi - (vhi - m₂) = m₂ := by omega
-        simp only [List.map_append, List.sum_append, List.map_singleton, List.sum_singleton,
-          hsub2]; omega
-      · simp only [List.map_append, List.sum_append, List.map_singleton, List.sum_singleton,
-          Nat.add_sub_cancel_left]; omega
-      · omega
+      omega
     have hcall_pot : 1 + callPotential input.length (y k) ≤ callPotential input.length x := by
-      rw [callPotential, hread_yk, callPotential, hstack]
-      split_ifs <;> simp only [List.map_append, List.sum_append, List.map_singleton,
-        List.sum_singleton] <;> omega
+      have h := sum_childStack_le (fun d => d - 1) (fun _ => Nat.zero_le _)
+        (by omega : m₂ ≤ vhi - vlo) hread_yk
+      rw [callPotential, callPotential, hstack, List.map_append, List.sum_append,
+        List.map_singleton, List.sum_singleton]
+      omega
     exact ⟨⟨hIy, hstep_pot, hcall_pot⟩, by omega⟩
 
 private theorem list_sum_subCost_nonneg (S : List (ℕ × ℕ)) :
@@ -1502,10 +1502,12 @@ private theorem outerBody_drift_step {w : ℕ} {input : List ℕ} {x : Data 16}
       have hc_le := countP_lt_add_gt_le hpiv_in
       have hlen_u : u.length = m := length_memSlice vlo vhi x.mem
       omega
+    have h := sum_childStack_le (fun d => d - 1) (fun _ => Nat.zero_le _)
+      (by omega : m₂ ≤ vhi - vlo) hread_yk
     refine ⟨hIy, ?_⟩
-    rw [callPotential, hread_yk, callPotential, hstack]
-    split_ifs <;> simp only [List.map_append, List.sum_append, List.map_singleton,
-      List.sum_singleton] <;> omega
+    simp only [callPotential, hstack, List.map_append, List.sum_append, List.map_singleton,
+      List.sum_singleton]
+    omega
   · rw [ProbComp.expect_map, ProbComp.expect_unifFin]
     set baseCost : ℝ := (S₀.map fun p => subCost (p.2 - p.1)).sum
     have hbase_nn : 0 ≤ baseCost := list_sum_subCost_nonneg S₀
@@ -1523,35 +1525,16 @@ private theorem outerBody_drift_step {w : ℕ} {input : List ℕ} {x : Data 16}
       change readStack input.length (y k) =
         (if 2 ≤ m₂ then (if 2 ≤ m₁ then S₀ ++ [(vlo, vlo + m₁)] else S₀) ++ [(vhi - m₂, vhi)]
          else (if 2 ≤ m₁ then S₀ ++ [(vlo, vlo + m₁)] else S₀)) at hread_yk
-      have hm12_le : m₁ + m₂ ≤ m - 1 := by
-        have hpiv_in : u[k.val]'(by have := k.isLt; simp [u]; omega) ∈ u := List.getElem_mem _
-        have hc_le := countP_lt_add_gt_le hpiv_in
-        omega
       have hstep_real : ((8 + t k + 2 : ℕ) : ℝ) ≤ 28 * (m : ℝ) := by
         have hnat : 8 + t k + 2 ≤ 28 * m := by omega
         exact_mod_cast hnat
-      have hyk_cost : ((readStack input.length (y k)).map fun p => subCost (p.2 - p.1)).sum =
-          baseCost + (subCost m₁ + subCost m₂) := by
-        rw [hread_yk]
-        split_ifs
-        · have hsub2 : vhi - (vhi - m₂) = m₂ := by omega
-          simp only [List.map_append, List.sum_append, List.map_singleton, List.sum_singleton,
-            Nat.add_sub_cancel_left, hsub2, baseCost]; ring
-        · have hsub2 : vhi - (vhi - m₂) = m₂ := by omega
-          have hz1 : subCost m₁ = 0 := subCost_of_lt_two (by omega)
-          simp only [List.map_append, List.sum_append, List.map_singleton, List.sum_singleton,
-            hsub2, hz1, baseCost]; ring
-        · have hz2 : subCost m₂ = 0 := subCost_of_lt_two (by omega)
-          simp only [List.map_append, List.sum_append, List.map_singleton, List.sum_singleton,
-            Nat.add_sub_cancel_left, hz2, baseCost]; ring
-        · have hz1 : subCost m₁ = 0 := subCost_of_lt_two (by omega)
-          have hz2 : subCost m₂ = 0 := subCost_of_lt_two (by omega)
-          simp only [hz1, hz2, baseCost]; ring
+      have hyk_cost := sum_childStack_le subCost subCost_nonneg
+        (List.countP_le_length.trans_eq hlen_u : m₂ ≤ vhi - vlo) hread_yk
       have hcast_steps : ((8 + t k : ℕ) : ℝ≥0∞) + 2 =
           ENNReal.ofReal ((8 + t k + 2 : ℕ) : ℝ) := by
         rw [ENNReal.ofReal_natCast]; push_cast; rfl
-      rw [hcast_steps, expPotential, hyk_cost, ← ENNReal.ofReal_add (by positivity)
-        (add_nonneg hbase_nn (add_nonneg (subCost_nonneg _) (subCost_nonneg _)))]
+      rw [hcast_steps, expPotential, ← ENNReal.ofReal_add (by positivity)
+        (list_sum_subCost_nonneg _)]
       exact ENNReal.ofReal_le_ofReal (by linarith)
     have hden : ((vhi - vlo - 1 : ℕ) : ℝ≥0∞) + 1 = ENNReal.ofReal (m : ℝ) := by
       rw [ENNReal.ofReal_natCast]

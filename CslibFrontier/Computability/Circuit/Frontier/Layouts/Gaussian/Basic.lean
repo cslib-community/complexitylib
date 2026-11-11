@@ -55,7 +55,8 @@ edge scores.
 
 ## Main results
 
-* `Cslib.Circuits.Frontier.Gaussian.closedBall_tgt_subset`: the ends of an edge are within
+* `Cslib.Circuits.Frontier.Gaussian.closedBall_subset_of_mem_incidenceSet`,
+  `Cslib.Circuits.Frontier.Gaussian.closedBall_tgt_subset`: the ends of an edge are within
   distance one.
 * `Cslib.Circuits.Frontier.Gaussian.card_not_disjoint_closedBall_le`,
   `Cslib.Circuits.Frontier.Gaussian.card_not_disjoint_closedBall_src_le`: overlapping balls.
@@ -111,20 +112,30 @@ private theorem edist_le_of_not_disjoint {v w : V} {r : ℕ}
     _ = ((2 * r : ℕ) : ℕ∞) := by push_cast; ring
 
 omit [Fintype V] in
+/-- The closed ball of radius `r` around one end of an edge lies in the closed ball of radius
+`r + 1` around either end. -/
+theorem closedBall_subset_of_mem_incidenceSet {e : E} {v w : V} (hv : e ∈ G.incidenceSet v)
+    (hw : e ∈ G.incidenceSet w) (r : ℕ) :
+    closedBall G.toSimpleGraph w r ⊆ closedBall G.toSimpleGraph v (r + 1) := by
+  intro z (hz : G.toSimpleGraph.edist w z ≤ r)
+  have h : G.toSimpleGraph.edist v z ≤ G.toSimpleGraph.edist w z + 1 := by
+    by_cases hvw : v = w
+    · rw [hvw]
+      exact le_self_add
+    · refine SimpleGraph.Adj.edist_le_edist_add_one
+        (Multigraph.toSimpleGraph_adj.mpr ⟨hvw, e, ?_⟩) z
+      rcases hv with hv | hv <;> rcases hw with hw | hw <;>
+        simp_all [Multigraph.ends, Sym2.eq_swap]
+  change G.toSimpleGraph.edist v z ≤ ((r + 1 : ℕ) : ℕ∞)
+  push_cast
+  exact h.trans (add_le_add_left hz 1)
+
+omit [Fintype V] in
 /-- The closed ball of radius `r` around the target of an edge lies in the closed ball of radius
 `r + 1` around its source. -/
 theorem closedBall_tgt_subset (e : E) (r : ℕ) :
-    closedBall G.toSimpleGraph (G.tgt e) r ⊆ closedBall G.toSimpleGraph (G.src e) (r + 1) := by
-  intro z (hz : G.toSimpleGraph.edist (G.tgt e) z ≤ r)
-  have h : G.toSimpleGraph.edist (G.src e) z ≤ G.toSimpleGraph.edist (G.tgt e) z + 1 := by
-    by_cases hst : G.src e = G.tgt e
-    · rw [hst]
-      exact le_self_add
-    · exact SimpleGraph.Adj.edist_le_edist_add_one
-        (Multigraph.toSimpleGraph_adj.mpr ⟨hst, e, rfl⟩) z
-  change G.toSimpleGraph.edist (G.src e) z ≤ ((r + 1 : ℕ) : ℕ∞)
-  push_cast
-  exact h.trans (add_le_add_left hz 1)
+    closedBall G.toSimpleGraph (G.tgt e) r ⊆ closedBall G.toSimpleGraph (G.src e) (r + 1) :=
+  closedBall_subset_of_mem_incidenceSet (Or.inl rfl) (Or.inr rfl) r
 
 variable [Finite E] {d : ℕ}
 

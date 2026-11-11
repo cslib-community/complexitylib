@@ -226,8 +226,7 @@ private theorem fieldOfBits_fieldInv (hw : 2 ≤ w) (a : List Bool) :
 private theorem embed_eq_fieldOfBits (hw : w ≠ 0) {b : ℕ} (hbw : b ≤ w) (a : BitString b) :
     BinaryField.embed hw hbw a = fieldOfBits (𝔅 hw) (List.ofFn a) := by
   rw [BinaryField.embed_apply, fieldOfBits_basis]
-  congr 1
-  funext j
+  congr 1 with j : 1
   rw [List.getD_eq_getElem?_getD, List.getElem?_ofFn]
   split_ifs <;> rfl
 

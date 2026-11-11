@@ -114,6 +114,7 @@ theorem run_singleOracle_independent (P : ι → Prover Unit) (i₀ : ι)
       (Prod.map id (fun s' => s' i₀)) =
       (P i₀).run p (s i₀) := by
   rw [Prover.run, WordOracleComp.run_interpret_singleOracle, Prover.run]
+  unfold ProbOracleComp.runWith OracleComp.runWith
   induction p using PFunctor.FreeM.induction generalizing s with
   | pure a =>
     simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
@@ -127,8 +128,7 @@ theorem run_singleOracle_independent (P : ι → Prover Unit) (i₀ : ι)
       change ((ProbComp.unifOracle n).map (·, s)).bind _ =
         ((ProbComp.unifOracle n).map (·, s i₀)).bind _
       rw [PMF.bind_map, PMF.bind_map]
-      congr 1
-      funext bit
+      congr 1 with bit : 1
       exact ih bit s
     | inr q =>
       obtain ⟨⟨⟩, msg⟩ := q
@@ -136,8 +136,7 @@ theorem run_singleOracle_independent (P : ι → Prover Unit) (i₀ : ι)
           (fun x => (x.1, Function.update s i₀ x.2))).bind _ =
         (((P i₀).respond ((), msg) (s i₀))).bind _
       rw [PMF.bind_map]
-      congr 1
-      funext x
+      congr 1 with x : 1
       simpa only [Function.comp_apply, Function.update_self] using
         ih x.1 (Function.update s i₀ x.2)
 

@@ -17,7 +17,7 @@ Construction and fixed-default elimination reuse the encoding capability's degre
 The Boolean test retains its constant output degree. No higher tidy calculus is used.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInDegree
 open Internal.WordPredicates
 
@@ -33,17 +33,12 @@ theorem getD {enc : Option β ↪ List Bool} [OptionEncoding enc₁ enc] (d : β
 
 /-- Whether a standard encoded option holds a value; the Boolean output has degree zero. -/
 theorem isSome (enc : β ↪ List Bool) :
-    ComputableInDegree (fun o : Option β => o.isSome) (encOption enc) encBool 1 0 := by
-  refine ⟨⟨fun o => 2 * (encOption enc o).length + 3, fun _ => 0,
-    ⟨3, fun _ => by simp only [pow_one]; omega⟩, DegreeBounded.const 0,
-    0, _, inferInstance, nonemptyT.toTM, fun o => ?_⟩,
-    ⟨1, fun o => by simp⟩⟩
-  have heq : encBool o.isSome = nonemptyT.run nonemptyT.q₀ (encOption enc o) := by
+    ComputableInDegree (fun o : Option β => o.isSome) (encOption enc) encBool 1 0 :=
+  computableInDegree_of_nonemptyT fun o => by
     cases o with
     | none => rfl
     | some b =>
       change [true] = [true] ++ nonemptyT.run true (enc b)
       rw [nonemptyT_run_true, List.append_nil]
-  simpa only [heq] using nonemptyT.computesInTimeAndSpace_toTM (encOption enc o)
 
 end Turing.MultiTapeTM.ComputableInDegree

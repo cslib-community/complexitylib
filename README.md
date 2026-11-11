@@ -1,8 +1,11 @@
-# Complexitylib
+# cslib-frontier
 
-Complexitylib is a Lean 4 library of computational complexity theory, built on
-[CSLib](https://github.com/leanprover/cslib) and Mathlib. It develops reusable arguments about
-algorithms, resource bounds, reductions, lower bounds, and cryptographic security.
+cslib-frontier is the frontier formalization library for
+[CSLib](https://github.com/leanprover/cslib), written in Lean 4 on top of CSLib and Mathlib. Its
+scope is computer science generally: algorithms and data structures, computational complexity,
+cryptography, logic, models of computation, and more. It develops reusable arguments about
+algorithms, resource bounds, reductions, lower bounds, and cryptographic security, held to CSLib's
+standards so that they can move upstream.
 
 A central goal is to let you write recognizable functional programs and prove their efficiency
 compositionally, with Turing-machine implementations justified underneath. Nonconstructive
@@ -16,80 +19,47 @@ mathematics. See [Contributing](CONTRIBUTING.md) to propose, implement, or revie
 
 ## Start here
 
-The [Operator's Manual](manual/README.md) covers using the codebase by hand or with an agent:
-setup, worked examples, tactics, models, design patterns and troubleshooting. The short
-[Agent Operator's Manual](manual/AGENT_OPERATORS.md) explains how humans direct agents, choose
-roles and manage review and handoffs. The [guide](https://www.cslib.io/cslib-frontier/guide/)
-provides checked Lean tutorials. For a particular task, start below.
-
 | I want to… | Start with… |
 | --- | --- |
-| Learn to use the library from the beginning | [Operator's Manual](manual/README.md) |
-| Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md) |
-| Use Complexitylib in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
+| Learn to use the library, by hand or with an agent | [Operator's Manual](manual/README.md): setup, worked examples, tactics, models and troubleshooting |
+| Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md): roles, review and handoffs |
+| Read checked Lean tutorials | [Guide](https://www.cslib.io/cslib-frontier/guide/) |
+| See what an area covers | [Library map](#library-map) below |
+| Find a named result, such as Cook–Levin or the PCP theorem | [Results inventory](results/README.md), then the declarations it links in the [API documentation](https://www.cslib.io/cslib-frontier/) |
+| Find a model, definition or mathematical tool | [Search the API documentation](https://www.cslib.io/cslib-frontier/search.html), rebuilt nightly from `main`; [CslibFrontier.lean](CslibFrontier.lean) lists every module |
+| Use cslib-frontier in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
-| Compare selected proofs with independently stated contracts | [Comparator suites](comparator/README.md) |
-| Certify functional programs and loops | [PolyTime examples](CslibFrontierTests/PolyTimeTactic.lean) |
-| State P/NP membership or prove a problem NP-complete | [Checked plain examples](CslibFrontierTests/NPCompleteness.lean), then [Clique](CslibFrontier/Computability/Complexity/Problems/Clique.lean) |
-| Construct circuits for polynomial-time function families | [Uniform circuit examples](CslibFrontierTests/UniformCircuits.lean) |
-| Define queries using least fixed points or tuple closure | [FO(LFP), FO(TC), and synthesis examples](CslibFrontierTests/FOOperators.lean) |
-| Move between ordered FO(LFP) queries and native polynomial time | [Immerman–Vardi characterization](CslibFrontier/Computability/Complexity/ImmermanVardi.lean) |
-| State deterministic function-time or exact path-counting bounds | [FTIME and SharpTIME examples](CslibFrontierTests/TimeClasses.lean) |
-| Write probabilistic programs or oracle reductions | [PPT examples](CslibFrontierTests/PPTTactic.lean), [oracle examples](CslibFrontierTests/OraclePPT.lean) |
-| Estimate frequencies in a stream | [Count-Min examples](CslibFrontierTests/CountMin.lean), then [fixed-query accuracy](CslibFrontier/DataStructure/CountMin/Probability.lean) |
-| Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/cslib-frontier/search.html), rebuilt nightly from `main`; [CslibFrontier.lean](CslibFrontier.lean) lists every module, and each documents its definitions, results, and references |
+| Propose a substantial new direction | [Open an issue](https://github.com/cslib-community/cslib-frontier/issues/new/choose), as [Contributing](CONTRIBUTING.md#proposing-and-contributing-work) describes; [ROADMAP.md](ROADMAP.md) lists the accepted directions |
 | Contribute a result or improve an API | [Contributing](CONTRIBUTING.md) |
 
-The checked examples show `fun_prop`, `polytime`, and `ppt` with explicit encodings and
-client-supplied invariants. The deterministic backend builds on Christian Reitwiessner's tidy
-machine calculus.
+### Library map
 
-For an NP-completeness proof, fix the instance encoding, give a verifier with a polynomial
-certificate-length bound, and reduce a known NP-hard problem to yours. Prove the verifier and
-reduction map polynomial-time with `fun_prop` or `polytime`, then prove their membership
-equivalences. The [Clique example](CslibFrontier/Computability/Complexity/Problems/Clique.lean)
-uses graph complementation; the [reduction index](CslibFrontier/Computability/Complexity/Reduction.lean)
-points to the other proved problems and their reduction maps. The checked examples state these
-claims with plain `ComputableInPolyTime`.
+Each top-level directory of [CslibFrontier/](CslibFrontier) is a library area. The reference
+chapters of the Operator's Manual describe its models and main theorems; the checked examples
+in [CslibFrontierTests/](CslibFrontierTests) show the APIs in use.
 
-The [results and reference inventory](results/README.md) uses readable Lean commands to collect
-named results, checked theorem identifiers and cited sources, including results without formal
-abstracts. Coverage and source audits remain incomplete.
+| Area | Covers | Start with |
+| --- | --- | --- |
+| `Computability/` | Turing machines and other machine models, time and space classes, reductions and completeness, circuits, PCP, query and communication complexity | [Machines and complexity classes](manual/machines-and-classes/index.md) and [circuits and other models](manual/circuits-logic-and-other-models/index.md); examples for [polynomial time](CslibFrontierTests/PolyTimeTactic.lean), [time classes](CslibFrontierTests/TimeClasses.lean), [NP-completeness](CslibFrontierTests/NPCompleteness.lean) and [uniform circuits](CslibFrontierTests/UniformCircuits.lean) |
+| `Algorithms/` | Graph, string, flow, optimization, approximation and sorting algorithms, as Lean functions and Word-RAM programs with proved correctness and cost | [Algorithms, memory, and data structures](manual/algorithms-and-memory/index.md); example: [Dijkstra](CslibFrontierTests/Dijkstra.lean) |
+| `DataStructure/` | Dictionaries, hashing, priority queues, search trees, sketches and memory specifications | [Dictionaries, hashing and randomized algorithms](manual/algorithms-and-memory/dictionaries-hashing-and-randomized.md); [Count-Min examples](CslibFrontierTests/CountMin.lean) and their [accuracy bound](CslibFrontier/DataStructure/CountMin/Probability.lean) |
+| `Crypto/` | Security games, primitives, computational assumptions, reductions and protocols | [Probabilistic programs and cryptography](manual/programs-crypto-and-probability/index.md); examples for [PPT programs](CslibFrontierTests/PPTTactic.lean) and [oracle reductions](CslibFrontierTests/OraclePPT.lean) |
+| `Languages/`, `Probability/` | Probabilistic and oracle programs with their semantics, and the probability tools they use | [Programs, probability laws, and native realization](manual/programs-crypto-and-probability/programs-and-realization.md) |
+| `Privacy/` | Differential privacy | [Protocol models, ideal oracles, and privacy](manual/programs-crypto-and-probability/protocols-and-privacy.md) |
+| `Logics/` | Propositional proof systems, constraint satisfaction, and first- and second-order logic over finite structures | [Proof complexity](manual/circuits-logic-and-other-models/proof-systems.md) and [finite-model logic](manual/circuits-logic-and-other-models/finite-model-logic.md); [FO(LFP) and FO(TC) examples](CslibFrontierTests/FOOperators.lean), [Immerman–Vardi](CslibFrontier/Computability/Complexity/ImmermanVardi.lean) |
+| `MachineLearning/` | PAC, online and statistical-query learning | [Learning and property testing](manual/circuits-logic-and-other-models/learning-and-testing.md) |
+| `GameTheory/` | Strategic games, congestion games, mechanism design and social choice | [Strategic games](manual/algorithms-and-memory/strategic-games.md) and [mechanism design](manual/algorithms-and-memory/mechanism-design.md) |
+| `Tactic/` | Automation: `polytime`, `ppt`, `negligible`, `game_trans`, first-order synthesis and others | [Proof automation](manual/design-and-assurance/automation.md) |
+| `Foundations/` | General mathematics: data, combinatorics, Boolean analysis, linear algebra and number theory | Cited from the chapters that use it; some modules are destined for Mathlib |
 
-The [selected formal abstracts](abstracts/README.md) present a small set of major results with
-inspectable definitions and checked Lean statements. The [combined PDF](https://www.cslib.io/cslib-frontier/abstracts/catalogue.pdf)
-and individual PDFs are generated from those sources. Each states its model and limitations;
-the selection is not an exhaustive API reference.
-
-## Selected results
-
-* [Cook–Levin: SAT is NP-complete](abstracts/CslibFrontierAbstracts/CookLevinAbstract.lean): Every efficiently checkable bit-string problem reduces in polynomial time to satisfiability.
-* [Agrawal–Kayal–Saxena: PRIMES is in P](abstracts/CslibFrontierAbstracts/PrimesAbstract.lean): Primality of a natural number given in binary is decidable in deterministic polynomial time.
-* [The PCP theorem](abstracts/CslibFrontierAbstracts/PCPAbstract.lean): NP proofs can be checked with logarithmic randomness and constantly many nonadaptive queries.
-* [Fagin: logic captures NP](abstracts/CslibFrontierAbstracts/FaginAbstract.lean): Existential second-order logic captures precisely the isomorphism-invariant NP properties of finite relational structures.
-* [Savitch: NPSPACE equals PSPACE](abstracts/CslibFrontierAbstracts/SavitchAbstract.lean): Nondeterminism does not enlarge polynomial space.
-* [Chandra–Kozen–Stockmeyer: AP equals PSPACE and APSPACE equals EXP](abstracts/CslibFrontierAbstracts/AlternationAbstract.lean): Alternation trades one exponential between time and space: alternating polynomial time is deterministic polynomial space, and alternating polynomial space is deterministic exponential time.
-* [Reingold: undirected reachability is in L](abstracts/CslibFrontierAbstracts/USTCONAbstract.lean): Undirected graph connectivity can be decided with logarithmic work space.
-* [Immerman–Szelepcsényi: nondeterministic space is closed under complement](abstracts/CslibFrontierAbstracts/ImmermanSzelepcsenyiAbstract.lean): Nondeterministic space at least logarithmic is closed under complement; in particular NL equals coNL.
-* [Shamir: IP equals PSPACE](abstracts/CslibFrontierAbstracts/ShamirAbstract.lean): Interaction and randomness give a polynomial-time verifier the power of polynomial space.
-* [Toda: a counting oracle decides the polynomial hierarchy](abstracts/CslibFrontierAbstracts/TodaAbstract.lean): Every problem in the polynomial hierarchy is decidable in polynomial time with an exact counting oracle.
-* [Adleman–DeMarrais–Huang: BQP is contained in PP](abstracts/CslibFrontierAbstracts/BQPAbstract.lean): Every problem decided with bounded error by a polynomial-time uniform family of quantum circuits is decided by a polynomial-time strict-majority vote over random strings.
-* [Barrington: five states capture NC¹](abstracts/CslibFrontierAbstracts/BarringtonAbstract.lean): Polynomial-length permutation programs on five states capture logarithmic-depth polynomial-size Boolean circuits.
-* [Håstad and Razborov–Smolensky: parity resists shallow circuits](abstracts/CslibFrontierAbstracts/ConstantDepthAbstract.lean): At fixed depth, parity requires more than polynomially many gates, including over an odd-prime modular basis.
-* [Braverman: polylogarithmic independence fools AC⁰](abstracts/CslibFrontierAbstracts/BravermanAbstract.lean): k-wise independence with k = (log(m/ε))^O(d²) fools every depth-d circuit of NOT and unbounded fan-in AND/OR gates with size and fan-in at most m, to within error ε.
-* [Formula lower bounds: parity and Andreev](abstracts/CslibFrontierAbstracts/FormulaBoundsAbstract.lean): Tree-shaped computation pays for repeated work: parity requires quadratic leaf size, and Andreev gives a stronger explicit bound.
-* [Depth-two threshold circuits for Andreev's function: quadratic upper bound and average-case bounds tight up to polylogarithmic factors](abstracts/CslibFrontierAbstracts/AndreevThresholdAbstract.lean): An alternating-linear shift identity gives an exact quadratic depth-two threshold circuit (`2·4^b + b m 2^b + 1` gates) and windowed average-case upper bounds for Andreev's function, while fixed-weight threshold-shift counting and Cauchy–Schwarz yield improved quadratic-in-`ε` gate and wire lower bounds.
-* [Limaye–Srinivasan–Tavenas over any field (after Forbes): constant-depth algebraic circuits for IMM need superpolynomial size](abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean): Over every field, constant product-depth simple algebraic circuits computing iterated matrix multiplication of ⌊log₂ ⌊log₂ n⌋⌋ generic n × n matrices need more than n^c gates for every c and all large n.
-* [Matrix multiplication: exponent at most 9/4](abstracts/CslibFrontierAbstracts/MatrixMultiplicationAbstract.lean): exact nonuniform arithmetic circuits over every characteristic-zero field, with all gates counted.
-* [One-way functions yield pseudorandom generators and adaptive functions](abstracts/CslibFrontierAbstracts/CryptographyAbstract.lean): One-wayness yields pseudorandomness, from an extra output bit to functions secure against adaptive oracle queries.
-* [Haken: pigeonhole formulas require long resolution proofs](abstracts/CslibFrontierAbstracts/ResolutionAbstract.lean): The pigeonhole principle has short CNF statements but requires exponentially many resolution lines.
-* [Communication: disjointness and inner product resist randomness](abstracts/CslibFrontierAbstracts/CommunicationAbstract.lean): Both problems require linearly many communicated bits even with shared randomness and bounded error.
-* [Sipser–Gács–Lautemann: BPP lies in the second polynomial level](abstracts/CslibFrontierAbstracts/SipserLautemannAbstract.lean): Bounded-error polynomial time admits both existential–universal and universal–existential polynomial descriptions.
-* [Chor–Goldreich: the inner product extracts from two weak sources](abstracts/CslibFrontierAbstracts/ChorGoldreichAbstract.lean): Two independent weak random sources whose min-entropies add up to more than the string length give a nearly fair bit through the inner product modulo two.
-* [OpenAI: the Exponential Time Hypothesis is false](abstracts/CslibFrontierAbstracts/SubexponentialSATAbstract.lean): For each fixed clause width, one deterministic machine exactly counts satisfying assignments in subexponential time and polynomial space; every fixed-width SAT exponent is zero, and ETH and SETH are false.
-* [Schöning: 3-SAT in time (4/3)^n on the randomized word RAM](abstracts/CslibFrontierAbstracts/SchoeningAbstract.lean): One fixed randomized word-RAM program runs ⌈(3n + 1)(4/3)^n⌉·c independent trials of Schöning's local search; it never errs on unsatisfiable formulas and fails on satisfiable 3-CNFs with probability at most e^(-c).
-* [Ilango: Partial MCSP is hard under the Exponential Time Hypothesis](abstracts/CslibFrontierAbstracts/PartialMCSPAbstract.lean): Under ETH, deciding circuit size for partial Boolean functions cannot be done in time 2^o(m log m) = N^o(log log N). *Note (October 2026):* the native formalization now [proves ETH false](abstracts/CslibFrontierAbstracts/SubexponentialSATAbstract.lean). This conditional entry is retained and its theorem remains valid, but its premise is false.
-* [McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P from NP](abstracts/CslibFrontierAbstracts/MagnificationAbstract.lean): If NP has polynomial-size circuits, then MCSP on 2^n-bit truth tables has circuits of size 2^n poly(n + s(n)); hence barely superlinear MCSP lower bounds separate NP from P/poly and P from NP.
+The checked examples use `fun_prop`, `polytime` and `ppt` with explicit encodings and
+client-supplied invariants; the deterministic backend builds on Christian Reitwiessner's tidy
+machine calculus. For an NP-completeness proof, the
+[Clique example](CslibFrontier/Computability/Complexity/Problems/Clique.lean) uses graph
+complementation and the [reduction index](CslibFrontier/Computability/Complexity/Reduction.lean)
+points to the other proved problems. The [results inventory](results/README.md) collects named
+results with checked theorem identifiers and cited sources; its coverage and source audits
+remain incomplete.
 
 ## Build and use
 
@@ -109,7 +79,7 @@ cd cslib-frontier
 scripts/build.sh --wfail --iofail
 ```
 
-The wrapper restores Mathlib and Complexitylib caches before invoking `lake build`, then
+The wrapper restores Mathlib and cslib-frontier caches before invoking `lake build`, then
 compiles changed or missing modules. It forwards Lake arguments and its exit status.
 `scripts/check.sh` also restores caches before validation. Before using Lean through MCP or
 another editor, run `scripts/cache/ensure.sh`; bare `lake` and MCP commands do not call it.
@@ -120,14 +90,6 @@ Use `scripts/cache/ensure.sh --refresh` to retry immediately. See
 Import the specific modules you need. `import CslibFrontier` imports the whole library. To contribute,
 follow [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [validation sequence](AGENTS.md#validation-sequence).
-
-### Compare theorem statements and proofs
-
-The optional [comparator suites](comparator/README.md) compare selected library proofs with
-independently stated contracts using `lake comparator --paranoid`. They cover reduction and
-circuit facts, two `polytime` proofs, and the fixed-width SAT counting and ETH endpoints.
-The guide explains the Linux sandbox requirement, the trusted definitions, and how to run a
-negative control that submits a valid proof of the wrong statement.
 
 ### Use from another Lean project
 
@@ -147,7 +109,7 @@ rev = "<commit SHA>"
 ```
 
 CSLib and Mathlib are transitive dependencies. If your project already requires either one,
-first align those requirements with the versions in Complexitylib's `lake-manifest.json` at
+first align those requirements with the versions in cslib-frontier's `lake-manifest.json` at
 the chosen revision.
 
 Then run the commands below from your project directory. When changing existing direct
@@ -161,74 +123,30 @@ lake build
 ```
 
 Commit the resulting `lake-manifest.json` along with the Lake configuration and `lean-toolchain`.
-Use the `CslibFrontier.` imports shown in the [checked examples](#start-here).
+Use the `CslibFrontier.` imports shown in the [checked examples](#library-map).
 
 ### Build the documentation
 
-Run the following commands from the repository root. For a cold checkout, first restore the
-available caches with `scripts/cache/ensure.sh`.
-
-#### API reference
-
-To build searchable API documentation from the module docstrings:
-
-```bash
-python3 scripts/check_docs.py --config-only
-lake -d docbuild build CslibFrontier:docs
-python3 scripts/check_docs.py
-python3 -m http.server --bind 127.0.0.1 --directory docbuild/.lake/build/doc
-```
-
-Open `http://localhost:8000` to browse and search. The **API documentation** workflow publishes
-`main` to the [API documentation site](https://www.cslib.io/cslib-frontier/) nightly.
-A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
-the directory argument above with the extracted artifact directory.
-
-If removing a source module leaves `check_docs.py` reporting obsolete modules, rebuild the
-generated documentation after any documentation build has stopped:
-
-```bash
-lake -d docbuild clean docbuild
-lake -d docbuild build CslibFrontier:docs
-python3 scripts/check_docs.py
-```
-
-The named clean removes only `docbuild/.lake/build`, including HTML, per-module data and the
-SQLite database; deleting HTML alone leaves stale data behind. Library and dependency build
-outputs, package checkouts and Lake's artifact cache are retained. Documentation for all imported
-modules is regenerated, which can take substantial time even with warm library build outputs.
-
-#### Checked guide
-
-The [guide](guide/CslibFrontierGuide.lean) introduces the library area by area, with Lean examples
-that are checked against the library whenever the guide is built. It is written with
-[Verso](https://github.com/leanprover/verso) in a separate `guide` project. To build and preview it:
-
-```bash
-scripts/guide.sh
-python3 -m http.server --bind 127.0.0.1 --directory guide/.lake/build/site/html-multi
-```
-
-The first build compiles Verso and links the guide's generator, which takes a few minutes. The
-**API documentation** workflow publishes the guide from `main` with the API documentation, at
-[/guide/](https://www.cslib.io/cslib-frontier/guide/). The **Guide** workflow builds
-pull requests that change the guide and uploads the pages as a `guide` artifact.
+[manual/BUILD.md](manual/BUILD.md) explains how to build the two manuals, the API reference
+(doc-gen4), the checked guide (Verso) and the source history dashboard. The **API documentation**
+workflow publishes the API reference, guide and dashboard from `main` nightly at
+[cslib.io/cslib-frontier](https://www.cslib.io/cslib-frontier/).
 
 ## Project information
 
-This is the canonical CSLib-based Complexitylib. The renamed historical
-[pre-CSLib implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available
-with archival pending; it has a different API, and some developments remain to be ported. The temporary
-repository and package name `complexitylib2` was retired when this repository moved to CSLib
-Community. The repository was later renamed from `complexitylib` to `cslib-frontier`, with the
-Lake package renamed to match and the module root renamed from Complexity to CslibFrontier.
-Downstream projects should require `cslib-frontier` and import `CslibFrontier.*` modules;
-declaration names did not change.
+This repository was the CSLib-based Complexitylib until 2026-11-08, when it was renamed
+cslib-frontier and its scope widened from computational complexity theory to computer science
+generally ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)). Declaration
+names did not change. The pre-CSLib
+[complexitylib-v1](https://github.com/SamuelSchlesinger/complexitylib-v1) has a different API;
+some of its developments remain to be ported. The [manual's history](manual/history/index.md)
+keeps the dated record of the complexitylib period.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `CslibFrontier.` to `Cslib.`. Acceptance requires
-CSLib review. [ROADMAP.md](ROADMAP.md) records outstanding work;
-[UPSTREAM.md](UPSTREAM.md) records upstream coordination and exceptional integration decisions.
+CSLib review. [ROADMAP.md](ROADMAP.md) lists the accepted directions;
+[CONTRIBUTING.md](CONTRIBUTING.md#upstreaming) describes upstreaming and lists live coordination
+threads; each module's `-- upstream:` marker records its status.
 
 Source headers retain authorship, module docstrings credit mathematical and formalization
 sources, and [references.bib](references.bib) contains the bibliography.

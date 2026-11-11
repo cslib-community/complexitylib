@@ -10,12 +10,10 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.EXP
 public import CslibFrontier.Computability.Complexity.Classes.Immune
 public import CslibFrontier.Computability.Complexity.Problems.BoundedHalting
+import CslibFrontier.Computability.Complexity.Classes.EXP.Padding
 import CslibFrontier.Computability.Complexity.Classes.Ladner.Basic
-import CslibFrontier.Computability.Complexity.Classes.Padding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!
@@ -219,17 +217,8 @@ theorem exists_infinite_subset_mem_P_of_polyTimeComplete_EXP
     exact Nat.add_le_add_right (Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) hexp)) _
   · exact (PolynomiallyBounded.eventually_lt_two_pow ht).mono fun n hn =>
       hn.le.trans (Nat.pow_le_pow_right (by norm_num) (Nat.le_self_pow k.succ_ne_zero n))
-  · -- pad `w` to `(frame w ++ 1^(2^|w|), 2 ^ |w| ^ (k + 1))` and test the framed word
-    have ht := computableInPolyTime_bermanTest (desc eS eBit tm) hκ b
-    have hB : {p : List Bool × ℕ | bermanTest (desc eS eBit tm) κ b (unframe p.1, p.2) = true} ∈
-        P (encPair encBits encUnary) :=
-      ⟨fun p => bermanTest (desc eS eBit tm) κ b (unframe p.1, p.2), by fun_prop,
-        fun _ => Iff.rfl⟩
-    have h := preimage_pad_prod_two_pow_mem_EXP (enc := encBits) hB (f := id)
-      (g := fun n => n ^ (k + 1)) (by fun_prop) (fun _ => le_rfl) (by fun_prop)
-    convert h using 1
-    ext w
-    simp [unframe_frame_append]
+  · exact setOf_mem_EXP_of_computableInPolyTime_pad (computableInPolyTime_bermanTest _ hκ b)
+      (L := fun w => w.length ^ (k + 1)) (by fun_prop)
 
 /-- **No problem complete for `E` is `P`-bi-immune**; in fact neither the problem nor its
 complement is `P`-immune [Berman][Berman1976]. -/

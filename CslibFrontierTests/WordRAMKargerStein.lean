@@ -293,7 +293,7 @@ theorem fastCutHighProbProgram_barbell8 :
   have hpos : 0 < minCut barbell8W := by rw [minCut_barbell8W]; decide
   have hFail := hspec.2.2.2 hpos
   have hInv :=
-    fastCutHighProbProgram_failure_le_inv_n (by decide : 2 ≤ 8) isMultigraph_barbell8W hw htot hpos
+    fastCutHighProbProgram_failure_le_inv_n isMultigraph_barbell8W hw htot hpos
   have hset : {cfg : RandCfg 24 | ∀ y, cfg ≠ .halted (minCut barbell8W) y} =
       {cfg : RandCfg 24 | ∀ y, cfg ≠ .halted 2 y} := by
     rw [minCut_barbell8W]

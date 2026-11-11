@@ -20,7 +20,7 @@ bounded only on reachable prefixes; no bound on arbitrary unreachable states is 
 The rules use the canonical direct core and its independent polynomial-growth algebra.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
@@ -120,13 +120,7 @@ theorem foldlWith {γ α β π : Type} {encIn : γ ↪ List Bool} {encA : α ↪
   let P := fun n : ℕ => 2 * (cP * (n + 1) ^ dP) + 1 + cB * (n + 1) ^ dB
   have hp : PolynomiallyBounded P := by dsimp [P]; fun_prop
   obtain ⟨c, d, hcd⟩ := polynomiallyBounded_iff_le.mp hp
-  have hC : ∀ x, C x ≤ c * ((encIn x).length + 1) ^ d := by
-    intro x
-    apply le_trans (b := P (encIn x).length) _ (hcd _)
-    dsimp [C, P]
-    have := hP x
-    have := hB x
-    omega
+  have hC : ∀ x, C x ≤ c * ((encIn x).length + 1) ^ d := by grind
   have hfold := foldl' (encA := encA) (encB := encPair encP encB)
     (list := list) (init := fun x => (par x, init x))
     (step := fun state value => (state.1, step state.1 state.2 value))

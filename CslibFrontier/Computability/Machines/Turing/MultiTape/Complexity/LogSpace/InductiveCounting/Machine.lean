@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.Reachability.InductiveCounting.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting.Encoding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting.Graph
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.ConfigurationGraph.RadixRounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.NondeterministicQueryMachine
 
 /-!
@@ -17,7 +18,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 
 The machine first counts the read-only input in binary. It then runs the streaming counting
 controller on the compact configuration graph of a stored radix, starting from
-`Turing.InductiveCounting.startRadix`, in two modes:
+`Turing.MultiTapeNTM.ConfigurationGraph.startRadix`, in two modes:
 
 * while the radix is unchecked, the controller's bad vertices are those whose source step leaves
   the radix (`Turing.MultiTapeNTM.ConfigurationGraph.overflow`). If the final count check of a
@@ -369,24 +370,6 @@ theorem run_bootstrap (choices : List Bool) (hlen : choices.length = input.lengt
   exact step_scan_end ntm input choice
 
 /-! ### The semantic invariant -/
-
-variable (State) in
-/-- The radix of round `j`: the first radix times `4 ^ j`. -/
-def roundRadix (n j : ℕ) : ℕ := 4 ^ j * startRadix State n
-
-theorem roundRadix_zero (n : ℕ) : roundRadix State n 0 = startRadix State n := by
-  simp [roundRadix]
-
-theorem roundRadix_succ (n j : ℕ) : roundRadix State n (j + 1) = 4 * roundRadix State n j := by
-  simp only [roundRadix, pow_succ]
-  ring
-
-theorem startRadix_le_roundRadix (n j : ℕ) : startRadix State n ≤ roundRadix State n j :=
-  Nat.le_mul_of_pos_left _ (pow_pos (by omega) _)
-
-theorem card_lt_roundRadix (n j : ℕ) : Fintype.card (Option State) + 1 < roundRadix State n j :=
-  (by have := card_lt_startRadix (State := State) n; omega : Fintype.card (Option State) + 1 <
-    startRadix State n).trans_le (startRadix_le_roundRadix n j)
 
 variable {ntm input}
 

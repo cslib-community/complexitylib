@@ -25,7 +25,7 @@ Connects query budgets (`Cslib.OracleComp.IsCostBounded`) with the possible outp
 * `Cslib.ProbComp.isQueryBounded_unifFin`: `ProbComp.unifFin n` makes one oracle query.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 

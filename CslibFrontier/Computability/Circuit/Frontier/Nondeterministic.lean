@@ -163,24 +163,11 @@ theorem cycleRank_le_of_nondeterministicDecides (hfan : c.FanInAtMost r)
     ((Compiler.graph c).cycleRank : ℝ) ≤
       (r - 1) * c.innerSize - n + Real.logb (Nat.card U) K + 1 := by
   set H := Compiler.hiddenNetwork c I fun _ => Acc
-  have hacc := accepted_hiddenNetwork_of_nondeterministicDecides hS
-  have hq : (1 : ℝ) < Nat.card U := by exact_mod_cast Finite.one_lt_card
-  have hrank : ((Compiler.graph c).cycleRank + H.read.ncard : ℝ) ≤
-      (((r - 1) * c.innerSize : ℕ) : ℝ) + 1 := by
-    exact_mod_cast Compiler.cycleRank_add_ncard_read_hiddenNetwork_le c I _ hfan
-      (Compiler.connected c)
-  have hcast : (((r - 1) * c.innerSize : ℕ) : ℝ) = (r - 1) * c.innerSize := by
-    rcases Nat.eq_zero_or_pos r with rfl | hr
-    · simp [Circuit.innerSize_eq_zero_of_fanInAtMost_zero hfan]
-    · rw [Nat.cast_mul, Nat.cast_sub hr, Nat.cast_one]
   -- The support lemma: the hidden network reads all but `log_q K` ordinary inputs.
-  have hunread : (H.readᶜ.ncard : ℝ) < Real.logb (Nat.card U) K := by
-    rw [Real.lt_logb_iff_rpow_lt hq (by exact_mod_cast hfree.pos), Real.rpow_natCast]
-    rw [← hacc] at hfree hbig
-    exact_mod_cast hfree.pow_ncard_compl_lt H.dependsOn_read hbig
-  have hcompl : (H.readᶜ.ncard : ℝ) + H.read.ncard = n := by
-    rw [← Nat.cast_add, add_comm, ncard_add_ncard_compl, Nat.card_eq_fintype_card, Fintype.card_fin]
-  linarith
+  rw [← accepted_hiddenNetwork_of_nondeterministicDecides hS] at hfree hbig
+  exact cycleRank_le_of_read hfan H.read
+    (Compiler.cycleRank_add_ncard_read_hiddenNetwork_le c I _ hfan (Compiler.connected c))
+    (hfree.pow_ncard_compl_lt H.dependsOn_read hbig)
 
 /-- **Every layout of the graph of a nondeterministic circuit is wide.** For a circuit of fan-in
 at most `r ≥ 2` deciding a large `K`-rectangle-free set `S` nondeterministically, every layout `π`

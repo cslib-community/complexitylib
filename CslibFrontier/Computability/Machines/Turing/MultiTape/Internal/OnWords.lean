@@ -48,10 +48,8 @@ public lemma transformsTapes_inputFromWord_fun
       (fun _ ws ws' em => ws' = ws ∧ em = encD (f b))
       (t b + 4) (s b + 2 * (encB b).length + 3 * K + 10) := by
   have hk : k + 2 ≤ K := by simpa using Fintype.card_le_of_embedding e
-  have h' := ((h b).inputFromWord true).extendTapes_update e
-  rw [he] at h'
-  exact h'.imp (fun _ _ hws => ⟨trivial, hws⟩)
-    (fun _ _ _ _ hws ⟨h, he⟩ => ⟨by rw [h, hws, Function.update_idem], he⟩) le_rfl (by omega)
+  exact ((h b).inputFromWord_extendTapes true he).imp (fun _ _ h => h) (fun _ _ _ _ _ h => h)
+    le_rfl (by omega)
 
 /-- A tidy machine run on the word on tape `V`, writing its output to tape `O`. -/
 public lemma transformsTapes_onWords (h : ComputesFunTidilyInTimeAndSpace tm encB encD f t s)
@@ -63,11 +61,8 @@ public lemma transformsTapes_onWords (h : ComputesFunTidilyInTimeAndSpace tm enc
       (t b + (encD (f b)).length + 6)
       (s b + 2 * (encB b).length + 2 * (encD (f b)).length + 4 * K + 15) := by
   have hk : k + 1 + 2 ≤ K := by simpa using Fintype.card_le_of_embedding e
-  have h' := (((h b).onWords true).imp
-    (P' := fun _ ws => True ∧ ws = Function.update (fun _ => []) (Fin.natAdd (k + 1) 0) (encB b))
-    (fun _ _ h => h.2) (fun _ _ _ _ _ h => h) le_rfl le_rfl).extendTapes_update e
-  rw [hi, ho] at h'
-  exact h'.imp (fun _ _ hws => ⟨trivial, hws⟩) (fun _ _ _ _ _ h => h) le_rfl (by omega)
+  exact ((h b).onWords_extendTapes true hi ho).imp (fun _ _ h => h) (fun _ _ _ _ _ h => h)
+    le_rfl (by omega)
 
 end Tapes
 

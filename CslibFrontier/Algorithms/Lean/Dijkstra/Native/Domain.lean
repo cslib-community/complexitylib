@@ -146,8 +146,7 @@ theorem loop_eq_step {n K V : ℕ} (a : ℕ) (ha : a ≠ 0) :
   rw [loop]
   unfold abstractLoopStep
   simp only [bind_assoc]
-  congr 1
-  funext e
+  congr 1 with e : 1
   cases e with
   | none => rfl
   | some e =>
@@ -165,8 +164,7 @@ theorem loopStep_eq_link {n K V w : ℕ}
     PFunctor.FreeM.liftM_lift (P := (spec n K V).signature) M (.inl .extractMin)
   rw [hq]
   unfold loopStep
-  congr 1
-  funext e
+  congr 1 with e : 1
   change Option (Fin n × ℕ) at e
   cases e with
   | none => rfl
@@ -262,8 +260,7 @@ theorem scan_while_safe {n K V w : ℕ}
   · intro a s hi ha _
     obtain ⟨hfirst, hinv, hrest⟩ := remainingEdges_step M u du b a s ha hi.2.1 hi.2.2
     have hres : (Memory.spec 0).clientResult s (do step a; pure (a + 1)) = a + 1 := by
-      rw [StateTransitionSpec.clientResult_bind]
-      rfl
+      simp only [client_simps]
     have hstate : (Memory.spec 0).clientState s (do step a; pure (a + 1)) =
         (Memory.spec w).clientState s (link M.methods (relaxEdge u du a)) := by
       rw [StateTransitionSpec.clientState_bind]

@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce
-import all CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.CarryLookahead.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode

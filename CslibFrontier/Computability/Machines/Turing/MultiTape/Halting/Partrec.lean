@@ -42,8 +42,9 @@ and mapping reductions with Mathlib's `Partrec`, `Computable`, `ComputablePred`,
 * `Turing.MultiTapeTM.IsComputable.computable`, `IsComputable.computable_bits`,
   `IsComputable.computable_bool`, `IsComputable.computable_option`,
   `IsComputable.computable_option_bits`, and `ComputableInPolyTime.isComputable`: every function
-  satisfying `IsComputable f encIn encOut` (with computable `encIn` and left-invertible `encOut`)
-  is `Computable` in Mathlib's sense, and polynomial-time functions are `IsComputable`.
+  satisfying `IsComputable f encIn encOut` (with computable `encIn` and a computable left inverse
+  of `encOut`) is `Computable` in Mathlib's sense, and polynomial-time functions are
+  `IsComputable`.
 * `Turing.MultiTapeTM.computable_frame`, `Turing.MultiTapeTM.primrec_encUnary`,
   `Turing.MultiTapeTM.computable_encUnary`, and `Turing.MultiTapeTM.computable_encPair`:
   Mathlib `Primrec`/`Computable` certificates for `frame`, `encUnary`, and `encPair`.
@@ -51,8 +52,9 @@ and mapping reductions with Mathlib's `Partrec`, `Computable`, `ComputablePred`,
   satisfying `MultiTapeTM.IsDecidable L enc` (with computable `enc`) satisfies Mathlib's
   `ComputablePred (· ∈ L)`.
 * `Turing.MultiTapeTM.MappingReducible.manyOneReducible` and
-  `MappingReducible.manyOneReducible_bits`: every `MultiTapeTM.MappingReducible` reduction induces a
-  Mathlib `ManyOneReducible` (`≤₀`) reduction.
+  `MappingReducible.manyOneReducible_bits`: every reduction
+  `MultiTapeTM.MappingReducible encA encB A B` (with computable `encA` and a computable left
+  inverse of `encB`) induces a Mathlib `ManyOneReducible` (`≤₀`) reduction.
 
 ## References
 
@@ -476,17 +478,12 @@ theorem primrec_simulate :
 
 /-! ## Partial recursive evaluation of `Desc` -/
 
-lemma stepOut_of_state_none (d : Desc) (x : List ℕ) (c : SCfg) (out : List ℕ)
-    (h : c.state = none) :
-    stepOut d x (c, out) = (c, out) := by
-  simp [stepOut, step, h]
-
 lemma stepOut_iterate_of_state_none (d : Desc) (x : List ℕ) (c : SCfg) (out : List ℕ)
     (h : c.state = none) (k : ℕ) :
     (stepOut d x)^[k] (c, out) = (c, out) := by
   induction k with
   | zero => rfl
-  | succ k ih => rw [Function.iterate_succ_apply', ih, stepOut_of_state_none d x c out h]
+  | succ k ih => rw [Function.iterate_succ_apply', ih, stepOut_of_state_eq_none h]
 
 theorem simulate_eq_of_halted {d : Desc} {x out : List ℕ} {t₁ t₂ : ℕ} (ht : t₁ ≤ t₂)
     (h : simulate d x t₁ = (out, true)) :
@@ -763,7 +760,8 @@ theorem IsDecidable.computablePred_bits {L : Set (List Bool)}
   hL.computablePred Computable.id
 
 /-- Any `MultiTapeTM.MappingReducible` reduction between `Primcodable` types with computable
-encoding `encA` and left-invertible `encB` yields a Mathlib `ManyOneReducible` (`≤₀`) reduction. -/
+encoding `encA` and a computable left inverse `decB` of `encB` yields a Mathlib `ManyOneReducible`
+(`≤₀`) reduction. -/
 theorem MappingReducible.manyOneReducible {α β : Type*} [Primcodable α] [Primcodable β]
     {encA : α ↪ List Bool} {encB : β ↪ List Bool} {decB : List Bool → β}
     {A : Set α} {B : Set β}

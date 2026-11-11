@@ -29,7 +29,7 @@ adds depths (`Circuit.depth_comp_le`) and parallel composition takes their maxim
   same for depths with costs.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

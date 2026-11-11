@@ -39,7 +39,7 @@ example {α κ : Type*} [LinearOrder κ] (key : α → κ) (x : Fin 1 → α) (a
 example {k r : ℕ} (key : Fin k → Fin r) (ascending : Bool) (x : BitString (1 * r)) :
     (bitonicSortCircuit key 0 ascending).eval interpretation x = x := by
   change BitString (BitonicSort.arity 0 * r) at x
-  simpa only [BitonicSort.sort, bitonicSortTraceCircuit.flatten_directProductInput] using
+  simpa only [BitonicSort.sort, bitonicSortTraceCircuit.flatten_block] using
     congrArg bitonicSortTraceCircuit.flatten (eval_bitonicSortCircuit key 0 ascending x)
 
 example : (bitonicSortCircuit (fun _ : Fin 1 => (0 : Fin 2)) 2 true).size = 120 := by
@@ -58,7 +58,7 @@ example (depth : ℕ) (ascending : Bool) :
   simpa using h
 
 example {k r : ℕ} (key : Fin k → Fin r) (depth : ℕ) (x : BitString (BitonicSort.arity depth * r)) :
-    Monotone (fun j => toLex (directProductInput
+    Monotone (fun j => toLex (BitString.block
       ((bitonicSortCircuit key depth true).eval interpretation x) j ∘ key)) :=
   monotone_bitonicSortCircuit key depth x
 
@@ -92,7 +92,7 @@ example {k r : ℕ} (key : Fin k → Fin r) (depth : ℕ) (x : BitString (Bitoni
     (BitString.equivFin 3).symm (records jb.1) jb.2
   let output := ((bitonicSortCircuit (id : Fin 3 → Fin 3) 3 true).evalVector
     interpretation input).get
-  List.ofFn fun j : Fin 8 => (BitString.equivFin 3 (directProductInput output j)).val
+  List.ofFn fun j : Fin 8 => (BitString.equivFin 3 (BitString.block output j)).val
 
 -- All 256 four-record inputs, four two-coordinate selectors (including repetitions), and both
 -- directions: 2048 checks of sorted keys and preservation of the complete record multiset.
@@ -106,7 +106,7 @@ example {k r : ℕ} (key : Fin k → Fin r) (depth : ℕ) (x : BitString (Bitoni
       (List.finRange 256).all fun raw =>
         let input := (BitString.equivFin 8).symm raw
         let output := (c.evalVector interpretation input).get
-        let records := fun x : BitString 8 => List.ofFn (directProductInput (k := 4) (n := 2) x)
+        let records := fun x : BitString 8 => List.ofFn (BitString.block (m := 4) (k := 2) x)
         let values := fun x => (records x).map fun row => (BitString.equivFin 2 row).val
         let keys := fun x => (records x).map fun row =>
           (List.ofFn (row ∘ key)).foldl (fun n bit => 2 * n + if bit then 1 else 0) 0

@@ -702,18 +702,7 @@ class CheckGuideLinksTests(unittest.TestCase):
 
     def test_existing_pages_and_anchors_pass(self):
         self.check("", f"{self.page}#Cslib.Complexity.NPComplete",
-                   f"{self.page}#Cslib.«term_&lt;=p_»", "abstracts/catalogue.pdf")
-
-    def test_unknown_abstract_fails(self):
-        self.assert_failure("Guide links to an unknown formal abstract: abstracts/gone.pdf",
-                            "abstracts/gone.pdf")
-
-    def test_staged_abstract_requires_file(self):
-        (self.docs / "abstracts").mkdir()
-        self.assert_failure("Guide links to a missing documentation page: abstracts/catalogue.pdf",
-                            "abstracts/catalogue.pdf")
-        (self.docs / "abstracts/catalogue.pdf").write_bytes(b"%PDF")
-        self.check("abstracts/catalogue.pdf")
+                   f"{self.page}#Cslib.«term_&lt;=p_»")
 
     def test_missing_page(self):
         self.assert_failure("Guide links to a missing documentation page: CslibFrontier/Gone.html",

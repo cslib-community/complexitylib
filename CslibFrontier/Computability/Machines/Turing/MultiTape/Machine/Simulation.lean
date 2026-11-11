@@ -71,8 +71,7 @@ theorem runConfigFrom_map
   | succ fuel ih =>
     rw [show fuel + 1 = 1 + fuel by lia, target.runConfigFrom_add, source.runConfigFrom_add,
       hstep, bind_map_left, map_bind]
-    congr 1
-    funext next
+    congr 1 with next : 1
     exact ih next
 
 /-- Relabelling control preserves the full clocked program when transition tables commute.
@@ -98,8 +97,7 @@ theorem runConfigFrom_mapState [Functor Choose]
   | some state =>
     simp only [runConfigFrom, Config.mapState, Cfg.mapState, hs, Option.map_some,
       Cfg.inputSymbol, htr, hchoose, bind_map_left, map_bind]
-    congr 1
-    funext action
+    congr 1 with action : 1
     cases action <;> simp [Action.mapState, Config.mapState, Config.step, Config.receive,
       Turing.Action.apply, Cfg.mapState]
 
@@ -127,8 +125,7 @@ theorem run_interpret_runConfigFrom_mul_indexed (delay fuel : ℕ)
     rw [show fuel + 1 = 1 + fuel by lia, source.runConfigFrom_add,
       OracleComp.interpret_bind, StateT.run_bind, Probability.PMF.monad_bind_eq_bind, PMF.map_bind]
     simp only [Function.comp_def]
-    congr 1
-    funext result
+    congr 1 with result : 1
     simpa [Nat.add_comm] using ih (fun i => embed (i + 1))
       (fun i hi => hstep (i + 1) (by lia)) result.1 result.2
 

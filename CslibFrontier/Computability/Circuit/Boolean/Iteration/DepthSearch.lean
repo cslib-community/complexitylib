@@ -23,7 +23,8 @@ operations per digit (`synthesis_threshold`).
 
 For the transient depth, the query `transientDepth f x ≤ v` asks whether `f^[v] x` is periodic:
 one input-time iteration and one periodicity test. This gives transient depths in at most
-`200000 * (n + 1) ^ 2 * powerBudget n s (2 ^ n) L` gates (`depth_circuit`), and
+`depthBudget n s L` gates (`depth_circuit`), itself at most
+`200000 * (n + 1) ^ 2 * powerBudget n s (2 ^ n) L`, and
 `600000 * (n + 1) ^ 2 * optimizedBudget n s (2 ^ n)` balanced (`depth_circuit_optimized`). The
 dictionary construction of `Iteration.Depth` avoids the factor `(n + 1) ^ 2`.
 
@@ -170,10 +171,7 @@ theorem synthesis_threshold {a : ℕ} (s : Set (BooleanFunction a)) (μ : BitStr
       fun x => BitVec.ofNat (n + 2) (μ x) := by
     funext x
     have hs := searchBelow_result n (μ x) (hμ x).le
-    have h1 : (1 : BitVec (n + 2)).toNat = 1 := by
-      change (BitVec.ofNat (n + 2) 1).toNat = 1
-      rw [BitVec.toNat_ofNat]
-      exact Nat.mod_eq_of_lt (Nat.one_lt_two_pow (by omega))
+    have h1 : (1 : BitVec (n + 2)).toNat = 1 := by grind
     have h0 : (0 : BitVec (n + 2)).toNat = 0 := rfl
     by_cases hz : μ x = 0
     · rw [ite_eq_left (by rw [h0, hz]; rfl), hz]

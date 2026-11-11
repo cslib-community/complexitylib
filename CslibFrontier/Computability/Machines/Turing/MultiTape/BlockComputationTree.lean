@@ -116,15 +116,16 @@ variable (encode : Option (View k State b) → Fin ℓ → Bool)
   Ary.Descending.tree (encode (some (initialView machine b))) (child σ)
     (codeGate machine input b σ encode decode) height root
 
-private theorem intervalGate_value {n : ℕ} (hn : n < q) :
+/-- At an interval inside the horizon, the unencoded gate applied to the values of its children
+is the interval's value. -/
+theorem intervalGate_value {n : ℕ} (hn : n < q) :
     intervalGate machine input b σ (n + 1)
       (fun j => value machine input b σ (child σ (n + 1) j)) =
         value machine input b σ (n + 1) := by
   rw [value, dite_eq_left hn]
   simp only [intervalGate, child, dite_eq_left hn, Fin.cases_zero, Fin.cases_succ,
     Equiv.symm_apply_apply]
-  congr 2
-  funext h d
+  congr 2 with h d : 2
   split
   next hfirst =>
     rw [value]

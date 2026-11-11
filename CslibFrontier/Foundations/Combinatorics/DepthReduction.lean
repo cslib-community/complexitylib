@@ -172,8 +172,7 @@ theorem exists_sdiff [DecidableEq V] {k r : ℕ} (hg : IsGrading E (2 ^ k) g) (h
         refine Nat.le_of_mul_le_mul_left ?_ hk
         have h₁ : k * #F₁ ≤ #(E \ F₁) := by linarith
         have h₃ : r ≤ k := by omega
-        have key : (k + 1) * (k * #F₂) ≤ (k + 1) * (r * #(E \ F₁)) :=
-          Nat.mul_le_mul_left _ hcard₂
+        have key : (k + 1) * (k * #F₂) ≤ (k + 1) * (r * #(E \ F₁)) := by gcongr
         have slack : (k - r) * (k * #F₁) ≤ (k - r) * #(E \ F₁) := Nat.mul_le_mul_left _ h₁
         zify [h₃] at slack ⊢
         rw [← hE]

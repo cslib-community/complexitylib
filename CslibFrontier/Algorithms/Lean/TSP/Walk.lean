@@ -30,7 +30,8 @@ returning to the first. A closed walk is a walk from its first vertex back to it
 
 * `walkCost_append_singleton`, `walkCost_map`: extending a walk at its end, relabeling vertices.
 * `cycleCost_cons`: a closed walk from `a` is the walk from `a` through the rest back to `a`.
-* `cycleCost_rotate`: a closed walk costs the same from any starting point.
+* `cycleCost_rotate`, `cycleCost_append_comm`: a closed walk costs the same from any starting
+  point.
 -/
 
 public section
@@ -71,6 +72,11 @@ theorem cycleCost_rotate (δ : α → α → ℕ) (t : List α) (k : ℕ) :
   rw [List.rotate_rotate, Nat.add_comm, ← List.rotate_rotate,
     ← List.zipWith_rotate_distrib _ _ _ _ (List.length_rotate t 1).symm]
   exact (List.rotate_perm _ _).sum_eq
+
+/-- A closed walk through `A` and then `X` costs the same as one through `X` and then `A`. -/
+theorem cycleCost_append_comm (δ : α → α → ℕ) (A X : List α) :
+    cycleCost δ (A ++ X) = cycleCost δ (X ++ A) := by
+  rw [← cycleCost_rotate δ (A ++ X) A.length, List.rotate_append_length_eq]
 
 /-- A closed walk on two vertices goes there and back. -/
 theorem cycleCost_pair (δ : α → α → ℕ) (u v : α) : cycleCost δ [u, v] = δ u v + δ v u :=

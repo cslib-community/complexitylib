@@ -53,7 +53,8 @@ theorem writeTask_frame (F n k c u e p : ℕ) (μ : ℕ → ℕ) (q : ℕ)
 instance (i : Fin registers) : Decidable (PushLocal i) :=
   inferInstanceAs (Decidable (i = Reg.cursor ∨ i = Reg.top))
 
-private theorem push_preserves (i : Fin registers) : ¬PushLocal i → push.Preserves i :=
+/-- A push preserves every register outside `PushLocal`. -/
+theorem push_preserves (i : Fin registers) : ¬PushLocal i → push.Preserves i :=
   by decide +revert
 
 /-- Store and append one complete task within twelve native instructions. -/

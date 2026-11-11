@@ -134,9 +134,9 @@ theorem synthesis_batched_binary_powering (f : BitString n → BitString n) (C :
     have hout (member : Fin r) : wires (fun x => f^[2 ^ j] (state j x member)) ⊆ src' := by
       rintro _ ⟨bit, rfl⟩
       refine Or.inr ⟨finProdFinEquiv (member, bit), funext fun x => ?_⟩
-      have hd : directProductInput (packed x) member = state j x member := by
+      have hd : BitString.block (packed x) member = state j x member := by
         funext i
-        simp only [directProductInput, packed, Equiv.symm_apply_apply]
+        simp only [BitString.block, packed, Equiv.symm_apply_apply]
       change pow.eval interpretation (packed x) _ = _
       rw [hp (packed x), blockMap_apply, hd]
     have hmux := Synthesis.iUnion (I := interpretation) (s := src')
@@ -147,10 +147,8 @@ theorem synthesis_batched_binary_powering (f : BitString n → BitString n) (C :
         (Or.inl (Or.inl (hb member ⟨j, hj⟩)))
     have he : (⋃ member, wires fun x => if bits x member ⟨j, hj⟩ then
         f^[2 ^ j] (state j x member) else state j x member) = q (j + 1) := by
-      congr 1
-      funext member
-      congr 1
-      funext x
+      congr 1 with member : 1
+      congr 1 with x : 1
       exact (iterate_toNat_word_mod_two_pow_succ f (bits x member) hj (init x member)).symm
     rw [he] at hmux
     refine (hpow.trans hmux).mono Set.Subset.rfl Set.Subset.rfl ?_

@@ -143,12 +143,7 @@ theorem sixteen_mul_numEdges_nativeChild_le (hK : 64 ^ a ≤ D.numEdges) (hia : 
     (fl : List ℕ) (pt : ℕ) (t : ℤ) (ζ β : List ℕ) (g : Fin 64) :
     16 * (nativeChild fl a i pt t ζ r D (nativeParentPacking r a D) β g).numEdges ≤
       D.numEdges := by
-  have hdeg' (v : ℕ) : (D.vertices.getD v defaultVertex).1.length ≤ Δ := by
-    by_cases hv : v < D.vertices.length
-    · rw [List.getD_eq_getElem _ _ hv]
-      exact hdeg _ (List.getElem_mem hv)
-    · rw [List.getD_eq_default _ _ (by omega)]
-      exact Nat.zero_le _
+  have hdeg' (v : ℕ) : (D.vertices.getD v defaultVertex).1.length ≤ Δ := by grind
   have hrow : ∀ v, #{e | rowOfP hD e = v} ≤ Δ := fun v => (card_rowOfP_le hD v).trans (hdeg' _)
   have hcol : ∀ w, #{e | colOfP hD e = w} ≤ Δ := fun w => (card_colOfP_le hD w).trans (hdeg' _)
   have hM' : 2 * Δ * (64 ^ (2 * a)) ^ 2 ≤ Fintype.card (Fin D.numEdges) := by
@@ -186,12 +181,7 @@ theorem numPackets_nativeParentPacking_mul_le (hK : 64 ^ a ≤ D.numEdges) {Δ :
     (hdeg : ∀ v ∈ D.vertices, v.1.length ≤ Δ) (hM : 2 * Δ * (64 ^ (2 * a)) ^ 2 ≤ D.numEdges)
     (hL : 2 ^ a * 64 ^ (2 * a) ≤ D.numEdges) :
     (nativeParentPacking r a D).2.1 * 2 ^ a ≤ 3 * D.numEdges := by
-  have hdeg' (v : ℕ) : (D.vertices.getD v defaultVertex).1.length ≤ Δ := by
-    by_cases hv : v < D.vertices.length
-    · rw [List.getD_eq_getElem _ _ hv]
-      exact hdeg _ (List.getElem_mem hv)
-    · rw [List.getD_eq_default _ _ (by omega)]
-      exact Nat.zero_le _
+  have hdeg' (v : ℕ) : (D.vertices.getD v defaultVertex).1.length ≤ Δ := by grind
   have h := PacketPacking.numPackets_packing_mul_le (rowOfP hD) (colOfP hD) a 64
     (fun v => (card_rowOfP_le hD v).trans (hdeg' _))
     (fun w => (card_colOfP_le hD w).trans (hdeg' _))

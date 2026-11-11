@@ -83,22 +83,13 @@ theorem eq_true_iff_lt_card_of_sorted {k : ℕ} (g : Fin k → Bool)
     g j = true ↔ j.val < #{i | g i = true} := by
   constructor
   · intro hj
-    have hsub : Iic j ⊆ ({i | g i = true} : Finset (Fin k)) := by
-      intro i hi
-      simp only [mem_filter, mem_univ, true_and]
-      by_contra hn
-      exact absurd (sorted i j (mem_Iic.mp hi) (by simpa using hn)) (by simp [hj])
+    have hsub : Iic j ⊆ ({i | g i = true} : Finset (Fin k)) := by grind
     have := card_le_card hsub
     rw [Fin.card_Iic] at this
     lia
   · intro hj
     by_contra hn
-    have hsub : ({i | g i = true} : Finset (Fin k)) ⊆ Iio j := by
-      intro i hi
-      simp only [mem_filter, mem_univ, true_and] at hi
-      rw [mem_Iio]
-      by_contra hle
-      exact absurd (sorted j i (not_lt.mp hle) (by simpa using hn)) (by simp [hi])
+    have hsub : ({i | g i = true} : Finset (Fin k)) ⊆ Iio j := by grind
     have := card_le_card hsub
     rw [Fin.card_Iio] at this
     lia

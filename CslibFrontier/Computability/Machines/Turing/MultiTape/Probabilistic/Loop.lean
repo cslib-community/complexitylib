@@ -31,9 +31,9 @@ with its tapes, oracle channels and external oracle state.
 ## Main results
 
 * `Turing.MultiTapePTM.RunsWords.repeatUntilBlank_round`: one round followed by the remaining loop.
-* `Turing.MultiTapePTM.RunsWords.repeatUntilBlank`: `rounds` rounds governed by an invariant run
-  `OracleComp.iterate rounds step` within `rounds * (t + 1)` steps, preserving the joint law of
-  the tape words and the external oracle state.
+* `Turing.MultiTapePTM.RunsWords.repeatUntilBlank`: `rounds + 1` rounds governed by an invariant
+  run `OracleComp.iterate rounds step` followed by `last` within `(rounds + 1) * (t + 1)` steps,
+  preserving the joint law of the tape words and the external oracle state.
 
 ## References
 
@@ -61,10 +61,10 @@ namespace RepeatUntilBlank
 
 /-- Embed an action of the repeated machine, sending its halt to the blank test. -/
 def runAction : MultiTapeMachine.Action k Bool State Operation →
-    MultiTapeMachine.Action k Bool (RepeatUntilBlankState State) Operation
+    MultiTapeMachine.Action k Bool (State ⊕ Unit) Operation
   | .step action symbol move =>
-    .step { action with state := some (action.state.elim .check .run) } symbol move
-  | .query op next => .query op (.run next)
+    .step { action with state := handOver () action.state } symbol move
+  | .query op next => .query op (.inl next)
 
 /-- The instruction that writes nothing, moves no head and enters `q`. -/
 def idle {S : Type} (q : Option S) : Turing.Action k Bool S :=
@@ -73,8 +73,8 @@ def idle {S : Type} (q : Option S) : Turing.Action k Bool S :=
 /-- The blank test: halt if the cell under the head of work tape `i` is blank, and otherwise
 restart at `initial`, moving no head and writing nothing. -/
 def checkAction (i : Fin k) (initial : State) (work : Fin k → Option Bool) :
-    MultiTapeMachine.Action k Bool (RepeatUntilBlankState State) Operation :=
-  .step (idle ((work i).map fun _ => .run initial)) (fun _ => none) (fun _ => 0)
+    MultiTapeMachine.Action k Bool (State ⊕ Unit) Operation :=
+  .step (idle ((work i).map fun _ => .inl initial)) (fun _ => none) (fun _ => 0)
 
 end RepeatUntilBlank
 
@@ -83,30 +83,30 @@ open RepeatUntilBlank
 /-- `body`, with its halting transitions sent to a test of the cell under the head of work tape
 `i`: a blank cell halts the loop, and any other cell restarts `body`. -/
 def repeatUntilBlank (i : Fin k) (body : MultiTapePTM k Bool State Operation) :
-    MultiTapePTM k Bool (RepeatUntilBlankState State) Operation where
-  initial := .run body.initial
+    MultiTapePTM k Bool (State ⊕ Unit) Operation where
+  initial := .inl body.initial
   tr q symbol work answer bit := match q with
-    | .run q => runAction (body.tr q symbol work answer bit)
-    | .check => checkAction i body.initial work
+    | .inl q => runAction (body.tr q symbol work answer bit)
+    | .inr () => checkAction i body.initial work
 
 namespace RepeatUntilBlank
 
 /-- The loop's transition table, started at its blank test. -/
 def fromCheck (i : Fin k) (body : MultiTapePTM k Bool State Operation) :
-    MultiTapePTM k Bool (RepeatUntilBlankState State) Operation :=
-  { repeatUntilBlank i body with initial := .check }
+    MultiTapePTM k Bool (State ⊕ Unit) Operation :=
+  { repeatUntilBlank i body with initial := .inr () }
 
-/-- A configuration of the repeated machine as one of the loop: a live state `q` becomes `run q`
-and the halted state becomes the blank test. -/
+/-- A configuration of the repeated machine as one of the loop: a live state `q` becomes `.inl q`
+and the halted state becomes the blank test `.inr ()`. -/
 def runConfig (cfg : Config k Bool State Operation x) :
-    Config k Bool (RepeatUntilBlankState State) Operation x :=
-  { cfg with tapes := cfg.tapes.mapState fun state => some (state.elim .check .run) }
+    Config k Bool (State ⊕ Unit) Operation x :=
+  { cfg with tapes := cfg.tapes.mapState (handOver ()) }
 
 variable (i : Fin k) (body : MultiTapePTM k Bool State Operation)
 
 /-- Starting at the test changes only the initial state, not the clocked program. -/
 theorem runOracleConfigFrom_fromCheck (fuel : ℕ)
-    (cfg : Config k Bool (RepeatUntilBlankState State) Operation x) :
+    (cfg : Config k Bool (State ⊕ Unit) Operation x) :
     (fromCheck i body).runOracleConfigFrom fuel cfg =
       (repeatUntilBlank i body).runOracleConfigFrom fuel cfg :=
   (MultiTapeMachine.runConfigFrom_map (repeatUntilBlank i body) (fromCheck i body) _ _ _ _
@@ -118,7 +118,7 @@ theorem runOracleConfigFrom_one_runConfig (cfg : Config k Bool State Operation x
     (repeatUntilBlank i body).runOracleConfigFrom 1 (runConfig cfg) =
       runConfig <$> body.runOracleConfigFrom 1 cfg := by
   obtain ⟨state, hs⟩ := Option.ne_none_iff_exists'.mp h
-  have hstate : (runConfig cfg).tapes.state = some (.run state) := by
+  have hstate : (runConfig cfg).tapes.state = some (.inl state) := by
     simp [runConfig, Cfg.mapState, hs]
   have hinp : (runConfig cfg).tapes.inputSymbol = cfg.tapes.inputSymbol := rfl
   have hwork : (runConfig cfg).tapes.workTapeSymbols = cfg.tapes.workTapeSymbols := rfl
@@ -128,7 +128,7 @@ theorem runOracleConfigFrom_one_runConfig (cfg : Config k Bool State Operation x
   simp only [bind_map_left, map_bind]
   congr 1
   funext bit
-  rw [show (repeatUntilBlank i body).tr (.run state) cfg.tapes.inputSymbol
+  rw [show (repeatUntilBlank i body).tr (.inl state) cfg.tapes.inputSymbol
     cfg.tapes.workTapeSymbols cfg.answerSymbols bit = runAction (body.tr state
       cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit) from rfl]
   cases body.tr state cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit with
@@ -200,7 +200,7 @@ theorem RunsWords.fromCheck_nil (i : Fin k) (body : MultiTapePTM k Bool State Op
     {ws : Fin k → List Bool} {out₀ : List Bool} (hi : ws i = []) :
     (fromCheck i body).RunsWords x ws out₀ 1 (pure ()) (fun _ => ws) (fun _ => []) := by
   intro OracleState oracle s cfg htapes hbuf
-  have hstate : cfg.tapes.state = some .check := by rw [htapes]; rfl
+  have hstate : cfg.tapes.state = some (.inr ()) := by rw [htapes]; rfl
   have hsym : cfg.tapes.workTapeSymbols i = none := by
     rw [htapes]
     simp [Cfg.workTapeSymbols, wordsCfg, tapeOfList_zero, hi]
@@ -226,15 +226,15 @@ theorem RunsWords.fromCheck_ne_nil (i : Fin k) {body : MultiTapePTM k Bool State
     (fromCheck i body).RunsWords x ws out₀ (t + 1) program ws' emit := by
   intro OracleState oracle s cfg htapes hbuf
   obtain ⟨b, rest, hb⟩ := List.exists_cons_of_ne_nil hi
-  have hstate : cfg.tapes.state = some .check := by rw [htapes]; rfl
+  have hstate : cfg.tapes.state = some (.inr ()) := by rw [htapes]; rfl
   have hsym : cfg.tapes.workTapeSymbols i = some b := by
     rw [htapes]
     simp [Cfg.workTapeSymbols, wordsCfg, tapeOfList_zero, hb]
   have hrun := run_interpret_runOracleConfigFrom_succ_step (fromCheck i body) oracle t cfg s
-    hstate (action := idle (some (.run body.initial))) (symbol := fun _ => none)
+    hstate (action := idle (some (.inl body.initial))) (symbol := fun _ => none)
     (move := fun _ => 0)
     (fun _ => by simp only [fromCheck, repeatUntilBlank, checkAction, hsym, Option.map_some])
-  have hstep := (step_idle_channels cfg (some (.run body.initial)))
+  have hstep := (step_idle_channels cfg (some (.inl body.initial)))
   dsimp only
   rw [hrun, runOracleConfigFrom_fromCheck]
   refine h OracleState oracle s _ ?_ (fun op => by rw [hstep]; exact hbuf op)
@@ -258,7 +258,6 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
     (repeatUntilBlank i body).RunsWords x ws₀ out₀ (t₁ + t₂)
       (prog₁ >>= fun a => (fun b => (a, b)) <$> prog₂ a)
       (fun p : α × β => ws₂ p.1 p.2) (fun p : α × β => emit₁ p.1 ++ emit₂ p.1 p.2) := by
-  classical
   intro OracleState oracle s cfg htapes hbuf
   let cfg₀ : Config k Bool State Operation x :=
     { tapes := wordsCfg x (some body.initial) ws₀ out₀, channels := cfg.channels }
@@ -274,7 +273,7 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
   have hcheck (mid : Config k Bool State Operation x) (a : α) (hmid : mid.tapes = f a) :
       (runConfig mid).tapes =
         wordsCfg x (some (fromCheck i body).initial) (ws₁ a) (out₀ ++ emit₁ a) := by
-    simp only [runConfig, hmid, f, mapState_wordsCfg, Option.elim_none]
+    simp only [runConfig, hmid, f, mapState_wordsCfg, handOver_none]
     rfl
   have hrest : ∀ result ∈ (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀)
       s).support,
@@ -289,58 +288,17 @@ theorem RunsWords.repeatUntilBlank_round (i : Fin k) {body : MultiTapePTM k Bool
   dsimp only
   rw [hcfg, run_interpret_runOracleConfigFrom_add i body oracle cfg₀ t₁ t₂ s hrest]
   constructor
-  · rw [PMF.map_bind]
-    let g (p : Cfg k Bool State x × OracleState) :
-        PMF (Cfg k Bool (RepeatUntilBlankState State) x × OracleState) :=
-      if h : ∃ a, p.1 = f a then
-        (ProbOracleComp.runWith oracle (prog₂ (Classical.choose h)) p.2).map
-          (fun (b, s₂) =>
-            (wordsCfg x none (ws₂ (Classical.choose h) b)
-              (out₀ ++ (emit₁ (Classical.choose h) ++ emit₂ (Classical.choose h) b)), s₂))
-      else PMF.pure (wordsCfg x none ws₀ out₀, p.2)
-    have hg (a : α) (s₁ : OracleState) :
-        g (f a, s₁) =
-          (ProbOracleComp.runWith oracle (prog₂ a) s₁).map
-            (fun (b, s₂) =>
-              (wordsCfg x none (ws₂ a b) (out₀ ++ (emit₁ a ++ emit₂ a b)), s₂)) := by
-      have hex : ∃ a', f a = f a' := ⟨a, rfl⟩
-      have hchoose : Classical.choose hex = a := hf (Classical.choose_spec hex).symm
-      change (if h : ∃ a', f a = f a' then _ else _) = _
-      simp only [hex, ↓reduceDIte, hchoose]
-    have hcongr :
-        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
-          (fun result =>
-            PMF.map (fun (final, s') => (final.tapes, s'))
-              (ProbOracleComp.runWith oracle
-                  ((repeatUntilBlank i body).runOracleConfigFrom t₂ (runConfig result.1))
-                  result.2)) =
-        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
-          (fun result => g (result.1.tapes, result.2)) := by
-      apply PMF.bind_congr_on_support
-      rintro ⟨mid, s₁⟩ hmid
-      obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid
-      have hlaw := ((h₂ a OracleState oracle s s₁ ha) OracleState oracle s₁
-        (runConfig mid) (hcheck mid a hmidTapes) hmidBuf).1
-      rw [runOracleConfigFrom_fromCheck] at hlaw
-      dsimp only
-      rw [hlaw, hmidTapes, hg a s₁]
-      congr 1
-      funext ⟨b, s₂⟩
-      simp only [List.append_assoc]
-    rw [hcongr]
-    have hmapBind :
-        (ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).bind
-          (fun result => g (result.1.tapes, result.2)) =
-        ((ProbOracleComp.runWith oracle (body.runOracleConfigFrom t₁ cfg₀) s).map
-          (fun (final, s') => (final.tapes, s'))).bind g := by
-      rw [PMF.bind_map]
-      rfl
-    rw [hmapBind, (h₁ OracleState oracle s cfg₀ rfl hbuf).1, PMF.bind_map]
-    simp only [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map, PMF.map_bind, PMF.map_comp,
-      Function.comp_def]
+  · refine law_bind Config.tapes Config.tapes hf
+      (fun a b => wordsCfg x none (ws₂ a b) (out₀ ++ (emit₁ a ++ emit₂ a b)))
+      (h₁ OracleState oracle s cfg₀ rfl hbuf).1 fun ⟨mid, s₁⟩ hmid => ?_
+    obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid
+    have hlaw := ((h₂ a OracleState oracle s s₁ ha) OracleState oracle s₁
+      (runConfig mid) (hcheck mid a hmidTapes) hmidBuf).1
+    rw [runOracleConfigFrom_fromCheck] at hlaw
+    refine ⟨a, hmidTapes, hlaw.trans ?_⟩
     congr 1
-    funext ⟨a, s₁⟩
-    exact hg a s₁
+    funext ⟨b, s₂⟩
+    simp only [List.append_assoc]
   · intro final hfinal op
     obtain ⟨⟨mid, s₁⟩, hmid, hfinal⟩ := (PMF.mem_support_bind_iff _ _ _).mp hfinal
     obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid

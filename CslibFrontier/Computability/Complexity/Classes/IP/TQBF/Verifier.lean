@@ -16,12 +16,14 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Search
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import Mathlib.NumberTheory.Bertrand
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # The machine verifier for quantified Boolean formulas
@@ -89,9 +91,6 @@ instance : FinEnum ArithQBF.Kind :=
 /-- Tokens of arithmetic formulas, the kind framed before the variable in binary. -/
 abbrev encArithToken : ArithQBF.Kind × ℕ ↪ List Bool :=
   encPair (encFinEnum ArithQBF.Kind) encNat
-
-/-- Points as lists of pairs of a variable, in binary, and a value, in unary. -/
-abbrev encPt : List (ℕ × ℕ) ↪ List Bool := encList (encPair encNat encUnary)
 
 /-- The parameters of the machine: the variables `xs` linearized after every quantifier, the
 modulus less one, so that the modulus is positive, and the degree bound `D` of every round. -/
@@ -267,14 +266,8 @@ private lemma unary_mod'_pt {γ : Type} {encIn : γ ↪ List Bool} {a b : γ →
     ComputableInPolyTime (fun x => a x % b x) encIn encUnary :=
   unary_mod.comp (ha.prod hb)
 
-private lemma unary_decide_eq_pt {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableInPolyTime a encIn encUnary)
-    (hb : ComputableInPolyTime b encIn encUnary) :
-    ComputableInPolyTime (fun x => decide (a x = b x)) encIn encBool :=
-  ha.decide_eq' hb
-
 attribute [local fun_prop] ComputableInPolyTime.bool_and' listTail_pt listIsEmpty_pt listHeadD_pt
-  unary_mod'_pt unary_decide_eq_pt computableInPolyTime_connectiveMod
+  unary_mod'_pt computableInPolyTime_connectiveMod
   computableInPolyTime_operatorMod
 
 private lemma xs_pt :
@@ -425,18 +418,14 @@ private theorem length_encClaim_map_le (I : LoopInput) (f : ℕ → ℕ)
   simp only [encClaim, length_encPair, encUnary_apply, List.length_replicate, claimBound]
   nlinarith
 
-private theorem length_encList_tail_le {α : Type} (enc : α ↪ List Bool) (l : List α) :
-    (encList enc l.tail).length ≤ (encList enc l).length := by
-  cases l <;> simp
-
 /-- Replacing the next token and the top claim by at most two claims of bounded encodings adds at
 most a bounded amount of storage. -/
 private theorem length_encVState_push_le (st : VState) (entries : List Claim) (b : Bool) {B : ℕ}
     (hlen : entries.length ≤ 2) (hentries : ∀ e ∈ entries, (encClaim e).length ≤ B) :
     (encVState (st.1.tail, entries ++ st.2.1.tail, b)).length ≤
       (encVState st).length + (8 * B + 8) := by
-  have htok := length_encList_tail_le encArithToken st.1
-  have hstk := length_encList_tail_le encClaim st.2.1
+  have htok := length_encList_sublist encArithToken st.1.tail_sublist
+  have hstk := length_encList_sublist encClaim st.2.1.tail_sublist
   have hentry : (encList encClaim entries).length ≤ 2 * (2 * B + 1) := by
     rw [length_encList]
     calc (entries.map fun e => 2 * (encClaim e).length + 1).sum
@@ -467,8 +456,7 @@ theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {n
   have hbin (o : ArithQBF.Connective) (hnext : next ∈ OracleComp.support
       (ask (I, st) >>= fun word => pure (binNext o (I, st) word))) :
       (encVState next).length ≤ (encVState st).length + (8 * claimBound I + 8) := by
-    obtain ⟨word, -, hword⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-    rw [OracleComp.eq_of_mem_supportWith_pure hword]
+    supp_cases hnext with ⟨word, -, rfl⟩
     unfold binNext
     split_ifs
     · refine length_encVState_push_le st [_, _] true (by simp) ?_
@@ -478,16 +466,12 @@ theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {n
   have hop (o : ArithQBF.Operator) (hnext : next ∈ OracleComp.support
       (ask (I, st) >>= opCont o (I, st))) :
       (encVState next).length ≤ (encVState st).length + (8 * claimBound I + 8) := by
-    obtain ⟨word, -, hword⟩ := OracleComp.mem_supportWith_bind_iff.mp hnext
-    unfold opCont at hword
-    split_ifs at hword
-    · obtain ⟨z, hz, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hword
-      refine length_encVState_push_le st [_] true (by simp) ?_
+    supp_cases hnext [opCont] with ⟨word, -, ⟨-, z, hz, rfl⟩ | ⟨-, rfl⟩⟩
+    · refine length_encVState_push_le st [_] true (by simp) ?_
       simp only [List.mem_singleton, forall_eq]
       exact length_encClaim_map_le I _ (fun x => by split_ifs <;> exact Nat.mod_lt _ hq) _
         (hornerMod_lt _ _)
-    · rw [OracleComp.eq_of_mem_supportWith_pure hword]
-      exact hrej
+    · exact hrej
   unfold step at h
   split_ifs at h with hactive
   · generalize hk : (st.1.headD (.top, 0)).1 = k at h
@@ -600,9 +584,6 @@ private lemma cond_pt {α β : Type} {encIn : α ↪ List Bool} {encOut : β ↪
     ComputableInPolyTime (fun x => if c x then f x else g x) encIn encOut :=
   ite hc hf hg
 
-private lemma qbf_tokens_pt : ComputableInPolyTime QBF.tokens encQBF (encList encToken) :=
-  computableInPolyTime_tokens
-
 private lemma isQuantifier_pt :
     ComputableInPolyTime QBF.Kind.isQuantifier encKind encBool := of_finite _
 
@@ -613,7 +594,7 @@ private lemma lin_pt {α : Type} {enc : α ↪ List Bool} :
     ComputableInPolyTime (fun _ : α => ArithQBF.Kind.lin) enc (encFinEnum ArithQBF.Kind) :=
   const _
 
-attribute [local fun_prop] cond_pt qbf_tokens_pt isQuantifier_pt arith_pt lin_pt
+attribute [local fun_prop] cond_pt isQuantifier_pt arith_pt lin_pt
 
 private lemma linVars_pt : ComputableInPolyTime linVars encQBF (encList encNat) := by
   unfold linVars

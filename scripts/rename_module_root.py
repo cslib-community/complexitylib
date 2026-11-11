@@ -35,8 +35,8 @@ Apply mode (the default) transforms the checkout in the current directory in pla
    when the module does not exist (test fixtures), so they are rewritten too. Comment lines that
    the longer names push past 100 columns are re-wrapped, and `FIXUPS` makes the few edits that
    no rule can.
-   `manual/development-history/` and `manual/data/` describe and analyse the pinned historical
-   snapshot, so only their URLs change.
+   `manual/history/` (formerly `manual/development-history/`) and `manual/data/` describe and
+   analyse the pinned historical snapshot, so only their URLs change.
 3. The aggregators are regenerated: with `lake exe mk_all` unless `--no-mk-all`, otherwise by the
    same rule in Python (`regenerate_aggregates`).
 
@@ -135,7 +135,7 @@ EXCLUDED = frozenset({
     "scripts/cache/setup-gcs.sh",
 })
 # Historical analyses of the pinned snapshot: only URLs change.
-URL_ONLY = ("manual/development-history/", "manual/data/")
+URL_ONLY = ("manual/history/", "manual/development-history/", "manual/data/")
 # Tooling sources: their dotted root tokens are module names even for nonexistent (fixture) modules.
 TOOLING_SUFFIXES = (".py", ".sh", ".cjs", ".js", ".yml", ".yaml")
 PRAGMA = "rename-module-root: keep"
@@ -145,6 +145,9 @@ FIXUPS = (
     ("README.md", "The package is named `complexitylib`; imports begin",
      "The package is named `cslib-frontier`; imports begin"),
     ("README.md", "\ncd complexitylib\n", "\ncd cslib-frontier\n"),
+    ("manual/workflows/getting-started.md", "\ncd complexitylib\n", "\ncd cslib-frontier\n"),
+    ("manual/workflows/getting-started.md", "The package is `complexitylib`; imports start with",
+     "The package is `cslib-frontier`; imports start with"),
     ("README.md",
      "Community. Downstream projects using that package name should change it to `complexitylib`; "
      "Lean\nimports remain unchanged.",
@@ -154,6 +157,10 @@ FIXUPS = (
      "`CslibFrontier.*` modules;\ndeclaration names did not change."),
     ("guide/CslibFrontierGuide/FirstSteps.lean", "The package is named `complexitylib`, and",
      "The package is named `cslib-frontier`, and"),
+    # The package-name fixup above lengthens the first line of this paragraph past 100 columns.
+    ("guide/CslibFrontierGuide/FirstSteps.lean",
+     "The package is named `cslib-frontier`, and its modules begin with `CslibFrontier.` and mirror CSLib's\nlayout. `import CslibFrontier` imports the whole library, which is convenient for exploring but slow\nto load; a development imports the modules it uses. Each module's documentation lists its main\ndefinitions and results, with references.",
+     "The package is named `cslib-frontier`, and its modules begin with `CslibFrontier.` and mirror\nCSLib's layout. `import CslibFrontier` imports the whole library, which is convenient for exploring\nbut slow to load; a development imports the modules it uses. Each module's documentation lists its\nmain definitions and results, with references."),
     ("AGENTS.md",
      "`merge=union` result, which keeps deleted imports and can misorder added ones.\n",
      "`merge=union` result, which keeps deleted imports and can misorder added ones.\n\n"

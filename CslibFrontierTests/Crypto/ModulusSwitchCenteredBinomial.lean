@@ -44,7 +44,7 @@ example (l : ℕ) :
       (OracleComp.replicateFin (l + 1) (sampleCenteredBinomial (8 * (l + 1)))))).map
         (fun values j i => (values j i : ZMod (2 ^ (moduleLWECBDWidth (l + 1) + 1)))) =
       PMF.pi (fun _ : Fin (l + 1) => PMF.pi (fun _ : Fin (l + 1) =>
-        Homomorphic.GSW.noiseLaw (moduleLWECBDWidth (l + 1) + 1) (8 * (l + 1)))) :=
+        LWE.noiseLaw (moduleLWECBDWidth (l + 1) + 1) (8 * (l + 1)))) :=
   eval_moduleLWECenteredBinomial_mod _ _ _ _
 
 /-- Power-of-two matrix entries use the exact finite uniform law, not arbitrary uniform sampling. -/
@@ -62,7 +62,7 @@ example : 4 * (2 * (10 : ℝ) + 1) * 10 * Real.exp (-10) < 1 := by
   linarith
 
 private noncomputable def noise (η : ℕ) : PMF (Fin 1 → ZMod 64) :=
-  PMF.pi fun _ => Homomorphic.GSW.noiseLaw 6 η
+  PMF.pi fun _ => LWE.noiseLaw 6 η
 
 private noncomputable def secrets : PMF (Fin 1 → Fin 1 → ZMod 64) := PMF.pi fun _ => noise 1
 
