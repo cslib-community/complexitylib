@@ -123,11 +123,8 @@ theorem mem_ModP_iff_primeFactors (hk : k ≠ 0) :
   have h_coprime : (k.primeFactors : Set ℕ).Pairwise fun i j =>
     (i ^ k.factorization i).Coprime (j ^ k.factorization j) := by
     intro i hi j hj hneq
-    have hpi : i.Prime := Nat.prime_of_mem_primeFactors hi
-    have hpj : j.Prime := Nat.prime_of_mem_primeFactors hj
-    have hcoprime : i.Coprime j := hpi.coprime_iff_not_dvd.mpr fun h_dvd =>
-      hneq ((hpj.eq_one_or_self_of_dvd i h_dvd).resolve_left hpi.ne_one)
-    exact hcoprime.pow _ _
+    have h_sub := Nat.pairwise_coprime_pow_primeFactors_factorization (n := k)
+    exact h_sub (fun (h : (⟨i, hi⟩ : k.primeFactors) = ⟨j, hj⟩) => hneq (congrArg Subtype.val h))
   rw [mem_ModP_prod_iff k.primeFactors (fun p => p ^ k.factorization p) h_coprime]
   constructor
   · rintro ⟨B, hB, rfl⟩
@@ -151,10 +148,7 @@ theorem ModP_eq_ModP_prod_primeFactors (hk : k ≠ 0) :
   rw [mem_ModP_iff_primeFactors hk]
   have h_coprime : (k.primeFactors : Set ℕ).Pairwise (fun i j => i.Coprime j) := by
     intro i hi j hj hneq
-    have hpi : i.Prime := Nat.prime_of_mem_primeFactors hi
-    have hpj : j.Prime := Nat.prime_of_mem_primeFactors hj
-    exact hpi.coprime_iff_not_dvd.mpr fun h_dvd =>
-      hneq ((hpj.eq_one_or_self_of_dvd i h_dvd).resolve_left hpi.ne_one)
+    exact (Nat.coprime_primes (Nat.prime_of_mem_primeFactors hi) (Nat.prime_of_mem_primeFactors hj)).mpr hneq
   rw [mem_ModP_prod_iff k.primeFactors (fun p => p) h_coprime]
 
 theorem supClosed_ModP (k : ℕ) (hA : A ∈ ModP k enc) (hB : B ∈ ModP k enc) :

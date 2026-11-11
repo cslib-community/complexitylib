@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2026 The cslib-frontier Authors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The cslib-frontier Authors
+-/
+
 import CslibFrontier.Computability.Complexity.Classes.ModP.Composite
 
 namespace Cslib.Complexity.Tests
@@ -13,9 +19,33 @@ example (A B : Set α) (hA : A ∈ ParityP enc) (hB : B ∈ ModP 3 enc) : A ∪ 
 example (A B : Set α) (hA : A ∈ ModP 6 enc) (hB : B ∈ ModP 6 enc) : A ∪ B ∈ ModP 6 enc :=
   supClosed_ModP 6 hA hB
 
+example : ModP 12 enc = ModP 6 enc := by
+  have hk : 12 ≠ 0 := by decide
+  have h : ModP 12 enc = ModP (∏ p ∈ (12 : ℕ).primeFactors, p) enc := ModP_eq_ModP_prod_primeFactors hk
+  -- 12.primeFactors is {2, 3}, product is 6
+  have h_prod : (∏ p ∈ (12 : ℕ).primeFactors, p) = 6 := by
+    have h_factors : (12 : ℕ).primeFactors = {2, 3} := by
+      ext x
+      simp only [Nat.mem_primeFactors, Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · rintro ⟨hp, hdvd, _⟩
+        have : x ≤ 12 := Nat.le_of_dvd (by decide) hdvd
+        revert hdvd hp
+        rcases Nat.eq_zero_or_pos x with rfl | hpos
+        · decide
+        · interval_cases x <;> decide
+      · rintro (rfl | rfl)
+        · exact ⟨Nat.prime_two, by decide, by decide⟩
+        · exact ⟨Nat.prime_three, by decide, by decide⟩
+    rw [h_factors]
+    exact rfl
+  rw [h_prod] at h
+  exact h
+
 example (A B : Set α) (hA : A ∈ ModP 0 enc) (hB : B ∈ ModP 0 enc) : A ∪ B ∈ ModP 0 enc :=
   supClosed_ModP 0 hA hB
 
+-- k = 1 is the empty language since everything mod 1 is 0, so f(x) mod 1 ≠ 0 is false.
 example (A B : Set α) (hA : A ∈ ModP 1 enc) (hB : B ∈ ModP 1 enc) : A ∪ B ∈ ModP 1 enc :=
   supClosed_ModP 1 hA hB
 
