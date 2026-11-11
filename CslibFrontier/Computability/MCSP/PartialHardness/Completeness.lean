@@ -261,10 +261,10 @@ private theorem combine_append_eq {S : Finset ℕ} {f : VarFunctions I lam} {τ 
     set s := (BitString.equivFin _ (BitString.zeroExtend (d' := varLength I lam v)
       (seed x ⟨_, htΔ⟩ q i)) : ℕ) with hs_def
     have hs : s < 2 ^ varLength I lam v := (BitString.equivFin _ _).isLt
-    have hin : directProductInput (addr L τ o x) (finProdFinEquiv (q, i)) =
+    have hin : BitString.block (addr L τ o x) (finProdFinEquiv (q, i)) =
         natBits L (o v + s) := by
       funext r
-      simp only [directProductInput, addr, Equiv.symm_apply_apply, natBits]
+      simp only [BitString.block, addr, Equiv.symm_apply_apply, natBits]
       exact addrBit_eq (t := ⟨_, htΔ⟩) rfl rfl hvW (hfit v hvS).1 i r
     have hlt : o v + s < 2 ^ L := by have := (hfit v hvS).2; omega
     simp only [directProduct, hin]

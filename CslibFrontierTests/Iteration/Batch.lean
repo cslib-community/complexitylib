@@ -108,7 +108,7 @@ example : ∃ out : Circuit signature 6 6,
     flipTail_invariant (by decide) one_pos
   refine ⟨out, ?_, by simpa [leftHalf, flipTail, batchBudget] using hs⟩
   have hx : ∀ member : Fin 3,
-      directProductInput ![false, false, false, true, false, false] member ∈ leftHalf := by decide
+      BitString.block ![false, false, false, true, false, false] member ∈ leftHalf := by decide
   exact (hout hx).trans (by decide)
 
 -- A single trajectory recovers `powerBudget`; the promise is proper; the improved budget is
@@ -116,7 +116,7 @@ example : ∃ out : Circuit signature 6 6,
 example :
     batchBudget 2 1 leftHalf.card 1 1 = powerBudget 2 1 leftHalf.card 1 ∧
     (¬∀ member : Fin 3,
-      directProductInput ![true, false, false, true, false, false] member ∈ leftHalf) ∧
+      BitString.block ![true, false, false, true, false, false] member ∈ leftHalf) ∧
     (batchBudget 2 1 leftHalf.card 3 1 = 165 ∧ batchBudget 2 1 4 3 1 = 219) ∧
     flipTail.eval interpretation ![false, false] ∉
       ({![false, false]} : Finset (BitString 2)) :=
@@ -131,14 +131,14 @@ example : ∃ out : Circuit signature 6 6,
   refine ⟨out, ?_, by simpa [flipTail, batchBudget] using hs⟩
   have hx : ∀ member : Fin 3, ∀ i : Fin 1,
       (flipTail.eval interpretation)^[i.val]
-        (directProductInput ![false, false, false, false, false, false] member) ∈
+        (BitString.block ![false, false, false, false, false, false] member) ∈
           ({![false, false]} : Finset (BitString 2)) := by decide
   exact (hout hx).trans (by decide)
 
 -- The optimized theorem keeps the same proper input domain.
 example (T : ℕ) : ∃ out : Circuit signature 6 6,
     out.ComputesOn interpretation
-      {x | ∀ member : Fin 3, directProductInput x member ∈ leftHalf}
+      {x | ∀ member : Fin 3, BitString.block x member ∈ leftHalf}
       (blockMap (flipTail.eval interpretation)^[T] 3) ∧
     (out.size : ℝ) ≤ 300000 * optimizedBatchBudget 2 1 2 3 := by
   simpa [leftHalf, flipTail] using
