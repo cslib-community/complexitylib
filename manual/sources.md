@@ -1362,6 +1362,11 @@ Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, ve
 
 Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinatorial Theory, Series A* 25(1), 80–83, 1978. https://doi.org/10.1016/0097-3165(78)90036-5 . Bibliographic data from the DOI record; the paper was not inspected. The induction in the library's Brégman module follows the published descriptions of this proof (induction on `n`, a convexity inequality at one row, then averaging over the rows).
 
+<a id="schrijver86"></a>
+## schrijver86
+
+Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. Bibliographic metadata from `references.bib`; cited at book level for polynomial-time exact rational Gaussian elimination and fraction-free subdeterminant size bounds (`rationalElim_computableInPolyTime`, `ratSolve_computableInPolyTime`). No primary copy was inspected in this pass, so no chapter or theorem number is claimed.
+
 <a id="schummervohra07"></a>
 ## schummervohra07
 

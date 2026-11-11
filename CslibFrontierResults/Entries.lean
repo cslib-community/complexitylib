@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
@@ -71,6 +72,7 @@ import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
+import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -2117,3 +2119,43 @@ register_result "tfnp-sopl-eopl-collapse" where
     transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
     EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
     are not formalized."
+
+register_result "bareiss-rational-elimination" where
+  title := "Exact rational Bareiss–Jordan Gaussian elimination and entry bounds"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_spec,
+    Cslib.LinearAlgebra.ratRref_isReducedRowEchelon,
+    Cslib.LinearAlgebra.ratRank_eq,
+    Cslib.LinearAlgebra.ratSolve_spec,
+    Cslib.LinearAlgebra.rationalElim_entry_bounds,
+    Cslib.LinearAlgebra.ratSolve_entry_bounds
+  ]
+  scope := "Executable row-denominator-cleared Bareiss–Jordan elimination over ℚ built on \
+    fraction-free Sylvester–Bareiss minor elimination over ℤ (RREF, exact rank, linearly \
+    independent spanning row and kernel bases, canonical linear system solving, and \
+    polynomial entry/denominator bit-length bounds via stageEntryBound). Bounded milestone \
+    of Issue #3672 (circulant spectra and fibre-sum bounds remain open there)."
+
+register_result "bareiss-rational-elimination-polytime" where
+  title := "Polynomial-time multi-tape Turing certificates for rational Gaussian elimination"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRref_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRank_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRowBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratKernelBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratSolve_computableInPolyTime
+  ]
+  scope := "Native Turing.MultiTapeTM.ComputableInPolyTime certificates for rationalElim, \
+    ratRref, ratRank, ratRowBasis, ratKernelBasis, and ratSolve with structured \
+    enc_structure codecs using unary matrix dimensions and framed signed-binary/rational \
+    entries. Bounded milestone of Issue #3672 (circulant spectra and fibre-sum bounds \
+    remain open there)."
