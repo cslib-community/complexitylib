@@ -27,152 +27,124 @@ open Cslib.Circuits.Boolean.AffineDisperserCore
 open Cslib.Circuits.Boolean.SemiCircuit
 open Cslib.Complexity.XORSAT.Dense Cslib.Circuits Cslib.BitString
 
+open State
+
+/-- The step chosen by the refuter. -/
 inductive StepChoice
+  /-- `(D1)`: delete the degenerate gate `J`. -/
   | deleteConstantGate (J : ℕ)
+  /-- `(D2)`: delete the gate `J`, which nothing reads. -/
   | deleteDeadGate (J : ℕ)
+  /-- `(D3)`: delete the equation `e` of at most two terms. -/
   | deleteShortEqn (e : ℕ)
+  /-- `(D4)`: unit-delete the parameter `x`, whose only child is the equation `e`. -/
   | deleteUnitParam (x e : ℕ)
+  /-- Move the affine gate `J` into the affine system. -/
   | moveAffine (J : ℕ)
+  /-- Case 2: the paired parameter `p` has degree `0` or at least `2`. -/
   | degeneratePair (p : ℕ)
+  /-- Case 3: `p` is the first member of a pair whose members share a child. -/
   | partnersShareChild (p : ℕ)
+  /-- Case 4: the paired parameter `p` occurs in an equation. -/
   | pairInSystem (p : ℕ)
+  /-- Case 5a: the non-affine gate `G` reads the paired parameter `p` and another parameter. -/
   | andOnPair (G p : ℕ)
+  /-- Case 5b, preparation: swap an auxiliary argument of the minimal gate `G`. -/
   | swapAuxIn (G : ℕ)
+  /-- Case 5b: pair creation on the minimal gate `G`. -/
   | pairCreation (G : ℕ)
 
-def isNode (i : ℕ) : Arg → Bool
-  | .const _ => false
-  | .node j => decide (i = j)
-
-def readsJ {n} (S : State n) (K : ℕ) (J : ℕ) : Bool :=
-  let g := S.gate K
-  isNode J g.left || isNode J g.right
-
+/-- Whether an argument is a gate of `S`. -/
 def isGate {n} (S : State n) : Arg → Bool
   | .const _ => false
   | .node i => decide (i ∈ S.gates)
 
+/-- Whether a gate is degenerate (`Gate.Degenerate`): it has a constant argument or two equal
+arguments. -/
+def isDegenerate (g : Gate) : Bool :=
+  match g.left, g.right with
+  | .const _, _ => true
+  | _, .const _ => true
+  | .node u, .node v => decide (u = v)
+
+/-- `(D1)`: the least degenerate gate. -/
+def findD1 {n} (S : State n) : Option ℕ :=
+  (S.gates.sort (· ≤ ·)).find? fun J => isDegenerate (S.gate J)
+
+/-- `(D2)`: the least gate that no gate and not the output reads. -/
 def findD2 {n} (S : State n) : Option ℕ :=
   (S.gates.sort (· ≤ ·)).find? fun J =>
-    decide (∀ K ∈ S.gates, !readsJ S K J) && !(isNode J S.out.arg)
+    decide ((∀ K ∈ S.gates, ¬ (S.gate K).Reads J) ∧ S.out.arg ≠ .node J)
 
+/-- `(D3)`: the least equation with at most two terms. -/
 def findD3 {n} (S : State n) : Option ℕ :=
   (S.eqns.sort (· ≤ ·)).find? fun e =>
     decide ((S.eqn e).terms.card ≤ 2)
 
-def childrenEq {n} (S : State n) (x : ℕ) (c : ℕ ⊕ ℕ) : Bool :=
-  decide (S.children x = {c})
-
+/-- `(D4)`: the least unpaired parameter not read by the output whose only child is an equation,
+with that equation. -/
 def findD4 {n} (S : State n) : Option (ℕ × ℕ) :=
   (S.unpaired.sort (· ≤ ·)).findSome? fun x =>
-    if decide (isNode x S.out.arg) then none
+    if S.out.arg = .node x then none
     else (S.eqns.sort (· ≤ ·)).findSome? fun e =>
-      if childrenEq S x (.inr e) then some (x, e) else none
+      if S.children x = {.inr e} then some (x, e) else none
 
+/-- The least affine gate reading no gate. -/
 def findMovable {n} (S : State n) : Option ℕ :=
   (S.gates.sort (· ≤ ·)).find? fun J =>
     decide (IsAffineOp (S.gate J).op) &&
     !(isGate S (S.gate J).left) &&
     !(isGate S (S.gate J).right)
 
+/-- Case 2: the least paired parameter of degree `0` or at least `2`. -/
 def findDegeneratePair {n} (S : State n) : Option ℕ :=
-  let badFsts := (S.pairs.filter (fun pr => S.deg pr.fst = 0 ∨ 2 ≤ S.deg pr.fst)).image ZeroPair.fst
-  let badSnds := (S.pairs.filter (fun pr => S.deg pr.snd = 0 ∨ 2 ≤ S.deg pr.snd)).image ZeroPair.snd
-  if h : badFsts.Nonempty then some (badFsts.max' h)
-  else if h2 : badSnds.Nonempty then some (badSnds.max' h2)
-  else none
+  (S.params.sort (· ≤ ·)).find? fun p =>
+    decide (S.Paired p ∧ (S.deg p = 0 ∨ 2 ≤ S.deg p))
 
-def encodeChild : ℕ ⊕ ℕ → ℕ
-  | .inl J => 2 * J
-  | .inr e => 2 * e + 1
+/-- Case 3: the least first member of a pair whose members share a child. -/
+def findPartnersShareChild {n} (S : State n) : Option ℕ :=
+  (S.params.sort (· ≤ ·)).find? fun p =>
+    decide (∃ pr ∈ S.pairs, pr.fst = p ∧ (S.children pr.fst ∩ S.children pr.snd).Nonempty)
 
-def decodeChild : ℕ → ℕ ⊕ ℕ
-  | c => if c % 2 = 0 then .inl (c / 2) else .inr (c / 2)
-
-def findPartnersShareChild {n} (S : State n) : Option (ℕ × (ℕ ⊕ ℕ)) :=
-  let bad := S.pairs.filter fun pr => (S.children pr.fst ∩ S.children pr.snd).Nonempty
-  let badFsts := bad.image ZeroPair.fst
-  if h : badFsts.Nonempty then
-    let fst := badFsts.max' h
-    let snds := (bad.filter (fun pr => pr.fst = fst)).image ZeroPair.snd
-    if hsnd : snds.Nonempty then
-      let snd := snds.max' hsnd
-      let childSet := S.children fst ∩ S.children snd
-      let childEnc := childSet.image encodeChild
-      if h2 : childEnc.Nonempty then
-        some (fst, decodeChild (childEnc.max' h2))
-      else none
-    else none
-  else none
-
-def degenerateLit {n} (S : State n) (J : ℕ) : Option Lit :=
-  let g := S.gate J
-  let op := g.op
-  let eval (L R : Bool) : Bool :=
-    let bL := match g.left with | .const b => b | .node _ => L
-    let bR := match g.right with | .const b => b | .node _ => R
-    op bL bR
-  let oFF := eval false false
-  let oFT := eval false true
-  let oTF := eval true false
-  let oTT := eval true true
-  if oFF == oFT && oTF == oTT then
-    if oFF == oTF then some (Lit.const oFF)
-    else match g.left with
-         | .node u => some (Lit.node u oFF)
-         | .const _ => none
-  else if oFF == oTF && oFT == oTT then
-    if oFF == oFT then some (Lit.const oFF)
-    else match g.right with
-         | .node v => some (Lit.node v oFF)
-         | .const _ => none
-  else if let (.node u, .node v) := (g.left, g.right) then
-    if u == v then
-      if oFF == oTT then some (Lit.const oFF)
-      else some (Lit.node u oFF)
-    else none
-  else none
-
-def findD1 {n} (S : State n) : Option ℕ :=
-  (S.gates.sort (· ≤ ·)).find? fun J =>
-    decide ((degenerateLit S J).isSome)
-
+/-- Case 4: the least paired parameter occurring in an equation. -/
 def findPairInSystem {n} (S : State n) : Option ℕ :=
-  (S.eqns.sort (· ≤ ·)).findSome? fun e =>
-    ((S.eqn e).terms.sort (· ≤ ·)).findSome? fun p =>
-      if decide (S.Paired p) then some p else none
+  (S.params.sort (· ≤ ·)).find? fun p =>
+    decide (S.Paired p ∧ ∃ e ∈ S.eqns, p ∈ (S.eqn e).terms)
 
+/-- Case 5a: the least non-affine gate reading two distinct parameters, one of them paired, with
+a paired argument. -/
 def findAndOnPair {n} (S : State n) : Option (ℕ × ℕ) :=
   (S.gates.sort (· ≤ ·)).findSome? fun G =>
-    if decide (!IsAffineOp (S.gate G).op) then
+    if ¬ IsAffineOp (S.gate G).op then
       match (S.gate G).left, (S.gate G).right with
       | .node p, .node w =>
-        if decide (p ≠ w ∧ p ∈ S.params ∧ w ∈ S.params) then
-          if decide (S.Paired p) then some (G, p)
-          else if decide (S.Paired w) then some (G, w)
+        if p ≠ w ∧ p ∈ S.params ∧ w ∈ S.params then
+          if S.Paired p then some (G, p)
+          else if S.Paired w then some (G, w)
           else none
         else none
       | _, _ => none
     else none
 
+/-- The step taken by the refuter in `S`, or `none` when `S` is terminal. -/
 def chooseStep? {n} (S : State n) : Option StepChoice :=
   match S.out.arg with
   | .const _ => none
   | .node u =>
-    if decide (u ∈ S.params) then none
+    if u ∈ S.params then none
     else if let some J := findD1 S then some (.deleteConstantGate J)
     else if let some J := findD2 S then some (.deleteDeadGate J)
     else if let some e := findD3 S then some (.deleteShortEqn e)
     else if let some (x, e) := findD4 S then some (.deleteUnitParam x e)
     else if let some J := findMovable S then some (.moveAffine J)
     else if let some p := findDegeneratePair S then some (.degeneratePair p)
-    else if let some (pr_fst, _H) := findPartnersShareChild S then some (.partnersShareChild pr_fst)
+    else if let some p := findPartnersShareChild S then some (.partnersShareChild p)
     else if let some p := findPairInSystem S then some (.pairInSystem p)
     else if let some (G, p) := findAndOnPair S then some (.andOnPair G p)
     else if hne : S.gates.Nonempty then
       let G := S.gates.min' hne
       if 0 < S.auxIn G then some (.swapAuxIn G)
-      else if decide (u = G) then none
+      else if u = G then none
       else some (.pairCreation G)
     else none
 
@@ -199,11 +171,7 @@ def findAffineRep {n} (S : State n) (a : ℕ) : Bool × Finset ℕ :=
   let T := S.params.filter fun y => evaluateAux S a (fun j => j == y) != c
   (c, T)
 
-open Cslib.Circuits.Boolean.AffineDisperser4n
-open Cslib.Circuits.Boolean.AffineDisperserCore
-open Cslib.Circuits.Boolean.SemiCircuit
-open Cslib.Complexity.XORSAT.Dense Cslib.Circuits Cslib.BitString
-
+/-- The pair of `S` containing `p`, found by searching the possible partners in `S.params`. -/
 def findPair {n} (S : State n) (p : ℕ) : Option ZeroPair :=
   (S.params.sort (· ≤ ·)).findSome? fun r =>
     let prs : List ZeroPair := [
@@ -214,140 +182,108 @@ def findPair {n} (S : State n) (p : ℕ) : Option ZeroPair :=
     ]
     prs.find? (fun (pr : ZeroPair) => decide (pr ∈ S.pairs))
 
+/-- The children of `p`: the gates reading it, then the equations containing it, in increasing
+order. -/
 def getChildren {n} (S : State n) (p : ℕ) : List (ℕ ⊕ ℕ) :=
   let inls := (S.gates.sort (· ≤ ·)).filterMap
-    (fun J => if decide (Sum.inl J ∈ S.children p) then some (Sum.inl J) else none)
+    (fun J => if Sum.inl J ∈ S.children p then some (Sum.inl J) else none)
   let inrs := (S.eqns.sort (· ≤ ·)).filterMap
-    (fun e => if decide (Sum.inr e ∈ S.children p) then some (Sum.inr e) else none)
+    (fun e => if Sum.inr e ∈ S.children p then some (Sum.inr e) else none)
   inls ++ inrs
 
-def deleteChild {n} (S : State n) (child : ℕ ⊕ ℕ) : State n :=
-  match child with
-  | .inl J => State.deleteGate S J ((degenerateLit S J).getD (Lit.const false))
-  | .inr e =>
-    let terms := (S.eqn e).terms.sort (· ≤ ·)
-    match terms.find? (fun v => decide (v ∈ S.aux)) with
-    | some v =>
-      let rest := terms.filter (· ≠ v)
-      let ℓ := if rest.isEmpty then Lit.const (S.eqn e).rhs
-               else Lit.node rest.head! (S.eqn e).rhs
-      State.deleteEqn S e v ℓ
-    | none => State.dropEqn S e 0
+/-- `(D4)` unit delete of the parameter `x` with only child the equation `e`: swap `x` with the
+least auxiliary variable whose affine representation contains `x`, then drop `e` and `x`. -/
+def unitDelete {n} (S : State n) (x e : ℕ) : State n :=
+  match (S.aux.sort (· ≤ ·)).find? (fun Q => decide (x ∈ (findAffineRep S Q).2)) with
+  | some Q => (S.swap x Q (findAffineRep S Q).1 (findAffineRep S Q).2).dropEqn e x
+  | none => S
 
+/-- The argument of `g` other than `p`. -/
+def otherArg (g : Gate) (p : ℕ) : ℕ :=
+  match g.left, g.right with
+  | .node u, .node v => if u = p then v else u
+  | _, _ => p
+
+/-- A value `b` of the argument `w` of a non-affine gate `g` making `g` constant, with that
+constant. -/
+def fixArg (g : Gate) (w : ℕ) : Bool × Bool :=
+  if g.right = .node w then
+    let b := !decide (g.op false false = g.op true false)
+    (b, g.op false b)
+  else
+    let b := !decide (g.op false false = g.op false true)
+    (b, g.op b false)
+
+/-- An auxiliary argument `a` of `g` with the other argument `b`. -/
+def auxArgs {n} (S : State n) (g : Gate) : Option (ℕ × ℕ) :=
+  match g.left, g.right with
+  | .node u, .node v =>
+    if u ∈ S.aux then some (u, v) else if v ∈ S.aux then some (v, u) else none
+  | _, _ => none
+
+/-- Apply the step `choice` to `S`. -/
 def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
   match choice with
-  | .deleteConstantGate J =>
-    let l := (degenerateLit S J).getD (Lit.const false)
-    State.deleteGate S J l
-  | .deleteDeadGate J =>
-    State.deleteGate S J (Lit.const false)
-  | .deleteShortEqn e =>
-    let terms := (S.eqn e).terms.sort (· ≤ ·)
-    match terms.find? (fun v => decide (v ∈ S.aux)) with
-    | some v =>
-      let rest := terms.filter (· ≠ v)
-      let ℓ := if rest.isEmpty then Lit.const (S.eqn e).rhs
-               else Lit.node rest.head! (S.eqn e).rhs
-      State.deleteEqn S e v ℓ
-    | none => State.dropEqn S e 0
-  | .deleteUnitParam x e =>
-    let terms := (S.eqn e).terms.sort (· ≤ ·)
-    match terms.find? (fun v => decide (v ∈ S.aux)) with
-    | some Q =>
-      let T := (S.eqn e).terms.erase Q
-      let S₁ := State.swap S x Q (S.eqn e).rhs T
-      State.dropEqn S₁ e x
-    | none => S
-  | .moveAffine J => State.moveAffine S J S.freshEqn
+  | .deleteConstantGate J => S.deleteConstraint (.inl J)
+  | .deleteDeadGate J => S.deleteGate J (Lit.const false)
+  | .deleteShortEqn e => S.deleteConstraint (.inr e)
+  | .deleteUnitParam x e => unitDelete S x e
+  | .moveAffine J => S.moveAffine J S.freshEqn
   | .degeneratePair p =>
     match findPair S p with
     | some pr =>
-      if S.deg p == 0 then
-        State.fixConst S (pr.partner p) (pr.partnerBias p)
+      if S.deg p = 0 then S.fixConst (pr.partner p) (pr.partnerBias p)
       else
-        let S₁ := State.fixConst S p (pr.bias p)
         match getChildren S p with
-        | c0 :: c1 :: _ =>
-          let S₂ := deleteChild S₁ c0
-          deleteChild S₂ c1
-        | _ => S₁
+        | N₁ :: N₂ :: _ => ((S.fixConst p (pr.bias p)).deleteConstraint N₁).deleteConstraint N₂
+        | _ => S
     | none => S
   | .partnersShareChild p =>
-    match findPair S p with
-    | some pr =>
-      let r := pr.partner p
-      let H_gate := (S.gates.sort (· ≤ ·)).find?
-        (fun G => decide (Sum.inl G ∈ S.children p ∩ S.children r))
-      match H_gate with
-      | some G =>
-          let φ (a b : Bool) := (S.gate G).op
-            (if (S.gate G).left == Arg.node p then a else b)
-            (if (S.gate G).right == Arg.node p then a else b)
-          if φ pr.fstBias false == φ pr.fstBias true then
-            let S₁ := State.fixConst S p (pr.bias p)
-            State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
-          else if φ false pr.sndBias == φ true pr.sndBias then
-            let S₁ := State.fixConst S r (pr.bias r)
-            State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
-          else
-            let S₁ := State.restrict S p (Lit.node r !(pr.fstBias ^^ pr.sndBias)) (S.pairsAvoid p)
-            State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
-      | none =>
-        State.restrict S p (Lit.node r !(pr.fstBias ^^ pr.sndBias)) (S.pairsAvoid p)
-    | none => S
+    match findPair S p, getChildren S p with
+    | some pr, H :: _ => S.partnersShareChildStep pr H
+    | _, _ => S
   | .pairInSystem p =>
     match findPair S p with
     | some pr =>
-      let r := pr.partner p
-      let S₁ := State.fixConst S r (pr.partnerBias p)
-      match (getChildren S r).head? with
-      | some Hr => deleteChild S₁ Hr
-      | none => S₁
+      match getChildren S (pr.partner p), getChildren S p with
+      | Hr :: _, .inr e :: _ =>
+        let S₂ := (S.fixConst (pr.partner p) (pr.partnerBias p)).deleteConstraint Hr
+        if S₂.deg p = 0 then S₂ else unitDelete S₂ p e
+      | _, _ => S
     | none => S
   | .andOnPair G p =>
     match findPair S p with
     | some pr =>
-      let r := pr.partner p
-      let S₁ := State.fixConst S r (pr.partnerBias p)
-      let S₂ := State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
-      match (getChildren S r).head? with
-      | some Hr => deleteChild S₂ Hr
-      | none => S₂
+      match getChildren S (pr.partner p) with
+      | Hr :: _ =>
+        let w := otherArg (S.gate G) p
+        S.andOnPairStep G pr p w (findPair S w) (fixArg (S.gate G) w).1 (fixArg (S.gate G) w).2
+          Hr
+      | [] => S
     | none => S
   | .swapAuxIn G =>
-    let a := match (S.gate G).left, (S.gate G).right with
-             | .node u, .node v =>
-               if decide (u ∈ S.aux) then some u
-               else if decide (v ∈ S.aux) then some v else none
-             | .node u, .const _ => if decide (u ∈ S.aux) then some u else none
-             | .const _, .node v => if decide (v ∈ S.aux) then some v else none
-             | _, _ => none
-    let b := match (S.gate G).left, (S.gate G).right with
-             | .node u, .node v => if decide (u ∈ S.aux) then some v else some u
-             | .node u, .const _ => some u
-             | .const _, .node v => some v
-             | _, _ => none
-    match a, b with
-    | some a, some b =>
-      let (c, T) := findAffineRep S a
-      let y := (T.sort (· ≤ ·)).find? (fun u => decide (u ≠ b ∧ u ∈ S.unpaired ∧ 2 ≤ S.deg u))
-      match y with
-      | some y => State.swap S y a c T
+    match auxArgs S (S.gate G) with
+    | some (a, b) =>
+      let rep := findAffineRep S a
+      if rep.2 ⊆ {b} then
+        S.deleteGate G ((S.gate G).subst a
+          (if rep.2 = ∅ then Lit.const rep.1 else ⟨.node b, rep.1⟩)).lit
+      else
+        match (rep.2.sort (· ≤ ·)).find? (fun y => decide (y ≠ b ∧ y ∈ S.unpaired)) with
+        | some y => S.swap y a rep.1 rep.2
+        | none => S
+    | none => S
+  | .pairCreation G =>
+    match (S.gate G).left, (S.gate G).right with
+    | .node t₁, .node t₂ =>
+      let op := (S.gate G).op
+      let α := decide (op true false = op true true)
+      let β := decide (op false true = op true true)
+      match (S.gates.sort (· ≤ ·)).find? (fun K => decide (K ≠ G ∧ (S.gate K).Reads G)) with
+      | some K =>
+        ((S.addPair ⟨t₁, α, t₂, β⟩).deleteGate G (Lit.const (op α β))).deleteConstraint (.inl K)
       | none => S
     | _, _ => S
-  | .pairCreation G =>
-    let t1 := match (S.gate G).left with | .node u => u | _ => 0
-    let t2 := match (S.gate G).right with | .node v => v | _ => 0
-    let op := (S.gate G).op
-    let α := decide (op true false == op true true)
-    let β := decide (op false true == op true true)
-    let S₁ := State.addPair S ⟨t1, α, t2, β⟩
-    let γ := op α β
-    let S₂ := State.deleteGate S₁ G (Lit.const γ)
-    let K_opt := (S.gates.sort (· ≤ ·)).find? (fun K => decide (K ≠ G) && readsJ S K G)
-    match K_opt with
-    | some K => State.deleteGate S₂ K ((degenerateLit S₂ K).getD (Lit.const false))
-    | none => S₂
 
 def isFstOfAnyPair {n} (S : State n) (x : ℕ) : Bool :=
   match findPair S x with

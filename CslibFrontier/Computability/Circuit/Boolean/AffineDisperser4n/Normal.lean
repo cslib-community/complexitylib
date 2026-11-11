@@ -419,6 +419,23 @@ theorem Valid.step_of_partnersShareChild {S : State n} {f : BooleanFunction n}
     exact step_of_partnersShareChild_finish hS hpr (Or.inl rfl) (Or.inr rfl) hpr_ne
       rfl hred hr_wt₂
 
+/-- The successor state of Case 3 for the pair `pr` whose members share the child `H`. -/
+@[expose] def partnersShareChildStep (S : State n) (pr : ZeroPair) : ℕ ⊕ ℕ → State n
+  | .inl G =>
+    let φ : Bool → Bool → Bool := fun a b => (S.gate G).op
+      (if (S.gate G).left = .node pr.fst then a else b)
+      (if (S.gate G).right = .node pr.fst then a else b)
+    if φ pr.fstBias false = φ pr.fstBias true then
+      (S.fixConst pr.fst pr.fstBias).deleteGate G (Lit.const (φ pr.fstBias pr.sndBias))
+    else if φ false pr.sndBias = φ true pr.sndBias then
+      (S.fixConst pr.snd pr.sndBias).deleteGate G (Lit.const (φ pr.fstBias pr.sndBias))
+    else
+      (S.restrict pr.fst ⟨.node pr.snd, !(pr.fstBias ^^ pr.sndBias)⟩
+        (S.pairsAvoid pr.fst)).deleteGate G (Lit.const (φ pr.fstBias (!pr.sndBias)))
+  | .inr e =>
+    (S.restrict pr.fst ⟨.node pr.snd, !(pr.fstBias ^^ pr.sndBias)⟩
+      (S.pairsAvoid pr.fst)).deleteConstraint (.inr e)
+
 /-! ### Case 4: Paired parameter in an affine equation -/
 
 /-- A paired parameter occurring in an affine equation (Case 4). -/
@@ -818,6 +835,16 @@ theorem Valid.step_of_andOnPair {S : State n} {f : BooleanFunction n} (hS : S.Va
     rw [config_ca]
     simp only [List.length_cons, List.length_nil, Finset.sum_const_zero] at hW
     omega
+
+/-- The successor state of Case 5a. -/
+@[expose] def andOnPairStep (S : State n) (G : ℕ) (pr : ZeroPair) (p w : ℕ)
+    (prw : Option ZeroPair) (b c : Bool) (Hr : ℕ ⊕ ℕ) : State n :=
+  let S₁ := S.fixConst (pr.partner p) (pr.partnerBias p)
+  let S₂ := match prw with
+    | some q => if b = q.bias w then S₁.fixConst w b
+        else (S₁.fixConst (q.partner w) (q.partnerBias w)).fixConst w b
+    | none => S₁.fixConst w b
+  (S₂.deleteGate G (Lit.const c)).deleteConstraint Hr
 
 /-! ### Normal form -/
 
