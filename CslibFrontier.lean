@@ -997,6 +997,11 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.GeneralLowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.Gradient
 public import CslibFrontier.Computability.Circuit.Arithmetic.Hessian
 public import CslibFrontier.Computability.Circuit.Arithmetic.Hessian.SourceComplexity
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AlgebraicIndependent
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ClosedWronskian
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LogCurve
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 public import CslibFrontier.Computability.Circuit.Arithmetic.Noncommutative.ABP
@@ -5186,6 +5191,7 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.Hessian
 public import CslibFrontier.Foundations.Data.MvPolynomial.HessianChainRule
 public import CslibFrontier.Foundations.Data.MvPolynomial.HessianRank
 public import CslibFrontier.Foundations.Data.MvPolynomial.MixedOperator
+public import CslibFrontier.Foundations.Data.MvPolynomial.PDerivConst
 public import CslibFrontier.Foundations.Data.MvPolynomial.PartialDerivatives
 public import CslibFrontier.Foundations.Data.MvPolynomial.PowerSum
 public import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
@@ -5512,7 +5518,9 @@ public import CslibFrontier.Foundations.Relation.Transport
 public import CslibFrontier.Foundations.RingTheory.AdjoinRoot
 public import CslibFrontier.Foundations.RingTheory.CyclicIntRing
 public import CslibFrontier.Foundations.RingTheory.CyclicIntRing.Coefficients
+public import CslibFrontier.Foundations.RingTheory.Derivation.Wronskian
 public import CslibFrontier.Foundations.RingTheory.GaloisRing
+public import CslibFrontier.Foundations.RingTheory.PowerSeries.Constants
 public import CslibFrontier.Foundations.RingTheory.RootsOfUnity.Principal
 public import CslibFrontier.Foundations.Syntax.PrefixParser
 public import CslibFrontier.GameTheory.Bimatrix.Basic
