@@ -341,18 +341,6 @@ theorem set_eq_mapIdx (l : List ℕ) (i v : ℕ) :
   rw [List.getElem_set, List.getElem_mapIdx]
   split_ifs with h₃ h₄ h₄ <;> first | rfl | omega
 
-theorem length_encList_set_le (l : List ℕ) (i v : ℕ) :
-    (encList encNat (l.set i v)).length ≤
-      (encList encNat l).length + 2 * (encNat v).length + 1 := by
-  induction l generalizing i with
-  | nil => simp
-  | cons a l ih =>
-    rcases i with _ | i
-    · simp [length_encList]; omega
-    · simp only [List.set_cons_succ, length_encList, List.map_cons, List.sum_cons] at ih ⊢
-      have := ih i
-      omega
-
 /-- The encoding of the states of `setStep`. -/
 abbrev encSetState : (ℕ × ℕ) × ℕ × List ℕ ↪ List Bool :=
   encPair (encPair encNat encNat) (encPair encNat (encList encNat))
@@ -400,7 +388,7 @@ theorem set :
     simp only [zero_add, List.nil_append, List.length_take, Nat.min_eq_left hk]
     have hset : (p.1.take k).mapIdx (fun k a => if k = p.2.1 then p.2.2 else a) =
         (p.1.take k).set p.2.1 p.2.2 := (set_eq_mapIdx _ _ _).symm
-    have h₁ := length_encList_set_le (p.1.take k) p.2.1 p.2.2
+    have h₁ := length_encList_set_le encNat (p.1.take k) p.2.1 p.2.2
     have h₂ := length_encList_take_le encNat p.1 k
     have h₃ : (encNat k).length ≤ (encList encNat p.1).length :=
       (length_encNat_le_self k).trans (hk.trans (length_le_length_encList _ _))

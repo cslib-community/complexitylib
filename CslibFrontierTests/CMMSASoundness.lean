@@ -74,4 +74,34 @@ example : ∃ lam₀ : ℕ,
   norm_num
   linarith
 
+/-! Agreement with the table is agreement with `entry f`, so it does not depend on the threshold
+`P`. -/
+
+example {I : CMMSAInstance} {Δ k lam P P' : ℕ} (f : VarFunctions I lam)
+    (h : BooleanFunction (inputLength I Δ k lam)) :
+    (toInstance I Δ k lam P f).AgreesWith h ↔ (toInstance I Δ k lam P' f).AgreesWith h := by
+  rw [agreesWith_toInstance_iff, agreesWith_toInstance_iff]
+
+/-! The generic count for a family of at most `2 ^ (6 θ λ + 10 (N + 1))` functions, with
+`Δ = k = 1`, `δ₀ = 1 / 4` and a gap `g` just above `6 log 2 / (log 2 - H(δ₀))`. The threshold
+on `λ` is linear in `N + 1`. -/
+
+example : ∃ lam₀ : ℕ, 1 ≤ lam₀ ∧
+    ∀ I ∈ (GapCMMSA 1 (7 * Real.log 2 / (Real.log 2 - Real.binEntropy (1 / 4))) 1).no,
+      ∀ N : ℕ, I.formulas.length ≤ N → I.weights.length ≤ N → (∀ w ∈ I.weights, w ≤ N) →
+      ∀ lam, lam₀ * (N + 1) ≤ lam →
+      ∀ F : Finset (BooleanFunction (inputLength I 1 1 lam)),
+        #F ≤ 2 ^ (6 * I.threshold * lam + 10 * (N + 1)) →
+      ∀ (Good : VarFunctions I lam → Prop) [DecidablePred Good],
+        (∀ f, Good f → ∃ h ∈ F, ∀ x b, entry f x = some b → h x = b) →
+        3 * #{f : VarFunctions I lam | Good f} ≤ Fintype.card (VarFunctions I lam) := by
+  have hγ : 0 < Real.log 2 - Real.binEntropy (1 / 4) :=
+    sub_pos.2 (Real.binEntropy_lt_log_two.2 (by norm_num))
+  refine exists_three_mul_card_le_of_card_le_two_pow 1 1 odd_one (δ₀ := 1 / 4)
+    (by norm_num) (by norm_num) (by norm_num) 6 10 ?_
+  rw [div_mul_cancel₀ _ hγ.ne']
+  have := Real.log_pos (one_lt_two (α := ℝ))
+  push_cast
+  linarith
+
 end CslibFrontierTests.CMMSASoundness
