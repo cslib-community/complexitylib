@@ -645,13 +645,14 @@ theorem exactWalk_apply_some (R : SelfReducible enc W) {count : α → ℕ}
           simp_rw [hterm_true]
           rw [Finset.sum_ite, Finset.sum_const_zero, add_zero, Finset.sum_const, nsmul_eq_mul]
           rcases hc1_le.eq_or_lt with h_eq | h_lt
-          congr 1
-          · have huniv : Finset.univ.filter
+          · congr 1
+            have huniv : Finset.univ.filter
                 (fun r : Fin (W y).card => (r : ℕ) < (W (R.child y true)).card) =
                 Finset.univ := by
               ext r; simp [h_eq]
             rw [huniv, Finset.card_fin, h_eq]
-          · have hIio : Finset.univ.filter
+          · congr 1
+            have hIio : Finset.univ.filter
                 (fun r : Fin (W y).card => (r : ℕ) < (W (R.child y true)).card) =
                 Finset.Iio ⟨(W (R.child y true)).card, h_lt⟩ := by
               ext r; simp [Fin.lt_def]
