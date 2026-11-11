@@ -1056,6 +1056,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Continuity
 public import CslibFrontier.Computability.Circuit.Boolean.Convolution
 public import CslibFrontier.Computability.Circuit.Boolean.Correction
 public import CslibFrontier.Computability.Circuit.Boolean.CriticalPath
+public import CslibFrontier.Computability.Circuit.Boolean.DeMorgan
 public import CslibFrontier.Computability.Circuit.Boolean.DepthClasses
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime.PolyTime
@@ -2631,6 +2632,7 @@ public import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAve
 public import CslibFrontier.Computability.MCSP.HardnessConsequences
 public import CslibFrontier.Computability.MCSP.Magnification
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
+public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.NP
 public import CslibFrontier.Computability.MCSP.Partial
 public import CslibFrontier.Computability.MCSP.PartialETH
