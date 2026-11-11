@@ -86,7 +86,7 @@ private theorem corrToCutSym_symm {α : Type*} (y : (α × α) → K) (u v : Opt
   cases u <;> cases v <;> simp only [corrToCutSym]
   abel
 
-private def corrToCutLinear (K : Type*) [Field K] [LinearOrder K]
+private def corrToCutLinear (K : Type*) [Field K]
     (α : Type*) : ((α × α) → K) →ₗ[K] (↥(⊤ : SimpleGraph (Option α)).edgeSet → K) where
   toFun y e := Sym2.lift ⟨corrToCutSym y, corrToCutSym_symm y⟩ e.1
   map_add' y₁ y₂ := by
@@ -109,7 +109,7 @@ private theorem top_edge_some_some {α : Type*} {i j : α} (hij : i ≠ j) :
     s(some i, some j) ∈ (⊤ : SimpleGraph (Option α)).edgeSet := by
   simpa only [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj, ne_eq, Option.some.injEq] using hij
 
-private def cutToCorrLinear (K : Type*) [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+private def cutToCorrLinear (K : Type*) [Field K]
     (α : Type*) [DecidableEq α] :
     (↥(⊤ : SimpleGraph (Option α)).edgeSet → K) →ₗ[K] ((α × α) → K) where
   toFun z p := (1 / 2 : K) *
@@ -138,6 +138,7 @@ private theorem cutVertex_compl {V : Type*} [Fintype V] [DecidableEq V] (X : Fin
             false_ne_true]
       simp only [cutVertex, Sym2.lift_mk, hiff]
 
+omit [LinearOrder K] [IsStrictOrderedRing K] in
 private theorem corrToCutLinear_corrVertex {α : Type*} [DecidableEq α] (b : Finset α) :
     corrToCutLinear K α (corrVertex K b) = cutVertex K (b.image some) := by
   ext ⟨e, he⟩
