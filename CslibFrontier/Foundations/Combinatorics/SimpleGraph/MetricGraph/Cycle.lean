@@ -1494,7 +1494,7 @@ private lemma mem_darts_iff_exists_append {u v : V} {p : W.graph.Walk u v} {d : 
     rw [Walk.darts_append, List.mem_append, Walk.darts_cons]
     exact Or.inr (List.mem_cons.mpr (Or.inl hd_eq))
 
-theorem circleMap_surjective_of_cycleGraph [Finite V] {n : ℕ}
+theorem circleMap_surjective_of_cycleGraph {n : ℕ}
     (e : W.graph ≃g cycleGraph (n + 3)) {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : c.IsCycle) :
     Function.Surjective (circleMap hc) := by
   classical
