@@ -411,9 +411,10 @@ in [the bibliography](../../references.bib). The checked clients are in
   they do not establish a universal conversion for arbitrary third-party serializers
   or noncomputable real-valued algorithmic inputs. Theorem 6's native specialization
   and the broader measurable/unbounded Theorem 5 remain separate.
-  Set Cover approximation hardness is tracked in
-  [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
-  not supplied as a premise.
+  The constant-factor Set Cover hardness transfer after Theorem 4 is proved in
+  `PartialCover.Hardness` (section below); the source's sharper
+  $(1-\varepsilon)\ln n$ factor remains blocked on
+  [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335).
   Unrestricted Theorems 5–6 also remain open.
   From a configured checkout, check the complete
   [StochasticOracleMulticoverGreedy](../../CslibFrontierTests/StochasticOracleMulticoverGreedy.lean)
@@ -926,8 +927,43 @@ measurable or unbounded-horizon Theorem 5 is tracked in
 [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). Theorem 4's native offline greedy runtime is now proved for the finite binary-rational
 representation above. Its computed greedy controller has the native success/OPT
 transfer and concrete incidence/query adapters above, including every call-count
-vector. The hardness transfer remains open;
-its asymptotic factors are now proved.
+vector. Its asymptotic factors are proved, and the constant-factor hardness
+transfer is proved below; the $(1-\varepsilon)\ln n$ factor remains blocked on #4335.
+
+### Submission 191: Set Cover hardness of one-turn partial-cover selection
+
+The remark after Theorem 4's proof ([Wang2027], PDF p. 11) reduces unweighted Set
+Cover to minimum-token one-turn partial-cover selection: oracle $i$ returns $V_i$
+with certainty at unit token cost, and $p=\eta=1$, $y_e=1/n$, $\rho=n$.
+`PartialCover.Hardness.Selection` is the binary input of this deterministic oracle
+class (ground labels, the set each oracle returns, natural token costs).
+`Selection.success` is the probability, under the same fixed-order retention law
+`Instance.law` used for Theorem 4's probability bound, that the retained responses
+cover the ground set; `success_eq` shows it is $1$ exactly when the queried sets
+cover $U$ and $0$ otherwise, including repeated calls. `admissible` shows that these
+oracles satisfy Theorem 4's conditional guarantee with $p=1$, so the instances lie
+in the source's model rather than in a separate combinatorial problem.
+
+`minSelection` minimizes the token bill $c(\zeta)=\sum_i c_i\zeta_i$ over call vectors
+with success probability at least $\eta=1$.
+`approxPreservingReducible_setCover_selection` reuses the library's
+`ApproxPreservingReducible` interface with identity ratio. `optTokens_ofSetSystem`
+proves that the optimum equals the minimum cover size, and the readback `queried`
+keeps the oracles with positive call counts in polynomial time.
+`P_eq_NP_of_selection_approx_const` combines this with `GapSetCover_npHard`: unless
+$\mathrm{P}=\mathrm{NP}$, no polynomial-time algorithm approximates the selection
+problem within any constant factor. Hardness on this subclass also rules out
+algorithms for any broader input class that contains it.
+
+The source states the sharper bound: no $(1-\varepsilon)\ln n$-approximation for any
+constant $\varepsilon>0$ unless $\mathrm{P}=\mathrm{NP}$, citing Dinur and Steurer (2014). That bound needs
+Dinur–Steurer low-soundness Label Cover, which the library does not have yet
+([#4335](https://github.com/cslib-community/cslib-frontier/issues/4335)).
+`P_eq_NP_of_selection_approx` accepts any `NP`-hard `GapSetCover r`, so the sharper
+statement will follow directly once that base lands. Run
+`lake build CslibFrontierTests.StochasticOracleSetCoverHardness` for the checked
+clients: covering and non-covering batches, repeated calls, the readback, the
+admissibility witness, optimum preservation and the consumer-facing hardness form.
 
 ### Submission 191: source coverage inventory
 
@@ -950,7 +986,7 @@ when its numerical statement is already proved. The full objective in
 | Lemma 1, PDF p. 9; App. A.3, p. 15 | `PartialCover.Instance.retain_cover_bound`; `NativeRetention.certified_eq`, `retain_eq`, `completed_output` | Covered: local dual certification, overlap-aware retention and derived full-cover weight bound, with actual rational native tests. |
 | Theorem 4, PDF pp. 10–11, arbitrary count vectors | `PartialCover.NativeExecution.vector_guarantee`, `external_source_law`; `NativeRetention.SourceEncoding.valid_toNative` | Covered: same native machine, original binary WSC/query interfaces, exact call multiplicities, certified tape-risk, sum-of-caps bill and oracle-only deadline, including zero calls and $q=0,1$. |
 | Theorem 4, PDF pp. 10–11, greedy algorithm and approximation factor | `PartialCover.GreedyNative.uniform_plan`, `risk_bill`; `PartialCover.NativeExecution.native_success`, `native_bill_le_riskOptimum`; `PartialCover.Asymptotics.fixed_failure`, `polynomial_failure` | Covered: native threshold/eligibility/cost/output composition, success and OPT-risk comparison, and $O(\log^2 n)$ / $O(\log n)$ corollaries for nonempty finite binary-rational inputs. |
-| Hardness remark after Theorem 4's proof, PDF p. 11 | No Set Cover approximation-hardness transfer | Blocked on [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335); this remark is distinct from Theorem 4's algorithmic statement. |
+| Hardness remark after Theorem 4's proof, PDF p. 11 | `PartialCover.Hardness.success_eq`, `admissible`, `approxPreservingReducible_setCover_selection`, `optTokens_ofSetSystem`, `P_eq_NP_of_selection_approx`, `P_eq_NP_of_selection_approx_const` | Partial: the source's deterministic-oracle reduction ($p=\eta=1$, $y_e=1/n$, $\rho=n$, unit token costs) is formalized through the actual retention law, and unless $\mathrm{P}=\mathrm{NP}$ minimum-token one-turn selection has no polynomial-time constant-factor approximation. The source's $(1-\varepsilon)\ln n$ bound (Dinur–Steurer) needs low-soundness Label Cover and is blocked on [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335); `P_eq_NP_of_selection_approx` transfers any future `GapSetCover` hardness unchanged. |
 | Lemma 2, PDF p. 11; App. A.4, pp. 15–16 | `AdaptiveSelection.binomial_le_completion` and finite conditional-history comparison APIs | Blocked on [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336) for the source’s varying-$p_t$ Poisson-binomial guarantee, including its heterogeneous and measurable/unbounded comparison; finite homogeneous comparisons are present. |
 | Theorem 5(1), PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOutput.upper_controller`, `BatchUpper.stopping_controller`, `BatchPathCost.upper_controller` | Covered for the named finite-opportunity block controller: certified decoded tape success, binomial deadline, survival-sum/mean/budget real-integrable total path-bill bounds, same source oracle and actual receipts. Silent divergence retains earlier charges. Unrestricted source-policy realization remains partial. |
 | Theorem 5(2) and consequence, PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOptimum.lower`, `success_le`, `feasible_success_le`, `upper`, `competitive` | Covered for admitted finite-control native selection-only competitors on the same oracle and seed: expected-cost lower bound, effective-turn binomial deadline obstruction and OPT envelope. |
@@ -1178,8 +1214,8 @@ This proves the arbitrary finite X3C construction and universal behavioral
 numerical endpoints, rather than only a singleton or supplied-certificate model.
 The unrestricted encoded-PTM representation and realization bridge is still unproved; neither
 unrestricted source Theorem 6 nor ALL-main is claimed complete. Theorem 5's
-representation/general-alphabet gaps and Theorem 4's hardness transfer above
-remain material. No curated abstract changes: these modules are outside the
+representation/general-alphabet gaps and Theorem 4's $(1-\varepsilon)\ln n$
+hardness factor (#4335) remain material. No curated abstract changes: these modules are outside the
 selected headline dependencies.
 
 
@@ -1470,9 +1506,7 @@ cost comparisons of two handpicked policies.
 A compiled rational cost-aware strategy is now provided in the following section.
 Arbitrary-real expected invoice realization and the separate unrestricted
 Theorem 5 representation obligations remain outside the implemented model and
-are not blocked on #4335 or #4336, so not everything outside those issues is present. The Agent
-Operator's Manual needs no edit: roles, operating procedures and human direction
-are unchanged. The curated abstract/results inventory is not promoted.
+are not blocked on #4335 or #4336, so not everything outside those issues is present. The curated abstract/results inventory is not promoted.
 
 
 ### Submission 191: one runtime cost-aware native program
@@ -1599,7 +1633,8 @@ Theorem 6. Later sections derive native query epochs and the concrete block cont
 General response alphabets and external PTM/query encodings, canonical-label
 recovery and arbitrary source-policy compilation remain open.
 Theorem 4 now has concrete incidence/query adapters and native greedy/every-vector
-execution guarantees above; the hardness transfer remains open. ROADMAP preserves
+execution guarantees above; its constant-factor hardness transfer is proved, while the
+$(1-\varepsilon)\ln n$ factor remains blocked on #4335. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
 No curated abstract depends on
 these new modules or selects this bounded bridge as a headline.
@@ -2202,7 +2237,8 @@ with a cofinal infinite-instruction path-cost law and real integrability are sep
 obligations. Divergence has no native terminal-world bill.
 
 Theorem 4's concrete incidence/query adapters and native greedy/every-vector
-execution guarantees are proved above; the hardness transfer remains open. Neither unrestricted
+execution guarantees are proved above, as is the constant-factor hardness transfer; the
+$(1-\varepsilon)\ln n$ factor remains blocked on #4335. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
 changes.
 
