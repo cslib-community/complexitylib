@@ -3031,7 +3031,7 @@ register_result "cnf-prefix-branching" where
     at k = 2. Combinatorial search-tree specification; no native machine runtime asserted here."
 
 register_result "schoening-multitape" where
-  title := "Schöning: randomized k-SAT in time (2(k - 1)/k)^n on fair-coin multitape Turing machines"
+  title := "Schöning: randomized k-SAT in time (2(k - 1)/k)^n on fair-coin multitape machines"
   topic := "SAT algorithms"
   sources := [
     { paper := Schoening1999, theorem := unverified, locator := unverified }
