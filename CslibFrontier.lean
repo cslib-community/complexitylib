@@ -5500,6 +5500,7 @@ public import CslibFrontier.Logics.FirstOrder.Locality.Gaifman
 public import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 public import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 public import CslibFrontier.Logics.FirstOrder.Locality.Reachability
+public import CslibFrontier.Logics.FirstOrder.Locality.Sharp
 public import CslibFrontier.Logics.FirstOrder.Operator.Basic
 public import CslibFrontier.Logics.FirstOrder.Operator.Definability
 public import CslibFrontier.Logics.FirstOrder.Operator.Definability.Finite
