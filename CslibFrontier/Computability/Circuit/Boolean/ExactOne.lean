@@ -251,7 +251,7 @@ structure SeqExactlyOneStepResult where
   gates : List (Op × List ℕ)
   seen1Wire : ℕ
   seen2Wire : ℕ
-  deriving Repr, Inhabited
+  deriving Inhabited
 
 /-- Recursive linear-size state transition tracking `(seen1, seen2)` across wire list `ws`.
 Returns `(gates, seen1Wire, seen2Wire)`. -/
@@ -270,10 +270,10 @@ input wires. Returns `(gates, outputWire)`. Uses `3 * ws.length + 3` gates. -/
 @[expose] def seqExactlyOneClause (n base : ℕ) (ws : List ℕ) : List (Op × List ℕ) × ℕ :=
   let zeroWire := n + base
   let step := seqExactlyOneStep (n + base + 1) zeroWire zeroWire ws
-  let seenPair := step.2
-  let notWire := n + base + 1 + step.1.length
+  let seenPair := (step.seen1Wire, step.seen2Wire)
+  let notWire := n + base + 1 + step.gates.length
   let outWire := notWire + 1
-  ([(.const false, [])] ++ step.1 ++ [(.not, [seenPair.2]), (.and, [seenPair.1, notWire])],
+  ([(.const false, [])] ++ step.gates ++ [(.not, [seenPair.2]), (.and, [seenPair.1, notWire])],
     outWire)
 
 @[simp]

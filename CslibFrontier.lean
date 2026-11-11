@@ -2257,6 +2257,7 @@ public import CslibFrontier.Computability.Complexity.Problems.CMMSA.Size
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Affine
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Basic
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Constant
+public import CslibFrontier.Computability.Complexity.Problems.CSP.Declared
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Hardness
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Horn
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence

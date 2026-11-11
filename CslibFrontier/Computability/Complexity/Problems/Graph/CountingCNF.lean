@@ -700,10 +700,10 @@ private theorem seqExactlyOneStep_eq_zipIdx (nextWire seen1 seen2 : ℕ) (ws : L
       have h0 : nextWire + 3 * (k + 1 + 1) = nextWire + 3 + 3 * (k + 1) := by omega
       rw [h0]
 
-private theorem snd_seqExactlyOneStep (nextWire seen1 seen2 : ℕ) (ws : List ℕ) :
-    (seqExactlyOneStep nextWire seen1 seen2 ws).2 =
-      if ws.length = 0 then (seen1, seen2)
-      else (nextWire + 3 * ws.length - 1, nextWire + 3 * ws.length - 2) := by
+private theorem seen1Wire_seqExactlyOneStep (nextWire seen1 seen2 : ℕ) (ws : List ℕ) :
+    (seqExactlyOneStep nextWire seen1 seen2 ws).seen1Wire =
+      if ws.length = 0 then seen1
+      else nextWire + 3 * ws.length - 1 := by
   induction ws generalizing nextWire seen1 seen2 with
   | nil => rfl
   | cons w ws ih =>
@@ -711,7 +711,20 @@ private theorem snd_seqExactlyOneStep (nextWire seen1 seen2 : ℕ) (ws : List �
     rcases ws with _ | ⟨w', ws'⟩
     · simp
     · simp only [List.length_cons, Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte]
-      congr 1 <;> omega
+      omega
+
+private theorem seen2Wire_seqExactlyOneStep (nextWire seen1 seen2 : ℕ) (ws : List ℕ) :
+    (seqExactlyOneStep nextWire seen1 seen2 ws).seen2Wire =
+      if ws.length = 0 then seen2
+      else nextWire + 3 * ws.length - 2 := by
+  induction ws generalizing nextWire seen1 seen2 with
+  | nil => rfl
+  | cons w ws ih =>
+    rw [seqExactlyOneStep, ih]
+    rcases ws with _ | ⟨w', ws'⟩
+    · simp
+    · simp only [List.length_cons, Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte]
+      omega
 
 private theorem sum_clauseGateCost_take (wss : List (List ℕ)) (i : ℕ) :
     ((wss.take i).map fun u => 3 * u.length + 4).sum =
@@ -952,30 +965,28 @@ private theorem tidy_seqExactlyOneClause :
   have hnot : ComputableTidilyInPolyTime
       (fun q : (ℕ × ℕ) × List ℕ =>
         (.not, [(seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-          (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.2]))
+          (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen2Wire]))
       E2 encGate := by
     have harg : ComputableTidilyInPolyTime
         (fun q : (ℕ × ℕ) × List ℕ =>
           (seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.2) E2 encNat :=
+            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen2Wire) E2 encNat :=
       (hseen 2).of_enc_eq fun q => by
-        rw [snd_seqExactlyOneStep]
-        split_ifs <;> rfl
+        rw [seen2Wire_seqExactlyOneStep]
     exact (ComputableTidilyInPolyTime.const Op.not).prod
       (harg.cons' (ComputableTidilyInPolyTime.const ([] : List ℕ)))
   have hand : ComputableTidilyInPolyTime
       (fun q : (ℕ × ℕ) × List ℕ =>
         (.and, [(seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-          (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.1,
+          (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen1Wire,
           q.1.1 + q.1.2 + 1 + 3 * q.2.length]))
       E2 encGate := by
     have hs1 : ComputableTidilyInPolyTime
         (fun q : (ℕ × ℕ) × List ℕ =>
           (seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.1) E2 encNat :=
+            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen1Wire) E2 encNat :=
       (hseen 1).of_enc_eq fun q => by
-        rw [snd_seqExactlyOneStep]
-        split_ifs <;> rfl
+        rw [seen1Wire_seqExactlyOneStep]
     have hnw : ComputableTidilyInPolyTime
         (fun q : (ℕ × ℕ) × List ℕ => q.1.1 + q.1.2 + 1 + 3 * q.2.length) E2 encNat :=
       ComputableTidilyInPolyTime.unary_to_binary.comp hq2NW
@@ -986,9 +997,9 @@ private theorem tidy_seqExactlyOneClause :
         [(.const false, [])] ++
           seqStepClosed (q.1.1 + q.1.2 + 1) (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2 ++
           [(.not, [(seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.2]),
+            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen2Wire]),
            (.and, [(seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.1,
+            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen1Wire,
             q.1.1 + q.1.2 + 1 + 3 * q.2.length])])
       E2 (encList encGate) := by
     have ha := (ComputableTidilyInPolyTime.listAppend encGate).comp
@@ -996,9 +1007,9 @@ private theorem tidy_seqExactlyOneClause :
     have htail : ComputableTidilyInPolyTime
         (fun q : (ℕ × ℕ) × List ℕ =>
           [(.not, [(seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.2]),
+            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen2Wire]),
            (.and, [(seqExactlyOneStep (q.1.1 + q.1.2 + 1)
-            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).2.1,
+            (q.1.1 + q.1.2) (q.1.1 + q.1.2) q.2).seen1Wire,
             q.1.1 + q.1.2 + 1 + 3 * q.2.length])])
         E2 (encList encGate) :=
       hnot.cons' (hand.cons' (ComputableTidilyInPolyTime.const ([] : List (Op × List ℕ))))
