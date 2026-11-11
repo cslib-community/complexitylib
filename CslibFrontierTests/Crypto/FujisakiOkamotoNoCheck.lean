@@ -20,21 +20,21 @@ toy PKE whose ciphertext is the message itself, with messages `Fin 2 → Bool` a
 3. Without the re-encryption check, `leakAdv` has advantage at least `1 - 3 / 8 = 5 / 8`.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.Crypto.FujisakiOkamotoNoCheck
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.FujisakiOkamoto
 
 /-- A perfectly correct toy PKE: the ciphertext is the message. -/
-def toyPKE : ExplicitCoinPKE Unit Unit (Fin 2 → Bool) Unit (Fin 2 → Bool) where
+@[expose] def toyPKE : ExplicitCoinPKE Unit Unit (Fin 2 → Bool) Unit (Fin 2 → Bool) where
   keyGen := pure ((), ())
   sampleCoins := pure ()
   encDet _ m _ := m
   dec _ c := some c
 
 /-- The `FO-notbot` scheme over `leakyPKE toyPKE` with uniform messages and keys. -/
-noncomputable def toyScheme :
+@[expose] noncomputable def toyScheme :
     Scheme Unit Unit (Fin 2 → Bool) Unit ((Fin 2 → Bool) × Option (Fin 2)) (Fin 8) :=
   ⟨leakyPKE toyPKE, ProbComp.uniform _, ProbComp.uniform _⟩
 

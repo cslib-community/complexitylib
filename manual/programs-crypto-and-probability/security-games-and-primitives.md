@@ -615,7 +615,7 @@ the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averagin
 `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). No IND-CCA bound for `FO-notbot` is
 proved in this module; multi-hop game transitions relating `indCcaRomAdvantage` / `eagerIndCcaGame`
 to `simHitProb` via fallback-seed decoupling, simulator consistency, and `δ`-correctness bad-event
-bounds remain separate objectives. Checked clients in
+bounds remain separate objectives. To see why the re-encryption check of `T` cannot be omitted in `FO-notbot`, import [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean): for any explicit-coin PKE `P` over `Fin n → Bool`, `leakyPKE P` appends an `Option (Fin n)` tag to ciphertexts while preserving `indCpaAdvantage` (`leakyPKE_indCpaAdvantage`), `DeltaCorrect` (`leakyPKE_deltaCorrect`), and `GammaSpread` (`leakyPKE_gammaSpread`), whereas dropping the re-encryption check (`Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`) lets the bit-recovery adversary `leakAdv` (`roQueryBounds_leakAdv`, `0` `G`-queries and `n + 1` `H`-queries) achieve advantage at least `1 - (n + 1) / |K|` (`advantage_eagerNoCheckGame_leakAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean)). Checked clients in
 [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)
 exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejection on
 `maskedShiftPKE`, zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE`
