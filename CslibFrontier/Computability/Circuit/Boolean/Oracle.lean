@@ -58,7 +58,7 @@ size at the polynomially bounded arities of the queries, shows the converse
   `P/poly` relative to a language in `P/poly` is `P/poly`.
 * `Cslib.Circuits.Boolean.fanInAtMost_mapOp_toOracle`,
   `Cslib.Circuits.Boolean.cost_mapOp_toOracle`, `Cslib.Circuits.Boolean.depthWith_mapOp_toOracle`:
-  a De Morgan circuit in the oracle basis has fan-in two and no oracle gates.
+  a De Morgan program or circuit in the oracle basis has fan-in two and no oracle gates.
 
 ## References
 
@@ -228,13 +228,14 @@ theorem fanInAtMost_mapOp_toOracle {g : ℕ} (p : Program signature n g) {r : �
     change signature.Arity line.op ≤ 2
     cases line.op <;> simp
 
-/-- A De Morgan circuit in the oracle basis has no oracle gates. -/
-@[simp] theorem cost_mapOp_toOracle (c : Circuit signature n m) :
-    (c.mapOp toOracle).program.cost OracleOp.queryWeight = 0 :=
-  (Program.cost_mapOp c.program _).trans <| (c.program.cost_const 0).trans (Nat.zero_mul _)
+/-- A De Morgan program in the oracle basis has no oracle gates. -/
+@[simp] theorem cost_mapOp_toOracle {g : ℕ} (p : Program signature n g) :
+    (p.mapOp toOracle).cost OracleOp.queryWeight = 0 :=
+  (Program.cost_mapOp p _).trans <| (p.cost_const 0).trans (Nat.zero_mul _)
 
-/-- A De Morgan circuit in the oracle basis has no oracle gate on any path. -/
-@[simp] theorem depthWith_mapOp_toOracle (c : Circuit signature n m) :
+/-- A De Morgan circuit in the oracle basis has no oracle gate on any path. Not a simp lemma:
+`Circuit.depthWith_mapOp` rewrites its left-hand side. -/
+theorem depthWith_mapOp_toOracle (c : Circuit signature n m) :
     (c.mapOp toOracle).depthWith OracleOp.queryWeight = 0 :=
   (Circuit.depthWith_mapOp c _).trans c.depthWith_zero
 
