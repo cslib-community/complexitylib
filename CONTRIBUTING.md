@@ -100,6 +100,12 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
+For changed APIs and reuse refactors, authors and reviewers
+[check the API through its callers](AGENTS.md#check-the-api-through-its-callers): inspect named
+access, semantic matcher/range facts, shared operational definitions, representation bridges and
+the intended public surface. Identify a representative caller that benefits, with evidence
+proportional to the change; a successful build alone does not establish these design properties.
+
 **Structures for domain objects and records**
 ([#4385](https://github.com/cslib-community/cslib-frontier/issues/4385)). Model domain objects,
 problem instances, certificates, configurations, and multi-field algorithm contexts, states or

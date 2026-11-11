@@ -5,6 +5,8 @@
 <!-- What changes, why, and which issue does it address?
 For mathematical changes, state the claim and important assumptions. Where relevant, explain
 the source-to-Lean mapping or why existing definitions could not be reused.
+For API/reuse refactors, identify a representative caller and what it no longer repeats;
+follow AGENTS.md#check-the-api-through-its-callers.
 New or changed statements follow AGENTS.md#encodings-in-statements; explain any exception. -->
 
 Authors of new files: <!-- the issue's originator(s) (its "Originated by" field, else its

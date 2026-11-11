@@ -227,6 +227,34 @@ checked example; broader API changes need representative affected clients and an
 migration plan. Investigate performance when it is material to the change, without requiring a
 benchmark campaign or separate design study for every small improvement.
 
+### Check the API through its callers
+
+Before handing off a changed API or reuse refactor, inspect a representative caller and the
+nearby implementations of the same idea. Reviewers repeat this check against the final change:
+
+- **Named access and semantic facts.** Use record fields or existing accessors in public
+  statements. When callers decode a Boolean matcher, unfold an embedding's coordinate arithmetic,
+  or rebuild field-projection certificates, provide the reusable characterization, range fact or
+  generated certificate they need and use it in the caller. Preserve the encoding layout and
+  resource bounds when migrating records; check a caller of the generated `enc_structure` rules.
+- **One implementation of shared behavior.** A game or algorithm should call its named handler
+  instead of repeating the same dispatch or transition code in its definition and proofs.
+  Different representations may need distinct implementations; keep their differences explicit
+  and connect them with the appropriate simulation or conversion lemma.
+- **Shared mathematics across representations.** Before repeating an argument in a sibling
+  module, look for a general statement and an existing bridge, such as PMF integration against
+  its induced measure. Derive the specialization when the bridge preserves the hypotheses and
+  intended dependencies. Put shared facts in a small topic module and migrate the existing
+  consumers together; do not create an abstraction whose callers must reconstruct the proof.
+- **Public API by purpose.** Keep expected properties of public objects available, including
+  matcher characterizations and embedding range facts. Keep one-proof wrappers around casts,
+  cache layouts or intermediate states private. Inspect references and automation before changing
+  visibility, but do not use a zero reference count alone to remove useful mathematical API.
+
+The handoff should identify the representative caller and the reasoning or representation work
+it no longer repeats, or explain why separate implementations remain necessary. A concise
+before/after example or source reference is enough; no separate audit report is required.
+
 ## Lean development: use the Lean MCP server first
 
 Bootstrap a cold checkout with `scripts/cache/ensure.sh` before Lean elaboration or building.
@@ -452,6 +480,9 @@ not need a particular agent installation.
 Read the actual definitions and statements. For substantive mathematics, explain briefly what is
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
+For changed APIs and reuse refactors, follow [Check the API through its callers](#check-the-api-through-its-callers):
+inspect the actual caller and relevant sibling implementation, including generated certificates
+and any representation bridge. Compilation alone does not check placement or duplicated behavior.
 Check new and changed statements against
 [Structures for domain objects and records](#structures-for-domain-objects-and-records) and
 [Encodings in statements](#encodings-in-statements).

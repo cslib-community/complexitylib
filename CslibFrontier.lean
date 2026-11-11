@@ -6183,6 +6183,7 @@ public import CslibFrontier.Probability.Entropy.Guessing
 public import CslibFrontier.Probability.Entropy.Pi
 public import CslibFrontier.Probability.EntropyConcentration
 public import CslibFrontier.Probability.EntropyExtraction
+public import CslibFrontier.Probability.EventCount
 public import CslibFrontier.Probability.Extractor.Basic
 public import CslibFrontier.Probability.Extractor.LeftoverHash
 public import CslibFrontier.Probability.Extractor.TwoSource
