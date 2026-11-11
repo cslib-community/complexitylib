@@ -315,8 +315,10 @@ compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_
 why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
 context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
 there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
-After the Lean gates, full and quick modes also re-elaborate the changed library and test files
-whose outputs Lake restored from the shared local artifact cache, which keeps no warnings
+After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
+restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
+affected sources, including unchanged importing clients, built import aggregates and executable
+helpers
 ([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
 generated research data. They catch source/link drift and malformed visual markup; they do not
