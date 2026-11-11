@@ -449,7 +449,9 @@ not need a particular agent installation.
 Read the actual definitions and statements. For substantive mathematics, explain briefly what is
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
-Check new and changed statements against [Encodings in statements](#encodings-in-statements).
+Check new and changed statements against
+[Structures for domain objects and records](#structures-for-domain-objects-and-records) and
+[Encodings in statements](#encodings-in-statements).
 Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
 a new copy of an argument the library already makes is a finding when the
 [library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
@@ -584,6 +586,23 @@ Syntactic similarity is a prompt to inspect reuse, not proof that models should 
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
 
+### Structures for domain objects and records
+
+Define domain objects, problem instances, certificates, configurations, and multi-field algorithm
+contexts, states or records as documented `structure`s with named, documented fields—not as tuple
+type synonyms (`abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ`) or bare product types
+in problem sets (`Set (List (ℕ × ℕ) × ℕ × ℕ)`, `Set (Graph × ℕ)`). A `structure` gives every
+component a name and docstring in editor hover and `doc-gen4`, supports dot-notation, prevents
+swapping homogeneous components, and avoids the `.1.2` positional projection chains banned by
+[#1764](https://github.com/cslib-community/cslib-frontier/issues/1764). Encode field-tuple
+structures with `enc_structure` under [Encodings in statements](#encodings-in-statements) below.
+
+Keep plain `Prod` (`×`) where the pair is not a domain record: generic binary combinators,
+mathematical Cartesian products, and uncurried multi-argument function inputs that merely pair an
+instance with a witness or second operand (such as an NP verifier `Instance × List Bool → Bool` or
+a binary operation `α × β → γ`). Existing tuple abbreviations and bare-product problem sets are
+migrated under [#4385](https://github.com/cslib-community/cslib-frontier/issues/4385).
+
 ### Encodings in statements
 
 An encoding is part of what a statement claims, so statements show every encoding; but a reader
@@ -619,8 +638,9 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    encoding, even where it occurs only once.
 5. **Declare structure encodings with `enc_structure`.** When a structure is encoded as the
    tuple of its fields in declaration order, declare the encoding with `enc_structure`, which
-   generates the embedding, its `_apply` equation and its `fun_prop` certificates, rather than
-   writing a `.trans` embedding and proving the certificates by hand. The
+   generates the embedding, its `_apply` equation and its `fun_prop` certificates (for degree,
+   `ComputableInO`, workspace budgets and `ComputableInPolyTime`), rather than writing a `.trans`
+   embedding and proving the certificates by hand. The
    [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
    shows the declaration and what it generates.
 6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs
