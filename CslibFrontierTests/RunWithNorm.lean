@@ -168,6 +168,25 @@ example (h : Bool → PMF Nat) :
           PMF.pure (x + (y + 10)) := by
   simp only [statelessProg, runWith_norm, pmf_norm]
 
+-- Closed stateless experiment wrapping a stateful reduction around a black-box adversary (as in
+-- reductions from stateful CPA/CCA games to stateless PRF/ROM games) folds directly to `runWith`.
+example {HState : Type} (keyGen : ℕ → ProbComp (List Bool))
+    (inner : List Bool → Unit × List Bool → StateT HState (WordOracleComp Unit) (List Bool))
+    (extOracle : Unit × List Bool → ProbComp (List Bool))
+    (adversary : ℕ → WordOracleComp Unit Bool) (n : ℕ) (h₀ : HState) :
+    ProbComp.eval (OracleComp.interpret
+      (OracleComp.sumHandler ProbComp.unifFin extOracle)
+      (reduction keyGen inner h₀ adversary n)) =
+    (ProbComp.eval (keyGen n)).bind fun aux =>
+      (ProbOracleComp.runWith
+        (fun q st =>
+          OracleComp.evalWith
+            (OracleComp.sumHandler ProbComp.unifOracle (fun req => ProbComp.eval (extOracle req)))
+            ((inner aux q).run st))
+        (adversary n) h₀).bind fun r =>
+        PMF.pure (!r.1) := by
+  simp only [reduction, runWith_norm, pmf_norm]
+
 end EvalWith
 
 end CslibFrontierTests.RunWithNorm

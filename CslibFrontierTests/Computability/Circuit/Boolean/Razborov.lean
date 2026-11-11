@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
+public import CslibFrontier.Computability.Circuit.Boolean.Smolensky.Majority
 
 /-!
 # Tests for Razborov's rank property against AC⁰[2]
@@ -19,8 +20,7 @@ Non-vacuity witnesses for the rank test of
 slice of `CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice`, the constructive and
 large half of `CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural` along the middle level,
 its usefulness against AC⁰[2] from `CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful`,
-and the separation `P ⊄ AC⁰[p]` for every prime `p`, combining the middle slice with parity for odd
-primes.
+and the separations `P ⊄ AC⁰[p]` and `AC⁰[p] ⊊ TC⁰` at `p = 2`, which go through the middle slice.
 -/
 
 public section
@@ -112,12 +112,14 @@ example (x : ℕ) {C : Circuit Unbounded.extSignature (rankLength 2 x) 1} (hCd :
 example {x : ℕ} (hx : 1 ≤ x) : rankLength 1 x + 1 ≤ 401 * 2 ^ 18 * x ^ 2 :=
   rankLength_add_one_le (d := 1) hx
 
-/-! ### `P ⊄ AC⁰[p]` for every prime `p` -/
+/-! ### Separations for every prime `p`, including `p = 2` -/
 
 example {p : ℕ} [Fact p.Prime] :
-    ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧ L ∉ AC0Mod p := by
-  rcases eq_or_ne p 2 with rfl | hp2
-  · exact exists_mem_P_notMem_AC0Mod_two
-  · exact exists_mem_P_notMem_AC0Mod hp2
+    ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧ L ∉ AC0Mod p :=
+  exists_mem_P_notMem_AC0Mod
+
+example : Language.ofSlices majority ∉ AC0Mod 2 := Smolensky.majority_notMem_AC0Mod
+
+example : AC0Mod 2 ⊂ TC0 := Smolensky.AC0Mod_ssubset_TC0
 
 end CslibFrontierTests.Computability.Circuit.Boolean.Razborov

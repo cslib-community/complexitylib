@@ -13,6 +13,7 @@ public import CslibFrontier.Foundations.Data.BitString.List.Operations
 public import CslibFrontier.Foundations.LinearAlgebra.KernelVector
 import CslibFrontier.Foundations.Data.BitString.ZModTwo
 import CslibFrontier.Foundations.Data.List.Blocks
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.FieldTheory.Finite.BinaryField
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.BigOperators.NatAntidiagonal
@@ -791,9 +792,8 @@ theorem length_kernelStepBits {n : ℕ} {a : List Bool} {N : List (List Bool)}
     rw [List.mem_map] at hw
     obtain ⟨v, hv, rfl⟩ := hw
     have hv_len : v.length = n := hN_mem v hv
-    have hpiv_len : (N.getD ((N.map (dotBool a)).idxOf true) []).length = n := by
-      rw [List.getD_eq_getElem _ _ (by simpa using h)]
-      exact hN_mem _ (List.getElem_mem _)
+    have hpiv_len : (N.getD ((N.map (dotBool a)).idxOf true) []).length = n :=
+      hN_mem _ (List.getD_mem [] (by simpa using h))
     split_ifs
     · rw [List.length_zipWith, hv_len, hpiv_len, min_self]
     · exact hv_len
@@ -841,9 +841,7 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
   let NZ : Fin n → Fin n → ZMod 2 := fun j => bitsToZModVec n (N.getD j.1 [])
   have hval : ∀ j : Fin n, rowValues aZ NZ j = bitEquiv.symm (dotBool a (N.getD j.1 [])) := by
     intro j
-    have hNj : (N.getD j.1 []).length = n := by
-      rw [List.getD_eq_getElem N [] (by omega)]
-      exact hN_mem _ (List.getElem_mem _)
+    have hNj : (N.getD j.1 []).length = n := hN_mem _ (List.getD_mem [] (by omega))
     rw [rowValues, dotBool_eq_dotProduct ha hNj]
   unfold kernelStepBits
   dsimp only
@@ -873,13 +871,11 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
     obtain ⟨j₀, hj₀⟩ := hall
     have hj₀_len : j₀.1 < N.length := by omega
     have htrue : true ∈ N.map (dotBool a) := by
-      refine List.mem_map.mpr ⟨N.getD j₀.1 [], ?_, ?_⟩
-      · rw [List.getD_eq_getElem N [] hj₀_len]
-        exact List.getElem_mem hj₀_len
-      · have h1 := hval j₀
-        rw [h1] at hj₀
-        exact (map_eq_one_iff bitEquiv.symm bitEquiv.symm.injective).mp
-          ((zmod2_eq_zero_or_one _).resolve_left hj₀)
+      refine List.mem_map.mpr ⟨N.getD j₀.1 [], List.getD_mem [] hj₀_len, ?_⟩
+      have h1 := hval j₀
+      rw [h1] at hj₀
+      exact (map_eq_one_iff bitEquiv.symm bitEquiv.symm.injective).mp
+        ((zmod2_eq_zero_or_one _).resolve_left hj₀)
     have hp_lt : (N.map (dotBool a)).idxOf true < N.length := by
       rw [← List.length_map (f := dotBool a)]
       exact List.idxOf_lt_length_iff.mpr htrue
@@ -919,9 +915,7 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
     rw [ite_eq_left hp_lt, List.getD_eq_getElem _ _ (by simp [hN_len]), List.getElem_map]
     rw [kernelStep, hbeta, div_one]
     have hvi : (N[i.1]'(by omega)).length = n := hN_mem _ (List.getElem_mem _)
-    have hpiv_len : (N.getD p []).length = n := by
-      rw [List.getD_eq_getElem N [] hp_lt]
-      exact hN_mem _ (List.getElem_mem _)
+    have hpiv_len : (N.getD p []).length = n := hN_mem _ (List.getD_mem [] hp_lt)
     have hi_eq : N[i.1]'(by omega) = N.getD i.1 [] := (List.getD_eq_getElem _ _ (by omega)).symm
     by_cases hdi : dotBool a (N[i.1]'(by omega)) = true
     · rw [ite_eq_left hdi]
@@ -1019,16 +1013,8 @@ theorem bitsToZModVec_kernelVecBits_eq {r n : ℕ} (M : List (List Bool)) (hM_le
       rw [Pi.zero_apply, bitsToZModVec, map_eq_zero_iff bitEquiv.symm bitEquiv.symm.injective,
         Bool.zero_eq_false]
       by_contra hnt
-      have hnt' : v[j.1]'(by omega) ≠ false := by
-        rw [List.getD_eq_getElem v false (by omega)] at hnt
-        exact hnt
-      have htrue : v[j.1]'(by omega) = true := Bool.eq_true_of_not_eq_false hnt'
-      have hmem : true ∈ v := List.mem_of_getElem htrue
-      have hany_true : v.any id = true := by
-        simp only [List.any_eq_true, id_eq]
-        exact ⟨true, hmem, rfl⟩
-      rw [hany] at hany_true
-      exact Bool.false_ne_true hany_true
+      exact Bool.false_ne_true (hany.symm.trans (List.any_eq_true.mpr
+        ⟨_, List.getD_mem false (by omega), Bool.eq_true_of_not_eq_false hnt⟩))
   unfold kernelVecBits
   rw [kernelVec]
   cases hfind : N.find? (fun v => v.any id) with
@@ -1037,9 +1023,7 @@ theorem bitsToZModVec_kernelVecBits_eq {r n : ℕ} (M : List (List Bool)) (hM_le
     have hnone : ∀ i : Fin n, kernelBasis A i = 0 := by
       intro i
       rw [← bitsToZModVec_kernelBasisBits M hM_len hM_mem i]
-      have hi_mem : N.getD i.1 [] ∈ N := by
-        rw [List.getD_eq_getElem N [] (by omega)]
-        exact List.getElem_mem _
+      have hi_mem : N.getD i.1 [] ∈ N := List.getD_mem [] (by omega)
       apply (hZ _ (hN_mem _ hi_mem)).mpr
       have hnf := List.find?_eq_none.mp hfind _ hi_mem
       exact Bool.eq_false_of_not_eq_true hnf
@@ -1108,14 +1092,9 @@ theorem kernelVecBits_any_of_exists {r n : ℕ} (M : List (List Bool)) (hM_len :
   rw [Pi.zero_apply, bitsToZModVec, map_eq_zero_iff bitEquiv.symm bitEquiv.symm.injective,
     Bool.zero_eq_false]
   by_contra hnj
-  rw [List.getD_eq_getElem _ _ (by rw [length_kernelVecBits]; exact j.2)] at hnj
-  have htrue : (kernelVecBits n M)[j.1]'(by rw [length_kernelVecBits]; exact j.2) = true :=
-    Bool.eq_true_of_not_eq_false hnj
-  have hany : (kernelVecBits n M).any id = true := by
-    simp only [List.any_eq_true, id_eq]
-    exact ⟨true, List.mem_of_getElem htrue, rfl⟩
-  rw [hfalse] at hany
-  exact Bool.false_ne_true hany
+  exact Bool.false_ne_true (hfalse.symm.trans (List.any_eq_true.mpr
+    ⟨_, List.getD_mem false (by rw [length_kernelVecBits]; exact j.2),
+      Bool.eq_true_of_not_eq_false hnj⟩))
 
 /-! ### Deterministic Berlekamp factoring over `𝔽₂` -/
 

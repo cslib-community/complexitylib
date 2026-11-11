@@ -7,9 +7,9 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmpDecode
 import CslibFrontier.MachineLearning.UniformLearning.Reduction
 
-/-! Checks of two pieces of the amplification reconstruction of Carmosino, Impagliazzo, Kabanets
-and Kolokolova: Goldreich–Levin decoding of `glAmp` (Claim 4.4) on concrete parameters, and
-black-box reductions between membership-query learners. -/
+/-! Checks of pieces of the amplification reconstruction of Carmosino, Impagliazzo, Kabanets and
+Kolokolova: Goldreich–Levin decoding of `glAmp` (Claim 4.4) on concrete parameters, the circuit
+size of the decoded candidates, and black-box reductions between membership-query learners. -/
 
 namespace CslibFrontierTests.AmpReconstruction
 
@@ -38,6 +38,16 @@ example {n : ℕ} (f : BooleanFunction n) :
       ℝ) :=
   dens_filter_glAmpCandidate_agree f (glAmp f 1) (by norm_num)
     (by simp [BitString]; norm_num) (by norm_num) (by norm_num)
+
+/-- With one mask, each output bit of the candidate costs `s + 11` gates over a predictor of
+size `s`: two constants, one copy of the predictor with a negation, and a majority of one vote. -/
+example {k n s : ℕ} {h : BooleanFunction (k * n + k)}
+    (hh : complexity interpretation (single h) ≤ s) (masks : Fin 1 → BitString k)
+    (guess : BitString 1) (j : Fin k) :
+    complexity interpretation
+        (single fun x : BitString (k * n) => glAmpCandidate h masks guess (BitString.block x) j) ≤
+      s + 11 :=
+  (complexity_glAmpCandidate_apply_le hh masks guess j).trans_eq (by norm_num)
 
 /-! ### Black-box reductions -/
 
