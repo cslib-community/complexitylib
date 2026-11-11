@@ -26,7 +26,8 @@ the client syntax, unfolding definitions, with one rule per form:
   the exact- or standard-basis arithmetic and bitwise operations.
 * the four memory queries: `Realizes.read`, `write`, `alloc` and `allocDirty`.
 * a method with a local zero-work `Realizes` certificate: `Realizes.reindex`, selecting its
-  arguments from live words before unfolding its implementation.
+  arguments from live words before unfolding its implementation. Computed arguments are first
+  staged by certified glue using the method's input encoding.
 * `if` on `a = b`, `a < b` or `a > b`: `Realizes.branch₀`.
 * `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
@@ -62,8 +63,9 @@ environment, the memory, the fit of the input words, memory well-formedness, and
 domain. It splits the conjunctions and `if`s of the synthesized domain and leaves each remaining
 condition as a goal. Local method certificates are tried in context order; the remaining rule
 selection follows the client syntax, without searching for bounds. An unsupported form is
-reported with its subterm. A called method's arguments must already be live words; computed
-arguments need an explicit `pure` step, whose glue is certified and charged as usual.
+reported with its subterm. A called method whose arguments are not all live words first stages
+its whole encoded argument with a charged `pure` step. This also supports custom input encodings
+without requiring a `WordEncoding` instance for the method's argument type.
 
 Each certificate is stated for the client form as written, with its domain in the client's terms
 (`certify`), so certificates compose syntactically. A bind's continuation domain is stated at the
@@ -746,8 +748,34 @@ private partial def callArgument (ty : Expr) : MetaM Expr := do
       #[a, b, x, ← callArgument (b.beta #[x])]
   mkFreshExprMVar ty
 
-/-- Reuse a local method certificate before unfolding its body. Every input word must already
-be live: `Realizes.reindex` supplies static wiring, without granting argument computation. -/
+/-- Wire a matched method's encoded argument to live words, retaining its domain. -/
+private def reindexCall (env : Env) (d arg certificate : Expr) (positions : Array Nat) :
+    TermElabM Out := do
+  let ty ← instantiateMVars (← inferType certificate)
+  unless ty.isAppOfArity ``Realizes 10 do
+    throwError "realize: expected a `Realizes` method certificate{indentExpr ty}"
+  let args := ty.getAppArgs
+  let k := positions.size
+  let finK := mkApp (mkConst ``Fin) (mkNatLit k)
+  let finEnv := mkApp (mkConst ``Fin) (mkNatLit env.k)
+  let rec indices : List Nat → MetaM Expr
+    | [] => mkAppOptM ``Matrix.vecEmpty #[finEnv]
+    | i :: is => do mkAppM ``Matrix.vecCons #[← finLit env.k i, ← indices is]
+  let ix ← indices positions.toList
+  let f ← mkLambdaFVars #[d] arg
+  let hwTy ← withLocalDeclD `e env.ty fun e => withLocalDeclD `i finK fun i => do
+    let lhs := mkApp (← mkAppM ``DFunLike.coe #[args[6]!, f.beta #[e]]) i
+    let rhs := mkApp (← mkAppM ``DFunLike.coe #[env.input, e]) (mkApp ix i)
+    mkForallFVars #[e, i] (← mkEq lhs rhs)
+  let hw ← proveResult hwTy k
+  let proof ← mkAppM ``Realizes.reindex #[certificate, f, env.input, ix, hw]
+  let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
+    withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+      mkLambdaFVars #[w, d, s] (← reducePairs (mkApp3 args[8]! w arg s))
+  return { proof, output := args[7]!, safe }
+
+/-- Reuse a local method certificate before unfolding its body. Live arguments use static
+wiring; otherwise a certified `pure` stage computes the argument in the callee's encoding. -/
 private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
     (body : Expr) (output? : Option Expr) : TermElabM (Option Out) := do
   for decl in ← getLCtx do
@@ -773,30 +801,27 @@ private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Exp
         throwError "realize: the method does not match"
       let arg ← instantiateMVars arg
       if arg.hasMVar then throwError "realize: the method argument is undetermined"
-      let out ← checkOutput decl.toExpr output?
+      discard <| checkOutput decl.toExpr output?
       let k ← encodingWidth args[6]!
       let coords ← encodingAtoms args[6]! arg k
-      let positions ← coords.mapM fun a => do
-        let some i ← findAtom atoms a
-          | throwError "realize: a method argument must first be computed into a live word"
-        pure i
-      let finK := mkApp (mkConst ``Fin) (mkNatLit k)
-      let finEnv := mkApp (mkConst ``Fin) (mkNatLit env.k)
-      let rec indices : List Nat → MetaM Expr
-        | [] => mkAppOptM ``Matrix.vecEmpty #[finEnv]
-        | i :: is => do mkAppM ``Matrix.vecCons #[← finLit env.k i, ← indices is]
-      let ix ← indices positions.toList
-      let f ← mkLambdaFVars #[d] arg
-      let hwTy ← withLocalDeclD `e env.ty fun e => withLocalDeclD `i finK fun i => do
-        let lhs := mkApp (← mkAppM ``DFunLike.coe #[args[6]!, f.beta #[e]]) i
-        let rhs := mkApp (← mkAppM ``DFunLike.coe #[env.input, e]) (mkApp ix i)
-        mkForallFVars #[e, i] (← mkEq lhs rhs)
-      let hw ← proveResult hwTy k
-      let proof ← mkAppM ``Realizes.reindex #[decl.toExpr, f, env.input, ix, hw]
+      let positions ← coords.mapM fun a => liftMetaM (findAtom atoms a)
+      if positions.all Option.isSome then
+        return some (← reindexCall env d arg decl.toExpr (positions.map Option.get!))
+      -- Stage the typed argument, rather than guessing an inverse for its encoding. The pure
+      -- bind reduces to the original call, and the existing glue rule charges its computation.
+      let hP ← realizePure ctx env d atoms arg args[6]!
+      let env' ← extend env args[2]! args[6]! k
+      let hQ ← withLocalDeclD `x env'.ty fun x => do
+        reindexCall env' x (← mkAppM ``Prod.snd #[x]) decl.toExpr
+          ((Array.range k).map (env.k + ·))
+      let (reply, next) ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+        return (← mkLambdaFVars #[d, s] arg, ← mkLambdaFVars #[d, s] s)
+      let proof ← bindRun hP.proof hQ.proof reply next
       let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
         withLocalDeclD `s (mkConst ``Memory.State) fun s => do
-          mkLambdaFVars #[w, d, s] (← reducePairs (mkApp3 args[8]! w arg s))
-      return some { proof, output := out, safe }
+          mkLambdaFVars #[w, d, s] (mkAnd (hP.safe.beta #[w, d, s])
+            (← reducePairs (mkApp3 args[8]! w arg s)))
+      return some { proof, output := hQ.output, safe }
     catch _ => saved.restore
   return none
 

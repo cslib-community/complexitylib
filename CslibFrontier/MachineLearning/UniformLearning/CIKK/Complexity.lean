@@ -42,7 +42,7 @@ certified.
   reconstruction of the amplification, from a bound on the hypothesis it decodes.
 * `Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_le`,
   `Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_le_two_pow`: the hypothesis of
-  the CIKK learner, exactly and in closed form.
+  the CIKK learner, in full and in closed form.
 
 ## References
 
