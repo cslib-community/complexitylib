@@ -415,7 +415,7 @@ walk collisions, Lemma 13 and the stopped guessing event. The original-query sto
 comparison is already supplied by the valid cut coupling. A tighter internal-vertex count
 or joint planted-verification/guessing argument remains to be derived for odd lengths.
 The Operator's Manual inventory retains “Partial” for that gap; Corollary 4 is covered.
-Literal ALL-main acceptance is not yet warranted. The guessed hidden-endpoint client
+Coverage of all stated main results is not yet established. The guessed hidden-endpoint client
 continues to show why old collision/covering alone is insufficient without a charged reveal.
 
 The stopped guessing term is now isolated in `IdealChain.Guessing.stopped_guess_le`
@@ -428,14 +428,19 @@ The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `coarse_source_search_bound`; the best unconditional all-length bounds remain in
 `VerificationCovering`. No deprecated aliases are retained.
 
-
 `PlantedUniqueness.accepted_eq` now proves actual planted verification uniqueness using the
 native planting/adversary/verification execution and computed forest witnesses. Its ledger
 includes planting's queries, so this is not the cheaper source collision event. The exact
 open `PlantedUniqueness.RemainingCharge` proposition records a phase-separated actual cut
 audit's joint stopping/collision charge and stopped guessing charge. It is unproved, and
 may be stronger than necessary because it counts planting collisions. No source theorem
-assumes it. The sharp odd-length inequality and literal ALL-main completion remain open.
+assumes it. `PlantedUniqueness.search_transport` now proves the actual-game transport: success is at
+most the audit stopping/collision union plus the stopped guessing event. Audit erasure
+is proved from the valid cut law and native replay; no quantitative bound is a premise.
+Only `RemainingCharge` is still open. In particular its guessing half still needs the
+phase-transcript connection to `Guessing.stopped_guess_le`; its joint collision half
+cannot be obtained by adding the older separate estimates. The sharp odd-length
+inequality and coverage of all source main results remain open.
 
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.

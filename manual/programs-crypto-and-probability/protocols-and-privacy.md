@@ -28,7 +28,6 @@ For an executable bounded signer, import [Lyubashevsky/Signature/Efficient.lean]
 
 `closeTo_lyubashevskySignBoundedNative` compares the resulting law, including `none`, with the exact bounded signer at distance at most `K * m * (2γ + 1) / 2^width`. `lyubashevskySignBoundedNative_none_le` bounds failure by the exact single-attempt abort probability raised to `K`, plus this sampling error. Keep that exact probability when the hash depends on the commitment: the interactive fixed-challenge abort formula cannot simply be substituted. [The checked one-dimensional example](../../CslibFrontierTests/Crypto/LyubashevskySigning.lean) covers success, rejection, missing rows, challenge truncation, zero attempts and a two-attempt distance bound `10/64`. These are implementation and distribution guarantees for a deterministic hash; the full random-oracle security obligations remain open.
 
-
 For an explicit schedule with negligible signing failure, import [Lyubashevsky/Signature/Parameters.lean](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Parameters.lean). `lyubashevskySigningParams λ` uses `t = λ + 1`, dimensions `n = m = k = t`, secret-entry bound one, margin `β = t`, radius `γ = 4t²`, sampling width `λ`, modulus `2^t` and `t` attempts. The exponential modulus is encoded in binary. `isPPTOn_lyubashevskySigningParams` certifies the actual signer jointly in unary `λ` and the complete raw matrix/message input sizes, for a polynomial-time deterministic word hash.
 
 The new [hash-uniform abort bound](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/Failure.lean), `lyubashevskySignAttempt_none_le`, holds for every deterministic hash, including one that chooses its challenge from the commitment: if `2β ≤ γ`, `kη ≤ β` and the secret entries are bounded by `η`, exact single-attempt failure is at most `4mβ/(2γ+1)`. Under the schedule above this is at most one half. `lyubashevskySigningParams_failure_le` bounds actual native failure by `2^−(λ+1) + (λ+1)^2 * (8(λ+1)^2+1) / 2^λ`; `negligible_lyubashevskySigningParams_failure` proves it negligible for arbitrary bounded-secret, public-matrix and message sequences. The probability guarantee does not require short messages; the runtime theorem charges their actual lengths. [Checked examples](../../CslibFrontierTests/Crypto/LyubashevskySigningParameters.lean) include a commitment-dependent hash, nonzero bounded secrets, certainty of native failure at `λ=0`, and an upper bound below one percent at `λ=32`. This schedule demonstrates efficient availability, not SIS hardness or EUF-CMA security.
@@ -700,7 +699,6 @@ Correctness is relative to propagation. `Switch.evaluate_garbleWith` shows that,
 `Switch.advantage_realGame_simGame` is the fixed-instance obliviousness statement. For a fixed well-formed system, satisfying assignment and distinguisher, the advantage between the evaluator's real view and the view that `Switch.simulate` builds from the control bits `S.controls σ` equals the `CCR.advantage` of an explicit reduction, which never repeats a tweak (`Switch.isTweakUnique_reduction`). The assumption is an arithmetic circular correlation robustness: the keyed oracle answers `(k, t, s)` with `H (k - Δ) t + s • Δ`. Heath's proof (Appendix A, Theorem 4 and the hybrids of Figure 4) assumes the Boolean form of Definition 1, and no implication between the two is formalized. The simulator is given the control bits, so the statement allows the view to leak them. Heath's simulation of the control bits for oblivious randomized switch systems is omitted, as are authenticated output decoding (decoding here is by colour only), adversary-chosen systems and inputs, and running-time bounds.
 
 The checked client [CslibFrontierTests/Crypto/GarblingSwitch.lean](../../CslibFrontierTests/Crypto/GarblingSwitch.lean) builds a five-gate multiplexer over `ZMod 4`. It checks that the system is well formed and satisfiable on both control values, that propagation and garbled decoding give the expected outputs by computation, and that both theorems apply. The obliviousness theorem is applied to a toy hash that is not correlation robust. Build it with `lake build CslibFrontierTests.Crypto.GarblingSwitch`.
-
 
 ### Half gates
 
@@ -1708,14 +1706,19 @@ The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `coarse_source_search_bound`; the best unconditional all-length bounds remain in
 `VerificationCovering`. No deprecated aliases are retained.
 
-
 `PlantedUniqueness.accepted_eq` now proves actual planted verification uniqueness using the
 native planting/adversary/verification execution and computed forest witnesses. Its ledger
 includes planting's queries, so this is not the cheaper source collision event. The exact
 open `PlantedUniqueness.RemainingCharge` proposition records a phase-separated actual cut
 audit's joint stopping/collision charge and stopped guessing charge. It is unproved, and
 may be stronger than necessary because it counts planting collisions. No source theorem
-assumes it. The sharp odd-length inequality and literal ALL-main completion remain open.
+assumes it. `PlantedUniqueness.search_transport` now proves the actual-game transport: success is at
+most the audit stopping/collision union plus the stopped guessing event. Audit erasure
+is proved from the valid cut law and native replay; no quantitative bound is a premise.
+Only `RemainingCharge` is still open. In particular its guessing half still needs the
+phase-transcript connection to `Guessing.stopped_guess_le`; its joint collision half
+cannot be obtained by adding the older separate estimates. The sharp odd-length
+inequality and coverage of all source main results remain open.
 
 ### STOC733 main-result coverage inventory
 
@@ -1749,7 +1752,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; full-ledger planted uniqueness proved; odd-length sharp collision composition remains open |
+| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.PlantedUniqueness.search_transport`, `IdealChain.PlantedUniqueness.RemainingCharge`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; full-ledger planted uniqueness proved; odd-length sharp collision composition remains open |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
@@ -1760,7 +1763,7 @@ as the counting/difference client checks. Theorem 7's uniform per-class mean for
 requires $p\le m$, but its deterministic source-machine endpoint covers $p>m$ too;
 no expectation-of-maximum, concentration or typical-space theorem is claimed.
 Section 7's finite CDCL observations are not formal asymptotic lower bounds.
-Accordingly the main-result inventory does **not** yet support ALL-main acceptance.
+Accordingly the main-result inventory does **not** yet support acceptance of all stated main results.
 
 The full-paper objective remains open for the sharper displayed Theorem 8 search constants
 at odd chain lengths.
@@ -1769,7 +1772,6 @@ sparse reduction above now charges family multiplicity and generation. The full 
 the faster count prepass, is supplied by the later `DPDissection` route. The
 positional-cut result is not a universal
 algorithmic barrier, and experimental CDCL exponents remain finite observations.
-
 
 The single-hit opposite-side component is
 [AddXNORNativeProbe.lean](../../CslibFrontier/Cryptanalysis/AddXNORNativeProbe.lean).
@@ -1798,7 +1800,6 @@ does not yet iterate the opposite class, exit with a complete chain witness,
 select orientation from counters or join original-input preprocessing. It proves
 no global peak-space or source multitape bit-time bound.
 
-
 `Quarter.probeScan_exec` extends this operation to a complete linked bucket.
 Initialize `operand` and `zero` to zero and supply the actual `Linked` chain,
 bounded full states, reversed operands and word-fit premise. The returned tag
@@ -1811,7 +1812,6 @@ composition before its tag can be interpreted as an Add/XNOR solution.
 The same complete client checks a miss followed by a zero-witness hit, all
 misses, an empty bucket, and early exit before an invalid successor. This scan
 is not the second-quarter/class iterator or a global computed-balance bound.
-
 
 `Quarter.probeScan_witness_exec` additionally identifies a node in the actual
 linked bucket when the tag is nonzero. Its first packed index, preserved second
@@ -2107,7 +2107,7 @@ The uniform preparation endpoint below supplies those stages; a uniform runtime
 program interpreter and the sharp source multitape bounds remain open. Native variable-length output and a concrete bit-output codec are now
 supplied by the following endpoint. Four packed witness words also remain in
 the charged register bank. This does not complete Lemma 8/Theorem 7
-or 733 ALL-main.
+or all main results of submission 733.
 
 From the repository root build
 `lake build CslibFrontier.Cryptanalysis.AddXNORNativeGlobalResources`, then run
@@ -2123,7 +2123,6 @@ empty-quarter misses, actual balance, dictionary release and final native class
 index/bound. The generic size client checks the fixed instruction count. If physical premises
 fail, move counter buffers before class scratch or increase word capacity; do not
 supply desired counter values or an orientation flag as an oracle.
-
 
 For a materialized output array, import
 `CslibFrontier.Cryptanalysis.AddXNORNativeOutputResources` and apply
@@ -2227,7 +2226,7 @@ steps, with the proved physical width $W=globalWidth$ and clock
 state can depend on $j$ rather than native computed-balance live support. The
 native bounds remain intact, but these bit profiles do not establish the source
 sorted-list time or peak-space asymptotics. A generic simulator certificate is
-not a sharp bit-model theorem, and this family is not a uniform ALL-main endpoint.
+not a sharp bit-model theorem, and this family is not a uniform endpoint covering all main results.
 
 From the repository root build
 `lake build CslibFrontier.Cryptanalysis.AddXNORBitExecution`, then run
@@ -2350,7 +2349,7 @@ witness serialization work. It is no longer the number of historical stores.
 charges. **This encoding bound is not a sharp bit-machine workspace theorem:**
 association-list scans and the interpreter's polynomial workspace overhead persist.
 Sorted-list/resource-faithful access, sharp bit time and sharp peak workspace remain
-open, alongside the other 733 ALL-main endpoints.
+open, alongside the other endpoints for submission 733’s main results.
 
 `Source.prepareCertificate` receives unary width/requested depth and one framed
 binary operand list (`Source.encoding`). It computes the first operand as seed,
@@ -2419,7 +2418,7 @@ witness or exhaustive-miss algorithm**: inverse-quarter generation, class counts
 matching, smaller-side full-state retention, access/probing and reuse/release still
 need the charged sorted-list composition. The existing complete `CompactExecution`
 path and all its cubic filter/interpreter costs remain unchanged. Neither global
-source resource bound nor 733 ALL-main is concluded here.
+source resource bound nor coverage of all main results of submission 733 is concluded here.
 
 `SortedMeet.run` adds a separate **whole-input full-state batch route**. It
 uses the same actual index/chain generator for both halves of the computed
@@ -3129,7 +3128,7 @@ population/wider-label client remains `CslibFrontierTests.AddXNORSourceDepth`.
 The earlier sorted-list solver and its certificate remain available. The source
 Theorem 7 pipeline, small-operand algorithm and source-rate sparse reduction are
 now assembled. The repaired ideal-model clauses remain open, so this does not complete the
-paper or the ALL-main objective. Per-class expectations still do not bound the
+paper or the objective of covering every main result. Per-class expectations still do not bound the
 expected maximum balance or give a typical-space theorem. Build the integrated
 large-binary-counter, colliding/zero-count, empty/residual-quarter and complete
 witness/miss clients with

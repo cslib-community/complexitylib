@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Cryptanalysis.AddXNORIdealGuessing
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
+import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Actual planted verification uniqueness
@@ -25,6 +27,9 @@ collision event. No law for the frontier sampler is used.
   open joint-event budget for the concrete phase-separated audit.
 
 ## Main results
+
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness.search_transport`: the actual
+  source success probability is bounded by the two audit events, without a charge premise.
 
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness.accepted_eq`: actual accepted
   candidates equal the planted word when the complete ledger is collision-free.
@@ -115,6 +120,96 @@ boundaries so internal planting queries never enter the adversary's stopped tran
       stopped := Visible.traceBad draw.perms changed
         (middle.trace.take (middle.trace.length - planted.trace.length))
       collided := decide (¬Forest.NoCollision {draw.seed} final.records) }
+
+private theorem replay_output {q : ℕ} {Word Output : Type} [Finite Word]
+    [DecidableEq Word] (perms : Label q → Equiv.Perm Word)
+    (program : ProbOracleComp (Spec q Word) Output) :
+    (ProbOracleComp.runWith Replay.answer program ⟨[], [], perms⟩).map Prod.fst =
+      interpret (Family.probEval perms) program := by
+  let _ : Fintype Word := Fintype.ofFinite Word
+  have h₁ := congrArg (PMF.map Prod.fst) (Replay.erase_records program
+    (⟨[], [], perms⟩ : Replay.State (Label q) Word))
+  have h₂ := congrArg (PMF.map Prod.fst) (Visible.attach_flag perms perms program)
+  rw [Visible.output_law] at h₂
+  simp only [PMF.map_comp, Function.comp_def] at h₁ h₂
+  exact h₁.trans h₂
+
+/-- Audit erasure recovers precisely the actual planted oracle program in the changed family.
+The stopped and collision observations never alter answers or the candidate. -/
+theorem audit_accepted {q : ℕ} {Word : Type} [Finite Word] [DecidableEq Word]
+    (draw : Challenge q Word) (k : Fin q)
+    (adversary : Word → Word → ProbOracleComp (Spec q Word) (Operators q)) :
+    (audit draw k adversary).map AuditResult.accepted =
+      interpret (Family.probEval (draw.changed k))
+        (plantedProgram draw.seed draw.bits adversary) := by
+  have he : (audit draw k adversary).map AuditResult.accepted =
+      (ProbOracleComp.runWith Replay.answer
+        (plantedProgram draw.seed draw.bits adversary)
+        ⟨[], [], draw.changed k⟩).map Prod.fst := by
+    simp only [audit, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.pure_map, pmf_norm,
+      plantedProgram, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_pure]
+  exact he.trans (replay_output _ _)
+
+/-- Actual audit acceptance forces guessing or a collision in its complete ledger. -/
+theorem audit_acceptance_implies {q : ℕ} {Word : Type} [Finite Word]
+    [DecidableEq Word] [Nonempty Word] (draw : Challenge q Word) (k : Fin q)
+    (adversary : Word → Word → ProbOracleComp (Spec q Word) (Operators q))
+    (r : AuditResult) (hr : r ∈ (audit draw k adversary).support) (ha : r.accepted = true) :
+    r.guessed = true ∨ r.collided = true := by
+  classical
+  simp only [audit, PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
+    Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff] at hr
+  obtain ⟨⟨target, planted⟩, hp, ⟨⟨candidate, middle⟩, hm,
+    ⟨⟨endpoint, final⟩, hv, he⟩⟩⟩ := hr
+  cases he
+  have heq : endpoint = target := of_decide_eq_true ha
+  by_cases hc : Forest.NoCollision {draw.seed} final.records
+  · left
+    have hout : (some candidate, final) ∈ (ProbOracleComp.runWith Replay.answer
+        (experiment draw.seed draw.bits adversary) ⟨[], [], draw.changed k⟩).support := by
+      simp only [experiment, ProbOracleComp.runWith_bind, PMF.mem_support_bind_iff]
+      refine ⟨(target, planted), hp, (candidate, middle), hm, (endpoint, final), hv, ?_⟩
+      simp [ProbOracleComp.runWith_pure, heq]
+    exact decide_eq_true (accepted_eq _ _ _ _ _ _ hout hc)
+  · exact Or.inr (decide_eq_true hc)
+
+/-- Averaging the valid cut law gives the original planted-search acceptance distribution. -/
+theorem audit_search_law {q : ℕ} {Word : Type} [Fintype Word] [DecidableEq Word]
+    [Nonempty Word] (k : Fin q)
+    (adversary : Word → Word → ProbOracleComp (Spec q Word) (Operators q)) :
+    (challenges.bind fun draw => audit draw k adversary).map AuditResult.accepted =
+      plantedSearch adversary := by
+  simp only [challenges, PMF.monad_bind_eq_bind, PMF.map_bind, PMF.pure_bind, audit_accepted,
+    Challenge.changed, pmf_norm, plantedSearch]
+  congr 1 with seed : 1
+  congr 1 with bits : 1
+  have h := source_uniform_splice bits k seed (fun perms _ =>
+    interpret (Family.probEval perms) (plantedProgram seed bits adversary))
+  rw [h]
+  simp only [interpret_plantedProgram, PMF.monad_bind_eq_bind]
+  rfl
+
+/-- The requested actual-game transport. No query-budget or numerical charge is assumed. -/
+theorem search_transport {q : ℕ} {Word : Type} [Fintype Word] [DecidableEq Word]
+    [Nonempty Word] (k : Fin q)
+    (adversary : Word → Word → ProbOracleComp (Spec q Word) (Operators q)) :
+    ((plantedSearch adversary) true).toReal ≤
+      (((challenges.bind fun draw => audit draw k adversary).map
+        (fun r => r.stopped || r.collided)) true).toReal +
+      (((challenges.bind fun draw => audit draw k adversary).map
+        (fun r => r.guessed && !r.stopped)) true).toReal := by
+  have h := Probability.PMF.map_true_le_add (challenges.bind fun draw => audit draw k adversary)
+    (E := AuditResult.accepted) (A := fun r => r.stopped || r.collided)
+    (B := fun r => r.guessed && !r.stopped) (fun r hr ha => by
+      rw [PMF.mem_support_bind_iff] at hr
+      obtain ⟨draw, _, hr⟩ := hr
+      rcases audit_acceptance_implies draw k adversary r hr ha with hg | hc
+      · cases r.stopped <;> simp [hg]
+      · exact Or.inl (by simp [hc]))
+  rw [audit_search_law] at h
+  have ht := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr
+    ⟨PMF.apply_ne_top _ _, PMF.apply_ne_top _ _⟩) h
+  simpa only [ENNReal.toReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)] using ht
 
 /-- OPEN quantitative obligation for this concrete audit. This is not a proved simulator or
 an assumption of a security theorem. It charges the union once and separately budgets the

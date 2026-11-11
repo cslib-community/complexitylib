@@ -33,3 +33,20 @@ example (perms : Label 3 → Equiv.Perm (Fin 7)) (final : Replay.State (Label 3)
     (fun _ _ => pure (fun _ => true)) final hout hc
   have hi := congrFun he (0 : Fin 3)
   contradiction
+
+/-- The transport works for a private-coin candidate, without assuming its query budget. -/
+example :
+    ((plantedSearch (fun (_ _ : Fin 5) => do
+        let coin ← ProbOracleComp.sample (ProbComp.unifFin 1)
+        return (fun _ : Fin 3 => decide (coin.val = 0)))) true).toReal ≤
+      (((challenges.bind fun draw => PlantedUniqueness.audit draw (1 : Fin 3)
+        (fun (_ _ : Fin 5) => do
+          let coin ← ProbOracleComp.sample (ProbComp.unifFin 1)
+          return (fun _ : Fin 3 => decide (coin.val = 0)))).map
+        (fun r => r.stopped || r.collided)) true).toReal +
+      (((challenges.bind fun draw => PlantedUniqueness.audit draw (1 : Fin 3)
+        (fun (_ _ : Fin 5) => do
+          let coin ← ProbOracleComp.sample (ProbComp.unifFin 1)
+          return (fun _ : Fin 3 => decide (coin.val = 0)))).map
+        (fun r => r.guessed && !r.stopped)) true).toReal := by
+  exact PlantedUniqueness.search_transport 1 _
