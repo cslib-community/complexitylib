@@ -13,7 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
@@ -345,28 +345,16 @@ private theorem computableInPolyTime_hstepB :
 
 /-! ### The exponent function -/
 
-theorem Htable_eq_iterate (n : ℕ) : Htable n = (fun T => T ++ [hstepB T])^[n] [] := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [Htable, Function.iterate_succ_apply', ← ih, hstepB_eq]
-
 /-- The tables of `H` are polynomial-time in their length, in unary. -/
 theorem computableInPolyTime_Htable :
     ComputableInPolyTime Htable encUnary (encList encUnary) := by
-  have hs := computableInPolyTime_hstepB
-  have h := iterate (encIn := encUnary) (encState := encList encUnary) (count := fun n => n)
-    (init := fun _ => []) (step := fun T => T ++ [hstepB T]) (by fun_prop) (by fun_prop)
-    (by fun_prop) (bound := fun n => n * (2 * n + 1))
-    (.of_forall_le 2 2 fun n => by simp only [encUnary_apply, List.length_replicate]; nlinarith)
-    (fun n i hi => by
-      rw [← Htable_eq_iterate]
-      calc (encList encUnary (Htable i)).length ≤ (Htable i).length * (2 * n + 1) :=
-            length_encList_le encUnary _ fun a ha => by
-              rw [Htable_eq] at ha
-              obtain ⟨m, hm, rfl⟩ := List.mem_map.mp ha
-              simpa using (H_le_self m).trans (by have := List.mem_range.mp hm; omega)
-        _ ≤ n * (2 * n + 1) := by rw [length_Htable]; exact Nat.mul_le_mul_right _ hi)
-  simpa only [← Htable_eq_iterate] using h
+  have hstep : hstepB = Hstep := funext hstepB_eq
+  change ComputableInPolyTime (List.courseOfValues Hstep) encUnary (encList encUnary)
+  rw [← hstep]
+  exact .courseOfValues computableInPolyTime_hstepB .id fun n i hi => by
+    have hval : List.courseOfValuesVal hstepB i = H i := by
+      simp [List.courseOfValuesVal, hstep, H, Htable]
+    simpa only [encUnary_apply, List.length_replicate, hval] using (H_le_self i).trans hi.le
 
 /-- **`H` is polynomial-time** on unary numbers. -/
 @[fun_prop]
@@ -439,12 +427,6 @@ theorem exists_index_of_mem_P {A : Set (List Bool)} (h : A ∈ P encBits) (B : �
   obtain ⟨i, hi, hrun⟩ := exists_index_runIndexed_eq tm (t := fun x => t x.length)
     (fun x => (htm x).runFrom_of_le le_rfl) (B + c + e)
   -- the clock of the index exceeds the time bound
-  have hclock (x : List Bool) : t x.length ≤ clock i x.length := by
-    calc t x.length ≤ c * (x.length + 1) ^ e := hle x
-      _ ≤ 2 ^ i * (x.length + 1) ^ i :=
-          Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
-            (Nat.pow_le_pow_right (by omega) (by omega))
-      _ = clock i x.length := by rw [clock, ← mul_pow]; ring_nf
-  exact ⟨f, hf, i, by omega, fun w => hrun w _ (hclock _)⟩
+  exact ⟨f, hf, i, by omega, fun w => hrun w _ ((hle w).trans (le_clock (by omega) w.length))⟩
 
 end Cslib.Complexity.Ladner

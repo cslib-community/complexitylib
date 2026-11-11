@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.Entropy
+public import CslibFrontier.Probability.PMF.Coin
 public import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 import CslibFrontier.Probability.PMF.Event
 import Mathlib.Analysis.Convex.Jensen
@@ -32,7 +33,8 @@ of `Real.binEntropy` (Jensen's inequality). This is not the textbook proof, whic
 
 ## Main results
 
-* `Cslib.Probability.PMF.entropy_bool`: the entropy of a bit is its binary entropy.
+* `Cslib.Probability.PMF.entropy_bool`, `Cslib.Probability.PMF.entropy_coin`: the entropy of a bit
+  is its binary entropy.
 * `Cslib.Probability.PMF.entropy_le_binEntropy_add_mul_logb`: Fano's inequality without side
   information.
 * `Cslib.Probability.PMF.conditionalEntropy_le_binEntropy_add_mul_logb`: Fano's inequality for a
@@ -62,6 +64,11 @@ theorem entropy_bool (q : PMF Bool) :
     rw [Fintype.sum_bool] at this
     linarith
   rw [entropy_eq_sum, Fintype.sum_bool, h, Real.binEntropy_eq_negMulLog_add_negMulLog_one_sub]
+
+open scoped unitInterval in
+/-- A coin showing `true` with probability `p` carries `h₂(p)` bits of entropy. -/
+theorem entropy_coin (p : I) : entropy (coin p) = Real.binEntropy p / Real.log 2 := by
+  rw [entropy_bool, coin_apply_toReal, ite_eq_left rfl]
 
 /-- **Fano's inequality** without side information [Cover and Thomas, Section 2.10, the remark
 after Theorem 2.10.1][CoverThomas2006]: if the guess `a` misses a sample of `q` with probability

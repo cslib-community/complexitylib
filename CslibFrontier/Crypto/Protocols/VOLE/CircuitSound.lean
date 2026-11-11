@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.VOLE.Circuit
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Tactic.PMFSwap
 
 /-!
@@ -94,7 +94,6 @@ theorem circuitCheck_eval_execute (C : Circuit (arithSignature F) (p + k) m)
       PMF.uniformOfFintype (CircuitMulGate C → F) := ProbComp.eval_uniform _
   simp only [huniform, ProbOracleComp.interpret_query, OracleComp.sumHandler, PMF.pure_bind]
   pmf_swap
-  rfl
 
 
 omit [Fintype F] in

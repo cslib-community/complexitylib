@@ -43,6 +43,7 @@ This file defines generic additive secret sharing over any finite commutative gr
 - `Cslib.ProbComp.sum_sampleAdditiveShares`
 - `Cslib.ProbComp.mem_support_sampleAdditiveShares_iff`
 - `Cslib.ProbComp.eq_eval_sampleAdditiveShares_of_sum_of_map_init`
+- `Cslib.ProbComp.uniformOfFintype_map_restrict_completeShares`
 - `Cslib.ProbComp.eval_restrict_sampleAdditiveShares`
 - `Cslib.ProbComp.eval_sampleAdditiveShares_eq_map_completeSharesErase`
 - `Cslib.ProbComp.eq_eval_sampleAdditiveShares_of_sum_of_map_erase`
@@ -60,12 +61,12 @@ open Cslib.Probability
 namespace Cslib.ProbComp
 
 /-- Extract the first `m - 1` coordinates of an `m`-tuple via `Fin.castLE (Nat.sub_le m 1)`. -/
-def initOfShares (m : ℕ) {G : Type} (s : Fin m → G) : Fin (m - 1) → G :=
+def initOfShares (m : ℕ) {G : Type*} (s : Fin m → G) : Fin (m - 1) → G :=
   fun k => s (Fin.castLE (Nat.sub_le m 1) k)
 
 /-- Deterministically complete `m - 1` shares `init : Fin (m - 1) → G` to `Fin m → G` summing
 to `target`, setting the last coordinate to `target - ∑ j : Fin (m - 1), init j`. -/
-def completeShares (m : ℕ) {G : Type} [AddCommGroup G]
+def completeShares (m : ℕ) {G : Type*} [AddCommGroup G]
     (target : G) (init : Fin (m - 1) → G) : Fin m → G :=
   fun i =>
     if h : i.1 < m - 1 then
@@ -73,23 +74,23 @@ def completeShares (m : ℕ) {G : Type} [AddCommGroup G]
     else
       target - ∑ j : Fin (m - 1), init j
 
-@[simp] theorem completeShares_castLE (m : ℕ) {G : Type} [AddCommGroup G]
+@[simp] theorem completeShares_castLE (m : ℕ) {G : Type*} [AddCommGroup G]
     (target : G) (init : Fin (m - 1) → G) (k : Fin (m - 1)) :
     completeShares m target init (Fin.castLE (Nat.sub_le m 1) k) = init k := by
   simp [completeShares, k.2]
 
-@[simp] theorem initOfShares_completeShares (m : ℕ) {G : Type} [AddCommGroup G]
+@[simp] theorem initOfShares_completeShares (m : ℕ) {G : Type*} [AddCommGroup G]
     (target : G) (init : Fin (m - 1) → G) :
     initOfShares m (completeShares m target init) = init := by
   ext k
   exact completeShares_castLE m target init k
 
-@[simp] theorem completeShares_top (m : ℕ) [NeZero m] {G : Type} [AddCommGroup G]
+@[simp] theorem completeShares_top (m : ℕ) [NeZero m] {G : Type*} [AddCommGroup G]
     (target : G) (init : Fin (m - 1) → G) :
     completeShares m target init (⊤ : Fin m) = target - ∑ j : Fin (m - 1), init j := by
   simp [completeShares, Fin.val_top]
 
-private theorem sum_univ_eq_add_top (m : ℕ) [NeZero m] {G : Type} [AddCommMonoid G]
+private theorem sum_univ_eq_add_top (m : ℕ) [NeZero m] {G : Type*} [AddCommMonoid G]
     (f : Fin m → G) :
     ∑ i : Fin m, f i =
       (∑ k : Fin (m - 1), f (Fin.castLE (Nat.sub_le m 1) k)) + f (⊤ : Fin m) := by
@@ -112,7 +113,7 @@ private theorem sum_univ_eq_add_top (m : ℕ) [NeZero m] {G : Type} [AddCommMono
   · intro _ _
     rfl
 
-@[simp] theorem sum_completeShares (m : ℕ) [NeZero m] {G : Type} [AddCommGroup G]
+@[simp] theorem sum_completeShares (m : ℕ) [NeZero m] {G : Type*} [AddCommGroup G]
     (target : G) (init : Fin (m - 1) → G) :
     ∑ i : Fin m, completeShares m target init i = target := by
   rw [sum_univ_eq_add_top m (completeShares m target init)]
@@ -120,7 +121,7 @@ private theorem sum_univ_eq_add_top (m : ℕ) [NeZero m] {G : Type} [AddCommMono
 
 /-- Any `m`-tuple `s` summing to `target` is recovered from its first `m - 1` coordinates by
 `completeShares m target`. -/
-theorem completeShares_initOfShares (m : ℕ) [NeZero m] {G : Type} [AddCommGroup G]
+theorem completeShares_initOfShares (m : ℕ) [NeZero m] {G : Type*} [AddCommGroup G]
     {target : G} {s : Fin m → G} (hs : ∑ i : Fin m, s i = target) :
     completeShares m target (initOfShares m s) = s := by
   ext i
@@ -134,7 +135,7 @@ theorem completeShares_initOfShares (m : ℕ) [NeZero m] {G : Type} [AddCommGrou
     rw [completeShares_top, sub_eq_iff_eq_add', ← hs]
     exact sum_univ_eq_add_top m s
 
-theorem completeShares_add (m : ℕ) {G : Type} [AddCommGroup G]
+theorem completeShares_add (m : ℕ) {G : Type*} [AddCommGroup G]
     (target₁ target₂ : G) (init₁ init₂ : Fin (m - 1) → G) :
     completeShares m (target₁ + target₂) (init₁ + init₂) =
       completeShares m target₁ init₁ + completeShares m target₂ init₂ := by
@@ -142,6 +143,52 @@ theorem completeShares_add (m : ℕ) {G : Type} [AddCommGroup G]
   by_cases h : i.1 < m - 1
   · simp [completeShares, h]
   · simp [completeShares, h, Finset.sum_add_distrib, add_sub_add_comm]
+
+/-- For any proper coalition `I ≠ Finset.univ` over a finite commutative group `G`, pushing
+uniform pads on `Fin (m - 1) → G` forward through `I.restrict ∘ completeShares m target` gives
+the uniform distribution on `(i : I) → G`. -/
+theorem uniformOfFintype_map_restrict_completeShares {m : ℕ} [NeZero m]
+    {G : Type*} [AddCommGroup G] [Fintype G]
+    (I : Finset (Fin m)) (hI : I ≠ Finset.univ) (target : G) :
+    (PMF.uniformOfFintype (Fin (m - 1) → G)).map (I.restrict ∘ completeShares m target) =
+      PMF.uniformOfFintype ((i : I) → G) := by
+  classical
+  apply Cslib.Probability.PMF.uniformOfFintype_map_of_shift
+  intro c
+  have hex : ∃ j₀ : Fin m, j₀ ∉ I := by
+    by_contra h
+    apply hI
+    ext i
+    simp only [Finset.mem_univ, iff_true]
+    by_contra hi
+    exact h ⟨i, hi⟩
+  obtain ⟨j₀, hj₀⟩ := hex
+  let full : Fin m → G := fun i =>
+    if hi : i ∈ I then c ⟨i, hi⟩
+    else if i = j₀ then -∑ k : I, c k
+    else 0
+  have hsum : ∑ i : Fin m, full i = 0 := by
+    rw [← Finset.sum_subset (Finset.subset_univ (insert j₀ I))]
+    · rw [Finset.sum_insert hj₀]
+      have h1 : full j₀ = -∑ k : I, c k := by simp [full, hj₀]
+      have h2 : ∑ i ∈ I, full i = ∑ k : I, c k := by
+        rw [← Finset.sum_attach I]
+        refine Finset.sum_congr rfl fun k _ => ?_
+        simp [full, k.2]
+      rw [h1, h2, neg_add_cancel]
+    · intro i _ hi
+      simp only [Finset.mem_insert, not_or] at hi
+      simp [full, hi.1, hi.2]
+  have hfull : completeShares m 0 (initOfShares m full) = full :=
+    completeShares_initOfShares m hsum
+  refine ⟨Equiv.addRight (initOfShares m full), fun init => ?_⟩
+  ext ⟨i, hi⟩
+  have hadd := congrFun (completeShares_add m target 0 init (initOfShares m full)) i
+  change completeShares m target (init + initOfShares m full) i =
+    completeShares m target init i + c ⟨i, hi⟩
+  rw [add_zero] at hadd
+  rw [hadd, Pi.add_apply, hfull]
+  simp [full, hi]
 
 /-- Sample uniform additive shares `s : Fin m → G` conditioned on `∑ i, s i = target`. -/
 noncomputable def sampleAdditiveShares (m : ℕ)
@@ -188,44 +235,8 @@ theorem eval_restrict_sampleAdditiveShares {m : ℕ} [NeZero m]
     (I : Finset (Fin m)) (hI : I ≠ Finset.univ) (target : G) :
     (ProbComp.eval (sampleAdditiveShares m target)).map I.restrict =
       PMF.uniformOfFintype ((i : I) → G) := by
-  classical
   rw [sampleAdditiveShares, eval_map, eval_uniform, PMF.map_comp]
-  apply Cslib.Probability.PMF.uniformOfFintype_map_of_shift
-  intro c
-  have hex : ∃ j₀ : Fin m, j₀ ∉ I := by
-    by_contra h
-    apply hI
-    ext i
-    simp only [Finset.mem_univ, iff_true]
-    by_contra hi
-    exact h ⟨i, hi⟩
-  obtain ⟨j₀, hj₀⟩ := hex
-  let full : Fin m → G := fun i =>
-    if hi : i ∈ I then c ⟨i, hi⟩
-    else if i = j₀ then -∑ k : I, c k
-    else 0
-  have hsum : ∑ i : Fin m, full i = 0 := by
-    rw [← Finset.sum_subset (Finset.subset_univ (insert j₀ I))]
-    · rw [Finset.sum_insert hj₀]
-      have h1 : full j₀ = -∑ k : I, c k := by simp [full, hj₀]
-      have h2 : ∑ i ∈ I, full i = ∑ k : I, c k := by
-        rw [← Finset.sum_attach I]
-        refine Finset.sum_congr rfl fun k _ => ?_
-        simp [full, k.2]
-      rw [h1, h2, neg_add_cancel]
-    · intro i _ hi
-      simp only [Finset.mem_insert, not_or] at hi
-      simp [full, hi.1, hi.2]
-  have hfull : completeShares m 0 (initOfShares m full) = full :=
-    completeShares_initOfShares m hsum
-  refine ⟨Equiv.addRight (initOfShares m full), fun init => ?_⟩
-  ext ⟨i, hi⟩
-  have hadd := congrFun (completeShares_add m target 0 init (initOfShares m full)) i
-  change completeShares m target (init + initOfShares m full) i =
-    completeShares m target init i + c ⟨i, hi⟩
-  rw [add_zero] at hadd
-  rw [hadd, Pi.add_apply, hfull]
-  simp [full, hi]
+  exact uniformOfFintype_map_restrict_completeShares I hI target
 
 /-- Deterministically complete shares on `Finset.univ.erase j₀` to `Fin m → G` summing to `target`,
 setting coordinate `j₀` to `target - ∑ k : Finset.univ.erase j₀, sub k`. -/
