@@ -4268,6 +4268,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.Beaver
 public import CslibFrontier.Crypto.Protocols.MPC.Broadcast
 public import CslibFrontier.Crypto.Protocols.MPC.CircuitEval
 public import CslibFrontier.Crypto.Protocols.MPC.Composition
+public import CslibFrontier.Crypto.Protocols.MPC.ComputationalComposition
 public import CslibFrontier.Crypto.Protocols.MPC.DDHOT
 public import CslibFrontier.Crypto.Protocols.MPC.IKNP
 public import CslibFrontier.Crypto.Protocols.MPC.Malicious

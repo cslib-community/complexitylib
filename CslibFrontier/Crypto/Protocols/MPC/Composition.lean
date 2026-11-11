@@ -566,6 +566,127 @@ simulator `S₂ op (subCoalition parties I)` at every `.oracle op parties` round
           (pushScheduleReceivedRestrict parties I (sc₂ op) (fun s => (v_sub s).received) i)
           (rest i).2)
 
+/-- Oracle-round decomposition of the simulated hybrid: running `.oracle query next` in `W₁` and
+expanding the coalition `I`'s transcript with `S₂` first samples the inner ideal joint distribution
+of `W₁ op` and `S₂ op (subCoalition parties I)` on the round's queries, then continues with `next`,
+prefixing the coalition's inner simulated views (Goldreich Theorem 7.5.7 Proof Sketch,
+pp. 702–703). -/
+theorem evalWith_oracle_bind_expandSimSteps {m : ℕ} {spec₁ spec₂ : MultiOracleSpec}
+    {State Out : Fin m → Type} {op : spec₁.Op} {parties : Fin (spec₁.arity op) ↪ Fin m}
+    {rest : Schedule m spec₁} {sc₂ : (op : spec₁.Op) → Schedule (spec₁.arity op) spec₂}
+    {Coins₂ : (op : spec₁.Op) → Fin (spec₁.arity op) → Type}
+    (W₁ : MultiOracleWorld spec₁)
+    (S₂ : (op : spec₁.Op) → (J : Finset (Fin (spec₁.arity op))) →
+      CoalitionSimulator (sc₂ op) (spec₁.Query op) (Coins₂ op) (spec₁.Answer op) J)
+    (I : Finset (Fin m)) (query : (s : Fin (spec₁.arity op)) → State (parties s) → spec₁.Query op s)
+    (next : Steps (fun i => State i × (Round.oracle op parties).Received i) Out rest)
+    (st : (i : Fin m) → State i) :
+    (((Steps.oracle query next).evalWith W₁ st).bind fun recv₁ =>
+      (ProbComp.eval (expandSimSteps S₂ I (Steps.oracle query next)
+          (I.restrict st) (I.restrict recv₁))).map
+        fun sub => (sub, fun i => (Steps.oracle query next).outputAt i (st i) (recv₁ i))) =
+    (ProbComp.eval (idealJoint (W₁ op) (subCoalition parties I) (S₂ op (subCoalition parties I))
+        (fun s => query s (st (parties s))))).bind fun va =>
+      ((next.evalWith W₁ (fun i => (st i, Round.deliverOracle parties va.2 i))).bind
+        fun r_tail =>
+          (ProbComp.eval (expandSimSteps S₂ I next
+            (I.restrict (fun i => (st i, Round.deliverOracle parties va.2 i)))
+            (I.restrict r_tail))).map
+            fun sub_tail =>
+              (sub_tail, fun i =>
+                next.outputAt i (st i, Round.deliverOracle parties va.2 i) (r_tail i))).map
+        fun res =>
+          (fun i : I =>
+            ((pushTupleRestrict parties I (fun s => (va.1 s).coins) i, (res.1 i).1),
+              Schedule.Received.append
+                (pushScheduleReceivedRestrict parties I (sc₂ op) (fun s => (va.1 s).received) i)
+                (res.1 i).2),
+            res.2) := by
+  simp only [pmf_norm, Steps.evalWith_oracle, expandSimSteps, idealJoint, bind_pure_comp]
+  refine congrArg (ProbComp.eval (W₁ op fun s => query s (st (parties s)))).bind
+    (funext fun ans => ?_)
+  pmf_swap
+
+/-- Oracle-round decomposition of the real composed execution: sampling subprotocol coins and
+running `Steps.compose Sub (.oracle query next)` in `W₂` first samples the real joint distribution
+of `Sub op` on the induced sub-coalition and the round's queries, then continues with
+`Steps.compose Sub next`, prefixing the coalition's inner real views (Goldreich Theorem 7.5.7
+Proof Sketch, pp. 702–703). -/
+theorem sampleSubCoins_bind_evalWith_compose_oracle {m : ℕ} {spec₁ spec₂ : MultiOracleSpec}
+    {State Out : Fin m → Type} {op : spec₁.Op} {parties : Fin (spec₁.arity op) ↪ Fin m}
+    {rest : Schedule m spec₁} {sc₂ : (op : spec₁.Op) → Schedule (spec₁.arity op) spec₂}
+    {Coins₂ : (op : spec₁.Op) → Fin (spec₁.arity op) → Type}
+    (W₂ : MultiOracleWorld spec₂)
+    (Sub : (op : spec₁.Op) →
+      Protocol (spec₁.arity op) spec₂ (sc₂ op) (spec₁.Query op) (Coins₂ op) (spec₁.Answer op))
+    (I : Finset (Fin m)) (query : (s : Fin (spec₁.arity op)) → State (parties s) → spec₁.Query op s)
+    (next : Steps (fun i => State i × (Round.oracle op parties).Received i) Out rest)
+    (st : (i : Fin m) → State i) :
+    ((ProbComp.eval (OracleComp.pi (sampleSubCoins Sub (.oracle op parties :: rest)))).bind
+      fun c_sub =>
+        ((Steps.compose Sub (Steps.oracle query next)).evalWith W₂ (fun i => (st i, c_sub i))).map
+          fun recv₂ =>
+            (fun i : I => (c_sub i.1, recv₂ i.1),
+              fun i => (Steps.compose Sub (Steps.oracle query next)).outputAt i (st i, c_sub i)
+                (recv₂ i))) =
+    ((Sub op).realJoint W₂ (subCoalition parties I) (fun s => query s (st (parties s)))).bind
+      fun va =>
+        ((ProbComp.eval (OracleComp.pi (sampleSubCoins Sub rest))).bind fun c_sub =>
+          ((Steps.compose Sub next).evalWith W₂
+              (fun i => ((st i, Round.deliverOracle parties va.2 i), c_sub i))).map fun recv₂ =>
+            (fun i : I => (c_sub i.1, recv₂ i.1),
+              fun i => (Steps.compose Sub next).outputAt i
+                ((st i, Round.deliverOracle parties va.2 i), c_sub i) (recv₂ i))).map
+          fun res =>
+            (fun i : I =>
+              ((pushTupleRestrict parties I (fun s => (va.1 s).coins) i, (res.1 i).1),
+                Schedule.Received.append
+                  (pushScheduleReceivedRestrict parties I (sc₂ op) (fun s => (va.1 s).received) i)
+                  (res.1 i).2),
+              res.2) := by
+  set q : (s : Fin (spec₁.arity op)) → spec₁.Query op s := fun s => query s (st (parties s))
+  symm
+  simp only [pmf_norm, Protocol.realJoint, Protocol.evalWith_eq, Protocol.outputOfView,
+    Steps.compose, sampleSubCoins, eval_pi_pair, eval_pi_sampleSlotCoins, Steps.evalWith_append,
+    Steps.evalWith_mapState, Prod.map_apply, Finset.restrict_def, id_eq]
+  refine congrArg (ProbComp.eval (OracleComp.pi (Sub op).sampleCoins)).bind (funext fun c_k => ?_)
+  -- Swap the `c_tail` and `r_sub` binds on the RHS so both sides bind `c_tail` then `r_sub`.
+  pmf_swap with c_tail
+  have hslot (i : Fin m) (s : Fin (spec₁.arity op)) (hs : parties s = i) :
+      (query s (hs.symm ▸ st i), pushTuple parties c_k i s hs) = (q s, c_k s) := by
+    subst hs
+    rfl
+  have hst_k :
+      (fun i : Fin m =>
+        ((st i, c_tail i),
+          fun (s : Fin (spec₁.arity op)) (hs : parties s = i) =>
+            (query s (hs.symm ▸ st i), pushTuple parties c_k i s hs))) =
+      fun i : Fin m =>
+        ((st i, c_tail i),
+          fun (s : Fin (spec₁.arity op)) (_ : parties s = i) => (q s, c_k s)) := by
+    funext i
+    exact Prod.ext rfl (funext fun s => funext fun hs => hslot i s hs)
+  rw [hst_k, evalWith_embed]
+  simp only [PMF.bind_map, Function.comp_def,
+    outputAt_embed, pullScheduleReceived_pushScheduleReceived, hslot,
+    Steps.outputAt_append, Steps.outputAt_mapState]
+  refine congrArg ((Sub op).steps.evalWith W₂ (fun s => (q s, c_k s))).bind
+    (funext fun r_sub => ?_)
+  have hdeliv :
+      (fun i : Fin m =>
+        ((st i, fun s hs => (Sub op).steps.outputAt s (q s, c_k s) (r_sub s)), c_tail i)) =
+      fun i : Fin m =>
+        ((st i,
+          Round.deliverOracle parties (fun s => (Sub op).steps.outputAt s (q s, c_k s) (r_sub s))
+            i),
+          c_tail i) := rfl
+  rw [hdeliv]
+  refine congrArg (PMF.map · _) (funext fun r_tail => ?_)
+  refine Prod.ext (funext fun i => ?_) rfl
+  exact Prod.ext rfl
+    (congrArg (Schedule.Received.append · (r_tail i.1))
+      (congrFun (restrict_pushScheduleReceived parties I (sc₂ op) r_sub) i).symm)
+
 /-- Hybrid equivalence lemma for `Steps.compose`: for any `steps : Steps State Out sc₁` and initial
 states `st : (i : Fin m) → State i`, running `steps` in `W₁` and expanding the coalition `I`'s
 transcript via `expandSimSteps S₂ I` produces the exact same joint distribution over
@@ -607,78 +728,9 @@ private theorem evalWith_compose_steps_eq_hybrid {m : ℕ} {spec₁ spec₂ : Mu
     simp only [pmf_norm] at hmap
     exact hmap
   | @oracle _ _ op parties rest query next ih =>
-    let q : (s : Fin (spec₁.arity op)) → spec₁.Query op s := fun s => query s (st (parties s))
-    let J : Finset (Fin (spec₁.arity op)) := subCoalition parties I
-    -- 1. Rewrite the LHS using `idealJoint` of `W₁ op` and `S₂ op J`.
-    have hlhs :
-        (((Steps.oracle query next).evalWith W₁ st).bind fun recv₁ =>
-          (ProbComp.eval (expandSimSteps S₂ I (Steps.oracle query next)
-              (I.restrict st) (I.restrict recv₁))).map
-            fun sub => (sub, fun i => (Steps.oracle query next).outputAt i (st i) (recv₁ i))) =
-        (ProbComp.eval (idealJoint (W₁ op) J (S₂ op J) q)).bind fun ⟨v_sub, ans⟩ =>
-          (((next.evalWith W₁ (fun i => (st i, Round.deliverOracle parties ans i))).bind
-            fun r_tail =>
-              (ProbComp.eval (expandSimSteps S₂ I next
-                (I.restrict (fun i => (st i, Round.deliverOracle parties ans i)))
-                (I.restrict r_tail))).map
-                fun sub_tail =>
-                  (sub_tail, fun i =>
-                    next.outputAt i (st i, Round.deliverOracle parties ans i) (r_tail i))).map
-            fun ⟨sub_tail, y⟩ =>
-              (fun i : I =>
-                ((pushTupleRestrict parties I (fun s => (v_sub s).coins) i, (sub_tail i).1),
-                  Schedule.Received.append
-                    (pushScheduleReceivedRestrict parties I (sc₂ op)
-                      (fun s => (v_sub s).received) i)
-                    (sub_tail i).2),
-                y)) := by
-      simp only [pmf_norm, Steps.evalWith_oracle, expandSimSteps, idealJoint, bind_pure_comp]
-      refine congrArg (ProbComp.eval (W₁ op q)).bind (funext fun ans => ?_)
-      pmf_swap
-    -- 2. Apply subprotocol privacy `hSub op J q` and the induction hypothesis `ih`.
-    rw [hlhs, hSub op J q]
+    rw [evalWith_oracle_bind_expandSimSteps, hSub op _ _,
+      sampleSubCoins_bind_evalWith_compose_oracle]
     simp only [ih (fun i => (st i, Round.deliverOracle parties _ i))]
-    -- 3. Unfold `(Sub op).realJoint W₂ J q` and the RHS of `Steps.compose`.
-    simp only [pmf_norm, Protocol.realJoint, Protocol.evalWith_eq, Protocol.outputOfView,
-      Steps.compose, sampleSubCoins, eval_pi_pair, eval_pi_sampleSlotCoins, Steps.evalWith_append,
-      Steps.evalWith_mapState, Prod.map_apply, Finset.restrict_def, id_eq]
-    refine congrArg (ProbComp.eval (OracleComp.pi (Sub op).sampleCoins)).bind (funext fun c_k => ?_)
-    -- Swap the `c_tail` and `r_sub` binds on the RHS so both sides bind `c_tail` then `r_sub`.
-    pmf_swap with c_tail
-    have hslot (i : Fin m) (s : Fin (spec₁.arity op)) (hs : parties s = i) :
-        (query s (hs.symm ▸ st i), pushTuple parties c_k i s hs) = (q s, c_k s) := by
-      subst hs
-      rfl
-    have hst_k :
-        (fun i : Fin m =>
-          ((st i, c_tail i),
-            fun (s : Fin (spec₁.arity op)) (hs : parties s = i) =>
-              (query s (hs.symm ▸ st i), pushTuple parties c_k i s hs))) =
-        fun i : Fin m =>
-          ((st i, c_tail i),
-            fun (s : Fin (spec₁.arity op)) (_ : parties s = i) => (q s, c_k s)) := by
-      funext i
-      exact Prod.ext rfl (funext fun s => funext fun hs => hslot i s hs)
-    rw [hst_k, evalWith_embed]
-    simp only [PMF.bind_map, Function.comp_def,
-      outputAt_embed, pullScheduleReceived_pushScheduleReceived, hslot,
-      Steps.outputAt_append, Steps.outputAt_mapState]
-    refine congrArg ((Sub op).steps.evalWith W₂ (fun s => (q s, c_k s))).bind
-      (funext fun r_sub => ?_)
-    have hdeliv :
-        (fun i : Fin m =>
-          ((st i, fun s hs => (Sub op).steps.outputAt s (q s, c_k s) (r_sub s)), c_tail i)) =
-        fun i : Fin m =>
-          ((st i,
-            Round.deliverOracle parties (fun s => (Sub op).steps.outputAt s (q s, c_k s) (r_sub s))
-              i),
-            c_tail i) := rfl
-    rw [hdeliv]
-    refine congrArg (PMF.map · _) (funext fun r_tail => ?_)
-    refine Prod.ext (funext fun i => ?_) rfl
-    exact Prod.ext rfl
-      (congrArg (Schedule.Received.append · (r_tail i.1))
-        (congrFun (restrict_pushScheduleReceived parties I (sc₂ op) r_sub) i).symm)
 
 end Composition
 
