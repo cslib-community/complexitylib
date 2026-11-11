@@ -608,7 +608,7 @@ end BranchingTree
 /-! ### Closed-form branching factors -/
 
 /-- Binary `[1, 1]` branching has exact characteristic sum `1` at `r = 2`. -/
-@[simp] theorem charSum_binary : charSum [1, 1] 2 = 1 := by
+theorem charSum_binary : charSum [1, 1] 2 = 1 := by
   rw [charSum_eq_sum_inv_pow [1, 1] (by norm_num)]
   norm_num
 
