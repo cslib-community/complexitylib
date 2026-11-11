@@ -100,6 +100,24 @@ example (g₀ g₁ g₂ : Game) (ε₀ : ℝ≥0) (ε₁ : ℝ)
     (Game.succProbability g₀ : ℝ) ≤ (Game.succProbability g₂ : ℝ) + (ε₁ + ε₀) := by
   game_trans [g₁] using [h₀, h₁]
 
+/-- One-sided `Game.succProbability G₀ ≤ B` hops to `PMF.pure false` in `ℝ≥0` and `ℝ`, accepting
+both equality/advantage hops and terminal `Game.succProbability` bounds. -/
+example (g₀ g₁ g₂ : Game) (ε : ℝ≥0)
+    (heq : g₁ = g₀) (h₂ : Game.succProbability g₂ ≤ ε) :
+    Game.succProbability g₀ ≤ Game.advantage g₁ g₂ + ε := by
+  game_trans [g₁, g₂] using [heq, le_rfl, h₂]
+
+example (g₀ g₁ : Game) (ε₀ : ℝ≥0) (ε₁ : ℝ)
+    (h₀ : Game.advantage g₁ g₀ ≤ ε₀) (h₁ : (Game.succProbability g₁ : ℝ) ≤ ε₁) :
+    (Game.succProbability g₀ : ℝ) ≤ ε₀ + ε₁ := by
+  game_trans [g₁] using [h₀, h₁]
+
+/-- Trailing sum-bound discharge aligns reversed `Game.advantage` summands synthesized by `le_rfl`
+(e.g. `ideal true → real true` hop vs `Game.advantage (real true) (ideal true)` in the target). -/
+example (r₀ i₀ i₁ r₁ : Game) (hi : i₁ = i₀) :
+    Game.advantage r₀ r₁ ≤ Game.advantage r₀ i₀ + Game.advantage r₁ i₁ := by
+  game_trans [i₀, i₁] using [le_rfl, hi, le_rfl]
+
 /-- `CloseTo` hops over an infinite type `PMF ℕ` with symmetry and equality steps. -/
 example (μ₀ μ₁ μ₂ μ₃ : PMF ℕ) (ε₀ ε₂ : ℝ≥0∞)
     (h₀ : CloseTo μ₁ μ₀ ε₀)
@@ -348,8 +366,7 @@ example (g₀ g₁ : Game) : Game.advantage g₀ g₁ ≤ 1 := by
 
 -- `game_trans` rejects goals outside its supported shapes.
 /--
-error: game_trans: expected a `Game.advantage`, `Encryption.advantage`,
-`Game.succProbability ≤ Game.succProbability + B`, or `CloseTo` goal
+error: game_trans: expected a `Game.advantage`, `Encryption.advantage`, `Game.succProbability`, or `CloseTo` goal
   n ≤ n
 -/
 #guard_msgs in

@@ -413,10 +413,10 @@ section Indexed
 
 variable {I : Type} {sI : I → Spec} {StmtI WitI StmtOutI WitOutI AuxI : I → Type}
 
-/-- The index, the statement and the auxiliary input `(i, x, z)` of an indexed family, with `x` and
-`z` already encoded: the index under `enc.index`, then `x` and `z` as bit words. The index and `x`
-are framed; `z` is not. An auxiliary-input simulator program reads this triple, and a
-distinguisher reads it after the unary security parameter, paired with an encoded transcript. -/
+/-- Family index, encoded statement and auxiliary input word `(i, x, z)`: the index under
+`enc.index`, then `x` and `z` as bit words (`enc.index` and `x` framed, `z` unframed). An
+auxiliary-input simulator reads this triple; a transcript distinguisher reads it after the unary
+parameter, paired with an encoded transcript, with an auxiliary input word in the `z` slot. -/
 abbrev Encoding.encStatementAux (enc : Encoding I sI StmtI) :
     I × List Bool × List Bool ↪ List Bool :=
   encPair enc.index (encPair encBits encBits)
