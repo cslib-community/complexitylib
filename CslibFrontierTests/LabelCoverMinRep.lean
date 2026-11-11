@@ -73,7 +73,7 @@ example : minRep (.refl _) (.refl _) (⟨3, []⟩ : Graph (Fin 2 → Fin 2)) = �
 /-- The native certificate composes with a client reading the threshold. -/
 example : ComputableInPolyTime
     (fun G : Graph (Fin 2 → Fin 2) => (minRep (.refl _) (.refl _) G).threshold)
-    (Graph.encoding (encPi encFin)) encUnary :=
+    (Graph.encoding (encPi (encFinEnum (Fin 2)))) encUnary :=
   CMMSAInstance.isPolyTime_threshold (isPolyTime_minRep _ _)
 
 end CslibFrontierTests.LabelCoverMinRep
