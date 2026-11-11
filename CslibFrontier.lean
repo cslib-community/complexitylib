@@ -39,6 +39,7 @@ public import CslibFrontier.Algorithms.Lean.CSP.VariableElimination
 public import CslibFrontier.Algorithms.Lean.CSP.WeightCost
 public import CslibFrontier.Algorithms.Lean.CYK.Basic
 public import CslibFrontier.Algorithms.Lean.DFS.Basic
+public import CslibFrontier.Algorithms.Lean.DFS.SCC
 public import CslibFrontier.Algorithms.Lean.DFS.TopologicalSort
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Client
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Cost
@@ -214,6 +215,7 @@ public import CslibFrontier.Algorithms.Lean.TimeM.Loops
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.BagMask
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSet
 public import CslibFrontier.Algorithms.Lean.TreeDecomposition.IndependentSetFPT
+public import CslibFrontier.Algorithms.Lean.TwoSAT
 public import CslibFrontier.Algorithms.Lean.VertexCover.Matching
 public import CslibFrontier.Algorithms.Lean.Yates
 public import CslibFrontier.Algorithms.Lean.ZFunction.Basic
@@ -2417,6 +2419,7 @@ public import CslibFrontier.Computability.Complexity.Problems.TwoSAT
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT.Completeness
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT.Layout
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT.Membership
+public import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT.Routines
 public import CslibFrontier.Computability.Complexity.Problems.USAT

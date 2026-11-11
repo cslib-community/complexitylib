@@ -6,9 +6,11 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
+import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
@@ -70,7 +72,9 @@ import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
+import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
 import CslibFrontier.Computability.Kolmogorov.MINKTStar.Hardness
@@ -3278,6 +3282,70 @@ register_result "bareiss-rational-elimination-polytime" where
     rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
     (circulant spectra and fibre-sum bounds remain open there)."
 
+register_result "kosaraju-scc" where
+  title := "Kosaraju's linear-time strongly connected components and condensation order"
+  topic := "algorithms"
+  sources := [
+    { paper := CLRS2009, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.DFS.isSCCCondensation_sccs,
+    Cslib.Algorithms.Lean.DFS.time_sccsM_of_nodup,
+    Cslib.Algorithms.Lean.DFS.IsSCCCondensation.indexComponents_eq_iff,
+    Cslib.Algorithms.Lean.DFS.IsSCCCondensation.indexComponents_le_of_edge
+  ]
+  scope := "Two-pass Kosaraju SCC decomposition on adjacency lists adj : V → List V in TimeM, \
+    returning duplicate-free mutual-reachability components in forward condensation topological \
+    order at exact cost 3 * (|vs| + ∑ v, |adj v|) for duplicate-free vertex lists covering V, \
+    plus O(|V|) component-index lookup. Visited-set membership, insertion, and function-update \
+    array steps are counted as unit-cost operations."
+
+register_result "twosat-linear-timem" where
+  title := "Aspvall–Plass–Tarjan linear-time 2-SAT solver and witness construction in TimeM"
+  topic := "algorithms"
+  sources := [
+    { paper := AspvallPlassTarjan1979, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.TwoSAT.solve_eq_some,
+    Cslib.Algorithms.Lean.TwoSAT.isSome_solve_iff,
+    Cslib.Algorithms.Lean.TwoSAT.time_solveFinM_le,
+    Cslib.Algorithms.Lean.TwoSAT.isSome_solveNat_iff
+  ]
+  scope := "Linear-time 2-SAT decision and satisfying-assignment construction via Kosaraju SCCs \
+    of the implication graph in TimeM (at most 12 * n + 8 * |φ| + 1 steps on CNF (Fin n)), \
+    together with variable compaction connecting solveNat to Cslib.Complexity.TwoSAT."
+
+register_result "twosat-polytime" where
+  title := "Native multi-tape polynomial-time 2-SAT decision and witness construction"
+  topic := "computational complexity"
+  sources := [
+    { paper := AspvallPlassTarjan1979, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.TwoSAT.mem_P,
+    Cslib.Complexity.TwoSAT.eval_assignment_of_mem,
+    Cslib.Complexity.TwoSAT.computableInPolyTime_solve,
+    Cslib.Complexity.TwoSAT.computableInPolyTime_assignment
+  ]
+  scope := "Multi-tape Turing-machine polynomial-time decision and satisfying-assignment \
+    construction for Cslib.Complexity.TwoSAT under binary CNF encoding encCNF, using \
+    occurrence-bounded implication-graph reachability without dense variable-index arrays."
+
+register_result "hornsat-least-model" where
+  title := "Least-model characterization and non-uniqueness for HornSAT"
+  topic := "computational complexity"
+  sources := [
+    { paper := Papadimitriou94, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.HornSAT.assignment_le_of_eval,
+    Cslib.Complexity.HornSAT.isLeast_assignment,
+    Cslib.Complexity.HornSAT.exists_multiple_models
+  ]
+  scope := "Forward-chaining HornSAT.assignment computes the pointwise-least satisfying model \
+    of every satisfiable Horn formula, together with an explicit Horn formula admitting \
+    distinct satisfying assignments on its occurring variables."
 register_result "sperner-2d-ppad-completeness" where
   title := "PPAD-completeness of circuit two-dimensional Sperner (Sperner2D)"
   topic := "structural complexity"
