@@ -80,7 +80,7 @@ The tactics search simp sets and Aesop rule sets that modules extend by register
 simp sets `wram_simps` (used by `wram_exec` and `wram_simp`), `cp_simps` (used by `cp_step`),
 `fo_realize` (used by `fo_simp`), `supp_norm` (used by `supp_cases`) and `runWith_norm` (used with
 `pmf_norm` on oracle experiments), and the Aesop rule sets
-`PolyTime`, `PPT`, `LogSpace`, `FirstOrder` and `FODefinable`.
+`PolyTime`, `PPT`, `OraclePPT`, `LogSpace`, `FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
 
@@ -203,7 +203,7 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 | Tactic/interface | Input contract and strategy | Boundary |
 |---|---|---|
 | [`logspace`](../../CslibFrontier/Tactic/LogSpace.lean) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
-| [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
+| [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin (`IsPPTOn`, `IsPPT`) and strict oracle (`IsOraclePPTOn`, `IsOraclePPT`) certificates by Aesop search (`[PPT, PolyTime]` and `[OraclePPT, PPT, PolyTime]` with `simp` disabled on oracle goals), tuple routine-call preparation, plain conditional guards (`cond'`, `ite'`), charged reply prefixes (`query_take'`), sequencing, captured maps, closed sampling and bounded-growth `OracleComp.iterate` loops | Arbitrary ideal PMFs need realization theorems; uncharged raw `ProbOracleComp.query` calls are rejected; handler substitution (`run_interpret_preprocess'`) and general loop invariants (`iterate_spec'`, `iterateWith_spec'`) keep their explicit rules |
 
 This is a family of focused proof tools, not one universal automatic complexity analyzer. Their common interface makes reusable algorithms easier to recognize without conflating the predicates they prove.
 
@@ -317,11 +317,13 @@ This contract answers a recurrent concern in the transcript: removing proof book
 
 ## Close encoded-length arithmetic
 
-Import `CslibFrontier.Tactic.EncLen` and use `enc_len` to expand standard encoded lengths with
-a fixed `simp only` list, then close the resulting arithmetic with `omega`. The complete
-[checked clients](../../CslibFrontierTests/EncLenTactic.lean) cover nested and variable pairs,
-leaf encodings, local encodings, locations, scaling facts and diagnostics. This proves encoding
-arithmetic; it does not construct a computation or resource certificate.
+Import `CslibFrontier.Tactic.EncLen` and use `enc_len` to expand standard encoded lengths
+(pairs, frames, unary numbers, raw bit lists, Booleans, options, sums, and `nil`/`cons` of
+`encList`) with a fixed `simp only` list, then close the resulting arithmetic with `omega`. The
+complete [checked clients](../../CslibFrontierTests/EncLenTactic.lean) cover nested and variable
+pairs, leaf encodings, framed list constructors, local encodings, locations, scaling facts and
+diagnostics. This proves encoding arithmetic; it does not construct a computation or resource
+certificate.
 
 By default only the current goal is expanded. Supply a local encoding lemma explicitly with
 `enc_len [eFoo_apply]`. Use `enc_len at h ⊢` to expand one hypothesis and the goal, or `enc_len at *`
