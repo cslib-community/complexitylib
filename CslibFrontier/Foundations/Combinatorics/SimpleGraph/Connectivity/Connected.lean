@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
+import Mathlib.Combinatorics.SimpleGraph.Acyclic
 
 /-!
 # Empty cuts of disconnected graphs
@@ -102,89 +103,13 @@ theorem exists_connected_induce_forall_not_adj_of_not_connected {V : Type*} [Fin
       exact hadj.ne hw.symm
     exact hni u₀ hisol
   have hind_conn : (G.induce (K u₀ : Set V)).Connected := by
-    have hu₀S : u₀ ∈ (K u₀ : Set V) := (hK_mem u₀ u₀).mpr Reachable.rfl
-    have hwalk : ∀ z u (q : G.Walk z u), u = u₀ → ∀ hz : z ∈ (K u₀ : Set V),
-        (G.induce (K u₀ : Set V)).Reachable ⟨z, hz⟩ ⟨u₀, hu₀S⟩ := by
-      intro z u q
-      induction q with
-      | nil =>
-        intro hzu hz
-        subst hzu
-        exact Reachable.rfl
-      | @cons a b c hadj p ih =>
-        intro hcu ha
-        have hp : G.Reachable b u₀ := hcu ▸ p.reachable
-        have hb : b ∈ (K u₀ : Set V) := (hK_mem u₀ b).mpr hp.symm
-        have hind_adj : (G.induce (K u₀ : Set V)).Adj ⟨a, ha⟩ ⟨b, hb⟩ := hadj
-        exact Reachable.trans hind_adj.reachable (ih hcu hb)
-    exact @Connected.mk _ (G.induce (K u₀ : Set V))
-      (fun a b => (hwalk a.1 u₀ (Classical.choice ((hK_mem u₀ a.1).mp a.2).symm) rfl a.2).trans
-        (hwalk b.1 u₀ (Classical.choice ((hK_mem u₀ b.1).mp b.2).symm) rfl b.2).symm)
-      ⟨⟨u₀, hu₀S⟩⟩
+    have hsupp : (K u₀ : Set V) = (G.connectedComponentMk u₀).supp := by
+      ext w
+      simp [K, ConnectedComponent.mem_supp_iff, ConnectedComponent.eq, reachable_comm]
+    rw [hsupp]
+    exact (G.connectedComponentMk u₀).connected_toSimpleGraph
   refine ⟨K u₀, hcard_ge_two, hle_half, hind_conn, fun x hx y hy hadj => ?_⟩
   exact hy ((hK_mem u₀ y).mpr (((hK_mem u₀ x).mp hx).trans hadj.reachable))
-
-private theorem exists_adj_leaving_of_walk {V : Type*} {G : SimpleGraph V} {S : Finset V}
-    {a b : V} (ha : a ∈ S) (hb : b ∉ S) (p : G.Walk a b) :
-    ∃ x ∈ S, ∃ y ∉ S, G.Adj x y := by
-  induction p with
-  | nil => exact False.elim (hb ha)
-  | @cons u v w hadj q ih =>
-    by_cases hv : v ∈ S
-    · exact ih hv hb
-    · exact ⟨u, ha, v, hv, hadj⟩
-
-private theorem exists_tree_edges_aux {V : Type*} [Fintype V]
-    {G : SimpleGraph V} (hc : G.Connected) :
-    ∀ m : ℕ, ∀ S : Finset V, ∀ t : Finset (Sym2 V),
-      S.Nonempty → #t = #S - 1 → (∀ e ∈ t, e ∈ G.edgeSet ∧ ∀ u ∈ e, u ∈ S) →
-      Fintype.card V - #S = m →
-      ∃ t' : Finset (Sym2 V), #t' = Fintype.card V - 1 ∧ ∀ e ∈ t', e ∈ G.edgeSet := by
-  classical
-  intro m
-  induction m with
-  | zero =>
-    intro S t _ ht hinv hm
-    have hcard : #S = Fintype.card V := by
-      have hle := Finset.card_le_univ S
-      omega
-    exact ⟨t, by omega, fun e he => (hinv e he).1⟩
-  | succ m ih =>
-    intro S t hSne ht hinv hm
-    have hSpos : 0 < #S := Finset.card_pos.mpr hSne
-    have hne_univ : S ≠ Finset.univ := by
-      intro h
-      rw [h, Finset.card_univ] at hm
-      omega
-    obtain ⟨w, hw⟩ : ∃ w : V, w ∉ S := by
-      by_contra! hall
-      apply hne_univ
-      exact Finset.eq_univ_iff_forall.mpr hall
-    obtain ⟨u, hu⟩ := hSne
-    obtain ⟨p⟩ := hc.preconnected u w
-    obtain ⟨x, hx, y, hy, hadj⟩ := exists_adj_leaving_of_walk hu hw p
-    let e : Sym2 V := s(x, y)
-    have he_not : e ∉ t := by
-      intro he
-      exact hy ((hinv e he).2 y (by simp [e]))
-    have ht' : #(insert e t) = #(insert y S) - 1 := by
-      rw [Finset.card_insert_of_notMem he_not, Finset.card_insert_of_notMem hy]
-      omega
-    have hinv' : ∀ e' ∈ insert e t, e' ∈ G.edgeSet ∧ ∀ z ∈ e', z ∈ insert y S := by
-      intro e' he'
-      rcases Finset.mem_insert.mp he' with rfl | he'
-      · refine ⟨hadj, fun z hz => ?_⟩
-        simp only [e, Sym2.mem_iff] at hz
-        rcases hz with hz | hz
-        · rw [hz]
-          exact Finset.mem_insert_of_mem hx
-        · rw [hz]
-          exact Finset.mem_insert_self y S
-      · refine ⟨(hinv e' he').1, fun z hz => Finset.mem_insert_of_mem ((hinv e' he').2 z hz)⟩
-    have hm' : Fintype.card V - #(insert y S) = m := by
-      rw [Finset.card_insert_of_notMem hy]
-      omega
-    exact ih (insert y S) (insert e t) ⟨y, Finset.mem_insert_self y S⟩ ht' hinv' hm'
 
 /-- Every connected finite nonempty graph contains a spanning tree edge subset of cardinality
 `|V| - 1`. All elements of this subset are non-diagonal edges of `G`. -/
@@ -192,13 +117,9 @@ theorem exists_card_sub_one_subset_edgeSet_of_connected {V : Type*} [Fintype V] 
     {G : SimpleGraph V} (hc : G.Connected) :
     ∃ t : Finset (Sym2 V), #t = Fintype.card V - 1 ∧ ∀ e ∈ t, e ∈ G.edgeSet ∧ ¬e.IsDiag := by
   classical
-  let v₀ : V := Classical.arbitrary V
-  obtain ⟨t, ht, hedge⟩ := exists_tree_edges_aux hc (Fintype.card V - 1) {v₀} ∅
-    ⟨v₀, Finset.mem_singleton_self v₀⟩ (by simp) (fun _ h => by simp at h) (by simp)
-  refine ⟨t, ht, fun e he => ⟨hedge e he, ?_⟩⟩
-  induction e using Sym2.ind with
-  | _ a b =>
-    have hab : G.Adj a b := hedge _ he
-    exact hab.ne
+  obtain ⟨T, hTG, hT⟩ := hc.exists_isTree_le
+  refine ⟨T.edgeFinset, by have := hT.card_edgeFinset; omega, fun e he => ?_⟩
+  have heG : e ∈ G.edgeSet := edgeSet_mono hTG (mem_edgeFinset.mp he)
+  exact ⟨heG, G.not_isDiag_of_mem_edgeSet heG⟩
 
 end SimpleGraph
