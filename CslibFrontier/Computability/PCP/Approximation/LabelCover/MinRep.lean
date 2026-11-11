@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.CMMSA
 public import CslibFrontier.Computability.PCP.Approximation.LabelCover
 import CslibFrontier.Computability.PCP.Approximation.LabelCover.SmallSoundness
+import CslibFrontier.Foundations.Data.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
@@ -133,15 +134,12 @@ private theorem mul_add_lt {i k n a : ℕ} (hi : i < k) (ha : a < n) : i * n + a
     _ = (i + 1) * n := by ring
     _ ≤ k * n := Nat.mul_le_mul_right n hi
 
-private theorem mul_add_div {k n a : ℕ} (ha : a < n) : (k * n + a) / n = k := by
-  rw [add_comm, Nat.add_mul_div_right _ _ (by omega), Nat.div_eq_of_lt ha, zero_add]
-
 /-- The weight of the variable of the label `a` of the `k`-th vertex is that vertex's degree. -/
 theorem getD_blockWeights {L : List ℕ} {n k a : ℕ} (hk : k < L.length) (ha : a < n) :
     (blockWeights L n).getD (k * n + a) 0 = L.count L[k] := by
   have hlt := mul_add_lt hk ha
   rw [List.getD_eq_getElem _ _ (by simpa [length_blockWeights] using hlt)]
-  simp only [blockWeights, List.getElem_map, List.getElem_range, mul_add_div ha,
+  simp only [blockWeights, List.getElem_map, List.getElem_range, Nat.mul_add_div_of_lt _ ha,
     List.getD_eq_getElem _ _ hk]
 
 theorem pos_of_mem_blockWeights {L : List ℕ} {n w : ℕ} (hw : w ∈ blockWeights L n) : 0 < w := by
@@ -163,7 +161,7 @@ private theorem blockVar_inj {L : List ℕ} {off n u v a b : ℕ} (hu : u ∈ L)
   unfold blockVar at h
   have h' : L.idxOf u * n + a = L.idxOf v * n + b := by omega
   have hidx : L.idxOf u = L.idxOf v := by
-    rw [← mul_add_div (k := L.idxOf u) ha, ← mul_add_div (k := L.idxOf v) hb, h']
+    rw [← Nat.mul_add_div_of_lt (L.idxOf u) ha, ← Nat.mul_add_div_of_lt (L.idxOf v) hb, h']
   exact ⟨(List.idxOf_inj hu).1 hidx, by rw [hidx] at h'; omega⟩
 
 theorem mem_srcs {C : Type} {G : Graph C} {d : Edge C} (hd : d ∈ G.edges) : d.src ∈ srcs G :=
