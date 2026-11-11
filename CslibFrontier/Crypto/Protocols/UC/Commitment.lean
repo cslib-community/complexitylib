@@ -69,6 +69,14 @@ Combining both experiments via the triangle inequality yields the quantitative t
 `not_emulatesDummyWithin_fcom`, `not_realizesWithin_fcom`, `not_realizes_fcom`, and
 `not_realizes_fcom_of_perfectlyComplete`.
 
+These theorems rest on the corrupted-committer / corrupted-receiver swap above, not on a difference
+in honest outputs. Honest parties see the same kinds of outputs in both worlds: the committer never
+gets an output, and the receiver gets `some .receipt` and then `some (.opened b)` only after the
+adversary delivers the messages (`deliverCommit` and `deliverOpen` on the network in the real world,
+on the backdoor of `fcom` in the ideal world). In particular, an environment that commits and then
+queries receiver `1` sees `none` in both worlds. The test file has an explicit `C = ∅` simulator for
+a one-time-pad scheme with zero advantage against every predicate of the full honest view.
+
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.UC.CommitmentInput`,
@@ -79,6 +87,7 @@ Combining both experiments via the triangle inequality yields the quantitative t
   ideal two-party commitment functionality.
 * `Cslib.Crypto.Protocols.UC.fcom`: the two-party ideal bit-commitment functionality
   $\mathcal{F}_{\mathrm{com}}$ with simulator-controlled output delivery.
+* `Cslib.Crypto.Protocols.UC.FcomAdversary`: adversaries and simulators facing `fcom`.
 * `Cslib.Crypto.Protocols.UC.fcomCommittedView`,
   `Cslib.Crypto.Protocols.UC.fcomLocked`: state-abstraction machines capturing pre-open hiding
   (`C = {1}`) and post-commit binding (`C = {0}`) of `fcom`.
@@ -199,7 +208,10 @@ simulator-controlled output delivery:
   `deliverOpen` on the backdoor (after `0` has opened and `deliverCommit` has been sent), and then
   receives `some (.opened b)`.
 - On backdoor `query`, the simulator receives `none` in `idle`, `some .receipt` when `b` is
-  committed and not yet opened (hiding `b`), and `some (.opened b)` once `0` has opened. -/
+  committed and not yet opened (hiding `b`), and `some (.opened b)` once `0` has opened.
+
+Figure 2 halts on an `Open` with no recorded bit; here `openCom` in `idle` is ignored instead, as
+it is by the honest committer of `PlainCommitmentScheme.toProtocol`. -/
 @[expose] def fcom :
     IdealFunctionality 2 CommitmentInput CommitmentOutput
       CommitmentBackdoor (Option CommitmentOutput) where
@@ -266,6 +278,12 @@ theorem corruptRouter_fcom_isBounded (κ : ℕ) (C : Finset (Fin 2)) :
       simp only [corruptRouter, hi, ↓reduceIte] <;> exact OracleComp.IsCostBounded.pure _ 0
   · cases q <;> rcases s with _ | ⟨b, ⟨_ | _, _ | _, _ | _⟩⟩ <;>
       exact OracleComp.IsCostBounded.pure _ 0
+
+/-- Adversaries (and simulators) facing `fcom`: environment queries `AdvQ` with replies `AdvR`,
+and access to the party ports and backdoor of `fcom` on the network side. -/
+abbrev FcomAdversary (AdvQ AdvR : Type) : Type 1 :=
+  Adversary 2 AdvQ AdvR ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
+    (Option CommitmentOutput ⊕ Option CommitmentOutput)
 
 /-- Deterministic transition of `corruptRouter {1} (fcom.toProtocol κ {1})` on the network port
 while `fcom` is in state `CommitmentState.committed b recDel` (independent of `b`). -/
@@ -428,8 +446,7 @@ theorem handle_fcom_locked (κ : ℕ) (C : Finset (Fin 2)) (bStar : Bool)
 /-- Running an adversary `S₀` against `fcom` from state `CommitmentState.active bStar phase`
 factors through `fcomLocked bStar`. -/
 theorem runFrom_execMachine_fcom_locked {AdvQ AdvR : Type}
-    (S₀ : Adversary 2 AdvQ AdvR ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₀ : FcomAdversary AdvQ AdvR)
     (κ : ℕ) (C : Finset (Fin 2)) (bStar : Bool) {α : Type}
     (program : ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput AdvQ AdvR) α)
     (stS : (S₀ κ C).State) (phase : CommitmentPhase) :
@@ -485,11 +502,8 @@ inductive ReceiverState (CommitMsg : Type) : Type
 /-- A simulator for the dummy adversary of a two-party plain-model commitment scheme with messages
 `CommitMsg` and `OpenMsg` against the ideal commitment functionality `fcom`. -/
 abbrev PlainCommitmentSim (CommitMsg OpenMsg : Type) : Type 1 :=
-  Adversary 2
-    ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
+  FcomAdversary ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
     (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg)
-    ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-    (Option CommitmentOutput ⊕ Option CommitmentOutput)
 
 /-- A two-party plain-model bit-commitment scheme with commit message type `CommitMsg` and opening
 message type `OpenMsg`:
@@ -1171,16 +1185,12 @@ execution (`exec scheme.toProtocol (dummyAdversary 2 _ _) {0} (corruptCommitterE
   | _ => return false
 
 private def fcomExecState {AdvQ AdvR : Type}
-    (S : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S : FcomAdversary AdvQ AdvR)
     (κ : ℕ) (C : Finset (Fin 2)) (st : (S κ C).State) (s : CommitmentState) :
     (execMachine fcom.toProtocol S κ C).State := (st, s)
 
 private theorem init_execMachine_fcom {AdvQ AdvR : Type}
-    (S : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S : FcomAdversary AdvQ AdvR)
     (κ : ℕ) (C : Finset (Fin 2)) :
     (execMachine fcom.toProtocol S κ C).init =
       (fun sA => fcomExecState S κ C sA .idle) <$> (S κ C).init := by
@@ -1188,18 +1198,14 @@ private theorem init_execMachine_fcom {AdvQ AdvR : Type}
     IdealFunctionality.toProtocol, fcomExecState, pure_bind, bind_pure_comp]
 
 private theorem handle_execMachine_fcom_commit {AdvQ AdvR : Type}
-    (S₁ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₁ : FcomAdversary AdvQ AdvR)
     (b : Bool) (κ : ℕ) (st₀ : (S₁ κ {1}).State) :
     ((execMachine fcom.toProtocol S₁ κ {1}).handle (Sum.inl (0, .commit b))).run
       (fcomExecState S₁ κ {1} st₀ .idle) =
       pure (none, fcomExecState S₁ κ {1} st₀ (.committed b false)) := rfl
 
 private theorem handle_execMachine_fcom_openCom {AdvQ AdvR : Type}
-    (S₁ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₁ : FcomAdversary AdvQ AdvR)
     (b : Bool) (κ : ℕ) (st₁ : (S₁ κ {1}).State) (recDel₁ : Bool) :
     ((execMachine fcom.toProtocol S₁ κ {1}).handle (Sum.inl (0, .openCom))).run
       (fcomExecState S₁ κ {1} st₁ (.committed b recDel₁)) =
@@ -1214,9 +1220,7 @@ private def execReplyInr {AdvQ AdvR : Type} (q : AdvQ) (r : AdvR) :
     execSpec 2 CommitmentInput CommitmentOutput AdvQ AdvR (Sum.inr q) := r
 
 private theorem handle_execMachine_fcom_committed_inr {AdvQ AdvR : Type}
-    (S₁ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₁ : FcomAdversary AdvQ AdvR)
     (b : Bool) (κ : ℕ) (q : AdvQ) (st₀ : (S₁ κ {1}).State) (recDel : Bool) :
     ((execMachine fcom.toProtocol S₁ κ {1}).handle (Sum.inr q)).run
       (fcomExecState S₁ κ {1} st₀ (.committed b recDel)) =
@@ -1231,9 +1235,7 @@ private theorem handle_execMachine_fcom_committed_inr {AdvQ AdvR : Type}
   rfl
 
 private theorem handle_execMachine_fcom_opened_inr {AdvQ AdvR : Type}
-    (S₁ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₁ : FcomAdversary AdvQ AdvR)
     (b : Bool) (κ : ℕ) (q : AdvQ) (st₁ : (S₁ κ {1}).State) (recDel₁ : Bool) :
     ((execMachine fcom.toProtocol S₁ κ {1}).handle (Sum.inr q)).run
       (fcomExecState S₁ κ {1} st₁ (.opened b recDel₁)) =
@@ -1364,9 +1366,7 @@ theorem exec_real_corruptCommitterEnv_eq_exec_fcom_corruptReceiverEnv
     none
 
 private def fcomLockedState {AdvQ AdvR : Type}
-    (S₀ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₀ : FcomAdversary AdvQ AdvR)
     (bStar : Bool) (κ : ℕ) (st : (S₀ κ {0}).State) (phase : CommitmentPhase) :
     ((liftAdversary (S₀ κ {0})).comp (corruptRouter {0} (fcomLocked bStar))).State :=
   (st, phase)
@@ -1379,9 +1379,7 @@ private def fcomLockedRouterPhase (bStar : Bool)
     CommitmentPhase := s
 
 private theorem closeProgram_fst_runFrom_execMachine_fcom_locked {AdvQ AdvR α : Type}
-    (S₀ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₀ : FcomAdversary AdvQ AdvR)
     (bStar : Bool) (κ : ℕ)
     (program : ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput AdvQ AdvR) α)
     (stS₀ : (S₀ κ {0}).State) (phase : CommitmentPhase) :
@@ -1399,9 +1397,7 @@ private theorem closeProgram_fst_runFrom_execMachine_fcom_locked {AdvQ AdvR α :
   rfl
 
 private theorem handle_fcomLocked_query_one {AdvQ AdvR : Type}
-    (S₀ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₀ : FcomAdversary AdvQ AdvR)
     (bStar : Bool) (κ : ℕ) (st : (S₀ κ {0}).State) (phase : CommitmentPhase) :
     (((liftAdversary (S₀ κ {0})).comp (corruptRouter {0} (fcomLocked bStar))).handle
       (Sum.inl (1, .query))).run (fcomLockedState S₀ bStar κ st phase) =
@@ -1409,9 +1405,7 @@ private theorem handle_fcomLocked_query_one {AdvQ AdvR : Type}
   rcases phase with ⟨_ | _, _ | _, _ | _⟩ <;> rfl
 
 private theorem handle_fcomLocked_inr {AdvQ AdvR : Type}
-    (S₀ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₀ : FcomAdversary AdvQ AdvR)
     (bStar : Bool) (κ : ℕ) (q : AdvQ) (st : (S₀ κ {0}).State) (phase : CommitmentPhase) :
     (((liftAdversary (S₀ κ {0})).comp (corruptRouter {0} (fcomLocked bStar))).handle
       (Sum.inr q)).run (fcomLockedState S₀ bStar κ st phase) =
@@ -1423,9 +1417,7 @@ private theorem handle_fcomLocked_inr {AdvQ AdvR : Type}
           (liftNet (((S₀ κ {0}).handle q).run st)) (fcomLockedRouterState bStar phase) := rfl
 
 private theorem handle_execMachine_fcom_query_one_idle {AdvQ AdvR : Type}
-    (S₀ : Adversary 2 AdvQ AdvR
-      ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-      (Option CommitmentOutput ⊕ Option CommitmentOutput))
+    (S₀ : FcomAdversary AdvQ AdvR)
     (κ : ℕ) (st : (S₀ κ {0}).State) :
     ((execMachine fcom.toProtocol S₀ κ {0}).handle (Sum.inl (1, .query))).run
       (fcomExecState S₀ κ {0} st .idle) =
