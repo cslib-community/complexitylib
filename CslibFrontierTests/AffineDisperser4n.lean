@@ -93,14 +93,14 @@ example :
   have hS : (initialState and2Circuit).Valid and2Fn := initialState_valid hcomp
   have hok : (initialState and2Circuit).AddPairOK ⟨0, false, 1, false⟩ :=
     ⟨by decide, by decide, by decide⟩
-  refine ⟨hok, hS.addPair hok, ?_⟩
-  have hq := State.addPair_q hok
+  refine ⟨hok, State.Valid.addPair hS hok, ?_⟩
+  have hq := AffineDisperserCore.State.addPair_q hok
   have hm : ((initialState and2Circuit).addPair ⟨0, false, 1, false⟩).m =
       (initialState and2Circuit).m := by
-    simp [State.m, State.addPair_params]
+    simp [AffineDisperserCore.State.m, AffineDisperserCore.State.addPair_params]
   have hqm := hS.q_le_m
-  have hqm' := (hS.addPair hok).q_le_m
-  unfold State.a at *
+  have hqm' := (State.Valid.addPair hS hok).q_le_m
+  unfold AffineDisperserCore.State.a at *
   omega
 
 end CslibFrontierTests.AffineDisperser4n
