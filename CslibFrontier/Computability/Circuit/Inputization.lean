@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Cslib.Computability.Circuit.Normalization
+public import CslibFrontier.Computability.Circuit.Normalization
 public import Cslib.Computability.Circuit.RelativeComplexity
 import Mathlib.Algebra.BigOperators.Fin
 
@@ -19,14 +19,14 @@ For a multi-output function `g : (Fin n → U) → Fin k → U`, the *non-input 
 `fun x => x i`. Their number is the exact complexity of `g` whenever `g` lists the wire
 functions of a program, and it is the price of computing `g` alongside any other function `f`:
 
-* every circuit computing `g` (alongside `f`) has a distinct gate for each non-input component,
-  because an output computing such a component cannot be an input wire and distinct functions are
-  computed by distinct gates;
+* in every circuit computing `g` (alongside `f`), each non-input component is the function of
+  some gate, because an output computing it cannot be an input wire; distinct functions are
+  computed by distinct gates, so there are at least as many such gates as non-input components;
 * turning those gates into extra inputs, which carry the values `g x`, leaves a circuit computing
   `f` from `x` and `g x`. So computing `g` and `f` together costs at least
   `#(nonInputComponents g) + C(f | g)`;
 * conversely, a program whose gate functions are components of `g` can be rebuilt with one gate
-  per distinct non-projection gate function (`Program.exists_irredundant_noInput`), which bounds
+  per distinct non-projection gate function (`Program.exists_irredundant_ne_input`), which bounds
   the complexity of `g` from above.
 
 Repeated components are counted once and components that are input projections are not counted,
@@ -40,15 +40,15 @@ since an output wire may be an input wire and designating outputs is free.
 
 ## Main results
 
-* `Cslib.Circuits.Circuit.card_nonInputComponents_le_card_componentGates`: a circuit whose outputs
-  include `g` has a distinct gate computing each non-input component of `g`.
+* `Cslib.Circuits.Circuit.nonInputComponents_subset_image_componentGates`,
+  `Cslib.Circuits.Circuit.card_nonInputComponents_le_card_componentGates`: in a circuit whose
+  outputs include `g`, every non-input component of `g` is the function of a component gate, so
+  there are at least as many component gates as non-input components.
 * `Cslib.Circuits.Circuit.card_nonInputComponents_add_ecomplexityGiven_le`,
   `Cslib.Circuits.card_nonInputComponents_add_ecomplexityGiven_le`: inputization,
   `#(nonInputComponents g) + C(f | g) ≤ C(g, f)`.
 * `Cslib.Circuits.card_nonInputComponents_le_ecomplexity`: the lower bound
   `#(nonInputComponents g) ≤ C(g)`.
-* `Cslib.Circuits.Program.exists_irredundant_noInput`: a program can be rebuilt with pairwise
-  distinct gate functions, none an input projection, each computed by a gate of the original.
 * `Cslib.Circuits.ecomplexity_le_card_nonInputComponents`,
   `Cslib.Circuits.ecomplexity_eq_card_nonInputComponents`,
   `Cslib.Circuits.ecomplexity_eval_eq_card_nonInputComponents`: when `g` lists wire functions of
@@ -62,8 +62,9 @@ since an output wire may be an input wire and designating outputs is free.
 
 These are library generalizations, to arbitrary signatures and interpretations, of
 [Ilango, Loff and Oliveira][IlangoLoffOliveira2020], Proposition 14 (pp. 22:21–22:22), where `g`
-lists the gates of De Morgan formulas, and of its use in Section 4.2, where the gap between the
-complexities of `T • g` and of `g` measures the cost of computing `T` from the components of `g`.
+lists the gates of De Morgan formulas, and of its use in the proof of Lemma 16 (p. 22:22), where
+the gap between the complexities of `T • g` and of `g` measures the cost of computing `T` from the
+components of `g`.
 
 * [R. Ilango, B. Loff and I. C. Oliveira, *NP-Hardness of Circuit Minimization for Multi-Output
   Functions*][IlangoLoffOliveira2020]
@@ -125,12 +126,62 @@ theorem Program.mem_componentGates {s : ℕ} {p : Program σ n s} {I : Interpret
   classical
   simp [Program.componentGates]
 
+/-! ### Component gates -/
+
+open Classical in
+/-- In a circuit whose outputs include every component of `g`, each non-input component of `g` is
+the function of a gate computing a component of `g`: an output computing it cannot be an input
+wire. -/
+theorem Circuit.nonInputComponents_subset_image_componentGates {I : Interpretation σ U}
+    {g : (Fin n → U) → Fin k → U} (c : Circuit σ n m)
+    (hg : ∀ j, ∃ o, ∀ x, c.eval I x o = g x j) :
+    nonInputComponents g ⊆ (c.program.componentGates I g).image (c.program.gateFunction I) := by
+  intro h hh
+  obtain ⟨⟨j, rfl⟩, hproj⟩ := mem_nonInputComponents.mp hh
+  obtain ⟨o, ho⟩ := hg j
+  cases hw : c.outputs o with
+  | input i =>
+      exact absurd (funext fun x => by simpa [Circuit.eval, hw] using (ho x).symm) (hproj i)
+  | gate t =>
+      have ht : c.program.gateFunction I t = fun x => g x j :=
+        funext fun x => by simpa [Circuit.eval, hw] using ho x
+      exact mem_image.mpr ⟨t, Program.mem_componentGates.mpr ⟨j, ht⟩, ht⟩
+
+/-- A circuit whose outputs include every component of `g` has at least as many gates computing
+components of `g` as `g` has non-input components ([Ilango, Loff and
+Oliveira][IlangoLoffOliveira2020], Proposition 14, first statement). -/
+theorem Circuit.card_nonInputComponents_le_card_componentGates {I : Interpretation σ U}
+    {g : (Fin n → U) → Fin k → U} (c : Circuit σ n m)
+    (hg : ∀ j, ∃ o, ∀ x, c.eval I x o = g x j) :
+    #(nonInputComponents g) ≤ #(c.program.componentGates I g) := by
+  classical
+  exact (card_le_card (c.nonInputComponents_subset_image_componentGates hg)).trans card_image_le
+
+/-- Computing `g` costs at least one gate for each non-input component of `g`. -/
+theorem card_nonInputComponents_le_ecomplexity (I : Interpretation σ U)
+    (g : (Fin n → U) → Fin k → U) : #(nonInputComponents g) ≤ ecomplexity I g :=
+  le_ecomplexity_iff.mpr fun c hc => by
+    have h := c.card_nonInputComponents_le_card_componentGates (I := I) (g := g)
+      fun j => ⟨j, fun x => congrFun (hc x) j⟩
+    exact_mod_cast h.trans (card_le_univ _ |>.trans_eq (Fintype.card_fin _))
+
 /-! ### Inputization -/
 
 /-- Read a wire of a program on `n` inputs as a wire on `n + k` inputs, sending gates through
 `gates`. -/
 private def liftWire {s s' : ℕ} (gates : Fin s → Wire (n + k) s') : Wire n s → Wire (n + k) s' :=
   Wire.elim (fun i => Wire.input (Fin.castAdd k i)) gates
+
+/-- A lifted wire carries the value of the original wire when every gate is sent to a wire
+carrying that gate's value. -/
+private theorem trace_liftWire {I : Interpretation σ U} {g : (Fin n → U) → Fin k → U} {s s' : ℕ}
+    {p : Program σ n s} {q : Program σ (n + k) s'} {gates : Fin s → Wire (n + k) s'}
+    (hgates : ∀ x t, q.trace I (Fin.append x (g x)) (gates t) = p.gateFunction I t x)
+    (x : Fin n → U) (w : Wire n s) :
+    q.trace I (Fin.append x (g x)) (liftWire gates w) = p.trace I x w := by
+  cases w with
+  | input i => simp [liftWire]
+  | gate t => exact hgates x t
 
 /-- **Inputization.** Every gate of `p` computing a component of `g` can be replaced by the extra
 input carrying that component. The remaining program reads `x` followed by `g x`, has one gate
@@ -144,16 +195,11 @@ private theorem Program.exists_inputize (I : Interpretation σ U) (g : (Fin n �
   | s + 1, .gate p line => by
       classical
       obtain ⟨s', q, gates, hgates, hcount⟩ := Program.exists_inputize I g p
-      have hwire (x : Fin n → U) (w : Wire n s) :
-          q.trace I (Fin.append x (g x)) (liftWire gates w) = p.trace I x w := by
-        cases w with
-        | input i => simp [liftWire]
-        | gate t => exact hgates x t
       let l := line.mapWires (liftWire gates)
       have hl (x : Fin n → U) :
           l.eval I (Fin.append x (g x)) (q.eval I (Fin.append x (g x))) =
             line.eval I x (p.eval I x) :=
-        line.eval_mapWires _ I x _ _ _ (hwire x)
+        line.eval_mapWires _ I x _ _ _ (trace_liftWire hgates x)
       have hsplit : #((p.gate line).componentGates I g) = #(p.componentGates I g) +
           if ∃ j, (p.gate line).gateFunction I (Fin.last s) = fun x => g x j then 1 else 0 := by
         simp only [Program.componentGates, card_filter, Fin.sum_univ_castSucc,
@@ -175,19 +221,15 @@ private theorem Program.exists_inputize (I : Interpretation σ U) (g : (Fin n �
           omega
 
 /-- **Inputization** (generalizing [Ilango, Loff and Oliveira][IlangoLoffOliveira2020],
-Proposition 14 and Section 4.2). A circuit computing `g` followed by `f` has a distinct gate for
-each non-input component of `g`, and its remaining gates compute `f` from `x` and `g x`. -/
+Proposition 14 and the proof of Lemma 16, p. 22:22). In a circuit computing `g` followed by `f`,
+the gates computing components of `g` are at least as many as the non-input components of `g`, and
+the remaining gates compute `f` from `x` and `g x`. -/
 theorem Circuit.card_nonInputComponents_add_ecomplexityGiven_le {I : Interpretation σ U}
     {g : (Fin n → U) → Fin k → U} {f : (Fin n → U) → Fin m → U} (c : Circuit σ n (k + m))
     (hc : c.Computes I fun x => Fin.append (g x) (f x)) :
     #(nonInputComponents g) + ecomplexityGiven I f g ≤ c.size := by
   classical
   obtain ⟨s', q, gates, hgates, hcount⟩ := c.program.exists_inputize I g
-  have hwire (x : Fin n → U) (w : Wire n c.size) :
-      q.trace I (Fin.append x (g x)) (liftWire gates w) = c.program.trace I x w := by
-    cases w with
-    | input i => simp [liftWire]
-    | gate t => exact hgates x t
   have hout (x : Fin n → U) (o : Fin (k + m)) :
       c.program.trace I x (c.outputs o) = Fin.append (g x) (f x) o :=
     congrFun (hc x) o
@@ -195,22 +237,9 @@ theorem Circuit.card_nonInputComponents_add_ecomplexityGiven_le {I : Interpretat
   have hf : ecomplexityGiven I f g ≤ s' := by
     refine ecomplexityGiven_le_of_eval f g
       ⟨q, fun o => liftWire gates (c.outputs (Fin.natAdd k o))⟩ fun x => funext fun o => ?_
-    simpa [Circuit.eval] using (hwire x _).trans (hout x (Fin.natAdd k o))
-  -- Every non-input component of `g` is computed by a gate of `c`.
-  have hsub : nonInputComponents g ⊆ (c.program.componentGates I g).image
-      (c.program.gateFunction I) := by
-    intro h hh
-    obtain ⟨⟨j, rfl⟩, hproj⟩ := mem_nonInputComponents.mp hh
-    have hj (x : Fin n → U) : c.program.trace I x (c.outputs (Fin.castAdd m j)) = g x j := by
-      simpa using hout x (Fin.castAdd m j)
-    cases hw : c.outputs (Fin.castAdd m j) with
-    | input i =>
-        exact absurd (funext fun x => by simpa [hw] using (hj x).symm) (hproj i)
-    | gate t =>
-        have ht : c.program.gateFunction I t = fun x => g x j :=
-          funext fun x => by simpa [hw] using hj x
-        exact mem_image.mpr ⟨t, Program.mem_componentGates.mpr ⟨j, ht⟩, ht⟩
-  have hcard := (card_le_card hsub).trans card_image_le
+    simpa [Circuit.eval] using (trace_liftWire hgates x _).trans (hout x (Fin.natAdd k o))
+  have hcard := c.card_nonInputComponents_le_card_componentGates (I := I) (g := g)
+    fun j => ⟨Fin.castAdd m j, fun x => by simpa [Circuit.eval] using hout x (Fin.castAdd m j)⟩
   calc (#(nonInputComponents g) : ℕ∞) + ecomplexityGiven I f g
       ≤ #(c.program.componentGates I g) + s' := add_le_add (by exact_mod_cast hcard) hf
     _ = c.size := by norm_cast; omega
@@ -223,85 +252,7 @@ theorem card_nonInputComponents_add_ecomplexityGiven_le (I : Interpretation σ U
       ecomplexity I fun x => Fin.append (g x) (f x) :=
   le_ecomplexity_iff.mpr fun c hc => c.card_nonInputComponents_add_ecomplexityGiven_le hc
 
-/-- A circuit whose outputs include the components of `g` has a distinct gate computing each
-non-input component of `g` ([Ilango, Loff and Oliveira][IlangoLoffOliveira2020], Proposition 14,
-first statement). -/
-theorem Circuit.card_nonInputComponents_le_card_componentGates {I : Interpretation σ U}
-    {g : (Fin n → U) → Fin k → U} (c : Circuit σ n m)
-    (hg : ∀ j, ∃ o, ∀ x, c.eval I x o = g x j) :
-    #(nonInputComponents g) ≤ #(c.program.componentGates I g) := by
-  classical
-  refine (card_le_card fun h hh => ?_).trans (card_image_le (f := c.program.gateFunction I))
-  obtain ⟨⟨j, rfl⟩, hproj⟩ := mem_nonInputComponents.mp hh
-  obtain ⟨o, ho⟩ := hg j
-  cases hw : c.outputs o with
-  | input i =>
-      exact absurd (funext fun x => by simpa [Circuit.eval, hw] using (ho x).symm) (hproj i)
-  | gate t =>
-      have ht : c.program.gateFunction I t = fun x => g x j :=
-        funext fun x => by simpa [Circuit.eval, hw] using ho x
-      exact mem_image.mpr ⟨t, Program.mem_componentGates.mpr ⟨j, ht⟩, ht⟩
-
-/-- Computing `g` costs at least one gate for each non-input component of `g`. -/
-theorem card_nonInputComponents_le_ecomplexity (I : Interpretation σ U)
-    (g : (Fin n → U) → Fin k → U) : #(nonInputComponents g) ≤ ecomplexity I g :=
-  le_ecomplexity_iff.mpr fun c hc => by
-    have h := c.card_nonInputComponents_le_card_componentGates (I := I) (g := g)
-      fun j => ⟨j, fun x => congrFun (hc x) j⟩
-    exact_mod_cast h.trans (card_le_univ _ |>.trans_eq (Fintype.card_fin _))
-
-/-! ### Projection-aware deduplication -/
-
-/-- **Projection-aware deduplication.** A program can be rebuilt so that its gates compute pairwise
-distinct functions, none of which is an input projection, while every wire keeps its value. Each
-new gate computes the function of some gate of the original program. -/
-theorem Program.exists_irredundant_noInput {s : ℕ} (p : Program σ n s) (I : Interpretation σ U) :
-    ∃ s' ≤ s, ∃ q : Program σ n s', ∃ ρ : Wire.Renaming n s s',
-      (∀ x w, q.trace I x (ρ w) = p.trace I x w) ∧ q.Irredundant I ∧
-        (∀ t i, q.gateFunction I t ≠ fun x => x i) ∧ ∀ t, ∃ t₀, ρ.gates t₀ = Wire.gate t := by
-  induction p with
-  | empty =>
-      exact ⟨0, le_rfl, .empty, .id, by simp, fun t => t.elim0, fun t => t.elim0,
-        fun t => t.elim0⟩
-  | @gate s p line ih =>
-      obtain ⟨s', hs', q, ρ, hρ, hq, hqin, hρsurj⟩ := ih
-      let l := line.mapWires ρ
-      have hl (x) : l.eval I x (q.eval I x) = line.eval I x (p.eval I x) :=
-        line.eval_mapWires ρ I x x (p.eval I x) (q.eval I x) (hρ x)
-      -- A gate computing an input projection, or a function already computed, is skipped.
-      have hskip (w : Wire n s') (hw : ∀ x, q.trace I x w = l.eval I x (q.eval I x)) :
-          ∃ s'' ≤ s + 1, ∃ q' : Program σ n s'', ∃ ρ' : Wire.Renaming n (s + 1) s'',
-            (∀ x w, q'.trace I x (ρ' w) = (p.gate line).trace I x w) ∧ q'.Irredundant I ∧
-              (∀ t i, q'.gateFunction I t ≠ fun x => x i) ∧
-                ∀ t, ∃ t₀, ρ'.gates t₀ = Wire.gate t := by
-        refine ⟨s', by omega, q, ρ.skipLast w, fun x v => ?_, hq, hqin, fun t => ?_⟩
-        · refine Wire.lastCases ?_ (fun v => ?_) v
-          · simpa [Program.trace] using (hw x).trans (hl x)
-          · simpa using hρ x v
-        · obtain ⟨t₀, ht₀⟩ := hρsurj t
-          exact ⟨t₀.castSucc, by simpa [Wire.Renaming.skipLast] using ht₀⟩
-      by_cases hin : ∃ i, (fun x => l.eval I x (q.eval I x)) = fun x => x i
-      · obtain ⟨i, hi⟩ := hin
-        exact hskip (Wire.input i) fun x => (congrFun hi x).symm
-      by_cases hdup : ∃ t, q.gateFunction I t = fun x => l.eval I x (q.eval I x)
-      · obtain ⟨t, ht⟩ := hdup
-        exact hskip (Wire.gate t) fun x => congrFun ht x
-      refine ⟨s' + 1, by omega, q.gate l, ρ.appendLast, fun x v => ?_, ?_, fun t => ?_,
-        fun t => ?_⟩
-      · refine Wire.lastCases ?_ (fun v => ?_) v
-        · simpa [Program.trace] using hl x
-        · simpa using hρ x v
-      · change Function.Injective ((q.gate l).gateFunction I)
-        convert Fin.snoc_injective_of_injective hq hdup using 1
-        ext t x
-        refine Fin.lastCases ?_ (fun t => ?_) t <;> simp
-      · refine Fin.lastCases ?_ (fun t => ?_) t
-        · intro i hi
-          exact hin ⟨i, by simpa using hi⟩
-        · simpa using hqin t
-      · refine Fin.lastCases ⟨Fin.last s, by simp [Wire.Renaming.appendLast]⟩ (fun t => ?_) t
-        obtain ⟨t₀, ht₀⟩ := hρsurj t
-        exact ⟨t₀.castSucc, by simp [Wire.Renaming.appendLast, ht₀]⟩
+/-! ### Exact complexity -/
 
 /-- When every component of `g` is a wire function of `p` and every gate of `p` that is not an
 input projection computes a component of `g`, computing `g` costs at most one gate per non-input
@@ -314,7 +265,7 @@ theorem ecomplexity_le_card_nonInputComponents {s : ℕ} (I : Interpretation σ 
       ∃ j, p.gateFunction I t = fun x => g x j) :
     ecomplexity I g ≤ #(nonInputComponents g) := by
   classical
-  obtain ⟨s', -, q, ρ, hρ, hq, hqin, hρsurj⟩ := p.exists_irredundant_noInput I
+  obtain ⟨s', -, q, ρ, hρ, hq, hqin, hρsurj⟩ := p.exists_irredundant_ne_input I
   choose w hw using hwires
   refine (ecomplexity_le_of_computes ⟨q, fun j => ρ (w j)⟩ fun x => funext fun j => ?_).trans ?_
   · simpa [Circuit.eval] using (hρ x (w j)).trans (congrFun (hw j) x)
