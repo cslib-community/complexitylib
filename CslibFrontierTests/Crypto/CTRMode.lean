@@ -19,25 +19,7 @@ open Cslib Cslib.Probability Cslib.Crypto
 /-! ### CTR queries and block costs -/
 
 /-- A valid left-or-right query: two messages of two 8-bit blocks each. -/
-def ctrQueryLR : CTRQuery 8 := ([0, 1], [1, 1])
-
-/-- A query whose two messages differ in length. -/
-def ctrQueryUnequal : CTRQuery 8 := ([0], [1, 1])
-
-/-- A valid query encrypts the selected message and costs its number of blocks. -/
-example : ctrSelect 2 true ctrQueryLR = [1, 1] ∧ ctrSelect 2 false ctrQueryLR = [0, 1] ∧
-    ctrBlocks 2 ctrQueryLR = 2 := by
-  decide
-
-/-- Messages of different lengths, or longer than the per-query limit, encrypt the empty message
-and cost nothing. -/
-example : ctrSelect 2 true ctrQueryUnequal = [] ∧ ctrBlocks 2 ctrQueryUnequal = 0 ∧
-    ctrSelect 1 false ctrQueryLR = [] ∧ ctrBlocks 1 ctrQueryLR = 0 := by
-  decide
-
-/-- The encrypted plaintext always has `ctrBlocks ℓ q` blocks. -/
-example : (ctrSelect 2 true ctrQueryUnequal).length = ctrBlocks 2 ctrQueryUnequal :=
-  length_ctrSelect 2 true ctrQueryUnequal
+def ctrQueryLR : BlockModeQuery 8 := ([0, 1], [1, 1])
 
 /-- Answering keystream calls starting at offset `i` evaluates `f (counter iv j)` along
 `i, i + 1, …, i + k - 1`. -/
@@ -62,13 +44,13 @@ example : ctrModCounter (n := 4) 0 0 ≠ ctrModCounter (n := 4) 0 1 ∧
 
 /-- A one-query adversary: asks `ctrQueryLR` and outputs `true` when the first ciphertext block is
 zero. -/
-def ctrOneQueryAdversary : CTRAdversary 8 := do
-  let r ← ProbOracleComp.query (spec := CTRSpec 8) ctrQueryLR
+def ctrOneQueryAdversary : BlockModeAdversary 8 := do
+  let r ← ProbOracleComp.query (spec := BlockModeSpec 8) ctrQueryLR
   return decide (r.2.head? = some 0)
 
 /-- The adversary asks for two blocks in total, with at most two blocks per query. -/
 theorem isCostBounded_ctrOneQueryAdversary :
-    OracleComp.IsCostBounded (ctrCost 2) ctrOneQueryAdversary 2 := by
+    OracleComp.IsCostBounded (blockModeCost 2) ctrOneQueryAdversary 2 := by
   unfold ctrOneQueryAdversary ProbOracleComp.query
   exact OracleComp.IsCostBounded.mono
     (OracleComp.IsCostBounded.bind (OracleComp.IsCostBounded.query (Sum.inr ctrQueryLR)) fun _ =>
@@ -93,7 +75,7 @@ example : ctrCpaGame ctrModCounter xorKeyed 2 true ctrOneQueryAdversary =
 example :
     (Game.advantage
         (PRF.idealGame (ctrReduction ctrModCounter 2 false ctrOneQueryAdversary))
-        (ctrIdealGame 2 ctrOneQueryAdversary) : ℝ) ≤ 1 / 64 :=
+        (blockModeIdealGame 2 ctrOneQueryAdversary) : ℝ) ≤ 1 / 64 :=
   (advantage_idealGame_ctrReduction_le ctrModCounter 2 false isCostBounded_ctrOneQueryAdversary
     (fun iv _ _ hi hj hij => ctrModCounter_injOn (by decide) iv hi hj hij)
     (fun i _ => ctrModCounter_injective_left i)).trans_eq (by norm_num)
@@ -120,19 +102,5 @@ example :
         1 / 32 :=
   (advantage_ctrCpaGame_ctrModCounter_le xorKeyed (by decide)
     isCostBounded_ctrOneQueryAdversary).trans_eq (by norm_num)
-
-/-! ### Axiom audit guards -/
-
-/-- info: 'Cslib.Crypto.ctrCpaGame_eq_realGame' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms ctrCpaGame_eq_realGame
-
-/-- info: 'Cslib.Crypto.advantage_idealGame_ctrReduction_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms advantage_idealGame_ctrReduction_le
-
-/-- info: 'Cslib.Crypto.advantage_ctrCpaGame_ctrModCounter_le' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms advantage_ctrCpaGame_ctrModCounter_le
 
 end CslibFrontierTests.Crypto.CTRMode

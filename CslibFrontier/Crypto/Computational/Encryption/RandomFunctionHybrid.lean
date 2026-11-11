@@ -7,9 +7,12 @@ Authors: Karn Seth, Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Crypto.Primitives.PRF.Finite
 public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
+public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
+public import CslibFrontier.Languages.Probabilistic.QueryCount
 public import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Crypto.Game.UntilBad
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -18,11 +21,20 @@ import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic.Linarith
 
 /-!
-# Lazy-vs-Fresh Random Function Hybrid and Game-Hop Utilities
+# Lazy-vs-Fresh Random Function Hybrid and Shared Block-Mode CPA Utilities
 
-Shared random-function hybrid machinery for block-cipher modes of operation (such as OFB and CTR):
-replaces a lazily sampled random function (`PRF.idealGame`) by fresh independent uniform sampling
-(`freshStep`) up to the repetition bad event that an oracle query hits a previously sampled input.
+Shared random-function hybrid and left-or-right block-mode CPA experiment machinery for symmetric
+block-cipher modes of operation (such as OFB and CTR):
+- replaces a lazily sampled random function (`PRF.idealGame`) by fresh independent uniform sampling
+  (`freshStep`) up to the repetition bad event that an oracle query hits a previously sampled
+  input;
+- provides the mode-independent left-or-right block-mode query/cost/ideal-game interface
+  (`BlockModeQuery`, `BlockModeSpec`, `BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`,
+  `blockModeCost`, `blockModeOracle`, `blockModeIdealOracle`, `blockModeCpaGame`,
+  `blockModeIdealGame`), generic PRF distinguisher builder (`blockModeQueryProgram`,
+  `blockModeReduction`), real-game / query-bound / ideal-game lifting lemmas
+  (`blockModeCpaGame_eq_realGame`, `isQueryBounded_blockModeReduction`,
+  `freshGame_eq_blockModeIdealGame`), and advantage triangle helpers.
 
 ## Main definitions
 
@@ -32,6 +44,15 @@ replaces a lazily sampled random function (`PRF.idealGame`) by fresh independent
   latches the repetition flag.
 * `Cslib.Crypto.freshStep`: fresh uniform random-function handler that always samples uniformly and
   latches the repetition flag on repeats.
+* `Cslib.Crypto.BlockModeQuery`, `Cslib.Crypto.BlockModeSpec`, `Cslib.Crypto.BlockModeAdversary`:
+  left-or-right block-mode queries, oracle spec, and adaptive adversaries.
+* `Cslib.Crypto.blockModeSelect`, `Cslib.Crypto.blockModeBlocks`, `Cslib.Crypto.blockModeCost`:
+  query selection, block count, and query-block cost.
+* `Cslib.Crypto.blockModeOracle`, `Cslib.Crypto.blockModeIdealOracle`,
+  `Cslib.Crypto.blockModeCpaGame`, `Cslib.Crypto.blockModeIdealGame`: generic real and ideal
+  random-IV block-mode left-or-right experiments.
+* `Cslib.Crypto.blockModeQueryProgram`, `Cslib.Crypto.blockModeReduction`: generic PRF distinguisher
+  from a left-or-right block-mode adversary and keystream oracle program.
 
 ## Main results
 
@@ -43,13 +64,16 @@ replaces a lazily sampled random function (`PRF.idealGame`) by fresh independent
   `freshStep` is at most the bad-flag probability under `freshStep`.
 * `Cslib.Crypto.snd_eq_of_mem_support_lift`, `Cslib.Crypto.toOuterMeasure_lift_eq_zero`: lifted
   private-coin support and zero-bad-event lemmas.
+* `Cslib.Crypto.length_blockModeSelect`, `Cslib.Crypto.blockModeBlocks_le`,
+  `Cslib.Crypto.blockModeCpaGame_eq_realGame`, `Cslib.Crypto.isQueryBounded_blockModeReduction`,
+  `Cslib.Crypto.freshGame_eq_blockModeIdealGame`: shared left-or-right block-mode CPA lemmas.
 * `Cslib.Crypto.advantage_le_two`, `Cslib.Crypto.advantage_le_four`: two-step and four-step
   triangle-inequality bounds for `Game.advantage`.
 
 ## References
 
 * [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, 3rd ed.][KatzLindell2020],
-  Section 3.6.3 (Theorem 3.33).
+  Section 3.6.3 (Definition 3.22, Theorem 3.33).
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023], Chapter 4.
 -/
 
@@ -230,5 +254,247 @@ theorem advantage_le_four (g₀ g₁ g₂ g₃ g₄ : Game) :
   have h₃ : (Game.advantage g₂ g₄ : ℝ) ≤ Game.advantage g₃ g₂ + Game.advantage g₄ g₃ :=
     (advantage_le_two g₂ g₃ g₄).trans_eq (by rw [Game.advantage_comm g₂ g₃, add_comm])
   linarith
+
+/-! ### Shared Left-or-Right Block-Mode CPA Experiment -/
+
+/-- A left-or-right query: two candidate plaintexts, each a list of `n`-bit blocks. -/
+abbrev BlockModeQuery (n : ℕ) : Type := List (BitString n) × List (BitString n)
+
+/-- The answer to a left-or-right block-mode query: an initialization vector and ciphertext blocks.
+-/
+abbrev BlockModeSpec (n : ℕ) : BlockModeQuery n → Type := fun _ => BitString n × List (BitString n)
+
+/-- An adaptive adversary in a left-or-right block-mode experiment, with private coins. -/
+abbrev BlockModeAdversary (n : ℕ) : Type := ProbOracleComp (BlockModeSpec n) Bool
+
+/-- The plaintext encrypted for query `q` under challenge bit `b`: the right message if `b = true`
+and the left one otherwise. Queries whose messages differ in length or exceed `ℓ` blocks encrypt
+the empty message. -/
+@[expose]
+def blockModeSelect (ℓ : ℕ) (b : Bool) (q : BlockModeQuery n) : List (BitString n) :=
+  if q.1.length = q.2.length ∧ q.1.length ≤ ℓ then (if b then q.2 else q.1) else []
+
+/-- The number of blocks encrypted for query `q`: the common length of a valid query, or `0`. -/
+@[expose]
+def blockModeBlocks (ℓ : ℕ) (q : BlockModeQuery n) : ℕ :=
+  if q.1.length = q.2.length ∧ q.1.length ≤ ℓ then q.1.length else 0
+
+/-- The encrypted plaintext has `blockModeBlocks ℓ q` blocks, regardless of the challenge bit. -/
+@[simp]
+theorem length_blockModeSelect (ℓ : ℕ) (b : Bool) (q : BlockModeQuery n) :
+    (blockModeSelect ℓ b q).length = blockModeBlocks ℓ q := by
+  unfold blockModeSelect blockModeBlocks
+  split_ifs <;> simp_all
+
+/-- Every query encrypts at most `ℓ` blocks. -/
+theorem blockModeBlocks_le (ℓ : ℕ) (q : BlockModeQuery n) : blockModeBlocks ℓ q ≤ ℓ := by
+  unfold blockModeBlocks
+  split_ifs with h
+  · exact h.2
+  · exact Nat.zero_le ℓ
+
+/-- The cost of a call in a left-or-right block-mode experiment: private draws are free and each
+encryption query costs its block length. -/
+@[expose]
+def blockModeCost (ℓ : ℕ) : ℕ ⊕ BlockModeQuery n → ℕ :=
+  Sum.elim (fun _ => 0) (blockModeBlocks ℓ)
+
+/-- Generic random-IV left-or-right encryption oracle for block encryption operator `enc` and
+challenge bit `b`. -/
+@[expose]
+noncomputable def blockModeOracle (enc : BitString n → List (BitString n) → List (BitString n))
+    (ℓ : ℕ) (b : Bool) (q : BlockModeQuery n) :
+    ProbComp (BitString n × List (BitString n)) := do
+  let iv ← ProbComp.uniform (BitString n)
+  return (iv, enc iv (blockModeSelect ℓ b q))
+
+/-- The ideal left-or-right oracle: a uniform initialization vector and `blockModeBlocks ℓ q`
+independent uniform ciphertext blocks, independent of the challenge bit. -/
+@[expose]
+noncomputable def blockModeIdealOracle (ℓ : ℕ) (q : BlockModeQuery n) :
+    ProbComp (BitString n × List (BitString n)) := do
+  let iv ← ProbComp.uniform (BitString n)
+  let c ← ProbComp.uniform (Fin (blockModeBlocks ℓ q) → BitString n)
+  return (iv, List.ofFn c)
+
+/-- Generic random-IV left-or-right experiment for keyed block encryption `enc` and challenge bit
+`b` ([KatzLindell2020], Definition 3.22). -/
+@[expose]
+noncomputable def blockModeCpaGame {Key : Type} [Fintype Key] [Nonempty Key]
+    (enc : Key → BitString n → List (BitString n) → List (BitString n)) (ℓ : ℕ) (b : Bool)
+    (adversary : BlockModeAdversary n) : Game :=
+  ProbComp.eval do
+    let key ← ProbComp.uniform Key
+    OracleComp.interpret (sumHandler ProbComp.unifFin (blockModeOracle (enc key) ℓ b)) adversary
+
+/-- The ideal left-or-right experiment: the adversary receives fresh uniform ciphertext blocks. -/
+@[expose]
+noncomputable def blockModeIdealGame (ℓ : ℕ) (adversary : BlockModeAdversary n) : Game :=
+  ProbComp.eval
+    (OracleComp.interpret (sumHandler ProbComp.unifFin (blockModeIdealOracle ℓ)) adversary)
+
+/-- One block-mode encryption computed from a keystream oracle program `keystream iv k`. -/
+@[expose]
+noncomputable def blockModeQueryProgram
+    (keystream : BitString n → ℕ →
+      ProbOracleComp (fun _ : BitString n => BitString n) (List (BitString n)))
+    (ℓ : ℕ) (b : Bool) (q : BlockModeQuery n) :
+    ProbOracleComp (fun _ : BitString n => BitString n) (BitString n × List (BitString n)) := do
+  let iv ← ProbOracleComp.sample (ProbComp.uniform (BitString n))
+  let ks ← keystream iv (blockModeSelect ℓ b q).length
+  return (iv, List.zipWith (· + ·) ks (blockModeSelect ℓ b q))
+
+/-- Generic PRF distinguisher built from a left-or-right block-mode adversary and keystream
+program. -/
+@[expose]
+noncomputable def blockModeReduction
+    (keystream : BitString n → ℕ →
+      ProbOracleComp (fun _ : BitString n => BitString n) (List (BitString n)))
+    (ℓ : ℕ) (b : Bool) (adversary : BlockModeAdversary n) :
+    PRF.Adversary (BitString n) (BitString n) :=
+  (OracleComp.interpret
+    (sumHandler (fun i => ProbOracleComp.sample (ProbComp.unifFin i))
+      (blockModeQueryProgram keystream ℓ b))
+    adversary : ProbOracleComp (fun _ : BitString n => BitString n) Bool)
+
+/-- When `keystream iv ms.length` evaluates with `F key` to the mask XORed by `enc key iv ms`,
+`blockModeCpaGame enc` equals `PRF.realGame F (blockModeReduction keystream ℓ b adversary)`. -/
+theorem blockModeCpaGame_eq_realGame {Key : Type} [Fintype Key] [Nonempty Key]
+    (enc : Key → BitString n → List (BitString n) → List (BitString n))
+    (keystream : BitString n → ℕ →
+      ProbOracleComp (fun _ : BitString n => BitString n) (List (BitString n)))
+    (F : Key → BitString n → BitString n) (ℓ : ℕ) (b : Bool)
+    (adversary : BlockModeAdversary n)
+    (hks : ∀ key iv ms,
+      ∃ raw : List (BitString n),
+        OracleComp.interpret (sumHandler ProbComp.unifFin fun y => pure (F key y))
+          (keystream iv ms.length) = (pure raw : ProbComp (List (BitString n))) ∧
+        List.zipWith (· + ·) raw ms = enc key iv ms) :
+    blockModeCpaGame enc ℓ b adversary =
+      PRF.realGame F (blockModeReduction keystream ℓ b adversary) := by
+  unfold blockModeCpaGame PRF.realGame blockModeReduction
+  congr 1
+  refine bind_congr fun key => ?_
+  rw [OracleComp.interpret_interpret]
+  congr 1
+  funext q
+  cases q with
+  | inl i =>
+    simp only [ProbOracleComp.interpret_sample]
+    exact (OracleComp.interpret_query_eq_self _).symm
+  | inr q =>
+    simp only [blockModeOracle, blockModeQueryProgram, ProbOracleComp.interpret_sample,
+      OracleComp.interpret_bind, OracleComp.interpret_pure]
+    congr 1
+    funext iv
+    obtain ⟨raw', hraw', henc'⟩ := hks key iv (blockModeSelect ℓ b q)
+    change OracleComp.interpret (sumHandler ProbComp.unifFin fun y => pure (F key y))
+        (keystream iv (blockModeSelect ℓ b q).length) = pure raw' at hraw'
+    rw [show (ProbComp.unifFin : (k : ℕ) → ProbComp (Fin (k + 1))) = OracleComp.query from rfl]
+      at hraw' ⊢
+    simp only [hraw', pure_bind, henc']
+
+/-- If `keystream iv k` makes at most `k` oracle calls for every `k ≤ ℓ`, and `adversary` asks
+at most `K` blocks in total, then `blockModeReduction keystream ℓ b adversary` makes at most `K`
+oracle calls. -/
+theorem isQueryBounded_blockModeReduction
+    (keystream : BitString n → ℕ →
+      ProbOracleComp (fun _ : BitString n => BitString n) (List (BitString n)))
+    (ℓ : ℕ) (b : Bool) {adversary : BlockModeAdversary n} {K : ℕ}
+    (hks : ∀ iv k, k ≤ ℓ → ProbOracleComp.IsQueryBounded (keystream iv k) k)
+    (h : OracleComp.IsCostBounded (blockModeCost ℓ) adversary K) :
+    ProbOracleComp.IsQueryBounded (blockModeReduction keystream ℓ b adversary) K := by
+  refine OracleComp.IsCostBounded.interpret (fun q => ?_) h
+  cases q with
+  | inl i => exact ProbOracleComp.isCostBounded_sample _ _
+  | inr q =>
+    have hq := OracleComp.IsCostBounded.bind
+      (ProbOracleComp.isCostBounded_sample (spec := fun _ : BitString n => BitString n)
+        (fun _ => 1) (ProbComp.uniform (BitString n))) fun iv =>
+      OracleComp.IsCostBounded.bind
+        (hks iv (blockModeSelect ℓ b q).length
+          (by rw [length_blockModeSelect]; exact blockModeBlocks_le ℓ q))
+        fun ks =>
+          OracleComp.IsCostBounded.pure (iv, List.zipWith (· + ·) ks (blockModeSelect ℓ b q)) 0
+    exact OracleComp.IsCostBounded.mono hq (by simp [blockModeCost])
+
+private theorem eval_blockModeIdealOracle (ℓ : ℕ) (q : BlockModeQuery n) :
+    ProbComp.eval (blockModeIdealOracle ℓ q) =
+      (PMF.uniformOfFintype (BitString n)).bind fun iv =>
+        (uniformBlocks (n := n) (blockModeBlocks ℓ q)).map (iv, ·) := by
+  simp only [blockModeIdealOracle, ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
+    uniformBlocks_eq, Function.comp_def, ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind]
+
+private theorem map_unit_runWith_freshStep_blockModeQueryProgram
+    (keystream : BitString n → ℕ →
+      ProbOracleComp (fun _ : BitString n => BitString n) (List (BitString n)))
+    (ℓ : ℕ) (b : Bool) (q : BlockModeQuery n) (s : FlagState n)
+    (hks : ∀ iv s,
+      (ProbOracleComp.runWith freshStep (keystream iv (blockModeBlocks ℓ q)) s).map Prod.fst =
+        uniformBlocks (blockModeBlocks ℓ q)) :
+    (ProbOracleComp.runWith freshStep
+        (blockModeQueryProgram keystream ℓ b q) s).map (fun x => (x.1, ())) =
+      (ProbComp.eval (blockModeIdealOracle ℓ q)).map (·, ()) := by
+  have hpad := map_iv_uniformBlocks_zipWith (blockModeSelect ℓ b q)
+  rw [length_blockModeSelect] at hpad
+  rw [eval_blockModeIdealOracle, ← hpad]
+  simp only [blockModeQueryProgram, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
+    ProbComp.eval_uniform, length_blockModeSelect, ProbOracleComp.runWith_pure,
+    PMF.map_bind, PMF.bind_map, Function.comp_def, PMF.pure_map]
+  refine PMF.bind_congr_on_support _ _ _ fun iv _ => ?_
+  have hk := hks iv s
+  rw [← hk]
+  simp only [PMF.map_comp, Function.comp_def]
+  rfl
+
+/-- Under fresh sampling, whenever the keystream program outputs uniform blocks on every query,
+`blockModeReduction` has the exact same output distribution as `blockModeIdealGame`. -/
+theorem freshGame_eq_blockModeIdealGame
+    (keystream : BitString n → ℕ →
+      ProbOracleComp (fun _ : BitString n => BitString n) (List (BitString n)))
+    (ℓ : ℕ) (b : Bool) (adversary : BlockModeAdversary n)
+    (hks : ∀ (q : BlockModeQuery n) iv s,
+      (ProbOracleComp.runWith freshStep (keystream iv (blockModeBlocks ℓ q)) s).map Prod.fst =
+        uniformBlocks (blockModeBlocks ℓ q)) :
+    (ProbOracleComp.runWith freshStep
+        (blockModeReduction keystream ℓ b adversary) ([], false)).map Prod.fst =
+      blockModeIdealGame ℓ adversary := by
+  have hstate :
+      (ProbOracleComp.runWith
+          (fun q => ProbOracleComp.runWith freshStep (blockModeQueryProgram keystream ℓ b q))
+          adversary ([], false)).map (fun x => (x.1, ())) =
+        ProbOracleComp.runWith
+          (fun q (u : Unit) => (ProbComp.eval (blockModeIdealOracle ℓ q)).map (·, u))
+          adversary () :=
+    ProbOracleComp.runWith_map_state
+      (fun q => ProbOracleComp.runWith freshStep (blockModeQueryProgram keystream ℓ b q))
+      (fun q (u : Unit) => (ProbComp.eval (blockModeIdealOracle ℓ q)).map (·, u))
+      (fun _ => ())
+      (fun q s =>
+        map_unit_runWith_freshStep_blockModeQueryProgram keystream ℓ b q s (hks q))
+      adversary ([], false)
+  have hro :
+      ProbOracleComp.runWith
+          (fun q (u : Unit) => (ProbComp.eval (blockModeIdealOracle ℓ q)).map (·, u)) adversary () =
+        (OracleComp.interpret
+          (sumHandler ProbComp.unifOracle fun q => ProbComp.eval (blockModeIdealOracle ℓ q))
+          adversary).map (·, ()) :=
+    ProbOracleComp.runWith_readOnly (fun q _ => ProbComp.eval (blockModeIdealOracle ℓ q))
+      adversary ()
+  rw [blockModeReduction, ProbOracleComp.runWith_interpret_sumHandler]
+  calc
+    (ProbOracleComp.runWith
+          (fun q => ProbOracleComp.runWith freshStep (blockModeQueryProgram keystream ℓ b q))
+          adversary ([], false)).map Prod.fst
+        = ((ProbOracleComp.runWith
+              (fun q => ProbOracleComp.runWith freshStep (blockModeQueryProgram keystream ℓ b q))
+              adversary ([], false)).map fun x => (x.1, ())).map Prod.fst :=
+          (PMF.map_comp (fun x : Bool × FlagState n => (x.1, ())) _ Prod.fst).symm
+    _ = ((OracleComp.interpret
+            (sumHandler ProbComp.unifOracle fun q => ProbComp.eval (blockModeIdealOracle ℓ q))
+            adversary).map (·, ())).map Prod.fst := by rw [hstate, hro]
+    _ = blockModeIdealGame ℓ adversary := by
+          rw [(PMF.map_comp (·, ()) _ Prod.fst).trans (PMF.map_id _),
+            blockModeIdealGame, ProbOracleComp.eval_interpret]
 
 end Cslib.Crypto

@@ -52,30 +52,31 @@ def echoMAC : MACScheme where
     subst htag
     exact beq_self_eq_true _
 
-/-- `echoCipher` satisfies plaintext-tag decryption completeness for `echoMAC`. -/
-theorem echo_h_dec :
-    ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (echoCipher.keyGen n)).support →
-      km ∈ (ProbComp.eval (echoMAC.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (echoMAC.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval
-          (echoCipher.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        echoCipher.decrypt n ke ct = some (encPair encBits encBits (msg, tag)) := by
-  intro _ _ _ msg tag _ _ _ _ ct hct
-  change ct ∈ (ProbComp.eval (pure (encPair encBits encBits (msg, tag)))).support at hct
-  simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hct
-  subst hct
-  rfl
+/-- Every framed `(msg, tag)` pair produced by `echoMAC` on an `n`-bit message has exact length
+`3 * n + 1`. -/
+theorem echo_pairLen :
+    ∀ n km, km ∈ (ProbComp.eval (echoMAC.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (echoMAC.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = 3 * n + 1 := by
+  intro n km _ msg hmsg tag htag
+  change tag ∈ (ProbComp.eval (pure msg)).support at htag
+  simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
+  subst htag
+  rw [encPair_apply]
+  dsimp only
+  rw [length_frame_append, encBits_apply, hmsg]
+  omega
 
-/-- Plain MAC-then-Encrypt instantiated on `echoCipher` and `echoMAC`. -/
+/-- Plain MAC-then-Encrypt instantiated on `echoCipher` and `echoMAC` with `ptLen n = 3 * n + 1`. -/
 noncomputable def echoMtE : SymmetricCipher :=
-  macThenEncrypt echoCipher echoMAC (fun _ => rfl) echo_h_dec
+  macThenEncrypt echoCipher echoMAC (fun n => 3 * n + 1) (by polytime) (fun _ => rfl)
+    echo_pairLen
 
-/-- MAC-then-Encrypt over `echoCipher.extendCipher` and `echoMAC`. -/
+/-- MAC-then-Encrypt over `echoCipher.extendCipher` and `echoMAC` with `ptLen n = 3 * n + 1`. -/
 noncomputable def echoMtEExt : SymmetricCipher :=
-  macThenEncrypt echoCipher.extendCipher echoMAC (fun _ => rfl)
-    (h_dec_extendCipher echoCipher echoMAC echo_h_dec)
+  macThenEncrypt echoCipher.extendCipher echoMAC (fun n => 3 * n + 1) (by polytime)
+    (fun _ => rfl) echo_pairLen
 
 /-! ### Round-trip, tag-rejection, and trailing-bit malleability checks -/
 
@@ -141,10 +142,11 @@ example :
         (ProbComp.eval
           (echoMtEExt.ccaOneTimeGame
             (macThenEncryptExtendCCAAdversary (fun n => 3 * n + 2)) true 2)) = 1 :=
-  ⟨eval_ciOneTimeGame_macThenEncrypt_extendCipher echoCipher echoMAC (fun _ => rfl) echo_h_dec
-     (fun n => 3 * n + 2) 2 (echoMtEExt_ctBound 2),
-   advantage_ccaOneTimeGame_macThenEncrypt_extendCipher_eq_one echoCipher echoMAC (fun _ => rfl)
-     echo_h_dec (fun n => 3 * n + 2) (by decide) (echoMtEExt_ctBound 2)⟩
+  ⟨eval_ciOneTimeGame_macThenEncrypt_extendCipher echoCipher echoMAC (fun n => 3 * n + 1)
+     (by polytime) (fun _ => rfl) echo_pairLen (fun n => 3 * n + 2) 2 (echoMtEExt_ctBound 2),
+   advantage_ccaOneTimeGame_macThenEncrypt_extendCipher_eq_one echoCipher echoMAC
+     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen (fun n => 3 * n + 2)
+     (by decide) (echoMtEExt_ctBound 2)⟩
 
 /-- Concrete failure of ciphertext integrity and CCA security on `echoMtEExt`. -/
 example :
@@ -153,36 +155,29 @@ example :
     ¬ echoMtEExt.OneTimeINDCCA ∧
     ¬ echoMtEExt.INDCCA :=
   ⟨not_oneTimeCiphertextIntegrity_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun _ => rfl) echo_h_dec,
+     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen,
    not_ciphertextIntegrity_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun _ => rfl) echo_h_dec,
+     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen,
    not_oneTimeINDCCA_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun _ => rfl) echo_h_dec,
+     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen,
    not_indcca_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun _ => rfl) echo_h_dec⟩
+     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen⟩
 
-/-! ### Axiom audit guards -/
+/-- Parametric `INDCPA` preservation and full non-vacuous PRF counterexample witness. -/
+example {E : SymmetricCipher} (h : E.INDCPA) :
+    (macThenEncrypt E echoMAC (fun n => 3 * n + 1) (by polytime) (fun _ => rfl)
+      echo_pairLen).INDCPA :=
+  indcpa_macThenEncrypt E echoMAC (fun n => 3 * n + 1) (by polytime)
+    (fun _ _ h => by dsimp only; omega) (fun _ => rfl) echo_pairLen h
 
-/-- info: 'Cslib.Crypto.SymmetricCipher.INDCPA.extendCipher' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms SymmetricCipher.INDCPA.extendCipher
-
-/-- info: 'Cslib.Crypto.SymmetricCipher.OneTimeINDCPA.extendCipher' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms SymmetricCipher.OneTimeINDCPA.extendCipher
-
-/-- info: 'Cslib.Crypto.h_dec_extendCipher' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms h_dec_extendCipher
-
-/-- info: 'Cslib.Crypto.not_ciphertextIntegrity_macThenEncrypt_extendCipher' depends on axioms: [propext,
- Classical.choice,
- Quot.sound] -/
-#guard_msgs in
-#print axioms not_ciphertextIntegrity_macThenEncrypt_extendCipher
-
-/-- info: 'Cslib.Crypto.not_indcca_macThenEncrypt_extendCipher' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in
-#print axioms not_indcca_macThenEncrypt_extendCipher
+example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (prfCipher family hprf.polyTime hprf.length_eq).extendCipher.INDCPA ∧
+      (prfMAC family hprf.polyTime).SUFCMA ∧
+      (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).INDCPA ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).OneTimeCiphertextIntegrity ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).CiphertextIntegrity ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).OneTimeINDCCA ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).INDCCA :=
+  hprf.prfMacThenEncryptExtend_counterexample
 
 end CslibFrontierTests.Crypto.MACThenEncrypt

@@ -7,8 +7,8 @@ Authors: Karn Seth, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
-public import CslibFrontier.Crypto.Computational.MAC
+public import CslibFrontier.Crypto.Computational.Encryption.EncryptThenMAC
+public import CslibFrontier.Crypto.Computational.GeneratorReindex
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
@@ -31,53 +31,66 @@ import CslibFrontier.Tactic.PPT
 # MAC-then-Encrypt Composition and Chosen-Ciphertext Counterexample
 
 This module formalizes the generic **MAC-then-Encrypt** symmetric encryption construction
-(`macThenEncrypt`) together with an explicit counterexample showing that generic MAC-then-Encrypt
-does not achieve chosen-ciphertext security (`INDCCA` or `OneTimeINDCCA`) or ciphertext integrity
-(`CiphertextIntegrity`), even when the underlying cipher is `INDCPA`-secure and the MAC is
-`SUFCMA`-secure ([KatzLindell2020], Section 5.2; [BonehShoup2023], Section 9.4.1).
+(`macThenEncrypt`), proves that it preserves `INDCPA` (`indcpa_macThenEncrypt`), and gives an
+explicit counterexample showing that generic MAC-then-Encrypt does not achieve chosen-ciphertext
+security (`INDCCA` or `OneTimeINDCCA`) or ciphertext integrity (`CiphertextIntegrity`), even when
+the underlying cipher is `INDCPA`-secure and the MAC is `SUFCMA`-secure ([KatzLindell2020],
+Section 5.2; [BonehShoup2023], Section 9.4.1).
 
-1. **Generic MAC-then-Encrypt construction (`macThenEncrypt`)**: given a symmetric cipher `E` and a
-   MAC scheme `M` authenticating `n`-bit messages (`M.msgLen n = n`) such that `E` correctly
-   decrypts encryptions of framed plaintext-tag pairs `encPair encBits encBits (msg, tag)`,
-   `macThenEncrypt` signs `msg` with `M` and encrypts the encoded pair `(msg, tag)` under `E`.
+1. **Generic MAC-then-Encrypt construction (`macThenEncrypt`) and `INDCPA` preservation**: given a
+   symmetric cipher `E`, a MAC scheme `M` authenticating `n`-bit messages (`M.msgLen n = n`), and
+   a polynomial-time length schedule `ptLen : ℕ → ℕ` such that every encoded `(msg, tag)` pair on
+   an `n`-bit message has length `ptLen n`, `macThenEncrypt E M ptLen ...` generates keys at
+   `(ptLen n, n)` and encrypts/decrypts the framed `(msg, tag)` pair under `E` at security
+   parameter `ptLen n`, discharging decryption completeness directly from `E.decrypt_encrypt`.
+   When `ptLen` is strictly monotone and `E` is `INDCPA`, `macThenEncrypt` is `INDCPA`
+   (`indcpa_macThenEncrypt`).
 2. **Malleable CPA-preserving cipher extension (`extendCipher`)**: appends `false` to every
    ciphertext on encryption and ignores the last bit (`ct.take (ct.length - 1)`) during
    decryption. We prove `extendCipher` preserves `INDCPA` (`INDCPA.extendCipher`) and
-   `OneTimeINDCPA` (`OneTimeINDCPA.extendCipher`) as well as plaintext-tag decryption completeness
-   (`h_dec_extendCipher`).
-3. **Explicit CCA and CI attack on `macThenEncrypt (extendCipher E) M`**: replacing the trailing
-   `false` bit of any ciphertext with `true` yields a distinct ciphertext with identical decryption
-   under `macThenEncrypt (extendCipher E) M`, breaking `OneTimeINDCCA` and `INDCCA` with exact
-   advantage `1` for every `n ≥ 1` (`not_oneTimeINDCCA_macThenEncrypt_extendCipher`,
-   `not_indcca_macThenEncrypt_extendCipher`) and `CiphertextIntegrity` with probability `1`.
+   `OneTimeINDCPA` (`OneTimeINDCPA.extendCipher`).
+3. **Explicit CI/CCA attack and PRF instantiation (`macThenEncrypt_extendCipher_counterexample`,
+   `prfMacThenEncryptExtend_counterexample`)**: replacing the trailing `false` bit of any ciphertext
+   with `true` yields a distinct ciphertext with identical decryption under
+   `macThenEncrypt E.extendCipher M ptLen ...`, breaking `OneTimeINDCCA` and `INDCCA` with exact
+   advantage `1` for every `n ≥ 1` and `CiphertextIntegrity` with probability `1`. Combining with
+   `indcpa_macThenEncrypt` and instantiating on `(prfCipher ...).extendCipher` + `prfMAC ...` gives
+   a non-vacuous counterexample from any `PseudorandomFunction`.
 
 ## Main definitions
 
-* `Cslib.Crypto.macThenEncrypt`: MAC-then-Encrypt symmetric cipher.
+* `Cslib.Crypto.macThenEncrypt`: MAC-then-Encrypt symmetric cipher with plaintext-tag length
+  schedule `ptLen`.
+* `Cslib.Crypto.mteToCPAHandler`, `Cslib.Crypto.mteToCPAAdversary`: `INDCPA` reduction from
+  `macThenEncrypt` at `n` to `E` at `ptLen n`.
 * `Cslib.Crypto.SymmetricCipher.extendCipher`: trailing-bit malleable symmetric cipher extension.
 * `Cslib.Crypto.SymmetricCipher.extendCPAAdversary`,
   `Cslib.Crypto.SymmetricCipher.extendOneTimeCPAAdversary`: CPA reductions to `E`.
 * `Cslib.Crypto.macThenEncryptExtendCCAAdversary`: two-query CCA distinguisher against
-  `macThenEncrypt E.extendCipher M`.
+  `macThenEncrypt E.extendCipher M ptLen ...`.
 * `Cslib.Crypto.macThenEncryptExtendCIAdversary`: one-query CI adversary against
-  `macThenEncrypt E.extendCipher M`.
+  `macThenEncrypt E.extendCipher M ptLen ...`.
+* `Cslib.Crypto.prfMacThenEncryptExtend`: end-to-end PRF-backed counterexample cipher at
+  `ptLen n = 3 * n + 1`.
 
 ## Main results
 
-* `Cslib.Crypto.h_dec_extendCipher`: `extendCipher` preserves plaintext-tag decryption
-  completeness.
+* `Cslib.Crypto.indcpa_macThenEncrypt`: `E.INDCPA` implies `INDCPA` for `macThenEncrypt` under a
+  strictly monotone polynomial-time `ptLen`.
 * `Cslib.Crypto.SymmetricCipher.INDCPA.extendCipher`,
   `Cslib.Crypto.SymmetricCipher.OneTimeINDCPA.extendCipher`: `extendCipher` preserves `INDCPA` and
   `OneTimeINDCPA`.
 * `Cslib.Crypto.advantage_ccaOneTimeGame_macThenEncrypt_extendCipher_eq_one`: the explicit CCA
   attacker achieves exact distinguishing advantage `1` against `macThenEncrypt E.extendCipher M`
   for all `n ≥ 1`.
-* `Cslib.Crypto.not_oneTimeINDCCA_macThenEncrypt_extendCipher`,
-  `Cslib.Crypto.not_indcca_macThenEncrypt_extendCipher`: `macThenEncrypt E.extendCipher M` fails
-  `OneTimeINDCCA` and `INDCCA`.
 * `Cslib.Crypto.not_oneTimeCiphertextIntegrity_macThenEncrypt_extendCipher`,
-  `Cslib.Crypto.not_ciphertextIntegrity_macThenEncrypt_extendCipher`: `macThenEncrypt
-  E.extendCipher M` fails ciphertext integrity.
+  `Cslib.Crypto.not_ciphertextIntegrity_macThenEncrypt_extendCipher`,
+  `Cslib.Crypto.not_oneTimeINDCCA_macThenEncrypt_extendCipher`,
+  `Cslib.Crypto.not_indcca_macThenEncrypt_extendCipher`: `macThenEncrypt E.extendCipher M` fails
+  one-time/adaptive ciphertext integrity and CCA security.
+* `Cslib.Crypto.macThenEncrypt_extendCipher_counterexample`,
+  `Cslib.Crypto.PseudorandomFunction.prfMacThenEncryptExtend_counterexample`: joint separation
+  theorems witnessing `E'.INDCPA`, `M.SUFCMA`, composed `INDCPA`, and all four negative bounds.
 
 ## References
 
@@ -95,28 +108,26 @@ open Cslib.Probability ProbComp OracleComp BitString Turing.MultiTapeTM
 open scoped NNReal ENNReal
 
 /-- **MAC-then-Encrypt symmetric cipher**: signs `n`-bit messages under `km ← M.keyGen n` and
-encrypts the framed pair `encPair encBits encBits (msg, tag)` under `ke ← E.keyGen n`. Since
-`SymmetricCipher.decrypt_encrypt` only guarantees correctness on `n`-bit inputs, decryption
-completeness on framed `(msg, tag)` pairs is taken explicitly as `h_dec`. -/
+encrypts the framed pair `encPair encBits encBits (msg, tag)` under `ke ← E.keyGen (ptLen n)` at
+security parameter `ptLen n`. Because `hpairLen` guarantees the framed `(msg, tag)` pair has length
+`ptLen n`, decryption completeness follows directly from `E.decrypt_encrypt (ptLen n)`. -/
 @[expose]
 noncomputable def macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
     (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag))) : SymmetricCipher where
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n) : SymmetricCipher where
   keyGen n := do
-    let ke ← E.keyGen n
+    let ke ← E.keyGen (ptLen n)
     let km ← M.keyGen n
     return encPair encBits encBits (ke, km)
   encrypt n k msg := do
     let tag ← M.sign (dropFrame k) msg
-    E.encrypt n (unframe k) (encPair encBits encBits (msg, tag))
+    E.encrypt (ptLen n) (unframe k) (encPair encBits encBits (msg, tag))
   decrypt n k ct :=
-    (E.decrypt n (unframe k) ct).elim none fun p =>
+    (E.decrypt (ptLen n) (unframe k) ct).elim none fun p =>
       let msg := unframe p
       let tag := dropFrame p
       if (encPair encBits encBits (msg, tag) == p) && (msg.length == M.msgLen n) &&
@@ -124,8 +135,12 @@ noncomputable def macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
         some msg
       else
         none
-  keyGen_ppt := by ppt
-  encrypt_ppt := by ppt
+  keyGen_ppt := by
+    have hpt := hptLenPoly.tidy
+    ppt
+  encrypt_ppt := by
+    have hpt := hptLenPoly.tidy
+    ppt
   decrypt_polyTime := by
     let EDecIn := encPair encUnary (encPair encBits encBits)
     let EBIn := encPair EDecIn encBits
@@ -136,9 +151,10 @@ noncomputable def macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
     have hct : ComputableTidilyInPolyTime (fun a : ℕ × List Bool × List Bool => a.2.2)
         EDecIn encBits := by dsimp only [EDecIn]; fun_prop
     have hdec : ComputableTidilyInPolyTime
-        (fun a : ℕ × List Bool × List Bool => E.decrypt a.1 (unframe a.2.1) a.2.2)
+        (fun a : ℕ × List Bool × List Bool => E.decrypt (ptLen a.1) (unframe a.2.1) a.2.2)
         EDecIn (encOption encBits) :=
-      E.decrypt_polyTime.tidy.comp (hn.prod ((ComputableTidilyInPolyTime.unframe.comp hk).prod hct))
+      E.decrypt_polyTime.tidy.comp
+        ((hptLenPoly.tidy.comp hn).prod ((ComputableTidilyInPolyTime.unframe.comp hk).prod hct))
     have hnone : ComputableTidilyInPolyTime
         (fun _ : ℕ × List Bool × List Bool => (none : Option (List Bool)))
         EDecIn (encOption encBits) := ComputableTidilyInPolyTime.const none
@@ -199,8 +215,9 @@ noncomputable def macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
       simp [encPair_apply, dropFrame_frame_append]
     rw [hunframe_k, hdrop_k] at hct
     obtain ⟨tag, htag, hct2⟩ := hct
-    have hdec : E.decrypt n ke ct = some (encPair encBits encBits (msg, tag)) :=
-      h_dec n ke km msg tag hke hkm hmsg htag ct hct2
+    have hdec : E.decrypt (ptLen n) ke ct = some (encPair encBits encBits (msg, tag)) :=
+      E.decrypt_encrypt (ptLen n) ke hke (encPair encBits encBits (msg, tag))
+        (hpairLen n km hkm msg hmsg tag htag) ct hct2
     have hunframe_p : unframe (encPair encBits encBits (msg, tag)) = msg := by
       simp [encPair_apply, unframe_frame_append]
     have hdrop_p : dropFrame (encPair encBits encBits (msg, tag)) = tag := by
@@ -211,6 +228,289 @@ noncomputable def macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
     simp only [Option.elim_some]
     rw [hunframe_p, hdrop_p]
     simp [hmLen, hver]
+
+/-! ### IND-CPA Preservation for MAC-then-Encrypt -/
+
+/-- Oracle handler used by `mteToCPAAdversary` to simulate the CPA oracle of `macThenEncrypt E M
+ptLen` against `E`'s CPA oracle at parameter `ptLen n`. On valid `n`-bit message pairs
+`(m0, m1)`, it signs both messages under `km` and forwards the pair of framed `(msg, tag)` pairs
+to `E`'s CPA oracle, truncating the reply to `ctCap` bits. -/
+noncomputable def mteToCPAHandler (M : MACScheme) (n ctCap : ℕ) (km : List Bool)
+    (request : Unit × List Bool) : WordOracleComp Unit (List Bool) :=
+  let m0 := unframe request.2
+  let m1 := dropFrame request.2
+  if (m0.length == n) && (m1.length == n) then do
+    let tag0 ← ProbOracleComp.sample (M.sign km m0)
+    let tag1 ← ProbOracleComp.sample (M.sign km m1)
+    let p0 := encPair encBits encBits (m0, tag0)
+    let p1 := encPair encBits encBits (m1, tag1)
+    List.take ctCap <$> ProbOracleComp.query ((), encPair encBits encBits (p0, p1))
+  else
+    pure []
+
+/-- Reduction from `cpaGame` on `macThenEncrypt E M ptLen` (at security parameter `n`) to `cpaGame`
+on `E` (at security parameter `m = ptLen n`): recovers `n := GeneratorReindex.parameter ptLen m`,
+checks `ptLen n == m`, samples a MAC key `km ← M.keyGen n`, and interprets `adversary n []` via
+`mteToCPAHandler`. -/
+noncomputable def mteToCPAAdversary (M : MACScheme) (ptLen ctBound : ℕ → ℕ)
+    (adversary : OracleDistinguisher) : OracleDistinguisher :=
+  fun m _ =>
+    let n := GeneratorReindex.parameter ptLen m
+    if ptLen n == m then do
+      let km ← ProbOracleComp.sample (M.keyGen n)
+      OracleComp.interpret
+        (OracleComp.sumHandler (fun u => ProbOracleComp.sample (ProbComp.unifFin u))
+          (mteToCPAHandler M n (ctBound m) km))
+        (adversary n [])
+    else
+      pure false
+
+/-- `mteToCPAAdversary` preserves strict oracle-PPT admissibility (`IsOraclePPT`). -/
+theorem isOraclePPT_mteToCPAAdversary (M : MACScheme) (ptLen ctBound : ℕ → ℕ)
+    (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hctBoundPoly : ComputableInPolyTime ctBound encUnary encUnary)
+    {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
+    IsOraclePPT encBool (mteToCPAAdversary M ptLen ctBound adversary) := by
+  have hparam : ComputableInPolyTime (GeneratorReindex.parameter ptLen) encUnary encUnary :=
+    GeneratorReindex.isPolyTime_parameter hptLenPoly .id'
+  let ECaller := encPair encUnary encBits
+  let EStateCaller := encPair ECaller encBits
+  let EHandlerIn := encPair EStateCaller (encPair (encFinEnum Unit) encBits)
+  have hparamT := hparam.tidy
+  have hctT := hctBoundPoly.tidy
+  have hcond : ComputableInPolyTime
+      (fun p : ((ℕ × List Bool) × List Bool) × (Unit × List Bool) =>
+        ((unframe p.2.2).length == GeneratorReindex.parameter ptLen p.1.1.1) &&
+          ((dropFrame p.2.2).length == GeneratorReindex.parameter ptLen p.1.1.1))
+      EHandlerIn encBool :=
+    (by dsimp only [EHandlerIn, EStateCaller, ECaller]; fun_prop :
+      ComputableTidilyInPolyTime _ EHandlerIn encBool).computableInPolyTime
+  have hyes : IsOraclePPTOn EHandlerIn encBits
+      (fun p : ((ℕ × List Bool) × List Bool) × (Unit × List Bool) => do
+        let tag0 ← ProbOracleComp.sample (M.sign p.1.2 (unframe p.2.2))
+        let tag1 ← ProbOracleComp.sample (M.sign p.1.2 (dropFrame p.2.2))
+        let p0 := encPair encBits encBits (unframe p.2.2, tag0)
+        let p1 := encPair encBits encBits (dropFrame p.2.2, tag1)
+        List.take (ctBound p.1.1.1) <$>
+          ProbOracleComp.query ((), encPair encBits encBits (p0, p1))) := by
+    dsimp only [EHandlerIn, EStateCaller, ECaller]
+    ppt
+  have hno : IsOraclePPTOn EHandlerIn encBits
+      (fun _ : ((ℕ × List Bool) × List Bool) × (Unit × List Bool) =>
+        (pure [] : WordOracleComp Unit (List Bool))) :=
+    (ComputableInPolyTime.const ([] : List Bool)).isOraclePPTOn (Operation := Unit)
+  have hhandler : IsOraclePPTOn EHandlerIn encBits
+      (fun p : ((ℕ × List Bool) × List Bool) × (Unit × List Bool) =>
+        mteToCPAHandler M (GeneratorReindex.parameter ptLen p.1.1.1) (ctBound p.1.1.1)
+          p.1.2 p.2) := by
+    unfold mteToCPAHandler
+    exact IsOraclePPTOn.cond' hcond hyes hno
+  have hprepare : ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × List Bool =>
+        (GeneratorReindex.parameter ptLen p.1.1, ([] : List Bool)))
+      EStateCaller ECaller := by
+    dsimp only [EStateCaller, ECaller]
+    exact ((hparam.comp ((ComputableInPolyTime.fst encUnary encBits).comp
+      (ComputableInPolyTime.fst ECaller encBits))).prod
+      (ComputableInPolyTime.const ([] : List Bool)))
+  have hres : ComputableInPolyTime
+      (fun pair : ((ℕ × List Bool) × List Bool) × List Bool => ctBound pair.1.1.1)
+      (encPair EStateCaller encBits) encUnary :=
+    hctBoundPoly.comp
+      ((ComputableInPolyTime.fst encUnary encBits).comp
+        ((ComputableInPolyTime.fst ECaller encBits).comp
+          (ComputableInPolyTime.fst EStateCaller encBits)))
+  have hrun : IsOraclePPTOn (Operation := Unit) EStateCaller encBool
+      (fun p : (ℕ × List Bool) × List Bool =>
+        OracleComp.interpret
+          (OracleComp.sumHandler (fun u => ProbOracleComp.sample (ProbComp.unifFin u))
+            (mteToCPAHandler M (GeneratorReindex.parameter ptLen p.1.1) (ctBound p.1.1) p.2))
+          (adversary (GeneratorReindex.parameter ptLen p.1.1) [])) := by
+    refine hadversary.interpret_preprocess_open'
+      (prepare := fun p : (ℕ × List Bool) × List Bool =>
+        (GeneratorReindex.parameter ptLen p.1.1, ([] : List Bool)))
+      (resources := fun p _ => ctBound p.1.1)
+      hprepare hhandler hres fun p request reply hreply => ?_
+    unfold mteToCPAHandler at hreply
+    dsimp only at hreply
+    split_ifs at hreply with hlenEq
+    · obtain ⟨tag0, _, hreply⟩ := OracleComp.mem_supportWith_bind_iff.mp hreply
+      obtain ⟨tag1, _, hreply⟩ := OracleComp.mem_supportWith_bind_iff.mp hreply
+      obtain ⟨ct, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
+      exact List.length_take_le _ _
+    · cases OracleComp.eq_of_mem_supportWith_pure hreply
+      exact Nat.zero_le _
+  have hkm : IsOraclePPTOn (Operation := Unit) ECaller encBits
+      (fun caller : ℕ × List Bool =>
+        ProbOracleComp.sample (M.keyGen (GeneratorReindex.parameter ptLen caller.1))) :=
+    (M.keyGen_ppt.preprocess
+      (hparam.comp (ComputableInPolyTime.fst encUnary encBits))).isOraclePPTOn
+  have hbody : IsOraclePPTOn (Operation := Unit) ECaller encBool
+      (fun caller : ℕ × List Bool => do
+        let km ← ProbOracleComp.sample (M.keyGen (GeneratorReindex.parameter ptLen caller.1))
+        OracleComp.interpret
+          (OracleComp.sumHandler (fun u => ProbOracleComp.sample (ProbComp.unifFin u))
+            (mteToCPAHandler M (GeneratorReindex.parameter ptLen caller.1) (ctBound caller.1) km))
+          (adversary (GeneratorReindex.parameter ptLen caller.1) [])) :=
+    hkm.bind_with hrun
+  have houterCond : ComputableInPolyTime
+      (fun caller : ℕ × List Bool => ptLen (GeneratorReindex.parameter ptLen caller.1) == caller.1)
+      ECaller encBool := by
+    have hptT := hptLenPoly.tidy
+    dsimp only [ECaller]
+    exact (by fun_prop : ComputableTidilyInPolyTime _ ECaller encBool).computableInPolyTime
+  have houterNo : IsOraclePPTOn (Operation := Unit) ECaller encBool
+      (fun _ : ℕ × List Bool => (pure false : WordOracleComp Unit Bool)) :=
+    (ComputableInPolyTime.const false).isOraclePPTOn (Operation := Unit)
+  unfold mteToCPAAdversary
+  exact (IsOraclePPTOn.cond' houterCond hbody houterNo).isOraclePPT
+
+/-- When `ptLen` is strictly monotone and `ctBound (ptLen n)` bounds all ciphertexts produced by
+`E.encrypt (ptLen n)` on `ptLen n`-bit plaintexts under supported keys, `E.cpaGame` running
+`mteToCPAAdversary` at security parameter `ptLen n` has the exact same output distribution as
+`(macThenEncrypt E M ptLen ...).cpaGame` running `adversary` at `n`. -/
+theorem eval_cpaGame_mteToCPAAdversary (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmono : StrictMono ptLen) (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
+    (ctBound : ℕ → ℕ) (adversary : OracleDistinguisher) (bit : Bool) (n : ℕ)
+    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen (ptLen n))).support,
+      ∀ msg, msg.length = ptLen n →
+      ∀ ct ∈ (ProbComp.eval (E.encrypt (ptLen n) k msg)).support, ct.length ≤ ctBound (ptLen n)) :
+    ProbComp.eval (E.cpaGame (mteToCPAAdversary M ptLen ctBound adversary) bit (ptLen n)) =
+      ProbComp.eval
+        ((macThenEncrypt E M ptLen hptLenPoly hmsgLen hpairLen).cpaGame adversary bit n) := by
+  simp only [SymmetricCipher.cpaGame, mteToCPAAdversary,
+    GeneratorReindex.parameter_apply_of_strictMono hmono n, beq_self_eq_true, ↓reduceIte,
+    ProbComp.eval_bind, ProbComp.eval_pure]
+  have hkeyGen : ProbComp.eval
+      ((macThenEncrypt E M ptLen hptLenPoly hmsgLen hpairLen).keyGen n) =
+      (ProbComp.eval (E.keyGen (ptLen n))).bind (fun ke =>
+        (ProbComp.eval (M.keyGen n)).bind (fun km =>
+          PMF.pure (encPair encBits encBits (ke, km)))) := by
+    simp only [macThenEncrypt, ProbComp.eval_bind, ProbComp.eval_pure]
+  rw [hkeyGen]
+  simp only [PMF.bind_bind, PMF.pure_bind]
+  refine PMF.bind_congr_on_support _ _ _ fun ke hke => ?_
+  simp only [ProbOracleComp.eval_run_interpret_eq_runWith]
+  rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample]
+  simp only [PMF.bind_map, Function.comp_def, PMF.bind_bind]
+  refine PMF.bind_congr_on_support _ _ _ fun km hkm => ?_
+  simp only [ProbOracleComp.runWith_interpret_sumHandler]
+  have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
+    simp [encPair_apply, unframe_frame_append]
+  have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
+    simp [encPair_apply, dropFrame_frame_append]
+  have horacle :
+      (fun q => ProbOracleComp.runWith
+          (fun q' s' => ProbComp.eval (E.cpaEncryptionOracle (ptLen n) ke bit q' s'))
+          (mteToCPAHandler M n (ctBound (ptLen n)) km q)) =
+        (fun q s =>
+          ProbComp.eval ((macThenEncrypt E M ptLen hptLenPoly hmsgLen hpairLen).cpaEncryptionOracle
+            n (encPair encBits encBits (ke, km)) bit q s)) := by
+    funext ⟨⟨⟩, req⟩ ⟨⟩
+    simp only [mteToCPAHandler, SymmetricCipher.cpaEncryptionOracle]
+    by_cases hcond : ((unframe req).length == n && (dropFrame req).length == n) = true
+    · simp only [hcond, ↓reduceIte, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
+        ProbOracleComp.runWith_map, ProbOracleComp.runWith_query,
+        PMF.bind_map, Function.comp_def]
+      simp only [Bool.and_eq_true, beq_iff_eq] at hcond
+      rcases hcond with ⟨hm0, hm1⟩
+      dsimp only [macThenEncrypt]
+      rw [hunframe_k, hdrop_k]
+      simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind]
+      have hu (tag0 tag1 : List Bool) : unframe (encPair encBits encBits
+          (encPair encBits encBits (unframe req, tag0),
+           encPair encBits encBits (dropFrame req, tag1))) =
+          encPair encBits encBits (unframe req, tag0) := by
+        simp [encPair_apply, unframe_frame_append]
+      have hd (tag0 tag1 : List Bool) : dropFrame (encPair encBits encBits
+          (encPair encBits encBits (unframe req, tag0),
+           encPair encBits encBits (dropFrame req, tag1))) =
+          encPair encBits encBits (dropFrame req, tag1) := by
+        simp [encPair_apply, dropFrame_frame_append]
+      have htagstep (tag0 : List Bool)
+          (htag0 : tag0 ∈ (ProbComp.eval (M.sign km (unframe req))).support)
+          (tag1 : List Bool)
+          (htag1 : tag1 ∈ (ProbComp.eval (M.sign km (dropFrame req))).support) :
+          ((unframe (encPair encBits encBits
+              (encPair encBits encBits (unframe req, tag0),
+               encPair encBits encBits (dropFrame req, tag1)))).length == ptLen n &&
+            (dropFrame (encPair encBits encBits
+              (encPair encBits encBits (unframe req, tag0),
+               encPair encBits encBits (dropFrame req, tag1)))).length == ptLen n) = true := by
+        rw [hu, hd, hpairLen n km hkm (unframe req) hm0 tag0 htag0,
+          hpairLen n km hkm (dropFrame req) hm1 tag1 htag1]
+        simp
+      cases bit with
+      | false =>
+        simp only [Bool.false_eq_true, ↓reduceIte]
+        refine PMF.bind_congr_on_support _ _ _ fun tag0 htag0 => ?_
+        trans (ProbComp.eval (M.sign km (dropFrame req))).bind fun _ =>
+          (ProbComp.eval (E.encrypt (ptLen n) ke
+            (encPair encBits encBits (unframe req, tag0)))).bind
+            fun ct => PMF.pure (ct, ())
+        · refine PMF.bind_congr_on_support _ _ _ fun tag1 htag1 => ?_
+          rw [htagstep tag0 htag0 tag1 htag1]
+          simp only [↓reduceIte, hu, ProbComp.eval_bind, ProbComp.eval_pure,
+            PMF.map_bind, PMF.pure_map, Prod.map_apply, id_eq]
+          refine PMF.bind_congr_on_support _ _ _ fun ct hct => ?_
+          have htake := hctBound ke hke _ (hpairLen n km hkm _ hm0 tag0 htag0) ct hct
+          rw [List.take_of_length_le htake]
+        · exact PMF.bind_const _ _
+      | true =>
+        simp only [↓reduceIte]
+        trans (ProbComp.eval (M.sign km (unframe req))).bind fun _ =>
+          (ProbComp.eval (M.sign km (dropFrame req))).bind fun tag1 =>
+            (ProbComp.eval (E.encrypt (ptLen n) ke
+              (encPair encBits encBits (dropFrame req, tag1)))).bind fun ct =>
+              PMF.pure (ct, ())
+        · refine PMF.bind_congr_on_support _ _ _ fun tag0 htag0 => ?_
+          refine PMF.bind_congr_on_support _ _ _ fun tag1 htag1 => ?_
+          rw [htagstep tag0 htag0 tag1 htag1]
+          simp only [↓reduceIte, hd, ProbComp.eval_bind, ProbComp.eval_pure,
+            PMF.map_bind, PMF.pure_map, Prod.map_apply, id_eq]
+          refine PMF.bind_congr_on_support _ _ _ fun ct hct => ?_
+          have htake := hctBound ke hke _ (hpairLen n km hkm _ hm1 tag1 htag1) ct hct
+          rw [List.take_of_length_le htake]
+        · exact PMF.bind_const _ _
+    · have hcondF : ((unframe req).length == n && (dropFrame req).length == n) = false :=
+        Bool.eq_false_iff.mpr hcond
+      simp only [hcondF, Bool.false_eq_true, ↓reduceIte, ProbOracleComp.runWith_pure,
+        ProbComp.eval_pure]
+  rw [horacle]
+
+/-- **IND-CPA security preserves under MAC-then-Encrypt**: when `ptLen` is strictly monotone and
+computable in polynomial time, every encoded `(msg, tag)` pair on an `n`-bit message has length
+`ptLen n`, and `E` is `INDCPA`-secure, then `macThenEncrypt E M ptLen hptLenPoly hmsgLen hpairLen`
+is `INDCPA`-secure. -/
+theorem indcpa_macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmono : StrictMono ptLen) (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
+    (hcpa : E.INDCPA) :
+    (macThenEncrypt E M ptLen hptLenPoly hmsgLen hpairLen).INDCPA := by
+  intro adversary hadversary
+  obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E.exists_ciphertext_length_bound_of_length_eq
+  have hred := hcpa (mteToCPAAdversary M ptLen ctBound adversary)
+    (isOraclePPT_mteToCPAAdversary M ptLen ctBound hptLenPoly hctBoundPoly hadversary)
+  have hcomp : Negligible (fun n => Game.advantage
+      (ProbComp.eval (E.cpaGame (mteToCPAAdversary M ptLen ctBound adversary) false (ptLen n)))
+      (ProbComp.eval (E.cpaGame (mteToCPAAdversary M ptLen ctBound adversary) true (ptLen n)))) :=
+    hred.comp_of_polynomial_bound (bound := id) hmono.tendsto_atTop
+      (by fun_prop) (Filter.Eventually.of_forall hmono.id_le)
+  refine hcomp.congr fun n => ?_
+  dsimp only
+  rw [eval_cpaGame_mteToCPAAdversary E M ptLen hptLenPoly hmono hmsgLen hpairLen ctBound
+      adversary false n (hctBound (ptLen n)),
+    eval_cpaGame_mteToCPAAdversary E M ptLen hptLenPoly hmono hmsgLen hpairLen ctBound
+      adversary true n (hctBound (ptLen n))]
 
 namespace SymmetricCipher
 
@@ -511,37 +811,7 @@ theorem OneTimeINDCPA.extendCipher {E : SymmetricCipher} (h : E.OneTimeINDCPA) :
 
 end SymmetricCipher
 
-/-- Plaintext-tag decryption completeness `h_dec` lifts from `E` to `E.extendCipher`. -/
-theorem h_dec_extendCipher (E : SymmetricCipher) (M : MACScheme)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag))) :
-    ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.extendCipher.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.extendCipher.encrypt n ke
-          (encPair encBits encBits (msg, tag)))).support,
-        E.extendCipher.decrypt n ke ct = some (encPair encBits encBits (msg, tag)) := by
-  intro n ke km msg tag hke hkm hmsg htag ct hct
-  simp only [SymmetricCipher.extendCipher] at hke hct ⊢
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hct
-  obtain ⟨c, hc, rfl⟩ := hct
-  have hdec := h_dec n ke km msg tag hke hkm hmsg htag c hc
-  have ht : (c ++ [false]).length = c.length + 1 := by simp
-  have heq : (c ++ [false]).take ((c ++ [false]).length - 1) = c := by
-    rw [ht, Nat.add_sub_cancel]
-    exact List.take_left
-  rw [heq]
-  simp [ht, hdec]
-
-/-! ### Explicit CI and CCA Attacks on `macThenEncrypt E.extendCipher M` -/
+/-! ### Explicit CI and CCA Attacks on `macThenEncrypt E.extendCipher M ptLen ...` -/
 
 private theorem append_true_ne_append_false (c : List Bool) : c ++ [true] ≠ c ++ [false] := by
   intro h
@@ -550,33 +820,32 @@ private theorem append_true_ne_append_false (c : List Bool) : c ++ [true] ≠ c 
 
 private theorem decrypt_macThenEncrypt_extendCipher_append_true
     (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
     (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag)))
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
     (n : ℕ) {ke km msg tag c : List Bool}
-    (hke : ke ∈ (ProbComp.eval (E.keyGen n)).support)
+    (hke : ke ∈ (ProbComp.eval (E.keyGen (ptLen n))).support)
     (hkm : km ∈ (ProbComp.eval (M.keyGen n)).support)
     (hmsg : msg.length = n)
     (htag : tag ∈ (ProbComp.eval (M.sign km msg)).support)
-    (hc : c ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support) :
-    (macThenEncrypt E.extendCipher M hmsgLen (h_dec_extendCipher E M h_dec)).decrypt n
+    (hc : c ∈ (ProbComp.eval (E.encrypt (ptLen n) ke
+      (encPair encBits encBits (msg, tag)))).support) :
+    (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen).decrypt n
       (encPair encBits encBits (ke, km)) (c ++ [true]) = some msg := by
   have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
     simp [encPair_apply, unframe_frame_append]
   have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
     simp [encPair_apply, dropFrame_frame_append]
-  have hdecE : E.decrypt n ke c = some (encPair encBits encBits (msg, tag)) :=
-    h_dec n ke km msg tag hke hkm hmsg htag c hc
+  have hdecE : E.decrypt (ptLen n) ke c = some (encPair encBits encBits (msg, tag)) :=
+    E.decrypt_encrypt (ptLen n) ke hke _ (hpairLen n km hkm msg hmsg tag htag) c hc
   have ht : (c ++ [true]).length = c.length + 1 := by simp
   have heq : (c ++ [true]).take ((c ++ [true]).length - 1) = c := by
     rw [ht, Nat.add_sub_cancel]
     exact List.take_left
-  have hdecExt : E.extendCipher.decrypt n ke (c ++ [true]) =
+  have hdecExt : E.extendCipher.decrypt (ptLen n) ke (c ++ [true]) =
       some (encPair encBits encBits (msg, tag)) := by
     simp [SymmetricCipher.extendCipher, ht, hdecE]
   have hunframe_p : unframe (encPair encBits encBits (msg, tag)) = msg := by
@@ -593,22 +862,20 @@ private theorem decrypt_macThenEncrypt_extendCipher_append_true
 
 private theorem malleate_macThenEncrypt_extendCipher_ciphertext
     (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
     (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag)))
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
     (n : ℕ) {ke km msg ct : List Bool}
-    (hke : ke ∈ (ProbComp.eval (E.keyGen n)).support)
+    (hke : ke ∈ (ProbComp.eval (E.keyGen (ptLen n))).support)
     (hkm : km ∈ (ProbComp.eval (M.keyGen n)).support)
     (hmsg : msg.length = n)
-    (hct : ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-      (h_dec_extendCipher E M h_dec)).encrypt n (encPair encBits encBits (ke, km)) msg)).support) :
+    (hct : ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+      hpairLen).encrypt n (encPair encBits encBits (ke, km)) msg)).support) :
     (ct.take (ct.length - 1) ++ [true]) ≠ ct ∧
-    (macThenEncrypt E.extendCipher M hmsgLen (h_dec_extendCipher E M h_dec)).decrypt n
+    (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen).decrypt n
       (encPair encBits encBits (ke, km)) (ct.take (ct.length - 1) ++ [true]) = some msg := by
   have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
     simp [encPair_apply, dropFrame_frame_append]
@@ -626,11 +893,11 @@ private theorem malleate_macThenEncrypt_extendCipher_ciphertext
   · rw [htake]
     exact append_true_ne_append_false c
   · rw [htake]
-    exact decrypt_macThenEncrypt_extendCipher_append_true E M hmsgLen h_dec n hke hkm
-      hmsg htag hc
+    exact decrypt_macThenEncrypt_extendCipher_append_true E M ptLen hptLenPoly hmsgLen hpairLen n
+      hke hkm hmsg htag hc
 
-/-- One-query ciphertext-integrity adversary against `macThenEncrypt E.extendCipher M`: encrypts
-`0^n` and flips the trailing `false` bit of the ciphertext to `true`. -/
+/-- One-query ciphertext-integrity adversary against `macThenEncrypt E.extendCipher M ptLen ...`:
+encrypts `0^n` and flips the trailing `false` bit of the ciphertext to `true`. -/
 def macThenEncryptExtendCIAdversary (ctBound : ℕ → ℕ) : CIAdversary :=
   fun n _ => do
     let ct ← List.take (ctBound n) <$> ProbOracleComp.query ((), List.replicate n false)
@@ -644,24 +911,22 @@ theorem isOraclePPT_macThenEncryptExtendCIAdversary {ctBound : ℕ → ℕ}
   ppt [macThenEncryptExtendCIAdversary]
 
 private theorem ci_oracle_for_macThenEncrypt_extendCipher (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
     (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag)))
-    (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).keyGen n)).support,
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
       ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-          (h_dec_extendCipher E M h_dec)).encrypt n k msg)).support, ct.length ≤ ctBound n) :
-    ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).ciOneTimeGame
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
+    (ctBound : ℕ → ℕ) (n : ℕ)
+    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+        hmsgLen hpairLen).keyGen n)).support,
+      ∀ msg, msg.length = n →
+      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+          hmsgLen hpairLen).encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).ciOneTimeGame
       (macThenEncryptExtendCIAdversary ctBound) n) = PMF.pure true := by
-  let E' := macThenEncrypt E.extendCipher M hmsgLen (h_dec_extendCipher E M h_dec)
+  let E' := macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen
   simp only [SymmetricCipher.ciOneTimeGame, macThenEncryptExtendCIAdversary,
     OracleComp.interpret_bind, OracleComp.interpret_map, OracleComp.interpret_pure,
     ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map, StateT.run_pure,
@@ -682,81 +947,76 @@ private theorem ci_oracle_for_macThenEncrypt_extendCipher (E : SymmetricCipher) 
     · apply PMF.bind_congr_on_support
       intro ct hct
       rw [List.take_of_length_le (hctBound _ hk _ List.length_replicate ct hct)]
-      obtain ⟨hne, hdec⟩ := malleate_macThenEncrypt_extendCipher_ciphertext E M hmsgLen h_dec n
-        hke hkm List.length_replicate hct
+      obtain ⟨hne, hdec⟩ := malleate_macThenEncrypt_extendCipher_ciphertext E M ptLen hptLenPoly
+        hmsgLen hpairLen n hke hkm List.length_replicate hct
       rw [hdec]
       simp [hne]
     · simp
   · simp
 
 /-- `macThenEncryptExtendCIAdversary` succeeds with probability `1` in `ciOneTimeGame` against
-`macThenEncrypt E.extendCipher M`. -/
+`macThenEncrypt E.extendCipher M ptLen ...`. -/
 theorem eval_ciOneTimeGame_macThenEncrypt_extendCipher (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
     (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag)))
-    (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).keyGen n)).support,
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
       ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-          (h_dec_extendCipher E M h_dec)).encrypt n k msg)).support, ct.length ≤ ctBound n) :
-    ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).ciOneTimeGame
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
+    (ctBound : ℕ → ℕ) (n : ℕ)
+    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+        hmsgLen hpairLen).keyGen n)).support,
+      ∀ msg, msg.length = n →
+      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+          hmsgLen hpairLen).encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).ciOneTimeGame
       (macThenEncryptExtendCIAdversary ctBound) n) = PMF.pure true :=
-  ci_oracle_for_macThenEncrypt_extendCipher E M hmsgLen h_dec ctBound n hctBound
+  ci_oracle_for_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen ctBound n hctBound
 
-/-- `macThenEncrypt E.extendCipher M` fails `OneTimeCiphertextIntegrity` for every cipher `E` and
-MAC `M` satisfying `hmsgLen` and `h_dec`. -/
+/-- `macThenEncrypt E.extendCipher M ptLen ...` fails `OneTimeCiphertextIntegrity` for every
+cipher `E` and MAC `M` satisfying `hmsgLen` and `hpairLen`. -/
 theorem not_oneTimeCiphertextIntegrity_macThenEncrypt_extendCipher (E : SymmetricCipher)
-    (M : MACScheme) (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag))) :
-    ¬ (macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).OneTimeCiphertextIntegrity := by
+    (M : MACScheme) (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n) :
+    ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).OneTimeCiphertextIntegrity := by
   intro hci
-  let E' := macThenEncrypt E.extendCipher M hmsgLen (h_dec_extendCipher E M h_dec)
+  let E' := macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen
   obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E'.exists_ciphertext_length_bound_of_length_eq
   have hneg := hci.negligible (macThenEncryptExtendCIAdversary ctBound)
     (isOraclePPT_macThenEncryptExtendCIAdversary hctBoundPoly)
   have hcongr : (fun n => Game.succProbability (ProbComp.eval
       (E'.ciOneTimeGame (macThenEncryptExtendCIAdversary ctBound) n))) = fun _ => (1 : ℝ≥0) := by
     funext n
-    rw [eval_ciOneTimeGame_macThenEncrypt_extendCipher E M hmsgLen h_dec ctBound n (hctBound n)]
+    rw [eval_ciOneTimeGame_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen
+      ctBound n (hctBound n)]
     simp [Game.succProbability]
   rw [hcongr] at hneg
   exact not_negligible_const one_ne_zero hneg
 
-/-- `macThenEncrypt E.extendCipher M` fails `CiphertextIntegrity` for every cipher `E` and MAC `M`
-satisfying `hmsgLen` and `h_dec`. -/
+/-- `macThenEncrypt E.extendCipher M ptLen ...` fails `CiphertextIntegrity` for every cipher `E`
+and MAC `M` satisfying `hmsgLen` and `hpairLen`. -/
 theorem not_ciphertextIntegrity_macThenEncrypt_extendCipher (E : SymmetricCipher)
-    (M : MACScheme) (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag))) :
-    ¬ (macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).CiphertextIntegrity :=
-  fun hci => not_oneTimeCiphertextIntegrity_macThenEncrypt_extendCipher E M hmsgLen h_dec
-    hci.oneTimeCiphertextIntegrity
+    (M : MACScheme) (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n) :
+    ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).CiphertextIntegrity :=
+  fun hci => not_oneTimeCiphertextIntegrity_macThenEncrypt_extendCipher E M ptLen hptLenPoly
+    hmsgLen hpairLen hci.oneTimeCiphertextIntegrity
 
-/-- Two-query chosen-ciphertext distinguisher against `macThenEncrypt E.extendCipher M`: queries
-the challenge encryption oracle on `(0^n, 1^n)`, flips the trailing `false` bit of the returned
-ciphertext `ct` to `true`, queries the decryption oracle on the distinct ciphertext `ct'`, and
-outputs `true` iff the plaintext equals `1^n`. -/
+/-- Two-query chosen-ciphertext distinguisher against `macThenEncrypt E.extendCipher M ptLen ...`:
+queries the challenge encryption oracle on `(0^n, 1^n)`, flips the trailing `false` bit of the
+returned ciphertext `ct` to `true`, queries the decryption oracle on the distinct ciphertext `ct'`,
+and outputs `true` iff the plaintext equals `1^n`. -/
 def macThenEncryptExtendCCAAdversary (ctBound : ℕ → ℕ) : CCAAdversary :=
   fun n _ => do
     let m0 := List.replicate n false
@@ -774,28 +1034,26 @@ theorem isOraclePPT_macThenEncryptExtendCCAAdversary {ctBound : ℕ → ℕ}
   have hct := hctBound.tidy
   ppt [macThenEncryptExtendCCAAdversary]
 
-/-- In `ccaOneTimeGame` against `macThenEncrypt E.extendCipher M`,
+/-- In `ccaOneTimeGame` against `macThenEncrypt E.extendCipher M ptLen ...`,
 `macThenEncryptExtendCCAAdversary` outputs `bit` with probability `1` whenever `bit = true` or
 `1 ≤ n`. -/
 theorem eval_ccaOneTimeGame_macThenEncrypt_extendCipher (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
     (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag)))
-    (ctBound : ℕ → ℕ) (bit : Bool) {n : ℕ} (hn : bit = true ∨ 1 ≤ n)
-    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).keyGen n)).support,
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
       ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-          (h_dec_extendCipher E M h_dec)).encrypt n k msg)).support, ct.length ≤ ctBound n) :
-    ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).ccaOneTimeGame
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
+    (ctBound : ℕ → ℕ) (bit : Bool) {n : ℕ} (hn : bit = true ∨ 1 ≤ n)
+    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+        hmsgLen hpairLen).keyGen n)).support,
+      ∀ msg, msg.length = n →
+      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+          hmsgLen hpairLen).encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).ccaOneTimeGame
       (macThenEncryptExtendCCAAdversary ctBound) bit n) = PMF.pure bit := by
-  let E' := macThenEncrypt E.extendCipher M hmsgLen (h_dec_extendCipher E M h_dec)
+  let E' := macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen
   simp only [SymmetricCipher.ccaOneTimeGame, macThenEncryptExtendCCAAdversary,
     OracleComp.interpret_bind, OracleComp.interpret_map, OracleComp.interpret_pure,
     ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map, StateT.run_pure,
@@ -825,8 +1083,8 @@ theorem eval_ccaOneTimeGame_macThenEncrypt_extendCipher (E : SymmetricCipher) (M
     · apply PMF.bind_congr_on_support
       intro ct hct
       rw [List.take_of_length_le (hctBound _ hk _ hmbLen ct hct)]
-      obtain ⟨hne, hdec⟩ := malleate_macThenEncrypt_extendCipher_ciphertext E M hmsgLen h_dec n
-        hke hkm hmbLen hct
+      obtain ⟨hne, hdec⟩ := malleate_macThenEncrypt_extendCipher_ciphertext E M ptLen hptLenPoly
+        hmsgLen hpairLen n hke hkm hmbLen hct
       have hnc : ([ct].contains (ct.take (ct.length - 1) ++ [true])) = false := by simp [hne]
       simp only [hnc, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind]
       rw [hdec]
@@ -841,50 +1099,46 @@ theorem eval_ccaOneTimeGame_macThenEncrypt_extendCipher (E : SymmetricCipher) (M
   · simp
 
 /-- `macThenEncryptExtendCCAAdversary` achieves exact one-time CCA advantage `1` against
-`macThenEncrypt E.extendCipher M` for every `n ≥ 1`. -/
+`macThenEncrypt E.extendCipher M ptLen ...` for every `n ≥ 1`. -/
 theorem advantage_ccaOneTimeGame_macThenEncrypt_extendCipher_eq_one (E : SymmetricCipher)
-    (M : MACScheme) (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag)))
-    (ctBound : ℕ → ℕ) {n : ℕ} (hn : 1 ≤ n)
-    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).keyGen n)).support,
+    (M : MACScheme) (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
       ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-          (h_dec_extendCipher E M h_dec)).encrypt n k msg)).support, ct.length ≤ ctBound n) :
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
+    (ctBound : ℕ → ℕ) {n : ℕ} (hn : 1 ≤ n)
+    (hctBound : ∀ k ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+        hmsgLen hpairLen).keyGen n)).support,
+      ∀ msg, msg.length = n →
+      ∀ ct ∈ (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly
+          hmsgLen hpairLen).encrypt n k msg)).support, ct.length ≤ ctBound n) :
     Game.advantage
-      (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).ccaOneTimeGame
+      (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).ccaOneTimeGame
         (macThenEncryptExtendCCAAdversary ctBound) false n))
-      (ProbComp.eval ((macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).ccaOneTimeGame
+      (ProbComp.eval ((macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).ccaOneTimeGame
         (macThenEncryptExtendCCAAdversary ctBound) true n)) = 1 := by
-  rw [eval_ccaOneTimeGame_macThenEncrypt_extendCipher E M hmsgLen h_dec ctBound false
-      (Or.inr hn) hctBound,
-    eval_ccaOneTimeGame_macThenEncrypt_extendCipher E M hmsgLen h_dec ctBound true
-      (Or.inl rfl) hctBound]
+  rw [eval_ccaOneTimeGame_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen
+      ctBound false (Or.inr hn) hctBound,
+    eval_ccaOneTimeGame_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen
+      ctBound true (Or.inl rfl) hctBound]
   simp [Game.advantage, Game.succProbability]
 
-/-- `macThenEncrypt E.extendCipher M` fails `OneTimeINDCCA` for every cipher `E` and MAC `M`
-satisfying `hmsgLen` and `h_dec`. -/
+/-- `macThenEncrypt E.extendCipher M ptLen ...` fails `OneTimeINDCCA` for every cipher `E` and
+MAC `M` satisfying `hmsgLen` and `hpairLen`. -/
 theorem not_oneTimeINDCCA_macThenEncrypt_extendCipher (E : SymmetricCipher)
-    (M : MACScheme) (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag))) :
-    ¬ (macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).OneTimeINDCCA := by
+    (M : MACScheme) (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n) :
+    ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).OneTimeINDCCA := by
   intro hcca
-  let E' := macThenEncrypt E.extendCipher M hmsgLen (h_dec_extendCipher E M h_dec)
+  let E' := macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen
   obtain ⟨ctBound, hctBoundPoly, hctBound⟩ := E'.exists_ciphertext_length_bound_of_length_eq
   have hneg := hcca (macThenEncryptExtendCCAAdversary ctBound)
     (isOraclePPT_macThenEncryptExtendCCAAdversary hctBoundPoly)
@@ -903,24 +1157,111 @@ theorem not_oneTimeINDCCA_macThenEncrypt_extendCipher (E : SymmetricCipher)
       (ProbComp.eval (E'.ccaOneTimeGame (macThenEncryptExtendCCAAdversary ctBound) true (n + 1)))) =
       fun _ => (1 : ℝ≥0) := by
     funext n
-    exact advantage_ccaOneTimeGame_macThenEncrypt_extendCipher_eq_one E M hmsgLen h_dec ctBound
-      (Nat.succ_pos n) (hctBound (n + 1))
+    exact advantage_ccaOneTimeGame_macThenEncrypt_extendCipher_eq_one E M ptLen hptLenPoly
+      hmsgLen hpairLen ctBound (Nat.succ_pos n) (hctBound (n + 1))
   rw [h1] at ht
   exact one_ne_zero (tendsto_nhds_unique tendsto_const_nhds ht)
 
-/-- `macThenEncrypt E.extendCipher M` fails `INDCCA` for every cipher `E` and MAC `M`
-satisfying `hmsgLen` and `h_dec`. -/
+/-- `macThenEncrypt E.extendCipher M ptLen ...` fails `INDCCA` for every cipher `E` and MAC `M`
+satisfying `hmsgLen` and `hpairLen`. -/
 theorem not_indcca_macThenEncrypt_extendCipher (E : SymmetricCipher)
-    (M : MACScheme) (hmsgLen : ∀ n, M.msgLen n = n)
-    (h_dec : ∀ n ke km msg tag,
-      ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      km ∈ (ProbComp.eval (M.keyGen n)).support →
-      msg.length = n →
-      tag ∈ (ProbComp.eval (M.sign km msg)).support →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n ke (encPair encBits encBits (msg, tag)))).support,
-        E.decrypt n ke ct = some (encPair encBits encBits (msg, tag))) :
-    ¬ (macThenEncrypt E.extendCipher M hmsgLen
-        (h_dec_extendCipher E M h_dec)).INDCCA :=
-  fun hcca => not_oneTimeINDCCA_macThenEncrypt_extendCipher E M hmsgLen h_dec hcca.oneTimeINDCCA
+    (M : MACScheme) (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n) :
+    ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+        hpairLen).INDCCA :=
+  fun hcca => not_oneTimeINDCCA_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen
+    hcca.oneTimeINDCCA
+
+/-! ### Combined Separation Theorem and PRF Instantiation -/
+
+/-- **Generic MAC-then-Encrypt CCA/CI counterexample theorem**: given any `INDCPA`-secure cipher
+`E`, any `SUFCMA`-secure MAC `M` on `n`-bit messages, and a strictly monotone polynomial-time
+plaintext-tag length schedule `ptLen`, the trailing-bit malleable extension `E.extendCipher` remains
+`INDCPA`, `macThenEncrypt E.extendCipher M ptLen ...` remains `INDCPA`, yet fails
+`OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`. -/
+theorem macThenEncrypt_extendCipher_counterexample (E : SymmetricCipher) (M : MACScheme)
+    (ptLen : ℕ → ℕ) (hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary)
+    (hmono : StrictMono ptLen) (hmsgLen : ∀ n, M.msgLen n = n)
+    (hpairLen : ∀ n km, km ∈ (ProbComp.eval (M.keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval (M.sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = ptLen n)
+    (hcpa : E.INDCPA) (hsuf : M.SUFCMA) :
+    E.extendCipher.INDCPA ∧ M.SUFCMA ∧
+      (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen).INDCPA ∧
+      ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+          hpairLen).OneTimeCiphertextIntegrity ∧
+      ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen
+          hpairLen).CiphertextIntegrity ∧
+      ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen).OneTimeINDCCA ∧
+      ¬ (macThenEncrypt E.extendCipher M ptLen hptLenPoly hmsgLen hpairLen).INDCCA :=
+  ⟨hcpa.extendCipher, hsuf,
+    indcpa_macThenEncrypt E.extendCipher M ptLen hptLenPoly hmono hmsgLen hpairLen
+      hcpa.extendCipher,
+    not_oneTimeCiphertextIntegrity_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen
+      hpairLen,
+    not_ciphertextIntegrity_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen,
+    not_oneTimeINDCCA_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen,
+    not_indcca_macThenEncrypt_extendCipher E M ptLen hptLenPoly hmsgLen hpairLen⟩
+
+/-- On an `n`-bit message under a supported key, every encoded `(msg, tag)` pair produced by
+`prfMAC family hpoly` has exact length `3 * n + 1`. -/
+theorem prfMAC_pair_length
+    (family : List Bool → List Bool → List Bool)
+    (hpoly : ComputableInPolyTime (fun pair => family pair.1 pair.2)
+      (encPair encBits encBits) encBits)
+    (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length) :
+    ∀ n km, km ∈ (ProbComp.eval ((prfMAC family hpoly).keyGen n)).support →
+      ∀ msg, msg.length = n →
+      ∀ tag ∈ (ProbComp.eval ((prfMAC family hpoly).sign km msg)).support,
+        (encPair encBits encBits (msg, tag)).length = 3 * n + 1 := by
+  intro n km hkm msg hmsg tag htag
+  dsimp only [prfMAC] at hkm htag
+  rw [BitString.eval_sampleList] at hkm
+  have hkmLen : km.length = n := BitString.length_of_mem_support_uniformList hkm
+  simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
+  subst htag
+  have htagLen : (prfOracle family km.length km msg).length = n := by
+    simp only [prfOracle, hmsg, hkmLen, ↓reduceIte]
+    rw [hlen km msg (by rw [hmsg, hkmLen]), hkmLen]
+  simp only [length_encPair, encBits_apply, hmsg, htagLen]
+  omega
+
+/-- Concrete MAC-then-Encrypt counterexample cipher instantiated on
+`(prfCipher family).extendCipher` and `prfMAC family` with plaintext-tag length schedule
+`ptLen n := 3 * n + 1`. -/
+@[expose]
+noncomputable def prfMacThenEncryptExtend
+    (family : List Bool → List Bool → List Bool)
+    (hpoly : ComputableInPolyTime (fun pair => family pair.1 pair.2)
+      (encPair encBits encBits) encBits)
+    (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length) :
+    SymmetricCipher :=
+  macThenEncrypt (prfCipher family hpoly hlen).extendCipher (prfMAC family hpoly)
+    (fun n => 3 * n + 1) (by fun_prop) (fun _ => rfl) (prfMAC_pair_length family hpoly hlen)
+
+/-- **Non-vacuous end-to-end MAC-then-Encrypt counterexample from any `PseudorandomFunction`**:
+for every uniform `PseudorandomFunction family`, `(prfCipher ...).extendCipher` is `INDCPA`,
+`prfMAC ...` is `SUFCMA`, `prfMacThenEncryptExtend` is `INDCPA`, and `prfMacThenEncryptExtend`
+fails `OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`. -/
+theorem PseudorandomFunction.prfMacThenEncryptExtend_counterexample
+    {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
+    (prfCipher family hprf.polyTime hprf.length_eq).extendCipher.INDCPA ∧
+      (prfMAC family hprf.polyTime).SUFCMA ∧
+      (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).INDCPA ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).OneTimeCiphertextIntegrity ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).CiphertextIntegrity ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).OneTimeINDCCA ∧
+      ¬ (prfMacThenEncryptExtend family hprf.polyTime hprf.length_eq).INDCCA :=
+  macThenEncrypt_extendCipher_counterexample
+    (prfCipher family hprf.polyTime hprf.length_eq)
+    (prfMAC family hprf.polyTime)
+    (fun n => 3 * n + 1) (by fun_prop) (fun _ _ h => by dsimp only; omega) (fun _ => rfl)
+    (prfMAC_pair_length family hprf.polyTime hprf.length_eq)
+    hprf.indcpa_prfCipher hprf.sufCma_prfMAC
 
 end Cslib.Crypto
