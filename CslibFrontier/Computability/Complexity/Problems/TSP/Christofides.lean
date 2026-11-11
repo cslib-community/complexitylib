@@ -35,8 +35,8 @@ triples of cities. Diagonal entries need not be zero.
 * `christofidesTour_perm`: the tour visits every city exactly once.
 * `two_mul_tourLength_christofidesTour_le_three_mul`: on metric matrices, twice the length of the
   tour is at most three times the length of any tour.
-* `two_mul_tourLength_christofidesTour_le_three_mul_of_mem`: if `(D, b) ∈ TSP` with `D` metric,
-  twice the length of the tour is at most `3 * b`.
+* `two_mul_tourLength_christofidesTour_le_three_mul_of_mem`: if `x ∈ TSP` with `x.dist` metric,
+  twice the length of the tour is at most `3 * x.bound`.
 
 ## Limitations
 
@@ -81,11 +81,12 @@ theorem two_mul_tourLength_christofidesTour_le_three_mul {D : List (List ℕ)} (
   exact two_mul_cycleCost_christofides_le_three_mul (fun x y => hD.symm x x.isLt y y.isLt)
     (fun x y z => hD.triangle x x.isLt y y.isLt z z.isLt) hq hcov
 
-/-- **The 3/2-approximation against the decision problem**: if a metric instance `(D, b)` belongs
-to `TSP`, twice the length of Christofides' tour is at most `3 * b`. -/
-theorem two_mul_tourLength_christofidesTour_le_three_mul_of_mem {D : List (List ℕ)} {b : ℕ}
-    (hD : IsMetric D) (h : (D, b) ∈ TSP) : 2 * tourLength D (christofidesTour D) ≤ 3 * b := by
+/-- **The 3/2-approximation against the decision problem**: if a metric instance `x` belongs to
+`TSP`, twice the length of Christofides' tour is at most `3 * x.bound`. -/
+theorem two_mul_tourLength_christofidesTour_le_three_mul_of_mem {x : TSPInstance}
+    (hx : IsMetric x.dist) (h : x ∈ TSP) :
+    2 * tourLength x.dist (christofidesTour x.dist) ≤ 3 * x.bound := by
   obtain ⟨p, hp, hb⟩ := h
-  exact (two_mul_tourLength_christofidesTour_le_three_mul hD hp).trans (Nat.mul_le_mul_left 3 hb)
+  exact (two_mul_tourLength_christofidesTour_le_three_mul hx hp).trans (Nat.mul_le_mul_left 3 hb)
 
 end Cslib.Complexity.TSP

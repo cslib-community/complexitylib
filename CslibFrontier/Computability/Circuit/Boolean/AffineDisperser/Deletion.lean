@@ -45,18 +45,13 @@ and not increasing `W` (`State.Valid.step_of_deletion`).
 
 namespace Cslib.Circuits.Boolean.AffineDisperser
 
-open Finset Cslib.BitString SemiCircuit
+open Finset Cslib.BitString SemiCircuit AffineDisperserCore
 
 namespace State
 
-variable {n : ℕ} {f : BooleanFunction n}
+open AffineDisperserCore.State
 
-/-- A parameter `p` of degree `1` containing `H` among its children has `{H}` as its set of
-children. -/
-theorem children_eq_singleton {S : State n} {p : ℕ} {H : ℕ ⊕ ℕ} (h1 : S.deg p = 1)
-    (hH : H ∈ S.children p) : S.children p = {H} := by
-  obtain ⟨a, ha⟩ := Finset.card_eq_one.1 h1
-  rw [ha] at hH ⊢; rw [Finset.mem_singleton.1 hH]
+variable {n : ℕ} {f : BooleanFunction n}
 
 /-- The configuration of Case 1: one of the deletions (D1)–(D4) applies. An equation has at most
 two terms (D3); a gate computes, on the solutions of the affine system, a constant or a literal of
@@ -73,14 +68,10 @@ def DeletionAvailable (S : State n) : Prop :=
 Lemma 2.3. -/
 theorem Valid.not_out_reads_param {S : State n} {d : ℕ} (hS : S.Valid f)
     (hf : IsAffineDisperser f d) (ha : d < S.a) {x : ℕ} (hx : x ∈ S.params) :
-    ¬ S.out.Reads x := by
-  intro hr
-  refine hS.out_not_affine hf ha S.out.neg (Finset.singleton_subset_iff.2 hx) fun val _ => ?_
-  rw [Finset.sum_singleton]
-  unfold Lit.eval
-  unfold Lit.Reads at hr
-  rw [hr, Arg.eval_node]
-  cases S.out.neg <;> cases val x <;> rfl
+    ¬ S.out.Reads x :=
+  not_out_reads_param_of fun h =>
+    Valid.out_not_affine hS hf ha S.out.neg (Finset.singleton_subset_iff.2 hx) fun val hcons =>
+      h val hcons trivial
 
 /-- (D4): an unpaired parameter `x` whose only child is the equation `e` is exchanged with an
 auxiliary variable depending on it and then deleted with `e`; this keeps `a` and lowers `W`. -/
@@ -93,12 +84,12 @@ theorem Valid.unit_delete {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffin
   obtain ⟨he, hxe⟩ := (SemiCircuit.inr_mem_children _).1 hex
   obtain ⟨Q, hQ, c, T, hT, hxT⟩ := SemiCircuit.exists_affineIn_of_mem_terms hS.wf hxp he hxe
   have hsw : S.SwapOK x Q c T := ⟨hxp, hxu, hQ, hT, hxT⟩
-  have hS₁ := hS.swap hsw
+  have hS₁ := Valid.swap hS hsw
   have hQp : Q ∉ S.params := fun hp => hS.wf.notMem_aux_of_mem_params hp hQ
   have hQx : Q ≠ x := fun he' => hQp (he' ▸ hxp)
   have hdrop : (S.swap x Q c T).DropEqnOK e x := by
     refine ⟨he, Finset.mem_insert_self _ _, hxe, fun e' he' hee hxe' => ?_, fun K hK hr => ?_,
-      hS.not_out_reads_param hf ha hxp⟩
+      Valid.not_out_reads_param hS hf ha hxp⟩
     · have : Sum.inr e' ∈ S.children x := (SemiCircuit.inr_mem_children _).2 ⟨he', hxe'⟩
       rw [hc, Finset.mem_singleton] at this
       exact hee (Sum.inr.inj this)
@@ -127,13 +118,14 @@ theorem Valid.unit_delete {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffin
       have h1 : S'.wt z = 0 := wt_of_notMem_params (by
         rw [hparams, Finset.mem_insert, Finset.mem_erase]; tauto)
       have h2 : S.wt z = 6 := by
-        rw [wt_of_mem hx, SemiCircuit.deg, hc, Finset.card_singleton, weight_one]
+        rw [wt_of_mem hx, SemiCircuit.deg, hc, Finset.card_singleton, config_weight, weight_one]
       rw [h1, h2, ite_eq_left rfl, ite_eq_right hQx.symm]
     · rw [ite_eq_right hzx]
       by_cases hzQ : z = Q
       · subst hzQ
         rw [ite_eq_left rfl, wt_of_notMem_params hQp]
-        have := S'.wt_le_seven z
+        have := S'.wt_le_bound z
+        rw [config_weightBound] at this
         omega
       · rw [ite_eq_right hzQ]
         by_cases hu : z ∈ S'.unpaired
@@ -149,14 +141,16 @@ theorem Valid.unit_delete {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffin
   rw [Finset.sum_ite_eq_of_mem' _ _ _ (Finset.mem_insert_of_mem hxp),
     Finset.sum_ite_eq_of_mem' _ _ _ (Finset.mem_insert_self _ _)] at hW
   have hs : S'.s + 1 = S.s := hsize
+  rw [config_cs, config_cq] at hW
   exact ⟨S', hS', hm, hs, ha', hq, by omega⟩
 
 /-- (D4) as a step of gate elimination. -/
 private theorem Valid.step_unit {S : State n} {d : ℕ} (hS : S.Valid f) (hf : IsAffineDisperser f d)
     (ha : d < S.a) {x e : ℕ} (hx : x ∈ S.unpaired) (hc : S.children x = {.inr e}) :
     ∃ S', Step f S S' := by
-  obtain ⟨S', hS', hm, hs, ha', -, hW⟩ := hS.unit_delete hf ha hx hc
-  exact ⟨S', hS', by omega, by omega, by omega, by omega⟩
+  obtain ⟨S', hS', hm, hs, ha', -, hW⟩ := Valid.unit_delete hS hf ha hx hc
+  have ha_eq : S'.a = S.a := ha'
+  exact ⟨S', hS', by omega, by omega, by omega, by rw [ha_eq]; omega⟩
 
 /-- A gate has at most two parameters as parents. -/
 theorem card_filter_inl_mem_children_le (S : State n) (J : ℕ) :
@@ -172,16 +166,17 @@ theorem Valid.step_of_deletion {S : State n} {d : ℕ} (hS : S.Valid f)
     ∃ S', Step f S S' := by
   rcases h with ⟨e, he, hcard⟩ | ⟨J, hJ, ℓ, hreads, hval⟩ | ⟨J, hJ, hun, hout⟩ | ⟨x, hx, e, hc⟩
   · obtain ⟨S', h⟩ := hS.exists_reduction_delete (N := .inr e) ⟨he, hcard⟩
-    exact ⟨S', h.step_of_delete hS ((Finset.card_le_card fun u hu =>
+    exact ⟨S', Reduction.step_of_delete h hS ((Finset.card_le_card fun u hu =>
       ((SemiCircuit.inr_mem_children _).1 (Finset.mem_filter.1 hu).2).2).trans hcard)⟩
-  · exact ⟨_, (hS.reduction_deleteGate ⟨hJ, hreads, Or.inl hval⟩
-      fun _ _ => List.mem_singleton_self _).step_of_delete hS
+  · exact ⟨_, Reduction.step_of_delete (hS.reduction_deleteGate
+      ⟨hJ, hreads, Or.inl fun val hcons _ => hval val hcons⟩
+      fun _ _ => List.mem_singleton_self _) hS
       (S.card_filter_inl_mem_children_le J)⟩
-  · exact ⟨_, ((hS.reduction_deleteGate (ℓ := Lit.const false) (T := [])
+  · exact ⟨_, Reduction.step_of_delete ((hS.reduction_deleteGate (ℓ := Lit.const false) (T := [])
       ⟨hJ, fun t ht => by simp [Lit.Reads, Lit.const] at ht, Or.inr ⟨hun, hout⟩⟩
-      fun t ht => by simp [Lit.Reads, Lit.const] at ht).mono (by simp)).step_of_delete hS
+      fun t ht => by simp [Lit.Reads, Lit.const] at ht).mono (by simp)) hS
       (S.card_filter_inl_mem_children_le J)⟩
-  · exact hS.step_unit hf ha hx hc
+  · exact Valid.step_unit hS hf ha hx hc
 
 end State
 
