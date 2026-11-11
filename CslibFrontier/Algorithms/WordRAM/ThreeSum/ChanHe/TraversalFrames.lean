@@ -192,15 +192,22 @@ def Entry.Valid (e : Entry) (n U : ℕ) : Prop :=
   (∀ j, (e.data j).Nodup) ∧ Cslib.Algorithms.ThreeSum.ChanHe.Admissible n U
     (e.data 0).toFinset (e.data 1).toFinset (e.data 2).toFinset
 
+/-- Each listed column of a valid entry represents at most `n` distinct integers. -/
+theorem Entry.Valid.card_toFinset_le {e : Entry} {n U : ℕ} (h : e.Valid n U) (j : Fin 3) :
+    (e.data j).toFinset.card ≤ n := by
+  fin_cases j
+  exacts [h.2.card₁, h.2.card₂, h.2.card₃]
+
+/-- Each listed column of a valid entry satisfies the magnitude bound `U`. -/
+theorem Entry.Valid.bdd {e : Entry} {n U : ℕ} (h : e.Valid n U) (j : Fin 3) :
+    Cslib.Algorithms.ThreeSum.Bdd U (e.data j).toFinset := by
+  fin_cases j
+  exacts [h.2.bdd₁, h.2.bdd₂, h.2.bdd₃]
+
 /-- Native input lengths equal finite-set cardinalities under the duplicate-free obligation. -/
 theorem Entry.Valid.length_le {e : Entry} {n U : ℕ} (h : e.Valid n U) (j : Fin 3) :
-    (e.data j).length ≤ n := by
-  have he := List.toFinset_card_of_nodup (h.1 j)
-  rw [← he]
-  fin_cases j
-  · exact h.2.card₁
-  · exact h.2.card₂
-  · exact h.2.card₃
+    (e.data j).length ≤ n :=
+  List.toFinset_card_of_nodup (h.1 j) ▸ h.card_toFinset_le j
 
 /-- The existing finite-set magnitude promise bounds every actual native array element. -/
 theorem Entry.Valid.natAbs_le {e : Entry} {n U : ℕ} (h : e.Valid n U)
@@ -208,11 +215,7 @@ theorem Entry.Valid.natAbs_le {e : Entry} {n U : ℕ} (h : e.Valid n U)
   have hz : e.read j i ∈ (e.data j).toFinset := by
     rw [e.read_eq j i hi, List.mem_toFinset]
     exact List.getElem_mem hi
-  have hb : |e.read j i| ≤ (U : ℤ) := by
-    fin_cases j
-    · exact h.2.bdd₁ _ hz
-    · exact h.2.bdd₂ _ hz
-    · exact h.2.bdd₃ _ hz
+  have hb := h.bdd j _ hz
   rw [← Int.natCast_natAbs] at hb
   exact_mod_cast hb
 
@@ -220,25 +223,16 @@ theorem Entry.Valid.natAbs_le {e : Entry} {n U : ℕ} (h : e.Valid n U)
 theorem Entry.Valid.child {e : Entry} {n U : ℕ} (h : e.Valid n U)
     (j : Fin 3) (base : ℕ) (zs : List ℤ) (hnd : zs.Nodup)
     (hsub : zs.toFinset ⊆ (e.data j).toFinset) : (e.child j base zs).Valid n U := by
-  refine ⟨?_, ?_⟩
-  · intro k
+  have hsub' (k : Fin 3) : ((e.child j base zs).data k).toFinset ⊆ (e.data k).toFinset := by
     by_cases he : k = j
     · subst k
-      simpa only [Entry.child, Function.update_self] using hnd
-    · simpa only [Entry.child, Function.update_of_ne he] using h.1 k
-  · fin_cases j
-    · change Cslib.Algorithms.ThreeSum.ChanHe.Admissible n U zs.toFinset
-        (e.data 1).toFinset (e.data 2).toFinset
-      exact ⟨(Finset.card_le_card hsub).trans h.2.card₁, h.2.card₂, h.2.card₃,
-        h.2.bdd₁.mono hsub, h.2.bdd₂, h.2.bdd₃⟩
-    · change Cslib.Algorithms.ThreeSum.ChanHe.Admissible n U (e.data 0).toFinset
-        zs.toFinset (e.data 2).toFinset
-      exact ⟨h.2.card₁, (Finset.card_le_card hsub).trans h.2.card₂, h.2.card₃,
-        h.2.bdd₁, h.2.bdd₂.mono hsub, h.2.bdd₃⟩
-    · change Cslib.Algorithms.ThreeSum.ChanHe.Admissible n U (e.data 0).toFinset
-        (e.data 1).toFinset zs.toFinset
-      exact ⟨h.2.card₁, h.2.card₂, (Finset.card_le_card hsub).trans h.2.card₃,
-        h.2.bdd₁, h.2.bdd₂, h.2.bdd₃.mono hsub⟩
+      simpa only [Entry.child, Function.update_self] using hsub
+    · simp only [Entry.child, Function.update_of_ne he, Finset.Subset.rfl]
+  refine ⟨fun k => ?_, h.2.mono (hsub' 0) (hsub' 1) (hsub' 2)⟩
+  by_cases he : k = j
+  · subst k
+    simpa only [Entry.child, Function.update_self] using hnd
+  · simpa only [Entry.child, Function.update_of_ne he] using h.1 k
 
 /-- A child reuses both untouched data blocks and the actual newly written heavy block. -/
 theorem Entry.Stored.child {e : Entry} {mem : ℕ → ℕ} (h : e.Stored mem)

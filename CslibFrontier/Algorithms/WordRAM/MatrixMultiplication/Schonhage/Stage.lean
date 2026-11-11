@@ -88,19 +88,9 @@ theorem exec_cells {w : ℕ} (hw : 0 < w) (side : Bool) (x : Data 32)
     obtain ⟨z, he, hzmem, hzcell, hzreg⟩ := exec_cell hw side y P n s d (y.regs cell)
       hP hnpos hi hys hyd rfl hyn hy7 hy10 hy1 (v (y.regs cell)) B hB (hv _ hi)
       hyinput hval haddr
-    refine ⟨z, he, ?_, hzcell⟩
-    refine ⟨fun a ha hl => (hzreg a ha hl).trans (hr a ha hl), ?_, ?_⟩
-    · intro i hzi
-      by_cases hic : i = y.regs cell
-      · subst i
-        simp only [hzmem, Function.update_self, stageResult]
-      · have hin : i < y.regs cell := by omega
-        rw [hzmem, Function.update_of_ne (by omega : d + i ≠ d + y.regs cell)]
-        exact hm i hin
-    · intro a ha
-      have hne : a ≠ d + y.regs cell := by omega
-      rw [hzmem, Function.update_of_ne hne]
-      exact hf a (by omega)
+    obtain ⟨hm', hf'⟩ :=
+      prefix_write_step (e := fun i => encode (stageResult side n v i)) hm hf hzmem
+    exact ⟨z, he, ⟨fun a ha hl => (hzreg a ha hl).trans (hr a ha hl), hm', hf'⟩, hzcell⟩
   have hx : Inv (x.regs cell) x := by
     refine ⟨fun _ _ _ => rfl, ?_, ?_⟩
     · simp only [hcell, Nat.not_lt_zero, false_implies, implies_true]

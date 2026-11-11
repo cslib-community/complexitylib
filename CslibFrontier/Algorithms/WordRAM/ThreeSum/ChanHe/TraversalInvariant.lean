@@ -88,10 +88,24 @@ theorem Arena.Controls.congr {a : Arena} {x y : Data 128} (h : a.Controls x)
     (hp _ (by decide)).trans hcap, (hp _ (by decide)).trans hz,
     (hp _ (by decide)).trans ho⟩
 
+/-- Preserving registers `71`–`95` preserves all persistent caller parameters. -/
+theorem Arena.Controls.of_regs_71_96 {a : Arena} {x y : Data 128} (h : a.Controls x)
+    (hr : ∀ i : Fin 128, 71 ≤ i.val → i.val < 96 → y.regs i = x.regs i) : a.Controls y :=
+  h.congr fun i hi => by
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
+    exact hr i (by omega) (by omega)
+
 /-- Concrete non-overlap and capacity obligations for the reserved native layout. -/
 def Arena.Separated (a : Arena) : Prop :=
   a.primes + a.m < a.stack ∧ a.stack + a.capacity ≤ a.table ∧
     a.table + a.outputCapacity ≤ a.floor ∧ 7 * (2 * a.fuel + 1) ≤ a.capacity
+
+/-- The reserved stack fits inside the gap between `a.stack` and `a.floor`. -/
+theorem Arena.Separated.capacity_le_gap {a : Arena} (ha : a.Separated) :
+    a.capacity ≤ a.floor - a.stack := by
+  have ht := ha.2.1
+  have hf := ha.2.2.1
+  omega
 
 /-- A single signed envelope covers both actual native kernels at every worklist transition. -/
 def Arena.Ready (a : Arena) (w : ℕ) : Prop :=

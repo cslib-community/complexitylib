@@ -21,7 +21,7 @@ open Cslib.Complexity Turing.MultiTapeTM
 
 /-! ### Headline complexity class results -/
 
-example : DirHamPath ∩ HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) :=
+example : DirHamPath ∩ HamPath ∈ NP encPathInstance :=
   inter_mem_NP DirHamPath.mem_NP HamPath.mem_NP
 
 example : DirHamCycle ∪ HamCycle ∈ NP encGraph :=
@@ -29,9 +29,9 @@ example : DirHamCycle ∪ HamCycle ∈ NP encGraph :=
 
 -- Certificates are quadratic in the encoded instance: every positive instance has a witness of
 -- length `len ^ 2`.
-example {x : Graph × ℕ × ℕ} (hx : x ∈ DirHamPath) :
+example {x : PathInstance} (hx : x ∈ DirHamPath) :
     ∃ w : List Bool,
-      w.length = (encPair encGraph (encPair encNat encNat) x).length ^ 2 ∧
+      w.length = (encPathInstance x).length ^ 2 ∧
         DirHamPath.verifier (x, w) = true := by
   simpa using (DirHamPath.isVerifier x).mp hx
 
@@ -40,17 +40,27 @@ example {G : Graph} (hG : G ∈ HamCycle) :
       w.length = (encGraph G).length ^ 2 ∧ HamCycle.verifier (G, w) = true := by
   simpa using (HamCycle.isVerifier G).mp hG
 
-/-! ### Compositional `fun_prop` synthesis -/
+/-! ### Compositional `fun_prop` synthesis and extensionality -/
 
-example : ComputableInPolyTime DirHamPath.verifier
-    (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool := by
+example {x y : PathInstance} (hg : x.graph = y.graph) (hs : x.source = y.source)
+    (ht : x.target = y.target) : x = y := by
+  ext <;> simp [*]
+
+example :
+    ComputableInPolyTime PathInstance.graph encPathInstance encGraph ∧
+      ComputableInPolyTime PathInstance.source encPathInstance encNat ∧
+      ComputableInPolyTime PathInstance.target encPathInstance encNat ∧
+      ComputableInPolyTime (fun x : PathInstance => (⟨x.graph, x.target, x.source⟩ : PathInstance))
+        encPathInstance encPathInstance := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> fun_prop
+
+example : ComputableInPolyTime DirHamPath.verifier (encPair encPathInstance encBits) encBool := by
   fun_prop
 
 example : ComputableInPolyTime DirHamCycle.verifier (encPair encGraph encBits) encBool := by
   fun_prop
 
-example : ComputableInPolyTime HamPath.verifier
-    (encPair (encPair encGraph (encPair encNat encNat)) encBits) encBool := by
+example : ComputableInPolyTime HamPath.verifier (encPair encPathInstance encBits) encBool := by
   fun_prop
 
 example : ComputableInPolyTime HamCycle.verifier (encPair encGraph encBits) encBool := by
@@ -94,49 +104,49 @@ example : Graph.cycleChainBool (fun u v => decide (u = v)) [7] = true := rfl
 
 private def dpath : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
 
-example : DirHamPath.verifier ((dpath, 0, 2), certificate dpath.1 [0, 1, 2]) = true := rfl
+example : DirHamPath.verifier (⟨dpath, 0, 2⟩, certificate dpath.1 [0, 1, 2]) = true := rfl
 -- Arcs are directed.
-example : DirHamPath.verifier ((dpath, 2, 0), certificate dpath.1 [2, 1, 0]) = false := rfl
+example : DirHamPath.verifier (⟨dpath, 2, 0⟩, certificate dpath.1 [2, 1, 0]) = false := rfl
 -- Wrong endpoints, a repeated vertex, and a missing arc are rejected.
-example : DirHamPath.verifier ((dpath, 0, 1), certificate dpath.1 [0, 1, 2]) = false := rfl
-example : DirHamPath.verifier ((dpath, 0, 2), certificate dpath.1 [0, 1, 1]) = false := rfl
-example : DirHamPath.verifier ((dpath, 1, 2), certificate dpath.1 [1, 0, 2]) = false := rfl
+example : DirHamPath.verifier (⟨dpath, 0, 1⟩, certificate dpath.1 [0, 1, 2]) = false := rfl
+example : DirHamPath.verifier (⟨dpath, 0, 2⟩, certificate dpath.1 [0, 1, 1]) = false := rfl
+example : DirHamPath.verifier (⟨dpath, 1, 2⟩, certificate dpath.1 [1, 0, 2]) = false := rfl
 
-example : (dpath, 0, 2) ∈ DirHamPath :=
+example : (⟨dpath, 0, 2⟩ : PathInstance) ∈ DirHamPath :=
   ⟨[0, 1, 2], by decide, fun v => by simp [dpath], rfl, rfl, by simp [dpath]⟩
 
 -- An undeclared endpoint is rejected.
-example : DirHamPath.verifier ((dpath, 0, 9), certificate dpath.1 [0, 1, 2]) = false := rfl
+example : DirHamPath.verifier (⟨dpath, 0, 9⟩, certificate dpath.1 [0, 1, 2]) = false := rfl
 
-example : (dpath, 0, 9) ∉ DirHamPath := by
+example : (⟨dpath, 0, 9⟩ : PathInstance) ∉ DirHamPath := by
   rintro ⟨p, -, hmem, -, ht, -⟩
   have := (hmem 9).1 (List.mem_of_getLast? ht)
   simp [dpath] at this
 
 -- `s = t` on a one-vertex graph is accepted.
-example : DirHamPath.verifier (((([5], []), 5, 5)), [false]) = true := rfl
+example : DirHamPath.verifier (⟨([5], []), 5, 5⟩, [false]) = true := rfl
 
-example : (([5], []), 5, 5) ∈ DirHamPath :=
+example : (⟨([5], []), 5, 5⟩ : PathInstance) ∈ DirHamPath :=
   ⟨[5], by decide, fun v => by simp, rfl, rfl, by simp⟩
 
 -- The empty graph has no Hamiltonian path.
-example : DirHamPath.verifier ((([], []), 0, 0), []) = false := rfl
+example : DirHamPath.verifier (⟨([], []), 0, 0⟩, []) = false := rfl
 
-example : (([], []), 0, 0) ∉ DirHamPath := by
+example : (⟨([], []), 0, 0⟩ : PathInstance) ∉ DirHamPath := by
   rintro ⟨p, -, hmem, hs, -⟩
   have := (hmem 0).1 (List.mem_of_head? hs)
   simp at this
 
 -- Duplicate vertex entries count once.
-example : DirHamPath.verifier ((([0, 1, 0], [(0, 1)]), 0, 1), certificate [0, 1, 0] [0, 1]) =
+example : DirHamPath.verifier (⟨([0, 1, 0], [(0, 1)]), 0, 1⟩, certificate [0, 1, 0] [0, 1]) =
     true := rfl
 
 -- Arcs with an undeclared endpoint are never used.
 private def detour : Graph := ([0, 1], [(0, 7), (7, 1)])
 
-example : DirHamPath.verifier ((detour, 0, 1), certificate detour.1 [0, 1]) = false := rfl
+example : DirHamPath.verifier (⟨detour, 0, 1⟩, certificate detour.1 [0, 1]) = false := rfl
 
-example : (detour, 0, 1) ∉ DirHamPath := by
+example : (⟨detour, 0, 1⟩ : PathInstance) ∉ DirHamPath := by
   rintro ⟨p, hnd, hmem, hs, ht, hch⟩
   have hlen := ((List.perm_ext_iff_of_nodup hnd (by decide : [0, 1].Nodup)).2 hmem).length_eq
   obtain ⟨a, b, rfl⟩ := List.length_eq_two.1 hlen
@@ -177,46 +187,46 @@ example : ([], []) ∉ DirHamCycle := by
 
 /-! ### Undirected Hamiltonian paths -/
 
-example : HamPath.verifier ((dpath, 0, 2), certificate dpath.1 [0, 1, 2]) = true := rfl
+example : HamPath.verifier (⟨dpath, 0, 2⟩, certificate dpath.1 [0, 1, 2]) = true := rfl
 -- Edges are undirected.
-example : HamPath.verifier ((dpath, 2, 0), certificate dpath.1 [2, 1, 0]) = true := rfl
-example : HamPath.verifier ((dpath, 1, 2), certificate dpath.1 [1, 0, 2]) = false := rfl
+example : HamPath.verifier (⟨dpath, 2, 0⟩, certificate dpath.1 [2, 1, 0]) = true := rfl
+example : HamPath.verifier (⟨dpath, 1, 2⟩, certificate dpath.1 [1, 0, 2]) = false := rfl
 
-example : (dpath, 2, 0) ∈ HamPath := by
+example : (⟨dpath, 2, 0⟩ : PathInstance) ∈ HamPath := by
   rw [mem_HamPath_iff]
   refine ⟨[2, 1, 0], by decide, fun _ => (by decide : [2, 1, 0].Perm dpath.1).mem_iff, rfl, rfl, ?_⟩
   simp only [List.isChain_cons_cons, List.isChain_singleton, and_true]
   exact ⟨(Graph.adjBool_eq_true_iff _ _ _).1 rfl, (Graph.adjBool_eq_true_iff _ _ _).1 rfl⟩
 
 -- An undeclared endpoint is rejected.
-example : HamPath.verifier ((dpath, 9, 2), certificate dpath.1 [0, 1, 2]) = false := rfl
+example : HamPath.verifier (⟨dpath, 9, 2⟩, certificate dpath.1 [0, 1, 2]) = false := rfl
 
-example : (dpath, 9, 2) ∉ HamPath := by
+example : (⟨dpath, 9, 2⟩ : PathInstance) ∉ HamPath := by
   rintro ⟨hs, -⟩
   simp [dpath] at hs
 
 -- `s = t` on a one-vertex graph is accepted.
-example : HamPath.verifier (((([5], []), 5, 5)), [false]) = true := rfl
+example : HamPath.verifier (⟨([5], []), 5, 5⟩, [false]) = true := rfl
 
-example : (([5], []), 5, 5) ∈ HamPath := by
+example : (⟨([5], []), 5, 5⟩ : PathInstance) ∈ HamPath := by
   rw [mem_HamPath_iff]
   exact ⟨[5], by decide, fun v => by simp, rfl, rfl, by simp⟩
 
 -- The empty graph has no Hamiltonian path.
-example : HamPath.verifier ((([], []), 0, 0), []) = false := rfl
+example : HamPath.verifier (⟨([], []), 0, 0⟩, []) = false := rfl
 
-example : (([], []), 0, 0) ∉ HamPath := by
+example : (⟨([], []), 0, 0⟩ : PathInstance) ∉ HamPath := by
   rintro ⟨hs, -⟩
   simp at hs
 
 -- Duplicate vertex entries count once.
-example : HamPath.verifier ((([0, 1, 0], [(1, 0)]), 0, 1), certificate [0, 1, 0] [0, 1]) = true :=
+example : HamPath.verifier (⟨([0, 1, 0], [(1, 0)]), 0, 1⟩, certificate [0, 1, 0] [0, 1]) = true :=
   rfl
 
 -- Edges with an undeclared endpoint are never used.
-example : HamPath.verifier ((detour, 0, 1), certificate detour.1 [0, 1]) = false := rfl
+example : HamPath.verifier (⟨detour, 0, 1⟩, certificate detour.1 [0, 1]) = false := rfl
 
-example : (detour, 0, 1) ∉ HamPath := by
+example : (⟨detour, 0, 1⟩ : PathInstance) ∉ HamPath := by
   rw [mem_HamPath_iff]
   rintro ⟨p, hnd, hmem, hs, ht, hch⟩
   have hlen := ((List.perm_ext_iff_of_nodup hnd (by decide : [0, 1].Nodup)).2 hmem).length_eq
