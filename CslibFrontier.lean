@@ -1055,6 +1055,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.ConstDepth
 public import CslibFrontier.Computability.Circuit.Boolean.Continuity
 public import CslibFrontier.Computability.Circuit.Boolean.Convolution
 public import CslibFrontier.Computability.Circuit.Boolean.Correction
+public import CslibFrontier.Computability.Circuit.Boolean.CountingBound
 public import CslibFrontier.Computability.Circuit.Boolean.CriticalPath
 public import CslibFrontier.Computability.Circuit.Boolean.DepthClasses
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime

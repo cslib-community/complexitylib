@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Boolean.CountingBound
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Restriction
 public import CslibFrontier.Computability.Languages.Slice
@@ -144,7 +145,8 @@ yes-instance fraction is at most `1/2`, modulo the formula encoding of three-val
    are `computableFunctions n s` (defined via `Cslib.Circuits.complexity interpretation`), and
    `card_computableFunctions_le_two_pow` bounds `(computableFunctions n s).card ≤ 2 ^ M` with
    `M = computableFunctionsLogBound n s = (s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)` from
-   `Cslib.Circuits.Boolean.card_computableFunctions_mul_factorial_le`.
+   `Cslib.Circuits.Boolean.card_computableFunctions_mul_factorial_le`; both are in
+   `CslibFrontier.Computability.Circuit.Boolean.CountingBound`.
 6. **Conclusion (`FormulaPolyOn` and `NP ⊄ FormulaPolyOn` in Theorem 1/17 and Theorem 5/27)**:
    Generalizing the word-level formula projection
    (`exists_formula_ofFunction_SuccinctMCSP_of_agrees`) to any language `L : Language Bool`
@@ -166,8 +168,6 @@ yes-instance fraction is at most `1/2`, modulo the formula encoding of three-val
   projections for `SuccinctMCSP.enc`.
 * `Cslib.ApproxMCSP.noSet`, `Cslib.ApproxMCSP`: the approximate `(1, 1 - 1 / k)-MCSP` promise
   problem [OliveiraSanthanam2018, Appendix A, Definition 41, p. 34].
-* `Cslib.Circuits.Boolean.computableFunctionsLogBound`: explicit `s log(n + s)` exponent bound
-  `(s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)` for `(computableFunctions n s).card`.
 * `Cslib.Circuits.Boolean.approxMCSPQueryEncLength`,
   `Cslib.Circuits.Boolean.avgCaseMCSPQueryEncLength`: encoded query lengths for the worst-case
   (Lemma 16 / Theorem 17) and zero-error average-case (Lemma 26 / Theorem 27) reductions.
@@ -195,8 +195,7 @@ yes-instance fraction is at most `1/2`, modulo the formula encoding of three-val
   `Cslib.Circuits.Boolean.exists_formula_separating_gapMCSP_of_partialMCSP`: Stage 2 derandomization
   of an assumed one-sided sample projection
   ([OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]).
-* `Cslib.Circuits.Boolean.card_computableFunctions_le_two_pow`,
-  `Cslib.Circuits.Boolean.card_le_two_mul_filter_notMem_succinctMCSP`,
+* `Cslib.Circuits.Boolean.card_le_two_mul_filter_notMem_succinctMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_approxMCSP_of_succinctMCSP`,
   `Cslib.Circuits.Boolean.exists_lt_formulaSize_succinctMCSP_of_approxMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_approxMCSP_of_succinctMCSP_inst`,
@@ -910,46 +909,6 @@ end ApproxMCSP
 
 namespace Circuits.Boolean
 
-/-- An explicit `s log(n + s)` upper bound on `log₂ (computableFunctions n s).card`, derived from
-`card_computableFunctions_mul_factorial_le`. -/
-def computableFunctionsLogBound (n s : ℕ) : ℕ :=
-  (s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)
-
-/-- The number of `n`-input Boolean functions of De Morgan circuit complexity at most `s` is at most
-`2 ^ computableFunctionsLogBound n s`. -/
-theorem card_computableFunctions_le_two_pow (n s : ℕ) :
-    (computableFunctions n s).card ≤ 2 ^ computableFunctionsLogBound n s := by
-  set L := Nat.clog 2 (n + s + 1)
-  have hns : n + s + 1 ≤ 2 ^ L := Nat.le_pow_clog (by decide) (n + s + 1)
-  have hs1 : s + 1 ≤ 2 ^ L := (by omega : s + 1 ≤ n + s + 1).trans hns
-  have hns0 : n + s ≤ 2 ^ L := (by omega : n + s ≤ n + s + 1).trans hns
-  have hbase : 5 * (n + s + 1) ^ 2 ≤ 2 ^ (2 * L + 3) := by
-    calc 5 * (n + s + 1) ^ 2
-        ≤ 8 * (2 ^ L) ^ 2 := Nat.mul_le_mul (by decide) (Nat.pow_le_pow_left hns 2)
-      _ = 2 ^ (2 * L + 3) := by
-        rw [← pow_mul, pow_add]
-        ring
-  have hpow : (5 * (n + s + 1) ^ 2) ^ s ≤ 2 ^ (s * (2 * L + 3)) := by
-    calc (5 * (n + s + 1) ^ 2) ^ s
-        ≤ (2 ^ (2 * L + 3)) ^ s := Nat.pow_le_pow_left hbase s
-      _ = 2 ^ (s * (2 * L + 3)) := by rw [← pow_mul, mul_comm]
-  have hends : (s + 1) * (n + s) ≤ 2 ^ (2 * L + 3) := by
-    calc (s + 1) * (n + s)
-        ≤ 2 ^ L * 2 ^ L := Nat.mul_le_mul hs1 hns0
-      _ = 2 ^ (2 * L) := by rw [← pow_add, two_mul]
-      _ ≤ 2 ^ (2 * L + 3) := Nat.pow_le_pow_right (by decide) (by omega)
-  calc (computableFunctions n s).card
-      ≤ (computableFunctions n s).card * s.factorial :=
-        Nat.le_mul_of_pos_right _ (Nat.factorial_pos s)
-    _ ≤ (s + 1) * (5 * (n + s + 1) ^ 2) ^ s * (n + s) :=
-        card_computableFunctions_mul_factorial_le n s
-    _ = ((s + 1) * (n + s)) * (5 * (n + s + 1) ^ 2) ^ s := by ring
-    _ ≤ 2 ^ (2 * L + 3) * 2 ^ (s * (2 * L + 3)) := Nat.mul_le_mul hends hpow
-    _ = 2 ^ computableFunctionsLogBound n s := by
-        rw [← pow_add, computableFunctionsLogBound]
-        congr 1
-        ring
-
 open Classical in
 /-- **Oliveira–Santhanam Stage 1: random-sampling union bound over `computableFunctions n s`
 [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].**
@@ -1310,17 +1269,6 @@ theorem not_NP_subset_FormulaPolyOn_of_approxMCSP_hard
   fun hsub =>
     not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_hard hs hk hhard
       (hsub SuccinctMCSP.mem_NP)
-
-/-- Elementary polynomial upper bound on `computableFunctionsLogBound n s`: since
-`Nat.clog 2 (n + s + 1) ≤ n + s + 1`, we have
-`computableFunctionsLogBound n s ≤ (s + 1) * (2 * (n + s + 1) + 3)`. -/
-theorem computableFunctionsLogBound_le_poly (n s : ℕ) :
-    computableFunctionsLogBound n s ≤ (s + 1) * (2 * (n + s + 1) + 3) := by
-  have hclog : Nat.clog 2 (n + s + 1) ≤ n + s + 1 :=
-    (Nat.clog_le_iff_le_pow (by decide)).mpr (Nat.lt_two_pow_self).le
-  dsimp only [computableFunctionsLogBound]
-  exact Nat.mul_le_mul_left (s + 1)
-    (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hclog) 3)
 
 /-- When `s` is polynomially bounded, `fun n => computableFunctionsLogBound n (s n)` is polynomially
 bounded. -/
