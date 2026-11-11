@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
-import CslibFrontier.Computability.Complexity.Problems.CSP.Declared
+public import CslibFrontier.Computability.Complexity.Problems.CSP.Declared
+import CslibFrontier.Computability.Complexity.Problems.SAT.Declared
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingEndpoint
 public import CslibFrontier.Computability.PolyTime.CSP.ToCNF
@@ -132,22 +133,16 @@ polynomial time. -/
 theorem computableInPolyTime_validDeclaredCSP (encRel : Rel ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime
       (fun x : DeclaredCSP Rel => validDeclaredCSP k x.1 x.2)
-      (encPair encUnary (encCSP encRel encNat)) encBool := by
-  have hN := ComputableInPolyTime.unary_to_binary.comp
-    (ComputableInPolyTime.fst encUnary (encCSP encRel encNat))
-  have hlt : ComputableInPolyTime
-      (fun p : (DeclaredCSP Rel) × ℕ => decide (p.2 < p.1.1))
-      (encPair (encPair encUnary (encCSP encRel encNat)) encNat) encBool :=
-    ComputableInPolyTime.binary_lt.comp
-      ((ComputableInPolyTime.snd _ _).prod (hN.comp (ComputableInPolyTime.fst _ _)))
+      (encDeclaredCSP encRel) encBool := by
+  have hN : ComputableInPolyTime (fun x : DeclaredCSP Rel => x.numVars) (encDeclaredCSP encRel) encNat := by fun_prop
+  have hlt : ComputableInPolyTime (fun p : DeclaredCSP Rel × ℕ => decide (p.2 < p.1.numVars)) (encPair (encDeclaredCSP encRel) encNat) encBool := by fun_prop
   have hvars : ComputableInPolyTime
-      (fun x : DeclaredCSP Rel => x.2.vars.all fun v => decide (v < x.1))
-      (encPair encUnary (encCSP encRel encNat)) encBool :=
-    ComputableInPolyTime.allWithInput
-      ((computableInPolyTime_vars encRel encNat).comp (ComputableInPolyTime.snd _ _)) hlt
+      (fun x : DeclaredCSP Rel => x.formula.vars.all fun v => decide (v < x.numVars))
+      (encDeclaredCSP encRel) encBool :=
+    ComputableInPolyTime.allWithInput ((computableInPolyTime_vars encRel encNat).comp (by fun_prop)) hlt
   have hwidth : ComputableInPolyTime
-      (fun x : DeclaredCSP Rel => x.2.all fun c => decide (c.2.length ≤ k))
-      (encPair encUnary (encCSP encRel encNat)) encBool := by
+      (fun x : DeclaredCSP Rel => x.formula.all fun c => decide (c.2.length ≤ k))
+      (encDeclaredCSP encRel) encBool := by
     fun_prop
   unfold validDeclaredCSP
   fun_prop
@@ -169,31 +164,31 @@ theorem validDeclaredCSP_denseRelabel [DecidableEq V] {k : ℕ} {F : CSP Rel V}
 
 /-- **General polynomial-time reduction to declared-variable Boolean `#CSP`:**
 Composing any polynomial-time reduction `f : α → DeclaredCSP Rel` and polynomial-time validity guard
-`valid : α → Bool` (implying `validDeclaredCSP k (f x).1 (f x).2 = true`) with
+`valid : α → Bool` (implying `validDeclaredCSP k (f x).numVars (f x).formula = true`) with
 `CSP.toCNFBounded k sem` and `CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared` yields
-an exact guarded model counter in time `O(2 ^ (A * interpolationScale (f x).1) * (|x| + 1) ^ e)`
+an exact guarded model counter in time `O(2 ^ (A * interpolationScale (f x).numVars) * (|x| + 1) ^ e)`
 and polynomial space. -/
 theorem exists_counter_of_polyTime_toDeclaredCSP {α : Type} {encA : α ↪ List Bool}
     (encRel : Rel ↪ List Bool) (k : ℕ) (sem : Rel → List Bool → Bool)
     (hsem : ∀ w : List Bool, w.length ≤ k →
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool)
     {f : α → DeclaredCSP Rel}
-    (hf : ComputableInPolyTime f encA (encPair encUnary (encCSP encRel encNat)))
+    (hf : ComputableInPolyTime f encA (encDeclaredCSP encRel))
     {valid : α → Bool} (hvalid : ComputableInPolyTime valid encA encBool)
-    (hvalid_imp : ∀ x, valid x = true → validDeclaredCSP k (f x).1 (f x).2 = true) :
+    (hvalid_imp : ∀ x, valid x = true → validDeclaredCSP k (f x).numVars (f x).formula = true) :
     ∃ (count : α → ℕ) (T S : α → ℕ) (A c e a b : ℕ),
       ComputableInO count encA encNat T S ∧
       (∀ x, count x = if valid x then
-        (f x).2.modelCountOn sem (Finset.range (f x).1) else 0) ∧
-      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (f x).1) *
+        (f x).formula.modelCountOn sem (Finset.range (f x).numVars) else 0) ∧
+      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (f x).numVars) *
         (((encA x).length : ℝ) + 1) ^ e) + c) ∧
       (∀ x, S x ≤ a * ((encA x).length + 1) ^ b) := by
-  let toCNFDecl (y : DeclaredCSP Rel) : DeclaredCSP SelfDualThreeSAT.SignPattern := (y.1, y.2.toCNFBounded k sem)
+  let toCNFDecl (y : DeclaredCSP Rel) : DeclaredCSP SelfDualThreeSAT.SignPattern := { numVars := y.numVars, formula := y.formula.toCNFBounded k sem }
   have htoCNF : ComputableInPolyTime toCNFDecl
-      (encPair encUnary (encCSP encRel encNat)) (encPair encUnary encCNF) :=
-    (fst encUnary (encCSP encRel encNat)).prod
+      (encDeclaredCSP encRel) (encDeclaredCNF) :=
+    encDeclaredCNF_mk_polyTime (encDeclaredCSP_numVars_polyTime ComputableInPolyTime.id')
       ((computableInPolyTime_toCNFBounded_of_forall encRel encNat k sem hsem).comp
-        (snd encUnary (encCSP encRel encNat)))
+        (encDeclaredCSP_formula_polyTime ComputableInPolyTime.id'))
   obtain ⟨count, T, S, A, c, e, a, b, hcount, hspec, hT, hS⟩ :=
     CountingNativeEndpoint.exists_counter_of_polyTime_toDeclared k (htoCNF.comp hf) hvalid
       fun x hx => validDeclaredInput_toCNFBounded sem (hvalid_imp x hx)
@@ -214,14 +209,14 @@ theorem exists_declaredCounter_of_forall (encRel : Rel ↪ List Bool) (k : ℕ)
     (hsem : ∀ w : List Bool, w.length ≤ k →
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
-      ComputableInO count (encPair encUnary (encCSP encRel encNat)) encNat T S ∧
+      ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
       (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
-        (((encPair encUnary (encCSP encRel encNat) x).length : ℝ) + 1) ^ e) + c) ∧
-      (∀ x, S x ≤ a * ((encPair encUnary (encCSP encRel encNat) x).length + 1) ^ b) :=
+        (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x, S x ≤ a * ((encDeclaredCSP encRel x).length + 1) ^ b) :=
   exists_counter_of_polyTime_toDeclaredCSP encRel k sem hsem
-    (id' (encIn := encPair encUnary (encCSP encRel encNat)))
+    (id' (encIn := encDeclaredCSP encRel))
     (computableInPolyTime_validDeclaredCSP encRel k) (fun _ hx => hx)
 
 /-- **Declared-variable exact counting for bounded-arity Boolean `#CSP`.** For any polynomial-time
@@ -234,12 +229,12 @@ theorem exists_declaredCounter (encRel : Rel ↪ List Bool) (k : ℕ)
     (hsem : ComputableInPolyTime (fun p : Rel × List Bool => sem p.1 p.2)
       (encPair encRel encBits) encBool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
-      ComputableInO count (encPair encUnary (encCSP encRel encNat)) encNat T S ∧
+      ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
       (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
-        (((encPair encUnary (encCSP encRel encNat) x).length : ℝ) + 1) ^ e) + c) ∧
-      (∀ x, S x ≤ a * ((encPair encUnary (encCSP encRel encNat) x).length + 1) ^ b) :=
+        (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x, S x ≤ a * ((encDeclaredCSP encRel x).length + 1) ^ b) :=
   exists_declaredCounter_of_forall encRel k sem fun w _ =>
     hsem.comp (id'.prod (const w))
 
@@ -248,12 +243,12 @@ alphabet.** -/
 theorem exists_declaredCounter_of_finite [Finite Rel] (encRel : Rel ↪ List Bool) (k : ℕ)
     (sem : Rel → List Bool → Bool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
-      ComputableInO count (encPair encUnary (encCSP encRel encNat)) encNat T S ∧
+      ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
       (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
-        (((encPair encUnary (encCSP encRel encNat) x).length : ℝ) + 1) ^ e) + c) ∧
-      (∀ x, S x ≤ a * ((encPair encUnary (encCSP encRel encNat) x).length + 1) ^ b) :=
+        (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x, S x ≤ a * ((encDeclaredCSP encRel x).length + 1) ^ b) :=
   exists_declaredCounter_of_forall encRel k sem fun _ _ => of_finite _
 
 /-- **Occurring-variable exact counting for bounded-arity Boolean `#CSP` (pattern-wise
@@ -268,8 +263,8 @@ theorem exists_modelCounter_of_forall [DecidableEq V] (encRel : Rel ↪ List Boo
       (∀ F : CSP Rel V, (T F : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale F.numVars) *
         (((encCSP encRel encV F).length : ℝ) + 1) ^ e) + c) ∧
       (∀ F : CSP Rel V, S F ≤ a * ((encCSP encRel encV F).length + 1) ^ b) := by
-  have hf : ComputableInPolyTime (fun F : CSP Rel V => (F.numVars, F.denseRelabel))
-      (encCSP encRel encV) (encPair encUnary (encCSP encRel encNat)) := by fun_prop
+  have hf : ComputableInPolyTime (fun F : CSP Rel V => { numVars := F.numVars, formula := F.denseRelabel : DeclaredCSP Rel })
+      (encCSP encRel encV) (encDeclaredCSP encRel) := by fun_prop
   have hvalid : ComputableInPolyTime
       (fun F : CSP Rel V => F.all fun c => decide (c.2.length ≤ k))
       (encCSP encRel encV) encBool := by fun_prop
