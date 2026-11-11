@@ -286,22 +286,15 @@ theorem integral_hyperplaneSide_ne {v : V → F} (hv : ∀ k, ‖v k‖ = 1) (i 
 theorem integral_hyperplaneSide_eq {v : V → F} (hv : ∀ k, ‖v k‖ = 1) (i j : V) :
     ∫ r : F, (if hyperplaneSide v r i = hyperplaneSide v r j then (1 : ℝ) else 0) ∂stdGaussian F =
       1 - arccos ⟪v i, v j⟫ / π := by
-  have hint : Integrable (fun r : F =>
-      if hyperplaneSide v r i ≠ hyperplaneSide v r j then (1 : ℝ) else 0) (stdGaussian F) := by
-    have heq : (fun r : F =>
-        if hyperplaneSide v r i ≠ hyperplaneSide v r j then (1 : ℝ) else 0) =
-        {r : F | hyperplaneSide v r i ≠ hyperplaneSide v r j}.indicator (fun _ => 1) := by
-      ext r
-      simp [Set.indicator_apply]
-    rw [heq]
-    exact (integrable_const 1).indicator (measurableSet_hyperplaneSide_ne v i j)
   have hcomp : (fun r : F =>
       if hyperplaneSide v r i = hyperplaneSide v r j then (1 : ℝ) else 0) =
       fun r : F => 1 - if hyperplaneSide v r i ≠ hyperplaneSide v r j then (1 : ℝ) else 0 := by
     ext r
     by_cases h : hyperplaneSide v r i = hyperplaneSide v r j <;> simp [h]
-  rw [hcomp, integral_sub (integrable_const 1) hint, integral_const, probReal_univ, smul_eq_mul,
-    mul_one, integral_hyperplaneSide_ne hv i j]
+  rw [hcomp,
+    integral_sub (integrable_const 1)
+      (integrable_ite_const (stdGaussian F) (measurableSet_hyperplaneSide_ne v i j) 1),
+    integral_const, probReal_univ, smul_eq_mul, mul_one, integral_hyperplaneSide_ne hv i j]
 
 omit [MeasurableSpace F] [BorelSpace F] [FiniteDimensional ℝ F] in
 /-- Same-side rounding inequality: `α · (1 + ⟪u, w⟫) / 2 ≤ 1 - arccos ⟪u, w⟫ / π` for unit

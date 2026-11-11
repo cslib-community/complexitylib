@@ -116,30 +116,14 @@ section SignedMeasurable
 
 variable [MeasurableSpace F] [BorelSpace F]
 
-private theorem integrable_hyperplaneSide_ne (v : V → F) (i j : V) (c : ℝ) (μ : Measure F)
-    [IsFiniteMeasure μ] :
-    Integrable (fun r : F => if hyperplaneSide v r i ≠ hyperplaneSide v r j then c else 0) μ := by
-  rw [show (fun r : F => if hyperplaneSide v r i ≠ hyperplaneSide v r j then c else 0) =
-      {r : F | hyperplaneSide v r i ≠ hyperplaneSide v r j}.indicator (fun _ => c) from
-    funext fun r => by simp only [Set.indicator_apply, Set.mem_ofPred_eq]]
-  exact (integrable_const c).indicator (measurableSet_hyperplaneSide_ne v i j)
-
-private theorem integrable_hyperplaneSide_eq (v : V → F) (i j : V) (c : ℝ) (μ : Measure F)
-    [IsFiniteMeasure μ] :
-    Integrable (fun r : F => if hyperplaneSide v r i = hyperplaneSide v r j then c else 0) μ := by
-  rw [show (fun r : F => if hyperplaneSide v r i = hyperplaneSide v r j then c else 0) =
-      {r : F | hyperplaneSide v r i = hyperplaneSide v r j}.indicator (fun _ => c) from
-    funext fun r => by simp only [Set.indicator_apply, Set.mem_ofPred_eq]]
-  exact (integrable_const c).indicator (measurableSet_hyperplaneSide_eq v i j)
-
 /-- `signedCutValue` along a random hyperplane is integrable under any finite measure. -/
 theorem integrable_signedCutValue_hyperplaneSide (ends : ι → V × V) (a b : ι → ℝ) (v : V → F)
     (μ : Measure F) [IsFiniteMeasure μ] :
     Integrable (fun r => signedCutValue ends a b (hyperplaneSide v r)) μ := by
   unfold signedCutValue
   exact integrable_finsetSum _ fun e _ =>
-    (integrable_hyperplaneSide_ne v (ends e).1 (ends e).2 (a e) μ).add
-      (integrable_hyperplaneSide_eq v (ends e).1 (ends e).2 (b e) μ)
+    (integrable_ite_const μ (measurableSet_hyperplaneSide_ne v (ends e).1 (ends e).2) (a e)).add
+      (integrable_ite_const μ (measurableSet_hyperplaneSide_eq v (ends e).1 (ends e).2) (b e))
 
 variable [FiniteDimensional ℝ F]
 
@@ -154,12 +138,13 @@ theorem integral_signedCutValue_hyperplaneSide (ends : ι → V × V) (a b : ι 
       (if hyperplaneSide v r (ends e).1 ≠ hyperplaneSide v r (ends e).2 then a e else 0) +
         if hyperplaneSide v r (ends e).1 = hyperplaneSide v r (ends e).2 then b e else 0)
       (stdGaussian F) := fun e _ =>
-    (integrable_hyperplaneSide_ne v (ends e).1 (ends e).2 (a e) _).add
-      (integrable_hyperplaneSide_eq v (ends e).1 (ends e).2 (b e) _)
+    (integrable_ite_const _ (measurableSet_hyperplaneSide_ne v (ends e).1 (ends e).2) (a e)).add
+      (integrable_ite_const _ (measurableSet_hyperplaneSide_eq v (ends e).1 (ends e).2) (b e))
   rw [integral_finsetSum _ hint]
   refine Finset.sum_congr rfl fun e _ => ?_
-  rw [integral_add (integrable_hyperplaneSide_ne v (ends e).1 (ends e).2 (a e) _)
-    (integrable_hyperplaneSide_eq v (ends e).1 (ends e).2 (b e) _)]
+  rw [integral_add
+    (integrable_ite_const _ (measurableSet_hyperplaneSide_ne v (ends e).1 (ends e).2) (a e))
+    (integrable_ite_const _ (measurableSet_hyperplaneSide_eq v (ends e).1 (ends e).2) (b e))]
   have hmul1 : (fun r : F =>
       if hyperplaneSide v r (ends e).1 ≠ hyperplaneSide v r (ends e).2 then a e else 0) =
       fun r : F => a e *
