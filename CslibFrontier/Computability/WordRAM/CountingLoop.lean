@@ -22,6 +22,8 @@ prove execution of the actual body, including its word fits and memory semantics
 * `ExecWithin.loop_count`: count from the current index to `N` with a body allowance `T`,
   charging `(N - index) * (T + 2) + 2`, including both loop-control instructions per iteration
   and the final test/exit. No one-past-end word-fit premise is required.
+* `prefix_write_step`: advance a written-prefix and outside-prefix memory invariant across a
+  single store at `d + j`.
 
 This is an original specialization of `ExecWithin.loop_invariant`.
 -/
@@ -56,5 +58,23 @@ theorem ExecWithin.loop_count {B : Basis} {r w N T : ℕ} {index limit : Fin r}
     simp only [Cond.holds_lt, hlimit y hI.2] at hstop
     omega
   exact ⟨y, hy, hend ▸ hI.2, hend⟩
+
+/-- Advance a loop's written-prefix and outside-prefix memory invariants across a single store
+at `d + j`. -/
+theorem prefix_write_step {α : Type*} {m₀ m z : ℕ → α} {d j : ℕ} {e : ℕ → α}
+    (hm : ∀ i < j, m (d + i) = e i)
+    (hf : ∀ a, ¬(d ≤ a ∧ a < d + j) → m a = m₀ a)
+    (hz : z = Function.update m (d + j) (e j)) :
+    (∀ i < j + 1, z (d + i) = e i) ∧
+      ∀ a, ¬(d ≤ a ∧ a < d + (j + 1)) → z a = m₀ a := by
+  subst hz
+  refine ⟨fun i hi => ?_, fun a ha => ?_⟩
+  · by_cases hij : i = j
+    · subst hij
+      exact Function.update_self _ _ _
+    · rw [Function.update_of_ne (by omega : d + i ≠ d + j)]
+      exact hm i (by omega)
+  · rw [Function.update_of_ne (by omega : a ≠ d + j)]
+    exact hf a (by omega)
 
 end Cslib.WordRAM

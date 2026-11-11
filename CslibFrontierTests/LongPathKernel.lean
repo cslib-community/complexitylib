@@ -30,14 +30,14 @@ def edge : Graph := ([1, 2], [(1, 2)])
 def noEdge : Graph := ([1, 2], [])
 
 /-- The edge `1 — 2` has a Hamiltonian path from `1` to `2`. -/
-theorem edge_mem_HamPath : (edge, 1, 2) ∈ HamPath := by
+theorem edge_mem_HamPath : (⟨edge, 1, 2⟩ : PathInstance) ∈ HamPath := by
   rw [mem_HamPath_iff]
   refine ⟨[1, 2], by decide, fun _ => Iff.rfl, rfl, rfl, ?_⟩
   rw [List.isChain_cons_cons, Graph.toSimpleGraph_adj]
   exact ⟨⟨by decide, Or.inl (List.mem_singleton_self _)⟩, List.isChain_singleton _⟩
 
 /-- Two vertices without edges have no Hamiltonian path. -/
-theorem noEdge_not_mem_HamPath : (noEdge, 1, 2) ∉ HamPath := by
+theorem noEdge_not_mem_HamPath : (⟨noEdge, 1, 2⟩ : PathInstance) ∉ HamPath := by
   rw [mem_HamPath_iff]
   rintro ⟨p, -, hcov, -, -, hch⟩
   match p, hcov, hch with
@@ -53,7 +53,7 @@ theorem noEdge_not_mem_HamPath : (noEdge, 1, 2) ∉ HamPath := by
     simp [noEdge] at h
 
 /-- An undeclared start rules out a Hamiltonian path. -/
-theorem undeclared_not_mem_HamPath : (edge, 5, 2) ∉ HamPath := by
+theorem undeclared_not_mem_HamPath : (⟨edge, 5, 2⟩ : PathInstance) ∉ HamPath := by
   rw [mem_HamPath_iff]
   rintro ⟨p, -, hcov, hs, -, -⟩
   have h5 := (hcov 5).1 (List.mem_of_head? hs)
@@ -62,18 +62,18 @@ theorem undeclared_not_mem_HamPath : (edge, 5, 2) ∉ HamPath := by
 /-! ### The cross-composition on concrete lists -/
 
 /-- A yes-entry gives a yes-instance of k-Path, whatever the other related entries. -/
-example : HamPath.toLongPath [(noEdge, 1, 2), (edge, 1, 2)] ∈ LongPath :=
+example : HamPath.toLongPath [⟨noEdge, 1, 2⟩, ⟨edge, 1, 2⟩] ∈ LongPath :=
   (HamPath.toLongPath_mem_iff (List.cons_ne_nil _ _)
     (by simp [edge, noEdge, Graph.length_distinctVertices])).2
     ⟨_, List.mem_cons_of_mem _ (List.mem_singleton_self _), edge_mem_HamPath⟩
 
 /-- An entry with an undeclared start does not spoil a yes-entry. -/
-example : HamPath.toLongPath [(edge, 5, 2), (edge, 1, 2)] ∈ LongPath :=
+example : HamPath.toLongPath [⟨edge, 5, 2⟩, ⟨edge, 1, 2⟩] ∈ LongPath :=
   (HamPath.toLongPath_mem_iff (List.cons_ne_nil _ _) (by simp)).2
     ⟨_, List.mem_cons_of_mem _ (List.mem_singleton_self _), edge_mem_HamPath⟩
 
 /-- Related no-entries give a no-instance of k-Path. -/
-example : HamPath.toLongPath [(noEdge, 1, 2), (edge, 5, 2)] ∉ LongPath := by
+example : HamPath.toLongPath [⟨noEdge, 1, 2⟩, ⟨edge, 5, 2⟩] ∉ LongPath := by
   rw [HamPath.toLongPath_mem_iff (List.cons_ne_nil _ _)
     (by simp [edge, noEdge, Graph.length_distinctVertices])]
   rintro ⟨x, hx, hxH⟩
@@ -83,8 +83,8 @@ example : HamPath.toLongPath [(noEdge, 1, 2), (edge, 5, 2)] ∉ LongPath := by
   · exact undeclared_not_mem_HamPath hxH
 
 /-- On one instance the cross-composition is the reduction showing that k-Path is `NP`-hard. -/
-example : HamPath.toLongPath [(edge, 1, 2)] ∈ LongPath ∧
-    HamPath.toLongPath [(noEdge, 1, 2)] ∉ LongPath := by
+example : HamPath.toLongPath [⟨edge, 1, 2⟩] ∈ LongPath ∧
+    HamPath.toLongPath [⟨noEdge, 1, 2⟩] ∉ LongPath := by
   refine ⟨(HamPath.toLongPath_mem_iff (List.cons_ne_nil _ _) (by simp)).2
     ⟨_, List.mem_singleton_self _, edge_mem_HamPath⟩, ?_⟩
   rw [HamPath.toLongPath_mem_iff (List.cons_ne_nil _ _) (by simp)]
@@ -113,8 +113,8 @@ example : IsPolyEquivalence encUnary fun p : ℕ × ℕ => decide (p.1 = p.2) :=
 
 /-- The hypotheses of the cross-composition theorem hold for k-Path: `HamPath` is `NP`-hard and
 OR-cross-composes into k-Path, so the kernel lower bound assumes only `coNP ⊄ NP/poly`. -/
-example : NPHard (encPair encGraph (encPair encNat encNat)) HamPath ∧
-    ORCrossComposes (encPair encGraph (encPair encNat encNat)) HamPath encLongPath
+example : NPHard encPathInstance HamPath ∧
+    ORCrossComposes encPathInstance HamPath encLongPath
       LongPathInstance.target LongPath :=
   ⟨HamPath_npHard, HamPath.orCrossComposes_LongPath⟩
 

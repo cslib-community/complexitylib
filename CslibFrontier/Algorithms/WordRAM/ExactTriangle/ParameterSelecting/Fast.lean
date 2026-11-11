@@ -11,6 +11,7 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Delivery
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.ParameterSelecting.Selection
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Exec
+import CslibFrontier.Foundations.Data.List.GetD
 
 /-!
 # Actual selected-prime complete fast execution
@@ -37,10 +38,8 @@ private theorem window_le {n d g p q T : ℕ} (h : p ≤ q) :
 
 private theorem original_bound {n F : ℕ} (values : List ℤ)
     (hlen : values.length = 3 * (n * n)) (hv : ∀ z ∈ values, z.natAbs ≤ F)
-    (q : ℕ) (hq : q < 3 * (n * n)) : (values.getD q 0).natAbs ≤ F := by
-  have hq' : q < values.length := by omega
-  rw [List.getD_eq_getElem _ _ hq']
-  exact hv _ (List.getElem_mem hq')
+    (q : ℕ) (hq : q < 3 * (n * n)) : (values.getD q 0).natAbs ≤ F :=
+  hv (values.getD q 0) (List.getD_mem 0 (by omega))
 
 /-- Concrete selection followed by the complete concrete solver, with both verdict directions.
 Parameter postconditions here are established by the real preceding parameter execution; none
