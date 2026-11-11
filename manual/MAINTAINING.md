@@ -33,7 +33,7 @@ and require the linked client's imports, namespace and local assumptions.
 A new page also needs a place in the book. Add a reference or history chapter to `ORDER` in
 [build_latex.py](data/build_latex.py), or a workflow or appendix page to `WORKFLOWS` or
 `APPENDICES` in [build_manual.py](data/build_manual.py), and link it from an existing page.
-A new reference section goes before the final `development-history` entry of `ORDER`; a page
+A new reference section goes before the final `history` entry of `ORDER`; a page
 deliberately kept out of the book belongs in `NON_CHAPTER_DOCUMENTS` in `build_manual.py`.
 Chapter order is an editorial choice, so the lists are maintained by hand; the checker
 reports any page missing from them.
@@ -94,14 +94,15 @@ still supports the claim; revise a changed claim with a current source link and 
 Source identity is evidence, not agreement with a textbook definition. Preserve source credit,
 conditional hypotheses, bounded milestones and unresolved broader objectives.
 
-The development-history measurements and quantitative census are historical. New measurements
-belong to a separately dated observation with defined coverage, units and denominators. Keep
+The [history](history/index.md) measurements and quantitative census are historical. New
+measurements belong to a separately dated observation with defined coverage, units and denominators. Keep
 their scripts and methods in the repository; write generated exports, API responses, dependency
 copies and plots to ignored directories, as described in [BUILD.md](BUILD.md#regenerating-research-outputs).
 The small excerpt registrations are handwritten source inputs and stay versioned. Maintain
 semantic judgments in the chapters and model map rather than in generated inventories.
 
-The optional fixed-snapshot audit is described in the [evidence index](index.md#supplementary-code).
-It is not a merge check against the moving repository and must not be run as a substitute for
-the live manual checker. Public Git evidence can be regenerated from complete history; private
-logs and the original mutable GitHub responses are separate reproduction requirements.
+The optional fixed-snapshot audit is described with the
+[survey's supplementary code](history/survey.md#supplementary-code). It is not a merge check
+against the moving repository and must not be run as a substitute for the live manual checker.
+Public Git evidence can be regenerated from complete history; private logs and the original
+mutable GitHub responses are separate reproduction requirements.
