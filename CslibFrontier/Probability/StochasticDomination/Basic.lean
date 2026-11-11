@@ -15,6 +15,7 @@ public import Mathlib.Probability.CDF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.ToMeasure
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.MeasureTheory.Constructions.BorelSpace.Order
 import Mathlib.MeasureTheory.Integral.Lebesgue.Basic
@@ -671,26 +672,13 @@ upper set `U` satisfies `q.toOuterMeasure U ≤ p.toOuterMeasure U`. -/
 def StochasticallyDominates {α : Type*} [Preorder α] (p q : PMF α) : Prop :=
   ∀ U : Set α, IsUpperSet U → q.toOuterMeasure U ≤ p.toOuterMeasure U
 
-private theorem toMeasure_eq_sum_dirac {α : Type*} [MeasurableSpace α] (p : PMF α) :
-    p.toMeasure = Measure.sum fun x => p x • Measure.dirac x := by
-  ext s hs
-  rw [Measure.sum_apply _ hs, PMF.toMeasure_apply p hs]
-  refine tsum_congr fun x => ?_
-  by_cases hx : x ∈ s <;> simp [Measure.dirac_apply' _ hs, hx]
-
-private theorem lintegral_toMeasure_eq_tsum {α : Type*} [MeasurableSpace α]
-    [MeasurableSingletonClass α] (p : PMF α) (f : α → ℝ≥0∞) :
-    ∫⁻ x, f x ∂p.toMeasure = ∑' x, p x * f x := by
-  rw [toMeasure_eq_sum_dirac p, lintegral_sum_measure]
-  refine tsum_congr fun x => ?_
-  simp [lintegral_dirac]
-
 private theorem integrable_toMeasure_of_summable {α : Type*} [MeasurableSpace α]
-    [MeasurableSingletonClass α] (p : PMF α) {f : α → ℝ} (hf_meas : Measurable f)
+    (p : PMF α) {f : α → ℝ} (hf_meas : Measurable f)
     (hf : Summable fun x => (p x).toReal * |f x|) :
     Integrable f p.toMeasure := by
   refine ⟨hf_meas.aestronglyMeasurable, ?_⟩
-  rw [hasFiniteIntegral_iff_norm, lintegral_toMeasure_eq_tsum]
+  rw [hasFiniteIntegral_iff_norm, PMF.lintegral_toMeasure p
+    (f := fun a => ENNReal.ofReal ‖f a‖) (ENNReal.measurable_ofReal.comp hf_meas.norm)]
   have heq : (fun x => p x * ENNReal.ofReal ‖f x‖) =
       fun x => (Real.toNNReal ((p x).toReal * |f x|) : ℝ≥0∞) := by
     ext x
@@ -775,7 +763,8 @@ theorem tsum_mul_le (h : StochasticallyDominates p q) {f : α → ℝ≥0∞} (h
   let _ : MeasurableSpace α := ⊤
   have hmeas : Cslib.Probability.StochasticallyDominates p.toMeasure q.toMeasure := h.toMeasure
   have hl := hmeas.lintegral_le measurable_from_top hf
-  rwa [lintegral_toMeasure_eq_tsum, lintegral_toMeasure_eq_tsum] at hl
+  rwa [PMF.lintegral_toMeasure p measurable_from_top,
+    PMF.lintegral_toMeasure q measurable_from_top] at hl
 
 /-- Real-valued expectation inequality for stochastically ordered `PMF`s and integrable monotone
 functions. -/
