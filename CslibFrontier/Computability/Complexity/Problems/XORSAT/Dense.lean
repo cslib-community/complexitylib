@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 public import CslibFrontier.Computability.Complexity.Classes.P
@@ -32,6 +33,7 @@ encodings. Inputs with a row of a different width are rejected.
 ## Main definitions
 
 * `Cslib.Complexity.XORSAT.Dense.Row`: Boolean coefficient word and right-hand side.
+* `Cslib.Complexity.XORSAT.Dense.Input`: declared variable width and dense equation rows.
 * `Cslib.Complexity.XORSAT.Dense.step`: one elimination column.
 * `Cslib.Complexity.XORSAT.Dense.decide`: the dense-system decision algorithm.
 -/
@@ -42,11 +44,24 @@ namespace Cslib.Complexity.XORSAT.Dense
 
 open Turing.MultiTapeTM
 
-/-- A Boolean coefficient word and right-hand side. -/
-abbrev Row := List Bool × Bool
+/-- A dense parity equation row with a Boolean coefficient word and Boolean right-hand side. -/
+@[ext] structure Row where
+  /-- The Boolean coefficient word, one entry per declared variable column. -/
+  coeffs : List Bool
+  /-- The Boolean right-hand side of the parity equation. -/
+  rhs : Bool
+  deriving DecidableEq
 
 /-- A list of dense equations. -/
 abbrev System := List Row
+
+/-- A dense XOR-SAT instance with a unary declared width and a list of equation rows. -/
+@[ext] structure Input where
+  /-- The unary-encoded declared number of variable columns. -/
+  width : ℕ
+  /-- The list of dense equation rows. -/
+  rows : System
+  deriving DecidableEq
 
 /-- Dot product over the Boolean ring; missing coordinates have value zero. -/
 @[expose] def dot : List Bool → List Bool → Bool
@@ -54,10 +69,10 @@ abbrev System := List Row
   | _, _ => false
 
 /-- Every row has the declared number of coefficients. -/
-@[expose] def Width (n : ℕ) (F : System) : Prop := ∀ e ∈ F, e.1.length = n
+@[expose] def Width (n : ℕ) (F : System) : Prop := ∀ e ∈ F, e.coeffs.length = n
 
 /-- An assignment satisfies every equation. -/
-@[expose] def Holds (F : System) (a : List Bool) : Prop := ∀ e ∈ F, dot e.1 a = e.2
+@[expose] def Holds (F : System) (a : List Bool) : Prop := ∀ e ∈ F, dot e.coeffs a = e.rhs
 
 /-- A solution has exactly the declared width. -/
 @[expose] def Satisfiable (n : ℕ) (F : System) : Prop :=
@@ -65,27 +80,27 @@ abbrev System := List Row
 
 /-- Substitute the first variable using a pivot equation, then drop that variable. -/
 @[expose] def clear (p e : Row) : Row :=
-  if e.1.headD false then (e.1.tail.zipWith Bool.xor p.1.tail, e.2 ^^ p.2)
-  else (e.1.tail, e.2)
+  if e.coeffs.headD false then ⟨e.coeffs.tail.zipWith Bool.xor p.coeffs.tail, e.rhs ^^ p.rhs⟩
+  else ⟨e.coeffs.tail, e.rhs⟩
 
 /-- One column of Gaussian elimination. A missing pivot means that the column is zero. -/
 @[expose] def step (F : System) : System :=
-  let p := (F.find? fun e => e.1.headD false).getD ([], false)
+  let p := (F.find? fun e => e.coeffs.headD false).getD ⟨[], false⟩
   F.map (clear p)
 
 /-- Framed rows with raw binary coefficient words. -/
-@[expose] def encRow : Row ↪ List Bool := encPair encBits encBool
+enc_structure encRow : Row where coeffs : encBits, rhs : encBool
 
 /-- A framed list of rows. -/
-@[expose] def encSystem : System ↪ List Bool := encList encRow
+abbrev encSystem : System ↪ List Bool := encList encRow
 
 /-- Unary declared width and a framed list of rows. -/
-@[expose] def encInput : (ℕ × System) ↪ List Bool := encPair encUnary encSystem
+enc_structure encInput : Input where width : encUnary, rows : encSystem
 
 /-- Check the row widths, eliminate all columns, then reject a remaining equation `0 = 1`. -/
-@[expose] def decide (q : ℕ × System) : Bool :=
-  q.2.all (fun e => Decidable.decide (e.1.length = q.1)) &&
-    (step^[q.1] q.2).all (fun e => !e.2)
+@[expose] def decide (q : Input) : Bool :=
+  q.rows.all (fun e => Decidable.decide (e.coeffs.length = q.width)) &&
+    (step^[q.width] q.rows).all (fun e => !e.rhs)
 
 private theorem dot_xor {v w : List Bool} (h : v.length = w.length) (a : List Bool) :
     dot (v.zipWith Bool.xor w) a = dot v a + dot w a := by
@@ -103,14 +118,14 @@ private theorem dot_xor {v w : List Bool} (h : v.length = w.length) (a : List Bo
         abel
 
 private theorem dot_cons (e : Row) (b : Bool) (a : List Bool) :
-    dot e.1 (b :: a) = e.1.headD false * b + dot e.1.tail a := by
-  cases e.1 <;> rfl
+    dot e.coeffs (b :: a) = e.coeffs.headD false * b + dot e.coeffs.tail a := by
+  cases e.coeffs <;> rfl
 
 /-- Clearing a row preserves its equation whenever the pivot equation holds. -/
-theorem clear_holds_iff (p e : Row) (h : e.1.length = p.1.length)
-    (b : Bool) (a : List Bool) (hp : p.1.headD false = true)
-    (hpa : dot p.1 (b :: a) = p.2) :
-    dot (clear p e).1 a = (clear p e).2 ↔ dot e.1 (b :: a) = e.2 := by
+theorem clear_holds_iff (p e : Row) (h : e.coeffs.length = p.coeffs.length)
+    (b : Bool) (a : List Bool) (hp : p.coeffs.headD false = true)
+    (hpa : dot p.coeffs (b :: a) = p.rhs) :
+    dot (clear p e).coeffs a = (clear p e).rhs ↔ dot e.coeffs (b :: a) = e.rhs := by
   rw [dot_cons, hp, show (true : Bool) = 1 from rfl, one_mul] at hpa
   rw [dot_cons]
   unfold clear
@@ -123,7 +138,7 @@ theorem clear_holds_iff (p e : Row) (h : e.1.length = p.1.length)
       cases b <;> cases u <;> cases v <;> cases r <;> decide
     exact halg _ _ _ _
   · rename_i he
-    have he' : e.1.headD false = false := Bool.eq_false_of_not_eq_true he
+    have he' : e.coeffs.headD false = false := Bool.eq_false_of_not_eq_true he
     rw [he']
     simp only [← Bool.zero_eq_false, zero_mul, zero_add]
 
@@ -134,8 +149,8 @@ theorem width_step {n : ℕ} {F : System} (hF : Width (n + 1) F) : Width n (step
   unfold clear
   split
   · rename_i h
-    have hp : ∃ p, F.find? (fun r => r.1.headD false) = some p := by
-      cases hp : F.find? (fun r => r.1.headD false) with
+    have hp : ∃ p, F.find? (fun r => r.coeffs.headD false) = some p := by
+      cases hp : F.find? (fun r => r.coeffs.headD false) with
       | some p => exact ⟨p, rfl⟩
       | none =>
         have hh := List.find?_eq_none.mp hp r hr
@@ -149,11 +164,11 @@ theorem width_step {n : ℕ} {F : System} (hF : Width (n + 1) F) : Width n (step
 /-- One elimination column preserves existence of a solution. -/
 theorem satisfiable_step_iff {n : ℕ} {F : System} (hF : Width (n + 1) F) :
     Satisfiable n (step F) ↔ Satisfiable (n + 1) F := by
-  cases hfind : F.find? (fun r => r.1.headD false) with
+  cases hfind : F.find? (fun r => r.coeffs.headD false) with
   | none =>
-    have hz (r : Row) (hr : r ∈ F) : r.1.headD false = false :=
+    have hz (r : Row) (hr : r ∈ F) : r.coeffs.headD false = false :=
       Bool.eq_false_of_not_eq_true (List.find?_eq_none.mp hfind r hr)
-    have hstep : step F = F.map (fun r => (r.1.tail, r.2)) := by
+    have hstep : step F = F.map (fun r => ⟨r.coeffs.tail, r.rhs⟩) := by
       simp only [step, hfind, Option.getD_none]
       apply List.map_congr_left
       intro r hr
@@ -166,7 +181,7 @@ theorem satisfiable_step_iff {n : ℕ} {F : System} (hF : Width (n + 1) F) :
       refine ⟨false :: a, by simp [ha], fun r hr => ?_⟩
       rw [dot_cons, hz r hr]
       simpa only [← Bool.zero_eq_false, zero_mul, zero_add] using
-        h (r.1.tail, r.2) (List.mem_map.mpr ⟨r, hr, rfl⟩)
+        h ⟨r.coeffs.tail, r.rhs⟩ (List.mem_map.mpr ⟨r, hr, rfl⟩)
     · rintro ⟨a, ha, h⟩
       cases a with
       | nil => simp at ha
@@ -179,16 +194,16 @@ theorem satisfiable_step_iff {n : ℕ} {F : System} (hF : Width (n + 1) F) :
         simpa only [← Bool.zero_eq_false, zero_mul, zero_add] using hh
   | some p =>
     have hpmem := List.mem_of_find?_eq_some hfind
-    have hp : p.1.headD false = true :=
-      List.find?_some (p := fun r : Row => r.1.headD false) hfind
+    have hp : p.coeffs.headD false = true :=
+      List.find?_some (p := fun r : Row => r.coeffs.headD false) hfind
     have hstep : step F = F.map (clear p) := by simp only [step, hfind, Option.getD_some]
     rw [hstep]
     constructor
     · rintro ⟨a, ha, h⟩
-      let b := p.2 + dot p.1.tail a
-      have hpa : dot p.1 (b :: a) = p.2 := by
+      let b := p.rhs + dot p.coeffs.tail a
+      have hpa : dot p.coeffs (b :: a) = p.rhs := by
         rw [dot_cons, hp]
-        change p.2 + dot p.1.tail a + dot p.1.tail a = p.2
+        change p.rhs + dot p.coeffs.tail a + dot p.coeffs.tail a = p.rhs
         rw [add_assoc, BooleanRing.add_self, add_zero]
       refine ⟨b :: a, by simp [ha], fun r hr => ?_⟩
       exact (clear_holds_iff p r ((hF r hr).trans (hF p hpmem).symm) b a hp hpa).mp
@@ -205,7 +220,7 @@ theorem satisfiable_step_iff {n : ℕ} {F : System} (hF : Width (n + 1) F) :
 
 /-- Elimination decides dense systems of the declared width. -/
 theorem elimination_correct {n : ℕ} {F : System} (hF : Width n F) :
-    (step^[n] F).all (fun e => !e.2) = true ↔ Satisfiable n F := by
+    (step^[n] F).all (fun e => !e.rhs) = true ↔ Satisfiable n F := by
   induction n generalizing F with
   | zero =>
     simp only [Function.iterate_zero_apply, List.all_eq_true, Bool.not_eq_true']
@@ -213,33 +228,33 @@ theorem elimination_correct {n : ℕ} {F : System} (hF : Width n F) :
     · intro h
       exact ⟨[], rfl, fun e he => by simpa [dot] using (h e he).symm⟩
     · rintro ⟨a, ha, h⟩ e he
-      have heq : e.1 = [] := List.eq_nil_of_length_eq_zero (hF e he)
+      have heq : e.coeffs = [] := List.eq_nil_of_length_eq_zero (hF e he)
       simpa [heq, dot] using (h e he).symm
   | succ n ih =>
     rw [Function.iterate_succ_apply, ih (width_step hF), satisfiable_step_iff hF]
 
 /-- The Boolean decider rejects malformed row widths and otherwise decides satisfiability. -/
-theorem decide_eq_true_iff (q : ℕ × System) :
-    decide q = true ↔ Width q.1 q.2 ∧ Satisfiable q.1 q.2 := by
+theorem decide_eq_true_iff (q : Input) :
+    decide q = true ↔ Width q.width q.rows ∧ Satisfiable q.width q.rows := by
   simp only [decide, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
   exact and_congr_right fun h => by simpa only [List.all_eq_true] using elimination_correct h
 
 /-- A column operation never lengthens an individual coefficient word. -/
-theorem length_clear_le (p e : Row) : (clear p e).1.length ≤ e.1.length := by
+theorem length_clear_le (p e : Row) : (clear p e).coeffs.length ≤ e.coeffs.length := by
   unfold clear
   split <;> simp only [List.length_zipWith, List.length_tail]
   · exact (Nat.min_le_left _ _).trans (Nat.sub_le _ _)
   · exact Nat.sub_le _ _
 
 private theorem length_encSystem_map_le (f : Row → Row)
-    (hf : ∀ e, (f e).1.length ≤ e.1.length) (F : System) :
+    (hf : ∀ e, (f e).coeffs.length ≤ e.coeffs.length) (F : System) :
     (encSystem (F.map f)).length ≤ (encSystem F).length := by
   induction F with
   | nil => rfl
   | cons e F ih =>
     have he := hf e
     simp only [encSystem, List.map_cons, encList_cons, List.length_append, length_frame,
-      encRow, length_encPair, encBits_apply, encBool_apply, List.length_singleton] at *
+      encRow_apply, length_encPair, encBits_apply, encBool_apply, List.length_singleton] at *
     omega
 
 /-- The complete encoded state weakly decreases at every iteration; there is no growth hidden
@@ -247,16 +262,41 @@ in repeated substitution or in the framing of rows. -/
 theorem length_step_le (F : System) : (encSystem (step F)).length ≤ (encSystem F).length :=
   length_encSystem_map_le _ (length_clear_le _) F
 
+private theorem row_coeffs_tidy :
+    ComputableTidilyInPolyTime Row.coeffs encRow encBits :=
+  (by fun_prop : ComputableInPolyTime Row.coeffs encRow encBits).tidy
+
+private theorem row_rhs_tidy :
+    ComputableTidilyInPolyTime Row.rhs encRow encBool :=
+  (by fun_prop : ComputableInPolyTime Row.rhs encRow encBool).tidy
+
+private theorem row_mk_tidy {γ : Type} {encIn : γ ↪ List Bool}
+    {c : γ → List Bool} {r : γ → Bool}
+    (hc : ComputableTidilyInPolyTime c encIn encBits)
+    (hr : ComputableTidilyInPolyTime r encIn encBool) :
+    ComputableTidilyInPolyTime (fun x => Row.mk (c x) (r x)) encIn encRow :=
+  (hc.prod hr).of_enc_eq fun _ => rfl
+
+private theorem input_width_tidy :
+    ComputableTidilyInPolyTime Input.width encInput encUnary :=
+  (by fun_prop : ComputableInPolyTime Input.width encInput encUnary).tidy
+
+private theorem input_rows_tidy :
+    ComputableTidilyInPolyTime Input.rows encInput encSystem :=
+  (by fun_prop : ComputableInPolyTime Input.rows encInput encSystem).tidy
+
+attribute [local fun_prop] row_coeffs_tidy row_rhs_tidy row_mk_tidy
+  input_width_tidy input_rows_tidy
+
 private theorem clear_polyTime : ComputableTidilyInPolyTime
     (fun q : Row × Row => clear q.1 q.2) (encPair encRow encRow) encRow := by
-  unfold clear encRow
+  unfold clear
   fun_prop
 
 private theorem step_polyTime : ComputableTidilyInPolyTime step encSystem encSystem := by
   have hp : ComputableTidilyInPolyTime
-      (fun F : System => (F.find? fun e => e.1.headD false).getD ([], false))
+      (fun F : System => (F.find? fun e => e.coeffs.headD false).getD ⟨[], false⟩)
       encSystem encRow := by
-    unfold encSystem encRow
     fun_prop
   exact ComputableTidilyInPolyTime.mapWith clear_polyTime hp
     ComputableTidilyInPolyTime.id'
@@ -265,25 +305,23 @@ private theorem step_polyTime : ComputableTidilyInPolyTime step encSystem encSys
 multi-tape Turing machines, with unary width and raw binary coefficient words. -/
 theorem decide_polyTime : ComputableInPolyTime decide encInput encBool := by
   have hloop : ComputableTidilyInPolyTime
-      (fun q : ℕ × System => step^[q.1] q.2) encInput encSystem :=
-    .iterate_of_bounded_growth (.fst encUnary encSystem) (.snd encUnary encSystem)
+      (fun q : Input => step^[q.width] q.rows) encInput encSystem :=
+    .iterate_of_bounded_growth input_width_tidy input_rows_tidy
       step_polyTime (growth := 0) (fun F => by simpa using length_step_le F)
   apply ComputableInPolyTime.of_tidy
   unfold decide
   have hwidth : ComputableTidilyInPolyTime
-      (fun q : ℕ × System => q.2.all (fun e => Decidable.decide (e.1.length = q.1)))
+      (fun q : Input => q.rows.all (fun e => Decidable.decide (e.coeffs.length = q.width)))
       encInput encBool := by
-    unfold encInput encSystem encRow
     fun_prop
-  have hend : ComputableTidilyInPolyTime (fun F : System => F.all (fun e => !e.2))
+  have hend : ComputableTidilyInPolyTime (fun F : System => F.all (fun e => !e.rhs))
       encSystem encBool := by
-    unfold encSystem encRow
     fun_prop
   exact hwidth.bool_and' (hend.comp hloop)
 
 /-- Dense XOR-SAT is in the native Turing-machine class `P`. -/
 theorem satisfiable_mem_P :
-    {q : ℕ × System | Width q.1 q.2 ∧ Satisfiable q.1 q.2} ∈ P encInput :=
+    {q : Input | Width q.width q.rows ∧ Satisfiable q.width q.rows} ∈ P encInput :=
   ⟨decide, decide_polyTime, fun q => (decide_eq_true_iff q).symm⟩
 
 end Cslib.Complexity.XORSAT.Dense

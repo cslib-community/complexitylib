@@ -24,7 +24,7 @@ example : MaxCut ∈ NP encMaxCut ∧
     PolyTimeReducible (encList encNat) encMaxCut Partition MaxCut :=
   ⟨MaxCut_npComplete.1, polyTimeReducible_Partition_MaxCut⟩
 
-example : PolyTimeReducible (encPair (encList encNat) encNat) encMaxCut SubsetSum MaxCut :=
+example : PolyTimeReducible encSubsetSum encMaxCut SubsetSum MaxCut :=
   polyTimeReducible_SubsetSum_Partition.trans polyTimeReducible_Partition_MaxCut
 
 /-! ### Cut weights -/
@@ -93,4 +93,18 @@ example : Partition.toMaxCut [] ∈ MaxCut := ⟨∅, le_refl 0⟩
 example : ComputableInPolyTime (fun a : List ℕ => Partition.toMaxCut (a ++ a))
     (encList encNat) encMaxCut := by fun_prop
 
+example : ComputableInPolyTime
+    (fun x : MaxCutInstance =>
+      (⟨x.edges.map fun e => ⟨e.v, e.u, e.weight⟩, x.bound⟩ : MaxCutInstance))
+    encMaxCut encMaxCut := by fun_prop
+
 end CslibFrontierTests.MaxCut
+
+-- Global `fun_prop` availability without opening `Cslib.Complexity` or `Cslib.Complexity.MaxCut`.
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun x : Cslib.Complexity.MaxCutInstance =>
+      Cslib.Complexity.MaxCutInstance.mk
+        (x.edges.map fun e => Cslib.Complexity.MaxCut.WeightedEdge.mk e.u e.v e.weight)
+        x.bound)
+    Cslib.Complexity.encMaxCut Cslib.Complexity.encMaxCut := by
+  fun_prop

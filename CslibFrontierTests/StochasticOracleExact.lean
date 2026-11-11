@@ -21,20 +21,20 @@ open Cslib.Probability.StochasticOracle Cslib.Complexity
 namespace CslibFrontierTests.StochasticOracleExact
 open TwoBatchHardness
 
-example : (reduction ([],0)).calls = [(1/4,1,1),(1/4,1,1)] := by decide +kernel
-example : (reduction ([0,0],0)).calls = (reduction ([],0)).calls := by decide +kernel
-example : (reduction ([],0)).threshold = 15/8 := by decide +kernel
+example : (reduction ⟨[], 0⟩).calls = [(1/4,1,1),(1/4,1,1)] := by decide +kernel
+example : (reduction ⟨[0,0], 0⟩).calls = (reduction ⟨[], 0⟩).calls := by decide +kernel
+example : (reduction ⟨[], 0⟩).threshold = 15/8 := by decide +kernel
 
 /-- A yes-instance reaches the actual real-randomized-policy decision language. -/
-example : reduction ([0,2,2],2) ∈ Decision := by
+example : reduction ⟨[0,2,2], 2⟩ ∈ Decision := by
   rw [reduction_mem_iff,mem_SubsetSum_iff_sublist]
   exact ⟨[2],by decide +kernel,rfl⟩
 
 /-- Equal positive source weights are distinct indexed opportunities. -/
-example : (reduction ([2,2],2)).calls.length = 4 := by decide +kernel
+example : (reduction ⟨[2,2], 2⟩).calls.length = 4 := by decide +kernel
 
 /-- A no-instance cannot beat the threshold using real private randomization. -/
-example : reduction ([2],1) ∉ Decision := by
+example : reduction ⟨[2], 1⟩ ∉ Decision := by
   rw [reduction_mem_iff,mem_SubsetSum_iff_sublist]
   rintro ⟨s,hs,he⟩
   have hm := List.mem_sublists.mpr hs

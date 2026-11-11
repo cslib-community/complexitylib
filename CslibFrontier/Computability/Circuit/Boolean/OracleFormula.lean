@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.Formula
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle
+public import CslibFrontier.Computability.Circuit.Boolean.Oracle.LocalClass
 
 /-!
 # Oracle formulas and local formula classes
@@ -41,7 +42,9 @@ by a formula.
   `OracleFormula.adaptivity`: the quantity, locality and adaptivity of the oracle gates.
 * `Cslib.Circuits.Boolean.OracleFormula.query`, `OracleFormula.and`, `OracleFormula.all`: an
   oracle gate on De Morgan formulas, and conjunctions.
-* `Cslib.Circuits.Boolean.LocalFormulaClass`: the local formula classes `[q, ℓ, a]–Formula[S]`.
+* `Cslib.Circuits.Boolean.formulaModel`: oracle formulas as an `OracleModel`.
+* `Cslib.Circuits.Boolean.LocalFormulaClass`: the local formula classes `[q, ℓ, a]–Formula[S]`,
+  `OracleModel.LocalClass` for `formulaModel`.
 
 ## Main results
 
@@ -49,8 +52,6 @@ by a formula.
   formula has no oracle gates.
 * `Cslib.Circuits.Boolean.OracleFormula.eval_query_eq_true_iff`, `OracleFormula.eval_all`: the
   semantics of oracle gates on De Morgan formulas and of conjunctions, with the measures of both.
-* `Cslib.Circuits.Boolean.LocalFormulaClass.mono`, `LocalFormulaClass.anti`: the classes grow with
-  their parameters and shrink with their promise sets.
 
 ## References
 
@@ -278,6 +279,18 @@ theorem maxQueryArity_all_le {ℓ : ℕ} {Fs : List (OracleFormula n)}
 
 end OracleFormula
 
+/-- Oracle formulas as a model of oracle devices: size is leaf size, and the quantity, locality
+and adaptivity are `OracleFormula.queryCount`, `OracleFormula.maxQueryArity` and
+`OracleFormula.adaptivity`. -/
+@[expose] noncomputable def formulaModel : OracleModel where
+  Device := OracleFormula
+  eval E O x := E.eval (oracleInterpretation O) x
+  size E := E.leafSize
+  queryCount E := OracleFormula.queryCount E
+  QueryArityAtMost E ℓ := OracleFormula.maxQueryArity E ≤ ℓ
+  adaptivity E := OracleFormula.adaptivity E
+  queryArityAtMost_mono h hℓ := h.trans hℓ
+
 /-- **Local formula classes** [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.5,
 Definition 11, p. 13], for formulas and promise problems: the promise problem with yes-instances
 `Yes` and no-instances `No` is in `[q, ℓ, a]–Formula[S]` when there is one oracle language `O` such
@@ -286,35 +299,15 @@ that, for every input length `m`, some oracle formula on `m` inputs with
 - at most `q m` oracle gates (quantity), each of fan-in at most `ℓ m` (locality),
 - at most `a m` oracle gates on any path from a leaf to the root (adaptivity),
 answers `true` on the yes-instances and `false` on the no-instances of length `m` under `O`.
+This is `OracleModel.LocalClass` for `formulaModel`, whose lemmas (`mono`, `anti`, `of_two_pow`)
+apply.
 
 Only input leaves count towards `S m`: constant leaves are free here, while the source's
 `Formula[s]` counts constant leaves too [ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.1,
 p. 12], so for a fixed `S` this class can be larger than the source's. Paths ending at constants
 count towards the adaptivity, so the adaptivity here is at least the source's, which counts only
 paths from inputs. -/
-@[expose] def LocalFormulaClass (q ℓ a S : ℕ → ℕ) (Yes No : Language Bool) : Prop :=
-  ∃ O : Language Bool, ∀ m, ∃ E : OracleFormula m,
-    E.leafSize ≤ S m ∧ OracleFormula.queryCount E ≤ q m ∧ OracleFormula.maxQueryArity E ≤ ℓ m ∧
-      OracleFormula.adaptivity E ≤ a m ∧
-      (∀ x : Fin m → Bool, List.ofFn x ∈ Yes → E.eval (oracleInterpretation O) x = true) ∧
-      (∀ x : Fin m → Bool, List.ofFn x ∈ No → E.eval (oracleInterpretation O) x = false)
-
-/-- The local formula classes grow with their parameters. -/
-theorem LocalFormulaClass.mono {q ℓ a S q' ℓ' a' S' : ℕ → ℕ} {Yes No : Language Bool}
-    (h : LocalFormulaClass q ℓ a S Yes No) (hq : q ≤ q') (hℓ : ℓ ≤ ℓ') (ha : a ≤ a')
-    (hS : S ≤ S') : LocalFormulaClass q' ℓ' a' S' Yes No := by
-  obtain ⟨O, hO⟩ := h
-  refine ⟨O, fun m => ?_⟩
-  obtain ⟨E, hS', hq', hℓ', ha', hyes, hno⟩ := hO m
-  exact ⟨E, hS'.trans (hS m), hq'.trans (hq m), hℓ'.trans (hℓ m), ha'.trans (ha m), hyes, hno⟩
-
-/-- Shrinking the yes- and no-instances keeps a promise problem in a local formula class. -/
-theorem LocalFormulaClass.anti {q ℓ a S : ℕ → ℕ} {Yes No Yes' No' : Language Bool}
-    (h : LocalFormulaClass q ℓ a S Yes No) (hY : Yes' ≤ Yes) (hN : No' ≤ No) :
-    LocalFormulaClass q ℓ a S Yes' No' := by
-  obtain ⟨O, hO⟩ := h
-  refine ⟨O, fun m => ?_⟩
-  obtain ⟨E, hS, hq, hℓ, ha, hyes, hno⟩ := hO m
-  exact ⟨E, hS, hq, hℓ, ha, fun x hx => hyes x (hY hx), fun x hx => hno x (hN hx)⟩
+abbrev LocalFormulaClass (q ℓ a S : ℕ → ℕ) (Yes No : Language Bool) : Prop :=
+  formulaModel.LocalClass q ℓ a S Yes No
 
 end Cslib.Circuits.Boolean

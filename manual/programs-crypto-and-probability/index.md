@@ -532,7 +532,9 @@ in [the bibliography](../../references.bib). The checked clients are in
   two-turn policy of expected cost at most the threshold, allowing arbitrary real private
   randomization. `restrictedDecision_npHard` derives NP-hardness even with unit cutoffs
   and a common success/cost ratio. It reuses the binary `SubsetSum` hardness theorem and
-  existing `SubsetSum.toPartition`, removes zero source weights, and preserves repeated
+  existing `SubsetSum.toPartition`. The reduction takes `SubsetSumInstance` with named
+  `numbers` and `target` fields, encoded by `encSubsetSum`; it removes zero source weights
+  and preserves repeated
   positive occurrences as distinct calls. `reduction_mem_iff` is both directions of the
   actual policy decision equivalence, rather than a deterministic-schedule surrogate.
 

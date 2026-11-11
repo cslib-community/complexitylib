@@ -111,7 +111,8 @@ private theorem positiveWeights_sum (l : List ℕ) : (positiveWeights l).sum = l
         Bool.false_eq_true, ite_false, List.sum_cons, zero_add] using ih
 
 private theorem positiveWeights_subsetSum (l : List ℕ) (t : ℕ) :
-    (positiveWeights l,t) ∈ SubsetSum ↔ (l,t) ∈ SubsetSum := by
+    (⟨positiveWeights l, t⟩ : SubsetSumInstance) ∈ SubsetSum ↔
+      (⟨l, t⟩ : SubsetSumInstance) ∈ SubsetSum := by
   simp only [mem_SubsetSum_iff_sublist]
   constructor
   · rintro ⟨s,hs,ht⟩
@@ -120,13 +121,14 @@ private theorem positiveWeights_subsetSum (l : List ℕ) (t : ℕ) :
     exact ⟨positiveWeights s,hs.filter _,(positiveWeights_sum s).trans ht⟩
 
 /-- Positive partition weights obtained using the existing subset-sum reduction. -/
-@[expose] def weights (x : List ℕ × ℕ) : List ℕ :=
-  SubsetSum.toPartition (positiveWeights x.1,x.2)
+@[expose] def weights (x : SubsetSumInstance) : List ℕ :=
+  SubsetSum.toPartition ⟨positiveWeights x.numbers, x.target⟩
 
 /-- Half the total of the constructed positive partition instance. -/
-@[expose] def halfTotal (x : List ℕ × ℕ) : ℕ := (positiveWeights x.1).sum + x.2 + 1
+@[expose] def halfTotal (x : SubsetSumInstance) : ℕ :=
+  (positiveWeights x.numbers).sum + x.target + 1
 
-private theorem weights_pos (x : List ℕ × ℕ) : ∀ n ∈ weights x, 0 < n := by
+private theorem weights_pos (x : SubsetSumInstance) : ∀ n ∈ weights x, 0 < n := by
   intro n hn
   simp only [weights, SubsetSum.toPartition, List.mem_append, List.mem_cons,
     List.not_mem_nil, or_false] at hn
@@ -135,19 +137,19 @@ private theorem weights_pos (x : List ℕ × ℕ) : ∀ n ∈ weights x, 0 < n :
   · omega
   · omega
 
-private theorem weights_total (x : List ℕ × ℕ) : (weights x).sum = 2 * halfTotal x := by
+private theorem weights_total (x : SubsetSumInstance) : (weights x).sum = 2 * halfTotal x := by
   simp [weights, SubsetSum.toPartition, halfTotal]
   omega
 
-private theorem halfTotal_pos (x : List ℕ × ℕ) : 0 < halfTotal x := by
+private theorem halfTotal_pos (x : SubsetSumInstance) : 0 < halfTotal x := by
   unfold halfTotal
   omega
 
-private theorem weights_nonempty (x : List ℕ × ℕ) : 0 < (weights x).length := by
+private theorem weights_nonempty (x : SubsetSumInstance) : 0 < (weights x).length := by
   simp [weights, SubsetSum.toPartition]
 
 /-- The actual emitted decision instance. All costs and probabilities are binary. -/
-@[expose] def reduction (x : List ℕ × ℕ) : Input where
+@[expose] def reduction (x : SubsetSumInstance) : Input where
   calls := (weights x).map (fun n : ℕ => ((n : ℚ) / denominator (halfTotal x),(n : ℚ),1))
   deadline := 2
   threshold := TwoBatchPartition.threshold (halfTotal x)
@@ -170,7 +172,7 @@ private theorem weights_nonempty (x : List ℕ × ℕ) : 0 < (weights x).length 
       by norm_num [callCutoff]⟩
 
 /-- Soundness and completeness of the binary reduction for the actual policy objective. -/
-theorem reduction_mem_iff (x : List ℕ × ℕ) : reduction x ∈ Decision ↔ x ∈ SubsetSum := by
+theorem reduction_mem_iff (x : SubsetSumInstance) : reduction x ∈ Decision ↔ x ∈ SubsetSum := by
   classical
   let a : Fin (reduction x).calls.length → ℕ := fun i =>
     (weights x).get ⟨i.val,by simpa only [reduction,List.length_map] using i.isLt⟩
@@ -217,22 +219,20 @@ private theorem positiveWeights_computable : ComputableInPolyTime positiveWeight
 attribute [local fun_prop] positiveWeights_computable
 
 private theorem weights_computable : ComputableInPolyTime weights
-    (encPair (encList encNat) encNat) (encList encNat) := by
+    encSubsetSum (encList encNat) := by
   unfold weights
   fun_prop
 
 private theorem halfTotal_computable : ComputableInPolyTime halfTotal
-    (encPair (encList encNat) encNat) encNat := by
-  have hs := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_sum).comp
-    (positiveWeights_computable.comp (fst (encList encNat) encNat))
-  have h := binary_add.comp ((binary_add.comp (hs.prod (snd _ _))).prod (const 1))
-  exact h
+    encSubsetSum encNat := by
+  unfold halfTotal
+  fun_prop
 
 attribute [local fun_prop] weights_computable halfTotal_computable
 
 private theorem denominator_computable : ComputableInPolyTime
-    (fun x : List ℕ × ℕ => denominator (halfTotal x))
-    (encPair (encList encNat) encNat) encRatBin := by
+    (fun x : SubsetSumInstance => denominator (halfTotal x))
+    encSubsetSum encRatBin := by
   unfold denominator
   simp only [pow_succ,pow_zero]
   fun_prop
@@ -242,19 +242,19 @@ attribute [local fun_prop] denominator_computable
 /-- One uniform native binary machine computes the complete reduction, including
 normalization, cubic denominator, threshold, list framing and repeated entries. -/
 theorem computable_reduction : ComputableInPolyTime reduction
-    (encPair (encList encNat) encNat) encInput := by
-  have hc : ComputableInPolyTime (fun x : List ℕ × ℕ => (reduction x).calls)
-      (encPair (encList encNat) encNat)
+    encSubsetSum encInput := by
+  have hc : ComputableInPolyTime (fun x : SubsetSumInstance => (reduction x).calls)
+      encSubsetSum
       (encList (encPair encRatBin (encPair encRatBin encRatBin))) := by
-    change ComputableInPolyTime (fun x : List ℕ × ℕ => (weights x).map
+    change ComputableInPolyTime (fun x : SubsetSumInstance => (weights x).map
       (fun n : ℕ => ((n : ℚ) / denominator (halfTotal x),(n : ℚ),1))) _ _
     apply mapWithInput weights_computable
-    have hn := ratBin_natCast.comp (snd (encPair (encList encNat) encNat) encNat)
-    have hd := denominator_computable.comp (fst (encPair (encList encNat) encNat) encNat)
+    have hn := ratBin_natCast.comp (snd encSubsetSum encNat)
+    have hd := denominator_computable.comp (fst encSubsetSum encNat)
     exact (ratBin_div.comp (hn.prod hd)).prod (hn.prod (const (1 : ℚ)))
-  have ht : ComputableInPolyTime (fun x : List ℕ × ℕ =>
+  have ht : ComputableInPolyTime (fun x : SubsetSumInstance =>
       TwoBatchPartition.threshold (halfTotal x))
-      (encPair (encList encNat) encNat) encRatBin := by
+      encSubsetSum encRatBin := by
     unfold TwoBatchPartition.threshold
     simp only [pow_two]
     fun_prop
@@ -265,7 +265,7 @@ theorem computable_reduction : ComputableInPolyTime reduction
   ∃ r : ℚ, ∀ t ∈ x.calls, callCutoff t = 1 ∧ callProbability t / callCost t = r}
 
 /-- The reduction already has the equal-cutoff/equal-ratio restrictions. -/
-theorem reduction_parameters (x : List ℕ × ℕ) :
+theorem reduction_parameters (x : SubsetSumInstance) :
     ∀ t ∈ (reduction x).calls,
       callCutoff t = 1 ∧ callProbability t / callCost t = (denominator (halfTotal x))⁻¹ := by
   intro t ht
