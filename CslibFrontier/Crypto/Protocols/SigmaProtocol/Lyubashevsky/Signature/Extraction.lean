@@ -11,7 +11,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Lyubashevsky.Signatur
 public import CslibFrontier.Probability.Guessing.Leakage
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Nonzero SIS extraction from public-key-only lattice forks

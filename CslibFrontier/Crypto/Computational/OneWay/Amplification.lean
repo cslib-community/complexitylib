@@ -20,7 +20,7 @@ import CslibFrontier.Foundations.Data.Finset.Sampling
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Probability.BitString.List.All
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # Yao's Weak-to-Strong One-Way Function Hardness Amplification

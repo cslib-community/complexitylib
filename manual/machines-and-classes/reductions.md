@@ -127,6 +127,12 @@ then reads one bit of the original-word tail.
 header length plus a logarithmic input-position counter. Binary addresses never allocate a
 word or unary counter of the indicated length.
 
+For certificates of consumers that retain a runtime state, compose
+`Runtime.header_inSpace` with the saved-state projection to decode its reversed header.
+Then compose `Evaluator.width_data_inSpace` with that data certificate to compute the declared
+virtual width. Both operations use space linear in their encoded argument; neither constructs
+the virtual word. The concrete evaluator and generic simulation use these same certificates.
+
 `Turing.VirtualWord.Runtime.access_inOriginalLogSpace` measures workspace against the original
 length $n$ when cut and address are at most $n$ and the suffix has at most $\lceil\log_2 n\rceil$ bits.
 The physical query-machine states have length at most $272(\log_2 n+1)$; compilation adds a

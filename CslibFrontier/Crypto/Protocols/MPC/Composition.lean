@@ -635,7 +635,6 @@ private theorem evalWith_compose_steps_eq_hybrid {m : ℕ} {spec₁ spec₂ : Mu
       simp only [pmf_norm, Steps.evalWith_oracle, expandSimSteps, idealJoint, bind_pure_comp]
       refine congrArg (ProbComp.eval (W₁ op q)).bind (funext fun ans => ?_)
       pmf_swap
-      rfl
     -- 2. Apply subprotocol privacy `hSub op J q` and the induction hypothesis `ih`.
     rw [hlhs, hSub op J q]
     simp only [ih (fun i => (st i, Round.deliverOracle parties _ i))]
