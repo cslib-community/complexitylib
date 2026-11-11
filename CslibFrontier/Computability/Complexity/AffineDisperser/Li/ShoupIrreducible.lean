@@ -20,6 +20,7 @@ public import Mathlib.RingTheory.Polynomial.Cyclotomic.Basic
 import CslibFrontier.Foundations.Combinatorics.AffineDisperser.AffineSubspace
 import CslibFrontier.Foundations.Data.BitString.ZModTwo
 import CslibFrontier.Foundations.FieldTheory.Finite.Subfield
+import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.Data.List.GetD
 import Mathlib.Data.Nat.ModEq
 import Mathlib.FieldTheory.Finite.Basic
@@ -87,35 +88,6 @@ private theorem sum_fin_cast {M : Type*} [AddCommMonoid M] {a b : ℕ} (h : a = 
     (f : ℕ → M) : ∑ i : Fin a, f i.1 = ∑ j : Fin b, f j.1 := by
   subst h
   rfl
-
-private theorem aeval_polyOfBits_eq_sum {K : Type*} [CommRing K] [Algebra (ZMod 2) K]
-    (ζ : K) {m : ℕ} (p : List Bool) (hp : p.length ≤ m) :
-    (polyOfBits p).aeval ζ =
-      ∑ j : Fin m, bitEquiv.symm (p.getD j.1 false) • ζ ^ j.1 := by
-  rw [aeval_def, eval₂_eq_sum_range]
-  have hdeg_le : (polyOfBits p).natDegree + 1 ≤ m ∨ polyOfBits p = 0 := by
-    by_cases hp0 : polyOfBits p = 0
-    · exact Or.inr hp0
-    · left
-      have hlt := degree_polyOfBits_lt p
-      rw [degree_eq_natDegree hp0, Nat.cast_lt] at hlt
-      omega
-  rcases hdeg_le with hdeg | hp0
-  · trans ∑ j ∈ Finset.range m, bitEquiv.symm (p.getD j false) • ζ ^ j
-    · rw [← Finset.sum_subset (Finset.range_mono hdeg)]
-      · refine Finset.sum_congr rfl fun j _ => ?_
-        rw [coeff_polyOfBits, Algebra.smul_def]
-      · intro j _ hj
-        rw [Finset.mem_range, not_lt] at hj
-        rw [← coeff_polyOfBits, coeff_eq_zero_of_natDegree_lt (by omega), zero_smul]
-    · rw [← Fin.sum_univ_eq_sum_range (fun j =>
-        bitEquiv.symm (p.getD j false) • ζ ^ j) m]
-  · simp only [hp0, natDegree_zero, coeff_zero, map_zero, zero_mul, Finset.sum_const_zero]
-    symm
-    refine Finset.sum_eq_zero fun j _ => ?_
-    have hcj : (polyOfBits p).coeff j.1 = 0 := by rw [hp0, coeff_zero]
-    rw [coeff_polyOfBits] at hcj
-    rw [hcj, zero_smul]
 
 private theorem polyOfBits_false_cons (p : List Bool) :
     polyOfBits (false :: p) = X * polyOfBits p := by
@@ -1096,21 +1068,6 @@ private theorem two_pow_mod_pow_eq {q : ℕ} (hq : q.Prime) (s : ℕ) :
     _ = (2 : ZMod q) ^ s := by rw [h2q]
     _ = ((2 ^ s : ℕ) : ZMod q) := by rw [Nat.cast_pow, Nat.cast_ofNat]
 
-private theorem two_pow_sub_one_dvd_pow_mul {d a : ℕ} :
-    2 ^ d - 1 ∣ 2 ^ (d * a) - 1 := by
-  induction a with
-  | zero => simp
-  | succ a ih =>
-    rw [Nat.mul_succ, pow_add]
-    have hda : 1 ≤ 2 ^ (d * a) := Nat.one_le_two_pow
-    have hd : 1 ≤ 2 ^ d := Nat.one_le_two_pow
-    have hsplit : 2 ^ (d * a) * 2 ^ d - 1 =
-        (2 ^ (d * a) - 1) * 2 ^ d + (2 ^ d - 1) := by
-      have hle : 2 ^ d ≤ 2 ^ (d * a) * 2 ^ d := Nat.le_mul_of_pos_left _ hda
-      rw [Nat.sub_mul, one_mul, ← Nat.add_sub_assoc hd, Nat.sub_add_cancel hle]
-    rw [hsplit]
-    exact dvd_add (dvd_mul_of_dvd_left ih _) dvd_rfl
-
 private theorem dvd_of_two_pow_sub_one_dvd {d q : ℕ} (hd : 0 < d)
     (hdvd : 2 ^ d - 1 ∣ 2 ^ q - 1) : d ∣ q := by
   rw [Nat.dvd_iff_mod_eq_zero]
@@ -1119,7 +1076,7 @@ private theorem dvd_of_two_pow_sub_one_dvd {d q : ℕ} (hd : 0 < d)
   have hr_lt : r < d := Nat.mod_lt q hd
   have hq_eq : q = d * a + r := (Nat.div_add_mod q d).symm
   have h1 : 1 ≤ 2 ^ d := Nat.one_le_two_pow
-  have h2 : 2 ^ d - 1 ∣ 2 ^ (d * a) - 1 := two_pow_sub_one_dvd_pow_mul
+  have h2 : 2 ^ d - 1 ∣ 2 ^ (d * a) - 1 := Nat.pow_sub_one_dvd_pow_sub_one 2 (dvd_mul_right d a)
   have hcong : 2 ^ q - 1 = 2 ^ r * (2 ^ (d * a) - 1) + (2 ^ r - 1) := by
     rw [hq_eq, pow_add, mul_comm (2 ^ (d * a)) (2 ^ r)]
     have hda : 1 ≤ 2 ^ (d * a) := Nat.one_le_two_pow
@@ -1141,16 +1098,6 @@ private theorem dvd_of_two_pow_sub_one_dvd {d q : ℕ} (hd : 0 < d)
   have hgt : 1 < 2 ^ r := Nat.one_lt_pow hr0 one_lt_two
   rw [hpowr] at hgt
   exact absurd hgt (by decide)
-
-private theorem two_pow_frob_add {R : Type*} [CommRing R] [CharP R 2] (n : ℕ) (a b : R) :
-    (a + b) ^ (2 ^ n) = a ^ (2 ^ n) + b ^ (2 ^ n) := by
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [pow_succ, pow_mul, ih, add_pow_two]
-    have h2 : (2 : R) * (a ^ 2 ^ n * b ^ 2 ^ n) = 0 := by
-      rw [CharTwo.two_eq_zero, zero_mul]
-    rw [mul_assoc (2 : R), h2, add_zero, ← pow_mul, ← pow_succ, ← pow_mul, ← pow_succ]
 
 private theorem shoupMinPolyMatrix_getD_getD (q m : ℕ) (pows : List (List (List Bool)))
     {idx c : ℕ} (hidx : idx < q * m) (hc : c < pows.length) :
@@ -1200,9 +1147,17 @@ private theorem shoupMinPolyMatrix_mulVec_zero_iff {K L : Type*} [Field K] [Fiel
         IsScalarTower.algebraMap_apply (ZMod 2) K L, ← map_mul,
         ← Algebra.smul_def (R := ZMod 2)]
       refine congrArg (· * y ^ i.1) (congrArg (algebraMap K L) ?_)
-      rw [aeval_polyOfBits_eq_sum ζ _ (hpows_entry_len c.1 c.2 i.1 i.2), Finset.smul_sum]
-      refine Finset.sum_congr rfl fun j _ => ?_
-      rw [smul_smul]
+      rw [aeval_polyOfBits, Finset.smul_sum]
+      trans ∑ j ∈ Finset.range m,
+          (v c * bitEquiv.symm (((pows.getD c.1 []).getD i.1 []).getD j false)) • ζ ^ j
+      · rw [← Finset.sum_subset (Finset.range_mono (hpows_entry_len c.1 c.2 i.1 i.2))]
+        · refine Finset.sum_congr rfl fun j _ => ?_
+          rw [smul_smul]
+        · intro j _ hj
+          rw [Finset.mem_range, not_lt] at hj
+          rw [List.getD_eq_default _ _ hj, bitEquiv_symm_false, mul_zero, zero_smul]
+      · rw [Fin.sum_univ_eq_sum_range (fun j =>
+          (v c * bitEquiv.symm (((pows.getD c.1 []).getD i.1 []).getD j false)) • ζ ^ j) m]
     simp_rw [hc_expand]
     rw [Finset.sum_comm]
     refine Finset.sum_congr rfl fun i _ => ?_
@@ -1312,10 +1267,11 @@ private theorem shoupBeta_minpoly_natDegree {K L : Type*} [Field K] [Field L]
     rw [hβL_eq]
     have hpow_sum_n : ∀ n : ℕ, (∑ s ∈ Finset.range n, y ^ (2 ^ (s * q))) ^ (2 ^ q) =
         ∑ s ∈ Finset.range n, (y ^ (2 ^ (s * q))) ^ (2 ^ q) := fun n => by
+      have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
       induction n with
       | zero => simp
       | succ n ih =>
-        rw [Finset.sum_range_succ, two_pow_frob_add, ih, Finset.sum_range_succ]
+        rw [Finset.sum_range_succ, add_pow_char_pow _ _ 2 q, ih, Finset.sum_range_succ]
     rw [hpow_sum_n m]
     have hm1 : 1 ≤ m := by omega
     rw [← Nat.sub_add_cancel hm1, Finset.sum_range_succ, Finset.sum_range_succ']
@@ -1449,8 +1405,9 @@ private theorem shoupBeta_minpoly_natDegree {K L : Type*} [Field K] [Field L]
         rw [mul_pow, hx, hy]
       one_mem' := one_pow _
       add_mem' := fun hx hy => by
+        have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
         change (_ + _) ^ _ = _
-        rw [two_pow_frob_add, hx, hy]
+        rw [add_pow_char_pow _ _ 2 q, hx, hy]
       zero_mem' := zero_pow (by positivity)
       algebraMap_mem' := fun c => by
         change (algebraMap (ZMod 2) L c) ^ (2 ^ q) = _
@@ -1702,21 +1659,8 @@ theorem shoupIrreducibleBits_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     exact mulVec_kernelVecBits M hM_len hM_mem
   have hkv_eval : (polyOfBits kv).aeval βL = 0 := by
     have hsum := (hmul_iff _).mp hkv_mul
-    rw [aeval_def, eval₂_eq_sum_range]
-    have hdeg_le : (polyOfBits kv).natDegree + 1 ≤ q + 1 := by
-      have hlt := degree_polyOfBits_lt kv
-      rw [degree_eq_natDegree hkv_ne0, Nat.cast_lt] at hlt
-      omega
-    trans ∑ c ∈ Finset.range (q + 1), (polyOfBits kv).coeff c • βL ^ c
-    · rw [← Finset.sum_subset (Finset.range_mono hdeg_le)]
-      · refine Finset.sum_congr rfl fun c _ => ?_
-        rw [Algebra.smul_def]
-      · intro c _ hc
-        rw [Finset.mem_range, not_lt] at hc
-        rw [coeff_eq_zero_of_natDegree_lt (by omega), zero_smul]
-    · rw [← Fin.sum_univ_eq_sum_range, ← hsum]
-      refine Finset.sum_congr rfl fun c _ => ?_
-      rw [coeff_polyOfBits, bitsToZModVec]
+    rw [aeval_polyOfBits, hkv_len, ← Fin.sum_univ_eq_sum_range]
+    exact hsum
   have hP_dvd : P ∣ polyOfBits kv := minpoly.dvd (ZMod 2) βL hkv_eval
   have hkv_deg_le : (polyOfBits kv).natDegree ≤ q := by
     have hlt := degree_polyOfBits_lt kv

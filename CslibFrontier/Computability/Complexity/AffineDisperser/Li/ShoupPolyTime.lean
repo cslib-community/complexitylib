@@ -118,21 +118,29 @@ theorem computableInPolyTime_primeDeg :
     ComputableInPolyTime primeDeg encUnary encUnary :=
   .of_tidy tidy_primeDeg
 
+private theorem tidy_beq_of_le {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
+    (hle₁ : ComputableTidilyInPolyTime (fun x => decide (f x ≤ g x)) enc encBool)
+    (hle₂ : ComputableTidilyInPolyTime (fun x => decide (g x ≤ f x)) enc encBool) :
+    ComputableTidilyInPolyTime (fun x => f x == g x) enc encBool := by
+  have hand := (ComputableTidilyInPolyTime.of_finite (fun b : Bool × Bool => b.1 && b.2)
+    (encA := encPair encBool encBool) (encB := encBool)).comp (hle₁.prod hle₂)
+  convert hand using 1
+  funext x
+  cases h : (f x == g x) <;> simp_all [Nat.le_antisymm_iff]
+
 private theorem tidy_binary_beq {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
     (hf : ComputableTidilyInPolyTime f enc encNat)
     (hg : ComputableTidilyInPolyTime g enc encNat) :
-    ComputableTidilyInPolyTime (fun x => f x == g x) enc encBool := by
-  have hle1 := ComputableTidilyInPolyTime.binary_le' hf hg
-  have hle2 := ComputableTidilyInPolyTime.binary_le' hg hf
-  have hand : ComputableTidilyInPolyTime
-      (fun x => decide (f x ≤ g x) && decide (g x ≤ f x)) enc encBool :=
-    (ComputableTidilyInPolyTime.of_finite (fun b : Bool × Bool => b.1 && b.2)
-      (encA := encPair encBool encBool) (encB := encBool)).comp (hle1.prod hle2)
-  have heq : (fun x => f x == g x) = fun x => decide (f x ≤ g x) && decide (g x ≤ f x) := by
-    funext x
-    cases h : (f x == g x) <;> simp_all [Nat.le_antisymm_iff]
-  rw [heq]
-  exact hand
+    ComputableTidilyInPolyTime (fun x => f x == g x) enc encBool :=
+  tidy_beq_of_le (ComputableTidilyInPolyTime.binary_le' hf hg)
+    (ComputableTidilyInPolyTime.binary_le' hg hf)
+
+private theorem tidy_unary_beq {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
+    (hf : ComputableTidilyInPolyTime f enc encUnary)
+    (hg : ComputableTidilyInPolyTime g enc encUnary) :
+    ComputableTidilyInPolyTime (fun x => f x == g x) enc encBool :=
+  tidy_beq_of_le (ComputableTidilyInPolyTime.unary_le' hf hg)
+    (ComputableTidilyInPolyTime.unary_le' hg hf)
 
 private def ordSomeAdd1 (_ x : ℕ) : ℕ := x + 1
 
@@ -589,20 +597,6 @@ theorem computableInPolyTime_polyMod :
       (encPair encBits encBits) encBits :=
   .of_tidy tidy_polyMod
 
-private theorem length_polyMod_le (a b : List Bool) : (polyMod a b).length ≤ a.length := by
-  unfold polyMod polyDivMod
-  dsimp only
-  have hinv : ∀ k,
-      let st := (polyDivModStep (polyTrim b))^[k] ([], polyTrim a)
-      st.1.length ≤ a.length ∧ st.2.length ≤ a.length := by
-    intro k
-    induction k with
-    | zero => exact ⟨by simp, length_polyTrim_le a⟩
-    | succ k ih =>
-      rw [Function.iterate_succ_apply']
-      exact length_polyDivModStep_le _ _ _ ih.1 ih.2
-  exact (hinv a.length).2
-
 private theorem tidy_polyGcdStep :
     ComputableTidilyInPolyTime (fun p : List Bool × List Bool => polyGcdStep p)
       (encPair encBits encBits) (encPair encBits encBits) := by
@@ -622,7 +616,7 @@ private theorem length_polyGcdStep_le (a b : List Bool) {n : ℕ}
   dsimp only
   split_ifs
   · exact ⟨ha, hb⟩
-  · exact ⟨hb, (length_polyMod_le a b).trans ha⟩
+  · exact ⟨hb, (polyDivMod_iterate_bounds a (polyTrim b) a.length).2.1.trans ha⟩
 
 private theorem tidy_polyGcd :
     ComputableTidilyInPolyTime (fun p : List Bool × List Bool => polyGcd p.1 p.2)
@@ -682,22 +676,6 @@ theorem computableInPolyTime_polyGcd :
       (encPair encBits encBits) encBits :=
   .of_tidy tidy_polyGcd
 
-private theorem length_polyGcd_le (a b : List Bool) :
-    (polyGcd a b).length ≤ max a.length b.length := by
-  unfold polyGcd
-  have hinv : ∀ k,
-      let st := (polyGcdStep)^[k] (polyTrim a, polyTrim b)
-      st.1.length ≤ max a.length b.length ∧ st.2.length ≤ max a.length b.length := by
-    intro k
-    induction k with
-    | zero =>
-      exact ⟨(length_polyTrim_le a).trans (le_max_left _ _),
-        (length_polyTrim_le b).trans (le_max_right _ _)⟩
-    | succ k ih =>
-      rw [Function.iterate_succ_apply']
-      exact length_polyGcdStep_le _ _ ih.1 ih.2
-  exact (hinv (a.length + b.length + 1)).1
-
 private theorem tidy_bitsFoldBool (op : Bool → Bool → Bool) (init : Bool) :
     ComputableTidilyInPolyTime (fun w : List Bool => w.foldl op init) encBits encBool :=
   ComputableTidilyInPolyTime.foldl' (encA := encBool) (encL := encBits) (encB := encBool)
@@ -754,12 +732,8 @@ private theorem tidy_polyComposePow :
     have hdm := ComputableTidilyInPolyTime.unary_divMod.comp (hxj.prod hxq)
     have hmod0 : ComputableTidilyInPolyTime
         (fun x : (ℕ × List Bool) × ℕ => x.2 % x.1.1 == 0)
-        (encPair (encPair encUnary encBits) encUnary) encBool := by
-      have hle := ComputableTidilyInPolyTime.unary_le'
-        ((ComputableTidilyInPolyTime.snd encUnary encUnary).comp hdm) (.const 0)
-      convert hle using 1
-      funext x
-      cases h : (x.2 % x.1.1 == 0) <;> simp_all
+        (encPair (encPair encUnary encBits) encUnary) encBool :=
+      tidy_unary_beq ((ComputableTidilyInPolyTime.snd encUnary encUnary).comp hdm) (.const 0)
     have hdiv := (ComputableTidilyInPolyTime.fst encUnary encUnary).comp hdm
     have hget := ComputableTidilyInPolyTime.bitsGetDWithInput hxp hdiv false
     exact (ComputableInPolyTime.ite' hmod0.computableInPolyTime
@@ -967,13 +941,10 @@ private theorem tidy_berlekampMatrix :
     have hdiag : ComputableTidilyInPolyTime
         (fun x : (List Bool × ℕ) × ℕ => decide ((x.1.2 == x.2 + 1) = true))
         (encPair (encPair encBits encUnary) encUnary) encBool := by
-      have h1 := ComputableTidilyInPolyTime.unary_le' hxi hj
-      have h2 := ComputableTidilyInPolyTime.unary_le' hj hxi
-      have hand := (ComputableTidilyInPolyTime.of_finite (fun b : Bool × Bool => b.1 && b.2)
-        (encA := encPair encBool encBool) (encB := encBool)).comp (h1.prod h2)
-      convert hand using 1
+      convert tidy_unary_beq hxi hj using 1
       funext x
-      cases h : (x.1.2 == x.2 + 1) <;> simp_all [Nat.le_antisymm_iff]
+      rw [Bool.eq_iff_iff]
+      simp
     exact (ComputableTidilyInPolyTime.of_finite (fun b : Bool × Bool => b.1 ^^ b.2)
       (encA := encPair encBool encBool) (encB := encBool)).comp (hbit.prod hdiag)
   have hrow : ComputableTidilyInPolyTime
@@ -1028,8 +999,10 @@ private theorem length_berlekampStep_le (g : List Bool) :
   · exact hgt
   · have hv : (kernelVecBits (gt.length - 2) (berlekampMatrix gt)).length = gt.length - 2 :=
       length_kernelVecBits _ _
-    have hgcd := length_polyGcd_le gt (false :: kernelVecBits (gt.length - 2) (berlekampMatrix gt))
-    simp only [List.length_cons, hv] at hgcd
+    let w := false :: kernelVecBits (gt.length - 2) (berlekampMatrix gt)
+    have hgcd : (polyGcd gt w).length ≤ max gt.length w.length :=
+      (polyGcd_iterate_bounds gt w (gt.length + w.length + 1)).1
+    simp only [w, List.length_cons, hv] at hgcd
     omega
   · exact hgt
 
@@ -1051,18 +1024,6 @@ private theorem tidy_berlekampIrreducibleFactor :
     PolyBounded.self fun _ _ _ _ hf => by
       simpa only [encBits_apply] using hf).1
 
-private theorem length_le_encList_bits (L : List (List Bool)) {v : List Bool} (hv : v ∈ L) :
-    v.length ≤ (encList encBits L).length := by
-  induction L with
-  | nil => simp at hv
-  | cons u L ih =>
-    rw [encList_cons, List.length_append]
-    rcases List.mem_cons.mp hv with rfl | hmem
-    · simp only [encBits_apply]
-      have hfr : (frame v).length = 2 * v.length + 1 := by simp
-      omega
-    · exact (ih hmem).trans (Nat.le_add_left _ _)
-
 private theorem getD_length_le_encList_bits (L : List (List Bool)) (i : ℕ) :
     (L.getD i []).length ≤ (encList encBits L).length := by
   rw [List.getD_eq_getElem?_getD]
@@ -1070,45 +1031,7 @@ private theorem getD_length_le_encList_bits (L : List (List Bool)) (i : ℕ) :
   | none => simp
   | some v =>
     simp only [Option.getD_some]
-    exact length_le_encList_bits L (List.mem_of_getElem? h)
-
-private theorem polyOfBits_ne_zero_of_polyTrim {f : List Bool}
-    (ht : polyTrim f = f) (hne : f ≠ []) : polyOfBits f ≠ 0 := by
-  have happ : ∀ l₁ l₂ : List Bool,
-      polyOfBits (l₁ ++ l₂) = polyOfBits l₁ + Polynomial.X ^ l₁.length * polyOfBits l₂ := by
-    intro l₁ l₂
-    induction l₁ with
-    | nil => simp
-    | cons b l₁ ih =>
-      rw [List.cons_append, polyOfBits_cons, polyOfBits_cons, ih, List.length_cons, pow_succ']
-      ring
-  have hcoeff : ∀ (l : List Bool) (k : ℕ), l.length ≤ k → (polyOfBits l).coeff k = 0 := by
-    intro l
-    induction l with
-    | nil => simp
-    | cons b l ih =>
-      intro k hk
-      rw [List.length_cons] at hk
-      rw [polyOfBits_cons]
-      cases k with
-      | zero => omega
-      | succ k => simp [Polynomial.coeff_X_mul, ih k (by omega)]
-  induction f using List.reverseRecOn with
-  | nil => exact absurd rfl hne
-  | append_singleton p b _ =>
-    cases b
-    · have := polyTrim_append_false p
-      rw [ht] at this
-      have hlen : (p ++ [false]).length = (polyTrim p).length := congrArg List.length this
-      have hle := length_polyTrim_le p
-      simp only [List.length_append, List.length_singleton] at hlen
-      omega
-    · intro h0
-      have hc : (polyOfBits (p ++ [true])).coeff p.length = 1 := by
-        rw [happ, polyOfBits_cons, polyOfBits_nil]
-        simp [hcoeff p p.length le_rfl]
-      rw [h0, Polynomial.coeff_zero] at hc
-      exact zero_ne_one hc
+    simpa only [encBits_apply] using length_le_encList_of_mem encBits (List.mem_of_getElem? h)
 
 private theorem length_polyMod_lt {u f : List Bool} (hf : (polyTrim f).isEmpty = false) :
     (polyMod u f).length < (polyTrim f).length := by
@@ -1116,9 +1039,7 @@ private theorem length_polyMod_lt {u f : List Bool} (hf : (polyTrim f).isEmpty =
     intro hnil
     rw [hnil] at hf
     simp at hf
-  have hf0 : polyOfBits f ≠ 0 := by
-    rw [← polyOfBits_polyTrim f]
-    exact polyOfBits_ne_zero_of_polyTrim (polyTrim_polyTrim f) hbt_ne
+  have hf0 : polyOfBits f ≠ 0 := polyOfBits_ne_zero_iff_polyTrim.mpr hbt_ne
   exact (polyOfBits_polyDivMod_spec (a := u) hf0).2.1
 
 private theorem length_polyMul_le' (a b : List Bool) :
@@ -1477,8 +1398,9 @@ private theorem tidy_shoupLFrobQBounded :
       x.length ≤ p.1.1 + p.2.length ∧
         ∀ v ∈ x, v.length ≤ p.1.2.length + (encList encBits p.2).length)
     hpar hcnt ha hstep'
-    (fun p => ⟨Nat.le_add_left _ _, fun v hv =>
-      (length_le_encList_bits p.2 hv).trans (Nat.le_add_left _ _)⟩)
+    (fun p => ⟨Nat.le_add_left _ _, fun v hv => by
+      simpa only [encBits_apply] using
+        (length_le_encList_of_mem encBits hv).trans (Nat.le_add_left _ _)⟩)
     (fun p k x hk _ => by
       have hf_ne : (polyTrim p.1.2).isEmpty = false := by
         by_contra h
@@ -1549,17 +1471,9 @@ private theorem tidy_shoupBetaBounded :
         (fun x : ℕ × ℕ => shoupBetaInitYCell x.1 x.2)
         (encPair encUnary encUnary) encBits := by
       have hi := ComputableTidilyInPolyTime.snd encUnary encUnary
-      have h1 := ComputableTidilyInPolyTime.unary_le' hi (.const 1)
-      have h2 := ComputableTidilyInPolyTime.unary_le' (.const 1) hi
       have hcond : ComputableTidilyInPolyTime (fun x : ℕ × ℕ => x.2 == 1)
-          (encPair encUnary encUnary) encBool := by
-        have hand := (ComputableTidilyInPolyTime.of_finite (fun b : Bool × Bool => b.1 && b.2)
-          (encA := encPair encBool encBool) (encB := encBool)).comp (h1.prod h2)
-        convert hand using 1
-        funext x
-        rw [Bool.eq_iff_iff]
-        simp only [Function.comp_def, beq_iff_eq, Bool.and_eq_true, decide_eq_true_eq]
-        exact Nat.le_antisymm_iff
+          (encPair encUnary encUnary) encBool :=
+        tidy_unary_beq hi (.const 1)
       exact (ComputableInPolyTime.ite' hcond.computableInPolyTime
         (ComputableInPolyTime.const [true]) (ComputableInPolyTime.const ([] : List Bool))).tidy
     exact ComputableTidilyInPolyTime.mapWithInput (f := shoupBetaInitYCell)
@@ -1732,12 +1646,9 @@ private theorem tidy_shoupPowersBounded :
         (fun x : ℕ × ℕ => shoupPowersOneCell x.1 x.2)
         (encPair encUnary encUnary) encBits := by
       have hi := ComputableTidilyInPolyTime.snd encUnary encUnary
-      have hle := ComputableTidilyInPolyTime.unary_le' hi (.const 0)
       have hcond : ComputableTidilyInPolyTime (fun x : ℕ × ℕ => x.2 == 0)
-          (encPair encUnary encUnary) encBool := by
-        convert hle using 1
-        funext x
-        cases h : (x.2 == 0) <;> simp_all
+          (encPair encUnary encUnary) encBool :=
+        tidy_unary_beq hi (.const 0)
       exact (ComputableInPolyTime.ite' hcond.computableInPolyTime
         (ComputableInPolyTime.const [true]) (ComputableInPolyTime.const ([] : List Bool))).tidy
     exact ComputableTidilyInPolyTime.mapWithInput (f := shoupPowersOneCell)

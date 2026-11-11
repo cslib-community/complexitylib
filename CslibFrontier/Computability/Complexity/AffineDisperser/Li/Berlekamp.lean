@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.AffineDisperser.BinaryPolyn
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
 public import CslibFrontier.Foundations.LinearAlgebra.KernelVector
 import CslibFrontier.Foundations.Data.BitString.ZModTwo
+import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Foundations.FieldTheory.Finite.BinaryField
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.BigOperators.NatAntidiagonal
@@ -73,20 +74,6 @@ private theorem zmod2_eq_zero_or_one (x : ZMod 2) : x = 0 ∨ x = 1 := by
   · exact Or.inl rfl
   · exact Or.inr rfl
 
-private theorem bitEquiv_symm_xor (a b : Bool) :
-    bitEquiv.symm (xor a b) = bitEquiv.symm a + bitEquiv.symm b := by
-  cases a <;> cases b <;> rfl
-
-private theorem bitEquiv_symm_and (a b : Bool) :
-    bitEquiv.symm (a && b) = bitEquiv.symm a * bitEquiv.symm b := by
-  cases a <;> cases b <;> rfl
-
-private theorem bitEquiv_symm_eq_zero_iff (b : Bool) : bitEquiv.symm b = 0 ↔ b = false := by
-  cases b <;> decide
-
-private theorem bitEquiv_symm_eq_one_iff (b : Bool) : bitEquiv.symm b = 1 ↔ b = true := by
-  cases b <;> decide
-
 private theorem list_idxOf_le_of_getElem {α : Type*} [BEq α] [LawfulBEq α]
     (l : List α) {x : α} {k : ℕ} (hk : k < l.length) (heq : l[k] = x) :
     l.idxOf x ≤ k := by
@@ -104,31 +91,6 @@ private theorem list_idxOf_le_of_getElem {α : Type*} [BEq α] [LawfulBEq α]
       split_ifs
       · simp
       · exact Nat.succ_le_succ (ih (by simpa using hk) heq)
-
-private theorem polyOfBits_append (l₁ l₂ : List Bool) :
-    polyOfBits (l₁ ++ l₂) = polyOfBits l₁ + X ^ l₁.length * polyOfBits l₂ := by
-  induction l₁ with
-  | nil => simp
-  | cons b l₁ ih =>
-    rw [List.cons_append, polyOfBits_cons, polyOfBits_cons, ih, List.length_cons, pow_succ']
-    ring
-
-/-- Degree of `polyOfBits l` is strictly less than `l.length`. -/
-theorem degree_polyOfBits_lt (l : List Bool) : (polyOfBits l).degree < l.length := by
-  induction l with
-  | nil => simp
-  | cons b l ih =>
-    rw [polyOfBits_cons, List.length_cons]
-    refine (degree_add_le _ _).trans_lt (max_lt ?_ ?_)
-    · exact degree_C_le.trans_lt (by exact_mod_cast Nat.succ_pos _)
-    · rcases eq_or_ne (polyOfBits l) 0 with h | h
-      · rw [h, mul_zero, degree_zero]
-        exact WithBot.bot_lt_coe _
-      · rw [degree_mul, degree_X, degree_eq_natDegree h]
-        rw [degree_eq_natDegree h] at ih
-        have : (polyOfBits l).natDegree < l.length := by exact_mod_cast ih
-        rw [← Nat.cast_one, ← Nat.cast_add, Nat.cast_lt]
-        omega
 
 private theorem coeff_comp_X_pow (P : (ZMod 2)[X]) {q : ℕ} (hq : 0 < q) (k : ℕ) :
     (P.comp (X ^ q)).coeff k = if q ∣ k then P.coeff (k / q) else 0 := by
@@ -163,15 +125,6 @@ theorem coeff_polyOfBits (l : List Bool) (i : ℕ) :
     cases i with
     | zero => simp
     | succ k => simp [coeff_X_mul, ih k]
-
-private theorem foldl_xor_range (m : ℕ) (f : ℕ → Bool) :
-    bitEquiv.symm ((List.range m).foldl (fun acc i => xor acc (f i)) false) =
-      ∑ i ∈ Finset.range m, bitEquiv.symm (f i) := by
-  induction m with
-  | zero => simp
-  | succ m ih =>
-    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
-      bitEquiv_symm_xor, ih, Finset.sum_range_succ]
 
 /-- Strip trailing `false` entries from a bit-coefficient list. -/
 @[expose] def polyTrim (p : List Bool) : List Bool :=
@@ -329,7 +282,7 @@ theorem polyOfBits_polyAdd (p q : List Bool) :
         ((List.range (max p.length q.length)).map
           (fun j => xor (p.getD j false) (q.getD j false)))
         false hi_lt, List.getElem_map, List.getElem_range]
-    rw [hget, bitEquiv_symm_xor]
+    rw [hget, ← Bool.add_eq_xor, map_add]
   · rw [List.getD_eq_default _ _ (by simp; omega),
       List.getD_eq_default p _ (by omega),
       List.getD_eq_default q _ (by omega)]
@@ -363,22 +316,21 @@ theorem polyOfBits_polyMul (p q : List Bool) :
     ext k
     rw [coeff_mul, Finset.Nat.sum_antidiagonal_eq_sum_range_succ (fun i j =>
       (polyOfBits p).coeff i * (polyOfBits q).coeff j)]
-    simp_rw [coeff_polyOfBits, ← bitEquiv_symm_and]
-    rw [← foldl_xor_range]
+    simp_rw [coeff_polyOfBits]
     by_cases hk : k < p.length + q.length
     · rw [List.getD_eq_getElem _ _ (by simp only [List.length_map, List.length_range]; exact hk),
-        List.getElem_map, List.getElem_range]
+        List.getElem_map, List.getElem_range, ← List.foldl_map (g := xor)
+          (f := fun i => p.getD i false && q.getD (k - i) false),
+        bitEquiv_symm_foldl_xor, List.map_map, Function.comp_def, List.sum_map_range_eq_sum_range]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [← Bool.mul_eq_and, map_mul]
     · rw [List.getD_eq_default _ _ (by simp; omega), bitEquiv_symm_false]
       symm
-      rw [foldl_xor_range]
       refine Finset.sum_eq_zero fun i hi => ?_
       rw [Finset.mem_range] at hi
       by_cases hip : i < p.length
-      · have hq : q.length ≤ k - i := by omega
-        rw [List.getD_eq_default q _ hq, Bool.and_false]
-        rfl
-      · rw [List.getD_eq_default p _ (by omega), Bool.false_and]
-        rfl
+      · rw [List.getD_eq_default q _ (by omega), bitEquiv_symm_false, mul_zero]
+      · rw [List.getD_eq_default p _ (by omega), bitEquiv_symm_false, zero_mul]
 
 private theorem polyOfBits_replicate_false_append (k : ℕ) (p : List Bool) :
     polyOfBits (List.replicate k false ++ p) = X ^ k * polyOfBits p := by
@@ -799,37 +751,16 @@ theorem polyOfBits_polyComposePow {q : ℕ} (hq : 0 < q) (f : List Bool) :
 private theorem dotBool_eq_dotProduct {n : ℕ} {u v : List Bool}
     (hu : u.length = n) (hv : v.length = n) :
     bitEquiv.symm (dotBool u v) = bitsToZModVec n u ⬝ᵥ bitsToZModVec n v := by
-  have hlen : (u.zipWith Bool.and v).length = n := by simp [hu, hv]
-  have hfold : ∀ (l : List Bool),
-      bitEquiv.symm (l.foldl Bool.xor false) =
-        ∑ i ∈ Finset.range l.length, bitEquiv.symm (l.getD i false) := by
-    intro l
-    induction l using List.reverseRecOn with
-    | nil => simp
-    | append_singleton l a ih =>
-      rw [List.foldl_append, List.foldl_cons, List.foldl_nil, bitEquiv_symm_xor, ih,
-        List.length_append, List.length_singleton, Finset.sum_range_succ]
-      congr 1
-      · refine Finset.sum_congr rfl fun i hi => ?_
-        rw [Finset.mem_range] at hi
-        rw [List.getD_eq_getElem l _ hi, List.getD_eq_getElem (l ++ [a]) _ (by simp; omega),
-          List.getElem_append_left hi]
-      · rw [List.getD_eq_getElem (l ++ [a]) _ (by simp), List.getElem_append_right le_rfl]
-        simp
   unfold dotBool
-  have hrhs :
-      bitsToZModVec n u ⬝ᵥ bitsToZModVec n v =
-        ∑ i ∈ Finset.range n,
-          bitEquiv.symm (u.getD i false) * bitEquiv.symm (v.getD i false) := by
-    rw [dotProduct]
-    dsimp only [bitsToZModVec]
-    exact Fin.sum_univ_eq_sum_range
-      (fun i => bitEquiv.symm (u.getD i false) * bitEquiv.symm (v.getD i false)) n
-  rw [hfold (u.zipWith Bool.and v), hlen, hrhs]
-  refine Finset.sum_congr rfl fun i hi => ?_
-  rw [Finset.mem_range] at hi
-  rw [List.getD_eq_getElem (u.zipWith Bool.and v) _ (by omega), List.getElem_zipWith,
-    bitEquiv_symm_and, List.getD_eq_getElem u _ (by omega), List.getD_eq_getElem v _ (by omega)]
+  have hmap :
+      (u.zipWith Bool.and v).map bitEquiv.symm =
+        List.ofFn (fun i : Fin n => bitsToZModVec n u i * bitsToZModVec n v i) := by
+    refine List.ext_getElem (by simp [hu, hv]) fun i hi _ => ?_
+    have hi' : i < n := by simpa [hu, hv] using hi
+    simp only [List.getElem_map, List.getElem_zipWith, List.getElem_ofFn, bitsToZModVec]
+    rw [List.getD_eq_getElem u false (by omega), List.getD_eq_getElem v false (by omega),
+      ← Bool.mul_eq_and, map_mul]
+  rw [bitEquiv_symm_foldl_xor, hmap, List.sum_ofFn, dotProduct]
 
 /-- One elimination step on the candidate basis `N` using row `a`. -/
 @[expose] def kernelStepBits (a : List Bool) (N : List (List Bool)) : List (List Bool) :=
@@ -947,7 +878,8 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
         exact List.getElem_mem hj₀_len
       · have h1 := hval j₀
         rw [h1] at hj₀
-        exact (bitEquiv_symm_eq_one_iff _).mp ((zmod2_eq_zero_or_one _).resolve_left hj₀)
+        exact (map_eq_one_iff bitEquiv.symm bitEquiv.symm.injective).mp
+          ((zmod2_eq_zero_or_one _).resolve_left hj₀)
     have hp_lt : (N.map (dotBool a)).idxOf true < N.length := by
       rw [← List.length_map (f := dotBool a)]
       exact List.idxOf_lt_length_iff.mpr htrue
@@ -960,7 +892,7 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
       exact hp_mem
     have hp_min : ∀ k : Fin n, k < ⟨p, by omega⟩ → rowValues aZ NZ k = 0 := by
       intro k hk
-      rw [hval k, bitEquiv_symm_eq_zero_iff]
+      rw [hval k, map_eq_zero_iff bitEquiv.symm bitEquiv.symm.injective, Bool.zero_eq_false]
       by_contra hnt
       have htk : (N.map (dotBool a))[k.1]'(by simp; omega) = true := by
         rw [List.getElem_map, ← List.getD_eq_getElem N [] (by omega)]
@@ -1008,7 +940,7 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
       have hget2 : (N.getD p [])[k.1]'(by omega) = (N.getD p []).getD k.1 false :=
         (List.getD_eq_getElem _ _ (by omega)).symm
       rw [List.getD_eq_getElem _ _ hk_zip, List.getElem_zipWith, hget1, hget2,
-        bitEquiv_symm_xor, sub_eq_add_neg]
+        ← Bool.add_eq_xor, map_add, sub_eq_add_neg]
       congr 1
       rcases zmod2_eq_zero_or_one (bitEquiv.symm ((N.getD p []).getD k.1 false)) with hc | hc <;>
         rw [hc] <;> rfl
@@ -1084,7 +1016,8 @@ theorem bitsToZModVec_kernelVecBits_eq {r n : ℕ} (M : List (List Bool)) (hM_le
       exact one_ne_zero hfj
     · intro hany
       funext j
-      rw [Pi.zero_apply, bitsToZModVec, bitEquiv_symm_eq_zero_iff]
+      rw [Pi.zero_apply, bitsToZModVec, map_eq_zero_iff bitEquiv.symm bitEquiv.symm.injective,
+        Bool.zero_eq_false]
       by_contra hnt
       have hnt' : v[j.1]'(by omega) ≠ false := by
         rw [List.getD_eq_getElem v false (by omega)] at hnt
@@ -1172,7 +1105,8 @@ theorem kernelVecBits_any_of_exists {r n : ℕ} (M : List (List Bool)) (hM_len :
   have hfalse : (kernelVecBits n M).any id = false := Bool.eq_false_of_not_eq_true hnt
   apply hne
   funext j
-  rw [Pi.zero_apply, bitsToZModVec, bitEquiv_symm_eq_zero_iff]
+  rw [Pi.zero_apply, bitsToZModVec, map_eq_zero_iff bitEquiv.symm bitEquiv.symm.injective,
+    Bool.zero_eq_false]
   by_contra hnj
   rw [List.getD_eq_getElem _ _ (by rw [length_kernelVecBits]; exact j.2)] at hnj
   have htrue : (kernelVecBits n M)[j.1]'(by rw [length_kernelVecBits]; exact j.2) = true :=
@@ -1358,7 +1292,7 @@ private theorem berlekampMatrix_mulVec_eq_zero_iff {l : List Bool} (hl : 2 ≤ l
         dsimp only [bitsToZModVec]
         rw [List.getD_eq_getElem row false hk_lt]
         dsimp only [row]
-        rw [List.getElem_map, List.getElem_range, bitEquiv_symm_xor, sub_eq_add_neg]
+        rw [List.getElem_map, List.getElem_range, ← Bool.add_eq_xor, map_add, sub_eq_add_neg]
         congr 1
         by_cases hik : i.1 = k.1 + 1
         · simp only [hik, beq_self_eq_true, decide_true, ite_true]
@@ -1400,6 +1334,12 @@ private theorem berlekampMatrix_mulVec_eq_zero_iff {l : List Bool} (hl : 2 ≤ l
     funext i
     exact hcoord (e.symm i) (Finset.mem_univ _) |>.trans (by simp)
 
+private theorem natDegree_pos_of_ne_zero_of_not_isUnit {p : (ZMod 2)[X]}
+    (hp0 : p ≠ 0) (hpnu : ¬ IsUnit p) : 0 < p.natDegree :=
+  Nat.pos_of_ne_zero fun h => hpnu (by
+    obtain ⟨c, rfl⟩ := natDegree_eq_zero.mp h
+    exact isUnit_C.mpr (Ne.isUnit fun hc => hp0 (by rw [hc, C_0])))
+
 private theorem exists_berlekamp_ker_of_not_irreducible {l : List Bool} (hl : 2 ≤ l.length)
     (hsq : Squarefree (polyOfBits (l ++ [true])))
     (hnirr : ¬ Irreducible (polyOfBits (l ++ [true]))) :
@@ -1419,20 +1359,8 @@ private theorem exists_berlekamp_ker_of_not_irreducible {l : List Bool} (hl : 2 
   obtain ⟨p, q, hpq, hnp, hnq⟩ := hnirr hg_nu
   have hp_ne : p ≠ 0 := fun h => hg_ne (by rw [hpq, h, zero_mul])
   have hq_ne : q ≠ 0 := fun h => hg_ne (by rw [hpq, h, mul_zero])
-  have hp_deg : 0 < p.natDegree := by
-    by_contra hle
-    have h0 : p.natDegree = 0 := by omega
-    obtain ⟨c, hc⟩ := natDegree_eq_zero.mp h0
-    rcases zmod2_eq_zero_or_one c with rfl | rfl
-    · exact hp_ne (hc.symm.trans C_0)
-    · exact hnp (by rw [← hc]; simp)
-  have hq_deg : 0 < q.natDegree := by
-    by_contra hle
-    have h0 : q.natDegree = 0 := by omega
-    obtain ⟨c, hc⟩ := natDegree_eq_zero.mp h0
-    rcases zmod2_eq_zero_or_one c with rfl | rfl
-    · exact hq_ne (hc.symm.trans C_0)
-    · exact hnq (by rw [← hc]; simp)
+  have hp_deg : 0 < p.natDegree := natDegree_pos_of_ne_zero_of_not_isUnit hp_ne hnp
+  have hq_deg : 0 < q.natDegree := natDegree_pos_of_ne_zero_of_not_isUnit hq_ne hnq
   have hcop : IsCoprime p q := by
     rw [← EuclideanDomain.gcd_isUnit_iff]
     have hd1 : EuclideanDomain.gcd p q ∣ p := EuclideanDomain.gcd_dvd_left p q
@@ -1687,13 +1615,8 @@ private theorem berlekampStep_invariant (g : List Bool)
           rw [show hp * (hp - 1) = hp ^ 2 - hp by ring, hh_sum, hl]
           exact hgh
         exact hg_not_dvd_hp1 (hcop.dvd_of_dvd_mul_left hprod)
-      have hf_deg_pos : 0 < (polyOfBits f).natDegree := by
-        by_contra h0
-        have heq0 : (polyOfBits f).natDegree = 0 := by omega
-        obtain ⟨c, hc⟩ := natDegree_eq_zero.mp heq0
-        rcases zmod2_eq_zero_or_one c with rfl | rfl
-        · exact hf_ne (hc.symm.trans C_0)
-        · exact hf_not_unit (by rw [← hc]; simp)
+      have hf_deg_pos : 0 < (polyOfBits f).natDegree :=
+        natDegree_pos_of_ne_zero_of_not_isUnit hf_ne hf_not_unit
       have hf_deg_lt : (polyOfBits f).natDegree < (polyOfBits g).natDegree := by
         have hle1 : (polyOfBits f).natDegree ≤ hp.natDegree :=
           Polynomial.natDegree_le_of_dvd (polyOfBits_polyGcd_dvd_right _ _) hhp_ne

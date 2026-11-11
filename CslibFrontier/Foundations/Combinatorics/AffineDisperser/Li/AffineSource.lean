@@ -76,38 +76,16 @@ open Cslib.BitString Cslib.Probability Cslib.Probability.PMF Module
 
 section BoolVectorSpace
 
-private theorem bitString_sub_eq_add {α : Type*} (u v : α → Bool) : u - v = u + v := by
-  funext i
-  change u i - v i = u i + v i
-  cases u i <;> cases v i <;> rfl
-
-private theorem direction_mk'_eq {V : Type*} [AddCommGroup V] [Module Bool V]
-    (x₀ : V) (W : Submodule Bool V) : (AffineSubspace.mk' x₀ W).direction = W := by
-  ext v
-  constructor
-  · intro hv
-    have := AffineSubspace.vadd_mem_of_mem_direction hv (AffineSubspace.self_mem_mk' x₀ W)
-    simpa only [AffineSubspace.mem_mk', vadd_vsub] using this
-  · intro hv
-    have hmem : v +ᵥ x₀ ∈ AffineSubspace.mk' x₀ W := by
-      simpa only [AffineSubspace.mem_mk', vadd_vsub] using hv
-    have := AffineSubspace.vsub_mem_direction hmem (AffineSubspace.self_mem_mk' x₀ W)
-    simpa only [vadd_vsub] using this
-
 private def toZModBits (ι : Type*) : (ι → Bool) ≃+ (ι → ZMod 2) where
   toFun v i := bitEquiv.symm (v i)
   invFun v i := bitEquiv (v i)
   left_inv v := funext fun i => bitEquiv.apply_symm_apply (v i)
   right_inv v := funext fun i => bitEquiv.symm_apply_apply (v i)
-  map_add' u v := funext fun i => by
-    change bitEquiv.symm (u i ^^ v i) = bitEquiv.symm (u i) + bitEquiv.symm (v i)
-    cases u i <;> cases v i <;> rfl
+  map_add' u v := funext fun i => map_add bitEquiv.symm (u i) (v i)
 
 private theorem toZModBits_smul {ι : Type*} (c : Bool) (v : ι → Bool) :
-    toZModBits ι (c • v) = bitEquiv.symm c • toZModBits ι v := by
-  funext i
-  change bitEquiv.symm (c && v i) = bitEquiv.symm c * bitEquiv.symm (v i)
-  cases c <;> cases v i <;> rfl
+    toZModBits ι (c • v) = bitEquiv.symm c • toZModBits ι v :=
+  funext fun i => map_mul bitEquiv.symm c (v i)
 
 private theorem symm_toZModBits_smul {ι : Type*} (c : ZMod 2) (v : ι → ZMod 2) :
     (toZModBits ι).symm (c • v) = bitEquiv c • (toZModBits ι).symm v := by
@@ -180,70 +158,25 @@ private theorem toZModSub_sup {ι : Type*} (U V : Submodule Bool (ι → Bool)) 
     · exact le_sup_left
     · exact le_sup_right
 
-private theorem finrank_bool_eq_finrank_toZMod {ι : Type*} [Finite ι]
-    (V : Submodule Bool (ι → Bool)) :
+private def toZModSubEquiv {ι : Type*} (V : Submodule Bool (ι → Bool)) :
+    V ≃+ toZModSub V where
+  toFun v := ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩
+  invFun w := ⟨(toZModBits ι).symm w.1, by
+    rw [← mem_toZModSub, (toZModBits ι).apply_symm_apply]; exact w.2⟩
+  left_inv v := Subtype.ext ((toZModBits ι).symm_apply_apply v.1)
+  right_inv w := Subtype.ext ((toZModBits ι).apply_symm_apply w.1)
+  map_add' u v := Subtype.ext (map_add (toZModBits ι) u.1 v.1)
+
+private theorem finrank_bool_eq_finrank_toZMod {ι : Type*} (V : Submodule Bool (ι → Bool)) :
     finrank Bool V = finrank (ZMod 2) (toZModSub V) := by
-  have : Finite (ι → ZMod 2) := Finite.of_equiv (ι → Bool) (toZModBits ι).toEquiv
-  set k := finrank (ZMod 2) (toZModSub V)
-  let B := Module.finBasis (ZMod 2) (toZModSub V)
-  let ef := B.equivFun
-  let e : V ≃ₗ[Bool] (Fin k → Bool) :=
-    { toFun := fun v j => bitEquiv (ef ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩ j)
-      invFun := fun f =>
-        let w := ef.symm (fun j => bitEquiv.symm (f j))
-        ⟨(toZModBits ι).symm w.1, by
-          rw [← mem_toZModSub, (toZModBits ι).apply_symm_apply]
-          exact w.2⟩
-      left_inv := fun v => by
-        ext1
-        have h : ef.symm (fun j => bitEquiv.symm
-            (bitEquiv (ef ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩ j))) =
-            ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩ := by
-          have hfun : (fun j => bitEquiv.symm
-              (bitEquiv (ef ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩ j))) =
-              ef ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩ := by
-            funext j; exact bitEquiv.symm_apply_apply _
-          rw [hfun, ef.symm_apply_apply]
-        exact (toZModBits ι).symm_apply_eq.mpr (congrArg Subtype.val h)
-      right_inv := fun f => by
-        funext j
-        dsimp only
-        have h : (⟨toZModBits ι ((toZModBits ι).symm
-            (ef.symm (fun i => bitEquiv.symm (f i))).1),
-            by rw [(toZModBits ι).apply_symm_apply]; exact (ef.symm _).2⟩ :
-              toZModSub V) = ef.symm (fun i => bitEquiv.symm (f i)) := by
-          ext1
-          exact (toZModBits ι).apply_symm_apply _
-        exact (congrArg (fun x => bitEquiv (ef x j)) h).trans
-          (by rw [ef.apply_symm_apply, bitEquiv.apply_symm_apply])
-      map_add' := fun u v => by
-        funext j
-        have hsum : (⟨toZModBits ι (u.1 + v.1), mem_toZModSub.mpr (V.add_mem u.2 v.2)⟩ :
-            toZModSub V) = ⟨toZModBits ι u.1, mem_toZModSub.mpr u.2⟩ +
-              ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩ := by
-          ext1; exact map_add (toZModBits ι) u.1 v.1
-        change bitEquiv (ef ⟨toZModBits ι (u.1 + v.1), _⟩ j) =
-          bitEquiv (ef ⟨toZModBits ι u.1, _⟩ j) + bitEquiv (ef ⟨toZModBits ι v.1, _⟩ j)
-        rw [hsum, map_add, Pi.add_apply, map_add]
-      map_smul' := fun c v => by
-        funext j
-        have hsmul : (⟨toZModBits ι (c • v.1), mem_toZModSub.mpr (V.smul_mem c v.2)⟩ :
-            toZModSub V) = bitEquiv.symm c • ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩ := by
-          ext1; exact toZModBits_smul c v.1
-        change bitEquiv (ef ⟨toZModBits ι (c • v.1), _⟩ j) =
-          c • bitEquiv (ef ⟨toZModBits ι v.1, _⟩ j)
-        rw [hsmul, map_smul, Pi.smul_apply, smul_eq_mul, map_mul, bitEquiv.apply_symm_apply]
-        rfl }
-  rw [e.finrank_eq, finrank_eq_card_basis (Pi.basisFun Bool (Fin k)), Fintype.card_fin]
+  have h := rank_eq_of_equiv_equiv (R := Bool) (R' := ZMod 2) (M := V) (M₁ := toZModSub V)
+    bitEquiv.symm (toZModSubEquiv V) bitEquiv.symm.bijective fun c v =>
+    Subtype.ext (toZModBits_smul c v.1)
+  exact congrArg Cardinal.toNat h
 
 private theorem natCard_submodule_bool {ι : Type*} [Finite ι] (V : Submodule Bool (ι → Bool)) :
     Nat.card V = 2 ^ finrank Bool V := by
-  have eV : V ≃ toZModSub V :=
-    { toFun := fun v => ⟨toZModBits ι v.1, mem_toZModSub.mpr v.2⟩
-      invFun := fun w => ⟨(toZModBits ι).symm w.1, by
-        rw [← mem_toZModSub, (toZModBits ι).apply_symm_apply]; exact w.2⟩
-      left_inv := fun v => Subtype.ext ((toZModBits ι).symm_apply_apply v.1)
-      right_inv := fun w => Subtype.ext ((toZModBits ι).apply_symm_apply w.1) }
+  have eV := (toZModSubEquiv V).toEquiv
   have hcard : Nat.card V = Nat.card (toZModSub V) := Nat.card_congr eV
   have : Finite (toZModSub V) := Finite.of_equiv V eV
   let _ : Fintype (toZModSub V) := Fintype.ofFinite _
@@ -611,44 +544,31 @@ private theorem uniformAffine_eq_bind_add_of_isCompl {n : ℕ}
     have ha₀_U : a₀ ∈ Au := by simpa [Au, a₀, AffineSubspace.mem_mk', vsub_eq_sub] using hu₀
     have hza₀_K : z + a₀ ∈ Bk := by
       have hz_eq : z = a₀ + k₀ := by
-        simp only [vsub_eq_sub, bitString_sub_eq_add] at huk₀
-        calc z = x₀ + (z + x₀) := by
-              rw [← add_assoc, add_comm x₀ z, add_assoc, BitString.add_self, add_zero]
-          _ = x₀ + (u₀ + k₀) := by rw [huk₀]
+        simp only [vsub_eq_sub] at huk₀
+        rw [← add_sub_cancel x₀ z, add_comm x₀ (z - x₀)]
+        calc z - x₀ + x₀ = (u₀ + k₀) + x₀ := by rw [huk₀]
           _ = a₀ + k₀ := by dsimp only [a₀]; abel
       rw [hz_eq, add_assoc, add_comm k₀ a₀, ← add_assoc, BitString.add_self, zero_add]
       simpa [Bk, AffineSubspace.mem_mk', vsub_eq_sub] using hk₀
     have huniq_a : ∀ a : BitString n, a ∈ Au ∧ z + a ∈ Bk → a = a₀ := by
       rintro a ⟨haA, hzaB⟩
-      have haU : a + x₀ ∈ U := by
-        simpa [Au, AffineSubspace.mem_mk', vsub_eq_sub, bitString_sub_eq_add] using haA
-      have hkK : z + a ∈ K := by
-        simpa [Bk, AffineSubspace.mem_mk', vsub_eq_sub, bitString_sub_eq_add] using hzaB
-      have hzkK : z + a₀ ∈ K := by
-        simpa [Bk, AffineSubspace.mem_mk', vsub_eq_sub, bitString_sub_eq_add] using hza₀_K
-      have ha₀U : a₀ + x₀ ∈ U := by
-        simpa [Au, AffineSubspace.mem_mk', vsub_eq_sub, bitString_sub_eq_add] using ha₀_U
-      have hdiffU : a + a₀ ∈ U := by
-        have h := U.add_mem haU ha₀U
-        have heq : (a + x₀) + (a₀ + x₀) = a + a₀ := by
-          calc (a + x₀) + (a₀ + x₀) = (a + a₀) + (x₀ + x₀) := by abel
-            _ = a + a₀ := by rw [BitString.add_self, add_zero]
-        rwa [heq] at h
-      have hdiffK : a + a₀ ∈ K := by
-        have h := K.add_mem hkK hzkK
-        have heq : (z + a) + (z + a₀) = a + a₀ := by
-          calc (z + a) + (z + a₀) = (z + z) + (a + a₀) := by abel
-            _ = a + a₀ := by rw [BitString.add_self, zero_add]
-        rwa [heq] at h
-      have hbot : a + a₀ ∈ U ⊓ K := ⟨hdiffU, hdiffK⟩
+      have haU : a - x₀ ∈ U := by simpa [Au, AffineSubspace.mem_mk', vsub_eq_sub] using haA
+      have hkK : z + a ∈ K := by simpa [Bk, AffineSubspace.mem_mk'] using hzaB
+      have hzkK : z + a₀ ∈ K := by simpa [Bk, AffineSubspace.mem_mk'] using hza₀_K
+      have ha₀U : a₀ - x₀ ∈ U := by simpa [Au, AffineSubspace.mem_mk', vsub_eq_sub] using ha₀_U
+      have hdiffU : a - a₀ ∈ U := by
+        have h := U.sub_mem haU ha₀U
+        rwa [show (a - x₀) - (a₀ - x₀) = a - a₀ by abel] at h
+      have hdiffK : a - a₀ ∈ K := by
+        have h := K.sub_mem hkK hzkK
+        rwa [show (z + a) - (z + a₀) = a - a₀ by abel] at h
+      have hbot : a - a₀ ∈ U ⊓ K := ⟨hdiffU, hdiffK⟩
       rw [hcompl.1, Submodule.mem_bot] at hbot
-      calc a = a + (a₀ + a₀) := by rw [BitString.add_self, add_zero]
-        _ = (a + a₀) + a₀ := by abel
-        _ = a₀ := by rw [hbot, zero_add]
+      exact sub_eq_zero.mp hbot
     rw [tsum_eq_single a₀]
     · rw [uniformAffine_apply Au hAu a₀, uniformAffine_apply Bk hBk (z + a₀),
         ite_eq_left ha₀_U, ite_eq_left hza₀_K,
-        direction_mk'_eq, direction_mk'_eq, hrank, pow_add, Nat.cast_mul,
+        AffineSubspace.direction_mk', AffineSubspace.direction_mk', hrank, pow_add, Nat.cast_mul,
         ENNReal.mul_inv (Or.inl (by positivity)) (Or.inl (ENNReal.natCast_ne_top _))]
     · intro a ha
       rw [uniformAffine_apply Au hAu a, uniformAffine_apply Bk hBk (z + a)]
@@ -671,9 +591,9 @@ private theorem uniformAffine_eq_bind_add_of_isCompl {n : ℕ}
           have hsum : (a -ᵥ x₀) + (z + a) ∈ A.direction := A.direction.add_mem (hU haU) (hK hkK)
           have hmem := AffineSubspace.vadd_mem_of_mem_direction hsum hx₀
           have hz_eq : ((a -ᵥ x₀) + (z + a)) +ᵥ x₀ = z := by
-            simp only [vadd_eq_add, vsub_eq_sub, bitString_sub_eq_add]
-            calc (a + x₀ + (z + a)) + x₀ = (a + a) + (x₀ + x₀) + z := by abel
-              _ = z := by rw [BitString.add_self, BitString.add_self, add_zero, zero_add]
+            simp only [vadd_eq_add, vsub_eq_sub]
+            calc a - x₀ + (z + a) + x₀ = z + (a + a) := by abel
+              _ = z := by rw [BitString.add_self, add_zero]
           rwa [hz_eq] at hmem
         · rw [ite_eq_right ha2, mul_zero]
       · rw [ite_eq_right ha1, zero_mul]
@@ -767,8 +687,8 @@ theorem affineConditioning {n m k : ℕ} {X : PMF (BitString n)} (hX : IsAffineS
       _ ≤ finrank (ZMod 2) (Fin m → ZMod 2) := Submodule.finrank_le _
       _ = m := by simp
   refine ⟨finrank Bool U, finrank Bool K, A, B, L 0, L_inv,
-    ⟨AsrcSub, hAsrcSub, by rw [direction_mk'_eq], rfl⟩,
-    ⟨BsrcSub, hBsrcSub, by rw [direction_mk'_eq], rfl⟩,
+    ⟨AsrcSub, hAsrcSub, by rw [AffineSubspace.direction_mk'], rfl⟩,
+    ⟨BsrcSub, hBsrcSub, by rw [AffineSubspace.direction_mk'], rfl⟩,
     by rw [← hdim, hkdim], by omega,
     uniformAffine_eq_bind_add_of_isCompl Asub hx₀ hU_le inf_le_left ⟨hcompl_inf, hcompl_sup⟩,
     ?_, hL_inv, ?_, ?_⟩
@@ -807,9 +727,8 @@ theorem affineConditioning {n m k : ℕ} {X : PMF (BitString n)} (hX : IsAffineS
         toZModBits (Fin n) (a -ᵥ x₀) := by
       simp only [TZ, LinearMap.comp_apply, LinearEquiv.coe_coe, hproj, ← heU,
         LinearEquiv.symm_apply_apply, Submodule.coe_subtype]
-    rw [hTZ, (toZModBits (Fin n)).symm_apply_apply, vsub_eq_sub, bitString_sub_eq_add]
-    calc x₀ + (a + x₀) = (x₀ + x₀) + a := by abel
-      _ = a := by rw [BitString.add_self, zero_add]
+    rw [hTZ, (toZModBits (Fin n)).symm_apply_apply, vsub_eq_sub]
+    abel
   · intro ℓ hℓ
     rw [PMF.mem_support_iff, PMF.map_apply] at hℓ
     have hex : ∃ x ∈ Asub, L x = ℓ := by
@@ -827,7 +746,7 @@ theorem affineConditioning {n m k : ℕ} {X : PMF (BitString n)} (hX : IsAffineS
         · rfl
     obtain ⟨xℓ, hxℓ, rfl⟩ := hex
     refine ⟨AffineSubspace.mk' xℓ K, ⟨xℓ, AffineSubspace.self_mem_mk' xℓ K⟩,
-      by rw [direction_mk'_eq], ?_⟩
+      by rw [AffineSubspace.direction_mk'], ?_⟩
     ext x
     simp only [SetLike.mem_coe, AffineSubspace.mem_mk', Set.mem_ofPred_eq]
     rw [mem_support_uniformAffine_iff Asub ⟨x₀, hx₀⟩ x]
@@ -1103,7 +1022,7 @@ theorem affineBlockDecomposition {t r k : ℕ} {b : Fin t → ℕ}
       ⟨x₀ i + c.1 i, AffineSubspace.self_mem_mk' _ _⟩
   have hP_src : ∀ c i, ∃ kᵢ, b i ≤ kᵢ + r ∧ IsAffineSource (P c i) kᵢ := fun c i =>
     ⟨finrank Bool (W i), hW_codim i, AffineSubspace.mk' (x₀ i + c.1 i) (W i),
-      ⟨x₀ i + c.1 i, AffineSubspace.self_mem_mk' _ _⟩, by rw [direction_mk'_eq], rfl⟩
+      ⟨x₀ i + c.1 i, AffineSubspace.self_mem_mk' _ _⟩, by rw [AffineSubspace.direction_mk'], rfl⟩
   have hpi_eq : ∀ c : C,
       ((PMF.uniformOfFintype (∀ i : Fin t, W i)).map fun w i => x₀ i + c.1 i + (w i).1) =
         PMF.pi (P c) := by
@@ -1117,7 +1036,7 @@ theorem affineBlockDecomposition {t r k : ℕ} {b : Fin t → ℕ}
       rw [Fintype.card_pi, Nat.cast_prod]
       refine Finset.prod_congr rfl fun i _ => ?_
       rw [card_affineSubspace_toFinset _ ⟨x₀ i + c.1 i, AffineSubspace.self_mem_mk' _ _⟩,
-        direction_mk'_eq, ← natCard_submodule_bool (W i), Nat.card_eq_fintype_card]
+        AffineSubspace.direction_mk', ← natCard_submodule_bool (W i), Nat.card_eq_fintype_card]
     by_cases hy : ∀ i : Fin t, y i ∈ (Set.toFinite
         (AffineSubspace.mk' (x₀ i + c.1 i) (W i) : Set (BitString (b i)))).toFinset
     · let w₀ : ∀ i : Fin t, W i := fun i => ⟨y i - (x₀ i + c.1 i), by
@@ -1236,7 +1155,7 @@ theorem isAffineDisperser_of_isAffineExtractor {n m k : ℕ} {ε : ℝ}
     let A0 : AffineSubspace Bool (BitString n) := AffineSubspace.mk' 0 ⊥
     have hA0 : (A0 : Set (BitString n)).Nonempty := ⟨0, AffineSubspace.self_mem_mk' 0 ⊥⟩
     have hsrc : IsAffineSource (uniformAffine A0 hA0) 0 :=
-      ⟨A0, hA0, by rw [direction_mk'_eq, finrank_bot], rfl⟩
+      ⟨A0, hA0, by rw [AffineSubspace.direction_mk', finrank_bot], rfl⟩
     have hdist0 : dist ((uniformAffine A0 hA0).map ext) (PMF.uniformOfFintype (BitString m)) ≤ ε :=
       hext _ hsrc
     have hdist_bit :
@@ -1245,8 +1164,8 @@ theorem isAffineDisperser_of_isAffineExtractor {n m k : ℕ} {ε : ℝ}
       (dist_map_le _ _ _).trans hdist0
     have hpure : uniformAffine A0 hA0 = PMF.pure 0 := by
       ext x
-      rw [uniformAffine_apply, direction_mk'_eq, finrank_bot, pow_zero, Nat.cast_one, inv_one,
-        PMF.pure_apply]
+      rw [uniformAffine_apply, AffineSubspace.direction_mk', finrank_bot, pow_zero, Nat.cast_one,
+        inv_one, PMF.pure_apply]
       by_cases hx : x = 0
       · subst hx
         rw [ite_eq_left (AffineSubspace.self_mem_mk' 0 ⊥), ite_eq_left rfl]
@@ -1312,9 +1231,9 @@ theorem exists_independent_affine_sum_of_isAffineSource {n k k₁ k₂ : ℕ}
   let A := uniformAffine (AffineSubspace.mk' x₀ V₁) ⟨x₀, AffineSubspace.self_mem_mk' x₀ V₁⟩
   let B := uniformAffine (AffineSubspace.mk' 0 V₂) ⟨0, AffineSubspace.self_mem_mk' 0 V₂⟩
   have hA : IsAffineSource A k₁ :=
-    ⟨AffineSubspace.mk' x₀ V₁, _, by rw [direction_mk'_eq, hV₁_dim], rfl⟩
+    ⟨AffineSubspace.mk' x₀ V₁, _, by rw [AffineSubspace.direction_mk', hV₁_dim], rfl⟩
   have hB : IsAffineSource B (k - k₁) :=
-    ⟨AffineSubspace.mk' 0 V₂, _, by rw [direction_mk'_eq, hV₂_dim], rfl⟩
+    ⟨AffineSubspace.mk' 0 V₂, _, by rw [AffineSubspace.direction_mk', hV₂_dim], rfl⟩
   refine ⟨A, B, hA, hB, ?_,
     uniformAffine_eq_bind_add_of_isCompl Asub hx₀ hV₁_le hV₂_le
       ⟨by rw [inf_comm]; exact hcompl_inf, by rw [sup_comm]; exact hcompl_sup⟩⟩

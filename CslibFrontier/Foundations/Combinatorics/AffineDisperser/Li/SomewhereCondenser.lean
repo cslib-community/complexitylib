@@ -144,42 +144,17 @@ splits `x ∈ BitString (m + m)` into `(x₁, x₂)` and outputs the `2 * d + 2`
         split_ifs <;> simp only [map_add] <;> abel
   map_smul' c x := by
     funext idx
-    cases c
-    · have hx0 : (false : Bool) • x = 0 := funext fun j => rfl
-      let fSmul : Fin (2 * d + 2) → BitString m := fun idx =>
-        if h0 : idx.1 = 0 then (splitHalfEquiv m x).1
-        else if h1 : idx.1 = 1 then (splitHalfEquiv m x).2
-        else if (idx.1 - 2) % 2 = 0 then
-          (splitHalfEquiv m x).1 +
-            T ⟨(idx.1 - 2) / 2, by have := idx.2; omega⟩ (splitHalfEquiv m x).2
-        else
-          (splitHalfEquiv m x).2 +
-            T ⟨(idx.1 - 2) / 2, by have := idx.2; omega⟩ (splitHalfEquiv m x).1
-      have h0r : ((RingHom.id Bool) false • fSmul) idx = (0 : BitString m) := funext fun j => rfl
-      have hsp0 : splitHalfEquiv m (0 : BitString (m + m)) = (0, 0) := map_zero _
-      dsimp only
-      rw [hx0, hsp0]
-      refine Eq.trans ?_ h0r.symm
-      by_cases h0 : idx.1 = 0
-      · simp [h0]
-      · by_cases h1 : idx.1 = 1
-        · simp [h1, one_ne_zero]
-        · simp only [h0, h1, ↓reduceDIte]
-          split_ifs <;> simp [map_zero]
-    · have hx1 : (true : Bool) • x = x := funext fun j => rfl
-      let fSmul : Fin (2 * d + 2) → BitString m := fun idx =>
-        if h0 : idx.1 = 0 then (splitHalfEquiv m x).1
-        else if h1 : idx.1 = 1 then (splitHalfEquiv m x).2
-        else if (idx.1 - 2) % 2 = 0 then
-          (splitHalfEquiv m x).1 +
-            T ⟨(idx.1 - 2) / 2, by have := idx.2; omega⟩ (splitHalfEquiv m x).2
-        else
-          (splitHalfEquiv m x).2 +
-            T ⟨(idx.1 - 2) / 2, by have := idx.2; omega⟩ (splitHalfEquiv m x).1
-      have h1r : ((RingHom.id Bool) true • fSmul) idx = fSmul idx := funext fun j => rfl
-      dsimp only
-      rw [hx1]
-      exact h1r.symm
+    have hsmul : splitHalfEquiv m (c • x) =
+        (c • (splitHalfEquiv m x).1, c • (splitHalfEquiv m x).2) := by
+      rw [map_smul]; rfl
+    dsimp only
+    rw [hsmul]
+    by_cases h0 : idx.1 = 0
+    · simp only [h0, ↓reduceDIte, RingHom.id_apply, Pi.smul_apply]
+    · by_cases h1 : idx.1 = 1
+      · simp only [h1, one_ne_zero, ↓reduceDIte, RingHom.id_apply, Pi.smul_apply]
+      · simp only [h0, h1, ↓reduceDIte, RingHom.id_apply, Pi.smul_apply]
+        split_ifs <;> simp only [map_smul, smul_add]
 
 private theorem basicCond_zero {m d : ℕ} (T : Fin d → BitString m →ₗ[Bool] BitString m)
     (x : BitString (m + m)) :
