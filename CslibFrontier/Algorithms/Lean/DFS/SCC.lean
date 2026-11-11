@@ -515,21 +515,13 @@ private theorem peelSCCs_spec [Fintype V] {vs : List V} (hvs : ∀ v, v ∈ vs)
             simp only [List.length_cons, List.getElem_cons_succ] at hi hj hu hv
             exact Nat.succ_le_succ (ih_cond (by omega) (by omega) hu hv huv)
 
-omit [DecidableEq V] in
-private theorem card_le_length' [Fintype V] {vs : List V} (hvs : ∀ v, v ∈ vs) :
-    Fintype.card V ≤ vs.length := by
-  classical
-  calc Fintype.card V = (Finset.univ : Finset V).card := rfl
-    _ ≤ vs.toFinset.card := Finset.card_le_card fun v _ => List.mem_toFinset.2 (hvs v)
-    _ ≤ vs.length := List.toFinset_card_le vs
-
-/-- **Correctness of Kosaraju's algorithm** [Cormen et al., Theorem 22.15][CLRS2009]: when `vs`
-lists every vertex of `V`, `sccs adj vs` partitions `V` into nonempty strongly connected
-components in forward condensation topological order. -/
+/-- **Correctness of Kosaraju's algorithm** [Cormen et al.][CLRS2009]: when `vs` lists every
+vertex of `V`, `sccs adj vs` partitions `V` into nonempty strongly connected components in forward
+condensation topological order. -/
 theorem isSCCCondensation_sccs {vs : List V} (hvs : ∀ v, v ∈ vs) :
     IsSCCCondensation adj (sccs adj vs) := by
   let _ : Fintype V := Fintype.ofList vs hvs
-  have hk : Fintype.card V ≤ vs.length := card_le_length' hvs
+  have hk : Fintype.card V ≤ vs.length := card_le_length hvs
   have hnd : (topologicalSort adj vs).Nodup := nodup_topologicalSort hvs
   have hmem_ord : ∀ v, v ∈ topologicalSort adj vs := mem_topologicalSort hvs
   have hord : ∀ r ∈ topologicalSort adj vs, ∀ w, Relation.ReflTransGen (Edge adj) w r →
