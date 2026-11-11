@@ -15,19 +15,20 @@ public import Mathlib.Data.Nat.Log
 # Parameters of the CIKK learner for AC⁰[2]
 
 Carmosino, Impagliazzo, Kabanets and Kolokolova run their learner with a natural property at an
-input length `ℓ` where the property rejects every function the reconstruction builds
+input length `ℓ` where the property rejects every output `g_z` of the black-box generator
 [Carmosino et al., Theorem 5.1, p. 10:19][CarmosinoImpagliazzoKabanetsKolokolova2016]. For AC⁰[2]
-those functions are the outputs `g_z` of the Nisan–Wigderson generator on the amplified target
-`Amp(f) = (f^k)^GL`, and the property is the rank property, which rejects every circuit of depth `D`
-and size `S` at the input length `rankLength D x` for `S ≤ 2 ^ x`
+the `g_z` are the functions computed by the Nisan–Wigderson generator on the amplified target
+`Amp(f) = (f^k)^GL`, and the property is the rank property, which rejects every function computed
+by a circuit of depth `D` and size `S` at the input length `rankLength D x` for `S ≤ 2 ^ x`
 (`Cslib.Circuits.Boolean.Razborov.notMem_rankProperty_rankLength_of_computes`). This file fixes the
-three parameters of that instance as explicit numerals, for depth `d`, size `s`, `n` input
-variables and error exponent `e`:
+three parameters of that instance in closed form, for depth `d`, size `s`, `n` input variables and
+error exponent `e`:
 
-* `cikkAC0Size e n s g`: the size bound `S(g) = k s + 6 (k n + k)² + 3` on the circuits for `g_z`
+* the size bound `S(g) = k s + 6 (k n + k)² + 3` on the circuits for `g_z`
   with `k = cikkK e g`, from a size-`s` circuit for `f`; their depth is at most `d + 7`;
 * `cikkAC0Len d e n s g`: the input length `ℓ(g) = rankLength (d + 7) (⌊log₂ S(g)⌋ + 1)` at which
-  the rank test rejects every such circuit (`notMem_rankProperty_cikkAC0Len_of_computes`);
+  the rank test rejects every function such a circuit computes
+  (`notMem_rankProperty_cikkAC0Len_of_computes`);
 * `cikkAC0Gap d e n s`: an advantage exponent `g`, a power of two, with `ℓ(g) + 2 ≤ g`
   (`cikkAC0Len_add_two_le_cikkAC0Gap`).
 
@@ -38,21 +39,22 @@ spare, while `ℓ` grows with `g` through `k` and `S`. It replaces the source's 
 [CarmosinoImpagliazzoKabanetsKolokolova2016]. Since `ℓ` is polylogarithmic in `S` and `k` is linear
 in `g`, `g` is polylogarithmic in `n`, `s` and `2 ^ e` for fixed `d`: with `D = d + 7` and
 `B = ⌊log₂ (M² (s + 6 (n + 1)² + 3))⌋ + 1`, `M = 2^{e+10} (3e + 42)`,
-`g ≤ 2^{2D(5D+25)} B^{2D}` (`cikkAC0Gap_le`). That bound gives the quasi-polynomial query count of
-[Carmosino et al., Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016].
+`g ≤ 2^{2D(5D+25)} B^{2D}` (`cikkAC0Gap_le`). That bound makes the learner's number of queries
+quasi-polynomial (`CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod`); the source's
+[Carmosino et al., Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016] bounds the
+running time, which this library does not certify.
 
 Labels. The rank property is this library's variant (one square matrix, threshold `C(n, a) / 2`,
 level `sliceLevel`; see `Cslib.Circuits.Boolean.Razborov.RankProperty`), and only `p = 2` is
 covered, where Corollary 5.4 states every prime. The depth overhead `7` is that of the library's
 generator circuits (`Cslib.Crypto.PRG.NisanWigderson.exists_circuit_generator_glAmp`). `g` and `k`
 are powers of two, and all constants are this library's, far from optimal. The learner and its
-correctness for depth-`d`, size-`s` AC⁰[2] targets are milestone M6.8b2 of
-[#4451](https://github.com/cslib-community/cslib-frontier/issues/4451); this file proves only the
-parameter inequalities.
+correctness for depth-`d`, size-`s` AC⁰[2] targets are in
+`CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod`; this file proves only the parameter
+inequalities.
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Razborov.cikkAC0Size`: the size bound `S(g)` on the generator circuits.
 * `Cslib.Circuits.Boolean.Razborov.cikkAC0Len`: the input length `ℓ(g)`.
 * `Cslib.Circuits.Boolean.Razborov.cikkAC0Gap`: the advantage exponent `g`.
 
@@ -80,10 +82,11 @@ open Cslib.MachineLearning.UniformLearning
 
 /-- The size bound `S(g) = k s + 6 (k n + k)² + 3`, with `k = cikkK e g`, on the circuits for the
 generator outputs `g_z` built from a circuit of size `s` on `n` inputs. -/
-def cikkAC0Size (e n s g : ℕ) : ℕ := cikkK e g * s + 6 * (cikkK e g * n + cikkK e g) ^ 2 + 3
+private def cikkAC0Size (e n s g : ℕ) : ℕ := cikkK e g * s + 6 * (cikkK e g * n + cikkK e g) ^ 2 + 3
 
 /-- The input length `ℓ(g) = rankLength (d + 7) (⌊log₂ S(g)⌋ + 1)` at which the rank test rejects
-every circuit with `MOD_2` gates of depth at most `d + 7` and size at most `S(g)`. -/
+every function computed by a circuit with `MOD_2` gates of depth at most `d + 7` and size at most
+`S(g)`. -/
 def cikkAC0Len (d e n s g : ℕ) : ℕ := rankLength (d + 7) (Nat.log 2 (cikkAC0Size e n s g) + 1)
 
 /-- `B = ⌊log₂ (M² (s + 6 (n + 1)² + 3))⌋ + 1` with `M = 2^{e+10} (3e + 42)`, the number of bits

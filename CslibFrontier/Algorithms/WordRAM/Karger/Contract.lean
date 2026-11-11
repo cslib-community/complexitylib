@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 import CslibFrontier.Computability.WordRAM.Call
+import CslibFrontier.Computability.WordRAM.RegisterFrame
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Lean.Karger.Contraction
 public import CslibFrontier.Computability.WordRAM.Heap
@@ -2825,12 +2826,6 @@ def computeDegreesAndTotalAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
 def contractDownToAt {r : ℕ} (hr : 16 ≤ r) : Code .standard r :=
   contractDownTo.rename (Fin.castLE hr)
 
-private theorem extend_castLE_regs_ge {r : ℕ} (hr : 16 ≤ r) (y : Data 16) (x : Data r)
-    (j : Fin r) (hj : 16 ≤ j.val) :
-    (y.extend (Fin.castLE hr) x).regs j = x.regs j :=
-  Function.extend_apply' y.regs x.regs j
-    (by rintro ⟨i, rfl⟩; exact absurd i.isLt (by simp [Fin.castLE] at hj; omega))
-
 /-- Specification of `computeDegreesAndTotalAt hr` on any `r`-register file (`16 ≤ r`), preserving
 all caller registers with index `≥ 16`. -/
 theorem computeDegreesAndTotalAt_exec {r w wb db str k : ℕ} (hr : 16 ≤ r)
@@ -2877,7 +2872,8 @@ theorem contractDownToAt_law {r w wb db str k t : ℕ} (hr : 16 ≤ r) {W : Fin 
       ((Lean.Karger.spec.toRandomized.withCoins.run (Lean.Karger.contractTimes (k - t))
         ⟨k, W⟩).map Prod.snd) :=
   (ExecRandLaw.rename (Fin.castLE_injective hr) (contractDownTo_law ht htk hW hst)).mono
-    (fun _ ⟨y, ⟨hmod, hy⟩, he⟩ => he ▸ ⟨hmod, fun j hj => extend_castLE_regs_ge hr y x j hj,
+    (fun _ ⟨y, ⟨hmod, hy⟩, he⟩ => he ▸ ⟨hmod,
+      fun j hj => Data.extend_castLE_regs_of_le (hrs := hr) y x j hj,
       by rwa [Data.comap_extend (Fin.castLE_injective hr)]⟩) le_rfl le_rfl
 
 /-- Specification of `contractDownToAt hr` on any `r`-register file (`16 ≤ r`), preserving all
@@ -2913,7 +2909,8 @@ theorem contractDownToAt_spec {r n w wb db str k t : ℕ} (hr : 16 ≤ r)
   · intro z hz
     obtain ⟨z₀, hz₀, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
     rcases hsup₀ z₀ hz₀ with ⟨ht0, hmod0, W', part', hC', hst'⟩
-    refine ⟨ht0, hmod0, fun j hj => extend_castLE_regs_ge hr z₀.1 x j hj, W', part', hC', ?_⟩
+    refine ⟨ht0, hmod0, fun j hj => Data.extend_castLE_regs_of_le (hrs := hr) z₀.1 x j hj,
+      W', part', hC', ?_⟩
     rwa [Data.comap_extend hf]
   · intro B hmin_pos hB_nt hB_min
     rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]

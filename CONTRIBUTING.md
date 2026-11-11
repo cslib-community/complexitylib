@@ -163,7 +163,7 @@ state paired with the bit read, with the state framed. Because the name is reduc
 statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
 see through it; syntactic tools such as `omega` do not. New and changed statements follow the
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
-checks the repetition rule.
+checks the repetition rule and rejects compound-encoding `local notation`s.
 
 To sweep an area, `python3 scripts/check_encoding_readability.py --list CslibFrontier/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
@@ -294,8 +294,10 @@ listed in a module docstring's "Main …" sections must exist, a new test file m
 than restate signatures with `example … := name`, and an `@[expose] … section` header must have a
 definition to expose. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
-public statements ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
-enforces its baseline only in the modules a pull request changes, and merge groups only report,
+public statements and check against compound-encoding `local notation`s
+([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
+enforces its baseline and the `local notation` rule only in the modules a pull request changes,
+and merge groups only report,
 so `main` can drift above the baseline; the next change to a drifted module names the encoding
 or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
 options. On pull requests CI also runs

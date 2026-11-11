@@ -31,6 +31,7 @@ state.
 ## Main definitions
 
 * `Cslib.Algorithms.Lean.DFS.Edge`: the edge relation of adjacency lists.
+* `Cslib.Algorithms.Lean.DFS.StronglyConnected`: mutual reachability in `Edge adj`.
 * `Cslib.Algorithms.Lean.DFS.visit`, `Cslib.Algorithms.Lean.DFS.dfs`: depth-first search.
 * `Cslib.Algorithms.Lean.DFS.dfsM`: depth-first search in `TimeM`.
 
@@ -43,6 +44,9 @@ state.
   either `u` finishes after `v` or `v` reaches `u`, so that the edge closes a cycle. This is the
   finishing-time argument in the proof of [Cormen et al., Theorem 22.12][CLRS2009], which rests on
   the absence of back edges in acyclic graphs (Lemma 22.11 there).
+* `Cslib.Algorithms.Lean.DFS.dfs_scc_finished_order`: if a finished vertex `u` reaches `v` while
+  `v` does not reach `u`, some vertex mutually reachable with `u` finishes after `v` (the
+  component finishing-time property underlying Kosaraju's algorithm [Cormen et al.][CLRS2009]).
 * `Cslib.Algorithms.Lean.DFS.time_dfsM`, `Cslib.Algorithms.Lean.DFS.time_dfsM_le`: the cost is one
   unit per root plus one per edge out of a finished vertex, so at most `|roots| + |E|`.
 
@@ -74,6 +78,25 @@ def Edge (adj : V → List V) (u v : V) : Prop := v ∈ adj u
 
 instance [DecidableEq V] (adj : V → List V) : DecidableRel (Edge adj) := fun u v =>
   inferInstanceAs (Decidable (v ∈ adj u))
+
+/-- Two vertices lie in the same strongly connected component when each reaches the other. -/
+def StronglyConnected (adj : V → List V) (u v : V) : Prop :=
+  Relation.ReflTransGen (Edge adj) u v ∧ Relation.ReflTransGen (Edge adj) v u
+
+namespace StronglyConnected
+
+variable {adj : V → List V}
+
+theorem refl (u : V) : StronglyConnected adj u u := ⟨.refl, .refl⟩
+
+theorem symm {u v : V} (h : StronglyConnected adj u v) : StronglyConnected adj v u :=
+  ⟨h.2, h.1⟩
+
+theorem trans {u v w : V} (h₁ : StronglyConnected adj u v) (h₂ : StronglyConnected adj v w) :
+    StronglyConnected adj u w :=
+  ⟨h₁.1.trans h₂.1, h₂.2.trans h₁.2⟩
+
+end StronglyConnected
 
 /-- The state of depth-first search. -/
 structure State (V : Type*) where
@@ -114,9 +137,43 @@ theorem visit_of_notMem {k : ℕ} {u : V} {s : State V} (h : u ∉ s.visited) :
           ⟨insert u s.visited, s.finished⟩).finished⟩ := by
   simp [visit, h]
 
+/-- `visit` only prepends newly finished vertices onto `s.finished`, without reading it. -/
+theorem visit_eq_of_nil :
+    ∀ (k : ℕ) (u : V) (vis : Finset V) (fin : List V),
+      visit adj k u ⟨vis, fin⟩ =
+        ⟨(visit adj k u ⟨vis, []⟩).visited, (visit adj k u ⟨vis, []⟩).finished ++ fin⟩
+  | 0, _, _, _ => rfl
+  | k + 1, u, vis, fin => by
+    by_cases hu : u ∈ vis
+    · simp [visit, hu]
+    · have hfold : ∀ (l : List V) (v₀ : Finset V) (f₀ : List V),
+          l.foldl (fun t v => visit adj k v t) ⟨v₀, f₀ ++ fin⟩ =
+            ⟨(l.foldl (fun t v => visit adj k v t) ⟨v₀, f₀⟩).visited,
+              (l.foldl (fun t v => visit adj k v t) ⟨v₀, f₀⟩).finished ++ fin⟩ := by
+        intro l
+        induction l with
+        | nil => intro v₀ f₀; rfl
+        | cons w l ih =>
+          intro v₀ f₀
+          simp only [List.foldl_cons, visit_eq_of_nil k w v₀ (f₀ ++ fin)]
+          rw [← List.append_assoc, ih, ← visit_eq_of_nil k w v₀ f₀]
+      simp only [visit, hu, ↓reduceIte]
+      simpa using congrArg (fun s : State V => State.mk s.visited (u :: s.finished))
+        (hfold (adj u) (insert u vis) [])
+
 end Unfold
 
 section Proof
+
+private theorem exists_step_notMem {R : V → V → Prop} {S : Finset V} {x y : V}
+    (hxy : Relation.ReflTransGen R x y) (hx : x ∈ S) (hy : y ∉ S) :
+    ∃ w w', w ∈ S ∧ w' ∉ S ∧ Relation.ReflTransGen R x w ∧ R w w' := by
+  induction hxy with
+  | refl => exact absurd hx hy
+  | @tail b c hab hbc ih =>
+    by_cases hb : b ∈ S
+    · exact ⟨b, c, hb, hy, hab, hbc⟩
+    · exact ih hb
 
 /-- The invariant of depth-first search. -/
 private structure Inv (adj : V → List V) (s : State V) : Prop where
@@ -125,6 +182,10 @@ private structure Inv (adj : V → List V) (s : State V) : Prop where
   closed : ∀ x ∈ s.finished, ∀ y ∈ adj x, y ∈ s.visited
   order : ∀ x ∈ s.finished, ∀ y ∈ adj x,
     [x, y] <+ s.finished ∨ Relation.ReflTransGen (Edge adj) y x
+  scc_order : ∀ x ∈ s.finished, ∀ y, Relation.ReflTransGen (Edge adj) x y →
+    ¬ Relation.ReflTransGen (Edge adj) y x →
+    (∃ z, StronglyConnected adj x z ∧ [z, y] <+ s.finished) ∨
+      ∃ z ∈ s.visited, z ∉ s.finished ∧ StronglyConnected adj x z
 
 /-- `s'` extends `s`: finishing prepends new vertices that were undiscovered in `s`. -/
 private def Ext (s s' : State V) : Prop :=
@@ -216,7 +277,10 @@ private theorem visit_spec [DecidableEq V] [Fintype V] :
       { nodup := hI.nodup
         finished_subset := fun x hx => Finset.mem_insert_of_mem (hI.finished_subset x hx)
         closed := fun x hx y hy => Finset.mem_insert_of_mem (hI.closed x hx y hy)
-        order := hI.order }
+        order := hI.order
+        scc_order := fun x hx y hxy hnyx =>
+          (hI.scc_order x hx y hxy hnyx).imp id fun ⟨z, hz, hzf, hxz⟩ =>
+            ⟨z, Finset.mem_insert_of_mem hz, hzf, hxz⟩ }
     have hk₀ : Fintype.card V - s₀.visited.card ≤ k := by
       have := Finset.card_insert_of_notMem hu
       simp only [s₀]
@@ -233,16 +297,18 @@ private theorem visit_spec [DecidableEq V] [Fintype V] :
       rw [hnew, List.mem_append, not_or]
       exact ⟨fun h => hdis u h (Finset.mem_insert_self _ _), fun h => hu (hI.finished_subset u h)⟩
     have hut' : u ∈ t.visited := (hvis u).2 (.inl (Finset.mem_insert_self _ _))
+    have hf_sub' : ∀ x ∈ u :: t.finished, x ∈ t.visited := by
+      intro x hx
+      rcases List.mem_cons.1 hx with rfl | hx
+      · exact hut'
+      · exact hIt.finished_subset x hx
+    have hclosed' : ∀ x ∈ u :: t.finished, ∀ y ∈ adj x, y ∈ t.visited := by
+      intro x hx
+      rcases List.mem_cons.1 hx with rfl | hx
+      · exact hvt
+      · exact hIt.closed x hx
     refine ⟨?_, ?_, hut', ?_⟩
-    · refine ⟨List.nodup_cons.2 ⟨hut, hIt.nodup⟩, ?_, ?_, ?_⟩
-      · intro x hx
-        rcases List.mem_cons.1 hx with rfl | hx
-        · exact hut'
-        · exact hIt.finished_subset x hx
-      · intro x hx
-        rcases List.mem_cons.1 hx with rfl | hx
-        · exact hvt
-        · exact hIt.closed x hx
+    · refine ⟨List.nodup_cons.2 ⟨hut, hIt.nodup⟩, hf_sub', hclosed', ?_, ?_⟩
       · intro x hx y hy
         rcases List.mem_cons.1 hx with rfl | hx
         · by_cases hyf : y ∈ t.finished
@@ -252,6 +318,46 @@ private theorem visit_spec [DecidableEq V] [Fintype V] :
         · rcases hIt.order x hx y hy with h | h
           · exact .inl (h.cons u)
           · exact .inr h
+      · intro x hx y hxy hnyx
+        by_cases hyt : y ∈ t.visited
+        · by_cases hyf : y ∈ t.finished
+          · rcases List.mem_cons.1 hx with rfl | hxt
+            · exact .inl ⟨x, ⟨.refl, .refl⟩, (List.singleton_sublist.2 hyf).cons_cons x⟩
+            · rcases hIt.scc_order x hxt y hxy hnyx with ⟨z, hxz, hsub⟩ | ⟨z, hzv, hzf, hxz⟩
+              · exact .inl ⟨z, hxz, hsub.cons u⟩
+              · by_cases hzu : z = u
+                · exact .inl ⟨u, hzu ▸ hxz, (List.singleton_sublist.2 hyf).cons_cons u⟩
+                · exact .inr ⟨z, hzv, List.not_mem_cons_of_ne_of_not_mem hzu hzf, hxz⟩
+          · obtain ⟨hy₀, hyf₀⟩ := hEt.gray hyt hyf
+            have hyu : Relation.ReflTransGen (Edge adj) y u := hg₀ y hy₀ hyf₀
+            rcases List.mem_cons.1 hx with rfl | hxt
+            · exact absurd hyu hnyx
+            · rcases hIt.scc_order x hxt y hxy hnyx with ⟨z, _, hsub⟩ | ⟨z, hzv, hzf, hxz⟩
+              · exact absurd (hsub.subset (by simp)) hyf
+              · have hzu : z ≠ u := fun hzu => hnyx (hyu.trans (hzu ▸ hxz.2))
+                exact .inr ⟨z, hzv, List.not_mem_cons_of_ne_of_not_mem hzu hzf, hxz⟩
+        · obtain ⟨w, w', hwv, hw'v, hxw, hww'⟩ := exists_step_notMem hxy (hf_sub' x hx) hyt
+          have hw_nf : w ∉ u :: t.finished := fun hwf => hw'v (hclosed' w hwf w' hww')
+          have hw_tf : w ∉ t.finished := fun hwf => hw_nf (List.mem_cons_of_mem u hwf)
+          obtain ⟨hw₀, hwf₀⟩ := hEt.gray hwv hw_tf
+          have hwu : Relation.ReflTransGen (Edge adj) w u := hg₀ w hw₀ hwf₀
+          rcases List.mem_cons.1 hx with rfl | hxt
+          · exact .inr ⟨w, hwv, hw_nf, hxw, hwu⟩
+          · rw [hnew, List.mem_append] at hxt
+            rcases hxt with hxnew | hxs
+            · have hxt' : x ∈ t.finished := by rw [hnew]; exact List.mem_append_left _ hxnew
+              have hux : Relation.ReflTransGen (Edge adj) u x :=
+                (hrt x (hIt.finished_subset x hxt')).resolve_left (hdis x hxnew)
+              exact .inr ⟨w, hwv, hw_nf, hxw, hwu.trans hux⟩
+            · rcases hI.scc_order x hxs y hxy hnyx with ⟨z, _, hsub⟩ | ⟨z, hzv, hzf, hxz⟩
+              · exact absurd (hEt.visited_subset (Finset.mem_insert_of_mem
+                  (hI.finished_subset y (hsub.subset (by simp))))) hyt
+              · have hzu : z ≠ u := fun h => hu (h ▸ hzv)
+                have hzn : z ∉ new := fun hzn => hdis z hzn (Finset.mem_insert_of_mem hzv)
+                have hzf' : z ∉ u :: t.finished := by
+                  simp only [List.mem_cons, hnew, List.mem_append, not_or]
+                  exact ⟨hzu, hzn, hzf⟩
+                exact .inr ⟨z, hEt.visited_subset (Finset.mem_insert_of_mem hzv), hzf', hxz⟩
     · refine ⟨u :: new, by simp [hnew, s₀], ?_, ?_⟩
       · intro x hx
         rcases List.mem_cons.1 hx with rfl | hx
@@ -306,7 +412,7 @@ private theorem dfs_spec [DecidableEq V] [Fintype V] {k : ℕ} (hk : Fintype.car
       (∀ u ∈ roots, u ∈ (dfs adj k roots).visited) ∧
       ∀ x ∈ (dfs adj k roots).visited, ∃ r ∈ roots, Relation.ReflTransGen (Edge adj) r x := by
   obtain ⟨hI, -, hb, hr, hR⟩ := foldl_visit_spec (adj := adj) hk roots ⟨∅, []⟩
-    ⟨List.nodup_nil, by simp, by simp, by simp⟩ (by simp)
+    ⟨List.nodup_nil, by simp, by simp, by simp, by simp⟩ (by simp)
   exact ⟨hI, hb, hr, fun x hx => (hR x hx).resolve_left (by simp)⟩
 
 end Proof
@@ -340,6 +446,18 @@ theorem dfs_finished_order (hk : Fintype.card V ≤ k) (roots : List V) {u v : V
     (hu : u ∈ (dfs adj k roots).finished) (huv : Edge adj u v) :
     [u, v] <+ (dfs adj k roots).finished ∨ Relation.ReflTransGen (Edge adj) v u :=
   (dfs_spec (adj := adj) hk roots).1.order u hu v huv
+
+/-- **Component finishing order**: if a finished vertex `u` reaches `v` while `v` does not reach
+`u`, then some vertex `z` mutually reachable with `u` finishes after `v` (appears before `v` in
+`finished`). -/
+theorem dfs_scc_finished_order (hk : Fintype.card V ≤ k) (roots : List V) {u v : V}
+    (hu : u ∈ (dfs adj k roots).finished) (huv : Relation.ReflTransGen (Edge adj) u v)
+    (hnvu : ¬ Relation.ReflTransGen (Edge adj) v u) :
+    ∃ z, StronglyConnected adj u z ∧ [z, v] <+ (dfs adj k roots).finished := by
+  obtain ⟨hI, hb, -, -⟩ := dfs_spec (adj := adj) hk roots
+  rcases hI.scc_order u hu v huv hnvu with ⟨z, huz, hsub⟩ | ⟨z, hzv, hzf, -⟩
+  · exact ⟨z, huz, hsub⟩
+  · exact absurd (hb z hzv) hzf
 
 end Results
 
@@ -403,6 +521,12 @@ private theorem visitM_spec :
 /-- `visitM` computes `visit`. -/
 theorem ret_visitM (k : ℕ) (u : V) (s : State V) : (visitM adj k u s).ret = visit adj k u s :=
   (visitM_spec k u s).1
+
+/-- `visitM` charges one unit plus the out-degrees of newly finished vertices. -/
+theorem time_visitM (k : ℕ) (u : V) (s : State V) :
+    (visitM adj k u s).time + outDegreeSum adj s.finished =
+      1 + outDegreeSum adj (visit adj k u s).finished :=
+  (visitM_spec k u s).2
 
 /-- `dfsM` computes `dfs`. -/
 theorem ret_dfsM (k : ℕ) (roots : List V) : (dfsM adj k roots).ret = dfs adj k roots :=

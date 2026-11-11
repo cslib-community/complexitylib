@@ -30,6 +30,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Computational.MerkleSignature.Security
 import CslibFrontier.Crypto.Computational.OneWayToPRF
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -510,11 +511,8 @@ private abbrev encPlantedCert : PlantedCertState ↪ List Bool :=
 private theorem length_fst_getD_keys_le (keys : List (List Bool × List Bool)) (idx : ℕ) :
     (keys.getD idx ([], [])).1.length ≤ (encKeys keys).length := by
   by_cases h : idx < keys.length
-  · have hmem : keys.getD idx ([], []) ∈ keys := by
-      rw [List.getD_eq_getElem _ _ h]
-      exact List.getElem_mem h
-    exact (length_le_encPair_left encBits encBits _).trans
-      (length_le_encList_of_mem (encPair encBits encBits) hmem)
+  · exact (length_le_encPair_left encBits encBits _).trans
+      (length_le_encList_of_mem (encPair encBits encBits) (List.getD_mem _ h))
   · rw [List.getD_eq_default _ _ (Nat.le_of_not_lt h)]
     exact Nat.zero_le _
 
@@ -3437,9 +3435,7 @@ private theorem localSignEdge_notrunc (S : IndexedSignatureScheme) {sigCap n : �
     simp only [PMF.pure_map, ProbComp.eval_pure]
   | none =>
     simp only [bind_pure_comp, ProbComp.eval_map, PMF.map_comp, Function.comp_def]
-    have hk_mem : usedKeys.getD idx ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
-      rw [List.getD_eq_getElem _ _ hidx]
-      exact hsupp _ (List.getElem_mem hidx)
+    have hk_mem := hsupp _ (List.getD_mem ([], []) hidx)
     refine PMF.map_congr_on_support _ _ _ fun raw hraw => ?_
     have hle := hsigCap _ hk_mem u hu msg hmsg raw hraw
     simp only [List.take_of_length_le hle]
@@ -3501,9 +3497,7 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
             hvis_inv childIdx uk' vis' hm_v
           exact ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt, hkeep idx hidx, hidx.trans_le hlenLe⟩⟩
         fun ⟨childIdx, uk', vis'⟩ _ ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt, hidx_eq, hidx'⟩ => by
-          have hchildMem : uk'.getD childIdx ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
-            rw [List.getD_eq_getElem _ _ hcLt]
-            exact hsp' _ (List.getElem_mem hcLt)
+          have hchildMem := hsp' _ (List.getD_mem ([], []) hcLt)
           have hse := localSignEdge_notrunc S hsigCap hsp' hidx' hbu (path := node)
             (Or.inr ⟨_, hchildMem, rfl⟩) edg all
           rw [hidx_eq] at hse
@@ -4362,9 +4356,7 @@ theorem succProbability_lazyTreeGame_le (S : IndexedSignatureScheme)
     have hpos : 0 < keys.length := by
       have := two_le_dyadicSize (slotBound n)
       omega
-    have hk0Mem : keys.getD 0 ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
-      rw [List.getD_eq_getElem _ _ hpos]
-      exact hkSupp _ (List.getElem_mem hpos)
+    have hk0Mem := hkSupp _ (List.getD_mem ([], []) hpos)
     have hinit : presampledBoundedInv (depth n) keys Q initPresampledState := by
       refine ⟨List.mem_singleton.mpr rfl, ?_, ?_, ?_, fun _ _ _ _ h => by cases h⟩
       · simp only [List.length_singleton, hkLen]

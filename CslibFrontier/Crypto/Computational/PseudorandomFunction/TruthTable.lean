@@ -96,6 +96,7 @@ def queryTable (words : List (List Bool)) : WordOracleComp Unit (List Bool) :=
 
 /-- **Asking for a table is strict oracle PPT**: each step copies one word onto the query buffer
 and reads one reply bit. -/
+@[fun_prop]
 theorem isOraclePPTOn_queryTable : IsOraclePPTOn (encList encBits) encBits queryTable := by
   unfold queryTable
   refine IsOraclePPTOn.map' (IsOraclePPTOn.iterate_of_bounded_growth'
@@ -115,7 +116,7 @@ theorem isOraclePPTOn_queryTable : IsOraclePPTOn (encList encBits) encBits query
     | cons word words =>
       simp only [queryTableStep, List.isEmpty_cons, Bool.false_eq_true, ite_false] at hnext
       obtain ⟨reply, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
-      enc_len [List.length_singleton, List.tail_cons, length_encList, List.map_cons, List.sum_cons]
+      enc_len [List.tail_cons]
 
 /-- Against a deterministic oracle, `queryTable` returns the first bits of the replies. -/
 theorem interpret_queryTable {m : Type → Type*} [Monad m] [LawfulMonad m]

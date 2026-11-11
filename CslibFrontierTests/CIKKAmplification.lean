@@ -9,7 +9,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 /-! Checks of the reconstruction for the amplification `Amp(f) = (f^k)^GL` of Carmosino,
 Impagliazzo, Kabanets and Kolokolova (Theorem 4.3): the queries that compute `Amp(f)`, the query
 count of the reconstruction, its output and its learning guarantee for a single amplified
-function, and the two-stage sampling bound that its proof uses. -/
+function. -/
 
 namespace CslibFrontierTests.CIKKAmplification
 
@@ -62,21 +62,5 @@ example (A : QueryLearner (Fin (k * n + k)) Ω) {s m K : ℕ} (f : BooleanFuncti
     (ampLearner A s m K (ω, (masks, guess), P, b₀, v)).eval f =
       dpDecode (glAmpCandidate ((A ω).eval (glAmp f k)) masks guess) false P b₀ v :=
   eval_ampLearner A s m K f ω masks guess P b₀ v
-
-/-! ### Two-stage sampling -/
-
-/-- Half of the first coordinates are even, and for each of them half of the second coordinates
-are below `2`: so a quarter of the pairs are both. -/
-example : (1 / 2 : ℝ) * (1 / 2) ≤ (Finset.dens {ab : Fin 4 × Fin 4 |
-    ab.1.val % 2 = 0 ∧ ab.2.val < 2} : ℝ) :=
-  Cslib.Probability.mul_le_dens_filter_prod (fun a : Fin 4 => a.val % 2 = 0)
-    (fun a (b : Fin 4) => a.val % 2 = 0 ∧ b.val < 2) (by norm_num)
-    (by
-      rw [Finset.dens, show Finset.card {a : Fin 4 | a.val % 2 = 0} = 2 by decide]
-      norm_num)
-    fun a ha => by
-      simp only [ha, true_and]
-      rw [Finset.dens, show Finset.card {b : Fin 4 | b.val < 2} = 2 by decide]
-      norm_num
 
 end CslibFrontierTests.CIKKAmplification

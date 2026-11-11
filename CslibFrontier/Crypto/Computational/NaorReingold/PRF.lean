@@ -510,47 +510,48 @@ private theorem isPPT_prfTapeDistinguisher (F : PrimeOrderGroupFamily)
   let EReq := encPair (encFinEnum Unit) encBits
   let ERest := encPair EReq (encFinEnum Unit)
   let EHandler := encPair ECaller ERest
-  have hprep : ComputableTidilyInPolyTime (fun p : ℕ × List Bool => (p.1, ([] : List Bool)))
+  have hprep : ComputableInPolyTime (fun p : ℕ × List Bool => (p.1, ([] : List Bool)))
       ECaller (encPair encUnary encBits) :=
-    (ComputableTidilyInPolyTime.fst encUnary encBits).prod (ComputableTidilyInPolyTime.const [])
-  have hfstH := ComputableTidilyInPolyTime.fst ECaller ERest
-  have hsndH := ComputableTidilyInPolyTime.snd ECaller ERest
-  have hreqQ : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.fst encUnary encBits).prod (ComputableInPolyTime.const [])
+  have hfstH := ComputableInPolyTime.fst ECaller ERest
+  have hsndH := ComputableInPolyTime.snd ECaller ERest
+  have hreqQ : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (Unit × List Bool) × Unit => pair.2.1.2)
       EHandler encBits :=
-    (ComputableTidilyInPolyTime.snd (encFinEnum Unit) encBits).comp
-      ((ComputableTidilyInPolyTime.fst EReq (encFinEnum Unit)).comp hsndH)
-  have hnH : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.snd (encFinEnum Unit) encBits).comp
+      ((ComputableInPolyTime.fst EReq (encFinEnum Unit)).comp hsndH)
+  have hnH : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (Unit × List Bool) × Unit => pair.1.1)
       EHandler encUnary :=
-    (ComputableTidilyInPolyTime.fst encUnary encBits).comp hfstH
-  have htH : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.fst encUnary encBits).comp hfstH
+  have htH : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (Unit × List Bool) × Unit => pair.1.2)
       EHandler encBits :=
-    (ComputableTidilyInPolyTime.snd encUnary encBits).comp hfstH
-  have hguard : ComputableTidilyInPolyTime
+    (ComputableInPolyTime.snd encUnary encBits).comp hfstH
+  have hguard : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × (Unit × List Bool) × Unit =>
         pair.2.1.2.length == pair.1.1)
       EHandler encBool :=
-    ComputableTidilyInPolyTime.unary_beq
-      (ComputableTidilyInPolyTime.length_bits.comp hreqQ) hnH
+    ComputableInPolyTime.unary_beq'
+      (ComputableInPolyTime.length_bits.comp hreqQ) hnH
   have hhandler : IsPPTOn EHandler (encPair encBits (encFinEnum Unit))
       (fun pair : (ℕ × List Bool) × (Unit × List Bool) × Unit =>
         pure (if pair.2.1.2.length = pair.1.1 then
           F.evalNaorReingoldTape id id desc bound expWidth pair.1.1 pair.1.2 pair.2.1.2
         else [], ())) := by
-    simpa only [beq_iff_eq] using ((ComputableTidilyInPolyTime.ite' hguard
-      (computableTidilyInPolyTime_evalNaorReingoldTape_of F
-        (inLen := id) (outLen := id) .id' .id' hdesc.tidy hbound hexpWidth.tidy hnH htH hreqQ)
-      (ComputableTidilyInPolyTime.const [])).prod
-      (ComputableTidilyInPolyTime.const ())).isPPTOn
-  have hres : ComputableTidilyInPolyTime
+    simpa only [beq_iff_eq] using ((hguard.ite
+      (.of_tidy (computableTidilyInPolyTime_evalNaorReingoldTape_of F
+        (inLen := id) (outLen := id) .id' .id' hdesc.tidy hbound hexpWidth.tidy
+        hnH.tidy htH.tidy hreqQ.tidy))
+      (ComputableInPolyTime.const [])).prod
+      (ComputableInPolyTime.const ())).isPPTOn
+  have hres : ComputableInPolyTime
       (fun pair : (ℕ × List Bool) × List Bool => pair.1.1 + 1)
       (encPair ECaller encBits) encUnary :=
-    ComputableTidilyInPolyTime.unary_add.comp
-      (((ComputableTidilyInPolyTime.fst encUnary encBits).comp
-        (ComputableTidilyInPolyTime.fst ECaller encBits)).prod (.const 1))
-  have hrun := hadversary.run_interpret_preprocess (State := Unit)
+    ComputableInPolyTime.unary_add.comp
+      (((ComputableInPolyTime.fst encUnary encBits).comp
+        (ComputableInPolyTime.fst ECaller encBits)).prod (.const 1))
+  have hrun := hadversary.run_interpret_preprocess' (State := Unit)
     (stateEncoding := encFinEnum Unit)
     (handler := fun (p : ℕ × List Bool) (request : Unit × List Bool) (_ : Unit) =>
       pure (if request.2.length = p.1 then
@@ -559,7 +560,7 @@ private theorem isPPT_prfTapeDistinguisher (F : PrimeOrderGroupFamily)
     (prepare := fun p : ℕ × List Bool => (p.1, []))
     (initial := fun _ => ())
     (resources := fun p _ => p.1 + 1)
-    hprep hhandler (ComputableTidilyInPolyTime.const ())
+    hprep hhandler (ComputableInPolyTime.const ())
     (fun _ _ => True) (fun _ => trivial) hres
     (fun a request _ _ result hresult => by
       simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult

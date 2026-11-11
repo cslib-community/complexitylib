@@ -69,15 +69,7 @@ theorem skip_transition {a : Arena} {w : ℕ} {target : List Node}
     change ns.length + (Cursor.mk (e :: es) ns).work ≤ a.outputCapacity at hb
     change ns.length + (Cursor.mk es ns).work ≤ a.outputCapacity
     omega
-  · apply h.output.congr
-    · intro p hp _
-      exact hmem p (Or.inr (by have := ha.2.1; omega))
-    · intro i u _
-      exact hmem _ (Or.inr (by
-        have hi := (h.outputBounds i).1
-        have ht := ha.2.1
-        have hf := ha.2.2.1
-        omega))
+  · exact h.output.of_arena_frame ha (fun i => (h.outputBounds i).1) hframe
   · intro i
     rw [hheap]
     exact h.outputBounds i
