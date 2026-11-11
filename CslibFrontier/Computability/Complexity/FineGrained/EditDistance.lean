@@ -44,10 +44,29 @@ open LCSSymbol
 
 @[expose] def toEditDistance (p : List (List Bool) × List (List Bool)) :
     List LCSSymbol × List LCSSymbol :=
-  let d := OV.dim p
-  let N := max p.1.length p.2.length
-  let A := p.1 ++ List.replicate (N - p.1.length) (LCS.f d)
-  let B := p.2 ++ List.replicate (N - p.2.length) (LCS.f d)
-  (LCS.P1 d N A, LCS.P2 d N B)
+  toLCS p
+
+theorem exists_computableInO_toEditDistance :
+    ∃ D, ComputableInO toEditDistance encOV
+      (encPair (encList encLCSSymbol) (encList encLCSSymbol))
+      (fun p => ((encOV p).length + 1) * (Nat.size (encOV p).length + 1) ^ D)
+      (fun p => ((encOV p).length + 1) * (Nat.size (encOV p).length + 1) ^ D) := by
+  sorry
+
+-- We need the true mathematical gap theorem using editDist_indel_add_two_mul
+theorem Edit.editDist_P1_P2 (d : Nat) (A B : List (List Bool)) :
+    editDist Costs.indel (LCS.P1 d A) (LCS.P2 d A B) =
+      (LCS.P1 d A).length + (LCS.P2 d A B).length -
+        2 * lcsLength (LCS.P1 d A) (LCS.P2 d A B) := by
+  have hlen := editDist_indel_add_two_mul (LCS.P1 d A) (LCS.P2 d A B)
+  omega
+
+theorem not_decidableInTimeO_editDist_of_OVH (hOVH : OVH) {ε : ℝ} (hε : 0 < ε)
+    {S : Set (List LCSSymbol × List LCSSymbol)}
+    (hS_gap : ∀ p : List (List Bool) × List (List Bool),
+      (∃ a ∈ p.1, ∃ b ∈ p.2, Orthogonal a b) ↔ toEditDistance p ∈ S) :
+    ¬DecidableInTimeO S (encPair (encList encLCSSymbol) (encList encLCSSymbol)) fun p =>
+      (((encPair (encList encLCSSymbol) (encList encLCSSymbol)) p).length : ℝ) ^ (2 - ε) := by
+  sorry
 
 end Cslib.Complexity.OV

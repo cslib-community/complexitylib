@@ -1,0 +1,266 @@
+   585	/-- The state of the parser of an encoded instance `encOV (A, B)`: whether it reads `B`, whether
+   586	it reads the marker of a bit of the outer frame of `A` (or the first bit of `encOV`), whether the
+   587	bit it reads is a frame marker, the coordinate of the current bit, and the number of the current
+   588	vector. -/
+   589	abbrev ParseState : Type := (((Bool × Bool) × Bool) × ℕ) × ℕ
+   590	
+   591	/-- The encoding of the parser state. -/
+   592	abbrev encParseState : ParseState ↪ List Bool :=
+   593	  encPair (encPair (encPair (encPair encBool encBool) encBool) encNat) encNat
+   594	
+   595	/-- A round of the parser, reading one bit. In the first list each bit `c` of the inner frames
+   596	comes as `[true, c]` in the outer frame, and the first unmarked bit ends the first list. In the
+   597	inner frames, a marker `true` announces a bit of the vector and `false` ends the vector. -/
+   598	def parseStep (p : ParseState × Bool) : ParseState :=
+   599	  if !p.1.1.1.1.1 && !p.1.1.1.1.2 then
+   600	    if p.2 then ((((false, true), p.1.1.1.2), p.1.1.2), p.1.2)
+   601	    else ((((true, false), false), p.1.1.2), p.1.2)
+   602	  else if p.1.1.1.2 then ((((p.1.1.1.1.1, false), false), p.1.1.2 + 1), p.1.2)
+   603	  else if p.2 then ((((p.1.1.1.1.1, false), true), p.1.1.2), p.1.2)
+   604	  else ((((p.1.1.1.1.1, false), false), 0), p.1.2 + 1)
+   605	
+   606	/-- The output of a round of the parser: `f k i b` for the bit `b` of coordinate `i` of the vector
+   607	numbered `k`, and `g s k` at the end of the vector numbered `k` of the list `s`. -/
+   608	def parseEmit {β : Type} (f : ℕ → ℕ → Bool → List β) (g : Bool → ℕ → List β)
+   609	    (p : ParseState × Bool) : List β :=
+   610	  if !p.1.1.1.1.1 && !p.1.1.1.1.2 then []
+   611	  else if p.1.1.1.2 then f p.1.2 p.1.1.2 p.2
+   612	  else if p.2 then []
+   613	  else g p.1.1.1.1.1 p.1.2
+   614	
+   615	/-- **One pass of the parser** over a list of bits, from a state. -/
+   616	def parseRun {β : Type} (f : ℕ → ℕ → Bool → List β) (g : Bool → ℕ → List β) :
+   617	    ParseState → List Bool → List β
+   618	  | _, [] => []
+   619	  | s, b :: l => parseEmit f g (s, b) ++ parseRun f g (parseStep (s, b)) l
+   620	
+   621	section Stream
+   622	
+   623	variable {β : Type} {f : ℕ → ℕ → Bool → List β} {g : Bool → ℕ → List β}
+   624	
+   625	/-- The streamed output of the parser rounds is the encoded output of the pass. -/
+   626	theorem streamEmit_eq_parseRun {enc : β ↪ List Bool} (s : ParseState) (l : List Bool) :
+   627	    streamEmit parseStep (fun p => encList enc (parseEmit f g p)) s l =
+   628	      encList enc (parseRun f g s l) := by
+   629	  induction l generalizing s with
+   630	  | nil => rfl
+   631	  | cons b l ih => rw [streamEmit, ih, parseRun, encList_append]
+   632	
+   633	/-- In the second phase, a frame `[true, b₁, …, true, bₙ, false]` is one vector. -/
+   634	theorem parseRun_frame_snd (i k : ℕ) (v : List Bool) (rest : List Bool) :
+   635	    parseRun f g ((((true, false), false), i), k) (frame v ++ rest) =
+   636	      bitsOut (f k) i v ++ g true k ++ parseRun f g ((((true, false), false), 0), k + 1) rest := by
+   637	  induction v generalizing i with
+   638	  | nil => simp [frame_nil, parseRun, parseEmit, parseStep, bitsOut]
+   639	  | cons b v ih =>
+   640	    simp only [frame_cons, List.cons_append, parseRun, parseEmit, parseStep, bitsOut]
+   641	    simp [ih, List.append_assoc]
+   642	
+   643	/-- In the second phase, the frames of a list of vectors. -/
+   644	theorem parseRun_frames_snd (k : ℕ) (vs : List (List Bool)) (rest : List Bool) :
+   645	    parseRun f g ((((true, false), false), 0), k) (vs.flatMap frame ++ rest) =
+   646	      vecsOut f (g true) k vs ++
+   647	        parseRun f g ((((true, false), false), 0), k + vs.length) rest := by
+   648	  induction vs generalizing k with
+   649	  | nil => simp [vecsOut]
+   650	  | cons v vs ih =>
+   651	    rw [List.flatMap_cons, List.append_assoc, parseRun_frame_snd, ih]
+   652	    simp [vecsOut, List.append_assoc, Nat.add_assoc, Nat.add_comm 1 vs.length]
+   653	
+   654	/-- In the first phase, the outer frame marks each bit `c` of the inner frames as `[true, c]`. -/
+   655	theorem parseRun_frame_fst (i k : ℕ) (v : List Bool) (rest : List Bool) :
+   656	    parseRun f g ((((false, false), false), i), k)
+   657	        ((frame v).flatMap (fun b => [true, b]) ++ rest) =
+   658	      bitsOut (f k) i v ++ g false k ++
+   659	        parseRun f g ((((false, false), false), 0), k + 1) rest := by
+   660	  induction v generalizing i with
+   661	  | nil => simp [parseRun, parseEmit, parseStep, bitsOut]
+   662	  | cons b v ih =>
+   663	    simp only [frame_cons, List.flatMap_cons, List.cons_append, List.nil_append]
+   664	    cases b <;> simp [parseRun, parseEmit, parseStep, bitsOut, ih, List.append_assoc]
+   665	
+   666	/-- In the first phase, the outer frame of the inner frames of a list of vectors. -/
+   667	theorem parseRun_frames_fst (k : ℕ) (vs : List (List Bool)) (rest : List Bool) :
+   668	    parseRun f g ((((false, false), false), 0), k)
+   669	        ((vs.flatMap frame).flatMap (fun b => [true, b]) ++ rest) =
+   670	      vecsOut f (g false) k vs ++
+   671	        parseRun f g ((((false, false), false), 0), k + vs.length) rest := by
+   672	  induction vs generalizing k with
+   673	  | nil => simp [vecsOut]
+   674	  | cons v vs ih =>
+   675	    rw [List.flatMap_cons, List.flatMap_append, List.append_assoc, parseRun_frame_fst, ih]
+   676	    simp [vecsOut, List.append_assoc, Nat.add_assoc, Nat.add_comm 1 vs.length]
+   677	
+   678	/-- **The parser on an encoded instance**: it emits the outputs of the first list, then those of
+   679	the second, numbering the vectors of both lists consecutively. -/
+   680	theorem parseRun_encOV (p : List (List Bool) × List (List Bool)) :
+   681	    parseRun f g ((((false, false), false), 0), 0) (encOV p) =
+   682	      vecsOut f (g false) 0 p.1 ++ vecsOut f (g true) p.1.length p.2 := by
+   683	  have hl (l : List (List Bool)) : encList encBits l = l.flatMap frame := rfl
+   684	  have e : encOV p = (p.1.flatMap frame).flatMap (fun b => [true, b]) ++
+   685	      (false :: p.2.flatMap frame ++ []) := by
+   686	    simp only [encOV, encPair_apply, frame, hl, List.append_nil, List.append_assoc,
+   687	      List.singleton_append]
+   688	  have h₁ : parseStep (((((false, false), false), 0), 0 + p.1.length), false) =
+   689	      ((((true, false), false), 0), p.1.length) := by simp [parseStep]
+   690	  have h₂ : parseEmit f g (((((false, false), false), 0), 0 + p.1.length), false) = [] := by
+   691	    simp [parseEmit]
+   692	  rw [e, parseRun_frames_fst, List.cons_append, parseRun, h₁, h₂, List.nil_append,
+   693	    parseRun_frames_snd]
+   694	  simp [parseRun]
+   695	
+   696	end Stream
+   697	
+   698	/-! ### The size of the parser state -/
+   699	
+   700	/-- A round increases the coordinate plus the vector number by at most one. -/
+   701	private theorem parseStep_le (s : ParseState) (b : Bool) :
+   702	    (parseStep (s, b)).1.2 + (parseStep (s, b)).2 ≤ s.1.2 + s.2 + 1 := by
+   703	  unfold parseStep
+   704	  split_ifs <;> simp only <;> omega
+   705	
+   706	/-- The coordinate plus the vector number grow by at most the number of rounds. -/
+   707	private theorem foldl_parseStep_le (s : ParseState) (l : List Bool) :
+   708	    (l.foldl (fun s b => parseStep (s, b)) s).1.2 + (l.foldl (fun s b => parseStep (s, b)) s).2 ≤
+   709	      s.1.2 + s.2 + l.length := by
+   710	  induction l generalizing s with
+   711	  | nil => simp
+   712	  | cons b l ih =>
+   713	    have := ih (parseStep (s, b))
+   714	    have := parseStep_le s b
+   715	    simp only [List.foldl_cons, List.length_cons]
+   716	    omega
+   717	
+   718	/-- The length of an encoded parser state. -/
+   719	private theorem length_encParseState (s : ParseState) :
+   720	    (encParseState s).length = 43 + 2 * Nat.size s.1.2 + Nat.size s.2 := by
+   721	  simp only [length_encPair, encBool_apply, encNat_apply, Nat.size_eq_bits_len,
+   722	    List.length_singleton]
+   723	  omega
+   724	
+   725	/-- The parser state after `j` bits holds numbers at most `j`. -/
+   726	private theorem length_encParseState_streamState_le (x : List Bool) (j : ℕ) :
+   727	    (encParseState (streamState ((((false, false), false), 0), 0) parseStep x j)).length ≤
+   728	      43 + 3 * Nat.size x.length := by
+   729	  have h₁ : (streamState ((((false, false), false), 0), 0) parseStep x j).1.2 +
+   730	      (streamState ((((false, false), false), 0), 0) parseStep x j).2 ≤ x.length := by
+   731	    have := foldl_parseStep_le ((((false, false), false), 0), 0) (x.take j)
+   732	    simp only [List.length_take, Nat.zero_add] at this
+   733	    exact this.trans (min_le_right _ _)
+   734	  have h₂ := Nat.size_le_size (show
+   735	    (streamState ((((false, false), false), 0), 0) parseStep x j).1.2 ≤ x.length by omega)
+   736	  have h₃ := Nat.size_le_size (show
+   737	    (streamState ((((false, false), false), 0), 0) parseStep x j).2 ≤ x.length by omega)
+   738	  rw [length_encParseState]
+   739	  omega
+   740	
+   741	open ComputableInPolyTime in
+   742	/-- A round of the parser is computable in polynomial time. -/
+   743	theorem computableInPolyTime_parseStep :
+   744	    ComputableInPolyTime parseStep (encPair encParseState encBool) encParseState := by
+   745	  unfold parseStep
+   746	  fun_prop
+   747	
+   748	open ComputableInPolyTime in
+   749	/-- The output of a round of the parser is computable in polynomial time when its outputs are. -/
+   750	theorem computableInPolyTime_parseEmit {β : Type} {enc : β ↪ List Bool} {f : ℕ → ℕ → Bool → List β}
+   751	    {g : Bool → ℕ → List β}
+   752	    (hf : ComputableInPolyTime (fun p : ParseState × Bool => f p.1.2 p.1.1.2 p.2)
+   753	      (encPair encParseState encBool) (encList enc))
+   754	    (hg : ComputableInPolyTime (fun p : ParseState × Bool => g p.1.1.1.1.1 p.1.2)
+   755	      (encPair encParseState encBool) (encList enc)) :
+   756	    ComputableInPolyTime (parseEmit f g) (encPair encParseState encBool) (encList enc) := by
+   757	  have hnil : ComputableInPolyTime (fun _ : ParseState × Bool => ([] : List β))
+   758	      (encPair encParseState encBool) (encList enc) := by fun_prop
+   759	  have hc₁ : ComputableInPolyTime (fun p : ParseState × Bool => !p.1.1.1.1.1 && !p.1.1.1.1.2)
+   760	      (encPair encParseState encBool) encBool := by fun_prop
+   761	  have hc₂ : ComputableInPolyTime (fun p : ParseState × Bool => p.1.1.1.2)
+   762	      (encPair encParseState encBool) encBool := by fun_prop
+   763	  have hc₃ : ComputableInPolyTime (fun p : ParseState × Bool => p.2)
+   764	      (encPair encParseState encBool) encBool := by fun_prop
+   765	  exact ite' hc₁ hnil (ite' hc₂ hf (ite' hc₃ hnil hg))
+   766	
+   767	open ComputableInPolyTime in
+   768	/-- **One pass of the parser** over an encoded instance runs within time `L (log L) ^ D` on inputs
+   769	of length `L`, when its outputs are computable in polynomial time. -/
+   770	theorem computableInO_parseRun {β : Type} {enc : β ↪ List Bool} {f : ℕ → ℕ → Bool → List β}
+   771	    {g : Bool → ℕ → List β} (fin : List β)
+   772	    (hfg : ComputableInPolyTime (parseEmit f g) (encPair encParseState encBool) (encList enc)) :
+   773	    ∃ D, ComputableInO
+   774	      (fun x : List Bool => parseRun f g ((((false, false), false), 0), 0) x ++ fin)
+   775	      encBits (encList enc) (fun x => (x.length + 1) * (Nat.size x.length + 1) ^ D)
+   776	      fun x => (x.length + 1) * (Nat.size x.length + 1) ^ D := by
+   777	  obtain ⟨dN, _, hN_deg⟩ := computableInPolyTime_parseStep.exists_degree
+   778	  obtain ⟨tN, sN, ⟨cN, htN⟩, ⟨cN', hsN⟩, hN⟩ := Internal.NormalForm.degree hN_deg
+   779	  obtain ⟨dE, _, hE_deg⟩ := hfg.exists_degree
+   780	  obtain ⟨tE, sE, ⟨cE, htE⟩, ⟨cE', hsE⟩, hE⟩ := Internal.NormalForm.degree hE_deg
+   781	  obtain ⟨cI, hI⟩ := computableInTimeAndSpace_of_const (α := List Bool) (encIn := encBits)
+   782	    (encOut := encParseState) ((((false, false), false), 0), 0)
+   783	  obtain ⟨cF, hF⟩ := computableInTimeAndSpace_of_const (α := ParseState) (encIn := encParseState)
+   784	    (encOut := encList enc) fin
+   785	  let reader : InputReader Bool Unit := ⟨(), fun _ b => (none, some b)⟩
+   786	  have hI' : ComputableTidilyInTimeAndSpace (fun _ : List Bool => ((((false, false), false), 0), 0))
+   787	      encBits encParseState (fun _ => 2 * cI + 2) (fun _ => 0) := hI.computableTidilyInTimeAndSpace
+   788	  have hF' : ComputableTidilyInTimeAndSpace (fun _ : ParseState => fin) encParseState (encList enc)
+   789	      (fun _ => 2 * cF + 2) (fun _ => 0) := hF.computableTidilyInTimeAndSpace
+   790	  -- the rounds take time polylogarithmic in the input length
+   791	  have hpow (x : List Bool) (d : ℕ) (hd : d ≤ dN + dE + 1) :
+   792	      (2 * (43 + 3 * Nat.size x.length) + 3) ^ d ≤
+   793	        89 ^ d * (Nat.size x.length + 1) ^ (dN + dE + 1) :=
+   794	    calc (2 * (43 + 3 * Nat.size x.length) + 3) ^ d ≤ (89 * (Nat.size x.length + 1)) ^ d :=
+   795	          Nat.pow_le_pow_left (by omega) d
+   796	      _ = 89 ^ d * (Nat.size x.length + 1) ^ d := Nat.mul_pow _ _ _
+   797	      _ ≤ 89 ^ d * (Nat.size x.length + 1) ^ (dN + dE + 1) := by gcongr
+   798	  have hround (x : List Bool) (j : ℕ) (hj : j < x.length) (c₁ c₂ : ℕ)
+   799	      (u₁ u₂ : ParseState × Bool → ℕ)
+   800	      (h₁ : ∀ a, u₁ a ≤ c₁ * ((encPair encParseState encBool a).length + 1) ^ dN)
+   801	      (h₂ : ∀ a, u₂ a ≤ c₂ * ((encPair encParseState encBool a).length + 1) ^ dE) :
+   802	      u₁ (streamState ((((false, false), false), 0), 0) parseStep x j, x[j]) +
+   803	        u₂ (streamState ((((false, false), false), 0), 0) parseStep x j, x[j]) ≤
+   804	      c₁ * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
+   805	        c₂ * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE := by
+   806	    have hs : (encParseState
+   807	        (streamState ((((false, false), false), 0), 0) parseStep x j, x[j]).1).length ≤
+   808	        43 + 3 * Nat.size x.length := length_encParseState_streamState_le x j
+   809	    have e : (encPair encParseState encBool
+   810	        (streamState ((((false, false), false), 0), 0) parseStep x j, x[j])).length + 1 ≤
+   811	        2 * (43 + 3 * Nat.size x.length) + 3 := by
+   812	      rw [length_encPair, encBool_apply, List.length_singleton]
+   813	      omega
+   814	    exact Nat.add_le_add ((h₁ _).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left e _)))
+   815	      ((h₂ _).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left e _)))
+   816	  obtain ⟨c, h⟩ := ComputableTidilyInTimeAndSpace.streamFold reader (fun b => [b])
+   817	    (fun _ => List.cons_ne_nil _ _) (fun a rest => by simp [reader, InputReader.read])
+   818	    (encA := encBool) (fun x => x) (fun x => by simp) hI' hN hE hF'
+   819	    (g := fun x : List Bool => parseRun f g ((((false, false), false), 0), 0) x ++ fin)
+   820	    (fun x => by rw [encList_append, streamEmit_eq_parseRun])
+   821	    (tMax := fun x => cN * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
+   822	      cE * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE)
+   823	    (sMax := fun x => cN' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
+   824	      cE' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE)
+   825	    (lMax := fun x => 43 + 3 * Nat.size x.length)
+   826	    (fun x j hj => hround x j hj cN cE tN tE htN htE)
+   827	    (fun x j hj => hround x j hj cN' cE' sN sE hsN hsE)
+   828	    (fun x j _ => length_encParseState_streamState_le x j)
+   829	    (fun x j hj => by rw [encBool_apply, List.length_singleton]; omega)
+   830	  set M := cN * 89 ^ dN + cE * 89 ^ dE + cN' * 89 ^ dN + cE' * 89 ^ dE
+   831	  have key (L Y t l a b : ℕ) (hY : 1 ≤ Y) (ht : t ≤ M * Y) (hl : l ≤ 43 * Y) :
+   832	      a + b + L + L * (t + l + 1) + l + 1 ≤ (a + b + M + 100) * ((L + 1) * Y + 1) := by
+   833	    nlinarith [Nat.mul_le_mul_left L ht, Nat.mul_le_mul_left L hl, Nat.mul_le_mul_left L hY]
+   834	  have hY (x : List Bool) : 1 ≤ (Nat.size x.length + 1) ^ (dN + dE + 1) :=
+   835	    Nat.one_le_pow _ _ (by omega)
+   836	  have hl (x : List Bool) : 43 + 3 * Nat.size x.length ≤
+   837	      43 * (Nat.size x.length + 1) ^ (dN + dE + 1) := by
+   838	    have := Nat.le_self_pow (show dN + dE + 1 ≠ 0 by omega) (Nat.size x.length + 1)
+   839	    omega
+   840	  have ht (x : List Bool) : cN * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
+   841	      cE * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE ≤
+   842	      M * (Nat.size x.length + 1) ^ (dN + dE + 1) := by
+   843	    have h₁ := Nat.mul_le_mul_left cN (hpow x dN (by omega))
+   844	    have h₂ := Nat.mul_le_mul_left cE (hpow x dE (by omega))
+   845	    simp only [M, Nat.add_mul, Nat.mul_assoc] at h₁ h₂ ⊢
+   846	    omega
+   847	  have hs (x : List Bool) : cN' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dN +
+   848	      cE' * (2 * (43 + 3 * Nat.size x.length) + 3) ^ dE ≤
+   849	      M * (Nat.size x.length + 1) ^ (dN + dE + 1) := by
+   850	    have h₁ := Nat.mul_le_mul_left cN' (hpow x dN (by omega))
