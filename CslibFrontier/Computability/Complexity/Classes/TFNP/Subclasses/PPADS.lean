@@ -193,7 +193,7 @@ theorem sinkOfLineRel_mem_PPADS {n : α → ℕ} {P S : α × List Bool → List
 theorem SearchReducible.mem_PPADS (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPADS encB) : R ∈ PPADS enc := by
   obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT⟩ := Complexity.mem_PPADS.mp hT
-  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex (isTotalSearch_sinkOfLineRel hS_len)
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
   exact Complexity.mem_PPADS.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
     hn.comp hf, by fun_prop, by fun_prop, fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 

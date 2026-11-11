@@ -431,7 +431,7 @@ theorem leafRel_mem_PPA {n : α → ℕ} {N₁ N₂ : α × List Bool → List B
 theorem SearchReducible.mem_PLS (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PLS encB) : R ∈ PLS enc := by
   obtain ⟨-, n, N, C, hn, hN, hC, hlen, hT⟩ := Complexity.mem_PLS.mp hT
-  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex (isTotalSearch_localOptRel hlen)
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
   exact Complexity.mem_PLS.mpr ⟨hR, n ∘ f, fun p => N (f p.1, p.2), fun p => C (f p.1, p.2),
     hn.comp hf, by fun_prop, by fun_prop, fun a => hlen (f a), h⟩
 
@@ -439,7 +439,7 @@ theorem SearchReducible.mem_PLS (h : SearchReducible enc encB R T) (hR : R ∈ F
 theorem SearchReducible.mem_PPP (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPP encB) : R ∈ PPP enc := by
   obtain ⟨-, n, F, hn, hF, hlen, hT⟩ := Complexity.mem_PPP.mp hT
-  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex (isTotalSearch_pigeonRel hlen)
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
   exact Complexity.mem_PPP.mpr ⟨hR, n ∘ f, fun p => F (f p.1, p.2), hn.comp hf, by fun_prop,
     fun a => hlen (f a), h⟩
 
@@ -447,7 +447,7 @@ theorem SearchReducible.mem_PPP (h : SearchReducible enc encB R T) (hR : R ∈ F
 theorem SearchReducible.mem_PPAD (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPAD encB) : R ∈ PPAD enc := by
   obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT⟩ := Complexity.mem_PPAD.mp hT
-  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex (isTotalSearch_endOfLineRel hS_len)
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
   exact Complexity.mem_PPAD.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
     hn.comp hf, by fun_prop, by fun_prop, fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
@@ -455,7 +455,7 @@ theorem SearchReducible.mem_PPAD (h : SearchReducible enc encB R T) (hR : R ∈ 
 theorem SearchReducible.mem_PPA (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPA encB) : R ∈ PPA enc := by
   obtain ⟨-, n, N₁, N₂, hn, hN₁, hN₂, hN₁_len, hN₂_len, hT⟩ := Complexity.mem_PPA.mp hT
-  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex (isTotalSearch_leafRel hN₁_len hN₂_len)
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
   exact Complexity.mem_PPA.mpr ⟨hR, n ∘ f, fun p => N₁ (f p.1, p.2), fun p => N₂ (f p.1, p.2),
     hn.comp hf, by fun_prop, by fun_prop, fun a => hN₁_len (f a), fun a => hN₂_len (f a), h⟩
 

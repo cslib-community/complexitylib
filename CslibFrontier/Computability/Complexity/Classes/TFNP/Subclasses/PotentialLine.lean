@@ -714,7 +714,7 @@ theorem sinkOfPotentialLineRel_mem_SOPL
 theorem SearchReducible.mem_EOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ EOPL encB) : R ∈ EOPL enc := by
   obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_EOPL.mp hT
-  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex (isTotalSearch_endOfPotentialLineRel hS_len)
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
   exact Complexity.mem_EOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
     fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
     fun a => hP_len (f a), fun a => hS_len (f a), h⟩
@@ -723,7 +723,7 @@ theorem SearchReducible.mem_EOPL (h : SearchReducible enc encB R T) (hR : R ∈ 
 theorem SearchReducible.mem_SOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ SOPL encB) : R ∈ SOPL enc := by
   obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_SOPL.mp hT
-  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex (isTotalSearch_sinkOfPotentialLineRel hS_len)
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
   exact Complexity.mem_SOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
     fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
     fun a => hP_len (f a), fun a => hS_len (f a), h⟩
