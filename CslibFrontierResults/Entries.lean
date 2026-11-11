@@ -64,6 +64,7 @@ import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
 import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.PartialETH
+import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
@@ -1836,3 +1837,25 @@ register_result "mktp-exp" where
     encoded in unary, where Liu and Pass use a binary threshold of about log n bits; for \
     thresholds O(|x|) the two encodings are polynomially related. MKtPAt s, with s \
     computable in polynomial time in unary, is in EXP over bit strings. Membership only."
+
+register_result "unique-games-perfect-completeness" where
+  title := "Satisfiable unique games are in P"
+  topic := "interactive proofs"
+  sources := [
+    { paper := Khot2010, theorem := unverified,
+      locator := "Section 2.4, after Definition 2.4 (author copy, p. 6)" }
+  ]
+  theorems := [
+    Cslib.Complexity.gapUniqueGames_one_mem_PromiseP,
+    Cslib.Complexity.gapUniqueGames_one_mem_PromiseP_of_pos,
+    Cslib.Complexity.gapUniqueGames_zero_mem_PromiseP,
+    Cslib.Complexity.isUniqueGame_mem_P,
+    Cslib.Complexity.satisfiable_uniqueGame_mem_P
+  ]
+  scope := "Native multi-tape PromiseP and P membership for each fixed finite alphabet Fin L \
+    under Graph.encoding (encPi (encFinEnum (Fin L))), the encoding of UniqueGamesConjecture. \
+    For 0 < L, label propagation over List.finRange L is certified by reading the final \
+    table directly without constructing ℕ → Fin L closures at runtime. For L = 0, Fin 0 is \
+    empty so every unique game vacuously has unsatVal = 0 and GapUniqueGames (Fin 0) 1 s \
+    has no no-instances, while no graph is satisfiable. This fixes L rather than taking it \
+    as part of the input."

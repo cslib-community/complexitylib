@@ -3254,6 +3254,7 @@ public import CslibFrontier.Computability.PCP.Approximation.MaxExactThreeSAT
 public import CslibFrontier.Computability.PCP.Approximation.MaxThreeSAT
 public import CslibFrontier.Computability.PCP.Approximation.ParitySearch
 public import CslibFrontier.Computability.PCP.Approximation.ThreeXOR
+public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Propagation
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime
 public import CslibFrontier.Computability.PCP.AssignmentTester
