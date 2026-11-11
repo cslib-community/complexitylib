@@ -50,6 +50,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.MCSP.FormulaMagnification.Locality
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
@@ -676,6 +677,26 @@ register_result "magnification" where
     2^n·c·(n + s(n) + 1)^c, counting all operation gates. Hence if for some k and every c > 0 \
     some 2^n-bit slice of MCSP[n^k] needs more than 2^n·c·(n + 1)^c gates, then NP ⊄ P/poly \
     and P ≠ NP. Size-only lower-bound hypothesis."
+
+register_result "formula-magnification-locality" where
+  title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: the Oliveira–Santhanam formula \
+    magnification reduction is local"
+  topic := "meta-complexity"
+  sources := [
+    { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+      theorem := "Proposition 63, [OS18] MCSP bullet",
+      locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_oracleFormula_separating_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP_real_poly
+  ]
+  scope := "MCSP[(s, 0), (s, δ)] on N = 2^n-bit truth tables is computed by De Morgan formulas \
+    with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
+    N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
+    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: the DAG [q, ℓ, a]-Circuit classes, the \
+    other bullets of Proposition 63 and the locality barrier (Theorem 59) are not formalized."
 
 register_result "matrix-multiplication" where
   title := "Matrix multiplication: the exponent is at most 9/4"

@@ -138,7 +138,8 @@ theorem exists_oracleFormula_separating_approxMCSP {s₁ s₂ k : ℕ → ℕ} {
 
 /-- A truth-table word has power-of-two length. -/
 private theorem exists_length_eq_two_pow_of_mem_truthTableLanguage
-    {C : ∀ n, Set (BooleanFunction n)} {w : List Bool} (hw : w ∈ truthTableLanguage C) : ∃ n, w.length = 2 ^ n := by
+    {C : ∀ n, Set (BooleanFunction n)} {w : List Bool} (hw : w ∈ truthTableLanguage C) :
+    ∃ n, w.length = 2 ^ n := by
   obtain ⟨n, h, -⟩ := hw
   exact ⟨n, h⟩
 
