@@ -191,6 +191,10 @@ def template (A : Fin t → Finset (Fin (2 ^ p))) (T : Fin (2 ^ p) → Bool) :
     (Fin p → Bool) → Fin (gateCount p t) → Bool :=
   fun x j => value A T ((Gate.equivFin p t).symm j) x
 
+theorem template_apply (A : Fin t → Finset (Fin (2 ^ p))) (T : Fin (2 ^ p) → Bool)
+    (x : Fin p → Bool) (j : Fin (gateCount p t)) :
+    template A T x j = value A T ((Gate.equivFin p t).symm j) x := by rfl
+
 @[simp] theorem template_equivFin (A : Fin t → Finset (Fin (2 ^ p))) (T : Fin (2 ^ p) → Bool)
     (κ : Gate p t) (x : Fin p → Bool) : template A T x (Gate.equivFin p t κ) = value A T κ x := by
   simp only [template, Equiv.symm_apply_apply]
@@ -198,6 +202,9 @@ def template (A : Fin t → Finset (Fin (2 ^ p))) (T : Fin (2 ^ p) → Bool) :
 /-- The function whose truth table is `T`, inputs read in the order of `BitString.equivFin`. -/
 def tableFun (T : Fin (2 ^ p) → Bool) : (Fin p → Bool) → Bool :=
   fun x => T (BitString.equivFin p x)
+
+@[simp] theorem tableFun_apply (T : Fin (2 ^ p) → Bool) (x : Fin p → Bool) :
+    tableFun T x = T (BitString.equivFin p x) := by rfl
 
 /-! ### Locality -/
 
@@ -346,7 +353,8 @@ private theorem value_eq_eval (A : Fin t → Finset (Fin (2 ^ p))) (T : Fin (2 ^
       obtain rfl : b = k := Fin.ext (by rw [Fin.le_iff_val_le_val] at hb; omega)
       exact h
     · rw [dite_eq_right hk, elim_gateWire, value_grid, value_grid, ← Bool.decide_and]
-      refine decide_eq_decide.mpr ⟨fun h => ⟨fun b hb => h b ?_, h k le_rfl⟩, fun ⟨h, hk'⟩ b hb => ?_⟩
+      refine decide_eq_decide.mpr
+        ⟨fun h => ⟨fun b hb => h b ?_, h k le_rfl⟩, fun ⟨h, hk'⟩ b hb => ?_⟩
       · rw [Fin.le_iff_val_le_val] at hb ⊢
         simp only at hb
         omega
@@ -533,7 +541,8 @@ theorem ecomplexityGiven_tableFun_le (A : Fin t → Finset (Fin (2 ^ p))) (T : F
     obtain ⟨i, hi, -⟩ := hC 0
     exact ⟨_, Finset.mem_image_of_mem coord hi⟩
   obtain ⟨c, hc, hsize⟩ := (synthesis_or hne).exists_circuit
-  refine (ecomplexityGiven_le_of_eval _ _ (c.mapOp (Boolean.DeMorganBasis.hom I)) fun x => ?_).trans ?_
+  refine (ecomplexityGiven_le_of_eval _ _ (c.mapOp (Boolean.DeMorganBasis.hom I))
+    fun x => ?_).trans ?_
   · rw [Circuit.eval_mapOp (I := Boolean.DeMorgan.interpretation), hc]
     funext o
     simp only [single_apply, tableFun, Finset.mem_image, exists_exists_and_eq_and, coord,
