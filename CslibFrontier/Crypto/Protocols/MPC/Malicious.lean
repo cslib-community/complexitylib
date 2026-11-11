@@ -209,6 +209,7 @@ private theorem extractBoolFromBiased_val2 :
     if h : i = 0 then cast (by simp [h]) (some ())
     else cast (by simp [h]) (some true)) = true := rfl
 
+set_option linter.unusedFintypeInType false in
 private theorem tsum_ite_eq_and_prop {α : Type} [Fintype α] [DecidableEq α] (A : α) (P : α → Prop)
     [DecidablePred P] (c : ENNReal) :
   (∑' x, if P x then if x = A then c else 0 else 0) = if P A then c else 0 := by
@@ -285,12 +286,10 @@ theorem naive_without_abort_failure :
       intro a
       split_ifs
       all_goals { first | rfl | exact Eq.symm (zero_add 0) }
-
     simp_rw [h_split, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
     simp only [extractBoolFromBiased_val1, extractBoolFromBiased_val2, ite_true]
     rw [← one_div]
     exact ENNReal.add_halves 1
-
   have h_lhs : ProbComp.eval (do
             let (_, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
             return extractBoolFromMalicious y) true = 1/2 := by
@@ -321,3 +320,8 @@ theorem naive_without_abort_failure :
     exact one_mul _
   rw [h_lhs, h_rhs] at H
   revert H; norm_num
+
+end MPC
+end Protocols
+end Crypto
+end Cslib
