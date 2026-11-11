@@ -19,7 +19,7 @@ open Cslib.GameTheory.CostGame
 open CslibFrontierTests.GameTheory.Strategic
 
 theorem blumMansour_pennies
-    {p : ℕ → ∀ i : Fin 2, Bool → ℝ} {T : ℕ} (hT : 0 < T)
+    {p : ℕ → Fin 2 → Bool → ℝ} {T : ℕ} (hT : 0 < T)
     (h_nonneg : ∀ t i c, 0 ≤ p t i c) (h_sum : ∀ t i, ∑ c, p t i c = 1)
     (hT_bound : ∀ _ : Fin 2, (2 : ℝ) * log 2 ≤ T)
     (h_cost : ∀ t < T, ∀ i a, |pennies.deviationCost (p t) i a| ≤ 1)

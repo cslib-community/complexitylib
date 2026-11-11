@@ -1137,15 +1137,28 @@ register_result "correlated-equilibrium-hierarchy" where
     Cslib.GameTheory.CostGame.IsPureNash.isCorrelatedEquilibrium,
     Cslib.GameTheory.CostGame.IsMixedNash.isCorrelatedEquilibrium,
     Cslib.GameTheory.CostGame.IsCorrelatedEquilibrium.isCoarseCorrelatedEquilibrium,
-    Cslib.GameTheory.CostGame.exists_isCorrelatedEquilibrium,
-    Cslib.GameTheory.CostGame.timeAverage_productDist_isApproxCorrelatedEquilibrium,
-    Cslib.GameTheory.CostGame.blumMansour_isApproxCorrelatedEquilibrium
+    Cslib.GameTheory.CostGame.exists_isCorrelatedEquilibrium
   ]
   scope := "Finite cost-minimization games and finitely supported distributions on profiles. \
     Correlated equilibria are defined by switching functions and shown equivalent to the \
     conditional form. Strictness of the inclusions is checked on examples in the test suite \
     (traffic light, Rock-Paper-Scissors), not stated as library theorems. Swap regret and \
     convergence of learning dynamics are not covered."
+
+register_result "swap-regret-approx-ce" where
+  title := "Approximate Correlated Equilibrium via Swap Regret"
+  topic := "game theory"
+  sources := [
+    { paper := Roughgarden2013CS364A, theorem := unverified,
+      locator := "Lecture 18, Section 1" }
+  ]
+  theorems := [
+    Cslib.GameTheory.CostGame.timeAverage_productDist_isApproxCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.blumMansour_isApproxCorrelatedEquilibrium
+  ]
+  scope := "Convergence of independent no-swap-regret learning dynamics to approximate \
+    correlated equilibria. Includes the general theorem for abstract algorithms and the \
+    specific application using the Blum-Mansour reduction."
 
 register_result "nash-existence-bimatrix" where
   title := "Every bimatrix game has a Nash equilibrium"
