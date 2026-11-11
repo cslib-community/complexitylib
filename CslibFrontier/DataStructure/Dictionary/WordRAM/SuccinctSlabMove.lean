@@ -412,12 +412,8 @@ theorem realizes_promoteStepGen :
       (WordEncoding.encode (α := (DictParams × (ℕ × ℕ)) × ℕ)) (WordEncoding.encode (α := ℕ))
       PromoteStepGenPre
       (fun _ _ => 0) := by
-  have hrg := realizes_readGMGen
-  have hrq := realizes_readQuotGen
-  have hwq := realizes_writeQuotGen
-  have hrv := realizes_readValGen
-  have hwv := realizes_writeValGen
-  have hrem := realizes_removeLastTailItemGen
+  -- Stage the shared tail indices once; automatic preparation at each call exceeds the
+  -- default elaboration budget for this large encoded environment.
   refine Realizes.congr (p := fun d : (DictParams × (ℕ × ℕ)) × ℕ => do
       let u ← pure (dpSlabSizeSubOne d.1.1 - d.2)
       let r_top ← pure (dpSlabSize d.1.1 + u)
@@ -442,6 +438,8 @@ theorem realizes_promoteStepGen :
       pure (d.2 + 1)) ?_
     (fun d => by simp only [promoteStepGenProg, pure_bind])
   realize
+    [realizes_readGMGen, realizes_readQuotGen, realizes_writeQuotGen, realizes_readValGen,
+      realizes_writeValGen, realizes_removeLastTailItemGen]
   all_goals (
     rcases d with ⟨⟨dp, d1⟩, d2⟩
     let d := (d1, d2)

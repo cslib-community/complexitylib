@@ -278,8 +278,9 @@ the syntax inactive; a command-local open ends with that declaration. Open the c
 [scope clients](../../CslibFrontierTests/WordRAMRealizeScope.lean) for both activation forms and
 the check that local opens do not leak into later declarations.
 
-Place a callee's zero-local-work `Realizes` certificate in the local context to reuse an opaque
-method before unfolding it. The tactic checks its basis and output encoding and uses existing
+Supply a callee's zero-local-work `Realizes` certificate with
+`realize [certificate₁, …]`, or place it in the local context, to reuse an opaque method before
+unfolding it. The tactic checks its basis and output encoding and uses existing
 `Realizes.reindex` to wire encoded argument coordinates to live words. When some coordinates
 need computation, it first certifies a charged `pure` stage for the whole argument using the
 callee's input encoding, then wires the call to those new words. This supports custom and
@@ -289,7 +290,23 @@ projections, aliased inputs, curried and dependent arguments, and optional-pair 
 Word-vector type abbreviations in the callee's input and output encodings are accepted without
 restating their literal `Fin` widths; the [encoding-alias clients](../../CslibFrontierTests/WordRAMRealizeAliases.lean)
 include a nine-word input, six-word result and empty-vector methods.
-Certificates are tried in context order; this does not search for a runtime bound.
+Existing local certificates are tried first, followed by the supplied terms in list order;
+this does not search for a runtime bound. Terms can apply a theorem to its parameters directly,
+so there is no need to name a local alias solely for the tactic. The
+[certificate-list clients](../../CslibFrontierTests/WordRAMRealizeCertificates.lean) check opaque
+calls, computed arguments, ordering and frontier-bounded certificates. For example, native
+[Dijkstra](../../CslibFrontier/Algorithms/Lean/Dijkstra/Native/Binary.lean) supplies its heap
+methods together:
+
+```lean
+realize [BinaryHeap.Native.realizes_insert, BinaryHeap.Native.realizes_decreaseKey]
+```
+
+The succinct dictionary helpers accept the same terms as `realizeDict using [certificates]`
+or `realizeDictWith [simplification_lemmas] using [certificates]`; the simplification list keeps
+its existing meaning. The [tail-pool clients](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctTailOps.lean)
+use this form to supply their read/write methods.
+
 Zero local work is an absorbed grading: the callee still has its certified native allowance
 against memory charge. It does not mean zero machine instructions.
 
