@@ -40,15 +40,16 @@ example : (innerProductCircuit 3).eval (extInterpretation (modGate 2))
 
 /-- Two constant gates give the string `101` at any input. -/
 example (x : BitString 4) :
-    (constsCircuit ![true, false, true]).eval (extInterpretation (modGate 2)) x 2 = true := by
+    (constsCircuit toExt ![true, false, true]).eval (extInterpretation (modGate 2)) x 2 =
+      true := by
   rw [eval_constsCircuit]
   rfl
 
 /-- A conjunction on each of three blocks of two bits: the blocks of `111000` are `11`, `10` and
 `00`. -/
-example : (Circuit.blockwise (andCircuit (n := 2) 0 1) 3).eval (extInterpretation (modGate 2))
+example : ((andCircuit (n := 2) 0 1).replicateScalar 3).eval (extInterpretation (modGate 2))
     ![true, true, true, false, false, false] = ![true, false, false] := by
-  rw [Circuit.eval_blockwise]
+  rw [Circuit.eval_replicateScalar]
   simp only [eval_andCircuit]
   decide
 
@@ -67,7 +68,7 @@ example :
         (extInterpretation (modGate 2)) (single (glAmp (parity 3) 4)) ∧
       (glAmpCircuit (Signature.Hom.id _) (parityOnCircuit (univ : Finset (Fin 3))) 4).size = 9 ∧
       (glAmpCircuit (Signature.Hom.id _) (parityOnCircuit (univ : Finset (Fin 3))) 4).depth ≤ 3 :=
-  ⟨computes_glAmpCircuit _ (computes_parityOnCircuit_univ 3) 4, by simp,
+  ⟨(computes_parityOnCircuit_univ 3).glAmpCircuit _ 4, by simp,
     (depth_glAmpCircuit_le _ _ _).trans (by simp)⟩
 
 /-- The circuit evaluated on the first input above. -/
