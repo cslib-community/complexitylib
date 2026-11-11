@@ -14,7 +14,8 @@ Modules copied from work that has not yet merged into cslib carry one of these m
 
 For every such module the script reports one of:
 
-    MERGED    the pull request has merged: bump the cslib pin past it and delete the copy
+    MERGED    the pull request has merged: bump the cslib pin past it and replace the copy
+              with a deprecated shim (file rule 3 of AGENTS.md)
     MOVED     the pull request or branch head moved since the copy: re-sync the copy
     CLOSED    the pull request was closed unmerged: decide whether to keep the copy
     CURRENT   the copy matches the current head

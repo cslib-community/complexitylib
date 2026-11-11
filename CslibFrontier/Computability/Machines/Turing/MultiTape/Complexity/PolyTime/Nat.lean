@@ -50,7 +50,7 @@ The indexed bound is adapted from Cslib/Computability/Probabilistic/Encoding.lea
 `crypto` branch at `5ff69ca93402e7c947208dc56396d6d86203ccd8`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableTidilyInPolyTime
 
@@ -190,17 +190,8 @@ theorem unary_eval (p : Polynomial ℕ) : ComputableTidilyInPolyTime p.eval encU
 
 /-- Convert a unary natural to its binary encoding by incrementing a binary counter. -/
 @[fun_prop]
-theorem unary_to_binary : ComputableTidilyInPolyTime (fun n : ℕ => n) encUnary encNat := by
-  have hsize (n : ℕ) : (encNat n).length ≤ n := by
-    rw [encNat_apply, Nat.size_eq_bits_len]
-    exact Nat.size_le.mpr Nat.lt_two_pow_self
-  have h := foldl' (encA := encBool) (encL := encBits) (list := fun n => List.replicate n true)
-    (step := fun n _ => n + 1)
-    (of_eq (encIn := encUnary) (encMid := encBits) fun _ => rfl) (const 0)
-    (computableTidilyInPolyTime_succ.comp (fst encNat encBool))
-    (B := fun n => (encUnary n).length) .self (fun n i _ => by
-      simpa [List.foldl_const] using (hsize (min i n)).trans (Nat.min_le_right i n))
-  simpa [List.foldl_const] using h
+theorem unary_to_binary : ComputableTidilyInPolyTime (fun n : ℕ => n) encUnary encNat :=
+  ComputableInPolyTime.unary_to_binary.tidy
 
 end Turing.MultiTapeTM.ComputableTidilyInPolyTime
 

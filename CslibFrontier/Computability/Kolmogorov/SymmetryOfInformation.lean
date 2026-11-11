@@ -340,8 +340,7 @@ theorem exists_complexity_universal_add_condUniversal_le :
   have hjsize : j.size ≤ l + 1 := Nat.size_le.mpr (hj.trans hml)
   -- `i` is written with exactly `k + 1 - l` digits, so that `l` can be recovered
   have hrest : (i.bits ++ List.replicate (k + 1 - l - i.size) false).length = k + 1 - l := by
-    rw [List.length_append, List.length_replicate, Nat.size_eq_bits_len]
-    omega
+    grind [List.length_append, List.length_replicate, Nat.size_eq_bits_len]
   have hl' : k + 1 - (k + 1 - l) = l := by omega
   have hX : universal.ecomplexity x ≤
       ((selfDelimitingCode k.bits ++ (i.bits ++ List.replicate (k + 1 - l - i.size) false)).length

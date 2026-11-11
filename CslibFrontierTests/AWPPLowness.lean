@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.AWPP.OracleWeights
 
 /-! # Concrete AWPP oracles and boundary cases for PP lowness -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.AWPPLowness
 

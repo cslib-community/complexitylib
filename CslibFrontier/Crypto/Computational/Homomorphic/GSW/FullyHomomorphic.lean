@@ -68,7 +68,7 @@ Neither theorem asserts lattice hardness, a worst-case reduction, or circuit pri
 * [C. Gentry, A. Sahai and B. Waters, Sections 3.2–3.4][GentrySahaiWaters2013]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.GSW.DepthParameters
 
@@ -116,7 +116,7 @@ theorem advantage_scheme_le (adversary : Encryption.Adversary) (security : ℕ) 
     2 * Game.advantage
       (distinguishingGame
         (LWE.realEnsemble dimension samples width
-          (fun k => noiseLaw (width k) (noise k)) security)
+          (fun k => LWE.noiseLaw (width k) (noise k)) security)
         (lweDistinguisher dimension samples width adversary security))
       (distinguishingGame
         (LWE.uniformEnsemble dimension samples width security)
@@ -126,7 +126,8 @@ theorem advantage_scheme_le (adversary : Encryption.Adversary) (security : ℕ) 
   have hfg :
       Encryption.advantage (Encryption.game scheme.keyGen scheme.encrypt adversary) security =
       Encryption.advantage
-        (Encryption.game (fun k => keyGenSerialized (dimension k) (samples k) (width k) (noise k))
+        (Encryption.game (fun k => LWE.keyGenSerialized (dimension k) (samples k) (width k)
+            (noise k))
           (fun k => encryptSerialized (dimension k) (samples k) (width k)) adversary) security :=
     congrArg₂
       (fun kg enc => Encryption.advantage (Encryption.game kg enc adversary) security)
@@ -144,7 +145,7 @@ theorem advantage_leveled_le (budget : ℕ → ℕ) (adversary : Encryption.Adve
       (2 * Game.advantage
         (distinguishingGame
           (LWE.realEnsemble dimension samples width
-            (fun k => noiseLaw (width k) (noise k)) security)
+            (fun k => LWE.noiseLaw (width k) (noise k)) security)
           (lweDistinguisher dimension samples width
             (Leveled.leveledAdversary scheme (fun k => 2 * budget k) secretWidth adversary)
             security))
@@ -195,7 +196,7 @@ and exactly that decryption algorithm: it is correct for every circuit of the re
 has the fixed widths, native algorithms and IND-CPA security. No circular-security assumption is
 used. -/
 theorem exists_leveled_of_decisionLWE
-    (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k))) :
+    (hLWE : DecisionLWE dimension samples width (fun k => LWE.noiseLaw (width k) (noise k))) :
     ∃ circuits : ∀ k, Circuit Boolean.signature
         ((3 * secretWidth k + 1) + (ciphertextWidth k + 1)) 1,
       ComputableInPolyTime
@@ -256,7 +257,7 @@ scheme, the self-loop construction correctly evaluates every finite circuit. Its
 of GSW, its decryption circuits have polynomial size, its four algorithms are native, and it is
 IND-CPA. -/
 theorem fullyHomomorphic_of_decisionLWE_of_circularSecure
-    (hLWE : DecisionLWE dimension samples width (fun k => noiseLaw (width k) (noise k)))
+    (hLWE : DecisionLWE dimension samples width (fun k => LWE.noiseLaw (width k) (noise k)))
     (hcircular : Encryption.CircularSecure scheme.keyGen scheme.encrypt) :
     (FixedKey.scheme decryptionCircuits).Correct ∧
       (∀ k c, (FixedKey.scheme decryptionCircuits).permitted k c) ∧

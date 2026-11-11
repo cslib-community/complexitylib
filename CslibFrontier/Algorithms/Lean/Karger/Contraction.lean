@@ -12,6 +12,7 @@ public import CslibFrontier.DataStructure.StateTransition.Randomized
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Blocks
 public import CslibFrontier.Languages.Probabilistic.Iteration
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
 
 /-!

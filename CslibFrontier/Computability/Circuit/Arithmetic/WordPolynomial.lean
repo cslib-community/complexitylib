@@ -289,8 +289,7 @@ private theorem prefixRest_append_right {A a B b β k : ℕ} (hA : A < 2 ^ a) (h
       (prefixRest A a B b).bind fun s => wordStep ((a : ℤ) - b) s (-(k : ℤ)) β := by
   rw [prefixRest_comm hA (add_two_pow_mul_lt hB hβ), prefixRest_append hB hA hβ,
     prefixRest_comm hB hA]
-  congr 1
-  funext s
+  congr 1 with s : 1
   rw [← wordStep_neg, neg_sub]
 
 end Strings
@@ -369,13 +368,11 @@ private theorem wordRestAt_succ (hD : ∀ j, D j < 2 ^ (W j).natAbs) (i : ℕ) :
   by_cases h : 0 ≤ W i
   · simp only [ite_eq_left h, ite_eq_right (not_lt.mpr h), add_zero]
     rw [prefixRest_append hP hN (hD i)]
-    congr 1
-    funext s
+    congr 1 with s : 1
     rw [Int.natAbs_of_nonneg h]
   · simp only [ite_eq_right h, ite_eq_left (not_le.mp h), add_zero]
     rw [prefixRest_append_right hP hN (hD i)]
-    congr 1
-    funext s
+    congr 1 with s : 1
     congr 1
     omega
 

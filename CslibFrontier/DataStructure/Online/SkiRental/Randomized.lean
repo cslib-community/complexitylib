@@ -483,13 +483,17 @@ theorem adversary_apply (B : ℕ) [NeZero B] (o : Option (Fin (B - 1))) :
 
 /-- **Lower bound.** Every randomized ski-rental strategy `μ` has, against an oblivious adversary,
 a request sequence and a valid offline schedule with `OPT ≥ 1` and
-`randomizedRatio B * OPT ≤ E_μ[ALG]`. -/
-theorem exists_randomized_witness (B : ℕ) [NeZero B] (μ : RandStrategy (problem B)) :
+`randomizedRatio B * OPT ≤ E_μ[ALG]`. At `B = 0` the ratio is `0` and one rented day is a
+witness. -/
+theorem exists_randomized_witness (B : ℕ) (μ : RandStrategy (problem B)) :
     ∃ reqs states, (problem B).ValidSchedule false reqs states ∧
       1 ≤ (problem B).scheduleCost false reqs states ∧
       ENNReal.ofReal (randomizedRatio B) * (problem B).scheduleCost false reqs states ≤
         RandStrategy.expectedCost μ false reqs := by
-  have hB : 1 ≤ B := NeZero.pos B
+  rcases Nat.eq_zero_or_pos B with rfl | hB
+  · refine ⟨[()], [false], ⟨id, trivial⟩, le_rfl, ?_⟩
+    simp [randomizedRatio]
+  have : NeZero B := ⟨hB.ne'⟩
   have hV0 : ((B ^ (B - 1) : ℕ) : ℝ≥0∞) ≠ 0 := by exact_mod_cast (pow_pos hB _).ne'
   obtain ⟨o, -, ho⟩ := RandStrategy.exists_le_mul_expectedCost (adversary B) false
     (fun o => List.replicate (advDays B o) ())
@@ -523,7 +527,7 @@ theorem exists_randomized_witness (B : ℕ) [NeZero B] (μ : RandStrategy (probl
 /-- No randomized ski-rental strategy is `(c, 0)`-competitive against an oblivious adversary for
 any `c < randomizedRatio B`; with `randomRentThenBuy_isCompetitive`, `randomizedRatio B` is the
 optimal randomized ratio. -/
-theorem not_isCompetitive_of_lt {B : ℕ} [NeZero B] (μ : RandStrategy (problem B)) {c : ℝ≥0∞}
+theorem not_isCompetitive_of_lt {B : ℕ} (μ : RandStrategy (problem B)) {c : ℝ≥0∞}
     (hc : c < ENNReal.ofReal (randomizedRatio B)) : ¬ RandStrategy.IsCompetitive μ c 0 := by
   intro h
   obtain ⟨reqs, states, hv, hpos, hle⟩ := exists_randomized_witness B μ

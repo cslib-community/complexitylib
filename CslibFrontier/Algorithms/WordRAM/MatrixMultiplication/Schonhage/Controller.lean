@@ -11,6 +11,7 @@ public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.He
 public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Meaning
 public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Copy
 import Mathlib.Tactic.Ring
+import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Alternating buffers for the shared native encoder
@@ -234,8 +235,7 @@ theorem progress_step {w L j : ℕ} (hw : 0 < w) (hj : j < L) (side : Bool)
     have hpp' : p < 10 * P := by simpa only [pow_succ', P] using hpp
     have hprod := Nat.mul_le_mul_right n (Nat.succ_le_of_lt hpp')
     have hi : p * n + r < 10 * P * n := by nlinarith only [hprod, hrr']
-    have hdiv : (p * n + r) / n = p := by
-      rw [Nat.mul_comm p n, Nat.mul_add_div hn, Nat.div_eq_of_lt hrr', Nat.add_zero]
+    have hdiv : (p * n + r) / n = p := Nat.mul_add_div_of_lt p hrr'
     have hmod : (p * n + r) % n = r := Nat.mul_add_mod_of_lt hrr'
     have hvout := hm (p * n + r) hi
     rw [show stageResult side n v (p * n + r) = value (table (coefficients side))

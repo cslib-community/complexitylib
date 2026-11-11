@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Data.Finset.Card
 public import Mathlib.Data.Fintype.Card
 public import Mathlib.Logic.Function.Iterate
+import Mathlib.Data.Fintype.EquivFin
 
 /-!
 # Sparse checkpoints in a functional graph
@@ -33,6 +34,7 @@ The state type may live in any universe and need not be finite; only `S` is.
 * `Cslib.FunctionalGraph.exists_checkpoints_on`: checkpoints for orbits staying in `S`.
 * `Cslib.FunctionalGraph.exists_checkpoints`: checkpoints on an invariant finite set.
 * `Cslib.FunctionalGraph.exists_checkpoints_finite`: at most `card α / L` checkpoints.
+* `Cslib.FunctionalGraph.exists_checkpoints_fin`: the same checkpoints, enumerated injectively.
 
 ## References
 
@@ -140,5 +142,18 @@ theorem exists_checkpoints_finite [Fintype α] (hL : 0 < L) :
     (fun _ _ => Finset.mem_univ _) hL
   refine ⟨H, (Nat.le_div_iff_mul_le hL).mpr ?_, fun x => hcover x (Finset.mem_univ x)⟩
   simpa using hsize
+
+/-- **Enumerated checkpoints on a finite type**: `exists_checkpoints_finite` with the marks listed
+without repetition as `cp : Fin M → α`. -/
+theorem exists_checkpoints_fin [Fintype α] (hL : 0 < L) :
+    ∃ (M : ℕ) (cp : Fin M → α), Function.Injective cp ∧ M ≤ Fintype.card α / L ∧
+      ∀ x, Repeats f x L ∨ ∃ d < 2 * L, ∃ j, f^[d] x = cp j := by
+  classical
+  obtain ⟨H, hcard, hcover⟩ := exists_checkpoints_finite f hL
+  refine ⟨H.card, fun j => (H.equivFin.symm j).val,
+    fun _ _ h => H.equivFin.symm.injective (Subtype.ext h), hcard, fun x => ?_⟩
+  rcases hcover x with hr | ⟨d, hd, hm⟩
+  · exact Or.inl hr
+  · exact Or.inr ⟨d, hd, H.equivFin ⟨_, hm⟩, by simp⟩
 
 end Cslib.FunctionalGraph

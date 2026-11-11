@@ -118,8 +118,7 @@ theorem count_eq_subsetZeta (C : SymAnd ι) (T : Finset ι) :
 theorem count_eq_subsetZeta_filter [Fintype ι] (C : SymAnd ι) (x : ι → Bool) :
     C.count x = subsetZeta C.gateMultiplicity (univ.filter fun i => x i = true) := by
   rw [← count_eq_subsetZeta]
-  congr 1
-  funext i
+  congr 1 with i : 1
   cases h : x i <;> simp [h]
 
 end Count

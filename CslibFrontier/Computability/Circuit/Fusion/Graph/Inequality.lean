@@ -107,13 +107,7 @@ theorem inequality_signature_injective
   intro p hp
   obtain ⟨i, hi⟩ := List.mem_iff_get.mp hp
   have hs := congrFun heq i
-  have he : diagonal u ∈ p.1 ↔ diagonal v ∈ p.1 := by
-    rw [Set.mem_iff_boolIndicator, Set.mem_iff_boolIndicator]
-    change c.pairs[i.val] = p at hi
-    change c.pairs[i.val].1.boolIndicator (diagonal u) =
-      c.pairs[i.val].1.boolIndicator (diagonal v) at hs
-    rw [hi] at hs
-    rw [hs]
+  have he : diagonal u ∈ p.1 ↔ diagonal v ∈ p.1 := by grind [Set.mem_iff_boolIndicator]
   change canonicalFilter (inequality V) e p.1 →
     canonicalFilter (inequality V) e p.2 → canonicalFilter (inequality V) e (p.1 ∩ p.2)
   simp only [e, canonicalFilter_inequality, Set.mem_inter_iff]

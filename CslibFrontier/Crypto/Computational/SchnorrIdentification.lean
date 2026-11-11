@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
 /-!
 # Schnorr identification under the discrete-logarithm assumption
@@ -223,9 +224,6 @@ private theorem specialSoundOn (setup : ℕ → PMF F.Desc) {k : ℕ → ℕ} {n
   simp only [wordRelation, wordExtract, extractNat_cast hcne, mul_smul]
   rw [sub_smul, sub_eq_sub_iff_sub_eq_sub.mp heq, ← sub_smul,
     inv_smul_smul₀ (sub_ne_zero.mpr hcne)]
-
-/-- Reading back the binary digits of a number recovers it. -/
-private theorem ofBits_bits (r : ℕ) : ofBits r.bits = r := Nat.foldr_bit_bits r
 
 /-- The rewinding adversary wins the discrete-logarithm game exactly when its output is a witness
 for the generated statement. -/

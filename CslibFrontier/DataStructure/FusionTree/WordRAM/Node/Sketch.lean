@@ -60,8 +60,6 @@ theorem exec_compress {w n q : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w
     ∃ y, Exec w compress x y 102 ∧ y.regs (compressBank 20) = p.compressed q ∧
       Frame x y := by
   let u := moved compressionInputs x
-  have hframe : Frame x u := frame_moved _ _ (by
-    simp [compressionInputs, compressBank, bank])
   have huq : (u.comap compressBank).regs CompressProgram.query = q := by
     simpa +decide [u, moved, compressionInputs, Data.comap, CompressProgram.query,
       parameter, headerBank, compressBank, bank] using hxq
@@ -105,12 +103,11 @@ theorem exec_compress {w n q : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w
     exact p.digits_value
   obtain ⟨v, hev, hv, hmem, _⟩ := CompressProgram.exec (L := p.b) hw
     (u.comap compressBank) (huq ▸ hq) hb hm huo (hud ▸ p.D_lt) (p.window hn hnB hlarge)
-  let y := v.extend compressBank u
-  refine ⟨y, ?_, ?_, hframe.trans (frame_extend _ (by decide) u v hmem)⟩
-  · exact (exec_moves w compressionInputs x).seq (hev.rename (bank_injective _))
-  · change Function.extend compressBank v.regs u.regs (compressBank 20) = _
-    rw [(bank_injective _).extend_apply, hv, huq, huc, hud]
-    rfl
+  obtain ⟨hexec, hframe⟩ := exec_bankCall _ (by decide)
+    (by simp [compressionInputs, compressBank, bank]) hev hmem
+  refine ⟨_, hexec, ?_, hframe⟩
+  rw [regs_extend_bank, hv, huq, huc, hud]
+  rfl
 
 /-- Transfer a compressed query and seven stored constants to a packed-rank workspace.
 The Boolean selects strict rank (original packed sketches) or inclusive rank (complements). -/
@@ -139,8 +136,8 @@ theorem exec_rank {w n q : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w key
     ∃ y, Exec w (rank strict) x y 17 ∧
       y.regs (rankBank 9) = sketchCut strict w keys q ∧ Frame x y := by
   let u := moved (rankInputs strict) x
-  have hf : Frame x u := frame_moved _ _ (by
-    cases strict <;> simp [rankInputs, rankBank, bank])
+  have hxs : ∀ p ∈ rankInputs strict, 40 ≤ p.1.val := by
+    cases strict <;> simp [rankInputs, rankBank, bank]
   have hwords := hx.words_eq
   have hcount := hx.count_eq
   cases strict with
@@ -160,11 +157,9 @@ theorem exec_rank {w n q : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w key
       (p.count_lt_radix hs hk) (fun i _ => p.sketches_lt i) (p.compressed_lt q)
       (p.packed_width hnB hlarge) hin.1 hin.2.1 hin.2.2.1 hin.2.2.2.1
       hin.2.2.2.2.1 hin.2.2.2.2.2.1 hin.2.2.2.2.2.2.1 hin.2.2.2.2.2.2.2
-    let v := RankProgram.result (u.comap rankBank) p.b n p.sketches (p.compressed q)
-    refine ⟨v.extend rankBank u, (exec_moves w _ x).seq (he.rename (bank_injective _)), ?_,
-      hf.trans (frame_extend _ (by decide) u v hm)⟩
-    change Function.extend rankBank v.regs u.regs (rankBank 9) = _
-    rw [(bank_injective _).extend_apply, hout]
+    obtain ⟨hexec, hframe⟩ := exec_bankCall _ (by decide) hxs he hm
+    refine ⟨_, hexec, ?_, hframe⟩
+    rw [regs_extend_bank, hout]
     exact (upperRankExpr_eq_card p.sketches hn (p.count_lt_radix hs hk)
       (fun i _ => p.sketches_lt i) (p.compressed_lt q)).symm.trans
         (NodeSemantics.upperRank_eq p hn hs hk q)
@@ -184,11 +179,9 @@ theorem exec_rank {w n q : ℕ} {keys : Fin n → ℕ} (p : NodeParameters w key
       (p.count_lt_radix hs hk) (fun i _ => p.sketches_lt i) (p.compressed_lt q)
       (p.packed_width hnB hlarge) hin.1 hin.2.1 hin.2.2.1 hin.2.2.2.1
       hin.2.2.2.2.1 hin.2.2.2.2.2.1 hin.2.2.2.2.2.2.1 hin.2.2.2.2.2.2.2
-    let v := LowerRankProgram.result (u.comap rankBank) p.b n p.sketches (p.compressed q)
-    refine ⟨v.extend rankBank u, (exec_moves w _ x).seq (he.rename (bank_injective _)), ?_,
-      hf.trans (frame_extend _ (by decide) u v hm)⟩
-    change Function.extend rankBank v.regs u.regs (rankBank 9) = _
-    rw [(bank_injective _).extend_apply, hout]
+    obtain ⟨hexec, hframe⟩ := exec_bankCall _ (by decide) hxs he hm
+    refine ⟨_, hexec, ?_, hframe⟩
+    rw [regs_extend_bank, hout]
     exact (LowerRankProgram.countGuards_complement p.sketches hn (p.count_lt_radix hs hk)
       (fun i _ => p.sketches_lt i) (p.compressed_lt q)).symm.trans
         (NodeSemantics.lowerRank_eq p hn hs hk q)

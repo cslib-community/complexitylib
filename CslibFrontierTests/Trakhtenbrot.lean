@@ -11,9 +11,10 @@ public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 
 /-! # Trakhtenbrot's theorem: checked instances
 
-Finite satisfiability on small examples: an axiom of infinity that is satisfiable but not finitely
-satisfiable (so its negation is finitely valid but not valid), the standard arithmetic model, and
-the reduction sentences of a halting and a non-halting code. -/
+Finite satisfiability on small examples: fixed-size `SatOnFin` and `quantifierDepth` checks,
+an axiom of infinity that is satisfiable but not finitely satisfiable (so its negation is finitely
+valid but not valid), the standard arithmetic model, and the reduction sentences of a halting and a
+non-halting code. -/
 
 @[expose] public section
 
@@ -83,5 +84,52 @@ theorem not_dom_eval_rfind_succ : ¬(Code.eval (Code.rfind' Code.succ) 0).Dom :=
 /-- The sentence of a diverging code has no finite model. -/
 theorem not_finSat_haltSentence_rfind_succ : ¬FinSat (haltSentence (Code.rfind' Code.succ)) :=
   fun h => not_dom_eval_rfind_succ ((eval_dom_iff_finSat _).2 h)
+
+/-! ### Quantifier depth and fixed-size satisfiability (`SatOnFin`) -/
+
+example : quantifierDepth falsum = 0 := by decide
+example : quantifierDepth (equal 0 1) = 0 := by decide
+example : quantifierDepth (rel 0 []) = 0 := by decide
+example : quantifierDepth infAx = 3 := by decide
+
+/-- `⊥` is not satisfiable on `Fin 1`, and `checkSatOnFin` agrees. -/
+theorem not_satOnFin_zero_falsum : ¬SatOnFin 0 falsum := fun ⟨_, _, h⟩ => h
+
+example : checkSatOnFin 0 falsum = false :=
+  Bool.eq_false_iff.2 fun h => not_satOnFin_zero_falsum (checkSatOnFin_eq_true_iff.1 h)
+
+/-- `x₀ = x₀` is satisfiable on `Fin 1`, and `checkSatOnFin` agrees. -/
+theorem satOnFin_zero_equal : SatOnFin 0 (equal 0 0) :=
+  ⟨fun _ _ => False, fun _ => 0, rfl⟩
+
+example : checkSatOnFin 0 (equal 0 0) = true :=
+  checkSatOnFin_eq_true_iff.2 satOnFin_zero_equal
+
+/-- Both a nullary raw atom `R()` and its negation are satisfiable on `Fin 1`. -/
+example : SatOnFin 0 (rel 0 []) := ⟨fun _ _ => True, fun _ => 0, trivial⟩
+example : SatOnFin 0 (neg (rel 0 [])) := ⟨fun _ _ => False, fun _ => 0, id⟩
+
+/-- "There exist two distinct elements": `∃ x₀ ∃ x₁, x₀ ≠ x₁`. -/
+def twoDistinct : RawFormula := ex 0 (ex 1 (neg (equal 0 1)))
+
+example : quantifierDepth twoDistinct = 2 := by decide
+
+/-- `twoDistinct` fails on `Fin 1` (`n = 0`) and holds on `Fin 2` (`n = 1`). -/
+theorem not_satOnFin_zero_twoDistinct : ¬SatOnFin 0 twoDistinct := by
+  rintro ⟨I, v, h⟩
+  simp only [twoDistinct, realize_ex, realize_neg, realize_equal, Function.update_self,
+    Function.update_of_ne (by decide : (0 : ℕ) ≠ 1)] at h
+  obtain ⟨a, b, hab⟩ := h
+  exact hab (Fin.ext (by omega))
+
+theorem satOnFin_one_twoDistinct : SatOnFin 1 twoDistinct := by
+  refine ⟨fun _ _ => False, fun _ => 0, ?_⟩
+  simp only [twoDistinct, realize_ex, realize_neg, realize_equal, Function.update_self,
+    Function.update_of_ne (by decide : (0 : ℕ) ≠ 1)]
+  exact ⟨0, 1, by decide⟩
+
+/-- The axiom of infinity fails `SatOnFin n` at every finite size `n + 1`. -/
+example (n : ℕ) : ¬SatOnFin n infAx :=
+  fun h => not_finSat_infAx ((finSat_iff_exists_satOnFin infAx).2 ⟨n, h⟩)
 
 end Cslib.Tests.Trakhtenbrot

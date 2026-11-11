@@ -51,6 +51,8 @@ size `O(k log k)` that outputs the exact binary representation of `BitString.wei
   `Cslib.Circuits.Boolean.weightPairCircuit`, `Cslib.Circuits.Boolean.weightCircuit`: leaf circuits,
   balanced carry-save reduction tree, and De Morgan circuit computing the binary numeral of the
   Hamming weight of `k` input bits.
+* `Cslib.Circuits.Boolean.reducePairs`: balanced four-to-two reduction of any list of carry-save
+  pairs on shared inputs.
 
 ## Main results
 
@@ -58,6 +60,10 @@ size `O(k log k)` that outputs the exact binary representation of `BitString.wei
   the sum modulo `2 ^ w`.
 * `Cslib.Circuits.Boolean.val_eval_weightCircuit`: `weightCircuit k` computes the exact binary
   numeral of `BitString.weight x` in `⌈log₂ (k + 1)⌉` bits.
+* `Cslib.Circuits.Boolean.pairVal_eval_reducePairs_mod`,
+  `Cslib.Circuits.Boolean.size_reducePairs_le`, `Cslib.Circuits.Boolean.depth_reducePairs_le`: a
+  pair reduction computes the sum of the supplied pair values, with linear size and logarithmic
+  depth in the number of pairs.
 * `Cslib.Circuits.Boolean.size_weightCircuit_le`,
   `Cslib.Circuits.Boolean.depth_weightCircuit_le`: size `O(k log k)` and depth `O(log k)`.
 
@@ -496,31 +502,59 @@ theorem depth_bitPairCircuit_le (j : Fin k) : (bitPairCircuit k w j).depth ≤ 1
   (Circuit.depth_comp_le _ _).trans (by
     simpa using (Circuit.depth_append_le _ _).trans (by simp))
 
+/-- Reduce carry-save pairs along the existing half-split tree; the empty sum is zero. -/
+def reducePairs (n w : ℕ) (cs : List (Circuit signature n (w + w))) :
+    Circuit signature n (w + w) :=
+  Circuit.balanced (csa4to2 w) (zeroPairCircuit n w) cs
+
+/-- The reduction preserves the complete sum modulo the word modulus. -/
+theorem pairVal_eval_reducePairs_mod (cs : List (Circuit signature n (w + w)))
+    (x : BitString n) :
+    pairVal ((reducePairs n w cs).eval interpretation x) % 2 ^ w =
+      (cs.map fun C => pairVal (C.eval interpretation x) % 2 ^ w).sum % 2 ^ w := by
+  rw [reducePairs, Circuit.eval_balanced]
+  exact List.balancedFold_induction
+    (op := fun u v : BitString (w + w) => (csa4to2 w).eval interpretation (Fin.append u v))
+    (e := (zeroPairCircuit n w).eval interpretation x)
+    (f := fun C : Circuit signature n (w + w) => C.eval interpretation x)
+    (p := fun (l : List (Circuit signature n (w + w))) (u : BitString (w + w)) =>
+      pairVal u % 2 ^ w =
+      (l.map fun C => pairVal (C.eval interpretation x) % 2 ^ w).sum % 2 ^ w)
+    (by simp [pairVal, fstBits, sndBits]) (fun C => by simp)
+    (fun l₁ l₂ u v _ _ hu hv => by
+      rw [pairVal_eval_csa4to2_mod, Nat.add_mod, hu, hv, ← Nat.add_mod,
+        List.map_append, List.sum_append]) cs
+
+/-- Charge the fallback only for the empty sum and every reduction gate for nonempty sums. -/
+theorem size_reducePairs_le (cs : List (Circuit signature n (w + w))) :
+    (reducePairs n w cs).size ≤ 1 + (cs.map Circuit.size).sum + cs.length * (40 * w) := by
+  by_cases h : cs = []
+  · subst cs
+    simp [reducePairs, Circuit.balanced]
+  · rw [reducePairs, Circuit.size_balanced _ _ h]
+    have := Nat.mul_le_mul (Nat.sub_le cs.length 1) (size_csa4to2_le w)
+    omega
+
+/-- The pair tree adds twelve levels per half-split round to the deepest supplied circuit. -/
+theorem depth_reducePairs_le (cs : List (Circuit signature n (w + w))) {D : ℕ}
+    (hD : ∀ C ∈ cs, C.depth ≤ D) :
+    (reducePairs n w cs).depth ≤ max D 1 + 12 * Nat.clog 2 cs.length := by
+  refine (Circuit.depth_balanced_le _ _ (D := max D 1)
+    (fun C hC => (hD C hC).trans (Nat.le_max_left _ _))
+    (fun _ => depth_zeroPairCircuit_le.trans (Nat.le_max_right _ _))).trans ?_
+  exact Nat.add_le_add_left (Nat.mul_le_mul_right _ (depth_csa4to2_le w)) _
+
 /-- Balanced binary tree of `csa4to2 w` reducers over all `k` input bits. -/
 def weightPairCircuit (k w : ℕ) : Circuit signature k (w + w) :=
   Circuit.balanced (csa4to2 w) (zeroPairCircuit k w) (List.ofFn (bitPairCircuit k w))
-
-private theorem pairVal_balancedFold_mod {β : Type*}
-    (op : BitString (w + w) → BitString (w + w) → BitString (w + w))
-    (hop : ∀ u v, pairVal (op u v) % 2 ^ w = (pairVal u + pairVal v) % 2 ^ w)
-    (e : BitString (w + w)) (he : pairVal e % 2 ^ w = 0)
-    (f : β → BitString (w + w)) (l : List β) :
-    pairVal (l.balancedFold op e f) % 2 ^ w =
-      (l.map fun b => pairVal (f b) % 2 ^ w).sum % 2 ^ w :=
-  List.balancedFold_induction
-    (p := fun l u => pairVal u % 2 ^ w = (l.map fun b => pairVal (f b) % 2 ^ w).sum % 2 ^ w)
-    he (fun b => by simp)
-    (fun l₁ l₂ u v _ _ hu hv => by
-      rw [hop, Nat.add_mod, hu, hv, ← Nat.add_mod, List.map_append, List.sum_append]) l
 
 /-- `weightPairCircuit k w` outputs a carry-save pair whose value is congruent to the Hamming
 weight `BitString.weight x` modulo `2 ^ w`. -/
 theorem pairVal_eval_weightPairCircuit_mod (x : BitString k) :
     pairVal ((weightPairCircuit k w).eval interpretation x) % 2 ^ w =
       BitString.weight x % 2 ^ w := by
-  rw [weightPairCircuit, Circuit.eval_balanced,
-    pairVal_balancedFold_mod _ (fun u v => pairVal_eval_csa4to2_mod u v) _
-      (by simp [pairVal, fstBits, sndBits])]
+  rw [show weightPairCircuit k w = reducePairs k w (List.ofFn (bitPairCircuit k w)) from rfl,
+    pairVal_eval_reducePairs_mod]
   simp only [List.map_ofFn, Function.comp_def, pairVal_eval_bitPairCircuit_mod, List.sum_ofFn,
     ← Finset.sum_nat_mod, BitString.weight_eq_sum_toNat]
 
@@ -539,12 +573,11 @@ theorem size_weightPairCircuit_le (k w : ℕ) :
 /-- `weightPairCircuit k w` has depth at most `1 + 12 * Nat.clog 2 k`. -/
 theorem depth_weightPairCircuit_le (k w : ℕ) :
     (weightPairCircuit k w).depth ≤ 1 + 12 * Nat.clog 2 k := by
-  refine (Circuit.depth_balanced_le _ _ (D := 1)
-    (fun C hC => ?_) (fun _ => depth_zeroPairCircuit_le)).trans ?_
-  · obtain ⟨j, rfl⟩ := List.mem_ofFn.1 hC
+  have h := depth_reducePairs_le (List.ofFn (bitPairCircuit k w)) (D := 1) fun C hC => by
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.1 hC
     exact depth_bitPairCircuit_le j
-  · rw [List.length_ofFn]
-    exact Nat.add_le_add_left (Nat.mul_le_mul_right _ (depth_csa4to2_le w)) 1
+  change (reducePairs k w (List.ofFn (bitPairCircuit k w))).depth ≤ _
+  simpa only [List.length_ofFn, max_self] using h
 
 /-- **Logarithmic-depth Hamming weight circuit**: outputs the `⌈log₂ (k + 1)⌉`-bit binary numeral
 of `BitString.weight x` (least significant bit first), using `O(k log k)` gates and depth

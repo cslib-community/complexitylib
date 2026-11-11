@@ -697,6 +697,26 @@ private theorem exists_flip_with_zVar_true {F : PosFormula (6 * n)}
     · rw [update_packXYZ_zVar, hC1, decide_eq_true_iff]
       exact ⟨j, by simp [y₀], by simp⟩
 
+/-- Shared core of Claim 15: no subformula `S` of `F` can read a coordinate `u ≠ zVar i` while
+evaluating to `true` whenever `zVar i` is set. Otherwise flipping `u` in the witness of
+`exists_flip_with_zVar_true` would change `F.eval` without changing `S.eval`. -/
+private theorem false_of_isSubformula_forces_zVar {F S : PosFormula (6 * n)} (hro : F.IsReadOnce)
+    (hC1 : ∀ y z : BitString (2 * n),
+      F.eval (packXYZ zeros2n y z) = decide (∃ j, y j = true ∧ z j = true))
+    (hC3 : ∀ x y : BitString (2 * n),
+      F.eval (packXYZ x y ones2n) = decide (∃ j, x j = true ∨ y j = true))
+    (hsub : PosFormula.IsSubformula S F) (i : Fin (2 * n)) {u : Fin (6 * n)}
+    (hu : u ∈ S.leafSupport) (hu_ne : u ≠ zVar i)
+    (hS : ∀ w : BitString (6 * n), w (zVar i) = true → S.eval w = true) : False := by
+  obtain ⟨w, hwz, hf0, hf1⟩ := exists_flip_with_zVar_true hC1 hC3 i hu_ne
+  have heq : F.eval (Function.update w u false) = F.eval (Function.update w u true) := by
+    refine PosFormula.eval_eq_of_isSubformula_of_eval_eq hsub hro (fun v hv => ?_) ?_
+    · have hvu : v ≠ u := fun h => hv (h ▸ hu)
+      simp [Function.update_of_ne hvu]
+    · rw [hS _ (by rwa [Function.update_of_ne hu_ne.symm]),
+        hS _ (by rwa [Function.update_of_ne hu_ne.symm])]
+  exact Bool.false_ne_true (hf0.symm.trans (heq.trans hf1))
+
 /-- **Claim 15 (left)** [ECCC TR20-183, Section 3, p. 25]: no `zVar i` leaf is the left child of an
 `or` subformula of `F`. -/
 private theorem not_isSubformula_or_var_zVar_left {F : PosFormula (6 * n)} (hro : F.IsReadOnce)
@@ -708,24 +728,11 @@ private theorem not_isSubformula_or_var_zVar_left {F : PosFormula (6 * n)} (hro 
     ¬PosFormula.IsSubformula (.or (.var (zVar i)) A) F := by
   intro hsub
   obtain ⟨u, huA⟩ := A.leafSupport_nonempty
-  have hroT := hsub.isReadOnce hro
   have hu_ne : u ≠ zVar i := by
-    intro h
-    subst h
-    exact Finset.disjoint_left.mp hroT.2.2 (Finset.mem_singleton_self _) huA
-  obtain ⟨w, hwz, hf0, hf1⟩ := exists_flip_with_zVar_true hC1 hC3 i hu_ne
-  let w₀ := Function.update w u false
-  let w₁ := Function.update w u true
-  have hw₀z : w₀ (zVar i) = true := by
-    simpa [w₀, Function.update_of_ne hu_ne.symm] using hwz
-  have hw₁z : w₁ (zVar i) = true := by
-    simpa [w₁, Function.update_of_ne hu_ne.symm] using hwz
-  have heq : F.eval w₀ = F.eval w₁ := by
-    refine PosFormula.eval_eq_of_isSubformula_of_eval_eq hsub hro (fun v hv => ?_) ?_
-    · have hvu : v ≠ u := fun h => hv (Finset.mem_union_right _ (h ▸ huA))
-      simp [w₀, w₁, Function.update_of_ne hvu]
-    · simp [hw₀z, hw₁z]
-  exact Bool.false_ne_true (hf0.symm.trans (heq.trans hf1))
+    rintro rfl
+    exact Finset.disjoint_left.mp (hsub.isReadOnce hro).2.2 (Finset.mem_singleton_self _) huA
+  exact false_of_isSubformula_forces_zVar hro hC1 hC3 hsub i (Finset.mem_union_right _ huA) hu_ne
+    fun w hw => by simp [hw]
 
 /-- **Claim 15 (right)** [ECCC TR20-183, Section 3, p. 25]: no `zVar i` leaf is the right child of
 an `or` subformula of `F`. -/
@@ -738,24 +745,39 @@ private theorem not_isSubformula_or_var_zVar_right {F : PosFormula (6 * n)} (hro
     ¬PosFormula.IsSubformula (.or A (.var (zVar i))) F := by
   intro hsub
   obtain ⟨u, huA⟩ := A.leafSupport_nonempty
-  have hroT := hsub.isReadOnce hro
   have hu_ne : u ≠ zVar i := by
-    intro h
-    subst h
-    exact Finset.disjoint_right.mp hroT.2.2 (Finset.mem_singleton_self _) huA
-  obtain ⟨w, hwz, hf0, hf1⟩ := exists_flip_with_zVar_true hC1 hC3 i hu_ne
-  let w₀ := Function.update w u false
-  let w₁ := Function.update w u true
-  have hw₀z : w₀ (zVar i) = true := by
-    simpa [w₀, Function.update_of_ne hu_ne.symm] using hwz
-  have hw₁z : w₁ (zVar i) = true := by
-    simpa [w₁, Function.update_of_ne hu_ne.symm] using hwz
+    rintro rfl
+    exact Finset.disjoint_right.mp (hsub.isReadOnce hro).2.2 (Finset.mem_singleton_self _) huA
+  exact false_of_isSubformula_forces_zVar hro hC1 hC3 hsub i (Finset.mem_union_left _ huA) hu_ne
+    fun w hw => by simp [hw]
+
+/-- Shared core of Claim 16: no subformula `S` of `F` can read `zVar j` for `j ≠ i` while
+evaluating to `false` whenever `zVar i` is unset. Otherwise setting `zVar j` on top of a single
+`y`-bit would change `F.eval` (Clause (1)) without changing `S.eval`. -/
+private theorem false_of_isSubformula_needs_zVar {F S : PosFormula (6 * n)} (hro : F.IsReadOnce)
+    (hC1 : ∀ y z : BitString (2 * n),
+      F.eval (packXYZ zeros2n y z) = decide (∃ j, y j = true ∧ z j = true))
+    (hsub : PosFormula.IsSubformula S F) {i j : Fin (2 * n)} (hji : j ≠ i)
+    (hj : zVar j ∈ S.leafSupport)
+    (hS : ∀ w : BitString (6 * n), w (zVar i) = false → S.eval w = false) : False := by
+  let y₀ := Function.update (zeros2n (n := n)) j true
+  let w₀ := packXYZ zeros2n y₀ zeros2n
+  let w₁ := Function.update w₀ (zVar j) true
+  have hw₀i : w₀ (zVar i) = false := by simp [w₀]
+  have hw₁i : w₁ (zVar i) = false := by
+    simp [w₁, w₀, Function.update_of_ne (zVar_inj.not.mpr hji.symm)]
   have heq : F.eval w₀ = F.eval w₁ := by
     refine PosFormula.eval_eq_of_isSubformula_of_eval_eq hsub hro (fun v hv => ?_) ?_
-    · have hvu : v ≠ u := fun h => hv (Finset.mem_union_left _ (h ▸ huA))
-      simp [w₀, w₁, Function.update_of_ne hvu]
-    · simp [hw₀z, hw₁z]
-  exact Bool.false_ne_true (hf0.symm.trans (heq.trans hf1))
+    · have hvj : v ≠ zVar j := fun h => hv (h ▸ hj)
+      simp [w₁, Function.update_of_ne hvj]
+    · rw [hS _ hw₀i, hS _ hw₁i]
+  have hf₀ : F.eval w₀ = false := by
+    simpa [w₀] using hC1 y₀ zeros2n
+  have hf₁ : F.eval w₁ = true := by
+    rw [show w₁ = packXYZ zeros2n y₀ (Function.update zeros2n j true) from
+      update_packXYZ_zVar _ _ _ j true, hC1, decide_eq_true_iff]
+    exact ⟨j, by simp [y₀], by simp⟩
+  exact Bool.false_ne_true (hf₀.symm.trans (heq.trans hf₁))
 
 /-- **Claim 16 (left)** [ECCC TR20-183, Section 3, p. 25]: if `.and (.var (zVar i)) A` is a
 subformula of `F`, then `A` reads no `z`-variable (`∀ j, zVar j ∉ A.leafSupport`). -/
@@ -767,29 +789,11 @@ private theorem not_mem_leafSupport_zVar_of_isSubformula_and_left {F : PosFormul
     (hsub : PosFormula.IsSubformula (.and (.var (zVar i)) A) F) :
     zVar j ∉ A.leafSupport := by
   intro hjA
-  have hroT := hsub.isReadOnce hro
   have hji : j ≠ i := by
-    intro h
-    subst h
-    exact Finset.disjoint_left.mp hroT.2.2 (Finset.mem_singleton_self _) hjA
-  let y₀ := Function.update (zeros2n (n := n)) j true
-  let w₀ := packXYZ zeros2n y₀ zeros2n
-  let w₁ := Function.update w₀ (zVar j) true
-  have hw₀i : w₀ (zVar i) = false := by simp [w₀]
-  have hw₁i : w₁ (zVar i) = false := by
-    simp [w₁, w₀, Function.update_of_ne (zVar_inj.not.mpr hji.symm)]
-  have heq : F.eval w₀ = F.eval w₁ := by
-    refine PosFormula.eval_eq_of_isSubformula_of_eval_eq hsub hro (fun v hv => ?_) ?_
-    · have hvj : v ≠ zVar j := fun h => hv (Finset.mem_union_right _ (h ▸ hjA))
-      simp [w₁, Function.update_of_ne hvj]
-    · simp [hw₀i, hw₁i]
-  have hf₀ : F.eval w₀ = false := by
-    simpa [w₀] using hC1 y₀ zeros2n
-  have hf₁ : F.eval w₁ = true := by
-    rw [show w₁ = packXYZ zeros2n y₀ (Function.update zeros2n j true) from
-      update_packXYZ_zVar _ _ _ j true, hC1, decide_eq_true_iff]
-    exact ⟨j, by simp [y₀], by simp⟩
-  exact Bool.false_ne_true (hf₀.symm.trans (heq.trans hf₁))
+    rintro rfl
+    exact Finset.disjoint_left.mp (hsub.isReadOnce hro).2.2 (Finset.mem_singleton_self _) hjA
+  exact false_of_isSubformula_needs_zVar hro hC1 hsub hji (Finset.mem_union_right _ hjA)
+    fun w hw => by simp [hw]
 
 /-- **Claim 16 (right)** [ECCC TR20-183, Section 3, p. 25]: if `.and A (.var (zVar i))` is a
 subformula of `F`, then `A` reads no `z`-variable (`∀ j, zVar j ∉ A.leafSupport`). -/
@@ -801,29 +805,11 @@ private theorem not_mem_leafSupport_zVar_of_isSubformula_and_right {F : PosFormu
     (hsub : PosFormula.IsSubformula (.and A (.var (zVar i))) F) :
     zVar j ∉ A.leafSupport := by
   intro hjA
-  have hroT := hsub.isReadOnce hro
   have hji : j ≠ i := by
-    intro h
-    subst h
-    exact Finset.disjoint_right.mp hroT.2.2 (Finset.mem_singleton_self _) hjA
-  let y₀ := Function.update (zeros2n (n := n)) j true
-  let w₀ := packXYZ zeros2n y₀ zeros2n
-  let w₁ := Function.update w₀ (zVar j) true
-  have hw₀i : w₀ (zVar i) = false := by simp [w₀]
-  have hw₁i : w₁ (zVar i) = false := by
-    simp [w₁, w₀, Function.update_of_ne (zVar_inj.not.mpr hji.symm)]
-  have heq : F.eval w₀ = F.eval w₁ := by
-    refine PosFormula.eval_eq_of_isSubformula_of_eval_eq hsub hro (fun v hv => ?_) ?_
-    · have hvj : v ≠ zVar j := fun h => hv (Finset.mem_union_left _ (h ▸ hjA))
-      simp [w₁, Function.update_of_ne hvj]
-    · simp [hw₀i, hw₁i]
-  have hf₀ : F.eval w₀ = false := by
-    simpa [w₀] using hC1 y₀ zeros2n
-  have hf₁ : F.eval w₁ = true := by
-    rw [show w₁ = packXYZ zeros2n y₀ (Function.update zeros2n j true) from
-      update_packXYZ_zVar _ _ _ j true, hC1, decide_eq_true_iff]
-    exact ⟨j, by simp [y₀], by simp⟩
-  exact Bool.false_ne_true (hf₀.symm.trans (heq.trans hf₁))
+    rintro rfl
+    exact Finset.disjoint_right.mp (hsub.isReadOnce hro).2.2 (Finset.mem_singleton_self _) hjA
+  exact false_of_isSubformula_needs_zVar hro hC1 hsub hji (Finset.mem_union_left _ hjA)
+    fun w hw => by simp [hw]
 
 /-- Number of `z`-variables in `S.leafSupport`. -/
 private def zCount (S : PosFormula (6 * n)) : ℕ :=

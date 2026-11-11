@@ -80,8 +80,8 @@ theorem sampleGame_replicate (generator : List Bool → List Bool) (sample : Pro
   have hout := congrArg (PMF.map Prod.fst) h
   have hstep := fun query cache => expansionOracle_sample generator sample n depth query cache
   simpa only [sampleGame, expansionGame, ProbComp.eval_bind, ProbComp.eval_map,
-    ProbOracleComp.eval_run_interpret, PMF.map_bind, PMF.map_comp, Function.comp_def, hstep]
-    using hout
+    ProbOracleComp.eval_run_interpret_eq_runWith, PMF.map_bind, PMF.map_comp, Function.comp_def,
+    hstep] using hout
 
 /-- The saved-sample game is uniformly PPT, including arbitrary and short challenge lists.
 The shared interpreter accounts for list consumption, cache lookup and tree evaluation. -/

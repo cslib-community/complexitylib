@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedEntry
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
 
 /-!
 # Direct truncated contraction with polynomial-time entries
@@ -31,23 +33,6 @@ open Cslib.GenericRAM Turing.MultiTapeTM
 
 variable {T : Type} {encT : T ↪ List Bool} {entry : T → List Bool → List ℕ}
 
-/-- The encoded argument of an entry on a vertex is at most three times the encoded network
-length plus a constant. -/
-theorem DescribedNetwork.length_entryInput_le (G : DescribedNetwork T)
-    {v : List ℕ × T} (hv : v ∈ G.vertices) {bs : List Bool} (hbs : bs.length = v.1.length) :
-    (encPair encT encBits (v.2, bs)).length + 1 ≤
-      3 * ((DescribedNetwork.encDescribed encT G).length + 1) := by
-  have h1 := length_le_encList_of_mem (encPair (encList encNat) encT) hv
-  have h2 : (encList (encPair (encList encNat) encT) G.vertices).length ≤
-      (DescribedNetwork.encDescribed encT G).length := by
-    change _ ≤ (encPair encUnary (encList (encPair (encList encNat) encT))
-      (G.numEdges, G.vertices)).length
-    rw [length_encPair]
-    dsimp only
-    omega
-  have h3 := length_le_length_encList encNat v.1
-  enc_len at h1 ⊢
-
 /-- Direct truncated contraction with a polynomial entry procedure has only the `2 ^ m`
 enumeration factor. The result includes its encoded output in the space bound. -/
 theorem truncDirectCertificate_le_of_isPolynomial
@@ -62,13 +47,9 @@ theorem truncDirectCertificate_le_of_isPolynomial
   obtain ⟨Kd, hKd⟩ := truncDirectCertificate_le entry ce
   let E : ℕ → ℕ := fun n => a * 3 ^ d * (n + 1) ^ d
   let F : ℕ → ℕ := fun n => Kd * (n + E n + 1) ^ Kd * (E n + 1)
-  have hEp : PolyBounded id E :=
-    (PolyBounded.const (a * 3 ^ d)).mul ((PolyBounded.self.add (PolyBounded.const 1)).pow d)
-  have hFp : PolyBounded id F :=
-    ((PolyBounded.const Kd).mul (((PolyBounded.self.add hEp).add
-      (PolyBounded.const 1)).pow Kd)).mul (hEp.add (PolyBounded.const 1))
-  obtain ⟨aF, dF, hF⟩ := hFp.exists_le
-  refine ⟨aF + dF, fun P ℓ r G => ?_⟩
+  have hFp : PolyBounded id F := by growth_poly
+  obtain ⟨KF, hF⟩ := hFp.exists_le_succ_pow
+  refine ⟨KF, fun P ℓ r G => ?_⟩
   set n := (encTrunc encT (P, ℓ, r, G)).length
   have hL : (DescribedNetwork.encDescribed encT G).length ≤ n := by
     enc_len [n]
@@ -83,17 +64,15 @@ theorem truncDirectCertificate_le_of_isPolynomial
         _ = E n := by simp only [E, mul_pow]; ring
     exact ⟨by omega, by omega⟩
   obtain ⟨hT, hS⟩ := hKd P ℓ r G (E n) (E n) he
-  have hbound : F n ≤ (aF + dF) * (n + 1) ^ (aF + dF) :=
-    (hF n).trans (Nat.mul_le_mul (by omega)
-      (Nat.pow_le_pow_right (by omega) (by omega)))
+  have hbound : F n ≤ KF * (n + 1) ^ KF := hF _ le_rfl n
   refine ⟨?_, ?_⟩
   · calc (truncDirectCertificate entry ce).time (P, ℓ, r, G)
         ≤ Kd * (n + E n + 1) ^ Kd * 2 ^ G.numEdges * (E n + 1) := hT
       _ = F n * 2 ^ G.numEdges := by simp only [F]; ring
-      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) * 2 ^ G.numEdges := by gcongr
+      _ ≤ KF * (n + 1) ^ KF * 2 ^ G.numEdges := by gcongr
   · calc (truncDirectCertificate entry ce).space (P, ℓ, r, G)
         ≤ Kd * (n + E n + 1) ^ Kd := hS
       _ ≤ F n := Nat.le_mul_of_pos_right _ (by omega)
-      _ ≤ (aF + dF) * (n + 1) ^ (aF + dF) := hbound
+      _ ≤ KF * (n + 1) ^ KF := hbound
 
 end Cslib.Circuits.Frontier

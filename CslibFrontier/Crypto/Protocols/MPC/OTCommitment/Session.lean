@@ -124,8 +124,7 @@ theorem decodeOpening_openingWord {k : ℕ} (b : Bool) (o : Opening k) :
     show (List.ofFn (fun i => o i false) ++ List.ofFn (fun i => o i true)).drop k = _ from hd]
   simp only [decodeOpening, Option.bind_some, List.length_zip, List.length_ofFn,
     Nat.min_self, ite_true]
-  congr 2
-  funext i c
+  congr 2 with i c : 2
   cases c <;> simp [List.getD_eq_getElem?_getD]
 
 /-- The receiver records whether a receipt was actually issued; pre-seal abort has no receipt. -/

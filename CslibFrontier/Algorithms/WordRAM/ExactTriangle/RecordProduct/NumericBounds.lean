@@ -45,9 +45,8 @@ theorem physical_fits {W n D g p A b Q : ℕ}
   have hw : 256 * Nat.clog 2 (2 * PreparationInput.wordBound n D g p A + n + n ^ 2 + 5) ≤ W :=
     by unfold admissionWidth at hW; omega
   have hfit := CallableProduct.physical_fits hw
-  have hM : CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n ^ 2) := by
-    apply Nat.pow_le_pow_right (by decide)
-    exact Nat.mul_le_mul_left 128 (Nat.clog_mono_right 2 (by omega))
+  have hM : CallableProduct.windowSize n Q ≤ CallableProduct.windowSize n (n ^ 2) :=
+    CallableProduct.windowSize_mono_right n hQ
   exact hfit.of_le (by omega)
 
 /-- The final threshold is logarithmic in the original outer dimension under the producer's

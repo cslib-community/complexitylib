@@ -31,7 +31,7 @@ polynomial-time comparison, which may capture the original input, makes it polyn
   computed framed list (and its `fun_prop` specialization to bit strings).
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

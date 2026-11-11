@@ -34,7 +34,7 @@ base `(27/4)^(1/3) = 2^(H₂(1/3))`, approximately `1.88988`, without rounding a
 * `Cslib.Circuits.Boolean.complexity_exists_translate_le`: compile any finite disjunction of
   translated functions, sharing the input negations across all terms.
 * `Cslib.Circuits.Boolean.complexity_sumset_le_of_cover`: compile any two-sided translate cover
-  into a circuit for sumset membership.
+  `A + B = (A₀ + B) ∪ (A + B₀)` into a circuit for sumset membership.
 * `Cslib.Circuits.Boolean.complexity_orConvolution_le`: the binomial-sum circuit bound for
   arbitrary Boolean functions.
 * `Cslib.Circuits.Boolean.exists_orConvolution_circuit`: an exact circuit attaining that bound.
@@ -92,9 +92,9 @@ theorem complexity_exists_translate_le {α : Type*}
     (fun i => complexity interpretation (single (f i))) fun i _ => hterm i)
   simpa only [Nat.add_assoc] using h.complexity_le
 
-/-- If every sum is covered by a translate whose left endpoint lies in `A₀` or whose right
-endpoint lies in `B₀`, compile that cover. The sets and their cover may be selected nonuniformly;
-the conclusion concerns the size of an exact circuit. -/
+/-- If the sumset `A + B` equals the union of the translates of `B` by the elements of `A₀` and
+the translates of `A` by the elements of `B₀`, compile that cover. The sets and their cover may be
+selected nonuniformly; the conclusion concerns the size of an exact circuit. -/
 theorem complexity_sumset_le_of_cover (A B A₀ B₀ : Finset (BitString n))
     (hcover : A + B = (A₀ + B) ∪ (A + B₀)) :
     complexity interpretation (single fun x => decide (x ∈ A + B)) ≤

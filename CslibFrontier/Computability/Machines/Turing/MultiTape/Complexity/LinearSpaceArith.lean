@@ -9,33 +9,31 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
 public import Mathlib.Data.Nat.Size
 
 /-!
 # Arithmetic in binary within linear work space
 
-Binary addition reexports the linear zip-transducer certificate, weakened to time quadratic in
-the encoded input length and linear charged workspace. The remaining facts bound lengths of
-arithmetic outputs and identify successor iteration, for clients with fixed workspace budgets.
+The facts here bound lengths of arithmetic outputs and identify successor iteration, for clients
+with fixed workspace budgets. The certificate of binary addition,
+`Turing.MultiTapeTM.ComputableInO.natAdd`, is in `Internal/BinaryAddition`, which this file
+publicly imports: it is the linear zip-transducer certificate, weakened to time quadratic in the
+encoded input length and linear charged workspace.
 
 ## Main results
 
-* `Turing.MultiTapeTM.length_encNat_mono`, `.length_encNat_add_le_add`, `.length_encNat_mul_le`:
-  monotonicity and lengths of sums and products in binary.
-* `Turing.MultiTapeTM.ComputableInO.natAdd`: binary addition in quadratic time and linear space.
+* `Turing.MultiTapeTM.length_encNat_add_le_add`, `.length_encNat_mul_le`: lengths of sums and
+  products in binary. Monotonicity, `Turing.MultiTapeTM.length_encNat_mono`, is in
+  `Internal/BinarySizeFacts`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
 theorem length_encNat_eq_size (n : ℕ) : (encNat n).length = n.size := by
   rw [encNat_apply, Nat.size_eq_bits_len]
-
-/-- Binary length is monotone in the value. -/
-theorem length_encNat_mono {m n : ℕ} (h : m ≤ n) : (encNat m).length ≤ (encNat n).length := by
-  simp only [length_encNat_eq_size]
-  exact Nat.size_le_size h
 
 /-- A number is at least as large as its length. -/
 theorem length_encNat_le_self (n : ℕ) : (encNat n).length ≤ n := by

@@ -41,7 +41,7 @@ jobs:
         pandoc texlive-xetex texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended
         tex-gyre fonts-texgyre
         fonts-dejavu-core graphviz poppler-utils
-      # Downloaded archives are cached as in abstracts.yml; apt still verifies their digests.
+      # Downloaded archives are cached; apt still verifies their digests.
       MANUAL_DEBS: /var/cache/manual-debs
     steps:
       # Pull requests build their head commit, so the PDFs' revision-pinned source links and

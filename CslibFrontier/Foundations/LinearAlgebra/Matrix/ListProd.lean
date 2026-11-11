@@ -28,7 +28,7 @@ them.
 * `Matrix.trace_pow_eq_sum`: the trace of a power as a sum over closed paths.
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

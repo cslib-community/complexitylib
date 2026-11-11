@@ -21,8 +21,8 @@ import Mathlib.Tactic.SplitIfs
 ## Main definitions
 
 * `Cslib.Orthogonal.walk`: a finite sequence of repeated integer vector steps.
-* `Cslib.Orthogonal.segmentWalk`, `Cslib.Orthogonal.subdivide`: unit subdivision of a segment
-  or an entire polygonal route, listing a shared endpoint only once.
+* `Cslib.Orthogonal.segmentWalk`, `Cslib.Orthogonal.subdivide`: unit subdivision of an
+  axis-aligned segment or an entire orthogonal route, listing a shared endpoint only once.
 * `Cslib.Orthogonal.subdivideWithin`: finite enumeration capped by a per-segment step budget.
 
 ## Main results
@@ -177,7 +177,7 @@ theorem add_length_direction {a b : Point} (h : a.1 = b.1 ∨ a.2 = b.2) :
     Prod.mk_add_mk, add_zero] <;>
     (try simp only [abs_eq_max_neg]) <;> omega
 
-/-- Unit subdivision of one segment, including both endpoints. -/
+/-- Unit subdivision of one axis-aligned segment, including both endpoints. -/
 def segmentWalk (a b : Point) : Route := walk a (direction a b) (length a b)
 
 /-- Segment subdivision uses exactly one more point than its Manhattan length. -/
@@ -414,7 +414,8 @@ theorem subdivide_eq_flatMap {r : Route} (hr : IsOrthogonal r) :
         List.getLast?_cons_cons, List.append_assoc]
 
 /-- Enumerate at most `budget` strict unit-prefix points per listed segment, then the last
-endpoint. The result agrees with `subdivide` when every segment fits in the budget. -/
+endpoint. The result agrees with `subdivide` on an orthogonal route when every segment fits in
+the budget. -/
 def subdivideWithin (budget : ℕ) (r : Route) : Route :=
   (r.consecutivePairs.flatMap fun e =>
     (List.range (min (length e.1 e.2) budget)).map fun i => e.1 + i • direction e.1 e.2) ++

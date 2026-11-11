@@ -717,8 +717,7 @@ theorem runSeq_eq_indexedSchemeLaw_bind [DecidableEq Op] [∀ o, Inhabited (Resu
     (fun idx => ProbOracleComp.coinLaw (P.step idx.2.1))
     (by omega) halph (fun _ _ _ => rfl)
   rw [← hpi, PMF.map_bind]
-  congr 1
-  funext Ω
+  congr 1 with Ω : 1
   simp only [PMF.pure_map]
   rfl
 

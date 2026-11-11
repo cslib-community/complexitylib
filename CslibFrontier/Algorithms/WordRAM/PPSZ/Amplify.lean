@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.PPSZ.Round
 public import CslibFrontier.Algorithms.WordRAM.PPZ.Amplify
 public import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.General
+import CslibFrontier.Foundations.Data.Nat.CeilDiv
 
 /-!
 # The PPSZ algorithm on the randomized word RAM
@@ -149,30 +150,23 @@ theorem ofDigits_ppszDigits (a b n c : ℕ) :
     Nat.ofDigits 2 (ppszDigits a b n c) = ppszRounds a b n c :=
   PPZ.ofDigits_countDigits _ _
 
+/-- `ppszExp a b n` is the ceiling division `a · n ⌈/⌉ b` by definition, so it is the ceiling of
+`(a / b) · n`. -/
+private theorem ppszExp_eq_ceil {a b : ℕ} (hb : 0 < b) (n : ℕ) :
+    ppszExp a b n = ⌈(a : ℝ) / b * n⌉₊ := by
+  rw [div_mul_eq_mul_div, ← Nat.cast_mul]
+  exact (Nat.ceil_div_eq_ceilDiv _ hb).symm
+
 /-- The exponent is at least `(a / b) n`. -/
 theorem le_ppszExp {a b : ℕ} (hb : 0 < b) (n : ℕ) : (a : ℝ) / b * n ≤ ppszExp a b n := by
-  have hkn : a * n ≤ b * ppszExp a b n := by
-    have h := Nat.div_add_mod (a * n + b - 1) b
-    have h' := Nat.mod_lt (a * n + b - 1) hb
-    simp only [ppszExp]
-    omega
-  have hb0 : (0 : ℝ) < b := by exact_mod_cast hb
-  have hr : (a : ℝ) * n ≤ b * ppszExp a b n := by exact_mod_cast hkn
-  rw [div_mul_eq_mul_div, div_le_iff₀ hb0]
-  linarith
+  rw [ppszExp_eq_ceil hb]
+  exact Nat.le_ceil _
 
 /-- The exponent is at most `(a / b) n + 1`. -/
 theorem ppszExp_le_add_one {a b : ℕ} (hb : 0 < b) (n : ℕ) :
     (ppszExp a b n : ℝ) ≤ (a : ℝ) / b * n + 1 := by
-  have hkn : b * ppszExp a b n ≤ a * n + b := by
-    have := Nat.div_mul_le_self (a * n + b - 1) b
-    simp only [ppszExp]
-    rw [Nat.mul_comm]
-    omega
-  have hb0 : (0 : ℝ) < b := by exact_mod_cast hb
-  have hr : (b : ℝ) * ppszExp a b n ≤ a * n + b := by exact_mod_cast hkn
-  rw [show (a : ℝ) / b * n + 1 = (a * n + b) / b by field_simp, le_div_iff₀ hb0]
-  linarith
+  rw [ppszExp_eq_ceil hb]
+  exact (Nat.ceil_lt_add_one (by positivity)).le
 
 /-! ### The setup -/
 
@@ -379,14 +373,8 @@ theorem roundSuccessProb_ge {k h s : ℕ} (hk : 3 ≤ k) {φ : CNF (Fin n)} (hsa
 
 /-- With `R = ppszRounds a b n c` rounds, `R 2 ^ (-(a / b) n)` is at least `c`. -/
 theorem le_ppszRounds_mul {a b : ℕ} (hb : 0 < b) (n c : ℕ) :
-    (c : ℝ) ≤ ppszRounds a b n c * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
-  have h2 : (1 : ℝ) ≤ (2 : ℝ) ^ ppszExp a b n * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
-    rw [← Real.rpow_natCast, ← Real.rpow_add two_pos]
-    exact Real.one_le_rpow one_le_two (by linarith [le_ppszExp (a := a) hb n])
-  calc (c : ℝ) ≤ c * ((2 : ℝ) ^ ppszExp a b n * (2 : ℝ) ^ (-((a : ℝ) / b * n))) :=
-        le_mul_of_one_le_right (Nat.cast_nonneg c) h2
-    _ = (ppszRounds a b n c : ℝ) * (2 : ℝ) ^ (-((a : ℝ) / b * n)) := by
-        simp only [ppszRounds]; push_cast; ring
+    (c : ℝ) ≤ ppszRounds a b n c * (2 : ℝ) ^ (-((a : ℝ) / b * n)) :=
+  PPZ.le_two_pow_mul_mul_rpow_neg (le_ppszExp hb n)
 
 /-- **Amplification from a bound on one round**: if one round of PPSZ with the bound `s` succeeds
 with probability at least `2 ^ (-(a / b) n)`, the program fails with probability at most

@@ -369,6 +369,35 @@ theorem card_not_forcedToAtMostOne_ltfEval_le {ι : Type*} [Fintype ι] [Decidab
 
 /-! ### Kane–Williams Gate and Wire Random Restriction Lemmas (Lemma 1.1 and Lemma 3.1) -/
 
+/-- Shared averaging step of the gate and wire restriction lemmas. If each `ω` contributes at most
+`2 ^ |ι| * 2 * ∑ i ∈ ltfSupport a, if P ω i then 1 / √(ltfWeightRank a i) else 0` and every
+`i ∈ ltfSupport a` satisfies `P ω i` for at most `F` choices of `ω`, then exchanging the sums and
+`sum_one_div_sqrt_card_ge_le` bound the total by `2 ^ |ι| * 2 * (F * (2 * √#(ltfSupport a)))`. -/
+private theorem sum_le_of_card_filter_le {Ω ι : Type*} [Fintype Ω] [Fintype ι]
+    (a : ι → ℝ) (N : Ω → ℝ) (P : Ω → ι → Prop) [∀ ω i, Decidable (P ω i)] {F : ℝ}
+    (hN : ∀ ω, N ω ≤ (2 : ℝ) ^ Fintype.card ι * 2 *
+      ∑ i ∈ ltfSupport a, if P ω i then (1 : ℝ) / Real.sqrt (ltfWeightRank a i) else 0)
+    (hF : ∀ i ∈ ltfSupport a, (#{ω : Ω | P ω i} : ℝ) ≤ F) :
+    ∑ ω, N ω ≤ (2 : ℝ) ^ Fintype.card ι * 2 * (F * (2 * Real.sqrt #(ltfSupport a))) := by
+  have hfreq : (∑ i ∈ ltfSupport a, (#{ω : Ω | P ω i} : ℝ) *
+      ((1 : ℝ) / Real.sqrt (ltfWeightRank a i))) ≤ F * (2 * Real.sqrt #(ltfSupport a)) := by
+    rcases (ltfSupport a).eq_empty_or_nonempty with hempty | ⟨i₀, hi₀⟩
+    · simp [hempty]
+    refine (sum_le_sum fun i hi => mul_le_mul_of_nonneg_right (hF i hi) (by positivity)).trans ?_
+    rw [← mul_sum]
+    exact mul_le_mul_of_nonneg_left (sum_one_div_sqrt_card_ge_le _ a)
+      ((Nat.cast_nonneg _).trans (hF i₀ hi₀))
+  calc ∑ ω, N ω
+      ≤ (2 : ℝ) ^ Fintype.card ι * 2 * ∑ ω : Ω, ∑ i ∈ ltfSupport a,
+          if P ω i then (1 : ℝ) / Real.sqrt (ltfWeightRank a i) else 0 := by
+        rw [mul_sum]; exact sum_le_sum fun ω _ => hN ω
+    _ = (2 : ℝ) ^ Fintype.card ι * 2 * ∑ i ∈ ltfSupport a,
+          (#{ω : Ω | P ω i} : ℝ) * ((1 : ℝ) / Real.sqrt (ltfWeightRank a i)) := by
+        rw [sum_comm]; congr 1
+        refine sum_congr rfl fun i _ => ?_
+        rw [← sum_filter, sum_const, nsmul_eq_mul]
+    _ ≤ _ := mul_le_mul_of_nonneg_left hfreq (by positivity)
+
 /-- **Gate Random Restriction Lemma** (Kane–Williams `arXiv:1511.07860v1`, Lemma 1.1):
 for any family of live sets `B : Ω → Finset ι` such that every active coordinate
 `i ∈ ltfSupport a` belongs to `B ω` for at most `p * |Ω|` choices of `ω : Ω`,
@@ -381,32 +410,9 @@ theorem sum_card_not_forcedToConst_ltfEval_le {Ω ι : Type*} [Fintype Ω] [Fint
       (Fintype.card Ω : ℝ) * (2 : ℝ) ^ Fintype.card ι *
         (4 * p * Real.sqrt #(ltfSupport a)) := by
   classical
-  let S := ltfSupport a
-  let r (i : ι) : ℝ := (1 : ℝ) / Real.sqrt (ltfWeightRank a i)
-  have hsum_le :
-      (∑ ω : Ω, (#{w : ι → Bool | ¬ ForcedToConst (ltfEval a θ) (B ω) w} : ℝ)) ≤
-        (2 : ℝ) ^ Fintype.card ι * 2 * ∑ ω : Ω, ∑ i ∈ B ω ∩ S, r i := by
-    refine (sum_le_sum fun ω _ => card_not_forcedToConst_ltfEval_le a θ (B ω)).trans (le_of_eq ?_)
-    simp_rw [← mul_assoc]; rw [← mul_sum]
-  have hswap : (∑ ω : Ω, ∑ i ∈ B ω ∩ S, r i) = ∑ i ∈ S, (#{ω : Ω | i ∈ B ω} : ℝ) * r i := by
-    have h1 (ω : Ω) : (∑ i ∈ B ω ∩ S, r i) = ∑ i ∈ S, if i ∈ B ω then r i else 0 := by
-      rw [← sum_filter, filter_mem_eq_inter, inter_comm]
-    simp_rw [h1]; rw [sum_comm]
-    refine sum_congr rfl fun i _ => ?_; rw [← sum_filter, sum_const, nsmul_eq_mul]
-  have hfreq :
-      (∑ i ∈ S, (#{ω : Ω | i ∈ B ω} : ℝ) * r i) ≤ p * (Fintype.card Ω : ℝ) * ∑ i ∈ S, r i := by
-    rw [mul_sum]
-    exact sum_le_sum fun i hi => mul_le_mul_of_nonneg_right (hp i hi) (by dsimp [r]; positivity)
-  have hrank : (∑ i ∈ S, r i) ≤ 2 * Real.sqrt #S := sum_one_div_sqrt_card_ge_le S a
-  rcases S.eq_empty_or_nonempty with hempty | ⟨i₀, hi₀⟩
-  · have hzero : (∑ ω : Ω, ∑ i ∈ B ω ∩ S, r i) = 0 := by rw [hswap, hempty, sum_empty]
-    rw [hzero] at hsum_le; simpa [S, hempty] using hsum_le
-  · have hp_nonneg : 0 ≤ p * (Fintype.card Ω : ℝ) := (Nat.cast_nonneg _).trans (hp i₀ hi₀)
-    calc (∑ ω : Ω, (#{w : ι → Bool | ¬ ForcedToConst (ltfEval a θ) (B ω) w} : ℝ))
-        ≤ (2 : ℝ) ^ Fintype.card ι * 2 * (p * (Fintype.card Ω : ℝ) * (2 * Real.sqrt #S)) := by
-          refine hsum_le.trans (mul_le_mul_of_nonneg_left ?_ (by positivity))
-          rw [hswap]; exact hfreq.trans (mul_le_mul_of_nonneg_left hrank hp_nonneg)
-      _ = (Fintype.card Ω : ℝ) * (2 : ℝ) ^ Fintype.card ι * (4 * p * Real.sqrt #S) := by ring
+  refine (sum_le_of_card_filter_le a _ (fun ω i => i ∈ B ω) (fun ω => ?_) hp).trans_eq (by ring)
+  refine (card_not_forcedToConst_ltfEval_le a θ (B ω)).trans_eq ?_
+  rw [mul_assoc, ← sum_filter, filter_mem_eq_inter, inter_comm]
 
 /-- **Wire Random Restriction Lemma** (Kane–Williams `arXiv:1511.07860v1`, Lemma 3.1):
 for any family of live sets `B : Ω → Finset ι` with `0 ≤ p` such that every active coordinate
@@ -423,29 +429,10 @@ theorem sum_card_not_forcedToAtMostOne_ltfEval_le {Ω ι : Type*} [Fintype Ω] [
       (Fintype.card Ω : ℝ) * (2 : ℝ) ^ Fintype.card ι *
         (4 * (#(ltfSupport a) : ℝ) * p * Real.sqrt p) := by
   classical
-  let S := ltfSupport a
-  let r (i : ι) : ℝ := (1 : ℝ) / Real.sqrt (ltfWeightRank a i)
-  have hsum_le :
-      (∑ ω : Ω, (#{w : ι → Bool | ¬ ForcedToAtMostOne (ltfEval a θ) (B ω) w} : ℝ)) ≤
-        (2 : ℝ) ^ Fintype.card ι * 2 *
-          ∑ ω : Ω, if 2 ≤ #(B ω ∩ S) then ∑ i ∈ B ω ∩ S, r i else 0 := by
-    refine (sum_le_sum fun ω _ => card_not_forcedToAtMostOne_ltfEval_le a θ (B ω)).trans
-      (le_of_eq ?_)
-    rw [mul_sum]; refine sum_congr rfl fun ω _ => ?_; split_ifs <;> ring
-  have hswap :
-      (∑ ω : Ω, if 2 ≤ #(B ω ∩ S) then ∑ i ∈ B ω ∩ S, r i else 0) =
-        ∑ i ∈ S, (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)} : ℝ) * r i := by
-    have h1 (ω : Ω) :
-        (if 2 ≤ #(B ω ∩ S) then ∑ i ∈ B ω ∩ S, r i else 0) =
-          ∑ i ∈ S, if i ∈ B ω ∧ 2 ≤ #(B ω ∩ S) then r i else 0 := by
-      split_ifs with h2
-      · rw [← sum_filter]; congr 1; ext i; simp [mem_inter, h2, and_comm]
-      · symm; exact sum_eq_zero fun i _ => by simp [h2]
-    simp_rw [h1]; rw [sum_comm]
-    refine sum_congr rfl fun i _ => ?_; rw [← sum_filter, sum_const, nsmul_eq_mul]
-  have hpair_bound (i : ι) (hi : i ∈ S) :
-      (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)} : ℝ) ≤
-        Real.sqrt #S * p * Real.sqrt p * (Fintype.card Ω : ℝ) := by
+  have hpair_bound (i : ι) (hi : i ∈ ltfSupport a) :
+      (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ ltfSupport a)} : ℝ) ≤
+        Real.sqrt #(ltfSupport a) * p * Real.sqrt p * (Fintype.card Ω : ℝ) := by
+    set S := ltfSupport a
     have hb1 : (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)} : ℝ) ≤ p * (Fintype.card Ω : ℝ) := by
       have hsub :
           (univ.filter fun ω : Ω => i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)) ⊆
@@ -484,22 +471,15 @@ theorem sum_card_not_forcedToAtMostOne_ltfEval_le {Ω ι : Type*} [Fintype Ω] [
         _ = (Real.sqrt #S * p * Real.sqrt p * (Fintype.card Ω : ℝ)) ^ 2 := by ring
     have hsqrt := Real.sqrt_le_sqrt hsq
     rwa [Real.sqrt_sq (by positivity), Real.sqrt_sq (by positivity)] at hsqrt
-  have hfreq :
-      (∑ i ∈ S, (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)} : ℝ) * r i) ≤
-        (Real.sqrt #S * p * Real.sqrt p * (Fintype.card Ω : ℝ)) * ∑ i ∈ S, r i := by
-    rw [mul_sum]
-    exact sum_le_sum fun i hi =>
-      mul_le_mul_of_nonneg_right (hpair_bound i hi) (by dsimp [r]; positivity)
-  have hrank : (∑ i ∈ S, r i) ≤ 2 * Real.sqrt #S := sum_one_div_sqrt_card_ge_le S a
-  calc (∑ ω : Ω, (#{w : ι → Bool | ¬ ForcedToAtMostOne (ltfEval a θ) (B ω) w} : ℝ))
-      ≤ (2 : ℝ) ^ Fintype.card ι * 2 *
-          ((Real.sqrt #S * p * Real.sqrt p * (Fintype.card Ω : ℝ)) * (2 * Real.sqrt #S)) := by
-        refine hsum_le.trans (mul_le_mul_of_nonneg_left ?_ (by positivity))
-        rw [hswap]; exact hfreq.trans (mul_le_mul_of_nonneg_left hrank (by positivity))
-    _ = (Fintype.card Ω : ℝ) * (2 : ℝ) ^ Fintype.card ι *
-          (4 * ((Real.sqrt #S) ^ 2) * p * Real.sqrt p) := by ring
-    _ = (Fintype.card Ω : ℝ) * (2 : ℝ) ^ Fintype.card ι *
-          (4 * (#S : ℝ) * p * Real.sqrt p) := by rw [Real.sq_sqrt (by positivity)]
+  refine (sum_le_of_card_filter_le a _ (fun ω i => i ∈ B ω ∧ 2 ≤ #(B ω ∩ ltfSupport a))
+    (fun ω => ?_) hpair_bound).trans_eq ?_
+  · refine (card_not_forcedToAtMostOne_ltfEval_le a θ (B ω)).trans_eq ?_
+    by_cases h2 : 2 ≤ #(B ω ∩ ltfSupport a)
+    · simp only [h2, and_true, ↓reduceIte]
+      rw [mul_assoc, ← sum_filter, filter_mem_eq_inter, inter_comm]
+    · simp [h2]
+  · have hS := Real.mul_self_sqrt (Nat.cast_nonneg (α := ℝ) #(ltfSupport a))
+    linear_combination (4 * (2 : ℝ) ^ Fintype.card ι * p * Real.sqrt p * (Fintype.card Ω : ℝ)) * hS
 
 /-! ### Block-partition random restriction corollaries -/
 

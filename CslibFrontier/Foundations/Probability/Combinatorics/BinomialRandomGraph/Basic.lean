@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Combinatorics.SimpleGraph.Copy
 public import Mathlib.MeasureTheory.Integral.Bochner.Basic
 public import Mathlib.Probability.Combinatorics.BinomialRandomGraph.Defs
+import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
 import CslibFrontier.Foundations.Probability.SecondMoment
 import Mathlib.Data.Fintype.CardEmbedding
 
@@ -66,39 +67,21 @@ variable {V W : Type*}
 /-- The graphs containing a given set of edges form a measurable set. -/
 theorem measurableSet_subset_edgeSet [Countable V] (s : Set (Sym2 V)) :
     MeasurableSet {G : SimpleGraph V | s ⊆ G.edgeSet} := by
-  have : {G : SimpleGraph V | s ⊆ G.edgeSet} = ⋂ e ∈ s, {G | e ∈ G.edgeSet} := by
-    ext G; simp [Set.subset_def]
-  rw [this]
-  refine MeasurableSet.biInter (Set.to_countable s) fun e _ => ?_
-  exact measurableSet_setOfPred.2 ((measurable_set_iff.1 measurable_edgeSet) e)
+  simpa [Set.subset_def] using measurableSet_edgePattern s fun _ => true
 
 /-- The supergraphs of a given graph form a measurable set. -/
 theorem measurableSet_setOf_le [Countable V] (H : SimpleGraph V) :
     MeasurableSet {G : SimpleGraph V | H ≤ G} := by
   simpa only [← edgeSet_subset_edgeSet] using measurableSet_subset_edgeSet H.edgeSet
 
-/-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`.
-This is a statement about `setBernoulli` transported along `fromEdgeSet`; upstream it belongs
-next to the `setBernoulli` API. -/
+/-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`:
+the constant pattern `true` in `SimpleGraph.binomialRandom_edgePattern`. -/
 theorem binomialRandom_subset_edgeSet [Countable V] (p : I) (s : Finset (Sym2 V))
     (hs : ∀ e ∈ s, ¬e.IsDiag) :
     G(V, p) {G | (s : Set (Sym2 V)) ⊆ G.edgeSet} = toNNReal p ^ #s := by
-  rw [binomialRandom_eq_map, Measure.map_apply measurable_fromEdgeSet
-    (measurableSet_subset_edgeSet _), setBernoulli_apply']
-  have : (fun q : Sym2 V → Prop => {i | q i}) ⁻¹'
-      (fromEdgeSet ⁻¹' {G | (s : Set (Sym2 V)) ⊆ G.edgeSet}) =
-      Set.pi (s : Set (Sym2 V)) (fun _ => {True}) := by
-    ext q
-    simp only [Set.mem_preimage, Set.mem_ofPred_eq, edgeSet_fromEdgeSet, Set.subset_def,
-      Set.mem_sdiff, Set.mem_pi, Finset.mem_coe, Set.mem_singleton_iff, eq_iff_iff, iff_true]
-    exact ⟨fun h e he => (h e he).1, fun h e he => ⟨h e he, hs e he⟩⟩
-  rw [this, Measure.infinitePi_pi _ (fun _ _ => measurableSet_singleton _)]
-  rw [Finset.prod_congr rfl (g := fun _ => (toNNReal p : ENNReal))]
-  · simp
-  intro e he
-  rw [bernoulliMeasure_apply_of_mem_of_notMem p (measurableSet_singleton _)]
-  · simpa using hs e he
-  · simp
+  have h := binomialRandom_edgePattern p s hs fun _ => true
+  simp only [iff_true, ↓reduceIte, Finset.prod_const] at h
+  exact h
 
 /-- `G(V, p)` contains a fixed finite set `s` of non-diagonal edges with probability `p ^ |s|`. -/
 theorem binomialRandom_real_subset_edgeSet [Countable V] (p : I) (s : Finset (Sym2 V))

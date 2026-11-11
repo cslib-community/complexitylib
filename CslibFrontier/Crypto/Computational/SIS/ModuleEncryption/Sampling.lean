@@ -8,8 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.SIS.ModuleEncryption
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Computability.Probabilistic.CenteredBinomial
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Secret laws and centered-binomial Module-LWE sampling
@@ -75,8 +76,7 @@ theorem realEncryptionView_retained_secret_marginal {k n q : ℕ} [NeZero q]
       pure (s, view)).map Prod.snd =
       realEncryptionView k n q noise m secretLaw ephemeralLaw := by
   rw [realEncryptionView_bind_secret]
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
-    PMF.bind_pure]
+  simp only [pmf_norm]
 
 /-- One native sampler handles every unary row count, degree and centered-binomial width.
 The output contains all signed integers in framed rows, with their binary magnitudes charged. -/
@@ -101,18 +101,18 @@ theorem eval_moduleLWECenteredBinomial_mod (k n w η : ℕ) :
     (ProbComp.eval (OracleComp.replicateFin k
       (OracleComp.replicateFin n (sampleCenteredBinomial η)))).map
         (fun values j i => (values j i : ZMod (2 ^ w))) =
-      PMF.pi (fun _ : Fin k => PMF.pi (fun _ : Fin n => Homomorphic.GSW.noiseLaw w η)) := by
+      PMF.pi (fun _ : Fin k => PMF.pi (fun _ : Fin n => LWE.noiseLaw w η)) := by
   rw [← ProbComp.eval_replicateFin_map_coords k
     (OracleComp.replicateFin n (sampleCenteredBinomial η))
     (fun values (i : Fin n) => (values i : ZMod (2 ^ w))), ProbComp.eval_replicateFin]
-  simp only [ProbComp.eval_map, Homomorphic.GSW.eval_errorVector_mod]
+  simp only [ProbComp.eval_map, LWE.eval_errorVector_mod]
 
 /-- Under the strict no-wrap margin, every coefficient of the sampled modular vector has
 centered magnitude at most the actual centered-binomial width. -/
 theorem moduleLWECenteredBinomial_inInfNormBound {k n w η : ℕ}
     (hwrap : 2 * η < 2 ^ w) {s : Fin k → Fin n → ZMod (2 ^ w)}
     (hs : s ∈ (PMF.pi (fun _ : Fin k =>
-      PMF.pi (fun _ : Fin n => Homomorphic.GSW.noiseLaw w η))).support) :
+      PMF.pi (fun _ : Fin n => LWE.noiseLaw w η))).support) :
     ModuleSIS.inInfNormBound η s := by
   intro j i
   have hi := (PMF.mem_support_pi_iff _ _).mp ((PMF.mem_support_pi_iff _ _).mp hs j) i

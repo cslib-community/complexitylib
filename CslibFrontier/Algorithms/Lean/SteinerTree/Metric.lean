@@ -39,7 +39,9 @@ algorithm (`Cslib.Algorithms.Lean.Kruskal.kruskalEdges`) on the complete graph o
 the terminals. This is the minimum spanning tree of the subgraph `G[R]` induced by the terminals in
 the source. The bounds need `R.Nodup` because `δ x x` may be positive. With `δ x x = 5`, the
 heuristic pays `5` to join the two copies in `R = [1, 1]`, while `steinerOpt δ [1, 1] = 0` (see
-`CslibFrontierTests.SteinerTree`).
+`CslibFrontierTests.SteinerTree`). When the diagonal cost is zero (`∀ x, δ x x = 0`), repeated
+terminals do not increase the cycle cost, and the bounds hold for arbitrary terminal lists
+(`length_mul_edgeCost_steinerMST_le_of_diag`).
 
 ## Source mapping
 
@@ -72,16 +74,20 @@ minimum spanning tree (`mul_totalWeight_kruskalEdges_le`).
 
 ## Main results
 
-* `totalWeight_kruskalEdges_completeEdges_le`,
-  `totalWeight_kruskalEdges_le_sum_consecutivePairs`: Kruskal's tree on a complete graph weighs at
-  most any duplicate-free connected edge list, in particular any Hamiltonian path.
+* `totalWeight_kruskalEdges_le_sum_consecutivePairs`: Kruskal's tree on a complete graph weighs at
+  most any Hamiltonian path (through `TSP.totalWeight_kruskalEdges_completeEdges_le`).
 * `mul_totalWeight_kruskalEdges_le`: `k · MST ≤ (k - 1) · cost(C)` for every Hamiltonian cycle `C`
   on `k` vertices. This sharpens [WilliamsonShmoys2011], Lemma 2.10, which states `MST ≤ cost(C)`.
 * `connects_steinerMST`: the heuristic connects the terminals.
 * `length_mul_edgeCost_steinerMST_le`: `|R| · cost(steinerMST) ≤ 2 (|R| - 1) · cost(T)` for every
-  list `T` that connects `R`.
-* `edgeCost_steinerMST_le_two_mul_steinerOpt`, `length_mul_edgeCost_steinerMST_le_steinerOpt`:
-  `cost(steinerMST) ≤ 2 · OPT` and `|R| · cost(steinerMST) ≤ 2 (|R| - 1) · OPT`.
+  list `T` that connects `R`, assuming `R.Nodup`.
+* `length_mul_edgeCost_steinerMST_le_of_diag`: `|R| · cost(steinerMST) ≤ 2 (|R| - 1) · cost(T)`
+  when `∀ x, δ x x = 0`, without assuming `R.Nodup`.
+* `edgeCost_steinerMST_le_two_mul`, `edgeCost_steinerMST_le_two_mul_steinerOpt`,
+  `length_mul_edgeCost_steinerMST_le_steinerOpt`: approximation bounds for duplicate-free terminals.
+* `edgeCost_steinerMST_le_two_mul_of_diag`, `edgeCost_steinerMST_le_two_mul_steinerOpt_of_diag`,
+  `length_mul_edgeCost_steinerMST_le_steinerOpt_of_diag`: the zero-diagonal approximation bounds
+  for arbitrary terminal lists.
 
 ## Limitations
 
@@ -169,26 +175,6 @@ theorem exists_connects_edgeCost_eq_steinerOpt (δ : α → α → ℕ) (R : Lis
     ⟨_, steinerMST δ R, connects_steinerMST δ R, rfl⟩
 
 /-! ### Minimum spanning trees of complete graphs -/
-
-/-- Kruskal's tree on the complete graph weighs at most any duplicate-free list of its edges that
-connects all vertices. -/
-theorem totalWeight_kruskalEdges_completeEdges_le {k : ℕ} (δ : Fin k → Fin k → ℕ)
-    {H : List (WeightedEdge k ℕ)} (hHnd : H.Nodup) (hHw : ∀ e ∈ H, e.weight = δ e.u e.v)
-    (hconn : ∀ x y : Fin k, Relation.EqvGen (fun a b => ∃ e ∈ H, a = e.u ∧ b = e.v) x y) :
-    totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight H := by
-  have hHsub : H.Subperm (completeEdges δ) :=
-    hHnd.subperm fun e he => mem_completeEdges.2 (hHw e he)
-  have hpart : edgePartition H = edgePartition (completeEdges δ) := by
-    ext x y
-    rw [(rel_edgePartition_iff_eqvGen _ x y).2 (hconn x y),
-      (rel_edgePartition_iff_eqvGen _ x y).2
-        (.rel _ _ ⟨⟨x, y, δ x y⟩, mem_completeEdges.2 rfl, rfl, rfl⟩)]
-  have hsf : IsSpanningForest (completeEdges δ) (kruskalEdges H) :=
-    ⟨(kruskalEdges_subperm H).trans hHsub, kruskalEdges_isAcyclic H,
-      (edgePartition_kruskalEdges H).trans hpart⟩
-  calc totalWeight (kruskalEdges (completeEdges δ)) ≤ totalWeight (kruskalEdges H) :=
-        (kruskalEdges_isMinSpanningForest _).2 _ hsf
-    _ ≤ totalWeight H := totalWeight_kruskalEdges_le H fun _ _ => Nat.zero_le _
 
 private theorem map_fst_consecutivePairs {β : Type*} :
     ∀ l : List β, l.consecutivePairs.map Prod.fst = l.dropLast
@@ -304,23 +290,98 @@ private theorem cycleCost_map {β : Type*} (f : α → β) (δ : β → β → �
 
 /-! ### The approximation guarantee -/
 
-/-- **The MST heuristic for metric Steiner tree, sharp form**: for a symmetric cost with the
-triangle inequality and duplicate-free terminals `R`, `|R| · cost(steinerMST δ R) ≤
-2 (|R| - 1) · cost(T)` for every edge list `T` connecting `R`. This is the factor `2 (1 - 1/|R|)`,
-a restricted form of [KouMarkowskyBerman1981]'s `2 (1 - 1/ℓ)` with `ℓ` the number of leaves of an
-optimal tree. -/
-theorem length_mul_edgeCost_steinerMST_le {δ : α → α → ℕ} (hsymm : ∀ x y, δ x y = δ y x)
-    (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α} (hR : R.Nodup)
+/-- Walk cost through consecutive duplicate visits is unchanged when the diagonal cost is zero. -/
+private theorem walkCost_replicate_append (δ : α → α → ℕ) (hdiag : ∀ x, δ x x = 0) (x b : α) (k : ℕ)
+    (L : List α) : walkCost δ x (List.replicate k x ++ L) b = walkCost δ x L b := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [List.replicate_succ, List.cons_append, walkCost, hdiag x, zero_add, ih]
+
+/-- Expanding each element `x` to `f x + 1` copies preserves walk cost. -/
+private def expandList (s : List α) (f : α → ℕ) : List α :=
+  s.flatMap fun x => List.replicate (f x + 1) x
+
+private theorem walkCost_expandList (δ : α → α → ℕ) (hdiag : ∀ x, δ x x = 0) (f : α → ℕ)
+    (s : List α) (a b : α) : walkCost δ a (expandList s f) b = walkCost δ a s b := by
+  induction s generalizing a with
+  | nil => rfl
+  | cons x s ih =>
+    simp only [expandList, List.flatMap_cons, walkCost]
+    rw [List.replicate_succ, List.cons_append, walkCost]
+    rw [walkCost_replicate_append δ hdiag]
+    change δ a x + walkCost δ x (expandList s f) b = _
+    rw [ih x]
+
+private theorem cycleCost_expandList_cons (δ : α → α → ℕ) (hdiag : ∀ x, δ x x = 0) (f : α → ℕ)
+    (x : α) (s : List α) : cycleCost δ (expandList (x :: s) f) = cycleCost δ (x :: s) := by
+  simp only [expandList, List.flatMap_cons]
+  rw [List.replicate_succ, List.cons_append]
+  rw [cycleCost_cons, walkCost_replicate_append δ hdiag]
+  change walkCost δ x (expandList s f) x = _
+  rw [walkCost_expandList δ hdiag, ← cycleCost_cons]
+
+private def indices [DecidableEq α] (R : List α) (x : α) : List (Fin R.length) :=
+  (List.finRange R.length).filter fun i => decide (R[i] = x)
+
+private theorem mem_indices [DecidableEq α] {R : List α} {x : α} {i : Fin R.length} :
+    i ∈ indices R x ↔ R[i] = x := by
+  simp [indices]
+
+private theorem indices_nodup [DecidableEq α] (R : List α) (x : α) : (indices R x).Nodup :=
+  (List.nodup_finRange _).filter _
+
+private theorem nodup_flatMap_indices [DecidableEq α] {R : List α} {s : List α} (hs : s.Nodup) :
+    (s.flatMap (indices R)).Nodup := by
+  rw [List.nodup_flatMap]
+  refine ⟨fun x _ => indices_nodup R x, ?_⟩
+  refine hs.imp fun {x y} hxy => ?_
+  intro i hx hy
+  rw [mem_indices] at hx hy
+  exact hxy (hx.symm.trans hy)
+
+private theorem mem_flatMap_indices [DecidableEq α] {R : List α} {s : List α}
+    (hs : ∀ a ∈ R, a ∈ s) (i : Fin R.length) : i ∈ s.flatMap (indices R) := by
+  rw [List.mem_flatMap]
+  refine ⟨R[i], hs R[i] (List.getElem_mem _), ?_⟩
+  rw [mem_indices]
+
+private theorem map_indices_eq_replicate [DecidableEq α] (R : List α) (x : α) :
+    (indices R x).map (fun i => R[i]) = List.replicate (indices R x).length x := by
+  refine List.ext_getElem (by simp) fun i hi1 hi2 => ?_
+  rw [List.getElem_map, List.getElem_replicate]
+  have hi : i < (indices R x).length := by simpa using hi1
+  have := (mem_indices).1 (List.getElem_mem hi)
+  exact this
+
+private theorem map_flatMap_indices_eq_expandList [DecidableEq α] (R : List α) (s : List α)
+    (hs : ∀ x ∈ s, 0 < (indices R x).length) :
+    (s.flatMap (indices R)).map (fun i => R[i]) =
+      expandList s (fun x => (indices R x).length - 1) := by
+  simp only [expandList, List.map_flatMap, map_indices_eq_replicate]
+  refine List.flatMap_congr fun x hx => ?_
+  congr 1
+  have := hs x hx
+  omega
+
+private theorem cycleCost_flatMap_indices_cons [DecidableEq α] (δ : α → α → ℕ)
+    (hdiag : ∀ x, δ x x = 0) (R : List α) (a : α) (l : List α)
+    (hs : ∀ x ∈ a :: l, 0 < (indices R x).length) :
+    cycleCost δ (((a :: l).flatMap (indices R)).map (fun i => R[i])) =
+      cycleCost δ (a :: l) := by
+  rw [map_flatMap_indices_eq_expandList R _ hs]
+  exact cycleCost_expandList_cons δ hdiag _ a l
+
+/-- A duplicate-free shortcut of an Euler circuit on the doubled component of `T` covering `R`. -/
+private theorem exists_cycleCost_le_of_connects {δ : α → α → ℕ} (hsymm : ∀ x y, δ x y = δ y x)
+    (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α} (hne : ∃ a ∈ R, ∃ b ∈ R, a ≠ b)
     {T : List (α × α)} (hT : Connects T R) :
-    R.length * edgeCost δ (steinerMST δ R) ≤ 2 * (R.length - 1) * edgeCost δ T := by
+    ∃ s : List α, s.Nodup ∧ (∀ x ∈ s, x ∈ R) ∧ (∀ a ∈ R, a ∈ s) ∧
+      cycleCost δ s ≤ 2 * edgeCost δ T := by
   classical
-  rw [edgeCost_steinerMST]
-  rcases Nat.lt_or_ge R.length 2 with hk | hk
-  · have := mul_totalWeight_kruskalEdges_le (terminalCost δ R) (List.nodup_finRange R.length)
-      (fun x => List.mem_finRange x)
-    rw [show R.length - 1 = 0 by omega] at this ⊢
-    simpa using this
-  obtain ⟨u, hu⟩ : ∃ u, u ∈ R := ⟨R[0], List.getElem_mem _⟩
+  obtain ⟨a, ha, b, hb, hab⟩ := hne
+  set u := a
+  have hu : u ∈ R := ha
   -- Step 1: restrict `T` to the component of `u`.
   set T' := T.filter fun e => decide (Relation.EqvGen (fun x y => (x, y) ∈ T) e.1 u) with hT'
   have hT'cost : edgeCost δ T' ≤ edgeCost δ T :=
@@ -328,23 +389,23 @@ theorem length_mul_edgeCost_steinerMST_le {δ : α → α → ℕ} (hsymm : ∀ 
   have hlift : ∀ a b, Relation.EqvGen (fun x y => (x, y) ∈ T) a b →
       Relation.EqvGen (fun x y => (x, y) ∈ T) a u →
       Relation.EqvGen (fun x y => (x, y) ∈ T') a b := by
-    intro a b hab
-    induction hab with
+    intro a b hab'
+    induction hab' with
     | rel x y hxy => exact fun hx => .rel _ _ (List.mem_filter.2 ⟨hxy, decide_eq_true hx⟩)
     | refl => exact fun _ => .refl _
     | symm x y hxy ih => exact fun hy => .symm _ _ (ih (.trans _ _ _ hxy hy))
     | trans x y z hxy hyz ih1 ih2 =>
       exact fun hx => .trans _ _ _ (ih1 hx) (ih2 (.trans _ _ _ (.symm _ _ hxy) hx))
-  have hRu : ∀ a ∈ R, Relation.EqvGen (fun x y => (x, y) ∈ T') a u := fun a ha =>
-    hlift a u (hT a ha u hu) (hT a ha u hu)
+  have hRu : ∀ a ∈ R, Relation.EqvGen (fun x y => (x, y) ∈ T') a u := fun a' ha' =>
+    hlift a' u (hT a' ha' u hu) (hT a' ha' u hu)
   have hT'u : ∀ e ∈ T', Relation.EqvGen (fun x y => (x, y) ∈ T') e.1 u := by grind
   -- Step 2: double it.
   set H := T' ++ T'.map Prod.swap with hH
   have hswap : ((T'.map Prod.swap).map undirected).Perm (T'.map undirected) := by
     rw [List.map_map]
     refine List.Perm.of_eq (List.map_congr_left fun e _ => ?_)
-    obtain ⟨a, b⟩ := e
-    change undirected (b, a) = undirected (a, b)
+    obtain ⟨a', b'⟩ := e
+    change undirected (b', a') = undirected (a', b')
     rw [undirected_mk, undirected_mk]
     exact Sym2.eq_swap
   have heven : ∀ x, Even (degree H x) := fun x => by
@@ -375,10 +436,8 @@ theorem length_mul_edgeCost_steinerMST_le {δ : α → α → ℕ} (hsymm : ∀ 
       | refl => rfl
       | symm _ _ _ ih => exact ih.symm
       | trans _ _ _ _ _ ih1 ih2 => exact ih1.trans ih2
-    have h0 := heq _ _ (hRu R[0] (List.getElem_mem _))
-    have h1 := heq _ _ (hRu R[1] (List.getElem_mem _))
-    have := (List.Nodup.getElem_inj_iff hR).1 (h0.trans h1.symm)
-    omega
+    have hab_eq : a = b := heq a b (hlift a b (hT a ha b hb) (hT a ha u hu))
+    exact hab hab_eq
   have hHcost : (H.map fun e => δ e.1 e.2).sum = 2 * edgeCost δ T' := by
     rw [hH, List.map_append, List.sum_append, List.map_map]
     have : T'.map ((fun e : α × α => δ e.1 e.2) ∘ Prod.swap) = T'.map fun e => δ e.1 e.2 :=
@@ -396,6 +455,30 @@ theorem length_mul_edgeCost_steinerMST_le {δ : α → α → ℕ} (hsymm : ∀ 
     refine (cycleCost_le_of_sublist δ htri hs_sub).trans ?_
     rw [← hHcost]
     exact cycleCost_dedup_le_of_isEulerCircuit htri hsymm hwE hHne
+  exact ⟨s, hs_nd, hs_R, hR_s, hs_cost.trans (Nat.mul_le_mul_left 2 hT'cost)⟩
+
+/-- **The MST heuristic for metric Steiner tree, sharp form**: for a symmetric cost with the
+triangle inequality and duplicate-free terminals `R`, `|R| · cost(steinerMST δ R) ≤
+2 (|R| - 1) · cost(T)` for every edge list `T` connecting `R`. This is the factor `2 (1 - 1/|R|)`,
+a restricted form of [KouMarkowskyBerman1981]'s `2 (1 - 1/ℓ)` with `ℓ` the number of leaves of an
+optimal tree. -/
+theorem length_mul_edgeCost_steinerMST_le {δ : α → α → ℕ} (hsymm : ∀ x y, δ x y = δ y x)
+    (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α} (hR : R.Nodup)
+    {T : List (α × α)} (hT : Connects T R) :
+    R.length * edgeCost δ (steinerMST δ R) ≤ 2 * (R.length - 1) * edgeCost δ T := by
+  classical
+  rw [edgeCost_steinerMST]
+  rcases Nat.lt_or_ge R.length 2 with hk | hk
+  · have := mul_totalWeight_kruskalEdges_le (terminalCost δ R) (List.nodup_finRange R.length)
+      (fun x => List.mem_finRange x)
+    rw [show R.length - 1 = 0 by omega] at this ⊢
+    simpa using this
+  have hne : ∃ a ∈ R, ∃ b ∈ R, a ≠ b := by
+    refine ⟨R[0], List.getElem_mem (by omega), R[1], List.getElem_mem (by omega), ?_⟩
+    intro h
+    have := (List.Nodup.getElem_inj_iff hR).1 h
+    omega
+  obtain ⟨s, hs_nd, hs_R, hR_s, hs_cost⟩ := exists_cycleCost_le_of_connects hsymm htri hne hT
   -- Step 4: reindex by the positions of the terminals.
   set q : List (Fin R.length) :=
     s.pmap (fun x hx => ⟨R.idxOf x, List.idxOf_lt_length_iff.2 hx⟩) hs_R with hq
@@ -410,32 +493,112 @@ theorem length_mul_edgeCost_steinerMST_le {δ : α → α → ℕ} (hsymm : ∀ 
     have : j = i := Fin.ext ((List.Nodup.getElem_inj_iff hR).1 hji)
     exact this ▸ hj
   have hq_cost : cycleCost (terminalCost δ R) q = cycleCost δ s := by
-    rw [← hqs, cycleCost_map]
-    rfl
+    have : cycleCost (terminalCost δ R) q = cycleCost δ (q.map (fun i => R[i])) := by
+      unfold cycleCost
+      rw [← List.map_rotate, List.zipWith_map]
+      rfl
+    rw [this, hqs]
   have hC := mul_totalWeight_kruskalEdges_le (terminalCost δ R) hq_nd hq_cov
   rw [hq_cost] at hC
   calc R.length * totalWeight (kruskalEdges (completeEdges (terminalCost δ R)))
         ≤ (R.length - 1) * cycleCost δ s := hC
-    _ ≤ (R.length - 1) * (2 * edgeCost δ T') := Nat.mul_le_mul_left _ hs_cost
-    _ = 2 * (R.length - 1) * edgeCost δ T' := by ring
-    _ ≤ 2 * (R.length - 1) * edgeCost δ T := Nat.mul_le_mul_left _ hT'cost
+    _ ≤ (R.length - 1) * (2 * edgeCost δ T) := Nat.mul_le_mul_left _ hs_cost
+    _ = 2 * (R.length - 1) * edgeCost δ T := by ring
 
-/-- **The MST heuristic for metric Steiner tree** ([WilliamsonShmoys2011], Exercise 2.5(a)): the
-heuristic costs at most twice any edge list connecting the terminals. -/
-theorem edgeCost_steinerMST_le_two_mul {δ : α → α → ℕ} (hsymm : ∀ x y, δ x y = δ y x)
-    (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α} (hR : R.Nodup)
+/-- **The MST heuristic for metric Steiner tree with zero diagonal**: when `∀ x, δ x x = 0`,
+`|R| · cost(steinerMST δ R) ≤ 2 (|R| - 1) · cost(T)` for every edge list `T` connecting `R`,
+without assuming `R.Nodup`. Steps between duplicate visits inside a block cost zero. -/
+theorem length_mul_edgeCost_steinerMST_le_of_diag {δ : α → α → ℕ} (hdiag : ∀ x, δ x x = 0)
+    (hsymm : ∀ x y, δ x y = δ y x) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α}
     {T : List (α × α)} (hT : Connects T R) :
-    edgeCost δ (steinerMST δ R) ≤ 2 * edgeCost δ T := by
-  have h := length_mul_edgeCost_steinerMST_le hsymm htri hR hT
+    R.length * edgeCost δ (steinerMST δ R) ≤ 2 * (R.length - 1) * edgeCost δ T := by
+  classical
+  rw [edgeCost_steinerMST]
+  rcases Nat.lt_or_ge R.length 2 with hk | hk
+  · have := mul_totalWeight_kruskalEdges_le (terminalCost δ R) (List.nodup_finRange R.length)
+      (fun x => List.mem_finRange x)
+    rw [show R.length - 1 = 0 by omega] at this ⊢
+    simpa using this
+  by_cases hne : ∃ a ∈ R, ∃ b ∈ R, a ≠ b
+  · obtain ⟨s, hs_nd, hs_R, hR_s, hs_cost⟩ :=
+      exists_cycleCost_le_of_connects hsymm htri hne hT
+    obtain ⟨a, l, rfl⟩ : ∃ a l, s = a :: l := by
+      cases h : s with
+      | nil =>
+        have := hR_s R[0] (List.getElem_mem (by omega))
+        simp [h] at this
+      | cons a l => exact ⟨a, l, rfl⟩
+    have hpos : ∀ x ∈ a :: l, 0 < (indices R x).length := by
+      intro x hx
+      have hxR : x ∈ R := hs_R x hx
+      obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hxR
+      have : (⟨i, hi⟩ : Fin R.length) ∈ indices R R[i] := by
+        rw [mem_indices]
+        rfl
+      exact List.length_pos_of_mem this
+    set q := (a :: l).flatMap (indices R) with hq
+    have hq_nd : q.Nodup := nodup_flatMap_indices hs_nd
+    have hq_cov : ∀ i, i ∈ q := mem_flatMap_indices hR_s
+    have hq_cost : cycleCost (terminalCost δ R) q = cycleCost δ (a :: l) := by
+      have hmap : cycleCost (terminalCost δ R) q = cycleCost δ (q.map (fun i => R[i])) := by
+        unfold cycleCost
+        rw [← List.map_rotate, List.zipWith_map]
+        rfl
+      rw [hmap, hq, cycleCost_flatMap_indices_cons δ hdiag R a l hpos]
+    have hC := mul_totalWeight_kruskalEdges_le (terminalCost δ R) hq_nd hq_cov
+    rw [hq_cost] at hC
+    calc R.length * totalWeight (kruskalEdges (completeEdges (terminalCost δ R)))
+        ≤ (R.length - 1) * cycleCost δ (a :: l) := hC
+      _ ≤ (R.length - 1) * (2 * edgeCost δ T) := Nat.mul_le_mul_left _ hs_cost
+      _ = 2 * (R.length - 1) * edgeCost δ T := by ring
+  · push Not at hne
+    have hall : ∀ i j : Fin R.length, R[i] = R[j] := fun i j =>
+      hne R[i] (List.getElem_mem _) R[j] (List.getElem_mem _)
+    have h0 : totalWeight (kruskalEdges (completeEdges (terminalCost δ R))) = 0 := by
+      unfold totalWeight
+      have heq0 : ∀ e ∈ kruskalEdges (completeEdges (terminalCost δ R)), e.weight = 0 := by
+        intro e he
+        have hsub := (kruskalEdges_subperm (completeEdges (terminalCost δ R))).subset he
+        rw [mem_completeEdges] at hsub
+        rw [hsub]
+        change δ R[e.u] R[e.v] = 0
+        rw [hall e.u e.v, hdiag]
+      refine List.sum_eq_zero fun w hw => ?_
+      obtain ⟨e, he, rfl⟩ := List.mem_map.1 hw
+      exact heq0 e he
+    rw [h0]
+    simp
+
+/-- The factor-2 bound follows from the sharp form: divide by `|R|`, and for `R = []` the tree is
+empty. -/
+private theorem edgeCost_steinerMST_le_two_mul_of_length_mul {δ : α → α → ℕ} {R : List α}
+    {c : ℕ} (h : R.length * edgeCost δ (steinerMST δ R) ≤ 2 * (R.length - 1) * c) :
+    edgeCost δ (steinerMST δ R) ≤ 2 * c := by
   rcases Nat.eq_zero_or_pos R.length with h0 | hpos
   · obtain rfl : R = [] := List.eq_nil_of_length_eq_zero h0
     have hle := (kruskalEdges_isAcyclic (completeEdges (terminalCost δ []))).length_le
     rw [edgeCost_steinerMST, List.eq_nil_of_length_eq_zero (Nat.le_zero.1 hle)]
     simp
   · refine Nat.le_of_mul_le_mul_left (h.trans ?_) hpos
-    calc 2 * (R.length - 1) * edgeCost δ T ≤ 2 * R.length * edgeCost δ T :=
+    calc 2 * (R.length - 1) * c ≤ 2 * R.length * c :=
           Nat.mul_le_mul_right _ (Nat.mul_le_mul_left 2 (Nat.sub_le _ _))
-      _ = R.length * (2 * edgeCost δ T) := by ring
+      _ = R.length * (2 * c) := by ring
+
+/-- **The MST heuristic for metric Steiner tree** ([WilliamsonShmoys2011], Exercise 2.5(a)): the
+heuristic costs at most twice any edge list connecting the terminals. -/
+theorem edgeCost_steinerMST_le_two_mul {δ : α → α → ℕ} (hsymm : ∀ x y, δ x y = δ y x)
+    (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α} (hR : R.Nodup)
+    {T : List (α × α)} (hT : Connects T R) :
+    edgeCost δ (steinerMST δ R) ≤ 2 * edgeCost δ T :=
+  edgeCost_steinerMST_le_two_mul_of_length_mul (length_mul_edgeCost_steinerMST_le hsymm htri hR hT)
+
+/-- The 2-approximation for zero-diagonal costs and arbitrary terminal lists. -/
+theorem edgeCost_steinerMST_le_two_mul_of_diag {δ : α → α → ℕ} (hdiag : ∀ x, δ x x = 0)
+    (hsymm : ∀ x y, δ x y = δ y x) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α}
+    {T : List (α × α)} (hT : Connects T R) :
+    edgeCost δ (steinerMST δ R) ≤ 2 * edgeCost δ T :=
+  edgeCost_steinerMST_le_two_mul_of_length_mul
+    (length_mul_edgeCost_steinerMST_le_of_diag hdiag hsymm htri hT)
 
 /-- **The MST 2-approximation for metric Steiner tree** ([WilliamsonShmoys2011], Exercise 2.5(a)):
 `cost(steinerMST δ R) ≤ 2 · OPT`. -/
@@ -446,6 +609,14 @@ theorem edgeCost_steinerMST_le_two_mul_steinerOpt {δ : α → α → ℕ}
   rw [← hc]
   exact edgeCost_steinerMST_le_two_mul hsymm htri hR hT
 
+/-- The 2-approximation against the optimum for zero-diagonal costs. -/
+theorem edgeCost_steinerMST_le_two_mul_steinerOpt_of_diag {δ : α → α → ℕ}
+    (hdiag : ∀ x, δ x x = 0) (hsymm : ∀ x y, δ x y = δ y x) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z)
+    {R : List α} : edgeCost δ (steinerMST δ R) ≤ 2 * steinerOpt δ R := by
+  obtain ⟨T, hT, hc⟩ := exists_connects_edgeCost_eq_steinerOpt δ R
+  rw [← hc]
+  exact edgeCost_steinerMST_le_two_mul_of_diag hdiag hsymm htri hT
+
 /-- The sharp form against the optimum: `|R| · cost(steinerMST δ R) ≤ 2 (|R| - 1) · OPT`. -/
 theorem length_mul_edgeCost_steinerMST_le_steinerOpt {δ : α → α → ℕ}
     (hsymm : ∀ x y, δ x y = δ y x) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z) {R : List α}
@@ -454,5 +625,14 @@ theorem length_mul_edgeCost_steinerMST_le_steinerOpt {δ : α → α → ℕ}
   obtain ⟨T, hT, hc⟩ := exists_connects_edgeCost_eq_steinerOpt δ R
   rw [← hc]
   exact length_mul_edgeCost_steinerMST_le hsymm htri hR hT
+
+/-- The sharp form against the optimum for zero-diagonal costs. -/
+theorem length_mul_edgeCost_steinerMST_le_steinerOpt_of_diag {δ : α → α → ℕ}
+    (hdiag : ∀ x, δ x x = 0) (hsymm : ∀ x y, δ x y = δ y x) (htri : ∀ x y z, δ x z ≤ δ x y + δ y z)
+    {R : List α} :
+    R.length * edgeCost δ (steinerMST δ R) ≤ 2 * (R.length - 1) * steinerOpt δ R := by
+  obtain ⟨T, hT, hc⟩ := exists_connects_edgeCost_eq_steinerOpt δ R
+  rw [← hc]
+  exact length_mul_edgeCost_steinerMST_le_of_diag hdiag hsymm htri hT
 
 end Cslib.Algorithms.Lean.SteinerTree

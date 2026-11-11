@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ClauseNetworkPolyTime
 public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.FastLeaves
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
+import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.ContractionCall
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Logics.Propositional.CNF.ModelCount.Declared
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -112,20 +113,6 @@ noncomputable def certificate (k : ℕ) : NativeCertificate (count k) encCNF enc
       (NativeCertificate.ofPolyTime (computableInPolyTime_contractionInput k)))
     (NativeCertificate.ofPolyTime computableInPolyTime_fallback)).congr fun _ => rfl
 
-private theorem certificate_time (k : ℕ) (φ : CNF ℕ) : (certificate k).time φ =
-    (NativeCertificate.ofPolyTime (computableInPolyTime_guard k)).time φ +
-      if guard k φ then
-          (NativeCertificate.ofPolyTime (computableInPolyTime_contractionInput k)).time φ +
-            fastContractionAlgorithm.certificate.time (contractionInput k φ)
-        else (NativeCertificate.ofPolyTime computableInPolyTime_fallback).time φ := rfl
-
-private theorem certificate_space (k : ℕ) (φ : CNF ℕ) : (certificate k).space φ =
-    (NativeCertificate.ofPolyTime (computableInPolyTime_guard k)).space φ +
-      if guard k φ then
-          (NativeCertificate.ofPolyTime (computableInPolyTime_contractionInput k)).space φ +
-            fastContractionAlgorithm.certificate.space (contractionInput k φ)
-        else (NativeCertificate.ofPolyTime computableInPolyTime_fallback).space φ := rfl
-
 /-! ### Correctness -/
 
 theorem guard_eq_true_iff {k : ℕ} {φ : CNF ℕ} :
@@ -217,122 +204,19 @@ theorem exponent_le_occurrences {K N : ℕ} (hN : 1 ≤ N) :
 /-- The machine runs in polynomial space, and in time `2 ^ F φ` times a polynomial for every
 exponent `F` that bounds the contraction's exponent `K s / √⌊log₂ s⌋` at the network size
 `s = 3 N` on the formulas handed to the contraction algorithm. -/
-private theorem computableInO_count (k : ℕ) :
-    ∃ K e b : ℕ, ∀ F : CNF ℕ → ℕ,
+private theorem expTimePolySpace_certificate (k : ℕ) :
+    ∃ K : ℕ, ∀ F : CNF ℕ → ℕ,
       (∀ φ, guard k φ = true →
         K * (3 * φ.vars.length) / Nat.sqrt (Nat.log 2 (3 * φ.vars.length)) ≤ F φ) →
-      ComputableInO (count k) encCNF encNat
-        (fun φ => 2 ^ F φ * ((encCNF φ).length + 1) ^ e)
-        (fun φ => ((encCNF φ).length + 1) ^ b) := by
-  obtain ⟨K, hK⟩ := fastContractionAlgorithm.bound (k + 4) 1
-  have hg := NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_guard k)
-  have hp := NativeCertificate.ofPolyTime_isPolynomial (computableInPolyTime_contractionInput k)
-  have hf := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_fallback
-  obtain ⟨cg, dg, htg⟩ := hg.1.exists_le
-  obtain ⟨cg', dg', hsg⟩ := hg.2.exists_le
-  obtain ⟨cp, dp, htp⟩ := hp.1.exists_le
-  obtain ⟨cp', dp', hsp⟩ := hp.2.exists_le
-  obtain ⟨cf, df, htf⟩ := hf.1.exists_le
-  obtain ⟨cf', df', hsf⟩ := hf.2.exists_le
-  obtain ⟨p, q, hlen⟩ := (computableInPolyTime_contractionInput k).polyBounded_length.exists_le
-  set e := dg + dp + df + q * K
-  set b := dg' + dp' + df' + q * K
-  refine ⟨K, e, b, fun F hF =>
-    (certificate k).computes.mono (cg + cp + cf + K * (p + 1) ^ K + cg' + cp' + cf' + 1)
-      (fun φ => ?_) (fun φ => ?_)⟩
-  all_goals
-    set Y := (encCNF φ).length + 1 with hY
-    have hY1 : 1 ≤ Y := Nat.le_add_left 1 _
-    have hpow {d d' : ℕ} (h : d ≤ d') : Y ^ d ≤ Y ^ d' := Nat.pow_le_pow_right hY1 h
-    have hn' : ((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-        (contractionInput k φ)).length + 1 ≤ (p + 1) * Y ^ q := by
-      have h1 := hlen φ
-      have h2 : 1 ≤ Y ^ q := Nat.one_le_pow _ _ hY1
-      rw [← hY] at h1
-      nlinarith
-    have hn'K : (((encPair encNat (encPair encNat ExplicitTensorNetwork.encExplicitNetwork))
-        (contractionInput k φ)).length + 1) ^ K ≤ (p + 1) ^ K * Y ^ (q * K) := by
-      calc _ ≤ ((p + 1) * Y ^ q) ^ K := Nat.pow_le_pow_left hn' K
-        _ = _ := by rw [mul_pow, pow_mul]
-  · -- time
-    set E := F φ
-    have h2E : 1 ≤ 2 ^ E := Nat.one_le_two_pow
-    set Z := 2 ^ E * Y ^ e
-    have hZ {d : ℕ} (h : d ≤ e) : Y ^ d ≤ Z :=
-      (hpow h).trans (Nat.le_mul_of_pos_left _ h2E)
-    have htg' : (NativeCertificate.ofPolyTime (computableInPolyTime_guard k)).time φ ≤ cg * Z :=
-      (htg φ).trans (Nat.mul_le_mul_left _ (hZ (by omega)))
-    have htp' : (NativeCertificate.ofPolyTime (computableInPolyTime_contractionInput k)).time φ ≤
-        cp * Z := (htp φ).trans (Nat.mul_le_mul_left _ (hZ (by omega)))
-    have htf' : (NativeCertificate.ofPolyTime computableInPolyTime_fallback).time φ ≤ cf * Z :=
-      (htf φ).trans (Nat.mul_le_mul_left _ (hZ (by omega)))
-    have htc : guard k φ = true → fastContractionAlgorithm.certificate.time (contractionInput k φ)
-        ≤ K * (p + 1) ^ K * Z := by
-      intro hgφ
-      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hgφ
+      (certificate k).ExpTimePolySpace F :=
+  fastContractionAlgorithm.expTimePolySpace_branch (computableInPolyTime_guard k)
+    (computableInPolyTime_contractionInput k) computableInPolyTime_fallback (k + 4) 1
+    (fun φ => 3 * φ.vars.length) fun φ hg => by
+      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
       have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
       have hm := length_le_length_vars fun c hc => (hcl c hc).1
-      have hb := (hK (3 * φ.vars.length) (3 * φ.vars.length) (clauseNetwork k φ) (by omega)
-        (by omega) (by omega) (explicitAdmissible_clauseNetwork hgφ)).1
-      have hexp := hF φ hgφ
-      calc fastContractionAlgorithm.certificate.time (contractionInput k φ)
-          ≤ K * ((p + 1) ^ K * Y ^ (q * K)) * 2 ^ E := by
-            refine hb.trans ?_
-            exact Nat.mul_le_mul (Nat.mul_le_mul_left _ hn'K)
-              (Nat.pow_le_pow_right (by norm_num) hexp)
-        _ ≤ K * (p + 1) ^ K * Z := by
-            have := hpow (show q * K ≤ e by omega)
-            calc K * ((p + 1) ^ K * Y ^ (q * K)) * 2 ^ E
-                = K * (p + 1) ^ K * (2 ^ E * Y ^ (q * K)) := by ring
-              _ ≤ K * (p + 1) ^ K * Z := Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ this)
-    rw [certificate_time]
-    generalize hKP : K * (p + 1) ^ K = KP at htc
-    have hC : ∀ c, c ≤ cg + cp + cf + KP + cg' + cp' + cf' + 1 →
-        c * Z ≤ (cg + cp + cf + KP + cg' + cp' + cf' + 1) * (Z + 1) := fun c hc =>
-      (Nat.mul_le_mul_right _ hc).trans (Nat.mul_le_mul_left _ (Nat.le_succ _))
-    split
-    · next hgφ =>
-      calc _ ≤ cg * Z + (cp * Z + KP * Z) := Nat.add_le_add htg' (Nat.add_le_add htp' (htc hgφ))
-        _ = (cg + cp + KP) * Z := by ring
-        _ ≤ _ := hC _ (by omega)
-    · calc _ ≤ cg * Z + cf * Z := Nat.add_le_add htg' htf'
-        _ = (cg + cf) * Z := by ring
-        _ ≤ _ := hC _ (by omega)
-  · -- space
-    have hsg' : (NativeCertificate.ofPolyTime (computableInPolyTime_guard k)).space φ ≤
-        cg' * Y ^ b := (hsg φ).trans (Nat.mul_le_mul_left _ (hpow (by omega)))
-    have hsp' : (NativeCertificate.ofPolyTime (computableInPolyTime_contractionInput k)).space φ ≤
-        cp' * Y ^ b := (hsp φ).trans (Nat.mul_le_mul_left _ (hpow (by omega)))
-    have hsf' : (NativeCertificate.ofPolyTime computableInPolyTime_fallback).space φ ≤
-        cf' * Y ^ b := (hsf φ).trans (Nat.mul_le_mul_left _ (hpow (by omega)))
-    have hsc : guard k φ = true →
-        fastContractionAlgorithm.certificate.space (contractionInput k φ) ≤
-          K * (p + 1) ^ K * Y ^ b := by
-      intro hgφ
-      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hgφ
-      have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
-      have hm := length_le_length_vars fun c hc => (hcl c hc).1
-      have hb := (hK (3 * φ.vars.length) (3 * φ.vars.length) (clauseNetwork k φ) (by omega)
-        (by omega) (by omega) (explicitAdmissible_clauseNetwork hgφ)).2
-      refine hb.trans ?_
-      calc K * _ ≤ K * ((p + 1) ^ K * Y ^ (q * K)) := Nat.mul_le_mul_left _ hn'K
-        _ ≤ K * (p + 1) ^ K * Y ^ b := by
-            rw [← Nat.mul_assoc]
-            exact Nat.mul_le_mul_left _ (hpow (by omega))
-    rw [certificate_space]
-    generalize hKP : K * (p + 1) ^ K = KP at hsc
-    have hC : ∀ c, c ≤ cg + cp + cf + KP + cg' + cp' + cf' + 1 →
-        c * Y ^ b ≤ (cg + cp + cf + KP + cg' + cp' + cf' + 1) * (Y ^ b + 1) := fun c hc =>
-      (Nat.mul_le_mul_right _ hc).trans (Nat.mul_le_mul_left _ (Nat.le_succ _))
-    split
-    · next hgφ =>
-      calc _ ≤ cg' * Y ^ b + (cp' * Y ^ b + KP * Y ^ b) :=
-            Nat.add_le_add hsg' (Nat.add_le_add hsp' (hsc hgφ))
-        _ = (cg' + cp' + KP) * Y ^ b := by ring
-        _ ≤ _ := hC _ (by omega)
-    · calc _ ≤ cg' * Y ^ b + cf' * Y ^ b := Nat.add_le_add hsg' hsf'
-        _ = (cg' + cf') * Y ^ b := by ring
-        _ ≤ _ := hC _ (by omega)
+      dsimp only [contractionInput]
+      exact ⟨by omega, by omega, by omega, explicitAdmissible_clauseNetwork hg⟩
 
 /-- **Model counting by tensor contraction.** For each clause width `k`, one machine computes
 `φ.modelCount` on every formula `φ` whose clauses have at most `k` literals, in time
@@ -345,13 +229,16 @@ theorem exists_modelCounter (k : ℕ) :
         (fun φ => 2 ^ (A * (φ.length + 1) / Nat.sqrt (Nat.log 2 (φ.numVars + 2))) *
           ((encCNF φ).length + 1) ^ e)
         (fun φ => ((encCNF φ).length + 1) ^ b) := by
-  obtain ⟨K, e, b, h⟩ := computableInO_count k
-  refine ⟨count k, 3 * k * K, e, b, fun φ hk => count_eq hk, h _ fun φ hg => ?_⟩
-  obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
-  have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
-  have hm := length_le_length_vars fun c hc => (hcl c hc).1
-  exact exponent_le (by omega) (CNF.length_vars_le_mul_length fun c hc => (hcl c hc).2)
-    (CNF.numVars_le_length_vars φ)
+  obtain ⟨K, h⟩ := expTimePolySpace_certificate k
+  have hc := h (fun φ => 3 * k * K * (φ.length + 1) / Nat.sqrt (Nat.log 2 (φ.numVars + 2)))
+    fun φ hg => by
+      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
+      have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
+      have hm := length_le_length_vars fun c hc => (hcl c hc).1
+      exact exponent_le (by omega) (CNF.length_vars_le_mul_length fun c hc => (hcl c hc).2)
+        (CNF.numVars_le_length_vars φ)
+  obtain ⟨e, he⟩ := hc.computableInO
+  exact ⟨count k, 3 * k * K, e, e, fun φ hk => count_eq hk, he⟩
 
 /-- **Model counting by tensor contraction, measured by literal occurrences.** For each clause
 width `k`, one machine computes `φ.modelCount` on every formula `φ` whose clauses have at most `k`
@@ -366,12 +253,15 @@ theorem exists_modelCounter_occurrences (k : ℕ) :
         (fun φ => 2 ^ (A * (φ.vars.length + 1) / Nat.sqrt (Nat.log 2 (φ.vars.length + 2))) *
           ((encCNF φ).length + 1) ^ e)
         (fun φ => ((encCNF φ).length + 1) ^ b) := by
-  obtain ⟨K, e, b, h⟩ := computableInO_count k
-  refine ⟨count k, 3 * K, e, b, fun φ hk => count_eq hk, h _ fun φ hg => ?_⟩
-  obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
-  have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
-  have hm := length_le_length_vars fun c hc => (hcl c hc).1
-  exact exponent_le_occurrences (by omega)
+  obtain ⟨K, h⟩ := expTimePolySpace_certificate k
+  have hc := h (fun φ => 3 * K * (φ.vars.length + 1) / Nat.sqrt (Nat.log 2 (φ.vars.length + 2)))
+    fun φ hg => by
+      obtain ⟨hne, hcl⟩ := guard_eq_true_iff.mp hg
+      have h1 : 1 ≤ φ.length := List.length_pos_iff.mpr hne
+      have hm := length_le_length_vars fun c hc => (hcl c hc).1
+      exact exponent_le_occurrences (by omega)
+  obtain ⟨e, he⟩ := hc.computableInO
+  exact ⟨count k, 3 * K, e, e, fun φ hk => count_eq hk, he⟩
 
 /-- **The fixed-density bound of Theorem 1.1.** For each clause width `k`, one machine computes
 `φ.modelCount` on every formula `φ` whose clauses have at most `k` literals, in polynomial space,

@@ -359,12 +359,7 @@ theorem erase_of_pathAvailable (h : IsPathRemovalNumbering n C σ) {x : ℕ} (hx
       have hpj : 2 ^ (σ z + 1) = 2 ^ σ z + 2 ^ σ z := by rw [pow_succ]; omega
       have hpf : 2 ^ f ≤ 2 ^ σ z := Nat.pow_le_pow_right Nat.two_pos (h.le z hzC)
       -- A pebble numbered above `z`, other than `x`, is numbered above `σ z + 1` afterwards.
-      have hup : ∀ w ∈ C, w ≠ x → σ z < σ w → σ z + 1 < σ' w := by
-        intro w hw hwx hjw
-        have hwg : σ w ≠ g := fun e => hwx (h.injOn hw hx e)
-        by_cases h2 : σ w < g
-        · rw [hσ'lt w h2]; omega
-        · rw [hσ'ge w h2]; omega
+      have hup : ∀ w ∈ C, w ≠ x → σ z < σ w → σ z + 1 < σ' w := by grind
       rcases h.near z hzC with h' | ⟨y, hy, hyz, hσ, hzy⟩
       · exact .inl (by omega)
       by_cases hyx : y = x

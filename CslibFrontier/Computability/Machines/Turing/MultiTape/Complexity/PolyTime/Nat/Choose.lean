@@ -33,7 +33,7 @@ otherwise.
   binomial coefficients from unary `(n, k)` to binary `encNat`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 

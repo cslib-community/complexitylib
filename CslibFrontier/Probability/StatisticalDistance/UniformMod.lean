@@ -34,7 +34,7 @@ a power of two.
   Version 0.6][BonehShoup2023], Section 3.11.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

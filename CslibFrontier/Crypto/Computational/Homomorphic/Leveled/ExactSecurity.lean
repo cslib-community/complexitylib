@@ -20,7 +20,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PPT
 
 /-!
-# Exact Gentry Theorem 4 hybrid loss, modular index sampling, and runtime overhead bounds
+# Exact hybrid loss for Gentry Theorem 4, modular index sampling, and overhead bounds
 
 `CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Security` proves IND-CPA security of the
 depth-budgeted leveled scheme `scheme D budget` via `leveledAdversary`, which samples link and
@@ -30,7 +30,8 @@ secret-bit coordinates from power-of-two ranges `dyadicSize (2 * budget n)` and
 `16 * (2 * budget n + 1) * (capacity n + 1)`.
 
 This module formalizes the two remaining quantitative refinements noted in Issue #1104 (Item 3)
-for [Gentry2009, Section 2, Theorem 4, p. 171]:
+for [Gentry2009, Section 2, Theorem 4, p. 171], up to a constant factor in the loss and without
+the theorem's running-time clause:
 
 1. **Exact `(2 * budget n) * (capacity n)` hybrid loss and `sampleModNat` bridge**:
    * `Scheme.exactKeyChainHybridGame` and `Scheme.exactLinkAdversary` sample the reverse link index
@@ -46,21 +47,27 @@ for [Gentry2009, Section 2, Theorem 4, p. 171]:
      `Leveled.advantage_scheme_le_exactLinkAdversary_add_zeroLinkAdversary`.
    * `Scheme.modLinkAdversary` and `Leveled.modLeveledAdversary` replace exact finite-range index
      sampling by strict-PPT modular sampling via `ProbComp.sampleModNat`, certified uniform strict
-     PPT (`Scheme.isPPT_modLinkAdversary`, `Leveled.isPPT_modLeveledAdversary`) with an explicit
-     `O(1 / 2 ^ n)` statistical tail (`Leveled.advantage_scheme_le_modLeveledAdversary`,
-     `Leveled.advantage_scheme_le_modLeveledAdversary_two_mul`).
+     PPT (`Scheme.isPPT_modLinkAdversary`, `Leveled.isPPT_modLeveledAdversary`); no such
+     certificate is proved for the two exact adversaries. When `0 < budget n`, `0 < capacity n`
+     and all supported base secret keys share one length at most `capacity n`, the resulting bound
+     multiplies the exact loss factor by the sum of the base advantage and a statistical tail
+     (`Leveled.advantage_scheme_le_modLeveledAdversary`). With `2 * n` coins per sample that tail
+     is at most `2 / 2 ^ n` when also `3 + 2 * budget n + capacity n ≤ 2 ^ n`
+     (`Leveled.advantage_scheme_le_modLeveledAdversary_two_mul`).
 
-2. **Explicit polynomial artifact-length, saved-state, and coin-budget overhead bounds**:
+2. **Explicit polynomial artifact-length and saved-state bounds, and coin-count formulas**:
    * `Leveled.publicKeyLengthBound` and
      `Leveled.length_encPublicKey_support_publicKeyChainHybrid_le` bound the bit length of every
      serialized public key passed to `adversary.choose` in terms of the chain depth `2 * budget n`,
      secret width `width`, and base key/ciphertext lengths.
    * `Scheme.linkStateLengthBound` and `Scheme.length_activeLinkState_le` bound the bit length of
      every active reduction state saved by `Scheme.chooseLinkAt`.
-   * `Leveled.exists_leveledAdversary_overhead` packages the quantitative polynomial input-length,
-     coin-budget, and strict-PPT clock witnesses for `leveledAdversary` in terms of the base
-     scheme's `keyGen`/`encrypt` bounds, `budget n`, `capacity n`, and `adversary`'s own runtime
-     polynomials evaluated at the serialized public-key length.
+   * `Leveled.exists_leveledAdversary_overhead` packages polynomial length bounds and seeded
+     replay laws for the base scheme's `keyGen`/`encrypt` and for `adversary`'s two stages at the
+     leveled public-key and ciphertext sizes, polynomial boundedness of the coin-count formulas
+     `Leveled.leveledChooseCoinBudget` and `Leveled.leveledGuessCoinBudget`, and strict-PPT
+     certificates for `leveledAdversary` and `modLeveledAdversary`. It contains no replay law for
+     `leveledAdversary` itself and no running-time comparison with `adversary`.
 
 ## Main definitions
 
@@ -78,8 +85,8 @@ for [Gentry2009, Section 2, Theorem 4, p. 171]:
 * `Cslib.Crypto.Homomorphic.Leveled.publicKeyLengthBound`: explicit upper bound on serialized
   leveled public-key length.
 * `Cslib.Crypto.Homomorphic.Leveled.leveledChooseCoinBudget`,
-  `Cslib.Crypto.Homomorphic.Leveled.leveledGuessCoinBudget`: explicit coin-tape budgets for the two
-  stages of `leveledAdversary`.
+  `Cslib.Crypto.Homomorphic.Leveled.leveledGuessCoinBudget`: coin-count formulas for the two
+  stages of `leveledAdversary`, proved polynomially bounded here.
 
 ## Main results
 
@@ -88,15 +95,18 @@ for [Gentry2009, Section 2, Theorem 4, p. 171]:
 * `Cslib.Crypto.Homomorphic.Scheme.isPPT_modLinkAdversary`,
   `Cslib.Crypto.Homomorphic.Scheme.publicKeyChainHybrid_advantage_le_modLinkAdversary`: strict-PPT
   modular key-chain reduction and concrete advantage bound.
-* `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_eq_exactLeveledAdversary`: exact Gentry
-  Theorem 4 reduction identity with loss `3 * (2 * budget n : ℝ≥0) * capacity n`.
+* `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_eq_exactLeveledAdversary`: exact
+  concrete-security identity with loss `3 * (2 * budget n : ℝ≥0) * capacity n` and no dyadic
+  rounding (Gentry's Theorem 4 up to a constant factor).
 * `Cslib.Crypto.Homomorphic.Leveled.isPPT_modLeveledAdversary`,
   `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_le_modLeveledAdversary`,
   `Cslib.Crypto.Homomorphic.Leveled.advantage_scheme_le_modLeveledAdversary_two_mul`: strict-PPT
-  modular leveled reduction and `O(1 / 2 ^ n)` statistical-tail bound.
+  modular leveled reduction, whose bound multiplies the loss factor by the sum of the base
+  advantage and a statistical tail (`2 / 2 ^ n` in the `2 * n`-coin specialization).
 * `Cslib.Crypto.Homomorphic.Leveled.length_encPublicKey_support_publicKeyChainHybrid_le`,
   `Cslib.Crypto.Homomorphic.Leveled.exists_leveledAdversary_overhead`: explicit polynomial
-  artifact-length, coin-tape, and runtime overhead bounds for `leveledAdversary`.
+  artifact-length bounds, component replay laws, polynomially bounded coin-count formulas and
+  strict-PPT certificates for `leveledAdversary` and `modLeveledAdversary`.
 
 ## References
 
@@ -250,7 +260,9 @@ theorem publicKeyChainHybrid_exact_gap (n depth width capacity : ℕ)
 
 /-- Two-stage base IND-CPA reduction that samples the reverse link coordinate uniformly from
 `Fin (depth n)` and the bit coordinate uniformly from `Fin (capacity n)` when both bounds are
-positive, avoiding the factor-of-four dyadic rounding loss of `Scheme.linkAdversary`. -/
+positive, avoiding the factor-of-four dyadic rounding loss of `Scheme.linkAdversary`. No
+strict-PPT certificate is proved for it; `modLinkAdversary` is the certified counterpart, and
+`advantage_exactLinkAdversary_modLinkAdversary_le` compares the two. -/
 noncomputable def exactLinkAdversary (depth capacity : ℕ → ℕ)
     (test : ℕ → (List (List Bool) × List (List (List Bool))) → ProbComp Bool) :
     Encryption.Adversary where
@@ -360,6 +372,37 @@ theorem advantage_bind_sampleModNat_fin_le (width M : ℕ) [NeZero M] (k : ℕ �
     (by simpa only [NNReal.coe_div, NNReal.coe_natCast, NNReal.coe_pow, NNReal.coe_ofNat] using
       ProbComp.dist_map_natCast_eval_sampleModNat_le width M)
 
+/-- Replacing exact uniform draws on `Fin M` and then `Fin N` by two `sampleModNat width` draws
+changes `Game.advantage` of any Boolean continuation by at most `(M + N) / 2 ^ width`. -/
+private theorem advantage_bind_sampleModNat_fin_fin_le (width M N : ℕ) [NeZero M] [NeZero N]
+    (k : ℕ → ℕ → Game) :
+    Game.advantage
+      ((ProbComp.eval (sampleModNat width M)).bind fun i =>
+        (ProbComp.eval (sampleModNat width N)).bind fun j => k i j)
+      ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+        (PMF.uniformOfFintype (Fin N)).bind fun j => k i.val j.val) ≤
+      ((M + N : ℕ) : ℝ≥0) / 2 ^ width := by
+  have hstep1 :
+      Game.advantage
+        ((ProbComp.eval (sampleModNat width M)).bind fun i =>
+          (ProbComp.eval (sampleModNat width N)).bind fun j => k i j)
+        ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+          (ProbComp.eval (sampleModNat width N)).bind fun j => k i.val j) ≤
+        (M : ℝ≥0) / 2 ^ width :=
+    advantage_bind_sampleModNat_fin_le width M _
+  have hstep2 :
+      Game.advantage
+        ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+          (ProbComp.eval (sampleModNat width N)).bind fun j => k i.val j)
+        ((PMF.uniformOfFintype (Fin M)).bind fun i =>
+          (PMF.uniformOfFintype (Fin N)).bind fun j => k i.val j.val) ≤
+        (N : ℝ≥0) / 2 ^ width :=
+    Game.advantage_bind_le_nnreal _ _ _ fun i =>
+      advantage_bind_sampleModNat_fin_le width N fun j => k i.val j
+  refine (Game.advantage_triangle _ _ _).trans ((add_le_add hstep1 hstep2).trans_eq ?_)
+  push_cast
+  ring
+
 /-- Sample a modular residue via `ProbComp.sampleModNat width bound`, capped at `bound` so its
 unary encoding is polynomially bounded even when `bound = 0`. When `0 < bound`, every residue modulo
 `bound` is strictly below `bound`, so `sampleModIndex width bound = sampleModNat width bound`. -/
@@ -411,7 +454,7 @@ noncomputable def modLinkAdversary (coins depth capacity : ℕ → ℕ)
 computable in polynomial time in unary. -/
 theorem isPPT_modLinkAdversary {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {test : ℕ → (List (List Bool) × List (List (List Bool))) → ProbComp Bool}
     (htest : IsPPTOn
@@ -498,43 +541,8 @@ theorem advantage_exactLinkAdversary_modLinkAdversary_le
       congr 1; funext j
       simp only [i.isLt, j.isLt, ↓reduceIte]
     rw [hexact, hmod, Game.advantage_comm]
-    have hstep1 :
-        Game.advantage
-          ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-            (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i j)
-          ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-            (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i.val j) ≤
-          (depth n : ℝ≥0) / 2 ^ (coins n) :=
-      advantage_bind_sampleModNat_fin_le (coins n) (depth n) _
-    have hstep2 :
-        Game.advantage
-          ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-            (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i.val j)
-          ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-            (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-              E.linkRunAt depth capacity test bit n i.val j.val) ≤
-          (capacity n : ℝ≥0) / 2 ^ (coins n) :=
-      Game.advantage_bind_le_nnreal _ _ _ fun i =>
-        advantage_bind_sampleModNat_fin_le (coins n) (capacity n)
-          (fun j => E.linkRunAt depth capacity test bit n i.val j)
-    have htri := Game.advantage_triangle
-      ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-        (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-          E.linkRunAt depth capacity test bit n i j)
-      ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-        (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-          E.linkRunAt depth capacity test bit n i.val j)
-      ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-        (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-          E.linkRunAt depth capacity test bit n i.val j.val)
-    have hsum :
-        (depth n : ℝ≥0) / 2 ^ (coins n) + (capacity n : ℝ≥0) / 2 ^ (coins n) =
-          ((depth n + capacity n : ℕ) : ℝ≥0) / 2 ^ (coins n) := by
-      push_cast; ring
-    exact htri.trans ((add_le_add hstep1 hstep2).trans_eq hsum)
+    exact advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
+      (E.linkRunAt depth capacity test bit n)
   · have hrun_reject (i : ℕ) (hi : i ≤ depth n) (j : ℕ) (hj : j ≤ capacity n) :
         E.linkRunAt depth capacity test bit n i j = PMF.pure false := by
       dsimp only [linkRunAt]
@@ -584,8 +592,9 @@ theorem advantage_le_of_triangle_both_div {g₀ g₁ m₀ m₁ : Game} {a b : �
   exact hstep2.trans_eq (by ring)
 
 /-- Concrete key-chain hybrid advantage bound via the strict-PPT `modLinkAdversary` reduction:
-the key-chain advantage is at most `(depth n : ℝ≥0) * capacity n` times `modLinkAdversary`'s
-base advantage plus the modular-sampling statistical tail
+when every base secret key in the support of `E.keyGen n` has the same length
+`width ≤ capacity n`, the key-chain advantage is at most `(depth n : ℝ≥0) * capacity n` times the
+sum of `modLinkAdversary`'s base advantage and the modular-sampling statistical tail
 `2 * (depth n + capacity n) / 2 ^ (coins n)`. -/
 theorem publicKeyChainHybrid_advantage_le_modLinkAdversary
     (coins depth capacity : ℕ → ℕ)
@@ -663,7 +672,7 @@ namespace Cslib.Crypto.Homomorphic.Leveled
 open ProbComp Probability Turing.MultiTapeTM
 open scoped NNReal Cslib.Probability.PMF
 
-/-! ### Exact Gentry Theorem 4 leveled reduction and three-hop decomposition -/
+/-! ### Exact uniform-index leveled reduction and three-hop decomposition -/
 
 /-- Unattenuated three-hop concrete-security bound for the leveled scheme `scheme D budget`:
 its IND-CPA advantage is bounded by the sum of the two `exactLinkAdversary` advantages (each
@@ -722,7 +731,9 @@ theorem advantage_scheme_le_exactLinkAdversary_add_zeroLinkAdversary {E : Scheme
 /-- Unified two-stage base IND-CPA reduction for the leveled construction that samples the hop
 selector uniformly from `Fin 3`, the reverse link coordinate uniformly from `Fin (depth n)`, and
 the secret-bit coordinate uniformly from `Fin (capacity n)` when `0 < depth n ∧ 0 < capacity n`,
-eliminating the `dyadicSize` rounding factor of `leveledAdversary`. -/
+eliminating the `dyadicSize` rounding factor of `leveledAdversary`. No strict-PPT certificate is
+proved for it; `modLeveledAdversary` is the certified counterpart, and
+`advantage_exactLeveledAdversary_modLeveledAdversary_le` compares the two. -/
 noncomputable def exactLeveledAdversary (E : Scheme) (depth capacity : ℕ → ℕ)
     (adversary : Encryption.Adversary) : Encryption.Adversary where
   choose n challengePk :=
@@ -969,8 +980,11 @@ theorem succProbability_exactLeveledAdversary (E : Scheme) (depth capacity : ℕ
     linear_combination (capacity n : ℝ) * hlink + hbit
   linarith
 
-/-- Signed chosen-message gap of the leveled scheme in terms of `exactLeveledAdversary`, with
-exact factor `3 * (2 * budget n : ℝ) * capacity n` ([Gentry2009], Section 2, Theorem 4, p. 171). -/
+/-- Signed chosen-message gap of the leveled scheme in terms of `exactLeveledAdversary` when
+`0 < budget n`, `0 < capacity n`, and every base secret key in the support of `E.keyGen n` has
+the same length `width ≤ capacity n`, with exact factor `3 * (2 * budget n : ℝ) * capacity n`
+([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in the loss;
+the running-time clause is not formalized). -/
 theorem gap_exactLeveledAdversary (E : Scheme) (budget capacity : ℕ → ℕ)
     (adversary : Encryption.Adversary) (n width : ℕ)
     (hbudget_pos : 0 < budget n) (hcapacity_pos : 0 < capacity n)
@@ -1002,9 +1016,12 @@ theorem gap_exactLeveledAdversary (E : Scheme) (budget capacity : ℕ → ℕ)
   linarith
 
 /-- Exact unsigned concrete-security identity for the depth-budgeted scheme `scheme D budget` via
-`exactLeveledAdversary` ([Gentry2009], Section 2, Theorem 4, p. 171): the advantage equals
-`3 * (2 * budget n : ℝ≥0) * capacity n` times the base advantage of `exactLeveledAdversary`,
-eliminating the `dyadicSize` rounding factor of `advantage_scheme_eq_leveledAdversary`. -/
+`exactLeveledAdversary` ([Gentry2009], Section 2, Theorem 4, p. 171, up to a constant factor in
+the loss; the running-time clause is not formalized): when `0 < budget n`, `0 < capacity n`, and
+every base secret key in the support of `E.keyGen n` has the same length `width ≤ capacity n`,
+the advantage equals `3 * (2 * budget n : ℝ≥0) * capacity n` times the base advantage of
+`exactLeveledAdversary`, eliminating the `dyadicSize` rounding factor of
+`advantage_scheme_eq_leveledAdversary`. -/
 theorem advantage_scheme_eq_exactLeveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -1027,7 +1044,7 @@ theorem advantage_scheme_eq_exactLeveledAdversary {E : Scheme}
     abs_mul, abs_mul, abs_mul, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < 3),
     abs_of_pos (by positivity : (0 : ℝ) < 2), Nat.abs_cast, Nat.abs_cast]
 
-/-! ### Strict-PPT `sampleModNat` leveled reduction and `O(1 / 2 ^ n)` statistical-tail bound -/
+/-! ### Strict-PPT `sampleModNat` leveled reduction and statistical-tail bound -/
 
 /-- Strict-PPT unified two-stage base IND-CPA reduction for the leveled construction that samples
 the three-way hop selector via `Scheme.sampleModIndex (coins n) 3`, delegating hops `0` and `1` to
@@ -1067,7 +1084,7 @@ noncomputable def modLeveledAdversary (E : Scheme) (coins depth capacity : ℕ �
 depth, and capacity are. -/
 theorem isPPT_modLeveledAdversary {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
     {coins depth capacity : ℕ → ℕ}
@@ -1075,21 +1092,8 @@ theorem isPPT_modLeveledAdversary {E : Scheme}
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
     (modLeveledAdversary E coins depth capacity adversary).IsPPT := by
-  have htag (first second : Bool) :
-      ComputableInPolyTime (tagLeveledChoice first second)
-        (encPair (encPair encBool encBool) encBits)
-        (encPair (encPair encBool encBool) encBits) := by
-    unfold tagLeveledChoice
-    exact (ComputableInPolyTime.fst _ _).prod
-      (ComputableInPolyTime.bitsCons (by fun_prop)
-        (ComputableInPolyTime.bitsCons (by fun_prop)
-          (ComputableInPolyTime.snd _ _)))
-  have hswap :
-      ComputableInPolyTime swapLeveledChoice
-        (encPair (encPair encBool encBool) encBits)
-        (encPair (encPair encBool encBool) encBits) := by
-    unfold swapLeveledChoice
-    fun_prop
+  have htag := computableInPolyTime_tagLeveledChoice
+  have hswap := computableInPolyTime_swapLeveledChoice
   have hzero := isPPT_zeroLinkAdversary hencrypt hadversary hkeyGen hdepth
   have hlinkFalse := Scheme.isPPT_modLinkAdversary hkeyGen hencrypt
     (isPPTOn_publicKeyGame hencrypt hadversary false) hcoins hdepth hcapacity
@@ -1122,7 +1126,7 @@ theorem isPPT_modLeveledAdversary {E : Scheme}
 /-- Specialization of `isPPT_modLeveledAdversary` to `2 * n` coins per modular index sample. -/
 theorem isPPT_modLeveledAdversary_two_mul {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
     {depth capacity : ℕ → ℕ}
@@ -1240,43 +1244,8 @@ theorem advantage_exactLeveledAdversary_modLeveledAdversary_le (E : Scheme)
           exact E.advantage_exactLinkAdversary_modLinkAdversary_le coins depth capacity
             (publicKeyGame E adversary true) (!bit) n
         · simp only [h0, h1, ↓reduceIte]
-          have hz1 :
-              Game.advantage
-                ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-                  (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i j)
-                ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-                  (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i.val j) ≤
-                (depth n : ℝ≥0) / 2 ^ (coins n) :=
-            Scheme.advantage_bind_sampleModNat_fin_le (coins n) (depth n) _
-          have hz2 :
-              Game.advantage
-                ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-                  (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i.val j)
-                ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-                  (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-                    leveledZeroAt E depth adversary bit n i.val j.val) ≤
-                (capacity n : ℝ≥0) / 2 ^ (coins n) :=
-            Game.advantage_bind_le_nnreal _ _ _ fun i =>
-              Scheme.advantage_bind_sampleModNat_fin_le (coins n) (capacity n)
-                (fun j => leveledZeroAt E depth adversary bit n i.val j)
-          have htriZero := Game.advantage_triangle
-            ((ProbComp.eval (sampleModNat (coins n) (depth n))).bind fun i =>
-              (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                leveledZeroAt E depth adversary bit n i j)
-            ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-              (ProbComp.eval (sampleModNat (coins n) (capacity n))).bind fun j =>
-                leveledZeroAt E depth adversary bit n i.val j)
-            ((PMF.uniformOfFintype (Fin (depth n))).bind fun i =>
-              (PMF.uniformOfFintype (Fin (capacity n))).bind fun j =>
-                leveledZeroAt E depth adversary bit n i.val j.val)
-          have hsumZero :
-              (depth n : ℝ≥0) / 2 ^ (coins n) + (capacity n : ℝ≥0) / 2 ^ (coins n) =
-                ((depth n + capacity n : ℕ) : ℝ≥0) / 2 ^ (coins n) := by
-            push_cast; ring
-          exact htriZero.trans ((add_le_add hz1 hz2).trans_eq hsumZero)
+          exact Scheme.advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
+            (leveledZeroAt E depth adversary bit n)
     have hstep2 :
         Game.advantage
           ((PMF.uniformOfFintype (Fin 3)).bind fun hop =>
@@ -1308,9 +1277,11 @@ theorem advantage_exactLeveledAdversary_modLeveledAdversary_le (E : Scheme)
     exact zero_le
 
 /-- Concrete Gentry Theorem 4 advantage bound for `scheme D budget` via the strict-PPT modular
-reduction `modLeveledAdversary`: the scheme advantage is bounded by the exact factor
-`3 * (2 * budget n : ℝ≥0) * capacity n` times `modLeveledAdversary`'s base advantage plus the
-`sampleModNat` statistical tail `2 * (3 + 2 * budget n + capacity n) / 2 ^ (coins n)`. -/
+reduction `modLeveledAdversary`: when `0 < budget n`, `0 < capacity n`, and every base secret key
+in the support of `E.keyGen n` has the same length `width ≤ capacity n`, the scheme advantage is
+bounded by the exact factor `3 * (2 * budget n : ℝ≥0) * capacity n` times the sum of
+`modLeveledAdversary`'s base advantage and the `sampleModNat` statistical tail
+`2 * (3 + 2 * budget n + capacity n) / 2 ^ (coins n)`. -/
 theorem advantage_scheme_le_modLeveledAdversary {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -1334,9 +1305,11 @@ theorem advantage_scheme_le_modLeveledAdversary {E : Scheme}
         (fun n => 2 * budget n) capacity adversary true n))
     zero_le
 
-/-- `2 * n`-coin specialization of `advantage_scheme_le_modLeveledAdversary`: when
-`3 + 2 * budget n + capacity n ≤ 2 ^ n`, sampling each coordinate with `2 * n` coins via
-`sampleModNat` bounds the statistical tail by `2 / 2 ^ n`. -/
+/-- `2 * n`-coin specialization of `advantage_scheme_le_modLeveledAdversary`: under that
+theorem's hypotheses and `3 + 2 * budget n + capacity n ≤ 2 ^ n`, sampling each coordinate with
+`2 * n` coins via `sampleModNat` bounds the statistical tail by `2 / 2 ^ n`, so the scheme
+advantage is at most `3 * (2 * budget n : ℝ≥0) * capacity n` times the sum of the base advantage
+and `2 / 2 ^ n`. -/
 theorem advantage_scheme_le_modLeveledAdversary_two_mul {E : Scheme}
     {secretWidth ciphertextWidth : ℕ → ℕ}
     (D : DecryptionCircuits E secretWidth ciphertextWidth)
@@ -1369,7 +1342,7 @@ theorem advantage_scheme_le_modLeveledAdversary_two_mul {E : Scheme}
           rw [mul_div_mul_right _ _ hpos.ne']
   gcongr
 
-/-! ### Explicit polynomial artifact-length, coin-tape, and runtime overhead bounds -/
+/-! ### Explicit polynomial artifact-length bounds, coin-count formulas, and efficiency witnesses -/
 
 /-- Every public artifact in the support of `E.publicKeyChainHybrid n depth cut` has serialized
 bit length at most `publicKeyLengthBound depth width pkBound ctBound` whenever supported base keys
@@ -1427,9 +1400,11 @@ theorem length_publicKey_support_keyGen_le {E : Scheme}
   exact length_encPublicKey_support_publicKeyChainHybrid_le n (2 * budget) (2 * budget)
     width pkBound ctBound hkey henc hart
 
-/-- Explicit coin-tape budget for the message-selection stage of `leveledAdversary` in terms of
+/-- Coin-count formula for the message-selection stage of `leveledAdversary` in terms of
 `depth`, `capacity`, and the per-call coin budgets of `E.keyGen`, `E.encrypt`, and
-`adversary.choose`:
+`adversary.choose`. It is proved polynomially bounded
+(`polynomiallyBounded_leveledChooseCoinBudget`); no replay law for that stage on this many coins
+is proved. It counts:
 * `2` selector bits plus `(Nat.log 2 depth + 1) + (Nat.log 2 capacity + 1)` dyadic index/coin bits,
 * `depth` calls to `E.keyGen`,
 * at most `depth * capacity` calls to `E.encrypt` (in the `zeroLinkAdversary` branch), and
@@ -1439,9 +1414,11 @@ def leveledChooseCoinBudget
   2 + (Nat.log 2 depth + 1) + (Nat.log 2 capacity + 1) +
     depth * keyGenCoins + depth * capacity * encCoins + advChooseCoins
 
-/-- Explicit coin-tape budget for the guessing stage of `leveledAdversary` in terms of
-`depth`, `capacity`, and the per-call coin budgets of `E.encrypt`, `adversary.choose`, and
-`adversary.guess`:
+/-- Coin-count formula for the guessing stage of `leveledAdversary` in terms of `depth`,
+`capacity`, and the per-call coin budgets of `E.encrypt`, `adversary.choose`, and
+`adversary.guess`. No replay law for `leveledAdversary`'s guess on this many coins is proved here;
+`Scheme.eval_modLinkAdversary_guess_eq_map_coins` (in `Leveled.GuessCoinTape`) proves one for the
+guess of `modLinkAdversary`. It counts:
 * at most `depth * capacity` calls to `E.encrypt` (splicing the `depth - 1` surrounding links,
   the `width - 1` non-challenge bits of the active link, and the `1` tagged challenge ciphertext
   in `publicKeyGame`),
@@ -1451,9 +1428,8 @@ def leveledGuessCoinBudget
     (depth capacity encCoins advChooseCoins advGuessCoins : ℕ) : ℕ :=
   depth * capacity * encCoins + advChooseCoins + advGuessCoins
 
-/-- When `depth` and `capacity` are polynomially bounded and the component coin budgets are
-polynomially bounded, `leveledChooseCoinBudget` and `leveledGuessCoinBudget` are polynomially
-bounded. -/
+/-- When `depth`, `capacity` and the component coin budgets are polynomially bounded,
+`leveledChooseCoinBudget` is polynomially bounded. -/
 theorem polynomiallyBounded_leveledChooseCoinBudget
     {depth capacity keyGenCoins encCoins advChooseCoins : ℕ → ℕ}
     (hdepth : PolynomiallyBounded depth) (hcap : PolynomiallyBounded capacity)
@@ -1484,9 +1460,9 @@ theorem polynomiallyBounded_leveledGuessCoinBudget
 /-- Polynomial artifact-length, component replay and native-efficiency witnesses for the
 leveled reduction motivated by [Gentry2009], Section 2, Theorem 4, p. 171. These witnesses do not
 assert the source's multiplicative runtime comparison.
-Given uniform strict-PPT certificates for `E.keyGen`, `E.encrypt`, and `adversary`, and
-polynomial-time unary certificates for `budget` and `capacity`, there exist explicit polynomial
-bounds:
+Given uniform strict-PPT certificates for `E.keyGen`, `E.encrypt`, and `adversary`,
+polynomial-time unary certificates for `budget` and `capacity`, and supported base secret keys
+all of length `width n ≤ capacity n`, there exist explicit polynomial bounds:
 * `pkBound n = c_kg * (n + 1) ^ d_kg` on base key lengths and key-generation coin count,
 * `ctBound n = c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc` on base ciphertext lengths and coin
   count,
@@ -1508,12 +1484,12 @@ such that:
 4. On every saved state of length at most `advChooseBudget n` and tagged ciphertext of length at
    most `ctBound n + 1`, `adversary.guess n state ct'` is realized by a total polynomial-time seeded
    evaluator using `advGuessBudget n` fair coins.
-5. Both `leveledAdversary` and `modLeveledAdversary` are uniform strict PPT, and the composite
-   coin-tape budgets `leveledChooseCoinBudget` and `leveledGuessCoinBudget` are polynomially
-   bounded in `n`. -/
+5. Both `leveledAdversary` and `modLeveledAdversary` are uniform strict PPT, and the coin-count
+   formulas `leveledChooseCoinBudget` and `leveledGuessCoinBudget` are polynomially bounded in
+   `n`. -/
 theorem exists_leveledAdversary_overhead {E : Scheme}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
     {width budget capacity : ℕ → ℕ}
@@ -1536,12 +1512,12 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       ComputableInPolyTime (fun (n, coins) => evalKey n coins)
         (encPair encUnary encBits) (encPair encBits encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalEncrypt x coins)
-        (encPair (encPair encUnary (encPair encBits encBool)) encBits) encBits ∧
+        (encPair (encKeyedInput encBool) encBits) encBits ∧
       ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
         (encPair (encPair encUnary encBits) encBits)
         (encPair (encPair encBool encBool) encBits) ∧
       ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
-        (encPair (encPair encUnary (encPair encBits encBits)) encBits) encBool ∧
+        (encPair Encryption.encGuessInput encBits) encBool ∧
       (∀ n, ProbComp.eval (E.keyGen n) =
         (BitString.uniformList (pkBound n)).map (evalKey n)) ∧
       (∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
@@ -1591,6 +1567,16 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
   let advGuessBudget (n : ℕ) :=
     c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
   have hdepth : ComputableInPolyTime (fun n => 2 * budget n) encUnary encUnary := by fun_prop
+  have hd : PolynomiallyBounded (fun n => 2 * budget n) := hdepth.polynomiallyBounded
+  have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
+  have hpk : PolynomiallyBounded pkBound := by dsimp only [pkBound]; fun_prop
+  have hct : PolynomiallyBounded ctBound := by dsimp only [ctBound]; fun_prop
+  have hpub : PolynomiallyBounded pubLen := by
+    dsimp only [pubLen, publicKeyLengthBound]
+    fun_prop
+  have hch : PolynomiallyBounded advChooseBudget := by
+    dsimp only [advChooseBudget]
+    fun_prop
   refine ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalKey, evalEncrypt, evalChoose,
     evalGuess, hevalKey, hevalEncrypt, hevalChoose, hevalGuess, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
     isPPT_leveledAdversary hencrypt hadversary hkeyGen hdepth hcapacity,
@@ -1658,28 +1644,8 @@ theorem exists_leveledAdversary_overhead {E : Scheme}
       simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
       omega
     exact Nat.mul_le_mul_left c_gu (Nat.pow_le_pow_left hin d_gu)
-  · have hd : PolynomiallyBounded (fun n => 2 * budget n) := hdepth.polynomiallyBounded
-    have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
-    have hpk : PolynomiallyBounded pkBound := by dsimp only [pkBound]; fun_prop
-    have hct : PolynomiallyBounded ctBound := by dsimp only [ctBound]; fun_prop
-    have hpub : PolynomiallyBounded pubLen := by
-      dsimp only [pubLen, publicKeyLengthBound]
-      fun_prop
-    have hch : PolynomiallyBounded advChooseBudget := by
-      dsimp only [advChooseBudget]
-      fun_prop
-    exact polynomiallyBounded_leveledChooseCoinBudget hd hc hpk hct hch
-  · have hd : PolynomiallyBounded (fun n => 2 * budget n) := hdepth.polynomiallyBounded
-    have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
-    have hpk : PolynomiallyBounded pkBound := by dsimp only [pkBound]; fun_prop
-    have hct : PolynomiallyBounded ctBound := by dsimp only [ctBound]; fun_prop
-    have hpub : PolynomiallyBounded pubLen := by
-      dsimp only [pubLen, publicKeyLengthBound]
-      fun_prop
-    have hch : PolynomiallyBounded advChooseBudget := by
-      dsimp only [advChooseBudget]
-      fun_prop
-    have hgu : PolynomiallyBounded advGuessBudget := by
+  · exact polynomiallyBounded_leveledChooseCoinBudget hd hc hpk hct hch
+  · have hgu : PolynomiallyBounded advGuessBudget := by
       dsimp only [advGuessBudget]
       fun_prop
     exact polynomiallyBounded_leveledGuessCoinBudget hd hc hct hch hgu

@@ -413,14 +413,6 @@ theorem uniform_not_accurate_le (f : (ι → Bool) → Bool) (θ : ℝ) (m : ℕ
   set F : (ι → Bool) → ℝ := fun x => signVal (f x)
   set n := Fintype.card ι
   set μ := (PMF.uniformOfFintype (Fin m → (ι → Bool) × (ι → Bool) × (ι → Bool))).toOuterMeasure
-  rcases Nat.eq_zero_or_pos m with rfl | hm
-  · -- without samples, the bound is at least one
-    refine (PMF.toOuterMeasure_le_one _ _).trans ?_
-    rw [← ENNReal.ofReal_one]
-    refine ENNReal.ofReal_le_ofReal ?_
-    simp only [Nat.cast_zero, zero_mul, neg_zero, zero_div, Real.exp_zero, mul_one]
-    have : (1 : ℝ) ≤ 2 ^ n := one_le_pow₀ (by norm_num)
-    nlinarith
   set c : ℝ := 2 * Real.exp (-(m * θ ^ 4) / 32) with hcdef
   have hc0 : 0 ≤ c := by positivity
   have hγ : (0 : ℝ) ≤ θ ^ 2 / 4 := by positivity
@@ -428,10 +420,10 @@ theorem uniform_not_accurate_le (f : (ι → Bool) → Bool) (θ : ℝ) (m : ℕ
   -- one bucket estimate
   have hbucket (J S : Finset ι) :
       μ {ω | θ ^ 2 / 4 ≤ |bucketEstimate f ω J S - bucketWeight F J S|} ≤ ENNReal.ofReal c := by
-    have h := PMF.uniform_abs_sum_div_sub_expect_ge_le
+    have h := PMF.uniform_abs_sum_div_sub_expect_ge_le (m := m)
       (fun ((x, y, z) : (ι → Bool) × (ι → Bool) × (ι → Bool)) =>
         F (J.piecewise x z) * chi ℝ S x * (F (J.piecewise y z) * chi ℝ S y))
-      (fun (x, y, z) => abs_signVal_mul_chi_mul_le_one _ _ S _ _) hm hγ
+      (fun (x, y, z) => abs_signVal_mul_chi_mul_le_one _ _ S _ _) hγ
     rw [show (𝔼 p : (ι → Bool) × (ι → Bool) × (ι → Bool),
         let (x, y, z) := p
         F (J.piecewise x z) * chi ℝ S x * (F (J.piecewise y z) * chi ℝ S y)) =
@@ -441,9 +433,9 @@ theorem uniform_not_accurate_le (f : (ι → Bool) → Bool) (θ : ℝ) (m : ℕ
   -- one sample coefficient
   have hcoeff (S : Finset ι) :
       μ {ω | θ ^ 2 / 4 ≤ |sampleCoeff f ω S - fourierCoeff F S|} ≤ ENNReal.ofReal c := by
-    have h := PMF.uniform_abs_sum_div_sub_expect_ge_le
+    have h := PMF.uniform_abs_sum_div_sub_expect_ge_le (m := m)
       (fun p : (ι → Bool) × (ι → Bool) × (ι → Bool) => F p.1 * chi ℝ S p.1)
-      (fun p => by rw [abs_mul, abs_signVal, abs_chi, one_mul]) hm hγ
+      (fun p => by rw [abs_mul, abs_signVal, abs_chi, one_mul]) hγ
     have hmean : 𝔼 p : (ι → Bool) × (ι → Bool) × (ι → Bool), F p.1 * chi ℝ S p.1 =
         fourierCoeff F S := by
       rw [← univ_product_univ, expect_product]

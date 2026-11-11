@@ -171,7 +171,7 @@ theorem formula_invertible_value (hχ : χ.IsPrimitive) (f : Formula n)
         Matrix.ext fun j k => intoField_algebraMap ev _ PolynomialHahn.embed_injective _]
       exact polynomialLift_embed χ (W i)
   have hb : f.Eval (algebraMap ℚ _) (fun i => representation χ (liftD χ (W i))) (inc y) := by
-    simpa only [hiX, RingHom.ext_rat (inc.comp cO) (algebraMap ℚ _)] using hy.map inc
+    simpa only [hiX] using hy.map_algebraMap inc
   let : CharZero (divisionSubring χ) := (representation χ).charZero
   refine ⟨inc y, hb, ?_⟩
   apply Formula.Eval.unit_of_division_lift (representation χ)
@@ -202,9 +202,7 @@ theorem formula_invertible_witness {n d : ℕ} (hd : 0 < d) (f : Formula n)
     e.toRingHom.comp (algebraMap ℚ ℂ).mapMatrix
   have hj : Function.Injective j := e.injective.comp (Matrix.map_injective (algebraMap ℚ
     ℂ).injective)
-  have ha' : f.Eval (algebraMap ℚ _) (fun i => j (W i)) (j a) := by
-    have hh := ha.map j
-    rwa [RingHom.ext_rat (j.comp (algebraMap ℚ _)) (algebraMap ℚ _)] at hh
+  have ha' : f.Eval (algebraMap ℚ _) (fun i => j (W i)) (j a) := ha.map_algebraMap j
   have ha0' : j a ≠ 0 := by
     intro hz
     exact ha0 (hj (hz.trans (map_zero j).symm))
@@ -215,10 +213,8 @@ theorem formula_invertible_witness {n d : ℕ} (hd : 0 < d) (f : Formula n)
     (fun i => j (W i)) (j a) ha' ha0'
   let r := Matrix.reindexRingEquiv (HahnSeries QuantumLift.Exponents ℂ) (ZMod.finEquiv
     d).toEquiv.symm
-  refine ⟨fun i => r (QuantumLift.representation χ (QuantumLift.liftD χ (j (W i)))), r b, ?_,
-    hbu.map r⟩
-  have hh := hb.map r.toRingHom
-  rwa [RingHom.ext_rat (r.toRingHom.comp (algebraMap ℚ _)) (algebraMap ℚ _)] at hh
+  refine ⟨fun i => r (QuantumLift.representation χ (QuantumLift.liftD χ (j (W i)))), r b,
+    hb.map_algebraMap r.toRingHom, hbu.map r⟩
 
 end
 end Rational

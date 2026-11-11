@@ -32,8 +32,10 @@ polynomial-time Lemma 4.7 replacement-design construction (`buildReplacementDesi
 (`withNeutralScopesList`, `scopeIncidencesList`, `normalizeVarSchedules`,
 `normalizeScopeSchedules`, `incidenceLabelsList`, `buildReplacementDesignData`,
 `ReplacementDesignData` projections, and `ReplacementDesignData.lookupReplacementRow`, with
-`encUnary` on `(n_free, D_cap, Q, r, A₀, R)` and binary/list encodings on scopes, schedules,
-and `ReplacementDesignData`), while `listScopeFamily`, `withNeutralScopesIndexEquiv`,
+`encUnary` on `(n_free, D_cap, Q, A₀, R)`, `r` in `encUnary` for `buildReplacementDesignData`
+and in binary `encNat` for `normalizeVarSchedules`, `normalizeScopeSchedules` and
+`incidenceLabelsList`, and binary/list encodings on scopes, schedules, the lookup indices
+`(f, v)`, and `ReplacementDesignData`), while `listScopeFamily`, `withNeutralScopesIndexEquiv`,
 `finToScopeIncidence`, `scopeIncidenceEquivFin`, `varAssignOfList`, `factorAssignOfList`,
 `BalancedSchedule`, `placeFinOfBalanced`, `constructedReplacementDesign`, and
 `ReplacementDesignData.Refines` serve as unencoded semantic specification bridges. All
@@ -971,10 +973,19 @@ private theorem incVars_eq_ofFn (n_free : ℕ) (scopes : List (List ℕ)) :
   rw [List.length_map] at hi
   simp only [List.getElem_map, List.getElem_ofFn, scopeVarOf, finToScopeIncidence]
 
-/-- Componentwise refinement predicate asserting that `data : ReplacementDesignData` represents
-`D : ReplacementDesign (listScopeFamily n_free scopes) Q r A₀ R τ` across all Definition 3.1
-components, including global `ℚ`-kernel equivalence and restricted-kernel evaluation annihilation
-from `C_{t,g}`. -/
+/-- Refinement predicate relating `data : ReplacementDesignData` to
+`D : ReplacementDesign (listScopeFamily n_free scopes) Q r A₀ R τ`. It asserts that the copy count
+is `D.h` and the denominator is `commonDenom Q R`; that each variable group list is duplicate-free,
+has length at most `2 * n_free / r`, and contains an index below `n_free` exactly when it lies in
+`varGroup D.varAssign t g`; that the factor group entries are those of `D.factorAssign`; that each
+incidence's looked-up replacement table is the one at its canonical index, has `n_free` rows of
+length `R`, and has the coefficients of `varReplacementRowScaledInt`; that the rows of
+`data.measurementMatrix` have the same `ℚ`-kernel as `varMeasurementMatrix`; and that a vector
+supported on a group and annihilated by the rows of its group matrix `C_{t,g}` is annihilated by
+the off-group replacement forms at `nodePoint t`. It bounds neither the number nor the `ℓ₁`-norms
+of the rows of `data.measurementMatrix` and `data.groupMeasurementMatrices` (the bounds
+`ReplacementDesign.total_measurement_rows_le` and `ReplacementDesign.sum_abs_measurement_row_le`
+are about `D`), and does not constrain `data.placements`. -/
 def ReplacementDesignData.Refines {n_free Q r A₀ R : ℕ} {τ : ℚ}
     (scopes : List (List ℕ)) (data : ReplacementDesignData)
     (D : ReplacementDesign (listScopeFamily n_free scopes) Q r A₀ R τ) : Prop :=

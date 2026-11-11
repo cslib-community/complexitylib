@@ -1,5 +1,5 @@
 [Unit]
-Description=Draft Complexitylib cache garbage collection
+Description=Draft cslib-frontier cache garbage collection
 RequiresMountsFor=/srv/cache-origin
 AssertPathIsMountPoint=/srv/cache-origin
 OnFailure=cache-origin-alert@%n.service

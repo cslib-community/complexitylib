@@ -291,6 +291,10 @@ theorem set_regs (x : Data r) (i : Fin r) (v : ℕ) :
 @[simp]
 theorem set_mem (x : Data r) (i : Fin r) (v : ℕ) : (x.set i v).mem = x.mem := rfl
 
+/-- Setting a register twice keeps the second value. -/
+theorem set_set (x : Data r) (i : Fin r) (u v : ℕ) : (x.set i u).set i v = x.set i v := by
+  simp only [set, Function.update_idem]
+
 /-- Writing to memory leaves the register file unchanged. -/
 @[simp]
 theorem write_regs (x : Data r) (a v : ℕ) : (x.write a v).regs = x.regs := rfl

@@ -153,11 +153,7 @@ theorem exists_pair_know {kk : ℕ} {u : ℕ → ℕ} (hu : StrictMonoOn u (Set.
     split_ifs <;> simp_all
   -- `s` lies strictly between two consecutive selected positions.
   rw [not_lt] at hlow hhigh
-  have hk2 : 2 ≤ kk := by
-    by_contra hcon
-    have : kk = 1 := by omega
-    subst this
-    exact hne 0 (by omega) (le_antisymm hlow hhigh)
+  have hk2 : 2 ≤ kk := by grind
   have hex : ∃ j, j + 1 < kk ∧ s < u (j + 1) := by
     refine ⟨kk - 2, by omega, ?_⟩
     have : kk - 2 + 1 = kk - 1 := by omega
