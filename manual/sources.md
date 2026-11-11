@@ -752,6 +752,11 @@ Johan Håstad, Russell Impagliazzo, Leonid A. Levin, Michael Luby. “A Pseudora
 
 Shuichi Hirahara. *Non-Black-Box Worst-Case to Average-Case Reductions within NP*. FOCS 2018, 247–258. https://doi.org/10.1109/FOCS.2018.00032 . Full version ECCC TR18-138. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation follows its Definition 9 (`MINKT`) and Definition 11 (`GapMINKT`) with ECCC numbering.
 
+<a id="hirahara2022"></a>
+## hirahara2022
+
+Shuichi Hirahara. *NP-Hardness of Learning Programs and Partial MCSP*. FOCS 2022, 968–979. https://doi.org/10.1109/FOCS54457.2022.00095 . Full version ECCC TR22-119. Checked against the FOCS proceedings text on 2026-11-11: the partial-string problems `MKTP*` and `MINKT*` (Section I, p. 971), consistency with a partial string (footnote 5, p. 971), the KT-style time measure of Theorem I.2 (footnote 6, p. 971), Theorem I.2 (p. 971), and the account of Ko's `MINKT` and relativization barrier (abstract, p. 968; Section I, p. 970). The ECCC numbering was not checked.
+
 <a id="hk21"></a>
 ## hk21
 
@@ -1017,6 +1022,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 
 Yanyi Liu and Rafael Pass. *On the Possibility of Basing Cryptography on EXP ≠ BPP*. CRYPTO 2021, LNCS 12825, 11–40. https://doi.org/10.1007/978-3-030-84242-0_2 . Full version ECCC TR21-056. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation cites its Section 2.2 for `MKtP` and Fact 3.1 with ECCC numbering.
 
+<a id="liupass2022ccc"></a>
+## liupass2022ccc
+
+Yanyi Liu and Rafael Pass. *On One-Way Functions from NP-Complete Problems*. CCC 2022, LIPIcs 234, 36:1–36:24. https://doi.org/10.4230/LIPIcs.CCC.2022.36 . Full version ECCC TR21-059. Checked against the LIPIcs text on 2026-11-11: Theorem 1.2 (p. 36:5), the NP-completeness of the conditional problem `McK^tP[ζ]` under randomized polynomial-time reductions, where a program is a RAM machine with random access to the condition (p. 36:4); footnote 4 (p. 36:4) notes that the problem had not been considered for RAM programs before, as opposed to Turing machines.
+
 <a id="lizhong2024"></a>
 ## lizhong2024
 
@@ -1176,6 +1186,11 @@ Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptogra
 ## nash51
 
 John Nash. "Non-Cooperative Games." *Annals of Mathematics* 54(2), 286–295, 1951. https://doi.org/10.2307/1969529 . Bibliographic data from the DOI record. Theorem 1 ("every finite game has an equilibrium point") and its proof by Brouwer's theorem were checked on printed p. 288 of the scan at https://www.cs.upc.edu/~ia/nash51.pdf during the agent review of [#4105](https://github.com/cslib-community/cslib-frontier/pull/4105) on 2026-11-10.
+
+<a id="nayakwu99"></a>
+## nayakwu99
+
+Ashwin Nayak and Felix Wu. *The Quantum Query Complexity of Approximating the Median and Related Statistics*. STOC '99, 384–393, 1999. https://doi.org/10.1145/301250.301349 ; open version arXiv:quant-ph/9804066v2, https://arxiv.org/abs/quant-ph/9804066v2 . Bibliographic metadata taken from `references.bib` (`NayakWu1999`). The arXiv v2 LaTeX source (`main.tex`) was inspected on 2026-11-11 UTC for the Section 1 problem definitions (`ε`-approximate median, `Δ`-approximate `k`-th smallest element with its relaxed input-membership remark, and `Δ`-approximate count), Theorem 1.5 (`Ω(√(n/Δ) + √(k(n-k))/Δ)` for `k`-th smallest), Corollary 1.6 (`Ω(1/ε)` and `Ω(min {1/ε, n})` for approximate median), Theorem 1.11 (`Ω(√(n/Δ) + √(t(n-t))/Δ)` for approximate counting), and the Section 2 partial-function reductions (`Proof of Theorem 1.5`). Nayak and Wu prove the underlying threshold bound by the polynomial method (Corollary 1.2); the library derives the reductions from `one_sub_mul_add_le_four_mul_mul_abs_sub_of_weight` ([AmbainisAdversary/WeightLayers](../CslibFrontier/Computability/QueryComplexity/Quantum/AmbainisAdversary/WeightLayers.lean)).
 
 <a id="nisan07"></a>
 ## nisan07
