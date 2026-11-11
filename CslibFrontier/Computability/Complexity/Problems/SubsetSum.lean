@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Foundations.Data.List.Blocks
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import Mathlib.Data.List.GetD
 
@@ -224,8 +225,7 @@ private theorem mem_distinctVars_of_mem {j : ℕ} {l : Literal ℕ} (hl : l ∈ 
     l.1 ∈ φ.distinctVars := by
   refine CNF.mem_distinctVars.2 ?_
   rcases Nat.lt_or_ge j φ.length with hj | hj
-  · rw [List.getD_eq_getElem _ _ hj] at hl
-    exact List.mem_map.2 ⟨l, List.mem_flatten.2 ⟨_, List.getElem_mem hj, hl⟩, rfl⟩
+  · exact List.mem_map.2 ⟨l, List.mem_flatten.2 ⟨_, List.getD_mem [] hj, hl⟩, rfl⟩
   · rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none hj] at hl
     simp at hl
 
@@ -443,8 +443,7 @@ theorem digit_mem_SubsetSum_iff_counts (hφ : ∀ c ∈ φ, c.length ≤ 3) :
     · rw [itemSet, card_filter_clause subset_rfl hj]
       have h₁ := card_filter_covers_le (φ := φ)
         (range φ.distinctVars.length ×ˢ (univ : Finset Bool)) j
-      rw [List.getD_eq_getElem _ _ hj] at h₁
-      have h₂ := hφ _ (List.getElem_mem hj)
+      have h₂ := hφ _ (List.getD_mem [] hj)
       have h₃ := card_filter_fst_le (range φ.length ×ˢ (univ : Finset Bool)) j
       lia
   have hcounts {A B : Finset (ℕ × Bool)} (hA : A ⊆ range φ.distinctVars.length ×ˢ univ) :
@@ -538,16 +537,14 @@ theorem counts_iff_satisfiable (hφ : ∀ c ∈ φ, c.length ≤ 3) :
         exact ⟨rfl, rfl⟩
       · rintro ⟨rfl, rfl⟩
         exact ⟨⟨hi, rfl⟩, rfl⟩
-    · have hle : cnt j ≤ 3 := (card_filter_covers_le A j).trans
-        (by rw [List.getD_eq_getElem _ _ hj]; exact hφ _ (List.getElem_mem hj))
+    · have hle : cnt j ≤ 3 := (card_filter_covers_le A j).trans (hφ _ (List.getD_mem [] hj))
       have hpos : 1 ≤ cnt j := by
         obtain ⟨l, hl, hσl⟩ := (Clause.eval_eq_true_iff _ _).1
-          ((CNF.eval_eq_true_iff _ _).1 hσ _ (List.getElem_mem hj))
-        have hl' : l ∈ φ.getD j [] := by rwa [List.getD_eq_getElem _ _ hj]
+          ((CNF.eval_eq_true_iff _ _).1 hσ _ (List.getD_mem [] hj))
         have hidx : φ.distinctVars.idxOf l.1 < φ.distinctVars.length :=
-          List.idxOf_lt_length_iff.2 (mem_distinctVars_of_mem hl')
+          List.idxOf_lt_length_iff.2 (mem_distinctVars_of_mem hl)
         refine card_pos.2 ⟨(φ.distinctVars.idxOf l.1, l.2), mem_filter.2 ⟨(hmemA _).2
-          ⟨hidx, ?_⟩, covers_eq_true_iff.2 ⟨l, hl', rfl, rfl⟩⟩⟩
+          ⟨hidx, ?_⟩, covers_eq_true_iff.2 ⟨l, hl, rfl, rfl⟩⟩⟩
         simp only [hb, List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hidx,
           List.getElem_idxOf hidx, Option.getD_some, hσl]
       have hBj : ({c ∈ B | c.1 = j} : Finset (ℕ × Bool)) =
