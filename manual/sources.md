@@ -1290,7 +1290,7 @@ Dijen K. Ray-Chaudhuri and Richard M. Wilson. “On `t`-Designs.” *Osaka Journ
 <a id="razborovrudich1997"></a>
 ## razborovrudich1997
 
-Alexander A. Razborov and Steven Rudich. *Natural Proofs*. Journal of Computer and System Sciences 55(1), 24–35, 1997. https://doi.org/10.1006/jcss.1997.1494 . Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean modules cite its Section 4 for the pseudorandom-generator form of the barrier.
+Alexander A. Razborov and Steven Rudich. *Natural Proofs*. Journal of Computer and System Sciences 55(1), 24–35, 1997. https://doi.org/10.1006/jcss.1997.1494 . Bibliographic data comes from the repository bibliography. The Lean modules cite its Section 4 for the pseudorandom-generator form of the barrier. Section 3.2 (p. 27), which states Razborov's GF(2) rank property against AC⁰[2] abstractly and leaves its largeness as an exercise, was inspected for [#4451](https://github.com/cslib-community/cslib-frontier/issues/4451); the rest of the paper was not inspected for this chapter.
 
 <a id="reedsmithvetta2004"></a>
 ## reedsmithvetta2004
