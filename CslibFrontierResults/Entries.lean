@@ -1173,16 +1173,23 @@ register_result "swap-regret-approx-ce" where
   title := "Approximate Correlated Equilibrium via Swap Regret"
   topic := "game theory"
   sources := [
+    { paper := BlumMansour2007, theorem := "Theorem 3 and Corollary 7",
+      locator := "pp. 1311, 1313" },
     { paper := Roughgarden2013CS364A, theorem := unverified,
       locator := "Lecture 18, Section 1" }
   ]
   theorems := [
     Cslib.GameTheory.CostGame.timeAverage_productDist_isApproxCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.blumMansourDynamics_eq_blumMansourProb,
     Cslib.GameTheory.CostGame.blumMansour_isApproxCorrelatedEquilibrium
   ]
-  scope := "Convergence of independent no-swap-regret learning dynamics to approximate \
-    correlated equilibria. Includes the general theorem for abstract algorithms and the \
-    specific application using the Blum-Mansour reduction."
+  scope := "Finite cost-minimization games under full-information expected-cost play over a \
+    fixed known finite horizon T > 0. Shows that swap regret at most R i yields an (R i / T)-\
+    approximate correlated equilibrium, explicitly constructs the coupled multi-player \
+    Blum–Mansour trajectory blumMansourDynamics G T (with Hedge learning rate \
+    √(m_i ln m_i / T)), and proves slack 2 √(m_i ln m_i / T) when costs lie in [-1, 1], \
+    m_i ≥ 2, and T ≥ m_i ln m_i. Does not cover anytime dynamics, sampled play, last-iterate \
+    convergence, or native running time."
 
 register_result "nash-existence-bimatrix" where
   title := "Every bimatrix game has a Nash equilibrium"

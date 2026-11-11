@@ -13,9 +13,11 @@ import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 
-/-! # Averaging square roots over a finite set
+/-! # Square-root averaging and scaling lemmas
 
-Cauchy–Schwarz bounds the mean square root by the square root of an upper bound on the mean.
+Cauchy–Schwarz bounds the mean square root by the square root of an upper bound on the mean
+(`Finset.sum_sqrt_le_card_mul_sqrt`), and `Real.sqrt_mul_div_self` rescales square-root regret
+bounds to time averages.
 -/
 
 public section
