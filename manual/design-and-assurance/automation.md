@@ -300,10 +300,24 @@ truncated subtraction, and rejection when fit or exact-operation evidence is mis
 Automatic staging computes the whole encoded argument when any coordinate needs computation;
 an explicit `pure` stage remains useful to share a computed value between several calls.
 
+Returned choices can also stay inside `pure`, including tuple and option components:
+`pure (min a b, max a b)` and `pure (decide (a = 0))` need no separate source program with
+branches around the returns. `realize` transports checked equalities through the returned
+value, then uses the existing native branch rules. Branch instructions are charged, and only
+the selected alternative requires its fit and exact-operation definedness proofs. Computing a
+comparison operand still requires that operand to fit before the test. Values fixed before
+runtime or already supplied by the input encoding retain their existing constant or live-word
+rules. Min/max selection uses the input words directly, so the largest fitting word needs no
+fitting successor. The complete
+[conditional-result clients](../../CslibFrontierTests/WordRAMRealizeValues.lean) check these cases,
+inactive exact division/subtraction, rejected missing premises, and frontier-bounded
+certificates. Check them from the repository root with
+`scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues`.
+
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
 certificate's basis, output encoding, zero local work and whether its argument coordinates use
-supported word glue, then inspect
-the domain at the reached memory. Retain the fit and safety obligations left by the tactic;
+supported word glue, then inspect the domain at the reached memory. Retain the fit and safety
+obligations left by the tactic;
 unfolding the method or dropping a resource premise does not supply those proofs. The
 [realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
 code and charging contract; the complete clients above supply imports and local context.
