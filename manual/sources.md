@@ -337,7 +337,7 @@ Eshan Chattopadhyay and Jyun-Jie Liao. *Optimal Error Pseudodistributions for Re
 <a id="chenhiraharaoliveirapichrajgopalsanthanam2020"></a>
 ## chenhiraharaoliveirapichrajgopalsanthanam2020
 
-Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` bullet of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
+Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` and `[MMW19]` bullets of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
 
 <a id="christofides76"></a>
 ## christofides76

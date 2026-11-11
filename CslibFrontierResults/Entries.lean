@@ -1977,7 +1977,7 @@ register_result "formula-magnification-locality" where
 
 register_result "mmw-merge-tree-locality" where
   title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: the McKay–Murray–Williams merge tree \
-    puts MCSP[s] in [O(N/s), O(s⁴), O(n/log s)]-Circuit[O(N/s)]"
+    puts MCSP[s] in [O(N/s), O(s⁴), O(n/log s)]-Circuit[O(N/s)] for n ≤ s ≤ N"
   topic := "meta-complexity"
   sources := [
     { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
@@ -1992,9 +1992,11 @@ register_result "mmw-merge-tree-locality" where
     oracle gates, each of fan-in at most 12·s(n)^4, at most n/⌊log₂ s(n)⌋ + 1 oracle gates on any \
     path, and at most 129m/s(n) + 3 gates (all gates counted). The circuits are the explicit \
     merge tree MergeTree.mmwCircuit, with ⌊log₂ s⌋ bits per level, under one fixed oracle, \
-    MergeTree.oracle, for all lengths; no bound on the oracle's complexity is claimed. The \
-    source's s(n) ≤ 2^n/poly(n) is not needed. Its constructive s is not formalized: the class \
-    is nonuniform."
+    MergeTree.oracle, for all lengths; no bound on the oracle's complexity is claimed. The bounds \
+    read as the source's O(N/s) and O(n/log s) when also s(n) ≤ 2^n. Deviations: the source \
+    assumes only a constructive s(n) ≤ 2^n/poly(n); n ≤ s(n) and 2 ≤ s(n) exclude s(n) < n, the \
+    exact bounds need no upper bound on s, and constructivity is not formalized (the class is \
+    nonuniform)."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
