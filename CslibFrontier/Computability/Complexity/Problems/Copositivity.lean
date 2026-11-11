@@ -8,25 +8,23 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.Computability.Circuit.Arithmetic.Encoding
-public import CslibFrontier.Computability.Circuit.Boolean.Encoding
 public import CslibFrontier.Computability.Complexity.Classes.NP
 public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.Clique
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Copositive
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Rat
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.Data.Rat.Basic
 public import Mathlib.Tactic.Matrix.ListMatrix
-import CslibFrontier.Computability.Circuit.Encoding.Check
 import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
@@ -59,21 +57,15 @@ and `Copositive` in `coNP`. In the reverse direction, the Motzkin–Straus copos
 characterization (`SimpleGraph.exists_nonneg_dotProduct_copositiveCliqueMatrix_lt_zero_iff`) gives
 a polynomial-time many-one reduction from `Clique` to `NonCopositive`.
 
-We also provide an optional input encoding `encRatArithCircuitInput` for rational arithmetic
-circuits over `encRat`.
-
 ## Main definitions
 
-- `Cslib.Complexity.encRat`: binary encoding of `ℚ` via `(q.num, q.den)`.
 - `Cslib.Complexity.SymRatMatrix`, `Cslib.Complexity.encSymRatMatrix`: symmetric rational square
-  matrices represented by row lists and their binary encoding.
+  matrices represented by row lists and their binary encoding via `Turing.MultiTapeTM.encRat`.
 - `Cslib.Complexity.Copositive`, `Cslib.Complexity.NonCopositive`: the copositivity and
   non-copositivity decision problems.
 - `Cslib.Complexity.NonCopositive.check`: polynomial-time verifier relation for `NonCopositive`.
 - `Cslib.Complexity.cliqueToSymRatMatrix`: polynomial-time reduction from `Clique` to
   `NonCopositive`.
-- `Cslib.Complexity.encRatArithCircuit`, `Cslib.Complexity.encRatArithCircuitInput`: binary
-  encodings for rational arithmetic circuits and circuit-input pairs.
 
 ## Main results
 
@@ -102,18 +94,7 @@ namespace Cslib.Complexity
 
 open Matrix Turing.MultiTapeTM
 
-/-! ### Rational and symmetric matrix encodings -/
-
-/-- Binary encoding of rational numerator-denominator pairs `(q.num, q.den)`. -/
-abbrev encRatData : ℤ × ℕ ↪ List Bool :=
-  encPair encIntBin encNat
-
-/-- Binary encoding of rational numbers `ℚ` as `(q.num, q.den)`. -/
-@[expose] def encRat : ℚ ↪ List Bool where
-  toFun q := encRatData (q.num, q.den)
-  inj' _ _ h :=
-    Rat.ext (congrArg Prod.fst (encRatData.injective h))
-      (congrArg Prod.snd (encRatData.injective h))
+/-! ### Symmetric rational matrix encoding -/
 
 /-- Binary encoding of a rational matrix row list. -/
 abbrev encRatMatrixRows : List (List ℚ) ↪ List Bool :=
@@ -342,18 +323,6 @@ private theorem NonCopositive.sound_of_check {M : SymRatMatrix} {p : List ℕ}
   intro hcop
   exact (not_lt_of_ge (hcop (fun i => (pFin i : ℚ)) fun i => Nat.cast_nonneg _)) hneg
 
-private theorem length_encRat_num_le (q : ℚ) : (encIntBin q.num).length ≤ (encRat q).length := by
-  change (encIntBin q.num).length ≤ (encPair encIntBin encNat (q.num, q.den)).length
-  rw [encPair_apply, List.length_append, length_frame]
-  dsimp only
-  omega
-
-private theorem length_encRat_den_le (q : ℚ) : (encNat q.den).length ≤ (encRat q).length := by
-  change (encNat q.den).length ≤ (encPair encIntBin encNat (q.num, q.den)).length
-  rw [encPair_apply, List.length_append, length_frame]
-  dsimp only
-  omega
-
 private theorem natAbs_le_two_pow_encIntBin (z : ℤ) : z.natAbs ≤ 2 ^ (encIntBin z).length := by
   have h := Nat.lt_size_self z.natAbs
   have hlen : z.natAbs.size ≤ (encIntBin z).length := by
@@ -523,32 +492,10 @@ theorem NonCopositive.exists_check_eq_true_iff (M : SymRatMatrix) :
     obtain ⟨p, hp, _⟩ := NonCopositive.complete_of_mem hM
     exact ⟨p, hp⟩
 
-private theorem computableInPolyTime_intCastRat :
-    ComputableInPolyTime (fun z : ℤ => (z : ℚ)) encIntBin encRat := by
-  have h : ComputableInPolyTime (fun z : ℤ => (z, (1 : ℕ))) encIntBin encRatData := by
-    fun_prop
-  exact h.of_enc_eq fun z => by
-    change encPair encIntBin encNat ((z : ℚ).num, (z : ℚ).den) =
-      encPair encIntBin encNat (z, 1)
-    rw [Rat.num_intCast, Rat.den_intCast]
-
 private theorem computableInPolyTime_rows :
     ComputableInPolyTime SymRatMatrix.rows encSymRatMatrix encRatMatrixRows :=
   (ComputableTidilyInPolyTime.of_eq (f := SymRatMatrix.rows)
     (encIn := encSymRatMatrix) (encMid := encRatMatrixRows) fun _ => rfl).computableInPolyTime
-
-private theorem computableInPolyTime_ratPair :
-    ComputableInPolyTime (fun q : ℚ => (q.num, q.den)) encRat encRatData :=
-  (ComputableTidilyInPolyTime.of_eq (f := fun q : ℚ => (q.num, q.den))
-    (encIn := encRat) (encMid := encRatData) fun _ => rfl).computableInPolyTime
-
-private theorem computableInPolyTime_ratNum :
-    ComputableInPolyTime Rat.num encRat encIntBin :=
-  computableInPolyTime_ratPair.fst'
-
-private theorem computableInPolyTime_ratDen :
-    ComputableInPolyTime Rat.den encRat encNat :=
-  computableInPolyTime_ratPair.snd'
 
 private theorem computableInPolyTime_commonDenom :
     ComputableInPolyTime SymRatMatrix.commonDenom encSymRatMatrix encIntBin := by
@@ -564,7 +511,7 @@ private theorem computableInPolyTime_commonDenom :
       ComputableInPolyTime (fun M : SymRatMatrix => M.rows.flatten.map fun q : ℚ => (q.den : ℤ))
         encSymRatMatrix (encList encIntBin) := by
     have hq : ComputableInPolyTime (fun q : ℚ => (q.den : ℤ)) encRat encIntBin :=
-      ComputableInPolyTime.intBin_natCast.comp computableInPolyTime_ratDen
+      ComputableInPolyTime.intBin_natCast.comp ComputableInPolyTime.rat_den
     exact (ComputableInPolyTime.map hq).comp hflat
   exact ComputableInPolyTime.intBin_prod.comp hdens
 
@@ -575,11 +522,11 @@ private theorem computableInPolyTime_intRows :
       (encIn := encSymRatMatrix) (encMid := encRatMatrixRows) fun _ => rfl
   have hnum : ComputableInPolyTime (fun p : SymRatMatrix × ℚ => p.2.num)
       (encPair encSymRatMatrix encRat) encIntBin :=
-    computableInPolyTime_ratNum.comp (ComputableInPolyTime.snd encSymRatMatrix encRat)
+    ComputableInPolyTime.rat_num.comp (ComputableInPolyTime.snd encSymRatMatrix encRat)
   have hdenZ : ComputableInPolyTime (fun p : SymRatMatrix × ℚ => (p.2.den : ℤ))
       (encPair encSymRatMatrix encRat) encIntBin :=
     ComputableInPolyTime.intBin_natCast.comp
-      (computableInPolyTime_ratDen.comp (ComputableInPolyTime.snd encSymRatMatrix encRat))
+      (ComputableInPolyTime.rat_den.comp (ComputableInPolyTime.snd encSymRatMatrix encRat))
   have hD : ComputableInPolyTime (fun p : SymRatMatrix × ℚ => p.1.commonDenom)
       (encPair encSymRatMatrix encRat) encIntBin :=
     computableInPolyTime_commonDenom.comp (ComputableInPolyTime.fst encSymRatMatrix encRat)
@@ -1050,7 +997,7 @@ private theorem computableInPolyTime_toRows :
       cases gk.1.distinctVertices <;> rfl
   have hk2Rat :
       ComputableInPolyTime (fun gk : Graph × ℕ => (((gk.2 : ℤ) - 2 : ℤ) : ℚ)) encClique encRat :=
-    computableInPolyTime_intCastRat.comp
+    ComputableInPolyTime.rat_intCast.comp
       (by fun_prop :
         ComputableInPolyTime (fun gk : Graph × ℕ => (gk.2 : ℤ) - 2) encClique encIntBin)
   have hentry :
@@ -1164,18 +1111,5 @@ theorem Copositive_coNPHard : coNPHard encSymRatMatrix Copositive := by
 library proof uses `NonCopositive` membership and the `Clique`/Motzkin–Straus reduction). -/
 theorem Copositive_coNPComplete : coNPComplete encSymRatMatrix Copositive :=
   ⟨Copositive.mem_coNP, Copositive_coNPHard⟩
-
-/-! ### Optional rational arithmetic circuit input encoding -/
-
-/-- Binary encoding of rational arithmetic circuits with `m` outputs over `encRat`. -/
-abbrev encRatArithCircuit (m : ℕ) :
-    (Σ n, Cslib.Circuits.Circuit (Cslib.Circuits.arithSignature ℚ) n m) ↪ List Bool :=
-  Cslib.Circuits.Circuit.encCircuit (Cslib.Circuits.ArithOp.encoding encRat) m
-
-/-- Binary encoding of `(C, x)` pairs for rational arithmetic circuits with `m` outputs and
-rational input vectors `x : List ℚ`. -/
-abbrev encRatArithCircuitInput (m : ℕ) :
-    (Σ n, Cslib.Circuits.Circuit (Cslib.Circuits.arithSignature ℚ) n m) × List ℚ ↪ List Bool :=
-  encPair (encRatArithCircuit m) (encList encRat)
 
 end Cslib.Complexity

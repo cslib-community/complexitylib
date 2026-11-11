@@ -52,6 +52,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
@@ -67,6 +68,7 @@ import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
 import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
+import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
@@ -75,6 +77,7 @@ import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
@@ -88,6 +91,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.WeisfeilerLeman
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
@@ -697,6 +701,27 @@ register_result "magnification" where
     some 2^n-bit slice of MCSP[n^k] needs more than 2^n·c·(n + 1)^c gates, then NP ⊄ P/poly \
     and P ≠ NP. Size-only lower-bound hypothesis."
 
+register_result "gap-mcsp-magnification" where
+  title := "Oliveira–Pich–Santhanam: N^(1+ε) lower bounds for Gap-MCSP imply NP ⊄ P/poly"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraPichSanthanam2019, theorem := "Theorem 1.4 (ECCC TR18-158 Theorem 4)",
+      locator := unverified }
+  ]
+  theorems := [
+    Cslib.MCSP.not_NP_subset_PPoly_of_gapMCSP_hard,
+    Cslib.MCSP.P_ne_NP_of_gapMCSP_hard,
+    Cslib.MCSP.exists_gapMCSP_separator_of_NP_subset_PPoly
+  ]
+  scope := "If for some ε > 0 and every small enough β > 0 (eventually as β → 0⁺), for \
+    infinitely many n no Boolean function on 2^n-bit truth tables that accepts every \
+    yes-instance and rejects every no-instance of Gap-MCSP[⌊2^(βn)/(10n)⌋₊, ⌊2^(βn)⌋₊] has \
+    De Morgan complexity at most N^(1+ε) (N = 2^n, all operation gates counted), then \
+    NP ⊄ P/poly and P ≠ NP. The source's constant c = 10. Proof route: the \
+    McKay–Murray–Williams circuits for MCSP[s] under NP ⊆ P/poly separate Gap-MCSP[s₁, s₂] \
+    whenever s₁ ≤ s₂; OPS's own proof through the efficient anti-checker (Lemma 4.1) is not \
+    formalized."
+
 register_result "matrix-multiplication" where
   title := "Matrix multiplication: the exponent is at most 9/4"
   topic := "algebraic complexity"
@@ -1029,6 +1054,27 @@ register_result "immerman-vardi" where
     native P under encStructure (unary cardinality, then framed truth tables); malformed \
     table shapes and universes below two are rejected."
 
+register_result "gradel-so-horn-captures-p" where
+  title := "Grädel: SO∃-Horn captures polynomial time on ordered structures with successor"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Gradel2007, theorem := "Theorems 3.2.17–3.2.18 and Exercise 3.2.20",
+      locator := "Section 3.2.3, pp. 147–148" },
+    { paper := Gradel1992, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.hornDefinable_iff_encodedLanguage_mem_P,
+    Cslib.Logic.FO.Ordered.HornDefinable.encodedLanguage_mem_P,
+    Cslib.Logic.FO.Ordered.HornDefinable.of_encodedLanguage_mem_P
+  ]
+  scope := "Queries over a finite relational vocabulary on canonically ordered structures Fin n \
+    with n ≥ 2. HornDefinable asks for one SO∃-Horn sentence with quantifier-free guards over \
+    language (succLanguage L), supplying primitive non-wrapping successor alongside the \
+    canonical numeric symbols (order, BIT, 0, 1 and max); hornDefinable_iff_exists_sentence \
+    identifies this fragment with arbitrary first-order guards over language L. A query is \
+    HornDefinable iff its language is in native P under encStructure; malformed table shapes \
+    and universes below two are rejected."
+
 register_result "fo-tc-nl" where
   title := "FO(TC) is contained in NL on ordered structures"
   topic := "descriptive complexity"
@@ -1098,7 +1144,7 @@ register_result "immerman-l-capture" where
     universes below two are rejected."
 
 register_result "ordered-projection-reducibility" where
-  title := "Immerman–Landau: ordered first-order projections compose and refine FO reductions"
+  title := "Immerman–Landau: ordered FO and QF projections compose and refine FO reductions"
   topic := "descriptive complexity"
   sources := [
     { paper := ImmermanLandau1995, theorem := "Proposition 3.7", locator := "Section 3" },
@@ -1109,6 +1155,7 @@ register_result "ordered-projection-reducibility" where
     Cslib.Logic.FO.Ordered.ProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.ProjectionReduces.reduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.projectionReduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.reduces
   ]
@@ -1117,9 +1164,11 @@ register_result "ordered-projection-reducibility" where
     trees of numeric guards with constants or single signed input literals at the leaves; \
     first-order projections allow guards over order, BIT, 0, 1 and max, while quantifier-free \
     projections require quantifier-free guards over order, non-wrapping successor, 0 and max \
-    without BIT. Transitivity of quantifier-free projections and projection-completeness \
-    endpoints are not yet formalized here; the logspace encoding lift at encStructure is proved \
-    separately in Classes.LogSpace.FirstOrder.Ordered.Projection."
+    without BIT. Both IsProjectionMap and IsQFProjectionMap contain the identity and are \
+    closed under composition (with BIT-free quantifier-free guard pullback via \
+    QFNumeric.onFullTuple); projection-completeness endpoints are not yet formalized here, and \
+    the logspace encoding lift at encStructure is proved separately in \
+    Classes.LogSpace.FirstOrder.Ordered.Projection."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
@@ -1483,8 +1532,42 @@ register_result "immerman-lander" where
     rank at most n + 1 correspond to round-n color histograms (for nonempty vertex types, since \
     CountingFormula.Realize takes a total assignment Fin 2 → V), and one-variable formulas of \
     rank at most n + 1 correspond to round-(n + 1) vertex colors paired with round-n histograms. \
-    Full C²-equivalence reduces to round |V| + |W|. Colored graphs with arbitrary initial \
-    colorings and k-dimensional Weisfeiler–Leman for k >= 2 are not formalized."
+    Full C²-equivalence reduces to round |V| + |W|. The k-dimensional generalization to C^(k+1) \
+    is in weisfeiler-leman-counting; colored graphs with arbitrary initial colorings are not \
+    formalized."
+
+register_result "weisfeiler-leman-counting" where
+  title := "Cai–Fürer–Immerman: k-dimensional Weisfeiler–Leman characterizes (k + 1)-variable \
+    counting logic C^(k+1)"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 5.2", locator := "Section 5" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_graph_range_castSucc_iff,
+    Cslib.Logic.FO.bijPebbleWinsForever_graph_range_castSucc_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_empty_of_wlHistogram_eq,
+    Cslib.Logic.FO.wlHistogram_eq_of_bijPebbleWins_graph_empty,
+    Cslib.Logic.FO.bijPebbleWinsForever_graph_empty_iff_wlHistogram_eq,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_iff_card_pow_add,
+    Cslib.Logic.FO.realize_countingFormula_iff_of_wlHistogram_eq,
+    Cslib.Logic.FO.wlHistogram_eq_of_forall_realize_countingFormula_empty_le,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_wlHistogram_eq,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_wlHistogram_card_pow_add,
+    Cslib.Logic.FO.forall_wlColoring_one_eq_iff,
+    Cslib.Logic.FO.forall_wlHistogram_one_eq_iff
+  ]
+  scope := "Uncolored finite simple graphs over FirstOrder.Language.graph with no LocallyFinite \
+    or DecidableRel assumption, for every dimension k : ℕ. Folklore k-WL colors k-tuples from \
+    their ordered atomic isomorphism type and refines by the multiset of (k + 1)-tuple step \
+    profiles. Two k-tuples get the same round-n color iff they agree on C^(k+1) formulas of \
+    quantifier rank at most n in the first k variables, and across all ranks iff they agree in \
+    round |V|^k + |W|^k. For nonempty graphs, C^(k+1) sentence equivalence equals k-WL histogram \
+    equality in all rounds and in round |V|^k + |W|^k, with a +k quantifier-rank shift for \
+    individual rounds. Colored graphs and Cai–Fürer–Immerman lower-bound graphs are not \
+    formalized."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"
@@ -1661,8 +1744,34 @@ register_result "color-refinement" where
     partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
     test is incomplete (equal-order d-regular graphs). The correspondence with \
-    two-variable counting logic C² on uncolored simple graphs is in immerman-lander. No \
-    k-dimensional Weisfeiler–Leman, fractional isomorphism or certified algorithm."
+    two-variable counting logic C² on uncolored simple graphs is in immerman-lander, and \
+    folklore k-dimensional Weisfeiler–Leman is in weisfeiler-leman. Fractional isomorphism and a \
+    certified algorithm are not formalized."
+
+register_result "weisfeiler-leman" where
+  title := "k-dimensional Weisfeiler–Leman: partition stabilization, soundness and two-graph \
+    stabilization"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := unverified, locator := "Section 5" }
+  ]
+  theorems := [
+    SimpleGraph.ker_wlColoring_eq,
+    SimpleGraph.ker_stableWLColoring,
+    SimpleGraph.Iso.wlColoring_comp,
+    SimpleGraph.Iso.wlHistogram_eq,
+    SimpleGraph.isEmpty_iso_of_wlHistogram_ne,
+    SimpleGraph.forall_wlColoring_eq_iff,
+    SimpleGraph.forall_wlHistogram_eq_iff
+  ]
+  scope := "Uncolored finite simple graphs ([Fintype V], with no LocallyFinite or DecidableRel \
+    assumption), for every dimension k : ℕ. Folklore k-WL colors Fin k → V by ordered atomic \
+    isomorphism type at round 0 and by the multiset over all v : V of the atomic type of \
+    Fin.snoc u v paired with the k single-coordinate replacement colors. The partition \
+    stabilizes from round |V|^k - k₀ on, is isomorphism-invariant, and two-graph tuple or \
+    histogram agreement in all rounds reduces to round |V|^k + |W|^k. The logical correspondence \
+    with C^(k+1) is in weisfeiler-leman-counting; initial tuple colorings and certified \
+    complexity bounds are not formalized."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"

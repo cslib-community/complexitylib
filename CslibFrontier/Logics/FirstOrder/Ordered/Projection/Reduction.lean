@@ -19,11 +19,9 @@ of `K` to members of `K'` and the non-members outside `K'`
 [Immerman and Landau, Definition 3.6][ImmermanLandau1995]. Both relations instantiate
 `Cslib.Complexity.ManyOneReducibleBy`.
 
-First-order projection reducibility is reflexive and transitive
+Both first-order and quantifier-free projection reducibility are reflexive and transitive
 [Immerman and Landau, Proposition 3.7][ImmermanLandau1995]. Quantifier-free projection reducibility
-is reflexive and refines `ProjectionReduces`, which in turn refines `Ordered.Reduces`; transitivity
-of quantifier-free projections (`QFProjectionReduces.trans`) is treated separately with the
-`BIT`-free tuple numeric translations.
+refines `ProjectionReduces`, which in turn refines `Ordered.Reduces`.
 
 For the logspace encoding lift (`ProjectionReduces.logSpaceReducible` and
 `QFProjectionReduces.logSpaceReducible` at `encStructure`), see
@@ -41,9 +39,11 @@ For the logspace encoding lift (`ProjectionReduces.logSpaceReducible` and
 * `Cslib.Logic.FO.Ordered.ProjectionReduces.refl`,
   `Cslib.Logic.FO.Ordered.ProjectionReduces.trans`: `≤_fop` is a preorder on relational ordered
   queries.
+* `Cslib.Logic.FO.Ordered.QFProjectionReduces.refl`,
+  `Cslib.Logic.FO.Ordered.QFProjectionReduces.trans`: `≤_qfp` is a preorder on relational ordered
+  queries.
 * `Cslib.Logic.FO.Ordered.ProjectionReduces.compl`,
   `Cslib.Logic.FO.Ordered.QFProjectionReduces.compl`: complement closure.
-* `Cslib.Logic.FO.Ordered.QFProjectionReduces.refl`: `≤_qfp` is reflexive.
 * `Cslib.Logic.FO.Ordered.QFProjectionReduces.projectionReduces`,
   `Cslib.Logic.FO.Ordered.ProjectionReduces.reduces`,
   `Cslib.Logic.FO.Ordered.QFProjectionReduces.reduces`: `≤_qfp` refines `≤_fop`, which refines
@@ -90,6 +90,15 @@ theorem trans [L'.IsRelational] [L''.IsRelational] {K : Query L} {K' : Query L'}
     ProjectionReduces K K'' :=
   ManyOneReducibleBy.trans (fun _ _ hf hg => hf.comp hg) h h'
 
+instance [L'.IsRelational] [L''.IsRelational] :
+    @Trans (Query L) (Query L') (Query L'')
+      ProjectionReduces ProjectionReduces ProjectionReduces :=
+  ⟨ProjectionReduces.trans⟩
+
+instance [L.IsRelational] : IsPreorder (Query L) ProjectionReduces where
+  refl := ProjectionReduces.refl
+  trans _ _ _ := ProjectionReduces.trans
+
 /-- A first-order projection reduction of `K` to `K'` reduces `Kᶜ` to `K'ᶜ`. -/
 theorem compl [L'.IsRelational] {K : Query L} {K' : Query L'} (h : ProjectionReduces K K') :
     ProjectionReduces Kᶜ K'ᶜ :=
@@ -116,6 +125,22 @@ namespace QFProjectionReduces
 /-- **Quantifier-free projection reducibility is reflexive.** -/
 @[refl] theorem refl [L.IsRelational] (K : Query L) : QFProjectionReduces K K :=
   ManyOneReducibleBy.refl IsQFProjectionMap.id K
+
+/-- **Quantifier-free projection reducibility is transitive**
+[Immerman and Landau, Proposition 3.7][ImmermanLandau1995]. -/
+theorem trans [L'.IsRelational] [L''.IsRelational] {K : Query L} {K' : Query L'}
+    {K'' : Query L''} (h : QFProjectionReduces K K') (h' : QFProjectionReduces K' K'') :
+    QFProjectionReduces K K'' :=
+  ManyOneReducibleBy.trans (fun _ _ hf hg => hf.comp hg) h h'
+
+instance [L'.IsRelational] [L''.IsRelational] :
+    @Trans (Query L) (Query L') (Query L'')
+      QFProjectionReduces QFProjectionReduces QFProjectionReduces :=
+  ⟨QFProjectionReduces.trans⟩
+
+instance [L.IsRelational] : IsPreorder (Query L) QFProjectionReduces where
+  refl := QFProjectionReduces.refl
+  trans _ _ _ := QFProjectionReduces.trans
 
 /-- A quantifier-free projection reduction of `K` to `K'` reduces `Kᶜ` to `K'ᶜ`. -/
 theorem compl [L'.IsRelational] {K : Query L} {K' : Query L'} (h : QFProjectionReduces K K') :
