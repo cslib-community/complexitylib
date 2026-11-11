@@ -59,6 +59,7 @@ import CslibFrontier.Computability.Kolmogorov.SymmetryOfInformation
 import CslibFrontier.Computability.MCSP.AntiChecker
 import CslibFrontier.Computability.MCSP.FormulaMagnification
 import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
+import CslibFrontier.Computability.MCSP.FormulaMagnification.Locality
 import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
 import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
 import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
@@ -84,6 +85,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
@@ -1159,8 +1161,35 @@ register_result "trakhtenbrot-sentence" where
     Theorem 9.2 and Corollary 9.3 state the binary case; higher arities pad binary atoms by \
     repeating the second argument). Sentences are coded by primcodableRaw, a scoped \
     instance, independent of the symbol encoding up to primitive recursive equivalence. \
-    FinSat and FinValid quantify over finite nonempty structures. Function symbols, infinite \
-    vocabularies and the decidable monadic converse (arities at most one) are not covered."
+    FinSat and FinValid quantify over finite nonempty structures. Function symbols and \
+    infinite vocabularies are not covered; the decidable monadic converse and dichotomy are \
+    in trakhtenbrot-dichotomy."
+
+register_result "trakhtenbrot-dichotomy" where
+  title := "Trakhtenbrot–Löwenheim: the decidability dichotomy for finite satisfiability"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Lowenheim1915, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.computablePred_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_not_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finSat_of_monadic,
+    FirstOrder.Language.Sentence.computablePred_finValid_of_monadic
+  ]
+  scope := "Mathlib L.Sentence over a relational language with finitely many relation \
+    symbols, coded by primcodableRaw. Finite satisfiability and finite validity (over \
+    finite nonempty structures) are decidable—and finite validity and finite \
+    unsatisfiability are r.e.—if and only if every relation symbol has arity at most one \
+    (allowing both unary and nullary symbols). On the monadic side, finite satisfiability \
+    and finite validity are primitive recursive by checking RawFormula.SatOnFin below the \
+    explicit bound max q 1 * 2 ^ k proved in monadic-small-model (Löwenheim is cited for \
+    decidability of the monadic class only). Function symbols and infinite vocabularies \
+    are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
@@ -1404,6 +1433,36 @@ register_result "bijective-pebble-games-c-k" where
     empty structures. Cai, Furer and Immerman state the characterization on graphs, for the \
     equivalent game in which the players exchange sets of equal size."
 
+register_result "immerman-lander" where
+  title := "The Immerman–Lander theorem: color refinement characterizes two-variable counting \
+    logic C²"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := ImmermanLander1990, theorem := unverified, locator := unverified },
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 5.2 (k = 1 case)",
+      locator := "Section 5" },
+    { paper := Immerman1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_graph_empty_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_singleton_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_univ_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_iff_card_add_card,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_card_add_card
+  ]
+  scope := "Finite LocallyFinite simple graphs over FirstOrder.Language.graph with the trivial \
+    initial coloring fun _ => (). Round-by-round correspondence between Hella's bijective \
+    2-pebble game (with 0, 1 or 2 placed pebbles) and color refinement: sentences of quantifier \
+    rank at most n + 1 correspond to round-n color histograms (for nonempty vertex types, since \
+    CountingFormula.Realize takes a total assignment Fin 2 → V), and one-variable formulas of \
+    rank at most n + 1 correspond to round-(n + 1) vertex colors paired with round-n histograms. \
+    Full C²-equivalence reduces to round |V| + |W|. Colored graphs with arbitrary initial \
+    colorings and k-dimensional Weisfeiler–Leman for k >= 2 are not formalized."
+
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"
   topic := "descriptive complexity"
@@ -1441,7 +1500,8 @@ register_result "monadic-small-model" where
     with a nonempty model has one on Fin (n + 1) with n + 1 ≤ max q 1 * 2 ^ k for k unary \
     symbols, through a substructure of the given model. The explicit bound and its proof by \
     Ehrenfeucht–Fraïssé games are proved here; Löwenheim is cited for the small model \
-    property only. The decision procedure for finite satisfiability is not yet formalized."
+    property only. The resulting decision procedure and dichotomy for finite satisfiability \
+    are in trakhtenbrot-dichotomy."
 
 register_result "connectivity-not-fo" where
   title := "Connectivity is not first-order definable"
@@ -1569,6 +1629,7 @@ register_result "color-refinement" where
     SimpleGraph.isGreatest_ker_stableColoring,
     SimpleGraph.not_exists_iso_of_colorHistogram_ne,
     SimpleGraph.isEmpty_iso_of_colorHistogram_ne,
+    SimpleGraph.forall_refinementColoring_eq_iff,
     SimpleGraph.forall_colorHistogram_eq_iff,
     SimpleGraph.IsRegularOfDegree.colorHistogram_eq
   ]
@@ -1577,8 +1638,8 @@ register_result "color-refinement" where
     partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
     test is incomplete (equal-order d-regular graphs). The correspondence with \
-    two-variable counting logic C² is not formalized. No k-dimensional \
-    Weisfeiler–Leman, fractional isomorphism or certified algorithm."
+    two-variable counting logic C² on uncolored simple graphs is in immerman-lander. No \
+    k-dimensional Weisfeiler–Leman, fractional isomorphism or certified algorithm."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
@@ -1732,6 +1793,26 @@ register_result "formula-magnification-ternary" where
     (Definition 43), then some binary NP language has no polynomial-size De Morgan formulas; \
     the general form takes any subexponential threshold. Circuit size counts every De Morgan \
     gate. Conditional: no formula lower bound for MCSP is proved."
+
+register_result "formula-magnification-locality" where
+  title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: the Oliveira–Santhanam formula \
+    magnification reduction is local"
+  topic := "meta-complexity"
+  sources := [
+    { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+      theorem := "Proposition 63, [OS18] MCSP bullet",
+      locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_oracleFormula_separating_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP_real_poly
+  ]
+  scope := "MCSP[(s, 0), (s, δ)] on N = 2^n-bit truth tables is computed by De Morgan formulas \
+    with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
+    N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
+    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: the DAG [q, ℓ, a]-Circuit classes, the \
+    other bullets of Proposition 63 and the locality barrier (Theorem 59) are not formalized."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
