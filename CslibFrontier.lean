@@ -5796,6 +5796,7 @@ public import CslibFrontier.Logics.Propositional.Algebraic.CNF
 public import CslibFrontier.Logics.Propositional.Algebraic.CNF.Boolean
 public import CslibFrontier.Logics.Propositional.Algebraic.CNF.Counting
 public import CslibFrontier.Logics.Propositional.Algebraic.CNF.Parity
+public import CslibFrontier.Logics.Propositional.Algebraic.FunctionalPigeonhole
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Combination
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.PolynomialCalculus
 public import CslibFrontier.Logics.Propositional.Algebraic.Nullstellensatz.Proof

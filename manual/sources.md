@@ -857,6 +857,11 @@ Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *
 
 Russell Impagliazzo, Ragesh Jaiswal, Valentine Kabanets and Avi Wigderson. *Uniform Direct Product Theorems: Simplified, Optimized, and Derandomized*. SIAM Journal on Computing 39(4), 1637–1665, 2010. DOI: [10.1137/080734030](https://doi.org/10.1137/080734030) (as reported by search; not resolved). The authors' preprint dated 2009-10-19 (https://www.math.ias.edu/~avi/PUBLICATIONS/ImpagliazzoJaKaWi2010.pdf) was inspected on 2026-11-11: Theorem 1.2 (the decoder that CIKK cite as their Theorem 4.1), Algorithms 1–2, Theorem 3.2 and Lemmas 2.11–2.14 and 3.8–3.12. Locators follow the preprint; the journal numbering is unchecked.
 
+<a id="impagliazzopudlaksgall99"></a>
+## impagliazzopudlaksgall99
+
+Russell Impagliazzo, Pavel Pudlák and Jiří Sgall. “Lower Bounds for the Polynomial Calculus and the Gröbner Basis Algorithm.” *Computational Complexity* 8(2), 127–144, 1999. DOI: [10.1007/s000370050024](https://doi.org/10.1007/s000370050024). Bibliographic record from `references.bib` (`ImpagliazzoPudlakSgall1999`); the paper text was not inspected (the `algFPHP` axiom presentation follows [#3569](https://github.com/cslib-community/cslib-frontier/issues/3569)).
+
 <a id="impagliazzowigderson97"></a>
 ## impagliazzowigderson97
 
