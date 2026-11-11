@@ -186,7 +186,7 @@ theorem ETH.not_decidableInSubexpTime_DirHamCycle (h : ETH) :
 `|V|` declared vertices and `|E|` arcs. -/
 theorem ETH.not_decidableInSubexpTime_DirHamPath (h : ETH) :
     ¬DecidableInSubexpTime DirHamPath encPathInstance
-      fun x => x.1.1.length + x.1.2.length :=
+      fun x => x.graph.1.length + x.graph.2.length :=
   h.not_decidableInSubexpTime_of_reduction SAT.computableInPolyTime_toSparseDirHamPath
     (fun φ _ => SAT.toSparseDirHamPath_mem_iff φ) (k := 70) fun φ hφ => by
       have := SAT.length_sparseDiamondGraph_le hφ
@@ -199,7 +199,7 @@ any polynomial in the length of the encoded instance, for graphs with `|V|` decl
 `|E|` edges. -/
 theorem ETH.not_decidableInSubexpTime_HamPath (h : ETH) :
     ¬DecidableInSubexpTime HamPath encPathInstance
-      fun x => x.1.1.length + x.1.2.length :=
+      fun x => x.graph.1.length + x.graph.2.length :=
   h.not_decidableInSubexpTime_of_reduction
     (DirHamPath.computableInPolyTime_toHamPath.comp
       SAT.computableInPolyTime_toSparseDirHamPath)

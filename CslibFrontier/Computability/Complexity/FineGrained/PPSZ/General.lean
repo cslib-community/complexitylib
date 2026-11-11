@@ -772,9 +772,7 @@ theorem round_success_limit {k : ℕ} (hk : 3 ≤ k) :
         ∑ σ ∈ univ.filter (fun σ => φ.eval σ = true), ((round φ w) fun x => some (σ x)).toReal := by
   intro ε hε
   obtain ⟨h, hh⟩ := exists_le_qbar (by omega : 2 ≤ k) hε
-  refine ⟨∑ i ∈ range h, (k - 1) ^ i, fun n φ hsat hlen => ?_⟩
-  refine le_trans ?_ (round_success_of_satisfiable hk hsat hlen le_rfl)
-  exact Real.rpow_le_rpow_of_exponent_le one_le_two
-    (neg_le_neg (mul_le_mul_of_nonneg_right (by linarith) (Nat.cast_nonneg n)))
+  exact ⟨∑ i ∈ range h, (k - 1) ^ i, fun n φ hsat hlen =>
+    (two_rpow_neg_mul_le n (by linarith)).trans (round_success_of_satisfiable hk hsat hlen le_rfl)⟩
 
 end Cslib.Complexity.PPSZ
