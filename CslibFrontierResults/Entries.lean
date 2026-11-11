@@ -2789,7 +2789,7 @@ register_result "cikk-learner-hypothesis-size" where
 
 register_result "cikk-learning-ac0-2" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning AC⁰[2] with the rank property, \
-    with quasi-polynomially many membership queries"
+    with quasi-polynomially many membership queries and quasi-polynomial-size hypotheses"
   topic := "meta-complexity"
   sources := [
     { paper := CarmosinoImpagliazzoKabanetsKolokolova2016,
@@ -2804,8 +2804,7 @@ register_result "cikk-learning-ac0-2" where
     Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le
   ]
   scope := "Corollary 5.4 for p = 2 with queries and hypothesis size counted, for a fixed depth d \
-    and size s. With \
-    g = cikkAC0Gap d e n s and l = cikkAC0Len d e n s g, the CIKK learner \
+    and size s. With g = cikkAC0Gap d e n s and l = cikkAC0Len d e n s g, the CIKK learner \
     (cikk-learning-from-dense-test) whose test accepts the truth tables of the rank property \
     (rank-property-natural-ac0-2) at input length l learns every function on n bits computed \
     by a circuit of NOT, unbounded fan-in AND/OR and MOD_2 gates of depth at most d and size at \

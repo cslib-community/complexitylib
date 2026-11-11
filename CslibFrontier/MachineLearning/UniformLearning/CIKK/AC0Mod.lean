@@ -59,7 +59,7 @@ Labels:
   queries. The learner's running time is not certified.
 * **Hypothesis size.** The hypotheses' bound is De Morgan circuit size with this library's
   constants; their depth is not certified, so they are not shown to lie in AC⁰[2]. Corollary 5.4's
-  hypotheses are general circuits as well, so the learner is not proper in either.
+  hypotheses are general circuits as well, so neither learner is shown to be proper.
 * **Nonuniform target class.** The class is fixed by `d` and `s`, with the input length `n`. The
   parameters `g` and `ℓ` are explicit closed forms rather than the source's choice of `L` with
   `log L > u⁻¹(poly)` [Carmosino et al., proof of Theorem 5.1, p. 10:19]
@@ -184,7 +184,7 @@ private theorem complexity_eval_cikkLearner_rankTest_le_of_add_two_le {n ℓ g :
           (complexity interpretation (single (truthTableTest (rankProperty sliceLevel ℓ))) + 1) :=
         complexity_eval_cikkLearner_le_two_pow n ℓ e g h _ f ω
     _ ≤ 2 ^ (11 * g + 9 * e + 3 * ℓ + 80) * 2 ^ (3 * ℓ + 8) := Nat.mul_le_mul_left _ htest
-    _ = 2 ^ (11 * g + 9 * e + 6 * ℓ + 88) := by rw [← pow_add]; ring_nf
+    _ = 2 ^ (11 * g + 9 * e + 6 * ℓ + 88) := by ring
     _ ≤ 2 ^ (17 * g + 9 * e + 76) := Nat.pow_le_pow_right (by norm_num) (by omega)
 
 /-- **Size of the AC⁰[2] learner's hypotheses** [Carmosino et al., Theorem 5.1, p. 10:19, and

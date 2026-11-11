@@ -56,9 +56,9 @@ example (e h n s : ℕ) (f : BooleanFunction n) (ω) :
   rwa [show 2 * (0 + 7) * (5 * (0 + 7) + 25) = 840 from rfl, show 2 * (0 + 7) = 14 from rfl]
     at h
 
-/-- **Learning parity with small hypotheses.** On every seed the hypothesis for `parity n` has a
-De Morgan circuit with at most `2 ^ (17 g + 9 e + 76)` gates, for `g = cikkAC0Gap 1 e n 1`; on most
-seeds it also agrees with `parity n` up to error `2^{-e}`. -/
+/-- **Small hypotheses for parity.** On every seed the hypothesis for `parity n` has a De Morgan
+circuit with at most `2 ^ (17 g + 9 e + 76)` gates, for `g = cikkAC0Gap 1 e n 1`. The first parity
+example shows that it learns `parity n`. -/
 example (e h n : ℕ) (ω) :
     complexity Boolean.interpretation (single
         ((cikkLearner n (cikkAC0Len 1 e n 1 (cikkAC0Gap 1 e n 1)) e (cikkAC0Gap 1 e n 1) h
