@@ -20,8 +20,7 @@ ORDER = [
     ('design-and-assurance', ['index', 'architecture', 'automation', 'assurance', 'upstream-and-credit']),
     ('machines-and-classes', ['index', 'native-and-resources', 'intermediate-and-legacy',
       'computability-and-description', 'verifiers-counting-interaction', 'reductions',
-      'parameterized-complexity', 'search-and-promises', 'endpoints-and-hierarchies', 'class-inclusions',
-      'native-counting']),
+      'parameterized-complexity', 'search-and-promises', 'endpoints-and-hierarchies', 'native-counting']),
     ('circuits-logic-and-other-models', ['index', 'circuits-and-formulas', 'networks-and-iteration',
       'algebraic-and-quantum', 'query-and-communication', 'finite-model-logic',
       'proof-systems', 'learning-and-testing', 'metacomplexity-and-methods']),
@@ -66,9 +65,7 @@ MATH = {'ℕ': r'\mathbb{N}', 'ℝ': r'\mathbb{R}', 'ℓ': r'\ell', '→': r'\to
         '⊕': r'\oplus', '∞': r'\infty', '−': '-', '×': r'\times', 'Γ': r'\Gamma',
         'Σ': r'\Sigma', 'α': r'\alpha', 'β': r'\beta', 'δ': r'\delta', 'ε': r'\varepsilon',
         'η': r'\eta', 'ι': r'\iota', 'κ': r'\kappa', 'λ': r'\lambda', 'μ': r'\mu',
-        'σ': r'\sigma', '₁': '_1', '₂': '_2', 'ᵢ': '_i', 'ⱼ': '_j', '¹': '^1', '²': '^2', '³': '^3',
-        '⁰': '^0', 'ₖ': '_k', 'ᵖ': '^p', '₊': '_+', 'Π': r'\Pi', '⊇': r'\supseteq',
-        '⊄': r'\nsubseteq', '✗': r'\times'}
+        'σ': r'\sigma', '₁': '_1', '₂': '_2', 'ᵢ': '_i', 'ⱼ': '_j', '¹': '^1', '²': '^2', '³': '^3'}
 
 
 def inline_tex(text):

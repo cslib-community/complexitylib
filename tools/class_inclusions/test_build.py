@@ -1,4 +1,4 @@
-"""Unit tests for scripts/class_inclusions.py."""
+"""Unit tests for tools/class_inclusions/build.py."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-import class_inclusions as ci  # noqa: E402
+import build as ci  # noqa: E402
 
 
 class CloseTests(unittest.TestCase):
@@ -55,6 +55,38 @@ class LiteratureTests(unittest.TestCase):
         for a, b in ci.COMPLEMENT.items():
             self.assertEqual(ci.COMPLEMENT[b], a)
             self.assertNotIn(a, ci.CO_CLOSED)
+
+
+def theorem(module: str, name: str) -> dict:
+    return {"kind": "theorem", "docLink": f"./CslibFrontier/{module}.html#{name}"}
+
+
+class IndexTests(unittest.TestCase):
+    def test_reads_local_theorems_and_links_from_the_site_root(self) -> None:
+        index = {"declarations": {
+            "Cslib.Complexity.P_subset_NP": theorem("Classes/NP", "Cslib.Complexity.P_subset_NP"),
+            "Cslib.Complexity.NP_def": {"kind": "def", "docLink": "./CslibFrontier/X.html#d"},
+            "Mathlib.Foo.P_subset_NP": {"kind": "theorem", "docLink": "./Mathlib/Foo.html#x"},
+        }}
+        self.assertEqual(ci.load_theorems(index), {"P_subset_NP": (
+            "Cslib.Complexity.P_subset_NP",
+            "../CslibFrontier/Classes/NP.html#Cslib.Complexity.P_subset_NP")})
+
+    def test_render_links_direct_marks_and_rejects_contradictions(self) -> None:
+        names = ["P_subset_NP", "NC_subset_AC", "NC_mono", "AC_subset_NC_succ",
+                 "NC_subset_PPoly", "AC_subset_PPoly"]
+        index = {"declarations": {f"Cslib.{n}": theorem("M", f"Cslib.{n}") for n in names}}
+        page = ci.render(index)
+        self.assertIn('href="../CslibFrontier/M.html#Cslib.P_subset_NP"', page)
+        self.assertIn('class="known"', page)
+        # The library cannot prove what the literature layer calls open.
+        index["declarations"]["Cslib.NP_subset_P"] = theorem("M", "Cslib.NP_subset_P")
+        with self.assertRaisesRegex(ValueError, "NP vs P"):
+            ci.render(index)
+
+    def test_missing_extra_theorem_is_reported(self) -> None:
+        with self.assertRaisesRegex(ValueError, "NC_subset_AC"):
+            ci.render({"declarations": {}})
 
 
 if __name__ == "__main__":
