@@ -4366,18 +4366,6 @@ theorem length_encList_ge_mul {α : Type*} (enc : α ↪ List Bool) (l : List α
     have hl := ih fun b hb => hK b (by simp [hb])
     omega
 
-/-- Upper bound on the framed bit-length of `encList enc l` from an elementwise upper bound. -/
-theorem length_encList_le_mul {α : Type*} (enc : α ↪ List Bool) (l : List α) (K : ℕ)
-    (hK : ∀ a ∈ l, (enc a).length ≤ K) : (encList enc l).length ≤ l.length * (2 * K + 1) := by
-  rw [length_encList]
-  induction l with
-  | nil => simp
-  | cons a l ih =>
-    simp only [List.length_cons, List.map_cons, List.sum_cons, Nat.add_mul, Nat.one_mul]
-    have ha := hK a (by simp)
-    have hl := ih fun b hb => hK b (by simp [hb])
-    omega
-
 private lemma size_prod_le {α : Type*} (l : List α) (f w : α → ℕ)
     (h : ∀ x ∈ l, (f x).size ≤ w x) : (l.map f).prod.size ≤ (l.map w).sum + 1 := by
   have hp := Int.size_natAbs_prod_le ((l.map f).map (Nat.cast : ℕ → ℤ))

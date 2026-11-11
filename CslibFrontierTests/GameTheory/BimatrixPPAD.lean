@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
 
@@ -93,8 +94,8 @@ private lemma witness_len_le_of_entry_le {c : BimatrixCode} {x y : List ℚ} {K 
     (hK : 2 * (3 * (2 * K + 1)) + 1 + 3 * (2 * K + 1) ≤ 500) :
     (encWitness ⟨x, y⟩).length ≤
       120 * (encBimatrix c).length ^ 3 + 400 * (encBimatrix c).length + 100 := by
-  have hx' := length_encList_le_mul encRat x K hx
-  have hy' := length_encList_le_mul encRat y K hy
+  have hx' := length_encList_le encRat x hx
+  have hy' := length_encList_le encRat y hy
   have hxm : (encList encRat x).length ≤ 3 * (2 * K + 1) :=
     hx'.trans (Nat.mul_le_mul_right _ hx_len)
   have hym : (encList encRat y).length ≤ 3 * (2 * K + 1) :=
