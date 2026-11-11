@@ -162,13 +162,12 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
       (initializeRoot_exec (x.comap (preprocessingRegisters r)) e
         ⟨fun i => h.bounded.1 (preprocessingRegisters r i), h.bounded.2⟩
         h.controls h.loaded h2 hcap (by have := ha.2.2.2; omega))
-  have breg (i : Fin 128) (hi : i.val < 96) :
-      b.regs (preprocessingRegisters r i) = x.regs (preprocessingRegisters r i) :=
-    hbr i (Or.inl hi)
-  have bframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : b.mem q = x.mem q := by
-    apply hframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    omega
+  obtain ⟨(bheap : b.regs (preprocessingRegisters r heap) =
+      x.regs (preprocessingRegisters r heap)), -, -, bframe, -, bstored, bends, bbitmap, bfloor⟩ :=
+    Arena.preserved_of_stack_frame (es := [e]) (x.comap (preprocessingRegisters r))
+      (b.comap (preprocessingRegisters r)) ha h.controls h.bitmap
+      (List.forall_mem_singleton.mpr h.stored) (List.forall_mem_singleton.mpr h.around)
+      (List.forall_mem_singleton.mpr h.ends) h.floor hframe (fun _ _ hi => hbr _ (Or.inl hi))
   have bm (i : Fin 16) : b.regs (controllerRegisters r i) = x.regs (controllerRegisters r i) :=
     hbouter _ (fun j => (controller_ne_preprocessing i j).symm)
   let s : Cursor := ⟨[e], ns⟩
@@ -178,61 +177,26 @@ theorem root_exec {r κ n w : ℕ} {a : Arena} (c : Host.Callee r)
   have remaining : s.remaining a = e.task.output (Nat.primesLE a.m) a.Λ := by
     simp only [s, Cursor.remaining, List.map_cons, List.map_nil, Math.output,
       List.flatMap_cons, List.flatMap_nil, List.append_nil]
-  have gap : a.capacity ≤ a.floor - a.stack := by
-    have ht := ha.2.1
-    have hg := ha.2.2.1
-    omega
   have hi : s.Invariant a w κ n (ns ++ e.task.output (Nat.primesLE a.m) a.Λ) b := by
     refine {
       bounded := hinit.bounded h.bounded
       controls := bcontrols
-      bitmap := ?_
-      stack := ?_
-      depth := ?_
-      valid := ?_
-      stored := ?_
-      around := ?_
-      ends := ?_
-      floor := ?_
-      heapBudget := ?_
-      packedLength := ?_
+      bitmap := bbitmap
+      stack := by simpa only [s, List.flatMap_cons, List.flatMap_nil, List.append_nil] using hstack
+      depth := h.fuel ▸ Math.bounded_singleton e.task
+      valid := List.forall_mem_singleton.mpr h.valid
+      stored := bstored
+      around := List.forall_mem_singleton.mpr h.around
+      ends := bends
+      floor := bfloor
+      heapBudget := by rw [bheap, work]; exact h.heapBudget
+      packedLength := (hbr _ (Or.inr (by decide))).trans h.packedLength
       envelopeValue := (bm _).trans h.envelopeValue
       unit := (bm _).trans h.unit
       boolean := (bm _).symm ▸ h.boolean
-      verdict := ?_
-      exactOutput := ?_
-      protectedMemory := ?_ }
-    · intro q hq
-      rw [bframe _ (Or.inl (by have := ha.1; omega))]
-      exact h.bitmap q hq
-    · simpa only [s, List.flatMap_cons, List.flatMap_nil, List.append_nil] using hstack
-    · rw [← h.fuel]
-      exact Math.bounded_singleton e.task
-    · intro d hd
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      exact he ▸ h.valid
-    · intro d hd
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      subst d
-      exact h.stored.of_stack_frame (h.around.mono_capacity gap) hframe
-    · intro d hd
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      exact he ▸ h.around
-    · intro d hd j
-      have he : d = e := by simpa only [s, List.mem_singleton] using hd
-      subst d
-      rw [breg heap (by decide)]
-      exact h.ends j
-    · rw [breg heap (by decide)]
-      exact h.floor
-    · rw [breg heap (by decide), work]
-      exact h.heapBudget
-    · exact (hbr _ (Or.inr (by decide))).trans h.packedLength
-    · rw [bm]
-      exact h.verdict
-    · rw [remaining]
-    · intro q hq
-      exact (bframe q (Or.inl hq)).trans (h.protectedMemory q hq)
+      verdict := by rw [bm]; exact h.verdict
+      exactOutput := by rw [remaining]
+      protectedMemory := fun q hq => (bframe q (Or.inl hq)).trans (h.protectedMemory q hq) }
   obtain ⟨y, he, hfinal⟩ := loop_exec c hw ha hresources hready h2 hcap s b hi
   have hexec : ExecWithin (w + 2) (oneRoot c.code) x y
       (70 + Math.work e.fuel * (visitTime a.n a.m a.N + 316) +
