@@ -615,7 +615,7 @@ theorem p2StableProb_eq_sub {r c : ℝ} (hr : 0 < r) (hc : 0 < c) :
   have hnorm : 2 * ∫ z in (0 : ℝ)..(r / c), gaussianPDFReal 0 1 z =
       (gaussianReal 0 1).real (Set.Icc (-r / c) (r / c)) := by
     have heven : ∀ z, gaussianPDFReal 0 1 (-z) = gaussianPDFReal 0 1 z := fun z => by
-      simp only [gaussianPDFReal_def, neg_sq]
+      simp only [gaussianPDFReal_def, sub_zero, neg_sq]
     have hcomp := intervalIntegral.integral_comp_neg (gaussianPDFReal 0 1) (a := -(r / c)) (b := 0)
     simp only [neg_zero, neg_neg, heven] at hcomp
     have hrc : 0 < r / c := div_pos hr hc
