@@ -49,8 +49,8 @@ This module analyses weight growth and binary representation cost of variable el
 
 ## Main definitions
 
-* `Cslib.Algorithms.Lean.CSP.FactorTable.mapHom`,
-  `Cslib.Algorithms.Lean.CSP.FactorTable.scale`: ring-homomorphism transport and factor scaling.
+* `Cslib.Algorithms.Lean.CSP.mapFactorHom`,
+  `Cslib.Algorithms.Lean.CSP.scaleFactor`: ring-homomorphism transport and factor scaling.
 * `Cslib.Algorithms.Lean.CSP.NatFactorRecord`, `Cslib.Algorithms.Lean.CSP.IntFactorRecord`,
   `Cslib.Algorithms.Lean.CSP.RatFactorRecord`, `Cslib.Algorithms.Lean.CSP.ModFactorRecord`:
   documented monomorphic factor records with `enc_structure` encodings.
@@ -128,7 +128,7 @@ variable {V : Type*}
 private def IntBudgetFor (d W : ℕ) (f : FactorTable ℤ V) (b : ℕ × ℕ) : Prop :=
   ∀ z ∈ f.entries.toList, z.natAbs ≤ d ^ b.1 * W ^ b.2
 
-private def IntBudgetInvariant [DecidableEq V] (d W M₀ k : ℕ) (s : ElimState ℤ V) : Prop :=
+private def IntBudgetInvariant (d W M₀ k : ℕ) (s : ElimState ℤ V) : Prop :=
   ∃ (iso : ℕ) (buds : List (ℕ × ℕ)),
     List.Forall₂ (IntBudgetFor d W) s.live buds ∧
     s.scalar.natAbs ≤ d ^ iso ∧
@@ -375,7 +375,7 @@ theorem length_encField_entry_le (p : ℕ) [NeZero p] (y : ZMod p) :
 /-- Peak encoded bit storage across all live `ZMod p` factor tables during `eliminateOrder` is
 bounded by `peakLiveEntries d order init * p.size` and hence by the intermediate-scope table bound
 times `p.size`. -/
-theorem liveFieldBits_eliminateOrder_le [DecidableEq V] {d p : ℕ} [NeZero p] (hd : 0 < d)
+theorem liveFieldBits_eliminateOrder_le [DecidableEq V] {d p : ℕ} (hd : 0 < d)
     (order : List V) (init : ElimState (ZMod p) V) :
     (liveEntries (eliminateOrder d order init).live) * p.size ≤
       init.live.length * max (maxTableEntries init.live) (d ^ maxOutScopeLen d order init) *
@@ -815,15 +815,19 @@ structure ModFactorRecord where
   entries : List ℕ
   deriving DecidableEq, Repr
 
+/-- Multi-tape binary encoding of `NatFactorRecord`. -/
 enc_structure encNatFactorRecord : NatFactorRecord where
   scope : (encList encNat), entries : (encList encNat)
 
+/-- Multi-tape binary encoding of `IntFactorRecord`. -/
 enc_structure encIntFactorRecord : IntFactorRecord where
   scope : (encList encNat), entries : (encList encIntBin)
 
+/-- Multi-tape binary encoding of `RatFactorRecord`. -/
 enc_structure encRatFactorRecord : RatFactorRecord where
   scope : (encList encNat), entries : (encList encRat)
 
+/-- Multi-tape binary encoding of `ModFactorRecord`. -/
 enc_structure encModFactorRecord : ModFactorRecord where
   modulus : encNat, scope : (encList encNat), entries : (encList encNat)
 

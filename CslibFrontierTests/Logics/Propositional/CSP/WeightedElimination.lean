@@ -28,6 +28,8 @@ Kernel-checked examples exercising:
    codec injectivity and bit-length bounds.
 -/
 
+set_option linter.privateModule false
+
 namespace CslibFrontierTests.WeightedElimination
 
 open Cslib.Logic.PL
@@ -87,9 +89,10 @@ theorem partitionFunction_satCSP_relabel :
     (satCSP.relabel (fun v : ℕ => v + 10)).partitionFunction orWt =
       satCSP.partitionFunction orWt := by
   let e : ℕ ≃ ℕ := (Equiv.swap 0 10).trans (Equiv.swap 1 11)
+  have he0 : e 0 = 10 := by decide
+  have he1 : e 1 = 11 := by decide
   have hcongr : satCSP.relabel (fun v : ℕ => v + 10) = satCSP.relabel e := by
-    simp [satCSP, CSP.relabel, Constraint.relabel, e]
-    decide
+    simp only [satCSP, CSP.relabel, Constraint.relabel, List.map_cons, List.map_nil, he0, he1]
   rw [hcongr]
   exact CSP.partitionFunction_relabel_equiv orWt e satCSP
 
