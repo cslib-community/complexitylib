@@ -15,8 +15,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 The existing query-machine compiler turns the complete driver into an ordinary multitape
 computation. Its space is bounded by the maximum physical storage of its candidate searches.
 The supplied source halting clock is a semantic witness only: the compiled machine obtains its
-input length and time guesses itself. Reducing this allowance to the square-root expression is
-a separate quantitative step.
+input length and time guesses itself. Any correct evaluator and any guess parameters may be
+used; reducing the allowance to a closed-form expression is a separate quantitative step for
+each instance.
 -/
 
 public section
@@ -25,23 +26,25 @@ namespace Turing.MultiTapePTM.BlockComputation.Driver
 
 open MultiTapeTM
 
-variable {k s : ℕ} {Q : Type} [Finite Q]
+variable {k : ℕ} {Q : Type}
 
 /-- A total deterministic source's Boolean decision is computed by an ordinary multitape
-machine with the complete driver's physical-space allowance. No computability assumption on
-its source halting-clock witness is needed. -/
-theorem computableInSpace_decision (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin s)
+machine with the complete driver's physical-space allowance, for any correct evaluator and any
+guess parameters. No computability assumption on its source halting-clock witness is needed. -/
+theorem computableInSpace_decision {E : ScheduleSearch.Evaluator} {M : MultiTapeTM k Bool Q}
+    {A : ℕ → ℕ → ℕ → ℕ} (hE : E.Correct M A) (P : OuterSearch.Parameters)
     {α : Type} (enc : α ↪ List Bool) (τ : α → ℕ)
     (hτ : ∀ a, (M.runFrom (Cfg.init M.q₀ (enc a)) (τ a)).Halted) :
     ∃ time c, ComputableInTimeAndSpace
       (fun a => decide ((M.runFrom (Cfg.init M.q₀ (enc a)) (τ a)).output = [true]))
-      enc encBool time (fun a => c * space k s Q (enc a).length (τ a)) := by
+      enc encBool time (fun a => c * space k A P (enc a).length (τ a)) := by
   classical
-  choose clock hpre hhalt hout hsize using fun a => exists_first_decision M e (enc a) (τ a) (hτ a)
-  refine QueryMachine.computableInSpace (encS := encState) (machine M e)
-    (machine_query_inSpace M e) (machine_next_inSpace M e) (machine_emit_inSpace M e)
-    (machine_halted_inSpace M e) (machine_finish_inSpace M e) clock hhalt hpre ?_
-    (fun a => space k s Q (enc a).length (τ a)) ?_ ⟨1, ?_⟩
+  choose clock hpre hhalt hout hsize using fun a =>
+    exists_first_decision P hE (enc a) (τ a) (hτ a)
+  refine QueryMachine.computableInSpace (encS := encState E) (machine E k P)
+    (machine_query_inSpace E k P) (machine_next_inSpace E k P) (machine_emit_inSpace E k P)
+    (machine_halted_inSpace E k P) (machine_finish_inSpace E k P) clock hhalt hpre ?_
+    (fun a => space k A P (enc a).length (τ a)) ?_ ⟨1, ?_⟩
   · intro w
     exact (hout w).symm
   · intro w

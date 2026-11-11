@@ -57,17 +57,36 @@ example {b : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 3) (b + 1) (b + 2))
     cp_step
   · cp_step
 
--- A comparison decided by `omega` from hypotheses that do not state its outcome.
+-- The comparison of a label decided by a hypothesis stating its negation the other way around:
+-- `2 ≤ n` decides `n < 2` false.
 example {b n : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 2) (b + 1) (b + 2))
     (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (h0 : regs.getD 0 0 = n) (hn : 2 ≤ n) :
     P.Reaches w (P.Running B) (b, regs) (b + 2, regs) := by
   cp_step [h0]
 
--- The comparison of a label decided by a hypothesis stating its negation the other way around.
+-- A comparison decided by `omega` from hypotheses that do not state its outcome.
 example {b n : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 2) (b + 1) (b + 2))
     (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (h0 : regs.getD 0 0 = n) (hn : ¬n ≤ 1) :
     P.Reaches w (P.Running B) (b, regs) (b + 2, regs) := by
   cp_step [h0]
+
+-- The other ways around: `¬2 ≤ n` decides `n < 2` true.
+example {b n : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 2) (b + 1) (b + 2))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (h0 : regs.getD 0 0 = n) (hn : ¬2 ≤ n) :
+    P.Reaches w (P.Running B) (b, regs) (b + 1, regs) := by
+  cp_step [h0]
+
+-- `2 < n` decides `n ≤ 2` false, here in the label of the target.
+example {b n F : ℕ} (h₀ : P.instr b = .assign 1 (const 0) (b + 1))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (hn : 2 < n) :
+    P.Reaches w (P.Running B) (b, regs) (if n ≤ 2 then F else b + 1, regs.set 1 0) := by
+  cp_step
+
+-- `¬n < 2` decides `2 ≤ n` true, here in the label of the source.
+example {b n F : ℕ} (h₀ : P.instr b = .assign 1 (const 0) (b + 1))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (hn : ¬n < 2) :
+    P.Reaches w (P.Running B) (if 2 ≤ n then b else F, regs) (b + 1, regs.set 1 0) := by
+  cp_step
 
 -- A conditional label in the target, decided after the step.
 example {b n F : ℕ} (h₀ : P.instr b = .assign 1 (const 0) (b + 1))

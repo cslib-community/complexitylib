@@ -347,25 +347,6 @@ private theorem decider_layout (φ : Formula (language L) TC.shape [] Empty) :
     rwa [show 4 + 6 * v.count + 1 + len φ true + 1 = 6 + 6 * v.count + len φ true by omega]
       at this
 
-variable (v) in
-omit [L.IsRelational] in
-private theorem bounds (a : EncodedStructure) (k : ℕ) :
-    1 ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    a.1 ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    a.1 ^ k ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    (encStructure a).length ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) ∧
-    ∀ i, a.1 ^ arityAt v i ≤ ((encStructure a).length + 1) ^ (v.maxArity + k) := by
-  have hm0 : v.maxArity ≠ 0 := by simp [Vocabulary.maxArity]
-  have hN : 1 ≤ (encStructure a).length + 1 := Nat.le_add_left 1 _
-  have hmono : ((encStructure a).length + 1) ^ v.maxArity ≤
-      ((encStructure a).length + 1) ^ (v.maxArity + k) := Nat.pow_le_pow_right hN (by omega)
-  have hn : a.1 ≤ (encStructure a).length + 1 :=
-    (card_le_length_encStructure a).trans (Nat.le_succ _)
-  refine ⟨Nat.one_le_pow _ _ hN, ?_, ?_, (length_le_pow_maxArity v a).trans hmono,
-    fun i => (pow_arityAt_le v a i).trans hmono⟩
-  · exact hn.trans ((Nat.le_self_pow hm0 _).trans hmono)
-  · exact (Nat.pow_le_pow_left hn k).trans (Nat.pow_le_pow_right hN (by omega))
-
 private theorem init_decider (φ : Formula (language L) TC.shape [] Empty) :
     (decider v φ).init = (0, (false : Bool).toNat :: List.replicate (3 + scratch φ) 0) := by
   simp only [init, decider, Bool.toNat_false]
@@ -384,7 +365,7 @@ theorem allBranches_decider {φ : Formula (language L) TC.shape [] Empty}
       (fun s => (decider v φ).instr s.1 = .accept → a ∈ K.encodedLanguage v) (fun _ => False)
       (decider v φ).init := by
   obtain ⟨hshape, hguard, hcomp, hacc, hrej⟩ := decider_layout (v := v) φ
-  obtain ⟨hB1, hnB, hwidth, hwB, hLB⟩ := bounds v a (TC.width φ)
+  obtain ⟨hB1, hnB, hwidth, hwB, hLB⟩ := decider_bounds v a (TC.width φ)
   rw [init_decider]
   suffices h : Sound (decider v φ) (encStructure a)
       (((encStructure a).length + 1) ^ (v.maxArity + TC.width φ))
@@ -442,7 +423,7 @@ theorem accepts_decider {φ : Formula (language L) TC.shape [] Empty}
   let _ : Fact (2 ≤ a.1) := ⟨hn⟩
   let _ := v.decode a
   obtain ⟨hshape, hguard, hcomp, hacc, hrej⟩ := decider_layout (v := v) φ
-  obtain ⟨hB1, hnB, hwidth, hwB, hLB⟩ := bounds v a (TC.width φ)
+  obtain ⟨hB1, hnB, hwidth, hwB, hLB⟩ := decider_bounds v a (TC.width φ)
   obtain ⟨regs₁, hreach₁, hlen₁, h0₁, hB₁⟩ :=
     reaches_shapeCode (P := padded 0 (shapeCode v 0 (4 + 6 * v.count)
       (6 + 6 * v.count + len φ true))) (codeAt_padded 0 _) hLB hwB
