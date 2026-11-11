@@ -30,6 +30,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure.Converse
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reachability
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
@@ -1110,6 +1111,29 @@ register_result "immerman-nl-capture" where
     from the size. One FO(TC) sentence defines the query iff its source-only encoded language \
     (encStructure) is in native NL; positive closures suffice. Malformed table shapes and \
     universes below two are rejected."
+
+register_result "immerman-reach-nl-complete" where
+  title := "Immerman: REACH is NL-complete under ordered first-order reductions"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := "Theorem 3.16 and Exercise 3.20",
+      locator := "Chapter 3, pp. 64–66" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.reduces_Reach_iff_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.exists_fullTupleInterpretation_Reach_of_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.reach_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.stReach_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.reach_logSpaceComplete_NL
+  ]
+  scope := "Canonically ordered finite relational structures on Fin n (2 ≤ n) with built-in \
+    ≤, BIT, 0, 1 and max, encoded at encStructure; native multi-tape NL with all-branches \
+    halting. Reach is 0-to-max directed reachability over Language.graph (arbitrary binary \
+    edge relation, self-loops permitted). Every ordered query in native NL reduces to Reach \
+    by one positive-dimensional FullTupleInterpretation (hence Ordered.Reduces), and conversely \
+    via positive FO(TC) pullback. Endpoint normalization covers arbitrary marked (s, t) \
+    including s = t, and Reach is logspace interreducible with STCON (encSTCON). First-order \
+    and quantifier-free projection refinements (≤_fop, ≤_qfp) are not formalized here."
 
 register_result "fo-dtc-l" where
   title := "FO(DTC) is contained in L on ordered structures"
