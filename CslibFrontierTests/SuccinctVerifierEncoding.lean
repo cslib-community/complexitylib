@@ -1,6 +1,19 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+
 module
 
 import CslibFrontier.Computability.Circuit.Boolean.SuccinctVerifier.Encoding
+
+/-!
+# Succinct-verifier certificate regression tests
+
+Concrete certificates exercise successful decoding, malformed descriptions, zero-gate witnesses,
+and the correctness and native polynomial-time construction of the resulting SAT queries.
+-/
 
 -- Regression tests intentionally export no declarations.
 set_option linter.privateModule false

@@ -8,6 +8,7 @@ module
 
 import CslibFrontier.Computability.Complexity.Classes.AlgorithmsToLowerBounds
 import CslibFrontier.Computability.Complexity.Classes.Time.BoundedExists
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List

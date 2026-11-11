@@ -28,9 +28,9 @@ The uniform constructor is certified on the native multitape model by
 widths and gate budget and of the decoder code; it does not enumerate clauses or assignments.
 
 The clause-index input width stays unchanged, and the output circuit has at most
-`D.size + 3 * s + 17` gates. A certificate of exactly `Boolean.certLength r s` bits produces an
-unsatisfiable output exactly when a size-at-most-`s` circuit supplies a satisfying assignment
-of `toCNF D`.
+`D.size + 3 * s + 17` gates. There exists a certificate of exactly `Boolean.certLength r s`
+bits producing an unsatisfiable output exactly when a size-at-most-`s` circuit supplies a
+satisfying assignment of `toCNF D`.
 
 This is the bounded-certificate implementation of the violated-clause verification in
 [Williams2010], the proof of Theorem 3.2. It does not by itself establish a time-hierarchy
