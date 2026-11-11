@@ -1705,4 +1705,8 @@ Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-
 ## zre15
 
 Samee Zahur, Mike Rosulek, David Evans. "Two Halves Make a Whole: Reducing Data Transfer in Garbled Circuits Using Half Gates." *Advances in Cryptology – EUROCRYPT 2015*, Lecture Notes in Computer Science 9057, 220–250, 2015. https://doi.org/10.1007/978-3-662-46803-6_8 . Full version: Cryptology ePrint Archive, Report 2014/756. The half-gates construction, the circular correlation robustness assumption and simulation privacy are cited at paper level. No theorem numbers are claimed.
-* [A. Backurs, P. Indyk, *Edit Distance Cannot Be Computed in Strongly Subquadratic Time (unless SETH is false)*][BackursIndyk2015]
+
+<a id="backursindyk15"></a>
+## backursindyk15
+
+Arturs Backurs and Piotr Indyk. "Edit Distance Cannot Be Computed in Strongly Subquadratic Time (unless SETH is false)." *STOC 2015*. https://doi.org/10.1145/2746539.2746612 .
