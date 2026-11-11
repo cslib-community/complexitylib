@@ -1367,6 +1367,11 @@ Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, ve
 
 Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinatorial Theory, Series A* 25(1), 80–83, 1978. https://doi.org/10.1016/0097-3165(78)90036-5 . Bibliographic data from the DOI record; the paper was not inspected. The induction in the library's Brégman module follows the published descriptions of this proof (induction on `n`, a convexity inequality at one row, then averaging over the rows).
 
+<a id="schummervohra02"></a>
+## schummervohra02
+
+James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Journal of Economic Theory* 104(2), 405–428, 2002. https://doi.org/10.1006/jeth.2001.2865 . Bibliographic metadata checked via web search; the primary PDF was not read directly, so no internal theorem or section numbering from the paper is claimed beyond the interval, tree, and cycle characterizations verified directly in Lean.
+
 <a id="schummervohra07"></a>
 ## schummervohra07
 

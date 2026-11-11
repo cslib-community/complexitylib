@@ -80,8 +80,11 @@ import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Cycle
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
+import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Interval
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
+import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Tree
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
@@ -1029,6 +1032,57 @@ register_result "facility-location-median" where
     weak group strategyproofness (attributed to Moulin 1980, uninspected here) and optimality \
     for the lower median x_((n-1)/2); the library proves the stronger IsGroupStrategyProof \
     property."
+
+register_result "facility-location-moulin-interval" where
+  title := "Moulin characterization of strategyproof location rules on closed real intervals"
+  topic := "game theory"
+  sources := [
+    { paper := Moulin1980, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.FacilityLocation.MoulinScheme.eval_isGroupStrategyProof,
+    Cslib.GameTheory.FacilityLocation.isStrategyProof_and_surjective_iff_exists_moulinScheme,
+    Cslib.GameTheory.FacilityLocation.moulinScheme_of_isometry
+  ]
+  scope := "Finite nonempty agent set ι and compact interval Set.Icc a b (with a < b) or \
+    isometric domain. Every MoulinScheme yields a deterministic onto strongly group strategyproof \
+    mechanism, and every deterministic onto strategyproof mechanism coincides with \
+    MoulinScheme.eval. Moulin 1980 primary paper uninspected here."
+
+register_result "facility-location-schummer-vohra-trees" where
+  title := "Schummer–Vohra characterization of strategyproof location rules on trees"
+  topic := "game theory"
+  sources := [
+    { paper := SchummerVohra2002, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.FacilityLocation.TreeEMVS.eval_isGroupStrategyProof,
+    Cslib.GameTheory.FacilityLocation.isStrategyProof_and_surjective_iff_exists_treeEMVS,
+    Cslib.GameTheory.FacilityLocation.isGroupStrategyProof_of_isStrategyProof_of_surjective_tree
+  ]
+  scope := "Any finite nonempty agent set ι and finite connected positive-weighted tree metric \
+    graph (W.graph.IsTree, MetricGraph W) with Borel measurable space. Deterministic onto \
+    strategyproof rules coincide with extended median voter schemes TreeEMVS and are strongly \
+    group strategyproof; majority-of-3 on star3 in CslibFrontierTests.SchummerVohra shows \
+    non-dictatorial rules exist. Schummer–Vohra 2002 primary PDF uninspected here."
+
+register_result "facility-location-schummer-vohra-cycles" where
+  title := "Schummer–Vohra cycle dictatorship on graphs with cycles"
+  topic := "game theory"
+  sources := [
+    { paper := SchummerVohra2002, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.FacilityLocation.exists_cycleDictator_of_isShortestCycle,
+    Cslib.GameTheory.FacilityLocation.exists_cycleDictator_of_not_isAcyclic,
+    Cslib.GameTheory.FacilityLocation.exists_dictatorship_of_cycleGraph
+  ]
+  scope := "Any finite nonempty agent set ι and finite connected positive-weighted MetricGraph W \
+    with Borel measurable space. Every deterministic onto strategyproof rule acts as a dictator on \
+    profiles supported on any shortest cycle (assuming ¬ W.graph.IsAcyclic) and is globally \
+    dictatorial on graphs isomorphic to cycleGraph n. Triangle + Tail in \
+    CslibFrontierTests.SchummerVohra shows cycle dictatorship need not extend globally. \
+    Schummer–Vohra 2002 primary PDF uninspected here."
 
 /-!
 ## Descriptive complexity and finite model theory
