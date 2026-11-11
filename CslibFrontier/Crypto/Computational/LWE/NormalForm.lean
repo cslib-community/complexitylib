@@ -180,7 +180,8 @@ private theorem decodeZModVec_encZModVec (v : Fin n → ZMod q) :
   simp
 
 omit [Fact (Nat.Prime q)] in
-private theorem decodeMatrix_encMatrix (M : Matrix (Fin n) (Fin m) (ZMod q)) :
+/-- Decoding inverts the matrix encoding. -/
+theorem decodeMatrix_encMatrix (M : Matrix (Fin n) (Fin m) (ZMod q)) :
     decodeMatrix n m q (encMatrix n m q M) = M := by
   funext i j
   simp only [decodeMatrix, encMatrix, encZMod, Function.Embedding.coeFn_mk, frames_encList,
@@ -396,26 +397,8 @@ private theorem bind_publicMatrix_uniform {k : ℕ} (μ : PMF (Fin n → ZMod q)
       (PMF.pi fun _ : Fin k => PMF.uniformOfFintype (ZMod q)).bind fun e =>
         PMF.pure (publicMatrix A s e)) =
       PMF.uniformOfFintype (Matrix (Fin k) (Fin (n + 1)) (ZMod q)) := by
-  have h (s : Fin n → ZMod q) :
-      ((PMF.uniformOfFintype (Matrix (Fin k) (Fin n) (ZMod q))).bind fun A =>
-        (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun e => PMF.pure (publicMatrix A s e)) =
-        PMF.uniformOfFintype (Matrix (Fin k) (Fin (n + 1)) (ZMod q)) := by
-    let E : Matrix (Fin k) (Fin n) (ZMod q) × (Fin k → ZMod q) ≃
-        Matrix (Fin k) (Fin (n + 1)) (ZMod q) :=
-      { toFun := fun x => publicMatrix x.1 s x.2
-        invFun := fun M =>
-          (fun i j => M i j.succ, fun i => M i 0 - ((fun i j => M i j.succ) *ᵥ s) i)
-        left_inv := fun x => by
-          ext <;> simp [publicMatrix]
-        right_inv := fun M => by
-          funext i j
-          refine Fin.cases ?_ (fun j => ?_) j <;> simp [publicMatrix] }
-    rw [← PMF.uniformOfFintype_map_equiv E, ← PMF.uniformOfFintype_prod]
-    simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
-    simp only [PMF.map, Function.comp_def]
-    rfl
   rw [PMF.pi_uniformOfFintype]
-  simp only [h, PMF.bind_const]
+  simp only [uniform_bind_publicMatrix, PMF.bind_const]
 
 private theorem uniformEnsemble_eq_realEnsemble {k : ℕ} :
     uniformEnsemble (fun _ => n) (fun _ => k) (fun _ => q) 0 =
