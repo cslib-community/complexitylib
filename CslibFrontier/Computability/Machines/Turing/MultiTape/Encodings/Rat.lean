@@ -28,7 +28,8 @@ import Mathlib.Data.Rat.Lemmas
 ## Main results
 
 * `Turing.MultiTapeTM.encRat_apply`: unfolding of `encRat q`.
-* `Turing.MultiTapeTM.length_encRat`: exact encoded bit length of `encRat q`.
+* `Turing.MultiTapeTM.length_encRat`, `Turing.MultiTapeTM.length_encRat_le`: exact encoded bit
+  length of `encRat q` and upper bound from numerator/denominator sizes.
 * `Turing.MultiTapeTM.length_encRat_num_le`: `(encIntBin q.num).length ≤ (encRat q).length`.
 * `Turing.MultiTapeTM.length_encRat_den_le`: `(encNat q.den).length ≤ (encRat q).length`.
 * `Turing.MultiTapeTM.natAbs_num_lt_two_pow_length_encRat`,
@@ -76,6 +77,14 @@ theorem length_encRat_num_le (q : ℚ) : (encIntBin q.num).length ≤ (encRat q)
 
 theorem length_encRat_den_le (q : ℚ) : (encNat q.den).length ≤ (encRat q).length :=
   length_le_encPair_right encIntBin encNat (q.num, q.den)
+
+/-- Upper bound on `(encRat q).length` in terms of `|q.num|` and `q.den` binary sizes. -/
+theorem length_encRat_le (q : ℚ) {A B : ℕ} (hnum : q.num.natAbs ≤ A) (hden : q.den ≤ B) :
+    (encRat q).length ≤ 2 * A.size + B.size + 3 := by
+  rw [length_encRat]
+  have hn : q.num.natAbs.size ≤ A.size := Nat.size_le_size hnum
+  have hd : q.den.size ≤ B.size := Nat.size_le_size hden
+  omega
 
 /-- The numerator magnitude of `q` is strictly below `2 ^ (encRat q).length`. -/
 theorem natAbs_num_lt_two_pow_length_encRat (q : ℚ) :
