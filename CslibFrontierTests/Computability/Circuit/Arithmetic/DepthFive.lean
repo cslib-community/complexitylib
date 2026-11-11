@@ -51,13 +51,10 @@ theorem example₁_polynomial : example₁.polynomial = X 0 * X 1 + X 1 ^ 2 := b
   simp [Fin.sum_univ_two, Fin.prod_univ_two]
   ring
 
-example : example₁.polynomial.IsHomogeneous 2 := example₁.isHomogeneous_polynomial
-
-open Cslib.Circuits.Arithmetic in
-example {n : ℕ} [NeZero n] (hn : Real.exp 29200 ≤ n)
-    (c : Circuit ℚ (Fin n × Fin n × Fin n)) (hc : c.polynomial = imm ℚ n n) :
-    (n : ℝ) ^ (√(n : ℝ) / 400) ≤ c.size :=
-  rpow_le_size hn c hc
+/-- The circuit certifies that its output `X 0 * X 1 + X 1 ^ 2` is homogeneous of degree `2`. -/
+theorem isHomogeneous_example₁ :
+    (X 0 * X 1 + X 1 ^ 2 : MvPolynomial (Fin 2) ℚ).IsHomogeneous 2 :=
+  example₁_polynomial ▸ example₁.isHomogeneous_polynomial
 
 open Cslib.Circuits.Arithmetic in
 /-- One threshold serves the rationals and the reals. -/
