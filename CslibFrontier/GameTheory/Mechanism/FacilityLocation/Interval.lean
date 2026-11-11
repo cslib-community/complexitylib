@@ -1279,5 +1279,3 @@ end Characterization
 end Moulin
 
 end Cslib.GameTheory.FacilityLocation
-
-

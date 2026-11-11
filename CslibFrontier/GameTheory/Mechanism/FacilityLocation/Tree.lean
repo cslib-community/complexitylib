@@ -1160,15 +1160,6 @@ private lemma subtree_univ [Fintype V] [Nonempty V] (hT : W.graph.IsTree) :
     rw [edgePoint_mem_subtree_iff hT (convexVertices_univ W) ht0 ht1]
     exact ⟨Finset.mem_univ _, Finset.mem_univ _⟩
 
-private lemma walkLength_append {V : Type*} {G : SimpleGraph V} (w : Sym2 V → ℝ) :
-    ∀ {a b c : V} (p₁ : G.Walk a b) (p₂ : G.Walk b c),
-      walkLength w (p₁.append p₂) = walkLength w p₁ + walkLength w p₂
-  | _, _, _, .nil, _ => by simp [walkLength]
-  | _, _, _, .cons hadj q, p₂ => by
-    have ih := walkLength_append w q p₂
-    simp only [walkLength, Walk.edges_cons, Walk.cons_append, List.map_cons, List.sum_cons] at ih ⊢
-    linarith
-
 private lemma walkLength_eq_vertexDist_of_isPath (hT : W.graph.IsTree) {a b : V}
     (p : W.graph.Walk a b) (hp : p.IsPath) :
     walkLength W.weight p = vertexDist W.graph W.weight a b := by
@@ -1345,30 +1336,6 @@ private lemma path_subtree_eq_interval (hT : W.graph.IsTree) {S : Finset V}
   · intro z hz
     exact ⟨a, ha, b, hb, hz⟩
 
-omit [Finite V] in
-private lemma edgeProj_cases_local (hT : W.graph.IsTree) (d : W.graph.Dart) (x : MetricGraph W) :
-    edgeProj hT d x = 0 ∨ edgeProj hT d x = W.weight d.edge ∨
-      ∃ t : unitInterval, 0 < (t : ℝ) ∧ (t : ℝ) < 1 ∧ x = edgePoint d t := by
-  classical
-  induction x using ind with
-  | vertex v =>
-    by_cases hr : (W.graph.deleteEdges {d.edge}).Reachable v d.fst
-    · exact Or.inl ((edgeProj_vertex_eq_zero_iff hT d v).mpr hr)
-    · exact Or.inr (Or.inl ((edgeProj_vertex_eq_weight_iff hT d v).mpr hr))
-  | edgePoint d' t ht0 ht1 =>
-    by_cases he : d'.edge = d.edge
-    · rcases (dart_edge_eq_iff d' d).mp he with rfl | hsym
-      · exact Or.inr (Or.inr ⟨t, ht0, ht1, rfl⟩)
-      · rw [hsym]
-        refine Or.inr (Or.inr ⟨unitInterval.symm t, ?_, ?_, ?_⟩)
-        · simp only [unitInterval.coe_symm_eq]; linarith
-        · simp only [unitInterval.coe_symm_eq]; linarith
-        · simpa only [unitInterval.symm_symm] using edgePoint_symm d (unitInterval.symm t)
-    · rw [edgeProj_edgePoint_of_edge_ne hT he]
-      by_cases hr : (W.graph.deleteEdges {d.edge}).Reachable d'.fst d.fst
-      · exact Or.inl ((edgeProj_vertex_eq_zero_iff hT d d'.fst).mpr hr)
-      · exact Or.inr (Or.inl ((edgeProj_vertex_eq_weight_iff hT d d'.fst).mpr hr))
-
 private lemma branch_adj_disjoint (hT : W.graph.IsTree) {c w₁ w₂ : V}
     (hadj₁ : W.graph.Adj c w₁) (hadj₂ : W.graph.Adj c w₂) (hne : w₁ ≠ w₂) :
     Disjoint (branch (vertex c : MetricGraph W) (vertex w₁))
@@ -1430,7 +1397,7 @@ private lemma mem_branch_adj_iff_edgeProj_pos (hT : W.graph.IsTree) {c w : V}
     rcases lt_or_ge (edgeProj hT d z) (W.weight d.edge) with hlt | hge
     · obtain ⟨t, ht0, ht1, rfl⟩ : ∃ t : unitInterval, 0 < (t : ℝ) ∧ (t : ℝ) < 1 ∧
           z = edgePoint d t := by
-        rcases edgeProj_cases_local hT d z with h0 | hw | ⟨t, ht0, ht1, hzeq⟩
+        rcases edgeProj_cases hT d z with h0 | hw | ⟨t, ht0, ht1, hzeq⟩
         · linarith
         · linarith
         · exact ⟨t, ht0, ht1, hzeq⟩
@@ -2643,4 +2610,3 @@ theorem isGroupStrategyProof_of_isStrategyProof_of_surjective_tree
 end Characterization
 
 end Cslib.GameTheory.FacilityLocation
-

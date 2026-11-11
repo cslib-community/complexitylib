@@ -403,7 +403,9 @@ theorem dist_edgePoint_edgePoint_same_eq [Finite V] (hT : W.graph.IsTree) (d : W
       |(s : ℝ) - t| * W.weight d.edge := by
   rw [dist_edgePoint_eq_direct_of_vertexDist_eq (vertexDist_adj hT d.adj), mul_comm]
 
-private lemma edgeProj_cases (hT : W.graph.IsTree) (d : W.graph.Dart) (x : MetricGraph W) :
+/-- Every point's projection onto dart `d` is `0`, `W.weight d.edge`, or realized by a strictly
+interior point along `d`. -/
+lemma edgeProj_cases (hT : W.graph.IsTree) (d : W.graph.Dart) (x : MetricGraph W) :
     edgeProj hT d x = 0 ∨ edgeProj hT d x = W.weight d.edge ∨
       ∃ t : unitInterval, 0 < (t : ℝ) ∧ (t : ℝ) < 1 ∧ x = edgePoint d t := by
   classical
@@ -1745,5 +1747,3 @@ end TreeMedian
 end MetricGraph
 
 end SimpleGraph
-
-

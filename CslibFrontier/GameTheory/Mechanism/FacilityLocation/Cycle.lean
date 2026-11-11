@@ -117,11 +117,6 @@ private theorem walkLength_pos_of_isCycle {V : Type*} (W : WeightedGraph V)
     have hq : 0 ≤ walkLength W.weight q := walkLength_nonneg W.weight W.weight_nonneg q
     linarith
 
-private theorem walkLength_reverse_eq {V : Type*} (W : WeightedGraph V)
-    {u v : V} (p : W.graph.Walk u v) :
-    walkLength W.weight p.reverse = walkLength W.weight p := by
-  simp only [walkLength, Walk.edges_reverse, List.map_reverse, List.sum_reverse]
-
 private theorem exists_min_cycle_dart_weight {V : Type*} (W : WeightedGraph V) [Finite V]
     {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : c.IsCycle) :
     ∃ wmin : ℝ, 0 < wmin ∧ ∀ d : W.graph.Dart, wmin ≤ W.weight d.edge := by
@@ -3736,4 +3731,3 @@ theorem exists_dictatorship_of_cycleGraph {V : Type*} (W : WeightedGraph V) [Fin
 end CycleDictator
 
 end Cslib.GameTheory.FacilityLocation
-

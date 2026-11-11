@@ -1815,5 +1815,3 @@ end CycleStructure
 end MetricGraph
 
 end SimpleGraph
-
-
