@@ -22,7 +22,7 @@ framed literals (`Cslib.Logic.PL.encTermOver`), and a formula the concatenation 
 terms (`Cslib.Logic.PL.encDNFOver`). Both are reducible abbreviations, so `fun_prop` and the
 combinators' lemmas see through the names.
 
-`Cslib.Complexity.encDNF`, the encoding of the instances of `#DNF`, is definitionally
+`Cslib.Complexity.encDNF`, the encoding of the instances of `#DNF`, is defined as
 `encDNFOver encNat`: variables numbered by natural numbers written in binary.
 
 ## Main definitions

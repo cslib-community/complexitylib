@@ -126,31 +126,26 @@ section PolyTime
 
 variable {Input : Type} {input : Input ↪ List Bool}
 
-private theorem isPolyTime_toFields :
-    ComputableInPolyTime (fun I : CMMSAInstance => (I.weights, I.threshold, I.formulas))
-      encoding encodingFields :=
-  .of_eq fun _ => rfl
-
 /-- Reading the weights is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_weights {inst : Input → CMMSAInstance}
     (h : ComputableInPolyTime inst input encoding) :
     ComputableInPolyTime (fun x => (inst x).weights) input (encList encUnary) :=
-  isPolyTime_toFields.fst'.comp h
+  encoding_weights_deg.computableInPolyTime.comp h
 
 /-- Reading the threshold is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_threshold {inst : Input → CMMSAInstance}
     (h : ComputableInPolyTime inst input encoding) :
     ComputableInPolyTime (fun x => (inst x).threshold) input encUnary :=
-  isPolyTime_toFields.snd'.fst'.comp h
+  encoding_threshold_deg.computableInPolyTime.comp h
 
 /-- Reading the formulas is polynomial-time. -/
 @[fun_prop]
 theorem isPolyTime_formulas {inst : Input → CMMSAInstance}
     (h : ComputableInPolyTime inst input encoding) :
     ComputableInPolyTime (fun x => (inst x).formulas) input (encList (encDNFOver encNat)) :=
-  isPolyTime_toFields.snd'.snd'.comp h
+  encoding_formulas_deg.computableInPolyTime.comp h
 
 /-- Assembling computed weights, threshold and formulas into an instance is polynomial-time. -/
 @[fun_prop]
@@ -161,7 +156,7 @@ theorem isPolyTime_mk {weights : Input → List ℕ} {threshold : Input → ℕ}
     (hformulas : ComputableInPolyTime formulas input (encList (encDNFOver encNat))) :
     ComputableInPolyTime (fun x => CMMSAInstance.mk (weights x) (threshold x) (formulas x))
       input encoding :=
-  (hweights.prod (hthreshold.prod hformulas)).of_enc_eq fun _ => rfl
+  encoding_mk_deg.computableInPolyTime.comp (hweights.prod (hthreshold.prod hformulas))
 
 end PolyTime
 

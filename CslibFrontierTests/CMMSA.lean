@@ -5,7 +5,6 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Problems.CMMSA
-import CslibFrontier.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras.PolyTime
 
 /-! Nonvacuity of `GapCMMSA`: a small yes-instance, a small no-instance at `σ = 1`, and a
 no-instance at a proportion `σ < 1`. -/
@@ -13,9 +12,6 @@ no-instance at a proportion `σ < 1`. -/
 namespace CslibFrontierTests.CMMSA
 
 open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
-
-/-- The formulas of an instance are encoded as the instances of `#DNF` are. -/
-example : encDNFOver encNat = encDNF := rfl
 
 /-- Two variables of weight `1`; the formulas `x₀ ∨ x₁` and `x₀`, at threshold `1`. -/
 def small : CMMSAInstance :=
