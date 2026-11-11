@@ -10,7 +10,9 @@ module
 public import CslibFrontier.Probability.Product
 public import Cslib.MachineLearning.PACLearning.Defs
 public import Cslib.Probability.PMF
+public import Mathlib.Data.Finset.Density
 public import Mathlib.InformationTheory.Hamming
+import CslibFrontier.Foundations.Data.Hamming
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 
@@ -53,6 +55,8 @@ bound the number of examples, not the running time of the learner.
 ## Main results
 
 * `Cslib.MachineLearning.UniformLearning.uniformExamples_eq_pi`: the examples are independent.
+* `Cslib.MachineLearning.UniformLearning.uniformError_eq_one_sub_dens`: the error is one minus
+  the fraction of the points of agreement.
 * `Cslib.MachineLearning.UniformLearning.learns_iff`: learning in terms of uniform samples of
   points.
 * `Cslib.MachineLearning.UniformLearning.mem_uniformRealizable_iff`: the uniform realizable family
@@ -117,6 +121,14 @@ theorem uniformError_le_one (f h : (ι → Bool) → Bool) : uniformError f h �
   have := hammingDist_le_card_fintype (x := h) (y := f)
   rw [Fintype.card_fun, Fintype.card_bool] at this
   exact_mod_cast this
+
+/-- The error of a hypothesis is one minus the fraction of the points where it agrees with the
+target. -/
+theorem uniformError_eq_one_sub_dens (f h : (ι → Bool) → Bool) :
+    uniformError f h = 1 - (Finset.dens {x | h x = f x} : ℝ) := by
+  rw [uniformError, hammingDist_eq_card_mul_one_sub_dens, Fintype.card_fun, Fintype.card_bool]
+  push_cast
+  field_simp
 
 /-- The error is the probability that a uniform point is misclassified. -/
 theorem toOuterMeasure_uniformOfFintype_ne (f h : (ι → Bool) → Bool) :
