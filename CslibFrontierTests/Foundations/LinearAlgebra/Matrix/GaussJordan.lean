@@ -14,8 +14,9 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 # Tests for staged Gauss–Jordan elimination
 
 A `3 × 3` matrix over `ZMod 2` whose rows sum to zero: `reduce` computes its reduced form, which
-has two nonzero rows, so the matrix has rank `2`. The identity is fixed by `reduce`, and the
-division-free `ZMod 2` form of a stage agrees with `stage` on the example.
+has two nonzero rows, so the matrix has rank `2`. The identity is fixed by `reduce`, a `1 × 2`
+example shows that one nonzero row may own several columns, and the division-free `ZMod 2` form of
+a stage agrees with `stage` on the first example.
 -/
 
 public section
@@ -43,6 +44,13 @@ example : gf2Example.rank = 2 := by
 
 /-- The identity has no row to clear. -/
 example : reduce (1 : Matrix (Fin 3) (Fin 3) (ZMod 2)) = 1 := by
+  decide +kernel
+
+/-- One nonzero row may own several columns: `!![1, 1]` is already reduced, and its single
+nonzero row is the only nonzero entry in both columns, but the rank is `1`. -/
+example : reduce !![(1 : ZMod 2), 1] = !![1, 1] ∧ (!![(1 : ZMod 2), 1]).rank = 1 := by
+  refine ⟨by decide +kernel, ?_⟩
+  rw [rank_eq_card_reduce_ne_zero]
   decide +kernel
 
 /-- The division-free form clears row `2` of the first column: it adds the pivot row `0`. -/

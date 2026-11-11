@@ -21,25 +21,26 @@ that row from every other row to clear column `j` (`Matrix.GaussJordan.stage`); 
 the matrix unchanged. Rows are never swapped, so every stage is a fixed function of the matrix.
 
 Each stage multiplies on the left by an invertible matrix, so it preserves the rank. After all `c`
-stages, every nonzero row owns a pivot column, where it is nonzero and every other row is zero
-(`Matrix.GaussJordan.exists_pivot_of_reduce_ne_zero`). The rank is therefore the number of nonzero
-rows, which is also the number of pivots (`Matrix.GaussJordan.rank_eq_card_reduce_ne_zero`). The
-rows of the output are not sorted into row echelon form, so `Matrix.IsPivotedBy` does not apply
-directly.
+stages, every nonzero row owns at least one column where it is nonzero and every other row is zero
+(`Matrix.GaussJordan.exists_pivot_of_reduce_ne_zero`); distinct rows own distinct columns, since an
+owned column has only one nonzero entry. The rank is therefore the number of nonzero rows
+(`Matrix.GaussJordan.rank_eq_card_reduce_ne_zero`). A row may own several columns: `!![1, 1]` is
+already reduced and has rank `1`. The rows of the output are not sorted into row echelon form, so
+`Matrix.IsPivotedBy` does not apply directly.
 
 Over `ZMod 2` a stage needs no division: the pivot entry is `1`, and the stage adds the pivot row
 to every other row with a `1` in column `j` (`Matrix.GaussJordan.stage_apply_zmod_two`). Each entry
 of a stage is then an XOR of ANDs of entries and pivot indicators, and the pivot is a prefix
-condition on column `j` (`Matrix.GaussJordan.pivotRow_eq_some_iff`). A Boolean circuit can evaluate
-one stage in constant depth given the prefix ORs; the full reduction chains `c` stages, so it has
-polynomial size and depth `O(c)`.
+condition on column `j` (`Matrix.GaussJordan.pivotRow_eq_some_iff`). A Boolean circuit with
+unbounded fan-in AND and OR gates can evaluate one stage in constant depth; the full reduction
+chains `c` stages, so it has polynomial size and depth `O(c)`.
 
 ## Main definitions
 
 * `Matrix.GaussJordan.IsFreeBefore A k i`: row `i` is zero on the columns before `k`.
 * `Matrix.GaussJordan.eliminate A j p`: clear column `j` with pivot row `p`.
 * `Matrix.GaussJordan.pivotRow A j`: the first row that is zero before column `j` and nonzero at
-  `j`, if any (the minimum of `Matrix.GaussJordan.candidates A j`).
+  `j`, if any (the minimum of `Matrix.GaussJordan.pivotCandidates A j`).
 * `Matrix.GaussJordan.stage A j`: one elimination stage at column `j`.
 * `Matrix.GaussJordan.reduce A`: the stages for columns `0, …, c - 1`, in order.
 
@@ -47,7 +48,7 @@ polynomial size and depth `O(c)`.
 
 * `Matrix.GaussJordan.rank_stage`, `Matrix.GaussJordan.rank_reduce`: the stages preserve rank.
 * `Matrix.GaussJordan.exists_pivot_of_reduce_ne_zero`: every nonzero row of `reduce A` owns a
-  pivot column.
+  column where every other row is zero.
 * `Matrix.GaussJordan.rank_eq_card_reduce_ne_zero`: the rank of `A` is the number of nonzero rows
   of `reduce A`.
 * `Matrix.GaussJordan.pivotRow_eq_some_iff`, `Matrix.GaussJordan.pivotRow_eq_none_iff`: the pivot
@@ -88,7 +89,7 @@ private def IsReducedBefore (B : Matrix m (Fin c) K) (k : ℕ) : Prop :=
 private theorem isReducedBefore_zero (B : Matrix m (Fin c) K) : IsReducedBefore B 0 :=
   fun _ => Or.inl fun _ hl => absurd hl (Nat.not_lt_zero _)
 
-/-- Once every column is processed, a nonzero row owns a pivot column. -/
+/-- Once every column is processed, a nonzero row owns a column where every other row is zero. -/
 private theorem exists_pivot_of_isReducedBefore {B : Matrix m (Fin c) K}
     (hB : IsReducedBefore B c) {i : m} (hi : B i ≠ 0) :
     ∃ l, B i l ≠ 0 ∧ ∀ i', i' ≠ i → B i' l = 0 := by
@@ -161,18 +162,18 @@ variable [Fintype m] [LinearOrder m] [Field K] [DecidableEq K]
 omit [LinearOrder m] in
 /-- The candidate pivot rows for column `j`: the rows that are zero before `j` and nonzero at
 `j`. -/
-@[expose] def candidates (A : Matrix m (Fin c) K) (j : Fin c) : Finset m :=
+@[expose] def pivotCandidates (A : Matrix m (Fin c) K) (j : Fin c) : Finset m :=
   univ.filter fun i => IsFreeBefore A j i ∧ A i j ≠ 0
 
 omit [LinearOrder m] in
-theorem mem_candidates {A : Matrix m (Fin c) K} {j : Fin c} {i : m} :
-    i ∈ candidates A j ↔ IsFreeBefore A j i ∧ A i j ≠ 0 := by
-  simp [candidates]
+theorem mem_pivotCandidates {A : Matrix m (Fin c) K} {j : Fin c} {i : m} :
+    i ∈ pivotCandidates A j ↔ IsFreeBefore A j i ∧ A i j ≠ 0 := by
+  simp [pivotCandidates]
 
 /-- The pivot row for column `j`: the first row that is zero on the columns before `j` and nonzero
 at `j`, or `none` if there is no such row. -/
 @[expose] def pivotRow (A : Matrix m (Fin c) K) (j : Fin c) : Option m :=
-  if h : (candidates A j).Nonempty then some ((candidates A j).min' h) else none
+  if h : (pivotCandidates A j).Nonempty then some ((pivotCandidates A j).min' h) else none
 
 /-- One stage of Gauss–Jordan elimination at column `j`: if column `j` has a pivot row, clear
 column `j` in every other row; otherwise leave the matrix unchanged. -/
@@ -198,15 +199,16 @@ theorem pivotRow_eq_some_iff {A : Matrix m (Fin c) K} {j : Fin c} {p : m} :
   · rw [Option.some_inj]
     constructor
     · rintro rfl
-      obtain ⟨hfree, hne⟩ := mem_candidates.mp ((candidates A j).min'_mem h)
+      obtain ⟨hfree, hne⟩ := mem_pivotCandidates.mp ((pivotCandidates A j).min'_mem h)
       refine ⟨hfree, hne, fun i hi hfi => ?_⟩
       by_contra hij
-      exact absurd ((candidates A j).min'_le i (mem_candidates.mpr ⟨hfi, hij⟩)) (not_le.mpr hi)
+      exact absurd ((pivotCandidates A j).min'_le i (mem_pivotCandidates.mpr ⟨hfi, hij⟩))
+        (not_le.mpr hi)
     · rintro ⟨hfree, hne, hmin⟩
-      refine le_antisymm ((candidates A j).min'_le p (mem_candidates.mpr ⟨hfree, hne⟩))
-        ((candidates A j).le_min' h p fun i hi => not_lt.mp fun hip => ?_)
-      exact (mem_candidates.mp hi).2 (hmin i hip (mem_candidates.mp hi).1)
-  · exact iff_of_false (by simp) fun ⟨hfree, hne, _⟩ => h ⟨p, mem_candidates.mpr ⟨hfree, hne⟩⟩
+      refine le_antisymm ((pivotCandidates A j).min'_le p (mem_pivotCandidates.mpr ⟨hfree, hne⟩))
+        ((pivotCandidates A j).le_min' h p fun i hi => not_lt.mp fun hip => ?_)
+      exact (mem_pivotCandidates.mp hi).2 (hmin i hip (mem_pivotCandidates.mp hi).1)
+  · exact iff_of_false (by simp) fun ⟨hfree, hne, _⟩ => h ⟨p, mem_pivotCandidates.mpr ⟨hfree, hne⟩⟩
 
 /-- Column `j` has no pivot row exactly when every row that is free before `j` is zero at `j`. -/
 theorem pivotRow_eq_none_iff {A : Matrix m (Fin c) K} {j : Fin c} :
@@ -214,11 +216,11 @@ theorem pivotRow_eq_none_iff {A : Matrix m (Fin c) K} {j : Fin c} :
   unfold pivotRow
   split_ifs with h
   · obtain ⟨i, hi⟩ := id h
-    obtain ⟨hfree, hne⟩ := mem_candidates.mp hi
+    obtain ⟨hfree, hne⟩ := mem_pivotCandidates.mp hi
     exact iff_of_false (by simp) fun hall => hne (hall i hfree)
   · refine iff_of_true rfl fun i hfree => ?_
     by_contra hne
-    exact h ⟨i, mem_candidates.mpr ⟨hfree, hne⟩⟩
+    exact h ⟨i, mem_pivotCandidates.mpr ⟨hfree, hne⟩⟩
 
 theorem stage_of_pivotRow_eq_none {A : Matrix m (Fin c) K} {j : Fin c}
     (h : pivotRow A j = none) : stage A j = A := by
@@ -301,15 +303,16 @@ private theorem isReducedBefore_reduceUpTo (A : Matrix m (Fin c) K) {k : ℕ} (h
     rw [reduceUpTo_succ_of_lt A hk]
     exact isReducedBefore_stage (ih (Nat.le_of_succ_le hk))
 
-/-- Every nonzero row of `reduce A` owns a pivot column: it is nonzero there and every other row is
-zero there. So the nonzero rows of `reduce A` correspond to its pivots. -/
-theorem exists_pivot_of_reduce_ne_zero (A : Matrix m (Fin c) K) {i : m} (hi : reduce A i ≠ 0) :
+/-- Every nonzero row of `reduce A` owns a column: it is nonzero there and every other row is zero
+there. Distinct rows own distinct columns, but one row may own several. -/
+theorem exists_pivot_of_reduce_ne_zero (A : Matrix m (Fin c) K) {i : m}
+    (hi : (reduce A).row i ≠ 0) :
     ∃ l, reduce A i l ≠ 0 ∧ ∀ i', i' ≠ i → reduce A i' l = 0 :=
   exists_pivot_of_isReducedBefore (isReducedBefore_reduceUpTo A le_rfl) hi
 
-/-- A matrix in which every nonzero row owns a pivot column has rank equal to its number of
-nonzero rows. The pivot columns of the nonzero rows give a diagonal submatrix with nonzero
-diagonal. -/
+/-- A matrix in which every nonzero row owns a column, where every other row is zero, has rank
+equal to its number of nonzero rows. One owned column per nonzero row gives a diagonal submatrix
+with nonzero diagonal. -/
 private theorem rank_eq_card_of_isReducedBefore {B : Matrix m (Fin c) K}
     (hB : IsReducedBefore B c) : B.rank = #{i | B.row i ≠ 0} := by
   refine le_antisymm (rank_le_card_of_support_subset B _ fun i hi =>
@@ -331,8 +334,8 @@ private theorem rank_eq_card_of_isReducedBefore {B : Matrix m (Fin c) K}
         exact rank_submatrix_le B _ _
 
 /-- **Rank by Gauss–Jordan elimination**: the rank of `A` is the number of nonzero rows of
-`reduce A`. Each nonzero row owns a pivot column (`exists_pivot_of_reduce_ne_zero`), so this is
-also the number of pivots. -/
+`reduce A`. Each nonzero row owns a column where every other row is zero
+(`exists_pivot_of_reduce_ne_zero`), and these give a diagonal submatrix of full size. -/
 theorem rank_eq_card_reduce_ne_zero (A : Matrix m (Fin c) K) :
     A.rank = #{i | (reduce A).row i ≠ 0} := by
   rw [← rank_reduce A]
