@@ -172,16 +172,14 @@ omit [DecidableEq V] in
 theorem sum_length_update_cons {α β : Type*} [DecidableEq α] [Fintype α] (f : α → List β)
     (u : α) (v : β) :
     (∑ w, (Function.update f u (v :: f u) w).length) = (∑ w, (f w).length) + 1 := by
-  rw [← Finset.add_sum_erase _ _ (Finset.mem_univ u),
-    ← Finset.add_sum_erase _ (fun w => (f w).length) (Finset.mem_univ u)]
-  have heq :
-      ∑ x ∈ Finset.univ.erase u, (Function.update f u (v :: f u) x).length =
-        ∑ x ∈ Finset.univ.erase u, (f x).length := by
-    refine Finset.sum_congr rfl fun x hx => ?_
-    rw [Function.update_of_ne (Finset.ne_of_mem_erase hx)]
-  rw [Function.update_self, List.length_cons, heq]
+  change (∑ w, (List.length ∘ Function.update f u (v :: f u)) w) = _
+  rw [Function.comp_update List.length f u (v :: f u)]
+  change (∑ w, Function.update (fun w => (f w).length) u (v :: f u).length w) = _
+  rw [Finset.sum_update_of_mem (Finset.mem_univ u)]
+  rw [← Finset.add_sum_erase _ (fun w => (f w).length) (Finset.mem_univ u)]
+  rw [List.length_cons]
+  rw [Finset.erase_eq]
   omega
-
 private theorem sum_length_foldl_update [Fintype V] (u : V) :
     ∀ (l : List V) (rev : V → List V),
       (∑ w, ((l.foldl (fun rev v => Function.update rev v (u :: rev v)) rev) w).length) =
