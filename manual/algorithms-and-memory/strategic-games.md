@@ -172,6 +172,33 @@ In Rock–Paper–Scissors, the uniform distribution on the six outcomes without
 correlated equilibrium but not a correlated equilibrium. Since `a + 1` beats `a` there, a player
 recommended `a` gains by switching to `a + 2`.
 
+[SwapRegretDynamics.lean](../../CslibFrontier/GameTheory/Strategic/SwapRegretDynamics.lean) defines
+`IsApproxCorrelatedEquilibrium ε σ`, where the expected cost bound for player `i` is relaxed by
+`ε i`. If after `T > 0` rounds every player `i` has total expected swap regret at most `R i`, then
+the time average of the product distributions is an `(R i / T)`-approximate correlated equilibrium
+(`timeAverage_productDist_isApproxCorrelatedEquilibrium`, Lecture 18, Proposition 1.3 of
+[roughgarden13cs364a][roughgarden13cs364a]; Theorem 3 of [blummansour07][blummansour07]).
+
+`blumMansourDynamics G T` constructs the coupled multi-player Blum–Mansour trajectory with Hedge
+copies tuned for a fixed finite horizon `T`, and `blumMansourDynamics_eq_blumMansourProb`
+identifies each player's trajectory with the single-learner Blum–Mansour algorithm against its
+realized `deviationCost` sequence. Under `[Fintype ι] [DecidableEq ι]`, `[∀ i, Fintype (S i)]`,
+`[∀ i, DecidableEq (S i)]`, `[∀ i, Nonempty (S i)]`, costs in `[-1, 1]` (`∀ i s, |G.cost i s| ≤ 1`),
+`m_i = |S i| ≥ 2`, and `T > 0` satisfying `m_i ln m_i ≤ T`,
+`blumMansour_isApproxCorrelatedEquilibrium` proves that the time average of the first `T` rounds
+is an approximate correlated equilibrium with exact slack `2 √(m_i ln m_i / T)` ([blummansour07][blummansour07],
+Corollary 7). This is a fixed-horizon (`T`-indexed), full-information expected-cost analysis: it
+does not establish anytime convergence independent of `T`, sampled play, last-iterate convergence,
+or a running-time theorem.
+
+The checked theorem `CslibFrontierTests.GameTheory.SwapRegretDynamics.blumMansour_pennies` in
+[GameTheory/SwapRegretDynamics.lean](../../CslibFrontierTests/GameTheory/SwapRegretDynamics.lean)
+instantiates this unconditionally on matching pennies for every `T ≥ 2`:
+
+```bash
+lake build CslibFrontierTests.GameTheory.SwapRegretDynamics
+```
+
 ## Atomic congestion games
 
 [Congestion/Basic.lean](../../CslibFrontier/GameTheory/Congestion/Basic.lean) defines
@@ -494,6 +521,9 @@ of Rock–Paper–Scissors is a coarse correlated equilibrium that is not correl
 
 The congestion tests also check that Hedge dynamics start uniform, and they apply the Hedge
 price-of-anarchy bound to the two-link game for every horizon.
+[CslibFrontierTests/GameTheory/SwapRegretDynamics.lean](../../CslibFrontierTests/GameTheory/SwapRegretDynamics.lean)
+instantiates the unconditional Blum–Mansour bound on matching pennies for every `T ≥ 2` and checks
+the `t = 0` learner identity at `T = 4`.
 [CslibFrontierTests/GameTheory/Stability.lean](../../CslibFrontierTests/GameTheory/Stability.lean) checks
 the following price-of-stability instances:
 
@@ -540,8 +570,7 @@ under strict `module` axiom checks.
 
 ## Known Limitations
 
-Swap regret and the convergence of no-swap-regret dynamics to correlated equilibria (Lecture 18,
-§1), existence of Wardrop flows, and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
+Existence of Wardrop flows and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
 [roughgarden03][roughgarden03] for classes without the constant functions (diverse classes on
 parallel links, Theorem 4.5, and inhomogeneous classes on unions of paths, Theorem 4.9) and the
 M/M/1 and M/G/1 delay functions of its Section 5 are not formalized. Nor are the tight price of
@@ -556,14 +585,16 @@ better-response paths or the polynomial-time algorithm for symmetric network con
 are ROADMAP directions under [#2900](https://github.com/cslib-community/cslib-frontier/issues/2900).
 Two-player rational Nash equilibrium is in `PPAD` (`BimatrixNash_mem_PPAD`); degenerate bimatrix
 parity, executing the Lemke–Howson path as a solver, and the Savani–von Stengel exponential
-lower bound remain tracked in [#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge dynamics are
-full-information and deterministic: they work with expected costs, not sampled play or bandit
-feedback, and only time-average guarantees are proved, not last-iterate convergence.
+lower bound remain tracked in [#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge and Blum–Mansour
+swap-regret dynamics are full-information, deterministic, and fixed-horizon (`T`-indexed): they work
+with expected costs, not anytime step sizes independent of `T`, sampled play or bandit feedback,
+and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
 [anshelevichDKTWR08]: ../sources.md#anshelevichdktwr08
 [babaioffChuangFeldman07]: ../sources.md#babaioffchuangfeldman07
+[blummansour07]: ../sources.md#blummansour07
 [complexitylib]: ../sources.md#complexitylib
 [epsteinFeldmanMansour09]: ../sources.md#epsteinfeldmanmansour09
 [fabrikantPapadimitriouTalwar04]: ../sources.md#fabrikantpapadimitrioutalwar04

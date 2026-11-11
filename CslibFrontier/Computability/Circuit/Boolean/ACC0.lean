@@ -12,8 +12,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Basic
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Simulation
 public import CslibFrontier.Computability.Complexity.Classes.P
 public import CslibFrontier.Computability.Complexity.Classes.PH.Kannan
-import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
-import CslibFrontier.Computability.Circuit.Boolean.Smolensky.Majority
+import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
+import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 
 /-!

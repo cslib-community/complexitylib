@@ -9,6 +9,7 @@ public import CslibFrontier.Crypto.Primitives.BlockCipher.Modes
 public import CslibFrontier.Foundations.Data.BitString.PadBlocks
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Control.Monad.Writer
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Data.Finset.Density
@@ -665,30 +666,6 @@ private theorem card_accept_eq_sum_reachableTraces {ℓ : ℕ} {X : Type*} [Fint
       exact h1
   · intro x _
     exact Finset.mem_image.2 ⟨O x, Finset.mem_univ _, rfl⟩
-private theorem card_functions_agree_on {α β : Type*} [Fintype α] [DecidableEq α]
-    [Fintype β] [DecidableEq β] (S : Finset α) (o : α → β) :
-    (Finset.univ.filter (fun f : α → β => ∀ x ∈ S, f x = o x)).card =
-      Fintype.card β ^ (Fintype.card α - S.card) := by
-  have hpi : Finset.univ.filter (fun f : α → β => ∀ x ∈ S, f x = o x) =
-      Fintype.piFinset (fun x => if x ∈ S then {o x} else Finset.univ) := by
-    ext f
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Fintype.mem_piFinset]
-    constructor
-    · intro h x
-      split_ifs with hx
-      · simp [h x hx]
-      · simp
-    · intro h x hx
-      have := h x
-      simp only [hx, ↓reduceIte] at this
-      simpa using this
-  rw [hpi, Fintype.card_piFinset]
-  simp only [apply_ite Finset.card, Finset.card_singleton, Finset.card_univ]
-  rw [Finset.prod_ite]
-  simp only [Finset.prod_const_one, one_mul, Finset.prod_const]
-  congr 1
-  rw [Finset.filter_not, Finset.filter_mem_eq_inter, Finset.univ_inter,
-    Finset.card_sdiff_of_subset (Finset.subset_univ _), Finset.card_univ]
 private theorem sum_filter_abs_sub_le {ι : Type*} (s : Finset ι) (a b : ι → ℝ)
     (P : ι → Prop) [DecidablePred P] (δ : ℝ) (_hδ : 0 ≤ δ) (hb : ∀ i ∈ s, 0 ≤ b i)
     (hab : ∀ i ∈ s, (1 - δ) * b i ≤ a i) (ha1 : ∑ i ∈ s, a i = 1) (hb1 : ∑ i ∈ s, b i = 1) :
@@ -771,7 +748,8 @@ private theorem cbcDecisionTrace_prob_lower_bound {ℓ : ℕ} (q : ℕ)
   set k := S.card; set N := Fintype.card (CBCInput n ℓ); have hkN : k ≤ N := Finset.card_le_univ S
   have hI : (Finset.univ.filter (fun f : CBCInput n ℓ → BitString n =>
       cbcDecisionTrace f T = cbcDecisionTrace o0 T)).card = (2 ^ n) ^ (N - k) := by
-    rw [Finset.filter_congr (fun f _ => hagree f), card_functions_agree_on S o0]
+    rw [Finset.filter_congr (fun f _ => hagree f), Fintype.card_filter_forall_mem_eq,
+      Finset.card_compl]
     congr 1; simp
   have hF : Fintype.card (CBCInput n ℓ → BitString n) = (2 ^ n) ^ N := by
     rw [Fintype.card_fun]; congr 1; simp

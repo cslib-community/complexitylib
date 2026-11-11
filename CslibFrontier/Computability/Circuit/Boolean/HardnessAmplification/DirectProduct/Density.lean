@@ -36,7 +36,8 @@ probability); the per-seed analysis of their Lemmas 3.8–3.10 is in the decoder
 
 The constants (`2 s ≤ k`, `s ≥ (64 / ε) log (512 / (ε δ ^ 2))`, `m ≥ (16 / δ) log (8 / ε)` and the
 fraction `δ / 8`) are ours, derived for the tuple formulation; they are not IJKW's. The results
-are counting statements about a pure function: the decoder's circuit size is a separate result.
+are counting statements about a pure function; `DirectProduct.Complexity` bounds the decoder's
+circuit size.
 
 ## Main definitions
 
@@ -172,7 +173,7 @@ theorem sum_sum_card_heavy_le (C' : (Fin k → U) → Fin k → V) (f : U → V)
             (fun (b₀ y : Fin k → U) => ∀ i ∈ P, b₀ i = y i) (s := univ) (t := H')
         _ = n ^ (k - s) * #H' := by
           have hc : ∀ y ∈ H', #{b₀ : Fin k → U | ∀ i ∈ P, b₀ i = y i} = n ^ (k - s) :=
-            fun y _ => by rw [← hPc]; convert Fintype.card_filter_forall_mem_eq P y
+            fun y _ => by rw [← hPc]; exact Fintype.card_filter_forall_mem_eq P y
           rw [sum_const_nat hc, mul_comm]
     exact_mod_cast hcount
   refine (sum_le_sum hP).trans ?_

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.MCSP.PartialHardness.Knowledge
 import CslibFrontier.Computability.Circuit.Boolean.CountingBound
 import CslibFrontier.Foundations.Combinatorics.WeightedTail
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.Tactic.FieldSimp
@@ -127,7 +128,7 @@ theorem inputLength_le_clog {I : CMMSAInstance} {Δ k lam : ℕ} (hm : I.formula
   have hidx : indexWidth I ≤ Nat.clog 2 lam := Nat.clog_le_of_le_pow (hm.trans hlamL)
   have hvar (v : ℕ) (hv : v < I.weights.length) : varLength I lam v ≤ 2 * Nat.clog 2 lam := by
     refine Nat.clog_le_of_le_pow ?_
-    calc I.weights.getD v 0 * lam ≤ lam * lam := Nat.mul_le_mul_right _ (hw _ (getD_weights_mem hv))
+    calc I.weights.getD v 0 * lam ≤ lam * lam := Nat.mul_le_mul_right _ (hw _ (List.getD_mem 0 hv))
       _ ≤ 2 ^ Nat.clog 2 lam * 2 ^ Nat.clog 2 lam := Nat.mul_le_mul hlamL hlamL
       _ = 2 ^ (2 * Nat.clog 2 lam) := by rw [← pow_add, two_mul]
   have hW : seedWidth I lam ≤ 2 * Nat.clog 2 lam :=
@@ -195,7 +196,7 @@ private theorem card_cand_le_exp_mul (hwf : I.WellFormed Δ) (hk : Odd k) (hΔ :
   set w : ℕ := I.weights.getD v 0
   set B := Real.log (4 * Δ ^ 4) + inputLength I Δ k lam * Real.log 2 with hB
   have hγ0 : 0 ≤ γ := sub_nonneg.2 Real.binEntropy_le_log_two
-  have hw1 : 1 ≤ w := hwf.weight_pos _ (getD_weights_mem v.isLt)
+  have hw1 : 1 ≤ w := hwf.weight_pos _ (List.getD_mem 0 v.isLt)
   have hΔ' : (1 : ℝ) ≤ Δ := by exact_mod_cast hΔ
   have hB0 : 0 ≤ B := by
     have : (1 : ℝ) ≤ 4 * Δ ^ 4 := by nlinarith [pow_le_pow_left₀ zero_le_one hΔ' 4]
