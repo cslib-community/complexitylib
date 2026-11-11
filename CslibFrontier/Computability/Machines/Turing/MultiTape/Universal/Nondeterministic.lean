@@ -32,7 +32,7 @@ description reaches a halted configuration with the output `[1]`.
 Along a computation path of the machine within `S` cells, the description's run stays within
 `cfgSpaceBound (descLen d) n k S` bits, for inputs of length `n` and `k` work tapes. The zippers
 of the run hold only cells that the machine's heads have visited, so this bound holds at every
-configuration of the run.
+configuration the run steps to.
 
 ## Main definitions
 
@@ -269,7 +269,7 @@ lemma exists_reflTransGen_fits_aux {input : List Symbol} (π : ntm.RunPath input
     omega
 
 /-- **A computation path of the machine within `S` cells is represented by a run of its
-description within the space bound**: every configuration the run passes through is at most
+description within the space bound**: every configuration the run steps to is at most
 `cfgSpaceBound (descLen d) n k S` bits long. -/
 public theorem exists_reflTransGen_fits_of_computationPath {input : List Symbol}
     (π : ntm.ComputationPath input) {S : ℕ} (hS : π.space ≤ S) :

@@ -21,9 +21,10 @@ whose edge expansion is at least `1 / 6000` (`Cslib.RotationMap.le_edgeExpansion
 `h(G) |V| / 3 ≤ e(G)` (`Cslib.RotationMap.edgeExpansion_mul_card_div_three_le_minBalancedCut`) gives
 the expansion bound. The expanders are obtained non-constructively.
 
-This is the graph family behind the Tseitin lower bounds for resolution and sum-of-squares
-(`CslibFrontier.Logics.Propositional.Resolution.TseitinExpander`,
-`CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander`).
+This is the graph family behind the Tseitin lower bounds for resolution, sum-of-squares and
+polynomial calculus (`CslibFrontier.Logics.Propositional.Resolution.TseitinExpander`,
+`CslibFrontier.Logics.Propositional.Algebraic.SumOfSquares.TseitinExpander`,
+`CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.TseitinExpander`).
 
 ## Main results
 

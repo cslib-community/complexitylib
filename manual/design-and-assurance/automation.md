@@ -10,9 +10,11 @@ module column omits the common prefix `CslibFrontier.`; import that module, and 
 tactic also open the namespace named in its row. Each reference is the most complete account of
 the tactic, in this chapter or another, or its checked clients when no chapter covers it; the
 clients show the imports and local context. Search tactics such as `polytime` and `fits` either
-close the goal or fail with a diagnostic. Execution and reduction tactics such as `wram_exec`,
-`fo_reduction` and `realize` leave the obligations they cannot prove as goals; their references
-say which.
+close the goal or fail with a diagnostic; when `degree`, `logspace`, `space`, `fo_qf`,
+`fo_iso_closed` or `fo_definable` fails, the error ends with a note saying what to supply, as
+described in [Read the remaining goal](../workflows/troubleshooting.md#read-the-remaining-goal).
+Execution and reduction tactics such as `wram_exec`, `fo_reduction` and `realize` leave the
+obligations they cannot prove as goals; their references say which.
 
 **Resource certificates**
 
@@ -22,7 +24,7 @@ say which.
 | `ppt`, `ppt [f, g]` | `Tactic.PPT` | `IsPPTOn`, `IsPPT`, `IsOraclePPTOn`, `IsOraclePPT` | [Named certificates](#named-certificates-and-polynomial-time), [other resource predicates](#other-resource-predicates) |
 | `@[program_certificate h*]` (attribute) | `Tactic.PolyTime.Init` | registers a certificate for `polytime`, `logspace` and `ppt` | [Named certificates](#named-certificates-and-polynomial-time) |
 | `logspace` | `Tactic.LogSpace` | `ComputableInLogSpace f encIn encOut` | [Other resource predicates](#other-resource-predicates), [checked clients](../../CslibFrontierTests/LogSpaceTactic.lean) |
-| `space`, `space [f]` | `Tactic.Space` | `ComputableInSpace f encIn encOut S`, with an explicit budget `S` | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
+| `space`, `space [f]` | `Tactic.Space` | `ComputableInSpace f encIn encOut S`, with an explicit budget `S`, including finite values, decidable conditions and Boolean connectives | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
 | `degree` | `Tactic.Degree` | `ComputableInDegree f encIn encOut d e` | [Preserve explicit polynomial degrees](#preserve-explicit-polynomial-degrees) |
 | `fun_prop` (Mathlib) | `Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists` | `ComputableInO f encIn encOut T S` | [Assemble joint time and space bounds](#assemble-joint-time-and-space-bounds) |
 | `option_match_to_elim` | `Tactic.OptionMatch` | any goal with an option match, before resource automation | [Rewrite option matches](#rewrite-option-matches-before-resource-automation) |
@@ -51,6 +53,7 @@ say which.
 | `wram_call h canonical hf with pats` | `Computability.WordRAM.SymbolicExec.CanonicalCall` | the same, keeping the caller state as `small.extend bank caller` | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `ram_keep view`, `ram_keep view using frame` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.MemoryView` | a block, list or footprint view, kept through stores outside its support | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `realize` (scoped, `Cslib.WordRAM`) | `Tactic.Realize` | `Realizes B p input output safe work` for a memory client | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
+| `simp only [client_simps]` (simp set) | `DataStructure.StateTransition`; `Computability.WordRAM.Realization.Basic` for `memoryCost` | splits `clientResult`, `clientState`, `clientHistory`, `totalCost`, `ValidHistory` and `memoryCost` at the binds of a client | [Relational operations and adaptive clients](../algorithms-and-memory/memory-specifications.md#relational-operations-and-adaptive-clients) |
 | `cp_step`, `cp_step [h]` | `Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` | one step of `P.Reaches w Q (l, regs) s'` for a counter program | [Step through counter programs](#step-through-counter-programs) |
 
 **Circuits, logic and probability**
@@ -58,17 +61,26 @@ say which.
 | Tactic | Module | Goal | Reference |
 |---|---|---|---|
 | `synthesis_available` | `Tactic.Synthesis` | membership of a wire among those already available | [Circuit construction](#circuit-construction), [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) |
+| `synthesis_union` | `Tactic.Synthesis` | `X ⊆ A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ`, syntactically or by a local hypothesis; `f ∈ A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ` by a local hypothesis | [Circuit construction](#circuit-construction) |
 | `synthesis_step b using r` | `Tactic.Synthesis` | appends the rule `r` to the builder `b` | [Circuit construction](#circuit-construction) |
 | `fo_qf`, `fo_iso_closed` | `Tactic.FirstOrder` | quantifier-freeness; closure of a class under isomorphism (`IsoClosed`) | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FirstOrderAutomation.lean) |
 | `fo_simp [h] at l` | `Tactic.FirstOrder` | unfolds the realization of formulas and interpreted structures | [Logical descriptions](#logical-descriptions) |
 | `fo_reduction I [h]` | `Tactic.FirstOrder` | `FO.QFReduces K K'`, `FO.Reduces K K'` through the interpretation `I` | [Logical descriptions](#logical-descriptions) |
 | `fo_definable`, `fo_wf [φ]` | `Tactic.FOOperator` | `Operator.Definable …`; formation conditions of explicit formulas | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FOOperators.lean) |
 | `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
+| `simp only [runWith_norm, pmf_norm]` (simp set) | `Languages.Probabilistic.Oracle.Norm` | the law of an oracle experiment (`runWith` of interpreted handlers), to nested `PMF.bind` | [One semantics with several views](../programs-crypto-and-probability/programs-and-realization.md#one-semantics-with-several-views) |
+| `pmf_swap`, `pmf_swap with x y` | `Tactic.PMFSwap` | an equation of distributions that draw the same independent samples in different orders | [Reorder independent samples](#reorder-independent-samples) |
+| `pmf_hoist q`, `pmf_hoist q at h` | `Tactic.PMFSwap` | moves the samples of `q` toward the front of their `PMF.bind` chains | [Reorder independent samples](#reorder-independent-samples) |
+| `supp_cases h`, `supp_cases h [p] with pat`; `simp only [supp_norm]` (simp set) | `Tactic.SuppCases` | inverts `h : x ∈ m.support` for a `PMF` or `OracleComp` program into the results of its parts | [Invert a support membership](../workflows/probabilistic-workflows.md#invert-a-support-membership) |
+| `negligible`, `negligible using hle`, `negligible eventually hle` | `Tactic.Negligible` | `Cslib.Crypto.Negligible f` | [Close negligibility bounds](#close-negligibility-bounds) |
+| `game_trans [g₁, …]`, `game_trans [g₁, …] using [h₀, …]` | `Tactic.GameHop` | `Game.advantage`, `Encryption.advantage` and `Game.succProbability` difference bounds, and `CloseTo`, split into one subgoal per hop | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
+| `peel_binds`, `peel_binds x₁ …` | `Tactic.GameHop` | removes the shared leading draws of the two sides of a `Game.advantage`, `Encryption.advantage`, `CloseTo` or `PMF` equality goal | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
-simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, `cp_simps`, used by `cp_step`, and
-`fo_realize`, used by `fo_simp`, and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`,
-`FirstOrder` and `FODefinable`.
+simp sets `wram_simps` (used by `wram_exec` and `wram_simp`), `cp_simps` (used by `cp_step`),
+`fo_realize` (used by `fo_simp`), `supp_norm` (used by `supp_cases`) and `runWith_norm` (used with
+`pmf_norm` on oracle experiments), and the Aesop rule sets
+`PolyTime`, `PPT`, `LogSpace`, `FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
 
@@ -232,12 +244,14 @@ and the diagnostics for a goal of the wrong form, a value that cannot be evaluat
 with nothing to execute. Calls, register renaming and memory frames are covered in
 [routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames).
 
-If `ram_eval` does not close its goal, check that every program given by name is among its simp
-lemmas, that `n` covers the iterations of every loop, and that the simp lemmas decide each
-condition the run tests: pass a hypothesis such as `h : x.regs i < x.regs j` explicitly, as in
-`ram_eval [p, h]`, because its `simp` call does not read hypotheses from the context. Fitting
-conditions are decided from the `Fits` hypotheses in context. A loop with a symbolic iteration
-count needs an invariant, such as `ExecWithin.loop_count` in the
+If `ram_eval` does not close its goal, its error names the failing step: a goal of neither form,
+a program `simp` cannot evaluate, a run that returns `none`, an undecided condition or an
+instruction bound that `omega` cannot prove, showing the last two. Check that every program given
+by name is among its simp lemmas, that `n` covers the iterations of every loop, and that the simp
+lemmas decide each condition the run tests: pass a hypothesis such as `h : x.regs i < x.regs j`
+explicitly, as in `ram_eval [p, h]`, because its `simp` call does not read hypotheses from the
+context. Fitting conditions are decided from the `Fits` hypotheses in context. A loop with a
+symbolic iteration count needs an invariant, such as `ExecWithin.loop_count` in the
 [counting-loop chapter](../algorithms-and-memory/wordram-and-bridges.md#proving-a-constant-cost-counting-loop),
 not a larger `n`.
 
@@ -291,7 +305,7 @@ code and charging contract; the complete clients above supply imports and local 
 
 [`synthesis_step`](../../CslibFrontier/Tactic/Synthesis.lean) applies an explicitly supplied synthesis rule and locates its required wires among available values. `Synthesis.Builder` retains earlier wires and accumulates certified cost. Membership search itself adds no gates. Reusing a computed value preserves sharing; invoking a new construction charges its bound. A final budget check verifies the chosen construction fits the target, but does not search globally for an optimal circuit.
 
-`synthesis_available` is that membership search on its own: it proves that a function is among the available wires, through the unions, ranges and indexed unions a builder's wire set is made of, and fails rather than adding a gate when it is not. The [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) uses it for every gate input and for the selected outputs.
+`synthesis_available` is that membership search on its own: it proves that a function is among the available wires, through the unions, ranges and indexed unions a builder's wire set is made of, and fails rather than adding a gate when it is not. The [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) uses it for every gate input and for the selected outputs. It first tries `synthesis_union`, which matches the wires against the members of a union `A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ`, the shape a chain of `Synthesis.extend` steps produces, syntactically or through a local hypothesis and without unfolding any definition. Only when that fails does it compare wire functions at default transparency, which can unfold word operations on wire families of equal width. A proof over a long chain can call `synthesis_union` directly, as [Karatsuba](../../CslibFrontier/Computability/Circuit/Boolean/Karatsuba.lean) does.
 
 This contract answers a recurrent concern in the transcript: removing proof bookkeeping must not silently introduce gates. The [circuit case study](../development-history/case-studies.md) connects that concern to PR #520 and to the subsequent decision not to pursue general budget-guided synthesis in that session. The present tactic source is the authority for its current capabilities.
 
