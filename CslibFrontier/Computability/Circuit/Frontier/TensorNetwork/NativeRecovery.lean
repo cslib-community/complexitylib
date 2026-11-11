@@ -1031,7 +1031,7 @@ private theorem getDPolyTime {P : α → List (List ℕ)} {k : α → ℕ}
     ComputableInPolyTime (fun x => (P x).getD (k x) []) encIn (encList encNat) :=
   (ComputableInPolyTime.listGetD (encA := encList encNat) []).comp (hP.prod hk)
 
-/-- A unary natural as a one-coordinate list. -/
+/-- A binary natural as a one-coordinate list. -/
 private theorem singletonPolyTime {n : α → ℕ} (hn : ComputableInPolyTime n encIn encNat) :
     ComputableInPolyTime (fun x => [n x]) encIn (encList encNat) :=
   ComputableInPolyTime.cons' hn (ComputableInPolyTime.const [])

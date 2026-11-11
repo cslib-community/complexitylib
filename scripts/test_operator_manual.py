@@ -12,7 +12,8 @@ from pathlib import Path
 from unittest import mock
 
 from check_operator_manual import (MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR, book_input_errors,
-                                   check, comment_depths, source_anchor_error)
+                                   check, comment_depths, fix_anchors, main as check_main,
+                                   source_anchor_error)
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -274,6 +275,85 @@ class ManualChecks(unittest.TestCase):
             self.assertEqual(result["errors"], [])
             self.assertEqual(result["allowed_stale_source_anchors"], [f"{entry[0]}#L{line}"])
             self.assertEqual(result["unused_stale_source_anchor_entries"], [])
+
+    def test_fix_anchors_repoints_drifted_named_links_and_preserves_syntax(self):
+        (self.repo / "CslibFrontierTests/Anchored.lean").write_text(ANCHORED_SOURCE)
+        lines = ANCHORED_SOURCE.splitlines()
+        at = {text: lines.index(text) + 1 for text in (
+            "/-- A documented definition. -/", "@[simp] theorem one_eq : one = 1 := rfl",
+            "private noncomputable def two : Nat :=", "  2",
+            "/-- Prose that happens to start a line with a keyword:",
+            "theorem in a docstring is not a declaration. -/", "def three : Nat := 3")}
+        url = "../../CslibFrontierTests/Anchored.lean#L{}"
+        doc_lines = [
+            f"[Anchored.one]({url.format(at['def three : Nat := 3'])})",
+            f"[Pair]({url.format(at['theorem in a docstring is not a declaration. -/'])})",
+            f"[`one_eq`]({url.format(9999)})",
+            f"[one](<{url.format(at['  2'])}>) and [two]({url.format(at['  2'])} \"sec\")",
+        ]
+        self.doc.write_text(self.doc.read_text() + "\n" + "\n".join(doc_lines) + "\n")
+        self.assertEqual(len(self.errors()), 5)
+        fixes = fix_anchors(self.repo)
+        self.assertEqual([f["new"] for f in fixes], [
+            f"L{at['/-- A documented definition. -/']}",
+            f"L{at['/-- Prose that happens to start a line with a keyword:']}",
+            f"L{at['@[simp] theorem one_eq : one = 1 := rfl']}",
+            f"L{at['/-- A documented definition. -/']}",
+            f"L{at['private noncomputable def two : Nat :=']}",
+        ])
+        self.assertEqual(self.errors(), [])
+        text = self.doc.read_text()
+        self.assertIn(f"[one](<{url.format(at['/-- A documented definition. -/'])}>)", text)
+        self.assertIn(f"[two]({url.format(at['private noncomputable def two : Nat :='])} \"sec\")",
+                      text)
+        self.assertEqual(fix_anchors(self.repo), [])
+        # Exercise the CLI `--fix-anchors` flag end-to-end on another drifted anchor.
+        self.doc.write_text(text + f"\n[three]({url.format(at['  2'])})\n")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = check_main(["--repo", str(self.repo), "--fix-anchors"])
+        self.assertEqual(code, 0)
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload["errors"], [])
+        self.assertEqual(len(payload["fixed_anchors"]), 1)
+        self.assertEqual(payload["fixed_anchors"][0]["new"], f"L{at['def three : Nat := 3']}")
+
+    def test_fix_anchors_skips_valid_special_ambiguous_and_allowlisted_links(self):
+        source = (
+            "module\n\n"
+            "/-- Doc. -/\ndef one : Nat := 1\n\n"
+            "namespace A\ndef dup : Nat := 0\nend A\n\n"
+            "namespace B\ndef dup : Nat := 1\nend B\n"
+        )
+        (self.repo / "CslibFrontierTests/Dup.lean").write_text(source)
+        url = "../../CslibFrontierTests/Dup.lean#L{}"
+        body = (
+            "\n"
+            f"[one]({url.format(4)}) "        # valid keyword line inside (3, 4) header
+            f"[one]({url.format(1)}) "        # whole-file anchor #L1
+            f"[one]({url.format(4)}-L{12}) "  # range anchor
+            f"`[one]({url.format(999)})`\n"   # inline code span
+            "```markdown\n"
+            f"[one]({url.format(999)})\n"     # fenced block
+            "```\n"
+            "[one](https://example.org/Dup.lean#L999)\n"
+            f"[prose label]({url.format(5)})\n"  # unnamed drifted link (blank line 5)
+            f"[dup]({url.format(4)})\n"          # ambiguous multiple declarations (points to one)
+            f"[one]({url.format(2)})\n"          # allowlisted stale anchor below
+        )
+        before = self.doc.read_text() + body
+        self.doc.write_text(before)
+        entry = ("CslibFrontierTests/Dup.lean", 2)
+        with mock.patch("check_operator_manual.STALE_SOURCE_ANCHORS", {entry}):
+            self.assertEqual(fix_anchors(self.repo), [])
+            self.assertEqual(self.doc.read_text(), before)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = check_main(["--repo", str(self.repo), "--fix-anchors"])
+            self.assertEqual(code, 1)
+            payload = json.loads(out.getvalue())
+            self.assertEqual(payload["fixed_anchors"], [])
+            self.assertEqual(len(payload["errors"]), 2)
 
 
 class SourceLineAnchors(unittest.TestCase):

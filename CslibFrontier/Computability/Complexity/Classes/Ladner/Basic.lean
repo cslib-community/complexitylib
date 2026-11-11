@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Ma
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Bit
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Decode
 public import CslibFrontier.Foundations.Data.List.Append
+public import CslibFrontier.Foundations.Data.List.CourseOfValues
 import CslibFrontier.Foundations.Data.Nat.Bits
 import Mathlib.Data.Nat.Size
 
@@ -60,9 +61,11 @@ Whether a word with index below `n` belongs to the language depends only on the 
   `Cslib.Complexity.Ladner.two_pow_length_word_le`: words and indices are inverse bijections, and
   the word with index `j` has length at most `log₂ (j + 1)`.
 * `Cslib.Complexity.Ladner.universal_desc_of_halted_map`,
-  `Cslib.Complexity.Ladner.exists_index_ge`, `Cslib.Complexity.Ladner.exists_index_runIndexed_eq`:
+  `Cslib.Complexity.Ladner.exists_index_ge`, `Cslib.Complexity.Ladner.exists_index_runIndexed_eq`,
+  `Cslib.Complexity.Ladner.le_clock`, `Cslib.Complexity.Ladner.clock_le_two_pow`:
   the universal function runs a machine from its description, every description has arbitrarily
-  large indices, and so every decider is run by machines with arbitrarily large indices.
+  large indices, so every decider is run by machines with arbitrarily large indices, and the clock
+  dominates fixed polynomials while staying within an exponential bound.
 * `Cslib.Complexity.Ladner.unpad_pad`, `Cslib.Complexity.Ladner.pad_unpad`: padding is undone.
 * `Cslib.Complexity.Ladner.Htable_eq`: the tables hold the values of `H`.
 * `Cslib.Complexity.Ladner.H_le`, `Cslib.Complexity.Ladner.H_le_of_agrees`,
@@ -261,6 +264,21 @@ def clock (i l : ℕ) : ℕ := (2 * l + 2) ^ i
 
 theorem one_le_clock (i l : ℕ) : 1 ≤ clock i l := Nat.one_le_pow _ _ (by omega)
 
+/-- For `c + e ≤ i`, `clock i l` dominates `c * (l + 1) ^ e`. -/
+theorem le_clock {c e i : ℕ} (h : c + e ≤ i) (l : ℕ) : c * (l + 1) ^ e ≤ clock i l :=
+  calc c * (l + 1) ^ e ≤ 2 ^ i * (l + 1) ^ i :=
+        Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
+          (Nat.pow_le_pow_right (by omega) (by omega))
+    _ = clock i l := by rw [clock, ← mul_pow]; ring_nf
+
+/-- `clock i l` is at most `2 ^ ((l + 1) * i)`. -/
+theorem clock_le_two_pow (i l : ℕ) : clock i l ≤ 2 ^ ((l + 1) * i) := by
+  rw [clock, pow_mul]
+  refine Nat.pow_le_pow_left ?_ i
+  have h : l + 1 ≤ 2 ^ l := Nat.lt_two_pow_self
+  rw [pow_succ]
+  omega
+
 /-- The machine with index `i`, allowed `clock i l` steps on a word of length `l` but never more
 than `cap`, halts on the `j`-th word with output `[b]` where `b` decides membership in
 `padSAT e`. -/
@@ -285,9 +303,8 @@ noncomputable def Hstep (T : List ℕ) : ℕ :=
     ∀ j < T.length, Agrees (fun m => T.getD m 0) T.length i j}
 
 /-- The table of the first `n` values of the exponent function. -/
-noncomputable def Htable : ℕ → List ℕ
-  | 0 => []
-  | n + 1 => Htable n ++ [Hstep (Htable n)]
+noncomputable def Htable : ℕ → List ℕ :=
+  List.courseOfValues Hstep
 
 /-- **The exponent function of Ladner's language.** -/
 noncomputable def H (n : ℕ) : ℕ := Hstep (Htable n)
@@ -296,20 +313,16 @@ noncomputable def H (n : ℕ) : ℕ := Hstep (Htable n)
 noncomputable def SATH : Set (List Bool) := padSAT H
 
 /-- **The tables hold the values of `H`.** -/
-theorem Htable_eq (n : ℕ) : Htable n = (List.range n).map H := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [Htable, List.range_succ, List.map_append, ← ih]; rfl
+theorem Htable_eq (n : ℕ) : Htable n = (List.range n).map H :=
+  List.courseOfValues_eq Hstep n
 
 @[simp]
-theorem length_Htable (n : ℕ) : (Htable n).length = n := by
-  simp [Htable_eq]
+theorem length_Htable (n : ℕ) : (Htable n).length = n :=
+  List.length_courseOfValues Hstep n
 
 theorem agrees_Htable_iff {n i j : ℕ} (hj : j < n) :
     Agrees (fun m => (Htable n).getD m 0) n i j ↔ Agrees H n i j :=
-  agrees_congr fun m hm => by
-    rw [Htable_eq, List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range (by omega)]
-    rfl
+  agrees_congr fun _ hm => List.getD_courseOfValues Hstep 0 (hm.trans hj)
 
 theorem H_eq (n : ℕ) :
     H n = sInf {i | i = Nat.log 2 (Nat.log 2 n) ∨ ∀ j < n, Agrees H n i j} := by

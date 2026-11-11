@@ -14,6 +14,7 @@ public import CslibFrontier.Languages.Probabilistic.Iteration
 public import CslibFrontier.Languages.Probabilistic.Repeat
 import CslibFrontier.Languages.Probabilistic.Concentration
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.ToReal
 
 /-!

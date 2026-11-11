@@ -19,6 +19,16 @@ Faisal N. Abu-Khzam, Michael R. Fellows, Michael A. Langston and W. Henry Suters
 
 Dimitris Achlioptas. “Database-Friendly Random Projections: Johnson–Lindenstrauss with Binary Coins.” *Journal of Computer and System Sciences* 66(4), 671–687, 2003. https://doi.org/10.1016/S0022-0000(03)00025-4 . Author-hosted copy of the typeset journal version: https://cgi.di.uoa.gr/~optas/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 1.1 on p. 673 (squared distances within `1 ± ε` with probability at least `1 - n^(-β)` for `k ≥ k₀ = (4 + 2β) log n / (ε²/2 - ε³/3)`, stated for all `ε, β > 0`; the `±1` distribution is (1)). Also checked: Lemma 4.1 on p. 679 (Gaussian entries), Lemma 5.1 on p. 679 (the per-vector tails), and Lemma 5.2 on p. 680, eqs. (6)–(7) (the bounds on `𝔼 exp (h Q²)` and `𝔼 Q⁴`).
 
+<a id="acor22"></a>
+## acor22
+
+Divesh Aggarwal, Eldon Chung, Maciej Obremski, João Ribeiro. "On Secret Sharing, Randomness, and Random-less Reductions for Secret Sharing." *Theory of Cryptography (TCC 2022), Part I*, LNCS 13747, 327–354, Springer, 2022. https://doi.org/10.1007/978-3-031-22318-1_12 ; ePrint https://eprint.iacr.org/2021/802 . Bibliographic metadata taken from `references.bib`. The direct ePrint copy was not inspected (gated behind an automated challenge), so ACOR22 attributions are unverified directly; the formalized threshold design results (`ThresholdDesign`, `(t', n') → (2, 2)` composition, `(2, 3, 2, 2)` and `(r, r, 2, 2)` impossibility for `r ≥ 3`) were checked against [aggarwal26](#aggarwal26), Section 5.
+
+<a id="aggarwal26"></a>
+## aggarwal26
+
+Divesh Aggarwal. *Secret Sharing Despite Non-Extractable Randomness*. arXiv:2610.20173v2, 2026. https://arxiv.org/abs/2610.20173v2 . LaTeX source (`secret_sharing.tex`, version v2) checked on 2026-11-10 UTC: Definition 2.1 (threshold finite-key correctness and `δ`-statistical privacy relative to a source class `sources`; generalized in the library to general `AccessStructure` and arbitrary `Key`) and Section 5 ("Relation to the reductions of ACOR22", covering threshold distribution designs, the `(t', n') → (2, 2)` composition, and non-existence of `(2, 3, 2, 2)` and `(r, r, 2, 2)` designs with `r ≥ 3`, generalized in the library to `DistributionDesign`, `ThresholdDesignOn`, and `no_thresholdDesign_two_two` for `2 ≤ t ≤ n`, `3 ≤ n`).
+
 <a id="ahocorasick75"></a>
 ## ahocorasick75
 
@@ -33,6 +43,11 @@ Benny Applebaum, Yuval Ishai, Eyal Kushilevitz. "How to Garble Arithmetic Circui
 ## alonbabaisuzuki1991
 
 Noga Alon, László Babai and Hiroshi Suzuki. “Multilinear Polynomials and Frankl–Ray-Chaudhuri–Wilson Type Intersection Theorems.” *Journal of Combinatorial Theory, Series A* 58(2), 165–180, 1991. https://doi.org/10.1016/0097-3165(91)90058-O . Bibliographic metadata from search summaries on 2026-11-08; the full text was not inspected in this pass. The manual attributes only the multilinear polynomial method for uniform and nonuniform restricted-intersection bounds to this paper; theorem numbers are not cited.
+
+<a id="alonfeldmanprocacciatennenholtz10"></a>
+## alonfeldmanprocacciatennenholtz10
+
+Noga Alon, Michal Feldman, Ariel D. Procaccia and Moshe Tennenholtz. "Strategyproof Approximation of the Minimax on Networks." *Mathematics of Operations Research* 35(3), 513–526, 2010. https://doi.org/10.1287/moor.1100.0457 (journal metadata verified via web search on 2026-11-11; journal PDF not inspected). Preprint inspected on 2026-11-11: "Strategyproof Approximation Mechanisms for Location on Networks," arXiv:0907.2049v1 (12 July 2009), https://arxiv.org/pdf/0907.2049v1 . Checked Section 2 (pp. 4–5: strategyproofness, group strategyproofness in the weak sense, social cost, approximation ratio) and Section 3.2 (pp. 6–7: Mechanism 1 random dictatorship, Theorem 3.1 proving strategyproofness and `2 - 2/n` approximation on graphs, first remark extending to arbitrary metric spaces, third remark on the 3-leaf star counterexample to weak group strategyproofness, and fourth remark on weak group strategyproofness on the line).
 
 <a id="alongibbonsmatiasszegedy99"></a>
 ## alongibbonsmatiasszegedy99
@@ -263,6 +278,11 @@ Michael Burrows and David J. Wheeler. *A Block-sorting Lossless Data Compression
 ## canetti20
 
 Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Article 28, 2020; full version Cryptology ePrint Archive 2000/067. https://doi.org/10.1145/3402457 .
+
+<a id="canonne22"></a>
+## canonne22
+
+Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased but Representative Sample*. Foundations and Trends in Communications and Information Theory 19(6), 1032–1198, 2022. https://doi.org/10.1561/0100000114 . Checked on 2026-11-10 against the author-hosted draft dated March 10, 2024 at https://ccanonne.github.io/files/misc/main-survey-fnt.pdf (journal pagination not inspected; locators follow that March 10, 2024 draft): Appendix B (pp. 149–152: Definition B.1, `(B.1)`–`(B.3)`, `(B.5)`–`(B.6)`, Lemmas B.1, B.2, and B.5) for Hellinger/`χ²`/KL definitions, tensorization, and comparison inequalities, and Section 3.1 (pp. 99–103: `(3.3)`, Lemma 3.1, and `(3.10)`) for the `√(2n)` Hellinger i.i.d. bound and Ingster's mixture second-moment identity (`CslibFrontier/Probability/{Hellinger,ChiSquare}.lean`).
 
 <a id="ccpv11"></a>
 ## ccpv11
@@ -1012,6 +1032,11 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 
 Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
 
+<a id="moulin80"></a>
+## moulin80
+
+Hervé Moulin. "On Strategy-Proofness and Single Peakedness." *Public Choice* 35(4), 437–455, 1980. https://doi.org/10.1007/BF00128122 . Bibliographic metadata checked against `references.bib` (`Moulin1980`) and secondary search summaries on 2026-11-10; the full text was not inspected, so no internal theorem numbers are claimed. Cited in [the mechanism-design chapter](algorithms-and-memory/mechanism-design.md) via [procacciatennenholtz13](#procacciatennenholtz13) (§3.1, p. 18:8) for group strategyproofness of fixed order-statistic (generalized median) rules on the real line (PT note the weak notion; the library proves the strong variant directly).
+
 <a id="mullersatterthwaite77"></a>
 ## mullersatterthwaite77
 
@@ -1096,6 +1121,11 @@ Ira Pohl. "A Sorting Problem and Its CslibFrontier." *Communications of the ACM*
 ## post46
 
 Emil L. Post. "A Variant of a Recursively Unsolvable Problem." *Bulletin of the American Mathematical Society* 52(4), 264–268, 1946. https://doi.org/10.1090/S0002-9904-1946-08555-9 . Bibliographic metadata only. The publisher's PDF returned an access error and was not inspected. It is cited as the origin of the correspondence problem and its unsolvability, as in [sipser13](#sipser13), §5.2.
+
+<a id="procacciatennenholtz13"></a>
+## procacciatennenholtz13
+
+Ariel D. Procaccia and Moshe Tennenholtz. "Approximate Mechanism Design without Money." *ACM Transactions on Economics and Computation* 1(4), Article 18 (18:1–18:26), 2013 (preliminary version in EC 2009). https://doi.org/10.1145/2542174.2542175 . Author-hosted TEAC copy inspected on 2026-11-11 at https://procaccia.info/wp-content/uploads/2020/03/facility.pdf : checked Section 3 (p. 18:7: randomized facility-location model, strategyproofness, group strategyproofness in the weak sense with strong group strategyproofness noted in passing, social cost, approximation ratio) and Section 3.1 (pp. 18:7–18:8: median optimality on `ℝ` with `med(x)` choosing `x_{(n-1)/2}` for even `n`, and weak group strategyproofness of fixed `k`-th order statistics attributed to [moulin80](#moulin80)). Cited in [the mechanism-design chapter](algorithms-and-memory/mechanism-design.md).
 
 <a id="radhakrishnan97"></a>
 ## radhakrishnan97
@@ -1222,6 +1252,11 @@ Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinato
 
 James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 243–265. A university-hosted PDF of the book was consulted on 2026-11-08 for §10.3 (the definition of blocking coalitions and the core, Definition 10.5, Theorems 10.6 and 10.7, pp. 253–255). Its core uses weak blocking, the strict core of the housing-market modules. Its claim on p. 255 that the core and the strict core coincide under strict preferences is refuted by a checked three-agent market in `CslibFrontierTests/HousingMarket.lean`.
 
+<a id="shamir1979"></a>
+## shamir1979
+
+Adi Shamir. "How to Share a Secret." *Communications of the ACM* 22(11), 612–613, 1979. https://doi.org/10.1145/359168.359176 . Bibliographic metadata taken from `references.bib`; cited at paper level for Shamir threshold secret sharing over finite fields, wrapped from pinned cslib's `Shamir` module and [Shamir/Linear.lean](../CslibFrontier/Crypto/Protocols/SecretSharing/Shamir/Linear.lean).
+
 <a id="shamir1992"></a>
 ## shamir1992
 
@@ -1316,6 +1351,10 @@ Seinosuke Toda. “PP Is as Hard as the Polynomial-Time Hierarchy.” *SIAM Jour
 ## toran04
 
 Jacobo Torán. “Space and Width in Propositional Resolution.” The Computational Complexity Column, *Bulletin of the EATCS* 83, 86–104, 2004 (bibliography key `Toran2004`). Author-hosted copy: https://www.uni-ulm.de/fileadmin/website_uni_ulm/iui.inst.190/Mitarbeiter/toran/beatcs/column83.pdf . Checked against that copy on 2026-11-08 UTC: Definition 2 (resolution space, as sequences of clause sets obtained by deleting clauses, adding a resolvent or adding an initial clause, the model of `CNF.configLTS`), Definition 7 (the pebble game in which an inference may shift a pebble from a parent to the resolvent) and Lemma 8 (space equals that game's pebble number), Theorem 9 (`tree-size(F) ≥ 2 ^ space(F) - 1`, after Esteban and Torán), and the Section 4 statement that the pigeonhole formulas with `m > n` have resolution space exactly `n + 1` independently of the number of pigeons (the text says "holes", evidently a slip). The survey's numerical values are those of the shifting game, one less than clause space in the library's convention. The survey credits the pigeonhole result to its reference [29], J. Torán, “Lower bounds for the space used in resolution”, CSL 1999, LNCS 1683, 362–373; that paper was not inspected. Journal pagination was taken from the bibliographic record.
+<a id="tsybakov09"></a>
+## tsybakov09
+
+Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Series in Statistics, Springer, 2009 (ISBN 978-0-387-79051-0). https://doi.org/10.1007/b13794 . Bibliographic metadata checked on 2026-11-10 (full text not inspected); Section 2.4 (`Divergence Measures and Lower Bounds`) is cited for `f`-divergence properties, Hellinger/TV comparisons (with Tsybakov scaling squared Hellinger by `2`, whereas the library normalizes `h ∈ [0, 1]`), `χ²` tensorization, `2 h² ≤ KL ≤ χ²`, and the Ingster/Le Cam mixture second-moment reduction.
 
 <a id="tutte48"></a>
 ## tutte48

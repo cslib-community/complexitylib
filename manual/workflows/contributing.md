@@ -30,7 +30,7 @@ After adding a library file, run `lake exe mk_all` to regenerate the aggregate. 
 scripts/check.sh --quick
 ```
 
-Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability ratchet on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. Unsupported or ambiguous changes fall back to the full check. Quick success is development feedback, not full integration validation.
+Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet; other non-Lean, unsupported or ambiguous changes fall back to the full check. Quick success is development feedback, not full integration validation.
 
 Lean, dependency or build changes need the six Lean gates on the final revision, together with the other required CI checks:
 
@@ -53,7 +53,9 @@ manual remains accurate, record a specific reason for it in the PR’s manual-im
 A proof-only edit preserving statements, imports and automation may need no prose change;
 a changed encoding or resource bound normally does. An edit that changes the number of lines
 in a file still moves the declarations below it, so repoint any manual links such as
-`File.lean#L120` to them. The checker below reports a link that no longer starts a
+`File.lean#L120` to them (for `[Ns.name](File.lean#Ln)` links,
+`python3 scripts/check_operator_manual.py --fix-anchors` repoints unambiguous declaration
+headers automatically). The checker below reports a link that no longer starts a
 declaration, or whose text names a declaration of the linked file that it does not start.
 
 Run `python3 scripts/check_operator_manual.py` from the repository root, and check changed

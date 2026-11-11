@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Session
 public import CslibFrontier.Computability.Probabilistic.Oracle
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Complete corrupted-sender executions
