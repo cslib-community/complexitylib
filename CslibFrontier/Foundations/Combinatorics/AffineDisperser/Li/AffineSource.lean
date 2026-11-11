@@ -232,7 +232,7 @@ theorem finrank_sup_add_finrank_inf_bitString {ι : Type*} [Finite ι]
   exact Submodule.finrank_sup_add_finrank_inf_eq (toZModSub U) (toZModSub K)
 
 /-- Rank-nullity for linear maps between `Bool`-vector spaces `ι₁ → Bool` and `ι₂ → Bool`. -/
-theorem finrank_range_add_finrank_ker_bitString {ι₁ ι₂ : Type*} [Finite ι₁] [Finite ι₂]
+theorem finrank_range_add_finrank_ker_bitString {ι₁ ι₂ : Type*} [Finite ι₁]
     (f : (ι₁ → Bool) →ₗ[Bool] (ι₂ → Bool)) (V : Submodule Bool (ι₁ → Bool)) :
     finrank Bool ↥(V.map f) + finrank Bool ↥(V ⊓ LinearMap.ker f) = finrank Bool V := by
   let fZ : (ι₁ → ZMod 2) →ₗ[ZMod 2] (ι₂ → ZMod 2) :=
