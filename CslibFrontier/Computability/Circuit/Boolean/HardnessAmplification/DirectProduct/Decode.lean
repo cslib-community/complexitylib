@@ -393,4 +393,194 @@ theorem card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f : U �
   have := div_le_div_of_nonneg_left (by positivity : (0 : ℝ) ≤ B * N ^ m) hθ ha
   linarith
 
+/-- The disagreement positions of a tuple: where `C'` differs from `f` coordinatewise. -/
+def disagreements (C' : (Fin k → U) → Fin k → V) (f : U → V) (y : Fin k → U) : Finset (Fin k) :=
+  {j | C' y j ≠ f (y j)}
+
+/-- **Total error of a good seed.** Suppose the consistent tuples have density at least `δ / 2`
+on the slice of `b₀` and at most an `ε / 64` fraction of them have `ε k / 64` or more
+disagreements. If `k ≤ 2 #Pᶜ`, `#Pᶜ ≥ (64 / ε) log (4 / δ)` and `m ≥ (16 / δ) log (8 / ε)`, then the
+errors of the decoder, summed over inputs and trial vectors, are at most `ε #U N ^ m / 2`.
+These constants are ours (derived for the tuple formulation), not IJKW's. -/
+theorem sum_card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f : U → V) (dflt : V)
+    (P : Finset (Fin k)) (b₀ : Fin k → U) (m : ℕ) {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
+    (hε1 : ε ≤ 1) (hδ1 : δ ≤ 1) (hk : k ≤ 2 * #Pᶜ) (hw : 64 / ε * Real.log (4 / δ) ≤ #Pᶜ)
+    (hm : 16 / δ * Real.log (8 / ε) ≤ m)
+    (hS : δ / 2 * Fintype.card U ^ #Pᶜ ≤ #(consistent C' P b₀))
+    (hH : (#{y ∈ consistent C' P b₀ | ε / 64 * k ≤ #(disagreements C' f y)} : ℝ) ≤
+      ε / 64 * #(consistent C' P b₀)) :
+    ∑ x, (#{v : Fin m → Trial U k | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤
+      ε * Fintype.card U * Fintype.card (Trial U k) ^ m / 2 := by
+  classical
+  rcases isEmpty_or_nonempty U with hU | hU
+  · simp
+  set S := consistent C' P b₀
+  set w : ℕ := #Pᶜ
+  set n : ℕ := Fintype.card U
+  set N : ℕ := Fintype.card (Trial U k)
+  have hn : (0 : ℝ) < n := by exact_mod_cast Fintype.card_pos
+  have hSpos : (0 : ℝ) < #S := lt_of_lt_of_le (by positivity) hS
+  have hlog4 : 0 < Real.log (4 / δ) :=
+    Real.log_pos (by rw [lt_div_iff₀ hδ]; linarith)
+  have hw0 : (0 : ℝ) < w := lt_of_lt_of_le (by positivity) hw
+  set θ : ℝ := #S * w / (4 * n)
+  have hθ : 0 < θ := by positivity
+  set L := ({x | (#(acceptedPairs C' P b₀ x) : ℝ) < θ} : Finset U)
+  -- the rarely accepted inputs
+  have hL : (#L : ℝ) ≤ ε * n / 8 := by
+    have h := card_filter_acceptedPairs_lt_mul_le C' P b₀ (μ := δ / 2) (by positivity)
+      (by linarith) hS
+    have h2 : Real.log (2 / (δ / 2)) = Real.log (4 / δ) := by congr 1; field_simp; norm_num
+    rw [h2] at h
+    have h3 : (#L : ℝ) * w ≤ 8 * n * Real.log (4 / δ) := h
+    have h4 : 8 * n * Real.log (4 / δ) ≤ ε * n / 8 * w := by
+      have := mul_le_mul_of_nonneg_left hw (by positivity : (0 : ℝ) ≤ ε * n / 8)
+      calc 8 * n * Real.log (4 / δ) = ε * n / 8 * (64 / ε * Real.log (4 / δ)) := by
+            field_simp; ring
+        _ ≤ _ := this
+    exact le_of_mul_le_mul_right (h3.trans h4) hw0
+  -- the timeout term
+  have hexp : Real.exp (-(m * (n ^ (#P + 1) * θ / N))) ≤ ε / 8 := by
+    have hk' : #P + w = k := by
+      rw [add_comm]; simp [w]
+    have hN : (N : ℝ) = k * n ^ k := by
+      simp only [N, n, Fintype.card_prod, Fintype.card_fun, Fintype.card_fin]; push_cast
+      ring
+    have hk0 : (0 : ℝ) < k := by
+      rw [← hk']; push_cast; linarith [(Nat.cast_nonneg #P : (0 : ℝ) ≤ _)]
+    have hratio : δ / 16 ≤ n ^ (#P + 1) * θ / N := by
+      rw [hN, le_div_iff₀ (by positivity)]
+      have hpow : (n : ℝ) ^ (#P + 1) * (n ^ w / n) = n ^ k := by
+        rw [← congrArg (fun e => (n : ℝ) ^ e) hk', pow_succ]; field_simp; ring
+      have hkw : (k : ℝ) ≤ 2 * w := by exact_mod_cast hk
+      calc δ / 16 * (k * n ^ k) ≤ δ / 2 * (w / 4) * n ^ k := by
+            have := mul_le_mul_of_nonneg_left hkw (by positivity : (0 : ℝ) ≤ δ / 16 * n ^ k)
+            linarith
+        _ = δ / 2 * n ^ w * (n ^ (#P + 1) * (w / (4 * n))) := by
+            rw [← hpow]; field_simp
+        _ ≤ #S * (n ^ (#P + 1) * (w / (4 * n))) :=
+            mul_le_mul_of_nonneg_right hS (by positivity)
+        _ = n ^ (#P + 1) * θ := by simp only [θ]; ring
+    have hmle : Real.log (8 / ε) ≤ m * (n ^ (#P + 1) * θ / N) := by
+      calc Real.log (8 / ε) = δ / 16 * (16 / δ * Real.log (8 / ε)) := by field_simp
+        _ ≤ (n ^ (#P + 1) * θ / N) * m := by
+            have : 0 ≤ Real.log (8 / ε) := Real.log_nonneg (by rw [le_div_iff₀ hε]; linarith)
+            refine mul_le_mul hratio hm (by positivity) (by positivity)
+        _ = _ := by ring
+    calc Real.exp (-(m * (n ^ (#P + 1) * θ / N))) ≤ Real.exp (-Real.log (8 / ε)) :=
+          Real.exp_le_exp.2 (by linarith)
+      _ = ε / 8 := by rw [Real.exp_neg, Real.exp_log (by positivity)]; field_simp
+  -- the bad pairs
+  have hbad : (∑ x, (#(badPairs C' f P b₀ x) : ℝ)) ≤ ε / 32 * k * #S := by
+    have h := sum_card_badPairs C' f P b₀
+    have h' : (∑ x, (#(badPairs C' f P b₀ x) : ℝ)) ≤ ∑ y ∈ S, (#(disagreements C' f y) : ℝ) := by
+      rw [← Nat.cast_sum, h, Nat.cast_sum]
+      exact sum_le_sum fun y _ => by
+        exact_mod_cast card_le_card fun j hj => by
+          simp only [disagreements, mem_filter, mem_univ, true_and] at hj ⊢; exact hj.2
+    refine h'.trans ?_
+    rw [← sum_filter_add_sum_filter_not S fun y => ε / 64 * k ≤ #(disagreements C' f y)]
+    have hheavy : ∑ y ∈ S with ε / 64 * k ≤ #(disagreements C' f y),
+        (#(disagreements C' f y) : ℝ) ≤ k * (ε / 64 * #S) := by
+      refine (sum_le_card_nsmul _ _ (k : ℝ) fun y _ => ?_).trans ?_
+      · exact_mod_cast (card_le_univ _).trans_eq (Fintype.card_fin k)
+      · rw [nsmul_eq_mul]; exact mul_le_mul_of_nonneg_left hH (Nat.cast_nonneg _) |>.trans_eq'
+          (by ring)
+    have hlight : ∑ y ∈ S with ¬ε / 64 * k ≤ #(disagreements C' f y),
+        (#(disagreements C' f y) : ℝ) ≤ ε / 64 * k * #S := by
+      refine (sum_le_card_nsmul _ _ (ε / 64 * k) fun y hy => (not_le.1 (mem_filter.1 hy).2).le
+        ).trans ?_
+      rw [nsmul_eq_mul, mul_comm]
+      exact mul_le_mul_of_nonneg_left (by exact_mod_cast card_filter_le _ _) (by positivity)
+    linarith
+  -- assemble
+  rw [← sum_filter_add_sum_filter_not univ (· ∈ L)]
+  have hLsum : ∑ x ∈ univ.filter (· ∈ L),
+      (#{v : Fin m → Trial U k | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ #L * N ^ m := by
+    rw [filter_mem_eq_inter, univ_inter, ← nsmul_eq_mul]
+    refine sum_le_card_nsmul _ _ _ fun x _ => ?_
+    have : #{v : Fin m → Trial U k | dpDecode C' dflt P b₀ v x ≠ f x} ≤ N ^ m := by
+      have := card_le_univ ({v : Fin m → Trial U k | dpDecode C' dflt P b₀ v x ≠ f x} :
+        Finset (Fin m → Trial U k))
+      rwa [Fintype.card_fun, Fintype.card_fin] at this
+    exact_mod_cast this
+  have hrest : ∑ x ∈ univ.filter (· ∉ L),
+      (#{v : Fin m → Trial U k | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤
+        (∑ x, (#(badPairs C' f P b₀ x) : ℝ)) * N ^ m / θ + n * (N ^ m * (ε / 8)) := by
+    calc _ ≤ ∑ x ∈ univ.filter (· ∉ L), ((#(badPairs C' f P b₀ x) : ℝ) * N ^ m / θ +
+          N ^ m * (ε / 8)) := by
+          refine sum_le_sum fun x hx => ?_
+          have hx' : θ ≤ #(acceptedPairs C' P b₀ x) := by
+            simpa [L] using (mem_filter.1 hx).2
+          refine (card_filter_dpDecode_ne_le C' f dflt P b₀ m x hθ hx').trans ?_
+          gcongr
+      _ ≤ ∑ x, ((#(badPairs C' f P b₀ x) : ℝ) * N ^ m / θ + N ^ m * (ε / 8)) :=
+          sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun _ _ _ => by positivity
+      _ = _ := by
+          rw [sum_add_distrib, sum_const, card_univ, nsmul_eq_mul]
+          simp only [div_eq_mul_inv, ← sum_mul]
+          rfl
+  have hbadθ : (∑ x, (#(badPairs C' f P b₀ x) : ℝ)) * N ^ m / θ ≤ ε * n / 4 * N ^ m := by
+    rw [div_le_iff₀ hθ]
+    have hkw : (k : ℝ) ≤ 2 * w := by exact_mod_cast hk
+    have hNm : (0 : ℝ) ≤ N ^ m := by positivity
+    calc (∑ x, (#(badPairs C' f P b₀ x) : ℝ)) * N ^ m ≤ ε / 32 * k * #S * N ^ m :=
+          mul_le_mul_of_nonneg_right hbad hNm
+      _ ≤ ε / 32 * (2 * w) * #S * N ^ m := by gcongr
+      _ = ε * n / 4 * N ^ m * θ := by simp only [θ]; field_simp; ring
+  have hNm : (0 : ℝ) ≤ N ^ m := by positivity
+  nlinarith
+
+/-- **A good seed decodes well for half of the trial vectors.** Under the hypotheses of
+`sum_card_filter_dpDecode_ne_le`, at least half of the trial vectors `v` give a hypothesis
+`dpDecode C' dflt P b₀ v` that differs from `f` on at most `ε #U` inputs. -/
+theorem card_filter_dpDecode_err_le_ge (C' : (Fin k → U) → Fin k → V) (f : U → V) (dflt : V)
+    (P : Finset (Fin k)) (b₀ : Fin k → U) (m : ℕ) {ε δ : ℝ} (hε : 0 < ε) (hδ : 0 < δ)
+    (hε1 : ε ≤ 1) (hδ1 : δ ≤ 1) (hk : k ≤ 2 * #Pᶜ) (hw : 64 / ε * Real.log (4 / δ) ≤ #Pᶜ)
+    (hm : 16 / δ * Real.log (8 / ε) ≤ m)
+    (hS : δ / 2 * Fintype.card U ^ #Pᶜ ≤ #(consistent C' P b₀))
+    (hH : (#{y ∈ consistent C' P b₀ | ε / 64 * k ≤ #(disagreements C' f y)} : ℝ) ≤
+      ε / 64 * #(consistent C' P b₀)) :
+    (Fintype.card (Trial U k) ^ m : ℝ) / 2 ≤
+      #{v : Fin m → Trial U k |
+        (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U} := by
+  classical
+  rcases isEmpty_or_nonempty U with hU | hU
+  · have hall : ({v : Fin m → Trial U k |
+        (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * Fintype.card U} :
+          Finset (Fin m → Trial U k)) = univ := by
+      ext v; simp [Finset.univ_eq_empty]
+    rw [hall, card_univ, Fintype.card_fun, Fintype.card_fin]
+    push_cast
+    linarith [(by positivity : (0 : ℝ) ≤ (Fintype.card (Trial U k) : ℝ) ^ m)]
+  set n : ℕ := Fintype.card U
+  set N : ℕ := Fintype.card (Trial U k)
+  have hn : (0 : ℝ) < n := by exact_mod_cast Fintype.card_pos
+  set bad := ({v : Fin m → Trial U k |
+    ¬(#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * n} : Finset (Fin m → Trial U k))
+  have hsplit := card_filter_add_card_filter_not (s := (univ : Finset (Fin m → Trial U k)))
+    (p := fun v => (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * n)
+  rw [card_univ, Fintype.card_fun, Fintype.card_fin] at hsplit
+  have hdouble : ∑ v : Fin m → Trial U k, (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) =
+      ∑ x, (#{v : Fin m → Trial U k | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) := by
+    simp only [card_filter, Nat.cast_sum, Nat.cast_ite, Nat.cast_one, Nat.cast_zero]
+    exact sum_comm
+  have hsum := sum_card_filter_dpDecode_ne_le C' f dflt P b₀ m hε hδ hε1 hδ1 hk hw hm hS hH
+  have hmarkov : (#bad : ℝ) * (ε * n) ≤
+      ∑ v : Fin m → Trial U k, (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) := by
+    calc (#bad : ℝ) * (ε * n) = ∑ v ∈ bad, ε * n := by rw [sum_const, nsmul_eq_mul]
+      _ ≤ ∑ v ∈ bad, (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) :=
+          sum_le_sum fun v hv => (not_le.1 (mem_filter.1 hv).2).le
+      _ ≤ _ := sum_le_sum_of_subset_of_nonneg (subset_univ _) fun _ _ _ => by positivity
+  rw [hdouble] at hmarkov
+  have hbad : (#bad : ℝ) ≤ N ^ m / 2 := by
+    have h := hmarkov.trans hsum
+    rw [le_div_iff₀ (by norm_num : (0 : ℝ) < 2)]
+    have : (#bad : ℝ) * 2 * (ε * n) ≤ N ^ m * (ε * n) := by nlinarith
+    exact le_of_mul_le_mul_right this (by positivity)
+  have hcast : ((#{v : Fin m → Trial U k |
+      (#{x | dpDecode C' dflt P b₀ v x ≠ f x} : ℝ) ≤ ε * n} : ℕ) : ℝ) + #bad = N ^ m := by
+    exact_mod_cast hsplit
+  linarith
+
 end Cslib.Circuits.Boolean.DirectProduct
