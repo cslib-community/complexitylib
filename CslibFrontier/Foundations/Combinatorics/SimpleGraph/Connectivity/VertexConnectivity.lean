@@ -18,8 +18,6 @@ import Mathlib.Data.Set.Card
 /-!
 # Vertex connectivity and internally disjoint paths in simple graphs
 
-Mathlib target: `Mathlib/Combinatorics/SimpleGraph/Connectivity/VertexConnectivity.lean`.
-
 Pure graph-theoretic notions and structural facts for vertex connectivity and Menger's theorem in
 `SimpleGraph V`:
 
