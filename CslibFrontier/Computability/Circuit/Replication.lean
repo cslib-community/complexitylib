@@ -26,9 +26,8 @@ cost is monotone even at zero copies, where a separate empty circuit suffices.
 
 ## Main definitions
 
-* `Cslib.Circuits.directProductInput`, `Cslib.Circuits.blockMap`,
-  `Cslib.Circuits.directProduct`: input block selection and independent copies of multi-output and
-  scalar functions.
+* `Cslib.Circuits.blockMap`, `Cslib.Circuits.directProduct`: independent copies of multi-output
+  and scalar functions on the input blocks (`Cslib.BitString.block`).
 * `Cslib.Circuits.Circuit.parallelFamily`: different circuits on consecutive disjoint blocks.
 * `Cslib.Circuits.Circuit.replicate`: independent copies of a multi-output circuit, the
   constant family.
@@ -61,23 +60,19 @@ namespace Cslib.Circuits
 universe v u
 variable {σ : Signature.{v}} {U : Type u} {n m k : ℕ}
 
-/-- Select one consecutive block of inputs. -/
-def directProductInput (x : Fin (k * n) → U) (j : Fin k) : Fin n → U :=
-  fun i => x (finProdFinEquiv (j, i))
-
 /-- Apply a multi-output function independently to each input block. -/
 def blockMap (f : (Fin n → U) → Fin m → U) (k : ℕ) :
     (Fin (k * n) → U) → Fin (k * m) → U :=
-  fun x i => f (directProductInput x (finProdFinEquiv.symm i).1) (finProdFinEquiv.symm i).2
+  fun x i => f (BitString.block x (finProdFinEquiv.symm i).1) (finProdFinEquiv.symm i).2
 
 /-- Apply a scalar function independently to each input block. -/
 def directProduct (f : (Fin n → U) → U) (k : ℕ) : (Fin (k * n) → U) → Fin k → U :=
-  fun x j => f (directProductInput x j)
+  fun x j => f (BitString.block x j)
 
 /-- Coordinate `(j, i)` of `blockMap f k x` is output `i` of `f` on input block `j`. -/
 @[simp] theorem blockMap_apply (f : (Fin n → U) → Fin m → U)
     (x : Fin (k * n) → U) (j : Fin k) (i : Fin m) :
-    blockMap f k x (finProdFinEquiv (j, i)) = f (directProductInput x j) i := by
+    blockMap f k x (finProdFinEquiv (j, i)) = f (BitString.block x j) i := by
   simp [blockMap]
 
 /-- Block `j` of the outputs of `blockMap f k x` is `f` on input block `j`. -/
@@ -85,7 +80,6 @@ theorem block_blockMap (f : (Fin n → U) → Fin m → U) (x : Fin (k * n) → 
     BitString.block (blockMap f k x) = fun j => f (BitString.block x j) := by
   funext j i
   rw [BitString.block_apply, blockMap_apply]
-  rfl
 
 namespace Circuit
 
@@ -102,7 +96,7 @@ def parallelFamily : {k : ℕ} → (Fin k → Circuit σ n m) → Circuit σ (k 
 theorem eval_parallelFamily_apply {k : ℕ} (cs : Fin k → Circuit σ n m) (I : Interpretation σ U)
     (x : Fin (k * n) → U) (j : Fin k) (i : Fin m) :
     (parallelFamily cs).eval I x (finProdFinEquiv (j, i)) =
-      (cs j).eval I (directProductInput x j) i := by
+      (cs j).eval I (BitString.block x j) i := by
   induction k with
   | zero => exact j.elim0
   | succ k ih =>
@@ -150,7 +144,7 @@ def replicate (c : Circuit σ n m) (k : ℕ) : Circuit σ (k * n) (k * m) :=
 theorem eval_replicate_apply (c : Circuit σ n m) (k : ℕ) (I : Interpretation σ U)
     (x : Fin (k * n) → U) (j : Fin k) (i : Fin m) :
     (c.replicate k).eval I x (finProdFinEquiv (j, i)) =
-      c.eval I (directProductInput x j) i :=
+      c.eval I (BitString.block x j) i :=
   eval_parallelFamily_apply _ I x j i
 
 /-- Replication computes the blockwise application of the original circuit. -/
@@ -205,7 +199,7 @@ theorem Computes.replicateScalar {c : Circuit σ n 1} {I : Interpretation σ U}
     (c.replicateScalar k).Computes I (directProduct f k) := fun x => by
   rw [eval_replicateScalar]
   funext j
-  exact congrFun (hc (directProductInput x j)) 0
+  exact congrFun (hc (BitString.block x j)) 0
 
 /-- Retain a positive initial batch by rewiring inputs and selecting outputs, without adding
 or removing gates. Discarded input blocks read the first retained block. -/
@@ -234,7 +228,7 @@ theorem Computes.takeDirectProductPrefix {small large : ℕ} {c : Circuit σ (la
   funext j
   apply congrArg f
   funext i
-  simp only [directProductInput, Function.comp_apply, Equiv.symm_apply_apply]
+  simp only [BitString.block, Function.comp_apply, Equiv.symm_apply_apply]
   simp
 
 end Circuit
@@ -287,7 +281,7 @@ theorem ecomplexityFrom_directProduct_comp_wiring_le {p : ℕ} (select : Fin n �
     funext j
     apply congrArg f
     funext i
-    simp only [directProductInput, wiring, Circuit.eval_wiring, Function.comp_apply,
+    simp only [BitString.block, wiring, Circuit.eval_wiring, Function.comp_apply,
       Equiv.symm_apply_apply, id_eq]
   exact (ecomplexityFrom_le_of_computesFrom _ h).trans_eq
     (by rw [Circuit.cost_program_comp, Circuit.cost_program_wiring, Nat.zero_add])

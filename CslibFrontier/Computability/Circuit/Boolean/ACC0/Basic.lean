@@ -11,7 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Circuit.Boolean.ModGates
 public import CslibFrontier.Computability.Circuit.Boolean.ModMajority
 public import Mathlib.Data.Nat.Prime.Defs
-import CslibFrontier.Computability.Circuit.Boolean.Smolensky.Majority
+import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 
 /-!
 # Definition, divisibility monotonicity, and Boolean closure of `ACC⁰`
@@ -30,7 +30,9 @@ Repeating each input wire of a `MOD_q` gate `k ≥ 1` times multiplies the Hammi
 and `q₂` therefore embed into the common modulus `q₁ * q₂`, making `ACC0` closed under complement,
 intersection, and union (`ACC0.compl`, `ACC0.inf`, `ACC0.sup`). By Håstad's and
 Razborov–Smolensky's lower bounds for parity, `AC0 ⊂ AC0Mod 2 ⊆ ACC0` (`AC0_ssubset_AC0Mod_two`,
-`AC0_ssubset_ACC0`) and `AC0Mod p ⊂ ACC0` for every odd prime `p` (`AC0Mod_ssubset_ACC0`).
+`AC0_ssubset_ACC0`) and `AC0Mod p ⊂ ACC0` for every odd prime `p` (`AC0Mod_ssubset_ACC0`). The case
+`p = 2` needs some language of `ACC0` outside AC⁰[2], such as `MOD_3`; no such lower bound is in
+the library.
 
 ## Main definitions
 
@@ -262,7 +264,9 @@ theorem AC0_ssubset_ACC0 : AC0 ⊂ ACC0 :=
     ⟨_, parity_mem_ACC0, parity_notMem_AC0⟩
 
 /-- **`AC⁰[p]` is strictly contained in `ACC⁰`** for every odd prime `p`, witnessed by parity
-[Razborov1987], [Smolensky1987]. -/
+[Smolensky1987]. For `p = 2` any language of `ACC0` outside `AC⁰[2]` would do, for example `MOD_3`
+by Smolensky's theorem for moduli `q` that are not powers of `p` [Smolensky1987]; no such lower
+bound is in the library. -/
 theorem AC0Mod_ssubset_ACC0 {p : ℕ} [Fact p.Prime] (hp2 : p ≠ 2) : AC0Mod p ⊂ ACC0 :=
   (Set.ssubset_iff_of_subset (AC0Mod_subset_ACC0 p)).2
     ⟨_, parity_mem_ACC0, Smolensky.parity_notMem_AC0Mod hp2⟩
