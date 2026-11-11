@@ -76,8 +76,8 @@ bounds to unconditional `P ≠ NP` hardness requires super-constant parallel rep
 
 ## References
 
-Neither primary paper text was inspected directly in this pass (bibliographic metadata checked via
-search records only; no numbered paper theorems are claimed). The parameterized constructions
+Primary texts uninspected (bibliographic metadata checked via search records only; locators
+unverified and no numbered paper theorems are claimed). The parameterized constructions
 `toWeightedSetCoverOf` and `toSetCoverOf` (explicit label lists, `PartitionGadget`, and
 `deg_L(u) * deg_R(v)` edge duplication) and the explicit constant threshold `c < 1 / (4 * log 2)`
 in `exists_weightedSetCover_log_gap` / `exists_setCover_log_gap` are this library's formalization.

@@ -474,7 +474,7 @@ Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of 
 <a id="feige1998"></a>
 ## feige1998
 
-Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the ACM* 45(4), 634–652, 1998. https://doi.org/10.1145/285055.285059 . Bibliographic metadata checked from search records in this pass; the full text was not inspected in this pass and no numbered paper theorems are claimed. Cited for the Set Cover hardness threshold framework using separating partition gadgets.
+Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the ACM* 45(4), 634–652, 1998. https://doi.org/10.1145/285055.285059 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the Set Cover hardness threshold framework using separating partition gadgets.
 
 <a id="fips203"></a>
 ## fips203
@@ -960,7 +960,7 @@ Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Co
 <a id="lundyannakakis1994"></a>
 ## lundyannakakis1994
 
-Carsten Lund and Mihalis Yannakakis. "On the Hardness of Approximating Minimization Problems." *Journal of the ACM* 41(5), 960–981, 1994. https://doi.org/10.1145/185675.306789 . Bibliographic metadata checked from search records in this pass; the full text was not inspected in this pass and no numbered paper theorems are claimed. Cited for the constant-factor and logarithmic Set Cover inapproximability reductions from Label Cover using set-system partition gadgets.
+Carsten Lund and Mihalis Yannakakis. "On the Hardness of Approximating Minimization Problems." *Journal of the ACM* 41(5), 960–981, 1994. https://doi.org/10.1145/185675.306789 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the constant-factor and logarithmic Set Cover inapproximability reductions from Label Cover using set-system partition gadgets.
 
 <a id="manacher75"></a>
 ## manacher75

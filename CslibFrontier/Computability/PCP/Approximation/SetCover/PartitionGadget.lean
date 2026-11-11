@@ -49,8 +49,8 @@ We provide two gadgets:
 
 ## References
 
-Neither primary paper text was inspected directly in this pass (bibliographic metadata checked via
-search records only; no numbered paper theorems are claimed). The explicit `PartitionGadget`
+Primary texts uninspected (bibliographic metadata checked via search records only; locators
+unverified and no numbered paper theorems are claimed). The explicit `PartitionGadget`
 structure, `boolCubeGadget`, and the `exists_cover_of_density`-derived size bound in
 `exists_small_partitionGadget` are this library's formulation.
 
