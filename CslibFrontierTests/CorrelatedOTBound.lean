@@ -807,8 +807,7 @@ theorem beaverOTProtocol_private :
     revert I hI
     decide
   rcases hI_cases with rfl | rfl | rfl
-  · dsimp only [idealCorrelatedJoint, realCorrelatedJoint, beaverSim,
-      CorrelatedSimulator.ofProbComp]
+  · dsimp only [idealCorrelatedJoint, realCorrelatedJoint, beaverSim]
     rw [← hOutEq, PMF.bind_map]
     simp only [Finset.notMem_empty, ↓reduceDIte, ProbComp.eval_pure,
       PMF.pure_map, Function.comp_def]

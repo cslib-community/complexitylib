@@ -45,7 +45,7 @@ any protocol realizing `k` independent random OTs (`idealROT k`) or `k` chosen-i
 * `Cslib.Crypto.Protocols.OT.realWithInputDist`, `Cslib.Crypto.Protocols.OT.realCorrelated`,
   `Cslib.Crypto.Protocols.OT.realCorrelatedJoint`,
   `Cslib.Crypto.Protocols.OT.CorrelatedSimulator`,
-  `Cslib.Crypto.Protocols.OT.CorrelatedSimulator.ofProbComp`,
+  `Cslib.Crypto.Protocols.OT.SemanticCorrelatedSimulator`,
   `Cslib.Crypto.Protocols.OT.idealCorrelatedJoint`,
   `Cslib.Crypto.Protocols.OT.PerfectSemiHonestPrivateOverSource`,
   `Cslib.Crypto.Protocols.OT.PerfectSemiHonestPrivateProperOverSource`: real and ideal correlated-
