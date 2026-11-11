@@ -466,6 +466,11 @@ Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between
 
 Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of Pure Nash Equilibria*. Proceedings of the 36th Annual ACM Symposium on Theory of Computing (STOC 2004), 604–612. https://doi.org/10.1145/1007352.1007445 . Bibliographic metadata checked against Crossref on 2026-11-08; the PLS-completeness theorem is attributed as cited in Roughgarden's CS364A Lecture #19, Theorem 3.1. The paper itself was not consulted.
 
+<a id="feige1998"></a>
+## feige1998
+
+Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the ACM* 45(4), 634–652, 1998. https://doi.org/10.1145/285055.285059 . Bibliographic metadata checked from search records in this pass; the full text was not inspected in this pass and no numbered paper theorems are claimed. Cited for the Set Cover hardness threshold framework using separating partition gadgets.
+
 <a id="fips203"></a>
 ## fips203
 
@@ -946,6 +951,11 @@ Yehuda Lindell, Benny Pinkas. "A Proof of Security of Yao's Protocol for Two-Par
 ## ltv98
 
 Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Computation by Pebble Games*. Physica D 120, 168–176, 1998. https://doi.org/10.1016/S0167-2789(98)00052-9 . Locators refer to arXiv:quant-ph/9703009v3 (11 April 1997), https://arxiv.org/abs/quant-ph/9703009v3 . The reversible pebble rule (Section 6), the procedures `pebble(s, n)` and `unpebble(s, n)` (Section 7), Theorem 1, Corollaries 1 and 2, Lemma 1 and Theorem 2 were checked. The definitions of available pebbles and of weak and strong solvability, the statement and proof of Theorem 1 (including the distance estimate `2^j + 2^f + 2^(f+1) + ⋯ + 2^(j−1) ≤ 2^(j+1)`), and Corollary 1 were rechecked against the same arXiv version on 2026-11-08 for `ReversiblePathReachable.lean`.
+
+<a id="lundyannakakis1994"></a>
+## lundyannakakis1994
+
+Carsten Lund and Mihalis Yannakakis. "On the Hardness of Approximating Minimization Problems." *Journal of the ACM* 41(5), 960–981, 1994. https://doi.org/10.1145/185675.306789 . Bibliographic metadata checked from search records in this pass; the full text was not inspected in this pass and no numbered paper theorems are claimed. Cited for the constant-factor and logarithmic Set Cover inapproximability reductions from Label Cover using set-system partition gadgets.
 
 <a id="manacher75"></a>
 ## manacher75
