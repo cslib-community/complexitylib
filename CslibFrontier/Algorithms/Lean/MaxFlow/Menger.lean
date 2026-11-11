@@ -328,7 +328,7 @@ private def splitNetwork [DecidableEq V] (G : Digraph V) [DecidableRel G.Adj]
 
 section Split
 
-variable [Fintype V] [DecidableEq V] {G : Digraph V} [DecidableRel G.Adj] {s t : V}
+variable [DecidableEq V] {G : Digraph V} [DecidableRel G.Adj] {s t : V}
 
 private theorem splitNetwork_s : (splitNetwork G s t).s = (s, true) := rfl
 
@@ -342,6 +342,8 @@ private theorem splitNetwork_cap_ft (u v : V) :
     (splitNetwork G s t).cap (u, false) (v, true) =
       if u = v ∧ u ≠ s ∧ u ≠ t then 1 else 0 := by
   simp [splitNetwork]
+
+variable [Fintype V]
 
 private theorem split_flow_eq_zero (f : (splitNetwork G s t).Flow) {x y : V × Bool}
     (h : (splitNetwork G s t).cap x y = 0) : f x y = 0 :=
