@@ -115,7 +115,7 @@ its output has length `n ≤ l * (P + 1)`, the output's parameter `μ` satisfies
 `2 ^ (δ * μ) ≤ 2 ^ (δ * c) * X` with `X ≥ 1`, and the decider takes time
 `T ≤ k * (2 ^ (δ * μ) * (n + 1) ^ e) + k`, then the reduction followed by the decider takes time
 within a constant times `X * P ^ (e + 1)`. -/
-private theorem reduce_add_decide_le {P X δ μ T : ℝ} {n l k e c : ℕ} (hP : 1 ≤ P) (hX : 1 ≤ X)
+theorem reduce_add_decide_le {P X δ μ T : ℝ} {n l k e c : ℕ} (hP : 1 ≤ P) (hX : 1 ≤ X)
     (hn : (n : ℝ) ≤ l * (P + 1)) (hμ : (2 : ℝ) ^ (δ * μ) ≤ 2 ^ (δ * c) * X)
     (hT : T ≤ k * (2 ^ (δ * μ) * (n + 1) ^ e) + k) :
     P + T ≤ (1 + k * 2 ^ (δ * c) * (2 * l + 1) ^ e + k) * (X * P ^ (e + 1)) := by

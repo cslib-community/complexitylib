@@ -193,26 +193,8 @@ theorem decidableInExpTime (r : SizeSensitiveReduction encA encB μA μB)
     have hm : (μB (r.toFun a) : ℝ) ≤ r.scale * μA a + r.offset := by
       exact_mod_cast r.measure_le a
     nlinarith
-  have hn : ((encB (r.toFun a)).length : ℝ) ≤ l * (P + 1) := by
-    dsimp only [P]
-    exact_mod_cast hl a
-  have hpow : (((encB (r.toFun a)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
-    rw [← mul_pow]
-    exact pow_le_pow_left₀ (by positivity) (by nlinarith) e
-  have hT' := mul_le_mul_of_nonneg_left (mul_le_mul hexp hpow (by positivity) (by positivity))
-    (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
-  have h₁ : P ≤ X * P ^ (e + 1) :=
-    (le_self_pow₀ hP (Nat.succ_ne_zero e)).trans (le_mul_of_one_le_left (by positivity) hX)
-  have h₂ : X * P ^ e ≤ X * P ^ (e + 1) :=
-    mul_le_mul_of_nonneg_left (pow_le_pow_right₀ hP (Nat.le_add_right e 1)) (by positivity)
-  have h₂' := mul_le_mul_of_nonneg_left h₂
-    (by positivity : (0 : ℝ) ≤ k * 2 ^ (δ * r.offset) * (2 * l + 1) ^ e)
-  have h₃ : (k : ℝ) * 1 ≤ k * (X * P ^ (e + 1)) := mul_le_mul_of_nonneg_left
-    (one_le_mul_of_one_le_of_one_le hX (one_le_pow₀ hP)) (Nat.cast_nonneg k)
-  have hsum : P + (t (r.toFun a) : ℝ) ≤ K * (X * P ^ (e + 1)) := by
-    have ht_a := ht (r.toFun a)
-    dsimp only [K]
-    linarith
+  have hsum : P + (t (r.toFun a) : ℝ) ≤ K * (X * P ^ (e + 1)) :=
+    reduce_add_decide_le hP hX (by dsimp only [P]; exact_mod_cast hl a) hexp (ht (r.toFun a))
   push_cast
   rw [pow_mul]
   exact hsum.trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))
