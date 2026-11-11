@@ -99,7 +99,8 @@ private theorem three_mul_le_pow {K ℓ M c X : ℕ} (hX : 64 ≤ X) (hℓ : ℓ
 
 /-- The windows met by a set of input wires of the template's inputs followed by its gates. -/
 private noncomputable def windowsOf (S : Finset (Fin (p + gateCount p t))) : Finset (Fin t) :=
-  S.biUnion fun z => Fin.addCases (fun _ => ∅) (fun j => ((Gate.equivFin p t).symm j).set.toFinset) z
+  S.biUnion fun z =>
+    Fin.addCases (fun _ => ∅) (fun j => ((Gate.equivFin p t).symm j).set.toFinset) z
 
 private theorem card_windowsOf_le (S : Finset (Fin (p + gateCount p t))) :
     #(windowsOf S) ≤ #S := by
