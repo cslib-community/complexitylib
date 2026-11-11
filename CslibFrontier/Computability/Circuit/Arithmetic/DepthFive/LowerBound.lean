@@ -7,6 +7,7 @@ Authors: Aviv Bar Natan
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Asymptotics
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.CircuitRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ImmRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum
@@ -33,6 +34,9 @@ is slightly stronger than the source's.
 ## Main results
 
 * `Cslib.Circuits.DepthFive.rpow_le_size_of_good`: the lower bound for good parameters.
+* `Cslib.Circuits.DepthFive.rpow_le_size`: the lower bound for every `n ≥ exp 29200`.
+* `Cslib.Circuits.DepthFive.exists_forall_rpow_le_size`: the lower bound for all sufficiently
+  large `n`, with a threshold independent of the field.
 
 ## References
 
@@ -150,5 +154,32 @@ theorem rpow_le_size_of_good (hp : p.Good) (hn : Real.exp 29200 ≤ p.n) {K : Ty
       hAB ▸ hmain'.trans (mul_le_mul_of_nonneg_right hexp (sq_nonneg _))
     exact le_of_mul_le_mul_left h (pow_pos hB0 2)
   exact (sq_le_sq₀ hB0.le hS0).1 hsq
+
+/-- **Homogeneous depth-five lower bound for `IMM`.** Over a field of characteristic zero, every
+syntactically homogeneous `ΣΠΣΠΣ` circuit computing `IMM_{n,n}` has size at least
+`n ^ (√n / 400)`, for every `n ≥ exp 29200`. -/
+theorem rpow_le_size {n : ℕ} [NeZero n] (hn : Real.exp 29200 ≤ n) {K : Type*} [Field K]
+    [CharZero K] (c : Circuit K (Fin n × Fin n × Fin n)) (hc : c.polynomial = imm K n n) :
+    (n : ℝ) ^ (√(n : ℝ) / 400) ≤ c.size := by
+  have h20 : 2 ^ 20 ≤ n := by
+    have h : ((2 : ℝ) ^ 20) ≤ Real.exp 29200 := by
+      have h₁ : Real.exp 29200 = Real.exp 1460 ^ 20 := by
+        rw [← Real.exp_nat_mul]; norm_num
+      rw [h₁]
+      exact pow_le_pow_left₀ (by norm_num) (by linarith [Real.add_one_le_exp 1460]) 20
+    exact_mod_cast h.trans hn
+  have : NeZero (paramsOf n).n := ‹NeZero n›
+  exact rpow_le_size_of_good (p := paramsOf n) (good_paramsOf h20) hn c hc
+
+/-- **Homogeneous depth-five lower bound for `IMM`**, the characteristic-zero corollary of
+[OpenAI, §6][OpenAI2026DepthFive]: there is an absolute `n₀` such that, over every field of
+characteristic zero and for every `n ≥ n₀`, every syntactically homogeneous `ΣΠΣΠΣ` circuit
+computing `IMM_{n,n}` has size at least `n ^ (√n / 400)`. -/
+theorem exists_forall_rpow_le_size :
+    ∃ n₀ : ℕ, ∀ (K : Type*) [Field K] [CharZero K] (n : ℕ) [NeZero n], n₀ ≤ n →
+      ∀ c : Circuit K (Fin n × Fin n × Fin n), c.polynomial = imm K n n →
+        (n : ℝ) ^ (√(n : ℝ) / 400) ≤ c.size :=
+  ⟨⌈Real.exp 29200⌉₊, fun _ _ _ _ _ hn c hc =>
+    rpow_le_size ((Nat.le_ceil _).trans (Nat.cast_le.2 hn)) c hc⟩
 
 end Cslib.Circuits.DepthFive
