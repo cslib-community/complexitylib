@@ -22,7 +22,7 @@ partition, using the proved whole-block-fallback property of `ResidualCover`.
 
 The decoded native WSC has derived validity and primal/dual optimum one. Coverage,
 weights, residuals and local certification commute with the original labels.
-This is not yet the general raw-history/role specialization or the universal
+This is not yet the complete native query/role specialization or the universal
 native query-token optimum comparison.
 
 ## Main definitions

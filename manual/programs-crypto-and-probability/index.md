@@ -955,7 +955,7 @@ when its numerical statement is already proved. The full objective in
 | Unrestricted Theorem 5 source coverage, PDF pp. 4–6, 11–12 | Native epoch/whole-policy representation and the preceding controller APIs | Partial: unrestricted source query/cutoff and external-machine realization, broader unbounded-horizon/divergent-path real-cost packaging and general measurable interfaces remain. Domination needed for measurable/unbounded progress is blocked on #4336; the other representation obligations are not blocked on that issue. |
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
-| Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. General raw-history decoding, canonical-role correspondence and the controller’s optimal output for arbitrary X3C families remain unproved. |
+| Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. Actual receipt/raw-history parsing, certification, residual, guard and decoded runtime result are now derived for arbitrary X3C families. Canonical-role correspondence, source admission of the computed follow-up and the complete controller’s general optimal-output law remain unproved. |
 | Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `ResidualCover.native_one_turn_lower` is only the older clocked one-turn bridge | Missing: unrestricted native one/two-turn competitor transfer, exact expected query-token minima and a quantified cost-optimal output guarantee for the selector. These are paper-local obligations, not blocked on #4335 or #4336. |
 
 Not everything outside #4335/#4336 is present. In particular, the native
@@ -1095,9 +1095,34 @@ joint mixture of these correlated native executions. The specialist checks the
 actual query bytes against its own original labeled subinstance. This is a
 nontrivial integrated client, not a universal native optimum theorem.
 
-The general source-family specialization still needs proofs that arbitrary encoded
-near/specialist raw responses induce the proved interpreted families and tests,
-canonical role correspondence and optimal output in this controller. Universal
+Import [NativeResidualReplies](../../CslibFrontier/Probability/StochasticOracle/NativeResidualReplies.lean)
+for the general raw-response connection. `Answers` distinguishes inactivity from
+cancellation, with an actual natural invoice in each active slot. `report` places
+original-label family masks in the source concurrent codec. `observed_proposals`
+derives the native parser’s output from actual `observe`/`replyOf` receipts of
+preformed batches and unit-latency source trajectories; no parser agreement is
+assumed. `observed_resources` derives the same receipt’s additive invoices and
+maximum concurrent unit latency, including canceled calls. The statements are
+pathwise and allow arbitrary correlated response vectors.
+
+`retained` handles complete newest-first raw histories and identifies executable
+rational retention with source chronological certification. `afterNear` and
+`afterSpecialist` use the actual `RuntimeControl.afterReply` update, preserving
+the original runtime instance and raw history. For every promised X3C family,
+`near_residual` and `near_live` derive the missing block and a live guard after
+its near-cover report. `completed_output` and `specialist_stopped` derive a
+weight-one cover decoded from the updated runtime result and a stopped guard
+after the specialist report. The
+[raw-reply client](../../CslibFrontierTests/StochasticOracleNativeResidualReplies.lean)
+checks all five six-point residuals, arbitrary invoice bit lengths, correlated
+raw replies, a concurrent actual receipt with a billed canceled slot, and the
+empty interface. Run
+`lake build CslibFrontierTests.StochasticOracleNativeResidualReplies`.
+
+These runtime-update results are not yet a complete source-admitted query-loop
+law. The general source-family specialization still needs canonical role
+correspondence, admission of the computed specialist request, and optimal
+compiled-controller output derived from that whole interaction. Universal
 native one/two-turn optimum transfer and selection of the cheaper attained strategy
 remain open. Natural invoices in the concrete source protocol do not assert an
 encoding for arbitrary real-valued bills. Source deadlines count oracle time only;
