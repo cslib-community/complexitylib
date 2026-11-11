@@ -151,6 +151,8 @@ variable {ι β : Type*} {f : (ι → Bool) → β}
 that some randomized decision tree computing `f` with error `0` makes at most `c` queries in
 expectation on every input. The finite coordinate space guarantees a correct deterministic tree,
 so the feasible set is nonempty. -/
+-- Finiteness restricts the public domain; `sInf` itself does not require it.
+@[nolint unusedArguments]
 noncomputable def zeroErrorComplexity [Finite ι] (f : (ι → Bool) → β) : ℝ :=
   sInf {c | ∃ μ : RandomizedDecisionTree ι β, μ.Computes 0 f ∧ ∀ x, μ.expectedCost x ≤ c}
 

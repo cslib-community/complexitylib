@@ -73,6 +73,8 @@ variable {ι β : Type*} {f : (ι → Bool) → β} {ν : StdSimplex ℝ (ι →
 /-- The distributional complexity `D^ν_ε(f)`: the least depth of a decision tree that errs with
 probability at most the nonnegative budget `ε` on inputs drawn from `ν`. The finite coordinate
 space ensures that the feasible set is nonempty. -/
+-- Finiteness restricts the public domain; `sInf` itself does not require it.
+@[nolint unusedArguments]
 noncomputable def distributionalComplexity [Finite ι] (ε : ℝ≥0) (ν : StdSimplex ℝ (ι → Bool))
     (f : (ι → Bool) → β) : ℕ :=
   sInf {d | ∃ t : DecisionTree ι β, t.distributionalError ν f ≤ ε ∧ t.depth ≤ d}

@@ -271,6 +271,8 @@ theorem exists_computes [Fintype ι] (f : (ι → Bool) → β) :
 
 /-- The decision tree complexity of `f` on finitely many variables: the least depth of a
 decision tree computing it. Finiteness ensures that the set of feasible depths is nonempty. -/
+-- Finiteness restricts the public domain; `sInf` itself does not require it.
+@[nolint unusedArguments]
 noncomputable def complexity [Finite ι] (f : (ι → Bool) → β) : ℕ :=
   sInf {d | ∃ t : DecisionTree ι β, t.Computes f ∧ t.depth ≤ d}
 

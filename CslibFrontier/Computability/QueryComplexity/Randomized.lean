@@ -309,6 +309,8 @@ variable {ι β : Type*} {f : (ι → Bool) → β} {μ : RandomizedDecisionTree
 /-- The randomized decision tree complexity `R_ε(f)`: the least depth of a randomized decision tree
 computing `f` with nonnegative error budget `ε` over finitely many variables. These restrictions
 ensure that a feasible tree exists. -/
+-- Finiteness restricts the public domain; `sInf` itself does not require it.
+@[nolint unusedArguments]
 noncomputable def randomizedComplexity [Finite ι] (ε : ℝ≥0) (f : (ι → Bool) → β) : ℕ :=
   sInf {d | ∃ μ : RandomizedDecisionTree ι β, μ.Computes ε f ∧ μ.depth ≤ d}
 
