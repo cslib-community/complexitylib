@@ -20,8 +20,9 @@ number `x < 2 ^ L`, and the function of variable `v` is a list `T[v]` of its val
 of `BitString.equivFin`. The definitions use only `Nat.testBit`, division and remainder by powers
 of two, `List.getD` and folds, so a polynomial-time proof can follow them directly.
 
-The input fields are read arithmetically. The slot `(t, q)` starts at bit
-`slotOffset I k lam t q = indexWidth + slotWidth · (q + Δ t)`, its `k` seeds of `W` bits come
+The input fields are read arithmetically. The formula index is `x mod 2 ^ indexWidth`
+(`formulaIndex_equivFin_symm`). The slot `(t, q)` starts at bit
+`slotOffset I Δ k lam t q = indexWidth + slotWidth · (q + Δ t)`, its `k` seeds of `W` bits come
 first, then its mask bit. A variable `v` evaluates a seed `z` at entry `z mod 2 ^ ℓ v` of `T[v]`,
 reading `false` past the end of `T[v]`.
 
@@ -36,6 +37,7 @@ follow their bodies.
 
 ## Main definitions
 
+* `Cslib.PartialMCSP.FromCMMSA.slotOffset`: the position of the first bit of a slot.
 * `Cslib.PartialMCSP.FromCMMSA.slotBitN`, `termParityN`, `entryN`, `tableN`: the slot bits, term
   parities, entries and whole table, computed from explicit tables and a numeric input.
 * `Cslib.PartialMCSP.FromCMMSA.IsVarTable`: `T[v]` is the table of `f v`.
@@ -43,11 +45,14 @@ follow their bodies.
 
 ## Main results
 
+* `Cslib.PartialMCSP.FromCMMSA.formulaIndex_equivFin_symm`: the formula index of the input numbered
+  `x` is `x mod 2 ^ indexWidth`, the index that `termParityN` and `entryN` read.
 * `Cslib.PartialMCSP.FromCMMSA.slotBitN_eq`, `termParityN_eq`: local correctness, from the tables of
   the variables that the slot or term reads.
 * `Cslib.PartialMCSP.FromCMMSA.entryN_eq`: with every table present, `entryN` is `entry`.
-* `Cslib.PartialMCSP.FromCMMSA.tableN_tables`: `tableN (tables f)` is the table of
-  `toInstance I Δ k lam P f`.
+* `Cslib.PartialMCSP.FromCMMSA.tableN_eq_ofFn`: from any list `T` with the table of every variable,
+  `tableN T` is the table of `toInstance I Δ k lam P f`.
+* `Cslib.PartialMCSP.FromCMMSA.tableN_tables`: in particular, `tableN (tables f)` is.
 * `Cslib.PartialMCSP.FromCMMSA.isVarTable_tables`, `IsVarTable.of_getD_eq`: `tables f` has the
   table of every variable, and so does any list that agrees with it at `v`.
 
@@ -66,9 +71,9 @@ variable {I : CMMSAInstance} {Δ k lam : ℕ}
 
 /-! ### The evaluator -/
 
-variable (I k lam) in
+variable (I Δ k lam) in
 /-- The position of the first bit of slot `(t, q)`: `indexWidth + slotWidth · (q + Δ t)`. -/
-@[expose] def slotOffset (Δ t q : ℕ) : ℕ := indexWidth I + slotWidth I k lam * (q + Δ * t)
+@[expose] def slotOffset (t q : ℕ) : ℕ := indexWidth I + slotWidth I k lam * (q + Δ * t)
 
 variable (I Δ k lam) in
 /-- The bit of slot `(t, q)` at a numeric input `x`, computed from the tables `T`: the mask bit of
@@ -78,8 +83,8 @@ literal. -/
   let v := var I (x % 2 ^ indexWidth I) t q
   (List.range k).foldl
     (fun acc i => acc ^^ (T.getD v []).getD
-      (x / 2 ^ (slotOffset I k lam Δ t q + seedWidth I lam * i) % 2 ^ varLength I lam v) false)
-    (x.testBit (slotOffset I k lam Δ t q + k * seedWidth I lam))
+      (x / 2 ^ (slotOffset I Δ k lam t q + seedWidth I lam * i) % 2 ^ varLength I lam v) false)
+    (x.testBit (slotOffset I Δ k lam t q + k * seedWidth I lam))
 
 variable (I Δ k lam) in
 /-- The parity of term `t` at a numeric input `x`: the sum of the bits of its occupied slots. -/
@@ -128,31 +133,27 @@ variable (I lam) in
 
 /-! ### Reading the input fields -/
 
-private theorem testBit_symm (x : Fin (2 ^ inputLength I Δ k lam))
-    (i : Fin (inputLength I Δ k lam)) :
-    (BitString.equivFin _).symm x i = (x : ℕ).testBit i :=
-  BitString.equivFin_symm_apply x i
-
-private theorem formulaIndex_symm (x : Fin (2 ^ inputLength I Δ k lam)) :
+/-- The formula index of the input numbered `x` is `x mod 2 ^ indexWidth`. -/
+theorem formulaIndex_equivFin_symm (x : Fin (2 ^ inputLength I Δ k lam)) :
     formulaIndex ((BitString.equivFin _).symm x) = (x : ℕ) % 2 ^ indexWidth I := by
   rw [formulaIndex, BitString.val_equivFin_eq_div_mod_of_testBit (s := 0) (N := x) fun i => ?_]
   · simp
-  · rw [testBit_symm]
+  · rw [BitString.equivFin_symm_apply]
     simp [indexPos]
 
 private theorem slotPos_val (t q : Fin Δ) (p : Fin (slotWidth I k lam)) :
-    (slotPos I Δ k lam t q p : ℕ) = slotOffset I k lam Δ t q + p := by
+    (slotPos I Δ k lam t q p : ℕ) = slotOffset I Δ k lam t q + p := by
   simp only [slotPos, Fin.natAdd, finProdFinEquiv_apply_val, slotOffset]
   ring
 
 private theorem maskPos_val (t q : Fin Δ) :
-    (maskPos I Δ k lam t q : ℕ) = slotOffset I k lam Δ t q + k * seedWidth I lam :=
+    (maskPos I Δ k lam t q : ℕ) = slotOffset I Δ k lam t q + k * seedWidth I lam :=
   slotPos_val t q (Fin.last _)
 
 private theorem seedPos_val (t q : Fin Δ) (i : Fin k) (r : Fin (seedWidth I lam)) :
-    (seedPos I Δ k lam t q i r : ℕ) = slotOffset I k lam Δ t q + seedWidth I lam * i + r := by
+    (seedPos I Δ k lam t q i r : ℕ) = slotOffset I Δ k lam t q + seedWidth I lam * i + r := by
   refine (slotPos_val t q (Fin.castSucc (finProdFinEquiv (i, r)))).trans ?_
-  change slotOffset I k lam Δ t q + ((finProdFinEquiv (i, r) : Fin (k * seedWidth I lam)) : ℕ) = _
+  change slotOffset I Δ k lam t q + ((finProdFinEquiv (i, r) : Fin (k * seedWidth I lam)) : ℕ) = _
   rw [finProdFinEquiv_apply_val]
   ring
 
@@ -166,7 +167,7 @@ private theorem evalVar_seed_eq {f : VarFunctions I lam} {T : List (List Bool)} 
     (hT : IsVarTable I lam f T v) (x : Fin (2 ^ inputLength I Δ k lam)) (t q : Fin Δ) (i : Fin k) :
     evalVar f v (seed ((BitString.equivFin _).symm x) t q i) =
       (T.getD v []).getD
-        ((x : ℕ) / 2 ^ (slotOffset I k lam Δ t q + seedWidth I lam * i) % 2 ^ varLength I lam v)
+        ((x : ℕ) / 2 ^ (slotOffset I Δ k lam t q + seedWidth I lam * i) % 2 ^ varLength I lam v)
         false := by
   set z := seed ((BitString.equivFin _).symm x) t q i
   have hz : evalVar f v z = evalVar f v (BitString.zeroExtend (d' := varLength I lam v) z) := by
@@ -178,7 +179,8 @@ private theorem evalVar_seed_eq {f : VarFunctions I lam} {T : List (List Bool)} 
     · rfl
   rw [hz, ← hT, BitString.val_equivFin_eq_div_mod_of_testBit fun r => ?_]
   have hr : (r : ℕ) < seedWidth I lam := r.isLt.trans_le (varLength_le_seedWidth' v)
-  simp only [BitString.zeroExtend, hr, dite_true, z, seed, testBit_symm, seedPos_val]
+  simp only [BitString.zeroExtend, hr, dite_true, z, seed, BitString.equivFin_symm_apply,
+    seedPos_val]
 
 /-! ### Correctness -/
 
@@ -198,7 +200,8 @@ theorem slotBitN_eq {f : VarFunctions I lam} {T : List (List Bool)}
     (x : Fin (2 ^ inputLength I Δ k lam)) (t q : Fin Δ)
     (hT : IsVarTable I lam f T (var I ((x : ℕ) % 2 ^ indexWidth I) t q)) :
     slotBitN I Δ k lam T x t q = slotBit f ((BitString.equivFin _).symm x) t q := by
-  rw [slotBitN, slotBit, formulaIndex_symm, testBit_symm, maskPos_val, foldl_xor_range]
+  rw [slotBitN, slotBit, formulaIndex_equivFin_symm, BitString.equivFin_symm_apply, maskPos_val,
+    foldl_xor_range]
   exact congrArg _ (Finset.sum_congr rfl fun i _ => (evalVar_seed_eq hT x t q i).symm)
 
 /-- **Local correctness of a term.** If `T[v]` is the table of `f v` for every variable `v` of
@@ -208,7 +211,7 @@ theorem termParityN_eq {f : VarFunctions I lam} {T : List (List Bool)}
     (hT : ∀ q : Fin Δ, (q : ℕ) < (term I ((x : ℕ) % 2 ^ indexWidth I) t).length →
       IsVarTable I lam f T (var I ((x : ℕ) % 2 ^ indexWidth I) t q)) :
     termParityN I Δ k lam T x t = termParity f ((BitString.equivFin _).symm x) t := by
-  rw [termParityN, termParity, formulaIndex_symm, foldl_xor_range, Bool.add_eq_xor,
+  rw [termParityN, termParity, formulaIndex_equivFin_symm, foldl_xor_range, Bool.add_eq_xor,
     Bool.false_xor]
   refine Finset.sum_congr rfl fun q _ => ?_
   by_cases hq : (q : ℕ) < (term I ((x : ℕ) % 2 ^ indexWidth I) t).length
@@ -225,7 +228,7 @@ theorem entryN_eq {f : VarFunctions I lam} {T : List (List Bool)}
     (hT : ∀ v, IsVarTable I lam f T v) (x : Fin (2 ^ inputLength I Δ k lam)) :
     entryN I Δ k lam T x = entry f ((BitString.equivFin _).symm x) := by
   have hpar (t : Fin Δ) := termParityN_eq (f := f) x t fun q _ => hT _
-  simp only [entryN, entry, formulaIndex_symm, all_range_iff, hpar]
+  simp only [entryN, entry, formulaIndex_equivFin_symm, all_range_iff, hpar]
   congr 1
   simp [Bool.or_eq_true, imp_iff_not_or]
 

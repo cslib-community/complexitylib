@@ -70,51 +70,6 @@ theorem restrictBitsAddHom_surjective {q M : ℕ} (hM : M ≤ q) :
     Function.Surjective (restrictBitsAddHom hM) :=
   fun w => ⟨zeroExtend w, restrictBitsAddHom_zeroExtend hM w⟩
 
-/-- Helper: `(b + 2 * x) % 2 ^ (M + 1) = b + 2 * (x % 2 ^ M)` for `b < 2`. -/
-private theorem add_two_mul_mod_two_pow_succ {b : ℕ} (hb : b < 2) (x M : ℕ) :
-    (b + 2 * x) % 2 ^ (M + 1) = b + 2 * (x % 2 ^ M) := by
-  have hdiv : (b + 2 * x) / 2 ^ (M + 1) = x / 2 ^ M := by
-    rw [pow_succ', ← Nat.div_div_eq_div_mul]
-    have h1 : (b + 2 * x) / 2 = x := by omega
-    rw [h1]
-  have hmul : 2 ^ (M + 1) * (x / 2 ^ M) = 2 * (2 ^ M * (x / 2 ^ M)) := by
-    rw [pow_succ', mul_assoc]
-  have hmod1 := Nat.div_add_mod (b + 2 * x) (2 ^ (M + 1))
-  have hmod2 := Nat.div_add_mod x (2 ^ M)
-  rw [hdiv, hmul] at hmod1
-  omega
-
-/-- Taking the first `M ≤ q` bits of `v : BitString q` corresponds to taking its unsigned integer
-value modulo `2 ^ M`. -/
-theorem val_equivFin_restrictBitsAddHom {q M : ℕ} (hM : M ≤ q) (v : BitString q) :
-    (equivFin M (restrictBitsAddHom hM v)).val = (equivFin q v).val % 2 ^ M := by
-  induction M generalizing q with
-  | zero =>
-    have hlt := (equivFin 0 (restrictBitsAddHom hM v)).isLt
-    omega
-  | succ M ih =>
-    cases q with
-    | zero => omega
-    | succ q =>
-      have hM' : M ≤ q := Nat.le_of_succ_le_succ hM
-      have hcons : restrictBitsAddHom hM v =
-          Fin.cons (v 0) (restrictBitsAddHom hM' (Fin.tail v)) := by
-        ext j
-        refine Fin.cases ?_ ?_ j
-        · rfl
-        · intro i
-          rfl
-      conv_rhs => rw [← Fin.cons_self_tail v]
-      rw [hcons, val_equivFin_cons, val_equivFin_cons, ih hM' (Fin.tail v)]
-      have hb : (v 0).toNat < 2 := by cases v 0 <;> decide
-      exact (add_two_mul_mod_two_pow_succ hb _ M).symm
-
-/-- Taking the `M`-bit prefix of `v : BitString q` via `zeroExtend` when `M ≤ q` reduces its
-unsigned integer value modulo `2 ^ M`. -/
-theorem val_equivFin_zeroExtend_of_le {q M : ℕ} (hM : M ≤ q) (v : BitString q) :
-    (equivFin M (zeroExtend v)).val = (equivFin q v).val % 2 ^ M := by
-  rw [← restrictBitsAddHom_eq_zeroExtend hM v, val_equivFin_restrictBitsAddHom hM v]
-
 /-- **A window of binary digits.** If the bits of `z : BitString d` are the binary digits
 `s, …, s + d - 1` of `N`, then the number of `z` is `N / 2 ^ s % 2 ^ d`. -/
 theorem val_equivFin_eq_div_mod_of_testBit {d s N : ℕ} {z : BitString d}
@@ -128,5 +83,21 @@ theorem val_equivFin_eq_div_mod_of_testBit {d s N : ℕ} {z : BitString d}
   · simp only [hi, decide_false, Bool.false_and]
     exact Nat.testBit_lt_two_pow
       ((equivFin d z).isLt.trans_le (Nat.pow_le_pow_right (by decide) (by omega)))
+
+/-- Taking the first `M ≤ q` bits of `v : BitString q` corresponds to taking its unsigned integer
+value modulo `2 ^ M`. -/
+theorem val_equivFin_restrictBitsAddHom {q M : ℕ} (hM : M ≤ q) (v : BitString q) :
+    (equivFin M (restrictBitsAddHom hM v)).val = (equivFin q v).val % 2 ^ M := by
+  rw [val_equivFin_eq_div_mod_of_testBit (s := 0) (N := equivFin q v)
+    (z := restrictBitsAddHom hM v) fun i => ?_]
+  · simp
+  · rw [Nat.zero_add]
+    exact (testBit_equivFin v (Fin.castLE hM i)).symm
+
+/-- Taking the `M`-bit prefix of `v : BitString q` via `zeroExtend` when `M ≤ q` reduces its
+unsigned integer value modulo `2 ^ M`. -/
+theorem val_equivFin_zeroExtend_of_le {q M : ℕ} (hM : M ≤ q) (v : BitString q) :
+    (equivFin M (zeroExtend v)).val = (equivFin q v).val % 2 ^ M := by
+  rw [← restrictBitsAddHom_eq_zeroExtend hM v, val_equivFin_restrictBitsAddHom hM v]
 
 end Cslib.BitString
