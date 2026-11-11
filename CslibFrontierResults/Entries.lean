@@ -6,6 +6,9 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
+import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
+import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
@@ -72,6 +75,7 @@ import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
+import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -1967,8 +1971,9 @@ register_result "formula-magnification-locality" where
   scope := "MCSP[(s, 0), (s, δ)] on N = 2^n-bit truth tables is computed by De Morgan formulas \
     with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
     N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
-    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: the DAG [q, ℓ, a]-Circuit classes, the \
-    other bullets of Proposition 63 and the locality barrier (Theorem 59) are not formalized."
+    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: no bullet of Proposition 63 is proved \
+    for the [q, ℓ, a]-Circuit classes (LocalCircuitClass), and the other bullets and the \
+    locality barrier (Theorem 59) are not formalized."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
@@ -2141,3 +2146,113 @@ register_result "tfnp-sopl-eopl-collapse" where
     transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
     EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
     are not formalized."
+
+register_result "goemans-williamson-max2sat" where
+  title := "Goemans–Williamson α-approximation rounding for MAX-2SAT (α > 0.87856)"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Theorem 7.2.1.1",
+      locator := "Section 7.2.1" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_signedSdpValue_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_satSdpValue_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_satValue_le_integral
+  ]
+  scope := "Exact stdGaussian random-hyperplane rounding of unit-vector SDP relaxations (P') \
+    and weighted MAX-2SAT over arbitrary finite clause/variable types with nonnegative weights, \
+    using Real.goemansWilliamsonConstant (0.87856 < α). No SDP solver, Gaussian sampler, \
+    derandomization, or Section 7.2.2 MAX-SAT LP/SDP hybrid is formalized."
+
+register_result "goemans-williamson-max2sat-cnf" where
+  title := "Goemans–Williamson rounding bridge for Cslib MaxTwoSAT CNFs"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Section 7.2.1",
+      locator := "Section 7.2.1" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_countP_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_target_le_integral_of_mem
+  ]
+  scope := "Specialization of Goemans–Williamson MAX-2SAT random-hyperplane rounding to list \
+    CNFs counted by Cslib.Logic.PL.CNF.countP and membership in Cslib.Complexity.MaxTwoSAT \
+    under exact stdGaussian expectation; no polynomial-time SDP solver is included."
+
+open Cslib.Algorithms.Lean.MaxDicut in
+register_result "goemans-williamson-maxdicut" where
+  title := "Goemans–Williamson β-approximation rounding for MAX-DICUT (β > 0.79607)"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Lemma 7.3.1, Lemma 7.3.2",
+      locator := "Section 7.3, pp. 1138–1139" }
+  ]
+  theorems := [
+    goemansWilliamsonDicutConstant_mul_dicutSdpValue_le_integral,
+    goemansWilliamsonDicutConstant_mul_dicutValue_le_integral,
+    goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph
+  ]
+  scope := "Exact stdGaussian random-hyperplane rounding for triple SDP relaxations (P'') and \
+    weighted directed multigraphs with nonnegative weights, achieving \
+    Real.goemansWilliamsonDicutConstant (0.79607 < β < 0.79608), plus the balanced-digraph \
+    reduction recovering α > 0.87856 on p. 1138. No SDP solver, finite-precision sampler, or \
+    derandomization is formalized."
+
+register_result "nayak-wu-counting" where
+  title := "Nayak–Wu: quantum query lower bound for approximate counting"
+  topic := "quantum complexity"
+  sources := [
+    { paper := NayakWu1999, theorem := "Theorem 1.11",
+      locator := "Section 1 (arXiv:quant-ph/9804066v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_exactCount_le,
+    Cslib.Quantum.one_sub_mul_approxCount_le,
+    Cslib.Quantum.approxCount_lower_bound
+  ]
+  scope := "T-query bit-query quantum algorithm outputting a real estimate y with |y - t| < Δ \
+    on inputs of Hamming weight t (failure probability at most ε, 2ε <= 1). When 1/2 <= Δ and \
+    4Δ <= n, gives (1 - 2 sqrt(ε(1-ε))) (sqrt(n/Δ) + sqrt(t(n-t))/Δ) <= 16T and <= 288T at \
+    ε = 1/3; when 0 < Δ <= 1/2 and 1 <= n, gives <= 4T. Derived from the adversary weight-layer \
+    bound rather than polynomials. Relative counting and approximate mean are not formalized."
+
+register_result "nayak-wu-kth-smallest" where
+  title := "Nayak–Wu: quantum query lower bound for approximate k-th smallest selection"
+  topic := "quantum complexity"
+  sources := [
+    { paper := NayakWu1999, theorem := "Theorem 1.5",
+      locator := "Sections 1 and 2 (arXiv:quant-ph/9804066v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_kthSmallest_le,
+    Cslib.Quantum.kthSmallest_lower_bound,
+    Cslib.Quantum.kthSmallest_involution_lower_bound,
+    Cslib.Quantum.kthSmallest_index_lower_bound
+  ]
+  scope := "T-query value-query quantum algorithm over a finite index type and linearly ordered \
+    alphabet returning an element within rank distance < Δ of k (or any relaxed value) with \
+    failure probability at most ε <= 1/2, for 1 <= k <= n, 1 <= Δ, 4Δ <= n. Proves explicit \
+    constants 32T (576T at ε = 1/3), 16T (288T) for involutive-difference oracle steps, and \
+    the same bound on T + 1 for index-returning algorithms. Comparison-tree oracles are not \
+    formalized."
+
+register_result "nayak-wu-median" where
+  title := "Nayak–Wu: quantum query lower bound for approximate median"
+  topic := "quantum complexity"
+  sources := [
+    { paper := NayakWu1999, theorem := "Corollary 1.6",
+      locator := "Section 1 (arXiv:quant-ph/9804066v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_median_le,
+    Cslib.Quantum.median_lower_bound,
+    Cslib.Quantum.median_inv_delta_lower_bound,
+    Cslib.Quantum.median_involution_lower_bound,
+    Cslib.Quantum.median_index_lower_bound
+  ]
+  scope := "T-query value-query quantum algorithm over a finite index type (1 <= n) and \
+    linearly ordered alphabet outputting a δ-approximate median (0 < δ < 1) with failure \
+    probability at most ε <= 1/2. Gives (1 - 2 sqrt(ε(1-ε))) min(1/δ, n) <= 24T, 432T at \
+    ε = 1/3 (hence 1/δ <= 432T when 1 <= δ n), 12T (216T) for involutive-difference oracle \
+    steps, and the same bound on T + 1 for index-returning algorithms. Derived via adversary \
+    weight-layer bounds rather than polynomials; comparison-tree oracles are not formalized."
