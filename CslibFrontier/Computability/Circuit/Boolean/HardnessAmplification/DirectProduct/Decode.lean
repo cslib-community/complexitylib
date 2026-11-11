@@ -33,9 +33,9 @@ least half of the trial vectors give a hypothesis with error at most `ε #U`. It
 tuples consistent with the seed have density at least `δ / 2` and that at most an `ε / 64`
 fraction of them disagree with `f` in `ε k / 64` or more positions. The module
 `CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Density`
-discharges these hypotheses for a `δ / 4` fraction of seeds and proves the counting headline. The
-decoder's circuit size, and with it M6.3 of #4451, remains open. The analysis follows the shape
-of IJKW's Lemmas 3.8–3.10. Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`,
+discharges these hypotheses for a `δ / 4` fraction of seeds and proves the counting headline, and
+`DirectProduct.Complexity` bounds the decoder's circuit size. The analysis follows the shape of
+IJKW's Lemmas 3.8–3.10. Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`,
 `(16 / δ) log (8 / ε)`) are ours, derived for the tuple formulation; they are not IJKW's. The
 parameter roles are swapped relative to IJKW's Theorem 1.2: `ε` here is their output error `δ`,
 and `δ` here is their agreement `ε`. The tuple form also omits their Algorithm 1 lookup that
