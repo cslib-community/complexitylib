@@ -516,6 +516,11 @@ Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of 
 
 Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the ACM* 45(4), 634–652, 1998. https://doi.org/10.1145/285055.285059 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the Set Cover hardness threshold framework using separating partition gadgets.
 
+<a id="fgms20"></a>
+## fgms20
+
+John Fearnley, Spencer Gordon, Ruta Mehta and Rahul Savani. "Unique End of Potential Line." *Journal of Computer and System Sciences* 114, 1–35, 2020. https://doi.org/10.1016/j.jcss.2020.05.007 . Checked on 2026-11-11 against the arXiv TeX source of `arXiv:1811.03841v1` (https://arxiv.org/abs/1811.03841 , dated 9 November 2018): Section 2 ("Unique End of Potential Line"), Definition 9 (`EndOfPotentialLine`, `\label{def:EOPL}`, solution types `(R1)` and `(R2)` under `P(0^n) = 0^n ≠ S(0^n)` and `V(0^n) = 0` with `V : {0, 1}^n → {0, …, 2^m - 1}`) and the complexity class `EOPL` with `EOPL ⊆ PLS ∩ PPAD`. `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLine.lean` formalizes uniform polynomial-time `EOPL` and `SOPL` families, totalized `(R1)/(R2)` violation relations (`mem_EOPL_iff_violation`, `mem_SOPL_iff_violation`), and `EOPL ⊆ PLS ∩ PPAD`. `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLineNormalization.lean` formalizes the uniform polynomial-time `(n + 1)`-bit normalization to the exact syntactic source conditions `PromisedPotentialLine` (`P(0^n) = 0^n ≠ S(0^n)` and `V(0^n) = 0`), pure `(R1)/(R2)` relations (`endOfPotentialLinePromisedRel`, `sinkOfPotentialLinePromisedRel`), and unary potential bit-bounds (`mem_EOPL_iff_promised_bounded`, `mem_SOPL_iff_promised_bounded`). Both modules use uniform polynomial-time families rather than canonical Boolean circuit codes; `UEOPL`, `CLS`, and the journal version's numbering were not formalized or separately checked.
+
 <a id="fips203"></a>
 ## fips203
 
@@ -760,7 +765,7 @@ Shuichi Hirahara. *Non-Black-Box Worst-Case to Average-Case Reductions within NP
 <a id="hirahara2022"></a>
 ## hirahara2022
 
-Shuichi Hirahara. *NP-Hardness of Learning Programs and Partial MCSP*. FOCS 2022, 968–979. https://doi.org/10.1109/FOCS54457.2022.00095 . Full version ECCC TR22-119. Checked against the FOCS proceedings text on 2026-11-11: the partial-string problems `MKTP*` and `MINKT*` (Section I, p. 971), consistency with a partial string (footnote 5, p. 971), the KT-style time measure of Theorem I.2 (footnote 6, p. 971), Theorem I.2 (p. 971), and the account of Ko's `MINKT` and relativization barrier (abstract, p. 968; Section I, p. 970). The ECCC numbering was not checked.
+Shuichi Hirahara. *NP-Hardness of Learning Programs and Partial MCSP*. FOCS 2022, 968–979. https://doi.org/10.1109/FOCS54457.2022.00095 . Full version ECCC TR22-119. Checked against the FOCS proceedings text on 2026-11-11: the partial-string problems `MKTP*` and `MINKT*` (Section I, p. 971), consistency with a partial string (footnote 5, p. 971), the KT-style time measure of Theorem I.2 (footnote 6, p. 971), Theorem I.2 (p. 971; its "In particular" clause, NP-hardness of Partial MCSP under randomized reductions, is `PartialMCSP.rpHard`), and the account of Ko's `MINKT` and relativization barrier (abstract, p. 968; Section I, p. 970). The ECCC numbering was not checked.
 
 <a id="hk21"></a>
 ## hk21
@@ -836,6 +841,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 ## impagliazzo95
 
 Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *Proceedings of the 36th Annual Symposium on Foundations of Computer Science (FOCS 1995)*, 538–545. DOI: [10.1109/SFCS.1995.492584](https://doi.org/10.1109/SFCS.1995.492584). Bibliographic metadata only; the paper itself was not inspected, and its statement is cited as recalled in [Holenstein 2005](#holenstein05), Section 2.
+
+<a id="impagliazzojaiswalkabanetswigderson10"></a>
+## impagliazzojaiswalkabanetswigderson10
+
+Russell Impagliazzo, Ragesh Jaiswal, Valentine Kabanets and Avi Wigderson. *Uniform Direct Product Theorems: Simplified, Optimized, and Derandomized*. SIAM Journal on Computing 39(4), 1637–1665, 2010. DOI: [10.1137/080734030](https://doi.org/10.1137/080734030) (as reported by search; not resolved). The authors' preprint dated 2009-10-19 (https://www.math.ias.edu/~avi/PUBLICATIONS/ImpagliazzoJaKaWi2010.pdf) was inspected on 2026-11-11: Theorem 1.2 (the decoder that CIKK cite as their Theorem 4.1), Algorithms 1–2, Theorem 3.2 and Lemmas 2.11–2.14 and 3.8–3.12. Locators follow the preprint; the journal numbering is unchecked.
 
 <a id="impagliazzowigderson97"></a>
 ## impagliazzowigderson97
@@ -1401,6 +1411,11 @@ Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, ve
 ## schrijver78
 
 Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinatorial Theory, Series A* 25(1), 80–83, 1978. https://doi.org/10.1016/0097-3165(78)90036-5 . Bibliographic data from the DOI record; the paper was not inspected. The induction in the library's Brégman module follows the published descriptions of this proof (induction on `n`, a convexity inequality at one row, then averaging over the rows).
+
+<a id="schrijver86"></a>
+## schrijver86
+
+Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. An independent agent review checked the primary book on 2026-11-11 UTC for Section 3.2, Theorem 3.2 (pp. 29–30, determinant encoding-size bound) and Section 3.3, "The Gaussian elimination method": Theorem 3.3 (pp. 32–33, polynomial-time rational Gaussian elimination), Corollary 3.3a (pp. 33–34, polynomial-time determinant, rank, inverse, linear-independence testing, and linear system solving), and the Gauss–Jordan discussion with Equations (28)–(30) (p. 35). Local adaptations in [`BareissElimination.lean`](../CslibFrontier/Algorithms/LinearAlgebra/BareissElimination.lean) and [`RationalElimination.lean`](../CslibFrontier/Computability/PolyTime/LinearAlgebra/RationalElimination.lean): (1) rather than Schrijver's normalized rational elimination, row denominators are cleared upfront and fraction-free Sylvester–Bareiss minor-scaled Gauss–Jordan updates are executed over `ℤ` with an explicit Hadamard/factorial bound (`stageEntryBound`); and (2) native multi-tape Turing `ComputableInPolyTime` time and workspace bounds are certified using `enc_structure` codecs with explicit unary dimension headers (`numRows`, `numCols`, `rank`, `pivotRows`, `pivotCols`, `nonPivotCols`) and framed signed-binary/rational entries.
 
 <a id="schummervohra07"></a>
 ## schummervohra07
