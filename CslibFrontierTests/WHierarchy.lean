@@ -81,13 +81,13 @@ def K3 : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩
 example : IndependentSet.edgeIndices K3 = [(0, 1), (1, 2), (0, 2)] := by decide
 
 -- One vertex of the triangle is a satisfying input of weight `1`.
-example : IndependentSet.toWCS (K3, 1) ∈ WCS 1 3 :=
+example : IndependentSet.toWCS ⟨K3, 1⟩ ∈ WCS 1 3 :=
   ⟨fun i => decide (i.val = 0), by decide, by
     dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩
 
 -- No input of weight `2` satisfies the circuit of the triangle, so the triangle has no
 -- independent set of two vertices.
-example : (K3, 2) ∉ IndependentSet := by
+example : (⟨K3, 2⟩ : IndependentSetInstance) ∉ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
   rintro ⟨x, hk, hx⟩
   dsimp [IndependentSet.toWCS] at x hk hx
@@ -98,25 +98,25 @@ example : (K3, 2) ∉ IndependentSet := by
 -- An edge with an undeclared end is not an edge of the circuit.
 example : IndependentSet.edgeIndices ⟨[0, 1], [(0, 5)]⟩ = [] := by decide
 
-example : ((⟨[0, 1], [(0, 5)]⟩, 2) : Graph × ℕ) ∈ IndependentSet := by
+example : (⟨⟨[0, 1], [(0, 5)]⟩, 2⟩ : IndependentSetInstance) ∈ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
   exact ⟨fun _ => true, by decide, by
     dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩
 
 -- A self-loop is not an edge of the circuit.
-example : ((⟨[0], [(0, 0)]⟩, 1) : Graph × ℕ) ∈ IndependentSet := by
+example : (⟨⟨[0], [(0, 0)]⟩, 1⟩ : IndependentSetInstance) ∈ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
   exact ⟨fun _ => true, by decide, by
     dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩
 
 /-! ### Classes -/
 
-example : Clique ∈ W 2 (encPair encGraph encNat) Prod.snd :=
+example : Clique ∈ W 2 encCliqueInstance (·.m) :=
   W_mono (by norm_num) Clique_mem_W
 
 -- A `W[1]`-hard problem in `FPT` would put `Clique` in `FPT`.
 example {β : Type} {enc : β ↪ List Bool} {κ : β → ℕ} {B : Set β} (hB : WHard 1 enc κ B)
-    (hFPT : B ∈ FPT enc κ) : Clique ∈ FPT (encPair encGraph encNat) Prod.snd :=
+    (hFPT : B ∈ FPT enc κ) : Clique ∈ FPT encCliqueInstance (·.m) :=
   hB.subset_FPT hFPT Clique_mem_W
 
 end CslibFrontierTests.WHierarchy

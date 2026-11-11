@@ -46,7 +46,7 @@ example : greedyMatching path4.edges = [(0, 1), (2, 3)] := by decide +kernel
 example : approxCover path4 = [0, 1, 2, 3] := by decide +kernel
 
 /-- `{1, 2}` covers the path. -/
-theorem path4_mem : (path4, 2) ∈ VertexCover := by
+theorem path4_mem : (⟨path4, 2⟩ : VertexCoverInstance) ∈ VertexCover := by
   refine mem_VertexCover_iff.2 ⟨{1, 2}, by decide +kernel, ?_, rfl⟩
   intro u hu v hv huv
   simp only [Graph.toSimpleGraph, SimpleGraph.fromRel_adj, path4, List.mem_cons,
@@ -75,7 +75,7 @@ def star3 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (0, 2), (0, 3)]⟩
 example : approxCover star3 = [0, 1] := by decide +kernel
 
 /-- The centre covers the star. -/
-theorem star3_mem : (star3, 1) ∈ VertexCover := by
+theorem star3_mem : (⟨star3, 1⟩ : VertexCoverInstance) ∈ VertexCover := by
   refine mem_VertexCover_iff.2 ⟨{0}, by decide +kernel, ?_, rfl⟩
   intro u hu v hv huv
   simp only [Graph.toSimpleGraph, SimpleGraph.fromRel_adj, star3, List.mem_cons,

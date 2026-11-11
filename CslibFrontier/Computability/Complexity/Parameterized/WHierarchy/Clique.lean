@@ -259,7 +259,7 @@ open Circuits Circuits.Boolean Circuits.Boolean.Unbounded Turing.MultiTapeTM WCS
 
 /-- **The graph construction is polynomial-time** for every fixed depth `d`. -/
 theorem WCS.computableInPolyTime_toClique (d : ℕ) :
-    ComputableInPolyTime (toClique (d := d)) (encWCS 1 d) (encPair encGraph encNat) := by
+    ComputableInPolyTime (toClique (d := d)) (encWCS 1 d) encCliqueInstance := by
   have hwc : ComputableInPolyTime (fun x : WCSInstance 1 d => x.circuit)
       (encWCS 1 d) (encWeftCircuit 1 d) :=
     encWCS_circuit_polyTime .id'
@@ -280,15 +280,17 @@ theorem WCS.computableInPolyTime_toClique (d : ℕ) :
     encWCS_weight_polyTime .id'
   have hres : ComputableInPolyTime
       (fun x : WCSInstance 1 d =>
-        (graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
+        (⟨graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
           (x.circuit.toCircuit.2.code.2.getD 0 0) x.weight,
-          size d x.circuit.toCircuit.1 x.weight))
-      (encWCS 1 d) (encPair encGraph encNat) :=
-    (computableInPolyTime_graph d hn hg ho hk).prod (computableInPolyTime_size d hn hk)
+          size d x.circuit.toCircuit.1 x.weight⟩ : CliqueInstance))
+      (encWCS 1 d) encCliqueInstance :=
+    encCliqueInstance_mk_polyTime
+      (computableInPolyTime_graph d hn hg ho hk)
+      (computableInPolyTime_size d hn hk)
   have heq : (toClique (d := d)) = fun x : WCSInstance 1 d =>
-      (graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
+      ⟨graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
         (x.circuit.toCircuit.2.code.2.getD 0 0) x.weight,
-        size d x.circuit.toCircuit.1 x.weight) := by
+        size d x.circuit.toCircuit.1 x.weight⟩ := by
     funext x
     rw [getD_code_outputs]
     rfl
@@ -299,26 +301,26 @@ theorem WCS.computableInPolyTime_toClique (d : ℕ) :
 `Clique`**, by a polynomial-time reduction that bounds the clique size by
 `(k + 1) ^ 2 ^ (d + 1) + 1`. -/
 theorem WCS.fptReducible_Clique (d : ℕ) :
-    FPTReducible (encWCS 1 d) (encPair encGraph encNat) WCSInstance.weight Prod.snd
+    FPTReducible (encWCS 1 d) encCliqueInstance WCSInstance.weight (·.m)
       (WCS 1 d) Clique :=
   FPTReducible.of_computableInPolyTime (computableInPolyTime_toClique d)
     (h := fun k => (k + 1) ^ 2 ^ (d + 1) + 1) (fun _ => size_le d _ _)
     fun x => (toClique_mem_Clique_iff x).symm
 
 /-- **`Clique` is `W[1]`-hard** [Cygan et al., Chapter 13][CyganEtAl2015] [DowneyFellows1999]. -/
-theorem Clique_wHard : WHard 1 (encPair encGraph encNat) Prod.snd Clique :=
+theorem Clique_wHard : WHard 1 encCliqueInstance (·.m) Clique :=
   wHard_iff.2 WCS.fptReducible_Clique
 
 /-- **`IndependentSet` is `W[1]`-hard** [Cygan et al., Chapter 13][CyganEtAl2015], by
 complementing the graph. -/
-theorem IndependentSet_wHard : WHard 1 (encPair encGraph encNat) Prod.snd IndependentSet :=
+theorem IndependentSet_wHard : WHard 1 encIndependentSetInstance (·.m) IndependentSet :=
   Clique_wHard.fptReducible fptReducible_Clique_IndependentSet
 
 /-- **`W[1] = FPT` exactly when `Clique` is in `FPT`**, for every problem type, encoding and
 parameter. -/
 theorem W_one_eq_FPT_iff :
     (∀ ⦃α : Type⦄ (enc : α ↪ List Bool) (κ : α → ℕ), W 1 enc κ = FPT enc κ) ↔
-      Clique ∈ FPT (encPair encGraph encNat) Prod.snd := by
+      Clique ∈ FPT encCliqueInstance (·.m) := by
   constructor
   · intro h
     rw [← h]

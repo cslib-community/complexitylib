@@ -27,8 +27,8 @@ open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 /-! ### Headline complexity class results -/
 
 example :
-    (VertexCover ∈ NP (encPair encGraph encNat) ∧
-        PolyTimeReducible encCNF (encPair encGraph encNat) SAT VertexCover) ∧
+    (VertexCover ∈ NP encVertexCoverInstance ∧
+        PolyTimeReducible encCNF encVertexCoverInstance SAT VertexCover) ∧
       (KColoring 2 ∈ NP encGraph ∧ KColoring 5 ∈ NP encGraph) ∧
       (ThreeColoring ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT ThreeColoring) ∧
@@ -54,7 +54,7 @@ example :
 
 example :
     PolyTimeReducible encCNF encGraph SAT ThreeColoring ∧
-      PolyTimeReducible encCNF (encPair encGraph encNat) SAT VertexCover ∧
+      PolyTimeReducible encCNF encVertexCoverInstance SAT VertexCover ∧
       PolyTimeReducible encCNF encPathInstance SAT DirHamPath :=
   ⟨ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP |>.trans polyTimeReducible_ThreeSAT_ThreeColoring,
     polyTimeReducible_SAT_IndependentSet.trans polyTimeReducible_IndependentSet_VertexCover,
@@ -63,10 +63,10 @@ example :
 /-! ### Compositional `fun_prop` synthesis -/
 
 example :
-    ComputableInPolyTime IndependentSet.toVertexCover (encPair encGraph encNat)
-        (encPair encGraph encNat) ∧
+    ComputableInPolyTime IndependentSet.toVertexCover encIndependentSetInstance
+        encVertexCoverInstance ∧
       ComputableInPolyTime VertexCover.verifier
-        (encPair (encPair encGraph encNat) encBits) encBool ∧
+        (encPair encVertexCoverInstance encBits) encBool ∧
       ComputableInPolyTime (KColoring.verifier 3) (encPair encGraph encBits) encBool ∧
       ComputableInPolyTime SAT.toThreeColoring encCNF encGraph ∧
       ComputableInPolyTime (SAT.toKColoring 2) encCNF encGraph ∧
@@ -74,7 +74,7 @@ example :
       ComputableInPolyTime SAT.toDirHamCycle encCNF encGraph ∧
       ComputableInPolyTime
         (fun φ => IndependentSet.toVertexCover (SAT.toIndependentSet φ))
-        encCNF (encPair encGraph encNat) := by
+        encCNF encVertexCoverInstance := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> fun_prop
 
 /-! ### `VertexCover` concrete and boundary tests -/
@@ -83,20 +83,20 @@ private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 -- A triangle has vertex covers with two vertices but none with one.
 example :
-    VertexCover.verifier ((triangle, 2), [true, true, false]) = true ∧
-      VertexCover.verifier ((triangle, 2), [false, true, true]) = true ∧
-      VertexCover.verifier ((triangle, 1), [true, false, false]) = false ∧
-      VertexCover.verifier ((triangle, 2), [true, false, false]) = false :=
+    VertexCover.verifier (⟨triangle, 2⟩, [true, true, false]) = true ∧
+      VertexCover.verifier (⟨triangle, 2⟩, [false, true, true]) = true ∧
+      VertexCover.verifier (⟨triangle, 1⟩, [true, false, false]) = false ∧
+      VertexCover.verifier (⟨triangle, 2⟩, [true, false, false]) = false :=
   ⟨rfl, rfl, rfl, rfl⟩
 
-example : (triangle, 2) ∈ VertexCover := by
+example : (⟨triangle, 2⟩ : VertexCoverInstance) ∈ VertexCover := by
   rw [mem_VertexCover_iff]
   refine ⟨{0, 1}, by decide, fun u hu v hv huv => ?_, rfl⟩
   simp only [triangle, List.mem_cons, List.not_mem_nil, or_false] at hu hv
   rcases hu with rfl | rfl | rfl <;> rcases hv with rfl | rfl | rfl <;>
     first | exact (huv.ne rfl).elim | simp
 
-example : (triangle, 1) ∉ VertexCover := by
+example : (⟨triangle, 1⟩ : VertexCoverInstance) ∉ VertexCover := by
   rw [mem_VertexCover_iff]
   rintro ⟨S, -, hS, hcard⟩
   obtain ⟨v, rfl⟩ := Finset.card_eq_one.1 hcard
@@ -110,7 +110,8 @@ example : (triangle, 1) ∉ VertexCover := by
   omega
 
 -- Covers have exactly `k` vertices: the triangle has one of all three vertices, but none of four.
-example : (triangle, 3) ∈ VertexCover ∧ (triangle, 4) ∉ VertexCover := by
+example : (⟨triangle, 3⟩ : VertexCoverInstance) ∈ VertexCover ∧
+    (⟨triangle, 4⟩ : VertexCoverInstance) ∉ VertexCover := by
   refine ⟨?_, fun h => absurd (mem_VertexCover_iff_exists_card_le.1 h).1 (by decide)⟩
   rw [mem_VertexCover_iff]
   refine ⟨{0, 1, 2}, by decide, fun u hu _ _ _ => Or.inl ?_, rfl⟩
@@ -118,10 +119,10 @@ example : (triangle, 3) ∈ VertexCover ∧ (triangle, 4) ∉ VertexCover := by
 
 -- Empty graph: `k = 0` is accepted and `k = 1` is rejected.
 example :
-    VertexCover.verifier (((⟨[], []⟩, 0) : Graph × ℕ), []) = true ∧
-      VertexCover.verifier (((⟨[], []⟩, 1) : Graph × ℕ), [true]) = false ∧
-      ((⟨[], []⟩ : Graph), 0) ∈ VertexCover ∧
-      ((⟨[], []⟩ : Graph), 1) ∉ VertexCover :=
+    VertexCover.verifier (⟨⟨[], []⟩, 0⟩, []) = true ∧
+      VertexCover.verifier (⟨⟨[], []⟩, 1⟩, [true]) = false ∧
+      (⟨⟨[], []⟩, 0⟩ : VertexCoverInstance) ∈ VertexCover ∧
+      (⟨⟨[], []⟩, 1⟩ : VertexCoverInstance) ∉ VertexCover :=
   ⟨rfl, rfl, mem_VertexCover_iff.2 ⟨∅, by simp, by simp, rfl⟩, fun h =>
     absurd (mem_VertexCover_iff_exists_card_le.1 h).1 (by decide)⟩
 
@@ -129,17 +130,15 @@ example :
 -- oversized binary targets are rejected without unary expansion; and `toVertexCover` complements
 -- the target within distinct declared vertices.
 example :
-    VertexCover.verifier (((⟨[0, 0, 1], [(0, 1)]⟩, 2) : Graph × ℕ), [true, true, false]) = false ∧
-      VertexCover.verifier (((⟨[0, 0, 1], [(0, 1)]⟩, 1) : Graph × ℕ), [true, false, false]) = true ∧
+    VertexCover.verifier (⟨⟨[0, 0, 1], [(0, 1)]⟩, 2⟩, [true, true, false]) = false ∧
+      VertexCover.verifier (⟨⟨[0, 0, 1], [(0, 1)]⟩, 1⟩, [true, false, false]) = true ∧
       VertexCover.verifier
-        (((⟨[10, 20], [(10, 99), (99, 20), (10, 10)]⟩, 0) : Graph × ℕ), [false, false]) = true ∧
-      VertexCover.verifier (((⟨[0, 1], [(0, 1)]⟩, 2 ^ 100) : Graph × ℕ), [true, true]) = false ∧
-      IndependentSet.toVertexCover (triangle, 1) = (triangle, 2) ∧
-      IndependentSet.toVertexCover (((⟨[0, 0, 1], []⟩, 2) : Graph × ℕ)) =
-        (((⟨[0, 0, 1], []⟩, 0) : Graph × ℕ)) ∧
-      IndependentSet.toVertexCover (triangle, 4) = (triangle, 4) ∧
-      IndependentSet.toVertexCover (((⟨[], []⟩, 0) : Graph × ℕ)) =
-        (((⟨[], []⟩, 0) : Graph × ℕ)) :=
+        (⟨⟨[10, 20], [(10, 99), (99, 20), (10, 10)]⟩, 0⟩, [false, false]) = true ∧
+      VertexCover.verifier (⟨⟨[0, 1], [(0, 1)]⟩, 2 ^ 100⟩, [true, true]) = false ∧
+      IndependentSet.toVertexCover ⟨triangle, 1⟩ = ⟨triangle, 2⟩ ∧
+      IndependentSet.toVertexCover ⟨⟨[0, 0, 1], []⟩, 2⟩ = ⟨⟨[0, 0, 1], []⟩, 0⟩ ∧
+      IndependentSet.toVertexCover ⟨triangle, 4⟩ = ⟨triangle, 4⟩ ∧
+      IndependentSet.toVertexCover ⟨⟨[], []⟩, 0⟩ = ⟨⟨[], []⟩, 0⟩ :=
   ⟨rfl, rfl, rfl, by decide, by decide, by decide, by decide, by decide⟩
 
 /-! ### `KColoring` and `ThreeColoring` concrete and boundary tests -/

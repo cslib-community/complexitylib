@@ -85,9 +85,10 @@ theorem ofAdj_adj {vs : List V} {adj : V → V → Bool} {i j : ℕ} :
 /-- The cliques of `ofAdj vs adj`: sets of positions whose entries are pairwise adjacent in some
 direction. -/
 theorem mem_Clique_ofAdj_iff {vs : List V} {adj : V → V → Bool} {m : ℕ} :
-    (ofAdj vs adj, m) ∈ Clique ↔ ∃ S : Finset ℕ, S.card = m ∧ (∀ i ∈ S, i < vs.length) ∧
-      ∀ i ∈ S, ∀ j ∈ S, ∀ (hi : i < vs.length) (hj : j < vs.length), i ≠ j →
-        (adj vs[i] vs[j] || adj vs[j] vs[i]) = true := by
+    (⟨ofAdj vs adj, m⟩ : CliqueInstance) ∈ Clique ↔
+      ∃ S : Finset ℕ, S.card = m ∧ (∀ i ∈ S, i < vs.length) ∧
+        ∀ i ∈ S, ∀ j ∈ S, ∀ (hi : i < vs.length) (hj : j < vs.length), i ≠ j →
+          (adj vs[i] vs[j] || adj vs[j] vs[i]) = true := by
   rw [mem_Clique_iff]
   constructor
   · rintro ⟨S, hS, hclique⟩
@@ -103,8 +104,9 @@ theorem mem_Clique_ofAdj_iff {vs : List V} {adj : V → V → Bool} {m : ℕ} :
 pairwise adjacent in some direction. -/
 theorem mem_Clique_ofAdj_iff_entries {vs : List V} {adj : V → V → Bool}
     (hirr : ∀ v, adj v v = false) {m : ℕ} :
-    (ofAdj vs adj, m) ∈ Clique ↔ ∃ T : Finset V, T.card = m ∧ (∀ v ∈ T, v ∈ vs) ∧
-      ∀ v ∈ T, ∀ w ∈ T, v ≠ w → (adj v w || adj w v) = true := by
+    (⟨ofAdj vs adj, m⟩ : CliqueInstance) ∈ Clique ↔
+      ∃ T : Finset V, T.card = m ∧ (∀ v ∈ T, v ∈ vs) ∧
+        ∀ v ∈ T, ∀ w ∈ T, v ≠ w → (adj v w || adj w v) = true := by
   classical
   rw [mem_Clique_ofAdj_iff]
   constructor
