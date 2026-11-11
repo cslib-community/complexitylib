@@ -121,6 +121,12 @@ theorem rank_circulant_diff3 :
     omega
   exact ⟨hr, (rank_circulant_complex diff3).symm.trans hr⟩
 
+example :
+    let w : ZMod 3 → ℚ := fun g => if g = 0 then 1 else if g = 1 then -1 else 0
+    (circulant w).rank =
+      Nat.card {ψ : AddChar (ZMod 3) ℂ // circulantEigenvalue (fun g => (w g : ℂ)) ψ ≠ 0} :=
+  rank_circulant_rat _
+
 private def evenCubeWeight : (Fin 2 → Bool) → ℚ :=
   fun x => if x 0 = x 1 then 1 else 0
 

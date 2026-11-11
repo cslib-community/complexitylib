@@ -13,6 +13,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.KroneckerRank
 public import Mathlib.Analysis.Fourier.FiniteAbelian.PontryaginDuality
 public import Mathlib.LinearAlgebra.Matrix.Circulant
 import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.LinearAlgebra.Matrix.Rank
 
 /-!
 # Group-circulant spectra, character matrices, and Boolean-cube diagonalization
@@ -29,9 +30,10 @@ Assembling the characters as columns of `Matrix.addCharMatrix G L` and conjugate
 `(Fintype.card G : L) ≠ 0` and `Fintype.card (AddChar G L) = Fintype.card G` (a character-splitting
 field for `G`), yielding `(Matrix.circulant w).rank = Nat.card {ψ // circulantEigenvalue w ψ ≠ 0}`
 (`Matrix.rank_circulant_of_card_addChar_eq`, and finset-cardinality form
-`Matrix.rank_circulant_eq_card_filter`). Over `ℂ`, Pontryagin duality (`AddChar.card_eq`) supplies
-`Matrix.rank_circulant_complex`, and any rank-preserving field extension `f : K →+* L` transfers
-the eigenvalue rank count directly via `Matrix.rank_circulant_of_rank_map_eq`.
+`Matrix.rank_circulant_eq_card_filter`). Combining Pontryagin duality (`AddChar.card_eq`) with
+`Matrix.rank_map_of_field` (`CslibFrontier/Foundations/LinearAlgebra/Matrix/Rank.lean`) gives
+`Matrix.rank_circulant_of_field_hom`, `Matrix.rank_circulant_complex`,
+`Matrix.rank_circulant_rat`, and `Matrix.rank_circulant_real`.
 
 On the Boolean cube `ι → Bool`, the character (Walsh–Hadamard) matrix `Matrix.cubeCharMatrix R ι`
 factors on `Fin n → Bool` as the `n`-th Kronecker power
@@ -291,12 +293,36 @@ theorem rank_circulant_of_rank_map_eq {K L : Type*} [Field K] [Field L] [Fintype
   rw [← hrank, map_circulant]
   exact rank_circulant_of_card_addChar_eq hchar hcard (f ∘ w)
 
+/-- **Rank of a group-circulant matrix via scalar extension** along `f : K →+* L` into a
+character-splitting field `L`, reusing `Matrix.rank_map_of_field`. -/
+theorem rank_circulant_of_field_hom {K L : Type*} [Field K] [Field L] [Fintype (AddChar G L)]
+    (f : K →+* L) (hchar : (Fintype.card G : L) ≠ 0)
+    (hcard : Fintype.card (AddChar G L) = Fintype.card G) (w : G → K) :
+    (circulant w).rank = Nat.card {ψ : AddChar G L // circulantEigenvalue (f ∘ w) ψ ≠ 0} :=
+  rank_circulant_of_rank_map_eq f (rank_map_of_field f (circulant w)) hchar hcard
+
 /-- **Rank of a complex group-circulant matrix**: `(circulant w).rank` equals the number of complex
 characters with nonzero eigenvalue. -/
 theorem rank_circulant_complex (w : G → ℂ) :
     (circulant w).rank = Nat.card {ψ : AddChar G ℂ // circulantEigenvalue w ψ ≠ 0} :=
   rank_circulant_of_card_addChar_eq (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)
     AddChar.card_eq w
+
+/-- **Rank of a rational group-circulant matrix**: `(circulant w).rank` equals the number of
+complex characters where `∑ g, (w g : ℂ) * ψ (-g) ≠ 0`. -/
+theorem rank_circulant_rat (w : G → ℚ) :
+    (circulant w).rank =
+      Nat.card {ψ : AddChar G ℂ // circulantEigenvalue (fun g => (w g : ℂ)) ψ ≠ 0} :=
+  rank_circulant_of_field_hom (Rat.castHom ℂ)
+    (Nat.cast_ne_zero.mpr Fintype.card_ne_zero) AddChar.card_eq w
+
+/-- **Rank of a real group-circulant matrix**: `(circulant w).rank` equals the number of complex
+characters where `∑ g, (w g : ℂ) * ψ (-g) ≠ 0`. -/
+theorem rank_circulant_real (w : G → ℝ) :
+    (circulant w).rank =
+      Nat.card {ψ : AddChar G ℂ // circulantEigenvalue (fun g => (w g : ℂ)) ψ ≠ 0} :=
+  rank_circulant_of_field_hom Complex.ofRealHom
+    (Nat.cast_ne_zero.mpr Fintype.card_ne_zero) AddChar.card_eq w
 
 end Diagonalization
 
