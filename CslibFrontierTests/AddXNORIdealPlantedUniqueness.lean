@@ -64,3 +64,15 @@ example (adversary : Fin 5 → Fin 5 → ProbOracleComp (Spec 3 (Fin 5)) (Operat
       (fun r => r.guessed && !r.stopped)) true).toReal ≤ 1 / 8 := by
   simpa only [show (2 : ℝ) ^ 3 = 8 by norm_num] using
     PlantedUniqueness.audit_guess_bound 1 adversary
+
+/-- The formerly tight nine-query case now fits the full collision allowance.
+This is a marginal collision bound, not the joint stopping/collision bound. -/
+example (adversary : Fin (2 ^ 13) → Fin (2 ^ 13) →
+    ProbOracleComp (Spec 9 (Fin (2 ^ 13))) (Operators 9))
+    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) 9) :
+    (((challenges.bind fun draw => PlantedUniqueness.audit draw (4 : Fin 9) adversary).map
+      PlantedUniqueness.AuditResult.collided) true).toReal ≤ 810 / 8192 := by
+  convert PlantedUniqueness.audit_collision_le_ten 13 9 4 adversary hbudget
+    (by omega) (by omega) using 1; norm_num
+
+example : (756 : ℝ) / (8192 - 27) ≤ 810 / 8192 := by norm_num

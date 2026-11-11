@@ -1710,8 +1710,9 @@ The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 native planting/adversary/verification execution and computed forest witnesses. Its ledger
 includes planting's queries, so this is not the cheaper source collision event. The exact
 open `PlantedUniqueness.RemainingCharge` proposition now records only the phase-separated
-audit's joint stopping/collision charge. It is unproved and may be stronger than necessary because it counts planting collisions. Only the explicitly
-conditional composition assumes it. `PlantedUniqueness.search_transport` proves that
+audit's joint stopping/collision charge. It is unproved and may be stronger than necessary
+because it counts planting collisions. Only the explicitly conditional composition assumes it.
+`PlantedUniqueness.search_transport` proves that
 success is at most the audit stopping/collision union plus the stopped guessing event. Audit erasure
 is proved from the valid cut law and native replay; no quantitative bound is a premise.
 `PlantedUniqueness.audit_guess_law` now proves that phase-transcript connection, and
@@ -1720,8 +1721,14 @@ is proved from the valid cut law and native replay; no quantitative bound is a p
 `source_theorem_eight_of_remaining_charge` states the final all-length assembly explicitly
 as conditional on that open proposition. It is not an unconditional proof of Theorem 8.
 The existing coarse separate rates exceed the target collision allowance even at
-$q=T=13,m=40$, as a kernel-checked arithmetic client shows. Sharper phase-sensitive rates
-or a joint union estimate are needed before treating the remaining small cases separately.
+$q=T=13,m=40$, as a kernel-checked arithmetic client shows. The new single-seed collision
+law gives
+$(Q^2+Q)/(N-Q)$ for the actual full audit, with $Q=T+2q$ and $N=2^m$.
+`PlantedUniqueness.audit_collision_le_ten` derives the collision marginal bound
+$10T^2/2^m$ for $T\ge6$ and $q\le T$, including $q=T=9$. This resolves the
+small-case collision normalization, but not the joint charge: the existing stopping
+estimate also pays for collisions. A bound on stopping outside the full-ledger collision
+event, or a joint union estimate, is still needed; adding the separate rates pays twice.
 The sharp odd-length inequality and coverage of all stated main results remain open.
 
 ### STOC733 main-result coverage inventory
@@ -1756,7 +1763,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.PlantedUniqueness.search_transport`, `IdealChain.PlantedUniqueness.audit_guess_bound`, `IdealChain.PlantedUniqueness.RemainingCharge`, `IdealChain.PlantedUniqueness.source_theorem_eight_of_remaining_charge`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; transport and audit guessing proved; joint `RemainingCharge` open; final assembly conditional |
+| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.PlantedUniqueness.search_transport`, `IdealChain.PlantedUniqueness.audit_guess_bound`, `IdealChain.PlantedUniqueness.RemainingCharge`, `IdealChain.PlantedUniqueness.source_theorem_eight_of_remaining_charge`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; transport and audit guessing proved; full-audit collision marginal at most $10T^2/2^m$ for $T\ge6$ and $q\le T$; joint `RemainingCharge` open; final assembly conditional |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width

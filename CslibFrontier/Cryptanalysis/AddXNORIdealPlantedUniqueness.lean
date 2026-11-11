@@ -20,24 +20,27 @@ The complete native experiment includes planting, adversary calls and verificati
 collision predicate therefore charges planting too; it is not the source's cheaper post-query
 collision event. No law for the frontier sampler is used.
 
+The names below are in `Cslib.Cryptanalysis.AddXNOR.IdealChain`.
+
 ## Main definitions
 
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness.experiment`: actual execution
+* `PlantedUniqueness.experiment`: actual execution
   retaining an accepted candidate.
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness.RemainingCharge`: the exact
+* `PlantedUniqueness.RemainingCharge`: the exact
   open joint-event budget for the concrete phase-separated audit.
 
 ## Main results
 
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness.audit_guess_bound`: the actual
+* `PlantedUniqueness.audit_collision_law`: exact full-ledger collision marginal.
+* `PlantedUniqueness.audit_collision_le_ten`: collision coefficient ten for `6 ≤ T` and `q ≤ T`.
+
+* `PlantedUniqueness.audit_guess_bound`: the actual
   audit stopped guessing probability is at most `2^(-q)`.
 * `PlantedUniqueness.source_theorem_eight_of_remaining_charge`:
   explicitly conditional final assembly; the joint charge remains an open premise.
-
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness.search_transport`: the actual
+* `PlantedUniqueness.search_transport`: the actual
   source success probability is bounded by the two audit events, without a charge premise.
-
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.PlantedUniqueness.accepted_eq`: actual accepted
+* `PlantedUniqueness.accepted_eq`: actual accepted
   candidates equal the planted word when the complete ledger is collision-free.
 -/
 
@@ -335,6 +338,124 @@ theorem audit_guess_bound {q : ℕ} {Word : Type} [Fintype Word] [DecidableEq Wo
   have ht := ENNReal.toReal_mono (by finiteness : (1 / (2 : ℝ≥0∞) ^ q) ≠ ⊤) hp
   simpa only [ENNReal.toReal_div, ENNReal.toReal_one, ENNReal.toReal_pow,
     ENNReal.toReal_ofNat] using ht
+
+private theorem experiment_budget {q : ℕ} {Word : Type} [DecidableEq Word]
+    (seed : Word) (bits : Operators q)
+    (adversary : Word → Word → ProbOracleComp (Spec q Word) (Operators q)) (T : ℕ)
+    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T) :
+    ProbOracleComp.IsQueryBounded (experiment seed bits adversary) (T + 2 * q) := by
+  have hw (word : Operators q) := walk_queryBound (List.ofFn fun i => (i, word i)) seed
+  simp only [List.length_ofFn] at hw
+  simpa only [experiment, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, two_mul,
+    Nat.add_zero] using (hw bits).bind fun target =>
+      (hbudget seed target).bind fun candidate => (hw candidate).bind fun endpoint =>
+        IsCostBounded.pure (if endpoint = target then some candidate else none) 0
+
+open scoped Classical in
+/-- Exact collision marginal of the concrete audit. The full planting ledger is retained;
+the valid splice law, not a frontier simulation, supplies its native independent-family law. -/
+theorem audit_collision_law {q : ℕ} {Word : Type} [Fintype Word] [DecidableEq Word]
+    [Nonempty Word] (k : Fin q)
+    (adversary : Word → Word → ProbOracleComp (Spec q Word) (Operators q)) :
+    (challenges.bind fun draw => audit draw k adversary).map AuditResult.collided =
+      (PMF.uniformOfFintype Word).bind fun seed =>
+        (PMF.uniformOfFintype (Operators q)).bind fun bits =>
+          (ProbOracleComp.runWith Ledger.answer (experiment seed bits adversary) []).map
+            (fun (_, records) => decide (¬Forest.NoCollision {seed} records)) := by
+  classical
+  have he (draw : Challenge q Word) : (audit draw k adversary).map AuditResult.collided =
+      (ProbOracleComp.runWith Replay.answer (experiment draw.seed draw.bits adversary)
+        ⟨[], [], draw.changed k⟩).map
+          (fun (_, final) => decide (¬Forest.NoCollision {draw.seed} final.records)) := by
+    simp only [audit, experiment, pmf_norm, PMF.map_bind, PMF.pure_map,
+      ProbOracleComp.runWith_bind, ProbOracleComp.runWith_pure]
+  simp only [challenges, pmf_norm, PMF.map_bind, he, Challenge.changed]
+  congr 1 with seed : 1
+  congr 1 with bits : 1
+  have hs := source_uniform_splice bits k seed (fun perms _ =>
+    (ProbOracleComp.runWith Replay.answer (experiment seed bits adversary)
+      ⟨[], [], perms⟩).map (fun (_, final) => decide (¬Forest.NoCollision {seed} final.records)))
+  rw [hs]
+  have hf := congrArg (PMF.map (fun (_, records) => decide (¬Forest.NoCollision {seed} records)))
+    (Replay.fresh_law (experiment seed bits adversary))
+  simpa only [PMF.map_bind, PMF.map_comp, Function.comp_def] using hf
+
+/-- Actual audit collisions, including planting, have the sharper single-seed rate.
+The only width restriction here is that the charged horizon fits the alphabet. -/
+theorem audit_collision_bound {q : ℕ} (m T : ℕ) (k : Fin q)
+    (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
+      ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
+    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T)
+    (hfit : T + 2 * q < 2 ^ m) :
+    (((challenges.bind fun draw => audit draw k adversary).map
+      AuditResult.collided) true).toReal ≤
+      (((T + 2 * q : ℕ) : ℝ) ^ 2 + (T + 2 * q : ℕ)) / (2 ^ m - (T + 2 * q : ℕ)) := by
+  classical
+  let bound : ℝ := (((T + 2 * q : ℕ) : ℝ) ^ 2 + (T + 2 * q : ℕ)) /
+    (2 ^ m - (T + 2 * q : ℕ))
+  have hn : 0 ≤ bound := by
+    apply div_nonneg (by positivity)
+    exact sub_nonneg.mpr (by exact_mod_cast hfit.le)
+  have hp : ((challenges.bind fun draw => audit draw k adversary).map AuditResult.collided) true ≤
+      ENNReal.ofReal bound := by
+    rw [audit_collision_law]
+    apply Probability.PMF.bind_apply_le_on_support
+    intro seed _
+    apply Probability.PMF.bind_apply_le_on_support
+    intro bits _
+    have h := Collisions.collision_singleton_le_real seed (T + 2 * q)
+      (by simpa only [Fintype.card_fin] using hfit) (experiment seed bits adversary)
+      (experiment_budget seed bits adversary T hbudget)
+    have hr : (((ProbOracleComp.runWith Ledger.answer
+        (experiment seed bits adversary) []).map
+        (fun (_, records) => decide (¬Forest.NoCollision {seed} records))) true).toReal ≤
+        bound := by
+      simpa only [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply,
+        Set.preimage, Set.mem_singleton_iff, decide_eq_true_eq, Fintype.card_fin,
+        Nat.cast_pow, Nat.cast_ofNat, bound] using h
+    exact (ENNReal.le_ofReal_iff_toReal_le (PMF.apply_ne_top _ _) hn).mpr hr
+  simpa only [ENNReal.toReal_ofReal hn, bound] using
+    ENNReal.toReal_mono ENNReal.ofReal_ne_top hp
+
+/-- The full audit collision marginal fits coefficient ten once `T≥6` and `q≤T`.
+The small-alphabet case is trivial; otherwise its size is at least `10*T^2`.
+This does not charge adversary-phase stopping, so is not the remaining joint inequality. -/
+theorem audit_collision_le_ten {q : ℕ} (m T : ℕ) (k : Fin q)
+    (adversary : Fin (2 ^ m) → Fin (2 ^ m) →
+      ProbOracleComp (Spec q (Fin (2 ^ m))) (Operators q))
+    (hbudget : ∀ seed target, ProbOracleComp.IsQueryBounded (adversary seed target) T)
+    (hq : q ≤ T) (hT : 6 ≤ T) :
+    (((challenges.bind fun draw => audit draw k adversary).map
+      AuditResult.collided) true).toReal ≤ 10 * (T : ℝ) ^ 2 / 2 ^ m := by
+  have ht : (6 : ℝ) ≤ T := by exact_mod_cast hT
+  have htn : (0 : ℝ) ≤ T := Nat.cast_nonneg _
+  have hnpos : (0 : ℝ) < 2 ^ m := by positivity
+  by_cases hsmall : 2 ^ m ≤ 10 * T ^ 2
+  · have hp : (((challenges.bind fun draw => audit draw k adversary).map
+        AuditResult.collided) true).toReal ≤ 1 := by
+      simpa using ENNReal.toReal_mono (by simp : (1 : ℝ≥0∞) ≠ ⊤) (PMF.coe_le_one
+        ((challenges.bind fun draw => audit draw k adversary).map AuditResult.collided) true)
+    apply hp.trans
+    apply (le_div_iff₀ hnpos).mpr
+    simpa only [one_mul] using (show (2 : ℝ) ^ m ≤ 10 * (T : ℝ) ^ 2 by
+      exact_mod_cast hsmall)
+  · have hN : 10 * T ^ 2 ≤ 2 ^ m := by omega
+    have hfit : T + 2 * q < 2 ^ m := by nlinarith
+    have hb := audit_collision_bound m T k adversary hbudget hfit
+    have hwidth : 10 * (T : ℝ) ^ 2 ≤ 2 ^ m := by exact_mod_cast hN
+    have hQ : ((T + 2 * q : ℕ) : ℝ) ≤ 3 * T := by
+      exact_mod_cast (by omega : T + 2 * q ≤ 3 * T)
+    have hQn : (0 : ℝ) ≤ (T + 2 * q : ℕ) := Nat.cast_nonneg _
+    have hd : (0 : ℝ) < 2 ^ m - (T + 2 * q : ℕ) :=
+      sub_pos.mpr (by exact_mod_cast hfit)
+    have hnum : (((T + 2 * q : ℕ) : ℝ) ^ 2 + (T + 2 * q : ℕ)) ≤
+        9 * (T : ℝ) ^ 2 + 3 * T := by nlinarith
+    have hbase : 0 ≤ ((T : ℝ) - 3) * 2 ^ m - 30 * T ^ 2 := by
+      nlinarith [mul_nonneg (show (0 : ℝ) ≤ T - 6 by linarith) hnpos.le]
+    apply hb.trans
+    apply (div_le_div_iff₀ hd hnpos).mpr
+    nlinarith [mul_le_mul_of_nonneg_right hnum hnpos.le, mul_nonneg htn hbase,
+      mul_nonneg (sq_nonneg (T : ℝ)) (show 0 ≤ 3 * (T : ℝ) - (T + 2 * q : ℕ) by linarith)]
 
 /-- OPEN joint stopping/collision charge for the concrete audit. The guessing half has
 been proved as `audit_guess_bound`. This is not an axiom or an established source bound. -/

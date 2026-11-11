@@ -432,8 +432,9 @@ The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 native planting/adversary/verification execution and computed forest witnesses. Its ledger
 includes planting's queries, so this is not the cheaper source collision event. The exact
 open `PlantedUniqueness.RemainingCharge` proposition now records only the phase-separated
-audit's joint stopping/collision charge. It is unproved and may be stronger than necessary because it counts planting collisions. Only the explicitly
-conditional composition assumes it. `PlantedUniqueness.search_transport` proves that
+audit's joint stopping/collision charge. It is unproved and may be stronger than necessary
+because it counts planting collisions. Only the explicitly conditional composition assumes it.
+`PlantedUniqueness.search_transport` proves that
 success is at most the audit stopping/collision union plus the stopped guessing event. Audit erasure
 is proved from the valid cut law and native replay; no quantitative bound is a premise.
 `PlantedUniqueness.audit_guess_law` now proves that phase-transcript connection, and
@@ -442,8 +443,14 @@ is proved from the valid cut law and native replay; no quantitative bound is a p
 `source_theorem_eight_of_remaining_charge` states the final all-length assembly explicitly
 as conditional on that open proposition. It is not an unconditional proof of Theorem 8.
 The existing coarse separate rates exceed the target collision allowance even at
-$q=T=13,m=40$, as a kernel-checked arithmetic client shows. Sharper phase-sensitive rates
-or a joint union estimate are needed before treating the remaining small cases separately.
+$q=T=13,m=40$, as a kernel-checked arithmetic client shows. The new single-seed collision
+law gives
+$(Q^2+Q)/(N-Q)$ for the actual full audit, with $Q=T+2q$ and $N=2^m$.
+`PlantedUniqueness.audit_collision_le_ten` derives the collision marginal bound
+$10T^2/2^m$ for $T\ge6$ and $q\le T$, including $q=T=9$. This resolves the
+small-case collision normalization, but not the joint charge: the existing stopping
+estimate also pays for collisions. A bound on stopping outside the full-ledger collision
+event, or a joint union estimate, is still needed; adding the separate rates pays twice.
 The sharp odd-length inequality and coverage of all stated main results remain open.
 
 Do not promote an older pair/batch bound, unnormalized machine profile, native

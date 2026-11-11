@@ -36,6 +36,8 @@ bound; search has weaker constants with its additional reveal calls charged.
 
 ## Main results
 
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.Collisions.collision_singleton_le_real`:
+  the sharper `(Q^2+Q)/(N-Q)` bound with one initial seed.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Collisions.collision_le`: the summed adaptive
   fresh-collision bound.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Collisions.source_collision_le_eight`: the
@@ -79,12 +81,13 @@ private theorem answer_miss (query : Index × PermQuery Word)
 
 /-- One fresh draw hits at most the old seen values and the newly supplied argument. The
 excluded-answer denominator uses the actual horizon and the reconstructed cache length. -/
-theorem step_le (initial : Finset Word) (hi : initial.card ≤ 2) (Q : ℕ)
+private theorem step_le_offset (initial : Finset Word) (offset : ℕ)
+    (hi : initial.card + 1 ≤ 2 * offset) (Q : ℕ)
     (query : Index × PermQuery Word) (records : List (Forest.Record Index Word))
     (hvalid : Family.Valid (Ledger.tables records)) (hlen : records.length < Q)
     (hc : Forest.NoCollision initial records) :
     (Ledger.answer query records).toOuterMeasure {out | ¬Forest.NoCollision initial out.2} ≤
-      (records.length + 2 : ℕ) * (2 : ℝ≥0∞) * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹ := by
+      (records.length + offset : ℕ) * (2 : ℝ≥0∞) * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹ := by
   classical
   cases hm : cachedAnswer (Ledger.tables records query.1) query.2 with
   | some value =>
@@ -100,13 +103,13 @@ theorem step_le (initial : Finset Word) (hi : initial.card ≤ 2) (Q : ℕ)
       tauto
     rw [hevent, PMF.toOuterMeasure_uniformOfFinset]
     have hseen : (insert query.2.argument (Forest.seen initial records)).card ≤
-        2 * (records.length + 2) := by
+        2 * (records.length + offset) := by
       have hb := Forest.seen_card_le initial records
       have hi' := Finset.card_insert_le query.2.argument (Forest.seen initial records)
       omega
     have hnum : ((freshAnswers (Ledger.tables records query.1) query.2).filter
         (· ∈ insert query.2.argument (Forest.seen initial records))).card ≤
-        2 * (records.length + 2) :=
+        2 * (records.length + offset) :=
       (Finset.card_le_card (fun _ hx => (Finset.mem_filter.mp hx).2)).trans hseen
     have hden : Fintype.card Word - Q ≤
         (freshAnswers (Ledger.tables records query.1) query.2).card := by
@@ -115,9 +118,18 @@ theorem step_le (initial : Finset Word) (hi : initial.card ≤ 2) (Q : ℕ)
       omega
     have hn : (((freshAnswers (Ledger.tables records query.1) query.2).filter
         (· ∈ insert query.2.argument (Forest.seen initial records))).card : ℝ≥0∞) ≤
-        (records.length + 2 : ℕ) * (2 : ℝ≥0∞) := by
+        (records.length + offset : ℕ) * (2 : ℝ≥0∞) := by
       exact_mod_cast (hnum.trans_eq (Nat.mul_comm _ _))
     exact mul_le_mul' hn (ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr hden))
+
+/-- The existing two-root fresh-answer estimate. -/
+theorem step_le (initial : Finset Word) (hi : initial.card ≤ 2) (Q : ℕ)
+    (query : Index × PermQuery Word) (records : List (Forest.Record Index Word))
+    (hvalid : Family.Valid (Ledger.tables records)) (hlen : records.length < Q)
+    (hc : Forest.NoCollision initial records) :
+    (Ledger.answer query records).toOuterMeasure {out | ¬Forest.NoCollision initial out.2} ≤
+      (records.length + 2 : ℕ) * (2 : ℝ≥0∞) * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹ :=
+  step_le_offset initial 2 (by omega) Q query records hvalid hlen hc
 
 open scoped Classical in
 /-- A proof-only extension outside the requested horizon. Every budgeted run agrees with the
@@ -166,33 +178,32 @@ theorem bounded_run_eq_original (Q : ℕ) (fallback : Word)
   bounded_run_eq Q fallback program Q hQ [] Family.valid_empty (by simp)
 
 /-- A triangular union bound for the actual ledger, including all adaptive private coins.
-Only the public query budget and two public roots are supplied; the fresh-hit estimates,
+The root-cardinality offset and query budget determine the sum; the fresh-hit estimates,
 validity and ledger-growth bounds are derived from the actual sampler. -/
-theorem collision_le (seed target : Word) (Q : ℕ)
+private theorem collision_le_offset (initial : Finset Word) (offset : ℕ)
+    (hi : initial.card + 1 ≤ 2 * offset) (seed : Word) (Q : ℕ)
     (program : ProbOracleComp (Family.Spec Index Word) Output)
     (hQ : ProbOracleComp.IsQueryBounded program Q) :
     (ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
-        {out | ¬Forest.NoCollision {seed, target} out.2} ≤
-      ((Q * 2 + Q.choose 2 : ℕ) : ℝ≥0∞) *
+        {out | ¬Forest.NoCollision initial out.2} ≤
+      ((Q * offset + Q.choose 2 : ℕ) : ℝ≥0∞) *
         (2 * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹) := by
   classical
-  let size (records : List (Forest.Record Index Word)) := records.length + 2
+  let size (records : List (Forest.Record Index Word)) := records.length + offset
   let rate : ℝ≥0∞ := 2 * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹
-  have hstep : ∀ query records, ¬(¬Forest.NoCollision {seed, target} records) →
+  have hstep : ∀ query records, ¬(¬Forest.NoCollision initial records) →
       (boundedAnswer Q seed query records).toOuterMeasure
-          {out | ¬Forest.NoCollision {seed, target} out.2} ≤ size records * rate := by
+          {out | ¬Forest.NoCollision initial out.2} ≤ size records * rate := by
     intro query records hgood
     by_cases hg : records.length < Q ∧ Family.Valid (Ledger.tables records)
     · rw [boundedAnswer, ite_eq_left hg]
       simpa only [size, rate, mul_assoc] using
-        step_le {seed, target}
-          (by simpa only [Finset.card_singleton] using Finset.card_insert_le seed {target})
-          Q query records hg.2 hg.1 (not_not.mp hgood)
+        step_le_offset initial offset hi Q query records hg.2 hg.1 (not_not.mp hgood)
     · rw [boundedAnswer, ite_eq_right hg]
       simp [hgood]
-  have hgrow : ∀ query records, ¬(¬Forest.NoCollision {seed, target} records) →
+  have hgrow : ∀ query records, ¬(¬Forest.NoCollision initial records) →
       ∀ out ∈ (boundedAnswer Q seed query records).support,
-        ¬(¬Forest.NoCollision {seed, target} out.2) → size out.2 ≤ size records + 1 := by
+        ¬(¬Forest.NoCollision initial out.2) → size out.2 ≤ size records + 1 := by
     intro query records _ out hout _
     by_cases hg : records.length < Q ∧ Family.Valid (Ledger.tables records)
     · rw [boundedAnswer, ite_eq_left hg] at hout
@@ -207,6 +218,30 @@ theorem collision_le (seed target : Word) (Q : ℕ)
   rw [bounded_run_eq_original Q seed program hQ] at h
   simpa only [size, List.length_nil, Nat.zero_add, rate] using h
 
+/-- The executed sampler collision estimate with two public roots. -/
+theorem collision_le (seed target : Word) (Q : ℕ)
+    (program : ProbOracleComp (Family.Spec Index Word) Output)
+    (hQ : ProbOracleComp.IsQueryBounded program Q) :
+    (ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
+        {out | ¬Forest.NoCollision {seed, target} out.2} ≤
+      ((Q * 2 + Q.choose 2 : ℕ) : ℝ≥0∞) *
+        (2 * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹) := by
+  apply collision_le_offset {seed, target} 2 _ seed Q program hQ
+  have h := Finset.card_insert_le seed {target}
+  simp only [Finset.card_singleton] at h
+  omega
+
+/-- A single initial seed removes the extra public-root allowance from every fresh draw. -/
+theorem collision_singleton_le (seed : Word) (Q : ℕ)
+    (program : ProbOracleComp (Family.Spec Index Word) Output)
+    (hQ : ProbOracleComp.IsQueryBounded program Q) :
+    (ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
+        {out | ¬Forest.NoCollision {seed} out.2} ≤
+      ((Q + Q.choose 2 : ℕ) : ℝ≥0∞) *
+        (2 * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹) := by
+  simpa only [Nat.mul_one] using
+    collision_le_offset {seed} 1 (by simp) seed Q program hQ
+
 /-- The real-valued expression obtained by summing all conditional fresh-hit bounds. -/
 @[expose] noncomputable def rate (N Q : ℕ) : ℝ := ((Q : ℝ) ^ 2 + 3 * Q) / (N - Q)
 
@@ -216,27 +251,51 @@ theorem rate_nonneg (N Q : ℕ) (hQ : Q ≤ N) : 0 ≤ rate N Q := by
   apply div_nonneg (by positivity)
   exact sub_nonneg.mpr (by exact_mod_cast hQ)
 
+private theorem collision_offset_le_real (initial : Finset Word) (offset : ℕ)
+    (hi : initial.card + 1 ≤ 2 * offset) (seed : Word) (Q : ℕ)
+    (hQN : Q < Fintype.card Word)
+    (program : ProbOracleComp (Family.Spec Index Word) Output)
+    (hbudget : ProbOracleComp.IsQueryBounded program Q) :
+    ((ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
+        {out | ¬Forest.NoCollision initial out.2}).toReal ≤
+      ((Q : ℝ) ^ 2 + (2 * offset - 1) * Q) / (Fintype.card Word - Q) := by
+  have hd : 0 < Fintype.card Word - Q := Nat.sub_pos_of_lt hQN
+  have hd0 : ((Fintype.card Word - Q : ℕ) : ℝ≥0∞) ≠ 0 := by exact_mod_cast hd.ne'
+  have hfinite : (((Q * offset + Q.choose 2 : ℕ) : ℝ≥0∞) *
+      (2 * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹)) ≠ ⊤ :=
+    ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) (ENNReal.mul_ne_top (by norm_num)
+      (ENNReal.inv_ne_top.mpr hd0))
+  have hprob := ENNReal.toReal_mono hfinite
+    (collision_le_offset initial offset hi seed Q program hbudget)
+  simp only [ENNReal.toReal_mul, ENNReal.toReal_natCast, ENNReal.toReal_ofNat,
+    ENNReal.toReal_inv, Nat.cast_sub hQN.le] at hprob
+  simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_choose_two] at hprob
+  convert hprob using 1; field_simp; ring
+
 /-- Exact finite-denominator version of the actual adaptive collision bound. -/
 theorem collision_le_real (seed target : Word) (Q : ℕ) (hQN : Q < Fintype.card Word)
     (program : ProbOracleComp (Family.Spec Index Word) Output)
     (hbudget : ProbOracleComp.IsQueryBounded program Q) :
     ((ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
         {out | ¬Forest.NoCollision {seed, target} out.2}).toReal ≤ rate (Fintype.card Word) Q := by
-  have hd : 0 < Fintype.card Word - Q := Nat.sub_pos_of_lt hQN
-  have hd0 : ((Fintype.card Word - Q : ℕ) : ℝ≥0∞) ≠ 0 := by exact_mod_cast hd.ne'
-  have hfinite : (((Q * 2 + Q.choose 2 : ℕ) : ℝ≥0∞) *
-      (2 * ((Fintype.card Word - Q : ℕ) : ℝ≥0∞)⁻¹)) ≠ ⊤ :=
-    ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) (ENNReal.mul_ne_top (by norm_num)
-      (ENNReal.inv_ne_top.mpr hd0))
-  have hprob := ENNReal.toReal_mono hfinite (collision_le seed target Q program hbudget)
-  simp only [ENNReal.toReal_mul, ENNReal.toReal_natCast, ENNReal.toReal_ofNat,
-    ENNReal.toReal_inv, Nat.cast_sub hQN.le] at hprob
-  simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat, Nat.cast_choose_two] at hprob
-  have hprob' : ((ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
-        {out | ¬Forest.NoCollision {seed, target} out.2}).toReal ≤
-      ((Q : ℝ) ^ 2 + 3 * Q) / (Fintype.card Word - Q) := by
-    convert hprob using 1; field_simp; ring
-  exact hprob'
+  have hi : ({seed, target} : Finset Word).card + 1 ≤ 2 * 2 := by
+    have h := Finset.card_insert_le seed {target}
+    simp only [Finset.card_singleton] at h
+    omega
+  have h := collision_offset_le_real {seed, target} 2 hi seed Q hQN program hbudget
+  norm_num only [Nat.cast_ofNat, mul_sub, mul_one, sub_self] at h
+  simpa only [rate] using h
+
+/-- The actual single-seed collision rate is `(Q^2+Q)/(N-Q)`, including private coins. -/
+theorem collision_singleton_le_real (seed : Word) (Q : ℕ) (hQN : Q < Fintype.card Word)
+    (program : ProbOracleComp (Family.Spec Index Word) Output)
+    (hbudget : ProbOracleComp.IsQueryBounded program Q) :
+    ((ProbOracleComp.runWith Ledger.answer program []).toOuterMeasure
+        {out | ¬Forest.NoCollision {seed} out.2}).toReal ≤
+      ((Q : ℝ) ^ 2 + Q) / (Fintype.card Word - Q) := by
+  have h := collision_offset_le_real {seed} 1 (by simp) seed Q hQN program hbudget
+  norm_num only [Nat.cast_one, one_mul] at h
+  exact h
 
 omit [DecidableEq Index] [Fintype Word] [DecidableEq Word] [Nonempty Word] in
 /-- Normalize the summed fresh-hit rate for at most `2*T` draws at the source word width. -/
