@@ -4295,6 +4295,7 @@ public import CslibFrontier.Crypto.Primitives.PRG.Nisan
 public import CslibFrontier.Crypto.Primitives.PRG.Nisan.Bits
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.AmpGeneratorCircuit
+public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.AmpGeneratorDeMorgan
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.BitPolynomial
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Derandomization
@@ -6147,7 +6148,9 @@ public import CslibFrontier.MachineLearning.UniformLearning.BestOf
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
+public import CslibFrontier.MachineLearning.UniformLearning.CIKK.DenseTest
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
+public import CslibFrontier.MachineLearning.UniformLearning.CIKK.PPoly
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Parameters
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
