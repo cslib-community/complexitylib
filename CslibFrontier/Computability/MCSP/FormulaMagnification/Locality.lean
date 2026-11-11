@@ -194,5 +194,20 @@ theorem localFormulaClass_approxMCSP_real {s : ℕ → ℕ} {δ : ℕ → ℝ} (
     (fun n => Nat.ceil_pos.mpr (by have := hδ n; positivity)) fun _ => le_rfl).anti le_rfl
     (ApproxMCSP.noSetReal_le_noSet hδ)
 
+/-- Polynomial class form: `[N, poly(s / δ), 1]–Formula[N · poly(s / δ)]` when `n ≤ s n`. -/
+theorem localFormulaClass_approxMCSP_real_poly {s : ℕ → ℕ} {δ : ℕ → ℝ} (hδ : ∀ n, 0 < δ n)
+    (hs : ∀ n, n ≤ s n) :
+    LocalFormulaClass (fun m => m)
+      (fun m => 98 * (⌈1 / δ (Nat.log 2 m)⌉₊ * (s (Nat.log 2 m) + 1)) ^ 3)
+      (fun _ => 1)
+      (fun m => m * (98 * (⌈1 / δ (Nat.log 2 m)⌉₊ * (s (Nat.log 2 m) + 1)) ^ 3))
+      (GapMCSP.yesSet s) (ApproxMCSP.noSetReal s δ) := by
+  have hb : ∀ m, approxMCSPQueryEncLength (Nat.log 2 m) (s (Nat.log 2 m))
+      ⌈1 / δ (Nat.log 2 m)⌉₊ ≤ 98 * (⌈1 / δ (Nat.log 2 m)⌉₊ * (s (Nat.log 2 m) + 1)) ^ 3 :=
+    fun m => approxMCSPQueryEncLength_le (hs _)
+      (Nat.ceil_pos.mpr (by have := hδ (Nat.log 2 m); positivity))
+  exact (localFormulaClass_approxMCSP_real hδ).mono le_rfl hb le_rfl
+    fun m => Nat.mul_le_mul_left m (hb m)
+
 end Cslib.Circuits.Boolean
 
