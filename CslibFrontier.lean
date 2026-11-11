@@ -462,6 +462,7 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Exec
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.First
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Flat
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Header
+public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Initialized
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.InputSpec
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.Kernel
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.RecordProduct.NumericBounds
