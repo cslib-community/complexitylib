@@ -45,8 +45,9 @@ relation symbols and is proved in `CslibFrontier.Logics.FirstOrder.FiniteVariabl
 ## Main results
 
 * `Cslib.Logic.FO.PebbleWins.mono`, `Cslib.Logic.FO.PebbleWins.of_subset`,
-  `Cslib.Logic.FO.pebbleWins_congr`: monotonicity in the number of rounds and in the placed
-  pebbles, and independence of unplaced pebbles.
+  `Cslib.Logic.FO.pebbleWins_congr`, `Cslib.Logic.FO.partialIsoOn_comp_equiv_iff`: monotonicity in
+  the number of rounds and in the placed pebbles, independence of unplaced pebbles, and pebble
+  reindexing.
 * `Cslib.Logic.FO.PebbleWins.refl`, `Cslib.Logic.FO.PebbleWins.symm`,
   `Cslib.Logic.FO.PebbleWins.trans`, `FirstOrder.Language.Equiv.pebbleWins`: the
   equivalence-relation laws and invariance under isomorphism.
@@ -125,6 +126,29 @@ theorem partialIsoOn_empty [IsEmpty (L.Relations 0)] (a : Fin k → M) (b : Fin 
   cases l with
   | zero => exact isEmptyElim R
   | succ l => exact absurd (hf 0) (Set.notMem_empty _)
+
+/-- Reindexing pebble names along a bijection preserves partial isomorphisms. -/
+theorem partialIsoOn_comp_equiv_iff {k' : ℕ} (σ : Fin k' ≃ Fin k) {S : Set (Fin k)}
+    {a : Fin k → M} {b : Fin k → N} :
+    PartialIsoOn L (σ ⁻¹' S) (a ∘ σ) (b ∘ σ) ↔ PartialIsoOn L S a b := by
+  constructor
+  · intro h
+    refine ⟨fun i hi j hj => ?_, fun R f hf => ?_⟩
+    · have := h.eq_iff (σ.symm i) (by simpa only [Set.mem_preimage, σ.apply_symm_apply] using hi)
+        (σ.symm j) (by simpa only [Set.mem_preimage, σ.apply_symm_apply] using hj)
+      simpa only [Function.comp_apply, σ.apply_symm_apply] using this
+    · have hcompM : (a ∘ σ) ∘ (σ.symm ∘ f) = a ∘ f := by
+        ext t
+        simp only [Function.comp_apply, σ.apply_symm_apply]
+      have hcompN : (b ∘ σ) ∘ (σ.symm ∘ f) = b ∘ f := by
+        ext t
+        simp only [Function.comp_apply, σ.apply_symm_apply]
+      have := h.relMap_iff R (σ.symm ∘ f) fun t => by
+        simpa only [Set.mem_preimage, Function.comp_apply, σ.apply_symm_apply] using hf t
+      rwa [hcompM, hcompN] at this
+  · intro h
+    exact ⟨fun i hi j hj => h.eq_iff (σ i) hi (σ j) hj,
+      fun R f hf => h.relMap_iff R (σ ∘ f) fun t => hf t⟩
 
 /-! ### The game -/
 
