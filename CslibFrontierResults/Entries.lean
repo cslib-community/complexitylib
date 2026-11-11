@@ -15,6 +15,8 @@ import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -951,6 +953,38 @@ register_result "hitting-set-derivative-closed" where
     points. Existence and size of an explicit set only: no bit complexity, no black-box \
     algorithm model, nothing in positive characteristic, and not the source's extension to \
     noncommutative ABPs."
+
+register_result "hitting-set-sparse" where
+  title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BenOrTiwari1988, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_primePowers,
+    Cslib.Circuits.Arithmetic.isHittingSet_powerHittingSet
+  ]
+  scope := "Over a domain of characteristic zero, the s points (p₁ʲ, …, pₙʲ), j < s, of powers \
+    of the first n primes hit every nonzero n-variate polynomial with at most s monomials, \
+    whatever its degree; more generally for any point whose monomials are pairwise distinct. \
+    Zero test only: no interpolation algorithm, no bit complexity, nothing in positive \
+    characteristic."
+
+register_result "hitting-set-lower-bound" where
+  title := "Heintz–Schnorr: hitting sets give lower bounds"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := HeintzSchnorr1980, theorem := unverified, locator := unverified },
+    { paper := Agrawal2005, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.IsHittingSet.exists_notMem,
+    Cslib.Circuits.Arithmetic.exists_ne_zero_forall_eval_eq_zero
+  ]
+  scope := "Over a field, if H is a hitting set for a class and T is a finite set of \
+    monomials with more elements than H, some nonzero polynomial with monomials in T is not \
+    in the class. Existence by a dimension count; the polynomial is not exhibited and its \
+    complexity is not bounded."
 
 /-! ## Further collected results -/
 
