@@ -7,7 +7,7 @@ mathematics, agent effort, successful tasks, or a productivity measurement.
 import argparse, collections, datetime, json, os, re, subprocess
 from pathlib import Path
 REVISION='13e6a31951bf1c89a1a6258c44f9444aecbbefd8'
-DEFAULT_OUTPUT=Path(__file__).resolve().parents[2]/'_generated/development-history/data'
+DEFAULT_OUTPUT=Path(__file__).resolve().parents[2]/'_generated/history/data'
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('repository',help='Repository with complete history through the fixed revision');ap.add_argument('--output',type=Path,default=DEFAULT_OUTPUT);a=ap.parse_args()
