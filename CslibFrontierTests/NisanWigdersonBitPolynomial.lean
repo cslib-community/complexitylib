@@ -4,9 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-module
--- upstream: local-only (tests of the bit-indexed polynomial design)
-
 import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.BitPolynomial
 
 /-! Checks of the bit-indexed polynomial design: a concrete reading over `ZMod 5`, a cell shared by
