@@ -24,11 +24,11 @@ sample-to-output kernel `run : (Fin m → X) → Ω → PMF α` (`Algorithm`)
 [ImpagliazzoLeiPitassiSorrell2022]. When the algorithm is deterministic given the sample and seed,
 `Algorithm.deterministic` lifts a map `(Fin m → X) → Ω → α` into `Algorithm`.
 
-Following `CONTRIBUTING.md` ("Algorithms are programs"), `Program` packages an executable
-`ProbComp` seed generator `seed : ProbComp Ω` and sample runner
-`run : (Fin m → X) → Ω → ProbComp α`, together with single-run execution (`Program.exec`) and
-two-sample shared-seed execution (`Program.coupledExec`), interpreted into `Algorithm` via
-`ProbComp.eval` (`Program.toAlgorithm`).
+`Program` packages a `ProbComp`-backed seed generator `seed : ProbComp Ω` and sample runner
+`run : (Fin m → X) → Ω → ProbComp α`, together with single-run `Program.exec` and two-sample
+shared-seed `Program.coupledExec`, interpreted semantically into `Algorithm` via `ProbComp.eval`
+(`Program.toAlgorithm`). Note that `Program` fixes probabilistic control over `ProbComp` without
+providing finite-precision real representations or native resource bounds.
 
 Running `A` twice on independent i.i.d. samples `S₁, S₂ ~ D^m` with the same shared seed `r ~ seed`
 induces the joint output distribution `Algorithm.pairedOutput A D` on `α × α`. The disagreement
@@ -282,10 +282,11 @@ theorem disagreeProb_map_le (A : Algorithm X Ω α m) (f : α → γ) (D : PMF X
 
 end Algorithm
 
-/-! ### Executable shared-seed programs (`ProbComp`) -/
+/-! ### `ProbComp`-backed shared-seed programs -/
 
 /-- A `ProbComp`-backed randomized sample algorithm: `seed` samples the shared randomness using
-finite uniform choices, and `run S r` executes on sample `S` and seed `r`. -/
+finite uniform choices, and `run S r` represents the sample-and-seed step as a `ProbComp`
+computation interpreted via `Program.toAlgorithm` (allowing noncomputable real-arithmetic maps). -/
 structure Program (X Ω α : Type) (m : ℕ) where
   /-- Program sampling the shared random seed. -/
   seed : ProbComp Ω

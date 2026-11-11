@@ -14,6 +14,7 @@ public import CslibFrontier.MachineLearning.Replicable.Composition
 public import CslibFrontier.MachineLearning.Replicable.Rounding
 public import CslibFrontier.Probability.Collision
 public import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.MachineLearning.Replicable.BiasEstimation
 import CslibFrontier.Probability.Concentration
 import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
@@ -430,47 +431,29 @@ private theorem empFreq_concentrates [Finite α] [DecidableEq α] (q : PMF α) (
     ((Probability.PMF.iid q k).toOuterMeasure
       {v : Fin k → α | δ < |empFreq k v y - (q y).toReal|}).toReal ≤
       2 * Real.exp (-2 * (k : ℝ) * δ ^ 2) := by
-  classical
   let _ : Fintype α := Fintype.ofFinite α
-  have hk : (0 : ℝ) < k := Nat.cast_pos.mpr (NeZero.pos k)
-  let score : Fin k → α → ℝ := fun _ z => if z = y then 1 else 0
-  have hscore : ∀ j (z : α), z ∈ q.support → score j z ∈ Set.Icc (0 : ℝ) 1 := fun _ z _ => by
-    dsimp only [score]
+  let f : α → ℝ := fun z => if z = y then 1 else 0
+  have hf : ∀ z ∈ q.support, f z ∈ Set.Icc (0 : ℝ) 1 := fun z _ => by
+    dsimp only [f]
     split_ifs <;> simp
-  have hhoeff := Probability.PMF.pi_sum_abs_sub_mean_ge (fun _ : Fin k => q) score
-    zero_le_one hscore (mul_nonneg hk.le hδ)
-  rw [← Probability.PMF.iid_eq_pi, Fintype.card_fin] at hhoeff
-  have hmean : ∑ j : Fin k, ∑ z : α, (q z).toReal * score j z = (k : ℝ) * (q y).toReal := by
-    simp only [score, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte,
-      Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-  have hsub :
-      {v : Fin k → α | δ < |empFreq k v y - (q y).toReal|} ⊆
-      {outcome : Fin k → α |
-        (k : ℝ) * δ ≤ |∑ j : Fin k, score j (outcome j) - ∑ j : Fin k, ∑ z : α,
-          (q z).toReal * score j z|} := by
-    intro v hv
-    simp only [Set.mem_ofPred_eq, empFreq] at hv ⊢
-    rw [hmean]
-    have hsum_v : ∑ j : Fin k, score j (v j) =
-        ((Finset.univ.filter fun j : Fin k => v j = y).card : ℝ) := by
-      simp [score]
-    rw [hsum_v]
-    have hmul : (k : ℝ) * |((Finset.univ.filter fun j : Fin k => v j = y).card : ℝ) / k -
-          (q y).toReal| =
-        |((Finset.univ.filter fun j : Fin k => v j = y).card : ℝ) - (k : ℝ) * (q y).toReal| := by
-      calc (k : ℝ) * |((Finset.univ.filter fun j : Fin k => v j = y).card : ℝ) / k - (q y).toReal|
-          = |(k : ℝ)| * |((Finset.univ.filter fun j : Fin k => v j = y).card : ℝ) / k -
-              (q y).toReal| := by rw [abs_of_pos hk]
-        _ = |(k : ℝ) * (((Finset.univ.filter fun j : Fin k => v j = y).card : ℝ) / k -
-              (q y).toReal)| := (abs_mul _ _).symm
-        _ = |((Finset.univ.filter fun j : Fin k => v j = y).card : ℝ) -
-              (k : ℝ) * (q y).toReal| := by
-            rw [mul_sub, mul_div_cancel₀ _ hk.ne']
-    rw [← hmul]
-    exact (mul_lt_mul_of_pos_left hv hk).le
-  refine (Probability.PMF.toOuterMeasure_toReal_mono _ hsub).trans (hhoeff.trans_eq ?_)
-  congr 2
-  field_simp [hk.ne']
+  have hconc := boundedMean_concentrates q f hf k hδ
+  have hfreq : ∀ v : Fin k → α, empFreq k v y = empiricalMean f v := fun v => by
+    simp only [empFreq, empiricalMean, Finset.card_filter, Nat.cast_sum]
+    congr 1
+    refine Finset.sum_congr rfl fun j _ => ?_
+    dsimp only [f]
+    split_ifs <;> simp
+  have hexp : (q y).toReal = distExpectation q f := by
+    simp [distExpectation, f]
+  have heq :
+      {v : Fin k → α | δ < |empFreq k v y - (q y).toReal|} =
+        {v : Fin k → α | δ < |empiricalMean f v - distExpectation q f|} := by
+    ext v
+    simp only [Set.mem_ofPred_eq, hfreq, hexp]
+  rw [heq]
+  refine hconc.trans_eq ?_
+  have hmax : max ((1 : ℝ) - 0) 1 = 1 := by norm_num
+  rw [hmax, one_pow, div_one]
 
 private theorem empFreq_all_concentrates [Fintype α] [DecidableEq α] (q : PMF α) (k : ℕ)
     [NeZero k] {δ : ℝ} (hδ : 0 ≤ δ) :
@@ -692,8 +675,8 @@ theorem isAccurateFor_amplifyFinite [Fintype α] [Nonempty α] [LinearOrder α]
 /-- **Finite-domain amplification theorem** [ImpagliazzoLeiPitassiSorrell2022]: for any finite
 nonempty linearly ordered output type `α`, if `A` achieves error `β₀ < 1 / (|α| + 1)` on `𝒟`
 (with no replicability assumption at all on `A`), then for any target `ρ > 0` and `β > 0`, there
-exist `a < b` and `k, N ≥ 1` such that `amplifyFinite A a b k N` is **strongly `ρ`-replicable**
-and `(good, β)`-accurate on `𝒟`. -/
+exist thresholds `a, b : ℝ` and `k, N ≥ 1` such that `amplifyFinite A a b k N` is **strongly
+`ρ`-replicable** and `(good, β)`-accurate on `𝒟`. -/
 theorem exists_amplifyFinite [Fintype α] [Nonempty α] [LinearOrder α]
     (A : Algorithm X Ω α m) {𝒟 : Set (PMF X)} {good : PMF X → Set α} {β₀ ρ β : ℝ}
     (hacc : IsAccurateFor A 𝒟 good β₀) (_hβ₀_nonneg : 0 ≤ β₀)

@@ -382,15 +382,24 @@ end RoundingAndComposition
 
 section BiasEstimationTests
 
-/-- Concrete nonvacuous coin bias estimation client with `w = 1 / 4`, `N = 8`, `m = 200`. -/
+/-- Concrete nonvacuous coin bias estimation client with `w = 1 / 4`, `N = 8`, `m = 4096`
+(yielding nontrivial strong `59 / 72`-replicability `< 1` and
+`(5 / 32, 2 / 9)` estimation accuracy). -/
 theorem concrete_replicableBiasProg_check :
-    IsReplicable (replicableBiasProg (1 / 4) 8 200).toAlgorithm
-      (2 * (1 / 16 : ℝ) / (1 / 4) + 1 / 8 +
-        2 * (2 * Real.exp (-2 * (200 : ℝ) * (1 / 16 : ℝ) ^ 2))) ∧
-    Estimates (replicableBiasProg (1 / 4) 8 200).toAlgorithm coinBias
-      (1 / 4 / 2 + 1 / 16) (2 * Real.exp (-2 * (200 : ℝ) * (1 / 16 : ℝ) ^ 2)) :=
-  ⟨isReplicable_replicableBiasProg (by norm_num) (by norm_num) 8 200,
-   estimates_replicableBiasProg (by norm_num) (by norm_num) 8 200⟩
+    IsReplicable (replicableBiasProg (1 / 4) 8 4096).toAlgorithm (59 / 72 : ℝ) ∧
+    Estimates (replicableBiasProg (1 / 4) 8 4096).toAlgorithm coinBias
+      (5 / 32 : ℝ) (2 / 9 : ℝ) := by
+  have hexp : Real.exp (-2 * (4096 : ℝ) * (1 / 32 : ℝ) ^ 2) ≤ 1 / 9 := by
+    have hpow : (9 : ℝ) ≤ Real.exp 8 := by
+      linarith [Real.add_one_le_exp (8 : ℝ)]
+    have hnorm : (-2 * (4096 : ℝ) * (1 / 32 : ℝ) ^ 2) = -(8 : ℝ) := by norm_num
+    rw [hnorm, Real.exp_neg]
+    exact inv_le_of_inv_le₀ (by norm_num) (by simpa using hpow)
+  have hrep := isReplicable_replicableBiasProg (by norm_num : (0 : ℝ) < 1 / 4)
+    (by norm_num : (0 : ℝ) ≤ 1 / 32) 8 4096
+  have hest := estimates_replicableBiasProg (by norm_num : (0 : ℝ) < 1 / 4)
+    (by norm_num : (0 : ℝ) ≤ 1 / 32) 8 4096
+  refine ⟨hrep.mono (by linarith), hest.mono (by norm_num) (by linarith)⟩
 
 /-- Existential parameter synthesis for `replicableBiasProg` at `(ε, ρ, β) = (1/10, 1/10, 1/10)`. -/
 theorem exists_replicableBiasProg_concrete :

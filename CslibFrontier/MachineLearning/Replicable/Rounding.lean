@@ -85,7 +85,8 @@ section Definitions
 @[expose] noncomputable def thresholdRound (a b : ℝ) (N : ℕ) (i : Fin N) (x : ℝ) : Bool :=
   decide (thresholdValue a b N i ≤ x)
 
-/-- Executable `ProbComp`-backed threshold-rounding `Program` applied to an estimator `est`. -/
+/-- `ProbComp`-backed ideal real-arithmetic threshold-rounding `Program` applied to a real
+estimator `est` (interpreted via `Program.toAlgorithm`). -/
 @[expose] noncomputable def thresholdProg {X : Type} {m : ℕ} (a b : ℝ) (N : ℕ) [NeZero N]
     (est : (Fin m → X) → ℝ) : Program X (Fin N) Bool m :=
   Program.deterministic (ProbComp.uniform (Fin N)) (fun S i => thresholdRound a b N i (est S))
@@ -98,7 +99,8 @@ section Definitions
 @[expose] noncomputable def roundGrid (w : ℝ) (N : ℕ) (i : Fin N) (x : ℝ) : ℝ :=
   ((roundGridBin w N i x : ℝ) + 1 / 2 - (i : ℝ) / N) * w
 
-/-- Executable `ProbComp`-backed periodic grid-rounding `Program` applied to `est`. -/
+/-- `ProbComp`-backed ideal real-arithmetic periodic grid-rounding `Program` applied to a real
+estimator `est` (interpreted via `Program.toAlgorithm`). -/
 @[expose] noncomputable def roundGridProg {X : Type} {m : ℕ} (w : ℝ) (N : ℕ) [NeZero N]
     (est : (Fin m → X) → ℝ) : Program X (Fin N) ℝ m :=
   Program.deterministic (ProbComp.uniform (Fin N)) (fun S i => roundGrid w N i (est S))

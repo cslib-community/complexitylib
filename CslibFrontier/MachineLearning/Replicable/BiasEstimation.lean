@@ -69,22 +69,22 @@ section BoundedMean
 variable {X : Type}
 
 /-- Sample average of `f : X → ℝ` over `S : Fin m → X`. -/
-@[expose] noncomputable def empiricalMean (f : X → ℝ) {m : ℕ} (S : Fin m → X) : ℝ :=
+@[expose] noncomputable def empiricalMean {X : Type*} (f : X → ℝ) {m : ℕ} (S : Fin m → X) : ℝ :=
   (∑ j : Fin m, f (S j)) / m
 
 /-- Population expectation `∑ x, (D x).toReal * f x` on a finite domain `X`. -/
-@[expose] noncomputable def distExpectation [Fintype X] (D : PMF X) (f : X → ℝ) : ℝ :=
+@[expose] noncomputable def distExpectation {X : Type*} [Fintype X] (D : PMF X) (f : X → ℝ) : ℝ :=
   ∑ x : X, (D x).toReal * f x
 
-/-- Executable `ProbComp`-backed program for replicable bounded-mean estimation via periodic grid
-rounding of `empiricalMean f`. -/
+/-- `ProbComp`-backed ideal real-arithmetic program for replicable bounded-mean estimation via
+periodic grid rounding of `empiricalMean f` (interpreted semantically via `Program.toAlgorithm`). -/
 @[expose] noncomputable def replicableMeanProg (f : X → ℝ) (w : ℝ) (N m : ℕ) [NeZero N] :
     Program X (Fin N) ℝ m :=
   roundGridProg w N (empiricalMean f)
 
 /-- Hoeffding concentration of the empirical mean of an observable `f : X → [a, b]` under
 `m ≥ 1` i.i.d. draws from `D`, using effective width `M = max (b - a) 1`. -/
-theorem boundedMean_concentrates [Fintype X] (D : PMF X) (f : X → ℝ) {a b : ℝ}
+theorem boundedMean_concentrates {X : Type*} [Fintype X] (D : PMF X) (f : X → ℝ) {a b : ℝ}
     (hf : ∀ x ∈ D.support, f x ∈ Set.Icc a b) (m : ℕ) [NeZero m] {δ : ℝ} (hδ : 0 ≤ δ) :
     ((Probability.PMF.iid D m).toOuterMeasure
       {S : Fin m → X | δ < |empiricalMean f S - distExpectation D f|}).toReal ≤
@@ -232,8 +232,8 @@ section CoinBias
 @[expose] noncomputable def empiricalBias {m : ℕ} (S : Fin m → Bool) : ℝ :=
   ((Finset.univ.filter fun j : Fin m => S j = true).card : ℝ) / m
 
-/-- Executable `ProbComp`-backed program for replicable coin bias estimation via periodic grid
-rounding of `empiricalBias`. -/
+/-- `ProbComp`-backed ideal real-arithmetic program for replicable coin bias estimation via
+periodic grid rounding of `empiricalBias` (interpreted semantically via `Program.toAlgorithm`). -/
 @[expose] noncomputable def replicableBiasProg (w : ℝ) (N m : ℕ) [NeZero N] :
     Program Bool (Fin N) ℝ m :=
   roundGridProg w N empiricalBias
