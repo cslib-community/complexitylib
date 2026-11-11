@@ -73,6 +73,18 @@ open Turing.MultiTapeTM ComputableInPolyTime
 
 /-! ### Problem instances and contraction state structures -/
 
+/-- Row-major Boolean adjacency matrix encoding. -/
+@[expose] abbrev encAdjTable : List (List Bool) ↪ List Bool :=
+  encList (encList encBool)
+
+/-- Row-major binary integer weight or cost matrix encoding. -/
+@[expose] abbrev encIntTable : List (List ℤ) ↪ List Bool :=
+  encList (encList encIntBin)
+
+/-- Encoding of an optional list of unary vertex indices (`Option (List ℕ)`). -/
+@[expose] abbrev encParentOption : Option (List ℕ) ↪ List Bool :=
+  encOption (encList encUnary)
+
 /-- Instance of the minimum-cost spanning arborescence problem on vertices `0, …, n - 1` (`n =
 adj.length`), given by a Boolean adjacency table, a binary integer cost table, and a binary root
 vertex index. -/
@@ -87,7 +99,7 @@ structure ArborescenceInstance where
 /-- Encoding of `ArborescenceInstance` with Boolean adjacency table, `encIntBin` cost matrix, and
 binary root index `encNat`. -/
 enc_structure encArborescenceInstance : ArborescenceInstance where
-  adj : (encList (encList encBool)), cost : (encList (encList encIntBin)), root : encNat
+  adj : encAdjTable, cost : encIntTable, root : encNat
 
 /-- Decision instance for minimum-cost spanning arborescence (`arcCost ≤ threshold`). -/
 structure ArborescenceDecInstance where
@@ -109,7 +121,7 @@ structure BranchingInstance where
 
 /-- Encoding of `BranchingInstance` with Boolean adjacency table and `encIntBin` weights. -/
 enc_structure encBranchingInstance : BranchingInstance where
-  adj : (encList (encList encBool)), weight : (encList (encList encIntBin))
+  adj : encAdjTable, weight : encIntTable
 
 /-- Decision instance for maximum-weight branching (`threshold ≤ arcCost`). -/
 structure BranchingDecInstance where
@@ -159,8 +171,8 @@ structure ContractState where
 
 /-- Encoding of `ContractState` for `iterateWith`. -/
 enc_structure encContractState : ContractState where
-  adj : (encList (encList encBool)), cost : (encList (encList encIntBin)),
-  root : encUnary, done : encBool, result : (encOption (encList encUnary)),
+  adj : encAdjTable, cost : encIntTable,
+  root : encUnary, done : encBool, result : encParentOption,
   stack : (encList encContractLevel)
 
 /-- Input bundle for parameterized `edmondsTableAuxList`. -/
@@ -176,8 +188,8 @@ structure TableAuxInput where
 
 /-- Encoding of `TableAuxInput` with unary fuel and root and binary integer costs. -/
 enc_structure encTableAuxInput : TableAuxInput where
-  fuel : encUnary, root : encUnary, adj : (encList (encList encBool)),
-  cost : (encList (encList encIntBin))
+  fuel : encUnary, root : encUnary, adj : encAdjTable,
+  cost : encIntTable
 
 /-- Intermediate workspace record for one contraction round (`contractFromParent`). -/
 structure ContractWork where
@@ -1400,7 +1412,7 @@ private theorem nat_size_le_self (k : ℕ) : k.size ≤ k :=
 theorem computableInPolyTime_edmondsTableAuxList :
     ComputableInPolyTime
       (fun x : TableAuxInput => edmondsTableAuxList x.fuel x.root x.adj x.cost)
-      encTableAuxInput (encOption (encList encUnary)) := by
+      encTableAuxInput encParentOption := by
   let polyB : TableAuxInput → ℕ := fun x =>
     let L := (encTableAuxInput x).length
     let sAdj := L + L * (6 * L + 1)
@@ -1672,7 +1684,7 @@ private theorem computableInPolyTime_clampedRoot :
   exact binary_to_unary_bounded hnat (by fun_prop) hle
 
 theorem computableInPolyTime_edmondsList :
-    ComputableInPolyTime edmondsList encArborescenceInstance (encOption (encList encUnary)) := by
+    ComputableInPolyTime edmondsList encArborescenceInstance encParentOption := by
   have hcr := computableInPolyTime_clampedRoot
   have hin : ComputableInPolyTime
       (fun inst : ArborescenceInstance =>
@@ -1700,7 +1712,7 @@ private theorem computableInPolyTime_transposeIntTable :
   exact computableInPolyTime_costAt' (by fun_prop) (by fun_prop) (by fun_prop)
 
 theorem computableInPolyTime_edmondsOutList :
-    ComputableInPolyTime edmondsOutList encArborescenceInstance (encOption (encList encUnary)) := by
+    ComputableInPolyTime edmondsOutList encArborescenceInstance encParentOption := by
   have hcr := computableInPolyTime_clampedRoot
   have htb : ComputableInPolyTime (fun inst : ArborescenceInstance => transposeBoolTable inst.adj)
       encArborescenceInstance (encList (encList encBool)) :=
@@ -2033,6 +2045,7 @@ private theorem argMinRange_fin {n : ℕ} (pred : Fin n → Bool) (key : Fin n �
     fun _ h => by simp at h
   simpa [List.argmin, argMinRange, map_val_finRange] using h
 
+/-- Boolean adjacency relation on `Fin n × Fin n` read from row-major table `a`. -/
 @[expose] def tableAdj (n : ℕ) (a : List (List Bool)) (u w : Fin n) : Bool :=
   adjAt a u.1 w.1
 
@@ -2614,7 +2627,7 @@ private theorem edmondsList_eq_edmonds {inst : ArborescenceInstance} [FinEnum (F
     simp only [hL, hV] at haux ⊢
   exact haux
 
-private theorem arcCost_parentDigraph_eq_sum_range {n : ℕ} [FinEnum (Fin n)] (c : List (List ℤ))
+private theorem arcCost_parentDigraph_eq_sum_range {n : ℕ} (c : List (List ℤ))
     (r : Fin n) (p : Fin n → Fin n) (pL : List ℕ)
     (hp : ∀ v : Fin n, pL.getD v.1 0 = (p v).1) :
     arcCost (Digraph.parentDigraph r p) (tableCost c) =

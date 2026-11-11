@@ -245,13 +245,14 @@ private theorem foldl_and_isSome {α : Type*} (p : α → Bool) :
 
 /-- Test whether iterating `f` starting from `x` returns to `x` within `n` steps (`n` ticks). -/
 @[expose] def hasCycleFromM (x : Fin n) (f : ParentTable n) : TimeM ℕ Bool := do
-  let st ← (List.range n).foldlM
+  let (_, hit) ← (List.range n).foldlM
     (fun (st : Fin n × Bool) _ => do
       ✓
-      let nxt := f[st.1.1]
-      pure (nxt, st.2 || (nxt == x)))
+      let (cur, hit) := st
+      let nxt := f[cur.1]
+      pure (nxt, hit || (nxt == x)))
     (x, false)
-  pure st.2
+  pure hit
 
 private theorem time_hasCycleFromM (x : Fin n) (f : ParentTable n) :
     (hasCycleFromM x f).time = n := by
@@ -266,7 +267,9 @@ private theorem ret_hasCycleFromM (x : Fin n) (f : ParentTable n) :
   simp only [ret_bind, ret_pure, ret_foldlM]
   have hinv : ∀ m : ℕ,
       (List.range m).foldl
-        (fun (st : Fin n × Bool) _ => (f[st.1.1], st.2 || (f[st.1.1] == x))) (x, false) =
+        (fun (st : Fin n × Bool) _ =>
+          let (cur, hit) := st
+          (f[cur.1], hit || (f[cur.1] == x))) (x, false) =
       ((fun i : Fin n => f[i.1])^[m] x,
         (List.range m).any fun k => (fun i : Fin n => f[i.1])^[k + 1] x == x) := by
     intro m
@@ -387,12 +390,13 @@ private theorem ret_findCycleM (r : Fin n) (f : ParentTable n) :
 /-- Materialize the cycle indicator vector `inCycle` of the orbit `cycleOf f x0` (`2 * n` ticks). -/
 @[expose] def cycleMaskM (f : ParentTable n) (x0 : Fin n) : TimeM ℕ (Vector Bool n) := do
   let init ← Vector.ofFnM fun _ : Fin n => do ✓ pure false
-  let st ← (List.range n).foldlM
+  let (_, mask) ← (List.range n).foldlM
     (fun (st : Fin n × Vector Bool n) _ => do
       ✓
-      pure (f[st.1.1], st.2.set st.1.1 true st.1.2))
+      let (cur, mask) := st
+      pure (f[cur.1], mask.set cur.1 true cur.2))
     (x0, init)
-  pure st.2
+  pure mask
 
 private theorem time_cycleMaskM (f : ParentTable n) (x0 : Fin n) :
     (cycleMaskM f x0).time = 2 * n := by
@@ -407,7 +411,9 @@ private theorem time_cycleMaskM (f : ParentTable n) (x0 : Fin n) :
 private theorem cycleMask_loop_spec (f : ParentTable n) (x0 : Fin n) :
     ∀ (m : ℕ) (init : Vector Bool n),
       let res := (List.range m).foldl
-        (fun (st : Fin n × Vector Bool n) _ => (f[st.1.1], st.2.set st.1.1 true st.1.2))
+        (fun (st : Fin n × Vector Bool n) _ =>
+          let (cur, mask) := st
+          (f[cur.1], mask.set cur.1 true cur.2))
         (x0, init)
       res.1 = (fun i : Fin n => f[i.1])^[m] x0 ∧
         ∀ j : Fin n,
@@ -423,7 +429,9 @@ private theorem cycleMask_loop_spec (f : ParentTable n) (x0 : Fin n) :
     · intro j
       simp only [Vector.getElem_set]
       by_cases hj : ((List.range m).foldl
-          (fun (st : Fin n × Vector Bool n) _ => (f[st.1.1], st.2.set st.1.1 true st.1.2))
+          (fun (st : Fin n × Vector Bool n) _ =>
+            let (cur, mask) := st
+            (f[cur.1], mask.set cur.1 true cur.2))
           (x0, init)).1.1 = j.1
       · have hj' : (fun i : Fin n => f[i.1])^[m] x0 = j := Fin.ext (ih1 ▸ hj)
         simp only [hj, ↓reduceIte, true_iff]
