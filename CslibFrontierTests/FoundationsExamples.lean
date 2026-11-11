@@ -410,6 +410,21 @@ example : 3 / 4 ≤ dens {ω : ∀ j : Fin (7 * 1 * 2 + 1),
   le_of_eq_of_le (tsub_eq_of_eq_add (by norm_num)).symm
     (one_sub_inv_two_pow_le_dens_filter_affineRelativeHashEstimate one_ne_zero 2 _)
 
+-- `dens_filter_not_relativeHashEstimate_le` applies even when `X` and the seed types are empty.
+private def emptyLevel (j : ℕ) : Empty → (Fin 7 → Empty) → Fin j → ZMod 2 :=
+  fun i _ => i.elim
+
+example :
+    dens {ω : ∀ _ : Fin (0 + 1), Fin (2 * 6) → Empty |
+      ¬ (#(∅ : Finset Empty) ≤ relativeHashEstimate emptyLevel (fun _ => 0) ∅ ω ∧
+        1 * relativeHashEstimate emptyLevel (fun _ => 0) ∅ ω ≤
+          (1 + 1) * #(∅ : Finset Empty))} ≤
+      ((0 : ℕ) + 1) * (8 / 9) ^ 6 :=
+  dens_filter_not_relativeHashEstimate_le (n := 0) (k := 7) (p := 1) (r := 6)
+    emptyLevel (fun _ => 0) ∅
+    (fun _ => ⟨fun x _ => (x 0).elim, fun {x₁} _ _ _ _ => (x₁ 0).elim⟩)
+    (fun _ => by simp [ZMod.card]) (by simp) (by norm_num)
+
 end ApproximateCounting
 
 end CslibFrontierTests.FoundationsExamples

@@ -12,6 +12,7 @@ import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.Lean.TwoSAT
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
+import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -66,6 +67,7 @@ import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Converse
 import CslibFrontier.Computability.Complexity.Fagin.Ordered.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
+import CslibFrontier.Computability.Complexity.FineGrained.CliqueGrouping
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
@@ -111,6 +113,7 @@ import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.DataStructure.NearNeighbor.Angular
 import CslibFrontier.DataStructure.NearNeighbor.PStable
+import CslibFrontier.DataStructure.Paging.Marking
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
@@ -3684,6 +3687,29 @@ register_result "yap-collapse" where
     coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
     decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
     from Σ_k ⊆ Π_k/poly are not part of this entry."
+register_result "randomized-marking-paging" where
+  title := "2 H_k-competitiveness of the randomized marking paging algorithm"
+  topic := "algorithms"
+  sources := [
+    { paper := FiatKarpLubyMcGeochSleatorYoung1991,
+      theorem := "Theorem 1",
+      locator := "Section 3" }
+  ]
+  theorems := [
+    Cslib.DataStructure.Paging.expectedCost_markingStrategy_eq,
+    Cslib.DataStructure.Paging.trackerExpectedCost_le_harmonic_mul_cleanCount,
+    Cslib.DataStructure.Paging.cleanCount_le_two_mul_scheduleCost,
+    Cslib.DataStructure.Paging.markingStrategy_expectedCost_le,
+    Cslib.DataStructure.Paging.markingStrategy_isCompetitive,
+    Cslib.DataStructure.Paging.markingStrategy_expectedCost_toReal_le
+  ]
+  scope := "Proves that the randomized marking algorithm (markingStrategy k hk) in the \
+    behavioural online strategy model (Online.BehavioralStrategy) is 2 H_k-competitive with \
+    additive constant 0 against an oblivious adversary from any admissible initial cache \
+    |s₀| ≤ k over any [DecidableEq α] page type. Local adaptations relative to \
+    arXiv:cs/0205038v1 Section 3: allows arbitrary page types α, initializes from any |s₀| ≤ k \
+    via non-evicting warmup while |cache| < k, and bounds clean requests by 2 * OPT directly \
+    against arbitrary (not necessarily lazy) valid offline schedules."
 
 register_result "fujisaki-okamoto-notbot-ind-cca" where
   title := "ROM IND-CCA security of the implicit-rejection Fujisaki–Okamoto transform FO-notbot"
@@ -3704,3 +3730,43 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
     real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
     recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
     accounting for the reduction; FO-⊥ and OW-PCVA are not covered."
+register_result "clique-eth-lower-bound" where
+  title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"
+  topic := "fine-grained complexity"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "Theorem 14.21", locator := "p.485" }
+  ]
+  theorems := [
+    Cslib.Complexity.ETH.not_clique_subexpVertex,
+    Cslib.Complexity.ETH.not_clique_subexpEnc,
+    Cslib.Complexity.ETH.clique_not_mem_FPT,
+    Cslib.Complexity.DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
+  ]
+  scope := "Clause-grouping reduction SAT.groupClique on Clique (encPair encGraph encNat) and \
+    ThreeSAT (encCNF). Under ETH (relative to the library's native DecidableInTimeO model), no \
+    decider for Clique runs in time f(k) · (|V| + 1)^o(k) · poly(|enc|) or f(k) · (|enc| + 1)^o(k) \
+    with arbitrary f and real exponent g(k) satisfying g(k) ≤ ε k for large k; in particular \
+    Clique ∉ FPT. Unconditional subexponential-time transfers to ThreeSAT hold without ETH. \
+    This adapts the source's 3-Coloring vertex grouping to 3-CNF clauses and arbitrary f."
+
+register_result "csp-bounded-treewidth" where
+  title := "Exact counting and decision for finite-domain CSPs over bounded treewidth"
+  topic := "parameterized algorithms"
+  sources := [
+    { paper := CyganEtAl2015, theorem := "Lemma 7.4 (nice trees)", locator := "p.161" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspDecideRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.time_cspCountRootedM_le,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountActiveRootedM,
+    Cslib.Algorithms.Lean.TreeDecomposition.ret_cspCountNiceM_equiv
+  ]
+  scope := "Finite constraint domains Fin q (and arbitrary Fintype/Inhabited D via Equiv D \
+    (Fin q)) over a supplied RootedTreeDecomposition of the primal or active primal graph. \
+    Normalizes via toNiceTreePruned to at most (3 w + 5)(|V| + 1) nice nodes (size, not runtime \
+    bound) and charges unit-cost TimeM inner-loop ticks bounded by (3 w + 5)(|V| + 1) · q^(w + 1) \
+    · dpNodeCost w F (excluding recursive list-manipulation overhead like bagList, sem \
+    evaluations, and unbounded integer arithmetic). The generic CSP-counting DP extension is an \
+    adaptation/original implementation. Computing the tree decomposition is external."
+
