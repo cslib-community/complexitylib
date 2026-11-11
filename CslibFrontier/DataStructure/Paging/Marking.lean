@@ -13,6 +13,7 @@ public import CslibFrontier.DataStructure.Paging.Basic
 public import Mathlib.NumberTheory.Harmonic.Defs
 import CslibFrontier.Foundations.NumberTheory.Harmonic
 import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.UniformPowerset
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
@@ -409,16 +410,6 @@ private theorem uniformOfFinset_congr {β : Type*} {s₁ s₂ : Finset β}
   subst h
   rfl
 
-private theorem pmf_bind_congr {β γ : Type*} {p : PMF β} {f g : β → PMF γ}
-    (h : ∀ x ∈ p.support, f x = g x) :
-    p.bind f = p.bind g := by
-  ext y
-  simp only [PMF.bind_apply]
-  refine tsum_congr fun x => ?_
-  by_cases hx : x ∈ p.support
-  · rw [h x hx]
-  · rw [(PMF.apply_eq_zero_iff p x).mpr hx, zero_mul, zero_mul]
-
 private theorem markingStep_on_union {k : ℕ} {M U : Finset α} {p : α}
     (hdisj : Disjoint M U) (hcard : M.card + U.card = k) (hU : U.Nonempty) (hpM : p ∉ M) :
     markingStep k ⟨M ∪ U, M⟩ p =
@@ -477,7 +468,7 @@ theorem markLaw_bind_markingStep {k : ℕ} (hk : 0 < k) {tr : MarkTracker α}
   · have hinsert : insert p tr.marked = tr.marked := Finset.insert_eq_of_mem hpM
     simp only [stepTracker, hpM, ↓reduceIte]
     rw [markLaw, dite_eq_left hne, PMF.bind_map, ← PMF.bind_pure_comp]
-    refine pmf_bind_congr fun U _ => ?_
+    refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun U _ => ?_
     have hpMU : p ∈ tr.marked ∪ U := Finset.mem_union_left U hpM
     simp only [Function.comp_apply, markingStep, hpMU, ↓reduceIte, hinsert]
   · by_cases ht0 : tr.staleCached = 0
@@ -522,7 +513,7 @@ theorem markLaw_bind_markingStep {k : ℕ} (hk : 0 < k) {tr : MarkTracker α}
           Finset.powersetCard_nonempty.mpr (by rw [Finset.card_erase_of_mem hpS]; omega)
         rw [markLaw, dite_eq_left hne',
           ← uniformOfFinset_powersetCard_hitOrErase hpS ht1 hst, PMF.map_bind]
-        refine pmf_bind_congr fun U hU => ?_
+        refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun U hU => ?_
         rw [mem_support_uniformOfFinset_iff] at hU
         obtain ⟨hUS, hUcard⟩ := Finset.mem_powersetCard.mp hU
         have hU_ne : U.Nonempty := Finset.card_pos.mp (by omega)
@@ -532,7 +523,7 @@ theorem markLaw_bind_markingStep {k : ℕ} (hk : 0 < k) {tr : MarkTracker α}
           Finset.powersetCard_nonempty.mpr (by omega)
         rw [markLaw, dite_eq_left hne',
           ← uniformOfFinset_powersetCard_erase ht1 hst, PMF.map_bind]
-        refine pmf_bind_congr fun U hU => ?_
+        refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun U hU => ?_
         rw [mem_support_uniformOfFinset_iff] at hU
         obtain ⟨hUS, hUcard⟩ := Finset.mem_powersetCard.mp hU
         have hU_ne : U.Nonempty := Finset.card_pos.mp (by omega)
