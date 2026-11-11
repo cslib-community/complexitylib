@@ -188,10 +188,11 @@ def extractBoolFromBiased (y : (i : Fin 2) → Option (if i = 0 then Unit else B
   | some v => cast (by simp [h]) v
   | none => true
 
-noncomputable instance iteFintype (i : Fin 2) : Fintype (if i = 0 then Unit else Bool) := by
+private noncomputable instance iteFintype (i : Fin 2) : Fintype (if i = 0 then Unit else Bool) := by
   split_ifs <;> infer_instance
 
-noncomputable instance iteDecidableEq (i : Fin 2) : DecidableEq (if i = 0 then Unit else Bool) := by
+private noncomputable instance iteDecidableEq (i : Fin 2) :
+    DecidableEq (if i = 0 then Unit else Bool) := by
   split_ifs <;> infer_instance
 
 private theorem extractBoolFromMalicious_val (b : Bool) :
@@ -265,16 +266,19 @@ theorem naive_without_abort_failure :
             return extractBoolFromBiased y) true = 1 := by
     dsimp [coinTossBiasedDist]
     simp only [eval_bind, eval_uniform, PMF.bind_apply, PMF.uniformOfFintype_apply]
-    simp only [apply_ite ProbComp.eval, eval_pure, tsum_fintype, Fintype.sum_bool, Fintype.card_bool, Nat.cast_ofNat]
+    simp only [apply_ite ProbComp.eval, eval_pure, tsum_fintype, Fintype.sum_bool,
+      Fintype.card_bool, Nat.cast_ofNat]
     simp only [reduceCtorEq, ite_true, ite_false, PMF.pure_apply, mul_ite, mul_one, mul_zero]
     have h_split : ∀ a : Unit × ((i : Fin 2) → Option (if i = 0 then Unit else Bool)),
       (if true = extractBoolFromBiased a.2 then
-          (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true))
+          (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) 
+                                  else cast (by simp [h]) (some true))
             then (2⁻¹:ENNReal) else 0) +
           (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
             then (2⁻¹:ENNReal) else 0)
         else 0) =
-      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else cast (by simp [h]) (some true))
+      (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) 
+                              else cast (by simp [h]) (some true))
         then if true = extractBoolFromBiased a.2 then (2⁻¹:ENNReal) else 0 else 0) +
       (if a = ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
         then if true = extractBoolFromBiased a.2 then (2⁻¹:ENNReal) else 0 else 0) := by
