@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.SIS.Module
 public import CslibFrontier.Languages.Probabilistic.CenteredBinomial.Concentration
 public import CslibFrontier.Probability.Product.Event
@@ -36,13 +36,13 @@ open scoped ENNReal
 no-wrap margin identifying the centered integer lift of every supported scalar draw. -/
 theorem toOuterMeasure_moduleLWECBD_noise_tail_le {n w η B : ℕ}
     (hη : 0 < η) (hwrap : 2 * η < 2 ^ w) :
-    (PMF.pi (fun _ : Fin n => Homomorphic.GSW.noiseLaw w η)).toOuterMeasure
+    (PMF.pi (fun _ : Fin n => LWE.noiseLaw w η)).toOuterMeasure
       {e | ¬ GeneralSIS.inInfNormBound B e} ≤
         n * ENNReal.ofReal (4 * Real.exp (-(B : ℝ) ^ 2 / (2 * η))) := by
-  have hscalar : (Homomorphic.GSW.noiseLaw w η).toOuterMeasure
+  have hscalar : (LWE.noiseLaw w η).toOuterMeasure
       {z | (B : ℤ) < |z.valMinAbs|} ≤
         ENNReal.ofReal (4 * Real.exp (-(B : ℝ) ^ 2 / (2 * η))) := by
-    rw [Homomorphic.GSW.noiseLaw, PMF.toOuterMeasure_map_apply]
+    rw [LWE.noiseLaw, PMF.toOuterMeasure_map_apply]
     refine (PMF.toOuterMeasure_mono _ ?_).trans
       (sampleCenteredBinomial_strict_tail_le hη (Nat.cast_nonneg B))
     intro z hz
@@ -54,11 +54,11 @@ theorem toOuterMeasure_moduleLWECBD_noise_tail_le {n w η B : ℕ}
       hlift] using hz.1
     exact_mod_cast hbad
   calc
-    _ ≤ ∑ _i : Fin n, (Homomorphic.GSW.noiseLaw w η).toOuterMeasure
+    _ ≤ ∑ _i : Fin n, (LWE.noiseLaw w η).toOuterMeasure
         {z | (B : ℤ) < |z.valMinAbs|} := by
       simpa only [GeneralSIS.inInfNormBound, not_forall, not_le, Set.mem_ofPred_eq] using
         PMF.toOuterMeasure_pi_exists_le
-          (fun _ : Fin n => Homomorphic.GSW.noiseLaw w η)
+          (fun _ : Fin n => LWE.noiseLaw w η)
           (fun _ => {z | (B : ℤ) < |z.valMinAbs|})
     _ ≤ ∑ _i : Fin n, ENNReal.ofReal
         (4 * Real.exp (-(B : ℝ) ^ 2 / (2 * η))) :=

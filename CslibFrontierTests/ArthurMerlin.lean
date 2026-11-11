@@ -59,7 +59,7 @@ example :
     ({w : List Bool | w.tail.headD false = true} ∈ MA encBits ∧
       {w : List Bool | w.tail.headD false = true} ∈ AM encBits) ∧
     ({w : List Bool | w.headD false = true} ∈ AM encBits ∧
-      GraphNonIsomorphism ∈ PiP 2 (encPair encGraph encGraph)) :=
+      GraphNonIsomorphism ∈ PiP 2 encGraphIsomorphism) :=
   ⟨⟨MA_subset_AM head_mem_MA_direct,
     MA_subset_SBP head_mem_MA,
     MA_subset_SigmaP_two_inter_PiP_two head_mem_MA,
@@ -98,8 +98,8 @@ example : ComputableInPolyTime (fun n : ℕ => 2 * n.factorial) encUnary encNat 
 
 /-- The hypothesis of the graph-isomorphism collapse follows from a reduction of `SAT` to graph
 isomorphism, placing `GraphNonIsomorphism` in `Σ₂`. -/
-example (h : PolyTimeReducible encCNF (encPair encGraph encGraph) SAT GraphIsomorphism) :
-    GraphNonIsomorphism ∈ SigmaP 2 (encPair encGraph encGraph) :=
+example (h : PolyTimeReducible encCNF encGraphIsomorphism SAT GraphIsomorphism) :
+    GraphNonIsomorphism ∈ SigmaP 2 encGraphIsomorphism :=
   PH_eq_SigmaP_two_of_npComplete_GraphIsomorphism
     ⟨GraphIsomorphism.mem_NP, CookLevin.SAT_npHard.trans h⟩ ▸
     PiP_subset_PH 2 (AM_subset_PiP_two GraphNonIsomorphism.mem_AM)

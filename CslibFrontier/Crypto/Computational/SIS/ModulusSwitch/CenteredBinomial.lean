@@ -139,9 +139,9 @@ private theorem family_budget (t : ℕ) :
 theorem toOuterMeasure_moduleLWECBD_switch_failure_le (l : ℕ) (m : Fin (l + 1) → Bool) :
     let t := l + 1
     let w := moduleLWECBDWidth t
-    let noise := PMF.pi (fun _ : Fin t => Homomorphic.GSW.noiseLaw (w + 1) (8 * t))
+    let noise := PMF.pi (fun _ : Fin t => LWE.noiseLaw (w + 1) (8 * t))
     let secrets := PMF.pi (fun _ : Fin t =>
-      PMF.pi (fun _ : Fin t => Homomorphic.GSW.noiseLaw (w + 1) 1))
+      PMF.pi (fun _ : Fin t => LWE.noiseLaw (w + 1) 1))
     (do
       let s ← secrets
       let view ← encryptionViewOfKeyLaw
@@ -154,9 +154,9 @@ theorem toOuterMeasure_moduleLWECBD_switch_failure_le (l : ℕ) (m : Fin (l + 1)
   dsimp only
   let t := l + 1
   let w := moduleLWECBDWidth t
-  let noise := PMF.pi (fun _ : Fin t => Homomorphic.GSW.noiseLaw (w + 1) (8 * t))
+  let noise := PMF.pi (fun _ : Fin t => LWE.noiseLaw (w + 1) (8 * t))
   let secrets := PMF.pi (fun _ : Fin t =>
-    PMF.pi (fun _ : Fin t => Homomorphic.GSW.noiseLaw (w + 1) 1))
+    PMF.pi (fun _ : Fin t => LWE.noiseLaw (w + 1) 1))
   have hwrap := moduleLWECBD_noWrap t
   have hs : ∀ s ∈ secrets.support, ModuleSIS.inInfNormBound 1 s := by
     intro s hs
@@ -199,9 +199,9 @@ theorem negligible_moduleLWECBD_switch_failure (m : (l : ℕ) → Fin (l + 1) �
     Negligible (fun l =>
       let t := l + 1
       let w := moduleLWECBDWidth t
-      let noise := PMF.pi (fun _ : Fin t => Homomorphic.GSW.noiseLaw (w + 1) (8 * t))
+      let noise := PMF.pi (fun _ : Fin t => LWE.noiseLaw (w + 1) (8 * t))
       let secrets := PMF.pi (fun _ : Fin t =>
-        PMF.pi (fun _ : Fin t => Homomorphic.GSW.noiseLaw (w + 1) 1))
+        PMF.pi (fun _ : Fin t => LWE.noiseLaw (w + 1) 1))
       ((do
         let s ← secrets
         let view ← encryptionViewOfKeyLaw

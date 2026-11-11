@@ -122,6 +122,11 @@ When several coordinators share one host, give them a single limit on concurrent
 not only a thread count. Their builds can exhaust the kernel's file handles before its
 processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
+Agents on one host also share Lake's artifact cache, which restores a module that another
+checkout built without its warnings. `scripts/check.sh` re-elaborates the changed files among
+such modules, but not their unchanged clients. When a local check and CI disagree about a
+warning, trust CI
+([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.

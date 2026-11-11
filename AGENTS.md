@@ -266,6 +266,9 @@ compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_
 why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
 context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
 there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+After the Lean gates, full and quick modes also re-elaborate the changed library and test files
+whose outputs Lake restored from the shared local artifact cache, which keeps no warnings
+([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
 generated research data. They catch source/link drift and malformed visual markup; they do not
 replace the required review of both manuals' meaning and usability.
@@ -449,7 +452,9 @@ not need a particular agent installation.
 Read the actual definitions and statements. For substantive mathematics, explain briefly what is
 proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
-Check new and changed statements against [Encodings in statements](#encodings-in-statements).
+Check new and changed statements against
+[Structures for domain objects and records](#structures-for-domain-objects-and-records) and
+[Encodings in statements](#encodings-in-statements).
 Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
 a new copy of an argument the library already makes is a finding when the
 [library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
@@ -531,6 +536,18 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
 never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
 
+GitHub declines every push to the branch of a PR that is in the merge queue ("protected branch
+hook declined"), even when its entry is `UNMERGEABLE`. Whoever restacks a queued PR, by hand or
+with `--push` below, first removes it with **Remove from queue** on the PR page or:
+
+```bash
+gh api graphql -f id="$(gh pr view <PR> --json id --jq .id)" -f query='
+  mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { mergeQueueEntry { state } } }'
+```
+
+Dequeueing merges nothing, so the author may do it; the new head is queued again only by a
+non-author, once the `check_restack.py` check below passes or the delta is reviewed.
+
 When the only conflicts with `main` are in the aggregates or `references.bib`,
 `python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
 without running the PR's code. It requires the `check_restack.py` check below to pass for the
@@ -559,7 +576,9 @@ bibliography merge written by that script, with nothing else changed, passes. Af
 branch, which could change it.
 An approval given while a PR is based on another branch also names that branch's head, and the
 check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
-review did not cover, would carry the approval if the lower PR never landed. Anyone, including
+review did not cover, would carry the approval if the lower PR never landed. Pass that head even
+when the approved head had also merged a newer `main`: the script then replays from the merge of
+the lower head and that `main`, and names it in the result. Anyone, including
 the author, may post the script's result line, which names both heads and the exact command. The
 non-author who queues the new head runs that command again rather than relying on the posted line.
 When the script reports differences, review the paths and diffs it prints as a delta, under the
@@ -583,6 +602,23 @@ express the intended mathematics; explain a non-obvious decision to introduce a 
 Syntactic similarity is a prompt to inspect reuse, not proof that models should be identified.
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
+
+### Structures for domain objects and records
+
+Define domain objects, problem instances, certificates, configurations, and multi-field algorithm
+contexts, states or records as documented `structure`s with named, documented fields—not as tuple
+type synonyms (`abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ`) or bare product types
+in problem sets (`Set (List (ℕ × ℕ) × ℕ × ℕ)`, `Set (Graph × ℕ)`). A `structure` gives every
+component a name and docstring in editor hover and `doc-gen4`, supports dot-notation, prevents
+swapping homogeneous components, and avoids the `.1.2` positional projection chains banned by
+[#1764](https://github.com/cslib-community/cslib-frontier/issues/1764). Encode field-tuple
+structures with `enc_structure` under [Encodings in statements](#encodings-in-statements) below.
+
+Keep plain `Prod` (`×`) where the pair is not a domain record: generic binary combinators,
+mathematical Cartesian products, and uncurried multi-argument function inputs that merely pair an
+instance with a witness or second operand (such as an NP verifier `Instance × List Bool → Bool` or
+a binary operation `α × β → γ`). Existing tuple abbreviations and bare-product problem sets are
+migrated under [#4385](https://github.com/cslib-community/cslib-frontier/issues/4385).
 
 ### Encodings in statements
 
@@ -619,8 +655,9 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    encoding, even where it occurs only once.
 5. **Declare structure encodings with `enc_structure`.** When a structure is encoded as the
    tuple of its fields in declaration order, declare the encoding with `enc_structure`, which
-   generates the embedding, its `_apply` equation and its `fun_prop` certificates, rather than
-   writing a `.trans` embedding and proving the certificates by hand. The
+   generates the embedding, its `_apply` equation and its `fun_prop` certificates (for degree,
+   `ComputableInO`, workspace budgets and `ComputableInPolyTime`), rather than writing a `.trans`
+   embedding and proving the certificates by hand. The
    [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
    shows the declaration and what it generates.
 6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs

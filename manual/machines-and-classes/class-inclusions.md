@@ -144,8 +144,8 @@ Columns AM to NEXP:
 
 | ⊆ | AC⁰ | ACC⁰ | TC⁰ | NC¹ | AC¹ | NC² | P/poly |
 |------|---|---|---|---|---|---|---|
-| **AC⁰** | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L260) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L292) | ✓* | ✓* | ✓* |
-| **ACC⁰** | [✗](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L260) | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L336) | (✓) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L268) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L276) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L284) |
+| **AC⁰** | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L262) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L292) | ✓* | ✓* | ✓* |
+| **ACC⁰** | [✗](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L262) | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L340) | (✓) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L268) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L276) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L284) |
 | **TC⁰** | [✗](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) | ? | · | (✓) | (✓) | (✓) | (✓) |
 | **NC¹** | (✗) | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L103) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L115) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L132) |
 | **AC¹** | ✗* | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L273) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L301) |
@@ -156,12 +156,12 @@ Columns AM to NEXP:
 
 | Statement | Declaration |
 |---|---|
-| AC⁰ ⊊ ACC⁰ | [`AC0_ssubset_ACC0`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L260) |
-| AC⁰ ⊆ ACC⁰ | [`AC0_subset_ACC0`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L207) |
+| AC⁰ ⊊ ACC⁰ | [`AC0_ssubset_ACC0`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L262) |
+| AC⁰ ⊆ ACC⁰ | [`AC0_subset_ACC0`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L209) |
 | AC⁰ ⊊ TC⁰ | [`AC0_ssubset_TC0`](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) |
 | AC⁰ ⊆ TC⁰ | [`AC0_subset_TC0`](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L61) |
 | AC⁰ ⊆ NC¹ | [`AC0_subset_NC_one`](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L292) |
-| ACC⁰ ⊆ TC⁰ | [`ACC0_subset_TC0`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L336) |
+| ACC⁰ ⊆ TC⁰ | [`ACC0_subset_TC0`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L340) |
 | ACC⁰ ⊆ AC¹ | [`ACC0_subset_AC_one`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L268) |
 | ACC⁰ ⊆ NC² | [`ACC0_subset_NC_two`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L276) |
 | ACC⁰ ⊆ P/poly | [`ACC0_subset_PPoly`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L284) |

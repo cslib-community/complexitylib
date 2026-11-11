@@ -232,6 +232,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `membership-learning` | [Randomized membership-query learners](circuits-logic-and-other-models/index.md) | learning |
 | `mistake-bound` | [Realizable online mistake-bound learners](circuits-logic-and-other-models/learning-and-testing.md) | learning |
 | `linearity-test` | [Decision-tree property testers for Boolean linearity](circuits-logic-and-other-models/index.md) | learning |
+| `replicable-algorithm` | [Shared-seed replicable sample algorithms (`Algorithm` and weak/strong `ρ`-replicability)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
+| `replicable-program` | [`ProbComp`-backed shared-seed replicable programs (`Program`)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
 | `mcsp` | [Total truth-table minimum circuit size](circuits-logic-and-other-models/index.md) | metacomplexity |
 | `partial-mcsp` | [Partial truth-table circuit minimization](circuits-logic-and-other-models/index.md) | metacomplexity |
 | `succinct-mcsp` | [Sample-set succinct MCSP](circuits-logic-and-other-models/index.md) | metacomplexity |
@@ -327,3 +329,4 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `mechanism-general-vcg` | [General-valuation mechanisms and VCG](algorithms-and-memory/mechanism-design.md) | mechanism-design |
 | `mechanism-bayes-nash` | [Bayes–Nash equilibrium, revenue equivalence and the first-price auction](algorithms-and-memory/mechanism-design.md) | mechanism-design |
 | `social-welfare-function` | [Social welfare functions on strict rankings and Arrow's theorem](algorithms-and-memory/mechanism-design.md) | social-choice |
+| `facility-location-mechanism` | [Randomized facility-location mechanisms, strategyproofness, and median optimality](algorithms-and-memory/mechanism-design.md) | facility-location |

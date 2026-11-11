@@ -24,14 +24,22 @@ The semantic theorem uses a bijection between source tuples and target elements.
 bijection between closure vertices, which carries one edge relation to the other and so preserves
 reflexive reachability. The translation also preserves the closure polarity `TC.Positive`.
 
+The semantic theorem is stated once for every closure semantics `closureBy T`, the reflexive
+transitive closure of `T` applied to the body relation, where `T` commutes with relabelling the
+vertices along a bijection (`Transports T`). Ordinary closure is `T = id`
+(`interpretation_eq_closureBy_id`); deterministic closure takes for `T` the deterministic reduct.
+
 ## Main definitions
 
 * `Cslib.Logic.FO.TC.Tuple.onFormula`: extend a first-order tuple pullback to FO(TC).
+* `Cslib.Logic.FO.TC.Tuple.closureBy`: closure of a transformed body relation.
+* `Cslib.Logic.FO.TC.Tuple.Transports`: a relation transform commutes with bijections.
 
 ## Main results
 
-* `Cslib.Logic.FO.TC.Tuple.realize_onFormula`: the pullback preserves truth for all relation
-  valuations that correspond blockwise.
+* `Cslib.Logic.FO.TC.Tuple.realize_onFormula_closureBy`: the pullback preserves truth under every
+  transported closure semantics, for all relation valuations that correspond blockwise.
+* `Cslib.Logic.FO.TC.Tuple.realize_onFormula`: the instance for ordinary closure.
 * `Cslib.Logic.FO.TC.Tuple.positive_onFormula`: the pullback preserves closure polarity.
 -/
 
@@ -118,6 +126,39 @@ variable {Γ : List ℕ} {α : Type}
     rw [onFormula, positive_applyTerms]
     exact and_congr Iff.rfl ((positive_relabel _ _ true).trans (ih ⟨0, Nat.one_pos⟩ true))
 
+/-- Closure of a transformed body relation: reflexive reachability along `T` of the relation that
+the body defines on closure tuples. `closureBy id` is `interpretation`; taking for `T` the
+deterministic reduct gives deterministic closure. -/
+@[expose] def closureBy (T : ∀ {β : Type}, (β → β → Prop) → β → β → Prop) {M : Type} :
+    Interpretation shape M :=
+  fun _ bodies args =>
+    Relation.ReflTransGen (T fun xs ys => bodies (0 : Fin 1) RelEnv.empty (pair xs ys))
+      (left args) (right args)
+
+/-- A relation transform `T` commutes with relabelling the vertices along a bijection. -/
+@[expose] def Transports (T : ∀ {β : Type}, (β → β → Prop) → β → β → Prop) : Prop :=
+  ∀ {β γ : Type} (e : β ≃ γ) {r : β → β → Prop} {s : γ → γ → Prop},
+    (∀ a b, r a b ↔ s (e a) (e b)) → ∀ a b, T r a b ↔ T s (e a) (e b)
+
+/-- The identity transform commutes with bijections. -/
+theorem transports_id : Transports fun r => r :=
+  fun _ _ _ h => h
+
+/-- Ordinary closure is closure of the untransformed body relation. -/
+theorem interpretation_eq_closureBy_id {M : Type} :
+    (interpretation : Interpretation shape M) = closureBy fun r => r :=
+  rfl
+
+/-- A closure under `closureBy T` follows `T` of the body relation. -/
+theorem realize_tc_closureBy (T : ∀ {β : Type}, (β → β → Prop) → β → β → Prop) {M : Type}
+    [L.Structure M] {k : ℕ} (body : Formula L shape Γ (α ⊕ Fin (2 * k)))
+    (args : Fin (2 * k) → L.Term α) (ρ : RelEnv Γ M) (v : α → M) :
+    (tc body args).Realize (closureBy T) ρ v ↔
+      Relation.ReflTransGen
+        (T fun xs ys => body.Realize (closureBy T) ρ (Sum.elim v (pair xs ys)))
+        (fun i => (left args i).realize v) (fun i => (right args i).realize v) :=
+  Iff.rfl
+
 variable {M N : Type} [L.Structure M] [L'.Structure N]
   (f : FOMap L L' d) (e : (Fin d → M) ≃ N)
   (hf : ∀ {α : Type} (φ : L'.Formula α) (v : α × Fin d → M),
@@ -135,7 +176,9 @@ private theorem endpoint_valuation {β : Type} (v : β × Fin d → M) {k : ℕ}
   | inl b => rfl
   | inr j => exact congrFun (blockEquiv_pair e us ws) j
 
-include hf in
+variable {T : ∀ {β : Type}, (β → β → Prop) → β → β → Prop} (hT : Transports T)
+
+include hf hT in
 /-- A pulled-back closure whose body defines the transported edge relation is the transported
 reachability relation. -/
 private theorem realize_applyTerms_tc {k : ℕ} (args : Fin (2 * k) → L'.Term α)
@@ -144,14 +187,14 @@ private theorem realize_applyTerms_tc {k : ℕ} (args : Fin (2 * k) → L'.Term 
     (φt : Operator.Formula L' shape Γ (α ⊕ Fin (2 * k)))
     (ρs : RelEnv (Γ.map (· * d)) M) (ρt : RelEnv Γ N) (v : α × Fin d → M)
     (hφ : ∀ (XS : Fin (2 * k * d) → M) (us ws : Fin (k * d) → M),
-      φs.Realize interpretation ρs (Sum.elim (Sum.elim v XS) (pair us ws)) ↔
-        φt.Realize interpretation ρt (Sum.elim (fun a => e (fun i => v (a, i)))
+      φs.Realize (closureBy T) ρs (Sum.elim (Sum.elim v XS) (pair us ws)) ↔
+        φt.Realize (closureBy T) ρt (Sum.elim (fun a => e (fun i => v (a, i)))
           (pair (blockEquiv e k us) (blockEquiv e k ws)))) :
     (applyTerms f args (tc (k := k * d) φs
         (fun i => .var (.inr (Fin.cast (Nat.mul_assoc 2 k d).symm i))))).Realize
-          interpretation ρs v ↔
-      (tc φt args).Realize interpretation ρt (fun a => e (fun i => v (a, i))) := by
-  rw [realize_applyTerms f e hf, realize_tc, realize_tc]
+          (closureBy T) ρs v ↔
+      (tc φt args).Realize (closureBy T) ρt (fun a => e (fun i => v (a, i))) := by
+  rw [realize_applyTerms f e hf, realize_tc_closureBy, realize_tc_closureBy]
   set Y : Fin (2 * k) → N := fun i => (args i).realize (fun a => e (fun j => v (a, j)))
   set P := (blockEquiv e k).symm (left Y)
   set Q := (blockEquiv e k).symm (right Y)
@@ -160,11 +203,11 @@ private theorem realize_applyTerms_tc {k : ℕ} (args : Fin (2 * k) → L'.Term 
     rw [Equiv.symm_apply_eq, blockEquiv_pair, Equiv.apply_symm_apply, Equiv.apply_symm_apply,
       pair_left_right]
   have key := Relation.reflTransGen_equiv_iff (blockEquiv e k)
-    (r := fun xs ys => φs.Realize interpretation ρs
+    (r := T fun xs ys => φs.Realize (closureBy T) ρs
       (Sum.elim (Sum.elim v (fun i => pair P Q (Fin.cast (Nat.mul_assoc 2 k d) i))) (pair xs ys)))
-    (s := fun xs ys => φt.Realize interpretation ρt
+    (s := T fun xs ys => φt.Realize (closureBy T) ρt
       (Sum.elim (fun a => e (fun i => v (a, i))) (pair xs ys)))
-    (hφ _) P Q
+    (hT (blockEquiv e k) (hφ _)) P Q
   rw [Equiv.apply_symm_apply, Equiv.apply_symm_apply] at key
   rw [hXS]
   have hends : ∀ {R : (Fin (k * d) → M) → (Fin (k * d) → M) → Prop} {a b a' b'},
@@ -177,15 +220,16 @@ private theorem realize_applyTerms_tc {k : ℕ} (args : Fin (2 * k) → L'.Term 
   · funext i
     exact congrFun (right_pair P Q) i
 
-include hf in
-/-- Full-tuple pullback preserves truth for arbitrary scoped relation valuations, including
-nested closures. The relation valuations correspond blockwise through `blockEquiv`. -/
-theorem realize_onFormula (φ : Operator.Formula L' shape Γ α) :
+include hf hT in
+/-- Full-tuple pullback preserves truth under every transported closure semantics, for arbitrary
+scoped relation valuations and nested closures. The relation valuations correspond blockwise
+through `blockEquiv`. -/
+theorem realize_onFormula_closureBy (φ : Operator.Formula L' shape Γ α) :
     ∀ (ρs : RelEnv (Γ.map (· * d)) M) (ρt : RelEnv Γ N),
       (∀ {k} (r : RelVar Γ k) xs, xs ∈ ρs (r.scale d) ↔ blockEquiv e k xs ∈ ρt r) →
       ∀ v : α × Fin d → M,
-        (onFormula f φ).Realize interpretation ρs v ↔
-          φ.Realize interpretation ρt (fun a => e (fun i => v (a, i))) := by
+        (onFormula f φ).Realize (closureBy T) ρs v ↔
+          φ.Realize (closureBy T) ρt (fun a => e (fun i => v (a, i))) := by
   induction φ with
   | ofFO φ =>
     intro ρs ρt hρ v
@@ -204,11 +248,22 @@ theorem realize_onFormula (φ : Operator.Formula L' shape Γ α) :
     exact realize_exBlock e _ _ ρs v _ (ih ρs ρt hρ)
   | op k body args ih =>
     intro ρs ρt hρ v
-    exact realize_applyTerms_tc f e hf args
+    exact realize_applyTerms_tc f e hf hT args
       ((onFormula f (body ⟨0, Nat.one_pos⟩)).relabel (endpointMap ∘ Sum.map Sum.inl id ∘ scopeMap))
       (body ⟨0, Nat.one_pos⟩) ρs ρt v
       (fun XS us ws => (Operator.Formula.realize_relabel _ _ _ _ _).trans
         ((ih ⟨0, Nat.one_pos⟩ ρs ρt hρ _).trans
           (iff_of_eq (congrArg _ (endpoint_valuation e v XS us ws)))))
+
+include hf in
+/-- Full-tuple pullback preserves truth for arbitrary scoped relation valuations, including
+nested closures. The relation valuations correspond blockwise through `blockEquiv`. -/
+theorem realize_onFormula (φ : Operator.Formula L' shape Γ α) :
+    ∀ (ρs : RelEnv (Γ.map (· * d)) M) (ρt : RelEnv Γ N),
+      (∀ {k} (r : RelVar Γ k) xs, xs ∈ ρs (r.scale d) ↔ blockEquiv e k xs ∈ ρt r) →
+      ∀ v : α × Fin d → M,
+        (onFormula f φ).Realize interpretation ρs v ↔
+          φ.Realize interpretation ρt (fun a => e (fun i => v (a, i))) :=
+  realize_onFormula_closureBy f e hf transports_id φ
 
 end Cslib.Logic.FO.TC.Tuple
