@@ -19,10 +19,12 @@ circuit in the sense of [Chen et al., Definition 3, p. 12]
 words, followed by the learner's De Morgan circuit (`Boolean.fixedQueryCircuit`). Its queries do
 not depend on the answers to other queries, so it uses non-adaptive membership queries; in the
 measures of [Chen et al., Definition 11, p. 13][ChenHiraharaOliveiraPichRajgopalSanthanam2020] it
-has `q` oracle gates, adaptivity at most one and locality `n`.
+has `q` oracle gates, each with `n` arguments, and adaptivity at most one. The exported fan-in bound
+`max n 2` also covers the De Morgan gates.
 
-`Language` has no constructor from a function, so the oracle is any language whose slice at the
-input length is the target.
+The statement holds for every oracle whose slice at the input length is the target, since only that
+slice is queried; `Language.ofSlices` gives such an oracle for any target. It bounds size and the
+oracle measures only: neither depth nor running time is certified.
 
 ## Main results
 

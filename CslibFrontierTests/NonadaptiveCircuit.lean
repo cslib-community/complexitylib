@@ -38,6 +38,10 @@ example (f : BooleanFunction n) (p : BitString n) :
     complexity interpretation (single ((answerLearner p).eval f)) ≤ 2 :=
   hasCircuit_answerLearner.complexity_eval_le f p
 
+/-- A larger size bound also holds. -/
+example : (answerLearner (n := n)).HasCircuit 1 5 :=
+  hasCircuit_answerLearner.mono (by norm_num)
+
 /-- Padding to three queries keeps the size. -/
 example : (answerLearner (n := n)).HasCircuit 3 0 :=
   hasCircuit_answerLearner.pad (by norm_num)

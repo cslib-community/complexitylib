@@ -25,11 +25,12 @@ oracle-circuit form, one round of `q` oracle gates on fixed words followed by th
 The definition differs from the source's in the following ways.
 * **Per seed.** The circuit may depend on the seed, which is fixed first; the source has one
   randomized circuit reading its random bits. A consumer that fixes the seed, such as the
-  Adleman-style step of [Chen et al., Lemma 34, pp. 25–26]
+  Adleman-style step of [Chen et al., Lemma 34, pp. 25–27]
   [ChenHiraharaOliveiraPichRajgopalSanthanam2020], needs only the per-seed form.
 * **Evaluation.** The circuit computes the hypothesis's value at `x` from the answers and `x`; the
   source's learner outputs a description of the hypothesis.
-* **Size.** The size is De Morgan circuit complexity (`Circuits.complexity`).
+* **Size.** The size is De Morgan circuit complexity (`Circuits.complexity`). Only size is
+  bounded: neither the depth of the circuit nor the learner's running time is certified.
 * **Semantic.** The definition constrains the hypothesis as a function of the target, not the
   decision tree: `HasCircuit` does not bound the queries of the tree itself, which
   `UniformLearning.QueryLearner.QueriesAtMost` does.
