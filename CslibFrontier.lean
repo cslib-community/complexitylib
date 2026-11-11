@@ -1262,6 +1262,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount
 public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount.ThresholdPolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Propagation
+public import CslibFrontier.Computability.Circuit.Boolean.Razborov.LearningParams
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural
