@@ -96,14 +96,10 @@ private theorem card_cand_le_exp_mul (hwf : I.WellFormed Δ) (hk : Odd k) (hΔ :
   obtain ⟨A, hA⟩ : ∃ A, A = inputLength I Δ k lam := ⟨_, rfl⟩
   set ℓ := varLength I lam v
   set γ := Real.log 2 - Real.binEntropy δ₀ with hγ
-  set w : ℕ := I.weights.getD v 0 with hw_def
+  set w : ℕ := I.weights.getD v 0
   set B := Real.log (4 * Δ ^ 4) + inputLength I Δ k lam * Real.log 2 with hB
   have hγ0 : 0 ≤ γ := sub_nonneg.2 Real.binEntropy_le_log_two
-  have hw1 : 1 ≤ w := by
-    have : I.weights.getD v 0 = I.weights[(v : ℕ)] := by
-      simp [List.getD_eq_getElem?_getD, v.isLt]
-    rw [hw_def, this]
-    exact hwf.weight_pos _ (List.getElem_mem _)
+  have hw1 : 1 ≤ w := hwf.weight_pos _ (getD_weights_mem v.isLt)
   have hΔ' : (1 : ℝ) ≤ Δ := by exact_mod_cast hΔ
   have hB0 : 0 ≤ B := by
     have : (1 : ℝ) ≤ 4 * Δ ^ 4 := by nlinarith [pow_le_pow_left₀ zero_le_one hΔ' 4]
@@ -325,10 +321,7 @@ theorem three_mul_card_toInstance_mem_PartialMCSP_le (Δ k P : ℕ) (hP : 0 < P)
   have hidx : indexWidth I ≤ L' := Nat.clog_le_of_le_pow (by omega)
   have hvar (v : ℕ) (hv : v < I.weights.length) : varLength I lam v ≤ 2 * L' := by
     refine Nat.clog_le_of_le_pow ?_
-    have hw : I.weights.getD v 0 ≤ N := by
-      have : I.weights.getD v 0 = I.weights[v] := by simp [List.getD_eq_getElem?_getD, hv]
-      rw [this]
-      exact hwN _ (List.getElem_mem _)
+    have hw : I.weights.getD v 0 ≤ N := hwN _ (getD_weights_mem hv)
     calc I.weights.getD v 0 * lam ≤ lam * lam := Nat.mul_le_mul_right _ (by omega)
       _ ≤ 2 ^ L' * 2 ^ L' := Nat.mul_le_mul hlamL' hlamL'
       _ = 2 ^ (2 * L') := by rw [← pow_add, two_mul]

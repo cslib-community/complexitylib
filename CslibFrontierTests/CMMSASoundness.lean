@@ -55,4 +55,23 @@ example : ∃ lam₀ : ℕ,
   norm_num
   linarith
 
+/-! Odd `k > 1`: `Δ = 2`, `k = 3`, `P = 1` and `δ₀ = 1 / 4`, where
+`(1 - 2 δ₀) ^ k = 1 / 8 = 1 / (2 Δ ²)`, with the same gap `g`. -/
+
+open scoped Classical in
+example : ∃ lam₀ : ℕ,
+    ∀ I ∈ (GapCMMSA 2 (25 * Real.log 2 / (Real.log 2 - Real.binEntropy (1 / 4))) 1).no,
+      ∀ N : ℕ, I.formulas.length ≤ N → I.weights.length ≤ N → (∀ w ∈ I.weights, w ≤ N) →
+        ∀ lam, lam₀ * (N + 1) ^ 2 ≤ lam →
+          3 * #{f : VarFunctions I lam | toInstance I 2 3 lam 1 f ∈ PartialMCSP} ≤
+            Fintype.card (VarFunctions I lam) := by
+  have hγ : 0 < Real.log 2 - Real.binEntropy (1 / 4) :=
+    sub_pos.2 (Real.binEntropy_lt_log_two.2 (by norm_num))
+  refine three_mul_card_toInstance_mem_PartialMCSP_le 2 3 1 one_pos (by decide) (δ₀ := 1 / 4)
+    (by norm_num) (by norm_num) (by norm_num) ?_
+  rw [div_mul_cancel₀ _ hγ.ne']
+  have := Real.log_pos (one_lt_two (α := ℝ))
+  norm_num
+  linarith
+
 end CslibFrontierTests.CMMSASoundness
