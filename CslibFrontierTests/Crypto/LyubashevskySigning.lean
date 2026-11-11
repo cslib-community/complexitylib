@@ -20,7 +20,8 @@ open Cslib Cslib.Probability Cslib.Crypto.Protocols.SigmaProtocol
 open Turing.MultiTapeTM Cslib.Interactive
 open scoped ENNReal
 
-abbrev params : LyubashevskyParams := ((1, 1, 1, 6), (7, 2, 1))
+abbrev params : LyubashevskyParams :=
+  { n := 1, m := 1, k := 1, width := 6, q := 7, γ := 2, β := 1 }
 abbrev input : LyubashevskySignInput := (params, [[1]], [[1]], [])
 def hashTrue : List Bool × List Bool → List Bool := fun _ => [true]
 

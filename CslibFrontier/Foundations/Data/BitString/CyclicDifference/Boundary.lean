@@ -24,6 +24,14 @@ an adjacent identification is the last-to-first edge, rather than an implicit pe
 * `Cslib.BitString.zeroPort`: identifies the endpoints of one cyclic edge.
 * `Cslib.BitString.differencePort`: lists the remaining difference coordinates in order.
 * `Cslib.BitString.capPort`: identifies old ports 1 and 3 and hides old port 2.
+
+## Main results
+
+* `Cslib.BitString.mem_cyclicDifferenceRelation_zeroRestriction`: exact conditioned deletion.
+* `Cslib.BitString.mem_cyclicDifferenceRelation_capRelation`: exact cap semantics.
+* `Cslib.BitString.capDifferencePort_eq_zero_iff`: only the first retained difference maps to zero.
+* `Cslib.BitString.three_le_val_capDifferencePort`: every other retained difference follows
+  the two hidden coordinates.
 -/
 
 public section
@@ -360,6 +368,39 @@ theorem capDifferencePort_injective {n : ℕ} :
   simp only [val_capDifferencePort] at hv
   split_ifs at hv <;> apply Fin.ext <;> omega
 
+/-- The cap preserves the distinguished zero coordinate and sends no other coordinate to it. -/
+@[simp] theorem capDifferencePort_eq_zero_iff {n : ℕ} (j : Fin (n + 2)) :
+    capDifferencePort j = 0 ↔ j = 0 := by
+  change capDifferencePort j = capDifferencePort 0 ↔ j = 0
+  exact capDifferencePort_injective.eq_iff
+
+/-- Every nonzero retained difference lies after the two differences hidden by the cap. -/
+theorem three_le_val_capDifferencePort {n : ℕ} {j : Fin (n + 2)} (hj : j ≠ 0) :
+    3 ≤ (capDifferencePort j).val := by
+  have hjv : j.val ≠ 0 := fun he => hj (Fin.ext he)
+  simp only [val_capDifferencePort, hjv, ite_false]
+  omega
+
+/-- The first hidden difference is not in the cap's retained coordinates. -/
+@[simp] theorem capDifferencePort_ne_one {n : ℕ} (j : Fin (n + 2)) :
+    capDifferencePort j ≠ 1 := by
+  intro he
+  have hv := congrArg Fin.val he
+  simp only [val_capDifferencePort, Fin.val_one] at hv
+  split_ifs at hv; omega
+
+/-- The second hidden difference is not in the cap's retained coordinates. -/
+@[simp] theorem capDifferencePort_ne_two {n : ℕ} (j : Fin (n + 2)) :
+    capDifferencePort j ≠ 2 := by
+  intro he
+  have hv := congrArg Fin.val he
+  simp only [val_capDifferencePort] at hv
+  have ht : (2 : Fin (n + 4)).val = 2 := by
+    change 2 % (n + 4) = 2
+    exact Nat.mod_eq_of_lt (by omega)
+  rw [ht] at hv
+  split_ifs at hv; omega
+
 /-- Exactly differences 1 and 2 are hidden by the cap. -/
 theorem exists_capDifferencePort {n : ℕ} (k : Fin (n + 4))
     (h1 : k ≠ 1) (h2 : k ≠ 2) : ∃ j, capDifferencePort j = k := by
@@ -378,33 +419,14 @@ theorem eq_pair_or_quartet_of_cap {n : ℕ} (j : Fin (n + 2)) (hj : j ≠ 0)
     (hd : s ∘ capDifferencePort = flipOn {0, j} (fun _ => false)) :
     s = flipOn {0, capDifferencePort j} (fun _ => false) ∨
       s = flipOn {0, 1, 2, capDifferencePort j} (fun _ => false) := by
-  have h0 : capDifferencePort j ≠ 0 := by
-    intro h
-    apply hj
-    exact capDifferencePort_injective h
-  have h1 : capDifferencePort j ≠ 1 := by
-    intro h
-    have hv := congrArg Fin.val h
-    simp only [val_capDifferencePort] at hv
-    simp only [Fin.val_one] at hv
-    split_ifs at hv; omega
-  have h2 : capDifferencePort j ≠ 2 := by
-    intro h
-    have hv := congrArg Fin.val h
-    simp only [val_capDifferencePort] at hv
-    have ht : (2 : Fin (n + 4)).val = 2 := by
-      change 2 % (n + 4) = 2
-      exact Nat.mod_eq_of_lt (by omega)
-    rw [ht] at hv
-    split_ifs at hv; omega
+  have h0 := (capDifferencePort_eq_zero_iff j).not.mpr hj
+  have h1 := capDifferencePort_ne_one j
+  have h2 := capDifferencePort_ne_two j
   have he (k : Fin (n + 4)) (hk1 : k ≠ 1) (hk2 : k ≠ 2) :
       s k = flipOn {0, capDifferencePort j} (fun _ => false) k := by
     obtain ⟨l, rfl⟩ := exists_capDifferencePort k hk1 hk2
     have hb := congrFun hd l
-    have hz : capDifferencePort l = 0 ↔ l = 0 := by
-      change capDifferencePort l = capDifferencePort 0 ↔ l = 0
-      exact capDifferencePort_injective.eq_iff
-    simpa [flipOn, hz, capDifferencePort_injective.eq_iff] using hb
+    simpa [flipOn, capDifferencePort_injective.eq_iff] using hb
   cases hb : s 1 with
   | false =>
     left

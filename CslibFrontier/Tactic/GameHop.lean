@@ -44,6 +44,9 @@ bind-coupling plumbing:
 
 * `Cslib.Crypto.Game.coe_advantage_triangle_add`: real-valued triangle step combining two hop
   bounds.
+* `Cslib.Crypto.Game.succProbability_le_of_advantage_pure_false_le`,
+  `Cslib.Crypto.Game.coe_succProbability_le_of_advantage_pure_false_le`: bridge lemmas reducing
+  one-sided `Game.succProbability` bounds to `Game.advantage · (PMF.pure false)`.
 * `Cslib.Crypto.Game.coe_advantage_bind_le_of_support`,
   `Cslib.Crypto.Game.coe_advantage_runStatelessOracle_le_of_support`,
   `Cslib.Crypto.Game.closeTo_runStatelessOracle`,
@@ -66,6 +69,18 @@ theorem coe_advantage_triangle_add (g₀ g₁ g₂ : Game) {ε₁ ε₂ : ℝ}
   have htri := NNReal.coe_le_coe.mpr (advantage_triangle g₀ g₁ g₂)
   rw [NNReal.coe_add] at htri
   exact htri.trans (add_le_add h₁ h₂)
+
+/-- Bounding `advantage g₀ (PMF.pure false) ≤ B` bounds `succProbability g₀ ≤ B`. -/
+theorem succProbability_le_of_advantage_pure_false_le {g₀ : Game} {B : ℝ≥0}
+    (h : advantage g₀ (PMF.pure false) ≤ B) :
+    succProbability g₀ ≤ B :=
+  (advantage_pure_false g₀) ▸ h
+
+/-- Real-valued version of `succProbability_le_of_advantage_pure_false_le`. -/
+theorem coe_succProbability_le_of_advantage_pure_false_le {g₀ : Game} {B : ℝ}
+    (h : (advantage g₀ (PMF.pure false) : ℝ) ≤ B) :
+    (succProbability g₀ : ℝ) ≤ B :=
+  (congrArg NNReal.toReal (advantage_pure_false g₀)) ▸ h
 
 /-- Support-restricted real-valued `PMF.bind` advantage bound. -/
 theorem coe_advantage_bind_le_of_support {α : Type*} (μ : PMF α) (game1 game2 : α → Game)
@@ -772,6 +787,12 @@ private meta def prepareGameTransGoal (goal : MVarId) : MetaM (MVarId × ParsedH
               | throwError "game_trans: unexpected subgoals reducing `Game.succProbability`"
             return (g', { mode := .advNNReal, start := g₀, stop := g₁, bound := B,
                           converted := true })
+        let [g'] ← curGoal.apply (← mkAppOptM ``Game.succProbability_le_of_advantage_pure_false_le
+          #[some g₀, some rhsLe])
+          | throwError "game_trans: unexpected subgoals reducing `Game.succProbability`"
+        let pureFalse := (← g'.getType).getAppArgs[2]!.getAppArgs[1]!
+        return (g', { mode := .advNNReal, start := g₀, stop := pureFalse, bound := rhsLe,
+                      converted := true })
       if lhsLe.isAppOfArity ``NNReal.toReal 1 then
         let inner := lhsLe.getAppArgs[0]!.cleanupAnnotations
         if inner.isAppOfArity ``Game.advantage 2 then
@@ -813,8 +834,15 @@ private meta def prepareGameTransGoal (goal : MVarId) : MetaM (MVarId × ParsedH
                 | throwError "game_trans: unexpected subgoals reducing `(succProbability : ℝ)`"
               return (g', { mode := .advReal, start := g₀, stop := g₁, bound := B,
                             converted := true })
+          let [g'] ← curGoal.apply
+            (← mkAppOptM ``Game.coe_succProbability_le_of_advantage_pure_false_le
+              #[some g₀, some rhsLe])
+            | throwError "game_trans: unexpected subgoals reducing `(succProbability : ℝ)`"
+          let pureFalse := (← g'.getType).getAppArgs[2]!.getAppArgs[0]!.getAppArgs[1]!
+          return (g', { mode := .advReal, start := g₀, stop := pureFalse, bound := rhsLe,
+                        converted := true })
     throwError "game_trans: expected a `Game.advantage`, `Encryption.advantage`, \
-      `Game.succProbability ≤ Game.succProbability + B`, or `CloseTo` goal{indentExpr orig}"
+      `Game.succProbability`, or `CloseTo` goal{indentExpr orig}"
 
 private meta def HopMode.itemType (m : HopMode) : MetaM Expr :=
   match m with
@@ -969,6 +997,38 @@ private meta def tryAssignElaboratedHop (hopGoal : MVarId) (mode : HopMode)
           hopGoal.assign (← mkAppM ``Iff.mpr #[hIff, hAligned])
           return true
       | .closeTo _ => return false
+    if leTy.isConstOf ``NNReal && lhsExpr.isAppOfArity ``Game.succProbability 1 then
+      let x := lhsExpr.getAppArgs[0]!
+      let pureFalse ← mkAppM ``PMF.pure #[mkConst ``Bool.false]
+      let hAdvPure ← mkAppM ``Game.advantage_pure_false #[x]
+      let hAdvLe ← mkAppM ``Eq.trans_le #[hAdvPure, uExpr]
+      match mode with
+      | .advNNReal =>
+        if ← matchHopEndpoints x pureFalse a b then
+          let _ ← isDefEq εMVar epsRhs
+          hopGoal.assign hAdvLe
+          return true
+        if ← matchHopEndpoints x pureFalse b a then
+          let _ ← isDefEq εMVar epsRhs
+          let hComm ← mkAppM ``Game.advantage_comm #[a, b]
+          hopGoal.assign (← mkAppM ``Eq.trans_le #[hComm, hAdvLe])
+          return true
+      | .advReal =>
+        if ← matchHopEndpoints x pureFalse a b then
+          let _ ← isDefEq εMVar (mkApp (mkConst ``NNReal.toReal) epsRhs)
+          let advAB ← mkAppM ``Game.advantage #[a, b]
+          let hIff ← mkAppOptM ``NNReal.coe_le_coe #[some advAB, some epsRhs]
+          hopGoal.assign (← mkAppM ``Iff.mpr #[hIff, hAdvLe])
+          return true
+        if ← matchHopEndpoints x pureFalse b a then
+          let _ ← isDefEq εMVar (mkApp (mkConst ``NNReal.toReal) epsRhs)
+          let advAB ← mkAppM ``Game.advantage #[a, b]
+          let hComm ← mkAppM ``Game.advantage_comm #[a, b]
+          let hAligned ← mkAppM ``Eq.trans_le #[hComm, hAdvLe]
+          let hIff ← mkAppOptM ``NNReal.coe_le_coe #[some advAB, some epsRhs]
+          hopGoal.assign (← mkAppM ``Iff.mpr #[hIff, hAligned])
+          return true
+      | .closeTo _ => return false
     if let .advReal := mode then
       if leTy.isConstOf ``Real && lhsExpr.isAppOfArity ``NNReal.toReal 1 then
         let inner := lhsExpr.getAppArgs[0]!.cleanupAnnotations
@@ -985,6 +1045,22 @@ private meta def tryAssignElaboratedHop (hopGoal : MVarId) (mode : HopMode)
             let hComm ← mkAppM ``Game.advantage_comm #[a, b]
             let hCoeComm ← mkCongrArg (mkConst ``NNReal.toReal) hComm
             hopGoal.assign (← mkAppM ``Eq.trans_le #[hCoeComm, uExpr])
+            return true
+        if inner.isAppOfArity ``Game.succProbability 1 then
+          let x := inner.getAppArgs[0]!
+          let pureFalse ← mkAppM ``PMF.pure #[mkConst ``Bool.false]
+          let hAdvPure ← mkAppM ``Game.advantage_pure_false #[x]
+          let hCoeAdvPure ← mkCongrArg (mkConst ``NNReal.toReal) hAdvPure
+          let hAdvLe ← mkAppM ``Eq.trans_le #[hCoeAdvPure, uExpr]
+          if ← matchHopEndpoints x pureFalse a b then
+            let _ ← isDefEq εMVar epsRhs
+            hopGoal.assign hAdvLe
+            return true
+          if ← matchHopEndpoints x pureFalse b a then
+            let _ ← isDefEq εMVar epsRhs
+            let hComm ← mkAppM ``Game.advantage_comm #[a, b]
+            let hCoeComm ← mkCongrArg (mkConst ``NNReal.toReal) hComm
+            hopGoal.assign (← mkAppM ``Eq.trans_le #[hCoeComm, hAdvLe])
             return true
   return false
 
@@ -1038,26 +1114,138 @@ private meta def solveHopGoalWith (hopGoal : MVarId) (mode : HopMode)
   if let some hEq := hEq? then
     assignZeroEqHop hopGoal mode a εMVar hEq
     return
+  match mode with
+  | .advNNReal =>
+    let pureFalse ← mkAppM ``PMF.pure #[mkConst ``Bool.false]
+    if ← withNewMCtxDepth (withReducibleAndInstances (isDefEq b pureFalse)) then
+      let succA ← mkAppM ``Game.succProbability #[a]
+      let succTy ← mkAppM ``LE.le #[succA, εMVar]
+      if let some prfSucc ← tryElabTyped? uStx succTy then
+        let hAdvPure ← mkAppM ``Game.advantage_pure_false #[a]
+        hopGoal.assign (← mkAppM ``Eq.trans_le #[hAdvPure, prfSucc])
+        return
+    if ← withNewMCtxDepth (withReducibleAndInstances (isDefEq a pureFalse)) then
+      let succB ← mkAppM ``Game.succProbability #[b]
+      let succTy ← mkAppM ``LE.le #[succB, εMVar]
+      if let some prfSucc ← tryElabTyped? uStx succTy then
+        let hAdvPure ← mkAppM ``Game.advantage_pure_false #[b]
+        let hComm ← mkAppM ``Game.advantage_comm #[a, b]
+        hopGoal.assign
+          (← mkAppM ``Eq.trans_le #[hComm, ← mkAppM ``Eq.trans_le #[hAdvPure, prfSucc]])
+        return
+  | .advReal =>
+    let pureFalse ← mkAppM ``PMF.pure #[mkConst ``Bool.false]
+    if ← withNewMCtxDepth (withReducibleAndInstances (isDefEq b pureFalse)) then
+      let succA ← mkAppM ``Game.succProbability #[a]
+      let coeSuccA := mkApp (mkConst ``NNReal.toReal) succA
+      let succTy ← mkAppM ``LE.le #[coeSuccA, εMVar]
+      if let some prfSucc ← tryElabTyped? uStx succTy then
+        let hCoeAdvPure ← mkCongrArg (mkConst ``NNReal.toReal)
+          (← mkAppM ``Game.advantage_pure_false #[a])
+        hopGoal.assign (← mkAppM ``Eq.trans_le #[hCoeAdvPure, prfSucc])
+        return
+    if ← withNewMCtxDepth (withReducibleAndInstances (isDefEq a pureFalse)) then
+      let succB ← mkAppM ``Game.succProbability #[b]
+      let coeSuccB := mkApp (mkConst ``NNReal.toReal) succB
+      let succTy ← mkAppM ``LE.le #[coeSuccB, εMVar]
+      if let some prfSucc ← tryElabTyped? uStx succTy then
+        let hCoeAdvPure ← mkCongrArg (mkConst ``NNReal.toReal)
+          (← mkAppM ``Game.advantage_pure_false #[b])
+        let hCoeComm ← mkCongrArg (mkConst ``NNReal.toReal)
+          (← mkAppM ``Game.advantage_comm #[a, b])
+        hopGoal.assign
+          (← mkAppM ``Eq.trans_le #[hCoeComm, ← mkAppM ``Eq.trans_le #[hCoeAdvPure, prfSucc]])
+        return
+  | .closeTo _ => pure ()
   let prf ← Term.elabTermEnsuringType uStx (some hopTy)
   Term.synthesizeSyntheticMVarsNoPostponing
   hopGoal.assign prf
 
+/-- Collect `(x, y)` argument pairs of `Game.advantage x y` occurrences in `e` without descending
+into game bodies. -/
+private meta partial def collectAdvPairs (e : Expr) : Array (Expr × Expr) :=
+  let c := e.cleanupAnnotations
+  if c.isAppOfArity ``Game.advantage 2 then
+    let args := c.getAppArgs
+    #[(args[0]!, args[1]!)]
+  else if c.isApp then
+    c.getAppArgs.foldl (fun acc a => acc ++ collectAdvPairs a) #[]
+  else
+    #[]
+
+/-- Align `Game.advantage x y` summands in `e` to `Game.advantage y x` when `(y, x)` appears in
+`bPairs` and `(x, y)` does not, returning `(e', h : e = e')`. -/
+private meta partial def alignAdvSummands (bPairs : Array (Expr × Expr)) (e : Expr) :
+    MetaM (Option (Expr × Expr)) := do
+  let c := e.cleanupAnnotations
+  if c.isAppOfArity ``Game.advantage 2 then
+    let args := c.getAppArgs
+    let x := args[0]!
+    let y := args[1]!
+    if !(← bPairs.anyM fun (u, v) => matchHopEndpoints x y u v) &&
+        (← bPairs.anyM fun (u, v) => matchHopEndpoints y x u v) then
+      let e' ← mkAppM ``Game.advantage #[y, x]
+      let h ← mkAppM ``Game.advantage_comm #[x, y]
+      return some (e', h)
+    return none
+  if c.isAppOfArity ``NNReal.toReal 1 then
+    let arg := c.getAppArgs[0]!
+    if let some (arg', h) ← alignAdvSummands bPairs arg then
+      let fn := c.getAppFn
+      return some (mkApp fn arg', ← mkCongrArg fn h)
+    return none
+  if c.isAppOfArity ``HAdd.hAdd 6 then
+    let args := c.getAppArgs
+    let lhs := args[4]!
+    let rhs := args[5]!
+    let l? ← alignAdvSummands bPairs lhs
+    let r? ← alignAdvSummands bPairs rhs
+    match l?, r? with
+    | none, none => return none
+    | some (lhs', hl), none =>
+      let pre := mkApp4 c.getAppFn args[0]! args[1]! args[2]! args[3]!
+      let e' := mkApp2 pre lhs' rhs
+      let h ← mkCongrFun (← mkCongrArg pre hl) rhs
+      return some (e', h)
+    | none, some (rhs', hr) =>
+      let pre := mkApp5 c.getAppFn args[0]! args[1]! args[2]! args[3]! lhs
+      let e' := mkApp pre rhs'
+      let h ← mkCongrArg pre hr
+      return some (e', h)
+    | some (lhs', hl), some (rhs', hr) =>
+      let pre := mkApp4 c.getAppFn args[0]! args[1]! args[2]! args[3]!
+      let e' := mkApp2 pre lhs' rhs'
+      let h ← mkCongr (← mkCongrArg pre hl) hr
+      return some (e', h)
+  return none
+
 /-- Attempt to automatically discharge a ground bound goal `sumExpr ≤ B` via reducible `rfl`,
-associativity/commutativity with zeros, or `ring` (on `ℝ≥0` / `ℝ`), without unfolding `def`s. -/
+associativity/commutativity with zeros, `Game.advantage_comm` alignment, or `ring` (on `ℝ≥0` / `ℝ`),
+without unfolding `def`s. -/
 private meta def tryAutoCloseBound (boundGoal : MVarId) (mode : HopMode)
     (sumExpr B : Expr) : TacticM Bool := boundGoal.withContext do
-  let s ← instantiateMVars sumExpr
+  let s₀ ← instantiateMVars sumExpr
   let b ← instantiateMVars B
-  if s.hasExprMVar || b.hasExprMVar then
+  if s₀.hasExprMVar || b.hasExprMVar then
     return false
+  let saved ← saveState
+  let aligned? ← match mode with
+    | .advNNReal | .advReal => alignAdvSummands (collectAdvPairs b) s₀
+    | .closeTo _ => pure none
+  let (curGoal, s) ← match aligned? with
+    | none => pure (boundGoal, s₀)
+    | some (s', hsEq) =>
+      let prop' ← mkAppM ``LE.le #[s', b]
+      let g' ← mkFreshExprSyntheticOpaqueMVar prop'
+      boundGoal.assign (← mkAppM ``Eq.trans_le #[hsEq, g'])
+      pure (g'.mvarId!, s')
   if ← withNewMCtxDepth (withReducibleAndInstances (isDefEq s b)) then
     let _ ← withReducibleAndInstances (isDefEq s b)
-    boundGoal.assign (← mkAppM ``le_refl #[s])
+    curGoal.assign (← mkAppM ``le_refl #[s])
     return true
-  let saved ← saveState
   try
     Term.withoutErrToSorry do
-      let [eqGoal] ← boundGoal.apply (← mkAppOptM ``le_of_eq #[none, none, some s, some b])
+      let [eqGoal] ← curGoal.apply (← mkAppOptM ``le_of_eq #[none, none, some s, some b])
         | failure
       setGoals [eqGoal]
       match mode with
@@ -1083,18 +1271,21 @@ syntax gameTransMids := ("[" term,* "]") <|> (term,+)
 syntax gameTransUsing := ("[" term,* "]") <|> term
 
 /-- Step a `Game.advantage`, `(Game.advantage : ℝ)`, `Encryption.advantage`,
-`Game.succProbability ≤ Game.succProbability + B`, or `CloseTo` goal across an explicit list of
+`Game.succProbability`, `(Game.succProbability : ℝ)`, or `CloseTo` goal across an explicit list of
 intermediate games or distributions:
 
 * `game_trans [g₁, g₂, ...]` (or `game_trans g₁, g₂, ...`) creates one hop subgoal per step
   (`G₀ → g₁`, `g₁ → g₂`, ..., `gₘ → Gₖ`) followed by a trailing bound subgoal
-  `?ε₀ + ?ε₁ + ... + ?εₘ ≤ B`.
+  `?ε₀ + ?ε₁ + ... + ?εₘ ≤ B`. One-sided `Game.succProbability G₀ ≤ B` goals (when `B` does not
+  already add `Game.succProbability G₁`) hop from `G₀` to `PMF.pure false` and accept
+  `Game.succProbability gₘ ≤ ε` hop proofs at `PMF.pure false`.
 * `game_trans [g₁, g₂] using [h₀, h₁, h₂]` discharges hop subgoals directly (use `_` to leave a
   hop open), automatically orienting reversed `Game.advantage_comm` / `CloseTo.symm` bounds,
   lifting `ℝ≥0` advantage bounds to `ℝ`, turning equalities `A = B` into `0` error, and closing
   the trailing sum bound when it holds by `rfl`, `ac_rfl`, or `ring`.
-* `game_trans` (with no intermediates) unfolds `Encryption.advantage` or reduces
-  `Game.succProbability G₀ ≤ Game.succProbability G₁ + B` to `Game.advantage G₀ G₁ ≤ B`
+* `game_trans` (with no intermediates) unfolds `Encryption.advantage`, reduces
+  `Game.succProbability G₀ ≤ Game.succProbability G₁ + B` to `Game.advantage G₀ G₁ ≤ B`, or
+  reduces `Game.succProbability G₀ ≤ B` to `Game.advantage G₀ (PMF.pure false) ≤ B`
   (`game_trans using [h]` also closes a single hop up to symmetry). -/
 syntax (name := gameTrans) "game_trans" (ppSpace colGt gameTransMids)?
   (colGt " using " gameTransUsing)? : tactic

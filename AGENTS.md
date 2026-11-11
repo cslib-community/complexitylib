@@ -54,6 +54,12 @@ validation. Do not create a separate issue or PR for each incidental cleanup.
 
 ### Completion and scope
 
+Code quality is part of the acceptance criteria. Authors must resolve avoidable duplication,
+unnecessary proof plumbing, misplaced shared infrastructure and incomplete migration cleanup
+affecting their changes and clients before requesting approval. Passing CI or preserving theorem
+statements does not discharge this work. Deferral is exceptional under
+[Improving library ergonomics](#improving-library-ergonomics).
+
 Optimize for trustworthy, reusable results, not the number of closed issues or merged PRs.
 When narrowing a task, preserve its original objective and record the bounded deliverable and
 remaining gap prominently. A restricted model, conditional result, or partial theorem does not
@@ -189,10 +195,11 @@ exhaust the host's file handles before its processors; agree on a limit on concu
 
 Place reusable definitions and general lemmas in the lowest suitable mathematical module.
 Specialized theorem modules should import their prerequisites. During review, look for general
-APIs buried in a particular application or proof. Extract them when the dependency improvement is
-concrete and the change is small; otherwise record a specific follow-up with declaration names,
-consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
-Do not expand a bounded PR into an unbounded architectural cleanup.
+APIs buried in a particular application or proof. Extract them to their natural shared home and
+update the affected clients in the same PR, applying the migration policy below. A second
+application importing the first for general infrastructure is a concrete signal to do this.
+Keep unrelated architectural redesign out of scope; use the exceptional deferral rule below when
+a technical dependency prevents completing the extraction.
 
 Do not prove a lemma that the library, CSLib, Mathlib or core already has, even privately or by
 re-deriving it inline inside another proof: use it, or make a private original public. After a
@@ -211,21 +218,63 @@ only what downstream proofs must unfold.
 
 ### Improving library ergonomics
 
-When work exposes library friction, workers should improve the relevant API, lemma, documentation
-or automation within the agreed scope, or record a concrete follow-up. Identify the affected
-client and declarations, search existing and upstream APIs, and prefer the smallest generally
-useful fix. Show representative before/after usage and explain what becomes clearer or easier.
+When work exposes library friction, improve the relevant API, lemma, proof strategy, documentation
+or automation in the original PR and carry the improvement through to its affected clients. Search
+existing APIs in this repository, Mathlib and CSLib before adding or re-proving anything, including
+private helpers. Making a duplicate private does not resolve duplication.
 
-Coordinators should be satisfied that the examples demonstrate a real improvement, that the
-proposal fits the mathematical API and upstream design, and that its benefit justifies the added
-maintenance and migration cost. Challenge arbitrary programming conventions and speculative
-abstractions; a familiar pattern alone is not a reason to adopt it. Reuse the placement,
-compatibility and review rules here.
+Reviewers must consider whether a different statement, representation, invariant, decomposition or
+proof strategy would make the mathematics more natural to state, prove and apply. Look beyond
+local tactic edits: applying an existing theorem, choosing a better induction argument or adding a
+small shared lemma can remove whole blocks of encoding, case or state-update bookkeeping. Assess
+the resulting client proofs and required imports as well as the new API. Preserve the mathematical
+claim, models, encodings, quantifiers and independent resource bounds when simplifying.
 
-Keep the evidence proportional. A small friction fix usually needs a short explanation and a
-checked example; broader API changes need representative affected clients and an in-repository
-migration plan. Investigate performance when it is material to the change, without requiring a
-benchmark campaign or separate design study for every small improvement.
+Require a concrete benefit from a proposed alternative: representative checked usage or a focused
+proof comparison explaining what becomes clearer or easier. Prefer the smallest generally useful
+change that fits the mathematical API and upstream design. Challenge speculative abstractions and
+arbitrary conventions; proof length alone is not a finding, and a personal preference does not
+justify rewriting an otherwise clear argument.
+
+Defer cleanup only when a specific technical dependency or independently substantial redesign
+prevents completing it with the PR. The reviewing coordinator must explicitly accept the reason,
+and a linked issue must name the remaining declarations, affected clients, proposed approach and
+responsible owner. A separate prerequisite PR may keep review focused, but the dependent PR waits
+for it. Creating a follow-up issue or citing scheduling pressure does not discharge cleanup that
+can be completed with the change.
+
+Keep the evidence proportional. A small improvement needs a short explanation and a checked
+client; broader API changes need representative affected clients and an in-repository migration
+plan. Investigate elaboration time and other performance costs when material, without requiring
+a benchmark campaign or separate design study for every small improvement.
+
+### Check the API through its callers
+
+Before handing off a changed API or reuse refactor, inspect a representative caller and the
+nearby implementations of the same idea. Reviewers repeat this check against the final change:
+
+- **Named access and semantic facts.** Use record fields or existing accessors in public
+  statements. When callers decode a Boolean matcher, unfold an embedding's coordinate arithmetic,
+  or rebuild field-projection certificates, provide the reusable characterization, range fact or
+  generated certificate they need and use it in the caller. Preserve the encoding layout and
+  resource bounds when migrating records; check a caller of the generated `enc_structure` rules.
+- **One implementation of shared behavior.** A game or algorithm should call its named handler
+  instead of repeating the same dispatch or transition code in its definition and proofs.
+  Different representations may need distinct implementations; keep their differences explicit
+  and connect them with the appropriate simulation or conversion lemma.
+- **Shared mathematics across representations.** Before repeating an argument in a sibling
+  module, look for a general statement and an existing bridge, such as PMF integration against
+  its induced measure. Derive the specialization when the bridge preserves the hypotheses and
+  intended dependencies. Put shared facts in a small topic module and migrate the existing
+  consumers together; do not create an abstraction whose callers must reconstruct the proof.
+- **Public API by purpose.** Keep expected properties of public objects available, including
+  matcher characterizations and embedding range facts. Keep one-proof wrappers around casts,
+  cache layouts or intermediate states private. Inspect references and automation before changing
+  visibility, but do not use a zero reference count alone to remove useful mathematical API.
+
+The handoff should identify the representative caller and the reasoning or representation work
+it no longer repeats, or explain why separate implementations remain necessary. A concise
+before/after example or source reference is enough; no separate audit report is required.
 
 ## Lean development: use the Lean MCP server first
 
@@ -449,9 +498,13 @@ documentation and source credit). One non-authoring reviewer may cover both. Add
 specific uncovered question or needed expertise, not to reach an approval count. Contributors do
 not need a particular agent installation.
 
-Read the actual definitions and statements. For substantive mathematics, explain briefly what is
-proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
+Read the actual definitions, statements and proof arguments, and inspect representative clients.
+For substantive mathematics, explain briefly what is proved, its limiting hypotheses/model/resource
+conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
+For changed APIs and reuse refactors, follow [Check the API through its callers](#check-the-api-through-its-callers):
+inspect the actual caller and relevant sibling implementation, including generated certificates
+and any representation bridge. Compilation alone does not check placement or duplicated behavior.
 Check new and changed statements against
 [Structures for domain objects and records](#structures-for-domain-objects-and-records) and
 [Encodings in statements](#encodings-in-statements).
@@ -461,6 +514,17 @@ a new copy of an argument the library already makes is a finding when the
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 
+Before approving library changes, read the **Parallel-definition**, **Duplicate-statement** and
+**Repeated-proof-block** notices in the CI job summary or step logs for the reviewed revision. Inspect both
+declarations or proof blocks for each relevant candidate. Record its resolution by reuse or
+generalization, or the concrete mathematical or API difference that justifies keeping both; link
+an existing author explanation rather than duplicating it. Locally, after a build, use
+`python3 -B scripts/parallel_defs.py --base REF` and the same command with `--theorems`;
+`python3 -B scripts/proof_copies.py --base REF` compares source proof blocks. `--limit N` expands
+truncated reports. Resolve skipped or incomplete scans, or record their coverage limits and
+perform targeted source checks. A successful exit, an empty report or a private declaration is
+not evidence of uniqueness; the tools supplement source search and semantic review.
+
 Review of both manuals is mandatory for every change. Follow
 [Maintaining the manuals](CONTRIBUTING.md#maintaining-the-manuals): check the impact assessment
 against the final revision. Check affected codebase procedures and examples from the Operator's
@@ -469,10 +533,11 @@ agent should be able to reuse the account without reconstructing it from convers
 human direction, roles and handoffs in the Agent Operator's Manual when the workflow changes.
 A passing link or excerpt check does not replace this review.
 
-Use inline comments for local findings. Explain the problem and a concrete change or question;
-mark optional suggestions as nits. Group related points. Keep unrelated cleanup as a follow-up,
-and do not turn an optional preference into a moving merge requirement. Authors may disagree:
-discuss the technical reason and settle the point.
+Review API and proof quality for private helpers as well as public declarations, following
+[Improving library ergonomics](#improving-library-ergonomics). Request changes for concrete,
+avoidable complexity or duplication affecting the PR; reserve nits for optional preferences.
+Use inline comments for local findings, explain the problem and a concrete change or question,
+and group related points. Authors may disagree: discuss the technical reason and settle the point.
 
 After fixes, review the delta and affected reasoning. Revisit more of the code when a change
 invalidates earlier conclusions. Reuse existing reviews after verifying their scope and source

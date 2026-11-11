@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.LocalitySensitiveHash
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import CslibFrontier.Probability.EventCount
 import CslibFrontier.Probability.IID.Event
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Markov
@@ -187,30 +188,6 @@ end Structure
 
 /-! ### The failure bound -/
 
-/-- A list count of events, each of probability at most `B`, has expectation at most
-`length · B`. -/
-private theorem tsum_mul_countP_le {Ω : Type*} (μ : PMF Ω) (E : Ω → X → Prop)
-    [∀ ω x, Decidable (E ω x)] (B : ℝ≥0∞) :
-    ∀ l : List X, (∀ x ∈ l, μ.toOuterMeasure {ω | E ω x} ≤ B) →
-      ∑' ω, μ ω * ((l.countP fun x => decide (E ω x) : ℕ) : ℝ≥0∞) ≤ l.length * B
-  | [], _ => by simp only [List.countP_nil, Nat.cast_zero, mul_zero, tsum_zero, zero_le]
-  | y :: l, hl => by
-    have hy := hl y List.mem_cons_self
-    have ih := tsum_mul_countP_le μ E B l fun x hx => hl x (List.mem_cons_of_mem y hx)
-    have hsplit : ∀ ω, μ ω * ((((y :: l).countP fun x => decide (E ω x)) : ℕ) : ℝ≥0∞) =
-        μ ω * ((l.countP fun x => decide (E ω x) : ℕ) : ℝ≥0∞) + {ω | E ω y}.indicator μ ω := by
-      intro ω
-      rw [List.countP_cons]
-      by_cases hω : E ω y
-      · simp only [hω, decide_true, ite_true, Nat.cast_add, Nat.cast_one, mul_add, mul_one,
-          Set.indicator_of_mem (show ω ∈ {ω | E ω y} from hω)]
-      · simp only [hω, decide_false, Bool.false_eq_true, ite_false, add_zero,
-          Set.indicator_of_notMem (show ω ∉ {ω | E ω y} from hω)]
-    simp only [hsplit]
-    rw [tsum_add, ← PMF.toOuterMeasure_apply, List.length_cons, Nat.cast_add, Nat.cast_one,
-      add_mul, one_mul]
-    exact add_le_add ih hy
-
 /-- **The far candidates are few on average.** If far pairs collide under `g` with probability at
 most `P₂`, the expected number of far candidates over `L` independent tables is at most
 `L |P| P₂`. -/
@@ -225,7 +202,8 @@ theorem tsum_iid_mul_countP_candidates_le [DecidableEq Y] {far : X → X → Pro
         ((P.countP fun x => decide (g (s j) x = g (s j) q ∧ far x q) : ℕ) : ℝ≥0∞)
       ≤ ∑ _j : Fin L, (P.length * ENNReal.ofReal P₂) := by
         refine Finset.sum_le_sum fun j _ => ?_
-        refine tsum_mul_countP_le (PMF.iid ν L) (fun s x => g (s j) x = g (s j) q ∧ far x q) _ P ?_
+        refine PMF.tsum_mul_countP_le (PMF.iid ν L)
+          (fun s x => g (s j) x = g (s j) q ∧ far x q) _ P ?_
         intro x hx
         by_cases hxf : far x q
         · have hset : {s : Fin L → ι | g (s j) x = g (s j) q ∧ far x q} =
@@ -390,6 +368,36 @@ theorem numTables_lt (n : ℕ) {p₁ p₂ : ℝ} (hp₁ : 0 < p₁) :
     (numTables n p₁ p₂ : ℝ) < (n : ℝ) ^ rho p₁ p₂ / p₁ + 1 :=
   Nat.ceil_lt_add_one (div_nonneg (Real.rpow_nonneg (Nat.cast_nonneg n) _) hp₁.le)
 
+/-- For `(p₁, p₂)`-sensitive parameters `0 < p₂ < p₁ ≤ 1` and `n > 0`, the explicit choices
+`k = numHashes n p₂` and `L = numTables n p₁ p₂` satisfy `0 < L` and
+`(1 - p₁ ^ k) ^ L + L * n * p₂ ^ k / (3 * L) ≤ exp (-1) + 1 / 3`. -/
+theorem numTables_failure_bound_le {n : ℕ} (hn : 0 < n) {p₁ p₂ : ℝ} (hp₂ : 0 < p₂)
+    (hp₂₁ : p₂ < p₁) (hp₁ : p₁ ≤ 1) :
+    0 < numTables n p₁ p₂ ∧
+      (1 - p₁ ^ numHashes n p₂) ^ numTables n p₁ p₂ +
+        numTables n p₁ p₂ * n * p₂ ^ numHashes n p₂ / (3 * numTables n p₁ p₂) ≤
+          Real.exp (-1) + 1 / 3 := by
+  set k := numHashes n p₂
+  set L := numTables n p₁ p₂
+  have hp₁0 : 0 < p₁ := hp₂.trans hp₂₁
+  have hLp : 1 ≤ (L : ℝ) * p₁ ^ k := one_le_numTables_mul_pow hn hp₂ hp₂₁ hp₁
+  have hnp : (n : ℝ) * p₂ ^ k ≤ 1 := mul_pow_numHashes_le hn hp₂ (hp₂₁.trans_le hp₁)
+  have hpk0 : 0 ≤ p₁ ^ k := pow_nonneg hp₁0.le k
+  have hpk1 : p₁ ^ k ≤ 1 := pow_le_one₀ hp₁0.le hp₁
+  have hL : 0 < L := by
+    by_contra h0
+    rw [show L = 0 by omega, Nat.cast_zero, zero_mul] at hLp
+    linarith
+  refine ⟨hL, add_le_add ?_ ?_⟩
+  · calc (1 - p₁ ^ k) ^ L ≤ Real.exp (-p₁ ^ k) ^ L := by
+          refine pow_le_pow_left₀ (by linarith) ?_ L
+          linarith [Real.add_one_le_exp (-p₁ ^ k)]
+      _ = Real.exp (-(L * p₁ ^ k)) := by rw [← Real.exp_nat_mul]; ring_nf
+      _ ≤ Real.exp (-1) := Real.exp_le_exp.2 (by linarith)
+  · have hL' : (0 : ℝ) < L := by exact_mod_cast hL
+    rw [div_le_iff₀ (by positivity)]
+    nlinarith
+
 /-- **The `(c, r)`-near-neighbour guarantee with explicit parameters**, for the static structure
 ([HarPeledIndykMotwani2012], Theorem 3.4, which also covers updates). The scanning rule is that of
 [IndykMotwani1998]; see [AndoniIndyk2008], Section 2.4. Let `hash` be `(p₁, p₂)`-sensitive with
@@ -405,29 +413,10 @@ theorem toOuterMeasure_query_numTables_eq_none_le [DecidableEq Y] {near far : X 
         {s | query (andHash hash (numHashes P.length p₂)) far s (3 * numTables P.length p₁ p₂)
           P q = none}).toReal ≤ Real.exp (-1) + 1 / 3 := by
   have hn : 0 < P.length := List.length_pos_of_mem hx₀
-  set k := numHashes P.length p₂
-  set L := numTables P.length p₁ p₂
-  have hp₁0 : 0 < p₁ := hp₂.trans hp₂₁
-  have hLp : 1 ≤ (L : ℝ) * p₁ ^ k := one_le_numTables_mul_pow hn hp₂ hp₂₁ hp₁
-  have hnp : (P.length : ℝ) * p₂ ^ k ≤ 1 := mul_pow_numHashes_le hn hp₂ (hp₂₁.trans_le hp₁)
-  have hpk0 : 0 ≤ p₁ ^ k := pow_nonneg hp₁0.le k
-  have hpk1 : p₁ ^ k ≤ 1 := pow_le_one₀ hp₁0.le hp₁
-  have hL : 0 < L := by
-    by_contra h0
-    rw [show L = 0 by omega, Nat.cast_zero, zero_mul] at hLp
-    linarith
-  have hbound := toOuterMeasure_query_andHash_eq_none_le h hp₂.le hp₂₁ k L
-    (by omega : 0 < 3 * L) hx₀ hnear
-  refine hbound.trans (add_le_add ?_ ?_)
-  · calc (1 - p₁ ^ k) ^ L ≤ Real.exp (-p₁ ^ k) ^ L := by
-          refine pow_le_pow_left₀ (by linarith) ?_ L
-          linarith [Real.add_one_le_exp (-p₁ ^ k)]
-      _ = Real.exp (-(L * p₁ ^ k)) := by rw [← Real.exp_nat_mul]; ring_nf
-      _ ≤ Real.exp (-1) := Real.exp_le_exp.2 (by linarith)
-  · have hL' : (0 : ℝ) < L := by exact_mod_cast hL
-    rw [div_le_iff₀ (by push_cast; positivity)]
-    push_cast
-    nlinarith
+  obtain ⟨hL, hnum⟩ := numTables_failure_bound_le hn hp₂ hp₂₁ hp₁
+  have hbound := toOuterMeasure_query_andHash_eq_none_le h hp₂.le hp₂₁ (numHashes P.length p₂)
+    (numTables P.length p₁ p₂) (by omega : 0 < 3 * numTables P.length p₁ p₂) hx₀ hnear
+  exact hbound.trans (by simpa only [Nat.cast_mul, Nat.cast_ofNat] using hnum)
 
 /-! ### Repetition -/
 

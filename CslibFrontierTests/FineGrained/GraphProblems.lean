@@ -73,7 +73,8 @@ example : SAT.toSparseIndependentSet [[]] ∉ IndependentSet := fun h => by
 `2` tops, `3 * 8 + 3` row nodes and `8` clause nodes. Sipser's construction has a diamond for each
 occurrence, each with a pair of nodes for each clause: `9` tops, `8 * 27` row nodes and `8` clause
 nodes. -/
-example : (SAT.sparseDiamondGraph ψ).1.length = 37 ∧ (SAT.toDirHamPath ψ).1.1.length = 233 := by
+example : (SAT.sparseDiamondGraph ψ).1.length = 37 ∧
+    (SAT.toDirHamPath ψ).graph.1.length = 233 := by
   decide +kernel
 
 example : (SAT.sparseDiamondGraph φ₁).1.length + (SAT.sparseDiamondGraph φ₁).2.length ≤
@@ -99,8 +100,8 @@ example : SAT.toSparseHamCycle φ₂ ∉ HamCycle := fun h => by
 
 /-- The formula with no clauses gives the graph of a single top, which a path visits without arcs;
 the empty clause gives a clause node that no detour reaches. -/
-example : SAT.toSparseDirHamPath [] = (([Diamond.topNode 0], []), Diamond.topNode 0,
-    Diamond.topNode 0) := by decide
+example : SAT.toSparseDirHamPath [] = ⟨([Diamond.topNode 0], []), Diamond.topNode 0,
+    Diamond.topNode 0⟩ := by decide
 
 example : SAT.toSparseDirHamCycle [[]] ∉ DirHamCycle := fun h => by
   obtain ⟨σ, hσ⟩ := (SAT.toSparseDirHamCycle_mem_iff [[]]).1 h

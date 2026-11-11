@@ -7,6 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
+import CslibFrontier.Computability.WordRAM.RegisterFrame
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Program
 
 /-!
@@ -83,13 +84,7 @@ theorem exec_residues {w n p a b : ℕ} (src dst : Fin 128) (x : Data 128)
     simp only [ThreeSum.ChanHe.Residues.memory, show ¬(b ≤ d ∧ d < b + n * n) by omega,
       ite_false]
   · intro j hj
-    have hyj : y.regs j = z.regs j := by
-      apply Function.extend_apply'
-      rintro ⟨q, heq⟩
-      have heqv := congrArg Fin.val heq
-      change q.val = j.val at heqv
-      omega
-    apply hyj.trans
+    refine (Data.extend_castLE_regs_of_le s z j hj).trans ?_
     simp only [z, Data.set,
       Function.update_of_ne (show j ≠ Reg.low9 by intro h; subst j; contradiction),
       Function.update_of_ne (show j ≠ Reg.low10 by intro h; subst j; contradiction),
