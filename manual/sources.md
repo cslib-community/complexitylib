@@ -77,7 +77,7 @@ Andris Ambainis. "Quantum lower bounds by quantum arguments." *Journal of Comput
 <a id="ambainis06"></a>
 ## ambainis06
 
-Andris Ambainis. "Polynomial degree vs. quantum query complexity." *Journal of Computer and System Sciences* 72(2), 220–238, 2006; preliminary version FOCS 2003; arXiv:quant-ph/0305028v4 (23 November 2004). https://arxiv.org/abs/quant-ph/0305028 . Read in arXiv:quant-ph/0305028v4 on 2026-11-11: Section 3.3 Definitions 1–3 (relation weights, `w'(x, y, i)`, and adversary bound), Section 4.1 Lemma 1 (the weighted adversary lower bound), Lemma 4 (`w'` formulation), and Section 4.3 Lemma 3 (`4`-bit base function with weight `w = 1` at Hamming distance `1` and `2/3` at Hamming distance `2`, `w' ∈ {1, 1/3, 4/3}`, and maximum load `v/wt = 2.5`). Journal pagination was checked through DBLP/search metadata and was not inspected directly.
+Andris Ambainis. "Polynomial degree vs. quantum query complexity." *Journal of Computer and System Sciences* 72(2), 220–238, 2006; preliminary version FOCS 2003; arXiv:quant-ph/0305028v4 (23 November 2004). https://arxiv.org/abs/quant-ph/0305028 . Read in arXiv:quant-ph/0305028v4 on 2026-11-11: Section 3.3 Definitions 1–3 (relation weights, `w'(x, y, i)`, and adversary bound), Section 4.1 Lemma 1 (the weighted adversary lower bound), Lemma 4 (`w'` formulation), and Section 4.3 Lemma 3 (`4`-bit base function with weight `w = 1` at Hamming distance `1` and `2/3` at Hamming distance `2`, `w' ∈ {1, 1/3, 4/3}`, and maximum load `wt/v = 2.5`). Journal pagination was checked through DBLP/search metadata and was not inspected directly.
 
 <a id="ambainismoscatappdewolf00"></a>
 ## ambainismoscatappdewolf00
@@ -1654,7 +1654,7 @@ Daniel H. Younger. "Recognition and Parsing of Context-Free Languages in Time n�
 <a id="zhang05"></a>
 ## zhang05
 
-Shengyu Zhang. "On the power of Ambainis's lower bounds." *Theoretical Computer Science* 339(2–3), 241–256, 2005. https://doi.org/10.1016/j.tcs.2005.01.011 ; open version arXiv:quant-ph/0311060v2, https://arxiv.org/abs/quant-ph/0311060 . Checked in arXiv:quant-ph/0311060v2 on 2026-11-11: Section 1 Definition 1 and Theorem 3 (the general weighted adversary `Alb₃`, proved in `WeightedAdversary.lean`), Section 2 Theorem 5 (`Alb₂ ≤ Alb₃`, realized via `WeightScheme.ofUnweighted` and used to prove `one_sub_mul_sqrt_le_two_mul_mul_sqrt` in `AmbainisAdversary.lean`), and Section 3 Theorem 6 (`Alb₃ ≤ ADV`, proved as `WeightScheme.le_spectralAdversary`). Journal pagination was not inspected directly.
+Shengyu Zhang. "On the power of Ambainis's lower bounds." *Theoretical Computer Science* 339(2–3), 241–256, 2005. https://doi.org/10.1016/j.tcs.2005.01.019 ; open version arXiv:quant-ph/0311060v2, https://arxiv.org/abs/quant-ph/0311060 . Checked in arXiv:quant-ph/0311060v2 on 2026-11-11: Section 1 Definition 1 and Theorem 3 (the general weighted adversary `Alb₃`, proved in `WeightedAdversary.lean`), Section 2 Theorem 5 (`Alb₂ ≤ Alb₃`, realized via `WeightScheme.ofUnweighted` and used to prove `one_sub_mul_sqrt_le_two_mul_mul_sqrt` in `AmbainisAdversary.lean`), The `Alb₃ ≤ ADV` mapping (`WeightScheme.le_spectralAdversary`) is an original proof; the cited Theorem 6 maps `Alb₃` to `√(N C_-(f))` instead. Journal pagination was not inspected directly.
 
 <a id="zivlempel77"></a>
 ## zivlempel77

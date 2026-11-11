@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: candidate
+
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Foundations.LinearAlgebra.Matrix.EuclideanOpNorm
@@ -23,6 +26,8 @@ namespace CslibFrontierTests.QuantumGeneralAdversary
 open Cslib Cslib.Quantum Cslib.BitString Finset Function
 open CslibFrontierTests.QuantumPolynomial
 open scoped Matrix
+
+public section
 
 /-! ### Unweighted adversary recovery on `readBit` -/
 
@@ -942,4 +947,6 @@ theorem generalAdversary_ternary2_ge_one : 1 ≤ generalAdversary (fun _ => True
           div_le_div_of_nonneg_left (norm_nonneg _) hm_pos hmax
       _ ≤ generalAdversary (fun _ => True) ternary2 := le_generalAdversary hsym hΓ
 
+
+end
 end CslibFrontierTests.QuantumGeneralAdversary

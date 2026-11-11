@@ -4,9 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
-import CslibFrontier.Computability.QueryComplexity.Quantum.BitQuery
-import CslibFrontierTests.QuantumPolynomial
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
+public import CslibFrontier.Computability.QueryComplexity.Quantum.BitQuery
+public import CslibFrontierTests.QuantumPolynomial
+public import CslibFrontier.Foundations.LinearAlgebra.UnitarySpectrum
 
 /-! Nonvacuous checks and concrete witnesses for multi-outcome readouts (`Readout`), unitary
 spectral diagonalization (`UnitarySpectrum`), value-query and index-to-value simulations
@@ -17,6 +21,8 @@ namespace CslibFrontierTests.QuantumNayakWu
 
 open Cslib Cslib.Quantum Cslib.BitString Finset
 open CslibFrontierTests.QuantumPolynomial
+
+public section
 
 /-! ### Multi-outcome readouts (`Readout.lean`) -/
 
@@ -493,4 +499,6 @@ example : min (1 / (1 / 3 : ℝ)) (Fintype.card (Fin 3)) ≤ 432 * ((0 : ℕ) + 
     zeroQueryAlg norm_unif3Init 0 (fun p => p.1) (δ := 1 / 3) (by simp) (by norm_num)
     (by norm_num) (fun X _ => zeroQuery_median_good X)
 
+
+end
 end CslibFrontierTests.QuantumNayakWu

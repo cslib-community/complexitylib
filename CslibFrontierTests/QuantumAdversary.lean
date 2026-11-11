@@ -4,7 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: candidate
+
 import CslibFrontier.Computability.QueryComplexity.Quantum.Adversary
+public import Cslib.Foundations.Data.BitString
+public import Cslib.Computability.QueryComplexity.Measures
+public import Mathlib.Data.Fintype.Defs
+public import CslibFrontier.Computability.QueryComplexity.SpectralSensitivity
+public import Mathlib.Algebra.Order.Group.Unbundled.Abs
 import CslibFrontier.Computability.QueryComplexity.Quantum.UnknownSearch
 import CslibFrontierTests.QuantumPolynomial
 
@@ -16,6 +24,8 @@ namespace CslibFrontierTests.QuantumAdversary
 
 open Cslib Cslib.Quantum Cslib.BitString Cslib.QueryComplexity Finset
 open CslibFrontierTests.QuantumPolynomial
+
+public section
 
 /-- Every coordinate is sensitive for parity. -/
 theorem sensitiveCoords_parity {n : ℕ} (x : BitString n) : sensitiveCoords (parity n) x = univ :=
@@ -64,5 +74,9 @@ example (N : ℕ) (hN : 0 < N) : N ≤ 1296 * (orRange N + orRange N) ^ 2 :=
   degree_threshold_one_right.symm.trans_le
     (degree_le_mul_sq (orSearch N) (norm_orSearchInit hN) _ (orAccept N)
       (abs_measureProb_run_orSearch_sub_le hN))
+
+end
+
+end
 
 end CslibFrontierTests.QuantumAdversary

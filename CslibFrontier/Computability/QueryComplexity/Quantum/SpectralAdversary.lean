@@ -36,9 +36,10 @@ schemes:
   (`Cslib.Quantum.one_sub_mul_opNorm_le_spectral`).
 * **Hierarchies and nonnegative barriers**:
   `Cslib.Quantum.spectralSensitivity_le_spectralAdversary` (`λ(f) ≤ ADV(f)`),
-  `Cslib.Quantum.WeightScheme.le_spectralAdversary` (`Alb₃(f) ≤ ADV(f)`, [Zhang2005],
-  Theorem 6), `Cslib.Quantum.spectralAdversary_le_generalAdversary` (`ADV(f) ≤ ADV±(f)`), and
-  the Hamming-distance barrier `k · ‖Γ‖ ≤ N · maxDiffNorm Γ` for `0 ≤ Γ`
+  `Cslib.Quantum.WeightScheme.le_spectralAdversary` (`Alb₃(f) ≤ ADV(f)`, original proof
+  formalizing the equivalence), `Cslib.Quantum.spectralAdversary_le_generalAdversary`
+  (`ADV(f) ≤ ADV±(f)`), and the Hamming-distance barrier
+  `k · ‖Γ‖ ≤ N · maxDiffNorm Γ` for `0 ≤ Γ`
   (`Cslib.Quantum.spectralAdversary_le_div_of_hammingDist_ge`).
 
 ## Main definitions
