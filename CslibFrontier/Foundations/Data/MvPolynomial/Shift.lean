@@ -24,6 +24,7 @@ be shifted by a point with polynomial coordinates; the result is a polynomial ov
 
 ## Main results
 
+* `MvPolynomial.eval_shift`: evaluating a shift evaluates at the translated point.
 * `MvPolynomial.degreeOf_shift_le`: shifting does not increase the degree in a variable.
 * `MvPolynomial.degreeOf_coeff_shift_le`: a degree bound for the coefficients of a shift by a
   point with polynomial coordinates.
@@ -54,6 +55,24 @@ theorem map_shift [CommSemiring B] [Algebra R B] (φ : A →ₐ[R] B) (a : σ �
     (f : MvPolynomial σ R) : map (φ : A →+* B) (shift a f) = shift (fun i => φ (a i)) f := by
   have h := comp_aeval (R := R) (f := fun i => (X i + C (a i) : MvPolynomial σ A)) (mapAlgHom φ)
   simpa [shift] using DFunLike.congr_fun h f
+
+/-- Evaluating a shifted polynomial at `b` evaluates the polynomial at `b + a`. -/
+theorem eval_shift (a b : σ → R) (f : MvPolynomial σ R) :
+    eval b (shift a f) = eval (fun i => b i + a i) f := by
+  have h := DFunLike.congr_fun (comp_aeval (R := R)
+    (f := fun i => (X i + C (a i) : MvPolynomial σ R)) (aeval b : MvPolynomial σ R →ₐ[R] R)) f
+  simpa [shift, aeval_eq_eval] using h
+
+/-- A polynomial of degree at most one in each of its finitely many variables has total degree
+at most the number of variables. -/
+theorem totalDegree_le_card_of_degreeOf_le_one [Fintype σ] {f : MvPolynomial σ R}
+    (hmul : ∀ i, f.degreeOf i ≤ 1) : f.totalDegree ≤ Fintype.card σ :=
+  Finset.sup_le fun m hm =>
+    calc (m.sum fun _ e => e) ≤ ∑ j ∈ m.support, 1 :=
+          Finset.sum_le_sum fun j _ => (monomial_le_degreeOf j hm).trans (hmul j)
+      _ ≤ Fintype.card σ := by
+          rw [Finset.sum_const, smul_eq_mul, mul_one]
+          exact Finset.card_le_univ _
 
 /-- Substituting the variables of the polynomial ring over an algebra is a base change. -/
 theorem aeval_X_eq_map (p : MvPolynomial σ R) :

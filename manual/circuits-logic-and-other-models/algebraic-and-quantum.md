@@ -208,9 +208,25 @@ lake build CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic \
 
 **Not certified here.** Characteristic zero is a genuine hypothesis: the Wronskian argument fails in positive characteristic. The source's extension to noncommutative algebraic branching programs is not formalized. Nothing is proved about the bit length of the points or the cost of computing them, and the bound `n * r ^ 2 + r` is the source's, not optimized. This is unrelated to the rational-formula hitting list of the next section, which concerns noncommutative rational formulas.
 
+## Hitting sets for multilinear any-order ROABPs
+
+Import [HittingSet/AnyOrder.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrder.lean). `IsAnyOrderROABP w f` says that `f : MvPolynomial (Fin n) F` is computed by a read-once oblivious branching program of width `w` in every order of the variables: for every list `l` of all the variables without repetition there are matrices `M : Fin n → Matrix (Fin w) (Fin w) F[X]` and indices `s t` with `f = roabpProd M l s t`, the `(s, t)` entry of the product of the `M i` evaluated at `X i` in the order of `l`. The matrices may depend on the order.
+
+The endpoint [isHittingSet_anyOrderHittingSet_roabp](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/AnyOrder.lean) is for `[Field F] [CharZero F]`: `anyOrderHittingSet F n w` hits `{f | (∀ i, f.degreeOf i ≤ 1) ∧ IsAnyOrderROABP w f}`. `card_anyOrderHittingSet_le F n w` bounds the set by an explicit expression in `n`, `w` and `Nat.log 2 w` that is polynomial in `n` and `w`, since `2 ^ Nat.log 2 w ≤ w`.
+
+**To use it for another class**, apply `isHittingSet_anyOrderHittingSet`, which hits every `f` with `f.degreeOf i ≤ 1` for all `i` and `SplitRankLE ↑U w f` for every `U : Finset (Fin n)`, and prove the split-rank bound as `IsAnyOrderROABP.splitRankLE` does. The pieces are the shifts and hash families of the next section, [colorPart](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ColorPart.lean) with `colorPart_ne_zero`, `exists_eval_ne_zero_of_eval_colorPart_ne_zero` and `exists_pderiv_closed_colorPart`, and the hitting set for small partial-derivative spaces above.
+
+Complete client: [AnyOrderHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/AnyOrderHittingSet.lean) shows that `X 0 * X 1` is computed by width-one programs in every order and obtains a point of the hitting set where it is nonzero. Build it with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.AnyOrderHittingSet
+```
+
+**Not certified here.** Positive characteristic. Polynomials of individual degree above one, set-multilinear depth-three circuits, and orbits. The converse of `IsAnyOrderROABP.splitRankLE`. The bit length of the points and the cost of computing them. The size bound is not the source's: the hash family and the shifts are the library's own constructions.
+
 ## Support-concentrating shifts and perfect hash families
 
-Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting sets for multilinear any-order read-once branching programs take from earlier work; the hitting set itself is not yet in the library.
+Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting set of the previous section takes from earlier work.
 
 `MvPolynomial.SplitRankLE U w f` ([SplitRank.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SplitRank.lean)) says that `f` is a sum of `w` products `p * q` with `p` in the variables of `U` and `q` in the others. It stands for "the coefficient matrix of `f` across the split has rank at most `w`", but no matrix is defined and that equivalence is not proved. `MvPolynomial.shift a` ([Shift.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/Shift.lean)) is `f ↦ f (X + a)`; the point may have coordinates in an algebra over the coefficient ring.
 
@@ -227,7 +243,7 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShif
   CslibFrontierTests.Foundations.Combinatorics.PerfectHashFamily
 ```
 
-**Not certified here.** Polynomials of individual degree above one: the argument is for multilinear polynomials only, and the general statement of Forbes, Saptharishi and Shpilka needs their rank condensers. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any statement about branching programs, and any cost of computing the points.
+**Not certified here.** Polynomials of individual degree above one: the argument is for multilinear polynomials only, and the general statement of Forbes, Saptharishi and Shpilka needs their rank condensers. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any cost of computing the points.
 
 ## Rational formulas and hitting lists
 

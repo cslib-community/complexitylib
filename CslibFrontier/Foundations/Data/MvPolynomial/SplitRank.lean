@@ -7,7 +7,7 @@ Authors: Aviv Bar Natan
 module
 -- upstream: candidate
 
-public import CslibFrontier.Init
+public import CslibFrontier.Foundations.Data.MvPolynomial.Shift
 public import Mathlib.Algebra.MvPolynomial.Supported
 
 /-!
@@ -30,6 +30,7 @@ substitution that keeps the two sets of variables apart, with no matrix in sight
 
 * `MvPolynomial.aeval_congr_of_mem_supported`: a substitution into a polynomial in the variables
   of `s` depends only on the values on `s`.
+* `MvPolynomial.SplitRankLE.shift`: shifting the variables preserves the split rank.
 * `MvPolynomial.aeval_mem_of_mem_supported`: such a substitution lands in a subalgebra that
   contains the values on `s`.
 -/
@@ -70,5 +71,15 @@ theorem aeval_mem_of_mem_supported (hp : p ∈ supported R s) (S : Subalgebra R 
   | mul_X p i hp => rw [map_mul, aeval_X]; exact S.mul_mem hp (hg _ i.2)
 
 end Supported
+
+/-- Shifting the variables preserves the split rank. -/
+theorem SplitRankLE.shift {U : Set σ} {w : ℕ} {f : MvPolynomial σ R} (h : SplitRankLE U w f)
+    (a : σ → R) : SplitRankLE U w (shift a f) := by
+  obtain ⟨p, q, hp, hq, rfl⟩ := h
+  have hmem : ∀ (s : Set σ), ∀ i ∈ s, (X i + C (a i) : MvPolynomial σ R) ∈ supported R s :=
+    fun s i hi => add_mem (Algebra.subset_adjoin ⟨i, hi, rfl⟩) ((supported R s).algebraMap_mem _)
+  exact ⟨fun i => MvPolynomial.shift a (p i), fun i => MvPolynomial.shift a (q i),
+    fun i => aeval_mem_of_mem_supported (hp i) _ (hmem U),
+    fun i => aeval_mem_of_mem_supported (hq i) _ (hmem Uᶜ), by simp only [map_sum, map_mul]⟩
 
 end MvPolynomial

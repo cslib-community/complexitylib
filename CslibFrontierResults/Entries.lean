@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
@@ -979,6 +980,30 @@ register_result "support-concentrating-shifts" where
     built from a perfect hash family of the library and not from the Klivans–Spielman \
     generator. Split rank is a decomposition into products, not a coefficient-matrix rank or \
     a branching program. No hitting set for read-once branching programs is claimed here."
+
+register_result "hitting-set-multilinear-any-order-roabp" where
+  title := "Polynomial-size hitting sets for multilinear any-order ROABPs"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := Shpilka2026, theorem := "Theorem 1.1, in characteristic zero; Lemmas 3.1–3.4",
+      locator := "§1.1 p. 3, §3 pp. 6–9" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_anyOrderHittingSet_roabp,
+    Cslib.Circuits.Arithmetic.isHittingSet_anyOrderHittingSet,
+    Cslib.Circuits.Arithmetic.card_anyOrderHittingSet_le,
+    Cslib.Circuits.Arithmetic.IsAnyOrderROABP.splitRankLE
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of points in Fⁿ, of size \
+    bounded by an explicit polynomial in n and w, that contains a non-root of every nonzero \
+    multilinear n-variate polynomial computed by width-w read-once oblivious branching \
+    programs in every variable order; more generally of every multilinear polynomial that is \
+    a sum of w products across every split of the variables. Characteristic zero only: the \
+    source's positive-characteristic case rests on an unpublished hitting set. Not the \
+    source's Theorem 1.2 for set-multilinear depth-3 circuits. The perfect hash family and \
+    the shifts are the library's own constructions, so the size bound differs from the \
+    source's. Existence and size of an explicit set only: no bit complexity and no \
+    black-box algorithm model. The converse of Nisan's characterisation is not proved."
 
 /-! ## Further collected results -/
 

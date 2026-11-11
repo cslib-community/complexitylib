@@ -183,16 +183,6 @@ private theorem degreeOf_genericShift_le (P : Finset (Fin n → Fin k)) (j : Fin
       Nat.pow_le_pow_right (by norm_num) (Fin.is_lt _).le
     omega
 
-omit [CharZero F] in
-private theorem totalDegree_le_of_degreeOf_le_one {f : MvPolynomial (Fin n) F}
-    (hmul : ∀ i, f.degreeOf i ≤ 1) : f.totalDegree ≤ n :=
-  Finset.sup_le fun m hm =>
-    calc (m.sum fun _ e => e) ≤ ∑ j ∈ m.support, 1 :=
-          Finset.sum_le_sum fun j _ => (monomial_le_degreeOf j hm).trans (hmul j)
-      _ ≤ n := by
-          rw [sum_const, smul_eq_mul, mul_one]
-          exact (card_le_univ _).trans_eq (Fintype.card_fin n)
-
 variable (F) in
 open scoped Classical in
 /-- The values of the generic shift on a grid: an explicit set of shifts of size at most
@@ -225,7 +215,8 @@ theorem exists_mem_concentratingShifts {P : Finset (Fin n → Fin k)}
   have hc0 : c ≠ 0 := mem_support_iff.1 hm
   let S : Fin 2 → Finset F :=
     ![(range (n * P.card + 1)).image Nat.cast, (range (n * 2 ^ k + 1)).image Nat.cast]
-  have ht := totalDegree_le_of_degreeOf_le_one hmul
+  have ht : f.totalDegree ≤ n :=
+    (totalDegree_le_card_of_degreeOf_le_one hmul).trans_eq (Fintype.card_fin n)
   have hdeg : ∀ i, c.degreeOf i < (S i).card := by
     intro i
     fin_cases i
