@@ -196,11 +196,10 @@ theorem exists_glPredictor_agree (enc : F ≃ BitString w) (h : BitString b ↪ 
   set good := (univ : Finset (BitString (m * w))).filter fun x =>
     1 / 2 + ε / 2 ≤ Crypto.GoldreichLevin.agreement (pred x) (target x)
   have hgood : ε / 2 * 2 ^ (m * w) ≤ #good := by
-    have hdens := Crypto.GoldreichLevin.dens_filter_agreement_ge pred target hε.le (by
+    have hcount := Crypto.GoldreichLevin.card_filter_agreement_ge pred target hε.le (by
       rw [← hpairs, hcard, ← mul_assoc, mul_assoc (1 / 2 + ε), ← pow_add]
       exact hagree)
-    rw [nnratCast_dens, hcard, le_div_iff₀ (by positivity)] at hdens
-    exact hdens
+    rwa [hcard] at hcount
   -- Goldreich–Levin with fixed masks and guess
   obtain ⟨masks, guess, hgl⟩ := Crypto.GoldreichLevin.exists_card_candidate_eq pred target
     (ε / 2) (by positivity) hK hsize good fun x hx => (mem_filter.1 hx).2
