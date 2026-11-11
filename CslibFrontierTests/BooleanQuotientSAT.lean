@@ -45,6 +45,21 @@ local instance : Fact (1 < 4) := ⟨by decide⟩
 
 local instance : Fact (Nat.Prime 2) := ⟨by decide⟩
 
+private theorem three_mul_X_mem_restrictDegree :
+    (3 * X 0 : MvPolynomial (Fin 1) (ZMod 4)) ∈ restrictDegree (Fin 1) (ZMod 4) 1 := by
+  have hsmul : (3 * X 0 : MvPolynomial (Fin 1) (ZMod 4)) = (3 : ZMod 4) • X 0 := by
+    rw [Algebra.smul_def, map_ofNat]
+  rw [hsmul]
+  refine Submodule.smul_mem _ (3 : ZMod 4) ?_
+  rw [mem_restrictDegree]
+  intro s hs j
+  have hs' : s = Finsupp.single 0 1 := by
+    by_contra hne
+    apply mem_support_iff.1 hs
+    rw [coeff_X, ite_eq_right fun h => hne h.symm]
+  subst hs'
+  by_cases hj : j = 0 <;> simp [hj]
+
 /-- Over the non-reduced ring `ZMod 4`, multilinear representatives remain unique modulo
 `boolIdeal`: `X 0 ^ 3 + 2 * X 0 ^ 2` reduces uniquely to `3 * X 0` in `restrictDegree`. -/
 example :
@@ -54,19 +69,7 @@ example :
       ∀ q ∈ restrictDegree (Fin 1) (ZMod 4) 1,
         ((X 0 ^ 3 + 2 * X 0 ^ 2 : MvPolynomial (Fin 1) (ZMod 4)) - q) ∈
           boolIdeal (Fin 1) (ZMod 4) → q = 3 * X 0 := by
-  have hmem : (3 * X 0 : MvPolynomial (Fin 1) (ZMod 4)) ∈ restrictDegree (Fin 1) (ZMod 4) 1 := by
-    have hsmul : (3 * X 0 : MvPolynomial (Fin 1) (ZMod 4)) = (3 : ZMod 4) • X 0 := by
-      rw [Algebra.smul_def, map_ofNat]
-    rw [hsmul]
-    refine Submodule.smul_mem _ (3 : ZMod 4) ?_
-    rw [mem_restrictDegree]
-    intro s hs j
-    have hs' : s = Finsupp.single 0 1 := by
-      by_contra hne
-      apply mem_support_iff.1 hs
-      rw [coeff_X, ite_eq_right fun h => hne h.symm]
-    subst hs'
-    by_cases hj : j = 0 <;> simp [hj]
+  have hmem := three_mul_X_mem_restrictDegree
   have hsub :
       ((X 0 ^ 3 + 2 * X 0 ^ 2 : MvPolynomial (Fin 1) (ZMod 4)) - 3 * X 0) ∈
         boolIdeal (Fin 1) (ZMod 4) := by
@@ -104,6 +107,28 @@ example :
       Module.finrank ℚ (restrictDegree (Fin 2) ℚ 1) = 4 := by
   rw [finrank_boolQuotient, finrank_restrictDegree_one]
   norm_num
+
+/-- Forward and inverse `restrictDegreeOneLinearEquiv` and `restrictDegreeOneQuotientEquiv`
+evaluations and canonical representatives work across the `module` boundary. -/
+example (p : restrictDegree (Fin 1) (ZMod 4) 1) (x : Fin 1 → Bool) :
+    restrictDegreeOneLinearEquiv (Fin 1) (ZMod 4) p x = eval (bitPoint x) p.1 ∧
+      ((restrictDegreeOneLinearEquiv (Fin 1) (ZMod 4)).symm (fun y => if y 0 then 3 else 0) :
+        MvPolynomial (Fin 1) (ZMod 4)) =
+        multilinearExtension (fun y => if y 0 then 3 else 0) ∧
+      restrictDegreeOneQuotientEquiv (Fin 1) (ZMod 4) p =
+        Ideal.Quotient.mk (boolIdeal (Fin 1) (ZMod 4)) p.1 ∧
+      ((restrictDegreeOneQuotientEquiv (Fin 1) (ZMod 4)).symm
+          (Ideal.Quotient.mk (boolIdeal (Fin 1) (ZMod 4)) (X 0 ^ 3 + 2 * X 0 ^ 2)) :
+        MvPolynomial (Fin 1) (ZMod 4)) = 3 * X 0 := by
+  refine ⟨restrictDegreeOneLinearEquiv_apply p x,
+    coe_restrictDegreeOneLinearEquiv_symm _,
+    restrictDegreeOneQuotientEquiv_apply p, ?_⟩
+  rw [coe_restrictDegreeOneQuotientEquiv_symm_mk]
+  refine eq_of_mem_restrictDegree_of_forall_eval_bitPoint
+    (multilinearExtension_mem_restrictDegree _) three_mul_X_mem_restrictDegree fun y => ?_
+  rw [eval_multilinearExtension]
+  simp only [map_add, map_pow, map_mul, map_ofNat, eval_X, bitPoint]
+  cases y 0 <;> decide
 
 end BooleanQuotientTests
 

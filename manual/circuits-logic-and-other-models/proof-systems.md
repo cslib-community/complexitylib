@@ -571,7 +571,12 @@ identifies the quotient `MvPolynomial ι R ⧸ boolIdeal ι R` over any commutat
 finite `ι` with the ring `(ι → Bool) → R` of cube functions (`boolQuotientAlgEquiv`), and proves
 uniqueness of multilinear representatives in `restrictDegree ι R 1` over arbitrary commutative
 rings and index types (`existsUnique_mem_restrictDegree_sub_mem_boolIdeal`, coinciding with
-`multilinearExtension` when `ι` is finite). Over a reduced ring `boolIdeal` is radical
+`multilinearExtension` when `ι` is finite). The companion linear equivalences
+`restrictDegreeOneLinearEquiv` and `restrictDegreeOneQuotientEquiv` (with `@[simp]` evaluation and
+inverse lemmas `restrictDegreeOneLinearEquiv_apply`, `coe_restrictDegreeOneLinearEquiv_symm`,
+`restrictDegreeOneQuotientEquiv_apply`, `eval_coe_restrictDegreeOneQuotientEquiv_symm`, and
+`coe_restrictDegreeOneQuotientEquiv_symm_mk`) transport between multilinear polynomials, cube
+functions, and quotient cosets. Over a reduced ring `boolIdeal` is radical
 (`boolIdeal_isRadical`), and over a field `K` the quotient has dimension `2 ^ Fintype.card ι`
 (`finrank_boolQuotient`).
 [Algebraic/CNF/Counting](../../CslibFrontier/Logics/Propositional/Algebraic/CNF/Counting.lean)
