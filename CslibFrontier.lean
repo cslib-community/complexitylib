@@ -2041,6 +2041,7 @@ public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Com
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PPADS
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLine
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
+public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Principles
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Sperner
