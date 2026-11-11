@@ -5238,9 +5238,11 @@ public import CslibFrontier.Foundations.Order.Changes
 public import CslibFrontier.Foundations.Order.FiniteFixedPoint
 public import CslibFrontier.Foundations.Order.Mirsky
 public import CslibFrontier.Foundations.Order.UpperLower
+public import CslibFrontier.Foundations.Probability.Bonferroni
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Clique
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Connectivity
+public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.ConnectivityThreshold
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.EdgePattern
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Extension
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.IsolatedVertices

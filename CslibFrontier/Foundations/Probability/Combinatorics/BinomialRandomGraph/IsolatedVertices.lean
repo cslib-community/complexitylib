@@ -34,8 +34,8 @@ inequality (Mathlib's `ProbabilityTheory.meas_ge_le_variance_div_sq`) gives
 
 The source computes the second moment the same way and concludes through
 `P(X > 0) ≥ (E X) ^ 2 / E[X ^ 2]`; Chebyshev's inequality gives the same conclusion here. The
-Poisson limit `P(X = 0) → e ^ (-e ^ (-c))` at `n p - log n → c`, and with it the constant case of
-Theorem 4.1, is not formalized.
+Poisson limit `P(X = k) → e ^ (-λ) λ ^ k / k!` and `P(G(n, p) is connected) → e ^ (-e ^ (-c))`
+at `n p - log n → c` are proved in `BinomialRandomGraph.ConnectivityThreshold`.
 
 ## Main results
 
@@ -70,24 +70,30 @@ namespace SimpleGraph
 variable {V : Type*}
 
 /-- The `|V| - 1` possible edges at `v`. -/
-private noncomputable def incidentPairs [Fintype V] [DecidableEq V] (v : V) : Finset (Sym2 V) :=
+noncomputable def incidentPairs [Fintype V] [DecidableEq V] (v : V) : Finset (Sym2 V) :=
   (univ.erase v).image fun w => s(v, w)
 
+/-- Membership characterization of `incidentPairs v`. -/
+theorem mem_incidentPairs [Fintype V] [DecidableEq V] {v : V} {e : Sym2 V} :
+    e ∈ incidentPairs v ↔ ∃ w ≠ v, e = s(v, w) := by
+  simp only [incidentPairs, mem_image, mem_erase, mem_univ, and_true]
+  exact ⟨fun ⟨w, hw, h⟩ => ⟨w, hw, h.symm⟩, fun ⟨w, hw, h⟩ => ⟨w, hw, h.symm⟩⟩
+
 /-- There are `|V| - 1` possible edges at `v`. -/
-private theorem card_incidentPairs [Fintype V] [DecidableEq V] (v : V) :
+theorem card_incidentPairs [Fintype V] [DecidableEq V] (v : V) :
     #(incidentPairs v) = Fintype.card V - 1 := by
   rw [incidentPairs, card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
     card_erase_of_mem (mem_univ _), card_univ]
 
 /-- No possible edge at `v` is a loop. -/
-private theorem not_isDiag_of_mem_incidentPairs [Fintype V] [DecidableEq V] {v : V} {e : Sym2 V}
+theorem not_isDiag_of_mem_incidentPairs [Fintype V] [DecidableEq V] {v : V} {e : Sym2 V}
     (he : e ∈ incidentPairs v) : ¬e.IsDiag := by
   simp only [incidentPairs, mem_image, mem_erase, mem_univ, and_true] at he
   obtain ⟨w, hw, rfl⟩ := he
   simpa using Ne.symm hw
 
 /-- `v` is isolated exactly when no possible edge at `v` is present. -/
-private theorem isIsolated_iff_disjoint_incidentPairs [Fintype V] [DecidableEq V]
+theorem isIsolated_iff_disjoint_incidentPairs [Fintype V] [DecidableEq V]
     (G : SimpleGraph V) (v : V) :
     G.IsIsolated v ↔ Disjoint (incidentPairs v : Set (Sym2 V)) G.edgeSet := by
   simp only [IsIsolated, Set.disjoint_left, incidentPairs, coe_image, coe_erase, coe_univ,
@@ -271,7 +277,7 @@ theorem binomialRandom_real_forall_not_isIsolated_le [Fintype V] [Nonempty V] (p
   exact variance_div_sq_le hn1 (unitInterval.nonneg p) hp
 
 /-- A connected graph on at least two vertices has no isolated vertex. -/
-private theorem setOf_connected_subset [Nontrivial V] :
+theorem setOf_connected_subset [Nontrivial V] :
     {G : SimpleGraph V | G.Connected} ⊆ {G | ∀ v, ¬G.IsIsolated v} :=
   fun _ hG v => (Connected.preconnected hG).not_isIsolated v
 
