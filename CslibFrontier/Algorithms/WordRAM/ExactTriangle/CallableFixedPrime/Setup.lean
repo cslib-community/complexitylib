@@ -33,12 +33,8 @@ theorem setup_fits {W b n D g p total : ℕ}
       sourceWidth n D g p total < windowSize n D g p total ∧
       6166 ≤ windowSize n D g p total := by
   obtain ⟨hsize, hwidth, h6166⟩ := source_bounds n D g p total
-  refine ⟨?_, hsize, hwidth, h6166⟩
-  by_contra h
-  have hW : W ≤ sourceWidth n D g p total := by omega
-  have he := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hW
-  unfold Fits windowSize at hfit
-  omega
+  refine ⟨(hfit.lt_of_pow_le (k := sourceWidth n D g p total)
+    (by change windowSize n D g p total ≤ _; omega)).le, hsize, hwidth, h6166⟩
 
 private theorem clogBank_injective : Function.Injective clogBank := by
   intro i j h
