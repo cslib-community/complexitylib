@@ -307,24 +307,56 @@ def terminalVal {n} (S : State n) (d_params : List ℕ) (A : List Bool) (x : ℕ
     | some i => A.getD i false
     | none => false
 
-def getDParams {n} (S : State n) (d : ℕ) : List ℕ :=
-  let F := (S.params.sort (· ≤ ·)).filter (fun x => !(isFstOfAnyPair S x))
-  F.take d
 
-def allAssignments : ℕ → List (List Bool)
-  | 0 => [[]]
-  | m + 1 => let r := allAssignments m; r.map (false :: ·) ++ r.map (true :: ·)
+
+def refuterMeasure {n} (S : State n) : ℕ :=
+  4 * (S.m + S.s) + 3 * S.gates.card + if h : S.gates.Nonempty then S.auxIn (S.gates.min' h) else 0
+
 
 def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool) (d : ℕ)
     (S : State n) : Option (BitString n) :=
-  let d_params := getDParams S d
-  (allAssignments d).findSome? fun A =>
-    let val_param := terminalVal S d_params A
-    let val_all := fun y =>
-      if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
-    let x_vec : BitString n := S.phi val_all
-    if C.eval fullInterpretation x_vec 0 != f x_vec then
-      some x_vec
+  match S.out.arg with
+  | .const _b =>
+    let F := (S.params.sort (· ≤ ·)).filter (fun x => !(isFstOfAnyPair S x))
+    let d_params := F.take d
+    (allAssignments d).findSome? fun A =>
+      let val_param := terminalVal S d_params A
+      let val_all := fun y =>
+        if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
+      let x_vec : BitString n := S.phi val_all
+      if C.eval fullInterpretation x_vec 0 != f x_vec then
+        some x_vec
+      else none
+  | .node u =>
+    let F := (S.params.sort (· ≤ ·)).filter (fun x => !(isFstOfAnyPair S x))
+    if decide (u ∈ S.params) || S.gates.isEmpty then
+      let (c_out, T_out) := if decide (u ∈ S.params) then (false, [u]) else findAffineRep S u
+      match F.find? (fun v => decide (v ∈ T_out)) with
+      | some pivot =>
+        let d_params := (F.filter (· ≠ pivot)).take d
+        (allAssignments d).findSome? fun A =>
+          let val_param_part := terminalVal S d_params A
+          let T_erase := T_out.filter (· ≠ pivot)
+          let xorSum := T_erase.foldl (fun acc y => acc ^^ val_param_part y) false
+          let pivot_val := c_out ^^ S.out.neg ^^ xorSum
+          let val_param := fun y => if y = pivot then pivot_val else val_param_part y
+          let val_all := fun y =>
+            if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
+          let x_vec : BitString n := S.phi val_all
+          if C.eval fullInterpretation x_vec 0 != f x_vec then some x_vec else none
+      | none => none
+    else if hne : S.gates.Nonempty then
+      let G := S.gates.min' hne
+      let α := decide ((S.gate G).op true false == (S.gate G).op true true)
+      let t1 := match (S.gate G).left with | .node x => x | _ => 0
+      let d_params := (F.filter (· ≠ t1)).take d
+      (allAssignments d).findSome? fun A =>
+        let val_param_part := terminalVal S d_params A
+        let val_param := fun y => if y = t1 then α else val_param_part y
+        let val_all := fun y =>
+          if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
+        let x_vec : BitString n := S.phi val_all
+        if C.eval fullInterpretation x_vec 0 != f x_vec then some x_vec else none
     else none
 
 def refuterLoop {n} (S : State n) (fuel : ℕ) : State n :=
@@ -338,8 +370,7 @@ def refuterLoop {n} (S : State n) (fuel : ℕ) : State n :=
 def refute {n d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
     (f : BitString n → Bool) : BitString n :=
   let S_init := initialState C
-  let S_final := refuterLoop S_init
-    (4 * (S_init.m + S_init.s) + 3 * S_init.gates.card + S_init.aux.card)
+  let S_final := refuterLoop S_init (refuterMeasure S_init)
   match findCounterexample C f d S_final with
   | some x => x
   | none => fun _ => false
