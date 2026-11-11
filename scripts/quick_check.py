@@ -22,21 +22,28 @@ class FullCheck(Exception):
 ENCODING_RATCHET = (
     "encoding readability ratchet",
     [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", "{base}"])
+PROJECTION_RATCHET = (
+    "projection chain ratchet",
+    [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", "{base}"])
+# The per-module ratchets of `ci-checks`, which read only the library sources.
+RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET)
 
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
 # to one runs that check (with `{base}`, the merge base) instead of falling back to the full check.
 # Any other non-Lean change, including every Python change under `scripts/`, still falls back.
 DATA_CHECKS = {
-    # Read only by its ratchet, which needs no build (`.github/workflows/lean_action_ci.yml`).
+    # Each is read only by its ratchet, which needs no build
+    # (`.github/workflows/lean_action_ci.yml`).
     "scripts/encoding_readability_baseline.json": ENCODING_RATCHET,
+    "scripts/projection_chains_baseline.json": PROJECTION_RATCHET,
 }
 
 # The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the
-# files under these roots (its default selection), the encoding ratchet the modules under
-# `ENCODING_ROOT`. Each takes seconds; the post-build audits need whole-library outputs that quick
-# mode does not build, so they stay in the full check.
+# files under these roots (its default selection), the ratchets the modules under `RATCHET_ROOT`.
+# Each takes seconds; the post-build audits need whole-library outputs that quick mode does not
+# build, so they stay in the full check.
 HYGIENE_ROOTS = ("CslibFrontier/", "CslibFrontierTests/")
-ENCODING_ROOT = "CslibFrontier/"
+RATCHET_ROOT = "CslibFrontier/"
 
 
 # `lake lint` runs this driver; quick mode passes it flags that only Batteries' runLinter accepts.
@@ -243,10 +250,11 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
         checks.insert(0, ("source hygiene (changed files)",
                           [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp",
                            "--", *hygiene]))
-    ratchet = (ENCODING_RATCHET[0], [base if part == "{base}" else part
-                                     for part in ENCODING_RATCHET[1]])
-    if ratchet not in checks and any(path.startswith(ENCODING_ROOT) for _, path in changes):
-        checks.append(ratchet)
+    if any(path.startswith(RATCHET_ROOT) for _, path in changes):
+        for label, command in RATCHETS:
+            ratchet = (label, [base if part == "{base}" else part for part in command])
+            if ratchet not in checks:
+                checks.append(ratchet)
     modules, aggregates, roots = source_modules(root)
     visible = set(git(root, "ls-files", "-z").split("\0")) | {p for _, p in changes}
     by_path = {path: module for module, path in modules.items()}

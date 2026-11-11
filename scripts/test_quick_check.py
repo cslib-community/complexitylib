@@ -187,6 +187,26 @@ class QuickCheckTests(unittest.TestCase):
         with self.assertRaisesRegex(quick.FullCheck, "deleted"):
             self.plan()
 
+    def test_projection_baseline_change_runs_its_ratchet_instead_of_falling_back(self):
+        baseline = "scripts/projection_chains_baseline.json"
+        self.write(baseline, '{"Demo/Base.lean": 3}\n')
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        base = self.git("rev-parse", "HEAD")
+        ratchet = ("projection chain ratchet",
+                   [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", base])
+        # A migration lowers the entry together with the Lean change that removes the chains.
+        self.write(baseline, "{}\n")
+        plan = self.plan()
+        self.assertEqual((plan.targets, plan.checks), ([], [ratchet]))
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        plan = self.plan()
+        self.assertEqual(plan.checks, [ratchet])
+        self.assertIn("DemoTests.Client", plan.targets)
+        (self.root / baseline).unlink()
+        with self.assertRaisesRegex(quick.FullCheck, "deleted"):
+            self.plan()
+
     def test_data_checks_run_before_the_build_and_stop_it_on_failure(self):
         plan = quick.Plan("base", ["Demo.Base"], [("lint", ["lint", "--base", "base"])])
         for lint_status, expected in ((0, [["lint", "--base", "base"],
@@ -406,21 +426,28 @@ class QuickCheckTests(unittest.TestCase):
     def test_changed_library_and_test_files_get_source_checks(self):
         base = self.git("rev-parse", "HEAD")
         hygiene = [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp", "--"]
-        ratchet = ("encoding readability ratchet",
-                   [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
+        encoding = ("encoding readability ratchet",
+                    [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
+        projection = ("projection chain ratchet",
+                      [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", base])
+        labels = ["source hygiene (changed files)", "encoding readability ratchet",
+                  "projection chain ratchet"]
         with patch.object(quick, "HYGIENE_ROOTS", ("Demo/", "DemoTests/")), \
-             patch.object(quick, "ENCODING_ROOT", "Demo/"):
+             patch.object(quick, "RATCHET_ROOT", "Demo/"):
             self.write("DemoTests/Client.lean", "import Demo.Middle\nexample : Nat := middle + 0\n")
             self.assertEqual(self.plan().checks, [
                 ("source hygiene (changed files)", [*hygiene, "DemoTests/Client.lean"])])
             self.write("Demo/Base.lean", "def value : Nat := 2\n")
             self.assertEqual(self.plan().checks, [
                 ("source hygiene (changed files)",
-                 [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), ratchet])
-            # A changed baseline already selects the ratchet; it runs once.
-            self.write("scripts/encoding_readability_baseline.json", "{}\n")
-            self.assertEqual([label for label, _ in self.plan().checks],
-                             ["source hygiene (changed files)", "encoding readability ratchet"])
+                 [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), encoding, projection])
+            # A changed baseline already selects its ratchet; each ratchet runs once.
+            for baseline in ("scripts/encoding_readability_baseline.json",
+                             "scripts/projection_chains_baseline.json"):
+                with self.subTest(baseline=baseline):
+                    self.write(baseline, "{}\n")
+                    self.assertEqual(sorted(label for label, _ in self.plan().checks),
+                                     sorted(labels))
         # The aggregates sit outside both roots, as `CslibFrontier.lean` does.
         self.assertEqual(quick.HYGIENE_ROOTS, ("CslibFrontier/", "CslibFrontierTests/"))
 

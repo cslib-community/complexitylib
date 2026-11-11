@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Complexity.Classes.EXP.Decidable
 import CslibFrontier.Computability.Complexity.Classes.Ladner.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.Ladner.Stages
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
@@ -116,7 +117,7 @@ def actStep (T : List ℕ) : ℕ :=
     0 (· + 1)
 
 /-- The table of the actions at the first `n` stages. -/
-def table (n : ℕ) : List ℕ := (fun T => T ++ [actStep T])^[n] []
+def table (n : ℕ) : List ℕ := List.courseOfValues actStep n
 
 /-- The action at stage `n`: `e + 1` if requirement `e` acts, `0` if none does. -/
 def act (n : ℕ) : ℕ := actStep (table n)
@@ -130,17 +131,15 @@ theorem word_mem_language_iff {n : ℕ} : word n ∈ language ↔ act n % 2 = 1 
   rw [mem_language_iff, index_word]
 
 theorem table_succ (n : ℕ) : table (n + 1) = table n ++ [act n] := by
-  rw [table, Function.iterate_succ_apply']
+  rw [table, List.courseOfValues_succ]
   rfl
 
-theorem table_eq (n : ℕ) : table n = (List.range n).map act := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [table_succ, List.range_succ, List.map_append, ← ih]; rfl
+theorem table_eq (n : ℕ) : table n = (List.range n).map act :=
+  List.courseOfValues_eq actStep n
 
 @[simp]
-theorem length_table (n : ℕ) : (table n).length = n := by
-  simp [table_eq]
+theorem length_table (n : ℕ) : (table n).length = n :=
+  List.length_courseOfValues actStep n
 
 theorem actStep_le (T : List ℕ) : actStep T ≤ T.length := by
   unfold actStep
@@ -258,19 +257,9 @@ private theorem computableInPolyTime_actStep :
 
 /-- **The tables of actions are polynomial-time** in their length, in unary. -/
 theorem computableInPolyTime_table : ComputableInPolyTime table encUnary (encList encUnary) :=
-  ComputableInPolyTime.iterate (encIn := encUnary) (encState := encList encUnary)
-    (count := fun n => n) (init := fun _ => []) (step := fun T => T ++ [actStep T]) (by fun_prop)
-    (by fun_prop) (by have := computableInPolyTime_actStep; fun_prop)
-    (bound := fun n => n * (2 * n + 1))
-    (.of_forall_le 2 2 fun n => by simp only [encUnary_apply, List.length_replicate]; nlinarith)
-    (fun n i hi => by
-      change (encList encUnary (table i)).length ≤ _
-      calc (encList encUnary (table i)).length ≤ (table i).length * (2 * n + 1) :=
-            length_encList_le encUnary _ fun a ha => by
-              rw [table_eq] at ha
-              obtain ⟨m, hm, rfl⟩ := List.mem_map.mp ha
-              simpa using (act_le m).trans (by have := List.mem_range.mp hm; omega)
-        _ ≤ n * (2 * n + 1) := by rw [length_table]; exact Nat.mul_le_mul_right _ hi)
+  .courseOfValues computableInPolyTime_actStep .id fun n i hi => by
+    have hact : List.courseOfValuesVal actStep i = act i := rfl
+    simpa only [encUnary_apply, List.length_replicate, hact] using (act_le i).trans hi.le
 
 /-- **The actions are polynomial-time** in the stage, in unary. -/
 theorem computableInPolyTime_act : ComputableInPolyTime act encUnary encUnary := by
