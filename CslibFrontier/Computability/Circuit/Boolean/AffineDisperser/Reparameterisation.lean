@@ -17,8 +17,8 @@ Two reparameterisation operations for `3.5n` states:
 
 * `State.Valid.swap`: specialization of the shared affine reparameterisation `(AR)`
   (`AffineDisperserCore.State.swap`) preserving `PairTame` affinity;
-* `State.quad`: the quadratic reparameterisation `(QR)` (Mishra–Santhanam, Definition 3.6 /
-  Section 4), substituting `z = D + (x + α)(y + β) + γ + c`, moving `D` into the parameters,
+* `State.quad`: the quadratic reparameterisation `(QR)` ([MishraSanthanam2026], §2.4 eq. (3),
+  §3.2, and §4.3), substituting `z = D + (x + α)(y + β) + γ + c`, moving `D` into the parameters,
   deleting `G` and `D`, and pairing `x` with `y`.
 
 ## Main definitions

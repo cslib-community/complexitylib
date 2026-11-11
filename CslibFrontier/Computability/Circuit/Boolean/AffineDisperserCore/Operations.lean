@@ -393,54 +393,10 @@ theorem deleteGate_children_of_ne {S : State cfg n} (hS : S.Valid f) {J : ℕ} {
   have := deleteGate_children_subset (S := S) (J := J) (ℓ := ℓ) z
   rwa [SemiCircuit.children_subst hzJ hzℓ] at this
 
-private theorem wellFormed_deleteGate_of_reads {C : SemiCircuit} (hC : C.WellFormed)
-    {J : ℕ} {ℓ : Lit} (hJ : J ∈ C.gates) (hreads : ∀ t, ℓ.Reads t → (C.gate J).Reads t) :
-    (C.deleteGate J ℓ).WellFormed := by
-  have hℓJ : ℓ.arg ≠ .node J := fun he => hC.not_reads_self hJ (hreads J he)
-  have heqn : ∀ e ∈ C.eqns, (C.eqn e).subst J ℓ = C.eqn e := fun e he =>
-    Equation.subst_of_notMem (hC.notMem_terms_of_mem_gates hJ he)
-  have heqns_iff : ∀ val, (C.deleteGate J ℓ).EqnsHold val ↔ C.EqnsHold val := fun val =>
-    forall₂_congr fun e he => by
-      change ((C.eqn e).subst J ℓ).Holds val ↔ _
-      rw [heqn e he]
-  have hreads_live : ∀ t, ℓ.Reads t → t ∈ C.live := fun t ht =>
-    hC.reads_live J hJ t (hreads t ht)
-  refine
-    { disjoint_params_aux := hC.disjoint_params_aux
-      disjoint_params_gates := Finset.disjoint_of_subset_right (Finset.erase_subset _ _)
-        hC.disjoint_params_gates
-      disjoint_aux_gates := Finset.disjoint_of_subset_right (Finset.erase_subset _ _)
-        hC.disjoint_aux_gates
-      reads_lt := fun K hK i hi hr => ?_
-      reads_live := fun K hK i hr => ?_
-      terms_subset := fun e he => by
-        change ((C.eqn e).subst J ℓ).terms ⊆ _
-        rw [heqn e he]; exact hC.terms_subset e he
-      card_terms_le := fun e he => Equation.card_subst_le.trans (hC.card_terms_le e he)
-      out_live := fun i hi => ?_
-      solvable := fun u => by
-        obtain ⟨val, hu, heq⟩ := hC.solvable u
-        exact ⟨val, hu, (heqns_iff val).2 heq⟩
-      unique := fun val val' hagree heq heq' =>
-        hC.unique val val' hagree ((heqns_iff val).1 heq) ((heqns_iff val').1 heq') }
-  · have hK' := Finset.mem_of_mem_erase hK
-    have hi' := Finset.mem_of_mem_erase hi
-    rcases Gate.reads_of_reads_subst hr with hr | ⟨hrJ, hr⟩
-    · exact hC.reads_lt K hK' i hi' hr
-    · exact (hC.reads_lt J hJ i hi' (hreads i hr)).trans (hC.reads_lt K hK' J hJ hrJ)
-  · refine mem_live_deleteGate ?_ fun he => Gate.not_reads_subst hℓJ (he ▸ hr)
-    rcases Gate.reads_of_reads_subst hr with hr | ⟨-, hr⟩
-    · exact hC.reads_live K (Finset.mem_of_mem_erase hK) i hr
-    · exact hreads_live i hr
-  · refine mem_live_deleteGate ?_ fun he => Lit.not_reads_subst hℓJ (he ▸ hi)
-    rcases Lit.reads_of_reads_subst hi with hi | ⟨-, hi⟩
-    · exact hC.out_live i hi
-    · exact hreads_live i hi
-
 /-- Deleting a gate preserves validity on admissible assignments. -/
 theorem Valid.deleteGate {S : State cfg n} (hS : S.Valid f) {J : ℕ} {ℓ : Lit}
     (h : S.DeleteGateLocusOK J ℓ) : (S.deleteGate J ℓ).Valid f := by
-  refine hS.of_liftsTo rfl rfl rfl (wellFormed_deleteGate_of_reads hS.wf h.mem h.reads)
+  refine hS.of_liftsTo rfl rfl rfl (hS.wf.deleteGate_of_reads h.mem h.reads)
     fun val hval hlocus => ?_
   have hℓJ : ℓ.arg ≠ .node J := fun he => hS.wf.not_reads_self h.mem (h.reads J he)
   set w := Function.update val J ((S.gate J).eval val)
