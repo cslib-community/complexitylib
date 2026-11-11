@@ -31,14 +31,14 @@ where `B = romCpaReduction A m₀ m₁` for some distinct messages `m₀ ≠ m�
 bound by composing the §3.1 theorem for `T` (IND-CPA to OW-PCA) with the §3.2.2 theorem for
 `U-notbot`; this proof composes the corresponding game hops directly:
 
-1. `advantage_eagerIndCcaGame_eagerFbGame_le` (`NotBot/Fallback.lean`): replacing the
+1. `advantage_eagerIndCcaGame_eagerFbGame_le` (module `NotBot.Fallback`): replacing the
    implicit-rejection keys `H(true, s, ·)` by an independent table costs `qH / |M|`.
-2. `eagerCoupledGame_eq_eagerFbGame` (`NotBot/Pushforward.lean`) and
-   `eval_coupledGame_eq_eagerCoupledGame` (`NotBot/Lazy.lean`): re-indexing the random oracles so
-   that decapsulation reads a ciphertext table `Hq`, and its lazy realization.
-3. `advantage_coupledGame_simGame_le` (`NotBot/Correctness.lean`): dropping the decryption test
-   from the simulator costs `(qG + qH + 1) δ`.
-4. `advantage_simGame_le` (`NotBot/Challenge.lean`): in the keyless simulator the real and random
+2. `eagerCoupledGame_eq_eagerFbGame` (`NotBot.Pushforward`) and
+   `eval_coupledGame_eq_eagerCoupledGame` (`NotBot.Lazy`): re-indexing the random oracles so that
+   decapsulation reads a ciphertext table `Hq`, and its lazy realization.
+3. `advantage_coupledGame_simGame_le` (`NotBot.Correctness`): dropping the decryption test from
+   the simulator costs `(qG + qH + 1) δ`.
+4. `advantage_simGame_le` (`NotBot.Challenge`): in the keyless simulator the real and random
    challenge keys are indistinguishable unless `m*` is queried or another message re-encrypts to
    `c*`, which reduces to IND-CPA via `romCpaReduction`.
 

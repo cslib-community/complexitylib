@@ -108,7 +108,7 @@ private theorem lookup_ens (x : α) (v : β) (L : List (α × β)) (y : α) :
   by_cases hy : y = x
   · subst hy
     simp [List.lookup_append, lookup_filter_self]
-  · simp [List.lookup_append, lookup_filter_ne x y L hy, hy]
+  · simp only [List.lookup_append, lookup_filter_ne x y L hy, hy, ↓reduceIte]
     cases L.lookup y <;> simp [hy]
 
 private theorem ens_cons_ne (x : α) (v : β) (L : List (α × β)) (y : α) (w : β) (hy : y ≠ x) :

@@ -13,9 +13,12 @@ public import CslibFrontierTests.Crypto.FujisakiOkamoto
 # Tests for the ROM IND-CCA theorem of `FO-notbot`
 
 The hypotheses of `Scheme.indCcaRomAdvantage_le` are met by the perfectly correct test scheme
-`notBotScheme` (`identityPKE` with uniform `Fin 4` messages, `DeltaCorrect 0`, `GammaSpread 0`) against the
-query-bounded adversary `queryCiphertextGAdv`, and the theorem then yields an explicit numeric bound.
+`notBotScheme` (`identityPKE` with uniform `Fin 4` messages, `DeltaCorrect 0`, `GammaSpread 0`)
+against the query-bounded adversary `queryCiphertextGAdv`, and the theorem then yields an explicit
+numeric bound.
 -/
+
+public section
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.FujisakiOkamoto
 open Cslib.Probability
