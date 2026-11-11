@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.SIS.ModulusSwitch.Correctness
 public import CslibFrontier.Probability.Product.Event
 public import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Randomized correctness after Module-LWE modulus switching

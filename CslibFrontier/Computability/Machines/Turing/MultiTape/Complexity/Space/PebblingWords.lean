@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Pebbling.Descending
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpaceLib
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Lists
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.FunProp
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.ListSlice
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.EqualityPrimitives
@@ -69,8 +70,6 @@ private theorem find?_range_succ (n : ℕ) (p : ℕ → Bool) :
       if p 0 then some 0 else ((List.range n).find? (p ∘ Nat.succ)).map Nat.succ := by
   rw [List.range_succ_eq_map, List.find?_cons, List.find?_map]
   cases p 0 <;> rfl
-
-private theorem diffIndex_nil (v : List Bool) : diffIndex [] v = 0 := rfl
 
 /-- Peeling a common first letter shifts the first difference by one. -/
 private theorem diffIndex_cons (a : Bool) (u v : List Bool) :
@@ -145,7 +144,7 @@ theorem diffIndex_inSpace :
   let encS := encPair encBits (encPair encNat encBool)
   have hid : ComputableInSpace (fun q : (List Bool × ℕ × Bool) × Bool => q) (encPair encS encBool)
       (encPair encS encBool) fun q => (encPair encS encBool q).length :=
-    (budget_prod (fst _ _) (snd _ _)).of_enc_eq fun _ => rfl
+    budget_id (.refl _)
   have hs := fst' hid
   have ha := snd' hid
   have hw := fst' hs
@@ -236,8 +235,7 @@ theorem ready_inSpace {child : π → ℕ → Fin d → ℕ} {Sc : π × ℕ →
   let E := encPair encP (encPair encBits encNat)
   have hid : ComputableInSpace (fun q : π × List Bool × ℕ => q) E E
       fun (p, w, i) => (E (p, w, i)).length + Sc (p, i) :=
-    ((budget_prod (fst _ _) (snd _ _)).of_enc_eq fun _ => rfl).mono_le
-      fun _ => Nat.le_add_right _ _
+    budget_id (.of_le fun _ => Nat.le_add_right _ _)
   have hpi : ComputableInSpace (fun q : π × List Bool × ℕ => (q.1, q.2.2)) E (encPair encP encNat)
       fun (p, w, i) => (E (p, w, i)).length + Sc (p, i) := budget_prod (fst' hid) (snd' (snd' hid))
   exact budget_ready (fst' (snd' hid)) (snd' (snd' hid)) fun a =>
@@ -263,7 +261,7 @@ private theorem countTrue_inSpace :
       fun u => (encBits u).length := by
   have hid : ComputableInSpace (fun q : ℕ × Bool => q) (encPair encNat encBool)
       (encPair encNat encBool) fun q => (encPair encNat encBool q).length :=
-    (budget_prod (fst _ _) (snd _ _)).of_enc_eq fun _ => rfl
+    budget_id (.refl _)
   have hstep : ComputableInSpace (fun q : ℕ × Bool => countStep q.1 q.2) (encPair encNat encBool)
       encNat fun q => (encPair encNat encBool q).length :=
     (budget_ite (snd' hid) (budget_natSucc (fst' hid)) (fst' hid)).of_enc_eq fun _ => rfl
@@ -275,8 +273,7 @@ private theorem countTrue_inSpace :
     have h₃ : (u.take i).length ≤ u.length := by simp
     omega
   have hfold := foldl (encA := encBool) (encL := encBits) (encB := encNat)
-    (of_inO (ComputableInO.of_eq (f := fun u : List Bool => u) (encIn := encBits)
-      (encMid := encBits) fun _ => rfl))
+    (budget_id (.refl _))
     (const (encB := encNat) 0) hstep
     (Q := fun u => 2 * u.length + 3) (B := fun u => u.length)
     (fun u i hi => by
@@ -407,8 +404,7 @@ theorem wordStep_inSpace {child : π → ℕ → Fin d → ℕ} {s : π → ℕ}
   let E := encPair encP (encPair encBits encBits)
   have hid : ComputableInSpace (fun q : π × List Bool × List Bool => q) E E
       fun (p, u, v) => (E (p, u, v)).length + Sc (p, diffIndex u v) + Ss p :=
-    ((budget_prod (fst _ _) (snd _ _)).of_enc_eq fun _ => rfl).mono_le
-      fun _ => Nat.le_add_right_of_le (Nat.le_add_right _ _)
+    budget_id (.of_le fun _ => Nat.le_add_right_of_le (Nat.le_add_right _ _))
   have hp := fst' hid
   have hu := fst' (snd' hid)
   have hv := snd' (snd' hid)
@@ -535,8 +531,7 @@ theorem childValues_inSpace {child : π → ℕ → Fin d → ℕ} {Sc : π × �
   let E := encPair encP (encPair encTable encNat)
   have hid : ComputableInSpace (fun q : π × List (ℕ × List Bool) × ℕ => q) E E
       fun (p, t, i) => (E (p, t, i)).length + Sc (p, i) :=
-    ((budget_prod (fst _ _) (snd _ _)).of_enc_eq fun _ => rfl).mono_le
-      fun _ => Nat.le_add_right _ _
+    budget_id (.of_le fun _ => Nat.le_add_right _ _)
   have hpi : ComputableInSpace (fun q : π × List (ℕ × List Bool) × ℕ => (q.1, q.2.2)) E
       (encPair encP encNat) fun (p, t, i) => (E (p, t, i)).length + Sc (p, i) :=
     budget_prod (fst' hid) (snd' (snd' hid))

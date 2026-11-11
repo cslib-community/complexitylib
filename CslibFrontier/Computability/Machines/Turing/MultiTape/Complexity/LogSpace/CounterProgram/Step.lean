@@ -267,7 +267,7 @@ conditionals.
 A conditional label `if c then l₁ else l₂` is decided when `c` or `¬c` is a hypothesis or, for a
 comparison of natural numbers or integers, follows by `omega`: that of the configuration before
 the step, and after the step that of either configuration when the label of the other is `l₁` or
-`l₂`, so that deciding it closes the goal.
+`l₂`. The goal is then closed when it can be; otherwise it is left with that label decided.
 
 The side conditions of the rule must be proved automatically: a bound `∀ r ∈ regs, r ≤ B` on the
 registers by a hypothesis, or entry by entry for `regs'.set i x` (from a bound on `regs'`) and for

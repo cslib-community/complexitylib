@@ -159,10 +159,10 @@ def check_local_attributes(root: Path) -> None:
                        "move them aside or run the check in another clone")
 
 
-def driver_config(root: Path) -> list[str]:
+def driver_config(root: Path, scripts: Path | None = None) -> list[str]:
     """`-c` options pinning every merge driver the replay could run: `bibkeys` and `leanagg` run
-    this checkout's resolvers, and every other configured driver reports a conflict without
-    merging."""
+    the resolvers in `scripts` (default this checkout's), and every other configured driver
+    reports a conflict without merging."""
     listed = git(root, "config", "--null", "--name-only", "--get-regexp",
                  r"^merge\..*\.driver$", ok=(0, 1))
     names = {key[len("merge."):-len(".driver")]
@@ -175,8 +175,10 @@ def driver_config(root: Path) -> list[str]:
         raise GitError("a configured merge driver name contains `=` or a newline, so the replay "
                        "cannot disable it; run the check in another clone")
     # Git expands `%` in a driver command, so a literal `%` in a path is doubled.
+    resolvers = ((scripts / BIB_RESOLVER.name, scripts / AGGREGATE_RESOLVER.name) if scripts
+                 else (BIB_RESOLVER, AGGREGATE_RESOLVER))
     python, bib, aggregate = (shlex.quote(str(p)).replace("%", "%%")
-                              for p in (sys.executable, BIB_RESOLVER, AGGREGATE_RESOLVER))
+                              for p in (sys.executable, *resolvers))
     options = ["-c", f"merge.{BIB_DRIVER}.driver={python} {bib} --driver %O %A %B",
                "-c", f"merge.{AGGREGATE_DRIVER}.driver={python} {aggregate} %O %A %B"]
     for name in sorted(names):
@@ -187,9 +189,16 @@ def driver_config(root: Path) -> list[str]:
 def replay(root: Path, approved_base: str, approved: str, onto: str) -> tuple[str, set[str]]:
     """The tree of `approved_base..approved` merged onto `onto`, and the paths that conflicted."""
     check_local_attributes(root)
-    result = git(root, f"--attr-source={onto}", "-c", f"core.attributesFile={os.devnull}",
-                 *MERGE_CONFIG, *driver_config(root), "merge-tree", "--write-tree", "--name-only",
-                 "-z", "--no-messages", f"--merge-base={approved_base}", onto, approved, ok=(0, 1))
+    return merge_tree(root, (f"--attr-source={onto}", "-c", f"core.attributesFile={os.devnull}",
+                             *MERGE_CONFIG, *driver_config(root)),
+                      f"--merge-base={approved_base}", onto, approved)
+
+
+def merge_tree(root: Path, options: tuple[str, ...], *args: str) -> tuple[str, set[str]]:
+    """`git merge-tree --write-tree` with the global `options` and the arguments `args`: the tree
+    it writes and the paths that conflicted."""
+    result = git(root, *options, "merge-tree", "--write-tree", "--name-only", "-z", "--no-messages",
+                 *args, ok=(0, 1))
     fields = result.stdout.split(b"\0")
     if not re.fullmatch(rb"[0-9a-f]{40,64}", fields[0]):
         raise GitError("unexpected `git merge-tree` output; Git 2.42 or later is required")

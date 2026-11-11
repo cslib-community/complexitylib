@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Interactive.AuxZK
 public import CslibFrontier.Computability.Interactive.Bundle
 public import CslibFrontier.Computability.Interactive.Efficient
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Round-by-round knowledge soundness of interactive reductions
