@@ -5,8 +5,13 @@ Authors: Samuel Schlesinger, Erik Demaine
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.ModP.Composite
+import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 namespace Cslib.Complexity.Tests
+
+open Turing.MultiTapeTM Cslib.Complexity
 
 variable {α : Type} {enc : α ↪ List Bool}
 
@@ -56,6 +61,15 @@ def notDiv6Lang : Set (List Bool) := {w | trueCount w % 6 ≠ 0}
 
 instance (w : List Bool) : Decidable (w ∈ notDiv6Lang) :=
   inferInstanceAs (Decidable (trueCount w % 6 ≠ 0))
+
+theorem trueCount_mem_SharpP : trueCount ∈ SharpP encBits := by
+  apply mem_SharpP_of_polyTime
+  have hcount : ComputableInPolyTime (fun x : List Bool => x.count true) encBits encUnary :=
+    ComputableInPolyTime.bitsCountWithInput ComputableInPolyTime.id' (.const true)
+  exact (ComputableInPolyTime.unary_to_binary.comp hcount).of_enc_eq (fun _ => rfl)
+
+example : notDiv6Lang ∈ ModP 6 encBits :=
+  ⟨trueCount, trueCount_mem_SharpP, fun _ => Iff.rfl⟩
 
 /-- Concrete evaluation of accepted input: count is 7, 7 % 6 = 1 ≠ 0, so it is accepted. -/
 example : [true, true, true, true, true, true, true] ∈ notDiv6Lang := by decide
