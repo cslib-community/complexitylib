@@ -533,6 +533,18 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
 never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
 
+GitHub declines every push to the branch of a PR that is in the merge queue ("protected branch
+hook declined"), even when its entry is `UNMERGEABLE`. Whoever restacks a queued PR, by hand or
+with `--push` below, first removes it with **Remove from queue** on the PR page or:
+
+```bash
+gh api graphql -f id="$(gh pr view <PR> --json id --jq .id)" -f query='
+  mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { mergeQueueEntry { state } } }'
+```
+
+Dequeueing merges nothing, so the author may do it; the new head is queued again only by a
+non-author, once the `check_restack.py` check below passes or the delta is reviewed.
+
 When the only conflicts with `main` are in the aggregates or `references.bib`,
 `python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
 without running the PR's code. It requires the `check_restack.py` check below to pass for the

@@ -605,6 +605,38 @@ Because the Boolean axioms are inputs, contradictory unit clauses have no spurio
 `CNF.ns_refutableInDegree_iff` and `CNF.pc_refutableInDegree_iff` give refutability in degree
 `card V + w`, for clauses of at most `w` literals, exactly when the formula is unsatisfiable.
 
+[The Boolean-cube quotient module](../../CslibFrontier/Foundations/BooleanAnalysis/BooleanQuotient.lean)
+identifies the quotient `MvPolynomial ι R ⧸ boolIdeal ι R` over any commutative ring `R` and
+finite `ι` with the ring `(ι → Bool) → R` of cube functions (`boolQuotientAlgEquiv`), and proves
+uniqueness of multilinear representatives in `restrictDegree ι R 1` over arbitrary commutative
+rings and index types (`existsUnique_mem_restrictDegree_sub_mem_boolIdeal`, coinciding with
+`multilinearExtension` when `ι` is finite). The companion linear equivalences
+`restrictDegreeOneLinearEquiv` and `restrictDegreeOneQuotientEquiv` (with `@[simp]` evaluation and
+inverse lemmas `restrictDegreeOneLinearEquiv_apply`, `coe_restrictDegreeOneLinearEquiv_symm`,
+`restrictDegreeOneQuotientEquiv_apply`, `eval_coe_restrictDegreeOneQuotientEquiv_symm`, and
+`coe_restrictDegreeOneQuotientEquiv_symm_mk`) transport between multilinear polynomials, cube
+functions, and quotient cosets. Over a reduced ring `boolIdeal` is radical
+(`boolIdeal_isRadical`), and over a field `K` the quotient has dimension `2 ^ Fintype.card ι`
+(`finrank_boolQuotient`).
+[Algebraic/CNF/Counting](../../CslibFrontier/Logics/Propositional/Algebraic/CNF/Counting.lean)
+identifies the spans of `boolAxioms` and `SOS.Psatz.booleanAxioms` with `boolIdeal`
+(`span_boolAxioms_eq_boolIdeal`, `span_booleanAxioms_eq_boolIdeal`), characterizes unsatisfiability
+over a field by `1 ∈ Ideal.span {p | p ∈ F} ⊔ boolIdeal σ K`
+(`Algebraic.one_mem_sup_boolIdeal_iff`), and defines the `0`/`1` clause and formula satisfaction
+indicators `Clause.satPoly R c := 1 - c.toBoolPoly R` and `CNF.satIndicatorPoly R φ`. Over any
+commutative ring `R`, summing `φ.satIndicatorPoly R` over Boolean assignments to `declared`,
+`φ.vars.toFinset`, or `bitsAssignment φ.distinctVars i` (`i < 2 ^ φ.numVars`) equals the natural
+count cast into `R`, `(φ.modelCountOn declared : R)` or `(φ.modelCount : R)`
+(`CNF.sum_eval_satIndicatorPoly_declared`, `CNF.sum_eval_satIndicatorPoly_vars`,
+`CNF.sum_range_eval_satIndicatorPoly_distinctVars`), whereas over the finite ambient cube `V → Bool`
+it equals `(2 : R) ^ (Fintype.card V - φ.numVars) * (φ.modelCount : R)` with the unused-variable
+factor `(2 : R) ^ (Fintype.card V - φ.numVars)` (`CNF.sum_eval_satIndicatorPoly`); in positive
+characteristic, casting into `R` preserves the counts only modulo the ring characteristic.
+[Checked examples](../../CslibFrontierTests/BooleanQuotientSAT.lean) verify uniqueness over the
+non-reduced ring `ZMod 4` (where `boolIdeal` fails to be radical), the dimension `4` on two
+variables over `ℚ`, unsatisfiability in `span F ⊔ boolIdeal`, and the cube-sum identities including
+unused variables (`sparseFin3`, where `modelCount = 3` and the `Fin 3 → Bool` sum is `6`).
+
 [The subset-sum lower bound](../../CslibFrontier/Logics/Propositional/Algebraic/SubsetSum.lean) is
 Theorem 5.1 of Impagliazzo, Pudlák and Sgall. Suppose every `c i` is nonzero and `n ≥ 1`. Then
 `m - ∑ c i * X i`, with the Boolean axioms, has no polynomial calculus refutation
