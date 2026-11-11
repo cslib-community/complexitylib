@@ -115,6 +115,11 @@ class RestoredFileTests(Fixture):
         self.assertEqual(c.restored_files(self.root, ["Demo/Base.lean"], ["tools"]),
                          ["Demo/Base.lean", "tools/Helper.lean", "tools/Tool.lean"])
 
+    def test_optional_aggregate_is_checked_only_when_built(self) -> None:
+        self.assertEqual(c.restored_files(self.root, [], ["Demo.lean"]), [])
+        self.write(".lake/build/lib/lean/Demo.olean", "compiled output")
+        self.assertEqual(c.restored_files(self.root, [], ["Demo.lean"]), ["Demo.lean"])
+
     def test_paths_with_whitespace_are_preserved(self) -> None:
         self.write("Demo/has space\nand newline.lean", "example : True := trivial\n")
         self.trace("Demo/has space\nand newline", synthetic=True, log=[])
@@ -244,8 +249,18 @@ class RealLakeTests(Fixture):
 
     def test_changed_import_makes_unchanged_restored_client_warn_in_full_and_quick_checks(self) -> None:
         self.write("Demo/Base.lean", "def value : Nat := 1\ndef oldValue : Nat := value\n")
-        client = "import Demo.Base\nexample : Nat := oldValue\n"
-        self.write("DemoTests/Client.lean", client)
+        self.write("DemoTests/Client.lean", "import Demo.Base\nexample : Nat := oldValue\n")
+        self.assert_unchanged_warning(
+            'def value : Nat := 1\n@[deprecated value (since := "2026-11-11")]\n'
+            'def oldValue : Nat := value\n', "DemoTests/Client.lean")
+
+    def test_unchanged_aggregate_import_warning_is_checked(self) -> None:
+        self.write("DemoTests/Client.lean", "import Demo\nexample : Nat := value\n")
+        self.assert_unchanged_warning(
+            'def value : Nat := 1\ndeprecated_module (since := "2026-11-11")\n', "Demo.lean")
+
+    def assert_unchanged_warning(self, edited_base: str, warning_file: str) -> None:
+        """A changed import can hide a warning in any unchanged source on a built client's path."""
         # Run quick mode's actual subprocess audit in this private project, stopping at its failure.
         for name in ("quick_check.py", "check_cache_restores.py", "QuickImports.lean"):
             self.write(f"scripts/{name}", (REPO / "scripts" / name).read_text())
@@ -253,8 +268,7 @@ class RealLakeTests(Fixture):
         self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
         self.commit()  # include the generated manifest before measuring the Lean-only change
         self.git("update-ref", "refs/remotes/origin/main", "HEAD")
-        self.write("Demo/Base.lean", 'def value : Nat := 1\n'
-                   '@[deprecated value (since := "2026-11-11")]\ndef oldValue : Nat := value\n')
+        self.write("Demo/Base.lean", edited_base)
         populate = self.lake("build", "DemoTests.Client")
         self.assertEqual(populate.returncode, 0, populate.stdout + populate.stderr)
         self.assertIn("deprecated", populate.stdout + populate.stderr)
@@ -269,7 +283,7 @@ class RealLakeTests(Fixture):
                 with redirect_stdout(out), redirect_stderr(out):
                     self.assertEqual(check([], self.root), 1, out.getvalue())
                 self.assertIn("deprecated", out.getvalue())
-                self.assertIn("FAIL  DemoTests/Client.lean", out.getvalue())
+                self.assertIn(f"FAIL  {warning_file}", out.getvalue())
 
 
 if __name__ == "__main__":

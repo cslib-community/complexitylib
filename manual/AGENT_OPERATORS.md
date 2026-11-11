@@ -124,7 +124,8 @@ processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
 Agents on one host also share Lake's artifact cache, which restores a module that another
 checkout built without its warnings. Full `scripts/check.sh` re-elaborates those built root-package
-sources; quick mode checks affected sources, including unchanged clients and executable helpers.
+sources; quick mode checks affected sources, including unchanged clients, built import aggregates
+and executable helpers.
 Bare Lake commands still lack this audit. When a local check and CI disagree about a warning,
 trust CI
 ([diagnosis](workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).

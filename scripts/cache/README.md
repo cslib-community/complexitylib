@@ -10,7 +10,7 @@ other checkout on the same machine with the same inputs. Outputs are hard-linked
 `~/.elan` unless `LAKE_CACHE_DIR` says otherwise. A restored module's warnings are not replayed,
 so `--wfail` can pass locally where CI fails. Full `scripts/check.sh` re-elaborates built
 root-package sources restored this way; quick mode checks affected sources, including unchanged
-clients and built executable helpers
+clients, built import aggregates and executable helpers
 ([troubleshooting](../../manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
 **Remote cache.** CI uploads the build outputs of every commit on `main`; `scripts/cache/get.sh`

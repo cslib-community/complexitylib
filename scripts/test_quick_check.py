@@ -72,14 +72,24 @@ class QuickCheckTests(unittest.TestCase):
         self.assertEqual(plan.restore_files,
                          ["Demo/Base.lean", "Demo/Middle.lean", "DemoTests/AllClient.lean",
                           "DemoTests/Client.lean"])
+        self.assertEqual(plan.restore_built, ["Demo.lean"])
+
+    def test_unused_aggregate_is_not_audited_or_built(self):
+        (self.root / "DemoTests/AllClient.lean").unlink()
+        self.write("DemoTests.lean", "import DemoTests.Client\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        self.write(".lake/build/lib/lean/Demo.trace", '{"synthetic": true}')
+        self.assertEqual(self.plan().restore_built, [])
 
     def record_command(self, command, plan):
         """Read the audit's temporary manifest while it exists, then normalize its random path."""
         if command[:3] == RESTORES:
             self.assertEqual(command[3], "--files-from")
             self.assertEqual(json.loads(Path(command[4]).read_text()), plan.restore_files)
-            self.assertEqual(command[5:], [part for directory in plan.restore_dirs
-                                          for part in ("--source-dir", directory)])
+            self.assertEqual(command[5:], [part for path in plan.restore_built
+                                          for part in ("--built-under", path)])
             return RESTORES
         return command
 
@@ -373,7 +383,7 @@ class QuickCheckTests(unittest.TestCase):
         plan = self.plan()
         self.assertIn("@/demoTool", plan.targets)
         self.assertIn("tools/Tool.lean", plan.restore_files)
-        self.assertEqual(plan.restore_dirs, ["tools"])
+        self.assertEqual(plan.restore_built, ["Demo.lean", "DemoTests.lean", "tools"])
 
     def test_hyphenated_executable_name_is_built_explicitly(self):
         self.add_executable("import Demo.Base", "demo-tool")

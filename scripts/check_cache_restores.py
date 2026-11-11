@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Re-elaborate local Lean files whose build outputs came from Lake's artifact cache (#4523).
 
-Usage: python3 scripts/check_cache_restores.py [--files-from JSON] [--source-dir DIR ...]
+Usage: python3 scripts/check_cache_restores.py [--files-from JSON] [--built-under PATH ...]
 
 `lakefile.toml` enables Lake's local artifact cache, which checkouts on the same machine share.
 Lake stores a module's outputs there whenever it builds them, also when the build logged warnings.
@@ -14,8 +14,9 @@ CI does not hit this, because its remote cache is published only from `main`.
 After the Lean gates, `scripts/full_check.py` runs this check for all built sources of the root
 package, including unchanged clients, tests and executables. This also covers deletions and
 configuration changes, which cannot use quick mode's bounded import graph. `scripts/quick_check.py`
-passes its affected source files as a JSON list, plus executable source directories whose built
-helpers may import the edited library indirectly. Missing or unreadable traces are checked too.
+passes its affected source files as a JSON list, plus built import aggregates and executable
+source directories whose helpers may import the edited library indirectly. Missing or unreadable
+traces are checked too.
 
 It runs `lake -q lean` on each selected file whose trace is synthetic and fails when the command
 fails or prints anything at all: `lake lean` exits 0 after warnings, and `--iofail` rejects
@@ -82,17 +83,16 @@ def built_files(root: Path, lib_dir: Path, dirs: list[Path]) -> set[str]:
 
 
 def restored_files(root: Path, files: list[str] | None = None,
-                   source_dirs: Sequence[str] = ()) -> list[str]:
+                   built_under: Sequence[str] = ()) -> list[str]:
     """Selected sources with restored, missing or unreadable build traces.
 
-    Without an explicit list, cover all root-package build outputs. Extra source directories
-    include the built helpers of executables, whose imports lie outside quick mode's library graph.
+    Without an explicit list, cover all root-package build outputs. Extra paths select built
+    aggregates or executable helper directories without forcing unbuilt sources into the audit.
     """
     lib_dir, dirs = layout(root)
-    built = built_files(root, lib_dir, dirs) if files is None or source_dirs else set()
+    built = built_files(root, lib_dir, dirs) if files is None or built_under else set()
     selected = built if files is None else set(files)
-    selected |= {rel for rel in built if any(Path(rel).is_relative_to(directory)
-                                           for directory in source_dirs)}
+    selected |= {rel for rel in built if any(Path(rel).is_relative_to(path) for path in built_under)}
     for rel in selected:
         path = Path(rel)
         if (path.is_absolute() or ".." in path.parts or path.suffix != ".lean"
@@ -113,15 +113,15 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--files-from", type=Path,
                         help="JSON list of affected source paths; default: all built root sources")
-    parser.add_argument("--source-dir", action="append", default=[],
-                        help="also check built sources under this executable source directory")
+    parser.add_argument("--built-under", action="append", default=[],
+                        help="also check built sources at this file or under this directory")
     args = parser.parse_args(argv)
     try:
         selected = json.loads(args.files_from.read_text()) if args.files_from else None
         if args.files_from and (not isinstance(selected, list)
                                 or any(not isinstance(rel, str) for rel in selected)):
             raise ValueError("--files-from must contain a JSON list of source paths")
-        files = restored_files(root, selected, args.source_dir)
+        files = restored_files(root, selected, args.built_under)
     except (OSError, ValueError) as error:
         print(f"Cannot audit restored sources: {error}", file=sys.stderr)
         return 1
