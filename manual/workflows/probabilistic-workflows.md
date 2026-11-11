@@ -837,6 +837,10 @@ weaken the soundness with `PromiseProblem.NPHard.mono`, as `exists_GapLabelCover
 loop, show that the incidence reduction of a loop has parallel edges and has none after loop
 removal, and instantiate both hardness theorems. Run
 `scripts/build.sh CslibFrontierTests.LabelCoverRepetition CslibFrontierTests.LabelCoverSmallSoundness`.
+For constant-factor Set Cover inapproximability from `exists_GapLabelCover_npHard` and its
+`c * log n` soundness gap, see
+[LundYannakakis.lean](../../CslibFrontier/Computability/PCP/Approximation/SetCover/LundYannakakis.lean)
+and [Set Cover approximation hardness](../algorithms-and-memory/approximation-algorithms.md#set-cover-approximation-hardness).
 Håstad's reductions from Label Cover remain open
 ([#886](https://github.com/cslib-community/cslib-frontier/issues/886)).
 

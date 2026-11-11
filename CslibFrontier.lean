@@ -2315,6 +2315,7 @@ public import CslibFrontier.Computability.Complexity.Problems.STCON
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Completeness
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Search
+public import CslibFrontier.Computability.Complexity.Problems.SetCover
 public import CslibFrontier.Computability.Complexity.Problems.SharpDNF
 public import CslibFrontier.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras
 public import CslibFrontier.Computability.Complexity.Problems.SharpDNF.KarpLubyMadras.PolyTime
@@ -3292,6 +3293,9 @@ public import CslibFrontier.Computability.PCP.Approximation.MaxCSP
 public import CslibFrontier.Computability.PCP.Approximation.MaxExactThreeSAT
 public import CslibFrontier.Computability.PCP.Approximation.MaxThreeSAT
 public import CslibFrontier.Computability.PCP.Approximation.ParitySearch
+public import CslibFrontier.Computability.PCP.Approximation.SetCover.ApproxReduction
+public import CslibFrontier.Computability.PCP.Approximation.SetCover.LundYannakakis
+public import CslibFrontier.Computability.PCP.Approximation.SetCover.PartitionGadget
 public import CslibFrontier.Computability.PCP.Approximation.ThreeXOR
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Propagation
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime
