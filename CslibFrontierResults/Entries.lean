@@ -71,6 +71,7 @@ import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
@@ -84,6 +85,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.WeisfeilerLeman
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
@@ -1424,8 +1426,42 @@ register_result "immerman-lander" where
     rank at most n + 1 correspond to round-n color histograms (for nonempty vertex types, since \
     CountingFormula.Realize takes a total assignment Fin 2 → V), and one-variable formulas of \
     rank at most n + 1 correspond to round-(n + 1) vertex colors paired with round-n histograms. \
-    Full C²-equivalence reduces to round |V| + |W|. Colored graphs with arbitrary initial \
-    colorings and k-dimensional Weisfeiler–Leman for k >= 2 are not formalized."
+    Full C²-equivalence reduces to round |V| + |W|. The k-dimensional generalization to C^(k+1) \
+    is in weisfeiler-leman-counting; colored graphs with arbitrary initial colorings are not \
+    formalized."
+
+register_result "weisfeiler-leman-counting" where
+  title := "Cai–Fürer–Immerman: k-dimensional Weisfeiler–Leman characterizes (k + 1)-variable \
+    counting logic C^(k+1)"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 5.2", locator := "Section 5" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_graph_range_castSucc_iff,
+    Cslib.Logic.FO.bijPebbleWinsForever_graph_range_castSucc_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_empty_of_wlHistogram_eq,
+    Cslib.Logic.FO.wlHistogram_eq_of_bijPebbleWins_graph_empty,
+    Cslib.Logic.FO.bijPebbleWinsForever_graph_empty_iff_wlHistogram_eq,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_iff_card_pow_add,
+    Cslib.Logic.FO.realize_countingFormula_iff_of_wlHistogram_eq,
+    Cslib.Logic.FO.wlHistogram_eq_of_forall_realize_countingFormula_empty_le,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_wlHistogram_eq,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_wlHistogram_card_pow_add,
+    Cslib.Logic.FO.forall_wlColoring_one_eq_iff,
+    Cslib.Logic.FO.forall_wlHistogram_one_eq_iff
+  ]
+  scope := "Uncolored finite simple graphs over FirstOrder.Language.graph with no LocallyFinite \
+    or DecidableRel assumption, for every dimension k : ℕ. Folklore k-WL colors k-tuples from \
+    their ordered atomic isomorphism type and refines by the multiset of (k + 1)-tuple step \
+    profiles. Two k-tuples get the same round-n color iff they agree on C^(k+1) formulas of \
+    quantifier rank at most n in the first k variables, and across all ranks iff they agree in \
+    round |V|^k + |W|^k. For nonempty graphs, C^(k+1) sentence equivalence equals k-WL histogram \
+    equality in all rounds and in round |V|^k + |W|^k, with a +k quantifier-rank shift for \
+    individual rounds. Colored graphs and Cai–Fürer–Immerman lower-bound graphs are not \
+    formalized."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"
@@ -1601,8 +1637,34 @@ register_result "color-refinement" where
     partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
     test is incomplete (equal-order d-regular graphs). The correspondence with \
-    two-variable counting logic C² on uncolored simple graphs is in immerman-lander. No \
-    k-dimensional Weisfeiler–Leman, fractional isomorphism or certified algorithm."
+    two-variable counting logic C² on uncolored simple graphs is in immerman-lander, and \
+    folklore k-dimensional Weisfeiler–Leman is in weisfeiler-leman. Fractional isomorphism and a \
+    certified algorithm are not formalized."
+
+register_result "weisfeiler-leman" where
+  title := "k-dimensional Weisfeiler–Leman: partition stabilization, soundness and two-graph \
+    stabilization"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := unverified, locator := "Section 5" }
+  ]
+  theorems := [
+    SimpleGraph.ker_wlColoring_eq,
+    SimpleGraph.ker_stableWLColoring,
+    SimpleGraph.Iso.wlColoring_comp,
+    SimpleGraph.Iso.wlHistogram_eq,
+    SimpleGraph.isEmpty_iso_of_wlHistogram_ne,
+    SimpleGraph.forall_wlColoring_eq_iff,
+    SimpleGraph.forall_wlHistogram_eq_iff
+  ]
+  scope := "Uncolored finite simple graphs ([Fintype V], with no LocallyFinite or DecidableRel \
+    assumption), for every dimension k : ℕ. Folklore k-WL colors Fin k → V by ordered atomic \
+    isomorphism type at round 0 and by the multiset over all v : V of the atomic type of \
+    Fin.snoc u v paired with the k single-coordinate replacement colors. The partition \
+    stabilizes from round |V|^k - k₀ on, is isomorphism-invariant, and two-graph tuple or \
+    histogram agreement in all rounds reduces to round |V|^k + |W|^k. The logical correspondence \
+    with C^(k+1) is in weisfeiler-leman-counting; initial tuple colorings and certified \
+    complexity bounds are not formalized."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"

@@ -278,8 +278,8 @@ In dependency order:
 
 Independent of that order:
 
-- **Color refinement and Weisfeiler–Leman** ([#3265](https://github.com/cslib-community/cslib-frontier/issues/3265)): stabilization, the coarsest equitable partition and soundness of the 1-WL test; equitable partitions as fractional automorphisms and isomorphisms (Tinhofer; Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2); a certified polynomial-time algorithm; and `k`-dimensional Weisfeiler–Leman.
-  Also colored graphs with arbitrary initial colorings, the correspondence between `k`-dimensional Weisfeiler–Leman and C^(k+1) beyond uncolored C², Cai–Fürer–Immerman graphs, and the infinitary logics L^k_∞ω ([#4085](https://github.com/cslib-community/cslib-frontier/issues/4085)).
+- **Color refinement and Weisfeiler–Leman** ([#3265](https://github.com/cslib-community/cslib-frontier/issues/3265)): stabilization, the coarsest equitable partition and soundness of the 1-WL test; equitable partitions as fractional automorphisms and isomorphisms (Tinhofer; Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2); and certified polynomial-time algorithms for 1-WL and `k`-WL.
+  Also colored graphs with arbitrary initial vertex or tuple colorings, Cai–Fürer–Immerman lower-bound graphs, and the infinitary logics L^k_∞ω ([#4085](https://github.com/cslib-community/cslib-frontier/issues/4085)).
 - **Vollmer's generalized quantifier framework** ([#399](https://github.com/cslib-community/cslib-frontier/issues/399)): Vollmer's survey [*A Generalized Quantifier Concept in Computational Complexity Theory*](https://arxiv.org/abs/cs/9809115), covering ordered leaf words, explicit uniformity and input-access models, finite-monoid classification and generalized logical quantifiers.
   The formalization must keep the paper's resource models and quantifier bounds.
 
