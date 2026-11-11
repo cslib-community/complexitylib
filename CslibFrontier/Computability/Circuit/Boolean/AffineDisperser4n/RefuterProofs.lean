@@ -50,26 +50,23 @@ variable {n : ℕ} {f : BooleanFunction n}
 
 /-! ### Searches -/
 
-private theorem mem_sort_iff {s : Finset ℕ} {x : ℕ} : x ∈ s.sort (· ≤ ·) ↔ x ∈ s :=
-  Finset.mem_sort _
-
 private theorem find?_sort_eq_some {s : Finset ℕ} {p : ℕ → Bool} {x : ℕ}
     (h : (s.sort (· ≤ ·)).find? p = some x) : x ∈ s ∧ p x = true :=
-  ⟨mem_sort_iff.1 (List.mem_of_find?_eq_some h), List.find?_some h⟩
+  ⟨(Finset.mem_sort (· ≤ ·)).1 (List.mem_of_find?_eq_some h), List.find?_some h⟩
 
 private theorem find?_sort_eq_none {s : Finset ℕ} {p : ℕ → Bool}
     (h : (s.sort (· ≤ ·)).find? p = none) : ∀ x ∈ s, p x = false := fun x hx => by
-  have := List.find?_eq_none.1 h x (mem_sort_iff.2 hx)
+  have := List.find?_eq_none.1 h x ((Finset.mem_sort (· ≤ ·)).2 hx)
   simpa using this
 
 private theorem findSome?_sort_eq_some {α : Type*} {s : Finset ℕ} {g : ℕ → Option α} {b : α}
     (h : (s.sort (· ≤ ·)).findSome? g = some b) : ∃ x ∈ s, g x = some b := by
   obtain ⟨x, hx, hgx⟩ := List.exists_of_findSome?_eq_some h
-  exact ⟨x, mem_sort_iff.1 hx, hgx⟩
+  exact ⟨x, (Finset.mem_sort (· ≤ ·)).1 hx, hgx⟩
 
 private theorem findSome?_sort_eq_none {α : Type*} {s : Finset ℕ} {g : ℕ → Option α}
     (h : (s.sort (· ≤ ·)).findSome? g = none) : ∀ x ∈ s, g x = none := fun x hx =>
-  List.findSome?_eq_none_iff.1 h x (mem_sort_iff.2 hx)
+  List.findSome?_eq_none_iff.1 h x ((Finset.mem_sort (· ≤ ·)).2 hx)
 
 /-- `isDegenerate` decides `Gate.Degenerate`. -/
 theorem isDegenerate_iff (g : Gate) : isDegenerate g = true ↔ g.Degenerate := by
@@ -100,20 +97,20 @@ theorem mem_getChildren {S : State n} {p : ℕ} {N : ℕ ⊕ ℕ} :
     N ∈ getChildren S p ↔ N ∈ S.children p := by
   unfold getChildren
   rcases N with J | e
-  · simp only [List.mem_append, List.mem_filterMap, mem_sort_iff]
+  · simp only [List.mem_append, List.mem_filterMap, Finset.mem_sort]
     constructor
     · rintro (⟨J', hJ', hJ⟩ | ⟨e', he', he⟩)
-      · split_ifs at hJ with h
-        · cases hJ; exact h
+      · split_ifs at hJ with h_mem
+        · cases hJ; exact h_mem
       · simp at he
     · intro h
       exact Or.inl ⟨J, ((SemiCircuit.inl_mem_children _).1 h).1, by simp [h]⟩
-  · simp only [List.mem_append, List.mem_filterMap, mem_sort_iff]
+  · simp only [List.mem_append, List.mem_filterMap, Finset.mem_sort]
     constructor
     · rintro (⟨J', hJ', hJ⟩ | ⟨e', he', he⟩)
       · simp at hJ
-      · split_ifs at he with h
-        · cases he; exact h
+      · split_ifs at he with h_mem
+        · cases he; exact h_mem
     · intro h
       exact Or.inr ⟨e, ((SemiCircuit.inr_mem_children _).1 h).1, by simp [h]⟩
 
@@ -747,24 +744,6 @@ private theorem refuterStep_swapAuxIn {S : State n} (hS : S.Valid f) (hD1 : find
       obtain ⟨hprep, hgeq, hlt⟩ :=
         Valid.preparation_swap_auxIn_of hS hne hab hGa hGb ha haff hy'T hy'.1 hy'.2
       exact Or.inr ⟨hprep, Or.inr ⟨hgeq, hne, hlt⟩⟩
-
-/-- The AND form `((a ^^ α) && (b ^^ β)) ^^ γ` of a non-affine operation (pair creation). -/
-private theorem and_form_spec {op : Bool → Bool → Bool} (h : ¬ IsAffineOp op) (x y : Bool) :
-    op x y = (((x ^^ decide (op true false = op true true)) &&
-      (y ^^ decide (op false true = op true true))) ^^
-      op (decide (op true false = op true true)) (decide (op false true = op true true))) := by
-  obtain ⟨α, β, γ, H⟩ := exists_and_form h
-  have hα : α = decide (op true false = op true true) := by
-    rw [H true false, H true true]
-    cases α <;> cases β <;> cases γ <;> rfl
-  have hβ : β = decide (op false true = op true true) := by
-    rw [H false true, H true true]
-    cases α <;> cases β <;> cases γ <;> rfl
-  have hγ : γ = op α β := by
-    rw [H]
-    cases α <;> cases β <;> cases γ <;> rfl
-  rw [←hα, ←hβ, ←hγ]
-  exact H x y
 
 private theorem refuterStep_pairCreation {S : State n} (hS : S.Valid f) {u : ℕ}
     (hout : S.out.arg = .node u) (hN : NoDeletion S) (hAOP : findAndOnPair S = none)

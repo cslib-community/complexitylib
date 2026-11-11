@@ -291,12 +291,10 @@ private theorem op_const_of_not_isAffineOp :
         op (decide ((op true false == op true true) = true)) true := by
   intro op h
   simp only [beq_iff_eq]
-  obtain ⟨α, β, γ, H⟩ := exists_and_form h
-  have hα : α = decide (op true false = op true true) := by
-    rw [H true false, H true true]
-    cases α <;> cases β <;> cases γ <;> rfl
-  rw [←hα, H, H]
-  cases α <;> cases β <;> cases γ <;> rfl
+  rw [and_form_spec h (decide (op true false = op true true)) false,
+    and_form_spec h (decide (op true false = op true true)) true]
+  cases decide (op true false = op true true) <;>
+    cases decide (op false true = op true true) <;> rfl
 
 private theorem terminal_gate {S : State n} {u : ℕ} (hterm : chooseStep? S = none)
     (hu : S.out.arg = .node u) (hup : u ∉ S.params) (hne : S.gates.Nonempty) :

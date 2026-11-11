@@ -615,17 +615,27 @@ eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
 `Scheme.indCcaRomAdvantage_eq_eager`), and the keyless simulator `Scheme.simHandler` and IND-CPA
 reduction `Scheme.romCpaReduction` (`Scheme.simHitProb`, `Scheme.indCpaAdvantage_romCpaReduction`,
 the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
-`Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). No IND-CCA bound for `FO-notbot` is
-proved in this module; multi-hop game transitions relating `indCcaRomAdvantage` / `eagerIndCcaGame`
-to `simHitProb` via fallback-seed decoupling, simulator consistency, and `δ`-correctness bad-event
-bounds remain separate objectives. Checked clients in
+`Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). The IND-CCA theorem itself is
+[`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean):
+`Scheme.indCcaRomAdvantage_le` bounds `indCcaRomAdvantage A` for uniform messages, a `δ`-correct
+and `γ`-spread PKE and `(qG, qH)` random-oracle queries (decapsulation queries unbounded) by
+`2 · indCpaAdvantage m₀ m₁ (romCpaReduction A m₀ m₁) + (2 qH + 2 (qG + qH)) / |M|
++ 2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}` for some `m₀ ≠ m₁` (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
+`NotBot/Hybrids.lean` (`Scheme.eagerFbGame`, `Scheme.eagerCoupledGame`, `Scheme.coupledGame`,
+`Scheme.simGame`), one file per hop: fallback-seed decoupling (`NotBot/Fallback.lean`), re-indexing
+the oracles so that decapsulation reads a ciphertext table (`NotBot/Pushforward.lean`) and its lazy
+realization (`NotBot/Lazy.lean`), the `δ`-correctness bad event (`NotBot/Correctness.lean`), and the
+challenge hop with the `γ` collision term (`NotBot/Challenge.lean`). `FO^⊥` and OW-PCVA security of
+`T` are not formalized. Checked clients in
 [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)
 exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejection on
 `maskedShiftPKE`, zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE`
 with failure probability `1 / 2`), positive and negative `GammaSpread` and `indCpaAdvantage`
 witnesses on `identityPKE`, and `ROQueryBounds`, `simHitProb`, `romCpaReduction`, positive
 `indCcaRomAdvantage`, and eager/lazy/averaging witnesses on `identityScheme`,
-`identityUnifKeyScheme`, and `maskedShiftScheme`.
+`identityUnifKeyScheme`, and `maskedShiftScheme`;
+[`CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean)
+instantiates `Scheme.indCcaRomAdvantage_le` on `notBotScheme` and on the `4`-spread uniform-key scheme `pairCoinScheme` (`indCcaRomAdvantage ≤ 3 / 8`).
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
@@ -665,7 +675,9 @@ keystream and ciphertext uniformity on fixed (non-adaptive) injective point sche
 counters), and `BitString.toOuterMeasure_addRight_mem_finset_eq` and
 `BitString.toOuterMeasure_addRight_mem_list_le` give the shifted-block collision probabilities
 `S.card / 2^n` and at most `ks.length / 2^n`. The modes module builds on them with
-`advantage_xorEvalPoints_eq_zero` and the chain collision bound `toOuterMeasure_badChain_le`
+`advantage_xorEvalPoints_eq_zero`, the uniform-block XOR and support-length helpers
+(`uniformBlocks_eq`, `length_snd_of_mem_support_uniformDraws`, `map_zipWith_uniformBlocks`,
+`map_iv_uniformBlocks_zipWith`), and the chain collision bound `toOuterMeasure_badChain_le`
 (`bs.length * (ks.length + bs.length) / 2^n`, over `uniformBlocks`, the `PMF.iid` uniform blocks read
 as a list) used when analyzing random-IV chaining. The indexed OFB and CTR masks decrypt the
 list-mode ciphertexts (`maskBlockDecrypt_ofbBlockMask_ofbEncryptBlocks`,
@@ -685,20 +697,51 @@ nonconstant counter schedule, are in
 and direct checks of the sampling lemmas are in
 [`CslibFrontierTests/BitStringCollision.lean`](../../CslibFrontierTests/BitStringCollision.lean).
 
+For the shared lazy-versus-fresh random-function hybrid and left-or-right block-mode CPA scaffolding
+used by both CTR and OFB mode, import
+[`Encryption/RandomFunctionHybrid.lean`](../../CslibFrontier/Crypto/Computational/Encryption/RandomFunctionHybrid.lean):
+it packages `FlagState`, the caching/fresh step handlers `lazyStep` and `freshStep`, the game
+equivalence `idealGame_eq_runWith_lazyStep`, the bad-flag reduction bounds
+`advantage_lazy_fresh_le` and `advantage_idealGame_freshStep_le`, lifted-coin support helpers
+(`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`), the two- and four-hop advantage
+triangle helpers `advantage_le_two` and `advantage_le_four`, and the shared block-mode query, cost,
+oracle, reduction, and ideal-game interface (`BlockModeQuery`, `BlockModeSpec`,
+`BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`, `blockModeCost`, `blockModeOracle`,
+`blockModeIdealOracle`, `blockModeCpaGame`, `blockModeIdealGame`, `blockModeQueryProgram`,
+`blockModeReduction`, `blockModeCpaGame_eq_realGame`, `isQueryBounded_blockModeReduction`, and
+`freshGame_eq_blockModeIdealGame`).
+
+For the chosen-plaintext security of random-IV counter (CTR) mode, import
+[`Encryption/CTRMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CTRMode.lean)
+(Katz–Lindell 3rd ed., §3.6.3, Figure 3.9, Definition 3.22, Theorem 3.33 [katzlindell20][katzlindell20];
+Boneh–Shoup Chapter 4 [bs23][bs23]). Using the shared `BlockModeAdversary` / `blockModeCost` /
+`blockModeIdealGame` interface, it formalizes the adaptive left-or-right multiple-encryption
+experiment (`ctrCpaGame`) for any counter schedule `counter : BitString n → ℕ → BitString n`
+satisfying within-query offset distinctness and per-offset IV injectivity, proves exact real-PRF
+correspondence for `ctrReduction` (`ctrCpaGame_eq_realGame`, `isQueryBounded_ctrReduction`), bounds
+the idealization collision error relative to `blockModeIdealGame` by `K ^ 2 / 2 ^ n` for `K` total
+queried blocks (`advantage_idealGame_ctrReduction_le`), and specializes to the modular-addition
+counter `ctrModCounter` whenever per-query length `ℓ ≤ 2 ^ n` (`ctrModCounter_injOn`,
+`ctrModCounter_injective_left`, `advantage_ctrCpaGame_ctrModCounter_randomFunction_le`,
+`advantage_ctrCpaGame_ctrModCounter_le`). The reduction is concrete (`ProbOracleComp`); no native
+multitape PPT statement is made. Concrete `BitString 8` evaluations and non-vacuous bounds are in
+[`CslibFrontierTests/Crypto/CTRMode.lean`](../../CslibFrontierTests/Crypto/CTRMode.lean).
+
 For the chosen-plaintext security of random-IV OFB mode, import
 [`Encryption/OFBMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/OFBMode.lean)
 (Katz–Lindell 3rd ed., §3.6.3, Figure 3.8, Definition 3.22, following the proof of Theorem 3.33
 [katzlindell20][katzlindell20]). `ofbCpaGame` is the left-or-right multiple-encryption experiment
-for a keyed block function. A query is a pair of block lists, and a pair whose lengths differ or
-exceed `ℓ` blocks encrypts the empty message (`ofbSelect`, `ofbBlocks`). `ofbReduction` turns an
-adversary into a PRF distinguisher that computes the keystream with its oracle
+for a keyed block function using `BlockModeAdversary`, `blockModeSelect`, and `blockModeBlocks`,
+where a pair whose lengths differ or exceed `ℓ` blocks encrypts the empty message. `ofbReduction`
+turns an adversary into a PRF distinguisher that computes the keystream with its oracle
 (`ofbCpaGame_eq_realGame`, `isQueryBounded_ofbReduction`). If the queries ask at most `K` blocks in
-total (`OracleComp.IsCostBounded (ofbCost ℓ) adversary K`), `advantage_idealGame_ofbReduction_le`
-bounds the distance from fresh uniform ciphertexts by `K * (K + ℓ) / 2^n` using
+total (`OracleComp.IsCostBounded (blockModeCost ℓ) adversary K`), `advantage_idealGame_ofbReduction_le`
+bounds the distance from `blockModeIdealGame` by `K * (K + ℓ) / 2^n` using
 `toOuterMeasure_badChain_le`. `advantage_ofbCpaGame_le` then bounds the left-or-right advantage by
 the two PRF advantages plus `2 * K * (K + ℓ) / 2^n`, and
 `advantage_ofbCpaGame_randomFunction_le` gives `2 * K * (K + ℓ) / 2^n` for a uniform random
-function. The reduction is concrete; no PPT statement is made. Concrete checks are in
+function. The reduction is concrete (`ProbOracleComp`); no native multitape PPT statement is made.
+Concrete checks are in
 [`CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean`](../../CslibFrontierTests/Crypto/OFBAndLengthCBCMAC.lean).
 
 For hash functions built from a fixed permutation or block cipher, import
@@ -747,6 +790,32 @@ so `encryptThenMAC E M.redundantTag hctLen` satisfies `INDCPA` and `EncForge` ye
 `PseudorandomFunction.prfEncryptThenMACRedundantTag_counterexample`, Exercise 5.4). Concrete
 evaluations and composed `IsPPT` / `IsOraclePPT` checks on `echoFamily` are in
 [`CslibFrontierTests/Crypto/CompositionCounterexamples.lean`](../../CslibFrontierTests/Crypto/CompositionCounterexamples.lean).
+
+For generic MAC-then-Encrypt composition, its `INDCPA` preservation, and its chosen-ciphertext
+counterexample over `SymmetricCipher` and `MACScheme`, import
+[`Encryption/MACThenEncrypt.lean`](../../CslibFrontier/Crypto/Computational/Encryption/MACThenEncrypt.lean)
+(Katz–Lindell 3rd ed., §5.2 [katzlindell20][katzlindell20]; Boneh–Shoup §9.4.1 [bs23][bs23]).
+Given a polynomial-time plaintext-tag length schedule `ptLen : ℕ → ℕ`
+(`hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary`), `M.msgLen n = n`, and
+`(encPair encBits encBits (msg, tag)).length = ptLen n` on valid `M` messages and tags,
+`macThenEncrypt E M ptLen hptLenPoly hmsgLen hpairLen` signs `msg` and runs `E` at security
+parameter `ptLen n` on `encPair encBits encBits (msg, tag)` (requiring no extra decryption
+hypothesis beyond `E.decrypt_encrypt`), verifying length, framing round-trip, and `M.verify` on
+decryption. When `StrictMono ptLen`, `indcpa_macThenEncrypt` reduces `INDCPA` of `macThenEncrypt`
+to `E.INDCPA` via `mteToCPAAdversary` (reindexing `ptLen` with `GeneratorReindex`). The malleable
+wrapper `SymmetricCipher.extendCipher` appends `false` to every ciphertext and ignores the last bit
+in decryption, preserving `INDCPA` (`SymmetricCipher.INDCPA.extendCipher`) and `OneTimeINDCPA`
+(`SymmetricCipher.OneTimeINDCPA.extendCipher`) via `extendCPAAdversary` and
+`extendOneTimeCPAAdversary`. Meanwhile, flipping that trailing bit (`macThenEncryptExtendCIAdversary`,
+`macThenEncryptExtendCCAAdversary`) achieves advantage `1` for every `n ≥ 1` against
+`macThenEncrypt E.extendCipher M ptLen ...`, refuting `OneTimeCiphertextIntegrity`,
+`CiphertextIntegrity`, `OneTimeINDCCA` (`not_oneTimeINDCCA_macThenEncrypt_extendCipher`), and
+`INDCCA` (`not_indcca_macThenEncrypt_extendCipher`), combined in
+`macThenEncrypt_extendCipher_counterexample` and instantiated unconditionally from any
+`PseudorandomFunction` via `prfMacThenEncryptExtend` (`ptLen n = 3 * n + 1`) and
+`PseudorandomFunction.prfMacThenEncryptExtend_counterexample`. Concrete checks on `echoCipher` and
+`echoMAC` as well as the PRF instantiation are in
+[`CslibFrontierTests/Crypto/MACThenEncrypt.lean`](../../CslibFrontierTests/Crypto/MACThenEncrypt.lean).
 
 ## Authentication, signatures, and state
 
