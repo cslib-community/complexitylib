@@ -95,6 +95,22 @@ private theorem sum_eq_sum_image_sum_ite (σ : Convexity.StdSimplex ℝ (∀ i, 
   rw [sum_ite_eq (σ.weights.support.image fun s => s i) (s i) fun a => σ.weights s * f s a,
     ite_eq_left (mem_image_of_mem _ hs)]
 
+omit [DecidableEq ι] in
+private theorem sum_eq_sum_univ_sum_ite (σ : Convexity.StdSimplex ℝ (∀ i, S i)) (i : ι)
+    [Fintype (S i)] [DecidableEq (S i)] (f : (∀ j, S j) → S i → ℝ) :
+    σ.weights.sum (fun s w => w * f s (s i)) = ∑ a,
+      σ.weights.sum (fun s w => w * if s i = a then f s a else 0) := by
+  rw [sum_eq_sum_image_sum_ite σ i f]
+  refine Finset.sum_subset (Finset.subset_univ (σ.weights.support.image fun s => s i))
+    (fun a _ ha => ?_)
+  simp only [Finsupp.sum]
+  apply Finset.sum_eq_zero
+  intro s hs
+  have : s i ≠ a := fun hs_eq => ha (hs_eq ▸ Finset.mem_image_of_mem (fun s => s i) hs)
+  split_ifs with hs_eq
+  · exact (this hs_eq).elim
+  · rw [mul_zero]
+
 variable {G}
 
 /-- An approximate correlated equilibrium with zero slack is a correlated equilibrium. -/
@@ -114,29 +130,11 @@ theorem isApproxCorrelatedEquilibrium_iff [∀ i, DecidableEq (S i)] [∀ i, Fin
   have H (i : ι) (δ : S i → S i) :
       σ.weights.sum (fun s w => w * G.cost i (update s i (δ (s i)))) =
         ∑ a, σ.weights.sum (fun s w =>
-          w * if s i = a then G.cost i (update s i (δ a)) else 0) := by
-    rw [sum_eq_sum_image_sum_ite σ i fun s a => G.cost i (update s i (δ a))]
-    refine Finset.sum_subset (Finset.subset_univ (σ.weights.support.image fun s => s i))
-      (fun a _ ha => ?_)
-    simp only [Finsupp.sum]
-    apply Finset.sum_eq_zero
-    intro s hs
-    have : s i ≠ a := fun hs_eq => ha (hs_eq ▸ Finset.mem_image_of_mem (fun s => s i) hs)
-    split_ifs with hs_eq
-    · exact (this hs_eq).elim
-    · rw [mul_zero]
+          w * if s i = a then G.cost i (update s i (δ a)) else 0) :=
+    sum_eq_sum_univ_sum_ite σ i fun s a => G.cost i (update s i (δ a))
   have H0 (i : ι) : σ.weights.sum (fun s w => w * G.cost i s) =
-      ∑ a, σ.weights.sum (fun s w => w * if s i = a then G.cost i s else 0) := by
-    rw [sum_eq_sum_image_sum_ite σ i fun s _ => G.cost i s]
-    refine Finset.sum_subset (Finset.subset_univ (σ.weights.support.image fun s => s i))
-      (fun a _ ha => ?_)
-    simp only [Finsupp.sum]
-    apply Finset.sum_eq_zero
-    intro s hs
-    have : s i ≠ a := fun hs_eq => ha (hs_eq ▸ Finset.mem_image_of_mem (fun s => s i) hs)
-    split_ifs with hs_eq
-    · exact (this hs_eq).elim
-    · rw [mul_zero]
+      ∑ a, σ.weights.sum (fun s w => w * if s i = a then G.cost i s else 0) :=
+    sum_eq_sum_univ_sum_ite σ i fun s _ => G.cost i s
   constructor
   · intro h i δ
     rw [← H0 i, ← H i δ]

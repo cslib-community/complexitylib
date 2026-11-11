@@ -10,6 +10,7 @@ module
 public import CslibFrontier.GameTheory.Strategic.Correlated
 public import CslibFrontier.GameTheory.Strategic.NoRegret
 public import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Sqrt
 
 /-!
 # Swap regret dynamics
@@ -98,49 +99,82 @@ theorem timeAverage_productDist_isApproxCorrelatedEquilibrium
 
 
 
+/-- The coupled Blum-Mansour dynamics. -/
+noncomputable def blumMansourDynamics (G : CostGame ι S) (T : ℕ) : ℕ → ∀ i, S i → ℝ :=
+  WellFounded.fix Nat.lt_wfRel.wf (fun t p => fun i =>
+    blumMansourProb √(Fintype.card (S i) * log (Fintype.card (S i)) / T)
+      (fun s c => if _h : s < t then G.deviationCost (p s _h) i c else 0) t)
+
+theorem blumMansourDynamics_eq (G : CostGame ι S) (T t : ℕ) (i : ι) (a : S i) :
+    blumMansourDynamics G T t i a =
+      blumMansourProb √(Fintype.card (S i) * log (Fintype.card (S i)) / T)
+        (fun s c => if _h : s < t then G.deviationCost (blumMansourDynamics G T s) i c else 0) t a := by
+  rw [blumMansourDynamics, WellFounded.fix_eq]
+
+variable [∀ i, Nonempty (S i)]
+
+theorem blumMansourDynamics_nonneg (G : CostGame ι S) (T t : ℕ) (i : ι) (a : S i) :
+    0 ≤ blumMansourDynamics G T t i a := by
+  rw [blumMansourDynamics_eq]
+  exact blumMansourProb_nonneg _ _ _ _
+
+theorem sum_blumMansourDynamics (G : CostGame ι S) (T t : ℕ) (i : ι) :
+    ∑ a, blumMansourDynamics G T t i a = 1 := by
+  have := sum_blumMansourProb (√(Fintype.card (S i) * log (Fintype.card (S i)) / T))
+    (fun s c => if _h : s < t then G.deviationCost (blumMansourDynamics G T s) i c else 0) t
+  refine Eq.trans ?_ this
+  apply sum_congr rfl
+  intro a _
+  exact blumMansourDynamics_eq G T t i a
+
 theorem blumMansour_isApproxCorrelatedEquilibrium
-    {p : ℕ → ∀ i, S i → ℝ} {T : ℕ} (hT : 0 < T)
-    (h_nonneg : ∀ t i c, 0 ≤ p t i c) (h_sum : ∀ t i, ∑ c, p t i c = 1)
+    {T : ℕ} (hT : 0 < T)
     (hn : ∀ i, 2 ≤ Fintype.card (S i))
     (hT_bound : ∀ i, (Fintype.card (S i) : ℝ) * log (Fintype.card (S i)) ≤ T)
-    (h_cost : ∀ t < T, ∀ i a, |G.deviationCost (p t) i a| ≤ 1)
-    (h_p : ∀ t i a, p t i a = blumMansourProb √(Fintype.card (S i) * log (Fintype.card (S i)) / T)
-      (fun s c => G.deviationCost (p s) i c) t a) :
+    (h_cost : ∀ t < T, ∀ i a, |G.deviationCost (blumMansourDynamics G T t) i a| ≤ 1) :
     G.IsApproxCorrelatedEquilibrium
       (fun i => 2 * √(Fintype.card (S i) * log (Fintype.card (S i)) / T))
-      (timeAverage (fun t => productDist (h_nonneg t) (h_sum t)) T hT) := by
+      (timeAverage (fun t => productDist (blumMansourDynamics_nonneg G T t)
+        (sum_blumMansourDynamics G T t)) T hT) := by
   have h_bound : ∀ i, (2 * √(T * (Fintype.card (S i) * log (Fintype.card (S i))))) / T =
       2 * √(Fintype.card (S i) * log (Fintype.card (S i)) / T) := by
     intro i
-    have hX_nonneg : 0 ≤ (Fintype.card (S i) : ℝ) * log (Fintype.card (S i)) :=
-      mul_nonneg (Nat.cast_nonneg _) (log_nonneg (by exact_mod_cast one_le_two.trans (hn i)))
+    have hT' : (0 : ℝ) < T := by exact_mod_cast hT
     calc (2 * √(T * (Fintype.card (S i) * log (Fintype.card (S i))))) / T
-      _ = 2 * (√(T : ℝ) * √((Fintype.card (S i) : ℝ) * log (Fintype.card (S i)))) / T := by
-        rw [Real.sqrt_mul (Nat.cast_nonneg T)]
-      _ = 2 * ((√(T : ℝ) / T) * √((Fintype.card (S i) : ℝ) * log (Fintype.card (S i)))) := by ring
-      _ = 2 * ((1 / √(T : ℝ)) * √((Fintype.card (S i) : ℝ) * log (Fintype.card (S i)))) := by
-        rw [Real.sqrt_div_self']
-      _ = 2 * (√((Fintype.card (S i) : ℝ) * log (Fintype.card (S i))) / √(T : ℝ)) := by ring
+      _ = 2 * (√(T * (Fintype.card (S i) * log (Fintype.card (S i)))) / T) := by ring
       _ = 2 * √((Fintype.card (S i) * log (Fintype.card (S i))) / T) := by
-        rw [← Real.sqrt_div hX_nonneg]
+        rw [Real.sqrt_mul_div_self hT']
   have h_eq : (fun i => 2 * √(Fintype.card (S i) * log (Fintype.card (S i)) / T)) =
       fun i => (2 * √(T * (Fintype.card (S i) * log (Fintype.card (S i))))) / T := by
     ext i
     rw [← h_bound i]
   rw [h_eq]
-  apply timeAverage_productDist_isApproxCorrelatedEquilibrium G hT h_nonneg h_sum
+  apply timeAverage_productDist_isApproxCorrelatedEquilibrium G hT (blumMansourDynamics_nonneg G T) (sum_blumMansourDynamics G T)
   intro i δ
   have := blumMansour_swap_regret_le_sqrt (hn i) (hT_bound i) (fun s hs a => h_cost s hs i a) δ
-  have h_sum_eq1 : ∑ t ∈ range T, ∑ a, p t i a * G.deviationCost (p t) i a =
+  have H_congr : ∀ t, blumMansourProb √(Fintype.card (S i) * log (Fintype.card (S i)) / T)
+    (fun s c => if _h : s < t then G.deviationCost (blumMansourDynamics G T s) i c else 0) t =
+    blumMansourProb √(Fintype.card (S i) * log (Fintype.card (S i)) / T)
+    (fun s c => G.deviationCost (blumMansourDynamics G T s) i c) t := by
+    intro t
+    apply blumMansourProb_congr
+    intro s hs
+    ext c
+    simp only [hs, dite_eq_left]
+  have h_sum_eq1 : ∑ t ∈ range T, ∑ a, blumMansourDynamics G T t i a *
+      G.deviationCost (blumMansourDynamics G T t) i a =
       ∑ t ∈ range T, ∑ a, blumMansourProb √(Fintype.card (S i) * log (Fintype.card (S i)) / T)
-      (fun s c => G.deviationCost (p s) i c) t a * G.deviationCost (p t) i a := by
+      (fun s c => G.deviationCost (blumMansourDynamics G T s) i c) t a *
+      G.deviationCost (blumMansourDynamics G T t) i a := by
     refine sum_congr rfl fun t _ => sum_congr rfl fun a _ => ?_
-    rw [h_p t i a]
-  have h_sum_eq2 : ∑ t ∈ range T, ∑ a, p t i a * G.deviationCost (p t) i (δ a) =
+    rw [blumMansourDynamics_eq, H_congr t]
+  have h_sum_eq2 : ∑ t ∈ range T, ∑ a, blumMansourDynamics G T t i a *
+      G.deviationCost (blumMansourDynamics G T t) i (δ a) =
       ∑ t ∈ range T, ∑ a, blumMansourProb √(Fintype.card (S i) * log (Fintype.card (S i)) / T)
-      (fun s c => G.deviationCost (p s) i c) t a * G.deviationCost (p t) i (δ a) := by
+      (fun s c => G.deviationCost (blumMansourDynamics G T s) i c) t a *
+      G.deviationCost (blumMansourDynamics G T t) i (δ a) := by
     refine sum_congr rfl fun t _ => sum_congr rfl fun a _ => ?_
-    rw [h_p t i a]
+    rw [blumMansourDynamics_eq, H_congr t]
   rw [h_sum_eq1, h_sum_eq2]
   exact this
 end Cslib.GameTheory.CostGame

@@ -36,3 +36,10 @@ theorem sum_sqrt_le_card_mul_sqrt {ι : Type*} (s : Finset ι) {F : ι → ℝ}
   nlinarith [(by positivity : (0 : ℝ) ≤ #s)]
 
 end Finset
+
+/-- Dividing the square root of `T * L` by `T > 0` yields `√(L / T)`. -/
+theorem Real.sqrt_mul_div_self {T L : ℝ} (hT : 0 < T) : √(T * L) / T = √(L / T) := by
+  have hs : √T * √T = T := Real.mul_self_sqrt hT.le
+  have hs0 : 0 < √T := Real.sqrt_pos.mpr hT
+  rw [Real.sqrt_mul hT.le, Real.sqrt_div' L hT.le, div_eq_div_iff hT.ne' hs0.ne']
+  linear_combination √L * hs

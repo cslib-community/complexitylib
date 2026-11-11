@@ -177,9 +177,16 @@ recommended `a` gains by switching to `a + 2`.
 player. As shown in Lecture 18, Proposition 1.3 of [roughgarden13cs364a][roughgarden13cs364a], if
 each player minimizes swap regret, the time average of the product distributions converges to an
 approximate correlated equilibrium (`timeAverage_productDist_isApproxCorrelatedEquilibrium`).
-Instantiating this with the Blum–Mansour reduction over Hedge copies
-(`blumMansour_isApproxCorrelatedEquilibrium`), the time average converges to a correlated
-equilibrium at a rate of $O(\sqrt{m \log m / T})$.
+Instantiating this with the explicitly coupled Blum–Mansour dynamics over Hedge copies
+(`blumMansourDynamics`), the time average converges to an approximate correlated equilibrium up to
+the slack `2 \sqrt{m_i \log m_i / T}` (`blumMansour_isApproxCorrelatedEquilibrium`) for a known
+finite horizon `T > 0`, where `m_i = |S_i| \ge 2`, provided `m_i \log m_i \le T` and the
+deviation costs are bounded by `1`.
+The convergence is verified concretely on matching pennies in
+`CslibFrontierTests.GameTheory.SwapRegretDynamics.blumMansour_pennies`. Check this with:
+```bash
+lake build CslibFrontierTests.GameTheory.SwapRegretDynamics
+```
 
 ## Atomic congestion games
 
