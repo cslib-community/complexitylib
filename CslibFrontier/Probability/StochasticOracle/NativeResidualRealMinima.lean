@@ -15,9 +15,16 @@ public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealAdapt
 [Wang2027], Theorem 6 and proof, PDF p. 13. All admitted finite-control
 selection-only native competitors use the same fresh-invoice residual oracle,
 original encoded instance and seed. Their local computation is unbounded.
-Universal lower accounting uses the derived primitive conditional price means;
+The constructed invoice law is drawn independently of the residual index `J`
+and the preceding history. Universal lower accounting uses the derived primitive conditional
+price means;
 the two actual compiled strategies attain both upper alternatives. No integer
 price identity, integrability, termination or optimum conclusion is assumed.
+
+These equalities concern `FixedMeanInvoice`. Extending attained equalities to every
+fixed invoice PMF with the same means, or to history-dependent invoice kernels
+with those conditional means, remains separate work; the more general fixed-PMF
+lower bounds alone do not supply that attainment.
 
 ## Main results
 

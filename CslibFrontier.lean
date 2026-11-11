@@ -3448,6 +3448,7 @@ public import CslibFrontier.Computability.Probabilistic.NativeBatch.Coverage
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.History
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.InitialEpoch
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.PathCost
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.ProgressComparison
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Retained
@@ -6130,6 +6131,7 @@ public import CslibFrontier.Probability.PMF.Finiteness
 public import CslibFrontier.Probability.PMF.Map
 public import CslibFrontier.Probability.PMF.Markov
 public import CslibFrontier.Probability.PMF.ObservedProcess
+public import CslibFrontier.Probability.PMF.ObservedProcess.Trajectory
 public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind
 public import CslibFrontier.Probability.PMF.PolynomialAgreement
@@ -6228,6 +6230,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeResidualMinima
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOracle
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualPathCost
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualPolicies
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealAdaptive
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealChoice
@@ -6241,6 +6244,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchAd
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOptimum
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutput
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutputObservation
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchPathCost
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchPlanner
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchReceipts
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchStopping

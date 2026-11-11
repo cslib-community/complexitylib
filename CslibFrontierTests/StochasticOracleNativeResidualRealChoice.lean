@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.NativeResidualRealChoice
+import CslibFrontier.Probability.StochasticOracle.NativeResidualPathCost
 import CslibFrontierTests.StochasticOracleResidualCover
 import Mathlib.Tactic
 
@@ -21,7 +21,8 @@ namespace CslibFrontierTests.StochasticOracleNativeResidualRealChoice
 open Cslib.Probability StochasticOracle NativeRetention ResidualCover ConcurrentBatch
 open NativeResidualCostChoice NativeOpenExecution Turing
 open Cslib.Optimization.OneConstraint
-open scoped ENNReal
+open scoped ENNReal NativeBatch.PathCost
+open MeasureTheory
 
 private abbrev blocks := StochasticOracleResidualCover.blocks
 private def points : Fin (Fintype.card (Point blocks)) ≃ Point blocks :=
@@ -135,5 +136,27 @@ example : BatchOptimum.optimum NativeResidualAttainment.limits
     (by norm_num) dearPrices dearReflects]
   norm_num [dear, parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
     Fin.sum_univ_succ]
+
+-- Real integrability is derived for the actual infinite path of the same code,
+-- not assumed for an auxiliary bill function or a terminal-only cost.
+example :
+    Integrable (fun ω => (NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω).toReal)
+      (NativeResidualPathCost.execution blocks points candidates parameters prices) ∧
+    (∫ ω, (NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω).toReal
+      ∂NativeResidualPathCost.execution blocks points candidates parameters prices) = 3 / 4 := by
+  obtain ⟨_, hint, he⟩ := NativeResidualPathCost.integrable_totalBill blocks points candidates
+    parameters (by norm_num) prices reflects
+  refine ⟨hint, ?_⟩
+  norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
+    Fin.sum_univ_succ] at he
+  exact he
+
+example : (∫ ω, (NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω).toReal
+    ∂NativeResidualPathCost.execution blocks points candidates dear dearPrices) = 5 / 2 := by
+  obtain ⟨_, _, he⟩ := NativeResidualPathCost.integrable_totalBill blocks points candidates
+    dear (by norm_num) dearPrices dearReflects
+  norm_num [dear, parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
+    Fin.sum_univ_succ] at he
+  exact he
 
 end CslibFrontierTests.StochasticOracleNativeResidualRealChoice

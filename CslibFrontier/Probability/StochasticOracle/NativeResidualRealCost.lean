@@ -24,7 +24,8 @@ import Mathlib.Tactic
 [Wang2027], model PDF p. 5 and Theorem 6 p. 13. Analytic costs may be real;
 algorithmic numerical inputs are binary rationals. Here fixed real means are
 realized by natural token reports, drawn freshly after each batch selection.
-The compiled program reads ordinary report bytes, never a real-number encoding.
+The invoice vector is drawn independently of the residual index `J` and the
+preceding history. The compiled program reads ordinary report bytes, never a real-number encoding.
 
 ## Main definitions
 

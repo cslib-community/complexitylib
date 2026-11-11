@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUpper
+import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchPathCost
 import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOptimum
 import Mathlib.Tactic
 
@@ -21,7 +21,7 @@ condition is assumed. This supplements the empty-ground boundary client.
 noncomputable section
 open Cslib Cslib.Probability StochasticOracle NativeRetention ConcurrentBatch NativeBatch
 open NativeOpenExecution NativeInterface Turing Trace Quantitative
-open scoped NNReal ENNReal
+open scoped NNReal ENNReal NativeBatch.PathCost
 open MeasureTheory
 private def lim : Limits 2 := ⟨fun _ => 1, by intro _; norm_num, 1, 1⟩
 private def invoice (b : Bool) : ℕ := if b then 2 else 1
@@ -163,7 +163,14 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
           ⟨ConcurrentBatch.initial (), []⟩⟩).map
         (BatchOutput.certified lim data.startup.system valid) true ∧
     1 ≤ BatchOptimum.optimum lim sampler data () valid 1 ∧
-    BatchOptimum.optimum lim sampler data () valid 1 ≤ 4 := by
+    BatchOptimum.optimum lim sampler data () valid 1 ≤ 4 ∧
+    Integrable (fun ω => (PathCost.totalBill charge ω).toReal)
+      (PathCost.pathMeasure lim sampler program
+        ⟨program.initialConfig (GuardedStartup.encoding data),
+          ⟨ConcurrentBatch.initial (), []⟩⟩) ∧
+    (∫ ω, (PathCost.totalBill charge ω).toReal ∂PathCost.pathMeasure lim sampler program
+      ⟨program.initialConfig (GuardedStartup.encoding data),
+        ⟨ConcurrentBatch.initial (), []⟩⟩) ≤ 4 := by
   let impl := BatchPlanner.controller 2 2
   let tapes := impl.tapes
   let R := impl.Controls
@@ -229,11 +236,11 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
         · rw [he next hn]
         · simp [(PMF.apply_eq_zero_iff _ _).mpr hn]
       _ = _ := by simp [PMF.tsum_coe]
-  have Hcost : ∀ t < lim.turns, ∀ o ∈ ((select lim sampler program
+  have Hcost : ∀ t, ∀ o ∈ ((select lim sampler program
       (law lim sampler program t world)).map (Quantitative.observe lim)).support,
       o.issued = true → Quantitative.conditionalMean lim sampler program
         (law lim sampler program t world) o charge ≤ 4 := by
-    intro t ht o ho hi
+    intro t o ho hi
     unfold Quantitative.conditionalMean mean
     calc
       _ ≤ ∑' next,
@@ -263,7 +270,15 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
     (by norm_num) (by intro _; norm_num [lim]) (by norm_num [data, lim]) rfl (by decide)
     valid 1 1 (by norm_num [I, instanceOf, ground, data, List.range_succ])
     ⟨1, by norm_num⟩ (by norm_num) 4
-    (by simpa only [hrho] using Hprod) Hcost
+    (by simpa only [hrho] using Hprod) (fun t _ => Hcost t)
+  have hpath := BatchPathCost.upper_controller (n := 2) 2 Unit lim sampler data () 1
+    rfl (by decide) (by decide) (by norm_num) (by intro _; norm_num [lim])
+    (by norm_num [data, lim]) rfl (by decide) valid 1 1
+    (by norm_num [I, instanceOf, ground, data, List.range_succ])
+    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) (fun t _ => Hcost t)
+  obtain ⟨_, _, _, _, _, hpathBudget⟩ := hpath
+  obtain ⟨_, hpathIntegrable, _⟩ := PathCost.totalBill_integrable_budget lim sampler program
+    4 world (initial_invariant lim ()) Hcost
   obtain ⟨hprogress, _, _, hbudget, _⟩ := h
   have hbin : (1 : ℝ≥0∞) ≤ ENNReal.ofReal
       (∫ j, (if 1 ≤ j then (1 : ℝ) else 0)
@@ -274,18 +289,19 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
     (by decide) (by decide) (by norm_num) (by intro _; norm_num [lim])
     (by norm_num [data, lim]) rfl (by decide) valid 1 1
     (by norm_num [I, instanceOf, ground, data, List.range_succ])
-    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) Hcost 1 hbin
+    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) (fun t _ => Hcost t) 1 hbin
   obtain ⟨_, _, hoptbudget, _⟩ := hopt
   have hlo := BatchOptimum.lower lim sampler data () valid 1 1 1 1 1
     (by intro q hq; have hq0 : q = 0 := by omega
         subst q; norm_num [instanceOf, ground, data, List.range_succ])
     (by norm_num) (by norm_num) lower_envelopes
-  refine ⟨?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, hpathIntegrable, ?_⟩
   · simpa [lim] using hbudget
   · simpa [hrho, lim, ProbabilityTheory.integral_binomial,
       show Finset.Iic (1 : ℕ) = {0, 1} from by decide] using hprogress
   · simpa using hlo
   · simpa [lim] using hoptbudget
+  · simpa [lim] using hpathBudget
 
 /-- Divergent terminal mass is never counted as receipt or tape success. -/
 example (tapes : ℕ) (R : Type) :

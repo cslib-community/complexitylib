@@ -18,7 +18,8 @@ import Mathlib.Tactic
 
 [Wang2027], model p. 5 and Theorem 6 p. 13. Natural invoices are drawn after
 batch selection. Their law may have arbitrary real masses and correlated
-coordinates. A point mass recovers the constant-invoice source. Conditional
+coordinates. The invoice law is fixed and drawn independently of the residual
+index `J` and the preceding history. A point mass recovers the constant-invoice source. Conditional
 residual factorization and raw source provenance are derived from dispatch.
 
 ## Main definitions

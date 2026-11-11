@@ -949,17 +949,20 @@ when its numerical statement is already proved. The full objective in
 | Theorem 4, PDF pp. 10–11, arbitrary count vectors | `PartialCover.NativeExecution.vector_guarantee`, `external_source_law`; `NativeRetention.SourceEncoding.valid_toNative` | Covered: same native machine, original binary WSC/query interfaces, exact call multiplicities, certified tape-risk, sum-of-caps bill and oracle-only deadline, including zero calls and $q=0,1$. |
 | Theorem 4, PDF pp. 10–11, greedy algorithm and approximation factor | `PartialCover.GreedyNative.uniform_plan`, `risk_bill`; `PartialCover.NativeExecution.native_success`, `native_bill_le_riskOptimum`; `PartialCover.Asymptotics.fixed_failure`, `polynomial_failure` | Covered: native threshold/eligibility/cost/output composition, success and OPT-risk comparison, and $O(\log^2 n)$ / $O(\log n)$ corollaries for nonempty finite binary-rational inputs. |
 | Hardness remark after Theorem 4's proof, PDF p. 11 | No Set Cover approximation-hardness transfer | Blocked on [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335); this remark is distinct from Theorem 4's algorithmic statement. |
-| Lemma 2, PDF p. 11; App. A.4, pp. 15–16 | `AdaptiveSelection.binomial_le_completion` and finite conditional-history comparison APIs | Blocked for the source’s varying-$p_t$ Poisson-binomial guarantee; finite homogeneous comparisons are present. The heterogeneous and measurable/unbounded comparison is tracked in [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). |
-| Theorem 5(1), PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOutput.upper_controller`, `BatchUpper.stopping_controller` | Covered for the named finite-opportunity block controller: certified decoded tape success, binomial deadline, survival-sum/mean/budget bill bounds, same source oracle and actual receipts. Unrestricted source-policy realization remains partial. |
+| Lemma 2, PDF p. 11; App. A.4, pp. 15–16 | `AdaptiveSelection.binomial_le_completion` and finite conditional-history comparison APIs | Blocked on [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336) for the source’s varying-$p_t$ Poisson-binomial guarantee; finite homogeneous comparisons are present. The heterogeneous and measurable/unbounded comparison is tracked in [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). |
+| Theorem 5(1), PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOutput.upper_controller`, `BatchUpper.stopping_controller`, `BatchPathCost.upper_controller` | Covered for the named finite-opportunity block controller: certified decoded tape success, binomial deadline, survival-sum/mean/budget real-integrable total path-bill bounds, same source oracle and actual receipts. Silent divergence retains earlier charges. Unrestricted source-policy realization remains partial. |
 | Theorem 5(2) and consequence, PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOptimum.lower`, `success_le`, `feasible_success_le`, `upper`, `competitive` | Covered for admitted finite-control native selection-only competitors on the same oracle and seed: expected-cost lower bound, effective-turn binomial deadline obstruction and OPT envelope. |
-| Unrestricted Theorem 5 source coverage, PDF pp. 4–6, 11–12 | Native epoch/whole-policy representation and the preceding controller APIs | Partial: unrestricted source query/cutoff and external-machine realization, broader unbounded-horizon/divergent-path real-cost packaging and general measurable interfaces remain. Domination needed for measurable/unbounded progress is blocked on #4336; the other representation obligations are not blocked on that issue. |
+| Unrestricted Theorem 5 source coverage, PDF pp. 4–6, 11–12 | Native epoch/whole-policy representation; `NativeBatch.PathCost.lintegral_totalBill_complete`, `totalBill_integrable_budget`; preceding controller APIs | Partial: unrestricted source query/cutoff, external-machine realization and general measurable interfaces remain. Infinite discrete native paths, retained divergent-prefix costs and real integrability are now packaged for the finite source budget. Infinitely many source turns require a broader interface and remain an extension beyond the source’s finite-$u$ statement. Domination needed for measurable/unbounded progress is blocked on #4336; the other representation obligations are not blocked on that issue. |
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
 | Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Covered in the documented native interface: arbitrary promised finite X3C inputs, original WSC labels, known role metadata, decoded raw residuals/local certificates, source batch admission, provenance, guarded native output and joint resources. The runtime-role controller removes the old least-element program's label-order restriction; the unused legacy specialization is not needed for these attainment results. |
-| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualInvoice.response_factor`, `expected_score_eq_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`, `native_one_lower`; `NativeResidualOptimum.one_lower_of_mean`, `two_lower_of_mean`; `NativeResidualRealCost.hasMean`; `NativeResidualRealAdaptive.minimum_cost_mem`; `NativeResidualRealMinima.native_optimum`, `native_one_optimum`, `native_ratio`, `native_linear_ratio`; `NativeResidualCostChoice.native_expected_cost`, `native_optimum`; `NativeResidualRealChoice.native_cost_mem`, `native_optimum` | Covered in the documented native model, with arbitrary positive real expected prices realized by fresh natural invoice vectors. Every admitted finite-control selection-only native competitor uses the same constructed source oracle and seed, with unbounded local computation. Conditional mean accounting preserves accrued divergent prefixes; the two compiled strategies attain both minima, and the rational-table cost chooser is one optimal compiled program. No integer-price identity, integrability or target-cost premise is required. External-machine representation remains a separate limitation. |
+| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualInvoice.response_factor`, `expected_score_eq_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`, `native_one_lower`; `NativeResidualOptimum.one_lower_of_mean`, `two_lower_of_mean`; `NativeResidualRealCost.hasMean`; `NativeResidualRealAdaptive.minimum_cost_mem`; `NativeResidualRealMinima.native_optimum`, `native_one_optimum`, `native_ratio`, `native_linear_ratio`; `NativeResidualCostChoice.native_expected_cost`, `native_optimum`; `NativeResidualRealChoice.native_cost_mem`, `native_optimum`; `NativeResidualPathCost.integrable_totalBill` | Partial at source scope: the documented native model proves the equalities for arbitrary positive real price parameters using the constructed `FixedMeanInvoice` law. It is drawn independently of residual index $J$ and the preceding history. Every admitted finite-control selection-only native competitor uses the same constructed source oracle and seed, with unbounded local computation. Conditional mean accounting preserves accrued divergent prefixes; the two compiled strategies attain both minima, and the rational-table cost chooser is one optimal compiled program. No integer-price identity, integrability or target-cost premise is required. The fixed-PMF lower theorem covers other history/$J$-independent fee PMFs with the same batch means, but their attained equalities have not been extended. History-dependent or $J$-coupled invoice laws with the paper’s conditional means also remain unproved. These are genuine source obligations, not blocked on #4336. External-machine representation remains separate. |
 
 Not everything outside #4335/#4336 is present. The native real-price Theorem 6
-minimum/ratio and rational uniform selector are now covered in the documented model.
+minimum/ratio and rational uniform selector are proved for the constructed fixed
+invoice law, independently drawn from $J$ and history. Extending attained equalities
+to other fixed mean-matching laws and history-dependent conditional-mean laws
+remains a source obligation.
 Unrestricted source-query/cutoff and external-machine realization for Theorem 5
 remain material, not blocked on #4336. No ALL-main or unrestricted source-model
 completion is claimed.
@@ -980,7 +983,8 @@ any prescribed nonnegative real coordinate means. At most one coordinate is
 charged in a draw, so within-batch invoices can be correlated. Its finite cap is
 derived from the prices; no total-bill bound or integrability premise is supplied.
 `NativeResidualRealCost.sample` draws a fresh vector after each admitted batch
-selection, followed by the original conditional residual response. All native
+selection, followed by the original conditional residual response. The invoice
+law is drawn independently of residual index $J$ and the preceding history. All native
 competitors see that same oracle. `batch_expected_cost` proves its fixed invoice
 mean for every selected batch, hidden server history, cutoff and remaining deadline,
 including cancellation.
@@ -1010,7 +1014,8 @@ uses near mean $1/4$ and specialist mean $1/2$, proves actual certified tape suc
 one and expected bill $3/4$, and places that attained value in the same native cost
 class. Neither price can be identified with a constant natural invoice.
 
-The universal real-mean lower/OPT equality is now proved by the accounting below.
+The native real-mean lower/OPT equality for this particular independent invoice law
+is proved by the accounting below; arbitrary conditional-mean invoice laws remain a gap.
 Import [NativeResidualInvoice](../../CslibFrontier/Probability/StochasticOracle/NativeResidualInvoice.lean)
 and [NativeResidualRealMinima](../../CslibFrontier/Probability/StochasticOracle/NativeResidualRealMinima.lean).
 `NativeResidualPolicies` now accepts a PMF of fresh natural invoices. A point mass
@@ -1036,6 +1041,15 @@ minimum $3/4$ at near mean $1/4$, and minimum $5/2$ at near mean $4$.
 `selectionOnly_of_output_memory_bind` shares the provenance support argument used
 by both concrete real-mean strategies.
 
+The lower accounting generalizes to every fixed invoice PMF satisfying `HasMean`,
+but still samples that PMF independently of $J$ and history. The attained upper
+and optimum equalities currently use `FixedMeanInvoice`; they have not been
+extended to every mean-matching fixed PMF. History-dependent or $J$-coupled invoice
+laws with fixed conditional per-call means require further execution, posterior
+and attainment proofs. These gaps are not blocked on #4336. The general native
+path-cost construction below imposes no such invoice-independence restriction,
+but by itself does not establish the missing optimum equalities.
+
 The unrestricted source-query/cutoff interpreter and external-machine adapters
 also remain unproved. `NativeUnboundedExecution.selectionOnly_of_output_memory`
 reuses derived native output/memory laws for provenance; its concrete consumers
@@ -1050,6 +1064,58 @@ From a matching warm checkout, run:
 lake build --wfail --iofail CslibFrontierTests.StochasticOracleNativeResidualRealCost \
   CslibFrontierTests.StochasticOracleNativeResidualRealChoice
 ```
+
+### Submission 191: actual infinite native paths and real total bills
+
+Import [PathCost](../../CslibFrontier/Computability/Probabilistic/NativeBatch/PathCost.lean)
+and [BatchPathCost](../../CslibFrontier/Probability/StochasticOracle/NativeRetention/BatchPathCost.lean).
+Use `open scoped Cslib.Probability.NativeBatch.PathCost` for the documented discrete
+state sigma algebra. The path space has its product sigma algebra; hidden state,
+reply packets and metadata need not range over a finite set. The adapter
+`ObservedProcess.trajectory` applies the Ionescu--Tulcea construction to the actual
+PMF transition. `map_coordinate` and `lintegral_coordinate` derive its original
+finite execution laws, without a supplied representation identity. This handles
+discrete PMF sources, not arbitrary nonatomic oracle kernels.
+
+`pathMeasure` runs the actual native source-epoch transition forever.
+`pathMeasureFrom` continues a retained trace prefix. `totalBill` includes the
+initial accrued prefix plus the series of actual new nonnegative receipt scores.
+`partialBill_eq_accrued_from` identifies its partial sums with the original accrued
+ledger almost surely. Silent divergence appends zero-call decisions and never
+erases the earlier bill. `lintegral_totalBill_from` uses monotone convergence to
+identify the total expectation with the supremum of finite trace expectations.
+`lintegral_totalBill_complete` proves that the source turn budget makes this equal
+to the already defined complete native expectation. No termination, total-bill
+bound or integrability premise is supplied.
+
+`totalBill_integrable_budget` derives almost-sure finiteness, real integrability
+and the budget cost bound from reached selected-batch conditional means. It allows
+history-dependent/correlated charges and arbitrary hidden metadata. The same-code
+`BatchPathCost.upper_controller` combines actual certified tape output with the
+survival-sum, mean and budget bounds for this real-integrable **total path bill**,
+under the existing primitive progress/cost/latency envelopes. It retains the fixed
+block scheduler’s scope; no arbitrary source scheduler is assumed executable.
+`NativeResidualPathCost.integrable_totalBill` gives the exact real minimum for the
+same compiled rational-table residual selector and its constructed independent
+invoice oracle, without an integrability or target-cost premise.
+
+The [path-cost client](../../CslibFrontierTests/NativeBatchPathCost.lean) applies the
+identity to the real native program with geometric, correlated unbounded invoices.
+It also continues an actual charged concurrent receipt through a silent native
+loop: the expected retained total is exactly eleven or three, while the suffix
+diverges. The zero-score edge is zero. The existing correlated upper-controller
+client now checks real total-bill integrability and bound four for the same single
+program that supplies success and OPT bounds. The fractional price-aware client
+checks real total expectations $3/4$ and $5/2$ for both branches of the same code.
+
+This closes discrete finite-budget native divergent-path/real-cost packaging,
+not unrestricted source query/cutoff or external-machine compilation. The paper
+fixes finite opportunities and a finite turn limit $u$. An interface issuing
+infinitely many source batches remains an additional requested extension; the
+cost monotone-convergence step itself does not require #4336. General measurable
+progress domination remains blocked on #4336. The Agent Operator’s Manual needs
+no edit: workflow, roles and human direction are unchanged. No abstract or ALL-main
+completion claim is promoted.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
 
