@@ -108,10 +108,16 @@ import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.DataStructure.NearNeighbor.Angular
+import CslibFrontier.DataStructure.NearNeighbor.PStable
+import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
+import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
+import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 import CslibFrontier.GameTheory.Strategic.Correlated
@@ -160,6 +166,8 @@ import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
+import CslibFrontier.Probability.LocalitySensitiveHash.PStable
+import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
 
 /-!
 # Collected results
@@ -511,6 +519,26 @@ register_result "constant-depth-mod-p" where
     satisfies 2·2^ℓ ≤ 5·size whenever ℓ ≥ 1 and 100(((p - 1)ℓ)^d + 1)² ≤ n + 1. Depth and \
     size count every gate, including NOT and constants; nonuniform."
 
+register_result "middle-slice-lower-bound-mod-two" where
+  title := "Razborov's rank method: a middle slice is not in AC⁰[2]"
+  topic := "circuit complexity"
+  sources := [
+    { paper := Razborov1987, theorem := unverified, locator := unverified },
+    { paper := RazborovRudich1997, theorem := unverified, locator := "Section 3.2, p. 27" },
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := unverified,
+      locator := "p. 10:20" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two
+  ]
+  scope := "No family of circuits of NOT, unbounded fan-in AND/OR and MOD_2 gates of constant \
+    depth and polynomial size decides the language of bit strings of length n with exactly \
+    ⌈n/2⌉ - ⌊√(n + 1)/10⌋ zeros (nonuniform). Proved through a variant of Razborov's GF(2) \
+    rank property (one square matrix, threshold C(n, a)/2). Razborov and Rudich (Section 3.2) \
+    state the property only abstractly; the explicit p = 2 form is the sketch of Carmosino et \
+    al. (p. 10:20). Razborov's original paper was not checked for its hard function. \
+    Membership in P and the separation are middle-slice-mod-two."
+
 register_result "middle-slice-mod-two" where
   title := "Razborov's rank method: a middle slice is in P but not in AC⁰[2]"
   topic := "circuit complexity"
@@ -524,13 +552,13 @@ register_result "middle-slice-mod-two" where
     Cslib.Circuits.Boolean.Razborov.middleSlice_mem_P,
     Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two
   ]
-  scope := "The language of bit strings of length n with exactly ⌈n/2⌉ - ⌊√(n + 1)⌋/10 zeros is \
+  scope := "The language of bit strings of length n with exactly ⌈n/2⌉ - ⌊√(n + 1)/10⌋ zeros is \
     decided in polynomial time by a multi-tape Turing machine and is not in AC⁰[2]: no family of \
     circuits of NOT, unbounded fan-in AND/OR and MOD_2 gates of constant depth and polynomial \
     size decides it (nonuniform). Proved through a variant of Razborov's GF(2) rank property \
     (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
     sketch, and Razborov's original paper was not checked for its hard function. The lower bound \
-    itself is middleSlice_notMem_AC0Mod_two in the imported module Razborov.MiddleSlice."
+    itself is the separate entry middle-slice-lower-bound-mod-two."
 
 register_result "rank-property-natural-ac0-2" where
   title := "Razborov's rank property is a P/poly-natural property useful against AC⁰[2]"
@@ -546,7 +574,7 @@ register_result "rank-property-natural-ac0-2" where
     Cslib.Circuits.Boolean.Razborov.notMem_rankProperty_rankLength_of_computes,
     Cslib.Circuits.Boolean.Razborov.rankLength_add_one_le
   ]
-  scope := "Along the level ⌈n/2⌉ - ⌊√(n + 1)⌋/10, the GF(2) rank property (a variant: one square \
+  scope := "Along the level ⌈n/2⌉ - ⌊√(n + 1)/10⌋, the GF(2) rank property (a variant: one square \
     matrix, threshold C(n, a)/2) is large, its truth tables are decided by De Morgan circuits of \
     173·8^n gates (P/poly; size only, depth not certified, not the sources' NC²), and it is useful \
     against AC⁰[2] (NOT, unbounded fan-in AND/OR and MOD_2 gates; nonuniform). Explicitly, at \
@@ -1265,6 +1293,29 @@ register_result "nash-existence-bimatrix" where
   ]
   scope := "Real payoff matrices over finite nonempty strategy sets, with no nondegeneracy \
     assumption; derived from the n-player theorem. Nonconstructive."
+
+register_result "two-player-nash-ppad" where
+  title := "Two-player rational Nash equilibrium is in PPAD"
+  topic := "game theory"
+  sources := [
+    { paper := Papadimitriou1994PPAD, theorem := unverified, locator := unverified },
+    { paper := Shapley1974, theorem := unverified, locator := unverified },
+    { paper := LemkeHowson1964, theorem := unverified, locator := unverified },
+    { paper := vonStengel2007, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_PPAD,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_TFNP,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_isTotalSearch,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_searchReducible_EndOfLine,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash.isNash
+  ]
+  scope := "Two-player games presented as pairs of rational payoff lists under encBimatrix. \
+    For well-formed nonempty m × n games, BimatrixNash asks for a canonical rational mixed Nash \
+    equilibrium encoded by encWitness within explicit bit-length bound 120·L³ + 400·L + 100 \
+    (malformed inputs admit only []). Proved in PPAD by lexicographic perturbation, \
+    Shapley-oriented Lemke–Howson pivoting, and Cramer rounding; does not prove PPAD-hardness \
+    or an efficient Lemke–Howson solver."
 
 register_result "facility-location-random-dictatorship" where
   title := "Random dictatorship is strategyproof and (2 - 2 / n)-approximate for social cost"
@@ -2862,7 +2913,8 @@ register_result "cikk-learning-from-dense-test" where
     over; (4) the number of queries is certified, the hypothesis size is bounded in \
     cikk-learner-hypothesis-size, and the running time is not certified; (5) p = 2 only; \
     (6) the test is an arbitrary Boolean function, not a natural property, so the \
-    property-to-learner form of Theorem 5.1 and Corollary 5.4 is not included."
+    property-to-learner form of Theorem 5.1 is not included; Corollary 5.4 for p = 2 is \
+    cikk-learning-ac0-2."
 
 register_result "cikk-learner-hypothesis-size" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the hypotheses of the learner from a \
@@ -2893,7 +2945,7 @@ register_result "cikk-learner-hypothesis-size" where
 
 register_result "cikk-learning-ac0-2" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning AC⁰[2] with the rank property, \
-    with quasi-polynomially many membership queries"
+    with quasi-polynomially many membership queries and quasi-polynomial-size hypotheses"
   topic := "meta-complexity"
   sources := [
     { paper := CarmosinoImpagliazzoKabanetsKolokolova2016,
@@ -2903,10 +2955,12 @@ register_result "cikk-learning-ac0-2" where
   theorems := [
     Cslib.MachineLearning.UniformLearning.learns_cikkLearner_rankTest,
     Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest,
-    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest_le
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_rankTest_le,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le_two_pow,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_cikkLearner_rankTest_le
   ]
-  scope := "Corollary 5.4 for p = 2 with queries counted, for a fixed depth d and size s. With \
-    g = cikkAC0Gap d e n s and l = cikkAC0Len d e n s g, the CIKK learner \
+  scope := "Corollary 5.4 for p = 2 with queries and hypothesis size counted, for a fixed depth d \
+    and size s. With g = cikkAC0Gap d e n s and l = cikkAC0Len d e n s g, the CIKK learner \
     (cikk-learning-from-dense-test) whose test accepts the truth tables of the rank property \
     (rank-property-natural-ac0-2) at input length l learns every function on n bits computed \
     by a circuit of NOT, unbounded fan-in AND/OR and MOD_2 gates of depth at most d and size at \
@@ -2914,11 +2968,16 @@ register_result "cikk-learning-ac0-2" where
     confidence 1 - 2^-h. It makes at most (h+1) 2^(12g + 6e + 59) queries, and \
     g <= 2^(2D(5D+25)) B^(2D) with D = d + 7 and B = floor(log2(M^2 (s + 6(n+1)^2 + 3))) + 1, \
     M = 2^(e+10)(3e+42), so for fixed d the number of queries is quasi-polynomial in n, s and \
-    2^e. Labels: (1) the rank property is this library's variant (one square matrix, threshold \
-    C(n, a)/2, level sliceLevel) with density 1/2 where Theorem 5.1 assumes largeness 1/5, and \
-    its constructivity is not used; (2) p = 2 only, where Corollary 5.4 states every prime; \
-    (3) queries are certified, but the source's running-time bound is not, nor is the \
-    hypotheses' circuit size; (4) the target class is nonuniform, fixed by d and s; (5) g and \
+    2^e. On every target and seed the hypothesis has a De Morgan circuit with at most \
+    2^(17g + 9e + 76) gates, also quasi-polynomial for fixed d: the rank test's truth-table \
+    circuit (173 * 8^l gates) fed into cikk-learner-hypothesis-size, with l + 2 <= g. Labels: \
+    (1) the rank property is this library's variant (one square matrix, threshold C(n, a)/2, \
+    level sliceLevel) with density 1/2 where Theorem 5.1 assumes largeness 1/5, and its \
+    constructivity is used only as truth-table circuit size, not the source's NC^2; (2) p = 2 \
+    only, where Corollary 5.4 states every prime; (3) queries and De Morgan hypothesis size are \
+    certified, but the source's running-time bound is not; hypothesis depth is not certified, \
+    so the hypotheses are not shown to lie in AC^0[2] (Corollary 5.4's hypotheses are general \
+    circuits too); (4) the target class is nonuniform, fixed by d and s; (5) g and \
     l are explicit closed forms from the fixed point l + 2 <= g, replacing the source's choice \
     of L with log L > u^-1(poly); the generator circuits add depth 7, and all constants are \
     this library's; (6) the deviations of cikk-learning-from-dense-test carry over. The \
@@ -3088,6 +3147,78 @@ register_result "tfnp-eopl-sopl-promised-normalization" where
     solution relations without a failed-promise fallback, and failed-promise back-maps via \
     potentialLineBack. Presented on uniform families rather than canonical circuit codes; UEOPL \
     and CLS are not formalized."
+
+register_result "simhash" where
+  title := "Charikar's SimHash collision law"
+  topic := "algorithms"
+  sources := [
+    { paper := Charikar2002, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Probability.measureCollisionProb_simHash,
+    Cslib.Probability.measureCollisionProb_simHash_of_norm_eq_one,
+    Cslib.Probability.isLocalitySensitive_simHash_inner
+  ]
+  scope := "Random-hyperplane sign hash `simHash r u = decide (0 <= <u, r>)` with seed `r` \
+    drawn from the standard Gaussian measure `stdGaussian E` on a finite-dimensional real \
+    inner product space `E` (and i.i.d. `gaussianReal 0 1` coordinates on `EuclideanSpace`). \
+    Proves exact collision probability `1 - angle u v / pi` on nonzero vectors, cosine-similarity \
+    sensitivity on unit vectors, and Charikar's triangle inequality for measurable collision laws."
+
+register_result "angular-near-neighbor" where
+  title := "Approximate near neighbours in angular distance via SimHash"
+  topic := "algorithms"
+  sources := [
+    { paper := Charikar2002, theorem := unverified, locator := unverified },
+    { paper := IndykMotwani1998, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.DataStructure.NearNeighbor.rho_simHash_le,
+    Cslib.DataStructure.NearNeighbor.measureReal_query_simHash_eq_none_le
+  ]
+  scope := "Static `(c, theta)`-approximate near-neighbour query bound over `Measure.pi` tables of \
+    `k = numHashes` AND-composed SimHash bits (`L = numTables`, stopping rule `T = 3 * L`). \
+    Proves exponent `rho <= 1 / c` and failure probability at most `exp (-1) + 1 / 3` whenever \
+    `0 < theta`, `1 < c`, and `c * theta < pi`. Probabilistic query failure only; word-RAM hash \
+    buckets, seed storage, dynamic updates, and query runtime are not formalized."
+
+register_result "p-stable-lsh" where
+  title := "p-stable LSH collision probabilities for p = 1 and p = 2"
+  topic := "algorithms"
+  sources := [
+    { paper := DatarImmorlicaIndykMirrokni2004, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Probability.measureCollisionProb_p2StableHash,
+    Cslib.Probability.p2StableProb_eq_integral,
+    Cslib.Probability.measureCollisionProb_p1StableHash,
+    Cslib.Probability.p1StableProb_eq
+  ]
+  scope := "Shifted interval quantization `floor ((proj a x + b) / r)` with `b` drawn from \
+    `uniformInterval r`. Proves the general Fubini integral, Cauchy `1`-stability for i.i.d. \
+    `cauchyMeasure 0 1` projections, exact Euclidean (`p = 2`, Gaussian) and `l_1` (`p = 1`, \
+    Cauchy) collision formulas including Datar et al.'s integral representation and closed \
+    forms, strict positivity, and strict monotonicity. General `p` in `(0, 2) \\ {1, 2}` is \
+    not formalized."
+
+register_result "p-stable-near-neighbor" where
+  title := "Approximate near neighbours in l_2 and l_1 via p-stable LSH"
+  topic := "algorithms"
+  sources := [
+    { paper := DatarImmorlicaIndykMirrokni2004, theorem := unverified, locator := unverified },
+    { paper := HarPeledIndykMotwani2012, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.DataStructure.NearNeighbor.rho_p2Stable_lt_one,
+    Cslib.DataStructure.NearNeighbor.measureReal_query_p2Stable_eq_none_le,
+    Cslib.DataStructure.NearNeighbor.rho_p1Stable_lt_one,
+    Cslib.DataStructure.NearNeighbor.measureReal_query_p1Stable_eq_none_le
+  ]
+  scope := "Static `(c, d)`-approximate near-neighbour guarantees over `Measure.pi` AND tables \
+    for Euclidean distance (`p = 2`, `stdGaussian E`) and `l_1` distance (`p = 1`, product \
+    `cauchyMeasure 0 1`), proving sublinear `rho < 1` and query failure at most `exp (-1) + 1 / 3` \
+    when `0 < w`, `0 < d`, and `1 < c`. Probabilistic query failure only; word-RAM hash buckets, \
+    seed storage, dynamic updates, and query runtime are not formalized."
 
 register_result "goemans-williamson-max2sat" where
   title := "Goemans–Williamson α-approximation rounding for MAX-2SAT (α > 0.87856)"
@@ -3401,6 +3532,75 @@ register_result "sperner-2d-ppad-completeness" where
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
 
+register_result "sturm-real-root-counting" where
+  title := "Sturm's theorem for separable real polynomials"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BasuPollackRoy2006, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Polynomial.sturmSeq_map,
+    Polynomial.sturmVariations_sub_eq_card_roots_Ioc,
+    Polynomial.sturmVariations_sub_eq_card_roots_Ioc_of_squarefree,
+    Polynomial.sturmVariations_sub_eq_card_roots_Ioo,
+    Polynomial.sturmVariations_sub_eq_card_roots_Icc
+  ]
+  scope := "Exact real-root counting on (a, b], (a, b), and [a, b] via Sturm sign variations of \
+    sturmSeq p (derivative p) for separable (equivalently squarefree) p : ℝ[X], together with \
+    field-homomorphism invariance of sturmSeq. Proved over ℝ via local constancy of \
+    sturmVariations p x + #{r <= x} rather than general real closed fields."
+
+register_result "mahler-mignotte-root-separation" where
+  title := "Hadamard's determinant inequality and Mahler–Mignotte root-separation bounds"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := Mahler1964, theorem := unverified, locator := "pp. 257–262" },
+    { paper := Mignotte1982, theorem := unverified, locator := "pp. 259–263" },
+    { paper := BasuPollackRoy2006, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Matrix.hadamard_det_sq_le,
+    Polynomial.mignotte_sep_mahler_complex,
+    Polynomial.mignotte_sep_sqNorm_complex,
+    Polynomial.mignotte_sep_sqNorm_real,
+    Polynomial.mignotte_sep_sqNorm_rat
+  ]
+  scope := "Hadamard's determinant inequality over ℂ and Mahler–Mignotte root-separation lower \
+    bounds 3 <= |α - β| ^ 2 * (d ^ (d + 2) * coeffSqNorm p ^ (d - 1)) for distinct roots of \
+    separable integer and cleared-denominator rational polynomials of degree d >= 2, combining \
+    Mahler's discriminant/Mahler-measure inequality with |discr p| >= 1 and Landau's l^2 bound."
+
+register_result "certified-real-root-isolation" where
+  title := "Certified Sturm-bisection real-root isolation with Mignotte depth and TimeM bounds"
+  topic := "algorithms"
+  sources := [
+    { paper := BasuPollackRoy2006, theorem := unverified, locator := unverified },
+    { paper := Mahler1964, theorem := unverified, locator := "pp. 257–262" },
+    { paper := Mignotte1982, theorem := unverified, locator := "pp. 259–263" }
+  ]
+  theorems := [
+    Cslib.RealRoot.isolateRootsTotal_isIsolatingFor,
+    Cslib.RealRoot.isolateRootsTotal_pairwise_disjoint,
+    Cslib.RealRoot.isolateRootsTotal_bijective_of_squarefree,
+    Cslib.RealRoot.isolateRootsTotal_endpoint_bounds_of_bitBound,
+    Cslib.RealRoot.isolateRootsTotalM_time_le_of_bitBound,
+    Cslib.RealRoot.isolateRootsTotal_spec_of_eq,
+    Cslib.RealRoot.isolatePolyRootsTotal_bijective,
+    Cslib.RealRoot.isolatePolyRootsTotalM_time_le_of_bitBound
+  ]
+  scope := "End-to-end TimeM ℕ-charged Sturm-bisection real-root isolator over ℚ[X]: \
+    isolateRootsTotalM / isolateRootsTotal on List ℚ is executable (decide +kernel / #eval), \
+    charging all preprocessing (trim, Euclidean Sturm sequence, Cauchy bound, denominator \
+    clearing, l^2 norm, and Nat.clog), bisection, left-root refinement, and Mignotte-fueled \
+    boundary separation into strictly disjoint closed intervals (J₁.upper < J₂.lower), whereas \
+    isolatePolyRootsTotalM / isolatePolyRootsTotal on Polynomial ℚ is noncomputable (inheriting \
+    Polynomial's noncomputable Finsupp representation) and measures the TimeM ℕ cost of \
+    isolateRootsTotalM on p.coeffsBelow (p.natDegree + 1) without charging coefficient extraction \
+    from Polynomial ℚ. Certifies strict monotone bijection onto {x : ℝ // aeval x p = 0} for \
+    every squarefree p : ℚ[X], dyadic endpoint numerator/denominator bit bounds, and O(n^5 (B+2)) \
+    TimeM ℕ operation count under HasCoeffBitBound B cs. TimeM ℕ counts unit-cost algebraic/RAM \
+    scalar operations on ℚ/ℤ/ℕ rather than bit-level Turing complexity along Euclidean Sturm \
+    remainders."
 register_result "yap-collapse" where
   title := "Yap's theorem: coNP in NP/poly collapses the polynomial hierarchy to Σ₃"
   topic := "structural complexity"

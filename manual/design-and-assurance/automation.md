@@ -68,12 +68,12 @@ obligations they cannot prove as goals; their references say which.
 | `fo_reduction I [h]` | `Tactic.FirstOrder` | `FO.QFReduces K K'`, `FO.Reduces K K'` through the interpretation `I` | [Logical descriptions](#logical-descriptions) |
 | `fo_definable`, `fo_wf [φ]` | `Tactic.FOOperator` | `Operator.Definable …`; formation conditions of explicit formulas | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FOOperators.lean) |
 | `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
-| `simp only [runWith_norm, pmf_norm]` (simp set) | `Languages.Probabilistic.Oracle.Norm` | the law of an oracle experiment (`runWith` of interpreted handlers), to nested `PMF.bind` | [One semantics with several views](../programs-crypto-and-probability/programs-and-realization.md#one-semantics-with-several-views) |
+| `simp only [runWith_norm, pmf_norm]` (simp set) | `Languages.Probabilistic.Oracle.Norm` | the law of an oracle experiment (`runWith` or stateless `evalWith` of interpreted handlers, including stateful inner reductions via `eval_interpret_eq_evalWith` / `evalWith_run_interpret`), to nested `PMF.bind` | [One semantics with several views](../programs-crypto-and-probability/programs-and-realization.md#one-semantics-with-several-views) |
 | `pmf_swap`, `pmf_swap with x y` | `Tactic.PMFSwap` | an equation of distributions that draw the same independent samples in different orders | [Reorder independent samples](#reorder-independent-samples) |
 | `pmf_hoist q`, `pmf_hoist q at h` | `Tactic.PMFSwap` | moves the samples of `q` toward the front of their `PMF.bind` chains | [Reorder independent samples](#reorder-independent-samples) |
 | `supp_cases h`, `supp_cases h [p] with pat`; `simp only [supp_norm]` (simp set) | `Tactic.SuppCases` | inverts `h : x ∈ m.support` for a `PMF` or `OracleComp` program into the results of its parts | [Invert a support membership](../workflows/probabilistic-workflows.md#invert-a-support-membership) |
 | `negligible`, `negligible using hle`, `negligible eventually hle` | `Tactic.Negligible` | `Cslib.Crypto.Negligible f` | [Close negligibility bounds](#close-negligibility-bounds) |
-| `game_trans [g₁, …]`, `game_trans [g₁, …] using [h₀, …]` | `Tactic.GameHop` | `Game.advantage`, `Encryption.advantage` and `Game.succProbability` difference bounds, and `CloseTo`, split into one subgoal per hop | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
+| `game_trans [g₁, …]`, `game_trans [g₁, …] using [h₀, …]` | `Tactic.GameHop` | `Game.advantage`, `Encryption.advantage`, one-sided or difference `Game.succProbability` bounds, and `CloseTo`, split into one subgoal per hop | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
 | `peel_binds`, `peel_binds x₁ …` | `Tactic.GameHop` | removes the shared leading draws of the two sides of a `Game.advantage`, `Encryption.advantage`, `CloseTo` or `PMF` equality goal | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
@@ -167,6 +167,8 @@ the same results. The [checked controls](../../CslibFrontierTests/PolyTimeRuleCl
 cover local registrations and both reducibility cases.
 
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
+
+Import [`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Captured.lean) for shared-input plain composition rules (`CslibFrontier.Tactic.PolyTime` does not import it). It registers `fun_prop` rules for `_root_.cond`, `List.take` and `List.drop` (requiring `encUnary` count premises), `List.head?`, `List.headD`, `List.count` (returning its count in `encUnary`), and fixed-list `List.any` (`anyConst`, whose fixed list needs no index encoding). Rules whose result encoding hides an element encoding (`listHead?WithInput`, `listHeadDWithInput`, `countWithInput`) also carry `program_certificate hlist` so `polytime` infers the element encoding from the `encList E` list premise before checking element arguments or outer projections. Binary remainder `ComputableInPolyTime.binary_mod'` on `encNat` stays explicit alongside `binary_div'` so `HMod.hMod` automation on `encUnary` remains unambiguous; see the complete checked client [`PolyTimeCaptured.lean`](../../CslibFrontierTests/PolyTimeCaptured.lean).
 
 ## Rewrite option matches before resource automation
 
@@ -300,10 +302,39 @@ truncated subtraction, and rejection when fit or exact-operation evidence is mis
 Automatic staging computes the whole encoded argument when any coordinate needs computation;
 an explicit `pure` stage remains useful to share a computed value between several calls.
 
+Ordinary `if` guards accept natural-word `=`, `≠`, `<`, `≤`, `>` and `≥`, and negations of
+these comparisons. Write `if a ≤ b then ... else ...` directly: the tactic reverses a strict
+test and swaps alternatives, charging the existing branch without computing `b + 1`. An
+operand actually written as `b + 1` still needs its usual fit proof. The complete
+[guard clients](../../CslibFrontierTests/WordRAMRealizeGuards.lean) check equal and maximal
+fitting words, selected-path safety and native execution of the migrated QuotientFilter query
+scan step with a maximal cutoff. From the repository root, run:
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGuards
+```
+
+Use nested branches for compound tests. Loop guards keep their existing grammar: `=`, `<`,
+`>` and `≠ 0`; this branch support does not extend the loop guard rules.
+
+Returned choices can also stay inside `pure`, including tuple and option components:
+`pure (min a b, max a b)` and `pure (decide (a = 0))` need no separate source program with
+branches around the returns. `realize` transports checked equalities through the returned
+value, then uses the existing native branch rules. Branch instructions are charged, and only
+the selected alternative requires its fit and exact-operation definedness proofs. Computing a
+comparison operand still requires that operand to fit before the test. Values fixed before
+runtime or already supplied by the input encoding retain their existing constant or live-word
+rules. Min/max selection uses the input words directly, so the largest fitting word needs no
+fitting successor. The complete
+[conditional-result clients](../../CslibFrontierTests/WordRAMRealizeValues.lean) check these cases,
+inactive exact division/subtraction, rejected missing premises, and frontier-bounded
+certificates. Check them from the repository root with
+`scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues`.
+
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
 certificate's basis, output encoding, zero local work and whether its argument coordinates use
-supported word glue, then inspect
-the domain at the reached memory. Retain the fit and safety obligations left by the tactic;
+supported word glue, then inspect the domain at the reached memory. Retain the fit and safety
+obligations left by the tactic;
 unfolding the method or dropping a resource premise does not supply those proofs. The
 [realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
 code and charging contract; the complete clients above supply imports and local context.
@@ -468,15 +499,17 @@ and
 Use `game_trans [g₁, g₂, ...]` (or `game_trans g₁, g₂, ...`) on goals of the form
 `Game.advantage G₀ Gₖ ≤ B` (`ℝ≥0`), `(Game.advantage G₀ Gₖ : ℝ) ≤ B` (`ℝ`),
 `Encryption.advantage exp n ≤ B`, `Game.succProbability G₀ ≤ Game.succProbability Gₖ + B` (in
-`ℝ≥0` or `ℝ`, in either addition order), or `CloseTo μ₀ μₖ B` (`ℝ≥0∞`). It creates one hop subgoal
-per adjacent pair followed by a trailing bound subgoal `?ε₀ + ... + ?εₘ ≤ B`. Passing
+`ℝ≥0` or `ℝ`, in either addition order), one-sided `Game.succProbability G₀ ≤ B` (in `ℝ≥0` or
+`ℝ`, hopping from `G₀` to `PMF.pure false`), or `CloseTo μ₀ μₖ B` (`ℝ≥0∞`). It creates one hop
+subgoal per adjacent pair followed by a trailing bound subgoal `?ε₀ + ... + ?εₘ ≤ B`. Passing
 `using [h₀, h₁, ...]` discharges hops directly (use `_` to leave a hop open for tactic proof),
-automatically orienting reversed `Game.advantage_comm` and `CloseTo.symm` bounds, lifting `ℝ≥0`
-advantage bounds into `ℝ`, turning game equalities `A = B` or `B = A` into zero error, and closing
-a fully instantiated sum bound when it holds by `rfl`, associativity/commutativity of `+` (with
-zeros), or `ring`. With no intermediate list, `game_trans` unfolds `Encryption.advantage` or
-reduces a `Game.succProbability` difference bound to `Game.advantage`, and `game_trans using [h]`
-closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
+automatically orienting reversed `Game.advantage_comm` and `CloseTo.symm` bounds, accepting
+`Game.succProbability x ≤ ε` proofs on `PMF.pure false` endpoints, lifting `ℝ≥0` bounds into `ℝ`,
+turning game equalities `A = B` or `B = A` into zero error, and closing a fully instantiated sum
+bound when it holds by `rfl`, symmetric `Game.advantage_comm` summand alignment,
+associativity/commutativity of `+` (with zeros), or `ring`. With no intermediate list,
+`game_trans` unfolds `Encryption.advantage` or reduces a `Game.succProbability` bound to
+`Game.advantage`, and `game_trans using [h]` closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
 `CslibFrontier.Crypto.Game.CloseTo.Statistical` and apply `Cslib.Interactive.closeTo_of_dist_le_ofReal`
 to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
 [Lyubashevsky commitment binding proof](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Commitment.lean).
