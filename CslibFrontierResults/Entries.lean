@@ -6,6 +6,9 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
+import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
+import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
@@ -31,6 +34,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure.Converse
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reachability
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
@@ -1116,6 +1120,29 @@ register_result "immerman-nl-capture" where
     (encStructure) is in native NL; positive closures suffice. Malformed table shapes and \
     universes below two are rejected."
 
+register_result "immerman-reach-nl-complete" where
+  title := "Immerman: REACH is NL-complete under ordered first-order reductions"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := "Theorem 3.16 and Exercise 3.20",
+      locator := "Chapter 3, pp. 64–66" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.reduces_Reach_iff_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.exists_fullTupleInterpretation_Reach_of_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.reach_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.stReach_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.reach_logSpaceComplete_NL
+  ]
+  scope := "Canonically ordered finite relational structures on Fin n (2 ≤ n) with built-in \
+    ≤, BIT, 0, 1 and max, encoded at encStructure; native multi-tape NL with all-branches \
+    halting. Reach is 0-to-max directed reachability over Language.graph (arbitrary binary \
+    edge relation, self-loops permitted). Every ordered query in native NL reduces to Reach \
+    by one positive-dimensional FullTupleInterpretation (hence Ordered.Reduces), and conversely \
+    via positive FO(TC) pullback. Endpoint normalization covers arbitrary marked (s, t) \
+    including s = t, and Reach is logspace interreducible with STCON (encSTCON). First-order \
+    and quantifier-free projection refinements (≤_fop, ≤_qfp) are not formalized here."
+
 register_result "fo-dtc-l" where
   title := "FO(DTC) is contained in L on ordered structures"
   topic := "descriptive complexity"
@@ -1149,7 +1176,7 @@ register_result "immerman-l-capture" where
     universes below two are rejected."
 
 register_result "ordered-projection-reducibility" where
-  title := "Immerman–Landau: ordered first-order projections compose and refine FO reductions"
+  title := "Immerman–Landau: ordered FO and QF projections compose and refine FO reductions"
   topic := "descriptive complexity"
   sources := [
     { paper := ImmermanLandau1995, theorem := "Proposition 3.7", locator := "Section 3" },
@@ -1160,6 +1187,7 @@ register_result "ordered-projection-reducibility" where
     Cslib.Logic.FO.Ordered.ProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.ProjectionReduces.reduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.trans,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.projectionReduces,
     Cslib.Logic.FO.Ordered.QFProjectionReduces.reduces
   ]
@@ -1168,9 +1196,11 @@ register_result "ordered-projection-reducibility" where
     trees of numeric guards with constants or single signed input literals at the leaves; \
     first-order projections allow guards over order, BIT, 0, 1 and max, while quantifier-free \
     projections require quantifier-free guards over order, non-wrapping successor, 0 and max \
-    without BIT. Transitivity of quantifier-free projections and projection-completeness \
-    endpoints are not yet formalized here; the logspace encoding lift at encStructure is proved \
-    separately in Classes.LogSpace.FirstOrder.Ordered.Projection."
+    without BIT. Both IsProjectionMap and IsQFProjectionMap contain the identity and are \
+    closed under composition (with BIT-free quantifier-free guard pullback via \
+    QFNumeric.onFullTuple); projection-completeness endpoints are not yet formalized here, and \
+    the logspace encoding lift at encStructure is proved separately in \
+    Classes.LogSpace.FirstOrder.Ordered.Projection."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
@@ -2119,6 +2149,57 @@ register_result "tfnp-sopl-eopl-collapse" where
     transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
     EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
     are not formalized."
+
+register_result "goemans-williamson-max2sat" where
+  title := "Goemans–Williamson α-approximation rounding for MAX-2SAT (α > 0.87856)"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Theorem 7.2.1.1",
+      locator := "Section 7.2.1" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_signedSdpValue_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_satSdpValue_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_satValue_le_integral
+  ]
+  scope := "Exact stdGaussian random-hyperplane rounding of unit-vector SDP relaxations (P') \
+    and weighted MAX-2SAT over arbitrary finite clause/variable types with nonnegative weights, \
+    using Real.goemansWilliamsonConstant (0.87856 < α). No SDP solver, Gaussian sampler, \
+    derandomization, or Section 7.2.2 MAX-SAT LP/SDP hybrid is formalized."
+
+register_result "goemans-williamson-max2sat-cnf" where
+  title := "Goemans–Williamson rounding bridge for Cslib MaxTwoSAT CNFs"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Section 7.2.1",
+      locator := "Section 7.2.1" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_countP_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_target_le_integral_of_mem
+  ]
+  scope := "Specialization of Goemans–Williamson MAX-2SAT random-hyperplane rounding to list \
+    CNFs counted by Cslib.Logic.PL.CNF.countP and membership in Cslib.Complexity.MaxTwoSAT \
+    under exact stdGaussian expectation; no polynomial-time SDP solver is included."
+
+open Cslib.Algorithms.Lean.MaxDicut in
+register_result "goemans-williamson-maxdicut" where
+  title := "Goemans–Williamson β-approximation rounding for MAX-DICUT (β > 0.79607)"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Lemma 7.3.1, Lemma 7.3.2",
+      locator := "Section 7.3, pp. 1138–1139" }
+  ]
+  theorems := [
+    goemansWilliamsonDicutConstant_mul_dicutSdpValue_le_integral,
+    goemansWilliamsonDicutConstant_mul_dicutValue_le_integral,
+    goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph
+  ]
+  scope := "Exact stdGaussian random-hyperplane rounding for triple SDP relaxations (P'') and \
+    weighted directed multigraphs with nonnegative weights, achieving \
+    Real.goemansWilliamsonDicutConstant (0.79607 < β < 0.79608), plus the balanced-digraph \
+    reduction recovering α > 0.87856 on p. 1138. No SDP solver, finite-precision sampler, or \
+    derandomization is formalized."
 
 section
 open Cslib.Communication

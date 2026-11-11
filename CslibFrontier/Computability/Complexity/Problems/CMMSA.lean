@@ -56,6 +56,9 @@ binary (`encDNFOver encNat`).
 
 * `Cslib.Complexity.mem_no_GapCMMSA_one`: at `σ = 1`, a no-instance is one in which every light
   assignment falsifies some formula.
+* `Cslib.Complexity.CMMSAInstance.WellFormed.length_le`,
+  `Cslib.Complexity.CMMSAInstance.WellFormed.length_term_le`: in a well-formed instance every
+  formula has at most `Δ` terms and every term at most `Δ` literals.
 * `Cslib.Complexity.CMMSAInstance.isPolyTime_mk` and the field accessors: the encoding is a
   record of its fields.
 
@@ -115,6 +118,19 @@ structure WellFormed (Δ : ℕ) : Prop where
 theorem WellFormed.mono {I : CMMSAInstance} {Δ Δ' : ℕ} (h : I.WellFormed Δ) (hΔ : Δ ≤ Δ') :
     I.WellFormed Δ' :=
   { h with length_flatten_le := fun φ hφ => (h.length_flatten_le φ hφ).trans hΔ }
+
+/-- Every formula of a well-formed instance has at most `Δ` terms, since its terms are nonempty. -/
+theorem WellFormed.length_le {I : CMMSAInstance} {Δ : ℕ} (h : I.WellFormed Δ) {φ : DNF ℕ}
+    (hφ : φ ∈ I.formulas) : φ.length ≤ Δ := by
+  refine le_trans ?_ (h.length_flatten_le φ hφ)
+  rw [List.length_flatten]
+  simpa using List.length_le_sum_of_one_le (φ.map List.length)
+    (by simpa [Nat.one_le_iff_ne_zero] using h.term_ne_nil φ hφ)
+
+/-- Every term of a well-formed instance has at most `Δ` literals. -/
+theorem WellFormed.length_term_le {I : CMMSAInstance} {Δ : ℕ} (h : I.WellFormed Δ)
+    {φ : DNF ℕ} (hφ : φ ∈ I.formulas) {t : Term ℕ} (ht : t ∈ φ) : t.length ≤ Δ :=
+  le_trans (List.sublist_flatten_of_mem ht).length_le (h.length_flatten_le φ hφ)
 
 /-- **Unary weights and threshold**, binary variables: an instance is encoded as the framed list of
 its unary weights, its framed unary threshold and the list of its formulas over binary variable
