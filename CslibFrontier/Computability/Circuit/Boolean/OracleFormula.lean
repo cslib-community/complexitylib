@@ -339,4 +339,13 @@ theorem LocalFormulaClass.mono {q ℓ a S q' ℓ' a' S' : ℕ → ℕ} {Yes No :
   obtain ⟨E, hS', hq', hℓ', ha', hyes, hno⟩ := hO m
   exact ⟨E, hS'.trans (hS m), hq'.trans (hq m), hℓ'.trans (hℓ m), ha'.trans (ha m), hyes, hno⟩
 
+/-- Shrinking the yes- and no-instances keeps a promise problem in a local formula class. -/
+theorem LocalFormulaClass.anti {q ℓ a S : ℕ → ℕ} {Yes No Yes' No' : Language Bool}
+    (h : LocalFormulaClass q ℓ a S Yes No) (hY : Yes' ≤ Yes) (hN : No' ≤ No) :
+    LocalFormulaClass q ℓ a S Yes' No' := by
+  obtain ⟨O, hO⟩ := h
+  refine ⟨O, fun m => ?_⟩
+  obtain ⟨E, hS, hq, hℓ, ha, hyes, hno⟩ := hO m
+  exact ⟨E, hS, hq, hℓ, ha, fun x hx => hyes x (hY hx), fun x hx => hno x (hN hx)⟩
+
 end Cslib.Circuits.Boolean

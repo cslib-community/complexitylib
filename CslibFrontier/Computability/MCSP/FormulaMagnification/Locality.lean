@@ -180,3 +180,19 @@ theorem noSetReal_le_noSet {s : ℕ → ℕ} {δ : ℕ → ℝ} (hδ : ∀ n, 0 
 
 end Cslib.ApproxMCSP
 
+namespace Cslib.Circuits.Boolean
+
+/-- Real-error class form of the local construction, with `k = ⌈1 / δ⌉₊`. -/
+theorem localFormulaClass_approxMCSP_real {s : ℕ → ℕ} {δ : ℕ → ℝ} (hδ : ∀ n, 0 < δ n) :
+    LocalFormulaClass (fun m => m)
+      (fun m => approxMCSPQueryEncLength (Nat.log 2 m) (s (Nat.log 2 m)) ⌈1 / δ (Nat.log 2 m)⌉₊)
+      (fun _ => 1)
+      (fun m => m *
+        approxMCSPQueryEncLength (Nat.log 2 m) (s (Nat.log 2 m)) ⌈1 / δ (Nat.log 2 m)⌉₊)
+      (GapMCSP.yesSet s) (ApproxMCSP.noSetReal s δ) :=
+  (localFormulaClass_approxMCSP (s₁ := s) (s₂ := s) (k := fun n => ⌈1 / δ n⌉₊)
+    (fun n => Nat.ceil_pos.mpr (by have := hδ n; positivity)) fun _ => le_rfl).anti le_rfl
+    (ApproxMCSP.noSetReal_le_noSet hδ)
+
+end Cslib.Circuits.Boolean
+
