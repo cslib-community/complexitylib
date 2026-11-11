@@ -2142,6 +2142,11 @@ public import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Majority
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Components
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Faces
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Graph
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Rotation
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Schaefer
 public import CslibFrontier.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.ChromaticNumber
@@ -2178,6 +2183,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Components
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Differences
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Dual
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import CslibFrontier.Computability.Complexity.Problems.Graph.SpanningTrees
 public import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors
