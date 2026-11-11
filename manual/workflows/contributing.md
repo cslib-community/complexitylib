@@ -6,7 +6,7 @@ A useful contribution gives the next client a clearer theorem, construction or p
 
 Specify the model, encodings, resource convention, uniformity and quantifier order. For a published result, identify the source version and locator and map those choices to the source. For a conditional or restricted milestone, state its restriction and preserve the broader objective. Assuming the difficult endpoint is not constructing it.
 
-Bind tuple components by name instead of reaching into nested tuples with chains such as `c.1.2`; CI stops a changed module from adding such chains to its public statements and definition bodies ([named components](../../CONTRIBUTING.md#library-quality-standard)). Write encodings so that readers can see them without parsing the same nested term repeatedly: name a compound encoding that recurs in a module's statements with a documented reducible `abbrev`, keep unary versus binary and representation choices visible in names and docstrings, and declare field-tuple structure encodings with [`enc_structure`](choosing-models.md#write-the-contract-before-the-proof). The [encoding rules](../../AGENTS.md#encodings-in-statements) state when a name is required.
+Model domain objects, problem instances, certificates, configurations, and multi-field algorithm contexts or states as documented `structure`s rather than tuple `abbrev`s or bare product sets, and declare field-tuple structure encodings with [`enc_structure`](choosing-models.md#write-the-contract-before-the-proof) ([structures for domain objects](../../AGENTS.md#structures-for-domain-objects-and-records)). Where ordinary pairs remain—such as generic combinators or `Instance × List Bool` verifier inputs—bind tuple components by name instead of reaching into nested tuples with chains such as `c.1.2`; CI stops a changed module from adding such chains to its public statements and definition bodies ([named components](../../CONTRIBUTING.md#library-quality-standard)). Write encodings so that readers can see them without parsing the same nested term repeatedly: name a compound encoding that recurs in a module's statements with a documented reducible `abbrev`, and keep unary versus binary and representation choices visible in names and docstrings. The [encoding rules](../../AGENTS.md#encodings-in-statements) state when a name is required.
 
 Search CSLib, Mathlib, local modules and the in-flight work recorded in source markers and the [coordination threads](../../CONTRIBUTING.md#upstreaming). Reuse definitions that express the same mathematics. Similar names with different encodings, costs or adversary power prompt a search for a bridge, not an automatic identification of models. The [model-selection chapter](choosing-models.md) gives the questions to settle.
 
@@ -53,7 +53,9 @@ manual remains accurate, record a specific reason for it in the PR’s manual-im
 A proof-only edit preserving statements, imports and automation may need no prose change;
 a changed encoding or resource bound normally does. An edit that changes the number of lines
 in a file still moves the declarations below it, so repoint any manual links such as
-`File.lean#L120` to them. The checker below reports a link that no longer starts a
+`File.lean#L120` to them (for `[Ns.name](File.lean#Ln)` links,
+`python3 scripts/check_operator_manual.py --fix-anchors` repoints unambiguous declaration
+headers automatically). The checker below reports a link that no longer starts a
 declaration, or whose text names a declaration of the linked file that it does not start.
 
 Run `python3 scripts/check_operator_manual.py` from the repository root, and check changed

@@ -16,12 +16,11 @@ import CslibFrontier.Computability.Complexity.Classes.NP.Closure
 import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Partrec
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Mathlib.Data.Set.Finite.List
 
 /-!
@@ -140,25 +139,21 @@ def stageStep (T : List ℕ) : ℕ :=
   else T.getD (T.length - 1) 0
 
 /-- The table of the first `n` stages. -/
-def table : ℕ → List ℕ
-  | 0 => []
-  | n + 1 => table n ++ [stageStep dA dF (table n)]
+def table : ℕ → List ℕ :=
+  List.courseOfValues (stageStep dA dF)
 
 /-- The stage at length `n`. -/
 def stage (n : ℕ) : ℕ := stageStep dA dF (table dA dF n)
 
-theorem table_eq (n : ℕ) : table dA dF n = (List.range n).map (stage dA dF) := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [table, List.range_succ, List.map_append, ← ih]; rfl
+theorem table_eq (n : ℕ) : table dA dF n = (List.range n).map (stage dA dF) :=
+  List.courseOfValues_eq (stageStep dA dF) n
 
 @[simp]
-theorem length_table (n : ℕ) : (table dA dF n).length = n := by
-  simp [table_eq]
+theorem length_table (n : ℕ) : (table dA dF n).length = n :=
+  List.length_courseOfValues (stageStep dA dF) n
 
-theorem getD_table {n m : ℕ} (h : m < n) : (table dA dF n).getD m 0 = stage dA dF m := by
-  rw [table_eq, List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range h]
-  rfl
+theorem getD_table {n m : ℕ} (h : m < n) : (table dA dF n).getD m 0 = stage dA dF m :=
+  List.getD_courseOfValues (stageStep dA dF) 0 h
 
 theorem stage_zero : stage dA dF 0 = 0 := by
   simp [stage, stageStep, table, witness]
@@ -335,29 +330,13 @@ private theorem computableInPolyTime_stageStep :
   unfold stageStep
   fun_prop
 
-theorem table_eq_iterate (n : ℕ) :
-    table dA dF n = (fun T => T ++ [stageStep dA dF T])^[n] [] := by
-  induction n with
-  | zero => rfl
-  | succ n ih => rw [table, Function.iterate_succ_apply', ← ih]
-
 /-- The tables of the stages are polynomial-time in their length, in unary. -/
 theorem computableInPolyTime_table :
-    ComputableInPolyTime (table dA dF) encUnary (encList encUnary) := by
-  have hs := computableInPolyTime_stageStep dA dF
-  have h := iterate (encIn := encUnary) (encState := encList encUnary) (count := fun n => n)
-    (init := fun _ => []) (step := fun T => T ++ [stageStep dA dF T]) (by fun_prop) (by fun_prop)
-    (by fun_prop) (bound := fun n => n * (2 * n + 1))
-    (.of_forall_le 2 2 fun n => by simp only [encUnary_apply, List.length_replicate]; nlinarith)
-    (fun n i hi => by
-      rw [← table_eq_iterate]
-      calc (encList encUnary (table dA dF i)).length ≤ (table dA dF i).length * (2 * n + 1) :=
-            length_encList_le encUnary _ fun a ha => by
-              rw [table_eq] at ha
-              obtain ⟨m, hm, rfl⟩ := List.mem_map.mp ha
-              simpa using (stage_le_self dA dF m).trans (by have := List.mem_range.mp hm; omega)
-        _ ≤ n * (2 * n + 1) := by rw [length_table]; exact Nat.mul_le_mul_right _ hi)
-  simpa only [← table_eq_iterate] using h
+    ComputableInPolyTime (table dA dF) encUnary (encList encUnary) :=
+  .courseOfValues (computableInPolyTime_stageStep dA dF) .id fun n i hi => by
+    have hstage : List.courseOfValuesVal (stageStep dA dF) i = stage dA dF i := rfl
+    simpa only [encUnary_apply, List.length_replicate, hstage] using
+      (stage_le_self dA dF i).trans hi.le
 
 /-- **The stages are polynomial-time** on unary numbers. -/
 theorem computableInPolyTime_stage : ComputableInPolyTime (stage dA dF) encUnary encUnary :=

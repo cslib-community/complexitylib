@@ -178,7 +178,7 @@ public abbrev RoundState (State : Type) : Type :=
 /-- The states of `Turing.MultiTapePTM.iterateWhile`. -/
 public abbrev MachineState (State : Type) : Type :=
   ((Unit ⊕ RewindState) ⊕ RewindWorkState) ⊕
-    (RepeatUntilBlankState (RoundState State) ⊕ FinishState)
+    ((RoundState State ⊕ Unit) ⊕ FinishState)
 
 variable (k) in
 /-- Prepare a round: clear the current tape, copy the next word to it and clear the next tape,

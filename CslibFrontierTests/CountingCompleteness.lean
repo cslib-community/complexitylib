@@ -49,11 +49,13 @@ example : [] ∈ USAT ∧ [[(0, true), (0, false)]] ∉ USAT :=
   ⟨SharpSAT.mem_USAT_iff.2 sharpSAT_nil, by rw [SharpSAT.mem_USAT_iff]; decide⟩
 example : [[(0, true), (0, false)]] ∈ ModSAT 3 := by change SharpSAT _ % 3 ≠ 0; decide
 example : [[(0, true), (0, false)]] ∉ ModSAT 2 := by change ¬SharpSAT _ % 2 ≠ 0; decide
-example : ([[(0, true), (1, true)]], 3) ∈ SharpSATAtLeast := by change 3 ≤ SharpSAT _; decide
-example : ([[(0, true), (1, true)]], 4) ∉ SharpSATAtLeast := by change ¬4 ≤ SharpSAT _; decide
-example : ([[(0, true), (1, true)]], 3) ∈ SharpSATExact ∧
-    ([[(0, true), (1, true)]], 2) ∉ SharpSATExact ∧
-    ([[(0, true)], [(0, false)]], 0) ∈ SharpSATExact :=
+example : (⟨[[(0, true), (1, true)]], 3⟩ : SharpSATTarget) ∈ SharpSATAtLeast := by
+  change 3 ≤ SharpSAT _; decide
+example : (⟨[[(0, true), (1, true)]], 4⟩ : SharpSATTarget) ∉ SharpSATAtLeast := by
+  change ¬4 ≤ SharpSAT _; decide
+example : (⟨[[(0, true), (1, true)]], 3⟩ : SharpSATTarget) ∈ SharpSATExact ∧
+    (⟨[[(0, true), (1, true)]], 2⟩ : SharpSATTarget) ∉ SharpSATExact ∧
+    (⟨[[(0, true)], [(0, false)]], 0⟩ : SharpSATTarget) ∈ SharpSATExact :=
   ⟨by change SharpSAT _ = 3; decide, by change ¬SharpSAT _ = 2; decide, sharpSAT_contradiction⟩
 example : [] ∈ MAJSAT := by simp [MAJSAT, sharpSAT_nil, CNF.vars]
 example : [[(0, true), (1, true)]] ∈ MAJSAT := by
@@ -98,5 +100,11 @@ example : SAT ∈ NP encCNF ∧
   have hc : PolyTimeComplete NP encCNF SAT := polyTimeComplete_NP_iff.2 CookLevin.SAT_npComplete
   refine ⟨hc.1, hc.2 encBits _ ?_⟩
   exact P_subset_NP ⟨fun w => w.headD false, by fun_prop, fun _ => Iff.rfl⟩
+
+/-- `enc_structure` rules for `SharpSATTarget` compose under `fun_prop`. -/
+example : ComputableInPolyTime
+    (fun x : SharpSATTarget => (⟨x.formula, x.target + 1⟩ : SharpSATTarget))
+    encSharpSATTarget encSharpSATTarget := by
+  fun_prop
 
 end CslibFrontierTests.CountingCompleteness
