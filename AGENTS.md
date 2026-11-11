@@ -576,7 +576,9 @@ bibliography merge written by that script, with nothing else changed, passes. Af
 branch, which could change it.
 An approval given while a PR is based on another branch also names that branch's head, and the
 check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
-review did not cover, would carry the approval if the lower PR never landed. Anyone, including
+review did not cover, would carry the approval if the lower PR never landed. Pass that head even
+when the approved head had also merged a newer `main`: the script then replays from the merge of
+the lower head and that `main`, and names it in the result. Anyone, including
 the author, may post the script's result line, which names both heads and the exact command. The
 non-author who queues the new head runs that command again rather than relying on the posted line.
 When the script reports differences, review the paths and diffs it prints as a delta, under the
