@@ -1545,6 +1545,24 @@ private theorem goodTrials_fail_le [DecidableEq α] (A : Algorithm X Ω α m) (D
           2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) := by
         simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
+private theorem goodTrial_heavy_of_thresholdPass (A : Algorithm X Ω α m) (D : PMF X)
+    {a b δ : ℝ} (hab : a ≤ b) {T N : ℕ} {rs : Fin T → Ω} {trials : Fin T → ℝ × α}
+    (htr : trials ∈ goodTrialsSet A D a δ rs) (i : Fin N) (t : Fin T)
+    (ht_pass : thresholdRound a b N i (trials t).1 = true) :
+    ∃ yStar : α,
+      a - δ ≤ seedColl A D (rs t) ∧
+      a - δ ≤ (seedOutput A D (rs t) yStar).toReal ∧
+      (trials t).2 = yStar := by
+  have ht_ge : a ≤ (trials t).1 := by
+    by_contra hlt
+    rw [not_le] at hlt
+    exact absurd ht_pass (by rw [thresholdRound_false_of_lt_left hab i hlt]; decide)
+  have hcoll_ge : a - δ ≤ seedColl A D (rs t) := by
+    have h2 := (abs_sub_le_iff.mp (htr t).1).1
+    linarith
+  obtain ⟨yStar, hyStar⟩ := exists_heavy_of_le_tsum_sq (seedOutput A D (rs t)) hcoll_ge
+  exact ⟨yStar, hcoll_ge, hyStar, (htr t).2 hcoll_ge yStar hyStar⟩
+
 private theorem pickFirstThresholded_eq_heavy (A : Algorithm X Ω α m) (D : PMF X)
     {a b θ_acc δ : ℝ} (hab : a ≤ b) (hb_acc : b ≤ θ_acc - δ) {T N : ℕ} [NeZero T]
     {rs : Fin T → Ω} {t₀ : Fin T} (ht₀ : θ_acc ≤ seedColl A D (rs t₀))
@@ -1566,15 +1584,9 @@ private theorem pickFirstThresholded_eq_heavy (A : Algorithm X Ω α m) (D : PMF
     rfl
   have ht_pass : thresholdRound a b N i (trials tStar).1 = true :=
     (Finset.mem_filter.mp (Finset.min'_mem _ hne)).2
-  have ht_ge : a ≤ (trials tStar).1 := by
-    by_contra hlt
-    rw [not_le] at hlt
-    exact absurd ht_pass (by rw [thresholdRound_false_of_lt_left hab i hlt]; decide)
-  have hcoll_ge : a - δ ≤ seedColl A D (rs tStar) := by
-    have h2 := (abs_sub_le_iff.mp (htr tStar).1).1
-    linarith
-  obtain ⟨yStar, hyStar⟩ := exists_heavy_of_le_tsum_sq (seedOutput A D (rs tStar)) hcoll_ge
-  exact ⟨tStar, yStar, hpick.trans ((htr tStar).2 hcoll_ge yStar hyStar), hyStar⟩
+  obtain ⟨yStar, _, hyStar, heq⟩ :=
+    goodTrial_heavy_of_thresholdPass A D hab htr i tStar ht_pass
+  exact ⟨tStar, yStar, hpick.trans heq, hyStar⟩
 
 /-- Disagreement probability upper bound for `amplifyReplicability`: if
 `1 / 2 + δ < a < b ≤ θ_acc - δ` and `θ_acc < 1`, then
@@ -1677,15 +1689,8 @@ theorem disagreeProb_amplifyReplicability_le [DecidableEq α] (A : Algorithm X �
           exact congrArg (fun t => (trials₂ t).2) (hmin _ _ hne2 hne1 hcand.symm)
         have ht_pass : thresholdRound a b N i (trials₁ tStar).1 = true :=
           (Finset.mem_filter.mp (Finset.min'_mem _ hne1)).2
-        have ht_ge : a ≤ (trials₁ tStar).1 := by
-          by_contra hlt
-          rw [not_le] at hlt
-          exact absurd ht_pass (by rw [thresholdRound_false_of_lt_left hab.le i hlt]; decide)
-        have hcoll_ge : a - δ ≤ seedColl A D (rs tStar) := by
-          have h2 := (abs_sub_le_iff.mp (htr₁ tStar).1).1
-          linarith
-        obtain ⟨yStar, hyStar⟩ := exists_heavy_of_le_tsum_sq (seedOutput A D (rs tStar)) hcoll_ge
-        have h1eq : (trials₁ tStar).2 = yStar := (htr₁ tStar).2 hcoll_ge yStar hyStar
+        obtain ⟨yStar, hcoll_ge, hyStar, h1eq⟩ :=
+          goodTrial_heavy_of_thresholdPass A D hab.le htr₁ i tStar ht_pass
         have h2eq : (trials₂ tStar).2 = yStar := (htr₂ tStar).2 hcoll_ge yStar hyStar
         exact hi (by rw [hpick1, hpick2, h1eq, h2eq])
       have hmono := Probability.PMF.toOuterMeasure_toReal_mono
