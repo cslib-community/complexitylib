@@ -29,7 +29,7 @@ certificate, in terms of the input.
   of any bit list satisfy `2 * (unframe v).length + (dropFrame v).length ≤ v.length`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
