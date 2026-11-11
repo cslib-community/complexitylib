@@ -29,7 +29,7 @@ with a specified residue distribution. Its public sample is the binary encoding 
 
 * `Cslib.Crypto.PrimeLWE.encMatrix`: binary encoding of `ZMod q` matrices.
 * `Cslib.Crypto.PrimeLWE.searchGame`: the search experiment for `ZMod q`.
-* `Cslib.Crypto.DecisionLWE`: the decision experiment for `ZMod q`.
+* `Cslib.Crypto.PrimeLWE.DecisionLWE`: the decision experiment for `ZMod q`.
 
 ## References
 
@@ -135,7 +135,6 @@ noncomputable def searchGameErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)] (nois
   let guessWord ← ProbComp.eval (adversary word)
   return guessWord = encZModVec n q secret
 
-end PrimeLWE
 
 /-- Search LWE hypothesis for prime modulus. -/
 def SearchLWE (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
@@ -164,5 +163,7 @@ def DecisionLWEErrorSecret (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime 
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ComputationallyIndistinguishable (PrimeLWE.realEnsembleErrorSecret n m q noise)
     (PrimeLWE.uniformEnsemble n m q)
+
+end PrimeLWE
 
 end Cslib.Crypto
