@@ -964,7 +964,9 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FirstMome
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.FourPath
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.ImmRank
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.MatrixProduct
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.OfFintype
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Params
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Path
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.PathCount
@@ -975,6 +977,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.RankMeasu
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Schedule
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.SecondMoment
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.SliceSum
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum.LayerWeight
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.WordSum.Runs
@@ -5106,6 +5109,7 @@ public import CslibFrontier.Foundations.Data.List.ListsUpTo
 public import CslibFrontier.Foundations.Data.List.Lookup
 public import CslibFrontier.Foundations.Data.List.OfFn
 public import CslibFrontier.Foundations.Data.List.OfFnGetD
+public import CslibFrontier.Foundations.Data.List.OfFnPad
 public import CslibFrontier.Foundations.Data.List.OrderStatistic
 public import CslibFrontier.Foundations.Data.List.Palindrome
 public import CslibFrontier.Foundations.Data.List.Perm

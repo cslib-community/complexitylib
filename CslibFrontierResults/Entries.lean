@@ -12,6 +12,7 @@ import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -826,8 +827,26 @@ register_result "depth-five-imm" where
     are unrestricted and gates are shared. The count is of the normalized model \
     Cslib.Circuits.DepthFive.Circuit, which is at most the source's gate count; no formal \
     conversion from a layered circuit is proved. The source's threshold is unspecified; here \
-    it is exp 29200, not optimized. Lower bound only: no matching construction and no \
-    positive characteristic."
+    it is exp 29200, not optimized. Lower bound only; the matching construction is the \
+    entry depth-five-imm-upper. Not proved in positive characteristic."
+
+register_result "depth-five-imm-upper" where
+  title := "OpenAI: a homogeneous depth-five circuit for iterated matrix multiplication"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := OpenAI2026DepthFive, theorem := "the block construction of §6",
+      locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.DepthFive.exists_circuit_size_le_rpow,
+    Cslib.Circuits.DepthFive.exists_circuit_imm_of_le_mul
+  ]
+  scope := "Over every commutative semiring and for every n ≥ 2, some syntactically \
+    homogeneous ΣΠΣΠΣ circuit computes IMM_{n,n} as a formal polynomial with at most \
+    n^(√n + 4) lower product, middle sum and upper product gates; for n ≤ r·t the exact count \
+    is r·n^(t+1) + r·n² + n^(r+1). Normalized model Cslib.Circuits.DepthFive.Circuit: leaves \
+    and bottom sums are not counted, and there are n^(r+1) upper products where the source \
+    has n^(r-1). With depth-five-imm the size is n^Θ(√n) over characteristic zero."
 
 /-! ## Further collected results -/
 
