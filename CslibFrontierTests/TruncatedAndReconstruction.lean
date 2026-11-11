@@ -105,6 +105,22 @@ example (p q : Polynomial ℤ) :
   rw [map_mul, Cslib.Circuits.Frontier.truncEquivTruncated_mk,
     Cslib.Circuits.Frontier.truncEquivTruncated_mk]
 
+example (p : Polynomial ℤ) :
+    (equivAdjoinRoot ℤ 4).symm (equivAdjoinRoot ℤ 4 (mk 4 p)) = mk 4 p := by
+  rw [equivAdjoinRoot_mk, equivAdjoinRoot_symm_mk]
+
+example (A : Cslib.JetTable 4 1 ℤ) (B : Cslib.JetTable 1 4 ℤ) (i : Fin 4) :
+    coeff i.val ((equivJetTableR1 ℤ 4).symm A) = A i 0 ∧
+      coeff i.val ((equivJetTable1R ℤ 4).symm B) = B 0 i := by
+  simp [i.isLt]
+
+example (p : Polynomial (ZMod (2 ^ 3))) :
+    (Cslib.Circuits.Frontier.truncEquivTruncated 3 4).symm
+        (Cslib.Circuits.Frontier.truncEquivTruncated 3 4 (mk 4 p)) =
+      mk 4 p := by
+  rw [Cslib.Circuits.Frontier.truncEquivTruncated_mk_zmod,
+    Cslib.Circuits.Frontier.truncEquivTruncated_symm_mk]
+
 end TruncatedAlgebraTests
 
 section RatReconstructionTests

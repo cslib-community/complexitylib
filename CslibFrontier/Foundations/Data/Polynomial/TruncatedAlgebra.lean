@@ -227,6 +227,11 @@ def coeffLinearMap (r i : ℕ) : Truncated R r →ₗ[R] R where
   map_smul' a x := by simp
 
 @[simp]
+theorem coeffLinearMap_apply (r i : ℕ) (x : Truncated R r) :
+    coeffLinearMap r i x = coeff i x := by
+  simp only [coeffLinearMap, LinearMap.coe_mk, AddHom.coe_mk]
+
+@[simp]
 theorem coeff_sum {ι : Type*} (s : Finset ι) (f : ι → Truncated R r) (i : ℕ) :
     coeff i (∑ k ∈ s, f k) = ∑ k ∈ s, coeff i (f k) :=
   map_sum (coeffLinearMap r i) f s
@@ -345,6 +350,10 @@ theorem ofCoeffList_coeffs (x : Truncated R r) : Polynomial.ofCoeffList (coeffs 
   by_cases hi : i < r
   · rw [List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map, List.getElem_range]
   · rw [List.getD_eq_default _ _ (by simpa using hi), coeff_eq_zero_of_le (not_lt.mp hi)]
+
+@[simp]
+theorem getD_coeffs (x : Truncated R r) (i : ℕ) : (coeffs x).getD i 0 = coeff i x := by
+  rw [← Polynomial.coeff_ofCoeffList, ofCoeffList_coeffs, coeff_toPoly]
 
 /-- Truncating two power series before multiplying and projecting to `Truncated R r` equals
 projecting the truncation of their power-series product. -/
@@ -520,6 +529,16 @@ theorem substZeroConst_var {S : Type*} [CommRing S] [Algebra R S] {g : Truncated
     (hg0 : coeff 0 g = 0) : substZeroConst hg0 (var R r) = g :=
   subst_var _
 
+theorem substZeroConst_apply {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r}
+    (hg0 : coeff 0 g = 0) (x : Truncated R r) :
+    substZeroConst hg0 x = subst (pow_eq_zero_of_coeff_zero hg0) x := by
+  simp only [substZeroConst]
+
+@[simp]
+theorem substZeroConst_mk {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r}
+    (hg0 : coeff 0 g = 0) (p : R[X]) : substZeroConst hg0 (mk r p) = Polynomial.aeval g p := by
+  rw [substZeroConst_apply, subst_mk]
+
 /-- Composition law for nilpotent substitution: `(f(g))(h) = f(g(h))`. -/
 theorem subst_comp {S T : Type*} [CommRing S] [CommRing T] [Algebra R S] [Algebra S T]
     [Algebra R T] [IsScalarTower R S T] {g : Truncated S r} (hg : g ^ r = 0)
@@ -669,27 +688,29 @@ theorem coeff_map {S : Type*} [CommRing S] (φ : R →+* S) (r i : ℕ) (x : Tru
     simp only [map_mk, coeff_mk, Polynomial.coeff_map]
     split_ifs <;> simp
 
+private noncomputable def toAdjoinRootAlgHom (R : Type*) [CommRing R] (r : ℕ) :
+    Truncated R r →ₐ[R] AdjoinRoot ((X : R[X]) ^ r) :=
+  Ideal.Quotient.liftₐ (Ideal.span {(X : R[X]) ^ r}) (AdjoinRoot.mkₐ _) fun p hp => by
+    rw [Ideal.mem_span_singleton] at hp
+    rcases hp with ⟨q, rfl⟩
+    simp [AdjoinRoot.mk_self]
+
 /-- Canonical `R`-algebra equivalence between `Truncated R r` and Mathlib's
 `AdjoinRoot ((X : R[X]) ^ r)`. -/
 def equivAdjoinRoot (R : Type*) [CommRing R] (r : ℕ) :
     Truncated R r ≃ₐ[R] AdjoinRoot ((X : R[X]) ^ r) :=
-  let toHom : Truncated R r →ₐ[R] AdjoinRoot ((X : R[X]) ^ r) :=
-    Ideal.Quotient.liftₐ (Ideal.span {(X : R[X]) ^ r}) (AdjoinRoot.mkₐ _) fun p hp => by
-      rw [Ideal.mem_span_singleton] at hp
-      rcases hp with ⟨q, rfl⟩
-      simp [AdjoinRoot.mk_self]
   let invHom : AdjoinRoot ((X : R[X]) ^ r) →ₐ[R] Truncated R r :=
     AdjoinRoot.liftAlgHom ((X : R[X]) ^ r) (Algebra.ofId R (Truncated R r)) (var R r)
       (by simp [Polynomial.eval₂_X_pow])
-  { toFun := toHom
+  { toFun := toAdjoinRootAlgHom R r
     invFun := invHom
     left_inv x := by
       induction x using induction_on with
       | hp p =>
-        change invHom (toHom (Ideal.Quotient.mk _ p)) = Ideal.Quotient.mk _ p
-        have hto : toHom (Ideal.Quotient.mk _ p) = AdjoinRoot.mk _ p := by
-          simp only [toHom, Ideal.Quotient.liftₐ_apply]
+        have hto : toAdjoinRootAlgHom R r (Ideal.Quotient.mk _ p) = AdjoinRoot.mk _ p := by
+          simp only [toAdjoinRootAlgHom, Ideal.Quotient.liftₐ_apply]
           rfl
+        change invHom (toAdjoinRootAlgHom R r (Ideal.Quotient.mk _ p)) = Ideal.Quotient.mk _ p
         rw [hto]
         change AdjoinRoot.liftAlgHom ((X : R[X]) ^ r) (Algebra.ofId R (Truncated R r)) (var R r) _
           (AdjoinRoot.mk _ p) = mk r p
@@ -710,11 +731,23 @@ def equivAdjoinRoot (R : Type*) [CommRing R] (r : ℕ) :
             Polynomial.aeval_X_left]
           rfl
         rw [hinv, mk_apply]
-        simp only [toHom, Ideal.Quotient.liftₐ_apply]
+        simp only [toAdjoinRootAlgHom, Ideal.Quotient.liftₐ_apply]
         rfl
-    map_mul' := toHom.map_mul
-    map_add' := toHom.map_add
-    commutes' := toHom.commutes }
+    map_mul' := (toAdjoinRootAlgHom R r).map_mul
+    map_add' := (toAdjoinRootAlgHom R r).map_add
+    commutes' := (toAdjoinRootAlgHom R r).commutes }
+
+@[simp]
+theorem equivAdjoinRoot_mk (R : Type*) [CommRing R] (r : ℕ) (p : R[X]) :
+    equivAdjoinRoot R r (mk r p) = AdjoinRoot.mk ((X : R[X]) ^ r) p := by
+  change toAdjoinRootAlgHom R r (mk r p) = AdjoinRoot.mk _ p
+  rw [toAdjoinRootAlgHom, mk_apply]
+  rfl
+
+@[simp]
+theorem equivAdjoinRoot_symm_mk (R : Type*) [CommRing R] (r : ℕ) (p : R[X]) :
+    (equivAdjoinRoot R r).symm (AdjoinRoot.mk ((X : R[X]) ^ r) p) = mk r p :=
+  (equivAdjoinRoot R r).symm_apply_eq.mpr (equivAdjoinRoot_mk R r p).symm
 
 end FunctorialityAndAdjoinRoot
 

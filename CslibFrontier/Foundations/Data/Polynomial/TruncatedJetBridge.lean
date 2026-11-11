@@ -99,6 +99,24 @@ theorem equivJetTableR1_mk (r : ℕ) (p : R[X]) :
   change toJetTableR1Hom R r (mk r p) = _
   rw [toJetTableR1Hom, mk_apply, Ideal.Quotient.lift_mk]
 
+@[simp]
+theorem coeff_equivJetTableR1_symm {r : ℕ} (i : ℕ) (A : JetTable r 1 R) :
+    coeff i ((equivJetTableR1 R r).symm A) = if h : i < r then A ⟨i, h⟩ 0 else 0 := by
+  have hmem := (equivJetTableR1 R r).apply_symm_apply A
+  have heq : coeff i ((equivJetTableR1 R r).symm A) =
+      if h : i < r then (JetTable.ofPolyZ r 1 (toPoly ((equivJetTableR1 R r).symm A))) ⟨i, h⟩ 0
+      else 0 := by
+    split_ifs with hi
+    · rw [JetTable.ofPolyZ_apply]
+      simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, ↓reduceIte, coeff_toPoly]
+    · exact coeff_eq_zero_of_le (not_lt.mp hi) _
+  rw [heq]
+  split_ifs with hi
+  · have h2 : JetTable.ofPolyZ r 1 (toPoly ((equivJetTableR1 R r).symm A)) = A := by
+      rw [← equivJetTableR1_mk, mk_toPoly, hmem]
+    rw [h2]
+  · rfl
+
 private def transposeEquiv (J ℓ : ℕ) (R : Type*) [CommRing R] :
     JetTable ℓ J R ≃+* JetTable J ℓ R where
   toFun := JetTable.transpose
@@ -122,6 +140,16 @@ theorem equivJetTable1R_mk (r : ℕ) (p : R[X]) :
   change JetTable.ofPolyZ r 1 p u j =
     (JetTable.ofPolyVPolyZ 1 r (Polynomial.map Polynomial.C p)) j u
   rw [JetTable.ofPolyZ_apply, JetTable.ofPolyVPolyZ_apply, Polynomial.coeff_map, Polynomial.coeff_C]
+
+@[simp]
+theorem coeff_equivJetTable1R_symm {r : ℕ} (i : ℕ) (A : JetTable 1 r R) :
+    coeff i ((equivJetTable1R R r).symm A) =
+      if h : i < r then A 0 ⟨i, h⟩ else 0 := by
+  have heq : (equivJetTable1R R r).symm A = (equivJetTableR1 R r).symm A.transpose := by
+    rw [equivJetTable1R]
+    rfl
+  rw [heq, coeff_equivJetTableR1_symm]
+  split_ifs <;> rfl
 
 end
 
