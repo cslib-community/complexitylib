@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test)
 
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterProofs
+public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterTime
 public meta import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterProofs
 
 /-!
@@ -48,5 +49,17 @@ def xor3Circuit : Circuit (fullSignature 2 Bool) 3 1 :=
     fun _ => Wire.gate ⟨0, by decide⟩⟩
 
 #guard (chooseStep? (initialState xor3Circuit)).isSome
+
+
+/-- A sanity check that `refuteM` returns the same as `refute`. -/
+example (f : BitString 100 → Bool) :
+    (@refuteM 100 11 proj100Circuit f).ret = @refute 100 11 proj100Circuit f :=
+  refuteM_ret proj100Circuit f
+
+/-- The time bound is satisfied. -/
+example (f : BitString 100 → Bool) :
+    (@refuteM 100 11 proj100Circuit f).time ≤
+      2^11 * (proj100Circuit.size + 100)^4 + (proj100Circuit.size + 100)^5 :=
+  refuteM_time_le proj100Circuit f
 
 end CslibFrontierTests.AffineDisperser4nRefuter

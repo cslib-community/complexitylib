@@ -23,6 +23,7 @@ namespace Cslib.Circuits.Boolean.AffineDisperser4n
 
 open Cslib.Algorithms.Lean
 
+/-- `refuteM` is the `TimeM` version of `refute`, bounding its running time explicitly. -/
 def refuteM {n d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
     (f : BitString n → Bool) : TimeM ℕ (BitString n) := do
   let S_init := initialState C
