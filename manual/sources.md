@@ -1402,6 +1402,11 @@ Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, ve
 
 Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinatorial Theory, Series A* 25(1), 80–83, 1978. https://doi.org/10.1016/0097-3165(78)90036-5 . Bibliographic data from the DOI record; the paper was not inspected. The induction in the library's Brégman module follows the published descriptions of this proof (induction on `n`, a convexity inequality at one row, then averaging over the rows).
 
+<a id="schrijver86"></a>
+## schrijver86
+
+Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. An independent agent review checked the primary book on 2026-11-11 UTC for Section 3.2, Theorem 3.2 (pp. 29–30, determinant encoding-size bound) and Section 3.3, "The Gaussian elimination method": Theorem 3.3 (pp. 32–33, polynomial-time rational Gaussian elimination), Corollary 3.3a (pp. 33–34, polynomial-time determinant, rank, inverse, linear-independence testing, and linear system solving), and the Gauss–Jordan discussion with Equations (28)–(30) (p. 35). Local adaptations in [`BareissElimination.lean`](../CslibFrontier/Algorithms/LinearAlgebra/BareissElimination.lean) and [`RationalElimination.lean`](../CslibFrontier/Computability/PolyTime/LinearAlgebra/RationalElimination.lean): (1) rather than Schrijver's normalized rational elimination, row denominators are cleared upfront and fraction-free Sylvester–Bareiss minor-scaled Gauss–Jordan updates are executed over `ℤ` with an explicit Hadamard/factorial bound (`stageEntryBound`); and (2) native multi-tape Turing `ComputableInPolyTime` time and workspace bounds are certified using `enc_structure` codecs with explicit unary dimension headers (`numRows`, `numCols`, `rank`, `pivotRows`, `pivotCols`, `nonPivotCols`) and framed signed-binary/rational entries.
+
 <a id="schummervohra07"></a>
 ## schummervohra07
 
