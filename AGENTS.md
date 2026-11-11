@@ -283,14 +283,15 @@ For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean m
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability ratchet: both read only sources and take seconds.
-Quick mode lints only the affected library modules, skips the global test/style/init-import gates
-and the post-build audits, which need whole-library outputs, and is not full validation. Non-Lean
-changes, deletions/renames, changed aggregates, unsupported layouts and ambiguous change/import
-analysis fall back to the full check. The one exception is
-`scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
-encoding-readability lint instead. Quick success alone does not satisfy the full validation
-requirement above; documentation-only checks need not invoke quick mode.
+library module changed, the encoding readability and projection chain ratchets: all read only
+sources and take seconds. Quick mode lints only the affected library modules, skips the global
+test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
+not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
+and ambiguous change/import analysis fall back to the full check. The exceptions are the
+ratchet baselines `scripts/encoding_readability_baseline.json` and
+`scripts/projection_chains_baseline.json`, which no Lean gate reads: a change to one runs its
+ratchet instead. Quick success alone does not satisfy the full validation requirement above;
+documentation-only checks need not invoke quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
 `CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
