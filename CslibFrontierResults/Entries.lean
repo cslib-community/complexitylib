@@ -86,6 +86,9 @@ import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
+import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
+import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
@@ -2634,3 +2637,71 @@ register_result "unique-games-perfect-completeness" where
     empty so every unique game vacuously has unsatVal = 0 and GapUniqueGames (Fin 0) 1 s \
     has no no-instances, while no graph is satisfiable. This fixes L rather than taking it \
     as part of the input."
+
+register_result "sturm-real-root-counting" where
+  title := "Sturm's theorem for separable real polynomials"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := BasuPollackRoy2006, theorem := "Theorem 2.50", locator := "Chapter 2" }
+  ]
+  theorems := [
+    Polynomial.sturmSeq_map,
+    Polynomial.sturmVariations_sub_eq_card_roots_Ioc,
+    Polynomial.sturmVariations_sub_eq_card_roots_Ioc_of_squarefree,
+    Polynomial.sturmVariations_sub_eq_card_roots_Ioo,
+    Polynomial.sturmVariations_sub_eq_card_roots_Icc
+  ]
+  scope := "Exact real-root counting on (a, b], (a, b), and [a, b] via Sturm sign variations of \
+    sturmSeq p (derivative p) for separable (equivalently squarefree) p : ℝ[X], together with \
+    field-homomorphism invariance of sturmSeq. Proved over ℝ via local constancy of \
+    sturmVariations p x + #{r <= x} rather than general real closed fields."
+
+register_result "mahler-mignotte-root-separation" where
+  title := "Hadamard's determinant inequality and Mahler–Mignotte root-separation bounds"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := Mahler1964, theorem := "Lemma 1; Theorem 2", locator := "pp. 257–262" },
+    { paper := Mignotte1982, theorem := unverified, locator := "pp. 259–263" },
+    { paper := BasuPollackRoy2006, theorem := unverified,
+      locator := "Chapter 10, Sections 10.1–10.2" }
+  ]
+  theorems := [
+    Matrix.hadamard_det_sq_le,
+    Polynomial.mignotte_sep_mahler_complex,
+    Polynomial.mignotte_sep_sqNorm_complex,
+    Polynomial.mignotte_sep_sqNorm_real,
+    Polynomial.mignotte_sep_sqNorm_rat
+  ]
+  scope := "Hadamard's determinant inequality over ℂ and Mahler–Mignotte root-separation lower \
+    bounds 3 <= |α - β| ^ 2 * (d ^ (d + 2) * coeffSqNorm p ^ (d - 1)) for distinct roots of \
+    separable integer and cleared-denominator rational polynomials of degree d >= 2, combining \
+    Mahler's discriminant/Mahler-measure inequality with |discr p| >= 1 and Landau's l^2 bound."
+
+register_result "certified-real-root-isolation" where
+  title := "Certified Sturm-bisection real-root isolation with Mignotte depth and TimeM bounds"
+  topic := "algorithms"
+  sources := [
+    { paper := BasuPollackRoy2006, theorem := "Theorem 2.50",
+      locator := "Chapter 2; Chapter 10, Sections 10.1–10.2" },
+    { paper := Mahler1964, theorem := "Theorem 2", locator := "pp. 257–262" }
+  ]
+  theorems := [
+    Cslib.RealRoot.isolateRootsTotal_isIsolatingFor,
+    Cslib.RealRoot.isolateRootsTotal_pairwise_disjoint,
+    Cslib.RealRoot.isolateRootsTotal_bijective_of_squarefree,
+    Cslib.RealRoot.isolateRootsTotal_endpoint_bounds_of_bitBound,
+    Cslib.RealRoot.isolateRootsTotalM_time_le_of_bitBound,
+    Cslib.RealRoot.isolateRootsTotal_spec_of_eq,
+    Cslib.RealRoot.isolatePolyRootsTotal_bijective,
+    Cslib.RealRoot.isolatePolyRootsTotalM_time_le_of_bitBound
+  ]
+  scope := "Computable end-to-end TimeM ℕ-charged Sturm-bisection real-root isolator over ℚ[X] \
+    (isolateRootsTotalM / isolateRootsTotal on List ℚ, wrapped as isolatePolyRootsTotalM / \
+    isolatePolyRootsTotal on Polynomial ℚ) charging all preprocessing (trim, Euclidean Sturm \
+    sequence, Cauchy bound, denominator clearing, l^2 norm, and Nat.clog), bisection, left-root \
+    refinement, and Mignotte-fueled boundary separation into strictly disjoint closed intervals \
+    (J₁.upper < J₂.lower). Certifies strict monotone bijection onto {x : ℝ // aeval x p = 0} for \
+    every squarefree p : ℚ[X], dyadic endpoint numerator/denominator bit bounds, and O(n^5 (B+2)) \
+    TimeM ℕ operation count under HasCoeffBitBound B cs. TimeM ℕ counts unit-cost algebraic/RAM \
+    scalar operations on ℚ/ℤ/ℕ rather than bit-level Turing complexity along Euclidean Sturm \
+    remainders."

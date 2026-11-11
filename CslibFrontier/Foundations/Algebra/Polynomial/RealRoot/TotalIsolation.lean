@@ -123,10 +123,12 @@ theorem refineLeftLoopTotalM_time_le (t : List ℚ) (seq : List (List ℚ)) :
   | 0, u, v, _ => by
     dsimp only
     simp only [refineLeftLoopTotalM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, zero_mul]
+    omega
   | fuel + 1, u, v, vu => by
     dsimp only
     let m := (u + v) / 2
     have hsv := sturmVariationsListM_time_le seq m
+    dsimp only [m] at hsv
     simp only [refineLeftLoopTotalM, TimeM.time_bind, TimeM.time_tick, sturmVariationsListM_ret]
     have hsplit : (fuel + 1) * ((2 * (seq.map List.length).sum + 6 * seq.length + 7) +
         (2 * t.length + 1) + 4) =
@@ -266,11 +268,13 @@ private theorem isolateIocM_length_le {cs : List ℚ} (hsep : (ofCoeffList cs).S
         have hmv : m ≤ v := by dsimp only [m]; linarith
         have h1 : vm ≤ vu := by
           rw [hvu]
+          dsimp only [vm]
           have hsepR : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).Separable := hsep.map
           rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
           exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr hum)
         have h2 : vv ≤ vm := by
           rw [hvv]
+          dsimp only [vm]
           have hsepR : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).Separable := hsep.map
           rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
           exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr hmv)
@@ -282,14 +286,14 @@ private theorem isolateIocM_length_le {cs : List ℚ} (hsep : (ofCoeffList cs).S
 private theorem sturmVariationsList_le_length (seq : List (List ℚ)) (x : ℚ) :
     sturmVariationsList seq x ≤ seq.length := by
   simp only [sturmVariationsList, List.signVariations]
-  let fs := ((seq.map (evalCoeffList x)).map SignType.sign).filter (fun s => decide (s ≠ 0))
-  have hsub : (List.destutter (· ≠ ·) fs).length ≤ fs.length :=
-    (List.destutter_sublist (· ≠ ·) fs).length_le
-  have hfl : fs.length ≤ seq.length := by
-    calc fs.length ≤ ((seq.map (evalCoeffList x)).map SignType.sign).length :=
-          List.length_filter_le _ _
-      _ = seq.length := by simp only [List.length_map]
-  omega
+  calc (((((seq.map (evalCoeffList x)).map SignType.sign).filter (· ≠ 0)).destutter (· ≠ ·)).length
+        - 1)
+      ≤ ((((seq.map (evalCoeffList x)).map SignType.sign).filter (· ≠ 0)).destutter (· ≠ ·)).length
+        := Nat.sub_le _ _
+    _ ≤ (((seq.map (evalCoeffList x)).map SignType.sign).filter (· ≠ 0)).length :=
+        (List.destutter_sublist _ _).length_le
+    _ ≤ ((seq.map (evalCoeffList x)).map SignType.sign).length := List.length_filter_le _ _
+    _ = seq.length := by simp only [List.length_map]
 
 private theorem isolateIocTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     (t : List ℚ) (depthBound : ℕ) :
@@ -319,17 +323,16 @@ private theorem isolateIocTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs
     by_cases hc0 : vu - vv = 0
     · simp only [eq_true hc0, ↓reduceIte, TimeM.time_pure]
       omega
-    · by_cases hc1 : vu - vv = 1
-      · have hc1' : c = 1 := hc1
-        simp only [eq_false hc0, eq_true hc1, hc1', eq_true (le_refl (1 : ℕ)), ↓reduceIte,
+    · simp only [eq_false hc0, ↓reduceIte, TimeM.time_bind, TimeM.time_tick]
+      by_cases hc1 : vu - vv = 1
+      · simp only [hc1, le_refl, ↓reduceIte,
           TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, zero_mul, one_mul]
         have href := refineLeftRootTotalM_time_le t seq depthBound u v vu
-        dsimp only at href
-        dsimp only [rTotal, vCost, eCost, seq] at *
+        dsimp only [seq] at href
         omega
-      · have hc2 : 2 ≤ c := by omega
-        have hif : ¬c ≤ 1 := by omega
-        simp only [eq_false hc0, eq_false hc1, eq_false hif, ↓reduceIte]
+      · have hc2 : 2 ≤ c := by dsimp only [c]; omega
+        have hif : ¬(vu - vv ≤ 1) := by omega
+        simp only [eq_false hc1, eq_false hif, ↓reduceIte]
         cases fuel with
         | zero =>
           simp only [TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, zero_mul]
@@ -337,6 +340,7 @@ private theorem isolateIocTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs
           have hc_r : 2 ≤ c * rTotal := by
             calc 2 = 2 * 1 := rfl
               _ ≤ c * rTotal := Nat.mul_le_mul hc2 hr_pos
+          dsimp only [rTotal, vCost, eCost, seq, c] at hc_r
           omega
         | succ fuel' =>
           simp only [TimeM.time_bind, TimeM.time_tick, sturmVariationsListM_ret,
@@ -361,6 +365,7 @@ private theorem isolateIocTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs
               ((isolateIocM t seq depthBound fuel' u m vu vm).ret).length ≤ seq.length := by
             have hl1 := isolateIocM_length_le hsep t depthBound fuel' u m vu vm hum hvu rfl
             have hl2 : vu ≤ seq.length := hvu ▸ sturmVariationsList_le_length seq u
+            dsimp only [seq] at hl2 ⊢
             omega
           have ihL := isolateIocTotalM_time_le hsep t depthBound fuel' u m vu vm hum hvu rfl
           have ihR := isolateIocTotalM_time_le hsep t depthBound fuel' m v vm vv hmv rfl hvv
@@ -391,7 +396,7 @@ private theorem isolateIocTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs
               2 + ((if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) * sTotal +
                 (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) * sTotal + sTotal) +
                 (c₁ * rTotal + c₂ * rTotal) := by
-            dsimp only [sTotal, vCost, m, vm, seq, c₁, c₂] at *
+            dsimp only [sTotal, rTotal, vCost, eCost, m, vm, seq, c₁, c₂, c] at *
             omega
           have hring : 2 + ((if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) * sTotal +
                 (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) * sTotal + sTotal) +
@@ -399,9 +404,9 @@ private theorem isolateIocTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs
               2 + ((if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) +
                 (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) + 1) * sTotal +
                 (c₁ + c₂) * rTotal := by ring
-          dsimp only [m, vm, seq] at hlin
           rw [hring, hsum_c] at hlin
-          exact hlin.trans (by omega)
+          dsimp only [sTotal, rTotal, vCost, eCost, m, vm, seq, c, c₁, c₂] at hmul_div hlin ⊢
+          omega
 
 /-! ### Step-charged boundary separation into strictly disjoint closed intervals -/
 
@@ -436,6 +441,7 @@ theorem separateMidLoopM_time_le (seq : List (List ℚ)) :
   | 0, _, _, _, _ => by
     dsimp only
     simp only [separateMidLoopM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, zero_mul]
+    omega
   | fuel + 1, a, m, b, vm => by
     dsimp only
     let m₁ := (a + m) / 2
@@ -516,10 +522,10 @@ private theorem exists_root_Ioc_of_var_pos {cs : List ℚ} (hsep : (ofCoeffList 
     (hpos : 1 ≤ sturmVariationsList (sturmSeqList cs) u -
       sturmVariationsList (sturmSeqList cs) v) :
     ∃ r : ℝ, (u : ℝ) < r ∧ r ≤ (v : ℝ) ∧ ((ofCoeffList cs).map (algebraMap ℚ ℝ)).IsRoot r := by
-  let pR := (ofCoeffList cs).map (algebraMap ℚ ℝ)
-  have hpR0 : pR ≠ 0 := (Polynomial.map_ne_zero_iff (algebraMap ℚ ℝ).injective).mpr hsep.ne_zero
+  have hpR0 : (ofCoeffList cs).map (algebraMap ℚ ℝ) ≠ 0 :=
+    (Polynomial.map_ne_zero_iff (algebraMap ℚ ℝ).injective).mpr hsep.ne_zero
   rw [card_roots_Ioc_eq_sep hsep huv] at hpos
-  obtain ⟨r, hr⟩ := Finset.card_pos.mp (Nat.pos_of_ne_zero (by omega))
+  obtain ⟨r, hr⟩ := Finset.card_pos.mp (Nat.lt_of_lt_of_le Nat.zero_lt_one hpos)
   simp only [Finset.mem_filter, Multiset.mem_toFinset, mem_roots hpR0] at hr
   exact ⟨r, hr.2.1, hr.2.2, hr.1⟩
 
@@ -561,6 +567,7 @@ private theorem separateMidLoopM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).S
       have hc := (Multiset.toFinset_card_le _).trans (Polynomial.card_roots' pR)
       have hd_eq := Polynomial.natDegree_map_eq_of_injective (algebraMap ℚ ℝ).injective
         (ofCoeffList cs)
+      dsimp only [pR] at hcard2 hc
       omega
     have hsep_w := dyadic_width_lt_root_sep hsep hd2 hr₁ hr₂ hr₁₂.ne
     rw [← hdepth, abs_of_neg (sub_neg.mpr hr₁₂), neg_sub] at hsep_w
@@ -586,13 +593,14 @@ private theorem separateMidLoopM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).S
     have hvm1_m : vm ≤ sturmVariationsList seq m₁ := hvm ▸ hanti hm1m.le
     have hvm_m2 : sturmVariationsList seq m₂ ≤ vm := hvm ▸ hanti hmm2.le
     have hvm2_b : sturmVariationsList seq b ≤ sturmVariationsList seq m₂ := hanti hm2b.le
+    dsimp only [seq, m₁, m₂] at hva_m1 hvm1_m hvm_m2 hvm2_b
     dsimp only [separateMidLoopM]
     simp only [TimeM.ret_bind, sturmVariationsListM_ret]
     split_ifs with h1
     · simp only [TimeM.ret_pure]
       have h0 : sturmVariationsList seq m₁ - sturmVariationsList seq m = 0 := by
         rw [← hvm]
-        change sturmVariationsList seq m₁ - vm = 0
+        dsimp only [seq, m₁]
         omega
       refine ⟨ham1.le, hm1m.le, le_rfl, hmb.le, hm1m, fun r h1r hrm =>
         no_root_Ioc_of_var_eq hsep hm1m.le h0 h1r hrm, fun r hmr hrm => ?_⟩
@@ -602,12 +610,16 @@ private theorem separateMidLoopM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).S
       · simp only [TimeM.ret_pure]
         have h0 : sturmVariationsList seq m - sturmVariationsList seq m₂ = 0 := by
           rw [← hvm]
-          change vm - sturmVariationsList seq m₂ = 0
+          dsimp only [seq, m₂]
           omega
         refine ⟨ham.le, le_rfl, hmm2.le, hm2b.le, hmm2, fun r hmr hrm => by linarith,
           fun r hmr hrm2 => no_root_Ioc_of_var_eq hsep hmm2.le h0 hmr hrm2⟩
-      · have hca' : sturmVariationsList seq m₁ - vm = 1 := by omega
-        have hcb' : vm - sturmVariationsList seq m₂ = 1 := by omega
+      · have hca' : sturmVariationsList seq m₁ - vm = 1 := by
+          dsimp only [seq, m₁]
+          omega
+        have hcb' : vm - sturmVariationsList seq m₂ = 1 := by
+          dsimp only [seq, m₂]
+          omega
         have hw_next : (m₂ - m₁ : ℝ) ≤ 2 * (cauchyBoundNat cs : ℝ) / (2 : ℝ) ^ (depth + 1) := by
           have hhalf : (m₂ - m₁ : ℝ) = (b - a : ℝ) / 2 := by
             dsimp only [m₁, m₂]
@@ -770,8 +782,8 @@ private theorem separatePairM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Sepa
               exact ⟨hr₂_root, hr₂_gt, hr₂u⟩
           rw [hset, Finset.card_singleton]
         have hw0 : (I₂.upper - I₁.lower : ℝ) ≤ 2 * (cauchyBoundNat cs : ℝ) / (2 : ℝ) ^ 0 := by
-          have h1 : (-(cauchyBoundNat cs : ℚ) : ℝ) ≤ (I₁.lower : ℝ) := Rat.cast_le.mpr hb₁
-          have h2 : (I₂.upper : ℝ) ≤ ((cauchyBoundNat cs : ℚ) : ℝ) := Rat.cast_le.mpr hb₂
+          have h1 := Rat.cast_le (K := ℝ).mpr hb₁
+          have h2 := Rat.cast_le (K := ℝ).mpr hb₂
           simp only [Rat.cast_neg, Rat.cast_natCast, pow_zero, div_one] at h1 h2 ⊢
           linarith
         have hmid := separateMidLoopM_spec hsep (mignotteBisectionDepth cs) 0
@@ -842,6 +854,7 @@ private theorem separateChainM_time_le (t : List ℚ) (seq : List (List ℚ)) (d
     dsimp only
     simp only [separateChainM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, List.length_nil,
       zero_mul]
+    omega
   | [_], _ => by
     dsimp only
     simp only [separateChainM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure,
@@ -957,29 +970,23 @@ private theorem separateChainM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Sep
     have hgap01 : IntervalGapOk pR I₀ I₁ := hpw_cons.1 I₁ List.mem_cons_self
     have hp := separatePairM_spec hsep hI₀.1 hI₁.1 hI₀.2.1 hI₁.2.2 hgap01
     rcases hp with ⟨hp1, hp2, hp3, hp4, hplt, hproot1, hproot2⟩
-    have ih := separateChainM_spec hsep rest' I₁
-      (separatePairM (trim cs) (sturmSeqList cs) (mignotteBisectionDepth cs) I₀ I₁).ret.2
+    let pair := (separatePairM (trim cs) (sturmSeqList cs) (mignotteBisectionDepth cs) I₀ I₁).ret
+    have ih := separateChainM_spec hsep rest' I₁ pair.2
       (fun I hI => hiso_all I (List.mem_cons_of_mem I₀ hI))
       hpw_cons.2 hp3 hproot2
     rcases ih with ⟨⟨J₁, Js, htail_eq, hJ₁_low⟩, htail_pw, htail_idx⟩
     obtain ⟨r₀, ⟨hr₀l, hr₀u, hr₀r⟩, hr₀_uniq⟩ := hI₀.1.2
     have hcur_r₀ : (curLower : ℝ) ≤ r₀ := hcur_root r₀ ⟨hr₀l, hr₀u, hr₀r⟩
-    have hr₀_u' : r₀ ≤ ((separatePairM (trim cs) (sturmSeqList cs)
-        (mignotteBisectionDepth cs) I₀ I₁).ret.1 : ℝ) := hproot1 r₀ ⟨hr₀l, hr₀u, hr₀r⟩
-    have hJ₀_le : curLower ≤ (separatePairM (trim cs) (sturmSeqList cs)
-        (mignotteBisectionDepth cs) I₀ I₁).ret.1 := Rat.cast_le.mp (hcur_r₀.trans hr₀_u')
+    have hr₀_u' : r₀ ≤ (pair.1 : ℝ) := hproot1 r₀ ⟨hr₀l, hr₀u, hr₀r⟩
+    have hJ₀_le : curLower ≤ pair.1 := Rat.cast_le.mp (hcur_r₀.trans hr₀_u')
     have hequiv₀ : ∀ r : ℝ,
-        ((curLower : ℝ) ≤ r ∧
-          r ≤ ((separatePairM (trim cs) (sturmSeqList cs)
-            (mignotteBisectionDepth cs) I₀ I₁).ret.1 : ℝ) ∧ pR.IsRoot r) ↔
+        ((curLower : ℝ) ≤ r ∧ r ≤ (pair.1 : ℝ) ∧ pR.IsRoot r) ↔
         ((I₀.lower : ℝ) ≤ r ∧ r ≤ (I₀.upper : ℝ) ∧ pR.IsRoot r) := by
       intro r
       exact ⟨fun ⟨hcl, hru, hrr⟩ =>
           ⟨(Rat.cast_le.mpr hcur_le).trans hcl, hru.trans (Rat.cast_le.mpr hp2), hrr⟩,
         fun h => ⟨hcur_root r h, hproot1 r h, h.2.2⟩⟩
-    have hisoJ₀ : ({ lower := curLower,
-        upper := (separatePairM (trim cs) (sturmSeqList cs)
-          (mignotteBisectionDepth cs) I₀ I₁).ret.1 } : RootInterval).IsIsolatingFor pR :=
+    have hisoJ₀ : ({ lower := curLower, upper := pair.1 } : RootInterval).IsIsolatingFor pR :=
       ⟨hJ₀_le, r₀, ⟨hcur_r₀, hr₀_u', hr₀r⟩, fun r hr => hr₀_uniq r ((hequiv₀ r).mp hr)⟩
     have hJ₁_iso : J₁.lower ≤ J₁.upper := by
       have h0 := (htail_idx 0 (by simp only [List.length_cons]; omega)).1.1
@@ -994,8 +1001,7 @@ private theorem separateChainM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Sep
         rwa [hJ₁_low]
       · have h1B : J₁.upper < B.lower := (List.pairwise_cons.mp htail_pw).1 B hBs
         dsimp only
-        have hlt1 : (separatePairM (trim cs) (sturmSeqList cs)
-            (mignotteBisectionDepth cs) I₀ I₁).ret.1 < J₁.lower := by rwa [hJ₁_low]
+        have hlt1 : pair.1 < J₁.lower := by rwa [hJ₁_low]
         exact lt_trans (lt_of_lt_of_le hlt1 hJ₁_iso) h1B
     · cases k with
       | zero =>
@@ -1003,7 +1009,9 @@ private theorem separateChainM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Sep
         exact ⟨hisoJ₀, hcur_le, hp2, hequiv₀⟩
       | succ k' =>
         simp only [List.length_cons] at hk
-        have hk' : k' < (I₁ :: rest').length := by omega
+        have hk' : k' < (I₁ :: rest').length := by
+          simp only [List.length_cons]
+          omega
         simpa only [List.getElem_cons_succ] using htail_idx k' hk'
 
 /-! ### End-to-end `TimeM ℕ`-charged computable isolator -/
@@ -1080,6 +1088,11 @@ theorem isolateRootsTotal_endpoint_bounds (cs : List ℚ) :
     have hup : DyadicBounded b (3 * k) J.upper := by simpa only [heq] using hd.2
     exact ⟨hlow, hup, hlow.den_le, hup.den_le, hlow.natAbs_num_le, hup.natAbs_num_le⟩
 
+private theorem getElem_of_eq {α : Type*} {xs ys : List α} (h : xs = ys) (i : ℕ)
+    (hi : i < xs.length) : xs[i]'hi = ys[i]'(h ▸ hi) := by
+  subst h
+  rfl
+
 private theorem isolateRootsTotal_index_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     (idx : ℕ) (hidx : idx < (isolateRoots cs).length) :
     let pR := (ofCoeffList cs).map (algebraMap ℚ ℝ)
@@ -1091,22 +1104,28 @@ private theorem isolateRootsTotal_index_spec {cs : List ℚ} (hsep : (ofCoeffLis
   have hiso := isolateRoots_isIsolatingFor hsep
   have hcau := isolateRoots_mem_cauchy hsep
   have hpw := isolateRoots_intervalGapOk hsep
-  cases hL : isolateRoots cs with
-  | nil =>
-    simp only [hL, List.length_nil] at hidx
-    omega
-  | cons I₀ rest =>
-    have hchain := separateChainM_spec hsep rest I₀ I₀.lower
-      (fun I hI => ⟨hiso I (hL ▸ hI), hcau I (hL ▸ hI)⟩)
-      (hL ▸ hpw) le_rfl (fun _ h => h.1)
-    have hidx' : idx < (I₀ :: rest).length := hL ▸ hidx
-    have h := hchain.2.2 idx hidx'
-    have hget : (isolateRootsTotal cs)[idx]'(by rw [isolateRootsTotal_length_eq]; exact hidx) =
-        ((separateChainM (trim cs) (sturmSeqList cs) (mignotteBisectionDepth cs)
-          I₀.lower (I₀ :: rest)).ret)[idx]'(by rw [separateChainM_length]; exact hidx') := by
-      simp only [isolateRootsTotal_eq_separateTouching, hL, separateTouchingM, TimeM.ret_bind]
-    have hgetI : (isolateRoots cs)[idx] = (I₀ :: rest)[idx] := by simp only [hL]
-    simpa only [hget, hgetI] using h
+  obtain ⟨I₀, rest, hL⟩ : ∃ I₀ rest, isolateRoots cs = I₀ :: rest := by
+    cases h : isolateRoots cs with
+    | nil =>
+      simp only [h, List.length_nil] at hidx
+      omega
+    | cons I₀ rest => exact ⟨I₀, rest, rfl⟩
+  have hchain := separateChainM_spec hsep rest I₀ I₀.lower
+    (fun I hI => ⟨hiso I (hL ▸ hI), hcau I (hL ▸ hI)⟩)
+    (hL ▸ hpw) le_rfl (fun _ h => h.1)
+  have hidx' : idx < (I₀ :: rest).length := hL ▸ hidx
+  have h := hchain.2.2 idx hidx'
+  have htot_eq : isolateRootsTotal cs =
+      (separateChainM (trim cs) (sturmSeqList cs) (mignotteBisectionDepth cs)
+        I₀.lower (I₀ :: rest)).ret := by
+    simp only [isolateRootsTotal_eq_separateTouching, hL, separateTouchingM, TimeM.ret_bind]
+  have hget : (isolateRootsTotal cs)[idx]'(by rw [isolateRootsTotal_length_eq]; exact hidx) =
+      ((separateChainM (trim cs) (sturmSeqList cs) (mignotteBisectionDepth cs)
+        I₀.lower (I₀ :: rest)).ret)[idx]'(by rw [separateChainM_length]; exact hidx') :=
+    getElem_of_eq htot_eq idx _
+  have hgetI : (isolateRoots cs)[idx] = (I₀ :: rest)[idx] := getElem_of_eq hL idx hidx
+  dsimp only at h ⊢
+  rwa [hget, hgetI]
 
 /-- Soundness: every interval in `isolateRootsTotal cs` isolates a unique real root of
 `(ofCoeffList cs).map (algebraMap ℚ ℝ)`. -/
@@ -1196,15 +1215,19 @@ theorem isolateRootsTotal_bijective {cs : List ℚ} (hsep : (ofCoeffList cs).Sep
     Function.Bijective (totalIsolatedRoot hsep) := by
   have hbij := isolateRoots_bijective hsep
   refine ⟨fun i j hij => ?_, fun ⟨x, hx⟩ => ?_⟩
-  · have hval : (isolatedRoot hsep ⟨i.1, (isolateRootsTotal_length_eq cs) ▸ i.2⟩).1 =
-        (isolatedRoot hsep ⟨j.1, (isolateRootsTotal_length_eq cs) ▸ j.2⟩).1 :=
+  · have hval : (totalIsolatedRoot hsep i).1 = (totalIsolatedRoot hsep j).1 :=
       congrArg Subtype.val hij
-    have heq := hbij.1 (Subtype.ext hval)
-    exact Fin.ext (congrArg Fin.val heq)
+    dsimp only [totalIsolatedRoot] at hval
+    have heq : (⟨i.1, (isolateRootsTotal_length_eq cs) ▸ i.2⟩ : Fin (isolateRoots cs).length) =
+        ⟨j.1, (isolateRootsTotal_length_eq cs) ▸ j.2⟩ :=
+      hbij.1 (Subtype.ext hval)
+    have hival : i.1 = j.1 := congrArg (Fin.val : Fin (isolateRoots cs).length → ℕ) heq
+    exact Fin.ext hival
   · have hx' : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).IsRoot x := by
       rwa [IsRoot.def, Polynomial.eval_map_algebraMap]
     obtain ⟨i₀, hi₀⟩ := hbij.2 ⟨x, hx'⟩
     refine ⟨⟨i₀.1, (isolateRootsTotal_length_eq cs).symm ▸ i₀.2⟩, Subtype.ext ?_⟩
+    dsimp only [totalIsolatedRoot]
     exact congrArg Subtype.val hi₀
 
 /-- Squarefree bijection form for `isolateRootsTotal cs`. -/
@@ -1241,9 +1264,15 @@ theorem isolateRootsTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Sepa
     exact h.symm
   have hseq_len : seq.length ≤ d + 1 := sturmSeqList_length_le cs
   have hseq_sum : (seq.map List.length).sum ≤ (d + 1) ^ 2 := by
-    have hop := sturmSeqOpCost_le cs
-    rw [sturmSeqOpCost] at hop
-    omega
+    have hentry : ∀ m ∈ seq.map List.length, m ≤ d + 1 := by
+      intro m hm
+      obtain ⟨f, hf, rfl⟩ := List.mem_map.mp hm
+      exact (sturmSeqList_entry_length_le cs hf).trans (by omega)
+    calc (seq.map List.length).sum
+        ≤ (seq.map List.length).length * (d + 1) := List.sum_le_length_nsmul _ _ hentry
+      _ = seq.length * (d + 1) := by rw [List.length_map]
+      _ ≤ (d + 1) * (d + 1) := Nat.mul_le_mul_right (d + 1) hseq_len
+      _ = (d + 1) ^ 2 := (sq (d + 1)).symm
   let vC_actual := 2 * (seq.map List.length).sum + 6 * seq.length + 7
   let vC := 2 * (d + 1) ^ 2 + 6 * (d + 1) + 7
   let eC_actual := 2 * (trim cs).length + 1
@@ -1290,7 +1319,7 @@ theorem isolateRootsTotalM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Sepa
     have h2 : (vL - vR) * (2 * eC_actual + 6 + k * (vC_actual + eC_actual + 4)) ≤
         d * (2 * eC + 6 + k * (vC + eC + 4)) :=
       Nat.mul_le_mul hc_le (Nat.add_le_add (by omega) (Nat.mul_le_mul_left k (by omega)))
-    dsimp only [vC_actual, eC_actual, seq, vL, vR, k, b] at h1 h2 hbis_raw
+    dsimp only [vC_actual, vC, eC_actual, eC, seq, vL, vR, k, b, d] at h1 h2 hbis_raw ⊢
     omega
   have hsep_raw := separateTouchingM_time_le (trim cs) seq k
     ((isolateIocM (trim cs) seq k k (-b) b vL vR).ret)
@@ -1325,115 +1354,171 @@ theorem isolateRootsTotalM_time_le_of_squarefree {cs : List ℚ}
     (isolateRootsTotalM cs).time ≤ prepCost + bisectCost + sepCost :=
   isolateRootsTotalM_time_le (PerfectField.separable_iff_squarefree.mpr hsq)
 
+private theorem totalTime_poly_bound {n d k B : ℕ}
+    (hd : d ≤ n) (hk : k ≤ (n + 2) ^ 2 * (B + 2)) :
+    let vCost := 2 * (d + 1) ^ 2 + 6 * (d + 1) + 7
+    let eCost := 2 * (d + 1) + 1
+    let prepCost := (n + 2) ^ 2 * (20 * n + 35) + 35 * n + k + 52
+    let bisectCost := 2 * vCost + 2 + k * (d / 2) * (vCost + (d + 1) + 10) +
+      d * (2 * eCost + 6 + k * (vCost + eCost + 4))
+    let sepCost := d * (eCost + vCost + k * (2 * vCost + 6) + 4) + 2
+    prepCost + bisectCost + sepCost ≤ 84 * (n + 2) ^ 5 * (B + 2) := by
+  dsimp only
+  let N := n + 2
+  let M := B + 2
+  have h1_N : 1 ≤ N := by dsimp only [N]; omega
+  have h2_N : 2 ≤ N := by dsimp only [N]; omega
+  have h1_M : 1 ≤ M := by dsimp only [M]; omega
+  have hd_N : d ≤ N := by dsimp only [N]; omega
+  have hd1_N : d + 1 ≤ N := by dsimp only [N]; omega
+  have hd2_N : d / 2 ≤ N := by dsimp only [N]; omega
+  have h4_N2 : 4 ≤ N ^ 2 := by simpa using Nat.pow_le_pow_left h2_N 2
+  have h8_N3 : 8 ≤ N ^ 3 := by simpa using Nat.pow_le_pow_left h2_N 3
+  have h16_N4 : 16 ≤ N ^ 4 := by simpa using Nat.pow_le_pow_left h2_N 4
+  have h32_N5 : 32 ≤ N ^ 5 := by simpa using Nat.pow_le_pow_left h2_N 5
+  have hN_N2 : N ≤ N ^ 2 := by simpa using Nat.pow_le_pow_right h1_N (by omega : 1 ≤ 2)
+  have hN_N5 : N ≤ N ^ 5 := by simpa using Nat.pow_le_pow_right h1_N (by omega : 1 ≤ 5)
+  have hN2_N5 : N ^ 2 ≤ N ^ 5 := Nat.pow_le_pow_right h1_N (by omega)
+  have hN3_N5 : N ^ 3 ≤ N ^ 5 := Nat.pow_le_pow_right h1_N (by omega)
+  have hN5_P : N ^ 5 ≤ N ^ 5 * M := by
+    simpa only [Nat.mul_one] using Nat.mul_le_mul_left (N ^ 5) h1_M
+  let vCost := 2 * (d + 1) ^ 2 + 6 * (d + 1) + 7
+  let eCost := 2 * (d + 1) + 1
+  have hv_le : vCost ≤ 10 * N ^ 2 := by
+    have hsq1 : (d + 1) ^ 2 ≤ N ^ 2 := Nat.pow_le_pow_left hd1_N 2
+    have hd1_N2 : d + 1 ≤ N ^ 2 := hd1_N.trans hN_N2
+    dsimp only [vCost]
+    omega
+  have he_le : eCost ≤ 3 * N := by
+    dsimp only [eCost]
+    omega
+  have he_N2 : eCost ≤ 3 * N ^ 2 := he_le.trans (Nat.mul_le_mul_left 3 hN_N2)
+  have hprep : N ^ 2 * (20 * n + 35) + 35 * n + k + 52 ≤ 24 * N ^ 5 * M := by
+    have h20 : 20 * n + 35 ≤ 20 * N := by dsimp only [N]; omega
+    have h_p1 : N ^ 2 * (20 * n + 35) ≤ 20 * N ^ 5 * M := by
+      calc N ^ 2 * (20 * n + 35)
+          ≤ N ^ 2 * (20 * N) := Nat.mul_le_mul_left _ h20
+        _ = 20 * N ^ 3 := by ring
+        _ ≤ 20 * N ^ 5 := Nat.mul_le_mul_left 20 hN3_N5
+        _ ≤ 20 * (N ^ 5 * M) := Nat.mul_le_mul_left 20 hN5_P
+        _ = 20 * N ^ 5 * M := by ring
+    have h35 : 35 * n + 52 ≤ 48 * N := by dsimp only [N]; omega
+    have h_p2 : 35 * n + 52 ≤ 3 * N ^ 5 * M := by
+      calc 35 * n + 52
+          ≤ 48 * N := h35
+        _ = 3 * (16 * N) := by ring
+        _ ≤ 3 * (N ^ 4 * N) := Nat.mul_le_mul_left 3 (Nat.mul_le_mul_right N h16_N4)
+        _ = 3 * N ^ 5 := by ring
+        _ ≤ 3 * (N ^ 5 * M) := Nat.mul_le_mul_left 3 hN5_P
+        _ = 3 * N ^ 5 * M := by ring
+    have h_p3 : k ≤ N ^ 5 * M := hk.trans (Nat.mul_le_mul_right M hN2_N5)
+    calc N ^ 2 * (20 * n + 35) + 35 * n + k + 52
+        = N ^ 2 * (20 * n + 35) + (35 * n + 52) + k := by ring
+      _ ≤ 20 * N ^ 5 * M + 3 * N ^ 5 * M + N ^ 5 * M :=
+          Nat.add_le_add (Nat.add_le_add h_p1 h_p2) h_p3
+      _ = 24 * N ^ 5 * M := by ring
+  have hbis1 : 2 * vCost + 2 ≤ 3 * N ^ 5 * M := by
+    have h22 : 2 * vCost + 2 ≤ 24 * N ^ 2 := by omega
+    calc 2 * vCost + 2
+        ≤ 24 * N ^ 2 := h22
+      _ = 3 * (8 * N ^ 2) := by ring
+      _ ≤ 3 * (N ^ 3 * N ^ 2) := Nat.mul_le_mul_left 3 (Nat.mul_le_mul_right (N ^ 2) h8_N3)
+      _ = 3 * N ^ 5 := by ring
+      _ ≤ 3 * (N ^ 5 * M) := Nat.mul_le_mul_left 3 hN5_P
+      _ = 3 * N ^ 5 * M := by ring
+  have hbis2 : k * (d / 2) * (vCost + (d + 1) + 10) ≤ 14 * N ^ 5 * M := by
+    have hd1_N2 : d + 1 ≤ N ^ 2 := hd1_N.trans hN_N2
+    have hv' : vCost + (d + 1) + 10 ≤ 14 * N ^ 2 := by omega
+    calc k * (d / 2) * (vCost + (d + 1) + 10)
+        ≤ (N ^ 2 * M * N) * (14 * N ^ 2) := Nat.mul_le_mul (Nat.mul_le_mul hk hd2_N) hv'
+      _ = 14 * N ^ 5 * M := by ring
+  have hbis3 : d * (2 * eCost + 6 + k * (vCost + eCost + 4)) ≤ 16 * N ^ 5 * M := by
+    have h2e : 2 * eCost + 6 ≤ 2 * N ^ 4 * M := by
+      have h9 : 2 * eCost + 6 ≤ 16 * N := by omega
+      calc 2 * eCost + 6
+          ≤ 16 * N := h9
+        _ ≤ 2 * (8 * N) := by omega
+        _ ≤ 2 * (N ^ 3 * N) := Nat.mul_le_mul_left 2 (Nat.mul_le_mul_right N h8_N3)
+        _ = 2 * (N ^ 4 * 1) := by ring
+        _ ≤ 2 * (N ^ 4 * M) := Nat.mul_le_mul_left 2 (Nat.mul_le_mul_left (N ^ 4) h1_M)
+        _ = 2 * N ^ 4 * M := by ring
+    have hve : vCost + eCost + 4 ≤ 14 * N ^ 2 := by omega
+    have hkv : k * (vCost + eCost + 4) ≤ 14 * N ^ 4 * M := by
+      calc k * (vCost + eCost + 4)
+          ≤ (N ^ 2 * M) * (14 * N ^ 2) := Nat.mul_le_mul hk hve
+        _ = 14 * N ^ 4 * M := by ring
+    calc d * (2 * eCost + 6 + k * (vCost + eCost + 4))
+        ≤ N * (2 * N ^ 4 * M + 14 * N ^ 4 * M) := Nat.mul_le_mul hd_N (Nat.add_le_add h2e hkv)
+      _ = 16 * N ^ 5 * M := by ring
+  have hsep_t : d * (eCost + vCost + k * (2 * vCost + 6) + 4) + 2 ≤ 27 * N ^ 5 * M := by
+    have hev : eCost + vCost + 4 ≤ 4 * N ^ 4 * M := by
+      have h14 : eCost + vCost + 4 ≤ 16 * N ^ 2 := by omega
+      calc eCost + vCost + 4
+          ≤ 16 * N ^ 2 := h14
+        _ = 4 * (4 * N ^ 2) := by ring
+        _ ≤ 4 * (N ^ 2 * N ^ 2) := Nat.mul_le_mul_left 4 (Nat.mul_le_mul_right (N ^ 2) h4_N2)
+        _ = 4 * (N ^ 4 * 1) := by ring
+        _ ≤ 4 * (N ^ 4 * M) := Nat.mul_le_mul_left 4 (Nat.mul_le_mul_left (N ^ 4) h1_M)
+        _ = 4 * N ^ 4 * M := by ring
+    have h2v : 2 * vCost + 6 ≤ 22 * N ^ 2 := by omega
+    have hkv : k * (2 * vCost + 6) ≤ 22 * N ^ 4 * M := by
+      calc k * (2 * vCost + 6)
+          ≤ (N ^ 2 * M) * (22 * N ^ 2) := Nat.mul_le_mul hk h2v
+        _ = 22 * N ^ 4 * M := by ring
+    have hinner : eCost + vCost + k * (2 * vCost + 6) + 4 ≤ 26 * N ^ 4 * M := by
+      calc eCost + vCost + k * (2 * vCost + 6) + 4
+          = (eCost + vCost + 4) + k * (2 * vCost + 6) := by ring
+        _ ≤ 4 * N ^ 4 * M + 22 * N ^ 4 * M := Nat.add_le_add hev hkv
+        _ = 26 * N ^ 4 * M := by ring
+    have hd_mul : d * (eCost + vCost + k * (2 * vCost + 6) + 4) ≤ 26 * N ^ 5 * M := by
+      calc d * (eCost + vCost + k * (2 * vCost + 6) + 4)
+          ≤ N * (26 * N ^ 4 * M) := Nat.mul_le_mul hd_N hinner
+        _ = 26 * N ^ 5 * M := by ring
+    have h2_le : 2 ≤ N ^ 5 * M := (by omega : 2 ≤ 32).trans (h32_N5.trans hN5_P)
+    calc d * (eCost + vCost + k * (2 * vCost + 6) + 4) + 2
+        ≤ 26 * N ^ 5 * M + N ^ 5 * M := Nat.add_le_add hd_mul h2_le
+      _ = 27 * N ^ 5 * M := by ring
+  have hbis_all : 2 * vCost + 2 + k * (d / 2) * (vCost + (d + 1) + 10) +
+      d * (2 * eCost + 6 + k * (vCost + eCost + 4)) ≤ 33 * N ^ 5 * M := by
+    calc 2 * vCost + 2 + k * (d / 2) * (vCost + (d + 1) + 10) +
+          d * (2 * eCost + 6 + k * (vCost + eCost + 4))
+        ≤ 3 * N ^ 5 * M + 14 * N ^ 5 * M + 16 * N ^ 5 * M :=
+          Nat.add_le_add (Nat.add_le_add hbis1 hbis2) hbis3
+      _ = 33 * N ^ 5 * M := by ring
+  calc (N ^ 2 * (20 * n + 35) + 35 * n + k + 52) +
+        (2 * vCost + 2 + k * (d / 2) * (vCost + (d + 1) + 10) +
+          d * (2 * eCost + 6 + k * (vCost + eCost + 4))) +
+        (d * (eCost + vCost + k * (2 * vCost + 6) + 4) + 2)
+      ≤ 24 * N ^ 5 * M + 33 * N ^ 5 * M + 27 * N ^ 5 * M :=
+        Nat.add_le_add (Nat.add_le_add hprep hbis_all) hsep_t
+    _ = 84 * N ^ 5 * M := by ring
+
 /-- Closed-form polynomial operation-count bound on `isolateRootsTotalM cs` purely in terms of
 input list length `cs.length` and coefficient bit-length bound `B` (`O(n ^ 5 * (B + 2))`). -/
 theorem isolateRootsTotalM_time_le_of_bitBound {B : ℕ} {cs : List ℚ}
     (hsq : Squarefree (ofCoeffList cs)) (hB : HasCoeffBitBound B cs) :
-    (isolateRootsTotalM cs).time ≤ 64 * (cs.length + 2) ^ 5 * (B + 2) := by
-  have hbase := isolateRootsTotalM_time_le_of_squarefree hsq
-  dsimp only at hbase
-  let n := cs.length
-  let d := (ofCoeffList cs).natDegree
-  let k := mignotteBisectionDepth cs
-  have hd_le : d ≤ n := (natDegree_ofCoeffList_le cs).trans (Nat.sub_le _ _)
-  have hk_le : k ≤ (n + 2) ^ 2 * (B + 2) := mignotteBisectionDepth_le_of_bitBound hB
-  let N := n + 2
-  have hd1 : d + 1 ≤ N := by dsimp only [N]; omega
-  have hd_N : d ≤ N := by dsimp only [N]; omega
-  have hd2_N : d / 2 ≤ N := by dsimp only [N]; omega
-  have hN_ge2 : 2 ≤ N := by dsimp only [N]; omega
-  have hB_ge2 : 2 ≤ B + 2 := by omega
-  let vCost := 2 * (d + 1) ^ 2 + 6 * (d + 1) + 7
-  let eCost := 2 * (d + 1) + 1
-  have hv_le : vCost ≤ 7 * N ^ 2 := by
-    have hsq1 : (d + 1) ^ 2 ≤ N ^ 2 := Nat.pow_le_pow_left hd1 2
-    dsimp only [vCost]
-    nlinarith
-  have he_le : eCost ≤ 3 * N := by
-    dsimp only [eCost]
-    omega
-  have hprep : (n + 2) ^ 2 * (20 * n + 35) + 35 * n + k + 52 ≤ 15 * N ^ 5 * (B + 2) := by
-    have hn_N : n ≤ N := by dsimp only [N]; omega
-    have hN2 : 4 ≤ N ^ 2 := by nlinarith
-    have hN3 : N ^ 3 = N ^ 2 * N := by ring
-    have hN5 : N ^ 5 = N ^ 2 * N ^ 2 * N := by ring
-    change N ^ 2 * (20 * n + 35) + 35 * n + k + 52 ≤ 15 * N ^ 5 * (B + 2)
-    have hk_N : k ≤ N ^ 2 * (B + 2) := hk_le
-    nlinarith
-  have hbis1 : 2 * vCost + 2 ≤ 5 * N ^ 5 * (B + 2) := by
-    have hN3 : 8 ≤ N ^ 3 := by nlinarith
-    have hN5 : N ^ 5 = N ^ 2 * N ^ 3 := by ring
-    nlinarith
-  have hbis2 : k * (d / 2) * (vCost + (d + 1) + 10) ≤ 12 * N ^ 5 * (B + 2) := by
-    have hv' : vCost + (d + 1) + 10 ≤ 11 * N ^ 2 := by nlinarith
-    have hkd : k * (d / 2) ≤ N ^ 2 * (B + 2) * N :=
-      Nat.mul_le_mul hk_le hd2_N
-    calc k * (d / 2) * (vCost + (d + 1) + 10)
-        ≤ (N ^ 2 * (B + 2) * N) * (11 * N ^ 2) := Nat.mul_le_mul hkd hv'
-      _ = 11 * N ^ 5 * (B + 2) := by ring
-      _ ≤ 12 * N ^ 5 * (B + 2) := by nlinarith
-  have hbis3 : d * (2 * eCost + 6 + k * (vCost + eCost + 4)) ≤ 12 * N ^ 5 * (B + 2) := by
-    have hve : vCost + eCost + 4 ≤ 10 * N ^ 2 := by nlinarith
-    have hkv : k * (vCost + eCost + 4) ≤ N ^ 2 * (B + 2) * (10 * N ^ 2) :=
-      Nat.mul_le_mul hk_le hve
-    have h2e : 2 * eCost + 6 ≤ 2 * N ^ 4 * (B + 2) := by
-      have hN3 : 8 ≤ N ^ 3 := by nlinarith
-      have hN4 : N ^ 4 = N * N ^ 3 := by ring
-      nlinarith
-    calc d * (2 * eCost + 6 + k * (vCost + eCost + 4))
-        ≤ N * (2 * N ^ 4 * (B + 2) + N ^ 2 * (B + 2) * (10 * N ^ 2)) :=
-            Nat.mul_le_mul hd_N (Nat.add_le_add h2e hkv)
-      _ = 12 * N ^ 5 * (B + 2) := by ring
-  have hsep_t : d * (eCost + vCost + k * (2 * vCost + 6) + 4) + 2 ≤ 20 * N ^ 5 * (B + 2) := by
-    have h2v : 2 * vCost + 6 ≤ 16 * N ^ 2 := by nlinarith
-    have hkv : k * (2 * vCost + 6) ≤ N ^ 2 * (B + 2) * (16 * N ^ 2) :=
-      Nat.mul_le_mul hk_le h2v
-    have h8 : 8 ≤ N ^ 2 * (B + 2) := by nlinarith
-    have hev : eCost + vCost + 4 ≤ 2 * N ^ 4 * (B + 2) := by
-      have h10 : eCost + vCost + 4 ≤ 10 * N ^ 2 := by nlinarith
-      calc eCost + vCost + 4
-          ≤ 10 * N ^ 2 := h10
-        _ ≤ 2 * N ^ 2 * 8 := by omega
-        _ ≤ 2 * N ^ 2 * (N ^ 2 * (B + 2)) := Nat.mul_le_mul_left _ h8
-        _ = 2 * N ^ 4 * (B + 2) := by ring
-    have hinner : eCost + vCost + k * (2 * vCost + 6) + 4 ≤ 18 * N ^ 4 * (B + 2) := by
-      calc eCost + vCost + k * (2 * vCost + 6) + 4
-          = (eCost + vCost + 4) + k * (2 * vCost + 6) := by ring
-        _ ≤ 2 * N ^ 4 * (B + 2) + N ^ 2 * (B + 2) * (16 * N ^ 2) := Nat.add_le_add hev hkv
-        _ = 18 * N ^ 4 * (B + 2) := by ring
-    have hd_mul : d * (eCost + vCost + k * (2 * vCost + 6) + 4) ≤ 18 * N ^ 5 * (B + 2) := by
-      calc d * (eCost + vCost + k * (2 * vCost + 6) + 4)
-          ≤ N * (18 * N ^ 4 * (B + 2)) := Nat.mul_le_mul hd_N hinner
-        _ = 18 * N ^ 5 * (B + 2) := by ring
-    have h2_le : 2 ≤ 2 * N ^ 5 * (B + 2) := by
-      have hN5_pos : 1 ≤ N ^ 5 := Nat.one_le_pow 5 N (by omega)
-      nlinarith
-    omega
-  have htotal_sum :
-      15 * N ^ 5 * (B + 2) + (5 * N ^ 5 * (B + 2) + 12 * N ^ 5 * (B + 2) + 12 * N ^ 5 * (B + 2)) +
-        20 * N ^ 5 * (B + 2) = 64 * (cs.length + 2) ^ 5 * (B + 2) := by
-    dsimp only [N, n]
-    ring
-  dsimp only [n, d, k, vCost, eCost] at hbase hprep hbis1 hbis2 hbis3 hsep_t
-  omega
+    (isolateRootsTotalM cs).time ≤ 84 * (cs.length + 2) ^ 5 * (B + 2) :=
+  (isolateRootsTotalM_time_le_of_squarefree hsq).trans
+    (totalTime_poly_bound ((natDegree_ofCoeffList_le cs).trans (Nat.sub_le _ _))
+      (mignotteBisectionDepth_le_of_bitBound hB))
 
 /-- Specialization of `isolateRootsTotalM_time_le_of_bitBound` to the computable bound
 `coeffBitBound cs`. -/
 theorem isolateRootsTotalM_time_le_coeffBitBound {cs : List ℚ}
     (hsq : Squarefree (ofCoeffList cs)) :
-    (isolateRootsTotalM cs).time ≤ 64 * (cs.length + 2) ^ 5 * (coeffBitBound cs + 2) :=
+    (isolateRootsTotalM cs).time ≤ 84 * (cs.length + 2) ^ 5 * (coeffBitBound cs + 2) :=
   isolateRootsTotalM_time_le_of_bitBound hsq (hasCoeffBitBound_coeffBitBound cs)
 
 /-- Explicit polynomial endpoint numerator and denominator bounds in `(cs.length, B)` under
 `HasCoeffBitBound B cs`: every returned endpoint has denominator `≤ 2 ^ E` and numerator
-`natAbs ≤ (cs.length + 1) * 2 ^ (2 * B + E)`, where `E = 3 * (cs.length + 2) ^ 2 * (B + 2)`. -/
+`natAbs ≤ 3 * 2 ^ (2 * B + E)`, where `E = 3 * (cs.length + 2) ^ 2 * (B + 2)`. -/
 theorem isolateRootsTotal_endpoint_bounds_of_bitBound {B : ℕ} {cs : List ℚ}
     (hB : HasCoeffBitBound B cs) :
     ∀ J ∈ isolateRootsTotal cs,
       let E := 3 * (cs.length + 2) ^ 2 * (B + 2)
       J.lower.den ≤ 2 ^ E ∧ J.upper.den ≤ 2 ^ E ∧
-        Int.natAbs J.lower.num ≤ (cs.length + 1) * 2 ^ (2 * B + E) ∧
-        Int.natAbs J.upper.num ≤ (cs.length + 1) * 2 ^ (2 * B + E) := by
+        Int.natAbs J.lower.num ≤ 3 * 2 ^ (2 * B + E) ∧
+        Int.natAbs J.upper.num ≤ 3 * 2 ^ (2 * B + E) := by
   intro J hJ
   dsimp only
   let E := 3 * (cs.length + 2) ^ 2 * (B + 2)
@@ -1442,26 +1527,28 @@ theorem isolateRootsTotal_endpoint_bounds_of_bitBound {B : ℕ} {cs : List ℚ}
   rcases hraw with ⟨_, _, hlden, huden, hlnum, hunum⟩
   have he_le : 3 * mignotteBisectionDepth cs ≤ E := by
     have hk := mignotteBisectionDepth_le_of_bitBound hB
-    dsimp only [E]
-    nlinarith
+    calc 3 * mignotteBisectionDepth cs
+        ≤ 3 * ((cs.length + 2) ^ 2 * (B + 2)) := Nat.mul_le_mul_left 3 hk
+      _ = E := by dsimp only [E]; ring
   have hpow_e : 2 ^ (3 * mignotteBisectionDepth cs) ≤ 2 ^ E :=
     Nat.pow_le_pow_right (by omega) he_le
-  have hb_le : cauchyBoundNat cs ≤ (cs.length + 1) * 2 ^ (2 * B) :=
-    cauchyBoundNat_le_of_bitBound hB
+  have hb_raw : cauchyBoundNat cs ≤ 2 ^ (2 * B) + 2 := cauchyBoundNat_le_of_bitBound hB
+  have h1_pow : 1 ≤ 2 ^ (2 * B) := Nat.one_le_pow (2 * B) 2 (by omega)
+  have hb_le : cauchyBoundNat cs ≤ 3 * 2 ^ (2 * B) := by omega
   have hmul_le : cauchyBoundNat cs * 2 ^ (3 * mignotteBisectionDepth cs) ≤
-      (cs.length + 1) * 2 ^ (2 * B + E) := by
+      3 * 2 ^ (2 * B + E) := by
     calc cauchyBoundNat cs * 2 ^ (3 * mignotteBisectionDepth cs)
-        ≤ ((cs.length + 1) * 2 ^ (2 * B)) * 2 ^ E := Nat.mul_le_mul hb_le hpow_e
-      _ = (cs.length + 1) * (2 ^ (2 * B) * 2 ^ E) := by ring
-      _ = (cs.length + 1) * 2 ^ (2 * B + E) := by rw [← Nat.pow_add]
+        ≤ (3 * 2 ^ (2 * B)) * 2 ^ E := Nat.mul_le_mul hb_le hpow_e
+      _ = 3 * (2 ^ (2 * B) * 2 ^ E) := by ring
+      _ = 3 * 2 ^ (2 * B + E) := by rw [← Nat.pow_add]
   exact ⟨hlden.trans hpow_e, huden.trans hpow_e, hlnum.trans hmul_le, hunum.trans hmul_le⟩
 
 /-- Combined specification of the computable `TimeM ℕ`-charged isolator `isolateRootsTotalM cs` for
 any squarefree `p : ℚ[X]` represented by `cs : List ℚ` (`ofCoeffList cs = p`) with coefficient bit
 bound `B`: isolating `aeval` soundness, strict separation `J₁.upper < J₂.lower`, pairwise disjoint
-closed real intervals `Set.Icc`, strictly monotone bijection onto `{x : ℝ // Polynomial.aeval x p = 0}`,
-polynomial dyadic endpoint numerator/denominator bounds, and `O(n ^ 5 * (B + 2))` total `TimeM ℕ`
-operation count. -/
+closed real intervals `Set.Icc`, strictly monotone bijection onto
+`{x : ℝ // Polynomial.aeval x p = 0}`, polynomial dyadic endpoint numerator/denominator bounds, and
+`O(n ^ 5 * (B + 2))` total `TimeM ℕ` operation count. -/
 theorem isolateRootsTotal_spec_of_eq {B : ℕ} {cs : List ℚ} {p : ℚ[X]}
     (hp : ofCoeffList cs = p) (hsq : Squarefree p) (hB : HasCoeffBitBound B cs) :
     (∀ J ∈ isolateRootsTotal cs, J.lower ≤ J.upper ∧
@@ -1478,9 +1565,9 @@ theorem isolateRootsTotal_spec_of_eq {B : ℕ} {cs : List ℚ} {p : ℚ[X]}
     (∀ J ∈ isolateRootsTotal cs,
       let E := 3 * (cs.length + 2) ^ 2 * (B + 2)
       J.lower.den ≤ 2 ^ E ∧ J.upper.den ≤ 2 ^ E ∧
-        Int.natAbs J.lower.num ≤ (cs.length + 1) * 2 ^ (2 * B + E) ∧
-        Int.natAbs J.upper.num ≤ (cs.length + 1) * 2 ^ (2 * B + E)) ∧
-    (isolateRootsTotalM cs).time ≤ 64 * (cs.length + 2) ^ 5 * (B + 2) := by
+        Int.natAbs J.lower.num ≤ 3 * 2 ^ (2 * B + E) ∧
+        Int.natAbs J.upper.num ≤ 3 * 2 ^ (2 * B + E)) ∧
+    (isolateRootsTotalM cs).time ≤ 84 * (cs.length + 2) ^ 5 * (B + 2) := by
   subst hp
   have hsep : (ofCoeffList cs).Separable := PerfectField.separable_iff_squarefree.mpr hsq
   exact ⟨isolateRootsTotal_aeval_unique hsep,
@@ -1501,9 +1588,30 @@ noncomputable def isolatePolyRootsTotalM (p : ℚ[X]) : TimeM ℕ (List RootInte
 noncomputable def isolatePolyRootsTotal (p : ℚ[X]) : List RootInterval :=
   (isolatePolyRootsTotalM p).ret
 
+theorem isolatePolyRootsTotalM_eq (p : ℚ[X]) :
+    isolatePolyRootsTotalM p = isolateRootsTotalM (p.coeffsBelow (p.natDegree + 1)) := by
+  rfl
+
+theorem isolatePolyRootsTotal_eq (p : ℚ[X]) :
+    isolatePolyRootsTotal p = isolateRootsTotal (p.coeffsBelow (p.natDegree + 1)) := by
+  rfl
+
+/-- Recovering `p.coeffsBelow (p.natDegree + 1)` from a coefficient list `cs` of length
+`p.natDegree + 1` representing `p`. -/
+theorem coeffsBelow_eq_of_ofCoeffList {cs : List ℚ} {p : ℚ[X]}
+    (hp : ofCoeffList cs = p) (hlen : cs.length = p.natDegree + 1) :
+    p.coeffsBelow (p.natDegree + 1) = cs := by
+  have heq : ofCoeffList (p.coeffsBelow (p.natDegree + 1)) = ofCoeffList cs := by
+    rw [Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree), hp]
+  refine List.ext_getElem (by rw [Polynomial.length_coeffsBelow, hlen]) fun i hi1 hi2 => ?_
+  have hc := congrArg (fun q : ℚ[X] => q.coeff i) heq
+  simpa only [Polynomial.coeff_ofCoeffList, List.getD_eq_getElem?_getD,
+    List.getElem?_eq_getElem hi1, List.getElem?_eq_getElem hi2, Option.getD_some] using hc
+
 @[simp]
 theorem isolatePolyRootsTotalM_ret (p : ℚ[X]) :
-    (isolatePolyRootsTotalM p).ret = isolatePolyRootsTotal p := rfl
+    (isolatePolyRootsTotalM p).ret = isolatePolyRootsTotal p := by
+  rfl
 
 private theorem polyTotalSeparable {p : ℚ[X]} (hsq : Squarefree p) :
     (ofCoeffList (p.coeffsBelow (p.natDegree + 1))).Separable :=
@@ -1561,7 +1669,8 @@ theorem polyTotalIsolatedRoot_mem {p : ℚ[X]} (hsq : Squarefree p)
     (polyTotalIsolatedRoot hsq i).1 ∈ Set.Icc (J.lower : ℝ) (J.upper : ℝ) :=
   totalIsolatedRoot_mem (polyTotalSeparable hsq) i
 
-/-- `polyTotalIsolatedRoot hsq` is strictly increasing across `Fin (isolatePolyRootsTotal p).length`. -/
+/-- `polyTotalIsolatedRoot hsq` is strictly increasing across
+`Fin (isolatePolyRootsTotal p).length`. -/
 theorem polyTotalIsolatedRoot_strictMono {p : ℚ[X]} (hsq : Squarefree p) :
     StrictMono (fun i : Fin (isolatePolyRootsTotal p).length => (polyTotalIsolatedRoot hsq i).1) :=
   totalIsolatedRoot_strictMono (polyTotalSeparable hsq)
@@ -1576,11 +1685,14 @@ theorem isolatePolyRootsTotal_bijective {p : ℚ[X]} (hsq : Squarefree p) :
   refine ⟨fun i j hij => ?_, fun ⟨x, hx⟩ => ?_⟩
   · have hval : (polyTotalIsolatedRoot hsq i).1 = (polyTotalIsolatedRoot hsq j).1 :=
       congrArg Subtype.val hij
+    dsimp only [polyTotalIsolatedRoot] at hval
     exact hbij.1 (Subtype.ext hval)
   · have hx' : Polynomial.aeval x (ofCoeffList (p.coeffsBelow (p.natDegree + 1))) = 0 := by
       simpa only [heq] using hx
     obtain ⟨i, hi⟩ := hbij.2 ⟨x, hx'⟩
-    exact ⟨i, Subtype.ext (congrArg Subtype.val hi)⟩
+    refine ⟨i, Subtype.ext ?_⟩
+    dsimp only [polyTotalIsolatedRoot]
+    exact congrArg Subtype.val hi
 
 /-- End-to-end `TimeM ℕ` operation-count bound for `isolatePolyRootsTotalM p` on squarefree
 `p : ℚ[X]`. -/
@@ -1612,7 +1724,7 @@ theorem isolatePolyRootsTotalM_time_le {p : ℚ[X]} (hsq : Squarefree p) :
 theorem isolatePolyRootsTotalM_time_le_of_bitBound {B : ℕ} {p : ℚ[X]}
     (hsq : Squarefree p)
     (hB : ∀ i ≤ p.natDegree, Int.natAbs (p.coeff i).num ≤ 2 ^ B ∧ (p.coeff i).den ≤ 2 ^ B) :
-    (isolatePolyRootsTotalM p).time ≤ 64 * (p.natDegree + 3) ^ 5 * (B + 2) := by
+    (isolatePolyRootsTotalM p).time ≤ 84 * (p.natDegree + 3) ^ 5 * (B + 2) := by
   dsimp only [isolatePolyRootsTotalM]
   have heq : ofCoeffList (p.coeffsBelow (p.natDegree + 1)) = p :=
     Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree)
@@ -1633,8 +1745,8 @@ theorem isolatePolyRootsTotal_endpoint_bounds_of_bitBound {B : ℕ} {p : ℚ[X]}
     ∀ J ∈ isolatePolyRootsTotal p,
       let E := 3 * (p.natDegree + 3) ^ 2 * (B + 2)
       J.lower.den ≤ 2 ^ E ∧ J.upper.den ≤ 2 ^ E ∧
-        Int.natAbs J.lower.num ≤ (p.natDegree + 2) * 2 ^ (2 * B + E) ∧
-        Int.natAbs J.upper.num ≤ (p.natDegree + 2) * 2 ^ (2 * B + E) := by
+        Int.natAbs J.lower.num ≤ 3 * 2 ^ (2 * B + E) ∧
+        Int.natAbs J.upper.num ≤ 3 * 2 ^ (2 * B + E) := by
   have hcsB : HasCoeffBitBound B (p.coeffsBelow (p.natDegree + 1)) := by
     intro c hc
     simp only [Polynomial.coeffsBelow, List.mem_map, List.mem_range] at hc
@@ -1645,7 +1757,6 @@ theorem isolatePolyRootsTotal_endpoint_bounds_of_bitBound {B : ℕ} {p : ℚ[X]}
   dsimp only at h ⊢
   rw [Polynomial.length_coeffsBelow] at h
   have hd3 : p.natDegree + 1 + 2 = p.natDegree + 3 := by omega
-  have hd2 : p.natDegree + 1 + 1 = p.natDegree + 2 := by omega
-  simpa only [hd3, hd2] using h
+  simpa only [hd3] using h
 
 end Cslib.RealRoot

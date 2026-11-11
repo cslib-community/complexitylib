@@ -57,9 +57,9 @@ concatenation (`left ++ right`) are uncharged (`0` ticks).
 ## References
 
 * [BasuPollackRoy2006] (locator unverified)
-* [Mahler1964] (originator of the Mahler-measure root-separation inequality; locator unverified)
-* [Mignotte1982] (locator unverified; `isolateRootsM_time_le` and left-root refinement packaging
-  are specific to this module)
+* [Mahler1964], Lemma 1 and Theorem 2 (pp. 257–262)
+* [Mignotte1982], pp. 259–263 (internal theorem number unverified; `isolateRootsM_time_le` and
+  left-root refinement packaging are specific to this module)
 -/
 
 public section
@@ -74,7 +74,7 @@ structure RootInterval where
   lower : ℚ
   /-- Right rational endpoint of the isolating interval. -/
   upper : ℚ
-  deriving DecidableEq, Repr
+  deriving @[expose] DecidableEq, Repr
 
 /-- Closed-interval root isolation predicate: `I.lower ≤ I.upper` and `[I.lower, I.upper]`
 contains a unique real root of `p`. -/
@@ -1115,6 +1115,14 @@ noncomputable def isolatePolyRoots (p : ℚ[X]) : List RootInterval :=
 /-- Cost-tracked real-root isolation for an arbitrary polynomial `p : ℚ[X]`. -/
 noncomputable def isolatePolyRootsM (p : ℚ[X]) : TimeM ℕ (List RootInterval) :=
   isolateRootsM (p.coeffsBelow (p.natDegree + 1))
+
+theorem isolatePolyRoots_eq (p : ℚ[X]) :
+    isolatePolyRoots p = isolateRoots (p.coeffsBelow (p.natDegree + 1)) := by
+  rfl
+
+theorem isolatePolyRootsM_eq (p : ℚ[X]) :
+    isolatePolyRootsM p = isolateRootsM (p.coeffsBelow (p.natDegree + 1)) := by
+  rfl
 
 /-- Soundness for `isolatePolyRoots p` on squarefree `p : ℚ[X]`. -/
 theorem isolatePolyRoots_isIsolatingFor {p : ℚ[X]} (hsq : Squarefree p) :
