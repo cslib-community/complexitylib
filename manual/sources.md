@@ -124,6 +124,11 @@ Boaz Barak and David Steurer. *Proofs, beliefs, and algorithms through the lens 
 
 Clark Barrett, Swarat Chaudhuri, Fabrizio Montesi, Jim Grundy, Pushmeet Kohli, Leonardo de Moura, Alexandre Rademaker and Sorrachai Yingchareonthawornchai. *CSLib: The Lean Computer Science Library*. arXiv:2602.04846v1, 2026. https://doi.org/10.48550/arXiv.2602.04846 . Author/title/version metadata checked against https://arxiv.org/abs/2602.04846 on 2026-11-02 UTC.
 
+<a id="basupollackroy06"></a>
+## basupollackroy06
+
+Saugata Basu, Richard Pollack and Marie-Françoise Roy. *Algorithms in Real Algebraic Geometry*, 2nd edition. Algorithms and Computation in Mathematics 10, Springer, 2006. https://doi.org/10.1007/3-540-33099-2 . Bibliographic metadata from `references.bib`; the primary textbook was not directly inspected (the retired author-hosted URL `perso.univ-rennes1.fr` returned HTTP 404), so internal chapter, section, and theorem numbers reported in secondary summaries (such as Chapter 2, Theorem 2.50 for Sturm's theorem over real closed fields and Chapter 10, §§10.1–10.2 for root bounds, root-separation bounds, and Sturm bisection) remain unverified against the printed text and are not claimed as verified locators. Local adaptations in `CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/`: [`Sturm.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/Sturm.lean) proves Sturm's theorem on `(a, b]` over `ℝ` via local constancy of `sturmVariations p x + #{r ≤ x}`; [`RootBound.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/RootBound.lean) packages the cleared-denominator rational `ℓ²` root-separation form (`Polynomial.mignotte_sep_sqNorm_rat`); and [`TotalRatPoly.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalRatPoly.lean) with [`TotalIsolation.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalIsolation.lean) implements an end-to-end `TimeM ℕ`-charged `List ℚ` Sturm-bisection isolator (`isolateRootsTotalM`, `isolateRootsTotal`) with left-endpoint root refinement and boundary separation into strictly disjoint closed rational intervals (`J₁.upper < J₂.lower`).
+
 <a id="bcgl92"></a>
 ## bcgl92
 
@@ -469,7 +474,7 @@ Ronald de Wolf. *Quantum Computing: Lecture Notes*. arXiv:1907.09415, read in v6
 <a id="diestel25"></a>
 ## diestel25
 
-Reinhard Diestel. *Graph Theory*, sixth edition. Graduate Texts in Mathematics 173, Springer, 2025. The author's free preview chapters (https://www.math.uni-hamburg.de/home/diestel/books/graph.theory/preview/Ch3.pdf and Ch1.pdf) were consulted on 2026-11-08 UTC for Section 1.4 (separating sets), Section 3.3, Corollary 3.3.5 (i) (vertex form, `ab ∉ E`) and (ii) (edge form), and the statements of Theorems 3.3.1 and 3.3.6, which are cited only as remaining work.
+Reinhard Diestel. *Graph Theory*, sixth edition. Graduate Texts in Mathematics 173, Springer, 2025. The author's free preview chapters (https://www.math.uni-hamburg.de/home/diestel/books/graph.theory/preview/Ch3.pdf and Ch1.pdf) were consulted on 2026-11-08 and 2026-11-11 UTC for Section 1.4 (`k`-connectedness `|G| > k`, separating sets, Proposition 1.4.2 `κ(G) ≤ λ(G)`), Section 3.3, Theorem 3.3.1 (`A`–`B` Menger), Corollary 3.3.5 (i) (vertex form, `ab ∉ E`) and (ii) (edge form), and Theorem 3.3.6 (i)–(ii) (global `k`-connectivity Menger).
 
 <a id="dilworth1950"></a>
 ## dilworth1950
@@ -1112,6 +1117,11 @@ Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Co
 
 Carsten Lund and Mihalis Yannakakis. "On the Hardness of Approximating Minimization Problems." *Journal of the ACM* 41(5), 960–981, 1994. https://doi.org/10.1145/185675.306789 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the constant-factor and logarithmic Set Cover inapproximability reductions from Label Cover using set-system partition gadgets.
 
+<a id="mahler64"></a>
+## mahler64
+
+Kurt Mahler. "An inequality for the discriminant of a polynomial." *Michigan Mathematical Journal* 11(3), 257–262, 1964. https://doi.org/10.1307/mmj/1028999140 . Bibliographic metadata from `references.bib`; the Project Euclid full text was gated behind an automated challenge and was not directly inspected, so internal lemma and theorem numbers reported in secondary mathematical records (Lemma 1 for Hadamard's determinant inequality and Theorem 2 for the root-separation lower bound `|α - β| > √3 · m^{-(m+2)/2} · |D(f)|^{1/2} · M(f)^{-(m-1)}` for degree `m ≥ 2` in terms of discriminant `D(f)` and Mahler measure `M(f)`) remain unverified against the primary article. In [`RootBound.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/RootBound.lean), `Polynomial.mignotte_sep_mahler_complex` proves the squared non-strict complex form `3 · ‖D(f)‖ ≤ ‖α - β‖² · d^{d+2} · M(f)^{2(d-1)}`, and `Polynomial.mignotte_sep_sqNorm_real` / `Polynomial.mignotte_sep_sqNorm_rat` combine it with `|D(f)| ≥ 1` for separable integer polynomials and Landau's coefficient `ℓ²` bound `M(f) ≤ ‖f‖₂`.
+
 <a id="manacher75"></a>
 ## manacher75
 
@@ -1156,6 +1166,11 @@ Karl Menger. "Zur allgemeinen Kurventheorie." *Fundamenta Mathematicae* 10, 96�
 ## mignonressayre04
 
 Thierry Mignon and Nicolas Ressayre. *A quadratic bound for the determinant and permanent problem*. International Mathematics Research Notices 2004(79), 4241–4253, 2004. https://doi.org/10.1155/S1073792804142566 . Bibliographic metadata checked on 2026-11-08; the publisher copy was not inspected, so no theorem number is claimed. The statement (`dc(perm_n) ≥ n²/2` in characteristic zero), the point `X₀` (all ones with `1 - n` in one corner), and the two Hessian lemmas were checked against R. Saptharishi, *A survey of lower bounds in arithmetic circuit complexity*, chapter "Determinantal Complexity Lower Bounds" (Theorem `thm:Mignon-Ressayre-mainthm`, Lemmas `lem:MR-det-ub` and `lem:MR-perm-lb`), at GitHub revision `af95c539`. The full rank of the Hessian at `X₀` is proved in the library by its own sandwich-identity argument, not by the survey's eigenvalue or block-matrix computation.
+
+<a id="mignotte82"></a>
+## mignotte82
+
+Maurice Mignotte. "Some Useful Bounds." In Bruno Buchberger, George E. Collins and Rüdiger Loos (eds.), *Computer Algebra: Symbolic and Algebraic Computation*, Computing Supplementum 4, 259–263, Springer, 1982. https://doi.org/10.1007/978-3-7091-7551-4_16 . Bibliographic metadata checked against DOI and secondary computer-algebra records on 2026-11-11 UTC; the primary Springer supplement pages 259–263 were not directly inspected, so internal theorem numbers are unverified. Cited alongside [`mahler64`](#mahler64) for the Mignotte coefficient `ℓ²` root-separation specialization (`Polynomial.mignotte_sep_sqNorm_real`, `Polynomial.mignotte_sep_sqNorm_rat`) governing `mignotteBisectionDepth`.
 
 <a id="mirsky1971"></a>
 ## mirsky1971
@@ -1445,7 +1460,7 @@ Alexander Schrijver. *Combinatorial Optimization: Polyhedra and Efficiency*. Alg
 <a id="schrijver17"></a>
 ## schrijver17
 
-Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. It was also consulted on 2026-11-08 UTC for Section 3.2 (display (6) and Theorem 3.2), Section 5.1 (Theorem 5.1 and Corollary 5.1a) and Theorem 5.2; the general-matching modules `Berge` and `TutteBerge` cite these locators. Section 4.1 (Theorem 4.1, Corollaries 4.1a and 4.1b, and the vertex-splitting and undirected remarks after them) was consulted on the same date for the Menger modules. Section 7.3 (display (17), Theorems 7.5 and 7.6) was consulted on 2026-11-08 for the Mirsky and Dilworth modules. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
+Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, version of March 23, 2017. https://homepages.cwi.nl/~lex/files/dict.pdf . The author-hosted PDF was consulted on 2026-11-08 UTC for Section 10.4 (Lemma 10.2), Section 10.5 (Example 10.5a, displays (23)–(25) and (27), Theorems 10.6, 10.7 and 10.9) and Exercise 10.22; the matroid intersection modules cite these locators. It was also consulted on 2026-11-08 UTC for Section 3.2 (display (6) and Theorem 3.2), Section 5.1 (Theorem 5.1 and Corollary 5.1a) and Theorem 5.2; the general-matching modules `Berge` and `TutteBerge` cite these locators. Section 4.1 (Theorem 4.1, Corollaries 4.1a and 4.1b including directed multigraphs, the vertex-splitting and undirected remarks after them, and Theorem 4.2's remark on integer-capacity path packing) was consulted on 2026-11-08 and 2026-11-11 UTC for the Menger modules. Section 7.3 (display (17), Theorems 7.5 and 7.6) was consulted on 2026-11-08 for the Mirsky and Dilworth modules. The corresponding chapter of Schrijver's 2003 monograph (Chapter 41) is cited in the library from secondary descriptions only; its theorem and page locators are unverified.
 
 <a id="schrijver78"></a>
 ## schrijver78
@@ -1456,6 +1471,11 @@ Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinato
 ## schrijver86
 
 Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. An independent agent review checked the primary book on 2026-11-11 UTC for Section 3.2, Theorem 3.2 (pp. 29–30, determinant encoding-size bound) and Section 3.3, "The Gaussian elimination method": Theorem 3.3 (pp. 32–33, polynomial-time rational Gaussian elimination), Corollary 3.3a (pp. 33–34, polynomial-time determinant, rank, inverse, linear-independence testing, and linear system solving), and the Gauss–Jordan discussion with Equations (28)–(30) (p. 35). Local adaptations in [`BareissElimination.lean`](../CslibFrontier/Algorithms/LinearAlgebra/BareissElimination.lean) and [`RationalElimination.lean`](../CslibFrontier/Computability/PolyTime/LinearAlgebra/RationalElimination.lean): (1) rather than Schrijver's normalized rational elimination, row denominators are cleared upfront and fraction-free Sylvester–Bareiss minor-scaled Gauss–Jordan updates are executed over `ℤ` with an explicit Hadamard/factorial bound (`stageEntryBound`); and (2) native multi-tape Turing `ComputableInPolyTime` time and workspace bounds are certified using `enc_structure` codecs with explicit unary dimension headers (`numRows`, `numCols`, `rank`, `pivotRows`, `pivotCols`, `nonPivotCols`) and framed signed-binary/rational entries.
+
+<a id="schummervohra02"></a>
+## schummervohra02
+
+James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Journal of Economic Theory* 104(2), 405–428, 2002. https://doi.org/10.1006/jeth.2001.2807 . The published version is paywalled and was not inspected. The [authors' January 23, 2001 preprint](https://www.kellogg.northwestern.edu/faculty/schummer/ftp/research/circle.pdf) was read on 2026-11-11, and the locators below refer to its pages. Section 2 (pp. 5–6) sets up finite connected length graphs and preferences given by negative path distance. Section 3 (pp. 9–16) defines generalized median voter schemes on paths, their consistency (p. 12) and extended median voter schemes, and Theorem 1 (p. 15) characterizes strategy-proof onto rules on trees. Section 4 proves Theorem 2 (p. 21): every strategy-proof onto rule has a dictator on each cycle. `TreeEMVS` represents extended median voter schemes by branch-winning coalitions rather than by consistent path schemes; see its docstring for the correspondence. Strong group strategyproofness of these rules is proved in the library and is not stated in the paper. The cycle results cover shortest cycles only.
 
 <a id="schummervohra07"></a>
 ## schummervohra07
