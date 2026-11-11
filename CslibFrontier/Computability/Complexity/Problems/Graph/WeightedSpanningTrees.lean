@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.Graph.ReducedLaplacian
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MatrixTree
+import CslibFrontier.Foundations.Data.List.OfFn
 
 /-!
 # Polynomial-time weighted spanning-tree summation
@@ -156,7 +157,7 @@ private lemma weightedLaplacianEntry_eq {WG : WeightedGraph} (u v : {v // v ∈ 
     rw [← Equiv.sum_comp WG.toGraph.vertexEquiv
         (fun x => if WG.toGraph.induced.Adj u x then WG.symWeight (Sym2.map Subtype.val s(u, x))
           else 0),
-      sum_map_eq_sum_fin]
+      List.sum_map_eq_sum_fin]
     refine Finset.sum_congr rfl fun i _ => ?_
     change WG.pairWeight u.1 WG.toGraph.distinctVertices[i] = _
     rw [← Graph.vertexEquiv_getElem WG.toGraph i]

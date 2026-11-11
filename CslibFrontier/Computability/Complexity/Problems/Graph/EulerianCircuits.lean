@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.Arborescence
 public import CslibFrontier.Foundations.Combinatorics.Multidigraph.BEST
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Factorial
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Foundations.Data.List.OfFn
 
 /-!
 # Polynomial-time Eulerian-circuit counting via the BEST theorem
@@ -90,7 +91,7 @@ private theorem card_fin_filter_subtype_eq {xs : List ℕ} {ys : List (ℕ × �
     (Finset.univ.filter fun i : Fin ys.length =>
       (⟨p ys[i], hp _ (List.getElem_mem i.isLt)⟩ : {x // x ∈ xs}) = v).card =
       ys.countP fun e => decide (p e = v.1) := by
-  rw [← card_fin_filter_getElem ys (fun e => decide (p e = v.1))]
+  rw [List.countP_eq_card_filter_getElem ys (fun e => decide (p e = v.1))]
   congr 1
   ext i
   simp [Subtype.ext_iff]
@@ -184,7 +185,7 @@ theorem eulerianCircuitCount_eq_natCard (G : Graph) (eIdx : ℕ) :
             (G.activeVertices.map fun v => ((G.outdeg v - 1).factorial : ℤ)).prod =
               ((∏ v : {v // v ∈ G.activeVertices},
                 ((Finset.univ.filter fun e => srcAct e = v).card - 1).factorial : ℕ) : ℤ) := by
-          rw [prod_map_eq_prod_fin, Nat.cast_prod, ← Equiv.prod_comp eAct]
+          rw [List.prod_map_eq_prod_fin, Nat.cast_prod, ← Equiv.prod_comp eAct]
           refine Finset.prod_congr rfl fun i _ => ?_
           have hi : (eAct i).1 = G.activeVertices[i] := rfl
           rw [card_fin_filter_subtype_eq Prod.fst (fun e h => (harcs e h).1) (eAct i), hi]

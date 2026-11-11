@@ -23,8 +23,6 @@ Shared bridge between list-tabulated integer matrices evaluated by
   matrix indexed by any type in bijection with the vertex list.
 * `Cslib.Complexity.detRows_filter_ne_eq`: `detRows` after filtering out a root vertex `r` equals
   the reduced submatrix determinant at `r`.
-* `Cslib.Complexity.prod_map_eq_prod_fin`, `Cslib.Complexity.sum_map_eq_sum_fin`: list map
-  product and sum rewritten as `Fin` big operators.
 * `Cslib.Complexity.Graph.vertexEquiv_getElem`: `G.vertexEquiv` indexing equation.
 * `Cslib.Complexity.computableInPolyTime_filter_ne`: filtering a vertex list to omit a computed
   vertex runs in polynomial time.
@@ -98,15 +96,6 @@ theorem detRows_filter_ne_equiv_eq {vs : List ℕ} (hnd : vs.Nodup)
   rw [detRows_filter_ne_eq hnd hr (M.submatrix e e) entry fun u v hu hv => by
     simpa only [Matrix.submatrix_apply] using hM u v hu hv]
   exact Matrix.det_submatrix_equiv_self eSub (M.submatrix Subtype.val Subtype.val)
-
-/-- Rewrite the product of a function mapped over a list as a `Finset.prod` over `Fin xs.length`. -/
-@[to_additive
-  /-- Rewrite the sum of a function mapped over a list as a `Finset.sum` over `Fin xs.length`. -/]
-theorem prod_map_eq_prod_fin {α β : Type*} [CommMonoid β] (xs : List α) (f : α → β) :
-    (xs.map f).prod = ∏ i : Fin xs.length, f xs[i] := by
-  rw [← Fin.prod_univ_getElem (xs.map f)]
-  refine Finset.prod_equiv (Fin.castOrderIso (List.length_map f)).toEquiv (by simp) fun i _ => ?_
-  simp
 
 /-- Indexing equivalence `G.vertexEquiv` evaluates to `G.distinctVertices[i]`. -/
 theorem Graph.vertexEquiv_getElem (G : Graph) (i : Fin G.distinctVertices.length) :

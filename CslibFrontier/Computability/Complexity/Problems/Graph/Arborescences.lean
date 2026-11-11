@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.Graph.ReducedLaplacian
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.Multidigraph.Arborescence
+import CslibFrontier.Foundations.Data.List.OfFn
 
 /-!
 # Polynomial-time spanning in-arborescence counting
@@ -51,15 +52,6 @@ public section
 namespace Cslib.Complexity.Graph
 
 open Turing MultiTapeTM
-
-theorem card_fin_filter_getElem {α : Type*} (xs : List α) (p : α → Bool) :
-    (Finset.univ.filter fun i : Fin xs.length => p xs[i] = true).card = xs.countP p := by
-  induction xs with
-  | nil => simp
-  | cons a l ih =>
-    simp only [Finset.card_filter, List.length_cons, Fin.sum_univ_succ, List.countP_cons, ← ih,
-      add_comm]
-    cases hpa : p a <;> simp [hpa]
 
 private theorem card_filter_fst_eq_sum_snd {V E : Type*} [Fintype V] [DecidableEq V] [Fintype E]
     (src tgt : E → V) (u : V) :
@@ -134,7 +126,7 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
             (Finset.univ.filter fun i : Fin G.distinctVertices.length =>
               (decide (G.distinctVertices[i] ≠ u.1) &&
                 G.2.any fun e => decide (e.1 = u.1 ∧ e.2 = G.distinctVertices[i])) = true).card :=
-        (card_fin_filter_getElem G.distinctVertices _).symm
+        List.countP_eq_card_filter_getElem G.distinctVertices _
       rw [hcard, Nat.cast_inj]
       refine Finset.card_bij (fun i _ => G.vertexEquiv i) ?_ ?_ ?_
       · intro i hi
@@ -295,13 +287,13 @@ private lemma multiLaplacianEntry_eq {mem : ℕ → Prop} [Fintype {v // mem v}]
         (f := fun w : {v // mem v} => (Finset.univ.filter fun e => src e = u ∧ tgt e = w).card)
         (fun _ _ => Nat.zero_le _) (Finset.mem_univ u)
     rw [← Nat.cast_sub hle, ← card_filter_fst_eq_sum_snd src tgt u, Nat.cast_inj,
-      ← card_fin_filter_getElem]
+      List.countP_eq_card_filter_getElem]
     congr 1
     ext i
     simp [src, tgt, Subtype.ext_iff]
   · have hne : u.1 ≠ v.1 := fun h => huv (Subtype.ext h)
     simp only [multiLaplacianEntry, hne, ↓reduceIte, huv, Multidigraph.arcMatrix_apply, zero_sub,
-      neg_inj, Nat.cast_inj, ← card_fin_filter_getElem]
+      neg_inj, Nat.cast_inj, List.countP_eq_card_filter_getElem]
     congr 1
     ext i
     simp [src, tgt, Subtype.ext_iff]
