@@ -1292,6 +1292,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Tran
 public import CslibFrontier.Computability.Circuit.Boolean.Word
 public import CslibFrontier.Computability.Circuit.Boolean.Word.Rewire
 public import CslibFrontier.Computability.Circuit.Boolean.XorLemma
+public import CslibFrontier.Computability.Circuit.Boolean.XorPowerListSize
 public import CslibFrontier.Computability.Circuit.Boolean.Yablonskii
 public import CslibFrontier.Computability.Circuit.Clique
 public import CslibFrontier.Computability.Circuit.Complexity
@@ -4842,6 +4843,8 @@ public import CslibFrontier.Foundations.Data.BitString.Propagation
 public import CslibFrontier.Foundations.Data.BitString.ShortMembers
 public import CslibFrontier.Foundations.Data.BitString.ShortWords
 public import CslibFrontier.Foundations.Data.BitString.Sign
+public import CslibFrontier.Foundations.Data.BitString.Sign.BigOperators
+public import CslibFrontier.Foundations.Data.BitString.SignWord
 public import CslibFrontier.Foundations.Data.BitString.Sum
 public import CslibFrontier.Foundations.Data.BitString.Support
 public import CslibFrontier.Foundations.Data.BitString.Threshold
@@ -4853,6 +4856,7 @@ public import CslibFrontier.Foundations.Data.Code.AsymptoticallyGood
 public import CslibFrontier.Foundations.Data.Code.BallVolume
 public import CslibFrontier.Foundations.Data.Code.Basic
 public import CslibFrontier.Foundations.Data.Code.BerlekampWelch
+public import CslibFrontier.Foundations.Data.Code.BinaryJohnson
 public import CslibFrontier.Foundations.Data.Code.Concatenation
 public import CslibFrontier.Foundations.Data.Code.EliasBassalygo
 public import CslibFrontier.Foundations.Data.Code.ExpanderCode
