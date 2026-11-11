@@ -842,6 +842,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 
 Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *Proceedings of the 36th Annual Symposium on Foundations of Computer Science (FOCS 1995)*, 538–545. DOI: [10.1109/SFCS.1995.492584](https://doi.org/10.1109/SFCS.1995.492584). Bibliographic metadata only; the paper itself was not inspected, and its statement is cited as recalled in [Holenstein 2005](#holenstein05), Section 2.
 
+<a id="impagliazzojaiswalkabanetswigderson10"></a>
+## impagliazzojaiswalkabanetswigderson10
+
+Russell Impagliazzo, Ragesh Jaiswal, Valentine Kabanets and Avi Wigderson. *Uniform Direct Product Theorems: Simplified, Optimized, and Derandomized*. SIAM Journal on Computing 39(4), 1637–1665, 2010. DOI: [10.1137/080734030](https://doi.org/10.1137/080734030) (as reported by search; not resolved). The authors' preprint dated 2009-10-19 (https://www.math.ias.edu/~avi/PUBLICATIONS/ImpagliazzoJaKaWi2010.pdf) was inspected on 2026-11-11: Theorem 1.2 (the decoder that CIKK cite as their Theorem 4.1), Algorithms 1–2, Theorem 3.2 and Lemmas 2.11–2.14 and 3.8–3.12. Locators follow the preprint; the journal numbering is unchecked.
+
 <a id="impagliazzowigderson97"></a>
 ## impagliazzowigderson97
 
