@@ -148,6 +148,7 @@ def chooseStep? {n} (S : State n) : Option StepChoice :=
       else some (.pairCreation G)
     else none
 
+/-- The dense `XORSAT` row of width `m` of the equation `∑ terms = c`. -/
 def toDenseRow (m : ℕ) (terms : Finset ℕ) (c : Bool) : Row :=
   ⟨(List.range m).map (fun i => decide (i ∈ terms)), c⟩
 
@@ -156,6 +157,8 @@ of the dense `XORSAT` systems built by `evaluateAux`. -/
 def varBound {n} (S : State n) : ℕ :=
   (S.params ∪ S.aux).sup id + 1
 
+/-- The value of `a` in the solution of the affine system of `S` extending the parameter values
+`val`: `false` exactly when the system together with `a = false` is satisfiable. -/
 def evaluateAux {n} (S : State n) (a : ℕ) (val : ℕ → Bool) : Bool :=
   let N := varBound S
   let sys : System := (S.eqns.sort (· ≤ ·)).map fun e =>
@@ -166,6 +169,8 @@ def evaluateAux {n} (S : State n) (a : ℕ) (val : ℕ → Bool) : Bool :=
   let F : System := sys ++ paramSys ++ aSys
   if Cslib.Complexity.XORSAT.Dense.decide ⟨N, F⟩ then false else true
 
+/-- The affine representation `(c, T)` of `a` in the parameters, read off from `evaluateAux` at
+the zero assignment and at the unit assignments. -/
 def findAffineRep {n} (S : State n) (a : ℕ) : Bool × Finset ℕ :=
   let c := evaluateAux S a (fun _ => false)
   let T := S.params.filter fun y => evaluateAux S a (fun j => j == y) != c
@@ -285,11 +290,14 @@ def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
       | none => S
     | _, _ => S
 
+/-- Whether `x` is the first member of a pair of `S`. -/
 def isFstOfAnyPair {n} (S : State n) (x : ℕ) : Bool :=
   match findPair S x with
   | some pr => decide (pr.fst = x)
   | none => false
 
+/-- The parameter values of a terminal state used by `findCounterexample`: first members of pairs
+take their bias, the parameters of `d_params` read `A`, and the others are `false`. -/
 def terminalVal {n} (S : State n) (d_params : List ℕ) (A : List Bool) (x : ℕ) : Bool :=
   match findPair S x with
   | some pr => if pr.fst = x then pr.fstBias else
@@ -303,16 +311,19 @@ def terminalVal {n} (S : State n) (d_params : List ℕ) (A : List Bool) (x : ℕ
 
 
 
+/-- The measure decreased by every step of the refuter. -/
 def refuterMeasure {n} (S : State n) : ℕ :=
   4 * (S.m + S.s) + 3 * S.gates.card + S.a +
     if h : S.gates.Nonempty then S.auxIn (S.gates.min' h) else 0
 
+/-- All Boolean lists of length `m`. -/
 def allAssignments : ℕ → List (List Bool)
   | 0 => [[]]
   | m + 1 => let r := allAssignments m; r.map (false :: ·) ++ r.map (true :: ·)
 
-def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool) (d : ℕ)
-    (S : State n) : Option (BitString n) :=
+/-- Search the `2^d` assignments of a terminal state for an input on which `C` and `f` disagree. -/
+def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool)
+    (d : ℕ) (S : State n) : Option (BitString n) :=
   match S.out.arg with
   | .const _b =>
     let F := (S.params.sort (· ≤ ·)).filter (fun x => !(isFstOfAnyPair S x))
@@ -365,6 +376,7 @@ def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitStri
         if C.eval fullInterpretation x_vec 0 != f x_vec then some x_vec else none
     else none
 
+/-- Apply refuter steps until a terminal state is reached or `fuel` runs out. -/
 def refuterLoop {n} (S : State n) (fuel : ℕ) : State n :=
   match fuel with
   | 0 => S
@@ -373,6 +385,8 @@ def refuterLoop {n} (S : State n) (fuel : ℕ) : State n :=
     | some choice => refuterLoop (applyStep S choice) fuel'
     | none => S
 
+/-- The refuter: run gate elimination from the initial state of `C`, then search the terminal state
+for an input on which `C` and `f` disagree. -/
 def refute {n d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
     (f : BitString n → Bool) : BitString n :=
   let S_init := initialState C

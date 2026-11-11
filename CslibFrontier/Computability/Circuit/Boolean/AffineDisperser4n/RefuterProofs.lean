@@ -75,7 +75,7 @@ private theorem exists_findPair {S : State n} (hS : S.Valid f) {p : ℕ} (hp : S
   obtain ⟨pr, hpr, hc⟩ := hp
   exact Option.isSome_iff_exists.1 (findPair_isSome hS hpr hc)
 
-/-- In a valid state, `findPair S p = none` exactly when `p` is unpaired. -/
+/-- In a valid state, a parameter for which `findPair` finds nothing is unpaired. -/
 theorem findPair_eq_none {S : State n} (hS : S.Valid f) {p : ℕ} (h : findPair S p = none) :
     ¬ S.Paired p := fun hp => by
   obtain ⟨pr, hpr⟩ := exists_findPair hS hp
@@ -247,24 +247,24 @@ theorem chooseStep?_spec {S : State n} {c : StepChoice} (h : chooseStep? S = som
 
 /-! ### Consequences of failed searches -/
 
-theorem findD1_eq_some {S : State n} {J : ℕ} (h : findD1 S = some J) :
+private theorem findD1_eq_some {S : State n} {J : ℕ} (h : findD1 S = some J) :
     J ∈ S.gates ∧ (S.gate J).Degenerate := by
   obtain ⟨hJ, hd⟩ := find?_sort_eq_some h
   exact ⟨hJ, (isDegenerate_iff _).1 hd⟩
 
-theorem findD1_eq_none {S : State n} (h : findD1 S = none) :
+private theorem findD1_eq_none {S : State n} (h : findD1 S = none) :
     ∀ J ∈ S.gates, ¬ (S.gate J).Degenerate := fun J hJ hd => by
   have := find?_sort_eq_none h J hJ
   rw [(isDegenerate_iff _).2 hd] at this
   cases this
 
-theorem findD2_eq_some {S : State n} {J : ℕ} (h : findD2 S = some J) :
+private theorem findD2_eq_some {S : State n} {J : ℕ} (h : findD2 S = some J) :
     J ∈ S.gates ∧ (∀ K ∈ S.gates, ¬ (S.gate K).Reads J) ∧ ¬ S.out.Reads J := by
   obtain ⟨hJ, hd⟩ := find?_sort_eq_some h
   simp only [decide_eq_true_eq] at hd
   exact ⟨hJ, hd.1, hd.2⟩
 
-theorem findD2_eq_none {S : State n} (h : findD2 S = none) :
+private theorem findD2_eq_none {S : State n} (h : findD2 S = none) :
     ∀ J ∈ S.gates, (∃ K ∈ S.gates, (S.gate K).Reads J) ∨ S.out.Reads J := fun J hJ => by
   have := find?_sort_eq_none h J hJ
   simp only [decide_eq_false_iff_not, not_and, not_not] at this
@@ -273,18 +273,18 @@ theorem findD2_eq_none {S : State n} (h : findD2 S = none) :
   · push Not at hK
     exact Or.inr (this hK)
 
-theorem findD3_eq_some {S : State n} {e : ℕ} (h : findD3 S = some e) :
+private theorem findD3_eq_some {S : State n} {e : ℕ} (h : findD3 S = some e) :
     e ∈ S.eqns ∧ (S.eqn e).terms.card ≤ 2 := by
   obtain ⟨he, hd⟩ := find?_sort_eq_some h
   exact ⟨he, by simpa using hd⟩
 
-theorem findD3_eq_none {S : State n} (h : findD3 S = none) :
+private theorem findD3_eq_none {S : State n} (h : findD3 S = none) :
     ∀ e ∈ S.eqns, 2 < (S.eqn e).terms.card := fun e he => by
   have := find?_sort_eq_none h e he
   simp only [decide_eq_false_iff_not, not_le] at this
   exact this
 
-theorem findD4_eq_some {S : State n} {x e : ℕ} (h : findD4 S = some (x, e)) :
+private theorem findD4_eq_some {S : State n} {x e : ℕ} (h : findD4 S = some (x, e)) :
     x ∈ S.unpaired ∧ ¬ S.out.Reads x ∧ e ∈ S.eqns ∧ S.children x = {.inr e} := by
   obtain ⟨x', hx', hg⟩ := findSome?_sort_eq_some h
   split_ifs at hg with hout
@@ -293,7 +293,7 @@ theorem findD4_eq_some {S : State n} {x e : ℕ} (h : findD4 S = some (x, e)) :
   cases hg'
   exact ⟨hx', hout, he', hch⟩
 
-theorem findD4_eq_none {S : State n} (h : findD4 S = none) :
+private theorem findD4_eq_none {S : State n} (h : findD4 S = none) :
     ∀ x ∈ S.unpaired, ¬ S.out.Reads x → ∀ e ∈ S.eqns, S.children x ≠ {.inr e} :=
   fun x hx hout e he hch => by
     have := findSome?_sort_eq_none h x hx
@@ -302,7 +302,7 @@ theorem findD4_eq_none {S : State n} (h : findD4 S = none) :
     have := findSome?_sort_eq_none this e he
     simp [hch] at this
 
-theorem findMovable_eq_some {S : State n} {J : ℕ} (h : findMovable S = some J) :
+private theorem findMovable_eq_some {S : State n} {J : ℕ} (h : findMovable S = some J) :
     J ∈ S.gates ∧ IsAffineOp (S.gate J).op ∧ ∀ i, (S.gate J).Reads i → i ∉ S.gates := by
   obtain ⟨hJ, hd⟩ := find?_sort_eq_some h
   simp only [Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true'] at hd
@@ -312,19 +312,20 @@ theorem findMovable_eq_some {S : State n} {J : ℕ} (h : findMovable S = some J)
   · rw [hi] at hl; simp [isGate, hig] at hl
   · rw [hi] at hr; simp [isGate, hig] at hr
 
-theorem findMovable_eq_none {S : State n} (h : findMovable S = none) :
+private theorem findMovable_eq_none {S : State n} (h : findMovable S = none) :
     ∀ J ∈ S.gates, IsAffineOp (S.gate J).op → isGate S (S.gate J).left = true ∨
       isGate S (S.gate J).right = true := fun J hJ haff => by
   have := find?_sort_eq_none h J hJ
   simp only [Bool.and_eq_false_iff, decide_eq_false_iff_not, Bool.not_eq_false'] at this
   tauto
 
-theorem findDegeneratePair_eq_some {S : State n} {p : ℕ} (h : findDegeneratePair S = some p) :
+private theorem findDegeneratePair_eq_some {S : State n} {p : ℕ}
+    (h : findDegeneratePair S = some p) :
     S.Paired p ∧ (S.deg p = 0 ∨ 2 ≤ S.deg p) := by
   obtain ⟨-, hd⟩ := find?_sort_eq_some h
   simpa using hd
 
-theorem findDegeneratePair_eq_none {S : State n} (hS : S.Valid f)
+private theorem findDegeneratePair_eq_none {S : State n} (hS : S.Valid f)
     (h : findDegeneratePair S = none) : ¬ S.DegeneratePair := by
   intro hdp
   obtain ⟨p, hp, hd⟩ := hdp
@@ -332,13 +333,13 @@ theorem findDegeneratePair_eq_none {S : State n} (hS : S.Valid f)
   simp only [decide_eq_false_iff_not] at this
   exact this ⟨hp, hd⟩
 
-theorem findPartnersShareChild_eq_some {S : State n} {p : ℕ}
+private theorem findPartnersShareChild_eq_some {S : State n} {p : ℕ}
     (h : findPartnersShareChild S = some p) :
     ∃ pr ∈ S.pairs, pr.fst = p ∧ (S.children pr.fst ∩ S.children pr.snd).Nonempty := by
   obtain ⟨-, hd⟩ := find?_sort_eq_some h
   simpa using hd
 
-theorem findPartnersShareChild_eq_none {S : State n} (hS : S.Valid f)
+private theorem findPartnersShareChild_eq_none {S : State n} (hS : S.Valid f)
     (h : findPartnersShareChild S = none) : ¬ S.PartnersShareChild := by
   intro hpsc
   obtain ⟨pr, hpr, hsh⟩ := hpsc
@@ -346,19 +347,19 @@ theorem findPartnersShareChild_eq_none {S : State n} (hS : S.Valid f)
   simp only [decide_eq_false_iff_not] at this
   exact this ⟨pr, hpr, rfl, hsh⟩
 
-theorem findPairInSystem_eq_some {S : State n} {p : ℕ} (h : findPairInSystem S = some p) :
+private theorem findPairInSystem_eq_some {S : State n} {p : ℕ} (h : findPairInSystem S = some p) :
     S.Paired p ∧ ∃ e ∈ S.eqns, p ∈ (S.eqn e).terms := by
   obtain ⟨-, hd⟩ := find?_sort_eq_some h
   simpa using hd
 
-theorem findPairInSystem_eq_none {S : State n} (hS : S.Valid f)
+private theorem findPairInSystem_eq_none {S : State n} (hS : S.Valid f)
     (h : findPairInSystem S = none) {p e : ℕ} (he : e ∈ S.eqns)
     (hpe : p ∈ (S.eqn e).terms) : ¬ S.Paired p := fun hp => by
   have := find?_sort_eq_none h p (hS.mem_params_of_paired hp)
   simp only [decide_eq_false_iff_not] at this
   exact this ⟨hp, e, he, hpe⟩
 
-theorem findAndOnPair_eq_some {S : State n} {G p : ℕ} (h : findAndOnPair S = some (G, p)) :
+private theorem findAndOnPair_eq_some {S : State n} {G p : ℕ} (h : findAndOnPair S = some (G, p)) :
     G ∈ S.gates ∧ ¬ IsAffineOp (S.gate G).op ∧ S.Paired p ∧ ∃ w, p ≠ w ∧ p ∈ S.params ∧
       w ∈ S.params ∧ (S.gate G).Reads p ∧ (S.gate G).Reads w ∧ otherArg (S.gate G) p = w := by
   obtain ⟨G', hG', hg⟩ := findSome?_sort_eq_some h
@@ -377,7 +378,7 @@ theorem findAndOnPair_eq_some {S : State n} {G p : ℕ} (h : findAndOnPair S = s
     simp only [otherArg, hl, hr]
     exact ite_eq_right hc.1
 
-theorem findAndOnPair_eq_none {S : State n} (h : findAndOnPair S = none) {G p w : ℕ}
+private theorem findAndOnPair_eq_none {S : State n} (h : findAndOnPair S = none) {G p w : ℕ}
     (hG : G ∈ S.gates) (hna : ¬ IsAffineOp (S.gate G).op) (hl : (S.gate G).left = .node p)
     (hr : (S.gate G).right = .node w) (hpw : p ≠ w) (hp : p ∈ S.params) (hw : w ∈ S.params) :
     ¬ S.Paired p ∧ ¬ S.Paired w := by
@@ -726,7 +727,7 @@ private theorem refuterStep_swapAuxIn {S : State n} (hS : S.Valid f) (hD1 : find
         Valid.preparation_swap_auxIn_of hS hne hab hGa hGb ha haff hy'T hy'.1 hy'.2
       exact Or.inr ⟨hprep, Or.inr ⟨hgeq, hne, hlt⟩⟩
 
-/-- The AND form `((a ^^ α) && (b ^^ β)) ^^ γ` of a non-affine operation used by pair creation. -/
+/-- The AND form `((a ^^ α) && (b ^^ β)) ^^ γ` of a non-affine operation (pair creation). -/
 private theorem and_form_spec {op : Bool → Bool → Bool} (h : ¬ IsAffineOp op) (x y : Bool) :
     op x y = (((x ^^ decide (op true false = op true true)) &&
       (y ^^ decide (op false true = op true true))) ^^
@@ -809,6 +810,8 @@ theorem refuterStep_applyStep {S : State n} (hS : S.Valid f) {c : StepChoice}
 
 /-! ### Main theorems -/
 
+/-- Every step chosen by the refuter lowers `refuterMeasure`, keeps validity, does not increase
+`a`, and satisfies `ΔW ≤ 10 Δa`. -/
 theorem applyStep_valid {n} {f : BooleanFunction n} {S : State n} (hS : S.Valid f)
     (choice : StepChoice) (hchoice : chooseStep? S = some choice) :
     refuterMeasure (applyStep S choice) < refuterMeasure S ∧
@@ -817,6 +820,8 @@ theorem applyStep_valid {n} {f : BooleanFunction n} {S : State n} (hS : S.Valid 
     (applyStep S choice).a ≤ S.a :=
   (refuterStep_applyStep hS hchoice).spec
 
+/-- Running the refuter loop from a valid state with fuel at least `refuterMeasure S` ends in a
+terminal valid state, with `ΔW ≤ 10 Δa` and `a` not increased. -/
 theorem refuterLoop_valid {n} {f : BooleanFunction n} {S : State n}
     (hS : S.Valid f) (fuel : ℕ) (hfuel : refuterMeasure S ≤ fuel) :
     chooseStep? (refuterLoop S fuel) = none ∧
@@ -840,6 +845,8 @@ theorem refuterLoop_valid {n} {f : BooleanFunction n} {S : State n}
       simp only [refuterLoop, hc]
       exact ⟨h1, h2, by omega, by omega⟩
 
+/-- The refuter finds an input on which a circuit of size `< 4n - 10d` disagrees with a
+`d`-affine disperser. -/
 theorem refute_correct {n d : ℕ} (C : Circuit (fullSignature 2 Bool) n 1)
     (f : BitString n → Bool) (hf : IsAffineDisperser f d)
     (hC : C.size + 10 * d < 4 * n) :
