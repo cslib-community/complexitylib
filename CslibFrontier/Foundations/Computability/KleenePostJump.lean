@@ -77,7 +77,7 @@ def haltsPredOpt (c : Nat.RecursiveIn.Code) (τ : List Bool) (x : ℕ) (e : ℕ)
   bif haltsPredDecide c τ x e then Option.some e else Option.none
 
 /-- Uncurried form of `haltsPredOpt` for primitive recursion combinators. -/
-def haltsPredOpt_all (p : Nat.RecursiveIn.Code × List Bool × ℕ) (e : ℕ) : Option ℕ :=
+def haltsPredOptAll (p : Nat.RecursiveIn.Code × List Bool × ℕ) (e : ℕ) : Option ℕ :=
   let (c, τ, x) := p
   haltsPredOpt c τ x e
 
@@ -110,8 +110,8 @@ private lemma primrec_evaln_eq_all :
       simp [h_eval]
     rfl
 
-/-- `haltsPredOpt_all` is primitive recursive. -/
-lemma primrec_haltsPredOpt_all : Primrec₂ haltsPredOpt_all := by
+/-- `haltsPredOptAll` is primitive recursive. -/
+lemma primrec_haltsPredOptAll : Primrec₂ haltsPredOptAll := by
   have hp1 : PrimrecPred (fun (q : (Nat.RecursiveIn.Code × List Bool × ℕ) × List Bool × ℕ × ℕ) =>
       q.1.2.1 <+: q.2.1) :=
     PrimrecRel.comp list_isPrefix (fst.comp (snd.comp fst)) (fst.comp snd)
@@ -166,11 +166,11 @@ lemma halts_iff_haltsPredOpt_dom (c : Nat.RecursiveIn.Code) (τ : List Bool) (x 
     · simp [h] at he
     · exact ⟨e, (haltsPred_iff_haltsPredDecide c τ x e).mpr h⟩
 
-/-- Unbounded search over `haltsPredOpt_all` is partial recursive. -/
+/-- Unbounded search over `haltsPredOptAll` is partial recursive. -/
 lemma partrec_haltsPredOpt_rfindOpt :
     Partrec fun (p : Nat.RecursiveIn.Code × List Bool × ℕ) =>
-      Nat.rfindOpt (haltsPredOpt_all p) :=
-  Partrec.rfindOpt (Primrec₂.to_comp primrec_haltsPredOpt_all)
+      Nat.rfindOpt (haltsPredOptAll p) :=
+  Partrec.rfindOpt (Primrec₂.to_comp primrec_haltsPredOptAll)
 
 /-- The halting question `Halts c τ x` reduces primitive-recursively to `halting`. -/
 lemma halts_reducibleTo_halting :
@@ -389,7 +389,7 @@ private lemma primrec_stepSearchOpt : Primrec₂ stepSearchOpt := by
     primrec_halts_eq_one.comp fst
   have h_pred : _root_.Primrec (fun q : ℕ × ℕ =>
       haltsPredOpt (stepArgs q.1).1 (stepArgs q.1).2.1 (stepArgs q.1).2.2 q.2) :=
-    primrec_haltsPredOpt_all.comp (primrec_stepArgs.comp fst) snd
+    primrec_haltsPredOptAll.comp (primrec_stepArgs.comp fst) snd
   exact (_root_.Primrec.cond h_halts h_pred (_root_.Primrec.const (Option.some 0))).of_eq
     fun ⟨p, e⟩ => by
       dsimp [stepSearchOpt]
