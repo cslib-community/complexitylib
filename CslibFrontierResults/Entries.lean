@@ -133,6 +133,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -2527,6 +2528,35 @@ register_result "natural-proofs" where
     P/poly-natural property is useful against P/poly. The generator tests are nonuniform \
     circuits reading the 2k-bit outputs; the barrier's derived tests read whole truth tables \
     of the GGM keyed family. The generator family is a hypothesis, not a constructed object."
+
+register_result "nw-reconstruction-learner" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
+    membership-query weak learner, one run"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 2.11",
+      locator := "Section 2.4" },
+    { paper := NisanWigderson1994, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.nwLearner_learns_of_dens,
+    Cslib.MachineLearning.UniformLearning.nwLearner_learns,
+    Cslib.MachineLearning.UniformLearning.div_two_mul_le_dens_uniformError_nwLearner_le,
+    Cslib.MachineLearning.UniformLearning.nwLearner_queriesAtMost,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_nwLearner_le
+  ]
+  scope := "One run of the reconstruction, in a library form. For an (l, n, a)-design with m > 0 \
+    blocks and a deterministic test accepting at least a delta fraction of m-bit strings but \
+    no output of the generator of any f in the class, the learner built from the negated test \
+    learns the class under the uniform distribution with membership queries, error \
+    1/2 - delta/(2m) and success probability delta/(2m) over a uniform trial. This is the \
+    delta-dense natural-property case; nwLearner_learns covers a distinguisher of any \
+    advantage eps, where the source takes advantage above 1/5, and advantage eps/(2m) \
+    replaces 1/L (the source's L is the output length m). It makes at most \
+    m 2^a queries, and every hypothesis has De Morgan circuit size at most that of the test \
+    plus m (2^a (2a + 3) + 1) + 1. The running time of the learner is not certified. Repeating \
+    poly(m) runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is not \
+    part of this entry."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"

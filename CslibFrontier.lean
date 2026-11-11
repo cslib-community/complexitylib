@@ -4211,6 +4211,7 @@ public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.BitPolynomial
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Circuit
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Derandomization
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Design
+public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Queries
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Reconstruction
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Sampling
 public import CslibFrontier.Crypto.Protocols.BCS.Basic
@@ -5986,6 +5987,7 @@ public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses
 public import CslibFrontier.MachineLearning.UniformLearning.MembershipQuery
+public import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 public import CslibFrontier.Privacy.DifferentialPrivacy.AboveThreshold
 public import CslibFrontier.Privacy.DifferentialPrivacy.AdvancedComposition
 public import CslibFrontier.Privacy.DifferentialPrivacy.Basic
