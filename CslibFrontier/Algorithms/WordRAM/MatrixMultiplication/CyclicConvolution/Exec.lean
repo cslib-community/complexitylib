@@ -81,28 +81,15 @@ theorem exec {w p A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
     have hmem : z.mem = Function.update y.mem (x.regs Reg.output + y.regs Reg.coefficient)
         (encode (convolution p u v (y.regs Reg.coefficient))) := by
       simpa only [hro] using hzmem
-    refine ⟨z, hz, ⟨?_, ?_, ?_, ?_⟩, hzrow⟩
-    · intro i hip
-      have hpi : 9 ≤ i.val ∧ (i.val ≤ 12 ∨ 18 ≤ i.val) := by
-        rcases hip with h | h
-        · exact ⟨h.1, Or.inl h.2⟩
-        · exact ⟨by omega, Or.inr (by omega)⟩
-      exact (hzregs i hpi).trans (hregs i hip)
-    · exact (hzregs Reg.one (by decide)).trans h1
-    · intro r hri
-      rw [hmem]
-      by_cases he : r = y.regs Reg.coefficient
-      · subst r
-        simp
-      · rw [Function.update_of_ne (by omega)]
-        exact hvalues r (by omega)
-    · intro a ha'
-      have hne : a ≠ x.regs Reg.output + y.regs Reg.coefficient := by omega
-      rw [hmem, Function.update_of_ne hne]
-      apply hframe
-      intro h
-      apply ha'
-      omega
+    obtain ⟨hvalues', hframe'⟩ :=
+      prefix_write_step (e := fun r => encode (convolution p u v r)) hvalues hframe hmem
+    refine ⟨z, hz, ⟨?_, (hzregs Reg.one (by decide)).trans h1, hvalues', hframe'⟩, hzrow⟩
+    intro i hip
+    have hpi : 9 ≤ i.val ∧ (i.val ≤ 12 ∨ 18 ≤ i.val) := by
+      rcases hip with h | h
+      · exact ⟨h.1, Or.inl h.2⟩
+      · exact ⟨by omega, Or.inr (by omega)⟩
+    exact (hzregs i hpi).trans (hregs i hip)
   let x₀ := (x.set Reg.coefficient 0).set Reg.one 1
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
   have hinit : ExecWithin (B := .standard) (w + 2)
