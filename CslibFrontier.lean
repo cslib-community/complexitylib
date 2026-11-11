@@ -2486,6 +2486,7 @@ public import CslibFrontier.Computability.Kolmogorov.SelfDelimiting
 public import CslibFrontier.Computability.Kolmogorov.SingleTape
 public import CslibFrontier.Computability.Kolmogorov.SymmetryOfInformation
 public import CslibFrontier.Computability.Kolmogorov.TimeBounded
+public import CslibFrontier.Computability.Kolmogorov.TimeBounded.Counting
 public import CslibFrontier.Computability.Kolmogorov.Uncomputability
 public import CslibFrontier.Computability.Languages.ChomskyNormalForm
 public import CslibFrontier.Computability.Languages.RegularLanguage
