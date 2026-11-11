@@ -576,14 +576,8 @@ theorem binomialRandom_real_forall_not_isIsolated_and_not_connected_le [Fintype 
 
 private theorem tendsto_zero_of_nonneg_of_sq_tendsto_zero {f : ℕ → ℝ} (hf : ∀ n, 0 ≤ f n)
     (hsq : Tendsto (fun n => f n ^ 2) atTop (𝓝 0)) : Tendsto f atTop (𝓝 0) := by
-  rw [Metric.tendsto_atTop] at hsq ⊢
-  intro ε hε
-  obtain ⟨N, hN⟩ := hsq (ε ^ 2) (sq_pos_of_pos hε)
-  refine ⟨N, fun n hn => ?_⟩
-  have hlt : f n ^ 2 < ε ^ 2 := by
-    simpa [Real.dist_eq, abs_of_nonneg (sq_nonneg (f n))] using hN n hn
-  have hf_lt : f n < ε := lt_of_pow_lt_pow_left₀ 2 hε.le hlt
-  simpa [Real.dist_eq, abs_of_nonneg (hf n)] using hf_lt
+  have h := Filter.Tendsto.sqrt hsq
+  simpa [Real.sqrt_sq (hf _)] using h
 
 /-- At the connectivity threshold `n p(n) - log n → c`, the probability that `G(Fin n, p n)` has
 no isolated vertices yet is disconnected tends to `0`. -/
