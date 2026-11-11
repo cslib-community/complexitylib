@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.Lean.DFS.SCC
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT
 import CslibFrontier.Algorithms.Lean.TimeM.Loops
+import CslibFrontier.Foundations.Data.List.Fold
 
 /-!
 # Linear-time 2-SAT via strongly connected components
@@ -86,7 +87,7 @@ def checkClausesM (φ : CNF V) : TimeM ℕ Bool :=
 
 theorem checkClauses_eq_true_iff (φ : CNF V) :
     checkClauses φ = true ↔ (∀ c ∈ φ, c.length ≤ 2) ∧ [] ∉ φ := by
-  rw [checkClauses, List.foldl_and_eq_and_all, Bool.true_and, List.all_eq_true]
+  rw [checkClauses, foldl_and_eq_and_all, Bool.true_and, List.all_eq_true]
   simp only [isValidTwoClause]
   constructor
   · intro h
@@ -432,7 +433,7 @@ theorem solve_eq_some (hvs : ∀ v, v ∈ vs) {σ : V → Bool} (h : solve vs φ
     · injection h with hσ
       subst hσ
       have hdist_all : ∀ v, compIdx (v, true) ≠ compIdx (v, false) := by
-        rw [List.foldl_and_eq_and_all, Bool.true_and, List.all_eq_true] at hdist
+        rw [foldl_and_eq_and_all, Bool.true_and, List.all_eq_true] at hdist
         exact fun v => of_decide_eq_true (hdist v (hvs v))
       refine ⟨hw, (CNF.eval_eq_true_iff _ _).2 fun c hc => ?_⟩
       have hc2 : c.length ≤ 2 := hw c hc
@@ -505,7 +506,7 @@ theorem isSome_solve_iff (hvs : ∀ v, v ∈ vs) :
                 (indexComponents (sccs (implicationAdj φ) (literalList vs)) (v, true) ≠
                   indexComponents (sccs (implicationAdj φ) (literalList vs)) (v, false)))
             true = true := by
-      rw [List.foldl_and_eq_and_all, Bool.true_and, List.all_eq_true]
+      rw [foldl_and_eq_and_all, Bool.true_and, List.all_eq_true]
       intro v _
       refine decide_eq_true fun heq => ?_
       obtain ⟨h₁, h₂⟩ := (hcond.indexComponents_eq_iff (v, true) (v, false)).1 heq

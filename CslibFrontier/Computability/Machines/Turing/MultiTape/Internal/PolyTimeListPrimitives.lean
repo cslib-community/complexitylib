@@ -7,6 +7,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
+import CslibFrontier.Foundations.Data.List.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.UnaryMachines
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Append
 
@@ -255,7 +256,7 @@ theorem allWithInput {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ Li
     (encB := encBool) (par := id) (list := list) (init := fun _ => true)
     (step := fun par state value => state && test par value)
     id' hlist (const true) hstep (PolyBounded.const 1) (by simp)
-  simpa only [List.foldl_and_eq_and_all, Bool.true_and, id_eq] using hfold
+  simpa only [foldl_and_eq_and_all, Bool.true_and, id_eq] using hfold
 
 /-- For a fixed list, only its members need callback certificates. The index type may live in
 any universe and needs neither an encoding nor a finite-type instance. -/
