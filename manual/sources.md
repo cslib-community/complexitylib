@@ -1177,6 +1177,11 @@ Moni Naor and Moti Yung. “Universal One-Way Hash Functions and their Cryptogra
 
 John Nash. "Non-Cooperative Games." *Annals of Mathematics* 54(2), 286–295, 1951. https://doi.org/10.2307/1969529 . Bibliographic data from the DOI record. Theorem 1 ("every finite game has an equilibrium point") and its proof by Brouwer's theorem were checked on printed p. 288 of the scan at https://www.cs.upc.edu/~ia/nash51.pdf during the agent review of [#4105](https://github.com/cslib-community/cslib-frontier/pull/4105) on 2026-11-10.
 
+<a id="nayakwu99"></a>
+## nayakwu99
+
+Ashwin Nayak and Felix Wu. *The Quantum Query Complexity of Approximating the Median and Related Statistics*. STOC '99, 384–393, 1999. https://doi.org/10.1145/301250.301349 ; open version arXiv:quant-ph/9804066v2, https://arxiv.org/abs/quant-ph/9804066v2 . Bibliographic metadata taken from `references.bib` (`NayakWu1999`). The arXiv v2 LaTeX source (`main.tex`) was inspected on 2026-11-11 UTC for the Section 1 problem definitions (`ε`-approximate median, `Δ`-approximate `k`-th smallest element with its relaxed input-membership remark, and `Δ`-approximate count), Theorem 1.5 (`Ω(√(n/Δ) + √(k(n-k))/Δ)` for `k`-th smallest), Corollary 1.6 (`Ω(1/ε)` and `Ω(min {1/ε, n})` for approximate median), Theorem 1.11 (`Ω(√(n/Δ) + √(t(n-t))/Δ)` for approximate counting), and the Section 2 partial-function reductions (`Proof of Theorem 1.5`). Nayak and Wu prove the underlying threshold bound by the polynomial method (Corollary 1.2); the library derives the reductions from `one_sub_mul_add_le_four_mul_mul_abs_sub_of_weight` ([AmbainisAdversary/WeightLayers](../CslibFrontier/Computability/QueryComplexity/Quantum/AmbainisAdversary/WeightLayers.lean)).
+
 <a id="nisan07"></a>
 ## nisan07
 
