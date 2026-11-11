@@ -711,6 +711,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
   Keep time, workspace and output-size bounds separate through composition, apply cumulative streaming contracts to captured iteration and nested loops, and develop general open-program composition.
 - **Certified PRG stretching** ([#2784](https://github.com/cslib-community/cslib-frontier/issues/2784)): Certify PRG stretching with seed length, rounds and generator cost kept separate.
   A related target is the adaptive arbitrary-word cipher with its hash-then-MAC/EtM construction ([#2749](https://github.com/cslib-community/cslib-frontier/issues/2749)).
+- **Disjoint-set forests** ([#3558](https://github.com/cslib-community/cslib-frontier/issues/3558)): The `O(log* n)` Hopcroft-Ullman amortized bound for union-by-rank with path compression.
 - **Mathlib TM2:** Sublinear work-space comparisons and a linear-space forward simulation.
 - **Single-tape lower bounds** ([#2884](https://github.com/cslib-community/cslib-frontier/issues/2884)): Crossing-sequence lower bounds for CSLib `SingleTapeTM` deciders, including the quadratic palindrome lower bound with a matching `O(n²)` single-tape decider.
   A linear-time multi-tape palindrome decider gives the one-tape/two-tape time separation.
