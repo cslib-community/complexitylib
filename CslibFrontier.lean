@@ -2113,6 +2113,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.LocalMapCountin
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Histogram
 public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.PolyTime
+public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Reduction
 public import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 public import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.AssignSL
 public import CslibFrontier.Computability.Complexity.FineGrained.PPSZ.Basic
@@ -5770,6 +5771,8 @@ public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Subpath
 public import CslibFrontier.Logics.Propositional.CSP.Edge.Walk.Visits
 public import CslibFrontier.Logics.Propositional.CSP.ExactlyOne
 public import CslibFrontier.Logics.Propositional.CSP.HardCore
+public import CslibFrontier.Logics.Propositional.CSP.MaxCSP
+public import CslibFrontier.Logics.Propositional.CSP.MaxCSPSampling
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence
 public import CslibFrontier.Logics.Propositional.CSP.Occurrence.Enumeration
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
