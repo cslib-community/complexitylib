@@ -86,4 +86,29 @@ theorem exists_oracleFormula_separating_approxMCSP {s₁ s₂ k : ℕ → ℕ} {
     refine ⟨OracleFormula.query (w j), fun h => hj ?_⟩
     exact (eval_query_succinctWord_eq_true_iff _ _ _ T).mp (h (List.mem_ofFn.mpr ⟨j, rfl⟩))
 
+/-- A truth-table word has power-of-two length. -/
+theorem exists_length_eq_two_pow_of_mem_truthTableLanguage {C : ∀ n, Set (BooleanFunction n)}
+    {w : List Bool} (hw : w ∈ truthTableLanguage C) : ∃ n, w.length = 2 ^ n := by
+  obtain ⟨n, h, -⟩ := hw
+  exact ⟨n, h⟩
+
+/-- Class form of the local Oliveira–Santhanam construction. -/
+theorem localFormulaClass_approxMCSP {s₁ s₂ k : ℕ → ℕ} (hk : ∀ n, 1 ≤ k n)
+    (hs : ∀ n, s₁ n ≤ s₂ n) :
+    LocalFormulaClass (fun m => m)
+      (fun m => approxMCSPQueryEncLength (Nat.log 2 m) (s₂ (Nat.log 2 m)) (k (Nat.log 2 m)))
+      (fun _ => 1)
+      (fun m => m * approxMCSPQueryEncLength (Nat.log 2 m) (s₂ (Nat.log 2 m)) (k (Nat.log 2 m)))
+      (GapMCSP.yesSet s₁) (ApproxMCSP.noSet s₂ k) := by
+  refine ⟨succinctMCSPOracle, fun m => ?_⟩
+  by_cases hm : ∃ n, m = 2 ^ n
+  · obtain ⟨n, rfl⟩ := hm
+    obtain ⟨E, hS, hq, hℓ, ha, hyes, hno⟩ :=
+      exists_oracleFormula_separating_approxMCSP (s₁ := s₁) (hk n) (hs n)
+    simp only [Nat.log_pow Nat.one_lt_two]
+    exact ⟨E, hS, hq, hℓ, ha, fun x hx => hyes x hx, fun x hx => hno x hx⟩
+  · refine ⟨OracleFormula.tt, by simp, by simp, by simp, by simp, fun x hx => ?_, fun x hx => ?_⟩
+    · exact absurd (by simpa using exists_length_eq_two_pow_of_mem_truthTableLanguage hx) hm
+    · exact absurd (by simpa using exists_length_eq_two_pow_of_mem_truthTableLanguage hx) hm
+
 end Cslib.Circuits.Boolean

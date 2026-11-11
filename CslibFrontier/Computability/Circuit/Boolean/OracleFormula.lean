@@ -323,7 +323,7 @@ answers `true` on the yes-instances and `false` on the no-instances of length `m
 
 Leaves are input leaves; constants are free. Paths ending at constants count too, so the adaptivity
 here is at least the source's, which counts only paths from inputs. -/
-def LocalFormulaClass (q ℓ a S : ℕ → ℕ) (Yes No : Language Bool) : Prop :=
+@[expose] def LocalFormulaClass (q ℓ a S : ℕ → ℕ) (Yes No : Language Bool) : Prop :=
   ∃ O : Language Bool, ∀ m, ∃ E : OracleFormula m,
     E.leafSize ≤ S m ∧ OracleFormula.queryCount E ≤ q m ∧ OracleFormula.maxQueryArity E ≤ ℓ m ∧
       OracleFormula.adaptivity E ≤ a m ∧
