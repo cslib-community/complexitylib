@@ -8,8 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.Data.Fintype.RestrictInjective
 import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Logic.Equiv.Set
 
 /-!
 # Truth tables read from a random string
@@ -27,8 +27,9 @@ is hit by `#S * 2 ^ p / 2 ^ (∑ v, 2 ^ ℓ v)` strings (`BitString.card_filter_
 This turns a count of bad families into a count of bad random strings, which is what a randomized
 reduction that samples functions from its random bits needs.
 
-The proof is the general fact that restricting functions along an injection has uniform fibers
-(`card_filter_comp_mem_mul`), applied to the positions of the tables (`BitString.tablePos`).
+The proof is the library's count of functions by a property of their restriction along an
+injection (`Nat.card_subtype_comp_injective_mul`), applied to the positions of the tables
+(`BitString.tablePos`).
 
 ## Main definitions
 
@@ -37,7 +38,6 @@ The proof is the general fact that restricting functions along an injection has 
 
 ## Main results
 
-* `Cslib.card_filter_comp_mem_mul`: restricting functions along an injection has uniform fibers.
 * `Cslib.BitString.card_functionTables`: there are `2 ^ (∑ v, 2 ^ ℓ v)` families of tables.
 * `Cslib.BitString.card_filter_decodeTables_mem_mul`: decoding a random string hits a set of
   families in proportion to its size.
@@ -47,39 +47,9 @@ The proof is the general fact that restricting functions along an injection has 
 
 public section
 
-namespace Cslib
+namespace Cslib.BitString
 
 open Finset
-
-/-- **Restricting functions along an injection has uniform fibers.** For an embedding
-`e : α ↪ β`, the functions `g : β → γ` whose restriction `g ∘ e` lies in a set `S` make up the
-same proportion of all functions `β → γ` as `S` does of all functions `α → γ`. -/
-theorem card_filter_comp_mem_mul {α β γ : Type*} [Fintype α] [DecidableEq α] [Fintype β]
-    [DecidableEq β] [Fintype γ] [DecidableEq γ] (e : α ↪ β) (S : Finset (α → γ)) :
-    #{g : β → γ | g ∘ e ∈ S} * Fintype.card (α → γ) = #S * Fintype.card (β → γ) := by
-  classical
-  -- Split `β → γ` into the values on the range of `e`, identified with `α`, and the rest.
-  let r : Set.range e ≃ α := (Equiv.ofInjective e e.injective).symm
-  let F : (β → γ) ≃ (α → γ) × ({b // b ∉ Set.range e} → γ) :=
-    (Equiv.piEquivPiSubtypeProd (· ∈ Set.range e) fun _ => γ).trans
-      (Equiv.prodCongr (Equiv.arrowCongr r (Equiv.refl γ)) (Equiv.refl _))
-  have hF : ∀ g, (F g).1 = g ∘ e := fun g => by
-    funext a
-    simp only [F, r, Equiv.trans_apply, Equiv.prodCongr_apply, Prod.map_fst,
-      Equiv.arrowCongr_apply, Equiv.refl_apply, Function.comp_apply, Equiv.symm_symm,
-      Equiv.piEquivPiSubtypeProd_apply, Equiv.ofInjective_apply]
-  have hfilter : #{g : β → γ | g ∘ e ∈ S} =
-      #S * Fintype.card ({b // b ∉ Set.range e} → γ) := by
-    rw [← Finset.card_univ (α := {b // b ∉ Set.range e} → γ), ← Finset.card_product]
-    refine Finset.card_equiv F fun g => ?_
-    simp [hF]
-  have hcard : Fintype.card (β → γ) =
-      Fintype.card (α → γ) * Fintype.card ({b // b ∉ Set.range e} → γ) := by
-    rw [Fintype.card_congr F, Fintype.card_prod]
-  rw [hfilter, hcard]
-  ring
-
-namespace BitString
 
 variable {n : ℕ}
 
@@ -100,11 +70,10 @@ theorem decodeTables_apply (B : ℕ) (ℓ : Fin n → ℕ) (r : List Bool) (v : 
 private theorem eq_of_mul_add_eq {B q q' r r' : ℕ} (hr : r < B) (hr' : r' < B)
     (h : q * B + r = q' * B + r') : q = q' ∧ r = r' := by
   have hB : 0 < B := lt_of_le_of_lt (Nat.zero_le _) hr
-  have hdiv := congrArg (· / B) h
-  have hmod := congrArg (· % B) h
-  simp only [Nat.mul_comm _ B, Nat.mul_add_div hB, Nat.div_eq_of_lt hr, Nat.div_eq_of_lt hr',
-    Nat.mul_add_mod, Nat.mod_eq_of_lt hr, Nat.mod_eq_of_lt hr', add_zero] at hdiv hmod
-  exact ⟨hdiv, hmod⟩
+  obtain ⟨hd, hm⟩ := (Nat.div_mod_unique hB (a := q * B + r) (d := q) (c := r)).2 ⟨by ring, hr⟩
+  obtain ⟨hd', hm'⟩ :=
+    (Nat.div_mod_unique hB (a := q * B + r) (d := q') (c := r')).2 ⟨by rw [h]; ring, hr'⟩
+  exact ⟨hd.symm.trans hd', hm.symm.trans hm'⟩
 
 /-- **The position of a table entry** in the block layout of `decodeTables`: entry `y` of the table
 of `v` is bit `v * B + equivFin y` of a string of `p` bits. -/
@@ -160,13 +129,14 @@ theorem card_filter_decodeTables_mem_mul {B p : ℕ} {ℓ : Fin n → ℕ} (hℓ
       #S * 2 ^ p := by
   classical
   let c := Equiv.piCurry fun v (_ : BitString (ℓ v)) => Bool
-  have key := card_filter_comp_mem_mul (γ := Bool) (tablePos hℓ hp) (S.map c.symm.toEmbedding)
-  simp only [Finset.card_map, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
-    Fintype.card_sigma] at key
+  have key := Nat.card_subtype_comp_injective_mul (tablePos hℓ hp) (tablePos hℓ hp).injective
+    (· ∈ S.map c.symm.toEmbedding)
+  simp only [Nat.card_eq_fintype_card, Fintype.card_subtype, filter_univ_mem, card_map,
+    Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Fintype.card_sigma] at key
   rw [← key]
   congr 2
   ext r
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_map_equiv, Equiv.symm_symm,
+  simp only [mem_filter, mem_univ, true_and, mem_map_equiv, Equiv.symm_symm,
     decodeTables_ofFn hℓ hp, c]
 
 /-- **Rare families are decoded from rare strings.** If at most a `b / a` fraction of the
@@ -182,6 +152,4 @@ theorem mul_card_filter_decodeTables_mem_le {B p a b : ℕ} {ℓ : Fin n → ℕ
     _ ≤ b * 2 ^ (∑ v, 2 ^ ℓ v) * 2 ^ p := Nat.mul_le_mul_right _ hS
     _ = b * 2 ^ p * 2 ^ (∑ v, 2 ^ ℓ v) := by ring
 
-end BitString
-
-end Cslib
+end Cslib.BitString
