@@ -182,11 +182,25 @@ lemma mem_applyTapes {ts : List Tape} {as : List TapeAct} {t' : Tape}
 lemma Inv.mono {D X j j' : ℕ} {c : SCfg} (h : Inv D X j c) (hj : j ≤ j') : Inv D X j' c :=
   ⟨h.state, h.inputPos, h.tapes, fun t ht => (h.workTapes t ht).mono hj⟩
 
+-- vendored: public for the descriptions of nondeterministic machines
+-- (`Universal/Nondeterministic.lean`)
 /-- The initial configuration satisfies the invariant. -/
-lemma inv_init (x : List ℕ) : Inv (descLen d) x.length 0 (init d) := by
+public lemma inv_init (x : List ℕ) : Inv (descLen d) x.length 0 (init d) := by
   refine ⟨q₀_le d, by simp [init], by simpa [init] using tapes_le d, fun t ht => ?_⟩
   obtain ⟨-, rfl⟩ := List.mem_replicate.mp ht
   exact ⟨by simp, by simp, by simp⟩
+
+-- vendored: extracted from `Inv.step` for the descriptions of nondeterministic machines
+-- (`Universal/Nondeterministic.lean`)
+/-- Firing an entry of the description preserves the invariant, with one more step. -/
+public lemma Inv.apply {d : Desc} {x : List ℕ} {j : ℕ} {c : SCfg}
+    (h : Inv (descLen d) x.length j c) {e : Key × Act} (he : e ∈ d.table) :
+    Inv (descLen d) x.length (j + 1) (e.2.apply x c) := by
+  refine ⟨state_le he, moveInput_le h.inputPos _, ?_, fun t' ht' => ?_⟩
+  · simpa [Act.apply, length_applyTapes_eq] using h.tapes
+  · obtain ⟨t, ht, h' | ⟨ta, hta, h'⟩⟩ := mem_applyTapes ht'
+    · exact h' ▸ (h.workTapes t ht).mono (Nat.le_succ _)
+    · exact h' ▸ (h.workTapes t ht).apply (write_le he hta)
 
 /-- Every step preserves the invariant, with one more step, and emits a number from the
 description. -/
@@ -202,11 +216,7 @@ lemma Inv.step {x : List ℕ} {j : ℕ} {c : SCfg} (h : Inv (descLen d) x.length
       by simp⟩
   rw [show Universal.step d x c = (a.apply x c, a.output) by simp [Universal.step, hs, hf]]
   have he := List.mem_of_find?_eq_some hf
-  refine ⟨⟨state_le he, moveInput_le h.inputPos _, ?_, fun t' ht' => ?_⟩, output_le he⟩
-  · simpa [Act.apply, length_applyTapes_eq] using h.tapes
-  · obtain ⟨t, ht, h' | ⟨ta, hta, h'⟩⟩ := mem_applyTapes ht'
-    · exact h' ▸ (h.workTapes t ht).mono (Nat.le_succ _)
-    · exact h' ▸ (h.workTapes t ht).apply (write_le he hta)
+  exact ⟨h.apply he, output_le he⟩
 
 /-- The configuration and the output after `j` steps. -/
 public lemma inv_iterate (x : List ℕ) (j : ℕ) :

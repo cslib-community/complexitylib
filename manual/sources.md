@@ -264,6 +264,11 @@ Michael Burrows and David J. Wheeler. *A Block-sorting Lossless Data Compression
 
 Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Article 28, 2020; full version Cryptology ePrint Archive 2000/067. https://doi.org/10.1145/3402457 .
 
+<a id="canonne22"></a>
+## canonne22
+
+Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased but Representative Sample*. Foundations and Trends in Communications and Information Theory 19(6), 1032–1198, 2022. https://doi.org/10.1561/0100000114 . Checked on 2026-11-10 against the author-hosted draft dated March 10, 2024 at https://ccanonne.github.io/files/misc/main-survey-fnt.pdf (journal pagination not inspected; locators follow that March 10, 2024 draft): Appendix B (pp. 149–152: Definition B.1, `(B.1)`–`(B.3)`, `(B.5)`–`(B.6)`, Lemmas B.1, B.2, and B.5) for Hellinger/`χ²`/KL definitions, tensorization, and comparison inequalities, and Section 3.1 (pp. 99–103: `(3.3)`, Lemma 3.1, and `(3.10)`) for the `√(2n)` Hellinger i.i.d. bound and Ingster's mixture second-moment identity (`CslibFrontier/Probability/{Hellinger,ChiSquare}.lean`).
+
 <a id="ccpv11"></a>
 ## ccpv11
 
@@ -1316,6 +1321,10 @@ Seinosuke Toda. “PP Is as Hard as the Polynomial-Time Hierarchy.” *SIAM Jour
 ## toran04
 
 Jacobo Torán. “Space and Width in Propositional Resolution.” The Computational Complexity Column, *Bulletin of the EATCS* 83, 86–104, 2004 (bibliography key `Toran2004`). Author-hosted copy: https://www.uni-ulm.de/fileadmin/website_uni_ulm/iui.inst.190/Mitarbeiter/toran/beatcs/column83.pdf . Checked against that copy on 2026-11-08 UTC: Definition 2 (resolution space, as sequences of clause sets obtained by deleting clauses, adding a resolvent or adding an initial clause, the model of `CNF.configLTS`), Definition 7 (the pebble game in which an inference may shift a pebble from a parent to the resolvent) and Lemma 8 (space equals that game's pebble number), Theorem 9 (`tree-size(F) ≥ 2 ^ space(F) - 1`, after Esteban and Torán), and the Section 4 statement that the pigeonhole formulas with `m > n` have resolution space exactly `n + 1` independently of the number of pigeons (the text says "holes", evidently a slip). The survey's numerical values are those of the shifting game, one less than clause space in the library's convention. The survey credits the pigeonhole result to its reference [29], J. Torán, “Lower bounds for the space used in resolution”, CSL 1999, LNCS 1683, 362–373; that paper was not inspected. Journal pagination was taken from the bibliographic record.
+<a id="tsybakov09"></a>
+## tsybakov09
+
+Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Series in Statistics, Springer, 2009 (ISBN 978-0-387-79051-0). https://doi.org/10.1007/b13794 . Bibliographic metadata checked on 2026-11-10 (full text not inspected); Section 2.4 (`Divergence Measures and Lower Bounds`) is cited for `f`-divergence properties, Hellinger/TV comparisons (with Tsybakov scaling squared Hellinger by `2`, whereas the library normalizes `h ∈ [0, 1]`), `χ²` tensorization, `2 h² ≤ KL ≤ χ²`, and the Ingster/Le Cam mixture second-moment reduction.
 
 <a id="tutte48"></a>
 ## tutte48

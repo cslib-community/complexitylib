@@ -11,7 +11,6 @@ public import CslibFrontier.Computability.WordRAM.Realization.Client.MemoryStack
 public import CslibFrontier.Computability.WordRAM.Realization.Backend
 public import CslibFrontier.Computability.WordRAM.Realization.Function
 import CslibFrontier.Tactic.Realize
-import CslibFrontier.Tactic.WordRAM
 
 /-!
 # An adaptive stack client compiled to one word-RAM program
@@ -174,7 +173,7 @@ public theorem program_spec {w n : ℕ} {s : Memory.State} (hf : Fits w (s.front
 
 /-- The client, compiled to one flat word-RAM program, computes `positive` in constant time at
 every width of at least three bits per input bit. -/
-@[fun_prop, program_certificate]
+@[fun_prop]
 public theorem positive_polytime :
     UniformComputableInPolyTime .standard positive (fun _ n => [n]) id :=
   realizes_program.uniformComputableInPolyTime .exactStandard 0 (.const 15) 3 (by decide)
