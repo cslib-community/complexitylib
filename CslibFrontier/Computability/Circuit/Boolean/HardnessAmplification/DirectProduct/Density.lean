@@ -36,7 +36,8 @@ probability); the per-seed analysis of their Lemmas 3.8–3.10 is in the decoder
 
 The constants (`2 s ≤ k`, `s ≥ (64 / ε) log (512 / (ε δ ^ 2))`, `m ≥ (16 / δ) log (8 / ε)` and the
 fraction `δ / 8`) are ours, derived for the tuple formulation; they are not IJKW's. The results
-are counting statements about a pure function: the decoder's circuit size is a separate result.
+are counting statements about a pure function; `DirectProduct.Complexity` bounds the decoder's
+circuit size.
 
 ## Main definitions
 
