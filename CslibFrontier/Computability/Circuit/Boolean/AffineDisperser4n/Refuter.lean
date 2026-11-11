@@ -208,6 +208,26 @@ def findPair {n} (S : State n) (p : ℕ) : Option ZeroPair :=
     ]
     prs.find? (fun (pr : ZeroPair) => decide (pr ∈ S.pairs))
 
+def getChildren {n} (S : State n) (p : ℕ) : List (ℕ ⊕ ℕ) :=
+  let inls := (S.gates.sort (· ≤ ·)).filterMap
+    (fun J => if decide (Sum.inl J ∈ S.children p) then some (Sum.inl J) else none)
+  let inrs := (S.eqns.sort (· ≤ ·)).filterMap
+    (fun e => if decide (Sum.inr e ∈ S.children p) then some (Sum.inr e) else none)
+  inls ++ inrs
+
+def deleteChild {n} (S : State n) (child : ℕ ⊕ ℕ) : State n :=
+  match child with
+  | .inl J => State.deleteGate S J ((degenerateLit S J).getD (Lit.const false))
+  | .inr e =>
+    let terms := (S.eqn e).terms.sort (· ≤ ·)
+    match terms.find? (fun v => decide (v ∈ S.aux)) with
+    | some v =>
+      let rest := terms.filter (· ≠ v)
+      let ℓ := if rest.isEmpty then Lit.const (S.eqn e).rhs
+               else Lit.node rest.head! (S.eqn e).rhs
+      State.deleteEqn S e v ℓ
+    | none => State.dropEqn S e 0
+
 def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
   match choice with
   | .deleteConstantGate J =>
@@ -235,7 +255,16 @@ def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
   | .moveAffine J => State.moveAffine S J S.freshEqn
   | .degeneratePair p =>
     match findPair S p with
-    | some pr => State.fixConst S p (pr.bias p)
+    | some pr =>
+      if S.deg p == 0 then
+        State.fixConst S (pr.partner p) (pr.partnerBias p)
+      else
+        let S₁ := State.fixConst S p (pr.bias p)
+        match getChildren S p with
+        | c0 :: c1 :: _ =>
+          let S₂ := deleteChild S₁ c0
+          deleteChild S₂ c1
+        | _ => S₁
     | none => S
   | .partnersShareChild p =>
     match findPair S p with
@@ -249,21 +278,35 @@ def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
             (if (S.gate G).left == Arg.node p then a else b)
             (if (S.gate G).right == Arg.node p then a else b)
           if φ pr.fstBias false == φ pr.fstBias true then
-            State.fixConst S p (pr.bias p)
+            let S₁ := State.fixConst S p (pr.bias p)
+            State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
           else if φ false pr.sndBias == φ true pr.sndBias then
-            State.fixConst S r (pr.bias r)
+            let S₁ := State.fixConst S r (pr.bias r)
+            State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
           else
-            State.restrict S p (Lit.node r !(pr.fstBias ^^ pr.sndBias)) (S.pairsAvoid p)
+            let S₁ := State.restrict S p (Lit.node r !(pr.fstBias ^^ pr.sndBias)) (S.pairsAvoid p)
+            State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
       | none =>
         State.restrict S p (Lit.node r !(pr.fstBias ^^ pr.sndBias)) (S.pairsAvoid p)
     | none => S
   | .pairInSystem p =>
     match findPair S p with
-    | some pr => State.fixConst S (pr.partner p) (pr.partnerBias p)
+    | some pr =>
+      let r := pr.partner p
+      let S₁ := State.fixConst S r (pr.partnerBias p)
+      match (getChildren S r).head? with
+      | some Hr => deleteChild S₁ Hr
+      | none => S₁
     | none => S
-  | .andOnPair _ p =>
+  | .andOnPair G p =>
     match findPair S p with
-    | some pr => State.fixConst S (pr.partner p) (pr.partnerBias p)
+    | some pr =>
+      let r := pr.partner p
+      let S₁ := State.fixConst S r (pr.partnerBias p)
+      let S₂ := State.deleteGate S₁ G ((degenerateLit S₁ G).getD (Lit.const false))
+      match (getChildren S r).head? with
+      | some Hr => deleteChild S₂ Hr
+      | none => S₂
     | none => S
   | .swapAuxIn G =>
     let a := match (S.gate G).left, (S.gate G).right with
@@ -292,7 +335,13 @@ def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
     let op := (S.gate G).op
     let α := decide (op true false == op true true)
     let β := decide (op false true == op true true)
-    State.addPair S ⟨t1, α, t2, β⟩
+    let S₁ := State.addPair S ⟨t1, α, t2, β⟩
+    let γ := op α β
+    let S₂ := State.deleteGate S₁ G (Lit.const γ)
+    let K_opt := (S.gates.sort (· ≤ ·)).find? (fun K => decide (K ≠ G) && readsJ S K G)
+    match K_opt with
+    | some K => State.deleteGate S₂ K ((degenerateLit S₂ K).getD (Lit.const false))
+    | none => S₂
 
 def isFstOfAnyPair {n} (S : State n) (x : ℕ) : Bool :=
   match findPair S x with
@@ -313,7 +362,8 @@ def terminalVal {n} (S : State n) (d_params : List ℕ) (A : List Bool) (x : ℕ
 
 
 def refuterMeasure {n} (S : State n) : ℕ :=
-  4 * (S.m + S.s) + 3 * S.gates.card + if h : S.gates.Nonempty then S.auxIn (S.gates.min' h) else 0
+  4 * (S.m + S.s) + 3 * S.gates.card + S.a +
+    if h : S.gates.Nonempty then S.auxIn (S.gates.min' h) else 0
 
 def allAssignments : ℕ → List (List Bool)
   | 0 => [[]]
