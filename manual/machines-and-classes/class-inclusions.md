@@ -43,7 +43,7 @@ Columns L to MA:
 | **QMA** | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
 | **PP** | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
 | **P^#P** | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
-| **PSPACE** | [✗](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean#L329) | (✗) | ? | ? | ? | ? | ? | ? | ? | ? |
+| **PSPACE** | [✗](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean#L424) | (✗) | ? | ? | ? | ? | ? | ? | ? | ? |
 | **IP** | ✗* | (✗) | ? | ? | ? | ? | ? | ? | ? | ? |
 | **EXP** | ✗* | ✗* | [✗](../../CslibFrontier/Computability/Complexity/Classes/EXP.lean#L179) | ? | ? | ? | ? | ? | ? | ? |
 | **NEXP** | ✗* | ✗* | ✗* | ✗* | ✗* | (✗) | ? | [✗](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Nondeterministic.lean#L140) | (✗) | ? |
@@ -52,18 +52,18 @@ Columns AM to NEXP:
 
 | ⊆ | AM | PH | BQP | QMA | PP | P^#P | PSPACE | IP | EXP | NEXP |
 |------|---|---|---|---|---|---|---|---|---|---|
-| **L** | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean#L329) | ✓* | ✓* | ✓* |
+| **L** | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean#L424) | ✓* | ✓* | ✓* |
 | **NL** | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* |
 | **P** | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/PH.lean#L308) | [✓](../../CslibFrontier/Computability/Complexity/Classes/BQP/Classical.lean#L196) | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/PP/Closure.lean#L68) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Oracle/Counting.lean#L106) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Space.lean#L134) | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/EXP.lean#L179) | ✓* |
 | **ZPP** | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* |
 | **RP** | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* |
 | **coRP** | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* |
-| **BPP** | [✓](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L378) | [✓](../../CslibFrontier/Computability/Complexity/Classes/PH/SipserLautemann.lean#L480) | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/MA.lean#L281) | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/PP.lean#L112) | ✓* | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L288) | ✓* | ✓* |
-| **NP** | [✓](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L375) | [✓](../../CslibFrontier/Computability/Complexity/Classes/PH.lean#L305) | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/NP.lean#L372) | [✓](../../CslibFrontier/Computability/Complexity/Classes/PP/Closure.lean#L50) | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L102) | [✓](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L245) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L191) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Nondeterministic.lean#L140) |
+| **BPP** | [✓](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L379) | [✓](../../CslibFrontier/Computability/Complexity/Classes/PH/SipserLautemann.lean#L480) | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/MA.lean#L281) | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/PP.lean#L112) | ✓* | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L285) | ✓* | ✓* |
+| **NP** | [✓](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L376) | [✓](../../CslibFrontier/Computability/Complexity/Classes/PH.lean#L305) | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/NP.lean#L372) | [✓](../../CslibFrontier/Computability/Complexity/Classes/PP/Closure.lean#L50) | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L102) | [✓](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L244) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L191) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Nondeterministic.lean#L140) |
 | **coNP** | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/PH.lean#L338) | ? | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/PP/Closure.lean#L127) | ✓* | ✓* | [✓](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L69) | ✓* | ✓* |
-| **MA** | [✓](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L335) | ✓* | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/MA.lean#L269) | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* |
+| **MA** | [✓](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L336) | ✓* | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/MA.lean#L269) | ✓* | ✓* | ✓* | ✓* | ✓* | ✓* |
 | **AM** | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/PH.lean#L315) | ? | ? | ? | ✓* | ✓* | ✓* | ✓* | ✓* |
-| **PH** | ? | · | ? | ? | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/Toda.lean#L116) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L253) | [✓](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L65) | ✓* | ✓* |
+| **PH** | ? | · | ? | ? | ? | [✓](../../CslibFrontier/Computability/Complexity/Classes/Toda.lean#L118) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L253) | [✓](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L65) | ✓* | ✓* |
 | **BQP** | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA.lean#L111) | [✓](../../CslibFrontier/Computability/Complexity/Classes/BQP/Counting.lean#L190) | ✓* | ✓* | ✓* | ✓* | ✓* |
 | **QMA** | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/QMA/Counting.lean#L317) | ✓* | ✓* | ✓* | ✓* | ✓* |
 | **PP** | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Complexity/Classes/Oracle/CountingEquivalence.lean#L55) | [✓](../../CslibFrontier/Computability/Complexity/Classes/Counting/Space.lean#L53) | ✓* | ✓* | ✓* |
@@ -79,7 +79,7 @@ Columns AM to NEXP:
 |---|---|
 | L ⊆ NL | [`L_subset_NL`](../../CslibFrontier/Computability/Complexity/Classes/LogSpace.lean#L144) |
 | L ⊆ P | [`L_subset_P`](../../CslibFrontier/Computability/Complexity/Classes/LogSpace.lean#L157) |
-| L ⊊ PSPACE | [`L_ssubset_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean#L329) |
+| L ⊊ PSPACE | [`L_ssubset_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean#L424) |
 | L ⊆ PSPACE | [`L_subset_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/LogSpace.lean#L162) |
 | NL ⊆ P | [`NL_subset_P`](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/PolyTime.lean#L57) |
 | P ⊆ ZPP | [`P_subset_ZPP`](../../CslibFrontier/Computability/Complexity/Classes/RP/Closure.lean#L78) |
@@ -102,28 +102,28 @@ Columns AM to NEXP:
 | coRP ⊆ BPP | [`coRP_subset_BPP`](../../CslibFrontier/Computability/Complexity/Classes/RP.lean#L327) |
 | coRP ⊆ coNP | [`coRP_subset_coNP`](../../CslibFrontier/Computability/Complexity/Classes/RP.lean#L195) |
 | BPP ⊆ MA | [`BPP_subset_MA`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin.lean#L182) |
-| BPP ⊆ AM | [`BPP_subset_AM`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L378) |
+| BPP ⊆ AM | [`BPP_subset_AM`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L379) |
 | BPP ⊆ PH | [`BPP_subset_PH`](../../CslibFrontier/Computability/Complexity/Classes/PH/SipserLautemann.lean#L480) |
 | BPP ⊆ BQP | [`BPP_subset_BQP`](../../CslibFrontier/Computability/Complexity/Classes/QMA/MA.lean#L281) |
 | BPP ⊆ PP | [`BPP_subset_PP`](../../CslibFrontier/Computability/Complexity/Classes/PP.lean#L112) |
-| BPP ⊆ IP | [`BPP_subset_IP`](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L288) |
+| BPP ⊆ IP | [`BPP_subset_IP`](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L285) |
 | NP ⊆ MA | [`NP_subset_MA`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin.lean#L166) |
-| NP ⊆ AM | [`NP_subset_AM`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L375) |
+| NP ⊆ AM | [`NP_subset_AM`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L376) |
 | NP ⊆ PH | [`NP_subset_PH`](../../CslibFrontier/Computability/Complexity/Classes/PH.lean#L305) |
 | NP ⊆ QMA | [`NP_subset_QMA`](../../CslibFrontier/Computability/Complexity/Classes/QMA/NP.lean#L372) |
 | NP ⊆ PP | [`NP_subset_PP`](../../CslibFrontier/Computability/Complexity/Classes/PP/Closure.lean#L50) |
 | NP ⊆ PSPACE | [`NP_subset_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L102) |
-| NP ⊆ IP | [`NP_subset_IP`](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L245) |
+| NP ⊆ IP | [`NP_subset_IP`](../../CslibFrontier/Computability/Complexity/Classes/IP.lean#L244) |
 | NP ⊆ EXP | [`NP_subset_EXP`](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L191) |
 | NP ⊊ NEXP | [`NP_ssubset_NEXP`](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Nondeterministic.lean#L140) |
 | NP ⊆ NEXP | [`NP_subset_NEXP`](../../CslibFrontier/Computability/Complexity/Classes/EXP.lean#L137) |
 | coNP ⊆ PH | [`coNP_subset_PH`](../../CslibFrontier/Computability/Complexity/Classes/PH.lean#L338) |
 | coNP ⊆ PP | [`coNP_subset_PP`](../../CslibFrontier/Computability/Complexity/Classes/PP/Closure.lean#L127) |
 | coNP ⊆ IP | [`coNP_subset_IP`](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L69) |
-| MA ⊆ AM | [`MA_subset_AM`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L335) |
+| MA ⊆ AM | [`MA_subset_AM`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Amplification.lean#L336) |
 | MA ⊆ QMA | [`MA_subset_QMA`](../../CslibFrontier/Computability/Complexity/Classes/QMA/MA.lean#L269) |
 | AM ⊆ PH | [`AM_subset_PH`](../../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/PH.lean#L315) |
-| PH ⊆ P^#P | [`PH_subset_PWithSharpPOracle`](../../CslibFrontier/Computability/Complexity/Classes/Toda.lean#L116) |
+| PH ⊆ P^#P | [`PH_subset_PWithSharpPOracle`](../../CslibFrontier/Computability/Complexity/Classes/Toda.lean#L118) |
 | PH ⊆ PSPACE | [`PH_subset_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L253) |
 | PH ⊆ IP | [`PH_subset_IP`](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L65) |
 | BQP ⊆ QMA | [`BQP_subset_QMA`](../../CslibFrontier/Computability/Complexity/Classes/QMA.lean#L111) |
@@ -135,7 +135,7 @@ Columns AM to NEXP:
 | PSPACE ⊆ IP | [`PSPACE_subset_IP`](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L56) |
 | PSPACE ⊆ EXP | [`PSPACE_subset_EXP`](../../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean#L125) |
 | IP = PSPACE | [`IP_eq_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/IP/Shamir.lean#L61) |
-| IP ⊆ PSPACE | [`IP_subset_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/IP/PSPACE.lean#L595) |
+| IP ⊆ PSPACE | [`IP_subset_PSPACE`](../../CslibFrontier/Computability/Complexity/Classes/IP/PSPACE.lean#L597) |
 | EXP ⊆ NEXP | [`EXP_subset_NEXP`](../../CslibFrontier/Computability/Complexity/Classes/EXP.lean#L146) |
 
 </details>
@@ -147,9 +147,9 @@ Columns AM to NEXP:
 | **AC⁰** | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L260) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L292) | ✓* | ✓* | ✓* |
 | **ACC⁰** | [✗](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L260) | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Basic.lean#L336) | (✓) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L268) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L276) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L284) |
 | **TC⁰** | [✗](../../CslibFrontier/Computability/Circuit/Boolean/TC0.lean#L74) | ? | · | (✓) | (✓) | (✓) | (✓) |
-| **NC¹** | (✗) | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L102) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L114) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L131) |
+| **NC¹** | (✗) | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L103) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L115) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L132) |
 | **AC¹** | ✗* | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L273) | [✓](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L301) |
-| **NC²** | ✗* | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L131) |
+| **NC²** | ✗* | ? | ? | ? | ? | · | [✓](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L132) |
 | **P/poly** | ✗* | ? | ? | ? | ? | ? | · |
 
 <details><summary>Theorems used</summary>
@@ -165,12 +165,12 @@ Columns AM to NEXP:
 | ACC⁰ ⊆ AC¹ | [`ACC0_subset_AC_one`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L268) |
 | ACC⁰ ⊆ NC² | [`ACC0_subset_NC_two`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L276) |
 | ACC⁰ ⊆ P/poly | [`ACC0_subset_PPoly`](../../CslibFrontier/Computability/Circuit/Boolean/ACC0/Simulation.lean#L284) |
-| NC¹ ⊆ AC¹ | [`NC_subset_AC 1`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L102) |
-| NC¹ ⊆ NC² | [`NC_mono (i := 1) (j := 2)`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L114) |
-| NC¹ ⊆ P/poly | [`NC_subset_PPoly 1`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L131) |
+| NC¹ ⊆ AC¹ | [`NC_subset_AC 1`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L103) |
+| NC¹ ⊆ NC² | [`NC_mono (i := 1) (j := 2)`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L115) |
+| NC¹ ⊆ P/poly | [`NC_subset_PPoly 1`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L132) |
 | AC¹ ⊆ NC² | [`AC_subset_NC_succ 1`](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L273) |
 | AC¹ ⊆ P/poly | [`AC_subset_PPoly 1`](../../CslibFrontier/Computability/Circuit/Boolean/FanInTwo.lean#L301) |
-| NC² ⊆ P/poly | [`NC_subset_PPoly 2`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L131) |
+| NC² ⊆ P/poly | [`NC_subset_PPoly 2`](../../CslibFrontier/Computability/Circuit/Boolean/DepthClasses.lean#L132) |
 
 </details>
 
