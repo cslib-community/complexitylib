@@ -54,16 +54,16 @@ namespace Scheme
 variable [DecidableEq M] [DecidableEq CT]
 
 /-- The three partial tables `(G, Hraw, Hq)` of the coupled game. -/
-private abbrev Tables (M R CT K : Type) : Type :=
+abbrev Tables (M R CT K : Type) : Type :=
   RandomOracle.Cache (fun _ : M => R) × RandomOracle.Cache (fun _ : Bool × M × CT => K) ×
     RandomOracle.Cache (fun _ : CT => K)
 
 /-- The represented tables of a `SimState`. -/
-private def tablesOf (st : SimState M R CT K) : Tables M R CT K :=
+@[expose] def tablesOf (st : SimState M R CT K) : Tables M R CT K :=
   (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache, RandomOracle.ofList st.hqCache)
 
 /-- `coupledHashH` on represented tables, answered with `RandomOracle.answer`. -/
-private noncomputable def answerHashH (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
+@[expose] noncomputable def answerHashH (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
     (x : Bool × M × CT) : StateT (Tables M R CT K) PMF K := fun t =>
   match x with
   | (false, m, c) =>
@@ -95,7 +95,7 @@ private noncomputable def answerHandler (S : Scheme PK SK M R CT K) (pk : PK) (s
 omit [DecidableEq M] [DecidableEq CT] in
 /-- One lazy call on a component cache, with its result and represented state, is
 `RandomOracle.answer` on the represented component. -/
-private theorem eval_zoom_memoize_map {Key Value St T β : Type} [DecidableEq Key]
+theorem eval_zoom_memoize_map {Key Value St T β : Type} [DecidableEq Key]
     (get : St → List (Key × Value)) (set : St → List (Key × Value) → St) (d : ProbComp Value)
     (q : Key) (s : St) (g : Value → β) (rep : St → T)
     (F : RandomOracle.Cache (fun _ : Key => Value) → T)
@@ -109,7 +109,7 @@ private theorem eval_zoom_memoize_map {Key Value St T β : Type} [DecidableEq Ke
 
 omit [DecidableEq M] [DecidableEq CT] in
 /-- One lazy call on a component cache followed by a continuation, on represented states. -/
-private theorem eval_zoom_memoize_bind {Key Value St T β : Type} [DecidableEq Key]
+theorem eval_zoom_memoize_bind {Key Value St T β : Type} [DecidableEq Key]
     (get : St → List (Key × Value)) (set : St → List (Key × Value) → St) (d : ProbComp Value)
     (q : Key) (s : St) (f : Value → St → ProbComp (β × St)) (rep : St → T)
     (Φ : Value × RandomOracle.Cache (fun _ : Key => Value) → PMF (β × T))
@@ -124,7 +124,7 @@ private theorem eval_zoom_memoize_bind {Key Value St T β : Type} [DecidableEq K
   exact hf v c
 
 /-- Mapping `SimState` to its represented tables turns `coupledHashH` into `answerHashH`. -/
-private theorem coupledHashH_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
+theorem coupledHashH_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
     (x : Bool × M × CT) (st : SimState M R CT K) :
     (ProbComp.eval (S.coupledHashH pk sk x st)).map (fun z => (z.1, tablesOf z.2)) =
       S.answerHashH pk sk x (tablesOf st) := by
@@ -165,9 +165,10 @@ private theorem coupledHandler_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK
   | H x => exact S.coupledHashH_map_tablesOf pk sk x st
   | decaps c =>
     by_cases hc : c = cStar
-    · simp only [coupledHandler, answerHandler, hc, ↓reduceIte]
+    · simp only [coupledHandler, coupledFilterHandler, answerHandler, hc, ↓reduceIte]
       exact PMF.pure_map _ _
-    · simp only [coupledHandler, answerHandler, hc, ↓reduceIte]
+    · simp only [coupledHandler, coupledFilterHandler, answerHandler, hc, ↓reduceIte,
+        Bool.cond_true]
       change (ProbComp.eval (simHashHq S.sampleKey c st >>= fun vs =>
         pure (some vs.1, vs.2))).map _ = _
       refine Eq.trans ?_ (eval_zoom_memoize_map SimState.hqCache
@@ -186,7 +187,7 @@ omit [DecidableEq M] [DecidableEq CT]
 
 /-- Answering one query and completing its table is completing the table and reading it,
 followed by any continuation `F` that ignores the intermediate cache. -/
-private theorem answer_bind_complete (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
+theorem answer_bind_complete (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
     (q : Q) (F : V × RandomOracle.Cache (fun _ : Q => V) → (Q → V) → PMF β)
     (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
     (RandomOracle.answer d q c).bind (fun x => (RandomOracle.complete d x.2).bind (F x)) =
@@ -200,7 +201,7 @@ private theorem answer_bind_complete (d : Q → PMF V) (c : RandomOracle.Cache (
   rw [hF v c' c]
 
 /-- `answer_bind_complete` past one independent sample `p`. -/
-private theorem answer_bind_complete₁ (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
+theorem answer_bind_complete₁ (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
     (q : Q) (p : PMF α) (F : V × RandomOracle.Cache (fun _ : Q => V) → α → (Q → V) → PMF β)
     (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
     (RandomOracle.answer d q c).bind (fun x => p.bind fun a =>
@@ -211,7 +212,7 @@ private theorem answer_bind_complete₁ (d : Q → PMF V) (c : RandomOracle.Cach
     (fun v c₁ c₂ => by rw [hF v c₁ c₂])
 
 /-- `answer_bind_complete` past two independent samples `p` and `p'`. -/
-private theorem answer_bind_complete₂ (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
+theorem answer_bind_complete₂ (d : Q → PMF V) (c : RandomOracle.Cache (fun _ : Q => V))
     (q : Q) (p : PMF α) (p' : PMF α')
     (F : V × RandomOracle.Cache (fun _ : Q => V) → α → α' → (Q → V) → PMF β)
     (hF : ∀ v c₁ c₂, F (v, c₁) = F (v, c₂)) :
@@ -234,11 +235,11 @@ section Complete
 variable [Fintype M] [Finite R] [Fintype CT] [Finite K]
 
 /-- Full tables `(G, Hraw, Hq)` of the eager coupled game. -/
-private abbrev FullTables (M R CT K : Type) : Type :=
+abbrev FullTables (M R CT K : Type) : Type :=
   (M → R) × (Bool × M × CT → K) × (CT → K)
 
 /-- Complete the three represented tables independently. -/
-private noncomputable def completeTables (S : Scheme PK SK M R CT K) (t : Tables M R CT K) :
+@[expose] noncomputable def completeTables (S : Scheme PK SK M R CT K) (t : Tables M R CT K) :
     PMF (FullTables M R CT K) :=
   (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins) t.1).bind fun G =>
   (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) t.2.1).bind fun H =>
@@ -331,8 +332,9 @@ has the output distribution of the eager coupled game `S.eagerCoupledGame A b`. 
 theorem eval_coupledGame_eq_eagerCoupledGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
     ProbComp.eval (S.coupledGame A b) = S.eagerCoupledGame A b := by
-  dsimp only [coupledGame, eagerCoupledGame]
-  simp only [pmf_norm, encT]
+  dsimp only [coupledGame, coupledFilterGame, eagerCoupledGame]
+  simp only [show S.coupledFilterHandler (fun _ _ => true) = S.coupledHandler from rfl,
+    pmf_norm, encT]
   congr 1 with ⟨pk, sk⟩ : 1
   have hstep (mStar : M) (rStar : R) :
       (ProbComp.eval ((S.coupledHashH pk sk (false, mStar, S.pke.encDet pk mStar rStar)).run

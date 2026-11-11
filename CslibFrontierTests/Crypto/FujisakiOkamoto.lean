@@ -242,8 +242,8 @@ theorem identityScheme_simHitProb_diag (m : Fin 4) :
   simp [-bind_pure_comp, -_root_.PMF.bind_apply,
     Scheme.simHitProb, Scheme.romCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
-    OracleComp.interpret_pure]
+    Scheme.simHandler, Scheme.simFilterHandler, simHashG, OracleComp.interpret_bind,
+    OracleComp.interpret_query, OracleComp.interpret_pure]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ m [] rfl]
 
@@ -254,8 +254,8 @@ theorem identityScheme_simHitProb_zero_one :
   simp [-bind_pure_comp, -_root_.PMF.bind_apply,
     Scheme.simHitProb, Scheme.romCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
-    OracleComp.interpret_pure]
+    Scheme.simHandler, Scheme.simFilterHandler, simHashG, OracleComp.interpret_bind,
+    OracleComp.interpret_query, OracleComp.interpret_pure]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ (0 : Fin 4) [] rfl]
 
