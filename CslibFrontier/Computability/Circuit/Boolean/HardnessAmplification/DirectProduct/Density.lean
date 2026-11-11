@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Decode
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.Miss
+import CslibFrontier.Foundations.Data.Finset.Markov
 import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import CslibFrontier.Foundations.Probability.TwoStage
 import Mathlib.Combinatorics.Enumerative.DoubleCounting
@@ -294,13 +295,9 @@ theorem sum_card_filter_good_ge (C' : (Fin k → U) → Fin k → V) (f : U → 
     intro P hPs
     have hPc : #Pᶜ = k - s := by
       rw [card_compl, Fintype.card_fin, (mem_powersetCard.1 hPs).2]
-    rw [← nsmul_eq_mul]
-    refine (card_nsmul_le_sum _ _ _ fun b hb => ?_).trans
-      (sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun _ _ _ => by positivity)
-    simp only [mem_filter, not_le] at hb
-    obtain ⟨-, hdense, htail⟩ := hb
+    refine card_filter_mul_le_sum _ _ _ (fun _ _ => by positivity) fun _ _ ⟨hdense, htail⟩ => ?_
     rw [hPc] at hdense
-    exact le_trans (mul_le_mul_of_nonneg_left hdense (by positivity)) htail.le
+    exact (mul_le_mul_of_nonneg_left hdense (by positivity)).trans (not_le.1 htail).le
   have hB := sum_sum_card_heavy_le C' f s hk (ε / 64)
   have hc : 0 < ε / 64 * (δ / 2 * (Fintype.card U : ℝ) ^ (k - s)) := by positivity
   have hT : ∑ P ∈ univ.powersetCard s,
@@ -376,8 +373,6 @@ theorem card_filter_seed_dpDecode_err_le_ge (C' : (Fin k → U) → Fin k → V)
       = δ / 4 * k.choose s * Fintype.card U ^ k * ((Fintype.card (Trial U k) : ℝ) ^ m / 2) := by
         ring
     _ ≤ _ := hpairs
-    _ = _ := congrArg Nat.cast <| card_nbij' (fun x => (x.1.1, x.1.2, x.2))
-        (fun x => ((x.1, x.2.1), x.2.2)) (fun _ h => by simpa using h)
-        (fun _ h => by simpa using h) (fun _ _ => rfl) (fun _ _ => rfl)
+    _ = _ := congrArg Nat.cast <| card_equiv (Equiv.prodAssoc _ _ _) fun _ => by simp
 
 end Cslib.Circuits.Boolean.DirectProduct

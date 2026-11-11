@@ -13,11 +13,10 @@ public import Mathlib.Data.Finset.Density
 public import Mathlib.Data.Fintype.Prod
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import CslibFrontier.Foundations.Data.Finset.Markov
 import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
 
 /-!
 # Two-stage sampling in finite products
@@ -56,11 +55,9 @@ theorem mul_le_card_filter_product {α β : Type*} (s : Finset α) (t : Finset �
   have hcount : (#{ab ∈ s ×ˢ t | q ab.1 ab.2} : ℝ) = ∑ a ∈ s, (#{b ∈ t | q a b} : ℝ) := by
     rw [← Nat.cast_sum, card_filter, sum_product]
     simp only [card_filter]
-  rw [hcount, ← sum_filter_add_sum_filter_not s good]
-  refine le_add_of_le_of_nonneg ?_ (sum_nonneg fun _ _ => by positivity)
-  calc ρ₁ * ρ₂ ≤ #{a ∈ s | good a} * ρ₂ := by gcongr
-    _ = ∑ _ ∈ s.filter good, ρ₂ := by rw [sum_const, nsmul_eq_mul]
-    _ ≤ _ := sum_le_sum fun a ha => h₂ a (mem_filter.1 ha).1 (mem_filter.1 ha).2
+  rw [hcount]
+  exact (mul_le_mul_of_nonneg_right h₁ hρ₂).trans
+    (card_filter_mul_le_sum s good _ (fun _ _ => by positivity) h₂)
 
 /-- **Two-stage sampling.** If a `ρ₁` fraction of the `a` are good, and for each good `a` a `ρ₂`
 fraction of the `b` satisfy `q a b`, then a `ρ₁ ρ₂` fraction of the pairs satisfy `q`. -/
