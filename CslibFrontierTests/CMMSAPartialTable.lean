@@ -6,10 +6,12 @@ Authors: Samuel Schlesinger
 
 module
 
-import CslibFrontier.Computability.MCSP.PartialHardness.Completeness
-import CslibFrontier.Foundations.Data.Nat.AlignedPacking
+public import CslibFrontier.Computability.MCSP.PartialHardness.Completeness
+public import CslibFrontier.Foundations.Data.Nat.AlignedPacking
 
 /-! Tests for the CMMSA partial truth table and its Yes completeness. -/
+
+public section
 
 namespace CslibFrontierTests.CMMSAPartialTable
 
