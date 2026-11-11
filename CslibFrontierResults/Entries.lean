@@ -3422,7 +3422,9 @@ register_result "lwe-normal-form-decision" where
   ]
   scope := "Concrete distinguishing advantage bound showing that if Decision LWE is hard
     with uniform secrets, it is also hard when the secret is drawn from the error
-    distribution (normal form), proved for prime moduli via `decisionNormalForm`."
+    distribution (normal form), proved for prime moduli via `decisionNormalForm`.
+    Note: The reduction algorithm uses `gaussInv?` which does not yet have a formalised
+    PPT bound, so this leaves an asymptotic non-PPT gap."
 
 register_result "lwe-normal-form-search" where
   title := "Reduction of general Search LWE to Search LWE in normal form"
@@ -3435,7 +3437,9 @@ register_result "lwe-normal-form-search" where
   ]
   scope := "Concrete success probability bound showing that if Search LWE is hard with
     uniform secrets, it is also hard when the secret is drawn from the error
-    distribution (normal form), proved for prime moduli via `searchNormalForm`."
+    distribution (normal form), proved for prime moduli via `searchNormalForm`.
+    Note: The reduction algorithm uses `gaussInv?` which does not yet have a formalised
+    PPT bound, so this leaves an asymptotic non-PPT gap."
 
 register_result "lwe-search-to-decision" where
   title := "Search-to-Decision reduction for LWE"

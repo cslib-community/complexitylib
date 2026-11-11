@@ -1297,6 +1297,11 @@ OpenAI. *Exact Derandomization of Logarithmic Space: L = RL = BPL*. Preprint, 23
 
 OpenAI. *The Exponential Time Hypothesis is False*. Manuscript dated 17 October 2026, revised 25 October 2026. Source revision `7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a`. [PDF](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf); [primary TeX](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/build/main_full_version.tex). The interpolation-route statement, metadata and label were checked in freshly retrieved TeX on 2026-11-02; full proof and PDF pagination were not independently audited.
 
+<a id="peikert2016"></a>
+## peikert2016
+
+Chris Peikert. *A Decade of Lattice Cryptography*. Foundations and Trends in Theoretical Computer Science 10(4), 283–424, 2016. https://doi.org/10.1561/0400000074 . Consulted for the equivalence between LWE normal form (secret key drawn from the error distribution) and the standard LWE problem (Section 4.2.1, page 23).
+
 <a id="pighizzini2009"></a>
 ## pighizzini2009
 
@@ -1356,6 +1361,11 @@ Omer Reingold. “Undirected Connectivity in Log-Space.” *Journal of the ACM* 
 ## reynolds02
 
 John C. Reynolds. “Separation Logic: A Logic for Shared Mutable Data Structures.” *LICS 2002*, 55–74. https://doi.org/10.1109/LICS.2002.1029817 ; author PDF https://www.cs.cmu.edu/~jcr/seplogic.pdf . The standard locality/separating-conjunction principle was consulted; the local finite-support model is an adaptation.
+
+<a id="regev2009"></a>
+## regev2009
+
+Oded Regev. "On lattices, learning with errors, random linear codes, and cryptography." *Journal of the ACM* 56(6), 1–40, 2009. https://doi.org/10.1145/1568318.1568324 . Consulted for the equivalence of search and decision LWE (Lemma 4.1-4.2, pages 30-31).
 
 <a id="rompel90"></a>
 ## rompel90

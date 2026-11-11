@@ -77,14 +77,14 @@ def encMatrix (n m q : ℕ) : Matrix (Fin n) (Fin m) (ZMod q) ↪ List Bool :=
       Option.getD_some] at hij
     exact hij⟩
 
-/-- The deterministic LWE public matrix `[A * s + e | A]` modulo `q`. -/
+/-- The deterministic LWE public matrix `[A * s + e | A]` modulo `q`. This replicates `LWE.publicMatrix` for `ZMod q`. -/
 @[expose]
 def publicMatrix {n m q : ℕ} (A : Matrix (Fin m) (Fin n) (ZMod q))
     (s : Fin n → ZMod q) (e : Fin m → ZMod q) :
     Matrix (Fin m) (Fin (n + 1)) (ZMod q) :=
   fun i => Fin.cons ((A *ᵥ s) i + e i) (A i)
 
-/-- Draw the public matrix `[A * s + e | A]`. -/
+/-- Draw the public matrix `[A * s + e | A]`. This replicates `LWE.publicMatrixLaw` for `ZMod q`. -/
 @[expose]
 noncomputable def publicMatrixLaw (n m q : ℕ) [Fact (Nat.Prime q)]
     (noise : PMF (ZMod q)) : PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod q)) := do
@@ -169,7 +169,6 @@ noncomputable def searchGameErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)] (nois
 
 
 /-- Search LWE hypothesis for prime modulus. -/
-@[expose]
 def SearchLWE (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
@@ -178,14 +177,12 @@ def SearchLWE (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))
         (noise security) (adversary security)))
 
 /-- Decision LWE hypothesis for prime modulus. -/
-@[expose]
 def DecisionLWE (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ComputationallyIndistinguishable (PrimeLWE.realEnsemble n m q noise)
     (PrimeLWE.uniformEnsemble n m q)
 
 /-- Search LWE hypothesis with error secret. -/
-@[expose]
 def SearchLWEErrorSecret (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
@@ -194,7 +191,6 @@ def SearchLWEErrorSecret (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q
         (noise security) (adversary security)))
 
 /-- Decision LWE hypothesis with error secret. -/
-@[expose]
 def DecisionLWEErrorSecret (n m q : ℕ → ℕ) [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) : Prop :=
   ComputationallyIndistinguishable (PrimeLWE.realEnsembleErrorSecret n m q noise)
