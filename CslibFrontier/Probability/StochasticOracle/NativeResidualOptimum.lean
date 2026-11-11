@@ -23,14 +23,16 @@ behavioral representation nor a cost lower bound is an admission premise.
 
 This module proves the one- and two-turn lower optima. Native attainment,
 equalities and the ratio are assembled downstream in `NativeResidualMinima`.
-The price convention here identifies the
-source prices with actual discrete per-opportunity invoices; arbitrary real
-invoice encodings remain outside this wire model.
+`one_lower_of_mean` and `two_lower_of_mean` use declared conditional batch means
+of fresh natural invoices, without an integer-price identity. The constant-invoice
+`one_lower` and `two_lower` are point-mass specializations. No real serializer
+is needed for analytic expected prices.
 
 ## Main results
 
 * `accept_eq`: the actual native certificate test is source optimal-cover acceptance.
-* `one_lower`, `two_lower`: residual lower bounds for the existing native token optima.
+* `one_lower_of_mean`, `two_lower_of_mean`: native lower bounds with real expected prices.
+* `one_lower`, `two_lower`: constant-invoice specializations for the same native optima.
 -/
 
 public section
@@ -109,15 +111,14 @@ private theorem optimal_event {k : ℕ} {Control : Type} {input : List Bool}
 selection-only native machine in the existing Theorem 5 common-oracle class.
 The source deadline and actual bill are those of the same sampler and input.
 No expected-cost, integrability, representation or optimality conclusion is a premise. -/
-theorem two_lower (P : Parameters z) (limits : Limits (z + 1))
-    (invoice : Fin (z + 1) → ℕ) (hz : 0 < z) (hx : Valid data.startup.system)
+theorem two_lower_of_mean (P : Parameters z) (limits : Limits (z + 1))
+    (invoice : PMF (Fin (z + 1) → ℕ)) (hz : 0 < z) (hx : Valid data.startup.system)
     (hdata : data.startup.system = SourceEncoding.toNative (source T points candidates))
     (ht : limits.turns = 2)
-    (hprice : ∀ i, (invoice i : ℝ) =
-      (finSuccEquiv z i).elim P.nearCost P.specialistCost) :
+    (hprice : NativeResidualInvoice.HasMean P invoice) :
     ENNReal.ofReal (min (∑ j, P.specialistCost j)
       (P.nearCost + P.missing.mean P.specialistCost)) ≤
-      BatchOptimum.optimum limits (NativeResidualOracle.sample T points candidates P invoice)
+      BatchOptimum.optimum limits (NativeResidualInvoice.sample T points candidates P invoice)
         data () hx 1 := by
   apply le_sInf
   intro v hv
@@ -128,7 +129,7 @@ theorem two_lower (P : Parameters z) (limits : Limits (z + 1))
   rw [he] at hadmit
   have hs := hsuccess.trans (BatchOptimum.certified_le_accepted limits data.startup.system hx
     (NativeUnboundedExecution.terminal machine
-      (environment limits (NativeResidualOracle.sample T points candidates P invoice)) world))
+      (environment limits (NativeResidualInvoice.sample T points candidates P invoice)) world))
   rw [he] at hs
   rw [show Coverage.nativeSuccess (NativeResidualPolicies.optimalAccept T candidates hz) =
     (fun result => decide (optimalOutput hz
@@ -137,6 +138,55 @@ theorem two_lower (P : Parameters z) (limits : Limits (z + 1))
   exact NativeResidualPolicies.native_two_lower T points candidates P limits invoice machine
     world (NativeBatch.initial_invariant limits ()) rfl ht hz hprice hadmit
       (le_antisymm (PMF.coe_le_one _ _) hs)
+
+/-- Theorem 6's one-turn token lower optimum, over every admitted finite-control
+selection-only native machine in the existing Theorem 5 common-oracle class.
+The source deadline and actual bill are those of the same sampler and input.
+No expected-cost, integrability, representation or optimality conclusion is a premise. -/
+theorem one_lower_of_mean (P : Parameters z) (limits : Limits (z + 1))
+    (invoice : PMF (Fin (z + 1) → ℕ)) (hz : 0 < z) (hx : Valid data.startup.system)
+    (hdata : data.startup.system = SourceEncoding.toNative (source T points candidates))
+    (ht : limits.turns = 1)
+    (hprice : NativeResidualInvoice.HasMean P invoice) :
+    ENNReal.ofReal (∑ j, P.specialistCost j) ≤
+      BatchOptimum.optimum limits (NativeResidualInvoice.sample T points candidates P invoice)
+        data () hx 1 := by
+  apply le_sInf
+  intro v hv
+  obtain ⟨k, Control, hfinite, machine, hadmit, hsuccess, rfl⟩ := hv
+  let world : World k Control Unit (ServerState (z + 1) Unit) (GuardedStartup.encoding data) :=
+    ⟨machine.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial (), []⟩⟩
+  have he := accept_eq T points data candidates hz hx hdata
+  rw [he] at hadmit
+  have hs := hsuccess.trans (BatchOptimum.certified_le_accepted limits data.startup.system hx
+    (NativeUnboundedExecution.terminal machine
+      (environment limits (NativeResidualInvoice.sample T points candidates P invoice)) world))
+  rw [he] at hs
+  rw [show Coverage.nativeSuccess (NativeResidualPolicies.optimalAccept T candidates hz) =
+    (fun result => decide (optimalOutput hz
+      (NativeResidualPolicies.terminalOutput T candidates result) = 1)) from
+        funext (optimal_event T data candidates hz)] at hs
+  exact NativeResidualPolicies.native_one_lower T points candidates P limits invoice machine
+    world (NativeBatch.initial_invariant limits ()) rfl ht hz hprice hadmit
+      (le_antisymm (PMF.coe_le_one _ _) hs)
+
+/-- Theorem 6's two-turn token lower optimum, over every admitted finite-control
+selection-only native machine in the existing Theorem 5 common-oracle class.
+The source deadline and actual bill are those of the same sampler and input.
+No expected-cost, integrability, representation or optimality conclusion is a premise. -/
+theorem two_lower (P : Parameters z) (limits : Limits (z + 1))
+    (invoice : Fin (z + 1) → ℕ) (hz : 0 < z) (hx : Valid data.startup.system)
+    (hdata : data.startup.system = SourceEncoding.toNative (source T points candidates))
+    (ht : limits.turns = 2)
+    (hprice : ∀ i, (invoice i : ℝ) =
+      (finSuccEquiv z i).elim P.nearCost P.specialistCost) :
+    ENNReal.ofReal (min (∑ j, P.specialistCost j)
+      (P.nearCost + P.missing.mean P.specialistCost)) ≤
+      BatchOptimum.optimum limits (NativeResidualOracle.sample T points candidates P invoice)
+        data () hx 1 := by
+  simpa only [NativeResidualInvoice.sample_pure] using
+    two_lower_of_mean T points data candidates P limits (PMF.pure invoice) hz hx hdata ht
+      (NativeResidualInvoice.hasMean_pure P invoice hprice)
 
 /-- Theorem 6's one-turn token lower optimum, over every admitted finite-control
 selection-only native machine in the existing Theorem 5 common-oracle class.
@@ -151,23 +201,8 @@ theorem one_lower (P : Parameters z) (limits : Limits (z + 1))
     ENNReal.ofReal (∑ j, P.specialistCost j) ≤
       BatchOptimum.optimum limits (NativeResidualOracle.sample T points candidates P invoice)
         data () hx 1 := by
-  apply le_sInf
-  intro v hv
-  obtain ⟨k, Control, hfinite, machine, hadmit, hsuccess, rfl⟩ := hv
-  let world : World k Control Unit (ServerState (z + 1) Unit) (GuardedStartup.encoding data) :=
-    ⟨machine.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial (), []⟩⟩
-  have he := accept_eq T points data candidates hz hx hdata
-  rw [he] at hadmit
-  have hs := hsuccess.trans (BatchOptimum.certified_le_accepted limits data.startup.system hx
-    (NativeUnboundedExecution.terminal machine
-      (environment limits (NativeResidualOracle.sample T points candidates P invoice)) world))
-  rw [he] at hs
-  rw [show Coverage.nativeSuccess (NativeResidualPolicies.optimalAccept T candidates hz) =
-    (fun result => decide (optimalOutput hz
-      (NativeResidualPolicies.terminalOutput T candidates result) = 1)) from
-        funext (optimal_event T data candidates hz)] at hs
-  exact NativeResidualPolicies.native_one_lower T points candidates P limits invoice machine
-    world (NativeBatch.initial_invariant limits ()) rfl ht hz hprice hadmit
-      (le_antisymm (PMF.coe_le_one _ _) hs)
+  simpa only [NativeResidualInvoice.sample_pure] using
+    one_lower_of_mean T points data candidates P limits (PMF.pure invoice) hz hx hdata ht
+      (NativeResidualInvoice.hasMean_pure P invoice hprice)
 
 end Cslib.Probability.StochasticOracle.NativeResidualOptimum

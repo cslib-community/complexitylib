@@ -58,6 +58,18 @@ variable (P : Parameters z)
 @[expose] def batchCost (A : Batch z) : ℝ :=
   (if none ∈ A then P.nearCost else 0) + ∑ j : Fin z, if some j ∈ A then P.specialistCost j else 0
 
+/-- Batch cost is the sum of the declared prices of its original source labels. -/
+theorem batchCost_eq_sum (A : Batch z) :
+    batchCost P A = ∑ i ∈ A, i.elim P.nearCost P.specialistCost := by
+  classical
+  have hsum : (∑ i : Call z,
+      if i ∈ A then i.elim P.nearCost P.specialistCost else 0) =
+      ∑ i ∈ A, i.elim P.nearCost P.specialistCost := by
+    rw [← Finset.sum_filter]
+    simp
+  rw [← hsum, Fintype.sum_option]
+  rfl
+
 open scoped Classical in
 /-- The first response distinguishes a near-cover residual only if that call was
 actually issued. Specialist answers are deterministic for the fixed constructed instance. -/
@@ -231,7 +243,8 @@ private theorem mean_lower {α : Type} [Fintype α] (w : Distribution α ℝ)
   obtain ⟨a, ha, h⟩ := w.exists_support_le_mean f
   exact (hm a (mem_filter.mp ha).2).trans h
 
-private theorem batchCost_nonneg (A : Batch z) : 0 ≤ batchCost P A := by
+/-- Nonnegative per-opportunity prices give a nonnegative cost for every selected batch. -/
+theorem batchCost_nonneg (A : Batch z) : 0 ≤ batchCost P A := by
   classical
   unfold batchCost
   apply add_nonneg

@@ -379,13 +379,7 @@ theorem batchCost_invoice (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
       (invoice ((finSuccEquiv z).symm i) : ℝ) = i.elim P.nearCost P.specialistCost := by
     simpa using hprice ((finSuccEquiv z).symm i)
   simp only [he]
-  have hsum : (∑ i : ResidualCover.Call z,
-      if i ∈ A then i.elim P.nearCost P.specialistCost else 0) =
-      ∑ i ∈ A, i.elim P.nearCost P.specialistCost := by
-    rw [← Finset.sum_filter]
-    simp
-  rw [← hsum, Fintype.sum_option]
-  rfl
+  exact batchCost_eq_sum P A
 
 /-- Every actual response retains its previous accrued bill and adds exactly the
 issued opportunity invoices, even if the query is wrong or its reply is canceled.

@@ -8,10 +8,12 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.FixedMeanInvoice
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualInvoice
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualAll
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutputObservation
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Mixture
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.FeedbackMixture
+import CslibFrontier.Computability.Probabilistic.NativeUnboundedExecution.OutputTransfer
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Tactic
@@ -36,7 +38,7 @@ The compiled program reads ordinary report bytes, never a real-number encoding.
   real expected bill, certified tape output and membership in the native cost class.
 
 Adaptive attainment is downstream in `NativeResidualRealAdaptive`; universal
-real-price lower optima remain separate. In
+real-price optima are assembled in `NativeResidualRealMinima`. In
 particular, a fresh per-batch mixture is not a once-for-all mixture of an adaptive policy.
 -/
 
@@ -52,6 +54,26 @@ variable (points : Fin n ≃ Point T) (candidates : Fin m ≃ Candidate T)
 /-- The source's fixed positive per-opportunity expected costs, with no integrality restriction. -/
 @[expose] def prices (P : Parameters z) : Fin (z + 1) → ℝ≥0 :=
   Fin.cases ⟨P.nearCost, P.near_pos.le⟩ (fun j => ⟨P.specialistCost j, (P.specialist_pos j).le⟩)
+
+/-- The constructed natural invoices have the source's arbitrary real batch means. -/
+theorem hasMean (P : Parameters z) :
+    NativeResidualInvoice.HasMean P (FixedMeanInvoice.law (prices P)) := by
+  classical
+  intro A
+  let B := A.map (finSuccEquiv z).symm.toEmbedding
+  have hi (f : Fin (z + 1) → ℕ) : NativeResidualOracle.invoiceCost f A = ∑ i ∈ B, f i := by
+    simp [B, NativeResidualOracle.invoiceCost]
+  simp_rw [hi]
+  simp only [Nat.cast_sum]
+  rw [FixedMeanInvoice.expected_batch, batchCost_eq_sum]
+  congr 1
+  change (∑ i ∈ A.map (finSuccEquiv z).symm.toEmbedding, (prices P i : ℝ)) = _
+  rw [Finset.sum_map]
+  apply Finset.sum_congr rfl
+  intro i hi
+  cases i with
+  | none => rfl
+  | some j => rfl
 
 /-- Fresh natural invoices at each admitted batch, followed by the original
 conditional residual response. All competitors share this same oracle. -/
@@ -220,41 +242,16 @@ theorem native_all_selectionOnly (P : Parameters z) (hz : 3 ≤ z)
       accept ⟨(NativeResidualRouting.controller false).program.initialConfig
         (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)),
         NativeResidualAttainment.initialMemory⟩ := by
-  intro fuel next hn C hc ha
-  have hh : NativeUnboundedExecution.halted next := by
-    unfold NativeOpenSelection.result at hc
-    split_ifs at hc with hs
-    exact Option.isNone_iff_eq_none.mp hs
-  have ht := (NativeUnboundedExecution.terminal_support _ _ _ _).mpr ⟨hh, fuel, hn⟩
-  have hm : some (next.config.tapes.output, next.memory) ∈
-      ((NativeUnboundedExecution.terminal (NativeResidualRouting.controller false).program
-        (environment (NativeResidualAll.config budget) (sample T points candidates P))
-        ⟨(NativeResidualRouting.controller false).program.initialConfig
-          (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)),
-          NativeResidualAttainment.initialMemory⟩).map
-            (Option.map fun w => (w.config.tapes.output, w.memory))).support :=
-    (PMF.mem_support_map_iff _ _ _).mpr ⟨some next, ht, rfl⟩
-  change _ ∈ ((NativeUnboundedExecution.terminal _
-    (environment _ (mixture _ _)) _).map _).support at hm
-  rw [native_all_mixture] at hm
-  obtain ⟨invoice, _, hm⟩ := (PMF.mem_support_bind_iff _ _ _).mp hm
-  obtain ⟨result, hr, he⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
-  cases result with
-  | none => cases he
-  | some before =>
-    obtain ⟨ho, hm⟩ := Prod.mk.inj (Option.some.inj he)
-    obtain ⟨hb', t, ht⟩ := (NativeUnboundedExecution.terminal_support _ _ _ before).mp hr
-    have hc' : NativeOpenSelection.result
-        (decodeFamily (NativeResidualAttainment.input T points
-          candidates).startup.system.rows.length)
-        before = some C := by
-      have hh' : next.config.tapes.state = none := hh
-      have hbefore : before.config.tapes.state = none := hb'
-      simpa only [NativeOpenSelection.result, hh', hbefore, Option.isNone_none, ite_true, ho]
-        using hc
-    have hp := NativeResidualAll.native_selectionOnly T points candidates P invoice hz budget hb
-      accept t before ht C hc' ha
-    simpa only [hm] using hp
+  apply NativeUnboundedExecution.selectionOnly_of_output_memory_bind _ _
+    (FixedMeanInvoice.law (prices P)) (NativeResidualRouting.controller false).program
+    (fun f => environment (NativeResidualAll.config budget)
+      (NativeResidualOracle.sample T points candidates P f)) _ _ accept _
+    (fun _ => ⟨(NativeResidualRouting.controller false).program.initialConfig
+      (GuardedStartup.encoding (NativeResidualAttainment.input T points candidates)),
+      NativeResidualAttainment.initialMemory⟩)
+  · exact native_all_mixture _ _ _ _ _
+  · intro f _
+    exact NativeResidualAll.native_selectionOnly T points candidates P f hz budget hb accept
 
 /-- The real all-specialist expected cost is attained in the original common-oracle
 native class for any positive source turn budget. -/

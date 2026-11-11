@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.NativeResidualRealAdaptive
+import CslibFrontier.Probability.StochasticOracle.NativeResidualRealMinima
 import CslibFrontierTests.StochasticOracleResidualCover
 import Mathlib.Analysis.SpecialFunctions.Sqrt
 import Mathlib.Tactic
@@ -80,6 +80,53 @@ example : NativeBatch.Quantitative.expected NativeResidualAttainment.limits
     Cslib.Optimization.OneConstraint.Distribution.mean, Fin.sum_univ_succ]
   congr 1
   ring
+
+-- The lower bound quantifies over all admitted native competitors on this same
+-- oracle: these are equalities of the existing native infima, not only feasible bills.
+example : BatchOptimum.optimum NativeResidualAttainment.limits
+    (sample blocks points candidates parameters)
+    (NativeResidualAttainment.input blocks points candidates)
+    () (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1 =
+      ENNReal.ofReal (1 + Real.sqrt 2) := by
+  have hs : 1 < Real.sqrt 2 := (Real.lt_sqrt (by norm_num)).mpr (by norm_num)
+  have hmean : parameters.missing.mean parameters.specialistCost = Real.sqrt 2 := by
+    norm_num [parameters, StochasticOracleResidualCover.parameters,
+      Cslib.Optimization.OneConstraint.Distribution.mean, Fin.sum_univ_succ]
+    ring
+  have hsum : (∑ j, parameters.specialistCost j) = 5 * Real.sqrt 2 := by
+    norm_num [parameters]
+  rw [NativeResidualRealMinima.native_optimum blocks points candidates parameters (by norm_num),
+    hmean, hsum]
+  change ENNReal.ofReal (min (5 * Real.sqrt 2) (1 + Real.sqrt 2)) = _
+  rw [min_eq_right (by nlinarith)]
+
+example : BatchOptimum.optimum (NativeResidualAll.config 1)
+    (sample blocks points candidates parameters)
+    (NativeResidualAttainment.input blocks points candidates)
+    () (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1 =
+      ENNReal.ofReal (5 * Real.sqrt 2) := by
+  rw [NativeResidualRealMinima.native_one_optimum blocks points candidates parameters (by norm_num)]
+  norm_num [parameters]
+
+private def scaled : Parameters 5 :=
+  { parameters with nearCost := 2 * Real.sqrt 2, near_pos := by positivity }
+
+-- The source's nontrivial 5/3 adaptivity ratio holds even at irrational prices.
+example :
+    (BatchOptimum.optimum (NativeResidualAll.config 1)
+      (sample blocks points candidates scaled)
+      (NativeResidualAttainment.input blocks points candidates)
+      () (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1).toReal /
+    (BatchOptimum.optimum NativeResidualAttainment.limits
+      (sample blocks points candidates scaled)
+      (NativeResidualAttainment.input blocks points candidates)
+      () (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1).toReal =
+        5 / 3 := by
+  have h := NativeResidualRealMinima.native_linear_ratio blocks points candidates scaled
+    (by norm_num) (Real.sqrt 2) 2 (Real.sqrt_pos.mpr (by norm_num))
+    (fun _ => rfl) rfl (by norm_num)
+  norm_num at h ⊢
+  exact h
 
 -- Nonintegral fixed costs can give correlated invoices: only one coordinate can
 -- receive the positive cap in a joint draw, without any independence hypothesis.

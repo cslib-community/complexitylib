@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealCost
+import CslibFrontier.Computability.Probabilistic.NativeUnboundedExecution.OutputTransfer
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Tactic
@@ -258,37 +259,18 @@ theorem native_selectionOnly (P : Parameters z) (hz : 3 ≤ z)
       (decodeFamily (input T points candidates).startup.system.rows.length) accept
       ⟨(NativeResidualRouting.controller true).program.initialConfig
         (GuardedStartup.encoding (input T points candidates)), initialMemory⟩ := by
-  intro fuel next hn C hc ha
-  have hh : NativeUnboundedExecution.halted next := by
-    unfold NativeOpenSelection.result at hc
-    split_ifs at hc with hs
-    exact Option.isNone_iff_eq_none.mp hs
-  have ht := (NativeUnboundedExecution.terminal_support _ _ _ _).mpr ⟨hh, fuel, hn⟩
-  have hm : some (next.config.tapes.output, next.memory) ∈
-      ((NativeUnboundedExecution.terminal (NativeResidualRouting.controller true).program
-        (environment limits (NativeResidualRealCost.sample T points candidates P))
-        ⟨(NativeResidualRouting.controller true).program.initialConfig
-          (GuardedStartup.encoding (input T points candidates)), initialMemory⟩).map
-            (Option.map fun w => (w.config.tapes.output, w.memory))).support :=
-    (PMF.mem_support_map_iff _ _ _).mpr ⟨some next, ht, rfl⟩
-  rw [native_mixture T points candidates P hz] at hm
-  simp only [PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hm
-  obtain ⟨f, _, g, _, result, hr, he⟩ := hm
-  cases result with
-  | none => cases he
-  | some before =>
-    obtain ⟨ho, hm⟩ := Prod.mk.inj (Option.some.inj he)
-    obtain ⟨hb, t, ht⟩ := (NativeUnboundedExecution.terminal_support _ _ _ before).mp hr
-    have hc' : NativeOpenSelection.result
-        (decodeFamily (input T points candidates).startup.system.rows.length) before = some C := by
-      have hh' : next.config.tapes.state = none := hh
-      have hbefore : before.config.tapes.state = none := hb
-      simpa only [NativeOpenSelection.result, hh', hbefore, Option.isNone_none, ite_true, ho]
-        using hc
-    have hp := NativeResidualAttainment.native_selectionOnly T points candidates P (combine f g) hz
-      accept t before ht C hc' ha
-    rw [hm] at hp
-    exact hp
+  let ν := FixedMeanInvoice.law (NativeResidualRealCost.prices P)
+  apply NativeUnboundedExecution.selectionOnly_of_output_memory_bind _ _
+    (ν.bind fun f => ν.map fun g => (f, g)) (NativeResidualRouting.controller true).program
+    (fun pair => environment limits
+      (NativeResidualOracle.sample T points candidates P (combine pair.1 pair.2))) _ _ accept _
+    (fun _ => ⟨(NativeResidualRouting.controller true).program.initialConfig
+      (GuardedStartup.encoding (input T points candidates)), initialMemory⟩)
+  · simpa only [PMF.bind_bind, PMF.bind_map, Function.comp_def] using
+      native_mixture T points candidates P hz
+  · intro pair _
+    exact NativeResidualAttainment.native_selectionOnly T points candidates P
+      (combine pair.1 pair.2) hz accept
 
 /-- Certified actual tape success for the same adaptive program and real-mean source. -/
 theorem native_certified (P : Parameters z) (hz : 3 ≤ z) :
@@ -319,8 +301,8 @@ theorem native_cost_mem (P : Parameters z) (hz : 3 ≤ z) :
     (native_expected_cost T points candidates P hz).symm⟩
 
 /-- Both source alternatives, with arbitrary real fixed means, are attained as
-actual native bills. This is feasibility of the source minimum, not yet the
-universal real-price lower bound on that minimum. -/
+actual native bills. This statement records feasibility; the universal real-price
+optimum equality is assembled downstream in `NativeResidualRealMinima`. -/
 theorem minimum_cost_mem (P : Parameters z) (hz : 3 ≤ z) :
     ENNReal.ofReal (min (∑ j, P.specialistCost j)
       (P.nearCost + P.missing.mean P.specialistCost)) ∈

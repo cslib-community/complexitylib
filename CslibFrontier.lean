@@ -6223,6 +6223,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeResidualAll
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualAttainment
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualCostChoice
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualEncoding
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualInvoice
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualMinima
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
@@ -6231,6 +6232,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeResidualPolicies
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealAdaptive
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealChoice
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealCost
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealMinima
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualReplies
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRouting
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualSelector

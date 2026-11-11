@@ -26,9 +26,7 @@ price identity or total-cost/integrability conclusion is assumed.
 * `native_selectionOnly`, `native_certified`: actual tape admission and deadline success.
 * `native_expected_cost`, `native_cost_mem`, `native_upper`: the same code realizes
   the source minimum as an actual attained feasible expected bill.
-
-The universal lower optimum for this fresh real-mean invoice oracle is separate;
-these theorems do not promote the upper bound to an optimum equality.
+* `native_optimum`: the attained bill equals the universal native optimum on this oracle.
 -/
 
 public section
@@ -147,12 +145,34 @@ theorem native_cost_mem (P : Parameters z) (hz : 3 ≤ z) (p : Prices) (h : Refl
     (native_certified T points candidates P hz p).ge,
     (native_expected_cost T points candidates P hz p h).symm⟩
 
-/-- Feasible native upper bound; universal real-mean lower accounting remains separate. -/
+/-- Feasible native upper bound, used with universal mean accounting in `native_optimum`. -/
 theorem native_upper (P : Parameters z) (hz : 3 ≤ z) (p : Prices) (h : Reflects p P) :
     BatchOptimum.optimum limits (NativeResidualRealCost.sample T points candidates P)
       (packed ⟨input T points candidates, p⟩) () (valid T points candidates (by omega)) 1 ≤
       ENNReal.ofReal (min (∑ j, P.specialistCost j)
         (P.nearCost + P.missing.mean P.specialistCost)) :=
   sInf_le (native_cost_mem T points candidates P hz p h)
+
+/-- The same compiled cost-aware selector attains the universal native optimum
+on its priced input, with arbitrary fixed real means reflected by rational data.
+All competitors use this very oracle and seed; lower accounting is derived. -/
+theorem native_optimum (P : Parameters z) (hz : 3 ≤ z) (p : Prices) (h : Reflects p P) :
+    BatchOptimum.optimum limits (NativeResidualRealCost.sample T points candidates P)
+      (packed ⟨input T points candidates, p⟩) () (valid T points candidates (by omega)) 1 =
+      ENNReal.ofReal (min (∑ j, P.specialistCost j)
+        (P.nearCost + P.missing.mean P.specialistCost)) := by
+  apply le_antisymm (native_upper T points candidates P hz p h)
+  let c := (finCongr (NativeResidualEncoding.rows_length T points candidates)).trans candidates
+  have hdata : (packed ⟨input T points candidates, p⟩).startup.system =
+      SourceEncoding.toNative (NativeResidualEncoding.source T points c) := by
+    rw [NativeResidualEncoding.source_reindex]
+    rfl
+  have hlower := NativeResidualOptimum.two_lower_of_mean T points
+    (packed ⟨input T points candidates, p⟩) c P limits
+    (FixedMeanInvoice.law (NativeResidualRealCost.prices P)) (by omega)
+    (valid T points candidates (by omega)) hdata rfl (NativeResidualRealCost.hasMean P)
+  dsimp only [c, packed, input] at hlower
+  rwa [NativeResidualInvoice.sample_reindex T points candidates
+    (NativeResidualEncoding.rows_length T points candidates)] at hlower
 
 end Cslib.Probability.StochasticOracle.NativeResidualRealChoice

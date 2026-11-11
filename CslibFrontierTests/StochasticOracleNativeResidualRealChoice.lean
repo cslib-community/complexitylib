@@ -90,4 +90,50 @@ example : ENNReal.ofReal (3 / 4) ∈ BatchOptimum.costs NativeResidualAttainment
     Fin.sum_univ_succ] at h ⊢
   exact h
 
+-- The same compiled code is optimal over every admitted competitor at fractional
+-- mean prices; no constant natural invoice can realize the near price.
+example : BatchOptimum.optimum NativeResidualAttainment.limits
+    (NativeResidualRealCost.sample blocks points candidates parameters)
+    (packed ⟨NativeResidualAttainment.input blocks points candidates, prices⟩) ()
+    (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1 =
+      ENNReal.ofReal (3 / 4) := by
+  rw [NativeResidualRealChoice.native_optimum blocks points candidates parameters
+    (by norm_num) prices reflects]
+  norm_num [parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
+    Fin.sum_univ_succ]
+
+private def dear : Parameters 5 :=
+  { parameters with nearCost := 4, near_pos := by norm_num }
+private def dearPrices : Prices := ⟨4, prices.entries⟩
+
+private def dearReflects : Reflects dearPrices dear where
+  rows _ := ⟨1 / 5, 1 / 2⟩
+  entries := rfl
+  near := by norm_num [dearPrices, dear]
+  probability j := by norm_num [dear, parameters, StochasticOracleResidualCover.parameters]
+  price j := by norm_num [dear, parameters]
+
+-- Changing only the rational input table selects the cheaper all-specialist
+-- branch of this same code, now with real mean prices and attained optimum 5/2.
+example : NativeBatch.Quantitative.expected NativeResidualAttainment.limits
+    (NativeResidualRealCost.sample blocks points candidates dear)
+    controller.program NativeBatch.Trace.charge 3
+    ⟨controller.program.initialConfig
+      (encoding ⟨NativeResidualAttainment.input blocks points candidates, dearPrices⟩),
+      NativeResidualAttainment.initialMemory⟩ = ENNReal.ofReal (5 / 2) := by
+  rw [NativeResidualRealChoice.native_expected_cost blocks points candidates dear
+    (by norm_num) dearPrices dearReflects]
+  norm_num [dear, parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
+    Fin.sum_univ_succ]
+
+example : BatchOptimum.optimum NativeResidualAttainment.limits
+    (NativeResidualRealCost.sample blocks points candidates dear)
+    (packed ⟨NativeResidualAttainment.input blocks points candidates, dearPrices⟩) ()
+    (NativeResidualAttainment.valid blocks points candidates (by norm_num)) 1 =
+      ENNReal.ofReal (5 / 2) := by
+  rw [NativeResidualRealChoice.native_optimum blocks points candidates dear
+    (by norm_num) dearPrices dearReflects]
+  norm_num [dear, parameters, StochasticOracleResidualCover.parameters, Distribution.mean,
+    Fin.sum_univ_succ]
+
 end CslibFrontierTests.StochasticOracleNativeResidualRealChoice
