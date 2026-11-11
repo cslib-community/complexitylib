@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Promise.Reduction
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Logics.Propositional.DNF.Encoding
 
 /-!
@@ -115,18 +116,11 @@ theorem WellFormed.mono {I : CMMSAInstance} {Δ Δ' : ℕ} (h : I.WellFormed Δ)
     I.WellFormed Δ' :=
   { h with length_flatten_le := fun φ hφ => (h.length_flatten_le φ hφ).trans hΔ }
 
-/-- The encoding of the fields: unary weights, unary threshold, formulas over binary variables. -/
-private abbrev encFields : List ℕ × ℕ × List (DNF ℕ) ↪ List Bool :=
-  encPair (encList encUnary) (encPair encUnary (encList (encDNFOver encNat)))
-
 /-- **Unary weights and threshold**, binary variables: an instance is encoded as the framed list of
 its unary weights, its framed unary threshold and the list of its formulas over binary variable
 numbers (`encDNFOver encNat`). -/
-def encoding : CMMSAInstance ↪ List Bool :=
-  ⟨fun I => encFields (I.weights, I.threshold, I.formulas), fun I J h => by
-    have h := encFields.injective h
-    exact CMMSAInstance.ext (congrArg Prod.fst h) (congrArg (fun p => p.2.1) h)
-      (congrArg (fun p => p.2.2) h)⟩
+enc_structure encoding : CMMSAInstance where
+  weights : (encList encUnary), threshold : encUnary, formulas : (encList (encDNFOver encNat))
 
 section PolyTime
 
@@ -134,7 +128,7 @@ variable {Input : Type} {input : Input ↪ List Bool}
 
 private theorem isPolyTime_toFields :
     ComputableInPolyTime (fun I : CMMSAInstance => (I.weights, I.threshold, I.formulas))
-      encoding encFields :=
+      encoding encodingFields :=
   .of_eq fun _ => rfl
 
 /-- Reading the weights is polynomial-time. -/
