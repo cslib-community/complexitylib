@@ -11,14 +11,15 @@ public import CslibFrontier.Computability.MCSP.MultiNPHard.Window
 import CslibFrontier.Computability.Circuit.FanIn
 import Cslib.Computability.Circuit.Counting
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import Mathlib.Data.Int.CardIntervalMod
 
 /-!
 # Window templates: the soundness count
 
-If no `ℓ + 1` windows come close to covering the inputs, then for most tables `T` the template
-followed by `T` costs more than the template's distinct non-input gate functions plus `ℓ`. This is
-the soundness half of the reduction of Ilango, Loff and Oliveira [IlangoLoffOliveira2020, §4.2,
-pp. 22:20–22:21].
+If no set of at most `ℓ + 1` windows comes close to covering the inputs, then for most tables `T`
+the template followed by `T` costs more than the template's distinct non-input gate functions plus
+`ℓ`. This is the soundness half of the reduction of Ilango, Loff and Oliveira
+[IlangoLoffOliveira2020, §4.2, pp. 22:20–22:21].
 
 **Library route.** The source proves soundness by compression [IlangoLoffOliveira2020, Lemma 16
 and its proof, pp. 22:22–22:23], using that the sets have bounded size. This file proves it
@@ -119,16 +120,16 @@ private theorem mem_windowsOf {S : Finset (Fin (p + gateCount p t))} {j : Fin (g
   rw [Fin.addCases_right, hi]
   exact Option.mem_toFinset.mpr rfl
 
-/-- **Soundness, as a count** (library route). Suppose every `ℓ + 1` of the windows miss a common
-set of at least `d` inputs, with `d ≥ p (5ℓ + 5)`, `ℓ ≤ t ≤ 2^p` and `2^p ≥ 64`. Then for at most
-a third of the tables `T` does the template followed by `T` cost at most the template's distinct
-non-input gate functions plus `ℓ`, over any De Morgan basis. This replaces the compression argument
-of [IlangoLoffOliveira2020, Lemma 16, pp. 22:22–22:23] by a union bound over small circuits. -/
+/-- **Soundness, as a count** (library route). Suppose every set of at most `ℓ + 1` windows misses a
+common set of at least `d` inputs, with `d ≥ p (5ℓ + 5)`, `ℓ ≤ t ≤ 2^p` and `2^p ≥ 64`. Then for at
+most a third of the tables `T` does the template followed by `T` cost at most the template's
+distinct non-input gate functions plus `ℓ`, over any De Morgan basis. This replaces the compression
+argument of [IlangoLoffOliveira2020, Lemma 16, pp. 22:22–22:23] by a union bound over small
+circuits. -/
 theorem three_mul_card_cheap_le (A : Fin t → Finset (Fin (2 ^ p))) (ℓ d : ℕ)
     (hcover : ∀ B : Finset (Fin t), #B ≤ ℓ + 1 →
       ∃ P : Finset (Fin (2 ^ p)), d ≤ #P ∧ ∀ i ∈ B, Disjoint (A i) P)
     (ht : t ≤ 2 ^ p) (hℓ : ℓ ≤ t) (hX : 64 ≤ 2 ^ p) (hd : p * (5 * ℓ + 5) ≤ d) :
-    open scoped Classical in
     3 * #{T : Fin (2 ^ p) → Bool |
       ecomplexity I (fun x => Fin.append (template A T x) (single (tableFun T) x)) ≤
         ((#(nonInputComponents (template A T)) + ℓ : ℕ) : ℕ∞)} ≤ 2 ^ (2 ^ p) := by
@@ -240,35 +241,29 @@ theorem lift_cover {N : ℕ} (hN : 0 < N) (S : Fin t → Finset ℕ) (C : Finset
   obtain ⟨i, hi, hu⟩ := hC _ (Nat.mod_lt _ hN)
   exact ⟨i, hi, mem_lift.mpr hu⟩
 
-/-- At least `2^p / N` inputs `y < 2^p` have residue `u < N`. -/
+/-- At least `2^p / N` inputs `y < 2^p` have residue `u < N` (`Nat.count_modEq_card`). -/
 private theorem le_card_residue {N u : ℕ} (hN : 0 < N) (hu : u < N) :
     2 ^ p / N ≤ #{y : Fin (2 ^ p) | (y : ℕ) % N = u} := by
-  have hk : ∀ k < 2 ^ p / N, u + k * N < 2 ^ p := fun k hk => by
-    have h1 : (k + 1) * N ≤ 2 ^ p / N * N := Nat.mul_le_mul_right N hk
-    have h2 := Nat.div_mul_le_self (2 ^ p) N
-    rw [Nat.succ_mul] at h1
-    omega
-  calc 2 ^ p / N = #(range (2 ^ p / N)) := (card_range _).symm
-    _ ≤ #{y : Fin (2 ^ p) | (y : ℕ) % N = u} := by
-      refine card_le_card_of_injOn
-        (fun k => if h : k < 2 ^ p / N then ⟨u + k * N, hk k h⟩ else ⟨0, Nat.two_pow_pos p⟩)
-        (fun k hk' => ?_) (fun k hk' l hl' heq => ?_)
-      · have hk'' := mem_range.mp hk'
-        simp only [dite_eq_left hk'', mem_coe, mem_filter, mem_univ, true_and]
-        rw [Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hu]
-      · have hk'' := mem_range.mp hk'
-        have hl'' := mem_range.mp hl'
-        simp only [dite_eq_left hk'', dite_eq_left hl'', Fin.mk.injEq] at heq
-        exact Nat.eq_of_mul_eq_mul_right hN (by omega)
+  have hc := Nat.count_modEq_card (2 ^ p) hN u
+  rw [Nat.count_eq_card_filter_range] at hc
+  have hmap : #{y : Fin (2 ^ p) | (y : ℕ) % N = u} = #{x ∈ range (2 ^ p) | x ≡ u [MOD N]} := by
+    rw [← card_map Fin.valEmbedding]
+    congr 1
+    ext x
+    simp only [mem_map, mem_filter, mem_univ, true_and, Fin.valEmbedding_apply, mem_range,
+      Nat.ModEq, Nat.mod_eq_of_lt hu]
+    exact ⟨fun ⟨y, hy, hx⟩ => hx ▸ ⟨y.isLt, hy⟩, fun ⟨hx, hy⟩ => ⟨⟨x, hx⟩, hy, rfl⟩⟩
+  rw [hmap, hc]
+  exact Nat.le_add_right _ _
 
-/-- **Soundness for lifted windows** (library route). Suppose every `ℓ + 1` of the sets `S i` miss
-some common residue `u < N`, with `ℓ ≤ t ≤ 2^p`, `2^p ≥ 64` and `p (5ℓ + 5) ≤ 2^p / N`. Then for at
-most a third of the tables `T` does the template of the lifted windows followed by `T` cost at most
-its distinct non-input gate functions plus `ℓ`, over any De Morgan basis. -/
+/-- **Soundness for lifted windows** (library route). Suppose every set of at most `ℓ + 1` of the
+sets `S i` misses some common residue `u < N`, with `ℓ ≤ t ≤ 2^p`, `2^p ≥ 64` and
+`p (5ℓ + 5) ≤ 2^p / N`. Then for at most a third of the tables `T` does the template of the lifted
+windows followed by `T` cost at most its distinct non-input gate functions plus `ℓ`, over any De
+Morgan basis. -/
 theorem three_mul_card_cheap_lift_le {N : ℕ} (hN : 0 < N) (S : Fin t → Finset ℕ) (ℓ : ℕ)
     (hmiss : ∀ B : Finset (Fin t), #B ≤ ℓ + 1 → ∃ u < N, ∀ i ∈ B, u ∉ S i)
     (ht : t ≤ 2 ^ p) (hℓ : ℓ ≤ t) (hX : 64 ≤ 2 ^ p) (hd : p * (5 * ℓ + 5) ≤ 2 ^ p / N) :
-    open scoped Classical in
     3 * #{T : Fin (2 ^ p) → Bool |
       ecomplexity I (fun x => Fin.append (template (fun i => lift p N (S i)) T x)
           (single (tableFun T) x)) ≤

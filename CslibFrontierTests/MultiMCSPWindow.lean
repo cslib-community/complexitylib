@@ -20,6 +20,8 @@ Concrete instances of `CslibFrontier.Computability.MCSP.MultiNPHard.Window` and 
 5. Both directions for the set system `{{0}, {1}}` on two elements, lifted to `2^6` inputs: the
    cover by both sets gives cost at most the count plus one for every table, while no single set
    covers, so at most a third of the tables cost at most the count plus zero.
+6. Soundness at `ℓ = 1`: the singletons `{0}, {1}, {2}` lifted to `2^9` inputs, where no two sets
+   cover and `p (5ℓ + 5) = 90 ≤ 170 = 2^9 / 3`.
 -/
 
 namespace CslibFrontierTests.MultiMCSPWindow
@@ -126,5 +128,18 @@ example : 3 * #{T : Fin (2 ^ 6) → Bool |
   refine ⟨1 - (i : ℕ), by omega, fun j hj => ?_⟩
   rw [mem_singleton.mp (hi hj)]
   fin_cases i <;> decide
+
+/-- The singletons `{0}, {1}, {2}` on the residues modulo three. -/
+private def S₃ : Fin 3 → Finset ℕ := ![{0}, {1}, {2}]
+
+/-- Soundness at `ℓ = 1`: no two singletons cover the three residues, so at most a third of the
+tables cost at most the count plus one. -/
+example : 3 * #{T : Fin (2 ^ 9) → Bool |
+      ecomplexity Boolean.DeMorgan.interpretation
+        (fun x => Fin.append (template (fun i => lift 9 3 (S₃ i)) T x) (single (tableFun T) x)) ≤
+        ((#(nonInputComponents (template (fun i => lift 9 3 (S₃ i)) T)) + 1 : ℕ) : ℕ∞)} ≤
+      2 ^ (2 ^ 9) :=
+  three_mul_card_cheap_lift_le (I := Boolean.DeMorgan.interpretation) (by norm_num) S₃ 1
+    (by decide) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 end CslibFrontierTests.MultiMCSPWindow
