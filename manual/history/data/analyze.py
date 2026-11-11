@@ -7,7 +7,7 @@ Durations are never interpreted as autonomous effort or successful theorem time.
 import argparse, collections, datetime as dt, json, math, statistics
 from pathlib import Path
 from git_history import REVISION
-DEFAULT_DATA=Path(__file__).resolve().parents[2]/'_generated/development-history/data'
+DEFAULT_DATA=Path(__file__).resolve().parents[2]/'_generated/history/data'
 
 def stamp(s):return dt.datetime.fromisoformat(s.replace('Z','+00:00'))
 def stats(xs):
