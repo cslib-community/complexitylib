@@ -78,13 +78,8 @@ theorem CSP.one_le_bitWidth (q : ℕ) : 1 ≤ CSP.bitWidth q :=
   le_max_left 1 (Nat.clog 2 q)
 
 /-- `q` is at most `2 ^ bitWidth q`. -/
-theorem CSP.le_two_pow_bitWidth (q : ℕ) : q ≤ 2 ^ CSP.bitWidth q := by
-  dsimp only [CSP.bitWidth]
-  cases q with
-  | zero => decide
-  | succ q' =>
-    have hle : Nat.clog 2 (q' + 1) ≤ max 1 (Nat.clog 2 (q' + 1)) := le_max_right _ _
-    exact (Nat.le_pow_clog (by decide) (q' + 1)).trans (Nat.pow_le_pow_right (by decide) hle)
+theorem CSP.le_two_pow_bitWidth (q : ℕ) : q ≤ 2 ^ CSP.bitWidth q :=
+  (Nat.le_pow_clog one_lt_two q).trans (Nat.pow_le_pow_right two_pos (le_max_right _ _))
 
 /-- The `b` Boolean variables representing domain variable `v`. -/
 def CSP.bitScope (b : ℕ) (v : ℕ) : List ℕ :=

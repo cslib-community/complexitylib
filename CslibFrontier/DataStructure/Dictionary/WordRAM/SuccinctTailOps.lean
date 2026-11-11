@@ -912,22 +912,6 @@ theorem realizes_appendTailItemGen :
       (fun _ _ => 0) := by
   have hrg := realizes_readGMGen
   have hwg := realizes_writeGMGen
-  refine Realizes.congr (p := fun d : DictParams × (ℕ × ℕ) => do
-      let r_idx ← pure (4 + 3 * d.2.2 + 1)
-      let r_b ← readGMGenProg (d.1, (d.2.1, r_idx))
-      let i1 ← pure 1
-      let t_new ← readGMGenProg (d.1, (d.2.1, i1))
-      let d_new ← pure (d.2.2 * dpTailCap d.1 + r_b)
-      let ptr_idx ← pure (dpGmTailPtrBase d.1 + d_new)
-      writeGMGenProg (d.1, ((d.2.1, ptr_idx), t_new))
-      let own_idx ← pure (dpGmTailOwnerBase d.1 + t_new)
-      writeGMGenProg (d.1, ((d.2.1, own_idx), d_new))
-      let r_b1 ← pure (r_b + 1)
-      writeGMGenProg (d.1, ((d.2.1, r_idx), r_b1))
-      let t_new1 ← pure (t_new + 1)
-      writeGMGenProg (d.1, ((d.2.1, i1), t_new1))
-      pure t_new) ?_
-    (fun d => by simp [appendTailItemGenProg, ← PFunctor.FreeM.bind_eq_bind])
   realizeDictWith [appendTailItemGenPre_mk]
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (appendTailItem_bounds h.2).1)
@@ -936,13 +920,13 @@ theorem realizes_appendTailItemGen :
   · exact (appendTailItem_bounds h.2).1
   · exact fits_const_of_dictEnv h.1 (by omega)
   · exact (appendTailItem_bounds h.2).2.1
-  · have hbnd := (appendTailItem_bounds h.2).2.2.1
-    exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU (by omega)
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (appendTailItem_bounds h.2).2.2.1)
   · exact (appendTailItem_bounds h.2).2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (le_of_lt (appendTailItem_bounds h.2).2.2.2.1)
+  · have hbnd := (appendTailItem_bounds h.2).2.2.1
+    exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU (by omega)
   · exact (appendTailItem_bounds h.2).2.2.2.1
   · exact fits_of_le_globalMetaLen h.1 h.2.2.2.2 hw hnU hU
       (appendTailItem_bounds h.2).2.2.2.2.1

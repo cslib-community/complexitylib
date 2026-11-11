@@ -220,7 +220,7 @@ theorem isPPTOn_run_indexedSigningOracle (S : IndexedSignatureScheme) {adversary
         Nat.mul_le_mul_left c (Nat.pow_le_pow_left (by omega) d)
       dsimp only
       omega
-    · enc_len [encList_cons, encPair_apply]
+    · enc_len
   · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
     subst hresult
     exact ⟨trivial, by simp, by lia⟩

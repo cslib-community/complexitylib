@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Complexity.Classes.PH.KarpLipton
 public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.MCSP.NP
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Computability.Circuit.Boolean.EvaluationTime
 import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
@@ -63,6 +64,9 @@ special case.
 
 ## Main definitions
 
+* `Cslib.MCSP.MergeHeader`, `Cslib.MCSP.MergeInput`: header and child-state input structures for
+  `CircuitMinMergeLanguage`, with `enc_structure` encodings `Cslib.MCSP.encHeader` and
+  `Cslib.MCSP.encMerge`.
 * `Cslib.MCSP.agreesOnPoint`, `Cslib.MCSP.AgreesWithChildren`: child-agreement predicates on a
   subcube prefix `p` (tested via `List.isPrefixOf`).
 * `Cslib.MCSP.IsMergedCert`, `Cslib.MCSP.IsMinMergedCert`: valid and lexicographically minimal
@@ -222,63 +226,77 @@ def IsMinMergedCert (n s : ℕ) (p w₀ w₁ w : List Bool) : Prop :=
 bit followed by a certificate of length `certLength n s`. -/
 def stateWidth (n s : ℕ) : ℕ := certLength n s + 1
 
-/-- The fixed parameters `((n, s), (p, j))` of a query to `CircuitMinMergeLanguage`: arity `n` and
-size bound `s` in unary, subcube prefix `p`, and output bit index `j` in unary. -/
-abbrev MergeHeader : Type := (ℕ × ℕ) × (List Bool × ℕ)
+/-- The fixed parameters `(arity, size, subcube, bitIndex)` of a query to
+`CircuitMinMergeLanguage`: arity and size bound in unary, subcube prefix, and output bit index in
+unary. -/
+@[ext] structure MergeHeader : Type where
+  /-- Truth-table arity `n`. -/
+  arity : ℕ
+  /-- Circuit size bound `s`. -/
+  size : ℕ
+  /-- Subcube prefix `p`. -/
+  subcube : List Bool
+  /-- Output bit index `j`. -/
+  bitIndex : ℕ
+  deriving DecidableEq
 
-/-- Encoding of `MergeHeader` with `n, s, j` in unary and `p` as raw bits. -/
-def encHeader : MergeHeader ↪ List Bool :=
-  encPair (encPair encUnary encUnary) (encPair encBits encUnary)
+/-- Encoding of `MergeHeader` with `arity`, `size`, `bitIndex` in unary and `subcube` as raw
+bits. -/
+enc_structure encHeader : MergeHeader where
+  arity : encUnary,
+  size : encUnary,
+  subcube : encBits,
+  bitIndex : encUnary
 
-/-- An input `(((n, s), (p, j)), v)` to `CircuitMinMergeLanguage`, where `v` concatenates the two
-child state vectors `(ok₀, w₀)` and `(ok₁, w₁)` of width `stateWidth n s`. -/
-abbrev MergeInput : Type := MergeHeader × List Bool
+attribute [fun_prop] encHeader_arity_polyTime encHeader_size_polyTime encHeader_subcube_polyTime
+  encHeader_bitIndex_polyTime encHeader_mk_polyTime
 
-/-- Encoding of `MergeInput` as `encPair encHeader encBits`, so `encMerge (hdr, v) =
-frame (encHeader hdr) ++ v`. -/
-def encMerge : MergeInput ↪ List Bool :=
-  encPair encHeader encBits
+/-- An input `⟨hdr, childStates⟩` to `CircuitMinMergeLanguage`, where `childStates` concatenates
+the two child state vectors `(ok₀, w₀)` and `(ok₁, w₁)` of width `stateWidth n s`. -/
+@[ext] structure MergeInput : Type where
+  /-- Query header `(arity, size, subcube, bitIndex)`. -/
+  header : MergeHeader
+  /-- Concatenated child state vectors `(ok₀, w₀) ++ (ok₁, w₁)`. -/
+  childStates : List Bool
+  deriving DecidableEq
 
-/-- The arity `n` of a `MergeInput` `(((n, s), (p, j)), v)`. -/
-abbrev mergeArity (a : MergeInput) : ℕ := a.1.1.1
+/-- Encoding of `MergeInput` pairing `encHeader` with `encBits`, so
+`encMerge ⟨hdr, v⟩ = frame (encHeader hdr) ++ v`. -/
+enc_structure encMerge : MergeInput where
+  header : encHeader,
+  childStates : encBits
 
-/-- The size bound `s` of a `MergeInput` `(((n, s), (p, j)), v)`. -/
-abbrev mergeSize (a : MergeInput) : ℕ := a.1.1.2
-
-/-- The subcube prefix `p` of a `MergeInput` `(((n, s), (p, j)), v)`. -/
-abbrev mergePrefix (a : MergeInput) : List Bool := a.1.2.1
-
-/-- The output bit index `j` of a `MergeInput` `(((n, s), (p, j)), v)`. -/
-abbrev mergeBitIndex (a : MergeInput) : ℕ := a.1.2.2
+attribute [fun_prop] encMerge_header_polyTime encMerge_childStates_polyTime encMerge_mk_polyTime
 
 /-- Extract the left child validity bit `ok₀` from a `MergeInput`. -/
-def mergeOk₀ (a : MergeInput) : Bool := a.2.getD 0 false
+def mergeOk₀ (a : MergeInput) : Bool := a.childStates.getD 0 false
 
 /-- Extract the left child certificate `w₀` of length `certLength n s` from a `MergeInput`. -/
 def mergeCert₀ (a : MergeInput) : List Bool :=
-  (a.2.drop 1).take (certLength (mergeArity a) (mergeSize a))
+  (a.childStates.drop 1).take (certLength a.header.arity a.header.size)
 
 /-- Extract the right child validity bit `ok₁` from a `MergeInput`. -/
 def mergeOk₁ (a : MergeInput) : Bool :=
-  a.2.getD (stateWidth (mergeArity a) (mergeSize a)) false
+  a.childStates.getD (stateWidth a.header.arity a.header.size) false
 
 /-- Extract the right child certificate `w₁` of length `certLength n s` from a `MergeInput`. -/
 def mergeCert₁ (a : MergeInput) : List Bool :=
-  (a.2.drop (stateWidth (mergeArity a) (mergeSize a) + 1)).take
-    (certLength (mergeArity a) (mergeSize a))
+  (a.childStates.drop (stateWidth a.header.arity a.header.size + 1)).take
+    (certLength a.header.arity a.header.size)
 
 /-- **The `CircuitMinMergeLanguage` decision problem**, adapted from `Circuit-Min-Merge` in
-[McKayMurrayWilliams2019, Section 2.1]: given parameters `((n, s), (p, j))` and
-concatenated child states `v` representing `(ok₀, w₀)` and `(ok₁, w₁)` for the two half-subcubes
-`p ++ [false]` and `p ++ [true]` (rather than `t` intervals), accepts when `ok₀ = true`,
-`ok₁ = true`, and there is a `BitString.wordLt`-least valid size-`≤ s` merged certificate `w`
-(`IsMinMergedCert n s p w₀ w₁ w`, rather than a minimum-size circuit) whose `j`-th output bit
-(`true` at `j = 0`, and bit `j - 1` of `w` at `j > 0`) is `true`. -/
+[McKayMurrayWilliams2019, Section 2.1]: given header parameters `⟨n, s, p, j⟩` and concatenated
+child states `v` representing `(ok₀, w₀)` and `(ok₁, w₁)` for the two half-subcubes `p ++ [false]`
+and `p ++ [true]` (rather than `t` intervals), accepts when `ok₀ = true`, `ok₁ = true`, and there
+is a `BitString.wordLt`-least valid size-`≤ s` merged certificate `w` (`IsMinMergedCert n s p w₀ w₁
+w`, rather than a minimum-size circuit) whose `j`-th output bit (`true` at `j = 0`, and bit `j - 1`
+of `w` at `j > 0`) is `true`. -/
 def CircuitMinMergeLanguage : Set MergeInput :=
   {a | mergeOk₀ a = true ∧ mergeOk₁ a = true ∧
     ∃ w : List Bool,
-      IsMinMergedCert (mergeArity a) (mergeSize a) (mergePrefix a) (mergeCert₀ a) (mergeCert₁ a) w ∧
-      (mergeBitIndex a == 0 || w.getD (mergeBitIndex a - 1) false) = true}
+      IsMinMergedCert a.header.arity a.header.size a.header.subcube (mergeCert₀ a) (mergeCert₁ a)
+        w ∧
+      (a.header.bitIndex == 0 || w.getD (a.header.bitIndex - 1) false) = true}
 
 private theorem PPolyOn_of_computableInPolyTime {α : Type} {enc : α ↪ List Bool}
     {f : α → Bool} (hf : ComputableInPolyTime f enc encBool) :
@@ -299,29 +317,17 @@ private theorem PPolyOn_imp {α : Type} {enc : α ↪ List Bool} {P Q : α → P
 The arity `n` and size bound `s` are read from the header in unary; the derived widths
 `certLength n s` and `stateWidth n s` are then unary arithmetic. -/
 
-open ComputableInPolyTime in
-/-- The arity `n` of a merge query is polynomial-time in unary. -/
-private theorem computableInPolyTime_mergeArity :
-    ComputableInPolyTime mergeArity encMerge encUnary :=
-  (fst encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-
-open ComputableInPolyTime in
-/-- The size bound `s` of a merge query is polynomial-time in unary. -/
-private theorem computableInPolyTime_mergeSize :
-    ComputableInPolyTime mergeSize encMerge encUnary :=
-  (snd encUnary encUnary).comp ((fst _ _).comp (fst encHeader encBits))
-
 /-- The certificate length `certLength n s` of a merge query is polynomial-time in unary. -/
 private theorem computableInPolyTime_mergeCertLength :
-    ComputableInPolyTime (fun a => certLength (mergeArity a) (mergeSize a)) encMerge encUnary := by
-  have hn := computableInPolyTime_mergeArity
-  have hs := computableInPolyTime_mergeSize
+    ComputableInPolyTime (fun a : MergeInput => certLength a.header.arity a.header.size)
+      encMerge encUnary := by
   unfold certLength
   fun_prop
 
 /-- The child state width `stateWidth n s` of a merge query is polynomial-time in unary. -/
 private theorem computableInPolyTime_mergeStateWidth :
-    ComputableInPolyTime (fun a => stateWidth (mergeArity a) (mergeSize a)) encMerge encUnary := by
+    ComputableInPolyTime (fun a : MergeInput => stateWidth a.header.arity a.header.size)
+      encMerge encUnary := by
   have hcert := computableInPolyTime_mergeCertLength
   unfold stateWidth
   fun_prop
@@ -330,55 +336,62 @@ open ComputableInPolyTime in
 private theorem computableInPolyTime_mergeCert₀ :
     ComputableInPolyTime mergeCert₀ encMerge encBits := by
   unfold mergeCert₀
-  exact bitsTakeWithInput (bitsDropWithInput (snd encHeader encBits) (const 1))
+  exact bitsTakeWithInput (bitsDropWithInput (by fun_prop) (const 1))
     computableInPolyTime_mergeCertLength
 
 open ComputableInPolyTime in
 private theorem computableInPolyTime_mergeCert₁ :
     ComputableInPolyTime mergeCert₁ encMerge encBits := by
   have hdrop : ComputableInPolyTime
-      (fun a => stateWidth (mergeArity a) (mergeSize a) + 1) encMerge encUnary := by
+      (fun a : MergeInput => stateWidth a.header.arity a.header.size + 1) encMerge encUnary := by
     have hsw := computableInPolyTime_mergeStateWidth
     fun_prop
   unfold mergeCert₁
-  exact bitsTakeWithInput (bitsDropWithInput (snd encHeader encBits) hdrop)
+  exact bitsTakeWithInput (bitsDropWithInput (by fun_prop) hdrop)
     computableInPolyTime_mergeCertLength
 
 open ComputableInPolyTime in
 private theorem isMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) :
     {q : MergeInput × List Bool |
-      IsMergedCert q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
+      IsMergedCert q.1.header.arity q.1.header.size q.1.header.subcube
+        (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
       PPolyOn (encPair encMerge encBits) := by
   let encQ := encPair encMerge encBits
   have hq1 : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1) encQ encMerge :=
     fst encMerge encBits
-  have hn := computableInPolyTime_mergeArity.comp' hq1
-  have hs := computableInPolyTime_mergeSize.comp' hq1
-  have hp : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.1.2.1) encQ encBits :=
-    (fst encBits encUnary).comp ((snd _ _).comp ((fst encHeader encBits).comp hq1))
+  have hn : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.header.arity)
+      encQ encUnary := by
+    fun_prop
+  have hs : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.header.size)
+      encQ encUnary := by
+    fun_prop
+  have hp : ComputableInPolyTime (fun q : MergeInput × List Bool => q.1.header.subcube)
+      encQ encBits := by
+    fun_prop
   have hw₀ := computableInPolyTime_mergeCert₀.comp' hq1
   have hw₁ := computableInPolyTime_mergeCert₁.comp' hq1
   have hcert := computableInPolyTime_mergeCertLength.comp' hq1
   have hw : ComputableInPolyTime (fun q : MergeInput × List Bool => q.2) encQ encBits :=
     snd encMerge encBits
-  have hlen : {q : MergeInput × List Bool | q.2.length = certLength q.1.1.1.1 q.1.1.1.2} ∈
-      PPolyOn encQ := by
+  have hlen : {q : MergeInput × List Bool |
+      q.2.length = certLength q.1.header.arity q.1.header.size} ∈ PPolyOn encQ := by
     simpa [decide_eq_true_eq] using PPolyOn_of_computableInPolyTime
       (decide_eq' (length_bits.comp (snd encMerge encBits)) hcert)
-  have hvalid : {q : MergeInput × List Bool | validCertificate q.1.1.1.1 q.1.1.1.2 q.2 = true} ∈
-      PPolyOn encQ :=
+  have hvalid : {q : MergeInput × List Bool |
+      validCertificate q.1.header.arity q.1.header.size q.2 = true} ∈ PPolyOn encQ :=
     PPolyOn_of_computableInPolyTime (computableInPolyTime_validCertificate hn hs hw)
   let encQX := encPair encQ encBits
   have hqx1 : ComputableInPolyTime (fun r : (MergeInput × List Bool) × List Bool => r.1)
       encQX encQ := fst encQ encBits
   have hagrees_pt : {r : (MergeInput × List Bool) × List Bool |
-      agreesOnPoint r.1.1.1.1.1 r.1.1.1.1.2 r.1.1.1.2.1
+      agreesOnPoint r.1.1.header.arity r.1.1.header.size r.1.1.header.subcube
         (mergeCert₀ r.1.1) (mergeCert₁ r.1.1) r.1.2 r.2 = true} ∈ PPolyOn encQX :=
     PPolyOn_of_computableInPolyTime (computableInPolyTime_agreesOnPoint
       (hn.comp hqx1) (hs.comp hqx1) (hp.comp hqx1) (hw₀.comp hqx1) (hw₁.comp hqx1)
       (hw.comp hqx1) (snd encQ encBits))
   have hagrees : {q : MergeInput × List Bool |
-      AgreesWithChildren q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
+      AgreesWithChildren q.1.header.arity q.1.header.size q.1.header.subcube
+        (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
       PPolyOn encQ :=
     PPolyOn.forall_of_computableInPolyTime_length hNP hn hagrees_pt
   exact PPolyOn.inf hlen (PPolyOn.inf hvalid hagrees)
@@ -386,20 +399,22 @@ private theorem isMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) 
 open ComputableInPolyTime in
 private theorem isMinMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBits) :
     {q : MergeInput × List Bool |
-      IsMinMergedCert q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
+      IsMinMergedCert q.1.header.arity q.1.header.size q.1.header.subcube
+        (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} ∈
       PPolyOn (encPair encMerge encBits) := by
   let encQ := encPair encMerge encBits
   let encQW := encPair encQ encBits
   have hmerged := isMergedCert_mem_PPolyOn hNP
   have hmerged' : {r : (MergeInput × List Bool) × List Bool |
-      IsMergedCert r.1.1.1.1.1 r.1.1.1.1.2 r.1.1.1.2.1
+      IsMergedCert r.1.1.header.arity r.1.1.header.size r.1.1.header.subcube
         (mergeCert₀ r.1.1) (mergeCert₁ r.1.1) r.2} ∈ PPolyOn encQW := by
     have hred : PolyTimeReducible encQW encQ
         {r : (MergeInput × List Bool) × List Bool |
-          IsMergedCert r.1.1.1.1.1 r.1.1.1.1.2 r.1.1.1.2.1
+          IsMergedCert r.1.1.header.arity r.1.1.header.size r.1.1.header.subcube
             (mergeCert₀ r.1.1) (mergeCert₁ r.1.1) r.2}
         {q : MergeInput × List Bool |
-          IsMergedCert q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} :=
+          IsMergedCert q.1.header.arity q.1.header.size q.1.header.subcube
+            (mergeCert₀ q.1) (mergeCert₁ q.1) q.2} :=
       ⟨fun r => (r.1.1, r.2),
         ((fst encMerge encBits).comp (fst encQ encBits)).prod (snd encQ encBits),
         fun _ => Iff.rfl⟩
@@ -413,11 +428,13 @@ private theorem isMinMergedCert_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBit
         (snd encQ encBits) ((snd encMerge encBits).comp (fst encQ encBits)))
     simpa [Bool.not_eq_true'] using PPolyOn_of_computableInPolyTime hcomp
   have hcert_q : ComputableInPolyTime
-      (fun q : MergeInput × List Bool => certLength q.1.1.1.1 q.1.1.1.2) encQ encUnary :=
+      (fun q : MergeInput × List Bool => certLength q.1.header.arity q.1.header.size)
+      encQ encUnary :=
     computableInPolyTime_mergeCertLength.comp' (fst encMerge encBits)
   have hforall : {q : MergeInput × List Bool |
-      ∀ w' : List Bool, w'.length = certLength q.1.1.1.1 q.1.1.1.2 →
-        IsMergedCert q.1.1.1.1 q.1.1.1.2 q.1.1.2.1 (mergeCert₀ q.1) (mergeCert₁ q.1) w' →
+      ∀ w' : List Bool, w'.length = certLength q.1.header.arity q.1.header.size →
+        IsMergedCert q.1.header.arity q.1.header.size q.1.header.subcube
+          (mergeCert₀ q.1) (mergeCert₁ q.1) w' →
           BitString.wordLt w' q.2 = false} ∈ PPolyOn encQ :=
     PPolyOn.forall_of_computableInPolyTime_length hNP hcert_q (PPolyOn_imp hmerged' hwordLt)
   exact PPolyOn.inf hmerged hforall
@@ -432,38 +449,39 @@ theorem circuitMinMergeLanguage_mem_PPolyOn (hNP : NP encBits ⊆ PPolyOn encBit
   let encQ := encPair encMerge encBits
   have hok : {a : MergeInput | mergeOk₀ a = true ∧ mergeOk₁ a = true} ∈ PPolyOn encMerge := by
     have hok₀ : ComputableInPolyTime mergeOk₀ encMerge encBool :=
-      bitsGetDWithInput (snd encHeader encBits) (const 0) false
+      bitsGetDWithInput (by fun_prop) (const 0) false
     have hok₁ : ComputableInPolyTime mergeOk₁ encMerge encBool :=
-      bitsGetDWithInput (snd encHeader encBits) computableInPolyTime_mergeStateWidth false
+      bitsGetDWithInput (by fun_prop) computableInPolyTime_mergeStateWidth false
     simpa [Bool.and_eq_true] using PPolyOn_of_computableInPolyTime (bool_and' hok₀ hok₁)
   have hj_q : ComputableInPolyTime
-      (fun q : MergeInput × List Bool => q.1.1.2.2) encQ encUnary :=
-    (snd encBits encUnary).comp ((snd _ _).comp
-      ((fst encHeader encBits).comp (fst encMerge encBits)))
+      (fun q : MergeInput × List Bool => q.1.header.bitIndex) encQ encUnary := by
+    fun_prop
   have hbit_q : {q : MergeInput × List Bool |
-      (q.1.1.2.2 == 0 || q.2.getD (q.1.1.2.2 - 1) false) = true} ∈ PPolyOn encQ := by
+      (q.1.header.bitIndex == 0 || q.2.getD (q.1.header.bitIndex - 1) false) = true} ∈
+      PPolyOn encQ := by
     have hj0 : ComputableInPolyTime
-        (fun q : MergeInput × List Bool => q.1.1.2.2 == 0) encQ encBool :=
+        (fun q : MergeInput × List Bool => q.1.header.bitIndex == 0) encQ encBool :=
       hj_q.beq (const 0)
     have hget : ComputableInPolyTime
-        (fun q : MergeInput × List Bool => q.2.getD (q.1.1.2.2 - 1) false) encQ encBool :=
+        (fun q : MergeInput × List Bool => q.2.getD (q.1.header.bitIndex - 1) false)
+        encQ encBool :=
       bitsGetDWithInput (snd encMerge encBits) (unary_sub.comp (hj_q.prod (const 1))) false
     exact PPolyOn_of_computableInPolyTime (bool_or.comp (hj0.prod hget))
   have hex : {a : MergeInput |
-      ∃ w : List Bool, w.length = certLength (mergeArity a) (mergeSize a) ∧
-        (IsMinMergedCert (mergeArity a) (mergeSize a) (mergePrefix a) (mergeCert₀ a)
-            (mergeCert₁ a) w ∧
-          (mergeBitIndex a == 0 || w.getD (mergeBitIndex a - 1) false) = true)} ∈
+      ∃ w : List Bool, w.length = certLength a.header.arity a.header.size ∧
+        (IsMinMergedCert a.header.arity a.header.size a.header.subcube
+            (mergeCert₀ a) (mergeCert₁ a) w ∧
+          (a.header.bitIndex == 0 || w.getD (a.header.bitIndex - 1) false) = true)} ∈
       PPolyOn encMerge :=
     PPolyOn.exists_of_computableInPolyTime_length hNP computableInPolyTime_mergeCertLength
       (PPolyOn.inf (isMinMergedCert_mem_PPolyOn hNP) hbit_q)
   have h_eq : CircuitMinMergeLanguage =
       {a : MergeInput | mergeOk₀ a = true ∧ mergeOk₁ a = true} ∩
       {a : MergeInput |
-        ∃ w : List Bool, w.length = certLength (mergeArity a) (mergeSize a) ∧
-          (IsMinMergedCert (mergeArity a) (mergeSize a) (mergePrefix a) (mergeCert₀ a)
-              (mergeCert₁ a) w ∧
-            (mergeBitIndex a == 0 || w.getD (mergeBitIndex a - 1) false) = true)} := by
+        ∃ w : List Bool, w.length = certLength a.header.arity a.header.size ∧
+          (IsMinMergedCert a.header.arity a.header.size a.header.subcube
+              (mergeCert₀ a) (mergeCert₁ a) w ∧
+            (a.header.bitIndex == 0 || w.getD (a.header.bitIndex - 1) false) = true)} := by
     ext a
     simp only [CircuitMinMergeLanguage, Set.mem_inter_iff, Set.mem_ofPred_eq, and_assoc]
     refine and_congr_right fun _ => and_congr_right fun _ => exists_congr fun w => ?_
@@ -590,9 +608,9 @@ private theorem drop_one_ofFn_subcubeState_eq {n s : ℕ} {f : BooleanFunction n
 
 private theorem mergeOk₀_append_subcubeState (n s : ℕ) (f : BooleanFunction n) (p : List Bool)
     (j : ℕ) :
-    mergeOk₀ (((n, s), (p, j)),
+    mergeOk₀ ⟨⟨n, s, p, j⟩,
       List.ofFn (Fin.append (subcubeState n s f (p ++ [false]))
-        (subcubeState n s f (p ++ [true])))) =
+        (subcubeState n s f (p ++ [true])))⟩ =
       (List.ofFn (subcubeState n s f (p ++ [false]))).getD 0 false := by
   simp only [mergeOk₀, List.ofFn_fin_append]
   have hlen0 : (List.ofFn (subcubeState n s f (p ++ [false]))).length = certLength n s + 1 :=
@@ -607,9 +625,9 @@ private theorem mergeOk₀_append_subcubeState (n s : ℕ) (f : BooleanFunction 
 
 private theorem mergeOk₁_append_subcubeState (n s : ℕ) (f : BooleanFunction n) (p : List Bool)
     (j : ℕ) :
-    mergeOk₁ (((n, s), (p, j)),
+    mergeOk₁ ⟨⟨n, s, p, j⟩,
       List.ofFn (Fin.append (subcubeState n s f (p ++ [false]))
-        (subcubeState n s f (p ++ [true])))) =
+        (subcubeState n s f (p ++ [true])))⟩ =
       (List.ofFn (subcubeState n s f (p ++ [true]))).getD 0 false := by
   simp only [mergeOk₁, List.ofFn_fin_append]
   have hlen0 : (List.ofFn (subcubeState n s f (p ++ [false]))).length = stateWidth n s :=
@@ -627,9 +645,9 @@ private theorem mergeOk₁_append_subcubeState (n s : ℕ) (f : BooleanFunction 
 
 private theorem mergeCert₀_append_subcubeState (n s : ℕ) (f : BooleanFunction n) (p : List Bool)
     (j : ℕ) :
-    mergeCert₀ (((n, s), (p, j)),
+    mergeCert₀ ⟨⟨n, s, p, j⟩,
       List.ofFn (Fin.append (subcubeState n s f (p ++ [false]))
-        (subcubeState n s f (p ++ [true])))) =
+        (subcubeState n s f (p ++ [true])))⟩ =
       (List.ofFn (subcubeState n s f (p ++ [false]))).drop 1 := by
   simp only [mergeCert₀, List.ofFn_fin_append]
   have hlen0 : (List.ofFn (subcubeState n s f (p ++ [false]))).length = certLength n s + 1 :=
@@ -638,9 +656,9 @@ private theorem mergeCert₀_append_subcubeState (n s : ℕ) (f : BooleanFunctio
 
 private theorem mergeCert₁_append_subcubeState (n s : ℕ) (f : BooleanFunction n) (p : List Bool)
     (j : ℕ) :
-    mergeCert₁ (((n, s), (p, j)),
+    mergeCert₁ ⟨⟨n, s, p, j⟩,
       List.ofFn (Fin.append (subcubeState n s f (p ++ [false]))
-        (subcubeState n s f (p ++ [true])))) =
+        (subcubeState n s f (p ++ [true])))⟩ =
       (List.ofFn (subcubeState n s f (p ++ [true]))).drop 1 := by
   simp only [mergeCert₁, List.ofFn_fin_append]
   have hlen0 : (List.ofFn (subcubeState n s f (p ++ [false]))).length = stateWidth n s :=
@@ -652,14 +670,14 @@ private theorem mergeCert₁_append_subcubeState (n s : ℕ) (f : BooleanFunctio
   rw [hdrop, List.drop_append, List.drop_eq_nil_of_le (by omega), List.nil_append,
     Nat.add_sub_cancel_left, List.take_of_length_le (by simp [hlen1])]
 
-/-- The multi-output merge step obtained by hardwiring the header `((n, s), (p, j))` into the
+/-- The multi-output merge step obtained by hardwiring the header `⟨n, s, p, j⟩` into the
 slices of a language `L` for each output bit `j : Fin (stateWidth n s)`. When `L` encodes
 `CircuitMinMergeLanguage`, it maps the states of the half-subcubes `p ++ [false]` and
 `p ++ [true]` to the state of `p` (`Cslib.MCSP.mergeVec_eq_subcubeState`). -/
 @[no_expose] noncomputable def mergeVec (L : Language Bool) (n s : ℕ) (p : List Bool)
     (y : BitString (stateWidth n s + stateWidth n s)) : BitString (stateWidth n s) :=
   fun j =>
-    let f := frame (encHeader ((n, s), (p, (j : ℕ))))
+    let f := frame (encHeader ⟨n, s, p, (j : ℕ)⟩)
     L.slice (f.length + (stateWidth n s + stateWidth n s))
       (substitute (prependInputs (BitString.ofList f.length f)) y)
 
@@ -674,17 +692,17 @@ theorem mergeVec_eq_subcubeState {L : Language Bool}
       subcubeState n s f p := by
   funext j
   set y := Fin.append (subcubeState n s f (p ++ [false])) (subcubeState n s f (p ++ [true]))
-  set hdr : MergeHeader := ((n, s), (p, (j : ℕ)))
+  set hdr : MergeHeader := ⟨n, s, p, (j : ℕ)⟩
   set fh := frame (encHeader hdr)
   have hofFn : List.ofFn (substitute (prependInputs (BitString.ofList fh.length fh)) y) =
-      encMerge (hdr, List.ofFn y) := by
-    rw [substitute_prependInputs, List.ofFn_fin_append, BitString.ofFn_ofList rfl]
+      encMerge ⟨hdr, List.ofFn y⟩ := by
+    rw [substitute_prependInputs, List.ofFn_fin_append, BitString.ofFn_ofList rfl, encMerge_apply]
     rfl
   rw [Bool.eq_iff_iff]
   change L.slice (fh.length + (stateWidth n s + stateWidth n s))
       (substitute (prependInputs (BitString.ofList fh.length fh)) y) = true ↔
     subcubeState n s f p j = true
-  rw [Language.slice_eq_true_iff, hofFn, ← hL (hdr, List.ofFn y), subcubeState_eq_true_iff]
+  rw [Language.slice_eq_true_iff, hofFn, ← hL ⟨hdr, List.ofFn y⟩, subcubeState_eq_true_iff]
   simp only [CircuitMinMergeLanguage, Set.mem_ofPred_eq, hdr, y, mergeOk₀_append_subcubeState,
     mergeOk₁_append_subcubeState, mergeCert₀_append_subcubeState, mergeCert₁_append_subcubeState,
     getD_zero_ofFn_subcubeState_eq_true_iff]
@@ -708,7 +726,7 @@ theorem mergeVec_eq_subcubeState {L : Language Bool}
 private theorem complexity_mergeVec_le (L : Language Bool) (n s : ℕ) (p : List Bool) {M : ℕ}
     (hM : ∀ j : Fin (stateWidth n s),
       complexity interpretation
-        (single (L.slice ((frame (encHeader ((n, s), (p, (j : ℕ))))).length +
+        (single (L.slice ((frame (encHeader ⟨n, s, p, (j : ℕ)⟩)).length +
           (stateWidth n s + stateWidth n s)))) ≤ M) :
     complexity interpretation (mergeVec L n s p) ≤ stateWidth n s * (M + 2) := by
   refine (complexity_pi_le (fun j y => mergeVec L n s p y j)).trans ?_
@@ -795,7 +813,7 @@ private theorem complexity_subcubeState_tree_le {L : Language Bool}
     {n s M : ℕ}
     (hM : ∀ p : List Bool, p.length ≤ n → ∀ j : Fin (stateWidth n s),
       complexity interpretation
-        (single (L.slice ((frame (encHeader ((n, s), (p, (j : ℕ))))).length +
+        (single (L.slice ((frame (encHeader ⟨n, s, p, (j : ℕ)⟩)).length +
           (stateWidth n s + stateWidth n s)))) ≤ M) :
     ∀ (k : ℕ) (p : List Bool), p.length + k = n →
       complexity interpretation
@@ -859,15 +877,15 @@ theorem subcubeState_nil_zero_eq_slice_yesSet (s : ℕ → ℕ) (n : ℕ) (T : B
 
 private theorem length_frame_encHeader_add_le {n s : ℕ} {p : List Bool} (hp : p.length ≤ n)
     (j : Fin (stateWidth n s)) :
-    (frame (encHeader ((n, s), (p, (j : ℕ))))).length + (stateWidth n s + stateWidth n s) ≤
+    (frame (encHeader ⟨n, s, p, (j : ℕ)⟩)).length + (stateWidth n s + stateWidth n s) ≤
       48 * (n + s + 1) ^ 2 := by
   have hj : (j : ℕ) < stateWidth n s := j.isLt
   have hsw : stateWidth n s ≤ 3 * (n + s + 1) ^ 2 + 1 := by
     have := certLength_le_three_mul_sq n s
     unfold stateWidth
     omega
-  simp only [encHeader, length_frame, length_encPair, encUnary_apply, List.length_replicate,
-    encBits_apply]
+  simp only [encHeader_apply, encHeaderFields, length_frame, length_encPair, encUnary_apply,
+    List.length_replicate, encBits_apply]
   nlinarith
 
 /-! ### Main theorems: MMW19 circuit upper bound and hardness magnification -/
@@ -896,9 +914,9 @@ theorem exists_complexity_yesSet_le_of_NP_subset_PPoly
   let M : ℕ := c₀ * (48 * N ^ 2 + 1) ^ c₀
   have hM (p : List Bool) (hp : p.length ≤ n) (j : Fin (stateWidth n (s n))) :
       complexity interpretation
-        (single (L.slice ((frame (encHeader ((n, s n), (p, (j : ℕ))))).length +
+        (single (L.slice ((frame (encHeader ⟨n, s n, p, (j : ℕ)⟩)).length +
           (stateWidth n (s n) + stateWidth n (s n))))) ≤ M := by
-    set m := (frame (encHeader ((n, s n), (p, (j : ℕ))))).length +
+    set m := (frame (encHeader ⟨n, s n, p, (j : ℕ)⟩)).length +
       (stateWidth n (s n) + stateWidth n (s n))
     have hm : m ≤ 48 * N ^ 2 := length_frame_encHeader_add_le hp j
     exact (hc₀ m).trans (Nat.mul_le_mul_left c₀ (Nat.pow_le_pow_left (by omega) c₀))

@@ -194,17 +194,17 @@ private theorem synthesis_duplicate
     refine ⟨slot (i, c), funext fun x => Bool.eq_iff_iff.mpr ?_⟩
     let y : BitString (Fintype.card ι) := fun w => g w x
     -- The records seen by the duplicate circuit.
-    let row := directProductInput (substitute ρ y)
+    let row := BitString.block (substitute ρ y)
     have hreal (i' : Fin (arity p)) (c' : Fin s) :
         row (slot (i', c')) = Fin.cons false (candidate hk bits scalar menu x e i' c') := by
       funext f
-      simp only [row, directProductInput, substitute, ρ, slot, Equiv.symm_apply_apply,
+      simp only [row, BitString.block, substitute, ρ, slot, Equiv.symm_apply_apply,
         Fin.cast_cast, Fin.cast_eq_self, Fin.addCases_left]
       refine Fin.cases ?_ (fun β => ?_) f
       · simp only [Fin.cases_zero, Fin.cons_zero, Sum.elim_inr, id]
       · simp only [Fin.cases_succ, Fin.cons_succ, Sum.elim_inl, y, g, Equiv.symm_apply_apply]
     have hpadRow (j : Fin pad) : row (Fin.cast hpad (Fin.natAdd _ j)) 0 = true := by
-      simp only [row, directProductInput, substitute, ρ, Equiv.symm_apply_apply,
+      simp only [row, BitString.block, substitute, ρ, Equiv.symm_apply_apply,
         Fin.cast_cast, Fin.cast_eq_self, Fin.addCases_right, Fin.cases_zero, Sum.elim_inr, id]
     simp only [circuit, Circuit.eval_comp, eval_substituteCircuit]
     rw [eval_duplicateFlagsCircuit_iff, duplicate, decide_eq_true_iff]
@@ -278,10 +278,10 @@ private theorem synthesis_success
     refine ⟨finProdFinEquiv (j₀, 0), funext fun x => ?_⟩
     have h := congrFun (congrFun
       (eval_bitonicSortCircuit (id : Fin 1 → Fin 1) p false (fun q => g q x)) j₀) 0
-    have hin : directProductInput (fun q => g q x) =
+    have hin : BitString.block (fun q => g q x) =
         fun i _ => clean hk bits scalar menu x e i := by
       funext i f
-      simp only [directProductInput, g, Equiv.symm_apply_apply]
+      simp only [BitString.block, g, Equiv.symm_apply_apply]
     rw [hin] at h
     have hflag := sort_flag_eq_true_iff (fun r : BitString 1 => r ∘ id) p
       (fun i _ => clean hk bits scalar menu x e i) j₀
@@ -416,9 +416,9 @@ private theorem synthesis_sortedPending (hin : inputs _ ⊆ src)
   refine ⟨finProdFinEquiv (j, f), funext fun x => ?_⟩
   have h := congrFun (congrFun
     (eval_bitonicSortCircuit flagKey p false (fun w => g w x)) j) f
-  have hin : directProductInput (fun w => g w x) = enriched hk bits scalar menu x := by
+  have hin : BitString.block (fun w => g w x) = enriched hk bits scalar menu x := by
     funext i f
-    simp only [directProductInput, g, Equiv.symm_apply_apply]
+    simp only [BitString.block, g, Equiv.symm_apply_apply]
   rw [hin] at h
   exact h
 

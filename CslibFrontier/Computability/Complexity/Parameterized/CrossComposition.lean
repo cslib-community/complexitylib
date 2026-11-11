@@ -29,9 +29,11 @@ of the list. Bodlaender, Jansen and Kratsch showed that if an `NP`-hard problem 
 into `(Q, κ)`, then `(Q, κ)` has no polynomial kernel and no polynomial compression unless
 `NP ⊆ coNP/poly` [BodlaenderJansenKratsch2014, Corollary 2]
 (`Cslib.Complexity.coNP_subset_NPPoly_of_orCrossComposes`,
-`Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`). Corollary 2 also concludes that the
-OR-distillation conjecture fails; that conclusion is not formalized here, and neither is the
-collapse of the polynomial hierarchy that follows from `NP ⊆ coNP/poly` by Yap's theorem.
+`Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`), and hence unless `PH = Σ₃` by Yap's
+theorem [Yap][Yap1983] (`Cslib.Complexity.PH_eq_SigmaP_three_of_orCrossComposes`,
+`Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes_of_PH_ne_SigmaP_three`). Corollary 2 also
+concludes that the OR-distillation conjecture fails; that conclusion is not stated as a named
+conjecture here.
 
 The proof follows [BodlaenderJansenKratsch2014, Theorem 5]. Given a list of instances, keep the
 entries related to every entry, and erase repeated entries. On a list of related instances of
@@ -71,17 +73,21 @@ polynomial in the parameter, are polynomial compressions.
 * `Cslib.Complexity.compl_mem_NPPoly_of_orCrossComposes`: if `A` OR-cross-composes into a
   parameterized problem with a polynomial compression, then the complement of `A` is in `NP/poly`.
 * `Cslib.Complexity.coNP_subset_NPPoly_of_orCrossComposes`,
-  `Cslib.Complexity.NP_subset_coNPPoly_of_orCrossComposes`: **Bodlaender–Jansen–Kratsch**: if an
+  `Cslib.Complexity.NP_subset_coNPPoly_of_orCrossComposes`,
+  `Cslib.Complexity.PH_eq_SigmaP_three_of_orCrossComposes`: **Bodlaender–Jansen–Kratsch**: if an
   `NP`-hard problem OR-cross-composes into a parameterized problem with a polynomial compression,
-  then `coNP ⊆ NP/poly`, equivalently `NP ⊆ coNP/poly`.
+  then `coNP ⊆ NP/poly` (equivalently `NP ⊆ coNP/poly`) and `PH = Σ₃`.
 * `Cslib.Complexity.not_hasPolyCompression_of_orCrossComposes`,
-  `Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`: the contrapositive, a kernelization
-  lower bound under `coNP ⊄ NP/poly`.
+  `Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes`,
+  `Cslib.Complexity.not_hasPolyCompression_of_orCrossComposes_of_PH_ne_SigmaP_three`,
+  `Cslib.Complexity.not_hasPolyKernel_of_orCrossComposes_of_PH_ne_SigmaP_three`: the
+  contrapositive kernelization lower bounds under `coNP ⊄ NP/poly` or `PH ≠ Σ₃`.
 
 ## References
 
 * [H. L. Bodlaender, B. M. P. Jansen, S. Kratsch, *Kernelization lower bounds by
   cross-composition*][BodlaenderJansenKratsch2014]
+* [C.-K. Yap, *Some consequences of non-uniform conditions on uniform classes*][Yap1983]
 -/
 
 public section
@@ -257,9 +263,8 @@ theorem compl_mem_NPPoly_of_orCrossComposes (D : Decoder enc)
 /-- **Bodlaender–Jansen–Kratsch**, the `NP ⊆ coNP/poly` conclusion of
 [BodlaenderJansenKratsch2014, Corollary 2], stated as `coNP ⊆ NP/poly`: if an `NP`-hard problem
 OR-cross-composes into a parameterized problem with a polynomial compression, then
-`coNP ⊆ NP/poly`, for every encoding of instances. The failure of the OR-distillation conjecture,
-the other conclusion of Corollary 2, and the collapse of the polynomial hierarchy that follows by
-Yap's theorem are not formalized. -/
+`coNP ⊆ NP/poly`, for every encoding of instances. For the collapse `PH = Σ₃` that follows by
+Yap's theorem, see `Cslib.Complexity.PH_eq_SigmaP_three_of_orCrossComposes`. -/
 theorem coNP_subset_NPPoly_of_orCrossComposes (hA : NPHard enc A)
     (hAQ : ORCrossComposes enc A encQ κ Q) (hQ : HasPolyCompression encQ κ Q) {δ : Type}
     (encC : δ ↪ List Bool) : coNP encC ⊆ NPPoly encC := by
@@ -278,6 +283,15 @@ theorem NP_subset_coNPPoly_of_orCrossComposes (hA : NPHard enc A)
     (encC : δ ↪ List Bool) : NP encC ⊆ coNPPoly encC :=
   coNP_subset_NPPoly_iff.1 (coNP_subset_NPPoly_of_orCrossComposes hA hAQ hQ encC)
 
+/-- **Bodlaender–Jansen–Kratsch and Yap** [BodlaenderJansenKratsch2014, Corollary 2],
+[Yap][Yap1983]: if an `NP`-hard problem OR-cross-composes into a parameterized problem with a
+polynomial compression, then the polynomial hierarchy collapses to its third level, `PH = Σ₃`, for
+every encoding of instances. -/
+theorem PH_eq_SigmaP_three_of_orCrossComposes (hA : NPHard enc A)
+    (hAQ : ORCrossComposes enc A encQ κ Q) (hQ : HasPolyCompression encQ κ Q) {δ : Type}
+    (encC : δ ↪ List Bool) : PH encC = SigmaP 3 encC :=
+  PH_eq_SigmaP_three_of_coNP_subset_NPPoly (coNP_subset_NPPoly_of_orCrossComposes hA hAQ hQ)
+
 /-- **Kernelization lower bound by cross-composition** [BodlaenderJansenKratsch2014, Corollary 2]:
 if an `NP`-hard problem OR-cross-composes into `(Q, κ)` and `coNP ⊄ NP/poly` for some encoding of
 instances, then `(Q, κ)` has no polynomial compression. -/
@@ -293,5 +307,22 @@ theorem not_hasPolyKernel_of_orCrossComposes (hA : NPHard enc A)
     (hAQ : ORCrossComposes enc A encQ κ Q) {δ : Type} {encC : δ ↪ List Bool}
     (hcoNP : ¬ coNP encC ⊆ NPPoly encC) : ¬ HasPolyKernel encQ κ Q :=
   fun hQ => not_hasPolyCompression_of_orCrossComposes hA hAQ hcoNP hQ.hasPolyCompression
+
+/-- **Kernelization lower bound under `PH ≠ Σ₃`** [BodlaenderJansenKratsch2014, Corollary 2],
+[Yap][Yap1983]: if an `NP`-hard problem OR-cross-composes into `(Q, κ)` and `PH ≠ Σ₃` for some
+encoding of instances, then `(Q, κ)` has no polynomial compression. -/
+theorem not_hasPolyCompression_of_orCrossComposes_of_PH_ne_SigmaP_three (hA : NPHard enc A)
+    (hAQ : ORCrossComposes enc A encQ κ Q) {δ : Type} {encC : δ ↪ List Bool}
+    (hPH : PH encC ≠ SigmaP 3 encC) : ¬ HasPolyCompression encQ κ Q :=
+  fun hQ => hPH (PH_eq_SigmaP_three_of_orCrossComposes hA hAQ hQ encC)
+
+/-- **Kernelization lower bound under `PH ≠ Σ₃`** [BodlaenderJansenKratsch2014, Corollary 2],
+[Yap][Yap1983]: if an `NP`-hard problem OR-cross-composes into `(Q, κ)` and `PH ≠ Σ₃` for some
+encoding of instances, then `(Q, κ)` has no polynomial kernel. -/
+theorem not_hasPolyKernel_of_orCrossComposes_of_PH_ne_SigmaP_three (hA : NPHard enc A)
+    (hAQ : ORCrossComposes enc A encQ κ Q) {δ : Type} {encC : δ ↪ List Bool}
+    (hPH : PH encC ≠ SigmaP 3 encC) : ¬ HasPolyKernel encQ κ Q :=
+  fun hQ =>
+    not_hasPolyCompression_of_orCrossComposes_of_PH_ne_SigmaP_three hA hAQ hPH hQ.hasPolyCompression
 
 end Cslib.Complexity

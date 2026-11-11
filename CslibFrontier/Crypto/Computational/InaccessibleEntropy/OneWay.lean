@@ -510,24 +510,13 @@ private def rompelTupleEquiv (n m : ℕ) :
   left_inv t := by rcases t with ⟨x, ⟨rows, shift⟩, rBits⟩; rfl
   right_inv z := by cases z; rfl
 
-private def affineSeedWordEquiv (k n : ℕ) :
-    ((Fin k → BitString n) × BitString k) ≃ BitString (k * n + k) where
-  toFun s := Cslib.BitString.ofList (k * n + k) (packAffineSeed s)
-  invFun b := unpackAffineSeed k n (List.ofFn b)
-  left_inv s := by
-    dsimp only
-    rw [Cslib.BitString.ofFn_ofList (length_packAffineSeed s), unpackAffineSeed_packAffineSeed]
-  right_inv b := by
-    dsimp only
-    rw [packAffineSeed_unpackAffineSeed List.length_ofFn, Cslib.BitString.ofList_ofFn]
-
 private theorem uniformList_seed_eq_map (k n : ℕ) :
     Cslib.BitString.uniformList (k * n + k) =
       (PMF.uniformOfFintype ((Fin k → BitString n) × BitString k)).map packAffineSeed := by
-  rw [Cslib.BitString.uniformList, ← PMF.uniformOfFintype_map_equiv (affineSeedWordEquiv k n),
+  rw [Cslib.BitString.uniformList, ← PMF.uniformOfFintype_map_equiv (affineSeedEquiv k n).symm,
     PMF.map_comp]
   refine congrArg (PMF.uniformOfFintype _).map (funext fun s => ?_)
-  exact Cslib.BitString.ofFn_ofList (length_packAffineSeed s)
+  exact ofFn_affineSeedEquiv_symm s
 
 private theorem uniformList_rompelBaseInLen_eq (n m : ℕ) :
     Cslib.BitString.uniformList (rompelBaseInLen n m) =
