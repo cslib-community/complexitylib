@@ -17,6 +17,7 @@ public import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Concentration
 import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
 
@@ -1245,7 +1246,8 @@ private theorem pairedOutput_amplifyReplicability [DecidableEq α] (A : Algorith
         rfl
 
 private theorem trialRunMarginal_single_fail [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
-    (r : Ω) {a δ : ℝ} (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (k₁ k₂ : ℕ) [NeZero k₂] :
+    (r : Ω) {a δ : ℝ} (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (k₁ k₂ : ℕ)
+    [NeZero k₁] [NeZero k₂] :
     ((trialRunMarginal A D r k₁ k₂).toOuterMeasure
       {pr : ℝ × α |
         |pr.1 - seedColl A D r| ≤ δ ∧
@@ -1499,7 +1501,8 @@ private noncomputable def goodTrialsSet (A : Algorithm X Ω α m) (D : PMF X)
       ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → (trials t).2 = y)}
 
 private theorem goodTrials_fail_le [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
-    {a δ : ℝ} (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (T k₁ k₂ : ℕ) [NeZero k₂] (rs : Fin T → Ω) :
+    {a δ : ℝ} (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (T k₁ k₂ : ℕ)
+    [NeZero k₁] [NeZero k₂] (rs : Fin T → Ω) :
     ((pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure
       (goodTrialsSet A D a δ rs)ᶜ).toReal ≤
       (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
@@ -1542,7 +1545,7 @@ private theorem goodTrials_fail_le [DecidableEq α] (A : Algorithm X Ω α m) (D
           2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) := by
         simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
-private theorem pickFirstThresholded_eq_heavy [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
+private theorem pickFirstThresholded_eq_heavy (A : Algorithm X Ω α m) (D : PMF X)
     {a b θ_acc δ : ℝ} (hab : a ≤ b) (hb_acc : b ≤ θ_acc - δ) {T N : ℕ} [NeZero T]
     {rs : Fin T → Ω} {t₀ : Fin T} (ht₀ : θ_acc ≤ seedColl A D (rs t₀))
     {trials : Fin T → ℝ × α} (htr : trials ∈ goodTrialsSet A D a δ rs) (i : Fin N) :
@@ -1581,7 +1584,7 @@ threshold discretization error `T * (2 * δ / (b - a) + 1 / N)`. -/
 theorem disagreeProb_amplifyReplicability_le [DecidableEq α] (A : Algorithm X Ω α m) (D : PMF X)
     {a b θ_acc δ : ℝ} (hab : a < b) (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a)
     (hb_acc : b ≤ θ_acc - δ) (hθ_lt : θ_acc < 1) (T k₁ k₂ N : ℕ)
-    [NeZero T] [NeZero k₂] [NeZero N] :
+    [NeZero T] [NeZero k₁] [NeZero k₂] [NeZero N] :
     (amplifyReplicability A a b T k₁ k₂ N).disagreeProb D ≤
       (A.disagreeProb D / (1 - θ_acc)) ^ T +
         2 * ((T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
@@ -1745,7 +1748,7 @@ theorem isAccurateFor_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω 
     {𝒟 : Set (PMF X)} {good : PMF X → Set α} {ρ₀ β₀ a b θ_acc δ : ℝ}
     (hrep : IsReplicableFor A 𝒟 ρ₀) (hacc : IsAccurateFor A 𝒟 good β₀)
     (hab : a < b) (hδ : 0 ≤ δ) (ha_half : 1 / 2 + δ < a) (hb_acc : b ≤ θ_acc - δ)
-    (hθ_lt : θ_acc < 1) (T k₁ k₂ N : ℕ) [NeZero T] [NeZero k₂] [NeZero N] :
+    (hθ_lt : θ_acc < 1) (T k₁ k₂ N : ℕ) [NeZero T] [NeZero k₁] [NeZero k₂] [NeZero N] :
     IsAccurateFor (amplifyReplicability A a b T k₁ k₂ N) 𝒟 good
       ((ρ₀ / (1 - θ_acc)) ^ T + (T : ℝ) * (β₀ / (a - δ)) +
         (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +

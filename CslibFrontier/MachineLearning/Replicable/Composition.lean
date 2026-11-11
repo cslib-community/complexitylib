@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Data.BitString.Block
 public import CslibFrontier.MachineLearning.Replicable.Basic
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
 

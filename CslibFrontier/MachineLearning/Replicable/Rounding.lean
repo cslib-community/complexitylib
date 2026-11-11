@@ -14,6 +14,7 @@ public import CslibFrontier.Probability.PMF.Uniform
 public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Algebra.Order.Floor.BigOperators
 
