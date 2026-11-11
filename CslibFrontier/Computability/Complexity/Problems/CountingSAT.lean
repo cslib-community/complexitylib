@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.US
 public import CslibFrontier.Computability.Complexity.Problems.SharpSAT
 public import CslibFrontier.Computability.Complexity.Problems.USAT
 public import CslibFrontier.Computability.Complexity.Reduction
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Complexity.Classes.SharpP.PolyTime
 import CslibFrontier.Computability.Complexity.CookLevin.Counting
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
@@ -64,6 +65,7 @@ binary.
 ## Main definitions
 
 * `Cslib.Complexity.ParitySAT`, `Cslib.Complexity.ModSAT`, `Cslib.Complexity.MAJSAT`,
+  `Cslib.Complexity.SharpSATTarget`, `Cslib.Complexity.encSharpSATTarget`,
   `Cslib.Complexity.SharpSATAtLeast`, `Cslib.Complexity.SharpSATExact`.
 * `Cslib.Complexity.shiftOdd`, `Cslib.Complexity.dummyClauses`,
   `Cslib.Complexity.padMajority`: padding a formula to a majority instance.
@@ -100,7 +102,7 @@ binary.
 * [C. H. Papadimitriou, *Computational Complexity*][Papadimitriou94]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -109,23 +111,36 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 /-! ### The problems -/
 
 /-- **⊕SAT**: the formulas with an odd number of satisfying assignments. -/
-def ParitySAT : Set (CNF ℕ) := {φ | Odd (SharpSAT φ)}
+@[expose] def ParitySAT : Set (CNF ℕ) := {φ | Odd (SharpSAT φ)}
 
 /-- **Mod_k SAT**: the formulas whose number of satisfying assignments is not divisible by `k`. -/
-def ModSAT (k : ℕ) : Set (CNF ℕ) := {φ | SharpSAT φ % k ≠ 0}
+@[expose] def ModSAT (k : ℕ) : Set (CNF ℕ) := {φ | SharpSAT φ % k ≠ 0}
 
 /-- **MAJSAT**: the formulas satisfied by strictly more than half of the truth assignments to their
 occurring variables (`2 ^ φ.vars.toFinset.card < 2 * SharpSAT φ`) [Gill][Gill1977],
 [Simon][Simon1975]. -/
-def MAJSAT : Set (CNF ℕ) := {φ | 2 ^ φ.vars.toFinset.card < 2 * SharpSAT φ}
+@[expose] def MAJSAT : Set (CNF ℕ) := {φ | 2 ^ φ.vars.toFinset.card < 2 * SharpSAT φ}
 
-/-- The pairs `(φ, m)` such that `φ` has at least `m` satisfying assignments. Instances are
-encoded with `m` in binary (`encPair encCNF encNat`). -/
-def SharpSATAtLeast : Set (CNF ℕ × ℕ) := {x | x.2 ≤ SharpSAT x.1}
+/-- An instance of a counting threshold or exact-count problem: a Boolean formula in conjunctive
+normal form paired with a target count of satisfying assignments. -/
+structure SharpSATTarget where
+  /-- The formula in conjunctive normal form. -/
+  formula : CNF ℕ
+  /-- The target number of satisfying assignments. -/
+  target : ℕ
+  deriving DecidableEq, Repr
 
-/-- The pairs `(φ, m)` such that `φ` has exactly `m` satisfying assignments. Instances are
-encoded with `m` in binary (`encPair encCNF encNat`). -/
-def SharpSATExact : Set (CNF ℕ × ℕ) := {x | SharpSAT x.1 = x.2}
+/-- Pairs of a formula and a target count, encoded as `encCNF` paired with binary `encNat`. -/
+enc_structure encSharpSATTarget : SharpSATTarget where
+  formula : encCNF, target : encNat
+
+/-- Instances `x : SharpSATTarget` such that `x.formula` has at least `x.target` satisfying
+assignments (`encSharpSATTarget`). -/
+@[expose] def SharpSATAtLeast : Set SharpSATTarget := {x | x.target ≤ SharpSAT x.formula}
+
+/-- Instances `x : SharpSATTarget` such that `x.formula` has exactly `x.target` satisfying
+assignments (`encSharpSATTarget`). -/
+@[expose] def SharpSATExact : Set SharpSATTarget := {x | SharpSAT x.formula = x.target}
 
 /-- Modulo two, a nonzero residue is oddness. -/
 theorem ModSAT_two : ModSAT 2 = ParitySAT := by
@@ -181,44 +196,45 @@ private theorem computableInPolyTime_two_pow_add {α : Type} (enc : α ↪ List 
     ((ComputableInPolyTime.unary_eval q).comp
       (ComputableInPolyTime.encoding_length enc))).prod (.const j))
 
-/-- The number given with a formula, as a function in `#P`. -/
-private theorem snd_mem_SharpP : (Prod.snd : CNF ℕ × ℕ → ℕ) ∈ SharpP (encPair encCNF encNat) :=
-  mem_SharpP_of_polyTime (.snd encCNF encNat)
+/-- The target count of an instance, as a function in `#P`. -/
+private theorem target_mem_SharpP :
+    (fun x : SharpSATTarget => x.target) ∈ SharpP encSharpSATTarget :=
+  mem_SharpP_of_polyTime (by fun_prop)
 
-/-- The number of satisfying assignments of the formula of a pair, as a function in `#P`. -/
-private theorem sharpSAT_fst_mem_SharpP :
-    (fun x : CNF ℕ × ℕ => SharpSAT x.1) ∈ SharpP (encPair encCNF encNat) :=
-  SharpP.comp_mem SharpSAT.mem_SharpP (.fst encCNF encNat)
+/-- The number of satisfying assignments of the formula of an instance, as a function in `#P`. -/
+private theorem sharpSAT_formula_mem_SharpP :
+    (fun x : SharpSATTarget => SharpSAT x.formula) ∈ SharpP encSharpSATTarget :=
+  SharpP.comp_mem SharpSAT.mem_SharpP (by fun_prop)
 
-/-- **Counting threshold is `PP`-complete**: whether a formula has at least `m` satisfying
-assignments, for `m` given in binary. -/
+/-- **Counting threshold is `PP`-complete**: whether a formula has at least `target` satisfying
+assignments, for `target` given in binary. -/
 theorem SharpSATAtLeast_ppComplete :
-    PolyTimeComplete PP (encPair encCNF encNat) SharpSATAtLeast := by
+    PolyTimeComplete PP encSharpSATTarget SharpSATAtLeast := by
   refine ⟨mem_PP_iff_exists_GapP.2 ⟨_, GapP.natCast_sub_natCast_mem
-    (SharpP.add_one_mem sharpSAT_fst_mem_SharpP) snd_mem_SharpP, fun x => ?_⟩,
+    (SharpP.add_one_mem sharpSAT_formula_mem_SharpP) target_mem_SharpP, fun x => ?_⟩,
     fun _ enc A hA => ?_⟩
   · simp only [SharpSATAtLeast, Set.mem_ofPred_eq, Pi.add_apply, Pi.one_apply]
     omega
   · obtain ⟨f, hf, q, hA⟩ := mem_PP_iff_exists_SharpP.1 hA
     obtain ⟨r, hr, hfr⟩ := CookLevin.SharpSAT_sharpPHard enc _ (SharpP.add_mem hf hf)
-    refine ⟨fun a => (r a, 2 ^ q.eval (enc a).length + 1),
-      hr.prod (computableInPolyTime_two_pow_add enc q 1), fun a => ?_⟩
+    refine ⟨fun a => ⟨r a, 2 ^ q.eval (enc a).length + 1⟩,
+      encSharpSATTarget_mk_polyTime hr (computableInPolyTime_two_pow_add enc q 1), fun a => ?_⟩
     have := hfr a
     simp only [Pi.add_apply] at this
     simp only [SharpSATAtLeast, Set.mem_ofPred_eq, hA a, ← this]
     omega
 
-/-- **Exact counting is `C=P`-complete**: whether a formula has exactly `m` satisfying
-assignments, for `m` given in binary. -/
+/-- **Exact counting is `C=P`-complete**: whether a formula has exactly `target` satisfying
+assignments, for `target` given in binary. -/
 theorem SharpSATExact_ceqPComplete :
-    PolyTimeComplete CeqP (encPair encCNF encNat) SharpSATExact := by
-  refine ⟨mem_CeqP_iff_exists_SharpP.2 ⟨_, sharpSAT_fst_mem_SharpP, _, snd_mem_SharpP,
+    PolyTimeComplete CeqP encSharpSATTarget SharpSATExact := by
+  refine ⟨mem_CeqP_iff_exists_SharpP.2 ⟨_, sharpSAT_formula_mem_SharpP, _, target_mem_SharpP,
     fun _ => Iff.rfl⟩, fun _ enc A hA => ?_⟩
   obtain ⟨f₁, hf₁, f₂, hf₂, hA⟩ := mem_CeqP_iff_exists_SharpP.1 hA
   obtain ⟨p, hle, hsub⟩ := SharpP.exists_two_pow_sub_mem hf₂
   obtain ⟨r, hr, hfr⟩ := CookLevin.SharpSAT_sharpPHard enc _ (SharpP.add_mem hf₁ hsub)
-  refine ⟨fun a => (r a, 2 ^ p.eval (enc a).length),
-    by simpa using hr.prod (computableInPolyTime_two_pow_add enc p 0),
+  refine ⟨fun a => ⟨r a, 2 ^ p.eval (enc a).length⟩,
+    by simpa using encSharpSATTarget_mk_polyTime hr (computableInPolyTime_two_pow_add enc p 0),
     fun a => ?_⟩
   have h₁ := hfr a
   have h₂ := hle a
@@ -228,7 +244,7 @@ theorem SharpSATExact_ceqPComplete :
 
 /-- **The complement of exact counting is `coC=P`-complete.** -/
 theorem compl_SharpSATExact_coCeqPComplete :
-    PolyTimeComplete coCeqP (encPair encCNF encNat) SharpSATExactᶜ :=
+    PolyTimeComplete coCeqP encSharpSATTarget SharpSATExactᶜ :=
   SharpSATExact_ceqPComplete.compl fun _ _ => Iff.rfl
 
 /-! ### Majority satisfiability -/
@@ -248,18 +264,18 @@ theorem MAJSAT_mem_PP : MAJSAT ∈ PP encCNF := by
   omega
 
 /-- Relabel the variables of `φ` to the odd numbers `2 v + 1`. -/
-def shiftOdd (φ : CNF ℕ) : CNF ℕ :=
+@[expose] def shiftOdd (φ : CNF ℕ) : CNF ℕ :=
   φ.relabel (fun v => v + v + 1)
 
 /-- Clauses forcing the `Q` positive even dummy variables `2, 4, …, 2 Q` to `false` when the
 selector variable `0` is `false`. -/
-def dummyClauses (Q : ℕ) : CNF ℕ :=
+@[expose] def dummyClauses (Q : ℕ) : CNF ℕ :=
   (List.range Q).map (fun j => [(0, true), (j + j + 2, false)])
 
 /-- Pad `φ` with `Q` even dummy variables `2, 4, …, 2 Q` and a selector variable `0` so that the
 resulting formula has `1 + Q + φ.vars.toFinset.card` occurring variables and
 `SharpSAT φ + (2 ^ (Q + φ.vars.toFinset.card) - 2 ^ Q)` satisfying assignments. -/
-def padMajority (φ : CNF ℕ) (Q : ℕ) : CNF ℕ :=
+@[expose] def padMajority (φ : CNF ℕ) (Q : ℕ) : CNF ℕ :=
   (shiftOdd φ).map ((0, true) :: ·) ++
     dummyClauses Q ++
     [(0, false) :: (shiftOdd φ).vars.map (·, true)]
