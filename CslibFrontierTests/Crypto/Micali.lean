@@ -116,12 +116,12 @@ example : OracleComp.evalPure toyOracle
     (micaliVerify toyVerifier x
       ⟨honestProof.root,
         [honestProof.response.getD 0 [],
-         [(false, ((honestProof.response.getD 1 []).getD 0 (false, [])).2)]]⟩) = false := by
+         [⟨false, ((honestProof.response.getD 1 []).getD 0 ⟨false, []⟩).path⟩]]⟩) = false := by
   decide
 
 example : OracleComp.evalPure toyOracle
     (micaliVerify toyVerifier x
-      ⟨honestProof.root, [honestProof.response.getD 0 [], [(true, [])]]⟩) = false := by
+      ⟨honestProof.root, [honestProof.response.getD 0 [], [⟨true, []⟩]]⟩) = false := by
   decide
 
 example : OracleComp.evalPure toyOracle

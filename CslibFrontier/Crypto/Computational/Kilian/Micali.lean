@@ -671,7 +671,7 @@ def kilianOpenProg (V : PCPVerifier α) (x : α) (table : List Bool) (ρ : List 
   (V.queries (x, ρ)).mapM fun a => do
     let i := kilianPosition V x a
     let path ← merklePathProg leaves i
-    return (t.getD i false, path)
+    return ⟨t.getD i false, path⟩
 
 /-- Oracle-program computation of the Kilian response for a list of random strings `ρs`. -/
 def kilianRespondProg (V : PCPVerifier α) (x : α) (table : List Bool) (ρs : List (List Bool)) :
@@ -684,11 +684,11 @@ def kilianCheckProg (V : PCPVerifier α) (x : α) (root : List Bool) (ρ : List 
     (answers : List KilianOpening) : OracleComp MerkleHashSpec Bool := do
   let queries := V.queries (x, ρ)
   let depth := kilianDepth V x
-  let checks ← (queries.zip answers).mapM fun (a, b, path) =>
-    merkleVerifyProg depth root (kilianPosition V x a) [b] path
+  let checks ← (queries.zip answers).mapM fun (a, o) =>
+    merkleVerifyProg depth root (kilianPosition V x a) [o.bit] o.path
   return answers.length == queries.length &&
     checks.all id &&
-    V.verdict ((x, ρ), answers.map Prod.fst)
+    V.verdict ((x, ρ), answers.map KilianOpening.bit)
 
 /-- Oracle-program verification of all Kilian repetitions against `root` and challenges `ρs`. -/
 def kilianVerifyProg (V : PCPVerifier α) (x : α) (root : List Bool) (ρs : List (List Bool))
@@ -727,7 +727,7 @@ theorem evalPure_kilianCheckProg (h : List Bool → List Bool) (V : PCPVerifier 
     OracleComp.evalPure_pure, kilianCheck, List.all_map]
   congr 2
   refine List.all_congr rfl ?_
-  rintro ⟨a, b, path⟩
+  rintro ⟨a, o⟩
   simp
 
 @[simp]
