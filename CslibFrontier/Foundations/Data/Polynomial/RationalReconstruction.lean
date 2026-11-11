@@ -38,8 +38,9 @@ from evaluation points via `Lagrange.interpolate`.
 ## Main results
 
 * `Polynomial.PolyRat.mul_eq_mul_of_dvd_sub_of_degree_lt`,
-  `Polynomial.PolyRat.eq_of_isCoprime_of_monic`, `Polynomial.PolyRat.eq_of_dvd_sub_of_bounds`:
-  modular uniqueness under degree bounds.
+  `Polynomial.PolyRat.eq_of_isCoprime_of_monic`, `Polynomial.PolyRat.eq_of_dvd_sub_of_bounds`,
+  `Polynomial.PolyRat.eq_of_dvd_sub_of_height_lt`: modular uniqueness under degree and height
+  bounds.
 * `Polynomial.PolyRat.reconstruct_eq_some`: soundness (monicity, degree/denominator bounds,
   coprimality, and modular congruence).
 * `Polynomial.PolyRat.reconstruct_of_eq`: completeness (recovering `some p` whenever
@@ -76,8 +77,12 @@ section HeightAndUniqueness
 variable {F : Type*}
 
 /-- Polynomial degree height `max num.natDegree den.natDegree`. -/
-def height [Semiring F] (p : PolyRat F) : ℕ :=
+@[expose] def height [Semiring F] (p : PolyRat F) : ℕ :=
   max p.num.natDegree p.den.natDegree
+
+theorem height_def [Semiring F] (p : PolyRat F) :
+    p.height = max p.num.natDegree p.den.natDegree :=
+  rfl
 
 theorem natDegree_num_le_height [Semiring F] (p : PolyRat F) : p.num.natDegree ≤ p.height :=
   le_max_left _ _
@@ -88,7 +93,7 @@ theorem natDegree_den_le_height [Semiring F] (p : PolyRat F) : p.den.natDegree �
 /-- Cross-multiplication uniqueness modulo `M`: if `M ∣ p.num - p.den * u`,
 `M ∣ q.num - q.den * u`, `(p.num.degree + q.den.degree < M.degree)`, and
 `(q.num.degree + p.den.degree < M.degree)`, then `p.num * q.den = q.num * p.den`. -/
-theorem mul_eq_mul_of_dvd_sub_of_degree_lt [Field F] {M u : F[X]} (_hM : M ≠ 0) {p q : PolyRat F}
+theorem mul_eq_mul_of_dvd_sub_of_degree_lt [Field F] {M u : F[X]} {p q : PolyRat F}
     (hp : M ∣ p.num - p.den * u) (hq : M ∣ q.num - q.den * u)
     (hdeg₁ : p.num.degree + q.den.degree < M.degree)
     (hdeg₂ : q.num.degree + p.den.degree < M.degree) :
@@ -122,28 +127,53 @@ theorem eq_of_isCoprime_of_monic [Field F] {p q : PolyRat F} (hmul : p.num * q.d
     exact mul_right_cancel₀ hmq.ne_zero hmul
   exact PolyRat.ext hnum hden
 
+private theorem eq_of_dvd_sub_of_deg_bounds [Field F] {M u : F[X]} {Np Dp Nq Dq : ℕ}
+    {p q : PolyRat F} (hMp : p.den.Monic) (hMq : q.den.Monic) (hcp : IsCoprime p.num p.den)
+    (hcq : IsCoprime q.num q.den) (hpn : p.num.degree ≤ Np) (hqn : q.num.degree ≤ Nq)
+    (hpd : p.den.natDegree ≤ Dp) (hqd : q.den.natDegree ≤ Dq)
+    (h1 : Np + Dq < M.natDegree) (h2 : Nq + Dp < M.natDegree)
+    (hp : M ∣ p.num - p.den * u) (hq : M ∣ q.num - q.den * u) : p = q := by
+  have hM : M ≠ 0 := fun h0 => by simp [h0] at h1
+  have hMdeg₁ : ((Np + Dq : ℕ) : WithBot ℕ) < M.degree := by
+    rw [Polynomial.degree_eq_natDegree hM]
+    exact WithBot.coe_lt_coe.mpr h1
+  have hMdeg₂ : ((Nq + Dp : ℕ) : WithBot ℕ) < M.degree := by
+    rw [Polynomial.degree_eq_natDegree hM]
+    exact WithBot.coe_lt_coe.mpr h2
+  have hpd' : p.den.degree ≤ Dp := by
+    rw [Polynomial.degree_eq_natDegree hMp.ne_zero]
+    exact WithBot.coe_le_coe.mpr hpd
+  have hqd' : q.den.degree ≤ Dq := by
+    rw [Polynomial.degree_eq_natDegree hMq.ne_zero]
+    exact WithBot.coe_le_coe.mpr hqd
+  have hlt₁ : p.num.degree + q.den.degree < M.degree :=
+    lt_of_le_of_lt (add_le_add hpn hqd') (by simpa only [Nat.cast_add] using hMdeg₁)
+  have hlt₂ : q.num.degree + p.den.degree < M.degree :=
+    lt_of_le_of_lt (add_le_add hqn hpd') (by simpa only [Nat.cast_add] using hMdeg₂)
+  exact eq_of_isCoprime_of_monic
+    (mul_eq_mul_of_dvd_sub_of_degree_lt hp hq hlt₁ hlt₂) hcp hcq hMp hMq
+
 /-- Modular uniqueness of reduced monic pairs under numerator/denominator degree bounds
 `N + D < M.natDegree`. -/
 theorem eq_of_dvd_sub_of_bounds [Field F] {M u : F[X]} {N D : ℕ} {p q : PolyRat F}
     (hMp : p.den.Monic) (hMq : q.den.Monic) (hcp : IsCoprime p.num p.den)
     (hcq : IsCoprime q.num q.den) (hpn : p.num.degree ≤ N) (hqn : q.num.degree ≤ N)
     (hpd : p.den.natDegree ≤ D) (hqd : q.den.natDegree ≤ D) (hMdeg : N + D < M.natDegree)
+    (hp : M ∣ p.num - p.den * u) (hq : M ∣ q.num - q.den * u) : p = q :=
+  eq_of_dvd_sub_of_deg_bounds hMp hMq hcp hcq hpn hqn hpd hqd hMdeg hMdeg hp hq
+
+/-- Modular uniqueness of reduced monic pairs under `PolyRat.height`: if `M ∣ p.num - p.den * u`,
+`M ∣ q.num - q.den * u`, and `p.height + q.height < M.natDegree`, then `p = q`. -/
+theorem eq_of_dvd_sub_of_height_lt [Field F] {M u : F[X]} {p q : PolyRat F}
+    (hMp : p.den.Monic) (hMq : q.den.Monic) (hcp : IsCoprime p.num p.den)
+    (hcq : IsCoprime q.num q.den) (hMdeg : p.height + q.height < M.natDegree)
     (hp : M ∣ p.num - p.den * u) (hq : M ∣ q.num - q.den * u) : p = q := by
-  have hM : M ≠ 0 := fun h0 => by simp [h0] at hMdeg
-  have hMdeg_lt : ((N + D : ℕ) : WithBot ℕ) < M.degree := by
-    rw [Polynomial.degree_eq_natDegree hM]
-    exact WithBot.coe_lt_coe.mpr hMdeg
-  have hpd' : p.den.degree ≤ D := by
-    rw [Polynomial.degree_eq_natDegree hMp.ne_zero]
-    exact WithBot.coe_le_coe.mpr hpd
-  have hqd' : q.den.degree ≤ D := by
-    rw [Polynomial.degree_eq_natDegree hMq.ne_zero]
-    exact WithBot.coe_le_coe.mpr hqd
-  have h1 : p.num.degree + q.den.degree < M.degree :=
-    lt_of_le_of_lt (add_le_add hpn hqd') (by simpa only [Nat.cast_add] using hMdeg_lt)
-  have h2 : q.num.degree + p.den.degree < M.degree :=
-    lt_of_le_of_lt (add_le_add hqn hpd') (by simpa only [Nat.cast_add] using hMdeg_lt)
-  exact eq_of_isCoprime_of_monic (mul_eq_mul_of_dvd_sub_of_degree_lt hM hp hq h1 h2) hcp hcq hMp hMq
+  have hpn : p.num.degree ≤ p.height :=
+    le_trans Polynomial.degree_le_natDegree (WithBot.coe_le_coe.mpr p.natDegree_num_le_height)
+  have hqn : q.num.degree ≤ q.height :=
+    le_trans Polynomial.degree_le_natDegree (WithBot.coe_le_coe.mpr q.natDegree_num_le_height)
+  exact eq_of_dvd_sub_of_deg_bounds hMp hMq hcp hcq hpn hqn p.natDegree_den_le_height
+    q.natDegree_den_le_height hMdeg (by rw [add_comm]; exact hMdeg) hp hq
 
 end HeightAndUniqueness
 
@@ -436,26 +466,21 @@ theorem reconstruct_of_eq {M u : F[X]} {N D : ℕ} {p : PolyRat F}
       rcases dvd_mul_of_dvd_right hmod_rt (s : F[X]) with ⟨x, hx⟩
       rcases dvd_mul_of_dvd_right hmod0 (s : F[X]) with ⟨y, hy⟩
       have hss : ((s * s : ℤ) : F[X]) = 1 := by rw [hs1]; simp
-      have hMa : M * p.num = M * (x * st.r0 + y * st.r1) := by
+      have hcramer : ∀ {a e0 e1 : F[X]},
+          (s : F[X]) * a * (st.r0 * st.t1 - st.r1 * st.t0) =
+            ((s : F[X]) * (p.num * st.t1 - p.den * st.r1)) * e0 +
+              ((s : F[X]) * (p.den * st.r0 - p.num * st.t0)) * e1 →
+          M * a = M * (x * e0 + y * e1) := fun {a e0 e1} hlin => by
         calc
-          M * p.num = ((s * s : ℤ) : F[X]) * M * p.num := by rw [hss, one_mul]
-          _ = (s : F[X]) * p.num * ((s : F[X]) * M) := by push_cast; ring
-          _ = (s : F[X]) * p.num * (st.r0 * st.t1 - st.r1 * st.t0) := by rw [hs2]
-          _ = ((s : F[X]) * (p.num * st.t1 - p.den * st.r1)) * st.r0 +
-                ((s : F[X]) * (p.den * st.r0 - p.num * st.t0)) * st.r1 := by ring
-          _ = (M * x) * st.r0 + (M * y) * st.r1 := by rw [← hx, ← hy]
-          _ = M * (x * st.r0 + y * st.r1) := by ring
-      have hMb : M * p.den = M * (x * st.t0 + y * st.t1) := by
-        calc
-          M * p.den = ((s * s : ℤ) : F[X]) * M * p.den := by rw [hss, one_mul]
-          _ = (s : F[X]) * p.den * ((s : F[X]) * M) := by push_cast; ring
-          _ = (s : F[X]) * p.den * (st.r0 * st.t1 - st.r1 * st.t0) := by rw [hs2]
-          _ = ((s : F[X]) * (p.num * st.t1 - p.den * st.r1)) * st.t0 +
-                ((s : F[X]) * (p.den * st.r0 - p.num * st.t0)) * st.t1 := by ring
-          _ = (M * x) * st.t0 + (M * y) * st.t1 := by rw [← hx, ← hy]
-          _ = M * (x * st.t0 + y * st.t1) := by ring
-      have ha_eq : p.num = x * st.r0 + y * st.r1 := mul_left_cancel₀ hM hMa
-      have hb_eq : p.den = x * st.t0 + y * st.t1 := mul_left_cancel₀ hM hMb
+          M * a = ((s * s : ℤ) : F[X]) * M * a := by rw [hss, one_mul]
+          _ = (s : F[X]) * a * ((s : F[X]) * M) := by push_cast; ring
+          _ = (s : F[X]) * a * (st.r0 * st.t1 - st.r1 * st.t0) := by rw [hs2]
+          _ = ((s : F[X]) * (p.num * st.t1 - p.den * st.r1)) * e0 +
+              ((s : F[X]) * (p.den * st.r0 - p.num * st.t0)) * e1 := hlin
+          _ = (M * x) * e0 + (M * y) * e1 := by rw [← hx, ← hy]
+          _ = M * (x * e0 + y * e1) := by ring
+      have ha_eq : p.num = x * st.r0 + y * st.r1 := mul_left_cancel₀ hM (hcramer (by ring))
+      have hb_eq : p.den = x * st.t0 + y * st.t1 := mul_left_cancel₀ hM (hcramer (by ring))
       have hx0 : x = 0 := by
         by_contra hxne
         have hxr0_deg : (N : WithBot ℕ) < (x * st.r0).degree := by

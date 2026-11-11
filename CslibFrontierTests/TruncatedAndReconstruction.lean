@@ -4,19 +4,26 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgebraBridge
-import CslibFrontier.Foundations.Data.Polynomial.RationalReconstruction
-import CslibFrontier.Foundations.Data.Polynomial.TruncatedAlgebra
-import CslibFrontier.Foundations.Data.Polynomial.TruncatedJetBridge
-import CslibFrontier.Foundations.Data.Rat.Reconstruction
+module
+-- upstream: local-only (test driver)
+
+public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgebraBridge
+public import CslibFrontier.Foundations.Data.Polynomial.RationalReconstruction
+public import CslibFrontier.Foundations.Data.Polynomial.TruncatedAlgebra
+public import CslibFrontier.Foundations.Data.Polynomial.TruncatedJetBridge
+public import CslibFrontier.Foundations.Data.Rat.Reconstruction
 
 /-!
 # Truncated polynomial algebra and rational / finite-field reconstruction clients
 
-Kernel-checked examples exercising `Polynomial.Truncated R r`, `Rat.reconstruct`,
+Strict `module` kernel-checked examples exercising `Polynomial.Truncated R r`, `Rat.reconstruct`,
 `Rat.reconstructPi`, and `Polynomial.PolyRat.reconstruct` / `Polynomial.PolyRat.cauchy`,
-including non-unit and bound-failure boundary cases and bridges to `JetTable` and `B_{P,ℓ}`.
+including exposed body unfolding (`geomInv`, `unitInv`, `subst`, `substZeroConst`, `toPoly`,
+`coeffs`, `Rat.height`, `PolyRat.height`), non-unit and bound-failure boundary cases, and
+bridges to `JetTable` and `B_{P,ℓ}`.
 -/
+
+public section
 
 namespace CslibFrontierTests.TruncatedAndReconstruction
 
@@ -289,6 +296,53 @@ example :
     rcases ha with rfl | rfl | rfl <;>
       simp only [p, eval_add, eval_X, eval_C, ne_eq] <;> decide
 
+example (p q : PolyRat (ZMod 5)) (u : (ZMod 5)[X]) :
+    p.height = max p.num.natDegree p.den.natDegree →
+      p.den.Monic → q.den.Monic → IsCoprime p.num p.den → IsCoprime q.num q.den →
+      p.height + q.height < (X ^ 4 + C (1 : ZMod 5)).natDegree →
+      (X ^ 4 + C 1) ∣ p.num - p.den * u → (X ^ 4 + C 1) ∣ q.num - q.den * u → p = q := by
+  intro _ hMp hMq hcp hcq hM hp hq
+  exact eq_of_dvd_sub_of_height_lt hMp hMq hcp hcq hM hp hq
+
+example :
+    let p : PolyRat (ZMod 5) := ⟨X + C 1, X + C 2⟩
+    p.height = 1 := by
+  intro p
+  have h1 : p.num.natDegree = 1 := by simp [p]
+  have h2 : p.den.natDegree = 1 := by simp [p]
+  simp [PolyRat.height, h1, h2]
+
 end PolyRatReconstructionTests
+
+section StrictModuleSurfaceTests
+
+open Polynomial (Truncated X C)
+open Polynomial.Truncated
+
+theorem strict_geomInv_rfl (y : Truncated ℤ 4) :
+    geomInv y = ∑ k ∈ Finset.range 4, y ^ k :=
+  rfl
+
+theorem strict_unitInv_rfl (u : ℚˣ) (x : Truncated ℚ 3) :
+    unitInv u x =
+      algebraMap ℚ (Truncated ℚ 3) (u⁻¹ : ℚˣ) *
+        geomInv (1 - algebraMap ℚ (Truncated ℚ 3) (u⁻¹ : ℚˣ) * x) :=
+  rfl
+
+theorem strict_toPoly_coeffs_rfl (x : Truncated ℤ 4) :
+    toPoly x = ∑ i ∈ Finset.range 4, C (coeff i x) * X ^ i ∧
+      coeffs x = (toPoly x).coeffsBelow 4 :=
+  ⟨rfl, rfl⟩
+
+theorem strict_height_rfl (q : ℚ) (p : Polynomial.PolyRat ℚ) :
+    q.height = max q.num.natAbs q.den ∧ p.height = max p.num.natDegree p.den.natDegree :=
+  ⟨rfl, rfl⟩
+
+theorem strict_subst_rfl (g : Truncated ℤ 4) (hg : coeff 0 g = 0) (f : Truncated ℤ 4) :
+    subst (pow_eq_zero_of_coeff_zero hg) f = liftAlgHom (pow_eq_zero_of_coeff_zero hg) f ∧
+      substZeroConst hg f = subst (pow_eq_zero_of_coeff_zero hg) f :=
+  ⟨rfl, rfl⟩
+
+end StrictModuleSurfaceTests
 
 end CslibFrontierTests.TruncatedAndReconstruction

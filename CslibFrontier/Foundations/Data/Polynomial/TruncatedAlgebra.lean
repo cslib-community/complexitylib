@@ -263,8 +263,12 @@ theorem coeff_mul_range {i : ℕ} (hi : i < r) (x y : Truncated R r) :
     Finset.Nat.sum_antidiagonal_eq_sum_range_succ (fun a b => coeff a x * coeff b y)]
 
 /-- Canonical degree `< r` polynomial representative of `x : Truncated R r`. -/
-def toPoly (x : Truncated R r) : R[X] :=
+@[expose] def toPoly (x : Truncated R r) : R[X] :=
   ∑ i ∈ Finset.range r, C (coeff i x) * X ^ i
+
+theorem toPoly_def (x : Truncated R r) :
+    toPoly x = ∑ i ∈ Finset.range r, C (coeff i x) * X ^ i :=
+  rfl
 
 @[simp]
 theorem coeff_toPoly (x : Truncated R r) (i : ℕ) : (toPoly x).coeff i = coeff i x := by
@@ -337,19 +341,22 @@ theorem sum_coeff_mul_var_pow (x : Truncated R r) :
     Polynomial.algebraMap_eq]
 
 /-- Canonical length-`r` coefficient list of `x : Truncated R r`. -/
-def coeffs (x : Truncated R r) : List R :=
-  (List.range r).map fun i => coeff i x
+@[expose] def coeffs (x : Truncated R r) : List R :=
+  (toPoly x).coeffsBelow r
+
+theorem coeffs_def (x : Truncated R r) : coeffs x = (toPoly x).coeffsBelow r :=
+  rfl
 
 @[simp]
 theorem length_coeffs (x : Truncated R r) : (coeffs x).length = r := by
-  simp [coeffs]
+  rw [coeffs, Polynomial.length_coeffsBelow]
 
 theorem ofCoeffList_coeffs (x : Truncated R r) : Polynomial.ofCoeffList (coeffs x) = toPoly x := by
-  ext i
-  rw [Polynomial.coeff_ofCoeffList, coeff_toPoly, coeffs]
-  by_cases hi : i < r
-  · rw [List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map, List.getElem_range]
-  · rw [List.getD_eq_default _ _ (by simpa using hi), coeff_eq_zero_of_le (not_lt.mp hi)]
+  by_cases hr : r = 0
+  · subst hr
+    have hnil : coeffs x = [] := List.eq_nil_of_length_eq_zero (length_coeffs x)
+    rw [hnil, Polynomial.ofCoeffList_nil, toPoly, Finset.range_zero, Finset.sum_empty]
+  · exact Polynomial.ofCoeffList_coeffsBelow (natDegree_toPoly_lt (Nat.pos_of_ne_zero hr) x)
 
 theorem getD_coeffs (x : Truncated R r) (i : ℕ) : (coeffs x).getD i 0 = coeff i x := by
   rw [← Polynomial.coeff_ofCoeffList, ofCoeffList_coeffs, coeff_toPoly]
@@ -400,8 +407,11 @@ theorem coeff_pow_eq_zero_of_lt {y : Truncated R r} (hy : coeff 0 y = 0) {d i : 
   · exact coeff_eq_zero_of_le (not_lt.mp hir) _
 
 /-- Finite geometric series `∑ k < r, y ^ k` inverting `1 - y` when `coeff 0 y = 0`. -/
-def geomInv (y : Truncated R r) : Truncated R r :=
+@[expose] def geomInv (y : Truncated R r) : Truncated R r :=
   ∑ k ∈ Finset.range r, y ^ k
+
+theorem geomInv_def (y : Truncated R r) : geomInv y = ∑ k ∈ Finset.range r, y ^ k :=
+  rfl
 
 /-- `(1 - y) * geomInv y = 1` whenever `coeff 0 y = 0`. -/
 theorem one_sub_mul_geomInv {y : Truncated R r} (hy : coeff 0 y = 0) :
@@ -420,36 +430,16 @@ theorem one_add_mul_geomInv_neg {y : Truncated R r} (hy : coeff 0 y = 0) :
     (1 + y) * geomInv (-y) = 1 := by
   simpa only [sub_neg_eq_add] using one_sub_mul_geomInv (y := -y) (by simp [hy])
 
-/-- An element of `Truncated R r` (for `r > 0`) is a unit iff its constant coefficient is a unit
-in `R`. -/
-theorem isUnit_iff (hr : 0 < r) {x : Truncated R r} : IsUnit x ↔ IsUnit (coeff 0 x) := by
-  constructor
-  · rintro ⟨u, hu⟩
-    have hcoeff : coeff 0 (u : Truncated R r) * coeff 0 ((u⁻¹ : (Truncated R r)ˣ) : Truncated R r) =
-        1 := by
-      have h1 := congrArg (coeff 0) u.mul_inv
-      rw [coeff_one, coeff_mul_range hr, Finset.sum_range_one, Nat.sub_zero] at h1
-      simpa only [hr, and_self, ↓reduceIte] using h1
-    rw [hu] at hcoeff
-    exact isUnit_iff_exists_inv.mpr ⟨_, hcoeff⟩
-  · rintro ⟨u, hu⟩
-    let y : Truncated R r := 1 - algebraMap R (Truncated R r) (u⁻¹ : Rˣ) * x
-    have hy0 : coeff 0 y = 0 := by
-      simp only [y, coeff_sub, coeff_one, hr, and_self, ↓reduceIte]
-      rw [coeff_mul_range hr, Finset.sum_range_one, Nat.sub_zero, coeff_algebraMap]
-      simp only [hr, and_self, ↓reduceIte, ← hu]
-      simp [Units.inv_mul]
-    have hinv := one_sub_mul_geomInv hy0
-    have h1y : 1 - y = algebraMap R (Truncated R r) (u⁻¹ : Rˣ) * x := sub_sub_cancel 1 _
-    rw [h1y] at hinv
-    have hx : x * (algebraMap R (Truncated R r) (u⁻¹ : Rˣ) * geomInv y) = 1 := by
-      linear_combination hinv
-    exact isUnit_iff_exists_inv.mpr ⟨_, hx⟩
-
 /-- Explicit inverse of `x : Truncated R r` given a unit witness `u` for `coeff 0 x`. -/
-def unitInv (u : Rˣ) (x : Truncated R r) : Truncated R r :=
+@[expose] def unitInv (u : Rˣ) (x : Truncated R r) : Truncated R r :=
   algebraMap R (Truncated R r) (u⁻¹ : Rˣ) *
     geomInv (1 - algebraMap R (Truncated R r) (u⁻¹ : Rˣ) * x)
+
+theorem unitInv_def (u : Rˣ) (x : Truncated R r) :
+    unitInv u x =
+      algebraMap R (Truncated R r) (u⁻¹ : Rˣ) *
+        geomInv (1 - algebraMap R (Truncated R r) (u⁻¹ : Rˣ) * x) :=
+  rfl
 
 /-- `x * unitInv u x = 1` whenever `coeff 0 x = u`. -/
 theorem mul_unitInv {x : Truncated R r} {u : Rˣ} (hu : coeff 0 x = u) :
@@ -471,6 +461,21 @@ theorem mul_unitInv {x : Truncated R r} {u : Rˣ} (hu : coeff 0 x = u) :
     rw [h1y] at hinv
     change x * (algebraMap R (Truncated R r) (u⁻¹ : Rˣ) * geomInv y) = 1
     linear_combination hinv
+
+/-- An element of `Truncated R r` (for `r > 0`) is a unit iff its constant coefficient is a unit
+in `R`. -/
+theorem isUnit_iff (hr : 0 < r) {x : Truncated R r} : IsUnit x ↔ IsUnit (coeff 0 x) := by
+  constructor
+  · rintro ⟨u, hu⟩
+    have hcoeff : coeff 0 (u : Truncated R r) * coeff 0 ((u⁻¹ : (Truncated R r)ˣ) : Truncated R r) =
+        1 := by
+      have h1 := congrArg (coeff 0) u.mul_inv
+      rw [coeff_one, coeff_mul_range hr, Finset.sum_range_one, Nat.sub_zero] at h1
+      simpa only [hr, and_self, ↓reduceIte] using h1
+    rw [hu] at hcoeff
+    exact isUnit_iff_exists_inv.mpr ⟨_, hcoeff⟩
+  · rintro ⟨u, hu⟩
+    exact isUnit_iff_exists_inv.mpr ⟨unitInv u x, mul_unitInv hu.symm⟩
 
 end UnitsAndNilpotency
 
@@ -504,14 +509,27 @@ theorem liftAlgHom_eq_sum {B : Type*} [CommRing B] [Algebra R B] {g : B} (hg : g
   rw [map_smul, map_pow, liftAlgHom_var]
 
 /-- Substitution `f ↦ f(g)` into `Truncated S r` for any `g` with `g ^ r = 0`. -/
-def subst {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r} (hg : g ^ r = 0) :
+@[expose] def subst {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r} (hg : g ^ r = 0) :
     Truncated R r →ₐ[R] Truncated S r :=
   liftAlgHom hg
 
 /-- Substitution `f ↦ f(g)` into `Truncated S r` when `coeff 0 g = 0`. -/
-def substZeroConst {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r}
+@[expose] def substZeroConst {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r}
     (hg0 : coeff 0 g = 0) : Truncated R r →ₐ[R] Truncated S r :=
   subst (pow_eq_zero_of_coeff_zero hg0)
+
+theorem subst_apply {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r} (hg : g ^ r = 0)
+    (f : Truncated R r) : subst hg f = liftAlgHom hg f :=
+  rfl
+
+theorem subst_eq_sum {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r} (hg : g ^ r = 0)
+    (f : Truncated R r) : subst hg f = ∑ i ∈ Finset.range r, coeff i f • g ^ i :=
+  liftAlgHom_eq_sum hg f
+
+theorem substZeroConst_eq_sum {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r}
+    (hg0 : coeff 0 g = 0) (f : Truncated R r) :
+    substZeroConst hg0 f = ∑ i ∈ Finset.range r, coeff i f • g ^ i :=
+  liftAlgHom_eq_sum (pow_eq_zero_of_coeff_zero hg0) f
 
 @[simp]
 theorem subst_mk {S : Type*} [CommRing S] [Algebra R S] {g : Truncated S r} (hg : g ^ r = 0)

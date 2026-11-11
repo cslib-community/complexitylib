@@ -60,8 +60,11 @@ open Finset
 section HeightAndUniqueness
 
 /-- Multiplicative height `max |num| den` of a rational number `q`. -/
-def height (q : ℚ) : ℕ :=
+@[expose] def height (q : ℚ) : ℕ :=
   max q.num.natAbs q.den
+
+theorem height_def (q : ℚ) : q.height = max q.num.natAbs q.den :=
+  rfl
 
 theorem natAbs_num_le_height (q : ℚ) : q.num.natAbs ≤ height q :=
   le_max_left _ _
@@ -118,16 +121,27 @@ theorem height_divInt_le (a b : ℤ) (hb : b ≠ 0) :
   max_le (le_trans (Rat.natAbs_num_divInt_le a b hb) (le_max_left _ _))
     (le_trans (Rat.den_divInt_le a b hb) (le_max_right _ _))
 
+private theorem den_mul_ne_zero (p q : ℚ) : (p.den : ℤ) * (q.den : ℤ) ≠ 0 :=
+  mul_ne_zero (Int.natCast_ne_zero.mpr p.den_nz) (Int.natCast_ne_zero.mpr q.den_nz)
+
+private theorem cross_natAbs_mul_le (p q : ℚ) :
+    (p.num * (q.den : ℤ)).natAbs + (q.num * (p.den : ℤ)).natAbs ≤ 2 * height p * height q := by
+  rw [Int.natAbs_mul, Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast]
+  have h1 : p.num.natAbs * q.den ≤ height p * height q :=
+    Nat.mul_le_mul (natAbs_num_le_height p) (den_le_height q)
+  have h2 : q.num.natAbs * p.den ≤ height p * height q :=
+    (Nat.mul_le_mul (natAbs_num_le_height q) (den_le_height p)).trans_eq (mul_comm _ _)
+  have h2eq : 2 * height p * height q = height p * height q + height p * height q := by ring
+  omega
+
 theorem height_mul_le (p q : ℚ) : height (p * q) ≤ height p * height q := by
   have hmul : p * q = Rat.divInt (p.num * q.num) ((p.den : ℤ) * (q.den : ℤ)) := by
     rw [Rat.divInt_eq_div]
     push_cast
     conv_lhs => rw [← Rat.num_div_den p, ← Rat.num_div_den q]
     ring
-  have hden_nz : (p.den : ℤ) * (q.den : ℤ) ≠ 0 :=
-    mul_ne_zero (Int.natCast_ne_zero.mpr p.den_nz) (Int.natCast_ne_zero.mpr q.den_nz)
   rw [hmul]
-  refine (height_divInt_le _ _ hden_nz).trans (max_le ?_ ?_)
+  refine (height_divInt_le _ _ (den_mul_ne_zero p q)).trans (max_le ?_ ?_)
   · rw [Int.natAbs_mul]
     exact Nat.mul_le_mul (natAbs_num_le_height p) (natAbs_num_le_height q)
   · rw [Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast]
@@ -143,23 +157,26 @@ theorem height_add_le (p q : ℚ) : height (p + q) ≤ 2 * height p * height q :
     have hq : (q.den : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr q.den_nz
     rw [div_add_div _ _ hp hq]
     ring
-  have hden_nz : (p.den : ℤ) * (q.den : ℤ) ≠ 0 :=
-    mul_ne_zero (Int.natCast_ne_zero.mpr p.den_nz) (Int.natCast_ne_zero.mpr q.den_nz)
   rw [hadd]
-  refine (height_divInt_le _ _ hden_nz).trans (max_le ?_ ?_)
-  · refine (Int.natAbs_add_le _ _).trans ?_
-    rw [Int.natAbs_mul, Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast]
-    have h1 : p.num.natAbs * q.den ≤ height p * height q :=
-      Nat.mul_le_mul (natAbs_num_le_height p) (den_le_height q)
-    have h2 : q.num.natAbs * p.den ≤ height p * height q :=
-      (Nat.mul_le_mul (natAbs_num_le_height q) (den_le_height p)).trans_eq (mul_comm _ _)
-    have h2eq : 2 * height p * height q = height p * height q + height p * height q := by ring
-    omega
+  refine (height_divInt_le _ _ (den_mul_ne_zero p q)).trans (max_le ?_ ?_)
+  · exact (Int.natAbs_add_le _ _).trans (cross_natAbs_mul_le p q)
   · rw [Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast]
     have h12 : p.den * q.den ≤ height p * height q :=
       Nat.mul_le_mul (den_le_height p) (den_le_height q)
     have h2eq : 2 * height p * height q = height p * height q + height p * height q := by ring
     omega
+
+private theorem div_eq_div_of_modEq_of_cross_lt {M : ℕ} {a₁ a₂ : ℤ} {b₁ b₂ : ℕ}
+    (hb₁ : 0 < b₁) (hb₂ : 0 < b₂) (hlt : (a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ)).natAbs < M)
+    (hmod : a₁ * (b₂ : ℤ) ≡ a₂ * (b₁ : ℤ) [ZMOD M]) :
+    (a₁ : ℚ) / (b₁ : ℚ) = (a₂ : ℚ) / (b₂ : ℚ) := by
+  have hdvd : (M : ℤ) ∣ a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ) := Int.modEq_iff_dvd.mp hmod.symm
+  have hzero : a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ) = 0 := by
+    by_contra hne
+    have hle := Nat.le_of_dvd (Int.natAbs_pos.mpr hne) (Int.natAbs_dvd_natAbs.mpr hdvd)
+    omega
+  rw [div_eq_div_iff (Nat.cast_ne_zero.mpr hb₁.ne') (Nat.cast_ne_zero.mpr hb₂.ne')]
+  exact_mod_cast sub_eq_zero.mp hzero
 
 /-- Uniqueness of modular rational recovery: if `a₁ * b₂ ≡ a₂ * b₁ [ZMOD M]` with
 `|aᵢ| ≤ N`, `0 < bᵢ ≤ D`, and `2 * N * D < M`, then `(a₁ : ℚ) / b₁ = (a₂ : ℚ) / b₂`. -/
@@ -168,25 +185,13 @@ theorem eq_of_modEq_of_bounds {M N D : ℕ} {a₁ a₂ : ℤ} {b₁ b₂ : ℕ}
     (hbd₁ : b₁ ≤ D) (hbd₂ : b₂ ≤ D) (hM : 2 * N * D < M)
     (hmod : a₁ * (b₂ : ℤ) ≡ a₂ * (b₁ : ℤ) [ZMOD M]) :
     (a₁ : ℚ) / (b₁ : ℚ) = (a₂ : ℚ) / (b₂ : ℚ) := by
-  have hdvd : (M : ℤ) ∣ a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ) := Int.modEq_iff_dvd.mp hmod.symm
+  refine div_eq_div_of_modEq_of_cross_lt hb₁ hb₂ ?_ hmod
   have h2eq : 2 * N * D = N * D + N * D := by ring
-  have hbound : (a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ)).natAbs ≤ 2 * N * D := by
-    refine (Int.natAbs_sub_le _ _).trans ?_
-    rw [Int.natAbs_mul, Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast]
-    have h1 : a₁.natAbs * b₂ ≤ N * D := Nat.mul_le_mul ha₁ hbd₂
-    have h2 : a₂.natAbs * b₁ ≤ N * D := Nat.mul_le_mul ha₂ hbd₁
-    omega
-  have hzero : a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ) = 0 := by
-    by_contra hne
-    have hpos : 0 < (a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ)).natAbs := Int.natAbs_pos.mpr hne
-    have hle : M ≤ (a₁ * (b₂ : ℤ) - a₂ * (b₁ : ℤ)).natAbs :=
-      Nat.le_of_dvd hpos (Int.natAbs_dvd_natAbs.mpr hdvd)
-    omega
-  have heq : a₁ * (b₂ : ℤ) = a₂ * (b₁ : ℤ) := sub_eq_zero.mp hzero
-  have hb₁q : (b₁ : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hb₁.ne'
-  have hb₂q : (b₂ : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr hb₂.ne'
-  rw [div_eq_div_iff hb₁q hb₂q]
-  exact_mod_cast heq
+  refine lt_of_le_of_lt ((Int.natAbs_sub_le _ _).trans ?_) hM
+  rw [Int.natAbs_mul, Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast]
+  have h1 : a₁.natAbs * b₂ ≤ N * D := Nat.mul_le_mul ha₁ hbd₂
+  have h2 : a₂.natAbs * b₁ ≤ N * D := Nat.mul_le_mul ha₂ hbd₁
+  omega
 
 /-- Modular uniqueness stated directly in terms of rational heights: if `p, q : ℚ` satisfy
 `(p.num : ZMod M) * (q.den : ZMod M) = (q.num : ZMod M) * (p.den : ZMod M)` and
@@ -194,29 +199,9 @@ theorem eq_of_modEq_of_bounds {M N D : ℕ} {a₁ a₂ : ℤ} {b₁ b₂ : ℕ}
 theorem eq_of_modEq_of_height_mul_lt {M : ℕ} {p q : ℚ}
     (hM : 2 * height p * height q < M)
     (hmod : p.num * (q.den : ℤ) ≡ q.num * (p.den : ℤ) [ZMOD M]) : p = q := by
-  have hp : (p.num : ℚ) / (p.den : ℚ) = p := Rat.num_div_den p
-  have hq : (q.num : ℚ) / (q.den : ℚ) = q := Rat.num_div_den q
-  rw [← hp, ← hq]
-  have hdvd : (M : ℤ) ∣ p.num * (q.den : ℤ) - q.num * (p.den : ℤ) := Int.modEq_iff_dvd.mp hmod.symm
-  have h2eq : 2 * height p * height q = height p * height q + height p * height q := by ring
-  have hbound : (p.num * (q.den : ℤ) - q.num * (p.den : ℤ)).natAbs ≤ 2 * height p * height q := by
-    refine (Int.natAbs_sub_le _ _).trans ?_
-    rw [Int.natAbs_mul, Int.natAbs_mul, Int.natAbs_natCast, Int.natAbs_natCast]
-    have h1 : p.num.natAbs * q.den ≤ height p * height q :=
-      Nat.mul_le_mul (natAbs_num_le_height p) (den_le_height q)
-    have h2 : q.num.natAbs * p.den ≤ height p * height q :=
-      (Nat.mul_le_mul (natAbs_num_le_height q) (den_le_height p)).trans_eq (mul_comm _ _)
-    omega
-  have hzero : p.num * (q.den : ℤ) - q.num * (p.den : ℤ) = 0 := by
-    by_contra hne
-    have hpos : 0 < (p.num * (q.den : ℤ) - q.num * (p.den : ℤ)).natAbs := Int.natAbs_pos.mpr hne
-    have hle : M ≤ (p.num * (q.den : ℤ) - q.num * (p.den : ℤ)).natAbs :=
-      Nat.le_of_dvd hpos (Int.natAbs_dvd_natAbs.mpr hdvd)
-    omega
-  have hb₁q : (p.den : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr p.den_nz
-  have hb₂q : (q.den : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr q.den_nz
-  rw [div_eq_div_iff hb₁q hb₂q]
-  exact_mod_cast sub_eq_zero.mp hzero
+  rw [← Rat.num_div_den p, ← Rat.num_div_den q]
+  refine div_eq_div_of_modEq_of_cross_lt p.den_pos q.den_pos ?_ hmod
+  exact lt_of_le_of_lt ((Int.natAbs_sub_le _ _).trans (cross_natAbs_mul_le p q)) hM
 
 end HeightAndUniqueness
 
@@ -496,28 +481,23 @@ theorem reconstruct_of_eq {M N D : ℕ} {u : ℤ} {q : ℚ}
         dvd_mul_of_dvd_right (Int.modEq_iff_dvd.mp hmod0.symm) s
       rcases hdvd_x with ⟨x, hx⟩
       rcases hdvd_y with ⟨y, hy⟩
-      have hMa : (M : ℤ) * q.num = (M : ℤ) * (x * st.r0 + y * st.r1) := by
+      have hcramer : ∀ {a e0 e1 : ℤ},
+          s * a * (st.r0 * st.t1 - st.r1 * st.t0) =
+            (s * (q.num * st.t1 - (q.den : ℤ) * st.r1)) * e0 +
+              (s * ((q.den : ℤ) * st.r0 - q.num * st.t0)) * e1 →
+          (M : ℤ) * a = (M : ℤ) * (x * e0 + y * e1) := fun {a e0 e1} hlin => by
         calc
-          (M : ℤ) * q.num = (s * s) * (M : ℤ) * q.num := by rw [hs1, one_mul]
-          _ = s * q.num * (s * (M : ℤ)) := by ring
-          _ = s * q.num * (st.r0 * st.t1 - st.r1 * st.t0) := by rw [hs2]
-          _ = (s * (q.num * st.t1 - (q.den : ℤ) * st.r1)) * st.r0 +
-                (s * ((q.den : ℤ) * st.r0 - q.num * st.t0)) * st.r1 := by ring
-          _ = ((M : ℤ) * x) * st.r0 + ((M : ℤ) * y) * st.r1 := by rw [← hx, ← hy]
-          _ = (M : ℤ) * (x * st.r0 + y * st.r1) := by ring
-      have hMb : (M : ℤ) * (q.den : ℤ) = (M : ℤ) * (x * st.t0 + y * st.t1) := by
-        calc
-          (M : ℤ) * (q.den : ℤ) = (s * s) * (M : ℤ) * (q.den : ℤ) := by rw [hs1, one_mul]
-          _ = s * (q.den : ℤ) * (s * (M : ℤ)) := by ring
-          _ = s * (q.den : ℤ) * (st.r0 * st.t1 - st.r1 * st.t0) := by rw [hs2]
-          _ = (s * (q.num * st.t1 - (q.den : ℤ) * st.r1)) * st.t0 +
-                (s * ((q.den : ℤ) * st.r0 - q.num * st.t0)) * st.t1 := by ring
-          _ = ((M : ℤ) * x) * st.t0 + ((M : ℤ) * y) * st.t1 := by rw [← hx, ← hy]
-          _ = (M : ℤ) * (x * st.t0 + y * st.t1) := by ring
+          (M : ℤ) * a = (s * s) * (M : ℤ) * a := by rw [hs1, one_mul]
+          _ = s * a * (s * (M : ℤ)) := by ring
+          _ = s * a * (st.r0 * st.t1 - st.r1 * st.t0) := by rw [hs2]
+          _ = (s * (q.num * st.t1 - (q.den : ℤ) * st.r1)) * e0 +
+              (s * ((q.den : ℤ) * st.r0 - q.num * st.t0)) * e1 := hlin
+          _ = ((M : ℤ) * x) * e0 + ((M : ℤ) * y) * e1 := by rw [← hx, ← hy]
+          _ = (M : ℤ) * (x * e0 + y * e1) := by ring
       have ha_eq : q.num = x * st.r0 + y * st.r1 :=
-        Int.eq_of_mul_eq_mul_left (Int.natCast_ne_zero.mpr hMpos.ne') hMa
+        Int.eq_of_mul_eq_mul_left (Int.natCast_ne_zero.mpr hMpos.ne') (hcramer (by ring))
       have hb_eq : (q.den : ℤ) = x * st.t0 + y * st.t1 :=
-        Int.eq_of_mul_eq_mul_left (Int.natCast_ne_zero.mpr hMpos.ne') hMb
+        Int.eq_of_mul_eq_mul_left (Int.natCast_ne_zero.mpr hMpos.ne') (hcramer (by ring))
       have hx0 : x = 0 := by
         by_contra hxne
         have hxabs : 1 ≤ x.natAbs := Int.natAbs_pos.mpr hxne
