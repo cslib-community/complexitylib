@@ -1608,28 +1608,26 @@ private theorem bitStream {σ ω : Type} {encS : σ ↪ List Bool} {encOut : ω 
   have hA : (cN + cE) * 3 ^ (dN + dE) ≤ C₀ := hC₀ ▸ Nat.mul_le_mul_right _ (by omega)
   have hB : (cN' + cE') * 3 ^ (dN + dE) ≤ C₀ := hC₀ ▸ Nat.mul_le_mul_right _ (by omega)
   refine ⟨c * (C₀ + 4), dN + dE + 1, h.mono (fun x => ?_) (fun x => ?_)⟩
-  · simp only [encBits_apply]
-    generalize tI x = a, tF (streamState (init x) next x x.length) = b, x.length = L
+  have hbound (c_sum : ℕ) (hC : c_sum * 3 ^ (dN + dE) ≤ C₀) :
+      c_sum * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) ≤ C₀ * (lMax x + 1) ^ (dN + dE + 1) ∧
+      lMax x + 1 ≤ (lMax x + 1) ^ (dN + dE + 1) := by
     have hY : (lMax x + 1) ^ (dN + dE) ≤ (lMax x + 1) ^ (dN + dE + 1) :=
       Nat.pow_le_pow_right (by omega) (by omega)
-    have hl : lMax x + 1 ≤ (lMax x + 1) ^ (dN + dE + 1) :=
-      Nat.le_self_pow (by omega) _
-    have h3 : (cN + cE) * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) ≤
+    have hl : lMax x + 1 ≤ (lMax x + 1) ^ (dN + dE + 1) := Nat.le_self_pow (by omega) _
+    have h3 : c_sum * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) ≤
         C₀ * (lMax x + 1) ^ (dN + dE + 1) := by
-      rw [← Nat.mul_assoc]; exact Nat.mul_le_mul hA hY
+      rw [← Nat.mul_assoc]; exact Nat.mul_le_mul hC hY
+    exact ⟨h3, hl⟩
+  · simp only [encBits_apply]
+    generalize tI x = a, tF (streamState (init x) next x x.length) = b, x.length = L
+    obtain ⟨h3, hl⟩ := hbound (cN + cE) hA
     generalize (lMax x + 1) ^ (dN + dE + 1) = Z at hl h3
     generalize (cN + cE) * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) = W at h3
     rw [Nat.mul_assoc c]
     apply Nat.mul_le_mul_left c
     nlinarith
   · generalize sI x = a, sF (streamState (init x) next x x.length) = b
-    have hY : (lMax x + 1) ^ (dN + dE) ≤ (lMax x + 1) ^ (dN + dE + 1) :=
-      Nat.pow_le_pow_right (by omega) (by omega)
-    have hl : lMax x + 1 ≤ (lMax x + 1) ^ (dN + dE + 1) :=
-      Nat.le_self_pow (by omega) _
-    have h3 : (cN' + cE') * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) ≤
-        C₀ * (lMax x + 1) ^ (dN + dE + 1) := by
-      rw [← Nat.mul_assoc]; exact Nat.mul_le_mul hB hY
+    obtain ⟨h3, hl⟩ := hbound (cN' + cE') hB
     generalize (lMax x + 1) ^ (dN + dE + 1) = Z at hl h3
     generalize (cN' + cE') * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) = W at h3
     rw [Nat.mul_assoc c]

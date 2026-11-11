@@ -669,4 +669,73 @@ theorem OVH_of_SETH (h : SETH) : OVH := by
   have : min ε 1 / 2 ≤ 1 / 2 := div_le_div_of_nonneg_right (min_le_right ε 1) zero_le_two
   linarith
 
+namespace OV
+
+/-- The encoded length of an instance of `N` vectors of dimension `d` is `O(N d)`. -/
+theorem length_encOV_le (p : List (List Bool) × List (List Bool)) :
+    (encOV p).length + 1 ≤ 4 * (p.1.length + p.2.length) * (OV.dim p + 1) + 2 := by
+  have hl (l : List (List Bool)) (hd : ∀ v ∈ l, v.length ≤ OV.dim p) :
+      (encList encBits l).length ≤ l.length * (2 * OV.dim p + 1) := by
+    rw [length_encList]
+    calc (l.map fun a => 2 * (encBits a).length + 1).sum
+        ≤ (l.map fun _ => 2 * OV.dim p + 1).sum :=
+          List.sum_le_sum fun a ha => by
+            have := hd a ha
+            rw [encBits_apply]
+            omega
+      _ = l.length * (2 * OV.dim p + 1) := by simp
+  have h₁ := hl p.1 fun v hv => le_listMax (f := List.length) (List.mem_append_left _ hv)
+  have h₂ := hl p.2 fun v hv => le_listMax (f := List.length) (List.mem_append_right _ hv)
+  rw [encOV, length_encPair]
+  nlinarith
+
+/-- A bound on the length of an encoded `OV` instance in terms of its dimension and number of vectors,
+useful for proving time bounds that depend on the encoding length. -/
+theorem encOV_length_rpow_le (p : List (List Bool) × List (List Bool)) {r : ℝ} (hr : r ≤ 2) :
+    (((encOV p).length : ℝ) + 1) ^ r ≤
+      36 * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ 2) + 4 := by
+  set X : ℝ := ((encOV p).length : ℝ) + 1
+  have hX1 : 1 ≤ X := by linarith [(Nat.cast_nonneg (encOV p).length : (0 : ℝ) ≤ _)]
+  have hlen := length_encOV_le p
+  have hlen' : X ≤ 4 * ((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1) + 2 := by
+    have : (((encOV p).length + 1 : ℕ) : ℝ) ≤
+        ((4 * (p.1.length + p.2.length) * (OV.dim p + 1) + 2 : ℕ) : ℝ) := by exact_mod_cast hlen
+    push_cast at this
+    push_cast
+    linarith
+  set Y : ℝ := ((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ 2
+  rcases Nat.eq_zero_or_pos (p.1.length + p.2.length) with hN | hN
+  · rw [hN, Nat.cast_zero, mul_zero, zero_mul, zero_add] at hlen'
+    calc X ^ r ≤ (2 : ℝ) ^ (2 : ℝ) :=
+          Real.rpow_le_rpow (by linarith) hlen' (by positivity) |>.trans
+            (Real.rpow_le_rpow_of_exponent_le (by norm_num) hr)
+      _ = 4 := by norm_num
+      _ ≤ 36 * Y + 4 := by positivity
+  · have hN1 : (1 : ℝ) ≤ ((p.1.length + p.2.length : ℕ) : ℝ) := by exact_mod_cast hN
+    have hd1 : (1 : ℝ) ≤ (OV.dim p : ℝ) + 1 := by
+      linarith [(Nat.cast_nonneg (OV.dim p) : (0 : ℝ) ≤ _)]
+    have hX6 : X ≤ 6 * (((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1)) := by
+      nlinarith
+    calc X ^ r ≤ (6 * (((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1))) ^ r :=
+          Real.rpow_le_rpow (by linarith) hX6 (by positivity)
+      _ = 6 ^ r * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ r) := by
+          rw [Real.mul_rpow (by norm_num) (by positivity),
+            Real.mul_rpow (by positivity) (by positivity)]
+      _ ≤ 36 * Y := by
+          have h6 : (6 : ℝ) ^ r ≤ 36 :=
+            (Real.rpow_le_rpow_of_exponent_le (by norm_num) hr).trans
+              (by norm_num : (6 : ℝ) ^ (2 : ℝ) ≤ 36)
+          have hd : ((OV.dim p : ℝ) + 1) ^ r ≤ ((OV.dim p : ℝ) + 1) ^ 2 := by
+            rw [← Real.rpow_two]
+            exact Real.rpow_le_rpow_of_exponent_le hd1 hr
+          have hNr : (0 : ℝ) ≤ ((p.1.length + p.2.length : ℕ) : ℝ) ^ r := by positivity
+          calc 6 ^ r * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ r)
+              ≤ 36 * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ 2) :=
+                mul_le_mul h6 (mul_le_mul_of_nonneg_left hd hNr) (by positivity)
+                  (by norm_num)
+            _ = 36 * Y := rfl
+      _ ≤ 36 * Y + 4 := by linarith
+
+end OV
+
 end Cslib.Complexity

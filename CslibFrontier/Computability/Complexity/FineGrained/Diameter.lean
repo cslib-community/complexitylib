@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Complexity.FineGrained
+public import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 public import CslibFrontier.Computability.Complexity.Problems.Graph
 public import Mathlib.Combinatorics.SimpleGraph.Diam
 import CslibFrontier.Foundations.Data.Nat.LogRpow
@@ -903,23 +904,7 @@ theorem exists_computableInO_toDiameter : ∃ D, ComputableInO toDiameter encOV 
         (Nat.le_add_left D₂ D₁))
     omega
 
-/-- The encoded length of an instance of `N` vectors of dimension `d` is `O(N d)`. -/
-theorem length_encOV_le (p : List (List Bool) × List (List Bool)) :
-    (encOV p).length + 1 ≤ 4 * (p.1.length + p.2.length) * (OV.dim p + 1) + 2 := by
-  have hl (l : List (List Bool)) (hd : ∀ v ∈ l, v.length ≤ OV.dim p) :
-      (encList encBits l).length ≤ l.length * (2 * OV.dim p + 1) := by
-    rw [length_encList]
-    calc (l.map fun a => 2 * (encBits a).length + 1).sum
-        ≤ (l.map fun _ => 2 * OV.dim p + 1).sum :=
-          List.sum_le_sum fun a ha => by
-            have := hd a ha
-            rw [encBits_apply]
-            omega
-      _ = l.length * (2 * OV.dim p + 1) := by simp
-  have h₁ := hl p.1 fun v hv => le_listMax (f := List.length) (List.mem_append_left _ hv)
-  have h₂ := hl p.2 fun v hv => le_listMax (f := List.length) (List.mem_append_right _ hv)
-  rw [encOV, length_encPair]
-  nlinarith
+
 
 end OV
 
@@ -1017,48 +1002,9 @@ theorem DecidableInTimeO.decidableInTimeO_OV_of_diameter {ε : ℝ} (hε : 0 < �
         (40 * C₂ + c) * ((((p.1.length + p.2.length : ℕ) : ℝ) ^ (2 - ε₀ / 2) *
           ((OV.dim p : ℝ) + 1) ^ 2)) + (40 * C₂ + c) := by
     set X : ℝ := ((encOV p).length : ℝ) + 1 with hX
-    have hX1 : 1 ≤ X := by linarith [(Nat.cast_nonneg (encOV p).length : (0 : ℝ) ≤ _)]
-    have hlen := length_encOV_le p
-    have hlen' : X ≤ 4 * ((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1) + 2 := by
-      have : (((encOV p).length + 1 : ℕ) : ℝ) ≤
-          ((4 * (p.1.length + p.2.length) * (OV.dim p + 1) + 2 : ℕ) : ℝ) := by exact_mod_cast hlen
-      push_cast at this
-      push_cast
-      linarith
     set Y : ℝ := ((p.1.length + p.2.length : ℕ) : ℝ) ^ (2 - ε₀ / 2) * ((OV.dim p : ℝ) + 1) ^ 2
     have hY0 : 0 ≤ Y := by positivity
-    have hXr : X ^ r ≤ 36 * Y + 4 := by
-      rcases Nat.eq_zero_or_pos (p.1.length + p.2.length) with hN | hN
-      · rw [hN, Nat.cast_zero, mul_zero, zero_mul, zero_add] at hlen'
-        calc X ^ r ≤ (2 : ℝ) ^ (2 : ℝ) :=
-              Real.rpow_le_rpow (by linarith) hlen' (by linarith) |>.trans
-                (Real.rpow_le_rpow_of_exponent_le (by norm_num) (by linarith))
-          _ = 4 := by norm_num
-          _ ≤ 36 * Y + 4 := by linarith
-      · have hN1 : (1 : ℝ) ≤ ((p.1.length + p.2.length : ℕ) : ℝ) := by exact_mod_cast hN
-        have hd1 : (1 : ℝ) ≤ (OV.dim p : ℝ) + 1 := by
-          linarith [(Nat.cast_nonneg (OV.dim p) : (0 : ℝ) ≤ _)]
-        have hX6 : X ≤ 6 * (((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1)) := by
-          nlinarith
-        calc X ^ r ≤ (6 * (((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1))) ^ r :=
-              Real.rpow_le_rpow (by linarith) hX6 (by linarith)
-          _ = 6 ^ r * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ r) := by
-              rw [Real.mul_rpow (by norm_num) (by positivity),
-                Real.mul_rpow (by positivity) (by positivity)]
-          _ ≤ 36 * Y := by
-              have h6 : (6 : ℝ) ^ r ≤ 36 :=
-                (Real.rpow_le_rpow_of_exponent_le (by norm_num) (by linarith)).trans
-                  (by norm_num : (6 : ℝ) ^ (2 : ℝ) ≤ 36)
-              have hd : ((OV.dim p : ℝ) + 1) ^ r ≤ ((OV.dim p : ℝ) + 1) ^ 2 := by
-                rw [← Real.rpow_two]
-                exact Real.rpow_le_rpow_of_exponent_le hd1 (by linarith)
-              have hNr : (0 : ℝ) ≤ ((p.1.length + p.2.length : ℕ) : ℝ) ^ r := by positivity
-              calc 6 ^ r * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ r)
-                  ≤ 36 * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ 2) :=
-                    mul_le_mul h6 (mul_le_mul_of_nonneg_left hd hNr) (by positivity)
-                      (by norm_num)
-                _ = 36 * Y := rfl
-          _ ≤ 36 * Y + 4 := by linarith
+    have hXr : X ^ r ≤ 36 * Y + 4 := OV.encOV_length_rpow_le p (by linarith)
     have := hbound p
     nlinarith
   refine (DecidableInTimeO.of_computableInO hdec (fun p => ?_) (fun p => hfinal p)).mono

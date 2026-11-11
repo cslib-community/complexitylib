@@ -183,48 +183,9 @@ theorem not_decidableInTimeO_editDist_of_OVH (hOVH : OVH) {ε : ℝ} (hε : 0 < 
     have hb := hbound p
     set X : ℝ := ((encOV p).length : ℝ) + 1 with hX
     set W : ℝ := ((OV.dim p : ℝ) + 1) ^ D with hW
-    have hX1 : 1 ≤ X := by linarith [(Nat.cast_nonneg (encOV p).length : (0 : ℝ) ≤ _)]
-    have hlen := length_encOV_le p
-    have hlen' : X ≤ 4 * ((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1) + 2 := by
-      have : (((encOV p).length + 1 : ℕ) : ℝ) ≤
-          ((4 * (p.1.length + p.2.length) * (OV.dim p + 1) + 2 : ℕ) : ℝ) := by exact_mod_cast hlen
-      push_cast at this
-      push_cast
-      linarith
     set Y : ℝ := ((p.1.length + p.2.length : ℕ) : ℝ) ^ (2 - ε₀ / 2) * ((OV.dim p : ℝ) + 1) ^ 2
     have hY0 : 0 ≤ Y := by positivity
-    have hXr : X ^ r ≤ 36 * Y + 4 := by
-      rcases Nat.eq_zero_or_pos (p.1.length + p.2.length) with hN | hN
-      · rw [hN, Nat.cast_zero, mul_zero, zero_mul, zero_add] at hlen'
-        calc X ^ r ≤ (2 : ℝ) ^ (2 : ℝ) :=
-              Real.rpow_le_rpow (by linarith) hlen' (by linarith) |>.trans
-                (Real.rpow_le_rpow_of_exponent_le (by norm_num) (by linarith))
-          _ = 4 := by norm_num
-          _ ≤ 36 * Y + 4 := by linarith
-      · have hN1 : (1 : ℝ) ≤ ((p.1.length + p.2.length : ℕ) : ℝ) := by exact_mod_cast hN
-        have hd1 : (1 : ℝ) ≤ (OV.dim p : ℝ) + 1 := by
-          linarith [(Nat.cast_nonneg (OV.dim p) : (0 : ℝ) ≤ _)]
-        have hX6 : X ≤ 6 * (((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1)) := by
-          nlinarith
-        calc X ^ r ≤ (6 * (((p.1.length + p.2.length : ℕ) : ℝ) * ((OV.dim p : ℝ) + 1))) ^ r :=
-              Real.rpow_le_rpow (by linarith) hX6 (by linarith)
-          _ = 6 ^ r * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ r) := by
-              rw [Real.mul_rpow (by norm_num) (by positivity),
-                Real.mul_rpow (by positivity) (by positivity)]
-          _ ≤ 36 * Y := by
-              have h6 : (6 : ℝ) ^ r ≤ 36 :=
-                (Real.rpow_le_rpow_of_exponent_le (by norm_num) (by linarith)).trans
-                  (by norm_num : (6 : ℝ) ^ (2 : ℝ) ≤ 36)
-              have hd : ((OV.dim p : ℝ) + 1) ^ r ≤ ((OV.dim p : ℝ) + 1) ^ 2 := by
-                rw [← Real.rpow_two]
-                exact Real.rpow_le_rpow_of_exponent_le hd1 (by linarith)
-              have hNr : (0 : ℝ) ≤ ((p.1.length + p.2.length : ℕ) : ℝ) ^ r := by positivity
-              calc 6 ^ r * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ r)
-                  ≤ 36 * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ 2) :=
-                    mul_le_mul h6 (mul_le_mul_of_nonneg_left hd hNr) (by positivity)
-                      (by norm_num)
-                _ = 36 * Y := rfl
-          _ ≤ 36 * Y + 4 := by linarith
+    have hXr : X ^ r ≤ 36 * Y + 4 := OV.encOV_length_rpow_le p (by linarith)
     -- the dimension factor is at most the target when there are vectors, and one otherwise
     have hW2 : W ^ 2 ≤ W ^ 2 * Y + 1 := by
       rcases Nat.eq_zero_or_pos (p.1.length + p.2.length) with hN | hN
