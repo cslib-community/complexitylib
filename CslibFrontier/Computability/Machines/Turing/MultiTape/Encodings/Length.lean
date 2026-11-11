@@ -23,11 +23,13 @@ certificate, in terms of the input.
 * `Turing.MultiTapeTM.length_encList`: the exact length.
 * `Turing.MultiTapeTM.sum_length_le_length_encList`: the encoded elements are no longer, in total,
   than the encoded list.
+* `Turing.MultiTapeTM.length_encList_set_le`: bound on the encoded length after replacing a list
+  element.
 * `Turing.MultiTapeTM.length_unframe_add_dropFrame_le`: the unframed prefix and remaining suffix
   of any bit list satisfy `2 * (unframe v).length + (dropFrame v).length ≤ v.length`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
@@ -51,6 +53,20 @@ theorem sum_length_le_length_encList (l : List α) :
   induction l with
   | nil => simp
   | cons a l ih => simp only [List.map_cons, List.sum_cons]; omega
+
+/-- Replacing an element of a list increases the encoded list length by at most
+`2 * (enc x).length + 1`. -/
+theorem length_encList_set_le (l : List α) (i : ℕ) (x : α) :
+    (encList enc (l.set i x)).length ≤ (encList enc l).length + 2 * (enc x).length + 1 := by
+  induction l generalizing i with
+  | nil => simp only [List.set_nil]; omega
+  | cons a l ih =>
+    rcases i with _ | i
+    · simp only [List.set_cons_zero, length_encList, List.map_cons, List.sum_cons]
+      omega
+    · simp only [List.set_cons_succ, length_encList, List.map_cons, List.sum_cons] at ih ⊢
+      have := ih i
+      omega
 
 /-- The unframed prefix and remaining suffix of any bit list satisfy
 `2 * (unframe v).length + (dropFrame v).length ≤ v.length`. -/

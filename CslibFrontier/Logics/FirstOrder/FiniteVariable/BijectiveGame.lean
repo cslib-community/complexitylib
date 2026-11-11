@@ -253,6 +253,15 @@ for `k > 0` when `M` or `N` is empty. -/
 def BijPebbleWinsForever (S : Set (Fin k)) (a : Fin k → M) (b : Fin k → N) : Prop :=
   ∃ I : Set (Fin k) → (Fin k → M) → (Fin k → N) → Prop, IsBijPebbleBackAndForth L I ∧ I S a b
 
+/-- Unfolds `BijPebbleWinsForever` into existence of a bijective `k`-pebble back-and-forth
+invariant. -/
+theorem bijPebbleWinsForever_iff_exists_isBijPebbleBackAndForth {S : Set (Fin k)} {a : Fin k → M}
+    {b : Fin k → N} :
+    BijPebbleWinsForever L S a b ↔
+      ∃ I : Set (Fin k) → (Fin k → M) → (Fin k → N) → Prop,
+        IsBijPebbleBackAndForth L I ∧ I S a b :=
+  Iff.rfl
+
 /-- Every position of a back-and-forth invariant is won by Duplicator in the infinite game. -/
 theorem IsBijPebbleBackAndForth.bijPebbleWinsForever
     {I : Set (Fin k) → (Fin k → M) → (Fin k → N) → Prop} (hI : IsBijPebbleBackAndForth L I)
