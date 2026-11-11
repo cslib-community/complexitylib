@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Crypto.Computational.Basic
+public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Foundations.Data.Matrix.Binary
 public import CslibFrontier.Probability.Product
 public import Mathlib.Data.Matrix.Mul
@@ -45,6 +46,7 @@ open Probability Turing.MultiTapeTM
 open scoped _root_.Matrix
 
 namespace PrimeLWE
+open LWE
 
 /-- Encode a `ZMod q` element. -/
 @[expose]
@@ -76,22 +78,6 @@ def encMatrix (n m q : ℕ) : Matrix (Fin n) (Fin m) (ZMod q) ↪ List Bool :=
     simp only [List.getD_eq_getElem?_getD, List.getElem?_ofFn, i.isLt, j.isLt, ↓reduceDIte,
       Option.getD_some] at hij
     exact hij⟩
-
-/-- The deterministic LWE public matrix `[A * s + e | A]` modulo `q`. This replicates `LWE.publicMatrix` for `ZMod q`. -/
-@[expose]
-def publicMatrix {n m q : ℕ} (A : Matrix (Fin m) (Fin n) (ZMod q))
-    (s : Fin n → ZMod q) (e : Fin m → ZMod q) :
-    Matrix (Fin m) (Fin (n + 1)) (ZMod q) :=
-  fun i => Fin.cons ((A *ᵥ s) i + e i) (A i)
-
-/-- Draw the public matrix `[A * s + e | A]`. This replicates `LWE.publicMatrixLaw` for `ZMod q`. -/
-@[expose]
-noncomputable def publicMatrixLaw (n m q : ℕ) [Fact (Nat.Prime q)]
-    (noise : PMF (ZMod q)) : PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod q)) := do
-  let secret ← PMF.uniformOfFintype (Fin n → ZMod q)
-  let publicPart ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))
-  let error ← PMF.pi (fun _ : Fin m => noise)
-  return publicMatrix publicPart secret error
 
 /-- With a uniform matrix `A` and a uniform error `e`, the public matrix `[A * s + e | A]` is
 uniform, whatever the secret `s`. -/
@@ -128,7 +114,7 @@ noncomputable def publicMatrixLawErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)]
 noncomputable def realEnsemble (n m : ℕ → ℕ) (q : ℕ → ℕ)
     [∀ security, Fact (Nat.Prime (q security))]
     (noise : (security : ℕ) → PMF (ZMod (q security))) (security : ℕ) : PMF (List Bool) :=
-  (publicMatrixLaw (n security) (m security) (q security) (noise security)).map (encMatrix _ _ _)
+  (publicMatrixLaw (n security) (m security) (noise security)).map (encMatrix _ _ _)
 
 /-- The prime LWE real ensemble with error secret. -/
 @[expose]

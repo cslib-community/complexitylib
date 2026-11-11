@@ -67,7 +67,7 @@ public section
 
 namespace Cslib.Crypto.PrimeLWE
 
-open Probability Turing.MultiTapeTM
+open Probability Turing.MultiTapeTM LWE
 open scoped _root_.Matrix
 
 /-! ### Shifting one coordinate -/
@@ -207,7 +207,7 @@ noncomputable def estimatorTrial {n m q : ℕ} [Fact (Nat.Prime q)]
 /-- The distinguisher's output law on real LWE samples. -/
 noncomputable def realLaw {n m q : ℕ} [Fact (Nat.Prime q)] (noise : PMF (ZMod q))
     (distinguisher : Matrix (Fin m) (Fin (n + 1)) (ZMod q) → ProbComp Bool) : PMF Bool :=
-  (publicMatrixLaw n m q noise).bind fun P => eval (distinguisher P)
+  (publicMatrixLaw n m noise).bind fun P => eval (distinguisher P)
 
 /-- The distinguisher's output law on uniform matrices. -/
 noncomputable def uniformLaw {n m q : ℕ} [Fact (Nat.Prime q)]

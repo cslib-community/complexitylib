@@ -56,6 +56,7 @@ polynomial-time algorithm, the asymptotic PPT (`IsPPTOn`) statement is not forma
 public section
 
 namespace Cslib.Crypto.PrimeLWE
+open LWE
 
 open Probability Turing.MultiTapeTM
 open scoped _root_.Matrix

@@ -38,18 +38,18 @@ noncomputable def bernoulliZMod2 (τ : I) : PMF (ZMod 2) :=
 
 /-- Search LPN hypothesis. -/
 def SearchLPN (n m : ℕ → ℕ) (τ : ℕ → I) : Prop :=
-  SearchLWE n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
+  PrimeLWE.SearchLWE n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
 
 /-- Decision LPN hypothesis. -/
 def DecisionLPN (n m : ℕ → ℕ) (τ : ℕ → I) : Prop :=
-  DecisionLWE n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
+  PrimeLWE.DecisionLWE n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
 
 /-- Search LPN with error secret. -/
 def SearchLPNErrorSecret (n m : ℕ → ℕ) (τ : ℕ → I) : Prop :=
-  SearchLWEErrorSecret n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
+  PrimeLWE.SearchLWEErrorSecret n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
 
 /-- Decision LPN with error secret. -/
 def DecisionLPNErrorSecret (n m : ℕ → ℕ) (τ : ℕ → I) : Prop :=
-  DecisionLWEErrorSecret n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
+  PrimeLWE.DecisionLWEErrorSecret n m (fun _ => 2) (fun sec => bernoulliZMod2 (τ sec))
 
 end Cslib.Crypto

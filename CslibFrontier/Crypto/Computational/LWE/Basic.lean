@@ -55,24 +55,25 @@ open scoped _root_.Matrix
 namespace LWE
 
 /-- The deterministic LWE public matrix `[B * t + error | B]`. -/
-def publicMatrix {n m w : ℕ} (B : Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
-    (t : Fin n → ZMod (2 ^ w)) (error : Fin m → ZMod (2 ^ w)) :
-    Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) :=
+@[expose]
+def publicMatrix {n m : ℕ} {R : Type} [CommRing R] (B : Matrix (Fin m) (Fin n) R)
+    (t : Fin n → R) (error : Fin m → R) : Matrix (Fin m) (Fin (n + 1)) R :=
   fun i => Fin.cons ((B *ᵥ t) i + error i) (B i)
 
 /-- Draw the public matrix `[B * t + e | B]`. The errors are independent of one another, of
 the uniform matrix, and of the uniform secret shared by all rows. -/
-noncomputable def publicMatrixLaw (n m w : ℕ) (noise : PMF (ZMod (2 ^ w))) :
-    PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w))) := do
-  let secret ← PMF.uniformOfFintype (Fin n → ZMod (2 ^ w))
-  let publicPart ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
+@[expose]
+noncomputable def publicMatrixLaw {R : Type} [CommRing R] [Fintype R] [Nonempty R]
+    (n m : ℕ) (noise : PMF R) : PMF (Matrix (Fin m) (Fin (n + 1)) R) := do
+  let secret ← PMF.uniformOfFintype (Fin n → R)
+  let publicPart ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) R)
   let error ← PMF.pi (fun _ : Fin m => noise)
   return publicMatrix publicPart secret error
 
 /-- Binary decision-LWE samples, using `w` bits per residue and a uniform secret. -/
 noncomputable def realEnsemble (n m w : ℕ → ℕ)
     (noise : (security : ℕ) → PMF (ZMod (2 ^ w security))) (security : ℕ) : PMF (List Bool) :=
-  (publicMatrixLaw (n security) (m security) (w security) (noise security)).map Matrix.toBinary
+  (publicMatrixLaw (n security) (m security) (noise security)).map Matrix.toBinary
 
 /-- Encode a uniform matrix with exactly the real experiment's dimensions and modulus. -/
 noncomputable def uniformEnsemble (n m w : ℕ → ℕ) (security : ℕ) : PMF (List Bool) :=

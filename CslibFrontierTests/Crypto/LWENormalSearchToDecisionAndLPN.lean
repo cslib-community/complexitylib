@@ -54,7 +54,6 @@ example : SearchLPN (fun _ => 0) (fun _ => 0) (fun _ => 0) ↔
   SearchLWE (fun _ => 0) (fun _ => 0) (fun _ => 2) (fun _ => bernoulliZMod2 0) := Iff.rfl
 
 -- Singular top block reduction logic on zero word
-#guard_msgs(drop info) in
-#check reduceNormalDecision (n := 1) (m := 0) (q := 2) (fun _ => pure false) []
+#reduce reduceNormalDecision (n := 1) (m := 0) (q := 2) (fun _ => pure true) [false, false]
 
 end CslibFrontierTests.Crypto.LWENormalSearchToDecisionAndLPN
