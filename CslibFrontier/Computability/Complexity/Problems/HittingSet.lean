@@ -4,6 +4,7 @@ All rights reserved. Released under Apache 2.0 license as described in the file 
 Authors: Hugo Akitaya, Shriya Thakur, Freddy Stock, and Adriano Corbellino
 -/
 module
+-- upstream: candidate
 
 
 -- Import vertex cover to prove that hitting set is NP hard
@@ -68,10 +69,6 @@ enc_structure encHittingSet : HittingSetInstance where
 def HittingSet : Set HittingSetInstance := {x | ∃ H : Finset {u // u ∈ x.finiteUniverse},
   -- for all subsets of S atleast 1 element of H belongs to S
   H.card = x.k ∧ ∀ S ∈ x.subsets, ∃ u ∈ H, (u : ℕ) ∈ S}
-
-attribute [fun_prop] encHittingSet_finiteUniverse_polyTime
-  encHittingSet_subsets_polyTime encHittingSet_k_polyTime
-  encHittingSet_mk_polyTime
 
 -- sets = [[1, 2], [2, 3], [3, 4]]
 -- selected = [2, 3]
@@ -251,18 +248,15 @@ theorem HittingSet.computableInPolyTime_verifier : ComputableInPolyTime HittingS
   -- the selected elements are both poly time
   refine computableInPolyTime_subsetVerifier (encγ := encNat) ?_ ?_
   -- Extracting the universe from fro the instance is poly time
-  · unfold encHittingSet
-    fun_prop
+  · fun_prop
   -- The verifier does 2 bool checks and we prove that each check is poly time
   · refine bool_and' ?_ ?_
     -- Checking that # of selected elements = k is poly time
-    · exact ((length_list_binary encNat).comp (snd _ _)).decide_eq' (by
-        unfold encHittingSet
-        exact (snd _ _).comp (fst _ _))
+    · exact ((length_list_binary encNat).comp (snd _ _)).decide_eq' (by fun_prop)
     -- Extracting the collection of subsets and the selected elements from the verifier
     -- input is poly time
     · have hp : ComputableInPolyTime
-          (fun y : HittingSetInstance × List ℕ => (y.1.1.2, y.2))
+          (fun y : HittingSetInstance × List ℕ => (y.1.subsets, y.2))
           (encPair encHittingSet (encList encNat))
           (encPair (encList (encList encNat)) (encList encNat)) := by
         unfold encHittingSet
@@ -275,17 +269,16 @@ theorem HittingSet.computableInPolyTime_verifier : ComputableInPolyTime HittingS
 -- convert each valid edge into a 2 elem subset and preserve k
 -- Covering an edge is equivalent to hitting its corresponding subset. -/
 def vertexCoverToHittingSet (x : Graph × ℕ) : HittingSetInstance :=
-  -- The universe of the hitting set instance is the graphs vertex list
-  let vertices := x.1.1
+  let ((vertices, graphEdges), k) := x
   -- vertex cover ignores edges with undeclared endpoints and self loops
-  let edges := x.1.2.filter fun e =>
-    decide (e.1 ∈ vertices) &&
-    decide (e.2 ∈ vertices) &&
-    decide (e.1 ≠ e.2)
+  let edges := graphEdges.filter fun (u, v) =>
+    decide (u ∈ vertices) &&
+    decide (v ∈ vertices) &&
+    decide (u ≠ v)
   -- convert each leftover (u, v) into [u, v]
-  let subsets := edges.map fun e => [e.1, e.2]
+  let subsets := edges.map fun (u, v) => [u, v]
   -- construct hitting set intance using the same target size k
-  ((vertices, subsets), x.2)
+  { finiteUniverse := vertices, subsets := subsets, k := k }
 
 /-- The reduction preserves YES instances
 A graph has a vertex cover of size k iff the constructed hitting set
