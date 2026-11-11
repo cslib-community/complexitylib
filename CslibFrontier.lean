@@ -1236,6 +1236,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Modular.Subtract
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.Subtract.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Multiplicity
 public import CslibFrontier.Computability.Circuit.Boolean.NaturalProof
+public import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.ConstDepth
 public import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 public import CslibFrontier.Computability.Circuit.Boolean.Nechiporuk
 public import CslibFrontier.Computability.Circuit.Boolean.NegationNormalForm
@@ -1260,6 +1261,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Propagation
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.RankProperty
+public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 public import CslibFrontier.Computability.Circuit.Boolean.ReadOnce
 public import CslibFrontier.Computability.Circuit.Boolean.Routing
 public import CslibFrontier.Computability.Circuit.Boolean.RoutingValues
