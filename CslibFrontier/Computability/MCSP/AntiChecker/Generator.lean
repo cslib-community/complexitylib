@@ -42,7 +42,8 @@ query length are polynomial in `n + s`.
 
 This is the library's deterministic greedy, not the proof of
 [Oliveira, Pich and Santhanam, Lemma 4.1][OliveiraPichSanthanam2019]. Replacing the oracle gates by
-circuits for the oracle, under `NP ⊆ P/poly`, is not done here.
+circuits for the oracle, under `NP ⊆ P/poly`, is done in
+`CslibFrontier.Computability.MCSP.AntiChecker.Efficient`, which proves that lemma.
 
 ## Main definitions
 
@@ -62,12 +63,19 @@ circuits for the oracle, under `NP ⊆ P/poly`, is not done here.
 * `Cslib.MCSP.AntiChecker.samplesOf_eval_generator`: the generator runs the greedy.
 * `Cslib.MCSP.AntiChecker.snd_eq_of_mem_samplesOf_eval_generator`: every sample is `(y, f y)`.
 * `Cslib.MCSP.AntiChecker.isAntiChecker_samplesOf_generator`: the anti-checker generator.
-* `Cslib.MCSP.AntiChecker.map_querySources_blockSources`: a query about the samples of an output.
+* `Cslib.MCSP.AntiChecker.map_fst_samplesOf`: the inputs of the samples in an output.
+* `Cslib.MCSP.AntiChecker.map_querySources_blockSources`,
+  `Cslib.MCSP.AntiChecker.length_querySources_blockSources`: a query about the samples of an
+  output, and its length.
+* `Cslib.MCSP.AntiChecker.queryLength_mono`: query length is monotone in the power, threshold and
+  number of samples.
 * `Cslib.MCSP.AntiChecker.size_generator`, `Cslib.MCSP.AntiChecker.cost_generator`,
   `Cslib.MCSP.AntiChecker.depthWith_generator_le`,
   `Cslib.MCSP.AntiChecker.fanInAtMost_generator`: the measures of the generator.
-* `Cslib.MCSP.AntiChecker.antiCheckerRounds_le`,
-  `Cslib.MCSP.AntiChecker.queryLength_antiChecker_le`: polynomial bounds on the parameters.
+* `Cslib.MCSP.AntiChecker.antiCheckerPower_pos`, `Cslib.MCSP.AntiChecker.antiCheckerRounds_pos`,
+  `Cslib.MCSP.AntiChecker.antiCheckerRounds_le`,
+  `Cslib.MCSP.AntiChecker.queryLength_antiChecker_le`: positivity and polynomial bounds on the
+  parameters.
 
 ## References
 
@@ -140,6 +148,12 @@ theorem length_encQuery_ofSamples_eq_queryLength (n s ℓ u : ℕ) (P : List (Bi
     (encQuery (Query.ofSamples n s ℓ u P)).length = queryLength n s ℓ u P.length :=
   length_encQuery_ofSamples n s ℓ u P
 
+/-- The query length is monotone in the power, the threshold and the number of samples. -/
+theorem queryLength_mono {s ℓ ℓ' u u' t t' : ℕ} (hℓ : ℓ ≤ ℓ') (hu : u ≤ u') (ht : t ≤ t') :
+    queryLength n s ℓ u t ≤ queryLength n s ℓ' u' t' := by
+  unfold queryLength
+  gcongr
+
 /-- Wire `b` of block `j` among `r` blocks of `n + 1` wires after the truth table. -/
 def blockWire {r : ℕ} (j : Fin r) (b : Fin (n + 1)) : Fin (2 ^ n + (n + 1) * r) :=
   ⟨2 ^ n + (n + 1) * j + b, by
@@ -206,6 +220,12 @@ def samplesOf {R : ℕ} (z : BitString (2 ^ n + (n + 1) * R)) : List (BitString 
     (samplesOf z).length = R := by
   simp [samplesOf]
 
+/-- The inputs of the samples of an output are read from the input wires of its blocks. -/
+theorem map_fst_samplesOf {R : ℕ} (z : BitString (2 ^ n + (n + 1) * R)) :
+    (samplesOf z).map Prod.fst =
+      List.ofFn fun j : Fin R => fun b : Fin n => z (blockWire j b.castSucc) := by
+  simp [samplesOf, List.map_ofFn, Function.comp_def]
+
 /-- On an output `z`, the sources of the blocks read the samples of `z`. -/
 theorem map_ofFn_blockSources {r : ℕ} (z : BitString (2 ^ n + (n + 1) * r)) :
     (List.ofFn fun j : Fin r => blockSources j).map
@@ -219,6 +239,14 @@ theorem map_querySources_blockSources {r : ℕ} (z : BitString (2 ^ n + (n + 1) 
     (querySources n s ℓ u (List.ofFn fun j : Fin r => blockSources j)).map (Sum.elim z id) =
       encQuery (Query.ofSamples n s ℓ u (samplesOf z)) := by
   rw [map_querySources, map_ofFn_blockSources, Query.ofSamples]
+
+/-- The query whose samples are the `r` blocks has length `queryLength n s ℓ u r`. -/
+theorem length_querySources_blockSources (s ℓ u r : ℕ) :
+    (querySources n s ℓ u (List.ofFn fun j : Fin r => blockSources (n := n) j)).length =
+      queryLength n s ℓ u r := by
+  have h := congrArg List.length
+    (map_querySources_blockSources (n := n) (r := r) (fun _ => false) s ℓ u)
+  rwa [List.length_map, length_encQuery_ofSamples_eq_queryLength, length_samplesOf] at h
 
 /-- The answers of a language `O` to the greedy's queries `(P, u)` for circuits on `n` inputs with
 at most `s` gates and power `ℓ`. -/
@@ -379,6 +407,14 @@ certificate length. -/
 def antiCheckerRounds (n s : ℕ) : ℕ :=
   certLength n s * (certLength n s + 200) + 1
 
+/-- The power of the anti-checker generator is positive. -/
+theorem antiCheckerPower_pos (n s : ℕ) : 0 < antiCheckerPower n s :=
+  Nat.add_pos_right _ (by norm_num)
+
+/-- The anti-checker generator has at least one round. -/
+theorem antiCheckerRounds_pos (n s : ℕ) : 0 < antiCheckerRounds n s :=
+  Nat.succ_pos _
+
 /-- **The anti-checker generator.** Let `O` agree with the anti-checker oracle on query words, and
 let `f` need more gates than `n` circuits with at most `s` gates and a circuit for their strict
 majority. On the truth table of `f`, every circuit with at most `s` gates differs from `f` on one of
@@ -421,15 +457,6 @@ theorem fanInAtMost_generator (n s ℓ R : ℕ) :
     (fanInAtMost_selectionRound _ _ _).mono <|
     max_le (Nat.add_le_add (Nat.add_le_add_right (Nat.mul_le_mul_left 2 (by omega)) 4)
       (Nat.mul_le_mul_right _ hr)) (by unfold queryLength; omega)
-
-/-- The certificate length is at most `3 (n + s + 1) ^ 2`. -/
-private theorem certLength_le_three_mul_sq (n s : ℕ) :
-    certLength n s ≤ 3 * (n + s + 1) ^ 2 := by
-  have h : 3 * (n + s + 1) ^ 2 =
-      certLength n s + (3 * n ^ 2 + s ^ 2 + 4 * n * s + 5 * n + s + 3) := by
-    unfold certLength
-    ring
-  omega
 
 /-- The anti-checker generator has at most `610 (n + s + 1) ^ 4` rounds. -/
 theorem antiCheckerRounds_le (n s : ℕ) : antiCheckerRounds n s ≤ 610 * (n + s + 1) ^ 4 := by

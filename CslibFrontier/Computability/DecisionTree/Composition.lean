@@ -12,7 +12,8 @@ public import CslibFrontier.Computability.DecisionTree.Cost
 /-!
 # Composition of decision trees
 
-`bind` replaces each output leaf by a continuation. `substitute` replaces each query by a
+`bind` replaces each output leaf by a continuation; `seqFin` runs finitely many trees one after
+another and outputs all their outputs. `substitute` replaces each query by a
 Boolean-valued decision tree and continues according to its answer. These are executable tree
 constructions, with exact evaluation and per-input cost laws. The input variables of different
 subroutines may overlap, and repeated queries are charged each time; substitution does not cache
@@ -27,10 +28,13 @@ including empty blocks. No multiplicative lower bound is asserted.
 ## Main definitions
 
 * `Cslib.DecisionTree.bind`: replace output leaves by continuations.
+* `Cslib.DecisionTree.seqFin`: run `k` trees in sequence and output all their outputs.
 * `Cslib.DecisionTree.substitute`: replace queries by Boolean-valued subroutines.
 
 ## Main results
 
+* `Cslib.DecisionTree.eval_seqFin`, `Cslib.DecisionTree.depth_seqFin_le`: the outputs and the
+  depth of a sequence of trees.
 * `Cslib.DecisionTree.eval_substitute`: query substitution computes function composition.
 * `Cslib.DecisionTree.weightedCost_substitute`: exact input-dependent composition cost.
 * `Cslib.DecisionTree.weightedDepth_substitute_le`: composition with heterogeneous query costs.
@@ -101,6 +105,36 @@ theorem depth_bind_le (t : DecisionTree ι β) (k : β → DecisionTree ι γ)
     {d : ℕ} (hk : ∀ b, (k b).depth ≤ d) : (t.bind k).depth ≤ t.depth + d := by
   simpa only [weightedDepth_const, Nat.mul_one] using
     t.weightedDepth_bind_le k (fun _ => 1) (fun b => by simpa using hk b)
+
+/-- Run the trees `t 0, …, t (k - 1)` one after another on the same input and output all their
+outputs. -/
+@[expose] def seqFin : {k : ℕ} → (Fin k → DecisionTree ι β) → DecisionTree ι (Fin k → β)
+  | 0, _ => leaf Fin.elim0
+  | _ + 1, t => (t 0).bind fun b => (seqFin fun j => t j.succ).bind fun bs => leaf (Fin.cons b bs)
+
+/-- Running trees in sequence outputs each tree's output. -/
+@[simp] theorem eval_seqFin {k : ℕ} (t : Fin k → DecisionTree ι β) (x : ι → Bool) :
+    (seqFin t).eval x = fun j => (t j).eval x := by
+  induction k with
+  | zero => exact funext fun j => j.elim0
+  | succ k ih =>
+    simp only [seqFin, eval_bind, ih, eval_leaf]
+    exact funext fun j => Fin.cases rfl (fun _ => rfl) j
+
+/-- Running `k` trees of depth at most `d` in sequence has depth at most `k * d`. -/
+theorem depth_seqFin_le {k d : ℕ} (t : Fin k → DecisionTree ι β) (ht : ∀ j, (t j).depth ≤ d) :
+    (seqFin t).depth ≤ k * d := by
+  induction k with
+  | zero => simp [seqFin]
+  | succ k ih =>
+    have hrest (b : β) : ((seqFin fun j => t j.succ).bind fun bs =>
+        leaf (Fin.cons b bs : Fin (k + 1) → β)).depth ≤ k * d := by
+      have := depth_bind_le (seqFin fun j => t j.succ)
+        (fun bs => leaf (Fin.cons b bs : Fin (k + 1) → β)) (d := 0) fun _ => (depth_leaf _).le
+      exact this.trans (ih _ fun j => ht j.succ)
+    refine (depth_bind_le _ _ hrest).trans ?_
+    rw [Nat.succ_mul, Nat.add_comm (k * d)]
+    exact Nat.add_le_add_right (ht 0) _
 
 /-- Replace a query of `i` by the Boolean subroutine `s i`, then follow its answer.
 Every occurrence is replaced independently; answers are not memoized. -/
