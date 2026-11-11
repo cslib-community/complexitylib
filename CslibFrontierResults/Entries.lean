@@ -2725,7 +2725,8 @@ register_result "cikk-amp-reconstruction" where
     (d) the four parameter conditions are hypotheses, where the source fixes \
     k = ceil(3c (1/eps) ln(1/gamma)) + 1. The size s of the direct-product set is an explicit \
     argument, and the seed distribution needs k > 0 and s <= k. The circuit size of the \
-    hypotheses is not bounded here, and the running time of the learner is not certified."
+    hypotheses is not bounded here (see cikk-learner-hypothesis-size), and the running time of \
+    the learner is not certified."
 
 register_result "cikk-learning-from-dense-test" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning f from a dense test that rejects \
