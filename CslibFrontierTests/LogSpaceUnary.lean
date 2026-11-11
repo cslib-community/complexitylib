@@ -51,11 +51,17 @@ example : ComputableInLogSpace (fun p : ℕ × ℕ => decide (p.1 * p.2 = p.2) &
 example : ComputableInLogSpace (fun p : ℕ × ℕ => p.1 * p.2) (encPair encUnary encUnary) encNat :=
   ComputableInLogSpace.unaryToBinary (by fun_prop)
 
+/-- A polynomial given directly as a counter-program expression, in unary. -/
+example : ComputableInLogSpace (fun p : ℕ × ℕ => p.1 * p.1 + p.2) (encPair encUnary encUnary)
+    encUnary :=
+  CounterProgram.Unary.computableInLogSpace_unary (F := fun a b => a * a + b)
+    (.add (.mul (.reg 0) (.reg 0)) (.reg 1)) fun _ _ => rfl
+
 /-- A polynomial given directly as a counter-program expression, in binary. -/
 example : ComputableInLogSpace (fun p : ℕ × ℕ => p.1 * p.1 + p.2) (encPair encUnary encUnary)
     encNat :=
   CounterProgram.Unary.computableInLogSpace_binary (F := fun a b => a * a + b)
-    (.add (.mul (.reg 0) (.reg 0)) (.reg 1)) 2 (fun _ _ => rfl) fun a b => by nlinarith
+    (.add (.mul (.reg 0) (.reg 0)) (.reg 1)) fun _ _ => rfl
 
 /-- Comparing the length of a list with its head. -/
 example : ComputableInLogSpace (fun l : List ℕ => decide (l.length * l.length ≤ l.headD 0))

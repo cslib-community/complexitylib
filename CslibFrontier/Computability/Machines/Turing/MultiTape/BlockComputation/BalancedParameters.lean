@@ -60,23 +60,12 @@ theorem horizon_pos {T : ℕ} (hT : 0 < T) : 0 < horizon T := by
   rw [hz, Nat.zero_mul] at h
   omega
 
-private theorem pow_size_le_twice {n : ℕ} (hn : 0 < n) : 2 ^ n.size ≤ 2 * n := by
-  have hs : 0 < n.size := Nat.size_pos.mpr hn
-  have hlo : 2 ^ (n.size - 1) ≤ n := Nat.lt_size.mp (by omega)
-  calc
-    2 ^ n.size = 2 ^ (n.size - 1) * 2 := by
-      rw [← pow_succ]
-      congr 1
-      omega
-    _ ≤ n * 2 := Nat.mul_le_mul_right 2 hlo
-    _ = 2 * n := Nat.mul_comm _ _
-
 /-- The chosen block square is at most four times the intended time-length product. -/
 theorem blockWidth_sq_le {T : ℕ} (hT : 0 < T) :
     blockWidth T ^ 2 ≤ 4 * (T * T.size) := by
   have hs : 0 < T.size := Nat.size_pos.mpr hT
-  have h₁ := pow_size_le_twice hT
-  have h₂ := pow_size_le_twice hs
+  have h₁ := two_pow_size_le_two_mul hT
+  have h₂ := two_pow_size_le_two_mul hs
   have hexp : 2 * ((T.size + T.size.size) / 2) ≤ T.size + T.size.size := by omega
   have hp := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) hexp
   have hsq : 2 ^ (2 * ((T.size + T.size.size) / 2)) = blockWidth T ^ 2 := by

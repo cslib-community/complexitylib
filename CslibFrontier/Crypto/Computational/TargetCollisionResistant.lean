@@ -393,11 +393,11 @@ theorem validInput_eq_true_iff (C : KeyedCompressionFamily) {n : ℕ} {x : List 
 theorem computableInPolyTime_validInput (C : KeyedCompressionFamily) :
     ComputableInPolyTime (fun ⟨n, x⟩ => C.validInput n x)
       (encPair encUnary encBits) encBool := by
-  have hp := ComputableTidilyInPolyTime.id' (encIn := encPair encUnary encBits)
-  exact of_tidy_congr (ComputableTidilyInPolyTime.unary_beq
-    (ComputableTidilyInPolyTime.length_bits.comp hp.snd')
-    (ComputableTidilyInPolyTime.unary_mul.comp
-      ((ComputableTidilyInPolyTime.const 2).prod (C.blockLen_polyTime.tidy.comp hp.fst'))))
+  have hp := ComputableInPolyTime.id' (encIn := encPair encUnary encBits)
+  exact (ComputableInPolyTime.unary_beq'
+    (ComputableInPolyTime.length_bits.comp hp.snd')
+    (ComputableInPolyTime.unary_mul.comp
+      ((ComputableInPolyTime.const 2).prod (C.blockLen_polyTime.comp hp.fst')))).of_enc_eq
     fun _ => rfl
 
 /-- Target collision resistance (UOWHF compression security) of `C` on `2 * C.blockLen n`-bit
@@ -848,18 +848,17 @@ theorem computableInPolyTime_uowhfCandidateInput
       encIn encBits := by
   have hleaves := computableInPolyTime_uowhfLeaves.comp (hM.prod hmsg)
   have hlev := computableInPolyTime_uowhfTreeLevels hh hn hκ hM
-    (.of_tidy (ComputableTidilyInPolyTime.bitsRowsWithInput hi.tidy hκ.tidy hfront.tidy)) hleaves
-  have htop := (computableInPolyTime_uowhfTreeLevels hh hn hκ hM
-    (.of_tidy (ComputableTidilyInPolyTime.bitsRowsWithInput hn.tidy hκ.tidy hfront.tidy))
-    hleaves).tidy
-  have hroot := computableInPolyTime_padOrTake.tidy.comp (hM.tidy.prod
-    ((ComputableTidilyInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp htop))
-  have hlow := ComputableTidilyInPolyTime.bitsLow hM.tidy
-    (ComputableTidilyInPolyTime.unary_to_binary.comp
-      (ComputableTidilyInPolyTime.length_bits.comp hmsg.tidy))
-  exact of_tidy_congr (ComputableTidilyInPolyTime.ite_decide (hi.tidy.unary_lt' hn.tidy)
-    (computableInPolyTime_uowhfPairInput hM hlev hj).tidy
-    (ComputableTidilyInPolyTime.bitsAppend hroot hlow)) fun _ => rfl
+    (ComputableInPolyTime.bitsRowsWithInput hi hκ hfront) hleaves
+  have htop := computableInPolyTime_uowhfTreeLevels hh hn hκ hM
+    (ComputableInPolyTime.bitsRowsWithInput hn hκ hfront) hleaves
+  have hroot := computableInPolyTime_padOrTake.comp (hM.prod
+    ((ComputableInPolyTime.headD (encA := encBits) (encL := encList encBits) []).comp htop))
+  have hlow := ComputableInPolyTime.bitsLow hM
+    (ComputableInPolyTime.unary_to_binary.comp
+      (ComputableInPolyTime.length_bits.comp hmsg))
+  exact (ComputableInPolyTime.ite_decide (hi.unary_lt' hn)
+    (computableInPolyTime_uowhfPairInput hM hlev hj)
+    (ComputableInPolyTime.bitsAppend hroot hlow)).of_enc_eq fun _ => rfl
 
 /-! ### Deterministic tree collision witness -/
 

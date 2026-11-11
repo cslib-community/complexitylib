@@ -300,17 +300,14 @@ example : Realizes .exact square (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
     (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
-/-- A non-strict comparison is not a native test. -/
+/-- A non-strict comparison uses a native strict test with swapped alternatives. -/
 def atMost (n : ℕ) : Memory.Prog ℕ := if n ≤ 3 then pure 0 else pure 1
 
-/--
-error: realize: a branch condition must be `a = b`, `a < b` or `a > b` on words, got
-  d ≤ 3
--/
-#guard_msgs in
 example : Realizes .exact atMost (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
+    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun w _ _ => Fits w 3)
+    (fun _ _ => 0) := by
   realize
+  all_goals first | exact h | exact h.of_le (by omega)
 
 /-- Recursion on a runtime value is a loop. -/
 def readMany : ℕ → Memory.Prog Unit

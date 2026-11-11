@@ -243,4 +243,20 @@ theorem ncard_neighborSet_artificialNode :
     (fun _ => eq_zero_of_matQ_mulVec_nonpos coordPos_A_pos) Fintype.card_sum artificialNode
     (completelyLabeled_iff_forall.2 ⟨fun _ => .inl rfl, fun _ => .inr rfl⟩)
 
+/-- `setOf_completelyLabeled_eq` applies without nonemptiness assumptions: on empty strategy sets
+there are no Nash equilibria and `(0, 0)` is the sole completely labelled vertex pair. -/
+example (G : BimatrixGame Empty Empty) :
+    {p : (Empty → ℝ) × (Empty → ℝ) | IsVertex G.matP (rhsP Empty Empty) p.1 ∧
+      IsVertex G.matQ (rhsQ Empty Empty) p.2 ∧
+      LemkeHowson.CompletelyLabeled G.matP (rhsP Empty Empty) G.matQ (rhsQ Empty Empty) p.1 p.2} =
+      {0} := by
+  have hnd : G.IsNondegenerate :=
+    isNondegenerate_iff.2 ⟨fun _ hx => Empty.elim hx.exists_pos.choose,
+      fun _ hy => Empty.elim hy.exists_pos.choose⟩
+  rw [G.setOf_completelyLabeled_eq hnd (fun i => i.elim) (fun i => i.elim)]
+  have hEmpty : {p : (Empty → ℝ) × (Empty → ℝ) | G.IsNash p.1 p.2} = ∅ :=
+    Set.eq_empty_of_forall_notMem fun _ hp =>
+      Empty.elim (isNash_iff.1 hp).1.isMixedStrategy.exists_pos.choose
+  simp [hEmpty]
+
 end CslibFrontierTests.GameTheory.Bimatrix

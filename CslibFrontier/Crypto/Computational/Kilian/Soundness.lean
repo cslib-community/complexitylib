@@ -155,16 +155,16 @@ def kilianOpenings (x : α) (ρs : List (List Bool)) (response : KilianResponse)
 def kilianConflict (x : α) (openings₁ openings₂ : List (ℕ × KilianOpening)) :
     Option ((ℕ × KilianOpening) × (ℕ × KilianOpening)) :=
   (openings₁.flatMap fun o₁ => openings₂.map fun o₂ => (o₁, o₂)).find?
-    fun ((a₁, b₁, _), (a₂, b₂, _)) =>
-      kilianPosition V x a₁ == kilianPosition V x a₂ && b₁ != b₂
+    fun ((a₁, o₁), (a₂, o₂)) =>
+      kilianPosition V x a₁ == kilianPosition V x a₂ && o₁.bit != o₂.bit
 
 /-- The binding adversary's output from two lists of openings against `root`: the conflicting
 pair found by `kilianConflict`, as two openings of its position with one-bit leaves. -/
 def kilianBindingOutput (x : α) (root : List Bool)
     (openings₁ openings₂ : List (ℕ × KilianOpening)) : MerkleBindingOutput :=
   (kilianConflict V x openings₁ openings₂).elim ((root, 0), ([], []), ([], []))
-    fun ((a, b₁, path₁), (_, b₂, path₂)) =>
-      ((root, kilianPosition V x a), ([b₁], path₁), ([b₂], path₂))
+    fun ((a, o₁), (_, o₂)) =>
+      ((root, kilianPosition V x a), ([o₁.bit], o₁.path), ([o₂.bit], o₂.path))
 
 /-- The position-binding adversary built from a cheating prover: run its first stage once and its
 second stage on two independent challenges, and output a conflicting pair of openings. -/
@@ -184,9 +184,9 @@ variable {H V}
 /-- Every opening of an accepted response passes `merkleVerify` at its position. -/
 theorem merkleVerify_of_mem_kilianOpenings {k : List Bool} {x : α} {root : List Bool}
     {ρs : List (List Bool)} {response : KilianResponse}
-    (h : kilianVerify H V k x root ρs response = true) {a : ℕ} {b : Bool}
-    {path : List (List Bool)} (ho : (a, b, path) ∈ kilianOpenings V x ρs response) :
-    merkleVerify H k (kilianDepth V x) root (kilianPosition V x a) [b] path = true := by
+    (h : kilianVerify H V k x root ρs response = true) {a : ℕ} {o : KilianOpening}
+    (ho : (a, o) ∈ kilianOpenings V x ρs response) :
+    merkleVerify H k (kilianDepth V x) root (kilianPosition V x a) [o.bit] o.path = true := by
   simp only [kilianVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at h
   simp only [kilianOpenings, List.mem_flatMap] at ho
   obtain ⟨⟨ρ, answers⟩, hmem, ho⟩ := ho
@@ -200,16 +200,16 @@ breaks binding. -/
 theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root : List Bool}
     {ρs₁ ρs₂ : List (List Bool)} {response₁ response₂ : KilianResponse}
     (h₁ : kilianVerify H V k x root ρs₁ response₁ = true)
-    (h₂ : kilianVerify H V k x root ρs₂ response₂ = true) {a₁ a₂ : ℕ} {b₁ b₂ : Bool}
-    {path₁ path₂ : List (List Bool)} (ho₁ : (a₁, b₁, path₁) ∈ kilianOpenings V x ρs₁ response₁)
-    (ho₂ : (a₂, b₂, path₂) ∈ kilianOpenings V x ρs₂ response₂)
-    (hpos : kilianPosition V x a₁ = kilianPosition V x a₂) (hb : b₁ ≠ b₂) :
+    (h₂ : kilianVerify H V k x root ρs₂ response₂ = true) {a₁ a₂ : ℕ} {o₁ o₂ : KilianOpening}
+    (ho₁ : (a₁, o₁) ∈ kilianOpenings V x ρs₁ response₁)
+    (ho₂ : (a₂, o₂) ∈ kilianOpenings V x ρs₂ response₂)
+    (hpos : kilianPosition V x a₁ = kilianPosition V x a₂) (hb : o₁.bit ≠ o₂.bit) :
     merkleBreaksBinding H k (kilianBindingOutput V x root (kilianOpenings V x ρs₁ response₁)
       (kilianOpenings V x ρs₂ response₂)) = true := by
   set openings₁ := kilianOpenings V x ρs₁ response₁
   set openings₂ := kilianOpenings V x ρs₂ response₂
   have hsome : (kilianConflict V x openings₁ openings₂).isSome = true := by
-    refine List.find?_isSome.mpr ⟨((a₁, b₁, path₁), (a₂, b₂, path₂)),
+    refine List.find?_isSome.mpr ⟨((a₁, o₁), (a₂, o₂)),
       List.mem_flatMap.mpr ⟨_, ho₁, List.mem_map.mpr ⟨_, ho₂, rfl⟩⟩, ?_⟩
     simpa [hpos] using hb
   obtain ⟨⟨p₁, p₂⟩, hfind⟩ := Option.isSome_iff_exists.mp hsome
@@ -218,13 +218,13 @@ theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root :
   obtain ⟨q₂, hq₂, hqeq⟩ := List.mem_map.mp hq
   simp only [Prod.mk.injEq] at hqeq
   obtain ⟨rfl, rfl⟩ := hqeq
-  obtain ⟨c₁, d₁, e₁⟩ := q₁
-  obtain ⟨c₂, d₂, e₂⟩ := q₂
+  obtain ⟨c₁, o₁'⟩ := q₁
+  obtain ⟨c₂, o₂'⟩ := q₂
   have v₁ := merkleVerify_of_mem_kilianOpenings h₁ hq₁
   have v₂ := merkleVerify_of_mem_kilianOpenings h₂ hq₂
   simp only [bne_iff_ne, ne_eq, Bool.and_eq_true, beq_iff_eq] at hp
   rw [kilianBindingOutput, hfind]
-  have hlen : e₁.length = kilianDepth V x := by
+  have hlen : o₁'.path.length = kilianDepth V x := by
     simp only [merkleVerify, Bool.and_eq_true, beq_iff_eq] at v₁
     exact v₁.1.1
   simp only [Option.elim, merkleBreaksBinding, hlen, Bool.and_eq_true, bne_iff_ne, ne_eq,
@@ -253,7 +253,7 @@ the proof spelled by `π` on every random string of the right length. -/
 theorem accepts_kilianProof {k : List Bool} {x : α} {root : List Bool}
     {ρs : List (List Bool)} {response : KilianResponse}
     (h : kilianVerify H V k x root ρs response = true) {π : ℕ → Bool}
-    (hcons : ∀ o ∈ kilianOpenings V x ρs response, o.2.1 = π (kilianPosition V x o.1))
+    (hcons : ∀ o ∈ kilianOpenings V x ρs response, o.2.bit = π (kilianPosition V x o.1))
     {ρ : List Bool} (hρ : ρ ∈ ρs) (hlen : ρ.length = V.coins x) :
     V.accepts x (kilianProof V x π) ρ = true := by
   simp only [kilianVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at h
@@ -311,7 +311,8 @@ private noncomputable def kilianWins (L : Set α) (s : List Bool × (α × List 
 /-- A run opens position `j` to the bit `b`. -/
 private def kilianOpens (s : List Bool × (α × List Bool) × List Bool)
     (r : List (List Bool) × KilianResponse) (j : ℕ) (b : Bool) : Bool :=
-  (kilianOpenings V s.2.1.1 r.1 r.2).any fun o => kilianPosition V s.2.1.1 o.1 == j && o.2.1 == b
+  (kilianOpenings V s.2.1.1 r.1 r.2).any fun o =>
+    kilianPosition V s.2.1.1 o.1 == j && o.2.bit == b
 
 private theorem eval_kilianSoundnessGame (L : Set α) (P : KilianProver α) (n : ℕ) :
     ProbComp.eval (kilianSoundnessGame H V L P n) =
@@ -340,8 +341,8 @@ private theorem disagreement_le_merkleBindingGame (L : Set α) (P : KilianProver
   · rw [hE]
     simp only [kilianWins, kilianOpens, Bool.and_eq_true, decide_eq_true_eq, List.any_eq_true,
       beq_iff_eq] at hE
-    obtain ⟨⟨⟨-, h₁⟩, -, h₂⟩, j, -, ⟨⟨a₁, b₁, path₁⟩, ho₁, hj₁, hb₁⟩,
-      ⟨⟨a₂, b₂, path₂⟩, ho₂, hj₂, hb₂⟩⟩ := hE
+    obtain ⟨⟨⟨-, h₁⟩, -, h₂⟩, j, -, ⟨⟨a₁, o₁⟩, ho₁, hj₁, hb₁⟩,
+      ⟨⟨a₂, o₂⟩, ho₂, hj₂, hb₂⟩⟩ := hE
     rw [merkleBreaksBinding_kilianBindingOutput h₁ h₂ ho₁ ho₂ (hj₁.trans hj₂.symm)
       (by simp only at hb₁ hb₂; rw [hb₁, hb₂]; decide)]
   · rw [Bool.not_eq_true] at hE
@@ -445,7 +446,7 @@ theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α
         intro ρ hρ
         refine accepts_kilianProof hwin.2 (fun o ho => ?_) hρ
           (length_of_mem_support_kilianRun hr ρ hρ)
-        exact hcons (kilianPosition V s.2.1.1 o.1) o.2.1
+        exact hcons (kilianPosition V s.2.1.1 o.1) o.2.bit
           (List.any_eq_true.mpr ⟨o, ho, by simp⟩)
       rw [← PMF.toOuterMeasure_map_apply, map_fst_kilianRun] at hsub
       refine (ENNReal.toReal_mono (by simp) (hsub.trans
@@ -535,10 +536,10 @@ private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
   have ha₂ := (ComputableInPolyTime.fst encNat encKilianOpening).comp hq₂
   have hop₁ := (ComputableInPolyTime.snd encNat encKilianOpening).comp hq₁
   have hop₂ := (ComputableInPolyTime.snd encNat encKilianOpening).comp hq₂
-  have hb₁ := (ComputableInPolyTime.fst encBool (encList encBits)).comp hop₁
-  have hb₂ := (ComputableInPolyTime.fst encBool (encList encBits)).comp hop₂
-  have hpath₁ := (ComputableInPolyTime.snd encBool (encList encBits)).comp hop₁
-  have hpath₂ := (ComputableInPolyTime.snd encBool (encList encBits)).comp hop₂
+  have hb₁ := encKilianOpening_bit_polyTime hop₁
+  have hb₂ := encKilianOpening_bit_polyTime hop₂
+  have hpath₁ := encKilianOpening_path_polyTime hop₁
+  have hpath₂ := encKilianOpening_path_polyTime hop₂
   have hpos₁ := ComputableInPolyTime.idxOfWithInput (htable.comp hg) ha₁
   have hpos₂ := ComputableInPolyTime.idxOfWithInput (htable.comp hg) ha₂
   have htest := ComputableInPolyTime.bool_and.comp ((ComputableInPolyTime.beq hpos₁ hpos₂).prod
@@ -546,7 +547,7 @@ private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
   have hconflict := ComputableInPolyTime.findWithInput
     (test := fun (g : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening))
       (q : (ℕ × KilianOpening) × (ℕ × KilianOpening)) =>
-        kilianPosition V g.1.1 q.1.1 == kilianPosition V g.1.1 q.2.1 && q.1.2.1 != q.2.2.1)
+        kilianPosition V g.1.1 q.1.1 == kilianPosition V g.1.1 q.2.1 && q.1.2.bit != q.2.2.bit)
     hpairs htest
   have hbody := ((hroot.comp hg).prod hpos₁).prod
     ((ComputableInPolyTime.bitsCons hb₁ (ComputableInPolyTime.const [])).prod hpath₁ |>.prod
@@ -556,7 +557,8 @@ private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
   exact ComputableInPolyTime.optionElimWithInput
     (body := fun (g : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening))
       (q : (ℕ × KilianOpening) × (ℕ × KilianOpening)) =>
-        ((g.1.2, kilianPosition V g.1.1 q.1.1), ([q.1.2.1], q.1.2.2), ([q.2.2.1], q.2.2.2)))
+        ((g.1.2, kilianPosition V g.1.1 q.1.1), ([q.1.2.bit], q.1.2.path),
+          ([q.2.2.bit], q.2.2.path)))
     hconflict ((hroot.prod (ComputableInPolyTime.const 0)).prod
       (ComputableInPolyTime.const ((([] : List Bool), ([] : List (List Bool))),
         (([] : List Bool), ([] : List (List Bool)))))) hbody

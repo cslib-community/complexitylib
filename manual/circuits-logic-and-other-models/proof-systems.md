@@ -298,8 +298,8 @@ proof; they do not prove its full forest or whole-blossom contraction invariants
 [Difference tests](../../CslibFrontierTests/CyclicDifference.lean) show that ternary NAE maps to
 an even delta-matroid of three weight-two tuples. [Exchange tests](../../CslibFrontierTests/DeltaMatroid.lean)
 include odd exactly-one relations, the empty-coordinate case, and failures of exchange/evenness.
-These mathematical prerequisites provide no planar embedding algorithm, edge-CSP solver or
-planar complexity dichotomy yet. The full remaining objective is [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+The complete explicit-table edge solver is documented below. Planar embedding recognition,
+geometric realization and the full complexity dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Occurrences, explicit tables and ordered incidence rotations
 
@@ -365,8 +365,8 @@ and [ordered CSP certificate tests](../../CslibFrontierTests/CSPRotationCertific
 
 These are finite encoding and numerical-verification results; the indexed duality and lifting
 theorems below extend their mathematical interface. Geometric realization, identifying the outer
-face across disconnected components, bare-instance recognition/construction and the edge solver
-remain open. Exact relation-arity and satisfiability guards are
+face across disconnected components and bare-instance recognition/construction remain open.
+The complete explicit-table edge solver is documented below. Exact relation-arity and satisfiability guards are
 separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
 rotation does not prove that its graph is nonplanar. The full objective remains
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
@@ -407,8 +407,8 @@ transport is shared through `CslibFrontier.Foundations.GroupTheory.Perm.Doubled`
 
 These are combinatorial duality and lifting results, reconstructing the graph prerequisite in
 Dvořák–Kupec, §3, printed p. 439. The checked compiler below supplies the native
-supplied-certificate CSP reduction. Geometric realization, bare rotation recognition and
-recursive edge solving remain open
+supplied-certificate CSP reduction, followed by the complete native edge solver below.
+Geometric realization, bare rotation recognition and final planar assembly remain open
 under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Ordered incidence-to-polygon rotations
@@ -486,8 +486,9 @@ The compiler reuses the now-public runtime helpers `orbitBool_polyTime`,
 `faceTable_polyTime` and `argumentNextIndex_polyTime`, preserving their statements,
 proofs and local automation. This implements the supplied numerical-certificate stage of
 Dvořák–Kupec §3, printed pp. 439–440, Lemma 5/Corollary 4/Theorem 2; bounded scans and
-parity-chain implementation are original. Geometric realization, bare recognition,
-the edge solver and the full planar dichotomy remain open under
+parity-chain implementation are original. The complete explicit-table solver below supplies
+the edge algorithm. Geometric realization, bare recognition and the full planar dichotomy remain
+open under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
@@ -516,7 +517,7 @@ common parity. The empty-scope relation is rejected under the nonempty delta-mat
 incompatible shared coordinates, empty external coordinates, arbitrary scope lengths, ordered
 outside ports, empty selections, nullary tables, and malformed guards. Native operation and size
 certificates remain those of `PolyTime.CSP.Table`. The whole-instance mathematical layer appears below;
-solver correctness, native solver cost and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+the complete native solver appears below. The full planar dichotomy remains open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Prefix-valid walks and augmentation
 
@@ -551,7 +552,7 @@ empty/nullary cases, sparse labels, and a trail whose final flip is valid but an
 prefix is invalid. This routine takes an improving comparison labeling as input. The fresh
 forest search below instead starts from the base labeling alone and stops at exhaustion,
 augmentation or a blossom. The contraction/lifting entry below supplies the mathematical
-next step; native recursive solving and the planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+next step, followed by the complete native edge solver. The planar dichotomy remains open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 For explicit tables, import `CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting`.
 In `Cslib.Complexity.CSP.EdgeAugmenting`, `Input` contains the original `CSP Table Nat`,
@@ -570,7 +571,7 @@ answer. [Native augmentation tests](../../CslibFrontierTests/EdgeCSPAugmentingNa
 returned paths, both phases, width rejection, empty/nullary constraints and sparse binary names.
 The supplied improving comparison remains necessary for this two-phase routine. The fresh search
 below has no comparison input, and its native compiler is documented separately below.
-The whole-instance mathematical layer is documented below; the full native solver remains open.
+The whole-instance mathematical layer and complete native edge solver are documented below.
 
 The reusable scan lives in `CSP.Occurrence.Enumeration`: `incidenceList` and
 `occurrences_eq_map_incidenceList` connect typed occurrences to the existing ordered record list.
@@ -641,6 +642,61 @@ includes its imports. From the repository root, check them with:
 scripts/build.sh \
   CslibFrontierTests.ProofComplexity.AlgebraicProofSystems \
   CslibFrontierTests.ProofComplexity.AlgebraicCNF
+```
+
+### Resolution to polynomial calculus with resolution
+
+Import `CslibFrontier.Logics.Propositional.Algebraic.CNF.PCR` for the
+[complete PCR encoding](../../CslibFrontier/Logics/Propositional/Algebraic/CNF/PCR.lean).
+`Clause.toPCRPoly` multiplies one complementary literal variable for each **distinct** literal
+of the clause. Thus both `x ∨ x` and `x` give `x̄`, whereas the existing `Clause.toPoly` retains
+list multiplicity. The squarefree encoding has at most one nonzero monomial and degree at most
+`Clause.width`, including for resolvents whose concatenated lists repeat literals.
+
+For a finite variable type, `CNF.toPCRPolys` appends `PCR.axioms` to the clause polynomials:
+`X l ^ 2 - X l` for both literal polarities, and
+`PCR.complementAxiom v = X (v, true) + X (v, false) - 1` for each original variable. The
+assignment convention is still `1` for a true literal. Over a nontrivial commutative ring,
+`CNF.eval_eq_true_iff_forall_eval_toPCRPolys_eq_zero` characterizes satisfaction at those
+literal truth values, and `CNF.not_satisfiable_of_pcr` gives refutation soundness. Over a field,
+`CNF.exists_commonZero_toPCRPolys_iff` also characterizes arbitrary common zeros: the Boolean
+and complementarity equations force them to come from Boolean assignments.
+
+The [resolution translation](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Resolution.lean)
+uses the existing `PC.IsProof` constructors over this input list. Import
+`CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Resolution` and apply
+`CNF.IsProof.exists_pcr` to a resolution proof with `s` lines, each of width at most `w`.
+Over any commutative ring it gives one PCR proof with `PC.size ≤ (5 * w + 13) * s` and
+`PC.degree ≤ w + 1`, containing the polynomial of every resolution line. Thus the empty
+clause supplies the constant polynomial `1`; `CNF.IsProof.exists_pcr_refutation` retains both
+bounds for a refutation. The squarefree representation and the treatment of tautological parents
+cover the library's list-based resolution rule without a normalization assumption.
+
+`CNF.RefutableInWidth.pcr_refutableInDegree` gives degree at most `w + 1` from a width-`w`
+refutation. `CNF.RefutableInSize.pcr_refutableInSize` gives size at most
+`(10 * N + 13) * s`, where `N = φ.vars.toFinset.card`, using the bound `w ≤ 2 * N`.
+This is a joint resource bound: it does not remove dependence on width or on the number of
+variables. A uniform polynomial bound in the resolution line count alone, as discussed in
+[#3542](https://github.com/cslib-community/cslib-frontier/issues/3542), requires a further argument.
+PCR size sums the supports of formal polynomial lines, including repetitions; it is neither
+the number of lines nor a count of monomials after reduction modulo the Boolean ideal.
+
+PCR's twin-variable representation follows [Alekhnovich et al., §4.1](https://doi.org/10.1137/S0097539700366735)
+(the [author preprint](https://www.math.ias.edu/~avi/PUBLICATIONS/MYPAPERS/ABRA01/ABRA01.pdf),
+pp. 17–18). The explicit size and degree constants here come from this construction; the paper's
+Lemma 4.1 concerns space. Encoded translation time, degree-controlled substitution into the
+original-variable PC encoding, and configuration-space bounds remain separate objectives.
+
+The [checked examples](../../CslibFrontierTests/ProofComplexity/ResolutionPCR.lean) show that
+arbitrarily many repetitions of a literal leave squarefree degree at `1`, while the old
+list-product degree grows with the repetition count. A three-line contradictory-unit
+refutation translates to at most `54` monomials and degree `2` over every commutative ring,
+instantiated over `ℚ` and `ZMod 2`. The examples also check both orientations of a tautological
+parent, a repeated nonpivot literal in a resolvent, satisfiable formulas with no PCR
+refutation, and the empty variable type. From the repository root, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.ProofComplexity.ResolutionPCR
 ```
 
 ### Refutations over the Boolean cube
@@ -759,7 +815,8 @@ every commutative ring), `n = 0 < m`, `m = 0`, and roundtrips for `boolSolutionE
 Not yet formalized ([Impagliazzo, Pudlák and Sgall][impagliazzopudlaksgall99]; [#3569](https://github.com/cslib-community/cslib-frontier/issues/3569)):
 the matching subset-sum upper bound of Theorem 4.2, the general and `algFPHP` size–degree
 tradeoffs, standard-CNF `FPHP`–`algFPHP` PCR encoding equivalence, pigeonhole degree and size
-lower bounds, and the simulation of bounded-width resolution by polynomial calculus.
+lower bounds, and the degree-controlled resolution translation into the original-variable PC
+encoding. The twin-variable PCR simulation is described [above](#resolution-to-polynomial-calculus-with-resolution).
 
 ### Tseitin formulas
 
@@ -918,7 +975,7 @@ the local disagreement-count lemma directly.
 nonempty preparation, repeated constraints, timestamp zero, odd parity and sparse binary names.
 The exhausted example with a connected feasible-pair graph still has two unavoidable defects.
 These mathematical results compose with the native compiler and whole-instance contraction/lifting
-below. The native recursive solver and complete dichotomy remain open;
+below, followed by the complete native edge solver. The full planar dichotomy remains open;
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) stays open.
 
 ## Native fresh forest search
@@ -954,8 +1011,8 @@ the existing `EdgeAugmenting` namespace and public imports remain available. The
 partial meetings, repeated original constraints, scan order, malformed tables, width rejection,
 invalid indices and names up to `2^250`. An end-to-end client derives a valid zero-defect labeling
 from the actual decoded augmentation. The existing native augmentation regression suite remains
-unchanged. Full recursive solving, geometric realization/recognition and the planar dichotomy
-remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+unchanged. The complete recursive solver appears below; geometric realization/recognition
+and the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Whole-instance blossom contraction and lifting
 
@@ -987,7 +1044,7 @@ by one. Thus `contractionMeasure_contract_lt` strictly decreases
 `2*numVars−positiveCount`, including `r=b`; variable count alone need not decrease.
 Nullaries do not contribute to `positiveCount`. Old row counts do not increase; the new
 central relation has `r` rows of width `r`, so its Boolean row data is quadratic in `r`.
-These are termination/storage accounting facts, without a native runtime theorem.
+These are termination/storage facts; the complete native solver below supplies the runtime theorem.
 
 The construction maps KKR v6 §5.3 (printed pp. 12–13), Observation 26/Corollary 27,
 Definition 39/Lemma 40 and Lemmas 42–44 (pp. 19–22). The copied-step distinction is explicit;
@@ -996,9 +1053,68 @@ the cut/completion attachment proof and finite bookkeeping are original alternat
 [lifting tests](../../CslibFrontierTests/EdgeCSPBlossomLifting.lean) execute nonempty preparation,
 repeated original constraints, grouped ports, honest one-hot references, `r=b` accounting,
 sparse names up to `2^250`, forward projection and an actual optimal comparison whose outside
-values change. Native recursive compilation and polynomial bounds for the complete solver,
-recognition/geometric correspondence, planar hardness and full
+values change. The complete native solver follows. Recognition/geometric correspondence,
+planar hardness and full
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) remain open.
+
+## Complete native even edge-CSP solver
+
+Import `CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Endpoint`. In
+`Cslib.Complexity.CSP.EdgeSolver`, `optimize` returns a finite minimum-defect occurrence buffer,
+`solve` returns a satisfying buffer, and `decideSAT` is the total Boolean decision routine.
+`optimize_spec` proves optimality; `solve_spec` proves validity, exact original occurrence width
+and zero defects. The buffers use the existing `EdgeAugmenting.labeling`, with one bit for every
+actual constraint/scope position.
+
+`evenEdgeSAT_mem_P` proves ordinary native P membership using `encCSP encTable encNat`.
+Its decision set is precisely the conjunction of `EdgeInstance`, actual
+`EdgeInstance.EvenConstraints Table.sem`, and CSP satisfiability.
+`decideSAT_eq_true_full` states that equivalence for every raw input. No model, optimizer,
+comparison labeling, lifting provider or runtime certificate is supplied by the caller.
+
+The internal `checkModel` scans stored rows and their actual coordinates to verify scope widths,
+well-formed nonempty relations, common parity and symmetric exchange. Every occurring name must
+appear twice in distinct constraints, and each scope must be repetition-free. Local parity may
+be odd and may differ between constraints. Duplicate rows and duplicate constraints retain their
+positions. Empty CSPs and true nullaries are included; empty/false relations, malformed rows,
+wrong arities, repeated scope names and non-even relations are rejected. Thus `optimize = none`
+means rejection outside the model. An accepted but unsatisfiable model still has an optimal
+buffer; `solve = none` and `decideSAT = false` additionally cover that case.
+
+One improvement performs a fresh search, then returns an augmentation, transfers an optimum,
+or prepares and contracts one blossom. A recursive child returns one improvement or an optimum;
+an improvement is lifted and returned immediately. At most `2*numVars` contractions occur per
+improvement, followed by at most `numVars+1` outer rounds. The proof uses the strict
+`2*numVars−positiveCount` measure, including contractions that preserve variable count.
+
+`computableInPolyTime_optimize`, `computableInPolyTime_solve` and
+`computableInPolyTime_decideSAT` cover every raw input. The finite native stack agrees exactly
+with the semantic algorithm via `Program.optimize_eq` and `Program.decideSAT_eq`. Resource bounds
+include complete stored rows, binary arities/names/positions, copied walks, parent frames,
+status tags and clocks, including malformed inputs. Work loops traverse actual lists; neither a
+binary variable name nor a declared arity funds enumeration. Old row counts do not increase;
+the quadratic central exactly-one data and all stack frames are included in the polynomial bound.
+
+For lifting certificates, import `CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.LiftingPolyTime`.
+`NativeLifting.encLiftResult` names their optional occurrence-buffer encoding: `none` is empty;
+`some bits` starts with `true`, then concatenates the framed one-bit Boolean encodings in
+buffer order. The abbreviation unfolds to `encOption (encList encBool)` without changing bytes.
+
+This completes the explicit-table edge algorithm of KKR v6, Theorem 21 (printed p. 8), Algorithm 1
+(p. 10), Theorem 24 and §5.3 (pp. 11–13), using the proved search, contraction and lifting layers.
+The one-improvement recursion organization and full framed-bit bookkeeping are original.
+The shared `EdgeAugmenting.buffer_eq` now lives beside `labeling_map` in `Edge.Buffer`;
+`recordAt_index`, `finish_eq` and `EdgeForest.poly_binaryIndex` are public for reuse.
+Forest input projections use the generated encoding rules, including in the solver certificates.
+
+[Solver tests](../../CslibFrontierTests/EdgeCSPSolver.lean) give complete ordinary-import clients,
+including SAT/UNSAT units, nonempty blossom preparation, repeated original constraint copies,
+changed outside comparison values, `r=b`, multiple improvements, every model guard and sparse
+names up to `2^250`. [Buffer-only tests](../../CslibFrontierTests/EdgeCSPSolverBuffer.lean) check the
+shared width bridge. The guide checks the native P endpoint, all-raw solver certificate,
+optimality theorem and concrete decisions. Geometric realization/recognition, ordered planar
+hardness transfer and final dichotomy assembly remain open under
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Finite crossover gadget semantics
 
@@ -1037,6 +1153,12 @@ The latter retains free order `0,1,4,…`. Adjacent identification conditions th
 difference to zero; the cap conditions old differences 1 and 2 to agree. The exact formulas
 in `BitString.CyclicDifference.Boundary` rule out new forbidden pairs during the descent.
 Cyclic rotations preserve orientation; no arbitrary port permutation is used.
+
+For coordinate proofs, use `capDifferencePort_eq_zero_iff`, `capDifferencePort_ne_one`,
+`capDifferencePort_ne_two` and `three_le_val_capDifferencePort`. These state that the retained
+differences preserve zero, omit both hidden coordinates, and send every nonzero input to an
+index at least three. Clients can use these facts
+without unfolding the coordinate map.
 
 `Construction.target` is standardized in the final four-port order. `Construction.gadget`
 executes the trace on an actual `PPGadget` over two symbols: the original `R` and binary
@@ -1093,7 +1215,7 @@ tests derive the gadgets from a single one-in-three symbol without primitive pin
 These results prove finite primitive-positive semantics. The selected witnesses are fixed-language
 data; no uniform preprocessing cost is asserted. The recorded recipes and concrete bodies support
 subsequent geometric proofs, but do not establish ordered planar substitution, a native reduction
-or planar hardness. Those obligations and the full solver/dichotomy remain open under
+or planar hardness. Those obligations and the full planar dichotomy remain open under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Three resolution representations

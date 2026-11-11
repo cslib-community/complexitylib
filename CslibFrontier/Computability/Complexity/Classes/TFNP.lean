@@ -453,6 +453,16 @@ theorem SearchReducible.trans (hRT : SearchReducible encA encB R T)
   ⟨f' ∘ f, fun x => g (x.1, g' (f x.1, x.2)), hf'.comp hf, by fun_prop,
     fun a ha => hdom' _ (hdom a ha), fun a w h => hsol a _ (hsol' (f a) w h)⟩
 
+/-- A search reduction to `T` on another instance type yields a search reduction, on the same
+instance type, to the pullback `fun a => T (f a)` along its polynomial-time instance map `f`.
+Classes defined by reductions to uniform families on the instance type itself use this to absorb
+reductions across instance types. -/
+theorem SearchReducible.exists_reindex (h : SearchReducible encA encB R T) :
+    ∃ f : α → β, ComputableInPolyTime f encA encB ∧
+      SearchReducible encA encA R fun a => T (f a) :=
+  let ⟨f, g, hf, hg, hdom, hsol⟩ := h
+  ⟨f, hf, id, g, .id', hg, hdom, hsol⟩
+
 /-- A search reduction is a polynomial-time many-one reduction between the domains. -/
 theorem SearchReducible.polyTimeReducible (h : SearchReducible encA encB R T) :
     PolyTimeReducible encA encB (searchDomain R) (searchDomain T) :=
