@@ -100,6 +100,20 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
+**Structures for domain objects and records**
+([#4385](https://github.com/cslib-community/cslib-frontier/issues/4385)). Model domain objects,
+problem instances, certificates, configurations, and multi-field algorithm contexts, states or
+records as documented `structure`s with named, documented fields, and declare their field-tuple
+encodings with `enc_structure` ([AGENTS.md](AGENTS.md#structures-for-domain-objects-and-records)).
+Do not introduce tuple type synonyms such as
+`abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ` or bare-product problem sets such as
+`Set (List (ℕ × ℕ) × ℕ × ℕ)` or `Set (Graph × ℕ)`. Named fields document the mathematical
+components in `doc-gen4`, enable dot-notation, and eliminate positional projections before they
+start, while `enc_structure` supplies the embedding and its `fun_prop` projection and constructor
+certificates across degree, `ComputableInO`, `ComputableInSpace` and `ComputableInPolyTime`. Keep
+ordinary `Prod` (`×`) for generic binary combinators, Cartesian products and uncurried
+multi-argument inputs such as an NP verifier `Instance × List Bool → Bool`.
+
 **Named components instead of positional projections**
 ([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Public statements and
 the bodies of public definitions do not reach into nested tuples with projection chains such as

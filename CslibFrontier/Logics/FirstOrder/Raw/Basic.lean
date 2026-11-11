@@ -45,6 +45,7 @@ The name `RawFormula` is also used by the FO(LFP) syntax `Cslib.Logic.FO.LFP.Raw
   `Denumerable` instance.
 * `Cslib.Logic.FO.RawFormula.Realize`: satisfaction.
 * `Cslib.Logic.FO.RawFormula.rename`: renaming of relation symbols.
+* `Cslib.Logic.FO.RawFormula.quantifierDepth`: the maximal nesting depth of quantifiers.
 * `Cslib.Logic.FO.RawFormula.FinSat`, `Cslib.Logic.FO.RawFormula.FinValid`: finite
   satisfiability and finite validity (truth in every finite nonempty structure).
 
@@ -226,6 +227,59 @@ def atoms : RawFormula → List (ℕ × ℕ)
   | rel r args => [(r, args.length)]
   | imp φ ψ => φ.atoms ++ ψ.atoms
   | all _ φ => φ.atoms
+
+/-- The **quantifier depth** of a raw formula: the maximal nesting depth of quantifiers. -/
+def quantifierDepth : RawFormula → ℕ
+  | falsum => 0
+  | equal _ _ => 0
+  | rel _ _ => 0
+  | imp φ ψ => max φ.quantifierDepth ψ.quantifierDepth
+  | all _ φ => φ.quantifierDepth + 1
+
+@[simp] theorem quantifierDepth_falsum : falsum.quantifierDepth = 0 := rfl
+
+@[simp] theorem quantifierDepth_equal (x y : ℕ) : (equal x y).quantifierDepth = 0 := rfl
+
+@[simp] theorem quantifierDepth_rel (r : ℕ) (args : List ℕ) :
+    (rel r args).quantifierDepth = 0 := rfl
+
+@[simp] theorem quantifierDepth_imp (φ ψ : RawFormula) :
+    (imp φ ψ).quantifierDepth = max φ.quantifierDepth ψ.quantifierDepth := rfl
+
+@[simp] theorem quantifierDepth_all (x : ℕ) (φ : RawFormula) :
+    (all x φ).quantifierDepth = φ.quantifierDepth + 1 := rfl
+
+@[simp] theorem quantifierDepth_neg (φ : RawFormula) :
+    (neg φ).quantifierDepth = φ.quantifierDepth := by
+  simp [neg]
+
+@[simp] theorem quantifierDepth_verum : verum.quantifierDepth = 0 := by
+  simp [verum]
+
+@[simp] theorem quantifierDepth_disj (φ ψ : RawFormula) :
+    (disj φ ψ).quantifierDepth = max φ.quantifierDepth ψ.quantifierDepth := by
+  simp [disj]
+
+@[simp] theorem quantifierDepth_conj (φ ψ : RawFormula) :
+    (conj φ ψ).quantifierDepth = max φ.quantifierDepth ψ.quantifierDepth := by
+  simp [conj]
+
+@[simp] theorem quantifierDepth_ex (x : ℕ) (φ : RawFormula) :
+    (ex x φ).quantifierDepth = φ.quantifierDepth + 1 := by
+  simp [ex]
+
+@[simp] theorem quantifierDepth_iff (φ ψ : RawFormula) :
+    (iff φ ψ).quantifierDepth = max φ.quantifierDepth ψ.quantifierDepth := by
+  simp [iff, max_comm]
+
+@[simp] theorem quantifierDepth_rename (σ : List ℕ) :
+    ∀ φ : RawFormula, (rename σ φ).quantifierDepth = φ.quantifierDepth
+  | falsum => rfl
+  | equal _ _ => rfl
+  | rel _ _ => rfl
+  | imp φ ψ => by
+    simp only [rename, quantifierDepth_imp, quantifierDepth_rename σ φ, quantifierDepth_rename σ ψ]
+  | all _ φ => by simp only [rename, quantifierDepth_all, quantifierDepth_rename σ φ]
 
 theorem lt_varBound_of_mem {x : ℕ} {args : List ℕ} (h : x ∈ args) :
     x < ((args.map (· + 1)).foldr max 0) := by
