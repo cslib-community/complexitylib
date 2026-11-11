@@ -1272,7 +1272,7 @@ private theorem shoupMinPolyMatrix_mulVec_zero_iff {K L : Type*} [Field K] [Fiel
     simp only [Matrix.mulVec, dotProduct, Pi.zero_apply] at hrow
     rw [← hrow]
     refine Finset.sum_congr rfl fun c _ => ?_
-    dsimp only [rowsToZModMatrix]
+    dsimp only [rowsToZModMatrix, bitsToZModVec]
     rw [shoupMinPolyMatrix_getD_getD q m pows hidx (by rw [hpows_len]; exact c.2)]
     have hdiv : (i.1 * m + j.1) / m = i.1 := by
       rw [mul_comm, Nat.mul_add_div hm0, Nat.div_eq_of_lt j.2, add_zero]
@@ -1287,7 +1287,7 @@ private theorem shoupMinPolyMatrix_mulVec_zero_iff {K L : Type*} [Field K] [Fiel
     have hall' := hall ⟨idx.1 / m, hi_lt⟩ ⟨idx.1 % m, hj_lt⟩
     rw [← hall']
     refine Finset.sum_congr rfl fun c _ => ?_
-    dsimp only [rowsToZModMatrix]
+    dsimp only [rowsToZModMatrix, bitsToZModVec]
     rw [shoupMinPolyMatrix_getD_getD q m pows idx.2 (by rw [hpows_len]; exact c.2), mul_comm]
 
 private theorem shoupBeta_minpoly_natDegree {K L : Type*} [Field K] [Field L]
