@@ -86,7 +86,12 @@ box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
-[Entropy/Fano.lean](../../CslibFrontier/Probability/Entropy/Fano.lean) is its entropy `h₂(p)`.
+[Entropy/Fano.lean](../../CslibFrontier/Probability/Entropy/Fano.lean) is its entropy `h₂(p)`. For
+uniform `k`-element subsets `uniformOfFinset (A.powersetCard k) _`, import
+[PMF/UniformPowerset.lean](../../CslibFrontier/Probability/PMF/UniformPowerset.lean) for uniform
+one-element deletion (`uniformOfFinset_powersetCard_erase`), hit-or-erase invariance when querying
+an element outside `A` (`uniformOfFinset_powersetCard_hitOrErase`), and exact miss probability
+`(A.card - k) / A.card` for `x ∈ A` (`toOuterMeasure_uniformOfFinset_powersetCard_notMem`).
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
 rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex

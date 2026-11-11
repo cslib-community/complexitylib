@@ -4511,6 +4511,7 @@ public import CslibFrontier.DataStructure.NearNeighbor.Hamming
 public import CslibFrontier.DataStructure.NearNeighbor.LSH
 public import CslibFrontier.DataStructure.ObliviousSequence
 public import CslibFrontier.DataStructure.Online.Basic
+public import CslibFrontier.DataStructure.Online.Behavioral
 public import CslibFrontier.DataStructure.Online.Randomized
 public import CslibFrontier.DataStructure.Online.SkiRental
 public import CslibFrontier.DataStructure.Online.SkiRental.Randomized
@@ -4520,6 +4521,7 @@ public import CslibFrontier.DataStructure.OrderedSet.Spec
 public import CslibFrontier.DataStructure.Paging.Basic
 public import CslibFrontier.DataStructure.Paging.LRU
 public import CslibFrontier.DataStructure.Paging.LowerBound
+public import CslibFrontier.DataStructure.Paging.Marking
 public import CslibFrontier.DataStructure.PrefixSums.CellProbe.LowerBound
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Dynamic
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Query
@@ -6208,6 +6210,7 @@ public import CslibFrontier.Probability.PMF.ToReal
 public import CslibFrontier.Probability.PMF.TwoBranch
 public import CslibFrontier.Probability.PMF.Uniform
 public import CslibFrontier.Probability.PMF.UniformBound
+public import CslibFrontier.Probability.PMF.UniformPowerset
 public import CslibFrontier.Probability.PMF.UniformSubset
 public import CslibFrontier.Probability.PMF.Union
 public import CslibFrontier.Probability.PairwiseIndependent
