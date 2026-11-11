@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PMF
+public import Mathlib.Probability.Distributions.Bernoulli
 public import Mathlib.Topology.UnitInterval
 
 /-!
@@ -28,6 +29,8 @@ Mathlib's `PMF.bernoulli` is deprecated in favor of `ProbabilityTheory.bernoulli
   two faces.
 * `Cslib.Probability.PMF.coin_eq_uniformOfFintype`: a fair coin is the uniform distribution on
   `Bool`.
+* `Cslib.Probability.PMF.toMeasure_coin`: as a measure, the coin is Mathlib's
+  `ProbabilityTheory.bernoulliMeasure true false p`.
 -/
 
 public section
@@ -62,5 +65,17 @@ theorem coin_eq_uniformOfFintype {p : I} (hp : (p : ℝ) = 1 / 2) :
   cases b <;> simp only [Bool.false_eq_true, ↓reduceIte]
   · rw [h, ENNReal.ofReal_inv_of_pos two_pos, ENNReal.ofReal_ofNat]
   · rw [hp, ENNReal.ofReal_inv_of_pos two_pos, ENNReal.ofReal_ofNat]
+
+/-- As a measure, the coin is Mathlib's Bernoulli distribution with mass `p` on `true`. -/
+theorem toMeasure_coin (p : I) :
+    (coin p).toMeasure = ProbabilityTheory.bernoulliMeasure true false p := by
+  classical
+  refine MeasureTheory.Measure.ext_of_singleton fun b => ?_
+  rw [_root_.PMF.toMeasure_apply_singleton _ _ (measurableSet_singleton b), coin_apply,
+    ProbabilityTheory.bernoulliMeasure_apply p (measurableSet_singleton b)]
+  cases b <;> simp only [Set.mem_singleton_iff, Bool.true_eq_false, Bool.false_eq_true,
+    ↓reduceIte]
+  · exact ENNReal.ofReal_eq_coe_nnreal (σ p).2.1
+  · exact ENNReal.ofReal_eq_coe_nnreal p.2.1
 
 end Cslib.Probability.PMF

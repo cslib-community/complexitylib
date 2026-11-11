@@ -11,7 +11,6 @@ public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.DEMCCA
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Computational.Encryption.DecryptionBound
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Tactic.PPT
 
 /-!

@@ -23,7 +23,8 @@ is needed.
 ## Main definitions
 
 * `ZLattice.coefficientMod`: reduction of basis coordinates modulo an integer.
-* `ZLattice.coefficientLift`: a lattice representative of each residue vector.
+* `ZLattice.coefficientLift`: a lattice representative of each residue vector, for a nonzero
+  modulus.
 * `ZLattice.coefficientFiberEquiv`: translation from the scalar lattice to a residue fiber.
 
 ## Main results
@@ -56,7 +57,9 @@ variable (L : Submodule ℤ E) (b : Module.Basis ι ℤ L) (p : ℕ)
   map_zero' := by ext i; simp
   map_add' v w := by ext i; simp
 
-/-- The representative whose basis coordinates are the least nonnegative residue values. -/
+/-- The lattice vector whose `i`th basis coordinate is `(a i).val`. For `p ≠ 0` these are the least
+nonnegative residues and the vector is a representative of `a`
+(`coefficientMod_coefficientLift`). -/
 @[expose] def coefficientLift (a : ι → ZMod p) : L :=
   b.equivFun.symm (fun i ↦ ((a i).val : ℤ))
 

@@ -302,18 +302,11 @@ end Step
 
 /-! ### The size of the states of a run -/
 
-/-- A suffix has a shorter encoding. -/
-private theorem length_encList_le_of_suffix {l l' : List (QBF.Kind × ℕ)} (h : l <:+ l') :
-    (encList encToken l).length ≤ (encList encToken l').length := by
-  obtain ⟨p, rfl⟩ := h
-  rw [encList_append, List.length_append]
-  omega
-
 /-- A frame storing a token of `φ` followed by a suffix of its tokens is no longer than the
 encoding of `φ`, up to its value. -/
 private theorem length_encFrame_le {φ : QBF ℕ} {f : Frame} (h : f.token :: f.rest <:+ φ.tokens) :
     (encFrame f).length ≤ (encQBF φ).length + 5 := by
-  have hs := length_encList_le_of_suffix h
+  have hs := length_encList_sublist encToken h.sublist
   have hfirst : (encOption encBool f.first).length ≤ 2 := by cases f.first <;> simp [encOption]
   change (encFrameFields f.fields).length ≤ _
   rw [encQBF_apply]
@@ -324,7 +317,7 @@ private theorem length_encFrame_le {φ : QBF ℕ} {f : Frame} (h : f.token :: f.
 encoding of length at most `16 * ((encQBF φ).length + 1) ^ 2`. -/
 theorem length_encState_le {φ : QBF ℕ} {s : State} (h : Good φ s) :
     (encState s).length ≤ 16 * ((encQBF φ).length + 1) ^ 2 := by
-  have hin := length_encList_le_of_suffix h.input
+  have hin := length_encList_sublist encToken h.input.sublist
   rw [← encQBF_apply] at hin
   have hstack : (encList encFrame s.stack).length ≤
       s.stack.length * (2 * ((encQBF φ).length + 5) + 1) :=

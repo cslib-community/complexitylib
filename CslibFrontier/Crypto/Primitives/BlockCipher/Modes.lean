@@ -11,7 +11,7 @@ public import CslibFrontier.Probability.BitString.Collision
 public import CslibFrontier.Probability.IID
 public import Mathlib.Data.Fintype.Perm
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
