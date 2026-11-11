@@ -1456,6 +1456,7 @@ public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Schedul
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ScheduledRecursion
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TaperedRecovery
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Truncated
+public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgebraBridge
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedAlgorithm
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedEntry
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.TruncatedPolyTime
@@ -5198,11 +5199,15 @@ public import CslibFrontier.Foundations.Data.Polynomial.HermiteInterpolation
 public import CslibFrontier.Foundations.Data.Polynomial.ModulusAmplifier
 public import CslibFrontier.Foundations.Data.Polynomial.ParityAmplifier
 public import CslibFrontier.Foundations.Data.Polynomial.ParityAmplifierDegree
+public import CslibFrontier.Foundations.Data.Polynomial.RationalReconstruction
 public import CslibFrontier.Foundations.Data.Polynomial.RingLagrange
 public import CslibFrontier.Foundations.Data.Polynomial.SignQueries
 public import CslibFrontier.Foundations.Data.Polynomial.StagedJetArithmetic
 public import CslibFrontier.Foundations.Data.Polynomial.TaperedHermite
+public import CslibFrontier.Foundations.Data.Polynomial.TruncatedAlgebra
+public import CslibFrontier.Foundations.Data.Polynomial.TruncatedJetBridge
 public import CslibFrontier.Foundations.Data.Rat.Basic
+public import CslibFrontier.Foundations.Data.Rat.Reconstruction
 public import CslibFrontier.Foundations.Data.Seq.Computation
 public import CslibFrontier.Foundations.Data.Set.Card
 public import CslibFrontier.Foundations.Data.Set.EqOnUpdate
