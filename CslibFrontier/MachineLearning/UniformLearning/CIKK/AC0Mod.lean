@@ -20,7 +20,7 @@ is useful [Carmosino et al., Theorem 5.1, p. 10:19]
 quasi-polynomial time with membership queries under the uniform distribution
 [Carmosino et al., Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016]. This file
 proves the `p = 2` case for a fixed depth `d` and size `s`, with the GF(2) rank property as the
-test.
+test, counting queries: neither the running time nor the hypotheses' circuit size is certified.
 
 The CIKK learner (`Cslib.MachineLearning.UniformLearning.learns_cikkLearner`) needs a test that is
 dense and rejects every output `g_z` of the black-box generator on the amplified target. Take the
@@ -46,7 +46,7 @@ Labels:
   which is not part of this file.
 * **`p = 2` only.** Corollary 5.4 states every prime.
 * **Queries, not time.** Corollary 5.4 bounds the running time; this file certifies the number of
-  queries. The learner's running time is not certified.
+  queries. Neither the learner's running time nor the circuit size of its hypotheses is certified.
 * **Nonuniform target class.** The class is fixed by `d` and `s`, with the input length `n`. The
   parameters `g` and `ℓ` are explicit closed forms rather than the source's choice of `L` with
   `log L > u⁻¹(poly)` [Carmosino et al., proof of Theorem 5.1, p. 10:19]
@@ -85,9 +85,10 @@ Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016], for `p = 2
 `g = cikkAC0Gap d e n s` and `ℓ = cikkAC0Len d e n s g`, the CIKK learner whose test accepts the
 truth tables of the rank property at `ℓ` learns every function on `n` bits computed by a circuit
 with `MOD_2` gates of depth at most `d` and size at most `s`, with error `2^{-e}` and confidence
-`1 - 2^{-h}`. The class is the length-`n` part of `Cslib.Circuits.Boolean.AC0Mod 2`: a language in
-`AC0Mod 2` has, at length `n`, a circuit of this kind with `d` its depth bound and `s` its size
-bound at `n`. The labels are in the module docstring. -/
+`1 - 2^{-h}`. The class is the circuit model of `Cslib.Circuits.Boolean.AC0Mod 2` at length `n`,
+with explicit depth bound `d` and size bound `s`: a language in `AC0Mod 2` has, at length `n`, a
+circuit of this kind with `d` its depth bound and `s` its size bound at `n`. The labels are in the
+module docstring. -/
 theorem learns_cikkLearner_rankTest (d e h n s : ℕ) :
     (cikkLearner n (cikkAC0Len d e n s (cikkAC0Gap d e n s)) e (cikkAC0Gap d e n s) h
         (truthTableTest (rankProperty sliceLevel (cikkAC0Len d e n s (cikkAC0Gap d e n s))))).Learns
