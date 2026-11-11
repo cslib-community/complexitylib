@@ -237,7 +237,7 @@ private theorem intBudgetInvariant_elimVar [DecidableEq V] {d W M₀ k : ℕ} (x
   · simp only [elimVar, hx, ↓reduceIte]
     exact ⟨iso, buds, hforall, hiso, by omega, hsnd⟩
 
-private theorem intBudgetInvariant_init [DecidableEq V] (d : ℕ) {W : ℕ}
+private theorem intBudgetInvariant_init (d : ℕ) {W : ℕ}
     (factors : List (FactorTable ℤ V)) (declared : List V)
     (hinit : ∀ f ∈ factors, ∀ z ∈ f.entries.toList, z.natAbs ≤ W) :
     IntBudgetInvariant d W factors.length 0 (ElimState.ofFactors factors declared) := by
@@ -284,7 +284,7 @@ private theorem natAbs_prod_entries_le {d W : ℕ} :
         _ = (d ^ b.1 * d ^ (bs.map Prod.fst).sum) *
               (W ^ b.2 * W ^ (bs.map Prod.snd).sum) := by ring
 
-private theorem natAbs_result_of_intBudget [DecidableEq V] {d W M₀ k : ℕ} (hd : 0 < d)
+private theorem natAbs_result_of_intBudget {d W M₀ k : ℕ} (hd : 0 < d)
     (hW : 0 < W) {s : ElimState ℤ V} (hs : IntBudgetInvariant d W M₀ k s) :
     s.result.natAbs ≤ d ^ k * W ^ M₀ := by
   rcases hs with ⟨iso, buds, hforall, hiso, hfst, hsnd⟩
