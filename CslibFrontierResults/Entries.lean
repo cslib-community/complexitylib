@@ -1112,12 +1112,12 @@ register_result "trakhtenbrot" where
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
     Corollaries: every r.e. set of finitely valid formulas misses one, so no sound proof \
-    system with a decidable proof relation proves every finitely valid formula. Libkin's \
-    form for a fixed vocabulary with a binary relation symbol and the transfer to Mathlib \
-    sentences are separate entries."
+    system with a decidable proof relation proves every finitely valid formula. The \
+    sharpening to a fixed vocabulary containing a relation symbol of arity at least two and \
+    the transfer to Mathlib sentences are separate entries."
 
 register_result "trakhtenbrot-binary" where
-  title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
+  title := "Trakhtenbrot's theorem for a vocabulary with a relation symbol of arity at least two"
   topic := "descriptive complexity"
   sources := [
     { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
@@ -1128,12 +1128,14 @@ register_result "trakhtenbrot-binary" where
     Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_not_of_rePred,
     Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_unprovable
   ]
-  scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
-    symbol, no computable procedure is correct for finite satisfiability on the raw \
-    sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
-    r.e. set of finitely valid sentences misses one over σ, and no sound proof system \
-    with a decidable proof relation proves them all. Raw library-local syntax with finite \
-    nonempty models; the form for Mathlib's L.Sentence is the entry trakhtenbrot-sentence."
+  scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a symbol of \
+    arity at least two, no computable procedure is correct for finite satisfiability on the \
+    raw sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
+    r.e. set of finitely valid sentences misses one over σ, and no sound proof system with a \
+    decidable proof relation proves them all. Libkin's Theorem 9.2 and Corollary 9.3 state \
+    the binary case; higher arities pad binary atoms by repeating the second argument. Raw \
+    library-local syntax with finite nonempty models; the form for Mathlib's L.Sentence is \
+    the entry trakhtenbrot-sentence."
 
 register_result "trakhtenbrot-sentence" where
   title := "Trakhtenbrot's theorem for Mathlib sentences"
@@ -1149,11 +1151,12 @@ register_result "trakhtenbrot-sentence" where
     FirstOrder.Language.Sentence.exists_finValid_unprovable
   ]
   scope := "Mathlib L.Sentence over a relational language with finitely many relation \
-    symbols; the negative results need a binary symbol. Sentences are coded by \
-    primcodableRaw, a scoped instance, independent of the symbol encoding up to primitive \
-    recursive equivalence. FinSat and FinValid quantify over finite nonempty structures. \
-    Function symbols, infinite vocabularies and vocabularies whose only non-unary symbols \
-    have arity at least three are not covered."
+    symbols; the negative results take a relation symbol of arity at least two (Libkin's \
+    Theorem 9.2 and Corollary 9.3 state the binary case; higher arities pad binary atoms by \
+    repeating the second argument). Sentences are coded by primcodableRaw, a scoped \
+    instance, independent of the symbol encoding up to primitive recursive equivalence. \
+    FinSat and FinValid quantify over finite nonempty structures. Function symbols, infinite \
+    vocabularies and the decidable monadic converse (arities at most one) are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
