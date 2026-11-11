@@ -24,7 +24,8 @@ functions (`Cslib.Logic.FO.RawFormula.primrec₂_of_rec`, modelled on Mathlib's
   `primrec_neg`, `primrec_conj`, `primrec_ex`, `primrec_bigConj`: the constructors and derived
   connectives are primitive recursive.
 * `Cslib.Logic.FO.RawFormula.primrec₂_of_rec`: structural recursion is primitive recursive.
-* `Cslib.Logic.FO.RawFormula.primrec₂_rename`, `primrec_varBound`.
+* `Cslib.Logic.FO.RawFormula.primrec₂_rename`, `primrec_varBound`, `primrec_atoms`,
+  `primrec_quantifierDepth`.
 -/
 
 public section
@@ -158,6 +159,28 @@ theorem primrec_varBound : Primrec varBound := by
     (nat_max.comp (fst.comp (snd.comp snd)) (snd.comp (snd.comp snd))).to₂
     (l := fun _ p => max (p.1.1 + 1) p.2)
     (nat_max.comp (succ.comp (fst.comp (fst.comp snd))) (snd.comp snd)).to₂
+    (fun _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl)
+  exact h.comp (const ()) Primrec.id
+
+theorem primrec_atoms : Primrec atoms := by
+  have h := primrec₂_of_rec (α := Unit) (σ := List (ℕ × ℕ)) (fun _ φ => atoms φ) (const [])
+    (e := fun _ _ => []) (const []).to₂
+    (r := fun _ p => [(p.1, p.2.length)])
+    (list_cons.comp (Primrec.pair (fst.comp snd) (list_length.comp (snd.comp snd)))
+      (const [])).to₂
+    (i := fun _ p => p.2.1 ++ p.2.2)
+    (list_append.comp (fst.comp (snd.comp snd)) (snd.comp (snd.comp snd))).to₂
+    (l := fun _ p => p.2) (snd.comp snd).to₂
+    (fun _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl)
+  exact h.comp (const ()) Primrec.id
+
+theorem primrec_quantifierDepth : Primrec quantifierDepth := by
+  have h := primrec₂_of_rec (α := Unit) (σ := ℕ) (fun _ φ => quantifierDepth φ) (const 0)
+    (e := fun _ _ => 0) (const 0).to₂
+    (r := fun _ _ => 0) (const 0).to₂
+    (i := fun _ p => max p.2.1 p.2.2)
+    (nat_max.comp (fst.comp (snd.comp snd)) (snd.comp (snd.comp snd))).to₂
+    (l := fun _ p => p.2 + 1) (succ.comp (snd.comp snd)).to₂
     (fun _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl) (fun _ _ _ => rfl)
   exact h.comp (const ()) Primrec.id
 

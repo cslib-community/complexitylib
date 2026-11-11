@@ -557,7 +557,8 @@ private theorem rule_next_val {θ : ℕ → ℕ} (hθ : ∀ j, 1 ≤ θ j) {k : 
 
 /-! ### Normalization -/
 
-private theorem mem_dedup {C : Clause V} {l : Literal V} : l ∈ dedup C ↔ l ∈ C := by
+/-- Literal membership is preserved by `dedup`. -/
+theorem mem_dedup {C : Clause V} {l : Literal V} : l ∈ dedup C ↔ l ∈ C := by
   simp only [dedup, List.mem_map, List.mem_filter, beq_iff_eq, Prod.exists, exists_and_right,
     exists_eq_right]
   constructor
@@ -567,7 +568,8 @@ private theorem mem_dedup {C : Clause V} {l : Literal V} : l ∈ dedup C ↔ l �
     refine ⟨C.idxOf l, List.mem_zipIdx_iff_getElem?.mpr ?_, rfl⟩
     rw [List.getElem?_eq_getElem (List.idxOf_lt_length_iff.mpr hl), List.getElem_idxOf]
 
-private theorem nodup_dedup (C : Clause V) : (dedup C).Nodup := by
+/-- Literal deduplication yields a duplicate-free clause. -/
+theorem nodup_dedup (C : Clause V) : (dedup C).Nodup := by
   have hzip : C.zipIdx.Nodup := by
     rw [List.Nodup, List.pairwise_iff_getElem]
     intro i j hi hj hij heq
@@ -579,7 +581,8 @@ private theorem nodup_dedup (C : Clause V) : (dedup C).Nodup := by
   simp only [List.mem_filter, beq_iff_eq] at hu hv
   rw [← hu.2, ← hv.2]
 
-private theorem length_dedup_le (C : Clause V) : (dedup C).length ≤ C.length := by
+/-- Literal deduplication does not increase clause length. -/
+theorem length_dedup_le (C : Clause V) : (dedup C).length ≤ C.length := by
   rw [← List.toFinset_card_of_nodup (nodup_dedup C)]
   refine (card_le_card fun l hl => ?_).trans (List.toFinset_card_le C)
   exact List.mem_toFinset.mpr (mem_dedup.mp (List.mem_toFinset.mp hl))

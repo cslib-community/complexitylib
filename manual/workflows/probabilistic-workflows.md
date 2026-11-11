@@ -94,6 +94,17 @@ and curry independent coins of different biases, and compute the probability tha
 show `true`. Run
 `scripts/build.sh CslibFrontierTests.PMFConditioning`.
 
+For real conditional expectations on a finite product distribution `PMF.pi p` (`∀ i : ι, α i`) given
+coordinate assignments on `fixed : Finset ι`, import
+[Product/ConditionalExpectation.lean](../../CslibFrontier/Probability/Product/ConditionalExpectation.lean).
+`PMF.condExpect p f fixed x` sums `f` against the product of `(p i)` over unfixed coordinates `i ∉ fixed`
+without requiring positive cylinder mass, so it extends smoothly outside `(PMF.pi p).support` while
+identifying `(PMF.pi p).filter …` with `fixedPi p fixed x` whenever fixed coordinates lie in
+`(p i).support` (`filter_pi_cylinder`). `condExpect_empty` recovers the full product expectation,
+`condExpect_univ` evaluates `f x`, `sum_mul_condExpect_insert` is the one-coordinate tower law, and
+`exists_condExpect_insert_le` / `exists_le_condExpect_insert` produce support-valued coordinate
+choices preserving the conditional expectation.
+
 Real-valued probabilities lie in `[0, 1]`. The lower bound is `ENNReal.toReal_nonneg`; for the
 upper bound, import [PMF/ToReal.lean](../../CslibFrontier/Probability/PMF/ToReal.lean) and use
 `PMF.toReal_apply_le_one μ a` for an outcome or `PMF.toOuterMeasure_toReal_le_one μ s` for an
@@ -174,6 +185,28 @@ optimal cost is exactly `2`, no generating tree does better, and the entropy is 
 They also cover a non-halting tree that generates nothing and has infinite cost. Run
 `scripts/build.sh CslibFrontierTests.KnuthYao`. The model counts coin flips only; it does not certify
 that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
+When an exact sampler instead repeats a fixed-width `width`-bit decoder `attempt : List Bool → Option α`,
+import [DDGTree/Rejection.lean](../../CslibFrontier/Probability/DDGTree/Rejection.lean) for
+`BlockRejectionSpec`, [Languages/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Languages/Probabilistic/RejectionSampling.lean)
+for the `ProbComp` programs (`sampleBlockTrials`, `sampleSeededTrials`, `sampleBlockCapped`), and
+[Computability/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Computability/Probabilistic/RejectionSampling.lean)
+for strict `IsPPTOn` certificates (`isPPTOn_sampleSeededTrials`, `isPPTOn_sampleBlockTrials`,
+`isPPTOn_sampleBlockCapped`) when `trials` and `width` are computed in `encUnary`, the `attempt`
+decoder is polynomial-time on input-and-block pairs, and (`sampleBlockCapped`) the `fallback` map
+is polynomial-time. On the unbounded
+side, `spec.toDDGTree` satisfies `run_toDDGTree` (`n / width` trials after `n` fair bits), generates
+the target law when `0 < width` and `acceptProb ≠ 0` (`toDDGTree_generates`), and reads
+`width / acceptProb` fair bits in expectation (`expectedFlips_toDDGTree`, including `⊤` when
+`acceptProb = 0`). On the capped side, `runTrials_none` gives exact failure `rejectProb ^ t` and
+`dist_runCapped_le` bounds fallback statistical distance by `(rejectProb ^ t).toReal`.
+`uniformFinTree` and `uniformFinRejectionSpec` specialize this to `Fin n` (`≤ 2 * Nat.clog 2 n`
+expected flips, `k` flips at `2 ^ k`, and `≤ (1 / 2) ^ t` capped failure; `dyadicFinRejectionSpec`
+and `subsetDyadicSpec` cover `dyadicSize n` and finite subsets). The
+[checked clients](../../CslibFrontierTests/FairBitRejectionAndCondExp.lean) verify exact `8 / 3` and
+`24 / 5` flip counts on `Fin 3` and `Fin 5`, capped `Fin 3` bounds, the never-accepting `⊤`
+boundary, subset sampling on `Fin 6`, and `IsPPTOn`; run
+`scripts/build.sh CslibFrontierTests.FairBitRejectionAndCondExp`.
 
 ## Polarize statistical distance
 
@@ -308,27 +341,27 @@ tensorization and comparison inequalities ([Tsybakov, Section 2.4](../sources.md
 
 - **Bhattacharyya coefficient and Hellinger distance.** Import
   [Hellinger.lean](../../CslibFrontier/Probability/Hellinger.lean). The definitions
-  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L133)
+  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L134)
   (`∑' a, √((p a).toReal * (q a).toReal) ∈ [0, 1]`),
-  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L137) (`1 - bhattacharyya p q`),
-  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L141)
+  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L138) (`1 - bhattacharyya p q`),
+  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L142)
   (`√(hellingerSq p q) ∈ [0, 1]`)—along with their symmetry, `[0, 1]` bounds, and definiteness
   (`= 0 ↔ p = q`)—apply to any `PMF α`, while the theorem API below assumes finite types
   `[Finite α]` / `[Fintype α]`. No competing `MetricSpace (PMF α)` instance is registered because
   `Cslib.Probability.PMF` already uses that slot for half-`L¹` `dist`;
-  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L304) supplies the
+  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L305) supplies the
   metric triangle inequality directly.
 - **Total-variation comparison and `n`-fold i.i.d. tensorization (finite types).**
-  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L345) and
-  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L398) give
+  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L346) and
+  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L399) give
   `h²(p, q) ≤ dist p q ≤ √2 * h(p, q)` (with `tvDist` corollaries on `toMeasure`).
-  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L426) and
-  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L444) prove multiplicative
+  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L427) and
+  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L445) prove multiplicative
   tensorization, yielding the sample-complexity acceptance bound
-  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L497):
+  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L498):
   `dist (iid p n) (iid q n) ≤ √(2 * n) * hellingerDist p q`. Markov kernel and map data
-  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L576) and
-  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L595).
+  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L577) and
+  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L596).
 - **Pearson `χ²` divergence and Ingster / Le Cam mixture bounds (finite types).** Import
   [ChiSquare.lean](../../CslibFrontier/Probability/ChiSquare.lean).
   [`echiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L142) (`ℝ≥0∞`-valued
@@ -359,6 +392,68 @@ cover disjoint point masses (`echiSquare = ⊤`), rational Bernoulli pairs, the 
 `pi`/`iid` tensorization, close Pythagorean-triple coins at `n = 10`, `map`/`bind` data
 processing, `2 h² ≤ KL ≤ log (1 + χ²) ≤ χ²`, and an Ingster/Le Cam two-point mixture bound. Run
 `scripts/build.sh CslibFrontierTests.HellingerChiSquare`.
+
+## Select a hypothesis from a finite family
+
+Import [Likelihood.lean](../../CslibFrontier/Probability/HypothesisSelection/Likelihood.lean),
+[LeCamBirge.lean](../../CslibFrontier/Probability/HypothesisSelection/LeCamBirge.lean), and
+[Tournament.lean](../../CslibFrontier/Probability/HypothesisSelection/Tournament.lean) to test pairs
+of discrete distributions and localize an unknown distribution `p : PMF α` from i.i.d. samples
+`iid p n` over a finite alphabet `α`.
+
+- **Likelihood-ratio Chernoff and realizable MLE.**
+  [Likelihood.lean](../../CslibFrontier/Probability/HypothesisSelection/Likelihood.lean) proves the
+  weighted likelihood-ratio bound `Cslib.Probability.PMF.toOuterMeasure_mul_le_bhattacharyya_div_sqrt`,
+  single-sample `toOuterMeasure_le_bhattacharyya`, and `n`-fold i.i.d. Chernoff bound
+  `toOuterMeasure_iid_le_bhattacharyya_pow` (`≤ Real.exp (-n * hellingerDist p q ^ 2)` via
+  `toOuterMeasure_iid_le_exp_hellingerDist`). Over any nonempty finite family `models` (`s : Finset ι`
+  with `mle`, or `Fin M` with `mleFin`), `mle_hellingerDist_gt_le` and `mleFin_hellingerDist_gt_le`
+  show that when `models i₀` generates the samples, maximum likelihood selects a model within
+  Hellinger radius `r ≥ 0` except with probability at most `(M - 1) * Real.exp (-n * r ^ 2)`,
+  giving sample complexity `Real.log (M / δ) / r ^ 2` (`mleFin_hellingerDist_ge_le_of_log`,
+  [Canonne](../sources.md#canonne22), [Tsybakov](../sources.md#tsybakov09)). Bare MLE is not robust
+  under misspecification: assigning zero probability to a single observed atom rejects a near-optimal
+  model immediately.
+- **Robust Le Cam–Birgé and Scheffé pairwise tests.**
+  [LeCamBirge.lean](../../CslibFrontier/Probability/HypothesisSelection/LeCamBirge.lean) defines the
+  clipped midpoint likelihood-ratio square root `birgeWeight q₀ q₁ a` (`√((q₀(a) + 2 q₁(a)) /
+  (2 q₀(a) + q₁(a)))`, `1` where both vanish, always in `[1 / √2, √2]`) and `leCamBirgeTest`
+  (comparing `∏ i, birgeWeight q₀ q₁ (x i) < 1`). Under any `p` with
+  `10 * hellingerDist p q₀ ≤ hellingerDist q₀ q₁`, `leCamBirgeTest_false_le` bounds false
+  rejection by `Real.exp (-n * hellingerSq q₀ q₁ / 25)` (`leCamBirgeTest_false_le_of_radius` gives
+  `Real.exp (-4 * n * r ^ 2)` when `h(p, q₀) ≤ r` and `10 * r ≤ h(q₀, q₁)`, and `leCamBirgeTest_true_le`
+  / `leCamBirgeTest_true_le_of_radius` are symmetric). For total variation, `scheffeTest` compares
+  `empiricalMass (scheffeSet q₀ q₁) x` against `(q₀(A) + q₁(A)) / 2` and achieves error at most
+  `Real.exp (-2 * n * γ ^ 2)` whenever `dist p q₀ + γ ≤ dist q₀ q₁ / 2` (`scheffeTest_false_le`,
+  `scheffeTest_true_le`).
+- **Parameter-free tournaments and finite covers.**
+  [Tournament.lean](../../CslibFrontier/Probability/HypothesisSelection/Tournament.lean) defines two
+  agnostic tournament selectors needing no prior bound on the approximation radius. `scheffeSelect`
+  (`scheffeSelectFin`) minimizes `scheffeScore` (worst empirical discrepancy over challengers'
+  Scheffé sets), achieving `dist p q_hat ≤ 3 * dist p q₀ + 2 * γ` simultaneously for all `q₀ ∈ s`
+  except with probability at most `2 * M * (M - 1) * Real.exp (-2 * n * γ ^ 2)`
+  (`scheffeSelect_prob_gt_le`, `scheffeSelectFin_ge_le_of_log`, `scheffeSelect_of_cover`).
+  `birgeTournamentSelect` (`birgeTournamentSelectFin`) minimizes `maxDefeatRadius` across pairwise
+  `leCamBirgeTest` matches: whenever some candidate satisfies `hellingerDist p (models i₀) ≤ r`, the
+  output satisfies `hellingerDist p (models i_hat) ≤ 11 * r` except with probability at most
+  `2 * (M - 1) * Real.exp (-4 * n * r ^ 2)` (`birgeTournamentSelect_prob_gt_le`,
+  `birgeTournamentSelectFin_ge_le_of_log`), giving agnostic `11 * r` selection over any finite
+  `r`-Hellinger cover (`birgeTournamentSelect_of_cover`). The `1/3`–`2/3` `birgeWeight` constants,
+  one-sided `scheffeScore`, and tournament proofs are this library's formulation ([Le Cam 1973](../sources.md#lecam73),
+  [Birgé 1983](../sources.md#birge83), and [Devroye–Lugosi 2001](../sources.md#devroyelugosi01) were
+  not inspected beyond bibliographic metadata).
+
+Model boundaries: all results are non-asymptotic bounds for discrete i.i.d. `PMF` tuples
+`Fin n → α` on finite alphabets `α` and finite candidate families (`hs : s.Nonempty` or `NeZero M`),
+assuming exact evaluation of `PMF` masses rather than continuous densities, unbounded alphabets, or
+streaming space/time bounds. The checked clients in
+[HypothesisSelection.lean](../../CslibFrontierTests/HypothesisSelection.lean) verify `bhattacharyya`
+and `n = 20` Chernoff decay for `coin (1 / 5)` vs. `coin (4 / 5)`, `n = 64` sample complexity for
+`mleFin` on three coins, a concrete zero-likelihood counterexample (`twoCoinsDetHalf` on nine `true`
+and one `false` samples) where `mleFin` picks the wrong model while both `scheffeSelectFin` and
+`birgeTournamentSelectFin` recover the near-optimal model, and probabilistic `scheffeSelectFin`,
+`birgeTournamentSelectFin`, and finite-cover bounds under `coin (201 / 1000)` misspecification. Run
+`scripts/build.sh CslibFrontierTests.HypothesisSelection`.
 
 ## Bound the mixing time of a finite Markov chain
 
@@ -775,6 +870,10 @@ weaken the soundness with `PromiseProblem.NPHard.mono`, as `exists_GapLabelCover
 loop, show that the incidence reduction of a loop has parallel edges and has none after loop
 removal, and instantiate both hardness theorems. Run
 `scripts/build.sh CslibFrontierTests.LabelCoverRepetition CslibFrontierTests.LabelCoverSmallSoundness`.
+For constant-factor Set Cover inapproximability from `exists_GapLabelCover_npHard` and its
+`c * log n` soundness gap, see
+[LundYannakakis.lean](../../CslibFrontier/Computability/PCP/Approximation/SetCover/LundYannakakis.lean)
+and [Set Cover approximation hardness](../algorithms-and-memory/approximation-algorithms.md#set-cover-approximation-hardness).
 Håstad's reductions from Label Cover remain open
 ([#886](https://github.com/cslib-community/cslib-frontier/issues/886)).
 
@@ -2247,3 +2346,73 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 `scripts/build.sh CslibFrontierTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
+
+## Bound adapted Bernoulli counts and hitting times by stochastic domination
+
+Import [`CslibFrontier.Probability.StochasticDomination`](../../CslibFrontier/Probability/StochasticDomination.lean)
+(or its constituent submodules) and open `Cslib.Probability` when proving tail bounds or expected
+stopping-time bounds for sequences of adapted events whose step-wise conditional success
+probabilities satisfy lower or upper bounds.
+
+- **First-order stochastic order**:
+  [`StochasticDomination/Basic.lean`](../../CslibFrontier/Probability/StochasticDomination/Basic.lean)
+  defines `StochasticallyDominates μ ν` on `Measure α` (`ν U ≤ μ U` for measurable upper sets)
+  and `PMF.StochasticallyDominates p q` on `PMF α`. Equate them with measurable monotone
+  `ℝ≥0∞`-valued Lebesgue expectations on `SFinite` measures (`stochasticallyDominates_iff_lintegral`),
+  with measurable monotone Bochner expectations on probability measures (`IsProbabilityMeasure μ`,
+  `IsProbabilityMeasure ν`) for functions integrable under both `μ` and `ν`
+  (`stochasticallyDominates_iff_integral`, which fails for unequal-mass measures), with upper tails
+  on `ℕ` (`stochasticallyDominates_nat_iff_Ici`) and probability-measure lower tails /
+  `ProbabilityTheory.cdf` (`stochasticallyDominates_nat_iff_Iio`,
+  `stochasticallyDominates_real_iff_cdf`), `Bool` coin laws (`PMF.stochasticallyDominates_bool_iff`),
+  couplings (`StochasticallyDominates.of_coupling`), and closure under `map`, `bind` (on `SFinite`
+  measures), and `add_prod`.
+- **Poisson-binomial and binomial benchmarks**:
+  [`PoissonBinomial.lean`](../../CslibFrontier/Probability/PoissonBinomial.lean) defines
+  `PMF.poissonBinomial : List unitInterval → PMF ℕ` with convolution (`poissonBinomial_append`),
+  permutation invariance (`poissonBinomial_perm`), independent-coin product equivalence
+  (`poissonBinomial_eq_map_pi`), and `ProbabilityTheory.binomial` specialization
+  (`toMeasure_poissonBinomial_replicate`).
+  [`StochasticDomination/PoissonBinomial.lean`](../../CslibFrontier/Probability/StochasticDomination/PoissonBinomial.lean)
+  proves parameter monotonicity (`poissonBinomial_stochasticallyDominates_of_forall₂`,
+  `binomial_stochasticallyDominates_of_le`, `binomial_stochasticallyDominates_of_nat_le`) and, for
+  strictly positive success probability `0 < (p : ℝ)`, the exact negative-binomial waiting-time
+  series `tsum_binomial_real_Iio : ∑' t, (ProbabilityTheory.binomial t p).real (Set.Iio r) = r / p`.
+- **Finite-horizon adapted processes**:
+  [`StochasticDomination/Adapted.lean`](../../CslibFrontier/Probability/StochasticDomination/Adapted.lean)
+  defines `adaptedCount A n` on general `Filtration ℕ m` (under `IsProbabilityMeasure P` and
+  `MeasurableSet[ℱ (t + 1)] (A t)`) with both lower- and upper-envelope domination
+  (`adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_adaptedCount`), active-before-target binomial tails
+  requiring the lower bound `p` only while `adaptedCount A t < r`
+  (`adaptedCount_real_Iio_le_binomial`), specializations to Markov Ionescu–Tulcea trajectories
+  (`traj_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_traj_adaptedCount`,
+  `trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
+  sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
+  `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Infinite-horizon stopping-time means**:
+  [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
+  proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and
+  `integral_untopD_eq_tsum_real_lt` under `IsFiniteMeasure P`, measurable `τ`, and summability of
+  `fun n => P.real {n < τ}`, certifying `τ ≠ ⊤` a.e. and integrability of
+  `((τ ·).untopD 0 : ℝ)`). Under `IsProbabilityMeasure P` (or `IsMarkovKernel (κ n)` with an initial `[IsProbabilityMeasure μ₀]` for mixtures, or just `IsMarkovKernel (κ n)` for fixed prefixes), adapted events
+  `MeasurableSet[ℱ (t + 1)] (A t)`, and strictly positive success probability `0 < (p : ℝ)`,
+  `stoppingTime_mean_le_of_adaptedCount_le` assumes `P[A t | ℱ t] ≥ p` a.e. before `τ` (`{t < τ}`)
+  and `r ≤ adaptedCount A n ω → τ ω ≤ n` to deduce `τ ≠ ⊤` a.e., integrability of
+  `((τ ·).untopD 0 : ℝ)`, and `𝔼[(τ ·).untopD 0] ≤ r / p`; the hitting-time specializations
+  (`countHittingTime_mean_le`, `traj_countHittingTime_mean_le`,
+  `trajMeasure_countHittingTime_mean_le`) assume the conditional lower bound `p` while
+  `adaptedCount A t < r`.
+
+The checked [`StochasticDomination.lean` clients](../../CslibFrontierTests/StochasticDomination.lean)
+verify concrete `ℕ`/`ℝ`/`Bool` order inequalities (`lintegral_le`, `integral_le`, `bind`), exact
+heterogeneous `poissonBinomial` masses and means, `ProbabilityTheory.binomial` comparison, a
+state-dependent sequential `PMF` process, lower/upper `Kernel.trajMeasure` envelopes, a
+target-stopped `Kernel.trajMeasure` process whose success probability drops to `0` once `r = 2`
+successes are reached while satisfying `𝔼[τ_2] ≤ 4`, and a truncated stopping time strictly
+distinct from `countHittingTime`. Run `scripts/build.sh CslibFrontierTests.StochasticDomination` from
+the repository root to check them.
+Instantiating these theorems on oracle-program executions remains open until the stochastic-oracle
+semantics ([#2530](https://github.com/cslib-community/cslib-frontier/pull/2530)) lands on `main`.

@@ -141,7 +141,7 @@ private theorem eval_scans {count width : ℕ} (source : Fin width → BitString
   rw [scans, Circuit.eval_comp, Circuit.eval_replicate_apply]
   congr 2 with index : 1
   cases index using Fin.addCases <;>
-    simp [Circuit.eval_wiringOn, directProductInput,
+    simp [Circuit.eval_wiringOn, BitString.block,
       -finProdFinEquiv_symm_apply, -Fin.natAdd_eq_addNat]
 
 private theorem cost_scans (count width : ℕ) (cost : signature.Op → ℕ) :
@@ -280,11 +280,11 @@ theorem eval_values_eq_true_iff {input count keyWidth width : ℕ}
 
 /-- Read the retained header of a row-major record array. -/
 def header {count headerWidth width : ℕ} (x : BitString (count * (headerWidth + width)))
-    (record : Fin count) : BitString headerWidth := directProductInput x record ∘ Fin.castAdd width
+    (record : Fin count) : BitString headerWidth := BitString.block x record ∘ Fin.castAdd width
 
 /-- Read the value field following the retained header. -/
 def value {count headerWidth width : ℕ} (x : BitString (count * (headerWidth + width)))
-    (record : Fin count) : BitString width := directProductInput x record ∘ Fin.natAdd headerWidth
+    (record : Fin count) : BitString width := BitString.block x record ∘ Fin.natAdd headerWidth
 
 /-- Keep every header wire and replace value wires by the corresponding scan outputs. -/
 def outputWire (count headerWidth width : ℕ) (index : Fin (count * (headerWidth + width))) :
@@ -319,7 +319,7 @@ theorem eval_broadcastCircuit_header {count headerWidth keyWidth width : ℕ}
     header ((broadcastCircuit key tag count width).eval interpretation x) record =
       header x record := by
   funext bit
-  simp only [header, directProductInput, Function.comp_apply, broadcastCircuit, Circuit.eval_comp,
+  simp only [header, BitString.block, Function.comp_apply, broadcastCircuit, Circuit.eval_comp,
     Circuit.eval_wiring, Circuit.eval_append, Circuit.id, outputWire, Equiv.symm_apply_apply,
     Fin.addCases_left, Fin.append_left, id_eq]
 
@@ -334,7 +334,7 @@ theorem eval_broadcastCircuit_value {count headerWidth keyWidth width : ℕ}
         (fun record bit => finProdFinEquiv (record, Fin.natAdd headerWidth bit))).eval
         interpretation x
         (finProdFinEquiv (bit, record)) := by
-  simp only [value, directProductInput, Function.comp_apply, broadcastCircuit, Circuit.eval_comp,
+  simp only [value, BitString.block, Function.comp_apply, broadcastCircuit, Circuit.eval_comp,
     Circuit.eval_wiring, Circuit.eval_append, outputWire, Equiv.symm_apply_apply,
     Fin.addCases_right, Fin.append_right]
 

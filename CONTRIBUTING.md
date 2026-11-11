@@ -100,6 +100,20 @@ Mathlib's standard linter set already enforces the mechanical part; reviews enfo
    Preserve existing guarantees when rewriting tests: exact bounds or probabilities must not
    become weaker inequalities, and regression cases must not become tautologies.
 
+**Structures for domain objects and records**
+([#4385](https://github.com/cslib-community/cslib-frontier/issues/4385)). Model domain objects,
+problem instances, certificates, configurations, and multi-field algorithm contexts, states or
+records as documented `structure`s with named, documented fields, and declare their field-tuple
+encodings with `enc_structure` ([AGENTS.md](AGENTS.md#structures-for-domain-objects-and-records)).
+Do not introduce tuple type synonyms such as
+`abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ` or bare-product problem sets such as
+`Set (List (ℕ × ℕ) × ℕ × ℕ)` or `Set (Graph × ℕ)`. Named fields document the mathematical
+components in `doc-gen4`, enable dot-notation, and eliminate positional projections before they
+start, while `enc_structure` supplies the embedding and its `fun_prop` projection and constructor
+certificates across degree, `ComputableInO`, `ComputableInSpace` and `ComputableInPolyTime`. Keep
+ordinary `Prod` (`×`) for generic binary combinators, Cartesian products and uncurried
+multi-argument inputs such as an NP verifier `Instance × List Bool → Bool`.
+
 **Named components instead of positional projections**
 ([#1764](https://github.com/cslib-community/cslib-frontier/issues/1764)). Public statements and
 the bodies of public definitions do not reach into nested tuples with projection chains such as
@@ -149,7 +163,7 @@ state paired with the bit read, with the state framed. Because the name is reduc
 statement is definitionally unchanged, and `enc_len`, `fun_prop` and the combinators' simp lemmas
 see through it; syntactic tools such as `omega` do not. New and changed statements follow the
 exact rules in [AGENTS.md](AGENTS.md#encodings-in-statements); the encoding-readability lint
-checks the repetition rule.
+checks the repetition rule and rejects compound-encoding `local notation`s.
 
 To sweep an area, `python3 scripts/check_encoding_readability.py --list CslibFrontier/Logics` lists
 its repeated compound encodings with their declarations, ignoring the baseline, and the local
@@ -280,8 +294,10 @@ listed in a module docstring's "Main …" sections must exist, a new test file m
 than restate signatures with `example … := name`, and an `@[expose] … section` header must have a
 definition to expose. CI runs both, and also
 `python3 scripts/check_encoding_readability.py`, the ratchet on repeated compound encodings in
-public statements ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
-enforces its baseline only in the modules a pull request changes, and merge groups only report,
+public statements and check against compound-encoding `local notation`s
+([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)). It
+enforces its baseline and the `local notation` rule only in the modules a pull request changes,
+and merge groups only report,
 so `main` can drift above the baseline; the next change to a drifted module names the encoding
 or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
 options. On pull requests CI also runs
@@ -354,9 +370,9 @@ should meet it, with checked Lean examples whose names link to the API documenta
 When a chapter needs proof plumbing or a missing lemma, improve the library rather than
 documenting around it.
 
-The [README](README.md#build-and-use) explains how to generate API documentation using
-[doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide with
-[Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
+The [build instructions](manual/BUILD.md#build-the-api-reference) explain how to generate API
+documentation using [doc-gen4](https://github.com/leanprover/doc-gen4) and how to build the guide
+with [Verso](https://github.com/leanprover/verso). Their separate `docbuild` and `guide` projects share
 the library's toolchain and dependency checkouts, and `docbuild` its bibliography. After changing
 library dependencies, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake -d docbuild update cslib-frontier`
 and the same with `-d guide`. When changing the Lean toolchain, also update the doc-gen4 tag in

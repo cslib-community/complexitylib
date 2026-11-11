@@ -27,7 +27,7 @@ open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
 example : AC0Mod 3 ⊂ TC0 :=
   have : Fact (Nat.Prime 3) := ⟨by decide⟩
-  Smolensky.AC0Mod_ssubset_TC0 (by decide)
+  Smolensky.AC0Mod_ssubset_TC0
 
 example : Language.ofSlices majority ∈ NC 1 := majority_mem_NC_one
 
