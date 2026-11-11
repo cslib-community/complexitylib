@@ -84,10 +84,6 @@ private theorem val_equivFin_natBits {L t : ℕ} (ht : t < 2 ^ L) :
     simp [natBits]
   rw [this, Equiv.apply_symm_apply]
 
-private theorem testBit_equivFin {d : ℕ} (z : BitString d) (r : Fin d) :
-    (BitString.equivFin d z : ℕ).testBit r = z r := by
-  rw [← BitString.equivFin_symm_apply, Equiv.symm_apply_apply]
-
 /-! ### The hard-wired table -/
 
 open Classical in
@@ -223,8 +219,8 @@ private theorem addrBit_eq {τ o : ℕ → ℕ} {x : BitString (inputLength I Δ
     rw [htt]
     rw [ht, hv] at h
     rw [ite_eq_left h.2.1]
-    have hbit := testBit_equivFin (BitString.zeroExtend (d' := varLength I lam v) (seed x t q i))
-      ⟨r, h.2.1⟩
+    have hbit := BitString.testBit_equivFin
+      (BitString.zeroExtend (d' := varLength I lam v) (seed x t q i)) ⟨r, h.2.1⟩
     simp only at hbit
     rw [hbit]
     simp [BitString.zeroExtend, h.2.2]
@@ -281,7 +277,7 @@ private theorem combine_append_eq {S : Finset ℕ} {f : VarFunctions I lam} {τ 
         BitString.zeroExtend (d' := varLength I lam v) (seed x ⟨_, htΔ⟩ q i) := by
       funext r
       simp only [natBits, hs_def]
-      exact testBit_equivFin _ r
+      exact BitString.testBit_equivFin _ r
     rw [hbits]
     unfold evalVar
     rw [dite_eq_left hvn, dite_eq_left hvn]
