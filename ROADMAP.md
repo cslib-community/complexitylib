@@ -782,8 +782,8 @@ The openai/math formalizations are Apache 2.0, as is cslib-frontier, so adaptati
 
 - **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)): A `#k`-SAT model counter running in time `2^{O_k(n log log n / √log n)}` at arbitrary density, by recursive tensor contraction.
   The intended route combines the fixed-density bound `2^{O_{k,D}(n / √log n)}` (Theorem D.1 with `ℓ = 1`) with the Lemma D.2 construction, applied natively to the model-counter interface.
-- **Exact optimization:** Exact MAX-SAT score distributions and optima in contraction time measured by literal occurrences plus clauses, with `2^{O_{k,c}(n / √log n)}` time and polynomial space for sparse fixed-width instances, and native extraction of an optimizing assignment.
-  Neither these bounds nor ordinary SAT sparsification gives a variable-count rate for dense exact MAX-SAT.
+- **Exact and subsampled optimization** ([#3672](https://github.com/cslib-community/cslib-frontier/issues/3672)): Sharpen exact MAX-SAT and sparse Max-CSP optimization from the `interpolationScale` rate to `2^{O_{k,c}(n / √log n)}` time and polynomial space on sparse fixed-width instances, extract an optimizing assignment natively, and couple constraint-subsampling approximation with native probabilistic-machine execution on dense instances.
+  Neither sparse exact bounds nor ordinary SAT sparsification gives a variable-count rate for dense exact MAX-SAT.
 - **Large weights:** Exact contraction of natural tensor tables whose bit lengths are polynomial in the structural size, applied natively to weighted-CSP partition functions, and signed or rational weight interfaces.
 
 ## Documentation and repository
