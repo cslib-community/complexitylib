@@ -1247,12 +1247,6 @@ theorem subdivideEquiv_edgePoint [Finite V] {B : Finset (MetricGraph W)}
 
 /-! ### Per-subdivided-edge affine distance from a point -/
 
-private noncomputable def clampUnitSub (r : ℝ) : unitInterval :=
-  ⟨max 0 (min 1 r), le_max_left _ _, max_le zero_le_one (min_le_left _ _)⟩
-
-private theorem clampUnitSub_of_mem {r : ℝ} (h0 : 0 ≤ r) (h1 : r ≤ 1) :
-    (clampUnitSub r : ℝ) = r := by
-  simp [clampUnitSub, min_eq_right h1, max_eq_right h0]
 
 /-- Choose a canonical dart orienting an undirected edge `e : G.edgeSet`. -/
 noncomputable def edgeDartOfSym2 {G : SimpleGraph V} (e : G.edgeSet) : G.Dart :=
@@ -1305,11 +1299,11 @@ noncomputable def dartBreakpoints [Finite V] (W : WeightedGraph V) (p : MetricGr
     let s₀ := Classical.choose h
     let c₁ := min ((s₀ : ℝ) * w) (b + w)
     let c₂ := min (-(s₀ : ℝ) * w) a
-    let t₂ := clampUnitSub ((c₁ - a) / (2 * w))
-    let t₃ := clampUnitSub ((b + w - c₂) / (2 * w))
+    let t₂ := Set.projIcc 0 1 zero_le_one ((c₁ - a) / (2 * w))
+    let t₃ := Set.projIcc 0 1 zero_le_one ((b + w - c₂) / (2 * w))
     {edgePoint d s₀, edgePoint d t₂, edgePoint d t₃}
   else
-    {edgePoint d (clampUnitSub ((b + w - a) / (2 * w)))}
+    {edgePoint d (Set.projIcc 0 1 zero_le_one ((b + w - a) / (2 * w)))}
 
 theorem dartBreakpoints_card_le [Finite V] (W : WeightedGraph V) (p : MetricGraph W)
     (d : W.graph.Dart) : (dartBreakpoints W p d).card ≤ 3 := by
@@ -1319,12 +1313,6 @@ theorem dartBreakpoints_card_le [Finite V] (W : WeightedGraph V) (p : MetricGrap
   · exact (Finset.card_insert_le _ _).trans
       (Nat.succ_le_succ ((Finset.card_insert_le _ _).trans (by simp)))
   · simp
-
-private theorem clampUnitSub_symm {r : ℝ} (h0 : 0 ≤ r) (h1 : r ≤ 1) :
-    clampUnitSub (1 - r) = unitInterval.symm (clampUnitSub r) := by
-  ext
-  simp [clampUnitSub, min_eq_right h1, max_eq_right h0,
-    min_eq_right (by linarith : 1 - r ≤ 1), max_eq_right (by linarith : 0 ≤ 1 - r)]
 
 theorem dartBreakpoints_symm [Finite V] (W : WeightedGraph V) (p : MetricGraph W)
     (d : W.graph.Dart) : dartBreakpoints W p d.symm = dartBreakpoints W p d := by
@@ -1381,11 +1369,12 @@ theorem dartBreakpoints_symm [Finite V] (W : WeightedGraph V) (p : MetricGraph W
       rw [div_le_one (by linarith)]
       rcases min_cases (-(s : ℝ) * w) a with ⟨hm, _⟩ | ⟨hm, _⟩ <;>
         rw [hm] <;> linarith [abs_le.mp hab_diff]
-    have hsym_t2 : clampUnitSub ((min ((s' : ℝ) * W.weight d.symm.edge)
+    have hsym_t2 : Set.projIcc 0 1 zero_le_one ((min ((s' : ℝ) * W.weight d.symm.edge)
           (dist p (vertex d.symm.snd) + W.weight d.symm.edge) - dist p (vertex d.symm.fst)) /
           (2 * W.weight d.symm.edge)) =
-        unitInterval.symm (clampUnitSub ((b + w - min (-(s : ℝ) * w) a) / (2 * w))) := by
-      rw [← clampUnitSub_symm hc2_lo hc2_hi]
+        unitInterval.symm
+          (Set.projIcc 0 1 zero_le_one ((b + w - min (-(s : ℝ) * w) a) / (2 * w))) := by
+      rw [unitInterval.symm_projIcc]
       congr 1
       have hsnd : d.symm.snd = d.fst := rfl
       simp only [Dart.fst_symm, hsnd, Dart.edge_symm, hs_eq, unitInterval.coe_symm_eq]
@@ -1399,11 +1388,13 @@ theorem dartBreakpoints_symm [Finite V] (W : WeightedGraph V) (p : MetricGraph W
       rw [hmin_eq]
       field_simp [show w ≠ 0 from hw.ne']
       ring
-    have hsym_t3 : clampUnitSub ((dist p (vertex d.symm.snd) + W.weight d.symm.edge -
+    have hsym_t3 : Set.projIcc 0 1 zero_le_one
+        ((dist p (vertex d.symm.snd) + W.weight d.symm.edge -
           min (-(s' : ℝ) * W.weight d.symm.edge) (dist p (vertex d.symm.fst))) /
           (2 * W.weight d.symm.edge)) =
-        unitInterval.symm (clampUnitSub ((min ((s : ℝ) * w) (b + w) - a) / (2 * w))) := by
-      rw [← clampUnitSub_symm hc1_lo hc1_hi]
+        unitInterval.symm
+          (Set.projIcc 0 1 zero_le_one ((min ((s : ℝ) * w) (b + w) - a) / (2 * w))) := by
+      rw [unitInterval.symm_projIcc]
       congr 1
       have hsnd : d.symm.snd = d.fst := rfl
       simp only [Dart.fst_symm, hsnd, Dart.edge_symm, hs_eq, unitInterval.coe_symm_eq]
@@ -1429,11 +1420,12 @@ theorem dartBreakpoints_symm [Finite V] (W : WeightedGraph V) (p : MetricGraph W
         (2 * W.weight d.edge) ≤ 1 := by
       rw [div_le_one (by linarith)]
       linarith [abs_le.mp hab_diff]
-    have hsym_eq : clampUnitSub ((dist p (vertex d.symm.snd) + W.weight d.symm.edge -
+    have hsym_eq : Set.projIcc 0 1 zero_le_one
+        ((dist p (vertex d.symm.snd) + W.weight d.symm.edge -
           dist p (vertex d.symm.fst)) / (2 * W.weight d.symm.edge)) =
-        unitInterval.symm (clampUnitSub ((dist p (vertex d.snd) + W.weight d.edge -
+        unitInterval.symm (Set.projIcc 0 1 zero_le_one ((dist p (vertex d.snd) + W.weight d.edge -
           dist p (vertex d.fst)) / (2 * W.weight d.edge))) := by
-      rw [← clampUnitSub_symm h0 h1]
+      rw [unitInterval.symm_projIcc]
       congr 1
       have hsnd : d.symm.snd = d.fst := rfl
       simp only [Dart.fst_symm, hsnd, Dart.edge_symm]
@@ -1521,8 +1513,8 @@ private theorem dist_point_edgePoint_piecewise_affine [Finite V] (W : WeightedGr
     have hp_eq : p = edgePoint d s₀ := hs₀.symm
     let c₁ := min ((s₀ : ℝ) * w) (b + w)
     let c₂ := min (-(s₀ : ℝ) * w) a
-    let t₂ := clampUnitSub ((c₁ - a) / (2 * w))
-    let t₃ := clampUnitSub ((b + w - c₂) / (2 * w))
+    let t₂ := Set.projIcc 0 1 zero_le_one ((c₁ - a) / (2 * w))
+    let t₃ := Set.projIcc 0 1 zero_le_one ((b + w - c₂) / (2 * w))
     have ht₂_mem : edgePoint d t₂ ∈ dartBreakpoints W p d := by
       dsimp only [dartBreakpoints]
       split_ifs
@@ -1549,14 +1541,14 @@ private theorem dist_point_edgePoint_piecewise_affine [Finite V] (W : WeightedGr
       rw [show ((1 : unitInterval) : ℝ) = 1 from rfl,
         abs_of_nonneg (unitInterval.one_sub_nonneg s₀), mul_comm]
     have ht₂_val : (t₂ : ℝ) = (c₁ - a) / (2 * w) := by
-      refine clampUnitSub_of_mem ?_ ?_
+      refine congrArg Subtype.val (Set.projIcc_of_mem zero_le_one ⟨?_, ?_⟩)
       · exact div_nonneg (sub_nonneg.mpr (le_min ha_le (by linarith [abs_le.mp hab_diff])))
           (by linarith)
       · rw [div_le_one (by linarith)]
         have : c₁ ≤ w := (min_le_left _ _).trans (mul_le_of_le_one_left hw.le s₀.2.2)
         linarith [dist_nonneg (x := p) (y := vertex d.fst)]
     have ht₃_val : (t₃ : ℝ) = (b + w - c₂) / (2 * w) := by
-      refine clampUnitSub_of_mem ?_ ?_
+      refine congrArg Subtype.val (Set.projIcc_of_mem zero_le_one ⟨?_, ?_⟩)
       · exact div_nonneg (by have : c₂ ≤ a := min_le_right _ _; linarith [abs_le.mp hab_diff])
           (by linarith)
       · rw [div_le_one (by linarith)]
@@ -1626,13 +1618,14 @@ private theorem dist_point_edgePoint_piecewise_affine [Finite V] (W : WeightedGr
           · exact hp ⟨s₀, rfl⟩
           · exact hp ⟨unitInterval.symm s₀, by rw [hsym, edgePoint_symm']⟩
         exact dist_edgePoint_eq_min_of_edge_ne hne s₀ r
-    let t_mid := clampUnitSub ((b + w - a) / (2 * w))
+    let t_mid := Set.projIcc 0 1 zero_le_one ((b + w - a) / (2 * w))
     have h0 : 0 ≤ (b + w - a) / (2 * w) :=
       div_nonneg (by linarith [abs_le.mp hab_diff]) (by linarith)
     have h1 : (b + w - a) / (2 * w) ≤ 1 := by
       rw [div_le_one (by linarith)]
       linarith [abs_le.mp hab_diff]
-    have htm_val : (t_mid : ℝ) = (b + w - a) / (2 * w) := clampUnitSub_of_mem h0 h1
+    have htm_val : (t_mid : ℝ) = (b + w - a) / (2 * w) :=
+      congrArg Subtype.val (Set.projIcc_of_mem zero_le_one ⟨h0, h1⟩)
     have htm_mem : edgePoint d t_mid ∈ dartBreakpoints W p d := by
       dsimp only [dartBreakpoints]
       split_ifs

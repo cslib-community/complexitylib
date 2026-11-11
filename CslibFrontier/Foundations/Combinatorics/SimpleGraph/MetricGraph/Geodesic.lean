@@ -139,33 +139,14 @@ end IsGeodesic
 
 /-! ### Construction of geodesics -/
 
-private noncomputable def clampUnit (r : ℝ) : unitInterval :=
-  ⟨max 0 (min 1 r), le_max_left _ _, max_le zero_le_one (min_le_left _ _)⟩
-
-private theorem clampUnit_of_mem {r : ℝ} (h0 : 0 ≤ r) (h1 : r ≤ 1) :
-    clampUnit r = ⟨r, h0, h1⟩ := by
-  ext
-  simp [clampUnit, min_eq_right h1, max_eq_right h0]
-
-private theorem coe_zero_eq : ((0 : unitInterval) : ℝ) = 0 := rfl
-
-private theorem coe_one_eq : ((1 : unitInterval) : ℝ) = 1 := rfl
-
-private theorem clampUnit_zero : clampUnit 0 = 0 :=
-  Subtype.ext (by simp [clampUnit])
-
-private theorem clampUnit_one : clampUnit 1 = 1 :=
-  Subtype.ext (by simp [clampUnit])
-
-private theorem clampUnit_coe (t : unitInterval) : clampUnit (t : ℝ) = t := by
-  ext
-  simp [clampUnit, min_eq_right t.2.2, max_eq_right t.2.1]
-
-private theorem abs_clampUnit_sub_le (r₁ r₂ : ℝ) :
-    |(clampUnit r₁ : ℝ) - clampUnit r₂| ≤ |r₁ - r₂| := by
-  have one_side : ∀ a b : ℝ, (clampUnit a : ℝ) - clampUnit b ≤ |a - b| := by
+private theorem abs_projIcc_sub_le (r₁ r₂ : ℝ) :
+    |(Set.projIcc (0 : ℝ) 1 zero_le_one r₁ : ℝ) -
+      Set.projIcc (0 : ℝ) 1 zero_le_one r₂| ≤ |r₁ - r₂| := by
+  have one_side : ∀ a b : ℝ,
+      (Set.projIcc (0 : ℝ) 1 zero_le_one a : ℝ) -
+        Set.projIcc (0 : ℝ) 1 zero_le_one b ≤ |a - b| := by
     intro a b
-    simp only [clampUnit]
+    simp only [Set.coe_projIcc]
     have hmin : min 1 a ≤ min 1 b + |a - b| := by
       rw [min_add]
       exact le_min ((min_le_left 1 a).trans (le_add_of_nonneg_right (abs_nonneg (a - b))))
@@ -178,19 +159,19 @@ private theorem abs_clampUnit_sub_le (r₁ r₂ : ℝ) :
 
 private noncomputable def dartRay (W : WeightedGraph V) (d : W.graph.Dart) (t₀ : unitInterval)
     (dir : Bool) (s : ℝ) : MetricGraph W :=
-  edgePoint d (clampUnit (if dir then (t₀ : ℝ) + s / W.weight d.edge
+  edgePoint d (Set.projIcc 0 1 zero_le_one (if dir then (t₀ : ℝ) + s / W.weight d.edge
     else (t₀ : ℝ) - s / W.weight d.edge))
 
 private theorem dartRay_zero (W : WeightedGraph V) (d : W.graph.Dart) (t₀ : unitInterval)
     (dir : Bool) : dartRay W d t₀ dir 0 = edgePoint d t₀ := by
-  simp only [dartRay, zero_div, add_zero, sub_zero, ite_self, clampUnit_coe]
+  simp only [dartRay, zero_div, add_zero, sub_zero, ite_self, Set.projIcc_val]
 
 private theorem dartRay_lip [Finite V] (W : WeightedGraph V) (d : W.graph.Dart)
     (t₀ : unitInterval) (dir : Bool) (s₁ s₂ : ℝ) :
     dist (dartRay W d t₀ dir s₁) (dartRay W d t₀ dir s₂) ≤ |s₁ - s₂| := by
   refine (dist_edgePoint_self_le d _ _).trans ?_
   have hw := W.dart_weight_pos d
-  refine (mul_le_mul_of_nonneg_left (abs_clampUnit_sub_le _ _) hw.le).trans ?_
+  refine (mul_le_mul_of_nonneg_left (abs_projIcc_sub_le _ _) hw.le).trans ?_
   cases dir
   · simp only [Bool.false_eq_true, ↓reduceIte]
     have heq : ((t₀ : ℝ) - s₁ / W.weight d.edge) - ((t₀ : ℝ) - s₂ / W.weight d.edge) =
@@ -258,8 +239,9 @@ private theorem walkCurve_cons_join (W : WeightedGraph V) {u x z : V} (h : W.gra
     dartRay W ⟨(u, x), h⟩ 0 true (W.weight s(u, x)) = walkCurve W q 0 := by
   have hw := W.weight_pos h
   rw [walkCurve_zero]
-  simp only [dartRay, ↓reduceIte, coe_zero_eq, zero_add, Dart.edge_mk,
-    div_self hw.ne', clampUnit_one, edgePoint_one]
+  simp only [dartRay, ↓reduceIte, Set.Icc.coe_zero, zero_add, Dart.edge_mk,
+    div_self hw.ne', Set.projIcc_right zero_le_one]
+  exact edgePoint_one ⟨(u, x), h⟩
 
 private theorem walkCurve_end (W : WeightedGraph V) {u v : V} (p : W.graph.Walk u v) :
     walkCurve W p (walkLength W.weight p) = vertex v := by
@@ -313,9 +295,11 @@ private theorem dartToEndCurve_end (W : WeightedGraph V) (d : W.graph.Dart)
   have hw := W.dart_weight_pos d
   cases b <;> simp only [dartToEndCurve, dartRay, Bool.false_eq_true, ↓reduceIte,
     mul_div_cancel_right₀ _ hw.ne']
-  · simp only [sub_self, clampUnit_zero, edgePoint_zero]
+  · simp only [sub_self, Set.projIcc_left zero_le_one]
+    exact edgePoint_zero d
   · have : (t : ℝ) + (1 - t) = 1 := by ring
-    rw [this, clampUnit_one, edgePoint_one]
+    rw [this, Set.projIcc_right zero_le_one]
+    exact edgePoint_one d
 
 private noncomputable def endToDartCurve (W : WeightedGraph V) (d : W.graph.Dart)
     (b : Bool) (s : ℝ) : MetricGraph W :=
@@ -334,11 +318,11 @@ private theorem endToDartCurve_end (W : WeightedGraph V) (d : W.graph.Dart)
   have hw := W.dart_weight_pos d
   cases b
   · simp only [endToDartCurve, dartRay, Bool.not_false, Bool.false_eq_true, ↓reduceIte,
-      coe_zero_eq, zero_add, mul_div_cancel_right₀ _ hw.ne', clampUnit_coe]
+      Set.Icc.coe_zero, zero_add, mul_div_cancel_right₀ _ hw.ne', Set.projIcc_val]
   · simp only [endToDartCurve, dartRay, Bool.not_true, Bool.false_eq_true, ↓reduceIte,
-      coe_one_eq, mul_div_cancel_right₀ _ hw.ne']
+      Set.Icc.coe_one, mul_div_cancel_right₀ _ hw.ne']
     have : 1 - (1 - (t : ℝ)) = t := by ring
-    rw [this, clampUnit_coe]
+    rw [this, Set.projIcc_val]
 
 private theorem exists_isGeodesic_vertex_edgePoint [Finite V] (u : V) (d : W.graph.Dart)
     (t : unitInterval) :
@@ -446,7 +430,8 @@ private theorem exists_isGeodesic_edgePoint_direct [Finite V] (d : W.graph.Dart)
     · have habs : |(t₁ : ℝ) - t₂| = t₂ - t₁ := by
         rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr hle)]
       rw [hdist, habs]
-      simp only [dartRay, ↓reduceIte, mul_div_cancel_right₀ _ hw.ne', add_sub_cancel, clampUnit_coe]
+      simp only [dartRay, ↓reduceIte, mul_div_cancel_right₀ _ hw.ne', add_sub_cancel,
+        Set.projIcc_val]
     · exact fun s t _ hst _ => (dartRay_lip W d t₁ true s t).trans_eq (by
         rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr hst)])
   · have hge : (t₂ : ℝ) ≤ t₁ := le_of_not_ge hle
@@ -454,7 +439,7 @@ private theorem exists_isGeodesic_edgePoint_direct [Finite V] (d : W.graph.Dart)
     · have habs : |(t₁ : ℝ) - t₂| = t₁ - t₂ := abs_of_nonneg (sub_nonneg.mpr hge)
       rw [hdist, habs]
       simp only [dartRay, Bool.false_eq_true, ↓reduceIte, mul_div_cancel_right₀ _ hw.ne',
-        sub_sub_cancel, clampUnit_coe]
+        sub_sub_cancel, Set.projIcc_val]
     · exact fun s t _ hst _ => (dartRay_lip W d t₁ false s t).trans_eq (by
         rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr hst)])
 
@@ -654,7 +639,7 @@ theorem edgePoint_mem_interval_of_fst [Finite V] {x : MetricGraph W} {d : W.grap
     gcongr
     rw [← edgePoint_zero d]
     refine (dist_edgePoint_self_le d 0 s).trans_eq ?_
-    rw [coe_zero_eq, zero_sub, abs_neg, abs_of_nonneg s.2.1, mul_comm]
+    rw [Set.Icc.coe_zero, zero_sub, abs_neg, abs_of_nonneg s.2.1, mul_comm]
   have h2 : dist (edgePoint d s) (edgePoint d t) ≤ ((t : ℝ) - s) * W.weight d.edge := by
     refine (dist_edgePoint_self_le d s t).trans_eq ?_
     rw [abs_sub_comm, abs_of_nonneg (sub_nonneg.mpr hst), mul_comm]
