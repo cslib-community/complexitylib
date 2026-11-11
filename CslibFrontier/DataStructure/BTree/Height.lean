@@ -37,7 +37,7 @@ the shape of a tree; they carry no cost content.
 
 Ported from `cslib-community/EpsilonEridani` at commit `1966ab476`:
 [EpsilonEridani/Algorithms/Lean/BTree/Height.lean](https://github.com/cslib-community/EpsilonEridani/blob/1966ab476f5db00425c83e19857fd38ba01143c4/EpsilonEridani/Algorithms/Lean/BTree/Height.lean).
-`le_mul_height_of_scan` added by Samuel Schlesinger for #3674 M7.
+`le_mul_height_of_scan` ported from `cslib-community/EpsilonEridani` PR `#39` at commit `9425389c8`.
 -/
 
 public section

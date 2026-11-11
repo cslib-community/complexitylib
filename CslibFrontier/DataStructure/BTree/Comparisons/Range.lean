@@ -45,7 +45,7 @@ the output is not the output under `≤`, so a bound in its length is not meanin
 ## Main results
 
 * `countQueries_rangeQ_le`: the number of comparisons made by `rangeQ` is at most
-  `2 * t * height + 2 * n`.
+  `2 * t * (2 * tr.height + (range lo hi tr).length)`.
 * `eval_rangeQ`: the value of `rangeQ` evaluated at the order oracle matches `range`.
 
 ## References
