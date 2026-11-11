@@ -108,6 +108,7 @@ import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.DataStructure.NearNeighbor.Angular
 import CslibFrontier.DataStructure.NearNeighbor.PStable
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
@@ -3683,3 +3684,23 @@ register_result "yap-collapse" where
     coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
     decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
     from Σ_k ⊆ Π_k/poly are not part of this entry."
+
+register_result "fujisaki-okamoto-notbot-ind-cca" where
+  title := "ROM IND-CCA security of the implicit-rejection Fujisaki–Okamoto transform FO-notbot"
+  topic := "cryptography"
+  sources := [
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := unverified,
+      locator := "§3.1 and §3.2.2 (IACR ePrint 2017/604, full version of 2 November 2021)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_le
+  ]
+  scope := "Domain-separated FO-notbot = U-notbot ∘ T over an explicit-coin PKE: for uniform \
+    messages, a δ-correct and γ-spread PKE, and a deterministic oracle adversary making at most \
+    qG queries to G and qH queries to H (decapsulation queries unbounded), the ROM IND-CCA \
+    advantage is at most 2·Adv^{IND-CPA}(romCpaReduction) + (2qH + 2(qG + qH))/|M| + \
+    2(qG + qH + 1)δ + 2(qG + qH)2^{-γ} for some distinct fixed challenge messages. The proof \
+    composes the T and U-notbot hops directly instead of through OW-PCA; roIndCcaGame draws both \
+    real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
+    recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
+    accounting for the reduction; FO-⊥ and OW-PCVA are not covered."
