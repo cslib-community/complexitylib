@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
+-- upstream: candidate
 
 public import CslibFrontier.DataStructure.BTree.Comparisons.Query
 public import CslibFrontier.DataStructure.BTree.Insert
@@ -22,14 +23,17 @@ namespace Cslib.DataStructure.BTree
 
 variable {α β : Type} [LinearOrder α] {t : ℕ} {k : α} {v : β} {tr : BTree α β}
 
+/-- Counted B-tree insert operation. -/
 def insertQ (t : ℕ) (k : α) (v : β) (tr : BTree α β) :
     FreeM (LEQuery α) (BTree α β) :=
   insertM t LEQuery.ask (pure ()) k v tr
 
+/-- Counted B-tree node insert or split operation. -/
 def insertOrSplitQ (t : ℕ) (k : α) (v : β) (tr : BTree α β) :
     FreeM (LEQuery α) (InsertResult α β) :=
   insertOrSplitM t LEQuery.ask (pure ()) k v tr
 
+/-- Counted B-tree node remainder insert operation. -/
 def insertRestQ (t : ℕ) (k : α) (v : β) (rest : List (Triple α β)) :
     FreeM (LEQuery α) (Option (List (Triple α β))) :=
   insertRestM t LEQuery.ask (pure ()) k v rest
@@ -63,7 +67,8 @@ theorem countQueries_insertRestQ_le_of_ret_none (rest : List (Triple α β))
     · by_cases hk' : k' ≤ k
       · simp [insertRestQ, insertRestM, hk, hk'] at h_ret
       · simp [insertRestQ, insertRestM, hk, hk']
-    · simp [insertRestQ, insertRestM, hk] at h_ret
+    · simp only [insertRestQ, insertRestM, bind_pure_comp, FreeM.eval_bind, FreeM.eval_lift,
+      LEQuery.oracleOf_le, hk, decide_false, Bool.false_eq_true, ↓reduceIte] at h_ret
       cases h_eval : FreeM.eval (fun {ι} => orderOracle)
         (insertRestM t LEQuery.ask (pure ()) k v tail)
       · simp [h_eval, FreeM.eval_map] at h_ret
@@ -81,7 +86,9 @@ theorem countQueries_insertRestQ_le (rest : List (Triple α β)) (B : ℕ)
     · by_cases hk' : k' ≤ k
       · simp [insertRestQ, insertRestM, hk, hk']; omega
       · simp [insertRestQ, insertRestM, hk, hk']; omega
-    · simp [insertRestQ, insertRestM, hk]
+    · simp only [insertRestQ, insertRestM, bind_pure_comp, FreeM.countQueries_bind,
+      FreeM.countQueries_lift, ↓FreeM.countQueries_ite, FreeM.eval_lift, LEQuery.oracleOf_le, hk,
+      decide_false, Bool.false_eq_true, ↓reduceIte, List.length_cons]
       cases h_eval : (insertRestM t LEQuery.ask (pure ()) k v tail).eval orderOracle <;>
         simp [FreeM.countQueries_map]
       · have hc : (insertOrSplitQ t k v c).countQueries orderOracle ≤ B := by apply h_cost; simp
@@ -105,7 +112,7 @@ theorem countQueries_insertOrSplitQ_node_le (first : BTree α β) (rest : List (
     (h_cost : ∀ c ∈ (node first rest).children,
         (insertOrSplitQ t k v c).countQueries orderOracle ≤ B) :
     (insertOrSplitQ t k v (.node first rest)).countQueries orderOracle ≤ rest.length + 1 + B := by
-  simp [insertOrSplitQ, insertOrSplitM, FreeM.countQueries_bind]
+  simp only [insertOrSplitQ, insertOrSplitM, bind_pure_comp, pure_bind, FreeM.countQueries_bind]
   cases h_eval : (insertRestM t LEQuery.ask (pure ()) k v rest).eval orderOracle <;>
     simp [FreeM.countQueries_map]
   · have h_first : (insertOrSplitQ t k v first).countQueries orderOracle ≤ B := by

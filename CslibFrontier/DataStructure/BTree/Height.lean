@@ -5,6 +5,7 @@ Authors: Jesse Alama
 -/
 
 module
+-- upstream: candidate
 
 public import CslibFrontier.DataStructure.BTree.Basic
 public import Mathlib.Data.Nat.Log
@@ -59,7 +60,8 @@ theorem le_size_node {n : ℕ} (h₁ : n - 1 ≤ first.size)
 /-- A node whose children each hold at most `n - 1` entries, for positive `n`, holds at most
 `(rest.length + 1) * n - 1`. -/
 theorem size_node_le {n : ℕ} (hn : 0 < n) (h₁ : first.size ≤ n - 1)
-    (h₂ : ∀ e ∈ rest, (Triple.child e).size ≤ n - 1) : (node first rest).size ≤ (rest.length + 1) * n - 1 := by
+    (h₂ : ∀ e ∈ rest, (Triple.child e).size ≤ n - 1) :
+    (node first rest).size ≤ (rest.length + 1) * n - 1 := by
   have hs :=
     (rest.map fun e => (Triple.child e).size).sum_le_length_nsmul (n - 1) (List.forall_mem_map.2 h₂)
   rw [List.length_map, Nat.nsmul_eq_mul] at hs

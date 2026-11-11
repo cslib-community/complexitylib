@@ -5,6 +5,7 @@ Authors: Jesse Alama
 -/
 
 module
+-- upstream: candidate
 
 public import CslibFrontier.DataStructure.BTree.Height
 public import CslibFrontier.DataStructure.BTree.MinMax
@@ -153,10 +154,12 @@ variable (oracle : {ι : Type} → LEQuery α ι → ι)
 theorem countQueries_slotM_le (k : α) (rest : List (α × β × BTree α β)) :
     (slotM LEQuery.ask k rest).countQueries oracle ≤ rest.length := by
   induction rest with
-  | nil => simp [slotM]
+  | nil => simp only [slotM, FreeM.countQueries_pure, List.length_nil, Std.le_refl]
   | cons e rest ih =>
     obtain ⟨k', v, c⟩ := e
-    simp [slotM]
+    simp only [slotM, bind_pure_comp, FreeM.countQueries_bind, FreeM.countQueries_lift,
+      ↓FreeM.countQueries_ite, FreeM.eval_lift, FreeM.countQueries_pure, FreeM.countQueries_map,
+      List.length_cons]
     split <;> omega
 
 /-- The minimum search makes no comparison. -/
@@ -165,7 +168,7 @@ theorem countQueries_slotM_le (k : α) (rest : List (α × β × BTree α β)) :
   fun_induction minM (pure () : FreeM (LEQuery α) Unit) tr with
   | case1 => simp
   | case2 first rest ih =>
-    simp [ih]
+    simp only [pure_bind, FreeM.countQueries_bind, ih, zero_add]
     split <;> simp
 
 /-- The maximum search makes no comparison. -/
@@ -241,7 +244,9 @@ theorem countQueries_predQ_node_le (k : α) (first : BTree α β)
     obtain ⟨k', v, c⟩ := e
     have h₁ := hB first List.mem_cons_self
     have h₂ := ih c fun c' hc' => hB c' (children_node_subset_children_node_cons hc')
-    simp [predM_node_cons]
+    simp only [predM_node_cons, pure_bind, Option.or_some, bind_pure_comp,
+      FreeM.countQueries_bind, FreeM.countQueries_lift, ↓FreeM.countQueries_ite, FreeM.eval_lift,
+      FreeM.countQueries_map, List.length_cons, ge_iff_le]
     split_ifs <;> omega
 
 /-- Successor search at a node makes at most one more comparison than the node has keys, beyond
@@ -260,7 +265,9 @@ theorem countQueries_succQ_node_le (k : α) (first : BTree α β)
     obtain ⟨k', v, c⟩ := e
     have h₁ := hB first List.mem_cons_self
     have h₂ := ih c fun c' hc' => hB c' (children_node_subset_children_node_cons hc')
-    simp [succM_node_cons]
+    simp only [succM_node_cons, Option.or_some, bind_pure_comp, pure_bind,
+      FreeM.countQueries_bind, FreeM.countQueries_lift, ↓FreeM.countQueries_ite, FreeM.eval_lift,
+      FreeM.countQueries_map, List.length_cons, ge_iff_le]
     split_ifs <;> omega
 
 /-- Rank at a node makes at most one more comparison than the node has keys, beyond what it
@@ -279,7 +286,9 @@ theorem countQueries_rankQ_node_le (k : α) (first : BTree α β)
     obtain ⟨k', v, c⟩ := e
     have h₁ := hB first List.mem_cons_self
     have h₂ := ih c fun c' hc' => hB c' (children_node_subset_children_node_cons hc')
-    simp [rankM_node_cons]
+    simp only [rankM_node_cons, pure_bind, bind_pure_comp, FreeM.countQueries_bind,
+      FreeM.countQueries_lift, ↓FreeM.countQueries_ite, FreeM.eval_lift, FreeM.countQueries_map,
+      List.length_cons, ge_iff_le]
     split_ifs <;> omega
 
 /-- The membership test makes as many comparisons as lookup. -/
@@ -373,38 +382,38 @@ abbrev WFInput (α β : Type) [LinearOrder α] (t : ℕ) := {p : BTree α β × 
 
 /-- Lookup makes at most `2 * t` comparisons at each of at most `height` nodes. -/
 theorem lookupQ_upperBound :
-    UpperBound (fun p : WFInput α β t => lookupQ p.1.2 p.1.1) (fun p => p.1.1.height)
+    UpperBound (fun p : WFInput α β t => lookupQ p.val.2 p.val.1) (fun p => p.val.1.height)
       (fun h => 2 * t * h) :=
   UpperBound.of_pointwise (fun _ _ h => Nat.mul_le_mul_left _ h)
-    fun oracle p => countQueries_lookupQ_le oracle p.2 p.1.2
+    fun oracle p => countQueries_lookupQ_le oracle p.property p.val.2
 
 /-- The membership test makes at most `2 * t` comparisons at each of at most `height` nodes. -/
 theorem containsQ_upperBound :
-    UpperBound (fun p : WFInput α β t => containsQ p.1.2 p.1.1) (fun p => p.1.1.height)
+    UpperBound (fun p : WFInput α β t => containsQ p.val.2 p.val.1) (fun p => p.val.1.height)
       (fun h => 2 * t * h) :=
   UpperBound.of_pointwise (fun _ _ h => Nat.mul_le_mul_left _ h)
-    fun oracle p => countQueries_containsQ_le oracle p.2 p.1.2
+    fun oracle p => countQueries_containsQ_le oracle p.property p.val.2
 
 /-- Predecessor search makes at most `2 * t` comparisons at each of at most `height` nodes. -/
 theorem predQ_upperBound :
-    UpperBound (fun p : WFInput α β t => predQ p.1.2 p.1.1) (fun p => p.1.1.height)
+    UpperBound (fun p : WFInput α β t => predQ p.val.2 p.val.1) (fun p => p.val.1.height)
       (fun h => 2 * t * h) :=
   UpperBound.of_pointwise (fun _ _ h => Nat.mul_le_mul_left _ h)
-    fun oracle p => countQueries_predQ_le oracle p.2 p.1.2
+    fun oracle p => countQueries_predQ_le oracle p.property p.val.2
 
 /-- Successor search makes at most `2 * t` comparisons at each of at most `height` nodes. -/
 theorem succQ_upperBound :
-    UpperBound (fun p : WFInput α β t => succQ p.1.2 p.1.1) (fun p => p.1.1.height)
+    UpperBound (fun p : WFInput α β t => succQ p.val.2 p.val.1) (fun p => p.val.1.height)
       (fun h => 2 * t * h) :=
   UpperBound.of_pointwise (fun _ _ h => Nat.mul_le_mul_left _ h)
-    fun oracle p => countQueries_succQ_le oracle p.2 p.1.2
+    fun oracle p => countQueries_succQ_le oracle p.property p.val.2
 
 /-- Rank makes at most `2 * t` comparisons at each of at most `height` nodes. -/
 theorem rankQ_upperBound :
-    UpperBound (fun p : WFInput α β t => rankQ p.1.2 p.1.1) (fun p => p.1.1.height)
+    UpperBound (fun p : WFInput α β t => rankQ p.val.2 p.val.1) (fun p => p.val.1.height)
       (fun h => 2 * t * h) :=
   UpperBound.of_pointwise (fun _ _ h => Nat.mul_le_mul_left _ h)
-    fun oracle p => countQueries_rankQ_le oracle p.2 p.1.2
+    fun oracle p => countQueries_rankQ_le oracle p.property p.val.2
 
 end UpperBounds
 
