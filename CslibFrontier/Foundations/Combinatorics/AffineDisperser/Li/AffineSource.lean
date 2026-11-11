@@ -396,7 +396,7 @@ section AffineSource
   ∃ (A : AffineSubspace Bool (BitString n)) (hA : (A : Set (BitString n)).Nonempty),
     finrank Bool A.direction = k ∧ X = uniformAffine A hA
 
-private theorem natCard_affineSubspace_eq_direction {ι : Type*} [Finite ι]
+private theorem natCard_affineSubspace_eq_direction {ι : Type*}
     (A : AffineSubspace Bool (ι → Bool)) {x₀ : ι → Bool} (hx₀ : x₀ ∈ A) :
     Nat.card (A : Set (ι → Bool)) = Nat.card A.direction := by
   let e : A.direction ≃ (A : Set (ι → Bool)) :=
@@ -445,7 +445,6 @@ theorem minEntropy_of_isAffineSource {n k : ℕ} {X : PMF (BitString n)}
   rw [minEntropy_uniformAffine, hdim]
 
 /-- Support of `uniformAffine A hA` is `A`. -/
-@[simp]
 theorem mem_support_uniformAffine_iff {n : ℕ} (A : AffineSubspace Bool (BitString n))
     (hA : (A : Set (BitString n)).Nonempty) (x : BitString n) :
     x ∈ (uniformAffine A hA).support ↔ x ∈ A := by
