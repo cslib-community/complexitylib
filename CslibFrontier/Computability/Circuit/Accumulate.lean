@@ -100,10 +100,6 @@ theorem fanInAtMost_accumulate {f R : ℕ} (h : ∀ r < R, (step r).FanInAtMost 
 
 section eval
 
-private theorem append_of_val_lt {α : Type*} {m n : ℕ} (u : Fin m → α) (v : Fin n → α)
-    (j : Fin (m + n)) (h : (j : ℕ) < m) : Fin.append u v j = u ⟨j, h⟩ := by
-  exact Fin.append_left u v ⟨j, h⟩
-
 private theorem append_of_val_eq {α : Type*} {m n : ℕ} (u : Fin m → α) (v : Fin n → α)
     (j : Fin (m + n)) (b : Fin n) (h : (j : ℕ) = m + b) : Fin.append u v j = v b := by
   rw [show j = Fin.natAdd m b from Fin.ext h, Fin.append_right]
@@ -121,9 +117,8 @@ theorem eval_accumulate_prefix (hstep : ∀ r y, (step r).eval I y = Fin.append 
   | base => rfl
   | succ R hrR ih =>
     have hiR : i < K₀ + w * R := hi.trans_le (by gcongr)
-    rw [accumulate, eval_comp, eval_comp, eval_wiring, hstep, Function.comp_apply,
-      append_of_val_lt _ _ _ hiR]
-    exact ih
+    rw [accumulate, eval_comp, eval_comp, eval_wiring, hstep, Function.comp_apply]
+    exact (Fin.append_left _ _ ⟨i, hiR⟩).trans ih
 
 /-- In an accumulation of rounds that keep their inputs, the output keeps the input. -/
 theorem eval_accumulate_input (hstep : ∀ r y, (step r).eval I y = Fin.append y (sel r y))

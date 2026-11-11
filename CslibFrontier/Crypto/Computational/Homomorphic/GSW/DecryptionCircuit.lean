@@ -53,7 +53,7 @@ abbrev inputWidth (n w : ℕ) : ℕ := n * w + ((n + 1) * w) * ((n + 1) * w)
 
 /-- Interpret the raw first block with the same total decoder as the serialized scheme. -/
 private def inputSecret (x : BitString (inputWidth n w)) : Fin n → ZMod (2 ^ w) :=
-  decodeSecret n w (List.ofFn (fstBits x))
+  LWE.decodeSecret n w (List.ofFn (fstBits x))
 
 /-- Interpret every raw ciphertext bit, including ciphertexts outside encryption support. -/
 private def inputCiphertext (x : BitString (inputWidth n w)) : Ciphertext n w :=
@@ -61,7 +61,7 @@ private def inputCiphertext (x : BitString (inputWidth n w)) : Ciphertext n w :=
 
 private theorem inputSecret_apply (x : BitString (inputWidth n w)) (j : Fin n) :
     inputSecret x j = ((BitString.equivFin w (block (fstBits x) j) : ℕ) : ZMod (2 ^ w)) := by
-  simp only [inputSecret, decodeSecret, Cslib.Matrix.ofBinary_apply,
+  simp only [inputSecret, LWE.decodeSecret, Cslib.Matrix.ofBinary_apply,
     Cslib.Matrix.binaryEntry, Fin.val_zero, zero_mul, zero_add,
     listRow_eq_ofFn w j, ofList_ofFn, Nat.foldr_bit_ofFn, BitString.val_equivFin_eq_sum]
 
@@ -177,7 +177,7 @@ private def decodeWord (w : ℕ) : Circuit signature w 1 :=
 /-- The scalar decoder is computed on every modular word, including both quarter ties. -/
 private theorem eval_decodeWord (x : BitString w) :
     (decodeWord w).eval interpretation x 0 =
-      decode w ((BitString.equivFin w x : ℕ) : ZMod (2 ^ w)) := by
+      LWE.decode w ((BitString.equivFin w x : ℕ) : ZMod (2 ^ w)) := by
   have hv : (((BitString.equivFin w x : ℕ) : ZMod (2 ^ w)).val) =
       (BitString.equivFin w x : ℕ) := by
     rw [ZMod.val_natCast, Nat.mod_eq_of_lt (BitString.equivFin w x).isLt]
@@ -187,10 +187,10 @@ private theorem eval_decodeWord (x : BitString w) :
   · by_cases h₁ : w = 1
     · subst w
       simp only [decodeWord, Nat.one_ne_zero, ↓reduceDIte, Circuit.eval_wiring,
-        Function.comp_apply, decode_one, hv]
+        Function.comp_apply, LWE.decode_one, hv]
       exact (testBit_wordValue x 0).symm
     · have hw : 2 ≤ w := by omega
-      rw [decode_eq_xor_highBits hw, hv]
+      rw [LWE.decode_eq_xor_highBits hw, hv]
       simp only [decodeWord, h₀, h₁, ↓reduceDIte, Formula.eval_toCircuit,
         Formula.eval_xor, Formula.eval_input]
       rw [testBit_wordValue x ⟨w - 1, by omega⟩,
