@@ -271,15 +271,15 @@ In dependency order:
 - **Undecidability in the finite:** Trakhtenbrot's theorem and the decidability dichotomy for Mathlib's `L.Sentence` beyond finite relational languages: infinite vocabularies (with a primitive recursive arity map) and languages with function symbols.
 - **Logic and automata on words** ([#2885](https://github.com/cslib-community/cslib-frontier/issues/2885)): Büchi–Elgot–Trakhtenbrot (MSO = regular on finite words), FO[<] ⊊ MSO, and FO[<] = star-free = aperiodic (McNaughton–Papert, Schützenberger; star-free ⇒ FO is [#3075](https://github.com/cslib-community/cslib-frontier/issues/3075) and FO ⇒ star-free, by composition of rank-`k` types, is [#3469](https://github.com/cslib-community/cslib-frontier/issues/3469)), with decidability of first-order definability for regular languages.
   Homomorphic-image closure of regular languages (upstream to CSLib), the non-elementary formula-to-automaton lower bound, Büchi's theorem for ω-words (S1S), and MSO on finite trees (Thatcher–Wright, Doner) and infinite trees (Rabin, S2S).
-- **Asymptotic probabilities** ([#4080](https://github.com/cslib-community/cslib-frontier/issues/4080)): beyond the 0-1 laws for graphs with constant edge probability and for finite relational vocabularies with a constant probability per relation symbol, laws for unlabelled structures and for classes defined by parametric axioms such as the simple-graph axioms.
-  Then the Kolaitis–Vardi laws for fixed-point and finite-variable infinitary logics, and the Shelah–Spencer laws for sparse random graphs.
+- **Asymptotic probabilities** ([#4080](https://github.com/cslib-community/cslib-frontier/issues/4080)): beyond the first-order and `L^k_∞ω` 0-1 laws for graphs (`G(n, p)`) and finite relational vocabularies (`bernoulliStructure`), laws for unlabelled structures and for classes defined by parametric axioms such as the simple-graph axioms.
+  Then embeddings from fixed-point and transitive-closure logics into `L^ω_∞ω` for the fixed-point Kolaitis–Vardi 0-1 laws, and the Shelah–Spencer laws for sparse random graphs.
 - **Dynamic descriptive complexity:** dynamic programs and update semantics with explicit initialization, auxiliary relations and domain conventions; invariant-preservation rules and reachability in DynFO as a target.
   Relate logical update restrictions to the stateful-algorithm interfaces through explicit translations.
 
 Independent of that order:
 
 - **Color refinement and Weisfeiler–Leman** ([#3265](https://github.com/cslib-community/cslib-frontier/issues/3265)): stabilization, the coarsest equitable partition and soundness of the 1-WL test; equitable partitions as fractional automorphisms and isomorphisms (Tinhofer; Ramana–Scheinerman–Ullman; Grohe–Kersting–Mladenov–Selman, Theorems 4.1 and 5.2); and certified polynomial-time algorithms for 1-WL and `k`-WL.
-  Also colored graphs with arbitrary initial vertex or tuple colorings, linear-size expander Cai–Fürer–Immerman graphs, and the infinitary logics L^k_∞ω ([#4085](https://github.com/cslib-community/cslib-frontier/issues/4085)).
+  Also colored graphs with arbitrary initial vertex or tuple colorings, linear-size expander Cai–Fürer–Immerman graphs, and embeddings of fixed-point logics into `L^k_∞ω` ([#4085](https://github.com/cslib-community/cslib-frontier/issues/4085)).
 - **Vollmer's generalized quantifier framework** ([#399](https://github.com/cslib-community/cslib-frontier/issues/399)): Vollmer's survey [*A Generalized Quantifier Concept in Computational Complexity Theory*](https://arxiv.org/abs/cs/9809115), covering ordered leaf words, explicit uniformity and input-access models, finite-monoid classification and generalized logical quantifiers.
   The formalization must keep the paper's resource models and quantifier bounds.
 
@@ -782,8 +782,8 @@ The openai/math formalizations are Apache 2.0, as is cslib-frontier, so adaptati
 
 - **The sharper Theorem 1.1 bound** ([#1538](https://github.com/cslib-community/cslib-frontier/issues/1538)): A `#k`-SAT model counter running in time `2^{O_k(n log log n / √log n)}` at arbitrary density, by recursive tensor contraction.
   The intended route combines the fixed-density bound `2^{O_{k,D}(n / √log n)}` (Theorem D.1 with `ℓ = 1`) with the Lemma D.2 construction, applied natively to the model-counter interface.
-- **Exact and subsampled optimization** ([#3672](https://github.com/cslib-community/cslib-frontier/issues/3672)): Sharpen exact MAX-SAT and sparse Max-CSP optimization from the `interpolationScale` rate to `2^{O_{k,c}(n / √log n)}` time and polynomial space on sparse fixed-width instances, extract an optimizing assignment natively, and couple constraint-subsampling approximation with native probabilistic-machine execution on dense instances.
-  Neither sparse exact bounds nor ordinary SAT sparsification gives a variable-count rate for dense exact MAX-SAT.
+- **Exact optimization:** Exact MAX-SAT score distributions and optima in contraction time measured by literal occurrences plus clauses, with `2^{O_{k,c}(n / √log n)}` time and polynomial space for sparse fixed-width instances, and native extraction of an optimizing assignment.
+  Neither these bounds nor ordinary SAT sparsification gives a variable-count rate for dense exact MAX-SAT.
 - **Large weights:** Exact contraction of natural tensor tables whose bit lengths are polynomial in the structural size, applied natively to weighted-CSP partition functions, and signed or rational weight interfaces.
 
 ## Documentation and repository

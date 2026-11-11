@@ -120,6 +120,7 @@ import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
+import CslibFrontier.Logics.Propositional.CSP.MaxCSPSampling
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
 import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
@@ -679,8 +680,8 @@ register_result "subexponential-sat-count" where
     number of variables, L the length of encCNF φ and s(n) = n(log log(n + 16))²/√log(n + 16) \
     the interpolation scale. Not the manuscript's sharper headline runtime."
 
-register_result "max-csp-subsampling-reduction" where
-  title := "Max-CSP constraint subsampling and fixed-width SAT solver reductions"
+register_result "max-csp-subsampling" where
+  title := "Max-CSP uniform constraint subsampling concentration and 2·δ·m optimality loss"
   topic := "SAT algorithms"
   sources := [
     { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
@@ -688,17 +689,30 @@ register_result "max-csp-subsampling-reduction" where
   theorems := [
     Cslib.Logic.PL.WeightedMaxCSP.exists_sample_score_abs_sub_ge_le,
     Cslib.Logic.PL.WeightedMaxCSP.optimum_sub_score_le_two_mul,
-    Cslib.Complexity.MaxSAT.FixedWidthSATSolver.exists_optimum_algorithm,
-    Cslib.Complexity.MaxSAT.sample_optimumByBinarySearchM_spec
+    Cslib.Logic.PL.MaxCSPInstance.exists_boolean_sample_approx
   ]
-  scope := "Uniform i.i.d. s-constraint subsampling of m-constraint [0, 1]-weighted Max-CSP \
+  scope := "Uniform i.i.d. s-constraint subsampling of an m-constraint [0, 1]-weighted Max-CSP \
     over finite domain D concentrates uniformly across D^n assignments within δ·m with failure \
     probability at most |D|^n · 2 · exp(-2 s δ²) (2^(n+1) · exp(-2 s δ²) over Bool), certifying \
-    at most 2·δ·m optimality loss for any sampled maximizer; polynomial-time compilation via \
-    thresholdCircuit and Compiler.toSatCNF reduces MAX-SAT and bounded-arity Max-CSP optimization \
-    to any supplied fixed-width k-SAT solver (3 ≤ k), transferring native ComputableInO bounds \
-    and O(log m)-query TimeM binary search. Native probabilistic-TM sampling and assignment \
-    extraction are not formalized."
+    rescaled-optimum accuracy δ·m and at most 2·δ·m optimality loss for every sampled maximizer."
+
+register_result "max-sat-solver-reduction" where
+  title := "MAX-SAT and Max-CSP optimization reduced to a supplied fixed-width SAT solver"
+  topic := "SAT algorithms"
+  sources := [
+    { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.MaxSAT.FixedWidthSATSolver.exists_optimum_algorithm,
+    Cslib.Complexity.MaxSAT.FixedWidthSATSolver.exists_subexp,
+    Cslib.Complexity.MaxSAT.sample_optimumByBinarySearchM_spec
+  ]
+  scope := "Polynomial-time threshold compilation via MaxSAT.thresholdCircuit and \
+    Compiler.toSatCNF (at most 957·workSize + 957 variables, clause width at most 3) reduces \
+    MAX-SAT and bounded-arity Boolean Max-CSP optimization to any supplied fixed-width k-SAT \
+    solver (3 ≤ k), transferring native ComputableInO bounds (instantiated unconditionally at \
+    interpolationScale) and O(log m)-query TimeM binary search on exact and subsampled instances. \
+    Native probabilistic-TM sampling and assignment extraction are not formalized."
 
 register_result "partial-mcsp" where
   title := "Ilango: Partial MCSP is hard under the Exponential Time Hypothesis"
