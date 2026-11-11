@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-import CslibFrontier.Computability.WordRAM.Call
+import CslibFrontier.Computability.WordRAM.RegisterFrame
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.Program
 
 /-!
@@ -96,22 +96,19 @@ theorem exec_layout {w n p k scratch : ℕ} (x : Data 128)
       (ram[ Reg.low2 ← Reg.two; Reg.low3 ← Reg.depth ]) x z 2 := by
     ram_eval [z, h2, hk, Reg.low2, Reg.low3, Reg.two, Reg.depth]
   let f : Fin 5 → Fin 128 := Fin.castLE (by decide)
-  obtain ⟨t, hcall, ⟨value, _, _, memory, _, _⟩, hframe⟩ :=
-    ExecWithin.rename_post (Fin.castLE_injective _) (Power.exec 2 k (by decide) (z.comap f)
-      (by simp +decide [z, f, Data.comap, Power.base, Reg.low2, Reg.low3])
-      (by simp [z, f, Data.comap, Power.exponent, Reg.low3])
-      (hw.of_le (by unfold layoutWordBound; omega)))
-  have tvalue : t.regs Reg.low0 = N := value
+  obtain ⟨s, he, value, _, _, memory, _, _⟩ := Power.exec 2 k (by decide) (z.comap f)
+    (by simp +decide [z, f, Data.comap, Power.base, Reg.low2, Reg.low3])
+    (by simp [z, f, Data.comap, Power.exponent, Reg.low3])
+    (hw.of_le (by unfold layoutWordBound; omega))
+  let t := s.extend f z
+  have hcall := he.rename (Fin.castLE_injective _)
+  have tvalue : t.regs Reg.low0 = N :=
+    (Data.extend_regs_of_eq (Fin.castLE_injective _) s z Power.value Reg.low0 rfl).trans value
   have thigh (i : Fin 128) (hi : 5 ≤ i.val) : t.regs i = x.regs i := by
-    have ht : t.regs i = z.regs i := by
-      apply hframe
-      intro j hj
-      have hv := congrArg Fin.val hj
-      change j.val = i.val at hv
-      omega
-    simpa only [z, Data.set,
+    refine (Data.extend_castLE_regs_of_le s z i hi).trans ?_
+    simp only [z, Data.set,
       Function.update_of_ne (show i ≠ Reg.low2 by intro he; subst i; contradiction),
-      Function.update_of_ne (show i ≠ Reg.low3 by intro he; subst i; contradiction)] using ht
+      Function.update_of_ne (show i ≠ Reg.low3 by intro he; subst i; contradiction)]
   have tn := (thigh Reg.side (by decide)).trans hn
   have tp := (thigh Reg.modulus (by decide)).trans hpr
   have ts := (thigh Reg.scratch (by decide)).trans hs
