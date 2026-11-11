@@ -136,3 +136,47 @@ theorem approxMCSPQueryEncLength_le {n s k : ℕ} (hn : n ≤ s) (hk : 1 ≤ k) 
   omega
 
 end Cslib.Circuits.Boolean
+
+namespace Cslib.ApproxMCSP
+
+open MCSP Circuits.Boolean
+
+/-- The no-instances of `MCSP[(s, 0), (s, δ)]` with a real error `δ`
+[ChenHiraharaOliveiraPichRajgopalSanthanam2020, Section 2.3, Definition 6, p. 12]: truth tables of
+functions `f` such that no function of circuit complexity at most `s n` agrees with `f` on at least
+a `(1 - δ n)`-fraction of inputs. -/
+def noSetReal (s : ℕ → ℕ) (δ : ℕ → ℝ) : Language Bool :=
+  truthTableLanguage fun n =>
+    {f | ∀ g ∈ computableFunctions n (s n),
+      (((Finset.univ.filter fun x => g x = f x).card : ℕ) : ℝ) < (1 - δ n) * 2 ^ n}
+
+/-- With `k n = ⌈1 / δ n⌉₊`, the real-error no-instances are integer-parameter no-instances. -/
+theorem noSetReal_le_noSet {s : ℕ → ℕ} {δ : ℕ → ℝ} (hδ : ∀ n, 0 < δ n) :
+    noSetReal s δ ≤ noSet s fun n => ⌈1 / δ n⌉₊ := by
+  rintro w ⟨n, h, hf⟩
+  refine ⟨n, h, fun g hg => ?_⟩
+  have hlt := hf g hg
+  generalize (Finset.univ.filter fun x => g x = _).card = a at hlt ⊢
+  have hk1 : 1 ≤ ⌈1 / δ n⌉₊ := Nat.ceil_pos.mpr (by have := hδ n; positivity)
+  have hkδ : 1 ≤ (⌈1 / δ n⌉₊ : ℝ) * δ n := by
+    rw [← div_le_iff₀ (hδ n)]
+    exact Nat.le_ceil (1 / δ n)
+  have hpow : (0 : ℝ) < 2 ^ n := by positivity
+  have hreal : (⌈1 / δ n⌉₊ : ℝ) * a ≤ ((⌈1 / δ n⌉₊ : ℝ) - 1) * 2 ^ n := by
+    have hk0 : (0 : ℝ) ≤ ⌈1 / δ n⌉₊ := Nat.cast_nonneg _
+    have h1 : (⌈1 / δ n⌉₊ : ℝ) * a ≤ ⌈1 / δ n⌉₊ * ((1 - δ n) * 2 ^ n) :=
+      mul_le_mul_of_nonneg_left hlt.le hk0
+    have h2 : (⌈1 / δ n⌉₊ : ℝ) * ((1 - δ n) * 2 ^ n) ≤ ((⌈1 / δ n⌉₊ : ℝ) - 1) * 2 ^ n := by
+      have : (⌈1 / δ n⌉₊ : ℝ) * ((1 - δ n) * 2 ^ n) =
+          ((⌈1 / δ n⌉₊ : ℝ) - ⌈1 / δ n⌉₊ * δ n) * 2 ^ n := by ring
+      rw [this]
+      exact mul_le_mul_of_nonneg_right (by linarith) hpow.le
+    exact h1.trans h2
+  have hcast : ((⌈1 / δ n⌉₊ - 1 : ℕ) : ℝ) = (⌈1 / δ n⌉₊ : ℝ) - 1 := by
+    rw [Nat.cast_sub hk1, Nat.cast_one]
+  exact_mod_cast (show ((⌈1 / δ n⌉₊ * a : ℕ) : ℝ) ≤ (((⌈1 / δ n⌉₊ - 1) * 2 ^ n : ℕ) : ℝ) by
+    push_cast [hcast]
+    exact hreal)
+
+end Cslib.ApproxMCSP
+
