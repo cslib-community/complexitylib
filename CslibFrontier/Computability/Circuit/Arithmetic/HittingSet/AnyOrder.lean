@@ -9,7 +9,8 @@ module
 
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
-public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPart
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPartDerivative
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPartEval
 
 /-!
 # Hitting sets for multilinear any-order ROABPs
@@ -76,26 +77,6 @@ public section
 namespace Cslib.Circuits.Arithmetic
 
 open Finset MvPolynomial
-
--- STUBS (replaced by the imported modules)
-theorem colorPart_ne_zero {σ F : Type*} [Field F] {r : ℕ} (c : σ → Fin r)
-    {G : MvPolynomial σ F} {m : σ →₀ ℕ}
-    (hm : m ∈ G.support) (hmul : ∀ v, m v ≤ 1) (hc : Set.InjOn c m.support)
-    (hcard : m.support.card = r) : colorPart c G ≠ 0 := sorry
-
-theorem exists_eval_ne_zero_of_eval_colorPart_ne_zero {σ F : Type*} [Field F] {r : ℕ}
-    (c : σ → Fin r) {G : MvPolynomial σ F}
-    {b : σ → F} {Λ : Finset F} (hΛ : G.totalDegree < Λ.card)
-    (hb : MvPolynomial.eval b (colorPart c G) ≠ 0) :
-    ∃ t ∈ Λ, ∃ J : Finset (Fin r),
-      MvPolynomial.eval (fun v => if c v ∈ J then 0 else t * b v) G ≠ 0 := sorry
-
-theorem exists_pderiv_closed_colorPart {σ F : Type*} [Field F] {r : ℕ} (c : σ → Fin r) {w : ℕ}
-    {G : MvPolynomial σ F}
-    (hG : ∀ I : Finset (Fin r), MvPolynomial.SplitRankLE (c ⁻¹' (I : Set (Fin r))) w G) :
-    ∃ V : Submodule F (MvPolynomial σ F), (∀ i, ∀ p ∈ V, MvPolynomial.pderiv i p ∈ V) ∧
-      Module.Finite F V ∧ Module.finrank F V ≤ 2 ^ r * w ∧ colorPart c G ∈ V := sorry
--- END STUBS
 
 variable (F : Type*) [Field F] [CharZero F] (n w : ℕ)
 

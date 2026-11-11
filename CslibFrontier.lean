@@ -1002,6 +1002,8 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ClosedWronskian
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPart
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPartDerivative
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ColorPartEval
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShift
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
