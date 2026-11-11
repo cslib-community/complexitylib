@@ -11,6 +11,7 @@ public import CslibFrontier.Algorithms.Lean.BinarySearch
 public import CslibFrontier.Computability.Complexity.Classes.NP.SelfReduction
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.BoundedQuery
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.PolyTime
+public import CslibFrontier.Computability.Complexity.FineGrained.MaxSAT.Histogram
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Option
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
@@ -61,12 +62,22 @@ decision queries followed by witness search at the optimal threshold
    `φ.length.size + φ.numVars ≤ (Nat.log 2 φ.length + 1) + φ.numVars` queries to the `NP`
    language `MaxSATThreshold`, with every queried instance no longer than `⟨φ, φ.length⟩`.
 
+The Max-SAT client here works in `P^NP`: instances are bare `φ : CNF ℕ`, every assignment
+`ℕ → Bool` is admissible, the query `MaxSATQuery` carries a binary target, and the oracle is the
+`NP` language `MaxSATThreshold` itself. `FineGrained/MaxSAT/Reduction.lean` instead fixes a declared
+variable count (`MaxSAT.StructInstance`, assignments in `BitString n`), takes a unary cutoff
+(`MaxSAT.ThresholdQuery`), and compiles each threshold query through `MaxSAT.thresholdCircuit` to a
+3-CNF for a supplied fixed-width `k`-SAT solver (`optimumByBinarySearchM`,
+`optimizeByBinarySearchM`). The two optima agree on well-formed instances:
+`MaxSAT.maxClauseScore_eq_optimum` gives `maxClauseScore φ = MaxSAT.optimum (n, φ)` when every
+variable of `φ` is below `n`.
+
 ## Main definitions
 
 * `Cslib.Complexity.BisectInterval`, `Cslib.Complexity.bisectStep`: interval state and single
   bisection step.
-* `Cslib.Complexity.ThresholdQuery`, `Cslib.Complexity.OptSolution`: typed query and
-  value-witness structures with encodings `encThresholdQuery` and `encOptSolution`.
+* `Cslib.Complexity.OracleThresholdQuery`, `Cslib.Complexity.OptSolution`: typed query and
+  value-witness structures with encodings `encOracleThresholdQuery` and `encOptSolution`.
 * `Cslib.Complexity.MaxThresholdSpec`, `Cslib.Complexity.MinThresholdSpec`: bounded maximization
   and minimization threshold specifications with `TimeM` solvers.
 * `Cslib.Complexity.bisectProgram`: native adaptive oracle bisection program.
@@ -91,6 +102,8 @@ decision queries followed by witness search at the optimal threshold
   `Cslib.Complexity.MaxSAT.computableInPolyTime_solveMaxSAT_of_mem_P`: Max-SAT optimal value
   and optimal assignment recovery relative to `MaxSATThreshold ∈ NP` and when
   `encMaxSATQuery '' MaxSATThreshold ∈ P encBits`.
+* `Cslib.Complexity.MaxSAT.maxClauseScore_eq_optimum`: on declared-range formulas, the
+  binary-search optimum equals the fine-grained `MaxSAT.optimum`.
 
 ## References
 
@@ -137,55 +150,57 @@ enc_structure encBisectInterval : BisectInterval where
   lo : encNat, hi : encNat
 
 /-- An instance `inst` paired with an integer objective threshold `target`. -/
-structure ThresholdQuery (α : Type) where
+structure OracleThresholdQuery (α : Type) where
   /-- Underlying problem instance. -/
   inst : α
   /-- Candidate objective threshold. -/
   target : ℕ
   deriving DecidableEq, Repr
 
-/-- Encoding of `ThresholdQuery α` as the framed pair of `encA` and binary `encNat`. -/
+/-- Encoding of `OracleThresholdQuery α` as the framed pair of `encA` and binary `encNat`. -/
 @[expose]
-def encThresholdQuery {α : Type} (encA : α ↪ List Bool) : ThresholdQuery α ↪ List Bool :=
+def encOracleThresholdQuery {α : Type} (encA : α ↪ List Bool) :
+    OracleThresholdQuery α ↪ List Bool :=
   ⟨fun q => encPair encA encNat (q.inst, q.target), fun x y h => by
     have h' := (encPair encA encNat).injective h
     cases x; cases y; simp_all⟩
 
-@[simp] theorem encThresholdQuery_apply {α : Type} (encA : α ↪ List Bool) (q : ThresholdQuery α) :
-    encThresholdQuery encA q = encPair encA encNat (q.inst, q.target) :=
+@[simp] theorem encOracleThresholdQuery_apply {α : Type} (encA : α ↪ List Bool)
+    (q : OracleThresholdQuery α) :
+    encOracleThresholdQuery encA q = encPair encA encNat (q.inst, q.target) :=
   rfl
 
 private theorem computableInDegree_thresholdQueryFields {α : Type} (encA : α ↪ List Bool) :
-    ComputableInDegree (fun q : ThresholdQuery α => (q.inst, q.target))
-      (encThresholdQuery encA) (encPair encA encNat) 1 1 :=
+    ComputableInDegree (fun q : OracleThresholdQuery α => (q.inst, q.target))
+      (encOracleThresholdQuery encA) (encPair encA encNat) 1 1 :=
   ComputableInDegree.of_eq fun _ => rfl
 
-/-- Projecting `ThresholdQuery.inst` is polynomial-time. -/
+/-- Projecting `OracleThresholdQuery.inst` is polynomial-time. -/
 @[scoped fun_prop]
-theorem encThresholdQuery_inst_polyTime {α γ : Type} {encA : α ↪ List Bool}
-    {encIn : γ ↪ List Bool} {g : γ → ThresholdQuery α}
-    (h : ComputableInPolyTime g encIn (encThresholdQuery encA)) :
+theorem encOracleThresholdQuery_inst_polyTime {α γ : Type} {encA : α ↪ List Bool}
+    {encIn : γ ↪ List Bool} {g : γ → OracleThresholdQuery α}
+    (h : ComputableInPolyTime g encIn (encOracleThresholdQuery encA)) :
     ComputableInPolyTime (fun a => (g a).inst) encIn encA :=
   (ComputableInDegree.fst' (computableInDegree_thresholdQueryFields encA)).computableInPolyTime.comp
     h
 
-/-- Projecting `ThresholdQuery.target` is polynomial-time. -/
+/-- Projecting `OracleThresholdQuery.target` is polynomial-time. -/
 @[scoped fun_prop]
-theorem encThresholdQuery_target_polyTime {α γ : Type} {encA : α ↪ List Bool}
-    {encIn : γ ↪ List Bool} {g : γ → ThresholdQuery α}
-    (h : ComputableInPolyTime g encIn (encThresholdQuery encA)) :
+theorem encOracleThresholdQuery_target_polyTime {α γ : Type} {encA : α ↪ List Bool}
+    {encIn : γ ↪ List Bool} {g : γ → OracleThresholdQuery α}
+    (h : ComputableInPolyTime g encIn (encOracleThresholdQuery encA)) :
     ComputableInPolyTime (fun a => (g a).target) encIn encNat :=
   (ComputableInDegree.snd' (computableInDegree_thresholdQueryFields encA)).computableInPolyTime.comp
     h
 
-/-- Constructing a `ThresholdQuery` from polynomial-time components is polynomial-time. -/
+/-- Constructing an `OracleThresholdQuery` from polynomial-time components is polynomial-time. -/
 @[scoped fun_prop]
-theorem encThresholdQuery_mk_polyTime {α γ : Type} {encA : α ↪ List Bool}
+theorem encOracleThresholdQuery_mk_polyTime {α γ : Type} {encA : α ↪ List Bool}
     {encIn : γ ↪ List Bool} {inst : γ → α} {target : γ → ℕ}
     (hi : ComputableInPolyTime inst encIn encA)
     (ht : ComputableInPolyTime target encIn encNat) :
-    ComputableInPolyTime (fun a => ThresholdQuery.mk (inst a) (target a))
-      encIn (encThresholdQuery encA) :=
+    ComputableInPolyTime (fun a => OracleThresholdQuery.mk (inst a) (target a))
+      encIn (encOracleThresholdQuery encA) :=
   (hi.prod ht).of_enc_eq fun _ => rfl
 
 /-- An optimal objective value paired with a witness attaining it. -/
@@ -780,8 +795,8 @@ private theorem computableInPolyTime_midpoint :
 open ComputableInPolyTime in
 private theorem isOraclePPTOn_bisectStepProgram {α : Type} {encA : α ↪ List Bool}
     {req : α → ℕ → List Bool}
-    (hreq : ComputableInPolyTime (fun q : ThresholdQuery α => req q.inst q.target)
-      (encThresholdQuery encA) encBits) :
+    (hreq : ComputableInPolyTime (fun q : OracleThresholdQuery α => req q.inst q.target)
+      (encOracleThresholdQuery encA) encBits) :
     IsOraclePPTOn (encPair encA encBisectInterval) encBisectInterval
       (fun pair => OracleComp.interpret ProbOracleComp.query
         (bisectStepProgram req pair.1 pair.2)) := by
@@ -790,9 +805,10 @@ private theorem isOraclePPTOn_bisectStepProgram {α : Type} {encA : α ↪ List 
       (encPair encA encBisectInterval) encNat :=
     computableInPolyTime_midpoint.comp (snd encA encBisectInterval)
   have hq : ComputableInPolyTime
-      (fun pair : α × BisectInterval => ThresholdQuery.mk pair.1 ((pair.2.lo + pair.2.hi) / 2))
-      (encPair encA encBisectInterval) (encThresholdQuery encA) :=
-    encThresholdQuery_mk_polyTime (fst encA encBisectInterval) hmid
+      (fun pair : α × BisectInterval =>
+        OracleThresholdQuery.mk pair.1 ((pair.2.lo + pair.2.hi) / 2))
+      (encPair encA encBisectInterval) (encOracleThresholdQuery encA) :=
+    encOracleThresholdQuery_mk_polyTime (fst encA encBisectInterval) hmid
   have hword : ComputableInPolyTime
       (fun pair : α × BisectInterval => req pair.1 ((pair.2.lo + pair.2.hi) / 2))
       (encPair encA encBisectInterval) encBits :=
@@ -843,8 +859,8 @@ private theorem isOraclePPTOn_bisectStepProgram {α : Type} {encA : α ↪ List 
 `req` are polynomial-time. -/
 theorem isOraclePPTOn_bisectProgram {α : Type} {encA : α ↪ List Bool}
     {req : α → ℕ → List Bool} {lo hi : α → ℕ}
-    (hreq : ComputableInPolyTime (fun q : ThresholdQuery α => req q.inst q.target)
-      (encThresholdQuery encA) encBits)
+    (hreq : ComputableInPolyTime (fun q : OracleThresholdQuery α => req q.inst q.target)
+      (encOracleThresholdQuery encA) encBits)
     (hlo : ComputableInPolyTime lo encA encNat)
     (hhi : ComputableInPolyTime hi encA encNat) :
     IsOraclePPTOn encA encNat
@@ -903,8 +919,8 @@ relative to `A` with at most `r |encA a|` requests whenever
 `(hi a - lo a).size ≤ r (encA a).length`. -/
 theorem computableInPolyTimeWithOracleQueries_bisect {α : Type} {encA : α ↪ List Bool}
     (A : Set (List Bool)) {req : α → ℕ → List Bool} {lo hi : α → ℕ} {r : ℕ → ℕ}
-    (hreq : ComputableInPolyTime (fun q : ThresholdQuery α => req q.inst q.target)
-      (encThresholdQuery encA) encBits)
+    (hreq : ComputableInPolyTime (fun q : OracleThresholdQuery α => req q.inst q.target)
+      (encOracleThresholdQuery encA) encBits)
     (hlo : ComputableInPolyTime lo encA encNat)
     (hhi : ComputableInPolyTime hi encA encNat)
     (hr : ∀ a, (hi a - lo a).size ≤ r (encA a).length) :
@@ -1044,6 +1060,25 @@ theorem maxClauseScore_spec (φ : CNF ℕ) :
   obtain ⟨σ, hσ⟩ := hex
   refine ⟨by change k - 1 ≤ φ.length; omega,
     ⟨σ, le_antisymm (hupper σ) hσ⟩, hupper⟩
+
+/-- Every declared-range assignment score is below `maxClauseScore φ`, for any declared variable
+count `n`. -/
+theorem optimum_le_maxClauseScore (n : ℕ) (φ : CNF ℕ) : optimum (n, φ) ≤ maxClauseScore φ := by
+  obtain ⟨x, hx⟩ := exists_score_eq_optimum (n, φ)
+  rw [← hx]
+  exact (maxClauseScore_spec φ).2.2 (assignment n x)
+
+/-- When every variable of `φ` is below `n`, the binary-search value `maxClauseScore φ` over
+`ℕ → Bool` equals the declared-variable optimum `MaxSAT.optimum (n, φ)` over `BitString n` from
+`FineGrained/MaxSAT/Histogram.lean`. Without the hypothesis, undeclared variables read `false` in
+`MaxSAT.score`, so the inequality `optimum_le_maxClauseScore` can be strict. -/
+theorem maxClauseScore_eq_optimum {n : ℕ} {φ : CNF ℕ} (hφ : ∀ v ∈ φ.vars, v < n) :
+    maxClauseScore φ = optimum (n, φ) := by
+  refine le_antisymm ?_ (optimum_le_maxClauseScore n φ)
+  obtain ⟨-, ⟨σ, hσ⟩, -⟩ := maxClauseScore_spec φ
+  rw [← hσ]
+  refine le_of_eq_of_le ?_ (score_le_optimum (n, φ) fun i => σ i)
+  exact CNF.countP_eval_congr fun v hv => by simp [assignment, hφ v hv]
 
 /-! ### Variable-by-variable witness recovery under partial assignments -/
 
@@ -1781,10 +1816,10 @@ theorem computableInPolyTimeWithOracleQueries_solveMaxSAT (A : Set (List Bool)) 
       encCNF encMaxSATSolution := by
   open ComputableInPolyTime in
   have hreq : ComputableInPolyTime
-      (fun q : ThresholdQuery (CNF ℕ) => encMaxSATQuery ⟨q.inst, q.target⟩)
-      (encThresholdQuery encCNF) encBits :=
-    (encMaxSATQuery_mk_polyTime (encThresholdQuery_inst_polyTime id')
-      (encThresholdQuery_target_polyTime id')).encoding_comp
+      (fun q : OracleThresholdQuery (CNF ℕ) => encMaxSATQuery ⟨q.inst, q.target⟩)
+      (encOracleThresholdQuery encCNF) encBits :=
+    (encMaxSATQuery_mk_polyTime (encOracleThresholdQuery_inst_polyTime id')
+      (encOracleThresholdQuery_target_polyTime id')).encoding_comp
   have hhi : ComputableInPolyTime (fun φ : CNF ℕ => φ.length + 1) encCNF encNat :=
     binary_add' (unary_to_binary.comp (SAT.computableInPolyTime_length id')) (const 1)
   have hb_cert := isOraclePPTOn_bisectProgram
