@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger, real-roots
 module
 -- upstream: candidate
 
+public import CslibFrontier.Probability.PMF.Uniform
 public import CslibFrontier.Crypto.Computational.LWE.PrimeModulus
 public import CslibFrontier.Crypto.Game.Hybrid
 
