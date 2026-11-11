@@ -552,9 +552,7 @@ omit [Finite α] [DecidableEq α] in
 private theorem toOuterMeasure_empiricalMass_tail_le (p : _root_.PMF α) (n : ℕ) (γ : ℝ)
     (P S : (Fin n → α) → Prop)
     (hiff : 0 < n → ∀ x : Fin n → α, P x ↔ S x)
-    (hpi : 0 < n →
-      ((iid p n).toOuterMeasure {x | S x}).toReal ≤
-        Real.exp (-2 * ((n : ℝ) * γ) ^ 2 / (↑(Fintype.card (Fin n)) * (1 : ℝ) ^ 2))) :
+    (hpi : ((iid p n).toOuterMeasure {x | S x}).toReal ≤ Real.exp (-2 * (n : ℝ) * γ ^ 2)) :
     ((iid p n).toOuterMeasure {x | P x}).toReal ≤ Real.exp (-2 * (n : ℝ) * γ ^ 2) := by
   rcases Nat.eq_zero_or_pos n with rfl | hn
   · refine (toOuterMeasure_toReal_le_one _ _).trans_eq ?_
@@ -562,12 +560,7 @@ private theorem toOuterMeasure_empiricalMass_tail_le (p : _root_.PMF α) (n : �
   have hevent : {x : Fin n → α | P x} = {x : Fin n → α | S x} := by
     ext x
     exact hiff hn x
-  rw [hevent]
-  exact (hpi hn).trans_eq (by
-    have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
-    rw [Fintype.card_fin]
-    congr 1
-    field_simp)
+  rwa [hevent]
 
 /-- Lower-tail Hoeffding concentration for `empiricalMass A x`. -/
 theorem toOuterMeasure_empiricalMass_le_sub_le (p : _root_.PMF α) (A : Finset α) (n : ℕ)
@@ -582,13 +575,10 @@ theorem toOuterMeasure_empiricalMass_le_sub_le (p : _root_.PMF α) (A : Finset �
     (fun hn x => by
       have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
       simp only [empiricalMass, div_le_iff₀ hnR]
-      constructor <;> intro hx <;> linarith)
-    fun hn => ?_
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
-  have h := pi_sum_le_mean_sub (fun _ : Fin n => p) (fun _ a => if a ∈ A then (1 : ℝ) else 0)
-    (bound := 1) (ε := n * γ) zero_le_one (empiricalMass_hoeffding_prep p A n)
-    (mul_nonneg hnR.le hγ)
-  rwa [sum_indicator_mean, ← iid_eq_pi] at h
+      constructor <;> intro hx <;> linarith) ?_
+  have h := pi_sum_le_mean_sub_card_mul (fun _ : Fin n => p)
+    (fun _ a => if a ∈ A then (1 : ℝ) else 0) (empiricalMass_hoeffding_prep p A n) hγ
+  rwa [Fintype.card_fin, sum_indicator_mean, ← iid_eq_pi] at h
 
 /-- Upper-tail Hoeffding concentration for `empiricalMass A x`. -/
 theorem toOuterMeasure_add_le_empiricalMass_le (p : _root_.PMF α) (A : Finset α) (n : ℕ)
@@ -603,13 +593,10 @@ theorem toOuterMeasure_add_le_empiricalMass_le (p : _root_.PMF α) (A : Finset �
     (fun hn x => by
       have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
       simp only [empiricalMass, le_div_iff₀ hnR]
-      constructor <;> intro hx <;> linarith)
-    fun hn => ?_
-  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
-  have h := pi_sum_ge_mean_add (fun _ : Fin n => p) (fun _ a => if a ∈ A then (1 : ℝ) else 0)
-    (bound := 1) (ε := n * γ) zero_le_one (empiricalMass_hoeffding_prep p A n)
-    (mul_nonneg hnR.le hγ)
-  rwa [sum_indicator_mean, ← iid_eq_pi] at h
+      constructor <;> intro hx <;> linarith) ?_
+  have h := pi_sum_ge_mean_add_card_mul (fun _ : Fin n => p)
+    (fun _ a => if a ∈ A then (1 : ℝ) else 0) (empiricalMass_hoeffding_prep p A n) hγ
+  rwa [Fintype.card_fin, sum_indicator_mean, ← iid_eq_pi] at h
 
 /-- Two-sided Hoeffding concentration for `empiricalMass A x`:
 `P^{\otimes n}(γ ≤ |empiricalMass A x - p(A)|) ≤ 2 * Real.exp (-2 * n * γ ^ 2)`. -/

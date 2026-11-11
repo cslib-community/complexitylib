@@ -250,18 +250,11 @@ theorem learns_bestOf [NeZero k] {A : QueryLearner ι Ω} {μ : PMF Ω}
     have hE (j : Fin k) : (PMF.uniformOfFintype (Fin t → ι → Bool)).toOuterMeasure (E j) ≤
         ENNReal.ofReal (2 * Real.exp (-2 * t * θ ^ 2)) := by
       rw [← PMF.pi_uniformOfFintype (ι := Fin t) (α := fun _ => ι → Bool)]
-      have hH := PMF.pi_sum_abs_sub_mean_ge (fun _ : Fin t => PMF.uniformOfFintype (ι → Bool))
-        (fun _ a => if (A (ω j)).eval f a = f a then (1 : ℝ) else 0) zero_le_one
-        (fun _ a _ => by by_cases h : (A (ω j)).eval f a = f a <;> simp [h])
-        (mul_nonneg (Nat.cast_nonneg t) hθ)
-      have hexp : -2 * ((t : ℝ) * θ) ^ 2 / ((Fintype.card (Fin t) : ℝ) * 1 ^ 2) =
-          -2 * t * θ ^ 2 := by
-        rcases Nat.eq_zero_or_pos t with rfl | ht
-        · simp
-        · have : (t : ℝ) ≠ 0 := by positivity
-          rw [Fintype.card_fin]
-          field_simp
-      rw [hexp] at hH
+      have hH := PMF.pi_sum_abs_sub_mean_ge_card_mul
+        (fun _ : Fin t => PMF.uniformOfFintype (ι → Bool))
+        (fun _ a => if (A (ω j)).eval f a = f a then (1 : ℝ) else 0)
+        (fun _ a _ => by by_cases h : (A (ω j)).eval f a = f a <;> simp [h]) hθ
+      rw [Fintype.card_fin] at hH
       exact (ENNReal.le_ofReal_iff_toReal_le (PMF.toOuterMeasure_ne_top _ _)
         (by positivity)).2 hH
     rw [PMF.toOuterMeasure_map_apply]
