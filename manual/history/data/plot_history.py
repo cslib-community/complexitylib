@@ -13,14 +13,14 @@ from pathlib import Path
 from git_history import REVISION
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / '_generated/development-history/data'
+DATA = ROOT / '_generated/history/data'
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--data-dir', type=Path, default=DATA, help='Directory containing extracted Git and private-session summaries')
     parser.add_argument('--census-dir', type=Path, default=ROOT / '_generated/data')
-    parser.add_argument('--output', type=Path, default=ROOT / '_generated/development-history/figures')
+    parser.add_argument('--output', type=Path, default=ROOT / '_generated/history/figures')
     parser.add_argument('--data-only', action='store_true', help='Recompute plotted data using only the standard library')
     args = parser.parse_args()
     daily = json.loads((args.data_dir / 'git_daily.json').read_text())

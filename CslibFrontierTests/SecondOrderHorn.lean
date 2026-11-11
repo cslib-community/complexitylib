@@ -8,20 +8,27 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Gradel
+public import CslibFrontier.Logics.SecondOrder.Horn.GuardElimination
+public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Horn
 public import Mathlib.ModelTheory.Graph
 import CslibFrontier.Tactic.FirstOrder
 
-/-! # SO∃-Horn definability of an ordered parity query
+/-! # SO∃-Horn definability, guard elimination, and full-tuple pullback
 
 `evenLoops` is an SO∃-Horn sentence over directed graphs with successor. Its clauses walk the
 universe along successor and derive `R b x` when the number of self-loops at points up to `x` has
 parity `b`. A goal clause rejects odd parity at the greatest point. Every guard is
 quantifier-free, and the step clauses use the primitive successor. Its intended reading is "the
-number of self-loops is even"; only the two instances below are checked, not that reading in
-general.
+number of self-loops is even"; only the instances below are checked, not that reading in general.
 
 On `Fin 3`, the graph with loops at `0` and `2` satisfies the sentence and the graph with one loop
-at `1` does not, so the defined query is neither empty nor full. -/
+at `1` does not, so the defined query is neither empty nor full.
+
+The second part tests `ESO.Horn.Sentence.elimGuards` and `hornDefinable_iff_exists_sentence` on a
+sentence `sinkFreeHorn` whose guard contains nested `∀` and `∃` quantifiers (`¬ ∀ x, ∃ y, adj x y`),
+checking both positive and negative structures at `n = 2` and `n = 3`. The third part tests
+`FullTupleInterpretation.onHornSentence` at dimension `k = 2` on concrete positive and negative
+structures. -/
 
 @[expose] public section
 
@@ -106,6 +113,8 @@ def loopGraph (n : ℕ) (hn : 2 ≤ n) (s : Fin n → Bool) : Ordered.Structure 
   input.RelMap
     | .adj, xs => xs 0 = xs 1 ∧ s (xs 0) = true
 
+section LoopGraph
+
 variable {n : ℕ} {hn : 2 ≤ n} {s : Fin n → Bool}
 
 theorem realize_loop {α : Type} (t : G.Term α) (v : α → loopGraph n hn s) :
@@ -167,6 +176,8 @@ theorem realize_evenLoops_iff : evenLoops.Realize (loopGraph n hn s) ↔
   simp only [List.forall_mem_cons, List.not_mem_nil, IsEmpty.forall_iff, implies_true, and_true,
     Bool.forall_bool]
   tauto
+
+end LoopGraph
 
 /-! ### Both sides of the query -/
 
@@ -249,5 +260,328 @@ example : evenLoops.Consistent (evenLoops.leastModel twoLoops) :=
 example : evenLoops.elimSucc.Realize twoLoops ∧ ¬evenLoops.elimSucc.Realize oneLoop := by
   rw [ESO.Horn.Sentence.realize_elimSucc, ESO.Horn.Sentence.realize_elimSucc]
   exact ⟨evenLoops_realize_twoLoops, not_evenLoops_realize_oneLoop⟩
+
+/-! ### Guard elimination on nested `∀` and `∃` quantifiers -/
+
+/-- Graph adjacency as a relation symbol of `language Language.graph`. -/
+abbrev ordAdj : (language Language.graph).Relations 2 := Sum.inl Language.adj
+
+/-- Width-`0` guard with nested `∀` and `∃` quantifiers: `¬ ∀ x, ∃ y, adj x y`. -/
+noncomputable def hasSinkGuard : (language Language.graph).Formula (Fin 0) :=
+  (∀' ∃' (ordAdj.boundedFormula₂ &0 &1)).not
+
+/-- Nullary relation signature for `sinkFreeHorn` and `sinkFreeSucc`. -/
+abbrev nullaryArity : Unit → ℕ := fun _ => 0
+
+/-- An SO∃-Horn sentence over `language Language.graph` with a nullary relation variable and a
+nested `∀`/`∃` guard: `hasSinkGuard → R()` and `R() → ⊥`, holding iff every vertex has an outgoing
+edge. -/
+noncomputable def sinkFreeHorn : ESO.Horn.Sentence (language Language.graph) where
+  Var := Unit
+  arity := nullaryArity
+  clauses :=
+    [ { width := 0
+        guard := hasSinkGuard
+        body := []
+        head := some ⟨(), Fin.elim0⟩ },
+      { width := 0
+        guard := ⊤
+        body := [⟨(), Fin.elim0⟩]
+        head := none } ]
+
+/-- Lift `sinkFreeHorn` to `G = language (succLanguage Language.graph)` while keeping its
+quantified guard. -/
+noncomputable def sinkFreeSucc : ESO.Horn.Sentence G where
+  Var := Unit
+  arity := nullaryArity
+  clauses :=
+    [ { width := 0
+        guard := (succInclusion Language.graph).onFormula hasSinkGuard
+        body := []
+        head := some ⟨(), Fin.elim0⟩ },
+      { width := 0
+        guard := ⊤
+        body := [⟨(), Fin.elim0⟩]
+        head := none } ]
+
+theorem realize_sinkFreeSucc_iff {m : ℕ} [Fact (2 ≤ m)] [Language.graph.Structure (Fin m)] :
+    sinkFreeSucc.Realize (Fin m) ↔ sinkFreeHorn.Realize (Fin m) := by
+  refine exists_congr fun R => ?_
+  let R₀ : ∀ i : Unit, Set (Fin (nullaryArity i) → Fin m) := R
+  change (∀ C ∈ [_, _], ESO.Horn.Clause.Holds C R₀) ↔
+    ∀ C ∈ [_, _], ESO.Horn.Clause.Holds C R₀
+  simp only [List.forall_mem_cons, List.not_mem_nil, IsEmpty.forall_iff, implies_true, and_true]
+  refine and_congr ?_ Iff.rfl
+  exact forall_congr' fun v => imp_congr (realize_succInclusion hasSinkGuard v) Iff.rfl
+
+theorem realize_hasSinkGuard {m : ℕ} [Fact (2 ≤ m)] [Language.graph.Structure (Fin m)]
+    (v : Fin 0 → Fin m) :
+    hasSinkGuard.Realize v ↔
+      ¬ ∀ x : Fin m, ∃ y : Fin m, RelMap (L := Language.graph) .adj ![x, y] := by
+  simp only [hasSinkGuard, Formula.Realize, BoundedFormula.realize_not, BoundedFormula.realize_all,
+    BoundedFormula.realize_ex, BoundedFormula.realize_rel₂]
+  rfl
+
+theorem realize_sinkFreeHorn {m : ℕ} [Fact (2 ≤ m)] [Language.graph.Structure (Fin m)] :
+    sinkFreeHorn.Realize (Fin m) ↔
+      ∀ x : Fin m, ∃ y : Fin m, RelMap (L := Language.graph) .adj ![x, y] := by
+  constructor
+  · rintro ⟨R, hR⟩
+    have hdef := hR _ List.mem_cons_self
+    have hgoal := hR _ (List.mem_cons_of_mem _ List.mem_cons_self)
+    by_contra hnot
+    have hmem : (Fin.elim0 ∘ Fin.elim0) ∈ R () :=
+      hdef Fin.elim0 ((realize_hasSinkGuard Fin.elim0).mpr hnot) fun _ ha => nomatch ha
+    exact hgoal Fin.elim0 (Formula.realize_top.mpr trivial)
+      (List.forall_mem_singleton.mpr hmem)
+  · intro hall
+    refine ⟨fun _ => ∅, fun C hC => ?_⟩
+    rcases List.mem_cons.mp hC with rfl | hC
+    · intro v hg _
+      exact False.elim (((realize_hasSinkGuard v).mp hg) hall)
+    · obtain rfl := List.mem_singleton.mp hC
+      intro v _ hb
+      exact hb _ List.mem_cons_self
+
+/-- Before `elimGuards`, `sinkFreeSucc` is genuinely not quantifier-free. -/
+theorem not_isQF_sinkFreeSucc : ¬ sinkFreeSucc.IsQF := by
+  intro hqf
+  have h0 := hqf _ List.mem_cons_self
+  change ((succInclusion Language.graph).onFormula hasSinkGuard).IsQF at h0
+  cases h0 with
+  | of_isAtomic ha => cases ha
+  | imp h₁ _ =>
+    cases h₁ with
+    | of_isAtomic ha => cases ha
+
+/-- `elimGuards` produces a quantifier-free SO∃-Horn sentence. -/
+example : sinkFreeSucc.elimGuards.IsQF := sinkFreeSucc.isQF_elimGuards
+
+/-- Positive `Fin 2` instance: loops at both `0` and `1`. -/
+def twoLoops2 : Ordered.Structure Language.graph := loopGraph 2 (by decide) ![true, true]
+
+/-- Negative `Fin 2` instance: loop at `0`, sink at `1`. -/
+def oneLoop2 : Ordered.Structure Language.graph := loopGraph 2 (by decide) ![true, false]
+
+/-- Positive `Fin 3` instance: loops at `0`, `1`, and `2`. -/
+def allLoops3 : Ordered.Structure Language.graph := loopGraph 3 (by decide) ![true, true, true]
+
+theorem elimGuards_sinkFreeSucc_twoLoops2 : sinkFreeSucc.elimGuards.Realize twoLoops2 := by
+  rw [ESO.Horn.Sentence.realize_elimGuards, realize_sinkFreeSucc_iff, realize_sinkFreeHorn]
+  intro x
+  exact ⟨x, rfl, by fin_cases x <;> rfl⟩
+
+theorem not_elimGuards_sinkFreeSucc_oneLoop2 : ¬ sinkFreeSucc.elimGuards.Realize oneLoop2 := by
+  rw [ESO.Horn.Sentence.realize_elimGuards, realize_sinkFreeSucc_iff, realize_sinkFreeHorn]
+  intro hall
+  obtain ⟨_, _, hs⟩ := hall (1 : Fin 2)
+  exact Bool.false_ne_true hs
+
+theorem elimGuards_sinkFreeSucc_allLoops3 : sinkFreeSucc.elimGuards.Realize allLoops3 := by
+  rw [ESO.Horn.Sentence.realize_elimGuards, realize_sinkFreeSucc_iff, realize_sinkFreeHorn]
+  intro x
+  exact ⟨x, rfl, by fin_cases x <;> rfl⟩
+
+theorem not_elimGuards_sinkFreeSucc_twoLoops : ¬ sinkFreeSucc.elimGuards.Realize twoLoops := by
+  rw [ESO.Horn.Sentence.realize_elimGuards, realize_sinkFreeSucc_iff, realize_sinkFreeHorn]
+  intro hall
+  obtain ⟨_, _, hs⟩ := hall (1 : Fin 3)
+  exact Bool.false_ne_true hs
+
+/-- Round-trip test: eliminating successor from `evenLoops`, lifting back to `G`, and eliminating
+quantifiers yields a quantifier-free sentence agreeing on `twoLoops` and `oneLoop`. -/
+example :
+    let Φ := (evenLoops.elimSucc.mapGuards (succInclusion Language.graph).onFormula).elimGuards
+    Φ.IsQF ∧ Φ.Realize twoLoops ∧ ¬ Φ.Realize oneLoop := by
+  refine ⟨ESO.Horn.Sentence.isQF_elimGuards _, ?_, ?_⟩
+  · rw [ESO.Horn.Sentence.realize_elimGuards,
+      ESO.Horn.Sentence.realize_mapGuards _ fun φ v => realize_succInclusion φ v,
+      ESO.Horn.Sentence.realize_elimSucc]
+    exact evenLoops_realize_twoLoops
+  · rw [ESO.Horn.Sentence.realize_elimGuards,
+      ESO.Horn.Sentence.realize_mapGuards _ fun φ v => realize_succInclusion φ v,
+      ESO.Horn.Sentence.realize_elimSucc]
+    exact not_evenLoops_realize_oneLoop
+
+/-- Ordered query defined directly by `sinkFreeHorn` (without successor, with nested
+quantifiers). -/
+def sinkFreeQuery : Query Language.graph := {M | sinkFreeHorn.Realize M}
+
+/-- `hornDefinable_iff_exists_sentence` establishes `HornDefinable` from an arbitrary-guard
+sentence over `language Language.graph`. -/
+theorem sinkFreeQuery_hornDefinable : HornDefinable sinkFreeQuery :=
+  hornDefinable_iff_exists_sentence.mpr ⟨sinkFreeHorn, fun _ => Iff.rfl⟩
+
+example : twoLoops2 ∈ sinkFreeQuery ∧ oneLoop2 ∉ sinkFreeQuery ∧
+    allLoops3 ∈ sinkFreeQuery ∧ twoLoops ∉ sinkFreeQuery := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact (realize_sinkFreeHorn (m := twoLoops2.size)).mpr fun x =>
+      ⟨x, rfl, by fin_cases x <;> rfl⟩
+  · exact fun h => by
+      obtain ⟨_, _, hs⟩ := (realize_sinkFreeHorn (m := oneLoop2.size)).mp h (1 : Fin 2)
+      exact Bool.false_ne_true hs
+  · exact (realize_sinkFreeHorn (m := allLoops3.size)).mpr fun x =>
+      ⟨x, rfl, by fin_cases x <;> rfl⟩
+  · exact fun h => by
+      obtain ⟨_, _, hs⟩ := (realize_sinkFreeHorn (m := twoLoops.size)).mp h (1 : Fin 3)
+      exact Bool.false_ne_true hs
+
+example : sinkFreeQuery.encodedLanguage graphVocabulary ∈ P encStructure :=
+  sinkFreeQuery_hornDefinable.encodedLanguage_mem_P graphVocabulary
+
+/-! ### Full-tuple pullback of SO∃-Horn sentences (`k = 2`) -/
+
+/-- Two-dimensional graph interpretation: pairs `(a₀, a₁)` and `(b₀, b₁)` are adjacent iff `a₀` and
+`b₀` are adjacent in the input graph. -/
+noncomputable def pairGraphInterp : FullTupleInterpretation Language.graph Language.graph 2 where
+  rel
+    | .adj => (LHom.sumInl : Language.graph →ᴸ language Language.graph).onFormula
+        (Relations.formula₂ Language.adj (.var (0, 0)) (.var (1, 0)))
+
+/-- Unary relation signature for `unreachMax`. -/
+abbrev unreachArity : Unit → ℕ := fun _ => 1
+
+/-- Reachability-based SO∃-Horn sentence over `language Language.graph` with a unary relation
+variable (`arity () = 1`, scaled to `2` at `k = 2`): `R(0)`, `adj(x, y) ∧ R(x) → R(y)`, and
+`R(max) → ⊥`, holding iff `max` is unreachable from `0`. -/
+noncomputable def unreachMax : ESO.Horn.Sentence (language Language.graph) where
+  Var := Unit
+  arity := unreachArity
+  clauses :=
+    [ { width := 1
+        guard := Term.equal (.var 0) (zero _)
+        body := []
+        head := some ⟨(), ![0]⟩ },
+      { width := 2
+        guard := Relations.formula₂ ordAdj (.var 0) (.var 1)
+        body := [⟨(), ![0]⟩]
+        head := some ⟨(), ![1]⟩ },
+      { width := 1
+        guard := Term.equal (.var 0) (max _)
+        body := [⟨(), ![0]⟩]
+        head := none } ]
+
+theorem realize_unreachMax_iff {m : ℕ} [Fact (2 ≤ m)] [Language.graph.Structure (Fin m)] :
+    unreachMax.Realize (Fin m) ↔
+      ∃ S : Set (Fin m),
+        (⟨0, by have : 2 ≤ m := Fact.out; omega⟩ : Fin m) ∈ S ∧
+        (∀ x y : Fin m, RelMap (L := Language.graph) .adj ![x, y] → x ∈ S → y ∈ S) ∧
+        (⟨m - 1, by have : 2 ≤ m := Fact.out; omega⟩ : Fin m) ∉ S := by
+  have hm : 2 ≤ m := Fact.out
+  let z0 : Fin m := ⟨0, by omega⟩
+  let zmax : Fin m := ⟨m - 1, by omega⟩
+  constructor
+  · rintro ⟨R, hR⟩
+    have hc0 := hR _ List.mem_cons_self
+    have hc1 := hR _ (List.mem_cons_of_mem _ List.mem_cons_self)
+    have hc2 := hR _ (List.mem_cons_of_mem _ (List.mem_cons_of_mem _ List.mem_cons_self))
+    refine ⟨{x | ![x] ∈ R ()}, ?_, ?_, ?_⟩
+    · have h := hc0 ![z0]
+        (by rw [Formula.realize_equal, Term.realize_var, Fin.ext_iff, realize_zero_val]; rfl)
+        (fun _ ha => nomatch ha)
+      change (![z0] ∘ ![0]) ∈ R () at h
+      rwa [show ![z0] ∘ ![0] = ![z0] from funext fun j => by fin_cases j; rfl] at h
+    · intro x y hadj hx
+      have hg : (Relations.formula₂ ordAdj (.var 0) (.var 1) :
+          (language Language.graph).Formula (Fin 2)).Realize ![x, y] := by
+        rw [Formula.realize_rel₂, Term.realize_var, Term.realize_var]
+        exact hadj
+      have hb : ∀ a ∈ ([⟨(), ![0]⟩] : List (ESO.Horn.Atom unreachArity (Fin 2))),
+          a.Holds R ![x, y] := by
+        refine List.forall_mem_singleton.mpr ?_
+        change (![x, y] ∘ ![0]) ∈ R ()
+        rwa [show ![x, y] ∘ ![0] = ![x] from funext fun j => by fin_cases j; rfl]
+      have h := hc1 ![x, y] hg hb
+      change (![x, y] ∘ ![1]) ∈ R () at h
+      rwa [show ![x, y] ∘ ![1] = ![y] from funext fun j => by fin_cases j; rfl] at h
+    · intro hmax
+      have hb : ∀ a ∈ ([⟨(), ![0]⟩] : List (ESO.Horn.Atom unreachArity (Fin 1))),
+          a.Holds R ![zmax] := by
+        refine List.forall_mem_singleton.mpr ?_
+        change (![zmax] ∘ ![0]) ∈ R ()
+        rwa [show ![zmax] ∘ ![0] = ![zmax] from funext fun j => by fin_cases j; rfl]
+      exact hc2 ![zmax]
+        (by rw [Formula.realize_equal, Term.realize_var, Fin.ext_iff, realize_max_val]; rfl) hb
+  · rintro ⟨S, h0, hstep, hmax⟩
+    let R : ∀ i : Unit, Set (Fin (unreachArity i) → Fin m) := fun _ => {u | u 0 ∈ S}
+    refine ⟨R, fun C hC => ?_⟩
+    rcases List.mem_cons.mp hC with rfl | hC
+    · intro v hg _
+      rw [Formula.realize_equal, Term.realize_var, Fin.ext_iff, realize_zero_val] at hg
+      have hv : v 0 = z0 := Fin.ext hg
+      change v 0 ∈ S
+      rwa [hv]
+    · rcases List.mem_cons.mp hC with rfl | hC
+      · intro v hg hb
+        have hv0 : v 0 ∈ S := hb _ List.mem_cons_self
+        rw [Formula.realize_rel₂, Term.realize_var, Term.realize_var] at hg
+        exact hstep (v 0) (v 1) hg hv0
+      · obtain rfl := List.mem_singleton.mp hC
+        intro v hg hb
+        have hv0 : v 0 ∈ S := hb _ List.mem_cons_self
+        rw [Formula.realize_equal, Term.realize_var, Fin.ext_iff, realize_max_val] at hg
+        have hv : v 0 = zmax := Fin.ext hg
+        rw [hv] at hv0
+        exact hmax hv0
+
+/-- The complete directed graph (with self-loops) on `Fin 2`. -/
+def completeGraph2 : Ordered.Structure Language.graph where
+  size := 2
+  size_ge_two := by decide
+  input.RelMap
+    | .adj, _ => True
+
+/-- Positive `k = 2` pullback instance: in `twoLoops2`, edges in `Fin (2 ^ 2)` preserve the first
+coordinate, so `max = 3` (first coordinate `1`) is unreachable from `0` (first coordinate `0`). -/
+theorem realize_onHornSentence_unreachMax_twoLoops2 :
+    (pairGraphInterp.onHornSentence unreachMax).Realize twoLoops2 := by
+  rw [pairGraphInterp.realize_onHornSentence (n := twoLoops2.size) (by decide)]
+  let := pairGraphInterp.inputStructure (n := twoLoops2.size)
+  let : Fact (2 ≤ twoLoops2.size ^ 2) :=
+    ⟨FullTupleInterpretation.two_le_pow (n := twoLoops2.size) (by decide)⟩
+  rw [realize_unreachMax_iff]
+  refine ⟨{x : Fin (twoLoops2.size ^ 2) | x.val < 2},
+    show 0 < 2 by decide, ?_, show ¬ (twoLoops2.size ^ 2 - 1 < 2) by decide⟩
+  intro x y hadj hx
+  change ((LHom.sumInl : Language.graph →ᴸ language Language.graph).onFormula
+    (Relations.formula₂ Language.adj (.var (0, 0)) (.var (1, 0)))).Realize
+      (fun p : Fin 2 × Fin 2 => lexEquiv.symm (![x, y] p.1) p.2) at hadj
+  rw [LHom.realize_onFormula, Formula.realize_rel₂, Term.realize_var, Term.realize_var] at hadj
+  obtain ⟨heq, _⟩ := hadj
+  have hval : ((lexEquiv.symm x : Fin 2 → Fin twoLoops2.size) 0).val =
+      ((lexEquiv.symm y : Fin 2 → Fin twoLoops2.size) 0).val := congrArg Fin.val heq
+  rw [lexEquiv_symm_apply_val, lexEquiv_symm_apply_val] at hval
+  change x.val / 2 % 2 = y.val / 2 % 2 at hval
+  change x.val < 2 at hx
+  change y.val < 2
+  have hy := y.isLt
+  change y.val < 4 at hy
+  omega
+
+/-- Negative `k = 2` pullback instance: in `completeGraph2`, `0` has a direct edge to `max = 3` in
+`Fin (2 ^ 2)`, so `unreachMax` fails. -/
+theorem not_realize_onHornSentence_unreachMax_completeGraph2 :
+    ¬ (pairGraphInterp.onHornSentence unreachMax).Realize completeGraph2 := by
+  rw [pairGraphInterp.realize_onHornSentence (n := completeGraph2.size) (by decide)]
+  let := pairGraphInterp.inputStructure (n := completeGraph2.size)
+  let : Fact (2 ≤ completeGraph2.size ^ 2) :=
+    ⟨FullTupleInterpretation.two_le_pow (n := completeGraph2.size) (by decide)⟩
+  rw [realize_unreachMax_iff (m := completeGraph2.size ^ 2)]
+  rintro ⟨S, h0, hstep, h3⟩
+  let z0 : Fin (completeGraph2.size ^ 2) := ⟨0, by decide⟩
+  let z3 : Fin (completeGraph2.size ^ 2) := ⟨completeGraph2.size ^ 2 - 1, by decide⟩
+  refine h3 (hstep z0 z3 ?_ h0)
+  change ((LHom.sumInl : Language.graph →ᴸ language Language.graph).onFormula
+    (Relations.formula₂ Language.adj (.var (0, 0)) (.var (1, 0)))).Realize
+      (fun p : Fin 2 × Fin 2 =>
+        (lexEquiv (n := completeGraph2.size) (k := 2)).symm (![z0, z3] p.1) p.2)
+  rw [LHom.realize_onFormula, Formula.realize_rel₂]
+  trivial
+
+/-- Combining `FullTupleInterpretation.onHornSentence` with `HornDefinable.of_sentence` yields
+`HornDefinable` for the pulled-back tuple query. -/
+example : HornDefinable ({M | (pairGraphInterp.onHornSentence unreachMax).Realize M} :
+    Query Language.graph) :=
+  HornDefinable.of_sentence (pairGraphInterp.onHornSentence unreachMax) fun _ => Iff.rfl
 
 end Cslib.Tests.SecondOrderHorn

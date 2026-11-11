@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 MANUAL = Path(__file__).resolve().parents[1]
-HISTORY = MANUAL / 'development-history/data'
+HISTORY = MANUAL / 'history/data'
 sys.path[:0] = [str(MANUAL / 'data'), str(HISTORY)]
 
 

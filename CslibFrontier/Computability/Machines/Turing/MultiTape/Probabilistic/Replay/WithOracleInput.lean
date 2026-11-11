@@ -70,9 +70,8 @@ private theorem runFrom_prepareInput (prepare : MultiTapeTM (r + 2) Bool Prepare
   have hm := ReplayInput.runFrom_mark (k := k) (r := r) coins input outer
   have hs := runFrom_seq (tm₁ := markFlag (k + r + 1) (some true)) hp rfl
     (by simpa [Cfg.withState, wordsCfg, markFlag, q₀_ofTr] using hm) rfl
-  simpa [prepareInput, initCfg_eq_wordsCfg, MultiTapeTM.Sequential.leftCfg,
-    MultiTapeTM.Sequential.rightCfg, wordsCfg, Cfg.mapState, MultiTapeTM.seq, q₀_ofTr,
-    inCfg, ReplayInput.initial] using hs
+  simpa [prepareInput, initCfg_eq_wordsCfg, wordsCfg, Cfg.mapState, MultiTapeTM.seq,
+    MultiTapeTM.combine, q₀_ofTr, inCfg, ReplayInput.initial] using hs
 
 private def ready (coins input outer : List Bool) :
     Config (k + r + 3) Bool (PrepareState ⊕ MarkWorkState) Oracle outer where

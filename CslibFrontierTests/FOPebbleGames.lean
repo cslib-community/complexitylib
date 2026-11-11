@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Foundations.ModelTheory.Graph
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
-public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import Mathlib.Combinatorics.SimpleGraph.CycleGraph
 public import Mathlib.ModelTheory.Order
 import Mathlib.Data.Fin.Tuple.Reflection
@@ -27,8 +27,8 @@ import Mathlib.Tactic.FinCases
   separates them, so Spoiler wins the `3`-round `3`-pebble game, and the hard direction turns
   this back into a separating Hintikka sentence. Color refinement does not separate this pair
   either (`CslibFrontierTests/Foundations/Combinatorics/SimpleGraph/ColorRefinement.lean`); by
-  the Immerman–Lander theorem, still to be formalized, that is the counting-logic analogue of the
-  `2`-pebble result. -/
+  the Immerman–Lander theorem (`CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement`),
+  that is the counting-logic analogue of the `2`-pebble result. -/
 
 @[expose] public section
 

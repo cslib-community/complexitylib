@@ -156,24 +156,6 @@ unary. This internal representation is converted to the binary `encWalkCode` on 
 enc_structure encWalkCodeWork : WalkCode where
   start : encNat, steps : (encList (encPair encUnary encUnary))
 
-private theorem poly_inputBody : ComputableInPolyTime Input.body encInput
-    (encCSP encTable encNat) := encInput_body_deg.computableInPolyTime
-private theorem poly_inputLabels : ComputableInPolyTime Input.labels encInput
-    (encList encBool) := encInput_labels_deg.computableInPolyTime
-private theorem poly_inputComparison : ComputableInPolyTime Input.comparison encInput
-    (encList encBool) := encInput_comparison_deg.computableInPolyTime
-private theorem poly_inputExcluded : ComputableInPolyTime Input.excluded encInput encNat :=
-  encInput_excluded_deg.computableInPolyTime
-private theorem poly_workStart : ComputableInPolyTime WalkCode.start encWalkCodeWork encNat :=
-  encWalkCodeWork_start_deg.computableInPolyTime
-private theorem poly_workSteps : ComputableInPolyTime WalkCode.steps encWalkCodeWork
-    (encList (encPair encUnary encUnary)) := encWalkCodeWork_steps_deg.computableInPolyTime
-private theorem poly_workMk :
-    ComputableInPolyTime (fun p : ℕ × List (ℕ × ℕ) => WalkCode.mk p.1 p.2)
-      encWalkCodeWorkFields encWalkCodeWork := encWalkCodeWork_mk_deg.computableInPolyTime
-attribute [local fun_prop] poly_inputBody poly_inputLabels poly_inputComparison poly_inputExcluded
-  poly_workStart poly_workSteps poly_workMk
-
 attribute [local fun_prop] poly_zipIdx poly_product poly_idxOf poly_records
   poly_readRecord poly_readWith poly_semWith poly_valid poly_inconsistent poly_flip
   poly_validWith poly_inconsistentWith
@@ -314,17 +296,12 @@ private theorem poly_buildWalk :
       (count := fun p : (Input × List Bool) × ℕ => distance p.1.1.labels p.1.2)
       (init := fun p : (Input × List Bool) × ℕ => ((⟨p.2, []⟩ : WalkCode), false))
       (ComputableInPolyTime.fst (encPair encInput (encList encBool)) encNat).tidy
-      (show ComputableInPolyTime
+      (by fun_prop : ComputableInPolyTime
         (fun p : (Input × List Bool) × ℕ => distance p.1.1.labels p.1.2)
-        (encPair (encPair encInput (encList encBool)) encNat) encUnary from
-        poly_distance.comp
-          (((poly_inputLabels.comp (ComputableInPolyTime.fst encInput (encList encBool))).comp
-            (ComputableInPolyTime.fst (encPair encInput (encList encBool)) encNat)).prod
-          ((ComputableInPolyTime.snd encInput (encList encBool)).comp
-            (ComputableInPolyTime.fst (encPair encInput (encList encBool)) encNat)))).tidy
-      (((poly_workMk.comp
-        ((ComputableInPolyTime.snd (encPair encInput (encList encBool)) encNat).prod
-          (ComputableInPolyTime.const []))).prod (ComputableInPolyTime.const false)).tidy)
+        (encPair (encPair encInput (encList encBool)) encNat) encUnary).tidy
+      (by fun_prop : ComputableInPolyTime
+        (fun p : (Input × List Bool) × ℕ => ((⟨p.2, []⟩ : WalkCode), false))
+        (encPair (encPair encInput (encList encBool)) encNat) encWalkState).tidy
       poly_walkStep.tidy
       (growth := fun p => (CSP.occurrences p.1.1.body).length * 12 + 6)
     · have hr : ComputableInPolyTime
@@ -372,8 +349,8 @@ private theorem poly_output : ComputableInPolyTime (fun w : WalkCode => w)
         ComputableInPolyTime (fun p : ℕ × ℕ => (p.1, p.2))
         (encPair encUnary encUnary) (encPair encNat encNat))
     simpa only [Function.comp_def, List.map_id'] using
-      hm.comp encWalkCodeWork_steps_deg.computableInPolyTime
-  exact (encWalkCodeWork_start_deg.computableInPolyTime.prod hsteps).of_enc_eq fun _ => rfl
+      hm.comp (encWalkCodeWork_steps_polyTime .id')
+  exact encWalkCode_mk_polyTime (by fun_prop) hsteps
 
 /-- Uniform native polynomial time on complete framed inputs, without validity, edge-instance,
 even-delta-matroid or improvement assumptions. Width errors reject; all other data are processed
