@@ -4338,7 +4338,8 @@ private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
       have hrow_ge : ∀ row ∈ M, c.cols * 9 ≤ (encList encRat row).length := by
         intro row hrow
         rw [← hMrow row hrow]
-        exact length_encList_ge_mul encRat row 4 fun q _ => Turing.MultiTapeTM.four_le_length_encRat q
+        exact length_encList_ge_mul encRat row 4 fun q _ =>
+          Turing.MultiTapeTM.four_le_length_encRat q
       have hm_ge := length_encList_ge_mul (encList encRat) M (c.cols * 9) hrow_ge
       rwa [hMlen] at hm_ge
     have h1_ge := hmat_len c.matA rfl hc.2.2.2.1
