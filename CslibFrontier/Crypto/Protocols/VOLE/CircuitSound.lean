@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.VOLE.Circuit
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Tactic.PMFSwap
 
 /-!

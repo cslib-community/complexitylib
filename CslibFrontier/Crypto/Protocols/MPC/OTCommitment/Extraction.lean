@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Opening
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import CslibFrontier.Probability.StatisticalDistance.Coupling
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Tactic.PMFSwap
 
 /-!

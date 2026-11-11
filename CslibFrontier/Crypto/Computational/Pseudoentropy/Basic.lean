@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Probability.Entropy
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling

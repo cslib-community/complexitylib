@@ -297,12 +297,52 @@ successor table. The native cost proof covers malformed tables and enormous bina
 indices; only actual list lengths fund iteration. See the [graph certificate tests](../../CslibFrontierTests/RotationCertificate.lean)
 and [ordered CSP certificate tests](../../CslibFrontierTests/CSPRotationCertificate.lean).
 
-These are finite encoding and numerical-verification results. Geometric realization, identifying
-the outer face across disconnected components, bare-instance recognition/construction, planar
-duality and the edge solver remain open. Exact relation-arity and satisfiability guards are
+These are finite encoding and numerical-verification results; the indexed duality and lifting
+theorems below extend their mathematical interface. Geometric realization, identifying the outer
+face across disconnected components, bare-instance recognition/construction and the edge solver
+remain open. Exact relation-arity and satisfiability guards are
 separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
 rotation does not prove that its graph is nonplanar. The full objective remains
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Indexed duality and Boolean difference lifting
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Dual`,
+`ComponentCounts` and `Lifting` at the same module prefix. The namespace is
+`Cslib.Complexity.Graph.RotationSystem`. These modules use the existing listed multigraph and
+rotation models. `dualGraph` preserves each listed edge position and names its incident faces
+by their least actual dart indices. `dualRotation` uses the source face successor as its vertex
+rotation; the dual face successor is edge reversal, source rotation, then edge reversal.
+The complete face/incident-vertex equivalences include singleton face orbits and retain loops,
+parallel occurrences and repeated boundary vertices.
+
+`numericalGenusZero_dual_iff r hG` preserves the existing componentwise numerical predicate.
+Its explicit `hG` requires every endpoint to be declared. Source isolated points have no dart
+and are omitted by dualization; their conventional source Euler equation is trivial. The
+empty graph and disconnected mixtures of point and edge components are included. The proof
+provides actual component bijections and exact vertex, edge and face counts.
+
+`FaceEven x` requires even parity on every actual face boundary. Darts are counted separately,
+so repeated appearances of an edge contribute with their boundary multiplicity. `edgeGradient`
+assigns the XOR of the endpoint spins to each indexed edge. With declared endpoints and
+`r.NumericalGenusZero`, `faceEven_iff_exists_vertexSpins r hG hgenus x` proves
+`r.FaceEven x ↔ ∃ spin : Nat → Bool, G.edgeGradient spin = x` for arbitrary finite listed graphs.
+The proof derives connectivity and characteristic-two incidence ranks internally. The reverse
+implication, `faceEven_edgeGradient`, telescopes along face boundaries and needs neither graph
+premise. Duplicate vertex declarations and sparse natural-number names are supported.
+
+The [dual and lifting tests](../../CslibFrontierTests/RotationDual.lean) check actual bridge, loop
+and digon dual data; a toroidal obstruction; disconnected point/edge mixtures; duplicate
+vertex declarations; names of size `2^100`; and the endpoint guard. The generic
+`Matrix.endpointIncidence` API is in
+`CslibFrontier.Foundations.LinearAlgebra.Matrix.EndpointIncidence`; loops contribute twice and
+cancel over `ZMod 2`, while parallel column positions stay distinct. Finite permutation orbit
+transport is shared through `CslibFrontier.Foundations.GroupTheory.Perm.Doubled`.
+
+These are combinatorial duality and lifting results, reconstructing the graph prerequisite in
+Dvořák–Kupec, §3, printed p. 439. Geometric realization, bare rotation recognition, native
+compilation, the full cyclic-difference CSP reduction and recursive edge solving remain open
+under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
@@ -514,6 +554,60 @@ Run `scripts/build.sh CslibFrontierTests.ProofComplexity.Algebraic` from the rep
 check them. Not yet formalized: the matching upper bound of Theorem 4.2, the size lower bounds of
 the same paper, pigeonhole degree lower bounds, and the simulation of bounded-width resolution by
 polynomial calculus.
+
+### Tseitin formulas
+
+[The Tseitin degree lower bound](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Tseitin.lean)
+is the polynomial calculus counterpart of the Ben-Sasson–Wigderson width lower bound. Take a field
+`K` with `2 ≠ 0` and a connected multigraph `ends : E → Sym2 V`. Then a polynomial calculus
+refutation of degree `d` of the clause polynomials of `CNF.tseitinFormula ends χ`, together with
+the Boolean axioms, forces `e(G) ≤ 2 d`
+(`Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). Here `e(G)` is
+`Multigraph.minBalancedCut`, the same expansion used in the width bound. The Nullstellensatz form
+follows through `PC.RefutableInDegree.of_ns`
+(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). The sum-of-squares counterpart,
+Grigoriev's bound `e(G) ≤ d` for the `±1` encoding of the Tseitin parity system, is described
+under [Sum-of-squares](#sum-of-squares). That Tseitin formulas are hard for
+polynomial calculus over fields of characteristic `≠ 2` is due to Buss, Grigoriev, Impagliazzo
+and Pitassi (JCSS 2001), and for the Nullstellensatz to Grigoriev (FOCS 1998). Buss and
+Nordström, Handbook of Satisfiability, §7.5.4, record this hardness qualitatively and describe the
+`R`-operator method. The quantitative form `e(G) ≤ 2 d`, with the Ben-Sasson–Wigderson expansion,
+is the form proved here; it is not taken from a checked source statement. The theorem numbers and
+constants of the two original papers have not been checked against a copy. The proof uses the
+invariant method with the change of variables `x ↦ (1 - y) / 2`. The invariant is the common
+kernel of linear functionals indexed by sets `T` of at most `d` edges. Each functional sends a
+monomial to the sign `(-1) ^ χ(U)` of the unique set `U` of fewer than `|V| / 3` vertices whose
+edge cut is the symmetric difference of `T` and the set of odd-degree variables of the monomial,
+or to `0` if there is no such `U`. The terms of a clause polynomial cancel in pairs, and `2 ≠ 0`
+turns `2 S = 0` into `S = 0`.
+
+[The expander corollary](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/TseitinExpander.lean)
+turns this into `h(G) |V| / 6 ≤ d` on rotation maps with edge expansion `h(G) > 0`. With
+`RotationMap.expander` it gives `CNF.exists_forall_pc_refutableInDegree_le`. For every `n ≥ 2`,
+this is an unsatisfiable formula with at most `120 n` variables, at most `2 ^ 120 · n` clauses
+and at most `120` literals per clause. Every polynomial calculus refutation of it over every field
+with `2 ≠ 0` has degree at least `n / 36000`. As in the resolution case, the expanders come from
+a counting argument, so the formulas exist but have no explicit generator.
+
+[The characteristic-2 upper bound](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/Tseitin.lean)
+shows that `2 ≠ 0` cannot be dropped. In characteristic `2`, the clause polynomials of the parity
+constraint at a vertex add up to the charge plus the sum of the incident variables
+(`CNF.sum_toBoolPolys_parityOnEq`). By the handshake argument the clause polynomials of the whole
+formula add up to `1`, so `CNF.ns_refutableInDegree_tseitinFormula_of_charP_two` gives a
+Nullstellensatz refutation whose degree is the largest number of edges at a vertex. The
+[tests](../../CslibFrontierTests/ProofComplexity/AlgebraicTseitin.lean) check the following instances:
+
+- On the triangle, the bound rules out degree `0` over `ℚ` and over `ZMod 3`, and over `ZMod 2`
+  the formula has a refutation of degree `2`.
+- A triangle with an isolated charged vertex has `e(G) = 2` but a refutation of degree `0`, so
+  connectivity is needed.
+- An expander on `5000000` vertices has `e(G) > 240`. Its Tseitin formula has a refutation of
+  degree `120` over `ZMod 2` but none over `ZMod 3`, so `2 ≠ 0` is needed.
+- The hard formulas, instantiated over `ZMod 3`.
+
+Run `scripts/build.sh CslibFrontierTests.ProofComplexity.AlgebraicTseitin` to check them. Not yet
+formalized: the size–degree trade-off for polynomial calculus, which would turn the degree bound
+into an exponential size lower bound for Tseitin formulas on expanders.
 
 ## Timestamped f-DAGs and local surgery
 
@@ -907,7 +1001,7 @@ The [checked examples](../../CslibFrontierTests/ProofComplexity/SumOfSquares.lea
 
 ## Known Limitations
 
-This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates and polynomial calculus (including refutations over the Boolean cube and one degree lower bound), sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates and polynomial calculus (including refutations over the Boolean cube and two degree lower bounds, for subset sum and Tseitin formulas), sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [barak-steurer16]: ../sources.md#barak-steurer16
 [beyersdorffgalesilauria10]: ../sources.md#beyersdorffgalesilauria10
