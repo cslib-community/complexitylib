@@ -256,9 +256,9 @@ example : (SAT.atLeast [(0, true), (1, false), (2, true)]).eval (· == 1) = fals
 
 /-- The only witness of `¬x₀ ∧ x₁` is `[false, true]`, so its left set contains `[false, false]`
 and `[false, true]` but not `[true, false]`. -/
-example : ([[(0, false)], [(1, true)]], [false, false]) ∈ LeftSAT ∧
-    ([[(0, false)], [(1, true)]], [false, true]) ∈ LeftSAT ∧
-    ([[(0, false)], [(1, true)]], [true, false]) ∉ LeftSAT := by
+example : (⟨[[(0, false)], [(1, true)]], [false, false]⟩ : LeftSATInstance) ∈ LeftSAT ∧
+    (⟨[[(0, false)], [(1, true)]], [false, true]⟩ : LeftSATInstance) ∈ LeftSAT ∧
+    (⟨[[(0, false)], [(1, true)]], [true, false]⟩ : LeftSATInstance) ∉ LeftSAT := by
   refine ⟨⟨rfl, (· == 1), rfl, by decide⟩, ⟨rfl, (· == 1), rfl, by decide⟩, ?_⟩
   rintro ⟨-, σ, hσ, hle⟩
   have h0 : σ 0 = false := by
@@ -268,10 +268,13 @@ example : ([[(0, false)], [(1, true)]], [false, false]) ∈ LeftSAT ∧
   revert hle
   cases σ 1 <;> decide
 
-/-- `SAT` and its left set reduce to each other. -/
-example : PolyTimeReducible encCNF (encPair encCNF encBits) SAT LeftSAT ∧
-    LeftSAT ∈ NP (encPair encCNF encBits) :=
-  ⟨SAT_polyTimeReducible_LeftSAT, LeftSAT_mem_NP⟩
+/-- `SAT` and its left set reduce to each other, and `enc_structure` composes cleanly. -/
+example : PolyTimeReducible encCNF encLeftSAT SAT LeftSAT ∧
+    LeftSAT ∈ NP encLeftSAT ∧
+    ComputableInPolyTime
+      (fun x : LeftSATInstance => (⟨x.formula, true :: x.word⟩ : LeftSATInstance))
+      encLeftSAT encLeftSAT :=
+  ⟨SAT_polyTimeReducible_LeftSAT, LeftSAT_mem_NP, by fun_prop⟩
 
 /-! ### Sparse sets hard under conjunctive reductions -/
 
