@@ -220,6 +220,7 @@ public import CslibFrontier.Algorithms.Lean.SuffixArray.Basic
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Kasai
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Search
 public import CslibFrontier.Algorithms.Lean.TSP.Christofides
+public import CslibFrontier.Algorithms.Lean.TSP.HamiltonianCount
 public import CslibFrontier.Algorithms.Lean.TSP.HeldKarp
 public import CslibFrontier.Algorithms.Lean.TSP.MSTTour
 public import CslibFrontier.Algorithms.Lean.TSP.PerfectMatching

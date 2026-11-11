@@ -124,6 +124,11 @@ Boaz Barak and David Steurer. *Proofs, beliefs, and algorithms through the lens 
 
 Clark Barrett, Swarat Chaudhuri, Fabrizio Montesi, Jim Grundy, Pushmeet Kohli, Leonardo de Moura, Alexandre Rademaker and Sorrachai Yingchareonthawornchai. *CSLib: The Lean Computer Science Library*. arXiv:2602.04846v1, 2026. https://doi.org/10.48550/arXiv.2602.04846 . Author/title/version metadata checked against https://arxiv.org/abs/2602.04846 on 2026-11-02 UTC.
 
+<a id="bax93"></a>
+## bax93
+
+Eric T. Bax. “Inclusion and Exclusion Algorithm for the Hamiltonian Path Problem.” *Information Processing Letters* 47(4), 203–207, 1993. https://doi.org/10.1016/0020-0190(93)90033-6 . Bibliographic metadata checked via DOI/DBLP on 2026-11-11; the article body (paywalled) was not inspected, so the manual cites it for the inclusion–exclusion walk-counting algorithm without a theorem or page locator.
+
 <a id="bcgl92"></a>
 ## bcgl92
 
@@ -574,7 +579,7 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locator (Section 1.2, the dynamic program for TSP in the introductory chapter) was taken from secondary descriptions and review; the book body was not inspected in this pass.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locators (Section 1.2 for the TSP dynamic program, and Section 4.1 for inclusion–exclusion counting of Hamiltonian paths) were taken from secondary descriptions and issue #3013; the book body was not inspected in this pass.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
@@ -921,6 +926,11 @@ Anna R. Karlin, Mark S. Manasse, Larry Rudolph, Daniel D. Sleator. "Competitive 
 ## karlin94
 
 Anna R. Karlin, Mark S. Manasse, Lyle A. McGeoch, Susan Owicki. "Competitive Randomized Algorithms for Nonuniform Problems." *Algorithmica* 11(6), 542–571, 1994 (preliminary version in SODA 1990). https://doi.org/10.1007/BF01189993 . Bibliographic data from secondary indexes and the DOI record; the full text was not inspected, so no theorem number is cited. The manual credits this paper with the equalizing randomized rent-or-buy strategy and its ratio `1/(1 - (1 - 1/B)^B) → e/(e-1)` against an oblivious adversary, which secondary sources attribute to it.
+
+<a id="karp82"></a>
+## karp82
+
+Richard M. Karp. “Dynamic Programming Meets the Principle of Inclusion and Exclusion.” *Operations Research Letters* 1(2), 49–51, 1982. https://doi.org/10.1016/0167-6377(82)90044-X . Bibliographic metadata checked via DOI on 2026-11-11; the article body (paywalled) was not inspected, so the manual cites it for the inclusion–exclusion formulation of sequencing/Hamiltonian-path counting without a theorem or page locator.
 
 <a id="kasai01"></a>
 ## kasai01
