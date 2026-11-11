@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Logics.SecondOrder.Horn.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.Successor
+import CslibFrontier.Logics.SecondOrder.Horn.GuardElimination
 
 /-!
 # SO∃-Horn definability of ordered queries
@@ -20,9 +21,14 @@ extended by a primitive successor, `language (succLanguage L)`: they may use the
 `=`, `≤`, `BIT`, successor and the constants `0`, `1` and `max`.
 
 Grädel's characterization of polynomial time by SO∃-Horn logic is stated for structures with
-successor. Successor must be primitive here because guards are quantifier-free: from `≤` alone,
-`y = x + 1` needs the universal quantifier of `Cslib.Logic.FO.Ordered.successor`. SO∃-Horn
-definability over `≤` and `BIT` without successor is a different fragment and is not treated here.
+successor. Successor must be primitive in the quantifier-free syntax because from `≤` alone,
+`y = x + 1` needs the universal quantifier of `Cslib.Logic.FO.Ordered.successor`. Conversely,
+`Cslib.Logic.ESO.Horn.Sentence.elimGuards` eliminates first-order quantifiers from guards over
+`language (succLanguage L)` by iterating universal quantifiers along successor from `0` to `max`.
+Combining guard elimination with `Cslib.Logic.FO.Ordered.elimSucc` shows that `HornDefinable`
+coincides with definability by an SO∃-Horn sentence over `language L` with arbitrary first-order
+guards (`hornDefinable_iff_exists_sentence`). Quantifier-free SO∃-Horn over `≤` and `BIT` without
+successor is a weaker syntactic fragment and is not used as the definition of `HornDefinable`.
 
 Every SO∃-Horn sentence is equivalent to one FO(LFP) sentence on canonical ordered structures, so
 `HornDefinable` queries are `LFPDefinable`. Successor is first removed from the guards with
@@ -45,6 +51,12 @@ exist because canonical ordered structures have at least two elements.
   ordered vocabulary, with arbitrary first-order guards, is `LFPDefinable`.
 * `Cslib.Logic.FO.Ordered.HornDefinable.exists_sentence`: a `HornDefinable` query is defined by
   an SO∃-Horn sentence over the ordered vocabulary without successor, with first-order guards.
+* `Cslib.Logic.FO.Ordered.HornDefinable.of_succSentence`: a query defined by an SO∃-Horn sentence
+  over `language (succLanguage L)` with arbitrary first-order guards is `HornDefinable`.
+* `Cslib.Logic.FO.Ordered.HornDefinable.of_sentence`: a query defined by an SO∃-Horn sentence over
+  `language L` with arbitrary first-order guards is `HornDefinable`.
+* `Cslib.Logic.FO.Ordered.hornDefinable_iff_exists_sentence`: `HornDefinable` is equivalent to
+  definability by an SO∃-Horn sentence over `language L` with arbitrary first-order guards.
 * `Cslib.Logic.FO.Ordered.HornDefinable.lfpDefinable`: `HornDefinable` queries are
   `LFPDefinable`.
 
@@ -52,9 +64,12 @@ exist because canonical ordered structures have at least two elements.
 
 * [E. Grädel, *Finite Model Theory and Descriptive Complexity*][Gradel2007], Theorem 3.2.18
   (p. 148) for the capture of polynomial time on ordered structures, and Exercise 3.2.20
-  (p. 148): the variant whose clause bodies contain only input literals is equivalent to the
-  first-order variant on ordered structures with successor and endpoint constants, but not on
-  ordered structures without successor. The exercise does not consider `BIT`.
+  (p. 148): the quantifier-free variant (whose clause bodies contain only input literals) is
+  equivalent to the arbitrary first-order guard variant on ordered structures with successor and
+  endpoint constants, whereas quantifier-free guards without successor are strictly weaker. The
+  exercise treats successor and endpoint constants without `BIT`; here
+  `hornDefinable_iff_exists_sentence` combines successor-iteration guard elimination with
+  `elimSucc` (`≤`) over the library's ordered vocabulary.
 * [E. Grädel, *Capturing complexity classes by fragments of second-order logic*][Gradel1992],
   for SO∃-Horn logic on successor structures. Section and theorem locators are unverified.
 * [N. Immerman, *Descriptive Complexity*][Immerman1999], Chapter 4, for FO(LFP).
@@ -113,6 +128,30 @@ theorem HornDefinable.exists_sentence {K : Query L} (hK : HornDefinable K) :
     ∃ Φ : ESO.Horn.Sentence (language L), ∀ M : Structure L, M ∈ K ↔ Φ.Realize M := by
   obtain ⟨Φ, -, hΦ⟩ := hK
   exact ⟨Φ.elimSucc, fun M => (hΦ M).trans (ESO.Horn.Sentence.realize_elimSucc Φ).symm⟩
+
+/-- Any ordered query defined by an SO∃-Horn sentence over `language (succLanguage L)` with
+arbitrary first-order guards is `HornDefinable`. -/
+theorem HornDefinable.of_succSentence {K : Query L}
+    (Φ : ESO.Horn.Sentence (language (succLanguage L)))
+    (hΦ : ∀ M : Structure L, M ∈ K ↔ Φ.Realize M) : HornDefinable K :=
+  ⟨Φ.elimGuards, Φ.isQF_elimGuards, fun M => (hΦ M).trans Φ.realize_elimGuards.symm⟩
+
+/-- Any ordered query defined by an SO∃-Horn sentence over `language L` with arbitrary first-order
+guards is `HornDefinable`: guards lift along `succInclusion L` and quantifiers are eliminated
+along successor. -/
+theorem HornDefinable.of_sentence {K : Query L} (Φ : ESO.Horn.Sentence (language L))
+    (hΦ : ∀ M : Structure L, M ∈ K ↔ Φ.Realize M) : HornDefinable K :=
+  HornDefinable.of_succSentence (Φ.mapGuards (succInclusion L).onFormula) fun M =>
+    (hΦ M).trans (Φ.realize_mapGuards _ fun φ v => realize_succInclusion φ v).symm
+
+/-- **Ordered SO∃-Horn definability coincides with arbitrary-guard SO∃-Horn over `language L`.**
+Combining successor elimination (`elimSucc`) with successor-iteration guard elimination
+(`elimGuards`) equates quantifier-free SO∃-Horn over `language (succLanguage L)` with
+arbitrary-guard SO∃-Horn over `language L`. -/
+theorem hornDefinable_iff_exists_sentence {K : Query L} :
+    HornDefinable K ↔
+      ∃ Φ : ESO.Horn.Sentence (language L), ∀ M : Structure L, M ∈ K ↔ Φ.Realize M :=
+  ⟨HornDefinable.exists_sentence, fun ⟨Φ, hΦ⟩ => HornDefinable.of_sentence Φ hΦ⟩
 
 /-- **SO∃-Horn definable queries are FO(LFP) definable.** -/
 theorem HornDefinable.lfpDefinable {K : Query L} (hK : HornDefinable K) : LFPDefinable K := by
