@@ -366,7 +366,8 @@ structure AgreesState where
   ok : Bool
   deriving Repr, DecidableEq
 
-enc_structure encAgreesState : AgreesState where j : encUnary, p : encBits, t : encBits, ok : encBool
+enc_structure encAgreesState : AgreesState where
+  j : encUnary, p : encBits, t : encBits, ok : encBool
 
 private def agreesStep (msg : α × List Bool × ℕ × List Bool → List Bool)
     (par : α × List Bool) (st : AgreesState) (x : IPMove × ℕ) : AgreesState :=
@@ -485,8 +486,8 @@ theorem computableInPolyTime_agrees_dyn {γ : Type} {enc : α ↪ List Bool} {en
     (par := fun x => (a x, c x)) (list := g)
     (init := fun x => { j := j₀ x, p := p₀ x, t := t₀ x, ok := true }) (step := agreesStep msg)
     (ha.prod hc) hg (hj₀.prod (hp₀.prod (ht₀.prod (ComputableInPolyTime.const true)))) hstep
-    (fun x pre st => st.1 = j₀ x + pre.length ∧
-      st.2.1.length + st.2.2.1.length ≤ (p₀ x).length + (t₀ x).length)
+    (fun x pre st => st.j = j₀ x + pre.length ∧
+      st.p.length + st.t.length ≤ (p₀ x).length + (t₀ x).length)
     (fun x => ⟨rfl, le_rfl⟩)
     (fun x pre st val _ hst => by
       rcases st with ⟨j, p, t, ok⟩
@@ -706,7 +707,7 @@ private def checkStep (B Z K : ℕ) (st : CheckState) (move : IPMove × ℕ) : C
     let y := w.drop (B * (n + Z) + B)
     let b := (y.take B).count true
     let x := (y.drop B).take (n + Z)
-    let ok' := ok && SetLowerBound.hashZero B (n + Z) r x &&
+    let ok' := ok && hashZero B (n + Z) r x &&
       (!((x.drop n).take (Z + κ - (b + K))).any fun b => b)
     (b, p ++ x.take n, (y.drop B).drop (n + Z), ok')
   | (.prover, n) =>
@@ -793,7 +794,7 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
         (ComputableInPolyTime.bitsTakeWithInput hy hBq) (ComputableInPolyTime.const true)
       have hyB := ComputableInPolyTime.bitsDropWithInput hy hBq
       have hx := ComputableInPolyTime.bitsTakeWithInput hyB hnZ
-      have hhash := SetLowerBound.computableInPolyTime_hashZero hBq hnZ hr hx
+      have hhash := computableInPolyTime_hashZero hBq hnZ hr hx
       have hpad := ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.bitsAnyWithInput
         (test := fun _ b => b)
         (ComputableInPolyTime.bitsTakeWithInput (ComputableInPolyTime.bitsDropWithInput hx hnq)
@@ -835,7 +836,7 @@ theorem computableInPolyTime_check_dyn {γ : Type} {encIn : γ ↪ List Bool}
     (step := fun par => checkStep par.1 par.2.1 par.2.2)
     (hB.prod (hZ.prod hK)) hg
     (by fun_prop) hstep
-    (fun x pre st => st.κ ≤ max (κ x) (B x) ∧
+    (fun (x : γ) (pre : List (IPMove × ℕ)) (st : CheckState) => st.κ ≤ max (κ x) (B x) ∧
       st.p.length ≤ (p x).length + transcriptLength pre ∧ st.w.length ≤ (w x).length)
     (fun x => ⟨le_max_left _ _, by simp, le_rfl⟩)
     (fun x pre st val _ hst => by
