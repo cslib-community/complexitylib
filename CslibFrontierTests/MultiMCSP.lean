@@ -5,14 +5,15 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.MCSP.Multi
+import CslibFrontier.Computability.MCSP.Multi.NP
 
 /-!
 # Tests: Multi-output MCSP and the constant-free De Morgan basis
 
 Small instances of `MultiMCSP`: the component-major table bits and the length of the Definition 1
 encoding, membership by an input wire and by one gate over every De Morgan basis, a negation that
-needs a gate over every basis, and a constant that separates the constant-free basis from cslib's
-basis with constants.
+needs a gate over every basis, a constant that separates the constant-free basis from cslib's
+basis with constants, and the `NP` verifiers accepting and rejecting certificates.
 -/
 
 namespace CslibFrontierTests.MultiMCSP
@@ -57,7 +58,8 @@ example : ¬ projInst.Positive := by decide
 def notInst (s : ℕ) : MultiMCSP.Instance := ⟨1, 1, s, fun _ => MCSP.truthTable 1 fun y => !y 0⟩
 
 /-- Negation needs a gate over every basis: without gates every wire is an input. -/
-example {σ : Signature} (I : Interpretation σ Bool) : notInst 0 ∉ MultiMCSP I := by
+theorem notInst_zero_not_mem {σ : Signature} (I : Interpretation σ Bool) :
+    notInst 0 ∉ MultiMCSP I := by
   rw [mem_iff_exists_program_wires]
   rintro ⟨g, p, hg, hw⟩
   obtain rfl : g = 0 := Nat.le_zero.1 hg
@@ -93,7 +95,7 @@ example {σ : Signature} (I : Interpretation σ Bool) [Boolean.DeMorganBasis I] 
 def constInst (s : ℕ) : MultiMCSP.Instance := ⟨0, 1, s, fun _ _ => true⟩
 
 /-- Without constants and without inputs nothing is computable, at any threshold. -/
-example (s : ℕ) : constInst s ∉ MultiMCSP Boolean.DeMorgan.interpretation := by
+theorem constInst_not_mem (s : ℕ) : constInst s ∉ MultiMCSP Boolean.DeMorgan.interpretation := by
   intro h
   have htop : ecomplexity Boolean.DeMorgan.interpretation (constInst s).function = ⊤ :=
     Boolean.DeMorgan.ecomplexity_eq_top (m := 1) Nat.one_pos _
@@ -117,5 +119,48 @@ example : (⟨1, MCSP.truthTable 1 fun y => y 0, 0⟩ : MCSP.Instance) ∈ MCSP 
   refine ofMCSP_mem_iff.1 (mem_iff_exists_program_wires.2 ?_)
   exact ⟨0, .empty, le_rfl, fun _ => ⟨.input (0 : Fin 1),
     funext fun y => (congrFun ((MCSP.truthTable 1).symm_apply_apply fun y => y 0) y).symm⟩⟩
+
+/-! ### Membership in NP -/
+
+/-- Multi-output MCSP over the constant-free basis of Definition 1 is in `NP`. -/
+example : MultiMCSP Boolean.DeMorgan.interpretation ∈ Complexity.NP encInstance := mem_NP
+
+/-- So is the library variant over cslib's basis with constants. -/
+example : MultiMCSP Boolean.interpretation ∈ Complexity.NP encInstance := mem_NP_boolean
+
+/-- With components, the verifier enumerates all `2 ^ n` inputs; with none, only the empty one. -/
+example : testArity 3 2 = 3 := testArity_of_pos (by decide)
+
+example : testArity 3 0 = 0 := testArity_zero 3
+
+/-- The certificate of the one-gate negation circuit, at threshold `1`, has
+`certLength 1 1 + 1 · (1 + 1) = 10 + 2` bits. -/
+example : (multiCertificate 1 (notCircuit.mapOp Boolean.DeMorgan.toBoolean)).length = 12 :=
+  (length_multiCertificate _ (by simp [notCircuit])).trans rfl
+
+/-- The constant-free verifier accepts that certificate, with any padding. -/
+example (extra : List Bool) :
+    verifier (notInst 1, multiCertificate 1 (notCircuit.mapOp Boolean.DeMorgan.toBoolean) ++
+      extra) = true :=
+  verifier_multiCertificate_append notCircuit_computes (by simp [notCircuit, notInst]) extra
+
+/-- The verifier over cslib's basis accepts it too. -/
+example (extra : List Bool) :
+    booleanVerifier (notInst 1,
+      multiCertificate 1 (notCircuit.mapOp Boolean.DeMorgan.toBoolean) ++ extra) = true :=
+  booleanVerifier_multiCertificate_append notCircuit_computes.mapOp
+    (by simp [notCircuit, notInst]) extra
+
+/-- No certificate makes the verifier accept negation with no gate. -/
+example (w : List Bool) : booleanVerifier (notInst 0, w) = false := by
+  by_contra h
+  obtain ⟨c, hc, hs, -⟩ := exists_circuit_of_booleanVerifier (Bool.not_eq_false _ ▸ h)
+  exact notInst_zero_not_mem _ (mem_iff_exists_circuit.2 ⟨c, hc, hs⟩)
+
+/-- No certificate makes the constant-free verifier accept a constant, whatever the threshold. -/
+example (s : ℕ) (w : List Bool) : verifier (constInst s, w) = false := by
+  by_contra h
+  exact constInst_not_mem s (mem_iff_exists_circuit.2
+    (exists_circuit_of_verifier (Bool.not_eq_false _ ▸ h)))
 
 end CslibFrontierTests.MultiMCSP
