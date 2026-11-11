@@ -15,7 +15,7 @@ This manual assumes basic Lean familiarity. Its workflows use the current checko
 
 For human direction of agents, use the separate [Agent Operator’s Manual](../AGENT_OPERATORS.md).
 
-The full model/theorem survey follows these workflows as reference chapters. The development study and model inventory remain available in the same volume.
+The [reference chapters](../index.md) follow these workflows and describe each model, its theorem routes and its design. The [history](../history/index.md) part preserves the original survey and development study.
 
 ## Known limitations
 
@@ -25,4 +25,4 @@ Examples are contextual excerpts from source clients, with their unique text che
 
 Read the opening workflows once, then use the model chapters as a reference. For a first deterministic proof, follow getting started, model selection and deterministic workflows. For a randomized or oracle routine, continue to the probabilistic chapter. For a circuit, finite-model or RAM application, begin with the model-selection table and follow its checked client and bridge. Use the troubleshooting chapter at the first unexplained obligation, and the contribution and coordination chapters when preparing a change or handing work to another person or agent.
 
-The reference chapters preserve the survey’s model descriptions, theorem boundaries, design rationale and source credit. The history is a dated observational record: it explains earlier decisions and failures but is not a substitute for the current contribution policy. The [full inventory and evidence index](../index.md) links supporting scripts and data; the [original paper plan](../paper-plan.md) preserves the earlier academic framing.
+The reference chapters record model descriptions, theorem boundaries, design rationale and source credit, and the [model map](../model-map.md) relates the models. The [history](../history/index.md) is a dated observational record: it explains earlier decisions and failures but is not a substitute for the current contribution policy. Its [survey front matter](../history/survey.md) links supporting scripts and data, and the [original paper plan](../history/paper-plan.md) preserves the earlier academic framing.

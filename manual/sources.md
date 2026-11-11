@@ -2,7 +2,7 @@
 
 Repository citations are pinned to the reviewed source or dependency revision. Direct declaration links in the chapter text identify the supporting statement. The [library bibliography](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/references.bib) is linked at the survey revision; inclusion there is not a claim that this review checked every cited paper. Mathematical attributions reported only from source annotations are identified as such in the chapters.
 
-The private-transcript sources are described in [the extraction methods](development-history/methods.md); selected excerpts are included in the manual, while their bulk exports remain untracked. Public GitHub issues, PRs and CI runs are linked from [development history](development-history/index.md). Refetching mutable records is not an archive of their historical contents. Inaccessible sources and unavailable archives are identified below or in the relevant chapter.
+The private-transcript sources are described in [the extraction methods](history/methods.md); selected excerpts are included in the manual, while their bulk exports remain untracked. Public GitHub issues, PRs and CI runs are linked from [development history](history/development.md). Refetching mutable records is not an archive of their historical contents. Inaccessible sources and unavailable archives are identified below or in the relevant chapter.
 
 <a id="aaronson20"></a>
 ## aaronson20
@@ -193,6 +193,11 @@ Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Foundations of Garbled Circuit
 ## bhr12b
 
 Mihir Bellare, Viet Tung Hoang, Phillip Rogaway. "Adaptively Secure Garbling with Applications to One-Time Programs and Secure Outsourcing." *Advances in Cryptology – ASIACRYPT 2012*, LNCS 7658, 134–153, Springer, 2012. https://doi.org/10.1007/978-3-642-34961-4_10 . Full version: Cryptology ePrint Archive, Report 2012/564 (`BellareHoangRogaway2012b`). `Garbling/Adaptive.lean` formalizes the coarse-grained adaptive privacy game `Prv1` of Section 3.1, Figure 2, in which a two-stage adversary first receives `(F, d)` from `Garble(f)` and then adaptively queries `Input(x)` to receive `X` from a stateful two-stage simulator.
+
+<a id="birge83"></a>
+## birge83
+
+Lucien Birgé. "Approximation dans les espaces métriques et théorie de l'estimation." *Zeitschrift für Wahrscheinlichkeitstheorie und Verwandte Gebiete* 65(2), 181–237, 1983. https://doi.org/10.1007/BF00532480 . Bibliographic metadata checked via search summaries on 2026-11-11; the article text was not inspected, and no theorem number is claimed. Cited as background origin for bounded likelihood-ratio Hellinger tests (`leCamBirgeTest`) and Hellinger tournament localization (`birgeTournamentSelect`); the explicit `1/3`–`2/3` clipped `birgeWeight` formulation and constants (`1 - h² / 25`, `10 * r`, `11 * r`, `2 * (M - 1) * exp (-4 n r²)`) are proved from first principles in `CslibFrontier/Probability/HypothesisSelection/{LeCamBirge,Tournament}.lean`.
 
 <a id="bjkst02"></a>
 ## bjkst02
@@ -415,6 +420,11 @@ Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, M
 ## dasguptagupta03
 
 Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
+
+<a id="devroyelugosi01"></a>
+## devroyelugosi01
+
+Luc Devroye and Gábor Lugosi. *Combinatorial Methods in Density Estimation*. Springer Series in Statistics, Springer, New York, 2001. ISBN 978-0-387-95117-1. https://doi.org/10.1007/978-1-4613-0125-7 . Bibliographic metadata checked via search summaries on 2026-11-11; the book text was not inspected, so Chapter 6 attribution is unverified against the printed book. Cited as background for Scheffé sets (`scheffeSet`), pairwise Scheffé tests (`scheffeTest`), and `3 * OPT + 2 * γ` minimum-distance TV selection (`scheffeSelect`); the one-sided `scheffeScore` formulation and Hoeffding union-bound proofs in `CslibFrontier/Probability/HypothesisSelection/{LeCamBirge,Tournament}.lean` are this library's formulation.
 
 <a id="dewolf19"></a>
 ## dewolf19
@@ -932,6 +942,11 @@ Leslie Lamport, Robert Shostak and Marshall Pease. "The Byzantine Generals Probl
 
 Lean development team. *Validating a Lean Proof*, The Lean Language Reference, accessed 2026-11-02 UTC. https://lean-lang.org/doc/reference/latest/ValidatingProofs/ . The page was inspected live; the requested version-specific URL was unavailable, and no verified archival snapshot was obtained. Version-specific library assertions in this dossier instead rely on pinned repository sources.
 
+<a id="lecam73"></a>
+## lecam73
+
+Lucien Le Cam. "Convergence of Estimates Under Dimensionality Restrictions." *The Annals of Statistics* 1(1), 38–53, 1973. https://doi.org/10.1214/aos/1193342380 . Bibliographic metadata checked via search summaries on 2026-11-11; the article text was not inspected, and no theorem number is claimed. Cited as background origin for bounded pairwise Hellinger tests and tournament localization (`leCamBirgeTest`, `birgeTournamentSelect`).
+
 <a id="lemkehowson64"></a>
 ## lemkehowson64
 
@@ -1047,6 +1062,11 @@ Thierry Mignon and Nicolas Ressayre. *A quadratic bound for the determinant and 
 
 L. Mirsky. "A Dual of Dilworth's Decomposition Theorem." *The American Mathematical Monthly* 78(8), 876–877, 1971. https://doi.org/10.1080/00029890.1971.11992886 . Bibliographic metadata from search summaries, checked on 2026-11-08; the paper is paywalled and was not inspected. The library attributes to it only the finite chain–antichain duality, whose formal statement and height-function proof follow [Schrijver's lecture notes](#schrijver17), Theorem 7.5.
 
+<a id="mishrasanthanam2027"></a>
+## mishrasanthanam2027
+
+Om Swostik Mishra and Rahul Santhanam. *An Explicit `4n - O(log n)` Size Lower Bound against General Boolean Circuits*. STOC 2027 submission 1241, 2027. https://stoc2027.sigact-ec.workers.dev/submissions/1241.pdf . The submission PDF was inaccessible in this pass (HTTP error 1042) and was not inspected directly; bibliographic details and cited labels (`Lemma 2.2`, `Theorem 4.1`, `Lemma 4.2`, `Remark 4.3`, and the `Theorem 1.1` target) come from repository issue `#4322` and remain unverified against the primary manuscript.
+
 <a id="misragries82"></a>
 ## misragries82
 
@@ -1067,6 +1087,11 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 
 Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
 
+<a id="motzkinstraus1965"></a>
+## motzkinstraus1965
+
+T. S. Motzkin and E. G. Straus. "Maxima for Graphs and a New Proof of a Theorem of Turán." *Canadian Journal of Mathematics* 17, 533–540, 1965. https://doi.org/10.4153/CJM-1965-053-6 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text is uninspected. The manual attributes to this paper the characterization `max_{x ∈ Δ} xᵀ A_G x = 1 - 1 / ω(G)` over the standard simplex (noting the factor-of-2 convention `∑_{ij ∈ E} x_i x_j = (1 / 2) xᵀ A_G x`); no internal theorem or section numbers are cited.
+
 <a id="moulin80"></a>
 ## moulin80
 
@@ -1081,6 +1106,11 @@ Eitan Muller and Mark A. Satterthwaite. "The Equivalence of Strong Positive Asso
 ## murraywilliams2017
 
 Cody D. Murray and R. Ryan Williams. *On the (Non) NP-Hardness of Computing Circuit Complexity*. Theory of Computing 13(4), 1–22, 2017. https://doi.org/10.4086/toc.2017.v013a004 . Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation quotes its Theorem 1.6 (Section 1, p. 5) and Theorem 4.1 (Section 4.1, p. 13).
+
+<a id="murtykabadi1987"></a>
+## murtykabadi1987
+
+Katta G. Murty and Santosh N. Kabadi. "Some NP-Complete Problems in Quadratic and Nonlinear Programming." *Mathematical Programming* 39(2), 117–129, 1987. https://doi.org/10.1007/BF02592948 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text is uninspected. The manual cites it for the `coNP`-completeness of testing matrix copositivity (and `NP`-completeness of non-copositivity), noting that secondary summaries describe [Murty–Kabadi] as reducing from subset sum whereas this library proves completeness via `Clique` and Motzkin–Straus; no internal theorem or section numbers are cited.
 
 <a id="nagamochiibaraki92"></a>
 ## nagamochiibaraki92
