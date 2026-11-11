@@ -40,6 +40,7 @@ import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Tactic.SuppCases
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
 
@@ -421,9 +422,7 @@ theorem exists_of_mem_support_keyGen {gen : ℕ → ProbComp KeyDesc} {n : ℕ}
     {keys : List Bool × List Bool} (hkeys : keys ∈ (ProbComp.eval (keyGen gen n)).support) :
     ∃ k : KeyDesc,
       keys = (encPair encNat encNat (k.modulus, k.z), encPair encNat encNat (k.p, k.q)) := by
-  simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.support_pure, Set.mem_singleton_iff] at hkeys
-  obtain ⟨k, _, rfl⟩ := hkeys; exact ⟨k, rfl⟩
+  supp_cases hkeys [keyGen] with ⟨k, _, rfl⟩; exact ⟨k, rfl⟩
 
 /-- Supported ciphertexts under `pk = ⟨N, z⟩` have the form `encNat (ciphertext N z m r)` with
 `r.Coprime N`. -/
@@ -431,9 +430,7 @@ theorem exists_of_mem_support_encrypt {n N z : ℕ} {pk : List Bool}
     (hpk : pk = encPair encNat encNat (N, z)) {m : Bool} {ct : List Bool}
     (hct : ct ∈ (ProbComp.eval (encrypt n pk m)).support) :
     ∃ r : ℕ, r.Coprime N ∧ ct = encNat (ciphertext N z m r) := by
-  simp only [encrypt, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.support_pure, Set.mem_singleton_iff] at hct
-  obtain ⟨r, _, hct_eq⟩ := hct
+  supp_cases hct [encrypt] with ⟨r, _, hct_eq⟩
   have hN : ofBits (unframe pk) = N := by rw [hpk, unframe_encPair_encNat, ofBits_encNat]
   have hz : ofBits (dropFrame pk) = z := by rw [hpk, dropFrame_encPair_encNat, ofBits_encNat]
   rw [hN, hz] at hct_eq
@@ -791,13 +788,9 @@ theorem decryptBits_encryptBits {gen : ℕ → ProbComp KeyDesc} {n : ℕ}
     decryptBits keys.2 cts = bits := by
   induction bits generalizing cts with
   | nil =>
-    simp only [encryptBits, List.mapM_nil, ProbComp.eval_pure, PMF.support_pure,
-      Set.mem_singleton_iff] at hcts
-    subst hcts; rfl
+    supp_cases hcts [encryptBits, List.mapM_nil]; rfl
   | cons b bs ih =>
-    simp only [encryptBits, List.mapM_cons, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hcts
-    obtain ⟨ct, hct, rest, hrest, rfl⟩ := hcts
+    supp_cases hcts [encryptBits, List.mapM_cons] with ⟨ct, hct, rest, hrest, rfl⟩
     simp only [decryptBits, List.map_cons, decrypt_encrypt hkeys b hct]
     exact congrArg (b :: ·) (ih hrest)
 

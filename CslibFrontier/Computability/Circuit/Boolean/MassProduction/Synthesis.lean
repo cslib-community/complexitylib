@@ -27,7 +27,7 @@ constructions improve this dependence by sharing work between copies.
   [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Boolean.MassProduction
 

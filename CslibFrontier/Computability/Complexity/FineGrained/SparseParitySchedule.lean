@@ -29,10 +29,14 @@ Theorem 2.2, printed pp. 38–39):
    uses a sufficiently large `c = c(k)` to bound both the equation count and monomial sparsity.
    For any width-`≤ k` CNF
    `φ : CNF V`:
+   - `CNF.totalIncidence_mul_le_of_card_equationScope_le`: when every equation scope of
+     `φ.parityRowSystem rows` has at most `w` variables, `rows.length ≤ 6 * Fintype.card V`, and
+     `(6 * w) * s ≤ b₀`, the total incidence times `s` is at most `b₀ * Fintype.card V`, the
+     heavy-variable budget `hM` of the branching bounds.
    - `CNF.totalIncidence_parityRowSystem_le_six_mul`: when `rows.length ≤ 6 * Fintype.card V` and
      `∀ r ∈ rows, weight r ≤ W`, total variable-equation incidence across `φ.parityRowSystem rows`
      is at most `(6 * (k * (W * 2 ^ k))) * Fintype.card V`.
-   - `CNF.card_le_two_mul_freeVar_parityRowSystem`: when `1 ≤ b₀`, `2 ≤ s_div`, and
+   - `CNF.card_le_two_mul_freeVar_parityRowSystem`: when `2 ≤ s_div` and
      `(6 * (k * (W * 2 ^ k))) * s_div ≤ b₀`, removing the heavy variables
      `S = heavyVars univ univ (fun j => equationScope (φ.parityRowSystem rows j)) b₀` leaves
      `Fintype.card V ≤ 2 * n'`, `Fintype.card V / 2 ≤ n'`, and at most
@@ -81,6 +85,7 @@ Theorem 2.2, printed pp. 38–39):
 
 ## Main results
 
+* `Cslib.Logic.PL.CNF.totalIncidence_mul_le_of_card_equationScope_le`
 * `Cslib.Logic.PL.CNF.totalIncidence_parityRowSystem_le_six_mul`
 * `Cslib.Logic.PL.CNF.card_le_two_mul_freeVar_parityRowSystem`
 * `Cslib.Logic.PL.CNF.card_branchAugmentedScope_parityRowSystem_le`
@@ -117,7 +122,7 @@ variables, there are at most `6 * Fintype.card V` rows, and `(6 * w) * s ≤ b�
 incidence times the branching divisor `s` is at most `b₀ * Fintype.card V`. This is the
 hypothesis `hM` of `card_le_two_mul_freeVar_of_heavyVars` and
 `card_branchAssignments_heavyVars_le_two_pow_div`. -/
-private theorem totalIncidence_mul_le_of_card_equationScope_le [Fintype V] [DecidableEq V]
+theorem CNF.totalIncidence_mul_le_of_card_equationScope_le [Fintype V] [DecidableEq V]
     {φ : CNF V} {rows : List (Fin φ.length → Bool)} {w s b₀ : ℕ}
     (hscope : ∀ j : Fin rows.length, #(equationScope (φ.parityRowSystem rows j)) ≤ w)
     (hlen : rows.length ≤ 6 * Fintype.card V) (h_thresh : (6 * w) * s ≤ b₀) :
@@ -153,7 +158,7 @@ theorem CNF.totalIncidence_parityRowSystem_le_six_mul [Fintype V] [DecidableEq V
 
 /-- **Section 5.5 & 6.3 ($n \le 2n'$ and branch count $\le 2^{n / s}$ for `CNF.parityRowSystem`):**
 when `∀ c ∈ φ, c.length ≤ k`, `∀ r ∈ rows, weight r ≤ W`, `rows.length ≤ 6 * Fintype.card V`,
-`1 ≤ b₀`, `2 ≤ s_div`, and `(6 * (k * (W * 2 ^ k))) * s_div ≤ b₀`, removing the heavy variables
+`2 ≤ s_div`, and `(6 * (k * (W * 2 ^ k))) * s_div ≤ b₀`, removing the heavy variables
 `S = heavyVars univ univ (fun j => equationScope (φ.parityRowSystem rows j)) b₀` leaves
 `Fintype.card V ≤ 2 * n'`, `Fintype.card V / 2 ≤ n'`, and at most `2 ^ (Fintype.card V / s_div)`
 branches in `branchAssignments S`. -/
@@ -161,7 +166,7 @@ theorem CNF.card_le_two_mul_freeVar_parityRowSystem [Fintype V] [DecidableEq V]
     {φ : CNF V} {k W b₀ s_div : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k)
     {rows : List (Fin φ.length → Bool)} (hW : ∀ r ∈ rows, weight r ≤ W)
     (hlen : rows.length ≤ 6 * Fintype.card V)
-    (hb₀ : 1 ≤ b₀) (hs_div : 2 ≤ s_div)
+    (hs_div : 2 ≤ s_div)
     (h_thresh : (6 * (k * (W * 2 ^ k))) * s_div ≤ b₀)
     (e : ↥(univ \ heavyVars univ (univ : Finset (Fin rows.length))
       (fun j => equationScope (φ.parityRowSystem rows j)) b₀) ≃ Fin n') :
@@ -170,12 +175,12 @@ theorem CNF.card_le_two_mul_freeVar_parityRowSystem [Fintype V] [DecidableEq V]
         (heavyVars univ (univ : Finset (Fin rows.length))
           (fun j => equationScope (φ.parityRowSystem rows j)) b₀)) ≤
       2 ^ (Fintype.card V / s_div) := by
-  have hM := totalIncidence_mul_le_of_card_equationScope_le
+  have hM := CNF.totalIncidence_mul_le_of_card_equationScope_le
     (CNF.card_equationScope_parityRowSystem_le hk hW) hlen h_thresh
   exact ⟨card_le_two_mul_freeVar_of_heavyVars univ
-      (fun j => equationScope (φ.parityRowSystem rows j)) hb₀ hs_div hM e,
+      (fun j => equationScope (φ.parityRowSystem rows j)) hs_div hM e,
     card_branchAssignments_heavyVars_le_two_pow_div univ
-      (fun j => equationScope (φ.parityRowSystem rows j)) hb₀ (by omega) hM⟩
+      (fun j => equationScope (φ.parityRowSystem rows j)) (by omega) hM⟩
 
 /-- **Section 5.5 & 6.3 (per-factor scope width $\le \max(k W 2^k, 1)$ for `CNF.parityRowSystem`):**
 when `∀ c ∈ φ, c.length ≤ k` and `∀ r ∈ rows, weight r ≤ W`, every factor `f` of
@@ -311,7 +316,7 @@ theorem CNF.branch_domainExaminationBound_parityRowSystem_le [Fintype V]
 /-- **Section 6.3 multi-branch domain-examination bound across `branchAssignments` for
 `CNF.parityRowSystem`**:
 When `∀ c ∈ φ, c.length ≤ k`, `∀ r ∈ rows, weight r ≤ W`, `rows.length ≤ 6 * Fintype.card V`,
-`1 ≤ b₀`, `2 ≤ s_div`, `(6 * (k * (W * 2 ^ k))) * s_div ≤ b₀`, and `e : ↥(univ \ S) ≃ Fin n'`,
+`2 ≤ s_div`, `(6 * (k * (W * 2 ^ k))) * s_div ≤ b₀`, and `e : ↥(univ \ S) ≃ Fin n'`,
 the free-variable dimension satisfies `Fintype.card V ≤ 2 * n'`, and if each branch
 `b ∈ branchAssignments S` has its real examination sum bounded via
 `CNF.branch_domainExaminationBound_parityRowSystem_le`, then the sum of those examination bounds
@@ -322,7 +327,7 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le [Fintype V] [De
     {φ : CNF V} {β k W b₀ s_div : ℕ} (hk : ∀ c ∈ φ, c.length ≤ k)
     {rows : List (Fin φ.length → Bool)} (hW : ∀ r ∈ rows, weight r ≤ W)
     (hlen : rows.length ≤ 6 * Fintype.card V)
-    (hb₀ : 1 ≤ b₀) (hs_div : 2 ≤ s_div)
+    (hs_div : 2 ≤ s_div)
     (h_thresh : (6 * (k * (W * 2 ^ k))) * s_div ≤ b₀)
     (e : ↥(univ \ heavyVars univ (univ : Finset (Fin rows.length))
       (fun j => equationScope (φ.parityRowSystem rows j)) b₀) ≃ Fin n')
@@ -341,12 +346,12 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le [Fintype V] [De
       (2 : ℝ) ^ (Fintype.card V / s_div) *
         (2 * (numNodes n' : ℝ) * (numGroups n' : ℝ) *
           Real.exp (((16 * k + 4 : ℕ) : ℝ) * (n' : ℝ) * rowCost β n')) := by
-  have hM := totalIncidence_mul_le_of_card_equationScope_le
+  have hM := CNF.totalIncidence_mul_le_of_card_equationScope_le
     (CNF.card_equationScope_parityRowSystem_le hk hW) hlen h_thresh
   have h16 : k * (2 * 6 + 4) + 4 = 16 * k + 4 := by ring
   simpa only [h16] using
     sum_branch_domainExaminationBound_le (β := β) (k := k) (c := 6)
-      (univ : Finset (Fin rows.length)) (φ.parityRowSystem rows) hb₀ hs_div hM e examSum
+      (univ : Finset (Fin rows.length)) (φ.parityRowSystem rows) hs_div hM e examSum
       (by simpa only [h16] using hexam)
 
 /-! ### 3. End-to-end Lemma 6.1 + Lemma 6.2 + Section 6.3 greedy parity-test schedule theorem -/
@@ -615,11 +620,10 @@ theorem CNF.exists_branch_schedule_parityRowSystem_of_le_clog_pow (k C_B β_B : 
     have : 2 * n₀ ≤ Fintype.card V := (le_max_left _ _).trans hN₀
     omega
   have hsqrt := two_le_sqrt_clog_two hn20
-  have hb₀_pos : 1 ≤ b₀ := Nat.succ_pos _
   have hthresh : (6 * (k * (W * 2 ^ k))) * (Nat.clog 2 (Fintype.card V)).sqrt ≤ b₀ :=
     Nat.le_succ _
   obtain ⟨⟨hn_le, hn_div⟩, hbranches⟩ :=
-    CNF.card_le_two_mul_freeVar_parityRowSystem hk hW hlen hb₀_pos hsqrt hthresh e
+    CNF.card_le_two_mul_freeVar_parityRowSystem hk hW hlen hsqrt hthresh e
   obtain ⟨hn₀_le, hcoeff⟩ := le_and_le_clog_of_max_le hN₀ hn_le
   obtain ⟨hb₀_pow, hw_pow⟩ :=
     parityBranchThreshold_succ_and_width_le_clog_pow (by omega) hn_le (by omega) hm hB hW_bound
@@ -715,18 +719,17 @@ theorem CNF.exists_greedy_parityRowSystem_branch_schedule_of_le_clog_pow (k C_B 
           (fun j => equationScope (φ.parityRowSystem (A i) j)) *
         (Nat.clog 2 (Fintype.card V)).sqrt ≤
       b₀ * Fintype.card V :=
-    totalIncidence_mul_le_of_card_equationScope_le hscope_D₀ hlen_i (Nat.le_succ _)
-  have hb₀_pos : 1 ≤ b₀ := Nat.succ_pos _
+    CNF.totalIncidence_mul_le_of_card_equationScope_le hscope_D₀ hlen_i (Nat.le_succ _)
   have hcard : Fintype.card V ≤ 2 * n' ∧ Fintype.card V / 2 ≤ n' :=
     card_le_two_mul_freeVar_of_heavyVars univ
-      (fun j => equationScope (φ.parityRowSystem (A i) j)) hb₀_pos hsqrt hM_le e
+      (fun j => equationScope (φ.parityRowSystem (A i) j)) hsqrt hM_le e
   have hbr :
       #(branchAssignments
           (heavyVars univ (univ : Finset (Fin (A i).length))
             (fun j => equationScope (φ.parityRowSystem (A i) j)) b₀)) ≤
         2 ^ (Fintype.card V / (Nat.clog 2 (Fintype.card V)).sqrt) :=
     card_branchAssignments_heavyVars_le_two_pow_div univ
-      (fun j => equationScope (φ.parityRowSystem (A i) j)) hb₀_pos (by omega) hM_le
+      (fun j => equationScope (φ.parityRowSystem (A i) j)) (by omega) hM_le
   obtain ⟨hn₀_le, hcoeff⟩ := le_and_le_clog_of_max_le hN₀ hcard.1
   obtain ⟨hb₀_pow, hw_pow⟩ :=
     parityBranchThreshold_succ_and_width_le_clog_pow (by omega) hcard.1 (by omega) hm hB_le

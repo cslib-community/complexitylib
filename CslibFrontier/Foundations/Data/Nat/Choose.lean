@@ -46,7 +46,7 @@ the Kővári–Sós–Turán bound.
   block-avoidance binomial estimate.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

@@ -58,12 +58,12 @@ variable (W : Quad p.n)
 
 /-- The type word of four paths: a layer has type `𝒟` (`true`) if the edges of `P` and `Q`
 differ, and type `𝒩` (`false`) otherwise. -/
-def type (t : Fin p.n) : Bool := decide (W.1.1.edge t ≠ W.1.2.edge t)
+def type (t : Fin p.n) : Bool := decide (W.P.edge t ≠ W.Q.edge t)
 
 /-- The second variable of the local polynomial of a layer: the edge of `R` in a layer of type
 `𝒩` and the edge of `Q` in a layer of type `𝒟`. The first variable is the edge of `P`. -/
 def mate (t : Fin p.n) : Fin p.n × Fin p.n × Fin p.n :=
-  if W.1.1.edge t = W.1.2.edge t then W.2.1.edge t else W.1.2.edge t
+  if W.P.edge t = W.Q.edge t then W.R.edge t else W.Q.edge t
 
 theorem mate_fst (t : Fin p.n) : (W.mate t).1 = t := by
   rw [mate]
@@ -71,13 +71,13 @@ theorem mate_fst (t : Fin p.n) : (W.mate t).1 = t := by
 
 variable (p) in
 /-- The shift of the second factor of the local polynomial. -/
-def shift (t : Fin p.n) : ℕ := if (W.1.1.edge t = W.1.2.edge t ↔ p.isV t) then 0 else 1
+def shift (t : Fin p.n) : ℕ := if (W.P.edge t = W.Q.edge t ↔ p.isV t) then 0 else 1
 
 variable (p) in
 /-- The local polynomial of a layer: the square root of the product of the four path
 coefficients of the layer. -/
 def «local» (M : Fin p.n × Fin p.n × Fin p.n →₀ ℕ) (t : Fin p.n) : ℕ :=
-  (M (W.1.1.edge t) + if p.isV t then 0 else 1) * (M (W.mate t) + W.shift p t)
+  (M (W.P.edge t) + if p.isV t then 0 else 1) * (M (W.mate t) + W.shift p t)
 
 end Quad
 

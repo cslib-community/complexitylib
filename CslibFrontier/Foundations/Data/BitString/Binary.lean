@@ -29,6 +29,7 @@ significant bit first), as well as `Nat.ofBits` and `Nat.testBit`, without addin
 * `Cslib.BitString.val_equivFin_eq_ofBits`: `equivFin` agrees with `Nat.ofBits`.
 * `Cslib.BitString.equivFin_symm_apply`: the `i`-th bit of `(equivFin n).symm k` is
   `(k : ℕ).testBit i`.
+* `Cslib.BitString.testBit_equivFin`: the `i`-th binary digit of `equivFin n x` is `x i`.
 * `Cslib.BitString.lsbValue_eq_binaryValue_reverse`: little-endian digits are the reversed
   big-endian ones.
 * `Cslib.BitString.lsbValue_ofFn`: reading the bits of an `n`-bit word in order gives its number in
@@ -41,7 +42,7 @@ significant bit first), as well as `Nat.ofBits` and `Nat.testBit`, without addin
   `equivFin n` coordinates.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.BitString
 
@@ -64,6 +65,11 @@ theorem val_equivFin_eq_ofBits {n : ℕ} (x : BitString n) : (equivFin n x : ℕ
   simp only [equivFin, Equiv.symm_trans_apply, Equiv.arrowCongr_symm, Equiv.refl_symm,
     Equiv.symm_symm, Equiv.arrowCongr_apply, Function.comp_apply, Equiv.refl_apply, hfin]
   rfl
+
+/-- The `i`-th binary digit of `equivFin n x` is `x i`. -/
+theorem testBit_equivFin {n : ℕ} (x : BitString n) (i : Fin n) :
+    (equivFin n x : ℕ).testBit i = x i := by
+  rw [← equivFin_symm_apply, Equiv.symm_apply_apply]
 
 /-- Reading the bits of an `n`-bit word in order gives its number in `equivFin n`. -/
 theorem lsbValue_ofFn {n : ℕ} (x : BitString n) : lsbValue (List.ofFn x) = equivFin n x := by

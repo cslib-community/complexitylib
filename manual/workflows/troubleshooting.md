@@ -13,6 +13,7 @@ Use editor or MCP diagnostics and goal inspection. A partial diagnostic response
 | `polytime` cannot certify a length guard such as `if w.length = n then … else …` | Whether the comparison's natural-number encoding is ambiguous | Import [`PolyTime/Nat/Eq.lean`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Eq.lean), whose `unary_eq'` fixes both operands to unary |
 | A loop leaves obligations | Iteration count, invariant, encoded state growth | Prove the growth/count premise and use the appropriate iteration rule |
 | A projection fails despite a supplied certificate | Its input/output representations | Match the encodings or supply the conversion certificate |
+| `Expected a definition with an exposed body`, or `omega`, `decide` or a projection cannot see through an imported definition | Whether the definition's module exposes its body | Use the module's characterizing lemmas, or add `@[expose]` to that definition alone ([module surface](../../CONTRIBUTING.md#public-surface-under-the-module-system)) |
 | `ppt` fails after a bind | Sampled-value and continuation encodings | Find a common encoding and the continuation's joint certificate |
 | `ppt` is slow or exhausts Aesop's rule limit on a sample-then-call routine | Whether every definition the program unfolds through was passed as a hint | Pass the hints, or [compose the rules explicitly](probabilistic-workflows.md#certify-a-closed-randomized-routine) |
 | `ppt` fails on an oracle goal | Whether the program is unfolded, and each query keeps a bounded `List.take` prefix | Pass the program's definition as a hint (`ppt [handler]`); for handler substitution or adaptive loops, apply the explicit rule and its invariant |
@@ -21,7 +22,7 @@ Use editor or MCP diagnostics and goal inspection. A partial diagnostic response
 | A RAM theorem does not apply to a Turing-time goal | Word width, basis and simulation | Apply a bridge and account for its overhead |
 | An endpoint needs a powerful added assumption | Whether it supplies the desired result | Locate the missing construction and reassess the claim |
 
-The [automation reference](../design-and-assurance/automation.md) documents the tactics. The [plain `polytime` implementation](../../CslibFrontier/Tactic/PolyTime.lean) and [`ppt`](../../CslibFrontier/Tactic/PPT.lean) may report a failed compositional attempt. This is a search hint, not a theorem of inefficiency or noncomputability. When `degree`, `logspace`, `space`, `stateful`, `fo_qf`, `fo_iso_closed` or `fo_definable` fails, the backend's error ends with a note saying what to supply: a certificate for the named routine, an unfolded definition, an input-length allowance, a bound on an answer vector, an intermediate contract or a registered rule. `degree` and `logspace` reject a goal of another kind before searching. The [failure tests](../../CslibFrontierTests/TacticFailureNotes.lean) show each failure next to the input that then closes the goal.
+The [automation reference](../design-and-assurance/automation.md) documents the tactics. The [plain `polytime` implementation](../../CslibFrontier/Tactic/PolyTime.lean) and [`ppt`](../../CslibFrontier/Tactic/PPT.lean) may report a failed compositional attempt. This is a search hint, not a theorem of inefficiency or noncomputability. When `degree`, `logspace`, `space`, `fo_qf`, `fo_iso_closed` or `fo_definable` fails, the backend's error ends with a note saying what to supply: a certificate for the named routine, an unfolded definition, an input-length allowance, a bound on an answer vector or a registered rule. `degree` and `logspace` reject a goal of another kind before searching. The [failure tests](../../CslibFrontierTests/TacticFailureNotes.lean) show each failure next to the input that then closes the goal.
 
 ## Separate algorithmic growth from search cost
 
@@ -41,7 +42,7 @@ scripts/cache/ensure.sh --refresh
 
 This retries restoration; it does not assert network or cache availability. On a warm local checkout, `COMPLEXITYLIB_CACHE_AUTO=0` opts out of automatic downloads for the wrappers while retaining Lake's input checks. The [cache guide](../../scripts/cache/README.md#automatic-restoration) specifies stamps, retries and seeding.
 
-If a small change causes a large rebuild, inspect its imports and exported interface. Public declarations and exposed definition bodies can invalidate dependents. The [build fan-out case study](../development-history/case-studies.md) explains why widely imported hubs can be costly. A slow rebuild alone does not demonstrate a cache defect.
+If a small change causes a large rebuild, inspect its imports and exported interface. Public declarations and exposed definition bodies can invalidate dependents. The [build fan-out case study](../history/case-studies.md) explains why widely imported hubs can be costly. A slow rebuild alone does not demonstrate a cache defect.
 
 ## Diagnose "Too many open files in system"
 
@@ -57,6 +58,6 @@ One Lake build runs roughly as many `lean` processes at once as its thread pool 
 
 A focused build, quick changed-client check, whole-library build, full `scripts/check.sh` run and axiom audit have different scopes. Record the actual command and revision. Quick mode can fall back to the full suite; inspect its report. The [contribution chapter](contributing.md) specifies integration requirements.
 
-If generated API documentation alone is stale after a module was removed, use the targeted cleanup in [the README](../../README.md#build-the-documentation). A library-wide clean discards unrelated warm outputs and does not repair an incorrect statement.
+If generated API documentation alone is stale after a module was removed, use the targeted cleanup in [the build instructions](../BUILD.md#build-the-api-reference). A library-wide clean discards unrelated warm outputs and does not repair an incorrect statement.
 
 [complexitylib]: ../sources.md#complexitylib

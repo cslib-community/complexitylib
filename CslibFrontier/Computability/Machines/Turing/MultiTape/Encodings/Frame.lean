@@ -49,7 +49,7 @@ and overwrite the bit in place (`Turing.MultiTapeTM.set_frame_append_cons`).
 * `Turing.MultiTapeTM.set_frame_append_cons`: overwriting a framed bit in place.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

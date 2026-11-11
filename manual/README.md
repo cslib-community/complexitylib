@@ -29,12 +29,12 @@ resource bound: the encoding and cost convention are part of the theorem.
 | Coordinate implementation and review | [Participant and reviewer procedures](workflows/agent-operations.md) |
 | Direct agents as their human operator | [Agent Operator's Manual](AGENT_OPERATORS.md) |
 
-The [reference index](index.md) covers models, major theorems, design choices and source
-credit. The [model map](model-map.md) provides 265 model and interface entries from the
-initial survey. Update the affected descriptions and routes when an interface, theorem
-contract or operating procedure changes; the index is not a claim that every mathematical
-declaration has been classified. The [existing guide](../guide/CslibFrontierGuide.lean) remains
-the home of its checked narrative examples, and [library source](../CslibFrontier/) and
+The [reference index](index.md) maps the library's areas to the reference chapters on models,
+major theorems, design choices and source credit, and the [model map](model-map.md) locates
+individual models and interfaces. Update the affected descriptions and routes when an
+interface, theorem contract or operating procedure changes; the reference is not a claim that
+every mathematical declaration has been classified. The [guide](../guide/CslibFrontierGuide.lean)
+remains the home of its checked narrative examples, and [library source](../CslibFrontier/) and
 [tests](../CslibFrontierTests/) remain the authority for definitions and example bodies.
 
 ## Maintain both manuals with the code
@@ -71,12 +71,9 @@ The [build instructions](BUILD.md) list optional publishing tools and output loc
 Book products live under ignored `manual/_build/`; optional research exports use
 `manual/_generated/`. Neither is maintained by hand.
 
-## Dated evidence
+## History
 
-The initial source survey and development measurements were taken at
-`13e6a31951bf1c89a1a6258c44f9444aecbbefd8` on 2 November 2026. The reference chapters retain
-pinned source evidence for that baseline; changes to their claims need current evidence.
-The [development record](development-history/index.md), census, transcript excerpts and
-historical audit data remain dated observations. Do not silently update their denominators
-or make old validation evidence support a new revision. Desktop conversation records are
-absent from that dataset. Raw private transcripts are not included.
+The [History](history/index.md) part keeps the dated record from the complexitylib period: the
+2 November 2026 source survey from which the reference chapters grew, and the study of the
+library's automated development. Its measurements stay fixed to their stated revision; they
+explain earlier decisions but do not describe the current library.

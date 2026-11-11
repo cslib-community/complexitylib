@@ -108,6 +108,11 @@ theorem portRank_eq_countP (groups : List ℕ) (g : ℕ) (ends : List (ℕ × �
         List.getD_eq_default _ _ h, show e + 1 - ends.length = e - ends.length + 1 by omega]
       split_ifs <;> ring
 
+/-- The end vertices of a list of edges, such as the edges `ends` of a parent network or the child
+edges: each edge is the pair `(u, v)` of its two end vertices in binary. The pairs are framed and
+concatenated in edge order, each with its first end framed. -/
+abbrev encEdgeEnds : List (ℕ × ℕ) ↪ List Bool := encList (encPair encNat encNat)
+
 section PolyTime
 
 variable {δ : Type} {encIn : δ ↪ List Bool} {groups : δ → List ℕ} {g : δ → ℕ}
@@ -118,7 +123,7 @@ private theorem test_polyTime (sel : ℕ × ℕ → ℕ)
     (hsel : ComputableInPolyTime sel (encPair encNat encNat) encNat)
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
     (hg : ComputableInPolyTime g encIn encNat)
-    (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat))) :
+    (hends : ComputableInPolyTime ends encIn encEdgeEnds) :
     ComputableInPolyTime (fun p : δ × ℕ =>
       decide ((groups p.1).getD (sel ((ends p.1).getD p.2 (0, 0))) 0 = g p.1))
       (encPair encIn encUnary) encBool := by
@@ -134,7 +139,7 @@ theorem computableInPolyTime_portEdges (sel : ℕ × ℕ → ℕ)
     (hsel : ComputableInPolyTime sel (encPair encNat encNat) encNat)
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
     (hg : ComputableInPolyTime g encIn encNat)
-    (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat))) :
+    (hends : ComputableInPolyTime ends encIn encEdgeEnds) :
     ComputableInPolyTime (fun x => portEdges (groups x) (g x) (ends x) sel) encIn
       (encList encUnary) :=
   ComputableInPolyTime.filterWithInput
@@ -147,7 +152,7 @@ theorem computableInPolyTime_portRank (sel : ℕ × ℕ → ℕ)
     (hsel : ComputableInPolyTime sel (encPair encNat encNat) encNat)
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
     (hg : ComputableInPolyTime g encIn encNat)
-    (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat)))
+    (hends : ComputableInPolyTime ends encIn encEdgeEnds)
     {e : δ → ℕ} (he : ComputableInPolyTime e encIn encNat) :
     ComputableInPolyTime (fun x => portRank (groups x) (g x) (ends x) sel (e x)) encIn encNat := by
   have hlen : ComputableInPolyTime (fun x => (ends x).length) encIn encUnary := by fun_prop
@@ -170,7 +175,7 @@ theorem computableInPolyTime_childEdgeOf {r v e : δ → ℕ}
     (hr : ComputableInPolyTime r encIn encNat)
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
     (hg : ComputableInPolyTime g encIn encNat)
-    (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat)))
+    (hends : ComputableInPolyTime ends encIn encEdgeEnds)
     (hv : ComputableInPolyTime v encIn encNat) (he : ComputableInPolyTime e encIn encNat) :
     ComputableInPolyTime (fun x => childEdgeOf (r x) (groups x) (g x) (ends x) (v x) (e x))
       encIn encNat := by
@@ -189,7 +194,7 @@ parent edge in unary. -/
 theorem computableInPolyTime_parentEdge {j : δ → ℕ}
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
     (hg : ComputableInPolyTime g encIn encNat)
-    (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat)))
+    (hends : ComputableInPolyTime ends encIn encEdgeEnds)
     (hj : ComputableInPolyTime j encIn encNat) :
     ComputableInPolyTime (fun x => parentEdge (groups x) (g x) (ends x) (j x)) encIn
       encUnary := by
@@ -259,7 +264,7 @@ private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ ×
     (hV : ComputableInPolyTime V encIn (encList (encPair (encList encNat) (VertexDesc.enc encT))))
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
     (hg : ComputableInPolyTime g encIn encNat)
-    (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat))) :
+    (hends : ComputableInPolyTime ends encIn encEdgeEnds) :
     ComputableInPolyTime (fun x =>
       ((List.range (V x).length).filter fun v => decide ((groups x).getD v 0 = g x)).map fun v =>
         (((V x).getD v defaultVertex).1.map (childEdgeOf (r x) (groups x) (g x) (ends x) v),
@@ -281,7 +286,7 @@ private theorem retained_polyTime {r : δ → ℕ} {V : δ → List (List ℕ ×
   have hg' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => g q.1.1) (encPair e₁ encNat) encNat :=
     hg.comp hxx
   have hends' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => ends q.1.1) (encPair e₁ encNat)
-      (encList (encPair encNat encNat)) := hends.comp hxx
+      encEdgeEnds := hends.comp hxx
   have hv' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => q.1.2) (encPair e₁ encNat) encNat :=
     ComputableInPolyTime.unary_to_binary.comp (hy.comp (ComputableInPolyTime.fst _ _))
   have he' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => q.2) (encPair e₁ encNat) encNat :=
@@ -343,9 +348,9 @@ private theorem packetVertices_polyTime {P : δ → ℕ} {cedges : δ → List (
     (hβ : ComputableInPolyTime β encIn (encList encUnary))
     (hg : ComputableInPolyTime g encIn encNat)
     (hgroups : ComputableInPolyTime groups encIn (encList encNat))
-    (hends : ComputableInPolyTime ends encIn (encList (encPair encNat encNat)))
+    (hends : ComputableInPolyTime ends encIn encEdgeEnds)
     (hP : ComputableInPolyTime P encIn encUnary)
-    (hcedges : ComputableInPolyTime cedges encIn (encList (encPair encNat encNat)))
+    (hcedges : ComputableInPolyTime cedges encIn encEdgeEnds)
     (hplace : ComputableInPolyTime place encIn (encList (encPair encNat encNat))) :
     ComputableInPolyTime (fun x => (List.range (P x)).map fun q =>
       (childPorts (cedges x) ((groups x).count (g x) + q),
@@ -381,7 +386,7 @@ private theorem packetVertices_polyTime {P : δ → ℕ} {cedges : δ → List (
   have hg' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => g q.1.1) (encPair e₁ encUnary) encNat :=
     hg.comp hxu
   have hends' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => ends q.1.1) (encPair e₁ encUnary)
-      (encList (encPair encNat encNat)) := hends.comp hxu
+      encEdgeEnds := hends.comp hxu
   have hj' : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ => q.2) (encPair e₁ encUnary) encNat :=
     ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _)
   have hpe : ComputableInPolyTime (fun q : (δ × ℕ) × ℕ =>

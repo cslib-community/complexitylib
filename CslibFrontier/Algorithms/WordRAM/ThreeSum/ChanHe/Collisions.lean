@@ -27,7 +27,7 @@ Equal input values must first be handled by the distinct-position frontend.
 * [T. M. Chan and Q. He, *Reducing 3SUM to Convolution-3SUM*][ChanHe2020]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe
 

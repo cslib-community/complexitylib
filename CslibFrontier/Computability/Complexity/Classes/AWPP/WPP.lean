@@ -30,7 +30,7 @@ and does not claim a nondeterministic counting-machine characterization.
 * [S. Fenner, L. Fortnow, S. Kurtz, L. Li, *An Oracle Builder's Toolkit*][FennerEtAl2003]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

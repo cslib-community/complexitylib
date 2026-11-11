@@ -336,8 +336,9 @@ theorem estimatedResidualInput_noise_le
       cutoff CB hCB hcut raw prep maximum precision) (by rw [pow_mul]; positivity))
 
 
-/-- Positive tolerance pays scaled centered RAW noise. In particular the second-envelope
-amplification is P * (|ζ| * (Lh + Lρ) / rate kt)^4; no RAW units are canceled. -/
+/-- Positive tolerance pays scaled centered RAW noise, for any factor `amplification ≥ 0` and at
+least `spectralWalkLength` steps. One admissible factor is the second-envelope amplification
+P * (|ζ| * (Lh + Lρ) / rate kt)^4, for any reals ζ, Lh and Lρ; no RAW units are canceled. -/
 theorem estimatedResidualInput_scaled_noise_le_dyadic
     (HP : FourthRootHierarchyParams 16 1 16 32 8) (hK : 0 < HP.K)
     (D : ZMod P) (R : RoleProfile J) (H : Horizon P)

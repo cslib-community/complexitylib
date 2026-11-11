@@ -203,8 +203,7 @@ theorem partialIncidencePotential_eq_expect {E V F : Type*} [Fintype E]
     partialIncidencePotential edge varLabels factorLabels =
       𝔼 a : V → L, 𝔼 d : F → L, potential (fun e =>
         (completeLabels varLabels a (edge e).2, completeLabels factorLabels d (edge e).1)) := by
-  have hL : 0 < Fintype.card (L × L) := Fintype.card_pos
-  simp_rw [potential_eq_collisions_sub _ hL, Finset.expect_sub_distrib,
+  simp_rw [potential_eq_collisions_sub, Finset.expect_sub_distrib,
     Finset.expect_sum_comm, Fintype.expect_const]
   simp only [partialIncidencePotential]
   simp_rw [partialIncidenceCollision_eq_expect]
@@ -222,8 +221,7 @@ theorem partialGroupPotential_eq_expect {T V G : Type*} [Fintype T] [DecidableEq
     (assigned : V → Option (T → G)) :
     partialGroupPotential assigned =
       𝔼 filler : V → T → G, ∑ t, potential (fun v => completeLabels assigned filler v t) := by
-  have hG : 0 < Fintype.card G := Fintype.card_pos
-  simp_rw [sum_potential_eq_collisions_sub _ hG, Finset.expect_sub_distrib,
+  simp_rw [sum_potential_eq_collisions_sub, Finset.expect_sub_distrib,
     Finset.expect_sum_comm, Fintype.expect_const]
   simp only [partialGroupPotential]
   simp_rw [partialCoordinateCollision_eq_expect]

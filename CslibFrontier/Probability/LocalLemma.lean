@@ -70,7 +70,7 @@ satisfiability and coloring problems (`Cslib.Probability.PMF.prod_one_sub_le_pi_
   [MoserTardos2010]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 
@@ -185,6 +185,28 @@ private theorem exp_one_inv_le_div_pow (d : ℕ) :
   rw [← Real.exp_neg, ← hsub]
   exact Real.exp_neg_one_le_one_sub_inv_pow le_rfl
 
+/-- The symmetric Local Lemma inequality `e * q * (d + 1) ≤ 1` implies the asymmetric weight bound
+`q ≤ (1 / (d + 1)) * (1 - 1 / (d + 1)) ^ k` for every `k ≤ d`. -/
+theorem le_inv_add_one_mul_one_sub_pow {d k : ℕ} {q : ℝ} (hk : k ≤ d)
+    (hlll : Real.exp 1 * q * (d + 1) ≤ 1) :
+    q ≤ (1 / ((d : ℝ) + 1)) * (1 - 1 / ((d : ℝ) + 1)) ^ k := by
+  have hd1 : (0 : ℝ) < d + 1 := by positivity
+  have hsub : 1 - 1 / ((d : ℝ) + 1) = d / (d + 1) := by
+    field_simp
+    ring
+  have hratio : (0 : ℝ) ≤ d / (d + 1) := by positivity
+  have hratio₁ : (d : ℝ) / (d + 1) ≤ 1 := (div_le_one hd1).2 (by linarith)
+  rw [hsub]
+  calc q ≤ 1 / ((d + 1) * Real.exp 1) := by
+        rw [le_div_iff₀ (by positivity)]
+        calc q * ((d + 1) * Real.exp 1) = Real.exp 1 * q * (d + 1) := by ring
+          _ ≤ 1 := hlll
+    _ = 1 / (d + 1) * (Real.exp 1)⁻¹ := by rw [one_div, one_div, mul_inv]
+    _ ≤ 1 / (d + 1) * ((d : ℝ) / (d + 1)) ^ d :=
+        mul_le_mul_of_nonneg_left (exp_one_inv_le_div_pow d) (by positivity)
+    _ ≤ 1 / (d + 1) * ((d : ℝ) / (d + 1)) ^ k :=
+        mul_le_mul_of_nonneg_left (pow_le_pow_of_le_one hratio hratio₁ hk) (by positivity)
+
 /-- **The symmetric Lovász Local Lemma, quantitative form**: if each of `n` measurable events has
 probability at most `q`, each `A i` is lopsidedly independent of the events outside `Γ i ∪ {i}`,
 each `Γ i` has at most `d` elements, and `e q (d + 1) ≤ 1`, then no event occurs with probability
@@ -200,21 +222,9 @@ theorem pow_le_measureReal_iInter_compl [Fintype ι]
   have hsub : 1 - 1 / ((d : ℝ) + 1) = d / (d + 1) := by field_simp; ring
   have h := prod_one_sub_le_measureReal_iInter_compl hA Γ hΓ (fun _ => 1 / ((d : ℝ) + 1))
     (fun _ => ⟨by positivity, (div_le_one hd1).2 (by linarith [d.cast_nonneg (α := ℝ)])⟩)
-    fun i => ?_
-  · simpa only [hsub, prod_const, card_univ] using h
-  · have hratio : (0 : ℝ) ≤ d / (d + 1) := by positivity
-    have hratio₁ : (d : ℝ) / (d + 1) ≤ 1 := (div_le_one hd1).2 (by linarith)
-    rw [prod_const, hsub]
-    calc μ.real (A i) ≤ q := hq i
-      _ ≤ 1 / ((d + 1) * Real.exp 1) := by
-          rw [le_div_iff₀ (by positivity)]
-          calc q * ((d + 1) * Real.exp 1) = Real.exp 1 * q * (d + 1) := by ring
-            _ ≤ 1 := hlll
-      _ = 1 / (d + 1) * (Real.exp 1)⁻¹ := by rw [one_div, one_div, mul_inv]
-      _ ≤ 1 / (d + 1) * ((d : ℝ) / (d + 1)) ^ d :=
-          mul_le_mul_of_nonneg_left (exp_one_inv_le_div_pow d) (by positivity)
-      _ ≤ 1 / (d + 1) * ((d : ℝ) / (d + 1)) ^ #(Γ i) :=
-          mul_le_mul_of_nonneg_left (pow_le_pow_of_le_one hratio hratio₁ (hd i)) (by positivity)
+    fun i => by
+      simpa only [prod_const] using (hq i).trans (le_inv_add_one_mul_one_sub_pow (hd i) hlll)
+  simpa only [hsub, prod_const, card_univ] using h
 
 /-- **The symmetric Lovász Local Lemma** [Alon and Spencer, Corollary 5.1.2][AlonSpencer2016],
 [ErdosLovasz1975]: if each of finitely many measurable events has probability at most `q`, each

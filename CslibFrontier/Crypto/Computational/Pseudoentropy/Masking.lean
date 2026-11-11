@@ -11,7 +11,7 @@ public import CslibFrontier.Probability.Entropy
 public import CslibFrontier.Crypto.Computational.Prediction
 public import CslibFrontier.Crypto.Computational.Hybrid.Sequence
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Boosting.Sampling
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling

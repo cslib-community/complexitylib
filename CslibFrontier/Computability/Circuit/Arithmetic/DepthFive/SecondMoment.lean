@@ -60,9 +60,9 @@ variable (p) in
 exponents of means `a / v` and `b / u`. -/
 noncomputable def Quad.weight (W : Quad p.n) (τ : Bool) (t : Fin p.n) : ℝ :=
   if p.isV t then ((p.a : ℝ) / p.v) ^ 2 *
-    (if τ then p.α⁻¹ else 1 + p.α⁻¹ * if W.1.1.edge t = W.2.1.edge t then 1 else 0)
+    (if τ then p.α⁻¹ else 1 + p.α⁻¹ * if W.P.edge t = W.R.edge t then 1 else 0)
   else (1 + (p.b : ℝ) / p.u) ^ 2 *
-    (if τ then p.β else 1 + p.β * if W.1.1.edge t = W.2.1.edge t then 1 else 0)
+    (if τ then p.β else 1 + p.β * if W.P.edge t = W.R.edge t then 1 else 0)
 
 omit [NeZero p.n] in
 /-- The upper comparison for a product over the layers satisfying `q` of two shifted exponents

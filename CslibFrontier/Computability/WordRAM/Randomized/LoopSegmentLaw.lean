@@ -42,8 +42,8 @@ namespace Cslib.WordRAM
 
 variable {B : Basis} {r : ℕ} {α β : Type}
 
-/-- A finite loop segment with a strict supported-path time bound, a pathwise random-call bound
-and the exact law of an observation of its final data. -/
+/-- A finite loop segment using at most `T` instructions on every supported path, with a pathwise
+random-call bound and the exact law of an observation of its final data. -/
 def LoopSegmentLaw (w : ℕ) (cond : Cond r) (body : Code B r) (x : Data r)
     (P : Data r → Prop) (T R : ℕ) (f : Data r → α) (μ : PMF α) : Prop :=
   ∃ m, LoopSegment w cond body x m ∧ m.IsQueryBounded R ∧

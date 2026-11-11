@@ -34,7 +34,7 @@ deterministic list calculus charges the traversal, row extraction and complete o
 * `Cslib.Probability.IsPPTOn.mapMWith`: the traversal may capture its complete input.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Complexity.AverageCase
 public import CslibFrontier.Computability.Kolmogorov.TimeBounded
 public import CslibFrontier.Probability.Entropy.BitString
 import CslibFrontier.Probability.PMF.Bind
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Polynomial
@@ -56,7 +56,7 @@ follow the full version `arXiv:2009.11514v1` (and ECCC TR20-052).
   full version `arXiv:2009.11514v1` (Section 5.2).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Kolmogorov
 

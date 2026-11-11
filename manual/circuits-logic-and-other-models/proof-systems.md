@@ -6,6 +6,16 @@ cslib-frontier represents propositional syntax as concrete finite data and disti
 
 [CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals.
 
+To certify a program that evaluates a formula, import
+`CslibFrontier.Logics.Propositional.CNF.PolyTime`. Its `fun_prop` rules
+`Literal.computableInPolyTime_eval`, `Clause.computableInPolyTime_eval` and
+`CNF.computableInPolyTime_eval` handle evaluation under an assignment `σ a`. They need a
+certificate for `fun p => σ p.1 p.2` on the pair of the input and a variable. Clients no longer need
+to pass `CNF.eval`, `Clause.eval` or `Literal.eval` to `fun_prop`. If the assignment is a named
+definition whose certificate is stated for a differently nested input, unfold that definition
+instead, as in `fun_prop [assignment]`. The [checked examples](../../CslibFrontierTests/CNFPolyTime.lean)
+include an assignment without a certificate, which `fun_prop` rejects.
+
 The [ClauseSet](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/ClauseSet/Basic.lean#L55) representation instead uses finite sets of finite sets of literals, so order and repetitions disappear. Its occurrence measure counts clauses mentioning a variable. List/set conversions preserve satisfying assignments but need separate size/occurrence lemmas. This is the representation used by the sparsification development.
 
 For ordinary disjunction with exactly three distinct variables per clause, import
@@ -79,15 +89,54 @@ that stops only when no event occurs almost surely reaches an assignment avoidin
 `proper_witness`, the coupling `check_witness`, `measure_check_eq_prod` and, combined,
 `table_witness_le`. Here `Proper` is the level independence proved inside Lemma 2.1(i), which
 implies the paper's properness. The paper's Galton–Watson counting is replaced by a depth
-induction, `sum_prod_shapes_le`. The model counts resamplings; it does not charge for sampling or
-for detecting occurring events. Theorems 1.3 (the parallel version) and 1.4 (the deterministic
-version) and the lopsided form are not formalized. The
+induction, `sum_prod_shapes_le`; relation-parameterized variants `witnessRel`, `ProperRel` and
+`sum_prod_shapesRel_le` support the lopsided extension.
+
+Symmetric weights `Real.exp 1 * q * (d + 1) ≤ 1` (`MoserTardos.exists_weights_of_symmetric`) and
+`PMF.pi` transport bridges live in `CslibFrontier.Probability.MoserTardos.Symmetric`. They give
+`lintegral_resamplings_le_symmetric` (`1 / d` for `1 ≤ d`), `lintegral_resamplings_le_symmetric_zero`
+(`q / (1 - q)` for `d = 0`), `lintegral_sum_resamplings_le_symmetric`,
+`ae_exists_forall_notMem_run_symmetric` and `exists_forall_notMem_symmetric`, together with
+`toReal_toOuterMeasure_pi_eq_measureReal`, `lintegral_resamplings_le_pmfPi`,
+`lintegral_resamplings_le_pmfPi_symmetric`, `ae_exists_forall_notMem_run_pmfPi` and
+`ae_exists_forall_notMem_run_pmfPi_symmetric` for events stated against `Cslib.Probability.PMF.pi`.
+
+The Section 6 lopsided extension is in `CslibFrontier.Probability.MoserTardos.Lopsided`
+[mosertardos10]. `Lopsidependent` and `lopsidedAdj` replace variable sharing by lopsidependency in
+the witness-tree relation `witnessRel (lopsidedAdj vbl A)`, using canonical depth-ordered log
+normalization for Lemma 6.2 (`Lopsided.table_isLog_eq_prod` and `Lopsided.table_witness_le`) and
+yielding Theorem 6.1 (`Lopsided.lintegral_resamplings_le`, `Lopsided.lintegral_sum_resamplings_le`,
+`Lopsided.ae_exists_run_eq_none`, `Lopsided.ae_exists_forall_notMem_run`,
+`Lopsided.exists_forall_notMem`, and symmetric `Lopsided.lintegral_resamplings_le_symmetric`,
+`Lopsided.ae_exists_forall_notMem_run_symmetric` and `Lopsided.exists_forall_notMem_symmetric`).
+
+For exact `k`-CNF satisfiability with improved constants,
+`CslibFrontier.Logics.Propositional.CNF.Moser.LocalLemma` instantiates these theorems on
+`CNF.IsExactDistinct k` formulas with the deterministic rule `Moser.firstViolatedRule`. Under
+standard share degree `Moser.degree φ i ≤ d` and `Real.exp 1 * (d + 1) ≤ 2 ^ k`, it supplies
+`Moser.lintegral_resamplings_le_of_exp_mul_le`, `Moser.lintegral_sum_resamplings_le_of_exp_mul_le`,
+and `Moser.ae_exists_eval_run_firstViolated_of_exp_mul_le` (yielding a constructive proof of
+`CNF.IsExactDistinct.satisfiable_of_exp_mul_le` above). Using `Moser.Conflicts` and
+`Moser.conflictDegree`, `Moser.not_lopsidependent_of_not_conflicts` weakens the neighborhood to
+clauses sharing a variable with opposite polarity, yielding
+`Moser.lintegral_resamplings_le_of_conflict_exp_mul_le`,
+`Moser.lintegral_sum_resamplings_le_of_conflict_exp_mul_le`,
+`Moser.ae_exists_eval_run_firstViolated_of_conflict_exp_mul_le` and
+`CNF.IsExactDistinct.satisfiable_of_conflict_exp_mul_le` under `Real.exp 1 * (d' + 1) ≤ 2 ^ k`.
+
+The model counts resamplings; it does not charge for sampling or for detecting occurring events.
+Theorems 1.3 (the parallel version) and 1.4 (the deterministic version) are not formalized. The
 [checked examples](../../CslibFrontierTests/MoserTardos.lean) give one fair coin, where the bound is
 `x / (1 - x) = 1`, two dependent events on three coins that meet the hypothesis with equality, an
 impossible event with `x = 0`, two complementary events for which no `x` satisfies the
-hypothesis, and a concrete valid log on a fixed table whose witness tree is computed by `decide`
-and passes its check. Check them with
-`scripts/build.sh CslibFrontierTests.MoserTardos`.
+hypothesis, a concrete valid log on a fixed table whose witness tree is computed by `decide`
+and passes its check, symmetric (`d = 0` and `d = 1`) and `PMF.pi` bridges, and Section 6
+lopsided events sharing a variable where the standard bound fails; check them with
+`scripts/build.sh CslibFrontierTests.MoserTardos`. The
+[constructive `k`-SAT examples](../../CslibFrontierTests/MoserLocalLemma.lean) cover an exact
+`4`-CNF exceeding `degree < 2 ^ (k - 3)`, a `decide`-verified `firstViolatedRule` step, and
+exact `3`-CNFs where `conflictDegree` (`0` and `1`) succeeds while `degree = 3` fails the standard
+Local Lemma; check them with `scripts/build.sh CslibFrontierTests.MoserLocalLemma`.
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
@@ -287,12 +336,89 @@ successor table. The native cost proof covers malformed tables and enormous bina
 indices; only actual list lengths fund iteration. See the [graph certificate tests](../../CslibFrontierTests/RotationCertificate.lean)
 and [ordered CSP certificate tests](../../CslibFrontierTests/CSPRotationCertificate.lean).
 
-These are finite encoding and numerical-verification results. Geometric realization, identifying
-the outer face across disconnected components, bare-instance recognition/construction, planar
-duality and the edge solver remain open. Exact relation-arity and satisfiability guards are
+These are finite encoding and numerical-verification results; the indexed duality and lifting
+theorems below extend their mathematical interface. Geometric realization, identifying the outer
+face across disconnected components, bare-instance recognition/construction and the edge solver
+remain open. Exact relation-arity and satisfiability guards are
 separate: a false nullary relation passes the port-order check. Rejection of a supplied toroidal
 rotation does not prove that its graph is nonplanar. The full objective remains
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Indexed duality and Boolean difference lifting
+
+Import `CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Dual`,
+`ComponentCounts` and `Lifting` at the same module prefix. The namespace is
+`Cslib.Complexity.Graph.RotationSystem`. These modules use the existing listed multigraph and
+rotation models. `dualGraph` preserves each listed edge position and names its incident faces
+by their least actual dart indices. `dualRotation` uses the source face successor as its vertex
+rotation; the dual face successor is edge reversal, source rotation, then edge reversal.
+The complete face/incident-vertex equivalences include singleton face orbits and retain loops,
+parallel occurrences and repeated boundary vertices.
+
+`numericalGenusZero_dual_iff r hG` preserves the existing componentwise numerical predicate.
+Its explicit `hG` requires every endpoint to be declared. Source isolated points have no dart
+and are omitted by dualization; their conventional source Euler equation is trivial. The
+empty graph and disconnected mixtures of point and edge components are included. The proof
+provides actual component bijections and exact vertex, edge and face counts.
+
+`FaceEven x` requires even parity on every actual face boundary. Darts are counted separately,
+so repeated appearances of an edge contribute with their boundary multiplicity. `edgeGradient`
+assigns the XOR of the endpoint spins to each indexed edge. With declared endpoints and
+`r.NumericalGenusZero`, `faceEven_iff_exists_vertexSpins r hG hgenus x` proves
+`r.FaceEven x ↔ ∃ spin : Nat → Bool, G.edgeGradient spin = x` for arbitrary finite listed graphs.
+The proof derives connectivity and characteristic-two incidence ranks internally. The reverse
+implication, `faceEven_edgeGradient`, telescopes along face boundaries and needs neither graph
+premise. Duplicate vertex declarations and sparse natural-number names are supported.
+
+The [dual and lifting tests](../../CslibFrontierTests/RotationDual.lean) check actual bridge, loop
+and digon dual data; a toroidal obstruction; disconnected point/edge mixtures; duplicate
+vertex declarations; names of size `2^100`; and the endpoint guard. The generic
+`Matrix.endpointIncidence` API is in
+`CslibFrontier.Foundations.LinearAlgebra.Matrix.EndpointIncidence`; loops contribute twice and
+cancel over `ZMod 2`, while parallel column positions stay distinct. Finite permutation orbit
+transport is shared through `CslibFrontier.Foundations.GroupTheory.Perm.Doubled`.
+
+These are combinatorial duality and lifting results, reconstructing the graph prerequisite in
+Dvořák–Kupec, §3, printed p. 439. Geometric realization, bare rotation recognition, native
+compilation, the full cyclic-difference CSP reduction and recursive edge solving remain open
+under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+## Ordered incidence-to-polygon rotations
+
+Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
+In `Cslib.Complexity.CSP`, `polygonGraph F` has one listed edge per actual argument occurrence,
+from its variable to the next variable in the same cyclic scope. Variable names are replaced by
+the existing dense occurrence names. Unary scopes give loops; repeated variables and identical
+constraints retain their separate edge and constraint positions. With `M` occurrences, there
+are exactly `M` edges and at most `M` variable vertices.
+
+Given an incidence rotation `r`, `polygonRotation r` constructs the corresponding abstract
+polygon rotation. `RespectsArgumentOrder r` records the original cyclic scope order. If every
+actual scope is positive, `polygonFaceEquiv r hOrder hPos` identifies all polygon faces with
+`Fin F.length ⊕ r.Face`: one indexed black face per constraint, plus every original incidence
+face as a white face. Singleton faces are included, and the two sides of every polygon edge
+belong to distinct faces. The positivity guard concerns actual scopes, independently of any
+relation arity or semantics. Nullary constraints require separate treatment.
+
+`polygonComponentEquiv F hPos` gives the complete component correspondence. Per component,
+`V_incidence = V_polygon + constraintCount`, `E_incidence = E_polygon`, and
+`F_polygon = constraintCount + F_incidence`. These actual counts prove
+`numericalGenusZero_polygon_iff r hOrder hPos` for the existing componentwise numerical
+predicate. Empty and disconnected instances are included, without a finite universe or
+magnitude bound on variable names.
+
+The [primal rotation tests](../../CslibFrontierTests/CSPPrimalRotation.lean) cover unary loops,
+repeated arguments and identical constraints, sparse `2^100` labels, disconnected/empty bodies,
+malformed declared arity, the nullary guard, and an ordered toroidal example where both
+numerical predicates fail. General face-quotient cardinality facts are in
+`CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts`; dense vertex
+counts reuse the existing component-vertex set API. Incidence endpoint declaration now lives
+at its source in `Problems.CSP.Incidence`, with its name and certificate clients preserved.
+
+This reconstructs the finite maps behind Dvořák–Kupec's ordered face model, printed p. 434.
+`polygonGraph` is an explicit list construction; abstract rotation/equivalence inverses are
+proof data. Native compilation, geometric realization, bare recognition and the complete
+planar CSP reduction/solver remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Delta-matroid composition and local contraction closure
 
@@ -446,6 +572,150 @@ scripts/build.sh \
   CslibFrontierTests.ProofComplexity.AlgebraicProofSystems \
   CslibFrontierTests.ProofComplexity.AlgebraicCNF
 ```
+
+### Refutations over the Boolean cube
+
+[The Boolean-cube layer](../../CslibFrontier/Logics/Propositional/Algebraic/Boolean.lean) reuses
+the NS and PC proofs above and passes the Boolean axioms `X i ^ 2 - X i` as explicit inputs,
+`F ++ boolAxioms σ R`. `IsBoolSolution F x` says that every `f ∈ F` vanishes at the `0/1` point
+`x : σ → Bool`, read in `R` with `1` for true. Soundness (`NS.IsProof.not_isBoolSolution`,
+`PC.IsProof.not_isBoolSolution`) holds over every nontrivial commutative ring. Completeness holds
+over a field. If every input has total degree at most `D` in `n = card σ` variables and there is
+no Boolean solution, then `NS.refutableInDegree_of_forall_not_isBoolSolution` gives a
+Nullstellensatz refutation of degree at most `n + D`, and `PC.RefutableInDegree.of_ns` transfers
+it to polynomial calculus (`NS.refutableInDegree_iff`, `PC.refutableInDegree_iff`). The proof uses
+Mathlib's Combinatorial Nullstellensatz. The bound `n + D` comes from that argument; the sharper
+polynomial calculus bound `max(D, n + 1)` of Impagliazzo, Pudlák and Sgall (Lemma 4.1) is not
+formalized. Two helpers support these results:
+[`NS.exists_isProof_of_sum`](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/Combination.lean)
+turns a finite combination of inputs into a certificate with the same degree bound, and
+[`PC.IsProof.mono`](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Invariant.lean)
+enlarges the input list. `Algebraic.setOf_mem_boolAxioms` identifies the members of
+`boolAxioms σ R` with the set `SOS.Psatz.booleanAxioms σ R` that Positivstellensatz refutations
+take as equations ([sum-of-squares](#sum-of-squares)).
+
+[The Boolean CNF encoding](../../CslibFrontier/Logics/Propositional/Algebraic/CNF/Boolean.lean)
+substitutes `X v` for the positive literal coordinate and `1 - X v` for the negative one in
+`Clause.toPoly`. So `Clause.toBoolPoly` is the standard product encoding in the original
+variables: `x ∨ ¬y` becomes `(1 - x) · y`. With `1` read as true, the clause polynomial is `0`
+at a satisfying point and `1` at a falsifying point (`Clause.eval_toBoolPoly`), and
+`CNF.isBoolSolution_toBoolPolys_iff` identifies Boolean solutions with satisfying assignments.
+Because the Boolean axioms are inputs, contradictory unit clauses have no spurious solution.
+`CNF.not_satisfiable_of_ns` and `CNF.not_satisfiable_of_pc` give soundness. Over a field,
+`CNF.ns_refutableInDegree_iff` and `CNF.pc_refutableInDegree_iff` give refutability in degree
+`card V + w`, for clauses of at most `w` literals, exactly when the formula is unsatisfiable.
+
+[The Boolean-cube quotient module](../../CslibFrontier/Foundations/BooleanAnalysis/BooleanQuotient.lean)
+identifies the quotient `MvPolynomial ι R ⧸ boolIdeal ι R` over any commutative ring `R` and
+finite `ι` with the ring `(ι → Bool) → R` of cube functions (`boolQuotientAlgEquiv`), and proves
+uniqueness of multilinear representatives in `restrictDegree ι R 1` over arbitrary commutative
+rings and index types (`existsUnique_mem_restrictDegree_sub_mem_boolIdeal`, coinciding with
+`multilinearExtension` when `ι` is finite). The companion linear equivalences
+`restrictDegreeOneLinearEquiv` and `restrictDegreeOneQuotientEquiv` (with `@[simp]` evaluation and
+inverse lemmas `restrictDegreeOneLinearEquiv_apply`, `coe_restrictDegreeOneLinearEquiv_symm`,
+`restrictDegreeOneQuotientEquiv_apply`, `eval_coe_restrictDegreeOneQuotientEquiv_symm`, and
+`coe_restrictDegreeOneQuotientEquiv_symm_mk`) transport between multilinear polynomials, cube
+functions, and quotient cosets. Over a reduced ring `boolIdeal` is radical
+(`boolIdeal_isRadical`), and over a field `K` the quotient has dimension `2 ^ Fintype.card ι`
+(`finrank_boolQuotient`).
+[Algebraic/CNF/Counting](../../CslibFrontier/Logics/Propositional/Algebraic/CNF/Counting.lean)
+identifies the spans of `boolAxioms` and `SOS.Psatz.booleanAxioms` with `boolIdeal`
+(`span_boolAxioms_eq_boolIdeal`, `span_booleanAxioms_eq_boolIdeal`), characterizes unsatisfiability
+over a field by `1 ∈ Ideal.span {p | p ∈ F} ⊔ boolIdeal σ K`
+(`Algebraic.one_mem_sup_boolIdeal_iff`), and defines the `0`/`1` clause and formula satisfaction
+indicators `Clause.satPoly R c := 1 - c.toBoolPoly R` and `CNF.satIndicatorPoly R φ`. Over any
+commutative ring `R`, summing `φ.satIndicatorPoly R` over Boolean assignments to `declared`,
+`φ.vars.toFinset`, or `bitsAssignment φ.distinctVars i` (`i < 2 ^ φ.numVars`) equals the natural
+count cast into `R`, `(φ.modelCountOn declared : R)` or `(φ.modelCount : R)`
+(`CNF.sum_eval_satIndicatorPoly_declared`, `CNF.sum_eval_satIndicatorPoly_vars`,
+`CNF.sum_range_eval_satIndicatorPoly_distinctVars`), whereas over the finite ambient cube `V → Bool`
+it equals `(2 : R) ^ (Fintype.card V - φ.numVars) * (φ.modelCount : R)` with the unused-variable
+factor `(2 : R) ^ (Fintype.card V - φ.numVars)` (`CNF.sum_eval_satIndicatorPoly`); in positive
+characteristic, casting into `R` preserves the counts only modulo the ring characteristic.
+[Checked examples](../../CslibFrontierTests/BooleanQuotientSAT.lean) verify uniqueness over the
+non-reduced ring `ZMod 4` (where `boolIdeal` fails to be radical), the dimension `4` on two
+variables over `ℚ`, unsatisfiability in `span F ⊔ boolIdeal`, and the cube-sum identities including
+unused variables (`sparseFin3`, where `modelCount = 3` and the `Fin 3 → Bool` sum is `6`).
+
+[The subset-sum lower bound](../../CslibFrontier/Logics/Propositional/Algebraic/SubsetSum.lean) is
+Theorem 5.1 of Impagliazzo, Pudlák and Sgall. Suppose every `c i` is nonzero and `n ≥ 1`. Then
+`m - ∑ c i * X i`, with the Boolean axioms, has no polynomial calculus refutation
+(`PC.not_refutableInDegree_subsetSumPoly`) and no Nullstellensatz refutation
+(`NS.not_refutableInDegree_subsetSumPoly`) of degree `⌈n/2⌉ = (n + 1) / 2`. The source proves
+this over `ℝ`; the formal statement needs only a field in which `⌈n/2⌉!` is nonzero. When no subset
+of the `c i` sums to `m`, completeness gives a refutation of degree `n + 1`
+(`PC.refutableInDegree_subsetSumPoly_iff`). The proof runs the invariant method
+`PC.IsProof.mem_of_degree_le` on the submodule of polynomials that agree on the cube with
+`(m - ∑ c i x i) · r` for some `r` of degree below `d`, using Lemma 5.2 from the
+[foundations section](#foundations-for-algebraic-degree-lower-bounds). The
+[tests](../../CslibFrontierTests/ProofComplexity/Algebraic.lean) check the following instances:
+
+- An explicit degree-2 Nullstellensatz refutation of `1/2 - x`, which has no degree-1
+  polynomial calculus refutation.
+- `x₁ + x₂ + x₃ + x₄ = 5` over `ℚ` and over `ZMod 7`, refutable in degree 5 but not in degree 2.
+- `x₁ + x₂ + x₃ = m` over the field with nine elements, for `m` outside `0, 1, 2, 3`, refutable
+  in degree 4 but not in degree 2, although `3!` vanishes there.
+- The instance with no variables, refutable in degree 0, which shows that `n ≥ 1` is needed.
+- `v ∧ ¬v`, refuted in degree 1, and the satisfiable formula `v`, which has no refutation.
+
+Run `scripts/build.sh CslibFrontierTests.ProofComplexity.Algebraic` from the repository root to
+check them. Not yet formalized: the matching upper bound of Theorem 4.2, the size lower bounds of
+the same paper, pigeonhole degree lower bounds, and the simulation of bounded-width resolution by
+polynomial calculus.
+
+### Tseitin formulas
+
+[The Tseitin degree lower bound](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Tseitin.lean)
+is the polynomial calculus counterpart of the Ben-Sasson–Wigderson width lower bound. Take a field
+`K` with `2 ≠ 0` and a connected multigraph `ends : E → Sym2 V`. Then a polynomial calculus
+refutation of degree `d` of the clause polynomials of `CNF.tseitinFormula ends χ`, together with
+the Boolean axioms, forces `e(G) ≤ 2 d`
+(`Tseitin.minBalancedCut_le_two_mul_of_pc_refutableInDegree`). Here `e(G)` is
+`Multigraph.minBalancedCut`, the same expansion used in the width bound. The Nullstellensatz form
+follows through `PC.RefutableInDegree.of_ns`
+(`Tseitin.minBalancedCut_le_two_mul_of_ns_refutableInDegree`). The sum-of-squares counterpart,
+Grigoriev's bound `e(G) ≤ d` for the `±1` encoding of the Tseitin parity system, is described
+under [Sum-of-squares](#sum-of-squares). That Tseitin formulas are hard for
+polynomial calculus over fields of characteristic `≠ 2` is due to Buss, Grigoriev, Impagliazzo
+and Pitassi (JCSS 2001), and for the Nullstellensatz to Grigoriev (FOCS 1998). Buss and
+Nordström, Handbook of Satisfiability, §7.5.4, record this hardness qualitatively and describe the
+`R`-operator method. The quantitative form `e(G) ≤ 2 d`, with the Ben-Sasson–Wigderson expansion,
+is the form proved here; it is not taken from a checked source statement. The theorem numbers and
+constants of the two original papers have not been checked against a copy. The proof uses the
+invariant method with the change of variables `x ↦ (1 - y) / 2`. The invariant is the common
+kernel of linear functionals indexed by sets `T` of at most `d` edges. Each functional sends a
+monomial to the sign `(-1) ^ χ(U)` of the unique set `U` of fewer than `|V| / 3` vertices whose
+edge cut is the symmetric difference of `T` and the set of odd-degree variables of the monomial,
+or to `0` if there is no such `U`. The terms of a clause polynomial cancel in pairs, and `2 ≠ 0`
+turns `2 S = 0` into `S = 0`.
+
+[The expander corollary](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/TseitinExpander.lean)
+turns this into `h(G) |V| / 6 ≤ d` on rotation maps with edge expansion `h(G) > 0`. With
+`RotationMap.expander` it gives `CNF.exists_forall_pc_refutableInDegree_le`. For every `n ≥ 2`,
+this is an unsatisfiable formula with at most `120 n` variables, at most `2 ^ 120 · n` clauses
+and at most `120` literals per clause. Every polynomial calculus refutation of it over every field
+with `2 ≠ 0` has degree at least `n / 36000`. As in the resolution case, the expanders come from
+a counting argument, so the formulas exist but have no explicit generator.
+
+[The characteristic-2 upper bound](../../CslibFrontier/Logics/Propositional/Algebraic/Nullstellensatz/Tseitin.lean)
+shows that `2 ≠ 0` cannot be dropped. In characteristic `2`, the clause polynomials of the parity
+constraint at a vertex add up to the charge plus the sum of the incident variables
+(`CNF.sum_toBoolPolys_parityOnEq`). By the handshake argument the clause polynomials of the whole
+formula add up to `1`, so `CNF.ns_refutableInDegree_tseitinFormula_of_charP_two` gives a
+Nullstellensatz refutation whose degree is the largest number of edges at a vertex. The
+[tests](../../CslibFrontierTests/ProofComplexity/AlgebraicTseitin.lean) check the following instances:
+
+- On the triangle, the bound rules out degree `0` over `ℚ` and over `ZMod 3`, and over `ZMod 2`
+  the formula has a refutation of degree `2`.
+- A triangle with an isolated charged vertex has `e(G) = 2` but a refutation of degree `0`, so
+  connectivity is needed.
+- An expander on `5000000` vertices has `e(G) > 240`. Its Tseitin formula has a refutation of
+  degree `120` over `ZMod 2` but none over `ZMod 3`, so `2 ≠ 0` is needed.
+- The hard formulas, instantiated over `ZMod 3`.
+
+Run `scripts/build.sh CslibFrontierTests.ProofComplexity.AlgebraicTseitin` to check them. Not yet
+formalized: the size–degree trade-off for polynomial calculus, which would turn the degree bound
+into an exponential size lower bound for Tseitin formulas on expanders.
 
 ## Timestamped f-DAGs and local surgery
 
@@ -813,7 +1083,7 @@ The [checked examples](../../CslibFrontierTests/ProofComplexity/Frege.lean) incl
 
 ## Foundations for algebraic degree lower bounds
 
-Two Boolean-analysis lemmas from the subset-sum degree lower bound of Impagliazzo, Pudlák and Sgall (Theorem 5.1) are available before the algebraic proof systems themselves. Lemma 5.2 of that paper is [`BitString.totalDegree_affine_mul`](../../CslibFrontier/Foundations/BooleanAnalysis/AffineDegree.lean). It concerns `L = m - ∑ c i * x i` with every `c i` nonzero and a nonzero function `r` on the cube with `2 * deg r < n`: the product `L * r` has multilinear degree exactly `deg r + 1`. The source proves it over `ℝ`; the formal statement needs only a field in which `n!` is nonzero. Its proof compares subset Möbius coefficients (`BitString.subsetMobius_bitVal_mul`) and applies Gottlieb's full-rank theorem for inclusion matrices ([`Finset.eq_zero_of_sum_powersetCard_eq_zero`](../../CslibFrontier/Foundations/Combinatorics/InclusionMatrix.lean)), proved over any field in which `1, …, #U` are nonzero. The tests ([inclusion matrices](../../CslibFrontierTests/Foundations/Combinatorics/InclusionMatrix.lean), [affine degree](../../CslibFrontierTests/Foundations/BooleanAnalysis/AffineDegree.lean)) show that the field hypothesis, `t + s ≤ #U` and `2 * deg r < n` cannot be dropped.
+Two lemmas from the subset-sum degree lower bound of Impagliazzo, Pudlák and Sgall (Theorem 5.1) are available before the algebraic proof systems themselves. Lemma 5.2 of that paper is [`BitString.totalDegree_affine_mul`](../../CslibFrontier/Foundations/BooleanAnalysis/AffineDegree.lean). It concerns `L = m - ∑ c i * x i` with every `c i` nonzero and a nonzero function `r` on the cube with `2 * deg r < n`: the product `L * r` has multilinear degree exactly `deg r + 1`. The source proves it over `ℝ`; the formal statement needs only a field in which `1, …, deg r + 1` are nonzero. Its proof compares subset Möbius coefficients (`BitString.subsetMobius_bitVal_mul`) and applies Gottlieb's full-rank theorem for inclusion matrices ([`Finset.eq_zero_of_sum_powersetCard_eq_zero`](../../CslibFrontier/Foundations/Combinatorics/InclusionMatrix.lean)), proved over any field in which `1, …, s` are nonzero. The tests ([inclusion matrices](../../CslibFrontierTests/Foundations/Combinatorics/InclusionMatrix.lean), [affine degree](../../CslibFrontierTests/Foundations/BooleanAnalysis/AffineDegree.lean)) show that the field hypothesis, `t + s ≤ #U` and `2 * deg r < n` cannot be dropped. Run `scripts/build.sh CslibFrontierTests.Foundations.Combinatorics.InclusionMatrix CslibFrontierTests.Foundations.BooleanAnalysis.AffineDegree` to check them.
 
 ## Sum-of-squares
 
@@ -839,7 +1109,7 @@ The [checked examples](../../CslibFrontierTests/ProofComplexity/SumOfSquares.lea
 
 ## Known Limitations
 
-This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates, polynomial calculus, sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
+This chapter covers resolution and clause space, cutting planes, semantic derivations, Frege proofs, Nullstellensatz certificates and polynomial calculus (including refutations over the Boolean cube and two degree lower bounds, for subset sum and Tseitin formulas), sum-of-squares and their syntax clients. It does not reclassify PCPs or interactive proofs as resolution proof systems; their verifier and protocol models have separate owners. The endpoint statements and model conventions are source-inspected, while every proof body and every original lower-bound paper has not been independently checked in this worker pass.
 
 [barak-steurer16]: ../sources.md#barak-steurer16
 [beyersdorffgalesilauria10]: ../sources.md#beyersdorffgalesilauria10

@@ -476,7 +476,7 @@ theorem sum_branchAssignments_le_two_pow_interpolationScale [Fintype ι] [Decida
         rw [← Real.rpow_add two_pos]; congr 1; push_cast; ring
 
 /-- **Section 5.5 multi-branch `interpolationScale` domain-examination bound (printed p. 39):**
-When `16384 ≤ Fintype.card ι`, `1 ≤ b₀`, and
+When `16384 ≤ Fintype.card ι` and
 `totalIncidence I (fun i => equationScope (P i)) * (Nat.clog 2 (Fintype.card ι)).sqrt ≤`
 `b₀ * Fintype.card ι`, the sum of the per-branch examination bounds across all
 `b ∈ branchAssignments S` is at most
@@ -485,7 +485,6 @@ theorem sum_branch_domainExaminationBound_le_two_pow_interpolationScale [Fintype
     {β k c b₀ : ℕ} {κ : Type*}
     (I : Finset κ) (P : κ → Finset (Finset ι))
     (hn : 16384 ≤ Fintype.card ι)
-    (hb₀ : 1 ≤ b₀)
     (hM : totalIncidence I (fun i => equationScope (P i)) * (Nat.clog 2 (Fintype.card ι)).sqrt ≤
       b₀ * Fintype.card ι)
     (examSum : (ι → Bool) → ℝ)
@@ -496,7 +495,7 @@ theorem sum_branch_domainExaminationBound_le_two_pow_interpolationScale [Fintype
       (2 : ℝ) ^ (((branchExamScaleCoeff β k c + 32 : ℕ) : ℝ) *
         interpolationScale (Fintype.card ι)) :=
   sum_branchAssignments_le_two_pow_interpolationScale hn
-    (card_branchAssignments_heavyVars_le_two_pow_div I (fun i => equationScope (P i)) hb₀
+    (card_branchAssignments_heavyVars_le_two_pow_div I (fun i => equationScope (P i))
       (Nat.le_sqrt.mpr (Nat.clog_pos one_lt_two (by omega))) hM)
     examSum hexam
 
@@ -556,7 +555,7 @@ theorem CNF.branch_domainExaminationBound_parityRowSystem_le_two_pow_interpolati
 /-- **Section 6.3 multi-branch `interpolationScale` domain-examination bound for
 `CNF.parityRowSystem` (equation-count ratio `c = 6`, printed p. 43):**
 When `16384 ≤ Fintype.card V`, `∀ c ∈ φ, c.length ≤ k`, `∀ r ∈ rows, weight r ≤ W`,
-`rows.length ≤ 6 * Fintype.card V`, `1 ≤ b₀`, and
+`rows.length ≤ 6 * Fintype.card V`, and
 `(6 * (k * (W * 2 ^ k))) * (Nat.clog 2 (Fintype.card V)).sqrt ≤ b₀`, if each branch
 `b ∈ branchAssignments S` has its examination sum bounded by
 `(2 : ℝ) ^ ((branchExamScaleCoeff β k 6 : ℝ) * interpolationScale (Fintype.card V))`, then the
@@ -568,7 +567,6 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le_two_pow_interpo
     {rows : List (Fin φ.length → Bool)} (hW : ∀ r ∈ rows, weight r ≤ W)
     (hlen : rows.length ≤ 6 * Fintype.card V)
     (hn : 16384 ≤ Fintype.card V)
-    (hb₀ : 1 ≤ b₀)
     (h_thresh : (6 * (k * (W * 2 ^ k))) * (Nat.clog 2 (Fintype.card V)).sqrt ≤ b₀)
     (examSum : (V → Bool) → ℝ)
     (hexam : ∀ b ∈ branchAssignments
@@ -582,22 +580,10 @@ theorem CNF.sum_branch_domainExaminationBound_parityRowSystem_le_two_pow_interpo
         examSum b) ≤
       (2 : ℝ) ^ (((branchExamScaleCoeff β k 6 + 32 : ℕ) : ℝ) *
         interpolationScale (Fintype.card V)) := by
-  have hM :
-      totalIncidence (univ : Finset (Fin rows.length))
-          (fun j => equationScope (φ.parityRowSystem rows j)) *
-        (Nat.clog 2 (Fintype.card V)).sqrt ≤
-      b₀ * Fintype.card V := by
-    calc totalIncidence (univ : Finset (Fin rows.length))
-            (fun j => equationScope (φ.parityRowSystem rows j)) *
-          (Nat.clog 2 (Fintype.card V)).sqrt
-        ≤ ((6 * (k * (W * 2 ^ k))) * Fintype.card V) *
-            (Nat.clog 2 (Fintype.card V)).sqrt :=
-          Nat.mul_le_mul_right _ (CNF.totalIncidence_parityRowSystem_le_six_mul hk hW hlen)
-      _ = ((6 * (k * (W * 2 ^ k))) * (Nat.clog 2 (Fintype.card V)).sqrt) * Fintype.card V := by
-          ring
-      _ ≤ b₀ * Fintype.card V := Nat.mul_le_mul_right _ h_thresh
+  have hM := CNF.totalIncidence_mul_le_of_card_equationScope_le
+    (CNF.card_equationScope_parityRowSystem_le hk hW) hlen h_thresh
   exact sum_branch_domainExaminationBound_le_two_pow_interpolationScale
-    (univ : Finset (Fin rows.length)) (φ.parityRowSystem rows) hn hb₀ hM examSum hexam
+    (univ : Finset (Fin rows.length)) (φ.parityRowSystem rows) hn hM examSum hexam
 
 /-- Post-branching Section 6.3 schedule feasibility, `ReplacementDesign` existence, and single- /
 multi-branch `2 ^ (A * interpolationScale (Fintype.card V))` domain-examination bounds for

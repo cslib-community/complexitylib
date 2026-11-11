@@ -23,7 +23,7 @@ from its actual polynomial clocks; it does not use a higher normal-form calculus
 * `ComputableInPolyTime.exists_degree`: fixed resource and independent output degrees exist.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM
 
 open Cslib

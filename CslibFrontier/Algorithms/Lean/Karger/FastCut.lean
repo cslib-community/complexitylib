@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.Lean.Karger.Contraction
 public import CslibFrontier.Algorithms.WordRAM.Karger.FastCut
 import CslibFrontier.Probability.PMF.TwoBranch
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Karger–Stein recursion as a client of the contraction specification

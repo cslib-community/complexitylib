@@ -4001,29 +4001,11 @@ theorem rehashDetTail_execWithin {w base c_exp n_max U V : ℕ}
     exact hiff.mpr
       (mem_survivingSeeds_of_goodForSet hnodup (fun u hu => (hdom_iff u).mp hu) hgood)
 
-theorem pmf_toOuterMeasure_mono_on_support {α : Type*} (p : PMF α) {S T : Set α}
-    (h : ∀ y ∈ p.support, y ∈ S → y ∈ T) :
-    p.toOuterMeasure S ≤ p.toOuterMeasure T := by
-  rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply]
-  refine tsum_le_tsum fun y => ?_
-  by_cases hyS : y ∈ S
-  · by_cases hyp : y ∈ p.support
-    · rw [Set.indicator_of_mem hyS, Set.indicator_of_mem (h y hyp hyS)]
-    · have hp0 : p y = 0 := (PMF.apply_eq_zero_iff p y).mpr hyp
-      rw [Set.indicator_of_mem hyS, hp0]
-      exact zero_le
-  · rw [Set.indicator_of_notMem hyS]
-    exact zero_le
-
 theorem half_le_toOuterMeasure_of_compl_le_half {α : Type*} (p : PMF α) (S : Set α)
     (hc : p.toOuterMeasure {x | x ∉ S} ≤ 1 / 2) :
     (1 : ℝ≥0∞) / 2 ≤ p.toOuterMeasure S := by
-  have hsum : p.toOuterMeasure S + p.toOuterMeasure {x | x ∉ S} = 1 := by
-    rw [PMF.toOuterMeasure_apply, PMF.toOuterMeasure_apply,
-      ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
-    conv_rhs => rw [← p.tsum_coe]
-    refine tsum_congr fun x => ?_
-    by_cases hx : x ∈ S <;> simp [hx]
+  have hsum : p.toOuterMeasure S + p.toOuterMeasure {x | x ∉ S} = 1 :=
+    toOuterMeasure_add_compl_ennreal p S
   have hle : (1 : ℝ≥0∞) / 2 + (1 : ℝ≥0∞) / 2 ≤ p.toOuterMeasure S + (1 : ℝ≥0∞) / 2 := by
     calc (1 : ℝ≥0∞) / 2 + (1 : ℝ≥0∞) / 2
       _ = 1 := ENNReal.add_halves 1
@@ -4053,8 +4035,8 @@ theorem survivingSeeds_card_and_nonempty {c_exp n_max U : ℕ}
       (PMF.uniformOfFintype (Seed c_exp n_max U (tableBits n_max))).toOuterMeasure
         {θ : Seed c_exp n_max U (tableBits n_max) |
           θ ∉ survivingSeeds evalHash1 evalHash2 (maxEvictions n_max) ks} ≤ 1 / 2 := by
-    refine le_trans (pmf_toOuterMeasure_mono_on_support _ ?_) (hreh ks.toFinset hcard_S)
-    intro θ _ hnot hgood
+    refine le_trans (PMF.toOuterMeasure_mono _ ?_) (hreh ks.toFinset hcard_S)
+    rintro θ ⟨hnot, -⟩ hgood
     exact hnot (mem_survivingSeeds_of_goodForSet hnodup
       (fun u hu => List.mem_toFinset.mpr hu) hgood)
   exact card_le_two_mul_card_of_uniformOfFintype_compl_le_half hprob
@@ -4200,8 +4182,8 @@ theorem rehashAttemptCode_execCodeDist {w base c_exp n_max U V : ℕ}
       half_le_toOuterMeasure_of_compl_le_half (seedLaw c_exp n_max U (tableBits n_max)) G
         (hreh (Dictionary.dom s) hcard_le)
     rw [← hlaw_att, PMF.toOuterMeasure_map_apply] at hgood_prob
-    refine le_trans hgood_prob (pmf_toOuterMeasure_mono_on_support μ_att ?_)
-    intro y hy hyG
+    refine le_trans hgood_prob (PMF.toOuterMeasure_mono μ_att ?_)
+    rintro y ⟨hyG, hy⟩
     dsimp only [μ_att] at hy
     rw [PMF.mem_support_map_iff] at hy
     obtain ⟨z1, hz1, rfl⟩ := hy
@@ -5686,15 +5668,6 @@ def cuckooCode (c_exp n_max : ℕ) : SubroutineCode .exact 19 2 where
   input := fun i => decide (0 < i.val)
   output := 2
 
-/-- The width bound `2 * trinomialDeg U (tableBits n_max) ≤ w` makes the size
-`2 ^ trinomialDeg U (tableBits n_max)` of the trinomial hash field fit in a word. -/
-private theorem fits_two_pow_trinomialDeg {w n_max U : ℕ}
-    (hw : 2 * Probability.trinomialDeg U (tableBits n_max) ≤ w) :
-    Fits w (2 ^ Probability.trinomialDeg U (tableBits n_max)) := by
-  have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
-    (tableBits_pos n_max).trans_le (Probability.le_trinomialDeg U (tableBits n_max))
-  exact Nat.pow_lt_pow_right (by decide) (by omega)
-
 theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
     (hx₁ : x₁.Bounded w)
     (hb : x₁.regs 0 = base)
@@ -5712,7 +5685,7 @@ theorem initSetup_coupled_spec {w base c_exp n_max U V : ℕ} {x₁ : Data 19}
         Modifies (Block.mk base (space c_exp n_max)).footprint x₁.mem p.2.mem := by
   have hd_pos : 0 < Probability.trinomialDeg U (tableBits n_max) :=
     lt_of_lt_of_le (tableBits_pos n_max) (Probability.le_trinomialDeg U (tableBits n_max))
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   have hfit_ev : Fits w (maxEvictions n_max) :=
     hfit_q.of_le ((maxEvictions_le_tableSize n_max).trans
       (Nat.pow_le_pow_right two_pos (Probability.le_trinomialDeg U (tableBits n_max))))
@@ -5780,7 +5753,7 @@ theorem opCode_coupled_step_spec {w base c_exp n_max U V : ℕ}
       (∑' p, ν p * (T_step p + ∑' q, (μ_step p) q * (0 : ℕ))) ≤
         (stepWorstCharge c_exp n_max U s o : ℝ≥0∞) + ∑' p, ν p * (0 : ℕ) := by
   classical
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   let μ_raw : Seed c_exp n_max U (tableBits n_max) × Data 19 → PMF (Data 19) := fun p =>
     if hp : Rep w base c_exp n_max U V s p.2 ∧ argMatch o p.2.regs then
       Classical.choose
@@ -6167,7 +6140,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
   classical
   intro C
   have hfam := isCuckooHashFamily_tableBits hU
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   induction ops generalizing ks s ν with
   | nil =>
     obtain ⟨p₀, hp₀⟩ := ν.support_nonempty
@@ -6405,7 +6378,7 @@ theorem cuckoo_seq_expected_amortized (w base c_exp n_max U V : ℕ)
             (Dictionary.empty U) ops : ℝ≥0∞) := by
   classical
   intro C
-  have hfit_q := fits_two_pow_trinomialDeg hw
+  have hfit_q := KWise.fits_two_pow_trinomialDeg hw
   obtain ⟨x₁, ⟨t_span, ht_span, he_span⟩, hm₁, hb₁, hfr₁, h3₁, h4₁⟩ :=
     allocSpan_execWithin hfr h3 h4 hfit_end hfit_ev
   have hx₁_bdd : x₁.Bounded w := he_span.bounded hx

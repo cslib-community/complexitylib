@@ -40,7 +40,7 @@ Proofs switch between the notions with `Turing.MultiTapeTM.ComputableInO.tidy` a
   `Turing.MultiTapeTM.ComputableTidilyInO.computableInO`.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

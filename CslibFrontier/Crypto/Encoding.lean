@@ -56,10 +56,11 @@ abbrev encKeyPairInput : ℕ × List Bool × List Bool ↪ List Bool :=
   encPair encUnary (encPair encBits encBits)
 
 /-- Input `(1ⁿ, a, z)` of a malicious verifier: the security parameter `n` in unary, the instance
-`a` encoded by `enc`, and the verifier's auxiliary input `z` as a bit word. The parameter and the
-instance are framed; `z` is not. A zero-knowledge simulator takes the same input, and a
-distinguisher takes it paired with a view, as `encPair (encInstanceAuxInput enc) encBits`. The
-layout is that of `Cslib.Probability.encAuxTriple encUnary enc`; the name records the role. -/
+`a` encoded by `enc`, and an auxiliary input `z` as a bit word. The parameter and the instance are
+framed; `z` is not. A zero-knowledge simulator takes the same input. A distinguisher takes it
+paired with a view, as `encPair (encInstanceAuxInput enc) encBits`, with its own auxiliary input
+`z′` in the last slot. The layout is that of `Cslib.Probability.encAuxTriple encUnary enc`; the
+name records the role. -/
 abbrev encInstanceAuxInput {α : Type} (enc : α ↪ List Bool) : ℕ × α × List Bool ↪ List Bool :=
   encPair encUnary (encPair enc encBits)
 

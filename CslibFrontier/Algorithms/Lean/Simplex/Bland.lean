@@ -39,8 +39,10 @@ In a dictionary `D` (`blandStep`):
   `coeff i s < 0` minimizing the ratio `rhs i / -coeff i s` (`blandLeaving`), and the method
   pivots.
 
-`run D fuel` iterates at most `fuel` pivots, and `simplex D` runs with fuel
-`(Fintype.card ι).choose #D.basis - 1`.
+`runWith step D fuel` iterates at most `fuel` pivots of a pivoting rule `step`. Its soundness
+(`runWith_eq_optimal`, `runWith_eq_unbounded`) is proved once, from what the rule promises when it
+stops and when it pivots. `run D fuel` is `runWith` with Bland's rule, and `simplex D` runs with
+fuel `(Fintype.card ι).choose #D.basis - 1`.
 
 ## Source mapping
 
@@ -62,6 +64,8 @@ number of basic variables, at most `N.choose m` bases occur, where `N = Fintype.
 * `Cslib.Algorithms.Lean.Simplex.minOpt`: the smallest element of a finite set, as an `Option`.
 * `Cslib.Algorithms.Lean.Simplex.Step`, `Cslib.Algorithms.Lean.Simplex.Outcome`: the decision of
   one simplex step and the result of a run.
+* `Cslib.Algorithms.Lean.Simplex.Dictionary.runWith`: the simplex method with a given pivoting
+  rule and at most `fuel` pivots.
 * `Cslib.Algorithms.Lean.Simplex.Dictionary.blandEntering`,
   `Cslib.Algorithms.Lean.Simplex.Dictionary.blandLeaving`,
   `Cslib.Algorithms.Lean.Simplex.Dictionary.blandStep`: Bland's rule.
@@ -71,6 +75,9 @@ number of basic variables, at most `N.choose m` bases occur, where `N = Fintype.
 
 ## Main results
 
+* `Dictionary.runWith_eq_optimal`, `Dictionary.runWith_eq_unbounded`: soundness of the simplex
+  method with any pivoting rule that stops only when the answer is correct and otherwise makes
+  pivots that preserve feasibility, equivalence and a nondecreasing objective value.
 * `Dictionary.basis_ne_of_blandPivot`: **Bland's rule does not cycle.**
 * `Dictionary.add_one_le_choose_of_blandPivot`: at most `N.choose m - 1` Bland pivots occur.
 * `Dictionary.run_ne_outOfFuel`, `Dictionary.simplex_ne_outOfFuel`: termination.
@@ -142,6 +149,107 @@ open Finset
 
 variable {ι K : Type*} [Fintype ι] [LinearOrder ι] [Field K] [LinearOrder K]
   [IsStrictOrderedRing K] (D : Dictionary ι K)
+
+/-! ### The simplex method with a pivoting rule -/
+
+/-- The simplex method with the pivoting rule `step` and at most `fuel` pivots: stop when `step`
+says so, otherwise pivot as it says. -/
+@[expose] def runWith (step : Dictionary ι K → Step ι) : Dictionary ι K → ℕ → Outcome ι K
+  | D, 0 =>
+    match step D with
+    | .optimal => .optimal D
+    | .unbounded s => .unbounded D s
+    | .pivot _ _ => .outOfFuel D
+  | D, fuel + 1 =>
+    match step D with
+    | .optimal => .optimal D
+    | .unbounded s => .unbounded D s
+    | .pivot r s => runWith step (D.pivot r s) fuel
+
+variable {step : Dictionary ι K → Step ι}
+
+omit [Fintype ι] [LinearOrder K] [IsStrictOrderedRing K] in
+/-- A run that runs out of fuel `fuel` makes `fuel + 1` pivots of its rule. -/
+theorem exists_pivot_of_runWith_eq_outOfFuel {fuel : ℕ} {D' : Dictionary ι K}
+    (h : D.runWith step fuel = .outOfFuel D') :
+    ∃ E : ℕ → Dictionary ι K, E 0 = D ∧
+      ∀ k < fuel + 1, ∃ r s, step (E k) = .pivot r s ∧ E (k + 1) = (E k).pivot r s := by
+  induction fuel generalizing D with
+  | zero =>
+    rcases hstep : step D with _ | s | ⟨r, s⟩ <;>
+      simp only [runWith, hstep, reduceCtorEq] at h
+    exact ⟨fun k => if k = 0 then D else D.pivot r s, rfl, fun k hk => by
+      obtain rfl : k = 0 := by omega
+      exact ⟨r, s, hstep, rfl⟩⟩
+  | succ fuel ih =>
+    rcases hstep : step D with _ | s | ⟨r, s⟩ <;>
+      simp only [runWith, hstep, reduceCtorEq] at h
+    obtain ⟨E, hE0, hE⟩ := ih _ h
+    refine ⟨fun k => if k = 0 then D else E (k - 1), rfl, fun k hk => ?_⟩
+    rcases k with _ | k
+    · simp only [↓reduceIte, Nat.zero_add, one_ne_zero]
+      rw [Nat.sub_self, hE0]
+      exact ⟨r, s, hstep, rfl⟩
+    · simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte, Nat.add_sub_cancel]
+      exact hE k (by omega)
+
+omit [IsStrictOrderedRing K] in
+/-- **Soundness of a pivoting rule, optimal case.** If the rule stops only at dictionaries with no
+positive reduced cost, and its pivots from a feasible dictionary give an equivalent feasible
+dictionary with no smaller objective value, then a run that stops at an optimal dictionary `D'`
+returns an equivalent feasible dictionary with no positive reduced cost and an objective value at
+least that of `D`. -/
+theorem runWith_eq_optimal
+    (hopt : ∀ D : Dictionary ι K, step D = .optimal → ∀ j ∉ D.basis, D.objCoeff j ≤ 0)
+    (hpivot : ∀ (D : Dictionary ι K) {r s : ι}, D.Feasible → step D = .pivot r s →
+      D.Equivalent (D.pivot r s) ∧ (D.pivot r s).Feasible ∧ D.objConst ≤ (D.pivot r s).objConst)
+    {fuel : ℕ} {D' : Dictionary ι K} (hD : D.Feasible) (h : D.runWith step fuel = .optimal D') :
+    D.Equivalent D' ∧ D'.Feasible ∧ D.objConst ≤ D'.objConst ∧
+      ∀ j ∉ D'.basis, D'.objCoeff j ≤ 0 := by
+  induction fuel generalizing D with
+  | zero =>
+    rcases hstep : step D with _ | s | ⟨r, s⟩ <;>
+      simp only [runWith, hstep, reduceCtorEq, Outcome.optimal.injEq] at h
+    rw [← h]
+    exact ⟨.refl _, hD, le_rfl, hopt D hstep⟩
+  | succ fuel ih =>
+    rcases hstep : step D with _ | s | ⟨r, s⟩ <;>
+      simp only [runWith, hstep, reduceCtorEq, Outcome.optimal.injEq] at h
+    · rw [← h]
+      exact ⟨.refl _, hD, le_rfl, hopt D hstep⟩
+    · obtain ⟨he, hf, ho⟩ := hpivot D hD hstep
+      obtain ⟨h1, h2, h3, h4⟩ := ih _ hf h
+      exact ⟨he.trans h1, h2, ho.trans h3, h4⟩
+
+omit [IsStrictOrderedRing K] in
+/-- **Soundness of a pivoting rule, unbounded case.** If the rule reports an unbounded entering
+variable `s` only when `s` is nonbasic with a positive reduced cost and no row bounds its
+increase, and its pivots from a feasible dictionary give an equivalent feasible dictionary, then a
+run that stops with an unbounded entering variable `s` returns an equivalent feasible dictionary
+in which this holds. -/
+theorem runWith_eq_unbounded
+    (hunb : ∀ (D : Dictionary ι K) {s : ι}, step D = .unbounded s →
+      s ∉ D.basis ∧ 0 < D.objCoeff s ∧ ∀ i ∈ D.basis, 0 ≤ D.coeff i s)
+    (hpivot : ∀ (D : Dictionary ι K) {r s : ι}, D.Feasible → step D = .pivot r s →
+      D.Equivalent (D.pivot r s) ∧ (D.pivot r s).Feasible)
+    {fuel : ℕ} {D' : Dictionary ι K} {s : ι} (hD : D.Feasible)
+    (h : D.runWith step fuel = .unbounded D' s) :
+    D.Equivalent D' ∧ D'.Feasible ∧ s ∉ D'.basis ∧ 0 < D'.objCoeff s ∧
+      ∀ i ∈ D'.basis, 0 ≤ D'.coeff i s := by
+  induction fuel generalizing D with
+  | zero =>
+    rcases hstep : step D with _ | s' | ⟨r, s'⟩ <;>
+      simp only [runWith, hstep, reduceCtorEq, Outcome.unbounded.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact ⟨.refl _, hD, hunb D hstep⟩
+  | succ fuel ih =>
+    rcases hstep : step D with _ | s' | ⟨r, s'⟩ <;>
+      simp only [runWith, hstep, reduceCtorEq, Outcome.unbounded.injEq] at h
+    · obtain ⟨rfl, rfl⟩ := h
+      exact ⟨.refl _, hD, hunb D hstep⟩
+    · obtain ⟨he, hf⟩ := hpivot D hD hstep
+      obtain ⟨h1, h2⟩ := ih _ hf h
+      exact ⟨he.trans h1, h2⟩
 
 /-! ### Bland's rule -/
 
@@ -480,17 +588,7 @@ theorem add_one_le_choose_of_blandPivot {E : ℕ → Dictionary ι K} {n : ℕ}
 variable (D)
 
 /-- The simplex method with Bland's rule and at most `fuel` pivots. -/
-@[expose] def run : Dictionary ι K → ℕ → Outcome ι K
-  | D, 0 =>
-    match D.blandStep with
-    | .optimal => .optimal D
-    | .unbounded s => .unbounded D s
-    | .pivot _ _ => .outOfFuel D
-  | D, fuel + 1 =>
-    match D.blandStep with
-    | .optimal => .optimal D
-    | .unbounded s => .unbounded D s
-    | .pivot r s => run (D.pivot r s) fuel
+@[expose] def run : Dictionary ι K → ℕ → Outcome ι K := runWith blandStep
 
 /-- **The simplex method with Bland's rule** ([Bland1977]; [Chvatal1983], Chapter 3), with the
 fuel `N.choose m - 1` that suffices from a feasible dictionary (`simplex_ne_outOfFuel`). -/
@@ -499,25 +597,8 @@ fuel `N.choose m - 1` that suffices from a feasible dictionary (`simplex_ne_outO
 omit [IsStrictOrderedRing K] in
 theorem exists_blandPivot_of_run_eq_outOfFuel {fuel : ℕ} {D' : Dictionary ι K}
     (h : run D fuel = .outOfFuel D') :
-    ∃ E : ℕ → Dictionary ι K, E 0 = D ∧ ∀ k < fuel + 1, (E k).BlandPivot (E (k + 1)) := by
-  induction fuel generalizing D with
-  | zero =>
-    rcases hstep : D.blandStep with _ | s | ⟨r, s⟩ <;>
-      simp only [run, hstep, reduceCtorEq] at h
-    exact ⟨fun k => if k = 0 then D else D.pivot r s, rfl, fun k hk => by
-      obtain rfl : k = 0 := by omega
-      exact ⟨r, s, hstep, rfl⟩⟩
-  | succ fuel ih =>
-    rcases hstep : D.blandStep with _ | s | ⟨r, s⟩ <;>
-      simp only [run, hstep, reduceCtorEq] at h
-    obtain ⟨E, hE0, hE⟩ := ih _ h
-    refine ⟨fun k => if k = 0 then D else E (k - 1), rfl, fun k hk => ?_⟩
-    rcases k with _ | k
-    · simp only [↓reduceIte, Nat.zero_add, one_ne_zero]
-      rw [Nat.sub_self, hE0]
-      exact ⟨r, s, hstep, rfl⟩
-    · simp only [Nat.add_eq_zero_iff, one_ne_zero, and_false, ↓reduceIte, Nat.add_sub_cancel]
-      exact hE k (by omega)
+    ∃ E : ℕ → Dictionary ι K, E 0 = D ∧ ∀ k < fuel + 1, (E k).BlandPivot (E (k + 1)) :=
+  D.exists_pivot_of_runWith_eq_outOfFuel h
 
 /-- **Termination of Bland's rule**: from a feasible dictionary, `N.choose m - 1` pivots of fuel
 suffice. -/
@@ -534,28 +615,31 @@ theorem simplex_ne_outOfFuel (hD : D.Feasible) (D' : Dictionary ι K) :
     D.simplex ≠ .outOfFuel D' :=
   D.run_ne_outOfFuel hD (by omega) D'
 
+/-- A pivot of Bland's rule preserves feasibility, equivalence and does not decrease the
+objective. -/
+theorem blandStep_eq_pivot_spec {r s : ι} (hD : D.Feasible) (h : D.blandStep = .pivot r s) :
+    D.Equivalent (D.pivot r s) ∧ (D.pivot r s).Feasible ∧
+      D.objConst ≤ (D.pivot r s).objConst :=
+  have hp : D.BlandPivot (D.pivot r s) := ⟨r, s, h, rfl⟩
+  ⟨hp.equivalent, hp.feasible hD, hp.objConst_le hD⟩
+
+omit [IsStrictOrderedRing K] in
+/-- Bland's rule reports an unbounded entering variable `s` only when `s` is nonbasic with a
+positive reduced cost and no row bounds its increase. -/
+theorem blandStep_eq_unbounded_spec {s : ι} (h : D.blandStep = .unbounded s) :
+    s ∉ D.basis ∧ 0 < D.objCoeff s ∧ ∀ i ∈ D.basis, 0 ≤ D.coeff i s := by
+  obtain ⟨h1, h2⟩ := D.blandStep_eq_unbounded_iff.1 h
+  obtain ⟨hs, hc, -⟩ := D.blandEntering_eq_some_iff.1 h1
+  exact ⟨hs, hc, D.blandLeaving_eq_none_iff.1 h2⟩
+
 /-- A run that stops at an optimal dictionary `D'` returns an equivalent feasible dictionary
 with no positive reduced cost and an objective value at least that of `D`. -/
 theorem run_eq_optimal {fuel : ℕ} {D' : Dictionary ι K} (hD : D.Feasible)
     (h : run D fuel = .optimal D') :
     D.Equivalent D' ∧ D'.Feasible ∧ D.objConst ≤ D'.objConst ∧
-      ∀ j ∉ D'.basis, D'.objCoeff j ≤ 0 := by
-  induction fuel generalizing D with
-  | zero =>
-    rcases hstep : D.blandStep with _ | s | ⟨r, s⟩ <;>
-      simp only [run, hstep, reduceCtorEq, Outcome.optimal.injEq] at h
-    rw [← h]
-    exact ⟨.refl _, hD, le_rfl,
-      D.blandEntering_eq_none_iff.1 (D.blandStep_eq_optimal_iff.1 hstep)⟩
-  | succ fuel ih =>
-    rcases hstep : D.blandStep with _ | s | ⟨r, s⟩ <;>
-      simp only [run, hstep, reduceCtorEq, Outcome.optimal.injEq] at h
-    · rw [← h]
-      exact ⟨.refl _, hD, le_rfl,
-        D.blandEntering_eq_none_iff.1 (D.blandStep_eq_optimal_iff.1 hstep)⟩
-    · have hp : D.BlandPivot (D.pivot r s) := ⟨r, s, hstep, rfl⟩
-      obtain ⟨h1, h2, h3, h4⟩ := ih _ (hp.feasible hD) h
-      exact ⟨hp.equivalent.trans h1, h2, (hp.objConst_le hD).trans h3, h4⟩
+      ∀ j ∉ D'.basis, D'.objCoeff j ≤ 0 :=
+  D.runWith_eq_optimal (fun D h => D.blandEntering_eq_none_iff.1 (D.blandStep_eq_optimal_iff.1 h))
+    blandStep_eq_pivot_spec hD h
 
 /-- A run that stops with an unbounded entering variable `s` returns an equivalent feasible
 dictionary in which `s` is nonbasic with a positive reduced cost and no row bounds its
@@ -563,25 +647,9 @@ increase. -/
 theorem run_eq_unbounded {fuel : ℕ} {D' : Dictionary ι K} {s : ι} (hD : D.Feasible)
     (h : run D fuel = .unbounded D' s) :
     D.Equivalent D' ∧ D'.Feasible ∧ s ∉ D'.basis ∧ 0 < D'.objCoeff s ∧
-      ∀ i ∈ D'.basis, 0 ≤ D'.coeff i s := by
-  induction fuel generalizing D with
-  | zero =>
-    rcases hstep : D.blandStep with _ | s' | ⟨r, s'⟩ <;>
-      simp only [run, hstep, reduceCtorEq, Outcome.unbounded.injEq] at h
-    obtain ⟨rfl, rfl⟩ := h
-    obtain ⟨h1, h2⟩ := D.blandStep_eq_unbounded_iff.1 hstep
-    obtain ⟨hs, hc, -⟩ := D.blandEntering_eq_some_iff.1 h1
-    exact ⟨.refl _, hD, hs, hc, D.blandLeaving_eq_none_iff.1 h2⟩
-  | succ fuel ih =>
-    rcases hstep : D.blandStep with _ | s' | ⟨r, s'⟩ <;>
-      simp only [run, hstep, reduceCtorEq, Outcome.unbounded.injEq] at h
-    · obtain ⟨rfl, rfl⟩ := h
-      obtain ⟨h1, h2⟩ := D.blandStep_eq_unbounded_iff.1 hstep
-      obtain ⟨hs, hc, -⟩ := D.blandEntering_eq_some_iff.1 h1
-      exact ⟨.refl _, hD, hs, hc, D.blandLeaving_eq_none_iff.1 h2⟩
-    · have hp : D.BlandPivot (D.pivot r s') := ⟨r, s', hstep, rfl⟩
-      obtain ⟨h1, h2⟩ := ih _ (hp.feasible hD) h
-      exact ⟨hp.equivalent.trans h1, h2⟩
+      ∀ i ∈ D'.basis, 0 ≤ D'.coeff i s :=
+  D.runWith_eq_unbounded blandStep_eq_unbounded_spec
+    (fun D _ _ hD h => (D.blandStep_eq_pivot_spec hD h).imp_right And.left) hD h
 
 /-- **Correctness of the simplex method with Bland's rule** ([Chvatal1983], Chapter 3): from a
 feasible dictionary `D` it either stops at an equivalent feasible dictionary whose basic solution

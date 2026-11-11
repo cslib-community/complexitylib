@@ -358,9 +358,8 @@ theorem two_pow_quotBits_le_sixteen_mul {w₀ n : ℕ} (hn : 1 ≤ n) :
   have h2 : max (effCap w₀ n) 1 ≤ n := max_le (min_le_left n (2 ^ w₀)) hn
   exact h1.trans (Nat.mul_le_mul_left 16 h2)
 
-theorem remBits_pos {w₀ k : ℕ} (hw₀ : 0 < w₀) : 0 < remBits w₀ k := by
-  dsimp only [remBits]
-  omega
+theorem remBits_pos {w₀ k : ℕ} (hw₀ : 0 < w₀) : 0 < remBits w₀ k :=
+  lt_min hw₀ k.succ_pos
 
 theorem remBits_le_w₀ (w₀ k : ℕ) : remBits w₀ k ≤ w₀ :=
   min_le_left w₀ (k + 1)

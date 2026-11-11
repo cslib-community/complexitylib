@@ -39,7 +39,7 @@ are *maximum distance separable*.
 * [V. Guruswami, A. Rudra, M. Sudan, *Essential Coding Theory*][GuruswamiRudraSudan2019]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Code
 

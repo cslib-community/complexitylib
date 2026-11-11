@@ -59,6 +59,8 @@ For a dense set `log_q |S| ≈ n`, so a small circuit gives a graph whose cycle 
 * `Cslib.Circuits.Frontier.pow_ncard_compl_read_lt`: the support lemma for circuits.
 * `Cslib.Circuits.Frontier.cycleRank_le`: the cycle rank of the graph of a circuit that reads all
   but few of its inputs.
+* `Cslib.Circuits.Frontier.cycleRank_le_of_read`: the same bound from any set of read inputs whose
+  complement carries few assignments.
 * `Cslib.Circuits.Frontier.logb_ncard_le_width`: every layout of the graph of such a circuit is
   wide.
 * `Cslib.Circuits.Frontier.exists_graph_of_decides`: the reduction theorem.
@@ -173,6 +175,34 @@ theorem pow_ncard_compl_read_lt (hS : c.Decides I Acc S) (hfree : RectangleFree 
   rw [← accepted_network_of_decides hS] at hfree hbig
   exact hfree.pow_ncard_compl_lt (Compiler.network c I _).dependsOn_read hbig
 
+/-- **The cycle rank from a set of read inputs.** Let `C` have fan-in at most `r` and `s` inner
+gates, and let `R ⊆ Fin n` satisfy `cycleRank + |R| ≤ (r - 1) s + 1`. If the coordinates outside
+`R` carry fewer than `K` assignments, then the cycle rank is at most
+`(r - 1) s - n + log_q K + 1`. The read set of the compiled network qualifies
+(`Compiler.cycleRank_add_ncard_read_le`), and so does the read set of the hidden network of a
+nondeterministic circuit, over its ordinary inputs. -/
+theorem cycleRank_le_of_read {k : ℕ} {C : Circuit σ k 1} (hfan : C.FanInAtMost r)
+    (R : Set (Fin n))
+    (hrank : (Compiler.graph C).cycleRank + R.ncard ≤ (r - 1) * C.innerSize + 1)
+    (hunread : Nat.card U ^ Rᶜ.ncard < K) :
+    ((Compiler.graph C).cycleRank : ℝ) ≤
+      (r - 1) * C.innerSize - n + Real.logb (Nat.card U) K + 1 := by
+  have hq : (1 : ℝ) < Nat.card U := by exact_mod_cast Finite.one_lt_card
+  have hrank : ((Compiler.graph C).cycleRank + R.ncard : ℝ) ≤
+      (((r - 1) * C.innerSize : ℕ) : ℝ) + 1 := by
+    exact_mod_cast hrank
+  have hcast : (((r - 1) * C.innerSize : ℕ) : ℝ) = (r - 1) * C.innerSize := by
+    rcases Nat.eq_zero_or_pos r with rfl | hr
+    · simp [Circuit.innerSize_eq_zero_of_fanInAtMost_zero hfan]
+    · rw [Nat.cast_mul, Nat.cast_sub hr, Nat.cast_one]
+  have hunread : (Rᶜ.ncard : ℝ) < Real.logb (Nat.card U) K := by
+    rw [Real.lt_logb_iff_rpow_lt hq (by exact_mod_cast Nat.zero_lt_of_lt hunread),
+      Real.rpow_natCast]
+    exact_mod_cast hunread
+  have hcompl : (Rᶜ.ncard : ℝ) + R.ncard = n := by
+    rw [← Nat.cast_add, add_comm, ncard_add_ncard_compl, Nat.card_eq_fintype_card, Fintype.card_fin]
+  linarith
+
 /-- **The cycle rank of the graph of a circuit** is at most `(r - 1) s - n + log_q K + 1` for
 fan-in at most `r`, where `s` counts the inner gates, when the inputs the circuit does not read
 carry fewer than `K` assignments. By the support lemma this is so for a circuit deciding a large
@@ -180,23 +210,9 @@ carry fewer than `K` assignments. By the support lemma this is so for a circuit 
 theorem cycleRank_le (hfan : c.FanInAtMost r)
     (hunread : Nat.card U ^ (Compiler.network c I fun _ => Acc).readᶜ.ncard < K) :
     ((Compiler.graph c).cycleRank : ℝ) ≤
-      (r - 1) * c.innerSize - n + Real.logb (Nat.card U) K + 1 := by
-  set N := Compiler.network c I fun _ => Acc
-  have hq : (1 : ℝ) < Nat.card U := by exact_mod_cast Finite.one_lt_card
-  have hrank : ((Compiler.graph c).cycleRank + N.read.ncard : ℝ) ≤
-      (((r - 1) * c.innerSize : ℕ) : ℝ) + 1 := by
-    exact_mod_cast Compiler.cycleRank_add_ncard_read_le I _ hfan (Compiler.connected c)
-  have hcast : (((r - 1) * c.innerSize : ℕ) : ℝ) = (r - 1) * c.innerSize := by
-    rcases Nat.eq_zero_or_pos r with rfl | hr
-    · simp [Circuit.innerSize_eq_zero_of_fanInAtMost_zero hfan]
-    · rw [Nat.cast_mul, Nat.cast_sub hr, Nat.cast_one]
-  have hunread : (N.readᶜ.ncard : ℝ) < Real.logb (Nat.card U) K := by
-    rw [Real.lt_logb_iff_rpow_lt hq (by exact_mod_cast Nat.zero_lt_of_lt hunread),
-      Real.rpow_natCast]
-    exact_mod_cast hunread
-  have hcompl : (N.readᶜ.ncard : ℝ) + N.read.ncard = n := by
-    rw [← Nat.cast_add, add_comm, ncard_add_ncard_compl, Nat.card_eq_fintype_card, Fintype.card_fin]
-  linarith
+      (r - 1) * c.innerSize - n + Real.logb (Nat.card U) K + 1 :=
+  cycleRank_le_of_read hfan _
+    (Compiler.cycleRank_add_ncard_read_le I _ hfan (Compiler.connected c)) hunread
 
 /-- **Every layout of the graph of a circuit is wide.** For a circuit of fan-in at most `r ≥ 2`
 deciding a large `K`-rectangle-free set `S`, every layout `π` of its graph satisfies

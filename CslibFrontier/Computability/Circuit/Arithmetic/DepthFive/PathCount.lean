@@ -48,12 +48,24 @@ variable {n : ℕ} [NeZero n]
 /-- Four paths `((P, Q), (R, S))`. -/
 abbrev Quad (n : ℕ) [NeZero n] := (Path n × Path n) × (Path n × Path n)
 
+/-- The first path `P` of four paths `((P, Q), (R, S))`. -/
+abbrev Quad.P (W : Quad n) : Path n := W.1.1
+
+/-- The second path `Q` of four paths `((P, Q), (R, S))`. -/
+abbrev Quad.Q (W : Quad n) : Path n := W.1.2
+
+/-- The third path `R` of four paths `((P, Q), (R, S))`. -/
+abbrev Quad.R (W : Quad n) : Path n := W.2.1
+
+/-- The fourth path `S` of four paths `((P, Q), (R, S))`. -/
+abbrev Quad.S (W : Quad n) : Path n := W.2.2
+
 /-- The four paths have type `τ`: in a layer of type `𝒩` (`false`) the edges of `P, Q` agree and
 those of `R, S` agree; in a layer of type `𝒟` (`true`) those of `P, R` agree and those of `Q, S`
 agree. -/
 def Quad.HasType (W : Quad n) (τ : Fin n → Bool) : Prop :=
-  ∀ t, if τ t then W.1.1.edge t = W.2.1.edge t ∧ W.1.2.edge t = W.2.2.edge t
-    else W.1.1.edge t = W.1.2.edge t ∧ W.2.1.edge t = W.2.2.edge t
+  ∀ t, if τ t then W.P.edge t = W.R.edge t ∧ W.Q.edge t = W.S.edge t
+    else W.P.edge t = W.Q.edge t ∧ W.R.edge t = W.S.edge t
 
 instance (W : Quad n) (τ : Fin n → Bool) : Decidable (W.HasType τ) := by
   unfold Quad.HasType
@@ -307,7 +319,7 @@ theorem sum_quad_le (p : Params) [NeZero p.n]
     (hadj : ∀ t t' : Fin p.n, (t : ℕ) + 1 = t' → p.isV t → p.isV t' → False)
     (τ : Fin p.n → Bool) {x : ℝ} (hx : 0 ≤ x) :
     ∑ W : Quad p.n, (if W.HasType τ then
-        ∏ t with p.isV t ∧ τ t = false, (1 + x * if W.1.1.edge t = W.2.1.edge t then 1 else 0)
+        ∏ t with p.isV t ∧ τ t = false, (1 + x * if W.P.edge t = W.R.edge t then 1 else 0)
       else 0) ≤
       (p.n : ℝ) ^ (2 * (p.n - 1)) * ((p.n : ℝ)⁻¹) ^ p.switches τ *
         ∏ t with p.isV t ∧ τ t = false, (1 + x * ((p.n : ℝ)⁻¹) ^ p.nbrN τ t) := by

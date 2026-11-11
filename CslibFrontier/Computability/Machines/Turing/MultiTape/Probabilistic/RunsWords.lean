@@ -15,6 +15,7 @@ public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.Tidy.Defs
 
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Simulation
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Word-configuration phases and tidy probabilistic oracle specifications
@@ -436,8 +437,7 @@ theorem seq_bind {first : MultiTapePTM k Bool State₀ Operation}
       Option.map_none, wordsCfg_inputPos, wordsCfg_output, Prod.mk.injEq, and_true]
     rfl
   · intro final hfinal op
-    obtain ⟨⟨mid, s₁⟩, hmid, hfinal⟩ := (PMF.mem_support_bind_iff _ _ _).mp hfinal
-    obtain ⟨⟨final₀, s₂⟩, hfinal₀, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hfinal
+    supp_cases hfinal with ⟨⟨mid, s₁⟩, hmid, ⟨final₀, s₂⟩, hfinal₀, rfl⟩
     obtain ⟨⟨a, ha, hmidTapes⟩, hmidBuf⟩ := h₁.mem_support oracle s cfg₀ rfl hbuf hmid
     have hstart : (Sequential.start second mid).tapes =
         wordsCfg x (some second.initial) (ws₁ a) (out₀ ++ emit₁ a) := by
@@ -639,9 +639,7 @@ theorem RunsWords.length_emit_le {machine : MultiTapePTM k Bool State Operation}
       ((ProbOracleComp.runWith oracle program s).map
         (fun (a, s') => (wordsCfg x (none : Option State) (ws₁ a) (out₀ ++ emit a), s'))).support :=
     (PMF.mem_support_map_iff _ _ _).mpr ⟨(a, s'), ha, rfl⟩
-  rw [← hlaw] at hmem
-  obtain ⟨⟨final, s₁⟩, hfinal, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hmem
-  rcases Prod.mk.inj heq with ⟨htapes, rfl⟩
+  supp_cases hmem [← hlaw] with ⟨⟨final, s₁⟩, hfinal, htapes, rfl⟩
   have hlen := length_output_le_of_mem_support_runOracleConfigFrom machine oracle time cfg s hfinal
   have hout : final.tapes.output = out₀ ++ emit a := by rw [htapes]; rfl
   have hcfg : cfg.tapes.output = out₀ := rfl
