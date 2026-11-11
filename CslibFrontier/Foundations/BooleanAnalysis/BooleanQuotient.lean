@@ -107,14 +107,15 @@ theorem boolIdeal_le_ker_evalCubeHom : boolIdeal ι R ≤ RingHom.ker (evalCubeH
     bitVal_pow _ two_ne_zero, sub_self]
 
 /-- Reducing a multilinear polynomial multiplied by `X i` by capping the exponent of `i` at `1`. -/
-private noncomputable def reduceVar [DecidableEq ι] (i : ι) (q : MvPolynomial ι R) :
+private noncomputable def reduceVar (i : ι) (q : MvPolynomial ι R) :
     MvPolynomial ι R :=
   ∑ s ∈ q.support,
     if s i = 0 then MvPolynomial.monomial (s + Finsupp.single i 1) (q.coeff s)
     else MvPolynomial.monomial s (q.coeff s)
 
-private theorem reduceVar_mem_restrictDegree [DecidableEq ι] (i : ι) {q : MvPolynomial ι R}
+private theorem reduceVar_mem_restrictDegree (i : ι) {q : MvPolynomial ι R}
     (hq : q ∈ restrictDegree ι R 1) : reduceVar i q ∈ restrictDegree ι R 1 := by
+  classical
   refine Submodule.sum_mem _ fun s hs => ?_
   have hsle : ∀ j, s j ≤ 1 := (mem_restrictDegree _ _ _).1 hq s hs
   split_ifs with hsi
@@ -131,9 +132,10 @@ private theorem reduceVar_mem_restrictDegree [DecidableEq ι] (i : ι) {q : MvPo
     obtain rfl := Finset.mem_singleton.1 (support_monomial_subset ht)
     exact hsle j
 
-private theorem mul_X_sub_reduceVar_mem_boolIdeal [DecidableEq ι] (i : ι)
+private theorem mul_X_sub_reduceVar_mem_boolIdeal (i : ι)
     {q : MvPolynomial ι R} (hq : q ∈ restrictDegree ι R 1) :
     q * X i - reduceVar i q ∈ boolIdeal ι R := by
+  classical
   have hsum : q * X i - reduceVar i q =
       ∑ s ∈ q.support,
         (MvPolynomial.monomial s (q.coeff s) * X i -
@@ -205,7 +207,7 @@ theorem exists_mem_restrictDegree_sub_mem_boolIdeal (p : MvPolynomial ι R) :
     rw [show p * X i - reduceVar i q = (p - q) * X i + (q * X i - reduceVar i q) by ring]
     exact Ideal.add_mem _ (Ideal.mul_mem_right _ _ hsub) (mul_X_sub_reduceVar_mem_boolIdeal i hq)
 
-private noncomputable def indMon [DecidableEq ι] (S : Finset ι) : ι →₀ ℕ :=
+private noncomputable def indMon (S : Finset ι) : ι →₀ ℕ :=
   S.sum fun i => Finsupp.single i 1
 
 private theorem indMon_apply [DecidableEq ι] (S : Finset ι) (i : ι) :
@@ -220,13 +222,15 @@ private theorem indMon_apply [DecidableEq ι] (S : Finset ι) (i : ι) :
       simp [hj]
     · by_cases hiS : i ∈ S <;> simp [hji, hiS]
 
-private theorem support_indMon [DecidableEq ι] (S : Finset ι) : (indMon S).support = S := by
+private theorem support_indMon (S : Finset ι) : (indMon S).support = S := by
+  classical
   ext i
   rw [Finsupp.mem_support_iff, indMon_apply]
   by_cases hi : i ∈ S <;> simp [hi]
 
-private theorem eq_indMon_of_le_one [DecidableEq ι] {s : ι →₀ ℕ} (hs : ∀ i, s i ≤ 1) :
+private theorem eq_indMon_of_le_one {s : ι →₀ ℕ} (hs : ∀ i, s i ≤ 1) :
     s = indMon s.support := by
+  classical
   ext i
   rw [indMon_apply]
   have hi := hs i

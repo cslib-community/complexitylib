@@ -407,7 +407,7 @@ theorem CNF.satisfiable_iff_satIndicatorPoly_notMem_boolIdeal [Nontrivial R] (φ
 
 /-- Modulo `boolIdeal V R`, `φ` is satisfiable if and only if the coset of `φ.satIndicatorPoly R`
 is nonzero. -/
-theorem CNF.satisfiable_iff_mk_satIndicatorPoly_ne_zero [Finite V] [Nontrivial R] (φ : CNF V) :
+theorem CNF.satisfiable_iff_mk_satIndicatorPoly_ne_zero [Nontrivial R] (φ : CNF V) :
     φ.Satisfiable ↔ Ideal.Quotient.mk (boolIdeal V R) (φ.satIndicatorPoly R) ≠ 0 := by
   rw [ne_eq, Ideal.Quotient.eq_zero_iff_mem, CNF.satIndicatorPoly_mem_boolIdeal_iff, not_not]
 
