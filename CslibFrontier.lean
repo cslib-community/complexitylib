@@ -1083,6 +1083,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.CodeComposition
 public import CslibFrontier.Computability.Circuit.Boolean.CodeReplication
 public import CslibFrontier.Computability.Circuit.Boolean.CodeSubstitution
 public import CslibFrontier.Computability.Circuit.Boolean.CodeTemplate
+public import CslibFrontier.Computability.Circuit.Boolean.Combinators
 public import CslibFrontier.Computability.Circuit.Boolean.CompareSwap
 public import CslibFrontier.Computability.Circuit.Boolean.Comparison
 public import CslibFrontier.Computability.Circuit.Boolean.Comparison.PolyTime
@@ -1121,6 +1122,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Hamming
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore.Set
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Complexity
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Decode
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Density
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmp
