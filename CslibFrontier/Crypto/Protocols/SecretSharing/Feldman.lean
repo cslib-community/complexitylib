@@ -155,7 +155,7 @@ private theorem sharingPolynomial_eq_sum_dealerCoeffs (d : F.Desc)
     · let idx : Fin (params.threshold + 1) := ⟨k + 1, Nat.succ_lt_succ hk⟩
       rw [Finset.sum_eq_single idx]
       · rw [Shamir.Polynomial.tailPolynomial_coeff params.threshold r ⟨k, hk⟩]
-        simp [idx, dealerCoeffs]
+        simp only [idx, dealerCoeffs, ↓reduceIte]
         exact (Fin.cons_succ (α := fun _ => ZMod (F.order d)) secret
           (r : Fin params.threshold → ZMod (F.order d)) ⟨k, hk⟩).symm
       · intro j _ hj
