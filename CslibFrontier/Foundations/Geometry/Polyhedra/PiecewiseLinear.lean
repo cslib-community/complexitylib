@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Analysis/Convex/PiecewiseLinear.lean`)
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Geometry.Polyhedra.Complex
@@ -136,17 +136,8 @@ theorem IsAffineOn.pi {ι : Type*} [Fintype ι] {H : ι → Type*}
     [∀ i, NormedAddCommGroup (H i)] [∀ i, NormedSpace ℝ (H i)] {f : ∀ i, E → H i}
     {S : Set E} (hf : ∀ i, IsAffineOn (f i) S) :
     IsAffineOn (fun x i => f i x) S := by
-  classical
   choose g hg using hf
-  let glin : E →ₗ[ℝ] (∀ i, H i) :=
-    { toFun := fun x i => (g i).linear x
-      map_add' := fun x y => funext fun i => (g i).linear.map_add x y
-      map_smul' := fun c x => funext fun i => (g i).linear.map_smul c x }
-  let gaff : E →ᵃ[ℝ] (∀ i, H i) :=
-    { toFun := fun x i => g i x
-      linear := glin
-      map_vadd' := fun x v => funext fun i => (g i).map_vadd x v }
-  exact ⟨gaff, fun x hx => funext fun i => hg i hx⟩
+  exact ⟨AffineMap.pi g, fun x hx => funext fun i => hg i hx⟩
 
 theorem IsAffineOn.comp {f : E → F} {g : F → G} {S : Set E} {T : Set F}
     (hf : IsAffineOn f S) (hg : IsAffineOn g T) (hST : MapsTo f S T) :
@@ -183,21 +174,21 @@ theorem IsAffineOn.image_isPolytope {f : E → F} {P : Set E}
 `PropCell` on every cell of a finite polytopal complex covering `P`. -/
 @[expose] def IsPiecewiseOn {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (PropCell : (E → F) → Set E → Prop) (P : Set E) (f : E → F) : Prop :=
-  IsPolyhedron P ∧ ∃ C : PolytopalComplex E, C.space = P ∧ ∀ Q ∈ C.cells, PropCell f Q
+  ∃ C : PolytopalComplex E, C.space = P ∧ ∀ Q ∈ C.cells, PropCell f Q
 
 omit [NormedAddCommGroup F] [NormedSpace ℝ F] in
 theorem isPiecewiseOn_congr {PropCell : (E → F) → Set E → Prop}
     (hcongr : ∀ {g g' : E → F} {S : Set E}, Set.EqOn g' g S → PropCell g S → PropCell g' S)
     {P : Set E} {f f' : E → F} (hf : IsPiecewiseOn PropCell P f) (heq : Set.EqOn f' f P) :
     IsPiecewiseOn PropCell P f' := by
-  rcases hf with ⟨hP, C, hC, hprop⟩
-  exact ⟨hP, C, hC, fun Q hQ => hcongr (heq.mono (hC ▸ C.subset_space hQ)) (hprop Q hQ)⟩
+  rcases hf with ⟨C, hC, hprop⟩
+  exact ⟨C, hC, fun Q hQ => hcongr (heq.mono (hC ▸ C.subset_space hQ)) (hprop Q hQ)⟩
 
 omit [NormedSpace ℝ F] in
 theorem isPiecewiseOn_continuousOn {PropCell : (E → F) → Set E → Prop}
     (hcont : ∀ {g : E → F} {S : Set E}, PropCell g S → ContinuousOn g S)
     {P : Set E} {f : E → F} (hf : IsPiecewiseOn PropCell P f) : ContinuousOn f P := by
-  rcases hf with ⟨_, C, rfl, hprop⟩
+  rcases hf with ⟨C, rfl, hprop⟩
   rw [PolytopalComplex.space, Set.biUnion_eq_iUnion]
   have : Finite C.cells := C.finite_cells.to_subtype
   exact (locallyFinite_of_finite fun Q : C.cells => (Q : Set E)).continuousOn_iUnion
@@ -209,38 +200,38 @@ polyhedron admitted as the space of a finite polytopal complex on whose cells `f
 @[expose] def IsPLOn (P : Set E) (f : E → F) : Prop :=
   IsPiecewiseOn IsAffineOn P f
 
-theorem IsPLOn.isPolyhedron {P : Set E} {f : E → F} (hf : IsPLOn P f) : IsPolyhedron P :=
-  hf.1
-
 theorem IsPLOn.congr {P : Set E} {f f' : E → F} (hf : IsPLOn P f) (heq : Set.EqOn f' f P) :
     IsPLOn P f' :=
   isPiecewiseOn_congr (fun heq hg => hg.congr heq) hf heq
 
 theorem IsPLOn.neg {P : Set E} {f : E → F} (hf : IsPLOn P f) : IsPLOn P (fun x => -f x) := by
-  rcases hf with ⟨hP, C, hC, haff⟩
-  exact ⟨hP, C, hC, fun Q hQ => (haff Q hQ).neg⟩
+  rcases hf with ⟨C, hC, haff⟩
+  exact ⟨C, hC, fun Q hQ => (haff Q hQ).neg⟩
 
 theorem IsPLOn.smul {P : Set E} (c : ℝ) {f : E → F} (hf : IsPLOn P f) :
     IsPLOn P (fun x => c • f x) := by
-  rcases hf with ⟨hP, C, hC, haff⟩
-  exact ⟨hP, C, hC, fun Q hQ => (haff Q hQ).smul c⟩
+  rcases hf with ⟨C, hC, haff⟩
+  exact ⟨C, hC, fun Q hQ => (haff Q hQ).smul c⟩
 
-end GeneralTarget
-
-section SchemaFiniteDim
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
-
-theorem isPiecewiseOn_empty {F : Type*} (PropCell : (E → F) → Set E → Prop) (f : E → F) :
+omit [NormedAddCommGroup F] [NormedSpace ℝ F] in
+theorem isPiecewiseOn_empty (PropCell : (E → F) → Set E → Prop) (f : E → F) :
     IsPiecewiseOn PropCell (∅ : Set E) f := by
-  refine ⟨isPolyhedron_empty, PolytopalComplex.empty, PolytopalComplex.space_empty,
-    fun Q hQ => ?_⟩
+  refine ⟨PolytopalComplex.empty, PolytopalComplex.space_empty, fun Q hQ => ?_⟩
   exfalso
   obtain ⟨x, hx⟩ := PolytopalComplex.empty.nonempty_of_mem hQ
   have hxsp : x ∈ (PolytopalComplex.empty : PolytopalComplex E).space :=
     PolytopalComplex.empty.subset_space hQ hx
   rw [PolytopalComplex.space_empty] at hxsp
   exact hxsp
+
+theorem isPLOn_empty (f : E → F) : IsPLOn (∅ : Set E) f :=
+  isPiecewiseOn_empty IsAffineOn f
+
+end GeneralTarget
+
+section SchemaFiniteDim
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
 
 theorem isPiecewiseOn_iff_simplicialComplex {F : Type*} {PropCell : (E → F) → Set E → Prop}
     (hmono : ∀ {g : E → F} {S T : Set E}, T ⊆ S → PropCell g S → PropCell g T)
@@ -249,13 +240,13 @@ theorem isPiecewiseOn_iff_simplicialComplex {F : Type*} {PropCell : (E → F) �
       ∃ K : Geometry.SimplicialComplex ℝ E, K.faces.Finite ∧ K.space = P ∧
         ∀ s ∈ K.faces, PropCell f (convexHull ℝ (s : Set E)) := by
   constructor
-  · rintro ⟨_, C, rfl, hprop⟩
+  · rintro ⟨C, rfl, hprop⟩
     refine ⟨C.barycentricSubdivision, C.barycentricSubdivision_faces_finite,
       C.barycentricSubdivision_space, fun s hs => ?_⟩
     obtain ⟨Q, hQ, hsub⟩ := C.barycentricSubdivision_simplex_subset hs
     exact hmono hsub (hprop Q hQ)
   · rintro ⟨K, hfin, rfl, hprop⟩
-    refine ⟨⟨K, hfin, rfl⟩, PolytopalComplex.ofSimplicialComplex K hfin,
+    refine ⟨PolytopalComplex.ofSimplicialComplex K hfin,
       PolytopalComplex.space_ofSimplicialComplex K hfin, ?_⟩
     rw [PolytopalComplex.cells_ofSimplicialComplex]
     rintro _ ⟨s, hs, rfl⟩
@@ -267,12 +258,11 @@ theorem isPiecewiseOn_iff_finite_polytope_cover {F : Type*} {PropCell : (E → F
     IsPiecewiseOn PropCell P f ↔ ∃ ℱ : Set (Set E), ℱ.Finite ∧
       (∀ Q ∈ ℱ, IsPolytope Q ∧ PropCell f Q) ∧ P = ⋃ Q ∈ ℱ, Q := by
   constructor
-  · rintro ⟨_, C, rfl, hprop⟩
+  · rintro ⟨C, rfl, hprop⟩
     exact ⟨C.cells, C.finite_cells, fun Q hQ => ⟨C.isPolytope_of_mem hQ, hprop Q hQ⟩, rfl⟩
   · rintro ⟨ℱ, hℱ, hcov, rfl⟩
     have hpoly : ∀ Q ∈ ℱ, IsPolytope Q := fun Q hQ => (hcov Q hQ).1
-    refine ⟨isPolyhedron_iff_finite_union_polytopes.2 ⟨ℱ, hℱ, hpoly, rfl⟩,
-      PolytopalComplex.ofFinitePolytopes hℱ hpoly,
+    refine ⟨PolytopalComplex.ofFinitePolytopes hℱ hpoly,
       PolytopalComplex.space_ofFinitePolytopes hℱ hpoly, fun S hS => ?_⟩
     obtain ⟨Q, hQ, hSQ⟩ := PolytopalComplex.ofFinitePolytopes_cell_subset hℱ hpoly hS
     exact hmono hSQ (hcov Q hQ).2
@@ -283,7 +273,7 @@ theorem isPiecewiseOn_of_finiteCover {F : Type*} {PropCell : (E → F) → Set E
     {f : E → F} (hcov : (⋃ i, Q i) = P) (hf : ∀ i, IsPiecewiseOn PropCell (Q i) f) :
     IsPiecewiseOn PropCell P f := by
   classical
-  choose C hC using fun i => (hf i).2
+  choose C hC using hf
   let ℱ : Set (Set E) := ⋃ i, (C i).cells
   have hℱ : ℱ.Finite := Set.finite_iUnion fun i => (C i).finite_cells
   refine (isPiecewiseOn_iff_finite_polytope_cover (PropCell := PropCell) hmono).2
@@ -333,7 +323,7 @@ theorem isPiecewiseOn_restrict {F : Type*} {PropCell : (E → F) → Set E → P
     (hmono : ∀ {g : E → F} {S T : Set E}, T ⊆ S → PropCell g S → PropCell g T)
     {P Q : Set E} {f : E → F} (hf : IsPiecewiseOn PropCell P f)
     (hQ : IsPolyhedron Q) (hQP : Q ⊆ P) : IsPiecewiseOn PropCell Q f := by
-  rcases hf with ⟨_, CP, hCP, hprop⟩
+  rcases hf with ⟨CP, hCP, hprop⟩
   obtain ⟨CQ, hCQ⟩ := isPolyhedron_iff_exists_polytopalComplex.1 hQ
   let ℱ : Set (Set E) := (fun p : Set E × Set E => p.1 ∩ p.2) '' (CP.cells ×ˢ CQ.cells)
   refine (isPiecewiseOn_iff_finite_polytope_cover (PropCell := PropCell) hmono).2
@@ -362,8 +352,8 @@ theorem isPiecewiseOn_exists_common_complex {F G : Type*}
     (hf : IsPiecewiseOn Prop₁ P f) (hg : IsPiecewiseOn Prop₂ P g) :
     ∃ C : PolytopalComplex E, C.space = P ∧
       (∀ Q ∈ C.cells, Prop₁ f Q) ∧ (∀ Q ∈ C.cells, Prop₂ g Q) := by
-  rcases hf with ⟨_, Cf, hCf, hp₁⟩
-  rcases hg with ⟨_, Cg, hCg, hp₂⟩
+  rcases hf with ⟨Cf, hCf, hp₁⟩
+  rcases hg with ⟨Cg, hCg, hp₂⟩
   have hsp : Cf.space = Cg.space := hCf.trans hCg.symm
   obtain ⟨K, hKfin, hKsp, href⟩ := exists_common_refinement Cf Cg hsp
   refine ⟨PolytopalComplex.ofSimplicialComplex K hKfin, ?_, ?_, ?_⟩
@@ -384,6 +374,10 @@ section FiniteDim
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
+theorem IsPLOn.isPolyhedron {P : Set E} {f : E → F} (hf : IsPLOn P f) : IsPolyhedron P :=
+  let ⟨C, hC, _⟩ := hf
+  isPolyhedron_iff_exists_polytopalComplex.2 ⟨C, hC⟩
+
 theorem IsAffineOn.continuousOn {f : E → F} {S : Set E} (hf : IsAffineOn f S) :
     ContinuousOn f S := by
   rcases hf with ⟨g, hg⟩
@@ -399,12 +393,9 @@ theorem isPLOn_iff_finite_polytope_cover {P : Set E} {f : E → F} :
       (∀ Q ∈ ℱ, IsPolytope Q ∧ IsAffineOn f Q) ∧ P = ⋃ Q ∈ ℱ, Q :=
   isPiecewiseOn_iff_finite_polytope_cover (fun hsub hg => hg.mono hsub)
 
-theorem isPLOn_empty (f : E → F) : IsPLOn (∅ : Set E) f :=
-  isPiecewiseOn_empty IsAffineOn f
-
 theorem IsPLOn.affineMap {P : Set E} (hP : IsPolyhedron P) (g : E →ᵃ[ℝ] F) : IsPLOn P g := by
   obtain ⟨C, hC⟩ := isPolyhedron_iff_exists_polytopalComplex.1 hP
-  exact ⟨hP, C, hC, fun Q _ => IsAffineOn.affineMap g Q⟩
+  exact ⟨C, hC, fun Q _ => IsAffineOn.affineMap g Q⟩
 
 theorem IsPLOn.const {P : Set E} (hP : IsPolyhedron P) (c : F) :
     IsPLOn P (fun _ => c) :=
@@ -442,7 +433,7 @@ theorem IsPLOn.exists_common_complex {G : Type*} [NormedAddCommGroup G] [NormedS
 theorem IsPLOn.add {P : Set E} {f g : E → F} (hf : IsPLOn P f) (hg : IsPLOn P g) :
     IsPLOn P (fun x => f x + g x) := by
   obtain ⟨C, hC, haff_f, haff_g⟩ := hf.exists_common_complex hg
-  exact ⟨hf.isPolyhedron, C, hC, fun Q hQ => (haff_f Q hQ).add (haff_g Q hQ)⟩
+  exact ⟨C, hC, fun Q hQ => (haff_f Q hQ).add (haff_g Q hQ)⟩
 
 theorem IsPLOn.sub {P : Set E} {f g : E → F} (hf : IsPLOn P f) (hg : IsPLOn P g) :
     IsPLOn P (fun x => f x - g x) :=
@@ -463,7 +454,7 @@ theorem IsPLOn.prodMk {G : Type*} [NormedAddCommGroup G] [NormedSpace ℝ G]
     {P : Set E} {f : E → F} {g : E → G}
     (hf : IsPLOn P f) (hg : IsPLOn P g) : IsPLOn P (fun x => (f x, g x)) := by
   obtain ⟨C, hC, haff_f, haff_g⟩ := hf.exists_common_complex hg
-  exact ⟨hf.isPolyhedron, C, hC, fun Q hQ => (haff_f Q hQ).prodMk (haff_g Q hQ)⟩
+  exact ⟨C, hC, fun Q hQ => (haff_f Q hQ).prodMk (haff_g Q hQ)⟩
 
 theorem IsPLOn.fst [FiniteDimensional ℝ F] {P : Set (E × F)} (hP : IsPolyhedron P) :
     IsPLOn P (Prod.fst : E × F → E) :=
@@ -483,10 +474,10 @@ theorem IsPLOn.pi {ι : Type*} [Fintype ι] {H : ι → Type*}
     intro x _
     funext i
     exact False.elim (hemp.false i)
-  · choose C hC using fun i => (hf i).2
+  · choose C hC using hf
     obtain ⟨K, hKfin, hKsp, href⟩ :=
       exists_common_refinement_of_finite_complexes C fun i => (hC i).1
-    refine ⟨hP, PolytopalComplex.ofSimplicialComplex K hKfin, ?_, ?_⟩
+    refine ⟨PolytopalComplex.ofSimplicialComplex K hKfin, ?_, ?_⟩
     · rw [PolytopalComplex.space_ofSimplicialComplex, hKsp]
     · rw [PolytopalComplex.cells_ofSimplicialComplex]
       rintro _ ⟨s, hs, rfl⟩
@@ -579,7 +570,7 @@ theorem IsPLOn.exists_preimage_complex [FiniteDimensional ℝ F] {P : Set E} {f 
     ∃ D : PolytopalComplex E, D.space = P ∩ f ⁻¹' CF.space ∧
       ∀ S ∈ D.cells, IsAffineOn f S ∧ ∃ R ∈ CF.cells, f '' S ⊆ R := by
   classical
-  rcases hf with ⟨_, CP, hCP, haff⟩
+  rcases hf with ⟨CP, hCP, haff⟩
   let aOf : Set E → E →ᵃ[ℝ] F := fun Q =>
     if h : Q ∈ CP.cells then (haff Q h).choose else AffineMap.const ℝ E 0
   have haOf : ∀ Q ∈ CP.cells, Set.EqOn f (aOf Q) Q := fun Q hQ => by
@@ -622,20 +613,20 @@ theorem IsPLOn.comp [FiniteDimensional ℝ F] {G : Type*} [NormedAddCommGroup G]
     {P : Set E} {T : Set F} {f : E → F} {g : F → G}
     (hf : IsPLOn P f) (hg : IsPLOn T g) (hmaps : MapsTo f P T) :
     IsPLOn P (g ∘ f) := by
-  rcases hg with ⟨_, CT, hCT, haff_g⟩
+  rcases hg with ⟨CT, hCT, haff_g⟩
   obtain ⟨D, hDsp, hDcell⟩ := hf.exists_preimage_complex CT
   have hsp : D.space = P := by
     rw [hDsp, hCT]
     ext x
     exact ⟨fun hx => hx.1, fun hx => ⟨hx, hmaps hx⟩⟩
-  refine ⟨hf.isPolyhedron, D, hsp, fun S hS => ?_⟩
+  refine ⟨D, hsp, fun S hS => ?_⟩
   obtain ⟨haffS, R, hR, hsubR⟩ := hDcell S hS
   exact haffS.comp (haff_g R hR) fun x hx => hsubR (Set.mem_image_of_mem f hx)
 
 omit [FiniteDimensional ℝ E] in
 theorem IsPLOn.image_isPolyhedron [FiniteDimensional ℝ F] {P : Set E} {f : E → F}
     (hf : IsPLOn P f) : IsPolyhedron (f '' P) := by
-  rcases hf with ⟨_, C, rfl, haff⟩
+  rcases hf with ⟨C, rfl, haff⟩
   rw [isPolyhedron_iff_finite_union_polytopes]
   refine ⟨(fun Q => f '' Q) '' C.cells, C.finite_cells.image _, ?_, ?_⟩
   · rintro _ ⟨Q, hQ, rfl⟩

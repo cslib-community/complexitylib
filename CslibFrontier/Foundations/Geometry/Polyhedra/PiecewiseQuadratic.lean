@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Analysis/Convex/PiecewiseQuadratic.lean`)
 
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Geometry.Polyhedra.PiecewiseLinear
@@ -226,7 +226,8 @@ theorem isQuadraticOn_iff_quadraticMap_add_affineMap [FiniteDimensional ℝ E]
       LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul, AffineMap.const_apply, B, L, Llin]
     rw [← add_assoc, ← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
     refine Finset.sum_congr rfl fun i _ => ?_
-    rw [affineMap_apply_eq_linear_add (a i) x, affineMap_apply_eq_linear_add (b i) x]
+    rw [congrFun (AffineMap.decomp (a i)) x, congrFun (AffineMap.decomp (b i)) x]
+    simp only [Pi.add_apply]
     ring
   · rintro ⟨Q, L, hQL⟩
     exact ((isQuadraticOn_of_quadraticMap Q S).add (IsQuadraticOn.affineMap L S)).congr hQL
@@ -289,8 +290,8 @@ private lemma affineMap_eq_mvPolynomial_basis {ι : Type*} [Finite ι]
   · simp only [p, map_add, map_sum, map_mul, MvPolynomial.eval_C, MvPolynomial.eval_X,
       Module.Basis.equivFun_apply]
     have hx : x = ∑ i, e.repr x i • e i := (e.sum_repr x).symm
-    conv_rhs => rw [affineMap_apply_eq_linear_add a x, hx]
-    simp only [map_sum, map_smul, smul_eq_mul, mul_comm]
+    conv_rhs => rw [congrFun (AffineMap.decomp a) x, hx]
+    simp only [Pi.add_apply, map_sum, map_smul, smul_eq_mul, mul_comm]
 
 /-- On a finite-dimensional real normed space equipped with a finite basis `e`, `f` is quadratic on
 `S` if and only if it agrees on `S` with a multivariate polynomial of `totalDegree ≤ 2` in the
@@ -371,31 +372,35 @@ with a polynomial of degree at most `2`. -/
 @[expose] def IsPQOn (P : Set E) (f : E → ℝ) : Prop :=
   IsPiecewiseOn IsQuadraticOn P f
 
-theorem IsPQOn.isPolyhedron {P : Set E} {f : E → ℝ} (hf : IsPQOn P f) : IsPolyhedron P :=
-  hf.1
-
 theorem IsPQOn.congr {P : Set E} {f f' : E → ℝ} (hf : IsPQOn P f) (heq : Set.EqOn f' f P) :
     IsPQOn P f' :=
   isPiecewiseOn_congr (fun heq hq => hq.congr heq) hf heq
 
 theorem IsPQOn.of_isPLOn {P : Set E} {f : E → ℝ} (hf : IsPLOn P f) : IsPQOn P f := by
-  rcases hf with ⟨hP, C, hC, haff⟩
-  exact ⟨hP, C, hC, fun Q hQ => IsQuadraticOn.of_isAffineOn (haff Q hQ)⟩
+  rcases hf with ⟨C, hC, haff⟩
+  exact ⟨C, hC, fun Q hQ => IsQuadraticOn.of_isAffineOn (haff Q hQ)⟩
 
 theorem IsPQOn.neg {P : Set E} {f : E → ℝ} (hf : IsPQOn P f) : IsPQOn P (fun x => -f x) := by
-  rcases hf with ⟨hP, C, hC, hquad⟩
-  exact ⟨hP, C, hC, fun Q hQ => (hquad Q hQ).neg⟩
+  rcases hf with ⟨C, hC, hquad⟩
+  exact ⟨C, hC, fun Q hQ => (hquad Q hQ).neg⟩
 
 theorem IsPQOn.smul (c : ℝ) {P : Set E} {f : E → ℝ} (hf : IsPQOn P f) :
     IsPQOn P (fun x => c * f x) := by
-  rcases hf with ⟨hP, C, hC, hquad⟩
-  exact ⟨hP, C, hC, fun Q hQ => (hquad Q hQ).smul c⟩
+  rcases hf with ⟨C, hC, hquad⟩
+  exact ⟨C, hC, fun Q hQ => (hquad Q hQ).smul c⟩
+
+theorem isPQOn_empty (f : E → ℝ) : IsPQOn (∅ : Set E) f :=
+  isPiecewiseOn_empty IsQuadraticOn f
 
 end GeneralPQ
 
 section FiniteDimPQ
 
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+
+theorem IsPQOn.isPolyhedron {P : Set E} {f : E → ℝ} (hf : IsPQOn P f) : IsPolyhedron P :=
+  let ⟨C, hC, _⟩ := hf
+  isPolyhedron_iff_exists_polytopalComplex.2 ⟨C, hC⟩
 
 theorem isPQOn_iff_simplicialComplex {P : Set E} {f : E → ℝ} :
     IsPQOn P f ↔ ∃ K : Geometry.SimplicialComplex ℝ E, K.faces.Finite ∧ K.space = P ∧
@@ -407,9 +412,6 @@ theorem isPQOn_iff_finite_polytope_cover {P : Set E} {f : E → ℝ} :
       (∀ Q ∈ ℱ, IsPolytope Q ∧ IsQuadraticOn f Q) ∧ P = ⋃ Q ∈ ℱ, Q :=
   isPiecewiseOn_iff_finite_polytope_cover (fun hsub hq => hq.mono hsub)
 
-theorem isPQOn_empty (f : E → ℝ) : IsPQOn (∅ : Set E) f :=
-  isPiecewiseOn_empty IsQuadraticOn f
-
 theorem IsPQOn.affineMap {P : Set E} (hP : IsPolyhedron P) (g : E →ᵃ[ℝ] ℝ) : IsPQOn P g :=
   IsPQOn.of_isPLOn (IsPLOn.affineMap hP g)
 
@@ -419,7 +421,7 @@ theorem IsPQOn.const {P : Set E} (hP : IsPolyhedron P) (c : ℝ) : IsPQOn P (fun
 theorem IsPQOn.quadraticMap {P : Set E} (hP : IsPolyhedron P) (Q : QuadraticMap ℝ E ℝ) :
     IsPQOn P Q := by
   obtain ⟨C, hC⟩ := isPolyhedron_iff_exists_polytopalComplex.1 hP
-  exact ⟨hP, C, hC, fun R _ => isQuadraticOn_of_quadraticMap Q R⟩
+  exact ⟨C, hC, fun R _ => isQuadraticOn_of_quadraticMap Q R⟩
 
 theorem IsPQOn.continuousOn {P : Set E} {f : E → ℝ} (hf : IsPQOn P f) : ContinuousOn f P :=
   isPiecewiseOn_continuousOn (fun h => h.continuousOn) hf
@@ -449,7 +451,7 @@ theorem IsPQOn.exists_common_complex {P : Set E} {f g : E → ℝ}
 theorem IsPQOn.add {P : Set E} {f g : E → ℝ} (hf : IsPQOn P f) (hg : IsPQOn P g) :
     IsPQOn P (fun x => f x + g x) := by
   obtain ⟨C, hC, hqf, hqg⟩ := hf.exists_common_complex hg
-  exact ⟨hf.isPolyhedron, C, hC, fun Q hQ => (hqf Q hQ).add (hqg Q hQ)⟩
+  exact ⟨C, hC, fun Q hQ => (hqf Q hQ).add (hqg Q hQ)⟩
 
 theorem IsPQOn.sub {P : Set E} {f g : E → ℝ} (hf : IsPQOn P f) (hg : IsPQOn P g) :
     IsPQOn P (fun x => f x - g x) :=
@@ -471,7 +473,7 @@ notes as `STOC 1056 Lemma 3.1`, unverified against the primary manuscript). -/
 theorem IsPQOn.mul_of_isPLOn {P : Set E} {f g : E → ℝ}
     (hf : IsPLOn P f) (hg : IsPLOn P g) : IsPQOn P (fun x => f x * g x) := by
   obtain ⟨C, hC, haff_f, haff_g⟩ := hf.exists_common_complex hg
-  exact ⟨hf.isPolyhedron, C, hC, fun Q hQ =>
+  exact ⟨C, hC, fun Q hQ =>
     IsQuadraticOn.mul_of_isAffineOn (haff_f Q hQ) (haff_g Q hQ)⟩
 
 /-- Any finite sum of pairwise products of real-valued PL functions on `P` is PQ on `P`. -/
@@ -485,13 +487,13 @@ theorem IsPQOn.comp_isPLOn [NormedAddCommGroup F] [NormedSpace ℝ F] [FiniteDim
     {P : Set E} {T : Set F} {f : E → F} {g : F → ℝ}
     (hf : IsPLOn P f) (hg : IsPQOn T g) (hmaps : MapsTo f P T) :
     IsPQOn P (g ∘ f) := by
-  rcases hg with ⟨_, CT, hCT, hq_g⟩
+  rcases hg with ⟨CT, hCT, hq_g⟩
   obtain ⟨D, hDsp, hDcell⟩ := hf.exists_preimage_complex CT
   have hsp : D.space = P := by
     rw [hDsp, hCT]
     ext x
     exact ⟨fun hx => hx.1, fun hx => ⟨hx, hmaps hx⟩⟩
-  refine ⟨hf.isPolyhedron, D, hsp, fun S hS => ?_⟩
+  refine ⟨D, hsp, fun S hS => ?_⟩
   obtain ⟨⟨a, ha⟩, R, hR, hsubR⟩ := hDcell S hS
   have hcomp : IsQuadraticOn (g ∘ a) S :=
     (hq_g R hR).comp_affineMap a fun x hx => hsubR ⟨x, hx, ha hx⟩
@@ -587,7 +589,7 @@ theorem IsPQOn.exists_cell_list_quadraticMap {P : Set E} {f : E → ℝ} (hf : I
       (∀ S Q L', (S, Q, L') ∈ L → IsPolytope S ∧ Set.EqOn f (fun x => Q x + L' x) S) ∧
       (⋃ S ∈ L.map Prod.fst, S) = P := by
   classical
-  rcases hf with ⟨_, C, hC, hquad⟩
+  rcases hf with ⟨C, hC, hquad⟩
   have hcell : ∀ S : Set E, ∃ QL : QuadraticMap ℝ E ℝ × (E →ᵃ[ℝ] ℝ),
       S ∈ C.cells → Set.EqOn f (fun x => QL.1 x + QL.2 x) S := by
     intro S

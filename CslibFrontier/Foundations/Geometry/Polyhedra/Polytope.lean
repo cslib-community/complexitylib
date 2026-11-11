@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Analysis/Convex/Polytope.lean`)
 
 public import CslibFrontier.Init
 public import Mathlib.Analysis.Convex.Exposed
@@ -23,8 +23,9 @@ import Mathlib.Tactic.Positivity
 
 This module develops compact convex polytopes in finite-dimensional real normed spaces,
 establishing the equivalence between vertex-hull representations (`IsVPolytope`) and bounded
-finite half-space intersections (`IsHPolytope`), along with faces (`IsPolytopeFace`), barycenters
-(`barycenter`), and closure under intersections, products, affine images, and affine preimages.
+finite half-space intersections (`IsHPolytope`), along with faces (`IsPolytopeFace`), vertex
+centroids (`vertexCentroid`), and closure under intersections, products, affine images, and affine
+preimages.
 
 ## Main definitions
 
@@ -32,7 +33,7 @@ finite half-space intersections (`IsHPolytope`), along with faces (`IsPolytopeFa
 * `Cslib.Polyhedra.IsHPolytope`: a bounded intersection of finitely many closed half-spaces.
 * `Cslib.Polyhedra.IsPolytope`: compact convex polytopes (`IsVPolytope`).
 * `Cslib.Polyhedra.IsPolytopeFace`: convex extreme subsets of a set.
-* `Cslib.Polyhedra.barycenter`: the centroid of the extreme points of a polytope.
+* `Cslib.Polyhedra.vertexCentroid`: the centroid of the extreme points of a polytope.
 
 ## Main results
 
@@ -48,11 +49,11 @@ finite half-space intersections (`IsHPolytope`), along with faces (`IsPolytopeFa
   `Cslib.Polyhedra.exists_isPolytopeFace_prod_eq`,
   `Cslib.Polyhedra.exists_isPolytopeFace_preimage_inter_eq`: characterization of faces of
   intersections, products, and affine preimage intersections.
-* `Cslib.Polyhedra.barycenter_notMem_of_ssubset`,
-  `Cslib.Polyhedra.barycenter_notMem_affineSpan_of_ssubset`: the barycenter of a polytope lies
-  outside every proper face and its affine span.
-* `Cslib.Polyhedra.exists_isPolytopeFace_ssubset_of_ne_barycenter`: ray projection from the
-  barycenter onto a proper face.
+* `Cslib.Polyhedra.vertexCentroid_notMem_of_ssubset`,
+  `Cslib.Polyhedra.vertexCentroid_notMem_affineSpan_of_ssubset`: the vertex centroid of a polytope
+  lies outside every proper face and its affine span.
+* `Cslib.Polyhedra.exists_isPolytopeFace_ssubset_of_ne_vertexCentroid`: ray projection from the
+  vertex centroid onto a proper face.
 
 ## References
 
@@ -91,9 +92,9 @@ with exposed faces (`IsPolytopeFace.isExposed`). -/
 @[expose] def IsPolytopeFace (P F : Set E) : Prop :=
   IsExtreme ℝ P F ∧ Convex ℝ F
 
-/-- The **barycenter** of a polytope `P`, defined as the centroid of its finite set of extreme
+/-- The **vertex centroid** of a polytope `P`, defined as the centroid of its finite set of extreme
 points (or `0` when `P.extremePoints ℝ` is infinite). -/
-noncomputable def barycenter (P : Set E) : E :=
+noncomputable def vertexCentroid (P : Set E) : E :=
   open Classical in
   if h : (P.extremePoints ℝ).Finite then h.toFinset.centroid ℝ id else 0
 
@@ -178,11 +179,6 @@ theorem isHPolytope_empty : IsHPolytope (∅ : Set E) := by
   simp only [mem_empty_iff_false, mem_ofPred_eq, mem_singleton_iff, forall_eq,
     AffineMap.const_apply, false_iff, not_le]
   exact zero_lt_one
-
-/-- Evaluation of a real affine functional `ℓ` decomposes as its linear part plus `ℓ 0`. -/
-theorem affineMap_apply_eq_linear_add (ℓ : E →ᵃ[ℝ] ℝ) (x : E) :
-    ℓ x = ℓ.linear x + ℓ 0 := by
-  simpa only [vadd_eq_add, add_zero] using ℓ.map_vadd (0 : E) x
 
 private lemma affineMap_eval_sum_smul (ℓ : E →ᵃ[ℝ] ℝ) {S : Finset E} {w : E → ℝ}
     (hw : ∑ v ∈ S, w v = 1) :
@@ -609,7 +605,7 @@ theorem IsPolytope.inter_setOf_le {P : Set E} (hP : IsPolytope P) {L : Set (E �
   exact ⟨fun ⟨h1, h2⟩ ℓ h => h.elim (h1 ℓ) (h2 ℓ),
     fun h => ⟨fun ℓ hℓ => h ℓ (.inl hℓ), fun ℓ hℓ => h ℓ (.inr hℓ)⟩⟩
 
-/-! ### Faces and barycenters of polytopes -/
+/-! ### Faces and vertex centroids of polytopes -/
 
 omit [FiniteDimensional ℝ E] in
 theorem isExtreme_mem_of_sum_pos {P F : Set E} (hPF : IsExtreme ℝ P F) (hP : Convex ℝ P)
@@ -731,14 +727,14 @@ theorem IsPolytope.extremePoints_nonempty {P : Set E} (hP : IsPolytope P) (hne :
   rw [hPeq] at hx
   exact hx
 
-theorem barycenter_eq_centroid {P : Set E} (hP : IsPolytope P) :
-    barycenter P = hP.finite_extremePoints.toFinset.centroid ℝ id := by
-  unfold barycenter
+theorem vertexCentroid_eq_centroid {P : Set E} (hP : IsPolytope P) :
+    vertexCentroid P = hP.finite_extremePoints.toFinset.centroid ℝ id := by
+  unfold vertexCentroid
   rw [dite_eq_left hP.finite_extremePoints]
 
-theorem barycenter_mem {P : Set E} (hP : IsPolytope P) (hne : P.Nonempty) :
-    barycenter P ∈ P := by
-  rw [barycenter_eq_centroid hP]
+theorem vertexCentroid_mem {P : Set E} (hP : IsPolytope P) (hne : P.Nonempty) :
+    vertexCentroid P ∈ P := by
+  rw [vertexCentroid_eq_centroid hP]
   have hsub : P = convexHull ℝ (hP.finite_extremePoints.toFinset : Set E) := by
     rw [hP.finite_extremePoints.coe_toFinset]
     exact hP.eq_convexHull_extremePoints
@@ -748,13 +744,13 @@ theorem barycenter_mem {P : Set E} (hP : IsPolytope P) (hne : P.Nonempty) :
       (hP.extremePoints_nonempty hne))
   rwa [← hsub] at hmem
 
-theorem barycenter_notMem_of_ssubset {P F : Set E} (hP : IsPolytope P) (hPF : IsPolytopeFace P F)
-    (hss : F ⊂ P) : barycenter P ∉ F := by
+theorem vertexCentroid_notMem_of_ssubset {P F : Set E} (hP : IsPolytope P)
+    (hPF : IsPolytopeFace P F) (hss : F ⊂ P) : vertexCentroid P ∉ F := by
   intro hbF
-  have hne : P.Nonempty := ⟨barycenter P, hPF.subset hbF⟩
+  have hne : P.Nonempty := ⟨vertexCentroid P, hPF.subset hbF⟩
   have hVne : hP.finite_extremePoints.toFinset.Nonempty :=
     hP.finite_extremePoints.toFinset_nonempty.2 (hP.extremePoints_nonempty hne)
-  rw [barycenter_eq_centroid hP, Finset.centroid_def,
+  rw [vertexCentroid_eq_centroid hP, Finset.centroid_def,
     Finset.affineCombination_eq_linear_combination _ _ _
       (Finset.sum_centroidWeights_eq_one_of_nonempty _ _ hVne)] at hbF
   set V := hP.finite_extremePoints.toFinset
@@ -822,11 +818,11 @@ theorem IsPolytopeFace.inter_affineSpan_eq {P F : Set E} (hP : IsPolytope P)
     have h1 : 1 ≤ n := Nat.one_le_cast.2 (Nat.succ_le_of_lt (Finset.card_pos.2 hVne))
     have h2 : 1 < 2 * n * (M + 1) := by nlinarith
     exact (div_lt_one hden_pos).2 h2
-  let b := barycenter F
-  have hbF : b ∈ F := barycenter_mem hFp hne
+  let b := vertexCentroid F
+  have hbF : b ∈ F := vertexCentroid_mem hFp hne
   have hb_eq : b = ∑ v ∈ V, (1 / n) • v := by
     dsimp only [b]
-    rw [barycenter_eq_centroid hFp, Finset.centroid_def]
+    rw [vertexCentroid_eq_centroid hFp, Finset.centroid_def]
     change Finset.affineCombination ℝ V id (V.centroidWeights ℝ) = _
     rw [Finset.affineCombination_eq_linear_combination _ _ _
       (Finset.sum_centroidWeights_eq_one_of_nonempty _ _ hVne)]
@@ -868,18 +864,18 @@ theorem IsPolytopeFace.inter_affineSpan_eq {P F : Set E} (hP : IsPolytope P)
   exact hPF.isExtreme.right_mem_of_mem_openSegment (hPF.subset hbF) (hwx ▸ hxP) hyF
     ⟨1 - ε, ε, sub_pos.2 hε_lt, hε_pos, sub_add_cancel 1 ε, rfl⟩
 
-theorem barycenter_notMem_affineSpan_of_ssubset {P F : Set E} (hP : IsPolytope P)
+theorem vertexCentroid_notMem_affineSpan_of_ssubset {P F : Set E} (hP : IsPolytope P)
     (hPF : IsPolytopeFace P F) (hne : F.Nonempty) (hss : F ⊂ P) :
-    barycenter P ∉ affineSpan ℝ F := by
+    vertexCentroid P ∉ affineSpan ℝ F := by
   intro hmem
-  have hmem' : barycenter P ∈ P ∩ (affineSpan ℝ F : Set E) :=
-    ⟨barycenter_mem hP ⟨hne.some, hPF.subset hne.some_mem⟩, hmem⟩
+  have hmem' : vertexCentroid P ∈ P ∩ (affineSpan ℝ F : Set E) :=
+    ⟨vertexCentroid_mem hP ⟨hne.some, hPF.subset hne.some_mem⟩, hmem⟩
   rw [hPF.inter_affineSpan_eq hP hne] at hmem'
-  exact barycenter_notMem_of_ssubset hP hPF hss hmem'
+  exact vertexCentroid_notMem_of_ssubset hP hPF hss hmem'
 
-theorem IsPolytope.apply_barycenter_lt {P : Set E} (hP : IsPolytope P) (hne : P.Nonempty)
+theorem IsPolytope.apply_vertexCentroid_lt {P : Set E} (hP : IsPolytope P) (hne : P.Nonempty)
     {ℓ : E →ᵃ[ℝ] ℝ} (hℓ_le : ∀ z ∈ P, ℓ z ≤ 0) {y : E} (hyP : y ∈ P) (hylt : ℓ y < 0) :
-    ℓ (barycenter P) < 0 := by
+    ℓ (vertexCentroid P) < 0 := by
   classical
   set V : Finset E := hP.finite_extremePoints.toFinset
   have hVne : V.Nonempty :=
@@ -899,8 +895,8 @@ theorem IsPolytope.apply_barycenter_lt {P : Set E} (hP : IsPolytope P) (hne : P.
       simp [this]
     linarith
   obtain ⟨v₀, hv₀, hv₀lt⟩ := hex
-  have hb_sum : ℓ (barycenter P) = ∑ v ∈ V, V.centroidWeights ℝ v * ℓ v := by
-    rw [barycenter_eq_centroid hP, Finset.centroid_def,
+  have hb_sum : ℓ (vertexCentroid P) = ∑ v ∈ V, V.centroidWeights ℝ v * ℓ v := by
+    rw [vertexCentroid_eq_centroid hP, Finset.centroid_def,
       Finset.affineCombination_eq_linear_combination _ _ _
         (Finset.sum_centroidWeights_eq_one_of_nonempty _ _ hVne)]
     simp only [id_eq]
@@ -989,14 +985,14 @@ theorem IsPolytopeFace.exists_eq_zero_of_isHPolytope {P F : Set E}
     Subset.antisymm (fun x hx => ⟨hPF.subset hx, fun ℓ hℓ => hℓ.2 x hx⟩) ?_⟩
   intro z ⟨hzP, hzL₀⟩
   have hFp := hPF.isPolytope hP
-  let b := barycenter F
-  have hbF : b ∈ F := barycenter_mem hFp hne
+  let b := vertexCentroid F
+  have hbF : b ∈ F := vertexCentroid_mem hFp hne
   have hb_strict : ∀ ℓ ∈ L \ L₀, ℓ b < 0 := by
     rintro ℓ ⟨hℓL, hnℓ⟩
     simp only [L₀, mem_ofPred_eq, hℓL, true_and, not_forall] at hnℓ
     obtain ⟨y, hyF, hne0⟩ := hnℓ
     have hy_lt : ℓ y < 0 := ((hPL ▸ hPF.subset hyF) ℓ hℓL).lt_of_ne hne0
-    exact hFp.apply_barycenter_lt hne (fun z hz => (hPL ▸ hPF.subset hz) ℓ hℓL) hyF hy_lt
+    exact hFp.apply_vertexCentroid_lt hne (fun z hz => (hPL ▸ hPF.subset hz) ℓ hℓL) hyF hy_lt
   set Lstrict : Finset (E →ᵃ[ℝ] ℝ) := hL.toFinset.filter (fun ℓ => ℓ ∉ L₀)
   let ε : ℝ :=
     if hs : Lstrict.Nonempty then
@@ -1156,19 +1152,19 @@ theorem exists_isPolytopeFace_preimage_inter_eq {P : Set E} {Q : Set F} (f : E �
     exact isPolytopeFace_of_eq_zero hLQ hQeq hQ.convex (fun _ hm => hm.1)
   exact ⟨P', Q', isPolytopeFace_of_eq_zero hLP hPeq hP.convex inter_subset_right, hQ'face, hGeq'⟩
 
-/-- Every point `x ∈ P` other than `barycenter P` lies on a closed segment from `barycenter P` to a
-point `y` in some proper nonempty face of `P`. -/
-theorem exists_isPolytopeFace_ssubset_of_ne_barycenter {P : Set E} (hP : IsPolytope P)
-    {x : E} (hx : x ∈ P) (hxne : x ≠ barycenter P) :
+/-- Every point `x ∈ P` other than `vertexCentroid P` lies on a closed segment from
+`vertexCentroid P` to a point `y` in some proper nonempty face of `P`. -/
+theorem exists_isPolytopeFace_ssubset_of_ne_vertexCentroid {P : Set E} (hP : IsPolytope P)
+    {x : E} (hx : x ∈ P) (hxne : x ≠ vertexCentroid P) :
     ∃ F, IsPolytopeFace P F ∧ F.Nonempty ∧ F ⊂ P ∧
-      ∃ y ∈ F, x ∈ segment ℝ (barycenter P) y := by
+      ∃ y ∈ F, x ∈ segment ℝ (vertexCentroid P) y := by
   classical
   obtain ⟨hbnd, L, hL, hPL⟩ := isPolytope_iff_isHPolytope.1 hP
-  let b := barycenter P
-  have hbP : b ∈ P := barycenter_mem hP ⟨x, hx⟩
+  let b := vertexCentroid P
+  have hbP : b ∈ P := vertexCentroid_mem hP ⟨x, hx⟩
   let Lstrict : Set (E →ᵃ[ℝ] ℝ) := {ℓ ∈ L | ∃ z ∈ P, ℓ z < 0}
   have hb_strict : ∀ ℓ ∈ Lstrict, ℓ b < 0 := fun ℓ ⟨hℓL, z, hzP, hzlt⟩ =>
-    hP.apply_barycenter_lt ⟨x, hx⟩ (fun w hw => (hPL ▸ hw) ℓ hℓL) hzP hzlt
+    hP.apply_vertexCentroid_lt ⟨x, hx⟩ (fun w hw => (hPL ▸ hw) ℓ hℓL) hzP hzlt
   set Linc : Finset (E →ᵃ[ℝ] ℝ) := hL.toFinset.filter (fun ℓ => ℓ ∈ Lstrict ∧ ℓ b < ℓ x)
   have hLinc_ne : Linc.Nonempty := by
     by_contra hmt
