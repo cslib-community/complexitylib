@@ -67,7 +67,7 @@ on round collapse (`AMk_eq_AM`, which is unavailable when `k(n)` grows with `n`)
 * [S. Goldwasser, M. Sipser, *Private coins versus public coins in interactive proof
   systems*][GoldwasserSipser1986]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft of January
-  2007][AroraBarak07] (Theorem 8.8; other section locators unverified)
+  2007][AroraBarak07] (locators unverified)
 -/
 
 public section

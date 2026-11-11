@@ -47,8 +47,7 @@ queries:
   `Cslib.Complexity.IPPolyQueryBounded_subset_AMPolyRounds`, and
   `Cslib.Complexity.IP_subset_AMPolyRounds`: `IPPolyQueryBounded enc q = IPPolyRounds enc (2 * q ·)`
   and `IP ⊆ AM[poly]`, carrying Goldwasser–Sipser without round collapse to the full oracle model
-  [Arora and Barak, Chapter 8][AroraBarak09]
-  [Arora and Barak, January 2007 draft, Theorem 8.8][AroraBarak07].
+  [Arora and Barak][AroraBarak09], [Arora and Barak (2007 draft)][AroraBarak07].
 
 ## Main definitions
 
@@ -79,8 +78,8 @@ queries:
 * [L. Babai, S. Moran, *Arthur-Merlin games: a randomized proof system, and a hierarchy of
   complexity classes*][BabaiMoran1988]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, January 2007 draft,
-  Section 8.3][AroraBarak07]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft of January
+  2007][AroraBarak07] (locators unverified)
 -/
 
 public section
