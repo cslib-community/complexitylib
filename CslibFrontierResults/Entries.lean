@@ -44,6 +44,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Transi
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
+import CslibFrontier.Computability.Complexity.Classes.PH.Yap
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
@@ -3099,3 +3100,27 @@ register_result "sperner-2d-ppad-completeness" where
     Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
+
+register_result "yap-collapse" where
+  title := "Yap's theorem: coNP in NP/poly collapses the polynomial hierarchy to Σ₃"
+  topic := "structural complexity"
+  sources := [
+    { paper := Yap1983, theorem := unverified, locator := unverified },
+    { paper := BodlaenderJansenKratsch2014, theorem := "Theorem 2",
+      locator := "p. 6 (arXiv v1)" }
+  ]
+  theorems := [
+    Cslib.Complexity.SigmaP_two_subset_NPPoly_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PiP_three_eq_SigmaP_three_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_UNSAT_mem_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_coNP_encBits_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_inter_PiP_three_of_coNP_subset_NPPoly
+  ]
+  scope := "Conditional collapse for arbitrary injective instance encodings. NPPoly uses a \
+    polynomially bounded bit-string advice function of the encoded input length read by a \
+    native polynomial-time NP verifier; PH uses polynomial-time alternating verifiers with \
+    exact polynomial block lengths. Under coNP ⊆ NP/poly (equivalently NP ⊆ coNP/poly, \
+    coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
+    decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
+    from Σ_k ⊆ Π_k/poly are not part of this entry."

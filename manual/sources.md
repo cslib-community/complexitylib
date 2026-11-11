@@ -1621,6 +1621,11 @@ F. Frances Yao. "Efficient Dynamic Programming Using Quadrangle Inequalities." *
 
 Andrew Chi-Chih Yao. "How to Generate and Exchange Secrets (Extended Abstract)." *27th Annual Symposium on Foundations of Computer Science (FOCS 1986)*, 162–167, 1986. https://doi.org/10.1109/SFCS.1986.25 . Bibliographic data from the DOI record and secondary listings, cited as the customary origin of garbled circuits. The full text was not inspected in this pass.
 
+<a id="yap1983"></a>
+## yap1983
+
+Chee K. Yap. "Some Consequences of Non-Uniform Conditions on Uniform Classes." *Theoretical Computer Science* 26(3), 287–300, 1983. https://doi.org/10.1016/0304-3975(83)90020-8 . Bibliographic data from the library bibliography (`Yap1983`); the full text is paywalled and was not inspected, so no theorem number in Yap's paper is cited. The manual attributes to it the collapse `coNP ⊆ NP/poly → PH = Σ₃` (`NP ⊆ coNP/poly → PH = Σ₃`), as cited in [Bodlaender, Jansen and Kratsch](#bodlaenderjansenkratsch2014), Theorem 2 (p. 6 of arXiv v1).
+
 <a id="yekhanin12"></a>
 ## yekhanin12
 

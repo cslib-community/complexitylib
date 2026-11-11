@@ -1965,7 +1965,9 @@ public import CslibFrontier.Computability.Complexity.Classes.PH.Kannan
 public import CslibFrontier.Computability.Complexity.Classes.PH.KarpLipton
 public import CslibFrontier.Computability.Complexity.Classes.PH.OracleNP
 public import CslibFrontier.Computability.Complexity.Classes.PH.Projection
+public import CslibFrontier.Computability.Complexity.Classes.PH.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
+public import CslibFrontier.Computability.Complexity.Classes.PH.Yap
 public import CslibFrontier.Computability.Complexity.Classes.PP
 public import CslibFrontier.Computability.Complexity.Classes.PP.Bit
 public import CslibFrontier.Computability.Complexity.Classes.PP.Characterization
