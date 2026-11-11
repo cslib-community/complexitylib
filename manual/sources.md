@@ -474,7 +474,7 @@ Irit Dinur. “The PCP Theorem by Gap Amplification.” *Journal of the ACM* 54(
 <a id="dinur2016"></a>
 ## dinur2016
 
-Irit Dinur. “Mildly Exponential Reduction from Gap 3SAT to Polynomial-Gap Label-Cover.” *Electronic Colloquium on Computational Complexity*, Report TR16-128, 2016. https://eccc.weizmann.ac.il/report/2016/128/ . Bibliographic metadata checked against the ECCC report record; the report's full text was not inspected directly, so no internal hypothesis, theorem, or page locator is cited. Used alongside [manurangsiraghavendra2017](#manurangsiraghavendra2017) for the standard Gap Exponential Time Hypothesis (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
+Irit Dinur. “Mildly Exponential Reduction from Gap 3SAT to Polynomial-Gap Label-Cover.” *Electronic Colloquium on Computational Complexity*, Report TR16-128, 2016. https://eccc.weizmann.ac.il/report/2016/128/ . Bibliographic metadata checked against the ECCC report record; the report's full text was inspected for Hypothesis 2.5 (p. 5), which has at most $D n$ clauses and fixed soundness $< 0.9$. Used alongside [manurangsiraghavendra2017](#manurangsiraghavendra2017) to document the Gap Exponential Time Hypothesis adaptation (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
 
 <a id="dosasgall2013"></a>
 ## dosasgall2013
@@ -1115,7 +1115,7 @@ Ju. I. Manin. "On cubic congruences to a prime modulus." *Izvestiya Akademii Nau
 <a id="manurangsiraghavendra2017"></a>
 ## manurangsiraghavendra2017
 
-Pasin Manurangsi and Prasad Raghavendra. “A Birthday Repetition Theorem and Complexity of Approximating Dense CSPs.” *44th International Colloquium on Automata, Languages, and Programming (ICALP 2017)*, LIPIcs 80, 78:1–78:15, 2017. https://doi.org/10.4230/LIPIcs.ICALP.2017.78 . Bibliographic metadata checked against the LIPIcs DOI record; the paper's full text was not inspected directly, so no internal hypothesis, theorem, or page locator is cited. Used alongside [dinur2016](#dinur2016) for the standard Gap Exponential Time Hypothesis (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
+Pasin Manurangsi and Prasad Raghavendra. “A Birthday Repetition Theorem and Complexity of Approximating Dense CSPs.” *44th International Colloquium on Automata, Languages, and Programming (ICALP 2017)*, LIPIcs 80, 78:1–78:15, 2017. https://doi.org/10.4230/LIPIcs.ICALP.2017.78 . Bibliographic metadata checked against the LIPIcs DOI record; the paper's full text was inspected for the approximation ETHA formulation (§1.1, p. 78:5). Used alongside [dinur2016](#dinur2016) to document the Gap Exponential Time Hypothesis adaptation (`GapETH`, `rGapETH`) in [FineGrained/GapETH.lean](../CslibFrontier/Computability/Complexity/FineGrained/GapETH.lean).
 
 <a id="mathlib"></a>
 ## mathlib
