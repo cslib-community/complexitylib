@@ -16,9 +16,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Space
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.CopyWord
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop.Space
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile.Space
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition.Space
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.IterateWhile.Space
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -77,312 +79,7 @@ open _root_.Turing _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapeTM
 
 namespace ExpIterateInternal
 
-section Tapes
 
-private abbrev curTape (k : ℕ) : Fin (k + 1 + 2) := Fin.natAdd (k + 1) 0
-
-private abbrev nextTape (k : ℕ) : Fin (k + 1 + 2) := (Fin.last k).castAdd 2
-
-private abbrev flagTape (k : ℕ) : Fin (k + 1 + 2) := Fin.natAdd (k + 1) 1
-
-private def copyEmb (k : ℕ) : Fin (0 + 1 + 2) ↪ Fin (k + 1 + 2) :=
-  ⟨![curTape k, nextTape k, flagTape k], by
-    intro a b h
-    fin_cases a <;> fin_cases b <;> simp [Fin.ext_iff] at h ⊢ <;> omega⟩
-
-private def emitEmb (k : ℕ) : Fin (0 + 2) ↪ Fin (k + 1 + 2) :=
-  ⟨![curTape k, flagTape k], by
-    intro a b h
-    fin_cases a <;> fin_cases b <;> simp [Fin.ext_iff] at h ⊢⟩
-
-@[simp] private theorem copyEmb_zero (k : ℕ) : copyEmb k 0 = curTape k := rfl
-@[simp] private theorem copyEmb_one (k : ℕ) : copyEmb k 1 = nextTape k := rfl
-@[simp] private theorem copyEmb_two (k : ℕ) : copyEmb k 2 = flagTape k := rfl
-@[simp] private theorem emitEmb_zero (k : ℕ) : emitEmb k 0 = curTape k := rfl
-@[simp] private theorem emitEmb_one (k : ℕ) : emitEmb k 1 = flagTape k := rfl
-
-private theorem curTape_ne_nextTape {k : ℕ} : curTape k ≠ nextTape k :=
-  Fin.ne_of_val_ne (by simp)
-
-private theorem flagTape_ne_nextTape {k : ℕ} : flagTape k ≠ nextTape k :=
-  Fin.ne_of_val_ne (by simp only [Fin.val_natAdd, Fin.val_castAdd, Fin.val_last]; omega)
-
-private theorem flagTape_ne_curTape {k : ℕ} : flagTape k ≠ curTape k :=
-  Fin.ne_of_val_ne (by simp)
-
-private def words {k : ℕ} (vc vn : List Bool) : Fin (k + 1 + 2) → List Bool :=
-  Function.update (Function.update (fun _ => []) (curTape k) vc) (nextTape k) vn
-
-@[simp]
-private theorem words_cur {k : ℕ} (vc vn : List Bool) :
-    words (k := k) vc vn (curTape k) = vc := by
-  simp [words, curTape_ne_nextTape]
-
-@[simp]
-private theorem words_next {k : ℕ} (vc vn : List Bool) :
-    words (k := k) vc vn (nextTape k) = vn := by
-  simp [words]
-
-@[simp]
-private theorem words_flag {k : ℕ} (vc vn : List Bool) :
-    words (k := k) vc vn (flagTape k) = [] := by
-  simp [words, flagTape_ne_nextTape, flagTape_ne_curTape]
-
-private theorem update_words_cur {k : ℕ} (vc vn v : List Bool) :
-    Function.update (words (k := k) vc vn) (curTape k) v = words v vn := by
-  rw [words, Function.update_comm curTape_ne_nextTape.symm, Function.update_idem, ← words]
-
-private theorem update_words_next {k : ℕ} (vc vn v : List Bool) :
-    Function.update (words (k := k) vc vn) (nextTape k) v = words vc v := by
-  rw [words, Function.update_idem, ← words]
-
-private theorem words_nil_next {k : ℕ} (v : List Bool) :
-    words (k := k) v [] = Function.update (fun _ => []) (curTape k) v :=
-  Function.update_eq_self_iff.mpr (by simp [curTape_ne_nextTape.symm])
-
-private theorem words_nil_cur {k : ℕ} (v : List Bool) :
-    words (k := k) [] v = Function.update (fun _ => []) (nextTape k) v := by
-  rw [words, Function.update_eq_self]
-
-private theorem words_nil_nil {k : ℕ} : words (k := k) [] [] = fun _ => [] := by
-  rw [words_nil_next, Function.update_eq_self]
-
-private theorem words_injective {k : ℕ} :
-    Function.Injective (fun p : List Bool × List Bool => words (k := k) p.1 p.2) := by
-  rintro ⟨vc, vn⟩ ⟨vc', vn'⟩ h
-  have hcur := congrFun h (curTape k)
-  have hnext := congrFun h (nextTape k)
-  simp only [words_cur, words_next] at hcur hnext
-  rw [hcur, hnext]
-
-private abbrev PrepareState : Type :=
-  (Unit ⊕ RewindWorkState) ⊕
-    (MarkWorkState ⊕ ((Unit ⊕ RewindState) ⊕ RewindWorkState) ⊕ MarkWorkState) ⊕
-      (Unit ⊕ RewindWorkState)
-
-private abbrev FinishState : Type :=
-  (MarkWorkState ⊕ (Unit ⊕ RewindState) ⊕ MarkWorkState) ⊕ (Unit ⊕ RewindWorkState)
-
-private abbrev RoundState (State : Type) : Type :=
-  PrepareState ⊕ (MarkWorkState ⊕ (State ⊕ RewindWorkState) ⊕ MarkWorkState)
-
-private abbrev MachineState (State : Type) : Type :=
-  ((Unit ⊕ RewindState) ⊕ RewindWorkState) ⊕
-    ((RoundState State ⊕ Unit) ⊕ FinishState)
-
-private noncomputable def prepareRound (k : ℕ) (mark : Bool) :
-    MultiTapeTM (k + 1 + 2) Bool PrepareState :=
-  ((clearWork Bool).extendTapes (tapeEmb (curTape k))).seq
-    ((copyWord (copyEmb k) mark).seq ((clearWork Bool).extendTapes (tapeEmb (nextTape k))))
-
-private noncomputable def finish (k : ℕ) (mark : Bool) :
-    MultiTapeTM (k + 1 + 2) Bool FinishState :=
-  (emitWord (emitEmb k) mark).seq ((clearWork Bool).extendTapes (tapeEmb (curTape k)))
-
-private theorem transformsTapes_prepareRound {k : ℕ} (mark : Bool) (vp v : List Bool) :
-    TransformsTapes (prepareRound k mark) (fun _ ws => ws = words vp v)
-      (fun _ _ ws' e => ws' = words v [] ∧ e = [])
-      (3 * vp.length + 6 * v.length + 16) (vp.length + 5 * v.length + 3 * (k + 1 + 2) + 17) := by
-  have hcur := (transformsTapes_clearWork_tapeEmb (curTape k) vp).imp
-    (P' := fun _ ws => ws = words vp v) (Q' := fun _ _ ws' e => ws' = words [] v ∧ e = [])
-    (fun _ _ h => by rw [h, words_cur])
-    (fun _ _ _ _ h ⟨h', he⟩ => ⟨by rw [h', h, update_words_cur], he⟩) le_rfl le_rfl
-  have hcopy := (transformsTapes_copyWord (copyEmb k) mark v).imp
-    (P' := fun _ ws => ws = words [] v) (Q' := fun _ _ ws' e => ws' = words v v ∧ e = [])
-    (fun _ _ h => by subst h; simp)
-    (fun _ _ _ _ h ⟨h', he⟩ => ⟨by rw [h', h, copyEmb_zero, update_words_cur], he⟩) le_rfl le_rfl
-  have hnext := (transformsTapes_clearWork_tapeEmb (nextTape k) v).imp
-    (P' := fun _ ws => ws = words v v) (Q' := fun _ _ ws' e => ws' = words v [] ∧ e = [])
-    (fun _ _ h => by rw [h, words_next])
-    (fun _ _ _ _ h ⟨h', he⟩ => ⟨by rw [h', h, update_words_next], he⟩) le_rfl le_rfl
-  exact (hcur.seq_eq (hcopy.seq_eq hnext)).imp (fun _ _ h => h)
-    (fun _ _ _ _ _ ⟨h', he⟩ => ⟨h', by simp only [he, List.append_nil]⟩) (by omega) (by omega)
-
-private theorem transformsTapes_finish {k : ℕ} (mark : Bool) (v : List Bool) :
-    TransformsTapes (finish k mark) (fun _ ws => ws = words v [])
-      (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = v)
-      (5 * v.length + 11) (3 * v.length + 2 * (k + 1 + 2) + 11) := by
-  have hemit := (transformsTapes_emitWord (emitEmb k) mark v).imp
-    (P' := fun _ ws => ws = words v []) (Q' := fun _ _ ws' e => ws' = words v [] ∧ e = v)
-    (fun _ _ h => by subst h; simp)
-    (fun _ _ _ _ h ⟨h', he⟩ => ⟨h'.trans h, he⟩) le_rfl le_rfl
-  have hclear := (transformsTapes_clearWork_tapeEmb (curTape k) v).imp
-    (P' := fun _ ws => ws = words v []) (Q' := fun _ _ ws' e => ws' = (fun _ => []) ∧ e = [])
-    (fun _ _ h => by rw [h, words_cur])
-    (fun _ _ _ _ h ⟨h', he⟩ => ⟨by rw [h', h, update_words_cur, words_nil_nil], he⟩) le_rfl le_rfl
-  exact (hemit.seq_eq hclear).imp (fun _ _ h => h)
-    (fun _ _ _ _ _ ⟨h', he⟩ => ⟨h', by simp only [he, List.append_nil]⟩) (by omega) (by omega)
-
-private noncomputable def closedRound {k : ℕ} {State : Type} (tm : MultiTapePTM k Bool State)
-    (mark : Bool) : MultiTapePTM (k + 1 + 2) Bool (RoundState State) :=
-  (ofDeterministic (prepareRound k mark)).seq (tm.onWords mark)
-
-private noncomputable def closedLoop {k : ℕ} {State : Type} (tm : MultiTapePTM k Bool State)
-    (mark : Bool) : MultiTapePTM (k + 1 + 2) Bool (MachineState State) :=
-  (ofDeterministic (loadWord Bool (nextTape k))).seq
-    ((repeatUntilBlank (nextTape k) (closedRound tm mark)).seq
-      (ofDeterministic (finish k mark)))
-
-private theorem runsWords_closedRound {k : ℕ} {State : Type} (x : List Bool)
-    {tm : MultiTapePTM k Bool State} (mark : Bool) {vp v : List Bool} {t l : ℕ}
-    {program : ProbOracleComp (fun _ : Empty × List Bool => List Bool) (List Bool)}
-    (htidy : tm.ComputesTidily v t program)
-    (hl : ∀ (OracleState : Type)
-      (oracle : Empty × List Bool → StateT OracleState PMF (List Bool))
-      (s : OracleState) (w' : List Bool) (s' : OracleState),
-      (w', s') ∈ (ProbOracleComp.runWith oracle program s).support → w'.length ≤ l)
-    (out₀ : List Bool) :
-    (closedRound tm mark).RunsWords x (words vp v) out₀
-      (3 * vp.length + 6 * v.length + 16 + (t + l + 6)) program (fun v' => words v v')
-      (fun _ => []) := by
-  have h₁ := RunsWords.of_transformsTapes (Operation := Empty) (x := x) (out₀ := out₀)
-    (transformsTapes_prepareRound (k := k) mark vp v) rfl (ws' := words v []) (emitted := [])
-    (fun _ _ hQ => hQ)
-  have h₂ : (tm.onWords mark).RunsWords x (words v []) (out₀ ++ []) (t + l + 6) program
-      (fun v' => words v v') (fun _ => []) := by
-    rw [words_nil_next]
-    exact htidy.onWords_of_le mark hl (out₀ ++ [])
-  exact h₁.seq_pure_left h₂
-
-private theorem computesTidily_and_runsInSpace_closedLoop {k : ℕ} {State : Type}
-    {tm : MultiTapePTM k Bool State} (mark : Bool) {r t L : ℕ} {w₀ : List Bool}
-    {step : List Bool → ProbOracleComp (fun _ : Empty × List Bool => List Bool) (List Bool)}
-    (invariant : ℕ → List Bool → Prop) (hbase : invariant 0 w₀)
-    (hround : ∀ n < r, ∀ w, invariant n w → tm.ComputesTidily w t (step w))
-    (hpreserve : ∀ n < r, ∀ w, invariant n w →
-      ∀ (OracleState : Type) (oracle : Empty × List Bool → StateT OracleState PMF (List Bool))
-        (s s' : OracleState) (w' : List Bool),
-        (w', s') ∈ (ProbOracleComp.runWith oracle (step w) s).support →
-          invariant (n + 1) w' ∧ w' ≠ [])
-    (hlast : ∀ w, invariant r w → tm.ComputesTidily w t (pure []))
-    (hlength : ∀ n ≤ r, ∀ w, invariant n w → w.length ≤ L) :
-    (closedLoop tm mark).ComputesTidily w₀ ((r + 1) * (t + 10 * L + 23) + 8 * L + 17)
-        (OracleComp.iterate r step w₀) ∧
-      (closedLoop tm mark).toNTM.RunsInSpace w₀ ((k + 1 + 2) * (2 * (t + 10 * L + 22) + 1)) := by
-  let step' (p : List Bool × List Bool) :
-      ProbOracleComp (fun _ : Empty × List Bool => List Bool) (List Bool × List Bool) :=
-    (fun v' => (p.2, v')) <$> step p.2
-  let last (p : List Bool × List Bool) :
-      ProbOracleComp (fun _ : Empty × List Bool => List Bool) (List Bool × List Bool) :=
-    pure (p.2, [])
-  let inv (n : ℕ) (p : List Bool × List Bool) : Prop := invariant n p.2 ∧ p.1.length ≤ L
-  have hpres : ∀ n < r, ∀ p, inv n p →
-      ∀ (OracleState : Type) (oracle : Empty × List Bool → StateT OracleState PMF (List Bool))
-        (st st' : OracleState) (p' : List Bool × List Bool),
-        (p', st') ∈ (ProbOracleComp.runWith oracle (step' p) st).support →
-        inv (n + 1) p' ∧ words (k := k) p'.1 p'.2 (nextTape k) ≠ [] := by
-    intro n hn p hp _ oracle st st' p' hp'
-    simp only [step', ProbOracleComp.runWith_map, PMF.mem_support_map_iff] at hp'
-    obtain ⟨⟨w', st''⟩, hw', heq⟩ := hp'
-    rcases Prod.mk.inj heq with ⟨rfl, rfl⟩
-    obtain ⟨hinv, hne⟩ := hpreserve n hn p.2 hp.1 _ oracle st st'' w' hw'
-    exact ⟨⟨hinv, hlength n hn.le p.2 hp.1⟩, by simpa only [words_next] using hne⟩
-  have hstepRW (out : List Bool) : ∀ n < r, ∀ p, inv n p →
-      (closedRound tm mark).RunsWords w₀ (words p.1 p.2) out (t + 10 * L + 22) (step' p)
-        (fun q => words q.1 q.2) (fun _ => []) := by
-    intro n hn p hp
-    have hl : ∀ (OracleState : Type)
-        (oracle : Empty × List Bool → StateT OracleState PMF (List Bool))
-        (s : OracleState) (w' : List Bool) (s' : OracleState),
-        (w', s') ∈ (ProbOracleComp.runWith oracle (step p.2) s).support → w'.length ≤ L :=
-      fun _ oracle s w' s' hw' =>
-        hlength (n + 1) hn w' (hpreserve n hn p.2 hp.1 _ oracle s s' w' hw').1
-    have hround' := (runsWords_closedRound w₀ mark (vp := p.1)
-      (hround n hn p.2 hp.1) hl out).of_map (fun v' => (p.2, v'))
-      (fun q => words q.1 q.2) (fun _ => [])
-    have := hp.2
-    have := hlength n hn.le p.2 hp.1
-    exact hround'.mono (by omega)
-  have hlastRW (out : List Bool) : ∀ p, inv r p →
-      (closedRound tm mark).RunsWords w₀ (words p.1 p.2) out (t + 10 * L + 22) (last p)
-        (fun q => words q.1 q.2) (fun _ => []) := by
-    intro p hp
-    have hround' := (runsWords_closedRound w₀ mark (vp := p.1) (l := 0)
-      (hlast p.2 hp.1) (fun _ _ _ w' _ hw' => by
-        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hw'
-        rw [hw'.1]
-        exact Nat.zero_le 0) out).of_map (fun v' => (p.2, v'))
-      (fun q => words q.1 q.2) (fun _ => [])
-    rw [map_pure] at hround'
-    have := hp.2
-    have := hlength r le_rfl p.2 hp.1
-    exact hround'.mono (by omega)
-  have hstop : ∀ p, inv r p →
-      ∀ (OracleState : Type) (oracle : Empty × List Bool → StateT OracleState PMF (List Bool))
-        (st st' : OracleState) (p' : List Bool × List Bool),
-        (p', st') ∈ (ProbOracleComp.runWith oracle (last p) st).support →
-          words (k := k) p'.1 p'.2 (nextTape k) = [] := by
-    intro p _ _ _ _ _ p' hp'
-    simp only [last, ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hp'
-    rw [hp'.1]
-    exact words_next _ _
-  have hfinal : ∀ (OracleState : Type)
-      (oracle : Empty × List Bool → StateT OracleState PMF (List Bool))
-      (s s' : OracleState) (p : List Bool × List Bool),
-      (p, s') ∈ (ProbOracleComp.runWith oracle (OracleComp.iterate r step' ([], w₀) >>= last)
-          s).support →
-      p.2 = [] ∧ p.1.length ≤ L := by
-    intro _ oracle s s' p hp
-    rw [ProbOracleComp.runWith_bind] at hp
-    obtain ⟨⟨mid, s₁⟩, hmid, hp⟩ := (PMF.mem_support_bind_iff _ _ _).mp hp
-    simp only [last, ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hp
-    obtain ⟨rfl, -⟩ := hp
-    have hmidInv := OracleComp.iterate_invariant inv
-      ⟨hbase, by simp only [List.length_nil, Nat.zero_le]⟩
-      (fun n p hn hp p' hp' => by
-        obtain ⟨_, oracle', st, st', hp'⟩ := ProbOracleComp.mem_support_iff_exists.mp hp'
-        exact (hpres n hn p hp _ oracle' st st' p' hp').1)
-      mid (ProbOracleComp.mem_support_of_mem oracle hmid)
-    exact ⟨rfl, hlength r le_rfl mid.2 hmidInv.1⟩
-  have hload (out : List Bool) := RunsWords.of_transformsTapes (Operation := Empty) (x := w₀)
-    (out₀ := out) (transformsTapes_loadWord (nextTape k) w₀) ⟨rfl, rfl⟩
-    (ws' := words (k := k) [] w₀) (emitted := [])
-    (fun _ _ h => ⟨h.1.trans (words_nil_cur w₀).symm, h.2⟩)
-  have hw₀ : w₀.length ≤ L := hlength 0 (Nat.zero_le _) w₀ hbase
-  refine ⟨?_, ?_⟩
-  · intro out₀
-    have hloop := RunsWords.repeatUntilBlank (nextTape k)
-      (body := closedRound tm mark) (x := w₀) (out₀ := out₀ ++ []) (words_injective (k := k))
-      (step := step') (last := last) (t := t + 10 * L + 22) (rounds := r) (s₀ := ([], w₀)) inv
-      ⟨hbase, by simp only [List.length_nil, Nat.zero_le]⟩
-      (hstepRW (out₀ ++ [])) (hlastRW (out₀ ++ [])) hpres hstop
-    have hinner := hloop.seq_pure_right
-      (second := ofDeterministic (finish k mark)) (t₂ := 5 * L + 11)
-      (ws₂ := fun _ _ => []) (emit₂ := fun p => p.1)
-      (fun _ _ h => words_injective (congrArg Prod.fst h))
-      (fun p _ oracle s s' hp => by
-        obtain ⟨hnil, hlen⟩ := hfinal _ oracle s s' p hp
-        exact (RunsWords.of_transformsTapes (transformsTapes_finish (k := k) mark p.1)
-          (congrArg (words p.1) hnil) (ws' := fun _ => []) (emitted := p.1)
-          (fun _ _ hQ => hQ)).mono (by omega))
-    have hall := ((hload out₀).seq_pure_left hinner).of_map Prod.fst (fun _ _ => []) id
-    have hprogram : Prod.fst <$> (OracleComp.iterate r step' ([], w₀) >>= last) =
-        OracleComp.iterate r step w₀ := by
-      rw [OracleComp.iterate_map r step' step Prod.snd
-        (fun p => by simp only [step', Functor.map_map, id_map']) ([], w₀)]
-      simp only [last, bind_pure_comp, Functor.map_map]
-    rw [hprogram] at hall
-    refine hall.mono ?_
-    rw [show (r + 1) * (t + 10 * L + 22 + 1) = (r + 1) * (t + 10 * L + 23) by ring]
-    omega
-  · have hspace := runsInSpace_toNTM_seq_repeatUntilBlank (nextTape k)
-      (ofDeterministic (loadWord Bool (nextTape k))) (closedRound tm mark)
-      (ofDeterministic (finish k mark)) (words_injective (k := k))
-      (emitFinal := Prod.fst) (t₁ := 3 * L + 22) (t := t + 10 * L + 22) (t₂ := 5 * L + 11)
-      (rounds := r) (s₀ := ([], w₀))
-      ((hload []).mono (by omega))
-      inv ⟨hbase, by simp only [List.length_nil, Nat.zero_le]⟩
-      (hstepRW []) (hlastRW []) hpres hstop
-      (fun _ oracle s s' p hp => by
-        obtain ⟨hnil, hlen⟩ := hfinal _ oracle s s' p hp
-        exact (RunsWords.of_transformsTapes (transformsTapes_finish (k := k) mark p.1)
-          (congrArg (words p.1) hnil) (ws' := fun _ => []) (emitted := p.1)
-          (fun _ _ hQ => hQ)).mono (by omega))
-    have hmax : max (3 * L + 22) (max (t + 10 * L + 22) (5 * L + 11)) = t + 10 * L + 22 := by
-      omega
-    rwa [hmax] at hspace
-
-end Tapes
 
 /-! ### Closed bridges and opaque two-phase composition -/
 
@@ -638,48 +335,54 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
     (hencode_le (count a) (count a) (initial a) le_rfl).trans
       (Nat.add_le_add_left (hbound a 0 (initial a) (Nat.zero_le _) (hbase a)) _)
   have hloop_spec (a : α) :
-      (ExpIterateInternal.closedLoop bodyM true).ComputesTidily (start a) (loopTime a)
+      (Turing.MultiTapePTM.iterateWhile bodyM true).ComputesTidily (start a) (loopTime a)
         (ProbOracleComp.sample
           ((fun final => encode (0, final)) <$> OracleComp.iterate (count a) step (initial a))) ∧
-      (ExpIterateInternal.closedLoop bodyM true).toNTM.RunsInSpace (start a) (loopSpace a) := by
-    have hboth := ExpIterateInternal.computesTidily_and_runsInSpace_closedLoop true
-      (tm := bodyM) (r := count a) (t := roundTime a) (L := bound a) (w₀ := start a)
-      (step := wordStep)
-      (fun n word => ∃ state, word = encode (count a - n, state) ∧ invariant a n state)
-      ⟨initial a, by simp only [start, Nat.sub_zero], hbase a⟩
-      (by
-        rintro n hn word ⟨state, rfl, hstate⟩
-        rw [hwordStep]
-        have hlen := hencode_le (count a - n) (count a) state (Nat.sub_le _ _)
-        have hs := hbound a n state hn.le hstate
-        refine ((hbodyM (count a - n, state)).mono ?_).congr fun State oracle s => ?_
-        · exact Nat.mul_le_mul_left cB (Nat.pow_le_pow_left (by dsimp only [bound]; omega) dB)
-        · simp only [encBits, Function.Embedding.coe_refl, id_map])
-      (by
-        rintro n hn word ⟨state, rfl, hstate⟩ State oracle s s' next hnext
-        rw [hwordStep] at hnext
-        have hpos : count a - n ≠ 0 := by omega
-        simp only [body, hpos, ↓reduceIte] at hnext
-        have hnext' := ProbOracleComp.mem_support_of_mem oracle hnext
-        obtain ⟨final, hfinal, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext'
-        have hsupp : final ∈ (ProbComp.eval (step state)).support :=
-          (ProbOracleComp.support_sample (step state)).subset hfinal
-        refine ⟨⟨final, by rw [Nat.sub_sub], hpreserve a n state hn hstate final hsupp⟩, ?_⟩
-        simp only [encode, encPair_apply, frame, ne_eq]
-        cases encNat (count a - (n + 1)) <;> simp)
-      (by
-        rintro word ⟨state, rfl, hstate⟩
-        have hlen := hencode_le (count a - count a) (count a) state (Nat.sub_le _ _)
-        have hs := hbound a (count a) state le_rfl hstate
-        refine ((hbodyM (count a - count a, state)).mono ?_).congr fun State oracle s => ?_
-        · exact Nat.mul_le_mul_left cB (Nat.pow_le_pow_left (by dsimp only [bound]; omega) dB)
-        · simp only [body, Nat.sub_self, ↓reduceIte, encBits, Function.Embedding.coe_refl, id_map])
-      (by
-        rintro n hn word ⟨state, rfl, hstate⟩
-        have hlen := hencode_le (count a - n) (count a) state (Nat.sub_le _ _)
-        have hs := hbound a n state hn hstate
-        dsimp only [bound]
-        omega)
+      (Turing.MultiTapePTM.iterateWhile bodyM true).toNTM.RunsInSpace (start a) (loopSpace a) := by
+    let inv := fun n word => ∃ state, word = encode (count a - n, state) ∧ invariant a n state
+    have hbase' : inv 0 (start a) := ⟨initial a, by simp only [start, Nat.sub_zero], hbase a⟩
+    have hround : ∀ n < count a, ∀ w, inv n w →
+        bodyM.ComputesTidily w (roundTime a) (wordStep w) := by
+      rintro n hn word ⟨state, rfl, hstate⟩
+      rw [hwordStep]
+      have hlen := hencode_le (count a - n) (count a) state (Nat.sub_le _ _)
+      have hs := hbound a n state hn.le hstate
+      refine ((hbodyM (count a - n, state)).mono ?_).congr fun State oracle s => ?_
+      · exact Nat.mul_le_mul_left cB (Nat.pow_le_pow_left (by dsimp only [bound]; omega) dB)
+      · simp only [encBits, Function.Embedding.coe_refl, id_map]
+    have hpreserve' : ∀ n < count a, ∀ w, inv n w → ∀ (OracleState : Type) (oracle : _)
+        (s s' : OracleState) (w' : List Bool),
+        (w', s') ∈ (ProbOracleComp.runWith oracle (wordStep w) s).support →
+        inv (n + 1) w' ∧ w' ≠ [] := by
+      rintro n hn word ⟨state, rfl, hstate⟩ State oracle s s' next hnext
+      rw [hwordStep] at hnext
+      have hpos : count a - n ≠ 0 := by omega
+      simp only [body, hpos, ↓reduceIte] at hnext
+      have hnext' := ProbOracleComp.mem_support_of_mem oracle hnext
+      obtain ⟨final, hfinal, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext'
+      have hsupp : final ∈ (ProbComp.eval (step state)).support :=
+        (ProbOracleComp.support_sample (step state)).subset hfinal
+      refine ⟨⟨final, by rw [Nat.sub_sub], hpreserve a n state hn hstate final hsupp⟩, ?_⟩
+      simp only [encode, encPair_apply, frame, ne_eq]
+      cases encNat (count a - (n + 1)) <;> simp
+    have hlast : ∀ w, inv (count a) w → bodyM.ComputesTidily w (roundTime a) (pure []) := by
+      rintro word ⟨state, rfl, hstate⟩
+      have hlen := hencode_le (count a - count a) (count a) state (Nat.sub_le _ _)
+      have hs := hbound a (count a) state le_rfl hstate
+      refine ((hbodyM (count a - count a, state)).mono ?_).congr fun State oracle s => ?_
+      · exact Nat.mul_le_mul_left cB (Nat.pow_le_pow_left (by dsimp only [bound]; omega) dB)
+      · simp only [body, Nat.sub_self, ↓reduceIte, encBits, Function.Embedding.coe_refl, id_map]
+    have hlength : ∀ n ≤ count a, ∀ w, inv n w → w.length ≤ bound a := by
+      rintro n hn word ⟨state, rfl, hstate⟩
+      have hlen := hencode_le (count a - n) (count a) state (Nat.sub_le _ _)
+      have hs := hbound a n state hn hstate
+      dsimp only [bound]
+      omega
+    have h1 := Turing.MultiTapePTM.ComputesTidily.iterateWhile true inv hbase'
+      hround hpreserve' hlast hlength
+    have h2 := Turing.MultiTapePTM.RunsInSpace.iterateWhile true inv hbase'
+      hround hpreserve' hlength
+    have hboth : _ ∧ _ := ⟨h1, h2⟩
     have hword_sample : OracleComp.iterate (count a) wordStep (start a) =
         ProbOracleComp.sample
           ((fun final => encode (0, final)) <$> OracleComp.iterate (count a) step (initial a)) := by
@@ -690,7 +393,7 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
     rw [hword_sample] at hboth
     exact hboth
   obtain ⟨kMid, MidControl, hfinMid, midM, hmidM⟩ :=
-    ExpIterateInternal.exists_comp_closed prepM (ExpIterateInternal.closedLoop bodyM true)
+    ExpIterateInternal.exists_comp_closed prepM (Turing.MultiTapePTM.iterateWhile bodyM true)
       input tp loopTime prepSpace loopSpace bound
       (fun a => PMF.pure (start a)) (fun a _ => μLoop a)
       (fun a => ExpIterateInternal.halted_of_computesTidily (hprep_tidy a))

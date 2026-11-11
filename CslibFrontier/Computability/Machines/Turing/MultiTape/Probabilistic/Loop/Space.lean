@@ -84,26 +84,12 @@ private theorem natAbs_workTapePos_replay_le (M : MultiTapePTM k Bool State)
       j).natAbs ≤ _
     omega
 
-private theorem replay_halted (M : MultiTapePTM k Bool State) (coins : List Bool)
-    (c : Config k Bool State Empty x) (h : c.tapes.state = none) :
-    M.runClosedConfigFromCoins coins c = c := by
-  induction coins with
-  | nil => rfl
-  | cons bit rest ih =>
-    change M.runClosedConfigFromCoins rest ((M.withCoin bit).step c) = c
-    rw [show (M.withCoin bit).step c = c by simp only [MultiTapeMachine.step, h], ih]
-
 private theorem replay_cons (M : MultiTapePTM k Bool State) (bit : Bool) (rest : List Bool)
     (c : Config k Bool State Empty x) :
     M.runClosedConfigFromCoins (bit :: rest) c =
       M.runClosedConfigFromCoins rest ((M.withCoin bit).step c) :=
   rfl
 
-private theorem replay_append (M : MultiTapePTM k Bool State) (before after : List Bool)
-    (c : Config k Bool State Empty x) :
-    M.runClosedConfigFromCoins (before ++ after) c =
-      M.runClosedConfigFromCoins after (M.runClosedConfigFromCoins before c) :=
-  List.foldl_append
 
 private noncomputable def emptyOracle : Empty × List Bool → StateT Unit PMF (List Bool) :=
   fun q => q.1.elim
@@ -144,19 +130,7 @@ private theorem runsWords_closed_completed {ws₀ : Fin k → List Bool} {out₀
       (M.runClosedConfigFromCoins coins cfg).tapes =
         wordsCfg x none (ws₁ a) (out₀ ++ emit a) := by
   have hhalt := runsWords_closed_halted M h cfg htapes
-  have hsupp : M.runClosedConfigFromCoins coins cfg ∈
-      (ProbComp.eval (M.runClosedConfigFrom t cfg)).support := by
-    by_cases hle : t ≤ coins.length
-    · have hm := M.runClosedConfigFromCoins_mem_support coins cfg
-      rwa [eval_runClosedConfigFrom_eq_of_halted M cfg hle hhalt] at hm
-    · let padded := coins ++ List.replicate (t - coins.length) false
-      have hlen : padded.length = t := by
-        simp only [padded, List.length_append, List.length_replicate]
-        omega
-      have hm := M.runClosedConfigFromCoins_mem_support padded cfg
-      rw [hlen] at hm
-      rwa [show M.runClosedConfigFromCoins padded cfg = M.runClosedConfigFromCoins coins cfg by
-        rw [replay_append, replay_halted M _ _ hstate]] at hm
+  have hsupp := completed_replay_mem_support M cfg t hhalt coins hstate
   have hmem : (M.runClosedConfigFromCoins coins cfg, ()) ∈
       (ProbOracleComp.runWith emptyOracle (M.runOracleConfigFrom t cfg) ()).support := by
     rw [runOracleConfigFrom_empty, ProbOracleComp.runWith_sample, PMF.mem_support_map_iff]
@@ -357,38 +331,6 @@ theorem workTapePos_repeatUntilBlank_mem_window (i : Fin k)
       exact ih (n + 1) s'
         { tapes := wordsCfg x (some body.initial) (ws s') out₀, channels := Empty.elim }
         rest (by omega) hinv' rfl
-
-private theorem replay_seq_cases {S₀ S₁ : Type}
-    (first : MultiTapePTM k Bool S₀) (second : MultiTapePTM k Bool S₁)
-    (initial : Config k Bool S₀ Empty x) (coins : List Bool) :
-    (∃ before, (first.seq second).runClosedConfigFromCoins coins (Sequential.left second initial) =
-      Sequential.left second (first.runClosedConfigFromCoins before initial)) ∨
-    ∃ before after,
-      (first.runClosedConfigFromCoins before initial).tapes.state = none ∧
-      (first.seq second).runClosedConfigFromCoins coins (Sequential.left second initial) =
-        Sequential.right (second.runClosedConfigFromCoins after
-          (Sequential.start second (first.runClosedConfigFromCoins before initial))) := by
-  induction coins using List.reverseRecOn with
-  | nil => exact Or.inl ⟨[], rfl⟩
-  | append_singleton coins bit ih =>
-    rw [replay_append]
-    rcases ih with ⟨before, hp⟩ | ⟨before, after, hh, hs⟩
-    · rw [hp]
-      by_cases hh : (first.runClosedConfigFromCoins before initial).tapes.state = none
-      · right
-        refine ⟨before, [bit], hh, ?_⟩
-        rw [Sequential.left_halted second _ hh]
-        simpa only [runClosedConfigFromCoins, List.foldl_cons, List.foldl_nil] using
-          step_withCoin_seq_right first second bit
-            (Sequential.start second (first.runClosedConfigFromCoins before initial))
-      · left
-        refine ⟨before ++ [bit], ?_⟩
-        rw [replay_append]
-        exact step_withCoin_seq_left first second bit _ hh
-    · right
-      refine ⟨before, after ++ [bit], hh, ?_⟩
-      rw [hs, replay_append]
-      exact step_withCoin_seq_right first second bit _
 
 /-- **Workspace bound for `first.seq ((repeatUntilBlank i body).seq last)`.** When `first` (`t₁`),
 each round of `body` (`t`), and `last` (`t₂`) satisfy closed `RunsWords` specifications, the
