@@ -205,6 +205,30 @@ private theorem expect_prod_row {k : ℕ} (g : (ι → Bool) → ℝ) :
     (T := univ) (by simp) fun _ x => g x).trans ?_
   rw [prod_const, card_univ, Fintype.card_fin]
 
+/-- **Markov's inequality over independent rows**: if every seed in `s` has
+`c ≤ ∑ j, r (b j)` and `𝔼 exp (r x) ≤ M` for a single row, then `s` has density at most
+`M ^ k / exp c`. Both tails apply this to `r = ±t Y²`. -/
+private theorem dens_le_pow_div_exp {k : ℕ} {s : Finset (Fin k → ι → Bool)}
+    {r : (ι → Bool) → ℝ} {c M : ℝ} (hs : ∀ b ∈ s, c ≤ ∑ j, r (b j))
+    (hM : 𝔼 x : ι → Bool, exp (r x) ≤ M) :
+    (dens s : ℝ) ≤ M ^ k / exp c := by
+  set f : (Fin k → ι → Bool) → ℝ := fun b => exp (∑ j, r (b j))
+  have hsub : s ⊆ ({b | exp c ≤ f b} : Finset _) := fun b hb =>
+    mem_filter.2 ⟨mem_univ _, exp_le_exp.2 (hs b hb)⟩
+  have hmarkov := Fintype.mul_dens_filter_le_expect (fun b => (exp_pos _).le : ∀ b, 0 ≤ f b)
+    (exp c)
+  have hfac : 𝔼 b, f b = (𝔼 x : ι → Bool, exp (r x)) ^ k := by
+    simp only [f, exp_sum]
+    exact expect_prod_row fun x => exp (r x)
+  calc (dens s : ℝ)
+      ≤ dens ({b | exp c ≤ f b} : Finset _) := by exact_mod_cast dens_le_dens hsub
+    _ ≤ (𝔼 b, f b) / exp c := by
+        rw [le_div_iff₀ (exp_pos _), mul_comm]
+        exact hmarkov
+    _ ≤ M ^ k / exp c := by
+        rw [hfac]
+        gcongr
+
 /-- **Upper tail**: for `k` independent Rademacher sums `Y_j = ∑ i, a i signVal (b j i)` and
 `0 ≤ ε`, `Pr[k (1 + ε) ∑ a² < ∑ j, Y_j²] ≤ exp (-(k / 2) (ε² / 2 - ε³ / 3))`. -/
 theorem dens_mul_lt_sum_sq_sum_mul_signVal_le (a : ι → ℝ) (k : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
@@ -226,19 +250,8 @@ theorem dens_mul_lt_sum_sq_sum_mul_signVal_le (a : ι → ℝ) (k : ℕ) {ε : �
   have hτ : τ < 1 / 2 := by
     rw [hτdef, div_lt_iff₀ (by positivity)]
     linarith
-  set f : (Fin k → ι → Bool) → ℝ := fun b => exp (t * ∑ j, (∑ i, a i * signVal (b j i)) ^ 2)
-  have hsub : ({b | k * (1 + ε) * S < ∑ j, (∑ i, a i * signVal (b j i)) ^ 2} :
-      Finset (Fin k → ι → Bool)) ⊆ ({b | exp (t * (k * (1 + ε) * S)) ≤ f b} : Finset _) := by
-    intro b hb
-    simp only [mem_filter, mem_univ, true_and] at hb ⊢
-    exact exp_le_exp.2 (mul_le_mul_of_nonneg_left hb.le ht0)
-  have hfac : 𝔼 b, f b = (𝔼 x : ι → Bool, exp (t * (∑ i, a i * signVal (x i)) ^ 2)) ^ k := by
-    simp only [f, mul_sum, exp_sum]
-    exact expect_prod_row fun x => exp (t * (∑ i, a i * signVal (x i)) ^ 2)
   have hrow := expect_exp_mul_sq_sum_mul_signVal_le a ht0 (by rw [← hSdef, htS]; exact hτ)
   rw [← hSdef, htS] at hrow
-  have hM := Fintype.mul_dens_filter_le_expect (fun b => (exp_pos _).le : ∀ b, 0 ≤ f b)
-    (exp (t * (k * (1 + ε) * S)))
   have h1 : 1 - 2 * τ = (1 + ε)⁻¹ := by
     rw [hτdef]
     field_simp
@@ -248,14 +261,10 @@ theorem dens_mul_lt_sum_sq_sum_mul_signVal_le (a : ι → ℝ) (k : ℕ) {ε : �
     field_simp
   calc (dens ({b | k * (1 + ε) * S < ∑ j, (∑ i, a i * signVal (b j i)) ^ 2} :
           Finset (Fin k → ι → Bool)) : ℝ)
-      ≤ dens ({b | exp (t * (k * (1 + ε) * S)) ≤ f b} : Finset _) := by
-        exact_mod_cast dens_le_dens hsub
-    _ ≤ (𝔼 b, f b) / exp (t * (k * (1 + ε) * S)) := by
-        rw [le_div_iff₀ (exp_pos _), mul_comm]
-        exact hM
-    _ ≤ ((√(1 - 2 * τ))⁻¹) ^ k / exp (t * (k * (1 + ε) * S)) := by
-        rw [hfac]
-        gcongr
+      ≤ ((√(1 - 2 * τ))⁻¹) ^ k / exp (t * (k * (1 + ε) * S)) := by
+        refine dens_le_pow_div_exp (fun b hb => ?_) hrow
+        rw [← mul_sum]
+        exact mul_le_mul_of_nonneg_left (mem_filter.1 hb).2.le ht0
     _ = (√(1 + ε) * exp (-(ε / 2))) ^ k := by
         rw [h2, h1, Real.sqrt_inv, inv_inv, exp_nat_mul, mul_pow, div_eq_mul_inv, ← inv_pow,
           ← exp_neg]
@@ -318,35 +327,18 @@ theorem dens_sum_sq_sum_mul_signVal_lt_mul_le (a : ι → ℝ) (k : ℕ) {ε : �
   have htS : t * S = τ := by
     rw [htdef]
     field_simp
-  set f : (Fin k → ι → Bool) → ℝ :=
-    fun b => exp (-(t * ∑ j, (∑ i, a i * signVal (b j i)) ^ 2))
-  have hsub : ({b | ∑ j, (∑ i, a i * signVal (b j i)) ^ 2 < k * (1 - ε) * S} :
-      Finset (Fin k → ι → Bool)) ⊆ ({b | exp (-(t * (k * (1 - ε) * S))) ≤ f b} : Finset _) := by
-    intro b hb
-    simp only [mem_filter, mem_univ, true_and] at hb ⊢
-    exact exp_le_exp.2 (neg_le_neg (mul_le_mul_of_nonneg_left hb.le ht0))
-  have hfac : 𝔼 b, f b =
-      (𝔼 x : ι → Bool, exp (-(t * (∑ i, a i * signVal (x i)) ^ 2))) ^ k := by
-    simp only [f, mul_sum, ← sum_neg_distrib, exp_sum]
-    exact expect_prod_row fun x => exp (-(t * (∑ i, a i * signVal (x i)) ^ 2))
   have hrow := expect_exp_neg_mul_sq_sum_mul_signVal_le a ht0
   rw [← hSdef, htS] at hrow
   have hA : 0 ≤ 1 - τ + 3 / 2 * τ ^ 2 := by nlinarith [sq_nonneg (τ - 1 / 3)]
-  have hM := Fintype.mul_dens_filter_le_expect (fun b => (exp_pos _).le : ∀ b, 0 ≤ f b)
-    (exp (-(t * (k * (1 - ε) * S))))
   have h2 : t * (k * (1 - ε) * S) = k * (τ * (1 - ε)) := by
     rw [show t * (k * (1 - ε) * S) = k * (1 - ε) * (t * S) by ring, htS]
     ring
   calc (dens ({b | ∑ j, (∑ i, a i * signVal (b j i)) ^ 2 < k * (1 - ε) * S} :
           Finset (Fin k → ι → Bool)) : ℝ)
-      ≤ dens ({b | exp (-(t * (k * (1 - ε) * S))) ≤ f b} : Finset _) := by
-        exact_mod_cast dens_le_dens hsub
-    _ ≤ (𝔼 b, f b) / exp (-(t * (k * (1 - ε) * S))) := by
-        rw [le_div_iff₀ (exp_pos _), mul_comm]
-        exact hM
-    _ ≤ (1 - τ + 3 / 2 * τ ^ 2) ^ k / exp (-(t * (k * (1 - ε) * S))) := by
-        rw [hfac]
-        gcongr
+      ≤ (1 - τ + 3 / 2 * τ ^ 2) ^ k / exp (-(t * (k * (1 - ε) * S))) := by
+        refine dens_le_pow_div_exp (fun b hb => ?_) hrow
+        rw [sum_neg_distrib, ← mul_sum]
+        exact neg_le_neg (mul_le_mul_of_nonneg_left (mem_filter.1 hb).2.le ht0)
     _ = ((1 - τ + 3 / 2 * τ ^ 2) * exp (τ * (1 - ε))) ^ k := by
         rw [h2, exp_neg, div_inv_eq_mul, exp_nat_mul, mul_pow]
     _ ≤ (exp (-(ε ^ 2 / 4 - ε ^ 3 / 6))) ^ k :=

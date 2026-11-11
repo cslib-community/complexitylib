@@ -38,8 +38,8 @@ of random bits it uses itself, and `r` only bounds it. (If the verifier were han
 string and put undecidable problems into the class.)
 
 The PCP theorem, `NP = PCP(log n, 1)`, is proved as `Cslib.Complexity.NP_eq_PCP_log` in
-`Computability/PCP/Completeness`. Its construction and Dinur's combinatorial argument are in
-`Cslib.PCP`.
+`Computability/PCP/Completeness`, whose module documentation outlines the proof and names its
+stages in `Cslib.PCP`.
 
 ## Main definitions
 

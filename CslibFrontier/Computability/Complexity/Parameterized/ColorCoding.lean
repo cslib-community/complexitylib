@@ -285,8 +285,6 @@ private theorem computableInPolyTime_entryCapped :
       encStepInput (encList encNat) := by
   have hG : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.1)
       (encPair encStepInput encNat) encGraph := by fun_prop
-  have hcs : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.2)
-      (encPair encStepInput encNat) (encList encNat) := by fun_prop
   have hv : ComputableInPolyTime (fun q : StepInput × ℕ => q.2)
       (encPair encStepInput encNat) encNat := by fun_prop
   have hmU : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.2)
@@ -295,18 +293,9 @@ private theorem computableInPolyTime_entryCapped :
       (encPair encStepInput encNat) encNat := unary_to_binary.comp hmU
   have hT : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.2)
       (encPair encStepInput encNat) (encList (encList encNat)) := by fun_prop
-  have hidx : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.1.1.idxOf q.2)
-      (encPair encStepInput encNat) encUnary := by
-    have hV : ComputableInPolyTime (fun q : StepInput × ℕ => q.1.1.1.1.1.1)
-        (encPair encStepInput encNat) (encList encNat) := by
-      unfold encGraph at hG
-      exact (fst _ _).comp hG
-    exact idxOfWithInput hV hv
   have hcol : ComputableInPolyTime
       (fun q : StepInput × ℕ => colorOf q.1.1.1.1.1 q.1.1.1.1.2 q.2)
-      (encPair encStepInput encNat) encNat := by
-    unfold colorOf
-    exact (listGetD 0).comp (hcs.prod hidx)
+      (encPair encStepInput encNat) encNat := by fun_prop
   have hcap : ComputableInPolyTime
       (fun q : StepInput × ℕ => min q.1.2 (colorOf q.1.1.1.1.1 q.1.1.1.1.2 q.2))
       (encPair encStepInput encNat) encUnary := binary_min_unary' hmU hcol
@@ -336,7 +325,7 @@ open ComputableInPolyTime in
 /-- The table on `N` color sets, for `N` in unary, is polynomial-time. -/
 theorem ColorCoding.computableInPolyTime_table :
     ComputableInPolyTime (fun x : (Graph × List ℕ) × ℕ => table x.1.1 (colorOf x.1.1 x.1.2) x.2)
-      (encPair (encPair encGraph (encList encNat)) encUnary) (encList (encList encNat)) := by
+      (encPair encColoredGraph encUnary) (encList (encList encNat)) := by
   simp only [table_eq_foldl]
   have hstep : ComputableInPolyTime
       (fun q : StepInput =>
@@ -425,15 +414,13 @@ private theorem computableInPolyTime_colorfulPathExponent :
 (`Cslib.Complexity.colorfulPathBool`) runs on the input padded to length `2 ^ min(n, k)`. The
 constant `δ` is not explicit; the bound `2 ^ k` of the RAM analysis is not claimed. -/
 theorem ColorfulPath_decidableInExpTime :
-    ∃ δ : ℝ, DecidableInExpTime ColorfulPath (encPair (encPair encGraph (encList encNat)) encNat)
-      Prod.snd δ :=
+    ∃ δ : ℝ, DecidableInExpTime ColorfulPath (encPair encColoredGraph encNat) Prod.snd δ :=
   DecidableInExpTime.of_computableInPolyTime_pad computableInPolyTime_colorfulPathPad
     computableInPolyTime_colorfulPathExponent (fun _ => min_le_right _ _)
     fun x => (colorfulPathBool_eq_true_iff x).symm
 
 /-- **Colorful k-Path is fixed-parameter tractable** in `k`. -/
-theorem ColorfulPath_mem_FPT :
-    ColorfulPath ∈ FPT (encPair (encPair encGraph (encList encNat)) encNat) Prod.snd :=
+theorem ColorfulPath_mem_FPT : ColorfulPath ∈ FPT (encPair encColoredGraph encNat) Prod.snd :=
   let ⟨_, h⟩ := ColorfulPath_decidableInExpTime
   h.mem_FPT
 

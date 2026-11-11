@@ -31,6 +31,8 @@ For the related block characterization of almost-commuting permutations, see
 * `Cslib.FunctionalGraph.commutation_defect_card`: the factor-two bound for injective maps.
 * `Cslib.FunctionalGraph.disagreement_image_eq`: edited permutations have the same edited outputs.
 * `Cslib.FunctionalGraph.disagreement_conjugate_card`: relabeling preserves the number of edits.
+* `Cslib.FunctionalGraph.disagreement_semiconj_card`: the same, against a semiconjugate of the
+  reference map.
 
 ## References
 
@@ -129,5 +131,15 @@ theorem disagreement_conjugate_card {β : Type*} [Fintype α] [Fintype β]
   · intro y hy
     refine ⟨e.symm y, ?_, by simp⟩
     simpa only [mem_disagreement, Function.comp_apply, e.injective.ne_iff] using hy
+
+/-- If the relabeling `e` carries `g` to `g'`, then relabeling `f` edits `g'` in as many
+places as `f` edits `g`. -/
+theorem disagreement_semiconj_card {β : Type*} [Fintype α] [Fintype β]
+    (f g : α → α) (e : α ≃ β) (g' : β → β) (h : Function.Semiconj e g g') :
+    (disagreement (e ∘ f ∘ e.symm) g').card = (disagreement f g).card := by
+  have hg : e ∘ g ∘ e.symm = g' := by
+    funext y
+    simpa only [Function.comp_apply, Equiv.apply_symm_apply] using h (e.symm y)
+  rw [← hg, disagreement_conjugate_card]
 
 end Cslib.FunctionalGraph

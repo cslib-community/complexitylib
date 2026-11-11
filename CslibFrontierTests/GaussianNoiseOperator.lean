@@ -138,8 +138,7 @@ example (ρ : ℝ) (z : Fin 3 → ℝ) :
     Finset.prod_singleton, Finset.card_insert_of_notMem, Finset.card_singleton,
     Nat.reduceAdd] at h
   convert h using 1
-  · congr 1
-    funext x
+  · congr 1 with x : 1
     ring
   · ring
 

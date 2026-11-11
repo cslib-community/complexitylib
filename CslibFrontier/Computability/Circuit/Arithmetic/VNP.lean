@@ -93,8 +93,7 @@ private theorem projection_booleanSum (ρ : Fin k → Fin n ⊕ K) (P : MvPolyno
   rw [booleanSum, booleanSum, map_sum]
   refine Finset.sum_congr rfl fun e _ => ?_
   rw [projection_projection, projection_projection]
-  congr 2
-  funext i
+  congr 2 with i : 1
   induction i using Fin.addCases with
   | left i =>
     rcases h : ρ i with j | a <;>

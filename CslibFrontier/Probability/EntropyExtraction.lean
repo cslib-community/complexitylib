@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.UniversalHash
 public import CslibFrontier.Probability.EntropyConcentration
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Extracting from concentrated conditional entropy
@@ -44,7 +45,7 @@ Adapted from the cslib `crypto` branch at
 `5ff69ca93402e7c947208dc56396d6d86203ccd8`, using the pinned finite-PMF metric.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

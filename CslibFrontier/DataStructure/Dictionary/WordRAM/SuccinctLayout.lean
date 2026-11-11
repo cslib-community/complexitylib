@@ -45,7 +45,7 @@ fixed-capacity succinct dynamic dictionary.
 ## Main results
 
 * `totalSpace_le_succinctWords`: `totalSpace U V w n_max h_space` is at most
-  `Dynamic.succinctWords 79 (35 + h_space) U V w n_max` whenever `n_max ≤ U`.
+  `Dynamic.succinctWords 79 (35 + h_space) U V w n_max`.
 * `quotAt_lt`, `valAt_lt`, `lmAt_lt`, `gmAt_lt`: bit-width bounds on extracted array entries.
 * `quotAt_zero_of_init`, `valAt_zero_of_init`, `lmAt_zero_of_init`, `gmAt_zero_of_init`: extracted
   arrays are identically zero on zero-initialized table memory.
@@ -104,13 +104,12 @@ def offGM (U V w n_max h_space : ℕ) : ℕ :=
 def totalSpace (U V w n_max h_space : ℕ) : ℕ :=
   offGM U V w n_max h_space + packedWords (globalMetaLen n_max) (globalPtrBits n_max) w
 
-/-- `totalSpace` is bounded by `Dynamic.succinctWords 79 (35 + h_space) U V w n_max` for all `w`
-whenever `n_max ≤ U`. -/
-theorem totalSpace_le_succinctWords {U V w n_max h_space : ℕ} (hnU : n_max ≤ U) :
+/-- `totalSpace` is bounded by `Dynamic.succinctWords 79 (35 + h_space) U V w n_max` for all `w`. -/
+theorem totalSpace_le_succinctWords {U V w n_max h_space : ℕ} :
     totalSpace U V w n_max h_space ≤
       Dynamic.succinctWords 79 (35 + h_space) U V w n_max := by
   have h := tableArrays_words_le_succinctWords (U := U) (V := V) (w := w) (n_max := n_max)
-    (C_hdr := h_space) hnU
+    (C_hdr := h_space)
   unfold totalSpace offGM offLM offVal offQuot lmSubWords
   omega
 

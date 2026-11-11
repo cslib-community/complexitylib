@@ -631,8 +631,7 @@ def Op.rename (f : Fin r → Fin r') : Op B r → Op B r'
 theorem Op.rename_bin (f : Fin r → Fin r') (g : BinOp) (d i j : Fin r) :
     (Op.bin g d i j).rename f = Op.bin g (f d) (f i) (f j) := by
   simp only [Op.bin, Op.rename]
-  congr 1
-  funext k
+  congr 1 with k : 1
   match k with
   | ⟨0, _⟩ => rfl
   | ⟨1, _⟩ => rfl
@@ -642,8 +641,7 @@ theorem Op.rename_bin (f : Fin r → Fin r') (g : BinOp) (d i j : Fin r) :
 theorem Op.rename_width (f : Fin r → Fin r') (d : Fin r) :
     (Op.width d).rename f = Op.width (f d) := by
   simp only [Op.width, Op.rename]
-  congr 1
-  funext k
+  congr 1 with k : 1
   exact k.elim0
 
 /-- Test the condition on the registers chosen by `f`. -/

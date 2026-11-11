@@ -60,13 +60,9 @@ open Filter
 threshold and its loss parameter are subexponential. -/
 theorem subexponentiallyBounded_avgCaseMCSPQueryEncLength {s r : ℕ → ℕ}
     (hs : SubexponentiallyBounded s) (hr : SubexponentiallyBounded r) :
-    SubexponentiallyBounded (fun n => avgCaseMCSPQueryEncLength n (s n) (r n)) := by
-  have hq := (subexponentiallyBounded_computableFunctionsLogBound hs).add hr
-  have h8n : SubexponentiallyBounded (fun n => 8 * n + 10) :=
-    ((SubexponentiallyBounded.const 8).mul SubexponentiallyBounded.id).add (.const 10)
-  have h4n : SubexponentiallyBounded (fun n => 4 * n + 3) :=
-    ((SubexponentiallyBounded.const 4).mul SubexponentiallyBounded.id).add (.const 3)
-  exact (h4n.add (hq.mul h8n)).add hs
+    SubexponentiallyBounded (fun n => avgCaseMCSPQueryEncLength n (s n) (r n)) :=
+  subexponentiallyBounded_ofFunctionEncLength
+    ((subexponentiallyBounded_computableFunctionsLogBound hs).add hr) hs
 
 open Classical in
 /-- Asymptotic forward form of the finite one-sided projection

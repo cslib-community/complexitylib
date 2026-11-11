@@ -23,7 +23,9 @@ threshold is chosen before all original weight bounds, matrices, layout and phys
   exhaustive branch at smaller dimensions.
 
 This original composition does not assume a fast solver, supplied time law or selected prime.
-It does not yet bound the repeated ordinary 3SUM host calls or prove the tuned 1.9992 endpoint.
+This module bounds only the callee time field. The repeated ordinary 3SUM host calls and the
+tuned 1.9992 endpoint are in `ThreeSum.Decision.exists_one9992_runs`, which is derived from
+`exists_time_subcubic_bound`.
 -/
 
 public section

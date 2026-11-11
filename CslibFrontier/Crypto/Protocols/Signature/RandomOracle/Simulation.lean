@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF
 
 /-!
@@ -42,16 +42,11 @@ theorem eval_worldRealize_eq_bind {PK SK M Sig Query Digest Coins : Type}
     (coins : PMF Coins) (replay : Coins → OracleComp (ForgerSpec M Query Sig Digest) (M × Sig))
     (h : ∀ (Store : Type)
       (handler : (q : M ⊕ Query) → StateT Store PMF (ForgerSpec M Query Sig Digest q)) s,
-      (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-        program).run s = coins.bind (fun r =>
-          (interpret (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) handler)
-            (liftOracleForger (replay r))).run s))
+      ProbOracleComp.runWith handler program s =
+        coins.bind (fun r => ProbOracleComp.runWith handler (liftOracleForger (replay r)) s))
     (accept : Bool → M × Sig → List (M × Sig) → Bool) :
     (world scheme sk).eval (worldRealize scheme pk program accept) = coins.bind (fun r =>
       (world scheme sk).eval (worldRealize scheme pk (liftOracleForger (replay r)) accept)) := by
-  simp only [eval_world_worldRealize, ProbOracleComp.runWith, OracleComp.runWith,
-    runLoggedForger, ProbOracleComp.run_interpret_run_interpret]
-  rw [h]
-  simp only [PMF.map_bind, PMF.monad_bind_eq_bind, PMF.bind_bind]
+  simp only [eval_world_worldRealize, runLoggedForger, h, runWith_norm, pmf_norm]
 
 end Cslib.Crypto.Protocols.ROMSignature

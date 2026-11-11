@@ -19,7 +19,7 @@ These facts are moved unchanged from the former polynomial-time bridge module. T
 machine semantics and carry no higher computability-calculus dependency.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM
 
 section Machine

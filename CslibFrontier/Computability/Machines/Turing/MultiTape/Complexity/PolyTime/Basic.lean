@@ -37,11 +37,11 @@ rules for `fun_prop`.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.decide_eq`, `.beq`: equality for fixed encodings.
 * `Turing.MultiTapeTM.ComputableTidilyInPolyTime.bool_and'`, `.decide_and`, `.cond`, `.ite_decide`:
   compound guards and conditionals with fixed intermediate Boolean encodings.
-* `Turing.MultiTapeTM.ComputableInPolyTime.decide_or`, `.bne`: disjunction and Boolean inequality
-  for plain certificates.
+* `Turing.MultiTapeTM.ComputableInPolyTime.decide_or`, `.bool_or'`, `.bne`, `.decide_ne`:
+  disjunction and inequality for plain certificates.
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 
@@ -260,6 +260,13 @@ theorem decide_or {left right : α → Prop} [∀ a, Decidable (left a)] [∀ a,
     ComputableInPolyTime (fun a => decide (left a ∨ right a)) encA encBool := by
   simpa only [Bool.decide_or, Function.comp_def] using bool_or.comp (hleft.prod hright)
 
+/-- Disjoin computed guards, fixing both intermediate Boolean encodings. -/
+theorem bool_or' {left right : α → Bool}
+    (hleft : ComputableInPolyTime left encA encBool)
+    (hright : ComputableInPolyTime right encA encBool) :
+    ComputableInPolyTime (fun a => left a || right a) encA encBool :=
+  bool_or.comp (hleft.prod hright)
+
 /-- Lawful Boolean inequality compares computed values through their common encoding. -/
 @[fun_prop]
 theorem bne [BEq β] [LawfulBEq β] {left right : α → β}
@@ -267,5 +274,13 @@ theorem bne [BEq β] [LawfulBEq β] {left right : α → β}
     (hright : ComputableInPolyTime right encA encB) :
     ComputableInPolyTime (fun x => left x != right x) encA encBool := by
   simpa only [_root_.bne, Function.comp_def] using bool_not.comp (hleft.beq hright)
+
+/-- Compare two computed values using their common encoding. -/
+@[fun_prop]
+theorem decide_ne [DecidableEq β] {left right : α → β}
+    (hleft : ComputableInPolyTime left encA encB)
+    (hright : ComputableInPolyTime right encA encB) :
+    ComputableInPolyTime (fun x => decide (left x ≠ right x)) encA encBool := by
+  simpa only [Function.comp_def, decide_not] using bool_not.comp (hleft.decide_eq' hright)
 
 end Turing.MultiTapeTM.ComputableInPolyTime

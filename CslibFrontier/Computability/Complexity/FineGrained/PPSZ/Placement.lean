@@ -559,9 +559,7 @@ theorem bernoulliProb_mul_le [Finite α] (hr : r ∈ Set.Icc (0 : ℝ) 1) (hE : 
     · by_cases hb : b ⊆ U
       · have hab : a ∩ b ⊆ U := inter_subset_left.trans ha
         have hab' : a ∪ b ⊆ U := union_subset ha hb
-        have e1 : #a + #b = #(a ∩ b) + #(a ∪ b) := by
-          have := card_union_add_card_inter a b
-          omega
+        have e1 : #a + #b = #(a ∩ b) + #(a ∪ b) := by grind
         have e2 : (#U - #a) + (#U - #b) = (#U - #(a ∩ b)) + (#U - #(a ∪ b)) := by
           have h1 := card_le_card hab'
           have h2 := card_union_add_card_inter a b

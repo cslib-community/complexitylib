@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.Parameter
 public import CslibFrontier.Crypto.Game
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Chosen-message security for public-key encryption
@@ -229,8 +230,7 @@ theorem eval_gameOn {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → 
           ProbComp.eval (adversary.guess n (ChoiceOut.state choice) ciphertext)
         else
           pure false) := by
-  simp only [gameOn, ProbComp.eval_bind, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
-    apply_ite ProbComp.eval, ProbComp.eval_pure, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, gameOn, apply_ite ProbComp.eval]
 
 /-- Only the public-key marginal of key generation is observed by the unrestricted experiment. -/
 theorem eval_game {Msg : Type} (keyGen : ℕ → ProbComp (List Bool × List Bool))
@@ -302,11 +302,10 @@ theorem eval_game_restrict {Msg : Type} (valid : ℕ → List Bool → Msg → M
     (adversary : AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     ProbComp.eval (game keyGen encrypt (adversary.restrict valid) bit n) =
       ProbComp.eval (gameOn valid keyGen encrypt adversary bit n) := by
-  simp only [game, gameOn, AdversaryOf.restrict, ChoiceOut.msgs, ChoiceOut.msg₀, ChoiceOut.msg₁,
-    ↓reduceIte, ProbComp.eval_bind,
-    ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, apply_ite ProbComp.eval]
-  congr 1; funext keys
-  congr 1; funext choice
+  simp only [pmf_norm, game, gameOn, AdversaryOf.restrict, ChoiceOut.msgs, ChoiceOut.msg₀,
+    ChoiceOut.msg₁, ↓reduceIte, apply_ite ProbComp.eval]
+  congr 1 with keys : 1
+  congr 1 with choice : 1
   cases valid n keys.1 choice.1.1 choice.1.2 <;>
     simp [PMF.bind_const]
 

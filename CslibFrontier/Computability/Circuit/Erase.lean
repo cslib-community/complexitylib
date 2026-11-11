@@ -87,8 +87,7 @@ def Line.liftConstants (line : Line σ n s) : Line (σ.withConstants P) n s :=
 @[simp] theorem Line.const_mapWires {n' s' : ℕ} (k : P) (f : Wire n s → Wire n' s') :
     (Line.const (σ := σ) k).mapWires f = Line.const k := by
   simp only [Line.const, Line.mapWires]
-  congr 1
-  funext a
+  congr 1 with a : 1
   exact a.elim0
 
 /-- Lifting a line to `σ.withConstants P` commutes with wire reindexing. -/

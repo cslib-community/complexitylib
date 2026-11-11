@@ -60,8 +60,7 @@ private theorem run_experiment (w : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
   rw [experiment, RandomizedSpec.run_bind, RandomizedSpec.run_map,
     RandomizedSpec.withCoins_run_sample, ProbComp.eval_unifFin,
     PMF.map_comp, PMF.bind_map, ← PMF.bind_pure_comp]
-  congr 1
-  funext r
+  congr 1 with r : 1
   simp only [Function.comp_apply]
   rw [RandomizedSpec.withCoins_run_liftRight, StateTransitionSpec.run_toRandomized]
   simp [Function.update_self]

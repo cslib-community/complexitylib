@@ -82,6 +82,11 @@ private theorem exists_true_coord {n : ℕ} {u : BitString n} (hu : u ≠ 0) :
     · rfl
     · exact False.elim (h j hj))
 
+/-- Distinct bit strings have a nonzero sum: bitwise, `a + b = 0` forces `a = b`
+(`BooleanRing.add_eq_zero'`). -/
+private theorem add_ne_zero_of_ne {n : ℕ} {x y : BitString n} (h : x ≠ y) : x + y ≠ 0 :=
+  fun h0 => h (funext fun j => (BooleanRing.add_eq_zero' _ _).1 (congrFun h0 j))
+
 private theorem exists_dotProduct_single {n : ℕ} {u : BitString n} (hu : u ≠ 0) (d : Bool) :
     ∃ a : BitString n, a ⬝ᵥ u = d := by
   obtain ⟨j, hj⟩ := exists_true_coord hu
@@ -105,13 +110,7 @@ private theorem exists_dotProduct_pair {n : ℕ} {u v : BitString n}
         cases d₂ <;> cases d₃ <;> rfl
       · rw [add_dotProduct, single_dotProduct, single_dotProduct, hv₁, hj₂]
         cases d₂ <;> cases d₃ <;> rfl
-  · have hdiff : u + v ≠ 0 := by
-      intro h0
-      apply huv
-      funext j
-      have hj := congrFun h0 j
-      change u j + v j = false at hj
-      cases hx : u j <;> cases hy : v j <;> simp_all [Bool.add_eq_xor]
+  · have hdiff : u + v ≠ 0 := add_ne_zero_of_ne huv
     obtain ⟨j₂, hj₂⟩ := exists_true_coord hdiff
     change u j₂ + v j₂ = true at hj₂
     cases hu₂ : u j₂ <;> cases hv₂ : v j₂
@@ -159,13 +158,7 @@ theorem isThreeWiseIndependentHash_affineHash (k n : ℕ) :
   · obtain ⟨x₁, x₂, hx₁₂, hT₂⟩ := card_eq_two.mp hc
     have hx₁ : x₁ ∈ T := by rw [hT₂]; simp
     have hx₂ : x₂ ∈ T := by rw [hT₂]; simp
-    have hu : x₁ + x₂ ≠ 0 := by
-      intro h0
-      apply hx₁₂
-      funext j
-      have hj := congrFun h0 j
-      change x₁ j + x₂ j = false at hj
-      cases hx : x₁ j <;> cases hy : x₂ j <;> simp_all [Bool.add_eq_xor]
+    have hu : x₁ + x₂ ≠ 0 := add_ne_zero_of_ne hx₁₂
     let c₁ := c ⟨x₁, hx₁⟩
     let c₂ := c ⟨x₂, hx₂⟩
     choose rows hrows using fun i : Fin k => exists_dotProduct_single hu (c₁ i + c₂ i)
@@ -187,20 +180,8 @@ theorem isThreeWiseIndependentHash_affineHash (k n : ℕ) :
     have hx₁ : x₁ ∈ T := by rw [hT₃]; simp
     have hx₂ : x₂ ∈ T := by rw [hT₃]; simp
     have hx₃ : x₃ ∈ T := by rw [hT₃]; simp
-    have hu : x₁ + x₂ ≠ 0 := by
-      intro h0
-      apply hx₁₂
-      funext j
-      have hj := congrFun h0 j
-      change x₁ j + x₂ j = false at hj
-      cases hx : x₁ j <;> cases hy : x₂ j <;> simp_all [Bool.add_eq_xor]
-    have hv : x₁ + x₃ ≠ 0 := by
-      intro h0
-      apply hx₁₃
-      funext j
-      have hj := congrFun h0 j
-      change x₁ j + x₃ j = false at hj
-      cases hx : x₁ j <;> cases hy : x₃ j <;> simp_all [Bool.add_eq_xor]
+    have hu : x₁ + x₂ ≠ 0 := add_ne_zero_of_ne hx₁₂
+    have hv : x₁ + x₃ ≠ 0 := add_ne_zero_of_ne hx₁₃
     have huv : x₁ + x₂ ≠ x₁ + x₃ := fun h => hx₂₃ (add_left_cancel h)
     let c₁ := c ⟨x₁, hx₁⟩
     let c₂ := c ⟨x₂, hx₂⟩
@@ -456,13 +437,7 @@ theorem prefixProj_affineHash_adjustAffineSeed {k n : ℕ} (r : ℕ)
     {y y₀ : BitString n} (hy : y ≠ y₀) (s : (Fin k → BitString n) × BitString k) :
     prefixProj k r (affineHash (adjustAffineSeed r (y + y₀) s) y) =
       prefixProj k r (affineHash (adjustAffineSeed r (y + y₀) s) y₀) := by
-  have hδ : y + y₀ ≠ 0 := by
-    intro h0
-    apply hy
-    funext j
-    have hj := congrFun h0 j
-    change y j + y₀ j = false at hj
-    cases h1 : y j <;> cases h2 : y₀ j <;> simp_all [Bool.add_eq_xor]
+  have hδ : y + y₀ ≠ 0 := add_ne_zero_of_ne hy
   rw [prefixProj_affineHash_eq_iff]
   intro i hir
   simp only [adjustAffineSeed, AddMonoidHom.coe_mk, ZeroHom.coe_mk, hir, ↓reduceIte]
@@ -487,13 +462,7 @@ private theorem card_fiber_adjustAffineSeed {k n : ℕ} (r : ℕ)
     #{s : (Fin k → BitString n) × BitString k | adjustAffineSeed r (y + y₀) s = s₀} =
       2 ^ min r k := by
   let δ := y + y₀
-  have hδ : δ ≠ 0 := by
-    intro h0
-    apply hy
-    funext j
-    have hj := congrFun h0 j
-    change y j + y₀ j = false at hj
-    cases h1 : y j <;> cases h2 : y₀ j <;> simp_all [Bool.add_eq_xor]
+  have hδ : δ ≠ 0 := add_ne_zero_of_ne hy
   have hs₀_fix : adjustAffineSeed r δ s₀ = s₀ :=
     adjustAffineSeed_eq_self_of_prefixProj_eq r hs₀
   have hshift :
@@ -610,41 +579,6 @@ theorem wordAffineHash_eq_ofFn {k n : ℕ} (seed : List Bool) (x : BitString n) 
     if decide (i < r) && dot then listXor n [row, mask] else row
   adjRows.flatten ++ listRow k 0 (seed.drop (k * n))
 
-@[simp] theorem length_wordAdjustAffineSeed (k n r : ℕ) (y y₀ seed : List Bool) :
-    (wordAdjustAffineSeed k n r y y₀ seed).length = k * n + k := by
-  have hrow : ∀ w ∈ ((List.range k).map fun i =>
-      let diff := listXor n [y, y₀]
-      let mask := listSingle n (diff.idxOf true)
-      let row := listRow n i (seed.take (k * n))
-      let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
-      if decide (i < r) && dot then listXor n [row, mask] else row), w.length = n := by
-    intro w hw
-    obtain ⟨i, _, rfl⟩ := List.mem_map.mp hw
-    dsimp only
-    split_ifs <;> simp
-  simp only [wordAdjustAffineSeed, List.length_append, length_listRow,
-    List.length_flatten, List.map_map]
-  have hsum : (((List.range k).map fun i =>
-      (let diff := listXor n [y, y₀]
-       let mask := listSingle n (diff.idxOf true)
-       let row := listRow n i (seed.take (k * n))
-       let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
-       if decide (i < r) && dot then listXor n [row, mask] else row).length)).sum = k * n := by
-    have hconst : ((List.range k).map fun i =>
-        (let diff := listXor n [y, y₀]
-         let mask := listSingle n (diff.idxOf true)
-         let row := listRow n i (seed.take (k * n))
-         let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
-         if decide (i < r) && dot then listXor n [row, mask] else row).length) =
-        List.replicate k n := by
-      apply List.ext_getElem (by simp)
-      intro i hi₁ hi₂
-      simp only [List.length_map, List.length_range] at hi₁
-      simp only [List.getElem_map, List.getElem_range, List.getElem_replicate]
-      exact hrow _ (List.mem_map.mpr ⟨i, List.mem_range.mpr hi₁, rfl⟩)
-    rw [hconst, List.sum_replicate, smul_eq_mul]
-  simpa only [Function.comp_def] using congrArg (· + k) hsum
-
 /-- On fixed-width words, `wordAdjustAffineSeed` agrees with `adjustAffineSeed` under
 `packAffineSeed` and `unpackAffineSeed`. -/
 theorem wordAdjustAffineSeed_eq_packAffineSeed (k n r : ℕ) (y y₀ seed : List Bool) :
@@ -690,5 +624,9 @@ theorem wordAdjustAffineSeed_eq_packAffineSeed (k n r : ℕ) (y y₀ seed : List
     ZeroHom.coe_mk]
   rw [hadjRows, ← ofFn_blocksEquiv_symm, listRow_zero]
   rfl
+
+@[simp] theorem length_wordAdjustAffineSeed (k n r : ℕ) (y y₀ seed : List Bool) :
+    (wordAdjustAffineSeed k n r y y₀ seed).length = k * n + k := by
+  rw [wordAdjustAffineSeed_eq_packAffineSeed, length_packAffineSeed]
 
 end Cslib.BitString.LinearHash

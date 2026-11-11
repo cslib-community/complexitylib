@@ -60,7 +60,7 @@ encoding, and, following the original development, for the stages of the dense t
 * `Rational.DeterminantAlgorithm.stages_power_bound`: the stage bound for dense tables.
 * `Rational.length_encList_stagesRows_le`: encoded length bound on intermediate stage tables.
 * `Rational.computableInPolyTime_stagesRows`, `Rational.detRows_polytime`: `stagesRows` and
-  `detRows` are computable in polynomial time over `encList (encList encIntBin)`.
+  `detRows` are computable in polynomial time over `encIntTable`.
 
 ## References
 
@@ -463,7 +463,7 @@ lemma length_of_mem_stagesRows {A : List (List ℤ)} {k : ℕ} {row : List ℤ}
   | succ k => rw [stagesRows_succ] at hrow; exact length_of_mem_tabulateTable hrow
 
 private lemma intBits_le_length_encList {A : List (List ℤ)} {row : List ℤ} (hrow : row ∈ A)
-    {z : ℤ} (hz : z ∈ row) : intBits z ≤ (encList (encList encIntBin) A).length + 1 := by
+    {z : ℤ} (hz : z ∈ row) : intBits z ≤ (encIntTable A).length + 1 := by
   rw [intBits_eq_length_encIntBin]
   exact ((length_le_encList_of_mem encIntBin hz).trans
     (length_le_encList_of_mem (encList encIntBin) hrow)).trans (Nat.le_succ _)
@@ -482,9 +482,8 @@ def stageTableBound (L k : ℕ) : ℕ := L * (2 * stageRowBound L k + 1)
 
 /-- Every stage table up to stage `k` has encoded length bounded by `stageTableBound`. -/
 theorem length_encList_stagesRows_le (A : List (List ℤ)) {i k : ℕ} (hik : i ≤ k) :
-    (encList (encList encIntBin) (stagesRows A i)).length ≤
-      stageTableBound (encList (encList encIntBin) A).length k := by
-  set L := (encList (encList encIntBin) A).length
+    (encIntTable (stagesRows A i)).length ≤ stageTableBound (encIntTable A).length k := by
+  set L := (encIntTable A).length
   have hlen : A.length ≤ L := length_le_length_encList (encList encIntBin) A
   have hentry {row : List ℤ} (hrow : row ∈ stagesRows A i) {z : ℤ} (hz : z ∈ row) :
       (encIntBin z).length ≤ stageEntryBound L k := by
@@ -516,8 +515,7 @@ variable {α : Type} {encIn : α ↪ List Bool}
 /-- Padding or truncating a list of rows to a square table is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_squareRows :
-    ComputableInPolyTime squareRows
-      (encList (encList encIntBin)) (encList (encList encIntBin)) :=
+    ComputableInPolyTime squareRows encIntTable encIntTable :=
   computableInPolyTime_tabulateTable (length_list _) (length_list _) (by fun_prop)
 
 @[local fun_prop]
@@ -530,8 +528,8 @@ private theorem dropUnary_list {β : Type} {encB : β ↪ List Bool} {l : α →
 /-- Computing the diagonal terms summed in one Bird stage is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_traceTerms {A F : α → List (List ℤ)} {i : α → ℕ}
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hF : ComputableInPolyTime F encIn (encList (encList encIntBin)))
+    (hA : ComputableInPolyTime A encIn encIntTable)
+    (hF : ComputableInPolyTime F encIn encIntTable)
     (hi : ComputableInPolyTime i encIn encUnary) :
     ComputableInPolyTime (fun x => traceTerms (A x) (F x) (i x))
       encIn (encList encIntBin) := by
@@ -540,8 +538,8 @@ theorem computableInPolyTime_traceTerms {A F : α → List (List ℤ)} {i : α �
 /-- Computing the product terms summed in one Bird stage is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_productTerms {A F : α → List (List ℤ)} {i j : α → ℕ}
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hF : ComputableInPolyTime F encIn (encList (encList encIntBin)))
+    (hA : ComputableInPolyTime A encIn encIntTable)
+    (hF : ComputableInPolyTime F encIn encIntTable)
     (hi : ComputableInPolyTime i encIn encUnary)
     (hj : ComputableInPolyTime j encIn encUnary) :
     ComputableInPolyTime (fun x => productTerms (A x) (F x) (i x) (j x))
@@ -551,8 +549,8 @@ theorem computableInPolyTime_productTerms {A F : α → List (List ℤ)} {i j : 
 /-- Computing one entry of a Bird stage is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_stepEntryRows {A F : α → List (List ℤ)} {i j : α → ℕ}
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
-    (hF : ComputableInPolyTime F encIn (encList (encList encIntBin)))
+    (hA : ComputableInPolyTime A encIn encIntTable)
+    (hF : ComputableInPolyTime F encIn encIntTable)
     (hi : ComputableInPolyTime i encIn encUnary)
     (hj : ComputableInPolyTime j encIn encUnary) :
     ComputableInPolyTime (fun x => stepEntryRows (A x) (F x) (i x) (j x))
@@ -563,17 +561,15 @@ theorem computableInPolyTime_stepEntryRows {A F : α → List (List ℤ)} {i j :
 @[fun_prop]
 theorem computableInPolyTime_stepRows :
     ComputableInPolyTime (fun p : List (List ℤ) × List (List ℤ) => stepRows p.1 p.2)
-      (encPair (encList (encList encIntBin)) (encList (encList encIntBin)))
-      (encList (encList encIntBin)) :=
+      (encPair encIntTable encIntTable) encIntTable :=
   computableInPolyTime_tabulateTable (by fun_prop) (by fun_prop) (by fun_prop)
 
 /-- Iterating `k` Bird stages on a list of rows is polynomial-time for a unary stage count `k`. -/
 @[fun_prop]
 theorem computableInPolyTime_stagesRows {A : α → List (List ℤ)} {k : α → ℕ}
-    (hA : ComputableInPolyTime A encIn (encList (encList encIntBin)))
+    (hA : ComputableInPolyTime A encIn encIntTable)
     (hk : ComputableInPolyTime k encIn encUnary) :
-    ComputableInPolyTime (fun x => stagesRows (A x) (k x))
-      encIn (encList (encList encIntBin)) :=
+    ComputableInPolyTime (fun x => stagesRows (A x) (k x)) encIn encIntTable :=
   iterateWith hA hk (computableInPolyTime_squareRows.comp hA)
     computableInPolyTime_stepRows
     (polyBounded_stageTableBound hA.polyBounded_length hk.polyBounded)
@@ -595,12 +591,12 @@ private lemma detRows_eq_ite (A : List (List ℤ)) :
 time on lists of rows of binary sign-magnitude integers. -/
 @[fun_prop]
 theorem detRows_polytime :
-    ComputableInPolyTime detRows (encList (encList encIntBin)) encIntBin := by
+    ComputableInPolyTime detRows encIntTable encIntBin := by
   have h : ComputableInPolyTime
       (fun A : List (List ℤ) =>
         if A.isEmpty then 1
         else (-1) ^ (A.length - 1) * rowEntry (stagesRows A (A.length - 1)) 0 0)
-      (encList (encList encIntBin)) encIntBin := by fun_prop
+      encIntTable encIntBin := by fun_prop
   simpa only [← detRows_eq_ite] using h
 
 end Rational

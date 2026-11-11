@@ -89,10 +89,7 @@ theorem mem_LongPath_succ_iff {G : Graph} {k : ℕ} :
   constructor
   · rintro ⟨p, ⟨hnd, hV, hch⟩, hlen⟩
     have hLne : p.pmap (fun a ha => (⟨a, ha⟩ : {v // v ∈ G.1})) hV ≠ [] := by
-      rintro h
-      rw [List.pmap_eq_nil_iff] at h
-      subst h
-      simp at hlen
+      grind [List.pmap_eq_nil_iff]
     have hLch := List.isChain_pmap_of_isChain (S := G.induced.Adj)
       (f := fun a ha => (⟨a, ha⟩ : {v // v ∈ G.1})) (fun _ _ _ _ hab => hab) hch hV
     refine ⟨_, _, SimpleGraph.Walk.ofSupport _ hLne hLch, ?_, ?_⟩

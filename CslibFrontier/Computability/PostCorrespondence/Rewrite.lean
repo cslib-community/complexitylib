@@ -168,7 +168,7 @@ theorem reflTransGen_of_mSolvable {R : Domino α → Prop} {D : List (Domino α)
     have : e ∈ tops σ := by rw [heq]; simp
     obtain ⟨d, hd, hed⟩ := List.mem_flatMap.mp this
     exact ⟨d, hd, hed⟩
-  obtain ⟨σ₁, d, σ₂, rfl, hed, hσ₁⟩ := exists_eq_append_cons_of_exists_mem hmem
+  obtain ⟨σ₁, d, σ₂, rfl, hed, hσ₁⟩ := List.exists_eq_append_cons_of_exists_mem hmem
   have hdD : d ∈ D := hσ d (by simp)
   obtain ⟨t, ht, het⟩ := he d hdD hed
   have hnot : e ∉ tops σ₁ ++ t := by
@@ -181,7 +181,7 @@ theorem reflTransGen_of_mSolvable {R : Domino α → Prop} {D : List (Domino α)
     have h' := heq
     rw [tops_append, tops_cons, ht] at h'
     simpa only [List.append_assoc, List.singleton_append] using h'
-  obtain ⟨h₁, h₂⟩ := (append_cons_inj_of_notMem_prefix hnot hu').mp hsplit
+  obtain ⟨h₁, h₂⟩ := (List.append_cons_inj_of_notMem_prefix hnot hu').mp hsplit
   have hτ : ∀ d' ∈ σ₁ ++ [d], R d' ∨ d'.top = d'.bottom := fun d' hd' =>
     hD d' (hσ d' (by
       rcases List.mem_append.mp hd' with hd' | hd'

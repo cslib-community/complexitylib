@@ -311,7 +311,7 @@ an edge for every walk in `G` of length `T` with kill signals in `Fin q`. The ed
 at `v` is the walk from `v` along the labels `k`, stopped when it is killed at step `killTime c`;
 its rotation map reverses the walk up to that step and leaves the unused labels and the signals
 alone, so that the reverse is killed at the same step. A step of its random walk is a random walk
-on `G` killed after each step with probability `1 / q`, and stopped after `T` steps. -/
+on `G` killed before each step with probability `1 / q`, and stopped after `T` steps. -/
 def killedPow : RotationMap V ((Fin T → D) × (Fin T → Fin q)) where
   rot x :=
     (((G.pow (killTime x.2.2)).rot (x.1, Fin.take _ (killTime_le x.2.2) x.2.1)).1,

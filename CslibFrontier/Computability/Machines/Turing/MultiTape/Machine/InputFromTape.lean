@@ -163,8 +163,7 @@ theorem runConfigFrom_inputFromTape (mark : Symbol) (fuel : ℕ)
       InputFromTape.config_workTapeSymbols, InputFromTape.config_inputSymbol,
       InputFromTape.config_flagSymbol, InputFromTape.config_answerSymbols, inputFromTape_tr,
       hchoose, bind_map_left, map_bind]
-    congr 1
-    funext a
+    congr 1 with a : 1
     cases a <;> simp only [InputFromTape.instruction, InputFromTape.step_config,
       InputFromTape.receive_config, InputFromTape.config_channels, map_pure, map_bind]
 
@@ -182,8 +181,7 @@ omit hchoose in
 theorem toTM_inputFromTape (machine : MultiTapeMachine k Symbol State Empty Id) :
     machine.inputFromTape.toTM = machine.toTM.inputFromTape := by
   simp only [toTM, MultiTapeTM.inputFromTape, MultiTapeTM.tr_ofTr, inputFromTape]
-  congr 1
-  funext state symbol work
+  congr 1 with state symbol work : 3
   cases machine.tr state (work (Fin.natAdd k 0)) (fun i => work (i.castAdd 2)) Empty.elim with
   | step a symbol move => rfl
   | query oracle next => exact oracle.elim

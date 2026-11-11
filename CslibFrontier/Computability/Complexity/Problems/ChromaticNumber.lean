@@ -8,13 +8,10 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.Coloring
-import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import Mathlib.Data.List.GetD
 
 /-!
 # Chromatic number
@@ -92,21 +89,8 @@ private def check (x : (Graph × ℕ) × List ℕ) : Bool :=
 
 private theorem computableInPolyTime_check :
     ComputableInPolyTime check (encPair (encPair encGraph encNat) (encList encNat)) encBool := by
-  have hV : ComputableInPolyTime (fun x : (Graph × ℕ) × List ℕ => x.1.1.1)
-      (encPair (encPair encGraph encNat) (encList encNat)) (encList encNat) := by
-    unfold encGraph
-    fun_prop
-  have hk : ComputableInPolyTime (fun x : (Graph × ℕ) × List ℕ => x.1.2)
-      (encPair (encPair encGraph encNat) (encList encNat)) encNat := by
-    fun_prop
-  have hc : ComputableInPolyTime (fun x : (Graph × ℕ) × List ℕ => x.2)
-      (encPair (encPair encGraph encNat) (encList encNat)) (encList encNat) := by
-    fun_prop
-  have hG : ComputableInPolyTime (fun x : (Graph × ℕ) × List ℕ => x.1.1)
-      (encPair (encPair encGraph encNat) (encList encNat)) encGraph := by
-    fun_prop
   unfold check
-  fun_prop
+  fun_prop [Graph.computableInPolyTime_fst]
 
 private theorem check_iff (x : (Graph × ℕ) × List ℕ) :
     check x = true ↔ (∀ v ∈ x.1.1.1, colorOf x.1.1 x.2 v < x.1.2) ∧
@@ -124,70 +108,27 @@ private theorem check_iff (x : (Graph × ℕ) × List ℕ) :
     · exact Or.inr (hadj u hu v hv huv)
     · exact Or.inl huv
 
-/-- The colors of the declared vertices under a coloring `c` with `k` colors, or their positions
-when `k` exceeds the number of declared vertices. -/
-private def witness (G : Graph) (k : ℕ) (c : ℕ → ℕ) : List ℕ :=
-  if k ≤ G.1.length then G.1.map c else List.range G.1.length
-
-private theorem colorOf_witness {G : Graph} {k : ℕ} {c : ℕ → ℕ} {v : ℕ} (hv : v ∈ G.1) :
-    colorOf G (witness G k c) v = if k ≤ G.1.length then c v else G.1.idxOf v := by
-  have hlt : G.1.idxOf v < G.1.length := List.idxOf_lt_length_iff.2 hv
-  unfold witness
-  split
-  · exact colorOf_map hv
-  · rw [colorOf, List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_range]
-
 /-- `ChromaticNumber` belongs to `NP`, with a list of colors as the witness. Colors are taken
 below the number of declared vertices, so witnesses stay polynomial although the number of colors
 is written in binary. -/
 theorem mem_NP : ChromaticNumber ∈ NP (encPair encGraph encNat) := by
-  have hset : ChromaticNumber = {x | ∃ c : List ℕ, (∀ v ∈ x.1.1, colorOf x.1 c v < x.2) ∧
-      ∀ u ∈ x.1.1, ∀ v ∈ x.1.1, x.1.toSimpleGraph.Adj u v →
-        colorOf x.1 c u ≠ colorOf x.1 c v} := by
-    ext ⟨G, k⟩
-    rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
-    constructor
-    · rintro ⟨c, hc, hadj⟩
-      refine ⟨G.1.map c, fun v hv => ?_, fun u hu v hv huv => ?_⟩
-      · rw [colorOf_map hv]
-        exact hc v hv
-      · rw [colorOf_map hu, colorOf_map hv]
-        exact hadj u hu v hv huv
-    · rintro ⟨c, hc, hadj⟩
-      exact ⟨colorOf G c, hc, hadj⟩
-  rw [hset]
-  refine mem_NP_of_witness (p := 2 * Polynomial.X ^ 2 + Polynomial.X) (.list .nat)
-    computableInPolyTime_check (fun x c => check_iff (x, c)) ?_
-  rintro ⟨G, k⟩ c ⟨hc, hadj⟩
-  refine ⟨witness G k (colorOf G c), ⟨fun v hv => ?_, fun u hu v hv huv => ?_⟩, ?_⟩
-  · rw [colorOf_witness hv]
-    split
-    · exact hc v hv
-    · have := List.idxOf_lt_length_iff.2 hv
-      omega
-  · rw [colorOf_witness hu, colorOf_witness hv]
-    split
-    · exact hadj u hu v hv huv
-    · exact fun h => huv.ne ((List.idxOf_inj hu).1 h)
-  · have hN : G.1.length ≤ (encPair encGraph encNat (G, k)).length :=
-      G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k))
-    have hentry : ∀ a ∈ witness G k (colorOf G c),
-        (encNat a).length ≤ (encPair encGraph encNat (G, k)).length := by
-      intro a ha
-      refine (length_encNat_le_self a).trans (le_trans ?_ hN)
-      unfold witness at ha
-      split at ha
-      · obtain ⟨v, hv, rfl⟩ := List.mem_map.1 ha
-        exact (hc v hv).le.trans ‹_›
-      · exact (List.mem_range.1 ha).le
-    have hlen : (witness G k (colorOf G c)).length ≤
-        (encPair encGraph encNat (G, k)).length := by
-      unfold witness
-      split <;> simpa using hN
-    have h := length_encList_le encNat _ hentry
-    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X,
-      Polynomial.eval_ofNat]
-    nlinarith
+  refine mem_NP_of_colorOf computableInPolyTime_check (fun G k cs h => ?_) fun G k h => ?_
+  · obtain ⟨hlt, hadj⟩ := (check_iff ((G, k), cs)).1 h
+    exact mem_KColoring_iff.2 ⟨colorOf G cs, hlt, hadj⟩
+  · obtain ⟨c, hc, hadj⟩ := mem_KColoring_iff.1 h
+    refine ⟨fun v => if k ≤ G.1.length then c v else G.1.idxOf v, fun v hv => ?_,
+      (check_iff _).2 ⟨fun v hv => ?_, fun u hu v hv huv => ?_⟩⟩
+    · split
+      · exact (hc v hv).le.trans ‹_›
+      · exact (List.idxOf_lt_length_iff.2 hv).le
+    · rw [colorOf_map hv]
+      split
+      · exact hc v hv
+      · exact (List.idxOf_lt_length_iff.2 hv).trans (Nat.lt_of_not_le ‹_›)
+    · rw [colorOf_map hu, colorOf_map hv]
+      split
+      · exact hadj u hu v hv huv
+      · exact fun heq => huv.ne ((List.idxOf_inj hu).1 heq)
 
 end ChromaticNumber
 

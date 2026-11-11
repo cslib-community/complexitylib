@@ -129,18 +129,26 @@ private noncomputable def msg (c : Fin (n + 1)) (S : Finset V) : ℕ :=
 
 variable {R w}
 
-private theorem sum_le_opt {i : Fin (n + 1)} {S J : Finset V} (hJ : J ⊆ below R i)
-    (hJS : G.IsIndepSet (↑(J ∪ S) : Set V)) : ∑ v ∈ J, w v ≤ opt R w i S :=
-  Finset.le_sup (f := fun J => ∑ v ∈ J, w v) (Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hJ, hJS⟩)
-
-private theorem exists_opt (i : Fin (n + 1)) {S : Finset V} (hS : G.IsIndepSet (↑S : Set V)) :
-    ∃ J ⊆ below R i, G.IsIndepSet (↑(J ∪ S) : Set V) ∧ opt R w i S = ∑ v ∈ J, w v := by
-  have h0 : (∅ : Finset V) ∈ (below R i).powerset.filter
+/-- The best weight of a subset `J ⊆ B` compatible with an independent `S` is attained, since
+`J = ∅` is always a candidate. Shared by `exists_opt` and `exists_msg`. -/
+private theorem exists_sup_indep (B : Finset V) {S : Finset V} (hS : G.IsIndepSet (↑S : Set V)) :
+    ∃ J ⊆ B, G.IsIndepSet (↑(J ∪ S) : Set V) ∧
+      (B.powerset.filter fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V)).sup
+        (fun J => ∑ v ∈ J, w v) = ∑ v ∈ J, w v := by
+  have h0 : (∅ : Finset V) ∈ B.powerset.filter
       fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V) :=
     Finset.mem_filter.2 ⟨Finset.empty_mem_powerset _, by rwa [Finset.empty_union]⟩
   obtain ⟨J, hJ, hJeq⟩ := Finset.exists_mem_eq_sup _ ⟨∅, h0⟩ fun J => ∑ v ∈ J, w v
   rw [Finset.mem_filter, Finset.mem_powerset] at hJ
   exact ⟨J, hJ.1, hJ.2, hJeq⟩
+
+private theorem sum_le_opt {i : Fin (n + 1)} {S J : Finset V} (hJ : J ⊆ below R i)
+    (hJS : G.IsIndepSet (↑(J ∪ S) : Set V)) : ∑ v ∈ J, w v ≤ opt R w i S :=
+  Finset.le_sup (f := fun J => ∑ v ∈ J, w v) (Finset.mem_filter.2 ⟨Finset.mem_powerset.2 hJ, hJS⟩)
+
+private theorem exists_opt (i : Fin (n + 1)) {S : Finset V} (hS : G.IsIndepSet (↑S : Set V)) :
+    ∃ J ⊆ below R i, G.IsIndepSet (↑(J ∪ S) : Set V) ∧ opt R w i S = ∑ v ∈ J, w v :=
+  exists_sup_indep (w := w) _ hS
 
 private theorem sum_le_msg {c : Fin (n + 1)} {S J : Finset V}
     (hJ : J ⊆ R.subtreeVerts c \ R.bag (R.parent c)) (hJS : G.IsIndepSet (↑(J ∪ S) : Set V)) :
@@ -149,13 +157,8 @@ private theorem sum_le_msg {c : Fin (n + 1)} {S J : Finset V}
 
 private theorem exists_msg (c : Fin (n + 1)) {S : Finset V} (hS : G.IsIndepSet (↑S : Set V)) :
     ∃ J ⊆ R.subtreeVerts c \ R.bag (R.parent c), G.IsIndepSet (↑(J ∪ S) : Set V) ∧
-      msg R w c S = ∑ v ∈ J, w v := by
-  have h0 : (∅ : Finset V) ∈ (R.subtreeVerts c \ R.bag (R.parent c)).powerset.filter
-      fun J : Finset V => G.IsIndepSet (↑(J ∪ S) : Set V) :=
-    Finset.mem_filter.2 ⟨Finset.empty_mem_powerset _, by rwa [Finset.empty_union]⟩
-  obtain ⟨J, hJ, hJeq⟩ := Finset.exists_mem_eq_sup _ ⟨∅, h0⟩ fun J => ∑ v ∈ J, w v
-  rw [Finset.mem_filter, Finset.mem_powerset] at hJ
-  exact ⟨J, hJ.1, hJ.2, hJeq⟩
+      msg R w c S = ∑ v ∈ J, w v :=
+  exists_sup_indep (w := w) _ hS
 
 private theorem forget_congr {B P : Finset V} {f g : Finset V → ℕ}
     (h : ∀ T ⊆ B, G.IsIndepSet (↑T : Set V) → f T = g T) (S : Finset V) :

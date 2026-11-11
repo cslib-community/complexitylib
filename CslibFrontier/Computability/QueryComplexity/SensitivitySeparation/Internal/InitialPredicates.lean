@@ -184,14 +184,10 @@ theorem initialFamily_joint (d M : ℕ) (b : Bool) :
   intro i _ ⟨hi, hi'⟩
   cases b with
   | false =>
-      have hflip : initialFamily d M q' (BitString.flipOn {i} x) = true := by
-        rw [hx'] at hi'
-        convert Bool.eq_true_of_ne_false hi'
+      have hflip : initialFamily d M q' (BitString.flipOn {i} x) = true := by grind
       exact ballPredicate_no_joint_zero blockCenter hrad x i hx hflip
   | true =>
-      have hflip : initialFamily d M q (BitString.flipOn {i} x) = false := by
-        rw [hx] at hi
-        convert Bool.eq_false_iff.mpr hi
+      have hflip : initialFamily d M q (BitString.flipOn {i} x) = false := by grind
       exact ballPredicate_no_joint_one blockCenter hrad x i hx' hflip
 
 end Internal

@@ -167,9 +167,7 @@ theorem kwProtocol_solves (p : Program signature n g) (i₀ : Fin n) (d : ℕ) (
       have hy' := (hval y).symm.trans hy
       rw [interpretation_of_op_eq_not hop] at hx' hy'
       have hfirst := firstArg_of_op_eq_not i₀ hop
-      have hd : p.wireDepthsWith andOrCost (firstArg p i₀ k) ≤ d := by
-        rw [hfirst]
-        exact (Nat.le_add_right _ _).trans ((hle _).trans hdk)
+      have hd : p.wireDepthsWith andOrCost (firstArg p i₀ k) ≤ d := by grind
       refine kwProtocol_solves p i₀ d _ (!s) hd x y ?_ ?_
       · rw [hfirst, ← hx', Bool.not_not]
       · rw [hfirst, ← hy', Bool.not_not]

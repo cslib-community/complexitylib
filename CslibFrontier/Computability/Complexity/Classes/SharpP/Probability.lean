@@ -25,7 +25,7 @@ probability bounds without changing the verifier's behavior on malformed random 
 * `Cslib.Complexity.acceptCount_le_half_iff`: equivalence of the integer and probability bounds.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

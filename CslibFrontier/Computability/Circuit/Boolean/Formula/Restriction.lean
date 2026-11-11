@@ -125,8 +125,7 @@ def mkOr (F G : Formula signature n) : Formula signature n :=
 theorem gate_not_eq (args : Fin (signature.Arity Op.not) → Formula signature n) :
     gate Op.not args = (args 0).not := by
   unfold Formula.not
-  congr 1
-  funext j
+  congr 1 with j : 1
   fin_cases j
   rfl
 
@@ -134,16 +133,14 @@ theorem gate_not_eq (args : Fin (signature.Arity Op.not) → Formula signature n
 theorem gate_and_eq (args : Fin (signature.Arity Op.and) → Formula signature n) :
     gate Op.and args = (args 0).and (args 1) := by
   unfold Formula.and
-  congr 1
-  funext j
+  congr 1 with j : 1
   fin_cases j <;> rfl
 
 /-- A binary `.or` node is the disjunction of its arguments. -/
 theorem gate_or_eq (args : Fin (signature.Arity Op.or) → Formula signature n) :
     gate Op.or args = (args 0).or (args 1) := by
   unfold Formula.or
-  congr 1
-  funext j
+  congr 1 with j : 1
   fin_cases j <;> rfl
 
 /-- `mkNot` of a constant `const b` is `const (!b)`. -/

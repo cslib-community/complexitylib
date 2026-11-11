@@ -100,9 +100,7 @@ theorem card_le_three_of_outdegree_le_one (I : Finset (Fin k))
   have hc : I.card.choose 2 ≤ I.card := by
     rw [← T.card_internalEdges, ← T.sum_outdegree_eq]
     simpa only [Finset.sum_const_nat, mul_one] using hsum
-  have hdouble : I.card * (I.card - 1) ≤ 2 * I.card + 1 := by
-    rw [Nat.choose_two_right] at hc
-    omega
+  have hdouble : I.card * (I.card - 1) ≤ 2 * I.card + 1 := by grind [Nat.choose_two_right]
   by_contra hn
   have h4 : 4 ≤ I.card := by omega
   have ht : I.card - 1 + 1 = I.card := by omega

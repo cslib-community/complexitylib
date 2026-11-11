@@ -378,14 +378,14 @@ theorem isFTRL_euclidean_iff (hne : K.Nonempty) (hc : IsComplete K) (hK : Convex
       sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)]
   constructor
   · intro h t
-    exact ((metricProjection_eq_iff_forall_norm_le hne hc hK (h.mem t)).mpr
+    exact ((metricProjection_eq_iff_forall_norm_le hc hK (h.mem t)).mpr
       ((key t (x t) (h.mem t)).mp (h.isMinOn t))).symm
   · intro h
     have hmem : ∀ t, x t ∈ K := fun t => by
       rw [h t]
       exact metricProjection_mem hne hc hK _
     refine ⟨hmem, fun t => (key t (x t) (hmem t)).mpr ?_⟩
-    exact (metricProjection_eq_iff_forall_norm_le hne hc hK (hmem t)).mp (h t).symm
+    exact (metricProjection_eq_iff_forall_norm_le hc hK (hmem t)).mp (h t).symm
 
 /-- The unprojected state of lazy projected online gradient descent: `y 0 = x₀` and
 `y (t + 1) = y t - η • grad t (Π_K (y t))`. -/

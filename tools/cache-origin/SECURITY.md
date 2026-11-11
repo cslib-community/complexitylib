@@ -48,20 +48,20 @@ deleting suspect objects; do not copy the suspect outputs into a replacement cac
    is stopped. In an authenticated maintainer shell:
 
    ```bash
-   gh cache delete --repo cslib-community/complexitylib --all --succeed-on-no-caches
-   gh api --paginate repos/cslib-community/complexitylib/actions/artifacts \
+   gh cache delete --repo cslib-community/cslib-frontier --all --succeed-on-no-caches
+   gh api --paginate repos/cslib-community/cslib-frontier/actions/artifacts \
      --jq '.artifacts[] | [.id, .name] | @tsv'
    ```
 
    Inspect that artifact list and delete all compiled build handoffs and staged publication
    artifacts from the incident window, using `gh api --method DELETE
-   repos/cslib-community/complexitylib/actions/artifacts/<id>` for each selected ID. Include
+   repos/cslib-community/cslib-frontier/actions/artifacts/<id>` for each selected ID. Include
    merge-group and `main` runs, not just the run that first downloaded MIT bytes. Do not rerun
    an old producer attempt to manufacture a replacement. Keep the original origins quarantined;
    a lifecycle policy is not an immediate purge, and GC will not purge its newest mapping.
 3. **Rotate recovery identity and credentials.** Set `CACHE_RECOVERY_GENERATION` to a new,
    never-used value of 1–64 letters, digits, dots, underscores or hyphens, such as
-   `incident-20261106-1`. Updated Lean CI, Guide and Comparator include this value in both the
+   `incident-20261106-1`. Updated Lean CI and Guide include this value in both the
    exact Actions cache key and its restore prefix; merge-group handoffs include it in their
    checked metadata. Pre-incident or unmarked handoffs are rejected. This is an emergency
    invalidation token, not a change to Lake's URLs or an ordinary GC epoch. Rotate the HTTP
@@ -90,7 +90,7 @@ deleting suspect objects; do not copy the suspect outputs into a replacement cac
 
    Obtain dependencies from their pinned source repositories and run the full validation
    sequence from `CONTRIBUTING.md`. `lake --no-cache` also disables Lake cache use for a direct
-   command. Do not download Mathlib/Complexitylib compiled outputs, restore Actions caches or
+   command. Do not download Mathlib/cslib-frontier compiled outputs, restore Actions caches or
    consume handoffs for this rebuild. Check that logs show compilation rather than restoration.
    The cache VM does not run Lean; use a separate builder with sufficient RAM.
 6. **Resume deliberately.** Review the clean build and new infrastructure, publish only those

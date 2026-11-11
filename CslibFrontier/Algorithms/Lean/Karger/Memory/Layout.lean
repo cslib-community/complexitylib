@@ -147,8 +147,7 @@ theorem mat_update_of_not_owns {m : ℕ → ℕ} {a : ℕ} (ha : ¬L.weight.Owns
 theorem graph_congr {k : ℕ} {m m' : ℕ → ℕ} (h : ∀ i j, i < k → j < k → L.mat m' i j = L.mat m i j) :
     L.graph k m' = L.graph k m := by
   simp only [graph]
-  congr
-  funext i j
+  congr with i j : 2
   exact h i j i.isLt j.isLt
 
 end Layout

@@ -149,8 +149,7 @@ theorem map_eval {I₁ : Interpretation σ U} {I₂ : Interpretation σ V} (h : 
   | input i => rfl
   | gate op args ih =>
     rw [eval_gate, h.homomorphic, eval_gate]
-    congr 1
-    funext j
+    congr 1 with j : 1
     exact ih j
 
 /-- A formula computes `f` when it agrees with `f` on every input. -/
@@ -373,8 +372,7 @@ theorem dependsOn_eval_of_leafSizeIn_eq_zero {Y : Finset (Fin n)} {F : Formula �
     rw [leafSizeIn_gate, Finset.sum_eq_zero_iff] at hF
     intro x y h
     simp only [eval_gate]
-    congr 1
-    funext j
+    congr 1 with j : 1
     exact ih j (hF j (Finset.mem_univ j)) h
 
 /-- A formula with no leaf in `Y` ignores the inputs in `Y`. -/
@@ -695,8 +693,7 @@ def substLast (C : Formula σ (n + 1)) (K : Formula σ n) : Formula σ n :=
 @[simp] theorem eval_substLast (I : Interpretation σ U) (C : Formula σ (n + 1)) (K : Formula σ n)
     (x : Fin n → U) : (C.substLast K).eval I x = C.eval I (Fin.snoc x (K.eval I x)) := by
   rw [substLast, eval_bind]
-  congr 1
-  funext i
+  congr 1 with i : 1
   induction i using Fin.lastCases with
   | last => simp
   | cast i => simp

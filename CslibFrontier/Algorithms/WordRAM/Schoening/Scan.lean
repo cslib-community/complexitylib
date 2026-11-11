@@ -123,13 +123,16 @@ theorem assignmentAt_eq {mem : ℕ → ℕ} {base : ℕ} {σ : Fin n → Bool} (
   rw [assignmentAt, h i]
   cases σ i <;> rfl
 
-private theorem toNat_eq_iff_beq (a b : Bool) : 1 - (a.toNat ^^^ b.toNat) = (a == b).toNat := by
+/-- One minus the XOR of two bit words is the word of their equality test. -/
+theorem one_sub_toNat_xor (a b : Bool) : 1 - (a.toNat ^^^ b.toNat) = (a == b).toNat := by
   cases a <;> cases b <;> rfl
 
-private theorem toNat_or (a b : Bool) : a.toNat ||| b.toNat = (a || b).toNat := by
+/-- The OR of two bit words is the word of their disjunction. -/
+theorem toNat_or (a b : Bool) : a.toNat ||| b.toNat = (a || b).toNat := by
   cases a <;> cases b <;> rfl
 
-private theorem toNat_xor_le_one (a b : Bool) : a.toNat ^^^ b.toNat ≤ 1 := by
+/-- The XOR of two bit words is a bit. -/
+theorem toNat_xor_le_one (a b : Bool) : a.toNat ^^^ b.toNat ≤ 1 := by
   cases a <;> cases b <;> decide
 
 /-! ### Registers -/
@@ -217,6 +220,8 @@ def ScanResult (σ : Fin n → Bool) (φ : CNF (Fin n)) (mem : ℕ → ℕ) (e f
   | none => fnd = 0
   | some c => fnd = 1 ∧ HoldsList cptr (encodeClause c) mem ∧ cptr + c.length + 1 ≤ e
 
+/-- The cons equation of `firstUnsat`: `List.find?_cons` with the match on `!c.eval σ` stated as an
+`if`, the form the scan proofs rewrite with. -/
 theorem firstUnsat_cons (σ : Fin n → Bool) (c : Clause (Fin n)) (φ : CNF (Fin n)) :
     firstUnsat (c :: φ) σ = if c.eval σ then firstUnsat φ σ else some c := by
   cases h : c.eval σ <;> simp [firstUnsat, h]
@@ -273,7 +278,7 @@ theorem litLoop_spec (σ : Fin n → Bool) (ls : Clause (Fin n)) (x : Data 24) (
       have := toNat_xor_le_one (σ l.1) l.2; omega)
     have hf5 : Fits w (1 - ((σ l.1).toNat ^^^ l.2.toNat)) := hw.of_le (by omega)
     have hf6 : Fits w (s.toNat ||| (1 - ((σ l.1).toNat ^^^ l.2.toNat))) := hw.of_le (by
-      rw [toNat_eq_iff_beq, toNat_or]; have := Bool.toNat_le (s || (σ l.1 == l.2)); omega)
+      rw [one_sub_toNat_xor, toNat_or]; have := Bool.toNat_le (s || (σ l.1 == l.2)); omega)
     have hf7 : Fits w (x.regs lptr + 1) := hw.of_le (by simp only [List.length_cons] at hend; omega)
     obtain ⟨y, hy, hym, hys, hyp, hya, hyo⟩ := ih (((((((((x.set lit (litCode l)).set var
         l.1.val).set sgn l.2.toNat).set addr (x.regs aBase + l.1.val)).set val
@@ -284,7 +289,7 @@ theorem litLoop_spec (σ : Fin n → Bool) (ls : Clause (Fin n)) (x : Data 24) (
       (by simp +decide [hone])
       (by simpa +decide [Function.update_apply] using hrest)
       (by simp only [List.length_cons] at hend; simp +decide [hend]; omega)
-      (by simp +decide [toNat_eq_iff_beq, toNat_or])
+      (by simp +decide [one_sub_toNat_xor, toNat_or])
       (by simpa +decide [Function.update_apply] using hσ)
       (by simp only [List.length_cons] at hend; simp +decide; omega)
       (by simpa +decide [Function.update_apply] using hw)

@@ -118,8 +118,7 @@ theorem programAtoms_gate (p : Program σ n g) (line : Line σ n g)
     simp only [Fin.snoc_last, Fin.snoc_castSucc] <;> unfold programAtoms
   all_goals
     first | rw [Program.lines_gate_last] | rw [Program.lines_gate_castSucc]
-    congr 1
-    funext a
+    congr 1 with a : 1
     exact Program.trace_gate_castSucc p line I input _
 
 /-- Gates cover every invariant that holds on the inputs and fails on some wire. -/

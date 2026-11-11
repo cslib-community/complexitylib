@@ -237,12 +237,6 @@ lemma space_le (c cI cF cQ K SI SF s l li le : ℕ) (hli : li ≤ l) (hle : le �
 /-- Reads one bit and emits it. -/
 def bitReader : InputReader Bool Unit := ⟨(), fun _ b => (none, some b)⟩
 
-lemma streamEmit_nil {α σ : Type*} (next : σ × α → σ) (s : σ) (l : List α) :
-    streamEmit next (fun _ => []) s l = [] := by
-  induction l generalizing s with
-  | nil => rfl
-  | cons a l ih => exact ih _
-
 open Translator in
 /-- **Multi-pass folds behind a translator.** A multi-pass fold over the events that the
 translator `tr` emits on the encoded input is tidily computable on the encoded input itself, from
@@ -364,7 +358,7 @@ public theorem ComputableTidilyInTimeAndSpace.multiPassFold_translate {Q E σ γ
     intro x
     rw [hg x]
     simp only [Translator.passState_lift, Translator.streamState_lift, List.take_length,
-      encBits_apply, streamEmit_nil, List.nil_append]
+      encBits_apply, streamEmit_const_nil, List.nil_append]
     rfl
   case refine_3 =>
     intro x i hi j hj

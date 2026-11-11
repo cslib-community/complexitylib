@@ -12,6 +12,7 @@ public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
 
+import CslibFrontier.Computability.GenericRAM.Signed.Fits
 import CslibFrontier.Computability.WordRAM.CountingLoop
 
 /-!
@@ -407,11 +408,7 @@ theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
     let M := x.regs factor * y.regs cursor
     have hM : 0 < M := Nat.mul_pos hfactor hp.pos
     have hMle : M ≤ x.regs factor * x.regs limit := Nat.mul_le_mul_left _ hiq
-    have hMf : GenericRAM.Signed.Fits w (M : ℤ) := by
-      refine ⟨hmod.1, ?_, lt_of_le_of_lt (by exact_mod_cast hMle) hmod.2.2⟩
-      have hnonneg : (0 : ℤ) ≤ M := Nat.cast_nonneg _
-      have hpower : (0 : ℤ) ≤ 2 ^ (w - 1) := by positivity
-      omega
+    have hMf : GenericRAM.Signed.Fits w (M : ℤ) := hmod.of_natAbs_le hMle
     have henc : encode (M : ℤ) = 2 * M := by simp [encode]
     have hencoded : Fits (w + 2) (2 * M) := by
       rw [← henc]

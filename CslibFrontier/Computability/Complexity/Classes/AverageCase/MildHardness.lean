@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Complexity.AverageCase
 public import CslibFrontier.Computability.Complexity.Classes.AverageCase.Distributional
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.PolyTime
 
 /-!

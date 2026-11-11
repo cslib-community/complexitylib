@@ -514,8 +514,7 @@ theorem correlatedGaussianPi_map_dotProduct (ρ : ℝ) (a : ι → ℝ) :
     Measure.map_prod_map _ _ (by fun_prop) (by fun_prop),
     Measure.map_map (by fun_prop) (by fun_prop), correlatedGaussian,
     Measure.map_map (by fun_prop) (by fun_prop)]
-  congr 1
-  funext g
+  congr 1 with g : 1
   exact Prod.ext rfl (by simp only [Function.comp_apply, Prod.map_fst, Prod.map_snd]; ring)
 
 variable {ι}
@@ -578,8 +577,7 @@ theorem gaussianNoiseStability_ite_nonneg_dotProduct {ρ : ℝ} (hρ : |ρ| ≤ 
       1 - 2 / π * arccos ρ := by
   rw [← gaussianNoiseStability_ite_pos_dotProduct hρ (neg_ne_zero.2 ha), gaussianNoiseStability,
     gaussianNoiseStability]
-  congr 1
-  funext p
+  congr 1 with p : 1
   simp only [neg_dotProduct, Left.neg_pos_iff]
   simp only [← not_le]
   split_ifs <;> norm_num

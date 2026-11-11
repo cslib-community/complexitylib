@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Probabilistic.Parameter
 public import CslibFrontier.Crypto.Game.CloseTo
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Efficient
+import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Computational special honest-verifier zero knowledge
@@ -303,8 +304,7 @@ theorem SimulatorRealizedBy.closeTo_conversation
       (PMF.uniformOfFintype (C i)).bind fun c =>
         ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i))).map (post c) := by
     rw [encodedConversation, (hS i).conversation_eq hxy]
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map,
-      PMF.map_comp]
+    simp only [pmf_norm]
     apply congrArg (PMF.bind _)
     funext c
     rw [← PMF.bind_pure_comp]

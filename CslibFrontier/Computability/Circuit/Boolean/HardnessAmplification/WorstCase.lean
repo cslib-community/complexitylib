@@ -607,10 +607,7 @@ private theorem henselCost_le (hM : M ≤ q ^ 2) (hd : d ≤ q) (hq : 1 ≤ q) :
 
 private theorem glCost_le (hw : 1 ≤ w) : glCost w K s ≤ 7 * w * 4 ^ K * (s + 1) := by
   set X := 2 ^ K - 1
-  have hpow : 2 ^ K = X + 1 := by
-    have := Nat.one_le_two_pow (n := K)
-    dsimp only [X]
-    omega
+  have hpow : 2 ^ K = X + 1 := by grind
   have h4 : 4 ^ K = (X + 1) ^ 2 := by
     rw [← hpow, ← pow_mul, mul_comm, pow_mul]
     norm_num

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Data.Fintype.RestrictInjective
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
 import Mathlib.Tactic.FinCases
@@ -20,7 +21,7 @@ has probability `2⁻ⁿ`; and a vocabulary with a nullary relation symbol, for 
 
 namespace CslibFrontierTests.RelationalZeroOneLaw
 
-open FirstOrder Language Structure Cslib.Logic.FO Cslib.Circuits.Boolean.ModelChecking Filter
+open FirstOrder Language Structure Cslib.Logic.FO Filter
 
 /-! ### The law for the language of graphs -/
 

@@ -110,9 +110,7 @@ theorem inner_phaseOracle_phaseOracle (x y : Fin N → Bool) (ψ φ : State N W)
           ((starRingEnd ℂ) (if j = i ∧ true = true then ψ.ofLp (j, true, w) else 0) *
             (if j = i ∧ true = true then φ.ofLp (j, true, w) else 0)) = 0 := by
         intro i hi
-        have hji : j ≠ i := by
-          rintro rfl
-          exact (mem_filter.1 hi).2 hj
+        have hji : j ≠ i := by grind
         simp [hji]
       rw [sum_eq_zero this, hj]
       cases y j <;> simp
