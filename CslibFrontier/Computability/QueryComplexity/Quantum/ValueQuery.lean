@@ -8,37 +8,38 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Search
-import Mathlib.Analysis.InnerProductSpace.Spectrum
+public import CslibFrontier.Foundations.Quantum.Measurement.Readout
+import CslibFrontier.Foundations.LinearAlgebra.UnitarySpectrum
 
 /-!
-# Quantum value-query algorithms and multi-outcome measurements
+# Quantum value-query algorithms
 
-This module extends the phase-oracle quantum query model (`Cslib.Quantum.run`) in two directions:
-
-1. **Multi-outcome measurements** (`Cslib.Quantum.measureOut`): measuring a unit state in the
-   computational basis and applying a classical readout map `out : ι → β` gives a distribution
-   over arbitrary outcome values `β` (for instance `ℝ` or an ordered alphabet `α`), rather than a
-   single accepting subset `S`.
-2. **Value-query algorithms** (`Cslib.Quantum.ValueState`, `Cslib.Quantum.valueOracle`,
-   `Cslib.Quantum.runValue`): states over an arbitrary finite query index type `ι`, a finite
-   value/answer register `V`, and a finite workspace `W`, where each oracle call applies an
-   input-dependent unitary `step (x i)` to the `V` register controlled by the query index `i`.
-   Permutation oracles (`Cslib.Quantum.permStep`), group-addition oracles
-   (`Cslib.Quantum.addStep`), and XOR oracles (`BitString` as an additive group) are special cases.
+This module extends the phase-oracle quantum query model (`Cslib.Quantum.run`) to the quantum
+value-query model (`Cslib.Quantum.ValueState`, `Cslib.Quantum.valueOracle`,
+`Cslib.Quantum.runValue`) over an arbitrary finite query index type `ι`, finite value/answer
+register `V`, and finite workspace `W`, where each oracle call applies an input-dependent unitary
+`step (x i)` to the `V` register controlled by the query index `i`. Permutation oracles
+(`Cslib.Quantum.permStep`), group-addition oracles (`Cslib.Quantum.addStep`), and XOR oracles
+(`BitString` as an additive group) are special cases. Multi-outcome computational-basis readouts
+(`Cslib.Quantum.measureOut`) are provided by
+`CslibFrontier/Foundations/Quantum/Measurement/Readout.lean`.
 
 For lower bounds, restricting a value-query algorithm to inputs taking only two values `a₀` and
 `a₁` can be simulated in the Boolean phase-oracle model (`Cslib.Quantum.run`) on `N = |ι|` bits:
 
 * When the relative step `(step a₀).symm.trans (step a₁)` is an involution (such as an XOR
-  oracle), one binary phase query simulates each value query (`Cslib.Quantum.exists_sim_involution`).
+  oracle), one binary phase query simulates each value query
+  (`Cslib.Quantum.exists_sim_involution`).
 * For an arbitrary unitary step `step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V)`,
   simultaneously diagonalizing the Hermitian and skew-Hermitian parts of the relative unitary
-  simulates each value query with two binary phase queries (`Cslib.Quantum.exists_sim_value`).
+  (`UnitarySpectrum` -> `LinearIsometryEquiv.exists_orthonormalBasis_eigenvectors`) simulates
+  each value query with two binary phase queries (`Cslib.Quantum.exists_sim_value`).
+* Index-returning `T`-query algorithms that read one value can be turned into `(T + 1)`-query
+  value-returning algorithms (`Cslib.Quantum.exists_sim_index_to_value`,
+  `Cslib.Quantum.exists_sim_index_to_value_perm`).
 
 ## Main definitions
 
-* `Cslib.Quantum.measureOut`: distribution of a classical readout of a computational-basis
-  measurement.
 * `Cslib.Quantum.ValueState`: quantum states over `ι × V × W`.
 * `Cslib.Quantum.valueOracle`, `Cslib.Quantum.permStep`, `Cslib.Quantum.addStep`: value-query
   oracles.
@@ -47,12 +48,13 @@ For lower bounds, restricting a value-query algorithm to inputs taking only two 
 
 ## Main results
 
-* `Cslib.Quantum.measureOut_toOuterMeasure_apply`: event probabilities under `measureOut`.
 * `Cslib.Quantum.norm_runValue`: value-query algorithms preserve norms.
 * `Cslib.Quantum.exists_sim_involution`: simulating a two-valued restriction with an involutive
   difference by `T` binary phase queries.
 * `Cslib.Quantum.exists_sim_value`: simulating an arbitrary two-valued restriction by `2 * T`
   binary phase queries.
+* `Cslib.Quantum.exists_sim_index_to_value`, `Cslib.Quantum.exists_sim_index_to_value_perm`:
+  simulating a `T`-query index-returning value-query algorithm with `T + 1` value queries.
 -/
 
 public section
@@ -60,32 +62,6 @@ public section
 namespace Cslib.Quantum
 
 open Finset
-
-/-! ### Multi-outcome measurements -/
-
-/-- Measuring a unit state `ψ` in the computational basis and decoding outcomes through
-`out : ι → β`. -/
-@[expose] noncomputable def measureOut {ι β : Type*} [Fintype ι] (ψ : EuclideanSpace ℂ ι)
-    (hψ : ‖ψ‖ = 1) (out : ι → β) : PMF β :=
-  (measure ψ hψ).map out
-
-@[simp] theorem measureOut_apply {ι β : Type*} [Fintype ι] (ψ : EuclideanSpace ℂ ι)
-    (hψ : ‖ψ‖ = 1) (out : ι → β) (b : β) :
-    measureOut ψ hψ out b = ∑ a : ι, by classical exact if b = out a then measure ψ hψ a else 0 := by
-  classical
-  simp [measureOut, PMF.map_apply]
-
-/-- The probability that `measureOut` lands in `{b | P b}` equals `measureProb` of the preimage
-subset `{y | P (out y)}`. -/
-theorem measureOut_toOuterMeasure_apply {ι β : Type*} [Fintype ι] [DecidableEq ι]
-    (ψ : EuclideanSpace ℂ ι) (hψ : ‖ψ‖ = 1) (out : ι → β) (P : β → Prop)
-    [DecidablePred P] :
-    (measureOut ψ hψ out).toOuterMeasure {b | P b} =
-      ENNReal.ofReal (measureProb ψ (univ.filter fun y => P (out y))) := by
-  rw [measureOut, PMF.toOuterMeasure_map_apply, ← measure_toOuterMeasure_apply ψ hψ]
-  congr 1
-  ext y
-  simp
 
 /-! ### Fibered unitary helpers -/
 
@@ -232,6 +208,7 @@ private theorem norm_sq_valueState (ψ : ValueState ι V W) :
       rw [h, (step (x i)).norm_map]
     exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
 
+/-- Coordinate evaluation of `valueOracle step x ψ` at `(i, v, w)`. -/
 @[simp] theorem valueOracle_apply (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
     (x : ι → α) (ψ : ValueState ι V W) (i : ι) (v : V) (w : W) :
     (valueOracle step x ψ).ofLp (i, v, w) =
@@ -244,6 +221,7 @@ private theorem norm_sq_valueState (ψ : ValueState ι V W) :
     EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V :=
   LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ (π a)
 
+/-- Coordinate evaluation of `permStep π a φ`. -/
 @[simp] theorem permStep_apply (π : α → Equiv.Perm V) (a : α) (φ : EuclideanSpace ℂ V) (v : V) :
     (permStep π a φ).ofLp v = φ.ofLp ((π a).symm v) :=
   rfl
@@ -254,23 +232,21 @@ addition on `ZMod M` as well as bitwise XOR on `BitString m`. -/
     EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V :=
   permStep (fun b => Equiv.addRight b) a
 
+/-- Coordinate evaluation of `addStep a φ`. -/
 @[simp] theorem addStep_apply [AddGroup V] (a : V) (φ : EuclideanSpace ℂ V) (v : V) :
     (addStep a φ).ofLp v = φ.ofLp (v - a) := by
   simp [addStep, sub_eq_add_neg]
 
+/-- Coordinate evaluation of `(addStep a).symm φ`. -/
 @[simp] theorem addStep_symm_apply [AddGroup V] (a : V) (φ : EuclideanSpace ℂ V) (v : V) :
     ((addStep a).symm φ).ofLp v = φ.ofLp (v + a) := by
   simp [addStep, permStep]
 
+/-- Action of `addStep a` on computational-basis state `ket v`. -/
 theorem addStep_ket [DecidableEq V] [AddGroup V] (a v : V) :
     addStep a (ket v) = ket (v + a) := by
   ext u
-  simp only [addStep_apply, ket_apply]
-  by_cases h : u = v + a
-  · have hsub : u - a = v := sub_eq_of_eq_add h
-    simp [h, hsub]
-  · have hsub : u - a ≠ v := fun heq => h (eq_add_of_sub_eq heq)
-    simp [h, hsub]
+  simp only [addStep_apply, ket_apply, sub_eq_iff_eq_add]
 
 /-- When every element of `V` has order dividing `2` (such as `BitString m`), the relative step
 `(addStep a₀).symm.trans (addStep a₁)` is an involution. -/
@@ -320,6 +296,7 @@ end ValueModel
     simp only [Prod.mk.injEq] at h
     exact Prod.ext (e.injective h.1) h.2.2
 
+/-- Application formula for `embedOutcome`. -/
 @[simp] theorem embedOutcome_apply {ι V W : Type*} {N : ℕ} (e : ι ≃ Fin N)
     (i : ι) (v : V) (w : W) :
     embedOutcome (V := V) (W := W) e (i, v, w) = (e i, false, v, w) :=
@@ -427,8 +404,8 @@ omit [Fintype ι] [Fintype V] [Fintype W] in
     (c : Bool) (v : V) : (bvSlice φ j w).ofLp (c, v) = φ.ofLp (j, c, v, w) := rfl
 
 private def bvFiberEquiv {N : ℕ} : (Fin N × Bool × V × W) ≃ ((Fin N × W) × (Bool × V)) where
-  toFun p := ((p.1, p.2.2.2), (p.2.1, p.2.2.1))
-  invFun q := (q.1.1, q.2.1, q.2.2, q.1.2)
+  toFun | (j, c, v, w) => ((j, w), (c, v))
+  invFun | ((j, w), (c, v)) => (j, c, v, w)
   left_inv _ := rfl
   right_inv _ := rfl
 
@@ -452,9 +429,9 @@ private noncomputable def ctrlZ {B : Type*} [Fintype B] (flag : Bool) :
   toFun φ := WithLp.toLp 2 fun ⟨c, v⟩ => (if flag ∧ c then (-1 : ℂ) else 1) * φ.ofLp (c, v)
   invFun φ := WithLp.toLp 2 fun ⟨c, v⟩ => (if flag ∧ c then (-1 : ℂ) else 1) * φ.ofLp (c, v)
   map_add' φ₁ φ₂ := by
-    ext ⟨c, v⟩; simp only [PiLp.toLp_apply, WithLp.ofLp_add, Pi.add_apply]; ring
+    ext ⟨c, v⟩; simp only [WithLp.ofLp_add, Pi.add_apply]; ring
   map_smul' r φ := by
-    ext ⟨c, v⟩; simp only [PiLp.toLp_apply, PiLp.smul_apply, smul_eq_mul, RingHom.id_apply]; ring
+    ext ⟨c, v⟩; simp only [PiLp.smul_apply, smul_eq_mul, RingHom.id_apply]; ring
   left_inv φ := by ext ⟨c, v⟩; cases flag <;> cases c <;> simp
   right_inv φ := by ext ⟨c, v⟩; cases flag <;> cases c <;> simp
   norm_map' φ := by
@@ -509,14 +486,13 @@ private noncomputable def invBoolV (R : EuclideanSpace ℂ V ≃ₗᵢ[ℂ] Eucl
   have hs0 : ∀ φ, s0 (F φ) = (1 / 2 : ℂ) • (s0 φ + R (s0 φ) + s1 φ - R (s1 φ)) := by
     intro φ
     ext v
-    simp only [F, s0, s1, PiLp.toLp_apply, Bool.false_eq_true, ite_false, ite_true,
-      PiLp.smul_apply, PiLp.sub_apply, PiLp.add_apply, smul_eq_mul]
+    simp only [F, s0, s1, Bool.false_eq_true, ite_false, PiLp.smul_apply, PiLp.sub_apply,
+      PiLp.add_apply, smul_eq_mul]
     ring
   have hs1 : ∀ φ, s1 (F φ) = (1 / 2 : ℂ) • (s0 φ - R (s0 φ) + s1 φ + R (s1 φ)) := by
     intro φ
     ext v
-    simp only [F, s0, s1, PiLp.toLp_apply, Bool.false_eq_true, ite_false, ite_true,
-      PiLp.smul_apply, PiLp.sub_apply, PiLp.add_apply, smul_eq_mul]
+    simp only [F, s0, s1, ite_true, PiLp.smul_apply, PiLp.sub_apply, PiLp.add_apply, smul_eq_mul]
     ring
   have hFinv : ∀ ψ, F (F ψ) = ψ := fun ψ => by
     ext ⟨c, v⟩
@@ -542,24 +518,22 @@ private noncomputable def invBoolV (R : EuclideanSpace ℂ V ≃ₗᵢ[ℂ] Eucl
     have hRF1v := congrArg (fun x => x.ofLp v) hRF1
     simp only [PiLp.smul_apply, PiLp.sub_apply, PiLp.add_apply, smul_eq_mul] at hRF0v hRF1v
     cases c <;>
-      simp only [F, PiLp.toLp_apply, Bool.false_eq_true, ite_false, ite_true, hF0, hF1, hRF0v,
-        hRF1v]
-    · simp only [s0, PiLp.toLp_apply]; ring
-    · simp only [s1, PiLp.toLp_apply]; ring
+      simp only [F, Bool.false_eq_true, ite_false, ite_true, hF0, hF1, hRF0v, hRF1v]
+    · simp only [s0]; ring
+    · simp only [s1]; ring
   { toFun := F
     invFun := F
     map_add' := fun ψ₁ ψ₂ => by
       ext ⟨c, v⟩
       have h0 : s0 (ψ₁ + ψ₂) = s0 ψ₁ + s0 ψ₂ := rfl
       have h1 : s1 (ψ₁ + ψ₂) = s1 ψ₁ + s1 ψ₂ := rfl
-      simp only [F, PiLp.toLp_apply, WithLp.ofLp_add, Pi.add_apply, h0, h1, map_add]
+      simp only [F, WithLp.ofLp_add, Pi.add_apply, h0, h1, map_add]
       ring
     map_smul' := fun r ψ => by
       ext ⟨c, v⟩
       have h0 : s0 (r • ψ) = r • s0 ψ := rfl
       have h1 : s1 (r • ψ) = r • s1 ψ := rfl
-      simp only [F, PiLp.toLp_apply, PiLp.smul_apply, smul_eq_mul, RingHom.id_apply, h0, h1,
-        map_smul]
+      simp only [F, PiLp.smul_apply, smul_eq_mul, RingHom.id_apply, h0, h1, map_smul]
       ring
     left_inv := hFinv
     right_inv := hFinv
@@ -592,40 +566,27 @@ private noncomputable def invBoolV (R : EuclideanSpace ℂ V ≃ₗᵢ[ℂ] Eucl
       have hsq_split : ∀ x : EuclideanSpace ℂ V,
           ‖(1 / 2 : ℂ) • (x + R x)‖ ^ 2 + ‖(1 / 2 : ℂ) • (x - R x)‖ ^ 2 = ‖x‖ ^ 2 := by
         intro x
-        rw [norm_smul, norm_smul, mul_pow, mul_pow, ← mul_add, parallelogram_law_with_norm ℂ x (R x),
-          R.norm_map]
+        rw [norm_smul, norm_smul, mul_pow, mul_pow, ← mul_add,
+          parallelogram_law_with_norm ℂ x (R x), R.norm_map]
         norm_num
         ring
       have hF0 : s0 (F ψ) = p0 + m1 := by
         ext v
-        simp only [F, s0, s1, p0, m1, u0, u1, PiLp.toLp_apply, PiLp.add_apply, PiLp.smul_apply,
-          PiLp.sub_apply, smul_eq_mul, Bool.false_eq_true, ite_false, ite_true]
+        simp only [F, s0, s1, p0, m1, u0, u1, PiLp.add_apply, PiLp.smul_apply, PiLp.sub_apply,
+          smul_eq_mul, Bool.false_eq_true, ite_false]
         ring
       have hF1 : s1 (F ψ) = m0 + p1 := by
         ext v
-        simp only [F, s0, s1, m0, p1, u0, u1, PiLp.toLp_apply, PiLp.add_apply, PiLp.smul_apply,
-          PiLp.sub_apply, smul_eq_mul, ite_true, Bool.false_eq_true, ite_false]
+        simp only [F, s0, s1, m0, p1, u0, u1, PiLp.add_apply, PiLp.smul_apply, PiLp.sub_apply,
+          smul_eq_mul, ite_true]
         ring
-      have hperp : ∀ a b : EuclideanSpace ℂ V, inner ℂ a b = 0 →
-          ‖a + b‖ ^ 2 = ‖a‖ ^ 2 + ‖b‖ ^ 2 := fun a b hab => by
-        have hba : inner ℂ b a = 0 := inner_eq_zero_symm.mpr hab
-        have hc : ((‖a + b‖ ^ 2 : ℝ) : ℂ) = ((‖a‖ ^ 2 + ‖b‖ ^ 2 : ℝ) : ℂ) := by
-          calc
-            ((‖a + b‖ ^ 2 : ℝ) : ℂ) = inner ℂ (a + b) (a + b) := by
-              rw [inner_self_eq_norm_sq_to_K]; norm_cast
-            _ = inner ℂ a a + inner ℂ a b + (inner ℂ b a + inner ℂ b b) := by
-              rw [inner_add_left, inner_add_right, inner_add_right]
-            _ = inner ℂ a a + inner ℂ b b := by rw [hab, hba, add_zero, zero_add]
-            _ = ((‖a‖ ^ 2 + ‖b‖ ^ 2 : ℝ) : ℂ) := by
-              rw [inner_self_eq_norm_sq_to_K, inner_self_eq_norm_sq_to_K]
-              push_cast; rfl
-        exact_mod_cast hc
-      have h0n : ‖p0 + m1‖ ^ 2 = ‖p0‖ ^ 2 + ‖m1‖ ^ 2 := hperp p0 m1 (hortho u0 u1)
+      have h0n : ‖p0 + m1‖ ^ 2 = ‖p0‖ ^ 2 + ‖m1‖ ^ 2 := by
+        simpa only [sq] using
+          norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero p0 m1 (hortho u0 u1)
       have h1n : ‖m0 + p1‖ ^ 2 = ‖m0‖ ^ 2 + ‖p1‖ ^ 2 := by
-        rw [add_comm]
-        calc
-          ‖p1 + m0‖ ^ 2 = ‖p1‖ ^ 2 + ‖m0‖ ^ 2 := hperp p1 m0 (hortho u1 u0)
-          _ = ‖m0‖ ^ 2 + ‖p1‖ ^ 2 := add_comm _ _
+        rw [add_comm m0 p1, add_comm (‖m0‖ ^ 2) (‖p1‖ ^ 2)]
+        simpa only [sq] using
+          norm_add_sq_eq_norm_sq_add_norm_sq_of_inner_eq_zero p1 m0 (hortho u1 u0)
       have hsplit : ∀ φ : EuclideanSpace ℂ (Bool × V),
           ‖φ‖ ^ 2 = ‖s0 φ‖ ^ 2 + ‖s1 φ‖ ^ 2 := fun φ => by
         rw [EuclideanSpace.norm_sq_eq, Fintype.sum_prod_type, Fintype.sum_bool, add_comm]
@@ -672,8 +633,7 @@ private theorem invBoolV_ctrlZ_invBoolV (R : EuclideanSpace ℂ V ≃ₗᵢ[ℂ]
     have h1v := congrArg (fun x => x.ofLp v) hs1
     have hR0v := congrArg (fun x => x.ofLp v) hRs0
     have hR1v := congrArg (fun x => x.ofLp v) hRs1
-    simp only [PiLp.toLp_apply, PiLp.smul_apply, PiLp.neg_apply, PiLp.add_apply, PiLp.sub_apply,
-      smul_eq_mul] at h0v h1v hR0v hR1v
+    simp only [PiLp.smul_apply, PiLp.add_apply, PiLp.sub_apply, smul_eq_mul] at h0v h1v hR0v hR1v
     cases c
     · simp only [invBoolV, LinearIsometryEquiv.coe_mk, PiLp.toLp_apply, Bool.false_eq_true,
         ite_false, ite_true, embedBoolFalse]
@@ -699,10 +659,72 @@ private theorem invBoolV_ctrlZ_invBoolV (R : EuclideanSpace ℂ V ≃ₗᵢ[ℂ]
       rw [h0v, h1v, hR0v, hR1v]
       ring
 
+private theorem bvSlice_liftValueIso_valueOracle {N : ℕ} {α : Type*} (e : ι ≃ Fin N)
+    (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V)) (a₀ : α)
+    (y : ValueState ι V W) (j : Fin N) (w : W) :
+    bvSlice (liftValueIso e (valueOracle step fun _ => a₀).toLinearIsometry (embedState e y)) j
+        w =
+      embedBoolFalse (step a₀ (valSlice y (e.symm j) w)) := by
+  rw [liftValueIso_embedState, bvSlice_embedState]
+  rfl
+
+private theorem step_rel_ite_apply {N : ℕ} {α : Type*} (e : ι ≃ Fin N)
+    (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
+    (a₀ a₁ : α) (b : Fin N → Bool) (y : ValueState ι V W) (j : Fin N) (v : V) (w : W) :
+    (if b j then ((step a₀).symm.trans (step a₁)) ((step a₀) (valSlice y (e.symm j) w))
+      else (step a₀) (valSlice y (e.symm j) w)).ofLp v =
+      (valueOracle step (fun i => if b (e i) then a₁ else a₀) y).ofLp (e.symm j, v, w) := by
+  have hv := valueOracle_apply step (fun i => if b (e i) then a₁ else a₀) y (e.symm j) v w
+  simp only [Equiv.apply_symm_apply] at hv
+  have hval : (WithLp.toLp 2 fun v' => y.ofLp (e.symm j, v', w)) = valSlice y (e.symm j) w := rfl
+  rw [hval] at hv
+  cases hbj : b j
+  · simp only [hbj, Bool.false_eq_true, ite_false] at hv ⊢
+    exact hv.symm
+  · simp only [hbj, ite_true, LinearIsometryEquiv.trans_apply,
+      LinearIsometryEquiv.symm_apply_apply] at hv ⊢
+    exact hv.symm
+
+private theorem measureProb_sim_stride {N : ℕ}
+    {α : Type*} (e : ι ≃ Fin N)
+    (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
+    (U : ℕ → ValueState ι V W →ₗᵢ[ℂ] ValueState ι V W)
+    (ψ₀ : ValueState ι V W) (x : ι → α) (T stride : ℕ)
+    (pre : State N (V × W) →ₗᵢ[ℂ] State N (V × W))
+    (Vsim : ℕ → State N (V × W) →ₗᵢ[ℂ] State N (V × W))
+    (b : Fin N → Bool) (S : Finset (ι × V × W))
+    (hzero : run Vsim (embedState e ψ₀) b 0 =
+      if 0 < T then pre (embedState e (runValue step U ψ₀ x 0))
+      else embedState e (runValue step U ψ₀ x T))
+    (hsucc : ∀ t, t < T →
+      run Vsim (embedState e ψ₀) b (stride * t) =
+        pre (embedState e (runValue step U ψ₀ x t)) →
+      run Vsim (embedState e ψ₀) b (stride * (t + 1)) =
+        if t + 1 < T then pre (embedState e (runValue step U ψ₀ x (t + 1)))
+        else embedState e (runValue step U ψ₀ x T)) :
+    measureProb (run Vsim (embedState e ψ₀) b (stride * T)) (S.map (embedOutcome e)) =
+      measureProb (runValue step U ψ₀ x T) S := by
+  classical
+  have hrun : ∀ t ≤ T,
+      run Vsim (embedState e ψ₀) b (stride * t) =
+        if t < T then pre (embedState e (runValue step U ψ₀ x t))
+        else embedState e (runValue step U ψ₀ x T) := by
+    intro t ht
+    induction t with
+    | zero => simpa using hzero
+    | succ t ih =>
+      have ht' : t < T := by omega
+      have hprev := ih ht'.le
+      simp only [ht', ite_true] at hprev
+      exact hsucc t ht' hprev
+  have hT := hrun T le_rfl
+  simp only [lt_irrefl, ite_false] at hT
+  rw [hT, measureProb_embedState]
+
 /-- **1-query simulation of an involutive two-valued oracle restriction**: if
 `(step a₀).symm.trans (step a₁)` is an involution, any `T`-query value-query algorithm restricted
 to `{a₀, a₁}` along `e : ι ≃ Fin N` can be simulated by `T` binary phase-oracle queries. -/
-theorem exists_sim_involution {N : ℕ} [DecidableEq ι] [DecidableEq V] [DecidableEq W]
+theorem exists_sim_involution {N : ℕ}
     {α : Type*} (e : ι ≃ Fin N)
     (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
     (a₀ a₁ : α)
@@ -714,6 +736,7 @@ theorem exists_sim_involution {N : ℕ} [DecidableEq ι] [DecidableEq V] [Decida
         ∀ (b : Fin N → Bool) (S : Finset (ι × V × W)),
           measureProb (run Vsim φ₀ b T) (S.map (embedOutcome e)) =
             measureProb (runValue step U ψ₀ (fun i => if b (e i) then a₁ else a₀) T) S := by
+  classical
   let R := (step a₀).symm.trans (step a₁)
   let G := invBoolV R hR
   let stepA0 : ValueState ι V W →ₗᵢ[ℂ] ValueState ι V W :=
@@ -735,257 +758,44 @@ theorem exists_sim_involution {N : ℕ} [DecidableEq ι] [DecidableEq V] [Decida
         embedState e (valueOracle step x y) := by
     intro y
     refine eq_embedState_of_bvSlice e _ _ fun j w => ?_
-    rw [bvSlice_liftBoolV, bvSlice_phaseOracle, bvSlice_liftBoolV]
-    have hA0 : bvSlice (A0 (embedState e y)) j w =
-        embedBoolFalse (step a₀ (valSlice y (e.symm j) w)) := by
-      rw [show A0 (embedState e y) = embedState e (stepA0 y) from liftValueIso_embedState e stepA0 y,
-        bvSlice_embedState]
-      congr 1
-      ext v
-      exact valueOracle_apply step (fun _ => a₀) y (e.symm j) v w
-    rw [hA0, invBoolV_ctrlZ_invBoolV]
+    rw [bvSlice_liftBoolV, bvSlice_phaseOracle, bvSlice_liftBoolV,
+      bvSlice_liftValueIso_valueOracle, invBoolV_ctrlZ_invBoolV]
     congr 1
     ext v
-    have hv := valueOracle_apply step x y (e.symm j) v w
-    simp only [x, Equiv.apply_symm_apply] at hv
-    cases hbj : b j <;> simp [hbj, hv, R]
-  have hrun : ∀ t ≤ T,
-      run Vsim (embedState e ψ₀) b t =
-        if t < T then liftBoolV G (A0 (embedState e (runValue step U ψ₀ x t)))
-        else embedState e (runValue step U ψ₀ x T) := by
-    intro t ht
-    induction t with
-    | zero =>
-      simp only [run, Vsim, ite_true]
-      by_cases hT : 0 < T
-      · simp [hT, pre, liftValueIso_embedState, runValue]
-      · have hT0 : T = 0 := by omega
-        subst hT0
-        simp [liftValueIso_embedState, runValue]
-    | succ t ih =>
-      have ht' : t < T := by omega
-      have hprev := ih ht'.le
-      rw [ite_eq_left.mpr fun h => absurd ht' h] at hprev
-      have hV : Vsim (t + 1) =
-          if t + 1 < T then
-            pre.comp ((liftValueIso e (U (t + 1))).comp (liftBoolV G).toLinearIsometry)
-          else (liftValueIso e (U T)).comp (liftBoolV G).toLinearIsometry := by
-        simp only [Vsim, Nat.add_eq_zero_iff, one_ne_zero, and_false, ite_false]
-        by_cases hlt : t + 1 < T
-        · simp [hlt]
-        · have heq : t + 1 = T := by omega
-          simp [hlt, heq]
-      rw [run, hprev, hV]
+    exact step_rel_ite_apply e step a₀ a₁ b y j v w
+  conv_lhs => rw [← one_mul T]
+  refine measureProb_sim_stride e step U ψ₀ x T 1 pre Vsim b S ?_ ?_
+  · simp only [run, Vsim, ite_true]
+    by_cases hT : 0 < T
+    · simp [hT, pre, liftValueIso_embedState, runValue]
+    · have hT0 : T = 0 := by omega
+      subst hT0
+      simp [liftValueIso_embedState, runValue]
+  · intro t ht' hprev
+    have hV : Vsim (t + 1) =
+        if t + 1 < T then
+          pre.comp ((liftValueIso e (U (t + 1))).comp (liftBoolV G).toLinearIsometry)
+        else (liftValueIso e (U T)).comp (liftBoolV G).toLinearIsometry := by
+      simp only [Vsim, Nat.add_eq_zero_iff, one_ne_zero, and_false, ite_false]
       by_cases hlt : t + 1 < T
-      · simp [hlt, pre, hstep, liftValueIso_embedState, runValue]
+      · simp [hlt]
       · have heq : t + 1 = T := by omega
-        subst heq
-        simp [hstep, liftValueIso_embedState, runValue]
-  have hT := hrun T le_rfl
-  rw [ite_eq_right.mpr fun h => absurd h (lt_irrefl T)] at hT
-  rw [hT, measureProb_embedState]
+        simp [heq]
+    rw [one_mul] at hprev
+    rw [show 1 * (t + 1) = t + 1 by omega, run, hprev, hV]
+    by_cases hlt : t + 1 < T
+    · simp only [hlt, ite_true, pre, LinearIsometry.coe_comp, Function.comp_apply,
+        LinearIsometryEquiv.coe_toLinearIsometry]
+      rw [hstep, liftValueIso_embedState]
+      rfl
+    · have heq : t + 1 = T := by omega
+      subst heq
+      simp only [lt_irrefl, ite_false, pre, LinearIsometry.coe_comp, Function.comp_apply,
+        LinearIsometryEquiv.coe_toLinearIsometry]
+      rw [hstep, liftValueIso_embedState]
+      rfl
 
 /-! #### 2-query simulation for arbitrary unitary relative step -/
-
-/-- Any unitary on a finite-dimensional complex inner product space has an orthonormal basis of
-simultaneous eigenvectors of its Hermitian and skew-Hermitian parts. -/
-private theorem exists_orthonormalBasis_eigenvectors
-    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E] [FiniteDimensional ℂ E]
-    (R : E ≃ₗᵢ[ℂ] E) :
-    ∃ (b : OrthonormalBasis (Fin (Module.finrank ℂ E)) ℂ E)
-      (μ ν : Fin (Module.finrank ℂ E) → ℝ),
-      (∀ k, (μ k) ^ 2 + (ν k) ^ 2 = 1) ∧
-      (∀ k, R (b k) = ((μ k : ℂ) + Complex.I * (ν k : ℂ)) • b k) := by
-  let U : E →ₗ[ℂ] E := R.toLinearMap
-  let Um : E →ₗ[ℂ] E := R.symm.toLinearMap
-  have hU : ∀ x, U x = R x := fun _ => rfl
-  have hUm : ∀ x, Um x = R.symm x := fun _ => rfl
-  let H : E →ₗ[ℂ] E := (1 / 2 : ℂ) • (U + Um)
-  let K : E →ₗ[ℂ] E := (-Complex.I / 2 : ℂ) • (U - Um)
-  have hRsa : ∀ x y : E, inner ℂ (R x) y = inner ℂ x (R.symm y) := fun x y => by
-    calc
-      inner ℂ (R x) y = inner ℂ (R x) (R (R.symm y)) := by rw [R.apply_symm_apply]
-      _ = inner ℂ x (R.symm y) := R.inner_map_map x (R.symm y)
-  have hRmsa : ∀ x y : E, inner ℂ (R.symm x) y = inner ℂ x (R y) := fun x y => by
-    calc
-      inner ℂ (R.symm x) y = inner ℂ (R (R.symm x)) (R y) := (R.inner_map_map _ _).symm
-      _ = inner ℂ x (R y) := by rw [R.apply_symm_apply]
-  have hHsym : H.IsSymmetric := fun x y => by
-    simp only [H, LinearMap.smul_apply, LinearMap.add_apply, hU, hUm,
-      inner_smul_left, inner_smul_right, inner_add_left, inner_add_right, hRsa, hRmsa]
-    simp only [starRingEnd_apply, star_div₀, star_one, star_ofNat]
-    ring
-  have hKsym : K.IsSymmetric := fun x y => by
-    calc
-      inner ℂ (K x) y
-          = (Complex.I / 2) * (inner ℂ (R x) y - inner ℂ (R.symm x) y) := by
-            simp only [K, LinearMap.smul_apply, LinearMap.sub_apply, hU, hUm, inner_smul_left,
-              inner_sub_left]
-            have hstar : starRingEnd ℂ (-Complex.I / 2) = Complex.I / 2 := by
-              simp only [map_div₀, map_neg, Complex.conj_I, map_ofNat, neg_neg]
-            rw [hstar]
-      _ = (Complex.I / 2) * (inner ℂ x (R.symm y) - inner ℂ x (R y)) := by rw [hRsa, hRmsa]
-      _ = inner ℂ x (K y) := by
-            simp only [K, LinearMap.smul_apply, LinearMap.sub_apply, hU, hUm, inner_smul_right,
-              inner_sub_right]
-            ring
-  have hHK : ∀ x, H (K x) = K (H x) := fun x => by
-    simp only [H, K, LinearMap.smul_apply, LinearMap.add_apply, LinearMap.sub_apply,
-      map_smul, map_add, map_sub, hU, hUm, R.apply_symm_apply, R.symm_apply_apply]
-    module
-  have hR_decomp : ∀ x, R x = H x + Complex.I • K x := fun x => by
-    simp only [H, K, LinearMap.smul_apply, LinearMap.add_apply, LinearMap.sub_apply, hU, hUm]
-    rw [smul_smul]
-    have hI : Complex.I * (-Complex.I / 2) = 1 / 2 := by
-      rw [mul_div_assoc', mul_neg, Complex.I_mul_I]
-      ring
-    rw [hI, ← smul_add]
-    have hsum : (R x + R.symm x) + (R x - R.symm x) = (2 : ℂ) • R x := by module
-    rw [hsum, smul_smul]
-    norm_num
-  have hind : ∀ n : ℕ, ∀ (W : Submodule ℂ E),
-      (∀ x ∈ W, H x ∈ W) → (∀ x ∈ W, K x ∈ W) → Module.finrank ℂ W = n →
-      ∃ (v : Fin n → E) (μ ν : Fin n → ℝ),
-        Orthonormal ℂ v ∧ (∀ k, v k ∈ W) ∧ (∀ k, H (v k) = (μ k : ℂ) • v k) ∧
-          (∀ k, K (v k) = (ν k : ℂ) • v k) := by
-    intro n
-    induction n with
-    | zero =>
-      intro W _ _ _
-      exact ⟨Fin.elim0, Fin.elim0, Fin.elim0, orthonormal_iff_ite.mpr fun i => Fin.elim0 i,
-        fun i => Fin.elim0 i, fun i => Fin.elim0 i, fun i => Fin.elim0 i⟩
-    | succ n ih =>
-      intro W hHW hKW hdim
-      let H_W : W →ₗ[ℂ] W := H.restrict hHW
-      let K_W : W →ₗ[ℂ] W := K.restrict hKW
-      have hH_W : H_W.IsSymmetric := hHsym.restrict_invariant hHW
-      have hK_W : K_W.IsSymmetric := hKsym.restrict_invariant hKW
-      let μ₀ : ℝ := hH_W.eigenvalues hdim ⟨0, Nat.zero_lt_succ n⟩
-      have heig : Module.End.HasEigenvalue H_W (μ₀ : ℂ) :=
-        hH_W.hasEigenvalue_eigenvalues hdim ⟨0, Nat.zero_lt_succ n⟩
-      let S : Submodule ℂ W := Module.End.eigenspace H_W (μ₀ : ℂ)
-      have hS_ne : S ≠ ⊥ := Module.End.hasEigenvalue_iff.mp heig
-      have hS_pos : 0 < Module.finrank ℂ S :=
-        Nat.pos_of_ne_zero fun h0 => hS_ne (Submodule.finrank_eq_zero.mp h0)
-      have hKS : ∀ x ∈ S, K_W x ∈ S := by
-        intro x hx
-        rw [Module.End.mem_eigenspace_iff] at hx ⊢
-        apply Subtype.ext
-        have h1 : H (K (x : E)) = K (H (x : E)) := hHK (x : E)
-        have h2 : H (x : E) = (μ₀ : ℂ) • (x : E) := congrArg Subtype.val hx
-        change H (K (x : E)) = (μ₀ : ℂ) • K (x : E)
-        rw [h1, h2, map_smul]
-      let K_S : S →ₗ[ℂ] S := K_W.restrict hKS
-      have hK_S := hK_W.restrict_invariant hKS
-      let ν₀ : ℝ := hK_S.eigenvalues rfl ⟨0, hS_pos⟩
-      let u₀ : S := hK_S.eigenvectorBasis rfl ⟨0, hS_pos⟩
-      have hu₀_norm : ‖u₀‖ = 1 := (hK_S.eigenvectorBasis rfl).orthonormal.1 ⟨0, hS_pos⟩
-      have hu₀_eig : K_S u₀ = (ν₀ : ℂ) • u₀ :=
-        Module.End.mem_eigenspace_iff.mp (hK_S.hasEigenvector_eigenvectorBasis rfl ⟨0, hS_pos⟩).1
-      let w₀ : W := (u₀ : W)
-      let v₀ : E := (w₀ : E)
-      have hv₀W : v₀ ∈ W := w₀.2
-      have hv₀_norm : ‖v₀‖ = 1 := hu₀_norm
-      have hv₀H : H v₀ = (μ₀ : ℂ) • v₀ := by
-        have hw₀S : w₀ ∈ S := u₀.2
-        rw [Module.End.mem_eigenspace_iff] at hw₀S
-        exact congrArg Subtype.val hw₀S
-      have hv₀K : K v₀ = (ν₀ : ℂ) • v₀ := by
-        have h1 : K_W w₀ = (ν₀ : ℂ) • w₀ := congrArg Subtype.val hu₀_eig
-        exact congrArg Subtype.val h1
-      let L : Submodule ℂ W := Submodule.span ℂ ({w₀} : Set W)
-      let L_orth : Submodule ℂ W := Lᗮ
-      let W' : Submodule ℂ E := L_orth.map W.subtype
-      have hw₀_ne : w₀ ≠ 0 := by
-        intro h
-        have h0 : ‖w₀‖ = 0 := by rw [h, norm_zero]
-        have h1 : (1 : ℝ) = 0 := by simpa [v₀] using hv₀_norm.symm.trans h0
-        norm_num at h1
-      have hL_dim : Module.finrank ℂ L = 1 := finrank_span_singleton hw₀_ne
-      have hL_orth_dim : Module.finrank ℂ L_orth = n := by
-        have hsum := Submodule.finrank_add_finrank_orthogonal L
-        rw [hL_dim, hdim] at hsum
-        dsimp [L_orth]
-        omega
-      have hW'_dim : Module.finrank ℂ W' = n := by
-        rw [Submodule.finrank_map_subtype_eq]
-        exact hL_orth_dim
-      have hv₀_orth_W' : ∀ x ∈ W', inner ℂ v₀ x = 0 := by
-        intro x hx
-        obtain ⟨y, hy, rfl⟩ := Submodule.mem_map.mp hx
-        exact hy w₀ (Submodule.subset_span (Set.mem_singleton w₀))
-      have hW'_sub : W' ≤ W := by
-        intro x hx
-        obtain ⟨y, _, rfl⟩ := Submodule.mem_map.mp hx
-        exact y.2
-      have hHW' : ∀ x ∈ W', H x ∈ W' := by
-        intro x hx
-        obtain ⟨y, hy, rfl⟩ := Submodule.mem_map.mp hx
-        refine Submodule.mem_map.mpr ⟨⟨H (y : E), hHW (y : E) y.2⟩, ?_, rfl⟩
-        intro z hz
-        obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
-        change inner ℂ (c • v₀) (H (y : E)) = 0
-        rw [inner_smul_left, ← hHsym v₀ (y : E), hv₀H, inner_smul_left,
-          hv₀_orth_W' (y : E) (Submodule.mem_map.mpr ⟨y, hy, rfl⟩)]
-        simp
-      have hKW' : ∀ x ∈ W', K x ∈ W' := by
-        intro x hx
-        obtain ⟨y, hy, rfl⟩ := Submodule.mem_map.mp hx
-        refine Submodule.mem_map.mpr ⟨⟨K (y : E), hKW (y : E) y.2⟩, ?_, rfl⟩
-        intro z hz
-        obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
-        change inner ℂ (c • v₀) (K (y : E)) = 0
-        rw [inner_smul_left, ← hKsym v₀ (y : E), hv₀K, inner_smul_left,
-          hv₀_orth_W' (y : E) (Submodule.mem_map.mpr ⟨y, hy, rfl⟩)]
-        simp
-      obtain ⟨v', μ', ν', hv'_ortho, hv'W', hv'H, hv'K⟩ := ih W' hHW' hKW' hW'_dim
-      refine ⟨Fin.cons v₀ v', Fin.cons μ₀ μ', Fin.cons ν₀ ν', ?_, ?_, ?_, ?_⟩
-      · rw [orthonormal_iff_ite]
-        intro i j
-        refine Fin.cases ?_ (fun i' => ?_) i <;> refine Fin.cases ?_ (fun j' => ?_) j
-        · simp [inner_self_eq_norm_sq_to_K, hv₀_norm]
-        · simp [Fin.cons_zero, Fin.cons_succ, Fin.zero_ne_succ, hv₀_orth_W' _ (hv'W' j')]
-        · simp [Fin.cons_zero, Fin.cons_succ, Fin.succ_ne_zero,
-            inner_eq_zero_symm.mp (hv₀_orth_W' _ (hv'W' i'))]
-        · simp only [Fin.cons_succ, Fin.succ_inj]
-          exact (orthonormal_iff_ite.mp hv'_ortho) i' j'
-      · intro k
-        refine Fin.cases hv₀W (fun k' => hW'_sub (hv'W' k')) k
-      · intro k
-        refine Fin.cases hv₀H (fun k' => hv'H k') k
-      · intro k
-        refine Fin.cases hv₀K (fun k' => hv'K k') k
-  obtain ⟨v, μ, ν, hv_ortho, _, hvH, hvK⟩ :=
-    hind (Module.finrank ℂ E) ⊤ (fun _ _ => trivial) (fun _ _ => trivial) (by simp)
-  have hunit : ∀ k, (μ k) ^ 2 + (ν k) ^ 2 = 1 := by
-    intro k
-    have hRv : R (v k) = ((μ k : ℂ) + Complex.I * (ν k : ℂ)) • v k := by
-      rw [hR_decomp, hvH k, hvK k, smul_smul, ← add_smul]
-    have hnorm : ‖((μ k : ℂ) + Complex.I * (ν k : ℂ))‖ = 1 := by
-      have h1 : ‖R (v k)‖ = 1 := by rw [R.norm_map, hv_ortho.1 k]
-      rw [hRv, norm_smul, hv_ortho.1 k, mul_one] at h1
-      exact h1
-    have hsq : ‖((μ k : ℂ) + Complex.I * (ν k : ℂ))‖ ^ 2 = 1 := by rw [hnorm, one_pow]
-    have hnsq : Complex.normSq ((μ k : ℂ) + Complex.I * (ν k : ℂ)) =
-        (μ k) ^ 2 + (ν k) ^ 2 := by
-      rw [Complex.normSq_apply]
-      simp [Complex.add_re, Complex.add_im, Complex.I_re, Complex.I_im, sq]
-    rw [Complex.sq_norm] at hsq
-    linarith
-  rcases Nat.eq_zero_or_pos (Module.finrank ℂ E) with hdim0 | hdimpos
-  · let b0 : Module.Basis (Fin (Module.finrank ℂ E)) ℂ E :=
-      Module.Basis.mk (v := v) hv_ortho.linearIndependent (fun x _ => by
-        have hsub : Subsingleton E := Module.finrank_zero_iff.mp hdim0
-        rw [Subsingleton.elim x 0]
-        exact zero_mem _)
-    refine ⟨b0.toOrthonormalBasis (by simpa [b0] using hv_ortho), μ, ν, hunit, fun k =>
-      Fin.elim0 (hdim0 ▸ k)⟩
-  · have : Nonempty (Fin (Module.finrank ℂ E)) := ⟨⟨0, hdimpos⟩⟩
-    let b := basisOfOrthonormalOfCardEqFinrank hv_ortho (by simp)
-    refine ⟨b.toOrthonormalBasis (by simpa [b] using hv_ortho), μ, ν, hunit, fun k => ?_⟩
-    have hb : (b.toOrthonormalBasis (by simpa [b] using hv_ortho)) k = v k := by
-      simp [b, coe_basisOfOrthonormalOfCardEqFinrank]
-    rw [hb, hR_decomp, hvH k, hvK k, smul_smul, ← add_smul]
 
 /-- Choosing `(c, s)` with `c² + s² = 1`, `c² - s² = μ`, and `2 c s = ν` for any point `(μ, ν)`
 on the unit circle. -/
@@ -1027,11 +837,11 @@ private noncomputable def prepYBool :
       else ψ.ofLp false - Complex.I * ψ.ofLp true)
   map_add' ψ₁ ψ₂ := by
     ext c
-    cases c <;> simp only [PiLp.toLp_apply, WithLp.ofLp_add, Pi.add_apply, ite_true,
+    cases c <;> simp only [WithLp.ofLp_add, Pi.add_apply, ite_true,
       Bool.false_eq_true, ite_false] <;> ring
   map_smul' r ψ := by
     ext c
-    cases c <;> simp only [PiLp.toLp_apply, PiLp.smul_apply, smul_eq_mul, RingHom.id_apply,
+    cases c <;> simp only [PiLp.smul_apply, smul_eq_mul, RingHom.id_apply,
       ite_true, Bool.false_eq_true, ite_false] <;> ring
   left_inv ψ := by
     have h2 : (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) ^ 2 = 1 / 2 := by
@@ -1039,7 +849,7 @@ private noncomputable def prepYBool :
       push_cast; ring
     have hI : Complex.I ^ 2 = -1 := Complex.I_sq
     ext c
-    cases c <;> simp only [PiLp.toLp_apply, ite_true, Bool.false_eq_true, ite_false] <;>
+    cases c <;> simp only [ite_true, Bool.false_eq_true, ite_false] <;>
       (ring_nf; simp only [h2, hI]; ring)
   right_inv ψ := by
     have h2 : (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) ^ 2 = 1 / 2 := by
@@ -1047,16 +857,16 @@ private noncomputable def prepYBool :
       push_cast; ring
     have hI : Complex.I ^ 2 = -1 := Complex.I_sq
     ext c
-    cases c <;> simp only [PiLp.toLp_apply, ite_true, Bool.false_eq_true, ite_false] <;>
+    cases c <;> simp only [ite_true, Bool.false_eq_true, ite_false] <;>
       (ring_nf; simp only [h2, hI]; ring)
   norm_map' ψ := by
     have hsq : ‖(WithLp.toLp 2 fun c : Bool => (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) *
         (if c then Complex.I * (ψ.ofLp false - ψ.ofLp true) else ψ.ofLp false + ψ.ofLp true) :
         EuclideanSpace ℂ Bool)‖ ^ 2 = ‖ψ‖ ^ 2 := by
       rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, Fintype.sum_bool, Fintype.sum_bool]
-      simp only [PiLp.toLp_apply, ite_true, Bool.false_eq_true, ite_false, norm_mul,
-        Complex.norm_real, Real.norm_eq_abs, mul_pow, sq_abs, inv_pow, Real.sq_sqrt zero_le_two,
-        Complex.norm_I, one_pow, one_mul, Complex.sq_norm, Complex.normSq_add, Complex.normSq_sub]
+      simp only [ite_true, Bool.false_eq_true, ite_false, norm_mul, Complex.norm_real,
+        Real.norm_eq_abs, mul_pow, sq_abs, inv_pow, Real.sq_sqrt zero_le_two, Complex.norm_I,
+        one_mul, Complex.sq_norm, Complex.normSq_add, Complex.normSq_sub]
       ring
     exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
 
@@ -1069,22 +879,22 @@ private noncomputable def rotBool (c s : ℝ) (hcs : c ^ 2 + s ^ 2 = 1) :
     else (c : ℂ) * ψ.ofLp false + (s : ℂ) * ψ.ofLp true
   map_add' ψ₁ ψ₂ := by
     ext b
-    cases b <;> simp only [PiLp.toLp_apply, WithLp.ofLp_add, Pi.add_apply, ite_true,
+    cases b <;> simp only [WithLp.ofLp_add, Pi.add_apply, ite_true,
       Bool.false_eq_true, ite_false] <;> ring
   map_smul' r ψ := by
     ext b
-    cases b <;> simp only [PiLp.toLp_apply, PiLp.smul_apply, smul_eq_mul, RingHom.id_apply,
+    cases b <;> simp only [PiLp.smul_apply, smul_eq_mul, RingHom.id_apply,
       ite_true, Bool.false_eq_true, ite_false] <;> ring
   left_inv ψ := by
     have hcsC : (c : ℂ) ^ 2 + (s : ℂ) ^ 2 = 1 := by exact_mod_cast hcs
     ext b
-    cases b <;> simp only [PiLp.toLp_apply, ite_true, Bool.false_eq_true, ite_false]
+    cases b <;> simp only [ite_true, Bool.false_eq_true, ite_false]
     · linear_combination (ψ.ofLp false) * hcsC
     · linear_combination (ψ.ofLp true) * hcsC
   right_inv ψ := by
     have hcsC : (c : ℂ) ^ 2 + (s : ℂ) ^ 2 = 1 := by exact_mod_cast hcs
     ext b
-    cases b <;> simp only [PiLp.toLp_apply, ite_true, Bool.false_eq_true, ite_false]
+    cases b <;> simp only [ite_true, Bool.false_eq_true, ite_false]
     · linear_combination (ψ.ofLp false) * hcsC
     · linear_combination (ψ.ofLp true) * hcsC
   norm_map' ψ := by
@@ -1093,10 +903,9 @@ private noncomputable def rotBool (c s : ℝ) (hcs : c ^ 2 + s ^ 2 = 1) :
         else (c : ℂ) * ψ.ofLp false - (s : ℂ) * ψ.ofLp true :
         EuclideanSpace ℂ Bool)‖ ^ 2 = ‖ψ‖ ^ 2 := by
       rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq, Fintype.sum_bool, Fintype.sum_bool]
-      simp only [PiLp.toLp_apply, ite_true, Bool.false_eq_true, ite_false, Complex.sq_norm,
-        Complex.normSq_apply, Complex.add_re, Complex.add_im, Complex.sub_re, Complex.sub_im,
-        Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im, zero_mul, sub_zero,
-        add_zero]
+      simp only [ite_true, Bool.false_eq_true, ite_false, Complex.sq_norm, Complex.normSq_apply,
+        Complex.add_re, Complex.add_im, Complex.sub_re, Complex.sub_im, Complex.mul_re,
+        Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im, zero_mul, sub_zero, add_zero]
       linear_combination
         ((ψ.ofLp false).re ^ 2 + (ψ.ofLp false).im ^ 2 +
           (ψ.ofLp true).re ^ 2 + (ψ.ofLp true).im ^ 2) * hcs
@@ -1108,9 +917,9 @@ private noncomputable def ctrlZBool (flag : Bool) :
   toFun ψ := WithLp.toLp 2 fun b => (if flag ∧ b then (-1 : ℂ) else 1) * ψ.ofLp b
   invFun ψ := WithLp.toLp 2 fun b => (if flag ∧ b then (-1 : ℂ) else 1) * ψ.ofLp b
   map_add' ψ₁ ψ₂ := by
-    ext b; simp only [PiLp.toLp_apply, WithLp.ofLp_add, Pi.add_apply]; ring
+    ext b; simp only [WithLp.ofLp_add, Pi.add_apply]; ring
   map_smul' r ψ := by
-    ext b; simp only [PiLp.toLp_apply, PiLp.smul_apply, smul_eq_mul, RingHom.id_apply]; ring
+    ext b; simp only [PiLp.smul_apply, smul_eq_mul, RingHom.id_apply]; ring
   left_inv ψ := by ext b; cases flag <;> cases b <;> simp
   right_inv ψ := by ext b; cases flag <;> cases b <;> simp
   norm_map' ψ := by
@@ -1149,7 +958,8 @@ private theorem prepY_rotBool_gadget (c s μ ν : ℝ) (hcs : c ^ 2 + s ^ 2 = 1)
     (rotBool c (-s) (by nlinarith)).trans prepYBool.symm
         (ctrlZBool flag (rotBool c s hcs (ctrlZBool flag (prepYBool (WithLp.toLp 2 fun b =>
           if b then 0 else z))))) =
-      WithLp.toLp 2 fun b => if b then 0 else (if flag then (μ : ℂ) + Complex.I * ν else 1) * z := by
+      WithLp.toLp 2 fun b =>
+        if b then 0 else (if flag then (μ : ℂ) + Complex.I * ν else 1) * z := by
   have hcs' : (c : ℂ) ^ 2 + (s : ℂ) ^ 2 = 1 := by exact_mod_cast hcs
   have hmu' : (c : ℂ) ^ 2 - (s : ℂ) ^ 2 = μ := by exact_mod_cast hmu
   have hnu' : 2 * (c : ℂ) * s = ν := by exact_mod_cast hnu
@@ -1163,12 +973,17 @@ private theorem prepY_rotBool_gadget (c s μ ν : ℝ) (hcs : c ^ 2 + s ^ 2 = 1)
     (1 / 2 : ℂ) * hmu'
   have hcs2 : (c : ℂ) * s = (ν : ℂ) / 2 := by linear_combination (1 / 2 : ℂ) * hnu'
   ext b
-  cases flag <;> cases c' : b <;>
+  cases flag <;> cases b <;>
     simp only [LinearIsometryEquiv.trans_apply, prepYBool_symm_apply, rotBool_apply,
-      ctrlZBool_apply, prepYBool_apply, PiLp.toLp_apply, ite_true, Bool.false_eq_true, ite_false,
-      Bool.false_and, Bool.true_and, Complex.ofReal_neg, and_self, and_false, and_true, false_and,
-      true_and] <;>
-    (ring_nf; simp only [h2, hI, hc2, hs2, hcs2]; ring)
+      ctrlZBool_apply, prepYBool_apply, ite_true, Bool.false_eq_true, ite_false,
+      Complex.ofReal_neg, and_self, and_false, and_true]
+  · ring_nf; simp only [h2, hI, hc2, hs2]; ring
+  · ring_nf; simp only [h2, hI, hc2, hs2]; ring
+  · ring_nf; simp only [h2, hI, hc2, hs2]
+    rw [show (1 / 2 : ℂ) * (c : ℂ) * z * (s : ℂ) * Complex.I * 4 =
+      2 * Complex.I * z * ((c : ℂ) * s) by ring, hcs2]
+    ring
+  · ring_nf; simp only [h2, hI, hc2, hs2]; ring
 
 private def boolSwapEquiv (B : Type*) : (Bool × B) ≃ (B × Bool) where
   toFun p := (p.2, p.1)
@@ -1203,12 +1018,14 @@ private theorem liftBasis_ctrlZ {B₁ B₂ : Type*} [Fintype B₁] [Fintype B₂
     ext v
     cases flag <;> cases c <;> simp [ctrlZ, sliceSecond]
   ext ⟨c, k⟩
-  cases flag <;> cases c <;> simp [liftBasis, ctrlZ, hslice, map_smul]
+  change (U (sliceSecond (ctrlZ flag φ) c)).ofLp k =
+    (if flag ∧ c then (-1 : ℂ) else 1) * (U (sliceSecond φ c)).ofLp k
+  rw [hslice, map_smul, PiLp.smul_apply, smul_eq_mul]
 
 /-- **2-query simulation of an arbitrary two-valued oracle restriction**: any `T`-query
 value-query algorithm restricted to `{a₀, a₁}` along `e : ι ≃ Fin N` can be simulated by `2 * T`
 binary phase-oracle queries. -/
-theorem exists_sim_value {N : ℕ} [DecidableEq ι] [DecidableEq V] [DecidableEq W]
+theorem exists_sim_value {N : ℕ}
     {α : Type*} (e : ι ≃ Fin N)
     (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
     (a₀ a₁ : α)
@@ -1219,8 +1036,9 @@ theorem exists_sim_value {N : ℕ} [DecidableEq ι] [DecidableEq V] [DecidableEq
         ∀ (b : Fin N → Bool) (S : Finset (ι × V × W)),
           measureProb (run Vsim φ₀ b (2 * T)) (S.map (embedOutcome e)) =
             measureProb (runValue step U ψ₀ (fun i => if b (e i) then a₁ else a₀) T) S := by
+  classical
   let R := (step a₀).symm.trans (step a₁)
-  obtain ⟨bas, μ, ν, hunit, heig⟩ := exists_orthonormalBasis_eigenvectors R
+  obtain ⟨bas, μ, ν, hunit, heig⟩ := LinearIsometryEquiv.exists_orthonormalBasis_eigenvectors R
   let d := Module.finrank ℂ (EuclideanSpace ℂ V)
   have hcs_ex : ∀ k : Fin d, ∃ p : ℝ × ℝ,
       p.1 ^ 2 + p.2 ^ 2 = 1 ∧ p.1 ^ 2 - p.2 ^ 2 = μ k ∧ 2 * p.1 * p.2 = ν k := by
@@ -1347,61 +1165,411 @@ theorem exists_sim_value {N : ℕ} [DecidableEq ι] [DecidableEq V] [DecidableEq
     intro y
     refine eq_embedState_of_bvSlice e _ _ fun j w => ?_
     simp only [bvSlice_liftBoolV, bvSlice_phaseOracle]
-    have hA0 : bvSlice (A0 (embedState e y)) j w =
-        embedBoolFalse (step a₀ (valSlice y (e.symm j) w)) := by
-      rw [show A0 (embedState e y) = embedState e (stepA0 y) from liftValueIso_embedState e stepA0 y,
-        bvSlice_embedState]
-      congr 1
-      ext v
-      exact valueOracle_apply step (fun _ => a₀) y (e.symm j) v w
-    rw [hA0, hgadget]
+    rw [bvSlice_liftValueIso_valueOracle, hgadget]
     congr 1
     ext v
-    have hv := valueOracle_apply step x y (e.symm j) v w
-    simp only [x, Equiv.apply_symm_apply] at hv
-    cases hbj : b j <;> simp [hbj, hv, R]
-  have hrun : ∀ t ≤ T,
-      run Vsim (embedState e ψ₀) b (2 * t) =
-        if t < T then liftBoolV Gpre (A0 (embedState e (runValue step U ψ₀ x t)))
-        else embedState e (runValue step U ψ₀ x T) := by
+    exact step_rel_ite_apply e step a₀ a₁ b y j v w
+  refine measureProb_sim_stride e step U ψ₀ x T 2 pre Vsim b S ?_ ?_
+  · simp only [run, Vsim, ite_true]
+    by_cases hT : 0 < T
+    · simp [hT, pre, liftValueIso_embedState, runValue]
+    · have hT0 : T = 0 := by omega
+      subst hT0
+      simp [liftValueIso_embedState, runValue]
+  · intro t ht' hprev
+    have hVodd : Vsim (2 * t + 1) = (liftBoolV Gmid).toLinearIsometry := by
+      have hmod : (2 * t + 1) % 2 = 1 := by omega
+      simp [Vsim, hmod]
+    have hVeven : Vsim (2 * t + 2) =
+        if t + 1 < T then
+          pre.comp ((liftValueIso e (U (t + 1))).comp (liftBoolV Gpost).toLinearIsometry)
+        else (liftValueIso e (U T)).comp (liftBoolV Gpost).toLinearIsometry := by
+      have hne : 2 * t + 2 ≠ 0 := by omega
+      have hmod : (2 * t + 2) % 2 ≠ 1 := by omega
+      have hr : (2 * t + 2) / 2 - 1 = t := by omega
+      simp only [Vsim, hne, ite_false, hmod, hr]
+      by_cases hlt : t + 1 < T
+      · simp [hlt]
+      · have heq : t + 1 = T := by omega
+        simp [heq]
+    rw [show 2 * (t + 1) = (2 * t + 1) + 1 by ring, run, run, hVodd, hVeven, hprev]
+    by_cases hlt : t + 1 < T
+    · simp only [hlt, ite_true, pre, LinearIsometry.coe_comp, Function.comp_apply,
+        LinearIsometryEquiv.coe_toLinearIsometry]
+      rw [hstep, liftValueIso_embedState]
+      rfl
+    · have heq : t + 1 = T := by omega
+      subst heq
+      simp only [lt_irrefl, ite_false, pre, LinearIsometry.coe_comp, Function.comp_apply,
+        LinearIsometryEquiv.coe_toLinearIsometry]
+      rw [hstep, liftValueIso_embedState]
+      rfl
+
+end TwoValueSim
+
+section IndexToValue
+
+private def indexRouteFun {ι V W : Type*} [DecidableEq ι] [DecidableEq V]
+    (idx : ι × V × W → ι) (v₀ : V) (i₀ : ι) :
+    ι × V × Bool × V × W × ι → ι × V × Bool × V × W × ι
+  | (i, v, false, v', w, i') =>
+    if v' = v₀ ∧ i' = i₀ then (idx (i, v, w), v₀, true, v, w, i)
+    else (i, v, false, v', w, i')
+  | (i, v, true, v', w, i') =>
+    if v = v₀ ∧ idx (i', v', w) = i then (i', v', false, v₀, w, i₀)
+    else (i, v, true, v', w, i')
+
+private theorem indexRouteFun_involutive {ι V W : Type*} [DecidableEq ι] [DecidableEq V]
+    (idx : ι × V × W → ι) (v₀ : V) (i₀ : ι) (q : ι × V × Bool × V × W × ι) :
+    indexRouteFun idx v₀ i₀ (indexRouteFun idx v₀ i₀ q) = q := by
+  rcases q with ⟨i, v, b, v', w, i'⟩
+  cases b <;> dsimp only [indexRouteFun] <;> split_ifs <;> simp_all
+
+private def indexRoutePerm {ι V W : Type*} [DecidableEq ι] [DecidableEq V]
+    (idx : ι × V × W → ι) (v₀ : V) (i₀ : ι) :
+    Equiv.Perm (ι × V × Bool × V × W × ι) where
+  toFun := indexRouteFun idx v₀ i₀
+  invFun := indexRouteFun idx v₀ i₀
+  left_inv := indexRouteFun_involutive idx v₀ i₀
+  right_inv := indexRouteFun_involutive idx v₀ i₀
+
+private def extProdEquiv {ι V W : Type*} :
+    (ι × V × Bool × V × W × ι) ≃ ((Bool × V × ι) × (ι × V × W)) where
+  toFun | (i, v, b, v', w, i') => ((b, v', i'), (i, v, w))
+  invFun | ((b, v', i'), (i, v, w)) => (i, v, b, v', w, i')
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+private def idxProdEquiv {ι V W : Type*} :
+    (ι × V × Bool × V × W × ι) ≃ ((ι × V × W) × Bool × ι × V) where
+  toFun | (j, vout, b, v, w, i) => ((i, v, w), b, j, vout)
+  invFun | ((i, v, w), b, j, vout) => (j, vout, b, v, w, i)
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+private def embedFalse {ι V W : Type*} [DecidableEq ι] [DecidableEq V] (v₀ : V) (i₀ : ι)
+    (ψ : ValueState ι V W) : ValueState ι V (Bool × V × W × ι) :=
+  WithLp.toLp 2 fun
+    | (i, v, false, v', w, i') => if v' = v₀ ∧ i' = i₀ then ψ.ofLp (i, v, w) else 0
+    | (_, _, true, _, _, _) => 0
+
+private def sliceFalse {ι V W : Type*} (v₀ : V) (i₀ : ι)
+    (ψ : ValueState ι V (Bool × V × W × ι)) : ValueState ι V W :=
+  WithLp.toLp 2 fun (i, v, w) => ψ.ofLp (i, v, false, v₀, w, i₀)
+
+private theorem norm_embedFalse {ι V W : Type*} [Fintype ι] [Fintype V] [Fintype W]
+    [DecidableEq ι] [DecidableEq V] (v₀ : V) (i₀ : ι) (ψ : ValueState ι V W) :
+    ‖embedFalse v₀ i₀ ψ‖ = ‖ψ‖ := by
+  have hsq : ‖embedFalse v₀ i₀ ψ‖ ^ 2 = ‖ψ‖ ^ 2 := by
+    rw [EuclideanSpace.norm_sq_eq]
+    rw [Fintype.sum_equiv extProdEquiv
+      (fun q => ‖(embedFalse v₀ i₀ ψ).ofLp q‖ ^ 2)
+      (fun p => ‖(embedFalse v₀ i₀ ψ).ofLp
+        (p.2.1, p.2.2.1, p.1.1, p.1.2.1, p.2.2.2, p.1.2.2)‖ ^ 2)
+      (fun ⟨_, _, _, _, _, _⟩ => rfl),
+      Fintype.sum_prod_type, Fintype.sum_prod_type, Fintype.sum_bool]
+    have htrue : ∑ vi : V × ι, ∑ p : ι × V × W,
+        ‖(embedFalse v₀ i₀ ψ).ofLp (p.1, p.2.1, true, vi.1, p.2.2, vi.2)‖ ^ 2 = 0 := by
+      simp [embedFalse]
+    have hfalse : ∀ vi : V × ι,
+        ∑ p : ι × V × W,
+          ‖(embedFalse v₀ i₀ ψ).ofLp (p.1, p.2.1, false, vi.1, p.2.2, vi.2)‖ ^ 2 =
+            if vi = (v₀, i₀) then ‖ψ‖ ^ 2 else 0 := fun ⟨v', i'⟩ => by
+      by_cases h : v' = v₀ ∧ i' = i₀
+      · simp [embedFalse, h, EuclideanSpace.norm_sq_eq]
+      · simp [embedFalse, h, Prod.ext_iff]
+    rw [htrue, zero_add]
+    simp [hfalse]
+  exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
+
+private noncomputable def liftFalseFun {ι V W : Type*} [Fintype ι] [Fintype V] [Fintype W]
+    [DecidableEq ι] [DecidableEq V] (v₀ : V) (i₀ : ι)
+    (U : ValueState ι V W →ₗᵢ[ℂ] ValueState ι V W)
+    (ψ : ValueState ι V (Bool × V × W × ι)) : ValueState ι V (Bool × V × W × ι) :=
+  WithLp.toLp 2 fun
+    | (i, v, false, v', w, i') =>
+      if v' = v₀ ∧ i' = i₀ then (U (sliceFalse v₀ i₀ ψ)).ofLp (i, v, w)
+      else ψ.ofLp (i, v, false, v', w, i')
+    | (i, v, true, v', w, i') => ψ.ofLp (i, v, true, v', w, i')
+
+private noncomputable def liftFalse {ι V W : Type*} [Fintype ι] [Fintype V] [Fintype W]
+    [DecidableEq ι] [DecidableEq V] (v₀ : V) (i₀ : ι)
+    (U : ValueState ι V W →ₗᵢ[ℂ] ValueState ι V W) :
+    ValueState ι V (Bool × V × W × ι) →ₗᵢ[ℂ] ValueState ι V (Bool × V × W × ι) where
+  toFun := liftFalseFun v₀ i₀ U
+  map_add' ψ₁ ψ₂ := by
+    ext ⟨i, v, b, v', w, i'⟩
+    have h : sliceFalse v₀ i₀ (ψ₁ + ψ₂) = sliceFalse v₀ i₀ ψ₁ + sliceFalse v₀ i₀ ψ₂ := rfl
+    cases b <;> simp only [liftFalseFun, WithLp.ofLp_add, Pi.add_apply, h, map_add]
+    split_ifs <;> rfl
+  map_smul' r ψ := by
+    ext ⟨i, v, b, v', w, i'⟩
+    have h : sliceFalse v₀ i₀ (r • ψ) = r • sliceFalse v₀ i₀ ψ := rfl
+    cases b <;> simp only [liftFalseFun, PiLp.smul_apply, smul_eq_mul, RingHom.id_apply, h,
+      map_smul]
+    split_ifs <;> rfl
+  norm_map' ψ := by
+    have hsq : ‖liftFalseFun v₀ i₀ U ψ‖ ^ 2 = ‖ψ‖ ^ 2 := by
+      rw [EuclideanSpace.norm_sq_eq, EuclideanSpace.norm_sq_eq,
+        Fintype.sum_equiv extProdEquiv (fun q => ‖(liftFalseFun v₀ i₀ U ψ).ofLp q‖ ^ 2)
+          (fun p => ‖(liftFalseFun v₀ i₀ U ψ).ofLp
+            (p.2.1, p.2.2.1, p.1.1, p.1.2.1, p.2.2.2, p.1.2.2)‖ ^ 2)
+          (fun ⟨_, _, _, _, _, _⟩ => rfl),
+        Fintype.sum_equiv extProdEquiv (fun q => ‖ψ.ofLp q‖ ^ 2)
+          (fun p => ‖ψ.ofLp (p.2.1, p.2.2.1, p.1.1, p.1.2.1, p.2.2.2, p.1.2.2)‖ ^ 2)
+          (fun ⟨_, _, _, _, _, _⟩ => rfl)]
+      conv_lhs => rw [Fintype.sum_prod_type, Fintype.sum_prod_type, Fintype.sum_bool]
+      conv_rhs => rw [Fintype.sum_prod_type, Fintype.sum_prod_type, Fintype.sum_bool]
+      have ht :
+          (∑ y : V × ι, ∑ y₁ : ι × V × W,
+            ‖(liftFalseFun v₀ i₀ U ψ).ofLp (y₁.1, y₁.2.1, true, y.1, y₁.2.2, y.2)‖ ^ 2) =
+          ∑ y : V × ι, ∑ y₁ : ι × V × W,
+            ‖ψ.ofLp (y₁.1, y₁.2.1, true, y.1, y₁.2.2, y.2)‖ ^ 2 := rfl
+      rw [ht, add_left_cancel_iff]
+      refine sum_congr rfl fun ⟨v', i'⟩ _ => ?_
+      by_cases h : v' = v₀ ∧ i' = i₀
+      · have hL : ∑ p : ι × V × W,
+            ‖(liftFalseFun v₀ i₀ U ψ).ofLp (p.1, p.2.1, false, v', p.2.2, i')‖ ^ 2 =
+            ∑ p : ι × V × W, ‖(U (sliceFalse v₀ i₀ ψ)).ofLp (p.1, p.2.1, p.2.2)‖ ^ 2 :=
+          sum_congr rfl fun p _ => by simp [liftFalseFun, h]
+        have hR : ∑ p : ι × V × W, ‖ψ.ofLp (p.1, p.2.1, false, v', p.2.2, i')‖ ^ 2 =
+            ‖sliceFalse v₀ i₀ ψ‖ ^ 2 := by
+          simp [h.1, h.2, sliceFalse, EuclideanSpace.norm_sq_eq]
+        rw [hL, ← EuclideanSpace.norm_sq_eq, U.norm_map, hR]
+      · refine sum_congr rfl fun p _ => by simp [liftFalseFun, h]
+    exact (sq_eq_sq₀ (norm_nonneg _) (norm_nonneg _)).mp hsq
+
+/-- **Index-to-value `(T + 1)`-query simulation**: given a `T`-query value-query algorithm
+`(U, ψ₀)` returning a query index `idx : ι × V × W → ι`, a basis state `ket v₀` and readout
+`read : V → α` such that querying `step (X i)` prepares `read v = X i` with probability `1`
+turn it into a `(T + 1)`-query value-returning algorithm with the exact same outcome
+distribution. -/
+theorem exists_sim_index_to_value {ι V W α : Type*} [Fintype ι] [Fintype V] [Fintype W]
+    [Nonempty ι]
+    (step : α → (EuclideanSpace ℂ V ≃ₗᵢ[ℂ] EuclideanSpace ℂ V))
+    (v₀ : V) (read : V → α)
+    (U : ℕ → ValueState ι V W →ₗᵢ[ℂ] ValueState ι V W)
+    (ψ₀ : ValueState ι V W) (T : ℕ) (idx : ι × V × W → ι) :
+    ∃ (U' : ℕ → ValueState ι V (Bool × V × W × ι) →ₗᵢ[ℂ] ValueState ι V (Bool × V × W × ι))
+      (ψ₀' : ValueState ι V (Bool × V × W × ι)) (out' : ι × V × Bool × V × W × ι → α),
+      ‖ψ₀'‖ = ‖ψ₀‖ ∧
+        ∀ (X : ι → α),
+          (∀ i : ι, (open Classical in
+            measureProb (step (X i) (ket v₀)) (univ.filter fun v => read v = X i)) = 1) →
+          ∀ (Pred : α → Prop) [DecidablePred Pred],
+          measureProb (runValue step U' ψ₀' X (T + 1)) (univ.filter fun q => Pred (out' q)) =
+            measureProb (runValue step U ψ₀ X T) (univ.filter fun p => Pred (X (idx p))) := by
+  classical
+  let i₀ : ι := Classical.arbitrary ι
+  let route : ValueState ι V (Bool × V × W × ι) ≃ₗᵢ[ℂ] ValueState ι V (Bool × V × W × ι) :=
+    LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ (indexRoutePerm idx v₀ i₀)
+  let U' : ℕ → ValueState ι V (Bool × V × W × ι) →ₗᵢ[ℂ] ValueState ι V (Bool × V × W × ι) :=
+    fun t =>
+      if t < T then liftFalse v₀ i₀ (U t)
+      else if t = T then route.toLinearIsometry.comp (liftFalse v₀ i₀ (U T))
+      else LinearIsometry.id
+  let ψ₀' := embedFalse v₀ i₀ ψ₀
+  let out' : ι × V × Bool × V × W × ι → α := fun (_, v, _, _, _, _) => read v
+  refine ⟨U', ψ₀', out', norm_embedFalse v₀ i₀ ψ₀, fun X hread Pred _ => ?_⟩
+  have hlift_emb : ∀ (V₀ : ValueState ι V W →ₗᵢ[ℂ] ValueState ι V W) (ψ : ValueState ι V W),
+      liftFalse v₀ i₀ V₀ (embedFalse v₀ i₀ ψ) = embedFalse v₀ i₀ (V₀ ψ) := fun V₀ ψ => by
+    have hs : sliceFalse v₀ i₀ (embedFalse v₀ i₀ ψ) = ψ := by
+      ext ⟨i₁, v₁, w₁⟩; simp [sliceFalse, embedFalse]
+    ext ⟨i, v, b, v', w, i'⟩
+    change (liftFalseFun v₀ i₀ V₀ (embedFalse v₀ i₀ ψ)).ofLp (i, v, b, v', w, i') = _
+    cases b
+    · dsimp only [liftFalseFun]
+      rw [hs]
+      by_cases h : v' = v₀ ∧ i' = i₀ <;> simp [embedFalse, h]
+    · simp [liftFalseFun, embedFalse]
+  have hlt_run : ∀ t ≤ T,
+      runValue step U' ψ₀' X t =
+        if t < T then embedFalse v₀ i₀ (runValue step U ψ₀ X t)
+        else route (embedFalse v₀ i₀ (runValue step U ψ₀ X T)) := by
     intro t ht
     induction t with
     | zero =>
-      simp only [run, Vsim, ite_true]
-      by_cases hT : 0 < T
-      · simp [hT, pre, liftValueIso_embedState, runValue]
+      dsimp only [runValue]
+      by_cases h0 : 0 < T
+      · simp [U', h0, ψ₀', hlift_emb]
       · have hT0 : T = 0 := by omega
         subst hT0
-        simp [liftValueIso_embedState, runValue]
+        simp [U', ψ₀', hlift_emb, runValue]
     | succ t ih =>
       have ht' : t < T := by omega
       have hprev := ih ht'.le
-      rw [ite_eq_left.mpr fun h => absurd ht' h] at hprev
-      have hVodd : Vsim (2 * t + 1) = (liftBoolV Gmid).toLinearIsometry := by
-        have hmod : (2 * t + 1) % 2 = 1 := by omega
-        simp [Vsim, hmod]
-      have hVeven : Vsim (2 * t + 2) =
-          if t + 1 < T then
-            pre.comp ((liftValueIso e (U (t + 1))).comp (liftBoolV Gpost).toLinearIsometry)
-          else (liftValueIso e (U T)).comp (liftBoolV Gpost).toLinearIsometry := by
-        have hne : 2 * t + 2 ≠ 0 := by omega
-        have hmod : (2 * t + 2) % 2 ≠ 1 := by omega
-        have hr : (2 * t + 2) / 2 - 1 = t := by omega
-        simp only [Vsim, hne, ite_false, hmod, hr]
-        by_cases hlt : t + 1 < T
-        · simp [hlt]
-        · have heq : t + 1 = T := by omega
-          simp [heq]
-      rw [show 2 * (t + 1) = (2 * t + 1) + 1 by ring, run, run, hVodd, hVeven, hprev]
+      simp only [ht', ite_true] at hprev
+      have hvo : valueOracle step X (embedFalse v₀ i₀ (runValue step U ψ₀ X t)) =
+          embedFalse v₀ i₀ (valueOracle step X (runValue step U ψ₀ X t)) := by
+        ext ⟨i, v, b, v', w, i'⟩
+        cases b
+        · by_cases h : v' = v₀ ∧ i' = i₀
+          · simp [valueOracle_apply, embedFalse, h]
+          · have hz : (WithLp.toLp 2 fun v₁ =>
+                (embedFalse v₀ i₀ (runValue step U ψ₀ X t)).ofLp (i, v₁, false, v', w, i')) =
+                (0 : EuclideanSpace ℂ V) := by
+              ext u; simp [embedFalse, h]
+            rw [valueOracle_apply, hz, map_zero]
+            simp [embedFalse, h]
+        · have hz : (WithLp.toLp 2 fun v₁ =>
+              (embedFalse v₀ i₀ (runValue step U ψ₀ X t)).ofLp (i, v₁, true, v', w, i')) =
+              (0 : EuclideanSpace ℂ V) := by
+            ext u; simp [embedFalse]
+          rw [valueOracle_apply, hz, map_zero]
+          simp [embedFalse]
+      have hUt : U' (t + 1) =
+          if t + 1 < T then liftFalse v₀ i₀ (U (t + 1))
+          else route.toLinearIsometry.comp (liftFalse v₀ i₀ (U T)) := by
+        dsimp only [U']
+        split_ifs with h₁ h₂
+        · rfl
+        · rfl
+        · exfalso; omega
+      rw [runValue, hprev, hvo, hUt]
       by_cases hlt : t + 1 < T
-      · simp [hlt, pre, hstep, liftValueIso_embedState, runValue]
+      · simp only [hlt, ite_true, hlift_emb]
+        rfl
       · have heq : t + 1 = T := by omega
         subst heq
-        simp [hstep, liftValueIso_embedState, runValue]
-  have hT := hrun T le_rfl
-  rw [ite_eq_right.mpr fun h => absurd h (lt_irrefl T)] at hT
-  rw [hT, measureProb_embedState]
+        simp only [lt_irrefl, ite_false, LinearIsometry.coe_comp, Function.comp_apply,
+          LinearIsometryEquiv.coe_toLinearIsometry, hlift_emb]
+        rfl
+  have hT := hlt_run T le_rfl
+  simp only [lt_irrefl, ite_false] at hT
+  have hfinal : runValue step U' ψ₀' X (T + 1) =
+      valueOracle step X (route (embedFalse v₀ i₀ (runValue step U ψ₀ X T))) := by
+    have hU_succ : U' (T + 1) = LinearIsometry.id := by
+      simp only [U', show ¬ (T + 1 < T) by omega, show ¬ (T + 1 = T) by omega, ite_false]
+    rw [runValue, hU_succ, hT, LinearIsometry.id_apply]
+  rw [hfinal]
+  set ψT := runValue step U ψ₀ X T
+  have hprob_step : ∀ j' : ι,
+      measureProb (step (X j') (ket v₀)) (univ.filter fun v => Pred (read v)) =
+        if Pred (X j') then 1 else 0 := fun j' => by
+    have hgood := hread j'
+    have hnorm : measureProb (step (X j') (ket v₀)) univ = 1 := by
+      rw [measureProb_univ, (step (X j')).norm_map, norm_ket, one_pow]
+    have hzero : ∀ v : V, read v ≠ X j' → ‖(step (X j') (ket v₀)).ofLp v‖ ^ 2 = 0 := by
+      intro v hv
+      have hc := measureProb_compl (step (X j') (ket v₀)) (univ.filter fun u => read u = X j')
+      rw [(step (X j')).norm_map, norm_ket, one_pow, hgood, sub_self] at hc
+      dsimp only [measureProb] at hc
+      have hmem : v ∈ (univ.filter fun u => read u = X j')ᶜ := by simpa using hv
+      have hle : ‖(step (X j') (ket v₀)).ofLp v‖ ^ 2 ≤
+          ∑ u ∈ (univ.filter fun u => read u = X j')ᶜ,
+            ‖(step (X j') (ket v₀)).ofLp u‖ ^ 2 :=
+        Finset.single_le_sum (f := fun u => ‖(step (X j') (ket v₀)).ofLp u‖ ^ 2)
+          (fun _ _ => by positivity) hmem
+      rw [hc] at hle
+      exact le_antisymm hle (by positivity)
+    by_cases hp : Pred (X j')
+    · simp only [hp, ite_true]
+      have hsub : univ.filter (fun u => read u = X j') ⊆ univ.filter (fun u => Pred (read u)) := by
+        intro u hu
+        rw [mem_filter] at hu ⊢
+        exact ⟨mem_univ u, hu.2 ▸ hp⟩
+      exact le_antisymm ((measureProb_mono _ (subset_univ _)).trans hnorm.le)
+        (hgood ▸ measureProb_mono _ hsub)
+    · simp only [hp, ite_false]
+      refine le_antisymm ?_ (measureProb_nonneg _ _)
+      refine sum_nonpos fun v hv => ?_
+      have hv' : Pred (read v) := (mem_filter.mp hv).2
+      have hne : read v ≠ X j' := fun heq => hp (heq ▸ hv')
+      rw [hzero v hne]
+  have hroute_apply : ∀ (j : ι) (v' : V) (b : Bool) (v : V) (w : W) (i : ι),
+      (route (embedFalse v₀ i₀ ψT)).ofLp (j, v', b, v, w, i) =
+        if b = true ∧ v' = v₀ ∧ idx (i, v, w) = j then ψT.ofLp (i, v, w) else 0 := by
+    intro j v' b v w i
+    change (embedFalse v₀ i₀ ψT).ofLp (indexRouteFun idx v₀ i₀ (j, v', b, v, w, i)) = _
+    cases b <;> dsimp only [indexRouteFun]
+    · by_cases h : v = v₀ ∧ i = i₀ <;> simp [h, embedFalse]
+    · by_cases h : v' = v₀ ∧ idx (i, v, w) = j <;> simp [h, embedFalse]
+  have hslice_true : ∀ (j : ι) (v : V) (w : W) (i : ι),
+      (WithLp.toLp 2 fun v' => (route (embedFalse v₀ i₀ ψT)).ofLp (j, v', true, v, w, i)) =
+        if idx (i, v, w) = j then ψT.ofLp (i, v, w) • ket v₀ else 0 := fun j v w i => by
+    ext v'
+    rw [hroute_apply]
+    by_cases hj : idx (i, v, w) = j <;> by_cases hv' : v' = v₀ <;> simp [hj, hv', ket_apply]
+  have hslice_false : ∀ (j : ι) (v : V) (w : W) (i : ι),
+      (WithLp.toLp 2 fun v' => (route (embedFalse v₀ i₀ ψT)).ofLp (j, v', false, v, w, i)) = 0 :=
+    fun j v w i => by
+      ext v'
+      simp [hroute_apply]
+  rw [measureProb, measureProb, sum_filter, sum_filter, Fintype.sum_equiv idxProdEquiv
+    (fun q => if Pred (out' q) then
+      ‖(valueOracle step X (route (embedFalse v₀ i₀ ψT))).ofLp q‖ ^ 2 else 0)
+    (fun q => if Pred (read q.2.2.2) then
+      ‖(valueOracle step X (route (embedFalse v₀ i₀ ψT))).ofLp
+        (q.2.2.1, q.2.2.2, q.2.1, q.1.2.1, q.1.2.2, q.1.1)‖ ^ 2 else 0)
+    (fun ⟨_, _, _, _, _, _⟩ => rfl), Fintype.sum_prod_type]
+  refine sum_congr rfl fun p _ => ?_
+  rw [Fintype.sum_prod_type, Fintype.sum_bool]
+  have hf : ∑ x : ι × V, (if Pred (read x.2) then
+      ‖(valueOracle step X (route (embedFalse v₀ i₀ ψT))).ofLp
+        (x.1, x.2, false, p.2.1, p.2.2, p.1)‖ ^ 2 else 0) = 0 := by
+    refine sum_eq_zero fun x _ => ?_
+    simp only [valueOracle_apply, hslice_false, map_zero, WithLp.ofLp_zero, Pi.zero_apply,
+      norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, ite_self]
+  rw [hf, add_zero, Fintype.sum_prod_type]
+  have hj_zero : ∀ j : ι, j ≠ idx p →
+      ∑ vout : V, (if Pred (read vout) then
+        ‖(valueOracle step X (route (embedFalse v₀ i₀ ψT))).ofLp
+          (j, vout, true, p.2.1, p.2.2, p.1)‖ ^ 2 else 0) = 0 := fun j hj => by
+    refine sum_eq_zero fun vout _ => ?_
+    simp only [valueOracle_apply, hslice_true, hj.symm, ite_false, map_zero, WithLp.ofLp_zero,
+      Pi.zero_apply, norm_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow, ite_self]
+  rw [sum_eq_single (idx p) (fun j _ hj => hj_zero j hj) (fun h => absurd (mem_univ _) h)]
+  have hval_eq : ∑ vout : V, (if Pred (read vout) then
+      ‖(valueOracle step X (route (embedFalse v₀ i₀ ψT))).ofLp
+        (idx p, vout, true, p.2.1, p.2.2, p.1)‖ ^ 2 else 0) =
+      ‖ψT.ofLp p‖ ^ 2 *
+        measureProb (step (X (idx p)) (ket v₀)) (univ.filter fun vout => Pred (read vout)) := by
+    calc
+      ∑ vout : V, (if Pred (read vout) then
+          ‖(valueOracle step X (route (embedFalse v₀ i₀ ψT))).ofLp
+            (idx p, vout, true, p.2.1, p.2.2, p.1)‖ ^ 2 else 0)
+          = ∑ vout : V, if Pred (read vout) then
+              ‖ψT.ofLp p‖ ^ 2 * ‖(step (X (idx p)) (ket v₀)).ofLp vout‖ ^ 2 else 0 := by
+              refine sum_congr rfl fun vout _ => ?_
+              simp only [valueOracle_apply, hslice_true, ite_true, map_smul, PiLp.smul_apply,
+                smul_eq_mul, norm_mul, mul_pow]
+      _ = ‖ψT.ofLp p‖ ^ 2 * ∑ vout : V,
+            if Pred (read vout) then ‖(step (X (idx p)) (ket v₀)).ofLp vout‖ ^ 2 else 0 := by
+              rw [mul_sum]
+              refine sum_congr rfl fun vout _ => by split_ifs <;> ring
+      _ = ‖ψT.ofLp p‖ ^ 2 *
+            measureProb (step (X (idx p)) (ket v₀)) (univ.filter fun vout => Pred (read vout)) := by
+              rw [measureProb, sum_filter]
+  rw [hval_eq, hprob_step]
+  split_ifs <;> ring
 
-end TwoValueSim
+/-- Index-to-value `(T + 1)`-query simulation specialized to a permutation oracle `permStep π` on
+two values `a₀, a₁` distinguished at `v₀ : V`. -/
+theorem exists_sim_index_to_value_perm {ι V W α : Type*} [Fintype ι] [Fintype V] [Fintype W]
+    [Nonempty ι]
+    (π : α → Equiv.Perm V) (v₀ : V) (a₀ a₁ : α) (hne : π a₀ v₀ ≠ π a₁ v₀)
+    (U : ℕ → ValueState ι V W →ₗᵢ[ℂ] ValueState ι V W)
+    (ψ₀ : ValueState ι V W) (T : ℕ) (idx : ι × V × W → ι) :
+    ∃ (U' : ℕ → ValueState ι V (Bool × V × W × ι) →ₗᵢ[ℂ] ValueState ι V (Bool × V × W × ι))
+      (ψ₀' : ValueState ι V (Bool × V × W × ι)) (out' : ι × V × Bool × V × W × ι → α),
+      ‖ψ₀'‖ = ‖ψ₀‖ ∧
+        ∀ (X : ι → α), (∀ i : ι, X i = a₀ ∨ X i = a₁) →
+          ∀ (Pred : α → Prop) [DecidablePred Pred],
+          measureProb (runValue (permStep π) U' ψ₀' X (T + 1))
+              (univ.filter fun q => Pred (out' q)) =
+            measureProb (runValue (permStep π) U ψ₀ X T)
+              (univ.filter fun p => Pred (X (idx p))) := by
+  classical
+  let read : V → α := fun v => if v = π a₀ v₀ then a₀ else a₁
+  obtain ⟨U', ψ₀', out', hnorm, hsim⟩ :=
+    exists_sim_index_to_value (permStep π) v₀ read U ψ₀ T idx
+  refine ⟨U', ψ₀', out', hnorm, fun X hX Pred _ => hsim X (fun i => ?_) Pred⟩
+  have hket : permStep π (X i) (ket v₀) = ket (π (X i) v₀) := by
+    ext v
+    simp [permStep_apply, ket_apply, Equiv.symm_apply_eq]
+  rw [hket, measureProb_ket]
+  rcases hX i with hi | hi <;> simp [hi, read, hne.symm]
+
+end IndexToValue
 
 end Cslib.Quantum
