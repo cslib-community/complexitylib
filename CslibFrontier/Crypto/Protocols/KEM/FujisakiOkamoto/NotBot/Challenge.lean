@@ -1145,6 +1145,25 @@ theorem advantage_simGame_le [Fintype M] [Nonempty M]
             2 * (((qG : ℝ) + qH) * (2 : ℝ) ^ (-γ)) :=
   S.advantage_simFilterGame_le (fun _ _ _ => true) (fun _ _ _ _ _ _ _ => rfl) A hq hM hmsg hγ
 
+omit [DecidableEq M] [DecidableEq CT] in
+/-- Four-game triangle inequality bounding `advantage (g₀ false) (g₀ true)` via a middle game pair
+`(g₁ false, g₁ true)`. -/
+theorem advantage_four_le (g₀ g₁ : Bool → Game) {ε₀ εsim ε₁ : ℝ}
+    (h₀ : (Game.advantage (g₀ false) (g₁ false) : ℝ) ≤ ε₀)
+    (hsim : (Game.advantage (g₁ false) (g₁ true) : ℝ) ≤ εsim)
+    (h₁ : (Game.advantage (g₀ true) (g₁ true) : ℝ) ≤ ε₁) :
+    (Game.advantage (g₀ false) (g₀ true) : ℝ) ≤ ε₀ + εsim + ε₁ := by
+  have htri : (Game.advantage (g₀ false) (g₀ true) : ℝ) ≤
+      Game.advantage (g₀ false) (g₁ false) +
+        Game.advantage (g₁ false) (g₁ true) +
+        Game.advantage (g₀ true) (g₁ true) := by
+    rw [Game.advantage_comm (g₀ true)]
+    have h := (Game.advantage_triangle (g₀ false) (g₁ false) (g₀ true)).trans
+      (add_le_add le_rfl (Game.advantage_triangle (g₁ false) (g₁ true) (g₀ true)))
+    rw [← add_assoc] at h
+    exact_mod_cast h
+  exact htri.trans (add_le_add (add_le_add h₀ hsim) h₁)
+
 end Scheme
 
 end Cslib.Crypto.Protocols.FujisakiOkamoto

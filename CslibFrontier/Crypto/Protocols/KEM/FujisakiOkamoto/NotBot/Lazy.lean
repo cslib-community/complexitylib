@@ -64,19 +64,19 @@ abbrev Tables (M R CT K : Type) : Type :=
 
 /-- `coupledHashH` on represented tables, answered with `RandomOracle.answer`. -/
 @[expose] noncomputable def answerHashH (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (x : Bool × M × CT) : StateT (Tables M R CT K) PMF K := fun t =>
+    (x : Bool × M × CT) : StateT (Tables M R CT K) PMF K := fun (tG, tH, tQ) =>
   match x with
   | (false, m, c) =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).bind fun y =>
+    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m tG).bind fun y =>
       if S.pke.encDet pk m y.1 = c ∧ S.pke.dec sk c = some m then
-        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c t.2.2).map
-          fun z => (z.1, (y.2, t.2.1, z.2))
+        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c tQ).map
+          fun z => (z.1, (y.2, tH, z.2))
       else
-        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m, c) t.2.1).map
-          fun z => (z.1, (y.2, z.2, t.2.2))
+        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m, c) tH).map
+          fun z => (z.1, (y.2, z.2, tQ))
   | (true, m, c) =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, m, c) t.2.1).map
-      fun z => (z.1, (t.1, z.2, t.2.2))
+    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, m, c) tH).map
+      fun z => (z.1, (tG, z.2, tQ))
 
 /-- `coupledHandler` on represented tables, answered with `RandomOracle.answer`. -/
 private noncomputable def answerHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
@@ -239,11 +239,12 @@ abbrev FullTables (M R CT K : Type) : Type :=
   (M → R) × (Bool × M × CT → K) × (CT → K)
 
 /-- Complete the three represented tables independently. -/
-@[expose] noncomputable def completeTables (S : Scheme PK SK M R CT K) (t : Tables M R CT K) :
-    PMF (FullTables M R CT K) :=
-  (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins) t.1).bind fun G =>
-  (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) t.2.1).bind fun H =>
-  (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) t.2.2).map fun Q => (G, H, Q)
+@[expose] noncomputable def completeTables (S : Scheme PK SK M R CT K) :
+    Tables M R CT K → PMF (FullTables M R CT K)
+  | (tG, tH, tQ) =>
+    (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins) tG).bind fun G =>
+    (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
+    (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).map fun Q => (G, H, Q)
 
 /-- `eagerCoupledHandler` reading its tables from the state. -/
 private noncomputable def eagerStateHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)

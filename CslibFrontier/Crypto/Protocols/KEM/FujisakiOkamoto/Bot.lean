@@ -696,23 +696,24 @@ private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {
         (S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 pk sk cStar (.decaps c)).map (·, T))
       (ENNReal.ofReal ((2 : ℝ) ^ (-γ)))
     dsimp only [answerCachedBotHandler, eagerCoupledBotHandler, decT]
-    by_cases hc : c = cStar
-    · simp only [hc, ↓reduceIte]
-      suffices h : (PMF.pure (none, (tG, tH, tQ))).bind
+    have hnone_sim : CloseTo
+        ((PMF.pure (none, (tG, tH, tQ))).bind
+          fun x : Option K × Tables M R CT K => (S.completeTables x.2).map (x.1, ·))
+        ((S.completeTables (tG, tH, tQ)).bind
+          fun T => (PMF.pure (none : Option K)).map (·, T))
+        (ENNReal.ofReal ((2 : ℝ) ^ (-γ))) := by
+      have h : (PMF.pure (none, (tG, tH, tQ))).bind
           (fun x : Option K × Tables M R CT K => (S.completeTables x.2).map (x.1, ·)) =
         (S.completeTables (tG, tH, tQ)).bind
-          (fun T => (PMF.pure (none : Option K)).map (·, T)) by
-        rw [h]; exact (CloseTo.refl _).mono zero_le
-      simp only [pmf_norm, PMF.map]
+          (fun T => (PMF.pure (none : Option K)).map (·, T)) := by
+        simp only [pmf_norm, PMF.map]
+      rw [h]; exact (CloseTo.refl _).mono zero_le
+    by_cases hc : c = cStar
+    · simp only [hc, ↓reduceIte]
+      exact hnone_sim
     · simp only [hc, ↓reduceIte]
       cases hdec : S.pke.dec sk c with
-      | none =>
-        suffices h : (PMF.pure (none, (tG, tH, tQ))).bind
-            (fun x : Option K × Tables M R CT K => (S.completeTables x.2).map (x.1, ·)) =
-          (S.completeTables (tG, tH, tQ)).bind
-            (fun T => (PMF.pure (none : Option K)).map (·, T)) by
-          rw [h]; exact (CloseTo.refl _).mono zero_le
-        simp only [pmf_norm, PMF.map]
+      | none => exact hnone_sim
       | some m' =>
         dsimp only
         cases ht : tG m' with
@@ -776,8 +777,8 @@ private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {
           rw [hL, hR]
           refine (closeTo_map_of_eq_off (S.completeTables (tG, tH, tQ)) _ _
             {T | S.pke.encDet pk m' (T.1 m') = c} (fun T hT => ?_)).mono ?_
-          · simp at hT
-            simp [hT]
+          · have hT' : S.pke.encDet pk m' (T.1 m') ≠ c := hT
+            simp [hT']
           · have hmap := S.completeTables_map_eval_at_of_none tG tH tQ m' ht
             have hmeas : (S.completeTables (tG, tH, tQ)).toOuterMeasure
                 {T | S.pke.encDet pk m' (T.1 m') = c} =
@@ -969,6 +970,20 @@ def romBotCpaReduction (S : Scheme PK SK M R CT K)
     (A : ROAdversary PK M R CT K) (m0 m1 : M) : PK → CT → ProbComp Bool :=
   S.romFilterCpaReduction (simBotCheck S.pke) A m0 m1
 
+private theorem simBotCheck_eq_true_iff (P : ExplicitCoinPKE PK SK M R CT) (pk : PK)
+    (L : List (M × R)) (c : CT) :
+    simBotCheck P pk L c = true ↔
+      ∃ m r, L.lookup m = some r ∧ P.encDet pk m r = c := by
+  simp only [simBotCheck, List.any_eq_true, Prod.exists]
+  constructor
+  · rintro ⟨m, _, -, h⟩
+    cases hlook : L.lookup m with
+    | none => simp [hlook] at h
+    | some r => exact ⟨m, r, hlook, by simpa [hlook] using h⟩
+  · rintro ⟨m, r, hlook, henc⟩
+    obtain ⟨l₁, l₂, hlist, -⟩ := List.lookup_eq_some_iff.mp hlook
+    exact ⟨m, r, by simp [hlist], by simp [hlook, henc]⟩
+
 /-- On any state satisfying `GoodCache`, the secret-key decapsulation check
 `cachedCoupledBotCheck` agrees with the keyless check `simBotCheck`. -/
 private theorem cachedCoupledBotCheck_eq_simBotCheck_of_goodCache (S : Scheme PK SK M R CT K)
@@ -976,7 +991,8 @@ private theorem cachedCoupledBotCheck_eq_simBotCheck_of_goodCache (S : Scheme PK
     (hgood : GoodCache S.pke pk sk st) :
     cachedCoupledBotCheck S.pke pk sk st.gCache c = simBotCheck S.pke pk st.gCache c := by
   apply Bool.eq_iff_iff.mpr
-  simp only [cachedCoupledBotCheck, simBotCheck, List.any_eq_true, Prod.exists]
+  rw [simBotCheck_eq_true_iff]
+  simp only [cachedCoupledBotCheck]
   constructor
   · intro h
     cases hdec : S.pke.dec sk c with
@@ -985,18 +1001,11 @@ private theorem cachedCoupledBotCheck_eq_simBotCheck_of_goodCache (S : Scheme PK
       simp only [hdec] at h
       cases hlook : st.gCache.lookup m' with
       | none => simp [hlook] at h
-      | some r' =>
-        obtain ⟨l₁, l₂, hlist, -⟩ := List.lookup_eq_some_iff.mp hlook
-        exact ⟨m', r', by simp [hlist], by simpa [hlook] using h⟩
-  · rintro ⟨m', _, -, h⟩
-    cases hlook : st.gCache.lookup m' with
-    | none => simp [hlook] at h
-    | some r' =>
-      simp only [hlook, decide_eq_true_eq] at h
-      obtain ⟨l₁, l₂, hlist, -⟩ := List.lookup_eq_some_iff.mp hlook
-      have hmem : (m', r') ∈ st.gCache := by simp [hlist]
-      have hdec : S.pke.dec sk c = some m' := h ▸ hgood (m', r') hmem
-      simp [hdec, hlook, h]
+      | some r' => exact ⟨m', r', hlook, by simpa [hlook] using h⟩
+  · rintro ⟨m', r', hlook, henc⟩
+    obtain ⟨l₁, l₂, hlist, -⟩ := List.lookup_eq_some_iff.mp hlook
+    have hdec : S.pke.dec sk c = some m' := henc ▸ hgood (m', r') (by simp [hlist])
+    simp [hdec, hlook, henc]
 
 /-- **Correctness hop for `FO^⊥`**: for an adversary making at most `qG` queries to `G` and `qH`
 queries to `H` against a `δ`-correct PKE, `cachedCoupledBotGame` and `simBotGame` have
@@ -1017,36 +1026,22 @@ private theorem simBotCheck_ens (S : Scheme PK SK M R CT K) (pk : PK) (mStar : M
     (hL : LookupNoneOr mStar rStar L) :
     simBotCheck S.pke pk (ens mStar rStar L) c = simBotCheck S.pke pk L c := by
   apply Bool.eq_iff_iff.mpr
-  simp only [simBotCheck, List.any_eq_true, Prod.exists]
+  simp only [simBotCheck_eq_true_iff, lookup_ens]
   constructor
-  · rintro ⟨m, _, -, h⟩
-    rw [lookup_ens] at h
+  · rintro ⟨m, r, hlook, henc⟩
     by_cases hm : m = mStar
     · subst hm
-      simp only [↓reduceIte, decide_eq_true_eq] at h
-      exact absurd h.symm hc
-    · simp only [hm, ↓reduceIte] at h
-      cases hlook : L.lookup m with
-      | none => simp [hlook] at h
-      | some r =>
-        obtain ⟨l₁, l₂, hlist, -⟩ := List.lookup_eq_some_iff.mp hlook
-        exact ⟨m, r, by simp [hlist], by simpa [hlook] using h⟩
-  · rintro ⟨m, _, -, h⟩
-    cases hlook : L.lookup m with
-    | none => simp [hlook] at h
-    | some r =>
-      simp only [hlook, decide_eq_true_eq] at h
-      have hm : m ≠ mStar := by
-        rintro rfl
-        rcases hL with hnone | hsome
-        · rw [hnone] at hlook; cases hlook
-        · rw [hsome] at hlook
-          cases hlook
-          exact hc h.symm
-      have hlook' : (ens mStar rStar L).lookup m = some r := by
-        simp only [lookup_ens, hm, ↓reduceIte, hlook]
-      obtain ⟨l₁, l₂, hlist, -⟩ := List.lookup_eq_some_iff.mp hlook'
-      exact ⟨m, r, by simp [hlist], by simp [hlook', h]⟩
+      simp only [↓reduceIte, Option.some.injEq] at hlook
+      exact absurd (hlook ▸ henc).symm hc
+    · simp only [hm, ↓reduceIte] at hlook
+      exact ⟨m, r, hlook, henc⟩
+  · rintro ⟨m, r, hlook, henc⟩
+    have hm : m ≠ mStar := by
+      rintro rfl
+      rcases hL with hnone | hsome
+      · rw [hnone] at hlook; cases hlook
+      · rw [hsome] at hlook; cases hlook; exact hc henc.symm
+    exact ⟨m, r, by simp [hm, hlook], henc⟩
 
 /-- **Challenge hop for `FO^⊥`**: if the message sampler is uniform on a message space with at
 least two elements and the PKE is `γ`-spread, then for every adversary making at most `qG` queries
@@ -1119,21 +1114,10 @@ theorem indCcaBotAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [F
   have hF := S.advantage_eagerIndCcaBotGame_simBotGame_le A hq hδ hγ false
   have hT := S.advantage_eagerIndCcaBotGame_simBotGame_le A hq hδ hγ true
   rw [indCcaBotAdvantage_eq_eager]
-  have htri : (Game.advantage (S.eagerIndCcaBotGame A false) (S.eagerIndCcaBotGame A true) : ℝ) ≤
-      Game.advantage (S.eagerIndCcaBotGame A false) (ProbComp.eval (S.simBotGame A false)) +
-        Game.advantage (ProbComp.eval (S.simBotGame A false))
-          (ProbComp.eval (S.simBotGame A true)) +
-        Game.advantage (S.eagerIndCcaBotGame A true) (ProbComp.eval (S.simBotGame A true)) := by
-    rw [Game.advantage_comm (S.eagerIndCcaBotGame A true)]
-    have h := (Game.advantage_triangle (S.eagerIndCcaBotGame A false)
-      (ProbComp.eval (S.simBotGame A false)) (S.eagerIndCcaBotGame A true)).trans
-      (add_le_add le_rfl (Game.advantage_triangle (ProbComp.eval (S.simBotGame A false))
-        (ProbComp.eval (S.simBotGame A true)) (S.eagerIndCcaBotGame A true)))
-    rw [← add_assoc] at h
-    exact_mod_cast h
   have hcard : (0 : ℝ) < Fintype.card M := by exact_mod_cast Fintype.card_pos
-  calc _ ≤ _ := htri
-    _ ≤ _ := add_le_add (add_le_add hF hsim) hT
+  calc _ ≤ _ :=
+        advantage_four_le (S.eagerIndCcaBotGame A) (fun b => ProbComp.eval (S.simBotGame A b))
+          hF hsim hT
     _ = _ := by field_simp; ring
 
 end Scheme
