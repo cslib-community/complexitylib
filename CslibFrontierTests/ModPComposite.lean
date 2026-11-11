@@ -21,7 +21,8 @@ example (A B : Set α) (hA : A ∈ ModP 6 enc) (hB : B ∈ ModP 6 enc) : A ∪ B
 
 example : ModP 12 enc = ModP 6 enc := by
   have hk : 12 ≠ 0 := by decide
-  have h : ModP 12 enc = ModP (∏ p ∈ (12 : ℕ).primeFactors, p) enc := ModP_eq_ModP_prod_primeFactors hk
+  have h : ModP 12 enc = ModP (∏ p ∈ (12 : ℕ).primeFactors, p) enc :=
+    ModP_eq_ModP_prod_primeFactors hk
   -- 12.primeFactors is {2, 3}, product is 6
   have h_prod : (∏ p ∈ (12 : ℕ).primeFactors, p) = 6 := by
     have h_factors : (12 : ℕ).primeFactors = {2, 3} := by
