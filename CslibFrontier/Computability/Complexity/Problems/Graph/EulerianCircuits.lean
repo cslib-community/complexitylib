@@ -51,25 +51,30 @@ namespace Cslib.Complexity.Graph
 open Turing MultiTapeTM
 
 /-- Out-degree of `v` in the valid-arc multidigraph `G.validArcs`. -/
+@[expose]
 def outdeg (G : Graph) (v : ℕ) : ℕ :=
   G.validArcs.countP fun e => decide (e.1 = v)
 
 /-- In-degree of `v` in the valid-arc multidigraph `G.validArcs`. -/
+@[expose]
 def indeg (G : Graph) (v : ℕ) : ℕ :=
   G.validArcs.countP fun e => decide (e.2 = v)
 
 /-- Boolean check that every declared vertex of `G` has equal out-degree and in-degree in
 `G.validArcs`. -/
+@[expose]
 def isBalancedBool (G : Graph) : Bool :=
   G.distinctVertices.all fun v => decide (G.outdeg v = G.indeg v)
 
 /-- Duplicate-free list of declared vertices of `G` with at least one outgoing arc in
 `G.validArcs`. -/
+@[expose]
 def activeVertices (G : Graph) : List ℕ :=
   G.distinctVertices.filter fun v => decide (G.outdeg v ≠ 0)
 
 /-- Number of Eulerian circuits of `(G.arcSrc, G.arcTgt)` starting with arc `eIdx` (`0` if
 `eIdx ≥ G.validArcs.length` or `G` is not balanced), computed via the BEST theorem. -/
+@[expose]
 def eulerianCircuitCount (G : Graph) (eIdx : ℕ) : ℕ :=
   if decide (eIdx < G.validArcs.length) && G.isBalancedBool then
     let r := (G.validArcs.getD eIdx (0, 0)).1
@@ -77,24 +82,18 @@ def eulerianCircuitCount (G : Graph) (eIdx : ℕ) : ℕ :=
       (G.activeVertices.map fun v => ((G.outdeg v - 1).factorial : ℤ)).prod.toNat
   else 0
 
-private theorem card_fin_filter_arc_eq (ys : List (ℕ × ℕ)) {xs : List ℕ} (p : ℕ × ℕ → ℕ)
+private theorem activeVertices_nodup (G : Graph) : G.activeVertices.Nodup :=
+  G.nodup_distinctVertices.filter _
+
+private theorem card_fin_filter_subtype_eq {xs : List ℕ} {ys : List (ℕ × ℕ)} (p : ℕ × ℕ → ℕ)
     (hp : ∀ e ∈ ys, p e ∈ xs) (v : {x // x ∈ xs}) :
     (Finset.univ.filter fun i : Fin ys.length =>
       (⟨p ys[i], hp _ (List.getElem_mem i.isLt)⟩ : {x // x ∈ xs}) = v).card =
       ys.countP fun e => decide (p e = v.1) := by
-  induction ys with
-  | nil => simp
-  | cons b bs ih =>
-    have hbs : ∀ e ∈ bs, p e ∈ xs := fun e he => hp e (List.mem_cons_of_mem _ he)
-    simp only [Finset.card_filter, List.length_cons, Fin.sum_univ_succ, List.countP_cons,
-      Subtype.ext_iff, Fin.getElem_fin, add_comm]
-    have ih' := ih hbs
-    simp only [Finset.card_filter, Subtype.ext_iff] at ih'
-    rw [← ih']
-    by_cases hpb : p b = v.1 <;> simp [hpb]
-
-private theorem activeVertices_nodup (G : Graph) : G.activeVertices.Nodup :=
-  G.nodup_distinctVertices.filter _
+  rw [← card_fin_filter_getElem ys (fun e => decide (p e = v.1))]
+  congr 1
+  ext i
+  simp [Subtype.ext_iff]
 
 private theorem mem_activeVertices_of_validArc (G : Graph) (hbal : G.isBalancedBool = true)
     {e : ℕ × ℕ} (he : e ∈ G.validArcs) :
@@ -107,12 +106,6 @@ private theorem mem_activeVertices_of_validArc (G : Graph) (hbal : G.isBalancedB
     exact hbal e.2 (Graph.mem_distinctVertices.2 hv.2)
   refine ⟨List.mem_filter.2 ⟨Graph.mem_distinctVertices.2 hv.1, decide_eq_true (by omega)⟩,
     List.mem_filter.2 ⟨Graph.mem_distinctVertices.2 hv.2, decide_eq_true (by omega)⟩⟩
-
-private theorem prod_map_eq_prod_fin {α β : Type*} [CommMonoid β] (xs : List α) (f : α → β) :
-    (xs.map f).prod = ∏ i : Fin xs.length, f xs[i] := by
-  conv_lhs => rw [← List.ofFn_getElem (xs := xs)]
-  rw [List.map_ofFn, List.prod_ofFn]
-  rfl
 
 /-- **Polynomial-time BEST theorem evaluation**: `G.eulerianCircuitCount eIdx` equals the number
 of Eulerian circuits of `(G.arcSrc, G.arcTgt)` starting at arc `eIdx` (and `0` when `eIdx` is out
@@ -156,8 +149,8 @@ theorem eulerianCircuitCount_eq_natCard (G : Graph) (eIdx : ℕ) :
           (Finset.univ.filter fun e => srcAct e = v).card =
             (Finset.univ.filter fun e => tgtAct e = v).card := by
         intro v
-        rw [card_fin_filter_arc_eq G.validArcs Prod.fst (fun e h => (harcs e h).1) v,
-          card_fin_filter_arc_eq G.validArcs Prod.snd (fun e h => (harcs e h).2) v]
+        rw [card_fin_filter_subtype_eq Prod.fst (fun e h => (harcs e h).1) v,
+          card_fin_filter_subtype_eq Prod.snd (fun e h => (harcs e h).2) v]
         simp only [isBalancedBool, List.all_eq_true, decide_eq_true_eq] at hbalB
         exact hbalB v.1 ((List.mem_filter.1 v.2).1)
       have hpos_act : ∀ v : {v // v ∈ G.activeVertices}, ∃ e, srcAct e = v := by
@@ -182,14 +175,7 @@ theorem eulerianCircuitCount_eq_natCard (G : Graph) (eIdx : ℕ) :
         multiLaplacianCount_eq_natCard G.activeVertices_nodup (fun _ => Iff.rfl)
           G.validArcs harcs (harcs _ (List.getElem_mem he)).1
       let eAct : Fin G.activeVertices.length ≃ {v // v ∈ G.activeVertices} :=
-        Equiv.ofBijective
-          (fun i : Fin G.activeVertices.length =>
-            ⟨G.activeVertices[i], List.getElem_mem i.isLt⟩)
-          ⟨fun i j h => Fin.ext (G.activeVertices_nodup.getElem_inj_iff.1
-              (congrArg Subtype.val h)),
-            fun ⟨x, hx⟩ =>
-              let ⟨i, hi, hg⟩ := List.mem_iff_getElem.1 hx
-              ⟨⟨i, hi⟩, Subtype.ext hg⟩⟩
+        G.activeVertices_nodup.getEquiv G.activeVertices
       have hprod :
           (G.activeVertices.map fun v => ((G.outdeg v - 1).factorial : ℤ)).prod.toNat =
             ∏ v : {v // v ∈ G.activeVertices},
@@ -201,7 +187,7 @@ theorem eulerianCircuitCount_eq_natCard (G : Graph) (eIdx : ℕ) :
           rw [prod_map_eq_prod_fin, Nat.cast_prod, ← Equiv.prod_comp eAct]
           refine Finset.prod_congr rfl fun i _ => ?_
           have hi : (eAct i).1 = G.activeVertices[i] := rfl
-          rw [card_fin_filter_arc_eq G.validArcs Prod.fst (fun e h => (harcs e h).1) (eAct i), hi]
+          rw [card_fin_filter_subtype_eq Prod.fst (fun e h => (harcs e h).1) (eAct i), hi]
           rfl
         rw [hnat, Int.toNat_natCast]
       rw [hr_def, hcard_eq, hbest, harb, hprod]
@@ -216,8 +202,8 @@ theorem eulerianCircuitCount_eq_natCard (G : Graph) (eIdx : ℕ) :
         unfold outdeg indeg
         let vSub : {x // x ∈ G.1} := ⟨v, Graph.mem_distinctVertices.1 hv⟩
         rw [show v = vSub.1 from rfl,
-          ← card_fin_filter_arc_eq G.validArcs Prod.fst (fun e h => (mem_validArcs.1 h).2.1) vSub,
-          ← card_fin_filter_arc_eq G.validArcs Prod.snd (fun e h => (mem_validArcs.1 h).2.2) vSub]
+          ← card_fin_filter_subtype_eq Prod.fst (fun e h => (mem_validArcs.1 h).2.1) vSub,
+          ← card_fin_filter_subtype_eq Prod.snd (fun e h => (mem_validArcs.1 h).2.2) vSub]
         exact hl.card_filter_src_eq vSub
       exact (Nat.card_of_isEmpty).symm
   · simp [eulerianCircuitCount, he]

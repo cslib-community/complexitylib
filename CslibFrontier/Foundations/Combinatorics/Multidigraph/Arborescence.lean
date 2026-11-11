@@ -126,13 +126,9 @@ private theorem card_filter_eq_sum_card_filter {V E : Type*} [DecidableEq V] [Fi
     (Finset.univ.filter fun e => φ e = x).card =
       ∑ y : V, (Finset.univ.filter fun e => φ e = x ∧ ψ e = y).card := by
   classical
-  rw [← Finset.card_biUnion (fun y _ y' _ hne =>
-    Finset.disjoint_left.2 fun e he1 he2 => hne
-      ((Finset.mem_filter.1 he1).2.2.symm.trans (Finset.mem_filter.1 he2).2.2))]
-  congr 1
-  ext e
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_biUnion, exists_and_left,
-    exists_eq', and_true]
+  simpa only [Finset.filter_filter, Finset.mem_univ, and_true] using
+    (Finset.sum_card_fiberwise_eq_card_filter
+      (Finset.univ.filter fun e => φ e = x) Finset.univ ψ).symm
 
 /-- **Root independence of the arborescence count** ([Stanley2013], Corollary 10.3). In any finite
 balanced multidigraph (`∀ v, outdeg v = indeg v`), the number of spanning in-arborescences rooted

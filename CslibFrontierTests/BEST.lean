@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: local-only (test driver for the BEST theorem)
+
 import CslibFrontier.Foundations.Combinatorics.Multidigraph.BEST
 
 /-!
@@ -24,6 +27,8 @@ A single loop at `0` next to an isolated vertex `1` has one Eulerian circuit but
 arborescence, so the hypothesis that every vertex has an outgoing arc is needed. A single arc
 `0 → 1` is unbalanced and has no Eulerian circuit.
 -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.BEST
 
@@ -231,8 +236,11 @@ example :
   have hbal : ∀ v : Fin 2, (Finset.univ.filter fun e => rotSrc e = v).card =
       (Finset.univ.filter fun e => rotTgt e = v).card := by
     intro v; fin_cases v <;> decide
-  refine ⟨fun _ => rfl, Cslib.Multidigraph.natCard_isEulerianCircuit_eq rotSrc rotTgt 0 2,
+  refine ⟨fun h => ?_, Cslib.Multidigraph.natCard_isEulerianCircuit_eq rotSrc rotTgt 0 2,
     Cslib.Multidigraph.natCard_isInArborescence_eq rotSrc rotTgt hbal 0 1⟩
+  rw [Cslib.Multidigraph.IsEulerianCircuit.coe_equivRotate]
+  simp only
+  decide
 
 -- Root independence without positive out-degree: a loop at `0` plus an isolated vertex `1`.
 private def isoSrc (_ : Fin 1) : Fin 2 := 0
@@ -257,14 +265,26 @@ example :
         Cslib.Multidigraph.IsInArborescence unbalSrc unbalTgt 1 f} = 2 := by
   have h0 := Cslib.Multidigraph.det_laplacian_arcMatrix_submatrix_eq_natCard_isInArborescence
     unbalSrc unbalTgt ℤ 0
+  have : Subsingleton {v : Fin 2 // v ≠ 0} := ⟨fun ⟨a, ha⟩ ⟨b, hb⟩ => by
+    fin_cases a <;> fin_cases b <;>
+      first | exact absurd ha (by decide) | exact absurd hb (by decide) | rfl⟩
   have hdet0 : ((Cslib.Multidigraph.arcMatrix unbalSrc unbalTgt ℤ).laplacian.submatrix
       (Subtype.val : {v : Fin 2 // v ≠ 0} → Fin 2) Subtype.val).det = 1 := by
+    rw [Matrix.det_eq_elem_of_subsingleton _ ⟨1, by decide⟩, Matrix.submatrix_apply,
+      Matrix.laplacian_apply]
+    simp only [Cslib.Multidigraph.arcMatrix_apply]
     decide
   rw [hdet0] at h0
   have h1 := Cslib.Multidigraph.det_laplacian_arcMatrix_submatrix_eq_natCard_isInArborescence
     unbalSrc unbalTgt ℤ 1
+  have : Subsingleton {v : Fin 2 // v ≠ 1} := ⟨fun ⟨a, ha⟩ ⟨b, hb⟩ => by
+    fin_cases a <;> fin_cases b <;>
+      first | exact absurd ha (by decide) | exact absurd hb (by decide) | rfl⟩
   have hdet1 : ((Cslib.Multidigraph.arcMatrix unbalSrc unbalTgt ℤ).laplacian.submatrix
       (Subtype.val : {v : Fin 2 // v ≠ 1} → Fin 2) Subtype.val).det = 2 := by
+    rw [Matrix.det_eq_elem_of_subsingleton _ ⟨0, by decide⟩, Matrix.submatrix_apply,
+      Matrix.laplacian_apply]
+    simp only [Cslib.Multidigraph.arcMatrix_apply]
     decide
   rw [hdet1] at h1
   exact ⟨by exact_mod_cast h0.symm, by exact_mod_cast h1.symm⟩

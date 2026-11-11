@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: local-only (test driver for polynomial-time graph counting)
+
 import CslibFrontier.Computability.Complexity.Problems.Graph.WeightedSpanningTrees
 import CslibFrontier.Computability.Complexity.Problems.Graph.Arborescences
 import CslibFrontier.Computability.Complexity.Problems.Graph.EulerianCircuits
@@ -14,6 +17,8 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.EulerianCircuits
 Nonvacuous tests for `WeightedSpanningTrees`, `Arborescences`, and `EulerianCircuits`, checking
 exact counts via kernel reduction (`decide`) alongside their `ComputableInPolyTime` certificates.
 -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.MatrixTreePolyTime
 

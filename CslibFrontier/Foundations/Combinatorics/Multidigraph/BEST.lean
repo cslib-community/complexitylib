@@ -58,6 +58,8 @@ each vertex.
 * `Cslib.Multidigraph.natCard_isEulerianCircuit_eq_det_mul`: the BEST theorem with the number of
   arborescences given by the directed matrix-tree theorem.
 * `Cslib.Multidigraph.IsEulerianCircuit.equivRotate`,
+  `Cslib.Multidigraph.IsEulerianCircuit.coe_equivRotate`,
+  `Cslib.Multidigraph.IsEulerianCircuit.coe_equivRotate_symm`,
   `Cslib.Multidigraph.natCard_isEulerianCircuit_eq`,
   `Cslib.Multidigraph.natCard_isInArborescence_eq_of_isEulerianCircuit`: independence of the
   Eulerian-circuit count from the starting arc and root independence of the arborescence count
@@ -771,6 +773,20 @@ def IsEulerianCircuit.equivRotate [DecidableEq E] (e₀ e₁ : E) :
   invFun l := ⟨rotateTo e₀ l.1, isEulerianCircuit_rotateTo l.2⟩
   left_inv l := Subtype.ext (rotateTo_rotateTo l.2)
   right_inv l := Subtype.ext (rotateTo_rotateTo l.2)
+
+@[simp]
+theorem IsEulerianCircuit.coe_equivRotate [DecidableEq E] (e₀ e₁ : E)
+    (l : {l : List E // IsEulerianCircuit src tgt e₀ l}) :
+    (IsEulerianCircuit.equivRotate e₀ e₁ l : List E) =
+      l.1.drop (l.1.idxOf e₁) ++ l.1.take (l.1.idxOf e₁) := by
+  rfl
+
+@[simp]
+theorem IsEulerianCircuit.coe_equivRotate_symm [DecidableEq E] (e₀ e₁ : E)
+    (l : {l : List E // IsEulerianCircuit src tgt e₁ l}) :
+    ((IsEulerianCircuit.equivRotate e₀ e₁).symm l : List E) =
+      l.1.drop (l.1.idxOf e₀) ++ l.1.take (l.1.idxOf e₀) := by
+  rfl
 
 end Rotate
 

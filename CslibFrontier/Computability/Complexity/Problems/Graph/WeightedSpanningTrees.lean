@@ -81,6 +81,7 @@ abbrev toGraph (WG : WeightedGraph) : Graph :=
 
 /-- Total integer weight assigned by `WG` to the unordered pair of distinct vertices `u ≠ v`
 (`0` when `u = v`). -/
+@[expose]
 def pairWeight (WG : WeightedGraph) (u v : ℕ) : ℤ :=
   if u = v then 0
   else
@@ -103,6 +104,7 @@ theorem symWeight_mk (WG : WeightedGraph) (u v : ℕ) :
   Sym2.lift_mk _ _ _
 
 /-- Entry `(u, v)` of the integer weighted Laplacian of `WG`. -/
+@[expose]
 def weightedLaplacianEntry (WG : WeightedGraph) (u v : ℕ) : ℤ :=
   if u = v then
     (WG.toGraph.distinctVertices.map fun w => WG.pairWeight u w).sum
@@ -110,6 +112,7 @@ def weightedLaplacianEntry (WG : WeightedGraph) (u v : ℕ) : ℤ :=
 
 /-- Exact weighted spanning-tree sum of `WG` computed by evaluating the reduced weighted
 Laplacian determinant (`0` when `WG.vertices` is empty). -/
+@[expose]
 def weightedSpanningTreeCount (WG : WeightedGraph) : ℤ :=
   if WG.toGraph.distinctVertices.isEmpty then 0
   else
@@ -120,19 +123,8 @@ def weightedSpanningTreeCount (WG : WeightedGraph) : ℤ :=
 
 private theorem distinctVertices_eq_nil_iff {G : Graph} :
     G.distinctVertices = [] ↔ G.1 = [] := by
-  constructor
-  · intro h
-    cases hv : G.1 with
-    | nil => rfl
-    | cons a _ =>
-      have : a ∈ G.distinctVertices := Graph.mem_distinctVertices.2 (by simp [hv])
-      simp [h] at this
-  · intro h
-    cases hd : G.distinctVertices with
-    | nil => rfl
-    | cons a _ =>
-      have : a ∈ G.1 := Graph.mem_distinctVertices.1 (by simp [hd])
-      simp [h] at this
+  rw [← List.length_eq_zero_iff, Graph.length_distinctVertices, Finset.card_eq_zero,
+    List.toFinset_eq_empty_iff]
 
 private theorem pairWeight_eq_zero_of_not_adj {WG : WeightedGraph}
     {u v : {v // v ∈ WG.vertices}} (hnadj : ¬ WG.toGraph.induced.Adj u v) :
@@ -161,13 +153,13 @@ private lemma weightedLaplacianEntry_eq {WG : WeightedGraph} (u v : {v // v ∈ 
   · subst huv
     simp only [weightedLaplacianEntry, ↓reduceIte, SimpleGraph.weightedAdjMatrix_apply,
       SimpleGraph.irrefl, sub_zero]
-    rw [← Equiv.sum_comp WG.toGraph.distinctEquiv
+    rw [← Equiv.sum_comp WG.toGraph.vertexEquiv
         (fun x => if WG.toGraph.induced.Adj u x then WG.symWeight (Sym2.map Subtype.val s(u, x))
           else 0),
       sum_map_eq_sum_fin]
     refine Finset.sum_congr rfl fun i _ => ?_
     change WG.pairWeight u.1 WG.toGraph.distinctVertices[i] = _
-    rw [← Graph.distinctEquiv_val WG.toGraph i]
+    rw [← Graph.vertexEquiv_getElem WG.toGraph i]
     split_ifs with hadj
     · simp [symWeight_mk]
     · exact pairWeight_eq_zero_of_not_adj hadj

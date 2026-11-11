@@ -52,7 +52,7 @@ namespace Cslib.Complexity.Graph
 
 open Turing MultiTapeTM
 
-private theorem card_fin_filter_getElem {α : Type*} (xs : List α) (p : α → Bool) :
+theorem card_fin_filter_getElem {α : Type*} (xs : List α) (p : α → Bool) :
     (Finset.univ.filter fun i : Fin xs.length => p xs[i] = true).card = xs.countP p := by
   induction xs with
   | nil => simp
@@ -70,23 +70,16 @@ private theorem card_filter_fst_eq_sum_snd {V E : Type*} [Fintype V] [DecidableE
   have hsum :
       ∑ w : V, (Finset.univ.filter fun e => src e = u ∧ tgt e = w).card =
         (Finset.univ.filter fun e => src e = u).card := by
-    rw [← Finset.card_biUnion (fun w _ w' _ hne =>
-      Finset.disjoint_left.2 fun e he1 he2 => hne
-        ((Finset.mem_filter.1 he1).2.2.symm.trans (Finset.mem_filter.1 he2).2.2))]
-    congr 1
-    ext e
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_biUnion, exists_and_left,
-      exists_eq', and_true]
+    simpa only [Finset.filter_filter, Finset.mem_univ, and_true] using
+      Finset.sum_card_fiberwise_eq_card_filter
+        (Finset.univ.filter fun e => src e = u) Finset.univ tgt
   have hpart :
       (Finset.univ.filter fun e => src e = u ∧ tgt e ≠ u).card +
           (Finset.univ.filter fun e => src e = u ∧ tgt e = u).card =
         (Finset.univ.filter fun e => src e = u).card := by
-    rw [← Finset.card_union_of_disjoint (Finset.disjoint_left.2 fun e he1 he2 =>
-      (Finset.mem_filter.1 he1).2.2 (Finset.mem_filter.1 he2).2.2)]
-    congr 1
-    ext e
-    simp only [Finset.mem_union, Finset.mem_filter, Finset.mem_univ, true_and]
-    tauto
+    simpa only [Finset.filter_filter, ne_eq, not_not] using
+      Finset.card_filter_add_card_filter_not
+        (s := Finset.univ.filter fun e => src e = u) (fun e => tgt e ≠ u)
   omega
 
 /-! ### Simple-digraph spanning in-arborescences -/
@@ -98,6 +91,7 @@ def toDigraph (G : Graph) : Digraph {v // v ∈ G.1} where
   Adj u v := (u.1, v.1) ∈ G.2
 
 /-- Entry `(u, v)` of the out-degree integer Laplacian of `G.toDigraph`. -/
+@[expose]
 def digraphLaplacianEntry (G : Graph) (u v : ℕ) : ℤ :=
   if u = v then
     (G.distinctVertices.countP fun w =>
@@ -106,6 +100,7 @@ def digraphLaplacianEntry (G : Graph) (u v : ℕ) : ℤ :=
 
 /-- Number of spanning in-arborescences of `G.toDigraph` rooted at `r` (`0` if `r ∉ G.1`),
 computed via the reduced out-degree Laplacian determinant. -/
+@[expose]
 def digraphInArborescenceCount (G : Graph) (r : ℕ) : ℕ :=
   if G.distinctVertices.any fun v => decide (v = r) then
     let rest := G.distinctVertices.filter fun v => decide (v ≠ r)
@@ -141,23 +136,23 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
                 G.2.any fun e => decide (e.1 = u.1 ∧ e.2 = G.distinctVertices[i])) = true).card :=
         (card_fin_filter_getElem G.distinctVertices _).symm
       rw [hcard, Nat.cast_inj]
-      refine Finset.card_bij (fun i _ => G.distinctEquiv i) ?_ ?_ ?_
+      refine Finset.card_bij (fun i _ => G.vertexEquiv i) ?_ ?_ ?_
       · intro i hi
         simp only [Finset.mem_filter, Finset.mem_univ, true_and, Bool.and_eq_true,
           decide_eq_true_eq, any_eq_decide_mem] at hi ⊢
         refine ⟨?_, fun h =>
-          hi.1 ((Graph.distinctEquiv_val G i).symm.trans (congrArg Subtype.val h))⟩
-        change (u.1, (G.distinctEquiv i).1) ∈ G.2
-        rw [Graph.distinctEquiv_val]
+          hi.1 ((Graph.vertexEquiv_getElem G i).symm.trans (congrArg Subtype.val h))⟩
+        change (u.1, (G.vertexEquiv i).1) ∈ G.2
+        rw [Graph.vertexEquiv_getElem]
         exact hi.2
       · intro i _ j _ hij
-        exact G.distinctEquiv.injective hij
+        exact G.vertexEquiv.injective hij
       · intro w hw
         simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hw
-        obtain ⟨i, hi⟩ := G.distinctEquiv.surjective w
+        obtain ⟨i, hi⟩ := G.vertexEquiv.surjective w
         refine ⟨i, ?_, hi⟩
         have hval : G.distinctVertices[i] = w.1 :=
-          (Graph.distinctEquiv_val G i).symm.trans (congrArg Subtype.val hi)
+          (Graph.vertexEquiv_getElem G i).symm.trans (congrArg Subtype.val hi)
         simp only [Finset.mem_filter, Finset.mem_univ, true_and, Bool.and_eq_true,
           decide_eq_true_eq, any_eq_decide_mem, hval]
         exact ⟨fun h => hw.2 (Subtype.ext h), hw.1⟩
@@ -171,12 +166,9 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
           (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w ∧ w ≠ u).card +
               (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w ∧ w = u).card =
             (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w).card := by
-        rw [← Finset.card_union_of_disjoint (Finset.disjoint_left.2 fun w hw1 hw2 =>
-          (Finset.mem_filter.1 hw1).2.2 (Finset.mem_filter.1 hw2).2.2)]
-        congr 1
-        ext w
-        simp only [Finset.mem_union, Finset.mem_filter, Finset.mem_univ, true_and]
-        tauto
+        simpa only [Finset.filter_filter, ne_eq, not_not] using
+          Finset.card_filter_add_card_filter_not
+            (s := Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w) (fun w => w ≠ u)
       have hself :
           (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w ∧ w = u).card =
             if G.toDigraph.Adj u u then 1 else 0 := by
@@ -262,12 +254,14 @@ def arcTgt (G : Graph) (e : Fin G.validArcs.length) : {v // v ∈ G.1} :=
   ⟨G.validArcs[e].2, mem_validArcs_snd (List.getElem_mem e.isLt)⟩
 
 /-- Entry `(u, v)` of the out-degree integer Laplacian of the multidigraph with arc list `arcs`. -/
+@[expose]
 def multiLaplacianEntry (arcs : List (ℕ × ℕ)) (u v : ℕ) : ℤ :=
   if u = v then (arcs.countP fun e => decide (e.1 = u ∧ e.2 ≠ u) : ℤ)
   else -(arcs.countP fun e => decide (e.1 = u ∧ e.2 = v) : ℤ)
 
 /-- Determinant of the reduced multidigraph Laplacian on duplicate-free vertex list `vs` after
 deleting vertex `r`, converted to `ℕ`. -/
+@[expose]
 def multiLaplacianCount (vs : List ℕ) (arcs : List (ℕ × ℕ)) (r : ℕ) : ℕ :=
   let rest := vs.filter fun v => decide (v ≠ r)
   (Cslib.Circuits.Rational.detRows
@@ -275,6 +269,7 @@ def multiLaplacianCount (vs : List ℕ) (arcs : List (ℕ × ℕ)) (r : ℕ) : �
 
 /-- Number of spanning in-arborescences of the multidigraph `(G.arcSrc, G.arcTgt)` rooted at `r`
 (`0` if `r ∉ G.1`). -/
+@[expose]
 def multiInArborescenceCount (G : Graph) (r : ℕ) : ℕ :=
   if G.distinctVertices.any fun v => decide (v = r) then
     multiLaplacianCount G.distinctVertices G.validArcs r

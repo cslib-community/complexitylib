@@ -23,6 +23,9 @@ Shared bridge between list-tabulated integer matrices evaluated by
   matrix indexed by any type in bijection with the vertex list.
 * `Cslib.Complexity.detRows_filter_ne_eq`: `detRows` after filtering out a root vertex `r` equals
   the reduced submatrix determinant at `r`.
+* `Cslib.Complexity.prod_map_eq_prod_fin`, `Cslib.Complexity.sum_map_eq_sum_fin`: list map
+  product and sum rewritten as `Fin` big operators.
+* `Cslib.Complexity.Graph.vertexEquiv_getElem`: `G.vertexEquiv` indexing equation.
 * `Cslib.Complexity.computableInPolyTime_filter_ne`: filtering a vertex list to omit a computed
   vertex runs in polynomial time.
 * `Cslib.Complexity.computableInPolyTime_detRows_map`: building a vertex-indexed integer table and
@@ -69,16 +72,13 @@ theorem detRows_filter_ne_eq {vs : List ℕ} (hnd : vs.Nodup) {r : ℕ} (hr : r 
     intro v
     simp [rest]
   have hrest_nd : rest.Nodup := hnd.filter _
-  have hbij : Function.Bijective (fun i : Fin rest.length =>
-      (⟨⟨rest[i], ((hmem _).1 (List.getElem_mem _)).1⟩,
-        fun h => ((hmem _).1 (List.getElem_mem _)).2
-          (congrArg Subtype.val h)⟩ : {x : {v // v ∈ vs} // x ≠ ⟨r, hr⟩})) := by
-    refine ⟨fun i j h => Fin.ext (hrest_nd.getElem_inj_iff.1 (congrArg (fun x => x.1.1) h)), ?_⟩
-    rintro ⟨⟨v, hv⟩, hne⟩
-    have hv_rest : v ∈ rest := (hmem v).2 ⟨hv, fun h => hne (Subtype.ext h)⟩
-    obtain ⟨i, hi, hget⟩ := List.mem_iff_getElem.1 hv_rest
-    exact ⟨⟨i, hi⟩, Subtype.ext (Subtype.ext hget)⟩
-  let e : Fin rest.length ≃ {x : {v // v ∈ vs} // x ≠ ⟨r, hr⟩} := Equiv.ofBijective _ hbij
+  let e : Fin rest.length ≃ {x : {v // v ∈ vs} // x ≠ ⟨r, hr⟩} :=
+    (hrest_nd.getEquiv rest).trans
+      { toFun := fun v =>
+          ⟨⟨v.1, ((hmem v.1).1 v.2).1⟩, fun h => ((hmem v.1).1 v.2).2 (congrArg Subtype.val h)⟩
+        invFun := fun ⟨⟨v, hv⟩, hne⟩ => ⟨v, (hmem v).2 ⟨hv, fun h => hne (Subtype.ext h)⟩⟩
+        left_inv := fun _ => Subtype.ext rfl
+        right_inv := fun _ => Subtype.ext (Subtype.ext rfl) }
   exact detRows_map_eq e (M.submatrix Subtype.val Subtype.val) entry fun i j =>
     hM (e i).1 (e j).1 (e i).2 (e j).2
 
@@ -99,29 +99,20 @@ theorem detRows_filter_ne_equiv_eq {vs : List ℕ} (hnd : vs.Nodup)
     simpa only [Matrix.submatrix_apply] using hM u v hu hv]
   exact Matrix.det_submatrix_equiv_self eSub (M.submatrix Subtype.val Subtype.val)
 
-/-- Bijection between indices `Fin G.distinctVertices.length` and the declared vertices
-`{v // v ∈ G.1}` of a `Graph`. -/
-noncomputable def Graph.distinctEquiv (G : Graph) :
-    Fin G.distinctVertices.length ≃ {v // v ∈ G.1} :=
-  Equiv.ofBijective
-    (fun i : Fin G.distinctVertices.length =>
-      ⟨G.distinctVertices[i], Graph.mem_distinctVertices.1 (List.getElem_mem _)⟩)
-    ⟨fun i j h => Fin.ext (G.nodup_distinctVertices.getElem_inj_iff.1 (congrArg Subtype.val h)),
-      fun ⟨x, hx⟩ =>
-        let ⟨i, hi, hg⟩ := List.mem_iff_getElem.1 (Graph.mem_distinctVertices.2 hx)
-        ⟨⟨i, hi⟩, Subtype.ext hg⟩⟩
+/-- Rewrite the product of a function mapped over a list as a `Finset.prod` over `Fin xs.length`. -/
+@[to_additive
+  /-- Rewrite the sum of a function mapped over a list as a `Finset.sum` over `Fin xs.length`. -/]
+theorem prod_map_eq_prod_fin {α β : Type*} [CommMonoid β] (xs : List α) (f : α → β) :
+    (xs.map f).prod = ∏ i : Fin xs.length, f xs[i] := by
+  rw [← Fin.prod_univ_getElem (xs.map f)]
+  refine Finset.prod_equiv (Fin.castOrderIso (List.length_map f)).toEquiv (by simp) fun i _ => ?_
+  simp
 
-@[simp]
-theorem Graph.distinctEquiv_val (G : Graph) (i : Fin G.distinctVertices.length) :
-    (G.distinctEquiv i : ℕ) = G.distinctVertices[i] := by
-  unfold Graph.distinctEquiv
-  rfl
-
-/-- Rewrite the sum of a function mapped over a list as a `Finset.sum` over `Fin xs.length`. -/
-theorem sum_map_eq_sum_fin {α β : Type*} [AddCommMonoid β] (xs : List α) (f : α → β) :
-    (xs.map f).sum = ∑ i : Fin xs.length, f xs[i] := by
-  conv_lhs => rw [← List.ofFn_getElem (xs := xs)]
-  rw [List.map_ofFn, List.sum_ofFn]
+/-- Indexing equivalence `G.vertexEquiv` evaluates to `G.distinctVertices[i]`. -/
+theorem Graph.vertexEquiv_getElem (G : Graph) (i : Fin G.distinctVertices.length) :
+    (G.vertexEquiv i : ℕ) = G.distinctVertices[i] := by
+  rw [Graph.vertexEquiv_apply, List.getD_eq_getElem?_getD,
+    List.getElem?_eq_getElem i.isLt, Option.getD_some]
   rfl
 
 /-- Filtering a vertex list to remove a computed vertex runs in polynomial time. -/
