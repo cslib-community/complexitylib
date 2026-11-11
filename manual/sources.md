@@ -631,6 +631,11 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 
 Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
 
+<a id="goosetal22"></a>
+## goosetal22
+
+Mika Göös, Alexandros Hollender, Siddhartha Jain, Gilbert Maystre, William Pires, Robert Robere and Ran Tao. "Further Collapses in TFNP." *37th Computational Complexity Conference (CCC 2022)*, LIPIcs 234, 33:1–33:15, 2022. https://doi.org/10.4230/LIPIcs.CCC.2022.33 . Checked on 2026-11-10 against the arXiv TeX source of `arXiv:2202.07761v2` (https://arxiv.org/abs/2202.07761 , dated 20 May 2022): Section 1, Theorem 1 (`EOPL = PLS ∩ PPAD`) and Theorem 2 (`SOPL = PLS ∩ PPADS`); Section 2, Lemma 1 (`inj-PHP` and `bij-PHP` as `PPADS`- and `PPAD`-complete formulations); Section 3, Lemma 2 (the path-pigeonhole reduction `inj-PHP ≤ Path-inj-PHP_f`); Section 4, Lemma 3 (`SoD ∧ inj-PHP ≤ SoPL`); and Section 5, Lemma 4 (`SoPL ∧ bij-PHP ≤ EoPL`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLineCollapse.lean` implements Lemma 4 directly from `SOPL` and `PPAD` (`SOPL_inter_PPAD_subset_EOPL`, `EOPL_eq_SOPL_inter_PPAD`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/SOPLCollapse.lean` implements Lemmas 1–3 directly on `PLS` and `PPADS` families over width `n₁(a) + 2(n₁(a) + n₂(a))` (`plsPpads_sink`, `mem_SOPL_of_localOpt_sinkOfLine`, `PLS_inter_PPADS_subset_SOPL`) and deduces Theorem 2 (`SOPL_eq_PLS_inter_PPADS`) and Theorem 1 (`EOPL_eq_PLS_inter_PPAD`). `UEOPL` and the query-model results of the paper are not formalized.
+
 <a id="grenet11"></a>
 ## grenet11
 
