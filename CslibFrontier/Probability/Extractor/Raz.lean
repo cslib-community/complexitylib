@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Lindsey
 public import CslibFrontier.Probability.Extractor.TwoSource
+public import CslibFrontier.Probability.StatisticalDistance
+public import CslibFrontier.Probability.PMF.Map
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Analysis.Convex.Jensen
 public import Mathlib.Analysis.Convex.Mul
@@ -36,7 +38,7 @@ public section
 
 namespace Cslib.Probability
 
-open Finset Cslib.Probability.PMF Matrix
+open Finset Cslib.Probability Cslib.Probability.PMF Matrix
 
 variable {ι Y : Type*} [Fintype ι] [Fintype Y] [DecidableEq ι]
 
@@ -53,11 +55,94 @@ def razExtractor (M : Y → Matrix ι ι (ZMod 2)) (x : (ι → ZMod 2) × (ι �
 
 /-- The statement that Raz's extractor is a two-source extractor.
 Defined as a `Prop` to avoid `sorry` before the proof is complete. -/
+
+theorem dist_bind_map_eq_abs_bias (p : PMF ((ι → ZMod 2) × (ι → ZMod 2))) (q : PMF Y)
+    (M : Y → Matrix ι ι (ZMod 2)) :
+    dist (p.bind (fun x => q.map (fun y => decide (razExtractor M x y = 1))))
+      (PMF.uniformOfFintype Bool) =
+    |∑ x, (p x).toReal * ∑ y, (q y).toReal * (-1 : ℝ) ^ (razExtractor M x y).val| / 2 := by
+  rw [dist_uniformOfFintype_bool]
+  have h1 : (p.bind (fun x => q.map (fun y => decide (razExtractor M x y = 1))) true).toReal =
+      ∑ x, (p x).toReal * ∑ y, if decide (razExtractor M x y = 1) = true then (q y).toReal else 0 := by
+    rw [PMF.bind_apply_toReal]
+    refine sum_congr rfl fun x _ => ?_
+    rw [PMF.map_apply_toReal]
+    simp_rw [eq_comm (a := true)]
+  rw [h1]
+  have hB : ∑ x, (p x).toReal * ∑ y, (q y).toReal * (-1 : ℝ) ^ (razExtractor M x y).val =
+      1 - 2 * ∑ x, (p x).toReal * ∑ y, if decide (razExtractor M x y = 1) = true
+        then (q y).toReal else 0 := by
+    calc ∑ x, (p x).toReal * ∑ y, (q y).toReal * (-1 : ℝ) ^ (razExtractor M x y).val
+      _ = ∑ x, (p x).toReal * ∑ y,
+          ((q y).toReal - 2 * (if decide (razExtractor M x y = 1) = true then (q y).toReal else 0)) := by
+        refine sum_congr rfl fun x _ => ?_
+        congr 1
+        refine sum_congr rfl fun y _ => ?_
+        by_cases h : razExtractor M x y = 1
+        · have hv : (razExtractor M x y).val = 1 := by rw [h]; rfl
+          rw [hv]
+          have hd : decide (razExtractor M x y = 1) = true := decide_eq_true h
+          simp [hd]
+          ring
+        · have hv : (razExtractor M x y).val = 0 := by
+            revert h
+            generalize razExtractor M x y = z
+            intro hz
+            revert hz
+            generalize eq : z.val = v
+            intro hz
+            have h_bound := ZMod.val_lt z
+            rw [eq] at h_bound
+            have h_cases : v = 0 ∨ v = 1 := by omega
+            rcases h_cases with rfl | rfl
+            · rfl
+            · exfalso
+              apply hz
+              apply ZMod.val_injective
+              rw [eq]
+              rfl
+          rw [hv]
+          have hd : decide (razExtractor M x y = 1) = false := decide_eq_false h
+          simp [hd]
+      _ = ∑ x, ( (p x).toReal * (∑ y, (q y).toReal) - (2 * (p x).toReal) *
+          (∑ y, if decide (razExtractor M x y = 1) = true then (q y).toReal else 0) ) := by
+        refine sum_congr rfl fun x _ => ?_
+        rw [sum_sub_distrib, mul_sub, ← mul_sum]
+        congr 1
+        ring
+      _ = (∑ x, (p x).toReal * (∑ y, (q y).toReal)) - ∑ x, (2 * (p x).toReal) *
+          (∑ y, if decide (razExtractor M x y = 1) = true then (q y).toReal else 0) := by
+        rw [sum_sub_distrib]
+      _ = (∑ x, (p x).toReal * (∑ y, (q y).toReal)) - 2 * ∑ x, (p x).toReal *
+          (∑ y, if decide (razExtractor M x y = 1) = true then (q y).toReal else 0) := by
+        congr 1
+        have hs : ∑ x, (2 * (p x).toReal) *
+            (∑ y, if decide (razExtractor M x y = 1) = true then (q y).toReal else 0) =
+            ∑ x, 2 * ((p x).toReal *
+            (∑ y, if decide (razExtractor M x y = 1) = true then (q y).toReal else 0)) := by
+          refine sum_congr rfl fun x _ => ?_
+          ring
+        rw [hs, ← mul_sum]
+      _ = 1 - 2 * ∑ x, (p x).toReal * ∑ y, if decide (razExtractor M x y = 1) = true
+          then (q y).toReal else 0 := by
+        have hq : ∀ x, (p x).toReal * ∑ y, (q y).toReal = (p x).toReal * 1 := by
+          intro x
+          congr 1
+          exact sum_toReal q
+        simp_rw [hq, mul_one, sum_toReal p]
+  have hS : (∑ x, (p x).toReal * ∑ y, if decide (razExtractor M x y = 1) = true
+      then (q y).toReal else 0) - 1 / 2 =
+      -(∑ x, (p x).toReal * ∑ y, (q y).toReal * (-1 : ℝ) ^ (razExtractor M x y).val) / 2 := by
+    linarith
+  rw [hS, abs_div, abs_neg]
+  congr 1
+  norm_num
+
 def RazExtractorTheorem (M : Y → Matrix ι ι (ZMod 2)) (t : ℕ) (δ : ℝ) (C : ℝ) (ε : ℝ)
     (_hM : IsRazMatrixFamily M t δ) (k₁ k₂ : ℝ)
     (_hk₁ : (1 / 2 + δ) * Fintype.card ι ≤ k₁)
     (_hk₂ : C * Real.log (Fintype.card ι) ≤ k₂) : Prop :=
-  IsTwoSourceExtractor (fun x y => (razExtractor M x y) = 1) k₁ k₂ ε
+  IsTwoSourceExtractor (fun x y => decide ((razExtractor M x y) = 1)) k₁ k₂ ε
 
 omit [Fintype Y] [DecidableEq ι] in
 theorem razExtractor_add_left (M : Y → Matrix ι ι (ZMod 2)) (x₁ x₁' x₂ : ι → ZMod 2) (y : Y) :
