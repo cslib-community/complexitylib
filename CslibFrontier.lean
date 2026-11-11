@@ -2615,6 +2615,7 @@ public import CslibFrontier.Computability.LogSpaceDerandomization.StochasticAtom
 public import CslibFrontier.Computability.LogSpaceDerandomization.TrueSampleMeans
 public import CslibFrontier.Computability.MCSP.AntiChecker
 public import CslibFrontier.Computability.MCSP.AntiChecker.Certificate
+public import CslibFrontier.Computability.MCSP.AntiChecker.Threshold
 public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.MCSP.FormulaMagnification
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
@@ -4270,6 +4271,8 @@ public import CslibFrontier.DataStructure.CountMin.Basic
 public import CslibFrontier.DataStructure.CountMin.LinearHash
 public import CslibFrontier.DataStructure.CountMin.Probability
 public import CslibFrontier.DataStructure.CountMin.Program
+public import CslibFrontier.DataStructure.Dictionary.CellProbe.HardDist
+public import CslibFrontier.DataStructure.Dictionary.CellProbe.MetaTree
 public import CslibFrontier.DataStructure.Dictionary.CuckooHashing
 public import CslibFrontier.DataStructure.Dictionary.DoubleHashing
 public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
@@ -4842,6 +4845,7 @@ public import CslibFrontier.Foundations.Data.BitString.Balanced
 public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.Foundations.Data.BitString.Binary
 public import CslibFrontier.Foundations.Data.BitString.Block
+public import CslibFrontier.Foundations.Data.BitString.BlockPower
 public import CslibFrontier.Foundations.Data.BitString.Combination
 public import CslibFrontier.Foundations.Data.BitString.Convolution
 public import CslibFrontier.Foundations.Data.BitString.Counter
@@ -5451,6 +5455,7 @@ public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.BijectiveGame
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
@@ -5502,6 +5507,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Composition
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.DomainInterpretation
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Encoding
+public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Horn
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.TransitiveClosure
@@ -5775,6 +5781,7 @@ public import CslibFrontier.Logics.SecondOrder.Encoding
 public import CslibFrontier.Logics.SecondOrder.Existential
 public import CslibFrontier.Logics.SecondOrder.Grounding
 public import CslibFrontier.Logics.SecondOrder.Horn
+public import CslibFrontier.Logics.SecondOrder.Horn.GuardElimination
 public import CslibFrontier.Logics.SecondOrder.Horn.LeastFixedPoint
 public import CslibFrontier.Logics.SecondOrder.Horn.Ordered
 public import CslibFrontier.Logics.SecondOrder.IndependentSet
@@ -5912,6 +5919,9 @@ public import CslibFrontier.Probability.HashFamily.Polynomial
 public import CslibFrontier.Probability.HashFamily.Uniform
 public import CslibFrontier.Probability.HashIsolation
 public import CslibFrontier.Probability.Hellinger
+public import CslibFrontier.Probability.HypothesisSelection.LeCamBirge
+public import CslibFrontier.Probability.HypothesisSelection.Likelihood
+public import CslibFrontier.Probability.HypothesisSelection.Tournament
 public import CslibFrontier.Probability.IID
 public import CslibFrontier.Probability.IID.CollisionCount
 public import CslibFrontier.Probability.IID.CrossCollisionCount
@@ -5992,6 +6002,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash
 public import CslibFrontier.Probability.PairwiseIndependentHash.Affine
 public import CslibFrontier.Probability.PairwiseIndependentHash.ComponentGap
 public import CslibFrontier.Probability.PairwiseIndependentHash.ConditionalAveraging
+public import CslibFrontier.Probability.PairwiseIndependentHash.Covering
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameChannel
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameSubstitution
 public import CslibFrontier.Probability.PairwiseIndependentHash.Mixing
