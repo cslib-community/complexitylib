@@ -544,7 +544,7 @@ Marshall L. Fisher, George L. Nemhauser, Laurence A. Wolsey. “An Analysis of A
 <a id="fominkratsch10"></a>
 ## fominkratsch10
 
-Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locator (Section 1.2, the dynamic program for TSP in the introductory chapter) was taken from secondary descriptions and review; the book body was not inspected in this pass.
+Fedor V. Fomin and Dieter Kratsch. *Exact Exponential Algorithms*. Texts in Theoretical Computer Science, An EATCS Series. Springer, 2010. https://doi.org/10.1007/978-3-642-16533-7 . Bibliographic metadata checked on 2026-11-07. The locator (Section 1.2, the dynamic program for TSP in the introductory chapter) was taken from secondary descriptions and review; the book body was not inspected in this pass. It is also cited at book level for search-tree branching vectors and disjoint clause-prefix branching on fixed-width SAT; no internal chapter, theorem, or page locators are claimed.
 
 <a id="fortnowsanthanam2011"></a>
 ## fortnowsanthanam2011
@@ -1381,6 +1381,11 @@ Mark A. Satterthwaite. "Strategy-Proofness and Arrow's Conditions: Existence and
 ## schoenebeck08
 
 Grant Schoenebeck. *Linear Level Lasserre Lower Bounds for Certain k-CSPs*. 49th Annual IEEE Symposium on Foundations of Computer Science (FOCS 2008), 593–602. https://doi.org/10.1109/FOCS.2008.74 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. On the same date worker w96-sos consulted the author-hosted copy https://schoeneb.people.si.umich.edu/papers/LasserreNew.pdf (19 pages, TeX output dated 6 December 2008) for Definition 5 (rounds of Lasserre), Definition 10 (width-`w` resolution on XOR formulas), Lemma 13 (the main lemma, p. 8) and Claim 14. In that copy Lemma 13 grants a feasible solution at the `w/2`-th round of Lasserre. An independent review reported `w/4` from a different version, so the constant is version-dependent. The library proves the sum-of-squares form of the lemma and does not construct Lasserre vectors. The typeset FOCS version was not consulted.
+
+<a id="schoening99"></a>
+## schoening99
+
+Uwe Schöning. *A Probabilistic Algorithm for k-SAT and Constraint Satisfaction Problems*. 40th Annual Symposium on Foundations of Computer Science (FOCS 1999), 410–414. https://doi.org/10.1109/SFFCS.1999.814612 . Bibliographic metadata taken from `references.bib` (`Schoening1999`); the paywalled conference proceedings were not directly inspected, and no internal theorem or page locators are claimed. Cited at paper level for the `3n`-step randomized local-search trial on width-`k` CNFs and its `(2 (k - 1) / k) ^ n` amplified decision algorithm (`(4 / 3) ^ n` for `3`-SAT).
 
 <a id="schrijver03"></a>
 ## schrijver03
