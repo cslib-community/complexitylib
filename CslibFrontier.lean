@@ -2621,6 +2621,8 @@ public import CslibFrontier.Computability.LogSpaceDerandomization.StochasticAtom
 public import CslibFrontier.Computability.LogSpaceDerandomization.TrueSampleMeans
 public import CslibFrontier.Computability.MCSP.AntiChecker
 public import CslibFrontier.Computability.MCSP.AntiChecker.Certificate
+public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle
+public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle.PolyTime
 public import CslibFrontier.Computability.MCSP.AntiChecker.Threshold
 public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.MCSP.FormulaMagnification
@@ -2937,6 +2939,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Polynomial
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Family
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.RotationMap.Tower
@@ -3014,6 +3017,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Op
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Rat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.StepMachine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.StepMachineComp
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.StreamFold
@@ -3851,7 +3855,6 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.FixedKey.Security
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Basic
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.CircuitEvaluation
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.CircuitEvaluation.PolyTime
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Decoding
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Decryption
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.DecryptionCircuit
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.DecryptionCircuit.Parameters
@@ -3862,7 +3865,6 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.DepthParameters
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.FullyHomomorphic
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Gadget
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Hiding
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Noise
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Parameters
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Sampling
@@ -3931,7 +3933,10 @@ public import CslibFrontier.Crypto.Computational.Kilian.NP
 public import CslibFrontier.Crypto.Computational.Kilian.Soundness
 public import CslibFrontier.Crypto.Computational.Kilian.Succinct
 public import CslibFrontier.Crypto.Computational.LWE.Basic
+public import CslibFrontier.Crypto.Computational.LWE.Decoding
 public import CslibFrontier.Crypto.Computational.LWE.DualRegev
+public import CslibFrontier.Crypto.Computational.LWE.DualRegev.Security
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.LWE.Regev
 public import CslibFrontier.Crypto.Computational.LWE.Regev.Security
 public import CslibFrontier.Crypto.Computational.Lattice.ShortestVector
@@ -5536,6 +5541,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.Projection
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Composition
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Reduction
 public import CslibFrontier.Logics.FirstOrder.Ordered.QFNumeric
+public import CslibFrontier.Logics.FirstOrder.Ordered.QFNumeric.Tuple
 public import CslibFrontier.Logics.FirstOrder.Ordered.Query
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Arithmetic
 public import CslibFrontier.Logics.FirstOrder.Ordered.Radix.Bit

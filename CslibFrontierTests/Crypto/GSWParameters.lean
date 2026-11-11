@@ -53,12 +53,12 @@ example : ¬ Negligible (fun n => NNReal.sqrt ((2 : ℝ≥0) ^ n / 2 ^ n)) := by
   simpa using not_negligible_const (by norm_num : (1 : ℝ≥0) ≠ 0)
 
 private def keyInputs (security : ℕ) :
-    KeyInputs (Parameters.dimension security) (Parameters.samples security)
+    LWE.KeyInputs (Parameters.dimension security) (Parameters.samples security)
       (Parameters.width security) :=
   ⟨fun _ => 5, fun _ _ => 3, fun _ => (Parameters.noise security : ℤ)⟩
 
 private def keys (security : ℕ) :=
-  (publicMatrix (keyInputs security).publicPart (keyInputs security).secret
+  (LWE.publicMatrixInt (keyInputs security).publicPart (keyInputs security).secret
     (keyInputs security).error, (keyInputs security).secret)
 
 private def coins (security : ℕ) :
@@ -69,10 +69,10 @@ private def ciphertext (security : ℕ) (message : Bool) :=
   encryptWithCoins (keys security).1 message (coins security)
 
 private theorem keyInputs_supported (security : ℕ) :
-    keyInputs security ∈ (ProbComp.eval (sampleKeyInputs (Parameters.dimension security)
+    keyInputs security ∈ (ProbComp.eval (LWE.sampleKeyInputs (Parameters.dimension security)
       (Parameters.samples security) (Parameters.width security)
         (Parameters.noise security))).support := by
-  rw [mem_support_sampleKeyInputs_iff]
+  rw [LWE.mem_support_sampleKeyInputs_iff]
   simp [keyInputs]
 
 -- Both nonzero signed endpoints occur in the actual error law at every security parameter.
@@ -87,10 +87,10 @@ example (security : ℕ) :
   exact_mod_cast (Parameters.noise_pos security).ne'
 
 private theorem keys_supported (security : ℕ) :
-    keys security ∈ (ProbComp.eval (keyGen (Parameters.dimension security)
+    keys security ∈ (ProbComp.eval (LWE.keyGen (Parameters.dimension security)
       (Parameters.samples security) (Parameters.width security)
         (Parameters.noise security))).support := by
-  simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [LWE.keyGen, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff]
   exact ⟨keyInputs security, keyInputs_supported security, rfl⟩
 
