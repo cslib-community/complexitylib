@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Crypto.Computational.LWE.PrimeModulus
 public import CslibFrontier.Crypto.Game.Hybrid
 
+public import Mathlib.Algebra.Field.ZMod
+
 /-!
 # Search to Decision LWE
 
@@ -110,7 +112,7 @@ def shiftErrorEquiv {m q : ℕ} [Fact (Nat.Prime q)] (e : Fin m → ZMod q)
   left_inv r := by
     ext i
     dsimp
-    have h : c⁻¹ * c = 1 := by apply inv_mul_cancel₀; convert hc
+    have h : c⁻¹ * c = 1 := by exact inv_mul_cancel₀ hc
     calc
       c⁻¹ * (e i + c * r i - e i) = c⁻¹ * (c * r i) := by rw [add_sub_cancel_left]
       _ = (c⁻¹ * c) * r i := by rw [← mul_assoc]
@@ -119,7 +121,7 @@ def shiftErrorEquiv {m q : ℕ} [Fact (Nat.Prime q)] (e : Fin m → ZMod q)
   right_inv r' := by
     ext i
     dsimp
-    have h : c * c⁻¹ = 1 := by apply mul_inv_cancel₀; convert hc
+    have h : c * c⁻¹ = 1 := by exact mul_inv_cancel₀ hc
     calc
       e i + c * (c⁻¹ * (r' i - e i)) = e i + (c * c⁻¹) * (r' i - e i) := by rw [← mul_assoc]
       _ = e i + 1 * (r' i - e i) := by rw [h]
