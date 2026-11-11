@@ -142,6 +142,8 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
+import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -2685,6 +2687,73 @@ register_result "nw-reconstruction-best-of" where
     through its negation, which has advantage at least delta. It makes at most k m 2^a + t \
     queries, and every hypothesis has the De Morgan circuit bound of one run. The running time \
     of the learner is not certified."
+
+register_result "cikk-amp-reconstruction" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning f from a learner for its \
+    amplification (f^k)^GL"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016,
+      theorem := "Theorem 4.3, with Claim 4.4 in its proof",
+      locator := "pp. 10:15–10:16; Claim 4.4 stated on p. 10:15" },
+    { paper := ImpagliazzoJaiswalKabanetsWigderson2010, theorem := unverified,
+      locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.learns_ampLearner,
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_ampLearner,
+    Cslib.MachineLearning.UniformLearning.eval_ampLearner
+  ]
+  scope := "The reconstruction for p = 2 in a library form, with the GF(2) amplification \
+    Amp(f) = (f^k)^GL. If a membership-query learner learns {Amp(f) | f in C} under the uniform \
+    distribution with error 1/2 - gamma and success probability p, then the black-box reduction \
+    that answers each of its queries with k queries to f, decodes its hypothesis with \
+    Goldreich-Levin and then with the direct-product decoder learns C with error eps and \
+    success probability p delta0^2/8, where delta0 = gamma/2^(K+3), when \
+    k <= 2 (gamma/2)^2 (2^K - 1), 2s <= k, s >= (64/eps) log(512/(eps delta0^2)) and \
+    m >= (16/delta0) log(8/eps). Claim 4.4, the Goldreich-Levin step, is \
+    dens_filter_glAmpCandidate_agree in HardnessAmplification/GLAmpDecode.lean, used in the \
+    proof. Deviations: (a) the Goldreich-Levin list has 2^K = O(k/gamma^2) \
+    entries, where the source's Goldreich-Rubinfeld-Sudan decoder has O(1/gamma^2); (b) each \
+    seed gives a deterministic decoder, and a delta0 fraction of the seeds has agreement at \
+    least delta0, by reverse Markov; (c) the success probability and the direct-product \
+    constants are ours, and p delta0^2/8 >= p gamma^6/(10368 k^2) for the least admissible K; \
+    (d) the four parameter conditions are hypotheses, where the source fixes \
+    k = ceil(3c (1/eps) ln(1/gamma)) + 1. The size s of the direct-product set is an explicit \
+    argument, and the seed distribution needs k > 0 and s <= k. The circuit size of the \
+    hypotheses is not bounded here, and the running time of the learner is not certified."
+
+register_result "cikk-learning-from-dense-test" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning f from a dense test that rejects \
+    the generator of its amplification, p = 2"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016,
+      theorem := "Theorem 5.1, with the composition from the proof of Theorem 3.2",
+      locator := "p. 10:19; proof of Theorem 3.2 on p. 10:11" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.learns_cikkLearner,
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner,
+    Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner_two_pow
+  ]
+  scope := "The learner of Theorem 5.1 for p = 2 in a per-function black-box form. Let a test on \
+    2^l-bit strings accept at least 2^(2^l) 2^(l+1-g) strings and no output of the \
+    Nisan-Wigderson generator of Amp(f) = (f^k)^GL, k = cikkK e g, on the binary polynomial \
+    design, for every f in C. Then cikkLearner, best-of selection over the amplification \
+    reconstruction (cikk-amp-reconstruction) of the Nisan-Wigderson learner of the negated test \
+    (nw-reconstruction-learner), learns C under the uniform distribution with membership \
+    queries, error 2^-e and confidence 1 - 2^-h, with at most \
+    (h+1) 2^(2l + 10g + 6e + 59) queries. Labelled deviations: (1) a single outer best-of \
+    selection replaces the source's per-stage confidence boosts (proof of Theorem 3.2), with \
+    the same result up to constants; (2) any density 2^(l+1-g) replaces largeness 1/5, and \
+    the Nisan-Wigderson advantage is delta/(2L) instead of 1/L; (3) error, confidence and k \
+    are powers of two with this library's constants, where the source has \
+    k = ceil(3c (1/eps) ln(1/gamma)) + 1, and the deviations of cikk-amp-reconstruction carry \
+    over; (4) the number of queries is certified, the hypothesis size is not part of this \
+    entry, and the running time is not certified; (5) p = 2 only; (6) the test is an \
+    arbitrary Boolean function, not a natural property, so the property-to-learner form of \
+    Theorem 5.1 and Corollary 5.4 is not included."
 
 register_result "chaitin-incompleteness" where
   title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"

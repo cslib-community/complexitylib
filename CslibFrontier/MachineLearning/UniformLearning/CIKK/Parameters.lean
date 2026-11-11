@@ -75,6 +75,14 @@ input length `k n + k` of `Amp(f)`.
   `Cslib.MachineLearning.UniformLearning.log_le_cikkSamples`: the conditions of the outer best-of
   selection.
 * `Cslib.MachineLearning.UniformLearning.cikkK_le`: `k ≤ 2 ^ (e + 10) (6g + 3e + 36)`.
+* `Cslib.MachineLearning.UniformLearning.cikkLogK_le`,
+  `Cslib.MachineLearning.UniformLearning.cikkK_le_two_pow`,
+  `Cslib.MachineLearning.UniformLearning.cikkMasks_le`,
+  `Cslib.MachineLearning.UniformLearning.cikkFixed_le`,
+  `Cslib.MachineLearning.UniformLearning.cikkTrials_le`,
+  `Cslib.MachineLearning.UniformLearning.cikkRuns_le`,
+  `Cslib.MachineLearning.UniformLearning.cikkSamples_le`: closed forms with exponents linear in
+  `e`, `g` and `h`, for bounds on the queries and hypothesis size of the learner.
 
 ## References
 
@@ -250,6 +258,49 @@ theorem cikkK_le (e g : ℕ) : cikkK e g ≤ 2 ^ (e + 10) * (6 * g + 3 * e + 36)
   rw [Nat.pred_succ] at hlt
   rw [show e + (m + 1) + 9 = e + 10 + m by omega, pow_add]
   exact Nat.mul_le_mul_left _ hlt.le
+
+/-- **Closed form of `log₂ k`**: `log₂ k ≤ 2e + g + 15`. -/
+theorem cikkLogK_le (e g : ℕ) : cikkLogK e g ≤ 2 * e + g + 15 := by
+  have hlt := Nat.lt_two_pow_self (n := e + g)
+  have h64 : 2 ^ (e + g + 6) = 64 * 2 ^ (e + g) := by ring
+  have hclog : Nat.clog 2 (6 * g + 3 * e + 36) ≤ e + g + 6 :=
+    Nat.clog_le_of_le_pow (by omega)
+  unfold cikkLogK
+  omega
+
+/-- **Closed form of `k`**: `k ≤ 2 ^ (2e + g + 15)`. -/
+theorem cikkK_le_two_pow (e g : ℕ) : cikkK e g ≤ 2 ^ (2 * e + g + 15) :=
+  Nat.pow_le_pow_right (by norm_num) (cikkLogK_le e g)
+
+/-- **Closed form of the mask count**: `K ≤ 3g + 2e + 17`. -/
+theorem cikkMasks_le (e g : ℕ) : cikkMasks e g ≤ 3 * g + 2 * e + 17 := by
+  have := cikkLogK_le e g
+  unfold cikkMasks
+  omega
+
+/-- **Closed form of the fixed set size**: `s ≤ 2 ^ (e + 7) (8g + 5e + 50)`. -/
+theorem cikkFixed_le (e g : ℕ) : cikkFixed e g ≤ 2 ^ (e + 7) * (8 * g + 5 * e + 50) := by
+  have := cikkLogK_le e g
+  exact Nat.mul_le_mul_left _ (by omega)
+
+/-- **Closed form of the trial count**: `m ≤ 2 ^ (4g + 2e + 24) (e + 4)`. -/
+theorem cikkTrials_le (e g : ℕ) : cikkTrials e g ≤ 2 ^ (4 * g + 2 * e + 24) * (e + 4) := by
+  have := cikkLogK_le e g
+  exact Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) (by omega))
+
+/-- **Closed form of the run count**: `b ≤ (h + 1) 2 ^ (9g + 4e + 43)`. -/
+theorem cikkRuns_le (e g h : ℕ) : cikkRuns e g h ≤ (h + 1) * 2 ^ (9 * g + 4 * e + 43) := by
+  have := cikkLogK_le e g
+  exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_right (by norm_num) (by omega))
+
+/-- **Closed form of the sample count**: `t ≤ 2 ^ (2e + 3) (9g + 4e + 2h + 46)`. -/
+theorem cikkSamples_le (e g h : ℕ) :
+    cikkSamples e g h ≤ 2 ^ (2 * e + 3) * (9 * g + 4 * e + 2 * h + 46) := by
+  have := cikkLogK_le e g
+  exact Nat.mul_le_mul_left _ (by omega)
+
+instance (e g : ℕ) : NeZero (cikkK e g) :=
+  ⟨by unfold cikkK; positivity⟩
 
 instance (e g h : ℕ) : NeZero (cikkRuns e g h) :=
   ⟨by unfold cikkRuns; positivity⟩
