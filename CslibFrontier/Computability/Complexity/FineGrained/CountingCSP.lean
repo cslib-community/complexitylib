@@ -132,9 +132,9 @@ polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_validDeclaredCSP (encRel : Rel ↪ List Bool) (k : ℕ) :
     ComputableInPolyTime
-      (fun x : DeclaredCSP Rel => validDeclaredCSP k x.1 x.2)
+      (fun x : DeclaredCSP Rel => validDeclaredCSP k x.numVars x.formula)
       (encDeclaredCSP encRel) encBool := by
-  have hN : ComputableInPolyTime (fun x : DeclaredCSP Rel => x.numVars) (encDeclaredCSP encRel) encNat := by fun_prop
+  have hN : ComputableInPolyTime (fun x : DeclaredCSP Rel => x.numVars) (encDeclaredCSP encRel) encNat := ComputableInPolyTime.unary_to_binary.comp (encDeclaredCSP_numVars_polyTime ComputableInPolyTime.id')
   have hlt : ComputableInPolyTime (fun p : DeclaredCSP Rel × ℕ => decide (p.2 < p.1.numVars)) (encPair (encDeclaredCSP encRel) encNat) encBool := by fun_prop
   have hvars : ComputableInPolyTime
       (fun x : DeclaredCSP Rel => x.formula.vars.all fun v => decide (v < x.numVars))
@@ -183,7 +183,7 @@ theorem exists_counter_of_polyTime_toDeclaredCSP {α : Type} {encA : α ↪ List
       (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (f x).numVars) *
         (((encA x).length : ℝ) + 1) ^ e) + c) ∧
       (∀ x, S x ≤ a * ((encA x).length + 1) ^ b) := by
-  let toCNFDecl (y : DeclaredCSP Rel) : DeclaredCSP SelfDualThreeSAT.SignPattern := { numVars := y.numVars, formula := y.formula.toCNFBounded k sem }
+  let toCNFDecl (y : DeclaredCSP Rel) : DeclaredCNF := { numVars := y.numVars, formula := y.formula.toCNFBounded k sem }
   have htoCNF : ComputableInPolyTime toCNFDecl
       (encDeclaredCSP encRel) (encDeclaredCNF) :=
     encDeclaredCNF_mk_polyTime (encDeclaredCSP_numVars_polyTime ComputableInPolyTime.id')
@@ -210,9 +210,9 @@ theorem exists_declaredCounter_of_forall (encRel : Rel ↪ List Bool) (k : ℕ)
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
       ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
-      (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
-        x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
-      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
+      (∀ x, count x = if validDeclaredCSP k x.numVars x.formula then
+        x.formula.modelCountOn sem (Finset.range x.numVars) else 0) ∧
+      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.numVars) *
         (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
       (∀ x, S x ≤ a * ((encDeclaredCSP encRel x).length + 1) ^ b) :=
   exists_counter_of_polyTime_toDeclaredCSP encRel k sem hsem
@@ -230,9 +230,9 @@ theorem exists_declaredCounter (encRel : Rel ↪ List Bool) (k : ℕ)
       (encPair encRel encBits) encBool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
       ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
-      (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
-        x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
-      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
+      (∀ x, count x = if validDeclaredCSP k x.numVars x.formula then
+        x.formula.modelCountOn sem (Finset.range x.numVars) else 0) ∧
+      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.numVars) *
         (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
       (∀ x, S x ≤ a * ((encDeclaredCSP encRel x).length + 1) ^ b) :=
   exists_declaredCounter_of_forall encRel k sem fun w _ =>
@@ -244,9 +244,9 @@ theorem exists_declaredCounter_of_finite [Finite Rel] (encRel : Rel ↪ List Boo
     (sem : Rel → List Bool → Bool) :
     ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b : ℕ),
       ComputableInO count (encDeclaredCSP encRel) encNat T S ∧
-      (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
-        x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
-      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.1) *
+      (∀ x, count x = if validDeclaredCSP k x.numVars x.formula then
+        x.formula.modelCountOn sem (Finset.range x.numVars) else 0) ∧
+      (∀ x, (T x : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale x.numVars) *
         (((encDeclaredCSP encRel x).length : ℝ) + 1) ^ e) + c) ∧
       (∀ x, S x ≤ a * ((encDeclaredCSP encRel x).length + 1) ^ b) :=
   exists_declaredCounter_of_forall encRel k sem fun _ _ => of_finite _
