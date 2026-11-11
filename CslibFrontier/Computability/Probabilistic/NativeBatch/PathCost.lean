@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative
 public import CslibFrontier.Probability.PMF.ObservedProcess.Trajectory
 import CslibFrontier.Probability.PMF.SupportTsum
+import CslibFrontier.Computability.Probabilistic.NativeBatch.History
 import Mathlib.MeasureTheory.Integral.Lebesgue.Countable
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.Tactic
@@ -35,6 +36,8 @@ This matches PMF semantics; it does not represent arbitrary nonatomic oracle law
 * `partialBill_eq_accrued`: actual accrued bills are the path series' partial sums.
 * `lintegral_totalBill`: total expected bill is the supremum of finite native expectations.
 * `lintegral_totalBill_complete`: the actual source budget identifies the complete expectation.
+* `totalBill_real`: a finite complete expectation gives a.s. finiteness, integrability and the
+  real integral.
 * `totalBill_integrable_budget`: real integrability derived from local source cost envelopes.
 -/
 
@@ -253,13 +256,35 @@ theorem lintegral_totalBill_complete (score : Record n → ℝ≥0∞) (hz : sco
       Nat.add_sub_cancel' (le_of_not_ge ht)
     rw [← he, expected_after_budget limits sample machine score hz world hi]
 
-/-- Finite source conditional invoice envelopes imply almost-sure finite actual
-path bills and real integrability, with the source turn-budget expectation bound.
-Unbounded realized reports and later silent divergence are allowed. -/
+/-- A finite complete native trace expectation makes the actual infinite-path bill
+almost surely finite and real integrable, with real integral equal to that expectation.
+This is the shared conversion used by every real-valued total-cost client. -/
+theorem totalBill_real (score : Record n → ℝ≥0∞) (hz : score none = 0)
+    (world : World k Control Unit (ServerState n Private) input)
+    (hi : Invariant limits world.memory)
+    (hf : Quantitative.expected limits sample machine score (limits.turns + 1) world ≠ ⊤) :
+    (∀ᵐ ω ∂pathMeasure limits sample machine world, totalBill score ω < ⊤) ∧
+    Integrable (fun ω => (totalBill score ω).toReal)
+      (pathMeasure limits sample machine world) ∧
+    (∫ ω, (totalBill score ω).toReal ∂pathMeasure limits sample machine world) =
+      (Quantitative.expected limits sample machine score (limits.turns + 1) world).toReal := by
+  have htotal := lintegral_totalBill_complete limits sample machine score hz world hi
+  have hm := measurable_totalBill (n := n) (k := k) (Private := Private) (Control := Control)
+    (input := input) score
+  have hf' : (∫⁻ ω, totalBill score ω ∂pathMeasure limits sample machine world) ≠ ⊤ := by
+    rw [htotal]; exact hf
+  have hae := ae_lt_top hm hf'
+  refine ⟨hae, integrable_toReal_of_lintegral_ne_top hm.aemeasurable hf', ?_⟩
+  rw [integral_toReal hm.aemeasurable hae, htotal]
+
+/-- Finite source conditional invoice envelopes at the reached turns below the source
+budget imply almost-sure finite actual path bills and real integrability, with the
+source turn-budget expectation bound. Unbounded realized reports and later silent
+divergence are allowed. -/
 theorem totalBill_integrable_budget (c : ℝ≥0)
     (world : World k Control Unit (ServerState n Private) input)
     (hi : Invariant limits world.memory)
-    (H : ∀ turn, ∀ o ∈
+    (H : ∀ turn < limits.turns, ∀ o ∈
       ((Quantitative.select limits sample machine (law limits sample machine turn world)).map
         (Quantitative.observe limits)).support, o.issued = true →
       Quantitative.conditionalMean limits sample machine (law limits sample machine turn world)
@@ -269,20 +294,11 @@ theorem totalBill_integrable_budget (c : ℝ≥0)
       (pathMeasure limits sample machine world) ∧
     (∫ ω, (totalBill charge ω).toReal ∂pathMeasure limits sample machine world) ≤
       (c : ℝ) * limits.turns := by
-  have hb : (∫⁻ ω, totalBill charge ω ∂pathMeasure limits sample machine world) ≤
-      (c : ℝ≥0∞) * limits.turns := by
-    rw [lintegral_totalBill]
-    apply iSup_le
-    intro turns
-    exact (Quantitative.cost_upper_budget limits sample machine c turns world hi
-      (fun turn _ => H turn)).1
-  have hfinite := ne_top_of_le_ne_top (ENNReal.mul_ne_top (by simp) (by simp)) hb
-  have hm := measurable_totalBill (n := n) (k := k) (Private := Private) (Control := Control)
-    (input := input) charge
-  have hae := ae_lt_top hm hfinite
-  refine ⟨hae, integrable_toReal_of_lintegral_ne_top hm.aemeasurable hfinite, ?_⟩
-  rw [integral_toReal hm.aemeasurable hae]
+  have hb := Quantitative.cost_upper_budget limits sample machine c limits.turns world hi H
+  rw [← History.final_expected_static limits sample machine world hi charge rfl] at hb
+  obtain ⟨hae, hint, heq⟩ := totalBill_real limits sample machine charge rfl world hi hb.2
+  refine ⟨hae, hint, heq.trans_le ?_⟩
   simpa only [ENNReal.toReal_mul, ENNReal.coe_toReal, ENNReal.toReal_natCast] using
-    ENNReal.toReal_mono (ENNReal.mul_ne_top (by simp) (by simp)) hb
+    ENNReal.toReal_mono (ENNReal.mul_ne_top (by simp) (by simp)) hb.1
 
 end Cslib.Probability.NativeBatch.PathCost

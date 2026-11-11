@@ -17,8 +17,7 @@ selection-only native competitors use the same fresh-invoice residual oracle,
 original encoded instance and seed. Their local computation is unbounded.
 The constructed invoice law is drawn independently of the residual index `J`
 and the preceding history. Universal lower accounting uses the derived primitive conditional
-price means;
-the two actual compiled strategies attain both upper alternatives. No integer
+price means; the two actual compiled strategies attain both upper alternatives. No integer
 price identity, integrability, termination or optimum conclusion is assumed.
 
 These equalities concern `FixedMeanInvoice`. Extending attained equalities to every

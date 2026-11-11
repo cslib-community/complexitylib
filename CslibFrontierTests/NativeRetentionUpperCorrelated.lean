@@ -236,11 +236,11 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
         · rw [he next hn]
         · simp [(PMF.apply_eq_zero_iff _ _).mpr hn]
       _ = _ := by simp [PMF.tsum_coe]
-  have Hcost : ∀ t, ∀ o ∈ ((select lim sampler program
+  have Hcost : ∀ t < lim.turns, ∀ o ∈ ((select lim sampler program
       (law lim sampler program t world)).map (Quantitative.observe lim)).support,
       o.issued = true → Quantitative.conditionalMean lim sampler program
         (law lim sampler program t world) o charge ≤ 4 := by
-    intro t o ho hi
+    intro t ht o ho hi
     unfold Quantitative.conditionalMean mean
     calc
       _ ≤ ∑' next,
@@ -270,13 +270,14 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
     (by norm_num) (by intro _; norm_num [lim]) (by norm_num [data, lim]) rfl (by decide)
     valid 1 1 (by norm_num [I, instanceOf, ground, data, List.range_succ])
     ⟨1, by norm_num⟩ (by norm_num) 4
-    (by simpa only [hrho] using Hprod) (fun t _ => Hcost t)
+    (by simpa only [hrho] using Hprod) Hcost
   have hpath := BatchPathCost.upper_controller (n := 2) 2 Unit lim sampler data () 1
     rfl (by decide) (by decide) (by norm_num) (by intro _; norm_num [lim])
     (by norm_num [data, lim]) rfl (by decide) valid 1 1
     (by norm_num [I, instanceOf, ground, data, List.range_succ])
-    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) (fun t _ => Hcost t)
+    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) Hcost
   obtain ⟨_, _, _, _, _, hpathBudget⟩ := hpath
+  -- `hpath` already gives integrability; this exercises the generic machine-level API too.
   obtain ⟨_, hpathIntegrable, _⟩ := PathCost.totalBill_integrable_budget lim sampler program
     4 world (initial_invariant lim ()) Hcost
   obtain ⟨hprogress, _, _, hbudget, _⟩ := h
@@ -289,7 +290,7 @@ example : ∃ (tapes : ℕ) (R : Type) (_ : Finite R)
     (by decide) (by decide) (by norm_num) (by intro _; norm_num [lim])
     (by norm_num [data, lim]) rfl (by decide) valid 1 1
     (by norm_num [I, instanceOf, ground, data, List.range_succ])
-    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) (fun t _ => Hcost t) 1 hbin
+    ⟨1, by norm_num⟩ (by norm_num) 4 (by simpa only [hrho] using Hprod) Hcost 1 hbin
   obtain ⟨_, _, hoptbudget, _⟩ := hopt
   have hlo := BatchOptimum.lower lim sampler data () valid 1 1 1 1 1
     (by intro q hq; have hq0 : q = 0 := by omega

@@ -78,16 +78,13 @@ theorem integrable_totalBill (P : Parameters z) (hz : 3 ≤ z) (p : Prices) (h :
     (∫ ω, (NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω).toReal
       ∂execution T points candidates P p) =
       min (∑ j, P.specialistCost j) (P.nearCost + P.missing.mean P.specialistCost) := by
-  have hm := NativeBatch.PathCost.measurable_totalBill (n := z + 1)
-    (k := controller.tapes) (Private := Unit) (Control := controller.Controls)
-    (input := encoding ⟨NativeResidualAttainment.input T points candidates, p⟩)
-    NativeBatch.Trace.charge
-  have he := lintegral_totalBill T points candidates P hz p h
-  have hf : (∫⁻ ω, NativeBatch.PathCost.totalBill NativeBatch.Trace.charge ω
-      ∂execution T points candidates P p) ≠ ⊤ := by rw [he]; exact ENNReal.ofReal_ne_top
-  have hae := ae_lt_top hm hf
-  refine ⟨hae, integrable_toReal_of_lintegral_ne_top hm.aemeasurable hf, ?_⟩
-  rw [integral_toReal hm.aemeasurable hae, he, ENNReal.toReal_ofReal]
+  have he := NativeResidualRealChoice.native_expected_cost T points candidates P hz p h
+  obtain ⟨hae, hint, heq⟩ := NativeBatch.PathCost.totalBill_real _ _ _ _ rfl _
+    (NativeBatch.initial_invariant _ ()) (he ▸ ENNReal.ofReal_ne_top)
+  refine ⟨hae, hint, ?_⟩
+  rw [execution, heq]
+  erw [he]
+  rw [ENNReal.toReal_ofReal]
   exact le_min (Finset.sum_nonneg (fun j _ => (P.specialist_pos j).le))
     (add_nonneg P.near_pos.le (Finset.sum_nonneg
       (fun j _ => mul_nonneg (P.missing.nonneg j) (P.specialist_pos j).le)))

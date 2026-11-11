@@ -40,7 +40,7 @@ constructed native controller; no total-cost conclusion is supplied. -/
 theorem upper_controller (width : ℕ) :
     let impl := BatchPlanner.controller n width
     let program := impl.program
-      ∀ (Private : Type) (limits : Limits n) (sample : Sampler n Private)
+    ∀ (Private : Type) (limits : Limits n) (sample : Sampler n Private)
         (data : GuardedStartup.Input) (seed : Private) (ell : ℝ≥0)
         (_ : data.startup.opportunities = n) (_ : 0 < width)
         (_ : data.startup.turns * width ≤ n)
@@ -54,17 +54,17 @@ theorem upper_controller (width : ℕ) :
       let I := instanceOf data.startup.system hx
       let parse := BatchReceipts.proposal data.startup.system
       ∀ (a r : ℕ) (_ : I.ground.card ≤ a * r) (p : Set.Icc (0 : ℝ) 1) (_ : 0 < (p : ℝ))
-        (c : ℝ≥0)
-        (_ : ∀ t < limits.turns, ∀ o ∈ ((select limits sample program
-          (law limits sample program t world)).map (Quantitative.observe limits)).support,
-          o.issued = true → ENNReal.ofReal p ≤ History.conditionalMean limits sample program
-            (law limits sample program t world) o
-            (fun h x => if AdaptiveSelection.productive I data.startup.system.rho parse a h x
-              then 1 else 0))
-        (_ : ∀ t < limits.turns, ∀ o ∈ ((select limits sample program
-          (law limits sample program t world)).map (Quantitative.observe limits)).support,
-          o.issued = true → Quantitative.conditionalMean limits sample program
-            (law limits sample program t world) o charge ≤ c),
+          (c : ℝ≥0)
+          (_ : ∀ t < limits.turns, ∀ o ∈ ((select limits sample program
+            (law limits sample program t world)).map (Quantitative.observe limits)).support,
+            o.issued = true → ENNReal.ofReal p ≤ History.conditionalMean limits sample program
+              (law limits sample program t world) o
+              (fun h x => if AdaptiveSelection.productive I data.startup.system.rho parse a h x
+                then 1 else 0))
+          (_ : ∀ t < limits.turns, ∀ o ∈ ((select limits sample program
+            (law limits sample program t world)).map (Quantitative.observe limits)).support,
+            o.issued = true → Quantitative.conditionalMean limits sample program
+              (law limits sample program t world) o charge ≤ c),
         ENNReal.ofReal (∫ j, (if r ≤ j then (1 : ℝ) else 0)
           ∂ProbabilityTheory.binomial limits.turns p) ≤
           (NativeUnboundedExecution.terminal program (environment limits sample) world).map
@@ -88,23 +88,17 @@ theorem upper_controller (width : ℕ) :
   let world : World impl.tapes impl.Controls Unit (ServerState n Private)
       (GuardedStartup.encoding data) :=
     ⟨program.initialConfig (GuardedStartup.encoding data), ⟨ConcurrentBatch.initial seed, []⟩⟩
-  let μ := PathCost.pathMeasure limits sample program world
   have hnum := BatchOutput.upper_controller (n := n) width Private limits sample data seed ell
     hn hw hc he hcut hd hbudget hallot hx a r hr p hp c Hprod Hcost
   obtain ⟨hcert, htail, hmean, hbudgetBill, hfinite⟩ := hnum
-  have htotal := PathCost.lintegral_totalBill_complete limits sample program charge rfl world
-    (initial_invariant limits seed)
-  change (∫⁻ ω, PathCost.totalBill charge ω ∂μ) = _ at htotal
-  have hm := PathCost.measurable_totalBill (n := n) (k := impl.tapes)
-    (Private := Private) (Control := impl.Controls) (input := GuardedStartup.encoding data) charge
-  have hf : (∫⁻ ω, PathCost.totalBill charge ω ∂μ) ≠ ⊤ := by rw [htotal]; exact hfinite
-  have hae := ae_lt_top hm hf
-  have hi := integrable_toReal_of_lintegral_ne_top hm.aemeasurable hf
+  obtain ⟨hae, hi, heq⟩ := PathCost.totalBill_real limits sample program charge rfl world
+    (initial_invariant limits seed) hfinite
   have hconvert (b : ℝ) (hb : 0 ≤ b)
       (H : Quantitative.expected limits sample program charge (limits.turns + 1) world ≤
         (c : ℝ≥0∞) * ENNReal.ofReal b) :
-      (∫ ω, (PathCost.totalBill charge ω).toReal ∂μ) ≤ (c : ℝ) * b := by
-    rw [integral_toReal hm.aemeasurable hae, htotal]
+      (∫ ω, (PathCost.totalBill charge ω).toReal
+        ∂PathCost.pathMeasure limits sample program world) ≤ (c : ℝ) * b := by
+    rw [heq]
     simpa only [ENNReal.toReal_mul, ENNReal.coe_toReal, ENNReal.toReal_ofReal hb] using
       ENNReal.toReal_mono (ENNReal.mul_ne_top (by simp) ENNReal.ofReal_ne_top) H
   refine ⟨hcert, hae, hi, hconvert _ ?_ htail, hconvert _ ?_ hmean, ?_⟩

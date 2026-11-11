@@ -951,7 +951,7 @@ when its numerical statement is already proved. The full objective in
 | Theorem 4, PDF pp. 10–11, arbitrary count vectors | `PartialCover.NativeExecution.vector_guarantee`, `external_source_law`; `NativeRetention.SourceEncoding.valid_toNative` | Covered: same native machine, original binary WSC/query interfaces, exact call multiplicities, certified tape-risk, sum-of-caps bill and oracle-only deadline, including zero calls and $q=0,1$. |
 | Theorem 4, PDF pp. 10–11, greedy algorithm and approximation factor | `PartialCover.GreedyNative.uniform_plan`, `risk_bill`; `PartialCover.NativeExecution.native_success`, `native_bill_le_riskOptimum`; `PartialCover.Asymptotics.fixed_failure`, `polynomial_failure` | Covered: native threshold/eligibility/cost/output composition, success and OPT-risk comparison, and $O(\log^2 n)$ / $O(\log n)$ corollaries for nonempty finite binary-rational inputs. |
 | Hardness remark after Theorem 4's proof, PDF p. 11 | No Set Cover approximation-hardness transfer | Blocked on [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335); this remark is distinct from Theorem 4's algorithmic statement. |
-| Lemma 2, PDF p. 11; App. A.4, pp. 15–16 | `AdaptiveSelection.binomial_le_completion` and finite conditional-history comparison APIs | Blocked on [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336) for the source’s varying-$p_t$ Poisson-binomial guarantee; finite homogeneous comparisons are present. The heterogeneous and measurable/unbounded comparison is tracked in [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). |
+| Lemma 2, PDF p. 11; App. A.4, pp. 15–16 | `AdaptiveSelection.binomial_le_completion` and finite conditional-history comparison APIs | Blocked on [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336) for the source’s varying-$p_t$ Poisson-binomial guarantee, including its heterogeneous and measurable/unbounded comparison; finite homogeneous comparisons are present. |
 | Theorem 5(1), PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOutput.upper_controller`, `BatchUpper.stopping_controller`, `BatchPathCost.upper_controller` | Covered for the named finite-opportunity block controller: certified decoded tape success, binomial deadline, survival-sum/mean/budget real-integrable total path-bill bounds, same source oracle and actual receipts. Silent divergence retains earlier charges. Unrestricted source-policy realization remains partial. |
 | Theorem 5(2) and consequence, PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOptimum.lower`, `success_le`, `feasible_success_le`, `upper`, `competitive` | Covered for admitted finite-control native selection-only competitors on the same oracle and seed: expected-cost lower bound, effective-turn binomial deadline obstruction and OPT envelope. |
 | Unrestricted Theorem 5 source coverage, PDF pp. 4–6, 11–12 | Native epoch/whole-policy representation; `NativeBatch.PathCost.lintegral_totalBill_complete`, `totalBill_integrable_budget`; preceding controller APIs | Partial: unrestricted source query/cutoff, external-machine realization and general measurable interfaces remain. Infinite discrete native paths, retained divergent-prefix costs and real integrability are now packaged for the finite source budget. Infinitely many source turns require a broader interface and remain an extension beyond the source’s finite-$u$ statement. Domination needed for measurable/unbounded progress is blocked on #4336; the other representation obligations are not blocked on that issue. |
@@ -1056,8 +1056,7 @@ The unrestricted source-query/cutoff interpreter and external-machine adapters
 also remain unproved. `NativeUnboundedExecution.selectionOnly_of_output_memory`
 reuses derived native output/memory laws for provenance; its concrete consumers
 are the cost-table compiler, not an assumed representation of arbitrary machines.
-The Agent Operator's Manual needs no edit: roles, ownership, build procedures and
-human direction do not change. No curated abstract or result is promoted to an
+No curated abstract or result is promoted to an
 unrestricted Theorem 5/6 or ALL-main claim.
 
 From a matching warm checkout, run:
@@ -1115,8 +1114,7 @@ not unrestricted source query/cutoff or external-machine compilation. The paper
 fixes finite opportunities and a finite turn limit $u$. An interface issuing
 infinitely many source batches remains an additional requested extension; the
 cost monotone-convergence step itself does not require #4336. General measurable
-progress domination remains blocked on #4336. The Agent Operator’s Manual needs
-no edit: workflow, roles and human direction are unchanged. No abstract or ALL-main
+progress domination remains blocked on #4336. No abstract or ALL-main
 completion claim is promoted.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
@@ -1182,8 +1180,7 @@ The unrestricted encoded-PTM representation and realization bridge is still unpr
 unrestricted source Theorem 6 nor ALL-main is claimed complete. Theorem 5's
 representation/general-alphabet gaps and Theorem 4's hardness transfer above
 remain material. No curated abstract changes: these modules are outside the
-selected headline dependencies. The Agent Operator's Manual requires no edit:
-ownership, review, validation and human direction are unchanged.
+selected headline dependencies.
 
 
 ### Submission 191: compiled residual-directed source queries
@@ -1282,8 +1279,6 @@ derives the one/two-turn native-to-behavioral laws for all admitted competitors;
 component-order controller still needs its own canonical-role specialization.
 The natural-invoice results in this subsection do not assert arbitrary-real expected invoice realization; the real-mean construction above is separate.
 `NativeResidualCostChoice` below provides compiled cost-aware choice for rational data. Source deadlines count oracle time only.
-The Agent Operator's Manual needs no edit because workflow and human direction
-are unchanged.
 
 ### Submission 191: unbounded native residual-policy tables
 
@@ -1357,8 +1352,7 @@ three. This lower-bound client does not prove attainment or that the reader solv
 the cover problem.
 This does not prove that every computed upper-program query is source valid. Run
 `lake build CslibFrontierTests.StochasticOracleNativeResidualPolicies`.
-The Agent Operator's Manual needs no edit: workflow, ownership and human direction
-are unchanged. No curated abstract or result is promoted to an unrestricted
+No curated abstract or result is promoted to an unrestricted
 Theorem 5/6 or ALL-main claim.
 
 ### Submission 191: attained adaptive native optimum
@@ -1607,8 +1601,7 @@ recovery and arbitrary source-policy compilation remain open.
 Theorem 4 now has concrete incidence/query adapters and native greedy/every-vector
 execution guarantees above; the hardness transfer remains open. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
-The Agent Operator's Manual needs no change because ownership, human direction,
-review and validation procedures are unchanged. No curated abstract depends on
+No curated abstract depends on
 these new modules or selects this bounded bridge as a headline.
 
 
@@ -2211,8 +2204,7 @@ obligations. Divergence has no native terminal-world bill.
 Theorem 4's concrete incidence/query adapters and native greedy/every-vector
 execution guarantees are proved above; the hardness transfer remains open. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
-changes. The Agent Operator's Manual requires no edit because human direction,
-ownership, review and validation procedures are unchanged.
+changes.
 
 
 ### Complete raw-interface adaptive retention program
