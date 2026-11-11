@@ -488,7 +488,8 @@ abbrev SemanticCorrelatedSimulator (sc : Schedule 2 noOracleSpec) (A B : Type)
   ((i : I) → Out i) → PMF ((i : I) → PartyView (Fin.cases A (fun _ => B)) Coins sc i)
 
 /-- A simulator for coalition `I` in a correlated-source protocol without external inputs receives
-only the coalition's outputs and samples simulated views (including the correlated input share) as a `ProbComp` probabilistic program. -/
+only the coalition's outputs and samples simulated views (including the correlated input
+share) as a `ProbComp` probabilistic program. -/
 abbrev CorrelatedSimulator (sc : Schedule 2 noOracleSpec) (A B : Type)
     (Coins Out : Fin 2 → Type) (I : Finset (Fin 2)) :=
   ((i : I) → Out i) → ProbComp ((i : I) → PartyView (Fin.cases A (fun _ => B)) Coins sc i)
@@ -836,7 +837,8 @@ theorem rot_le_mutualInfo
     have hIdealEq : idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {0} (S {0}) =
         (PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun sb =>
-          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb))).bind fun v0 =>
+          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool)
+            sb))).bind fun v0 =>
             (PMF.uniformOfFintype (Fin k → Bool)).map fun ch =>
               (v0, Fin.cases (motive := fun _ => Fin k → Bool × Bool) sb
                 (fun _ j => (ch j, otSelect (sb j) (ch j)))) := by
@@ -859,7 +861,8 @@ theorem rot_le_mutualInfo
     have hLHS : (idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {0} (S {0})).map proj0 =
         ((PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun sb =>
-          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb))).map fun v0 =>
+          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool)
+            sb))).map fun v0 =>
             (sb, transcriptOfView proto 0 (v0 ⟨0, Finset.mem_singleton_self 0⟩))).bind
           fun st => (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·) := by
       rw [hIdealEq, PMF.map_bind, PMF.bind_bind]
@@ -876,7 +879,8 @@ theorem rot_le_mutualInfo
     have hMargSimp : (idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {0} (S {0})).map (fun p => (proj0 p).1) =
         (PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun sb =>
-          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb))).map fun v0 =>
+          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool)
+            sb))).map fun v0 =>
             (sb, transcriptOfView proto 0 (v0 ⟨0, Finset.mem_singleton_self 0⟩)) := by
       rw [hIdealEq, PMF.map_bind]
       congr 1 with sb : 1
@@ -938,7 +942,8 @@ theorem rot_le_mutualInfo
     have hIdealEq : idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {1} (S {1}) =
         (PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun rb =>
-          (ProbComp.eval (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool) rb))).bind fun v1 =>
+          (ProbComp.eval (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool)
+            rb))).bind fun v1 =>
             (PMF.uniformOfFintype (Fin k → Bool)).map fun ub =>
               (v1, Fin.cases (motive := fun _ => Fin k → Bool × Bool)
                 (fun j => if (rb j).1 then (ub j, (rb j).2) else ((rb j).2, ub j))
@@ -1033,13 +1038,15 @@ variable {A B : Type} {sc : Schedule 2 noOracleSpec} {ExtIn Coins Out : Fin 2 �
       ((i : Fin 2) → Out i)) :=
   (realCorrelatedWithInput proto source x).map (Prod.map I.restrict id)
 
-/-- Semantic simulator for a correlated-source protocol with external inputs `ExtIn`, mapping directly to `PMF`. -/
+/-- Semantic simulator for a correlated-source protocol with external inputs `ExtIn`,
+mapping directly to `PMF`. -/
 abbrev SemanticCorrelatedSimulatorWithInput (sc : Schedule 2 noOracleSpec) (A B : Type)
     (ExtIn Coins Out : Fin 2 → Type) (I : Finset (Fin 2)) :=
   ((i : I) → ExtIn i) → ((i : I) → Out i) →
     PMF ((i : I) → PartyView (fun i => ExtIn i × Fin.cases A (fun _ => B) i) Coins sc i)
 
-/-- Simulator for a correlated-source protocol with external inputs `ExtIn`, defined as a probabilistic program. -/
+/-- Simulator for a correlated-source protocol with external inputs `ExtIn`,
+defined as a probabilistic program. -/
 abbrev CorrelatedSimulatorWithInput (sc : Schedule 2 noOracleSpec) (A B : Type)
     (ExtIn Coins Out : Fin 2 → Type) (I : Finset (Fin 2)) :=
   ((i : I) → ExtIn i) → ((i : I) → Out i) →
@@ -1049,19 +1056,22 @@ abbrev CorrelatedSimulatorWithInput (sc : Schedule 2 noOracleSpec) (A B : Type)
 @[expose] noncomputable def semanticIdealCorrelatedJointWithInput (sc : Schedule 2 noOracleSpec)
     (A B : Type)
     (ExtIn Coins Out : Fin 2 → Type) (f : Functionality 2 ExtIn Out) (I : Finset (Fin 2))
-    (S : SemanticCorrelatedSimulatorWithInput sc A B ExtIn Coins Out I) (x : (i : Fin 2) → ExtIn i) :
+    (S : SemanticCorrelatedSimulatorWithInput sc A B ExtIn Coins Out I)
+    (x : (i : Fin 2) → ExtIn i) :
     PMF (((i : I) → PartyView (fun i => ExtIn i × Fin.cases A (fun _ => B) i) Coins sc i) ×
       ((i : Fin 2) → Out i)) :=
   (ProbComp.eval (f x)).bind fun y => (S (I.restrict x) (I.restrict y)).map (·, y)
 
-/-- Ideal joint view-and-output distribution for functionality `f : Functionality 2 ExtIn Out` and a `ProbComp` simulator. -/
+/-- Ideal joint view-and-output distribution for functionality `f : Functionality 2 ExtIn Out`
+and a `ProbComp` simulator. -/
 @[expose] noncomputable def idealCorrelatedJointWithInput (sc : Schedule 2 noOracleSpec)
     (A B : Type)
     (ExtIn Coins Out : Fin 2 → Type) (f : Functionality 2 ExtIn Out) (I : Finset (Fin 2))
     (S : CorrelatedSimulatorWithInput sc A B ExtIn Coins Out I) (x : (i : Fin 2) → ExtIn i) :
     PMF (((i : I) → PartyView (fun i => ExtIn i × Fin.cases A (fun _ => B) i) Coins sc i) ×
       ((i : Fin 2) → Out i)) :=
-  semanticIdealCorrelatedJointWithInput sc A B ExtIn Coins Out f I (fun x y => ProbComp.eval (S x y)) x
+  semanticIdealCorrelatedJointWithInput sc A B ExtIn Coins Out f I
+    (fun x y => ProbComp.eval (S x y)) x
 
 /-- Perfect semi-honest privacy over `source` against proper static coalitions `I ≠ Finset.univ`
 for a functionality with external party inputs. -/
@@ -1277,7 +1287,8 @@ theorem chosenOT_le_mutualInfo
         rfl
       rw [hrest, hresty]
       refine map_congr_on_support
-        (ProbComp.eval (S {0} (restrictZero (eQ0 x0)) (restrictZero (F := (batchOTSpec k Bool).Answer ()) ())))
+        (ProbComp.eval (S {0} (restrictZero (eQ0 x0))
+          (restrictZero (F := (batchOTSpec k Bool).Answer ()) ())))
         _ _ fun v0 hv0 => ?_
       have hv0_supp :
           (v0, batchOTAnswer (pairVec (F := (batchOTSpec k Bool).Query ()) (eQ0 x0) (eQ1 x1))) ∈

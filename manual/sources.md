@@ -39,10 +39,10 @@ Alfred V. Aho, Margaret J. Corasick. "Efficient String Matching: An Aid to Bibli
 
 Rudolf Ahlswede and Imre Csiszár. "Common Randomness in Information Theory and Cryptography. Part I: Secret Sharing." *IEEE Transactions on Information Theory* 39(4), 1121–1132, 1993. https://doi.org/10.1109/18.243431 . Bibliographic metadata checked via secondary search summaries on 2026-11-11.
 
-<a id="ahlswedecsiszar05"></a>
-## ahlswedecsiszar05
+<a id="ahlswedecsiszar07"></a>
+## ahlswedecsiszar07
 
-Rudolf Ahlswede and Imre Csiszár. "On Oblivious Transfer Capacity." ISIT 2005. IACR ePrint 2005/242. Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8). Used for the asymptotic single-choice-bit string-OT bound (which the Lean formalization adapts to finite exact batch-bit OT with independent choices).
+Rudolf Ahlswede and Imre Csiszár. "On Oblivious Transfer Capacity." ISIT 2007, Nice, France, pp. 2061--2064, https://doi.org/10.1109/ISIT.2007.4557524. Checked on 2026-11-11 against the open-access technical report `242.pdf`: §3 Theorem 1 (PDF p. 6) and §4 Eq. (14) (PDF p. 8). Used for the asymptotic single-choice-bit string-OT bound (which the Lean formalization adapts to finite exact batch-bit OT with independent choices).
 
 <a id="aik11"></a>
 ## aik11
