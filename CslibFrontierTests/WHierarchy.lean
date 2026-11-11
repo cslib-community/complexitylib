@@ -60,9 +60,10 @@ example : seriesAnd3.2.weft = 2 ∧ seriesAnd3.2.depth = 2 := by decide
 /-! ### Weighted circuit satisfiability -/
 
 -- The conjunction of three inputs is satisfied only by the input with three ones.
-example : (and3, 3) ∈ WeightedCircuitSAT := ⟨fun _ => true, by decide, by decide⟩
+example : (⟨and3, 3⟩ : WeightedCircuitSATInstance) ∈ WeightedCircuitSAT :=
+  ⟨fun _ => true, by decide, by decide⟩
 
-example : (and3, 2) ∉ WeightedCircuitSAT := by
+example : (⟨and3, 2⟩ : WeightedCircuitSATInstance) ∉ WeightedCircuitSAT := by
   rintro ⟨x, hk, hx⟩
   revert hk hx
   revert x
@@ -81,13 +82,15 @@ example : IndependentSet.edgeIndices K3 = [(0, 1), (1, 2), (0, 2)] := by decide
 
 -- One vertex of the triangle is a satisfying input of weight `1`.
 example : IndependentSet.toWCS (K3, 1) ∈ WCS 1 3 :=
-  ⟨fun i => decide (i.val = 0), by decide, by rw [IndependentSet.eval_toCircuit]; decide⟩
+  ⟨fun i => decide (i.val = 0), by decide, by
+    dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩
 
 -- No input of weight `2` satisfies the circuit of the triangle, so the triangle has no
 -- independent set of two vertices.
 example : (K3, 2) ∉ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
   rintro ⟨x, hk, hx⟩
+  dsimp [IndependentSet.toWCS] at x hk hx
   rw [IndependentSet.eval_toCircuit] at hx
   revert x
   decide
@@ -97,12 +100,14 @@ example : IndependentSet.edgeIndices ([0, 1], [(0, 5)]) = [] := by decide
 
 example : ((([0, 1], [(0, 5)]), 2) : Graph × ℕ) ∈ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
-  exact ⟨fun _ => true, by decide, by rw [IndependentSet.eval_toCircuit]; decide⟩
+  exact ⟨fun _ => true, by decide, by
+    dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩
 
 -- A self-loop is not an edge of the circuit.
 example : ((([0], [(0, 0)]), 1) : Graph × ℕ) ∈ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
-  exact ⟨fun _ => true, by decide, by rw [IndependentSet.eval_toCircuit]; decide⟩
+  exact ⟨fun _ => true, by decide, by
+    dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩
 
 /-! ### Classes -/
 

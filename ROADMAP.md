@@ -256,7 +256,7 @@ Ordered first-order complexity follows Immerman: structures on {0, …, n-1} wit
 Numeric predicates are computed from the universe size, not supplied as unverified input tables.
 In dependency order:
 
-- **Ordered completeness:** SAT, 3SAT, 3COL, independent set, clique and vertex cover NP-complete under first-order or quantifier-free projections; REACH NL-complete under first-order reductions.
+- **Ordered completeness:** SAT, 3SAT, 3COL, independent set, clique and vertex cover NP-complete under first-order or quantifier-free projections.
 - **Projections** ([#1244](https://github.com/cslib-community/cslib-frontier/issues/1244)): projection reducibility on finite structure classes, its reflexivity and transitivity, and the standard ordered machine-encoding bridge.
   The classical qfp convention excludes BIT (Immerman–Landau, Definition 3.6), and arbitrary quantifier-free combinations of input relations are not projections.
 - **Circuit Value P-completeness:** Circuit Value is P-complete under first-order reductions, via `REACHa → MCVP → CVP` (Immerman, Theorem 3.26 and Exercise 3.28), with the alternating-logspace simulation of polynomial-time machines (the machine-level `P ⊆ AL`, see [#2873](https://github.com/cslib-community/cslib-frontier/issues/2873)) and the translation to `encCircuitValue`.
@@ -364,6 +364,7 @@ Define logspace and DLOGTIME uniformity with explicit gate-address, direct-conne
   NC simulation of unrestricted `TCⁱ` needs Muroga's threshold weight-bounding theorem.
 - **Formula and monotone depth lower bounds**: formula lower bounds beyond Andreev's, following Jukna, and Raz–Wigderson's monotone depth bound for matching on general graphs.
 - **Monotone circuits versus P** ([#2063](https://github.com/cslib-community/cslib-frontier/issues/2063), [#3147](https://github.com/cslib-community/cslib-frontier/issues/3147)): a monotone language in P whose monotone circuit complexity is superpolynomial, from Razborov's `n ^ Ω(log n)` monotone bound for bipartite perfect matching, and the exponential gap of É. Tardos (1988).
+- **Explicit affine dispersers for logarithmic dimension** ([#4323](https://github.com/cslib-community/cslib-frontier/issues/4323)): an explicit polynomial-time affine disperser for dimension `O(log n)` (Li 2023), strengthening the unconditional `3.5 N - o(N)` Boolean circuit lower bounds in `P` (`O(N / log N)` and `O(N ^ (4 / 5))` thresholds) to `3.5 N - O(log N)`.
 - **An explicit frontier extractor**: port v1's sumset-extractor construction with an explicit family in `Complexity.P encBits` that discharges the frontier lower bounds' hypotheses.
   Because it would exceed the library's unconditional `3.5 N - o(N)` bound in P, it needs an independent correctness review of the frontier core.
 - **Weighted threshold representations**: v1's explicit source-reduction family, universal scalar circuit synthesis, entropy and asymptotic activity bounds, and geometric cutting.
