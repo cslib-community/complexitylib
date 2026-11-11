@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AlgebraicIndependent
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Defs
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
 public import Mathlib.RingTheory.PowerSeries.Trunc
 import Mathlib.Algebra.Polynomial.Roots
@@ -17,7 +18,8 @@ import Mathlib.LinearAlgebra.Dimension.Constructions
 # Polynomial hitting sets for small partial-derivative spaces
 
 A finite set `H` of points is a *hitting set* for a class of polynomials if every nonzero
-polynomial of the class is nonzero at some point of `H`. Over a field `F` of characteristic zero,
+polynomial of the class is nonzero at some point of `H` (`IsHittingSet`). Over a field `F` of
+characteristic zero,
 [Bhardwaj et al.][BhardwajEtAl2026] give an explicit hitting set of size
 `poly (n, d, r)` for the `n`-variate polynomials of degree at most `d` that lie in a space of
 dimension at most `r` closed under all partial derivatives; in particular for those whose space
@@ -35,7 +37,6 @@ have a hitting set of size polynomial in `n`, `d` and `s` (`isHittingSet_sum_pow
 
 ## Main definitions
 
-* `IsHittingSet`: a finite set of points that hits every nonzero polynomial of a class.
 * `logCurve`: the truncated logarithmic curve.
 * `logHittingSet`: the points of the curve at `t = 0, …, d (n r ^ 2 + r)`.
 
@@ -59,12 +60,6 @@ open scoped Polynomial PowerSeries
 namespace Cslib.Circuits.Arithmetic
 
 open Finset
-
-/-- A finite set of points is a hitting set for a class of polynomials if every nonzero
-polynomial of the class is nonzero at one of the points. -/
-def IsHittingSet {F σ : Type*} [CommSemiring F] (H : Finset (σ → F))
-    (𝒞 : Set (MvPolynomial σ F)) : Prop :=
-  ∀ f ∈ 𝒞, f ≠ 0 → ∃ a ∈ H, MvPolynomial.eval a f ≠ 0
 
 variable (F : Type*) [Field F] [CharZero F] (n : ℕ)
 
