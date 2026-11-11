@@ -64,7 +64,7 @@ open Cslib.Complexity Cslib.Logic.PL
 variable (I : CMMSAInstance) (Δ k lam P : ℕ)
 
 /-- The input length `ℓ v = ⌈log₂ (w v · λ)⌉` of the function of variable `v`, so that
-`w v · λ ≤ 2 ^ ℓ v ≤ 2 w v · λ` for a positive weight. -/
+`w v · λ ≤ 2 ^ ℓ v ≤ 2 w v · λ` for a positive weight and `λ ≥ 1`. -/
 def varLength (v : ℕ) : ℕ := Nat.clog 2 (I.weights.getD v 0 * lam)
 
 /-- The seed width `W`: the largest `ℓ v` over the variables `v < n`. -/

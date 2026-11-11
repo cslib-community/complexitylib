@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, next to `Mathlib/Algebra/BigOperators/Ring/Finset.lean`)
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic

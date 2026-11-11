@@ -47,10 +47,9 @@ At a defined entry this is term `t`'s parity, which is the entry. The `Δ k` rea
 (`complexity_le_mul_of_forall_dependsOn`). That is at most `2 ^ L / (P L)` once
 `(m + 1) ² ≤ 2 ^ L`, which `λ ≥ λ₀ (m + 1) ²` ensures.
 
-**The threshold is existential.** `λ₀ = 2 ^ L₀` comes from Uhlig's and Lupanov's eventual bounds,
-which are not computed. A reduction that uses this theorem takes `λ = λ₀ (|I| + 1) ²`. It is
-polynomial in the input length whatever the constant is, and `m ≤ |I|` for the encoding of `I`. A
-client that needs `L₀` as a number obtains it from the `∀ᶠ` bounds with `Filter.eventually_atTop`.
+**The threshold is existential.** `λ₀ = 2 ^ L₀` comes from Uhlig's and Lupanov's eventual bounds
+and is not computed. A reduction fixes it and takes `λ = λ₀ (|I| + 1) ²`, which is polynomial in the
+input length whatever the constant is, since `m ≤ |I|` for the encoding of `I`.
 
 ## Main results
 
@@ -147,16 +146,6 @@ private def combine (τ : ℕ → ℕ) :
 
 /-! ### Correctness -/
 
-/-- The terms of a list of nonempty lists are at most as many as their elements. -/
-private theorem length_le_length_flatten {α : Type*} :
-    ∀ {l : List (List α)}, (∀ t ∈ l, t ≠ []) → l.length ≤ l.flatten.length
-  | [], _ => le_rfl
-  | t :: l, h => by
-    have ht : 0 < t.length := List.length_pos_iff.2 (h t List.mem_cons_self)
-    have := length_le_length_flatten fun u hu => h u (List.mem_cons_of_mem t hu)
-    simp only [List.length_cons, List.flatten_cons, List.length_append]
-    omega
-
 /-- Every formula of a Yes instance has a term whose variables lie in the satisfying assignment. -/
 private theorem exists_satTerm {S : Finset ℕ}
     (hmono : ∀ φ ∈ I.formulas, ∀ t ∈ φ, ∀ l ∈ t, l.2 = true)
@@ -247,8 +236,7 @@ private theorem combine_append_eq {S : Finset ℕ} {f : VarFunctions I lam} {τ 
   have hφΔ : (I.formulas.getD (formulaIndex x) []).length ≤ Δ := by
     have hmem : I.formulas.getD (formulaIndex x) [] ∈ I.formulas := by
       simp [List.getD_eq_getElem?_getD, hj, List.getElem_mem]
-    exact (length_le_length_flatten (hΔ.term_ne_nil _ hmem)).trans
-      (hΔ.length_flatten_le _ hmem)
+    exact hΔ.length_le hmem
   have htΔ : τ (formulaIndex x) < Δ := lt_of_lt_of_le htj hφΔ
   rw [← termParity_eq_of_entry_eq_some hx ⟨_, htΔ⟩ htj]
   simp only [combine, combineCore, Fin.append_left, Fin.append_right, termParity, slotBit,
@@ -361,11 +349,10 @@ private theorem junta_le {a L m : ℕ} (e : ℕ) (ha : 2 ^ a ≤ 2 * (m + 1)) (h
 constant `λ₀` such that every Yes instance `I` of `GapCMMSA Δ g σ` maps into partial MCSP for every
 choice of the functions `f`, once `λ ≥ λ₀ (m + 1) ²`, where `m` is the number of formulas.
 
-`λ₀` is existential: it comes from the eventual bounds of Uhlig's theorem
+`λ₀` is existential and not computed: it comes from the eventual bounds of Uhlig's theorem
 (`MassProduction.eventually_mul_complexity_table_le`) and of `16 (P K) ² L ⁶ ≤ 2 ^ L`. A reduction
-takes `λ = λ₀ (|I| + 1) ²` for the input length `|I|`, which is at least `m`. A client that needs
-the threshold as a number extracts it from these `∀ᶠ` bounds with `Filter.eventually_atTop`. The
-gap `g` and the proportion `σ` play no part on the Yes side. -/
+fixes it and takes `λ = λ₀ (|I| + 1) ²` for the input length `|I|`, which is at least `m`. The gap
+`g` and the proportion `σ` play no part on the Yes side. -/
 theorem exists_toInstance_mem_PartialMCSP (Δ k P : ℕ) (hP : 0 < P) :
     ∃ lam₀ : ℕ, ∀ (g σ : ℝ) (I : CMMSAInstance), I ∈ (GapCMMSA Δ g σ).yes →
       ∀ lam, lam₀ * (I.formulas.length + 1) ^ 2 ≤ lam →
