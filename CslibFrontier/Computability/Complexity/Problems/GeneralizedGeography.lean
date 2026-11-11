@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.IndependentSet
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 
 /-!
 # Generalized Geography
@@ -33,6 +34,10 @@ and it is never revisited; a start vertex without usable arcs is a loss for the 
 ## Main definitions
 
 * `Cslib.Complexity.Graph.GeographyWins`: the player to move wins.
+* `Cslib.Complexity.GeneralizedGeographyInstance`: instance `(graph, start)` of Generalized
+  Geography.
+* `Cslib.Complexity.encGeneralizedGeography`: polynomial-time encoding of
+  `GeneralizedGeographyInstance`.
 * `Cslib.Complexity.GeneralizedGeography`: the first player wins.
 
 ## Main results
@@ -52,7 +57,7 @@ and it is never revisited; a start vertex without usable arcs is a loss for the 
 * [T. J. Schaefer, *On the complexity of some two-person perfect-information games*][Schaefer1978]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -68,6 +73,7 @@ theorem card_sdiff_cons_lt {G : Graph} {vis : List ℕ} {w : ℕ} (hw : w ∈ G.
 /-- **Generalized Geography**: with the token at `v` and the vertices `vis` visited, the player
 to move wins when some arc from `v` leads to an unvisited declared vertex `w` from which the other
 player, to move with `w` visited, does not win. -/
+@[expose]
 def GeographyWins (G : Graph) (vis : List ℕ) (v : ℕ) : Prop :=
   ∃ w, ∃ _ : (v, w) ∈ G.2 ∧ w ∈ G.1 ∧ w ∉ vis, ¬G.GeographyWins (w :: vis) w
 termination_by (G.1.toFinset \ vis.toFinset).card
@@ -114,18 +120,37 @@ theorem geographyWins_congr {G : Graph} {vis vis' : List ℕ} (h : ∀ u, u ∈ 
 
 end Graph
 
+/-- An instance `(graph, start)` of **Generalized Geography**. -/
+@[ext]
+structure GeneralizedGeographyInstance where
+  /-- The directed graph on which the game is played. -/
+  graph : Graph
+  /-- The starting vertex of the token. -/
+  start : ℕ
+  deriving DecidableEq, Repr
+
+/-- Encoding of `GeneralizedGeographyInstance` as a pair `(graph, start)`. -/
+enc_structure encGeneralizedGeography : GeneralizedGeographyInstance where
+  graph : encGraph,
+  start : Turing.MultiTapeTM.encNat
+
+attribute [fun_prop] encGeneralizedGeography_graph_polyTime
+  encGeneralizedGeography_start_polyTime encGeneralizedGeography_mk_polyTime
+
 /-- **Generalized Geography**, vertex version [Sipser, Section 8.3][Sipser2013]
 [LichtensteinSipser1980]: the graphs with a start vertex on which the first player wins, moving
 first with the token on the start vertex, when no vertex may be visited twice. -/
-def GeneralizedGeography : Set (Graph × ℕ) := {x | x.1.GeographyWins [x.2] x.2}
+@[expose]
+def GeneralizedGeography : Set GeneralizedGeographyInstance :=
+  {x | x.graph.GeographyWins [x.start] x.start}
 
-theorem mem_GeneralizedGeography {x : Graph × ℕ} :
-    x ∈ GeneralizedGeography ↔ x.1.GeographyWins [x.2] x.2 :=
+theorem mem_GeneralizedGeography {x : GeneralizedGeographyInstance} :
+    x ∈ GeneralizedGeography ↔ x.graph.GeographyWins [x.start] x.start :=
   Iff.rfl
 
 /-- On a graph without arcs the first player cannot move and loses. -/
 theorem notMem_GeneralizedGeography_of_nil {V : List ℕ} {s : ℕ} :
-    ((V, []), s) ∉ GeneralizedGeography := by
+    (⟨(V, []), s⟩ : GeneralizedGeographyInstance) ∉ GeneralizedGeography := by
   rw [mem_GeneralizedGeography, Graph.geographyWins_iff]
   simp
 

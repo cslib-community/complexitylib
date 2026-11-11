@@ -2482,6 +2482,7 @@ public import CslibFrontier.Computability.Kolmogorov.Incompressibility
 public import CslibFrontier.Computability.Kolmogorov.Invariance
 public import CslibFrontier.Computability.Kolmogorov.MINKT
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar
+public import CslibFrontier.Computability.Kolmogorov.MINKTStar.Generator
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar.TruthTable
 public import CslibFrontier.Computability.Kolmogorov.MINcKT
 public import CslibFrontier.Computability.Kolmogorov.MKtP
@@ -2663,6 +2664,8 @@ public import CslibFrontier.Computability.MCSP.Magnification.MergeTree
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Circuit
 public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.Multi.NP
+public import CslibFrontier.Computability.MCSP.MultiNPHard
+public import CslibFrontier.Computability.MCSP.MultiNPHard.PolyTime
 public import CslibFrontier.Computability.MCSP.MultiNPHard.Reduction
 public import CslibFrontier.Computability.MCSP.MultiNPHard.Window
 public import CslibFrontier.Computability.MCSP.MultiNPHard.WindowCount
@@ -3329,6 +3332,7 @@ public import CslibFrontier.Computability.PCP.Approximation.SetCover.ApproxReduc
 public import CslibFrontier.Computability.PCP.Approximation.SetCover.LundYannakakis
 public import CslibFrontier.Computability.PCP.Approximation.SetCover.PartitionGadget
 public import CslibFrontier.Computability.PCP.Approximation.ThreeXOR
+public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Propagation
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime
 public import CslibFrontier.Computability.PCP.AssignmentTester
