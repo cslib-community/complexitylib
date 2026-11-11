@@ -35,8 +35,8 @@ with `s₁` gates agrees with them and `f` is rejected. One fixed oracle answers
 queries and the final query, as Definition 11 (iii) requires.
 
 The statement is unconditional, and its gap is explicit. The bullet's `s` is `s₂` here. The
-statement differs from the source in three ways, all generalizations or omissions of
-uniformity:
+statement differs from the source in three ways. The first drops a uniformity condition, the
+second drops a size restriction, and the third is a difference of presentation:
 * "constructive" is dropped: the circuits are nonuniform, so `s₁` and `s₂` are arbitrary;
 * `s ≤ 2 ^ n / poly(n)` is not needed: the bounds hold for every `s₂` above the gap;
 * the class `[q, ℓ, a]–Circuit[·]` of Definition 11 is not defined here. The four bounds are stated

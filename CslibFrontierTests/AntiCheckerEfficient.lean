@@ -11,8 +11,8 @@ import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 # Tests for the efficient anti-checker and the Gap-MCSP oracle circuits
 
 OPS Lemma 4.1 is instantiated at a fixed `β` under `NP ⊆ P/poly`. The oracle circuits for
-Gap-MCSP are applied at small concrete thresholds and, for all large `n`, at the thresholds of OPS
-Lemma 4.1.
+Gap-MCSP accept a concrete yes-instance at `n = 1` and apply, for all large `n`, at the thresholds
+of OPS Lemma 4.1.
 -/
 
 namespace CslibFrontierTests.AntiCheckerEfficient
@@ -43,16 +43,18 @@ example (hNP : NP encBits ⊆ PPolyOn encBits) :
   obtain ⟨c, hc⟩ := exists_antiChecker_circuit_le_of_NP_subset_PPoly hNP
   exact ⟨c, fun n s hn => (hc n s _ hn le_rfl).imp fun _ h => h.1⟩
 
--- Gap-MCSP oracle circuits at `n = 1` with thresholds `0` and `8`, the least `s₂` the gap allows.
+-- Gap-MCSP oracle circuits at `n = 1` with thresholds `1` and `9`, the least `s₂` the gap allows:
+-- the circuit accepts the truth table of a constant function, which has one gate. At `n = 1` every
+-- function has fewer than `9` gates, so there are no no-instances to reject; the large-`n` example
+-- below is the non-vacuous use.
 example : ∃ E : Circuit oracleSignature (2 ^ 1) 1,
-    E.size ≤ 5000 * 2 ^ 1 * 8 ^ 5 ∧
-    (∀ T : BitString (2 ^ 1), List.ofFn T ∈ GapMCSP.yesSet (fun _ => 0) →
-      E.eval (oracleInterpretation antiCheckerOracle) T 0 = true) ∧
-    (∀ T : BitString (2 ^ 1), List.ofFn T ∈ GapMCSP.noSet (fun _ => 8) →
-      E.eval (oracleInterpretation antiCheckerOracle) T 0 = false) := by
-  obtain ⟨E, hsize, -, -, -, hyes, hno⟩ :=
-    exists_oracleCircuit_gapMCSP (s₁ := fun _ => 0) (s₂ := fun _ => 8) (n := 1) (by norm_num)
-  exact ⟨E, hsize, hyes, hno⟩
+    E.size ≤ 5000 * 2 ^ 1 * 9 ^ 5 ∧
+    E.eval (oracleInterpretation antiCheckerOracle) (MCSP.truthTable 1 fun _ => false) 0 =
+      true := by
+  obtain ⟨E, hsize, -, -, -, hyes, -⟩ :=
+    exists_oracleCircuit_gapMCSP (s₁ := fun _ => 1) (s₂ := fun _ => 9) (n := 1) (by norm_num)
+  refine ⟨E, hsize, hyes _ ?_⟩
+  rw [GapMCSP.ofFn_mem_yesSet_iff, Equiv.symm_apply_apply, complexity_const]
 
 -- The thresholds of OPS Lemma 4.1 meet the gap condition for all large `n`, so
 -- `Gap-MCSP[⌊2 ^ (β n) / 10 n⌋₊, ⌊2 ^ (β n)⌋₊]` has the oracle circuits for all large `n`.

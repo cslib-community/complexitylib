@@ -30,9 +30,9 @@ gates replaced by `P/poly` circuits for a language that agrees with the anti-che
 queries (`Cslib.MCSP.AntiChecker.exists_mem_PPoly_agrees_antiCheckerOracle`), followed by wires
 that copy the input bits of each sample into `t` output blocks of `n` bits. The explicit form
 `Cslib.MCSP.AntiChecker.exists_antiChecker_circuit_le_of_NP_subset_PPoly` bounds the size by
-`2 ^ n · c (n + s + 1) ^ c` for every `n`, `s` and `t` at least the number of rounds, and makes the
-hardness assumption explicit: `f` needs more gates than `n` circuits with `s` gates and their strict
-majority.
+`2 ^ n · c (n + s + 1) ^ c` for every `n > 0`, every `s` and every `t` at least the number of
+rounds, and makes the hardness assumption explicit: `f` needs more gates than `n` circuits with `s`
+gates and their strict majority.
 
 **Proof route.** The statement is OPS's; the proof is not. The anti-checker is the library's
 deterministic greedy against the hash threshold oracle (`Cslib.MCSP.AntiChecker.greedy`), whose

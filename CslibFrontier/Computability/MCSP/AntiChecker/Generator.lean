@@ -42,7 +42,8 @@ query length are polynomial in `n + s`.
 
 This is the library's deterministic greedy, not the proof of
 [Oliveira, Pich and Santhanam, Lemma 4.1][OliveiraPichSanthanam2019]. Replacing the oracle gates by
-circuits for the oracle, under `NP ⊆ P/poly`, is not done here.
+circuits for the oracle, under `NP ⊆ P/poly`, is done in
+`CslibFrontier.Computability.MCSP.AntiChecker.Efficient`, which proves that lemma.
 
 ## Main definitions
 
@@ -406,9 +407,11 @@ certificate length. -/
 def antiCheckerRounds (n s : ℕ) : ℕ :=
   certLength n s * (certLength n s + 200) + 1
 
+/-- The power of the anti-checker generator is positive. -/
 theorem antiCheckerPower_pos (n s : ℕ) : 0 < antiCheckerPower n s :=
   Nat.add_pos_right _ (by norm_num)
 
+/-- The anti-checker generator has at least one round. -/
 theorem antiCheckerRounds_pos (n s : ℕ) : 0 < antiCheckerRounds n s :=
   Nat.succ_pos _
 
