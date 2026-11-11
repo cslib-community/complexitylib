@@ -5358,13 +5358,16 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Farkas
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GaussJordan
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GrenetPermanent
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GroupCirculant
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.HessianPermanent
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Hyperplane
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.IsotropicPosition
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Kronecker
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.KroneckerRank
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Laplacian
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Lindsey
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.LinearMeasurements
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.LinearProgramming
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.ListProd
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Moore
