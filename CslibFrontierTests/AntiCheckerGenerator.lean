@@ -44,7 +44,7 @@ example (n s ℓ : ℕ) (f : BooleanFunction n) :
     samplesOf ((generator n s ℓ 1).eval (oracleInterpretation 0) (MCSP.truthTable n f)) =
       [(default, f default)] := by
   have hnone : ∀ P u, queryOracle (0 : Language Bool) n s ℓ P u = false := fun P u => by
-    rw [Bool.eq_false_iff, ne_eq, queryOracle_eq_true]
+    rw [Bool.eq_false_iff, ne_eq, queryOracle_eq_true_iff]
     exact Language.notMem_zero _
   have hfind : (BitString.enum n).find? (fun _ => false) = none := List.find?_eq_none.2 (by simp)
   rw [samplesOf_eval_generator]
