@@ -159,7 +159,6 @@ theorem coeff_one (i : ℕ) : coeff i (1 : Truncated R r) = if i = 0 ∧ 0 < r t
   · subst hi0; simp
   · simp [hi0]
 
-@[simp]
 theorem coeff_C (a : R) (i : ℕ) :
     coeff i (mk r (C a)) = if i = 0 ∧ 0 < r then a else 0 := by
   rw [coeff_mk, Polynomial.coeff_C]
@@ -232,12 +231,10 @@ theorem coeff_sum {ι : Type*} (s : Finset ι) (f : ι → Truncated R r) (i : �
     coeff i (∑ k ∈ s, f k) = ∑ k ∈ s, coeff i (f k) :=
   map_sum (coeffLinearMap r i) f s
 
-@[simp]
 theorem coeff_nsmul (i n : ℕ) (x : Truncated R r) :
     coeff i (n • x) = n • coeff i x :=
   map_nsmul (coeffLinearMap r i) n x
 
-@[simp]
 theorem coeff_zsmul (i : ℕ) (k : ℤ) (x : Truncated R r) :
     coeff i (k • x) = k • coeff i x :=
   map_zsmul (coeffLinearMap r i) k x
