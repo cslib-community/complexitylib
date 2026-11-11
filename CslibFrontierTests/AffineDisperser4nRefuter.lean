@@ -8,10 +8,13 @@ module
 -- upstream: local-only (test)
 
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterProofs
+public meta import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser4n.RefuterProofs
 
 /-!
 # Tests for the deterministic `4n - 10d` refuter
 -/
+
+set_option linter.hashCommand false
 
 public section
 
@@ -26,6 +29,8 @@ open Cslib.Circuits.Boolean.SemiCircuit
 def proj100Circuit : Circuit (fullSignature 2 Bool) 100 1 :=
   ⟨Program.empty, fun _ => Wire.input ⟨0, by decide⟩⟩
 
+#guard (chooseStep? (initialState proj100Circuit)).isNone
+
 /-- There exists a genuine `11`-affine disperser on `100` bits on which `refute` produces a
 disagreeing input against `proj100Circuit`. -/
 theorem exists_disperser_refute_disagrees :
@@ -34,5 +39,14 @@ theorem exists_disperser_refute_disagrees :
         f (@refute 100 11 proj100Circuit f) := by
   obtain ⟨f, hf⟩ := exists_isAffineDisperser (n := 100) (d := 11) (by norm_num)
   exact ⟨f, hf, refute_correct proj100Circuit f hf (by decide)⟩
+
+/-- A nonterminal circuit on `3` bits with one XOR gate. -/
+def xor3Circuit : Circuit (fullSignature 2 Bool) 3 1 :=
+  ⟨Program.gate Program.empty
+    ⟨FullOp.fn fun xs => xs 0 ^^ xs 1,
+      fun i => if h : i.val = 0 then Wire.input ⟨0, by decide⟩ else Wire.input ⟨1, by decide⟩⟩,
+    fun _ => Wire.gate ⟨0, by decide⟩⟩
+
+#guard (chooseStep? (initialState xor3Circuit)).isSome
 
 end CslibFrontierTests.AffineDisperser4nRefuter
