@@ -307,7 +307,7 @@ Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased bu
 <a id="carmosinoimpagliazzokabanetskolokolova2016"></a>
 ## carmosinoimpagliazzokabanetskolokolova2016
 
-Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run. For the AC⁰[2] efficiency of their generator ([#4451](https://github.com/cslib-community/cslib-frontier/issues/4451)), also checked on 2026-11-11 against the LIPIcs PDF: Definition 3.1, Theorems 3.2 and 3.3 (p. 10:10) and the proof of Theorem 3.2 (p. 10:11); Definition 3.4 (black-box amplification, pp. 10:10–10:11) and Lemma 3.5 (p. 10:11); Section 3.1, which opens on p. 10:11 with the design requirements; Theorem 3.6 and its proof (pp. 10:12–10:13), which define the polynomials `A_i` and the sets `S_i`, bound their overlap on p. 10:12 and end with the hard-coded matrix `M_{j,k} = r_j^k`; Theorem 3.7 and its proof (p. 10:13); and Theorem 4.3 (p. 10:15) with its proof (pp. 10:15–10:16). `CslibFrontier/Crypto/Primitives/PRG/NisanWigderson/{BitPolynomial,MXCircuit,AmpGeneratorCircuit}.lean` and `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/{GLAmp,GLAmpCircuit}.lean` follow them for `p = 2`. For the reconstruction for `p = 2`, also checked on 2026-11-11 against the LIPIcs PDF: Theorem 4.1 (p. 10:14); Theorem 4.2 and the sketch of its algorithm (p. 10:15); and Claim 4.4 (p. 10:15), whose proof and the combination with Theorem 4.1 that ends the proof of Theorem 4.3 follow on pp. 10:15–10:16. `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/GLAmpDecode.lean` and `CslibFrontier/MachineLearning/UniformLearning/CIKK/Amplification.lean` follow them.
+Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run. For the AC⁰[2] efficiency of their generator ([#4451](https://github.com/cslib-community/cslib-frontier/issues/4451)), also checked on 2026-11-11 against the LIPIcs PDF: Definition 3.1, Theorems 3.2 and 3.3 (p. 10:10) and the proof of Theorem 3.2 (p. 10:11); Definition 3.4 (black-box amplification, pp. 10:10–10:11) and Lemma 3.5 (p. 10:11); Section 3.1, which opens on p. 10:11 with the design requirements; Theorem 3.6 and its proof (pp. 10:12–10:13), which define the polynomials `A_i` and the sets `S_i`, bound their overlap on p. 10:12 and end with the hard-coded matrix `M_{j,k} = r_j^k`; Theorem 3.7 and its proof (p. 10:13); and Theorem 4.3 (p. 10:15) with its proof (pp. 10:15–10:16). `CslibFrontier/Crypto/Primitives/PRG/NisanWigderson/{BitPolynomial,MXCircuit,AmpGeneratorCircuit}.lean` and `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/{GLAmp,GLAmpCircuit}.lean` follow them for `p = 2`. For the reconstruction for `p = 2`, also checked on 2026-11-11 against the LIPIcs PDF: Theorem 4.1 (p. 10:14); Theorem 4.2 and the sketch of its algorithm (p. 10:15); and Claim 4.4 (p. 10:15), whose proof and the combination with Theorem 4.1 that ends the proof of Theorem 4.3 follow on pp. 10:15–10:16. `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/GLAmpDecode.lean` and `CslibFrontier/MachineLearning/UniformLearning/CIKK/Amplification.lean` follow them. For the `p = 2` natural property and the learner built from it, also checked on 2026-11-11 against the LIPIcs PDF, by an agent in the [M6.7 gate note](https://github.com/cslib-community/cslib-frontier/issues/4451#issuecomment-6791276714): Theorems 5.1 and 5.3 (p. 10:19) and the sketch of the `p = 2` rank property (p. 10:20). `CslibFrontier/Computability/Circuit/Boolean/Razborov/RankProperty.lean` follows that sketch in a variant, and `CslibFrontier/MachineLearning/UniformLearning/CIKK/Learner.lean` follows Theorem 5.1 in a per-function black-box form.
 
 <a id="ccpv11"></a>
 ## ccpv11
@@ -450,6 +450,11 @@ Marek Cygan, Fedor V. Fomin, Łukasz Kowalik, Daniel Lokshtanov, Dániel Marx, M
 ## dasguptagupta03
 
 Sanjoy Dasgupta, Anupam Gupta. “An Elementary Proof of a Theorem of Johnson and Lindenstrauss.” *Random Structures & Algorithms* 22(1), 60–65, 2003. https://doi.org/10.1002/rsa.10073 . Author-hosted copy: https://cseweb.ucsd.edu/~dasgupta/papers/jl.pdf . Checked against that copy on 2026-11-07 UTC: Theorem 2.1 on p. 61 (`0 < ε < 1` and `k ≥ 4 (ε²/2 - ε³/3)⁻¹ ln n`), and Lemma 2.2 on p. 62 (tails for the projection of a random unit vector onto `k` coordinates, proved with `𝔼 exp (sX²) = (1 - 2s)^(-1/2)` for a standard Gaussian `X`).
+
+<a id="datar04"></a>
+## datar04
+
+Mayur Datar, Nicole Immorlica, Piotr Indyk and Vahab S. Mirrokni. “Locality-sensitive hashing scheme based on p-stable distributions.” *Proceedings of the Twentieth Annual Symposium on Computational Geometry (SoCG 2004)*, ACM, 253–262, 2004. https://doi.org/10.1145/997817.997857 . Bibliographic metadata checked against DBLP search results; the full text was not inspected (attempted archive links returned HTTP 404), so section and theorem locators remain unverified.
 
 <a id="devroyelugosi01"></a>
 ## devroyelugosi01
@@ -1297,6 +1302,11 @@ OpenAI. *Exact Derandomization of Logarithmic Space: L = RL = BPL*. Preprint, 23
 
 OpenAI. *The Exponential Time Hypothesis is False*. Manuscript dated 17 October 2026, revised 25 October 2026. Source revision `7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a`. [PDF](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf); [primary TeX](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/build/main_full_version.tex). The interpolation-route statement, metadata and label were checked in freshly retrieved TeX on 2026-11-02; full proof and PDF pagination were not independently audited.
 
+<a id="papadimitriou94ppad"></a>
+## papadimitriou94ppad
+
+Christos H. Papadimitriou. "On the Complexity of the Parity Argument and Other Inefficient Proofs of Existence." *Journal of Computer and System Sciences* 48(3), 498–532, 1994. https://doi.org/10.1016/S0022-0000(05)80063-7 . Bibliographic metadata checked against `references.bib` (`Papadimitriou1994PPAD`); the journal text was not inspected, so internal theorem numbers are not claimed. Cited for the complexity class `PPAD`, canonical `EndOfLine` completeness, and containment of two-player Nash equilibrium.
+
 <a id="pighizzini2009"></a>
 ## pighizzini2009
 
@@ -1466,6 +1476,11 @@ Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI
 ## shannon1956
 
 Claude E. Shannon. *The Zero Error Capacity of a Noisy Channel*. IRE Transactions on Information Theory 2(3), 8–19, 1956. https://doi.org/10.1109/TIT.1956.1056798 . Bibliographic data from the DOI record. The zero-error capacity as a limit over strong powers, and the five-word code in the square of the pentagon, are attributed from secondary accounts; the full text was not inspected in this pass.
+
+<a id="shapley74"></a>
+## shapley74
+
+Lloyd S. Shapley. "A Note on the Lemke–Howson Algorithm." *Mathematical Programming Studies* 1 (*Pivoting and Extensions*, ed. M. L. Balinski), 175–189, Springer, 1974 (also RAND Report R-1538-PR, July 1974). https://doi.org/10.1007/BFb0121248 . Bibliographic metadata checked against the Springer DOI record and secondary summaries on 2026-11-11; the full text was not inspected, so internal theorem numbers are not claimed. Credited, via [vonstengel07](#vonstengel07) (§3.12), with the determinant-based orientation (index) of the Lemke–Howson graph.
 
 <a id="shapleyscarf74"></a>
 ## shapleyscarf74
