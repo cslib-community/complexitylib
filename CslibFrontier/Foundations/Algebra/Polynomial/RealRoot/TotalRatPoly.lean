@@ -1208,7 +1208,6 @@ theorem clog4M_ret (n : ℕ) : (clog4M n).ret = Nat.clog 4 n := by
       rw [ih _ hlt]
       have : (n + 3) / 4 = (n + 4 - 1) / 4 := by omega
       rw [this, ← Nat.clog_of_two_le (by decide : 2 ≤ 4) (by omega)]
-      omega
 
 theorem clog4M_time (n : ℕ) : (clog4M n).time = Nat.clog 4 n + 1 := by
   induction n using Nat.strongRecOn with
