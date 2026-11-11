@@ -207,12 +207,6 @@ theorem image_affine_convexHull (T : Matrix ι ν K) [Fintype ν] (t : ι → K)
   exact φ.image_convexHull S
 
 omit [IsStrictOrderedRing K] in
-/-- A linear map commutes with `convexHull`. -/
-theorem image_linearMap_convexHull (f : (ν → K) →ₗ[K] (ι → K)) (S : Set (ν → K)) :
-    f '' convexHull K S = convexHull K (f '' S) :=
-  f.image_convexHull S
-
-omit [IsStrictOrderedRing K] in
 /-- A finite convex hull `conv (range V)` is nontrivial iff `V` takes two distinct values. -/
 theorem nontrivial_convexHull_range_iff {V : ν → ι → K} :
     (convexHull K (Set.range V)).Nontrivial ↔ ∃ j₁ j₂, V j₁ ≠ V j₂ := by

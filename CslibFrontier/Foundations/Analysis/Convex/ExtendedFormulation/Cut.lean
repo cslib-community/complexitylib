@@ -233,8 +233,8 @@ theorem extensionComplexity_cutPolytope_option_eq (α : Type*) [Fintype α] [Dec
     · rintro ⟨b, rfl⟩
       exact ⟨cutVertex K (b.image some), ⟨b.image some, rfl⟩, cutToCorrLinear_cutVertex_image b⟩
   refine extensionComplexity_eq_of_linearMaps (corrToCutLinear K α) (cutToCorrLinear K α) ?_ ?_
-  · rw [corrPolytope, image_linearMap_convexHull, him₁, cutPolytope]
-  · rw [cutPolytope, image_linearMap_convexHull, him₂, corrPolytope]
+  · rw [corrPolytope, LinearMap.image_convexHull, him₁, cutPolytope]
+  · rw [cutPolytope, LinearMap.image_convexHull, him₂, corrPolytope]
 
 omit [LinearOrder K] [IsStrictOrderedRing K] in
 private theorem cutVertex_funLeft {V₁ V₂ : Type*} [DecidableEq V₁] [DecidableEq V₂]
@@ -264,7 +264,7 @@ private theorem extensionComplexity_cutPolytope_congr {V W : Type*} [Fintype V] 
   have hgf : ∀ Y : Finset W, g (cutVertex K Y) = cutVertex K (Y.image e.symm) :=
     cutVertex_funLeft e
   refine extensionComplexity_eq_of_linearMaps g f ?_ ?_
-  · rw [cutPolytope, image_linearMap_convexHull, cutPolytope]
+  · rw [cutPolytope, LinearMap.image_convexHull, cutPolytope]
     congr 1
     ext z
     simp only [Set.mem_image, Set.mem_range]
@@ -275,7 +275,7 @@ private theorem extensionComplexity_cutPolytope_congr {V W : Type*} [Fintype V] 
       refine ⟨cutVertex K (X.image e), ⟨X.image e, rfl⟩, ?_⟩
       rw [hgf, Finset.image_image]
       simp only [Equiv.symm_comp_self, Finset.image_id]
-  · rw [cutPolytope, image_linearMap_convexHull, cutPolytope]
+  · rw [cutPolytope, LinearMap.image_convexHull, cutPolytope]
     congr 1
     ext z
     simp only [Set.mem_image, Set.mem_range]

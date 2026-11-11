@@ -380,7 +380,7 @@ theorem extensionComplexity_corrPolytope_le_corrGadgetGraph
             (corrGadgetGraph n).IsIndepSet (S : Set _)} => stabVertex K S.1) ''
           {S | c ⬝ᵥ stabVertex K S.1 = δ}) := by
       simpa only [face, stabPolytope] using convexHull_inter_dotProduct_eq hvalid
-    rw [hface, image_linearMap_convexHull, corrPolytope]
+    rw [hface, LinearMap.image_convexHull, corrPolytope]
     congr 1
     ext y
     simp only [Set.mem_image, Set.mem_ofPred_eq, Set.mem_range, Subtype.exists]
@@ -438,7 +438,7 @@ private theorem extensionComplexity_corrGadgetGraph_le_stabHardGraph
   let proj : (Fin m → K) →ₗ[K] (CorrGadgetV p → K) := LinearMap.funLeft K K emb
   have him : proj '' stabPolytope K (stabHardGraph m) =
       stabPolytope K (corrGadgetGraph p) := by
-    rw [stabPolytope, image_linearMap_convexHull, stabPolytope]
+    rw [stabPolytope, LinearMap.image_convexHull, stabPolytope]
     congr 1
     ext y
     simp only [Set.mem_image, Set.mem_range, Subtype.exists]

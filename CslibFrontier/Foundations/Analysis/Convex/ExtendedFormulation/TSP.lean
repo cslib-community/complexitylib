@@ -22,7 +22,7 @@ polytope `corrPolytope K (Fin p)` to the symmetric traveling salesman polytope `
 Kaibel–Weltge's `(3 / 2) ^ p` bound on `corrPolytope` [KaibelWeltge2015, Theorem 1].
 
 For `p ≥ 1`, `SplitV (CorrDigraphV p) v₀ pad` has `3 * |CorrDigraphV p| + pad ≤ 69 * p ^ 2 + pad`
-vertices, and intersecting `tspPolytope K W` with the zero-weight facet for non-edges of
+vertices, and intersecting `tspPolytope K W` with the zero-weight non-edge exposed face of
 `paddedSplitGraph v₀ pad (corrDigraphAdj p hp)` yields a face whose coordinate projection onto the
 distinguished reverse edges `(vOut (chain v 1), vIn (chain v 0))` equals `corrPolytope K (Fin p)`
 (`extensionComplexity_corrPolytope_le_tspPolytope_splitV`). Transporting along any bijection
@@ -108,7 +108,7 @@ private theorem tspPolytope_funLeft_eq {V₁ V₂ : Type*} [Fintype V₁] [Finty
     LinearMap.funLeft K K ⇑(SimpleGraph.Iso.completeGraph e).mapEdgeSet '' tspPolytope K V₂ =
       tspPolytope K V₁ := by
   have hcard : Fintype.card V₁ = Fintype.card V₂ := Fintype.card_congr e
-  rw [tspPolytope, image_linearMap_convexHull, tspPolytope]
+  rw [tspPolytope, LinearMap.image_convexHull, tspPolytope]
   congr 1
   ext z
   simp only [Set.mem_image, Set.mem_range, Subtype.exists]
@@ -300,7 +300,7 @@ private theorem extensionComplexity_corrPolytope_le_splitV_face
       map_smul' := fun _ _ => rfl }
   have hface := tspPolytope_inter_subgraph_eq (K := K) G
   have hproj : π '' (tspPolytope K W ∩ {x | c ⬝ᵥ x = 0}) = corrPolytope K (Fin p) := by
-    rw [hface, image_linearMap_convexHull, corrPolytope]
+    rw [hface, LinearMap.image_convexHull, corrPolytope]
     congr 1
     ext y
     simp only [Set.mem_image, Set.mem_range, Subtype.exists]

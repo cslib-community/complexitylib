@@ -39,6 +39,16 @@ on `O(p²)` vertices (`card_corrDigraphV_le`).
 * [FioriniMassarPokuttaTiwaryDeWolf2015], Section 3.4 (Lemma 11, Steps (i)–(ii)).
 -/
 
+private theorem consecutivePairs_nil {α : Type*} :
+    List.consecutivePairs ([] : List α) = [] := rfl
+
+private theorem consecutivePairs_cons_cons {α : Type*} (a b : α) (l : List α) :
+    List.consecutivePairs (a :: b :: l) = (a, b) :: List.consecutivePairs (b :: l) := rfl
+
+private theorem consecutivePairs_singleton {α : Type*} (a : α) :
+    List.consecutivePairs [a] = [] := rfl
+
+
 public section
 
 /-- Variables of the correlation `3`-SAT formula on `Fin p`: diagonal `C_{ii}` and
@@ -359,14 +369,11 @@ private theorem slotClause_inj_slot {p : ℕ} {v : CorrVar p} {ℓ₁ ℓ₂ : F
   · cases h2
   · exact Fin.ext (hl₁.trans hl₂.symm)
 
-private def listAdjPairs {α : Type*} : List α → List (α × α)
-  | [] => []
-  | [_] => []
-  | a :: b :: xs => (a, b) :: listAdjPairs (b :: xs)
 
-private theorem listAdjPairs_append {α : Type*} {l₁ l₂ : List α} (h₁ : l₁ ≠ []) (h₂ : l₂ ≠ []) :
-    listAdjPairs (l₁ ++ l₂) =
-      listAdjPairs l₁ ++ (l₁.getLast h₁, l₂.head h₂) :: listAdjPairs l₂ := by
+private theorem List.consecutivePairs_append {α : Type*} {l₁ l₂ : List α}
+    (h₁ : l₁ ≠ []) (h₂ : l₂ ≠ []) :
+    List.consecutivePairs (l₁ ++ l₂) =
+      List.consecutivePairs l₁ ++ (l₁.getLast h₁, l₂.head h₂) :: List.consecutivePairs l₂ := by
   induction l₁ with
   | nil => exact absurd rfl h₁
   | cons a xs ih =>
@@ -378,9 +385,10 @@ private theorem listAdjPairs_append {α : Type*} {l₁ l₂ : List α} (h₁ : l
       | cons b ys =>
           have hne : b :: ys ≠ [] := List.cons_ne_nil b ys
           rw [List.cons_append, List.cons_append]
-          dsimp only [listAdjPairs]
+          dsimp only [consecutivePairs_nil, consecutivePairs_cons_cons, consecutivePairs_singleton,
+            false_or, List.nil_append, List.cons_append]
           have hca : b :: (ys ++ l₂) = (b :: ys) ++ l₂ := rfl
-          rw [hca, ih hne, List.getLast_cons hne]; rfl
+          rw [hca, ih hne, List.getLast_cons hne]
 
 private theorem flatMap_ne_nil {α β : Type*} {L : List β} (hL : L ≠ [])
     {f : β → List α} (hf : ∀ b ∈ L, f b ≠ []) :
@@ -427,27 +435,28 @@ private theorem getLast_flatMap {α β : Type*} {L : List β} (hL : L ≠ [])
           rw [h1, ih htail hft]
           exact hcongr _ _ (List.getLast_cons htail).symm
 
-private theorem mem_listAdjPairs_flatMap {α β : Type*} {L : List β} (hL : L ≠ [])
+private theorem mem_List.consecutivePairs_flatMap {α β : Type*} {L : List β} (hL : L ≠ [])
     {f : β → List α} (hf : ∀ b, f b ≠ []) {x y : α} :
-    (x, y) ∈ listAdjPairs (L.flatMap f) ↔
-      (∃ b ∈ L, (x, y) ∈ listAdjPairs (f b)) ∨
-      (∃ p ∈ listAdjPairs L,
+    (x, y) ∈ List.consecutivePairs (L.flatMap f) ↔
+      (∃ b ∈ L, (x, y) ∈ List.consecutivePairs (f b)) ∨
+      (∃ p ∈ List.consecutivePairs L,
         x = (f p.1).getLast (hf p.1) ∧ y = (f p.2).head (hf p.2)) := by
   induction L with
   | nil => exact absurd rfl hL
   | cons b bs ih =>
       cases bs with
       | nil =>
-          simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, listAdjPairs,
-            List.not_mem_nil, false_and, exists_false, or_false, List.mem_singleton,
-            exists_eq_left]
+          simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil,
+            consecutivePairs_singleton, List.not_mem_nil, false_and, exists_false, or_false,
+            List.mem_singleton, exists_eq_left]
       | cons b' bs' =>
           have htail : b' :: bs' ≠ [] := List.cons_ne_nil b' bs'
           have hfm := flatMap_ne_nil htail (fun z _ => hf z)
-          rw [List.flatMap_cons, listAdjPairs_append (hf b) hfm, List.mem_append,
-            List.mem_cons, Prod.mk.injEq, ih htail, head_flatMap htail (fun z _ => hf z),
+          rw [List.flatMap_cons, List.consecutivePairs_append (hf b) hfm, List.mem_append,
+            List.mem_cons, Prod.mk.injEq, ih htail,
+            head_flatMap htail (fun z _ => hf z),
             List.head_cons]
-          simp only [listAdjPairs, List.mem_cons]
+          simp only [consecutivePairs_cons_cons,             List.mem_cons]
           constructor
           · rintro (h | ⟨rfl, rfl⟩ | ⟨c, hc, hxy⟩ | ⟨p, hp, h1, h2⟩)
             · exact Or.inl ⟨b, Or.inl rfl, h⟩
@@ -461,8 +470,8 @@ private theorem mem_listAdjPairs_flatMap {α β : Type*} {L : List β} (hL : L �
               · cases hbb; exact Or.inr (Or.inl ⟨h1, h2⟩)
               · exact Or.inr (Or.inr (Or.inr ⟨(p₁, p₂), hp, h1, h2⟩))
 
-private theorem getElem_mem_listAdjPairs {α : Type*} (l : List α) (i : ℕ)
-    (hi : i + 1 < l.length) : (l[i], l[i + 1]) ∈ listAdjPairs l := by
+private theorem getElem_mem_List.consecutivePairs {α : Type*} (l : List α) (i : ℕ)
+    (hi : i + 1 < l.length) : (l[i], l[i + 1]) ∈ List.consecutivePairs l := by
   induction l generalizing i with
   | nil => simp only [List.length_nil] at hi; omega
   | cons a xs ih =>
@@ -470,24 +479,31 @@ private theorem getElem_mem_listAdjPairs {α : Type*} (l : List α) (i : ℕ)
       | nil => simp only [List.length_singleton] at hi; omega
       | cons b ys =>
           cases i with
-          | zero => simp only [listAdjPairs, List.getElem_cons_zero, List.getElem_cons_succ,
-              List.mem_cons, true_or]
+          | zero =>
+              simp only [consecutivePairs_cons_cons,
+                                List.getElem_cons_zero, List.getElem_cons_succ, List.mem_cons,
+                                  true_or]
           | succ j =>
-              simp only [listAdjPairs, List.getElem_cons_succ, List.mem_cons]
+              simp only [consecutivePairs_cons_cons,
+                                List.getElem_cons_succ, List.mem_cons]
               exact Or.inr (ih j (by simp only [List.length_cons] at hi ⊢; omega))
 
-private theorem mem_listAdjPairs_iff_exists_getElem {α : Type*} {l : List α} {x y : α} :
-    (x, y) ∈ listAdjPairs l ↔
+private theorem mem_List.consecutivePairs_iff_exists_getElem {α : Type*} {l : List α} {x y : α} :
+    (x, y) ∈ List.consecutivePairs l ↔
       ∃ i, ∃ hi : i + 1 < l.length, l[i] = x ∧ l[i + 1] = y := by
   induction l with
-  | nil => simp only [listAdjPairs, List.not_mem_nil, List.length_nil, false_iff, not_exists]; omega
+  | nil => simp only [consecutivePairs_nil, List.not_mem_nil, List.length_nil, false_iff,
+    not_exists]; omega
   | cons a xs ih =>
       cases xs with
       | nil =>
-          simp only [listAdjPairs, List.not_mem_nil, List.length_singleton, false_iff, not_exists]
+          simp only [consecutivePairs_singleton,
+            List.not_mem_nil, List.length_singleton,
+            false_iff, not_exists]
           omega
       | cons b ys =>
-          simp only [listAdjPairs, List.mem_cons, Prod.mk.injEq, ih]
+          simp only [consecutivePairs_cons_cons, List.mem_cons, Prod.mk.injEq,
+            ih]
           constructor
           · rintro (⟨rfl, rfl⟩ | ⟨j, hj, h1, h2⟩)
             · exact ⟨0, by simp only [List.length_cons]; omega, rfl, rfl⟩
@@ -500,7 +516,8 @@ private theorem mem_listAdjPairs_iff_exists_getElem {α : Type*} {l : List α} {
 
 private theorem step_mem_cyclicPairs {α : Type*} (l : List α) [NeZero l.length] (hl : l ≠ [])
     (i : Fin l.length) (h2 : 2 ≤ l.length) :
-    (l[i.1], l[(i + 1 : Fin l.length).1]) ∈ (l.getLast hl, l.head hl) :: listAdjPairs l := by
+    (l[i.1], l[(i + 1 : Fin l.length).1]) ∈
+      (l.getLast hl, l.head hl) :: List.consecutivePairs l := by
   have h1 : (1 : Fin l.length).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
   by_cases hlast : i.1 + 1 = l.length
   · have hi1 : (i + 1 : Fin l.length).1 = 0 := by
@@ -517,17 +534,17 @@ private theorem step_mem_cyclicPairs {α : Type*} (l : List α) [NeZero l.length
       rw [Fin.val_add, h1]
       exact Nat.mod_eq_of_lt hlt
     simp only [hi1]
-    exact List.mem_cons_of_mem _ (getElem_mem_listAdjPairs l i.1 hlt)
+    exact List.mem_cons_of_mem _ (getElem_mem_List.consecutivePairs l i.1 hlt)
 
 private theorem cyclicPairs_mem_iff {α : Type*} (l : List α) [NeZero l.length] (hl : l ≠ [])
     (h2 : 2 ≤ l.length) {x y : α} :
     (∃ i : Fin l.length, l[i.1] = x ∧ l[(i + 1 : Fin l.length).1] = y) ↔
-      (x, y) ∈ (l.getLast hl, l.head hl) :: listAdjPairs l := by
+      (x, y) ∈ (l.getLast hl, l.head hl) :: List.consecutivePairs l := by
   have h1 : (1 : Fin l.length).1 = 1 := by rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
   constructor
   · rintro ⟨i, rfl, rfl⟩
     exact step_mem_cyclicPairs l hl i h2
-  · rw [List.mem_cons, Prod.mk.injEq, mem_listAdjPairs_iff_exists_getElem]
+  · rw [List.mem_cons, Prod.mk.injEq, mem_List.consecutivePairs_iff_exists_getElem]
     rintro (⟨rfl, rfl⟩ | ⟨j, hj, rfl, rfl⟩)
     · refine ⟨⟨l.length - 1, by omega⟩, (List.getLast_eq_getElem hl).symm, ?_⟩
       have hi1 : (⟨l.length - 1, by omega⟩ + 1 : Fin l.length).1 = 0 := by
@@ -652,8 +669,8 @@ private def slotVisit {p : ℕ} (_hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVa
 private theorem slotVisit_ne_nil {p : ℕ} (_hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVar p)
     (ℓ : Fin (chainSlots p v)) : slotVisit _hp b v ℓ ≠ [] := by
   dsimp only [slotVisit]
-  split_ifs <;> simp only [List.cons_append, List.nil_append, ne_eq,
-    List.cons_ne_nil, not_false_eq_true]
+  split_ifs <;> simp only [List.cons_append, List.nil_append, ne_eq, List.cons_ne_nil,
+    not_false_eq_true]
 
 private theorem chainSlots_pos {p : ℕ} (hp : 1 ≤ p) (v : CorrVar p) : 0 < chainSlots p v := by
   cases v <;> simp only [chainSlots] <;> omega
@@ -670,8 +687,8 @@ private def varBlock {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVar 
 private theorem varBlock_ne_nil {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVar p) :
     varBlock hp b v ≠ [] := by
   dsimp only [varBlock]
-  split_ifs <;> simp only [List.cons_append, List.nil_append, ne_eq,
-    List.cons_ne_nil, not_false_eq_true]
+  split_ifs <;> simp only [List.cons_append, List.nil_append, ne_eq, List.cons_ne_nil,
+    not_false_eq_true]
 
 private theorem head_varBlock {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (v : CorrVar p) :
     (varBlock hp b v).head (varBlock_ne_nil hp b v) = .gate v := by
@@ -694,8 +711,8 @@ private theorem getLast_varBlock {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (
   dsimp only [varBlock]
   split_ifs with hval
   · simp only [List.cons_append, List.nil_append,
-      List.getLast_cons (List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _)),
-      List.getLast_append_of_ne_nil _ (List.cons_ne_nil _ _), List.getLast_singleton]
+    List.getLast_cons (List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _)),
+    List.getLast_append_of_ne_nil _ (List.cons_ne_nil _ _), List.getLast_singleton]
   · simp only [List.cons_append, List.nil_append]
     have htrue : assignVarVal b v = true := Bool.eq_true_of_not_eq_false hval
     have hfm := flatMap_ne_nil hrev (fun ℓ _ => slotVisit_ne_nil hp b v ℓ)
@@ -706,15 +723,14 @@ private theorem getLast_varBlock {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (
       simp only [List.getElem_map, List.length_map, List.length_finRange, List.getElem_finRange]
       ext; simp only [Fin.val_rev, Fin.val_cast]; omega
     rw [hgl]
-    simp only [slotVisit, htrue, Bool.true_eq_false, ↓reduceIte,
-      List.cons_append, List.nil_append]
+    simp only [slotVisit, htrue, Bool.true_eq_false, ↓reduceIte, List.cons_append, List.nil_append]
     rw [List.getLast_cons (List.append_ne_nil_of_right_ne_nil _ (List.cons_ne_nil _ _)),
       List.getLast_append_of_ne_nil _ (List.cons_ne_nil _ _),
       List.getLast_cons (List.cons_ne_nil _ _), List.getLast_singleton]
 
-private theorem listAdjPairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p))
+private theorem List.consecutivePairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p))
     (v : CorrVar p) (ℓ : Fin (chainSlots p v)) {x y : CorrDigraphV p}
-    (hmem : (x, y) ∈ listAdjPairs (slotVisit hp b v ℓ)) :
+    (hmem : (x, y) ∈ List.consecutivePairs (slotVisit hp b v ℓ)) :
     corrDigraphAdj p hp x y := by
   dsimp only [slotVisit] at hmem
   by_cases hval : assignVarVal b v = false
@@ -722,8 +738,9 @@ private theorem listAdjPairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset 
     dsimp only [slotDetour] at hmem
     cases hs : slotClause p v ℓ with
     | none =>
-        simp only [hs, List.append_nil, List.cons_append, List.nil_append, listAdjPairs,
-          List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+        simp only [hs, List.append_nil, List.cons_append, List.nil_append,
+          consecutivePairs_cons_cons, consecutivePairs_singleton, List.mem_cons,
+          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
         rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
           simp only [corrDigraphAdj, true_and] <;>
           exact Or.inl trivial
@@ -731,8 +748,9 @@ private theorem listAdjPairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset 
         rcases ql with ⟨⟨e, c⟩, lit⟩
         simp only [hs] at hmem
         split_ifs at hmem with ho
-        · simp only [List.cons_append, List.nil_append, listAdjPairs, List.mem_cons,
-            Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+        · simp only [List.cons_append, List.nil_append, consecutivePairs_cons_cons,
+          consecutivePairs_singleton, List.mem_cons,
+          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           have hcl := slotClause_clauseOwner b (e, c)
           rw [ho, hs, Option.some.injEq, Prod.mk.injEq] at hcl
           have hlit : lit = false := hcl.2.trans hval
@@ -741,8 +759,9 @@ private theorem listAdjPairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset 
             exact Or.inl trivial
           · exact ⟨ℓ, false, hlit ▸ hs, Or.inl ⟨rfl, rfl⟩⟩
           · exact ⟨ℓ, false, hlit ▸ hs, Or.inl ⟨rfl, rfl⟩⟩
-        · simp only [List.append_nil, List.cons_append, List.nil_append, listAdjPairs,
-            List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+        · simp only [List.append_nil, List.cons_append, List.nil_append, consecutivePairs_cons_cons,
+          consecutivePairs_singleton, List.mem_cons,
+          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
             simp only [corrDigraphAdj, true_and] <;>
             exact Or.inl trivial
@@ -751,8 +770,9 @@ private theorem listAdjPairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset 
     dsimp only [slotDetour] at hmem
     cases hs : slotClause p v ℓ with
     | none =>
-        simp only [hs, List.append_nil, List.cons_append, List.nil_append, listAdjPairs,
-          List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+        simp only [hs, List.append_nil, List.cons_append, List.nil_append,
+          consecutivePairs_cons_cons, consecutivePairs_singleton, List.mem_cons,
+          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
         rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
           simp only [corrDigraphAdj, true_and] <;>
           exact Or.inr trivial
@@ -760,8 +780,9 @@ private theorem listAdjPairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset 
         rcases ql with ⟨⟨e, c⟩, lit⟩
         simp only [hs] at hmem
         split_ifs at hmem with ho
-        · simp only [List.cons_append, List.nil_append, listAdjPairs, List.mem_cons,
-            Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+        · simp only [List.cons_append, List.nil_append, consecutivePairs_cons_cons,
+          consecutivePairs_singleton, List.mem_cons,
+          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           have hcl := slotClause_clauseOwner b (e, c)
           rw [ho, hs, Option.some.injEq, Prod.mk.injEq] at hcl
           have hlit : lit = true := hcl.2.trans htrue
@@ -770,8 +791,9 @@ private theorem listAdjPairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset 
           · exact ⟨ℓ, true, hlit ▸ hs, Or.inr ⟨rfl, rfl⟩⟩
           · simp only [corrDigraphAdj, true_and]
             exact Or.inr trivial
-        · simp only [List.append_nil, List.cons_append, List.nil_append, listAdjPairs,
-            List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+        · simp only [List.append_nil, List.cons_append, List.nil_append, consecutivePairs_cons_cons,
+          consecutivePairs_singleton, List.mem_cons,
+          Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
             simp only [corrDigraphAdj, true_and] <;>
             exact Or.inr trivial
@@ -802,9 +824,9 @@ private theorem getLast_slotVisit {p : ℕ} (_hp : 1 ≤ p) (b : Finset (Fin p))
       List.getLast_append_of_ne_nil _ (List.cons_ne_nil _ _),
       List.getLast_cons (List.cons_ne_nil _ _), List.getLast_singleton]
 
-private theorem listAdjPairs_varBlock_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p))
+private theorem List.consecutivePairs_varBlock_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p))
     (v : CorrVar p) {x y : CorrDigraphV p}
-    (hmem : (x, y) ∈ listAdjPairs (varBlock hp b v)) :
+    (hmem : (x, y) ∈ List.consecutivePairs (varBlock hp b v)) :
     corrDigraphAdj p hp x y := by
   have hs := chainSlots_pos hp v
   have hfr : List.finRange (chainSlots p v) ≠ [] := by
@@ -819,10 +841,11 @@ private theorem listAdjPairs_varBlock_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (
     have hcat := List.append_ne_nil_of_left_ne_nil hfm
       [.chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩]
     rw [List.append_assoc,
-      listAdjPairs_append (List.cons_ne_nil _ _) hcat,
-      listAdjPairs_append hfm (List.cons_ne_nil _ _)] at hmem
-    simp only [listAdjPairs, List.nil_append, List.mem_append, List.mem_cons, Prod.mk.injEq,
-      List.getLast_singleton, List.not_mem_nil, or_false] at hmem
+      List.consecutivePairs_append (List.cons_ne_nil _ _) hcat,
+      List.consecutivePairs_append hfm (List.cons_ne_nil _ _)] at hmem
+    simp only [consecutivePairs_singleton,
+      List.nil_append, List.mem_append, List.mem_cons, Prod.mk.injEq,
+      List.not_mem_nil, or_false, List.getLast_singleton] at hmem
     rw [List.head_append_of_ne_nil hfm] at hmem
     rcases hmem with ⟨rfl, rfl⟩ | hflat | ⟨rfl, rfl⟩
     · rw [head_flatMap hfr (fun ℓ _ => slotVisit_ne_nil hp b v ℓ), head_slotVisit, hval]
@@ -832,10 +855,10 @@ private theorem listAdjPairs_varBlock_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (
         simp only [List.getElem_finRange, Fin.val_cast]
       simp only [hhead, ↓reduceIte, corrDigraphAdj, Nat.mul_zero, true_and]
       exact Or.inl trivial
-    · rw [mem_listAdjPairs_flatMap hfr (fun ℓ => slotVisit_ne_nil hp b v ℓ)] at hflat
+    · rw [mem_List.consecutivePairs_flatMap hfr (fun ℓ => slotVisit_ne_nil hp b v ℓ)] at hflat
       rcases hflat with ⟨ℓ, _, hxy⟩ | ⟨⟨ℓ₁, ℓ₂⟩, hadj, rfl, rfl⟩
-      · exact listAdjPairs_slotVisit_mem hp b v ℓ hxy
-      · rw [mem_listAdjPairs_iff_exists_getElem] at hadj
+      · exact List.consecutivePairs_slotVisit_mem hp b v ℓ hxy
+      · rw [mem_List.consecutivePairs_iff_exists_getElem] at hadj
         obtain ⟨i, hi, h1, h2⟩ := hadj
         have h1v := congrArg Fin.val h1
         have h2v := congrArg Fin.val h2
@@ -858,9 +881,10 @@ private theorem listAdjPairs_varBlock_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (
         ((List.finRange (chainSlots p v)).map Fin.rev).flatMap (slotVisit hp b v) =
         ([.gate v, .chain v ⟨3 * chainSlots p v, _⟩] : List _) ++
           ((List.finRange (chainSlots p v)).map Fin.rev).flatMap (slotVisit hp b v) from rfl,
-      listAdjPairs_append (List.cons_ne_nil _ _) hfm] at hmem
-    simp only [listAdjPairs, List.getLast_cons (List.cons_ne_nil _ _), List.getLast_singleton,
-      List.mem_append, List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
+      List.consecutivePairs_append (List.cons_ne_nil _ _) hfm] at hmem
+    simp only [consecutivePairs_cons_cons, consecutivePairs_singleton,
+      List.nil_append, List.cons_append, List.getLast_cons (List.cons_ne_nil _ _),
+      List.getLast_singleton, List.mem_cons, Prod.mk.injEq, ] at hmem
     rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | hflat
     · simp only [corrDigraphAdj, chainLen, true_and]
       right; trivial
@@ -872,10 +896,10 @@ private theorem listAdjPairs_varBlock_mem {p : ℕ} (hp : 1 ≤ p) (b : Finset (
         ext; simp only [Fin.val_rev, Fin.val_cast]
       simp only [hh, corrDigraphAdj, true_and]
       right; omega
-    · rw [mem_listAdjPairs_flatMap hrev (fun ℓ => slotVisit_ne_nil hp b v ℓ)] at hflat
+    · rw [mem_List.consecutivePairs_flatMap hrev (fun ℓ => slotVisit_ne_nil hp b v ℓ)] at hflat
       rcases hflat with ⟨ℓ, _, hxy⟩ | ⟨⟨ℓ₁, ℓ₂⟩, hadj, rfl, rfl⟩
-      · exact listAdjPairs_slotVisit_mem hp b v ℓ hxy
-      · rw [mem_listAdjPairs_iff_exists_getElem] at hadj
+      · exact List.consecutivePairs_slotVisit_mem hp b v ℓ hxy
+      · rw [mem_List.consecutivePairs_iff_exists_getElem] at hadj
         obtain ⟨i, hi, h1, h2⟩ := hadj
         simp only [List.length_map, List.length_finRange, List.getElem_map,
           List.getElem_finRange] at hi h1 h2
@@ -953,7 +977,7 @@ private theorem slotVisit_nodup {p : ℕ} (_hp : 1 ≤ p) (b : Finset (Fin p)) (
       have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h).2); dsimp only at this; omega
     · refine List.nodup_append.2 ⟨hdet, ?_, fun z hz w hw hzw => ?_⟩
       · simp only [List.nodup_cons, List.mem_singleton, List.nodup_nil, List.not_mem_nil,
-          not_false_eq_true, and_true]
+        not_false_eq_true, and_true]
         intro h
         have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h).2); dsimp only at this; omega
       · simp only [List.mem_cons, List.not_mem_nil, or_false] at hw
@@ -1002,8 +1026,8 @@ private theorem mem_varBlock_iff {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (
     exact ⟨ℓ.rev, List.mem_finRange _, Fin.rev_rev ℓ⟩
   dsimp only [varBlock]
   split_ifs <;>
-    simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false,
-      List.mem_flatMap, List.mem_finRange, true_and, hrev_mem, mem_slotVisit_iff]
+    simp only [List.mem_append, List.mem_cons, List.mem_nil_iff, or_false, List.mem_flatMap,
+      List.mem_finRange, true_and, hrev_mem, mem_slotVisit_iff]
   · constructor
     · rintro ((rfl | ⟨ℓ, (rfl | rfl | rfl) | ⟨q, rfl, hq⟩⟩) | rfl)
       · exact Or.inl rfl
@@ -1091,7 +1115,7 @@ private theorem varBlock_nodup {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (v 
   split_ifs
   · refine List.nodup_append.2 ⟨?_, List.nodup_singleton _, fun z hz w hw hzw => ?_⟩
     · simp only [List.cons_append, List.nil_append, List.nodup_cons, List.mem_flatMap,
-        List.mem_finRange, true_and, hfm_nd, and_true]
+      List.mem_finRange, true_and, hfm_nd, and_true]
       rintro ⟨ℓ, h⟩
       rw [mem_slotVisit_iff] at h
       rcases h with (h | h | h) | ⟨q, h, _⟩ <;> cases h
@@ -1101,22 +1125,23 @@ private theorem varBlock_nodup {p : ℕ} (hp : 1 ≤ p) (b : Finset (Fin p)) (v 
       rcases hz with hz | ⟨ℓ, hℓ⟩
       · subst hz; cases hzw
       · exact hno_end ℓ (hzw ▸ hℓ)
-  · simp only [List.cons_append, List.nil_append, List.nodup_cons, List.mem_cons,
-      List.mem_flatMap, not_or, hrev_fm_nd, and_true]
+  · simp only [List.cons_append, List.nil_append, List.nodup_cons, List.mem_cons, List.mem_flatMap,
+    not_or, hrev_fm_nd, and_true]
     refine ⟨⟨(by intro h; cases h), fun ⟨ℓ, _, h⟩ => by
       rw [mem_slotVisit_iff] at h
       rcases h with (h | h | h) | ⟨q, h, _⟩ <;> cases h⟩,
       fun ⟨ℓ, _, h⟩ => hno_end ℓ h⟩
 
-private theorem mem_of_mem_listAdjPairs {α : Type*} {l : List α} {x y : α}
-    (h : (x, y) ∈ listAdjPairs l) : x ∈ l ∧ y ∈ l := by
+private theorem mem_of_mem_List.consecutivePairs {α : Type*} {l : List α} {x y : α}
+    (h : (x, y) ∈ List.consecutivePairs l) : x ∈ l ∧ y ∈ l := by
   induction l with
   | nil => cases h
   | cons a xs ih =>
       cases xs with
       | nil => cases h
       | cons b ys =>
-          simp only [listAdjPairs, List.mem_cons, Prod.mk.injEq] at h
+          simp only [consecutivePairs_cons_cons, List.mem_cons, Prod.mk.injEq,
+            ] at h
           rcases h with ⟨rfl, rfl⟩ | h
           · exact ⟨by simp only [List.mem_cons, true_or],
               by simp only [List.mem_cons, true_or, or_true]⟩
@@ -1127,7 +1152,7 @@ private theorem chain_one_zero_not_mem_forward {p : ℕ} (hp : 1 ≤ p) (b : Fin
     (v : CorrVar p) (hval : assignVarVal b v = false) :
     (.chain v ⟨1, by have := two_le_chainLen hp v; omega⟩,
       .chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) ∉
-        listAdjPairs (varBlock hp b v) := by
+        List.consecutivePairs (varBlock hp b v) := by
   have hs := chainSlots_pos hp v
   have hfr : List.finRange (chainSlots p v) ≠ [] := by
     intro h; have := congrArg List.length h
@@ -1139,22 +1164,24 @@ private theorem chain_one_zero_not_mem_forward {p : ℕ} (hp : 1 ≤ p) (b : Fin
   have hcat := List.append_ne_nil_of_left_ne_nil hfm
     [.chain v ⟨3 * chainSlots p v, by simp only [chainLen]; omega⟩]
   rw [List.append_assoc,
-    listAdjPairs_append (List.cons_ne_nil _ _) hcat,
-    listAdjPairs_append hfm (List.cons_ne_nil _ _)] at hmem
-  simp only [listAdjPairs, List.nil_append, List.mem_append, List.mem_cons, Prod.mk.injEq,
-    List.getLast_singleton, List.not_mem_nil, or_false] at hmem
+    List.consecutivePairs_append (List.cons_ne_nil _ _) hcat,
+    List.consecutivePairs_append hfm (List.cons_ne_nil _ _)] at hmem
+  simp only [consecutivePairs_singleton,
+    List.nil_append, List.mem_append, List.mem_cons, Prod.mk.injEq,
+    List.not_mem_nil, or_false, List.getLast_singleton] at hmem
   rw [List.head_append_of_ne_nil hfm] at hmem
   rcases hmem with ⟨h1, _⟩ | hflat | ⟨_, h2⟩
   · cases h1
-  · rw [mem_listAdjPairs_flatMap hfr (fun ℓ => slotVisit_ne_nil hp b v ℓ)] at hflat
+  · rw [mem_List.consecutivePairs_flatMap hfr (fun ℓ => slotVisit_ne_nil hp b v ℓ)] at hflat
     rcases hflat with ⟨ℓ, _, hxy⟩ | ⟨⟨ℓ₁, ℓ₂⟩, hadj, _, h2⟩
     · dsimp only [slotVisit] at hxy
       simp only [hval, ↓reduceIte] at hxy
       dsimp only [slotDetour] at hxy
       cases hsc : slotClause p v ℓ with
       | none =>
-          simp only [hsc, List.append_nil, List.cons_append, List.nil_append, listAdjPairs,
-            List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
+          simp only [hsc, List.append_nil, List.cons_append, List.nil_append,
+            consecutivePairs_cons_cons, consecutivePairs_singleton, List.mem_cons,
+            Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
           rcases hxy with ⟨h1, h2⟩ | ⟨h1, h2⟩
           · have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h2).2)
             dsimp only at this; omega
@@ -1164,14 +1191,16 @@ private theorem chain_one_zero_not_mem_forward {p : ℕ} (hp : 1 ≤ p) (b : Fin
       | some ql =>
           simp only [hsc] at hxy
           split_ifs at hxy
-          · simp only [List.cons_append, List.nil_append, listAdjPairs, List.mem_cons,
-              Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
+          · simp only [List.cons_append, List.nil_append, consecutivePairs_cons_cons,
+            consecutivePairs_singleton, List.mem_cons,
+            Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
             rcases hxy with ⟨_, h2⟩ | ⟨_, h2⟩ | ⟨h1, _⟩
             · cases h2
             · cases h2
             · cases h1
-          · simp only [List.append_nil, List.cons_append, List.nil_append, listAdjPairs,
-              List.mem_cons, Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
+          · simp only [List.append_nil, List.cons_append, List.nil_append,
+            consecutivePairs_cons_cons, consecutivePairs_singleton, List.mem_cons,
+            Prod.mk.injEq, List.not_mem_nil, or_false] at hxy
             rcases hxy with ⟨_, h2⟩ | ⟨h1, h2⟩
             · have := congrArg Fin.val (eq_of_heq (CorrDigraphV.chain.inj h2).2)
               dsimp only at this; omega
@@ -1183,7 +1212,7 @@ private theorem chain_one_zero_not_mem_forward {p : ℕ} (hp : 1 ≤ p) (b : Fin
       have := congrArg Fin.val h2.2
       dsimp only at this
       have hne : ℓ₂.1 ≠ 0 := by
-        rw [mem_listAdjPairs_iff_exists_getElem] at hadj
+        rw [mem_List.consecutivePairs_iff_exists_getElem] at hadj
         obtain ⟨i, hi, _, h2'⟩ := hadj
         simp only [List.length_finRange, List.getElem_finRange] at hi h2'
         have hv2 := congrArg Fin.val h2'
@@ -1197,7 +1226,7 @@ private theorem chain_one_zero_mem_backward {p : ℕ} (hp : 1 ≤ p) (b : Finset
     (v : CorrVar p) (hval : assignVarVal b v = true) :
     (.chain v ⟨1, by have := two_le_chainLen hp v; omega⟩,
       .chain v ⟨0, by have := two_le_chainLen hp v; omega⟩) ∈
-        listAdjPairs (varBlock hp b v) := by
+        List.consecutivePairs (varBlock hp b v) := by
   have hs := chainSlots_pos hp v
   have hfr : List.finRange (chainSlots p v) ≠ [] := by
     intro h; have := congrArg List.length h
@@ -1211,9 +1240,9 @@ private theorem chain_one_zero_mem_backward {p : ℕ} (hp : 1 ≤ p) (b : Finset
       ((List.finRange (chainSlots p v)).map Fin.rev).flatMap (slotVisit hp b v) =
       ([.gate v, .chain v ⟨3 * chainSlots p v, _⟩] : List _) ++
         ((List.finRange (chainSlots p v)).map Fin.rev).flatMap (slotVisit hp b v) from rfl,
-    listAdjPairs_append (List.cons_ne_nil _ _) hfm]
+    List.consecutivePairs_append (List.cons_ne_nil _ _) hfm]
   refine List.mem_append_right _ (List.mem_cons_of_mem _ ?_)
-  rw [mem_listAdjPairs_flatMap hrev (fun ℓ => slotVisit_ne_nil hp b v ℓ)]
+  rw [mem_List.consecutivePairs_flatMap hrev (fun ℓ => slotVisit_ne_nil hp b v ℓ)]
   left
   let ℓ₀ : Fin (chainSlots p v) := ⟨0, hs⟩
   refine ⟨ℓ₀, ?_, ?_⟩
@@ -1221,10 +1250,12 @@ private theorem chain_one_zero_mem_backward {p : ℕ} (hp : 1 ≤ p) (b : Finset
     exact ⟨ℓ₀.rev, List.mem_finRange _, Fin.rev_rev ℓ₀⟩
   · dsimp only [slotVisit]
     simp only [hval, Bool.true_eq_false, ↓reduceIte]
-    rw [listAdjPairs_append (List.append_ne_nil_of_left_ne_nil (List.cons_ne_nil _ _) _)
+    rw [List.consecutivePairs_append (List.append_ne_nil_of_left_ne_nil (List.cons_ne_nil _ _) _)
       (List.cons_ne_nil _ _)]
     refine List.mem_append_right _ (List.mem_cons_of_mem _ ?_)
-    simp only [listAdjPairs, List.mem_cons, ℓ₀, Nat.mul_zero, zero_add, true_or]
+    simp only [consecutivePairs_cons_cons, consecutivePairs_singleton,
+      List.mem_cons, ℓ₀, Nat.mul_zero, zero_add,
+      true_or]
 
 /-- Every vertex subset `b : Finset (Fin p)` (`1 ≤ p`) determines a satisfying assignment of the
 correlation `3`-SAT formula and hence a directed Hamiltonian tour `τ` of `corrDigraphAdj p hp`
@@ -1306,7 +1337,8 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
       τ t = tourList[(finCongr hlen.symm t).1] := fun _ => rfl
   have hpair_iff : ∀ x y : CorrDigraphV p,
       (∃ t : Fin (Fintype.card (CorrDigraphV p)), τ t = x ∧ τ (t + 1) = y) ↔
-        (x, y) ∈ (tourList.getLast htl_ne, tourList.head htl_ne) :: listAdjPairs tourList := by
+        (x, y) ∈ (tourList.getLast htl_ne, tourList.head htl_ne) ::
+          List.consecutivePairs tourList := by
     intro x y
     rw [← cyclicPairs_mem_iff tourList htl_ne hlen2]
     constructor
@@ -1328,14 +1360,13 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
           rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
         have h1b : (1 : Fin tourList.length).1 = 1 := by
           rw [Fin.val_one']; exact Nat.mod_eq_of_lt (by omega)
-        simp only [finCongr_apply, finCongr_symm_apply, Fin.val_cast, Fin.val_add,
-          h1a, h1b, hlen]
+        simp only [finCongr_apply, finCongr_symm_apply, Fin.val_cast, Fin.val_add, h1a, h1b, hlen]
       simp only [hτ_apply, h1eq]
   have hcyc_adj : ∀ {x y : CorrDigraphV p},
-      (x, y) ∈ (tourList.getLast htl_ne, tourList.head htl_ne) :: listAdjPairs tourList →
+      (x, y) ∈ (tourList.getLast htl_ne, tourList.head htl_ne) :: List.consecutivePairs tourList →
         corrDigraphAdj p hp x y := by
     intro x y hmem
-    rw [List.mem_cons, Prod.mk.injEq, mem_listAdjPairs_flatMap hM_ne
+    rw [List.mem_cons, Prod.mk.injEq, mem_List.consecutivePairs_flatMap hM_ne
       (fun k => varBlock_ne_nil hp b (varAt p k))] at hmem
     rcases hmem with ⟨rfl, rfl⟩ | (⟨k, _, hxy⟩ | ⟨⟨k₁, k₂⟩, hadj, rfl, rfl⟩)
     · rw [getLast_flatMap hM_ne (fun k _ => varBlock_ne_nil hp b (varAt p k)),
@@ -1363,8 +1394,8 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
       split_ifs <;> simp only [corrDigraphAdj, hvn, chainLen, true_and]
       · exact Or.inr trivial
       · exact Or.inl trivial
-    · exact listAdjPairs_varBlock_mem hp b (varAt p k) hxy
-    · rw [mem_listAdjPairs_iff_exists_getElem] at hadj
+    · exact List.consecutivePairs_varBlock_mem hp b (varAt p k) hxy
+    · rw [mem_List.consecutivePairs_iff_exists_getElem] at hadj
       obtain ⟨i, hi, h1, h2⟩ := hadj
       simp only [List.length_finRange, List.getElem_finRange] at hi h1 h2
       rw [getLast_varBlock, head_varBlock]
@@ -1383,14 +1414,14 @@ theorem exists_dirTour_of_assignment {p : ℕ} [NeZero p] (hp : 1 ≤ p) (b : Fi
         assignVarVal b v = true := by
     intro v
     rw [hpair_iff]
-    rw [List.mem_cons, Prod.mk.injEq, mem_listAdjPairs_flatMap hM_ne
+    rw [List.mem_cons, Prod.mk.injEq, mem_List.consecutivePairs_flatMap hM_ne
       (fun k => varBlock_ne_nil hp b (varAt p k))]
     constructor
     · rintro (⟨hlast, hhead⟩ | (⟨k, _, hk⟩ | ⟨⟨k₁, k₂⟩, _, _, hhead⟩))
       · rw [head_flatMap hM_ne (fun k _ => varBlock_ne_nil hp b (varAt p k)), head_varBlock]
           at hhead
         cases hhead
-      · have hm := (mem_of_mem_listAdjPairs hk).1
+      · have hm := (mem_of_mem_List.consecutivePairs hk).1
         rw [mem_varBlock_iff] at hm
         rcases hm with h | ⟨_, h⟩ | ⟨_, h, _⟩
         · cases h
