@@ -15,7 +15,8 @@ public import Mathlib.ModelTheory.Graph
 # Graph maps as maps of `Language.graph`-structures
 
 A simple graph `G` on `V` is a structure of Mathlib's language of graphs `FirstOrder.Language.graph`
-through `SimpleGraph.structure`. This file translates between the graph maps of
+through `SimpleGraph.structure`. This file adds the missing `IsEmpty` and `Finite` instances on the
+relation symbols of `Language.graph` and translates between the graph maps of
 `Mathlib/Combinatorics/SimpleGraph/Maps.lean` and the maps of `Language.graph`-structures: a graph
 isomorphism `G ≃g H` is exactly an equivalence `V ≃[Language.graph] W` of the structures
 `G.structure` and `H.structure`, and an induced embedding `G ↪g H` is exactly an embedding
@@ -24,6 +25,9 @@ formula, and isomorphic graphs satisfy the same sentences.
 
 ## Main definitions
 
+* `FirstOrder.Language.graph.isEmpty_relations_zero`,
+  `FirstOrder.Language.graph.finite_relations`: the language of graphs has no nullary relation
+  symbols and finitely many relation symbols in total.
 * `SimpleGraph.Iso.toLanguageEquiv`, `SimpleGraph.Iso.ofLanguageEquiv`: a graph isomorphism as an
   equivalence of `Language.graph`-structures, and back.
 * `SimpleGraph.Embedding.toLanguageEmbedding`, `SimpleGraph.Embedding.ofLanguageEmbedding`: an
@@ -38,6 +42,20 @@ formula, and isomorphic graphs satisfy the same sentences.
 -/
 
 public section
+
+namespace FirstOrder.Language.graph
+
+/-- The graph language has no nullary relation symbols, matching the analogous instance for
+`Language.order` in `Mathlib/ModelTheory/Order.lean`. -/
+instance isEmpty_relations_zero : IsEmpty (Language.graph.Relations 0) :=
+  ⟨fun r => nomatch r⟩
+
+/-- The graph language has finitely many relation symbols. -/
+instance finite_relations : Finite (Σ l, Language.graph.Relations l) :=
+  Finite.of_surjective (fun _ : Unit => (⟨2, .adj⟩ : Σ l, Language.graph.Relations l))
+    (fun ⟨_, r⟩ => by cases r; exact ⟨(), rfl⟩)
+
+end FirstOrder.Language.graph
 
 namespace SimpleGraph
 

@@ -469,7 +469,8 @@ class BookInputs(unittest.TestCase):
             (self.root / name).write_text("# fixture rendering input\n")
         (self.root / "README.md").write_text("# A complete first chapter\n")
         (self.root / "AGENT_OPERATORS.md").write_text("# A short manual for the human driver\n")
-        (self.root / "paper-plan.md").write_text("# Archived editorial plan\n")
+        (self.root / "history").mkdir()
+        (self.root / "history/paper-plan.md").write_text("# Archived editorial plan\n")
         self.sources = self.root / "sources.md"
         self.sources.write_text('# Sources\n\n<a id="example"></a>\n## example\n\nCanonical citation.\n')
         self.output = self.root / "_build"

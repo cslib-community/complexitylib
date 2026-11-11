@@ -16,11 +16,11 @@ public import CslibFrontier.Computability.Complexity.Problems.MaxCut
 
 This module connects the Goemans–Williamson analysis in
 `CslibFrontier.Algorithms.Lean.MaxCut.GoemansWilliamson` [GoemansWilliamson1995] to the weighted
-maximum-cut problem `Cslib.Complexity.MaxCut`, whose instances are edge lists
-`L : List ((ℕ × ℕ) × ℕ)` of weighted edges and whose cut weight is
-`Cslib.Complexity.MaxCut.cutWeight`. Indexing the edges by their positions `Fin L.length`,
-`cutValue` is `cutWeight` (`cutValue_eq_cutWeight`), and the guarantee for `ε`-optimal unit
-vectors restates for `cutWeight`. Vertices are natural numbers; only the endpoints of `L` matter.
+maximum-cut problem `Cslib.Complexity.MaxCut`, whose edge lists have elements of type
+`Cslib.Complexity.MaxCut.WeightedEdge` and whose cut weight is `Cslib.Complexity.MaxCut.cutWeight`.
+Indexing the edges by their positions `Fin L.length`, `cutValue` is `cutWeight`
+(`cutValue_eq_cutWeight`), and the guarantee for `ε`-optimal unit vectors restates for
+`cutWeight`. Vertices are natural numbers; only the endpoints of `L` matter.
 
 ## Main results
 
@@ -45,18 +45,18 @@ variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 /-- **`cutValue` is `MaxCut.cutWeight`.** On the edge list `L` of an instance of the weighted
 `Cslib.Complexity.MaxCut` problem, indexed by positions, `cutValue` is the weight
 `Cslib.Complexity.MaxCut.cutWeight L side`. -/
-theorem cutValue_eq_cutWeight (L : List ((ℕ × ℕ) × ℕ)) (side : ℕ → Bool) :
-    cutValue (fun i : Fin L.length => L[i].1) (fun i => (L[i].2 : ℝ)) side =
+theorem cutValue_eq_cutWeight (L : List Cslib.Complexity.MaxCut.WeightedEdge) (side : ℕ → Bool) :
+    cutValue (fun i : Fin L.length => (L[i].u, L[i].v)) (fun i => (L[i].weight : ℝ)) side =
       (Cslib.Complexity.MaxCut.cutWeight L side : ℝ) := by
   unfold cutValue
   simp only [Fin.getElem_fin]
-  rw [Fin.sum_univ_fun_getElem L fun x => if side x.1.1 ≠ side x.1.2 then (x.2 : ℝ) else 0]
+  rw [Fin.sum_univ_fun_getElem L fun x => if side x.u ≠ side x.v then (x.weight : ℝ) else 0]
   unfold Cslib.Complexity.MaxCut.cutWeight
   induction L with
   | nil => simp
   | cons x L ih =>
     rw [List.map_cons, List.sum_cons, ih, List.filter_cons]
-    by_cases h : side x.1.1 = side x.1.2
+    by_cases h : side x.u = side x.v
     · simp [Cslib.Complexity.MaxCut.crosses, h]
     · simp [Cslib.Complexity.MaxCut.crosses, h]
 
@@ -65,11 +65,12 @@ variable [FiniteDimensional ℝ F] [MeasurableSpace F] [BorelSpace F] in
 an instance of weighted MAX-CUT and unit vectors `v` within `ε` of optimal for its relaxation,
 the expected weight of the rounded cut is at least `α` times the weight of every cut minus `ε`.
 Vertices are natural numbers; only the endpoints of `L` matter. -/
-theorem goemansWilliamsonConstant_mul_cutWeight_le_integral (L : List ((ℕ × ℕ) × ℕ))
+theorem goemansWilliamsonConstant_mul_cutWeight_le_integral
+    (L : List Cslib.Complexity.MaxCut.WeightedEdge)
     {v : ℕ → F} (hv : ∀ i, ‖v i‖ = 1) {ε : ℝ}
     (hopt : ∀ v' : ℕ → F, (∀ i, ‖v' i‖ = 1) →
-      sdpValue (fun i : Fin L.length => L[i].1) (fun i => (L[i].2 : ℝ)) v' ≤
-        sdpValue (fun i : Fin L.length => L[i].1) (fun i => (L[i].2 : ℝ)) v + ε)
+      sdpValue (fun i : Fin L.length => (L[i].u, L[i].v)) (fun i => (L[i].weight : ℝ)) v' ≤
+        sdpValue (fun i : Fin L.length => (L[i].u, L[i].v)) (fun i => (L[i].weight : ℝ)) v + ε)
     (side : ℕ → Bool) :
     goemansWilliamsonConstant * ((Cslib.Complexity.MaxCut.cutWeight L side : ℝ) - ε) ≤
       ∫ r, (Cslib.Complexity.MaxCut.cutWeight L (hyperplaneSide v r) : ℝ) ∂stdGaussian F := by
