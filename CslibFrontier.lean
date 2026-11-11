@@ -2480,6 +2480,7 @@ public import CslibFrontier.Computability.Kolmogorov.Incompressibility
 public import CslibFrontier.Computability.Kolmogorov.Invariance
 public import CslibFrontier.Computability.Kolmogorov.MINKT
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar
+public import CslibFrontier.Computability.Kolmogorov.MINKTStar.TruthTable
 public import CslibFrontier.Computability.Kolmogorov.MINcKT
 public import CslibFrontier.Computability.Kolmogorov.MKtP
 public import CslibFrontier.Computability.Kolmogorov.MultiTape
