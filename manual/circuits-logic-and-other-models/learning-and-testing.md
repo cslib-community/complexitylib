@@ -155,3 +155,15 @@ The examples use semantic hypotheses and real probability/analysis. These result
 [odonnell14]: ../sources.md#odonnell14
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [roughgarden15cc]: ../sources.md#roughgarden15cc
+
+## Replicable algorithms
+
+Shared-seed replicable sample algorithms ([Impagliazzo–Lei–Pitassi–Sorrell 2022](../sources.md#ilps22), formalized in [`Basic.lean`](../../CslibFrontier/MachineLearning/Replicable/Basic.lean)) capture randomized algorithms `Algorithm X Ω α m` whose shared seed `r : Ω` fixes a common source of randomness across two independent runs on fresh i.i.d. `m`-sample draws from a distribution `D : PMF X`.
+
+* **Core interface and `ProbComp` programs**: [`Basic.lean`](../../CslibFrontier/MachineLearning/Replicable/Basic.lean) defines `Algorithm`, executable [`Program`](../../CslibFrontier/MachineLearning/Replicable/Basic.lean) (backed by `Cslib.ProbComp` and lowered via `Program.toAlgorithm`), weak family-restricted replicability `IsReplicableFor`, distribution-free strong replicability `IsReplicable`, and accuracy predicates `IsAccurateFor`, `EstimatesFor`, and `Estimates`.
+* **Composition**: [`Composition.lean`](../../CslibFrontier/MachineLearning/Replicable/Composition.lean) proves additive replicability preservation under sequential pairing (`seqPair`), sequential binding (`seqBind`), product families (`pi`), and `k`-fold replication (`replicate`).
+* **Randomized rounding**: [`Rounding.lean`](../../CslibFrontier/MachineLearning/Replicable/Rounding.lean) provides discrete randomized threshold rounding (`thresholdRound`, `thresholdProg`), periodic offset-grid rounding (`roundGrid`, `roundGridProg`), continuous `[0, 1)` Lebesgue-measure equivalents, and generic concentration-to-replicability theorems (`isReplicableFor_roundGridProg_of_concentrates`, `isAccurateFor_roundGridProg_of_concentrates`).
+* **Confidence and replicability amplification**: [`Amplification.lean`](../../CslibFrontier/MachineLearning/Replicable/Amplification.lean) formalizes `majorityVote` and `medianOfRuns` confidence amplification (`β₀ < 1 / 2`), finite-domain heavy-hitter amplification (`amplifyFinite`) yielding strong `ρ`-replicability from accuracy `β₀ < 1 / (|α| + 1)`, and general-domain collision-threshold amplification (`amplifyReplicability`) boosting any `ρ₀ < 1 / 2` over `[DecidableEq α]`.
+* **Bounded-mean and coin bias clients**: [`BiasEstimation.lean`](../../CslibFrontier/MachineLearning/Replicable/BiasEstimation.lean) implements `replicableMeanProg` and `replicableBiasProg`, combining Hoeffding concentration with `roundGridProg` to obtain strong `ρ`-replicability and `(ε, β)`-accuracy.
+
+Checked counterexamples (including exact `disagreeProb = 1 / 2` on a fair coin and weak-vs-strong replicability separation) and concrete instantiations live in [`Replicable.lean`](../../CslibFrontierTests/Replicable.lean).

@@ -212,6 +212,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `lfp` | [Positive checked first-order least fixed point](circuits-logic-and-other-models/index.md) | finite-logic |
 | `tc` | [First-order reflexive transitive closure](circuits-logic-and-other-models/index.md) | finite-logic |
 | `eso` | [Existential second-order relational sentences](circuits-logic-and-other-models/index.md) | finite-logic |
+| `replicable-algorithm` | [Shared-seed replicable sample algorithms (`Algorithm` and weak/strong `ρ`-replicability)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
+| `replicable-program` | [`ProbComp`-backed shared-seed replicable programs (`Program`)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
 | `relational-encoding` | [Unordered finite relational table encoding](circuits-logic-and-other-models/index.md) | finite-logic |
 | `ordered-structure` | [Canonical ordered finite structures with BIT](circuits-logic-and-other-models/index.md) | finite-logic |
 | `ordered-domain` | [Ordered restricted-domain interpretations with numeric certificates](circuits-logic-and-other-models/index.md) | finite-logic |
