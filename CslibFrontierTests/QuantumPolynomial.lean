@@ -97,6 +97,4 @@ example (W : Type) [Fintype W] (U : ℕ → State 3 W →ₗᵢ[ℂ] State 3 W) 
 
 end
 
-end
-
 end CslibFrontierTests.QuantumPolynomial
