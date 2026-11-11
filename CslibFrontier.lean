@@ -2148,6 +2148,7 @@ public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.In
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import CslibFrontier.Computability.Complexity.Problems.BoundedHalting
+public import CslibFrontier.Computability.Complexity.Problems.CMMSA
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Affine
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Basic
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Constant
@@ -3261,6 +3262,7 @@ public import CslibFrontier.Computability.PCP.Approximation.Johnson
 public import CslibFrontier.Computability.PCP.Approximation.KCenter
 public import CslibFrontier.Computability.PCP.Approximation.LabelCover
 public import CslibFrontier.Computability.PCP.Approximation.LabelCover.Incidence
+public import CslibFrontier.Computability.PCP.Approximation.LabelCover.MinRep
 public import CslibFrontier.Computability.PCP.Approximation.LabelCover.Repetition
 public import CslibFrontier.Computability.PCP.Approximation.LabelCover.SmallSoundness
 public import CslibFrontier.Computability.PCP.Approximation.MaxCSP
@@ -5715,6 +5717,7 @@ public import CslibFrontier.Logics.Propositional.CuttingPlanes.Pigeonhole
 public import CslibFrontier.Logics.Propositional.CuttingPlanes.Resolution
 public import CslibFrontier.Logics.Propositional.CuttingPlanes.Separation
 public import CslibFrontier.Logics.Propositional.DNF
+public import CslibFrontier.Logics.Propositional.DNF.Encoding
 public import CslibFrontier.Logics.Propositional.DNF.ModelCount
 public import CslibFrontier.Logics.Propositional.Frege
 public import CslibFrontier.Logics.Propositional.Frege.Resolution
