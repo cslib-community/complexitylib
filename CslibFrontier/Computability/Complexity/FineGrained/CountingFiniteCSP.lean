@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+import CslibFrontier.Computability.Complexity.Problems.CSP.Declared
 public import CslibFrontier.Init
 public import CslibFrontier.Logics.Propositional.CSP.ToBoolean
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingCSP
@@ -29,7 +30,7 @@ decision over any fixed finite domain size `q` and arity bound `k`:
 
 1. **Polynomial-time compilation (`CSP.computableInPolyTime_toBoolean`,
    `CSP.computableInPolyTime_toBooleanDeclared`, `CSP.polyBounded_length_toBooleanDeclared`):**
-   compiling `(N, F) : ℕ × CSP Rel ℕ` to `(N * CSP.bitWidth q, F.toBoolean q N)` is computable in
+   compiling `(N, F) : DeclaredCSP Rel` to `(N * CSP.bitWidth q, F.toBoolean q N)` is computable in
    polynomial time from `encPair encUnary (encCSP encRel encNat)` to
    `encPair encUnary (encCSP (encOption encRel) encNat)`.
 2. **Native declared-variable counting (`CSP.exists_declaredCounter_finiteDomain_of_forall`,
@@ -99,22 +100,22 @@ theorem computableInPolyTime_bitScope (b : ℕ) :
         (ComputableInPolyTime.snd encNat encNat)))
 
 /-- Compiling a finite-domain CSP on declared variables `0, …, N - 1` into its equivalent Boolean
-CSP `x.2.toBoolean q x.1` is computable in polynomial time from the native encoding
+CSP `x.formula.toBoolean q x.numVars` is computable in polynomial time from the native encoding
 `encPair encUnary (encCSP encRel encNat)`. -/
 @[fun_prop]
 theorem computableInPolyTime_toBoolean (encRel : Rel ↪ List Bool) (q : ℕ) :
-    ComputableInPolyTime (fun x : ℕ × CSP Rel ℕ => x.2.toBoolean q x.1)
+    ComputableInPolyTime (fun x : DeclaredCSP Rel => x.formula.toBoolean q x.numVars)
       (encPair encUnary (encCSP encRel encNat))
       (encCSP (encOption encRel) encNat) := by
   let b := CSP.bitWidth q
   let encIn := encPair encUnary (encCSP encRel encNat)
   let encOutElem := encConstraint (encOption encRel) encNat
   have hnone : ComputableInPolyTime
-      (fun x : ℕ × CSP Rel ℕ =>
+      (fun x : DeclaredCSP Rel =>
         (List.range x.1).map fun v => ((none : Option Rel), CSP.bitScope b v))
       encIn (encList encOutElem) := by fun_prop
   have hsome : ComputableInPolyTime
-      (fun x : ℕ × CSP Rel ℕ => x.2.map fun c => (some c.1, c.2.flatMap (CSP.bitScope b)))
+      (fun x : DeclaredCSP Rel => x.2.map fun c => (some c.1, c.2.flatMap (CSP.bitScope b)))
       encIn (encList encOutElem) := by fun_prop
   exact ComputableInPolyTime.listAppend' hnone hsome
 
@@ -123,7 +124,7 @@ theorem computableInPolyTime_toBoolean (encRel : Rel ↪ List Bool) (q : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_toBooleanDeclared (encRel : Rel ↪ List Bool) (q : ℕ) :
     ComputableInPolyTime
-      (fun x : ℕ × CSP Rel ℕ => (x.1 * CSP.bitWidth q, x.2.toBoolean q x.1))
+      (fun x : DeclaredCSP Rel => (x.numVars * CSP.bitWidth q, x.formula.toBoolean q x.numVars))
       (encPair encUnary (encCSP encRel encNat))
       (encPair encUnary (encCSP (encOption encRel) encNat)) :=
   (ComputableInPolyTime.unary_mul'
@@ -135,10 +136,10 @@ theorem computableInPolyTime_toBooleanDeclared (encRel : Rel ↪ List Bool) (q :
 input encoding length. -/
 theorem polyBounded_length_toBooleanDeclared (encRel : Rel ↪ List Bool) (q : ℕ) :
     PolyBounded
-      (fun x : ℕ × CSP Rel ℕ => (encPair encUnary (encCSP encRel encNat) x).length)
-      (fun x : ℕ × CSP Rel ℕ =>
+      (fun x : DeclaredCSP Rel => (encPair encUnary (encCSP encRel encNat) x).length)
+      (fun x : DeclaredCSP Rel =>
         (encPair encUnary (encCSP (encOption encRel) encNat)
-          (x.1 * CSP.bitWidth q, x.2.toBoolean q x.1)).length) :=
+          (x.numVars * CSP.bitWidth q, x.formula.toBoolean q x.numVars)).length) :=
   (computableInPolyTime_toBooleanDeclared encRel q).polyBounded_length
 
 /-- Pattern-wise polynomial-time computability of the compiled Boolean semantics
@@ -192,7 +193,7 @@ theorem computableInPolyTime_semBoolean_of_forall (encRel : Rel ↪ List Bool) (
 /-- **Declared-variable model counting transfer via Boolean compilation.**
 For any fixed domain size `q`, arity bound `k`, and finite relation alphabet `Rel` with semantics
 `sem : Rel → List (Fin q) → Bool`, evaluating the bounded-arity Boolean CSP counter on the
-compiled Boolean instance `(x.1 * CSP.bitWidth q, x.2.toBoolean q x.1)` computes the exact
+compiled Boolean instance `(x.numVars * CSP.bitWidth q, x.formula.toBoolean q x.numVars)` computes the exact
 declared-variable model count `x.2.modelCountOn sem (Finset.range x.1)` for every valid
 finite-domain instance `x` of constraint width at most `k`. -/
 theorem exists_declaredCounter_toBoolean [Finite Rel]
@@ -203,18 +204,18 @@ theorem exists_declaredCounter_toBoolean [Finite Rel]
     ∃ (count : ℕ × CSP (Option Rel) ℕ → ℕ) (T S : ℕ × CSP (Option Rel) ℕ → ℕ)
       (A c e a b_space : ℕ),
       ComputableInO count enc encNat T S ∧
-      (∀ x : ℕ × CSP Rel ℕ,
+      (∀ x : DeclaredCSP Rel,
         (∀ c ∈ x.2, c.2.length ≤ k) →
         (∀ v ∈ x.2.vars, v < x.1) →
-        count (x.1 * b, x.2.toBoolean q x.1) =
+        count (x.1 * b, x.formula.toBoolean q x.numVars) =
           x.2.modelCountOn sem (Finset.range x.1)) ∧
-      (∀ x : ℕ × CSP Rel ℕ,
-        (T (x.1 * b, x.2.toBoolean q x.1) : ℝ) ≤
+      (∀ x : DeclaredCSP Rel,
+        (T (x.1 * b, x.formula.toBoolean q x.numVars) : ℝ) ≤
           c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale (x.1 * b)) *
-            (((enc (x.1 * b, x.2.toBoolean q x.1)).length : ℝ) + 1) ^ e) + c) ∧
-      (∀ x : ℕ × CSP Rel ℕ,
-        S (x.1 * b, x.2.toBoolean q x.1) ≤
-          a * ((enc (x.1 * b, x.2.toBoolean q x.1)).length + 1) ^ b_space) := by
+            (((enc (x.1 * b, x.formula.toBoolean q x.numVars)).length : ℝ) + 1) ^ e) + c) ∧
+      (∀ x : DeclaredCSP Rel,
+        S (x.1 * b, x.formula.toBoolean q x.numVars) ≤
+          a * ((enc (x.1 * b, x.formula.toBoolean q x.numVars)).length + 1) ^ b_space) := by
   let b := CSP.bitWidth q
   let k' := max 1 k * b
   let sem' := CSP.semBoolean q sem
@@ -222,9 +223,9 @@ theorem exists_declaredCounter_toBoolean [Finite Rel]
   obtain ⟨count, T, S, A, c, e, a, b_space, hcount, hspec, hT, hS⟩ :=
     CSP.exists_declaredCounter_of_finite (encOption encRel) k' sem'
   refine ⟨count, T, S, A, c, e, a, b_space, hcount, fun x hw hvars => ?_,
-    fun x => hT (x.1 * b, x.2.toBoolean q x.1),
-    fun x => hS (x.1 * b, x.2.toBoolean q x.1)⟩
-  rw [hspec (x.1 * b, x.2.toBoolean q x.1)]
+    fun x => hT (x.1 * b, x.formula.toBoolean q x.numVars),
+    fun x => hS (x.1 * b, x.formula.toBoolean q x.numVars)⟩
+  rw [hspec (x.1 * b, x.formula.toBoolean q x.numVars)]
   dsimp only [Prod.fst, Prod.snd]
   have hvalid := CSP.validDeclaredCSP_toBoolean (q := q) hw hvars
   rw [hvalid]
@@ -232,7 +233,7 @@ theorem exists_declaredCounter_toBoolean [Finite Rel]
   exact CSP.modelCountOn_toBoolean q x.1 sem x.2 hvars
 
 /-- **General polynomial-time reduction to declared-variable finite-domain `#CSP`:**
-Composing any polynomial-time reduction `f : α → ℕ × CSP Rel ℕ` and polynomial-time validity guard
+Composing any polynomial-time reduction `f : α → DeclaredCSP Rel` and polynomial-time validity guard
 `valid : α → Bool` (implying `validDeclaredCSP k (f x).1 (f x).2 = true`) with
 `CSP.computableInPolyTime_toBooleanDeclared` and `CSP.exists_counter_of_polyTime_toDeclaredCSP`,
 and rescaling `interpolationScale ((f x).1 * bitWidth q)` via `interpolationScale_mul_le`, yields
@@ -243,7 +244,7 @@ theorem exists_counter_of_polyTime_toFiniteDeclaredCSP {α : Type} {encA : α �
     (sem : Rel → List (Fin q) → Bool)
     (hsem : ∀ w : List (Fin q), w.length ≤ max 1 k →
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool)
-    {f : α → ℕ × CSP Rel ℕ}
+    {f : α → DeclaredCSP Rel}
     (hf : ComputableInPolyTime f encA (encPair encUnary (encCSP encRel encNat)))
     {valid : α → Bool} (hvalid : ComputableInPolyTime valid encA encBool)
     (hvalid_imp : ∀ x, valid x = true → validDeclaredCSP k (f x).1 (f x).2 = true) :
@@ -297,14 +298,14 @@ theorem exists_counter_of_polyTime_toFiniteDeclaredCSP {α : Type} {encA : α �
 hypothesis).** Whenever `fun R => sem R w` is computable in polynomial time for each domain tuple
 `w : List (Fin q)` of length at most `max 1 k`, one native machine on
 `encPair encUnary (encCSP encRel encNat)` computes the exact guarded declared-variable model count
-`F.modelCountOn sem (Finset.range N)` on every input `x = (N, F) : ℕ × CSP Rel ℕ` in time
+`F.modelCountOn sem (Finset.range N)` on every input `x = (N, F) : DeclaredCSP Rel` in time
 `O(2 ^ (A * interpolationScale N) * (|x| + 1) ^ e)` and polynomial space in the native finite-domain
 input length `|x|`. -/
 theorem exists_declaredCounter_finiteDomain_of_forall (encRel : Rel ↪ List Bool)
     (q : ℕ) [Inhabited (Fin q)] (k : ℕ) (sem : Rel → List (Fin q) → Bool)
     (hsem : ∀ w : List (Fin q), w.length ≤ max 1 k →
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
-    ∃ (count : ℕ × CSP Rel ℕ → ℕ) (T S : ℕ × CSP Rel ℕ → ℕ) (A c e a b_space : ℕ),
+    ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b_space : ℕ),
       ComputableInO count (encPair encUnary (encCSP encRel encNat)) encNat T S ∧
       (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧
@@ -322,7 +323,7 @@ declared-variable model count `F.modelCountOn sem (Finset.range N)` on every inp
 time `O(2 ^ (A * interpolationScale N) * (|x| + 1) ^ e)` and polynomial space. -/
 theorem exists_declaredCounter_finiteDomain [Finite Rel] (encRel : Rel ↪ List Bool)
     (q : ℕ) [Inhabited (Fin q)] (k : ℕ) (sem : Rel → List (Fin q) → Bool) :
-    ∃ (count : ℕ × CSP Rel ℕ → ℕ) (T S : ℕ × CSP Rel ℕ → ℕ) (A c e a b_space : ℕ),
+    ∃ (count : DeclaredCSP Rel → ℕ) (T S : DeclaredCSP Rel → ℕ) (A c e a b_space : ℕ),
       ComputableInO count (encPair encUnary (encCSP encRel encNat)) encNat T S ∧
       (∀ x, count x = if validDeclaredCSP k x.1 x.2 then
         x.2.modelCountOn sem (Finset.range x.1) else 0) ∧

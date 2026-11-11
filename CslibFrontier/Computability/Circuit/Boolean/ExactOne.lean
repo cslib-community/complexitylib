@@ -247,18 +247,23 @@ private theorem getD_evalCode_append_bin {x : List Bool} {gates : List (Op × Li
 
 /-! ### Sequential exact-one De Morgan gate list -/
 
+structure SeqExactlyOneStepResult where
+  gates : List (Op × List ℕ)
+  seen1Wire : ℕ
+  seen2Wire : ℕ
+  deriving Repr, Inhabited
+
 /-- Recursive linear-size state transition tracking `(seen1, seen2)` across wire list `ws`.
 Returns `(gates, seen1Wire, seen2Wire)`. -/
-@[expose] def seqExactlyOneStep (nextWire seen1 seen2 : ℕ) : List ℕ → List (Op × List ℕ) × ℕ × ℕ
-  | [] => ([], seen1, seen2)
+@[expose] def seqExactlyOneStep (nextWire seen1 seen2 : ℕ) : List ℕ → SeqExactlyOneStepResult
+  | [] => ⟨[], seen1, seen2⟩
   | w :: ws =>
     let both := nextWire
     let nextSeen2 := nextWire + 1
     let nextSeen1 := nextWire + 2
     let rest := seqExactlyOneStep (nextWire + 3) nextSeen1 nextSeen2 ws
-    let seenPair := rest.2
-    ([(.and, [seen1, w]), (.or, [seen2, both]), (.or, [seen1, w])] ++ rest.1,
-      seenPair.1, seenPair.2)
+    ⟨[(.and, [seen1, w]), (.or, [seen2, both]), (.or, [seen1, w])] ++ rest.gates,
+      rest.seen1Wire, rest.seen2Wire⟩
 
 /-- Sequential exact-one circuit on input wires `ws`, starting at gate offset `base` on `n` total
 input wires. Returns `(gates, outputWire)`. Uses `3 * ws.length + 3` gates. -/
@@ -273,7 +278,7 @@ input wires. Returns `(gates, outputWire)`. Uses `3 * ws.length + 3` gates. -/
 
 @[simp]
 theorem length_seqExactlyOneStep (nextWire seen1 seen2 : ℕ) (ws : List ℕ) :
-    (seqExactlyOneStep nextWire seen1 seen2 ws).1.length = 3 * ws.length := by
+    (seqExactlyOneStep nextWire seen1 seen2 ws).gates.length = 3 * ws.length := by
   induction ws generalizing nextWire seen1 seen2 with
   | nil => rfl
   | cons w ws ih =>
@@ -295,11 +300,11 @@ theorem snd_seqExactlyOneClause (n base : ℕ) (ws : List ℕ) :
 private theorem isCodeFrom_seqExactlyOneStep (n : ℕ) :
     ∀ (ws : List ℕ) (k seen1 seen2 : ℕ),
       (∀ w ∈ ws, w < n + k) → seen1 < n + k → seen2 < n + k →
-        Program.IsCodeFrom signature n k (seqExactlyOneStep (n + k) seen1 seen2 ws).1 ∧
-        (seqExactlyOneStep (n + k) seen1 seen2 ws).2.1 <
-          n + (k + (seqExactlyOneStep (n + k) seen1 seen2 ws).1.length) ∧
-        (seqExactlyOneStep (n + k) seen1 seen2 ws).2.2 <
-          n + (k + (seqExactlyOneStep (n + k) seen1 seen2 ws).1.length)
+        Program.IsCodeFrom signature n k (seqExactlyOneStep (n + k) seen1 seen2 ws).gates ∧
+        (seqExactlyOneStep (n + k) seen1 seen2 ws).seen1Wire <
+          n + (k + (seqExactlyOneStep (n + k) seen1 seen2 ws).gates.length) ∧
+        (seqExactlyOneStep (n + k) seen1 seen2 ws).seen2Wire <
+          n + (k + (seqExactlyOneStep (n + k) seen1 seen2 ws).gates.length)
   | [], k, seen1, seen2, _, hs1, hs2 => by
     simp only [seqExactlyOneStep, List.length_nil, Nat.add_zero]
     exact ⟨trivial, hs1, hs2⟩
@@ -314,7 +319,7 @@ private theorem isCodeFrom_seqExactlyOneStep (n : ℕ) :
       refine isCodeFrom_bin n (k + 1) .or rfl seen2 (n + k) _ (by omega) (by omega) ?_
       refine isCodeFrom_bin n (k + 2) .or rfl seen1 w _ (by omega) (by omega) ?_
       change Program.IsCodeFrom signature n (k + 3)
-        (seqExactlyOneStep (n + (k + 3)) (n + (k + 2)) (n + (k + 1)) ws).1
+        (seqExactlyOneStep (n + (k + 3)) (n + (k + 2)) (n + (k + 1)) ws).gates
       exact hrest.1
     · simp only [List.length_cons, List.length_nil, List.length_append]
       omega
@@ -344,9 +349,9 @@ private theorem evalCode_seqExactlyOneStep (x : List Bool) (prefixGates : List (
     (hs1 : (evalCode interpretation false x prefixGates).getD seen1 false = decide (0 < count))
     (hs2 : (evalCode interpretation false x prefixGates).getD seen2 false = decide (1 < count)) :
     let res := seqExactlyOneStep (x.length + prefixGates.length) seen1 seen2 ws
-    let full := evalCode interpretation false x (prefixGates ++ res.1)
-    full.getD res.2.1 false = decide (0 < count + ws.countP fun w => full.getD w false) ∧
-      full.getD res.2.2 false = decide (1 < count + ws.countP fun w => full.getD w false) := by
+    let full := evalCode interpretation false x (prefixGates ++ res.gates)
+    full.getD res.seen1Wire false = decide (0 < count + ws.countP fun w => full.getD w false) ∧
+      full.getD res.seen2Wire false = decide (1 < count + ws.countP fun w => full.getD w false) := by
   induction ws generalizing prefixGates seen1 seen2 count with
   | nil =>
     dsimp only [seqExactlyOneStep]
@@ -399,12 +404,19 @@ private theorem evalCode_seqExactlyOneStep (x : List Bool) (prefixGates : List (
       (by omega) (by omega) hns1 hns2'
     rw [hp3_len, show x.length + (k + 3) = x.length + k + 3 from by omega] at hih
     let rest := seqExactlyOneStep (x.length + k + 3) (x.length + k + 2) (x.length + k + 1) ws
-    have hassoc : p3 ++ rest.1 =
-        prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).1 := by
+    have hassoc : p3 ++ rest.gates =
+        prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).gates := by
       simp [p3, p2, p1, seqExactlyOneStep, rest, List.append_assoc, Nat.add_assoc]
-    have hrestEq : (seqExactlyOneStep (x.length + (k + 3)) (x.length + (k + 2))
-        (x.length + (k + 1)) ws).2 =
-        (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).2 := by
+    have hrestEq1 : (seqExactlyOneStep (x.length + (k + 3)) (x.length + (k + 2))
+        (x.length + (k + 1)) ws).seen1Wire =
+        (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).seen1Wire := by
+      dsimp only [seqExactlyOneStep]
+      rw [show x.length + k + 3 = x.length + (k + 3) from by omega,
+        show x.length + k + 2 = x.length + (k + 2) from by omega,
+        show x.length + k + 1 = x.length + (k + 1) from by omega]
+    have hrestEq2 : (seqExactlyOneStep (x.length + (k + 3)) (x.length + (k + 2))
+        (x.length + (k + 1)) ws).seen2Wire =
+        (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).seen2Wire := by
       dsimp only [seqExactlyOneStep]
       rw [show x.length + k + 3 = x.length + (k + 3) from by omega,
         show x.length + k + 2 = x.length + (k + 2) from by omega,
@@ -413,30 +425,30 @@ private theorem evalCode_seqExactlyOneStep (x : List Bool) (prefixGates : List (
     rw [hassoc] at hih
     have hreadFull (u : ℕ) (hu : u < x.length + k) :
         (evalCode interpretation false x
-          (prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).1)).getD
+          (prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).gates)).getD
           u false =
           (evalCode interpretation false x prefixGates).getD u false :=
       getD_evalCode_prefix hu
     have heq0 :
         List.countP (fun u =>
           (evalCode interpretation false x
-            (prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).1)).getD u
+            (prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).gates)).getD u
             false) (w :: ws) =
         (if (evalCode interpretation false x prefixGates).getD w false then 1 else 0) +
           List.countP (fun u =>
             (evalCode interpretation false x
-              (prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).1)).getD u
+              (prefixGates ++ (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).gates)).getD u
               false) ws := by
       rw [List.countP_cons, hreadFull w hw]
       split_ifs <;> omega
-    have hres1 : (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).2.1 =
+    have hres1 : (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).seen1Wire =
         (seqExactlyOneStep (x.length + (k + 3)) (x.length + (k + 2))
-          (x.length + (k + 1)) ws).2.1 := by
-      simpa only using congrArg Prod.fst hrestEq.symm
-    have hres2 : (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).2.2 =
+          (x.length + (k + 1)) ws).seen1Wire :=
+      hrestEq1.symm
+    have hres2 : (seqExactlyOneStep (x.length + k) seen1 seen2 (w :: ws)).seen2Wire =
         (seqExactlyOneStep (x.length + (k + 3)) (x.length + (k + 2))
-          (x.length + (k + 1)) ws).2.2 := by
-      simpa only using congrArg Prod.snd hrestEq.symm
+          (x.length + (k + 1)) ws).seen2Wire :=
+      hrestEq2.symm
     change _ ∧ _
     rw [hres1, hres2, heq0]
     simpa only [Nat.add_assoc] using hih
@@ -462,40 +474,40 @@ theorem evalCode_seqExactlyOneClause (x : List Bool) (prefixGates : List (Op × 
   have hlen1 : prefix1.length = k + 1 := by simp [prefix1, k]
   rw [hlen1, show x.length + (k + 1) = x.length + k + 1 from by omega] at hstep
   let stepRes := seqExactlyOneStep (x.length + k + 1) (x.length + k) (x.length + k) ws
-  let prefix2 := prefix1 ++ stepRes.1
-  let notWire := x.length + k + 1 + stepRes.1.length
-  let prefix3 := prefix2 ++ [(.not, [stepRes.2.2])]
-  have hlen2 : prefix2.length = k + 1 + stepRes.1.length := by
+  let prefix2 := prefix1 ++ stepRes.gates
+  let notWire := x.length + k + 1 + stepRes.gates.length
+  let prefix3 := prefix2 ++ [(.not, [stepRes.seen2Wire])]
+  have hlen2 : prefix2.length = k + 1 + stepRes.gates.length := by
     dsimp only [prefix2, prefix1]
     rw [List.length_append, List.length_append, List.length_singleton]
-  have hlen3 : prefix3.length = k + 1 + stepRes.1.length + 1 := by
+  have hlen3 : prefix3.length = k + 1 + stepRes.gates.length + 1 := by
     simp [prefix3, hlen2]
   have hstepCode := isCodeFrom_seqExactlyOneStep x.length ws (k + 1) (x.length + k) (x.length + k)
     (fun u hu => (hws u hu).trans (by omega)) (by omega) (by omega)
   rw [show x.length + (k + 1) = x.length + k + 1 from by omega] at hstepCode
-  have hs1lt : stepRes.2.1 < x.length + prefix2.length := by
+  have hs1lt : stepRes.seen1Wire < x.length + prefix2.length := by
     rw [hlen2]; have := hstepCode.2.1; omega
   have hnot : (evalCode interpretation false x prefix3).getD notWire false =
-      !((evalCode interpretation false x prefix2).getD stepRes.2.2 false) := by
+      !((evalCode interpretation false x prefix2).getD stepRes.seen2Wire false) := by
     dsimp only [prefix3, notWire]
-    rw [show x.length + k + 1 + stepRes.1.length = x.length + prefix2.length by rw [hlen2]; omega]
-    exact getD_evalCode_append_not stepRes.2.2
-  have hfullEq : prefix3 ++ [(.and, [stepRes.2.1, notWire])] = prefixGates ++ clause.1 := by
+    rw [show x.length + k + 1 + stepRes.gates.length = x.length + prefix2.length by rw [hlen2]; omega]
+    exact getD_evalCode_append_not stepRes.seen2Wire
+  have hfullEq : prefix3 ++ [(.and, [stepRes.seen1Wire, notWire])] = prefixGates ++ clause.1 := by
     simp [prefix3, prefix2, prefix1, clause, seqExactlyOneClause, stepRes, notWire, k,
       List.append_assoc]
   have hc2 : clause.2 = x.length + prefix3.length := by
     simp [clause, seqExactlyOneClause, hlen3, stepRes, k]; omega
   have hout : (evalCode interpretation false x (prefixGates ++ clause.1)).getD clause.2 false =
-      (((evalCode interpretation false x prefix2).getD stepRes.2.1 false) &&
-        !((evalCode interpretation false x prefix2).getD stepRes.2.2 false)) := by
+      (((evalCode interpretation false x prefix2).getD stepRes.seen1Wire false) &&
+        !((evalCode interpretation false x prefix2).getD stepRes.seen2Wire false)) := by
     rw [← hfullEq, hc2, getD_evalCode_append_bin, Op.value, ← hnot]
-    have hpre : prefix3 = prefix2 ++ [(.not, [stepRes.2.2])] := rfl
+    have hpre : prefix3 = prefix2 ++ [(.not, [stepRes.seen2Wire])] := rfl
     rw [hpre, getD_evalCode_prefix hs1lt]
   have hcnt : List.countP (fun w => (evalCode interpretation false x prefix2).getD w false) ws =
       List.countP (fun w => (evalCode interpretation false x prefixGates).getD w false) ws := by
     refine List.countP_congr fun w hw => ?_
     have hw' : w < x.length + k := hws w hw
-    have hpre : prefix2 = prefixGates ++ ([(.const false, [])] ++ stepRes.1) := by
+    have hpre : prefix2 = prefixGates ++ ([(.const false, [])] ++ stepRes.gates) := by
       simp [prefix2, prefix1, List.append_assoc]
     rw [hpre, getD_evalCode_prefix hw']
   change (evalCode interpretation false x (prefixGates ++ clause.1)).getD clause.2 false = _

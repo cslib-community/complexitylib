@@ -675,7 +675,7 @@ theorem validDeclaredInput_toPerfectMatchingCNF (G : Graph) :
 /-! ### Polynomial-time certificate for `Graph.toPerfectMatchingCNF` -/
 
 private theorem seqExactlyOneStep_eq_zipIdx (nextWire seen1 seen2 : ℕ) (ws : List ℕ) :
-    (seqExactlyOneStep nextWire seen1 seen2 ws).1 =
+    (seqExactlyOneStep nextWire seen1 seen2 ws).gates =
       ws.zipIdx.flatMap fun p =>
         let nw := nextWire + 3 * p.2
         let s1 := if p.2 = 0 then seen1 else nw - 1
