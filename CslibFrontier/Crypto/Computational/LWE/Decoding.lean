@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Karn Seth, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Karn Seth, Samuel Schlesinger
 -/
 
 module
@@ -57,6 +57,7 @@ def encodeBit (w : ℕ) (μ : Bool) : ZMod (2 ^ w) :=
 def decode (w : ℕ) (x : ZMod (2 ^ w)) : Bool :=
   decide (2 ^ w ≤ 4 * x.val ∧ 4 * x.val < 3 * 2 ^ w)
 
+/-- Characterization of decoding to `true` as the middle half of the canonical residue interval. -/
 @[simp] theorem decode_eq_true_iff (w : ℕ) (x : ZMod (2 ^ w)) :
     decode w x = true ↔ 2 ^ w ≤ 4 * x.val ∧ 4 * x.val < 3 * 2 ^ w := by
   simp [decode]

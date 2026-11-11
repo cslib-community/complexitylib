@@ -34,8 +34,9 @@ identity-based encryption scheme of [GentryPeikertVaikuntanathan2008, Section 7.
 zero error under the stated noise margin.
 
 The key generator `keyGen` draws a uniform binary secret. Its public key is statistically close to
-a uniform pair by the leftover hash lemma for `e ↦ eᵀ A`. The reduction of chosen-plaintext
-security of the dual scheme to decision LWE with `m + 1` samples is not formalized here.
+a uniform pair by the leftover hash lemma for `e ↦ eᵀ A`. Native serialized codecs, PPT
+certificates, and the IND-CPA security reduction to decision LWE with `m + 1` samples are in
+`LWE.DualRegev.Security`.
 
 ## Main definitions
 

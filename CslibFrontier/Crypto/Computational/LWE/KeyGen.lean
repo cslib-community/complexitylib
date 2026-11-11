@@ -117,6 +117,7 @@ theorem publicMatrixInt_mulVec_secretVector {n m w : ℕ}
 noncomputable def sampleResidue (w : ℕ) : ProbComp (ZMod (2 ^ w)) :=
   ((↑) : ℕ → ZMod (2 ^ w)) <$> sampleBinaryNat w
 
+/-- A uniform residue sample has the uniform finite-ring law modulo `2 ^ w`. -/
 @[simp] theorem eval_sampleResidue (w : ℕ) :
     ProbComp.eval (sampleResidue w) = PMF.uniformOfFintype (ZMod (2 ^ w)) := by
   rw [sampleResidue, ProbComp.eval_map, eval_sampleBinaryNat, PMF.map_comp]
@@ -131,6 +132,7 @@ noncomputable def sampleResidue (w : ℕ) : ProbComp (ZMod (2 ^ w)) :=
 noncomputable def sampleVector (count w : ℕ) : ProbComp (Fin count → ZMod (2 ^ w)) :=
   OracleComp.replicateFin count (sampleResidue w)
 
+/-- A uniform residue vector sample has the uniform product law modulo `2 ^ w`. -/
 @[simp] theorem eval_sampleVector (count w : ℕ) :
     ProbComp.eval (sampleVector count w) =
       PMF.uniformOfFintype (Fin count → ZMod (2 ^ w)) := by
