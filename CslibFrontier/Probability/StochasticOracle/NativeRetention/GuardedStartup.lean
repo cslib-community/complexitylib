@@ -60,7 +60,8 @@ structure Input where
 @[expose] def state (input : Input) : RuntimeControl.State :=
   RuntimeControl.initial input.startup input.allotments
 
-private theorem fields : ComputableInPolyTime
+/-- Read the original startup record and reservation allowance from its actual word. -/
+theorem fields : ComputableInPolyTime
     (fun data : Input => (data.startup, data.allotments)) encoding
     (encPair InitialContext.encoding encUnary) := .of_eq fun _ => rfl
 

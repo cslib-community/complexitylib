@@ -24,8 +24,9 @@ Discrete invoices are explicitly identified with the source prices.
 * `native_optimum`, `native_one_optimum`: native optima equal the source minima.
 * `native_ratio`, `native_linear_ratio`: the source adaptivity ratio for these native optima.
 
-A uniform cost-aware choice compiled into a single program and arbitrary-real
-invoice representation remain separate obligations.
+The downstream `NativeResidualCostChoice` compiles rational decision data into
+one cost-aware program. Arbitrary-real expected invoice realization remains
+outside this natural-wire invoice specialization.
 -/
 
 public section

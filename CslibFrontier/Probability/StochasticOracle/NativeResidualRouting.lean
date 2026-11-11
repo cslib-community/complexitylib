@@ -199,7 +199,8 @@ budgets are fixed by the chosen algorithm, without installing a prepared context
 @[expose] def initial (adaptive : Bool) (data : GuardedStartup.Input) : RuntimeControl.State :=
   { GuardedStartup.state data with turns := if adaptive then 2 else 1, allotments := 2 }
 
-private theorem computable_initial (adaptive : Bool) : ComputableInPolyTime (initial adaptive)
+/-- Compile original-input initialization for either fixed strategy. -/
+theorem computable_initial (adaptive : Bool) : ComputableInPolyTime (initial adaptive)
     GuardedStartup.encoding RuntimeControl.encoding := by
   have hf := fields.comp GuardedStartup.computable_state
   have ht : ComputableInPolyTime (fun _ : GuardedStartup.Input => if adaptive then (2 : ℕ) else 1)

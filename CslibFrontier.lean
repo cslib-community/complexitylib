@@ -6217,6 +6217,7 @@ public import CslibFrontier.Probability.StochasticOracle.ExecutionFeasibility
 public import CslibFrontier.Probability.StochasticOracle.FullCover
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualAll
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualAttainment
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualCostChoice
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualEncoding
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualMinima
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn
@@ -6230,6 +6231,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchAdmission
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOptimum
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutput
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutputObservation
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchPlanner
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchReceipts
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchStopping

@@ -22,6 +22,7 @@ must establish termination independently before using this equality.
 ## Main results
 
 * `expected_charge_eq_terminal`: actual retained-trace expectation equals terminal billing.
+* `expected_charge_eq_of_output_memory`: compiled output/memory laws transport accrued expectation.
 -/
 
 public section
@@ -54,5 +55,48 @@ theorem expected_charge_eq_terminal (limits : Limits n) (sample : Sampler n Priv
     exact (hm hterminates).elim
   · simpa only [he, Option.map_some, Option.elim_some, worldOf] using
       (terminal_resources limits sample machine world next hi hzero state hs he).1
+
+/-- Two terminating native implementations with the same actual output/memory
+law have the same accrued expected bill. The hypothesis is a semantic transfer
+lemma; concrete compilers must derive the law and termination before applying it. -/
+theorem expected_charge_eq_of_output_memory {k' : ℕ} {Control' : Type} {input' : List Bool}
+    (limits : Limits n) (sample : Sampler n Private)
+    (machine : MultiTapePTM k Bool Control Unit)
+    (other : MultiTapePTM k' Bool Control' Unit)
+    (world : World k Control Unit (ServerState n Private) input)
+    (start : World k' Control' Unit (ServerState n Private) input')
+    (hi : Invariant limits world.memory) (hj : Invariant limits start.memory)
+    (hzero : world.memory.privateState.history = [])
+    (hzero' : start.memory.privateState.history = [])
+    (hlaw : (NativeUnboundedExecution.terminal machine (environment limits sample) world).map
+      (Option.map fun w => (w.config.tapes.output, w.memory)) =
+      (NativeUnboundedExecution.terminal other (environment limits sample) start).map
+        (Option.map fun w => (w.config.tapes.output, w.memory)))
+    (ht : NativeUnboundedExecution.terminal other (environment limits sample) start none = 0) :
+    expected limits sample machine charge (limits.turns + 1) world =
+      expected limits sample other charge (limits.turns + 1) start := by
+  let μ := NativeUnboundedExecution.terminal machine (environment limits sample) world
+  let ν := NativeUnboundedExecution.terminal other (environment limits sample) start
+  have hterm : μ none = 0 := by
+    apply (PMF.apply_eq_zero_iff _ _).mpr
+    intro hn
+    have hm : none ∈ (μ.map
+        (Option.map fun w => (w.config.tapes.output, w.memory))).support :=
+      (PMF.mem_support_map_iff _ _ _).mpr ⟨none, hn, rfl⟩
+    rw [hlaw] at hm
+    obtain ⟨result, hr, he⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
+    cases result with
+    | none => exact hr ht
+    | some next => cases he
+  rw [expected_charge_eq_terminal limits sample machine world hi hzero hterm,
+    expected_charge_eq_terminal limits sample other start hj hzero' ht]
+  let score : Option (List Bool × Memory Unit (ServerState n Private)) → ℝ≥0∞ :=
+    fun result => result.elim 0 (fun pair => (tokenBill pair.2.events : ℝ≥0∞))
+  have hleft := PMF.tsum_map_mul μ
+    (Option.map fun w => (w.config.tapes.output, w.memory)) score
+  have hright := PMF.tsum_map_mul ν
+    (Option.map fun w => (w.config.tapes.output, w.memory)) score
+  simp only [score, Option.elim_map, Function.comp_def] at hleft hright
+  rw [← hleft, hlaw, hright]
 
 end Cslib.Probability.NativeBatch.Quantitative
