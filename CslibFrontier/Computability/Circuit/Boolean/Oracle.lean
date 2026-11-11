@@ -56,6 +56,9 @@ size at the polynomially bounded arities of the queries, shows the converse
   bounds on its size and depth.
 * `Cslib.Circuits.Boolean.PPolyOracle_subset_PPoly`, `Cslib.Circuits.Boolean.PPolyOracle_eq_PPoly`:
   `P/poly` relative to a language in `P/poly` is `P/poly`.
+* `Cslib.Circuits.Boolean.fanInAtMost_mapOp_toOracle`, `cost_mapOp_toOracle`,
+  `depthWith_mapOp_toOracle`: a De Morgan circuit in the oracle basis has fan-in two and no oracle
+  gates.
 
 ## References
 
@@ -224,6 +227,16 @@ theorem fanInAtMost_mapOp_toOracle {g : ℕ} (p : Program signature n g) {r : �
     refine ⟨ih, le_trans ?_ hr⟩
     change signature.Arity line.op ≤ 2
     cases line.op <;> simp
+
+/-- A De Morgan circuit in the oracle basis has no oracle gates. -/
+@[simp] theorem cost_mapOp_toOracle (c : Circuit signature n m) :
+    (c.mapOp toOracle).program.cost OracleOp.queryWeight = 0 :=
+  (Program.cost_mapOp c.program _).trans <| (c.program.cost_const 0).trans (Nat.zero_mul _)
+
+/-- A De Morgan circuit in the oracle basis has no oracle gate on any path. -/
+@[simp] theorem depthWith_mapOp_toOracle (c : Circuit signature n m) :
+    (c.mapOp toOracle).depthWith OracleOp.queryWeight = 0 :=
+  (Circuit.depthWith_mapOp c _).trans c.depthWith_zero
 
 /-- A language in `P/poly` is in `P/poly` relative to any oracle. -/
 theorem PPoly.subset_PPolyOracle (A : Language Bool) : PPoly ⊆ PPolyOracle A := by
