@@ -159,7 +159,9 @@ abbrev LocalCircuitClass (q ℓ a S : ℕ → ℕ) (Yes No : Language Bool) : Pr
 power of two, such as the truth tables of a property, a promise problem is in a local circuit
 class once some oracle `O` and, at each length `2 ^ n`, an oracle circuit within the bounds at
 `2 ^ n` separates the instances of that length, provided `1 ≤ S 0`. At the other lengths a circuit
-with no gates outputs an input, except at length zero, where a constant gate does. -/
+with no gates outputs an input, except at length zero, where a constant gate does. The hypothesis
+`1 ≤ S 0` is necessary: a circuit with no inputs and no gates has no wire for its output
+(`Wire 0 0` is empty), so every circuit on zero inputs has size at least one. -/
 theorem LocalCircuitClass.of_two_pow {q ℓ a S : ℕ → ℕ} {Yes No : Language Bool}
     (O : Language Bool) (hS : 1 ≤ S 0)
     (hYes : ∀ w ∈ Yes, ∃ n, w.length = 2 ^ n) (hNo : ∀ w ∈ No, ∃ n, w.length = 2 ^ n)
@@ -171,7 +173,7 @@ theorem LocalCircuitClass.of_two_pow {q ℓ a S : ℕ → ℕ} {Yes No : Languag
         (∀ x : Fin (2 ^ n) → Bool, List.ofFn x ∈ No →
           c.eval (oracleInterpretation O) x 0 = false)) :
     LocalCircuitClass q ℓ a S Yes No := by
-  refine OracleModel.LocalClass.of_two_pow O hYes hNo (fun m => ?_) hpow
+  refine OracleModel.LocalClass.of_two_pow O hYes hNo (fun m _ => ?_) hpow
   cases m with
   | zero =>
     refine ⟨Circuit.oneGate (.base (.const true)) Fin.elim0, ?_, ?_, ?_, ?_⟩
