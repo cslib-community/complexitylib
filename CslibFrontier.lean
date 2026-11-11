@@ -5045,6 +5045,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Ba
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Bipartite
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Convex
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Cycle
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.CycleDarts
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Realization
