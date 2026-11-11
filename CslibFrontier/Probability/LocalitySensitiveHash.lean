@@ -179,7 +179,7 @@ theorem IsLocalitySensitive.not_far {prob : X → X → ℝ} {near far : X → X
 /-! ### The AND construction -/
 
 /-- The AND construction: concatenate `k` hashes keyed by independent seeds. -/
-def andHash (hash : ι → X → Y) (k : ℕ) (seeds : Fin k → ι) (x : X) : Fin k → Y :=
+@[expose] def andHash (hash : ι → X → Y) (k : ℕ) (seeds : Fin k → ι) (x : X) : Fin k → Y :=
   fun j => hash (seeds j) x
 
 /-- `k` independently keyed hashes all collide with probability `p ^ k`. -/
