@@ -49,4 +49,13 @@ example {n ℓ : ℕ} (i : BitString ℓ) (z : Fin (n * 2 ^ binaryFieldDegree n)
           (binaryFieldPoints n j ^ (t : ℕ)) c = true} i)) :=
   Design.restrict_binaryPolynomial i z j _ fun c => by rw [Equiv.symm_apply_apply]
 
+/-- Through `Design.binaryPolynomial_eq`, a client sees the blocks of the binary instance as
+`bitPolyBlock`s, so it can use `mem_bitPolyBlock` and `card_bitPolyBlock`. -/
+example (n ℓ : ℕ) (i : Fin (2 ^ ℓ)) : #((Design.binaryPolynomial n ℓ).block i) = n := by
+  rw [Design.binaryPolynomial_eq, Design.block_bitPolynomial, card_bitPolyBlock]
+
+/-- The field degree for `n = 5` rows is `3 ≤ 5`. -/
+example : binaryFieldDegree 5 ≤ 5 :=
+  binaryFieldDegree_le_self (by norm_num)
+
 end CslibFrontierTests.NisanWigdersonBitPolynomial

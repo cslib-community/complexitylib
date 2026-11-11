@@ -14,12 +14,13 @@ public import CslibFrontier.Foundations.Data.BitString.Parity
 public import CslibFrontier.Foundations.FieldTheory.Finite.BinaryField
 import CslibFrontier.Foundations.Data.BitString.Parity.SubsetSum
 import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.Log
 
 /-!
 # The bit-indexed polynomial design
 
 Carmosino, Impagliazzo, Kabanets and Kolokolova's AC⁰[p] construction of Nisan–Wigderson designs
-(§3.1 and the proof of Theorem 3.6, pp. 10:11–10:12)
+(Def 3.4, Lemma 3.5, §3.1 and the proof of Theorem 3.6, pp. 10:10–10:12)
 [CarmosinoImpagliazzoKabanetsKolokolova2016] indexes the blocks by bit strings. The string
 `i : BitString ℓ` names the polynomial `A_i(x) = ∑_t i_t x^t` with coefficients `0` and `1`
 (`Cslib.Crypto.PRG.NisanWigderson.bitPoly`). The universe is split into `n` rows, each a copy of
@@ -73,6 +74,8 @@ This differs from the source in these ways:
   row by row.
 * `Cslib.Crypto.PRG.NisanWigderson.bits_bitPoly_eq_parityOn`: each bit of `A_i(r)` is a parity of
   `i`.
+* `Cslib.Crypto.PRG.NisanWigderson.Design.binaryPolynomial_eq`: the binary instance unfolded, so
+  that the general results apply to it.
 * `Cslib.Crypto.PRG.NisanWigderson.Design.restrict_binaryPolynomial`: the reading for the binary
   instance, with each column given by the bits of its number.
 * `Cslib.Crypto.PRG.NisanWigderson.Design.seedLength_binaryPolynomial_le`: the seed has at most
@@ -81,7 +84,7 @@ This differs from the source in these ways:
 ## References
 
 * [M. L. Carmosino, R. Impagliazzo, V. Kabanets, A. Kolokolova, *Learning algorithms from natural
-  proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016], §3.1, Theorem 3.6
+  proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016], Def 3.4, Lemma 3.5, §3.1, Theorem 3.6
 * [N. Nisan, A. Wigderson, *Hardness vs randomness*][NisanWigderson1994]
 -/
 
@@ -105,7 +108,7 @@ theorem bitPoly_eq_sum_mul (i : BitString ℓ) (x : F) :
   simp only [bitPoly, ite_mul, one_mul, zero_mul]
 
 /-- The coefficients `1` where `i` is true and `0` elsewhere determine `i`. -/
-theorem bitCoeff_injective :
+private theorem bitCoeff_injective :
     Function.Injective fun (i : BitString ℓ) (t : Fin ℓ) => (if i t then 1 else 0 : F) := by
   intro i i' h
   funext t
@@ -126,7 +129,7 @@ variable (r : Fin n → F) (num : F ≃ Fin q)
 
 /-- Distinct rows give distinct cells: the cell of row `j` in block `i` is `(j, num (A_i(r_j)))`,
 numbered row-major. -/
-theorem bitPolyCell_injective (i : BitString ℓ) :
+private theorem bitPolyCell_injective (i : BitString ℓ) :
     Function.Injective fun j : Fin n => finProdFinEquiv (j, num (bitPoly i (r j))) :=
   fun _ _ h => congrArg Prod.fst (finProdFinEquiv.injective h)
 
@@ -156,7 +159,7 @@ theorem card_bitPolyBlock (i : BitString ℓ) : #(bitPolyBlock r num i) = n := b
 /-- **Distinct blocks share at most `ℓ - 1` cells**, for distinct points `r_j`. A shared cell in
 row `j` is a point `r_j` where the two polynomials agree. The polynomials are distinct and of
 degree less than `ℓ`, so this holds for at most `ℓ - 1` points (`card_polynomialBlock_inter_le`)
-[CarmosinoImpagliazzoKabanetsKolokolova2016, proof of Theorem 3.6]. -/
+[CarmosinoImpagliazzoKabanetsKolokolova2016, Lemma 3.5]. -/
 theorem card_bitPolyBlock_inter_le (hr : Function.Injective r) {i i' : BitString ℓ}
     (h : i ≠ i') : #(bitPolyBlock r num i ∩ bitPolyBlock r num i') ≤ ℓ - 1 := by
   classical
@@ -235,10 +238,12 @@ theorem le_two_pow_binaryFieldDegree (n : ℕ) : n ≤ 2 ^ binaryFieldDegree n :
 theorem two_pow_binaryFieldDegree_le (hn : 1 ≤ n) : 2 ^ binaryFieldDegree n ≤ 2 * n := by
   rcases hn.eq_or_lt with rfl | hn
   · simp [binaryFieldDegree, Nat.clog_one_right]
-  have hpos := Nat.clog_pos one_lt_two hn
-  have hlt := Nat.pow_pred_clog_lt_self one_lt_two hn
-  rw [binaryFieldDegree, max_eq_right hpos, ← Nat.succ_pred_eq_of_pos hpos, pow_succ]
-  omega
+  rw [binaryFieldDegree, max_eq_right (Nat.clog_pos one_lt_two hn)]
+  exact Nat.pow_clog_le_mul one_lt_two (by omega)
+
+/-- The degree is at most `n`, for `n ≥ 1`. -/
+theorem binaryFieldDegree_le_self (hn : 1 ≤ n) : binaryFieldDegree n ≤ n :=
+  max_le hn (Nat.clog_le_of_le_pow Nat.lt_two_pow_self.le)
 
 /-- The numbering `BinaryField e ≃ Fin (2 ^ e)` of the field elements by their bits, least
 significant first. -/
@@ -258,6 +263,13 @@ elements. -/
 noncomputable def Design.binaryPolynomial (n ℓ : ℕ) :
     Design (n * 2 ^ binaryFieldDegree n) n (ℓ - 1) (2 ^ ℓ) :=
   .bitPolynomial ℓ (binaryFieldPoints n) (binaryFieldNum (binaryFieldDegree_ne_zero n))
+
+/-- The binary instance is the bit-indexed polynomial design at its points and column numbering. -/
+theorem Design.binaryPolynomial_eq (n ℓ : ℕ) :
+    Design.binaryPolynomial n ℓ =
+      .bitPolynomial ℓ (binaryFieldPoints n) (binaryFieldNum (binaryFieldDegree_ne_zero n)) := by
+  unfold Design.binaryPolynomial
+  rfl
 
 /-- **Reading a seed in block `i` of the binary instance.** Row `j` contributes the cell whose
 column `v` has the bits of `A_i(r_j)`. Bit `c` of `A_i(r_j)` is the parity of `i` on the exponents
