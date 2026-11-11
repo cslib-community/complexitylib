@@ -3854,7 +3854,6 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.FixedKey.Security
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Basic
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.CircuitEvaluation
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.CircuitEvaluation.PolyTime
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Decoding
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Decryption
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.DecryptionCircuit
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.DecryptionCircuit.Parameters
@@ -3865,7 +3864,6 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.DepthParameters
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.FullyHomomorphic
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Gadget
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Hiding
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Noise
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Parameters
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Sampling
@@ -3934,7 +3932,10 @@ public import CslibFrontier.Crypto.Computational.Kilian.NP
 public import CslibFrontier.Crypto.Computational.Kilian.Soundness
 public import CslibFrontier.Crypto.Computational.Kilian.Succinct
 public import CslibFrontier.Crypto.Computational.LWE.Basic
+public import CslibFrontier.Crypto.Computational.LWE.Decoding
 public import CslibFrontier.Crypto.Computational.LWE.DualRegev
+public import CslibFrontier.Crypto.Computational.LWE.DualRegev.Security
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.LWE.Regev
 public import CslibFrontier.Crypto.Computational.LWE.Regev.Security
 public import CslibFrontier.Crypto.Computational.Lattice.ShortestVector

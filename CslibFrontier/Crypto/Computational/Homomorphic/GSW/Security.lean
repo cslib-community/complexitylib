@@ -9,9 +9,9 @@ module
 
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Hiding
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Parameters
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.PolyTime
+import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.Correctness
 import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
@@ -80,13 +80,13 @@ theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ)
     Encryption.publicKeyGame (LWE.uniformEnsemble n m w security)
       (fun k => encryptSerialized (n k) (m k) (w k)) adversary bit security =
         uniformPublicGame (n := n security) (m := m security) (w := w security)
-          (fun A => ProbComp.eval (adversary.choose security (serializePublicMatrix A)))
+          (fun A => ProbComp.eval (adversary.choose security (LWE.serializePublicMatrix A)))
           (fun state ciphertext =>
             ProbComp.eval (adversary.guess security state (serializeCiphertext ciphertext)))
           bit := by
   simp only [pmf_norm, Encryption.publicKeyGame, LWE.uniformEnsemble, uniformPublicGame,
     eval_encryptSerialized, Matrix.ofBinary_toBinary, encrypt, eval_sampleCoins,
-    serializePublicMatrix]
+    LWE.serializePublicMatrix]
 
 /-- The uniform public-key word gives the typed hiding theorem's full adaptive bound. -/
 theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)
@@ -103,7 +103,7 @@ theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)
     NNReal.coe_mul, NNReal.coe_natCast, Real.coe_sqrt, NNReal.coe_div, NNReal.coe_pow,
     NNReal.coe_ofNat, Nat.mul_comm] using
       uniformPublicGame_advantage_le (n := n security) (m := m security) (w := w security)
-        (fun A => ProbComp.eval (adversary.choose security (serializePublicMatrix A)))
+        (fun A => ProbComp.eval (adversary.choose security (LWE.serializePublicMatrix A)))
         (fun state ciphertext =>
           ProbComp.eval (adversary.guess security state (serializeCiphertext ciphertext)))
 
@@ -111,16 +111,16 @@ theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)
 advantage plus the shared-public-matrix statistical error. No efficiency is needed for this law. -/
 theorem advantage_game_le (n m w η : ℕ → ℕ)
     (adversary : Encryption.Adversary) (security : ℕ) :
-    Encryption.advantage (Encryption.game (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
+    Encryption.advantage (Encryption.game (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
       (fun k => encryptSerialized (n k) (m k) (w k)) adversary) security ≤
       2 * Game.advantage
-        (distinguishingGame (LWE.realEnsemble n m w (fun k => noiseLaw (w k) (η k)) security)
+        (distinguishingGame (LWE.realEnsemble n m w (fun k => LWE.noiseLaw (w k) (η k)) security)
           (lweDistinguisher n m w adversary security))
         (distinguishingGame (LWE.uniformEnsemble n m w security)
           (lweDistinguisher n m w adversary security)) +
             hidingError (n security) (m security) (w security) := by
   simp only [Encryption.advantage, Encryption.eval_game_eq_publicKeyGame,
-    eval_keyGenSerialized_publicWord]
+    LWE.eval_keyGenSerialized_publicWord]
   exact (Encryption.advantage_publicKeyGame_le _ (LWE.uniformEnsemble n m w security)
     _ adversary security).trans
       (add_le_add le_rfl (advantage_uniformEnsemble_le n m w adversary security))
@@ -133,8 +133,8 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
     (hm : ComputableInPolyTime m encUnary encUnary)
     (hw : ComputableInPolyTime w encUnary encUnary)
     (hmargin : ∀ᶠ security in atTop, (n security + 1) * w security + 2 * security ≤ m security)
-    (hLWE : DecisionLWE n m w (fun k => noiseLaw (w k) (η k))) :
-    Encryption.INDCPA (fun k => keyGenSerialized (n k) (m k) (w k) (η k))
+    (hLWE : DecisionLWE n m w (fun k => LWE.noiseLaw (w k) (η k))) :
+    Encryption.INDCPA (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
       (fun k => encryptSerialized (n k) (m k) (w k)) := by
   intro adversary hadversary
   have hsource := hLWE (lweDistinguisher n m w adversary)
@@ -152,9 +152,9 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
 Only decision LWE for its precise centered-binomial law remains a security assumption. -/
 theorem Parameters.indCPA
     (hLWE : DecisionLWE Parameters.dimension Parameters.samples Parameters.width
-      (fun k => noiseLaw (Parameters.width k) (Parameters.noise k))) :
+      (fun k => LWE.noiseLaw (Parameters.width k) (Parameters.noise k))) :
     Encryption.INDCPA
-      (fun k => keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
+      (fun k => LWE.keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
         (Parameters.width k) (Parameters.noise k))
       (fun k => encryptSerialized (Parameters.dimension k) (Parameters.samples k)
         (Parameters.width k)) :=
