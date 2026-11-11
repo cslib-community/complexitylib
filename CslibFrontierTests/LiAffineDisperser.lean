@@ -107,15 +107,19 @@ theorem isAffineSomewhereCondenser_dimExpander2 :
               convert h2mem using 1
               funext i
               fin_cases i
-              · simp [dimExpander2, e0, hb0]
-              · simp [dimExpander2, e0, hb0, hb1]; decide
+              · change e0 0 = v 0
+                rw [hb0]; rfl
+              · change e0 1 = v 0 + v 1
+                rw [hb0, hb1]; decide
             refine ⟨he0, ?_⟩
             have hadd := S.add_mem h0mem he0
             convert hadd using 1
             funext i
             fin_cases i
-            · simp [dimExpander2, e1, hb0]; decide
-            · simp [dimExpander2, e1, hb1]; decide
+            · change e1 0 = v 0 + e0 0
+              rw [hb0]; decide
+            · change e1 1 = v 1 + e0 1
+              rw [hb1]; decide
         rw [eq_top_iff]
         intro w _
         have hw : w = (if w 0 = true then e0 else 0) + (if w 1 = true then e1 else 0) := by
