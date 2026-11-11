@@ -429,6 +429,14 @@ The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `VerificationCovering`. No deprecated aliases are retained.
 
 
+`PlantedUniqueness.accepted_eq` now proves actual planted verification uniqueness using the
+native planting/adversary/verification execution and computed forest witnesses. Its ledger
+includes planting's queries, so this is not the cheaper source collision event. The exact
+open `PlantedUniqueness.RemainingCharge` proposition records a phase-separated actual cut
+audit's joint stopping/collision charge and stopped guessing charge. It is unproved, and
+may be stronger than necessary because it counts planting collisions. No source theorem
+assumes it. The sharp odd-length inequality and literal ALL-main completion remain open.
+
 Do not promote an older pair/batch bound, unnormalized machine profile, native
 live support or generic polynomial in a whole list to this source bit theorem.
 The older solvers and their charges remain intact. Binary min/max certificates

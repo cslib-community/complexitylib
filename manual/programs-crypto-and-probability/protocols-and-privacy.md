@@ -1709,6 +1709,14 @@ The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `VerificationCovering`. No deprecated aliases are retained.
 
 
+`PlantedUniqueness.accepted_eq` now proves actual planted verification uniqueness using the
+native planting/adversary/verification execution and computed forest witnesses. Its ledger
+includes planting's queries, so this is not the cheaper source collision event. The exact
+open `PlantedUniqueness.RemainingCharge` proposition records a phase-separated actual cut
+audit's joint stopping/collision charge and stopped guessing charge. It is unproved, and
+may be stronger than necessary because it counts planting collisions. No source theorem
+assumes it. The sharp odd-length inequality and literal ALL-main completion remain open.
+
 ### STOC733 main-result coverage inventory
 
 Locators below refer to the pinned [WangLvShenZhang2027] manuscript's printed PDF pages.
@@ -1741,7 +1749,7 @@ that every incidental proof assertion or experimental plot has a separate Lean t
 | Theorem 7, pp. 22–23 | `DPDissection.sourceCertificate_bounds`, `DPDissection.source_quarter_depth_bounds` | Covered on typed inputs, all allowed depths |
 | Lemma 9, p. 23 | `unique_cut` | Covered as positional representation, not a universal algorithmic barrier |
 | Corollaries 1 and 3, pp. 7, 14 | `solution_project`, `eval_bit_zero`, `solution_parity_class`, `parity_class_card` | Covered with positive-width/count hypotheses where needed |
-| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; odd-length uniqueness/sharp inequality remains open |
+| Theorem 8, pp. 25–28 | `IdealChain.VerificationCovering.source_theorem_eight_even`, `IdealChain.VerificationCovering.source_search_rate`, `IdealChain.Guessing.stopped_guess_le`, `IdealChain.PlantedUniqueness.accepted_eq`, `IdealChain.Security.source_search_half_budget` | Partial: literal sharp inequality for all even $q$; all lengths have bound $(3T+1)/2^h+18T^2/2^m$ and the source query barrier; stopped guessing bounded by $2^{-q}$; full-ledger planted uniqueness proved; odd-length sharp collision composition remains open |
 | Corollary 4, p. 28 | `IdealChain.Security.source_corollary_four` | Covered for the actual source games; internal collision coefficient $8$ implies source coefficient $10$ |
 
 Theorem 2 uses width $C(v+1)$ universally and $Cv$ for $v\ge1$: a positive-width
