@@ -47,10 +47,15 @@ circuits for the oracle, under `NP ⊆ P/poly`, is not done here.
 ## Main definitions
 
 * `Cslib.MCSP.AntiChecker.querySources`: a query word read from constants and wires.
+* `Cslib.MCSP.AntiChecker.queryLength`: the length of a greedy query
+  (`Cslib.MCSP.AntiChecker.length_encQuery_ofSamples_eq_queryLength`).
 * `Cslib.MCSP.AntiChecker.generator`: the greedy as an oracle circuit over the truth table.
+* `Cslib.MCSP.AntiChecker.blockWire`: wire `b` of the block of round `j` in an output.
 * `Cslib.MCSP.AntiChecker.samplesOf`, `Cslib.MCSP.AntiChecker.blockSources`: the samples in an
   output of the generator, and the wires that hold them.
 * `Cslib.MCSP.AntiChecker.queryOracle`: a language's answers to the greedy's queries.
+* `Cslib.MCSP.AntiChecker.antiCheckerPower`, `Cslib.MCSP.AntiChecker.antiCheckerRounds`: the power
+  `L + 200` and the `L (L + 200) + 1` rounds of the anti-checker generator.
 
 ## Main results
 
@@ -129,6 +134,11 @@ variable {n : ℕ}
 with at most `s` gates and power `ℓ`. -/
 def queryLength (n s ℓ u t : ℕ) : ℕ :=
   2 * (n + s + ℓ + u) + 4 + t * (4 * n + 5)
+
+/-- A greedy query with `t` samples has length `queryLength n s ℓ u t`. -/
+theorem length_encQuery_ofSamples_eq_queryLength (n s ℓ u : ℕ) (P : List (BitString n × Bool)) :
+    (encQuery (Query.ofSamples n s ℓ u P)).length = queryLength n s ℓ u P.length :=
+  length_encQuery_ofSamples n s ℓ u P
 
 /-- Wire `b` of block `j` among `r` blocks of `n + 1` wires after the truth table. -/
 def blockWire {r : ℕ} (j : Fin r) (b : Fin (n + 1)) : Fin (2 ^ n + (n + 1) * r) :=
@@ -217,7 +227,7 @@ noncomputable def queryOracle (O : Language Bool) (n s ℓ : ℕ) (P : List (Bit
   @decide (encQuery (Query.ofSamples n s ℓ u P) ∈ O) (Classical.propDecidable _)
 
 /-- `O` answers a greedy query yes exactly when its `encQuery` word is in `O`. -/
-theorem queryOracle_eq_true {O : Language Bool} {s ℓ u : ℕ} {P : List (BitString n × Bool)} :
+theorem queryOracle_eq_true_iff {O : Language Bool} {s ℓ u : ℕ} {P : List (BitString n × Bool)} :
     queryOracle O n s ℓ P u = true ↔ encQuery (Query.ofSamples n s ℓ u P) ∈ O :=
   @decide_eq_true_iff _ (Classical.propDecidable _)
 
@@ -296,7 +306,7 @@ private theorem selectedWord_generatorRound (O : Language Bool) (f : BooleanFunc
       · simp [length_roundSources]
       · intro a h₁ h₂
         simp [substitute, roundSrc]
-    rw [Bool.eq_iff_iff, Language.slice_eq_true_iff, queryOracle_eq_true, hofFn, roundSources,
+    rw [Bool.eq_iff_iff, Language.slice_eq_true_iff, queryOracle_eq_true_iff, hofFn, roundSources,
       map_querySources, List.map_append, map_ofFn_blockSources]
     simp [Query.ofSamples, inputSources, hz, Function.comp_def]
   have hspec := selectedWord_spec O (roundSrc s ℓ R r)
@@ -382,7 +392,7 @@ theorem isAntiChecker_samplesOf_generator {n s : ℕ} (hn : 0 < n) {O : Language
         (oracleInterpretation O) (MCSP.truthTable n f))).map Prod.fst} := by
   rw [samplesOf_eval_generator, antiCheckerRounds, antiCheckerPower]
   exact isAntiChecker_greedy hn hf (isThresholdOracle_of_eq_true_iff (Nat.succ_pos _)
-    fun P u => by rw [queryOracle_eq_true, hO])
+    fun P u => by rw [queryOracle_eq_true_iff, hO])
 
 /-! ### Measures -/
 
