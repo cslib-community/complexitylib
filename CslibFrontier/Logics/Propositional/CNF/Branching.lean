@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Data.BranchingVector
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount.Declared
 import CslibFrontier.Logics.Propositional.CNF.Eval
+import CslibFrontier.Foundations.Data.List.Blocks
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Card
 
@@ -150,24 +151,6 @@ theorem PartitionsModels.satisfiable_iff {φ : CNF V} {branches : List (CNF V)}
     (h : PartitionsModels φ branches) :
     φ.Satisfiable ↔ ∃ ψ ∈ branches, ψ.Satisfiable :=
   h.coversModels.satisfiable_iff
-
-private theorem (by simp only [List.countP_eq_length_filter, List.length_filter_eq_sum]) {α : Type*} (p : α → Bool) (xs : List α) :
-    xs.countP p = (xs.map fun x => if p x then 1 else 0).sum := by
-  induction xs with
-  | nil => rfl
-  | cons x rest ih =>
-    rw [List.countP_cons, List.map_cons, List.sum_cons, ih]
-    cases p x
-    · simp only [Bool.false_eq_true, ↓reduceIte, Nat.zero_add, Nat.add_zero]
-    · simp only [↓reduceIte, Nat.add_comm _ 1]
-
-private theorem Finset.sum_list_sum_comm {ι α : Type*} (s : Finset ι) (xs : List α)
-    (f : ι → α → ℕ) :
-    ∑ i ∈ s, (xs.map (f i)).sum = (xs.map fun x => ∑ i ∈ s, f i x).sum := by
-  induction xs with
-  | nil => simp only [List.map_nil, List.sum_nil, Finset.sum_const_zero]
-  | cons x rest ih =>
-    simp only [List.map_cons, List.sum_cons, Finset.sum_add_distrib, ih]
 
 private def extDeclared [DecidableEq V] (declared : Finset V) (σ : declared → Bool) (v : V) :
     Bool :=
