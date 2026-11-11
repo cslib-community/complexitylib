@@ -198,6 +198,7 @@ theorem blockSensitivity_le_three_mul_randomizedComplexity (f : BooleanFunction 
     blockSensitivity f ≤ 3 * randomizedComplexity (1 / 3) f := by
   have := one_sub_two_mul_mul_blockSensitivity_le_randomizedComplexity
     (ε := 1 / 3) f
+  norm_num only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] at this
   have h : (blockSensitivity f : ℝ) ≤ 3 * randomizedComplexity (1 / 3) f := by linarith
   exact_mod_cast h
 
@@ -237,7 +238,7 @@ theorem one_sub_two_mul_pow_three_mul_complexity_le (f : BooleanFunction n) :
 theorem complexity_le_mul_randomizedComplexity_pow_three (f : BooleanFunction n) :
     complexity f ≤ 27 * randomizedComplexity (1 / 3) f ^ 3 := by
   have := one_sub_two_mul_pow_three_mul_complexity_le (ε := 1 / 3) f
-  rw [show (1 - 2 * (1 / 3 : ℝ)) ^ 3 = 1 / 27 by norm_num] at this
+  norm_num only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] at this
   have h : (complexity f : ℝ) ≤ 27 * (randomizedComplexity (1 / 3) f : ℝ) ^ 3 := by linarith
   exact_mod_cast h
 

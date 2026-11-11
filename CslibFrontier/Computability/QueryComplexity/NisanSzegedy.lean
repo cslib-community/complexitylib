@@ -260,6 +260,7 @@ theorem one_sub_two_mul_mul_blockSensitivity_le {ε : ℝ≥0} (f : BooleanFunct
 theorem blockSensitivity_le_six_mul_approxDegree_sq (f : BooleanFunction n) :
     blockSensitivity f ≤ 6 * approxDegree (1 / 3) f ^ 2 := by
   have := one_sub_two_mul_mul_blockSensitivity_le (ε := 1 / 3) f
+  norm_num only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] at this
   have h : (blockSensitivity f : ℝ) ≤ 6 * approxDegree (1 / 3) f ^ 2 := by linarith
   exact_mod_cast h
 

@@ -396,7 +396,7 @@ namespace DecisionTree
 theorem randomizedComplexity_le_complexity {ι β : Type*} [Finite ι] {ε : ℝ≥0}
     (f : (ι → Bool) → β) : QueryComplexity.randomizedComplexity ε f ≤ complexity f :=
   QueryComplexity.randomizedComplexity_zero f ▸
-    QueryComplexity.randomizedComplexity_antitone (zero_le ε)
+    QueryComplexity.randomizedComplexity_antitone zero_le
 
 /-- `R_ε(f)` is at most the number of variables for `ε ≥ 0`. -/
 theorem randomizedComplexity_le_card {ι β : Type*} [Fintype ι] {ε : ℝ≥0}
