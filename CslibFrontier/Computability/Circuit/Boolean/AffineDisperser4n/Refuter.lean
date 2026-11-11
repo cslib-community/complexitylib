@@ -241,7 +241,8 @@ def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
     match findPair S p with
     | some pr =>
       let r := pr.partner p
-      let H_gate := (S.gates.sort (· ≤ ·)).find? (fun G => decide (Sum.inl G ∈ S.children p ∩ S.children r))
+      let H_gate := (S.gates.sort (· ≤ ·)).find?
+        (fun G => decide (Sum.inl G ∈ S.children p ∩ S.children r))
       match H_gate with
       | some G =>
           let φ (a b : Bool) := (S.gate G).op
@@ -266,7 +267,9 @@ def applyStep {n} (S : State n) (choice : StepChoice) : State n :=
     | none => S
   | .swapAuxIn G =>
     let a := match (S.gate G).left, (S.gate G).right with
-             | .node u, .node v => if decide (u ∈ S.aux) then some u else if decide (v ∈ S.aux) then some v else none
+             | .node u, .node v =>
+               if decide (u ∈ S.aux) then some u
+               else if decide (v ∈ S.aux) then some v else none
              | .node u, .const _ => if decide (u ∈ S.aux) then some u else none
              | .const _, .node v => if decide (v ∈ S.aux) then some v else none
              | _, _ => none
@@ -312,6 +315,9 @@ def terminalVal {n} (S : State n) (d_params : List ℕ) (A : List Bool) (x : ℕ
 def refuterMeasure {n} (S : State n) : ℕ :=
   4 * (S.m + S.s) + 3 * S.gates.card + if h : S.gates.Nonempty then S.auxIn (S.gates.min' h) else 0
 
+def allAssignments : ℕ → List (List Bool)
+  | 0 => [[]]
+  | m + 1 => let r := allAssignments m; r.map (false :: ·) ++ r.map (true :: ·)
 
 def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitString n → Bool) (d : ℕ)
     (S : State n) : Option (BitString n) :=
@@ -329,22 +335,30 @@ def findCounterexample {n} (C : Circuit (fullSignature 2 Bool) n 1) (f : BitStri
       else none
   | .node u =>
     let F := (S.params.sort (· ≤ ·)).filter (fun x => !(isFstOfAnyPair S x))
-    if decide (u ∈ S.params) || S.gates.isEmpty then
-      let (c_out, T_out) := if decide (u ∈ S.params) then (false, [u]) else findAffineRep S u
+    if decide (u ∈ S.params) || S.gates.card == 0 then
+      let (c_out, T_out) :=
+        if decide (u ∈ S.params) then (false, ({u} : Finset ℕ)) else findAffineRep S u
       match F.find? (fun v => decide (v ∈ T_out)) with
       | some pivot =>
         let d_params := (F.filter (· ≠ pivot)).take d
         (allAssignments d).findSome? fun A =>
           let val_param_part := terminalVal S d_params A
           let T_erase := T_out.filter (· ≠ pivot)
-          let xorSum := T_erase.foldl (fun acc y => acc ^^ val_param_part y) false
+          let xorSum := (T_erase.sort (· ≤ ·)).foldl (fun acc y => acc ^^ val_param_part y) false
           let pivot_val := c_out ^^ S.out.neg ^^ xorSum
           let val_param := fun y => if y = pivot then pivot_val else val_param_part y
           let val_all := fun y =>
             if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
           let x_vec : BitString n := S.phi val_all
           if C.eval fullInterpretation x_vec 0 != f x_vec then some x_vec else none
-      | none => none
+      | none =>
+        let d_params := F.take d
+        (allAssignments d).findSome? fun A =>
+          let val_param := terminalVal S d_params A
+          let val_all := fun y =>
+            if decide (y ∈ S.params) then val_param y else evaluateAux S y val_param
+          let x_vec : BitString n := S.phi val_all
+          if C.eval fullInterpretation x_vec 0 != f x_vec then some x_vec else none
     else if hne : S.gates.Nonempty then
       let G := S.gates.min' hne
       let α := decide ((S.gate G).op true false == (S.gate G).op true true)
