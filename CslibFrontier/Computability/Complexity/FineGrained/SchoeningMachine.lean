@@ -360,7 +360,12 @@ private theorem half_le_bernoulli_factor (n k : ℕ) :
       _ = 1 / 2 := by field_simp
   have hbern := one_add_mul_le_pow (a := -δ) (by linarith) (3 * n)
   push_cast at hbern
-  linarith
+  change _ ≤ (1 - δ) ^ (3 * n)
+  calc (1 / 2 : ℝ) = 1 - 1 / 2 := by ring
+    _ ≤ 1 - (3 * n : ℝ) * δ := by linarith
+    _ = 1 + (3 * n : ℝ) * -δ := by ring
+    _ ≤ (1 + -δ) ^ (3 * n) := hbern
+    _ = (1 - δ) ^ (3 * n) := by ring
 
 /-- **Fair-coin Schöning trial domination.** Using `w = 2 |V| + k + 3` fair bits per step preserves
 at least half of the ideal single-trial success probability. -/
