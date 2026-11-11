@@ -43,7 +43,8 @@ form also omits their Algorithm 1 lookup that answers `x = aᵢ` with the corres
 
 ## Main definitions
 
-* `trialTuple`, `accepts`, `dpDecode`: the decoder.
+* `trialTuple`, `accepts`, `dpDecode`: the decoder. Other modules unfold them with `trialTuple_eq`,
+  `accepts_eq`, `dpDecode_zero` and `dpDecode_cons`.
 * `consistent`, `acceptedPairs`, `badPairs`, `disagreements`: the counting objects.
 
 ## Main results
@@ -164,6 +165,36 @@ first accepted trial, or `dflt` if no trial is accepted. -/
 def dpDecode (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k)) (b₀ : Fin k → U)
     {m : ℕ} (v : Fin m → Trial U k) (x : U) : V :=
   ((firstAccepted (accepts C' P b₀ x) v).map fun t => C' (trialTuple P b₀ x t) t.1).getD dflt
+
+omit [Fintype U] [DecidableEq U] in
+/-- The trial tuple overwrites the free position of `b₀` on `P` and the filler elsewhere. -/
+theorem trialTuple_eq (P : Finset (Fin k)) (b₀ : Fin k → U) (x : U) (t : Trial U k) :
+    trialTuple P b₀ x t = Function.update (P.piecewise b₀ t.2) t.1 x := by
+  unfold trialTuple
+  rfl
+
+omit [Fintype U] [DecidableEq U] in
+/-- Unfolding the acceptance test. -/
+theorem accepts_eq (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k)) (b₀ : Fin k → U) (x : U)
+    (t : Trial U k) :
+    accepts C' P b₀ x t = decide (t.1 ∉ P ∧ ∀ i ∈ P, C' (trialTuple P b₀ x t) i = C' b₀ i) := by
+  unfold accepts
+  rfl
+
+omit [Fintype U] [DecidableEq U] in
+/-- With no trials, the decoder outputs the default. -/
+@[simp] theorem dpDecode_zero (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k))
+    (b₀ : Fin k → U) (v : Fin 0 → Trial U k) (x : U) : dpDecode C' dflt P b₀ v x = dflt := by
+  simp [dpDecode]
+
+omit [Fintype U] [DecidableEq U] in
+/-- The decoder answers from the first trial if it is accepted, and otherwise from the rest. -/
+theorem dpDecode_cons (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k))
+    (b₀ : Fin k → U) {m : ℕ} (t : Trial U k) (w : Fin m → Trial U k) (x : U) :
+    dpDecode C' dflt P b₀ (Fin.cons t w : Fin (m + 1) → Trial U k) x =
+      if accepts C' P b₀ x t then C' (trialTuple P b₀ x t) t.1 else dpDecode C' dflt P b₀ w x := by
+  rw [dpDecode, dpDecode, firstAccepted_cons]
+  split_ifs <;> rfl
 
 /-- The pairs `(j, y)` that account for the trials accepted at `x`: `j ∉ P`, `y = b₀` on `P`,
 `y j = x` and `C' y = C' b₀` on `P`. -/
