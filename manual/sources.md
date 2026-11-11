@@ -797,6 +797,11 @@ Yuval Ishai, Joe Kilian, Kobbi Nissim and Erez Petrank. "Extending Oblivious Tra
 
 Rahul Ilango. *Constant Depth Formula and Partial Function Versions of MCSP are Hard*. FOCS 2020, 424–433. https://doi.org/10.1109/FOCS46700.2020.00047 . Full version ECCC TR20-183. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter.
 
+<a id="ilo2020"></a>
+## ilo2020
+
+Rahul Ilango, Bruno Loff and Igor C. Oliveira. *NP-Hardness of Circuit Minimization for Multi-Output Functions*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 22:1–22:36. https://doi.org/10.4230/LIPIcs.CCC.2020.22 . Inspected the LIPIcs PDF directly: Section 4.2, Proposition 14 and the consequence `∆ = CC(T • g) − CC(g)` (pp. 22:21–22:22).
+
 <a id="immerman1988"></a>
 ## immerman1988
 
