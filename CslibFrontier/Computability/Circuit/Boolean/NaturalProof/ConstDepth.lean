@@ -20,8 +20,9 @@ This is how lower bounds such as Razborov's against AC⁰[2] give usefulness.
 
 Only this direction is provided. The converse needs a hypothesis: over a basis that cannot produce
 an output on zero inputs, `ConstDepth I` is empty, so every property is useful against it, while
-projections still compute members of `C n`. The converse is deferred to milestone M6.8b of
-[#4451](https://github.com/cslib-community/cslib-frontier/issues/4451), its first consumer.
+projections still compute members of `C n`. The converse is not formalized; its expected consumer
+is the abstract form of [Carmosino et al., Theorem 5.1][CarmosinoImpagliazzoKabanetsKolokolova2016],
+which stays open under [#798](https://github.com/cslib-community/cslib-frontier/issues/798).
 
 ## Main results
 
@@ -31,6 +32,8 @@ projections still compute members of `C n`. The converse is deferred to mileston
 ## References
 
 * [A. A. Razborov, S. Rudich, *Natural proofs*][RazborovRudich1997]
+* [M. L. Carmosino, R. Impagliazzo, V. Kabanets, A. Kolokolova, *Learning algorithms from natural
+  proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016]
 -/
 
 public section
