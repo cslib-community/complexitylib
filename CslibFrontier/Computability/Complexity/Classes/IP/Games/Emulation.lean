@@ -30,7 +30,7 @@ prover's. A public-coin game of shape `Emulation.shape B Z g` lets Merlin prove 
 count to Arthur.
 
 At a verifier move of `n` bits, Arthur sends the seed of an affine hash to `B` bits of strings of
-`n + Z` bits (`Cslib.Complexity.SetLowerBound.hashZero`). Merlin answers with a claim, the number
+`n + Z` bits (`Cslib.BitString.LinearHash.hashZero`). Merlin answers with a claim, the number
 `b ≤ B` of `true` bits in a block of `B` bits, a message `m` of `n` bits and padding `z` of `Z`
 bits. The claim `b` says that the continuation after `m` has count at least `2 ^ b`. With the
 current claim `κ`, Merlin's answer must hash to zero and the first `Z + κ - (b + K)` bits of `z`
@@ -83,7 +83,7 @@ counts, which removes the separate normalisation of the set lower bound protocol
 
 namespace Cslib.Complexity
 
-open Finset Turing.MultiTapeTM SetLowerBound
+open Finset Turing.MultiTapeTM BitString.LinearHash
 
 namespace Emulation
 
@@ -225,14 +225,14 @@ private theorem value_verifier_inner (B Z K : ℕ) (V : List Bool → Bool) (n :
     (c : Fin B → Bool) (m : Fin n → Bool) (z : Fin Z → Bool) :
     AMGame.value true (shape B Z g) (fun t => ((check B Z K V ((.verifier, n) :: g) κ p
         (List.ofFn r ++ (List.ofFn (Fin.append c (Fin.append m z)) ++ t))).toNat : ℚ)) =
-      ((BitString.LinearHash.affineHash (seedEquiv B (n + Z) r) (Fin.append m z) = 0 ∧
+      ((affineHash (affineSeedEquiv B (n + Z) r) (Fin.append m z) = 0 ∧
           (!((List.ofFn z).take (Z + κ - ((List.ofFn c).count true + K))).any fun b => b) = true :
           Bool).toNat : ℚ) *
         AMGame.value true (shape B Z g) fun t =>
           ((check B Z K V g ((List.ofFn c).count true) (p ++ List.ofFn m) t).toNat : ℚ) := by
   simp only [List.ofFn_fin_append]
   have hx : hashZero B (n + Z) (List.ofFn r) (List.ofFn m ++ List.ofFn z) =
-      decide (BitString.LinearHash.affineHash (seedEquiv B (n + Z) r) (Fin.append m z) = 0) := by
+      decide (affineHash (affineSeedEquiv B (n + Z) r) (Fin.append m z) = 0) := by
     rw [← List.ofFn_fin_append]
     exact Bool.eq_iff_iff.2 ((hashZero_ofFn r _).trans decide_eq_true_iff.symm)
   simp only [check_verifier_ofFn, hx]
@@ -332,10 +332,10 @@ theorem value_le (B Z K μ : ℕ) (hBK : B ≤ K) (hμ : 0 < μ) (V : List Bool 
           Fin.append m z ∈ S b :=
         mem_map.2 ⟨(m, z), mem_product.2 ⟨hm, mem_filter.2 ⟨mem_univ _, hz⟩⟩, rfl⟩
       -- the seeds for which a generous claim succeeds
-      have hh := (BitString.LinearHash.isPairwiseIndependentHash_affineHash B
-        (n + Z)).comp_seedEquiv (seedEquiv B (n + Z))
+      have hh := (isPairwiseIndependentHash_affineHash B (n + Z)).comp_seedEquiv
+        (affineSeedEquiv B (n + Z))
       let bad (b : ℕ) : Finset (Fin (B * (n + Z) + B) → Bool) :=
-        {r | 0 ∈ (S b).image (BitString.LinearHash.affineHash (seedEquiv B (n + Z) r))}
+        {r | 0 ∈ (S b).image (affineHash (affineSeedEquiv B (n + Z) r))}
       have hbad (b : ℕ) : μ * #(bad b) * 2 ^ B ≤ 2 ^ K * 2 ^ (B * (n + Z) + B) := by
         have h1 : #(bad b) * 2 ^ B ≤ #(S b) * 2 ^ (B * (n + Z) + B) := by
           simpa only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] using
@@ -370,9 +370,8 @@ theorem value_le (B Z K μ : ℕ) (hBK : B ≤ K) (hμ : 0 < μ) (V : List Bool 
           sum_nonneg fun _ _ => by split_ifs <;> norm_num
         have hE_nonneg : (0 : ℚ) ≤ verifierMoves g * ((B + 1) * 2 ^ K / (μ * 2 ^ B)) +
             μ ^ (verifierMoves g + 1) * N / 2 ^ κ := by positivity
-        by_cases hloc : BitString.LinearHash.affineHash (seedEquiv B (n + Z) r)
-            (Fin.append m z) = 0 ∧ (!((List.ofFn z).take
-              (Z + κ - ((List.ofFn c).count true + K))).any fun b => b) = true
+        by_cases hloc : affineHash (affineSeedEquiv B (n + Z) r) (Fin.append m z) = 0 ∧
+            (!((List.ofFn z).take (Z + κ - ((List.ofFn c).count true + K))).any fun b => b) = true
         · rw [decide_eq_true hloc, Bool.toNat_true, Nat.cast_one, one_mul]
           by_cases hm : m ∈ T ((List.ofFn c).count true)
           · have hr : r ∈ bad ((List.ofFn c).count true) :=
@@ -551,10 +550,10 @@ theorem one_sub_le_value (B Z K : ℕ) (hBK : B ≤ K) (hZ : B + K ≤ Z) (V : L
           exact absurd hS (Nat.two_pow_pos K).not_ge
         · exact h
       -- the seeds that miss the good answers
-      have hh := (BitString.LinearHash.isPairwiseIndependentHash_affineHash B
-        (n + Z)).comp_seedEquiv (seedEquiv B (n + Z))
+      have hh := (isPairwiseIndependentHash_affineHash B (n + Z)).comp_seedEquiv
+        (affineSeedEquiv B (n + Z))
       let miss : Finset (Fin (B * (n + Z) + B) → Bool) :=
-        univ.filter fun r => 0 ∉ S.image (BitString.LinearHash.affineHash (seedEquiv B (n + Z) r))
+        univ.filter fun r => 0 ∉ S.image (affineHash (affineSeedEquiv B (n + Z) r))
       have hmiss : (#miss : ℚ) ≤ (B + 1) * 2 ^ B / 2 ^ K * 2 ^ (B * (n + Z) + B) := by
         have h1 : #miss * #S ≤ 2 ^ B * 2 ^ (B * (n + Z) + B) := by
           simpa only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin] using
@@ -583,7 +582,7 @@ theorem one_sub_le_value (B Z K : ℕ) (hBK : B ≤ K) (hZ : B + K ≤ Z) (V : L
               (List.ofFn r ++ (List.ofFn y ++ t))).toNat : ℚ)) (mem_univ _)))
           linarith
         · rw [sub_zero]
-          have h0 : 0 ∈ S.image (BitString.LinearHash.affineHash (seedEquiv B (n + Z) r)) := by
+          have h0 : 0 ∈ S.image (affineHash (affineSeedEquiv B (n + Z) r)) := by
             by_contra h
             exact hr (mem_filter.2 ⟨mem_univ _, h⟩)
           obtain ⟨x, hxS, hx0⟩ := mem_image.1 h0
@@ -595,9 +594,8 @@ theorem one_sub_le_value (B Z K : ℕ) (hBK : B ≤ K) (hZ : B + K ≤ Z) (V : L
           have hc : (List.ofFn c).count true = β := count_ofFn_lt B β hβB
           refine le_trans ?_ (le_sup' _ (mem_univ (Fin.append c (Fin.append m z))))
           rw [value_verifier_inner, hc]
-          have hloc : BitString.LinearHash.affineHash (seedEquiv B (n + Z) r)
-              (Fin.append m z) = 0 ∧ (!((List.ofFn z).take
-                (Z + κ - (β + K))).any fun b => b) = true := ⟨hx0, hz'⟩
+          have hloc : affineHash (affineSeedEquiv B (n + Z) r) (Fin.append m z) = 0 ∧
+              (!((List.ofFn z).take (Z + κ - (β + K))).any fun b => b) = true := ⟨hx0, hz'⟩
           rw [decide_eq_true hloc, Bool.toNat_true, Nat.cast_one, one_mul]
           exact ih hg' β hβB _ hm'
       -- average over Arthur's seeds

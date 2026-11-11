@@ -8,7 +8,6 @@ module
 -- upstream: candidate (addition to `Cslib/Computability/Circuit/Replication.lean`)
 
 public import CslibFrontier.Computability.Circuit.Replication
-import CslibFrontier.Computability.Circuit.CompositionDepth
 
 /-!
 # The depth of replicated circuits
@@ -16,8 +15,8 @@ import CslibFrontier.Computability.Circuit.CompositionDepth
 `Circuit.replicateScalar c k` runs `k` copies of the single-output circuit `c` side by side, one
 on each block of the input. The copies share no gates, so the depth does not grow.
 
-This is kept apart from the replication API so that its importers do not depend on the depth
-library.
+This is kept apart from the replication API so that adding it does not rebuild that module's
+importers.
 
 ## Main results
 

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.GameTheory.Congestion.Basic
 import CslibFrontier.Foundations.Data.BitString.Block
 import CslibFrontier.Foundations.Data.List.Blocks
@@ -86,27 +87,36 @@ namespace Cslib.GameTheory
 
 open Turing.MultiTapeTM ComputableInPolyTime Cslib.Complexity
 
-/-- An explicitly described congestion game. The first component lists, for each player, its
-strategies, each a list of resource indices. The second lists, for each resource `e`, its cost
-table `[c_e(1), c_e(2), …]`: entry `k` is the per-user cost of `e` at load `k + 1`. -/
-abbrev CongestionCode : Type := List (List (List ℕ)) × List (List ℕ)
+/-- An explicitly described congestion game, listing each player's strategies and each resource's
+cost table. -/
+@[ext] structure CongestionCode : Type where
+  /-- For each player, its listed strategies, each a list of resource indices. -/
+  playerStrategies : List (List (List ℕ))
+  /-- For each resource `e`, its cost table `[c_e(1), c_e(2), …]`: entry `k` is the per-user cost
+  of `e` at load `k + 1`. -/
+  costTables : List (List ℕ)
+  deriving DecidableEq
 
 /-- The encoding of explicit congestion games: resource indices in unary, costs in binary. -/
-abbrev encCongestion : CongestionCode ↪ List Bool :=
-  encPair (encList (encList (encList encUnary))) (encList (encList encNat))
+enc_structure encCongestion : CongestionCode where
+  playerStrategies : (encList (encList (encList encUnary))),
+  costTables : (encList (encList encNat))
+
+attribute [fun_prop] encCongestion_playerStrategies_polyTime encCongestion_costTables_polyTime
+  encCongestion_mk_polyTime
 
 namespace CongestionCode
 
 /-! ### Reading a code -/
 
 /-- The number of players. -/
-def players (c : CongestionCode) : ℕ := c.1.length
+def players (c : CongestionCode) : ℕ := c.playerStrategies.length
 
 /-- The number of resources, one per cost table. -/
-def resources (c : CongestionCode) : ℕ := c.2.length
+def resources (c : CongestionCode) : ℕ := c.costTables.length
 
 /-- The listed strategies of player `i`. -/
-def strategies (c : CongestionCode) (i : ℕ) : List (List ℕ) := c.1.getD i []
+def strategies (c : CongestionCode) (i : ℕ) : List (List ℕ) := c.playerStrategies.getD i []
 
 /-- The number of strategies of player `i`: a player with no listed strategy gets one, the empty
 strategy. -/
@@ -116,10 +126,10 @@ def numStrategies (c : CongestionCode) (i : ℕ) : ℕ := max 1 (c.strategies i)
 def strategy (c : CongestionCode) (i k : ℕ) : List ℕ := (c.strategies i).getD k []
 
 /-- The cost table of resource `e`. -/
-def costs (c : CongestionCode) (e : ℕ) : List ℕ := c.2.getD e []
+def costs (c : CongestionCode) (e : ℕ) : List ℕ := c.costTables.getD e []
 
 /-- The width of a player's block in a profile string; it is at least every strategy count. -/
-def width (c : CongestionCode) : ℕ := c.1.flatten.length + 1
+def width (c : CongestionCode) : ℕ := c.playerStrategies.flatten.length + 1
 
 /-- The length of profile strings. -/
 def vertexLength (c : CongestionCode) : ℕ := c.players * c.width
@@ -403,8 +413,8 @@ theorem mem_moves {c : CongestionCode} {i k : ℕ} :
 /-- A block is wide enough for every strategy index. -/
 theorem numStrategies_le_width (c : CongestionCode) (i : ℕ) : c.numStrategies i ≤ c.width := by
   unfold numStrategies width strategies
-  have : (c.1.getD i []).length ≤ c.1.flatten.length := by
-    rcases h : c.1[i]? with _ | l
+  have : (c.playerStrategies.getD i []).length ≤ c.playerStrategies.flatten.length := by
+    rcases h : c.playerStrategies[i]? with _ | l
     · simp [List.getD_eq_getElem?_getD, h]
     · rw [List.getD_eq_getElem?_getD, h, Option.getD_some, List.length_flatten]
       exact List.le_sum_of_mem (List.mem_map_of_mem (List.mem_of_getElem? h))
