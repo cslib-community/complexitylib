@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmpDecode
 public import CslibFrontier.MachineLearning.UniformLearning.Reduction
 import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.Probability.TwoStage
 
 /-!
 # Reconstruction for the amplification `(f^k)^GL`
@@ -64,7 +65,8 @@ Two interface choices are not in the source. `ampLearner A s m K` takes the size
 explicitly, since the seed type contains `P`. `ampSeed` needs `[NeZero k]`, since a trial picks a
 position in `Fin k` and the extra seed is empty when `k = 0`.
 
-Only the hypotheses and the number of queries are certified, not running time.
+The learning guarantee and the number of queries are certified; running time and the circuit size
+of the hypotheses are not.
 
 ## Main definitions
 
@@ -133,8 +135,8 @@ of the seed, then with the direct-product decoder for the rest of the seed. The 
 `P` is explicit because the seed type contains `P`; the source leaves it implicit. -/
 def ampLearner (A : QueryLearner (Fin (k * n + k)) Ω) (s m K : ℕ) :
     QueryLearner (Fin n) (Ω × AmpSeed n k s m K) :=
-  QueryLearner.reduce A (glAmpQuery k) fun h τ =>
-    dpDecode (glAmpCandidate h τ.1.1 τ.1.2) false τ.2.1 τ.2.2.1 τ.2.2.2
+  QueryLearner.reduce A (glAmpQuery k) fun h ((masks, guess), P, b₀, v) =>
+    dpDecode (glAmpCandidate h masks guess) false P b₀ v
 
 /-- The seed distribution of `ampLearner`: a seed of `A` drawn from `μ`, and an independent uniform
 extra seed. It needs `[NeZero k]` and `[Fact (s ≤ k)]` because the extra seed is empty otherwise:
@@ -146,11 +148,12 @@ noncomputable def ampSeed (μ : PMF Ω) (k s m K : ℕ) [NeZero k] [Fact (s ≤ 
 
 /-- Run on `f`, the reconstruction decodes the hypothesis of `A` run on `glAmp f k`. -/
 theorem eval_ampLearner (A : QueryLearner (Fin (k * n + k)) Ω) (s m K : ℕ) (f : BooleanFunction n)
-    (ω : Ω × AmpSeed n k s m K) :
-    (ampLearner A s m K ω).eval f =
-      dpDecode (glAmpCandidate ((A ω.1).eval (glAmp f k)) ω.2.1.1 ω.2.1.2) false ω.2.2.1
-        ω.2.2.2.1 ω.2.2.2.2 :=
-  QueryLearner.eval_reduce A _ (eval_glAmpQuery f) ω
+    (ω : Ω) (masks : Fin K → BitString k) (guess : BitString K)
+    (P : ↥(univ.powersetCard s : Finset (Finset (Fin k)))) (b₀ : Fin k → BitString n)
+    (v : Fin m → Trial (BitString n) k) :
+    (ampLearner A s m K (ω, (masks, guess), P, b₀, v)).eval f =
+      dpDecode (glAmpCandidate ((A ω).eval (glAmp f k)) masks guess) false P b₀ v :=
+  QueryLearner.eval_reduce A _ (eval_glAmpQuery f) _
 
 /-- The reconstruction makes `k` queries to `f` for each query of `A`. -/
 theorem queriesAtMost_ampLearner {A : QueryLearner (Fin (k * n + k)) Ω} {q : ℕ}
@@ -162,33 +165,6 @@ private theorem uniformError_le_iff (f h : BooleanFunction n) (ε : ℝ) :
     uniformError f h ≤ ε ↔ (#{x | h x ≠ f x} : ℝ) ≤ ε * Fintype.card (BitString n) := by
   rw [uniformError, hammingDist, BitString.card, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat,
     div_le_iff₀ (by positivity)]
-
-/-- **Two-stage sampling.** If a `ρ₁` fraction of the `a` are good, and for each good `a` a `ρ₂`
-fraction of the `b` satisfy `q a b`, then a `ρ₁ ρ₂` fraction of the pairs satisfy `q`. -/
-private theorem mul_le_dens_filter_prod {α β : Type*} [Fintype α] [Fintype β] [Nonempty α]
-    [Nonempty β] (good : α → Prop) [DecidablePred good] (q : α → β → Prop)
-    [∀ a, DecidablePred (q a)] {ρ₁ ρ₂ : ℝ} (hρ₂ : 0 ≤ ρ₂) (h₁ : ρ₁ ≤ (dens {a | good a} : ℝ))
-    (h₂ : ∀ a, good a → ρ₂ ≤ (dens {b | q a b} : ℝ)) :
-    ρ₁ * ρ₂ ≤ (dens {ab : α × β | q ab.1 ab.2} : ℝ) := by
-  simp only [nnratCast_dens, Fintype.card_prod, Nat.cast_mul] at h₁ h₂ ⊢
-  have hα : (0 : ℝ) < Fintype.card α := by exact_mod_cast Fintype.card_pos
-  have hβ : (0 : ℝ) < Fintype.card β := by exact_mod_cast Fintype.card_pos
-  have hcount : (#{ab : α × β | q ab.1 ab.2} : ℝ) = ∑ a, (#{b | q a b} : ℝ) := by
-    rw [← Nat.cast_sum]
-    congr 1
-    rw [← univ_product_univ, card_filter, sum_product]
-    simp only [card_filter]
-  have hsum : (#{a | good a} : ℝ) * (ρ₂ * Fintype.card β) ≤ ∑ a, (#{b | q a b} : ℝ) := by
-    rw [← nsmul_eq_mul, ← sum_const, ← sum_filter_add_sum_filter_not univ good]
-    refine le_add_of_le_of_nonneg (sum_le_sum fun a ha => ?_) (sum_nonneg fun _ _ => by positivity)
-    have := h₂ a (mem_filter.1 ha).2
-    rwa [le_div_iff₀ hβ] at this
-  rw [hcount, le_div_iff₀ (by positivity)]
-  rw [le_div_iff₀ hα] at h₁
-  calc ρ₁ * ρ₂ * (Fintype.card α * Fintype.card β)
-        = ρ₁ * Fintype.card α * ρ₂ * Fintype.card β := by ring
-    _ ≤ #{a | good a} * ρ₂ * Fintype.card β := by gcongr
-    _ ≤ _ := by linarith [hsum]
 
 /-- **Direct-product decoding, seed density form.** If `C'` agrees with the direct product of `f`
 on a `δ` fraction of the tuples, then a `δ / 8` fraction of the direct-product seeds decode `f`
@@ -240,22 +216,24 @@ private theorem dens_filter_dpDecode_uniformError_le {s m : ℕ} [NeZero k]
 /-- **Reconstruction for `Amp(f) = (f^k)^GL`** [Carmosino, Impagliazzo, Kabanets and Kolokolova,
 Theorem 4.3 and Claim 4.4, pp. 10:15–10:16], library form. Suppose `A` learns
 `{glAmp f k | f ∈ C}` with error `1/2 - γ` and success probability `p`. Put
-`δ₀ = γ / 2^(K+3)`, and assume `0 < K`, `k ≤ 2 (γ/2)² (2^K - 1)`, `2 s ≤ k`,
+`δ₀ = γ / 2^(K+3)`, and assume `k ≤ 2 (γ/2)² (2^K - 1)`, `2 s ≤ k`,
 `s ≥ (64/ε) log (512 / (ε δ₀²))` and `m ≥ (16/δ₀) log (8/ε)`. Then `ampLearner A s m K` learns
 `C` with error `ε` and success probability `p δ₀² / 8`. The list loss, the per-seed decoder, the
 constants and the choice of `k` are labelled in the module docstring. -/
 theorem learns_ampLearner {s : ℕ} [NeZero k] [Fact (s ≤ k)] {A : QueryLearner (Fin (k * n + k)) Ω}
     {μ : PMF Ω} {C : ConceptClass (BitString n) Bool} {m K : ℕ} {γ ε p : ℝ}
     (hA : A.Learns μ ((glAmp · k) '' C) (1 / 2 - γ) (1 - p)) (hp : p ≤ 1) (hγ : 0 < γ)
-    (hε : 0 < ε) (hε1 : ε ≤ 1) (hK : 0 < K)
+    (hε : 0 < ε) (hε1 : ε ≤ 1)
     (hsize : (k : ℝ) ≤ 2 * (γ / 2) ^ 2 * ((2 ^ K - 1 : ℕ) : ℝ))
     (hsk : 2 * s ≤ k) (hs : 64 / ε * Real.log (512 / (ε * (γ / 2 ^ (K + 3)) ^ 2)) ≤ s)
     (hm : 16 / (γ / 2 ^ (K + 3)) * Real.log (8 / ε) ≤ m) :
     (ampLearner A s m K).Learns (ampSeed μ k s m K) C ε (1 - p * ((γ / 2 ^ (K + 3)) ^ 2 / 8)) := by
   have := nonempty_ampSeed n k s m K
-  obtain ⟨τ₀⟩ := nonempty_ampSeed n k s m K
-  have : Nonempty (↥(univ.powersetCard s : Finset (Finset (Fin k))) × (Fin k → BitString n) ×
-      (Fin m → Trial (BitString n) k)) := ⟨τ₀.2⟩
+  -- `0 < K`, since `K = 0` makes the size condition force `k = 0`
+  have hK : 0 < K := by
+    refine Nat.pos_of_ne_zero fun hK => NeZero.ne k ?_
+    subst hK
+    simpa using hsize
   have hδ₀ : 0 < γ / 2 ^ (K + 3) := by positivity
   refine QueryLearner.learns_reduce (fun f _ y => eval_glAmpQuery f y) hA hp (by positivity)
     fun f _ h hh => ?_
@@ -272,7 +250,7 @@ theorem learns_ampLearner {s : ℕ} [NeZero k] [Fact (s ≤ k)] {A : QueryLearne
     rwa [le_div_iff₀ (by positivity)] at h3
   -- Goldreich–Levin decoding (Claim 4.4), then direct-product decoding for each good pair
   have hgl := dens_filter_glAmpCandidate_agree f h hγ hagree hK hsize
-  have hprod := mul_le_dens_filter_prod
+  have hprod := Cslib.Probability.mul_le_dens_filter_prod
     (fun mg : (Fin K → BitString k) × BitString K => γ / 2 ^ (K + 3) * 2 ^ (k * n) ≤
       (#{y : Fin k → BitString n | ∀ i, glAmpCandidate h mg.1 mg.2 y i = f (y i)} : ℝ))
     (fun mg (τ : ↥(univ.powersetCard s : Finset (Finset (Fin k))) × (Fin k → BitString n) ×

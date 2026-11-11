@@ -17,6 +17,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.VariableCopyPlacement
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.List.OfFn
 import Mathlib.Data.Finset.Disjoint
@@ -390,9 +391,6 @@ theorem isTableShape_pullbackReplacementRow (n R : ℕ) (placements : List (ℕ 
     Cslib.IsTableShape n R (pullbackReplacementRow n R placements incVars e blockRepl) :=
   Cslib.isTableShape_tabulateTable n R _
 
-private theorem getD_mem_of_lt {α : Type*} (d : α) {l : List α} {i : ℕ} (hi : i < l.length) :
-    l.getD i d ∈ l := by rw [List.getD_eq_getElem _ _ hi]; exact List.getElem_mem hi
-
 /-- Extracting degree-`k` coefficients (`k < R`) across `pullbackReplacementRow` coincides with
 `pullbackMeasurementRow` applied to the degree-`k` coefficient slice of `blockRepl[u_e]`. -/
 theorem map_coeff_pullbackReplacementRow (n R : ℕ) (placements : List (ℕ × ℕ)) (incVars : List ℕ)
@@ -437,7 +435,7 @@ private theorem sum_range_groupVars_eq_toFinset {M : Type*} [AddCommMonoid M]
     (∑ j ∈ Finset.range groupVars.length, g (groupVars.getD j 0)) =
       ∑ v ∈ groupVars.toFinset, g v := by
   refine Finset.sum_bij (fun j _ => groupVars.getD j 0)
-    (fun j hj => List.mem_toFinset.mpr (getD_mem_of_lt 0 (Finset.mem_range.mp hj))) ?_ ?_
+    (fun j hj => List.mem_toFinset.mpr (List.getD_mem 0 (Finset.mem_range.mp hj))) ?_ ?_
     fun _ _ => rfl
   · intro j₁ hj₁ j₂ hj₂ heq
     have h₁ := Finset.mem_range.mp hj₁; have h₂ := Finset.mem_range.mp hj₂
@@ -471,7 +469,7 @@ theorem copyEmbedExec_eq_zero_of_forall_ne {K : Type*} [AddCommMonoid K]
     copyEmbedExec placements incVars x copyIdx y = 0 := by
   rw [copyEmbedExec, sum_map_zip (0, 0) 0]
   refine Finset.sum_eq_zero fun e he => ite_eq_right fun ⟨h1, h2⟩ => ?_
-  exact hunocc _ (getD_mem_of_lt (0, 0) (Nat.lt_min.mp (Finset.mem_range.mp he)).1) (Prod.ext h1 h2)
+  exact hunocc _ (List.getD_mem (0, 0) (Nat.lt_min.mp (Finset.mem_range.mp he)).1) (Prod.ext h1 h2)
 
 /-! ### Exact linear-map pullback semantics -/
 
@@ -504,7 +502,7 @@ theorem sum_pullbackMeasurementRow_mul {K : Type*} [CommRing K]
     rw [Finset.sum_eq_single (incVars.getD e 0)
       (fun _ _ hne => ite_eq_right fun ⟨_, hv_eq⟩ => hne hv_eq.symm)
       (fun hnot => absurd (Finset.mem_range.mpr
-        (hvars _ (getD_mem_of_lt 0 (Nat.lt_min.mp (Finset.mem_range.mp he)).2))) hnot)]; simp
+        (hvars _ (List.getD_mem 0 (Nat.lt_min.mp (Finset.mem_range.mp he)).2))) hnot)]; simp
   have hrhs : (∑ y ∈ Finset.range D,
         (auxRow.getD y 0 : K) * copyEmbedExec placements incVars x copyIdx y) =
       ∑ e ∈ Finset.range m, if (placements.getD e (0, 0)).1 = copyIdx then
@@ -520,7 +518,7 @@ theorem sum_pullbackMeasurementRow_mul {K : Type*} [CommRing K]
     rw [Finset.sum_eq_single (placements.getD e (0, 0)).2
       (fun _ _ hne => ite_eq_right fun ⟨_, hy_eq⟩ => hne hy_eq.symm)
       (fun hnot => absurd (Finset.mem_range.mpr
-        (hD _ (getD_mem_of_lt (0, 0) (Nat.lt_min.mp (Finset.mem_range.mp he)).1))) hnot)]; simp
+        (hD _ (List.getD_mem (0, 0) (Nat.lt_min.mp (Finset.mem_range.mp he)).1))) hnot)]; simp
   exact hlhs.trans hrhs.symm
 
 private theorem zipWith_mul_sum_map_range {row : List ℤ} {k : ℕ} (hlen : row.length ≤ k)
@@ -609,7 +607,7 @@ theorem sum_evalCoeffList_pullbackReplacementRow {K : Type*} [CommRing K]
       have hv_lt : v < row.length := by
         simpa only [row, length_pullbackReplacementRow] using Finset.mem_range.mp hv
       rw [evalCoeffList_map_intCast_eq_sum_range t _
-        (length_coeff_of_mem_pullbackReplacementRow (getD_mem_of_lt [] hv_lt)).le, Finset.sum_mul]
+        (length_coeff_of_mem_pullbackReplacementRow (List.getD_mem [] hv_lt)).le, Finset.sum_mul]
     rw [Finset.sum_congr rfl hv_eq, Finset.sum_comm]
     refine Finset.sum_congr rfl fun k _ => ?_
     rw [Finset.mul_sum]; refine Finset.sum_congr rfl fun v _ => ?_
@@ -648,13 +646,13 @@ theorem getD_zero_pullbackReplacementRow {n R : ℕ} {placements : List (ℕ × 
       if v = incVars.getD e 0 then d_den else 0 := by
   rw [pullbackReplacementRow, Cslib.rowEntry_tabulateTable_of_lt _ hv hR, sum_map_zip (0, 0) 0,
     Finset.sum_eq_single e]
-  · dsimp only; rw [hzero _ (getD_mem_of_lt (0, 0) (Nat.lt_min.mp he).1)]
+  · dsimp only; rw [hzero _ (List.getD_mem (0, 0) (Nat.lt_min.mp he).1)]
     by_cases hv_eq : v = incVars.getD e 0
     · subst hv_eq; simp
     · rw [ite_eq_right (fun h => hv_eq h.2.symm), ite_eq_right hv_eq]
   · intro i hi hne
     have hi_pl := (Nat.lt_min.mp (Finset.mem_range.mp hi)).1; have he_pl := (Nat.lt_min.mp he).1
-    dsimp only; rw [hzero _ (getD_mem_of_lt (0, 0) hi_pl)]
+    dsimp only; rw [hzero _ (List.getD_mem (0, 0) hi_pl)]
     split_ifs with hc hu
     · have heq_p : placements.getD i (0, 0) = placements.getD e (0, 0) := Prod.ext hc.1 hu.symm
       rw [List.getD_eq_getElem _ _ hi_pl, List.getD_eq_getElem _ _ he_pl] at heq_p
@@ -679,14 +677,14 @@ theorem sum_evalCoeffList_pullbackReplacementRow_zero {K : Type*} [CommRing K]
         (((pullbackReplacementRow n R placements incVars e blockRepl).getD v []).map Int.cast) *
         x v) = (d_den : K) * x (incVars.getD e 0) := by
   set row := pullbackReplacementRow n R placements incVars e blockRepl
-  have hve_lt : incVars.getD e 0 < n := hvars _ (getD_mem_of_lt 0 (Nat.lt_min.mp he).2)
+  have hve_lt : incVars.getD e 0 < n := hvars _ (List.getD_mem 0 (Nat.lt_min.mp he).2)
   have hv_zero (v : ℕ) (hv : v ∈ Finset.range n) :
       Polynomial.evalCoeffList (0 : K) ((row.getD v []).map Int.cast) * x v =
         (if v = incVars.getD e 0 then (d_den : K) else 0) * x v := by
     have hv_lt : v < row.length := by
       simpa only [row, length_pullbackReplacementRow] using Finset.mem_range.mp hv
     rw [evalCoeffList_map_intCast_eq_sum_range (0 : K) _
-      (length_coeff_of_mem_pullbackReplacementRow (getD_mem_of_lt [] hv_lt)).le,
+      (length_coeff_of_mem_pullbackReplacementRow (List.getD_mem [] hv_lt)).le,
       Finset.sum_eq_single 0
         (fun k _ hk => by rw [zero_pow hk, mul_zero])
         (fun hnot => absurd (Finset.mem_range.mpr hR) hnot)]
@@ -737,7 +735,7 @@ theorem sum_abs_pullbackMeasurementRow_le {n D : ℕ} {placements : List (ℕ ×
         ∑ y ∈ Finset.range D,
           if (placements.getD e (0, 0)).1 = copyIdx ∧ (placements.getD e (0, 0)).2 = y then
             |auxRow.getD y 0| else 0 := by
-    have hy_lt := hD _ (getD_mem_of_lt (0, 0) (Nat.lt_min.mp (Finset.mem_range.mp he)).1)
+    have hy_lt := hD _ (List.getD_mem (0, 0) (Nat.lt_min.mp (Finset.mem_range.mp he)).1)
     symm; rw [Finset.sum_eq_single (placements.getD e (0, 0)).2
       (fun _ _ hne => ite_eq_right fun ⟨_, hy_eq⟩ => hne hy_eq.symm)
       (fun hnot => absurd (Finset.mem_range.mpr hy_lt) hnot)]; simp
@@ -963,7 +961,7 @@ theorem copyEmbedExec_eq_zero_of_ne_group {K : Type*} [AddCommMonoid K]
   have he' := Finset.mem_range.mp he
   dsimp only
   split_ifs with hmatch
-  · exact hsupp _ (hinc _ (getD_mem_of_lt 0 (Nat.lt_min.mp he').2)) fun hmem =>
+  · exact hsupp _ (hinc _ (List.getD_mem 0 (Nat.lt_min.mp he').2)) fun hmem =>
       hne ((hcompat e he' (Prod.ext hmatch.1 hmatch.2)).symm.trans (mem_varGroupList.mp hmem).2)
   · rfl
 

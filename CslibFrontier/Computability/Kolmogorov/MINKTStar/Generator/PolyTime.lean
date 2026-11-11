@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Kolmogorov.MINKTStar.Generator
-import CslibFrontier.Computability.Kolmogorov.AverageCase
+import CslibFrontier.Computability.Kolmogorov.TimeBounded.PolyTime
 import CslibFrontier.Computability.MCSP.PartialHardness.EvaluatorPolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List

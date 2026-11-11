@@ -140,7 +140,7 @@ theorem learns_cikkLearner {n ℓ : ℕ} (e g h : ℕ) {test : BitString (2 ^ �
   -- stage 2: the reconstruction of the amplification
   have h2 := learns_ampLearner (s := cikkFixed e g) (m := cikkTrials e g) (K := cikkMasks e g)
     (ε := 1 / 2 ^ (e + 1)) h1 (one_div_two_pow_le_one g) (by positivity) (by positivity)
-    (one_div_two_pow_le_one _) (cikkMasks_pos e g) (cikkK_le_cikkMasks e g)
+    (one_div_two_pow_le_one _) (cikkK_le_cikkMasks e g)
     (two_mul_cikkFixed_le_cikkK e g) (le_cikkFixed e g) (le_cikkTrials e g)
   -- stage 3: best-of selection
   have hp : (1 : ℝ) / 2 ^ g * ((1 / 2 ^ g / 2 ^ (cikkMasks e g + 3)) ^ 2 / 8) ≤ 1 := by
