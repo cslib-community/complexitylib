@@ -8,9 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.Probability.MutualInformation
 public import CslibFrontier.Computability.Communication.Information
-import CslibFrontier.Probability.PMF.Bind
+public import CslibFrontier.Probability.MutualInformation.DataProcessing
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
@@ -22,9 +21,9 @@ For a joint law of a correlated source `(A, B)`, Alice's and Bob's final views `
 public transcript `T`, and `k` random oblivious transfer (ROT) outputs `(S, R)`:
 
 1. Conditional mutual information satisfies deterministic data processing
-   (`condMutualInfo_map_le_of_comp`) and is non-increasing when conditioning on a public message
-   determined by one party's view and the prior transcript
-   (`condMutualInfo_map_pair_fst_le_of_eq_zero`, `condMutualInfo_map_pair_snd_le_of_eq_zero`).
+   (`condMutualInfo_map_le_of_comp`) and transcript monotonicity
+   (`condMutualInfo_map_pair_fst_le_of_eq_zero`, `condMutualInfo_map_pair_snd_le_of_eq_zero`),
+   provided in `Cslib.Probability.MutualInformation.DataProcessing`.
 2. For `k` independent, correct, and perfectly private random OTs with public transcript `T`, the
    conditional mutual information `I(S; R | T)` equals `k` bits (`condMutualInfo_rot_eq`).
 3. Combining data processing and transcript non-increase yields the Ahlswede–Csiszár-style bound
@@ -40,12 +39,6 @@ public transcript `T`, and `k` random oblivious transfer (ROT) outputs `(S, R)`:
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.OT.condMutualInfo_map_le_of_comp`: conditional data processing for
-  deterministic maps on the support.
-* `Cslib.Crypto.Protocols.OT.condMutualInfo_map_pair_fst_le_of_eq_zero`,
-  `Cslib.Crypto.Protocols.OT.condMutualInfo_map_pair_snd_le_of_eq_zero`: public messages
-  conditionally independent of the other party given the speaker's state cannot increase
-  conditional mutual information.
 * `Cslib.Crypto.Protocols.OT.condMutualInfo_le_mutualInfo_of_internal_le_external`: bridge from
   `Cslib.Communication.internalInfoCost ≤ Cslib.Communication.externalInfoCost` to
   `I(X; Y | T) ≤ I(X; Y)`.
@@ -57,12 +50,12 @@ public transcript `T`, and `k` random oblivious transfer (ROT) outputs `(S, R)`:
 
 * [R. Ahlswede and I. Csiszár, *Common Randomness in Information Theory and Cryptography.
   Part I: Secret Sharing*][AhlswedeCsiszar1993] (bibliographic metadata verified; primary full text
-  not audited in this session).
+  uninspected; locators unverified).
 * [A. C. A. Nascimento and A. Winter, *On the Oblivious-Transfer Capacity of Noisy
-  Resources*][NascimentoWinter2008] (bibliographic metadata verified; primary full text not audited
-  in this session).
-* [T. M. Cover and J. A. Thomas, *Elements of Information Theory*][CoverThomas2006] (information-
-  theoretic background; printed book not audited in this session).
+  Resources*][NascimentoWinter2008] (bibliographic metadata verified; primary full text uninspected;
+  locators unverified).
+* [T. M. Cover and J. A. Thomas, *Elements of Information Theory*][CoverThomas2006]
+  (information-theoretic background; locators unverified).
 -/
 
 public section
@@ -74,207 +67,7 @@ open scoped ENNReal
 
 variable {Ω α β γ δ τ : Type*}
 
-/-! ### Conditional mutual information chain rules and data processing -/
-
-/-- Symmetry of conditional mutual information in its two foreground variables:
-`I(A; B | C) = I(B; A | C)`. -/
-theorem condMutualInfo_map_swap [Finite γ] [Finite α] [Finite β]
-    (ν : PMF Ω) (C : Ω → γ) (A : Ω → α) (B : Ω → β) :
-    condMutualInfo (ν.map fun ω => (C ω, A ω, B ω)) =
-      condMutualInfo (ν.map fun ω => (C ω, B ω, A ω)) := by
-  rw [condMutualInfo_map, condMutualInfo_map,
-    entropy_map_eq_of_comp ν (F := fun ω => (C ω, A ω, B ω))
-      (G := fun ω => (C ω, B ω, A ω)) (e := fun t => (t.1, t.2.2, t.2.1))
-      (fun s t h => by
-        obtain ⟨c, a, b⟩ := s
-        obtain ⟨c', a', b'⟩ := t
-        simp only [Prod.mk.injEq] at h
-        exact Prod.ext h.1 (Prod.ext h.2.2 h.2.1))
-      (fun _ _ => rfl)]
-  ring
-
-/-- Chain rule for conditional mutual information in the first foreground variable:
-`I((D, A); B | C) = I(D; B | C) + I(A; B | (C, D))`. -/
-theorem condMutualInfo_map_prodMk_left_eq_add [Finite γ] [Finite δ] [Finite α] [Finite β]
-    (ν : PMF Ω) (C : Ω → γ) (D : Ω → δ) (A : Ω → α) (B : Ω → β) :
-    condMutualInfo (ν.map fun ω => (C ω, (D ω, A ω), B ω)) =
-      condMutualInfo (ν.map fun ω => (C ω, D ω, B ω)) +
-        condMutualInfo (ν.map fun ω => ((C ω, D ω), A ω, B ω)) := by
-  rw [condMutualInfo_map, condMutualInfo_map, condMutualInfo_map,
-    entropy_map_eq_of_comp ν (F := fun ω => ((C ω, D ω), A ω))
-      (G := fun ω => (C ω, (D ω, A ω))) (e := fun t => (t.1.1, (t.1.2, t.2)))
-      (fun s t h => by
-        obtain ⟨⟨c, d⟩, a⟩ := s
-        obtain ⟨⟨c', d'⟩, a'⟩ := t
-        simp only [Prod.mk.injEq] at h
-        exact Prod.ext (Prod.ext h.1 h.2.1) h.2.2)
-      (fun _ _ => rfl),
-    entropy_map_eq_of_comp ν (F := fun ω => ((C ω, D ω), B ω))
-      (G := fun ω => (C ω, D ω, B ω)) (e := fun t => (t.1.1, t.1.2, t.2))
-      (fun s t h => by
-        obtain ⟨⟨c, d⟩, b⟩ := s
-        obtain ⟨⟨c', d'⟩, b'⟩ := t
-        simp only [Prod.mk.injEq] at h
-        exact Prod.ext (Prod.ext h.1 h.2.1) h.2.2)
-      (fun _ _ => rfl),
-    entropy_map_eq_of_comp ν (F := fun ω => ((C ω, D ω), A ω, B ω))
-      (G := fun ω => (C ω, (D ω, A ω), B ω)) (e := fun t => (t.1.1, (t.1.2, t.2.1), t.2.2))
-      (fun s t h => by
-        obtain ⟨⟨c, d⟩, a, b⟩ := s
-        obtain ⟨⟨c', d'⟩, a', b'⟩ := t
-        simp only [Prod.mk.injEq] at h
-        exact Prod.ext (Prod.ext h.1 h.2.1.1) (Prod.ext h.2.1.2 h.2.2))
-      (fun _ _ => rfl)]
-  ring
-
-/-- Chain rule for conditional mutual information in the second foreground variable:
-`I(A; (D, B) | C) = I(A; D | C) + I(A; B | (C, D))`. -/
-theorem condMutualInfo_map_prodMk_right_eq_add [Finite γ] [Finite α] [Finite δ] [Finite β]
-    (ν : PMF Ω) (C : Ω → γ) (A : Ω → α) (D : Ω → δ) (B : Ω → β) :
-    condMutualInfo (ν.map fun ω => (C ω, A ω, (D ω, B ω))) =
-      condMutualInfo (ν.map fun ω => (C ω, A ω, D ω)) +
-        condMutualInfo (ν.map fun ω => ((C ω, D ω), A ω, B ω)) := by
-  rw [condMutualInfo_map_swap ν C A (fun ω => (D ω, B ω)),
-    condMutualInfo_map_prodMk_left_eq_add ν C D B A,
-    condMutualInfo_map_swap ν C D A,
-    condMutualInfo_map_swap ν (fun ω => (C ω, D ω)) B A]
-
-/-- Conditional mutual information decreases when replacing the first foreground variable by a
-function determined on the support: `I(S; B | C) ≤ I(A; B | C)`. -/
-theorem condMutualInfo_map_le_of_comp_left {α' : Type*}
-    [Finite γ] [Finite α] [Finite α'] [Finite β]
-    (ν : PMF Ω) (C : Ω → γ) (A : Ω → α) (S : Ω → α') (B : Ω → β)
-    (f : α → α') (hf : ∀ ω ∈ ν.support, S ω = f (A ω)) :
-    condMutualInfo (ν.map fun ω => (C ω, S ω, B ω)) ≤
-      condMutualInfo (ν.map fun ω => (C ω, A ω, B ω)) := by
-  have h1 : condMutualInfo (ν.map fun ω => (C ω, A ω, B ω)) =
-      condMutualInfo (ν.map fun ω => (C ω, (S ω, A ω), B ω)) := by
-    rw [condMutualInfo_map, condMutualInfo_map,
-      entropy_map_eq_of_comp ν (F := fun ω => (C ω, A ω)) (G := fun ω => (C ω, (S ω, A ω)))
-        (e := fun t => (t.1, (f t.2, t.2)))
-        (fun s t h => by
-          obtain ⟨c, a⟩ := s
-          obtain ⟨c', a'⟩ := t
-          simp only [Prod.mk.injEq] at h
-          exact Prod.ext h.1 h.2.2)
-        (fun ω hω => by simp [hf ω hω]),
-      entropy_map_eq_of_comp ν (F := fun ω => (C ω, A ω, B ω))
-        (G := fun ω => (C ω, (S ω, A ω), B ω)) (e := fun t => (t.1, (f t.2.1, t.2.1), t.2.2))
-        (fun s t h => by
-          obtain ⟨c, a, b⟩ := s
-          obtain ⟨c', a', b'⟩ := t
-          simp only [Prod.mk.injEq] at h
-          exact Prod.ext h.1 (Prod.ext h.2.1.2 h.2.2))
-        (fun ω hω => by simp [hf ω hω])]
-  rw [h1, condMutualInfo_map_prodMk_left_eq_add]
-  have := condMutualInfo_nonneg (ν.map fun ω => ((C ω, S ω), A ω, B ω))
-  linarith
-
-/-- Conditional data processing for deterministic maps on both foreground variables:
-if `S` is determined by `A` and `R` is determined by `B` on the support of `ν`, then
-`I(S; R | C) ≤ I(A; B | C)`. -/
-theorem condMutualInfo_map_le_of_comp {α' β' : Type*}
-    [Finite γ] [Finite α] [Finite α'] [Finite β] [Finite β']
-    (ν : PMF Ω) (C : Ω → γ) (A : Ω → α) (S : Ω → α') (B : Ω → β) (R : Ω → β')
-    (f : α → α') (hf : ∀ ω ∈ ν.support, S ω = f (A ω))
-    (g : β → β') (hg : ∀ ω ∈ ν.support, R ω = g (B ω)) :
-    condMutualInfo (ν.map fun ω => (C ω, S ω, R ω)) ≤
-      condMutualInfo (ν.map fun ω => (C ω, A ω, B ω)) := by
-  calc condMutualInfo (ν.map fun ω => (C ω, S ω, R ω))
-      ≤ condMutualInfo (ν.map fun ω => (C ω, A ω, R ω)) :=
-        condMutualInfo_map_le_of_comp_left ν C A S R f hf
-    _ = condMutualInfo (ν.map fun ω => (C ω, R ω, A ω)) :=
-        condMutualInfo_map_swap ν C A R
-    _ ≤ condMutualInfo (ν.map fun ω => (C ω, B ω, A ω)) :=
-        condMutualInfo_map_le_of_comp_left ν C B R A g hg
-    _ = condMutualInfo (ν.map fun ω => (C ω, A ω, B ω)) :=
-        condMutualInfo_map_swap ν C B A
-
-/-- Conditioning on a message `M` that carries no conditional mutual information with `B` given
-`(C, A)` cannot increase `I(A; B | C)`. -/
-theorem condMutualInfo_map_pair_fst_le_of_eq_zero [Finite γ] [Finite δ] [Finite α] [Finite β]
-    (ν : PMF Ω) (C : Ω → γ) (M : Ω → δ) (A : Ω → α) (B : Ω → β)
-    (h : condMutualInfo (ν.map fun ω => ((C ω, A ω), M ω, B ω)) = 0) :
-    condMutualInfo (ν.map fun ω => ((C ω, M ω), A ω, B ω)) ≤
-      condMutualInfo (ν.map fun ω => (C ω, A ω, B ω)) := by
-  have h1 := condMutualInfo_map_prodMk_left_eq_add ν C M A B
-  have h2 := condMutualInfo_map_prodMk_left_eq_add ν C A M B
-  have hswap : condMutualInfo (ν.map fun ω => (C ω, (M ω, A ω), B ω)) =
-      condMutualInfo (ν.map fun ω => (C ω, (A ω, M ω), B ω)) := by
-    rw [condMutualInfo_map, condMutualInfo_map,
-      entropy_map_eq_of_comp ν (F := fun ω => (C ω, (A ω, M ω)))
-        (G := fun ω => (C ω, (M ω, A ω))) (e := Prod.map id Prod.swap)
-        (Function.injective_id.prodMap Prod.swap_injective) (fun _ _ => rfl),
-      entropy_map_eq_of_comp ν (F := fun ω => (C ω, (A ω, M ω), B ω))
-        (G := fun ω => (C ω, (M ω, A ω), B ω))
-        (e := Prod.map id (Prod.map Prod.swap id))
-        (Function.injective_id.prodMap (Prod.swap_injective.prodMap Function.injective_id))
-        (fun _ _ => rfl)]
-  have hnonneg := condMutualInfo_nonneg (ν.map fun ω => (C ω, M ω, B ω))
-  linarith
-
-/-- Symmetric form: conditioning on a message `M` that carries no conditional mutual information
-with `A` given `(C, B)` cannot increase `I(A; B | C)`. -/
-theorem condMutualInfo_map_pair_snd_le_of_eq_zero [Finite γ] [Finite δ] [Finite α] [Finite β]
-    (ν : PMF Ω) (C : Ω → γ) (M : Ω → δ) (A : Ω → α) (B : Ω → β)
-    (h : condMutualInfo (ν.map fun ω => ((C ω, B ω), M ω, A ω)) = 0) :
-    condMutualInfo (ν.map fun ω => ((C ω, M ω), A ω, B ω)) ≤
-      condMutualInfo (ν.map fun ω => (C ω, A ω, B ω)) := by
-  rw [condMutualInfo_map_swap ν (fun ω => (C ω, M ω)) A B,
-    condMutualInfo_map_swap ν C A B]
-  exact condMutualInfo_map_pair_fst_le_of_eq_zero ν C M B A h
-
-/-- Independent private randomness does not change mutual information:
-`I((A, R₀); (B, R₁)) = I(A; B)`. -/
-theorem mutualInfo_bind_pair_indep [Finite α] [Finite β] [Finite γ] [Finite δ]
-    (source : PMF (α × β)) (c₀ : PMF γ) (c₁ : PMF δ) :
-    mutualInfo (source.bind fun ab => c₀.bind fun r₀ => c₁.map fun r₁ =>
-      ((ab.1, r₀), (ab.2, r₁))) = mutualInfo source := by
-  classical
-  let := Fintype.ofFinite α
-  let := Fintype.ofFinite β
-  let joint := source.bind fun ab => c₀.bind fun r₀ => c₁.map fun r₁ => ((ab.1, r₀), (ab.2, r₁))
-  have hfst : joint.map Prod.fst =
-      (source.map Prod.fst).bind fun a => c₀.map (a, ·) := by
-    simp only [joint, PMF.map_bind, PMF.map_comp, Function.comp_def]
-    calc source.bind (fun ab => c₀.bind fun r₀ => c₁.map (Function.const δ (ab.1, r₀)))
-        = source.bind (fun ab => c₀.map (ab.1, ·)) := by
-          congr 1 with ab : 1
-          simp only [PMF.map_const]
-          rfl
-      _ = (source.map Prod.fst).bind fun a => c₀.map (a, ·) := by
-          rw [PMF.bind_map]
-          rfl
-  have hsnd : joint.map Prod.snd =
-      (source.map Prod.snd).bind fun b => c₁.map (b, ·) := by
-    simp only [joint, PMF.map_bind, PMF.map_comp, Function.comp_def]
-    calc source.bind (fun ab => c₀.bind (fun _ => c₁.map (ab.2, ·)))
-        = source.bind (fun ab => c₁.map (ab.2, ·)) := by
-          congr 1 with ab : 1
-          exact PMF.bind_const c₀ _
-      _ = (source.map Prod.snd).bind fun b => c₁.map (b, ·) := by
-          rw [PMF.bind_map]
-          rfl
-  have hjoint : entropy joint = entropy source + entropy c₀ + entropy c₁ := by
-    let e : (α × β) × (γ × δ) ≃ (α × γ) × (β × δ) :=
-      Equiv.prodProdProdComm α β γ δ
-    have heq : joint = (source.bind fun ab => (c₀.bind fun r₀ => c₁.map (r₀, ·)).map (ab, ·)).map
-        e := by
-      simp only [joint, PMF.map_bind, PMF.map_comp, Function.comp_def, e]
-      rfl
-    rw [heq, entropy_map_of_injective _ e.injective, entropy_bind_pair]
-    simp only [← Finset.sum_mul, sum_toReal, one_mul, entropy_prod]
-    ring
-  have hMI_joint : mutualInfo joint =
-      entropy (joint.map Prod.fst) + entropy (joint.map Prod.snd) - entropy joint := by
-    have hid : joint.map (fun p => (p.1, p.2)) = joint := PMF.map_id joint
-    simpa only [hid] using mutualInfo_map joint Prod.fst Prod.snd
-  have hMI_source : mutualInfo source =
-      entropy (source.map Prod.fst) + entropy (source.map Prod.snd) - entropy source := by
-    have hid : source.map (fun p => (p.1, p.2)) = source := PMF.map_id source
-    simpa only [hid] using mutualInfo_map source Prod.fst Prod.snd
-  rw [hMI_joint, hMI_source, hfst, hsnd, entropy_prod, entropy_prod, hjoint]
-  ring
+/-! ### Communication cost bridge and OT observables -/
 
 /-- Bridge from `Cslib.Communication`: whenever `internalInfoCost ≤ externalInfoCost`, the
 conditional mutual information between the inputs given the transcript is at most the input
@@ -292,7 +85,10 @@ theorem condMutualInfo_le_mutualInfo_of_internal_le_external [Finite α] [Finite
 @[expose] def otSelect (pair : Bool × Bool) (c : Bool) : Bool :=
   if c then pair.2 else pair.1
 
+/-- Selecting bit `0` from `pair = (m₀, m₁)` returns `m₀`. -/
 @[simp] theorem otSelect_false (pair : Bool × Bool) : otSelect pair false = pair.1 := rfl
+
+/-- Selecting bit `1` from `pair = (m₀, m₁)` returns `m₁`. -/
 @[simp] theorem otSelect_true (pair : Bool × Bool) : otSelect pair true = pair.2 := rfl
 
 /-- The receiver choice vector `(c₀, ..., c_{k-1})` extracted from `k` ROT receiver outputs. -/

@@ -5902,6 +5902,7 @@ public import CslibFrontier.Probability.Minimax.Value
 public import CslibFrontier.Probability.MoserTardos
 public import CslibFrontier.Probability.MoserTardos.Witness
 public import CslibFrontier.Probability.MutualInformation
+public import CslibFrontier.Probability.MutualInformation.DataProcessing
 public import CslibFrontier.Probability.OptimalStopping.Basic
 public import CslibFrontier.Probability.OptimalStopping.Prophet
 public import CslibFrontier.Probability.OptimalStopping.ProphetIID

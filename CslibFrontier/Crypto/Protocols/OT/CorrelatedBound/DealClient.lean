@@ -9,9 +9,8 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Protocol
-import CslibFrontier.Probability.Conditioning
 import CslibFrontier.Probability.Entropy
-import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.MutualInformation.DataProcessing
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
@@ -58,10 +57,10 @@ remains hidden.
 
 * [R. Ahlswede and I. Csiszár, *Common Randomness in Information Theory and Cryptography.
   Part I: Secret Sharing*][AhlswedeCsiszar1993] (bibliographic metadata verified; primary full text
-  not audited in this session).
+  uninspected; locators unverified).
 * [A. C. A. Nascimento and A. Winter, *On the Oblivious-Transfer Capacity of Noisy
-  Resources*][NascimentoWinter2008] (bibliographic metadata verified; primary full text not audited
-  in this session).
+  Resources*][NascimentoWinter2008] (bibliographic metadata verified; primary full text uninspected;
+  locators unverified).
 -/
 
 open Cslib
@@ -74,83 +73,6 @@ open scoped ENNReal
 namespace Cslib.Crypto.Protocols.OT
 
 public section
-
-private theorem mutualInfo_eq_sub_logb_card_of_const_unseen {α β : Type*} [Finite α] [Finite β]
-    (p : PMF (α × β)) (unseen : α → Finset β) (E : ℝ) (c : ℕ) (hc : 0 < c)
-    (hsnd : entropy (p.map Prod.snd) = E)
-    (hcard : ∀ a ∈ (p.map Prod.fst).support, (unseen a).card = c)
-    (hzero : ∀ a ∈ (p.map Prod.fst).support, ∀ b ∉ unseen a, p (a, b) = 0)
-    (hconst : ∀ a ∈ (p.map Prod.fst).support,
-      ∀ b₀ ∈ unseen a, ∀ b₁ ∈ unseen a, p (a, b₁) = p (a, b₀)) :
-    mutualInfo p = E - Real.logb 2 c := by
-  let _ := Fintype.ofFinite α
-  let _ := Fintype.ofFinite β
-  have hcond_supp : ∀ a ∈ (p.map Prod.fst).support,
-      entropy (conditionalSnd p a) = Real.logb 2 c := by
-    intro a ha
-    have hca : (unseen a).card = c := hcard a ha
-    have hne : (unseen a).Nonempty := Finset.card_pos.mp (hca ▸ hc)
-    let b₀ := hne.choose
-    have hb₀ : b₀ ∈ unseen a := hne.choose_spec
-    let val : ℝ≥0∞ := conditionalSnd p a b₀
-    have h_outside : ∀ b ∉ unseen a, conditionalSnd p a b = 0 := by
-      intro b hb
-      rw [conditionalSnd_apply p a ha b, hzero a ha b hb, ENNReal.zero_div]
-    have h_inside : ∀ b ∈ unseen a, conditionalSnd p a b = val := by
-      intro b hb
-      dsimp only [val]
-      rw [conditionalSnd_apply p a ha b, conditionalSnd_apply p a ha b₀, hconst a ha b₀ hb₀ b hb]
-    have hsum_one : ∑ b : β, conditionalSnd p a b = 1 := by
-      simpa only [tsum_fintype] using (conditionalSnd p a).tsum_coe
-    have hsum_unseen : ∑ b ∈ unseen a, conditionalSnd p a b = 1 := by
-      rw [← hsum_one]
-      exact Finset.sum_subset (Finset.subset_univ _) fun b _ hb => h_outside b hb
-    have hmul : ((c : ℝ≥0∞) * val) = 1 := by
-      have hconst_sum : ∑ _ ∈ unseen a, val = 1 := by
-        rw [← hsum_unseen]
-        exact Finset.sum_congr rfl fun b hb => (h_inside b hb).symm
-      simpa only [Finset.sum_const, nsmul_eq_mul, hca] using hconst_sum
-    have hval : val = (c : ℝ≥0∞)⁻¹ := by
-      rw [mul_comm] at hmul
-      exact ENNReal.eq_inv_of_mul_eq_one_left hmul
-    let _ : Nonempty {b : β // b ∈ unseen a} := ⟨⟨b₀, hb₀⟩⟩
-    have hcond_eq : conditionalSnd p a =
-        (PMF.uniformOfFintype {b : β // b ∈ unseen a}).map Subtype.val := by
-      ext b
-      classical
-      rw [PMF.map_apply]
-      by_cases hb : b ∈ unseen a
-      · rw [tsum_eq_single (⟨b, hb⟩ : {b : β // b ∈ unseen a})]
-        · simp only [↓reduceIte, PMF.uniformOfFintype_apply, Fintype.card_coe, hca,
-            h_inside b hb, hval]
-        · intro x hx
-          split_ifs with h
-          · exact False.elim (hx (Subtype.ext h.symm))
-          · rfl
-      · rw [h_outside b hb, tsum_eq_sum (s := (∅ : Finset {b : β // b ∈ unseen a}))]
-        · exact Finset.sum_empty.symm
-        · intro x _
-          split_ifs with h
-          · exact False.elim (hb (h ▸ x.2))
-          · rfl
-    rw [hcond_eq, entropy_map_of_injective _ Subtype.val_injective, entropy_uniform,
-      Fintype.card_coe, hca]
-  have hcond : conditionalEntropy p = Real.logb 2 c := by
-    rw [conditionalEntropy_eq_sum]
-    have hterm : ∀ a : α, ((p.map Prod.fst) a).toReal * entropy (conditionalSnd p a) =
-        ((p.map Prod.fst) a).toReal * Real.logb 2 c := by
-      intro a
-      by_cases ha : a ∈ (p.map Prod.fst).support
-      · rw [hcond_supp a ha]
-      · have h0 : (p.map Prod.fst) a = 0 := by
-          by_contra hne0
-          exact ha hne0
-        rw [h0, ENNReal.toReal_zero, zero_mul, zero_mul]
-    rw [Finset.sum_congr rfl fun a _ => hterm a, ← Finset.sum_mul]
-    have hsum_fst : ∑ a : α, ((p.map Prod.fst) a).toReal = 1 :=
-      sum_toReal (p.map Prod.fst)
-    rw [hsum_fst, one_mul]
-  rw [mutualInfo_eq_entropy_map_snd_sub_conditionalEntropy, hsnd, hcond]
 
 private theorem uniformPermFin4_map_eval2_eq_uniform :
     ((PMF.uniformOfFintype (Equiv.Perm (Fin 4))).map fun ρ => ρ 2) =
@@ -298,15 +220,15 @@ theorem mutualInfo_deal211 : mutualInfo deal211 = 1 := by
     have h4 : ((4 : ℕ) : ℝ) = (2 : ℝ) ^ (2 : ℕ) := by norm_num
     rw [h4, Real.logb_pow, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
     norm_num
-  have hres := mutualInfo_eq_sub_logb_card_of_const_unseen deal211 unseenOrdered 2 2
-    (by norm_num) hsnd (fun a ha => unseenOrdered_card (deal211_fst_ne ha))
+  have hres := mutualInfo_eq_entropy_map_snd_sub_logb_of_const_fiber deal211 unseenOrdered 2
+    (by norm_num) (fun a ha => unseenOrdered_card (deal211_fst_ne ha))
     (fun a _ b hb => by
       by_contra hne0
       have hsupp : (a, b) ∈ deal211.support := hne0
       obtain ⟨_, hb1, hb2⟩ := mem_support_deal211.mp hsupp
       exact hb (Finset.mem_erase.mpr ⟨hb2, Finset.mem_erase.mpr ⟨hb1, Finset.mem_univ _⟩⟩))
     (fun a _ b₀ hb₀ b₁ hb₁ => deal211_const_on_unseen a hb₀ hb₁)
-  rw [hres, Nat.cast_ofNat, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
+  rw [hres, hsnd, Nat.cast_ofNat, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
   norm_num
 
 /-- Any protocol realizing `k` independent random OTs with perfect semi-honest privacy over
@@ -536,14 +458,14 @@ theorem mutualInfo_deal211Unordered : mutualInfo deal211Unordered = 1 := by
     have h4 : ((4 : ℕ) : ℝ) = (2 : ℝ) ^ (2 : ℕ) := by norm_num
     rw [h4, Real.logb_pow, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
     norm_num
-  have hres := mutualInfo_eq_sub_logb_card_of_const_unseen deal211Unordered unseenUnordered 2 2
-    (by norm_num) hsnd (fun s _ => unseenUnordered_card s)
+  have hres := mutualInfo_eq_entropy_map_snd_sub_logb_of_const_fiber
+    deal211Unordered unseenUnordered 2 (by norm_num) (fun s _ => unseenUnordered_card s)
     (fun s _ b hb => by
       by_contra hne0
       have hsupp : (s, b) ∈ deal211Unordered.support := hne0
       exact hb (Finset.mem_sdiff.mpr ⟨Finset.mem_univ _, mem_support_deal211Unordered.mp hsupp⟩))
     (fun s _ b₀ hb₀ b₁ hb₁ => deal211Unordered_const_on_unseen s hb₀ hb₁)
-  rw [hres, Nat.cast_ofNat, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
+  rw [hres, hsnd, Nat.cast_ofNat, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
   norm_num
 
 /-- Any protocol realizing `k` independent random OTs with perfect semi-honest privacy over
@@ -585,16 +507,11 @@ theorem chosenOT_le_one_of_deal211Unordered {sc : Schedule 2 noOracleSpec} {Coin
     PMF ((Fin m → Fin 4 × Fin 4) × (Fin m → Fin 4)) :=
   (PMF.pi fun _ : Fin m => deal211).map fun f => (fun i => (f i).1, fun i => (f i).2)
 
-private def piPairEquiv (α β : Type*) (m : ℕ) :
-    (Fin m → α × β) ≃ (Fin m → α) × (Fin m → β) where
-  toFun f := (fun i => (f i).1, fun i => (f i).2)
-  invFun ab i := (ab.1 i, ab.2 i)
-  left_inv _ := rfl
-  right_inv _ := rfl
-
 private theorem deal211Batch_apply (m : ℕ) (as : Fin m → Fin 4 × Fin 4) (bs : Fin m → Fin 4) :
     deal211Batch m (as, bs) = ∏ i : Fin m, deal211 (as i, bs i) := by
-  change ((PMF.pi fun _ : Fin m => deal211).map (piPairEquiv _ _ m)) (as, bs) = _
+  change ((PMF.pi fun _ : Fin m => deal211).map
+    (Equiv.arrowProdEquivProdArrow (Fin m) (fun _ => Fin 4 × Fin 4) (fun _ => Fin 4))) (as, bs) =
+    _
   rw [map_equiv_apply, PMF.pi_apply]
   rfl
 
@@ -656,9 +573,9 @@ theorem mutualInfo_deal211Batch (m : ℕ) : mutualInfo (deal211Batch m) = m := b
     rw [deal211Batch_apply, deal211Batch_apply]
     exact Finset.prod_congr rfl fun i _ =>
       deal211_const_on_unseen (as i) (hbs₀ i) (hbs₁ i)
-  have hres := mutualInfo_eq_sub_logb_card_of_const_unseen (deal211Batch m) unseenB
-    (2 * (m : ℝ)) (2 ^ m) (pow_pos (by norm_num) m) hsnd hcard hzero hconst
-  rw [hres, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
+  have hres := mutualInfo_eq_entropy_map_snd_sub_logb_of_const_fiber (deal211Batch m) unseenB
+    (2 ^ m) (pow_pos (by norm_num) m) hcard hzero hconst
+  rw [hres, hsnd, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
     Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
   ring
 
@@ -707,29 +624,8 @@ theorem rot_le_entropy_fst {sc : Schedule 2 noOracleSpec} {A B : Type} {Coins : 
     (S : (I : Finset (Fin 2)) →
       CorrelatedSimulator sc A B Coins (fun _ => Fin k → Bool × Bool) I)
     (hPriv : PerfectSemiHonestPrivateProperOverSource proto source (idealROT k) S) :
-    (k : ℝ) ≤ entropy (source.map Prod.fst) := by
-  have hk := rot_le_mutualInfo proto source S hPriv
-  have hid : source.map (fun ab : A × B => (ab.1, ab.2)) = source := by
-    rw [show (fun ab : A × B => (ab.1, ab.2)) = id from funext fun ⟨_, _⟩ => rfl, PMF.map_id]
-  have hmi1 : mutualInfo source =
-      entropy (source.map Prod.fst) + entropy (source.map Prod.snd) - entropy source := by
-    conv_lhs => rw [← hid]
-    rw [mutualInfo_map, hid]
-  have hmi2 : mutualInfo (source.map Prod.swap) =
-      entropy (source.map Prod.snd) + entropy (source.map Prod.fst) - entropy source := by
-    have hsw : source.map Prod.swap = source.map (fun ab => (ab.2, ab.1)) := rfl
-    rw [hsw, mutualInfo_map, ← hsw, entropy_map_of_injective source Prod.swap_injective]
-  have hswap : mutualInfo (source.map Prod.swap) = mutualInfo source := by
-    rw [hmi1, hmi2]
-    ring
-  have hle : mutualInfo source ≤ entropy (source.map Prod.fst) := by
-    rw [← hswap]
-    have hsnd : (source.map Prod.swap).map Prod.snd = source.map Prod.fst := by
-      rw [PMF.map_comp]
-      rfl
-    rw [← hsnd]
-    exact mutualInfo_le_entropy_map_snd (source.map Prod.swap)
-  exact hk.trans hle
+    (k : ℝ) ≤ entropy (source.map Prod.fst) :=
+  (rot_le_mutualInfo proto source S hPriv).trans (mutualInfo_le_entropy_map_fst source)
 
 /-- Bob's marginal source entropy bounds the number of perfectly private random OTs over any
 finite correlated source `source : PMF (A × B)`. -/

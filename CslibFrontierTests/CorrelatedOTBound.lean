@@ -202,36 +202,36 @@ private noncomputable def beaverSim :
           | ⟨1, _⟩ => beaverView1 2 ((0, 2), (1, 3), false, false)
       else do
         let ρ ← ProbComp.uniform (Equiv.Perm (Fin 4))
-        let r ← ProbComp.uniform Bool
         let a := (ρ 0, ρ 1)
         let (u, v) := otherTwo a.1 a.2
-        let w := if r then (v, u) else (u, v)
         let s := out ⟨0, h0⟩ 0
-        let m₀ := xor s.1 (decide (w.1 < a.1))
-        let m₁ := xor s.2 (decide (w.2 < a.2))
-        pure fun ⟨i, hi⟩ =>
-          if hi0 : i = 0 then hi0 ▸ beaverView0 a (r, m₀, m₁)
-          else False.elim (by
-            fin_cases i
-            · exact hi0 rfl
-            · exact h1 hi)
+        (fun r : Bool =>
+          let w := if r then (v, u) else (u, v)
+          let m₀ := xor s.1 (decide (w.1 < a.1))
+          let m₁ := xor s.2 (decide (w.2 < a.2))
+          fun ⟨i, hi⟩ =>
+            if hi0 : i = 0 then hi0 ▸ beaverView0 a (r, m₀, m₁)
+            else False.elim (by
+              fin_cases i
+              · exact hi0 rfl
+              · exact h1 hi)) <$> ProbComp.uniform Bool
     else if h1 : (1 : Fin 2) ∈ I then do
       let ρ ← ProbComp.uniform (Equiv.Perm (Fin 4))
-      let mOther ← ProbComp.uniform Bool
       let oy := out ⟨1, h1⟩ 0
       let c := oy.1
       let y := oy.2
       let b := ρ 2
       let p₀ := if c then sortedPair (ρ 0) (ρ 3) else sortedPair (ρ 0) (ρ 2)
       let p₁ := if c then sortedPair (ρ 1) (ρ 2) else sortedPair (ρ 1) (ρ 3)
-      let m₀ := if c then mOther else xor y (decide (ρ 2 < ρ 0))
-      let m₁ := if c then xor y (decide (ρ 2 < ρ 1)) else mOther
-      pure fun ⟨i, hi⟩ =>
-        if hi1 : i = 1 then hi1 ▸ beaverView1 b (p₀, p₁, m₀, m₁)
-        else False.elim (by
-          fin_cases i
-          · exact h0 hi
-          · exact hi1 rfl)
+      (fun mOther : Bool =>
+        let m₀ := if c then mOther else xor y (decide (ρ 2 < ρ 0))
+        let m₁ := if c then xor y (decide (ρ 2 < ρ 1)) else mOther
+        fun ⟨i, hi⟩ =>
+          if hi1 : i = 1 then hi1 ▸ beaverView1 b (p₀, p₁, m₀, m₁)
+          else False.elim (by
+            fin_cases i
+            · exact h0 hi
+            · exact hi1 rfl)) <$> ProbComp.uniform Bool
     else
       pure fun ⟨i, hi⟩ => False.elim (by
         fin_cases i
@@ -324,10 +324,6 @@ private theorem swapPerm13_invol (ρ : Equiv.Perm (Fin 4)) (flip : Bool) :
   · rfl
   · have hsq : Equiv.swap (1 : Fin 4) 3 * Equiv.swap 1 3 = 1 := by decide
     simp only [swapPerm13, ↓reduceIte, mul_assoc, hsq, mul_one]
-
-private theorem bind_pure_eq_map {α β : Type*} (p : PMF α) (f : α → β) :
-    (p.bind fun a => PMF.pure (f a)) = p.map f :=
-  PMF.bind_pure_comp f p
 
 private theorem realCorrelated_beaverOTProtocol :
     realCorrelated beaverOTProtocol deal211 =
@@ -512,9 +508,8 @@ private theorem beaver_priv0 :
           (v0, out) := by
     dsimp only [idealCorrelatedJoint, idealROT, beaverSim, CorrelatedSimulator.ofProbComp]
     simp only [Finset.mem_singleton, one_ne_zero, ↓reduceDIte,
-      ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-      PMF.bind_map, PMF.map_bind, bind_pure_eq_map,
-      PMF.map_comp, Function.comp_def, Finset.restrict, Fin.cases_zero]
+      ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
+      PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def, Finset.restrict, Fin.cases_zero]
     simp_rw [uniformOfFintype_bind_map]
     congr 1 with ⟨⟨s, c⟩, ρ', r⟩ : 1
     refine Prod.ext (funext fun ⟨i, hi⟩ => ?_) rfl
@@ -720,9 +715,8 @@ private theorem beaver_priv1 :
     dsimp only [idealCorrelatedJoint, idealROT, beaverSim, CorrelatedSimulator.ofProbComp,
       Finset.restrict]
     simp only [Finset.mem_singleton, zero_ne_one, ↓reduceDIte,
-      ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure,
-      PMF.bind_map, PMF.map_bind, bind_pure_eq_map,
-      PMF.map_comp, Function.comp_def]
+      ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
+      PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
     simp_rw [uniformOfFintype_bind_map]
     congr 1 with ⟨⟨s, c⟩, ρ', mOther⟩ : 1
     refine Prod.ext (funext fun ⟨i, hi⟩ => ?_) rfl
@@ -817,7 +811,9 @@ theorem beaverOTProtocol_private :
       CorrelatedSimulator.ofProbComp]
     rw [← hOutEq, PMF.bind_map]
     simp only [Finset.notMem_empty, ↓reduceDIte, ProbComp.eval_pure,
-      PMF.pure_map, Function.comp_def, bind_pure_eq_map]
+      PMF.pure_map, Function.comp_def]
+    change (realCorrelated beaverOTProtocol deal211).map _ =
+      (realCorrelated beaverOTProtocol deal211).map _
     congr 1 with x : 1
     refine Prod.ext (funext fun ⟨i, hi⟩ => False.elim (Finset.notMem_empty i hi)) rfl
   · exact beaver_priv0
@@ -882,8 +878,8 @@ example :
       · intro x _
         rw [ite_eq_right_of_eq_false _ _ (eq_false fun h => hc1 (congrFun h 1))]
   rw [hpi, PMF.map_bind, PMF.bind_map]
-  simp only [proto, Steps.evalWith_message, Steps.evalWith_done, PMF.pure_map, Function.comp_def,
-    bind_pure_eq_map]
+  simp only [proto, Steps.evalWith_message, Steps.evalWith_done, PMF.pure_map, Function.comp_def]
+  change (PMF.uniformOfFintype Msg).map _ = _
   dsimp only [idealROT]
   congr 1 with x : 1
   funext i
