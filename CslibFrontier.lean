@@ -948,6 +948,7 @@ public import CslibFrontier.Computability.CellProbe.Chronogram
 public import CslibFrontier.Computability.CellProbe.DecisionTree
 public import CslibFrontier.Computability.CellProbe.Defs
 public import CslibFrontier.Computability.CellProbe.Randomized
+public import CslibFrontier.Computability.Circuit.Accumulate
 public import CslibFrontier.Computability.Circuit.Approximation
 public import CslibFrontier.Computability.Circuit.Approximation.Hamming
 public import CslibFrontier.Computability.Circuit.Arithmetic
@@ -1201,6 +1202,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.NonconstantCost
 public import CslibFrontier.Computability.Circuit.Boolean.Nondeterminism
 public import CslibFrontier.Computability.Circuit.Boolean.OpValue
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle
+public import CslibFrontier.Computability.Circuit.Boolean.Oracle.Selection
 public import CslibFrontier.Computability.Circuit.Boolean.OracleFormula
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Circuit.Boolean.PPolyHard
@@ -1821,6 +1823,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Decider
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Projection
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reachability
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Output
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Reduction
@@ -5550,6 +5553,7 @@ public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Blocks
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Bounds
 public import CslibFrontier.Logics.FirstOrder.Ordered.Multiplication.Columns
 public import CslibFrontier.Logics.FirstOrder.Ordered.Packing
+public import CslibFrontier.Logics.FirstOrder.Ordered.Problems.Reachability
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Composition
 public import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Reduction
