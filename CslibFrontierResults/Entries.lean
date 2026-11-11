@@ -51,6 +51,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.ImmermanVardi
+import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
@@ -1859,3 +1860,27 @@ register_result "mktp-exp" where
     encoded in unary, where Liu and Pass use a binary threshold of about log n bits; for \
     thresholds O(|x|) the two encodings are polynomially related. MKtPAt s, with s \
     computable in polynomial time in unary, is in EXP over bit strings. Membership only."
+
+register_result "w-hierarchy-subset-xp" where
+  title := "WeightedCircuitSAT, W[P] and every level W[t] of the W-hierarchy lie in XP"
+  topic := "parameterized complexity"
+  sources := [
+    { paper := CyganEtAl2015, theorem := unverified, locator := "Chapter 13" },
+    { paper := DowneyFellows1999, theorem := unverified, locator := unverified },
+    { paper := FlumGrohe2006, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.WeightedCircuitSAT_mem_XP,
+    Cslib.Complexity.WP_subset_XP,
+    Cslib.Complexity.W_subset_XP,
+    Cslib.Complexity.WCS_mem_XP,
+    Cslib.Complexity.W_subset_WP,
+    Cslib.Complexity.WP_eq_FPT_iff,
+    Cslib.Complexity.IndependentSet_mem_XP,
+    Cslib.Complexity.Clique_mem_XP
+  ]
+  scope := "Instances of WeightedCircuitSAT encode a one-output unbounded fan-in Boolean circuit \
+    together with the target weight k in binary. Exhaustive search over min(n, k)-tuples of input \
+    wires places WeightedCircuitSAT in slicewise polynomial time XP for multi-tape Turing \
+    machines, and fpt-reduction closure gives FPT ⊆ W[t] ⊆ W[P] ⊆ XP for every weft bound t, \
+    along with XP membership for WCS t d, Clique and IndependentSet."
