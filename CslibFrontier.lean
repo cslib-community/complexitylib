@@ -2674,6 +2674,7 @@ public import CslibFrontier.Computability.MCSP.PartialHardness.Construction
 public import CslibFrontier.Computability.MCSP.PartialHardness.Evaluator
 public import CslibFrontier.Computability.MCSP.PartialHardness.EvaluatorPolyTime
 public import CslibFrontier.Computability.MCSP.PartialHardness.Knowledge
+public import CslibFrontier.Computability.MCSP.PartialHardness.Seeded
 public import CslibFrontier.Computability.MCSP.PartialHardness.Soundness
 public import CslibFrontier.Computability.MCSP.PartialNP
 public import CslibFrontier.Computability.MCSP.Shannon
