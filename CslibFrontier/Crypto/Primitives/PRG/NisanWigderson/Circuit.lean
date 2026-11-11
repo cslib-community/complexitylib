@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Circuit.Boolean.Hierarchy
-public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson
+public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.Sampling
 import CslibFrontier.Computability.Circuit.Complexity
 
 /-!
@@ -25,8 +25,10 @@ the reconstructed function is computed with at most `S + m (2 ^ a (2 a + 3) + 1)
 (`exists_complexity_le_half_add_div_le_card_eq`). Contrapositively, if no circuit of that size
 agrees with `f` on a `1 / 2 + ε / m` fraction of the inputs, then no test computed with `S` gates
 accepts outputs of the generator with probability `ε` more than uniform strings
-(`toReal_realExperiment_sub_toReal_idealExperiment_lt`). Gates are counted as in
-`Cslib.Circuits.complexity` over the De Morgan basis, constants and negations included.
+(`toReal_realExperiment_sub_toReal_idealExperiment_lt`). The same bound holds for the guess of
+every trial of the randomized reconstruction, not just for one good choice
+(`complexity_trialGuess_le`). Gates are counted as in `Cslib.Circuits.complexity` over the
+De Morgan basis, constants and negations included.
 
 ## Main results
 
@@ -37,6 +39,8 @@ accepts outputs of the generator with probability `ε` more than uniform strings
 * `Cslib.Crypto.PRG.NisanWigderson.toReal_realExperiment_sub_toReal_idealExperiment_lt`: the
   generator fools circuits with `S` gates if `f` is hard to approximate with
   `S + m (2 ^ a (2 a + 3) + 1) + 1` gates.
+* `Cslib.Crypto.PRG.NisanWigderson.complexity_trialGuess_le`: the guess of every trial has
+  complexity at most `S + m (2 ^ a (2 a + 3) + 1) + 1`.
 
 ## References
 
@@ -90,6 +94,21 @@ private theorem complexity_nextBitGuess_le (test : BooleanFunction m) (i : Fin m
       cases test _ <;> rfl
     rw [e]
     exact htest.trans (Nat.le_succ _)
+
+/-- **The guess of every trial is a small circuit.** For every choice `t` of the random choices
+of the reconstruction, the guess built from the test has De Morgan circuit complexity at most that
+of the test plus `m * (2 ^ a * (2 * a + 3) + 1) + 1`. -/
+theorem complexity_trialGuess_le (D : Design ℓ n a m) (f : BooleanFunction n)
+    (test : BooleanFunction m) (t : Trial ℓ m) :
+    complexity interpretation (single (trialGuess D f test t)) ≤
+      complexity interpretation (single test) + m * (2 ^ a * (2 * a + 3) + 1) + 1 := by
+  refine complexity_nextBitGuess_le test t.pos t.bit t.pad
+    (fun j x => generator D f (D.extend t.pos x t.seed) (Fin.castLE t.pos.isLt.le j))
+    (Nat.le_add_left 1 _) fun j => ?_
+  refine (complexity_le_of_dependsOn (dependsOn_generator_extend D f _ _ t.seed)).trans ?_
+  have := D.card_overlap_le <|
+    Fin.ne_of_gt (show Fin.castLE t.pos.isLt.le j < t.pos from j.isLt)
+  gcongr
 
 /-- **The Nisan–Wigderson reconstruction with circuits**
 [Arora and Barak, Chapter 20][AroraBarak09]. If `0 < m` and a deterministic test accepts outputs of

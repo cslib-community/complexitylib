@@ -294,6 +294,11 @@ Ran Canetti. *Universally Composable Security*. Journal of the ACM 67(5), Articl
 
 Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased but Representative Sample*. Foundations and Trends in Communications and Information Theory 19(6), 1032–1198, 2022. https://doi.org/10.1561/0100000114 . Checked on 2026-11-10 against the author-hosted draft dated March 10, 2024 at https://ccanonne.github.io/files/misc/main-survey-fnt.pdf (journal pagination not inspected; locators follow that March 10, 2024 draft): Appendix B (pp. 149–152: Definition B.1, `(B.1)`–`(B.3)`, `(B.5)`–`(B.6)`, Lemmas B.1, B.2, and B.5) for Hellinger/`χ²`/KL definitions, tensorization, and comparison inequalities, and Section 3.1 (pp. 99–103: `(3.3)`, Lemma 3.1, and `(3.10)`) for the `√(2n)` Hellinger i.i.d. bound and Ingster's mixture second-moment identity (`CslibFrontier/Probability/{Hellinger,ChiSquare}.lean`).
 
+<a id="carmosinoimpagliazzokabanetskolokolova2016"></a>
+## carmosinoimpagliazzokabanetskolokolova2016
+
+Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run.
+
 <a id="ccpv11"></a>
 ## ccpv11
 
@@ -337,7 +342,7 @@ Eshan Chattopadhyay and Jyun-Jie Liao. *Optimal Error Pseudodistributions for Re
 <a id="chenhiraharaoliveirapichrajgopalsanthanam2020"></a>
 ## chenhiraharaoliveirapichrajgopalsanthanam2020
 
-Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` bullet of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
+Lijie Chen, Shuichi Hirahara, Igor C. Oliveira, Ján Pich, Ninad Rajgopal and Rahul Santhanam. *Beyond Natural Proofs: Hardness Magnification and Locality*. ITCS 2020, LIPIcs 151. https://doi.org/10.4230/LIPIcs.ITCS.2020.70 ; full version ECCC TR19-168. Checked against the ECCC full version on 2026-11-11: Definition 11 (local circuit classes `[q, ℓ, a]–C[s]`, Section 2.5, p. 13) and the MCSP `[OS18]` and `[MMW19]` bullets of Proposition 63 (Appendix A.2, p. 52). Theorem numbers follow the ECCC numbering.
 
 <a id="christofides76"></a>
 ## christofides76
@@ -510,6 +515,11 @@ Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of 
 ## feige1998
 
 Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the ACM* 45(4), 634–652, 1998. https://doi.org/10.1145/285055.285059 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the Set Cover hardness threshold framework using separating partition gadgets.
+
+<a id="fgms20"></a>
+## fgms20
+
+John Fearnley, Spencer Gordon, Ruta Mehta and Rahul Savani. "Unique End of Potential Line." *Journal of Computer and System Sciences* 114, 1–35, 2020. https://doi.org/10.1016/j.jcss.2020.05.007 . Checked on 2026-11-11 against the arXiv TeX source of `arXiv:1811.03841v1` (https://arxiv.org/abs/1811.03841 , dated 9 November 2018): Section 2 ("Unique End of Potential Line"), Definition 9 (`EndOfPotentialLine`, `\label{def:EOPL}`, solution types `(R1)` and `(R2)` under `P(0^n) = 0^n ≠ S(0^n)` and `V(0^n) = 0` with `V : {0, 1}^n → {0, …, 2^m - 1}`) and the complexity class `EOPL` with `EOPL ⊆ PLS ∩ PPAD`. `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLine.lean` formalizes uniform polynomial-time `EOPL` and `SOPL` families, totalized `(R1)/(R2)` violation relations (`mem_EOPL_iff_violation`, `mem_SOPL_iff_violation`), and `EOPL ⊆ PLS ∩ PPAD`. `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLineNormalization.lean` formalizes the uniform polynomial-time `(n + 1)`-bit normalization to the exact syntactic source conditions `PromisedPotentialLine` (`P(0^n) = 0^n ≠ S(0^n)` and `V(0^n) = 0`), pure `(R1)/(R2)` relations (`endOfPotentialLinePromisedRel`, `sinkOfPotentialLinePromisedRel`), and unary potential bit-bounds (`mem_EOPL_iff_promised_bounded`, `mem_SOPL_iff_promised_bounded`). Both modules use uniform polynomial-time families rather than canonical Boolean circuit codes; `UEOPL`, `CLS`, and the journal version's numbering were not formalized or separately checked.
 
 <a id="fips203"></a>
 ## fips203
@@ -755,7 +765,7 @@ Shuichi Hirahara. *Non-Black-Box Worst-Case to Average-Case Reductions within NP
 <a id="hirahara2022"></a>
 ## hirahara2022
 
-Shuichi Hirahara. *NP-Hardness of Learning Programs and Partial MCSP*. FOCS 2022, 968–979. https://doi.org/10.1109/FOCS54457.2022.00095 . Full version ECCC TR22-119. Checked against the FOCS proceedings text on 2026-11-11: the partial-string problems `MKTP*` and `MINKT*` (Section I, p. 971), consistency with a partial string (footnote 5, p. 971), the KT-style time measure of Theorem I.2 (footnote 6, p. 971), Theorem I.2 (p. 971), and the account of Ko's `MINKT` and relativization barrier (abstract, p. 968; Section I, p. 970). The ECCC numbering was not checked.
+Shuichi Hirahara. *NP-Hardness of Learning Programs and Partial MCSP*. FOCS 2022, 968–979. https://doi.org/10.1109/FOCS54457.2022.00095 . Full version ECCC TR22-119. Checked against the FOCS proceedings text on 2026-11-11: the partial-string problems `MKTP*` and `MINKT*` (Section I, p. 971), consistency with a partial string (footnote 5, p. 971), the KT-style time measure of Theorem I.2 (footnote 6, p. 971), Theorem I.2 (p. 971; its "In particular" clause, NP-hardness of Partial MCSP and of `MINKT*` under randomized reductions, is `PartialMCSP.rpHard` and `MINKTStar.rpHard`), and the account of Ko's `MINKT` and relativization barrier (abstract, p. 968; Section I, p. 970). The ECCC numbering was not checked.
 
 <a id="hk21"></a>
 ## hk21
@@ -810,7 +820,7 @@ Rahul Ilango. *Constant Depth Formula and Partial Function Versions of MCSP are 
 <a id="ilo2020"></a>
 ## ilo2020
 
-Rahul Ilango, Bruno Loff and Igor C. Oliveira. *NP-Hardness of Circuit Minimization for Multi-Output Functions*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 22:1–22:36. https://doi.org/10.4230/LIPIcs.CCC.2020.22 . Inspected the LIPIcs PDF directly: the canonical DNF (pp. 22:19–22:20), Section 4.2 (pp. 22:20–22:21), Proposition 14 and the consequence `∆ = CC(T • g) − CC(g)` (pp. 22:21–22:22), Lemma 15 (p. 22:22) and Lemma 16 (pp. 22:22–22:23).
+Rahul Ilango, Bruno Loff and Igor C. Oliveira. *NP-Hardness of Circuit Minimization for Multi-Output Functions*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 22:1–22:36. https://doi.org/10.4230/LIPIcs.CCC.2020.22 . Inspected the LIPIcs PDF directly: Theorem 4 (p. 22:5), the canonical DNF (pp. 22:19–22:20), Section 4.2 (pp. 22:20–22:21), Proposition 14 and the consequence `∆ = CC(T • g) − CC(g)` (pp. 22:21–22:22), Lemma 15 (p. 22:22) and Lemma 16 (pp. 22:22–22:23).
 
 <a id="ilps22"></a>
 ## ilps22
@@ -831,6 +841,11 @@ Russell Impagliazzo and Ramamohan Paturi. *On the Complexity of k-SAT*. Journal 
 ## impagliazzo95
 
 Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *Proceedings of the 36th Annual Symposium on Foundations of Computer Science (FOCS 1995)*, 538–545. DOI: [10.1109/SFCS.1995.492584](https://doi.org/10.1109/SFCS.1995.492584). Bibliographic metadata only; the paper itself was not inspected, and its statement is cited as recalled in [Holenstein 2005](#holenstein05), Section 2.
+
+<a id="impagliazzojaiswalkabanetswigderson10"></a>
+## impagliazzojaiswalkabanetswigderson10
+
+Russell Impagliazzo, Ragesh Jaiswal, Valentine Kabanets and Avi Wigderson. *Uniform Direct Product Theorems: Simplified, Optimized, and Derandomized*. SIAM Journal on Computing 39(4), 1637–1665, 2010. DOI: [10.1137/080734030](https://doi.org/10.1137/080734030) (as reported by search; not resolved). The authors' preprint dated 2009-10-19 (https://www.math.ias.edu/~avi/PUBLICATIONS/ImpagliazzoJaKaWi2010.pdf) was inspected on 2026-11-11: Theorem 1.2 (the decoder that CIKK cite as their Theorem 4.1), Algorithms 1–2, Theorem 3.2 and Lemmas 2.11–2.14 and 3.8–3.12. Locators follow the preprint; the journal numbering is unchecked.
 
 <a id="impagliazzowigderson97"></a>
 ## impagliazzowigderson97
@@ -1290,7 +1305,7 @@ Dijen K. Ray-Chaudhuri and Richard M. Wilson. “On `t`-Designs.” *Osaka Journ
 <a id="razborovrudich1997"></a>
 ## razborovrudich1997
 
-Alexander A. Razborov and Steven Rudich. *Natural Proofs*. Journal of Computer and System Sciences 55(1), 24–35, 1997. https://doi.org/10.1006/jcss.1997.1494 . Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean modules cite its Section 4 for the pseudorandom-generator form of the barrier.
+Alexander A. Razborov and Steven Rudich. *Natural Proofs*. Journal of Computer and System Sciences 55(1), 24–35, 1997. https://doi.org/10.1006/jcss.1997.1494 . Bibliographic data comes from the repository bibliography. The Lean modules cite its Section 4 for the pseudorandom-generator form of the barrier. Section 3.2 (p. 27), which states Razborov's GF(2) rank property against AC⁰[2] abstractly and leaves its largeness as an exercise, was inspected for [#4451](https://github.com/cslib-community/cslib-frontier/issues/4451); the rest of the paper was not inspected for this chapter.
 
 <a id="reedsmithvetta2004"></a>
 ## reedsmithvetta2004
@@ -1401,6 +1416,11 @@ Alexander Schrijver. *A Course in Combinatorial Optimization*. Lecture notes, ve
 ## schrijver78
 
 Alexander Schrijver. "A Short Proof of Minc's Conjecture." *Journal of Combinatorial Theory, Series A* 25(1), 80–83, 1978. https://doi.org/10.1016/0097-3165(78)90036-5 . Bibliographic data from the DOI record; the paper was not inspected. The induction in the library's Brégman module follows the published descriptions of this proof (induction on `n`, a convexity inequality at one row, then averaging over the rows).
+
+<a id="schrijver86"></a>
+## schrijver86
+
+Alexander Schrijver. *Theory of Linear and Integer Programming*. Wiley-Interscience Series in Discrete Mathematics, John Wiley & Sons, Chichester, 1986. An independent agent review checked the primary book on 2026-11-11 UTC for Section 3.2, Theorem 3.2 (pp. 29–30, determinant encoding-size bound) and Section 3.3, "The Gaussian elimination method": Theorem 3.3 (pp. 32–33, polynomial-time rational Gaussian elimination), Corollary 3.3a (pp. 33–34, polynomial-time determinant, rank, inverse, linear-independence testing, and linear system solving), and the Gauss–Jordan discussion with Equations (28)–(30) (p. 35). Local adaptations in [`BareissElimination.lean`](../CslibFrontier/Algorithms/LinearAlgebra/BareissElimination.lean) and [`RationalElimination.lean`](../CslibFrontier/Computability/PolyTime/LinearAlgebra/RationalElimination.lean): (1) rather than Schrijver's normalized rational elimination, row denominators are cleared upfront and fraction-free Sylvester–Bareiss minor-scaled Gauss–Jordan updates are executed over `ℤ` with an explicit Hadamard/factorial bound (`stageEntryBound`); and (2) native multi-tape Turing `ComputableInPolyTime` time and workspace bounds are certified using `enc_structure` codecs with explicit unary dimension headers (`numRows`, `numCols`, `rank`, `pivotRows`, `pivotCols`, `nonPivotCols`) and framed signed-binary/rational entries.
 
 <a id="schummervohra07"></a>
 ## schummervohra07
@@ -1536,10 +1556,20 @@ Bernhard von Stengel. "Equilibrium Computation for Two-Player Games in Strategic
 
 Virginia Vassilevska Williams and R. Ryan Williams. "Subcubic Equivalences Between Path, Matrix, and Triangle Problems." *Journal of the ACM* 65(5), 27:1–27:38, 2018; preliminary version in FOCS 2010. https://doi.org/10.1145/3186893 . Bibliographic metadata checked on 2026-11-07. The authors' journal manuscript https://people.csail.mit.edu/virgi/tria-mmult-jv.pdf was consulted on 2026-11-08 for the negative triangle problem over a structure (Section 2), Theorem 4.1, Theorem 4.2, Lemma 4.1 and Lemma 4.2 (and its proof with parts of size `n^{1−a}`). Theorem and lemma numbers follow that manuscript.
 
+<a id="vzg13"></a>
+## vzg13
+
+Joachim von zur Gathen and Jürgen Gerhard. *Modern Computer Algebra*, 3rd edition, Cambridge University Press, 2013. https://doi.org/10.1017/CBO9781139856065 . Bibliographic metadata checked from the publisher record and Chapter 5 section listing (§5.7 "Rational function reconstruction", p. 115; §5.8 "Cauchy interpolation", p. 118; and §5.10 "Rational number reconstruction"); the full book text was not inspected, and no theorem or algorithm numbers are claimed.
+
 <a id="wagnerfischer74"></a>
 ## wagnerfischer74
 
 Robert A. Wagner and Michael J. Fischer. "The String-to-String Correction Problem." *Journal of the ACM* 21(1), 168–173, 1974. https://doi.org/10.1145/321796.321811 . The bibliographic data come from search summaries of the publisher record (2026-11-08). The full text is paywalled and was not inspected, so the paper's internal theorem and algorithm numbering is unverified and is not cited. The manual credits it with the edit-distance dynamic program under general letter costs, with traces (alignments) as the objects of minimum cost and with the `O(|x| |y|)` table, as these are standardly described.
+
+<a id="wang81"></a>
+## wang81
+
+Paul S. Wang. "A p-adic Algorithm for Univariate Partial Fractions." *Proceedings of the 1981 ACM Symposium on Symbolic and Algebraic Computation (SYMSAC '81)*, 212–217, ACM, 1981. https://doi.org/10.1145/800206.806398 . Bibliographic metadata checked from the ACM Digital Library record; the article text was not inspected, and no theorem or algorithm numbers are claimed.
 
 <a id="wattenhofer16"></a>
 ## wattenhofer16

@@ -23,20 +23,20 @@ private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
 
 /-! ### Headline results -/
 
-example : ChromaticNumber ∈ NP (encPair encGraph encNat) ∧
-    NPHard (encPair encGraph encNat) ChromaticNumber ∧
-    PolyTimeReducible encGraph (encPair encGraph encNat) (KColoring 4) ChromaticNumber :=
+example : ChromaticNumber ∈ NP encChromaticNumber ∧
+    NPHard encChromaticNumber ChromaticNumber ∧
+    PolyTimeReducible encGraph encChromaticNumber (KColoring 4) ChromaticNumber :=
   ⟨ChromaticNumber_npComplete.1, ChromaticNumber_npComplete.2,
     polyTimeReducible_KColoring_ChromaticNumber 4⟩
 
 /-! ### Colorability -/
 
 -- The triangle is 3-colorable but not 2-colorable.
-example : (triangle, 3) ∈ ChromaticNumber := by
+example : (⟨triangle, 3⟩ : ChromaticNumberInstance) ∈ ChromaticNumber := by
   rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
   exact ⟨id, by decide, fun u _ v _ huv => huv.ne⟩
 
-example : (triangle, 2) ∉ ChromaticNumber := by
+example : (⟨triangle, 2⟩ : ChromaticNumberInstance) ∉ ChromaticNumber := by
   rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
   rintro ⟨c, hc, hadj⟩
   have h₀ := hc 0 (by decide)
@@ -48,16 +48,16 @@ example : (triangle, 2) ∉ ChromaticNumber := by
   omega
 
 -- A number of colors far beyond the number of vertices.
-example : (triangle, 2 ^ 64) ∈ ChromaticNumber := by
+example : (⟨triangle, 2 ^ 64⟩ : ChromaticNumberInstance) ∈ ChromaticNumber := by
   rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
   exact ⟨id, by decide, fun u _ v _ huv => huv.ne⟩
 
 -- Without colors, exactly the graphs without declared vertices are colorable.
-example : ((([] : List ℕ), [(0, 1)]), 0) ∈ ChromaticNumber := by
+example : (⟨(([] : List ℕ), [(0, 1)]), 0⟩ : ChromaticNumberInstance) ∈ ChromaticNumber := by
   rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
   exact ⟨id, by simp, by simp⟩
 
-example : ((([5] : List ℕ), []), 0) ∉ ChromaticNumber := by
+example : (⟨(([5] : List ℕ), []), 0⟩ : ChromaticNumberInstance) ∉ ChromaticNumber := by
   rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
   rintro ⟨c, hc, -⟩
   exact Nat.not_lt_zero _ (hc 5 (by simp))
@@ -81,6 +81,19 @@ example : colorOf ([5, 7], []) ([5, 7].map fun v => v + 1) 7 = 8 :=
 -- Compositional `fun_prop` synthesis for colors read from computed lists.
 example : ComputableInPolyTime (fun p : (Graph × List ℕ) × ℕ => colorOf p.1.1 p.1.2 0)
     (encPair (encPair encGraph (encList encNat)) encNat) encNat := by
+  fun_prop
+
+-- Global `fun_prop` synthesis for `encChromaticNumber` projections and constructor.
+example : ComputableInPolyTime (fun x : ChromaticNumberInstance => x.graph)
+    encChromaticNumber encGraph := by
+  fun_prop
+
+example : ComputableInPolyTime (fun x : ChromaticNumberInstance => x.colors)
+    encChromaticNumber encNat := by
+  fun_prop
+
+example : ComputableInPolyTime (fun p : Graph × ℕ => (⟨p.1, p.2⟩ : ChromaticNumberInstance))
+    (encPair encGraph encNat) encChromaticNumber := by
   fun_prop
 
 end CslibFrontierTests.ChromaticNumber
