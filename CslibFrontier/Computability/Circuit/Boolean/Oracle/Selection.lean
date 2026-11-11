@@ -226,8 +226,8 @@ def round (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Sourc
       (((Circuit.id oracleSignature (K + 2)).append (queryLayer src)).comp (constLayer K)))
 
 /-- The word that `round src word dflt` selects on the input `x` under the oracle `O`. -/
-noncomputable def roundSel (O : Language Bool) (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
-    (dflt : Fin w → Source K) (x : BitString K) : BitString w :=
+noncomputable def roundSel (O : Language Bool) (src : Fin N → Fin q → Source K)
+    (word : Fin N → Fin w → Source K) (dflt : Fin w → Source K) (x : BitString K) : BitString w :=
   firstSel (fun b => (dflt b).val x) (fun i => O.slice q fun a => (src i a).val x)
     (fun i b => (word i b).val x)
 
@@ -291,7 +291,8 @@ theorem depthWith_round_le (src : Fin N → Fin q → Source K) (word : Fin N �
 theorem fanInAtMost_round (src : Fin N → Fin q → Source K) (word : Fin N → Fin w → Source K)
     (dflt : Fin w → Source K) : (round src word dflt).FanInAtMost (max q 2) :=
   (Circuit.fanInAtMost_wiring _ _).append <|
-    ((Circuit.fanInAtMost_mapOp _ _).2 ((Circuit.fanInAtMost_two _).mono (le_max_right _ _))).comp <|
+    ((Circuit.fanInAtMost_mapOp _ _).2
+        ((Circuit.fanInAtMost_two _).mono (le_max_right _ _))).comp <|
       ((Circuit.fanInAtMost_wiring _ _).append
         ((fanInAtMost_queryLayer src).mono (le_max_left _ _))).comp (fanInAtMost_constLayer _ _)
 

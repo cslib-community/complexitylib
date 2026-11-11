@@ -42,9 +42,11 @@ private theorem val_pairSrc (n E : ℕ) (y : Fin (2 ^ n)) (x : BitString (2 ^ n 
 
 /-- Every round emits a pair `(y, T y)`. -/
 private theorem toyRound_pair (n E : ℕ) (O : Language Bool) (x : BitString (2 ^ n + E)) :
-    ∃ y : Fin (2 ^ n), roundSel O (querySrc n E) (pairSrc n E) (pairSrc n E ⟨0, Nat.two_pow_pos n⟩) x =
-      Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y) :=
-  roundSel_prop (P := fun v => ∃ y : Fin (2 ^ n), v = Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y))
+    ∃ y : Fin (2 ^ n),
+      roundSel O (querySrc n E) (pairSrc n E) (pairSrc n E ⟨0, Nat.two_pow_pos n⟩) x =
+        Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y) :=
+  roundSel_prop
+    (P := fun v => ∃ y : Fin (2 ^ n), v = Fin.lastCases (x (Fin.castAdd E y)) (bitsOf n y))
     O _ _ _ x ⟨_, val_pairSrc n E _ x⟩ fun y _ => ⟨y, val_pairSrc n E y x⟩
 
 /-- `R` toy rounds; round `r` reads the table and the `r` earlier pairs. -/
