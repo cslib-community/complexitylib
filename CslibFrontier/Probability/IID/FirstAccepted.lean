@@ -68,6 +68,17 @@ theorem firstAccepted_cons (acc : T → Bool) {m : ℕ} (a : T) (w : Fin m → T
   simp only [firstAccepted, List.ofFn_succ, Fin.cons_zero, Fin.cons_succ]
   cases h : acc a <;> simp [h]
 
+/-- No trial is accepted exactly when the first accepted trial does not exist. -/
+theorem firstAccepted_eq_none_iff (acc : T → Bool) {m : ℕ} (v : Fin m → T) :
+    firstAccepted acc v = none ↔ ∀ i, acc (v i) = false := by
+  simp [firstAccepted, List.find?_eq_none, List.mem_ofFn]
+
+/-- The first accepted trial is accepted and is one of the trials. -/
+theorem firstAccepted_eq_some {acc : T → Bool} {m : ℕ} {v : Fin m → T} {a : T}
+    (h : firstAccepted acc v = some a) : acc a = true ∧ ∃ i, v i = a := by
+  refine ⟨List.find?_some h, ?_⟩
+  simpa [List.mem_ofFn] using List.mem_of_find?_eq_some h
+
 variable [Fintype T]
 
 /-- **No trial is accepted**: exactly `R ^ m` tuples have every entry rejected. -/
