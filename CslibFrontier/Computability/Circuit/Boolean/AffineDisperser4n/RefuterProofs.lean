@@ -531,12 +531,6 @@ private theorem refuterStep_moveAffine {S : State n} (hS : S.Valid f) {J : ℕ}
 
 /-! #### Pair cases -/
 
-private theorem deg_eq_one_of_paired {S : State n} (hndeg : ¬ S.DegeneratePair) {p : ℕ}
-    (hp : S.Paired p) : S.deg p = 1 := by
-  have h0 : S.deg p ≠ 0 := fun h => hndeg ⟨p, hp, Or.inl h⟩
-  have h2 : ¬ 2 ≤ S.deg p := fun h => hndeg ⟨p, hp, Or.inr h⟩
-  omega
-
 private theorem refuterStep_degeneratePair {S : State n} (hS : S.Valid f) {p : ℕ}
     (h : findDegeneratePair S = some p) :
     RefuterStep f S (applyStep S (.degeneratePair p)) := by
@@ -576,7 +570,7 @@ private theorem refuterStep_partnersShareChild {S : State n} (hS : S.Valid f) {p
   obtain ⟨hprm', hprp'⟩ := findPair_eq_some hpr'
   obtain rfl : pr' = pr := hS.pair_unique hprm' hpr hprp' (Or.inl hfst)
   subst hfst
-  have hdeg := deg_eq_one_of_paired hndeg hp
+  have hdeg := Paired.deg_eq_one hndeg hp
   obtain ⟨N, l, hl⟩ := exists_getChildren_cons (S := S) (p := pr'.fst) (by omega)
   have hN : N ∈ S.children pr'.fst := mem_getChildren.1 (by rw [hl]; simp)
   have hNH : N = H := by
@@ -599,9 +593,9 @@ private theorem refuterStep_pairInSystem {S : State n} (hS : S.Valid f) {u p : �
   obtain ⟨hprm, hprp⟩ := findPair_eq_some hpr
   have hrp : S.Paired (pr.partner p) := ⟨pr, hprm, pr.contains_partner hprp⟩
   obtain ⟨Hr, l, hl⟩ := exists_getChildren_cons (S := S) (p := pr.partner p)
-    (by rw [deg_eq_one_of_paired hndeg hrp])
+    (by rw [Paired.deg_eq_one hndeg hrp])
   have hHr : Hr ∈ S.children (pr.partner p) := mem_getChildren.1 (by rw [hl]; simp)
-  have hdegp := deg_eq_one_of_paired hndeg hp
+  have hdegp := Paired.deg_eq_one hndeg hp
   have hcp : S.children p = {.inr e} :=
     AffineDisperserCore.State.children_eq_singleton hdegp.le
       ((SemiCircuit.inr_mem_children _).2 ⟨he, hpe⟩)
@@ -673,7 +667,7 @@ private theorem refuterStep_andOnPair {S : State n} (hS : S.Valid f) {G p : ℕ}
   obtain ⟨hprm, hprp⟩ := findPair_eq_some hpr
   have hrp : S.Paired (pr.partner p) := ⟨pr, hprm, pr.contains_partner hprp⟩
   obtain ⟨Hr, l, hl⟩ := exists_getChildren_cons (S := S) (p := pr.partner p)
-    (by rw [deg_eq_one_of_paired hndeg hrp])
+    (by rw [Paired.deg_eq_one hndeg hrp])
   have hHr : Hr ∈ S.children (pr.partner p) := mem_getChildren.1 (by rw [hl]; simp)
   simp only [applyStep, hpr, hl, hw]
   exact Or.inl ⟨Valid.step_andOnPair_of hS hndeg hnsh hG hprm hprp hwpar hpw hGp hGw

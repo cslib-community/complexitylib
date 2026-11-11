@@ -131,7 +131,8 @@ theorem Valid.preparation_moveAffine {S : State n} {f : BooleanFunction n} (hS :
 @[expose] def DegeneratePair (S : State n) : Prop :=
   ∃ p, S.Paired p ∧ (S.deg p = 0 ∨ 2 ≤ S.deg p)
 
-private theorem Paired.deg_eq_one {S : State n} (hndeg : ¬ S.DegeneratePair) {p : ℕ}
+/-- When no paired parameter is degenerate, every paired parameter has degree `1`. -/
+theorem Paired.deg_eq_one {S : State n} (hndeg : ¬ S.DegeneratePair) {p : ℕ}
     (hp : S.Paired p) : S.deg p = 1 := by
   have h0 : S.deg p ≠ 0 := fun h => hndeg ⟨p, hp, Or.inl h⟩
   have h2 : ¬ 2 ≤ S.deg p := fun h => hndeg ⟨p, hp, Or.inr h⟩
