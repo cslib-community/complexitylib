@@ -20,10 +20,10 @@ import Mathlib.Data.Rat.Init
 /-!
 # Approximation-preserving reductions and Set Cover gap problems
 
-General optimization-problem interfaces (`MinOptProblem`, `MaxOptProblem`), approximation
-guarantees (`IsApprox`), approximation-preserving reductions (`ApproxPreservingReducible`), and the
-gap promise problems for unweighted and weighted Set Cover (`GapSetCover`,
-`GapWeightedSetCover`), formulated for this library's multi-tape polynomial-time model.
+General minimization-problem interface (`MinOptProblem`), approximation guarantees (`IsApprox`),
+approximation-preserving reductions (`ApproxPreservingReducible`), and the gap promise problems for
+unweighted and weighted Set Cover (`GapSetCover`, `GapWeightedSetCover`), formulated for this
+library's multi-tape polynomial-time model.
 
 An approximation-preserving reduction between minimization problems maps instances in polynomial
 time and lifts feasible solutions back in polynomial time while controlling the blowup of the
@@ -39,8 +39,8 @@ induced decider runs in native multi-tape polynomial time.
 
 ## Main definitions
 
-* `Cslib.Complexity.MinOptProblem`, `Cslib.Complexity.MaxOptProblem`: minimization and maximization
-  problems with induced gap promise problems (`gapProblem`) and approximation ratios (`IsApprox`).
+* `Cslib.Complexity.MinOptProblem`: minimization problems with induced gap promise problems
+  (`gapProblem`) and approximation ratios (`IsApprox`).
 * `Cslib.Complexity.ApproxPreservingReducible`: polynomial-time approximation-preserving reductions
   between minimization problems, closed under identity and composition.
 * `Cslib.Complexity.minSetCover`, `Cslib.Complexity.minWeightedSetCover`: optimization-problem
@@ -86,45 +86,17 @@ structure MinOptProblem (Instance Solution : Type) where
   /-- Valid instances admit a feasible solution achieving `opt`. -/
   exists_opt : ∀ x, IsValid x → ∃ y, Feasible x y ∧ cost x y = opt x
 
-/-- A combinatorial maximization problem over valid instances `IsValid`, feasible solutions
-`Feasible`, real objective value `val`, and attained optimum `opt`. -/
-structure MaxOptProblem (Instance Solution : Type) where
-  /-- Predicate picking out well-formed/feasible instances. -/
-  IsValid : Instance → Prop
-  /-- Feasible solutions for a given instance. -/
-  Feasible : Instance → Solution → Prop
-  /-- Objective value to maximize. -/
-  val : Instance → Solution → ℝ
-  /-- Optimal value on an instance. -/
-  opt : Instance → ℝ
-  /-- Every feasible solution on a valid instance has value at most `opt`. -/
-  le_opt : ∀ x y, IsValid x → Feasible x y → val x y ≤ opt x
-  /-- Valid instances admit a feasible solution achieving `opt`. -/
-  exists_opt : ∀ x, IsValid x → ∃ y, Feasible x y ∧ val x y = opt x
-
 /-- The gap promise problem induced by a minimization problem `P` with completeness threshold `c`
 and soundness threshold `s`, restricted to valid instances. -/
 @[expose] noncomputable def MinOptProblem.gapProblem {α σ : Type} (P : MinOptProblem α σ)
     (c s : α → ℝ) : PromiseProblem α :=
   (PromiseProblem.gapMin P.opt c s).restrict {x | P.IsValid x}
 
-/-- The gap promise problem induced by a maximization problem `P` with completeness threshold `c`
-and soundness threshold `s`, restricted to valid instances. -/
-@[expose] noncomputable def MaxOptProblem.gapProblem {α σ : Type} (P : MaxOptProblem α σ)
-    (c s : α → ℝ) : PromiseProblem α :=
-  (PromiseProblem.gapMax P.opt c s).restrict {x | P.IsValid x}
-
 /-- An algorithm `A` is a `ρ`-approximation for minimization problem `P` when on every valid
 instance it returns a feasible solution of cost at most `ρ x * P.opt x`. -/
 @[expose] def MinOptProblem.IsApprox {α σ : Type} (P : MinOptProblem α σ) (ρ : α → ℝ)
     (A : α → σ) : Prop :=
   ∀ x, P.IsValid x → P.Feasible x (A x) ∧ P.cost x (A x) ≤ ρ x * P.opt x
-
-/-- An algorithm `A` is a `ρ`-approximation for maximization problem `P` when on every valid
-instance it returns a feasible solution of value at least `ρ x * P.opt x`. -/
-@[expose] def MaxOptProblem.IsApprox {α σ : Type} (P : MaxOptProblem α σ) (ρ : α → ℝ)
-    (A : α → σ) : Prop :=
-  ∀ x, P.IsValid x → P.Feasible x (A x) ∧ ρ x * P.opt x ≤ P.val x (A x)
 
 /-- Polynomial-time **approximation-preserving reduction** from minimization problem `P₁` to `P₂`
 with ratio transformer `g : α₁ → ℝ → ℝ`: polynomial-time maps `toInst` and `liftSol` preserve
@@ -212,26 +184,13 @@ private theorem coverIndices_isCover_of_isCoverList {S : SetSystem} {I : List �
   exact ⟨⟨i, hi⟩, Finset.mem_filter.2 ⟨Finset.mem_univ _, List.mem_toFinset.2 hiI⟩, hui⟩
 
 private theorem card_coverIndices_le_length (S : SetSystem) (I : List ℕ) :
-    (Finset.univ.filter fun i : Fin S.sets.length => (i : ℕ) ∈ I.toFinset).card ≤ I.length := by
-  calc (Finset.univ.filter fun i : Fin S.sets.length => (i : ℕ) ∈ I.toFinset).card
-      ≤ (Finset.image Fin.val (Finset.univ.filter fun i : Fin S.sets.length =>
-          (i : ℕ) ∈ I.toFinset)).card := (Finset.card_image_of_injective _ Fin.val_injective).ge
-    _ ≤ I.toFinset.card := Finset.card_le_card (fun x hx => by
-        obtain ⟨i, hi, rfl⟩ := Finset.mem_image.1 hx
-        exact (Finset.mem_filter.1 hi).2)
-    _ ≤ I.length := List.toFinset_card_le I
+    (Finset.univ.filter fun i : Fin S.sets.length => (i : ℕ) ∈ I.toFinset).card ≤ I.length :=
+  (card_filter_mem_le_card I.toFinset).trans (List.toFinset_card_le I)
 
 private theorem sum_toFinset_le_map_sum (I : List ℕ) (f : ℕ → ℕ) :
     ∑ x ∈ I.toFinset, f x ≤ (I.map f).sum := by
-  induction I with
-  | nil => simp
-  | cons a as ih =>
-    simp only [List.toFinset_cons, List.map_cons, List.sum_cons]
-    by_cases ha : a ∈ as.toFinset
-    · rw [Finset.insert_eq_of_mem ha]
-      exact ih.trans (Nat.le_add_left _ _)
-    · rw [Finset.sum_insert ha]
-      exact Nat.add_le_add_left ih _
+  rw [← List.toFinset_dedup, List.sum_toFinset f (List.nodup_dedup I)]
+  exact ((List.dedup_sublist I).map f).sum_le_sum (fun _ _ => Nat.zero_le _)
 
 private theorem coverWeight_coverIndices_le_sum (W : WeightedSetSystem) (I : List ℕ) :
     W.coverWeight (Finset.univ.filter fun i : Fin W.sets.length => (i : ℕ) ∈ I.toFinset) ≤

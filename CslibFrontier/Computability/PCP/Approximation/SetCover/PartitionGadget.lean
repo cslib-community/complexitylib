@@ -10,10 +10,10 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Combinatorics.FiniteCover
 public import Mathlib.Data.Nat.Log
+import Batteries.Data.Nat.Lemmas
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Option
 import Mathlib.Data.Fintype.Powerset
-import Mathlib.Data.Nat.Bitwise
 
 /-!
 # Partition gadgets for Set Cover hardness
@@ -109,69 +109,6 @@ end PartitionGadget
 
 /-! ### Explicit Boolean-cube gadget -/
 
-/-- Build an integer `< 2 ^ n` whose lowest `n` bits match `f 0, …, f (n - 1)`. -/
-private def encodeMask (f : ℕ → Bool) : ℕ → ℕ
-  | 0 => 0
-  | n + 1 => encodeMask f n + if f n then 2 ^ n else 0
-
-private theorem encodeMask_lt (f : ℕ → Bool) (n : ℕ) : encodeMask f n < 2 ^ n := by
-  induction n with
-  | zero => simp [encodeMask]
-  | succ n ih =>
-    simp only [encodeMask, Nat.pow_succ]
-    split_ifs <;> omega
-
-private theorem testBit_eq_decide_div_mod (x k : ℕ) :
-    x.testBit k = decide (x / 2 ^ k % 2 = 1) := by
-  simp only [Nat.testBit, Nat.shiftRight_eq_div_pow]
-  rcases Nat.mod_two_eq_zero_or_one (x / 2 ^ k) with h | h <;> simp [h]
-
-private theorem testBit_encodeMask (f : ℕ → Bool) (n k : ℕ) :
-    (encodeMask f n).testBit k = (decide (k < n) && f k) := by
-  induction n with
-  | zero => simp [encodeMask]
-  | succ n ih =>
-    have hlt := encodeMask_lt f n
-    simp only [encodeMask]
-    by_cases hk : k < n
-    · have hk1 : k < n + 1 := Nat.lt_succ_of_lt hk
-      rw [show (decide (k < n + 1) && f k) = f k by simp [hk1]]
-      rw [show (decide (k < n) && f k) = f k by simp [hk]] at ih
-      split_ifs with hfn
-      · rw [testBit_eq_decide_div_mod] at ih
-        rw [testBit_eq_decide_div_mod]
-        have hdvd : 2 ∣ 2 ^ (n - k) := by
-          obtain ⟨m, hm⟩ := Nat.exists_eq_add_of_lt hk
-          have hsub : n - k = m + 1 := by omega
-          rw [hsub, Nat.pow_succ]
-          exact dvd_mul_left _ _
-        have hsplit : 2 ^ n = 2 ^ k * 2 ^ (n - k) := by
-          rw [← Nat.pow_add, Nat.add_sub_of_le (le_of_lt hk)]
-        rw [hsplit, Nat.add_mul_div_left _ _ (Nat.two_pow_pos k), Nat.add_mod,
-          Nat.mod_eq_zero_of_dvd hdvd, add_zero, Nat.mod_mod]
-        exact ih
-      · simpa only [add_zero] using ih
-    · have hge : n ≤ k := Nat.le_of_not_lt hk
-      rcases eq_or_lt_of_le hge with hnk | hgt
-      · subst hnk
-        have hzero : encodeMask f n / 2 ^ n = 0 := Nat.div_eq_of_lt hlt
-        rw [show (decide (n < n + 1) && f n) = f n by simp]
-        split_ifs with hfn
-        · rw [testBit_eq_decide_div_mod, Nat.add_div_right _ (Nat.two_pow_pos n), hzero]
-          simp [hfn]
-        · rw [Nat.add_zero, testBit_eq_decide_div_mod, hzero]
-          cases hfn' : f n <;> simp [hfn'] at hfn ⊢
-      · have hk1 : ¬ k < n + 1 := by omega
-        have hdiv0 : (encodeMask f n + if f n then 2 ^ n else 0) / 2 ^ k = 0 := by
-          refine Nat.div_eq_of_lt ?_
-          have hpow : 2 ^ (n + 1) ≤ 2 ^ k := Nat.pow_le_pow_right (by decide) hgt
-          have hsum : encodeMask f n + (if f n then 2 ^ n else 0) < 2 ^ (n + 1) := by
-            rw [Nat.pow_succ]
-            split_ifs <;> omega
-          exact lt_of_lt_of_le hsum hpow
-        rw [testBit_eq_decide_div_mod, hdiv0]
-        simp [hk1]
-
 /-- The explicit Boolean-cube partition gadget on `γ`: universe size `2 ^ Fintype.card γ`, where
 element `x` lies in `S_b` when bit `(Fintype.equivFin γ b)` of `x` is set. -/
 @[expose] noncomputable def boolCubeGadget (γ : Type) [Fintype γ] : PartitionGadget γ where
@@ -184,21 +121,16 @@ theorem boolCubeGadget_separates (γ : Type) [Fintype γ] (t : ℕ) :
   intro P Q hDisj _
   classical
   let e := Fintype.equivFin γ
-  let f : ℕ → Bool := fun k =>
-    if hk : k < Fintype.card γ then decide (e.symm ⟨k, hk⟩ ∈ P) else false
-  refine ⟨encodeMask f (Fintype.card γ), encodeMask_lt f _, fun b hbP => ?_, fun b hbQ => ?_⟩
-  · have hlt : (e b : ℕ) < Fintype.card γ := (e b).isLt
-    change (encodeMask f (Fintype.card γ)).testBit (e b : ℕ) = true
-    rw [testBit_encodeMask, decide_eq_true hlt, Bool.true_and]
-    simp only [f]
-    split_ifs
-    simpa using hbP
-  · have hlt : (e b : ℕ) < Fintype.card γ := (e b).isLt
-    change (encodeMask f (Fintype.card γ)).testBit (e b : ℕ) = false
-    rw [testBit_encodeMask, decide_eq_true hlt, Bool.true_and]
-    simp only [f]
-    split_ifs
-    simpa using Finset.disjoint_right.1 hDisj hbQ
+  let f : Fin (Fintype.card γ) → Bool := fun k => decide (e.symm k ∈ P)
+  refine ⟨Nat.ofBits f, Nat.ofBits_lt_two_pow f, fun b hbP => ?_, fun b hbQ => ?_⟩
+  · change (Nat.ofBits f).testBit (e b : ℕ) = true
+    rw [Nat.testBit_ofBits_lt f _ (e b).isLt]
+    simp only [f, Fin.eta, Equiv.symm_apply_apply, decide_eq_true_eq]
+    exact hbP
+  · change (Nat.ofBits f).testBit (e b : ℕ) = false
+    rw [Nat.testBit_ofBits_lt f _ (e b).isLt]
+    simp only [f, Fin.eta, Equiv.symm_apply_apply, decide_eq_false_iff_not]
+    exact Finset.disjoint_right.1 hDisj hbQ
 
 /-! ### Small logarithmic-alphabet partition gadget via `FiniteCover` -/
 

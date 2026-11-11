@@ -296,11 +296,31 @@ theorem mem_SetCover_iff_optCoverSize {S : SetSystem} {k : ℕ} :
   refine ⟨fun ⟨C, hC, hk⟩ => ⟨⟨C, hC⟩, (SetSystem.optCoverSize_le hC).trans hk⟩,
     fun ⟨hS, hk⟩ => (SetSystem.optCoverSize_le_iff hS).1 hk⟩
 
+theorem card_filter_mem_le_card {n : ℕ} (I : Finset ℕ) :
+    (Finset.univ.filter fun i : Fin n => (i : ℕ) ∈ I).card ≤ I.card :=
+  Finset.card_le_card_of_injOn Fin.val
+    (fun _ hi => (Finset.mem_filter.1 hi).2) (fun _ _ _ _ h => Fin.ext h)
+
 private theorem filter_image_val_eq {n : ℕ} (C : Finset (Fin n)) :
     Finset.univ.filter (fun i : Fin n => (i : ℕ) ∈ C.image Fin.val) = C := by
   ext i
   simp only [Finset.mem_filter, Finset.mem_univ, Finset.mem_image, true_and]
   exact ⟨fun ⟨j, hj, hij⟩ => Fin.ext hij ▸ hj, fun hi => ⟨i, hi, rfl⟩⟩
+
+private theorem exists_fin_witness_iff {n : ℕ} {C_pred : Finset (Fin n) → Prop}
+    {I_pred : Finset ℕ → Prop}
+    (h_fwd : ∀ C, C_pred C → I_pred (C.image Fin.val))
+    (h_bwd : ∀ I, (∀ v ∈ I, v ∈ List.range n) → I_pred I →
+      C_pred (Finset.univ.filter fun i : Fin n => (i : ℕ) ∈ I)) :
+    (∃ C, C_pred C) ↔
+      ∃ I : Finset ℕ, (∀ v ∈ I, v ∈ List.range n) ∧ I_pred I := by
+  constructor
+  · rintro ⟨C, hC⟩
+    refine ⟨C.image Fin.val, fun x hx => ?_, h_fwd C hC⟩
+    obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 hx
+    exact List.mem_range.2 i.isLt
+  · rintro ⟨I, hmem, hI⟩
+    exact ⟨_, h_bwd I hmem hI⟩
 
 /-- Unweighted Set Cover is in `NP` via subset witnesses over `List.range S.sets.length`. -/
 theorem SetCover_mem_NP : SetCover ∈ NP encSetCover := by
@@ -341,22 +361,9 @@ theorem SetCover_mem_NP : SetCover ∈ NP encSetCover := by
   have hmem := mem_NP_of_subsetWitness (encγ := encUnary) (P := P) hvs hcheck hP
   have hEq : SetCover = {p | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ vs p) ∧ P p S} := by
     ext ⟨S, k⟩
-    constructor
-    · rintro ⟨C, hcov, hcard⟩
-      refine ⟨C.image Fin.val, fun x hx => ?_, ?_, ?_⟩
-      · obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 hx
-        exact List.mem_range.2 i.isLt
-      · rwa [filter_image_val_eq]
-      · exact (Finset.card_image_le).trans hcard
-    · rintro ⟨I, _, hcov, hcard⟩
-      refine ⟨_, hcov, ?_⟩
-      calc (Finset.univ.filter fun i : Fin S.sets.length => (i : ℕ) ∈ I).card
-          ≤ (Finset.image Fin.val (Finset.univ.filter fun i : Fin S.sets.length =>
-              (i : ℕ) ∈ I)).card := (Finset.card_image_of_injective _ Fin.val_injective).ge
-        _ ≤ I.card := Finset.card_le_card (fun x hx => by
-            obtain ⟨i, hi, rfl⟩ := Finset.mem_image.1 hx
-            exact (Finset.mem_filter.1 hi).2)
-        _ ≤ k := hcard
+    exact exists_fin_witness_iff
+      (fun C ⟨hcov, hcard⟩ => ⟨by rwa [filter_image_val_eq], Finset.card_image_le.trans hcard⟩)
+      (fun I _ ⟨hcov, hcard⟩ => ⟨hcov, (card_filter_mem_le_card I).trans hcard⟩)
   rwa [hEq]
 
 /-! ### Weighted set systems -/
@@ -711,15 +718,9 @@ theorem WeightedSetCover_mem_NP : WeightedSetCover ∈ NP encWeightedSetCover :=
   have hmem := mem_NP_of_subsetWitness (encγ := encUnary) (P := P) hvs hcheck hP
   have hEq : WeightedSetCover = {p | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ vs p) ∧ P p S} := by
     ext ⟨W, k⟩
-    constructor
-    · rintro ⟨C, hcov, hwt⟩
-      refine ⟨C.image Fin.val, fun x hx => ?_, ?_, ?_⟩
-      · obtain ⟨i, -, rfl⟩ := Finset.mem_image.1 hx
-        exact List.mem_range.2 i.isLt
-      · rwa [filter_image_val_eq]
-      · rwa [filter_image_val_eq]
-    · rintro ⟨I, -, hcov, hwt⟩
-      exact ⟨_, hcov, hwt⟩
+    exact exists_fin_witness_iff
+      (fun C ⟨hcov, hwt⟩ => ⟨by rwa [filter_image_val_eq], by rwa [filter_image_val_eq]⟩)
+      (fun _ _ h => h)
   rwa [hEq]
 
 end Cslib.Complexity

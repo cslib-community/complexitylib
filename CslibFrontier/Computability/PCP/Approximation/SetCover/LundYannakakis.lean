@@ -133,7 +133,7 @@ and `R v : Finset γ` such that every edge `(u, v)` with `|L u| + |R v| ≤ t` h
 labelling satisfies at least `(1 - 2 * ρ / t) * (4 / t ^ 2)` of the edges of `g`. -/
 theorem exists_labelling_of_list_sets {β γ : Type} [DecidableEq γ] [Nonempty β] [Nonempty γ]
     (g : Graph (β → γ)) (L : ℕ → Finset β) (R : ℕ → Finset γ) {t : ℕ} (ht : 0 < t)
-    {ρ : ℝ} (_hρ : 2 * ρ ≤ t) (hm : 0 < g.edges.length)
+    {ρ : ℝ} (hm : 0 < g.edges.length)
     (hmatch : ∀ i : Fin g.edges.length,
       (L (g.edges[i].src)).card + (R (g.edges[i].dst)).card ≤ t →
         ∃ a ∈ L (g.edges[i].src), ∃ b ∈ R (g.edges[i].dst), (g.edges[i].constraint) a = b)
@@ -817,10 +817,27 @@ private theorem weighted_sum_deg_mul_cand_le {α : Type} [DecidableEq α]
     _ = ∑ i ∈ S, W.sets[i].weight :=
           Finset.sum_fiberwise_of_maps_to hmem (fun i => W.sets[i].weight)
 
+private theorem sum_cand_card_le_of_deg_bounds {β γ : Type}
+    (g : Graph (β → γ)) (L : ℕ → Finset β) (R : ℕ → Finset γ) {totL totR tot : ℕ} {ρ : ℝ}
+    (hsumL : ∑ u ∈ (leftVertices g).toFinset, degL g u * (L u).card ≤ totL)
+    (hsumR : ∑ v ∈ (rightVertices g).toFinset, degR g v * (R v).card ≤ totR)
+    (hpart : totL + totR = tot) (htot : (tot : ℝ) ≤ ρ * (2 * g.edges.length)) :
+    ∑ i : Fin g.edges.length,
+      (((L g.edges[i].src).card + (R g.edges[i].dst).card : ℕ) : ℝ) ≤
+        ρ * (2 * g.edges.length) := by
+  have hsum_nat : ∑ i : Fin g.edges.length, ((L g.edges[i].src).card + (R g.edges[i].dst).card) ≤
+      tot := by
+    rw [Finset.sum_add_distrib, sum_over_edges_degL g (fun u => (L u).card),
+      sum_over_edges_degR g (fun v => (R v).card)]
+    omega
+  have hcast : (∑ i : Fin g.edges.length,
+      (((L g.edges[i].src).card + (R g.edges[i].dst).card : ℕ) : ℝ)) ≤ tot := by
+    exact_mod_cast hsum_nat
+  exact hcast.trans htot
+
 theorem weightedSetSystemOf_sound_of_isCover [DecidableEq γ] [Nonempty β] [Nonempty γ]
     {bs : List β} {gs : List γ} {fallback : γ} {G : PartitionGadget γ} {t : ℕ} (ht : 0 < t)
-    (hsep : G.Separates t) {g : Graph (β → γ)} (hm : 0 < g.edges.length)
-    {ρ : ℝ} (hρ : 2 * ρ ≤ t)
+    (hsep : G.Separates t) {g : Graph (β → γ)} (hm : 0 < g.edges.length) {ρ : ℝ}
     {C : Finset (Fin (weightedSetSystemOf bs gs fallback G g).sets.length)}
     (hC : (weightedSetSystemOf bs gs fallback G g).IsCover C)
     (hwt : ((weightedSetSystemOf bs gs fallback G g).coverWeight C : ℝ) ≤
@@ -886,18 +903,10 @@ theorem weightedSetSystemOf_sound_of_isCover [DecidableEq γ] [Nonempty β] [Non
     have := Finset.sum_filter_add_sum_filter_not C (fun i : Fin W.sets.length => (i : ℕ) < nL)
       (fun i => W.sets[i].weight)
     simpa [C_L, C_R, not_lt, WeightedSetSystem.coverWeight] using this
-  have hsum_nat : ∑ i : Fin g.edges.length, ((L g.edges[i].src).card + (R g.edges[i].dst).card) ≤
-      W.coverWeight C := by
-    rw [Finset.sum_add_distrib, sum_over_edges_degL g (fun u => (L u).card),
-      sum_over_edges_degR g (fun v => (R v).card)]
-    omega
   have hsum : ∑ i : Fin g.edges.length,
       (((L g.edges[i].src).card + (R g.edges[i].dst).card : ℕ) : ℝ) ≤
-        ρ * (2 * g.edges.length) := by
-    have hcast : (∑ i : Fin g.edges.length,
-        (((L g.edges[i].src).card + (R g.edges[i].dst).card : ℕ) : ℝ)) ≤ W.coverWeight C := by
-      exact_mod_cast hsum_nat
-    exact hcast.trans hwt
+        ρ * (2 * g.edges.length) :=
+    sum_cand_card_le_of_deg_bounds g L R hsumL_le hsumR_le hpart hwt
   have hmatch : ∀ i : Fin g.edges.length,
       (L g.edges[i].src).card + (R g.edges[i].dst).card ≤ t →
         ∃ a ∈ L g.edges[i].src, ∃ b ∈ R g.edges[i].dst, g.edges[i].constraint a = b := by
@@ -928,19 +937,19 @@ theorem weightedSetSystemOf_sound_of_isCover [DecidableEq γ] [Nonempty β] [Non
       obtain ⟨hdst, hmem⟩ := (mem_weightedRightSet i.isLt hx).1 hjz'
       refine ⟨(rightItem j).2, Finset.mem_image.2 ⟨j, Finset.mem_filter.2 ⟨hjCR, hdst.symm⟩, rfl⟩,
         hmem⟩
-  exact exists_labelling_of_list_sets g L R ht hρ hm hmatch hsum
+  exact exists_labelling_of_list_sets g L R ht hm hmatch hsum
 
 theorem weightedSetSystemOf_sound [DecidableEq γ] [Nonempty β] [Nonempty γ]
     {bs : List β} {gs : List γ} {fallback : γ} (hbs_all : ∀ a, a ∈ bs) (hgs_all : ∀ b, b ∈ gs)
     {G : PartitionGadget γ} {t : ℕ} (ht : 0 < t) (hsep : G.Separates t)
-    {g : Graph (β → γ)} (hm : 0 < g.edges.length) {ρ : ℝ} (hρ : 2 * ρ ≤ t)
+    {g : Graph (β → γ)} (hm : 0 < g.edges.length) {ρ : ℝ}
     (hwt : ((weightedSetSystemOf bs gs fallback G g).optCoverWeight : ℝ) ≤
       ρ * (2 * g.edges.length)) :
     (1 - 2 * ρ / t) * (4 / (t : ℝ) ^ 2) ≤ 1 - (g.toGraph projectionEval).unsatVal := by
   obtain ⟨C, hC, hCwt⟩ := WeightedSetSystem.exists_isCover_optCoverWeight
     (weightedSetSystemOf_coverable hbs_all hgs_all G g)
   rw [← hCwt] at hwt
-  exact weightedSetSystemOf_sound_of_isCover ht hsep hm hρ hC hwt
+  exact weightedSetSystemOf_sound_of_isCover ht hsep hm hC hwt
 
 /-! #### Unweighted reduction -/
 
@@ -1354,8 +1363,7 @@ private theorem sum_deg_mul_cand_le_card {ι α : Type} [DecidableEq α]
 
 theorem setSystemOf_sound_of_isCover [DecidableEq γ] [Nonempty β] [Nonempty γ]
     {bs : List β} {gs : List γ} {fallback : γ} {G : PartitionGadget γ} {t : ℕ} (ht : 0 < t)
-    (hsep : G.Separates t) {g : Graph (β → γ)} (hm : 0 < g.edges.length)
-    {ρ : ℝ} (hρ : 2 * ρ ≤ t)
+    (hsep : G.Separates t) {g : Graph (β → γ)} (hm : 0 < g.edges.length) {ρ : ℝ}
     {C : Finset (Fin (setSystemOf bs gs fallback G g).sets.length)}
     (hC : (setSystemOf bs gs fallback G g).IsCover C)
     (hcard : (C.card : ℝ) ≤ ρ * (2 * g.edges.length)) :
@@ -1441,18 +1449,10 @@ theorem setSystemOf_sound_of_isCover [DecidableEq γ] [Nonempty β] [Nonempty γ
     have h := Finset.sum_filter_add_sum_filter_not C
       (fun i : Fin (setSystemOf bs gs fallback G g).sets.length => (i : ℕ) < nL) (fun _ => 1)
     simpa [C_L, C_R, not_lt] using h
-  have hsum_nat : ∑ i : Fin g.edges.length, ((L g.edges[i].src).card + (R g.edges[i].dst).card) ≤
-      C.card := by
-    rw [Finset.sum_add_distrib, sum_over_edges_degL g (fun u => (L u).card),
-      sum_over_edges_degR g (fun v => (R v).card)]
-    omega
   have hsum : ∑ i : Fin g.edges.length,
       (((L g.edges[i].src).card + (R g.edges[i].dst).card : ℕ) : ℝ) ≤
-        ρ * (2 * g.edges.length) := by
-    have hcast : (∑ i : Fin g.edges.length,
-        (((L g.edges[i].src).card + (R g.edges[i].dst).card : ℕ) : ℝ)) ≤ C.card := by
-      exact_mod_cast hsum_nat
-    exact hcast.trans hcard
+        ρ * (2 * g.edges.length) :=
+    sum_cand_card_le_of_deg_bounds g L R hsumL_le hsumR_le hpart hcard
   have hmatch : ∀ i : Fin g.edges.length,
       (L g.edges[i].src).card + (R g.edges[i].dst).card ≤ t →
         ∃ a ∈ L g.edges[i].src, ∃ b ∈ R g.edges[i].dst, g.edges[i].constraint a = b := by
@@ -1500,18 +1500,18 @@ theorem setSystemOf_sound_of_isCover [DecidableEq γ] [Nonempty β] [Nonempty γ
       obtain ⟨hdst, hr2eq, hmem⟩ := (mem_unweightedRightSet i.isLt hx hr₁).1 hjz'
       refine ⟨(rightItem j).2.2,
         Finset.mem_image.2 ⟨j, Finset.mem_filter.2 ⟨hjCR, hdst.symm, hr2eq.symm⟩, rfl⟩, hmem⟩
-  exact exists_labelling_of_list_sets g L R ht hρ hm hmatch hsum
+  exact exists_labelling_of_list_sets g L R ht hm hmatch hsum
 
 theorem setSystemOf_sound [DecidableEq γ] [Nonempty β] [Nonempty γ]
     {bs : List β} {gs : List γ} {fallback : γ} (hbs_all : ∀ a, a ∈ bs) (hgs_all : ∀ b, b ∈ gs)
     {G : PartitionGadget γ} {t : ℕ} (ht : 0 < t) (hsep : G.Separates t)
-    {g : Graph (β → γ)} (hm : 0 < g.edges.length) {ρ : ℝ} (hρ : 2 * ρ ≤ t)
+    {g : Graph (β → γ)} (hm : 0 < g.edges.length) {ρ : ℝ}
     (hcard : ((setSystemOf bs gs fallback G g).optCoverSize : ℝ) ≤ ρ * (2 * g.edges.length)) :
     (1 - 2 * ρ / t) * (4 / (t : ℝ) ^ 2) ≤ 1 - (g.toGraph projectionEval).unsatVal := by
   obtain ⟨C, hC, hCcard⟩ := SetSystem.exists_isCover_optCoverSize
     (setSystemOf_coverable hbs_all hgs_all G g)
   rw [← hCcard] at hcard
-  exact setSystemOf_sound_of_isCover ht hsep hm hρ hC hcard
+  exact setSystemOf_sound_of_isCover ht hsep hm hC hcard
 
 end Combinatorial
 
@@ -1519,34 +1519,14 @@ end Combinatorial
 
 section PolyTime
 
-private theorem computableInPolyTime_natPair :
-    ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2) (encPair encNat encNat) encNat := by
-  have hlt : ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 < p.2))
-      (encPair encNat encNat) encBool :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_lt'
-      (fst encNat encNat).tidy (snd encNat encNat).tidy)
-  have h1 : ComputableInPolyTime (fun p : ℕ × ℕ => p.2 * p.2 + p.1)
-      (encPair encNat encNat) encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_add'
-      (ComputableTidilyInPolyTime.binary_mul' (snd encNat encNat).tidy (snd encNat encNat).tidy)
-      (fst encNat encNat).tidy)
-  have h2 : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.1 + p.1 + p.2)
-      (encPair encNat encNat) encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_add'
-      (ComputableTidilyInPolyTime.binary_add'
-        (ComputableTidilyInPolyTime.binary_mul' (fst encNat encNat).tidy (fst encNat encNat).tidy)
-        (fst encNat encNat).tidy)
-      (snd encNat encNat).tidy)
-  rw [show (fun p : ℕ × ℕ => Nat.pair p.1 p.2) =
-      fun p : ℕ × ℕ => if decide (p.1 < p.2) then p.2 * p.2 + p.1 else p.1 * p.1 + p.1 + p.2 by
-    funext p
-    simp [Nat.pair]]
-  exact ite' hlt h1 h2
-
 private theorem natPair_comp {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
     (hf : ComputableInPolyTime f enc encNat) (hg : ComputableInPolyTime g enc encNat) :
-    ComputableInPolyTime (fun x => Nat.pair (f x) (g x)) enc encNat :=
-  computableInPolyTime_natPair.comp (hf.prod hg)
+    ComputableInPolyTime (fun x => Nat.pair (f x) (g x)) enc encNat := by
+  have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
+      (encPair encNat encNat) encNat := by
+    unfold Nat.pair
+    fun_prop
+  exact hpair.comp (hf.prod hg)
 
 private theorem unaryToNat {α : Type} {enc : α ↪ List Bool} {f : α → ℕ}
     (hf : ComputableInPolyTime f enc encUnary) : ComputableInPolyTime f enc encNat :=
@@ -1984,7 +1964,7 @@ private theorem edges_length_pos_of_no_gapLabelCover {β γ : Type} [DecidableEq
 theorem polyTimeReducible_GapLabelCover_GapWeightedSetCover
     {β γ : Type} [Finite β] [Nonempty β] [Finite γ] [DecidableEq γ] [Nonempty γ]
     (encC : (β → γ) ↪ List Bool) {G : PartitionGadget γ} {t : ℕ} (ht : 0 < t)
-    (hsep : G.Separates t) {r s : ℝ} (hr : 1 < r) (hrt : 2 * r ≤ t)
+    (hsep : G.Separates t) {r s : ℝ} (hr : 1 < r)
     (hs : s < (1 - 2 * r / t) * (4 / (t : ℝ) ^ 2)) :
     PromiseProblem.PolyTimeReducible (Graph.encoding encC) encWeightedSetCover
       (GapLabelCover β γ 1 s) (GapWeightedSetCover r) := by
@@ -2009,7 +1989,7 @@ theorem polyTimeReducible_GapLabelCover_GapWeightedSetCover
       push Not at hlt
       dsimp only [toWeightedSetCoverOf] at hlt
       push_cast at hlt
-      have hsound := weightedSetSystemOf_sound hbs hgs ht hsep hm hrt (ρ := r) hlt.le
+      have hsound := weightedSetSystemOf_sound hbs hgs ht hsep hm (ρ := r) hlt.le
       linarith
     · have hk0 : (0 : ℝ) < (2 * g.edges.length : ℕ) := by
         exact_mod_cast (by omega : 0 < 2 * g.edges.length)
@@ -2019,7 +1999,7 @@ theorem polyTimeReducible_GapLabelCover_GapWeightedSetCover
 theorem polyTimeReducible_GapLabelCover_GapSetCover
     {β γ : Type} [Finite β] [Nonempty β] [Finite γ] [DecidableEq γ] [Nonempty γ]
     (encC : (β → γ) ↪ List Bool) {G : PartitionGadget γ} {t : ℕ} (ht : 0 < t)
-    (hsep : G.Separates t) {r s : ℝ} (hr : 1 < r) (hrt : 2 * r ≤ t)
+    (hsep : G.Separates t) {r s : ℝ} (hr : 1 < r)
     (hs : s < (1 - 2 * r / t) * (4 / (t : ℝ) ^ 2)) :
     PromiseProblem.PolyTimeReducible (Graph.encoding encC) encSetCover
       (GapLabelCover β γ 1 s) (GapSetCover r) := by
@@ -2043,7 +2023,7 @@ theorem polyTimeReducible_GapLabelCover_GapSetCover
       push Not at hlt
       dsimp only [toSetCoverOf] at hlt
       push_cast at hlt
-      have hsound := setSystemOf_sound hbs hgs ht hsep hm hrt (ρ := r) hlt.le
+      have hsound := setSystemOf_sound hbs hgs ht hsep hm (ρ := r) hlt.le
       linarith
     · have hk0 : (0 : ℝ) < (2 * g.edges.length : ℕ) := by
         exact_mod_cast (by omega : 0 < 2 * g.edges.length)
@@ -2068,7 +2048,6 @@ theorem GapSetCover_npHard {c : ℝ} (hc : 1 < c) :
   obtain ⟨k, _, hLC⟩ := exists_GapLabelCover_npHard hδ0 hδ1
   let β := Fin k → (Bool × (Fin 6 → Bool)) × (Bool × (Fin 6 → Bool))
   let γ := Fin k → Bool × (Fin 6 → Bool)
-  have hrt : 2 * c ≤ t := by linarith
   have hfrac : 2 * c / t ≤ 1 / 2 := by
     rw [div_le_div_iff₀ (by positivity) (by norm_num)]
     linarith
@@ -2083,7 +2062,7 @@ theorem GapSetCover_npHard {c : ℝ} (hc : 1 < c) :
     exact lt_of_lt_of_le h3 h2
   have hred := polyTimeReducible_GapLabelCover_GapSetCover (β := β) (γ := γ)
     (encPi (encPi (encPair encBool (encPi encBool))))
-    ht0 (boolCubeGadget_separates γ t) hc hrt hgap
+    ht0 (boolCubeGadget_separates γ t) hc hgap
   exact hLC.trans hred
 
 /-- **Milestone 1 (weighted Set Cover):** `GapWeightedSetCover c` is `NP`-hard for every
@@ -2255,6 +2234,58 @@ private theorem log_gap_sound_contradiction {c unsat : ℝ} {t len : ℕ}
   have h1t : (0 : ℝ) < 1 / (t : ℝ) ^ 2 := by positivity
   linarith
 
+private theorem exists_log_gap_aux {β γ : Type}
+    [Fintype γ] [DecidableEq γ]
+    {Sys : Type} (groundLen optCost : Sys → ℕ)
+    (Coverable : Sys → Prop) (memYes memNo : Sys → ℕ → (Sys → ℝ) → Prop)
+    (hYes_iff : ∀ X k r, memYes X k r ↔ Coverable X ∧ optCost X ≤ k)
+    (hNo_iff : ∀ X k r, memNo X k r ↔ Coverable X ∧ r X * k ≤ optCost X ∧ (k : ℝ) < r X * k)
+    {c : ℝ} (hc0 : 0 < c) (hc : c < 1 / (4 * Real.log 2))
+    (g : Graph (β → γ)) (hm : 0 < List.length g.edges) (p : ℕ)
+    (sys : PartitionGadget γ → Sys)
+    (hcov : ∀ G, Coverable (sys G))
+    (hlow : ∀ G, G.size ≤ groundLen (sys G))
+    (hup : ∀ G, groundLen (sys G) ≤ List.length g.edges ^ p * G.size)
+    (hcomplete : ∀ G, 1 ≤ 1 - ConstraintGraph.unsatVal (g.toGraph projectionEval) →
+      optCost (sys G) ≤ 2 * List.length g.edges)
+    (hsound : ∀ (G : PartitionGadget γ) {t : ℕ}, 0 < t → G.Separates t →
+      ∀ {ρ : ℝ}, (optCost (sys G) : ℝ) ≤ ρ * (2 * List.length g.edges) →
+        (1 - 2 * ρ / t) * (4 / (t : ℝ) ^ 2) ≤
+          1 - ConstraintGraph.unsatVal (g.toGraph projectionEval)) :
+    ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget γ, G.Separates t ∧
+      G.size = 2 ^ t * (t * Nat.clog 2 (2 * Fintype.card γ + 1) + 1) ∧
+      Coverable (sys G) ∧
+      (1 ≤ 1 - ConstraintGraph.unsatVal (g.toGraph projectionEval) →
+        memYes (sys G) (2 * List.length g.edges) (fun Y => c * Real.log (groundLen Y))) ∧
+      (1 - ConstraintGraph.unsatVal (g.toGraph projectionEval) ≤ 1 / (t : ℝ) ^ 2 →
+        memNo (sys G) (2 * List.length g.edges) (fun Y => c * Real.log (groundLen Y))) := by
+  let A₀ : ℕ := Nat.clog 2 (2 * Fintype.card γ + 1)
+  let B : ℝ := (p : ℝ) * Real.log (List.length g.edges : ℝ) + Real.log ((A₀ + 1 : ℕ) : ℝ)
+  obtain ⟨t, ht4, hlog_low, hlog_high⟩ := exists_large_threshold_of_log_lt hc0 hc (B := B)
+  obtain ⟨G, hsep, hGsize⟩ := exists_small_partitionGadget γ t
+  refine ⟨t, ht4, G, hsep, hGsize, hcov G, fun hyes => ?_, fun hno => ?_⟩
+  · rw [hYes_iff]
+    exact ⟨hcov G, hcomplete G hyes⟩
+  · rw [hNo_iff]
+    have hGt : 2 ^ t ≤ G.size := by
+      rw [hGsize]
+      exact Nat.le_mul_of_pos_right _ (Nat.succ_pos _)
+    have hlow_nat : 2 ^ t ≤ groundLen (sys G) := hGt.trans (hlow G)
+    have hup_nat : groundLen (sys G) ≤ g.edges.length ^ p * (2 ^ t * (t * A₀ + 1)) := by
+      refine (hup G).trans ?_
+      rw [hGsize]
+    obtain ⟨hratio_gt, hratio_le⟩ := log_gap_ratio_bounds hc0 hm hlow_nat hup_nat hlog_low
+      (by simpa [B, add_assoc] using hlog_high)
+    have hk0 : (0 : ℝ) < (2 * g.edges.length : ℕ) := by
+      exact_mod_cast (by omega : 0 < 2 * g.edges.length)
+    refine ⟨hcov G, ?_, lt_mul_of_one_lt_left hk0 hratio_gt⟩
+    by_contra hlt
+    push Not at hlt
+    push_cast at hlt
+    have ht0 : 0 < t := by omega
+    have hsound' := hsound G ht0 hsep (ρ := c * Real.log (groundLen (sys G))) hlt.le
+    exact log_gap_sound_contradiction ht0 hratio_le hsound' hno
+
 /-- **Logarithmic gap for weighted Set Cover (`c * ln n`)** under `O(1 / t ^ 2)` Label Cover
 soundness, for any `0 < c < 1 / (4 * log 2)` using the `O(t * 2 ^ t * log |γ|)` separating
 partition gadget (`exists_small_partitionGadget`). -/
@@ -2273,42 +2304,22 @@ theorem exists_weightedSetCover_log_gap {β γ : Type} [Fintype β] [Nonempty β
         (W, k) ∈ (GapWeightedSetCoverFn fun X => c * Real.log (List.length X.ground)).yes) ∧
       (1 - ConstraintGraph.unsatVal (g.toGraph projectionEval) ≤ 1 / (t : ℝ) ^ 2 →
         (W, k) ∈ (GapWeightedSetCoverFn fun X => c * Real.log (List.length X.ground)).no) := by
-  let A₀ : ℕ := Nat.clog 2 (2 * Fintype.card γ + 1)
-  let B : ℝ := Real.log (List.length g.edges : ℝ) + Real.log ((A₀ + 1 : ℕ) : ℝ)
-  obtain ⟨t, ht4, hlog_low, hlog_high⟩ := exists_large_threshold_of_log_lt hc0 hc (B := B)
-  obtain ⟨G, hsep, hGsize⟩ := exists_small_partitionGadget γ t
-  refine ⟨t, ht4, G, hsep, hGsize, ?_⟩
-  dsimp only
   let bs : List β := Finset.univ.toList
   let gs : List γ := Finset.univ.toList
-  let W := weightedSetSystemOf bs gs (Classical.arbitrary γ) G g
-  let k := 2 * g.edges.length
   have hbs : ∀ a : β, a ∈ bs := fun a => Finset.mem_toList.2 (Finset.mem_univ a)
   have hgs : ∀ b : γ, b ∈ gs := fun b => Finset.mem_toList.2 (Finset.mem_univ b)
-  have hcov : W.Coverable := weightedSetSystemOf_coverable hbs hgs G g
-  refine ⟨hcov, fun hyes => ?_, fun hno => ?_⟩
-  · rw [mem_yes_GapWeightedSetCoverFn]
-    exact ⟨hcov, weightedSetSystemOf_complete hbs hgs G g hyes⟩
-  · rw [mem_no_GapWeightedSetCoverFn]
-    have hGt : 2 ^ t ≤ G.size := by
-      rw [hGsize]
-      exact Nat.le_mul_of_pos_right _ (Nat.succ_pos _)
-    have hlow_nat : 2 ^ t ≤ W.ground.length := by
-      rw [weightedSetSystemOf_ground_length]
-      exact hGt.trans (Nat.le_mul_of_pos_left _ hm)
-    have hup_nat : W.ground.length ≤ g.edges.length ^ 1 * (2 ^ t * (t * A₀ + 1)) := by
-      rw [pow_one, weightedSetSystemOf_ground_length, hGsize]
-    obtain ⟨hratio_gt, hratio_le⟩ := log_gap_ratio_bounds hc0 hm hlow_nat hup_nat hlog_low
-      (by simpa [B, one_mul, add_assoc] using hlog_high)
-    have hk0 : (0 : ℝ) < k := by exact_mod_cast (by omega : 0 < 2 * g.edges.length)
-    refine ⟨hcov, ?_, lt_mul_of_one_lt_left hk0 hratio_gt⟩
-    by_contra hlt
-    push Not at hlt
-    push_cast at hlt
-    have ht0 : 0 < t := by omega
-    have hsound := weightedSetSystemOf_sound (fallback := Classical.arbitrary γ) hbs hgs ht0 hsep hm
-      (by linarith : 2 * (c * Real.log W.ground.length) ≤ t) hlt.le
-    exact log_gap_sound_contradiction ht0 hratio_le hsound hno
+  obtain ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩ := exists_log_gap_aux
+    (fun X => X.ground.length) WeightedSetSystem.optCoverWeight
+    WeightedSetSystem.Coverable (fun X k r => (X, k) ∈ (GapWeightedSetCoverFn r).yes)
+    (fun X k r => (X, k) ∈ (GapWeightedSetCoverFn r).no)
+    (fun _ _ _ => mem_yes_GapWeightedSetCoverFn) (fun _ _ _ => mem_no_GapWeightedSetCoverFn)
+    hc0 hc g hm 1 (fun G => weightedSetSystemOf bs gs (Classical.arbitrary γ) G g)
+    (fun G => weightedSetSystemOf_coverable hbs hgs G g)
+    (fun G => by rw [weightedSetSystemOf_ground_length]; exact Nat.le_mul_of_pos_left _ hm)
+    (fun G => by rw [pow_one, weightedSetSystemOf_ground_length])
+    (fun G h => weightedSetSystemOf_complete hbs hgs G g h)
+    (fun G _ ht hs _ hwt => weightedSetSystemOf_sound hbs hgs ht hs hm hwt)
+  exact ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩
 
 /-- **Logarithmic gap for unweighted Set Cover (`c * ln n`)** under `O(1 / t ^ 2)` Label Cover
 soundness, for any `0 < c < 1 / (4 * log 2)`. Upgrading this logarithmic gap to unconditional
@@ -2329,42 +2340,21 @@ theorem exists_setCover_log_gap {β γ : Type} [Fintype β] [Nonempty β]
         (S, k) ∈ (GapSetCoverFn fun X => c * Real.log (List.length X.ground)).yes) ∧
       (1 - ConstraintGraph.unsatVal (g.toGraph projectionEval) ≤ 1 / (t : ℝ) ^ 2 →
         (S, k) ∈ (GapSetCoverFn fun X => c * Real.log (List.length X.ground)).no) := by
-  let A₀ : ℕ := Nat.clog 2 (2 * Fintype.card γ + 1)
-  let B : ℝ := 3 * Real.log (List.length g.edges : ℝ) + Real.log ((A₀ + 1 : ℕ) : ℝ)
-  obtain ⟨t, ht4, hlog_low, hlog_high⟩ := exists_large_threshold_of_log_lt hc0 hc (B := B)
-  obtain ⟨G, hsep, hGsize⟩ := exists_small_partitionGadget γ t
-  refine ⟨t, ht4, G, hsep, hGsize, ?_⟩
-  dsimp only
   let bs : List β := Finset.univ.toList
   let gs : List γ := Finset.univ.toList
-  let S := setSystemOf bs gs (Classical.arbitrary γ) G g
-  let k := 2 * g.edges.length
   have hbs : ∀ a : β, a ∈ bs := fun a => Finset.mem_toList.2 (Finset.mem_univ a)
   have hgs : ∀ b : γ, b ∈ gs := fun b => Finset.mem_toList.2 (Finset.mem_univ b)
-  have hcov : S.Coverable := setSystemOf_coverable hbs hgs G g
-  refine ⟨hcov, fun hyes => ?_, fun hno => ?_⟩
-  · rw [mem_yes_GapSetCoverFn]
-    exact ⟨hcov, setSystemOf_complete hbs hgs G g hyes⟩
-  · rw [mem_no_GapSetCoverFn]
-    have hGt : 2 ^ t ≤ G.size := by
-      rw [hGsize]
-      exact Nat.le_mul_of_pos_right _ (Nat.succ_pos _)
-    have hlow_nat : 2 ^ t ≤ S.ground.length :=
-      hGt.trans (setSystemOf_ground_length_ge hm)
-    have hup_nat : S.ground.length ≤ g.edges.length ^ 3 * (2 ^ t * (t * A₀ + 1)) := by
-      refine setSystemOf_ground_length_le.trans ?_
-      rw [hGsize]
-    obtain ⟨hratio_gt, hratio_le⟩ := log_gap_ratio_bounds hc0 hm hlow_nat hup_nat hlog_low
-      (by simpa [B, add_assoc] using hlog_high)
-    have hk0 : (0 : ℝ) < k := by exact_mod_cast (by omega : 0 < 2 * g.edges.length)
-    refine ⟨hcov, ?_, lt_mul_of_one_lt_left hk0 hratio_gt⟩
-    by_contra hlt
-    push Not at hlt
-    push_cast at hlt
-    have ht0 : 0 < t := by omega
-    have hsound := setSystemOf_sound (fallback := Classical.arbitrary γ) hbs hgs ht0 hsep hm
-      (by linarith : 2 * (c * Real.log S.ground.length) ≤ t) hlt.le
-    exact log_gap_sound_contradiction ht0 hratio_le hsound hno
+  obtain ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩ := exists_log_gap_aux
+    (fun X => X.ground.length) SetSystem.optCoverSize SetSystem.Coverable
+    (fun X k r => (X, k) ∈ (GapSetCoverFn r).yes) (fun X k r => (X, k) ∈ (GapSetCoverFn r).no)
+    (fun _ _ _ => mem_yes_GapSetCoverFn) (fun _ _ _ => mem_no_GapSetCoverFn)
+    hc0 hc g hm 3 (fun G => setSystemOf bs gs (Classical.arbitrary γ) G g)
+    (fun G => setSystemOf_coverable hbs hgs G g)
+    (fun _ => setSystemOf_ground_length_ge hm)
+    (fun _ => setSystemOf_ground_length_le)
+    (fun G h => setSystemOf_complete hbs hgs G g h)
+    (fun G _ ht hs _ hcard => setSystemOf_sound hbs hgs ht hs hm hcard)
+  exact ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩
 
 end Hardness
 
