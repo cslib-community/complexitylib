@@ -185,7 +185,8 @@ omit [Fintype U] [DecidableEq U] in
 /-- With no trials, the decoder outputs the default. -/
 @[simp] theorem dpDecode_zero (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k))
     (b₀ : Fin k → U) (v : Fin 0 → Trial U k) (x : U) : dpDecode C' dflt P b₀ v x = dflt := by
-  simp [dpDecode]
+  unfold dpDecode
+  simp
 
 omit [Fintype U] [DecidableEq U] in
 /-- The decoder answers from the first trial if it is accepted, and otherwise from the rest. -/
@@ -193,7 +194,8 @@ theorem dpDecode_cons (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finse
     (b₀ : Fin k → U) {m : ℕ} (t : Trial U k) (w : Fin m → Trial U k) (x : U) :
     dpDecode C' dflt P b₀ (Fin.cons t w : Fin (m + 1) → Trial U k) x =
       if accepts C' P b₀ x t then C' (trialTuple P b₀ x t) t.1 else dpDecode C' dflt P b₀ w x := by
-  rw [dpDecode, dpDecode, firstAccepted_cons]
+  unfold dpDecode
+  rw [firstAccepted_cons]
   split_ifs <;> rfl
 
 /-- The pairs `(j, y)` that account for the trials accepted at `x`: `j ∉ P`, `y = b₀` on `P`,

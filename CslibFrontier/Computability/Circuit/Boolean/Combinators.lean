@@ -21,7 +21,7 @@ only.
 
 ## Main definitions
 
-* `blockSubst`: the substitution that feeds one block from the input and fixes the others.
+* `blockInputs`: the substitution that feeds one block from the input and fixes the others.
 
 ## Main results
 
@@ -65,13 +65,15 @@ theorem complexity_ite_le (a f g : BooleanFunction n) :
   omega
 
 /-- **Finite conjunction**: the conjunction of the tests `F i` over `i ∈ s`, each costing at most
-`c` gates, costs at most `#s (c + 1) + 1` gates. -/
+`c` gates, costs at most `#s (c + 1) + 1` gates. The lemma takes the `Decidable` instance of the
+caller's statement, such as `Nat.decidableForallFin` when `ι = Fin k`, so it applies directly. -/
 theorem complexity_decide_forall_mem_le {ι : Type*} (s : Finset ι)
-    (F : ι → BooleanFunction n) {c : ℕ}
+    (F : ι → BooleanFunction n) [dec : ∀ x, Decidable (∀ i ∈ s, F i x = true)] {c : ℕ}
     (hF : ∀ i ∈ s, complexity interpretation (single (F i)) ≤ c) :
     complexity interpretation (single fun x => decide (∀ i ∈ s, F i x = true)) ≤
       #s * (c + 1) + 1 := by
   classical
+  obtain rfl : dec = fun x => Finset.decidableDforallFinset := Subsingleton.elim _ _
   induction s using Finset.induction_on with
   | empty =>
     simpa using (Synthesis.const (s := inputs n) true).complexity_le
@@ -88,19 +90,19 @@ theorem complexity_decide_forall_mem_le {ι : Type*} (s : Finset ι)
 
 /-- The substitution that feeds block `j` of a flat tuple of `k` blocks from the input and fixes
 every other block to the corresponding bits of `z`. -/
-def blockSubst {k : ℕ} (z : Fin k → BitString n) (j : Fin k) : Fin (k * n) → Fin n ⊕ Bool :=
+def blockInputs {k : ℕ} (z : Fin k → BitString n) (j : Fin k) : Fin (k * n) → Fin n ⊕ Bool :=
   fun p => if (finProdFinEquiv.symm p).1 = j then .inl (finProdFinEquiv.symm p).2
     else .inr (z (finProdFinEquiv.symm p).1 (finProdFinEquiv.symm p).2)
 
-/-- Substituting `blockSubst z j` and cutting into blocks puts `x` at block `j` of `z`. -/
-theorem block_substitute_blockSubst {k : ℕ} (z : Fin k → BitString n) (j : Fin k)
+/-- Substituting `blockInputs z j` and cutting into blocks puts `x` at block `j` of `z`. -/
+@[simp] theorem block_substitute_blockInputs {k : ℕ} (z : Fin k → BitString n) (j : Fin k)
     (x : BitString n) :
-    BitString.block (substitute (blockSubst z j) x) = Function.update z j x := by
+    BitString.block (substitute (blockInputs z j) x) = Function.update z j x := by
   funext i a
   by_cases hij : i = j
   · subst hij
-    simp [substitute, blockSubst]
-  · simp [substitute, blockSubst, hij]
+    simp [substitute, blockInputs]
+  · simp [substitute, blockInputs, hij]
 
 /-- **Reading one block**: fixing every block but block `j` to the bits of `z` costs at most two
 more gates than reading all of them. -/
@@ -109,8 +111,8 @@ theorem complexity_single_block_le {k : ℕ} (G : (Fin k → BitString n) → Bo
     complexity interpretation (single fun x : BitString n => G (Function.update z j x)) ≤
       complexity interpretation (single fun y : BitString (k * n) => G (BitString.block y)) +
         2 := by
-  have h := complexity_substitute_le (blockSubst z j) fun y => G (BitString.block y)
-  simp only [block_substitute_blockSubst] at h
+  have h := complexity_substitute_le (blockInputs z j) fun y => G (BitString.block y)
+  simp only [block_substitute_blockInputs] at h
   exact h
 
 end Cslib.Circuits.Boolean

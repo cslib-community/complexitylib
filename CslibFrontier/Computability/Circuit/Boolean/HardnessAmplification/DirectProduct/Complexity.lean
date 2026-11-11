@@ -31,9 +31,9 @@ selects the first accepted trial (four gates per trial). The default answer cost
 step is a combinator of `CslibFrontier.Computability.Circuit.Boolean.Combinators`. The circuit
 recomputes `C'` for each trial and each position read; it shares nothing between trials.
 
-The constants `c₀ = 4` and `c₁ = 3` are ours. The bound is on size only; depth is not certified.
-IJKW state the decoder as an oracle algorithm, and CIKK bound its circuit size by a polynomial; the
-explicit affine form here is a library formulation.
+The constants `c₀ = 4`, `c₁ = 3` and the trailing `1` are ours. The bound is on size only; depth
+is not certified. IJKW state the decoder as an oracle algorithm, and CIKK bound its circuit size by
+a polynomial; the explicit affine form here is a library formulation.
 
 ## Main results
 
@@ -57,7 +57,9 @@ variable {n : ℕ}
 CIKK, Theorem 4.1). Read tuples of `k` blocks of `n` bits from flat inputs with
 `Cslib.BitString.block`. If every output of `C'` costs at most `c` gates on the flat input, the
 decoder with a fixed seed `(P, b₀, v)` of `m` trials costs at most `m (#P + 1) (c + 4) + 3 m + 1`
-gates. The constants `4` and `3` are ours. This bounds size only; depth is not certified. -/
+gates. The circuit recomputes `C'` for every read and shares nothing between trials. The constants
+`4`, `3` and the trailing `1` (the default answer) are ours. This bounds size only; depth is not
+certified. -/
 theorem complexity_dpDecode_le {k : ℕ} (C' : (Fin k → BitString n) → Fin k → Bool) (dflt : Bool)
     (P : Finset (Fin k)) (b₀ : Fin k → BitString n) {m : ℕ} (v : Fin m → Trial (BitString n) k)
     {c : ℕ}
@@ -87,15 +89,13 @@ theorem complexity_dpDecode_le {k : ℕ} (C' : (Fin k → BitString n) → Fin k
         funext x
         simp only [accepts_eq, ht, not_false_eq_true, true_and, decide_eq_true_eq]
       rw [heq]
-      have h := complexity_decide_forall_mem_le (c := c + 3) P
-        (fun i x => decide (C' (trialTuple P b₀ x t) i = C' b₀ i)) fun i _ => by
-          cases hb : C' b₀ i
-          · simpa using (complexity_not_le fun x => C' (trialTuple P b₀ x t) i).trans
-              (Nat.add_le_add_right (hread t i) 1)
-          · simpa using (hread t i).trans (by omega)
-      -- the conjunction lemma elaborates its `decide` with a classical instance
-      convert h.trans (le_of_eq (by ring : #P * (c + 3 + 1) + 1 = #P * (c + 4) + 1)) using 4
-      exact decide_eq_decide.mpr Iff.rfl
+      refine (complexity_decide_forall_mem_le (c := c + 3) P
+        (fun i x => decide (C' (trialTuple P b₀ x t) i = C' b₀ i)) fun i _ => ?_).trans
+        (le_of_eq (by ring))
+      cases hb : C' b₀ i
+      · simpa using (complexity_not_le fun x => C' (trialTuple P b₀ x t) i).trans
+          (Nat.add_le_add_right (hread t i) 1)
+      · simpa using (hread t i).trans (by omega)
   induction m with
   | zero =>
     have heq : dpDecode C' dflt P b₀ v = fun _ => dflt := funext fun x => dpDecode_zero ..
