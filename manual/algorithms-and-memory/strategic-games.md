@@ -456,10 +456,38 @@ Nash's theorem (see the section on mixed Nash equilibria); the parity argument a
 and finiteness for nondegenerate games.
 The algorithm is due to Lemke and Howson [lemkehowson64][lemkehowson64].
 
-Only the undirected parity argument is formalized. The Lemke–Howson path is not run as an
-algorithm, and nothing is said about its length. There is no orientation of the paths and no bit
-sizes of the rational vertices. Games are not encoded as a TFNP search problem, so this does not
-show that two-player Nash is in PPAD.
+For computational complexity (`PPAD` membership of two-player rational Nash equilibria
+[papadimitriou94ppad][papadimitriou94ppad]), four additional layers sit above the undirected
+parity argument:
+
+- [Foundations/Data/Int/Radix.lean](../../CslibFrontier/Foundations/Data/Int/Radix.lean) and
+  [Foundations/LinearAlgebra/Matrix/IntegerKernel.lean](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/IntegerKernel.lean)
+  prove uniqueness of bounded signed radix expansions (`Int.eq_zero_of_sum_mul_pow_eq_zero`) and
+  existence of `kernelVecBound`-bounded nonzero integer kernel vectors for wide integer matrices
+  (`Matrix.exists_int_mulVec_eq_zero_of_card_lt`).
+- [Foundations/LinearAlgebra/Matrix/VertexOrientation.lean](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/VertexOrientation.lean)
+  and [Bimatrix/ShapleyOrientation.lean](../../CslibFrontier/GameTheory/Bimatrix/ShapleyOrientation.lean)
+  formalize Shapley's determinant orientation [shapley74][shapley74] of pivoting edges across
+  two bounded polyhedral systems (`halfEdgeIndex`, `halfEdgeIndex_pivot_left_eq_neg`,
+  `halfEdgeIndex_pivot_right_eq_neg`, `halfEdgeIndex_zero_zero`).
+- [Bimatrix/RationalVertex.lean](../../CslibFrontier/GameTheory/Bimatrix/RationalVertex.lean)
+  perturbs positive integer payoff matrices with `K = 2 ^ bitBound m n H` (`intMatP`, `intMatQ`,
+  `pertRhsPInt`, `pertRhsQInt`), establishes nondegeneracy over every ordered field, and recovers
+  unperturbed exact rational Nash equilibria via signed Cramer determinants (`cramerVec`,
+  `basisSignNum`, `IsFeasibleBasis`, `isNash_extractNum`) with bounded numerators
+  `m! * H^m` and `n! * H^n` with polynomial bit length.
+- [Bimatrix/PPAD.lean](../../CslibFrontier/GameTheory/Bimatrix/PPAD.lean) defines the
+  structures `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix` using
+  `Turing.MultiTapeTM.encRat`) and `StrategyPair` (fields `x`, `y`, encoded via
+  `enc_structure encWitness`),
+  the rational Nash search problem `BimatrixNash` (accepting `[]` on malformed codes),
+  polynomial-time bit-encoded graph maps `pred` and `succ` on `2 * (m + n)` bits, and
+  `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`, `BimatrixNash_mem_PPAD`,
+  `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`.
+
+Executing the Lemke–Howson path as a standalone solver, extending the undirected parity theorem
+directly to degenerate bimatrix games, and proving the Savani–von Stengel exponential lower
+bound or `PPAD`-completeness of two-player Nash are not formalized.
 
 ## Working with the API
 
@@ -531,6 +559,15 @@ is degenerate, and its infinitely many equilibria show that the hypothesis canno
 artificial pair `(0, 0)` has degree `1` in the Lemke–Howson graph of the shifted coordination
 game.
 
+[CslibFrontierTests/GameTheory/BimatrixPPAD.lean](../../CslibFrontierTests/GameTheory/BimatrixPPAD.lean)
+checks `BimatrixCode.WellFormed` and `wellFormedB` on concrete games and malformed inputs
+(`emptyCode`, `nonRectCode`, `mismatchCode`), verifies valid and invalid `IsRationalNash` and
+`BimatrixNash` witnesses on the `2 × 2` coordination game, matching pennies, von Stengel's
+`3 × 2` game (3.3), and a degenerate `2 × 2` zero game, checks `Turing.MultiTapeTM.encRat`, `StrategyPair`, and `encWitness` length
+bounds, and exercises `BimatrixNash.isNash`, `extractNash_sound`, `BimatrixNash_mem_PPAD`,
+`BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`
+under strict `module` axiom checks.
+
 ## Known Limitations
 
 Existence of Wardrop flows and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
@@ -546,11 +583,12 @@ of congestion games are in `PLS`, but their PLS-completeness (Lecture #19, Theor
 PPAD-completeness of mixed equilibria are not formalized. Neither are exponentially long
 better-response paths or the polynomial-time algorithm for symmetric network congestion games. These
 are ROADMAP directions under [#2900](https://github.com/cslib-community/cslib-frontier/issues/2900).
-Two-player Nash in PPAD, degenerate bimatrix games and the Lemke–Howson algorithm are tracked in
-[#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge and Blum–Mansour
+Two-player rational Nash equilibrium is in `PPAD` (`BimatrixNash_mem_PPAD`); degenerate bimatrix
+parity, executing the Lemke–Howson path as a solver, and the Savani–von Stengel exponential
+lower bound remain tracked in [#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge and Blum–Mansour
 swap-regret dynamics are full-information, deterministic, and fixed-horizon (`T`-indexed): they work
 with expected costs, not anytime step sizes independent of `T`, sampled play or bandit feedback,
-running-time bounds, or last-iterate convergence.
+and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
@@ -563,11 +601,13 @@ cited in the Monderer–Shapley and Roughgarden papers; their own texts were not
 [lemkehowson64]: ../sources.md#lemkehowson64
 [mondererShapley96]: ../sources.md#monderershapley96
 [nash51]: ../sources.md#nash51
+[papadimitriou94ppad]: ../sources.md#papadimitriou94ppad
 [rosenthal73]: ../sources.md#rosenthal73
 [roughgarden03]: ../sources.md#roughgarden03
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [roughgarden15]: ../sources.md#roughgarden15
 [roughgardenTardos02]: ../sources.md#roughgardentardos02
 [roughgardenTardos07]: ../sources.md#roughgardentardos07
+[shapley74]: ../sources.md#shapley74
 [tardosWexler07]: ../sources.md#tardoswexler07
 [vonstengel07]: ../sources.md#vonstengel07

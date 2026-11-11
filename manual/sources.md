@@ -1302,6 +1302,11 @@ OpenAI. *Exact Derandomization of Logarithmic Space: L = RL = BPL*. Preprint, 23
 
 OpenAI. *The Exponential Time Hypothesis is False*. Manuscript dated 17 October 2026, revised 25 October 2026. Source revision `7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a`. [PDF](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/paper.pdf); [primary TeX](https://github.com/openai/math/blob/7ef5c0cc5ca4b0e072b7a050fca09ab24bc6fa3a/preprints/The-Exponential-Time-Hypothesis-is-False-October-25-2026/build/main_full_version.tex). The interpolation-route statement, metadata and label were checked in freshly retrieved TeX on 2026-11-02; full proof and PDF pagination were not independently audited.
 
+<a id="papadimitriou94ppad"></a>
+## papadimitriou94ppad
+
+Christos H. Papadimitriou. "On the Complexity of the Parity Argument and Other Inefficient Proofs of Existence." *Journal of Computer and System Sciences* 48(3), 498–532, 1994. https://doi.org/10.1016/S0022-0000(05)80063-7 . Bibliographic metadata checked against `references.bib` (`Papadimitriou1994PPAD`); the journal text was not inspected, so internal theorem numbers are not claimed. Cited for the complexity class `PPAD`, canonical `EndOfLine` completeness, and containment of two-player Nash equilibrium.
+
 <a id="pighizzini2009"></a>
 ## pighizzini2009
 
@@ -1471,6 +1476,11 @@ Adi Shamir. “IP = PSPACE.” *Journal of the ACM* 39(4), 869–877 (1992). DOI
 ## shannon1956
 
 Claude E. Shannon. *The Zero Error Capacity of a Noisy Channel*. IRE Transactions on Information Theory 2(3), 8–19, 1956. https://doi.org/10.1109/TIT.1956.1056798 . Bibliographic data from the DOI record. The zero-error capacity as a limit over strong powers, and the five-word code in the square of the pentagon, are attributed from secondary accounts; the full text was not inspected in this pass.
+
+<a id="shapley74"></a>
+## shapley74
+
+Lloyd S. Shapley. "A Note on the Lemke–Howson Algorithm." *Mathematical Programming Studies* 1 (*Pivoting and Extensions*, ed. M. L. Balinski), 175–189, Springer, 1974 (also RAND Report R-1538-PR, July 1974). https://doi.org/10.1007/BFb0121248 . Bibliographic metadata checked against the Springer DOI record and secondary summaries on 2026-11-11; the full text was not inspected, so internal theorem numbers are not claimed. Credited, via [vonstengel07](#vonstengel07) (§3.12), with the determinant-based orientation (index) of the Lemke–Howson graph.
 
 <a id="shapleyscarf74"></a>
 ## shapleyscarf74

@@ -114,6 +114,7 @@ import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Bimatrix.PPAD
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 import CslibFrontier.GameTheory.Strategic.Correlated
@@ -1269,6 +1270,29 @@ register_result "nash-existence-bimatrix" where
   ]
   scope := "Real payoff matrices over finite nonempty strategy sets, with no nondegeneracy \
     assumption; derived from the n-player theorem. Nonconstructive."
+
+register_result "two-player-nash-ppad" where
+  title := "Two-player rational Nash equilibrium is in PPAD"
+  topic := "game theory"
+  sources := [
+    { paper := Papadimitriou1994PPAD, theorem := unverified, locator := unverified },
+    { paper := Shapley1974, theorem := unverified, locator := unverified },
+    { paper := LemkeHowson1964, theorem := unverified, locator := unverified },
+    { paper := vonStengel2007, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_PPAD,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_TFNP,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_isTotalSearch,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash_searchReducible_EndOfLine,
+    Cslib.GameTheory.BimatrixCode.BimatrixNash.isNash
+  ]
+  scope := "Two-player games presented as pairs of rational payoff lists under encBimatrix. \
+    For well-formed nonempty m × n games, BimatrixNash asks for a canonical rational mixed Nash \
+    equilibrium encoded by encWitness within explicit bit-length bound 120·L³ + 400·L + 100 \
+    (malformed inputs admit only []). Proved in PPAD by lexicographic perturbation, \
+    Shapley-oriented Lemke–Howson pivoting, and Cramer rounding; does not prove PPAD-hardness \
+    or an efficient Lemke–Howson solver."
 
 register_result "facility-location-random-dictatorship" where
   title := "Random dictatorship is strategyproof and (2 - 2 / n)-approximate for social cost"
