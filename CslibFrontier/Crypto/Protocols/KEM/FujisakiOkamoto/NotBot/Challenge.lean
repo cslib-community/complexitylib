@@ -40,14 +40,14 @@ compared with the run of the same simulator from empty caches, which is the run 
    for a uniform `m*` has the probability bounded by
    `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`.
 
-The resulting bound `2 (Adv_CPA + (qG + qH)/|M|) + 2 (qG + qH) 2^(-γ)` is stated with the weaker
-constant `3` on the first two terms, as fixed by the hybrid plan of the IND-CCA proof.
+Each simulator game is within `Pr[G(m*) cached] + (qG + qH) 2^(-γ)` of the empty-cache run, so the
+two bits are within twice that, giving `2 (Adv_CPA + (qG + qH)/|M|) + 2 (qG + qH) 2^(-γ)`.
 
 ## Main results
 
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.advantage_simGame_le`: the advantage between
   `simGame A false` and `simGame A true` is at most
-  `3 Adv_CPA(romCpaReduction A m₀ m₁) + 3 (qG + qH)/|M| + 2 (qG + qH) 2^(-γ)` for some distinct
+  `2 Adv_CPA(romCpaReduction A m₀ m₁) + 2 (qG + qH)/|M| + 2 (qG + qH) 2^(-γ)` for some distinct
   messages `m₀ ≠ m₁`, when the message sampler is uniform and the PKE is `γ`-spread.
 
 ## References
@@ -1003,7 +1003,7 @@ private theorem closeTo_simRun_preset (S : Scheme PK SK M R CT K) (A : ROAdversa
 message space with at least two elements and the PKE is `γ`-spread, then for every adversary
 making at most `qG` queries to `G` and `qH` queries to `H`, some distinct messages `m₀ ≠ m₁` bound
 the advantage between the keyless simulator games `simGame A false` and `simGame A true` by
-`3 Adv_CPA(romCpaReduction A m₀ m₁) + 3 (qG + qH)/|M| + 2 (qG + qH) 2^(-γ)`. -/
+`2 Adv_CPA(romCpaReduction A m₀ m₁) + 2 (qG + qH)/|M| + 2 (qG + qH) 2^(-γ)`. -/
 theorem advantage_simGame_le [Fintype M] [Nonempty M]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) {qG qH : ℕ}
     (hq : ROQueryBounds A qG qH) (hM : 2 ≤ Fintype.card M)
@@ -1012,8 +1012,8 @@ theorem advantage_simGame_le [Fintype M] [Nonempty M]
     ∃ m₀ m₁ : M, m₀ ≠ m₁ ∧
       (Game.advantage (ProbComp.eval (S.simGame A false))
           (ProbComp.eval (S.simGame A true)) : ℝ) ≤
-        3 * (S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁) : ℝ) +
-          3 * (((qG : ℝ) + qH) / Fintype.card M) +
+        2 * (S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁) : ℝ) +
+          2 * (((qG : ℝ) + qH) / Fintype.card M) +
             2 * (((qG : ℝ) + qH) * (2 : ℝ) ^ (-γ)) := by
   classical
   obtain ⟨m₀, m₁, hne, havg⟩ := S.avg_simHitProb_le_indCpaAdvantage_romCpaReduction A hM hq
@@ -1078,9 +1078,6 @@ theorem advantage_simGame_le [Fintype M] [Nonempty M]
     ENNReal.toReal_add hHtop hεtop, hH,
     S.avg_simRun_hit A hmsg, hε, ENNReal.toReal_mul, ENNReal.toReal_natCast,
     ENNReal.toReal_ofReal (Real.rpow_nonneg (by norm_num) _)] at hreal
-  have hQ : (0 : ℝ) ≤ ((qG : ℝ) + qH) / Fintype.card M := by positivity
-  have hAdv : (0 : ℝ) ≤ (S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁) : ℝ) :=
-    NNReal.coe_nonneg _
   rw [Nat.cast_add] at hreal
   linarith
 
