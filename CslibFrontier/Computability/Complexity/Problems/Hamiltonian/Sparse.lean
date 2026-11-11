@@ -103,8 +103,8 @@ def sparseDiamondGraph (φ : CNF ℕ) : Graph :=
 
 /-- The reduction from `SAT` to `DirHamPath` of linear size: the sparse diamond graph of `φ`,
 from the top of the first diamond to the bottom of the last. -/
-def toSparseDirHamPath (φ : CNF ℕ) : Graph × ℕ × ℕ :=
-  (sparseDiamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.distinctVars.length)
+def toSparseDirHamPath (φ : CNF ℕ) : PathInstance :=
+  ⟨sparseDiamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.distinctVars.length⟩
 
 /-- The reduction from `SAT` to `DirHamCycle` of linear size: the sparse diamond graph of `φ` with
 an arc from the bottom of the last diamond back to the top of the first. -/

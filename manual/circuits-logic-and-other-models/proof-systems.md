@@ -643,6 +643,61 @@ scripts/build.sh \
   CslibFrontierTests.ProofComplexity.AlgebraicCNF
 ```
 
+### Resolution to polynomial calculus with resolution
+
+Import `CslibFrontier.Logics.Propositional.Algebraic.CNF.PCR` for the
+[complete PCR encoding](../../CslibFrontier/Logics/Propositional/Algebraic/CNF/PCR.lean).
+`Clause.toPCRPoly` multiplies one complementary literal variable for each **distinct** literal
+of the clause. Thus both `x ∨ x` and `x` give `x̄`, whereas the existing `Clause.toPoly` retains
+list multiplicity. The squarefree encoding has at most one nonzero monomial and degree at most
+`Clause.width`, including for resolvents whose concatenated lists repeat literals.
+
+For a finite variable type, `CNF.toPCRPolys` appends `PCR.axioms` to the clause polynomials:
+`X l ^ 2 - X l` for both literal polarities, and
+`PCR.complementAxiom v = X (v, true) + X (v, false) - 1` for each original variable. The
+assignment convention is still `1` for a true literal. Over a nontrivial commutative ring,
+`CNF.eval_eq_true_iff_forall_eval_toPCRPolys_eq_zero` characterizes satisfaction at those
+literal truth values, and `CNF.not_satisfiable_of_pcr` gives refutation soundness. Over a field,
+`CNF.exists_commonZero_toPCRPolys_iff` also characterizes arbitrary common zeros: the Boolean
+and complementarity equations force them to come from Boolean assignments.
+
+The [resolution translation](../../CslibFrontier/Logics/Propositional/Algebraic/PolynomialCalculus/Resolution.lean)
+uses the existing `PC.IsProof` constructors over this input list. Import
+`CslibFrontier.Logics.Propositional.Algebraic.PolynomialCalculus.Resolution` and apply
+`CNF.IsProof.exists_pcr` to a resolution proof with `s` lines, each of width at most `w`.
+Over any commutative ring it gives one PCR proof with `PC.size ≤ (5 * w + 13) * s` and
+`PC.degree ≤ w + 1`, containing the polynomial of every resolution line. Thus the empty
+clause supplies the constant polynomial `1`; `CNF.IsProof.exists_pcr_refutation` retains both
+bounds for a refutation. The squarefree representation and the treatment of tautological parents
+cover the library's list-based resolution rule without a normalization assumption.
+
+`CNF.RefutableInWidth.pcr_refutableInDegree` gives degree at most `w + 1` from a width-`w`
+refutation. `CNF.RefutableInSize.pcr_refutableInSize` gives size at most
+`(10 * N + 13) * s`, where `N = φ.vars.toFinset.card`, using the bound `w ≤ 2 * N`.
+This is a joint resource bound: it does not remove dependence on width or on the number of
+variables. A uniform polynomial bound in the resolution line count alone, as discussed in
+[#3542](https://github.com/cslib-community/cslib-frontier/issues/3542), requires a further argument.
+PCR size sums the supports of formal polynomial lines, including repetitions; it is neither
+the number of lines nor a count of monomials after reduction modulo the Boolean ideal.
+
+PCR's twin-variable representation follows [Alekhnovich et al., §4.1](https://doi.org/10.1137/S0097539700366735)
+(the [author preprint](https://www.math.ias.edu/~avi/PUBLICATIONS/MYPAPERS/ABRA01/ABRA01.pdf),
+pp. 17–18). The explicit size and degree constants here come from this construction; the paper's
+Lemma 4.1 concerns space. Encoded translation time, degree-controlled substitution into the
+original-variable PC encoding, and configuration-space bounds remain separate objectives.
+
+The [checked examples](../../CslibFrontierTests/ProofComplexity/ResolutionPCR.lean) show that
+arbitrarily many repetitions of a literal leave squarefree degree at `1`, while the old
+list-product degree grows with the repetition count. A three-line contradictory-unit
+refutation translates to at most `54` monomials and degree `2` over every commutative ring,
+instantiated over `ℚ` and `ZMod 2`. The examples also check both orientations of a tautological
+parent, a repeated nonpivot literal in a resolvent, satisfiable formulas with no PCR
+refutation, and the empty variable type. From the repository root, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.ProofComplexity.ResolutionPCR
+```
+
 ### Refutations over the Boolean cube
 
 [The Boolean-cube layer](../../CslibFrontier/Logics/Propositional/Algebraic/Boolean.lean) reuses
@@ -759,7 +814,8 @@ every commutative ring), `n = 0 < m`, `m = 0`, and roundtrips for `boolSolutionE
 Not yet formalized ([Impagliazzo, Pudlák and Sgall][impagliazzopudlaksgall99]; [#3569](https://github.com/cslib-community/cslib-frontier/issues/3569)):
 the matching subset-sum upper bound of Theorem 4.2, the general and `algFPHP` size–degree
 tradeoffs, standard-CNF `FPHP`–`algFPHP` PCR encoding equivalence, pigeonhole degree and size
-lower bounds, and the simulation of bounded-width resolution by polynomial calculus.
+lower bounds, and the degree-controlled resolution translation into the original-variable PC
+encoding. The twin-variable PCR simulation is described [above](#resolution-to-polynomial-calculus-with-resolution).
 
 ### Tseitin formulas
 

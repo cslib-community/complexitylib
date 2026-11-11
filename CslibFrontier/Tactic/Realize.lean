@@ -30,7 +30,8 @@ the client syntax, unfolding definitions, with one rule per form:
 * a method with a local zero-work `Realizes` certificate: `Realizes.reindex`, selecting its
   arguments from live words before unfolding its implementation. Computed arguments are first
   staged by certified glue using the method's input encoding.
-* `if` on `a = b`, `a < b` or `a > b`: `Realizes.branch₀`.
+* `if` on natural `=`, `≠`, `<`, `≤`, `>` or `≥`, and their negations:
+  `Realizes.branch₀`, swapping alternatives for negated tests.
 * `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
@@ -643,8 +644,30 @@ private def cond? (c : Expr) : MetaM (Option (Name × Expr × Expr)) := do
 /-- The comparison of a branch condition: equality or `<`, with its operands. -/
 private def parseCond (c : Expr) : MetaM (Name × Expr × Expr) := do
   if let some r ← cond? c then return r
-  throwError "realize: a branch condition must be `a = b`, `a < b` or `a > b` on words, \
+  throwError "realize: a branch condition must compare words using `=`, `≠`, `<`, `≤`, `>` \
+    or `≥`, or negate one of these comparisons, \
     got{indentExpr c}"
+
+/-- Lower a non-strict or negated word test to a native comparison. Leave word operands and
+alternatives untouched so their own rules retain live values, fit and selected-path safety. -/
+private def normalizeBranch? (body : Expr) : MetaM (Option Simp.Result) := do
+  let mut thms : SimpTheorems := {}
+  for name in [``ne_eq, ``ite_not] do
+    thms ← thms.addConst name
+  thms ← thms.addConst ``not_lt (inv := true)
+  let ctx ← Simp.mkContext
+    (config := { dsimp := false, zeta := false, proj := false, iota := false })
+    (simpTheorems := #[thms]) (congrTheorems := ← getSimpCongrTheorems)
+  let defaults := Simp.mkDefaultMethodsCore #[]
+  let methods : Simp.Methods := { defaults with
+    pre := fun e => do
+      if e == body.getArg! 3 || e == body.getArg! 4 then return .done { expr := e }
+      if (← whnfR (← inferType e)).isConstOf ``Nat then return .done { expr := e }
+      defaults.pre e }
+  let (normalized, _) ← Simp.main body ctx (methods := methods)
+  if normalized.expr.isAppOfArity ``ite 5 &&
+      (← cond? (normalized.expr.getArg! 1)).isSome then return some normalized
+  return none
 
 /-- The comparison of a loop guard, after unfolding definitions. `a = b`, `a < b` and `a > b`
 are tested as written. `a ≠ 0` is tested as `0 < a`; the flag records this rewriting. -/
@@ -987,6 +1010,11 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
     return { proof, output, safe := ← trueSafe env.ty }
   -- branching
   if body.isAppOfArity ``ite 5 then
+    if (← cond? (body.getArg! 1)).isNone then
+      if let some normalized ← normalizeBranch? body then
+        let out ← realizeBody ctx env d atoms normalized.expr output?
+        let eq ← mkLambdaFVars #[d] (← mkEqSymm (← normalized.getProof))
+        return { out with proof := ← mkAppM ``Realizes.congr #[out.proof, eq] }
     let c := body.getArg! 1
     let inst := body.getArg! 2
     let t := body.getArg! 3

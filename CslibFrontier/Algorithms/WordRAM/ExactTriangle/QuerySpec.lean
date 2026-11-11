@@ -36,14 +36,6 @@ namespace Cslib.Algorithms.WordRAM.ExactTriangle.QuerySpec
 
 open Cslib.Matrix Cslib.Algorithms.ExactTriangle
 
-private theorem pairIndex_eq (n : ℕ) (q : Fin n × Fin n) :
-    pairIndex q = (finProdFinEquiv q).val := by
-  simp [pairIndex, finProdFinEquiv, Nat.add_comm, Nat.mul_comm]
-
-private theorem pairIndex_lt {n : ℕ} (q : Fin n × Fin n) : pairIndex q < n * n := by
-  rw [pairIndex_eq]
-  exact (finProdFinEquiv q).isLt
-
 private theorem card_of_mem_pairIndex {n N : ℕ} (hN : N ≤ n * n)
     (S : Finset (Fin n × Fin n)) (P : ℕ → Prop) [DecidablePred P]
     (hS : ∀ q, q ∈ S ↔ pairIndex q < N ∧ P (pairIndex q)) :
@@ -59,7 +51,7 @@ private theorem card_of_mem_pairIndex {n N : ℕ} (hN : N ≤ n * n)
     have hklt : k < n * n := (Finset.mem_range.mp hkN).trans_le hN
     let q := finProdFinEquiv.symm (⟨k, hklt⟩ : Fin (n * n))
     have hq : pairIndex q = k := by
-      rw [pairIndex_eq]
+      rw [pairIndex_eq_val_finProdFinEquiv]
       exact congrArg Fin.val (finProdFinEquiv.apply_symm_apply ⟨k, hklt⟩)
     have hqS : q ∈ S := (hS q).mpr (by
       rw [hq]
@@ -135,7 +127,7 @@ theorem query_readback (rho : Fin p) (mem : ℕ → ℕ) (base : ℕ)
   have hcount : Nat.count P t = k := Nat.count_nth hfinite
   let q := finProdFinEquiv.symm (⟨t, ht⟩ : Fin (n * n))
   have hqindex : pairIndex q = t := by
-    rw [pairIndex_eq]
+    rw [pairIndex_eq_val_finProdFinEquiv]
     exact congrArg Fin.val (finProdFinEquiv.apply_symm_apply ⟨t, ht⟩)
   have hq : q ∈ residueClass wAB p rho := (mem_class wAB hp R hR rho q).mpr (by
     rw [hqindex]
