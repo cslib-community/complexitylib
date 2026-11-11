@@ -186,7 +186,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn("No candidate parallel definitions among the 4 examined declarations.",
                       p.markdown([], 4, 10))
         text = p.markdown(self.found, 7, 1)
-        self.assertIn("2 candidate(s) among the 7 examined declarations. The first 1 are listed.",
+        self.assertIn("2 candidate(s) among the 7 examined declarations. The first 1 are listed;",
                       text)
         self.assertIn("- CslibFrontier/MCSP/Magnification.lean:86: `Cslib.MCSP.MCSPAt` is", text)
         self.assertNotIn("New.big", text)
@@ -219,6 +219,17 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(line.startswith("::notice file=CslibFrontier/New.lean,line=10,"
                                         "title=Possible duplicate statement::`New.dup`"))
 
+    def test_statement_source_links_and_partial_coverage(self) -> None:
+        found = p.select_groups(StatementSelectionTests.ROWS, same_module=False)
+        source = "https://github.com/example/library/blob/merge-sha"
+        text = p.markdown(found, 4, 10, theorems=True, source_url=source,
+                          missing=["CslibFrontier.Unbuilt"])
+        self.assertIn(f"({source}/CslibFrontier/New.lean#L10)", text)
+        self.assertIn(f"({source}/CslibFrontier/Old.lean#L20)", text)
+        self.assertIn("`Nat.add_comm` (in `Init.Core`)", text)
+        self.assertIn("**Incomplete comparison:**", text)
+        self.assertIn("Statement-key equality cannot find specializations", text)
+
     def test_annotations_are_escaped(self) -> None:
         finding = p.Finding("a", "CslibFrontier/x,y:z.lean", 3, "b%", "CslibFrontier/O.lean", 4, 300,
                             0.5)
@@ -227,6 +238,34 @@ class ReportTests(unittest.TestCase):
                                         "title=Possible parallel definition::"))
         self.assertIn("`b%25`", line)
         self.assertEqual(len(p.annotations(self.found, 1)), 1)
+
+    def test_both_declarations_link_to_the_checked_revision(self) -> None:
+        source = "https://github.com/example/library/blob/tested-sha"
+        text = p.markdown(self.found, 7, 10, source_url=source)
+        self.assertIn(f"[CslibFrontier/MCSP/Magnification.lean:86]"
+                      f"({source}/CslibFrontier/MCSP/Magnification.lean#L86)", text)
+        self.assertIn(f"[CslibFrontier/MCSP/Basic.lean:40]"
+                      f"({source}/CslibFrontier/MCSP/Basic.lean#L40)", text)
+        self.assertEqual(p.location("CslibFrontier/A B.lean", 3, source),
+                         f"[CslibFrontier/A B.lean:3]({source}/CslibFrontier/A%20B.lean#L3)")
+
+    def test_empty_report_discloses_missing_comparisons_and_scope(self) -> None:
+        text = p.markdown([], 4, 10, missing=["CslibFrontier.Unbuilt"])
+        self.assertIn("No candidate parallel definitions", text)
+        self.assertIn("**Incomplete comparison:** 1 library module(s)", text)
+        self.assertIn("`CslibFrontier.Unbuilt`", text)
+        self.assertIn("Inspect the separate Duplicate-statement notice", text)
+        self.assertIn("Repeated-proof-block notice", text)
+        self.assertIn("An empty report does not replace source search", text)
+
+    def test_github_source_url_requires_a_repository_and_revision(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(p.github_source_url())
+            os.environ["GITHUB_REPOSITORY"] = "example/library"
+            self.assertIsNone(p.github_source_url())
+            os.environ["GITHUB_SHA"] = "merge-sha"
+            self.assertEqual(p.github_source_url(),
+                             "https://github.com/example/library/blob/merge-sha")
 
 
 class DriverTests(unittest.TestCase):
@@ -266,15 +305,18 @@ class DriverTests(unittest.TestCase):
         (self.build / "CslibFrontier").mkdir(parents=True)
         (self.build / "CslibFrontier/New.olean").write_text("")
         with mock.patch.object(p, "run_reader", side_effect=RuntimeError("boom")):
-            code, out = self.run_main()
+            code, out = self.run_main("--github")
         self.assertEqual(code, 0)
         self.assertIn("skipped: the tool failed (boom)", out)
+        self.assertIn("This is not a completed duplication check", self.summary.read_text())
 
     def test_findings_go_to_the_summary_and_annotations(self) -> None:
         (self.build / "CslibFrontier").mkdir(parents=True)
         (self.build / "CslibFrontier/New.olean").write_text("")
         rows = [ALIAS, {"examined": 3, "modules": 2, "missing": []}]
-        with mock.patch.object(p, "run_reader", return_value=rows) as reader:
+        with mock.patch.object(p, "run_reader", return_value=rows) as reader, \
+                mock.patch.dict(os.environ, {"GITHUB_REPOSITORY": "example/library",
+                                             "GITHUB_SHA": "merge-sha"}):
             code, out = self.run_main("--github")
         self.assertEqual(code, 0)
         self.assertEqual(reader.call_args.args[1].splitlines(), ["lines CslibFrontier.New *"])
@@ -282,6 +324,9 @@ class DriverTests(unittest.TestCase):
         self.assertIn("1 candidate(s) among the 3 examined declarations.", out)
         self.assertIn("::notice file=CslibFrontier/MCSP/Magnification.lean,line=86,", out)
         self.assertIn("`Cslib.MCSP.MCSPAt` is `Cslib.GapMCSP.yesSet`", self.summary.read_text())
+        self.assertIn("https://github.com/example/library/blob/merge-sha/"
+                      "CslibFrontier/MCSP/Basic.lean#L40", self.summary.read_text())
+        self.assertIn("Record the disposition in the PR", self.summary.read_text())
 
     def test_theorems_mode(self) -> None:
         (self.build / "CslibFrontier").mkdir(parents=True)
@@ -326,7 +371,28 @@ class DriverTests(unittest.TestCase):
             code, out = self.run_main("--github")
         self.assertEqual(code, 0)
         self.assertIn("no `CslibFrontier/` definitions added or modified", out)
-        self.assertFalse(self.summary.exists())
+        self.assertIn("no `CslibFrontier/` definitions added or modified", self.summary.read_text())
+
+    def test_missing_statistics_are_a_skip(self) -> None:
+        (self.build / "CslibFrontier").mkdir(parents=True)
+        (self.build / "CslibFrontier/New.olean").write_text("")
+        with mock.patch.object(p, "run_reader", return_value=[]):
+            code, out = self.run_main("--github")
+        self.assertEqual(code, 0)
+        self.assertIn("skipped: the tool failed", out)
+        self.assertIn("no coverage statistics", self.summary.read_text())
+        self.assertNotIn("No candidate parallel definitions", self.summary.read_text())
+
+    def test_partial_coverage_reaches_the_summary(self) -> None:
+        (self.build / "CslibFrontier").mkdir(parents=True)
+        (self.build / "CslibFrontier/New.olean").write_text("")
+        rows = [{"examined": 3, "modules": 2, "missing": ["CslibFrontier.Unbuilt"]}]
+        with mock.patch.object(p, "run_reader", return_value=rows):
+            code, out = self.run_main("--github")
+        self.assertEqual(code, 0)
+        self.assertIn("**Incomplete comparison:**", out)
+        self.assertIn("**Incomplete comparison:**", self.summary.read_text())
+        self.assertIn("`CslibFrontier.Unbuilt`", self.summary.read_text())
 
 
 # A compiled module for `CompiledFixtureTests`. Declarations from `-- new` on are examined.
