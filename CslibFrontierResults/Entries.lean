@@ -45,6 +45,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Det
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
@@ -2146,6 +2147,31 @@ register_result "tfnp-sopl-eopl-collapse" where
     transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
     EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
     are not formalized."
+
+register_result "tfnp-eopl-sopl-promised-normalization" where
+  title := "Promised-source normalization for EOPL and SOPL (Fearnley et al. Definition 9)"
+  topic := "structural complexity"
+  sources := [
+    { paper := FearnleyGordonMehtaSavani2020, theorem := "Definition 9",
+      locator := "Section 2 (arXiv:1811.03841v1)" }
+  ]
+  theorems := [
+    Cslib.Complexity.promisedPotentialLine_normalized,
+    Cslib.Complexity.exists_normalizedPotentialBound,
+    Cslib.Complexity.endOfPotentialLinePromisedRel_normalized_iff,
+    Cslib.Complexity.sinkOfPotentialLinePromisedRel_normalized_iff,
+    Cslib.Complexity.endOfPotentialLineRel_searchReducible_promised_normalized,
+    Cslib.Complexity.promised_normalized_searchReducible_endOfPotentialLineRel,
+    Cslib.Complexity.endOfPotentialLineViolationRel_searchReducible_promised_normalized,
+    Cslib.Complexity.mem_EOPL_iff_promised_bounded,
+    Cslib.Complexity.mem_SOPL_iff_promised_bounded
+  ]
+  scope := "Uniform polynomial-time (n + 1)-bit normalization for EOPL and SOPL families over \
+    any injective encoding enc : α ↪ List Bool, enforcing P(0^(n+1)) = 0^(n+1) ≠ S(0^(n+1)) and \
+    V(0^(n+1)) = 0 with V'(1 u) = V u + 1, unary potential bit-bound 2^(m + 1), pure (R1)/(R2) \
+    solution relations without a failed-promise fallback, and failed-promise back-maps via \
+    potentialLineBack. Presented on uniform families rather than canonical circuit codes; UEOPL \
+    and CLS are not formalized."
 
 register_result "goemans-williamson-max2sat" where
   title := "Goemans–Williamson α-approximation rounding for MAX-2SAT (α > 0.87856)"
