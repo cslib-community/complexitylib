@@ -232,6 +232,12 @@ theorem qbar_three_le (d : ℕ) : qbar 3 d ≤ 2 - 2 * Real.log 2 :=
 theorem exists_le_qbar_three {ε : ℝ} (hε : 0 < ε) : ∃ h, 2 - 2 * Real.log 2 - ε ≤ qbar 3 h :=
   ((tendsto_order.1 tendsto_qbar_three).1 _ (by linarith)).exists.imp fun _ => le_of_lt
 
+/-- Monotonicity of `x ↦ 2 ^ (-(x * n))` in the base exponent `x`. -/
+theorem two_rpow_neg_mul_le {x y : ℝ} (n : ℕ) (h : x ≤ y) :
+    (2 : ℝ) ^ (-(y * n)) ≤ (2 : ℝ) ^ (-(x * n)) :=
+  Real.rpow_le_rpow_of_exponent_le one_le_two
+    (neg_le_neg (mul_le_mul_of_nonneg_right h (Nat.cast_nonneg n)))
+
 /-- **PPSZ for unique 3-SAT** [Paturi, Pudlák, Saks, Zane, Theorem 1(ii)][PaturiPudlakSaksZane2005],
 [Scheder, Theorem 1.3][Scheder2021], for PPSZ with w-implication. For every `ε > 0` there is a
 bound `w` such that, for every `n`, one round of PPSZ with w-implication outputs the unique
@@ -252,9 +258,7 @@ theorem round_success_unique_three_limit :
       (2 : ℝ) ^ (-((2 * Real.log 2 - 1 + ε) * n)) ≤ ((round φ w) fun x => some (σ x)).toReal := by
   intro ε hε
   obtain ⟨h, hh⟩ := exists_le_qbar_three hε
-  refine ⟨∑ i ∈ range h, (3 - 1) ^ i, fun n φ σ hσ huniq hlen => ?_⟩
-  refine le_trans ?_ (round_success_of_unique hσ huniq hlen le_rfl)
-  exact Real.rpow_le_rpow_of_exponent_le one_le_two
-    (neg_le_neg (mul_le_mul_of_nonneg_right (by linarith) (Nat.cast_nonneg n)))
+  exact ⟨∑ i ∈ range h, (3 - 1) ^ i, fun n φ σ hσ huniq hlen =>
+    (two_rpow_neg_mul_le n (by linarith)).trans (round_success_of_unique hσ huniq hlen le_rfl)⟩
 
 end Cslib.Complexity.PPSZ

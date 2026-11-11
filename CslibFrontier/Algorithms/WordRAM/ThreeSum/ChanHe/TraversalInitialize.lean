@@ -85,10 +85,7 @@ theorem initializeRoot_exec {a : Arena} {w : ℕ} (x : Data 128) (e : Entry)
     (fun i => (hp.bounded hx).1 (slot i)) (by simpa only [List.length_nil] using hcapacity)
   have bm (i : Fin 128) (hi : Outside i) : b.regs i = x.regs i :=
     (hr i hi).trans (pmeta i hi)
-  refine ⟨b, hp.seq hb, ?_, hc.congr (by
-    intro i hi
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-    exact bm i (Or.inl (by omega))), hf, bm⟩
+  refine ⟨b, hp.seq hb, ?_, hc.of_regs_71_96 (fun i _ hi => bm i (Or.inl hi)), hf, bm⟩
   simpa only [Entry.loaded_words ploaded, List.append_nil] using hs
 
 end Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
