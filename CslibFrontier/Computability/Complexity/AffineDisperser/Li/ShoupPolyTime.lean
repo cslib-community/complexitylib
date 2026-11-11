@@ -801,29 +801,6 @@ private theorem tidy_kernelStepBits :
   unfold kernelStepBits kernelRowStep
   simp only [decide_eq_true_eq]
 
-private theorem foldl_kernelStepBits_inv (n : ℕ) (M : List (List Bool)) :
-    (M.foldl (fun N a => kernelStepBits a N) (BitString.listSingles n)).length = n ∧
-      ∀ v ∈ M.foldl (fun N a => kernelStepBits a N) (BitString.listSingles n), v.length = n := by
-  have hinit : (BitString.listSingles n).length = n ∧
-      ∀ v ∈ BitString.listSingles n, v.length = n := by
-    refine ⟨by simp [BitString.listSingles], fun v hv => ?_⟩
-    simp only [BitString.listSingles, List.mem_map, List.mem_range] at hv
-    rcases hv with ⟨i, _, rfl⟩
-    simp [BitString.listSingle]
-  have hfold : ∀ (L : List (List Bool)) (N : List (List Bool)),
-      N.length = n → (∀ v ∈ N, v.length = n) →
-      (L.foldl (fun N a => kernelStepBits a N) N).length = n ∧
-        ∀ v ∈ L.foldl (fun N a => kernelStepBits a N) N, v.length = n := by
-    intro L
-    induction L with
-    | nil => intro N h1 h2; exact ⟨h1, h2⟩
-    | cons a L ih =>
-      intro N h1 h2
-      rw [List.foldl_cons]
-      have hstep := length_kernelStepBits (a := a) h1 h2
-      exact ih _ hstep.1 hstep.2
-  exact hfold M _ hinit.1 hinit.2
-
 private theorem tidy_kernelBasisBits :
     ComputableTidilyInPolyTime
       (fun p : ℕ × List (List Bool) => kernelBasisBits p.1 p.2)
@@ -849,7 +826,8 @@ private theorem tidy_kernelBasisBits :
     (B := fun p : ℕ × List (List Bool) => p.1 * (2 * p.1 + 1))
     (ComputableTidilyInPolyTime.polyBounded hboundFn) ?_
   intro p i hi
-  obtain ⟨hlen, hrows⟩ := foldl_kernelStepBits_inv p.1 (p.2.take i)
+  obtain ⟨hlen, hrows⟩ := length_kernelBasisBits p.1 (p.2.take i)
+  unfold kernelBasisBits at hlen hrows
   refine (length_encList_le encBits _ (b := p.1)
     (fun v hv => by simp [encBits_apply, hrows v hv])).trans ?_
   rw [hlen]

@@ -486,7 +486,9 @@ theorem shoupCyclicFactor_iterate_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) 
     obtain ⟨hdvd', hirr', hdeg'⟩ := polyOfBits_berlekampIrreducibleFactor_dvd hsq_comp hdeg_comp
     exact ⟨polyTrim_berlekampIrreducibleFactor _, hdvd'.trans hdvd_comp, hirr', hdeg'⟩
 
-/-- `shoupCyclicFactor q` produces an irreducible factor whose root generates `𝔽_{2 ^ (q ^ k)}`. -/
+/-- `shoupCyclicFactor q k` produces an irreducible factor of degree `m = ordTwoMod q` dividing
+`cyclotomic (q ^ k) (ZMod 2)`, so its root generates `𝔽_{2 ^ m}` and has multiplicative order
+`q ^ k`. -/
 theorem shoupCyclicFactor_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     let m := ordTwoMod q
     let k := qAdicValTwoPowSubOne q m
@@ -1443,26 +1445,8 @@ private theorem shoupBeta_minpoly_natDegree {K L : Type*} [Field K] [Field L]
     exact orderOf_dvd_iff_pow_eq_one.mpr hw_pow_sub
   have hd_dvd_q : d ∣ q := dvd_of_two_pow_sub_one_dvd hd_pos hdvd_pow
   rcases hq.eq_one_or_self_of_dvd d hd_dvd_q with h1 | hq_eq
-  · exfalso
-    have hmon := minpoly.monic hβ_int
-    have hdeg1 : (minpoly (ZMod 2) βL).natDegree = 1 := h1
-    set p := minpoly (ZMod 2) βL
-    have hp_eq : p = X + C (p.coeff 0) := by
-      ext i
-      rcases lt_trichotomy i 1 with hi0 | rfl | hi
-      · have hi' : i = 0 := by omega
-        subst hi'
-        simp
-      · have h1coeff : p.coeff 1 = 1 := by
-          rw [← hdeg1]
-          exact hmon.coeff_natDegree
-        simp [h1coeff]
-      · rw [coeff_eq_zero_of_natDegree_lt (by omega)]
-        simp [coeff_X, coeff_C, show i ≠ 0 by omega, show (1 : ℕ) ≠ i by omega]
-    have hev := minpoly.aeval (ZMod 2) βL
-    change aeval βL p = 0 at hev
-    rw [hp_eq, map_add, aeval_X, aeval_C] at hev
-    exact hβ_notin (p.coeff 0) (CharTwo.add_eq_zero.mp hev)
+  · obtain ⟨c, hc⟩ := minpoly.natDegree_eq_one_iff.mp h1
+    exact absurd hc.symm (hβ_notin c)
   · exact hq_eq
 
 private theorem shoupPowers_entry_length {q m : ℕ} (hm1 : 1 ≤ m) (f : List Bool)
