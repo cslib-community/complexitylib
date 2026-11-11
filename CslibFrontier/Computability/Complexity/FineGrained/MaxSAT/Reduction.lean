@@ -707,7 +707,8 @@ theorem FixedWidthSATSolver.exists_optimum_algorithm {k : ℕ} (hk : 3 ≤ k)
         have h1 : L ≤ (L + 1) ^ 1 := by simp only [pow_one]; omega
         exact h1.trans (Nat.pow_le_pow_right hL1 ((le_max_right _ _).trans (le_max_right dg _)))
       split_ifs
-      · have hpow := henc_pow p solver.spaceExp (le_max_left _ 1)
+      · have hpow : ((encCNF p.2).length + 1) ^ solver.spaceExp ≤ (L + 1) ^ bMax :=
+          henc_pow p solver.spaceExp (le_max_left _ 1)
         omega
       · omega
   obtain ⟨d₁, hlist⟩ := ComputableInO.polynomial_queries

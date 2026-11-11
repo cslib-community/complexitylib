@@ -544,9 +544,12 @@ theorem countP_eval_constraintToCNF_add_one {Rel V : Type*} (sem : Rel → List 
     simp only [Constraint.toCNF, List.length_map, forb]
   have hbeq : forb.countP (fun w => c.2.map σ == w) = forb.count (c.2.map σ) := by
     rw [List.count_eq_countP]
-    exact List.countP_congr fun _ _ => Bool.beq_comm
+    exact List.countP_congr fun _ _ => by rw [beq_iff_eq, beq_iff_eq, eq_comm]
+  have hneg : forb.countP (fun w => !(c.2.map σ == w)) =
+      forb.countP (fun w => ¬(c.2.map σ == w)) :=
+    List.countP_congr fun _ _ => by simp
   have hsplit := List.length_eq_countP_add_countP (fun w => c.2.map σ == w) (l := forb)
-  rw [hbeq] at hsplit
+  rw [hbeq, ← hneg] at hsplit
   have hmem : c.2.map σ ∈ forb ↔ Constraint.eval sem σ c = false := by
     simp only [forb, List.mem_filter, mem_enumList, List.length_map, true_and, Constraint.eval,
       Bool.not_eq_true']
@@ -559,7 +562,7 @@ theorem countP_eval_constraintToCNF_add_one {Rel V : Type*} (sem : Rel → List 
     simp only [hev, Bool.cond_true]
     omega
   · have hfalse : Constraint.eval sem σ c = false := Bool.eq_false_iff.mpr hev
-    rw [hnodup.count_eq_one_of_mem (hmem.mpr hfalse)] at hsplit
+    rw [List.count_eq_one_of_mem hnodup (hmem.mpr hfalse)] at hsplit
     simp only [hfalse, Bool.cond_false]
     omega
 
@@ -799,7 +802,7 @@ theorem optimum_toClampedBoolean {Rel : Type*} {q : ℕ} (hq : 0 < q) [Inhabited
     simp only [toWeighted, toClampedBoolean, WeightedMaxCSP.toClampedBoolean, List.map_map]
     rfl
   have hvars' : ∀ v ∈ F.toWeighted.vars, v < F.toWeighted.numVars := by
-    simpa only [WeightedMaxCSP.vars, toWeighted, List.flatMap_map] using hvars
+    simpa only [WeightedMaxCSP.vars, toWeighted, List.flatMap_map, vars] using hvars
   rw [← optimum_toWeighted, hwt, F.toWeighted.optimum_toClampedBoolean hq sem hvars',
     optimum_toWeighted]
 
