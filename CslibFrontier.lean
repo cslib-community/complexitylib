@@ -3533,8 +3533,10 @@ public import CslibFrontier.Computability.QueryComplexity.Quantum.Progress
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Search
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Simon
 public import CslibFrontier.Computability.QueryComplexity.Quantum.SimonSearch
+public import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 public import CslibFrontier.Computability.QueryComplexity.Quantum.UnknownSearch
 public import CslibFrontier.Computability.QueryComplexity.Quantum.ValueQuery
+public import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 public import CslibFrontier.Computability.QueryComplexity.Randomized
 public import CslibFrontier.Computability.QueryComplexity.Randomized.Counting
 public import CslibFrontier.Computability.QueryComplexity.Randomized.DeutschJozsa

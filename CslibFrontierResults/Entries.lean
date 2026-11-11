@@ -76,6 +76,8 @@ import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
+import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
+import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -2256,3 +2258,56 @@ register_result "nayak-wu-median" where
     ε = 1/3 (hence 1/δ <= 432T when 1 <= δ n), 12T (216T) for involutive-difference oracle \
     steps, and the same bound on T + 1 for index-returning algorithms. Derived via adversary \
     weight-layer bounds rather than polynomials; comparison-tree oracles are not formalized."
+
+register_result "quantum-weighted-adversary" where
+  title := "Weighted and strong-weighted quantum adversary lower bounds (Alb₃)"
+  topic := "quantum complexity"
+  sources := [
+    { paper := Ambainis2006, theorem := "Lemma 1 and Lemma 4",
+      locator := "Sections 3.3 and 4.1 (arXiv:quant-ph/0305028v4)" },
+    { paper := Zhang2005, theorem := "Theorem 3, Theorem 5, and Theorem 6",
+      locator := "Sections 1–3 (arXiv:quant-ph/0311060v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.WeightScheme.one_sub_mul_sum_le,
+    Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sum_le,
+    Cslib.Quantum.WeightScheme.one_sub_mul_sqrt_le_of_load_le,
+    Cslib.Quantum.WeightScheme.one_sub_two_mul_sqrt_mul_sqrt_le_of_load_le,
+    Cslib.Quantum.one_sub_mul_sqrt_le_of_unweighted
+  ]
+  scope := "T-query bit-query phase-oracle quantum algorithms over finite workspace, for general \
+    promise relations (x, y) with P x ∧ P y ∧ f x ≠ f y and arbitrary finite output alphabets α \
+    (using pairwise disjoint measurement regions S_out : α → Finset _). Covers nonnegative \
+    WeightScheme (Ambainis's weighted adversary and Zhang's strong Alb₃ method), its reduction \
+    from strong to weak load bounds, and recovery of the unweighted adversary bound (Alb₂). \
+    Spectral matrices and negative weights are in Cslib.Quantum.SpectralAdversary."
+
+register_result "quantum-general-adversaries" where
+  title := "Spectral and negative-weight quantum adversary lower bounds (ADV and ADV±)"
+  topic := "quantum complexity"
+  sources := [
+    { paper := BarnumSaksSzegedy2003, theorem := unverified, locator := unverified },
+    { paper := HoyerLeeSpalek2007, theorem := "Theorem 1 and Theorem 2",
+      locator := "Section 1.1 (arXiv:quant-ph/0611054v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_opNorm_le_spectral,
+    Cslib.Quantum.one_sub_mul_spectralAdversary_le,
+    Cslib.Quantum.one_sub_mul_opNorm_le_general_boolean,
+    Cslib.Quantum.one_sub_mul_generalAdversary_le_boolean,
+    Cslib.Quantum.one_sub_mul_opNorm_le_general,
+    Cslib.Quantum.one_sub_mul_generalAdversary_le,
+    Cslib.Quantum.spectralSensitivity_le_spectralAdversary,
+    Cslib.Quantum.WeightScheme.le_spectralAdversary,
+    Cslib.Quantum.spectralAdversary_le_generalAdversary,
+    Cslib.Quantum.spectralAdversary_le_div_of_hammingDist_ge
+  ]
+  scope := "T-query bit-query phase-oracle quantum algorithms over finite workspace, for general \
+    promise relations (x, y) with P x ∧ P y ∧ f x ≠ f y and arbitrary finite output alphabets α \
+    (using pairwise disjoint measurement regions S_out : α → Finset _). Covers Barnum–Saks–Szegedy \
+    spectral adversary ADV (norm quotient over nonnegative symmetric Γ, cited via HLS07 §1.1 since \
+    CCC'03 was not directly inspected), Høyer–Lee–Špalek negative-weight adversary ADV± \
+    (strengthened to (1 - 2√(ε(1-ε)) - ε) ADV± ≤ 2T and exact Boolean 1 - 2√(ε(1-ε))), the \
+    hierarchy λ(f) ≤ ADV(f) ≤ ADV±(f) and Alb₃ ≤ ADV(f), and the Hamming-distance barrier \
+    ADV(f) ≤ N / k. Non-Boolean input alphabets (value queries / permutation inversion) and \
+    general composition theorems are not formalized here."
