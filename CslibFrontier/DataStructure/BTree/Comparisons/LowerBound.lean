@@ -41,7 +41,7 @@ private noncomputable def listPrefix {L : List α} (h : L.Nodup) : α → Fin L.
   Function.extend (listEmbedding h) .inl .inr
 
 @[simp] private lemma listPrefix_embedded {L : List α} (h : L.Nodup) (i : Fin L.length) :
-    listPrefix h (L.get i) = .inl i :=
+    listPrefix h L[i.val] = .inl i :=
   (listEmbedding h).injective.extend_apply _ _ _
 
 private theorem listPrefix_injective {L : List α} (h : L.Nodup) :
@@ -76,7 +76,7 @@ private instance {L : List α} (h : L.Nodup) :
     IsLinearOrder α (PrefixOrder h) where
 
 private lemma prefixOrder_get_iff {L : List α} (h : L.Nodup) (a b : Fin L.length) :
-    PrefixOrder h (L.get a) (L.get b) ↔ a ≤ b := by
+    PrefixOrder h L[a.val] L[b.val] ↔ a ≤ b := by
   simp only [PrefixOrder, InvImage, listPrefix_embedded]
   exact ⟨by rintro ⟨h⟩; exact h, Sum.Lex.inl⟩
 
@@ -85,7 +85,7 @@ private lemma prefixOrder_lt_getElem_iff {L : List α} (h : L.Nodup) (a b : ℕ)
     (PrefixOrder h L[a] L[b] ∧ ¬PrefixOrder h L[b] L[a]) ↔ a < b := by
   have h1 := prefixOrder_get_iff h ⟨a, ha⟩ ⟨b, hb⟩
   have h2 := prefixOrder_get_iff h ⟨b, hb⟩ ⟨a, ha⟩
-  simp only [List.get_eq_getElem, Fin.mk_le_mk] at h1 h2
+  simp only [Fin.mk_le_mk] at h1 h2
   rw [h1, h2]
   omega
 
