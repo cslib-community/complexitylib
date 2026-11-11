@@ -849,24 +849,9 @@ theorem zmodReduce_eq_cast (q : ℕ) (a : ℤ) :
     have hnonneg : 0 ≤ a % (q : ℤ) := Int.emod_nonneg a (by omega)
     omega
 
-@[local fun_prop]
-private theorem computableInPolyTime_listDotProduct :
-    ComputableInPolyTime
-      (fun p : ℕ × List ℤ × List ℤ => ListMatrix.dotProduct p.1 p.2.1 p.2.2)
-      (encPair encUnary (encPair (encList encIntBin) (encList encIntBin))) encIntBin := by
-  simp only [ListMatrix.dotProduct_eq_sum_map_range]
-  fun_prop
-
 /-- Convert the first `k` bits of a raw challenge word `c` into a `0`-`1` integer list. -/
 def challengeIntList (k : ℕ) (c : List Bool) : List ℤ :=
   (List.range k).map fun j => if c.getD j false then 1 else 0
-
-@[local fun_prop]
-private theorem computableTidilyInPolyTime_challengeIntList :
-    ComputableTidilyInPolyTime (fun p : ℕ × List Bool => challengeIntList p.1 p.2)
-      (encPair encUnary encBits) (encList encIntBin) := by
-  unfold challengeIntList
-  fun_prop
 
 /-- Check whether the first `m` coordinates of `z` lie in `[-B, B]`. -/
 def inBoxList (m B : ℕ) (z : List ℤ) : Bool :=
