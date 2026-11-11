@@ -150,7 +150,7 @@ The baseline survey at `13e6a319` inspected the conditional statements, truth-ta
 The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/issues/798) and the ROADMAP's Kolmogorov and metacomplexity entries list the remaining directions. A selection of those not formalized:
 
 - Liu–Pass Theorem 3.1 (c) in the near-linear range `t(n) ≥ (1 + ε) n`, which needs a rate-1 efficient conditional EP-PRG.
-- The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1). Existence, the greedy against a threshold oracle and `P/poly` circuits for the oracle under `NP ⊆ P/poly` are proved, but circuits for the selection are not ([#4383](https://github.com/cslib-community/cslib-frontier/issues/4383)).
+- The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1). Existence, the greedy against a threshold oracle and, under `NP ⊆ P/poly`, `P/poly` circuits for the oracle on its queries are proved, but circuits for the selection are not ([#4383](https://github.com/cslib-community/cslib-frontier/issues/4383)).
 - NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
 - The minimum formula size problem (MFSP) as a separate problem, and the locality barrier (Theorem 59) of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam; of their Proposition 63, only the MCSP `[OS18]` bullet is formalized.
 - Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.

@@ -4,14 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Circuit.Boolean.Hierarchy
 import CslibFrontier.Computability.MCSP.AntiChecker.Oracle.PolyTime
 
 /-!
 # Tests for the anti-checker oracle language
 
 Contradictory samples make a yes-query at power `1` and threshold `0`, because no function agrees
-with both. Under `NP ⊆ P/poly`, a `P/poly` language agreeing with the anti-checker oracle gives a
-threshold oracle for the greedy. One query is checked against the length formula.
+with both, and no samples make a no-query, because a constant function fits them. Under
+`NP ⊆ P/poly`, a `P/poly` language agreeing with the anti-checker oracle gives a threshold oracle
+for the greedy. One query is checked against the length formula.
 -/
 
 namespace CslibFrontierTests.AntiCheckerOracle
@@ -27,6 +29,13 @@ example (n s : ℕ) (x : BitString n) :
   have h0 := hg (x, false) (by simp)
   have h1 := hg (x, true) (by simp)
   simp_all
+
+-- No samples are a no-query at power `1` and threshold `0` for circuits with one gate: a constant
+-- function fits them.
+example (n : ℕ) : encQuery (Query.ofSamples n 1 1 0 []) ∉ antiCheckerOracle :=
+  encQuery_ofSamples_one_zero_notMem_antiCheckerOracle_iff.2
+    ⟨fun _ => true, mem_computableFunctions_iff_complexity_le.2 (complexity_const true).le,
+      by simp⟩
 
 -- Under `NP ⊆ P/poly`, a `P/poly` language agreeing with the anti-checker oracle is a threshold
 -- oracle for the greedy at every positive power.
