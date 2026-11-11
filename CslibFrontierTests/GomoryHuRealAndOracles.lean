@@ -64,8 +64,8 @@ noncomputable def WReal : Fin 2 → Fin 2 → ℝ
   | 1, 0 => Real.sqrt 2
   | _, _ => 0
 
-theorem exists_real_tree : ∃ T, IsGomoryHuTree (Cslib.WeightedCut.realCutWeight WReal) T :=
-  exists_isGomoryHuTree_realCutWeight (by intro u v; fin_cases u <;> fin_cases v <;> rfl)
+theorem exists_real_tree : ∃ T, IsGomoryHuTree (Cslib.WeightedCut.cutWeight WReal) T :=
+  exists_isGomoryHuTree_cutWeight_of_symm (by intro u v; fin_cases u <;> fin_cases v <;> rfl)
     (by intro u v; fin_cases u <;> fin_cases v <;> simp [WReal])
 
 theorem WReal_nonneg (u v : Fin 2) : 0 ≤ WReal u v := by
@@ -73,14 +73,14 @@ theorem WReal_nonneg (u v : Fin 2) : 0 ≤ WReal u v := by
 
 /-- The only cut separating `0` from `1` is `{0}`, of weight `√2`. -/
 theorem minRealCutBetween_WReal : minRealCutBetween WReal 0 1 = Real.sqrt 2 := by
-  have hcut : ∀ X : Finset (Fin 2), 0 ∈ X → 1 ∉ X → realCutWeight WReal X = Real.sqrt 2 := by
+  have hcut : ∀ X : Finset (Fin 2), 0 ∈ X → 1 ∉ X → cutWeight WReal X = Real.sqrt 2 := by
     intro X h0 h1
     have hX : X = {0} := by
       ext x
       fin_cases x <;> simp [h0, h1]
     subst hX
-    simp [realCutWeight, WReal, Fin.sum_univ_two]
-  obtain ⟨X, h0, h1, hX⟩ := exists_realCutWeight_eq_minRealCutBetween WReal (s := 0) (t := 1)
+    simp [cutWeight, WReal, Fin.sum_univ_two]
+  obtain ⟨X, h0, h1, hX⟩ := exists_cutWeight_eq_minRealCutBetween WReal (s := 0) (t := 1)
     (by decide)
   rw [← hX, hcut X h0 h1]
 

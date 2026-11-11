@@ -20,12 +20,21 @@ import Mathlib.Tactic.Ring
 # Maximum flows with capacities in a linearly ordered field
 
 Flows on a finite vertex type `V` with capacities `W : V → V → K` in a linearly ordered field `K`
-(for example `ℝ` or `ℚ`), and the max-flow min-cut theorem in this setting
-([FordFulkerson1962], Chapter I, Sections 4–8; [Schrijver2003], Section 10). The integral theory
+(for example `ℝ` or `ℚ`), and the max-flow min-cut theorem in this setting. The integral theory
 over `ℕ`, with algorithms, is in `CslibFrontier.Algorithms.Lean.MaxFlow.Basic`.
 
-A flow is a function `f : V × V → K` on ordered pairs. Arcs are arbitrary: antiparallel arcs,
-loops, arcs into `s` and arcs out of `t` are allowed. The value of `f` is its net outflow at `s`.
+**Source mapping.** [Schrijver2003], Section 10.1 (pp. 148–149), defines flows on a digraph with
+real capacities `c : A → ℝ₊`, conservation and the value as net outflow at `s`; Theorem 10.3
+(Section 10.2, p. 150) is the max-flow min-cut theorem. This module differs in three ways:
+
+* A flow is a function `f : V × V → K` on all ordered pairs, so absent arcs are pairs of capacity
+  `0`. Antiparallel arcs, loops, arcs into `s` and arcs out of `t` are allowed; a loop contributes
+  to both the outflow and the inflow of its vertex, so it cancels.
+* Capacities lie in an arbitrary linearly ordered field `K` rather than in `ℝ`. This is an
+  extension of the source statement.
+* Since `K` need not be complete, a maximum flow is not obtained by compactness. It comes from
+  linear-programming duality over `K` (`Matrix.exists_isGreatest_of_bddAbove`), and augmenting
+  paths need not terminate either.
 
 Since capacities need not be integers, augmenting paths need not terminate. Instead, a maximum
 flow is obtained from linear-programming duality over `K`
@@ -43,7 +52,7 @@ reachability relation would increase the value.
 
 * `Cslib.Algorithms.Lean.MaxFlow.IsFeasibleRealFlow.realNetOut_eq_sub`: the value of a feasible
   flow equals its net flow across any `s`–`t` cut.
-* `Cslib.Algorithms.Lean.MaxFlow.IsFeasibleRealFlow.realNetOut_le_realCutWeight`: weak duality.
+* `Cslib.Algorithms.Lean.MaxFlow.IsFeasibleRealFlow.realNetOut_le_cutWeight`: weak duality.
 * `Cslib.Algorithms.Lean.MaxFlow.exists_isMaxRealFlow`: a maximum flow exists.
 * `Cslib.Algorithms.Lean.MaxFlow.isMaxRealFlow_minRealCutBetween`: the **max-flow min-cut
   theorem**, the maximum flow value is `minRealCutBetween W s t`.
@@ -131,9 +140,9 @@ variable [IsStrictOrderedRing K]
 
 /-- **Weak duality**: the value of a feasible `s`–`t` flow is at most the weight of every `s`–`t`
 cut. -/
-theorem IsFeasibleRealFlow.realNetOut_le_realCutWeight (hf : IsFeasibleRealFlow W s t f)
-    {X : Finset V} (hs : s ∈ X) (ht : t ∉ X) : realNetOut f s ≤ realCutWeight W X := by
-  rw [hf.realNetOut_eq_sub hs ht, realCutWeight]
+theorem IsFeasibleRealFlow.realNetOut_le_cutWeight (hf : IsFeasibleRealFlow W s t f)
+    {X : Finset V} (hs : s ∈ X) (ht : t ∉ X) : realNetOut f s ≤ cutWeight W X := by
+  rw [hf.realNetOut_eq_sub hs ht, cutWeight]
   have hout : ∑ u ∈ X, ∑ v ∈ univ \ X, f (u, v) ≤ ∑ u ∈ X, ∑ v ∈ univ \ X, W u v :=
     sum_le_sum fun u _ => sum_le_sum fun v _ => hf.2.1 u v
   have hin : 0 ≤ ∑ u ∈ X, ∑ v ∈ univ \ X, f (v, u) :=
@@ -312,17 +321,18 @@ private theorem exists_augmentation (hnn : ∀ e, 0 ≤ f e) (hcap : ∀ e, f e 
       · simp only [Pi.add_apply, Pi.single_eq_of_ne he, add_zero]
         exact ⟨le_add_mul_of_le h₀ h₁ (hnn e) (hb e).1, add_mul_le_of_le h₀ h₁ (hcap e) (hb e).2⟩
 
-/-- **Max-flow min-cut theorem** over a linearly ordered field ([FordFulkerson1962], Chapter I,
-Sections 4–8; [Schrijver2003], Section 10): for non-negative capacities `W` and distinct `s` and
-`t`, the greatest value of a feasible `s`–`t` flow is the minimum `s`–`t` cut weight. -/
+/-- **Max-flow min-cut theorem** over a linearly ordered field ([Schrijver2003], Theorem 10.3,
+p. 150, extended from `ℝ` to `K`; [FordFulkerson1962], Chapter I, Sections 4–8): for non-negative
+capacities `W` and distinct `s` and `t`, the greatest value of a feasible `s`–`t` flow is the
+minimum `s`–`t` cut weight. The maximum is attained (`exists_isMaxRealFlow`). -/
 theorem isMaxRealFlow_minRealCutBetween (hW : ∀ u v, 0 ≤ W u v) (hst : s ≠ t) :
     IsMaxRealFlow W s t (minRealCutBetween W s t) := by
   classical
   obtain ⟨f, hf, hmax⟩ := exists_isMaxRealFlow hW s t
   suffices h : realNetOut f s = minRealCutBetween W s t from h ▸ hmax
   apply le_antisymm
-  · obtain ⟨X, hs, ht, hX⟩ := exists_realCutWeight_eq_minRealCutBetween W hst
-    exact hX ▸ hf.realNetOut_le_realCutWeight hs ht
+  · obtain ⟨X, hs, ht, hX⟩ := exists_cutWeight_eq_minRealCutBetween W hst
+    exact hX ▸ hf.realNetOut_le_cutWeight hs ht
   -- The vertices reachable from `s` in the residual graph form a cut of weight `realNetOut f s`.
   let X : Finset V := univ.filter (Relation.ReflTransGen (Residual W f) s)
   have hsX : s ∈ X := mem_filter.mpr ⟨mem_univ s, Relation.ReflTransGen.refl⟩
@@ -348,10 +358,10 @@ theorem isMaxRealFlow_minRealCutBetween (hW : ∀ u v, 0 ≤ W u v) (hst : s ≠
       (mem_sdiff.mp hv).2 (mem_filter.mpr ⟨mem_univ v, (mem_filter.mp hu).2.tail h⟩)
     simp only [Residual, not_or, not_lt] at hres
     exact ⟨le_antisymm (hf.2.1 u v) hres.1, le_antisymm hres.2 (hf.1 v u)⟩
-  have hval : realNetOut f s = realCutWeight W X := by
-    rw [hf.realNetOut_eq_sub hsX htX, realCutWeight,
+  have hval : realNetOut f s = cutWeight W X := by
+    rw [hf.realNetOut_eq_sub hsX htX, cutWeight,
       sum_congr rfl fun u hu => sum_congr rfl fun v hv => (hsat u hu v hv).1,
       sum_eq_zero fun u hu => sum_eq_zero fun v hv => (hsat u hu v hv).2, sub_zero]
-  exact hval ▸ minRealCutBetween_le_realCutWeight W hsX htX
+  exact hval ▸ minRealCutBetween_le_cutWeight W hsX htX
 
 end Cslib.Algorithms.Lean.MaxFlow
