@@ -84,7 +84,9 @@ indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
 box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
-`PMF.bernoulli` is deprecated.
+`PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
+`ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
+[Entropy/Fano.lean](../../CslibFrontier/Probability/Entropy/Fano.lean) is its entropy `h₂(p)`.
 
 The [checked clients](../../CslibFrontierTests/PMFConditioning.lean) condition two fair bits on
 rectangles, split off one of two fair bits, relabel two point masses injectively, restrict, reindex
@@ -283,6 +285,67 @@ cover:
 
 Run `scripts/build.sh CslibFrontierTests.StatisticalDifference` and
 `scripts/build.sh CslibFrontierTests.StatisticalDifferencePolyTime`.
+
+## Compare distributions by Hellinger distance and chi-square divergence
+
+For finite distributions (`PMF α` with `[Finite α]` / `[Fintype α]`), Hellinger distance and
+Pearson `χ²` divergence complement half-`L¹` statistical distance (`dist`) with exact product
+tensorization and comparison inequalities ([Tsybakov, Section 2.4](../sources.md#tsybakov09);
+[Canonne, §3.1 and Appendix B](../sources.md#canonne22)):
+
+- **Bhattacharyya coefficient and Hellinger distance.** Import
+  [Hellinger.lean](../../CslibFrontier/Probability/Hellinger.lean). The definitions
+  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L133)
+  (`∑' a, √((p a).toReal * (q a).toReal) ∈ [0, 1]`),
+  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L137) (`1 - bhattacharyya p q`),
+  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L141)
+  (`√(hellingerSq p q) ∈ [0, 1]`)—along with their symmetry, `[0, 1]` bounds, and definiteness
+  (`= 0 ↔ p = q`)—apply to any `PMF α`, while the theorem API below assumes finite types
+  `[Finite α]` / `[Fintype α]`. No competing `MetricSpace (PMF α)` instance is registered because
+  `Cslib.Probability.PMF` already uses that slot for half-`L¹` `dist`;
+  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L304) supplies the
+  metric triangle inequality directly.
+- **Total-variation comparison and `n`-fold i.i.d. tensorization (finite types).**
+  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L345) and
+  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L398) give
+  `h²(p, q) ≤ dist p q ≤ √2 * h(p, q)` (with `tvDist` corollaries on `toMeasure`).
+  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L426) and
+  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L444) prove multiplicative
+  tensorization, yielding the sample-complexity acceptance bound
+  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L497):
+  `dist (iid p n) (iid q n) ≤ √(2 * n) * hellingerDist p q`. Markov kernel and map data
+  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L576) and
+  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L595).
+- **Pearson `χ²` divergence and Ingster / Le Cam mixture bounds (finite types).** Import
+  [ChiSquare.lean](../../CslibFrontier/Probability/ChiSquare.lean).
+  [`echiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L142) (`ℝ≥0∞`-valued
+  `∑' a, ENNReal.ofReal (((p a).toReal - (q a).toReal) ^ 2) / q a`, with reference distribution `q`
+  as the **second** argument matching `klDiv p.toMeasure q.toMeasure`) and real-valued
+  [`chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L148) (`(echiSquare p q).toReal`)
+  are defined on any `PMF α`, together with nonnegativity and self-vanishing. All remaining
+  theorems require `[Finite α]` / `[Fintype α]` (on countably infinite types, `p.support ⊆ q.support`
+  alone does not imply finite divergence):
+  [`echiSquare_ne_top_iff`](../../CslibFrontier/Probability/ChiSquare.lean#L167) equates finiteness
+  to `p.support ⊆ q.support`, and real-valued theorems state `p.support ⊆ q.support` explicitly so
+  `x / 0 = 0` never hides off-support mass. These cover tensorization
+  ([`one_add_chiSquare_pi`](../../CslibFrontier/Probability/ChiSquare.lean#L299),
+  [`one_add_chiSquare_iid`](../../CslibFrontier/Probability/ChiSquare.lean#L329)), TV upper bounds
+  ([`dist_le_sqrt_chiSquare_div_two`](../../CslibFrontier/Probability/ChiSquare.lean#L366),
+  [`tvDist_le_sqrt_chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L384)), data
+  processing ([`chiSquare_bind_le`](../../CslibFrontier/Probability/ChiSquare.lean#L401)), the
+  mixture second-moment identity
+  ([`one_add_chiSquare_bind_eq`](../../CslibFrontier/Probability/ChiSquare.lean#L505),
+  [`one_add_chiSquare_bind_iid_eq`](../../CslibFrontier/Probability/ChiSquare.lean#L555)), and the
+  comparison hierarchy `2 h² ≤ KL ≤ log (1 + χ²) ≤ χ²`
+  ([`two_mul_hellingerSq_le_toReal_klDiv`](../../CslibFrontier/Probability/ChiSquare.lean#L573),
+  [`toReal_klDiv_le_log_one_add_chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L614),
+  [`two_mul_hellingerSq_le_chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L656)).
+
+The checked clients in [HellingerChiSquare.lean](../../CslibFrontierTests/HellingerChiSquare.lean)
+cover disjoint point masses (`echiSquare = ⊤`), rational Bernoulli pairs, the triangle inequality,
+`pi`/`iid` tensorization, close Pythagorean-triple coins at `n = 10`, `map`/`bind` data
+processing, `2 h² ≤ KL ≤ log (1 + χ²) ≤ χ²`, and an Ingster/Le Cam two-point mixture bound. Run
+`scripts/build.sh CslibFrontierTests.HellingerChiSquare`.
 
 ## Bound the mixing time of a finite Markov chain
 

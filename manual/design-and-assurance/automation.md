@@ -18,9 +18,9 @@ say which.
 
 | Tactic | Module | Goal | Reference |
 |---|---|---|---|
-| `polytime`, `polytime [f, g]` | `Tactic.PolyTime`; `Tactic.WordRAM` for RAM certificates | `ComputableInPolyTime f encIn encOut`, or its tidy form; registered RAM certificates | [Named certificates](#named-certificates-and-polynomial-time) |
+| `polytime`, `polytime [f, g]` | `Tactic.PolyTime` | `ComputableInPolyTime f encIn encOut`, or its tidy form | [Named certificates](#named-certificates-and-polynomial-time) |
 | `ppt`, `ppt [f, g]` | `Tactic.PPT` | `IsPPTOn`, `IsPPT`, `IsOraclePPTOn`, `IsOraclePPT` | [Named certificates](#named-certificates-and-polynomial-time), [other resource predicates](#other-resource-predicates) |
-| `@[program_certificate h*]` (attribute) | `Tactic.PolyTime.Init` | registers a certificate for `polytime`, `logspace`, `ppt` and `stateful` | [Named certificates](#named-certificates-and-polynomial-time) |
+| `@[program_certificate h*]` (attribute) | `Tactic.PolyTime.Init` | registers a certificate for `polytime`, `logspace` and `ppt` | [Named certificates](#named-certificates-and-polynomial-time) |
 | `logspace` | `Tactic.LogSpace` | `ComputableInLogSpace f encIn encOut` | [Other resource predicates](#other-resource-predicates), [checked clients](../../CslibFrontierTests/LogSpaceTactic.lean) |
 | `space`, `space [f]` | `Tactic.Space` | `ComputableInSpace f encIn encOut S`, with an explicit budget `S` | [Choose a model](../workflows/choosing-models.md#write-the-contract-before-the-proof) |
 | `degree` | `Tactic.Degree` | `ComputableInDegree f encIn encOut d e` | [Preserve explicit polynomial degrees](#preserve-explicit-polynomial-degrees) |
@@ -28,7 +28,6 @@ say which.
 | `option_match_to_elim` | `Tactic.OptionMatch` | any goal with an option match, before resource automation | [Rewrite option matches](#rewrite-option-matches-before-resource-automation) |
 | `growth_poly`, `growth_poly [h]` | `Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation` | `PolyBounded size cost`, `Cslib.PolynomiallyBounded p` | [Composing polynomial resource envelopes](../machines-and-classes/native-and-resources.md#composing-polynomial-resource-envelopes) |
 | `bigO` (scoped, `Turing.MultiTapeTM`) | `Computability.Machines.Turing.MultiTape.Complexity.BigOLe` | `u ≼ v` (`BigOLe`) | [Source docstring](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/BigOLe.lean#L123) |
-| `stateful` | `Tactic.Stateful`; `Tactic.WordRAM` for RAM controllers | `Hoare` and `CostHoare` contracts of `StateTransitionSpec`; registered `WordRAM.Refines` controllers | [Other resource predicates](#other-resource-predicates), [checked clients](../../CslibFrontierTests/StatefulRefinement.lean) |
 
 **Encodings and arithmetic**
 
@@ -68,7 +67,7 @@ say which.
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
 simp sets `wram_simps`, used by `wram_exec` and `wram_simp`, `cp_simps`, used by `cp_step`, and
-`fo_realize`, used by `fo_simp`, and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`, `Stateful`,
+`fo_realize`, used by `fo_simp`, and the Aesop rule sets `PolyTime`, `PPT`, `LogSpace`,
 `FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
@@ -134,7 +133,7 @@ polynomial; use `fun_prop` with explicit bounds for `ComputableInO`.
 
 ## Named certificates and polynomial time
 
-[`program_certificate`](../../CslibFrontier/Tactic/PolyTime/Init.lean) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index prevents a RAM certificate from accidentally solving a Turing-machine goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.
+[`program_certificate`](../../CslibFrontier/Tactic/PolyTime/Init.lean) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index keeps the families apart: a logarithmic-space or PPT certificate is never tried on a polynomial-time goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.
 
 [`polytime`](../../CslibFrontier/Tactic/PolyTime.lean) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
 
@@ -193,9 +192,6 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 |---|---|---|
 | [`logspace`](../../CslibFrontier/Tactic/LogSpace.lean) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
 | [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
-| [`stateful`](../../CslibFrontier/Tactic/Stateful.lean) | Local semantic/operation-cost Hoare contracts and Aesop rules | Intermediate assertions and implementations for bind/link are supplied explicitly; total machine time remains separate |
-
-[`Tactic.WordRAM`](../../CslibFrontier/Tactic/WordRAM.lean) adds no tactic of its own. Importing it lets `stateful` reuse controller refinements (`WordRAM.Refines`) and `polytime` reuse RAM polynomial-time certificates (`WordRAM.ComputableInPolyTime`, `WordRAM.UniformComputableInPolyTime`) registered with `program_certificate`. Width, basis and fixed-code realization still matter, and host-language continuation work is not free: `Refines.bind`, `branch`, `prepend` and `call` choose intermediate assertions and charged preparation code explicitly. The [controller clients](../../CslibFrontierTests/WordRAMController.lean) use both tactics.
 
 This is a family of focused proof tools, not one universal automatic complexity analyzer. Their common interface makes reusable algorithms easier to recognize without conflating the predicates they prove.
 
@@ -244,6 +240,18 @@ conditions are decided from the `Fits` hypotheses in context. A loop with a symb
 count needs an invariant, such as `ExecWithin.loop_count` in the
 [counting-loop chapter](../algorithms-and-memory/wordram-and-bridges.md#proving-a-constant-cost-counting-loop),
 not a larger `n`.
+
+The two tactics' fixed lemmas form the simp sets `ram_eval_simps` and `ram_exact_eval_simps`,
+which [`Notation`](../../CslibFrontier/Computability/WordRAM/Notation.lean) and
+[`ExactNotation`](../../CslibFrontier/Computability/WordRAM/ExactNotation.lean) fill and index
+once with `ram_eval_simp_set_for`, so a call no longer elaborates the list. Do not tag a lemma
+with either attribute, because that changes every call; pass it as a simp lemma of the call
+instead. To change the shared lemmas, edit the `ram_eval_simp_set_for` macro in `Notation`; to
+change a basis's lemmas, edit its `ram_eval_simp_set_for` command. The
+[equivalence test](../../CslibFrontierTests/WordRAMEvalSimpSet.lean) then fails until its copy of
+the old literal list is updated to match, and the
+[pinned budget](../../CslibFrontierTests/AutomationRamEval.lean) catches a return of the per-call
+cost.
 
 ## Certify and reuse memory methods
 
@@ -399,14 +407,24 @@ steps, renewed after stripping each sample whose distribution occurs once on eac
 runs out, `pmf_swap` fails rather than guess an order: many samples of one distribution, such as
 six drawn in reverse order, exceed it. Then strip or reorder some samples first. If no order makes
 the sides agree, it strips the common samples, first those whose distribution occurs once on each
-side, and leaves the equation of the continuations. `pmf_swap with x y` skips the search, strips
-exactly two samples the same way and names them.
+side, and leaves the equation of the continuations, or closes it when `rfl` proves it.
+`pmf_swap with x y` skips the search, strips exactly two samples the same way and names them in
+the order they occur in the right side, whichever is stripped first; it leaves the remaining
+equation as it is.
+
+Samples may also move past a sampler `F` that takes a continuation, such as
+`Game.runStatelessOracle o prog`, when `pmf_swap [h]` is given a commutation lemma
+`h : μ.bind (fun b => F (k b)) = F (fun a => μ.bind fun b => k b a)` that holds for every
+distribution `μ`, as `Game.bind_runStatelessOracle_comm` does. A lemma of another form is
+rejected with the expected form, and two samplers do not move past each other.
 
 When both sides draw the same distributions and differ only in what they return, the goal does
 not determine which sample to strip. Choose it with `pmf_hoist q`, which moves the samples of `q`
 toward the front of their chains anywhere in the goal, or in a hypothesis with `at h`, then strip
-it with `congr 1 with x : 1`. A sample whose distribution mentions an earlier sample never moves
-past it; the diagnostic lists the samples of both sides and marks those dependencies. The
+it with `congr 1 with x : 1`. When a chain draws `q` twice, `pmf_hoist (occ := n) q` moves only
+its `n`th independent sample, counting along each chain and through the chains in order, the left
+side of an equation first. A sample whose distribution mentions an earlier sample never moves past
+it; the diagnostic lists the samples of both sides and marks those dependencies. The
 [checked clients](../../CslibFrontierTests/PMFSwap.lean) cover each form and diagnostic.
 
 ## Step game hops and align shared random draws

@@ -12,7 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolynomialPadding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 
-/-! Concrete padding, decoding, acceptance/rejection by the padding guard, the improved
+/-! Concrete padding, decoding, acceptance/rejection by the padding guard, the linear
 binary-to-unary resource bound, and instances of the translation lemma. -/
 
 public section
@@ -73,7 +73,7 @@ example (h : DTIME encBits (fun n => (n + 1) ^ 2) ⊆ DTIME encBits (fun n => n 
     (fun n => by nlinarith) (fun n => by omega) (by fun_prop) (fun n => by omega) h
 
 open Cslib.Complexity in
-/-- Polynomial padding now also transfers collapses to the linear degree. -/
+/-- Polynomial padding transfers collapses whose smaller degree is linear. -/
 example (h : DTIME encBits (fun n => (n + 1) ^ 2) ⊆ DTIME encBits (fun n => (n + 1) ^ 1)) :
     DTIME encBits (fun n => (n + 1) ^ (2 * 3)) ⊆ DTIME encBits (fun n => (n + 1) ^ (1 * 3)) :=
   DTIME_pow_mul_subset_of_subset le_rfl (by omega) (by omega) h

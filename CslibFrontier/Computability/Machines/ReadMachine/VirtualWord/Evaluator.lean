@@ -38,6 +38,13 @@ open MultiTapeTM ComputableInSpace
 /-- The declared virtual length; for valid cuts this is the reconstructed word's length. -/
 @[expose] def width (d : Data) : ℕ := d.1 + d.2.1.length
 
+/-- The declared width uses space linear in the encoded data, without allocating the word. -/
+theorem width_data_inSpace : ComputableInSpace width encData encNat
+    (fun d => (encData d).length) := by
+  have hl : ComputableInSpace List.length encBits encNat (fun w => w.length) :=
+    (of_inO ComputableInO.lengthNat).weaken (.of_le_linear 1 1 fun _ => by omega)
+  exact budget_natAdd (fst _ _) (budget_comp_linear hl (snd _ _).fst')
+
 /-- Runtime accessor state, binary consumer position, and saved Boolean evaluator state. -/
 abbrev State := Runtime.State × ℕ × Bool
 
@@ -178,20 +185,13 @@ theorem value_word (δ : Bool × Bool → Bool) (cut : ℕ) (suffix x : List Boo
 
 /-- Header decoding is native in the charged consumer state. -/
 theorem data_inSpace : ComputableInSpace data encState encData
-    (fun s => (encState s).length) := by
-  have hr : ComputableInSpace List.reverse encBits encBits (fun w => w.length) :=
-    of_inO ComputableInDegree.bitsReverse.inO_one
-  unfold data
-  exact budget_comp_linear Runtime.decode_inSpace
-    (budget_comp_linear hr (fst _ _).fst'.fst')
+    (fun s => (encState s).length) :=
+  budget_comp_linear (f := fun s : State => s.1) Runtime.header_inSpace (fst _ _)
 
 /-- The virtual length is computed from binary cut and the stored suffix only. -/
 theorem width_inSpace : ComputableInSpace (fun s => width (data s)) encState encNat
-    (fun s => (encState s).length) := by
-  have hl : ComputableInSpace List.length encBits encNat (fun w => w.length) :=
-    (of_inO ComputableInO.lengthNat).weaken (.of_le_linear 1 1 fun _ => by omega)
-  exact budget_natAdd data_inSpace.fst'
-    (budget_comp_linear hl data_inSpace.snd'.fst')
+    (fun s => (encState s).length) :=
+  budget_comp_linear width_data_inSpace data_inSpace
 
 /-- The outer scan address is binary, even for unbounded virtual lengths. -/
 theorem address_inSpace : ComputableInSpace address encState encNat

@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
+import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
@@ -33,6 +34,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
+import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
@@ -61,6 +63,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
+import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
@@ -229,6 +232,25 @@ register_result "alternation-aspace-dtime" where
     deterministic decision within c₁·2^(c·(log₂ n + s(n) + 1)) + c₂ steps, or 2^(c·s(n)) when \
     log₂ n ≤ s(n); no constructibility hypothesis; the converse inclusion is not included; \
     arbitrary injective encodings."
+
+register_result "nspace-dtime" where
+  title := "Nondeterministic space s is within deterministic time 2^O(s)"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak09, theorem := unverified, locator := "Section 4.1" },
+    { paper := Sipser2013, theorem := unverified, locator := "Section 8.4" }
+  ]
+  theorems := [
+    Cslib.Complexity.exists_mem_DTIME_of_mem_NSPACE,
+    Cslib.Complexity.exists_mem_DTIME_of_mem_NSPACE_of_log2_le,
+    Turing.MultiTapeNTM.RecognizesInSpace.mem_DTIME
+  ]
+  scope := "One finite-state binary nondeterministic multi-tape machine per problem with \
+    work space c₁·s(n) + c₂ along every computation prefix; the recognizer form permits \
+    nonterminating branches. DTIME is deterministic decision within \
+    c₁·2^(c·(log₂ n + s(n) + 1)) + c₂ steps, or 2^(c·s(n)) when log₂ n ≤ s(n); no \
+    constructibility hypothesis, unlike the source's space-constructible S; arbitrary \
+    injective encodings."
 
 register_result "reingold" where
   title := "Reingold: undirected reachability is in L"
@@ -715,6 +737,28 @@ register_result "nl-in-p" where
     branches with logarithmic workspace; deterministic polynomial-time \
     configuration reachability decides acceptance."
 
+register_result "ladner-density" where
+  title := "Ladner's density theorem for polynomial-time many-one reducibility"
+  topic := "structural complexity"
+  sources := [
+    { paper := Ladner1975a, theorem := unverified, locator := unverified },
+    { paper := Schoening1982, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.exists_isDecidable_notMem_P_lt,
+    Cslib.Complexity.exists_mem_NP_notMem_P_lt,
+    Cslib.Complexity.NPComplete.exists_NP_not_P_not_npComplete_lt,
+    Cslib.Complexity.exists_isDecidable_between_of_notMem_P,
+    Cslib.Complexity.exists_mem_NP_between_of_notMem_P
+  ]
+  scope := "Problems on binary words (encBits); total deterministic multi-tape polynomial-time \
+    many-one reductions. Between any two problems A <ₘᵖ B on bit words with B decidable \
+    (respectively A, B in NP) and B ∉ P, there is a decidable problem C (respectively in NP) \
+    strictly between them; if P ≠ NP, every NP-complete language on bit words has an \
+    NP-intermediate language strictly below it. Many-one (≤ₘᵖ) order and non-reductions only; \
+    Ladner's polynomial-time Turing (≤ᵀᵖ) non-reduction and ≤ᵀᵖ-density forms are not included. \
+    The hypothesis B ∉ P is required (∅ <ₘᵖ {[true]} has no intermediate)."
+
 register_result "ppz-success" where
   title := "PPZ success probability for k-SAT"
   topic := "SAT algorithms"
@@ -1075,13 +1119,26 @@ register_result "zero-one-law-relational" where
     Cslib.Logic.FO.Relational.tendsto_sentenceProb_one_iff,
     Cslib.Logic.FO.Relational.tendsto_sentenceProb_zero_iff,
     Cslib.Logic.FO.Relational.not_exists_sentence_even_card,
-    Cslib.Logic.FO.Relational.not_definable_even_card
+    Cslib.Logic.FO.Relational.not_definable_even_card,
+    Cslib.Logic.FO.Relational.bernoulliStructure_zero_one_law,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_one_iff,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_zero_iff,
+    Cslib.Logic.FO.Relational.tendsto_sentenceProb_bernoulliStructure_one_iff_uniformStructure,
+    Cslib.Logic.FO.Relational.not_exists_sentence_of_not_tendsto_bernoulliStructure
   ]
   scope := "Relational languages with finitely many relation symbols, none nullary, under the \
     uniform measure on L-structures on {0, …, n - 1}. The limit is 1 exactly for the \
     consequences of the extension theory and 0 exactly when the negation is one. The law \
     fails with a nullary symbol. For Language.graph the measure is uniform on directed \
-    graphs with loops, so this is not the G(n, 1/2) law."
+    graphs with loops, so this is not the G(n, 1/2) law. The sources cover this uniform law, \
+    in which every atomic fact has probability 1/2 (Fagin1976). The bernoulliStructure \
+    theorems extend it to a constant probability 0 < p R < 1 for each relation symbol R, with \
+    the same almost-sure sentences for every such p. That extension is an adaptation of \
+    Fagin's proof made here; no primary source for it was found, and none of the listed \
+    sources is claimed for it. With p R equal to 0 or 1 the characterization by the \
+    extension theory fails, although the 0-1 law still holds by replacing the symbol with \
+    ⊥ or ⊤ (it is a.s. empty or full); that reduction is not formalized. Unlabelled \
+    structures and probabilities depending on n are not covered."
 
 register_result "buchi-elgot-trakhtenbrot" where
   title := "Büchi–Elgot–Trakhtenbrot: MSO-definable languages are the regular languages"
@@ -1240,6 +1297,25 @@ register_result "even-linear-orders" where
     sufficient condition with threshold 2^n. EVEN is not definable even above any size \
     threshold."
 
+register_result "monadic-small-model" where
+  title := "Löwenheim: the small model property for monadic sentences"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Lowenheim1915, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Monadic.duplicatorWins_of_encard,
+    Cslib.Logic.FO.Monadic.realize_iff_of_encard,
+    Cslib.Logic.FO.Monadic.exists_substructure_realize,
+    Cslib.Logic.FO.Monadic.exists_fin_realize
+  ]
+  scope := "Mathlib relational languages whose relation symbols have arity at most one, with \
+    finitely many unary symbols; nullary symbols are allowed. A sentence of quantifier rank q \
+    with a nonempty model has one on Fin (n + 1) with n + 1 ≤ max q 1 * 2 ^ k for k unary \
+    symbols, through a substructure of the given model. The explicit bound and its proof by \
+    Ehrenfeucht–Fraïssé games are proved here; Löwenheim is cited for the small model \
+    property only. The decision procedure for finite satisfiability is not yet formalized."
+
 register_result "connectivity-not-fo" where
   title := "Connectivity is not first-order definable"
   topic := "descriptive complexity"
@@ -1380,15 +1456,20 @@ register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
   topic := "time complexity"
   sources := [
-    { paper := FortnowSanthanam2006, theorem := "Lemma 5", locator := "Section 3.3" }
+    { paper := FortnowSanthanam2006,
+      theorem := "Lemma 5 (the translation method only, not these statements)",
+      locator := "Section 3.3" }
   ]
   theorems := [
     Cslib.Complexity.DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow,
-    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_log_rpow
+    Cslib.Complexity.DTIME_pow_ssubset_DTIME_of_pow_mul_log_rpow_le,
+    Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_two_pow_add_log_div,
+    Cslib.Complexity.DTIME_two_pow_ssubset_DTIME_of_two_pow_mul_rpow_le
   ]
   scope := "DTIME(n^a) is strictly inside DTIME(g) whenever g(n) >= n^a (ln n)^eps eventually, \
-    for every integer a >= 1 and real eps > 0, on bit strings with native multitape DTIME. \
+    for every integer a >= 1 and real eps > 0, and DTIME(2^n) is strictly inside DTIME(g) \
+    whenever g(n) >= 2^n n^eps eventually, on bit strings with native multitape DTIME. \
     Derived by translation (padding) from the library's polylogarithmic-gap diagonal theorem; \
-    the source lemma is the translation method, not this statement. Only the bounds n^a are \
-    covered, not arbitrary time-constructible t, and this is not W. J. Paul's fixed-tape \
-    hierarchy."
+    the source lemma is the translation method, not this statement. Only the bounds n^a and \
+    2^n are covered, not arbitrary time-constructible t, and this is not W. J. Paul's \
+    fixed-tape hierarchy."

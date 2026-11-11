@@ -117,7 +117,7 @@ def heavyIncidenceCutoff (M n : ℕ) : ℕ :=
   ((M + n - 1) / n) * (if Nat.clog 2 n = 0 then 0 else (Nat.clog 2 n - 1).sqrt + 1)
 
 /-- Selector for the smallest integer `β ≥ 1` satisfying `b ≤ lam ^ β` and `w ≤ lam ^ β` in
-Section 5.5 (`[OpenAI2026ETH]`, pp. 38–39), defaulting to `1` when `lam ≤ 1` and `max b w > 1`. -/
+Section 5.5 (`[OpenAI2026ETH]`, pp. 38–39), defaulting to `1` when `lam ≤ 1` and `lam < max b w`. -/
 def chooseBeta (lam b w : ℕ) : ℕ :=
   (((List.range (max b.size w.size + 1)).map (· + 1)).find? fun β =>
     decide (b ≤ lam ^ β) && decide (w ≤ lam ^ β)).getD 1
