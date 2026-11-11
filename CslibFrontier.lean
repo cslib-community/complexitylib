@@ -1056,6 +1056,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.ConstDepth
 public import CslibFrontier.Computability.Circuit.Boolean.Continuity
 public import CslibFrontier.Computability.Circuit.Boolean.Convolution
 public import CslibFrontier.Computability.Circuit.Boolean.Correction
+public import CslibFrontier.Computability.Circuit.Boolean.CountingBound
 public import CslibFrontier.Computability.Circuit.Boolean.CriticalPath
 public import CslibFrontier.Computability.Circuit.Boolean.DeMorgan
 public import CslibFrontier.Computability.Circuit.Boolean.DepthClasses
@@ -4760,6 +4761,7 @@ public import CslibFrontier.Foundations.Combinatorics.FunctionalGraph.Projection
 public import CslibFrontier.Foundations.Combinatorics.FunctionalGraph.Spectrum
 public import CslibFrontier.Foundations.Combinatorics.GreedySchedules
 public import CslibFrontier.Foundations.Combinatorics.Hoeffding
+public import CslibFrontier.Foundations.Combinatorics.HybridPrediction
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric
 public import CslibFrontier.Foundations.Combinatorics.HypergraphCut
 public import CslibFrontier.Foundations.Combinatorics.InclusionMatrix
@@ -4857,6 +4859,7 @@ public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Contraction
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.MAOrdering
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.MinCutBetween
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Multigraph
+public import CslibFrontier.Foundations.Combinatorics.WeightedTail
 public import CslibFrontier.Foundations.Computability.ComputablePred
 public import CslibFrontier.Foundations.Computability.ContextFreeGrammar
 public import CslibFrontier.Foundations.Computability.DistinctValues
