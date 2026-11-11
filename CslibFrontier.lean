@@ -4851,6 +4851,7 @@ public import CslibFrontier.Foundations.Combinatorics.CompositionMoment
 public import CslibFrontier.Foundations.Combinatorics.CompositionMomentLinear
 public import CslibFrontier.Foundations.Combinatorics.DepthReduction
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
+public import CslibFrontier.Foundations.Combinatorics.Digraph.Connectivity
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.ErdosSzekeres
 public import CslibFrontier.Foundations.Combinatorics.Expander.AffineFamily
@@ -4946,6 +4947,7 @@ public import CslibFrontier.Foundations.Combinatorics.MajorityVote
 public import CslibFrontier.Foundations.Combinatorics.MajorityVote.Weighted
 public import CslibFrontier.Foundations.Combinatorics.Multidigraph.Arborescence
 public import CslibFrontier.Foundations.Combinatorics.Multidigraph.BEST
+public import CslibFrontier.Foundations.Combinatorics.Multidigraph.Connectivity
 public import CslibFrontier.Foundations.Combinatorics.Multigraph
 public import CslibFrontier.Foundations.Combinatorics.Multigraph.CutSpace
 public import CslibFrontier.Foundations.Combinatorics.PacketPacking
@@ -4967,6 +4969,8 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CliqueCover
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.EdgeConnectivity
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.VertexConnectivity
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Crown
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CutRank
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.DominatingSet
