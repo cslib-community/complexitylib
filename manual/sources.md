@@ -149,6 +149,11 @@ Richard Bellman. “Dynamic Programming Treatment of the Travelling Salesman Pro
 
 Charles H. Bennett. *Time/Space Trade-Offs for Reversible Computation*. SIAM Journal on Computing 18(4), 766–776, 1989. https://doi.org/10.1137/0218053 . Bibliographic metadata only; the paper was not inspected in this pass. The manual credits it with the recursive checkpointing strategy as described in [ltv98](#ltv98), Sections 6 and 7.
 
+<a id="bensassonkopparty12"></a>
+## bensassonkopparty12
+
+Eli Ben-Sasson and Swastik Kopparty. *Affine Dispersers from Subspace Polynomials*. SIAM Journal on Computing 41(4), 880–914, 2012. https://doi.org/10.1137/110826254 . Bibliographic metadata as in the library bibliography; the primary PDF was not directly inspected, so ECCC report theorem locators recorded in the source remain unverified against the primary text.
+
 <a id="berge57"></a>
 ## berge57
 
@@ -501,6 +506,11 @@ Jeff Erickson, Ivor van der Hoog, Tillmann Miltzow. “Smoothing the Gap Between
 
 Alex Fabrikant, Christos H. Papadimitriou, and Kunal Talwar. *The Complexity of Pure Nash Equilibria*. Proceedings of the 36th Annual ACM Symposium on Theory of Computing (STOC 2004), 604–612. https://doi.org/10.1145/1007352.1007445 . Bibliographic metadata checked against Crossref on 2026-11-08; the PLS-completeness theorem is attributed as cited in Roughgarden's CS364A Lecture #19, Theorem 3.1. The paper itself was not consulted.
 
+<a id="feige1998"></a>
+## feige1998
+
+Uriel Feige. "A Threshold of ln n for Approximating Set Cover." *Journal of the ACM* 45(4), 634–652, 1998. https://doi.org/10.1145/285055.285059 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the Set Cover hardness threshold framework using separating partition gadgets.
+
 <a id="fips203"></a>
 ## fips203
 
@@ -604,7 +614,7 @@ Torbjörn Granlund, Peter L. Montgomery. "Division by Invariant Integers using M
 <a id="goemanswilliamson95"></a>
 ## goemanswilliamson95
 
-Michel X. Goemans and David P. Williamson. "Improved Approximation Algorithms for Maximum Cut and Satisfiability Problems Using Semidefinite Programming." *Journal of the ACM* 42(6), 1115–1145, 1995. https://doi.org/10.1145/227683.227684 . Section 2 (the relaxation (P) and random-hyperplane rounding) and Section 3 (Theorem 3.1, Lemma 3.2, Theorem 3.3, Lemma 3.4, and Lemma 3.5 with its tangent-line proof at `θ = 2.331122`) were checked against the author-hosted copy at https://math.mit.edu/~goemans/PAPERS/maxcut-jacm.pdf on 2026-11-08.
+Michel X. Goemans and David P. Williamson. "Improved Approximation Algorithms for Maximum Cut and Satisfiability Problems Using Semidefinite Programming." *Journal of the ACM* 42(6), 1115–1145, 1995. https://doi.org/10.1145/227683.227684 . Section 2 (the relaxation (P) and random-hyperplane rounding) and Section 3 (Theorem 3.1, Lemma 3.2, Theorem 3.3, Lemma 3.4, and Lemma 3.5 with its tangent-line proof at `θ = 2.331122`) were checked against the author-hosted copy at https://math.mit.edu/~goemans/PAPERS/maxcut-jacm.pdf on 2026-11-08. Section 7.2.1 (relaxations `(Q')`, `(P')`, and Theorem 7.2.1.1 for MAX 2-SAT) and Section 7.3 (relaxations `(Q'')`, `(P'')`, Lemmas 7.3.1–7.3.2, the `β > 0.79607` MAX DICUT bound, the balanced-digraph `α` bound on p. 1138, and the sign typo in display `(Q'')`) were checked against the same copy on 2026-11-11.
 
 <a id="goldbergtarjan88"></a>
 ## goldbergtarjan88
@@ -625,6 +635,11 @@ Oded Goldreich. *Foundations of Cryptography, Volume 2: Basic Applications*. Cam
 ## gomoryhu61
 
 Ralph E. Gomory and T. C. Hu. “Multi-Terminal Network Flows.” *Journal of the Society for Industrial and Applied Mathematics* 9(4), 551–570, 1961. https://doi.org/10.1137/0109047 . Bibliographic metadata checked through the publisher record; the article body was not inspected in this pass. The manual cites it for cut-equivalent (Gomory–Hu) trees and the triangle inequality for minimum cut values, as described in [Schrijver 2003](#schrijver03), Section 15.4.
+
+<a id="goosetal22"></a>
+## goosetal22
+
+Mika Göös, Alexandros Hollender, Siddhartha Jain, Gilbert Maystre, William Pires, Robert Robere and Ran Tao. "Further Collapses in TFNP." *37th Computational Complexity Conference (CCC 2022)*, LIPIcs 234, 33:1–33:15, 2022. https://doi.org/10.4230/LIPIcs.CCC.2022.33 . Checked on 2026-11-10 against the arXiv TeX source of `arXiv:2202.07761v2` (https://arxiv.org/abs/2202.07761 , dated 20 May 2022): Section 1, Theorem 1 (`EOPL = PLS ∩ PPAD`) and Theorem 2 (`SOPL = PLS ∩ PPADS`); Section 2, Lemma 1 (`inj-PHP` and `bij-PHP` as `PPADS`- and `PPAD`-complete formulations); Section 3, Lemma 2 (the path-pigeonhole reduction `inj-PHP ≤ Path-inj-PHP_f`); Section 4, Lemma 3 (`SoD ∧ inj-PHP ≤ SoPL`); and Section 5, Lemma 4 (`SoPL ∧ bij-PHP ≤ EoPL`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PotentialLineCollapse.lean` implements Lemma 4 directly from `SOPL` and `PPAD` (`SOPL_inter_PPAD_subset_EOPL`, `EOPL_eq_SOPL_inter_PPAD`). `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/SOPLCollapse.lean` implements Lemmas 1–3 directly on `PLS` and `PPADS` families over width `n₁(a) + 2(n₁(a) + n₂(a))` (`plsPpads_sink`, `mem_SOPL_of_localOpt_sinkOfLine`, `PLS_inter_PPADS_subset_SOPL`) and deduces Theorem 2 (`SOPL_eq_PLS_inter_PPADS`) and Theorem 1 (`EOPL_eq_PLS_inter_PPAD`). `UEOPL` and the query-model results of the paper are not formalized.
 
 <a id="grenet11"></a>
 ## grenet11
@@ -786,6 +801,11 @@ Yuval Ishai, Joe Kilian, Kobbi Nissim and Erez Petrank. "Extending Oblivious Tra
 ## ilango2020focs
 
 Rahul Ilango. *Constant Depth Formula and Partial Function Versions of MCSP are Hard*. FOCS 2020, 424–433. https://doi.org/10.1109/FOCS46700.2020.00047 . Full version ECCC TR20-183. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter.
+
+<a id="ilo2020"></a>
+## ilo2020
+
+Rahul Ilango, Bruno Loff and Igor C. Oliveira. *NP-Hardness of Circuit Minimization for Multi-Output Functions*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 22:1–22:36. https://doi.org/10.4230/LIPIcs.CCC.2020.22 . Inspected the LIPIcs PDF directly: the canonical DNF (pp. 22:19–22:20), Section 4.2 (pp. 22:20–22:21), Proposition 14 and the consequence `∆ = CC(T • g) − CC(g)` (pp. 22:21–22:22), Lemma 15 (p. 22:22) and Lemma 16 (pp. 22:22–22:23).
 
 <a id="immerman1988"></a>
 ## immerman1988
@@ -977,6 +997,11 @@ Leonid A. Levin. *Average Case Complete Problems*. SIAM Journal on Computing 15(
 
 Carsten Lund, Lance Fortnow, Howard Karloff and Noam Nisan. *Algebraic Methods for Interactive Proof Systems*. JACM 39(4), 859–868, 1992. https://doi.org/10.1145/146585.146605 .
 
+<a id="li2023"></a>
+## li2023
+
+Xin Li. *Two Source Extractors for Asymptotically Optimal Entropy, and (Many) More*. FOCS 2023, 1271–1281. https://doi.org/10.1109/FOCS57990.2023.00075 . Bibliographic metadata checked; secondary search summaries indicate Definition 3.1 (affine sources), Lemma 3.9 (affine conditioning), Lemma 3.10 (block decomposition), Theorem 7.13 (sumset extractor), and Corollary 7.14 in preprint versions, while the full primary PDF was not read line by line, so individual numbered locators in `AffineSource.lean` remain unverified against the typeset FOCS version.
+
 <a id="liptonyoung1994"></a>
 ## liptonyoung1994
 
@@ -991,6 +1016,11 @@ Yanyi Liu and Rafael Pass. *On One-way Functions and Kolmogorov Complexity*. FOC
 ## liupass2021crypto
 
 Yanyi Liu and Rafael Pass. *On the Possibility of Basing Cryptography on EXP ≠ BPP*. CRYPTO 2021, LNCS 12825, 11–40. https://doi.org/10.1007/978-3-030-84242-0_2 . Full version ECCC TR21-056. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation cites its Section 2.2 for `MKtP` and Fact 3.1 with ECCC numbering.
+
+<a id="lizhong2024"></a>
+## lizhong2024
+
+Xin Li and Yan Zhong. *Explicit Directional Affine Extractors and Improved Hardness for Linear Branching Programs*. CCC 2024, LIPIcs 300, 10:1–10:14. https://doi.org/10.4230/LIPIcs.CCC.2024.10 ; preprint arXiv:2304.11495. Bibliographic metadata checked on 2026-11-11 UTC; secondary search summaries confirm Definition 21 (affine somewhere condenser), Theorem 18, and Lemma 20 in Section 3, while the full primary PDF was not read line by line, so the remaining numbered locators cited in `AffineSource.lean` and `SomewhereCondenser.lean` remain unverified against the typeset CCC version.
 
 <a id="ll24"></a>
 ## ll24
@@ -1016,6 +1046,11 @@ Yehuda Lindell, Benny Pinkas. "A Proof of Security of Yao's Protocol for Two-Par
 ## ltv98
 
 Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Computation by Pebble Games*. Physica D 120, 168–176, 1998. https://doi.org/10.1016/S0167-2789(98)00052-9 . Locators refer to arXiv:quant-ph/9703009v3 (11 April 1997), https://arxiv.org/abs/quant-ph/9703009v3 . The reversible pebble rule (Section 6), the procedures `pebble(s, n)` and `unpebble(s, n)` (Section 7), Theorem 1, Corollaries 1 and 2, Lemma 1 and Theorem 2 were checked. The definitions of available pebbles and of weak and strong solvability, the statement and proof of Theorem 1 (including the distance estimate `2^j + 2^f + 2^(f+1) + ⋯ + 2^(j−1) ≤ 2^(j+1)`), and Corollary 1 were rechecked against the same arXiv version on 2026-11-08 for `ReversiblePathReachable.lean`.
+
+<a id="lundyannakakis1994"></a>
+## lundyannakakis1994
+
+Carsten Lund and Mihalis Yannakakis. "On the Hardness of Approximating Minimization Problems." *Journal of the ACM* 41(5), 960–981, 1994. https://doi.org/10.1145/185675.306789 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the constant-factor and logarithmic Set Cover inapproximability reductions from Label Cover using set-system partition gadgets.
 
 <a id="manacher75"></a>
 ## manacher75
@@ -1072,6 +1107,11 @@ L. Mirsky. "A Dual of Dilworth's Decomposition Theorem." *The American Mathemati
 
 Om Swostik Mishra and Rahul Santhanam. *An Explicit `4n - O(log n)` Size Lower Bound against General Boolean Circuits*. STOC 2027 submission 1241, 2027. https://stoc2027.sigact-ec.workers.dev/submissions/1241.pdf . The submission PDF was inaccessible in this pass (HTTP error 1042) and was not inspected directly; bibliographic details and cited labels (`Lemma 2.2`, `Theorem 4.1`, `Lemma 4.2`, `Remark 4.3`, and the `Theorem 1.1` target) come from repository issue `#4322` and remain unverified against the primary manuscript.
 
+<a id="mishrasanthanam26"></a>
+## mishrasanthanam26
+
+Om Swostik Mishra and Rahul Santhanam. *An Explicit `3.5n - o(n)` Size Lower Bound against General Boolean Circuits*. Electronic Colloquium on Computational Complexity (ECCC) TR26-260, 2026, https://eccc.weizmann.ac.il/report/2026/260/ . Bibliographic metadata as in the library bibliography; the primary text was not directly inspected.
+
 <a id="misragries82"></a>
 ## misragries82
 
@@ -1090,7 +1130,7 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 <a id="mosertardos10"></a>
 ## mosertardos10
 
-Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
+Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08; Section 6 (lopsidependency, Lemma 6.2, Theorem 6.1, and the conflict-graph CNF application) was checked against the same arXiv v3 PDF on 2026-11-11. The JACM article numbering was not checked against the typeset journal version.
 
 <a id="motzkinstraus1965"></a>
 ## motzkinstraus1965
@@ -1175,7 +1215,7 @@ Ryan O'Donnell. *Analysis of Boolean Functions*. Cambridge University Press, 201
 <a id="oliveirapichsanthanam2019"></a>
 ## oliveirapichsanthanam2019
 
-Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean modules cite its Lemmas 4.1 and 4.7.
+Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography. The Lean modules cite its Lemmas 4.1 and 4.7 and Theorem 1.4. For Theorem 1.4, worker meta-proj read the authors' copy of ECCC TR18-158 revision 1 (https://www.dcs.warwick.ac.uk/~igorcarb/documents/papers/OPS19.pdf) on 2026-11-11 UTC: Theorem 4 there is the same statement with an unspecified universal constant `c ≥ 1`, its proof in Section 4.1 uses `c = 10`, Definition 9 has no-instances of size `> s₂`, and Section 2 says gate types do not matter. The journal numbering `1.4` was not checked against the journal text.
 
 <a id="oliveirasanthanam2018"></a>
 ## oliveirasanthanam2018
@@ -1371,6 +1411,11 @@ Alexander Shen, Vladimir A. Uspensky and Nikolay Vereshchagin. *Kolmogorov Compl
 ## shi03
 
 Yaoyun Shi. "Both Toffoli and Controlled-NOT Need Little Help to Do Universal Quantum Computing." *Quantum Information and Computation* 3(1), 84–92, 2003. https://doi.org/10.26421/QIC3.1-7 ; arXiv version (v2, titled "Both Toffoli and Controlled-NOT need little help to do universal quantum computation") https://arxiv.org/abs/quant-ph/0205115 . The arXiv v2 PDF was read on 2026-11-08 UTC for §2 (the notation `U[A]` for a gate on chosen qubits), §4 (Propositions 4.1 and 4.2, Definition 4.3, Lemmas 4.4 and 4.5, Algorithm 2, Theorem 4.6) and Figure 1. The library's controlled circuits, phase oracles, reflection about zero and plane rotation follow the proof of Lemma 4.5 in §4.2. With the Hadamard gate, `σ_z = H σ_x H` holds exactly, so §4.1 is not used. Journal pagination is taken from the bibliographic record.
+
+<a id="shoup1990"></a>
+## shoup1990
+
+Victor Shoup. "New Algorithms for Finding Irreducible Polynomials over Finite Fields." *Mathematics of Computation* 54(189), 435–447, 1990. https://doi.org/10.1090/s0025-5718-1990-0993933-0 . Bibliographic metadata checked on 2026-11-11 UTC; the full primary PDF was not read directly, so the library relies on the standard deterministic Frobenius/trace construction and deterministic Berlekamp splitting verified directly in Lean without claiming section/theorem locators from the paper.
 
 <a id="sipser13"></a>
 ## sipser13

@@ -428,8 +428,8 @@ theorem computableInPolyTime_circuitCode :
 
 /-- **The instance of `WCS 1 3` of a graph and a target**: the circuit of the graph, of weft at most
 `1` and depth at most `3`, with the target as weight. -/
-def toWCS : Graph × ℕ → WeftCircuit 1 3 × ℕ
-  | (G, k) => (⟨toCircuit G, weft_toCircuit_le G, depth_toCircuit_le G⟩, k)
+def toWCS : Graph × ℕ → WCSInstance 1 3
+  | (G, k) => ⟨⟨toCircuit G, weft_toCircuit_le G, depth_toCircuit_le G⟩, k⟩
 
 /-- The instance of `WCS 1 3` of `(G, k)` is a yes-instance exactly when `G` has an independent
 set of `k` declared vertices. -/
@@ -448,14 +448,14 @@ theorem computableInPolyTime_toWCS :
     fun_prop
   refine h.of_enc_eq fun x => ?_
   obtain ⟨G, k⟩ := x
-  simp only [toWCS, encPair_apply, encWeftCircuit_apply, Circuit.encCircuit_apply,
+  simp only [toWCS, encWCS_apply, encPair_apply, encWeftCircuit_apply, Circuit.encCircuit_apply,
     code_toCircuit]
   rfl
 
 /-- **`IndependentSet` fpt-reduces to `WCS 1 3`**, by a polynomial-time reduction that keeps the
 parameter. -/
 theorem fptReducible_WCS :
-    FPTReducible (encPair encGraph encNat) (encWCS 1 3) Prod.snd Prod.snd IndependentSet
+    FPTReducible (encPair encGraph encNat) (encWCS 1 3) Prod.snd WCSInstance.weight IndependentSet
       (WCS 1 3) :=
   FPTReducible.of_computableInPolyTime computableInPolyTime_toWCS (h := id)
     (fun _ => le_rfl) fun x => (toWCS_mem_WCS_iff x).symm
