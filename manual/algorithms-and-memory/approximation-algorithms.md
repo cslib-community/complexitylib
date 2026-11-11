@@ -38,6 +38,19 @@ Import `CslibFrontier.Algorithms.Lean.SetCover.Greedy` ([CslibFrontier/Algorithm
 
 The [checked examples](../../CslibFrontierTests/SetCoverGreedy.lean) include an instance where greedy pays `11/6` against an optimum of `11/10`, inside the bound `121/60`. They also show a fractional cover strictly cheaper than every integral cover. Machine-level running time is open ([ROADMAP](../../ROADMAP.md#combinatorial-optimization)).
 
+### Set Cover approximation hardness
+
+Import `CslibFrontier.Computability.Complexity.Problems.SetCover` ([source](../../CslibFrontier/Computability/Complexity/Problems/SetCover.lean)) for the encoded unweighted and weighted set-system problems (`SetSystem` / `encSetSystem`, `WeightedSetSystem` / `encWeightedSetSystem`, `SetCover_mem_NP`, `WeightedSetCover_mem_NP`) and their bridges to `greedy` (`SetSystem.greedyIndices_isCover`, `SetSystem.greedyIndices_length_le_one_add_log`, `WeightedSetSystem.greedyWeight_le_one_add_log`).
+
+Import `CslibFrontier.Computability.PCP.Approximation.SetCover.ApproxReduction` ([source](../../CslibFrontier/Computability/PCP/Approximation/SetCover/ApproxReduction.lean)) for `MinOptProblem`, `IsApprox`, `ApproxPreservingReducible`, `GapSetCover`, `GapWeightedSetCover`, `approxPreservingReducible_setCover_weightedSetCover`, and the `P = NP` consequences (`P_eq_NP_of_setCover_approx`, `P_eq_NP_of_weightedSetCover_approx`).
+
+Import `CslibFrontier.Computability.PCP.Approximation.SetCover.LundYannakakis` ([source](../../CslibFrontier/Computability/PCP/Approximation/SetCover/LundYannakakis.lean)) and [PartitionGadget.lean](../../CslibFrontier/Computability/PCP/Approximation/SetCover/PartitionGadget.lean) for the Lund–Yannakakis / Feige reductions from Label Cover ([Lund and Yannakakis][lundyannakakis1994]; [Feige][feige1998]; cited at paper level without inspecting full texts). The `MinOptProblem` / `ApproxPreservingReducible` interface, the explicit `exists_cover_of_density` gadget size, and the `1 / (4 * log 2)` threshold are this library's formulation:
+
+- **Constant-factor NP-hardness:** `GapSetCover_npHard` and `GapWeightedSetCover_npHard` prove `NP`-hardness of `GapSetCover c` and `GapWeightedSetCover c` for every constant `c > 1` from `exists_GapLabelCover_npHard` via `boolCubeGadget_separates`, ruling out polynomial-time constant-factor approximation algorithms for unweighted and weighted Set Cover unless `P = NP` (`P_eq_NP_of_setCover_approx_const`, `P_eq_NP_of_weightedSetCover_approx_const`).
+- **Logarithmic gap under low soundness:** `exists_small_partitionGadget` gives a `t`-separating gadget of size `O(t * 2 ^ t * log |γ|)` via `exists_cover_of_density`, and `exists_setCover_log_gap` / `exists_weightedSetCover_log_gap` yield per-instance `c * Real.log n` gaps for every `0 < c < 1 / (4 * log 2)` and every `t ≥ logGapThreshold c p m |γ|` (an explicit `O(p * log m + log log |γ|)` threshold, with `p = 3` unweighted and `p = 1` weighted) conditional on the Label Cover instance having soundness `≤ 1 / t ^ 2`. Upgrading these conditional gaps beyond the constant-round `exists_GapLabelCover_npHard` base requires either super-constant parallel repetition via a quasi-polynomial reduction (ruling out polynomial-time `c * log n` approximation under the stronger assumption `NP ⊈ DTIME(n^{O(log log n)})`, not `P ≠ NP` alone) or polynomial-time low-soundness Label Cover such as Dinur–Steurer (for `P ≠ NP` hardness up to `(1 - ε) ln n`).
+
+The [hardness examples](../../CslibFrontierTests/SetCoverHardness.lean) check concrete `SetCover` and `WeightedSetCover` instances, non-coverability, `boolCubeGadget` separation, concrete satisfiable and contradictory `toSetCoverOf` / `toWeightedSetCoverOf` reductions, `GapSetCover_npHard`, and `exists_setCover_log_gap` (both completeness on `satGraph` and a nonvacuous low-soundness witness on `Fin 2048` with `t = 41`, `t ^ 2 ≤ |γ|`, and `1 - unsatVal = 1 / 2048 ≤ 1 / t ^ 2`). Run `scripts/build.sh CslibFrontierTests.SetCoverHardness`.
+
 ## Greedy submodular maximization over matroids and `p`-systems
 
 Import `CslibFrontier.Algorithms.Lean.Submodular.MatroidGreedy` ([source](../../CslibFrontier/Algorithms/Lean/Submodular/MatroidGreedy.lean)) for the algorithm and its guarantees, and `CslibFrontier.Algorithms.Lean.Query.Submodular.MatroidGreedy` ([source](../../CslibFrontier/Algorithms/Lean/Query/Submodular/MatroidGreedy.lean)) for the oracle program. Like greedy set cover, this is analyzed for solution quality and query counts, not for machine running time. `submodularMatroidGreedy f indep xs` takes a value function `f : Finset α → β`, an independence test `indep : Finset α → Bool` and a ground list `xs`. Starting from `∅`, each round adds an element `c ∉ S` of `xs` with `indep (insert c S)` that maximizes `f (insert c S)`, with ties going to the earliest element of `xs`. It stops when no element can be added. This is the greedy algorithm of [Fisher, Nemhauser and Wolsey][fnw78], as described in [Călinescu et al.][ccpv11].
@@ -127,10 +140,12 @@ The [examples](../../CslibFrontierTests/SteinerTree.lean) take a star metric wit
 [christofides76]: ../sources.md#christofides76
 [clrs09]: ../sources.md#clrs09
 [edmonds65]: ../sources.md#edmonds65
+[feige1998]: ../sources.md#feige1998
 [fnw78]: ../sources.md#fnw78
 [fominkratsch10]: ../sources.md#fominkratsch10
 [gilbertpollak68]: ../sources.md#gilbertpollak68
 [goemanswilliamson95]: ../sources.md#goemanswilliamson95
 [heldkarp62]: ../sources.md#heldkarp62
 [kmb81]: ../sources.md#kmb81
+[lundyannakakis1994]: ../sources.md#lundyannakakis1994
 [williamsonshmoys11]: ../sources.md#williamsonshmoys11

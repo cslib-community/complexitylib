@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 
@@ -16,8 +17,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 `ZeroOneIP` is the feasibility problem of zero-one integer programming in equality form: a system
 of linear equations `∑ j, a j * x j = t` with natural coefficients and right-hand sides, encoded in
-binary, has a solution with every `x j ∈ {0, 1}`. Each constraint is a pair `(a, t)`, with `a`
-listing the coefficients of the variables `0, 1, …`; missing coefficients are zero.
+binary, has a solution with every `x j ∈ {0, 1}`. Each equation `c : ZeroOneIP.Equation` stores the
+coefficients `c.coeffs` of the variables `0, 1, …` (with missing coefficients zero) and the
+right-hand side `c.rhs`.
 
 Karp states zero-one integer programming with integer coefficients and inequalities
 [Karp1972]; the equality form with natural coefficients is the special case used here, and it is
@@ -26,6 +28,8 @@ already `NP`-complete. A subset sum instance is a single equation, so `SubsetSum
 
 ## Main definitions
 
+* `Cslib.Complexity.ZeroOneIP.Equation`, `Cslib.Complexity.ZeroOneIP.encEquation`: equality
+  constraints and their binary encoding.
 * `Cslib.Complexity.ZeroOneIP`, `Cslib.Complexity.encZeroOneIP`.
 * `Cslib.Complexity.ZeroOneIP.verifier`.
 * `Cslib.Complexity.SubsetSum.toZeroOneIP`.
@@ -43,22 +47,40 @@ already `NP`-complete. A subset sum instance is a single equation, so `SubsetSum
 * [R. M. Karp, *Reducibility among combinatorial problems*][Karp1972]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
 open Finset Turing.MultiTapeTM ComputableInPolyTime
 
-/-- The systems of linear equations with natural coefficients that have a zero-one solution, the
-equality form of Karp's zero-one integer programming [Karp1972]. A constraint `(a, t)` asks for
-`∑ j < a.length, a[j] * x j = t`. -/
-def ZeroOneIP : Set (List (List ℕ × ℕ)) :=
-  {C | ∃ x : ℕ → Bool, ∀ c ∈ C, ∑ j ∈ range c.1.length, c.1.getD j 0 * (x j).toNat = c.2}
+namespace ZeroOneIP
 
-/-- Instances of `ZeroOneIP`: the equations `(a, t)`, each framed, an equation being its list `a` of
-coefficients, framed, each coefficient framed, then its right-hand side `t`; all numbers in
-binary. -/
-abbrev encZeroOneIP : List (List ℕ × ℕ) ↪ List Bool := encList (encPair (encList encNat) encNat)
+/-- A linear equality constraint `∑ j, coeffs[j] * x j = rhs` in a zero-one integer program, with
+missing coefficients treated as zero. -/
+structure Equation where
+  /-- The coefficients of variables `0, 1, …`. -/
+  coeffs : List ℕ
+  /-- The right-hand side target. -/
+  rhs : ℕ
+  deriving DecidableEq, Repr
+
+/-- Binary encoding of a zero-one linear equation as `(coeffs, rhs)`. -/
+enc_structure encEquation : Equation where
+  coeffs : (encList encNat), rhs : encNat
+
+end ZeroOneIP
+
+/-- The systems of linear equations with natural coefficients that have a zero-one solution, the
+equality form of Karp's zero-one integer programming [Karp1972]. An equation `c` asks for
+`∑ j < c.coeffs.length, c.coeffs[j] * x j = c.rhs`. -/
+@[expose] def ZeroOneIP : Set (List ZeroOneIP.Equation) :=
+  {C | ∃ x : ℕ → Bool,
+    ∀ c ∈ C, ∑ j ∈ range c.coeffs.length, c.coeffs.getD j 0 * (x j).toNat = c.rhs}
+
+/-- Instances of `ZeroOneIP`: the equations `(coeffs, rhs)`, each framed, an equation being its
+list `coeffs` of coefficients, framed, each coefficient framed, then its right-hand side `rhs`;
+all numbers in binary. -/
+abbrev encZeroOneIP : List ZeroOneIP.Equation ↪ List Bool := encList ZeroOneIP.encEquation
 
 /-- The numbers selected by a mask sum to the scalar product with the mask. -/
 theorem sum_maskSelect (a : List ℕ) (w : List Bool) :
@@ -75,8 +97,8 @@ namespace ZeroOneIP
 
 /-- The verifier for `ZeroOneIP`: the certificate, read as the values of the variables, satisfies
 every equation. -/
-def verifier (x : List (List ℕ × ℕ) × List Bool) : Bool :=
-  x.1.all fun c => decide ((maskSelect c.1 x.2).sum = c.2)
+@[expose] def verifier (x : List Equation × List Bool) : Bool :=
+  x.1.all fun c => decide ((maskSelect c.coeffs x.2).sum = c.rhs)
 
 /-- `ZeroOneIP.verifier` verifies `ZeroOneIP` with certificates as long as the encoded system. -/
 theorem isVerifier :
@@ -85,8 +107,12 @@ theorem isVerifier :
   simp only [ZeroOneIP, Set.mem_ofPred_eq, Polynomial.eval_X, verifier, List.all_eq_true,
     decide_eq_true_eq, sum_maskSelect]
   set n := (encZeroOneIP C).length
-  have hlen : ∀ c ∈ C, c.1.length ≤ n := fun c hc =>
-    (length_le_length_encPair encNat encNat c).trans (length_le_encList_of_mem _ hc)
+  have hlen : ∀ c ∈ C, c.coeffs.length ≤ n := by
+    intro c hc
+    have hc_len : c.coeffs.length ≤ (encEquation c).length := by
+      rw [encEquation_apply]
+      exact length_le_length_encPair encNat encNat (c.coeffs, c.rhs)
+    exact hc_len.trans (length_le_encList_of_mem _ hc)
   constructor
   · rintro ⟨x, hx⟩
     refine ⟨(List.range n).map x, by simp, fun c hc => ?_⟩
@@ -115,7 +141,7 @@ end ZeroOneIP
 namespace SubsetSum
 
 /-- A subset sum instance as a single equation. -/
-def toZeroOneIP (x : List ℕ × ℕ) : List (List ℕ × ℕ) := [x]
+@[expose] def toZeroOneIP (x : List ℕ × ℕ) : List ZeroOneIP.Equation := [⟨x.1, x.2⟩]
 
 /-- **Correctness of the reduction to `ZeroOneIP`.** -/
 theorem toZeroOneIP_mem_iff (x : List ℕ × ℕ) : toZeroOneIP x ∈ ZeroOneIP ↔ x ∈ SubsetSum := by
@@ -131,6 +157,7 @@ theorem toZeroOneIP_mem_iff (x : List ℕ × ℕ) : toZeroOneIP x ∈ ZeroOneIP 
   · rintro ⟨w, -, hw⟩
     exact ⟨fun j => w.getD j false, hw⟩
 
+open scoped ZeroOneIP in
 /-- The reduction to `ZeroOneIP` is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_toZeroOneIP :
