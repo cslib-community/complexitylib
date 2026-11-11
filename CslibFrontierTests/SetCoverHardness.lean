@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import CslibFrontier.Computability.PCP.Approximation.SetCover.LundYannakakis
+import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.NormNum
 
@@ -23,7 +24,7 @@ Nonvacuous kernel-checked examples (using no `native_decide`) exercising:
    two-edge `LabelCover` graphs, including non-uniform vertex degrees.
 4. Instantiations of `GapSetCover_npHard`, `GapWeightedSetCover_npHard`,
    `P_eq_NP_of_setCover_approx_const`, `exists_weightedSetCover_log_gap`, and
-   `exists_setCover_log_gap`.
+   `exists_setCover_log_gap` (including nonvacuous `t ^ 2 ≤ |γ|` soundness on `shiftGraph2048`).
 -/
 
 public section
@@ -392,7 +393,8 @@ private theorem quarter_lt_inv_four_log_two : (1 / 4 : ℝ) < 1 / (4 * Real.log 
     (Real.log_lt_sub_one_of_pos (by norm_num) (by norm_num)).trans_eq (by norm_num)
   exact div_lt_div_of_pos_left (by norm_num) (by positivity) (by linarith)
 
-example : ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget Bool, G.Separates t ∧
+example : let t := logGapThreshold (1 / 4 : ℝ) 3 satGraph.edges.length (Fintype.card Bool)
+    4 ≤ t ∧ ∃ G : PartitionGadget Bool, G.Separates t ∧
     G.size = 2 ^ t * (t * Nat.clog 2 (2 * Fintype.card Bool + 1) + 1) ∧
     let bs : List Bool := Finset.univ.toList
     let gs : List Bool := Finset.univ.toList
@@ -404,9 +406,10 @@ example : ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget Bool, G.Separates t �
     (1 - ConstraintGraph.unsatVal (satGraph.toGraph projectionEval) ≤ 1 / (t : ℝ) ^ 2 →
       (S, k) ∈ (GapSetCoverFn fun X => (1 / 4 : ℝ) * Real.log (List.length X.ground)).no) :=
   exists_setCover_log_gap (c := (1 / 4 : ℝ)) (by norm_num) quarter_lt_inv_four_log_two
-    satGraph (by simp [satGraph])
+    satGraph (by simp [satGraph]) le_rfl
 
-example : ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget Bool, G.Separates t ∧
+example : let t := logGapThreshold (1 / 4 : ℝ) 1 satGraph.edges.length (Fintype.card Bool)
+    4 ≤ t ∧ ∃ G : PartitionGadget Bool, G.Separates t ∧
     G.size = 2 ^ t * (t * Nat.clog 2 (2 * Fintype.card Bool + 1) + 1) ∧
     let bs : List Bool := Finset.univ.toList
     let gs : List Bool := Finset.univ.toList
@@ -420,6 +423,203 @@ example : ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget Bool, G.Separates t �
       (W, k) ∈ (GapWeightedSetCoverFn fun X =>
         (1 / 4 : ℝ) * Real.log (List.length X.ground)).no) :=
   exists_weightedSetCover_log_gap (c := (1 / 4 : ℝ)) (by norm_num) quarter_lt_inv_four_log_two
-    satGraph (by simp [satGraph])
+    satGraph (by simp [satGraph]) le_rfl
+
+private def shiftEdgesPow2 : ℕ → ℕ → List (Edge (Fin 2048 → Fin 2048))
+  | 0, offset => [⟨0, 1, fun x => x + ⟨offset % 2048, Nat.mod_lt _ (by decide)⟩⟩]
+  | k + 1, offset => shiftEdgesPow2 k offset ++ shiftEdgesPow2 k (offset + 2 ^ k)
+
+private theorem shiftEdgesPow2_length (k offset : ℕ) :
+    (shiftEdgesPow2 k offset).length = 2 ^ k := by
+  induction k generalizing offset with
+  | zero => rfl
+  | succ k ih =>
+    simp only [shiftEdgesPow2, List.length_append, ih, pow_succ, Nat.mul_two]
+
+private theorem shiftEdgesPow2_getElem (k offset i : ℕ)
+    (hi : i < (shiftEdgesPow2 k offset).length) :
+    (shiftEdgesPow2 k offset)[i] =
+      ⟨0, 1, fun x => x + ⟨(offset + i) % 2048, Nat.mod_lt _ (by decide)⟩⟩ := by
+  induction k generalizing offset i with
+  | zero =>
+    have hi0 : i = 0 := by
+      simp only [shiftEdgesPow2, List.length_singleton] at hi
+      omega
+    subst hi0
+    rfl
+  | succ k ih =>
+    have hlen : i < 2 ^ (k + 1) := by rwa [shiftEdgesPow2_length] at hi
+    simp only [shiftEdgesPow2]
+    rw [List.getElem_append]
+    split_ifs with hlt
+    · exact ih offset i hlt
+    · have hlenk : (shiftEdgesPow2 k offset).length = 2 ^ k := shiftEdgesPow2_length k offset
+      have hi2 :
+          i - (shiftEdgesPow2 k offset).length < (shiftEdgesPow2 k (offset + 2 ^ k)).length := by
+        rw [hlenk, shiftEdgesPow2_length]
+        rw [pow_succ, Nat.mul_two] at hlen
+        rw [hlenk] at hlt
+        omega
+      rw [ih (offset + 2 ^ k) (i - (shiftEdgesPow2 k offset).length) hi2, hlenk]
+      have hadd : offset + 2 ^ k + (i - 2 ^ k) = offset + i := by
+        rw [hlenk] at hlt
+        omega
+      rw [hadd]
+
+/-- Concrete bipartite projection game over `Fin 2048` with `2048` shift constraints `x ↦ x + a`:
+for every labelling `(ℓ, r)` exactly `1` edge is satisfied, so `1 - unsatVal = 1 / 2048`. -/
+def shiftGraph2048 : Graph (Fin 2048 → Fin 2048) :=
+  ⟨2, shiftEdgesPow2 11 0⟩
+
+private theorem shiftGraph2048_edges_length : shiftGraph2048.edges.length = 2048 :=
+  shiftEdgesPow2_length 11 0
+
+private theorem shiftGraph2048_edges_getElem (i : ℕ) (hi : i < shiftGraph2048.edges.length) :
+    shiftGraph2048.edges[i]'hi = ⟨0, 1, fun x => x + ⟨i % 2048, Nat.mod_lt _ (by decide)⟩⟩ := by
+  have h := shiftEdgesPow2_getElem 11 0 i hi
+  rwa [Nat.zero_add] at h
+
+open Classical in
+private theorem shiftGraph2048_soundness :
+    0 < 1 - ConstraintGraph.unsatVal (shiftGraph2048.toGraph projectionEval) ∧
+      1 - ConstraintGraph.unsatVal (shiftGraph2048.toGraph projectionEval) = 1 / 2048 := by
+  have hm : Fintype.card (Fin shiftGraph2048.edges.length) = 2048 := by
+    simp [shiftGraph2048_edges_length]
+  have hsat_iff (σ : ℕ → Fin 2048 × Fin 2048) (i : Fin shiftGraph2048.edges.length) :
+      (shiftGraph2048.toGraph projectionEval).Satisfies σ i ↔
+        i.val = ((σ 1).2 - (σ 0).1).val := by
+    have hi : i.val < 2048 := i.isLt.trans_eq shiftGraph2048_edges_length
+    rw [satisfies_toGraph_projectionEval_iff, List.get_eq_getElem,
+      shiftGraph2048_edges_getElem i.val i.isLt]
+    dsimp only
+    have hmod : (⟨i.val % 2048, Nat.mod_lt _ (by decide)⟩ : Fin 2048) = ⟨i.val, hi⟩ :=
+      Fin.ext (Nat.mod_eq_of_lt hi)
+    rw [hmod]
+    constructor
+    · intro h
+      have heq : (⟨i.val, hi⟩ : Fin 2048) = (σ 1).2 - (σ 0).1 := eq_sub_of_add_eq' h
+      have hval : (⟨i.val, hi⟩ : Fin 2048).val = ((σ 1).2 - (σ 0).1).val :=
+        congrArg Fin.val heq
+      dsimp only at hval
+      exact hval
+    · intro h
+      have heq : (⟨i.val, hi⟩ : Fin 2048) = (σ 1).2 - (σ 0).1 := Fin.ext h
+      rw [heq]
+      exact add_sub_cancel (σ 0).1 (σ 1).2
+  have hunsat_frac (σ : ℕ → Fin 2048 × Fin 2048) :
+      (shiftGraph2048.toGraph projectionEval).unsatFrac σ = 2047 / 2048 := by
+    rw [ConstraintGraph.unsatFrac, hm]
+    let i₀ : Fin shiftGraph2048.edges.length :=
+      ⟨((σ 1).2 - (σ 0).1).val,
+        ((σ 1).2 - (σ 0).1).isLt.trans_eq shiftGraph2048_edges_length.symm⟩
+    have hunsat_eq :
+        (shiftGraph2048.toGraph projectionEval).unsatEdges σ = Finset.univ.erase i₀ := by
+      ext i
+      simp only [ConstraintGraph.mem_unsatEdges, Finset.mem_erase, Finset.mem_univ, and_true,
+        hsat_iff, ne_eq, Fin.ext_iff, i₀]
+    rw [hunsat_eq, Finset.card_erase_of_mem (Finset.mem_univ i₀), Finset.card_fin,
+      shiftGraph2048_edges_length]
+    norm_num
+  have hval : (shiftGraph2048.toGraph projectionEval).unsatVal = 2047 / 2048 := by
+    apply le_antisymm
+    · exact (ConstraintGraph.unsatVal_le _ (fun _ => (0, 0))).trans_eq (hunsat_frac _)
+    · rw [ConstraintGraph.le_unsatVal_iff]
+      intro σ
+      exact (hunsat_frac σ).ge
+  rw [hval]
+  norm_num
+
+private theorem eighth_lt_inv_four_log_two : (1 / 8 : ℝ) < 1 / (4 * Real.log 2) := by
+  have hlog2 : Real.log 2 < 0.6931471808 := Real.log_two_lt_d9
+  have hpos : 0 < Real.log 2 := Real.log_pos (by norm_num)
+  exact div_lt_div_of_pos_left (by norm_num) (by positivity) (by linarith)
+
+private theorem logGapThreshold_shift2048_le :
+    logGapThreshold (1 / 8 : ℝ) 3 shiftGraph2048.edges.length (Fintype.card (Fin 2048)) ≤ 41 := by
+  rw [shiftGraph2048_edges_length, Fintype.card_fin]
+  have hlog_gt : 0.6931471803 < Real.log 2 := Real.log_two_gt_d9
+  have hlog_lt : Real.log 2 < 0.6931471808 := Real.log_two_lt_d9
+  have hclog : Nat.clog 2 (2 * 2048 + 1) = 13 := by decide
+  unfold logGapThreshold
+  simp only [hclog]
+  have hgap_gt : (0.6534 : ℝ) < 1 - 4 * Real.log 2 * (1 / 8 : ℝ) := by linarith
+  have hgap_lt : 1 - 4 * Real.log 2 * (1 / 8 : ℝ) < (0.6535 : ℝ) := by linarith
+  have hδ_gt : (0.6534 : ℝ) < (1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ)) := by
+    linarith
+  have hδ_lt : (1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ)) < (0.6535 : ℝ) := by
+    linarith
+  have hT1 : Nat.ceil (1 / ((1 / 8 : ℝ) * Real.log 2)) + 1 ≤ 41 := by
+    have hdiv : 1 / ((1 / 8 : ℝ) * Real.log 2) ≤ 40 := by
+      rw [div_le_iff₀ (by linarith)]
+      linarith
+    have hceil : Nat.ceil (1 / ((1 / 8 : ℝ) * Real.log 2)) ≤ 40 := Nat.ceil_le.mpr hdiv
+    omega
+  have hT0 : Nat.ceil (max (((1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ)) / 2) - 1 -
+      Real.log ((1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ)) / 2)) 0 /
+      ((1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ)) / 2)) + 1 ≤ 41 := by
+    set δ := (1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ))
+    set α := δ / 2
+    have hα_gt : (1 / 4 : ℝ) < α := by dsimp only [α, δ]; linarith
+    have hα_lt : α < (0.33 : ℝ) := by dsimp only [α, δ]; linarith
+    have hlogα : -Real.log α < 2 * Real.log 2 := by
+      have h1 : Real.log ((2 : ℝ) ^ (-2 : ℤ)) < Real.log α := by
+        apply Real.log_lt_log (by norm_num)
+        norm_num
+        linarith
+      rw [Real.log_zpow] at h1
+      push_cast at h1
+      linarith
+    have hC_lt : α - 1 - Real.log α < (0.72 : ℝ) := by linarith
+    have hnum : max (α - 1 - Real.log α) 0 / α ≤ 40 := by
+      rw [div_le_iff₀ (by linarith)]
+      have hmax : max (α - 1 - Real.log α) 0 ≤ (0.72 : ℝ) := max_le hC_lt.le (by norm_num)
+      linarith
+    exact Nat.add_le_add_right (Nat.ceil_le.mpr hnum) 1
+  have hT2 : Nat.ceil (max ((3 : ℝ) * Real.log (2048 : ℕ) + Real.log ((13 + 1 : ℕ) : ℝ)) 0 /
+      ((1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ)))) + 1 ≤ 41 := by
+    set δ := (1 - 4 * Real.log 2 * (1 / 8 : ℝ)) / (8 * (1 / 8 : ℝ))
+    have hlog2048 : Real.log ((2048 : ℕ) : ℝ) = 11 * Real.log 2 := by
+      have h : ((2048 : ℕ) : ℝ) = (2 : ℝ) ^ 11 := by norm_num
+      rw [h, Real.log_pow]
+      norm_num
+    have hlog14 : Real.log ((13 + 1 : ℕ) : ℝ) ≤ 4 * Real.log 2 := by
+      have h : Real.log (14 : ℝ) ≤ Real.log ((2 : ℝ) ^ 4) :=
+        Real.log_le_log (by norm_num) (by norm_num)
+      rw [Real.log_pow] at h
+      push_cast at h
+      have h14 : ((13 + 1 : ℕ) : ℝ) = (14 : ℝ) := by norm_num
+      rwa [h14]
+    have hB_lt : (3 : ℝ) * Real.log (2048 : ℕ) + Real.log ((13 + 1 : ℕ) : ℝ) <
+        (25.65 : ℝ) := by
+      calc (3 : ℝ) * Real.log (2048 : ℕ) + Real.log ((13 + 1 : ℕ) : ℝ)
+          ≤ 3 * (11 * Real.log 2) + 4 * Real.log 2 := by linarith [hlog2048, hlog14]
+        _ < 25.65 := by linarith
+    have hdiv : max ((3 : ℝ) * Real.log (2048 : ℕ) + Real.log ((13 + 1 : ℕ) : ℝ)) 0 / δ ≤ 40 := by
+      rw [div_le_iff₀ (by linarith)]
+      have hmax : max ((3 : ℝ) * Real.log (2048 : ℕ) + Real.log ((13 + 1 : ℕ) : ℝ)) 0 ≤
+          (25.65 : ℝ) := max_le hB_lt.le (by norm_num)
+      exact hmax.trans (by linarith)
+    exact Nat.add_le_add_right (Nat.ceil_le.mpr hdiv) 1
+  exact max_le (max_le (by omega) hT0) (max_le hT1 hT2)
+
+example : let t := 41
+    t ^ 2 ≤ Fintype.card (Fin 2048) ∧
+    0 < 1 - ConstraintGraph.unsatVal (shiftGraph2048.toGraph projectionEval) ∧
+    ∃ G : PartitionGadget (Fin 2048), G.Separates t ∧
+      let bs : List (Fin 2048) := Finset.univ.toList
+      let gs : List (Fin 2048) := Finset.univ.toList
+      let S := setSystemOf bs gs (Classical.arbitrary (Fin 2048)) G shiftGraph2048
+      let k := 2 * List.length shiftGraph2048.edges
+      S.Coverable ∧
+      (S, k) ∈ (GapSetCoverFn fun X => (1 / 8 : ℝ) * Real.log (List.length X.ground)).no := by
+  have ht : logGapThreshold (1 / 8 : ℝ) 3 shiftGraph2048.edges.length
+      (Fintype.card (Fin 2048)) ≤ 41 := logGapThreshold_shift2048_le
+  obtain ⟨_, G, hsep, _, hcov, _, hno⟩ := exists_setCover_log_gap (c := (1 / 8 : ℝ))
+    (by norm_num) eighth_lt_inv_four_log_two shiftGraph2048
+    (by simp [shiftGraph2048_edges_length]) ht
+  obtain ⟨hsound_pos, hsound_eq⟩ := shiftGraph2048_soundness
+  refine ⟨by norm_num, hsound_pos, G, hsep, hcov, hno ?_⟩
+  rw [hsound_eq]
+  norm_num
 
 end CslibFrontierTests.SetCoverHardness

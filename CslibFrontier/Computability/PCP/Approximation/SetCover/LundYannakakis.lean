@@ -49,18 +49,24 @@ Instantiating `G` with `boolCubeGadget γ` and composing with `exists_GapLabelCo
 (`GapSetCover_npHard`, `GapWeightedSetCover_npHard`), ruling out polynomial-time constant-factor
 approximation algorithms for unweighted and weighted Set Cover unless `P = NP`.
 
-Instantiating `G` with `exists_small_partitionGadget` gives `c * Real.log n` gap theorems
-(`exists_weightedSetCover_log_gap`, `exists_setCover_log_gap`) for any `0 < c < 1 / (4 * log 2)`
-whenever the Label Cover instance has soundness `O(1 / t ^ 2)`. Upgrading those logarithmic gap
-bounds to unconditional `P ≠ NP` hardness requires super-constant parallel repetition (giving
-`NP ⊈ DTIME(n^{O(log log n)})`) or polynomial-time low-soundness Label Cover (Dinur–Steurer
-`(1 - ε) ln n`), which are beyond the constant-round `exists_GapLabelCover_npHard` base.
+Instantiating `G` with `exists_small_partitionGadget` gives per-instance `c * Real.log n` gap
+theorems (`exists_weightedSetCover_log_gap`, `exists_setCover_log_gap`) for any
+`0 < c < 1 / (4 * log 2)` and any `t ≥ logGapThreshold c p g.edges.length |γ|` (an explicit
+threshold growing like `O(p * log m + log log |γ|)`), conditional on the Label Cover instance
+having soundness `≤ 1 / t ^ 2`. Obtaining unconditional complexity-theoretic hardness from this
+conditional reduction requires ingredients beyond the constant-round `exists_GapLabelCover_npHard`
+base: super-constant parallel repetition uses a quasi-polynomial reduction and therefore yields
+hardness against polynomial-time algorithms only under the stronger assumption
+`NP ⊈ DTIME(n^{O(log log n)})` rather than `P ≠ NP` alone, whereas `P ≠ NP` hardness requires a
+polynomial-time low-soundness Label Cover theorem (such as Dinur–Steurer for `(1 - ε) ln n`).
 
 ## Main definitions
 
 * `Cslib.Complexity.SetCoverReduction.toWeightedSetCoverOf`,
   `Cslib.Complexity.SetCoverReduction.toSetCoverOf`: computable weighted and unweighted reductions
   from Label Cover parameterized by explicit label lists and a `PartitionGadget`.
+* `Cslib.Complexity.logGapThreshold`: explicit `O(p * log m + log log |γ|)` threshold above
+  which the `c * ln n` gap arithmetic holds.
 
 ## Main results
 
@@ -72,7 +78,8 @@ bounds to unconditional `P ≠ NP` hardness requires super-constant parallel rep
   `Cslib.Complexity.P_eq_NP_of_weightedSetCover_approx_const`: constant-factor NP-hardness for
   every constant.
 * `Cslib.Complexity.exists_weightedSetCover_log_gap`,
-  `Cslib.Complexity.exists_setCover_log_gap`: `c * ln n` gap under `O(1 / t ^ 2)` soundness.
+  `Cslib.Complexity.exists_setCover_log_gap`: per-instance `c * ln n` gap for any `t` above
+  `logGapThreshold`, conditional on `1 / t ^ 2` Label Cover soundness.
 
 ## References
 
@@ -121,11 +128,6 @@ private theorem card_pi_update_eq {U : Type*} [Fintype U] [DecidableEq U]
           simp
         · simp [hu] }
   rw [← Fintype.card_prod, Fintype.card_congr φ]
-
-private theorem four_mul_le_sq_add (a b : ℕ) : 4 * (a * b) ≤ (a + b) ^ 2 := by
-  have hsq : (0 : ℤ) ≤ (a - b : ℤ) ^ 2 := sq_nonneg _
-  have hz : (4 : ℤ) * (a * b) ≤ (a + b : ℤ) ^ 2 := by linarith
-  exact_mod_cast hz
 
 /-- **Core Lund–Yannakakis label-extraction lemma**: given candidate label sets `L u : Finset β`
 and `R v : Finset γ` such that every edge `(u, v)` with `|L u| + |R v| ≤ t` has a matching pair
@@ -278,7 +280,8 @@ theorem exists_labelling_of_list_sets {β γ : Type} [DecidableEq γ] [Nonempty 
       have hsum_le : (L' u₀.1).card + (R' v₀.1).card ≤ t := by
         rw [hLcard, hRcard]
         exact hle
-      exact (four_mul_le_sq_add _ _).trans (Nat.pow_le_pow_left hsum_le 2)
+      rw [← mul_assoc]
+      exact (_root_.four_mul_le_sq_add _ _).trans (Nat.pow_le_pow_left hsum_le 2)
     have hnat_mul : 4 * Fintype.card Choice ≤ t ^ 2 * (hitSet i).card := by
       calc 4 * Fintype.card Choice
           = 4 * (Fintype.card hitPair * ((L' u₀.1).card * (R' v₀.1).card)) := by rw [hcard_mul]
@@ -2100,12 +2103,32 @@ theorem P_eq_NP_of_weightedSetCover_approx_const {A : WeightedSetSystem → List
   P_eq_NP_of_weightedSetCover_approx (GapWeightedSetCover_npHard (by linarith : 1 < c + 2)) hc0
     (by linarith : c < c + 2) hA happrox enc
 
-private theorem log_add_one_le_mul {δ : ℝ} (hδ : 0 < δ) :
-    ∃ T : ℕ, ∀ t : ℕ, T ≤ t → Real.log (t + 1 : ℝ) ≤ δ * t := by
+/-- Explicit lower threshold on the separation parameter `t` in terms of `c`, polynomial blowup
+degree `p`, edge count `m`, and label cardinality `cardGamma` for the `c * Real.log n` gap
+reductions. Asymptotically this threshold grows as `O(p * log m + log log cardGamma)` for fixed
+`0 < c < 1 / (4 * log 2)`. -/
+@[expose] noncomputable def logGapThreshold (c : ℝ) (p m cardGamma : ℕ) : ℕ :=
+  let gap : ℝ := 1 - 4 * Real.log 2 * c
+  let δ : ℝ := gap / (8 * c)
+  let α : ℝ := δ / 2
+  let A₀ : ℕ := Nat.clog 2 (2 * cardGamma + 1)
+  let B : ℝ := (p : ℝ) * Real.log m + Real.log ((A₀ + 1 : ℕ) : ℝ)
+  let T₀ : ℕ := Nat.ceil (max (α - 1 - Real.log α) 0 / α) + 1
+  let T₁ : ℕ := Nat.ceil (1 / (c * Real.log 2)) + 1
+  let T₂ : ℕ := Nat.ceil (max B 0 / δ) + 1
+  max (max 4 T₀) (max T₁ T₂)
+
+/-- `logGapThreshold` is always at least `4`. -/
+theorem four_le_logGapThreshold (c : ℝ) (p m cardGamma : ℕ) :
+    4 ≤ logGapThreshold c p m cardGamma :=
+  le_trans (le_max_left 4 _) (le_max_left _ _)
+
+private theorem log_add_one_le_mul_of_le {δ : ℝ} (hδ : 0 < δ) {t : ℕ}
+    (ht : Nat.ceil (max ((δ / 2) - 1 - Real.log (δ / 2)) 0 / (δ / 2)) + 1 ≤ t) :
+    Real.log (t + 1 : ℝ) ≤ δ * t := by
   let α : ℝ := δ / 2
   have hα : 0 < α := by positivity
   let C : ℝ := α - 1 - Real.log α
-  refine ⟨Nat.ceil (max C 0 / α) + 1, fun t ht => ?_⟩
   have h1 : Real.log (α * ((t : ℝ) + 1)) ≤ α * ((t : ℝ) + 1) - 1 :=
     Real.log_le_sub_one_of_pos (mul_pos hα (by positivity))
   have hmul : Real.log (α * ((t : ℝ) + 1)) = Real.log α + Real.log ((t : ℝ) + 1) :=
@@ -2124,10 +2147,13 @@ private theorem log_add_one_le_mul {δ : ℝ} (hδ : 0 < δ) :
   have haa : α + α = δ := by dsimp only [α]; ring
   rwa [haa] at hlog
 
-private theorem exists_large_threshold_of_log_lt {c B : ℝ} (hc0 : 0 < c)
-    (hc : c < 1 / (4 * Real.log 2)) :
-    ∃ t : ℕ, 4 ≤ t ∧ 1 < c * (t * Real.log 2) ∧
-      c * (B + Real.log ((t : ℝ) + 1) + t * Real.log 2) ≤ (t : ℝ) / 4 := by
+private theorem logGapThreshold_spec {c : ℝ} {p m cardGamma t : ℕ}
+    (hc0 : 0 < c) (hc : c < 1 / (4 * Real.log 2))
+    (ht : logGapThreshold c p m cardGamma ≤ t) :
+    4 ≤ t ∧ 1 < c * (t * Real.log 2) ∧
+      c * (((p : ℝ) * Real.log m +
+        Real.log ((Nat.clog 2 (2 * cardGamma + 1) + 1 : ℕ) : ℝ)) +
+        Real.log ((t : ℝ) + 1) + t * Real.log 2) ≤ (t : ℝ) / 4 := by
   have hlog2 : 0 < Real.log 2 := Real.log_pos (by norm_num)
   have hc_lt : 4 * Real.log 2 * c < 1 := by
     rw [lt_div_iff₀ (by positivity)] at hc
@@ -2136,37 +2162,41 @@ private theorem exists_large_threshold_of_log_lt {c B : ℝ} (hc0 : 0 < c)
   have hgap : 0 < gap := by dsimp only [gap]; linarith
   let δ : ℝ := gap / (8 * c)
   have hδ : 0 < δ := by positivity
-  obtain ⟨T, hT⟩ := log_add_one_le_mul hδ
-  let T₁ : ℕ := Nat.ceil (2 / (c * Real.log 2)) + 1
-  let T₂ : ℕ := Nat.ceil (max B 0 * (8 * c) / gap) + 1
-  refine ⟨max (max 4 T) (max T₁ T₂), ?_, ?_, ?_⟩
-  · exact le_trans (le_max_left 4 T) (le_max_left _ _)
-  · have ht1 : (2 / (c * Real.log 2) : ℝ) ≤ max (max 4 T) (max T₁ T₂) := by
-      have : (Nat.ceil (2 / (c * Real.log 2)) : ℝ) ≤ max (max 4 T) (max T₁ T₂) := by
-        exact_mod_cast le_trans (Nat.le_add_right _ 1)
-          (le_trans (le_max_left T₁ T₂) (le_max_right _ _))
-      exact (Nat.le_ceil _).trans this
-    have hmul : 2 ≤ c * Real.log 2 * (max (max 4 T) (max T₁ T₂) : ℕ) := by
-      rw [div_le_iff₀ (mul_pos hc0 hlog2)] at ht1
-      linarith
+  let α : ℝ := δ / 2
+  let A₀ : ℕ := Nat.clog 2 (2 * cardGamma + 1)
+  let B : ℝ := (p : ℝ) * Real.log m + Real.log ((A₀ + 1 : ℕ) : ℝ)
+  let T₀ : ℕ := Nat.ceil (max (α - 1 - Real.log α) 0 / α) + 1
+  let T₁ : ℕ := Nat.ceil (1 / (c * Real.log 2)) + 1
+  let T₂ : ℕ := Nat.ceil (max B 0 / δ) + 1
+  have ht4 : 4 ≤ t := (four_le_logGapThreshold c p m cardGamma).trans ht
+  have htT0 : T₀ ≤ t :=
+    le_trans (le_max_right 4 _) (le_trans (le_max_left _ _) ht)
+  have htT1 : T₁ ≤ t :=
+    le_trans (le_max_left _ _) (le_trans (le_max_right _ _) ht)
+  have htT2 : T₂ ≤ t :=
+    le_trans (le_max_right _ _) (le_trans (le_max_right _ _) ht)
+  refine ⟨ht4, ?_, ?_⟩
+  · have ht1 : (1 / (c * Real.log 2) : ℝ) < t := by
+      have hceil : (1 / (c * Real.log 2) : ℝ) ≤ Nat.ceil (1 / (c * Real.log 2)) := Nat.le_ceil _
+      have hlt : (Nat.ceil (1 / (c * Real.log 2)) : ℝ) < t := by
+        have hlt_nat : Nat.ceil (1 / (c * Real.log 2)) + 1 ≤ t := htT1
+        exact_mod_cast Nat.lt_of_succ_le hlt_nat
+      exact lt_of_le_of_lt hceil hlt
+    rw [div_lt_iff₀ (mul_pos hc0 hlog2)] at ht1
     linarith
-  · set t := max (max 4 T) (max T₁ T₂)
-    have htT : T ≤ t := le_trans (le_max_right 4 T) (le_max_left _ _)
-    have hlogt : Real.log ((t : ℝ) + 1) ≤ δ * t := hT t htT
-    have hBt : max B 0 ≤ (gap / (8 * c)) * t := by
-      have ht2 : max B 0 * (8 * c) / gap ≤ t := by
-        have hle : max B 0 * (8 * c) / gap ≤ Nat.ceil (max B 0 * (8 * c) / gap) := Nat.le_ceil _
-        have : (Nat.ceil (max B 0 * (8 * c) / gap) : ℝ) ≤ t := by
-          exact_mod_cast le_trans (Nat.le_add_right _ 1)
-            (le_trans (le_max_right T₁ T₂) (le_max_right _ _))
-        exact hle.trans this
-      rw [div_le_iff₀ hgap] at ht2
-      rw [div_mul_eq_mul_div, le_div_iff₀ (by positivity)]
-      linarith
-    have hB' : B ≤ δ * t := (le_max_left B 0).trans (by simpa [δ] using hBt)
+  · have hlogt : Real.log ((t : ℝ) + 1) ≤ δ * t := log_add_one_le_mul_of_le hδ htT0
+    have hBt : max B 0 ≤ δ * t := by
+      have ht2 : max B 0 / δ ≤ t := by
+        have hle : max B 0 / δ ≤ Nat.ceil (max B 0 / δ) := Nat.le_ceil _
+        have ht' : (Nat.ceil (max B 0 / δ) : ℝ) ≤ t := by
+          exact_mod_cast le_trans (Nat.le_add_right _ 1) htT2
+        exact hle.trans ht'
+      rw [div_le_iff₀ hδ, mul_comm] at ht2
+      exact ht2
+    have hB' : B ≤ δ * t := (le_max_left B 0).trans hBt
     have hsum : c * (B + Real.log ((t : ℝ) + 1) + t * Real.log 2) ≤
-        c * (2 * δ * t + t * Real.log 2) := by
-      refine mul_le_mul_of_nonneg_left (by linarith) hc0.le
+        c * (2 * δ * t + t * Real.log 2) :=
+      mul_le_mul_of_nonneg_left (by linarith) hc0.le
     have hid : c * (2 * δ * t + t * Real.log 2) = (t : ℝ) / 4 := by
       dsimp only [δ, gap]
       field_simp [hc0.ne']
@@ -2251,8 +2281,9 @@ private theorem exists_log_gap_aux {β γ : Type}
     (hsound : ∀ (G : PartitionGadget γ) {t : ℕ}, 0 < t → G.Separates t →
       ∀ {ρ : ℝ}, (optCost (sys G) : ℝ) ≤ ρ * (2 * List.length g.edges) →
         (1 - 2 * ρ / t) * (4 / (t : ℝ) ^ 2) ≤
-          1 - ConstraintGraph.unsatVal (g.toGraph projectionEval)) :
-    ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget γ, G.Separates t ∧
+          1 - ConstraintGraph.unsatVal (g.toGraph projectionEval))
+    {t : ℕ} (ht : logGapThreshold c p g.edges.length (Fintype.card γ) ≤ t) :
+    4 ≤ t ∧ ∃ G : PartitionGadget γ, G.Separates t ∧
       G.size = 2 ^ t * (t * Nat.clog 2 (2 * Fintype.card γ + 1) + 1) ∧
       Coverable (sys G) ∧
       (1 ≤ 1 - ConstraintGraph.unsatVal (g.toGraph projectionEval) →
@@ -2260,10 +2291,9 @@ private theorem exists_log_gap_aux {β γ : Type}
       (1 - ConstraintGraph.unsatVal (g.toGraph projectionEval) ≤ 1 / (t : ℝ) ^ 2 →
         memNo (sys G) (2 * List.length g.edges) (fun Y => c * Real.log (groundLen Y))) := by
   let A₀ : ℕ := Nat.clog 2 (2 * Fintype.card γ + 1)
-  let B : ℝ := (p : ℝ) * Real.log (List.length g.edges : ℝ) + Real.log ((A₀ + 1 : ℕ) : ℝ)
-  obtain ⟨t, ht4, hlog_low, hlog_high⟩ := exists_large_threshold_of_log_lt hc0 hc (B := B)
+  obtain ⟨ht4, hlog_low, hlog_high⟩ := logGapThreshold_spec hc0 hc ht
   obtain ⟨G, hsep, hGsize⟩ := exists_small_partitionGadget γ t
-  refine ⟨t, ht4, G, hsep, hGsize, hcov G, fun hyes => ?_, fun hno => ?_⟩
+  refine ⟨ht4, G, hsep, hGsize, hcov G, fun hyes => ?_, fun hno => ?_⟩
   · rw [hYes_iff]
     exact ⟨hcov G, hcomplete G hyes⟩
   · rw [hNo_iff]
@@ -2275,7 +2305,7 @@ private theorem exists_log_gap_aux {β γ : Type}
       refine (hup G).trans ?_
       rw [hGsize]
     obtain ⟨hratio_gt, hratio_le⟩ := log_gap_ratio_bounds hc0 hm hlow_nat hup_nat hlog_low
-      (by simpa [B, add_assoc] using hlog_high)
+      (by simpa only [A₀, add_assoc] using hlog_high)
     have hk0 : (0 : ℝ) < (2 * g.edges.length : ℕ) := by
       exact_mod_cast (by omega : 0 < 2 * g.edges.length)
     refine ⟨hcov G, ?_, lt_mul_of_one_lt_left hk0 hratio_gt⟩
@@ -2286,14 +2316,19 @@ private theorem exists_log_gap_aux {β γ : Type}
     have hsound' := hsound G ht0 hsep (ρ := c * Real.log (groundLen (sys G))) hlt.le
     exact log_gap_sound_contradiction ht0 hratio_le hsound' hno
 
-/-- **Logarithmic gap for weighted Set Cover (`c * ln n`)** under `O(1 / t ^ 2)` Label Cover
-soundness, for any `0 < c < 1 / (4 * log 2)` using the `O(t * 2 ^ t * log |γ|)` separating
-partition gadget (`exists_small_partitionGadget`). -/
+/-- **Per-instance logarithmic gap for weighted Set Cover (`c * ln n`)** for any `0 < c < 1 /
+(4 * log 2)` and any separation parameter `t ≥ logGapThreshold c 1 g.edges.length |γ|` (using the
+`O(t * 2 ^ t * log |γ|)` separating partition gadget `exists_small_partitionGadget`), conditional
+on `1 - unsatVal ≤ 1 / t ^ 2`. Upgrading this conditional reduction to hardness requires either
+super-constant parallel repetition via a quasi-polynomial reduction (assuming
+`NP ⊈ DTIME(n^{O(log log n)})`, not `P ≠ NP` alone) or polynomial-time low-soundness Label Cover
+such as Dinur–Steurer (for `P ≠ NP`). -/
 theorem exists_weightedSetCover_log_gap {β γ : Type} [Fintype β] [Nonempty β]
     [Fintype γ] [DecidableEq γ] [Nonempty γ]
     {c : ℝ} (hc0 : 0 < c) (hc : c < 1 / (4 * Real.log 2))
-    (g : Graph (β → γ)) (hm : 0 < List.length g.edges) :
-    ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget γ, G.Separates t ∧
+    (g : Graph (β → γ)) (hm : 0 < List.length g.edges)
+    {t : ℕ} (ht : logGapThreshold c 1 g.edges.length (Fintype.card γ) ≤ t) :
+    4 ≤ t ∧ ∃ G : PartitionGadget γ, G.Separates t ∧
       G.size = 2 ^ t * (t * Nat.clog 2 (2 * Fintype.card γ + 1) + 1) ∧
       let bs : List β := Finset.univ.toList
       let gs : List γ := Finset.univ.toList
@@ -2308,7 +2343,7 @@ theorem exists_weightedSetCover_log_gap {β γ : Type} [Fintype β] [Nonempty β
   let gs : List γ := Finset.univ.toList
   have hbs : ∀ a : β, a ∈ bs := fun a => Finset.mem_toList.2 (Finset.mem_univ a)
   have hgs : ∀ b : γ, b ∈ gs := fun b => Finset.mem_toList.2 (Finset.mem_univ b)
-  obtain ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩ := exists_log_gap_aux
+  obtain ⟨ht4, G, hsep, hGsize, hcov, hyes, hno⟩ := exists_log_gap_aux
     (fun X => X.ground.length) WeightedSetSystem.optCoverWeight
     WeightedSetSystem.Coverable (fun X k r => (X, k) ∈ (GapWeightedSetCoverFn r).yes)
     (fun X k r => (X, k) ∈ (GapWeightedSetCoverFn r).no)
@@ -2319,17 +2354,21 @@ theorem exists_weightedSetCover_log_gap {β γ : Type} [Fintype β] [Nonempty β
     (fun G => by rw [pow_one, weightedSetSystemOf_ground_length])
     (fun G h => weightedSetSystemOf_complete hbs hgs G g h)
     (fun G _ ht hs _ hwt => weightedSetSystemOf_sound hbs hgs ht hs hm hwt)
-  exact ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩
+    ht
+  exact ⟨ht4, G, hsep, hGsize, hcov, hyes, hno⟩
 
-/-- **Logarithmic gap for unweighted Set Cover (`c * ln n`)** under `O(1 / t ^ 2)` Label Cover
-soundness, for any `0 < c < 1 / (4 * log 2)`. Upgrading this logarithmic gap to unconditional
-`P ≠ NP` hardness requires super-constant parallel repetition or polynomial-time low-soundness
-Label Cover (Dinur–Steurer), beyond constant-round `exists_GapLabelCover_npHard`. -/
+/-- **Per-instance logarithmic gap for unweighted Set Cover (`c * ln n`)** for any `0 < c < 1 /
+(4 * log 2)` and any separation parameter `t ≥ logGapThreshold c 3 g.edges.length |γ|`, conditional
+on Label Cover soundness `≤ 1 / t ^ 2`. Upgrading this conditional reduction beyond the
+constant-round `exists_GapLabelCover_npHard` base requires either super-constant parallel repetition
+via a quasi-polynomial reduction (assuming `NP ⊈ DTIME(n^{O(log log n)})`, not `P ≠ NP` alone) or
+polynomial-time low-soundness Label Cover such as Dinur–Steurer (for `P ≠ NP`). -/
 theorem exists_setCover_log_gap {β γ : Type} [Fintype β] [Nonempty β]
     [Fintype γ] [DecidableEq γ] [Nonempty γ]
     {c : ℝ} (hc0 : 0 < c) (hc : c < 1 / (4 * Real.log 2))
-    (g : Graph (β → γ)) (hm : 0 < List.length g.edges) :
-    ∃ t : ℕ, 4 ≤ t ∧ ∃ G : PartitionGadget γ, G.Separates t ∧
+    (g : Graph (β → γ)) (hm : 0 < List.length g.edges)
+    {t : ℕ} (ht : logGapThreshold c 3 g.edges.length (Fintype.card γ) ≤ t) :
+    4 ≤ t ∧ ∃ G : PartitionGadget γ, G.Separates t ∧
       G.size = 2 ^ t * (t * Nat.clog 2 (2 * Fintype.card γ + 1) + 1) ∧
       let bs : List β := Finset.univ.toList
       let gs : List γ := Finset.univ.toList
@@ -2344,7 +2383,7 @@ theorem exists_setCover_log_gap {β γ : Type} [Fintype β] [Nonempty β]
   let gs : List γ := Finset.univ.toList
   have hbs : ∀ a : β, a ∈ bs := fun a => Finset.mem_toList.2 (Finset.mem_univ a)
   have hgs : ∀ b : γ, b ∈ gs := fun b => Finset.mem_toList.2 (Finset.mem_univ b)
-  obtain ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩ := exists_log_gap_aux
+  obtain ⟨ht4, G, hsep, hGsize, hcov, hyes, hno⟩ := exists_log_gap_aux
     (fun X => X.ground.length) SetSystem.optCoverSize SetSystem.Coverable
     (fun X k r => (X, k) ∈ (GapSetCoverFn r).yes) (fun X k r => (X, k) ∈ (GapSetCoverFn r).no)
     (fun _ _ _ => mem_yes_GapSetCoverFn) (fun _ _ _ => mem_no_GapSetCoverFn)
@@ -2354,7 +2393,8 @@ theorem exists_setCover_log_gap {β γ : Type} [Fintype β] [Nonempty β]
     (fun _ => setSystemOf_ground_length_le)
     (fun G h => setSystemOf_complete hbs hgs G g h)
     (fun G _ ht hs _ hcard => setSystemOf_sound hbs hgs ht hs hm hcard)
-  exact ⟨t, ht4, G, hsep, hGsize, hcov, hyes, hno⟩
+    ht
+  exact ⟨ht4, G, hsep, hGsize, hcov, hyes, hno⟩
 
 end Hardness
 
