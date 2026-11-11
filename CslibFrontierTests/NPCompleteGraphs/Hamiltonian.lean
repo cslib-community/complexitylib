@@ -158,19 +158,19 @@ example : DirHamCycle.verifier (dpath, certificate dpath.vertices [0, 1, 2]) = f
 -- Two vertices need arcs in both directions.
 example : DirHamCycle.verifier (⟨[0, 1], [(0, 1), (1, 0)]⟩, certificate [0, 1] [0, 1]) = true :=
   rfl
-example : DirHamCycle.verifier (([0, 1], [(0, 1)]), certificate [0, 1] [0, 1]) = false := rfl
+example : DirHamCycle.verifier (⟨[0, 1], [(0, 1)]⟩, certificate [0, 1] [0, 1]) = false := rfl
 
 -- A single vertex with a self-loop has a directed Hamiltonian cycle; without it, it has none.
 example : DirHamCycle.verifier (⟨[0], [(0, 0)]⟩, [false]) = true := rfl
-example : DirHamCycle.verifier (([0], []), [false]) = false := rfl
+example : DirHamCycle.verifier (⟨[0], []⟩, [false]) = false := rfl
 
-example : ([0], [(0, 0)]) ∈ DirHamCycle :=
+example : (⟨[0], [(0, 0)]⟩ : Graph) ∈ DirHamCycle :=
   ⟨[0], by decide, fun v => by simp, by simp, by simp⟩
 
 -- The empty graph has no directed Hamiltonian cycle.
 example : DirHamCycle.verifier (⟨[], []⟩, []) = false := rfl
 
-example : ([], []) ∉ DirHamCycle := by
+example : (⟨[], []⟩ : Graph) ∉ DirHamCycle := by
   rintro ⟨p, -, hmem, hne, -⟩
   obtain ⟨a, ha⟩ := List.exists_mem_of_ne_nil p hne
   simpa using (hmem a).1 ha
@@ -246,7 +246,7 @@ example : dtriangle ∈ HamCycle := by
 example : HamCycle.verifier (⟨[0], [(0, 0)]⟩, [false]) = false := rfl
 example : HamCycle.verifier (⟨[0, 1], [(0, 1), (1, 0)]⟩, certificate [0, 1] [0, 1]) = false := rfl
 
-example : ([0], [(0, 0)]) ∉ HamCycle := by
+example : (⟨[0], [(0, 0)]⟩ : Graph) ∉ HamCycle := by
   rw [mem_HamCycle_iff]
   rintro ⟨p, hnd, hmem, hlen, -⟩
   have := ((List.perm_ext_iff_of_nodup hnd (by decide : [0].Nodup)).2 hmem).length_eq
@@ -256,7 +256,7 @@ example : ([0], [(0, 0)]) ∉ HamCycle := by
 -- The empty graph has no Hamiltonian cycle.
 example : HamCycle.verifier (⟨[], []⟩, []) = false := rfl
 
-example : ([], []) ∉ HamCycle := by
+example : (⟨[], []⟩ : Graph) ∉ HamCycle := by
   rw [mem_HamCycle_iff]
   rintro ⟨p, -, hmem, hlen, -⟩
   obtain ⟨a, ha⟩ := List.exists_mem_of_ne_nil p (List.ne_nil_of_length_pos (by omega))
