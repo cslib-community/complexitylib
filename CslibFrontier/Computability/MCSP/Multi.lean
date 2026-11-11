@@ -163,7 +163,7 @@ each framed, then the `m · 2^n` table bits, component-major (`Instance.tableBit
     obtain rfl := Instance.tableBits_injective hT
     rfl⟩
 
-theorem encInstance_apply (x : Instance) :
+@[simp] theorem encInstance_apply (x : Instance) :
     encInstance x = encUnaryFields (x.arity, x.outputs, x.threshold, x.tableBits) :=
   rfl
 
