@@ -1206,26 +1206,8 @@ theorem clog4M_ret (n : ℕ) : (clog4M n).ret = Nat.clog 4 n := by
     · simp only [TimeM.ret_bind, TimeM.ret_pure]
       have hlt : (n + 3) / 4 < n := by omega
       rw [ih _ hlt]
-      let k := Nat.clog 4 ((n + 3) / 4)
-      have hup : Nat.clog 4 n ≤ k + 1 := by
-        refine Nat.clog_le_of_le_pow ?_
-        have hk : (n + 3) / 4 ≤ 4 ^ k := Nat.le_pow_clog (by decide : 1 < 4) _
-        rw [pow_succ, mul_comm _ 4]
-        omega
-      have hlow : k + 1 ≤ Nat.clog 4 n := by
-        by_contra hnot
-        have hnk : Nat.clog 4 n ≤ k := by omega
-        have hn_pow : n ≤ 4 ^ k :=
-          (Nat.clog_le_iff_le_pow (by decide : 1 < 4)).mp hnk
-        rcases Nat.eq_zero_or_pos k with hk0 | hkpos
-        · rw [hk0, pow_zero] at hn_pow
-          exact hle hn_pow
-        · have hk' : (n + 3) / 4 ≤ 4 ^ (k - 1) := by
-            have hpow : 4 * 4 ^ (k - 1) = 4 ^ k := by
-              conv_rhs => rw [← Nat.sub_add_cancel hkpos, pow_succ, mul_comm]
-            omega
-          have hck : k ≤ k - 1 := Nat.clog_le_of_le_pow hk'
-          omega
+      have : (n + 3) / 4 = (n + 4 - 1) / 4 := by omega
+      rw [this, ← Nat.clog_of_two_le (by decide : 2 ≤ 4) (by omega)]
       omega
 
 theorem clog4M_time (n : ℕ) : (clog4M n).time = Nat.clog 4 n + 1 := by

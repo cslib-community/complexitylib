@@ -234,14 +234,8 @@ theorem lcmDens_le_of_bitBound {B : ℕ} {cs : List ℚ} (hB : HasCoeffBitBound 
     have hq_den : q.den ≤ 2 ^ B := (hB q List.mem_cons_self).2
     have hih : lcmDens qs ≤ 2 ^ (qs.length * B) :=
       ih fun r hr => hB r (List.mem_cons_of_mem q hr)
-    have hgcd_pos : 1 ≤ Nat.gcd q.den (lcmDens qs) :=
-      Nat.gcd_pos_of_pos_left _ q.den_pos
-    have hlcm_le : Nat.lcm q.den (lcmDens qs) ≤ q.den * lcmDens qs := by
-      calc Nat.lcm q.den (lcmDens qs)
-          = 1 * Nat.lcm q.den (lcmDens qs) := (one_mul _).symm
-        _ ≤ Nat.gcd q.den (lcmDens qs) * Nat.lcm q.den (lcmDens qs) :=
-              Nat.mul_le_mul_right _ hgcd_pos
-        _ = q.den * lcmDens qs := Nat.gcd_mul_lcm _ _
+    have hlcm_le : Nat.lcm q.den (lcmDens qs) ≤ q.den * lcmDens qs :=
+      Nat.lcm_le_mul q.den_pos (one_le_lcmDens qs)
     calc Nat.lcm q.den (lcmDens qs)
         ≤ q.den * lcmDens qs := hlcm_le
       _ ≤ 2 ^ B * 2 ^ (qs.length * B) := Nat.mul_le_mul hq_den hih
