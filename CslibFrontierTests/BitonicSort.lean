@@ -39,7 +39,7 @@ example {α κ : Type*} [LinearOrder κ] (key : α → κ) (x : Fin 1 → α) (a
 example {k r : ℕ} (key : Fin k → Fin r) (ascending : Bool) (x : BitString (1 * r)) :
     (bitonicSortCircuit key 0 ascending).eval interpretation x = x := by
   change BitString (BitonicSort.arity 0 * r) at x
-  simpa only [BitonicSort.sort, bitonicSortTraceCircuit.flatten_block] using
+  simpa only [BitonicSort.sort, BitString.blocksEquiv_symm_block] using
     congrArg bitonicSortTraceCircuit.flatten (eval_bitonicSortCircuit key 0 ascending x)
 
 example : (bitonicSortCircuit (fun _ : Fin 1 => (0 : Fin 2)) 2 true).size = 120 := by
