@@ -82,18 +82,18 @@ private theorem card_biUnion_incident [Fintype V] [DecidableEq V] (S : Finset V)
       rw [Finset.card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
         Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
     rw [Finset.biUnion_insert, Finset.card_union, hcard, ih]
-    have hinter : (Finset.univ.erase v).image (Sym2.mk v) ∩ S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v) = S.image fun w => s(v, w) := by
+    have hinter : (Finset.univ.erase v).image (Sym2.mk v) ∩ (S.biUnion fun v' => (Finset.univ.erase v').image (Sym2.mk v')) = S.image fun w => s(v, w) := by
       ext e
       simp only [Finset.mem_inter, Finset.mem_biUnion, Finset.mem_image, Finset.mem_image]
       constructor
       · rintro ⟨⟨w, -, rfl⟩, u, hu, z, -, heq⟩
-        rcases Sym2.eq_iff.mp heq with ⟨hvu, _⟩ | ⟨_, hwu⟩
-        · exact False.elim (hv (hvu ▸ hu))
-        · exact ⟨u, hu, by rw [hwu]⟩
+        rcases Sym2.eq_iff.mp heq with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+        · exact False.elim (hv hu)
+        · exact ⟨_, hu, rfl⟩
       · rintro ⟨w, hw, rfl⟩
         have hwv : w ≠ v := fun h => hv (h ▸ hw)
-        exact ⟨⟨w, hwv, rfl⟩, w, hw, v, hwv.symm, Sym2.eq_swap⟩
-    have hcard_inter : #((Finset.univ.erase v).image (Sym2.mk v) ∩ S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v)) = #S := by
+        exact ⟨⟨w, Finset.mem_erase.mpr ⟨hwv, Finset.mem_univ _⟩, rfl⟩, w, hw, v, Finset.mem_erase.mpr ⟨hwv.symm, Finset.mem_univ _⟩, Sym2.eq_swap⟩
+    have hcard_inter : #((Finset.univ.erase v).image (Sym2.mk v) ∩ S.biUnion (fun v' => (Finset.univ.erase v').image (Sym2.mk v'))) = #S := by
       rw [hinter, Finset.card_image_of_injective _ fun _ _ h => Sym2.congr_right.mp h]
     have hSn : #S + 1 ≤ Fintype.card V := by
       rw [← Finset.card_insert_of_notMem hv]
@@ -119,7 +119,7 @@ theorem binomialRandom_real_forall_isIsolated [Fintype V] (p : I) (S : Finset V)
     intro e he
     obtain ⟨v, _, hev⟩ := Finset.mem_biUnion.mp he
     obtain ⟨w, hw, rfl⟩ := Finset.mem_image.1 hev
-    simpa using hw
+    simpa using (Finset.mem_erase.mp hw).1.symm
   have hset : {G : SimpleGraph V | ∀ v ∈ S, G.IsIsolated v} =
       {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} := by
     ext G
@@ -410,12 +410,14 @@ private theorem card_sym2_filter_not_isDiag [DecidableEq V] (S : Finset V) :
       exact hnd (Sym2.diag_isDiag u)
     · rintro ⟨he, hnd⟩
       refine ⟨he, fun hd => ?_⟩
-      obtain ⟨u, rfl⟩ := Sym2.isDiag_iff_exists.mp hd
-      exact hnd ⟨u, by simp, rfl⟩
+      induction e using Sym2.ind with
+      | h x y =>
+        obtain rfl := Sym2.mk_isDiag_iff.mp hd
+        exact hnd ⟨x, he x (by simp), rfl⟩
   have hsub : S.image Sym2.diag ⊆ S.sym2 := by
     intro e he
     obtain ⟨u, hu, rfl⟩ := Finset.mem_image.mp he
-    simp only [Finset.mem_sym2_iff, Sym2.mem_iff, true_or, implies_true, hu]
+    exact Finset.diag_mem_sym2_iff.mpr hu
   have hinj : Function.Injective (Sym2.diag : V → Sym2 V) := fun a b h => by
     simp only [Sym2.diag, Sym2.eq_iff, and_self, or_self] at h
     exact h
@@ -428,8 +430,9 @@ private theorem disjoint_sym2_filter_not_isDiag_cutPairs [Fintype V] [DecidableE
     Disjoint (S.sym2.filter (¬ ·.IsDiag)) ((S ×ˢ Sᶜ).image Sym2.mk.uncurry) := by
   rw [Finset.disjoint_left]
   intro e he_in he_cut
-  obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ := Finset.mem_image.mp he_cut
-  exact hv ((Finset.mem_filter.mp he_in).1 v (by simp))
+  obtain ⟨⟨u, v⟩, h_in, rfl⟩ := Finset.mem_image.mp he_cut
+  have ⟨hu, hv⟩ := Finset.mem_product.mp h_in
+  exact (Finset.mem_compl.mp hv) (Finset.mk_mem_sym2_iff.mp (Finset.mem_filter.mp he_in).1).2
 
 private theorem binomialRandom_real_edgeSet_and_cut [Fintype V] [DecidableEq V] (p : I)
     (S : Finset V) {t : Finset (Sym2 V)} (ht : t ⊆ S.sym2.filter (¬ ·.IsDiag)) :
@@ -437,25 +440,30 @@ private theorem binomialRandom_real_edgeSet_and_cut [Fintype V] [DecidableEq V] 
       (p : ℝ) ^ #t * (1 - p : ℝ) ^ (#S * (Fintype.card V - #S)) := by
   let b : Sym2 V → Bool := fun e => decide (e ∈ t)
   let cP : Finset (Sym2 V) := (S ×ˢ Sᶜ).image Sym2.mk.uncurry
-  have hdisj : Disjoint t (cP) := (disjoint_sym2_filter_not_isDiag_cP).mono_left ht
+  have hdisj : Disjoint t (cP) := (disjoint_sym2_filter_not_isDiag_cutPairs S).mono_left ht
   have hdiag : ∀ e ∈ t ∪ cP, ¬e.IsDiag := by
     intro e he
     rcases Finset.mem_union.mp he with het | hec
     · exact (Finset.mem_filter.mp (ht het)).2
-    · obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ := Finset.mem_image.mp hec
+    · obtain ⟨⟨u, v⟩, h_in, rfl⟩ := Finset.mem_image.mp hec
+      have ⟨hu, hv⟩ := Finset.mem_product.mp h_in
       rintro hd
-      exact hv (Sym2.mk_isDiag_iff.1 hd ▸ hu)
+      exact (Finset.mem_compl.mp hv) (Sym2.mk_isDiag_iff.1 hd ▸ hu)
   have hset : {G : SimpleGraph V | (∀ e ∈ t, e ∈ G.edgeSet) ∧ ∀ u ∈ S, ∀ v ∉ S, ¬G.Adj u v} =
       {G | ∀ e ∈ t ∪ cP, e ∈ G.edgeSet ↔ b e = true} := by
     ext G
-    simp only [Set.mem_ofPred_eq, Set.disjoint_left, Finset.mem_coe, Finset.mem_union, b, decide_eq_true_eq]
+    simp only [Set.mem_ofPred_eq, Finset.mem_union, b, decide_eq_true_eq]
     constructor
     · rintro ⟨ht_edge, hcut⟩ e
+      intro he
       constructor
-      · rintro (het | hec)
+      · rintro _
+        rcases he with het | hec
         · exact het
-        · obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, rfl⟩ := Finset.mem_image.mp hec
-          exact absurd (hcut u hu v hv) (not_not.mpr ‹_›)
+        · obtain ⟨⟨u, v⟩, h_in, rfl⟩ := Finset.mem_image.mp hec
+          have ⟨hu, hv⟩ := Finset.mem_product.mp h_in
+          have hv' := Finset.mem_compl.mp hv
+          exact absurd (hcut u hu v hv') (not_not.mpr ‹_›)
       · rintro ht_mem
         exact ht_edge e ht_mem
     · intro h
@@ -463,12 +471,13 @@ private theorem binomialRandom_real_edgeSet_and_cut [Fintype V] [DecidableEq V] 
       · intro e he
         exact (h e (Or.inl he)).mpr (by simp [he])
       · intro u hu v hv huv
-        have hec : s(u, v) ∈ cP := Finset.mem_image.mpr ⟨(u, v), ⟨hu, hv⟩, rfl⟩
+        have hec : s(u, v) ∈ cP := Finset.mem_image.mpr ⟨(u, v), Finset.mem_product.mpr ⟨hu, Finset.mem_compl.mpr hv⟩, rfl⟩
         have hf := (h (s(u, v)) (Or.inr hec)).mp huv
         have hnot : ¬ (s(u, v) ∈ t) := by
           intro hbad
           exact Finset.disjoint_left.mp hdisj hbad hec
-        simp only [hnot, decide_False] at hf
+        revert hf
+        simp [hnot]
   rw [hset, binomialRandom_real_edgePattern p (t ∪ cP) hdiag b,
     Finset.prod_union hdisj]
   have hp1 : ∏ e ∈ t, (if b e = true then (p : ℝ) else 1 - p) = (p : ℝ) ^ #t := by
@@ -482,14 +491,15 @@ private theorem binomialRandom_real_edgeSet_and_cut [Fintype V] [DecidableEq V] 
       have hnot : e ∉ t := Finset.disjoint_right.mp hdisj he
       simp [b, hnot]
     have hcard_cP : #cP = #S * (Fintype.card V - #S) := by
-      have hinj : Set.InjOn Sym2.mk.uncurry (S ×ˢ Sᶜ : Finset (V × V)) := by
+      have hinj : Set.InjOn Sym2.mk.uncurry (↑(S ×ˢ Sᶜ) : Set (V × V)) := by
         rintro ⟨u, v⟩ huv ⟨u', v'⟩ huv' h
         simp only [Finset.coe_product, Finset.coe_compl, Set.mem_prod, Finset.mem_coe,
           Set.mem_compl_iff] at huv huv'
-        rcases Sym2.eq_iff.1 h with ⟨h1, h2⟩ | ⟨h1, h2⟩
-        · simp [h1, h2]
-        · exact absurd (h1 ▸ huv.1) huv'.2
-      rw [cP, Finset.card_image_of_injOn hinj, Finset.card_product, Finset.card_compl]
+        rcases Sym2.eq_iff.1 h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+        · rfl
+        · exact absurd huv.1 huv'.2
+      change #((S ×ˢ Sᶜ).image Sym2.mk.uncurry) = _
+      rw [Finset.card_image_of_injOn hinj, Finset.card_product, Finset.card_compl]
     rw [Finset.prod_congr rfl h2, Finset.prod_const, hcard_cP]
   rw [hp1, hp2]
 

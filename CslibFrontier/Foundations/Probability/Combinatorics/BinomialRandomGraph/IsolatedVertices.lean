@@ -70,18 +70,21 @@ namespace SimpleGraph
 variable {V : Type*}
 
 /-- The `|V| - 1` possible edges at `v`. -/
-theorem isIsolated_iff_disjoint_incident (G : SimpleGraph V) (v : V) :
+theorem isIsolated_iff_disjoint_incident [Fintype V] [DecidableEq V] (G : SimpleGraph V) (v : V) :
     G.IsIsolated v ↔ Disjoint (((Finset.univ.erase v).image (Sym2.mk v) : Finset (Sym2 V)) : Set (Sym2 V)) G.edgeSet := by
   simp only [SimpleGraph.IsIsolated, Set.disjoint_left, Finset.coe_image, Finset.coe_erase, Finset.coe_univ,
     Set.mem_image, Set.mem_sdiff, Set.mem_univ, Set.mem_singleton_iff, true_and]
   constructor
   · rintro h _ ⟨w, hw, rfl⟩ hw_edge
-    exact h w (hw.symm) hw_edge
-  · intro h w hw
-    exact h ⟨w, hw.symm, rfl⟩ hw
+    exact h w hw_edge
+  · intro h w hw_edge
+    by_cases hw : w = v
+    · subst hw
+      exact G.irrefl hw_edge
+    · exact h ⟨w, hw, rfl⟩ hw_edge
 
 /-- A fixed vertex of `G(V, p)` is isolated with probability `(1 - p) ^ (|V| - 1)`. -/
-theorem binomialRandom_real_isIsolated (p : I) (v : V) :
+theorem binomialRandom_real_isIsolated [Fintype V] (p : I) (v : V) :
     G(V, p).real {G | G.IsIsolated v} = (1 - p : ℝ) ^ (Fintype.card V - 1) := by
   classical
   let t : Finset (Sym2 V) := (Finset.univ.erase v).image (Sym2.mk v)
@@ -90,15 +93,17 @@ theorem binomialRandom_real_isIsolated (p : I) (v : V) :
     ext G
     exact isIsolated_iff_disjoint_incident G v
   have hdiag : ∀ e ∈ t, ¬e.IsDiag := by
-    rintro _ ⟨w, hw, rfl⟩
-    simpa using hw
+    intro e he
+    simp only [t, Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true] at he
+    obtain ⟨w, hw, rfl⟩ := he
+    simpa using Ne.symm hw
   have hcard : #t = Fintype.card V - 1 := by
     rw [Finset.card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
       Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
   rw [hset, binomialRandom_real_disjoint_edgeSet p _ hdiag, hcard]
 
 /-- The possible edges at two distinct vertices share only the edge between them. -/
-private theorem incidentPairs_inter {u v : V} (huv : u ≠ v) :
+private theorem incidentPairs_inter [Fintype V] [DecidableEq V] {u v : V} (huv : u ≠ v) :
     (Finset.univ.erase u).image (Sym2.mk u) ∩ (Finset.univ.erase v).image (Sym2.mk v) = {s(u, v)} := by
   ext e
   simp only [Finset.mem_inter, Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true,
@@ -113,7 +118,7 @@ private theorem incidentPairs_inter {u v : V} (huv : u ≠ v) :
 
 /-- Two distinct fixed vertices of `G(V, p)` are both isolated with probability
 `(1 - p) ^ (2 |V| - 3)`: the `2 (|V| - 2) + 1` possible edges at `u` or `v` are all absent. -/
-theorem binomialRandom_real_isIsolated_and (p : I) {u v : V} (huv : u ≠ v) :
+theorem binomialRandom_real_isIsolated_and [Fintype V] (p : I) {u v : V} (huv : u ≠ v) :
     G(V, p).real {G | G.IsIsolated u ∧ G.IsIsolated v} =
       (1 - p : ℝ) ^ (2 * Fintype.card V - 3) := by
   classical
@@ -122,16 +127,15 @@ theorem binomialRandom_real_isIsolated_and (p : I) {u v : V} (huv : u ≠ v) :
   have hset : {G : SimpleGraph V | G.IsIsolated u ∧ G.IsIsolated v} =
       {G | Disjoint ((tu ∪ tv : Finset (Sym2 V)) : Set (Sym2 V)) G.edgeSet} := by
     ext G
-    simp only [Set.mem_ofPred_eq, isIsolated_iff_disjoint_incident, Finset.coe_union,
+    simp only [tu, tv, Set.mem_ofPred_eq, isIsolated_iff_disjoint_incident, Finset.coe_union,
       Set.disjoint_union_left]
   have h2 : 2 ≤ Fintype.card V := Fintype.one_lt_card_iff.2 ⟨u, v, huv⟩
   have hdiag : ∀ e ∈ tu ∪ tv, ¬e.IsDiag := by
     intro e he
-    rcases Finset.mem_union.1 he with he | he
-    · obtain ⟨w, hw, rfl⟩ := Finset.mem_image.1 he
-      simpa using hw
-    · obtain ⟨w, hw, rfl⟩ := Finset.mem_image.1 he
-      simpa using hw
+    simp only [tu, tv, Finset.mem_union, Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true] at he
+    rcases he with ⟨w, hw, rfl⟩ | ⟨w, hw, rfl⟩
+    · simpa using Ne.symm hw
+    · simpa using Ne.symm hw
   rw [hset, binomialRandom_real_disjoint_edgeSet p _ hdiag]
   have hc := Finset.card_union_add_card_inter tu tv
   rw [incidentPairs_inter huv, Finset.card_singleton] at hc
