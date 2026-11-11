@@ -1083,6 +1083,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.CodeComposition
 public import CslibFrontier.Computability.Circuit.Boolean.CodeReplication
 public import CslibFrontier.Computability.Circuit.Boolean.CodeSubstitution
 public import CslibFrontier.Computability.Circuit.Boolean.CodeTemplate
+public import CslibFrontier.Computability.Circuit.Boolean.Combinators
 public import CslibFrontier.Computability.Circuit.Boolean.CompareSwap
 public import CslibFrontier.Computability.Circuit.Boolean.Comparison
 public import CslibFrontier.Computability.Circuit.Boolean.Comparison.PolyTime
@@ -1121,6 +1122,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Hamming
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore
 public import CslibFrontier.Computability.Circuit.Boolean.HardCore.Set
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Complexity
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Decode
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Density
 public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLAmp
@@ -6216,6 +6218,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash.Toeplitz
 public import CslibFrontier.Probability.PairwiseIndependentHash.Universal
 public import CslibFrontier.Probability.PairwiseIndependentHash.ValidatedWords
 public import CslibFrontier.Probability.Pinsker
+public import CslibFrontier.Probability.PoissonBinomial
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.Product.ConditionalExpectation
 public import CslibFrontier.Probability.Product.Estimator
@@ -6251,6 +6254,11 @@ public import CslibFrontier.Probability.StatisticalDistance.Product
 public import CslibFrontier.Probability.StatisticalDistance.UniformMod
 public import CslibFrontier.Probability.StatisticalDistance.XOR
 public import CslibFrontier.Probability.StatisticalDistance.XORSampling
+public import CslibFrontier.Probability.StochasticDomination
+public import CslibFrontier.Probability.StochasticDomination.Adapted
+public import CslibFrontier.Probability.StochasticDomination.Basic
+public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
+public import CslibFrontier.Probability.StochasticDomination.Stopping
 public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
 public import CslibFrontier.Probability.UniformNat
