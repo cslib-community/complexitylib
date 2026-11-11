@@ -15,7 +15,7 @@ The curated [Model map](../model-map.md) contains **92 entries**, separating cha
 | [Finite-model logic](finite-model-logic.md) | How do formulas, interpretations, encodings and native complexity classes meet? |
 | [Propositional proof systems](proof-systems.md) | Which proof objects and measures support resolution lower bounds, interpolation, algebraic proof systems, cutting planes and Frege proofs? |
 | [Learning and property testing](learning-and-testing.md) | Are the proved bounds on samples, queries, or machine time? |
-| [Metacomplexity and lower-bound methods](metacomplexity-and-methods.md) | What are the MCSP variants and conditional barriers, and how are general lower-bound arguments packaged? |
+| [Metacomplexity and lower-bound methods](metacomplexity-and-methods.md) | What are the MCSP and time-bounded Kolmogorov problems, which magnification, one-way-function and NP-hardness consequences are proved and under which hypotheses, and how are general lower-bound arguments packaged? |
 
 ## Architecture and concrete use
 
