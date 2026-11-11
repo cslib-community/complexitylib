@@ -382,13 +382,12 @@ example {δ : ℝ} (hδ : 0 ≤ δ)
     hcomp.mem_PSPACE Decoder.bits hB_PS,
     hExpA⟩
 
-end CslibFrontierTests.DisjointInstancesAndOracleReduction
 
 
 
 
-
-def dummyStackSpec : StackAccumulationSpec encUnary (encFinEnum Unit) encNat encNat encNat encNat where
+def dummyStackSpec :
+    StackAccumulationSpec encUnary (encFinEnum Unit) encNat encNat encNat encNat where
   defaultNode := 0
   initCtx _ := ()
   initStack _ := []
@@ -410,27 +409,50 @@ def dummyStackSpec : StackAccumulationSpec encUnary (encFinEnum Unit) encNat enc
 example : ∃ c e : ℕ, ∃ Space : ℕ → ℕ,
     PolyBounded (fun a => (encUnary a).length) Space ∧
     ComputableInO (dummyStackSpec.run id) encUnary encNat
-      (fun a => c * ((encUnary a).length + 1) ^ e + (dummyStackSpec.rounds a + 1) * (c * ((encUnary a).length + 1) ^ e + 0)) Space := by
-  have h := exists_computableInO_run dummyStackSpec
-    (g := id) (Tg := fun _ => 0) (Sg := fun _ => 0)
-    (ComputableInPolyTime.id'.inO (Sg := fun _ => 0))
-    (⟨fun _ => 0, Cslib.PolynomiallyBounded.const 0, fun _ => le_rfl⟩)
-    (stateBound := fun _ => 1000) (ansBound := fun _ => 1000) (leafMax := fun _ => 0)
+      (fun a => c * ((encUnary a).length + 1) ^ e +
+        (dummyStackSpec.rounds a + 1) * (c * ((encUnary a).length + 1) ^ e + (encNat 0).length)) Space ∧
+    ComputableInPolySpace (dummyStackSpec.run id) encUnary encNat := by
+  have h := StackAccumulationSpec.exists_computableInO_run dummyStackSpec
+    (g := id) (Tg := fun x => (encNat x).length) (Sg := fun x => (encNat x).length)
+    (ComputableInO.id')
+    (⟨id, Cslib.PolynomiallyBounded.id, fun _ => le_rfl⟩)
+    (stateBound := fun _ => 1000) (ansBound := fun _ => 1000)
+    (leafMax := fun _ => (encNat 0).length)
     (⟨fun _ => 1000, Cslib.PolynomiallyBounded.const 1000, fun _ => le_rfl⟩)
     (⟨fun _ => 1000, Cslib.PolynomiallyBounded.const 1000, fun _ => le_rfl⟩)
     (by
       intro a i hi
-      have heq : i = 0 := by omega
-      subst heq
-      exact (by decide))
+      cases i with
+      | zero =>
+        have heq : (dummyStackSpec.step id)^[0] (dummyStackSpec.initState a) = ⟨(), [], 0⟩ := rfl
+        rw [heq]
+        exact (by decide)
+      | succ j =>
+        have heq : (dummyStackSpec.step id)^[j + 1] (dummyStackSpec.initState a) =
+          (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := rfl
+        rw [heq]
+        rw [StackAccumulationSpec.iterate_step_empty]
+        exact (by decide))
     (by
-      intro a i hi H
-      have heq : i = 0 := by omega
-      subst heq
-      exact (by decide))
+      intro a i hi st H
+      cases i with
+      | zero =>
+        cases H.1
+      | succ j =>
+        have heq : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := rfl
+        rw [heq] at H
+        rw [StackAccumulationSpec.iterate_step_empty] at H
+        cases H.1)
     (by
-      intro a i hi H
-      have heq : i = 0 := by omega
-      subst heq
-      exact (by decide))
+      intro a i hi st H
+      cases i with
+      | zero =>
+        cases H.1
+      | succ j =>
+        have heq : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := rfl
+        rw [heq] at H
+        rw [StackAccumulationSpec.iterate_step_empty] at H
+        cases H.1)
   exact h
+
+end CslibFrontierTests.DisjointInstancesAndOracleReduction
