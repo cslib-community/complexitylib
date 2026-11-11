@@ -1092,6 +1092,11 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 
 Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
 
+<a id="motzkinstraus1965"></a>
+## motzkinstraus1965
+
+T. S. Motzkin and E. G. Straus. "Maxima for Graphs and a New Proof of a Theorem of Turán." *Canadian Journal of Mathematics* 17, 533–540, 1965. https://doi.org/10.4153/CJM-1965-053-6 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text is uninspected. The manual attributes to this paper the characterization `max_{x ∈ Δ} xᵀ A_G x = 1 - 1 / ω(G)` over the standard simplex (noting the factor-of-2 convention `∑_{ij ∈ E} x_i x_j = (1 / 2) xᵀ A_G x`); no internal theorem or section numbers are cited.
+
 <a id="moulin80"></a>
 ## moulin80
 
@@ -1106,6 +1111,11 @@ Eitan Muller and Mark A. Satterthwaite. "The Equivalence of Strong Positive Asso
 ## murraywilliams2017
 
 Cody D. Murray and R. Ryan Williams. *On the (Non) NP-Hardness of Computing Circuit Complexity*. Theory of Computing 13(4), 1–22, 2017. https://doi.org/10.4086/toc.2017.v013a004 . Bibliographic data comes from the repository bibliography; the paper was not inspected for this chapter. The Lean module documentation quotes its Theorem 1.6 (Section 1, p. 5) and Theorem 4.1 (Section 4.1, p. 13).
+
+<a id="murtykabadi1987"></a>
+## murtykabadi1987
+
+Katta G. Murty and Santosh N. Kabadi. "Some NP-Complete Problems in Quadratic and Nonlinear Programming." *Mathematical Programming* 39(2), 117–129, 1987. https://doi.org/10.1007/BF02592948 . Bibliographic metadata checked via DOI and secondary search summaries on 2026-11-10; the published text is uninspected. The manual cites it for the `coNP`-completeness of testing matrix copositivity (and `NP`-completeness of non-copositivity), noting that secondary summaries describe [Murty–Kabadi] as reducing from subset sum whereas this library proves completeness via `Clique` and Motzkin–Straus; no internal theorem or section numbers are cited.
 
 <a id="nagamochiibaraki92"></a>
 ## nagamochiibaraki92

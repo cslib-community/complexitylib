@@ -18,9 +18,10 @@ import CslibFrontier.Foundations.Computability.ComputablePred
 **Trakhtenbrot's theorem** ([Trakhtenbrot1950]; compare [Libkin2004], Theorem 9.2 and
 Corollary 9.3): finite satisfiability of first-order sentences is undecidable. It is proved here
 for raw relational sentences over the union of all finite vocabularies (unboundedly many relation
-symbols, each of arity at most three); Libkin's form for a vocabulary with one binary relation
-symbol is derived from it in `CslibFrontier/Logics/FirstOrder/Trakhtenbrot/Binary.lean` (see
-**Scope** below). Since finite satisfiability is r.e.
+symbols, each of arity at most three); the sharpening to any vocabulary containing a relation symbol
+of arity at least `2` (compare [Libkin2004], Theorem 9.2, for the binary case) is derived from it in
+`CslibFrontier/Logics/FirstOrder/Trakhtenbrot/Binary.lean` (see **Scope** below). Since finite
+satisfiability is r.e.
 (`Cslib.Logic.FO.RawFormula.rePred_finSat`), finite validity is co-r.e. but not r.e., so no
 effective proof system is sound and complete for truth in all finite structures.
 
@@ -47,9 +48,9 @@ sentences are library-local `Cslib.Logic.FO.RawFormula`s, not Mathlib `L.Sentenc
 module documentation of `CslibFrontier/Logics/FirstOrder/Raw/Basic.lean`; the transfer to
 `L.Sentence` is `CslibFrontier/Logics/FirstOrder/Trakhtenbrot/Sentence.lean`). The reduction uses
 relation symbols of arity at most three, but unboundedly many of them; Libkin's Theorem 9.2 is
-stated for every vocabulary with at least one binary relation symbol. That sharpening interprets
-the vocabulary in one binary relation and is
-`Cslib.Logic.FO.RawFormula.not_exists_computable_finSat_of_mem` in
+stated for every vocabulary with at least one binary relation symbol, and padding extends it to any
+relation symbol of arity at least `2`. That sharpening interprets the vocabulary in one relation and
+is `Cslib.Logic.FO.RawFormula.not_exists_computable_finSat_of_mem` in
 `CslibFrontier/Logics/FirstOrder/Trakhtenbrot/Binary.lean`.
 
 ## Main definitions
@@ -181,15 +182,16 @@ open Trakhtenbrot
 /-- **Trakhtenbrot's theorem** ([Trakhtenbrot1950]): finite satisfiability of first-order
 sentences is undecidable. This is the form for raw relational sentences over the union of all
 finite vocabularies (unboundedly many relation symbols, each of arity at most three). The
-form of [Libkin2004], Theorem 9.2, for sentences over any vocabulary with a binary relation symbol
-is `Cslib.Logic.FO.RawFormula.not_exists_computable_finSat_of_mem`. -/
+sharpening to sentences over any vocabulary containing a relation symbol of arity at least `2`
+(compare [Libkin2004], Theorem 9.2, for the binary case) is
+`Cslib.Logic.FO.RawFormula.not_exists_computable_finSat_of_mem`. -/
 theorem not_computablePred_finSat : ¬ComputablePred FinSat := fun h =>
   ComputablePred.halting_problem 0 <|
     (h.comp primrec_haltSentence.to_comp).of_eq fun c => (eval_dom_iff_finSat c).symm
 
 /-- **Finite validity is not r.e.**, for raw relational sentences over the union of all finite
-vocabularies. [Libkin2004], Corollary 9.3, the corresponding statement for sentences over a
-vocabulary with a binary relation symbol, is
+vocabularies. The corresponding statement for sentences over a vocabulary containing a relation
+symbol of arity at least `2` (compare [Libkin2004], Corollary 9.3) is
 `Cslib.Logic.FO.RawFormula.not_exists_rePred_finValid_of_mem`. -/
 theorem not_rePred_finValid : ¬REPred FinValid := fun h =>
   ComputablePred.halting_problem_not_re 0 <|
