@@ -165,7 +165,7 @@ theorem length_restrict_lt {φ : CNF V} {v : V} {b : Bool} {c : Clause V}
     (φ.restrict v b).length < φ.length := by
   unfold CNF.restrict
   rw [List.length_map, List.length_filter_lt_length_iff_exists]
-  exact ⟨c, hc, decide_eq_false (not_not.mpr hl)⟩
+  exact ⟨c, hc, fun h => (of_decide_eq_true h) hl⟩
 
 /-- Restricting on `v` removes all occurrences of `v`. -/
 @[simp] theorem occurrences_restrict_self (φ : CNF V) (v : V) (b : Bool) :
