@@ -2,6 +2,9 @@ module
 
 import CslibFrontier.Computability.Circuit.Boolean.SuccinctVerifier.Encoding
 
+-- Regression tests intentionally export no declarations.
+set_option linter.privateModule false
+
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity
 open Cslib.Circuits.Boolean.SuccinctVerifier Turing.MultiTapeTM
 
@@ -16,10 +19,19 @@ private def falseWitness : Circuit signature 0 1 :=
 private def positiveClause : Circuit signature 0 (3 * (0 + 1)) :=
   Circuit.pi fun _ => trueWitness
 
+private theorem certificate_trueWitness :
+    certificate 0 1 trueWitness.code.1 (trueWitness.outputs 0).toNat =
+      [true, false, true, false, false, false, false] := by decide
+
+private theorem certificate_falseWitness :
+    certificate 0 1 falseWitness.code.1 (falseWitness.outputs 0).toNat =
+      [true, false, false, false, false, false, false] := by decide
+
 -- The unique variable is required to be true; its seven-bit certificate is parsed exactly.
 example : decodeCertificate 0 1 [true, false, true, false, false, false, false] =
     some trueWitness := by
-  simpa only [List.append_nil] using decodeCertificate_certificate_append trueWitness (by decide) []
+  simpa only [List.append_nil, certificate_trueWitness] using
+    decodeCertificate_certificate_append (s := 1) trueWitness (by decide) []
 
 -- No zero-gate circuit exists at input width zero. In particular the empty guess is rejected.
 example : decodeCertificate 0 0 [] = none := by rfl
@@ -33,7 +45,9 @@ example : decodeCertificate 0 1 [true, false, false, true, false, false, false] 
 
 -- Zero gates are allowed when an actual input wire is available.
 example : decodeCertificate 1 0 [false] = some (Circuit.wiring signature id) := by
-  simpa only [List.append_nil] using decodeCertificate_certificate_append
+  have hcert : certificate 1 0 (Circuit.wiring signature id : Circuit signature 1 1).code.1
+      ((Circuit.wiring signature id : Circuit signature 1 1).outputs 0).toNat = [false] := by decide
+  simpa only [List.append_nil, hcert] using decodeCertificate_certificate_append (s := 0)
     (Circuit.wiring signature id : Circuit signature 1 1) (by decide) []
 
 -- A real satisfying witness is accepted by the compiled UNSAT test.
@@ -42,8 +56,8 @@ example : (⟨0, certificateCircuit (r := 0) positiveClause 1
     CircuitSAT := by
   rw [not_mem_CircuitSAT_certificateCircuit_iff]
   refine ⟨trueWitness, ?_, ?_⟩
-  · simpa only [List.append_nil] using
-      decodeCertificate_certificate_append trueWitness (by decide) []
+  · simpa only [List.append_nil, certificate_trueWitness] using
+      decodeCertificate_certificate_append (s := 1) trueWitness (by decide) []
   · decide
 
 -- A well-formed but incorrect constant-false witness produces a violated clause.
@@ -52,8 +66,8 @@ example : (⟨0, certificateCircuit (r := 0) positiveClause 1
     CircuitSAT := by
   have hdecode : decodeCertificate 0 1 [true, false, false, false, false, false, false] =
       some falseWitness := by
-    simpa only [List.append_nil] using
-      decodeCertificate_certificate_append falseWitness (by decide) []
+    simpa only [List.append_nil, certificate_falseWitness] using
+      decodeCertificate_certificate_append (s := 1) falseWitness (by decide) []
   rw [certificateCircuit_of_decode_eq_some positiveClause hdecode]
   refine ⟨fun _ => false, ?_⟩
   rw [eval_badClause]

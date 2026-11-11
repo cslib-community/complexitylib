@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Time.Verifier
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicExponentialTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
 /-!
 # From SAT algorithms to lower bounds for witness circuits
@@ -208,7 +209,7 @@ theorem smallWitnessLanguage_mem_NTIME_of_polyTime
   have hbuildTime := Nat.pow_le_pow_left hpair dB
   have hsatTime := ht x (certificateQuery D s (x, w)) rfl
     (size_certificateQuery_le D s (x, w))
-  dsimp [p]
+  simp only [p, encPair_apply, encBits_apply] at hbuildTime ⊢
   omega
 
 /-- **Algorithms-to-witness-circuit-lower-bounds transfer.** If the succinct satisfiability

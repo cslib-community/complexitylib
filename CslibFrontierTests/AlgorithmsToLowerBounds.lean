@@ -26,6 +26,9 @@ and verify the displayed combined bound. This tests the machine-level transfer a
 logic, without importing the broader class-inclusion hierarchy.
 -/
 
+-- Regression tests intentionally export no declarations.
+set_option linter.privateModule false
+
 namespace CslibFrontierTests.AlgorithmsToLowerBounds
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean Cslib.Complexity

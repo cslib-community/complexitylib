@@ -18,6 +18,9 @@ and demands both values of its single variable, so no witness can pass. The fina
 checks zero clause-address bits: there is still one clause to verify.
 -/
 
+-- Regression tests intentionally export no declarations.
+set_option linter.privateModule false
+
 namespace CslibFrontierTests.SuccinctVerifier
 
 open Cslib Cslib.Circuits Cslib.Circuits.Boolean
