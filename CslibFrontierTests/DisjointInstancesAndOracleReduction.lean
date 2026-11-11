@@ -388,12 +388,12 @@ end CslibFrontierTests.DisjointInstancesAndOracleReduction
 
 
 
-def dummyStackSpec : StackAccumulationSpec encNat (encFinEnum Unit) encNat encNat encNat encNat where
+def dummyStackSpec : StackAccumulationSpec encUnary (encFinEnum Unit) encNat encNat encNat encNat where
   defaultNode := 0
   initCtx _ := ()
   initStack _ := []
   initAcc _ := 0
-  rounds _ := 0
+  rounds n := 2 ^ n
   isLeaf _ := true
   leafInstance _ := 0
   expand _ := []
@@ -401,16 +401,16 @@ def dummyStackSpec : StackAccumulationSpec encNat (encFinEnum Unit) encNat encNa
   computableInPolyTime_initCtx := .const ()
   computableInPolyTime_initStack := .const []
   computableInPolyTime_initAcc := .const 0
-  computableInPolyTime_rounds := .const 0
+  computableInPolyTime_rounds := ComputableTidilyInPolyTime.binary_two_pow.computableInPolyTime
   computableInPolyTime_isLeaf := .const true
   computableInPolyTime_leafInstance := .const 0
   computableInPolyTime_expand := .const []
   computableInPolyTime_combine := .const 0
 
 example : ∃ c e : ℕ, ∃ Space : ℕ → ℕ,
-    PolyBounded (fun a => (encNat a).length) Space ∧
-    ComputableInO (dummyStackSpec.run id) encNat encNat
-      (fun a => c * ((encNat a).length + 1) ^ e + (dummyStackSpec.rounds a + 1) * (c * ((encNat a).length + 1) ^ e + 0)) Space := by
+    PolyBounded (fun a => (encUnary a).length) Space ∧
+    ComputableInO (dummyStackSpec.run id) encUnary encNat
+      (fun a => c * ((encUnary a).length + 1) ^ e + (dummyStackSpec.rounds a + 1) * (c * ((encUnary a).length + 1) ^ e + 0)) Space := by
   have h := exists_computableInO_run dummyStackSpec
     (g := id) (Tg := fun _ => 0) (Sg := fun _ => 0)
     (ComputableInPolyTime.id'.inO (Sg := fun _ => 0))
