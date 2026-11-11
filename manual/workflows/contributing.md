@@ -20,6 +20,16 @@ Library paths are intended to migrate from `CslibFrontier.` to `Cslib.` unchange
 
 Public resource statements use plain computability predicates; tidiness remains an internal machine-proof mechanism during migration. Before a supported release, renaming an interface means updating its in-repository clients and removing the superseded API, rather than adding compatibility aliases. Preserve ported files' authors and licenses and cite mathematical sources through the ordered `references.bib` keys. See [upstream coordination and credit](../design-and-assurance/upstream-and-credit.md).
 
+Before handing off an API change, open a representative caller and inspect the work it must do
+to use the result. Repeated Boolean-case analysis suggests a matcher characterization; repeated
+coordinate arithmetic suggests an embedding range lemma; projection-certificate plumbing suggests
+named records and the generated `enc_structure` rules. Use the improved interface in that caller
+in the same change. Compare sibling implementations too: a PMF result may specialize a measure
+result through an existing conversion theorem, and a game can call the handler its proof already
+names. Keep one-proof representation wrappers private while retaining useful mathematical facts.
+The [author and reviewer procedure](../../AGENTS.md#check-the-api-through-its-callers) describes
+the checks and how to record a concise before/after example without a separate audit report.
+
 ## Validate the client, then the change
 
 Begin with diagnostics for the changed file and a representative downstream client. For new bundled hypotheses, provide a satisfying instance; use a negative case when it exposes vacuity or a model boundary. Tests should exercise behavior or the interface rather than restate a theorem by name.

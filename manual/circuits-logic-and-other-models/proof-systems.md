@@ -1094,6 +1094,12 @@ difference to zero; the cap conditions old differences 1 and 2 to agree. The exa
 in `BitString.CyclicDifference.Boundary` rule out new forbidden pairs during the descent.
 Cyclic rotations preserve orientation; no arbitrary port permutation is used.
 
+For coordinate proofs, use `capDifferencePort_eq_zero_iff`, `capDifferencePort_ne_one`,
+`capDifferencePort_ne_two` and `three_le_val_capDifferencePort`. These state that the retained
+differences preserve zero, omit both hidden coordinates, and send every nonzero input to an
+index at least three. Clients can use these facts
+without unfolding the coordinate map.
+
 `Construction.target` is standardized in the final four-port order. `Construction.gadget`
 executes the trace on an actual `PPGadget` over two symbols: the original `R` and binary
 disequality. Its initial body contains one `R` literal and one or two disequalities per port.
