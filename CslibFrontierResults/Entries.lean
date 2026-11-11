@@ -46,6 +46,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Sav
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -2256,3 +2257,24 @@ register_result "nayak-wu-median" where
     ε = 1/3 (hence 1/δ <= 432T when 1 <= δ n), 12T (216T) for involutive-difference oracle \
     steps, and the same bound on T + 1 for index-returning algorithms. Derived via adversary \
     weight-layer bounds rather than polynomials; comparison-tree oracles are not formalized."
+
+register_result "sperner-2d-ppad-completeness" where
+  title := "PPAD-completeness of circuit two-dimensional Sperner (Sperner2D)"
+  topic := "structural complexity"
+  sources := [
+    { paper := ChenDeng2006, theorem := unverified,
+      locator := unverified },
+    { paper := ChenDengTeng2009, theorem := unverified,
+      locator := "Section 4.1, Definitions 4.2, 4.4 and 4.5 (with d = 2)" }
+  ]
+  theorems := [
+    Cslib.Complexity.EndOfLine_searchReducible_Sperner2D,
+    Cslib.Complexity.Sperner2D_searchHard,
+    Cslib.Complexity.Sperner2D_searchComplete
+  ]
+  scope := "Explicit polynomial-time search reduction EndOfLine ≤ Sperner2D compiling each \
+    n-bit EndOfLine instance uniformly into a circuit on a 2^(n + 5) × 2^(n + 5) grid of 16 × 16 \
+    routing, crossover and end-tile gadgets, combined with Sperner2D_mem_PPAD under encSperner2D. \
+    Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
+    as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
+    completeness and d-dimensional circuit Sperner are not formalized."
