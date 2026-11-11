@@ -4800,6 +4800,7 @@ public import CslibFrontier.Foundations.Combinatorics.GreedySchedules
 public import CslibFrontier.Foundations.Combinatorics.Hoeffding
 public import CslibFrontier.Foundations.Combinatorics.HybridPrediction
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric
+public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.Miss
 public import CslibFrontier.Foundations.Combinatorics.HypergraphCut
 public import CslibFrontier.Foundations.Combinatorics.InclusionMatrix
 public import CslibFrontier.Foundations.Combinatorics.Janson
@@ -6024,6 +6025,7 @@ public import CslibFrontier.Probability.IID
 public import CslibFrontier.Probability.IID.CollisionCount
 public import CslibFrontier.Probability.IID.CrossCollisionCount
 public import CslibFrontier.Probability.IID.Event
+public import CslibFrontier.Probability.IID.FirstAccepted
 public import CslibFrontier.Probability.IID.Occurrence
 public import CslibFrontier.Probability.Isolation
 public import CslibFrontier.Probability.JohnsonLindenstrauss
@@ -6150,6 +6152,7 @@ public import CslibFrontier.Probability.StatisticalDistance.Product
 public import CslibFrontier.Probability.StatisticalDistance.UniformMod
 public import CslibFrontier.Probability.StatisticalDistance.XOR
 public import CslibFrontier.Probability.StatisticalDistance.XORSampling
+public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
