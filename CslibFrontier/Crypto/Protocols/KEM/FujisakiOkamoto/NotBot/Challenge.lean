@@ -356,19 +356,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) {γ : ℝ}
     refine (toOuterMeasure_gCache_eq_zero _ st
       (fun g => ∃ p ∈ g, S.pke.encDet pk p.1 p.2 = cStar) hst fun y hy => ?_).le
     dsimp only [simHandler] at hy
-    by_cases hc : c = cStar
-    · simp only [hc, ↓reduceIte] at hy
-      change y ∈ (ProbComp.eval (pure (none, st))).support at hy
-      simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hy
-      rw [hy]
-    · simp only [hc, ↓reduceIte] at hy
-      change y ∈ (ProbComp.eval (simHashHq S.sampleKey c st >>= fun a =>
-        pure (some a.fst, a.snd))).support at hy
-      rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hy
-      obtain ⟨z, hz, hy₂⟩ := hy
-      simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hy₂
-      rw [hy₂]
-      exact (simHashHq_support (cStar := cStar) hz).1
+    exact gCache_eq_of_mem_support_decaps _ _ _ _ _ hy
 
 /-- **Bad-event split**: from the empty state, the simulator records `mStar` in
 `gCache` or `cStar` in `hqCache` with probability at most that of recording `mStar`, plus

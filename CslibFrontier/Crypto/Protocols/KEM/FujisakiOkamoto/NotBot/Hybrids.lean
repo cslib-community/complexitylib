@@ -149,6 +149,29 @@ def coupledHashH (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
   | (true, m, c) =>
     simHashHRaw S.sampleKey (true, m, c)
 
+omit [DecidableEq M] in
+/-- The decapsulation branch shared by `simHandler` and `coupledHandler` leaves `gCache`
+unchanged. -/
+theorem gCache_eq_of_mem_support_decaps (sampleKey : ProbComp K) (cStar c : CT)
+    (st : SimState M R CT K) (x : Option K × SimState M R CT K)
+    (hx : x ∈ (ProbComp.eval ((if c = cStar then return none else do
+      let k ← simHashHq sampleKey c
+      return some k : StateT (SimState M R CT K) ProbComp (Option K)) st)).support) :
+    x.2.gCache = st.gCache := by
+  by_cases hc : c = cStar
+  · simp only [hc, ↓reduceIte] at hx
+    change x ∈ (ProbComp.eval (pure (none, st))).support at hx
+    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
+    rw [hx]
+  · simp only [hc, ↓reduceIte] at hx
+    change x ∈ (ProbComp.eval (simHashHq sampleKey c st >>= fun a =>
+      pure (some a.fst, a.snd))).support at hx
+    rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hx
+    obtain ⟨z, hz, hx⟩ := hx
+    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
+    rw [hx]
+    exact simHashHq_gCache_eq _ _ _ _ hz
+
 /-- Lazy realization of `eagerCoupledHandler` on `SimState`; it differs from `simHandler` only
 in using `coupledHashH` for `H`. -/
 def coupledHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (cStar : CT)

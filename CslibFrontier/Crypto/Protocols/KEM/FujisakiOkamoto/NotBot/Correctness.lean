@@ -245,19 +245,7 @@ private theorem testHandler_decaps_gCache_eq (S : Scheme PK SK M R CT K) (cStar 
     (hx : x ∈ (ProbComp.eval (S.testHandler cStar t (.decaps c) st)).support) :
     x.2.gCache = st.gCache := by
   dsimp only [testHandler] at hx
-  by_cases hc : c = cStar
-  · simp only [hc, ↓reduceIte] at hx
-    change x ∈ (ProbComp.eval (pure (none, st))).support at hx
-    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
-    rw [hx]
-  · simp only [hc, ↓reduceIte] at hx
-    change x ∈ (ProbComp.eval (simHashHq S.sampleKey c st >>= fun a =>
-      pure (some a.fst, a.snd))).support at hx
-    rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hx
-    obtain ⟨z, hz, hx⟩ := hx
-    rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
-    rw [hx]
-    exact simHashHq_gCache_eq _ _ _ _ hz
+  exact gCache_eq_of_mem_support_decaps _ _ _ _ _ hx
 
 private theorem testHandler_gCache_subset (S : Scheme PK SK M R CT K) (cStar : CT)
     (t : M → CT → R → Prop) [∀ m c, DecidablePred (t m c)] (q : ROQuery M CT)
