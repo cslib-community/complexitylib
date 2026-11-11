@@ -8,9 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.PolyTime
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.LWE.Regev
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Matrix.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Tactic.PPT
@@ -21,8 +23,8 @@ import CslibFrontier.Tactic.PPT
 The serialized Regev encryption program reads a public word with the fixed-width row-major
 encoding of `Matrix.toBinary`, samples `m` fair coins and writes the `n + 1` ciphertext residues
 with `w` bits each. Missing bits and coins are zero and excess data is ignored, so the program is
-total. Key generation is the existing serialized LWE key generator
-`Homomorphic.GSW.keyGenSerialized`, whose public word is exactly a decision-LWE sample.
+total. Key generation is the shared serialized LWE key generator `LWE.keyGenSerialized`, whose
+public word is exactly a decision-LWE sample.
 
 Both honest programs are strict PPT, and the reduction to decision LWE is one uniform strict PPT
 distinguisher with loss two. The remaining statistical term is the single-challenge
@@ -101,7 +103,7 @@ theorem encryptEntry_eq (n m w : ℕ) (publicWord : List Bool) (message : Bool)
     cases coins.getD r.val false <;> simp
   · by_cases hj : j = 0
     · subst hj
-      simp [encodeBit]
+      simp [LWE.encodeBit]
     · have hv : j.val ≠ 0 := fun h => hj (Fin.ext h)
       simp [hj, hv]
 
@@ -252,17 +254,17 @@ theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ) (adversary : Encrypti
 advantage plus the leftover-hash term. No efficiency is needed for this inequality. -/
 theorem advantage_game_le (n m w η : ℕ → ℕ) (adversary : Encryption.Adversary) (security : ℕ) :
     Encryption.advantage
-      (Encryption.game (fun k => Homomorphic.GSW.keyGenSerialized (n k) (m k) (w k) (η k))
+      (Encryption.game (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
         (fun k => encryptSerialized (n k) (m k) (w k)) adversary) security ≤
       2 * Game.advantage
         (distinguishingGame
-          (LWE.realEnsemble n m w (fun k => Homomorphic.GSW.noiseLaw (w k) (η k)) security)
+          (LWE.realEnsemble n m w (fun k => LWE.noiseLaw (w k) (η k)) security)
           (lweDistinguisher n m w adversary security))
         (distinguishingGame (LWE.uniformEnsemble n m w security)
           (lweDistinguisher n m w adversary security)) +
         hidingError (n security) (m security) (w security) := by
   simp only [Encryption.advantage, Encryption.eval_game_eq_publicKeyGame,
-    Homomorphic.GSW.eval_keyGenSerialized_publicWord]
+    LWE.eval_keyGenSerialized_publicWord]
   exact (Encryption.advantage_publicKeyGame_le _ (LWE.uniformEnsemble n m w security)
     _ adversary security).trans
       (add_le_add le_rfl (advantage_uniformEnsemble_le n m w adversary security))
@@ -275,8 +277,8 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
     (hm : ComputableInPolyTime m encUnary encUnary)
     (hw : ComputableInPolyTime w encUnary encUnary)
     (hmargin : ∀ᶠ security in atTop, (n security + 1) * w security + 2 * security ≤ m security)
-    (hLWE : DecisionLWE n m w (fun k => Homomorphic.GSW.noiseLaw (w k) (η k))) :
-    Encryption.INDCPA (fun k => Homomorphic.GSW.keyGenSerialized (n k) (m k) (w k) (η k))
+    (hLWE : DecisionLWE n m w (fun k => LWE.noiseLaw (w k) (η k))) :
+    Encryption.INDCPA (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
       (fun k => encryptSerialized (n k) (m k) (w k)) := by
   intro adversary hadversary
   have hsource := hLWE (lweDistinguisher n m w adversary)

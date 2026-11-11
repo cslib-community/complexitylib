@@ -19,55 +19,52 @@ mathematics. See [Contributing](CONTRIBUTING.md) to propose, implement, or revie
 
 ## Start here
 
-The [Operator's Manual](manual/README.md) covers using the codebase by hand or with an agent:
-setup, worked examples, tactics, models, design patterns and troubleshooting. The short
-[Agent Operator's Manual](manual/AGENT_OPERATORS.md) explains how humans direct agents, choose
-roles and manage review and handoffs. The [guide](https://www.cslib.io/cslib-frontier/guide/)
-provides checked Lean tutorials. For a particular task, start below.
-
 | I want to… | Start with… |
 | --- | --- |
-| Learn to use the library from the beginning | [Operator's Manual](manual/README.md) |
-| Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md) |
+| Learn to use the library, by hand or with an agent | [Operator's Manual](manual/README.md): setup, worked examples, tactics, models and troubleshooting |
+| Direct agents working in the library | [Agent Operator's Manual](manual/AGENT_OPERATORS.md): roles, review and handoffs |
+| Read checked Lean tutorials | [Guide](https://www.cslib.io/cslib-frontier/guide/) |
+| See what an area covers | [Library map](#library-map) below |
+| Find a named result, such as Cook–Levin or the PCP theorem | [Results inventory](results/README.md), then the declarations it links in the [API documentation](https://www.cslib.io/cslib-frontier/) |
+| Find a model, definition or mathematical tool | [Search the API documentation](https://www.cslib.io/cslib-frontier/search.html), rebuilt nightly from `main`; [CslibFrontier.lean](CslibFrontier.lean) lists every module |
 | Use cslib-frontier in another Lean project | [Add a pinned dependency](#use-from-another-lean-project) |
 | Build or edit this repository | [Build a checkout](#build-a-checkout) |
-| Certify functional programs and loops | [PolyTime examples](CslibFrontierTests/PolyTimeTactic.lean) |
-| State P/NP membership or prove a problem NP-complete | [Checked plain examples](CslibFrontierTests/NPCompleteness.lean), then [Clique](CslibFrontier/Computability/Complexity/Problems/Clique.lean) |
-| Construct circuits for polynomial-time function families | [Uniform circuit examples](CslibFrontierTests/UniformCircuits.lean) |
-| Define queries using least fixed points or tuple closure | [FO(LFP), FO(TC), and synthesis examples](CslibFrontierTests/FOOperators.lean) |
-| Move between ordered FO(LFP) queries and native polynomial time | [Immerman–Vardi characterization](CslibFrontier/Computability/Complexity/ImmermanVardi.lean) |
-| State deterministic function-time or exact path-counting bounds | [FTIME and SharpTIME examples](CslibFrontierTests/TimeClasses.lean) |
-| Write probabilistic programs or oracle reductions | [PPT examples](CslibFrontierTests/PPTTactic.lean), [oracle examples](CslibFrontierTests/OraclePPT.lean) |
-| Estimate frequencies in a stream | [Count-Min examples](CslibFrontierTests/CountMin.lean), then [fixed-query accuracy](CslibFrontier/DataStructure/CountMin/Probability.lean) |
-| Find a named result, such as Cook–Levin or the PCP theorem | [Results inventory](results/README.md), then the declarations it links in the [API documentation](https://www.cslib.io/cslib-frontier/) |
-| Find a computational model or mathematical tool | [Search the API documentation](https://www.cslib.io/cslib-frontier/search.html), rebuilt nightly from `main`; [CslibFrontier.lean](CslibFrontier.lean) lists every module, and each documents its definitions, results, and references |
 | Propose a substantial new direction | [Open an issue](https://github.com/cslib-community/cslib-frontier/issues/new/choose), as [Contributing](CONTRIBUTING.md#proposing-and-contributing-work) describes; [ROADMAP.md](ROADMAP.md) lists the accepted directions |
 | Contribute a result or improve an API | [Contributing](CONTRIBUTING.md) |
 
-The checked examples show `fun_prop`, `polytime`, and `ppt` with explicit encodings and
-client-supplied invariants. The deterministic backend builds on Christian Reitwiessner's tidy
-machine calculus.
+### Library map
 
-For an NP-completeness proof, fix the instance encoding, give a verifier with a polynomial
-certificate-length bound, and reduce a known NP-hard problem to yours. Prove the verifier and
-reduction map polynomial-time with `fun_prop` or `polytime`, then prove their membership
-equivalences. The [Clique example](CslibFrontier/Computability/Complexity/Problems/Clique.lean)
-uses graph complementation; the [reduction index](CslibFrontier/Computability/Complexity/Reduction.lean)
-points to the other proved problems and their reduction maps. The checked examples state these
-claims with plain `ComputableInPolyTime`.
+Each top-level directory of [CslibFrontier/](CslibFrontier) is a library area. The reference
+chapters of the Operator's Manual describe its models and main theorems; the checked examples
+in [CslibFrontierTests/](CslibFrontierTests) show the APIs in use.
 
-The [results and reference inventory](results/README.md) uses readable Lean commands to collect
-named results, with checked theorem identifiers and cited sources; its generated index links each
-theorem to the [API documentation](https://www.cslib.io/cslib-frontier/). Coverage and source
-audits remain incomplete.
+| Area | Covers | Start with |
+| --- | --- | --- |
+| `Computability/` | Turing machines and other machine models, time and space classes, reductions and completeness, circuits, PCP, query and communication complexity | [Machines and complexity classes](manual/machines-and-classes/index.md) and [circuits and other models](manual/circuits-logic-and-other-models/index.md); examples for [polynomial time](CslibFrontierTests/PolyTimeTactic.lean), [time classes](CslibFrontierTests/TimeClasses.lean), [NP-completeness](CslibFrontierTests/NPCompleteness.lean) and [uniform circuits](CslibFrontierTests/UniformCircuits.lean) |
+| `Algorithms/` | Graph, string, flow, optimization, approximation and sorting algorithms, as Lean functions and Word-RAM programs with proved correctness and cost | [Algorithms, memory, and data structures](manual/algorithms-and-memory/index.md); example: [Dijkstra](CslibFrontierTests/Dijkstra.lean) |
+| `DataStructure/` | Dictionaries, hashing, priority queues, search trees, sketches and memory specifications | [Dictionaries, hashing and randomized algorithms](manual/algorithms-and-memory/dictionaries-hashing-and-randomized.md); [Count-Min examples](CslibFrontierTests/CountMin.lean) and their [accuracy bound](CslibFrontier/DataStructure/CountMin/Probability.lean) |
+| `Crypto/` | Security games, primitives, computational assumptions, reductions and protocols | [Probabilistic programs and cryptography](manual/programs-crypto-and-probability/index.md); examples for [PPT programs](CslibFrontierTests/PPTTactic.lean) and [oracle reductions](CslibFrontierTests/OraclePPT.lean) |
+| `Languages/`, `Probability/` | Probabilistic and oracle programs with their semantics, and the probability tools they use | [Programs, probability laws, and native realization](manual/programs-crypto-and-probability/programs-and-realization.md) |
+| `Privacy/` | Differential privacy | [Protocol models, ideal oracles, and privacy](manual/programs-crypto-and-probability/protocols-and-privacy.md) |
+| `Logics/` | Propositional proof systems, constraint satisfaction, and first- and second-order logic over finite structures | [Proof complexity](manual/circuits-logic-and-other-models/proof-systems.md) and [finite-model logic](manual/circuits-logic-and-other-models/finite-model-logic.md); [FO(LFP) and FO(TC) examples](CslibFrontierTests/FOOperators.lean), [Immerman–Vardi](CslibFrontier/Computability/Complexity/ImmermanVardi.lean) |
+| `MachineLearning/` | PAC, online and statistical-query learning | [Learning and property testing](manual/circuits-logic-and-other-models/learning-and-testing.md) |
+| `GameTheory/` | Strategic games, congestion games, mechanism design and social choice | [Strategic games](manual/algorithms-and-memory/strategic-games.md) and [mechanism design](manual/algorithms-and-memory/mechanism-design.md) |
+| `Tactic/` | Automation: `polytime`, `ppt`, `negligible`, `game_trans`, first-order synthesis and others | [Proof automation](manual/design-and-assurance/automation.md) |
+| `Foundations/` | General mathematics: data, combinatorics, Boolean analysis, linear algebra and number theory | Cited from the chapters that use it; some modules are destined for Mathlib |
+
+The checked examples use `fun_prop`, `polytime` and `ppt` with explicit encodings and
+client-supplied invariants; the deterministic backend builds on Christian Reitwiessner's tidy
+machine calculus. For an NP-completeness proof, the
+[Clique example](CslibFrontier/Computability/Complexity/Problems/Clique.lean) uses graph
+complementation and the [reduction index](CslibFrontier/Computability/Complexity/Reduction.lean)
+points to the other proved problems. The [results inventory](results/README.md) collects named
+results with checked theorem identifiers and cited sources; its coverage and source audits
+remain incomplete.
 
 ## Build and use
 
 The package is named `cslib-frontier`; imports begin with `CslibFrontier.`. Most declaration
-namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`. In an announced
-cutover ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)), the module root
-will be renamed from `CslibFrontier.` to `CslibFrontier.` and the package to `cslib-frontier`;
-declaration names do not change.
+namespaces begin with `Cslib`, and Turing-machine declarations use `Turing`.
 
 ### Build a checkout
 
@@ -126,72 +123,24 @@ lake build
 ```
 
 Commit the resulting `lake-manifest.json` along with the Lake configuration and `lean-toolchain`.
-Use the `CslibFrontier.` imports shown in the [checked examples](#start-here).
+Use the `CslibFrontier.` imports shown in the [checked examples](#library-map).
 
 ### Build the documentation
 
-Run the following commands from the repository root. For a cold checkout, first restore the
-available caches with `scripts/cache/ensure.sh`.
-
-#### API reference
-
-To build searchable API documentation from the module docstrings:
-
-```bash
-python3 scripts/check_docs.py --config-only
-lake -d docbuild build CslibFrontier:docs
-python3 scripts/check_docs.py
-python3 -m http.server --bind 127.0.0.1 --directory docbuild/.lake/build/doc
-```
-
-Open `http://localhost:8000` to browse and search. The **API documentation** workflow publishes
-`main` to the [API documentation site](https://www.cslib.io/cslib-frontier/) nightly, including
-the [Lean source history dashboard](https://www.cslib.io/cslib-frontier/stats/).
-A manual run on another branch produces an `api-docs` artifact instead; serve it by replacing
-the directory argument above with the extracted artifact directory.
-
-If removing a source module leaves `check_docs.py` reporting obsolete modules, rebuild the
-generated documentation after any documentation build has stopped:
-
-```bash
-lake -d docbuild clean docbuild
-lake -d docbuild build CslibFrontier:docs
-python3 scripts/check_docs.py
-```
-
-The named clean removes only `docbuild/.lake/build`, including HTML, per-module data and the
-SQLite database; deleting HTML alone leaves stale data behind. Library and dependency build
-outputs, package checkouts and Lake's artifact cache are retained. Documentation for all imported
-modules is regenerated, which can take substantial time even with warm library build outputs.
-
-#### Checked guide
-
-The [guide](guide/CslibFrontierGuide.lean) introduces the library area by area, with Lean examples
-that are checked against the library whenever the guide is built. It is written with
-[Verso](https://github.com/leanprover/verso) in a separate `guide` project. To build and preview it:
-
-```bash
-scripts/guide.sh
-python3 -m http.server --bind 127.0.0.1 --directory guide/.lake/build/site/html-multi
-```
-
-The first build compiles Verso and links the guide's generator, which takes a few minutes. The
-**API documentation** workflow publishes the guide from `main` with the API documentation, at
-[/guide/](https://www.cslib.io/cslib-frontier/guide/). The **Guide** workflow builds
-pull requests that change the guide and uploads the pages as a `guide` artifact.
+[manual/BUILD.md](manual/BUILD.md) explains how to build the two manuals, the API reference
+(doc-gen4), the checked guide (Verso) and the source history dashboard. The **API documentation**
+workflow publishes the API reference, guide and dashboard from `main` nightly at
+[cslib.io/cslib-frontier](https://www.cslib.io/cslib-frontier/).
 
 ## Project information
 
-This repository was the canonical CSLib-based Complexitylib until 2026-11-08, when it was renamed
-from complexitylib to cslib-frontier and its scope widened from computational complexity theory to
-computer science generally ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)).
-The renamed historical [pre-CSLib
-implementation](https://github.com/SamuelSchlesinger/complexitylib-v1) remains available with
-archival pending; it has a different API, and some developments remain to be ported. The
-temporary repository and package name `complexitylib2` was retired when this repository moved to
-CSLib Community. With the rename, the Lake package became `cslib-frontier` and the module root
-`CslibFrontier`; downstream projects should require `cslib-frontier` and import
-`CslibFrontier.*` modules. Declaration names did not change.
+This repository was the CSLib-based Complexitylib until 2026-11-08, when it was renamed
+cslib-frontier and its scope widened from computational complexity theory to computer science
+generally ([#3675](https://github.com/cslib-community/cslib-frontier/issues/3675)). Declaration
+names did not change. The pre-CSLib
+[complexitylib-v1](https://github.com/SamuelSchlesinger/complexitylib-v1) has a different API;
+some of its developments remain to be ported. The [manual's history](manual/history/index.md)
+keeps the dated record of the complexitylib period.
 
 Modules follow CSLib's APIs, paths, namespaces, and contribution standards so they can move
 upstream with the import prefix changed from `CslibFrontier.` to `Cslib.`. Acceptance requires

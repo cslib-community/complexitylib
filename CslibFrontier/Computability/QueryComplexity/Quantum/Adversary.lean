@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Computability.QueryComplexity.Midrijanis
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Polynomial
 public import CslibFrontier.Computability.QueryComplexity.SpectralSensitivity
+import CslibFrontier.Computability.QueryComplexity.Quantum.Progress
+import CslibFrontier.Foundations.Data.BitString.Flip
 import CslibFrontier.Foundations.Quantum.Measurement.Overlap
 
 /-!
@@ -33,9 +35,10 @@ nonnegative weights `u` and `w` on the cube. The progress measure sums
   `⟨u, A_f w⟩ = ∑_x ∑_{i sensitive at x} u(x) w(x ⊕ eᵢ)`.
 * The inputs `x` and `x ⊕ eᵢ` have oracles that differ only on query index `i` with control bit
   `1`, so one query changes their overlap by `2 ⟨Π_i ψₓ, Π_i ψ_{x ⊕ eᵢ}⟩`
-  (`Cslib.Quantum.inner_phaseOracle_update_not`), where `Π_i` is `Cslib.Quantum.ctrlProj`. By
-  `2ab ≤ a² + b²` and `∑_i ‖Π_i ψ‖² ≤ 1`, counting each edge from both of its ends, a query lowers
-  the measure by at most `‖u‖² + ‖w‖²`.
+  `2 ⟨Π_i ψ, Π_i φ⟩`. By applying `Cslib.Quantum.one_sub_mul_sum_le_of_sq_le`
+  (`CslibFrontier.Computability.QueryComplexity.Quantum.Progress`), `2ab ≤ a² + b²`, and
+  `∑_i ‖Π_i ψ‖² ≤ 1`, counting each edge from both of its ends, a query lowers the measure by
+  at most `‖u‖² + ‖w‖²`.
 * At the end, inputs with different values of `f` have overlap at most `2√(ε(1-ε))`, because
   `|⟨ψ, φ⟩|² + (p - q)² ≤ 1` for unit states whose acceptance probabilities are `p` and `q`
   (`Cslib.Quantum.norm_inner_sq_add_sq_measureProb_sub_le_one`).
@@ -89,20 +92,14 @@ index `i` with control bit `1`, so applying them changes the overlap of two stat
 theorem inner_phaseOracle_update_not (x : Fin N → Bool) (i : Fin N) (ψ φ : State N W) :
     inner ℂ (phaseOracle x ψ) (phaseOracle (update x i (!x i)) φ) =
       inner ℂ ψ φ - 2 * inner ℂ (ctrlProj i ψ) (ctrlProj i φ) := by
-  simp only [PiLp.inner_apply, RCLike.inner_apply', mul_sum, ← sum_sub_distrib]
-  refine sum_congr rfl fun p _ => ?_
-  obtain ⟨j, b, w⟩ := p
-  simp only [phaseOracle_apply, ctrlProj, PiLp.toLp_apply, map_mul]
-  by_cases hj : j = i
-  · subst hj
-    cases b <;> cases x j <;>
-      simp only [Bool.and_self, Bool.and_true, Bool.and_false, Bool.not_false, Bool.not_true,
-        Bool.false_eq_true, ↓reduceIte, update_self, and_self, and_false, map_one, map_neg,
-        map_zero, one_mul, neg_mul, mul_neg, mul_zero, sub_zero] <;>
-      ring
-  · have hji : update x i (!x i) j = x j := update_of_ne hj _ _
-    simp only [hji, hj, false_and, ↓reduceIte, map_zero, mul_zero, sub_zero]
-    split_ifs <;> simp
+  classical
+  rw [inner_phaseOracle_phaseOracle]
+  have h : univ.filter (fun j => x j ≠ update x i (!x i) j) = {i} := by
+    ext j
+    by_cases hj : j = i
+    · subst hj; cases hx : x j <;> simp [hx]
+    · simp [hj]
+  rw [h, sum_singleton]
 
 /-- A query algorithm with a unit initial state and error `ε ≤ 1/2` leaves the states on inputs
 with different values of `f` with overlap at most `2√(ε(1-ε))`. -/
@@ -122,91 +119,6 @@ theorem norm_inner_run_le {f : BooleanFunction N} {ε : ℝ}
   · simp only [hfx, hfy, bitVal_false, bitVal_true, sub_zero] at hx₁ hy₂
     exact norm_inner_le_two_mul_sqrt_of_measureProb hx hy (by linarith) hy₂ hε
 
-section Progress
-
-/-- The progress measure of the adversary argument: the overlaps after `t` queries of the states
-on the ends of the sensitive edges `(x, i)` of `f`, weighted by `u(x) w(x ⊕ eᵢ)`. -/
-private noncomputable def progress (f : BooleanFunction N) (U : ℕ → State N W →ₗᵢ[ℂ] State N W)
-    (ψ₀ : State N W) (u w : BitString N → ℝ) (t : ℕ) : ℝ :=
-  ∑ x, ∑ i ∈ sensitiveCoords f x, u x * w (update x i (!x i)) *
-    ‖inner ℂ (run U ψ₀ x t) (run U ψ₀ (update x i (!x i)) t)‖
-
-variable {f : BooleanFunction N} (U : ℕ → State N W →ₗᵢ[ℂ] State N W) {ψ₀ : State N W}
-  {u w : BitString N → ℝ}
-
-/-- One query lowers the overlap of the states on `x` and on `x ⊕ eᵢ` by at most
-`2 ‖Π_i ψₓ‖ ‖Π_i ψ_{x ⊕ eᵢ}‖`. -/
-private theorem norm_inner_run_succ (x : Fin N → Bool) (i : Fin N) (t : ℕ) :
-    ‖inner ℂ (run U ψ₀ x t) (run U ψ₀ (update x i (!x i)) t)‖ -
-        2 * (‖ctrlProj i (run U ψ₀ x t)‖ * ‖ctrlProj i (run U ψ₀ (update x i (!x i)) t)‖) ≤
-      ‖inner ℂ (run U ψ₀ x (t + 1)) (run U ψ₀ (update x i (!x i)) (t + 1))‖ := by
-  change _ ≤ ‖inner ℂ (U (t + 1) (phaseOracle x (run U ψ₀ x t)))
-    (U (t + 1) (phaseOracle (update x i (!x i)) (run U ψ₀ (update x i (!x i)) t)))‖
-  rw [LinearIsometry.inner_map_map, inner_phaseOracle_update_not]
-  have h₁ := norm_inner_le_norm (𝕜 := ℂ) (ctrlProj i (run U ψ₀ x t))
-    (ctrlProj i (run U ψ₀ (update x i (!x i)) t))
-  have h₂ := norm_sub_norm_le (inner ℂ (run U ψ₀ x t) (run U ψ₀ (update x i (!x i)) t))
-    (2 * inner ℂ (ctrlProj i (run U ψ₀ x t)) (ctrlProj i (run U ψ₀ (update x i (!x i)) t)))
-  rw [norm_mul, RCLike.norm_ofNat] at h₂
-  linarith
-
-/-- **One query makes little progress**: it lowers the progress measure by at most
-`‖u‖² + ‖w‖²`. -/
-private theorem progress_sub_progress_succ_le (hψ₀ : ‖ψ₀‖ = 1) (hu : 0 ≤ u) (hw : 0 ≤ w)
-    (t : ℕ) :
-    progress f U ψ₀ u w t - progress f U ψ₀ u w (t + 1) ≤ ∑ x, u x ^ 2 + ∑ x, w x ^ 2 := by
-  set a : BitString N → Fin N → ℝ := fun x i => ‖ctrlProj i (run U ψ₀ x t)‖ with ha_def
-  -- the query magnitudes of a unit state sum to at most `1`
-  have ha (x : BitString N) : ∑ i, a x i ^ 2 ≤ 1 := by
-    calc ∑ i, a x i ^ 2 ≤ ∑ i, regProb (run U ψ₀ x t) i :=
-          sum_le_sum fun i _ => norm_sq_ctrlProj_le i _
-      _ = 1 := by rw [sum_regProb, norm_run, hψ₀, one_pow]
-  have hweight (v : BitString N → ℝ) :
-      ∑ x, ∑ i ∈ sensitiveCoords f x, v x ^ 2 * a x i ^ 2 ≤ ∑ x, v x ^ 2 := by
-    refine sum_le_sum fun x _ => ?_
-    calc ∑ i ∈ sensitiveCoords f x, v x ^ 2 * a x i ^ 2 ≤ ∑ i, v x ^ 2 * a x i ^ 2 :=
-          sum_le_sum_of_subset_of_nonneg (subset_univ _) fun i _ _ => by positivity
-      _ = v x ^ 2 * ∑ i, a x i ^ 2 := by rw [mul_sum]
-      _ ≤ v x ^ 2 * 1 := mul_le_mul_of_nonneg_left (ha x) (sq_nonneg _)
-      _ = v x ^ 2 := mul_one _
-  have h₁ := hweight u
-  -- the weights at the far ends, counted from those ends
-  have h₂ := hweight w
-  rw [← sum_sum_sensitiveCoords_update f fun i y => w y ^ 2 * a y i ^ 2] at h₂
-  have key : progress f U ψ₀ u w t - progress f U ψ₀ u w (t + 1) ≤
-      ∑ x, ∑ i ∈ sensitiveCoords f x, (u x ^ 2 * a x i ^ 2 +
-        w (update x i (!x i)) ^ 2 * a (update x i (!x i)) i ^ 2) := by
-    simp only [progress, ← sum_sub_distrib]
-    refine sum_le_sum fun x _ => sum_le_sum fun i _ => ?_
-    have hstep := norm_inner_run_succ U (ψ₀ := ψ₀) x i t
-    have huw : 0 ≤ u x * w (update x i (!x i)) := mul_nonneg (hu x) (hw _)
-    have := mul_le_mul_of_nonneg_left hstep huw
-    simp only [ha_def]
-    nlinarith [sq_nonneg (u x * ‖ctrlProj i (run U ψ₀ x t)‖ -
-      w (update x i (!x i)) * ‖ctrlProj i (run U ψ₀ (update x i (!x i)) t)‖)]
-  simp only [sum_add_distrib] at key
-  linarith
-
-/-- Telescoping: `T` queries lower the progress measure by at most `T (‖u‖² + ‖w‖²)`. -/
-private theorem progress_zero_sub_le (hψ₀ : ‖ψ₀‖ = 1) (hu : 0 ≤ u) (hw : 0 ≤ w) (T : ℕ) :
-    progress f U ψ₀ u w 0 - progress f U ψ₀ u w T ≤ T * (∑ x, u x ^ 2 + ∑ x, w x ^ 2) := by
-  induction T with
-  | zero => simp
-  | succ T ih =>
-    have := progress_sub_progress_succ_le (f := f) U hψ₀ hu hw T
-    push_cast
-    linarith
-
-/-- Before any query the states agree, so the progress measure is the form `⟨u, A_f w⟩`. -/
-private theorem progress_zero (hψ₀ : ‖ψ₀‖ = 1) :
-    progress f U ψ₀ u w 0 = ∑ x, ∑ i ∈ sensitiveCoords f x, u x * w (update x i (!x i)) := by
-  have h : ‖inner ℂ (U 0 ψ₀) (U 0 ψ₀)‖ = 1 := by
-    rw [LinearIsometry.inner_map_map, inner_self_eq_norm_sq_to_K, hψ₀]
-    simp
-  simp only [progress, run, h, mul_one]
-
-end Progress
-
 /-- **The adversary bound for the sensitivity graph**: if a `T`-query algorithm with a unit
 initial state accepts every input `x`, by an outcome in `S`, with probability within `ε ≤ 1/2` of
 `f(x)`, then for all nonnegative weights `u` and `w` on the cube,
@@ -218,18 +130,46 @@ theorem one_sub_mul_sum_sensitiveCoords_le {f : BooleanFunction N} {ε : ℝ}
     (hε : 2 * ε ≤ 1) {u w : BitString N → ℝ} (hu : 0 ≤ u) (hw : 0 ≤ w) :
     (1 - 2 * √(ε * (1 - ε))) * ∑ x, ∑ i ∈ sensitiveCoords f x, u x * w (update x i (!x i)) ≤
       T * (∑ x, u x ^ 2 + ∑ x, w x ^ 2) := by
-  have hT := progress_zero_sub_le (f := f) U hψ₀ hu hw T
-  rw [progress_zero U hψ₀] at hT
-  -- at the end, the overlaps across sensitive edges are small
-  have hend : progress f U ψ₀ u w T ≤
-      2 * √(ε * (1 - ε)) * ∑ x, ∑ i ∈ sensitiveCoords f x, u x * w (update x i (!x i)) := by
-    simp only [progress, mul_sum]
-    refine sum_le_sum fun x _ => sum_le_sum fun i hi => ?_
-    have hxy : f x ≠ f (update x i (!x i)) := (mem_sensitiveCoords.1 hi).symm
-    have := norm_inner_run_le U hψ₀ T S h hε hxy
-    have huw : 0 ≤ u x * w (update x i (!x i)) := mul_nonneg (hu x) (hw _)
-    nlinarith
-  linarith
+  classical
+  set R := (univ : Finset (BitString N × BitString N)).filter fun p =>
+    (sensitivityGraph f).Adj p.1 p.2
+  have hadj : ∀ {x y : BitString N} {i : Fin N}, (sensitivityGraph f).Adj x y → x i ≠ y i →
+      y = update x i (!x i) := by
+    intro x y i hxy hne
+    obtain ⟨j, -, rfl⟩ := sensitivityGraph_adj.1 hxy
+    by_cases hji : j = i
+    · subst hji; rfl
+    · exact (hne (by simp [update_of_ne (Ne.symm hji)])).elim
+  have hbound := one_sub_mul_sum_le_of_sq_le U hψ₀ T R (fun p => u p.1 * w p.2)
+    (fun p hp => by
+      obtain ⟨i, hi, hp2⟩ := sensitivityGraph_adj.1 (mem_filter.1 hp).2
+      exact norm_inner_run_le U hψ₀ T S h hε (hp2 ▸ hi.symm))
+    (fun p _ => u p.1 ^ 2) (fun p _ => w p.2 ^ 2) (fun x => u x ^ 2) (fun y => w y ^ 2)
+    (fun p _ => mul_nonneg (hu _) (hw _)) (fun _ _ _ _ => sq_nonneg _) (fun _ _ _ _ => sq_nonneg _)
+    (fun _ _ _ _ => by ring_nf; rfl) (fun _ _ => sq_nonneg _) (fun _ _ => sq_nonneg _)
+    (fun x _ i => by
+      refine (sum_le_sum_of_subset_of_nonneg (t := {(x, update x i (!x i))}) ?_
+        fun _ _ _ => sq_nonneg _).trans_eq (by simp)
+      intro p hp
+      obtain ⟨hpR, hne, rfl⟩ := mem_filter.1 hp
+      exact mem_singleton.2 (Prod.ext rfl (hadj (mem_filter.1 hpR).2 hne)))
+    (fun y _ i => by
+      refine (sum_le_sum_of_subset_of_nonneg (t := {(update y i (!y i), y)}) ?_
+        fun _ _ _ => sq_nonneg _).trans_eq (by simp)
+      intro p hp
+      obtain ⟨hpR, hne, rfl⟩ := mem_filter.1 hp
+      exact mem_singleton.2 (Prod.ext (hadj (mem_filter.1 hpR).2.symm hne.symm) rfl))
+  have hsumR : ∑ p ∈ R, u p.1 * w p.2 =
+      ∑ x, ∑ i ∈ sensitiveCoords f x, u x * w (update x i (!x i)) := by
+    rw [sum_filter, Fintype.sum_prod_type]
+    refine sum_congr rfl fun x _ => ?_
+    rw [← sum_filter, show (univ.filter fun y => (sensitivityGraph f).Adj x y) =
+        (sensitivityGraph f).neighborFinset x by ext; simp, neighborFinset_sensitivityGraph]
+    exact sum_image fun i _ j _ hij => BitString.update_not_injective x hij
+  rw [hsumR] at hbound
+  exact hbound.trans (mul_le_mul_of_nonneg_left
+    (add_le_add (sum_le_univ_sum_of_nonneg fun _ => sq_nonneg _)
+      (sum_le_univ_sum_of_nonneg fun _ => sq_nonneg _)) (Nat.cast_nonneg _))
 
 /-- **Spectral sensitivity bounds quantum queries**: if a `T`-query algorithm with a unit initial
 state accepts every input `x`, by an outcome in `S`, with probability within `ε ≤ 1/2` of `f(x)`,

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.Evaluation
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.InnerProduct
 public import CslibFrontier.Computability.Circuit.Boolean.Modular.Subtract
+import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.Bits
 import Mathlib.Data.List.GetD
@@ -53,7 +54,7 @@ abbrev inputWidth (n w : ℕ) : ℕ := n * w + ((n + 1) * w) * ((n + 1) * w)
 
 /-- Interpret the raw first block with the same total decoder as the serialized scheme. -/
 private def inputSecret (x : BitString (inputWidth n w)) : Fin n → ZMod (2 ^ w) :=
-  decodeSecret n w (List.ofFn (fstBits x))
+  LWE.decodeSecret n w (List.ofFn (fstBits x))
 
 /-- Interpret every raw ciphertext bit, including ciphertexts outside encryption support. -/
 private def inputCiphertext (x : BitString (inputWidth n w)) : Ciphertext n w :=
@@ -61,7 +62,7 @@ private def inputCiphertext (x : BitString (inputWidth n w)) : Ciphertext n w :=
 
 private theorem inputSecret_apply (x : BitString (inputWidth n w)) (j : Fin n) :
     inputSecret x j = ((BitString.equivFin w (block (fstBits x) j) : ℕ) : ZMod (2 ^ w)) := by
-  simp only [inputSecret, decodeSecret, Cslib.Matrix.ofBinary_apply,
+  simp only [inputSecret, LWE.decodeSecret, Cslib.Matrix.ofBinary_apply,
     Cslib.Matrix.binaryEntry, Fin.val_zero, zero_mul, zero_add,
     listRow_eq_ofFn w j, ofList_ofFn, Nat.foldr_bit_ofFn, BitString.val_equivFin_eq_sum]
 
@@ -164,10 +165,6 @@ private theorem phase_cast (x : BitString (inputWidth n w)) (hw : 0 < w) :
     Nat.cast_sub (Nat.le_of_lt (BitString.equivFin w b).isLt), ZMod.natCast_self]
   simp only [ha, hb, decryptionPhase, sub_eq_add_neg, add_comm, zero_add]
 
-private theorem testBit_wordValue (x : BitString w) (i : Fin w) :
-    (BitString.equivFin w x : ℕ).testBit i.val = x i := by
-  simpa only [BitVec.getLsbD, toNat_word_eq_equivFin] using getLsbD_word x i
-
 /-- Implement the actual width-zero, width-one and top-two-bit decoder cases. -/
 private def decodeWord (w : ℕ) : Circuit signature w 1 :=
   if h₀ : w = 0 then Circuit.oneGate (.const false) Fin.elim0
@@ -177,7 +174,7 @@ private def decodeWord (w : ℕ) : Circuit signature w 1 :=
 /-- The scalar decoder is computed on every modular word, including both quarter ties. -/
 private theorem eval_decodeWord (x : BitString w) :
     (decodeWord w).eval interpretation x 0 =
-      decode w ((BitString.equivFin w x : ℕ) : ZMod (2 ^ w)) := by
+      LWE.decode w ((BitString.equivFin w x : ℕ) : ZMod (2 ^ w)) := by
   have hv : (((BitString.equivFin w x : ℕ) : ZMod (2 ^ w)).val) =
       (BitString.equivFin w x : ℕ) := by
     rw [ZMod.val_natCast, Nat.mod_eq_of_lt (BitString.equivFin w x).isLt]
@@ -187,14 +184,14 @@ private theorem eval_decodeWord (x : BitString w) :
   · by_cases h₁ : w = 1
     · subst w
       simp only [decodeWord, Nat.one_ne_zero, ↓reduceDIte, Circuit.eval_wiring,
-        Function.comp_apply, decode_one, hv]
-      exact (testBit_wordValue x 0).symm
+        Function.comp_apply, LWE.decode_one, hv]
+      exact (BitString.testBit_equivFin x 0).symm
     · have hw : 2 ≤ w := by omega
-      rw [decode_eq_xor_highBits hw, hv]
+      rw [LWE.decode_eq_xor_highBits hw, hv]
       simp only [decodeWord, h₀, h₁, ↓reduceDIte, Formula.eval_toCircuit,
         Formula.eval_xor, Formula.eval_input]
-      rw [testBit_wordValue x ⟨w - 1, by omega⟩,
-        testBit_wordValue x ⟨w - 2, by omega⟩]
+      rw [BitString.testBit_equivFin x ⟨w - 1, by omega⟩,
+        BitString.testBit_equivFin x ⟨w - 2, by omega⟩]
 
 private theorem depth_decodeWord_le (w : ℕ) : (decodeWord w).depth ≤ 3 := by
   unfold decodeWord
