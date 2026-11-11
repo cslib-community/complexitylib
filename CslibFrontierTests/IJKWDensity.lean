@@ -31,7 +31,7 @@ open Cslib.Circuits.Boolean.DirectProduct Finset
 -- The tuples in `Fin 3 → Bool` that agree with `y` on `{0}` number `2 ^ 2`.
 example : #{b : Fin 3 → Bool | ∀ i ∈ ({0} : Finset (Fin 3)), b i = ![true, false, true] i} =
     Fintype.card Bool ^ #({0} : Finset (Fin 3))ᶜ := by
-  convert Fintype.card_filter_forall_mem_eq ({0} : Finset (Fin 3)) ![true, false, true]
+  exact Fintype.card_filter_forall_mem_eq ({0} : Finset (Fin 3)) ![true, false, true]
 
 example :
     #{b : Fin 3 → Bool | ∀ i ∈ ({0} : Finset (Fin 3)), b i = ![true, false, true] i} = 4 := by
