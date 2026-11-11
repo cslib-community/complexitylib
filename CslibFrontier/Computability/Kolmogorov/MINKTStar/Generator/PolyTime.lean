@@ -59,7 +59,7 @@ size bound, this makes the `MINKT*` instance of the CMMSA table a yes-instance
 ## References
 
 The generator and its analysis are the library's own. They give the yes case of the library's
-proof of the `MINKT*` clause of [Hirahara2022, Theorem I.2], which issue #4447 tracks.
+proof of the `MINKT*` clause of [Hirahara2022, Theorem I.2], `MINKTStar.rpHard` in `Hardness.lean`.
 
 * [S. Hirahara, *NP-Hardness of Learning Programs and Partial MCSP*][Hirahara2022]
 -/

@@ -32,7 +32,7 @@ counts the steps of the described machine, which outputs the whole string.
 
 This file defines the problem, its encoding and its witness check, and proves that it lies in `NP`
 and that `MINKT` reduces to it. NP-hardness under randomized reductions
-[Hirahara2022, Theorem I.2] is tracked in issue #4447.
+[Hirahara2022, Theorem I.2] is `MINKTStar.rpHard`, in the `Hardness` submodule.
 
 ## Encoding
 
