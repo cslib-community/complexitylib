@@ -1066,6 +1066,47 @@ private theorem lowBits_zero_eq (n : ℕ) : lowBits n 0 = zeroVertex n := by
     obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hb
     simp [lowBits, List.getElem_map]⟩
 
+private theorem lowBits_inj_of_lt {n a b : ℕ} (ha : a < 2 ^ n) (hb : b < 2 ^ n)
+    (h : lowBits n a = lowBits n b) : a = b := by
+  have hval := congrArg lsbValue h
+  simpa only [lsbValue_lowBits ha, lsbValue_lowBits hb] using hval
+
+private theorem activeNbr_eq_hasNbr (n : ℕ) (fCode gCode : CircuitCode) {X : ℕ}
+    (hX : X < 2 ^ n) (isOut : Bool) :
+    let F := evalNat n fCode
+    let G := evalNat n gCode
+    let cf := evalCircuitCode n fCode
+    let cg := evalCircuitCode n gCode
+    decide (F X < 2 ^ n ∧ F X ≠ X ∧ (if isOut then F X ≠ 0 else X ≠ 0) ∧ G (F X) = X) =
+      decide (cg (cf (lowBits n X)) = lowBits n X ∧ cf (lowBits n X) ≠ lowBits n X ∧
+        (if isOut then cf (lowBits n X) ≠ zeroVertex n else lowBits n X ≠ zeroVertex n)) := by
+  intro F G cf cg
+  have hFlt : F X < 2 ^ n := evalNat_lt n fCode X
+  have h0lt : 0 < 2 ^ n := Nat.two_pow_pos n
+  rw [decide_eq_decide]
+  have h1 : G (F X) = X ↔ cg (cf (lowBits n X)) = lowBits n X := by
+    simp only [F, G, cf, cg, ← lowBits_evalNat n fCode X]
+    constructor
+    · intro heq
+      rw [← lowBits_evalNat n gCode (evalNat n fCode X), heq]
+    · intro heq
+      rw [← lowBits_evalNat n gCode (evalNat n fCode X)] at heq
+      exact lowBits_inj_of_lt (evalNat_lt _ _ _) hX heq
+  have h2 : F X ≠ X ↔ cf (lowBits n X) ≠ lowBits n X := by
+    simp only [F, cf, ← lowBits_evalNat n fCode X]
+    exact ⟨fun hne heq => hne (lowBits_inj_of_lt hFlt hX heq),
+      fun hne heq => hne (congrArg (lowBits n) heq)⟩
+  have h3 : (if isOut then F X ≠ 0 else X ≠ 0) ↔
+      (if isOut then cf (lowBits n X) ≠ zeroVertex n else lowBits n X ≠ zeroVertex n) := by
+    cases isOut <;>
+      simp only [← lowBits_zero_eq n, F, cf, ← lowBits_evalNat n fCode X]
+    · exact ⟨fun hne heq => hne (lowBits_inj_of_lt hX h0lt heq),
+        fun hne heq => hne (congrArg (lowBits n) heq)⟩
+    · exact ⟨fun hne heq => hne (lowBits_inj_of_lt hFlt h0lt heq),
+        fun hne heq => hne (congrArg (lowBits n) heq)⟩
+  exact ⟨fun h => ⟨h1.mp h.2.2.2, h2.mp h.2.1, h3.mp h.2.2.1⟩,
+    fun h => ⟨hFlt, h2.mpr h.2.1, h3.mpr h.2.2, h1.mpr h.1⟩⟩
+
 private theorem activeOut_eq_hasOut (inst : ℕ × CircuitCode × CircuitCode) {X : ℕ}
     (hX : X < 2 ^ inst.1) :
     let (n, pCode, sCode) := inst
@@ -1073,42 +1114,7 @@ private theorem activeOut_eq_hasOut (inst : ℕ × CircuitCode × CircuitCode) {
       hasOut Prod.fst (fun p => evalCircuitCode p.1.1 p.1.2.1 p.2)
         (fun p => evalCircuitCode p.1.1 p.1.2.2 p.2) inst (lowBits n X) := by
   rcases inst with ⟨n, pCode, sCode⟩
-  have hSlt : evalNat n sCode X < 2 ^ n := evalNat_lt n sCode X
-  have h0lt : 0 < 2 ^ n := Nat.two_pow_pos n
-  dsimp only
-  unfold activeOut hasOut
-  rw [decide_eq_decide]
-  have h1 : evalNat n pCode (evalNat n sCode X) = X ↔
-      evalCircuitCode n pCode (evalCircuitCode n sCode (lowBits n X)) = lowBits n X := by
-    rw [← lowBits_evalNat n sCode X]
-    constructor
-    · intro heq
-      rw [← lowBits_evalNat n pCode (evalNat n sCode X), heq]
-    · intro heq
-      have h := congrArg lsbValue heq
-      simpa only [evalNat, lsbValue_lowBits hX] using h
-  have h2 : evalNat n sCode X ≠ X ↔ evalCircuitCode n sCode (lowBits n X) ≠ lowBits n X := by
-    rw [← lowBits_evalNat n sCode X]
-    constructor
-    · intro hne heq
-      apply hne
-      have h := congrArg lsbValue heq
-      simpa only [lsbValue_lowBits hSlt, lsbValue_lowBits hX] using h
-    · intro hne heq
-      apply hne
-      rw [heq]
-  have h3 : evalNat n sCode X ≠ 0 ↔ evalCircuitCode n sCode (lowBits n X) ≠ zeroVertex n := by
-    rw [← lowBits_evalNat n sCode X, ← lowBits_zero_eq n]
-    constructor
-    · intro hne heq
-      apply hne
-      have h := congrArg lsbValue heq
-      simpa only [lsbValue_lowBits hSlt, lsbValue_lowBits h0lt] using h
-    · intro hne heq
-      apply hne
-      rw [heq]
-  exact ⟨fun h => ⟨h1.mp h.2.2.2, h2.mp h.2.1, h3.mp h.2.2.1⟩,
-    fun h => ⟨hSlt, h2.mpr h.2.1, h3.mpr h.2.2, h1.mpr h.1⟩⟩
+  exact activeNbr_eq_hasNbr n sCode pCode hX true
 
 private theorem activeIn_eq_hasIn (inst : ℕ × CircuitCode × CircuitCode) {X : ℕ}
     (hX : X < 2 ^ inst.1) :
@@ -1117,42 +1123,7 @@ private theorem activeIn_eq_hasIn (inst : ℕ × CircuitCode × CircuitCode) {X 
       hasIn Prod.fst (fun p => evalCircuitCode p.1.1 p.1.2.1 p.2)
         (fun p => evalCircuitCode p.1.1 p.1.2.2 p.2) inst (lowBits n X) := by
   rcases inst with ⟨n, pCode, sCode⟩
-  have hPlt : evalNat n pCode X < 2 ^ n := evalNat_lt n pCode X
-  have h0lt : 0 < 2 ^ n := Nat.two_pow_pos n
-  dsimp only
-  unfold activeIn hasIn
-  rw [decide_eq_decide]
-  have h1 : evalNat n sCode (evalNat n pCode X) = X ↔
-      evalCircuitCode n sCode (evalCircuitCode n pCode (lowBits n X)) = lowBits n X := by
-    rw [← lowBits_evalNat n pCode X]
-    constructor
-    · intro heq
-      rw [← lowBits_evalNat n sCode (evalNat n pCode X), heq]
-    · intro heq
-      have h := congrArg lsbValue heq
-      simpa only [evalNat, lsbValue_lowBits hX] using h
-  have h2 : evalNat n pCode X ≠ X ↔ evalCircuitCode n pCode (lowBits n X) ≠ lowBits n X := by
-    rw [← lowBits_evalNat n pCode X]
-    constructor
-    · intro hne heq
-      apply hne
-      have h := congrArg lsbValue heq
-      simpa only [lsbValue_lowBits hPlt, lsbValue_lowBits hX] using h
-    · intro hne heq
-      apply hne
-      rw [heq]
-  have h3 : X ≠ 0 ↔ lowBits n X ≠ zeroVertex n := by
-    rw [← lowBits_zero_eq n]
-    constructor
-    · intro hne heq
-      apply hne
-      have h := congrArg lsbValue heq
-      simpa only [lsbValue_lowBits hX, lsbValue_lowBits h0lt] using h
-    · intro hne heq
-      apply hne
-      rw [heq]
-  exact ⟨fun h => ⟨h1.mp h.2.2.2, h2.mp h.2.1, h3.mp h.2.2.1⟩,
-    fun h => ⟨hPlt, h2.mpr h.2.1, h3.mpr h.2.2, h1.mpr h.1⟩⟩
+  exact activeNbr_eq_hasNbr n pCode sCode hX false
 
 private def colorToBits (c : Fin 3) : List Bool :=
   match c with
@@ -1178,42 +1149,6 @@ private def encFin16 : Fin 16 ↪ List Bool where
   toFun i := encUnary i.val
   inj' _ _ h := Fin.ext (encUnary.injective h)
 
-private theorem poly_boolOp₂ {α : Type} {enc : α ↪ List Bool} (op : Bool → Bool → Bool)
-    {f g : α → Bool} (hf : ComputableInPolyTime f enc encBool)
-    (hg : ComputableInPolyTime g enc encBool) :
-    ComputableInPolyTime (fun a => op (f a) (g a)) enc encBool :=
-  (of_finite (encIn := encPair encBool encBool) (encOut := encBool)
-    fun p => op p.1 p.2).comp (hf.prod hg)
-
-private theorem poly_not {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
-    (hf : ComputableInPolyTime f enc encBool) :
-    ComputableInPolyTime (fun a => !f a) enc encBool :=
-  (of_finite (encIn := encBool) (encOut := encBool) not).comp hf
-
-private theorem poly_le {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
-    (hf : ComputableInPolyTime f enc encNat) (hg : ComputableInPolyTime g enc encNat) :
-    ComputableInPolyTime (fun a => decide (f a ≤ g a)) enc encBool := by
-  have heq (a b : ℕ) : (!decide (b < a)) = decide (a ≤ b) := by
-    by_cases h : a ≤ b
-    · simp [h, Nat.not_lt.mpr h]
-    · have hlt : b < a := by omega
-      simp [h, hlt]
-  simpa only [heq] using poly_not (binary_lt' hg hf)
-
-private theorem poly_eq {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
-    (hf : ComputableInPolyTime f enc encNat) (hg : ComputableInPolyTime g enc encNat) :
-    ComputableInPolyTime (fun a => decide (f a = g a)) enc encBool := by
-  have heq (a b : ℕ) : (decide (a ≤ b) && decide (b ≤ a)) = decide (a = b) := by
-    rcases Nat.lt_trichotomy a b with h | rfl | h
-    · have hn : a ≠ b := Nat.ne_of_lt h
-      have hnb : ¬(b ≤ a) := Nat.not_le_of_gt h
-      simp [hn, hnb]
-    · simp
-    · have hn : a ≠ b := Nat.ne_of_gt h
-      have hna : ¬(a ≤ b) := Nat.not_le_of_gt h
-      simp [hn, hna]
-  simpa only [heq] using poly_boolOp₂ and (poly_le hf hg) (poly_le hg hf)
-
 private theorem computableInPolyTime_evalNat {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {code : α → CircuitCode} {u : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
@@ -1231,6 +1166,23 @@ private theorem computableInPolyTime_evalNat {α : Type} {enc : α ↪ List Bool
   refine hnat.of_enc_eq fun a => ?_
   simp only [evalNat, Cslib.BitString.lsbValue_eq_foldr_bit]
   rfl
+
+private theorem computableInPolyTime_lsbValue {α : Type} {enc : α ↪ List Bool}
+    {bits : α → List Bool} (hbits : ComputableInPolyTime bits enc encBits) :
+    ComputableInPolyTime (fun a => lsbValue (bits a)) enc encNat := by
+  have h : ComputableInPolyTime (fun a => ofBits (bits a)) enc encNat :=
+    .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hbits.tidy)
+  refine h.of_enc_eq fun a => ?_
+  rw [Cslib.BitString.lsbValue_eq_foldr_bit]
+  rfl
+
+private theorem computableInPolyTime_div16Sub1 {α : Type} {enc : α ↪ List Bool}
+    {f : α → ℕ} (hf : ComputableInPolyTime f enc encNat) :
+    ComputableInPolyTime (fun a => f a / 16 - 1) enc encNat := by
+  have hshr : ComputableInPolyTime (fun a => (f a >>> 4) - 1) enc encNat :=
+    binary_sub' (binary_shiftRight' hf (const 4)) (const 1)
+  refine hshr.of_enc_eq fun a => ?_
+  rw [Nat.shiftRight_eq_div_pow]
 
 private theorem computableInPolyTime_mod16 {α : Type} {enc : α ↪ List Bool} {f : α → ℕ}
     (hf : ComputableInPolyTime f enc encNat) :
@@ -1253,6 +1205,30 @@ private theorem computableInPolyTime_mod16 {α : Type} {enc : α ↪ List Bool} 
   have hlt : f a % 16 < 16 := Nat.mod_lt _ (by decide)
   simp [Nat.mod_eq_of_lt hlt]
 
+private theorem computableInPolyTime_activeNbr {α : Type} {enc : α ↪ List Bool}
+    {n : α → ℕ} {fCode gCode : α → CircuitCode} {u nz : α → ℕ}
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hf : ComputableInPolyTime fCode enc encCode)
+    (hg : ComputableInPolyTime gCode enc encCode)
+    (hu : ComputableInPolyTime u enc encNat)
+    (hnz : ComputableInPolyTime nz enc encNat) :
+    ComputableInPolyTime
+      (fun a =>
+        let v := evalNat (n a) (fCode a) (u a)
+        decide (v < 2 ^ n a ∧ v ≠ u a ∧ nz a ≠ 0 ∧ evalNat (n a) (gCode a) v = u a))
+      enc encBool := by
+  have hN : ComputableInPolyTime (fun a => 2 ^ n a) enc encNat := binary_two_pow.comp hn
+  have hv : ComputableInPolyTime (fun a => evalNat (n a) (fCode a) (u a)) enc encNat :=
+    computableInPolyTime_evalNat hn hf hu
+  have hgv : ComputableInPolyTime
+      (fun a => evalNat (n a) (gCode a) (evalNat (n a) (fCode a) (u a))) enc encNat :=
+    computableInPolyTime_evalNat hn hg hv
+  have hc1 := binary_lt' hv hN
+  have hc2 := hv.decide_ne hu
+  have hc3 := hnz.decide_ne (const 0)
+  have hc4 := hgv.decide_eq' hu
+  exact .of_tidy (hc1.tidy.decide_and (hc2.tidy.decide_and (hc3.tidy.decide_and hc4.tidy)))
+
 private theorem computableInPolyTime_activeOut {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {pCode sCode : α → CircuitCode} {u : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
@@ -1261,25 +1237,8 @@ private theorem computableInPolyTime_activeOut {α : Type} {enc : α ↪ List Bo
     (hu : ComputableInPolyTime u enc encNat) :
     ComputableInPolyTime
       (fun a => activeOut (2 ^ n a) (evalNat (n a) (pCode a)) (evalNat (n a) (sCode a)) (u a))
-      enc encBool := by
-  have hN : ComputableInPolyTime (fun a => 2 ^ n a) enc encNat := binary_two_pow.comp hn
-  have hS : ComputableInPolyTime (fun a => evalNat (n a) (sCode a) (u a)) enc encNat :=
-    computableInPolyTime_evalNat hn hs hu
-  have hPS : ComputableInPolyTime
-      (fun a => evalNat (n a) (pCode a) (evalNat (n a) (sCode a) (u a))) enc encNat :=
-    computableInPolyTime_evalNat hn hp hS
-  have hc1 := binary_lt' hS hN
-  have hc2 := poly_not (poly_eq hS hu)
-  have hc3 := poly_not (poly_eq hS (const 0))
-  have hc4 := poly_eq hPS hu
-  have hres := poly_boolOp₂ and hc1 (poly_boolOp₂ and hc2 (poly_boolOp₂ and hc3 hc4))
-  refine hres.of_enc_eq fun a => congrArg encBool ?_
-  simp only [activeOut]
-  by_cases h1 : evalNat (n a) (sCode a) (u a) < 2 ^ n a <;>
-    by_cases h2 : evalNat (n a) (sCode a) (u a) = u a <;>
-    by_cases h3 : evalNat (n a) (sCode a) (u a) = 0 <;>
-    by_cases h4 : evalNat (n a) (pCode a) (evalNat (n a) (sCode a) (u a)) = u a <;>
-    simp [h1, h2, h3, h4]
+      enc encBool :=
+  computableInPolyTime_activeNbr hn hs hp hu (computableInPolyTime_evalNat hn hs hu)
 
 private theorem computableInPolyTime_activeIn {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {pCode sCode : α → CircuitCode} {u : α → ℕ}
@@ -1289,25 +1248,8 @@ private theorem computableInPolyTime_activeIn {α : Type} {enc : α ↪ List Boo
     (hu : ComputableInPolyTime u enc encNat) :
     ComputableInPolyTime
       (fun a => activeIn (2 ^ n a) (evalNat (n a) (pCode a)) (evalNat (n a) (sCode a)) (u a))
-      enc encBool := by
-  have hN : ComputableInPolyTime (fun a => 2 ^ n a) enc encNat := binary_two_pow.comp hn
-  have hP : ComputableInPolyTime (fun a => evalNat (n a) (pCode a) (u a)) enc encNat :=
-    computableInPolyTime_evalNat hn hp hu
-  have hSP : ComputableInPolyTime
-      (fun a => evalNat (n a) (sCode a) (evalNat (n a) (pCode a) (u a))) enc encNat :=
-    computableInPolyTime_evalNat hn hs hP
-  have hc1 := binary_lt' hP hN
-  have hc2 := poly_not (poly_eq hP hu)
-  have hc3 := poly_not (poly_eq hu (const 0))
-  have hc4 := poly_eq hSP hu
-  have hres := poly_boolOp₂ and hc1 (poly_boolOp₂ and hc2 (poly_boolOp₂ and hc3 hc4))
-  refine hres.of_enc_eq fun a => congrArg encBool ?_
-  simp only [activeIn]
-  by_cases h1 : evalNat (n a) (pCode a) (u a) < 2 ^ n a <;>
-    by_cases h2 : evalNat (n a) (pCode a) (u a) = u a <;>
-    by_cases h3 : u a = 0 <;>
-    by_cases h4 : evalNat (n a) (sCode a) (evalNat (n a) (pCode a) (u a)) = u a <;>
-    simp [h1, h2, h3, h4]
+      enc encBool :=
+  computableInPolyTime_activeNbr hn hp hs hu hu
 
 private theorem computableInPolyTime_tileKindDiag {α : Type} {enc : α ↪ List Bool}
     {b1 b2 b3 b4 b5 b6 : α → Bool}
@@ -1430,21 +1372,11 @@ private theorem computableInPolyTime_colorFun :
       encIn encBits :=
     .of_tidy (ComputableTidilyInPolyTime.bitsTakeWithInput hyDrop.tidy hm.tidy)
   have hx : ComputableInPolyTime
-      (fun p => lsbValue (p.2.take (eolInstN p + 5))) encIn encNat := by
-    have h : ComputableInPolyTime
-        (fun p => ofBits (p.2.take (eolInstN p + 5))) encIn encNat :=
-      .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hxBits.tidy)
-    refine h.of_enc_eq fun p => ?_
-    rw [Cslib.BitString.lsbValue_eq_foldr_bit]
-    rfl
+      (fun p => lsbValue (p.2.take (eolInstN p + 5))) encIn encNat :=
+    computableInPolyTime_lsbValue hxBits
   have hy : ComputableInPolyTime
-      (fun p => lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5))) encIn encNat := by
-    have h : ComputableInPolyTime
-        (fun p => ofBits ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5))) encIn encNat :=
-      .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hyBits.tidy)
-    refine h.of_enc_eq fun p => ?_
-    rw [Cslib.BitString.lsbValue_eq_foldr_bit]
-    rfl
+      (fun p => lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5))) encIn encNat :=
+    computableInPolyTime_lsbValue hyBits
   have hN : ComputableInPolyTime (fun p => 2 ^ eolInstN p) encIn encNat :=
     binary_two_pow.comp hn
   have hlim : ComputableInPolyTime (fun p => 16 * (2 ^ eolInstN p + 1)) encIn encNat :=
@@ -1455,29 +1387,18 @@ private theorem computableInPolyTime_colorFun :
         16 ≤ lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) ∧
         lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) < 16 * (2 ^ eolInstN p + 1)))
       encIn encBool := by
-    have c1 := poly_le (const 16) hx
+    have c1 := binary_le' (const 16) hx
     have c2 := binary_lt' hx hlim
-    have c3 := poly_le (const 16) hy
+    have c3 := binary_le' (const 16) hy
     have c4 := binary_lt' hy hlim
-    have hres := poly_boolOp₂ and c1 (poly_boolOp₂ and c2 (poly_boolOp₂ and c3 c4))
-    refine hres.of_enc_eq fun p => ?_
-    simp only [Bool.decide_and]
+    exact .of_tidy (c1.tidy.decide_and (c2.tidy.decide_and (c3.tidy.decide_and c4.tidy)))
   have hX : ComputableInPolyTime (fun p => lsbValue (p.2.take (eolInstN p + 5)) / 16 - 1)
-      encIn encNat := by
-    have hshr : ComputableInPolyTime (fun p => (lsbValue (p.2.take (eolInstN p + 5)) >>> 4) - 1)
-        encIn encNat :=
-      binary_sub' (binary_shiftRight' hx (const 4)) (const 1)
-    refine hshr.of_enc_eq fun p => ?_
-    rw [Nat.shiftRight_eq_div_pow]
+      encIn encNat :=
+    computableInPolyTime_div16Sub1 hx
   have hY : ComputableInPolyTime
       (fun p => lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) / 16 - 1)
-      encIn encNat := by
-    have hshr : ComputableInPolyTime
-        (fun p => (lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) >>> 4) - 1)
-        encIn encNat :=
-      binary_sub' (binary_shiftRight' hy (const 4)) (const 1)
-    refine hshr.of_enc_eq fun p => ?_
-    rw [Nat.shiftRight_eq_div_pow]
+      encIn encNat :=
+    computableInPolyTime_div16Sub1 hy
   have hho0 := computableInPolyTime_activeOut hn hp hs (const 0)
   have hho := computableInPolyTime_activeOut hn hp hs hY
   have hhi := computableInPolyTime_activeIn hn hp hs hX
@@ -1490,8 +1411,8 @@ private theorem computableInPolyTime_colorFun :
         (lsbValue (p.2.take (eolInstN p + 5)) / 16 - 1)) encIn encNat :=
     computableInPolyTime_evalNat hn hp hX
   have hkDiag := computableInPolyTime_tileKindDiag hho0 hho hhi (binary_lt' hX hS)
-    (binary_lt' hX hP) (poly_eq hX (const 0))
-  have hkOff := computableInPolyTime_tileKindOff hho hhi (poly_eq hS hX) (binary_lt' hY hX)
+    (binary_lt' hX hP) (hX.decide_eq' (const 0))
+  have hkOff := computableInPolyTime_tileKindOff hho hhi (hS.decide_eq' hX) (binary_lt' hY hX)
     (binary_lt' hX hS) (binary_lt' hS hX) (binary_lt' hP hY) (binary_lt' hY hP)
   have hk : ComputableInPolyTime (fun p =>
       tileKind (2 ^ eolInstN p) (evalNat (eolInstN p) (eolInstP p))
@@ -1499,7 +1420,7 @@ private theorem computableInPolyTime_colorFun :
         (lsbValue (p.2.take (eolInstN p + 5)) / 16 - 1)
         (lsbValue ((p.2.drop (eolInstN p + 5)).take (eolInstN p + 5)) / 16 - 1))
       encIn encTileKind := by
-    have hif := (poly_eq hX hY).ite hkDiag hkOff
+    have hif := (hX.decide_eq' hY).ite hkDiag hkOff
     refine hif.of_enc_eq fun p => congrArg encTileKind ?_
     simp [tileKind]
   have hdx := computableInPolyTime_mod16 hx
@@ -1515,9 +1436,9 @@ private theorem computableInPolyTime_colorFun :
     have htab : ComputableInPolyTime (fun q : TileKind × Fin 16 × Fin 16 =>
         colorToBits (tileColor q.1 q.2.1.val q.2.2.val)) encT encBits := of_finite _
     exact htab.comp (hk.prod (hdx.prod hdy))
-  have houtColor := computableInPolyTime_marginOut hho0 (poly_eq hy (const 1))
-    (poly_le hx (const 23)) (poly_eq hx (const 24)) (poly_le (const 2) hy)
-    (binary_lt' hy (const 16)) (poly_eq hx (const 23))
+  have houtColor := computableInPolyTime_marginOut hho0 (hy.decide_eq' (const 1))
+    (binary_le' hx (const 23)) (hx.decide_eq' (const 24)) (binary_le' (const 2) hy)
+    (binary_lt' hy (const 16)) (hx.decide_eq' (const 23))
   have hres := hinBox.ite hboxColor houtColor
   refine hres.of_enc_eq fun p => congrArg encBits ?_
   rcases p with ⟨⟨n, pCode, sCode⟩, uv⟩
@@ -1559,32 +1480,18 @@ private theorem computableInPolyTime_decodeSol :
   have hyBits : ComputableInPolyTime (fun p => p.2.tail.drop (eolInstN p + 5)) encIn encBits :=
     .of_tidy (ComputableTidilyInPolyTime.bitsDropWithInput htail.tidy hm.tidy)
   have hx : ComputableInPolyTime
-      (fun p => lsbValue (p.2.tail.take (eolInstN p + 5))) encIn encNat := by
-    have h : ComputableInPolyTime
-        (fun p => ofBits (p.2.tail.take (eolInstN p + 5))) encIn encNat :=
-      .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hxBits.tidy)
-    refine h.of_enc_eq fun p => ?_
-    rw [Cslib.BitString.lsbValue_eq_foldr_bit]
-    rfl
+      (fun p => lsbValue (p.2.tail.take (eolInstN p + 5))) encIn encNat :=
+    computableInPolyTime_lsbValue hxBits
   have hy : ComputableInPolyTime
-      (fun p => lsbValue (p.2.tail.drop (eolInstN p + 5))) encIn encNat := by
-    have h : ComputableInPolyTime
-        (fun p => ofBits (p.2.tail.drop (eolInstN p + 5))) encIn encNat :=
-      .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hyBits.tidy)
-    refine h.of_enc_eq fun p => ?_
-    rw [Cslib.BitString.lsbValue_eq_foldr_bit]
-    rfl
-  have hcond := poly_boolOp₂ or (binary_lt' hx (const 16)) (binary_lt' hy (const 16))
+      (fun p => lsbValue (p.2.tail.drop (eolInstN p + 5))) encIn encNat :=
+    computableInPolyTime_lsbValue hyBits
+  have hcond := (binary_lt' hx (const 16)).bool_or' (binary_lt' hy (const 16))
   have hzero : ComputableInPolyTime (fun p : (ℕ × CircuitCode × CircuitCode) × List Bool =>
       zeroVertex (eolInstN p)) encIn encBits :=
     .of_tidy ((ComputableTidilyInPolyTime.bitsReplicate false).comp hn.tidy)
   have hX : ComputableInPolyTime
-      (fun p => lsbValue (p.2.tail.take (eolInstN p + 5)) / 16 - 1) encIn encNat := by
-    have hshr : ComputableInPolyTime
-        (fun p => (lsbValue (p.2.tail.take (eolInstN p + 5)) >>> 4) - 1) encIn encNat :=
-      binary_sub' (binary_shiftRight' hx (const 4)) (const 1)
-    refine hshr.of_enc_eq fun p => ?_
-    rw [Nat.shiftRight_eq_div_pow]
+      (fun p => lsbValue (p.2.tail.take (eolInstN p + 5)) / 16 - 1) encIn encNat :=
+    computableInPolyTime_div16Sub1 hx
   have hnz : ComputableInPolyTime
       (fun p => lowBits (eolInstN p) (lsbValue (p.2.tail.take (eolInstN p + 5)) / 16 - 1))
       encIn encBits :=
