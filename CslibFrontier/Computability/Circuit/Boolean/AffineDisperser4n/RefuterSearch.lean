@@ -142,13 +142,13 @@ private theorem isAffine_terminalVal {d : ℕ} (S : State n) (L : List ℕ) (x :
   unfold terminalVal
   rcases findPair S x with _ | pr
   · rcases L.findIdx? (· = x) with _ | i
-    · exact Cslib.BitString.isAffine_const false
+    · exact Cslib.BitString.isAffine_const (fun b => Bool.xor_self b) false
     · exact isAffine_getD_ofFn i
   · by_cases h : pr.fst = x
-    · simpa [h] using Cslib.BitString.isAffine_const (d := d) pr.fstBias
+    · simpa [h] using Cslib.BitString.isAffine_const (fun b => Bool.xor_self b) pr.fstBias
     · simp only [h, ite_false]
       rcases L.findIdx? (· = x) with _ | i
-      · exact Cslib.BitString.isAffine_const false
+      · exact Cslib.BitString.isAffine_const (fun b => Bool.xor_self b) false
       · exact isAffine_getD_ofFn i
 
 /-! ### The free parameters -/
@@ -268,7 +268,8 @@ private theorem findSome_isSome_terminalVal {d : ℕ} (C : Circuit (fullSignatur
 private theorem foldl_xor_eq_sum (g : ℕ → Bool) (T : Finset ℕ) :
     (T.sort (· ≤ ·)).foldl (fun acc y => acc ^^ g y) false = ∑ y ∈ T, g y := by
   change (T.sort (· ≤ ·)).foldl (fun acc y => acc + g y) 0 = ∑ y ∈ T, g y
-  rw [← List.foldl_map, ← List.sum_eq_foldl, ← List.sum_toFinset _ (Finset.sort_nodup _ _), Finset.sort_toFinset]
+  rw [← List.foldl_map, ← List.sum_eq_foldl, ← List.sum_toFinset _ (Finset.sort_nodup _ _)]
+  rw [Finset.sort_toFinset]
 
 private theorem filter_ne_take_props {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {p : ℕ}
     (hp : p ∈ freeParams S) {d : ℕ} (hd : d < S.a) :
@@ -471,7 +472,8 @@ theorem findCounterexample_isSome {d : ℕ} (C : Circuit (fullSignature 2 Bool) 
         · intro x
           by_cases hx : x = t₁
           · simpa [hx] using
-              Cslib.BitString.isAffine_const (d := d) (decide ((op true false == op true true) = true))
+              Cslib.BitString.isAffine_const (fun b => Bool.xor_self b)
+                (decide ((op true false == op true true) = true))
           · simpa [hx] using isAffine_terminalVal S L x
         · intro A j hj
           rw [ite_eq_right (hLne _ (List.getElem_mem hj))]
