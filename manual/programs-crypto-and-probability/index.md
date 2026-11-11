@@ -956,7 +956,7 @@ when its numerical statement is already proved. The full objective in
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
 | Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. Actual receipt/raw-history parsing, certification, residual, guard and decoded runtime result are now derived for arbitrary X3C families. Canonical-role correspondence, source admission of the computed follow-up and the complete controller’s general optimal-output law remain unproved. |
-| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `ResidualCover.native_one_turn_lower` is only the older clocked one-turn bridge | Missing: unrestricted native one/two-turn competitor transfer, exact expected query-token minima and a quantified cost-optimal output guarantee for the selector. These are paper-local obligations, not blocked on #4335 or #4336. |
+| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualOracle.response_factor`; `NativeResidualPolicies.policy_law`, `terminal_law`, `policy_nonreuse`, `selection_admissible`, `selection_cost` | Partial: one concrete source sampler now yields two-epoch behavioral tables for every typed native machine, with unbounded local execution/metadata, exact stopped output readback, derived nonreuse and explicit behavioral output completion. Preservation of admitted native success under completion and identification of the score with actual accrued bills remain unproved; so do the exact native token minima and compiled cost-optimal uniform selectors. These are paper-local obligations, not blocked on #4335 or #4336. |
 
 Not everything outside #4335/#4336 is present. In particular, the native
 Theorem 6 obligations and the separate Theorem 5 representation obligations in
@@ -1128,6 +1128,56 @@ remain open. Natural invoices in the concrete source protocol do not assert an
 encoding for arbitrary real-valued bills. Source deadlines count oracle time only;
 no wall-clock bound including native local instructions is claimed. The Agent
 Operator's Manual needs no edit because workflow and human direction are unchanged.
+
+### Submission 191: unbounded native residual-policy tables
+
+Import [NativeResidualOracle](../../CslibFrontier/Probability/StochasticOracle/NativeResidualOracle.lean)
+and [NativeResidualPolicies](../../CslibFrontier/Probability/StochasticOracle/NativeResidualPolicies.lean).
+The former constructs one source sampler from the original X3C inputs: zero is
+the near-cover role and `j+1` is the specialist for original block `j`. A completed
+batch is preformed before its near residual is sampled. Specialist answers are
+fixed hidden exact covers. `query` encodes the original WSC and requested
+subuniverse; `families` cancels incorrect subinstance bytes. The sampler is shared
+by every native competitor. Natural invoices are supplied separately from the
+real-valued analytic price fields in `ResidualCover.Parameters`; no equality of
+those prices or expected native costs is asserted by the constructor.
+
+`response_factor` derives the actual native source-response kernel from that
+sampler. `NativeResidualPolicies.joint` instruments two genuine source epochs
+and the following local-computation epoch. `joint_hidden` recovers the actual
+three-epoch native trace, retaining hidden tapes, private coins, rejected-query
+computation, invoices and divergent mass. `policy_law` derives finite behavioral
+tables by posterior disintegration. Only the source actions/residuals and final
+family are tabulated; hidden native state is not approximated by a finite type.
+The residual label is latent instrumentation on an invalid-query cancellation,
+not an assumption that native code observed it.
+
+With two source turns, `terminal_law` identifies the family marginal with the
+original unbounded stopped native tape output, under its original candidate
+labels. Invalid/missing outputs map to the empty failure family. `policy_nonreuse`
+derives disjoint reached action sets from the actual source ledger, excluding
+null histories. `selectionPolicy` intersects output with the proposed source
+family; `selection_admissible` proves this completed behavioral policy admissible
+and `selection_cost` preserves its batch-cost score. These facts do **not** yet
+prove that completion preserves every admitted native success, or that the
+batch-cost score equals the actual accrued invoice expectation. Those two
+connections are needed before applying the proved behavioral token minima to
+native competitors; no such conclusion is assumed or claimed here. The general
+compiled upper selector still needs canonical-role/follow-up admission and the
+cost-aware alternative described above.
+
+The [native-policy client](../../CslibFrontierTests/StochasticOracleNativeResidualPolicies.lean)
+uses the five overlapping-triple blocks and an actual full-reply native reader
+starting with the original query on its input tape. Every missing block has
+positive source probability; the stopped raw-output/shared-memory law is derived,
+with exact bill two and oracle duration one. It also instantiates table
+readback and behavioral completion/admission for that reader and for the same
+named adaptive upper program, and checks a billed wrong-subinstance cancellation.
+This does not prove that every computed upper-program query is source valid. Run
+`lake build CslibFrontierTests.StochasticOracleNativeResidualPolicies`.
+The Agent Operator's Manual needs no edit: workflow, ownership and human direction
+are unchanged. No curated abstract or result is promoted to an unrestricted
+Theorem 5/6 or ALL-main claim.
 
 ### Submission 191: a concrete native-to-behavioral bridge
 

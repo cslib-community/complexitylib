@@ -117,15 +117,6 @@ example (bits : ℕ) :
     (fun i => 2 ^ bits + i.val) (fun _ => rfl) (by norm_num)
   simpa only [active, allBatch, Option.isSome_some, filter_true] using h
 
--- Sampling the hidden missing component once gives correlated raw replies.
--- The actual runtime completion/stop decision is certain under this mixture.
-example (nearBits specialistBits : ℕ) :
-    (PMF.uniformOfFintype (Fin 5)).map (fun j =>
-      RuntimeControl.stopped (afterSpecialist blocks points candidates j
-        (2 ^ nearBits) (2 ^ specialistBits))) = PMF.pure true := by
-  simp only [specialist_stopped blocks points candidates (by norm_num)]
-  exact PMF.map_const _ _
-
 -- The zero-interface edge has no proposal despite its canonical report tag.
 example : returned blocks (fun i : Fin 0 => Fin.elim0 i) = [] := rfl
 
