@@ -27,7 +27,7 @@ occupies hole `j`. The system consists of:
 
 - `Cslib.Logic.PL.Algebraic.algFPHP`: the full `algFPHP(m, n)` polynomial system over `R`.
 - `Cslib.Logic.PL.Algebraic.algFPHPConstraints`: the non-Boolean constraints (pigeon, functionality,
-  and hole axioms), so that `algFPHP m n R = algFPHPConstraints m n R ++ boolAxioms (Fin m × Fin n) R`.
+  and hole axioms), so `algFPHP m n R = algFPHPConstraints m n R ++ boolAxioms (Fin m × Fin n) R`.
 - `Cslib.Logic.PL.Algebraic.pigeonIndicator`: the Boolean indicator assignment of a map
   `Fin m → Fin n`.
 - `Cslib.Logic.PL.Algebraic.boolSolutionEquivEmbedding`: equivalence between Boolean solutions of
@@ -276,7 +276,8 @@ private theorem pigeonIndicator_eval_eq_zero {m n : ℕ} {R : Type*} [CommRing R
 private theorem exists_injective_eq_bitPoint {m n : ℕ} {R : Type*} [CommRing R] [Nontrivial R]
     {a : Fin m × Fin n → R} (ha_bin : ∀ v, a v = 0 ∨ a v = 1)
     (ha_c : ∀ p ∈ algFPHPConstraints m n R, eval a p = 0) :
-    ∃ f : Fin m → Fin n, Function.Injective f ∧ a = Cslib.BitString.bitPoint (pigeonIndicator f) := by
+    ∃ f : Fin m → Fin n, Function.Injective f ∧
+      a = Cslib.BitString.bitPoint (pigeonIndicator f) := by
   have hfunc : ∀ i : Fin m, ∀ j j' : Fin n, j ≠ j' → a (i, j) = 1 → a (i, j') = 0 := by
     intro i j j' hne h1
     have hmul : a (i, j) * a (i, j') = 0 := by
