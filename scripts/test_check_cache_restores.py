@@ -150,7 +150,11 @@ class MainTests(Fixture):
 
 
 class RealLakeTests(Fixture):
-    """Lake restores a module that logged a warning without the warning; the check catches it."""
+    """Lake restores a module that logged a warning without the warning; the check catches it.
+
+    CI's "Test Python tooling" step runs before Lean is installed, so CI skips this test; it runs
+    in a local `scripts/check.sh` or `python3 -m unittest` with the repository's toolchain.
+    """
 
     def setUp(self) -> None:
         # CI runs Python tests before installing Lean.

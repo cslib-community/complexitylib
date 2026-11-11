@@ -16,7 +16,9 @@ After the Lean gates, `scripts/full_check.py` and `scripts/quick_check.py` run t
 base of REF, default `origin/main`, and the working tree, untracked files included, as
 `scripts/check_changed_files.py` computes them) and whose trace is synthetic. It fails when that
 command fails or prints anything at all: `lake lean` exits 0 after warnings, and `--iofail` rejects
-informational output too. A changed file with no trace was not built, which the gates report.
+informational output too. `lake lean` first builds the file's imports and replays their logs, so
+a reported message can also come from an import. A changed file with no trace was not built,
+which the gates report. Files are elaborated one at a time.
 
 The check does not cover unchanged modules restored from a local entry that another checkout built
 with warnings. Lake would have to keep each entry's messages and replay them on restore to close
@@ -94,11 +96,14 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         result = elaborate(root, rel)
         if result.returncode or result.stdout.strip():
             failed.append(rel)
-            print(f"FAIL  {rel} (restored from the artifact cache)\n{result.stdout.rstrip()}",
-                  flush=True)
+            # `lake lean` first builds the file's imports and replays their logs, so a message can
+            # also come from an import that this checkout built with warnings.
+            print(f"FAIL  {rel} (restored from the artifact cache; messages from it or its "
+                  f"imports)\n{result.stdout.rstrip()}", flush=True)
     if failed:
-        print(f"{len(failed)} changed file(s) restored from the artifact cache have messages that "
-              "`lake build --wfail --iofail` did not replay; see #4523.", file=sys.stderr)
+        print(f"Re-elaborating {len(failed)} changed file(s) restored from the artifact cache "
+              "printed messages that `lake build --wfail --iofail` did not replay; see #4523.",
+              file=sys.stderr)
         return 1
     print(f"Changed files restored from the artifact cache re-elaborated cleanly ({len(files)}).")
     return 0
