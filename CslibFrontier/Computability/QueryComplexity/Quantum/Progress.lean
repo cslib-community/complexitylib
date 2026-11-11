@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Search
 public import Cslib.Foundations.Data.BitString
+import CslibFrontier.Foundations.Quantum.Measurement.Overlap
 
 /-!
 # Weighted progress measures for quantum query adversary arguments
