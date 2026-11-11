@@ -259,11 +259,6 @@ theorem packetData_fst_lt (e : E) :
   have h2 := maxLoad_le_numBlocks_mul rowOf colOf ρ κ
   exact Nat.div_lt_of_lt_mul (by rw [Nat.mul_comm]; omega)
 
-/-- Digit `i` of the number of a bit string is its bit `i`. -/
-private theorem testBit_equivFin (bits : Fin a → Bool) (i : Fin a) :
-    (BitString.equivFin a bits : ℕ).testBit i = bits i := by
-  rw [← BitString.equivFin_symm_apply, Equiv.symm_apply_apply]
-
 /-- The orientation digit orients the sorted pair of two symbols. -/
 private theorem pair_eq_orient {α : Type*} [LinearOrder α] (x y : α) (b : Bool) :
     (x, y) = if (if x = y then b else decide (y < x)) then (min x y, max x y).swap
@@ -316,7 +311,7 @@ private theorem orient_injective {α : Type*} [LinearOrder α] {x y x' y' : α} 
     exact congrArg (· + _) (congrArg (2 ^ a * ·) hblock)
   labels_eq := by
     intro e i
-    simp only [Equiv.symm_apply_apply, testBit_equivFin]
+    simp only [Equiv.symm_apply_apply, BitString.testBit_equivFin]
     have hsort : ∀ b : Bool, (fun q : Fin r × Fin r => (min q.1 q.2, max q.1 q.2))
         (if b then (max (ρ (rowOf e) i) (κ (colOf e) i), min (ρ (rowOf e) i) (κ (colOf e) i))
           else (min (ρ (rowOf e) i) (κ (colOf e) i), max (ρ (rowOf e) i) (κ (colOf e) i))) =

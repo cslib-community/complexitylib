@@ -49,38 +49,39 @@ example : (P4, 5) ∉ LongPath := not_mem_LongPath_of_lt (by decide)
 /-! ### Colorful paths, decided by the dynamic programming -/
 
 -- A colorful coloring: the whole path is a colorful path on four vertices.
-example : colorfulPathBool ((P4, [0, 1, 2, 3]), 4) = true := by decide
+example : colorfulPathBool ⟨P4, [0, 1, 2, 3], 4⟩ = true := by decide
 
-example : ((P4, [0, 1, 2, 3]), 4) ∈ ColorfulPath :=
+example : (⟨P4, [0, 1, 2, 3], 4⟩ : ColorfulPathInstance) ∈ ColorfulPath :=
   (colorfulPathBool_eq_true_iff _).1 (by decide)
 
 -- Two alternating colors: no colorful path on four vertices, but one on two.
-example : ((P4, [0, 1, 0, 1]), 4) ∉ ColorfulPath := fun h => by
+example : (⟨P4, [0, 1, 0, 1], 4⟩ : ColorfulPathInstance) ∉ ColorfulPath := fun h => by
   have := (colorfulPathBool_eq_true_iff _).2 h
   revert this
   decide
 
-example : ((P4, [0, 1, 0, 1]), 2) ∈ ColorfulPath :=
+example : (⟨P4, [0, 1, 0, 1], 2⟩ : ColorfulPathInstance) ∈ ColorfulPath :=
   (colorfulPathBool_eq_true_iff _).1 (by decide)
 
 -- `1 - 2 - 3` is colorful with colors `{0, 1, 2}`, although `0` and `3` share a color.
-example : ((P4, [0, 1, 2, 0]), 3) ∈ ColorfulPath :=
+example : (⟨P4, [0, 1, 2, 0], 3⟩ : ColorfulPathInstance) ∈ ColorfulPath :=
   (colorfulPathBool_eq_true_iff _).1 (by decide)
 
 -- A vertex off the path may have a color at least `k`: `0 - 1 - 2` is a solution for `k = 3`.
-example : ((P4, [0, 1, 2, 7]), 3) ∈ ColorfulPath :=
+example : (⟨P4, [0, 1, 2, 7], 3⟩ : ColorfulPathInstance) ∈ ColorfulPath :=
   (colorfulPathBool_eq_true_iff _).1 (by decide)
 
 -- Colors must be less than `k`: four distinct colors that are not `{0, 1, 2, 3}` are rejected.
-example : ((P4, [1, 2, 3, 4]), 4) ∉ ColorfulPath := fun h => by
+example : (⟨P4, [1, 2, 3, 4], 4⟩ : ColorfulPathInstance) ∉ ColorfulPath := fun h => by
   have := (colorfulPathBool_eq_true_iff _).2 h
   revert this
   decide
 
 -- `k = 0` is accepted by the empty path; `k` above the number of vertices is rejected.
-example : ((P4, []), 0) ∈ ColorfulPath := (colorfulPathBool_eq_true_iff _).1 (by decide)
+example : (⟨P4, [], 0⟩ : ColorfulPathInstance) ∈ ColorfulPath :=
+  (colorfulPathBool_eq_true_iff _).1 (by decide)
 
-example : ((P4, [0, 1, 2, 3, 4]), 5) ∉ ColorfulPath := fun h => by
+example : (⟨P4, [0, 1, 2, 3, 4], 5⟩ : ColorfulPathInstance) ∉ ColorfulPath := fun h => by
   have := (colorfulPathBool_eq_true_iff _).2 h
   revert this
   decide
@@ -97,13 +98,13 @@ example : ColorCoding.Reaches P4 (colorOf P4 [0, 1, 2, 3]) 15 3 :=
 
 -- The exponent can be taken at least `1`.
 example : ∃ δ : ℝ, 1 ≤ δ ∧ DecidableInExpTime ColorfulPath
-    (encPair (encPair encGraph (encList encNat)) encNat) Prod.snd δ :=
+    encColorfulPathInstance ColorfulPathInstance.length δ :=
   let ⟨δ, h⟩ := ColorfulPath_decidableInExpTime
   ⟨max δ 1, le_max_right _ _, h.mono (le_max_left _ _)⟩
 
 -- Fixed-parameter tractable also for a larger parameter: `k` plus the number of listed colors.
 example : ColorfulPath ∈
-    FPT (encPair (encPair encGraph (encList encNat)) encNat) fun x => x.2 + x.1.2.length :=
+    FPT encColorfulPathInstance fun x => x.length + x.colors.length :=
   FPT_subset_FPT_of_le_comp (h := id) (fun _ => Nat.le_add_right _ _) ColorfulPath_mem_FPT
 
 /-! ### Clique and Independent Set -/
@@ -116,5 +117,42 @@ example : FPTReducible (encPair encGraph encNat) (encPair encGraph encNat) Prod.
 example (h : IndependentSet ∈ FPT (encPair encGraph encNat) Prod.snd) :
     Clique ∈ FPT (encPair encGraph encNat) Prod.snd :=
   Clique_mem_FPT_iff.2 h
+
+-- Compositional `fun_prop` clients using the `enc_structure`-generated rules and
+-- `Cslib.Complexity.ColorCoding` scope.
+example : ComputableInPolyTime (fun x : ColorfulPathInstance => x.length)
+    encColorfulPathInstance encNat := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun x : ColorfulPathInstance × ℕ => (⟨x.1.graph, x.1.colors, x.2⟩ : ColorfulPathInstance))
+    (encPair encColorfulPathInstance encNat) encColorfulPathInstance := by
+  fun_prop
+
+open scoped Cslib.Complexity.ColorCoding in
+example : ComputableInPolyTime
+    (fun x : ColorCoding.StepInput =>
+      (⟨⟨x.input.graph, x.input.colors, x.input.numSets⟩, x.table, x.mask⟩ :
+        ColorCoding.StepInput))
+    ColorCoding.encStepInput ColorCoding.encStepInput := by
+  fun_prop
+
+open scoped Cslib.Complexity.ColorCoding in
+example : ComputableInPolyTime
+    (fun x : ColorfulPathInstance × ℕ =>
+      ColorCoding.table x.1.graph (colorOf x.1.graph x.1.colors) x.2)
+    (encPair encColorfulPathInstance encUnary) ColorCoding.encTable := by
+  have ht : ComputableInPolyTime
+      (fun x : ColorfulPathInstance × ℕ =>
+        (⟨x.1.graph, x.1.colors, x.2⟩ : ColorCoding.TableInput))
+      (encPair encColorfulPathInstance encUnary) ColorCoding.encTableInput := by
+    fun_prop
+  change ComputableInPolyTime
+    (fun x : ColorfulPathInstance × ℕ =>
+      (fun y : ColorCoding.TableInput =>
+        ColorCoding.table y.graph (colorOf y.graph y.colors) y.numSets)
+        ⟨x.1.graph, x.1.colors, x.2⟩)
+    _ _
+  exact ColorCoding.computableInPolyTime_table.comp ht
 
 end CslibFrontierTests.ColorCoding
