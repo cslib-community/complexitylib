@@ -176,8 +176,7 @@ theorem synthesis_detect (s : Set (BooleanFunction n)) (records : BitString n �
           (fun j => pairEncode (adjacentPair (records x) j)) (pairEncode (pad, pad))
           (R - 1) bit := by
       unfold pairWires wires detect
-      congr 1
-      funext bit x
+      congr 1 with bit x : 2
       exact congrFun (chooseRecord_map pairEncode (fun j => flags j x)
         (adjacentPair (records x)) (pad, pad) (R - 1)) bit
     rw [he]
@@ -225,7 +224,7 @@ theorem synthesis_sorted (s : Set (BooleanFunction n)) (d : ℕ)
   apply h.mono Set.Subset.rfl ?_ (size_sortCircuit_le d)
   intro fn hfn
   obtain ⟨j, bit, rfl⟩ := Set.mem_iUnion.mp hfn
-  exact ⟨finProdFinEquiv (j, bit), by simp [sorted, directProductInput]⟩
+  exact ⟨finProdFinEquiv (j, bit), by simp [sorted, BitString.block]⟩
 
 end Record
 

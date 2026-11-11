@@ -28,10 +28,6 @@ open Cslib.WordRAM
 open CallableProduct
 open Cslib.Algorithms.MatrixMultiplication.Schonhage
 
-private theorem context_fits {W b N Q P : ℕ}
-    (hW : 256 * Nat.clog 2 (b + N + Q + P + 5) ≤ W) : Fits W P := by
-  exact fits_of_lt_clog_le (by omega : P < b + N + Q + P + 5) (by omega)
-
 /-- Every native caller prefix is physically word-bounded, including a loaded dirty word
 before the following remainder. Here `P` bounds every initial register and memory word,
 not merely the source input or normalized values. It is an initial-data bound, not a bound
@@ -40,8 +36,7 @@ theorem caller_prefix_bounded {W b N Q P k : ℕ} {x : Data 163} {z : State 163}
     (hregs : ∀ i, x.regs i ≤ P) (hmem : ∀ a, x.mem a ≤ P)
     (hW : 256 * Nat.clog 2 (b + N + Q + P + 5) ≤ W)
     (hr : Runs W (program.program Reg.result) ⟨0, x⟩ z k) : z.data.Bounded W :=
-  hr.bounded ⟨fun i => (context_fits hW).of_le (hregs i),
-    fun a => (context_fits hW).of_le (hmem a)⟩
+  hr.bounded (context_bounded hregs hmem hW)
 
 /-- Actual callable flat runs at every admitted physical width, with arbitrary dirty initial
 workspace bounded by `P`. This is the interface for a real producer's reachable caller state:
@@ -67,15 +62,9 @@ theorem runs_caller {W b m t N P : ℕ}
           Signed.encode ((X * Y) (qs.get i).1 (qs.get i).2)) ∧
       (∀ a, a < QueriedProduct.inputEnd m N qs.length + 1 → y.mem (b + a) = x.mem (b + a)) ∧
       (∀ a, a < b ∨ b + windowSize N qs.length ≤ a → y.mem a = x.mem a) := by
-  have hfit : Fits W (b + 4 * windowSize N qs.length + 1024) := by
-    apply physical_fits
-    have h := Nat.clog_mono_right 2 (by omega :
-      b + N + qs.length + 5 ≤ b + N + qs.length + P + 5)
-    omega
+  have hfit : Fits W (b + 4 * windowSize N qs.length + 1024) := context_window_fits hW
   obtain ⟨y, hy, yr, yb, yM, hv, hi, hf⟩ := exec X Y qs x hb hinput hX hY ht hN hfit
-  have hx : x.Bounded W := ⟨fun i => (context_fits hW).of_le (hregs i),
-    fun a => (context_fits hW).of_le (hmem a)⟩
-  have ybound := hy.bounded hx
+  have ybound := hy.bounded (context_bounded hregs hmem hW)
   obtain ⟨n, hn, hy⟩ := hy
   refine ⟨y, n, hn, ?_, ?_, ybound, hv, hi, hf⟩
   · simpa only [Nat.zero_add] using hy.runs (pc := 0)

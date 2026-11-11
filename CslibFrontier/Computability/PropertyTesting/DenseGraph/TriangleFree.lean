@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.PropertyTesting.DenseGraph.Basic
 public import Mathlib.Combinatorics.SimpleGraph.Triangle.Removal
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF
 
 /-!
@@ -166,8 +167,9 @@ private theorem evalWith_triangleTrial (m : ℕ) (G : SimpleGraph (Fin (m + 1)))
         (Probability.PMF.uniformOfFintype (Fin (m + 1))).bind fun v =>
           (Probability.PMF.uniformOfFintype (Fin (m + 1))).bind fun w =>
             PMF.pure (!(decide (G.Adj u v) && decide (G.Adj v w) && decide (G.Adj u w))) := by
-  simp only [triangleTrial, OracleComp.evalWith_bind, evalWith_sample, ProbComp.eval_unifFin,
-    evalWith_queryAdj, PMF.pure_bind, OracleComp.evalWith_pure]
+  simp only [triangleTrial, OracleComp.evalWith_bind,
+    ProbOracleComp.evalWith_sumHandler_unifOracle_sample, ProbComp.eval_unifFin, evalWith_queryAdj,
+    PMF.pure_bind, OracleComp.evalWith_pure]
 
 private theorem toReal_pure_not_and (A B C : Prop) [Decidable A] [Decidable B] [Decidable C] :
     (PMF.pure (!(decide A && decide B && decide C)) true).toReal =

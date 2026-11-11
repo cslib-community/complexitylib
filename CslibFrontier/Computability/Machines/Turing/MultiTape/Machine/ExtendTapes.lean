@@ -152,8 +152,7 @@ theorem runConfigFrom_embed (cfg : Config k Symbol State Oracle input)
     simp only [runConfigFrom, Config.embed_state, hs, Config.embed_inputSymbol,
       Config.embed_workTapeSymbols, Config.embed_answerSymbols, extendTapes_tr, hchoose,
       bind_map_left, map_bind]
-    congr 1
-    funext action
+    congr 1 with action : 1
     cases action <;> simp [Action.extendTapes, Config.step_embed, Config.receive_embed]
 
 /-- The additional work tapes do not affect the observable output program. -/
@@ -194,9 +193,9 @@ omit hchoose in
 /-- In the effect-free deterministic case, tape extension is exactly upstream's compiler. -/
 theorem toTM_extendTapes (machine : MultiTapeMachine k Symbol State Empty Id) :
     (machine.extendTapes e).toTM = machine.toTM.extendTapes e := by
-  simp only [toTM, MultiTapeTM.extendTapes, MultiTapeTM.tr_ofTr, extendTapes]
-  congr 1
-  funext state symbol work
+  simp only [toTM, MultiTapeTM.extendTapes, MultiTapeTM.adapt, extendTapes]
+  congr 1 with state symbol work : 3
+  simp only [MultiTapeTM.adaptedTr, MultiTapeTM.tr_ofTr, Function.comp_def]
   cases machine.tr state symbol (fun i => work (e i)) Empty.elim with
   | step action symbol move => rfl
   | query oracle next => exact oracle.elim

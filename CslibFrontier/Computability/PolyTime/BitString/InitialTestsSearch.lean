@@ -26,6 +26,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Analysis.Complex.ExponentialBounds
 import CslibFrontier.Tactic.EncLen
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 
 /-!
 # Sequential initial-test search and shortened Tanner check matrices
@@ -425,7 +426,7 @@ private theorem searchMatrix_sound {Q : Type} (rowsOf colsOf : Q → ℕ)
   let k : Fin (2 ^ (rowsOf q * colsOf q)) := equivFin (rowsOf q * colsOf q) (blocksEquiv.symm M)
   have hcand : listRows (rowsOf q) (colsOf q) (lowBits (rowsOf q * colsOf q) k.val) =
       List.ofFn (fun r => List.ofFn (M r)) := by
-    rw [BooleanFold.lowBits_eq_word _ k, Equiv.symm_apply_apply, listRows_ofFn,
+    rw [lowBits_eq_ofFn_equivFin_symm _ k, Equiv.symm_apply_apply, listRows_ofFn,
       block_blocksEquiv_symm]
   exact hinv.2.2.1 (hinv.2.2.2 ⟨k.val, k.isLt, by rwa [hcand]⟩)
 private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ : Q ↪ List Bool}
@@ -457,10 +458,7 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
       (fun p => by dsimp only; generalize 2 ^ wCheck p.2.1 = z; omega)).congr (fun _ => rfl)
   let B (a : α) : ℕ :=
     2 * (encQ (qOf a)).length + 1 + (3 + rowsOf (qOf a) * (2 * colsOf (qOf a) + 1))
-  have hBP : PolyBounded (fun a => (encIn a).length) B :=
-    (((PolyBounded.const 2).mul hq.polyBounded_length).add (.const 1)).add
-      ((PolyBounded.const 3).add ((polyBounded hra).mul
-        (((PolyBounded.const 2).mul (polyBounded hca)).add (.const 1))))
+  have hBP : PolyBounded (fun a => (encIn a).length) B := by growth_poly
   have hB (a : α) (j : ℕ) (_ : j ≤ 2 ^ (rowsOf (qOf a) * colsOf (qOf a))) :
       (encSt (IndexFold.run (searchMatrixStep rowsOf colsOf check) j
         (qOf a, (false, listRows (rowsOf (qOf a)) (colsOf (qOf a)) []))).2).length ≤ B a := by
@@ -535,7 +533,7 @@ theorem checkSmallBiasShifts_eq_true_iff {ell d maxBiasNum maxBiasDen : ℕ} [Ne
       (k : Fin (2 ^ ell)) : shifts.countP (fun row => bitDot row (lowBits ell k.val)) =
         #{j : Fin d | parityOn {i : Fin ell | (equivFin ell).symm k i = true} (s j) = true} := by
     nth_rw 1 [list_eq_ofFn_ofList hlen hrows]
-    rw [BooleanFold.lowBits_eq_word _ k, List.countP_ofFn, ← card_filter]; congr 1; ext j
+    rw [lowBits_eq_ofFn_equivFin_symm _ k, List.countP_ofFn, ← card_filter]; congr 1; ext j
     simp only [mem_filter, mem_univ, true_and]; rw [bitDot_ofFn, dotProduct_eq_parityOn]
   have hbias_iff (S : Finset (Fin ell)) :
       ((d - 2 * #{j : Fin d | parityOn S (s j) = true}) +
@@ -675,12 +673,12 @@ theorem checkLocalCodeDistance_eq_true_iff (c d minDist : ℕ) (H0 : List (List 
   · let k := equivFin d w
     have hk0 : k.val ≠ 0 := fun hk => hw0 <| by
       rw [← (equivFin d).symm_apply_apply w]; exact (equivFin_symm_eq_zero_iff k).2 hk
-    have htest := hall k.val k.isLt hk0; rw [BooleanFold.lowBits_eq_word _ k,
+    have htest := hall k.val k.isLt hk0; rw [lowBits_eq_ofFn_equivFin_symm _ k,
       Equiv.symm_apply_apply, (hker_iff hlen hrows w).2 hker] at htest
     simpa only [Bool.not_true, Bool.false_or, decide_eq_true_eq, count_true_ofFn] using htest
   · let k : Fin (2 ^ d) := ⟨idx, hidx⟩; let w : BitString d := (equivFin d).symm k
     have hw0 : w ≠ 0 := fun h0 => hne ((equivFin_symm_eq_zero_iff k).1 h0)
-    rw [BooleanFold.lowBits_eq_word _ k]
+    rw [lowBits_eq_ofFn_equivFin_symm _ k]
     by_cases hkerList : H0.all (fun row => !bitDot row (List.ofFn w)) = true
     · rw [hkerList, Bool.not_true, Bool.false_or, decide_eq_true_eq, count_true_ofFn]
       exact hdist w hw0 ((hker_iff hlen hrows w).1 hkerList)
@@ -889,7 +887,7 @@ private theorem buildRow_eq_ofFn_shortRow {m ell d c : ℕ} (hd : 0 < d) (hm : m
   set endPt := if side then (edgeEmbedding hd hm ef).1 +
       ofList ell (shifts.getD (edgeEmbedding hd hm ef).2.val []) else (edgeEmbedding hd hm ef).1
   have hu : lowBits ell (e / d) = List.ofFn (edgeEmbedding hd hm ef).1 :=
-    BooleanFold.lowBits_eq_word _ ⟨e / d, (Nat.div_lt_iff_lt_mul hd).2 (he.trans_le hm)⟩
+    lowBits_eq_ofFn_equivFin_symm _ ⟨e / d, (Nat.div_lt_iff_lt_mul hd).2 (he.trans_le hm)⟩
   have hs : listRow ell 0 (shifts.getD (e % d) []) =
       List.ofFn (ofList ell (shifts.getD (edgeEmbedding hd hm ef).2.val [])) :=
     listRow_zero ell (shifts.getD (e % d) [])
@@ -897,7 +895,7 @@ private theorem buildRow_eq_ofFn_shortRow {m ell d c : ℕ} (hd : 0 < d) (hm : m
         (listRow ell 0 (shifts.getD (e % d) [])) else lowBits ell (e / d)) = List.ofFn endPt := by
     rw [hu, hs]; cases side <;> simp only [endPt, ↓reduceIte, Bool.false_eq_true, ofFn_add]
   simp only [List.getElem_map, List.getElem_range, List.getElem_ofFn, beq_false_of_ne hd.ne',
-    Bool.false_eq_true, ↓reduceIte, hend, BooleanFold.lowBits_eq_word _ v, Tanner.shortRow]
+    Bool.false_eq_true, ↓reduceIte, hend, lowBits_eq_ofFn_equivFin_symm _ v, Tanner.shortRow]
   change (if !((List.ofFn endPt).zipWith Bool.xor (List.ofFn ((equivFin ell).symm v))).any id then
       (H0.getD i.val []).getD (e % d) false else false) =
     if endPt = (equivFin ell).symm v then ofList d (H0.getD i.val []) (edgeEmbedding hd hm ef).2

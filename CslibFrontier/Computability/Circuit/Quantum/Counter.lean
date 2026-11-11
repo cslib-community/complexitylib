@@ -12,9 +12,9 @@ public import CslibFrontier.Computability.Circuit.Quantum.Classical
 /-!
 # A reversible threshold counter
 
-A classical circuit of CNOT and Toffoli gates that counts, in unary, how many of `k` input bits
-are one, up to a threshold `T` (`Cslib.Quantum.Counter.codes`). Its ancillas start at zero: qubit
-`base` is set to one, and stage `s` has `T` fresh qubits, its *levels*
+A classical circuit of NOT, CNOT and Toffoli gates that counts, in unary, how many of `k` input
+bits are one, up to a threshold `T` (`Cslib.Quantum.Counter.codes`). Its ancillas start at zero:
+qubit `base` is set to one, and stage `s` has `T` fresh qubits, its *levels*
 (`Cslib.Quantum.Counter.level`). After stage `s`, level `i` reads whether more than `i` of the
 first `s` input bits are one. Stage `s + 1` reads the next input bit `b` and sets each new level
 to the old level `i - 1` when `b` is one and to the old level `i` otherwise, with three gates: the

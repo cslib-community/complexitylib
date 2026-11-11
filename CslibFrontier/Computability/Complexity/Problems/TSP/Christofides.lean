@@ -35,8 +35,8 @@ triples of cities. Diagonal entries need not be zero.
 * `christofidesTour_perm`: the tour visits every city exactly once.
 * `two_mul_tourLength_christofidesTour_le_three_mul`: on metric matrices, twice the length of the
   tour is at most three times the length of any tour.
-* `two_mul_tourLength_christofidesTour_le_three_mul_of_mem`: if `(D, b) ∈ TSP` with `D` metric,
-  twice the length of the tour is at most `3 * b`.
+* `two_mul_tourLength_christofidesTour_le_three_mul_of_mem`: if `x ∈ TSP` with `x.dist` metric,
+  twice the length of the tour is at most `3 * x.bound`.
 
 ## Limitations
 
@@ -66,15 +66,8 @@ spanning tree together with a minimum-weight perfect matching on its odd-degree 
 /-- **Feasibility.** Christofides' tour visits every city exactly once. -/
 theorem christofidesTour_perm (D : List (List ℕ)) :
     (christofidesTour D).Perm (List.range D.length) := by
-  refine (List.perm_ext_iff_of_nodup
-    (((christofides_perm _).nodup_iff.2 (List.nodup_finRange _)).map Fin.val_injective)
-    List.nodup_range).2 fun x => ?_
-  simp only [List.mem_map, List.mem_range]
-  constructor
-  · rintro ⟨y, -, rfl⟩
-    exact y.isLt
-  · intro hx
-    exact ⟨⟨x, hx⟩, (christofides_perm _).symm.subset (List.mem_finRange _), rfl⟩
+  rw [christofidesTour, ← List.map_coe_finRange_eq_range]
+  exact (christofides_perm _).map Fin.val
 
 /-- **Christofides' 3/2-approximation for metric TSP** ([Christofides1976];
 [WilliamsonShmoys2011], Theorem 2.13): on a metric matrix, twice the length of Christofides' tour
@@ -83,22 +76,17 @@ exhaustive search, so this certifies the approximation ratio, not a polynomial r
 theorem two_mul_tourLength_christofidesTour_le_three_mul {D : List (List ℕ)} (hD : IsMetric D)
     {p : List ℕ} (hp : p.Perm (List.range D.length)) :
     2 * tourLength D (christofidesTour D) ≤ 3 * tourLength D p := by
-  have hlt : ∀ x ∈ p, x < D.length := fun x hx => List.mem_range.1 (hp.subset hx)
-  obtain ⟨q, rfl⟩ : ∃ q : List (Fin D.length), q.map Fin.val = p :=
-    ⟨p.pmap Fin.mk hlt, by simp [List.map_pmap]⟩
-  have hq : q.Nodup := (hp.nodup_iff.2 List.nodup_range).of_map _
-  have hcov : ∀ x, x ∈ q := fun x => by
-    obtain ⟨y, hy, hyx⟩ := List.mem_map.1 (hp.symm.subset (List.mem_range.2 x.isLt))
-    exact Fin.ext hyx ▸ hy
+  obtain ⟨q, rfl, hq, hcov⟩ := exists_map_val_eq_of_perm_range hp
   rw [christofidesTour, tourLength_map_val, tourLength_map_val]
   exact two_mul_cycleCost_christofides_le_three_mul (fun x y => hD.symm x x.isLt y y.isLt)
     (fun x y z => hD.triangle x x.isLt y y.isLt z z.isLt) hq hcov
 
-/-- **The 3/2-approximation against the decision problem**: if a metric instance `(D, b)` belongs
-to `TSP`, twice the length of Christofides' tour is at most `3 * b`. -/
-theorem two_mul_tourLength_christofidesTour_le_three_mul_of_mem {D : List (List ℕ)} {b : ℕ}
-    (hD : IsMetric D) (h : (D, b) ∈ TSP) : 2 * tourLength D (christofidesTour D) ≤ 3 * b := by
+/-- **The 3/2-approximation against the decision problem**: if a metric instance `x` belongs to
+`TSP`, twice the length of Christofides' tour is at most `3 * x.bound`. -/
+theorem two_mul_tourLength_christofidesTour_le_three_mul_of_mem {x : TSPInstance}
+    (hx : IsMetric x.dist) (h : x ∈ TSP) :
+    2 * tourLength x.dist (christofidesTour x.dist) ≤ 3 * x.bound := by
   obtain ⟨p, hp, hb⟩ := h
-  exact (two_mul_tourLength_christofidesTour_le_three_mul hD hp).trans (Nat.mul_le_mul_left 3 hb)
+  exact (two_mul_tourLength_christofidesTour_le_three_mul hx hp).trans (Nat.mul_le_mul_left 3 hb)
 
 end Cslib.Complexity.TSP

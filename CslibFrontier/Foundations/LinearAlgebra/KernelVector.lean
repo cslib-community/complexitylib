@@ -143,10 +143,12 @@ theorem firstNonzero_smul (c : F) (u : Fin n → F) : firstNonzero (c • u) = c
   · simp only [firstNonzero, firstFlags_smul hc, Pi.smul_apply, smul_eq_mul, mul_sum]
     exact sum_congr rfl fun i _ => mul_left_comm _ _ _
 
-/-- A nonzero vector `u` is `firstNonzero u` times its normalization `(firstNonzero u)⁻¹ • u`. -/
-theorem firstNonzero_smul_inv_smul {u : Fin n → F} (hu : u ≠ 0) :
+/-- A vector `u` is `firstNonzero u` times its normalization `(firstNonzero u)⁻¹ • u`. -/
+theorem firstNonzero_smul_inv_smul {u : Fin n → F} :
     firstNonzero u • (firstNonzero u)⁻¹ • u = u := by
-  rw [smul_smul, mul_inv_cancel₀ (firstNonzero_eq_zero_iff.not.2 hu), one_smul]
+  by_cases hu : u = 0
+  · subst hu; simp
+  · exact smul_inv_smul₀ (firstNonzero_eq_zero_iff.not.2 hu) u
 
 /-! ### Elimination -/
 

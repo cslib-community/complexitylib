@@ -55,8 +55,7 @@ theorem realizes_isEmpty : Realizes .exact
   change (Memory.read (d.2 + 9 * d.1 + 1) >>= fun m =>
       if m = 0 then pure true else pure false) =
     (Memory.read (d.2 + 9 * d.1 + 1) >>= fun m => pure (decide (m = 0)))
-  congr 1
-  funext m
+  congr 1 with m : 1
   by_cases hm : m = 0 <;> simp [hm]
 
 /-- The optional key method uses the original in-heap flag and key array. The raw runtime
@@ -80,8 +79,7 @@ theorem realizes_getKey : Realizes .exact
       d 1 + 7 * d 0 + d 2 := by omega
   rw [ha]
   simp only [DataStructure.link, getKey, PFunctor.FreeM.liftM_bind, rd, Record.read, layout]
-  congr 1
-  funext b
+  congr 1 with b : 1
   split_ifs <;> rfl
 
 end Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native

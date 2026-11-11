@@ -71,16 +71,6 @@ namespace Interaction
 /-- Histories, encoded as lists of pairs of words. -/
 abbrev encHistory : History ↪ List Bool := encList (encPair encBits encBits)
 
-/-- A suffix of a list has a shorter encoding. -/
-theorem length_encList_le_of_suffix {α : Type} {enc : α ↪ List Bool} {l l' : List α}
-    (h : l <:+ l') : (encList enc l).length ≤ (encList enc l').length := by
-  obtain ⟨p, rfl⟩ := h
-  induction p with
-  | nil => rfl
-  | cons a p ih =>
-    simp only [List.cons_append, encList_cons, List.length_append]
-    lia
-
 variable {k : ℕ} {Control Operation Entry : Type} [DecidableEq Operation] [Inhabited Entry]
   (matchOp : Operation → Entry → Bool) (entryPair : Entry → List Bool × List Bool)
   (M : MultiTapePTM k Bool Control Operation)
@@ -361,7 +351,7 @@ private theorem computableInPolyTime_aliveRun :
       nlinarith)
     (fun p consumed s hprefix hs => ?_)).1
   have hcfg := hcf _ _ _ _ hs.1
-  have hhist := length_encList_le_of_suffix (enc := encEntry) hs.2
+  have hhist := length_encList_sublist encEntry hs.2.sublist
   have hcons : consumed.length ≤ p.2.1.length := hprefix.length_le
   simp only [encAliveState, length_encPair, encBool_apply, List.length_singleton, encBits_apply]
     at hcfg hhist ⊢

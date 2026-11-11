@@ -98,8 +98,7 @@ theorem runConfigFrom_prependOutput [DecidableEq Oracle]
     simp only [runConfigFrom, Config.prependOutput_state, hs,
       Config.prependOutput_inputSymbol, Config.prependOutput_workTapeSymbols,
       Config.prependOutput_answerSymbols, map_bind]
-    congr 1
-    funext action
+    congr 1 with action : 1
     cases action <;> simp [Config.step_prependOutput, Config.receive_prependOutput]
 
 end Turing.MultiTapeMachine

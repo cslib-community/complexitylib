@@ -25,7 +25,7 @@ proved in `TraversalRoot.root_exec`; complete initialized-input preprocessing is
 `PreprocessingInput.runs_input`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 

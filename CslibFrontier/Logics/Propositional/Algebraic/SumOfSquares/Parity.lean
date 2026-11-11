@@ -274,24 +274,23 @@ private theorem rep_spec {A : Finset σ} (hA : 2 * #A ≤ w) :
   Classical.epsilon_spec (p := fun B => 2 * #B ≤ w ∧ ∃ c, P.Derives w (A ∆ B) c)
     ⟨A, hA, false, by rw [symmDiff_self]; exact Derives.empty⟩
 
+/-- On sets of size at most `w / 2`, "`A ∆ B` is derivable" is transitive. -/
+private theorem derives_symmDiff_trans {A B C : Finset σ} (hA : 2 * #A ≤ w) (hC : 2 * #C ≤ w)
+    {b c : Bool} (hAB : P.Derives w (A ∆ B) b) (hBC : P.Derives w (B ∆ C) c) :
+    P.Derives w (A ∆ C) (b ^^ c) := by
+  have hAC : A ∆ B ∆ (B ∆ C) = A ∆ C := by rw [symmDiff_assoc, symmDiff_symmDiff_cancel_left]
+  have hw := card_symmDiff_le A C
+  rw [← hAC] at hw ⊢
+  exact hAB.symmDiff hBC (by omega)
+
 private theorem rep_eq {A B : Finset σ} (hA : 2 * #A ≤ w) (hB : 2 * #B ≤ w) {c : Bool}
     (h : P.Derives w (A ∆ B) c) : rep P w A = rep P w B := by
   unfold rep
   congr 1
   ext C
   refine and_congr_right fun hC => ⟨fun ⟨c', hc'⟩ => ?_, fun ⟨c', hc'⟩ => ?_⟩
-  · refine ⟨c ^^ c', ?_⟩
-    have := h.symmDiff hc' ?_
-    · rwa [symmDiff_comm A B, symmDiff_assoc, symmDiff_symmDiff_cancel_left] at this
-    · rw [symmDiff_comm A B, symmDiff_assoc, symmDiff_symmDiff_cancel_left]
-      have := card_symmDiff_le B C
-      omega
-  · refine ⟨c ^^ c', ?_⟩
-    have := h.symmDiff hc' ?_
-    · rwa [symmDiff_assoc, symmDiff_symmDiff_cancel_left] at this
-    · rw [symmDiff_assoc, symmDiff_symmDiff_cancel_left]
-      have := card_symmDiff_le A C
-      omega
+  · exact ⟨c ^^ c', derives_symmDiff_trans hB hC (symmDiff_comm A B ▸ h) hc'⟩
+  · exact ⟨c ^^ c', derives_symmDiff_trans hA hC h hc'⟩
 
 /-- **The moment matrix is positive semidefinite**: if `0 = 1` is not derivable in width `w`,
 then for sets `A i` of size at most `w / 2` and any coefficients `a i`,
@@ -308,15 +307,8 @@ theorem sum_sum_mul_parityValue_nonneg {R : Type*} [CommRing R] [LinearOrder R]
     split_ifs with h
     · obtain ⟨-, ci, hci⟩ := rep_spec (P := P) (hA i hi)
       obtain ⟨-, cj, hcj⟩ := rep_spec (P := P) (hA j hj)
-      have hij : A i ∆ rep P w (A i) ∆ (A j ∆ rep P w (A j)) = A i ∆ A j := by
-        rw [h, symmDiff_symmDiff_symmDiff_comm, symmDiff_self, symmDiff_bot]
-      have hd := hci.symmDiff hcj (by
-        rw [hij]
-        have := card_symmDiff_le (A i) (A j)
-        have := hA i hi
-        have := hA j hj
-        omega)
-      rw [hij] at hd
+      have hd := derives_symmDiff_trans (B := rep P w (A j)) (hA i hi) (hA j hj) (h ▸ hci)
+        (symmDiff_comm (A j) _ ▸ hcj)
       simp only [τ]
       rw [parityValue_eq_of_derives hP hd, parityValue_eq_of_derives hP hci,
         parityValue_eq_of_derives hP hcj, BitString.neg_one_pow_toNat_xor]

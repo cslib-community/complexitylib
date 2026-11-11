@@ -10,15 +10,15 @@ module
 public import Cslib.Init
 public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Basic.Real.Basic
-import CslibFrontier.Foundations.Data.BitString.Agree
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import Mathlib.Algebra.BigOperators.Ring.Finset
 
 /-!
 # Uniformly random bits on a set of positions
 
 The bits of a uniformly random word `ι → Bool` on a set `S` of positions all take a given value
-with probability `2 ^ (-|S|)` (`BitString.expect_ite_forall_mem_eq`), by the count of words
-agreeing off a set (`BitString.card_filter_forall_notMem_eq`); so some of them takes the other
+with probability `2 ^ (-|S|)` (`BitString.expect_ite_forall_mem_eq`), by the count of functions
+agreeing on a set (`Fintype.card_filter_forall_mem_eq`); so some of them takes the other
 value with probability `1 - 2 ^ (-|S|)` (`BitString.expect_ite_exists_mem_eq`).
 
 ## Main results
@@ -42,9 +42,7 @@ theorem expect_ite_forall_mem_eq {ι : Type*} [Fintype ι] [DecidableEq ι] (S :
     (b : Bool) [DecidablePred fun x : ι → Bool => ∀ i ∈ S, x i = b] :
     𝔼 x : ι → Bool, (if ∀ i ∈ S, x i = b then (1 : ℝ) else 0) = 2⁻¹ ^ #S := by
   have hcard : #{x : ι → Bool | ∀ i ∈ S, x i = b} = 2 ^ #Sᶜ := by
-    rw [← card_filter_forall_notMem_eq Sᶜ fun _ => b]
-    refine congrArg card (filter_congr fun x _ => ?_)
-    simp only [mem_compl, not_not]
+    rw [Fintype.card_filter_forall_mem_eq S fun _ => b, Fintype.card_bool]
   have hS : #S ≤ Fintype.card ι := card_le_univ S
   rw [expect_eq_sum_div_card, sum_boole, hcard, card_compl, card_univ, Fintype.card_fun,
     Fintype.card_bool]

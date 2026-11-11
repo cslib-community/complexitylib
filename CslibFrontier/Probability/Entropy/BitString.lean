@@ -40,7 +40,7 @@ distributions:
   full version `arXiv:2009.11514v1` (Sections 2.5 and 5.2).
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

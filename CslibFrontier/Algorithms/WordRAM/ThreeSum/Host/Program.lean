@@ -133,7 +133,7 @@ theorem runs_input {κ w r T : ℕ} (input : List ℤ) (solver : Code .standard 
     rw [ham]
     exact hmem i hi
   obtain ⟨y, hy, -, -, hyf, hyans, hym⟩ := exec_loop μ solver a hap hai haf hinput
-    (fun s hs => index_fits hw hs) (filler_fits hw).1 (filler_fits hw).2
+    (fun s hs => index_fits hw hs) (filler_fits hw).1
     (fun i hi => value_fits hw (hμ i hi))
     (hf.1.mono (show w ≤ w + 2 by omega)) hsolver
   have hans : y.regs (hostRegisters found) = 1 ↔ Convolution N μ :=

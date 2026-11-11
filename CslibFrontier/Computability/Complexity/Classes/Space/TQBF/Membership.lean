@@ -302,18 +302,11 @@ end Step
 
 /-! ### The size of the states of a run -/
 
-/-- A suffix has a shorter encoding. -/
-private theorem length_encList_le_of_suffix {l l' : List (QBF.Kind × ℕ)} (h : l <:+ l') :
-    (encList encToken l).length ≤ (encList encToken l').length := by
-  obtain ⟨p, rfl⟩ := h
-  rw [encList_append, List.length_append]
-  omega
-
 /-- A frame storing a token of `φ` followed by a suffix of its tokens is no longer than the
 encoding of `φ`, up to its value. -/
 private theorem length_encFrame_le {φ : QBF ℕ} {f : Frame} (h : f.token :: f.rest <:+ φ.tokens) :
     (encFrame f).length ≤ (encQBF φ).length + 5 := by
-  have hs := length_encList_le_of_suffix h
+  have hs := length_encList_sublist encToken h.sublist
   have hfirst : (encOption encBool f.first).length ≤ 2 := by cases f.first <;> simp [encOption]
   change (encFrameFields f.fields).length ≤ _
   rw [encQBF_apply]
@@ -324,7 +317,7 @@ private theorem length_encFrame_le {φ : QBF ℕ} {f : Frame} (h : f.token :: f.
 encoding of length at most `16 * ((encQBF φ).length + 1) ^ 2`. -/
 theorem length_encState_le {φ : QBF ℕ} {s : State} (h : Good φ s) :
     (encState s).length ≤ 16 * ((encQBF φ).length + 1) ^ 2 := by
-  have hin := length_encList_le_of_suffix h.input
+  have hin := length_encList_sublist encToken h.input.sublist
   rw [← encQBF_apply] at hin
   have hstack : (encList encFrame s.stack).length ≤
       s.stack.length * (2 * ((encQBF φ).length + 5) + 1) :=
@@ -338,10 +331,6 @@ theorem length_encState_le {φ : QBF ℕ} {s : State} (h : Good φ s) :
   nlinarith
 
 /-! ### The evaluator in polynomial space -/
-
-/-- `x ^ a ≤ x ^ b` for `1 ≤ x` and `a ≤ b`. -/
-private theorem pow_le_pow_of_le {x a b : ℕ} (hx : 1 ≤ x) (hab : a ≤ b) : x ^ a ≤ x ^ b :=
-  Nat.pow_le_pow_right hx hab
 
 /-- **The evaluator in polynomial space.** On a formula whose encoding has length `L`, the
 evaluator is computable within time `O(2 ^ L * (L + 1) ^ e)` and space `O((L + 1) ^ e)`, for
@@ -381,14 +370,13 @@ theorem exists_computableInO_evaluate : ∃ e, ComputableInO evaluate encQBF enc
       calc (16 * (L + 1) ^ 2 + 1) ^ a ≤ (17 * (L + 1) ^ 2) ^ a :=
             Nat.pow_le_pow_left (by linarith only [Nat.one_le_pow 2 (L + 1) hP]) a
         _ = 17 ^ a * (L + 1) ^ (2 * a) := by rw [Nat.mul_pow, ← pow_mul]
-        _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (pow_le_pow_of_le hP (by omega))
+        _ ≤ 17 ^ a * (L + 1) ^ E := Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hP (by omega))
     have hR := hpow d (by omega)
     have hA : ((encState s).length + 1) ^ d₁ ≤ 17 ^ d₁ * (L + 1) ^ E :=
       (Nat.pow_le_pow_left (by omega) d₁).trans (hpow d₁ (by omega))
-    have hM1 : L + 1 ≤ (L + 1) ^ E := by
-      simpa using pow_le_pow_of_le hP (show 1 ≤ E by omega)
-    have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
-    have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := pow_le_pow_of_le hP (by omega)
+    have hM1 : L + 1 ≤ (L + 1) ^ E := Nat.le_self_pow (by omega) _
+    have hM2 : (L + 1) ^ 2 ≤ (L + 1) ^ E := Nat.pow_le_pow_right hP (by omega)
+    have hM0 : (L + 1) ^ d₀ ≤ (L + 1) ^ E := Nat.pow_le_pow_right hP (by omega)
     have hK : 17 ^ d ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
     have hK₁ : 17 ^ d₁ ≤ 17 ^ (d + d₁) := Nat.pow_le_pow_right (by norm_num) (by omega)
     have hN : 1 ≤ 2 ^ L := Nat.one_le_two_pow

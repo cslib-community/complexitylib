@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Foundations.Data.List.OfFnGetD
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
 
@@ -42,13 +43,7 @@ private theorem nonempty_of_eval {arity : Rel → ℕ} {sem : Rel → List Bool 
   refine ⟨fun i => σ (c.2.getD i 0), ?_⟩
   change sem c.1 (List.ofFn fun i : Fin (arity c.1) => σ (c.2.getD i 0)) = true
   change sem c.1 (c.2.map σ) = true at hσ
-  have heq : (List.ofFn fun i : Fin (arity c.1) => σ (c.2.getD i 0)) = c.2.map σ := by
-    rw [← hc]
-    convert List.ofFn_getElem_eq_map c.2 σ using 1
-    congr 1
-    funext i
-    rw [List.getD_eq_getElem c.2 0 i.isLt]
-  rwa [heq]
+  rwa [List.ofFn_getD_eq_map_of_length σ 0 hc]
 
 /-- A common unary constant gives native polynomial-time satisfiability for a fixed finite
 Boolean constraint language. Empty relations are rejected before applying the constant model. -/

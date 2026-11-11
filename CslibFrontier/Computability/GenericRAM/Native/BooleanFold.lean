@@ -68,14 +68,6 @@ noncomputable def decoder :
 theorem decoder_isPolynomial : decoder.IsPolynomial :=
   NativeCertificate.ofPolyTime_isPolynomial decoder_polyTime
 
-/-- Each valid binary index decodes to its word in the existing finite enumeration order. -/
-theorem lowBits_eq_word (n : ℕ) (j : Fin (2 ^ n)) :
-    lowBits n j = List.ofFn ((equivFin n).symm j) := by
-  rw [lowBits_eq_ofFn]
-  congr 1
-  funext i
-  exact (equivFin_symm_apply j i).symm
-
 /-- The conceptual sequence of decoded indices is exactly the old materializing enumeration.
 Only this specification uses the list of all indices. -/
 theorem decoded_range_eq_enumList (n : ℕ) :
@@ -83,14 +75,14 @@ theorem decoded_range_eq_enumList (n : ℕ) :
   apply List.ext_getElem (by simp)
   intro i hi hi'
   simp only [List.getElem_map, List.getElem_range, enumList_eq_ofFn, List.getElem_ofFn]
-  exact lowBits_eq_word n ⟨i, by simpa using hi⟩
+  exact lowBits_eq_ofFn_equivFin_symm n ⟨i, by simpa using hi⟩
 
 /-- Distinct valid indices decode to distinct runtime words. -/
 theorem decoder_injective (n : ℕ) :
     Function.Injective (fun j : Fin (2 ^ n) => lowBits n j) := by
   intro i j h
   apply (equivFin n).symm.injective
-  exact List.ofFn_inj.mp (by simpa only [lowBits_eq_word] using h)
+  exact List.ofFn_inj.mp (by simpa only [lowBits_eq_ofFn_equivFin_symm] using h)
 
 /-- Every runtime word of the declared length is decoded by exactly one valid index. -/
 theorem decoder_coverage (n : ℕ) (word : List Bool) (hw : word.length = n) :

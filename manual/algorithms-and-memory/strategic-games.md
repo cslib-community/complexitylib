@@ -2,12 +2,12 @@
 
 [Chapter index](index.md) · [Online and streaming models](online-and-streaming.md)
 
-This page covers finite strategic games in cost-minimization form, potential games, atomic and
-nonatomic congestion games, price-of-anarchy and price-of-stability bounds, fair cost-sharing games,
-strong Nash equilibria, no-regret (Hedge) dynamics, and bimatrix games with the Lemke–Howson parity
-argument. Most of it is mathematics about real-valued costs or payoffs with no machine model. The
+This page covers finite strategic games in cost-minimization form, potential games, mixed Nash
+equilibria and Nash's theorem, correlated equilibria, atomic and nonatomic congestion games, price-of-anarchy and
+price-of-stability bounds, fair cost-sharing games, strong Nash equilibria, no-regret (Hedge)
+dynamics, and bimatrix games with the Lemke–Howson parity argument. Most of it is mathematics about real-valued costs or payoffs with no machine model. The
 exception is the membership of pure Nash equilibria of explicit congestion games in `PLS`, which
-uses the native polynomial-time interface [complexitylib][complexitylib].
+uses the native polynomial-time interface [cslib-frontier][complexitylib].
 
 ## The strategic-game layer
 
@@ -96,6 +96,108 @@ bounded by `M > 0` and `T ≥ ln |S i|`:
 
 [Congestion/Hedge.lean](../../CslibFrontier/GameTheory/Congestion/Hedge.lean) specializes the bound to
 affine congestion games: `5/2 socialCost s' + 3 M ∑ i, √(ln |S i| / T)`.
+
+## Mixed Nash equilibria and Nash's theorem
+
+[Nash.lean](../../CslibFrontier/GameTheory/Strategic/Nash.lean) defines `expectedCost G p i`, player
+`i`'s expected cost under the product distribution of the mixed strategies `p`, and
+`IsMixedNash p`: every `p i` is a probability vector (`IsMixedStrategy`, from
+[MixedStrategy.lean](../../CslibFrontier/GameTheory/MixedStrategy.lean)), and
+`expectedCost G p i ≤ deviationCost G p i a` for every player `i` and pure strategy `a`. This is
+Definition 3.2 of [roughgarden13cs364a][roughgarden13cs364a], Lecture 13. The headline is
+`CostGame.exists_isMixedNash`, **Nash's theorem** [nash51][nash51]: a game with finitely many
+players, each with a finite nonempty strategy set, has a mixed Nash equilibrium. Write
+`G.exists_isMixedNash`; the instances needed are `[Fintype ι] [DecidableEq ι]`,
+`[∀ i, Fintype (S i)]` and `[∀ i, Nonempty (S i)]`.
+
+The proof follows Nash. `nashMap` moves each mixed strategy towards the pure strategies that would
+lower the player's cost, in proportion to the gain `max 0 (expectedCost - deviationCost)`, and
+renormalizes. Its fixed points are exactly the mixed Nash equilibria (`isFixedPt_nashMap_iff`), and
+Brouwer's theorem for products of simplices (`Cslib.Brouwer.exists_isFixedPt_pi_simplex`, see
+[search problems](../machines-and-classes/search-and-promises.md)) gives a fixed point. Related
+results:
+
+- `isMixedNash_single_iff`: pure Nash equilibria are exactly the mixed Nash equilibria made of
+  point masses `Pi.single (s i) 1`; `IsPureNash.isMixedNash` is one direction.
+- `IsMixedNash.deviationCost_eq_of_pos`: a pure strategy in the support of an equilibrium strategy
+  attains the expected cost.
+- `IsMixedNash.expectedCost_le_update`: deviations to mixed strategies gain nothing either. It rests
+  on `deviationCost_update_self` in `Mixed.lean`: the expected cost vector of player `i` depends on
+  `p i` only through its total mass.
+- `IsMixedNash.isCoarseCorrelatedEquilibrium`: the product distribution of a mixed Nash equilibrium
+  is a coarse correlated equilibrium.
+
+[Bimatrix/Existence.lean](../../CslibFrontier/GameTheory/Bimatrix/Existence.lean) derives
+`BimatrixGame.exists_isNash` for every bimatrix game with nonempty strategy sets, with no
+nondegeneracy hypothesis. It views the game as a two-player cost game indexed by `Bool` with the
+negated payoffs, lifting both strategy sets to a common universe. Each player's expected cost
+vector is the negated matrix–vector product of expected payoffs, by `sum_productWeight_mul_apply`
+in `Mixed.lean`: under the product weights, a function of one player's strategy has its expectation
+under that player's mixed strategy.
+
+To check a candidate equilibrium, compute `deviationCost` for each pure strategy and compare it
+with `expectedCost`, which `sum_mul_deviationCost_eq_expectedCost` writes as their average.
+`deviationCost_def` and `productWeight_def` unfold the sums. The checked example
+[Strategic.lean](../../CslibFrontierTests/GameTheory/Strategic.lean) does this for uniform mixing
+in matching pennies. The existence proof is nonconstructive: nothing here computes an
+equilibrium or bounds the complexity of finding one.
+
+## Correlated equilibria
+
+[Correlated.lean](../../CslibFrontier/GameTheory/Strategic/Correlated.lean) defines
+`IsCorrelatedEquilibrium σ` for a finitely supported distribution `σ` on profiles, by switching
+functions as in [roughgarden13cs364a][roughgarden13cs364a], Lecture 18, §1. For every player `i`
+and every `δ : S i → S i`, the expected cost of `i` under `σ` is at most its expected cost after
+replacing its recommendation `s i` by `δ (s i)`. `isCorrelatedEquilibrium_iff` gives the
+conditional form, Definition 3.3 of Lecture 13: for every recommendation `a` and deviation `b`,
+compare the expected costs on the event `s i = a`. Both sides are multiplied by the probability
+of the event, so the condition makes sense when that probability is zero. The iff needs
+`[∀ i, DecidableEq (S i)]` but no finiteness.
+
+The equilibrium concepts are nested as in Figure 2 of Lecture 13, and each inclusion has a lemma:
+
+- `IsPureNash.isCorrelatedEquilibrium`: a pure Nash equilibrium as a point mass;
+- `IsMixedNash.isCorrelatedEquilibrium`: the product distribution `productDist` of a mixed Nash
+  equilibrium. Conditioned on its own recommendation, a player still faces the others' mixed
+  strategies;
+- `IsCorrelatedEquilibrium.isCoarseCorrelatedEquilibrium`: constant switching functions are fixed
+  deviations.
+
+`exists_isCorrelatedEquilibrium` follows from Nash's theorem; it takes `[Finite ι]`,
+`[∀ i, Finite (S i)]` and `[∀ i, Nonempty (S i)]`. The checked examples in the test file
+[GameTheory/Correlated.lean](../../CslibFrontierTests/GameTheory/Correlated.lean) show that the
+inclusions are strict. The traffic light of Lecture 13, §3.4, mixes the pure equilibria (stop, go) and (go, stop)
+evenly: it is a correlated equilibrium but not the product distribution of any mixed strategies.
+In Rock–Paper–Scissors, the uniform distribution on the six outcomes without a tie is a coarse
+correlated equilibrium but not a correlated equilibrium. Since `a + 1` beats `a` there, a player
+recommended `a` gains by switching to `a + 2`.
+
+[SwapRegretDynamics.lean](../../CslibFrontier/GameTheory/Strategic/SwapRegretDynamics.lean) defines
+`IsApproxCorrelatedEquilibrium ε σ`, where the expected cost bound for player `i` is relaxed by
+`ε i`. If after `T > 0` rounds every player `i` has total expected swap regret at most `R i`, then
+the time average of the product distributions is an `(R i / T)`-approximate correlated equilibrium
+(`timeAverage_productDist_isApproxCorrelatedEquilibrium`, Lecture 18, Proposition 1.3 of
+[roughgarden13cs364a][roughgarden13cs364a]; Theorem 3 of [blummansour07][blummansour07]).
+
+`blumMansourDynamics G T` constructs the coupled multi-player Blum–Mansour trajectory with Hedge
+copies tuned for a fixed finite horizon `T`, and `blumMansourDynamics_eq_blumMansourProb`
+identifies each player's trajectory with the single-learner Blum–Mansour algorithm against its
+realized `deviationCost` sequence. Under `[Fintype ι] [DecidableEq ι]`, `[∀ i, Fintype (S i)]`,
+`[∀ i, DecidableEq (S i)]`, `[∀ i, Nonempty (S i)]`, costs in `[-1, 1]` (`∀ i s, |G.cost i s| ≤ 1`),
+`m_i = |S i| ≥ 2`, and `T > 0` satisfying `m_i ln m_i ≤ T`,
+`blumMansour_isApproxCorrelatedEquilibrium` proves that the time average of the first `T` rounds
+is an approximate correlated equilibrium with exact slack `2 √(m_i ln m_i / T)` ([blummansour07][blummansour07],
+Corollary 7). This is a fixed-horizon (`T`-indexed), full-information expected-cost analysis: it
+does not establish anytime convergence independent of `T`, sampled play, last-iterate convergence,
+or a running-time theorem.
+
+The checked theorem `CslibFrontierTests.GameTheory.SwapRegretDynamics.blumMansour_pennies` in
+[GameTheory/SwapRegretDynamics.lean](../../CslibFrontierTests/GameTheory/SwapRegretDynamics.lean)
+instantiates this unconditionally on matching pennies for every `T ≥ 2`:
+
+```bash
+lake build CslibFrontierTests.GameTheory.SwapRegretDynamics
+```
 
 ## Atomic congestion games
 
@@ -309,9 +411,9 @@ vanishes on `(0, ∞)` (see `one_le_pigouBound`).
 [Bimatrix/Basic.lean](../../CslibFrontier/GameTheory/Bimatrix/Basic.lean) defines
 `BimatrixGame M N`, a two-player game with payoff matrices `A B : Matrix M N ℝ`. Unlike
 `CostGame`, players maximize payoffs, following von Stengel [vonstengel07][vonstengel07]. Mixed
-strategies are plain vectors with `IsMixedStrategy x` (nonnegative, summing to `1`), as in
-`Strategic/Mixed.lean`; `isMixedStrategy_iff_mem_range_weights` identifies them with the weights of
-`Convexity.StdSimplex`. The module defines best responses, `IsNash` and `IsNondegenerate`, the
+strategies are plain vectors with `IsMixedStrategy x` (nonnegative, summing to `1`), defined in
+[MixedStrategy.lean](../../CslibFrontier/GameTheory/MixedStrategy.lean);
+`isMixedStrategy_iff_mem_range_weights` identifies them with the weights of `Convexity.StdSimplex`. The module defines best responses, `IsNash` and `IsNondegenerate`, the
 source's Definition 3.2: no mixed strategy with support of size `k` has more than `k` pure best
 responses. It proves the best response condition (`isBestResponse₁_iff`, Proposition 3.1) and the
 equal support sizes of equilibria of nondegenerate games (`IsNash.ncard_support_eq`,
@@ -349,14 +451,43 @@ payoffs to be positive with `exists_addConst_pos`. The headline is
 `IsNondegenerate.odd_ncard_isNash`: a nondegenerate bimatrix game (with `M` and `N` nonempty) has
 an odd number of Nash equilibria, the source's Corollary 3.7. `IsNondegenerate.exists_isNash` and
 `IsNondegenerate.finite_setOf_isNash` follow, so `hG.exists_isNash` works for
-`hG : G.IsNondegenerate`. Existence here is the special case of Nash's theorem for nondegenerate
-bimatrix games only. The name `BimatrixGame.exists_isNash` is kept free for the general theorem.
+`hG : G.IsNondegenerate`. Existence for all bimatrix games is `BimatrixGame.exists_isNash`, from
+Nash's theorem (see the section on mixed Nash equilibria); the parity argument adds the odd count
+and finiteness for nondegenerate games.
 The algorithm is due to Lemke and Howson [lemkehowson64][lemkehowson64].
 
-Only the undirected parity argument is formalized. The Lemke–Howson path is not run as an
-algorithm, and nothing is said about its length. There is no orientation of the paths and no bit
-sizes of the rational vertices. Games are not encoded as a TFNP search problem, so this does not
-show that two-player Nash is in PPAD.
+For computational complexity (`PPAD` membership of two-player rational Nash equilibria
+[papadimitriou94ppad][papadimitriou94ppad]), four additional layers sit above the undirected
+parity argument:
+
+- [Foundations/Data/Int/Radix.lean](../../CslibFrontier/Foundations/Data/Int/Radix.lean) and
+  [Foundations/LinearAlgebra/Matrix/IntegerKernel.lean](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/IntegerKernel.lean)
+  prove uniqueness of bounded signed radix expansions (`Int.eq_zero_of_sum_mul_pow_eq_zero`) and
+  existence of `kernelVecBound`-bounded nonzero integer kernel vectors for wide integer matrices
+  (`Matrix.exists_int_mulVec_eq_zero_of_card_lt`).
+- [Foundations/LinearAlgebra/Matrix/VertexOrientation.lean](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/VertexOrientation.lean)
+  and [Bimatrix/ShapleyOrientation.lean](../../CslibFrontier/GameTheory/Bimatrix/ShapleyOrientation.lean)
+  formalize Shapley's determinant orientation [shapley74][shapley74] of pivoting edges across
+  two bounded polyhedral systems (`halfEdgeIndex`, `halfEdgeIndex_pivot_left_eq_neg`,
+  `halfEdgeIndex_pivot_right_eq_neg`, `halfEdgeIndex_zero_zero`).
+- [Bimatrix/RationalVertex.lean](../../CslibFrontier/GameTheory/Bimatrix/RationalVertex.lean)
+  perturbs positive integer payoff matrices with `K = 2 ^ bitBound m n H` (`intMatP`, `intMatQ`,
+  `pertRhsPInt`, `pertRhsQInt`), establishes nondegeneracy over every ordered field, and recovers
+  unperturbed exact rational Nash equilibria via signed Cramer determinants (`cramerVec`,
+  `basisSignNum`, `IsFeasibleBasis`, `isNash_extractNum`) with bounded numerators
+  `m! * H^m` and `n! * H^n` with polynomial bit length.
+- [Bimatrix/PPAD.lean](../../CslibFrontier/GameTheory/Bimatrix/PPAD.lean) defines the
+  structures `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix` using
+  `Turing.MultiTapeTM.encRat`) and `StrategyPair` (fields `x`, `y`, encoded via
+  `enc_structure encWitness`),
+  the rational Nash search problem `BimatrixNash` (accepting `[]` on malformed codes),
+  polynomial-time bit-encoded graph maps `pred` and `succ` on `2 * (m + n)` bits, and
+  `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`, `BimatrixNash_mem_PPAD`,
+  `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`.
+
+Executing the Lemke–Howson path as a standalone solver, extending the undirected parity theorem
+directly to degenerate bimatrix games, and proving the Savani–von Stengel exponential lower
+bound or `PPAD`-completeness of two-player Nash are not formalized.
 
 ## Working with the API
 
@@ -377,11 +508,22 @@ checks the following:
 - the Monderer–Shapley Prisoner's Dilemma with its exact potential;
 - matching pennies, which has no pure equilibrium, no FIP and no generalized ordinal potential;
 - point-mass coarse correlated equilibria;
-- uniform mixing in matching pennies, which is a coarse correlated equilibrium;
+- uniform mixing in matching pennies, which is a mixed Nash equilibrium and, as a product
+  distribution, a coarse correlated equilibrium;
+- Nash's theorem on matching pennies, whose mixed equilibria cannot be point masses, and point-mass
+  mixed equilibria in the Prisoner's Dilemma;
 - Proposition 3.1 on a constant equilibrium sequence.
+
+[CslibFrontierTests/GameTheory/Correlated.lean](../../CslibFrontierTests/GameTheory/Correlated.lean)
+checks the bridges to correlated equilibria on these games and the strict hierarchy: the traffic
+light is a correlated equilibrium that is not a product distribution, and the no-tie distribution
+of Rock–Paper–Scissors is a coarse correlated equilibrium that is not correlated.
 
 The congestion tests also check that Hedge dynamics start uniform, and they apply the Hedge
 price-of-anarchy bound to the two-link game for every horizon.
+[CslibFrontierTests/GameTheory/SwapRegretDynamics.lean](../../CslibFrontierTests/GameTheory/SwapRegretDynamics.lean)
+instantiates the unconditional Blum–Mansour bound on matching pennies for every `T ≥ 2` and checks
+the `t = 0` learner identity at `T = 4`.
 [CslibFrontierTests/GameTheory/Stability.lean](../../CslibFrontierTests/GameTheory/Stability.lean) checks
 the following price-of-stability instances:
 
@@ -412,17 +554,23 @@ the `step` map, clamping, a player with no listed strategy, and out-of-range res
 [CslibFrontierTests/GameTheory/Bimatrix.lean](../../CslibFrontierTests/GameTheory/Bimatrix.lean) checks
 the three equilibria of von Stengel's `3 × 2` example (3.3). It shows that the identity
 coordination game is nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies. The zero game
-is degenerate, and its infinitely many equilibria show that the hypothesis cannot be dropped. The
-file also checks a vertex and a non-vertex of an interval and a degenerate system. Finally, the
+is degenerate, and its infinitely many equilibria show that the hypothesis cannot be dropped;
+`exists_isNash` still applies to it. The file also checks a vertex and a non-vertex of an interval and a degenerate system. Finally, the
 artificial pair `(0, 0)` has degree `1` in the Lemke–Howson graph of the shifted coordination
 game.
 
+[CslibFrontierTests/GameTheory/BimatrixPPAD.lean](../../CslibFrontierTests/GameTheory/BimatrixPPAD.lean)
+checks `BimatrixCode.WellFormed` and `wellFormedB` on concrete games and malformed inputs
+(`emptyCode`, `nonRectCode`, `mismatchCode`), verifies valid and invalid `IsRationalNash` and
+`BimatrixNash` witnesses on the `2 × 2` coordination game, matching pennies, von Stengel's
+`3 × 2` game (3.3), and a degenerate `2 × 2` zero game, checks `Turing.MultiTapeTM.encRat`, `StrategyPair`, and `encWitness` length
+bounds, and exercises `BimatrixNash.isNash`, `extractNash_sound`, `BimatrixNash_mem_PPAD`,
+`BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`
+under strict `module` axiom checks.
+
 ## Known Limitations
 
-Mixed Nash equilibria are formalized only for bimatrix games. Their existence is proved only for
-nondegenerate bimatrix games, through the parity argument above; Nash's theorem for general finite
-games is not formalized. Correlated equilibria (with swap regret), existence of Wardrop flows, and
-weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
+Existence of Wardrop flows and weighted congestion games are not formalized. For the Pigou bound, the tight lower bounds of
 [roughgarden03][roughgarden03] for classes without the constant functions (diverse classes on
 parallel links, Theorem 4.5, and inhomogeneous classes on unions of paths, Theorem 4.9) and the
 M/M/1 and M/G/1 delay functions of its Section 5 are not formalized. Nor are the tight price of
@@ -435,25 +583,31 @@ of congestion games are in `PLS`, but their PLS-completeness (Lecture #19, Theor
 PPAD-completeness of mixed equilibria are not formalized. Neither are exponentially long
 better-response paths or the polynomial-time algorithm for symmetric network congestion games. These
 are ROADMAP directions under [#2900](https://github.com/cslib-community/cslib-frontier/issues/2900).
-Two-player Nash in PPAD, degenerate bimatrix games and the Lemke–Howson algorithm are tracked in
-[#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge dynamics are
-full-information and deterministic: they work with expected costs, not sampled play or bandit
-feedback, and only time-average guarantees are proved, not last-iterate convergence.
+Two-player rational Nash equilibrium is in `PPAD` (`BimatrixNash_mem_PPAD`); degenerate bimatrix
+parity, executing the Lemke–Howson path as a solver, and the Savani–von Stengel exponential
+lower bound remain tracked in [#3391](https://github.com/cslib-community/cslib-frontier/issues/3391). Hedge and Blum–Mansour
+swap-regret dynamics are full-information, deterministic, and fixed-horizon (`T`-indexed): they work
+with expected costs, not anytime step sizes independent of `T`, sampled play or bandit feedback,
+and only time-average guarantees are proved, not last-iterate convergence.
 The theorems of Rosenthal, Christodoulou–Koutsoupias and Awerbuch–Azar–Epstein are attributed as
 cited in the Monderer–Shapley and Roughgarden papers; their own texts were not consulted.
 
 [anshelevichDKTWR08]: ../sources.md#anshelevichdktwr08
 [babaioffChuangFeldman07]: ../sources.md#babaioffchuangfeldman07
+[blummansour07]: ../sources.md#blummansour07
 [complexitylib]: ../sources.md#complexitylib
 [epsteinFeldmanMansour09]: ../sources.md#epsteinfeldmanmansour09
 [fabrikantPapadimitriouTalwar04]: ../sources.md#fabrikantpapadimitrioutalwar04
 [lemkehowson64]: ../sources.md#lemkehowson64
 [mondererShapley96]: ../sources.md#monderershapley96
+[nash51]: ../sources.md#nash51
+[papadimitriou94ppad]: ../sources.md#papadimitriou94ppad
 [rosenthal73]: ../sources.md#rosenthal73
 [roughgarden03]: ../sources.md#roughgarden03
 [roughgarden13cs364a]: ../sources.md#roughgarden13cs364a
 [roughgarden15]: ../sources.md#roughgarden15
 [roughgardenTardos02]: ../sources.md#roughgardentardos02
 [roughgardenTardos07]: ../sources.md#roughgardentardos07
+[shapley74]: ../sources.md#shapley74
 [tardosWexler07]: ../sources.md#tardoswexler07
 [vonstengel07]: ../sources.md#vonstengel07

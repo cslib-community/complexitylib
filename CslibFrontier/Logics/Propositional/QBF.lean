@@ -364,6 +364,24 @@ theorem alls_append (vs ws : List V) (φ : QBF V) : alls (vs ++ ws) φ = alls vs
 
 variable [DecidableEq V] (σ : V → Bool)
 
+/-- An assignment agreeing with `Function.update σ v b` outside `vs` agrees with `σ` outside
+`v :: vs`. -/
+private theorem agree_of_agree_update {β : Type*} {σ τ : V → β} {v : V} {b : β} {vs : List V}
+    (hτ : ∀ x ∉ vs, τ x = Function.update σ v b x) : ∀ x ∉ v :: vs, τ x = σ x := fun x hx => by
+  rw [hτ x fun h => hx (List.mem_cons_of_mem _ h),
+    Function.update_of_ne fun h => hx (by simp [h])]
+
+/-- An assignment agreeing with `σ` outside `v :: vs` agrees with `Function.update σ v (τ v)`
+outside `vs`. -/
+private theorem agree_update_of_agree {β : Type*} {σ τ : V → β} {v : V} {vs : List V}
+    (hτ : ∀ x ∉ v :: vs, τ x = σ x) : ∀ x ∉ vs, τ x = Function.update σ v (τ v) x := by
+  intro x hx
+  by_cases hxv : x = v
+  · subst hxv
+    simp
+  · rw [Function.update_of_ne hxv]
+    exact hτ x (by simp [hxv, hx])
+
 /-- **A block of existential quantifiers** ranges over the assignments that agree with the given
 one outside the block. -/
 theorem eval_exs_eq_true_iff (vs : List V) (φ : QBF V) :
@@ -377,16 +395,9 @@ theorem eval_exs_eq_true_iff (vs : List V) (φ : QBF V) :
     constructor
     · rintro ⟨b, hb⟩
       obtain ⟨τ, hτ, h⟩ := (ih _).mp hb
-      refine ⟨τ, fun x hx => ?_, h⟩
-      rw [hτ x fun h => hx (List.mem_cons_of_mem _ h),
-        Function.update_of_ne fun h => hx (by simp [h])]
+      exact ⟨τ, agree_of_agree_update hτ, h⟩
     · rintro ⟨τ, hτ, h⟩
-      refine ⟨τ v, (ih _).mpr ⟨τ, fun x hx => ?_, h⟩⟩
-      by_cases hxv : x = v
-      · subst hxv
-        simp
-      · rw [Function.update_of_ne hxv]
-        exact hτ x (by simp [hxv, hx])
+      exact ⟨τ v, (ih _).mpr ⟨τ, agree_update_of_agree hτ, h⟩⟩
 
 /-- **A block of universal quantifiers** ranges over the assignments that agree with the given one
 outside the block. -/
@@ -400,16 +411,9 @@ theorem eval_alls_eq_true_iff (vs : List V) (φ : QBF V) :
     rw [eval_all_eq_true_iff]
     constructor
     · intro h τ hτ
-      refine (ih _).mp (h (τ v)) τ fun x hx => ?_
-      by_cases hxv : x = v
-      · subst hxv
-        simp
-      · rw [Function.update_of_ne hxv]
-        exact hτ x (by simp [hxv, hx])
+      exact (ih _).mp (h (τ v)) τ (agree_update_of_agree hτ)
     · intro h b
-      refine (ih _).mpr fun τ hτ => h τ fun x hx => ?_
-      rw [hτ x fun h => hx (List.mem_cons_of_mem _ h),
-        Function.update_of_ne fun h => hx (by simp [h])]
+      exact (ih _).mpr fun τ hτ => h τ (agree_of_agree_update hτ)
 
 /-- The conjunction of a list `l` evaluates to `true` iff every formula in `l` evaluates to
 `true`. -/

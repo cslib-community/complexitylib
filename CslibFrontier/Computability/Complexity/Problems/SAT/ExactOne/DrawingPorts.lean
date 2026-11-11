@@ -193,34 +193,12 @@ theorem clausePorts_side {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     (clausePorts φ d i).side j = literalSide φ d i j.val := by
   have hm := (clausePorts_spec hd hi).2
   simp only [portsMatch, Bool.and_eq_true] at hm
-  fin_cases j
-  · change 0 < φ[i].length at hj
-    have hn : 0 < min (φ.getD i []).length 3 := by
-      rw [List.getD_eq_getElem _ _ hi]
-      omega
-    have he := hm.1.1
-    change (if 0 < min (φ.getD i []).length 3 then (clausePorts φ d i).1 == literalSide φ d i 0
-      else true) = true at he
-    simp only [hn, ↓reduceIte, beq_iff_eq] at he
-    simpa [PortAssignment.side] using he
-  · change 1 < φ[i].length at hj
-    have hn : 1 < min (φ.getD i []).length 3 := by
-      rw [List.getD_eq_getElem _ _ hi]
-      omega
-    have he := hm.1.2
-    change (if 1 < min (φ.getD i []).length 3 then (clausePorts φ d i).2.1 == literalSide φ d i 1
-      else true) = true at he
-    simp only [hn, ↓reduceIte, beq_iff_eq] at he
-    simpa [PortAssignment.side] using he
-  · change 2 < φ[i].length at hj
-    have hn : 2 < min (φ.getD i []).length 3 := by
-      rw [List.getD_eq_getElem _ _ hi]
-      omega
-    have he := hm.2
-    change (if 2 < min (φ.getD i []).length 3 then (clausePorts φ d i).2.2 == literalSide φ d i 2
-      else true) = true at he
-    simp only [hn, ↓reduceIte, beq_iff_eq] at he
-    simpa [PortAssignment.side] using he
+  have hn : j.val < min (φ.getD i []).length 3 := by
+    rw [List.getD_eq_getElem _ _ hi]
+    omega
+  obtain ⟨⟨h₀, h₁⟩, h₂⟩ := hm
+  -- Position `j` is present, so its `portsMatch` conjunct fixes its side.
+  fin_cases j <;> simp_all [PortAssignment.side]
 
 /-- A collar's midpoint is its center plus its cardinal radius vector. -/
 theorem collarOuterPort_eq_center_add : ∀ s : Fin 4,

@@ -114,8 +114,7 @@ theorem bernoulliAverage_union_difference_subtype {ι : Type*} [Fintype ι] [Dec
     (fun S R => f S (fun i => R i)) (fun i => P i || Q i)
       (fun i => P i && !Q i))) = _
   rw [bernoulliAverage_union_difference p q r hr (fun S R => f S (fun i => R i))]
-  congr 1
-  funext S
+  congr 1 with S : 1
   have he (T : ι → Bool) : (fun i : {i // S i = true} => S i && T i) =
       (fun i : {i // S i = true} => T i) := by
     funext i

@@ -31,6 +31,9 @@ computation within a fixed space budget.
 * `Turing.MultiTapeTM.ComputableInSpace.budget_natAdd`,
   `Turing.MultiTapeTM.ComputableInSpace.budget_cons` and their siblings: arithmetic and list
   operations on values computed within a fixed budget stay within it.
+* `Turing.MultiTapeTM.ComputableInSpace.budget_optionSome`,
+  `Turing.MultiTapeTM.ComputableInSpace.budget_optionGetD`,
+  `Turing.MultiTapeTM.ComputableInSpace.budget_optionIsSome`: building and reading options.
 * `Turing.MultiTapeTM.ComputableInSpace.dispatch`: a case distinction on the element of a
   fixed list at a computed index.
 -/
@@ -159,6 +162,7 @@ theorem natLt :
       fun p => (encPair encNat encNat p).length + 1 :=
   of_inO ComputableInO.natLt
 
+/-- **Truncated subtraction**, `b - a` from `(a, b)`: the second component minus the first. -/
 theorem natSub :
     ComputableInSpace (fun p : ℕ × ℕ => p.2 - p.1) (encPair encNat encNat) encNat
       fun p => (encPair encNat encNat p).length + 1 :=
@@ -337,18 +341,6 @@ theorem set_eq_mapIdx (l : List ℕ) (i v : ℕ) :
   rw [List.getElem_set, List.getElem_mapIdx]
   split_ifs with h₃ h₄ h₄ <;> first | rfl | omega
 
-theorem length_encList_set_le (l : List ℕ) (i v : ℕ) :
-    (encList encNat (l.set i v)).length ≤
-      (encList encNat l).length + 2 * (encNat v).length + 1 := by
-  induction l generalizing i with
-  | nil => simp
-  | cons a l ih =>
-    rcases i with _ | i
-    · simp [length_encList]; omega
-    · simp only [List.set_cons_succ, length_encList, List.map_cons, List.sum_cons] at ih ⊢
-      have := ih i
-      omega
-
 /-- The encoding of the states of `setStep`. -/
 abbrev encSetState : (ℕ × ℕ) × ℕ × List ℕ ↪ List Bool :=
   encPair (encPair encNat encNat) (encPair encNat (encList encNat))
@@ -396,7 +388,7 @@ theorem set :
     simp only [zero_add, List.nil_append, List.length_take, Nat.min_eq_left hk]
     have hset : (p.1.take k).mapIdx (fun k a => if k = p.2.1 then p.2.2 else a) =
         (p.1.take k).set p.2.1 p.2.2 := (set_eq_mapIdx _ _ _).symm
-    have h₁ := length_encList_set_le (p.1.take k) p.2.1 p.2.2
+    have h₁ := length_encList_set_le encNat (p.1.take k) p.2.1 p.2.2
     have h₂ := length_encList_take_le encNat p.1 k
     have h₃ : (encNat k).length ≤ (encList encNat p.1).length :=
       (length_encNat_le_self k).trans (hk.trans (length_le_length_encList _ _))
@@ -632,6 +624,18 @@ theorem budget_finMod {w : ℕ} (hw : 0 < w) {m : α → ℕ}
 theorem budget_optionSome {a : α → β} (ha : ComputableInSpace a encIn encB Bs) :
     ComputableInSpace (fun x => some (a x)) encIn (encOption encB) Bs :=
   budget_comp_linear (of_inO (ComputableInDegree.optionSome (enc₁ := encB)).inO_one) ha
+
+/-- The value of an option with a fixed default, within the budget. -/
+theorem budget_optionGetD {o : α → Option β} (d : β)
+    (ho : ComputableInSpace o encIn (encOption encB) Bs) :
+    ComputableInSpace (fun x => (o x).getD d) encIn encB Bs :=
+  budget_comp_linear (of_inO (ComputableInDegree.getD (enc₁ := encB) d).inO_one) ho
+
+/-- Whether an option holds a value, within the budget. -/
+theorem budget_optionIsSome {o : α → Option β}
+    (ho : ComputableInSpace o encIn (encOption encB) Bs) :
+    ComputableInSpace (fun x => (o x).isSome) encIn encBool Bs :=
+  budget_comp_linear (of_inO (ComputableInDegree.isSome encB).inO_one) ho
 
 end ComputableInSpace
 

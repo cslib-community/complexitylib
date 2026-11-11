@@ -78,17 +78,22 @@ def BinaryTreeVertex.below {h : ℕ} (v : BinaryTreeVertex h) : Set (BinaryTreeV
     u ∈ v.below ↔ v.path <+: u.path :=
   Iff.rfl
 
+/-- A vertex at the full depth `h` is a leaf: it has no children in `T_h`. -/
+private theorem completeBinaryTree_not_adj_of_length_eq {h : ℕ} {u v : BinaryTreeVertex h}
+    (hv : v.path.length = h) : ¬ (completeBinaryTree h).Adj u v := by
+  rintro ⟨b, hb⟩
+  have h₁ := congrArg List.length hb
+  have h₂ := u.length_le
+  simp only [List.length_append, List.length_singleton] at h₁
+  omega
+
 private theorem blackPebblable_completeBinaryTree_aux {h : ℕ} (k : ℕ) (v : BinaryTreeVertex h)
     (hk : v.path.length + k = h) : BlackPebblable (completeBinaryTree h) (k + 2) v := by
   induction k generalizing v with
   | zero =>
-    refine BlackPebblable.of_forall_adj (s := 1) ∅ (fun u hu => ?_) (by simp) (by simp)
+    exact BlackPebblable.of_forall_adj (s := 1) ∅
+      (fun _ hu => absurd hu (completeBinaryTree_not_adj_of_length_eq hk)) (by simp) (by simp)
       (by simp)
-    obtain ⟨b, hb⟩ := hu
-    have h₁ := congrArg List.length hb
-    have h₂ := u.length_le
-    simp only [List.length_append, List.length_singleton] at h₁
-    omega
   | succ k ih =>
     let y : BinaryTreeVertex h := ⟨v.path ++ [false], by simp; omega⟩
     let z : BinaryTreeVertex h := ⟨v.path ++ [true], by simp; omega⟩
@@ -117,12 +122,8 @@ private theorem completeBinaryTree_unblocked_left {h : ℕ} {P : Finset (BinaryT
     Unblocked (completeBinaryTree h) P v := by
   induction k generalizing v with
   | zero =>
-    refine .source (fun u hu => ?_) (fun hv => hP v hv 0 (by simp))
-    obtain ⟨b, hb⟩ := hu
-    have h₁ := congrArg List.length hb
-    have h₂ := u.length_le
-    simp only [List.length_append, List.length_singleton] at h₁
-    omega
+    exact .source (fun _ hu => absurd hu (completeBinaryTree_not_adj_of_length_eq hk))
+      (fun hv => hP v hv 0 (by simp))
   | succ k ih =>
     let y : BinaryTreeVertex h := ⟨v.path ++ [false], by simp; omega⟩
     refine .step (u := y) (ih y (by simp [y]; omega) fun w hw i hwi => hP w hw (i + 1) ?_)

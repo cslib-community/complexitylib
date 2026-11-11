@@ -42,8 +42,11 @@ results in `Cslib.BalancedSchedules` govern the concrete list/integer algorithms
 unencoded typed specification bridges. Total fallback conventions: `wordToSchedule` clamps digits
 `≥ r` and missing positions to `0`; `streamBestSlotLabel` returns `List.replicate Q 0` when
 `r ^ Q = 0`; `clearedPartialCollision`, `updateSlotSchedules`, and `readSlotSchedule` use total
-`List.getD` / `List.set` defaults on out-of-bounds indices; and `scoreDenom` replaces zero
-normalizers `numEdges * C` or `Q * n` by `1`.
+`List.getD` / `List.set` defaults on out-of-bounds indices; `scoreDenom` replaces zero
+normalizers `numEdges * C` or `Q * n` by `1`, and is `0` when `r = 0`; and
+`clearedIncidencePotential` and `clearedGroupPotential` use truncated subtraction in `ℕ`. They and
+`clearedJointScore` are exact cleared numerators for `1 ≤ r` and `K = r ^ Q` on the typed bridge
+lists `edgesOfFin` and `partialScheduleListOfFin`, where no subtraction truncates.
 
 ## Main definitions
 
@@ -87,7 +90,6 @@ normalizers `numEdges * C` or `Q * n` by `1`.
 namespace Cslib.BalancedSchedules
 
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
-open ComputableTidilyInO (length_encNat_mono)
 open scoped BigOperators
 
 /-! ### Section 1: Radix-`r` candidate word decoder and bijections -/
@@ -264,7 +266,10 @@ def clearedIncidenceCollisions (K : ℕ) (edges : List (ℕ × ℕ))
     clearedPartialCollision K varSched e.2 e'.2 *
       clearedPartialCollision K facSched e.1 e'.1).sum).sum
 
-/-- Cleared-integer numerator of `partialIncidencePotential` over common denominator `K ^ 2`. -/
+/-- `clearedIncidenceCollisions` minus `edges.length ^ 2`, with truncated subtraction in `ℕ`. For
+`1 ≤ r` and `K = r ^ Q`, on `edgesOfFin` and `partialScheduleListOfFin` lists it is the
+cleared-integer numerator of `partialIncidencePotential` over common denominator `K ^ 2`
+(`clearedIncidencePotential_eq_mul`); otherwise the subtraction can truncate to `0`. -/
 def clearedIncidencePotential (K : ℕ) (edges : List (ℕ × ℕ))
     (varSched facSched : List (Option (List ℕ))) : ℕ :=
   clearedIncidenceCollisions K edges varSched facSched - edges.length ^ 2
@@ -276,16 +281,22 @@ def clearedGroupCollisions (n Q r : ℕ) (varSched : List (Option (List ℕ))) :
     ((List.range n).map fun v =>
       ((List.range n).map fun v' => clearedPartialCollision r ct v v').sum).sum).sum
 
-/-- Cleared-integer numerator of `partialGroupPotential` over common denominator `r`. -/
+/-- `clearedGroupCollisions` minus `Q * n ^ 2`, with truncated subtraction in `ℕ`. For `1 ≤ r`, on
+`partialScheduleListOfFin` lists it is the cleared-integer numerator of `partialGroupPotential`
+over common denominator `r`; otherwise the subtraction can truncate to `0`. -/
 def clearedGroupPotential (n Q r : ℕ) (varSched : List (Option (List ℕ))) : ℕ :=
   clearedGroupCollisions n Q r varSched - Q * n ^ 2
 
-/-- Common positive integer denominator clearing `normalizedPartialScore` across all candidate
-evaluations without rational GCD reductions ([OpenAI2026ETH], Lemma 4.5, p. 31). -/
+/-- Common integer denominator clearing `normalizedPartialScore` across all candidate
+evaluations without rational GCD reductions ([OpenAI2026ETH], Lemma 4.5, p. 31). It is positive
+when `1 ≤ r` (`scoreDenom_pos`) and `0` when `r = 0`. -/
 def scoreDenom (numEdges n Q r C : ℕ) : ℕ :=
   (r ^ Q) ^ 2 * max (numEdges * C) 1 * r * max (Q * n) 1
 
-/-- Exact natural-number numerator of `normalizedPartialScore` over `scoreDenom`. -/
+/-- Natural-number numerator of `normalizedPartialScore` over `scoreDenom`: exact for `1 ≤ r` on
+`edgesOfFin` and `partialScheduleListOfFin` lists
+(`normalizedPartialScore_eq_clearedJointScore_div`). It is built from `clearedIncidencePotential`
+and `clearedGroupPotential`, whose subtractions can truncate to `0` otherwise. -/
 def clearedJointScore (n Q r C : ℕ) (edges : List (ℕ × ℕ))
     (varSched facSched : List (Option (List ℕ))) : ℕ :=
   (if edges.length * C = 0 then 0
@@ -582,12 +593,6 @@ theorem clearedJointScore_le_iff_normalizedPartialScore_le {E m n Q r : ℕ} (hr
 private theorem binary_sum_polyTime :
     ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
 
-private theorem binary_add_polyTime {γ : Type} {encIn : γ ↪ List Bool} {a b : γ → ℕ}
-    (ha : ComputableInPolyTime a encIn encNat) (hb : ComputableInPolyTime b encIn encNat) :
-    ComputableInPolyTime (fun x => a x + b x) encIn encNat :=
-  (show ComputableInPolyTime (fun p : ℕ × ℕ => p.1 + p.2)
-    (encPair encNat encNat) encNat by fun_prop).comp (ha.prod hb)
-
 private theorem computableInPolyTime_clearedPartialCollision {α γ : Type} [DecidableEq α]
     {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {cardL i j : γ → ℕ} {assigned : γ → List (Option α)}
@@ -707,7 +712,7 @@ private theorem computableInPolyTime_coordProject :
   have hec := heLen.binary_mul' hC; have hincPot := hincCol.binary_sub' he2
   have hgrpPot := hgrpCol.binary_sub' (hQBin.binary_mul' hn2)
   unfold clearedJointScore clearedIncidencePotential clearedGroupPotential
-  exact binary_add_polyTime
+  exact ComputableInPolyTime.binary_add'
     (.ite_decide (hec.decide_eq' (.const 0)) (.const 0)
       (hincPot.binary_mul' (hrBin.binary_mul' (computableInPolyTime_binary_max1 hqn))))
     (.ite_decide (hqn.decide_eq' (.const 0)) (.const 0)
@@ -947,7 +952,6 @@ end
 public section
 namespace Cslib.BalancedSchedules
 open Finset Cslib.GenericRAM Turing.MultiTapeTM
-open ComputableTidilyInO (length_encNat_mono)
 
 /-- All-prefix live-state bit-length bound for the inner `IndexFold.run selectSlotStep` loop across
 every visited prefix `j ≤ r ^ Q` (never multiplying workspace by `r ^ Q`). -/

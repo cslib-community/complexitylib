@@ -395,10 +395,8 @@ theorem clientResult_lastSlotOfProg {U V w n_max h_space : ℕ} (d : ℕ × ℕ)
   · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
     have hr_pos : 1 ≤ gm (gmRIdx d.2) := pos_gmRIdx_of_pos_bCount hb_pos hinv hb hbc
     have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
-    have hr_cap : gm (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
-      have : gm (gmRIdx d.2) < tailCapPerBucket n_max := (hinv.multi_r_bounds hb_pos d.2 hb).1
-      unfold gmRIdx at this
-      omega
+    have hr_cap : gm (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max :=
+      Nat.sub_lt_of_lt (hinv.multi_r_bounds hb_pos d.2 hb).1
     have hptr_lt :
         gmTailPtrBase n_max + (d.2 * tailCapPerBucket n_max + (gm (4 + 3 * d.2 + 1) - 1)) <
           globalMetaLen n_max := gmTailPtrIdx_lt hb_pos hb hr_cap
@@ -463,23 +461,23 @@ theorem realizes_lastSlotOfGen :
     have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
     rw [clientResult_readGMProg _ hr_idx_lt]
     have hr_cap :
-        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
-      have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
+        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max :=
+      Nat.sub_lt_of_lt (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1
     exact fits_of_le_globalMetaLen h.1 hb_pos hw hnU hU
       (le_of_lt (gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap))
   · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
     have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
     rw [clientResult_readGMProg _ hr_idx_lt]
     have hr_cap :
-        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
-      have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
+        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max :=
+      Nat.sub_lt_of_lt (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1
     exact gmTailPtrIdx_lt hb_pos h.2.2.1 hr_cap
   · have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hc
     have hr_idx_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos h.2.2.1
     have hr_pos := pos_gmRIdx_of_pos_bCount hb_pos h.2.1 h.2.2.1 h.2.2.2
     have hr_cap :
-        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max := by
-      have := (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1; unfold gmRIdx at this; omega
+        gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1 < tailCapPerBucket n_max :=
+      Nat.sub_lt_of_lt (h.2.1.multi_r_bounds hb_pos d.2 h.2.2.1).1
     have hptr_lt : gmTailPtrBase n_max +
         (d.2 * tailCapPerBucket n_max +
           (gmAt d.1 U V w₀ n_max h_space s.mem (4 + 3 * d.2 + 1) - 1)) <

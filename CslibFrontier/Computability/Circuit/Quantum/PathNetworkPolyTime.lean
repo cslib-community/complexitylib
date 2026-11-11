@@ -84,7 +84,7 @@ private theorem scalarVertex_eq (S : List ℕ) (X : List Bool) (gs : List GateCo
 /-- The encoding of networks is the encoding of their number of edges and vertices. -/
 private theorem computableInPolyTime_equivProd_symm :
     ComputableInPolyTime (DescribedNetwork.equivProd (T := List ℕ)).symm
-      (encPair encUnary (encList (encPair (encList encNat) (encList encNat))))
+      (encPair encUnary (encList encVertex))
       ExplicitTensorNetwork.encExplicitNetwork :=
   ComputableInPolyTime.of_eq fun _ => rfl
 
@@ -154,8 +154,7 @@ theorem computableInPolyTime_gatePorts {c i : α → ℕ} (hc : ComputableInPoly
 theorem computableInPolyTime_gateVertex {neg : α → ℕ} {X : α → List Bool} {c i : α → ℕ}
     (hneg : ComputableInPolyTime neg inp encNat) (hX : ComputableInPolyTime X inp encBits)
     (hc : ComputableInPolyTime c inp encUnary) (hi : ComputableInPolyTime i inp encUnary) :
-    ComputableInPolyTime (fun a => gateVertex (neg a) (X a) (gs a) (c a) (i a)) inp
-      (encPair (encList encNat) (encList encNat)) := by
+    ComputableInPolyTime (fun a => gateVertex (neg a) (X a) (gs a) (c a) (i a)) inp encVertex := by
   have hps := computableInPolyTime_gatePorts hgs hc hi
   have hq := computableInPolyTime_qubits_getD hgs hi
   have hg := listGetDWithInput hgs hi default
@@ -186,15 +185,17 @@ theorem computableInPolyTime_gateVertex {neg : α → ℕ} {X : α → List Bool
   · exact ite_decide (decide_eq' (bool_and' ((headD false).comp hins) ((headD false).comp houts))
       (const true)) hneg (const 1)
   · have htl := (tail (encA := encBool)).comp hins
-    exact ite_decide (decide_eq' houts (cons' (bool_xor.comp (((headD false).comp hins).prod
-      (allWithInput htl (snd _ _)))) htl)) (const 1) (const 0)
+    -- Elaborated without an expected type, which `comp` would otherwise unify by unfolding.
+    have hxor := bool_xor.comp (((headD false).comp hins).prod
+      (allWithInput (test := fun _ => id) htl (snd _ _)))
+    exact ite_decide (decide_eq' houts (cons' hxor htl)) (const 1) (const 0)
 
 /-- **Glue vertices are polynomial-time.** -/
 theorem computableInPolyTime_glueVertex {S : α → List ℕ}
     (hS : ComputableInPolyTime S inp (encList encUnary)) {w : α → ℕ}
     (hw : ComputableInPolyTime w inp encUnary) :
     ComputableInPolyTime (fun a => (glueVertex (S a) (gs a) (w a) : List ℕ × List ℕ)) inp
-      (encPair (encList encNat) (encList encNat)) := by
+      encVertex := by
   have hqs := computableInPolyTime_occurrences hgs
   have hN := (length_list _).comp hqs
   have hq := listGetDWithInput hqs hw 0
@@ -212,7 +213,7 @@ theorem computableInPolyTime_scalarVertex {S : α → List ℕ} {X : α → List
     (hX : ComputableInPolyTime X inp encBits)
     (hgs : ComputableInPolyTime gs inp (encList encGateCode)) :
     ComputableInPolyTime (fun a => (scalarVertex (S a) (X a) (gs a) : List ℕ × List ℕ)) inp
-      (encPair (encList encNat) (encList encNat)) := by
+      encVertex := by
   simp only [scalarVertex_eq]
   refine (const []).prod (cons' (ite_decide (decide_eq' (allWithInput hS (bool_or.comp
     ((decide_mem (computableInPolyTime_occurrences (hgs.comp (fst _ _))) (snd _ _)).prod
@@ -231,7 +232,7 @@ theorem computableInPolyTime_network {neg : α → ℕ} {S : α → List ℕ} {X
   have hN := (length_list _).comp (computableInPolyTime_occurrences hgs)
   have hgate (c : ℕ) : ComputableInPolyTime (fun a => (List.range (gs a).length).map
       (gateVertex (neg a) (X a) (gs a) c)) inp
-      (encList (encPair (encList encNat) (encList encNat))) :=
+      (encList encVertex) :=
     mapWithInput (range.comp hL) (computableInPolyTime_gateVertex (hgs.comp (fst _ _))
       (hneg.comp (fst _ _)) (hX.comp (fst _ _)) (const c) (snd _ _))
   have hverts : ComputableInPolyTime (fun a =>
@@ -241,7 +242,7 @@ theorem computableInPolyTime_network {neg : α → ℕ} {S : α → List ℕ} {X
         [scalarVertex (S a) (X a) (gs a)] ++
       (List.range (2 * (occurrences (gs a)).length)).map fun w =>
         (([2 * w, 2 * w + 1], eqTable) : List ℕ × List ℕ)) inp
-      (encList (encPair (encList encNat) (encList encNat))) :=
+      (encList encVertex) :=
     listAppend' (listAppend' (listAppend' (listAppend' (hgate 0) (hgate 1))
       (mapWithInput (range.comp hN) (computableInPolyTime_glueVertex (hgs.comp (fst _ _))
         (hS.comp (fst _ _)) (snd _ _))))
@@ -250,9 +251,12 @@ theorem computableInPolyTime_network {neg : α → ℕ} {S : α → List ℕ} {X
         ((ports_unary_to_binary (cons' (unary_mul' (const 2) (snd _ _))
           (cons' (unary_add' (unary_mul' (const 2) (snd _ _)) (const 1)) (const [])))).prod
           (const _)))
+  -- Elaborated without an expected type: propagating one into `comp` makes the unifier try
+  -- `?f ∘ ?g =?= fun a => …` and fail only after unfolding `ComputableInPolyTime`.
+  have hnet := computableInPolyTime_equivProd_symm.comp
+    ((unary_mul' (const 2) (unary_mul' (const 2) hN)).prod hverts)
   unfold network
   exact (unary_to_binary.comp (unary_add' (unary_add' (unary_mul' (const 2) hL) hN)
-    (const 1))).prod (computableInPolyTime_equivProd_symm.comp
-      ((unary_mul' (const 2) (unary_mul' (const 2) hN)).prod hverts))
+    (const 1))).prod hnet
 
 end Cslib.Quantum.PathNetwork

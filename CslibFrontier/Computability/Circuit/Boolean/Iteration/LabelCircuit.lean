@@ -211,17 +211,9 @@ theorem cyclic_label_circuit (c : Circuit signature n n) (L : ℕ) (hL : 0 < L) 
       (∀ x ∈ Function.periodicPts (c.eval interpretation),
         out.eval interpretation x = canonicalLabel (c.eval interpretation) x) ∧
       out.size ≤ 20000 * powerBudget n c.size (2 ^ n) L := by
-  classical
-  obtain ⟨H, hcard, hcover⟩ := exists_checkpoints_finite (c.eval interpretation) hL
-  let cp : Fin H.card → BitString n := fun j => (H.equivFin.symm j).val
-  have hcp : Function.Injective cp := fun _ _ h => H.equivFin.symm.injective (Subtype.ext h)
-  have hcov (x : BitString n) : Repeats (c.eval interpretation) x L ∨
-      ∃ t < 2 * L, ∃ j, (c.eval interpretation)^[t] x = cp j := by
-    rcases hcover x with hr | ⟨t, ht, hm⟩
-    · exact Or.inl hr
-    · exact Or.inr ⟨t, ht, H.equivFin ⟨_, hm⟩, by simp [cp]⟩
+  obtain ⟨M, cp, hcp, hM, hcov⟩ := exists_checkpoints_fin (c.eval interpretation) hL
   obtain ⟨out, hout, hs⟩ := cyclic_labels_from_checkpoints c L hL hLN cp hcp hcov
-  exact ⟨out, hout, hs.trans (labelCost_le _ _ _ _ hL hLN (by simpa using hcard))⟩
+  exact ⟨out, hout, hs.trans (labelCost_le _ _ _ _ hL hLN (by simpa using hM))⟩
 
 /-- Moving a state onto its cycle with `f^[(2 ^ n)!]` does not change its label. -/
 private theorem canonicalLabel_iterate_factorial (f : BitString n → BitString n) (x : BitString n) :

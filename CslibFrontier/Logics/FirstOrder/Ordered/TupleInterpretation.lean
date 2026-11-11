@@ -125,8 +125,7 @@ noncomputable def tupleConstants (L : Language) (k : ℕ) :
 /-- The constant definitions select exactly their explicit canonical coordinate tuples. -/
 theorem realize_tupleConstants (c : NumericFunction 0) (x : Fin (k + 1) → Fin n) :
     ((tupleConstants L k).constant c).Realize x ↔ x = constantTuple c := by
-  simp only [tupleConstants, Formula.realize_iInf, Formula.realize_equal, Term.realize_var,
-    funext_iff]
+  fo_simp [tupleConstants, funext_iff]
   apply forall_congr'
   intro i
   cases c with

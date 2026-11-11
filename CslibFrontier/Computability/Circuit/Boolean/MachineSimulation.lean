@@ -97,11 +97,6 @@ private theorem featureFn_eq_true {t : ℕ} {φ : Feature k State} {x : Fin n �
     featureFn tm t φ x = true ↔ φ.Holds (cfgAt tm t x) :=
   decide_eq_true_iff
 
-/-- `featureFn tm t φ x` is `false` iff the feature `φ` does not hold at step `t` on input `x`. -/
-theorem featureFn_eq_false {t : ℕ} {φ : Feature k State} {x : Fin n → Bool} :
-    featureFn tm t φ x = false ↔ ¬φ.Holds (cfgAt tm t x) :=
-  decide_eq_false_iff_not
-
 /-! ### Feature sets -/
 
 section Sets
@@ -417,7 +412,8 @@ end Run
 noncomputable def acceptedWithin (T : ℕ → ℕ) : Language Bool :=
   Language.ofSlices fun n => featureFn tm (T n) (.out (.one true))
 
-/-- An input is accepted within `T` steps when the machine has written `[true]` by then. -/
+/-- An input `w` is in `acceptedWithin tm T` if and only if the output after exactly `T w.length`
+steps is `[true]`. -/
 theorem mem_acceptedWithin_iff (T : ℕ → ℕ) (w : List Bool) :
     w ∈ acceptedWithin tm T ↔
       OutView.ofList (tm.runFrom (tm.initCfg w) (T w.length)).output = .one true := by
@@ -425,9 +421,9 @@ theorem mem_acceptedWithin_iff (T : ℕ → ℕ) (w : List Bool) :
     congrArg (fun u => OutView.ofList (tm.runFrom (tm.initCfg u) (T w.length)).output)
       (List.ext_getElem (by simp) fun i _ _ => by simp : List.ofFn (w[·]) = w)]
 
-/-- **Machines with polynomial running time have polynomial circuits.** The inputs on which a
-machine has written `[true]` within a polynomially bounded number of steps form a language in
-`P/poly`. -/
+/-- **Machines with polynomial running time have polynomial circuits.** For a machine with finitely
+many states and a polynomially bounded `T`, the inputs on which the output after exactly `T n`
+steps is `[true]`, where `n` is the length of the input, form a language in `P/poly`. -/
 theorem acceptedWithin_mem_PPoly [Finite State] {T : ℕ → ℕ} (hT : PolynomiallyBounded T) :
     acceptedWithin tm T ∈ PPoly := by
   have := Fintype.ofFinite State

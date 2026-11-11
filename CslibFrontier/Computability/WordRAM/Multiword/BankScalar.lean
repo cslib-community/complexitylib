@@ -52,10 +52,8 @@ abbrev scalarResult : Fin (capacity n + 4) := ⟨6, by dsimp [capacity]; omega�
 
 private theorem value_preserved {w : ℕ} {x y : Data (capacity n + 4)} (j : Fin n)
     (hp : ∀ i, 44 ≤ i.val → y.regs i = x.regs i) :
-    value (radix w) y (regs j) = value (radix w) x (regs j) := by
-  unfold value
-  congr 1
-  exact List.map_congr_left fun i hi => hp i (by have := mem_regs hi; omega)
+    value (radix w) y (regs j) = value (radix w) x (regs j) :=
+  value_congr fun i hi => hp i (by have := mem_regs hi; omega)
 
 /-- Assemble into physical registers four and five, compute in register six, and split the
 checked result into the destination. Both inputs are read before any bank entry is written. -/

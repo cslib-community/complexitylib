@@ -45,9 +45,7 @@ private theorem consecutivePair_index {r : Route} {a b : Point}
     (h : (a, b) ∈ r.consecutivePairs) :
     ∃ (k : ℕ) (hk : k + 1 < r.length), r[k] = a ∧ r[k + 1] = b := by
   obtain ⟨k, hk, heq⟩ := List.mem_iff_getElem.mp h
-  have hk' : k + 1 < r.length := by
-    simpa only [List.consecutivePairs, List.length_zip, List.length_tail,
-      min_eq_right (Nat.sub_le _ _), Nat.lt_sub_iff_add_lt] using hk
+  have hk' : k + 1 < r.length := by grind
   simp only [List.consecutivePairs, List.getElem_zip, List.getElem_tail] at heq
   exact ⟨k, hk', congrArg Prod.fst heq, congrArg Prod.snd heq⟩
 
@@ -324,10 +322,7 @@ private theorem occurrencePath_clause_center_iff {φ : CNF ℕ} {o : Occurrence 
   have h := Graph.unitPath_center_iff (SAT.incidenceGraph φ)
     (fun _ => SAT.incidenceGraph_endpoints) (fun _ => SAT.incidenceGraph_loopless) hoidx
     (w := φ.distinctVars.length + i) (by simp only [SAT.incidenceGraph, List.length_range]; omega)
-  have he : (SAT.incidenceGraph φ).2[(Cslib.Logic.PL.occurrences φ).idxOf o] =
-      (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1) := by
-    simp only [SAT.incidenceGraph, List.getElem_map]
-    rw [List.getElem_idxOf (List.idxOf_lt_length_of_mem ho)]
+  have he := incidenceGraph_edge_idxOf ho
   have hb := SAT.incidenceGraph_bipartite (List.getElem_mem hoidx)
   rw [he] at hb h
   change Layout.center (φ.distinctVars.length + i) ∈ occurrencePath φ o ↔
@@ -348,9 +343,7 @@ theorem clause_cell_not_mem_path_dropLast {φ : CNF ℕ} {o : Occurrence ℕ}
   have hlen := occurrencePath_length_ge_two ho
   have hend := (occurrencePath_endpoints ho).2
   rw [List.getLast?_eq_getElem?, List.getElem?_eq_getElem (by omega)] at hend
-  have hk' : k < (occurrencePath φ o).length := by
-    simp only [List.length_dropLast] at hk
-    omega
+  have hk' : k < (occurrencePath φ o).length := by grind
   have heq : (occurrencePath φ o)[k] =
       (occurrencePath φ o)[(occurrencePath φ o).length - 1] := by
     rw [Option.some.inj hend]

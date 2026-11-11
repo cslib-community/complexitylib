@@ -15,10 +15,10 @@ import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import CslibFrontier.Computability.PolyTime.Int.Compare
 import CslibFrontier.Computability.PolyTime.Int.DotProduct
 import CslibFrontier.Foundations.Data.List.Blocks
 import CslibFrontier.Foundations.Data.List.DotProduct
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
@@ -216,8 +216,7 @@ private theorem abs_matrix_le (C : List (List ℤ × ℤ)) (n : ℕ) (i : Fin C.
       ((2 ^ (encSystem C).length : ℕ) : ℤ) := by
   simp only [matrix, of_apply]
   by_cases hj : (j : ℕ) < C[i.1].1.length
-  · rw [List.getD_eq_getElem _ _ hj]
-    exact abs_le_two_pow (List.getElem_mem i.2) (Or.inl (List.getElem_mem hj))
+  · exact abs_le_two_pow (List.getElem_mem i.2) (Or.inl (List.getD_mem 0 hj))
   · rw [List.getD_eq_default _ _ (not_lt.1 hj), abs_zero]
     positivity
 
@@ -229,9 +228,7 @@ private theorem abs_rhs_le (C : List (List ℤ × ℤ)) (i : Fin C.length) :
 private theorem length_encIntBin_le {z : ℤ} {E : ℕ} (hz : |z| ≤ ((2 ^ E : ℕ) : ℤ)) :
     (encIntBin z).length ≤ E + 2 := by
   rw [length_encIntBin]
-  have h1 : z.natAbs ≤ 2 ^ E := by
-    rw [Int.abs_eq_natAbs] at hz
-    exact_mod_cast hz
+  have h1 : z.natAbs ≤ 2 ^ E := by grind
   have : z.natAbs.size ≤ E + 1 :=
     Nat.size_le.2 (h1.trans_lt (Nat.pow_lt_pow_right (by norm_num) (by omega)))
   omega
@@ -310,10 +307,7 @@ private theorem dotProduct_map_eq_sum_fin (C : List (List ℤ × ℤ)) (f : List
     rw [List.getD_eq_getElem (C.map f) 0 (by rw [List.length_map]; exact i.2), List.getElem_map,
       mul_comm]
   rw [h1]
-  have hext : ∀ k, C.length ≤ k ∨ q.length ≤ k → (C.map f).getD k 0 * q.getD k 0 = 0 := by
-    rintro k (hk | hk)
-    · rw [List.getD_eq_default _ _ (by simpa using hk), zero_mul]
-    · rw [List.getD_eq_default _ _ hk, mul_zero]
+  have hext : ∀ k, C.length ≤ k ∨ q.length ≤ k → (C.map f).getD k 0 * q.getD k 0 = 0 := by grind
   rw [← sum_range_eq_of_vanish (Nat.le_add_right q.length C.length)
       (fun k => (C.map f).getD k 0 * q.getD k 0) fun k hk => hext k (Or.inr hk),
     ← sum_range_eq_of_vanish (Nat.le_add_left C.length q.length)
@@ -341,8 +335,7 @@ theorem notMem_of_certCheck {C : List (List ℤ × ℤ)} {q : List ℤ}
   · intro i
     have : 0 ≤ q.getD i 0 := by
       by_cases hi : (i : ℕ) < q.length
-      · rw [List.getD_eq_getElem _ _ hi]
-        exact hq _ (List.getElem_mem hi)
+      · exact hq _ (List.getD_mem 0 hi)
       · rw [List.getD_eq_default _ _ (not_lt.1 hi)]
     simp only [Pi.zero_apply]
     exact_mod_cast this

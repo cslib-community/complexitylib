@@ -100,18 +100,10 @@ theorem gateQuery_eval_eq (p : Program signature n g) (gate : Fin g)
     (hprevious : ∀ j < gate, previous j = p.eval interpretation x j) :
     (gateQuery p gate previous).eval interpretation x Fin.elim0 =
       p.eval interpretation x gate := by
-  have hsum : (∑ j, gateWeight p gate j * (previous j).toNat) =
-      ∑ j, gateWeight p gate j * (p.eval interpretation x j).toNat := by
-    apply sum_congr rfl
-    intro j _
-    by_cases hj : j < gate
-    · rw [hprevious j hj]
-    · rw [gateWeight_eq_zero_of_le p gate j (le_of_not_gt hj)]
-      simp
-  rw [eval_gate_eq p x gate]
+  rw [eval_gate_eq_of_forall_lt p x gate fun j hj => (hprevious j hj).symm]
   change decide ((p.lines gate).op.threshold - ∑ j, gateWeight p gate j * (previous j).toNat ≤
     ∑ i, inputWeight p gate i * (x i).toNat) = _
-  rw [Bool.eq_iff_iff, decide_eq_true_iff, decide_eq_true_iff, hsum, sub_le_iff_le_add]
+  rw [Bool.eq_iff_iff, decide_eq_true_iff, decide_eq_true_iff, sub_le_iff_le_add]
 
 private theorem exists_varying_query (p : Program signature n g)
     (S : Finset (Fin n → Bool)) (hS : S.Nonempty)

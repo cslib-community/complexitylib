@@ -111,8 +111,7 @@ theorem childSpan_le_span (d : ℕ) : childSpan d ≤ span d := by
 theorem maximum_lt_universe {d p m M : ℕ} {t : Tree d} {mem : ℕ → ℕ}
     (ht : t.Valid) (hr : Rep t p mem) (hb : t.bounds = some (m, M)) :
     mem (p + 2) = M ∧ M < universeSize d := by
-  have he := ht.extrema
-  simp only [Tree.Extrema, hb] at he
+  have he := ht.extrema_of_bounds hb
   have hh := hr.header
   simp only [Header, hb] at hh
   exact ⟨hh.2.1.2, he.2.1⟩

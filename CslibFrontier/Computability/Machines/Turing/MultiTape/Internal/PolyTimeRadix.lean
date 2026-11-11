@@ -20,7 +20,7 @@ only decreases the magnitude, so its prefix bound follows from the encoded input
 numeric value of the dividend. No global encoding-search rule or raw transport is added.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInPolyTime
 
 /-- Shift a natural digit by a natural radius, returning an ordinary sign-magnitude integer.
@@ -36,10 +36,7 @@ theorem intBin_subNatNat : ComputableInPolyTime (fun p : ℕ × ℕ => Int.subNa
   change encIntBin (Int.subNatNat p.1 p.2) =
     decide (p.1 < p.2) :: ((p.1 - p.2) + (p.2 - p.1)).bits
   rw [encIntBin_apply, Int.subNatNat_eq_coe]
-  have hs : decide ((p.1 : ℤ) - p.2 < 0) = decide (p.1 < p.2) := by
-    rw [Bool.eq_iff_iff]
-    simp only [decide_eq_true_eq]
-    omega
+  have hs : decide ((p.1 : ℤ) - p.2 < 0) = decide (p.1 < p.2) := by grind
   rw [hs]
   congr 2
   rcases le_total p.1 p.2 with hl | hr

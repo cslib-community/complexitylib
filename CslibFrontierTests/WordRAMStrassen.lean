@@ -11,6 +11,8 @@ import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Strassen.Initialize
 import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Strassen.LeafStep
 import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Strassen.Exec
 import Mathlib.Tactic.IntervalCases
+-- Compiled `Code.eval` runs below use the fast interpreter.
+import CslibFrontier.Computability.WordRAM.Structured.FastEval
 
 /-!
 # Native explicit-stack Strassen execution regressions

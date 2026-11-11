@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.PrimeSelection.Flat
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CountPrime.SourceBounds
-import CslibFrontier.Foundations.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.ClogPow
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
 
@@ -62,17 +62,9 @@ theorem admissionWidth_le_log {n D A κ : ℕ} (hDn : D ≤ n) (hκ : 1 ≤ κ)
 
 private theorem threshold_pow_le {n D A κ : ℕ} (hDn : D ≤ n) (hκ : 1 ≤ κ)
     (hA : A ≤ (n + 2) ^ κ) :
-    2 ^ admissionWidth n D A ≤ (n + 2) ^ (2 * κ + 60) := by
-  have hw := admissionWidth_le_log hDn hκ hA
-  have htwo : 2 * (n + 2) ≤ (n + 2) ^ 2 := by nlinarith
-  calc
-    _ ≤ 2 ^ ((κ + 30) * Nat.clog 2 (n + 2)) := Nat.pow_le_pow_right (by decide) hw
-    _ = (2 ^ Nat.clog 2 (n + 2)) ^ (κ + 30) := by
-      rw [← pow_mul, Nat.mul_comm]
-    _ ≤ (2 * (n + 2)) ^ (κ + 30) :=
-      Nat.pow_le_pow_left (Nat.pow_clog_le_mul (by decide) (by omega)) _
-    _ ≤ ((n + 2) ^ 2) ^ (κ + 30) := Nat.pow_le_pow_left htwo _
-    _ = _ := by rw [← pow_mul, Nat.mul_add]
+    2 ^ admissionWidth n D A ≤ (n + 2) ^ (2 * κ + 60) :=
+  (Nat.pow_le_pow_right (by decide) (admissionWidth_le_log hDn hκ hA)).trans
+    (Nat.two_pow_mul_clog_le_pow (by omega) (by omega))
 
 /-- Every actual prefix at every admitted source-regime physical width has polynomial
 words and support independently of that physical width. -/

@@ -231,15 +231,10 @@ theorem isVertex_right_of_completelyLabeled (hnd₁ : IsNondegenerateSystem A₁
     (hnd₂ : IsNondegenerateSystem A₂ b₂) (hrec₂ : ∀ v, A₂ *ᵥ v ≤ 0 → v = 0)
     (hcard : Fintype.card κ = Fintype.card ι₁ + Fintype.card ι₂) {x : ι₁ → K} {y : ι₂ → K}
     (hx : A₁ *ᵥ x ≤ b₁) (hy : A₂ *ᵥ y ≤ b₂) (hcl : CompletelyLabeled A₁ b₁ A₂ b₂ x y) :
-    IsVertex A₂ b₂ y := by
-  classical
-  refine isVertex_of_card_tightRows hnd₂ hrec₂ hy ?_
-  have hu : tightRows A₁ b₁ x ∪ tightRows A₂ b₂ y = univ :=
-    eq_univ_of_forall fun j => mem_union.2 (hcl j)
-  have h1 := card_union_le (tightRows A₁ b₁ x) (tightRows A₂ b₂ y)
-  rw [hu, card_univ, hcard] at h1
-  have h2 := isNondegenerateSystem_iff.1 hnd₁ x hx
-  omega
+    IsVertex A₂ b₂ y :=
+  -- Swap the roles of the two systems.
+  isVertex_left_of_completelyLabeled hnd₂ hrec₂ hnd₁ (hcard.trans (add_comm _ _)) hy hx
+    fun j => (hcl j).symm
 
 variable (hnd₁ : IsNondegenerateSystem A₁ b₁) (hrec₁ : ∀ v, A₁ *ᵥ v ≤ 0 → v = 0)
   (hnd₂ : IsNondegenerateSystem A₂ b₂) (hrec₂ : ∀ v, A₂ *ᵥ v ≤ 0 → v = 0)

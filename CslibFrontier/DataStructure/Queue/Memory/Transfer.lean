@@ -55,8 +55,7 @@ theorem transferBody_forget (L₁ L₂ : Stack.Memory.Layout) (w C r : ℕ) :
         (Queue.transfer 1) := by
   simp only [transferBody, Queue.transfer, link, Methods.prod, Stack.Memory.methods,
     PFunctor.FreeM.liftM, PFunctor.FreeM.bind_eq_bind, bind_assoc]
-  congr 1
-  funext a
+  congr 1 with a : 1
   cases a <;> simp [PFunctor.FreeM.liftM, Methods.prod, Stack.Memory.methods]
 
 /-- The bounded while has exactly the original source program, with no inactive tail queries
@@ -79,8 +78,7 @@ theorem transfer_eq_boundedWhile (L₁ L₂ : Stack.Memory.Layout) (w C fuel n :
       simp only [Queue.transfer, link, PFunctor.FreeM.liftM, Methods.prod,
         Stack.Memory.methods, boundedWhile, Nat.zero_lt_succ, ↓reduceIte, transferBody,
         Nat.add_sub_cancel, PFunctor.FreeM.bind_eq_bind, bind_assoc]
-      congr 1
-      funext a
+      congr 1 with a : 1
       cases a with
       | none => simp [boundedWhile_of_not]
       | some v =>
