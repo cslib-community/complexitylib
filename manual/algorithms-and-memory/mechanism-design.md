@@ -364,13 +364,67 @@ entry.
 
 ## Randomized Facility-Location Mechanisms
 
-The randomized facility-location modules model mechanisms without money that map an `ι`-indexed profile of reported locations on a pseudometric space `(G, [PseudoMetricSpace G] [MeasurableSpace G])` to a facility distribution `ProbabilityMeasure G` ([Procaccia and Tennenholtz][procacciatennenholtz13]).
+The randomized facility-location modules model mechanisms without money that map an `ι`-indexed
+profile of reported locations on a pseudometric space `(G, [PseudoMetricSpace G]
+[MeasurableSpace G])` (slightly generalizing the metric-space and graph-distance settings of
+[Procaccia and Tennenholtz][procacciatennenholtz13], §3, p. 18:7, and
+[Alon, Feldman, Procaccia, and Tennenholtz][alonfeldmanprocacciatennenholtz10], §2,
+arXiv:0907.2049v1 p. 4) to a facility distribution `ProbabilityMeasure G`.
 
-* [FacilityLocation.Basic](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Basic.lean): defines `socialCost x y := ∑ i, dist (x i) y`, `optSocialCost`, `IsOptimal`, `Mechanism ι G := (ι → G) → ProbabilityMeasure G`, and both the extended nonnegative Lebesgue expected distance `expectedECost μ loc := ∫⁻ y, edist loc y ∂μ` (`ℝ≥0∞`) and the real-valued Bochner integral `expectedCost μ loc := ∫ y, dist loc y ∂μ`. Defining `Mechanism.IsStrategyProof`, `Mechanism.IsWeakGroupStrategyProof`, `Mechanism.IsGroupStrategyProof`, and `Mechanism.HasApproxRatio` against `expectedECost` avoids Bochner integrability's `0`-default on infinite-moment distributions while recovering real-valued equivalences (`isStrategyProof_iff_expectedCost_le`, `hasApproxRatio_iff_expectedSocialCost_le`) whenever `HasFiniteCost` holds. `Mechanism.deterministic` and `Mechanism.ofPMF` embed deterministic rules and finite/countable `PMF` rules into `Mechanism`, and `HasApproxRatio.one_le` shows `1 ≤ α` whenever `G` is nontrivial and `2 ≤ Fintype.card ι`.
-* [FacilityLocation.Dictatorship](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Dictatorship.lean): proves on any pseudometric space (`[OpensMeasurableSpace G]`) that `dictatorship i₀` is strongly group strategyproof (`dictatorship_isGroupStrategyProof`) with approximation ratio `max 1 (Fintype.card ι - 1)` (`dictatorship_hasApproxRatio`), and that `randomDictatorship` (uniform `PMF.uniformOfFintype` over nonempty finite `ι`) is strategyproof (`randomDictatorship_isStrategyProof`) with approximation ratio `2 - 2 / Fintype.card ι` (`randomDictatorship_hasApproxRatio`).
-* [FacilityLocation.Median](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Median.lean): defines `IsOrderStatistic`, `orderStatistic`, `lowerMedian`, and `upperMedian` using sorted multisets and `List.IsOrderStatistic`, proves that every fixed `k`-th `orderStatisticMechanism` on `ℝ` (`k < Fintype.card ι`) is strongly group strategyproof (`orderStatisticMechanism_isGroupStrategyProof`, [Moulin][moulin80]), shows `lowerMedian_isOptimal` and `upperMedian_isOptimal` for `socialCost` on `ℝ`, and concludes that `medianMechanism` is both group strategyproof (`medianMechanism_isGroupStrategyProof`) and `1`-approximate (`medianMechanism_hasApproxRatio_one`, [Procaccia and Tennenholtz][procacciatennenholtz13]). Conversely, `not_isStrategyProof_meanMechanism` shows that `meanMechanism` fails strategyproofness whenever `2 ≤ Fintype.card ι`.
+* [FacilityLocation.Basic](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Basic.lean):
+  defines `socialCost x y := ∑ i, dist (x i) y`, `optSocialCost`, `IsOptimal`,
+  `Mechanism ι G := (ι → G) → ProbabilityMeasure G`, the extended nonnegative Lebesgue expected
+  distance `expectedECost μ loc := ∫⁻ y, edist loc y ∂μ` (`ℝ≥0∞`), and the real-valued Bochner
+  integral `expectedCost μ loc := ∫ y, dist loc y ∂μ`. Defining `Mechanism.IsStrategyProof`,
+  `Mechanism.IsWeakGroupStrategyProof`, `Mechanism.IsGroupStrategyProof`, and
+  `Mechanism.HasApproxRatio` against `expectedECost` avoids Bochner integrability's `0`-default on
+  infinite-moment distributions while recovering real-valued equivalences
+  (`isStrategyProof_iff_expectedCost_le`, `hasApproxRatio_iff_expectedSocialCost_le`) whenever
+  `HasFiniteCost` holds. Here `IsWeakGroupStrategyProof` (no nonempty coalition makes every
+  member strictly better off) matches what PT §3 and AFPT §2 call "group strategyproofness", while
+  `IsGroupStrategyProof` formalizes the stronger variant noted in passing in PT §3 (p. 18:7).
+  `Mechanism.deterministic` and `Mechanism.ofPMF` embed deterministic rules and finite/countable
+  `PMF` rules into `Mechanism`, using `PMF.toMeasure_eq_sum` and `PMF.lintegral_toMeasure` from
+  [PMF.ToMeasure](../../CslibFrontier/Probability/PMF/ToMeasure.lean) for `expectedECost_ofPMF`.
+  `HasApproxRatio.one_le` shows `1 ≤ α` whenever `G` is nontrivial and `2 ≤ Fintype.card ι`.
+* [FacilityLocation.Dictatorship](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Dictatorship.lean):
+  proves on any pseudometric space (`[OpensMeasurableSpace G]`) that `dictatorship i₀` is strongly
+  group strategyproof (`dictatorship_isGroupStrategyProof`) with the elementary worst-case
+  approximation ratio `max 1 (Fintype.card ι - 1)` (`dictatorship_hasApproxRatio`), and that
+  `randomDictatorship` (Mechanism 1 of [AFPT][alonfeldmanprocacciatennenholtz10], §3.2, arXiv
+  p. 6: uniform `PMF.uniformOfFintype` over nonempty finite `ι`) is strategyproof
+  (`randomDictatorship_isStrategyProof`) with approximation ratio `2 - 2 / Fintype.card ι`
+  (`randomDictatorship_hasApproxRatio`, generalizing AFPT Theorem 3.1 and its first remark,
+  arXiv pp. 6–7, from metric/graph spaces to pseudometrics). Both bounds share the per-agent
+  shift lemma `socialCost_self_le`.
+* [FacilityLocation.Median](../../CslibFrontier/GameTheory/Mechanism/FacilityLocation/Median.lean):
+  builds on [Fintype.OrderStatistic](../../CslibFrontier/Foundations/Data/Fintype/OrderStatistic.lean)
+  (`Fintype.IsOrderStatistic`, `Fintype.orderStatistic`, `Fintype.lowerMedian`,
+  `Fintype.upperMedian`, `Fintype.sum_abs_sub_lowerMedian_le`, and
+  `Fintype.sum_abs_sub_upperMedian_le`, bridged to sorted multisets and `List.IsOrderStatistic`).
+  Proves that every fixed `k`-th `orderStatisticMechanism` on `ℝ` (clamped at
+  `Fintype.card ι - 1`) is strongly group strategyproof for all `k : ℕ`
+  (`orderStatisticMechanism_isGroupStrategyProof`, strengthening the weak group strategyproofness
+  noted in [Procaccia and Tennenholtz][procacciatennenholtz13], §3.1, pp. 18:7–18:8 and
+  attributed there to [Moulin][moulin80], which was not directly inspected), shows
+  `lowerMedian_isOptimal` and `upperMedian_isOptimal` for `socialCost` on `ℝ`, and concludes that
+  `medianMechanism` (picking the lower median `x_((n - 1) / 2)` as the leftmost optimal point
+  for even `n`, PT §3.1, p. 18:7) is both strongly group strategyproof
+  (`medianMechanism_isGroupStrategyProof`) and `1`-approximate (`medianMechanism_hasApproxRatio_one`).
+  Conversely, `not_isStrategyProof_meanMechanism` shows that `meanMechanism` (over `mean`,
+  unfolded via `mean_def`) fails strategyproofness whenever `2 ≤ Fintype.card ι`.
 
-The [facility-location checks](../../CslibFrontierTests/FacilityLocation.lean) verify concrete `medianMechanism` evaluations on `![0, 1, 10]` (cost `10 = optSocialCost < 12`) and even `n = 4` (`![0, 1, 2, 10]`, both `lowerMedian = 1` and `upperMedian = 2` optimal with cost `11`); non-strategyproof counterexamples for `meanMechanism` on `![0, 1, 1]` and the even-`n` midpoint `midpointMedian4` on `![0, 1, 2, 3]`; tightness of ratio `2` for `dictatorship 0` on `Fin 3`; strategyproofness and `(4/3)`-approximation of `randomDictatorship` on `Fin 3` over `ℝ` separated from `IsGroupStrategyProof` (on `![0, 1, 2]` deviating to `![1, 1, 1]`) and `IsWeakGroupStrategyProof` (on the 4-point star metric `Star4`); a continuous uniform `[0, 1]` `ProbabilityMeasure ℝ` evaluation (`expectedCost = 1/4` at `1/2`); and the `constantZero2` counterexample failing every finite approximation ratio.
+The [facility-location checks](../../CslibFrontierTests/FacilityLocation.lean) verify concrete
+`medianMechanism` and `Fintype.lowerMedian` evaluations on `![0, 1, 10]` (cost `10 =
+optSocialCost < 12`) and even `n = 4` (`![0, 1, 2, 10]`, both `Fintype.lowerMedian = 1` and
+`Fintype.upperMedian = 2` optimal with cost `11`), clamped `orderStatisticMechanism (ι := Fin 3) 5`,
+non-strategyproof counterexamples for `meanMechanism` on `![0, 1, 1]` and the even-`n` midpoint
+`midpointMedian4` on `![0, 1, 2, 3]`, tightness of ratio `2` for `dictatorship 0` on `Fin 3`,
+strategyproofness and `(4/3)`-approximation of `randomDictatorship` on `Fin 3` over `ℝ` separated
+from `IsGroupStrategyProof` (on `![0, 1, 2]` deviating to `![1, 1, 1]`) and
+`IsWeakGroupStrategyProof` (on the 4-point star metric `Star4`, matching AFPT §3.2 third remark vs
+line weak GSP in §3.2 fourth remark), a continuous uniform `[0, 1]` `ProbabilityMeasure ℝ`
+evaluation (`expectedCost = 1/4` at `1/2`), and `constantZero2` failing every approximation ratio.
 
 ## Known Limitations
 
@@ -385,7 +439,11 @@ Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge
 single-parameter mechanisms as general ones (for example VCG specializing to Vickrey), and any
 computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001 and #3173.
 
-For facility location, only single-facility mechanisms optimizing expected social cost (sum of distances) are formalized. Not yet formalized: maximum-cost (egalitarian) objectives, multiple-facility (`k ≥ 2`) location, characterization of strategyproof mechanisms on general metric graphs and trees/cycles (Schummer–Vohra, issue #4327), and impossibility/lower-bound theorems beyond `1 ≤ α`.
+For facility location, only single-facility mechanisms optimizing expected social cost (sum of
+distances) are formalized. Not yet formalized: maximum-cost (egalitarian) objectives,
+multiple-facility (`k ≥ 2`) location, characterization of strategyproof mechanisms on general
+metric graphs and trees/cycles (Schummer–Vohra, issue #4327), and impossibility/lower-bound
+theorems beyond `1 ≤ α`.
 
 For social choice, Arrow's theorem and the Gibbard–Satterthwaite theorem are formalized for strict
 individual rankings. A finite electorate is necessary, but the infinite-electorate counterexample
@@ -394,6 +452,7 @@ corollary for individual weak orders, May's theorem, quantitative (Kalai) versio
 theorem, and the complexity of winner determination and manipulation. See `ROADMAP.md` and issue
 #3282.
 
+[alonfeldmanprocacciatennenholtz10]: ../sources.md#alonfeldmanprocacciatennenholtz10
 [hartline21]: ../sources.md#hartline21
 [moulin80]: ../sources.md#moulin80
 [nisan07]: ../sources.md#nisan07

@@ -14,21 +14,26 @@ import Mathlib.Tactic.Ring
 /-!
 # Dictatorship and random dictatorship mechanisms
 
-Two canonical facility-location mechanisms that work on an arbitrary metric space `G`
-([ProcacciaTennenholtz2013]):
+Two canonical facility-location mechanisms that work on an arbitrary pseudometric space `G`:
 
 * `dictatorship i₀` always places the facility at agent `i₀`'s reported location. It is
-  strongly group strategyproof (`dictatorship_isGroupStrategyProof`) and achieves approximation
-  ratio `max 1 (n - 1)` for `n` agents (`dictatorship_hasApproxRatio`).
+  strongly group strategyproof (`dictatorship_isGroupStrategyProof`) and achieves the elementary
+  worst-case approximation ratio `max 1 (n - 1)` for `n` agents (`dictatorship_hasApproxRatio`),
+  included here for baseline comparison.
 * `randomDictatorship` chooses an agent uniformly at random and places the facility at its
-  reported location (`(PMF.uniformOfFintype ι).map x`). It is strategyproof
+  reported location (`(PMF.uniformOfFintype ι).map x`), which is Mechanism 1 of
+  [AlonFeldmanProcacciaTennenholtz2010] (§3.2, arXiv:0907.2049v1 pp. 6–7). It is strategyproof
   (`randomDictatorship_isStrategyProof`) and achieves approximation ratio `2 - 2 / n`
   (`randomDictatorship_hasApproxRatio`), hence `2` (`randomDictatorship_hasApproxRatio_two`),
-  improving on deterministic dictatorship whenever `n ≥ 3`.
+  extending Theorem 3.1 of [AlonFeldmanProcacciaTennenholtz2010] from graphs to arbitrary
+  pseudometric spaces (cf. §3.2, first remark, arXiv p. 7) and improving on deterministic
+  dictatorship whenever `n ≥ 3`.
 
-Unlike the median on `ℝ`, `randomDictatorship` is not group strategyproof (even on `ℝ` for 3
-agents, and not even weakly group strategyproof on a 3-leaf star metric); see
-`CslibFrontierTests.FacilityLocation`.
+Unlike the median on `ℝ`, `randomDictatorship` fails coalitional strategyproofness: on a 3-leaf
+star metric (`Star4` in `CslibFrontierTests.FacilityLocation`) it is not even weakly group
+strategyproof ([AlonFeldmanProcacciaTennenholtz2010] §3.2, third remark, arXiv p. 7), and even
+on `ℝ` for 3 agents (where it is weakly group strategyproof, §3.2, fourth remark) it fails strong
+group strategyproofness (`CslibFrontierTests.FacilityLocation`).
 
 ## Main definitions
 
@@ -37,6 +42,8 @@ agents, and not even weakly group strategyproof on a 3-leaf star metric); see
 
 ## Main results
 
+* `Cslib.GameTheory.FacilityLocation.socialCost_self_le`: shared triangle-inequality shift bound
+  from [AlonFeldmanProcacciaTennenholtz2010] (§3.2, proof of Theorem 3.1).
 * `Cslib.GameTheory.FacilityLocation.dictatorship_isGroupStrategyProof`,
   `Cslib.GameTheory.FacilityLocation.dictatorship_isStrategyProof`: dictatorship is strongly group
   strategyproof (and hence strategyproof) on every pseudometric space.
@@ -51,8 +58,8 @@ agents, and not even weakly group strategyproof on a 3-leaf star metric); see
 
 ## References
 
-* [A. D. Procaccia and M. Tennenholtz, *Approximate Mechanism Design without
-  Money*][ProcacciaTennenholtz2013]
+* [N. Alon, M. Feldman, A. D. Procaccia, and M. Tennenholtz, *Strategyproof Approximation of the
+  Minimax on Networks*][AlonFeldmanProcacciaTennenholtz2010]
 -/
 
 public section
@@ -97,38 +104,53 @@ theorem dictatorship_isStrategyProof [DecidableEq ι] (i₀ : ι) :
   (dictatorship_isGroupStrategyProof i₀).isStrategyProof
 
 omit [MeasurableSpace G] [OpensMeasurableSpace G] in
+/-- Shifting a facility from any location `y` to agent `i`'s location `x i` increases total
+social cost by at most `(n - 2) * dist (x i) y` ([AlonFeldmanProcacciaTennenholtz2010] §3.2,
+proof of Theorem 3.1, arXiv:0907.2049v1 p. 6). -/
+theorem socialCost_self_le [Fintype ι] (i : ι) (x : ι → G) (y : G) :
+    socialCost x (x i) ≤ socialCost x y + ((Fintype.card ι : ℝ) - 2) * dist (x i) y := by
+  classical
+  have hi : i ∈ (Finset.univ : Finset ι) := Finset.mem_univ i
+  have hsum : socialCost x (x i) = ∑ j ∈ Finset.univ.erase i, dist (x j) (x i) := by
+    rw [socialCost, ← Finset.add_sum_erase _ _ hi, dist_self, zero_add]
+  have htri : ∑ j ∈ Finset.univ.erase i, dist (x j) (x i) ≤
+      ∑ j ∈ Finset.univ.erase i, (dist (x j) y + dist (x i) y) :=
+    Finset.sum_le_sum fun j _ => by
+      rw [dist_comm (x i) y]
+      exact dist_triangle (x j) y (x i)
+  have hcard : ((Finset.univ.erase i : Finset ι).card : ℝ) = (Fintype.card ι : ℝ) - 1 := by
+    have hpos : 1 ≤ Fintype.card ι := Fintype.card_pos_iff.2 ⟨i⟩
+    rw [Finset.card_erase_of_mem hi, Finset.card_univ, Nat.cast_sub hpos, Nat.cast_one]
+  have hrest : ∑ j ∈ Finset.univ.erase i, dist (x j) y = socialCost x y - dist (x i) y := by
+    rw [socialCost, Finset.sum_erase_eq_sub hi]
+  rw [hsum]
+  calc ∑ j ∈ Finset.univ.erase i, dist (x j) (x i)
+      ≤ ∑ j ∈ Finset.univ.erase i, (dist (x j) y + dist (x i) y) := htri
+    _ = (socialCost x y - dist (x i) y) + ((Fintype.card ι : ℝ) - 1) * dist (x i) y := by
+        rw [Finset.sum_add_distrib, Finset.sum_const, nsmul_eq_mul, hcard, hrest]
+    _ = socialCost x y + ((Fintype.card ι : ℝ) - 2) * dist (x i) y := by ring
+
+omit [MeasurableSpace G] [OpensMeasurableSpace G] in
 theorem socialCost_dictatorship_le [Fintype ι] (i₀ : ι) (x : ι → G) (y : G) :
     socialCost x (x i₀) ≤ max 1 ((Fintype.card ι : ℝ) - 1) * socialCost x y := by
-  classical
-  have hi₀ : i₀ ∈ (Finset.univ : Finset ι) := Finset.mem_univ i₀
-  have hsum : socialCost x (x i₀) = ∑ i ∈ Finset.univ.erase i₀, dist (x i) (x i₀) := by
-    rw [socialCost, ← Finset.add_sum_erase _ _ hi₀, dist_self, zero_add]
-  have hopt : socialCost x y = dist (x i₀) y + ∑ i ∈ Finset.univ.erase i₀, dist (x i) y := by
-    rw [socialCost, ← Finset.add_sum_erase _ _ hi₀]
-  have htri : ∑ i ∈ Finset.univ.erase i₀, dist (x i) (x i₀) ≤
-      (∑ i ∈ Finset.univ.erase i₀, dist (x i) y) +
-        ((Fintype.card ι : ℝ) - 1) * dist (x i₀) y := by
-    calc ∑ i ∈ Finset.univ.erase i₀, dist (x i) (x i₀)
-        ≤ ∑ i ∈ Finset.univ.erase i₀, (dist (x i) y + dist (x i₀) y) :=
-          Finset.sum_le_sum fun i _ => by
-            rw [dist_comm (x i₀) y]
-            exact dist_triangle (x i) y (x i₀)
-      _ = (∑ i ∈ Finset.univ.erase i₀, dist (x i) y) +
-            ((Fintype.card ι : ℝ) - 1) * dist (x i₀) y := by
-          rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_erase_of_mem hi₀,
-            Finset.card_univ, nsmul_eq_mul]
-          have hpos : 1 ≤ Fintype.card ι := Fintype.card_pos_iff.2 ⟨i₀⟩
-          rw [Nat.cast_sub hpos, Nat.cast_one]
   set α : ℝ := max 1 ((Fintype.card ι : ℝ) - 1)
-  have hα1 : 1 ≤ α := le_max_left _ _
-  have hαn : (Fintype.card ι : ℝ) - 1 ≤ α := le_max_right _ _
-  have hrest : ∑ i ∈ Finset.univ.erase i₀, dist (x i) y ≤
-      α * ∑ i ∈ Finset.univ.erase i₀, dist (x i) y :=
-    le_mul_of_one_le_left (Finset.sum_nonneg fun _ _ => dist_nonneg) hα1
-  have hlead : ((Fintype.card ι : ℝ) - 1) * dist (x i₀) y ≤ α * dist (x i₀) y :=
-    mul_le_mul_of_nonneg_right hαn dist_nonneg
-  rw [hsum, hopt, mul_add]
-  linarith
+  have hsub : (Fintype.card ι : ℝ) - 2 ≤ α - 1 := by
+    linarith [le_max_right (1 : ℝ) ((Fintype.card ι : ℝ) - 1)]
+  have hpos : 0 ≤ α - 1 := by
+    linarith [le_max_left (1 : ℝ) ((Fintype.card ι : ℝ) - 1)]
+  have hle : dist (x i₀) y ≤ socialCost x y :=
+    Finset.single_le_sum (fun _ _ => dist_nonneg) (Finset.mem_univ i₀)
+  calc socialCost x (x i₀)
+      ≤ socialCost x y + ((Fintype.card ι : ℝ) - 2) * dist (x i₀) y := socialCost_self_le i₀ x y
+    _ ≤ socialCost x y + (α - 1) * dist (x i₀) y := by
+        have : ((Fintype.card ι : ℝ) - 2) * dist (x i₀) y ≤ (α - 1) * dist (x i₀) y :=
+          mul_le_mul_of_nonneg_right hsub dist_nonneg
+        linarith
+    _ ≤ socialCost x y + (α - 1) * socialCost x y := by
+        have : (α - 1) * dist (x i₀) y ≤ (α - 1) * socialCost x y :=
+          mul_le_mul_of_nonneg_left hle hpos
+        linarith
+    _ = α * socialCost x y := by ring
 
 theorem dictatorship_hasApproxRatio [Fintype ι] [Nonempty G] (i₀ : ι) :
     (dictatorship (G := G) i₀).HasApproxRatio (max 1 ((Fintype.card ι : ℝ) - 1)) := by
@@ -162,7 +184,8 @@ section RandomDictatorship
 variable {ι G : Type*} [PseudoMetricSpace G] [MeasurableSpace G] [Fintype ι] [Nonempty ι]
 
 /-- **Random dictatorship**: choose an agent uniformly at random and place the facility at its
-reported location. -/
+reported location (Mechanism 1 of [AlonFeldmanProcacciaTennenholtz2010] §3.2,
+arXiv:0907.2049v1 p. 6). -/
 @[expose] noncomputable def randomDictatorship : Mechanism ι G :=
   Mechanism.ofPMF fun x => (Cslib.Probability.PMF.uniformOfFintype ι).map x
 
@@ -185,7 +208,8 @@ theorem expectedSocialCost_randomDictatorship (x : ι → G) :
 
 /-- Random dictatorship is strategyproof on every pseudometric space: when agent `i` misreports
 `z`, every term `j ≠ i` in its expected distance is unchanged, while the `j = i` term increases
-from `0` to `dist (x i) z ≥ 0`. -/
+from `0` to `dist (x i) z ≥ 0` ([AlonFeldmanProcacciaTennenholtz2010] §3.2, Theorem 3.1 and
+first remark, arXiv:0907.2049v1 pp. 6–7). -/
 theorem randomDictatorship_isStrategyProof [DecidableEq ι] :
     (randomDictatorship (ι := ι) (G := G)).IsStrategyProof := by
   rw [Mechanism.isStrategyProof_iff_expectedCost_le (M := randomDictatorship)
@@ -200,7 +224,8 @@ theorem randomDictatorship_isStrategyProof [DecidableEq ι] :
   rw [Function.update_of_ne (Finset.ne_of_mem_erase hj)]
 
 /-- Random dictatorship achieves approximation ratio `2 - 2 / n` for `n` agents on every
-pseudometric space. -/
+pseudometric space ([AlonFeldmanProcacciaTennenholtz2010] §3.2, Theorem 3.1 and first remark,
+arXiv:0907.2049v1 pp. 6–7). -/
 theorem randomDictatorship_hasApproxRatio :
     (randomDictatorship (ι := ι) (G := G)).HasApproxRatio
       (2 - 2 / (Fintype.card ι : ℝ)) := by
@@ -218,55 +243,16 @@ theorem randomDictatorship_hasApproxRatio :
     ENNReal.ofReal_le_ofReal_iff (mul_nonneg hratio (optSocialCost_nonneg x))]
   refine le_mul_optSocialCost hratio fun y => ?_
   rw [expectedSocialCost_randomDictatorship, div_le_iff₀ hpos]
-  have hsum : ∑ i, ∑ j, dist (x i) (x j) =
-      ∑ i, ∑ j ∈ Finset.univ.erase i, dist (x i) (x j) := by
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [← Finset.add_sum_erase _ _ (Finset.mem_univ i), dist_self, zero_add]
-  have htri : ∑ i, ∑ j ∈ Finset.univ.erase i, dist (x i) (x j) ≤
-      2 * ((Fintype.card ι : ℝ) - 1) * socialCost x y := by
-    calc ∑ i, ∑ j ∈ Finset.univ.erase i, dist (x i) (x j)
-        ≤ ∑ i, ∑ j ∈ Finset.univ.erase i, (dist (x i) y + dist (x j) y) := by
-          refine Finset.sum_le_sum fun i _ => Finset.sum_le_sum fun j _ => ?_
-          rw [dist_comm (x j) y]
-          exact dist_triangle (x i) y (x j)
-      _ = ∑ i, (((Fintype.card ι : ℝ) - 1) * dist (x i) y +
-            ∑ j ∈ Finset.univ.erase i, dist (x j) y) := by
-          refine Finset.sum_congr rfl fun i _ => ?_
-          rw [Finset.sum_add_distrib, Finset.sum_const,
-            Finset.card_erase_of_mem (Finset.mem_univ i), Finset.card_univ, nsmul_eq_mul,
-            Nat.cast_sub Fintype.card_pos, Nat.cast_one]
-      _ = ((Fintype.card ι : ℝ) - 1) * socialCost x y +
-            ∑ i, ∑ j ∈ Finset.univ.erase i, dist (x j) y := by
-          rw [Finset.sum_add_distrib, ← Finset.mul_sum, socialCost]
-      _ = 2 * ((Fintype.card ι : ℝ) - 1) * socialCost x y := by
-          have hswap : ∑ i : ι, ∑ j ∈ Finset.univ.erase i, dist (x j) y =
-              ((Fintype.card ι : ℝ) - 1) * socialCost x y := by
-            have hite : ∀ i j : ι,
-                (if j ∈ Finset.univ.erase i then dist (x j) y else 0) =
-                  (if i ∈ Finset.univ.erase j then dist (x j) y else 0) := by
-              intro i j
-              by_cases hij : j = i
-              · simp [hij]
-              · simp [hij, Ne.symm hij]
-            calc ∑ i, ∑ j ∈ Finset.univ.erase i, dist (x j) y
-                = ∑ i, ∑ j, if j ∈ Finset.univ.erase i then dist (x j) y else 0 := by
-                  refine Finset.sum_congr rfl fun i _ => ?_
-                  rw [← Finset.sum_filter, Finset.filter_mem_eq_inter, Finset.univ_inter]
-              _ = ∑ j, ∑ i, if i ∈ Finset.univ.erase j then dist (x j) y else 0 := by
-                  rw [Finset.sum_comm]
-                  exact Finset.sum_congr rfl fun j _ =>
-                    Finset.sum_congr rfl fun i _ => hite i j
-              _ = ∑ j, ∑ _i ∈ Finset.univ.erase j, dist (x j) y := by
-                  refine Finset.sum_congr rfl fun j _ => ?_
-                  rw [← Finset.sum_filter, Finset.filter_mem_eq_inter, Finset.univ_inter]
-              _ = ∑ j, ((Fintype.card ι : ℝ) - 1) * dist (x j) y := by
-                  refine Finset.sum_congr rfl fun j _ => ?_
-                  rw [Finset.sum_const, Finset.card_erase_of_mem (Finset.mem_univ j),
-                    Finset.card_univ, nsmul_eq_mul, Nat.cast_sub Fintype.card_pos, Nat.cast_one]
-              _ = ((Fintype.card ι : ℝ) - 1) * socialCost x y := by
-                  rw [← Finset.mul_sum, socialCost]
-          rw [hswap]
-          ring
+  have hsum : ∑ i, ∑ j, dist (x i) (x j) = ∑ j, socialCost x (x j) := Finset.sum_comm
+  have htri : ∑ j, socialCost x (x j) ≤ (2 * (Fintype.card ι : ℝ) - 2) * socialCost x y := by
+    calc ∑ j, socialCost x (x j)
+        ≤ ∑ j, (socialCost x y + ((Fintype.card ι : ℝ) - 2) * dist (x j) y) :=
+          Finset.sum_le_sum fun j _ => socialCost_self_le j x y
+      _ = (Fintype.card ι : ℝ) * socialCost x y +
+            ((Fintype.card ι : ℝ) - 2) * socialCost x y := by
+          rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+            ← Finset.mul_sum, socialCost]
+      _ = (2 * (Fintype.card ι : ℝ) - 2) * socialCost x y := by ring
   rw [hsum]
   refine htri.trans_eq ?_
   field_simp [hpos.ne']

@@ -16,16 +16,17 @@ import Mathlib.Data.Fin.VecNotation
 Nonvacuous instantiations and separations for `Cslib.GameTheory.FacilityLocation`:
 
 1. **Median and order statistics on `ℝ`**:
-   - For `Fin 3`, `medianMechanism` is group strategyproof, strategyproof, and `1`-approximate; on
-     `![0, 1, 10]`, `lowerMedian = 1` achieves `socialCost = 10 = optSocialCost`, strictly below
-     `socialCost ![0, 1, 10] 3 = 12`.
-   - For even `n = 4` on `![0, 1, 2, 10]`, `lowerMedian = 1` and `upperMedian = 2` both attain
-     `socialCost = 11 = optSocialCost`.
+   - For `Fin 3`, `medianMechanism` and `orderStatisticMechanism k` (even clamped `k = 5 ≥ 3`) are
+     group strategyproof, strategyproof, and `medianMechanism` is `1`-approximate; on
+     `![0, 1, 10]`, `Fintype.lowerMedian = 1` achieves `socialCost = 10 = optSocialCost`, strictly
+     below `socialCost ![0, 1, 10] 3 = 12`.
+   - For even `n = 4` on `![0, 1, 2, 10]`, `Fintype.lowerMedian = 1` and `Fintype.upperMedian = 2`
+     both attain `socialCost = 11 = optSocialCost`.
 2. **Non-strategyproof counterexamples**:
    - `meanMechanism` fails strategyproofness on `Fin 3`, demonstrated both abstractly and
      explicitly on `![0, 1, 1]` (`2/3` vs `0` when agent `0` misreports `-2`).
-   - The even-`n` midpoint median `(orderStatistic x 1 + orderStatistic x 2) / 2` on `Fin 4` fails
-     strategyproofness on `![0, 1, 2, 3]` when agent `1` misreports `0`.
+   - The even-`n` midpoint median `(Fintype.orderStatistic x 1 + Fintype.orderStatistic x 2) / 2`
+     on `Fin 4` fails strategyproofness on `![0, 1, 2, 3]` when agent `1` misreports `0`.
 3. **Dictatorship and random dictatorship**:
    - `dictatorship 0` on `Fin 3` is group strategyproof and `2`-approximate, with tightness witness
      `![0, 10, 10]` showing ratio `α < 2` is impossible.
@@ -56,20 +57,30 @@ example : (medianMechanism (ι := Fin 3)).IsStrategyProof :=
 example : (medianMechanism (ι := Fin 3)).HasApproxRatio 1 :=
   medianMechanism_hasApproxRatio_one
 
+example : (orderStatisticMechanism (ι := Fin 3) 5).IsGroupStrategyProof :=
+  orderStatisticMechanism_isGroupStrategyProof 5
+
+private theorem orderStatistic_fin_eq {n : ℕ} {x : Fin (n + 1) → ℝ} {k : ℕ} {y : ℝ}
+    (i : Fin (n + 1)) (hi : x i = y) (hk : k < n + 1) {sLt sLe : Finset (Fin (n + 1))}
+    (hLt : ∀ j : Fin (n + 1), x j < y ↔ j ∈ sLt)
+    (hLe : ∀ j : Fin (n + 1), x j ≤ y ↔ j ∈ sLe)
+    (hc1 : sLt.card ≤ k) (hc2 : k < sLe.card) :
+    Fintype.orderStatistic x k = y := by
+  refine Fintype.orderStatistic_eq_of_isOrderStatistic
+    (by simpa only [Fintype.card_fin] using hk) ⟨⟨i, hi⟩, ?_, ?_⟩
+  · have heq : (Finset.univ.filter fun j => x j < y) = sLt := by
+      ext j; simp only [Finset.mem_filter, Finset.mem_univ, true_and, hLt]
+    rw [heq]; exact hc1
+  · have heq : (Finset.univ.filter fun j => x j ≤ y) = sLe := by
+      ext j; simp only [Finset.mem_filter, Finset.mem_univ, true_and, hLe]
+    rw [heq]; exact hc2
+
 private theorem lowerMedian_vec3 :
-    lowerMedian (![0, 1, 10] : Fin 3 → ℝ) = 1 := by
-  have hos : IsOrderStatistic (![0, 1, 10] : Fin 3 → ℝ) 1 1 := by
-    refine ⟨⟨1, by norm_num⟩, ?_, ?_⟩
-    · have hlt : (Finset.univ.filter fun i : Fin 3 =>
-          (![0, 1, 10] : Fin 3 → ℝ) i < 1) = {0} := by
-        ext i; fin_cases i <;> simp
-      rw [hlt, Finset.card_singleton]
-    · have hle : (Finset.univ.filter fun i : Fin 3 =>
-          (![0, 1, 10] : Fin 3 → ℝ) i ≤ 1) = {0, 1} := by
-        ext i; fin_cases i <;> simp
-      rw [hle]
-      decide
-  exact orderStatistic_eq_of_isOrderStatistic (by decide) hos
+    Fintype.lowerMedian (![0, 1, 10] : Fin 3 → ℝ) = 1 := by
+  rw [Fintype.lowerMedian_def]
+  exact orderStatistic_fin_eq (n := 2) 1 (by norm_num) (by decide) (sLt := {0}) (sLe := {0, 1})
+    (fun j => by fin_cases j <;> simp) (fun j => by fin_cases j <;> simp)
+    (by decide) (by decide)
 
 example :
     expectedSocialCost (medianMechanism (![0, 1, 10] : Fin 3 → ℝ)) ![0, 1, 10] = 10 := by
@@ -89,39 +100,24 @@ example :
   norm_num [Real.dist_eq]
 
 private theorem lowerMedian_vec4 :
-    lowerMedian (![0, 1, 2, 10] : Fin 4 → ℝ) = 1 := by
-  have hos : IsOrderStatistic (![0, 1, 2, 10] : Fin 4 → ℝ) 1 1 := by
-    refine ⟨⟨1, by norm_num⟩, ?_, ?_⟩
-    · have hlt : (Finset.univ.filter fun i : Fin 4 =>
-          (![0, 1, 2, 10] : Fin 4 → ℝ) i < 1) = {0} := by
-        ext i; fin_cases i <;> simp
-      rw [hlt, Finset.card_singleton]
-    · have hle : (Finset.univ.filter fun i : Fin 4 =>
-          (![0, 1, 2, 10] : Fin 4 → ℝ) i ≤ 1) = {0, 1} := by
-        ext i; fin_cases i <;> simp
-      rw [hle]
-      decide
-  exact orderStatistic_eq_of_isOrderStatistic (by decide) hos
+    Fintype.lowerMedian (![0, 1, 2, 10] : Fin 4 → ℝ) = 1 := by
+  rw [Fintype.lowerMedian_def]
+  exact orderStatistic_fin_eq (n := 3) 1 (by norm_num) (by decide) (sLt := {0}) (sLe := {0, 1})
+    (fun j => by fin_cases j <;> simp) (fun j => by fin_cases j <;> simp)
+    (by decide) (by decide)
 
 private theorem upperMedian_vec4 :
-    upperMedian (![0, 1, 2, 10] : Fin 4 → ℝ) = 2 := by
-  have hos : IsOrderStatistic (![0, 1, 2, 10] : Fin 4 → ℝ) 2 2 := by
-    refine ⟨⟨2, by norm_num⟩, ?_, ?_⟩
-    · have hlt : (Finset.univ.filter fun i : Fin 4 =>
-          (![0, 1, 2, 10] : Fin 4 → ℝ) i < 2) = {0, 1} := by
-        ext i; fin_cases i <;> simp; norm_num
-      rw [hlt]
-      decide
-    · have hle : (Finset.univ.filter fun i : Fin 4 =>
-          (![0, 1, 2, 10] : Fin 4 → ℝ) i ≤ 2) = {0, 1, 2} := by
-        ext i; fin_cases i <;> simp; norm_num
-      rw [hle]
-      decide
-  exact orderStatistic_eq_of_isOrderStatistic (by decide) hos
+    Fintype.upperMedian (![0, 1, 2, 10] : Fin 4 → ℝ) = 2 := by
+  rw [Fintype.upperMedian_def]
+  exact orderStatistic_fin_eq (n := 3) 2 (by norm_num) (by decide)
+    (sLt := {0, 1}) (sLe := {0, 1, 2})
+    (fun j => by fin_cases j <;> (simp; try norm_num))
+    (fun j => by fin_cases j <;> (simp; try norm_num))
+    (by decide) (by decide)
 
 example :
-    socialCost (![0, 1, 2, 10] : Fin 4 → ℝ) (lowerMedian ![0, 1, 2, 10]) = 11 ∧
-      socialCost (![0, 1, 2, 10] : Fin 4 → ℝ) (upperMedian ![0, 1, 2, 10]) = 11 ∧
+    socialCost (![0, 1, 2, 10] : Fin 4 → ℝ) (Fintype.lowerMedian ![0, 1, 2, 10]) = 11 ∧
+      socialCost (![0, 1, 2, 10] : Fin 4 → ℝ) (Fintype.upperMedian ![0, 1, 2, 10]) = 11 ∧
       optSocialCost (![0, 1, 2, 10] : Fin 4 → ℝ) = 11 := by
   have h1 : socialCost (![0, 1, 2, 10] : Fin 4 → ℝ) 1 = 11 := by
     rw [socialCost, Fin.sum_univ_four]
@@ -141,7 +137,7 @@ example : ¬ (meanMechanism (ι := Fin 3)).IsStrategyProof :=
 example :
     expectedCost (meanMechanism (![0, 1, 1] : Fin 3 → ℝ)) 0 = 2 / 3 ∧
       expectedCost (meanMechanism (Function.update (![0, 1, 1] : Fin 3 → ℝ) 0 (-2))) 0 = 0 := by
-  simp only [meanMechanism, Mechanism.expectedCost_deterministic, mean, Fintype.card_fin]
+  simp only [meanMechanism, Mechanism.expectedCost_deterministic, mean_def, Fintype.card_fin]
   constructor
   · rw [Fin.sum_univ_three]
     norm_num [Real.dist_eq]
@@ -151,55 +147,35 @@ example :
 /-- For even `n = 4`, averaging the two middle order statistics fails strategyproofness on
 `![0, 1, 2, 3]` when agent `1` misreports `0`. -/
 noncomputable def midpointMedian4 : Mechanism (Fin 4) ℝ :=
-  Mechanism.deterministic fun x => (orderStatistic x 1 + orderStatistic x 2) / 2
+  Mechanism.deterministic fun x => (Fintype.orderStatistic x 1 + Fintype.orderStatistic x 2) / 2
 
 theorem not_isStrategyProof_midpointMedian4 : ¬ midpointMedian4.IsStrategyProof := by
   rw [midpointMedian4, Mechanism.isStrategyProof_deterministic_iff]
   intro hsp
   let x : Fin 4 → ℝ := ![0, 1, 2, 3]
-  have hx1 : orderStatistic x 1 = 1 := by
-    refine orderStatistic_eq_of_isOrderStatistic (by decide) ⟨⟨1, rfl⟩, ?_, ?_⟩
-    · have hlt : (Finset.univ.filter fun i : Fin 4 => x i < 1) = {0} := by
-        ext i; fin_cases i <;> simp [x]
-      rw [hlt, Finset.card_singleton]
-    · have hle : (Finset.univ.filter fun i : Fin 4 => x i ≤ 1) = {0, 1} := by
-        ext i; fin_cases i <;> simp [x]
-      rw [hle]
-      decide
-  have hx2 : orderStatistic x 2 = 2 := by
-    refine orderStatistic_eq_of_isOrderStatistic (by decide) ⟨⟨2, rfl⟩, ?_, ?_⟩
-    · have hlt : (Finset.univ.filter fun i : Fin 4 => x i < 2) = {0, 1} := by
-        ext i; fin_cases i <;> (simp [x]; try norm_num)
-      rw [hlt]
-      decide
-    · have hle : (Finset.univ.filter fun i : Fin 4 => x i ≤ 2) = {0, 1, 2} := by
-        ext i; fin_cases i <;> (simp [x]; try norm_num)
-      rw [hle]
-      decide
+  have hx1 : Fintype.orderStatistic x 1 = 1 :=
+    orderStatistic_fin_eq (n := 3) 1 rfl (by decide) (sLt := {0}) (sLe := {0, 1})
+      (fun j => by fin_cases j <;> simp [x]) (fun j => by fin_cases j <;> simp [x])
+      (by decide) (by decide)
+  have hx2 : Fintype.orderStatistic x 2 = 2 :=
+    orderStatistic_fin_eq (n := 3) 2 rfl (by decide) (sLt := {0, 1}) (sLe := {0, 1, 2})
+      (fun j => by fin_cases j <;> (simp [x]; try norm_num))
+      (fun j => by fin_cases j <;> (simp [x]; try norm_num))
+      (by decide) (by decide)
   let x' : Fin 4 → ℝ := Function.update x 1 0
-  have hx'1 : orderStatistic x' 1 = 0 := by
-    refine orderStatistic_eq_of_isOrderStatistic (by decide) ⟨⟨1, by simp [x']⟩, ?_, ?_⟩
-    · have hlt : (Finset.univ.filter fun i : Fin 4 => x' i < 0) = ∅ := by
-        ext i; fin_cases i <;> simp [x', x]
-      rw [hlt, Finset.card_empty]
-      decide
-    · have hle : (Finset.univ.filter fun i : Fin 4 => x' i ≤ 0) = {0, 1} := by
-        ext i; fin_cases i <;> simp [x', x]
-      rw [hle]
-      decide
-  have hx'2 : orderStatistic x' 2 = 2 := by
-    refine orderStatistic_eq_of_isOrderStatistic (by decide) ⟨⟨2, by simp [x', x]⟩, ?_, ?_⟩
-    · have hlt : (Finset.univ.filter fun i : Fin 4 => x' i < 2) = {0, 1} := by
-        ext i; fin_cases i <;> (simp [x', x]; try norm_num)
-      rw [hlt]
-      decide
-    · have hle : (Finset.univ.filter fun i : Fin 4 => x' i ≤ 2) = {0, 1, 2} := by
-        ext i; fin_cases i <;> (simp [x', x]; try norm_num)
-      rw [hle]
-      decide
+  have hx'1 : Fintype.orderStatistic x' 1 = 0 :=
+    orderStatistic_fin_eq (n := 3) 1 (by simp [x']) (by decide) (sLt := ∅) (sLe := {0, 1})
+      (fun j => by fin_cases j <;> simp [x', x]) (fun j => by fin_cases j <;> simp [x', x])
+      (by decide) (by decide)
+  have hx'2 : Fintype.orderStatistic x' 2 = 2 :=
+    orderStatistic_fin_eq (n := 3) 2 (by simp [x', x]) (by decide)
+      (sLt := {0, 1}) (sLe := {0, 1, 2})
+      (fun j => by fin_cases j <;> (simp [x', x]; try norm_num))
+      (fun j => by fin_cases j <;> (simp [x', x]; try norm_num))
+      (by decide) (by decide)
   have hle := hsp x 1 0
-  change dist (x 1) ((orderStatistic x 1 + orderStatistic x 2) / 2) ≤
-    dist (x 1) ((orderStatistic x' 1 + orderStatistic x' 2) / 2) at hle
+  change dist (x 1) ((Fintype.orderStatistic x 1 + Fintype.orderStatistic x 2) / 2) ≤
+    dist (x 1) ((Fintype.orderStatistic x' 1 + Fintype.orderStatistic x' 2) / 2) at hle
   rw [hx1, hx2, hx'1, hx'2] at hle
   have hx1val : x 1 = 1 := rfl
   rw [hx1val, Real.dist_eq, Real.dist_eq] at hle
@@ -227,19 +203,12 @@ example {α : ℝ} (h : (dictatorship (ι := Fin 3) (G := ℝ) 0).HasApproxRatio
       Mechanism.expectedSocialCost_deterministic, socialCost, Fin.sum_univ_three]
     norm_num [Real.dist_eq]
   have hopt : optSocialECost (![0, 10, 10] : Fin 3 → ℝ) = ENNReal.ofReal 10 := by
-    have hmed : lowerMedian (![0, 10, 10] : Fin 3 → ℝ) = 10 := by
-      have hos : IsOrderStatistic (![0, 10, 10] : Fin 3 → ℝ) 1 10 := by
-        refine ⟨⟨1, by norm_num⟩, ?_, ?_⟩
-        · have hlt : (Finset.univ.filter fun i : Fin 3 =>
-              (![0, 10, 10] : Fin 3 → ℝ) i < 10) = {0} := by
-            ext i; fin_cases i <;> simp
-          rw [hlt, Finset.card_singleton]
-        · have hle : (Finset.univ.filter fun i : Fin 3 =>
-              (![0, 10, 10] : Fin 3 → ℝ) i ≤ 10) = {0, 1, 2} := by
-            ext i; fin_cases i <;> simp
-          rw [hle]
-          decide
-      exact orderStatistic_eq_of_isOrderStatistic (by rw [Fintype.card_fin]; decide) hos
+    have hmed : Fintype.lowerMedian (![0, 10, 10] : Fin 3 → ℝ) = 10 := by
+      rw [Fintype.lowerMedian_def]
+      exact orderStatistic_fin_eq (n := 2) 1 (by norm_num) (by decide)
+        (sLt := {0}) (sLe := {0, 1, 2})
+        (fun j => by fin_cases j <;> simp) (fun j => by fin_cases j <;> simp)
+        (by decide) (by decide)
     rw [optSocialECost_eq_ofReal_optSocialCost,
       ← (lowerMedian_isOptimal (![0, 10, 10] : Fin 3 → ℝ)).socialCost_eq_optSocialCost,
       hmed, socialCost, Fin.sum_univ_three]

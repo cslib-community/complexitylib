@@ -7,22 +7,27 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Foundations.Data.Fintype.OrderStatistic
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Basic
-import CslibFrontier.Foundations.Data.List.OrderStatistic
-import Mathlib.Data.Multiset.Sort
 import Mathlib.Tactic.Linarith
 
 /-!
 # Median and order-statistic facility-location mechanisms on ℝ
 
-On the real line `ℝ`, any fixed `k`-th order statistic (`orderStatisticMechanism k`) is strongly
-group strategyproof (`orderStatisticMechanism_isGroupStrategyProof`, [Moulin1980],
-[ProcacciaTennenholtz2013]). Moreover, both the lower median `x_((n - 1) / 2)` and the upper
-median `x_(n / 2)` minimize the social cost `∑ i, |x i - y|` over all `y : ℝ`
-(`lowerMedian_isOptimal`, `upperMedian_isOptimal`). Consequently `medianMechanism` (the lower
-median) is simultaneously group strategyproof (`medianMechanism_isGroupStrategyProof`) and
-`1`-approximate, i.e., socially optimal (`medianMechanism_hasApproxRatio_one`,
-[ProcacciaTennenholtz2013]).
+On the real line `ℝ`, any fixed `k`-th order statistic (`orderStatisticMechanism k`, clamped at
+`Fintype.card ι - 1`) is strongly group strategyproof
+(`orderStatisticMechanism_isGroupStrategyProof`). [ProcacciaTennenholtz2013] (§3.1, pp. 18:7–18:8)
+note that any `k`-th order statistic is weakly group strategyproof (attributing this to
+[Moulin1980], which is not directly inspected here); the strong variant proved in
+`orderStatisticMechanism_isGroupStrategyProof` implies both weak group strategyproofness and
+strategyproofness.
+
+Moreover, both the lower median `x_((n - 1) / 2)` (`Fintype.lowerMedian`) and the upper median
+`x_(n / 2)` (`Fintype.upperMedian`) minimize the social cost `∑ i, |x i - y|` over all `y : ℝ`
+(`lowerMedian_isOptimal`, `upperMedian_isOptimal`). Following [ProcacciaTennenholtz2013] (§3.1,
+p. 18:7), `medianMechanism` picks the lower median `x_((n - 1) / 2)` (the leftmost optimal point
+for even `n`), and is simultaneously group strategyproof (`medianMechanism_isGroupStrategyProof`)
+and `1`-approximate, i.e., socially optimal (`medianMechanism_hasApproxRatio_one`).
 
 By contrast, `meanMechanism` fails strategyproofness whenever there are at least two agents
 (`not_isStrategyProof_meanMechanism`), and for even `n` the average of the two middle order
@@ -30,28 +35,21 @@ statistics also fails strategyproofness (see `CslibFrontierTests.FacilityLocatio
 
 ## Main definitions
 
-* `Cslib.GameTheory.FacilityLocation.IsOrderStatistic`: `y` is the `k`-th order statistic of
-  `x : ι → α` (reusing `List.IsOrderStatistic` for uniqueness and sorting).
-* `Cslib.GameTheory.FacilityLocation.orderStatistic`: the `k`-th order statistic of `x : ι → α`.
-* `Cslib.GameTheory.FacilityLocation.lowerMedian`,
-  `Cslib.GameTheory.FacilityLocation.upperMedian`: the lower and upper medians.
 * `Cslib.GameTheory.FacilityLocation.orderStatisticMechanism`,
-  `Cslib.GameTheory.FacilityLocation.medianMechanism`: deterministic mechanisms on `ℝ`.
+  `Cslib.GameTheory.FacilityLocation.medianMechanism`: deterministic mechanisms on `ℝ` built from
+  `Fintype.orderStatistic` and `Fintype.lowerMedian`.
 * `Cslib.GameTheory.FacilityLocation.mean`,
   `Cslib.GameTheory.FacilityLocation.meanMechanism`: the arithmetic-mean mechanism on `ℝ`.
 
 ## Main results
 
-* `Cslib.GameTheory.FacilityLocation.orderStatistic_isOrderStatistic`,
-  `Cslib.GameTheory.FacilityLocation.orderStatistic_eq_of_isOrderStatistic`: characterization of
-  `orderStatistic`.
-* `Cslib.GameTheory.FacilityLocation.orderStatisticMechanism_isGroupStrategyProof`: every fixed
-  order-statistic mechanism on `ℝ` is strongly group strategyproof.
+* `Cslib.GameTheory.FacilityLocation.orderStatisticMechanism_isGroupStrategyProof`,
+  `Cslib.GameTheory.FacilityLocation.orderStatisticMechanism_isStrategyProof`: every fixed
+  order-statistic mechanism on `ℝ` is strongly group strategyproof (and hence strategyproof).
 * `Cslib.GameTheory.FacilityLocation.medianMechanism_isGroupStrategyProof`,
   `Cslib.GameTheory.FacilityLocation.medianMechanism_isStrategyProof`: the median mechanism on `ℝ`
   is group strategyproof and strategyproof.
-* `Cslib.GameTheory.FacilityLocation.isOptimal_of_median_counts`,
-  `Cslib.GameTheory.FacilityLocation.lowerMedian_isOptimal`,
+* `Cslib.GameTheory.FacilityLocation.lowerMedian_isOptimal`,
   `Cslib.GameTheory.FacilityLocation.upperMedian_isOptimal`: optimality of the lower and upper
   medians for `socialCost` on `ℝ`.
 * `Cslib.GameTheory.FacilityLocation.medianMechanism_hasApproxRatio_one`,
@@ -74,147 +72,44 @@ namespace Cslib.GameTheory.FacilityLocation
 open MeasureTheory Finset
 open scoped BigOperators
 
-/-! ### Order statistics on finite profiles -/
-
-section OrderStatistic
-
-open Classical in
-/-- `y` is the `k`-th order statistic (0-indexed) of the profile `x : ι → α`: `y` is in the image
-of `x`, at most `k` agents lie strictly below `y`, and strictly more than `k` agents lie at or
-below `y`. -/
-@[expose] def IsOrderStatistic {ι α : Type*} [Fintype ι] [LinearOrder α] (x : ι → α)
-    (k : ℕ) (y : α) : Prop :=
-  (∃ i : ι, x i = y) ∧
-    (Finset.univ.filter fun i => x i < y).card ≤ k ∧
-    k < (Finset.univ.filter fun i => x i ≤ y).card
-
-open Classical in
-/-- The `k`-th order statistic (0-indexed) of `x : ι → α`, clamped to `Fintype.card ι - 1` when
-`k ≥ Fintype.card ι`. -/
-@[expose] noncomputable def orderStatistic {ι α : Type*} [Fintype ι] [Nonempty ι] [LinearOrder α]
-    (x : ι → α) (k : ℕ) : α :=
-  ((Finset.univ.val.map x).sort (· ≤ ·))[min k (Fintype.card ι - 1)]'(by
-    rw [Multiset.length_sort, Multiset.card_map, Finset.card_val, Finset.card_univ]
-    exact Nat.lt_of_le_of_lt (min_le_right _ _) (Nat.sub_lt Fintype.card_pos zero_lt_one))
-
-/-- The lower median `x_((n - 1) / 2)` of a nonempty finite profile `x`. -/
-@[expose] noncomputable def lowerMedian {ι α : Type*} [Fintype ι] [Nonempty ι] [LinearOrder α]
-    (x : ι → α) : α :=
-  orderStatistic x ((Fintype.card ι - 1) / 2)
-
-/-- The upper median `x_(n / 2)` of a nonempty finite profile `x`. -/
-@[expose] noncomputable def upperMedian {ι α : Type*} [Fintype ι] [Nonempty ι] [LinearOrder α]
-    (x : ι → α) : α :=
-  orderStatistic x (Fintype.card ι / 2)
-
-section Lemmas
-
-open Classical in
-private theorem countP_sorted_eq_card_filter {ι α : Type*} [Fintype ι] [LinearOrder α]
-    (x : ι → α) (p : α → Bool) :
-    ((Finset.univ.val.map x).sort (· ≤ ·)).countP p =
-      (Finset.univ.filter fun i => p (x i)).card := by
-  have hp : p = fun a => decide (p a = true) := funext fun a => by cases p a <;> rfl
-  rw [hp, ← Multiset.coe_countP, Multiset.sort_eq, Multiset.countP_map, ← Finset.filter_val]
-  simp only [Bool.decide_eq_true]
-  rfl
-
-open Classical in
-private theorem isOrderStatistic_iff_list {ι α : Type*} [Fintype ι] [LinearOrder α]
-    {x : ι → α} {k : ℕ} {y : α} :
-    IsOrderStatistic x k y ↔
-      ((Finset.univ.val.map x).sort (· ≤ ·)).IsOrderStatistic (· ≤ ·) k y := by
-  set s := (Finset.univ.val.map x).sort (· ≤ ·)
-  have hmem : (∃ i : ι, x i = y) ↔ y ∈ s := by
-    rw [Multiset.mem_sort, Multiset.mem_map]
-    simp only [Finset.mem_val, Finset.mem_univ, true_and]
-  have hlt : (Finset.univ.filter fun i => x i < y).card = s.countP (fun a => ¬ y ≤ a) := by
-    rw [countP_sorted_eq_card_filter x (fun a => decide (¬ y ≤ a))]
-    congr 1
-    ext i
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, decide_eq_true_eq, not_le]
-  have hle : (Finset.univ.filter fun i => x i ≤ y).card = s.countP (fun a => a ≤ y) := by
-    rw [countP_sorted_eq_card_filter x (fun a => decide (a ≤ y))]
-    simp only [decide_eq_true_eq]
-  rw [IsOrderStatistic, hmem, hlt, hle]
-  exact ⟨fun ⟨h1, h2, h3⟩ => ⟨h1, h2, h3⟩, fun h => ⟨h.mem, h.countP_lt_le, h.lt_countP_le⟩⟩
-
-variable {ι α : Type*} [Fintype ι] [LinearOrder α]
-
-theorem IsOrderStatistic.unique {x : ι → α} {k : ℕ} {y y' : α}
-    (h : IsOrderStatistic x k y) (h' : IsOrderStatistic x k y') : y = y' :=
-  (isOrderStatistic_iff_list.1 h).unique (isOrderStatistic_iff_list.1 h')
-
-theorem orderStatistic_isOrderStatistic [Nonempty ι] (x : ι → α) {k : ℕ}
-    (hk : k < Fintype.card ι) : IsOrderStatistic x k (orderStatistic x k) := by
-  classical
-  rw [isOrderStatistic_iff_list]
-  have hlen : k < ((Finset.univ.val.map x).sort (· ≤ ·)).length := by
-    rw [Multiset.length_sort, Multiset.card_map, Finset.card_val, Finset.card_univ]
-    exact hk
-  have hmin : min k (Fintype.card ι - 1) = k := min_eq_left (Nat.le_pred_of_lt hk)
-  have hlist := List.isOrderStatistic_getElem_of_perm (List.Perm.refl _)
-    (Multiset.pairwise_sort _ _) hlen
-  simpa only [orderStatistic, hmin] using hlist
-
-theorem orderStatistic_eq_of_isOrderStatistic [Nonempty ι] {x : ι → α} {k : ℕ}
-    (hk : k < Fintype.card ι) {y : α} (h : IsOrderStatistic x k y) :
-    orderStatistic x k = y :=
-  (orderStatistic_isOrderStatistic x hk).unique h
-
-theorem orderStatistic_fin_eq_mergeSort {n : ℕ} (x : Fin (n + 1) → α) {k : ℕ} (hk : k < n + 1) :
-    (List.ofFn x).mergeSort[k]? = some (orderStatistic x k) := by
-  classical
-  rw [← List.isOrderStatistic_iff_mergeSort]
-  have hcard : k < Fintype.card (Fin (n + 1)) := by simpa only [Fintype.card_fin] using hk
-  have hos := orderStatistic_isOrderStatistic x hcard
-  have hlist := isOrderStatistic_iff_list.1 hos
-  have huniv : (Finset.univ : Finset (Fin (n + 1))).val = ↑(List.finRange (n + 1)) := by
-    rw [Fin.univ_def]
-  have hperm : (List.ofFn x).Perm ((Finset.univ.val.map x).sort (· ≤ ·)) := by
-    rw [← Multiset.coe_eq_coe, Multiset.sort_eq, huniv, List.ofFn_eq_map]
-    rfl
-  refine ⟨hperm.symm.subset hlist.mem, ?_, ?_⟩
-  · rw [hperm.countP_eq]
-    exact hlist.countP_lt_le
-  · rw [hperm.countP_eq]
-    exact hlist.lt_countP_le
-
-end Lemmas
-
-end OrderStatistic
-
 /-! ### Strategyproofness and optimality on ℝ -/
 
 section RealMechanisms
 
 variable {ι : Type*} [Fintype ι] [Nonempty ι]
 
-/-- The deterministic `k`-th order-statistic mechanism on `ℝ`. -/
+/-- The deterministic `k`-th order-statistic mechanism on `ℝ` (clamped at `Fintype.card ι - 1`). -/
 @[expose] noncomputable def orderStatisticMechanism (k : ℕ) : Mechanism ι ℝ :=
-  Mechanism.deterministic fun x => orderStatistic x k
+  Mechanism.deterministic fun x => Fintype.orderStatistic x k
 
-/-- The deterministic **median mechanism** on `ℝ`, using the lower median `x_((n - 1) / 2)`. -/
+/-- The deterministic **median mechanism** on `ℝ`, using the lower median `x_((n - 1) / 2)`
+([ProcacciaTennenholtz2013] §3.1, p. 18:7). -/
 @[expose] noncomputable def medianMechanism : Mechanism ι ℝ :=
-  Mechanism.deterministic lowerMedian
+  Mechanism.deterministic Fintype.lowerMedian
 
-/-- Every fixed `k`-th order-statistic mechanism on `ℝ` (`k < n`) is strongly group strategyproof
-([Moulin1980], [ProcacciaTennenholtz2013]): if a coalition moves the facility from `y` to
-`y' < y`, all agents at or above `y` strictly lose and therefore cannot belong to the coalition,
-leaving at most `k` agents at or below `y'` (contradicting that `y'` has rank `k`); symmetrically
-for `y < y'`. -/
-theorem orderStatisticMechanism_isGroupStrategyProof [DecidableEq ι] {k : ℕ}
-    (hk : k < Fintype.card ι) : (orderStatisticMechanism (ι := ι) k).IsGroupStrategyProof := by
+/-- Every fixed `k`-th order-statistic mechanism on `ℝ` (clamped at `n - 1` when `k ≥ n`) is
+strongly group strategyproof (strengthening the weak group strategyproofness noted in
+[ProcacciaTennenholtz2013] §3.1, p. 18:7, attributed there to [Moulin1980]): if a coalition moves
+the facility from `y` to `y' < y`, all agents at or above `y` strictly lose and therefore cannot
+belong to the coalition, leaving at most `min k (n - 1)` agents at or below `y'` (contradicting
+that `y'` has rank `min k (n - 1)`); symmetrically for `y < y'`. -/
+theorem orderStatisticMechanism_isGroupStrategyProof [DecidableEq ι] (k : ℕ) :
+    (orderStatisticMechanism (ι := ι) k).IsGroupStrategyProof := by
   classical
   rw [orderStatisticMechanism, Mechanism.isGroupStrategyProof_deterministic_iff]
   rintro x z A ⟨hle, j, hj, hlt⟩
-  set y := orderStatistic x k
+  set m := min k (Fintype.card ι - 1)
+  have hm : m < Fintype.card ι :=
+    Nat.lt_of_le_of_lt (min_le_right _ _) (Nat.sub_lt Fintype.card_pos zero_lt_one)
+  set y := Fintype.orderStatistic x k
   set x' := A.piecewise z x
-  set y' := orderStatistic x' k
-  have hy := orderStatistic_isOrderStatistic x hk
-  change IsOrderStatistic x k y at hy
-  have hy' := orderStatistic_isOrderStatistic x' hk
-  change IsOrderStatistic x' k y' at hy'
+  set y' := Fintype.orderStatistic x' k
+  have hy : Fintype.IsOrderStatistic x m y := by
+    rw [show y = Fintype.orderStatistic x m from Fintype.orderStatistic_eq_min x k]
+    exact Fintype.orderStatistic_isOrderStatistic x hm
+  have hy' : Fintype.IsOrderStatistic x' m y' := by
+    rw [show y' = Fintype.orderStatistic x' m from Fintype.orderStatistic_eq_min x' k]
+    exact Fintype.orderStatistic_isOrderStatistic x' hm
   have hne : y' ≠ y := fun heq => by rw [heq] at hlt; exact (lt_irrefl _ hlt)
   rcases hne.lt_or_gt with hlt_y | hgt_y
   · -- If `y' < y`, every agent `i` with `y ≤ x i` strictly loses under `y'`, so `i ∉ A`.
@@ -266,133 +161,31 @@ theorem orderStatisticMechanism_isGroupStrategyProof [DecidableEq ι] {k : ℕ}
     have h2 := hy'.2.1
     omega
 
-theorem orderStatisticMechanism_isStrategyProof [DecidableEq ι] {k : ℕ}
-    (hk : k < Fintype.card ι) : (orderStatisticMechanism (ι := ι) k).IsStrategyProof :=
-  (orderStatisticMechanism_isGroupStrategyProof hk).isStrategyProof
+theorem orderStatisticMechanism_isStrategyProof [DecidableEq ι] (k : ℕ) :
+    (orderStatisticMechanism (ι := ι) k).IsStrategyProof :=
+  (orderStatisticMechanism_isGroupStrategyProof k).isStrategyProof
 
 /-- The median mechanism on `ℝ` is strongly group strategyproof. -/
 theorem medianMechanism_isGroupStrategyProof [DecidableEq ι] :
     (medianMechanism (ι := ι)).IsGroupStrategyProof := by
-  have hk : (Fintype.card ι - 1) / 2 < Fintype.card ι :=
-    Nat.lt_of_le_of_lt (Nat.div_le_self _ 2) (Nat.sub_lt Fintype.card_pos zero_lt_one)
-  exact orderStatisticMechanism_isGroupStrategyProof hk
+  simpa only [medianMechanism, funext Fintype.lowerMedian_def, orderStatisticMechanism] using
+    orderStatisticMechanism_isGroupStrategyProof (ι := ι) ((Fintype.card ι - 1) / 2)
 
-/-- The median mechanism on `ℝ` is strategyproof ([ProcacciaTennenholtz2013]). -/
+/-- The median mechanism on `ℝ` is strategyproof ([ProcacciaTennenholtz2013] §3.1, p. 18:7). -/
 theorem medianMechanism_isStrategyProof [DecidableEq ι] :
     (medianMechanism (ι := ι)).IsStrategyProof :=
   medianMechanism_isGroupStrategyProof.isStrategyProof
 
-omit [Nonempty ι] in
-/-- Any point `y` having at most `n / 2` agents strictly to its left and at most `n / 2` agents
-strictly to its right minimizes `socialCost x` on `ℝ`. -/
-theorem isOptimal_of_median_counts {x : ι → ℝ} {y : ℝ}
-    (hlt : 2 * (Finset.univ.filter fun i => x i < y).card ≤ Fintype.card ι)
-    (hgt : 2 * (Finset.univ.filter fun i => y < x i).card ≤ Fintype.card ι) :
-    IsOptimal x y := by
-  classical
-  intro z
-  change ∑ i, |x i - y| ≤ ∑ i, |x i - z|
-  rcases le_total z y with hzy | hyz
-  · set L := Finset.univ.filter fun i => x i < y
-    set R := Finset.univ.filter fun i => ¬ x i < y
-    have hcard : L.card + R.card = Fintype.card ι := by
-      simpa only [Finset.card_univ] using
-        Finset.card_filter_add_card_filter_not (s := Finset.univ) (p := fun i => x i < y)
-    have hLR : (L.card : ℝ) ≤ R.card := by exact_mod_cast (by omega : L.card ≤ R.card)
-    have hL : ∑ i ∈ L, |x i - y| ≤ ∑ i ∈ L, |x i - z| + (L.card : ℝ) * (y - z) := by
-      calc ∑ i ∈ L, |x i - y|
-          ≤ ∑ i ∈ L, (|x i - z| + (y - z)) := by
-            refine Finset.sum_le_sum fun i _ => ?_
-            have htri : |x i - y| ≤ |x i - z| + |z - y| := by
-              simpa only [Real.dist_eq] using dist_triangle (x i) z y
-            rwa [abs_of_nonpos (sub_nonpos.2 hzy), neg_sub] at htri
-        _ = ∑ i ∈ L, |x i - z| + (L.card : ℝ) * (y - z) := by
-            rw [Finset.sum_add_distrib, Finset.sum_const, nsmul_eq_mul]
-    have hR : ∑ i ∈ R, |x i - y| = ∑ i ∈ R, |x i - z| - (R.card : ℝ) * (y - z) := by
-      have hterm : ∀ i ∈ R, |x i - y| = |x i - z| - (y - z) := by
-        intro i hi
-        rw [Finset.mem_filter] at hi
-        have hxi : y ≤ x i := not_lt.1 hi.2
-        rw [abs_of_nonneg (sub_nonneg.2 hxi), abs_of_nonneg (sub_nonneg.2 (hzy.trans hxi))]
-        ring
-      rw [Finset.sum_congr rfl hterm, Finset.sum_sub_distrib, Finset.sum_const, nsmul_eq_mul]
-    have hsplit_y : ∑ i, |x i - y| = ∑ i ∈ L, |x i - y| + ∑ i ∈ R, |x i - y| :=
-      (Finset.sum_filter_add_sum_filter_not Finset.univ (fun i => x i < y)
-        (fun i => |x i - y|)).symm
-    have hsplit_z : ∑ i, |x i - z| = ∑ i ∈ L, |x i - z| + ∑ i ∈ R, |x i - z| :=
-      (Finset.sum_filter_add_sum_filter_not Finset.univ (fun i => x i < y)
-        (fun i => |x i - z|)).symm
-    have hdiff : ((L.card : ℝ) - R.card) * (y - z) ≤ 0 :=
-      mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.2 hLR) (sub_nonneg.2 hzy)
-    linarith
-  · set L := Finset.univ.filter fun i => x i ≤ y
-    set R := Finset.univ.filter fun i => ¬ x i ≤ y
-    have hReq : R = Finset.univ.filter fun i => y < x i := by
-      ext i
-      simp only [R, Finset.mem_filter, Finset.mem_univ, true_and, not_le]
-    have hcard : L.card + R.card = Fintype.card ι := by
-      simpa only [Finset.card_univ] using
-        Finset.card_filter_add_card_filter_not (s := Finset.univ) (p := fun i => x i ≤ y)
-    have hRL : (R.card : ℝ) ≤ L.card := by
-      have hcard' : L.card + (Finset.univ.filter fun i => y < x i).card = Fintype.card ι := by
-        simpa only [hReq] using hcard
-      exact_mod_cast (by omega : R.card ≤ L.card)
-    have hL : ∑ i ∈ L, |x i - y| = ∑ i ∈ L, |x i - z| - (L.card : ℝ) * (z - y) := by
-      have hterm : ∀ i ∈ L, |x i - y| = |x i - z| - (z - y) := by
-        intro i hi
-        rw [Finset.mem_filter] at hi
-        rw [abs_of_nonpos (sub_nonpos.2 hi.2), abs_of_nonpos (sub_nonpos.2 (hi.2.trans hyz))]
-        ring
-      rw [Finset.sum_congr rfl hterm, Finset.sum_sub_distrib, Finset.sum_const, nsmul_eq_mul]
-    have hR : ∑ i ∈ R, |x i - y| ≤ ∑ i ∈ R, |x i - z| + (R.card : ℝ) * (z - y) := by
-      calc ∑ i ∈ R, |x i - y|
-          ≤ ∑ i ∈ R, (|x i - z| + (z - y)) := by
-            refine Finset.sum_le_sum fun i _ => ?_
-            have htri : |x i - y| ≤ |x i - z| + |z - y| := by
-              simpa only [Real.dist_eq] using dist_triangle (x i) z y
-            rwa [abs_of_nonneg (sub_nonneg.2 hyz)] at htri
-        _ = ∑ i ∈ R, |x i - z| + (R.card : ℝ) * (z - y) := by
-            rw [Finset.sum_add_distrib, Finset.sum_const, nsmul_eq_mul]
-    have hsplit_y : ∑ i, |x i - y| = ∑ i ∈ L, |x i - y| + ∑ i ∈ R, |x i - y| :=
-      (Finset.sum_filter_add_sum_filter_not Finset.univ (fun i => x i ≤ y)
-        (fun i => |x i - y|)).symm
-    have hsplit_z : ∑ i, |x i - z| = ∑ i ∈ L, |x i - z| + ∑ i ∈ R, |x i - z| :=
-      (Finset.sum_filter_add_sum_filter_not Finset.univ (fun i => x i ≤ y)
-        (fun i => |x i - z|)).symm
-    have hdiff : ((R.card : ℝ) - L.card) * (z - y) ≤ 0 :=
-      mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.2 hRL) (sub_nonneg.2 hyz)
-    linarith
-
-private theorem orderStatistic_isOptimal (x : ι → ℝ) {k : ℕ} (hk : k < Fintype.card ι)
-    (hle : 2 * k ≤ Fintype.card ι) (hge : Fintype.card ι ≤ 2 * (k + 1)) :
-    IsOptimal x (orderStatistic x k) := by
-  classical
-  have hos := orderStatistic_isOrderStatistic x hk
-  have hsplit := Finset.card_filter_add_card_filter_not (s := Finset.univ)
-    (p := fun i => x i ≤ orderStatistic x k)
-  have hgt_eq : (Finset.univ.filter fun i => orderStatistic x k < x i) =
-      Finset.univ.filter fun i => ¬ x i ≤ orderStatistic x k := by
-    ext i; simp only [Finset.mem_filter, Finset.mem_univ, true_and, not_le]
-  rw [Finset.card_univ, ← hgt_eq] at hsplit
-  refine isOptimal_of_median_counts ?_ ?_
-  · have := hos.2.1; omega
-  · have := hos.2.2; omega
-
-/-- The lower median minimizes social cost on `ℝ`. -/
-theorem lowerMedian_isOptimal (x : ι → ℝ) : IsOptimal x (lowerMedian x) := by
-  have hk : (Fintype.card ι - 1) / 2 < Fintype.card ι :=
-    Nat.lt_of_le_of_lt (Nat.div_le_self _ 2) (Nat.sub_lt Fintype.card_pos zero_lt_one)
-  have hpos := Fintype.card_pos (α := ι)
-  exact orderStatistic_isOptimal x hk (by omega) (by omega)
+/-- The lower median minimizes social cost on `ℝ` ([ProcacciaTennenholtz2013] §3.1, pp. 18:7–8). -/
+theorem lowerMedian_isOptimal (x : ι → ℝ) : IsOptimal x (Fintype.lowerMedian x) := fun z =>
+  Fintype.sum_abs_sub_lowerMedian_le x z
 
 /-- The upper median minimizes social cost on `ℝ`. -/
-theorem upperMedian_isOptimal (x : ι → ℝ) : IsOptimal x (upperMedian x) := by
-  have hk : Fintype.card ι / 2 < Fintype.card ι :=
-    Nat.div_lt_self Fintype.card_pos (by decide)
-  exact orderStatistic_isOptimal x hk (by omega) (by omega)
+theorem upperMedian_isOptimal (x : ι → ℝ) : IsOptimal x (Fintype.upperMedian x) := fun z =>
+  Fintype.sum_abs_sub_upperMedian_le x z
 
 /-- The median mechanism on `ℝ` is `1`-approximate (socially optimal)
-([ProcacciaTennenholtz2013]). -/
+([ProcacciaTennenholtz2013] §3.1, pp. 18:7–18:8). -/
 theorem medianMechanism_hasApproxRatio_one :
     (medianMechanism (ι := ι)).HasApproxRatio 1 := by
   rw [medianMechanism, Mechanism.hasApproxRatio_deterministic_iff _ zero_le_one]
@@ -408,8 +201,13 @@ theorem expectedSocialCost_medianMechanism_eq_optSocialCost (x : ι → ℝ) :
 
 omit [Nonempty ι] in
 /-- The arithmetic mean of the reported locations on `ℝ`. -/
-@[expose] noncomputable def mean (x : ι → ℝ) : ℝ :=
+noncomputable def mean (x : ι → ℝ) : ℝ :=
   (∑ i, x i) / Fintype.card ι
+
+omit [Nonempty ι] in
+theorem mean_def (x : ι → ℝ) : mean x = (∑ i, x i) / Fintype.card ι := by
+  unfold mean
+  rfl
 
 omit [Nonempty ι] in
 /-- The deterministic **mean mechanism** on `ℝ`. -/
@@ -437,11 +235,11 @@ theorem not_isStrategyProof_meanMechanism [DecidableEq ι] (hcard : 2 ≤ Fintyp
     rw [Finset.sum_congr rfl (fun j hj =>
       show x j = 1 by simp only [x, Finset.ne_of_mem_erase hj, ite_false]), hones]
   have hmean_x : mean x = ((Fintype.card ι : ℝ) - 1) / Fintype.card ι := by
-    rw [mean, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀)]
+    rw [mean_def, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀)]
     have hx0 : x i₀ = 0 := by simp only [x, ite_true]
     rw [hx0, zero_add, hsum]
   have hmean_upd : mean (Function.update x i₀ z) = 0 := by
-    rw [mean, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀), Function.update_self]
+    rw [mean_def, ← Finset.add_sum_erase _ _ (Finset.mem_univ i₀), Function.update_self]
     have hupd : ∑ j ∈ Finset.univ.erase i₀, Function.update x i₀ z j =
         ∑ j ∈ Finset.univ.erase i₀, x j :=
       Finset.sum_congr rfl fun j hj => Function.update_of_ne (Finset.ne_of_mem_erase hj) z x

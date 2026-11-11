@@ -12,16 +12,18 @@ public import CslibFrontier.Probability.PMF.Expect
 public import Mathlib.Data.Finset.Piecewise
 public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 public import Mathlib.Probability.ProbabilityMassFunction.Monad
+import CslibFrontier.Probability.PMF.ToMeasure
 import Mathlib.MeasureTheory.Constructions.BorelSpace.Metric
 import Mathlib.MeasureTheory.Integral.Bochner.SumMeasure
-import Mathlib.MeasureTheory.Integral.Lebesgue.Countable
 import Mathlib.Tactic.Linarith
 
 /-!
 # Randomized facility-location mechanisms on metric spaces
 
-A *randomized facility-location mechanism* ([ProcacciaTennenholtz2013], [SchummerVohra2007])
-collects reported locations `x : ι → G` from finitely many agents on a metric space `G` and outputs
+A *randomized facility-location mechanism* ([ProcacciaTennenholtz2013] §3, p. 18:7;
+[AlonFeldmanProcacciaTennenholtz2010] §2, arXiv:0907.2049v1 p. 4; see also [SchummerVohra2007])
+collects reported locations `x : ι → G` from finitely many agents on a `PseudoMetricSpace G`
+(slightly generalizing the metric-space and graph-distance settings in those papers) and outputs
 a probability measure `M x : ProbabilityMeasure G` for the facility location. Agent `i` at true
 location `x i` incurs distance cost `dist (x i) y` when the facility is placed at `y`.
 
@@ -37,12 +39,15 @@ location `x i` incurs distance cost `dist (x i) y` when the facility is placed a
   holds (in particular, for every deterministic mechanism, every finitely supported `PMF` mechanism,
   and every mechanism on a `CompactSpace`).
 * **Direct-revelation incentive notions.** Strategyproofness (`Mechanism.IsStrategyProof`) says no
-  single agent can strictly decrease its expected cost by misreporting. We also provide two
-  coalitional notions, mirroring `Cslib.GameTheory.CostGame.IsStrongNash` and
-  `Cslib.GameTheory.CostGame.IsStrongEquilibrium`: `Mechanism.IsGroupStrategyProof` (no coalition
-  can make every member weakly better off and at least one strictly better off) and
+  single agent can strictly decrease its expected cost by misreporting. Following
+  [ProcacciaTennenholtz2013] (§3, p. 18:7) and [AlonFeldmanProcacciaTennenholtz2010] (§2,
+  arXiv:0907.2049v1 p. 4), we provide two coalitional notions mirroring
+  `Cslib.GameTheory.CostGame.IsStrongEquilibrium` and `Cslib.GameTheory.CostGame.IsStrongNash`:
   `Mechanism.IsWeakGroupStrategyProof` (no nonempty coalition can make every member strictly better
-  off). Obvious strategyproofness requires extensive-form game trees and is out of scope here.
+  off—what PT and AFPT call "group strategyproofness") and `Mechanism.IsGroupStrategyProof` (the
+  stronger variant noted in passing in PT §3, p. 18:7, where no coalition can make every member
+  weakly better off and at least one strictly better off). Obvious strategyproofness requires
+  extensive-form game trees and is out of scope here.
 * **Bridges for deterministic and `PMF` mechanisms.** `Mechanism.deterministic` embeds
   deterministic rules `(ι → G) → G` via `Measure.dirac`, and `Mechanism.ofPMF` embeds discrete
   randomized rules `(ι → G) → PMF G` via `PMF.toMeasure`, with exact reduction lemmas to `dist`,
@@ -382,20 +387,24 @@ variable {ι G : Type*} [PseudoMetricSpace G] [MeasurableSpace G]
 
 /-- A randomized facility-location mechanism `M` is **strategyproof** if no agent `i` can strictly
 reduce its expected distance to the facility by misreporting a location `z` instead of its true
-location `x i` ([ProcacciaTennenholtz2013]). -/
+location `x i` ([ProcacciaTennenholtz2013] §3, p. 18:7;
+[AlonFeldmanProcacciaTennenholtz2010] §2, arXiv:0907.2049v1 p. 4). -/
 @[expose] def IsStrategyProof [DecidableEq ι] (M : Mechanism ι G) : Prop :=
   ∀ (x : ι → G) (i : ι) (z : G),
     expectedECost (M x) (x i) ≤ expectedECost (M (Function.update x i z)) (x i)
 
 /-- A randomized mechanism `M` is **weakly group strategyproof** if no nonempty coalition `A` can
-jointly misreport so that every member of `A` strictly decreases its expected cost. -/
+jointly misreport so that every member of `A` strictly decreases its expected cost. This is what
+[ProcacciaTennenholtz2013] (§3, p. 18:7) and [AlonFeldmanProcacciaTennenholtz2010] (§2,
+arXiv:0907.2049v1 p. 4) call "group strategyproofness". -/
 @[expose] def IsWeakGroupStrategyProof [DecidableEq ι] (M : Mechanism ι G) : Prop :=
   ∀ (x z : ι → G) (A : Finset ι), A.Nonempty →
     ∃ i ∈ A, expectedECost (M x) (x i) ≤ expectedECost (M (A.piecewise z x)) (x i)
 
-/-- A randomized mechanism `M` is **group strategyproof** (strongly) if no coalition `A` can jointly
-misreport so that no member of `A` increases its expected cost and at least one member strictly
-decreases its expected cost ([ProcacciaTennenholtz2013]). -/
+/-- A randomized mechanism `M` is **(strongly) group strategyproof** if no coalition `A` can
+jointly misreport so that no member of `A` increases its expected cost and at least one member
+strictly decreases its expected cost (the stronger variant noted in passing in
+[ProcacciaTennenholtz2013] §3, p. 18:7). -/
 @[expose] def IsGroupStrategyProof [DecidableEq ι] (M : Mechanism ι G) : Prop :=
   ∀ (x z : ι → G) (A : Finset ι),
     ¬ ((∀ i ∈ A, expectedECost (M (A.piecewise z x)) (x i) ≤ expectedECost (M x) (x i)) ∧
@@ -403,7 +412,8 @@ decreases its expected cost ([ProcacciaTennenholtz2013]). -/
 
 /-- A randomized mechanism `M` has **approximation ratio `α`** (for expected social cost) if on
 every profile `x`, its expected social cost is at most `α * optSocialECost x`
-([ProcacciaTennenholtz2013]). -/
+([ProcacciaTennenholtz2013] §3, p. 18:7; [AlonFeldmanProcacciaTennenholtz2010] §2,
+arXiv:0907.2049v1 p. 4). -/
 @[expose] def HasApproxRatio [Fintype ι] (M : Mechanism ι G) (α : ℝ) : Prop :=
   ∀ x : ι → G, expectedSocialECost (M x) x ≤ ENNReal.ofReal α * optSocialECost x
 
@@ -669,27 +679,9 @@ theorem hasApproxRatio_deterministic_iff [Fintype ι] [Nonempty G] (f : (ι → 
 
 end Mechanism
 
-/-- Every `PMF` induces the sum of weighted Dirac measures, on any measurable space. -/
-theorem pmf_toMeasure_eq_sum {α : Type*} [MeasurableSpace α] (p : PMF α) :
-    p.toMeasure = Measure.sum fun y : α => p y • Measure.dirac y := by
-  classical
-  refine Measure.ext fun s hs => ?_
-  rw [p.toMeasure_apply hs, Measure.sum_apply _ hs]
-  refine tsum_congr fun y => ?_
-  rw [Measure.coe_smul, Pi.smul_apply, smul_eq_mul, Measure.dirac_apply' _ hs, Set.indicator_apply]
-  split_ifs with hy
-  · simp [hy]
-  · simp [hy]
-
-theorem lintegral_pmf_toMeasure {α : Type*} [MeasurableSpace α] (p : PMF α) {f : α → ℝ≥0∞}
-    (hf : Measurable f) : ∫⁻ y, f y ∂p.toMeasure = ∑' y, p y * f y := by
-  rw [pmf_toMeasure_eq_sum, lintegral_sum_measure]
-  refine tsum_congr fun y => ?_
-  rw [lintegral_smul_measure, lintegral_dirac' y hf, smul_eq_mul]
-
 theorem expectedECost_ofPMF (p : PMF G) (loc : G) :
     expectedECost (p.toMeasure.toProbabilityMeasure) loc = ∑' y, p y * edist loc y :=
-  lintegral_pmf_toMeasure p (measurable_edist_left loc)
+  PMF.lintegral_toMeasure p (measurable_edist_left loc)
 
 theorem expectedECost_ofPMF_finset (p : PMF G) {s : Finset G} (hs : ∀ y, y ∉ s → p y = 0)
     (loc : G) :
