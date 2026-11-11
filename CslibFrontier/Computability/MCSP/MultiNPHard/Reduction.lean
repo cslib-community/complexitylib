@@ -25,9 +25,10 @@ instance and a random string, with its correctness for every outcome of the rand
 reduces from Trevisan's `r`-bounded Set Cover; here the source problem is the library's
 `GapSetCover 3`, which `GapSetCover_npHard` shows `NP`-hard.
 
-**This file does not prove that the reduction runs in polynomial time, nor that Multi-MCSP is
-`NP`-hard.** `rpReducible_of_computableInPolyTime` derives the randomized reduction from that
-running-time hypothesis.
+`rpReducible_of_computableInPolyTime` derives the randomized reduction from the hypothesis that
+`reduce` runs in polynomial time. `MultiMCSP.Reduction.computableInPolyTime_reduce`
+(`CslibFrontier.Computability.MCSP.MultiNPHard.PolyTime`) proves that hypothesis, and
+`CslibFrontier.Computability.MCSP.MultiNPHard` states the resulting `NP`-hardness.
 
 Given `(S, k)`, write `N` for the length of `S.ground` and `t` for the number of sets.
 
@@ -420,8 +421,8 @@ randomized reduction with one-sided error: yes-instances always map to yes-insta
 no-instances to no-instances with probability at least `2/3` [IlangoLoffOliveira2020, §4.2,
 pp. 22:20–22:21]. The basis is any `Boolean.DeMorganBasis`: `Boolean.DeMorgan.interpretation` is
 the source's constant-free basis of Definition 1, `Boolean.interpretation` the library variant with
-constants. Soundness uses the library's union bound in place of the source's Lemma 16. The
-running-time hypothesis is not yet proved. -/
+constants. Soundness uses the library's union bound in place of the source's Lemma 16.
+`MultiMCSP.rpReducible_gapSetCover` discharges the running-time hypothesis. -/
 theorem rpReducible_of_computableInPolyTime
     (hpoly : Turing.MultiTapeTM.ComputableInPolyTime reduce
       (Turing.MultiTapeTM.encPair encSetCover Turing.MultiTapeTM.encBits) encInstance) :
