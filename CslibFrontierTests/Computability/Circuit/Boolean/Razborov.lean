@@ -9,14 +9,17 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
+public import CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural
 
 /-!
 # Tests for Razborov's rank property against AC⁰[2]
 
 Non-vacuity witnesses for the rank test of
 `CslibFrontier.Computability.Circuit.Boolean.Razborov.RankProperty`, concrete values of the middle
-slice of `CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice`, and the separation
-`P ⊄ AC⁰[p]` for every prime `p`, combining the middle slice with parity for odd primes.
+slice of `CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice`, the constructive and
+large half of `CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural` along the middle level,
+and the separation `P ⊄ AC⁰[p]` for every prime `p`, combining the middle slice with parity for odd
+primes.
 -/
 
 public section
@@ -61,6 +64,22 @@ example : middleSlice 3 ![true, true, false] = false := by
 example : sliceLevel 99 = 49 := by
   rw [sliceLevel_eq, show (99 + 1 : ℕ) = 10 ^ 2 by norm_num, Nat.sqrt_eq']
   norm_num
+
+/-! ### Constructivity and naturalness -/
+
+-- The rank test on three inputs at level `1`, from its truth table of length `8`, within
+-- `173 · 8 ^ 3` gates.
+example : complexity interpretation (single (truthTableTest (rankTest 3 1))) ≤ 173 * 8 ^ 3 :=
+  complexity_truthTableTest_rankTest_le 3 1
+
+-- The identity witness has the rank property along the middle level.
+example (n : ℕ) : exactWeight (n - sliceLevel n) ∈ rankProperty sliceLevel n := by
+  rw [rankProperty_apply]
+  exact exactWeight_mem_rankTest _
+
+-- Along the middle level the rank property is `P/poly`-natural.
+example : NaturalProof.IsNatural PPoly (rankProperty sliceLevel) :=
+  isNatural_PPoly_rankProperty sliceLevel
 
 /-! ### `P ⊄ AC⁰[p]` for every prime `p` -/
 

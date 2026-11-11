@@ -20,7 +20,7 @@ import CslibFrontier.Foundations.Data.Nat.Log
 # The bit-indexed polynomial design
 
 Carmosino, Impagliazzo, Kabanets and Kolokolova's AC⁰[p] construction of Nisan–Wigderson designs
-(Def 3.4, Lemma 3.5, §3.1 and the proof of Theorem 3.6, pp. 10:10–10:12)
+(§3.1 and the proof of Theorem 3.6, pp. 10:11–10:13)
 [CarmosinoImpagliazzoKabanetsKolokolova2016] indexes the blocks by bit strings. The string
 `i : BitString ℓ` names the polynomial `A_i(x) = ∑_t i_t x^t` with coefficients `0` and `1`
 (`Cslib.Crypto.PRG.NisanWigderson.bitPoly`). The universe is split into `n` rows, each a copy of
@@ -78,13 +78,15 @@ This differs from the source in these ways:
   that the general results apply to it.
 * `Cslib.Crypto.PRG.NisanWigderson.Design.restrict_binaryPolynomial`: the reading for the binary
   instance, with each column given by the bits of its number.
+* `Cslib.Crypto.PRG.NisanWigderson.Design.mem_block_binaryPolynomial_iff`: cell `(j, v)` lies in
+  block `i` of the binary instance when each bit of `v` is the corresponding parity of `i`.
 * `Cslib.Crypto.PRG.NisanWigderson.Design.seedLength_binaryPolynomial_le`: the seed has at most
   `2 n²` bits.
 
 ## References
 
 * [M. L. Carmosino, R. Impagliazzo, V. Kabanets, A. Kolokolova, *Learning algorithms from natural
-  proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016], Def 3.4, Lemma 3.5, §3.1, Theorem 3.6
+  proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016], §3.1, proof of Theorem 3.6
 * [N. Nisan, A. Wigderson, *Hardness vs randomness*][NisanWigderson1994]
 -/
 
@@ -159,7 +161,7 @@ theorem card_bitPolyBlock (i : BitString ℓ) : #(bitPolyBlock r num i) = n := b
 /-- **Distinct blocks share at most `ℓ - 1` cells**, for distinct points `r_j`. A shared cell in
 row `j` is a point `r_j` where the two polynomials agree. The polynomials are distinct and of
 degree less than `ℓ`, so this holds for at most `ℓ - 1` points (`card_polynomialBlock_inter_le`)
-[CarmosinoImpagliazzoKabanetsKolokolova2016, Lemma 3.5]. -/
+[CarmosinoImpagliazzoKabanetsKolokolova2016, proof of Theorem 3.6, p. 10:12]. -/
 theorem card_bitPolyBlock_inter_le (hr : Function.Injective r) {i i' : BitString ℓ}
     (h : i ≠ i') : #(bitPolyBlock r num i ∩ bitPolyBlock r num i') ≤ ℓ - 1 := by
   classical
@@ -288,6 +290,21 @@ theorem Design.restrict_binaryPolynomial {α : Type*} (i : BitString ℓ)
   congr 1
   funext c
   rw [hv, AddEquiv.toEquiv_eq_coe, AddEquiv.coe_toEquiv, bits_bitPoly_eq_parityOn]
+
+/-- **Membership in a block of the binary instance.** Cell `(j, v)` lies in block `i` exactly
+when, for every `c`, bit `c` of `v` is the parity of `i` on the exponents `t` with bit `c` of
+`r_j ^ t` set. This is the test of [CarmosinoImpagliazzoKabanetsKolokolova2016, Theorem 3.6]. -/
+theorem Design.mem_block_binaryPolynomial_iff (i : BitString ℓ) (j : Fin n)
+    (v : Fin (2 ^ binaryFieldDegree n)) :
+    finProdFinEquiv (j, v) ∈ (Design.binaryPolynomial n ℓ).block (BitString.equivFin ℓ i) ↔
+      ∀ c, (BitString.equivFin _).symm v c =
+        parityOn {t : Fin ℓ | BinaryField.equivBits (binaryFieldDegree_ne_zero n)
+          (binaryFieldPoints n j ^ (t : ℕ)) c = true} i := by
+  rw [Design.binaryPolynomial, Design.block_bitPolynomial, Equiv.symm_apply_apply,
+    mem_bitPolyBlock, Equiv.symm_apply_apply, binaryFieldNum, Equiv.trans_apply,
+    ← Equiv.symm_apply_eq, funext_iff]
+  refine forall_congr' fun c => ?_
+  rw [AddEquiv.toEquiv_eq_coe, AddEquiv.coe_toEquiv, bits_bitPoly_eq_parityOn]
 
 /-- **The seed of the binary instance has at most `2 n²` bits.** -/
 theorem Design.seedLength_binaryPolynomial_le (n : ℕ) :
