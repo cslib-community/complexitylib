@@ -7,7 +7,7 @@ Authors: Aviv Bar Natan
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
+public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 
 /-!
 # Homogeneous depth-five circuits
@@ -15,6 +15,9 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Model
 A circuit with two lower product gates `X 0` and `X 1`, two middle sum gates copying them, and
 the upper product gates `X 0 * X 1` and `X 1 * X 1`. The second upper product uses the same
 middle gate twice. The circuit computes `X 0 * X 1 + X 1 ^ 2` with six gates.
+
+The lower bound for iterated matrix multiplication applies over `ℚ` and over `ℝ`, with one
+threshold for both fields.
 -/
 
 @[expose] public section
@@ -49,5 +52,21 @@ theorem example₁_polynomial : example₁.polynomial = X 0 * X 1 + X 1 ^ 2 := b
   ring
 
 example : example₁.polynomial.IsHomogeneous 2 := example₁.isHomogeneous_polynomial
+
+open Cslib.Circuits.Arithmetic in
+example {n : ℕ} [NeZero n] (hn : Real.exp 29200 ≤ n)
+    (c : Circuit ℚ (Fin n × Fin n × Fin n)) (hc : c.polynomial = imm ℚ n n) :
+    (n : ℝ) ^ (√(n : ℝ) / 400) ≤ c.size :=
+  rpow_le_size hn c hc
+
+open Cslib.Circuits.Arithmetic in
+/-- One threshold serves the rationals and the reals. -/
+theorem exists_threshold : ∃ n₀ : ℕ, ∀ (n : ℕ) [NeZero n], n₀ ≤ n →
+    (∀ c : Circuit ℚ (Fin n × Fin n × Fin n), c.polynomial = imm ℚ n n →
+      (n : ℝ) ^ (√(n : ℝ) / 400) ≤ c.size) ∧
+    ∀ c : Circuit ℝ (Fin n × Fin n × Fin n), c.polynomial = imm ℝ n n →
+      (n : ℝ) ^ (√(n : ℝ) / 400) ≤ c.size := by
+  obtain ⟨n₀, h⟩ := exists_forall_rpow_le_size.{0}
+  exact ⟨n₀, fun n _ hn => ⟨h ℚ n hn, h ℝ n hn⟩⟩
 
 end CslibFrontierTests.DepthFive
