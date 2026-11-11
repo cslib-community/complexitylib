@@ -4266,6 +4266,8 @@ public import CslibFrontier.DataStructure.CountMin.Basic
 public import CslibFrontier.DataStructure.CountMin.LinearHash
 public import CslibFrontier.DataStructure.CountMin.Probability
 public import CslibFrontier.DataStructure.CountMin.Program
+public import CslibFrontier.DataStructure.Dictionary.CellProbe.HardDist
+public import CslibFrontier.DataStructure.Dictionary.CellProbe.MetaTree
 public import CslibFrontier.DataStructure.Dictionary.CuckooHashing
 public import CslibFrontier.DataStructure.Dictionary.DoubleHashing
 public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
