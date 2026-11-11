@@ -1607,8 +1607,7 @@ private theorem bitStream {σ ω : Type} {encS : σ ↪ List Bool} {encOut : ω 
   obtain ⟨C₀, hC₀⟩ : ∃ C₀, C₀ = (cN + cE + cN' + cE') * 3 ^ (dN + dE) := ⟨_, rfl⟩
   have hA : (cN + cE) * 3 ^ (dN + dE) ≤ C₀ := hC₀ ▸ Nat.mul_le_mul_right _ (by omega)
   have hB : (cN' + cE') * 3 ^ (dN + dE) ≤ C₀ := hC₀ ▸ Nat.mul_le_mul_right _ (by omega)
-  refine ⟨c * (C₀ + 4), dN + dE + 1, h.mono (fun x => ?_) (fun x => ?_)⟩
-  have hbound (c_sum : ℕ) (hC : c_sum * 3 ^ (dN + dE) ≤ C₀) :
+  have hbound (x : List Bool) (c_sum : ℕ) (hC : c_sum * 3 ^ (dN + dE) ≤ C₀) :
       c_sum * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) ≤ C₀ * (lMax x + 1) ^ (dN + dE + 1) ∧
       lMax x + 1 ≤ (lMax x + 1) ^ (dN + dE + 1) := by
     have hY : (lMax x + 1) ^ (dN + dE) ≤ (lMax x + 1) ^ (dN + dE + 1) :=
@@ -1618,16 +1617,17 @@ private theorem bitStream {σ ω : Type} {encS : σ ↪ List Bool} {encOut : ω 
         C₀ * (lMax x + 1) ^ (dN + dE + 1) := by
       rw [← Nat.mul_assoc]; exact Nat.mul_le_mul hC hY
     exact ⟨h3, hl⟩
+  refine ⟨c * (C₀ + 4), dN + dE + 1, h.mono (fun x => ?_) (fun x => ?_)⟩
   · simp only [encBits_apply]
     generalize tI x = a, tF (streamState (init x) next x x.length) = b, x.length = L
-    obtain ⟨h3, hl⟩ := hbound (cN + cE) hA
+    obtain ⟨h3, hl⟩ := hbound x (cN + cE) hA
     generalize (lMax x + 1) ^ (dN + dE + 1) = Z at hl h3
     generalize (cN + cE) * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) = W at h3
     rw [Nat.mul_assoc c]
     apply Nat.mul_le_mul_left c
     nlinarith
   · generalize sI x = a, sF (streamState (init x) next x x.length) = b
-    obtain ⟨h3, hl⟩ := hbound (cN' + cE') hB
+    obtain ⟨h3, hl⟩ := hbound x (cN' + cE') hB
     generalize (lMax x + 1) ^ (dN + dE + 1) = Z at hl h3
     generalize (cN' + cE') * (3 ^ (dN + dE) * (lMax x + 1) ^ (dN + dE)) = W at h3
     rw [Nat.mul_assoc c]
@@ -2049,6 +2049,18 @@ private theorem foldl_max_eq (l : List ℕ) (a : ℕ) : l.foldl max a = max a (l
   | cons x l ih => rw [List.foldl_cons, ih, List.foldr_cons, Nat.max_assoc]
 
 open ComputableInPolyTime in
+private theorem computableInPolyTime_VG_aux {f : ℕ → List Bool → List LCSSymbol}
+    (hf : ComputableInPolyTime (fun q : ℕ × List Bool => f q.1 q.2)
+      (encPair encUnary encBits) (encList encLCSSymbol)) :
+    ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => f p.1.1 p.2)
+      (encPair (encPair encUnary (encList encBits)) encBits) (encList encLCSSymbol) := by
+  have hq : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
+      (encPair (encPair encUnary (encList encBits)) encBits) (encPair encUnary encBits) := by
+    fun_prop
+  exact ComputableInPolyTime.comp' (f := fun q : ℕ × List Bool => f q.1 q.2)
+    (g := fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2)) hf hq
+
+open ComputableInPolyTime in
 private theorem computableInPolyTime_P1 :
     ComputableInPolyTime (fun q : ℕ × List (List Bool) => LCS.P1 q.1 q.2)
       (encPair encUnary (encList encBits)) (encList encLCSSymbol) := by
@@ -2058,14 +2070,9 @@ private theorem computableInPolyTime_P1 :
           List.replicate (3 * q.2.length * (10 * q.1 + 10)) s3) :=
     funext fun q => by simp only [LCS.P1, LCS.sepLen, List.flatMap, List.append_assoc]
   rw [e]
-  have hq : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
-      (encPair (encPair encUnary (encList encBits)) encBits) (encPair encUnary encBits) := by
-    fun_prop
   have hV : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => LCS.VG1' p.1.1 p.2)
       (encPair (encPair encUnary (encList encBits)) encBits) (encList encLCSSymbol) :=
-    ComputableInPolyTime.comp' (f := fun q : ℕ × List Bool => LCS.VG1' q.1 q.2)
-      (g := fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
-      computableInPolyTime_VG1' hq
+    computableInPolyTime_VG_aux computableInPolyTime_VG1'
   have hR : ComputableInPolyTime
       (fun q : ℕ × List (List Bool) => List.replicate (3 * q.2.length * (10 * q.1 + 10)) s3)
       (encPair encUnary (encList encBits)) (encList encLCSSymbol) := by
@@ -2088,14 +2095,9 @@ private theorem computableInPolyTime_P2 :
   have hD : ComputableInPolyTime (fun q : ℕ × List (List Bool) => LCS.DummyBlock q.1)
       (encPair encUnary (encList encBits)) (encList encLCSSymbol) := by
     unfold LCS.DummyBlock LCS.M LCS.W; fun_prop
-  have hq : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
-      (encPair (encPair encUnary (encList encBits)) encBits) (encPair encUnary encBits) := by
-    fun_prop
   have hV : ComputableInPolyTime (fun p : (ℕ × List (List Bool)) × List Bool => LCS.VG2' p.1.1 p.2)
       (encPair (encPair encUnary (encList encBits)) encBits) (encList encLCSSymbol) :=
-    ComputableInPolyTime.comp' (f := fun q : ℕ × List Bool => LCS.VG2' q.1 q.2)
-      (g := fun p : (ℕ × List (List Bool)) × List Bool => (p.1.1, p.2))
-      computableInPolyTime_VG2' hq
+    computableInPolyTime_VG_aux computableInPolyTime_VG2'
   have hn : ComputableInPolyTime (fun q : ℕ × List (List Bool) => q.2.length)
       (encPair encUnary (encList encBits)) encUnary := by fun_prop
   have hB : ComputableInPolyTime (fun q : ℕ × List (List Bool) => LCS.P2Blocks q.1 q.2)

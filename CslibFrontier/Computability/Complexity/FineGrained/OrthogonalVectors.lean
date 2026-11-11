@@ -689,9 +689,10 @@ theorem length_encOV_le (p : List (List Bool) × List (List Bool)) :
   rw [encOV, length_encPair]
   nlinarith
 
-/-- A bound on the length of an encoded `OV` instance in terms of its dimension and number of vectors,
-useful for proving time bounds that depend on the encoding length. -/
-theorem encOV_length_rpow_le (p : List (List Bool) × List (List Bool)) {r : ℝ} (hr : r ≤ 2) :
+/-- A bound on the length of an encoded `OV` instance in terms of its dimension and
+number of vectors, useful for proving time bounds that depend on the encoding length. -/
+theorem encOV_length_rpow_le (p : List (List Bool) × List (List Bool))
+    {r : ℝ} (hr : r ≤ 2) (hr0 : 0 ≤ r) :
     (((encOV p).length : ℝ) + 1) ^ r ≤
       36 * (((p.1.length + p.2.length : ℕ) : ℝ) ^ r * ((OV.dim p : ℝ) + 1) ^ 2) + 4 := by
   set X : ℝ := ((encOV p).length : ℝ) + 1
@@ -710,7 +711,9 @@ theorem encOV_length_rpow_le (p : List (List Bool) × List (List Bool)) {r : ℝ
           Real.rpow_le_rpow (by linarith) hlen' (by positivity) |>.trans
             (Real.rpow_le_rpow_of_exponent_le (by norm_num) hr)
       _ = 4 := by norm_num
-      _ ≤ 36 * Y + 4 := by positivity
+      _ ≤ 36 * Y + 4 := by
+        have : (0 : ℝ) ≤ Y := by positivity
+        linarith
   · have hN1 : (1 : ℝ) ≤ ((p.1.length + p.2.length : ℕ) : ℝ) := by exact_mod_cast hN
     have hd1 : (1 : ℝ) ≤ (OV.dim p : ℝ) + 1 := by
       linarith [(Nat.cast_nonneg (OV.dim p) : (0 : ℝ) ≤ _)]

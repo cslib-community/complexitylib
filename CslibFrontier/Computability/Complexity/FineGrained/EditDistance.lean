@@ -185,7 +185,7 @@ theorem not_decidableInTimeO_editDist_of_OVH (hOVH : OVH) {ε : ℝ} (hε : 0 < 
     set W : ℝ := ((OV.dim p : ℝ) + 1) ^ D with hW
     set Y : ℝ := ((p.1.length + p.2.length : ℕ) : ℝ) ^ (2 - ε₀ / 2) * ((OV.dim p : ℝ) + 1) ^ 2
     have hY0 : 0 ≤ Y := by positivity
-    have hXr : X ^ r ≤ 36 * Y + 4 := OV.encOV_length_rpow_le p (by linarith)
+    have hXr : X ^ r ≤ 36 * Y + 4 := OV.encOV_length_rpow_le p (by linarith) (by linarith)
     -- the dimension factor is at most the target when there are vectors, and one otherwise
     have hW2 : W ^ 2 ≤ W ^ 2 * Y + 1 := by
       rcases Nat.eq_zero_or_pos (p.1.length + p.2.length) with hN | hN

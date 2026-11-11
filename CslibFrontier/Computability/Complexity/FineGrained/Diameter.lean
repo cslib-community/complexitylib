@@ -1004,7 +1004,7 @@ theorem DecidableInTimeO.decidableInTimeO_OV_of_diameter {ε : ℝ} (hε : 0 < �
     set X : ℝ := ((encOV p).length : ℝ) + 1 with hX
     set Y : ℝ := ((p.1.length + p.2.length : ℕ) : ℝ) ^ (2 - ε₀ / 2) * ((OV.dim p : ℝ) + 1) ^ 2
     have hY0 : 0 ≤ Y := by positivity
-    have hXr : X ^ r ≤ 36 * Y + 4 := OV.encOV_length_rpow_le p (by linarith)
+    have hXr : X ^ r ≤ 36 * Y + 4 := OV.encOV_length_rpow_le p (by linarith) (by linarith)
     have := hbound p
     nlinarith
   refine (DecidableInTimeO.of_computableInO hdec (fun p => ?_) (fun p => hfinal p)).mono
