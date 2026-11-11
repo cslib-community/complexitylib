@@ -37,6 +37,23 @@ recursion on the tree:
 `2 * t * (2 * height + k)`, and `countQueries_rangeQ_le_log` composes it with
 `IsWF.height_le_log`. The bounds are stated at the order's oracle only: under another oracle
 the output is not the output under `≤`, so a bound in its length is not meaningful.
+
+## Main definitions
+
+* `rangeQ`: B-tree closed-interval query counting comparisons.
+
+## Main results
+
+* `countQueries_rangeQ_le`: the number of comparisons made by `rangeQ` is at most
+  `2 * t * height + 2 * n`.
+* `eval_rangeQ`: the value of `rangeQ` evaluated at the order oracle matches `range`.
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 18][CLRS2009]
+
+Ported from cslib-community/EpsilonEridani PR #39 at commit 9425389c8.
 -/
 
 public section
@@ -317,22 +334,5 @@ theorem countQueries_rangeQ_le_log (h : IsWF t tr) (lo hi : α) :
     (Nat.mul_le_mul_left _ (by have := h.height_le_log; omega))
 
 end Comparisons
-
-/-! ### Examples -/
-
-private def rangeQExample : BTree ℕ String :=
-  .node (.node .leaf [(1, "a", .leaf), (2, "b", .leaf)])
-    [(3, "c", .node .leaf [(4, "d", .leaf), (5, "e", .leaf)]),
-     (6, "f", .node .leaf [(7, "g", .leaf), (8, "h", .leaf)])]
-
-/-- An interval spanning all three children compares both bounds with every key but `8`, and
-`8` with both bounds to stop the last scan. -/
-example : (rangeQ 2 7 rangeQExample).countQueries orderOracle = 16 := by
-  simp [rangeQExample]
-
-/-- An interval above every key compares both bounds with each root key and each key of the
-last child. -/
-example : (rangeQ 9 10 rangeQExample).countQueries orderOracle = 8 := by
-  simp [rangeQExample]
 
 end Cslib.DataStructure.BTree

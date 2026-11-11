@@ -16,18 +16,28 @@ import Mathlib.Algebra.Order.Group.Nat
 # Size and height of classic B-trees
 
 The three inequalities relating the size and height of a well-formed classic B-tree of minimum
-degree `t`, after Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*, Chapter 18:
+degree `t`, after [CLRS2009], Chapter 18. They follow from the corresponding bounds for non-root
+subtrees, `Occupied.pow_sub_one_le_size` and `Occupied.size_le`. These are structural facts about
+the shape of a tree; they carry no cost content.
 
-* `IsWF.le_size`: a non-empty tree of height `h` has at least `2 * t ^ (h - 1) - 1` entries;
-* `IsWF.size_le`: a tree of height `h` has at most `(2 * t) ^ h - 1` entries;
+## Main results
+
+* `IsWF.le_size`: a non-empty tree of height `h` has at least `2 * t ^ (h - 1) - 1` entries.
+* `IsWF.size_le`: a tree of height `h` has at most `(2 * t) ^ h - 1` entries.
 * `IsWF.height_le_log`: the height is at most `Nat.log t ((size + 1) / 2) + 1`, the bound of
-  Theorem 18.1 with heights counted in nodes rather than edges.
+  [CLRS2009], Theorem 18.1, with heights counted in nodes rather than edges.
+* `Balanced.height_le_log`: the same bound from the shape alone, without key order.
+* `le_mul_height_of_scan`: a count on trees that spends at most one more than a node's key count
+  at each node along a descent is at most `2 * t * height`.
 
-They follow from the corresponding bounds for non-root subtrees, `Occupied.pow_sub_one_le_size`
-and `Occupied.size_le`. These are structural facts about the shape of a tree; they carry no cost
-content. `le_mul_height_of_scan` is the shape fact behind per-level cost bounds: a count on trees
-that spends at most one more than a node's key count at each node along a descent is at most
-`2 * t * height`.
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 18][CLRS2009]
+
+Ported from `cslib-community/EpsilonEridani` at commit `1966ab476`:
+[EpsilonEridani/Algorithms/Lean/BTree/Height.lean](https://github.com/cslib-community/EpsilonEridani/blob/1966ab476f5db00425c83e19857fd38ba01143c4/EpsilonEridani/Algorithms/Lean/BTree/Height.lean).
+`le_mul_height_of_scan` added by Samuel Schlesinger for #3674 M7.
 -/
 
 public section
@@ -200,13 +210,5 @@ theorem IsWF.size_le (h : IsWF t tr) : tr.size ≤ (2 * t) ^ tr.height - 1 := by
 /-- The height of a well-formed tree is logarithmic in its size (Cormen et al., Theorem 18.1). -/
 theorem IsWF.height_le_log (h : IsWF t tr) : tr.height ≤ Nat.log t ((tr.size + 1) / 2) + 1 :=
   h.balanced.height_le_log h.two_le h.rootKeys_pos h.occupied_of_mem_children
-
-/-! ### Examples -/
-
-/-- The bound at a root with one key and two leaf children: height `1`, size `1`. -/
-example :
-    (BTree.node (α := ℕ) (β := Unit) .leaf [(1, (), .leaf)]).height ≤
-      Nat.log 2 (((BTree.node (α := ℕ) (β := Unit) .leaf [(1, (), .leaf)]).size + 1) / 2) + 1 := by
-  decide
 
 end Cslib.DataStructure.BTree

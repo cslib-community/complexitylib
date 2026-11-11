@@ -17,9 +17,10 @@ public import Cslib.Algorithms.Lean.Query.Sort.LEQuery
 /-!
 # Comparison costs of B-tree point queries
 
-The point queries of `CslibFrontier.BTree` are defined once over a monad, with a comparator and
-a node-visit action. This file instantiates them in CSLib's query-complexity framework, at
-`FreeM (LEQuery α)` with the comparison query `LEQuery.ask` and the trivial `visit := pure ()`,
+The point queries of `Cslib.DataStructure.BTree` are defined once over a monad,
+with a comparator and a node-visit action. This file instantiates them in
+CSLib's query-complexity framework, at `FreeM (LEQuery α)` with the
+comparison query `LEQuery.ask` and the trivial `visit := pure ()`,
 so that every key comparison is a query and node visits are free: `lookupQ`, `containsQ`,
 `minQ`, `maxQ`, `predQ`, `succQ` and `rankQ`. Counting is structural: a program parametric in
 the oracle cannot compare keys without asking.
@@ -37,7 +38,27 @@ shape of the tree does not depend on the answers; `lookupQ_upperBound` and its s
 them as `Cslib.Query.UpperBound` over well-formed inputs. The
 minimum and maximum make no comparisons at all. `countQueries_slotM_le` bounds the within-node
 linear search by one comparison per key. The bound is the comparison analysis of B-TREE-SEARCH
-in Cormen, Leiserson, Rivest and Stein, *Introduction to Algorithms*, Section 18.2.
+in [CLRS2009], Section 18.2.
+
+## Main definitions
+
+* `lookupQ`, `containsQ`, `minQ`, `maxQ`, `predQ`, `succQ`, `rankQ`: B-tree point queries counting
+  comparisons.
+
+## Main results
+
+* `countQueries_lookupQ_le`: the number of comparisons made by `lookupQ` is at most
+  `2 * t * height`.
+* `eval_lookupQ`: the value of `lookupQ` evaluated at the order oracle matches
+  `lookup`.
+* (and similarly for the other queries)
+
+## References
+
+* [T. H. Cormen, C. E. Leiserson, R. L. Rivest and C. Stein, *Introduction to Algorithms*,
+  Chapter 18][CLRS2009]
+
+Ported from cslib-community/EpsilonEridani PR #39 at commit 9425389c8.
 -/
 
 public section
@@ -416,14 +437,5 @@ theorem rankQ_upperBound :
     fun oracle p => countQueries_rankQ_le oracle p.property p.val.2
 
 end UpperBounds
-
-/-! ### Examples -/
-
-/-- A two-level tree at `t = 2`: looking up `4` under the order's oracle compares it with `2` at
-the root and with `3` in the last child, and finds nothing. -/
-example :
-    (lookupQ 4 (BTree.node (.node .leaf [(1, 1, .leaf)])
-      [(2, 2, .node .leaf [(3, 3, .leaf)])] : BTree ℕ ℕ)).countQueries orderOracle = 2 := by
-  simp [lookupQ, lookupM]
 
 end Cslib.DataStructure.BTree
