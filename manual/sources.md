@@ -44,6 +44,11 @@ Benny Applebaum, Yuval Ishai, Eyal Kushilevitz. "How to Garble Arithmetic Circui
 
 Noga Alon, László Babai and Hiroshi Suzuki. “Multilinear Polynomials and Frankl–Ray-Chaudhuri–Wilson Type Intersection Theorems.” *Journal of Combinatorial Theory, Series A* 58(2), 165–180, 1991. https://doi.org/10.1016/0097-3165(91)90058-O . Bibliographic metadata from search summaries on 2026-11-08; the full text was not inspected in this pass. The manual attributes only the multilinear polynomial method for uniform and nonuniform restricted-intersection bounds to this paper; theorem numbers are not cited.
 
+<a id="alonfeldmanprocacciatennenholtz10"></a>
+## alonfeldmanprocacciatennenholtz10
+
+Noga Alon, Michal Feldman, Ariel D. Procaccia and Moshe Tennenholtz. "Strategyproof Approximation of the Minimax on Networks." *Mathematics of Operations Research* 35(3), 513–526, 2010. https://doi.org/10.1287/moor.1100.0457 (journal metadata verified via web search on 2026-11-11; journal PDF not inspected). Preprint inspected on 2026-11-11: "Strategyproof Approximation Mechanisms for Location on Networks," arXiv:0907.2049v1 (12 July 2009), https://arxiv.org/pdf/0907.2049v1 . Checked Section 2 (pp. 4–5: strategyproofness, group strategyproofness in the weak sense, social cost, approximation ratio) and Section 3.2 (pp. 6–7: Mechanism 1 random dictatorship, Theorem 3.1 proving strategyproofness and `2 - 2/n` approximation on graphs, first remark extending to arbitrary metric spaces, third remark on the 3-leaf star counterexample to weak group strategyproofness, and fourth remark on weak group strategyproofness on the line).
+
 <a id="alongibbonsmatiasszegedy99"></a>
 ## alongibbonsmatiasszegedy99
 
@@ -1027,6 +1032,11 @@ Dov Monderer and Lloyd S. Shapley. *Potential Games*. Games and Economic Behavio
 
 Robin A. Moser and Gábor Tardos. “A Constructive Proof of the General Lovász Local Lemma.” *Journal of the ACM* 57(2), Article 11, 2010. https://doi.org/10.1145/1667053.1667060 . Open version: arXiv:0903.0544v3, https://arxiv.org/abs/0903.0544 . Theorems 1.1–1.4, the Section 2 definitions of the log and witness trees, Lemma 2.1 and the Section 3 counting argument (Lemma 3.1) were checked against the arXiv v3 PDF (dated 20 May 2009) on 2026-11-08. The JACM article numbering was not checked against the typeset journal version.
 
+<a id="moulin80"></a>
+## moulin80
+
+Hervé Moulin. "On Strategy-Proofness and Single Peakedness." *Public Choice* 35(4), 437–455, 1980. https://doi.org/10.1007/BF00128122 . Bibliographic metadata checked against `references.bib` (`Moulin1980`) and secondary search summaries on 2026-11-10; the full text was not inspected, so no internal theorem numbers are claimed. Cited in [the mechanism-design chapter](algorithms-and-memory/mechanism-design.md) via [procacciatennenholtz13](#procacciatennenholtz13) (§3.1, p. 18:8) for group strategyproofness of fixed order-statistic (generalized median) rules on the real line (PT note the weak notion; the library proves the strong variant directly).
+
 <a id="mullersatterthwaite77"></a>
 ## mullersatterthwaite77
 
@@ -1111,6 +1121,11 @@ Ira Pohl. "A Sorting Problem and Its CslibFrontier." *Communications of the ACM*
 ## post46
 
 Emil L. Post. "A Variant of a Recursively Unsolvable Problem." *Bulletin of the American Mathematical Society* 52(4), 264–268, 1946. https://doi.org/10.1090/S0002-9904-1946-08555-9 . Bibliographic metadata only. The publisher's PDF returned an access error and was not inspected. It is cited as the origin of the correspondence problem and its unsolvability, as in [sipser13](#sipser13), §5.2.
+
+<a id="procacciatennenholtz13"></a>
+## procacciatennenholtz13
+
+Ariel D. Procaccia and Moshe Tennenholtz. "Approximate Mechanism Design without Money." *ACM Transactions on Economics and Computation* 1(4), Article 18 (18:1–18:26), 2013 (preliminary version in EC 2009). https://doi.org/10.1145/2542174.2542175 . Author-hosted TEAC copy inspected on 2026-11-11 at https://procaccia.info/wp-content/uploads/2020/03/facility.pdf : checked Section 3 (p. 18:7: randomized facility-location model, strategyproofness, group strategyproofness in the weak sense with strong group strategyproofness noted in passing, social cost, approximation ratio) and Section 3.1 (pp. 18:7–18:8: median optimality on `ℝ` with `med(x)` choosing `x_{(n-1)/2}` for even `n`, and weak group strategyproofness of fixed `k`-th order statistics attributed to [moulin80](#moulin80)). Cited in [the mechanism-design chapter](algorithms-and-memory/mechanism-design.md).
 
 <a id="radhakrishnan97"></a>
 ## radhakrishnan97
