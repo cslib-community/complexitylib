@@ -68,19 +68,19 @@ obligations they cannot prove as goals; their references say which.
 | `fo_reduction I [h]` | `Tactic.FirstOrder` | `FO.QFReduces K K'`, `FO.Reduces K K'` through the interpretation `I` | [Logical descriptions](#logical-descriptions) |
 | `fo_definable`, `fo_wf [φ]` | `Tactic.FOOperator` | `Operator.Definable …`; formation conditions of explicit formulas | [Logical descriptions](#logical-descriptions), [checked clients](../../CslibFrontierTests/FOOperators.lean) |
 | `simp only [pmf_norm]` (simp set) | `Languages.Probabilistic.Norm` | the law of a probabilistic program, to nested `PMF.bind` | [Normalize the law of a program](../workflows/probabilistic-workflows.md#normalize-the-law-of-a-program) |
-| `simp only [runWith_norm, pmf_norm]` (simp set) | `Languages.Probabilistic.Oracle.Norm` | the law of an oracle experiment (`runWith` of interpreted handlers), to nested `PMF.bind` | [One semantics with several views](../programs-crypto-and-probability/programs-and-realization.md#one-semantics-with-several-views) |
+| `simp only [runWith_norm, pmf_norm]` (simp set) | `Languages.Probabilistic.Oracle.Norm` | the law of an oracle experiment (`runWith` or stateless `evalWith` of interpreted handlers, including stateful inner reductions via `eval_interpret_eq_evalWith` / `evalWith_run_interpret`), to nested `PMF.bind` | [One semantics with several views](../programs-crypto-and-probability/programs-and-realization.md#one-semantics-with-several-views) |
 | `pmf_swap`, `pmf_swap with x y` | `Tactic.PMFSwap` | an equation of distributions that draw the same independent samples in different orders | [Reorder independent samples](#reorder-independent-samples) |
 | `pmf_hoist q`, `pmf_hoist q at h` | `Tactic.PMFSwap` | moves the samples of `q` toward the front of their `PMF.bind` chains | [Reorder independent samples](#reorder-independent-samples) |
 | `supp_cases h`, `supp_cases h [p] with pat`; `simp only [supp_norm]` (simp set) | `Tactic.SuppCases` | inverts `h : x ∈ m.support` for a `PMF` or `OracleComp` program into the results of its parts | [Invert a support membership](../workflows/probabilistic-workflows.md#invert-a-support-membership) |
 | `negligible`, `negligible using hle`, `negligible eventually hle` | `Tactic.Negligible` | `Cslib.Crypto.Negligible f` | [Close negligibility bounds](#close-negligibility-bounds) |
-| `game_trans [g₁, …]`, `game_trans [g₁, …] using [h₀, …]` | `Tactic.GameHop` | `Game.advantage`, `Encryption.advantage` and `Game.succProbability` difference bounds, and `CloseTo`, split into one subgoal per hop | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
+| `game_trans [g₁, …]`, `game_trans [g₁, …] using [h₀, …]` | `Tactic.GameHop` | `Game.advantage`, `Encryption.advantage`, one-sided or difference `Game.succProbability` bounds, and `CloseTo`, split into one subgoal per hop | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
 | `peel_binds`, `peel_binds x₁ …` | `Tactic.GameHop` | removes the shared leading draws of the two sides of a `Game.advantage`, `Encryption.advantage`, `CloseTo` or `PMF` equality goal | [Step game hops](#step-game-hops-and-align-shared-random-draws) |
 
 The tactics search simp sets and Aesop rule sets that modules extend by registering lemmas: the
 simp sets `wram_simps` (used by `wram_exec` and `wram_simp`), `cp_simps` (used by `cp_step`),
 `fo_realize` (used by `fo_simp`), `supp_norm` (used by `supp_cases`) and `runWith_norm` (used with
 `pmf_norm` on oracle experiments), and the Aesop rule sets
-`PolyTime`, `PPT`, `LogSpace`, `FirstOrder` and `FODefinable`.
+`PolyTime`, `PPT`, `OraclePPT`, `LogSpace`, `FirstOrder` and `FODefinable`.
 
 ## Assemble joint time and space bounds
 
@@ -147,7 +147,7 @@ polynomial; use `fun_prop` with explicit bounds for `ComputableInO`.
 
 [`program_certificate`](../../CslibFrontier/Tactic/PolyTime/Init.lean) indexes a theorem by its efficiency predicate and the head constant of its program, with an encoding flag. The predicate index keeps the families apart: a logarithmic-space or PPT certificate is never tried on a polynomial-time goal. Looking up a named routine before unfolding its body keeps clients abstract and controls search. The same annotation registers with `fun_prop`, reusing an existing registration when present; parameterized `IsPPT` certificates are normalized to `IsPPTOn` for the shared encoded-input interface.
 
-[`polytime`](../../CslibFrontier/Tactic/PolyTime.lean) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
+[`polytime`](../../CslibFrontier/Tactic/PolyTime.lean) combines these certificates with `fun_prop` composition and the Aesop `PolyTime` rules. On efficiency goals, Aesop's normalization pass disables `dsimp`, projection reduction, and `match`/`let` unfolding until named certificates, local calls, `fun_prop`, and composition rules have tried (while side premises normalize as usual, and full `simp_all` on efficiency goals remains available at lower priority); this preserves reducible `abbrev` wrappers and projection heads for certificate argument inference. Loops use Hoare-style iteration theorems plus bounds on state growth and iteration count. A bounded number of calls to individually efficient routines is insufficient if intermediate data grows exponentially; the growth hypotheses are part of the proof obligation. Ordinary search failure can expose a failed compositional attempt as a diagnostic, not as evidence of noncomputability.
 
 Before searching, `polytime` and `ppt` prepare the goal the same way. `polytime [f, g]` (or
 `ppt [f, g]`) unfolds the definitions `f` and `g` in the goal and inlines the `let`s this exposes;
@@ -203,7 +203,7 @@ certificates and bounds. Rewriting alone does not supply a missing resource cert
 | Tactic/interface | Input contract and strategy | Boundary |
 |---|---|---|
 | [`logspace`](../../CslibFrontier/Tactic/LogSpace.lean) | Named certificates, recomputation-based composition, bounded output vectors and loop rules | Arbitrarily long intermediate output cannot simply be retained in logarithmic workspace |
-| [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin program certificates, deterministic calls, supported sampling, bounded-growth iteration; strict oracle programs (`IsOraclePPTOn`, `IsOraclePPT`) by plain `fun_prop` composition of charged reply prefixes, sequencing, maps, conditionals and sampling | Arbitrary ideal PMFs need realization theorems; handler substitution and adaptive oracle loops keep their explicit rules, whose invariants and growth bounds are part of the claim |
+| [`ppt`](../../CslibFrontier/Tactic/PPT.lean) | Closed strict fair-coin (`IsPPTOn`, `IsPPT`) and strict oracle (`IsOraclePPTOn`, `IsOraclePPT`) certificates by Aesop search (`[PPT, PolyTime]` and `[OraclePPT, PPT, PolyTime]` with `simp` disabled on oracle goals), tuple routine-call preparation, plain conditional guards (`cond'`, `ite'`), charged reply prefixes (`query_take'`), sequencing, captured maps, closed sampling and bounded-growth `OracleComp.iterate` loops | Arbitrary ideal PMFs need realization theorems; uncharged raw `ProbOracleComp.query` calls are rejected; handler substitution (`run_interpret_preprocess'`) and general loop invariants (`iterate_spec'`, `iterateWith_spec'`) keep their explicit rules |
 
 This is a family of focused proof tools, not one universal automatic complexity analyzer. Their common interface makes reusable algorithms easier to recognize without conflating the predicates they prove.
 
@@ -278,7 +278,10 @@ the check that local opens do not leak into later declarations.
 
 Place a callee's zero-local-work `Realizes` certificate in the local context to reuse an opaque
 method before unfolding it. The tactic checks its basis and output encoding and uses existing
-`Realizes.reindex` to wire every encoded argument coordinate to an already live word. The
+`Realizes.reindex` to wire encoded argument coordinates to live words. When some coordinates
+need computation, it first certifies a charged `pure` stage for the whole argument using the
+callee's input encoding, then wires the call to those new words. This supports custom and
+dependent input encodings without a `WordEncoding` instance for the argument type. The
 complete [method-call clients](../../CslibFrontierTests/WordRAMRealizationCall.lean) cover
 projections, aliased inputs, curried and dependent arguments, and optional-pair replies.
 Word-vector type abbreviations in the callee's input and output encodings are accepted without
@@ -289,13 +292,17 @@ Zero local work is an absorbed grading: the callee still has its certified nativ
 against memory charge. It does not mean zero machine instructions.
 
 The called method's domain must hold at the memory actually reached by earlier queries.
-The call client after a write demonstrates that obligation explicitly. Computed arguments
-such as `d+1` need an explicit certified `pure` stage and its fit/domain proof; they cannot be
-supplied by static register wiring. The same file contrasts the rejected unstaged call with
-its successful staged version and includes dependent pair/scalar staging.
+The call client after a write demonstrates that obligation explicitly. Write computed arguments
+directly, such as `method (d + 1)`: `realize` leaves the result's `Fits w (d + 1)` obligation and
+the method's domain as goals. Exact subtraction and division retain their definedness conditions.
+The same file checks automatic and explicit staging, dependent arguments, standard-basis
+truncated subtraction, and rejection when fit or exact-operation evidence is missing.
+Automatic staging computes the whole encoded argument when any coordinate needs computation;
+an explicit `pure` stage remains useful to share a computed value between several calls.
 
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
-certificate's basis, output encoding, zero local work and live input coordinates, then inspect
+certificate's basis, output encoding, zero local work and whether its argument coordinates use
+supported word glue, then inspect
 the domain at the reached memory. Retain the fit and safety obligations left by the tactic;
 unfolding the method or dropping a resource premise does not supply those proofs. The
 [realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
@@ -307,7 +314,7 @@ code and charging contract; the complete clients above supply imports and local 
 
 `synthesis_available` is that membership search on its own: it proves that a function is among the available wires, through the unions, ranges and indexed unions a builder's wire set is made of, and fails rather than adding a gate when it is not. The [worked example](../workflows/finding-results.md#build-a-shared-boolean-circuit) uses it for every gate input and for the selected outputs. It first tries `synthesis_union`, which matches the wires against the members of a union `A₀ ∪ T₁ ∪ ⋯ ∪ Tₖ`, the shape a chain of `Synthesis.extend` steps produces, syntactically or through a local hypothesis and without unfolding any definition. Only when that fails does it compare wire functions at default transparency, which can unfold word operations on wire families of equal width. A proof over a long chain can call `synthesis_union` directly, as [Karatsuba](../../CslibFrontier/Computability/Circuit/Boolean/Karatsuba.lean) does.
 
-This contract answers a recurrent concern in the transcript: removing proof bookkeeping must not silently introduce gates. The [circuit case study](../development-history/case-studies.md) connects that concern to PR #520 and to the subsequent decision not to pursue general budget-guided synthesis in that session. The present tactic source is the authority for its current capabilities.
+This contract answers a recurrent concern in the transcript: removing proof bookkeeping must not silently introduce gates. The [circuit case study](../history/case-studies.md) connects that concern to PR #520 and to the subsequent decision not to pursue general budget-guided synthesis in that session. The present tactic source is the authority for its current capabilities.
 
 ## Logical descriptions
 
@@ -317,11 +324,13 @@ This contract answers a recurrent concern in the transcript: removing proof book
 
 ## Close encoded-length arithmetic
 
-Import `CslibFrontier.Tactic.EncLen` and use `enc_len` to expand standard encoded lengths with
-a fixed `simp only` list, then close the resulting arithmetic with `omega`. The complete
-[checked clients](../../CslibFrontierTests/EncLenTactic.lean) cover nested and variable pairs,
-leaf encodings, local encodings, locations, scaling facts and diagnostics. This proves encoding
-arithmetic; it does not construct a computation or resource certificate.
+Import `CslibFrontier.Tactic.EncLen` and use `enc_len` to expand standard encoded lengths
+(pairs, frames, unary numbers, raw bit lists, Booleans, options, sums, and `nil`/`cons` of
+`encList`) with a fixed `simp only` list, then close the resulting arithmetic with `omega`. The
+complete [checked clients](../../CslibFrontierTests/EncLenTactic.lean) cover nested and variable
+pairs, leaf encodings, framed list constructors, local encodings, locations, scaling facts and
+diagnostics. This proves encoding arithmetic; it does not construct a computation or resource
+certificate.
 
 By default only the current goal is expanded. Supply a local encoding lemma explicitly with
 `enc_len [eFoo_apply]`. Use `enc_len at h ⊢` to expand one hypothesis and the goal, or `enc_len at *`
@@ -459,15 +468,17 @@ and
 Use `game_trans [g₁, g₂, ...]` (or `game_trans g₁, g₂, ...`) on goals of the form
 `Game.advantage G₀ Gₖ ≤ B` (`ℝ≥0`), `(Game.advantage G₀ Gₖ : ℝ) ≤ B` (`ℝ`),
 `Encryption.advantage exp n ≤ B`, `Game.succProbability G₀ ≤ Game.succProbability Gₖ + B` (in
-`ℝ≥0` or `ℝ`, in either addition order), or `CloseTo μ₀ μₖ B` (`ℝ≥0∞`). It creates one hop subgoal
-per adjacent pair followed by a trailing bound subgoal `?ε₀ + ... + ?εₘ ≤ B`. Passing
+`ℝ≥0` or `ℝ`, in either addition order), one-sided `Game.succProbability G₀ ≤ B` (in `ℝ≥0` or
+`ℝ`, hopping from `G₀` to `PMF.pure false`), or `CloseTo μ₀ μₖ B` (`ℝ≥0∞`). It creates one hop
+subgoal per adjacent pair followed by a trailing bound subgoal `?ε₀ + ... + ?εₘ ≤ B`. Passing
 `using [h₀, h₁, ...]` discharges hops directly (use `_` to leave a hop open for tactic proof),
-automatically orienting reversed `Game.advantage_comm` and `CloseTo.symm` bounds, lifting `ℝ≥0`
-advantage bounds into `ℝ`, turning game equalities `A = B` or `B = A` into zero error, and closing
-a fully instantiated sum bound when it holds by `rfl`, associativity/commutativity of `+` (with
-zeros), or `ring`. With no intermediate list, `game_trans` unfolds `Encryption.advantage` or
-reduces a `Game.succProbability` difference bound to `Game.advantage`, and `game_trans using [h]`
-closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
+automatically orienting reversed `Game.advantage_comm` and `CloseTo.symm` bounds, accepting
+`Game.succProbability x ≤ ε` proofs on `PMF.pure false` endpoints, lifting `ℝ≥0` bounds into `ℝ`,
+turning game equalities `A = B` or `B = A` into zero error, and closing a fully instantiated sum
+bound when it holds by `rfl`, symmetric `Game.advantage_comm` summand alignment,
+associativity/commutativity of `+` (with zeros), or `ring`. With no intermediate list,
+`game_trans` unfolds `Encryption.advantage` or reduces a `Game.succProbability` bound to
+`Game.advantage`, and `game_trans using [h]` closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
 `CslibFrontier.Crypto.Game.CloseTo.Statistical` and apply `Cslib.Interactive.closeTo_of_dist_le_ofReal`
 to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
 [Lyubashevsky commitment binding proof](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Commitment.lean).

@@ -103,9 +103,9 @@ example : IsPPT encBool
 
 -- Both honest algorithms are strict PPT for the same growing, positive-noise parameter family.
 example : IsPPTOn encUnary (encPair encBits encBits)
-    (fun security => keyGenSerialized (Parameters.dimension security) (Parameters.samples security)
-      (Parameters.width security) (Parameters.noise security)) :=
-  isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
+    (fun security => LWE.keyGenSerialized (Parameters.dimension security)
+      (Parameters.samples security) (Parameters.width security) (Parameters.noise security)) :=
+  LWE.isPPTOn_keyGenSerialized Parameters.computableInPolyTime_dimension
     Parameters.computableInPolyTime_samples Parameters.computableInPolyTime_width
     Parameters.computableInPolyTime_noise
 
@@ -118,17 +118,17 @@ example : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
 -- No separate encryption-efficiency, security-of-encryption, or zero-noise premise is supplied.
 example
     (hLWE : DecisionLWE Parameters.dimension Parameters.samples Parameters.width
-      (fun k => noiseLaw (Parameters.width k) (Parameters.noise k))) :
+      (fun k => LWE.noiseLaw (Parameters.width k) (Parameters.noise k))) :
     Negligible (fun k =>
       Game.advantage
         (ProbComp.eval (Encryption.game
-          (fun k => keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
+          (fun k => LWE.keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
             (Parameters.width k) (Parameters.noise k))
           (fun k => encryptSerialized (Parameters.dimension k) (Parameters.samples k)
             (Parameters.width k))
           adaptiveAdversary false k))
         (ProbComp.eval (Encryption.game
-          (fun k => keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
+          (fun k => LWE.keyGenSerialized (Parameters.dimension k) (Parameters.samples k)
             (Parameters.width k) (Parameters.noise k))
           (fun k => encryptSerialized (Parameters.dimension k) (Parameters.samples k)
             (Parameters.width k))

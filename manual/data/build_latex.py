@@ -34,7 +34,8 @@ ORDER = [
       'dictionaries-hashing-and-randomized', 'flows-cuts-and-matching',
       'three-sum-and-exact-triangle', 'approximation-algorithms', 'optimization-and-duality',
       'mechanism-design']),
-    ('development-history', ['index', 'methods', 'timings', 'case-studies', 'transcripts', 'study-design']),
+    ('history', ['index', 'survey', 'development', 'methods', 'timings', 'case-studies',
+      'transcripts', 'study-design']),
 ]
 FILES = ['index.md'] + [f'{section}/{name}.md' for section, names in ORDER for name in names] + ['model-map.md']
 
@@ -244,8 +245,9 @@ validation evidence, and independent agent review have distinct scopes.\par}
 \pagenumbering{roman}
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-cslib-frontier is a Lean library of computational complexity theory built on CSLib
-and Mathlib. This survey examines its computational models and their connections,
+cslib-frontier, then named complexitylib, is a Lean library built on CSLib and
+Mathlib; at this snapshot its scope was computational complexity theory. This
+survey examines its computational models and their connections,
 with explicit attention to encodings, uniformity, resource measures, and quantifier
 order. It describes native machine interfaces, circuits, logical and information-access
 models, probabilistic programs and cryptography, and RAM-based algorithms and

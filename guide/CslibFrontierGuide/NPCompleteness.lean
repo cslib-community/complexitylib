@@ -45,7 +45,9 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import CslibFrontier.Computability.PolyTime.CSP.Table
+import CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Size
 import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.DAGPaths
@@ -87,6 +89,7 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
+import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
 import CslibFrontier.Computability.PolyTime.CSP.Table
 import CslibFrontier.Computability.PolyTime.CSP.Edge.Augmenting
 import CslibFrontier.Logics.Propositional.CSP.Edge.Augmenting
@@ -866,8 +869,111 @@ example {G : Graph} (r : Graph.RotationSystem G) (spin : ℕ → Bool) :
 
 `CslibFrontierTests/RotationDual.lean` contains concrete bridge, loop, digon,
 torus and disconnected sparse-name cases. These are finite combinatorial
-results. Geometric realization, bare recognition, native compilation, the
-whole cyclic-difference CSP reduction and recursive solver remain open.
+results. The checked compiler below provides the native supplied-certificate
+CSP reduction. Geometric realization, bare recognition and recursive solving
+remain open.
+
+
+# Ordered Incidence-to-Polygon Rotations
+
+Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
+The actual `polygonGraph` puts one edge between successive variables of each
+cyclic scope, retaining occurrence positions and dense variable names. Unary
+scopes become loops; repeated names and identical constraints stay distinct.
+Given an incidence rotation respecting the original argument order, every
+polygon face is an indexed constraint face or an original incidence face:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+noncomputable example {Rel V : Type} [DecidableEq V] (F : CSP Rel V)
+    (r : Graph.RotationSystem (incidenceGraph F))
+    (hOrder : RespectsArgumentOrder r)
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (polygonRotation r).Face ≃ Fin F.length ⊕ r.Face :=
+  polygonFaceEquiv r hOrder hPos
+```
+
+Singleton face orbits are included. With positive actual scopes, components
+correspond and the exact per-component counts preserve numerical genus zero:
+
+```lean
+open Cslib.Logic.PL Cslib.Complexity Cslib.Complexity.CSP in
+example {Rel V : Type} [DecidableEq V] (F : CSP Rel V)
+    (r : Graph.RotationSystem (incidenceGraph F))
+    (hOrder : RespectsArgumentOrder r)
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (polygonRotation r).NumericalGenusZero ↔ r.NumericalGenusZero :=
+  numericalGenusZero_polygon_iff r hOrder hPos
+```
+
+The graph has exactly one edge per occurrence and at most that many variable
+vertices. The bridge covers empty/disconnected bodies and sparse names;
+positivity is about actual scopes and assumes no relation semantics or arity
+contract. Nullary constraints require separate handling.
+`CslibFrontierTests/CSPPrimalRotation.lean` checks loops, repeated positions,
+identical constraints, malformed arity, the positivity guard and a toroidal
+rotation. The finite graph is explicit; abstract rotation inverses and face
+bijections are proof data. The checked compiler below supplies an executable
+reduction. Geometric realization, bare recognition and the planar solver remain
+open.
+
+
+# Checked Cyclic-Difference Edge Compilation
+
+Import `CslibFrontier.Computability.PolyTime.CSP.CyclicDifference.Size`.
+The actual compiler takes the original CSP and a supplied ordered numerical
+rotation certificate. The fixed language is self-complementary, and each
+nonempty relation has an even delta-matroid cyclic-difference image:
+
+```lean
+open Cslib.BitString Cslib.Logic.PL.CSP Cslib.Complexity
+  Cslib.Complexity.CSP Cslib.Complexity.CSP.CyclicCompiler
+  Turing.MultiTapeTM in
+example {Rel : Type} [Finite Rel] (encRel : Rel ↪ List Bool)
+    (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
+    (hself : ∀ r, IsSelfComplementary (booleanRelation arity sem r))
+    (hdelta : ∀ r, (booleanRelation arity sem r).Nonempty →
+      IsEvenDeltaMatroid
+        (cyclicDifferenceRelation (booleanRelation arity sem r))) :
+    Turing.MultiTapeTM.ComputableInPolyTime (compile arity sem)
+      (encCSPRotationCertificate encRel encNat)
+      (encCSP encTable encNat) :=
+  (compile_spec encRel arity sem hself hdelta).1
+```
+
+{name}`Cslib.Complexity.CSP.CyclicCompiler.compile_correct` also guarantees
+an edge instance with exact widths and even constraints on every raw input.
+Target SAT is equivalent to source SAT together with the exact-arity and
+rotation checks. Empty symbols may occur in the language; their constraints,
+false nullaries and bad guards reject to two incompatible nonempty unary pins.
+True nullaries are handled internally. No positive-scope assumption is needed.
+
+Long white boundaries expand to width-three parity chains. Output names are
+dense binary indices, independent of the magnitude of original names:
+
+```lean
+open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity
+  Cslib.Complexity.CSP.CyclicCompiler in
+example {Rel : Type} (arity : Rel → ℕ)
+    (sem : Rel → List Bool → Bool)
+    (input : CSP Rel ℕ × Graph.RotationCertificate) :
+    (compile arity sem input).vars.length ≤
+      4 * input.1.occurrences.length + 2 :=
+  length_vars_compile_le arity sem input
+```
+
+There are at most `C+M+2` constraints and names below `2M+1`, for actual
+source constraint/occurrence counts `C,M`. The input encoding frames the CSP
+before the binary successor certificate; the output includes all explicit rows,
+binary arities/names and list/pair framing.
+{name}`Cslib.Complexity.CSP.CyclicCompiler.polyBounded_length_compile`
+bounds the complete encoded output. Fixed-language preprocessing can depend
+exponentially on fixed arity. Runtime has no input-validity premise.
+
+`CslibFrontierTests/CSPCyclicCompiler.lean` gives concrete SAT/UNSAT NAE runs,
+long chains, nullaries, repeated arguments, bad guards and huge binary labels.
+This proves the supplied numerical-certificate compiler stage, without a bare
+recognizer, geometric correspondence, edge solver or full planar dichotomy.
 
 
 # Delta-Matroid Closure for Local Contraction

@@ -312,9 +312,10 @@ private theorem arity_and_card_le_length_enc_of_encT (encT : ℕ ↪ List Bool) 
 
 /-- The verifier on raw data `(((n, samples), s), w)`: instantiates `MCSP.checkCertificateOn` on
 the sample list `samples` at gate budget `MCSP.sampleBudget n samples.length s`. -/
-def rawVerifier (r : ((ℕ × List (List Bool × Bool)) × ℕ) × List Bool) : Bool :=
-  MCSP.checkCertificateOn r.1.1.2 Prod.fst (fun p out => out == p.2)
-    r.1.1.1 (MCSP.sampleBudget r.1.1.1 r.1.1.2.length r.1.2) r.2
+def rawVerifier : ((ℕ × List (List Bool × Bool)) × ℕ) × List Bool → Bool
+  | (((n, samples), s), w) =>
+    MCSP.checkCertificateOn samples Prod.fst (fun p out => out == p.2)
+      n (MCSP.sampleBudget n samples.length s) w
 
 /-- The `NP` verifier for `SuccinctMCSP`. -/
 def verifier (p : Instance × List Bool) : Bool :=
@@ -414,6 +415,10 @@ theorem computableInPolyTime_rawVerifier :
       (encPair (encPair encIn encSample) encBool) encBool :=
     ComputableInPolyTime.beq (ComputableInPolyTime.snd _ _)
       (ComputableInPolyTime.fst _ _).snd'.snd'
+  have hfun : rawVerifier = fun r => MCSP.checkCertificateOn r.1.1.2 Prod.fst
+      (fun p out => out == p.2) r.1.1.1 (MCSP.sampleBudget r.1.1.1 r.1.1.2.length r.1.2) r.2 :=
+    funext fun _ => rfl
+  rw [hfun]
   exact MCSP.computableInPolyTime_checkCertificateOn hn hS hw hsamples
     (ComputableInPolyTime.fst encBits encBool) haccept
 

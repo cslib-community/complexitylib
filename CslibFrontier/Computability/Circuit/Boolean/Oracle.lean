@@ -40,6 +40,9 @@ size at the polynomially bounded arities of the queries, shows the converse
 * `Cslib.Circuits.Boolean.OracleOp`, `Cslib.Circuits.Boolean.OracleOp.arity`,
   `Cslib.Circuits.Boolean.oracleSignature`, `Cslib.Circuits.Boolean.oracleInterpretation`: the De
   Morgan basis with oracle gates.
+* `Cslib.Circuits.Boolean.OracleOp.queryWeight`, `Cslib.Circuits.Boolean.OracleOp.queryArity`:
+  the weight counting oracle gates and the fan-in of an oracle gate, for measuring the oracle
+  gates of a device.
 * `Cslib.Circuits.Boolean.toOracle`: the De Morgan basis inside it.
 * `Cslib.Circuits.Boolean.oracleImpl`, `Cslib.Circuits.Boolean.oracleSize`,
   `Cslib.Circuits.Boolean.oracleDepth`, `Cslib.Circuits.Boolean.inlineOracle`: gate replacement and
@@ -53,6 +56,9 @@ size at the polynomially bounded arities of the queries, shows the converse
   bounds on its size and depth.
 * `Cslib.Circuits.Boolean.PPolyOracle_subset_PPoly`, `Cslib.Circuits.Boolean.PPolyOracle_eq_PPoly`:
   `P/poly` relative to a language in `P/poly` is `P/poly`.
+* `Cslib.Circuits.Boolean.fanInAtMost_mapOp_toOracle`,
+  `Cslib.Circuits.Boolean.cost_mapOp_toOracle`, `Cslib.Circuits.Boolean.depthWith_mapOp_toOracle`:
+  a De Morgan program or circuit in the oracle basis has fan-in two and no oracle gates.
 
 ## References
 
@@ -74,6 +80,25 @@ inductive OracleOp where
 abbrev OracleOp.arity : OracleOp → ℕ
   | .base op => signature.Arity op
   | .query q => q
+
+/-- One for an oracle gate and zero for a De Morgan operation: the weight whose cost counts oracle
+gates and whose weighted depth counts oracle gates along a path. -/
+def OracleOp.queryWeight : OracleOp → ℕ
+  | .base _ => 0
+  | .query _ => 1
+
+/-- The fan-in of an oracle gate, and zero for a De Morgan operation. -/
+def OracleOp.queryArity : OracleOp → ℕ
+  | .base _ => 0
+  | .query q => q
+
+@[simp] theorem OracleOp.queryWeight_base (op : Op) : (OracleOp.base op).queryWeight = 0 := rfl
+
+@[simp] theorem OracleOp.queryWeight_query (q : ℕ) : (OracleOp.query q).queryWeight = 1 := rfl
+
+@[simp] theorem OracleOp.queryArity_base (op : Op) : (OracleOp.base op).queryArity = 0 := rfl
+
+@[simp] theorem OracleOp.queryArity_query (q : ℕ) : (OracleOp.query q).queryArity = q := rfl
 
 /-- The De Morgan basis with an oracle gate of every arity. It is reducible, so that case analysis
 on its operations sees their arities. -/
@@ -202,6 +227,17 @@ theorem fanInAtMost_mapOp_toOracle {g : ℕ} (p : Program signature n g) {r : �
     refine ⟨ih, le_trans ?_ hr⟩
     change signature.Arity line.op ≤ 2
     cases line.op <;> simp
+
+/-- A De Morgan program in the oracle basis has no oracle gates. -/
+@[simp] theorem cost_mapOp_toOracle {g : ℕ} (p : Program signature n g) :
+    (p.mapOp toOracle).cost OracleOp.queryWeight = 0 :=
+  (Program.cost_mapOp p _).trans <| (p.cost_const 0).trans (Nat.zero_mul _)
+
+/-- A De Morgan circuit in the oracle basis has no oracle gate on any path. Not a simp lemma:
+`Circuit.depthWith_mapOp` rewrites its left-hand side. -/
+theorem depthWith_mapOp_toOracle (c : Circuit signature n m) :
+    (c.mapOp toOracle).depthWith OracleOp.queryWeight = 0 :=
+  (Circuit.depthWith_mapOp c _).trans c.depthWith_zero
 
 /-- A language in `P/poly` is in `P/poly` relative to any oracle. -/
 theorem PPoly.subset_PPolyOracle (A : Language Bool) : PPoly ⊆ PPolyOracle A := by

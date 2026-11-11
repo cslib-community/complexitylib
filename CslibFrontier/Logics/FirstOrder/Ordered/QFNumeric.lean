@@ -40,8 +40,11 @@ quantifier, so the image of a quantifier-free formula need not be quantifier-fre
 
 ## Main results
 
-* `Cslib.Logic.FO.Ordered.QFNumeric.realize_le`, `Cslib.Logic.FO.Ordered.QFNumeric.realize_succ`:
-  the canonical meaning of the atoms.
+* `Cslib.Logic.FO.Ordered.QFNumeric.realize_le`, `Cslib.Logic.FO.Ordered.QFNumeric.realize_succ`,
+  `Cslib.Logic.FO.Ordered.QFNumeric.zero_eq`, `Cslib.Logic.FO.Ordered.QFNumeric.max_eq`,
+  `Cslib.Logic.FO.Ordered.QFNumeric.realize_boundedFormula_le`,
+  `Cslib.Logic.FO.Ordered.QFNumeric.realize_boundedFormula_succ`: the canonical meaning of the
+  atoms and raw vocabulary symbols.
 * `Cslib.Logic.FO.Ordered.realize_numericSuccessor`: `numericSuccessor` defines non-wrapping
   successor on `Fin n`, `2 ≤ n`.
 * `Cslib.Logic.FO.Ordered.realize_toNumeric`: translation preserves truth on `Fin n`, `2 ≤ n`.
@@ -153,6 +156,32 @@ theorem realize_succ (s t : qfNumericLanguage.Term α) (v : α → Fin n) :
     (succ s t).Realize v ↔ (s.realize v).val + 1 = (t.realize v).val := by
   rw [succ, Formula.realize_rel₂]
   rfl
+
+/-- Syntactic unfolding of `QFNumeric.zero` as a raw `qfNumericLanguage` constant term. -/
+theorem zero_eq :
+    (zero : qfNumericLanguage.Term α) = .func (.inl EndpointFunction.zero) Fin.elim0 := by
+  rw [zero]; rfl
+
+/-- Syntactic unfolding of `QFNumeric.max` as a raw `qfNumericLanguage` constant term. -/
+theorem max_eq :
+    (max : qfNumericLanguage.Term α) = .func (.inl EndpointFunction.max) Fin.elim0 := by
+  rw [max]; rfl
+
+/-- Realization of a raw `EndpointRelation.le` atomic formula in `qfNumericLanguage`. -/
+theorem realize_boundedFormula_le (ts : Fin 2 → qfNumericLanguage.Term (α ⊕ Fin 0))
+    (v : α → Fin n) :
+    Formula.Realize (Relations.boundedFormula (L := qfNumericLanguage) (.inl EndpointRelation.le)
+      ts) v ↔ (ts 0).realize (Sum.elim v default) ≤ (ts 1).realize (Sum.elim v default) := by
+  exact BoundedFormula.realize_rel
+
+/-- Realization of a raw `SuccRelation.succ` atomic formula in `qfNumericLanguage`. -/
+theorem realize_boundedFormula_succ (ts : Fin 2 → qfNumericLanguage.Term (α ⊕ Fin 0))
+    (v : α → Fin n) :
+    Formula.Realize (Relations.boundedFormula (L := qfNumericLanguage) (.inr SuccRelation.succ)
+      ts) v ↔
+      ((ts 0).realize (Sum.elim v default)).val + 1 =
+        ((ts 1).realize (Sum.elim v default)).val := by
+  exact BoundedFormula.realize_rel
 
 end QFNumeric
 
