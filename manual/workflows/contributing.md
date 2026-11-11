@@ -101,4 +101,10 @@ Explain the problem, resulting behavior, limitations and validation in the PR. L
 
 After fixes, request review of the affected delta. Changed reasoning, statement semantics and uncertain conflict resolutions require fresh review; a clean rebase may sometimes preserve existing approval. Integration requires maintainer authority as well as validation and review. State what is complete and what remains. When only a milestone is delivered, keep the broader objective visible and open or explicitly disposed of.
 
+Keep a source approval conditional while notices, rendered pages or other source questions still
+need review. When releasing that hold, link the earlier proof/API/caller assessment and record
+which remaining questions were resolved; reuse unchanged evidence. The queue helper's `--wait`
+option queues automatically when CI passes, so finish any review of newly produced material
+before starting it. Follow [Approve and queue](../../AGENTS.md#approve-and-queue).
+
 [complexitylib]: ../sources.md#complexitylib
