@@ -88,6 +88,27 @@ noncomputable def publicMatrixLaw (n m q : ℕ) [Fact (Nat.Prime q)]
   let error ← PMF.pi (fun _ : Fin m => noise)
   return publicMatrix publicPart secret error
 
+/-- With a uniform matrix `A` and a uniform error `e`, the public matrix `[A * s + e | A]` is
+uniform, whatever the secret `s`. -/
+theorem uniform_bind_publicMatrix {n m q : ℕ} [Fact (Nat.Prime q)] (s : Fin n → ZMod q) :
+    ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+      (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun e => PMF.pure (publicMatrix A s e)) =
+      PMF.uniformOfFintype (Matrix (Fin m) (Fin (n + 1)) (ZMod q)) := by
+  let E : Matrix (Fin m) (Fin n) (ZMod q) × (Fin m → ZMod q) ≃
+      Matrix (Fin m) (Fin (n + 1)) (ZMod q) :=
+    { toFun := fun x => publicMatrix x.1 s x.2
+      invFun := fun M =>
+        (fun i j => M i j.succ, fun i => M i 0 - ((fun i j => M i j.succ) *ᵥ s) i)
+      left_inv := fun x => by
+        ext <;> simp [publicMatrix]
+      right_inv := fun M => by
+        funext i j
+        refine Fin.cases ?_ (fun j => ?_) j <;> simp [publicMatrix] }
+  rw [← PMF.uniformOfFintype_map_equiv E, ← PMF.uniformOfFintype_prod]
+  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
+  simp only [PMF.map, Function.comp_def]
+  rfl
+
 /-- Draw the public matrix `[A * s + e | A]` where `s` is drawn from the error distribution. -/
 noncomputable def publicMatrixLawErrorSecret (n m q : ℕ) [Fact (Nat.Prime q)]
     (noise : PMF (ZMod q)) : PMF (Matrix (Fin m) (Fin (n + 1)) (ZMod q)) := do
