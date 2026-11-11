@@ -81,14 +81,13 @@ example : ∃ t : ℕ → ℕ,
   let t : ℕ → ℕ := fun n => 2 * n + (2 * n + 3) ^ d + K
   refine ⟨t, smallWitnessLanguage_mem_NTIME (C := 1) hℓ hbuild.inO hsat hspec ?_⟩
   intro x w hw
-  obtain ⟨b, rfl⟩ := List.length_eq_one.mp (show w.length = 1 by simpa [certLength] using hw)
+  obtain ⟨b, rfl⟩ := List.length_eq_one_iff.mp (show w.length = 1 by simpa [certLength] using hw)
   have hcost : cost (certificateQuery (r := fun _ => 1) family (fun _ => 0) (x, [b])) ≤ K := by
     cases b
     · exact Nat.le_max_left _ _
     · exact Nat.le_max_right _ _
   have hpair : (encPair encBits encBits (x, [b])).length + 1 = 2 * x.length + 3 := by
     simp only [length_encPair, encBits_apply, List.length_cons, List.length_nil]
-    omega
   change x.length + x.length +
     (((encPair encBits encBits (x, [b])).length + 1) ^ d +
       cost (certificateQuery (r := fun _ => 1) family (fun _ => 0) (x, [b]))) ≤ 1 * t x.length + 1
