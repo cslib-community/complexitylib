@@ -22,7 +22,7 @@ open Cslib.GameTheory Cslib.GameTheory.CongestionCode
 
 /-- Two players, two resources: `[[0], [1]]` for each player, cost tables `[1, 2]` and
 `[3, 6]`. -/
-def twoLinks : CongestionCode := ([[[0], [1]], [[0], [1]]], [[1, 2], [3, 6]])
+def twoLinks : CongestionCode := ⟨[[[0], [1]], [[0], [1]]], [[1, 2], [3, 6]]⟩
 
 example : twoLinks.vertexLength = 10 := by decide
 
@@ -63,7 +63,7 @@ example : ¬ twoLinks.PureNash [] := by
 
 /-- Player `0` lists no strategy and gets the empty one; player `1` lists a strategy that uses an
 out-of-range resource `7` and resource `0`, whose cost table is empty. -/
-def degenerate : CongestionCode := ([[], [[7, 0]]], [[]])
+def degenerate : CongestionCode := ⟨[[], [[7, 0]]], [[]]⟩
 
 example : degenerate.numStrategies 0 = 1 := by decide
 example : degenerate.strategy 0 0 = [] := by decide
@@ -74,4 +74,23 @@ example : degenerate.PureNash (List.replicate degenerate.vertexLength false) := 
 -- Every code has a solution.
 example (c : CongestionCode) : ∃ u, c.PureNash u := pureNash_mem_TFNP.2 c
 
+-- Structure extensionality and `enc_structure` `fun_prop` support.
+example {c₁ c₂ : CongestionCode} (h₁ : c₁.playerStrategies = c₂.playerStrategies)
+    (h₂ : c₁.costTables = c₂.costTables) : c₁ = c₂ :=
+  CongestionCode.ext h₁ h₂
+
 end CslibFrontierTests.GameTheory.CongestionPLS
+
+open Turing.MultiTapeTM Cslib.GameTheory in
+example : ComputableInPolyTime (fun c : CongestionCode => CongestionCode.mk c.playerStrategies
+    c.costTables) encCongestion encCongestion := by
+  fun_prop
+
+section GlobalFunProp
+open Turing.MultiTapeTM in
+example : ComputableInPolyTime
+    (fun c : Cslib.GameTheory.CongestionCode =>
+      Cslib.GameTheory.CongestionCode.mk c.playerStrategies c.costTables)
+    Cslib.GameTheory.encCongestion Cslib.GameTheory.encCongestion := by
+  fun_prop
+end GlobalFunProp

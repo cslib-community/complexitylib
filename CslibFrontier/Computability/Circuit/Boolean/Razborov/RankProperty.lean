@@ -51,7 +51,8 @@ the zero-sum matrix of `f` is at least `C(n, a) / 2`.
   depth-`d` AC⁰[2] circuit computing a function that passes the test has size at least
   `2 · 2 ^ ℓ / (5 (n + 1))` whenever `ℓ ^ d + 2 ≤ 2 s` (`two_mul_two_pow_le_size_of_mem_rankTest`).
 
-The constructivity of the test, the circuit size of computing its rank, is not treated here.
+The constructivity of the test, a circuit of size `173 · 8 ^ n` deciding it from truth tables, is
+in `CslibFrontier.Computability.Circuit.Boolean.Razborov.Natural`.
 
 **Sources and variant.** [Razborov and Rudich, §3.2, p. 27][RazborovRudich1997] state the rank
 property only abstractly and leave its largeness as an exercise. The explicit form for `p = 2` is

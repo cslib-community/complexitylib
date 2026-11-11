@@ -149,15 +149,12 @@ theorem length_encCore_coreInput_le (y : List ℕ × ℕ × ℕ × ℕ × Descri
 
 variable (core : ℕ × List ℕ × ℕ × DescribedNetwork (SpecDesc T) → List ℕ)
 
-/-- The encoding of the state of the loop: the binary index, the input and the values so far. -/
-local notation "encS" => encPair encNat (encPair (encEngine encT) (encList (encList encNat)))
-
 /-- **The live state of the loop.** After `j` rounds, if each of the first `j` values is at most
 `Yb` bits, the state is at most `2 |j| + 2 n + 2 + j (2 Yb + 1)` bits, for the binary length `|j|`
 of `j` and the length `n` of the input. -/
 theorem length_run_engineStep_le (y : List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) {j Yb : ℕ}
     (hY : ∀ k < j, (encList encNat (core (coreInput y k))).length ≤ Yb) :
-    (encS (IndexFold.run (engineStep core) j (y, []))).length ≤
+    (encEngineState encT (IndexFold.run (engineStep core) j (y, []))).length ≤
       2 * (encNat j).length + 2 * (encEngine encT y).length + 2 + j * (2 * Yb + 1) := by
   rw [run_engineStep]
   have h := Turing.MultiTapeTM.length_encList_le (encList encNat)
@@ -195,11 +192,11 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     ComputableInPolyTime.id'.prod (ComputableInPolyTime.const [])
   have hcA : ComputableInPolyTime
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) => p.2.1)
-      encS (encEngine encT) :=
+      (encEngineState encT) (encEngine encT) :=
     (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)
   have hcC : ComputableInPolyTime
       (fun p : ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) => p.2.2)
-      encS (encList (encList encNat)) :=
+      (encEngineState encT) (encList (encList encNat)) :=
     (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _)
   have hcB := ComputableInPolyTime.snoc (encList encNat)
   obtain ⟨pN, hpN, mN, bN⟩ := exists_mono_poly_cert hcN
@@ -237,7 +234,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     simp only [Sh, S]
     omega
   have hstate (j : ℕ) (hj : j ≤ N) :
-      (encS (IndexFold.run (engineStep core) j (y, []))).length ≤ S := by
+      (encEngineState encT (IndexFold.run (engineStep core) j (y, []))).length ≤ S := by
     have h := length_run_engineStep_le (encT := encT) core y (j := j) (Yb := Yb)
       fun k hk => (hcore k (by omega)).2.2
     have hj' : (encNat j).length ≤ N := (length_encNat_mono hj).trans (length_encNat_le_self N)
@@ -271,7 +268,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     have hsq := Nat.pow_le_pow_left hidx 2
     have hR := (hcore j hj).1
     rw [run_engineStep] at h1 h2 h3 h4 hs hsq ⊢
-    simp only [Function.comp_apply] at h1 h2 h3 h4 hs hsq ⊢
+    simp only [Function.comp_apply, encEngineState] at h1 h2 h3 h4 hs hsq ⊢
     omega
   have hround_space (j : ℕ) (hj : j ≤ N) :
       (IndexFold.roundCertificate (engineStepCertificate core cc)).space
@@ -290,7 +287,7 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
       exact (length_encNat_mono hj).trans (length_encNat_le_self N)
     have hQ := (hcore j hj).2.1
     rw [run_engineStep] at h1 h2 h3 h4 hs hidx ⊢
-    simp only [Function.comp_apply] at h1 h2 h3 h4 hs hidx ⊢
+    simp only [Function.comp_apply, encEngineState] at h1 h2 h3 h4 hs hidx ⊢
     omega
   -- The trajectory maxima.
   have hmaxT : NativeCertificate.maxRoundTime
@@ -301,9 +298,10 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
       (IndexFold.roundCertificate (engineStepCertificate core cc)) N (0, y, []) ≤
         S + (N + 1) + pA (Sh X) + pC (Sh X) + pD (Sh X) + pB (2 * Sh X + 1 + X) + Q :=
     NativeCertificate.maxRoundSpace_le _ _ _ fun j hj => hround_space j hj
-  have hmaxL : NativeCertificate.maxStateLength encS (IndexFold.step (engineStep core)) N
-      (0, y, []) ≤ S :=
+  have hmaxL : NativeCertificate.maxStateLength (encEngineState encT)
+      (IndexFold.step (engineStep core)) N (0, y, []) ≤ S :=
     NativeCertificate.maxStateLength_le _ _ _ _ fun j hj => hstate j hj
+  dsimp only [encEngineState] at hmaxL
   -- The pieces outside the loop.
   have hLX : L ≤ X := by omega
   have hNt := (bN y).1.trans (mN hLX)
@@ -329,8 +327,11 @@ theorem engineCertificate_le (cc : NativeCertificate core (encCore encT) (encLis
     have hB := Nat.mul_le_mul_left (N + 1) (show
       NativeCertificate.maxRoundTime (IndexFold.roundCertificate (engineStepCertificate core cc))
           N (0, y, []) +
-        NativeCertificate.maxStateLength encS (IndexFold.step (engineStep core)) N (0, y, []) +
-          ((encNat N).length + 1) ^ 2 ≤ 2 * S + 2 * (N + 1) ^ 2 + P4 + R by omega)
+        NativeCertificate.maxStateLength (encEngineState encT)
+          (IndexFold.step (engineStep core)) N (0, y, []) +
+          ((encNat N).length + 1) ^ 2 ≤ 2 * S + 2 * (N + 1) ^ 2 + P4 + R by
+            dsimp only [encEngineState]; omega)
+    dsimp only [encEngineState] at hB
     have hsum : (N + 1) * A + (N + 1) * (2 * S + 2 * (N + 1) ^ 2 + P4 + R) =
         (N + 1) * (A + 2 * S + 2 * (N + 1) ^ 2 + P4 + R) := by ring
     have hC := Nat.mul_le_mul_left (N + 1)

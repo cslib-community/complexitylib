@@ -16,10 +16,10 @@ public import CslibFrontier.Computability.Complexity.Problems.MaxTwoSAT
 
 This module connects the Goemans–Williamson MAX-2SAT analysis in
 `CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson` [GoemansWilliamson1995] to the
-complexity-theoretic `Cslib.Complexity.MaxTwoSAT` problem on `CNF ℕ`, whose satisfied-clause count
-is `φ.countP (Clause.eval σ)`. Indexing clauses by `Fin φ.length`, `satValue` equals
-`(φ.countP (Clause.eval σ) : ℝ)` (`satValue_eq_countP`), and the `ε`-optimal rounding guarantee
-restates directly for `MaxTwoSAT`.
+complexity-theoretic `Cslib.Complexity.MaxTwoSAT` problem on `MaxTwoSATInstance`, whose
+satisfied-clause count is `φ.countP (Clause.eval σ)`. Indexing clauses by `Fin φ.length`,
+`satValue` equals `(φ.countP (Clause.eval σ) : ℝ)` (`satValue_eq_countP`), and the `ε`-optimal
+rounding guarantee restates directly for `MaxTwoSAT`.
 
 ## Main results
 
@@ -28,7 +28,7 @@ restates directly for `MaxTwoSAT`.
 * `Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_countP_le_integral`: the
   Goemans–Williamson guarantee for `CNF.countP`.
 * `Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_target_le_integral_of_mem`:
-  for any `(φ, K) ∈ Cslib.Complexity.MaxTwoSAT` and `ε`-optimal unit vectors, the expected number
+  for any `⟨φ, K⟩ ∈ Cslib.Complexity.MaxTwoSAT` and `ε`-optimal unit vectors, the expected number
   of satisfied clauses under random-hyperplane rounding is at least `α ((K : ℝ) - ε)`.
 
 ## References
@@ -77,12 +77,13 @@ theorem goemansWilliamsonConstant_mul_countP_le_integral (φ : CNF V) (hφ : ∀
   exact goemansWilliamsonConstant_mul_sub_le_integral (fun i : Fin φ.length => φ[i])
     (fun i => hφ φ[i] (List.getElem_mem i.2)) (fun _ => zero_le_one) hv hopt σ
 
-/-- **Goemans–Williamson guarantee for `Cslib.Complexity.MaxTwoSAT`.** If `(φ, K) ∈ MaxTwoSAT` and
+/-- **Goemans–Williamson guarantee for `Cslib.Complexity.MaxTwoSAT`.** If `⟨φ, K⟩ ∈ MaxTwoSAT` and
 unit vectors `v` are within `ε` of optimal for `satSdpValue`, then the expected number of clauses
 satisfied by `satHyperplaneAssignment v r` is at least `α ((K : ℝ) - ε)`. -/
 theorem goemansWilliamsonConstant_mul_target_le_integral_of_mem {φ : CNF ℕ} {K : ℕ}
-    (hmem : (φ, K) ∈ Cslib.Complexity.MaxTwoSAT) {v : Option ℕ → F} (hv : ∀ o, ‖v o‖ = 1)
-    {ε : ℝ} (hopt : ∀ v' : Option ℕ → F, (∀ o, ‖v' o‖ = 1) →
+    (hmem : (⟨φ, K⟩ : Cslib.Complexity.MaxTwoSATInstance) ∈ Cslib.Complexity.MaxTwoSAT)
+    {v : Option ℕ → F} (hv : ∀ o, ‖v o‖ = 1) {ε : ℝ}
+    (hopt : ∀ v' : Option ℕ → F, (∀ o, ‖v' o‖ = 1) →
       satSdpValue (fun i : Fin φ.length => φ[i]) (fun _ => 1) v' ≤
         satSdpValue (fun i : Fin φ.length => φ[i]) (fun _ => 1) v + ε) :
     goemansWilliamsonConstant * ((K : ℝ) - ε) ≤

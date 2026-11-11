@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.VertexCover
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.DominatingSet
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -18,8 +19,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-!
 # Dominating sets
 
-`DominatingSet` is problem GT2 of [Garey and Johnson][GareyJohnson1979]. Its instances are graphs,
-given by a list of vertices and a list of edges, together with a number `k`. An instance is in the
+`DominatingSet` is problem GT2 of [Garey and Johnson][GareyJohnson1979]. Its instances
+(`Cslib.Complexity.DominatingSetInstance`, encoded by `Cslib.Complexity.encDominatingSet`) pair a
+graph, given by a list of vertices and a list of edges, with a number `k`. An instance is in the
 problem when some `k` declared vertices dominate the graph: every declared vertex is chosen or is
 adjacent to a chosen one. Graphs are read on their declared vertices through
 `Cslib.Complexity.Graph.induced`, and domination through `SimpleGraph.IsDominatingSet`, as for
@@ -37,7 +39,7 @@ selects declared vertices, and `DominatingSet.isDominating` checks domination.
 
 ## The reduction from vertex cover
 
-`VertexCover.toDominatingSet` maps `(G, k)` to `(VertexCover.dominationGraph G, k + 1)`. The graph
+`VertexCover.toDominatingSet` maps `(G, k)` to `⟨VertexCover.dominationGraph G, k + 1⟩`. The graph
 `dominationGraph G` has:
 
 * a copy `2v` of every declared vertex `v` of `G`;
@@ -64,6 +66,7 @@ between copies.
 
 ## Main definitions
 
+* `Cslib.Complexity.DominatingSetInstance`, `Cslib.Complexity.encDominatingSet`.
 * `Cslib.Complexity.DominatingSet`.
 * `Cslib.Complexity.DominatingSet.isDominating`: the executable domination test.
 * `Cslib.Complexity.VertexCover.properEdges`, `Cslib.Complexity.VertexCover.edgeVertex`,
@@ -76,7 +79,7 @@ between copies.
   dominating sets of exactly `k` vertices versus dominating sets of at most `k` vertices.
 * `Cslib.Complexity.DominatingSet.isDominating_eq_true_iff`,
   `Cslib.Complexity.DominatingSet.computableInPolyTime_isDominating`,
-  `Cslib.Complexity.DominatingSet.mem_NP`: `DominatingSet ∈ NP (encPair encGraph encNat)`.
+  `Cslib.Complexity.DominatingSet.mem_NP`: `DominatingSet ∈ NP encDominatingSet`.
 * `Cslib.Complexity.VertexCover.toDominatingSet_mem_iff`,
   `Cslib.Complexity.VertexCover.computableInPolyTime_toDominatingSet`,
   `Cslib.Complexity.polyTimeReducible_VertexCover_DominatingSet`: the reduction.
@@ -88,23 +91,43 @@ between copies.
 * [M. R. Garey and D. S. Johnson, *Computers and Intractability*][GareyJohnson1979], Problem GT2.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
 open Turing.MultiTapeTM ComputableInPolyTime
 
+/-- An instance `(graph, bound)` of **Dominating Set**. -/
+@[ext]
+structure DominatingSetInstance where
+  /-- The undirected graph to dominate. -/
+  graph : Graph
+  /-- The number of vertices in the dominating set. -/
+  bound : ℕ
+  deriving DecidableEq, Repr
+
+/-- Encoding of `DominatingSetInstance` as a pair `(graph, bound)`. -/
+enc_structure encDominatingSet : DominatingSetInstance where
+  graph : encGraph,
+  bound : encNat
+
+attribute [fun_prop] encDominatingSet_graph_polyTime encDominatingSet_bound_polyTime
+  encDominatingSet_mk_polyTime
+
 /-- The graphs with a dominating set of `k` of their vertices [Garey and Johnson, Problem
 GT2][GareyJohnson1979]: `k` declared vertices such that every declared vertex is chosen or adjacent
 to a chosen one. -/
-def DominatingSet : Set (Graph × ℕ) :=
-  {(G, k) | ∃ S : Finset {v // v ∈ G.1}, G.induced.IsDominatingSet S ∧ S.card = k}
+@[expose]
+def DominatingSet : Set DominatingSetInstance :=
+  {x | ∃ S : Finset {v // v ∈ x.graph.1}, x.graph.induced.IsDominatingSet S ∧ S.card = x.bound}
 
 /-- Membership in `DominatingSet` as a finite set of `k` declared vertices such that every declared
 vertex is chosen or adjacent to a chosen one. -/
+@[simp]
 theorem mem_DominatingSet_iff {G : Graph} {k : ℕ} :
-    (G, k) ∈ DominatingSet ↔ ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
-      (∀ v ∈ G.1, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card = k := by
+    (⟨G, k⟩ : DominatingSetInstance) ∈ DominatingSet ↔
+      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
+        (∀ v ∈ G.1, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card = k := by
   constructor
   · rintro ⟨S, hS, hcard⟩
     refine ⟨S.map (.subtype _),
@@ -126,8 +149,9 @@ theorem mem_DominatingSet_iff {G : Graph} {k : ℕ} :
 exactly when `k` is at most the number of distinct declared vertices and some dominating set has
 at most `k` vertices. -/
 theorem mem_DominatingSet_iff_exists_card_le {G : Graph} {k : ℕ} :
-    (G, k) ∈ DominatingSet ↔ k ≤ G.1.toFinset.card ∧ ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
-      (∀ v ∈ G.1, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card ≤ k := by
+    (⟨G, k⟩ : DominatingSetInstance) ∈ DominatingSet ↔
+      k ≤ G.1.toFinset.card ∧ ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
+        (∀ v ∈ G.1, v ∈ S ∨ ∃ s ∈ S, G.toSimpleGraph.Adj v s) ∧ S.card ≤ k := by
   rw [mem_DominatingSet_iff]
   constructor
   · rintro ⟨S, hSV, hS, rfl⟩
@@ -143,6 +167,7 @@ namespace DominatingSet
 /-! ### Membership in `NP` -/
 
 /-- Whether every declared vertex of `G` is in `C` or adjacent to a vertex of `C`. -/
+@[expose]
 def isDominating (G : Graph) (C : List ℕ) : Bool :=
   G.1.all fun v => decide (v ∈ C) || C.any fun s => G.adjBool v s
 
@@ -162,17 +187,16 @@ theorem computableInPolyTime_isDominating :
 
 /-- `DominatingSet` belongs to `NP`: the certificate selects distinct declared vertices, and the
 verifier checks their number and `isDominating`. -/
-theorem mem_NP : DominatingSet ∈ NP (encPair encGraph encNat) := by
-  have hset : DominatingSet = {x | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ x.1.1) ∧
-      ((∀ v ∈ x.1.1, v ∈ S ∨ ∃ s ∈ S, x.1.toSimpleGraph.Adj v s) ∧ S.card = x.2)} :=
+theorem mem_NP : DominatingSet ∈ NP encDominatingSet := by
+  have hset : DominatingSet = {x | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ x.graph.1) ∧
+      ((∀ v ∈ x.graph.1, v ∈ S ∨ ∃ s ∈ S, x.graph.toSimpleGraph.Adj v s) ∧
+        S.card = x.bound)} :=
     Set.ext fun ⟨_, _⟩ => mem_DominatingSet_iff
   rw [hset]
-  refine mem_NP_of_subsetWitness (encγ := encNat) (vs := fun x : Graph × ℕ => x.1.1)
-    (check := fun y => decide (y.2.length = y.1.2) && isDominating y.1.1 y.2)
-    (by unfold encGraph; fun_prop) ?_ fun x l hl _ => ?_
-  · refine bool_and' ?_ (computableInPolyTime_isDominating.comp
-      (((fst _ _).comp (fst _ _)).prod (snd _ _)))
-    exact ((length_list_binary encNat).comp (snd _ _)).decide_eq' (by fun_prop)
+  refine mem_NP_of_subsetWitness (encγ := encNat) (vs := fun x : DominatingSetInstance => x.graph.1)
+    (check := fun y => decide (y.2.length = y.1.bound) && isDominating y.1.graph y.2)
+    ((fst _ _).comp (encDominatingSet_graph_polyTime (by fun_prop)))
+    (by fun_prop) fun x l hl _ => ?_
   · simp only [Bool.and_eq_true, decide_eq_true_eq, isDominating_eq_true_iff, List.mem_toFinset,
       List.toFinset_card_of_nodup hl, and_comm]
 
@@ -183,6 +207,7 @@ end DominatingSet
 namespace VertexCover
 
 /-- The listed edges of `G` between two distinct declared vertices. -/
+@[expose]
 def properEdges (G : Graph) : List (ℕ × ℕ) :=
   (declaredEdges G).filter fun e => decide (e.1 ≠ e.2)
 
@@ -192,6 +217,7 @@ theorem mem_properEdges {G : Graph} {e : ℕ × ℕ} :
   simp only [properEdges, List.mem_filter, mem_declaredEdges, decide_eq_true_eq, and_assoc]
 
 /-- The vertex of the edge `e` in `dominationGraph`: an odd number at least `5`. -/
+@[expose]
 def edgeVertex (e : ℕ × ℕ) : ℕ := 2 * Nat.pair e.1 e.2 + 5
 
 /-- Distinct edges have distinct vertices. -/
@@ -204,6 +230,7 @@ theorem edgeVertex_injective : Function.Injective edgeVertex := by
 /-- The graph of the reduction from `VertexCover` to `DominatingSet`: a copy `2v` of every
 declared vertex `v`, a hub `1` adjacent to every copy, a pendant `3` adjacent to the hub, and for
 every proper edge `e` a vertex `edgeVertex e` adjacent to the copies of the endpoints of `e`. -/
+@[expose]
 def dominationGraph (G : Graph) : Graph :=
   (1 :: 3 :: G.1.map (2 * ·) ++ (properEdges G).map edgeVertex,
     (1, 3) :: G.1.map (fun v => (1, 2 * v)) ++
@@ -296,12 +323,14 @@ private theorem decodeVertex_edgeVertex (e : ℕ × ℕ) : decodeVertex (edgeVer
 /-- The reduction from `VertexCover` to `DominatingSet`: the graph `dominationGraph G` with the
 target `k + 1`, or the unsatisfiable target `0` when `k` exceeds the number of distinct declared
 vertices. -/
-def toDominatingSet : Graph × ℕ → Graph × ℕ := fun (G, k) =>
-  (dominationGraph G, if k ≤ G.1.toFinset.card then k + 1 else 0)
+@[expose]
+def toDominatingSet : Graph × ℕ → DominatingSetInstance := fun (G, k) =>
+  ⟨dominationGraph G, if k ≤ G.1.toFinset.card then k + 1 else 0⟩
 
 /-- A vertex cover of `k` vertices, with the hub, dominates `dominationGraph G`. -/
 private theorem mem_DominatingSet_of_mem_VertexCover {G : Graph} {k : ℕ}
-    (h : (G, k) ∈ VertexCover) : (dominationGraph G, k + 1) ∈ DominatingSet := by
+    (h : (G, k) ∈ VertexCover) :
+    (⟨dominationGraph G, k + 1⟩ : DominatingSetInstance) ∈ DominatingSet := by
   classical
   obtain ⟨C, hCV, hC, rfl⟩ := mem_VertexCover_iff.1 h
   refine mem_DominatingSet_iff.2 ⟨insert 1 (C.image (2 * ·)), fun w hw => ?_, fun w hw => ?_, ?_⟩
@@ -328,7 +357,8 @@ private theorem mem_DominatingSet_of_mem_VertexCover {G : Graph} {k : ℕ}
 /-- A dominating set of `dominationGraph G` of `k + 1` vertices yields a vertex cover of at most
 `k` vertices: drop the hub and the pendant, and read the remaining vertices back in `G`. -/
 private theorem exists_cover_of_mem_DominatingSet {G : Graph} {k : ℕ}
-    (h : (dominationGraph G, k + 1) ∈ DominatingSet) : ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
+    (h : (⟨dominationGraph G, k + 1⟩ : DominatingSetInstance) ∈ DominatingSet) :
+    ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧
       (∀ u ∈ G.1, ∀ v ∈ G.1, G.toSimpleGraph.Adj u v → u ∈ S ∨ v ∈ S) ∧ S.card ≤ k := by
   classical
   obtain ⟨D, hDV, hD, hcard⟩ := mem_DominatingSet_iff.1 h
@@ -441,17 +471,18 @@ theorem computableInPolyTime_dominationGraph :
 number of distinct declared vertices, computed in unary. -/
 @[fun_prop]
 theorem computableInPolyTime_toDominatingSet :
-    ComputableInPolyTime toDominatingSet (encPair encGraph encNat) (encPair encGraph encNat) := by
+    ComputableInPolyTime toDominatingSet (encPair encGraph encNat) encDominatingSet := by
   have hle : ComputableInPolyTime (fun x : Graph × ℕ => decide (x.2 ≤ x.1.1.toFinset.card))
       (encPair encGraph encNat) encBool := by
     simp_rw [← Graph.length_distinctVertices]
     fun_prop
   have heq : toDominatingSet = fun x : Graph × ℕ =>
-      (dominationGraph x.1, if decide (x.2 ≤ x.1.1.toFinset.card) then x.2 + 1 else 0) := by
+      (⟨dominationGraph x.1,
+        if decide (x.2 ≤ x.1.1.toFinset.card) then x.2 + 1 else 0⟩ : DominatingSetInstance) := by
     funext ⟨G, k⟩
     simp only [toDominatingSet, decide_eq_true_eq]
   rw [heq]
-  exact (computableInPolyTime_dominationGraph.comp (fst _ _)).prod
+  exact encDominatingSet_mk_polyTime (computableInPolyTime_dominationGraph.comp (fst _ _))
     (ite' hle (by fun_prop) (const 0))
 
 end VertexCover
@@ -459,18 +490,18 @@ end VertexCover
 /-- `VertexCover` reduces to `DominatingSet` in polynomial time via
 `VertexCover.toDominatingSet`. -/
 theorem polyTimeReducible_VertexCover_DominatingSet :
-    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) VertexCover
+    PolyTimeReducible (encPair encGraph encNat) encDominatingSet VertexCover
       DominatingSet :=
   ⟨VertexCover.toDominatingSet, VertexCover.computableInPolyTime_toDominatingSet,
     fun x => (VertexCover.toDominatingSet_mem_iff x).symm⟩
 
 /-- `DominatingSet` is `NP`-hard. -/
-theorem DominatingSet_npHard : NPHard (encPair encGraph encNat) DominatingSet :=
+theorem DominatingSet_npHard : NPHard encDominatingSet DominatingSet :=
   VertexCover_npHard.trans polyTimeReducible_VertexCover_DominatingSet
 
 /-- **`DominatingSet` is NP-complete** [Garey and Johnson, Problem GT2][GareyJohnson1979], with the
 target in binary. -/
-theorem DominatingSet_npComplete : NPComplete (encPair encGraph encNat) DominatingSet :=
+theorem DominatingSet_npComplete : NPComplete encDominatingSet DominatingSet :=
   ⟨DominatingSet.mem_NP, DominatingSet_npHard⟩
 
 end Cslib.Complexity

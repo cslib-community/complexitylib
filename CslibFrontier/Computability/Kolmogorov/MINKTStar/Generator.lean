@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Kolmogorov.MINKTStar.TruthTable
 import CslibFrontier.Computability.MCSP.PartialHardness.Completeness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Foundations.Data.List.Blocks
+import CslibFrontier.Foundations.Data.List.GetD
 
 /-!
 # The `MINKT*` generator for the CMMSA table
@@ -26,7 +27,7 @@ printed from a short description: the **generator witness** (`GenWitness`). It h
 `f v` for `v ∈ S` only. Its expansion (`GenWitness.generate`) prints, at the input numbered `x`, the
 parity of the chosen term of the indexed formula, computed from those tables by H5b1's evaluator
 (`PartialMCSP.FromCMMSA.termParityN`). At a defined entry every term has the entry's parity, so
-the printed table is consistent with the pattern (`GenWitness.consistent_generate`).
+the printed table is consistent with the pattern (`GenWitness.exists_consistent_generate`).
 
 The tables of the set variables have total length at most `2 w(S) λ ≤ 2 θ λ`
 (`PartialMCSP.FromCMMSA.sum_two_pow_varLength_le_two_mul_weight`), so the witness has encoded
@@ -51,7 +52,7 @@ polynomial time; the threshold of the `MINKT*` instance is chosen from that.
 ## References
 
 The generator and its analysis are the library's own. They give the yes case of the library's
-proof of the `MINKT*` clause of [Hirahara2022, Theorem I.2], which issue #4447 tracks.
+proof of the `MINKT*` clause of [Hirahara2022, Theorem I.2], `MINKTStar.rpHard` in `Hardness.lean`.
 
 * [S. Hirahara, *NP-Hardness of Learning Programs and Partial MCSP*][Hirahara2022]
 -/
@@ -130,11 +131,6 @@ private theorem getD_setTables {f : VarFunctions I lam} {S : Finset ℕ} {v : �
   · simp [setTables, List.getD_eq_getElem?_getD, hvn, hv]
   · simp [setTables, varTable, List.getD_eq_getElem?_getD, hvn]
 
-private theorem getD_formulas_mem {j : ℕ} (hj : j < I.formulas.length) :
-    I.formulas.getD j [] ∈ I.formulas := by
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj, Option.getD_some]
-  exact List.getElem_mem hj
-
 /-- **Consistency.** If `τ j` is a term of formula `j` whose variables lie in `S`, then the honest
 witness prints a table consistent with the CMMSA table. -/
 private theorem consistent_generate_ofSat (hwf : I.WellFormed Δ) {τ : ℕ → ℕ} {S : Finset ℕ}
@@ -149,7 +145,7 @@ private theorem consistent_generate_ofSat (hwf : I.WellFormed Δ) {τ : ℕ → 
   have hj : (x : ℕ) % 2 ^ indexWidth I < I.formulas.length := by
     simpa only [formulaIndex_equivFin_symm] using formulaIndex_lt_of_entry_eq_some hx
   obtain ⟨htj, hS⟩ := hτ _ hj
-  have hτΔ := htj.trans_le (hwf.length_le (getD_formulas_mem hj))
+  have hτΔ := htj.trans_le (hwf.length_le (List.getD_mem [] hj))
   have hpar := termParityN_eq (f := f) (T := setTables f S) x ⟨_, hτΔ⟩ fun q hq =>
     IsVarTable.of_getD_eq (getD_setTables (hS q hq))
   have hentry := termParity_eq_of_entry_eq_some hx ⟨_, hτΔ⟩
@@ -173,7 +169,7 @@ private theorem length_enc_ofSat_le (hwf : I.WellFormed Δ) (hlam : 1 ≤ lam) {
     refine (List.sum_le_length_nsmul _ (2 * Δ) fun a ha => ?_).trans (by simp)
     obtain ⟨j, hj, rfl⟩ := List.mem_map.1 ha
     have hj' := List.mem_range.1 hj
-    have := (hτ j hj').trans_le (hwf.length_le (getD_formulas_mem hj'))
+    have := (hτ j hj').trans_le (hwf.length_le (List.getD_mem [] hj'))
     simp only [Function.comp_apply, encUnary_apply, List.length_replicate]
     omega
   -- the tables: `2 ∑_{v ∈ S} 2 ^ ℓ v + n ≤ 4 w(S) λ + n`
