@@ -51,8 +51,9 @@ Oliveira and Santhanam's formula magnification [oliveirasanthanam2018][oliveiras
 | `formula-magnification-stretched` | Theorem 17(ii) | leaf size `N^(1+ε)` at arbitrarily large `N`; polynomially bounded parameters | some δ > 0 and NP language whose formula size is not `O(2^(m^δ))` |
 | `formula-magnification-subexp` | Theorem 17(iii) | leaf size `2^(n + n/d)` or `N^(1+ε)`; subexponential parameters | `NP ⊄ Formula[poly]` |
 | `formula-magnification-average-case` | Theorem 27, one-sided | leaf size `2^(n/d)` for formulas accepting every yes-instance and at most `2^(2^n - n)` tables | `NP ⊄ Formula[poly]`, weaker than the source's `2^Ω(n)` |
+| `formula-magnification-ternary` | Theorem 5, Definition 43 | `o(N)` total leaves for ternary zero-error devices (unknown mask and answer formula) solving `MCSP[⌊2^√n⌋]`, answering `?` on at most a `1/n` fraction for every large n | `NP ⊄ Formula[poly]` |
 
-The average-case form covers formulas only, not the ternary zero-error devices of Theorem 5.
+[SublinearAverageCase.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/SublinearAverageCase.lean) states Theorem 5 for ternary zero-error devices ([ZeroErrorAverageCase.lean](../../CslibFrontier/Computability/MCSP/ZeroErrorAverageCase.lean)) at the threshold `⌊2^√n⌋`: if no device family with `o(N)` total leaves solves `MCSP[⌊2^√n⌋]` while answering `?` on at most a `1/n` fraction of truth tables for every large n (Definition 43), then `NP ⊄ Formula[poly]`. The section 1.2 form, with `?` on at most half of the tables, is a corollary, and a library generalization takes any subexponential threshold.
 
 ## Consequences of NP-hardness of MCSP
 
@@ -144,7 +145,6 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 
 - Liu–Pass Theorem 3.1 (c) in the near-linear range `t(n) ≥ (1 + ε) n`, which needs a rate-1 efficient conditional EP-PRG.
 - The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1), which needs approximate counting by circuits; only existence is proved.
-- The rounded `2^√n`, ternary zero-error-device form of Oliveira–Santhanam Theorem 5.
 - NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
 - The minimum formula size problem (MFSP) as a separate problem, and the locality barrier of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam.
 - Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.
