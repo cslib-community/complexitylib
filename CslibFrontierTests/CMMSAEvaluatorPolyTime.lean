@@ -44,6 +44,19 @@ example (Δ k : ℕ) :
       (encOption encBool) := by
   fun_prop
 
+/-- The shape a client mapping over the entries meets: an abstract context with the instance,
+`λ` and the tables given by certificates, and the input `x` arriving in unary from `mapWithInput`
+over `List.range`. -/
+example {γ : Type} {enc : γ ↪ List Bool} {I : γ → CMMSAInstance} {lam : γ → ℕ}
+    {T : γ → List (List Bool)} (Δ k : ℕ)
+    (hI : ComputableInPolyTime I enc CMMSAInstance.encoding)
+    (hlam : ComputableInPolyTime lam enc encUnary)
+    (hT : ComputableInPolyTime T enc (encList encBits)) :
+    ComputableInPolyTime
+      (fun p : γ × (ℕ × ℕ) => termParityN (I p.1) Δ k (lam p.1) (T p.1) p.2.1 p.2.2)
+      (encPair enc (encPair encUnary encUnary)) encBool := by
+  fun_prop
+
 /-- The bound on the number of entries holds for every instance, here one with no formulas and a
 weight of `0`. -/
 example (Δ k lam : ℕ) : 2 ^ inputLength ⟨[0], 0, []⟩ Δ k lam ≤ 2 * (2 ^ k * 2) ^ (Δ * Δ) := by

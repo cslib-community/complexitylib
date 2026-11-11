@@ -9,13 +9,13 @@ module
 
 public import CslibFrontier.Computability.MCSP.PartialHardness.Evaluator
 public import CslibFrontier.Computability.MCSP.PartialNP
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Data.List.Fold
@@ -102,10 +102,8 @@ theorem maxWeight_eq_zero_or_mem (I : CMMSAInstance) :
 
 /-- The largest weight is at most any bound on the weights. -/
 theorem maxWeight_le {I : CMMSAInstance} {b : ℕ} (h : ∀ w ∈ I.weights, w ≤ b) :
-    maxWeight I ≤ b := by
-  rcases maxWeight_eq_zero_or_mem I with h' | h'
-  · exact h' ▸ Nat.zero_le b
-  · exact h _ h'
+    maxWeight I ≤ b :=
+  List.max_le_of_forall_le _ _ h
 
 /-- **The seed width is `⌈log₂ (w_max λ)⌉`** for the largest weight `w_max`. -/
 theorem seedWidth_eq (I : CMMSAInstance) (lam : ℕ) :
@@ -157,21 +155,9 @@ theorem computableInPolyTime_varLength {I : α → CMMSAInstance} {lam v : α �
 theorem computableInPolyTime_maxWeight {I : α → CMMSAInstance}
     (hI : ComputableInPolyTime I input CMMSAInstance.encoding) :
     ComputableInPolyTime (fun a => maxWeight (I a)) input encUnary := by
-  have hw := CMMSAInstance.isPolyTime_weights hI
-  have hfold := ComputableInPolyTime.foldlWithInput_of_bounded_growth
-    (encA := encUnary) (encL := encList encUnary) (encB := encUnary)
-    (list := fun a => (I a).weights) (step := fun _ acc w => max acc w)
-    (ComputableInPolyTime.const 0)
-    ⟨hw, (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_max).comp
-      ((ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.fst _ _) |>.prod
-        (ComputableInPolyTime.snd _ _)), inferInstance, inferInstance⟩
-    (growth := fun a => (encList encUnary (I a).weights).length)
-    ⟨hw.polyBounded_length, fun a acc w hw' => by
-      have := SizedListEncoding.length_elem_le (encA := encUnary) (encL := encList encUnary) _ w hw'
-      simp only [encUnary_apply, List.length_replicate] at this ⊢
-      omega⟩
-  refine ComputableInPolyTime.of_enc_eq hfold fun a => ?_
-  rw [maxWeight, List.foldl_eq_foldr]
+  refine ComputableInPolyTime.of_enc_eq ((ComputableInPolyTime.unary_foldl_max 0).comp
+    (CMMSAInstance.isPolyTime_weights hI)) fun a => ?_
+  rw [Function.comp_apply, maxWeight, List.foldl_eq_foldr]
 
 /-- The width of the formula index is polynomial-time, in unary. -/
 @[fun_prop]
@@ -293,7 +279,8 @@ private theorem computableInPolyTime_all_range {g : α → ℕ → Bool} (n : �
       (hg n n.lt_succ_self)
 
 /-- A slot bit computed from explicit tables is polynomial-time, for fixed `Δ` and `k`: the
-instance `I`, `λ`, the slot `(t, q)` in unary, the tables `T` and the input `x` in binary. -/
+instance `I` (in `CMMSAInstance.encoding`), `λ` and the slot `(t, q)` in unary, the tables `T` and
+the input `x` in binary. -/
 @[fun_prop]
 theorem computableInPolyTime_slotBitN {I : α → CMMSAInstance} {lam t q x : α → ℕ}
     {T : α → List (List Bool)} (Δ k : ℕ)
@@ -319,7 +306,8 @@ theorem computableInPolyTime_slotBitN {I : α → CMMSAInstance} {lam t q x : α
       (ComputableInPolyTime.binary_two_pow.comp (computableInPolyTime_varLength hI hlam hv))))
 
 /-- The parity of a term computed from explicit tables is polynomial-time, for fixed `Δ` and `k`:
-the instance `I`, `λ` and the term `t` in unary, the tables `T` and the input `x` in binary. -/
+the instance `I` (in `CMMSAInstance.encoding`), `λ` and the term `t` in unary, the tables `T` and
+the input `x` in binary. -/
 @[fun_prop]
 theorem computableInPolyTime_termParityN {I : α → CMMSAInstance} {lam t x : α → ℕ}
     {T : α → List (List Bool)} (Δ k : ℕ)
@@ -338,7 +326,7 @@ theorem computableInPolyTime_termParityN {I : α → CMMSAInstance} {lam t x : �
     (computableInPolyTime_slotBitN Δ k hI hlam hT hx ht (ComputableInPolyTime.const q))
 
 /-- An entry computed from explicit tables is polynomial-time, for fixed `Δ` and `k`: the instance
-`I` and `λ` in unary, the tables `T` and the input `x` in binary. -/
+`I` (in `CMMSAInstance.encoding`), `λ` in unary, the tables `T` and the input `x` in binary. -/
 @[fun_prop]
 theorem computableInPolyTime_entryN {I : α → CMMSAInstance} {lam x : α → ℕ}
     {T : α → List (List Bool)} (Δ k : ℕ)
@@ -372,7 +360,7 @@ theorem computableInPolyTime_entryN {I : α → CMMSAInstance} {lam x : α → �
     (ComputableInPolyTime.const _)
 
 /-- The whole table computed from explicit tables is polynomial-time, for fixed `Δ` and `k`: the
-instance `I` and `λ` in unary, the tables `T`. -/
+instance `I` (in `CMMSAInstance.encoding`), `λ` in unary, the tables `T`. -/
 @[fun_prop]
 theorem computableInPolyTime_tableN {I : α → CMMSAInstance} {lam : α → ℕ}
     {T : α → List (List Bool)} (Δ k : ℕ)
