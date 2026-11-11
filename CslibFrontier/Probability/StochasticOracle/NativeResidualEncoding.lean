@@ -22,8 +22,9 @@ partition, using the proved whole-block-fallback property of `ResidualCover`.
 
 The decoded native WSC has derived validity and primal/dual optimum one. Coverage,
 weights, residuals and local certification commute with the original labels.
-This is not yet the complete native query/role specialization or the universal
-native query-token optimum comparison.
+Runtime-role source execution is derived downstream in `NativeResidualAttainment`
+and `NativeResidualAll`; `NativeResidualMinima` proves the attained native
+one/two-turn optima and ratio under the explicit natural-invoice convention.
 
 ## Main definitions
 

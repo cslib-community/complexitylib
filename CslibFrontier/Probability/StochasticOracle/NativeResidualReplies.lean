@@ -20,13 +20,14 @@ codec. The native streaming parser and rational retention operate on those bytes
 including arbitrary invoice bits, inactive opportunities and cancellation.
 No parser-validity, decoded-family or desired-retention law is assumed.
 
-This connects the original-label construction to runtime local processing and
-the actual response-dependent context updates. Canonical-role correspondence and
-source admission of the second computed request still need a general proof;
-these local endpoints do not yet prove the complete native query loop or identify
-arbitrary native competitors with source behavioral policies. The universal
-native query-token optimum remains open. Invoices here use the existing natural
-wire format; no arbitrary-real invoice encoding or local-instruction deadline is claimed.
+This connects the original-label construction to actual runtime local processing.
+Downstream, `NativeResidualAttainment` and `NativeResidualAll` derive source
+admission and complete native execution for the runtime-role controllers;
+`NativeResidualPolicies` derives the native-to-behavioral competitor laws, and
+`NativeResidualMinima` identifies the attained native one/two-turn optima and ratio.
+The legacy least-element controller still needs its own canonical-role specialization.
+Invoices use the existing natural wire format; no arbitrary-real invoice encoding
+or deadline including local instructions is claimed.
 
 ## Main definitions
 

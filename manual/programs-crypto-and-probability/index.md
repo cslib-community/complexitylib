@@ -1119,15 +1119,16 @@ raw replies, a concurrent actual receipt with a billed canceled slot, and the
 empty interface. Run
 `lake build CslibFrontierTests.StochasticOracleNativeResidualReplies`.
 
-These runtime-update results are not yet a complete source-admitted query-loop
-law. The general source-family specialization still needs canonical role
-correspondence, admission of the computed specialist request, and optimal
-compiled-controller output derived from that whole interaction. Universal
-native one/two-turn optimum transfer and selection of the cheaper attained strategy
-remain open. Natural invoices in the concrete source protocol do not assert an
-encoding for arbitrary real-valued bills. Source deadlines count oracle time only;
-no wall-clock bound including native local instructions is claimed. The Agent
-Operator's Manual needs no edit because workflow and human direction are unchanged.
+The local endpoints above are composed downstream with source admission and
+actual compiled execution by the runtime-role controllers in
+`NativeResidualAttainment` and `NativeResidualAll`. `NativeResidualPolicies`
+derives the one/two-turn native-to-behavioral laws for all admitted competitors;
+`NativeResidualMinima` derives the attained native optima and ratio. The legacy
+component-order controller still needs its own canonical-role specialization.
+Natural invoices do not assert arbitrary-real bill encoding; compiled uniform
+cost-aware choice remains open. Source deadlines count oracle time only.
+The Agent Operator's Manual needs no edit because workflow and human direction
+are unchanged.
 
 ### Submission 191: unbounded native residual-policy tables
 
@@ -1182,12 +1183,11 @@ $$
 The competitor class, original runtime input, one shared sampler/seed and accrued
 bills are exactly those of `BatchOptimum.optimum`; no finite hidden-state or local
 clock bound is introduced. The source prices here are positive natural invoices
-cast to reals. Arbitrary-real invoice representation, native attainment, the
-one-turn lower/equality, the two-turn equality/ratio and compiled cost-aware
-uniform selectors remain open. The legacy component-order upper program still needs canonical-role specialization.
-The runtime-role adaptive variant below derives source admission and arbitrary-family
-certified output, and attains the adaptive cost; the complementary all-specialist
-attainment remains open.
+cast to reals. The downstream runtime-role variants derive source admission,
+certified tape output and both attained native optima and their ratio; see
+`NativeResidualMinima`. Arbitrary-real invoice representation and a compiled
+uniform cost-aware chooser remain open. The legacy component-order upper
+program still needs its own canonical-role specialization.
 
 The [native-policy client](../../CslibFrontierTests/StochasticOracleNativeResidualPolicies.lean)
 uses the five overlapping-triple blocks and an actual full-reply native reader
