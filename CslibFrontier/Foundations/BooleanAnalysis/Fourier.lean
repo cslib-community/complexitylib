@@ -16,6 +16,7 @@ public import Mathlib.Data.Matrix.Mul
 public import Mathlib.Algebra.Module.Equiv.Defs
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.Algebra.Group.AddChar
+import CslibFrontier.Foundations.Data.BitString.Sign.BigOperators
 import Mathlib.Analysis.Fourier.FiniteAbelian.Orthogonality
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.BigOperators.Ring.Finset
@@ -410,15 +411,8 @@ read as signs, is one minus twice the fraction of the inputs on which they diffe
 [O'Donnell, Section 1.4][ODonnell2014]. -/
 theorem expect_signVal_mul_signVal (f g : (ι → Bool) → Bool) :
     𝔼 x, signVal (f x) * signVal (g x) = 1 - 2 * hammingDist f g / 2 ^ Fintype.card ι := by
-  have h (x : ι → Bool) :
-      signVal (f x) * signVal (g x) = 1 - 2 * if f x ≠ g x then 1 else 0 := by
-    rw [signVal_mul_signVal]
-    by_cases hx : f x = g x <;> norm_num [hx]
-  rw [hammingDist]
-  simp only [h, expect_eq_sum_div_card, sum_sub_distrib, ← mul_sum, sum_boole, sum_const,
-    card_univ, Fintype.card_fun, Fintype.card_bool, nsmul_eq_mul, mul_one, Nat.cast_pow,
-    Nat.cast_ofNat]
-  rw [sub_div, div_self (pow_ne_zero _ two_ne_zero)]
+  rw [expect_eq_sum_div_card, sum_signVal_mul_signVal_eq_card_sub, card_univ, Fintype.card_fun,
+    Fintype.card_bool, Nat.cast_pow, Nat.cast_ofNat, sub_div, div_self (pow_ne_zero _ two_ne_zero)]
 
 /-- The Fourier coefficient on `S` of a Boolean function read as signs is one minus twice the
 relative Hamming distance from the function to the parity on `S`. -/
