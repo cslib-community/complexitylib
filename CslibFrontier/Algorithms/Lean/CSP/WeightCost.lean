@@ -231,7 +231,7 @@ private theorem natAbs_prod_entries_le {d W : ℕ}
     (live.map fun (f : FactorTable ℤ V) => f.entries.getD 0 0).prod.natAbs ≤
       d ^ (buds.map Prod.fst).sum * W ^ (buds.map Prod.snd).sum := by
   have h := prod_natAbs_le_of_forall₂ hb (fun _ => 0)
-  simpa only [FactorTable.evalAt, lsbIndex_map_zero] using h
+  simpa only [FactorTable.evalAt, ofDigits_map_zero] using h
 
 private theorem natAbs_result_of_intBudget {d W M₀ k : ℕ} (hd : 0 < d)
     (hW : 0 < W) {s : ElimState ℤ V} (hs : IntBudgetInvariant d W M₀ k s) :

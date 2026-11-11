@@ -12,6 +12,7 @@ import CslibFrontier.Logics.Propositional.CSP.PartitionFunction.Properties
 import CslibFrontier.Logics.Propositional.CSP.FactorTable
 import CslibFrontier.Algorithms.Lean.CSP.VariableElimination
 import CslibFrontier.Algorithms.Lean.CSP.WeightCost
+import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # Weighted CSP Partition Function and Variable Elimination Tests
@@ -72,7 +73,7 @@ theorem partitionFunctionOn_satCSP_isolated :
     decide
   rw [hsdiff, Finset.card_singleton, Fintype.card_bool, pow_one] at hcard
   have hpart : satCSP.partitionFunction orWt = 2 := by
-    have h1 := result_eliminateOrderM_ofCSP 2 FactorTable.boolEquivFin2 orWt
+    have h1 := result_eliminateOrderM_ofCSP 2 finTwoEquiv.symm orWt
       (F := satCSP) (declared := [0, 1]) (order := [0, 1]) (by simp [satCSP_vars])
       Finset.Subset.rfl
     have hvars : ([0, 1] : List ℕ).toFinset = satCSP.vars.toFinset := by
@@ -117,7 +118,7 @@ theorem separator_chain_factorization :
   · exact CSP.partitionFunction_separator chainWt (by decide) (by decide)
   · have hvars : ([0, 1, 2] : List ℕ).toFinset = (sepF1 ++ sepF2).vars.toFinset := by
       decide
-    have h1 := result_eliminateOrderM_ofCSP 2 FactorTable.boolEquivFin2 chainWt
+    have h1 := result_eliminateOrderM_ofCSP 2 finTwoEquiv.symm chainWt
       (F := sepF1 ++ sepF2) (declared := [0, 1, 2]) (order := [0, 1, 2]) (by rw [hvars])
       Finset.Subset.rfl
     rw [CSP.partitionFunction_eq_partitionFunctionOn, ← hvars, ← h1]
@@ -127,11 +128,11 @@ end PartitionAndSeparator
 
 section FactorTablesAndNetworks
 
-example : lsbIndex 3 [2, 1, 0] = 5 := by decide
+example : Nat.ofDigits 3 [2, 1, 0] = 5 := by decide
 example : lsbDecode 3 3 5 = [2, 1, 0] := by decide
-example : lsbIndex 2 ([true, false, true].map Bool.toNat) =
+example : Nat.ofDigits 2 ([true, false, true].map Bool.toNat) =
     Cslib.BitString.lsbValue [true, false, true] :=
-  lsbIndex_two_eq_lsbValue _
+  ofDigits_two_eq_lsbValue _
 
 private def edgeTableFactors : List (FactorTable ℕ ℕ) :=
   [ { scope := [], entries := #[3] },

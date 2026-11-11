@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction
+public import Mathlib.Data.Finset.Pi
 import CslibFrontier.Foundations.Data.List.Boole
 import Mathlib.Algebra.BigOperators.Group.List.Basic
 import Mathlib.Algebra.BigOperators.Pi
@@ -151,36 +152,33 @@ theorem partitionFunctionOn_cons_nil [Semiring R] [DecidableEq V] [Fintype D] [I
       wt r [] * F.partitionFunctionOn wt declared := by
   simp only [partitionFunctionOn, weight_cons, List.map_nil, Finset.mul_sum]
 
-/-- Split assignments on `T` into assignments on `S ⊆ T` and `T \ S`. -/
-@[expose] def sdiffPiEquiv {V D : Type*} [DecidableEq V] {S T : Finset V} (hST : S ⊆ T) :
-    (T → D) ≃ (S → D) × ((T \ S : Finset V) → D) where
-  toFun σ := (fun v => σ ⟨v.1, hST v.2⟩, fun v => σ ⟨v.1, (Finset.mem_sdiff.mp v.2).1⟩)
-  invFun p v :=
-    if hv : v.1 ∈ S then p.1 ⟨v.1, hv⟩
-    else p.2 ⟨v.1, Finset.mem_sdiff.mpr ⟨v.2, hv⟩⟩
-  left_inv σ := funext fun v => by by_cases hv : v.1 ∈ S <;> simp [hv]
-  right_inv p := by
-    ext v
-    · simp [v.2]
-    · have hv : v.1 ∉ S := (Finset.mem_sdiff.mp v.2).2
-      simp [hv]
+/-- Split assignments on `T` into assignments on `S ⊆ T` and `T \ S`, derived from
+`Equiv.piFinsetUnion` along `S ∪ (T \ S) = T`. -/
+def sdiffPiEquiv {V D : Type*} [DecidableEq V] {S T : Finset V} (hST : S ⊆ T) :
+    (T → D) ≃ (S → D) × ((T \ S : Finset V) → D) :=
+  ((Equiv.piFinsetUnion (fun _ => D) (disjoint_sdiff_self_right (x := S) (y := T))).trans
+    (Equiv.piCongrLeft' (fun _ => D)
+      (Equiv.subtypeEquivRight fun v => by
+        rw [Finset.mem_union, ← Finset.mem_coe, ← Finset.mem_coe, ← Finset.mem_coe,
+          ← Set.mem_union, ← Finset.coe_union, Finset.union_sdiff_of_subset hST]))).symm
 
-/-- Split assignments on a disjoint union `d₁ ∪ d₂` into assignments on `d₁` and `d₂`. -/
-@[expose] def unionPiEquiv {V D : Type*} [DecidableEq V] {d₁ d₂ : Finset V}
-    (hdisj : Disjoint d₁ d₂) :
-    ((d₁ ∪ d₂ : Finset V) → D) ≃ (d₁ → D) × (d₂ → D) where
-  toFun σ :=
-    (fun v => σ ⟨v.1, Finset.mem_union_left d₂ v.2⟩,
-     fun v => σ ⟨v.1, Finset.mem_union_right d₁ v.2⟩)
-  invFun p v :=
-    if hv : v.1 ∈ d₁ then p.1 ⟨v.1, hv⟩
-    else p.2 ⟨v.1, (Finset.mem_union.mp v.2).resolve_left hv⟩
-  left_inv σ := funext fun v => by by_cases hv : v.1 ∈ d₁ <;> simp [hv]
-  right_inv p := by
-    ext v
-    · simp [v.2]
-    · have hv : v.1 ∉ d₁ := Finset.disjoint_right.mp hdisj v.2
-      simp [hv]
+@[simp]
+theorem sdiffPiEquiv_symm_apply_left {V D : Type*} [DecidableEq V] {S T : Finset V}
+    (hST : S ⊆ T) (p : (S → D) × ((T \ S : Finset V) → D)) {v : V}
+    (hvS : v ∈ S) (hvT : v ∈ T) :
+    (sdiffPiEquiv hST).symm p ⟨v, hvT⟩ = p.1 ⟨v, hvS⟩ := by
+  simp only [sdiffPiEquiv, Equiv.symm_symm, Equiv.trans_apply, Equiv.piCongrLeft'_apply,
+    Equiv.subtypeEquivRight_symm_apply]
+  exact Equiv.piFinsetUnion_left (fun _ => D) disjoint_sdiff_self_right hvS _
+
+@[simp]
+theorem sdiffPiEquiv_symm_apply_right {V D : Type*} [DecidableEq V] {S T : Finset V}
+    (hST : S ⊆ T) (p : (S → D) × ((T \ S : Finset V) → D)) {v : V}
+    (hvRest : v ∈ T \ S) (hvT : v ∈ T) :
+    (sdiffPiEquiv hST).symm p ⟨v, hvT⟩ = p.2 ⟨v, hvRest⟩ := by
+  simp only [sdiffPiEquiv, Equiv.symm_symm, Equiv.trans_apply, Equiv.piCongrLeft'_apply,
+    Equiv.subtypeEquivRight_symm_apply]
+  exact Equiv.piFinsetUnion_right (fun _ => D) disjoint_sdiff_self_right hvRest _
 
 private theorem partitionFunctionOn_split [Semiring R] [DecidableEq V] [Fintype D] [Inhabited D]
     (wt : Rel → List D → R) (F : CSP Rel V) {S T : Finset V} (hST : S ⊆ T) :
@@ -207,10 +205,10 @@ private theorem partitionFunctionOn_split [Semiring R] [DecidableEq V] [Fintype 
         refine funext fun v => ?_
         by_cases hvS : v ∈ S
         · have hvT : v ∈ T := hST hvS
-          simp [eSplit, sdiffPiEquiv, hvS, hvT]
+          simp [eSplit, hvS, hvT]
         · by_cases hvT : v ∈ T
           · have hvRest : v ∈ T \ S := Finset.mem_sdiff.mpr ⟨hvT, hvS⟩
-            simp [eSplit, sdiffPiEquiv, hvS, hvT, hvRest]
+            simp [eSplit, hvS, hvT, hvRest]
           · have hvRest : v ∉ T \ S := fun h => hvT (Finset.mem_sdiff.mp h).1
             simp [hvS, hvT, hvRest]
 
@@ -455,7 +453,7 @@ theorem partitionFunctionOn_append_of_disjoint [CommSemiring R] [DecidableEq V] 
     (hdisj : Disjoint d₁ d₂) (h₁ : F₁.vars.toFinset ⊆ d₁) (h₂ : F₂.vars.toFinset ⊆ d₂) :
     partitionFunctionOn wt (F₁ ++ F₂) (d₁ ∪ d₂) =
       F₁.partitionFunctionOn wt d₁ * F₂.partitionFunctionOn wt d₂ := by
-  let eSplit := unionPiEquiv (D := D) hdisj
+  let eSplit := (Equiv.piFinsetUnion (fun _ => D) hdisj).symm
   rw [partitionFunctionOn, partitionFunctionOn, partitionFunctionOn]
   calc ∑ σ : (d₁ ∪ d₂ : Finset V) → D,
           weight wt (F₁ ++ F₂) (fun v => if h : v ∈ d₁ ∪ d₂ then σ ⟨v, h⟩ else default)
@@ -473,12 +471,13 @@ theorem partitionFunctionOn_append_of_disjoint [CommSemiring R] [DecidableEq V] 
         · refine weight_congr fun v hv => ?_
           have hv₁ : v ∈ d₁ := h₁ (List.mem_toFinset.mpr hv)
           have hvu : v ∈ d₁ ∪ d₂ := Finset.mem_union_left d₂ hv₁
-          simp [eSplit, unionPiEquiv, hv₁, hvu]
+          simpa [eSplit, hv₁, hvu] using
+            Equiv.piFinsetUnion_left (fun _ => D) hdisj hv₁ hvu
         · refine weight_congr fun v hv => ?_
           have hv₂ : v ∈ d₂ := h₂ (List.mem_toFinset.mpr hv)
-          have hv₁ : v ∉ d₁ := Finset.disjoint_right.mp hdisj hv₂
           have hvu : v ∈ d₁ ∪ d₂ := Finset.mem_union_right d₁ hv₂
-          simp [eSplit, unionPiEquiv, hv₁, hv₂, hvu]
+          simpa [eSplit, hv₂, hvu] using
+            Equiv.piFinsetUnion_right (fun _ => D) hdisj hv₂ hvu
     _ = (∑ σ₁ : d₁ → D, F₁.weight wt fun v => if h : v ∈ d₁ then σ₁ ⟨v, h⟩ else default) *
           (∑ σ₂ : d₂ → D, F₂.weight wt fun v => if h : v ∈ d₂ then σ₂ ⟨v, h⟩ else default) := by
         rw [Fintype.sum_prod_type, Finset.sum_mul_sum]

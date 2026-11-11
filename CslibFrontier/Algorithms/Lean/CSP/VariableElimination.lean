@@ -348,10 +348,10 @@ private theorem evalAt_elimBucketTable [CommSemiring R] [DecidableEq V] {d : ℕ
     intro k hk
     rcases List.mem_map.mp hk with ⟨v, hv, rfl⟩
     exact hlt v hv
-  have hidx : lsbIndex d (outScope.map σ) < d ^ outScope.length := by
-    simpa [List.length_map] using lsbIndex_lt _ hlt_map
-  have hdec : lsbDecode d outScope.length (lsbIndex d (outScope.map σ)) = outScope.map σ := by
-    have := lsbDecode_lsbIndex (outScope.map σ) hlt_map
+  have hidx : Nat.ofDigits d (outScope.map σ) < d ^ outScope.length := by
+    simpa [List.length_map] using ofDigits_lt_pow_length _ hlt_map
+  have hdec : lsbDecode d outScope.length (Nat.ofDigits d (outScope.map σ)) = outScope.map σ := by
+    have := lsbDecode_ofDigits (outScope.map σ) hlt_map
     simpa [List.length_map] using this
   rw [FactorTable.evalAt, elimBucketTable, Array.getD]
   dsimp only
@@ -361,7 +361,7 @@ private theorem evalAt_elimBucketTable [CommSemiring R] [DecidableEq V] {d : ℕ
         let assign := assignScope outScope digits
         ∑ a : Fin d,
           (bucket.map fun f => f.evalAt d fun v => if v = x then a.1 else assign v).prod)[
-        lsbIndex d (outScope.map σ)]'(by simpa [outScope] using hidx) =
+        Nat.ofDigits d (outScope.map σ)]'(by simpa [outScope] using hidx) =
       ∑ a : Fin d, (bucket.map fun f => f.evalAt d fun v => if v = x then a.1 else σ v).prod
     rw [Array.getElem_ofFn]
     dsimp only
@@ -384,7 +384,7 @@ private theorem evalAt_elimBucketTable_zero [Semiring R] [DecidableEq V] (x : V)
   dsimp only
   split_ifs with hsz
   · have hlen0 : outScope.length = 0 := by
-      have hsz' : lsbIndex 0 (outScope.map σ) < 0 ^ outScope.length := by
+      have hsz' : Nat.ofDigits 0 (outScope.map σ) < 0 ^ outScope.length := by
         simpa [outScope] using hsz
       by_contra hne
       rw [zero_pow hne] at hsz'
@@ -393,7 +393,7 @@ private theorem evalAt_elimBucketTable_zero [Semiring R] [DecidableEq V] (x : V)
         ∑ a : Fin 0, (bucket.map fun f =>
           f.evalAt 0 fun v => if v = x then a.1 else assignScope outScope
             (lsbDecode 0 outScope.length idx.1) v).prod)[
-        lsbIndex 0 (outScope.map σ)]'(by simpa [outScope] using hsz) = 0
+        Nat.ofDigits 0 (outScope.map σ)]'(by simpa [outScope] using hsz) = 0
     rw [Array.getElem_ofFn]
     simp
   · rfl
@@ -568,7 +568,7 @@ theorem eval_eq_result_of_remaining_nil [Semiring R] [DecidableEq V] (d : ℕ)
       ((default : (∅ : Finset V) → Fin d) ⟨v, h⟩).1 else 0) = fun _ => 0 := by
     funext v
     simp
-  rw [hzero, lsbIndex_map_zero]
+  rw [hzero, ofDigits_map_zero]
 
 /-- If `order` covers all initial declared variables `init.remaining`, eliminating along `order`
 leaves `remaining = []` and its scalar `result` recovers `init.eval d`. -/
@@ -619,9 +619,9 @@ section TimeMCost
 variable {R V : Type}
 
 private theorem ret_evalScopeIdxM (d : ℕ) (σ : V → ℕ) :
-    ∀ vs : List V, (evalScopeIdxM d σ vs).ret = lsbIndex d (vs.map σ)
+    ∀ vs : List V, (evalScopeIdxM d σ vs).ret = Nat.ofDigits d (vs.map σ)
   | [] => rfl
-  | v :: vs => by simp [evalScopeIdxM, ret_evalScopeIdxM d σ vs]
+  | v :: vs => by simp [evalScopeIdxM, ret_evalScopeIdxM d σ vs, Nat.ofDigits_cons]
 
 private theorem time_evalScopeIdxM (d : ℕ) (σ : V → ℕ) :
     ∀ vs : List V, (evalScopeIdxM d σ vs).time = vs.length

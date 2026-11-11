@@ -9,9 +9,11 @@ module
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.Explicit
 public import CslibFrontier.Logics.Propositional.CSP.PartitionFunction.Properties
+public import Mathlib.Data.Nat.Digits.Defs
 import Mathlib.Algebra.BigOperators.Pi
 import Mathlib.Algebra.BigOperators.Ring.Finset
 import Mathlib.Data.Fintype.BigOperators
+import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -24,13 +26,13 @@ finite domain `D` of size `d`) and `Cslib.Circuits.Frontier.ExplicitTensorNetwor
 
 Constraint scopes are arbitrary lists of variables: repeated variables inside a scope (for example
 `[v, v]`), empty scopes (`[]`), isolated declared variables, and disconnected constraint components
-are all handled uniformly by evaluating mixed-radix least-significant-digit indices (`lsbIndex`)
-against an assignment `σ : V → ℕ`.
+are all handled uniformly by evaluating mixed-radix least-significant-digit indices
+(`Nat.ofDigits`) against an assignment `σ : V → ℕ`.
 
 ## Main definitions
 
-* `Cslib.Logic.PL.CSP.lsbIndex`, `Cslib.Logic.PL.CSP.lsbDecode`: least-significant-digit
-  mixed-radix encoding and decoding between `List ℕ` tuples below `d` and indices `< d ^ len`.
+* `Cslib.Logic.PL.CSP.lsbDecode`: fixed-width least-significant-digit mixed-radix decoding from
+  indices `< d ^ len` to `List ℕ` tuples below `d`, paired with Mathlib's `Nat.ofDigits`.
 * `Cslib.Logic.PL.CSP.FactorTable`: factor table pairing `scope : List V` with `entries : Array R`.
 * `Cslib.Logic.PL.CSP.FactorTable.contractionOn`, `Cslib.Logic.PL.CSP.FactorTable.contraction`:
   partition functions of lists of factor tables over declared or occurring variables.
@@ -41,8 +43,8 @@ against an assignment `σ : V → ℕ`.
 
 ## Main results
 
-* `Cslib.Logic.PL.CSP.lsbDecode_lsbIndex`, `Cslib.Logic.PL.CSP.lsbIndex_lsbDecode`: radix
-  round-trip identities; `lsbIndex_two_eq_lsbValue` recovers `Cslib.BitString.lsbValue`.
+* `Cslib.Logic.PL.CSP.lsbDecode_ofDigits`, `Cslib.Logic.PL.CSP.ofDigits_lsbDecode`: radix
+  round-trip identities; `ofDigits_two_eq_lsbValue` recovers `Cslib.BitString.lsbValue`.
 * `Cslib.Logic.PL.CSP.FactorTable.contractionOn_ofCSP`,
   `Cslib.Logic.PL.CSP.FactorTable.contraction_ofCSP`: exact agreement with
   `CSP.partitionFunctionOn` and `CSP.partitionFunction` over any finite domain.
@@ -62,28 +64,17 @@ open Cslib.Circuits.Frontier
 
 section Radix
 
-/-- Mixed-radix value of a list of base-`d` digits in least-significant-digit-first order. -/
-@[expose] def lsbIndex (d : ℕ) : List ℕ → ℕ
-  | [] => 0
-  | x :: xs => x + d * lsbIndex d xs
-
 /-- Decode `idx` into `len` base-`d` digits in least-significant-digit-first order. -/
 @[expose] def lsbDecode (d : ℕ) : ℕ → ℕ → List ℕ
   | 0, _ => []
   | len + 1, idx => (idx % d) :: lsbDecode d len (idx / d)
 
-@[simp]
-theorem lsbIndex_nil (d : ℕ) : lsbIndex d [] = 0 := rfl
-
-@[simp]
-theorem lsbIndex_cons (d x : ℕ) (xs : List ℕ) :
-    lsbIndex d (x :: xs) = x + d * lsbIndex d xs := rfl
-
-/-- Evaluating `lsbIndex` on an all-zero coordinate tuple yields `0`. -/
-theorem lsbIndex_map_zero {V : Type*} (d : ℕ) : ∀ xs : List V,
-    lsbIndex d (xs.map fun _ => 0) = 0
+/-- Evaluating `Nat.ofDigits` on an all-zero coordinate tuple yields `0`. -/
+theorem ofDigits_map_zero {V : Type*} (d : ℕ) : ∀ xs : List V,
+    Nat.ofDigits d (xs.map fun _ => 0) = 0
   | [] => rfl
-  | _ :: xs => by rw [List.map_cons, lsbIndex_cons, lsbIndex_map_zero d xs, mul_zero, zero_add]
+  | _ :: xs => by
+      rw [List.map_cons, Nat.ofDigits_cons, ofDigits_map_zero d xs, mul_zero, zero_add]
 
 @[simp]
 theorem length_lsbDecode (d len idx : ℕ) : (lsbDecode d len idx).length = len := by
@@ -102,36 +93,46 @@ theorem mem_lsbDecode_lt {d : ℕ} (hd : 0 < d) (len idx x : ℕ)
       · exact Nat.mod_lt _ hd
       · exact ih _ hx
 
-/-- `lsbIndex d xs` is strictly below `d ^ xs.length` whenever every digit is below `d`. -/
-theorem lsbIndex_lt {d : ℕ} : ∀ xs : List ℕ, (∀ x ∈ xs, x < d) → lsbIndex d xs < d ^ xs.length
-  | [], _ => by simp
-  | x :: xs, h => by
-      have hx : x < d := h x (by simp)
-      have hxs : lsbIndex d xs < d ^ xs.length :=
-        lsbIndex_lt xs fun y hy => h y (by simp [hy])
-      calc x + d * lsbIndex d xs
-          < d + d * lsbIndex d xs := by omega
-        _ = d * (lsbIndex d xs + 1) := by rw [Nat.mul_add, Nat.mul_one, Nat.add_comm]
-        _ ≤ d * d ^ xs.length := Nat.mul_le_mul_left d (Nat.succ_le_of_lt hxs)
-        _ = d ^ (x :: xs).length := by simp [pow_succ']
+/-- `Nat.ofDigits d xs` is strictly below `d ^ xs.length` for every `d` (including degenerate
+bases `d ≤ 1`) whenever every digit is below `d`. -/
+theorem ofDigits_lt_pow_length {d : ℕ} (xs : List ℕ) (h : ∀ x ∈ xs, x < d) :
+    Nat.ofDigits d xs < d ^ xs.length := by
+  rcases lt_trichotomy d 1 with hd0 | rfl | hd1
+  · cases xs with
+    | nil => simp
+    | cons x _ =>
+        have hx := h x (by simp)
+        omega
+  · have hz : xs = xs.map fun _ => 0 := by
+      induction xs with
+      | nil => rfl
+      | cons x xs ih =>
+          have hx0 : x = 0 := by
+            have := h x (by simp)
+            omega
+          subst hx0
+          exact congrArg (0 :: ·) (ih fun y hy => h y (by simp [hy]))
+    rw [hz, ofDigits_map_zero, one_pow]
+    exact Nat.zero_lt_one
+  · exact Nat.ofDigits_lt_base_pow_length hd1 h
 
-/-- Decoding `lsbIndex d xs` at length `xs.length` recovers `xs` when digits are below `d`. -/
-theorem lsbDecode_lsbIndex {d : ℕ} :
-    ∀ xs : List ℕ, (∀ x ∈ xs, x < d) → lsbDecode d xs.length (lsbIndex d xs) = xs
+/-- Decoding `Nat.ofDigits d xs` at length `xs.length` recovers `xs` when digits are below `d`. -/
+theorem lsbDecode_ofDigits {d : ℕ} :
+    ∀ xs : List ℕ, (∀ x ∈ xs, x < d) → lsbDecode d xs.length (Nat.ofDigits d xs) = xs
   | [], _ => rfl
   | x :: xs, h => by
       have hx : x < d := h x (by simp)
       have hxs : ∀ y ∈ xs, y < d := fun y hy => h y (by simp [hy])
-      have hdiv : (x + d * lsbIndex d xs) / d = lsbIndex d xs := by
+      have hdiv : (x + d * Nat.ofDigits d xs) / d = Nat.ofDigits d xs := by
         rw [Nat.mul_comm, Nat.add_mul_div_right _ _ (lt_of_le_of_lt (Nat.zero_le x) hx),
           Nat.div_eq_of_lt hx, Nat.zero_add]
-      have hmod : (x + d * lsbIndex d xs) % d = x := by
+      have hmod : (x + d * Nat.ofDigits d xs) % d = x := by
         rw [Nat.mul_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hx]
-      simp [lsbDecode, lsbIndex, hmod, hdiv, lsbDecode_lsbIndex xs hxs]
+      simp [lsbDecode, Nat.ofDigits_cons, hmod, hdiv, lsbDecode_ofDigits xs hxs]
 
 /-- Encoding the first `len` decoded digits recovers `idx` when `idx < d ^ len`. -/
-theorem lsbIndex_lsbDecode {d len idx : ℕ} (h : idx < d ^ len) :
-    lsbIndex d (lsbDecode d len idx) = idx := by
+theorem ofDigits_lsbDecode {d len idx : ℕ} (h : idx < d ^ len) :
+    Nat.ofDigits d (lsbDecode d len idx) = idx := by
   induction len generalizing idx with
   | zero =>
       simp only [pow_zero] at h
@@ -144,15 +145,15 @@ theorem lsbIndex_lsbDecode {d len idx : ℕ} (h : idx < d ^ len) :
         by_cases hd : d = 0
         · subst hd; simp at h
         · exact Nat.div_lt_of_lt_mul h
-      rw [lsbDecode, lsbIndex, ih hdiv]
+      rw [lsbDecode, Nat.ofDigits_cons, ih hdiv]
       exact Nat.mod_add_div idx d
 
-/-- At radix `2`, `lsbIndex` on `Bool.toNat` digits equals `Cslib.BitString.lsbValue`. -/
-theorem lsbIndex_two_eq_lsbValue : ∀ bs : List Bool,
-    lsbIndex 2 (bs.map Bool.toNat) = BitString.lsbValue bs
+/-- At radix `2`, `Nat.ofDigits` on `Bool.toNat` digits equals `Cslib.BitString.lsbValue`. -/
+theorem ofDigits_two_eq_lsbValue : ∀ bs : List Bool,
+    Nat.ofDigits 2 (bs.map Bool.toNat) = BitString.lsbValue bs
   | [] => rfl
   | b :: bs => by
-      rw [List.map_cons, lsbIndex_cons, lsbIndex_two_eq_lsbValue bs, BitString.lsbValue]
+      rw [List.map_cons, Nat.ofDigits_cons, ofDigits_two_eq_lsbValue bs, BitString.lsbValue]
 
 end Radix
 
@@ -181,7 +182,7 @@ entries. -/
 /-- Evaluate a factor table at a `ℕ`-valued assignment `σ`, looking up its LSB base-`d` index
 with `0` outside bounds. -/
 @[expose] def evalAt (d : ℕ) [Zero R] (f : FactorTable R V) (σ : V → ℕ) : R :=
-  f.entries.getD (lsbIndex d (f.scope.map σ)) 0
+  f.entries.getD (Nat.ofDigits d (f.scope.map σ)) 0
 
 /-- All variables occurring in a list of factor tables. -/
 @[expose] def vars [DecidableEq V] (factors : List (FactorTable R V)) : Finset V :=
@@ -242,7 +243,7 @@ theorem contractionOn_eq_card_pow_mul_of_subset [Semiring R] [DecidableEq V] (d 
         refine Finset.sum_congr rfl fun p _ => prod_map_evalAt_congr fun f hf v hv => ?_
         have hvS : v ∈ S := hvars (List.mem_toFinset.mpr (List.mem_flatMap.mpr ⟨f, hf, hv⟩))
         have hvT : v ∈ T := hST hvS
-        simp [eSplit, sdiffPiEquiv, hvS, hvT]
+        simp [eSplit, hvS, hvT]
     _ = ∑ _ : (T \ S : Finset V) → Fin d, ∑ σ₁ : S → Fin d,
           (factors.map fun f =>
             f.evalAt d fun v => if h : v ∈ S then (σ₁ ⟨v, h⟩).1 else 0).prod := by
@@ -264,7 +265,7 @@ theorem contractionOn_append_of_disjoint [CommSemiring R] [DecidableEq V] (d : �
     (hdisj : Disjoint d₁ d₂) (h₁ : vars fs₁ ⊆ d₁) (h₂ : vars fs₂ ⊆ d₂) :
     contractionOn d (fs₁ ++ fs₂) (d₁ ∪ d₂) =
       contractionOn d fs₁ d₁ * contractionOn d fs₂ d₂ := by
-  let eSplit := unionPiEquiv (D := Fin d) hdisj
+  let eSplit := (Equiv.piFinsetUnion (fun _ => Fin d) hdisj).symm
   rw [contractionOn, contractionOn, contractionOn]
   calc ∑ σ : (d₁ ∪ d₂ : Finset V) → Fin d,
           ((fs₁ ++ fs₂).map fun f =>
@@ -286,12 +287,15 @@ theorem contractionOn_append_of_disjoint [CommSemiring R] [DecidableEq V] (d : �
         · refine prod_map_evalAt_congr fun f hf v hv => ?_
           have hv₁ : v ∈ d₁ := h₁ (List.mem_toFinset.mpr (List.mem_flatMap.mpr ⟨f, hf, hv⟩))
           have hvu : v ∈ d₁ ∪ d₂ := Finset.mem_union_left d₂ hv₁
-          simp [eSplit, unionPiEquiv, hv₁, hvu]
+          have hleft := congrArg Fin.val
+            (Equiv.piFinsetUnion_left (fun _ => Fin d) hdisj (f := p.1) (g := p.2) hv₁ hvu)
+          simpa [eSplit, hv₁, hvu] using hleft
         · refine prod_map_evalAt_congr fun f hf v hv => ?_
           have hv₂ : v ∈ d₂ := h₂ (List.mem_toFinset.mpr (List.mem_flatMap.mpr ⟨f, hf, hv⟩))
-          have hv₁ : v ∉ d₁ := Finset.disjoint_right.mp hdisj hv₂
           have hvu : v ∈ d₁ ∪ d₂ := Finset.mem_union_right d₁ hv₂
-          simp [eSplit, unionPiEquiv, hv₁, hv₂, hvu]
+          have hright := congrArg Fin.val
+            (Equiv.piFinsetUnion_right (fun _ => Fin d) hdisj (f := p.1) (g := p.2) hv₂ hvu)
+          simpa [eSplit, hv₂, hvu] using hright
     _ = (∑ σ₁ : d₁ → Fin d,
           (fs₁.map fun f => f.evalAt d fun v => if h : v ∈ d₁ then (σ₁ ⟨v, h⟩).1 else 0).prod) *
           (∑ σ₂ : d₂ → Fin d,
@@ -355,17 +359,6 @@ section CSPBridge
 
 variable {Rel V D R : Type*}
 
-/-- Canonical bijection `Bool ≃ Fin 2` sending `false ↦ 0` and `true ↦ 1`. -/
-@[expose] def boolEquivFin2 : Bool ≃ Fin 2 where
-  toFun b := ⟨b.toNat, by cases b <;> decide⟩
-  invFun i := decide (i.1 ≠ 0)
-  left_inv b := by cases b <;> decide
-  right_inv i := Fin.ext (by
-    rcases i with ⟨k, hk⟩
-    match k with
-    | 0 => rfl
-    | 1 => rfl)
-
 /-- Compile one constraint into an explicit factor table at domain size `d` using bijection
 `e : D ≃ Fin d`. -/
 @[expose] def ofConstraint [Inhabited D] (d : ℕ) (e : D ≃ Fin d) (wt : Rel → List D → R)
@@ -406,11 +399,11 @@ theorem evalAt_ofConstraint [Zero R] [Inhabited D] (d : ℕ) (e : D ≃ Fin d)
     intro x hx
     rcases List.mem_map.mp hx with ⟨v, _, rfl⟩
     exact (e (σ v)).2
-  have hidx : lsbIndex d (c.2.map fun v => (e (σ v)).1) < d ^ c.2.length := by
-    simpa [List.length_map] using lsbIndex_lt _ hlt
-  have hdec : lsbDecode d c.2.length (lsbIndex d (c.2.map fun v => (e (σ v)).1)) =
+  have hidx : Nat.ofDigits d (c.2.map fun v => (e (σ v)).1) < d ^ c.2.length := by
+    simpa [List.length_map] using ofDigits_lt_pow_length _ hlt
+  have hdec : lsbDecode d c.2.length (Nat.ofDigits d (c.2.map fun v => (e (σ v)).1)) =
       c.2.map fun v => (e (σ v)).1 := by
-    have := lsbDecode_lsbIndex (c.2.map fun v => (e (σ v)).1) hlt
+    have := lsbDecode_ofDigits (c.2.map fun v => (e (σ v)).1) hlt
     simpa [List.length_map] using this
   rw [evalAt, ofConstraint, Array.getD]
   dsimp only
@@ -418,7 +411,7 @@ theorem evalAt_ofConstraint [Zero R] [Inhabited D] (d : ℕ) (e : D ≃ Fin d)
   · change (Array.ofFn fun i : Fin (d ^ c.2.length) =>
         let args := (lsbDecode d c.2.length i.1).map fun k =>
           if hk : k < d then e.symm ⟨k, hk⟩ else default
-        wt c.1 args)[lsbIndex d (c.2.map fun v => (e (σ v)).1)]'(by simpa using hidx) =
+        wt c.1 args)[Nat.ofDigits d (c.2.map fun v => (e (σ v)).1)]'(by simpa using hidx) =
       wt c.1 (c.2.map σ)
     rw [Array.getElem_ofFn]
     dsimp only
@@ -498,8 +491,8 @@ private theorem entry_eq_evalAt_two [Zero R] (ports : List ℕ) (table : List R)
         (fun i => (assign i).toNat) := by
   rw [ExplicitTensorNetwork.entry, FactorTable.evalAt, list_toArray_getD]
   have hl : BitString.lsbValue (ports.map assign) =
-      lsbIndex 2 (ports.map fun i => (assign i).toNat) := by
-    rw [← lsbIndex_two_eq_lsbValue, List.map_map]
+      Nat.ofDigits 2 (ports.map fun i => (assign i).toNat) := by
+    rw [← ofDigits_two_eq_lsbValue, List.map_map]
     rfl
   rw [hl]
 
@@ -516,7 +509,7 @@ theorem contractionOn_ofExplicitTensorNetwork [CommSemiring R]
       right_inv := fun _ => rfl }
   let eAssign : (Finset.range net.numEdges → Fin 2) ≃ (Fin net.numEdges → Bool) :=
     (Equiv.piCongrLeft' (fun _ => Fin 2) eDom.symm).trans
-      (Equiv.piCongrRight fun _ => boolEquivFin2.symm)
+      (Equiv.piCongrRight fun _ => finTwoEquiv)
   rw [contractionOn, ExplicitTensorNetwork.contraction]
   refine Fintype.sum_equiv eAssign _ _ fun σ => ?_
   rw [ofExplicitTensorNetwork, List.map_map]
@@ -531,8 +524,11 @@ theorem contractionOn_ofExplicitTensorNetwork [CommSemiring R]
   · have hir : i ∈ Finset.range net.numEdges := Finset.mem_range.mpr hi
     simp only [hi, hir, dite_true]
     have hassign : (eAssign σ ⟨i, hi⟩).toNat = (σ ⟨i, hir⟩).1 := by
-      have hinv := congrArg Fin.val (boolEquivFin2.right_inv (σ ⟨i, hir⟩))
-      simpa [eAssign, boolEquivFin2, eDom] using hinv
+      change (finTwoEquiv (σ ⟨i, hir⟩)).toNat = (σ ⟨i, hir⟩).1
+      rcases σ ⟨i, hir⟩ with ⟨_ | _ | k, hk⟩
+      · rfl
+      · rfl
+      · omega
     exact hassign.symm
   · have hir : i ∉ Finset.range net.numEdges := by simpa [Finset.mem_range] using hi
     simp [hi, hir]
