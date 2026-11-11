@@ -1642,6 +1642,10 @@ public import CslibFrontier.Computability.Complexity.AcceptCount
 public import CslibFrontier.Computability.Complexity.AffineDisperser
 public import CslibFrontier.Computability.Complexity.AffineDisperser.BinaryPolynomial
 public import CslibFrontier.Computability.Complexity.AffineDisperser.Coordinates
+public import CslibFrontier.Computability.Complexity.AffineDisperser.Li.Berlekamp
+public import CslibFrontier.Computability.Complexity.AffineDisperser.Li.PolyTime
+public import CslibFrontier.Computability.Complexity.AffineDisperser.Li.ShoupIrreducible
+public import CslibFrontier.Computability.Complexity.AffineDisperser.Li.ShoupPolyTime
 public import CslibFrontier.Computability.Complexity.AffineDisperser.PolyTime
 public import CslibFrontier.Computability.Complexity.AffineDisperser.Program
 public import CslibFrontier.Computability.Complexity.AverageCase
@@ -4658,6 +4662,8 @@ public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.BinaryFiel
 public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Bits
 public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Explicit
 public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.IndependentSources
+public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Li.AffineSource
+public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Li.SomewhereCondenser
 public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Threshold
 public import CslibFrontier.Foundations.Combinatorics.ApproximateMajority
 public import CslibFrontier.Foundations.Combinatorics.BalancedSchedules
