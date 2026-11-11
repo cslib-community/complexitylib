@@ -317,7 +317,7 @@ end CapAndArc
 
 /-- Vertex splitting of `G`: arcs `(u, true) → (v, false)` of capacity `2` for the arcs of `G`, and
 splitting arcs `(v, false) → (v, true)` of capacity `1` for `v ≠ s, t`. -/
-private def splitNetwork [Fintype V] [DecidableEq V] (G : Digraph V) [DecidableRel G.Adj]
+private def splitNetwork [DecidableEq V] (G : Digraph V) [DecidableRel G.Adj]
     (s t : V) : Network (V × Bool) where
   cap x y :=
     if x.2 = true ∧ y.2 = false ∧ G.Adj x.1 y.1 then 2
@@ -743,7 +743,7 @@ section Multidigraph
 
 variable {V E : Type*} (src tgt : E → V)
 
-private noncomputable def multiNetwork [Fintype V] [DecidableEq V] [Fintype E]
+private noncomputable def multiNetwork [DecidableEq V] [Fintype E]
     (s t : V) : Network V where
   cap u v := (Finset.univ.filter fun e => src e = u ∧ tgt e = v).card
   s := s

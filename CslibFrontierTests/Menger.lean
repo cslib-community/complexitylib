@@ -405,7 +405,8 @@ example : ∀ ⦃u v : Fin 8⦄, u ≠ v → ∃ P : Finset (cube.Walk u v), P.c
       (fun w₁ w₂ => ∀ x ∈ w₁.support, x ∈ w₂.support → x = u ∨ x = v) :=
   ((isVertexConnected_iff_forall_exists_finset cube 3).mp cube_isVertexConnected).2
 
-/-- The 3-cube is `3`-edge-connected, derived from `cube_isVertexConnected` via Proposition 1.4.2. -/
+/-- The 3-cube is `3`-edge-connected, derived from `cube_isVertexConnected` via
+Proposition 1.4.2. -/
 theorem cube_isEdgeConnected : cube.IsEdgeConnected 3 :=
   isEdgeConnected_of_isVertexConnected cube_isVertexConnected
 
