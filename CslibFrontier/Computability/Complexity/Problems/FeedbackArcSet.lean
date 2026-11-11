@@ -10,7 +10,6 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.FeedbackVertexSet
 public import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
-import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -189,23 +188,13 @@ private theorem exists_certifies {G : Graph} {k : ℕ}
 
 /-- `FeedbackArcSet` belongs to `NP`, with a listed numbering as the witness. -/
 theorem mem_NP : FeedbackArcSet ∈ NP encFeedbackArcSet := by
-  have hset : FeedbackArcSet = {x | ∃ ρ : List ℕ, check (x, ρ) = true} := by
-    ext ⟨G, k⟩
-    exact ⟨fun h => let ⟨g, _, hg⟩ := exists_certifies h; ⟨G.1.map g, (check_iff _).2 hg⟩,
-      fun ⟨ρ, hρ⟩ => mem_of_certifies ((check_iff (⟨G, k⟩, ρ)).1 hρ)⟩
-  rw [hset]
-  refine mem_NP_of_witness (p := 2 * Polynomial.X ^ 2 + Polynomial.X) (.list .nat)
-    computableInPolyTime_check (fun _ _ => Iff.rfl) ?_
-  rintro ⟨G, k⟩ ρ hρ
-  obtain ⟨g, hgle, hg⟩ := exists_certifies (mem_of_certifies ((check_iff (⟨G, k⟩, ρ)).1 hρ))
-  have hN : G.1.length ≤ (encFeedbackArcSet ⟨G, k⟩).length := by
-    rw [encFeedbackArcSet_apply]
-    exact G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k))
-  refine ⟨G.1.map g, (check_iff _).2 hg, ?_⟩
-  have h := Graph.length_encList_map_le hN fun v hv =>
-    ((hgle v hv).trans G.1.toFinset_card_le).trans hN
-  simpa only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X,
-    Polynomial.eval_ofNat] using h
+  refine mem_NP_of_colorOf FeedbackArcSetInstance.graph computableInPolyTime_check
+    (fun ⟨G, k⟩ => by
+      rw [encFeedbackArcSet_apply]
+      exact G.length_vertices_le_encGraph.trans (length_le_encPair_left _ _ (G, k)))
+    (fun ⟨G, k⟩ ρ h => mem_of_certifies ((check_iff (⟨G, k⟩, ρ)).1 h)) fun ⟨G, k⟩ h => ?_
+  obtain ⟨g, hgle, hg⟩ := exists_certifies h
+  exact ⟨g, fun v hv => (hgle v hv).trans G.1.toFinset_card_le, (check_iff (⟨G, k⟩, _)).2 hg⟩
 
 end FeedbackArcSet
 
