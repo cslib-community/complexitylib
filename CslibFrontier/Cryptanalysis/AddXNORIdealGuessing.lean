@@ -22,7 +22,8 @@ non-planted candidate forces a collision; that actual-world uniqueness argument 
 
 ## Main results
 
-* `Cslib.Cryptanalysis.AddXNOR.IdealChain.Guessing.stopped_guess_eq`: equality of the stopped guessing mass.
+* `Cslib.Cryptanalysis.AddXNOR.IdealChain.Guessing.stopped_guess_eq`: equality of the
+  stopped guessing mass.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Guessing.independent_guess`: exact hidden-word guessing.
 * `Cslib.Cryptanalysis.AddXNOR.IdealChain.Guessing.stopped_guess_le`: the changed-world
   stopped guess costs at most `2^(-q)` in the valid cut coupling.
