@@ -57,9 +57,9 @@ concatenation (`left ++ right`) are uncharged (`0` ticks).
 ## References
 
 * [BasuPollackRoy2006] (locator unverified)
-* [Mahler1964] (originator of the Mahler-measure root-separation inequality; locator unverified)
-* [Mignotte1982] (locator unverified; `isolateRootsM_time_le` and left-root refinement packaging
-  are specific to this module)
+* [Mahler1964], pp. 257–262 (locator unverified)
+* [Mignotte1982], pp. 259–263 (locator unverified; `isolateRootsM_time_le` and left-root
+  refinement packaging are specific to this module)
 -/
 
 public section
@@ -74,11 +74,11 @@ structure RootInterval where
   lower : ℚ
   /-- Right rational endpoint of the isolating interval. -/
   upper : ℚ
-  deriving DecidableEq, Repr
+  deriving @[expose] DecidableEq, Repr
 
 /-- Closed-interval root isolation predicate: `I.lower ≤ I.upper` and `[I.lower, I.upper]`
 contains a unique real root of `p`. -/
-def RootInterval.IsIsolatingFor (I : RootInterval) (p : ℝ[X]) : Prop :=
+@[expose] def RootInterval.IsIsolatingFor (I : RootInterval) (p : ℝ[X]) : Prop :=
   I.lower ≤ I.upper ∧
     ∃! r : ℝ, (I.lower : ℝ) ≤ r ∧ r ≤ (I.upper : ℝ) ∧ p.IsRoot r
 
@@ -271,13 +271,30 @@ private theorem refineLeftRootM_time_le (t : List ℚ) (seq : List (List ℚ)) (
       have hloop := refineLeftLoopM_time_le t seq fuel u v vu
       omega
 
-private theorem sturmVariationsList_antitone {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
+theorem sturmVariationsList_antitone {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     {u v : ℚ} (huv : u ≤ v) :
     sturmVariationsList (sturmSeqList cs) v ≤ sturmVariationsList (sturmSeqList cs) u := by
   let pR := (ofCoeffList cs).map (algebraMap ℚ ℝ)
   have hsepR : pR.Separable := hsep.map
   rw [sturmVariationsList_eq_sturmVariations, sturmVariationsList_eq_sturmVariations]
   exact Polynomial.sturmVariations_antitone hsepR (Rat.cast_le.mpr huv)
+
+theorem bisect_split_budget_le (fuel' c₁ c₂ : ℕ) (hc : 2 ≤ c₁ + c₂) :
+    (if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) +
+      (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) + 1 ≤
+      (fuel' + 1) * ((c₁ + c₂) / 2) := by
+  have hd1 : (if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) ≤ fuel' * (c₁ / 2) := by
+    split_ifs <;> omega
+  have hd2 : (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) ≤ fuel' * (c₂ / 2) := by
+    split_ifs <;> omega
+  have hhalf : c₁ / 2 + c₂ / 2 ≤ (c₁ + c₂) / 2 := by omega
+  have hhalf1 : 1 ≤ (c₁ + c₂) / 2 := by omega
+  calc (if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) +
+        (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) + 1
+      ≤ fuel' * (c₁ / 2) + fuel' * (c₂ / 2) + 1 := by omega
+    _ = fuel' * (c₁ / 2 + c₂ / 2) + 1 := by ring
+    _ ≤ fuel' * ((c₁ + c₂) / 2) + (c₁ + c₂) / 2 := by gcongr
+    _ = (fuel' + 1) * ((c₁ + c₂) / 2) := by ring
 
 private theorem isolateIocM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     (t : List ℚ) (depthBound : ℕ) :
@@ -332,19 +349,8 @@ private theorem isolateIocM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Sep
           have hsum_c : c₁ + c₂ = c := by omega
           have hdiv : (if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) +
               (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) + 1 ≤
-              (fuel' + 1) * (c / 2) := by
-            have hd1 : (if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) ≤ fuel' * (c₁ / 2) := by
-              split_ifs <;> omega
-            have hd2 : (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) ≤ fuel' * (c₂ / 2) := by
-              split_ifs <;> omega
-            have hhalf : c₁ / 2 + c₂ / 2 ≤ c / 2 := by omega
-            have hhalf1 : 1 ≤ c / 2 := by omega
-            calc (if c₁ ≤ 1 then 0 else fuel' * (c₁ / 2)) +
-                  (if c₂ ≤ 1 then 0 else fuel' * (c₂ / 2)) + 1
-                ≤ fuel' * (c₁ / 2) + fuel' * (c₂ / 2) + 1 := by omega
-              _ = fuel' * (c₁ / 2 + c₂ / 2) + 1 := by ring
-              _ ≤ fuel' * (c / 2) + c / 2 := by gcongr
-              _ = (fuel' + 1) * (c / 2) := by ring
+              (fuel' + 1) * (c / 2) :=
+            hsum_c ▸ bisect_split_budget_le fuel' c₁ c₂ (by omega)
           calc sCost +
                 ((isolateIocM t seq depthBound fuel' u m vu vm).time +
                   (isolateIocM t seq depthBound fuel' m v vm vv).time)
@@ -357,7 +363,7 @@ private theorem isolateIocM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Sep
                   (c₁ + c₂) * lCost := by ring
             _ ≤ (fuel' + 1) * (c / 2) * sCost + c * lCost := by rw [hsum_c]; gcongr
 
-private theorem eval_rat_eq_zero_iff (cs : List ℚ) (x : ℚ) :
+theorem eval_rat_eq_zero_iff (cs : List ℚ) (x : ℚ) :
     evalCoeffList x (trim cs) = 0 ↔
       ((ofCoeffList cs).map (algebraMap ℚ ℝ)).eval (x : ℝ) = 0 := by
   have heval : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).eval (x : ℝ) =
@@ -372,7 +378,7 @@ private theorem eval_rat_eq_zero_iff (cs : List ℚ) (x : ℚ) :
   rw [heval]
   exact Rat.cast_eq_zero.symm
 
-private theorem card_roots_Ioc_eq {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
+theorem card_roots_Ioc_eq {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     {u v : ℚ} (huv : u ≤ v) :
     sturmVariationsList (sturmSeqList cs) u - sturmVariationsList (sturmSeqList cs) v =
       (((ofCoeffList cs).map (algebraMap ℚ ℝ)).roots.toFinset.filter
@@ -393,7 +399,7 @@ private theorem exists_two_roots_Ioc_of_two_le {pR : ℝ[X]} (hpR : pR ≠ 0) {u
   · exact ⟨α, β, hα.1, hβ.1, hα.2.1, hlt, hβ.2.2⟩
   · exact ⟨β, α, hβ.1, hα.1, hβ.2.1, hgt, hα.2.2⟩
 
-private theorem natDegree_ge_two_of_two_roots {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
+theorem natDegree_ge_two_of_two_roots {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     {α β : ℝ} (hα : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).IsRoot α)
     (hβ : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).IsRoot β) (hne : α ≠ β) :
     2 ≤ (ofCoeffList cs).natDegree := by
@@ -440,7 +446,7 @@ private theorem unique_root_Ioc_of_card_eq_one {cs : List ℚ} (hsep : (ofCoeffL
     rw [hr₀, Finset.mem_singleton] at hmem
     exact hmem
 
-private theorem no_root_Ioc_of_card_eq_zero {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
+theorem no_root_Ioc_of_card_eq_zero {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     {u v : ℚ} (huv : u ≤ v)
     (hcnt : sturmVariationsList (sturmSeqList cs) u -
       sturmVariationsList (sturmSeqList cs) v = 0)
@@ -663,7 +669,9 @@ private theorem refineLeftRootM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Se
       rcases hloop with ⟨hiso, hlow, hup, hequiv⟩
       exact ⟨hiso, hlow.le, hup, fun _ => hlow, hequiv⟩
 
-private def IntervalGapOk (p : ℝ[X]) (I₁ I₂ : RootInterval) : Prop :=
+/-- Separation invariant between consecutive isolating intervals: either `I₁.upper < I₂.lower`, or
+`I₁.upper = I₂.lower` and that shared rational boundary point is not a root of `p`. -/
+@[expose] def IntervalGapOk (p : ℝ[X]) (I₁ I₂ : RootInterval) : Prop :=
   I₁.upper < I₂.lower ∨ (I₁.upper = I₂.lower ∧ p.eval (I₁.upper : ℝ) ≠ 0)
 
 private theorem intervalGapOk_of_mid {p : ℝ[X]} {m : ℚ} {I₁ I₂ : RootInterval}
@@ -815,7 +823,7 @@ private theorem isolateRoots_spec_aux {cs : List ℚ} (hsep : (ofCoeffList cs).S
     let b : ℚ := (cauchyBoundNat cs : ℚ)
     let seq := sturmSeqList cs
     let pR := (ofCoeffList cs).map (algebraMap ℚ ℝ)
-    (∀ I ∈ isolateRoots cs, I.IsIsolatingFor pR) ∧
+    (∀ I ∈ isolateRoots cs, I.IsIsolatingFor pR ∧ -b ≤ I.lower ∧ I.upper ≤ b) ∧
       (isolateRoots cs).Pairwise (IntervalGapOk pR) ∧
       (isolateRoots cs).length =
         sturmVariationsList seq (-b) - sturmVariationsList seq b ∧
@@ -841,13 +849,21 @@ private theorem isolateRoots_spec_aux {cs : List ℚ} (hsep : (ofCoeffList cs).S
       TimeM.ret_bind, sturmVariationsM_ret]
     rfl
   rw [heq]
-  exact ⟨fun I hI => (hspec.1 I hI).1, hspec.2.1, hspec.2.2.1, hspec.2.2.2.2⟩
+  exact ⟨fun I hI => ⟨(hspec.1 I hI).1, (hspec.1 I hI).2.1, (hspec.1 I hI).2.2.1⟩,
+    hspec.2.1, hspec.2.2.1, hspec.2.2.2.2⟩
 
 /-- Soundness: every rational interval returned by `isolateRoots cs` isolates a unique real root
 of `(ofCoeffList cs).map (algebraMap ℚ ℝ)`. -/
 theorem isolateRoots_isIsolatingFor {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
     ∀ I ∈ isolateRoots cs, I.IsIsolatingFor ((ofCoeffList cs).map (algebraMap ℚ ℝ)) :=
-  (isolateRoots_spec_aux hsep).1
+  fun I hI => ((isolateRoots_spec_aux hsep).1 I hI).1
+
+/-- Cauchy enclosure: every interval returned by `isolateRoots cs` lies within
+`[-cauchyBoundNat cs, cauchyBoundNat cs]`. -/
+theorem isolateRoots_mem_cauchy {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
+    ∀ I ∈ isolateRoots cs,
+      -(cauchyBoundNat cs : ℚ) ≤ I.lower ∧ I.upper ≤ (cauchyBoundNat cs : ℚ) :=
+  fun I hI => ((isolateRoots_spec_aux hsep).1 I hI).2
 
 /-- Ordering: consecutive intervals returned by `isolateRoots cs` satisfy `I₁.upper ≤ I₂.lower`. -/
 theorem isolateRoots_pairwise {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
@@ -857,7 +873,8 @@ theorem isolateRoots_pairwise {cs : List ℚ} (hsep : (ofCoeffList cs).Separable
   · exact hlt.le
   · exact heq_lu.le
 
-private theorem isolateRoots_intervalGapOk {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
+/-- Pairwise boundary-gap invariant `IntervalGapOk` across `isolateRoots cs`. -/
+theorem isolateRoots_intervalGapOk {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
     (isolateRoots cs).Pairwise (IntervalGapOk ((ofCoeffList cs).map (algebraMap ℚ ℝ))) :=
   (isolateRoots_spec_aux hsep).2.1
 
@@ -1012,6 +1029,24 @@ theorem isolateRoots_bijective {cs : List ℚ} (hsep : (ofCoeffList cs).Separabl
     have hri := isolatedRoot_mem hsep i
     exact huniq.unique ⟨hri.1, hri.2, (isolatedRoot hsep i).2⟩ ⟨hi_mem.1, hi_mem.2, hr⟩
 
+theorem sturmVariationsList_cauchy_sub_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
+    sturmVariationsList (sturmSeqList cs) (-(cauchyBoundNat cs : ℚ)) -
+      sturmVariationsList (sturmSeqList cs) (cauchyBoundNat cs : ℚ) ≤
+      (ofCoeffList cs).natDegree := by
+  let b : ℚ := (cauchyBoundNat cs : ℚ)
+  have hb0 : (0 : ℚ) ≤ b := Nat.cast_nonneg _
+  have heq := card_roots_Ioc_eq hsep (by linarith : -b ≤ b)
+  have hpR_deg : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).natDegree =
+      (ofCoeffList cs).natDegree :=
+    Polynomial.natDegree_map_eq_of_injective (algebraMap ℚ ℝ).injective _
+  rw [heq]
+  calc (((ofCoeffList cs).map (algebraMap ℚ ℝ)).roots.toFinset.filter
+        (fun r : ℝ => ((-b : ℚ) : ℝ) < r ∧ r ≤ (b : ℝ))).card
+      ≤ ((ofCoeffList cs).map (algebraMap ℚ ℝ)).roots.toFinset.card := Finset.card_filter_le _ _
+    _ ≤ ((ofCoeffList cs).map (algebraMap ℚ ℝ)).roots.card := Multiset.toFinset_card_le _
+    _ ≤ ((ofCoeffList cs).map (algebraMap ℚ ℝ)).natDegree := Polynomial.card_roots' _
+    _ = (ofCoeffList cs).natDegree := hpR_deg
+
 /-- `TimeM ℕ` bisection/evaluation tick upper bound for `isolateRootsM cs` in terms of `natDegree`
 and `mignotteBisectionDepth cs` (preprocessing and scalar/list control steps cost `0` ticks). -/
 theorem isolateRootsM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
@@ -1039,21 +1074,7 @@ theorem isolateRootsM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable
   let seq := sturmSeqList cs
   let vL := sturmVariationsList seq (-b)
   let vR := sturmVariationsList seq b
-  have hc_le : vL - vR ≤ d := by
-    have hb0 : (0 : ℚ) ≤ b := Nat.cast_nonneg _
-    have heq := card_roots_Ioc_eq hsep (by linarith : -b ≤ b)
-    have hpR_deg : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).natDegree = d :=
-      Polynomial.natDegree_map_eq_of_injective (algebraMap ℚ ℝ).injective _
-    have hcard_le : (((ofCoeffList cs).map (algebraMap ℚ ℝ)).roots.toFinset.filter
-        (fun r : ℝ => ((-b : ℚ) : ℝ) < r ∧ r ≤ (b : ℝ))).card ≤ d := by
-      calc _ ≤ ((ofCoeffList cs).map (algebraMap ℚ ℝ)).roots.toFinset.card :=
-            Finset.card_filter_le _ _
-        _ ≤ ((ofCoeffList cs).map (algebraMap ℚ ℝ)).roots.card := Multiset.toFinset_card_le _
-        _ ≤ ((ofCoeffList cs).map (algebraMap ℚ ℝ)).natDegree := Polynomial.card_roots' _
-        _ = d := hpR_deg
-    change sturmVariationsList seq (-b) - sturmVariationsList seq b ≤ d
-    rw [heq]
-    exact hcard_le
+  have hc_le : vL - vR ≤ d := sturmVariationsList_cauchy_sub_le hsep
   simp only [isolateRootsM, hte, Bool.false_eq_true, ↓reduceIte, TimeM.time_bind,
     sturmVariationsM_time, sturmVariationsM_ret]
   have hb0 : (0 : ℚ) ≤ b := Nat.cast_nonneg _
@@ -1105,6 +1126,14 @@ noncomputable def isolatePolyRoots (p : ℚ[X]) : List RootInterval :=
 noncomputable def isolatePolyRootsM (p : ℚ[X]) : TimeM ℕ (List RootInterval) :=
   isolateRootsM (p.coeffsBelow (p.natDegree + 1))
 
+theorem isolatePolyRoots_eq (p : ℚ[X]) :
+    isolatePolyRoots p = isolateRoots (p.coeffsBelow (p.natDegree + 1)) := by
+  rfl
+
+theorem isolatePolyRootsM_eq (p : ℚ[X]) :
+    isolatePolyRootsM p = isolateRootsM (p.coeffsBelow (p.natDegree + 1)) := by
+  rfl
+
 /-- Soundness for `isolatePolyRoots p` on squarefree `p : ℚ[X]`. -/
 theorem isolatePolyRoots_isIsolatingFor {p : ℚ[X]} (hsq : Squarefree p) :
     ∀ I ∈ isolatePolyRoots p, I.IsIsolatingFor (p.map (algebraMap ℚ ℝ)) := by
@@ -1123,7 +1152,7 @@ theorem isolatePolyRoots_pairwise {p : ℚ[X]} (hsq : Squarefree p) :
     Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree)
   exact isolateRoots_pairwise (PerfectField.separable_iff_squarefree.mpr (heq.symm ▸ hsq))
 
-private theorem polySeparable {p : ℚ[X]} (hsq : Squarefree p) :
+theorem polySeparable {p : ℚ[X]} (hsq : Squarefree p) :
     (ofCoeffList (p.coeffsBelow (p.natDegree + 1))).Separable :=
   PerfectField.separable_iff_squarefree.mpr
     ((Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree)).symm ▸ hsq)

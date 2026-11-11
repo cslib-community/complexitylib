@@ -37,14 +37,6 @@ theorem tileKey_lt {L m N : ℕ} (hm : m ≤ L) (q : ℕ × ℕ)
   unfold tileKey
   nlinarith only [Nat.mul_le_mul_right (numBands L m N) (Nat.succ_le_of_lt hβ), hγ]
 
-private theorem countStep_parameters {w T L m N Q : ℕ} {x y : Data 96}
-    (hx : Parameters L m N Q x) (he : ExecWithin w countStep x y T) :
-    Parameters L m N Q y := hx.reframe (by
-  intro i hi
-  apply he.regs_eq
-  have hp : ∀ i ∈ parameterRegisters, countStep.Preserves i := by decide +kernel
-  exact hp i hi)
-
 /-- The full native count update, including loading both original coordinates. Its count
 bound comes from the original prefix length, rather than a supplied intermediate-state fit. -/
 theorem exec_countStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ × ℕ)
@@ -111,7 +103,7 @@ theorem exec_countStep {w L m N Q n : ℕ} (hm : m ≤ L) (pairs : ℕ → ℕ �
       pointer, index, queries, queryRow, queryCol, rowBand, colBand, tile, bandWidth,
       counts, count, BandPreparation.bands, BandPreparation.one, BandPreparation.two,
       Fin.mk.injEq]
-  refine ⟨y, he, countStep_parameters hx he, by simp [y, index], ?_, ?_⟩
+  refine ⟨y, he, hx.of_exec he (by decide +kernel), by simp [y, index], ?_, ?_⟩
   · intro t ht'
     change y.mem (countAddress L Q + t) = Nat.count (fun k => key k = t) (n + 1)
     rw [Nat.count_succ]

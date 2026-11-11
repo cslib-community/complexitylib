@@ -44,11 +44,7 @@ theorem exec_logarithm {w : ℕ} (x : Data 128)
   wram_exec [NatClog.result, result]
   wram_simp [NatClog.arg, memory, result]
   intro i hi hd h0 h1 h2 h4
-  rw [Data.set_regs_of_ne hd, Data.extend_regs_of_forall_ne _ _ i (by
-    intro j hj
-    have hv := congrArg Fin.val hj
-    change j.val = i.val at hv
-    omega)]
+  rw [Data.set_regs_of_ne hd, Data.extend_castLE_regs_of_le _ _ i hi]
   simp only [Data.set_regs, Function.update_of_ne (show i ≠ Reg.low0 by
     intro h; subst i; contradiction), Function.update_of_ne h0,
     Function.update_of_ne h1, Function.update_of_ne h2, Function.update_of_ne h4]

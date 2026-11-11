@@ -39,6 +39,12 @@ example : complexity interpretation
   simpa using complexity_decide_forall_mem_le (univ : Finset (Fin 3)) (fun i x => x i) (c := 0)
     fun i _ => by simp
 
+-- The disjunction of all three input bits costs at most four gates.
+example : complexity interpretation
+    (single fun x : BitString 3 => decide (∃ i ∈ (univ : Finset (Fin 3)), x i = true)) ≤ 4 := by
+  simpa using complexity_decide_exists_mem_le (univ : Finset (Fin 3)) (fun i x => x i) (c := 0)
+    fun i _ => by simp
+
 /-! ### The decoder -/
 
 -- Reading the first bit of every block costs nothing on the flat tuple, so `c = 0`.
