@@ -611,7 +611,7 @@ private theorem compressWithSteps_size (uf : Batteries.UnionFind) (x : Fin uf.si
 
 @[simp]
 theorem compressWithSteps_root (uf : Batteries.UnionFind) (x : Fin uf.size) :
-    (Prod.fst (compressWithSteps uf x).snd : ℕ) = uf.rootD x.1 := by
+    ( (Prod.fst (compressWithSteps uf x).snd : Fin _) : ℕ ) = uf.rootD x.1 := by
   unfold compressWithSteps
   dsimp only
   rw [findGo_rankBound_fst, Batteries.UnionFind.findAux_root,
@@ -624,7 +624,8 @@ private theorem compressWithSteps_steps (uf : Batteries.UnionFind) (x : Fin uf.s
 private theorem compressWithSteps_eq_find_of_eq {u v : Batteries.UnionFind} (h : u = v)
     {i : ℕ} (hu : i < u.size) (hv : i < v.size) :
     (compressWithSteps u ⟨i, hu⟩).1 = (v.find ⟨i, hv⟩).1 ∧
-      ((compressWithSteps u ⟨i, hu⟩).2.1 : ℕ) = ((v.find ⟨i, hv⟩).2.1 : ℕ) := by
+      (( (Prod.fst (compressWithSteps u ⟨i, hu⟩).snd : Fin _) : ℕ )) =
+        ((v.find ⟨i, hv⟩).2.1 : ℕ) := by
   subst h
   exact ⟨compressWithSteps_fst _ _,
     by rw [compressWithSteps_root, Batteries.UnionFind.find_root_2]⟩
