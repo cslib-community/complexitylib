@@ -466,6 +466,9 @@ class LocalManualGateTests(unittest.TestCase):
                    " def test_control(self):\n"
                    "  self.assertNotEqual(os.environ.get('MANUAL_TEST_FAILURE'), '1')\n"
                    "unittest.main()\n")
+        # The generator needs the real Lean sources; its own tests are in
+        # test_class_inclusions.py. A stub keeps this checkout to the manual gates.
+        self.write("scripts/class_inclusions.py", "raise SystemExit(0)\n")
         recorder = ('#!/usr/bin/env python3\nimport json,os,sys\n'
                     'with open(os.environ["QUICK_COMMAND_LOG"], "a") as f:\n'
                     ' f.write(json.dumps([sys.argv[0].split("/")[-1], *sys.argv[1:]])+"\\n")\n')
@@ -488,6 +491,7 @@ class LocalManualGateTests(unittest.TestCase):
             with self.subTest(args=args):
                 result = self.run_gate(*args)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("ok    class inclusion tables are current", result.stdout)
                 self.assertIn("ok    operator manual links and excerpts", result.stdout)
                 self.assertIn("ok    operator manual tooling tests", result.stdout)
                 commands = [json.loads(x) for x in self.log.read_text().splitlines()]
