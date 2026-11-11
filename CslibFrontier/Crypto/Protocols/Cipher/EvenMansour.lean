@@ -1157,9 +1157,11 @@ private theorem IsCallBounded.badKey_toReal_le {State γ K : Type}
   refine (hbad (transcriptCipher T) (transcriptPerm T)).trans ?_
   gcongr
 
-/-- **Boneh–Shoup Theorem 4.14 for adaptive call-bounded distinguishers (two-key)**: on any
-supported transcript `T` of a distinguisher satisfying `IsCallBounded program Q_e Q_π`, a uniform
-key pair `(k₀, k₁) ← G × G` is bad with real probability at most `2 * Q_e * Q_π / |G|`. -/
+/-- **Boneh–Shoup Theorem 4.14 bad-key union bound on call-bounded transcripts (two-key)**:
+against any stateful bidirectional oracle, on any supported transcript `T` of a distinguisher
+satisfying `IsCallBounded program Q_e Q_π`, a fresh uniform key pair `(k₀, k₁) ← G × G`, sampled
+independently of `T`, is bad for `transcriptCipher T` and `transcriptPerm T` with real
+probability at most `2 * Q_e * Q_π / |G|`. -/
 theorem IsCallBounded.badEvenMansourKey_toReal_le {State γ : Type}
     {program : OracleComp (EvenMansourSpec G) γ} {Q_e Q_π : ℕ}
     (h : IsCallBounded program Q_e Q_π)
@@ -1172,9 +1174,11 @@ theorem IsCallBounded.badEvenMansourKey_toReal_le {State γ : Type}
       2 * (Q_e : ℝ) * (Q_π : ℝ) / (Fintype.card G : ℝ) :=
   h.badKey_toReal_le oracle hmem _ isBadEvenMansourKey toOuterMeasure_isBadEvenMansourKey_toReal_le
 
-/-- **Boneh–Shoup Theorem 4.14 for adaptive call-bounded distinguishers (single-key)**: on any
-supported transcript `T` of a distinguisher satisfying `IsCallBounded program Q_e Q_π`, a single
-uniform key `k ← G` is bad with real probability at most `2 * Q_e * Q_π / |G|`. -/
+/-- **Boneh–Shoup Theorem 4.14 bad-key union bound on call-bounded transcripts (single-key)**:
+against any stateful bidirectional oracle, on any supported transcript `T` of a distinguisher
+satisfying `IsCallBounded program Q_e Q_π`, a single fresh uniform key `k ← G`, sampled
+independently of `T`, is bad for `transcriptCipher T` and `transcriptPerm T` with real
+probability at most `2 * Q_e * Q_π / |G|`. -/
 theorem IsCallBounded.badSingleKeyEvenMansour_toReal_le {State γ : Type}
     {program : OracleComp (EvenMansourSpec G) γ} {Q_e Q_π : ℕ}
     (h : IsCallBounded program Q_e Q_π)

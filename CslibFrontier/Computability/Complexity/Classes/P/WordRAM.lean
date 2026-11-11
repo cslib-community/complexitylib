@@ -58,7 +58,7 @@ it, its word list must be computable in polynomial time, and the time bound at t
 polynomial in `|encIn a|`. -/
 theorem Program.DecidesInTime.mem_P_of_width
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {p : Program B r} {encode : ℕ → α → List ℕ} {A : Set α} {time : α → ℕ → ℕ}
     {allowed : α → ℕ → Prop} (h : p.DecidesInTime encode A time allowed) {width : α → ℕ}
     (hwidth : Turing.MultiTapeTM.ComputableInPolyTime width encIn encUnary)
@@ -80,7 +80,7 @@ list `encode a` is computable in polynomial time from `encIn a`, and `size a` is
 bounded in `|encIn a|`. -/
 theorem Program.DecidesInTime.mem_P
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {p : Program B r} {encode : α → List ℕ} {A : Set α} {size : α → ℕ} {T : ℕ → ℕ} {k : ℕ}
     (hT : PolynomiallyBounded T) (hsize : PolyBounded (fun a => (encIn a).length) size)
     (hencode : Turing.MultiTapeTM.ComputableInPolyTime encode encIn (encList encNat))
@@ -97,7 +97,7 @@ computable in polynomial time and a size measure polynomially bounded in the enc
 length. -/
 theorem UniformPolynomialTime.mem_P
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat))
+      encWidthOperands (encOption encNat))
     {encode : α → List ℕ} {A : Set α} {size : α → ℕ}
     (h : UniformPolynomialTime B A (fun _ => encode) size)
     (hsize : PolyBounded (fun a => (encIn a).length) size)
@@ -152,7 +152,7 @@ one fixed word-RAM program over `B` decides it on the bits of its instances, wit
 many instructions in `|encIn a|`, at every word size above a logarithmic threshold. -/
 theorem mem_P_iff_uniformPolynomialTime (φ : Basis.additive.Hom B)
     (hop : ∀ op : B.Op, Turing.MultiTapeTM.ComputableInPolyTime (B.genericModel.checkedOp op)
-      (encPair encUnary (encPi encNat)) (encOption encNat)) {A : Set α} :
+      encWidthOperands (encOption encNat)) {A : Set α} :
     A ∈ Cslib.Complexity.P encIn ↔
       UniformPolynomialTime B A (fun _ a => (encIn a).map Bool.toNat)
         (fun a => (encIn a).length) :=

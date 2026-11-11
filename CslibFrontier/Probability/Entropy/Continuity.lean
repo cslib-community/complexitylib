@@ -166,28 +166,25 @@ theorem condEntropyModulus_monotoneOn : MonotoneOn condEntropyModulus (Set.Icc 0
 /-! ### Winter's coupling -/
 
 /-- The coin showing `true` with probability `d / (1 + d)`. -/
-private noncomputable def coin (d : ℝ) (hd : 0 ≤ d) : PMF Bool :=
-  PMF.ofFintype (fun b => ENNReal.ofReal (cond b (d / (1 + d)) (1 / (1 + d)))) (by
-    have h1 : (1 + d) ≠ 0 := by linarith
-    rw [Fintype.sum_bool, Bool.cond_true, Bool.cond_false,
-      ← ENNReal.ofReal_add (div_nonneg hd (by linarith)) (div_nonneg zero_le_one (by linarith)),
-      ← add_div, add_comm, div_self h1, ENNReal.ofReal_one])
+private noncomputable def mixCoin (d : ℝ) (hd : 0 ≤ d) : PMF Bool :=
+  coin ⟨d / (1 + d), div_nonneg hd (by linarith), (div_le_one (by linarith)).2 (by linarith)⟩
 
-private theorem coin_true (d : ℝ) (hd : 0 ≤ d) : (coin d hd true).toReal = d / (1 + d) := by
-  rw [coin, PMF.ofFintype_apply, Bool.cond_true,
-    ENNReal.toReal_ofReal (div_nonneg hd (by linarith))]
+private theorem mixCoin_true (d : ℝ) (hd : 0 ≤ d) : (mixCoin d hd true).toReal = d / (1 + d) := by
+  rw [mixCoin, coin_apply_toReal, ite_eq_left rfl]
 
-private theorem coin_false (d : ℝ) (hd : 0 ≤ d) : (coin d hd false).toReal = 1 / (1 + d) := by
-  rw [coin, PMF.ofFintype_apply, Bool.cond_false,
-    ENNReal.toReal_ofReal (div_nonneg zero_le_one (by linarith))]
+private theorem mixCoin_false (d : ℝ) (hd : 0 ≤ d) : (mixCoin d hd false).toReal = 1 / (1 + d) := by
+  have h1 : 1 + d ≠ 0 := by positivity
+  rw [mixCoin, coin_apply_toReal, ite_eq_right Bool.false_ne_true]
+  field_simp
+  ring
 
-private theorem mul_entropy_coin (d : ℝ) (hd : 0 ≤ d) :
-    (1 + d) * entropy (coin d hd) = condEntropyModulus d := by
-  rw [entropy_bool, coin_true, condEntropyModulus, mul_div_assoc]
+private theorem mul_entropy_mixCoin (d : ℝ) (hd : 0 ≤ d) :
+    (1 + d) * entropy (mixCoin d hd) = condEntropyModulus d := by
+  rw [mixCoin, entropy_coin, condEntropyModulus, mul_div_assoc]
 
 /-- The mixture of `R₀` and `R₁` with weights `1 / (1 + d)` and `d / (1 + d)`. -/
 private noncomputable def mix (d : ℝ) (hd : 0 ≤ d) (R₀ R₁ : PMF Ω) : PMF Ω :=
-  (coin d hd).bind fun b => cond b R₁ R₀
+  (mixCoin d hd).bind fun b => cond b R₁ R₀
 
 private theorem map_mix {Ω' : Type*} (d : ℝ) (hd : 0 ≤ d) (R₀ R₁ : PMF Ω) (f : Ω → Ω') :
     (mix d hd R₀ R₁).map f = mix d hd (R₀.map f) (R₁.map f) := by
@@ -199,23 +196,24 @@ private theorem conditionalEntropy_add_mul_le_of_mix_eq [Finite β] [Finite α] 
     (hd : 0 ≤ d) {R₀ R₁ S₀ S₁ : PMF (β × α)} (h : mix d hd R₀ R₁ = mix d hd S₀ S₁) :
     conditionalEntropy R₀ + d * conditionalEntropy R₁ ≤
       conditionalEntropy S₀ + d * conditionalEntropy S₁ + condEntropyModulus d := by
-  have hlow := sum_mul_conditionalEntropy_le_conditionalEntropy_bind (coin d hd)
+  have hlow := sum_mul_conditionalEntropy_le_conditionalEntropy_bind (mixCoin d hd)
     fun b => cond b R₁ R₀
-  have hup := conditionalEntropy_bind_le (coin d hd) fun b => cond b S₁ S₀
+  have hup := conditionalEntropy_bind_le (mixCoin d hd) fun b => cond b S₁ S₀
   change _ ≤ conditionalEntropy (mix d hd R₀ R₁) at hlow
   change conditionalEntropy (mix d hd S₀ S₁) ≤ _ at hup
   rw [h] at hlow
-  simp only [Fintype.sum_bool, Bool.cond_true, Bool.cond_false, coin_true, coin_false] at hlow hup
+  simp only [Fintype.sum_bool, Bool.cond_true, Bool.cond_false, mixCoin_true, mixCoin_false]
+    at hlow hup
   have h1 : (0 : ℝ) < 1 + d := by linarith
   have key := mul_le_mul_of_nonneg_left (hlow.trans hup) h1.le
-  rw [← mul_entropy_coin d hd]
+  rw [← mul_entropy_mixCoin d hd]
   have e1 : (1 + d) * (d / (1 + d) * conditionalEntropy R₁ + 1 / (1 + d) * conditionalEntropy R₀) =
       conditionalEntropy R₀ + d * conditionalEntropy R₁ := by
     field_simp
     ring
   have e2 : (1 + d) * (d / (1 + d) * conditionalEntropy S₁ + 1 / (1 + d) * conditionalEntropy S₀ +
-      entropy (coin d hd)) =
-      conditionalEntropy S₀ + d * conditionalEntropy S₁ + (1 + d) * entropy (coin d hd) := by
+      entropy (mixCoin d hd)) =
+      conditionalEntropy S₀ + d * conditionalEntropy S₁ + (1 + d) * entropy (mixCoin d hd) := by
     field_simp
     ring
   linarith
@@ -245,8 +243,8 @@ private theorem mix_excess_eq [Fintype Ω] (P Q : PMF Ω) (h : 0 < dist P Q) :
   have h1 : (0 : ℝ) < 1 + dist P Q := by linarith
   ext a
   refine (ENNReal.toReal_eq_toReal_iff' (PMF.apply_ne_top _ a) (PMF.apply_ne_top _ a)).mp ?_
-  simp only [mix, bind_apply_toReal, Fintype.sum_bool, Bool.cond_true, Bool.cond_false, coin_true,
-    coin_false, excess_toReal, dist_comm Q P]
+  simp only [mix, bind_apply_toReal, Fintype.sum_bool, Bool.cond_true, Bool.cond_false,
+    mixCoin_true, mixCoin_false, excess_toReal, dist_comm Q P]
   field_simp
   rcases le_total (P a).toReal (Q a).toReal with hPQ | hPQ
   · rw [max_eq_left (sub_nonneg.mpr hPQ), max_eq_right (sub_nonpos.mpr hPQ)]

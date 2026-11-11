@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.Decoding
 public import CslibFrontier.Foundations.Data.BitString.Enumeration
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Crypto.Game
 
 /-!

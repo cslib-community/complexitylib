@@ -113,7 +113,10 @@ write the merge with `main` instead of sending the PR back. It refuses any other
 pushes nothing. Pushing its commit to the PR branch is a deliberate step by the author or a
 coordinator acting for them, who records the push. Existing approval carries forward when
 `scripts/check_restack.py` passes and CI passes at the new head, as
-[Restacks](../AGENTS.md#restacks) describes.
+[Restacks](../AGENTS.md#restacks) describes. When the only conflicts are in `references.bib` or the
+`mk_all` aggregates, `python3 scripts/restack_mechanical.py <PR> --approved-head <SHA>` does the
+merge, the regeneration and that check in one step. It pushes only with `--push`, under the same
+rule for who pushes, and prints the queue command without running it.
 
 When several coordinators share one host, give them a single limit on concurrent Lean builds,
 not only a thread count. Their builds can exhaust the kernel's file handles before its

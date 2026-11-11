@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.MIP.Defs
 public import CslibFrontier.Computability.Complexity.Classes.IP.CoinFixing
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Deterministic prover optimality and history consistency for `MIP`
@@ -470,14 +471,11 @@ private theorem mem_listMapM {l : List α} {g : α → PMF β} {S : α → List 
   induction l with
   | nil =>
     intro xs hxs
-    simp only [List.mapM_nil, Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff] at hxs
-    subst hxs
+    supp_cases hxs [List.mapM_nil]
     exact List.mem_singleton_self []
   | cons a rest ih =>
     intro xs hxs
-    simp only [List.mapM_cons, Probability.PMF.monad_bind_eq_bind,
-      Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hxs
-    obtain ⟨b, hb, ys, hys, rfl⟩ := hxs
+    supp_cases hxs [List.mapM_cons] with ⟨b, hb, ys, hys, rfl⟩
     simp only [listMapM, List.mem_flatMap, List.mem_map]
     exact ⟨b, hS a List.mem_cons_self b hb, ys,
       ih (fun a' ha' => hS a' (List.mem_cons_of_mem a ha')) ys hys, rfl⟩
@@ -507,9 +505,7 @@ private theorem support_presampleTree_subset (Q : Prover Unit) (L : ℕ)
     simp only [presampleTree] at ht
     simp only [allTrees]
     refine mem_listMapM (fun m _ entry hentry => ?_) t ht
-    simp only [Probability.PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
-      PMF.mem_support_map_iff] at hentry
-    obtain ⟨ys, _, child, hchild, rfl⟩ := hentry
+    supp_cases hentry with ⟨ys, _, child, hchild, rfl⟩
     simp only [List.mem_flatMap, List.mem_map]
     refine ⟨ys.1.take L, ?_, child, ih ys.2 child hchild, rfl⟩
     exact Finset.mem_toList.mpr (BitString.mem_shortWords.mpr (List.length_take_le L ys.1))
@@ -527,14 +523,11 @@ private theorem support_listPiPMF_subset [DecidableEq ι] (default : α)
   induction l with
   | nil =>
     intro f hf
-    simp only [listPiPMF, PMF.mem_support_pure_iff] at hf
-    subst hf
+    supp_cases hf [listPiPMF]
     exact List.mem_singleton_self _
   | cons i rest ih =>
     intro f hf
-    simp only [listPiPMF, Probability.PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff,
-      PMF.mem_support_map_iff] at hf
-    obtain ⟨a, ha, g, hg, rfl⟩ := hf
+    supp_cases hf [listPiPMF] with ⟨a, ha, g, hg, rfl⟩
     simp only [allListPi, List.mem_flatMap, List.mem_map]
     exact ⟨a, hS i List.mem_cons_self a ha, g,
       ih (fun j hj => hS j (List.mem_cons_of_mem i hj)) g hg, rfl⟩
@@ -614,8 +607,7 @@ theorem exists_deterministic_prover_family [Finite ι] [DecidableEq ι] {γ : Ty
   have hsupp : ∀ f ∈ μ.support, f ∈ candidates := by
     refine support_listPiPMF_subset defaultTree (Finset.univ : Finset ι).toList ?_
     intro i _ st hst
-    simp only [PMF.mem_support_map_iff] at hst
-    obtain ⟨t, ht, rfl⟩ := hst
+    supp_cases hst with ⟨t, ht, rfl⟩
     exact List.mem_map_of_mem (support_presampleTree_subset (P i) L queries d (P i).init t ht)
   let fBest := bestOfList g (fun _ => defaultTree) candidates
   refine ⟨fun i => TreeStrategy.toDetProver (fBest i), ?_⟩
