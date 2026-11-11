@@ -4687,6 +4687,7 @@ public import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliam
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliamsonDicut
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Hyperbolic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogSum
+public import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.PolynomialSwitch
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.RationalRamp
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.RpowAbsSum
@@ -6023,6 +6024,7 @@ public import CslibFrontier.MachineLearning.StatisticalQuery.Simulation
 public import CslibFrontier.MachineLearning.UniformLearning.AC0
 public import CslibFrontier.MachineLearning.UniformLearning.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.BestOf
+public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Parameters
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses
