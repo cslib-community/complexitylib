@@ -386,80 +386,136 @@ example {δ : ℝ} (hδ : 0 ≤ δ)
 
 
 
-def dummyStackSpec :
-    StackAccumulationSpec encUnary (encFinEnum Unit) encNat encNat encNat encNat where
-  defaultNode := 0
-  initCtx _ := ()
-  initStack _ := [0]
-  initAcc _ := 0
-  rounds n := 2 ^ n
-  isLeaf _ := true
-  leafInstance _ := 0
-  expand _ := []
-  combine _ := 0
-  computableInPolyTime_initCtx := .const ()
-  computableInPolyTime_initStack := .const [0]
-  computableInPolyTime_initAcc := .const 0
-  computableInPolyTime_rounds := ComputableTidilyInPolyTime.binary_two_pow.computableInPolyTime
-  computableInPolyTime_isLeaf := .const true
-  computableInPolyTime_leafInstance := .const 0
-  computableInPolyTime_expand := .const []
-  computableInPolyTime_combine := .const 0
+lemma countdownStackSpec_foldl_acc (a : ℕ) (L' : List (List Bool)) :
+    ((L'.map (countdownBranching.walk a)).foldl
+      (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
+      (countdownStackSpec.initAcc a)).cap = 2 ^ a ∧
+    ((L'.map (countdownBranching.walk a)).foldl
+      (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
+      (countdownStackSpec.initAcc a)).total ≤ 2 ^ a := by
+  have H : ∀ l acc, acc.total ≤ acc.cap →
+      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩) acc l).cap = acc.cap ∧
+      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩) acc l).total ≤ acc.cap := by
+    intro l
+    induction l with
+    | nil =>
+      intro acc hacc
+      exact ⟨rfl, hacc⟩
+    | cons x xs ih =>
+      intro acc hacc
+      apply ih
+      simp only [countdownStackSpec, CappedNatAcc.add]
+      exact min_le_left _ _
+  have hinit : (countdownStackSpec.initAcc a).total ≤ (countdownStackSpec.initAcc a).cap := by
+    simp only [countdownStackSpec, CappedNatAcc.init]
+    have : 0 < 2 ^ a := Nat.two_pow_pos a
+    omega
+  have hres := H (L'.map (countdownBranching.walk a)) (countdownStackSpec.initAcc a) hinit
+  simp only [countdownStackSpec, CappedNatAcc.init] at hres
+  exact hres
+
+lemma countdownStackSpec_stateBound (a i : ℕ) (hi : i ≤ countdownStackSpec.rounds a) :
+    (encStackSearchState (encFinEnum Unit) encNat encCappedNatAcc
+      ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a))).length ≤
+        1000 * (a + 1) ^ 2 := by
+  have hwalk_len : ∀ s w, countdownBranching.IsLeafWord s w → w.length ≤ s := by
+    intro s w hw
+    induction w generalizing s with
+    | nil => exact Nat.zero_le s
+    | cons b ws ih =>
+      obtain ⟨hnot, htail⟩ := hw
+      change ¬(s = 0) at hnot
+      have hsub := ih (s - 1) htail
+      simp only [List.length_cons]
+      omega
+  have H := StackAccumulationSpec.run_eq_foldl_leafWords countdownStackSpec (fun _ => 1) a
+    countdownBranching countdownBranching_terminating rfl
+    (fun _ => decide_eq_true_eq.to_iff)
+    (fun _ _ => rfl) (hwalk_len a)
+    (by
+      intro L hnd hL
+      have hcard : L.toFinset.card ≤ ∑ j ∈ Finset.range (a + 1), a.choose j :=
+        countdownBranching.card_le_sum_choose_of_isLeafWord
+          (fun w hw => (hL w).mp (List.mem_toFinset.mp hw))
+          (fun w hw => hwalk_len a w ((hL w).mp (List.mem_toFinset.mp hw)))
+          (fun w hw => (Finset.card_filter_le _ _).trans (by
+            rw [Finset.card_range]
+            exact hwalk_len a w ((hL w).mp (List.mem_toFinset.mp hw))))
+      rw [Nat.sum_range_choose, List.toFinset_card_of_nodup hnd] at hcard
+      change 2 * L.length ≤ 2 * 2 ^ a + 1
+      have : 0 < 2 ^ a := Nat.two_pow_pos a
+      omega)
+  obtain ⟨L, hnd, hL, hrun_eq, hstate⟩ := H
+  obtain ⟨hlen, helem, ⟨L', hsub, hacc⟩⟩ := hstate i hi
+  have hcap := countdownStackSpec_foldl_acc a L'
+  rw [← hacc] at hcap
+  obtain ⟨hcap1, hcap2⟩ := hcap
+  have hlen_cap := CappedNatAcc.length_encCappedNatAcc_le_of_le_two_pow (by rw [hcap1]; exact hcap2) (by rw [hcap1])
+  have hlen_stack : (encList encNat ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).stack).length ≤ (a + 1) * (2 * (a + 1) + 1) + 1 := by
+    have h_enc_list := length_encList_le encNat ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).stack (b := a + 1) (by
+      intro x hx
+      obtain ⟨w, hw1, hw2, hw3⟩ := helem x hx
+      have hwalk : ∀ (s : ℕ) (w : List Bool), countdownBranching.walk s w ≤ s := by
+        intro s w
+        induction w generalizing s with
+        | nil => exact le_rfl
+        | cons b ws ih => exact (ih (s - 1)).trans (by omega)
+      have hx_eq : x = countdownBranching.walk a w := hw3.symm
+      rw [hx_eq]
+      have hx_le : countdownBranching.walk a w ≤ a := hwalk a w
+      have hx2 : (encNat (countdownBranching.walk a w)).length ≤ a + 1 := by
+        have h := length_encNat_mono hx_le
+        have hpow : (encNat a).length ≤ a + 1 := (length_encNat_le_self a).trans (by omega)
+        exact h.trans hpow
+      exact hx2)
+    have h_mul := Nat.mul_le_mul_right (2 * (a + 1) + 1) hlen
+    omega
+  have H_mul2 : (a + 1) * (2 * (a + 1) + 1) = 2 * (a + 1)^2 + (a + 1) := by ring
+  rw [H_mul2] at hlen_stack
+  simp only [encStackSearchState_apply, length_encPair]
+  have hctx : ((encFinEnum Unit) ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).ctx).length ≤ 10 := by
+    have h := length_encFinEnum_lt ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a)).ctx
+    have hc : Nat.card Unit ≤ 10 := by simp
+    omega
+  have H_sq : a + 1 ≤ (a + 1)^2 := by
+    have h1 : (a + 1) * 1 ≤ (a + 1) * (a + 1) := Nat.mul_le_mul_left (a + 1) (Nat.le_add_left 1 a)
+    have h2 : (a + 1) * 1 = a + 1 := by ring
+    have h3 : (a + 1) * (a + 1) = (a + 1)^2 := by ring
+    omega
+  have H_sq2 : 1 ≤ (a + 1)^2 := by
+    have h1 : 1 * 1 ≤ (a + 1) * (a + 1) := Nat.mul_le_mul (Nat.le_add_left 1 a) (Nat.le_add_left 1 a)
+    have h2 : (a + 1) * (a + 1) = (a + 1)^2 := by ring
+    omega
+  omega
 
 example : ∃ c e : ℕ, ∃ Space : ℕ → ℕ,
     PolyBounded (fun a => (encUnary a).length) Space ∧
-    ComputableInO (dummyStackSpec.run id) encUnary encNat
+    ComputableInO (countdownStackSpec.run (fun _ => 1)) encUnary encCappedNatAcc
       (fun a => c * ((encUnary a).length + 1) ^ e +
-        (dummyStackSpec.rounds a + 1) *
-          (c * ((encUnary a).length + 1) ^ e + (encNat 0).length)) Space ∧
-    ComputableInPolySpace (dummyStackSpec.run id) encUnary encNat := by
-  have h := StackAccumulationSpec.exists_computableInO_run dummyStackSpec
-    (g := id) (Tg := fun x => (encNat x).length) (Sg := fun x => (encNat x).length)
-    (ComputableInO.id')
-    (⟨id, Cslib.PolynomiallyBounded.id, fun _ => le_rfl⟩)
-    (stateBound := fun _ => 1000) (ansBound := fun _ => 1000)
-    (leafMax := fun _ => (encNat 0).length)
-    (⟨fun _ => 1000, Cslib.PolynomiallyBounded.const 1000, fun _ => le_rfl⟩)
-    (⟨fun _ => 1000, Cslib.PolynomiallyBounded.const 1000, fun _ => le_rfl⟩)
-    (by
-      intro a i hi
-      cases i with
-      | zero =>
-        have heq : (dummyStackSpec.step id)^[0] (dummyStackSpec.initState a) = ⟨(), [0], 0⟩ := rfl
-        rw [heq]
-        exact (by decide)
-      | succ j =>
-        have heq : (dummyStackSpec.step id)^[j + 1] (dummyStackSpec.initState a) =
-          (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := rfl
-        rw [heq]
-        rw [StackAccumulationSpec.iterate_step_empty]
-        exact (by decide))
+        (countdownStackSpec.rounds a + 1) *
+          (c * ((encUnary a).length + 1) ^ e + (encNat 1).length)) Space ∧
+    ComputableInPolySpace (countdownStackSpec.run (fun _ => 1)) encUnary encCappedNatAcc := by
+  have h := StackAccumulationSpec.exists_computableInO_run countdownStackSpec
+    (g := fun _ => 1) (Tg := fun x => (encNat x).length) (Sg := fun x => (encNat x).length)
+    (ComputableInO.const 1)
+    (PolyBounded.self)
+    (stateBound := fun a => 1000 * (a + 1) ^ 2) (ansBound := fun _ => (encNat 1).length)
+    (leafMax := fun _ => (encNat 1).length)
+    (PolyBounded.of_forall_le 1000 2 (fun a => by simp only [encUnary_apply, List.length_replicate]; exact le_rfl))
+    (PolyBounded.const (encNat 1).length)
+    countdownStackSpec_stateBound
     (by
       intro a i hi st H
-      cases i with
-      | zero =>
-        have heq : st = ⟨(), [0], 0⟩ := rfl
-        rw [heq]
-        exact (by decide)
-      | succ j =>
-        have heq : st = (dummyStackSpec.step id)^[j + 1] (dummyStackSpec.initState a) := rfl
-        have heq2 : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := heq
-        rw [heq2] at H
-        rw [StackAccumulationSpec.iterate_step_empty] at H
-        cases H.1)
+      exact le_rfl)
     (by
       intro a i hi st H
-      cases i with
-      | zero =>
-        have heq : st = ⟨(), [0], 0⟩ := rfl
-        rw [heq]
-        exact le_rfl
-      | succ j =>
-        have heq : st = (dummyStackSpec.step id)^[j + 1] (dummyStackSpec.initState a) := rfl
-        have heq2 : st = (dummyStackSpec.step id)^[j] ⟨(), [], 0⟩ := heq
-        rw [heq2] at H
-        rw [StackAccumulationSpec.iterate_step_empty] at H
-        cases H.1)
+      obtain ⟨hnot, hleaf⟩ := H
+      change decide (st.stack.headD 0 = 0) = true at hleaf
+      rw [decide_eq_true_eq] at hleaf
+      change (encNat (st.stack.headD 0)).length ≤ _
+      rw [hleaf]
+      decide)
   exact h
+
 
 end CslibFrontierTests.DisjointInstancesAndOracleReduction
