@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -633,17 +633,31 @@ private theorem refuterStep_pairInSystem {S : State n} (hS : S.Valid f) {u p : �
 private theorem fixArg_spec {g : Gate} (hg : ¬ IsAffineOp g.op) {a w : ℕ} (haw : a ≠ w)
     (hargs : (g.left = .node a ∧ g.right = .node w) ∨ (g.left = .node w ∧ g.right = .node a))
     (val : ℕ → Bool) (hw : val w = (fixArg g w).1) : g.eval val = (fixArg g w).2 := by
-  unfold IsAffineOp at hg
+  obtain ⟨α, β, γ, H⟩ := exists_and_form hg
   rcases hargs with ⟨hl, hr⟩ | ⟨hl, hr⟩
   · simp only [fixArg, hr, ite_true] at hw ⊢
     rw [Gate.eval_of_args hl hr, hw]
-    cases val a <;> cases h₁ : g.op false false <;> cases h₂ : g.op true false <;>
-      cases h₃ : g.op false true <;> cases h₄ : g.op true true <;> simp_all
+    have hβ : β = !decide (g.op false false = g.op true false) := by
+      rw [H false false, H true false]
+      cases α <;> cases β <;> cases γ <;> rfl
+    have H2 : g.op false β = γ := by
+      rw [H]
+      cases α <;> cases β <;> cases γ <;> rfl
+    rw [←hβ]
+    rw [H, H2]
+    cases α <;> cases β <;> cases γ <;> cases val a <;> rfl
   · have hr' : g.right ≠ .node w := by rw [hr]; simpa using haw
     simp only [fixArg, hr', ite_false] at hw ⊢
     rw [Gate.eval_of_args hl hr, hw]
-    cases val a <;> cases h₁ : g.op false false <;> cases h₂ : g.op true false <;>
-      cases h₃ : g.op false true <;> cases h₄ : g.op true true <;> simp_all
+    have hα : α = !decide (g.op false false = g.op false true) := by
+      rw [H false false, H false true]
+      cases α <;> cases β <;> cases γ <;> rfl
+    have H2 : g.op α false = γ := by
+      rw [H]
+      cases α <;> cases β <;> cases γ <;> rfl
+    rw [←hα]
+    rw [H, H2]
+    cases α <;> cases β <;> cases γ <;> cases val a <;> rfl
 
 private theorem andOnPairStep_gates_subset (S : State n) (G : ℕ) (pr : ZeroPair) (p w : ℕ)
     (prw : Option ZeroPair) (b c : Bool) (Hr : ℕ ⊕ ℕ) :
@@ -739,9 +753,18 @@ private theorem and_form_spec {op : Bool → Bool → Bool} (h : ¬ IsAffineOp o
     op x y = (((x ^^ decide (op true false = op true true)) &&
       (y ^^ decide (op false true = op true true))) ^^
       op (decide (op true false = op true true)) (decide (op false true = op true true))) := by
-  unfold IsAffineOp at h
-  cases x <;> cases y <;> cases h₁ : op false false <;> cases h₂ : op true false <;>
-    cases h₃ : op false true <;> cases h₄ : op true true <;> simp_all
+  obtain ⟨α, β, γ, H⟩ := exists_and_form h
+  have hα : α = decide (op true false = op true true) := by
+    rw [H true false, H true true]
+    cases α <;> cases β <;> cases γ <;> rfl
+  have hβ : β = decide (op false true = op true true) := by
+    rw [H false true, H true true]
+    cases α <;> cases β <;> cases γ <;> rfl
+  have hγ : γ = op α β := by
+    rw [H]
+    cases α <;> cases β <;> cases γ <;> rfl
+  rw [←hα, ←hβ, ←hγ]
+  exact H x y
 
 private theorem refuterStep_pairCreation {S : State n} (hS : S.Valid f) {u : ℕ}
     (hout : S.out.arg = .node u) (hN : NoDeletion S) (hAOP : findAndOnPair S = none)

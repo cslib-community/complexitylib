@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
@@ -128,9 +128,6 @@ private theorem terminalVal_of_getElem {S : State n} {L : List ℕ} (hL : L.Nodu
     simp [this]
   · rfl
 
-private theorem isAffine_const_bool {d : ℕ} (c : Bool) : IsAffine fun _ : BitString d => c :=
-  fun _ _ _ => by cases c <;> rfl
-
 private theorem isAffine_getD_ofFn {d : ℕ} (i : ℕ) :
     IsAffine fun u : BitString d => (List.ofFn u).getD i false := by
   intro a b c
@@ -145,13 +142,13 @@ private theorem isAffine_terminalVal {d : ℕ} (S : State n) (L : List ℕ) (x :
   unfold terminalVal
   rcases findPair S x with _ | pr
   · rcases L.findIdx? (· = x) with _ | i
-    · exact isAffine_const_bool false
+    · exact Cslib.BitString.isAffine_const false
     · exact isAffine_getD_ofFn i
   · by_cases h : pr.fst = x
-    · simpa [h] using isAffine_const_bool (d := d) pr.fstBias
+    · simpa [h] using Cslib.BitString.isAffine_const (d := d) pr.fstBias
     · simp only [h, ite_false]
       rcases L.findIdx? (· = x) with _ | i
-      · exact isAffine_const_bool false
+      · exact Cslib.BitString.isAffine_const false
       · exact isAffine_getD_ofFn i
 
 /-! ### The free parameters -/
@@ -268,17 +265,10 @@ private theorem findSome_isSome_terminalVal {d : ℕ} (C : Circuit (fullSignatur
     (fun x hx => (mem_freeParams.1 (hL.2.1 x hx)).1) hL.2.2 (terminalVal_coord hL.1 hL.2.1)
     (fun A _ hpr => terminalVal_fst hS L A hpr) b hout
 
-private theorem foldl_xor_eq_add_sum (g : ℕ → Bool) :
-    ∀ (l : List ℕ) (a : Bool), l.foldl (fun acc y => acc ^^ g y) a = a + (l.map g).sum
-  | [], a => by simp
-  | x :: l, a => by
-    rw [List.foldl_cons, foldl_xor_eq_add_sum g l, List.map_cons, List.sum_cons, ← add_assoc]
-    rfl
-
 private theorem foldl_xor_eq_sum (g : ℕ → Bool) (T : Finset ℕ) :
     (T.sort (· ≤ ·)).foldl (fun acc y => acc ^^ g y) false = ∑ y ∈ T, g y := by
-  rw [foldl_xor_eq_add_sum, ← List.sum_toFinset _ (Finset.sort_nodup _ _), Finset.sort_toFinset]
-  exact zero_add _
+  change (T.sort (· ≤ ·)).foldl (fun acc y => acc + g y) 0 = ∑ y ∈ T, g y
+  rw [← List.foldl_map, ← List.sum_eq_foldl, ← List.sum_toFinset _ (Finset.sort_nodup _ _), Finset.sort_toFinset]
 
 private theorem filter_ne_take_props {f : BooleanFunction n} {S : State n} (hS : S.Valid f) {p : ℕ}
     (hp : p ∈ freeParams S) {d : ℕ} (hd : d < S.a) :
@@ -298,8 +288,14 @@ private theorem op_const_of_not_isAffineOp :
     ∀ op : Bool → Bool → Bool, ¬ IsAffineOp op →
       op (decide ((op true false == op true true) = true)) false =
         op (decide ((op true false == op true true) = true)) true := by
-  unfold IsAffineOp
-  decide
+  intro op h
+  simp only [beq_iff_eq]
+  obtain ⟨α, β, γ, H⟩ := exists_and_form h
+  have hα : α = decide (op true false = op true true) := by
+    rw [H true false, H true true]
+    cases α <;> cases β <;> cases γ <;> rfl
+  rw [←hα, H, H]
+  cases α <;> cases β <;> cases γ <;> rfl
 
 private theorem terminal_gate {S : State n} {u : ℕ} (hterm : chooseStep? S = none)
     (hu : S.out.arg = .node u) (hup : u ∉ S.params) (hne : S.gates.Nonempty) :
@@ -475,7 +471,7 @@ theorem findCounterexample_isSome {d : ℕ} (C : Circuit (fullSignature 2 Bool) 
         · intro x
           by_cases hx : x = t₁
           · simpa [hx] using
-              isAffine_const_bool (d := d) (decide ((op true false == op true true) = true))
+              Cslib.BitString.isAffine_const (d := d) (decide ((op true false == op true true) = true))
           · simpa [hx] using isAffine_terminalVal S L x
         · intro A j hj
           rw [ite_eq_right (hLne _ (List.getElem_mem hj))]
