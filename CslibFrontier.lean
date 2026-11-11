@@ -4283,6 +4283,7 @@ public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Garble
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Oblivious
 public import CslibFrontier.Crypto.Primitives.Hash.BlockCipherCompression
 public import CslibFrontier.Crypto.Primitives.Hash.Sponge
+public import CslibFrontier.Crypto.Primitives.IdealCipher.Compression
 public import CslibFrontier.Crypto.Primitives.PRF.Finite
 public import CslibFrontier.Crypto.Primitives.PRG.Circuit
 public import CslibFrontier.Crypto.Primitives.PRG.Game
@@ -4685,10 +4686,13 @@ public import CslibFrontier.Foundations.Algebra.DFT
 public import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 public import CslibFrontier.Foundations.Algebra.GeometricTail
 public import CslibFrontier.Foundations.Algebra.Module.ZLattice.CoefficientFiber
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.BitBounds
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Isolation
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RatPoly
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
+public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalRatPoly
 public import CslibFrontier.Foundations.Algebra.Shear
 public import CslibFrontier.Foundations.Algebra.Tropical
 public import CslibFrontier.Foundations.AlgebraicGeometry.EllipticCurve.Hasse
@@ -5625,6 +5629,7 @@ public import CslibFrontier.Languages.Probabilistic.CenteredBinomial.Concentrati
 public import CslibFrontier.Languages.Probabilistic.Concentration
 public import CslibFrontier.Languages.Probabilistic.Expect
 public import CslibFrontier.Languages.Probabilistic.Forking
+public import CslibFrontier.Languages.Probabilistic.IdealCipher
 public import CslibFrontier.Languages.Probabilistic.Iteration
 public import CslibFrontier.Languages.Probabilistic.LinearHash
 public import CslibFrontier.Languages.Probabilistic.Memoize

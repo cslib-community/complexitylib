@@ -124,6 +124,11 @@ Boaz Barak and David Steurer. *Proofs, beliefs, and algorithms through the lens 
 
 Clark Barrett, Swarat Chaudhuri, Fabrizio Montesi, Jim Grundy, Pushmeet Kohli, Leonardo de Moura, Alexandre Rademaker and Sorrachai Yingchareonthawornchai. *CSLib: The Lean Computer Science Library*. arXiv:2602.04846v1, 2026. https://doi.org/10.48550/arXiv.2602.04846 . Author/title/version metadata checked against https://arxiv.org/abs/2602.04846 on 2026-11-02 UTC.
 
+<a id="basupollackroy06"></a>
+## basupollackroy06
+
+Saugata Basu, Richard Pollack and Marie-Françoise Roy. *Algorithms in Real Algebraic Geometry*, 2nd edition. Algorithms and Computation in Mathematics 10, Springer, 2006. https://doi.org/10.1007/3-540-33099-2 . Bibliographic metadata from `references.bib`; the primary textbook was not directly inspected (the retired author-hosted URL `perso.univ-rennes1.fr` returned HTTP 404), so internal chapter, section, and theorem numbers reported in secondary summaries (such as Chapter 2, Theorem 2.50 for Sturm's theorem over real closed fields and Chapter 10, §§10.1–10.2 for root bounds, root-separation bounds, and Sturm bisection) remain unverified against the printed text and are not claimed as verified locators. Local adaptations in `CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/`: [`Sturm.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/Sturm.lean) proves Sturm's theorem on `(a, b]` over `ℝ` via local constancy of `sturmVariations p x + #{r ≤ x}`; [`RootBound.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/RootBound.lean) packages the cleared-denominator rational `ℓ²` root-separation form (`Polynomial.mignotte_sep_sqNorm_rat`); and [`TotalRatPoly.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalRatPoly.lean) with [`TotalIsolation.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/TotalIsolation.lean) implements an end-to-end `TimeM ℕ`-charged `List ℚ` Sturm-bisection isolator (`isolateRootsTotalM`, `isolateRootsTotal`) with left-endpoint root refinement and boundary separation into strictly disjoint closed rational intervals (`J₁.upper < J₂.lower`).
+
 <a id="bcgl92"></a>
 ## bcgl92
 
@@ -1112,6 +1117,11 @@ Ming Li, John Tromp and Paul Vitányi. *Reversible Simulation of Irreversible Co
 
 Carsten Lund and Mihalis Yannakakis. "On the Hardness of Approximating Minimization Problems." *Journal of the ACM* 41(5), 960–981, 1994. https://doi.org/10.1145/185675.306789 . Bibliographic metadata checked via search records only; primary text uninspected and internal theorem locators unverified (no numbered paper theorems claimed). Cited for the constant-factor and logarithmic Set Cover inapproximability reductions from Label Cover using set-system partition gadgets.
 
+<a id="mahler64"></a>
+## mahler64
+
+Kurt Mahler. "An inequality for the discriminant of a polynomial." *Michigan Mathematical Journal* 11(3), 257–262, 1964. https://doi.org/10.1307/mmj/1028999140 . Bibliographic metadata from `references.bib`; the Project Euclid full text was gated behind an automated challenge and was not directly inspected, so internal lemma and theorem numbers reported in secondary mathematical records (Lemma 1 for Hadamard's determinant inequality and Theorem 2 for the root-separation lower bound `|α - β| > √3 · m^{-(m+2)/2} · |D(f)|^{1/2} · M(f)^{-(m-1)}` for degree `m ≥ 2` in terms of discriminant `D(f)` and Mahler measure `M(f)`) remain unverified against the primary article. In [`RootBound.lean`](../CslibFrontier/Foundations/Algebra/Polynomial/RealRoot/RootBound.lean), `Polynomial.mignotte_sep_mahler_complex` proves the squared non-strict complex form `3 · ‖D(f)‖ ≤ ‖α - β‖² · d^{d+2} · M(f)^{2(d-1)}`, and `Polynomial.mignotte_sep_sqNorm_real` / `Polynomial.mignotte_sep_sqNorm_rat` combine it with `|D(f)| ≥ 1` for separable integer polynomials and Landau's coefficient `ℓ²` bound `M(f) ≤ ‖f‖₂`.
+
 <a id="manacher75"></a>
 ## manacher75
 
@@ -1156,6 +1166,11 @@ Karl Menger. "Zur allgemeinen Kurventheorie." *Fundamenta Mathematicae* 10, 96�
 ## mignonressayre04
 
 Thierry Mignon and Nicolas Ressayre. *A quadratic bound for the determinant and permanent problem*. International Mathematics Research Notices 2004(79), 4241–4253, 2004. https://doi.org/10.1155/S1073792804142566 . Bibliographic metadata checked on 2026-11-08; the publisher copy was not inspected, so no theorem number is claimed. The statement (`dc(perm_n) ≥ n²/2` in characteristic zero), the point `X₀` (all ones with `1 - n` in one corner), and the two Hessian lemmas were checked against R. Saptharishi, *A survey of lower bounds in arithmetic circuit complexity*, chapter "Determinantal Complexity Lower Bounds" (Theorem `thm:Mignon-Ressayre-mainthm`, Lemmas `lem:MR-det-ub` and `lem:MR-perm-lb`), at GitHub revision `af95c539`. The full rank of the Hessian at `X₀` is proved in the library by its own sandwich-identity argument, not by the survey's eigenvalue or block-matrix computation.
+
+<a id="mignotte82"></a>
+## mignotte82
+
+Maurice Mignotte. "Some Useful Bounds." In Bruno Buchberger, George E. Collins and Rüdiger Loos (eds.), *Computer Algebra: Symbolic and Algebraic Computation*, Computing Supplementum 4, 259–263, Springer, 1982. https://doi.org/10.1007/978-3-7091-7551-4_16 . Bibliographic metadata checked against DOI and secondary computer-algebra records on 2026-11-11 UTC; the primary Springer supplement pages 259–263 were not directly inspected, so internal theorem numbers are unverified. Cited alongside [`mahler64`](#mahler64) for the Mignotte coefficient `ℓ²` root-separation specialization (`Polynomial.mignotte_sep_sqNorm_real`, `Polynomial.mignotte_sep_sqNorm_rat`) governing `mignotteBisectionDepth`.
 
 <a id="mirsky1971"></a>
 ## mirsky1971
