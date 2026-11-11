@@ -686,7 +686,7 @@ private theorem coinFlip_execStepsRand (ops : List Unit)
         refine ⟨hexr.bounded hprep_bdd hz_supp, rfl, ?_⟩
         intro a _
         dsimp only [mc] at hz
-        simp only [ ← bind_pure_comp, ProbComp.eval_bind, ProbComp.eval_pure,
+        simp only [ProbComp.eval_bind, ProbComp.eval_pure,
           PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hz
         obtain ⟨k, _, rfl⟩ := hz
         rfl
@@ -718,7 +718,6 @@ private theorem coinFlip_execStepsRand (ops : List Unit)
         List.length_cons, List.length_nil] at hql ⊢
       omega
     · simp only [List.map_cons, List.sum_cons]
-      push_cast
       exact add_le_add hexp_le hT_rem
 
 noncomputable def coinFlipObliviousImpl :
