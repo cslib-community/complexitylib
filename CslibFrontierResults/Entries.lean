@@ -41,6 +41,8 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -95,6 +97,7 @@ import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
+import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Reduction
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
@@ -1099,6 +1102,30 @@ register_result "immerman-l-capture" where
     closure of the deterministic reduct on tuples of fixed width. Malformed table shapes and \
     universes below two are rejected."
 
+register_result "ordered-projection-reducibility" where
+  title := "Immerman–Landau: ordered first-order projections compose and refine FO reductions"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := ImmermanLandau1995, theorem := "Proposition 3.7", locator := "Section 3" },
+    { paper := Immerman1999, theorem := "Exercise 2.15(1)", locator := "Chapter 2, p. 36" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.ProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.ProjectionReduces.trans,
+    Cslib.Logic.FO.Ordered.ProjectionReduces.reduces,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.projectionReduces,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.reduces
+  ]
+  scope := "Queries on canonically ordered relational structures Fin n with n ≥ 2. Projections \
+    are positive-dimensional full-tuple interpretations whose output relations are decision \
+    trees of numeric guards with constants or single signed input literals at the leaves; \
+    first-order projections allow guards over order, BIT, 0, 1 and max, while quantifier-free \
+    projections require quantifier-free guards over order, non-wrapping successor, 0 and max \
+    without BIT. Transitivity of quantifier-free projections and projection-completeness \
+    endpoints are not yet formalized here; the logspace encoding lift at encStructure is proved \
+    separately in Classes.LogSpace.FirstOrder.Ordered.Projection."
+
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
   topic := "descriptive complexity"
@@ -1945,6 +1972,47 @@ register_result "mktp-exp" where
     encoded in unary, where Liu and Pass use a binary threshold of about log n bits; for \
     thresholds O(|x|) the two encodings are polynomially related. MKtPAt s, with s \
     computable in polynomial time in unary, is in EXP over bit strings. Membership only."
+
+register_result "tfnp-eopl-eq-sopl-inter-ppad" where
+  title := "EOPL = SOPL ∩ PPAD"
+  topic := "structural complexity"
+  sources := [
+    { paper := GoosEtAl2022, theorem := "Lemma 4",
+      locator := "Section 5, pp. 9–10 of arXiv:2202.07761v2" }
+  ]
+  theorems := [
+    Cslib.Complexity.EOPL_eq_SOPL_inter_PPAD,
+    Cslib.Complexity.SOPL_inter_PPAD_subset_EOPL,
+    Cslib.Complexity.mem_EOPL_of_sinkOfPotentialLine_endOfLine
+  ]
+  scope := "Uniform total-search classes over any injective encoding enc : α ↪ List Bool, \
+    defined by native deterministic multi-tape polynomial-time predecessor, successor and \
+    binary potential families with unary vertex width and polynomial-time search reductions. \
+    Potential-line graphs prune active edges along which the potential does not strictly \
+    increase. Combines an end-of-line family directly with a sink-of-potential-line family \
+    rather than routing through bijective pigeonhole."
+
+register_result "tfnp-sopl-eopl-collapse" where
+  title := "Further collapses in TFNP: SOPL = PLS ∩ PPADS and EOPL = PLS ∩ PPAD"
+  topic := "structural complexity"
+  sources := [
+    { paper := GoosEtAl2022, theorem := "Theorem 1 and Theorem 2",
+      locator := "Section 1, p. 1; Lemmas 2–3, Sections 3–4, pp. 6–8 of arXiv:2202.07761v2" }
+  ]
+  theorems := [
+    Cslib.Complexity.SOPL_eq_PLS_inter_PPADS,
+    Cslib.Complexity.EOPL_eq_PLS_inter_PPAD,
+    Cslib.Complexity.PLS_inter_PPADS_subset_SOPL,
+    Cslib.Complexity.PLS_inter_PPAD_subset_EOPL,
+    Cslib.Complexity.mem_SOPL_of_localOpt_sinkOfLine
+  ]
+  scope := "Uniform total-search classes over any injective encoding enc : α ↪ List Bool, \
+    defined by native deterministic multi-tape polynomial-time local-search, sink-of-line, \
+    end-of-line and potential-line families with unary vertex width and polynomial-time search \
+    reductions. Proves PLS ∩ PPADS ⊆ SOPL via the path-pigeonhole gadget and reversible PLS \
+    transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
+    EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
+    are not formalized."
 
 section
 open Cslib.Communication
