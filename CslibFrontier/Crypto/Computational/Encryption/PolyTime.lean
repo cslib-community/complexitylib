@@ -42,7 +42,7 @@ ciphertext; no independent bound on those intermediate values is assumed.
   Section 11.2, Attack Game 11.1, p. 436.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Encryption
 

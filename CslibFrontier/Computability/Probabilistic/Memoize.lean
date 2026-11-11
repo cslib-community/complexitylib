@@ -29,6 +29,10 @@ The proof uses a sample as a fallback for optional lookup, so neither keys nor v
 inhabitant chosen in advance. Its realizing machine may run and discard the sampler on a hit;
 the source program still has exactly the joint result/cache law of `memoize`.
 
+## Main definitions
+
+* `Cslib.Probability.encMemoCache`: encoding of an association-list cache.
+
 ## Main results
 
 * `Cslib.Probability.IsPPTOn.memoize`: certify a memoized sampler through `fun_prop`.
@@ -54,6 +58,14 @@ private theorem lookup_eq_map_find {K V : Type} [BEq K] (key : K) (cache : List 
   congr 1 with entry : 1
   cases h : key == entry.1 <;> simp [Option.guard, h]
 
+/-- Encoding of a memoization cache, an association list of key/value entries: the framed list
+(`encList`) of entries, each the key (`keyEncoding`, framed) followed by its value
+(`valueEncoding`). `IsOraclePPTOn.memoize` spells out the same encoding because its module does
+not import this one. -/
+abbrev encMemoCache {Key Value : Type} (keyEncoding : Key ↪ List Bool)
+    (valueEncoding : Value ↪ List Bool) : List (Key × Value) ↪ List Bool :=
+  encList (encPair keyEncoding valueEncoding)
+
 /-- Cache a certified sampler's results using an ordinary list. Runtime query data, captured
 inputs and the complete returned cache are included in the certificate. No default key or value
 is required, and repeated keys use their first cached occurrence. -/
@@ -64,8 +76,8 @@ theorem IsPPTOn.memoize {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input :
     (hcompute : IsPPTOn input valueEncoding (fun a => compute a (query a)))
     (hquery : ComputableInPolyTime query input keyEncoding)
     (hcache : ComputableInPolyTime cache input
-      (encList (encPair keyEncoding valueEncoding))) :
-    IsPPTOn input (encPair valueEncoding (encList (encPair keyEncoding valueEncoding)))
+      (encMemoCache keyEncoding valueEncoding)) :
+    IsPPTOn input (encPair valueEncoding (encMemoCache keyEncoding valueEncoding))
       (fun a => memoize (compute a) (query a) (cache a)) := by
   let found (a : α) := (cache a).find? (fun entry => query a == entry.1)
   have hfound : ComputableInPolyTime found input
@@ -75,7 +87,7 @@ theorem IsPPTOn.memoize {α Key Value : Type} [BEq Key] [LawfulBEq Key] {input :
     else (value, (query a, value) :: cache a)
   have hpost : ComputableInPolyTime (fun p : α × Value => finish p.1 p.2)
       (encPair input valueEncoding)
-      (encPair valueEncoding (encList (encPair keyEncoding valueEncoding))) := by
+      (encPair valueEncoding (encMemoCache keyEncoding valueEncoding)) := by
     unfold finish
     fun_prop
   refine (hcompute.map_with (f := finish) hpost).congr ?_
@@ -92,15 +104,15 @@ theorem memoize_cache_growth_le {Key Value : Type} [BEq Key]
     (hvalues : ∀ value ∈ (distribution key).support, (valueEncoding value).length ≤ maxValue)
     (result : Value × List (Key × Value))
     (hresult : result ∈ (memoize distribution key cache).support) :
-    (encList (encPair keyEncoding valueEncoding) result.2).length ≤
-      (encList (encPair keyEncoding valueEncoding) cache).length +
+    (encMemoCache keyEncoding valueEncoding result.2).length ≤
+      (encMemoCache keyEncoding valueEncoding cache).length +
         4 * (keyEncoding key).length + 2 * maxValue + 3 := by
   rcases (RandomOracle.mem_support_memoize_iff _ _ _ _).mp hresult with
     ⟨_, hnext⟩ | ⟨_, hvalue, hnext⟩
   · simp only [hnext]
     lia
   · have := hvalues _ hvalue
-    enc_len [hnext, encList_cons]
+    enc_len [hnext, encMemoCache, encList_cons]
 
 /-- A cached call preserves a reply-size invariant and adds at most one encoded entry. The bound
 charges the complete key and value, including both layers of framing. -/
@@ -113,8 +125,8 @@ theorem memoize_call_size_le {Key Value : Type} [BEq Key] [LawfulBEq Key]
     (hresult : result ∈ (memoize distribution key cache).support) :
     (valueEncoding result.1).length ≤ maxValue ∧
       (∀ entry ∈ result.2, (valueEncoding entry.2).length ≤ maxValue) ∧
-      (encList (encPair keyEncoding valueEncoding) result.2).length ≤
-        (encList (encPair keyEncoding valueEncoding) cache).length +
+      (encMemoCache keyEncoding valueEncoding result.2).length ≤
+        (encMemoCache keyEncoding valueEncoding cache).length +
           4 * (keyEncoding key).length + 2 * maxValue + 3 := by
   obtain ⟨hreply, hcache'⟩ := RandomOracle.memoize_invariant distribution
     (fun _ value => (valueEncoding value).length ≤ maxValue) key cache hcache hvalues result hresult
@@ -136,7 +148,7 @@ theorem memoize_cache_size_le {α Key Value : Type} [BEq Key]
       (keyEncoding entry.1).length ≤ maxKey ∧ (valueEncoding entry.2).length ≤ maxValue)
     (result : α)
     (h : (result, cache') ∈ (ProbOracleComp.runWith (memoize distribution) program cache).support) :
-    (encList (encPair keyEncoding valueEncoding) cache').length ≤
+    (encMemoCache keyEncoding valueEncoding cache').length ≤
       (cache.length + calls) * (4 * maxKey + 2 * maxValue + 3) := by
   obtain ⟨hcount, hentries⟩ := RandomOracle.memoize_cache_bounds_prob distribution program
     (fun key => (keyEncoding key).length) calls maxKey hcalls hkeys cache cache' result h

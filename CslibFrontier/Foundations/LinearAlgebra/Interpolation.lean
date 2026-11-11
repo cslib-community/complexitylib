@@ -32,7 +32,7 @@ small.
   a combination of the functions `v a` for `a ∈ s`, then `#G ≤ #s`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.LinearAlgebra
 

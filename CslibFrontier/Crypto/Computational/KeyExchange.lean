@@ -254,8 +254,7 @@ theorem isPPTOn_dhEavToDDH
     {adversary : ℕ → (F.Desc × List Bool × List Bool) × List Bool → ProbComp Bool}
     (hA : IsPPTOn (KeyExchange.encEavInput F.encDHTranscript encBits) encBool
       (fun input => adversary input.1 input.2)) :
-    IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool (fun input => F.dhEavToDDH adversary input.1 input.2) := by
+    IsPPTOn F.encDDHInput encBool (fun input => F.dhEavToDDH adversary input.1 input.2) := by
   have h2 := ComputableInPolyTime.snd encUnary
     (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   have h3 :=

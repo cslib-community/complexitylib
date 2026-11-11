@@ -36,7 +36,7 @@ PSPACE. In particular, this argument does not assume that an encoding's image is
 * [L. Fortnow, *Counting Complexity*][Fortnow1997]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

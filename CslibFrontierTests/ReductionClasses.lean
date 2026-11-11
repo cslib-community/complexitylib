@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Complexity.Reduction
 
 /-! Generic class contracts using only the reduction API, without Ladner's construction. -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.ReductionClasses
 

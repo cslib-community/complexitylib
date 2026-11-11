@@ -29,6 +29,7 @@ import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Tactic.PMFSwap
+import CslibFrontier.Tactic.SuppCases
 
 /-!
 # Strict-PPT ElGamal Key Generation, KEM Encapsulation, and `Encryption.INDCPAOn` Bridges
@@ -191,12 +192,8 @@ theorem hashedElGamalDecaps_hashedElGamalEncapsProb (H : F.Desc × List Bool →
     {encapsulated : List Bool × List Bool}
     (hencaps : encapsulated ∈ (ProbComp.eval (F.hashedElGamalEncapsProb H d n keys.1)).support) :
     F.hashedElGamalDecaps H d n keys.2 encapsulated.2 = encapsulated.1 := by
-  simp only [elGamalKeyGenProb, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.support_pure, Set.mem_singleton_iff] at hkeys
-  rcases hkeys with ⟨a, _, rfl⟩
-  simp only [hashedElGamalEncapsProb, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hencaps
-  rcases hencaps with ⟨b, _, rfl⟩
+  supp_cases hkeys [elGamalKeyGenProb] with ⟨a, _, rfl⟩
+  supp_cases hencaps [hashedElGamalEncapsProb] with ⟨b, _, rfl⟩
   simp only [hashedElGamalDecaps, ofBits_encNat, dropFrame_encPair_encBits,
     encodeElGamalPublicKey_eq_encode, F.smul_encode, smul_smul, mul_comm (a : ZMod (F.order (d n)))]
 
@@ -506,12 +503,8 @@ theorem elGamalDecryptDet_elGamalEncryptProb (d : ℕ → F.Desc) (n : ℕ)
     (hct : ct ∈ (ProbComp.eval
       (F.elGamalEncryptProb (fun _ x => x) d n keys.1 (F.encode (d n) m))).support) :
     F.elGamalDecryptDet d n keys.2 ct = F.encode (d n) m := by
-  simp only [elGamalKeyGenProb, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.support_pure, Set.mem_singleton_iff] at hkeys
-  rcases hkeys with ⟨a, _, rfl⟩
-  simp only [elGamalEncryptProb, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.support_pure, Set.mem_singleton_iff] at hct
-  rcases hct with ⟨b, _, rfl⟩
+  supp_cases hkeys [elGamalKeyGenProb] with ⟨a, _, rfl⟩
+  supp_cases hct [elGamalEncryptProb] with ⟨b, _, rfl⟩
   simp only [elGamalDecryptDet, ofBits_encNat, unframe_encPair_encBits, dropFrame_encPair_encBits,
     F.decodeElGamal_encodeElGamalEncrypt]
 

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingTreeBound
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingSparsifyContext
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+import CslibFrontier.Computability.PolyTime.CNF.DeclaredInput
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -48,7 +49,8 @@ subexponential counting endpoint of [OpenAI2026ETH], Section 6.4 (pp. 43–44).
 namespace Cslib.Complexity.CountingSparsify
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF.Sparsification Turing.MultiTapeTM
-open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff normalizeDeclaredLeaf)
+open Cslib.Logic.PL.CNF (validDeclaredInput validDeclaredInput_eq_true_iff normalizeDeclaredLeaf
+  computableInPolyTime_validDeclaredInput)
 open Sparsify (rounds length_encNat_rounds)
 
 variable {P : Type} {encP : P ↪ List Bool}
@@ -142,24 +144,6 @@ private theorem rounds_length_polyBounded (BOf : P → ℕ) :
   rw [length_encNat_rounds]
   have := Nat.div_le_self x.2.numVars (BOf x.1)
   omega
-
-private theorem computableInPolyTime_validDeclaredInput_uniform (k : ℕ) {NOf : P → ℕ}
-    (hN : ComputableInPolyTime NOf encP encUnary) :
-    ComputableInPolyTime (fun x : P × CNF ℕ => validDeclaredInput k (NOf x.1) x.2)
-      (encPair encP encCNF) encBool := by
-  have hNbin := ComputableInPolyTime.unary_to_binary.comp hN
-  have hlt : ComputableInPolyTime
-      (fun x : (P × CNF ℕ) × ℕ => decide (x.2 < NOf x.1.1))
-      (encPair (encPair encP encCNF) encNat) encBool :=
-    ComputableInPolyTime.binary_lt.comp
-      ((ComputableInPolyTime.snd _ _).prod
-        (hNbin.comp ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _))))
-  have hs : ComputableInPolyTime
-      (fun x : P × CNF ℕ => x.2.vars.all fun v => decide (v < NOf x.1))
-      (encPair encP encCNF) encBool :=
-    ComputableInPolyTime.allWithInput (by fun_prop) hlt
-  unfold validDeclaredInput
-  fun_prop
 
 private theorem length_context_iterate_le {MOf : P → ℕ} {K k B D : ℕ} {p : P}
     (hM : 1 ≤ MOf p) (hK : 1 ≤ K) (hM2 : 2 ≤ MOf p) (hkK : k ≤ K)
@@ -384,7 +368,7 @@ private theorem declared_resources_of_step
   have hscaled := (hf.comp hloop).mono_le
     (fun x => Nat.add_le_add_left (hfinish x) (Tloop x))
     (fun x => Nat.add_le_add_left (hfinish x) (Sloop x))
-  obtain ⟨dc, hc⟩ := polyTime_inO (computableInPolyTime_validDeclaredInput_uniform k hN)
+  obtain ⟨dc, hc⟩ := polyTime_inO (computableInPolyTime_validDeclaredInput k hN)
   have hwhole := hc.ite hscaled (ComputableInO.const (encIn := encPair encP encCNF) 0)
   let W (x : P × CNF ℕ) := (L x + 1) ^ dc + I x + A x + B x +
     (clock x + 1) ^ 2 + clock x + F x + L x + 1

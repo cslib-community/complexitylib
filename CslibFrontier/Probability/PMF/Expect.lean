@@ -40,7 +40,7 @@ into the vocabulary of `Finset.expect` (`𝔼`) and `Finset.dens`.
   function of a uniform sample is `true` is a density.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 

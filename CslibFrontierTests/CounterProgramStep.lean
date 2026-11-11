@@ -46,13 +46,60 @@ example {c : ℕ} (h₀ : P.instr (c + 1 + 1) = .lt (reg 0) (const 3) (c + 3) (c
     P.Reaches w (P.Running B) (c + 2, regs) (c + 4, regs) := by
   cp_step [h0]
 
--- A comparison the lemmas do not decide: split on its condition and pass the case.
-example {b : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 3) (b + 1) (b + 1))
+-- A comparison the lemmas do not decide: after a split on its condition, `cp_step` decides it
+-- from the case hypothesis, and the next comparison by `omega`.
+example {b : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 3) (b + 1) (b + 2))
+    (h₁ : P.instr (b + 1) = .lt (reg 0) (const 5) (b + 2) (b + 3))
     (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) :
-    P.Reaches w (P.Running B) (b, regs) (b + 1, regs) := by
+    P.Reaches w (P.Running B) (b, regs) (b + 2, regs) := by
   by_cases h : regs.getD 0 0 < 3
-  · cp_step [h]
-  · cp_step [h]
+  · cp_step
+    cp_step
+  · cp_step
+
+-- The comparison of a label decided by a hypothesis stating its negation the other way around:
+-- `2 ≤ n` decides `n < 2` false.
+example {b n : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 2) (b + 1) (b + 2))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (h0 : regs.getD 0 0 = n) (hn : 2 ≤ n) :
+    P.Reaches w (P.Running B) (b, regs) (b + 2, regs) := by
+  cp_step [h0]
+
+-- A comparison decided by `omega` from hypotheses that do not state its outcome.
+example {b n : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 2) (b + 1) (b + 2))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (h0 : regs.getD 0 0 = n) (hn : ¬n ≤ 1) :
+    P.Reaches w (P.Running B) (b, regs) (b + 2, regs) := by
+  cp_step [h0]
+
+-- The other ways around: `¬2 ≤ n` decides `n < 2` true.
+example {b n : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 2) (b + 1) (b + 2))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (h0 : regs.getD 0 0 = n) (hn : ¬2 ≤ n) :
+    P.Reaches w (P.Running B) (b, regs) (b + 1, regs) := by
+  cp_step [h0]
+
+-- `2 < n` decides `n ≤ 2` false, here in the label of the target.
+example {b n F : ℕ} (h₀ : P.instr b = .assign 1 (const 0) (b + 1))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (hn : 2 < n) :
+    P.Reaches w (P.Running B) (b, regs) (if n ≤ 2 then F else b + 1, regs.set 1 0) := by
+  cp_step
+
+-- `¬n < 2` decides `2 ≤ n` true, here in the label of the source.
+example {b n F : ℕ} (h₀ : P.instr b = .assign 1 (const 0) (b + 1))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (hn : ¬n < 2) :
+    P.Reaches w (P.Running B) (if 2 ≤ n then b else F, regs) (b + 1, regs.set 1 0) := by
+  cp_step
+
+-- A conditional label in the target, decided after the step.
+example {b n F : ℕ} (h₀ : P.instr b = .assign 1 (const 0) (b + 1))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B) (hn : 2 ≤ n) :
+    P.Reaches w (P.Running B) (b, regs) (if n < 2 then F else b + 1, regs.set 1 0) := by
+  cp_step
+
+-- A fact about expressions before their evaluation by `cp_simps` is passed with `↓`.
+example {b p : ℕ} (h₀ : P.instr b = .lt (const 0) (reg 1) (b + 1) (b + 2))
+    (regs : List ℕ) (hB : ∀ r ∈ regs, r ≤ B)
+    (hp : (const 0).eval regs < (reg 1).eval regs ↔ 0 < p) (hp0 : 0 < p) :
+    P.Reaches w (P.Running B) (b, regs) (b + 1, regs) := by
+  cp_step [↓hp.mpr hp0]
 
 -- A concrete program: the instructions are read off by evaluation, the bounds on a list of
 -- registers written out are proved entry by entry, and the registers and the arithmetic of the
@@ -112,7 +159,7 @@ example {b : ℕ} (h : P.instr b = .assign 0 (const 0) (b + 1)) (regs : List ℕ
 /--
 error: cp_step: the label
   if regs.getD 0 0 < 3 then b + 1 else b + 2
-is not decided. Pass the outcome of its condition or the bit read (`w[i]? = some b`) to `cp_step` as a simp lemma, splitting into cases first.
+is not decided. Split into cases on its condition, which `cp_step` then decides by a hypothesis or `omega`, or pass the bit read (`w[i]? = some b`) as a simp lemma.
 -/
 #guard_msgs in
 example {b : ℕ} (h₀ : P.instr b = .lt (reg 0) (const 3) (b + 1) (b + 2))
@@ -127,7 +174,7 @@ error: cp_step: the label
   | some true => b + 1
   | some false => b + 2
   | none => F
-is not decided. Pass the outcome of its condition or the bit read (`w[i]? = some b`) to `cp_step` as a simp lemma, splitting into cases first.
+is not decided. Split into cases on its condition, which `cp_step` then decides by a hypothesis or `omega`, or pass the bit read (`w[i]? = some b`) as a simp lemma.
 -/
 #guard_msgs in
 example {b F : ℕ} (h₀ : P.instr b = .read (reg 0) (b + 1) (b + 2) F)

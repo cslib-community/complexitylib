@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Basic
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT

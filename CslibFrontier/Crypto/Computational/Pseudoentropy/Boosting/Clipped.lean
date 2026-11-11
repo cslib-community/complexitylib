@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.UniformNat
 public import CslibFrontier.Foundations.Data.BitString.List.Vote
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Probability.Quantile

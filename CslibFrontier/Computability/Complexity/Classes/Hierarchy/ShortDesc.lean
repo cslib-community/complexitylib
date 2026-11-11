@@ -18,10 +18,12 @@ import Mathlib.Data.Nat.Size
 /-!
 # Short descriptions
 
-The time and space hierarchy theorems diagonalize only over inputs whose framed description is
+The time hierarchy theorems diagonalize only over inputs whose framed description is
 *short*: `2 ^ |unframe x| ≤ |x|` (`Cslib.Complexity.Diagonal.shortDesc`). Decoding a description
 of `L` bits then takes time polynomial in `L`, of a degree fixed by the decoder, hence `O(2 ^ L)`,
-which is `O(|x|)`. Padded descriptions are short.
+which is `O(|x|)`. Padded descriptions are short. The space hierarchy theorem asks for tiny
+descriptions instead (`CslibFrontier.Computability.Complexity.Classes.Hierarchy.TinyDesc`), so that
+decoding takes logarithmic space.
 
 ## Main definitions
 

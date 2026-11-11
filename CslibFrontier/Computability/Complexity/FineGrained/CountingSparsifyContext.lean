@@ -72,22 +72,17 @@ section PolyTime
 
 open ComputableInPolyTime
 
-/-- Search states with a context, encoded as framed tuples: the context, the weighting count in
-unary, the stack of formulas, and the accumulator in binary. -/
-local notation "encX" encC =>
-  encPair encC (encPair encUnary (encPair (encList encCNF) encNat))
-
 variable {encC : C ↪ List Bool} {θ : C → ℕ → ℕ}
 
 /-- Popping a sparse leaf and adding its weighted count is polynomial-time, keeping the context. -/
 private theorem computableInPolyTime_leafUpdateWith :
     ComputableInPolyTime (fun p : (C × State) × ℕ => (p.1.1, leafUpdate p.1.2 p.2))
-      (encPair (encX encC) encNat) (encX encC) := by
+      (encPair (encPair encC encState) encNat) (encPair encC encState) := by
   have hctx : ComputableInPolyTime (fun p : (C × State) × ℕ => p.1.1)
-      (encPair (encX encC) encNat) encC := by
+      (encPair (encPair encC encState) encNat) encC := by
     fun_prop
   have hstate : ComputableInPolyTime (fun p : (C × State) × ℕ => (p.1.2, p.2))
-      (encPair (encX encC) encNat) (encPair encState encNat) := by
+      (encPair (encPair encC encState) encNat) (encPair encState encNat) := by
     fun_prop
   exact hctx.prod (computableInPolyTime_leafUpdate.comp hstate)
 
@@ -99,51 +94,53 @@ private theorem computableInPolyTime_innerWith
     ComputableInPolyTime (fun x : C × State =>
       (x.1, (x.2.1, (countingNext (θ x.1) K (x.2.2.1.headD []) false ::
         countingNext (θ x.1) K (x.2.2.1.headD []) true :: x.2.2.1.tail, x.2.2.2))))
-      (encX encC) (encX encC) := by
+      (encPair encC encState) (encPair encC encState) := by
   have h := computableInPolyTime_countingNextWith encNat hθ K
   have hH : ComputableInPolyTime (fun x : C × State => x.2.2.1.headD [])
-      (encX encC) encCNF := by
+      (encPair encC encState) encCNF := by
     unfold encCNF
     fun_prop
   have hb (b : Bool) : ComputableInPolyTime
-      (fun x : C × State => countingNext (θ x.1) K (x.2.2.1.headD []) b) (encX encC)
+      (fun x : C × State => countingNext (θ x.1) K (x.2.2.1.headD []) b) (encPair encC encState)
       (encList (encList (encPair encNat encBool))) := by
     simpa only [Function.comp_def] using
       h.comp ((fst encC _).prod (hH.prod (const b : ComputableInPolyTime _ _ encBool)))
   have h₀ := hb false
   have h₁ := hb true
-  unfold encCNF
+  unfold encState encCNF
   fun_prop
 
 /-- **The time and space of a context step**: a polynomial in the length of the encoded context
 and state, plus the time (respectively space) of the leaf counter and a polynomial in the state and
-counter output lengths when the head formula is sparse. -/
+counter output lengths when the head formula is sparse. The context and state are encoded as
+`encPair encC encState`: the framed context followed by the search state. -/
 theorem exists_computableInO_stepWith
     (hθ : ComputableInPolyTime (fun x : C × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
       (encPair encC (encPair encUnary encUnary)) encBool) (K : ℕ)
     {g : C × CNF ℕ → ℕ} {t s : C × CNF ℕ → ℕ}
     (hg : ComputableInO g (encPair encC encCNF) encNat t s) :
-    ∃ d, ComputableInO (stepWith θ K g) (encX encC) (encX encC)
-      (fun x => (((encX encC) x).length + 1) ^ d +
+    ∃ d, ComputableInO (stepWith θ K g) (encPair encC encState) (encPair encC encState)
+      (fun x => ((encPair encC encState x).length + 1) ^ d +
         if x.2.2.1.isEmpty = false ∧ isSparse (θ x.1) K (x.2.2.1.headD []) = true then
           t (x.1, x.2.2.1.headD []) +
-            (((encX encC) x).length + (encNat (g (x.1, x.2.2.1.headD []))).length + 1) ^ d
+            ((encPair encC encState x).length + (encNat (g (x.1, x.2.2.1.headD []))).length + 1) ^ d
         else 0)
-      (fun x => (((encX encC) x).length + 1) ^ d +
+      (fun x => ((encPair encC encState x).length + 1) ^ d +
         if x.2.2.1.isEmpty = false ∧ isSparse (θ x.1) K (x.2.2.1.headD []) = true then
           s (x.1, x.2.2.1.headD []) +
-            (((encX encC) x).length + (encNat (g (x.1, x.2.2.1.headD []))).length + 1) ^ d
+            ((encPair encC encState x).length + (encNat (g (x.1, x.2.2.1.headD []))).length + 1) ^ d
         else 0) := by
   have hH : ComputableInPolyTime (fun x : C × State => (x.1, x.2.2.1.headD []))
-      (encX encC) (encPair encC encCNF) := by
+      (encPair encC encState) (encPair encC encCNF) := by
     unfold encCNF
     fun_prop
   have hS : ComputableInPolyTime
-      (fun x : C × State => isSparse (θ x.1) K (x.2.2.1.headD [])) (encX encC) encBool := by
+      (fun x : C × State => isSparse (θ x.1) K (x.2.2.1.headD []))
+      (encPair encC encState) encBool := by
     simpa only [Function.comp_def] using (computableInPolyTime_isSparseWith encNat hθ K).comp hH
   have h := exists_computableInO_searchStep
-    (by unfold encCNF; fun_prop :
-      ComputableInPolyTime (fun x : C × State => x.2.2.1.isEmpty) (encX encC) encBool)
+    (by unfold encState encCNF; fun_prop :
+      ComputableInPolyTime (fun x : C × State => x.2.2.1.isEmpty) (encPair encC encState) encBool)
     hS hH (computableInPolyTime_innerWith hθ K) computableInPolyTime_leafUpdateWith hg
   -- the context step pulls its case split out of the context pair
   have heq : stepWith θ K g = fun x =>

@@ -31,7 +31,7 @@ The premise is equality of formal polynomials, not agreement of functions over a
   [S. Schlesinger, *Algebraic circuit formalizations in Complexitylib*][Schlesinger2026Algebraic].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 

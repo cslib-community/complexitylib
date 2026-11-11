@@ -97,7 +97,12 @@ scoped macro_rules
 `Exec w c x y T`, allowing each loop the given number of iterations (default `0`), and deciding
 with the given simp lemmas which subtractions stay at or above zero and which divisors are
 nonzero. Whether a written number fits a word is decided by `omega` from the `Fits` hypotheses
-in context (`Cslib.WordRAM.reduceFits`), or by the given simp lemmas. -/
+in context (`Cslib.WordRAM.reduceFits`), or by the given simp lemmas.
+
+On failure the error names the step that failed, as for `ram_eval`: the goal has neither form, a
+given simp lemma does not elaborate, `simp` cannot evaluate the program, the interpreter returns
+`none` (a fault such as a subtraction below zero, or too few loop iterations), a branch or `Fits`
+condition remains (shown), or `omega` cannot prove the instruction bound (shown). -/
 scoped syntax (name := ramExactEval)
   "ram_exact_eval" (ppSpace num)? (" [" Lean.Parser.Tactic.simpArg,* "]")? : tactic
 
@@ -106,10 +111,12 @@ scoped macro_rules
   | `(tactic| ram_exact_eval [$args,*]) => `(tactic| ram_exact_eval 0 [$args,*])
   | `(tactic| ram_exact_eval $n:num) => `(tactic| ram_exact_eval $n [])
   | `(tactic| ram_exact_eval $n:num [$args,*]) => `(tactic|
-      ram_eval_core "ram_exact_eval" $n
-        [Cslib.WordRAM.Op.eval_exactBin, Cslib.WordRAM.Op.eval_exactWidth,
-          Cslib.WordRAM.Basis.exact_interp_bin, Cslib.WordRAM.Basis.exact_interp_width,
-          Cslib.WordRAM.BinOp.evalExact] [$args,*])
+      ram_eval_core "ram_exact_eval" $n ram_exact_eval_simps [$args,*])
+
+ram_eval_simp_set_for ram_exact_eval_simps
+  [Cslib.WordRAM.Op.eval_exactBin, Cslib.WordRAM.Op.eval_exactWidth,
+    Cslib.WordRAM.Basis.exact_interp_bin, Cslib.WordRAM.Basis.exact_interp_width,
+    Cslib.WordRAM.BinOp.evalExact]
 
 end Cslib.WordRAM
 

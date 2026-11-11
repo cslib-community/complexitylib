@@ -332,10 +332,10 @@ attribute [local irreducible] ComputableInPolyTime
 /-- The verifier on the bits of a truth table, a threshold and a certificate, with the number of
 inputs read from the length of the table: `MCSP.verifier` on raw data
 (`Cslib.MCSP.verifier_eq_tableVerifier`), defined on every list of bits. -/
-def tableVerifier (r : (List Bool × ℕ) × List Bool) : Bool :=
-  let n := Nat.log 2 r.1.1.length
-  checkCertificate (fun y out => out == tableValue r.1.1 y) n
-    (sampleBudget n r.1.1.length r.1.2) r.2
+def tableVerifier : (List Bool × ℕ) × List Bool → Bool
+  | ((T, s), w) =>
+    let n := Nat.log 2 T.length
+    checkCertificate (fun y out => out == tableValue T y) n (sampleBudget n T.length s) w
 
 theorem verifier_eq_tableVerifier (p : Instance × List Bool) :
     verifier p = tableVerifier ((List.ofFn p.1.table, p.1.threshold), p.2) := by

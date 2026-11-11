@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Init
 public import Cslib.Algorithms.Lean.MergeSort.MergeSort
+-- `import all` only for functional induction on `List.mergeM` and `List.mergeSortM`, whose bodies
+-- CSLib does not expose.
 import all Cslib.Algorithms.Lean.Sort.Merge
 
 /-!

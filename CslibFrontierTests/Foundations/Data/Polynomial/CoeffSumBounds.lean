@@ -20,7 +20,7 @@ in any ordered commutative semiring, not only `ℕ`: here the `ℓ¹` norm of re
 `ν = |·|`, inherits the triangle inequality and submultiplicativity.
 -/
 
-@[expose] public section
+public section
 
 namespace Polynomial.CoeffSumBoundsTests
 

@@ -53,8 +53,6 @@ universe u v w x y
 
 variable {S : PFunctor.{v, w}} {D E : StateTransitionSpec.{u, v, w}} {C τ : Type x} {α β : Type y}
 
-instance : Coe StateTransitionSpec.{u, v, w} PFunctor.{v, w} := ⟨StateTransitionSpec.signature⟩
-
 /-- A backend chooses its own execution evidence, independently of a resource measure. -/
 abbrev Execution (S : PFunctor.{v, w}) (C Trace : Type x) :=
   C → (o : S.A) → S.B o → C → Trace → Prop

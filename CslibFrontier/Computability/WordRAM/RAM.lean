@@ -18,7 +18,10 @@ The additive fragment of `Cslib.WordRAM` uses constants, copying, addition, trun
 subtraction, indirect memory, comparisons and control flow. Its compiler uses the existing
 natural-number `Cslib.RAM` with logarithmic instruction costs. This is a forward simulation
 of successful, bounded-word executions; it does not reflect overflow faults or simulate the
-word-width instruction, multiplication, division, bitwise operations or shifts.
+word-width instruction, multiplication, division, bitwise operations, shifts or random
+sampling. The predicate `Cslib.WordRAM.Instr.IsAdditive` holds of `Cslib.WordRAM.Instr.rand`,
+whose compiled block only jumps to the next block: deterministic `Cslib.WordRAM.step` faults on
+`rand`, so a successful execution never reaches one.
 
 Source registers occupy target registers `1, …, r`. Register `0` is zero until the final
 output is copied to it. Four further registers hold `1`, the fixed memory offset, and two
@@ -33,8 +36,8 @@ integer/I/O model. Neither this compiler nor its cost bound is a Turing-machine 
 
 ## Main definitions
 
-* `Cslib.WordRAM.Instr.IsAdditive`, `Cslib.WordRAM.Program.IsAdditive`: the supported instruction
-  and program fragment.
+* `Cslib.WordRAM.Instr.IsAdditive`, `Cslib.WordRAM.Program.IsAdditive`: the instruction and
+  program fragment that the simulation theorems assume.
 * `Cslib.WordRAM.ToRAM.memoryBase`, `Cslib.WordRAM.ToRAM.one`, `Cslib.WordRAM.ToRAM.offset`,
   `Cslib.WordRAM.ToRAM.address`, `Cslib.WordRAM.ToRAM.test`, `Cslib.WordRAM.ToRAM.entry`: target
   register layout and instruction block offsets.
@@ -75,7 +78,10 @@ variable {r : ℕ}
 theorem Fits.bitLength_le {w v : ℕ} (h : Fits w v) : RAM.bitLength v ≤ w + 1 :=
   (RAM.bitLength_le_iff (Nat.succ_ne_zero w)).2 (h.mono (Nat.le_succ w))
 
-/-- The fragment compiled to the logarithmic-cost natural-number RAM. -/
+/-- The instruction fragment that the simulation theorems assume: every instruction except an
+ALU operation other than addition and subtraction. `Instr.rand` belongs to the fragment although
+`ToRAM.compileInstr` gives it only a jump to the next block; deterministic `step` faults on
+`rand`, so a halting run never executes one. -/
 def Instr.IsAdditive : Instr .standard r → Prop
   | .op (.alu (.bin f) ..) => f = .add ∨ f = .sub
   | .op (.alu .width ..) => False
@@ -167,8 +173,9 @@ def compileInstr (base length pc : ℕ) (i : Instr .standard r) (k : ℕ) : RAM.
   | _, _ => jump next
 
 /-- Compile into blocks of eight instructions. `base` is the position where the result will
-be inserted in the target program; jump targets are absolute. The unsupported instructions
-have no correctness specification. The compiler is independent of word size and input. -/
+be inserted in the target program; jump targets are absolute. Instructions outside
+`Instr.IsAdditive`, and `Instr.rand`, compile to a jump to the next block and have no
+correctness specification. The compiler is independent of word size and input. -/
 def compile (base : ℕ) (p : Program .standard r) : RAM.Program :=
   List.ofFn fun k : Fin (8 * p.length) =>
     match p[k.1 / 8]? with

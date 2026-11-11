@@ -52,9 +52,10 @@ with the untracked book products.
 2. Open the complete client. Verify that the model, encoding, hypotheses and resource claim
    agree with the explanation; inspect a meaningful edge or failure case.
 3. Run `python3 scripts/check_operator_manual.py` and `python3 scripts/test_operator_manual.py`.
-   The checker validates local paths and Markdown anchors, visual markup, the book's chapter
-   lists, excerpt registration and unique exact excerpt matches in current source; its controls
-   exercise failure and recovery.
+   The checker validates local paths and Markdown anchors, source line anchors (each starts a
+   declaration and, when its link text names a declaration of the linked file, that one), visual
+   markup, the book's chapter lists, excerpt registration and unique exact excerpt matches in
+   current source; its controls exercise failure and recovery.
    Both are required in CI and run before Lean work in full and quick `scripts/check.sh` modes.
    They need only Python, without publishing tools or regenerated research data. Inserting unrelated
    lines above an excerpt is allowed. Changing, removing or duplicating its text needs attention.
@@ -62,11 +63,12 @@ with the untracked book products.
    the cited text starts: an unindented declaration (after modifiers such as `private` or
    `noncomputable`), an `@[…]` attribute or a `/--` docstring, outside any comment. A range may
    instead start at `/-!`, `section` or `namespace`, and `#L1` links a whole file. An edit that
-   adds or removes lines above an anchored declaration, even inside a proof, moves it: find the
-   links with `git grep -n 'File.lean#L' manual/` and repoint them in the same change. The checker
-   cannot tell that a link starts on the declaration its text names, so check the name when
-   repointing. `STALE_SOURCE_ANCHORS` in the checker lists links that are stale, or that queued
-   pull requests will make stale, and tolerates them until those pull requests land
+   adds or removes lines above an anchored declaration, even inside a proof, moves it: run
+   `python3 scripts/check_operator_manual.py --fix-anchors` to repoint `[Ns.name](File.lean#Ln)`
+   links at the current header line of the declaration they name, and find any remaining prose,
+   range or ambiguous links with `git grep -n 'File.lean#L' manual/` to update by hand.
+   `STALE_SOURCE_ANCHORS` in the checker lists links that are stale, or that queued pull requests
+   will make stale, and tolerates them until those pull requests land
    ([#3991](https://github.com/cslib-community/cslib-frontier/issues/3991)); repointing one of
    those links needs no edit to the list.
 4. When Lean examples or their imports change, check the complete affected source clients under
