@@ -1746,10 +1746,12 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LogClock
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Nondeterministic
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicExponentialTime
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicPolynomial
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicTime
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.SpaceDiagonalBounds
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TimePolylog
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TinyDesc
