@@ -14,6 +14,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Data.Nat.Choose.Cast
 import Mathlib.Tactic.Linarith

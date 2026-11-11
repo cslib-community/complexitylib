@@ -12,6 +12,7 @@ public import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 
 /-!
 # A visible stopped coupling for the actual ideal-chain games

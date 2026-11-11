@@ -370,7 +370,7 @@ reduction are assembled. Repaired ideal-model clauses remain open in #2527/ROADM
 `AddXNORIdealChain` now defines actual planted-search and both decision experiments,
 with private-coin bidirectional adversaries. Its exact lazy laws reuse independently
 indexed permutation tables and prove validity on supported prefixes, including collisions.
-Do not identify these laws with the false literal frontier simulator in source Lemma 10,
+Do not identify these laws with the false Lemma 10 simulation claim,
 or infer a security bound from them: preinstalled planted tables depend on the target.
 In `AddXNORIdealCut`, `IdealChain.source_uniform_splice` proves the planted joint law
 by a reversible single-cut image swap, with no collision-free or simulation premise. `AddXNORIdealCoupling`
