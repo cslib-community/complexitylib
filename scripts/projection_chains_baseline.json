@@ -111,7 +111,7 @@
  "CslibFrontier/Computability/Complexity/Classes/QMA/NP.lean": 1,
  "CslibFrontier/Computability/Complexity/Classes/SPP/FewP.lean": 14,
  "CslibFrontier/Computability/Complexity/Classes/SharpP/Space.lean": 4,
- "CslibFrontier/Computability/Complexity/Classes/Space/GeneralizedGeography/Membership.lean": 10,
+ "CslibFrontier/Computability/Complexity/Classes/Space/GeneralizedGeography/Membership.lean": 4,
  "CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses.lean": 13,
  "CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/Sperner.lean": 10,
  "CslibFrontier/Computability/Complexity/CookLevin/Correctness.lean": 2,

@@ -28,8 +28,7 @@ theorem mem_JobSequencing_iff_permutations {x : JobSequencingInstance} :
 /-! ### Headline results -/
 
 example : JobSequencing ∈ NP encJobSequencing ∧
-    PolyTimeReducible (encPair (encList encNat) encNat) encJobSequencing SubsetSum
-      JobSequencing :=
+    PolyTimeReducible encSubsetSum encJobSequencing SubsetSum JobSequencing :=
   ⟨JobSequencing_npComplete.1, polyTimeReducible_SubsetSum_JobSequencing⟩
 
 /-! ### Total penalties -/
@@ -62,29 +61,29 @@ example : (⟨[⟨2, 3, 5⟩, ⟨2, 3, 5⟩], 4⟩ : JobSequencingInstance) ∉ 
 
 /-! ### Karp's reduction from `SubsetSum` -/
 
-example : SubsetSum.toJobSequencing ([3, 5], 5) = ⟨[⟨3, 5, 3⟩, ⟨5, 5, 5⟩], 3⟩ := rfl
+example : SubsetSum.toJobSequencing ⟨[3, 5], 5⟩ = ⟨[⟨3, 5, 3⟩, ⟨5, 5, 5⟩], 3⟩ := rfl
 
 -- `5` hits the target, so running its job first leaves penalty `3`.
-example : SubsetSum.toJobSequencing ([3, 5], 5) ∈ JobSequencing :=
+example : SubsetSum.toJobSequencing ⟨[3, 5], 5⟩ ∈ JobSequencing :=
   ⟨[⟨5, 5, 5⟩, ⟨3, 5, 3⟩], List.Perm.swap _ _ _, le_refl 3⟩
 -- No sub-multiset of `[3, 5]` sums to `4`, so every order pays more than `4`.
-example : SubsetSum.toJobSequencing ([3, 5], 4) = ⟨[⟨3, 4, 3⟩, ⟨5, 4, 5⟩], 4⟩ := rfl
-example : SubsetSum.toJobSequencing ([3, 5], 4) ∉ JobSequencing :=
+example : SubsetSum.toJobSequencing ⟨[3, 5], 4⟩ = ⟨[⟨3, 4, 3⟩, ⟨5, 4, 5⟩], 4⟩ := rfl
+example : SubsetSum.toJobSequencing ⟨[3, 5], 4⟩ ∉ JobSequencing :=
   fun h => absurd (mem_JobSequencing_iff_permutations.1 h) (by decide)
-example : ([3, 5], 4) ∉ SubsetSum := fun h => by
+example : (⟨[3, 5], 4⟩ : SubsetSumInstance) ∉ SubsetSum := fun h => by
   obtain ⟨s, hs, hsum⟩ := mem_SubsetSum_iff_sublist.1 h
   exact absurd (⟨s, List.mem_sublists.2 hs, hsum⟩ : ∃ s ∈ [3, 5].sublists, s.sum = 4)
     (by decide)
 
 -- Targets above the total give an instance with no feasible order.
-example : SubsetSum.toJobSequencing ([3, 5], 9) = ⟨[⟨1, 0, 1⟩], 0⟩ := rfl
-example : SubsetSum.toJobSequencing ([3, 5], 9) ∉ JobSequencing :=
+example : SubsetSum.toJobSequencing ⟨[3, 5], 9⟩ = ⟨[⟨1, 0, 1⟩], 0⟩ := rfl
+example : SubsetSum.toJobSequencing ⟨[3, 5], 9⟩ ∉ JobSequencing :=
   fun h => absurd (mem_JobSequencing_iff_permutations.1 h) (by decide)
 
 -- The target `0` is always reachable, and so is the full total.
-example : SubsetSum.toJobSequencing ([3, 5], 0) ∈ JobSequencing :=
+example : SubsetSum.toJobSequencing ⟨[3, 5], 0⟩ ∈ JobSequencing :=
   (SubsetSum.toJobSequencing_mem_iff _).2 ⟨0, bot_le, rfl⟩
-example : SubsetSum.toJobSequencing ([3, 5], 8) ∈ JobSequencing :=
+example : SubsetSum.toJobSequencing ⟨[3, 5], 8⟩ ∈ JobSequencing :=
   (SubsetSum.toJobSequencing_mem_iff _).2 ⟨[3, 5], le_refl _, rfl⟩
 
 /-! ### Compositional `fun_prop` synthesis -/
@@ -97,8 +96,9 @@ example : ComputableInPolyTime
     (fun x : JobSequencingInstance => (x.jobs.headD ⟨0, 0, 0⟩).time + x.bound)
     encJobSequencing encNat := by fun_prop
 
-example : ComputableInPolyTime (fun x : List ℕ × ℕ => SubsetSum.toJobSequencing (x.1, x.2 + 1))
-    (encPair (encList encNat) encNat) encJobSequencing := by fun_prop
+example : ComputableInPolyTime
+    (fun x : SubsetSumInstance => SubsetSum.toJobSequencing ⟨x.numbers, x.target + 1⟩)
+    encSubsetSum encJobSequencing := by fun_prop
 
 example : ComputableInPolyTime
     (fun x : JobSequencingInstance =>

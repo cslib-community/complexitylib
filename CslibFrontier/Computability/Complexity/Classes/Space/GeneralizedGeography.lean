@@ -29,7 +29,7 @@ has two halves:
   `PSPACE`-hard, reduce to it by the diamond construction of Sipser's proof, which adapts
   Schaefer's reduction from quantified formulas to geography games.
 
-Both are relative to the encoding `encPair encGraph encNat` of a graph, as lists of binary vertices
+Both are relative to the encoding `encGeneralizedGeography` of a graph, as lists of binary vertices
 and arcs, with a binary start vertex.
 
 ## Main results
@@ -53,7 +53,7 @@ open Turing.MultiTapeTM
 /-- **Generalized Geography is `PSPACE`-complete** [Sipser, Theorem 8.14][Sipser2013]
 [LichtensteinSipser1980]. -/
 theorem GeneralizedGeography_pspaceComplete :
-    PSPACEComplete (encPair encGraph encNat) GeneralizedGeography :=
+    PSPACEComplete encGeneralizedGeography GeneralizedGeography :=
   ⟨GeneralizedGeography_mem_PSPACE, GeneralizedGeography_pspaceHard⟩
 
 end Cslib.Complexity
