@@ -14,7 +14,46 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 /-!
 # Direct-product decoding
 
-Draft: definitions and counting identities for the direct-product decoder.
+The direct-product decoder of [Impagliazzo, Jaiswal, Kabanets and
+Wigderson][ImpagliazzoJaiswalKabanetsWigderson2010] (preprint of 2009-10-19, Theorem 1.2 and
+Algorithm 2; Carmosino, Impagliazzo, Kabanets and Kolokolova cite it as their Theorem 4.1) turns a
+map `C' : (Fin k → U) → Fin k → V` that agrees with the direct product `f ^ k` on a `δ` fraction
+of tuples into a hypothesis for `f`. It is stated here as a pure function: no circuits and no
+running time.
+
+**Library formulation.** Inputs are uniform `k`-tuples with a random position subset `P`, in place
+of IJKW's `k`-sets. This avoids their collision term; it does not prove the `k`-set version. A seed
+is a set `P` of positions, a tuple `b₀` and `m` trials `(j, r)`. On input `x`, a trial queries
+`trialTuple P b₀ x (j, r)`: `b₀` on `P`, `x` at `j` and `r` elsewhere. It is accepted when `j ∉ P`
+and `C'` gives it the values that `C' b₀` has on `P`. `dpDecode` outputs the value of `C'` at `j`
+for the first accepted trial, or a default.
+
+**Per-seed analysis.** `card_filter_dpDecode_err_le_ge` fixes `P` and `b₀` and shows that at
+least half of the trial vectors give a hypothesis with error at most `ε #U`. It assumes that the
+tuples consistent with the seed have density at least `δ / 2` and that at most an `ε / 64`
+fraction of them disagree with `f` in `ε k / 64` or more positions. These hypotheses are
+discharged for a `δ / 4` fraction of `(P, b₀)` in the companion density module (#4451, M6.3b1b).
+The analysis follows the shape of IJKW's Lemmas 3.8–3.12 (good, excellent and correct). Its
+constants (`ε / 64`, `(64 / ε) log (4 / δ)`, `(16 / δ) log (8 / ε)`) are ours, derived for the
+tuple formulation; they are not IJKW's.
+
+## Main definitions
+
+* `trialTuple`, `accepts`, `dpDecode`: the decoder.
+* `consistent`, `acceptedPairs`, `badPairs`, `disagreements`: the counting objects.
+
+## Main results
+
+* `card_filter_trialTuple`: trials are counted by the tuples they produce.
+* `card_filter_dpDecode_ne_le`: the error at one input.
+* `card_filter_acceptedPairs_lt_mul_le`: few inputs are rarely accepted.
+* `sum_card_filter_dpDecode_ne_le`: the total error of a good seed.
+* `card_filter_dpDecode_err_le_ge`: a good seed decodes well for half of the trial vectors.
+
+## References
+
+* [ImpagliazzoJaiswalKabanetsWigderson2010]
+* [CarmosinoImpagliazzoKabanetsKolokolova2016]
 -/
 
 public section
@@ -200,6 +239,7 @@ def consistent (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k)) (b₀ :
     Finset (Fin k → U) :=
   {y | (∀ i ∈ P, y i = b₀ i) ∧ ∀ i ∈ P, C' y i = C' b₀ i}
 
+/-- The accepted pairs are the free positions of the consistent tuples that carry `x`. -/
 theorem acceptedPairs_eq_filter (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k))
     (b₀ : Fin k → U) (x : U) :
     acceptedPairs C' P b₀ x = (Pᶜ ×ˢ consistent C' P b₀).filter fun p => p.2 p.1 = x := by
@@ -207,6 +247,7 @@ theorem acceptedPairs_eq_filter (C' : (Fin k → U) → Fin k → V) (P : Finset
   simp only [acceptedPairs, consistent, mem_filter, mem_univ, true_and, mem_product, mem_compl]
   tauto
 
+/-- The bad pairs are the free disagreement positions of the consistent tuples that carry `x`. -/
 theorem badPairs_eq_filter (C' : (Fin k → U) → Fin k → V) (f : U → V) (P : Finset (Fin k))
     (b₀ : Fin k → U) (x : U) :
     badPairs C' f P b₀ x =
@@ -246,6 +287,7 @@ theorem sum_card_badPairs (C' : (Fin k → U) → Fin k → V) (f : U → V) (P 
   refine sum_congr rfl fun y _ => ?_
   rw [card_filter]
 
+omit [DecidableEq U] in
 /-- **Edges into a dense slice**: for a family `S` of tuples that agree on `P`, the free entries
 carry weight at least `(#S - #U ^ w exp (-μ w / 8)) μ w / 2`, where `w = #Pᶜ`. This applies the
 tuple-sampler weight bound to the coordinates outside `P`. -/
@@ -316,15 +358,12 @@ theorem card_filter_acceptedPairs_lt_mul_le (C' : (Fin k → U) → Fin k → V)
     have : 2 * (#L * (#S * w / (4 * n))) = #S / 2 * (μL * w) := by
       simp only [μL]; field_simp; ring
     nlinarith
-  rcases (mul_nonneg (div_nonneg hn.le hn.le |>.trans_eq' rfl |> fun _ =>
-    (by positivity : (0 : ℝ) ≤ μL)) hw).eq_or_lt with h0 | hpos
-  · have : (#L : ℝ) * w = 0 := by
-      have : μL * w = 0 := h0.symm
-      simp only [μL] at this
-      field_simp at this
-      linarith
-    rw [this]
+  rcases Nat.eq_zero_or_pos w with hw0 | hw0
+  · rw [hw0, Nat.cast_zero, mul_zero]
     have : 0 ≤ Real.log (2 / μ) := Real.log_nonneg (by rw [le_div_iff₀ hμ0]; linarith)
+    positivity
+  have hpos : 0 < μL * w := by
+    have : (0 : ℝ) < #L := by exact_mod_cast hL.card_pos
     positivity
   have h1 : (#S : ℝ) / 2 ≤ n ^ w * Real.exp (-(μL * w / 8)) := le_of_mul_le_mul_right hkey hpos
   have h2 : μ / 2 ≤ Real.exp (-(μL * w / 8)) := by
