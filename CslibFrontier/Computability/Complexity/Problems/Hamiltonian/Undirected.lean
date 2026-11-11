@@ -419,7 +419,7 @@ private theorem chain_reverse_coe {α : Type*} {R : α → α → Prop} (hR : �
 `s` to `t` exactly when its split graph has an undirected Hamiltonian path from `in(s)` to
 `out(t)`. -/
 theorem split_mem_HamPath_iff (G : Graph) (s t : ℕ) :
-    (G.split, G.splitVertex s 0, G.splitVertex t 2) ∈ HamPath ↔ (G, s, t) ∈ DirHamPath := by
+    ⟨G.split, G.splitVertex s 0, G.splitVertex t 2⟩ ∈ HamPath ↔ ⟨G, s, t⟩ ∈ DirHamPath := by
   rw [mem_HamPath_iff]
   constructor
   · rintro ⟨q, hnd, hcov, hs, ht, hch⟩
@@ -546,13 +546,14 @@ end Graph
 namespace DirHamPath
 
 /-- The reduction from `DirHamPath` to `HamPath`: split the vertices of the graph, and ask for a
-path from the entry of `s` to the exit of `t`. -/
-def toHamPath (x : Graph × ℕ × ℕ) : Graph × ℕ × ℕ :=
-  (x.1.split, x.1.splitVertex x.2.1 0, x.1.splitVertex x.2.2 2)
+path from the entry of `source` to the exit of `target`. -/
+def toHamPath (x : HamiltonianPathInstance) : HamiltonianPathInstance :=
+  ⟨x.graph.split, x.graph.splitVertex x.source 0, x.graph.splitVertex x.target 2⟩
 
 /-- Correctness of `DirHamPath.toHamPath`. -/
-theorem toHamPath_mem_iff (x : Graph × ℕ × ℕ) : toHamPath x ∈ HamPath ↔ x ∈ DirHamPath :=
-  Graph.split_mem_HamPath_iff x.1 x.2.1 x.2.2
+theorem toHamPath_mem_iff (x : HamiltonianPathInstance) :
+    toHamPath x ∈ HamPath ↔ x ∈ DirHamPath :=
+  Graph.split_mem_HamPath_iff x.graph x.source x.target
 
 /-- The reduction `DirHamPath.toHamPath` is polynomial-time. -/
 @[fun_prop]

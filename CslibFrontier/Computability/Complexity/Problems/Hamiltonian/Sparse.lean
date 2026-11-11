@@ -103,8 +103,8 @@ def sparseDiamondGraph (φ : CNF ℕ) : Graph :=
 
 /-- The reduction from `SAT` to `DirHamPath` of linear size: the sparse diamond graph of `φ`,
 from the top of the first diamond to the bottom of the last. -/
-def toSparseDirHamPath (φ : CNF ℕ) : Graph × ℕ × ℕ :=
-  (sparseDiamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.distinctVars.length)
+def toSparseDirHamPath (φ : CNF ℕ) : HamiltonianPathInstance :=
+  ⟨sparseDiamondGraph φ, Diamond.topNode 0, Diamond.topNode φ.distinctVars.length⟩
 
 /-- The reduction from `SAT` to `DirHamCycle` of linear size: the sparse diamond graph of `φ` with
 an arc from the bottom of the last diamond back to the top of the first. -/
@@ -211,7 +211,7 @@ end Correctness
 sparse diamond graph has a Hamiltonian path from the top of the first diamond to the bottom of the
 last. -/
 theorem toSparseDirHamPath_mem_iff (φ : CNF ℕ) : toSparseDirHamPath φ ∈ DirHamPath ↔ φ ∈ SAT :=
-  (mem_DirHamPath_iff wellFormed_sparseDetours).trans satisfiable_sparseDetours_iff
+  (Diamond.mem_DirHamPath_iff wellFormed_sparseDetours).trans satisfiable_sparseDetours_iff
 
 /-- **Correctness of the closed sparse diamond construction.** A formula is satisfiable exactly
 when its closed sparse diamond graph has a Hamiltonian cycle. -/
