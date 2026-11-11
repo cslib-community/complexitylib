@@ -18,6 +18,11 @@ bound `d` and polynomial size bound `s`, eventually no circuit over `I` of depth
 size at most `s n` computes a member of `C n` (`NaturalProof.IsUseful.of_eventually_constDepth`).
 This is how lower bounds such as Razborov's against AC⁰[2] give usefulness.
 
+Only this direction is provided. The converse needs a hypothesis: over a basis that cannot produce
+an output on zero inputs, `ConstDepth I` is empty, so every property is useful against it, while
+projections still compute members of `C n`. The converse is deferred to milestone M6.8b of
+[#4451](https://github.com/cslib-community/cslib-frontier/issues/4451), its first consumer.
+
 ## Main results
 
 * `Cslib.Circuits.Boolean.NaturalProof.IsUseful.of_eventually_constDepth`: usefulness against

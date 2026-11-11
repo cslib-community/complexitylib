@@ -23,11 +23,12 @@ function passing the rank test (`isUseful_AC0Mod_two_rankProperty`). With
 `P/poly`-natural property useful against AC⁰[2]
 (`isNatural_PPoly_and_isUseful_AC0Mod_two_rankProperty`).
 
-The explicit form says how long the truth tables must be. For depth `d` and size `2 ^ x`, at the
-length `rankLength d x` no circuit of depth at most `d` and at most `2 ^ x` gates computes a
-member of the rank property (`notMem_rankProperty_rankLength_of_computes`), and that length is
-polylogarithmic in the size: `rankLength d x + 1 ≤ 401 · 2 ^ (2 d (2 d + 7)) · x ^ (2 d)`
-(`rankLength_add_one_le`). So for fixed `d` the truth tables have length `2 ^ O((log S) ^ (2 d))`,
+The explicit form says how many input variables suffice. For depth `d` and size `2 ^ x`, at the
+input length `rankLength d x` no circuit of depth at most `d` and at most `2 ^ x` gates computes a
+member of the rank property (`notMem_rankProperty_rankLength_of_computes`), and for `x ≥ 1` that
+input length is polylogarithmic in the size:
+`rankLength d x + 1 ≤ 401 · 2 ^ (2 d (2 d + 7)) · x ^ (2 d)` (`rankLength_add_one_le`). So for
+fixed `d` the truth tables, of length `2 ^ rankLength d x`, have length `2 ^ O((log S) ^ (2 d))`,
 quasi-polynomial in the size `S`. This is the explicit form of the usefulness bound
 `2 ^ Ω(n ^ (1 / (2 d)))` of
 [Carmosino et al., Theorem 5.3][CarmosinoImpagliazzoKabanetsKolokolova2016].
@@ -44,8 +45,8 @@ The learning consequences, Theorem 5.1 in class form and Corollary 5.4 of
 
 ## Main definitions
 
-* `Cslib.Circuits.Boolean.Razborov.rankLength d x`: a truth-table length at which the rank test
-  rejects every circuit of depth at most `d` and at most `2 ^ x` gates.
+* `Cslib.Circuits.Boolean.Razborov.rankLength d x`: an input length (number of variables) at which
+  the rank test rejects every circuit of depth at most `d` and at most `2 ^ x` gates.
 
 ## Main results
 
@@ -54,8 +55,8 @@ The learning consequences, Theorem 5.1 in class form and Corollary 5.4 of
   property is `P/poly`-natural and useful against AC⁰[2].
 * `Cslib.Circuits.Boolean.Razborov.notMem_rankProperty_rankLength_of_computes`: explicit
   usefulness at the length `rankLength d x`.
-* `Cslib.Circuits.Boolean.Razborov.rankLength_add_one_le`: that length is polylogarithmic in the
-  size.
+* `Cslib.Circuits.Boolean.Razborov.rankLength_add_one_le`: for `x ≥ 1`, that input length is
+  polylogarithmic in the size.
 
 ## References
 
@@ -131,10 +132,10 @@ theorem isNatural_PPoly_and_isUseful_AC0Mod_two_rankProperty :
 /-! ### Explicit usefulness -/
 
 /-- The exponent `⌊log₂ x⌋ + 2 d + 7` of the parameter `ℓ = 2 ^ rankExponent d x`. -/
-def rankExponent (d x : ℕ) : ℕ := Nat.log 2 x + 2 * d + 7
+private def rankExponent (d x : ℕ) : ℕ := Nat.log 2 x + 2 * d + 7
 
-/-- A truth-table length for depth `d` and size `2 ^ x`: `100 (ℓ ^ d + 1)²` with
-`ℓ = 2 ^ rankExponent d x`. -/
+/-- An input length (number of variables) for depth `d` and size `2 ^ x`: `100 (ℓ ^ d + 1)²` with
+`ℓ = 2 ^ (⌊log₂ x⌋ + 2 d + 7)`. Truth tables at this length have `2 ^ rankLength d x` entries. -/
 def rankLength (d x : ℕ) : ℕ := 100 * ((2 ^ rankExponent d x) ^ d + 1) ^ 2
 
 /-- `(d + 1)² ≤ 4 ^ d`. -/
@@ -182,8 +183,9 @@ private theorem five_mul_rankLength_lt (d x : ℕ) :
     _ ≤ 2 ^ (1 + P * 64 * U) := Nat.pow_le_pow_right (by norm_num) (by omega)
     _ = 2 * 2 ^ (P * 64 * U) := by rw [pow_add, pow_one]
 
-/-- **Explicit usefulness against AC⁰[2]**: at the length `rankLength d x`, no circuit with `MOD_2`
-gates of depth at most `d` and at most `2 ^ x` gates computes a function of the rank property. -/
+/-- **Explicit usefulness against AC⁰[2]**: at the input length `rankLength d x`, no circuit with
+`MOD_2` gates of depth at most `d` and at most `2 ^ x` gates computes a function of the rank
+property. -/
 theorem notMem_rankProperty_rankLength_of_computes {d x : ℕ}
     {C : Circuit Unbounded.extSignature (rankLength d x) 1} (hCd : C.depth ≤ d)
     (hCs : C.size ≤ 2 ^ x) {f : BooleanFunction (rankLength d x)}
@@ -201,7 +203,7 @@ theorem notMem_rankProperty_rankLength_of_computes {d x : ℕ}
     Nat.mul_le_mul_left _ hCs
   omega
 
-/-- **The length is polylogarithmic in the size**: for `x ≥ 1`,
+/-- **The input length is polylogarithmic in the size**: for `x ≥ 1`,
 `rankLength d x + 1 ≤ 401 · 2 ^ (2 d (2 d + 7)) · x ^ (2 d)`, so truth tables of length
 `2 ^ rankLength d x` are quasi-polynomial in the size `2 ^ x`. -/
 theorem rankLength_add_one_le {d x : ℕ} (hx : 1 ≤ x) :

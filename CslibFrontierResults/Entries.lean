@@ -512,9 +512,10 @@ register_result "rank-property-natural-ac0-2" where
   scope := "Along the level ⌈n/2⌉ - ⌊√(n + 1)⌋/10, the GF(2) rank property (a variant: one square \
     matrix, threshold C(n, a)/2) is large, its truth tables are decided by De Morgan circuits of \
     173·8^n gates (P/poly; size only, depth not certified, not the sources' NC²), and it is useful \
-    against AC⁰[2] (NOT, unbounded fan-in AND/OR and MOD_2 gates; nonuniform). Explicitly, at a \
-    length m with m + 1 ≤ 401·2^(2d(2d+7))·x^(2d), no circuit of depth at most d with at most 2^x \
-    gates computes a function with the property. p = 2 only; the constants are this library's. \
+    against AC⁰[2] (NOT, unbounded fan-in AND/OR and MOD_2 gates; nonuniform). Explicitly, at \
+    the input length m = rankLength d x, which satisfies m + 1 ≤ 401·2^(2d(2d+7))·x^(2d) for \
+    x ≥ 1, no circuit of depth at most d with at most 2^x gates computes a function with the \
+    property. p = 2 only; the constants are this library's. \
     The learning consequences (CIKK Theorem 5.1 class form, Corollary 5.4) are not included."
 
 register_result "braverman" where
