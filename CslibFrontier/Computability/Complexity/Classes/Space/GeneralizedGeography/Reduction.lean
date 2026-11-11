@@ -125,10 +125,10 @@ def formulaGraph (xs : List ℕ) (ψ : CNF ℕ) : Graph :=
 
 /-- **The reduction from `TQBFCNF`**: the graph of the formula, from the top of the first diamond,
 when the formula is closed, and a graph without arcs otherwise. -/
-def reduce (x : List (ℕ × ℕ) × CNF ℕ) : Graph × ℕ :=
+def reduce (x : List (ℕ × ℕ) × CNF ℕ) : GeneralizedGeographyInstance :=
   if x.2.all (fun c => c.all fun l => decide (l.1 ∈ QBF.roundVars x.1)) then
-    (formulaGraph (QBF.roundVars x.1) x.2, topNode 0)
-  else (([0], []), 0)
+    ⟨formulaGraph (QBF.roundVars x.1) x.2, topNode 0⟩
+  else ⟨([0], []), 0⟩
 
 /-! ### The arcs -/
 
@@ -607,7 +607,7 @@ theorem computableInPolyTime_formulaGraph {xs : γ → List ℕ} {ψ : γ → CN
 
 /-- **The reduction is polynomial-time.** -/
 theorem computableInPolyTime_reduce :
-    ComputableInPolyTime reduce encPrenexCNF (encPair encGraph encNat) := by
+    ComputableInPolyTime reduce encPrenexCNF encGeneralizedGeography := by
   unfold reduce QBF.roundVars encPrenexCNF
   simp only [List.decide_mem_eq_any]
   unfold encCNF
@@ -622,13 +622,13 @@ open GeneralizedGeography Turing.MultiTapeTM
 /-- **`TQBFCNF` reduces to Generalized Geography** [Sipser, Theorem 8.14][Sipser2013]
 [LichtensteinSipser1980]. -/
 theorem polyTimeReducible_TQBFCNF_GeneralizedGeography :
-    PolyTimeReducible encPrenexCNF (encPair encGraph encNat) TQBFCNF GeneralizedGeography :=
+    PolyTimeReducible encPrenexCNF encGeneralizedGeography TQBFCNF GeneralizedGeography :=
   ⟨reduce, computableInPolyTime_reduce, fun x => (reduce_mem_iff x).symm⟩
 
 /-- **Generalized Geography is `PSPACE`-hard** [Sipser, Theorem 8.14][Sipser2013]
 [LichtensteinSipser1980]. -/
 theorem GeneralizedGeography_pspaceHard :
-    PSPACEHard (encPair encGraph encNat) GeneralizedGeography :=
+    PSPACEHard encGeneralizedGeography GeneralizedGeography :=
   TQBFCNF_pspaceHard.trans polyTimeReducible_TQBFCNF_GeneralizedGeography
 
 end Cslib.Complexity

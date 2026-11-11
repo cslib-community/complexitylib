@@ -266,6 +266,9 @@ compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_
 why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
 context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
 there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+After the Lean gates, full and quick modes also re-elaborate the changed library and test files
+whose outputs Lake restored from the shared local artifact cache, which keeps no warnings
+([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
 generated research data. They catch source/link drift and malformed visual markup; they do not
 replace the required review of both manuals' meaning and usability.
@@ -533,6 +536,18 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
 never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
 
+GitHub declines every push to the branch of a PR that is in the merge queue ("protected branch
+hook declined"), even when its entry is `UNMERGEABLE`. Whoever restacks a queued PR, by hand or
+with `--push` below, first removes it with **Remove from queue** on the PR page or:
+
+```bash
+gh api graphql -f id="$(gh pr view <PR> --json id --jq .id)" -f query='
+  mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { mergeQueueEntry { state } } }'
+```
+
+Dequeueing merges nothing, so the author may do it; the new head is queued again only by a
+non-author, once the `check_restack.py` check below passes or the delta is reviewed.
+
 When the only conflicts with `main` are in the aggregates or `references.bib`,
 `python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
 without running the PR's code. It requires the `check_restack.py` check below to pass for the
@@ -561,7 +576,9 @@ bibliography merge written by that script, with nothing else changed, passes. Af
 branch, which could change it.
 An approval given while a PR is based on another branch also names that branch's head, and the
 check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
-review did not cover, would carry the approval if the lower PR never landed. Anyone, including
+review did not cover, would carry the approval if the lower PR never landed. Pass that head even
+when the approved head had also merged a newer `main`: the script then replays from the merge of
+the lower head and that `main`, and names it in the result. Anyone, including
 the author, may post the script's result line, which names both heads and the exact command. The
 non-author who queues the new head runs that command again rather than relying on the posted line.
 When the script reports differences, review the paths and diffs it prints as a delta, under the
