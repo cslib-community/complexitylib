@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (test driver)
 
+public import CslibFrontier.Algorithms.Lean.Simplex.TwoPhase
 public import CslibFrontier.Algorithms.Lean.Simplex.Dantzig
 public import CslibFrontier.Algorithms.Lean.Simplex.LinearProgram
 import Mathlib.Algebra.Order.Ring.Rat
@@ -65,6 +66,18 @@ def isOutOfFuel {ι K : Type*} : Outcome ι K → Bool
   | _ => false
 
 /-- The dictionary returned by a run, whatever the outcome. -/
+def isOptimal? {m n K} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {A : Matrix (Fin m) (Fin n) K} {b c} : TwoPhaseResult A b c → Option (List K × List K)
+  | .optimal x y => some (List.ofFn x, List.ofFn y)
+  | _ => none
+
+def isInfeasible? {m n K} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {A : Matrix (Fin m) (Fin n) K} {b c} : TwoPhaseResult A b c → Option (List K)
+  | .infeasible y => some (List.ofFn y)
+  | _ => none
+
+def isUnbounded? {m n K} [Field K] [LinearOrder K] [IsStrictOrderedRing K] {A : Matrix (Fin m) (Fin n) K} {b c} : TwoPhaseResult A b c → Option (List K × List K)
+  | .unbounded x d => some (List.ofFn x, List.ofFn d)
+  | _ => none
+
 def lastDict {ι K : Type*} : Outcome ι K → Dictionary ι K
   | .optimal D => D
   | .unbounded D _ => D
@@ -191,6 +204,45 @@ example : ¬ (slackDictionary !![(1 : ℚ)] ![-1] ![1]).Feasible := by
 `C(7, 3) - 1 = 34` pivots. -/
 example : (Fintype.card (Fin (3 + 3))).choose #(slackDictionary A₁ b₁ c₁).basis - 1 = 19 ∧
     (Fintype.card (Fin (4 + 3))).choose #(slackDictionary A₂ b₂ c₂).basis - 1 = 34 := by
+  decide +kernel
+
+
+
+
+
+
+/-! ### 4. Two-phase method -/
+
+def A_inf : Matrix (Fin 1) (Fin 1) ℚ := !![(1 : ℚ)]
+def b_inf : Fin 1 → ℚ := ![-1]
+def c_inf : Fin 1 → ℚ := ![1]
+
+/-- `max x` subject to `x ≤ -1`, `x ≥ 0` is infeasible. -/
+example : isInfeasible? (twoPhase A_inf b_inf c_inf) = some [(1 : ℚ)] := by
+  decide +kernel
+
+def A_unb : Matrix (Fin 1) (Fin 1) ℚ := !![(-1 : ℚ)]
+def b_unb : Fin 1 → ℚ := ![-1]
+def c_unb : Fin 1 → ℚ := ![1]
+
+/-- `max x` subject to `-x ≤ -1`, `x ≥ 0` is unbounded. -/
+example : isUnbounded? (twoPhase A_unb b_unb c_unb) = some ([(1 : ℚ)], [(1 : ℚ)]) := by
+  decide +kernel
+
+def A_opt : Matrix (Fin 2) (Fin 1) ℚ := !![(-1 : ℚ); 1]
+def b_opt : Fin 2 → ℚ := ![-1, 2]
+def c_opt : Fin 1 → ℚ := ![1]
+
+/-- `max x` subject to `-x ≤ -1`, `x ≤ 2`, `x ≥ 0` is optimal with value 2. -/
+example : isOptimal? (twoPhase A_opt b_opt c_opt) = some ([(2 : ℚ)], [(0 : ℚ), 1]) := by
+  decide +kernel
+
+def A_m0 : Matrix (Fin 0) (Fin 1) ℚ := Matrix.of (fun _ _ => (0 : ℚ))
+def b_m0 : Fin 0 → ℚ := fun _ => 0
+def c_m0 : Fin 1 → ℚ := ![1]
+
+/-- Edge case `m = 0`: `max x` subject to `x ≥ 0` is unbounded. -/
+example : isUnbounded? (twoPhase A_m0 b_m0 c_m0) = some ([(0 : ℚ)], [(1 : ℚ)]) := by
   decide +kernel
 
 end CslibFrontierTests.Algorithms.Lean.Simplex

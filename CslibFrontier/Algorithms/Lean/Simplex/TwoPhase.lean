@@ -79,6 +79,7 @@ def phaseOneDict (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) : Dictionary (
     else
       auxDictionary A b
 
+/-- Unskip `x₀` from the variable index, restoring the original index space. -/
 def unskipX₀ (i : Fin (n + 1 + m)) (hi : i ≠ x₀Index) : Fin (n + m) :=
   if h : i.val < n then
     ⟨i.val, by omega⟩
@@ -87,6 +88,7 @@ def unskipX₀ (i : Fin (n + 1 + m)) (hi : i ≠ x₀Index) : Fin (n + m) :=
       have h1 : i.val ≠ n := by intro heq; apply hi; ext; simp [x₀Index, heq]
       omega⟩
 
+/-- Skip `x₀` in the variable index, mapping to the auxiliary index space. -/
 def skipX₀ (i : Fin (n + m)) : Fin (n + 1 + m) :=
   if h : i.val < n then ⟨i.val, by omega⟩ else ⟨i.val + 1, by omega⟩
 
@@ -365,7 +367,7 @@ private theorem auxDictionary_value_le_zero (A : Matrix (Fin m) (Fin n) K) (b : 
         simp [hi_lt]
       rw [h_zero, add_zero]
       have hnot_lt : ¬((Fin.last n).val < n) := by simp
-      simp
+      rw [if_neg hnot_lt]
       rfl
     · rw [Finset.mem_filter]
       simp
