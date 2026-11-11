@@ -1264,4 +1264,3 @@ theorem exists_decidesWithBoundedErrorInTime_ThreeSAT :
 end MachineDecider
 
 end Cslib.Complexity.Schoening
-
