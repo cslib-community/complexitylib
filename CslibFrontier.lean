@@ -5597,6 +5597,7 @@ public import CslibFrontier.Logics.Propositional.CNF.ModelCount.Relabel
 public import CslibFrontier.Logics.Propositional.CNF.Moser
 public import CslibFrontier.Logics.Propositional.CNF.Moser.Compression
 public import CslibFrontier.Logics.Propositional.CNF.Moser.Kolmogorov
+public import CslibFrontier.Logics.Propositional.CNF.Moser.LocalLemma
 public import CslibFrontier.Logics.Propositional.CNF.Moser.Probability
 public import CslibFrontier.Logics.Propositional.CNF.NotAllEqual
 public import CslibFrontier.Logics.Propositional.CNF.NotAllEqual.ThreeOccurrence
@@ -5917,6 +5918,8 @@ public import CslibFrontier.Probability.MinEntropy.LeftoverHash
 public import CslibFrontier.Probability.Minimax
 public import CslibFrontier.Probability.Minimax.Value
 public import CslibFrontier.Probability.MoserTardos
+public import CslibFrontier.Probability.MoserTardos.Lopsided
+public import CslibFrontier.Probability.MoserTardos.Symmetric
 public import CslibFrontier.Probability.MoserTardos.Witness
 public import CslibFrontier.Probability.MutualInformation
 public import CslibFrontier.Probability.OptimalStopping.Basic
