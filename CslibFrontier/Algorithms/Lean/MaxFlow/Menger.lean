@@ -1090,7 +1090,13 @@ private theorem isSeparator_simpleGraph_iff_toDigraph {G : SimpleGraph V} {A B Y
 
 /-- **Menger's theorem, undirected `A`–`B` set form, with a matching separator** ([Menger1927];
 [Diestel2025], Theorem 3.3.1): in a finite simple graph, for any `A, B : Set V`, there exist `m`
-pairwise vertex-disjoint `A`–`B` paths and an `A`–`B` separator `Y : Finset V` of size `m`. -/
+pairwise vertex-disjoint `A`–`B` paths and an `A`–`B` separator `Y : Finset V` of size `m`.
+
+An `A`–`B` path here starts in `A`, ends in `B` and may pass through further vertices of `A` or
+`B` (the endpoint convention of [Schrijver2017], Section 4.1), whereas [Diestel2025], Section 1.3,
+lets `A`–`B` paths meet `A` and `B` only at their ends. Single-vertex paths at vertices of `A ∩ B`
+are allowed, so every separator meets `A ∩ B`, but such vertices need not appear as single-vertex
+paths in the family. -/
 theorem exists_disjoint_walk_eq_isSeparator [Finite V] (G : SimpleGraph V) (A B : Set V) :
     ∃ (m : ℕ) (a b : Fin m → V) (W : ∀ i, G.Walk (a i) (b i)),
       (∀ i, a i ∈ A) ∧ (∀ i, b i ∈ B) ∧ (∀ i, (W i).IsPath) ∧
@@ -1106,7 +1112,9 @@ theorem exists_disjoint_walk_eq_isSeparator [Finite V] (G : SimpleGraph V) (A B 
 
 /-- **Menger's theorem, undirected `A`–`B` set form** ([Menger1927]; [Diestel2025],
 Theorem 3.3.1): in a finite simple graph, there exist `k` pairwise vertex-disjoint `A`–`B` paths
-if and only if every `A`–`B` separator has at least `k` vertices. -/
+if and only if every `A`–`B` separator has at least `k` vertices. The paths follow the endpoint
+convention of `exists_disjoint_walk_eq_isSeparator`, not Diestel's: they may pass through further
+vertices of `A` or `B`. -/
 theorem exists_disjoint_walk_iff_forall_isSeparator [Finite V] (G : SimpleGraph V)
     (A B : Set V) (k : ℕ) :
     (∃ (a b : Fin k → V) (W : ∀ i, G.Walk (a i) (b i)),
@@ -1129,7 +1137,12 @@ theorem exists_disjoint_walk_iff_forall_isSeparator [Finite V] (G : SimpleGraph 
 
 /-- **Menger's theorem, global edge-connectivity form** ([Diestel2025], Theorem 3.3.6 (ii)): a
 finite simple graph is `k`-edge-connected iff every pair of vertices is joined by `k` pairwise
-edge-disjoint paths. -/
+edge-disjoint paths.
+
+`k`-edge-connectivity is Mathlib's `SimpleGraph.IsEdgeConnected`, which extends the convention of
+[Diestel2025], Section 1.4: Diestel requires more than one vertex, whereas `IsEdgeConnected k`
+holds for every `k` on empty and one-vertex types. Pairs `u = v` are included, and are joined by
+`k` copies of the trivial walk. -/
 theorem isEdgeConnected_iff_forall_exists_edgeDisjoint [Finite V] (G : SimpleGraph V) (k : ℕ) :
     G.IsEdgeConnected k ↔
       ∀ u v : V, ∃ W : Fin k → G.Walk u v, (∀ i, (W i).IsPath) ∧
