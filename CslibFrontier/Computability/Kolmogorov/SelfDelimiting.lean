@@ -63,6 +63,14 @@ def decodeSelfDelimiting (q : List Bool) : List Bool × List Bool :=
   ((r.drop k).take n, (r.drop k).drop n)
 
 
+/-- The extracted word and unused suffix together never exceed the raw input,
+including malformed or arbitrarily large numerical length headers. -/
+theorem decodeSelfDelimiting_length_le (word : List Bool) :
+    (decodeSelfDelimiting word).1.length + (decodeSelfDelimiting word).2.length ≤ word.length := by
+  simp only [decodeSelfDelimiting, List.length_take, List.length_drop]
+  omega
+
+
 /-- The decoder inverts the code: it splits `selfDelimitingCode p ++ q` back into `p` and `q`. -/
 @[simp]
 theorem decodeSelfDelimiting_selfDelimitingCode_append (p q : List Bool) :
