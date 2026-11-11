@@ -15,6 +15,7 @@ public import CslibFrontier.Algorithms.WordRAM.PPZ.Round
 public import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
 import CslibFrontier.Foundations.Data.Nat.CeilDiv
 

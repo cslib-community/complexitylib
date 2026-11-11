@@ -142,9 +142,11 @@ section Efficiency
 
 variable {family : List Bool → List Bool → List Bool}
 
-/-- The encoding of the reduction's cache. -/
+/-- The encoding of the reduction's cache: the memoization cache encoding (`encMemoCache`) whose
+keys pair a key index (`encFinEnum`, framed) with a query (`encBits`) and whose values are
+`encBits`. -/
 private abbrev cacheEncoding (t : ℕ) : MultiKeyCache t ↪ List Bool :=
-  encList (encPair (encPair (encFinEnum (Fin t)) encBits) encBits)
+  encMemoCache (encPair (encFinEnum (Fin t)) encBits) encBits
 
 /-- The input of one handler call: the caller `((n, aux), key)`, the request and the cache. -/
 private abbrev HandlerInput (t : ℕ) :=

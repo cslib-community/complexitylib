@@ -103,17 +103,30 @@ event (these short names need `open Cslib.Probability`), rather than converting 
 [checked examples](../../CslibFrontierTests/ProbabilityNotation.lean) bound a program and a set event.
 Run `scripts/build.sh CslibFrontierTests.ProbabilityNotation`.
 
+For a Boolean distribution `p : PMF Bool`, import
+[PMF/Bool.lean](../../CslibFrontier/Probability/PMF/Bool.lean) and use
+`PMF.apply_true_add_apply_false p : p true + p false = 1` rather than rewriting with `tsum_bool`
+and `PMF.tsum_coe` by hand. Its real forms are `PMF.toReal_true_add_toReal_false` and
+`PMF.toReal_false_eq_one_sub`. The same module bounds Boolean events written as `(p.map E) true`:
+`PMF.map_true_mono`, `PMF.map_true_le_add` and `PMF.map_any_range_true_le_sum` (a union bound),
+and `PMF.map_not_true` for complements. To compose an event bound through `PMF.bind`, use the
+`PMF.toOuterMeasure_bind_*` lemmas in
+[PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean). The
+[checked examples](../../CslibFrontierTests/PMFBool.lean) recover the mass of `false` from the mass of
+`true`; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
 [PMF/Finiteness.lean](../../CslibFrontier/Probability/PMF/Finiteness.lean) and discharge each side
 condition with `by finiteness`, in place, instead of assembling it from `ENNReal.add_ne_top`,
 `ENNReal.sum_ne_top` and `PMF.apply_ne_top`. The module makes Mathlib's `finiteness` know that a
 mass `p a`, an event probability `p.toOuterMeasure s` and a finite sum of finite terms are finite,
-and that a term is finite given `h : x < _` or `h : ∀ i, f i ≠ ∞`; Mathlib already covers sums,
-products, powers, casts and inverses of nonzero terms, and hypotheses `x ≠ ∞`. A factor with no
-such reason, such as an arbitrary `x : ℝ≥0∞`, makes it fail, often only after Aesop's
-rule-application limit; add a hypothesis `x ≠ ∞` or prove that factor separately. Each call
-costs roughly 100 to 700 heartbeats of Aesop search and positivity, so where the explicit term is
+and lets it apply hypotheses such as `h : ∀ i, f i ≠ ∞`. Mathlib already covers sums, products,
+powers, casts and inverses of nonzero terms, and hypotheses `x ≠ ∞` or `x < _`; the module keeps
+the `x < _` case working alongside its sum rule. A factor with no such reason, such as an arbitrary
+`x : ℝ≥0∞`, makes it fail, often only after Aesop's rule-application limit; add a hypothesis
+`x ≠ ∞` or prove that factor separately. Each successful call costs roughly 100 to 800 heartbeats
+of Aesop search and positivity, so where the explicit term is
 a single `PMF.apply_ne_top _ _` keep the term. To compare success probabilities, import
 [Game/Order.lean](../../CslibFrontier/Crypto/Game/Order.lean):
 `apply Game.succProbability_mono` leaves the goal `g₁ true ≤ g₂ true`, without unfolding
@@ -286,6 +299,67 @@ cover:
 Run `scripts/build.sh CslibFrontierTests.StatisticalDifference` and
 `scripts/build.sh CslibFrontierTests.StatisticalDifferencePolyTime`.
 
+## Compare distributions by Hellinger distance and chi-square divergence
+
+For finite distributions (`PMF α` with `[Finite α]` / `[Fintype α]`), Hellinger distance and
+Pearson `χ²` divergence complement half-`L¹` statistical distance (`dist`) with exact product
+tensorization and comparison inequalities ([Tsybakov, Section 2.4](../sources.md#tsybakov09);
+[Canonne, §3.1 and Appendix B](../sources.md#canonne22)):
+
+- **Bhattacharyya coefficient and Hellinger distance.** Import
+  [Hellinger.lean](../../CslibFrontier/Probability/Hellinger.lean). The definitions
+  [`bhattacharyya`](../../CslibFrontier/Probability/Hellinger.lean#L133)
+  (`∑' a, √((p a).toReal * (q a).toReal) ∈ [0, 1]`),
+  [`hellingerSq`](../../CslibFrontier/Probability/Hellinger.lean#L137) (`1 - bhattacharyya p q`),
+  and [`hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L141)
+  (`√(hellingerSq p q) ∈ [0, 1]`)—along with their symmetry, `[0, 1]` bounds, and definiteness
+  (`= 0 ↔ p = q`)—apply to any `PMF α`, while the theorem API below assumes finite types
+  `[Finite α]` / `[Fintype α]`. No competing `MetricSpace (PMF α)` instance is registered because
+  `Cslib.Probability.PMF` already uses that slot for half-`L¹` `dist`;
+  [`hellingerDist_triangle`](../../CslibFrontier/Probability/Hellinger.lean#L304) supplies the
+  metric triangle inequality directly.
+- **Total-variation comparison and `n`-fold i.i.d. tensorization (finite types).**
+  [`hellingerSq_le_dist`](../../CslibFrontier/Probability/Hellinger.lean#L345) and
+  [`dist_le_sqrt_two_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L398) give
+  `h²(p, q) ≤ dist p q ≤ √2 * h(p, q)` (with `tvDist` corollaries on `toMeasure`).
+  [`bhattacharyya_pi`](../../CslibFrontier/Probability/Hellinger.lean#L426) and
+  [`bhattacharyya_iid`](../../CslibFrontier/Probability/Hellinger.lean#L444) prove multiplicative
+  tensorization, yielding the sample-complexity acceptance bound
+  [`dist_iid_le_sqrt_two_mul_nat_mul_hellingerDist`](../../CslibFrontier/Probability/Hellinger.lean#L497):
+  `dist (iid p n) (iid q n) ≤ √(2 * n) * hellingerDist p q`. Markov kernel and map data
+  processing are [`hellingerDist_bind_le`](../../CslibFrontier/Probability/Hellinger.lean#L576) and
+  [`hellingerDist_map_le`](../../CslibFrontier/Probability/Hellinger.lean#L595).
+- **Pearson `χ²` divergence and Ingster / Le Cam mixture bounds (finite types).** Import
+  [ChiSquare.lean](../../CslibFrontier/Probability/ChiSquare.lean).
+  [`echiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L142) (`ℝ≥0∞`-valued
+  `∑' a, ENNReal.ofReal (((p a).toReal - (q a).toReal) ^ 2) / q a`, with reference distribution `q`
+  as the **second** argument matching `klDiv p.toMeasure q.toMeasure`) and real-valued
+  [`chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L148) (`(echiSquare p q).toReal`)
+  are defined on any `PMF α`, together with nonnegativity and self-vanishing. All remaining
+  theorems require `[Finite α]` / `[Fintype α]` (on countably infinite types, `p.support ⊆ q.support`
+  alone does not imply finite divergence):
+  [`echiSquare_ne_top_iff`](../../CslibFrontier/Probability/ChiSquare.lean#L167) equates finiteness
+  to `p.support ⊆ q.support`, and real-valued theorems state `p.support ⊆ q.support` explicitly so
+  `x / 0 = 0` never hides off-support mass. These cover tensorization
+  ([`one_add_chiSquare_pi`](../../CslibFrontier/Probability/ChiSquare.lean#L299),
+  [`one_add_chiSquare_iid`](../../CslibFrontier/Probability/ChiSquare.lean#L329)), TV upper bounds
+  ([`dist_le_sqrt_chiSquare_div_two`](../../CslibFrontier/Probability/ChiSquare.lean#L366),
+  [`tvDist_le_sqrt_chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L384)), data
+  processing ([`chiSquare_bind_le`](../../CslibFrontier/Probability/ChiSquare.lean#L401)), the
+  mixture second-moment identity
+  ([`one_add_chiSquare_bind_eq`](../../CslibFrontier/Probability/ChiSquare.lean#L505),
+  [`one_add_chiSquare_bind_iid_eq`](../../CslibFrontier/Probability/ChiSquare.lean#L555)), and the
+  comparison hierarchy `2 h² ≤ KL ≤ log (1 + χ²) ≤ χ²`
+  ([`two_mul_hellingerSq_le_toReal_klDiv`](../../CslibFrontier/Probability/ChiSquare.lean#L573),
+  [`toReal_klDiv_le_log_one_add_chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L614),
+  [`two_mul_hellingerSq_le_chiSquare`](../../CslibFrontier/Probability/ChiSquare.lean#L656)).
+
+The checked clients in [HellingerChiSquare.lean](../../CslibFrontierTests/HellingerChiSquare.lean)
+cover disjoint point masses (`echiSquare = ⊤`), rational Bernoulli pairs, the triangle inequality,
+`pi`/`iid` tensorization, close Pythagorean-triple coins at `n = 10`, `map`/`bind` data
+processing, `2 h² ≤ KL ≤ log (1 + χ²) ≤ χ²`, and an Ingster/Le Cam two-point mixture bound. Run
+`scripts/build.sh CslibFrontierTests.HellingerChiSquare`.
+
 ## Bound the mixing time of a finite Markov chain
 
 Import [MarkovChain/Coupling.lean](../../CslibFrontier/Probability/MarkovChain/Coupling.lean). A chain
@@ -311,7 +385,7 @@ that bounds `(((Q ^ t) (x, y)).toOuterMeasure {w | w.1 ≠ w.2}).toReal` for all
 The bounded event is "the copies differ at time `t`", not the source's coupling-time tail, and is
 never larger. The theorem covers time-homogeneous Markovian couplings only, but needs no
 stickiness. To bound the event, `PMF.toOuterMeasure_bind_le_mul_ennreal` from
-[PMF/Event.lean](../../CslibFrontier/Probability/PMF/Event.lean) gives a step-by-step induction. The
+[PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean) gives a step-by-step induction. The
 worked client is [BitString/LazyRandomWalk.lean](../../CslibFrontier/Probability/BitString/LazyRandomWalk.lean):
 for the lazy hypercube walk `Cslib.BitString.lazyRandomWalk ι`, `mixingTime_lazyRandomWalk_le`
 proves `t_mix(ε) ≤ ⌈n log n + n log ε⁻¹⌉`. The ceiling is necessary, as the `n = 1`, `ε = 2/5`

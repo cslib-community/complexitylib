@@ -19,9 +19,9 @@ Two structural facts about polynomial calculus proofs (`Cslib.Logic.PL.PC.IsProo
   (`Cslib.Logic.PL.PC.IsProof.mono`, `Cslib.Logic.PL.PC.RefutableInDegree.mono`).
 * **The invariant method for degree lower bounds**
   (`Cslib.Logic.PL.PC.IsProof.mem_of_degree_le`). Suppose an `R`-submodule `M` of polynomials
-  contains every input and contains `X v * p` whenever `p ∈ M` and `X v * p` has degree at most
-  `d`. Then every line of a proof of degree at most `d` lies in `M`. A degree lower bound follows
-  when `1 ∉ M`. This is the shape of the argument of Theorem 5.1 of
+  contains every input of degree at most `d` and contains `X v * p` whenever `p ∈ M` and
+  `X v * p` has degree at most `d`. Then every line of a proof of degree at most `d` lies in `M`.
+  A degree lower bound follows when `1 ∉ M`. This is the shape of the argument of Theorem 5.1 of
   [ImpagliazzoPudlakSgall1999], used in `CslibFrontier.Logics.Propositional.Algebraic.SubsetSum`.
 
 ## Main results
@@ -59,17 +59,19 @@ theorem RefutableInDegree.mono {F G : List (MvPolynomial V R)} {d e : ℕ}
   let ⟨ls, hls, h1, hd⟩ := h
   ⟨ls, hls.mono hFG, h1, hd.trans hde⟩
 
-/-- **The invariant method.** Let `M` be a submodule containing every input and containing
-`X v * p` whenever `p ∈ M` and `X v * p` has total degree at most `d`. Then every line of a
-proof of degree at most `d` lies in `M`. -/
+/-- **The invariant method.** Let `M` be a submodule containing every input of total degree at
+most `d` and containing `X v * p` whenever `p ∈ M` and `X v * p` has total degree at most `d`.
+Then every line of a proof of degree at most `d` lies in `M`. Inputs of larger degree cannot occur
+in such a proof, so `M` need not contain them. -/
 theorem IsProof.mem_of_degree_le {F ls : List (MvPolynomial V R)} (h : IsProof F ls) {d : ℕ}
-    (hd : degree ls ≤ d) (M : Submodule R (MvPolynomial V R)) (hF : ∀ f ∈ F, f ∈ M)
+    (hd : degree ls ≤ d) (M : Submodule R (MvPolynomial V R))
+    (hF : ∀ f ∈ F, f.totalDegree ≤ d → f ∈ M)
     (hX : ∀ v, ∀ p ∈ M, (X v * p).totalDegree ≤ d → X v * p ∈ M) : ∀ p ∈ ls, p ∈ M := by
   induction h with
   | nil => simp
   | mem _ hp ih =>
     rw [degree_cons, max_le_iff] at hd
-    exact List.forall_mem_cons.mpr ⟨hF _ hp, ih hd.2⟩
+    exact List.forall_mem_cons.mpr ⟨hF _ hp hd.1, ih hd.2⟩
   | linear a b _ hp hq ih =>
     rw [degree_cons, max_le_iff] at hd
     have hM := ih hd.2

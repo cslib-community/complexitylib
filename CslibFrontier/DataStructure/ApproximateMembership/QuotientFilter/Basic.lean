@@ -38,8 +38,8 @@ slots storing `f`-bit remainders `Fin (2 ^ f)` with three metadata bits per slot
    `(List.range ℓ).flatMap (fun j => taggedRun (bucketRun S quot rem (probeSlot b o j)))`,
    with every prefix `m < ℓ` satisfying `m + 1 ≤ ∑ j ≤ m, |bucketRun ... (probeSlot b o j)|`.
    Consequently:
-   - Slot occupancy and slot contents depend **only** on the current key set `S` and hash pair
-     `(quot, rem)` (history-independent canonical runs).
+   - When `#S < 2 ^ b`, slot occupancy and slot contents depend **only** on the current key set
+     `S` and hash pair `(quot, rem)` (history-independent canonical runs).
    - The number of keys of `S` whose quotient falls into a maximal full cluster
      `cyclicInterval b (quot u) a ℓ` equals `ℓ` (`card_filter_quot_mem_cyclicInterval_eq`),
      transferring the $5$-wise independent dyadic scale-overload bound directly to quotient-filter
