@@ -21,9 +21,10 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-!
 # `MINKT*` is `NP`-hard under randomized reductions
 
-Hirahara's theorem [Hirahara2022, Theorem I.2]: every `NP` problem reduces to `MINKT*` by a
-polynomial-time randomized reduction with one-sided error. The reduction maps yes-instances to
-yes-instances always and no-instances to no-instances with probability at least `2/3`.
+A special case of [Hirahara2022, Theorem I.2] ("In particular", p. 971), in the library's
+one-sided many-one form: every `NP` problem reduces to `MINKT*` by a polynomial-time randomized
+reduction with one-sided error. The reduction maps yes-instances to yes-instances always and
+no-instances to no-instances with probability at least `2/3`.
 
 The proof composes the `NP`-hardness of `GapCMMSA Δ g 1` (`exists_hard_params`) with a randomized
 reduction from `GapCMMSA Δ g 1` to `MINKT*`, `rpReducible_GapCMMSA_MINKTStar`. That reduction
@@ -54,9 +55,9 @@ The statement is the `MINKT*` case of the "In particular" clause of [Hirahara202
 the construction and its analysis are the library's own (route B, as for partial MCSP in issue
 #4362). The library's time-bounded complexity counts the steps of the described machine under the
 universal machine, where footnote 6 of the source uses a KT-style measure; the soundness count
-holds for every step budget, and the completeness needs only some polynomial budget, so both
-directions are robust to the choice. The `(log N)^ε` inapproximability and the distributional forms
-of the theorem are not formalized.
+holds for every step budget, and the completeness needs only some polynomial budget, so the
+argument should transfer to that measure, which the library does not formalize. The `(log N)^ε`
+inapproximability and the distributional forms of the theorem are not formalized.
 
 ## References
 
