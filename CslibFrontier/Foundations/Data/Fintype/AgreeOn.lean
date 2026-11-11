@@ -29,10 +29,13 @@ namespace Fintype
 
 open Finset
 
-variable {ι β : Type*} [Fintype ι] [DecidableEq ι] [Fintype β] [DecidableEq β]
+variable {ι β : Type*} [Fintype ι] [DecidableEq ι] [Fintype β]
 
-/-- The functions that agree with `y` on `P` number `#β ^ #Pᶜ`. -/
-theorem card_filter_forall_mem_eq (P : Finset ι) (y : ι → β) :
+/-- The functions that agree with `y` on `P` number `#β ^ #Pᶜ`. The filter's decidability is an
+instance argument, so the lemma rewrites whichever instance elaborated the filter (on `Fin n`,
+`Nat.decidableForallFin`). -/
+theorem card_filter_forall_mem_eq (P : Finset ι) (y : ι → β)
+    [DecidablePred fun b : ι → β => ∀ i ∈ P, b i = y i] :
     #{b : ι → β | ∀ i ∈ P, b i = y i} = Fintype.card β ^ #Pᶜ := by
   have h : ({b : ι → β | ∀ i ∈ P, b i = y i} : Finset (ι → β)) =
       piFinset fun i => if i ∈ P then {y i} else univ := by

@@ -173,7 +173,7 @@ theorem sum_sum_card_heavy_le (C' : (Fin k → U) → Fin k → V) (f : U → V)
             (fun (b₀ y : Fin k → U) => ∀ i ∈ P, b₀ i = y i) (s := univ) (t := H')
         _ = n ^ (k - s) * #H' := by
           have hc : ∀ y ∈ H', #{b₀ : Fin k → U | ∀ i ∈ P, b₀ i = y i} = n ^ (k - s) :=
-            fun y _ => by rw [← hPc]; convert Fintype.card_filter_forall_mem_eq P y
+            fun y _ => by rw [← hPc]; exact Fintype.card_filter_forall_mem_eq P y
           rw [sum_const_nat hc, mul_comm]
     exact_mod_cast hcount
   refine (sum_le_sum hP).trans ?_
