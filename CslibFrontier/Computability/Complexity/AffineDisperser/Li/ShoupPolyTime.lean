@@ -118,30 +118,6 @@ theorem computableInPolyTime_primeDeg :
     ComputableInPolyTime primeDeg encUnary encUnary :=
   .of_tidy tidy_primeDeg
 
-private theorem tidy_beq_of_le {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
-    (hle₁ : ComputableTidilyInPolyTime (fun x => decide (f x ≤ g x)) enc encBool)
-    (hle₂ : ComputableTidilyInPolyTime (fun x => decide (g x ≤ f x)) enc encBool) :
-    ComputableTidilyInPolyTime (fun x => f x == g x) enc encBool := by
-  have hand := (ComputableTidilyInPolyTime.of_finite (fun b : Bool × Bool => b.1 && b.2)
-    (encA := encPair encBool encBool) (encB := encBool)).comp (hle₁.prod hle₂)
-  convert hand using 1
-  funext x
-  cases h : (f x == g x) <;> simp_all [Nat.le_antisymm_iff]
-
-private theorem tidy_binary_beq {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
-    (hf : ComputableTidilyInPolyTime f enc encNat)
-    (hg : ComputableTidilyInPolyTime g enc encNat) :
-    ComputableTidilyInPolyTime (fun x => f x == g x) enc encBool :=
-  tidy_beq_of_le (ComputableTidilyInPolyTime.binary_le' hf hg)
-    (ComputableTidilyInPolyTime.binary_le' hg hf)
-
-private theorem tidy_unary_beq {α : Type} {enc : α ↪ List Bool} {f g : α → ℕ}
-    (hf : ComputableTidilyInPolyTime f enc encUnary)
-    (hg : ComputableTidilyInPolyTime g enc encUnary) :
-    ComputableTidilyInPolyTime (fun x => f x == g x) enc encBool :=
-  tidy_beq_of_le (ComputableTidilyInPolyTime.unary_le' hf hg)
-    (ComputableTidilyInPolyTime.unary_le' hg hf)
-
 private def ordSomeAdd1 (_ x : ℕ) : ℕ := x + 1
 
 private theorem tidy_ordTwoMod :
@@ -156,7 +132,7 @@ private theorem tidy_ordTwoMod :
       (encPair encUnary encUnary) encNat :=
     ComputableTidilyInPolyTime.binary_mod' htwoPow
       (hu2b.comp (ComputableTidilyInPolyTime.fst encUnary encUnary))
-  have hpred := tidy_binary_beq hmod (.const 1)
+  have hpred := hmod.beq (.const 1)
   have hf : ComputableTidilyInPolyTime
       (fun q : ℕ => (List.range (q - 1)).find? fun i => 2 ^ (i + 1) % q == 1)
       encUnary (encOption encUnary) :=
@@ -205,7 +181,7 @@ private theorem tidy_qAdicValTwoPowSubOne :
   have hpred : ComputableTidilyInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => decide ((2 ^ p.1.2 % p.1.1 ^ (p.2 + 1) == 1) = true))
       (encPair (encPair encUnary encUnary) encUnary) encBool := by
-    have hbeq := tidy_binary_beq hmod (.const 1)
+    have hbeq := hmod.beq (.const 1)
     have heq : (fun p : (ℕ × ℕ) × ℕ =>
           decide ((2 ^ p.1.2 % p.1.1 ^ (p.2 + 1) == 1) = true)) =
         fun p => 2 ^ p.1.2 % p.1.1 ^ (p.2 + 1) == 1 := by
@@ -733,7 +709,7 @@ private theorem tidy_polyComposePow :
     have hmod0 : ComputableTidilyInPolyTime
         (fun x : (ℕ × List Bool) × ℕ => x.2 % x.1.1 == 0)
         (encPair (encPair encUnary encBits) encUnary) encBool :=
-      tidy_unary_beq ((ComputableTidilyInPolyTime.snd encUnary encUnary).comp hdm) (.const 0)
+      ((ComputableTidilyInPolyTime.snd encUnary encUnary).comp hdm).beq (.const 0)
     have hdiv := (ComputableTidilyInPolyTime.fst encUnary encUnary).comp hdm
     have hget := ComputableTidilyInPolyTime.bitsGetDWithInput hxp hdiv false
     exact (ComputableInPolyTime.ite' hmod0.computableInPolyTime
@@ -941,7 +917,7 @@ private theorem tidy_berlekampMatrix :
     have hdiag : ComputableTidilyInPolyTime
         (fun x : (List Bool × ℕ) × ℕ => decide ((x.1.2 == x.2 + 1) = true))
         (encPair (encPair encBits encUnary) encUnary) encBool := by
-      convert tidy_unary_beq hxi hj using 1
+      convert hxi.beq hj using 1
       funext x
       rw [Bool.eq_iff_iff]
       simp
@@ -1473,7 +1449,7 @@ private theorem tidy_shoupBetaBounded :
       have hi := ComputableTidilyInPolyTime.snd encUnary encUnary
       have hcond : ComputableTidilyInPolyTime (fun x : ℕ × ℕ => x.2 == 1)
           (encPair encUnary encUnary) encBool :=
-        tidy_unary_beq hi (.const 1)
+        hi.beq (.const 1)
       exact (ComputableInPolyTime.ite' hcond.computableInPolyTime
         (ComputableInPolyTime.const [true]) (ComputableInPolyTime.const ([] : List Bool))).tidy
     exact ComputableTidilyInPolyTime.mapWithInput (f := shoupBetaInitYCell)
@@ -1648,7 +1624,7 @@ private theorem tidy_shoupPowersBounded :
       have hi := ComputableTidilyInPolyTime.snd encUnary encUnary
       have hcond : ComputableTidilyInPolyTime (fun x : ℕ × ℕ => x.2 == 0)
           (encPair encUnary encUnary) encBool :=
-        tidy_unary_beq hi (.const 0)
+        hi.beq (.const 0)
       exact (ComputableInPolyTime.ite' hcond.computableInPolyTime
         (ComputableInPolyTime.const [true]) (ComputableInPolyTime.const ([] : List Bool))).tidy
     exact ComputableTidilyInPolyTime.mapWithInput (f := shoupPowersOneCell)
