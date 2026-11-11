@@ -212,8 +212,6 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `lfp` | [Positive checked first-order least fixed point](circuits-logic-and-other-models/index.md) | finite-logic |
 | `tc` | [First-order reflexive transitive closure](circuits-logic-and-other-models/index.md) | finite-logic |
 | `eso` | [Existential second-order relational sentences](circuits-logic-and-other-models/index.md) | finite-logic |
-| `replicable-algorithm` | [Shared-seed replicable sample algorithms (`Algorithm` and weak/strong `ρ`-replicability)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
-| `replicable-program` | [`ProbComp`-backed shared-seed replicable programs (`Program`)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
 | `relational-encoding` | [Unordered finite relational table encoding](circuits-logic-and-other-models/index.md) | finite-logic |
 | `ordered-structure` | [Canonical ordered finite structures with BIT](circuits-logic-and-other-models/index.md) | finite-logic |
 | `ordered-domain` | [Ordered restricted-domain interpretations with numeric certificates](circuits-logic-and-other-models/index.md) | finite-logic |
@@ -234,6 +232,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `membership-learning` | [Randomized membership-query learners](circuits-logic-and-other-models/index.md) | learning |
 | `mistake-bound` | [Realizable online mistake-bound learners](circuits-logic-and-other-models/learning-and-testing.md) | learning |
 | `linearity-test` | [Decision-tree property testers for Boolean linearity](circuits-logic-and-other-models/index.md) | learning |
+| `replicable-algorithm` | [Shared-seed replicable sample algorithms (`Algorithm` and weak/strong `ρ`-replicability)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
+| `replicable-program` | [`ProbComp`-backed shared-seed replicable programs (`Program`)](circuits-logic-and-other-models/learning-and-testing.md#replicable-algorithms) | learning |
 | `mcsp` | [Total truth-table minimum circuit size](circuits-logic-and-other-models/index.md) | metacomplexity |
 | `partial-mcsp` | [Partial truth-table circuit minimization](circuits-logic-and-other-models/index.md) | metacomplexity |
 | `succinct-mcsp` | [Sample-set succinct MCSP](circuits-logic-and-other-models/index.md) | metacomplexity |

@@ -19,7 +19,9 @@ import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.Markov
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Probability.PMF.Union
 
 /-!
 # Amplification of accuracy and replicability
@@ -481,12 +483,9 @@ private theorem empFreq_all_concentrates [Fintype α] [DecidableEq α] (q : PMF 
     ext v
     simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Finset.mem_univ, exists_true_left]
   rw [hunion]
-  have hmeas := MeasureTheory.measure_biUnion_finset_le
-    (μ := (Probability.PMF.iid q k).toOuterMeasure) Finset.univ
+  have hreal := Probability.PMF.toOuterMeasure_toReal_biUnion_finset_le
+    (Probability.PMF.iid q k) Finset.univ
     (fun y => {v : Fin k → α | δ < |empFreq k v y - (q y).toReal|})
-  have hreal := ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun y _ =>
-    Probability.PMF.toOuterMeasure_ne_top _ _) hmeas
-  rw [ENNReal.toReal_sum fun y _ => Probability.PMF.toOuterMeasure_ne_top _ _] at hreal
   refine hreal.trans ?_
   calc ∑ y : α, ((Probability.PMF.iid q k).toOuterMeasure
           {v : Fin k → α | δ < |empFreq k v y - (q y).toReal|}).toReal
@@ -562,13 +561,10 @@ theorem isReplicable_amplifyFinite [Fintype α] [Nonempty α] [LinearOrder α]
       exact hi hsame
     have hmono := Probability.PMF.toOuterMeasure_toReal_mono
       (Probability.PMF.uniformOfFintype (Fin N)) hpre
-    have hunion := MeasureTheory.measure_biUnion_finset_le
-      (μ := (Probability.PMF.uniformOfFintype (Fin N)).toOuterMeasure) Finset.univ
+    have hunionR := Probability.PMF.toOuterMeasure_toReal_biUnion_finset_le
+      (Probability.PMF.uniformOfFintype (Fin N)) Finset.univ
       (fun y => {i : Fin N | thresholdRound a b N i (empFreq k v₁ y) ≠
         thresholdRound a b N i (empFreq k v₂ y)})
-    have hunionR := (ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun y _ =>
-      Probability.PMF.toOuterMeasure_ne_top _ _) hunion)
-    rw [ENNReal.toReal_sum fun y _ => Probability.PMF.toOuterMeasure_ne_top _ _] at hunionR
     refine (hmono.trans hunionR).trans ?_
     calc ∑ y : α, ((Probability.PMF.uniformOfFintype (Fin N)).toOuterMeasure
             {i : Fin N | thresholdRound a b N i (empFreq k v₁ y) ≠
@@ -874,56 +870,55 @@ private theorem agreeProb_eq_tsum_seedColl (A : Algorithm X Ω α m) (D : PMF X)
   · intro r
     exact ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (Probability.PMF.toOuterMeasure_ne_top _ _)
 
+private theorem pmf_markov_ge_toReal_le {Ω : Type*} (p : PMF Ω) (f : Ω → ℝ) {c μ : ℝ}
+    (hc : 0 < c) (hf_nn : ∀ r, 0 ≤ f r) (hf_le : ∀ r, f r ≤ 1)
+    (hsum : ∑' r, (p r).toReal * f r ≤ μ) :
+    (p.toOuterMeasure {r | c ≤ f r}).toReal ≤ μ / c := by
+  have hmarkov := Probability.PMF.mul_toOuterMeasure_le_tsum p
+    (fun r => ENNReal.ofReal (f r)) (ENNReal.ofReal c)
+  have hset : {r | ENNReal.ofReal c ≤ ENNReal.ofReal (f r)} = {r | c ≤ f r} := by
+    ext r
+    simp only [Set.mem_ofPred_eq, ENNReal.ofReal_le_ofReal_iff (hf_nn r)]
+  rw [hset] at hmarkov
+  have htsum_top : (∑' r, p r * ENNReal.ofReal (f r)) ≠ ⊤ := by
+    refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
+    calc ∑' r, p r * ENNReal.ofReal (f r)
+        ≤ ∑' r, p r :=
+          tsum_le_tsum fun r => mul_le_of_le_one_right' (ENNReal.ofReal_le_one.mpr (hf_le r))
+      _ = 1 := p.tsum_coe
+  have hreal := ENNReal.toReal_mono htsum_top hmarkov
+  rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal hc.le, ENNReal.tsum_toReal_eq] at hreal
+  · have hconv : ∑' r, (p r * ENNReal.ofReal (f r)).toReal = ∑' r, (p r).toReal * f r := by
+      refine tsum_congr fun r => ?_
+      rw [ENNReal.toReal_mul, ENNReal.toReal_ofReal (hf_nn r)]
+    rw [hconv] at hreal
+    exact (le_div_iff₀ hc).mpr (mul_comm c _ ▸ hreal.trans hsum)
+  · intro r
+    exact ENNReal.mul_ne_top (PMF.apply_ne_top _ _) ENNReal.ofReal_ne_top
+
 private theorem seed_markov_coll_lt (A : Algorithm X Ω α m) (D : PMF X) {c : ℝ} (hc : c < 1) :
     (A.seed.toOuterMeasure {r : Ω | seedColl A D r < c}).toReal ≤
       A.disagreeProb D / (1 - c) := by
-  classical
   have h1c : 0 < 1 - c := sub_pos.mpr hc
-  have hsum_seed : ∑' r : Ω, (A.seed r).toReal = 1 := Probability.PMF.tsum_toReal A.seed
   have hsum_agree : Summable fun r : Ω => (A.seed r).toReal * seedColl A D r :=
     (Probability.PMF.summable_toReal A.seed).of_nonneg_of_le
       (fun r => mul_nonneg ENNReal.toReal_nonneg (seedColl_nonneg A D r))
       (fun r => mul_le_of_le_one_right ENNReal.toReal_nonneg (seedColl_le_one A D r))
-  have hdisagree : A.disagreeProb D = ∑' r : Ω, (A.seed r).toReal * (1 - seedColl A D r) := by
+  have hdisagree :
+      ∑' r : Ω, (A.seed r).toReal * (1 - seedColl A D r) ≤ A.disagreeProb D := by
     rw [Algorithm.disagreeProb_eq_one_sub_agreeProb, agreeProb_eq_tsum_seedColl]
-    calc 1 - ∑' r : Ω, (A.seed r).toReal * seedColl A D r
-        = (∑' r : Ω, (A.seed r).toReal) - ∑' r : Ω, (A.seed r).toReal * seedColl A D r := by
-          rw [hsum_seed]
-      _ = ∑' r : Ω, ((A.seed r).toReal - (A.seed r).toReal * seedColl A D r) :=
-          ((Probability.PMF.summable_toReal A.seed).tsum_sub hsum_agree).symm
-      _ = ∑' r : Ω, (A.seed r).toReal * (1 - seedColl A D r) :=
-          tsum_congr fun r => by ring
-  have hmarkov_sum : Summable fun r : Ω => if seedColl A D r < c then (A.seed r).toReal else 0 :=
-    (Probability.PMF.summable_toReal A.seed).of_nonneg_of_le
-      (fun r => by split_ifs <;> simp [ENNReal.toReal_nonneg])
-      (fun r => by split_ifs <;> simp [ENNReal.toReal_nonneg])
-  have hmeas_tsum :
-      (A.seed.toOuterMeasure {r : Ω | seedColl A D r < c}).toReal =
-        ∑' r : Ω, if seedColl A D r < c then (A.seed r).toReal else 0 := by
-    rw [PMF.toOuterMeasure_apply, ENNReal.tsum_toReal_eq]
-    · refine tsum_congr fun r => ?_
-      by_cases hr : seedColl A D r < c
-      · simp [Set.indicator_of_mem, hr]
-      · simp [Set.indicator_of_notMem, hr]
-    · intro r
-      exact ne_top_of_le_ne_top (A.seed.apply_ne_top r) (Set.indicator_le_self _ _ _)
-  have hle_sum :
-      (∑' r : Ω, (if seedColl A D r < c then (A.seed r).toReal else 0) * (1 - c)) ≤
-        ∑' r : Ω, (A.seed r).toReal * (1 - seedColl A D r) := by
-    have hsum_rem : Summable fun r : Ω => (A.seed r).toReal * (1 - seedColl A D r) :=
-      ((Probability.PMF.summable_toReal A.seed).sub hsum_agree).of_nonneg_of_le
-        (fun r => mul_nonneg ENNReal.toReal_nonneg (sub_nonneg.mpr (seedColl_le_one A D r)))
-        (fun r => by
-          change (A.seed r).toReal * (1 - seedColl A D r) ≤
-            (A.seed r).toReal - (A.seed r).toReal * seedColl A D r
-          linarith)
-    refine (hmarkov_sum.mul_right (1 - c)).tsum_le_tsum (fun r => ?_) hsum_rem
-    split_ifs with hr
-    · exact mul_le_mul_of_nonneg_left (by linarith) ENNReal.toReal_nonneg
-    · rw [zero_mul]
-      exact mul_nonneg ENNReal.toReal_nonneg (sub_nonneg.mpr (seedColl_le_one A D r))
-  rw [tsum_mul_right, ← hmeas_tsum, ← hdisagree] at hle_sum
-  exact (le_div_iff₀ h1c).mpr hle_sum
+    have hrewrite :
+        ∑' r : Ω, (A.seed r).toReal * (1 - seedColl A D r) =
+          ∑' r : Ω, ((A.seed r).toReal - (A.seed r).toReal * seedColl A D r) :=
+      tsum_congr fun r => by ring
+    rw [hrewrite, (Probability.PMF.summable_toReal A.seed).tsum_sub hsum_agree,
+      Probability.PMF.tsum_toReal A.seed]
+  have hsub : {r : Ω | seedColl A D r < c} ⊆ {r : Ω | 1 - c ≤ 1 - seedColl A D r} :=
+    fun r hr => by simp only [Set.mem_ofPred_eq] at hr ⊢; linarith
+  refine (Probability.PMF.toOuterMeasure_toReal_mono _ hsub).trans ?_
+  exact pmf_markov_ge_toReal_le A.seed (fun r => 1 - seedColl A D r) h1c
+    (fun r => sub_nonneg.mpr (seedColl_le_one A D r))
+    (fun r => sub_le_self 1 (seedColl_nonneg A D r)) hdisagree
 
 private theorem pmfPiFin_forall_lt_le {Ω : Type*} (p : PMF Ω) (P : Ω → Prop) :
     ∀ T : ℕ,
@@ -1408,74 +1403,47 @@ private theorem seed_markov_err_lt (A : Algorithm X Ω α m) (D : PMF X) (good :
     {c β₀ : ℝ} (hc : 0 < c) (hacc : ((A.marginal D).toOuterMeasure goodᶜ).toReal ≤ β₀) :
     (A.seed.toOuterMeasure
       {r : Ω | c ≤ ((seedOutput A D r).toOuterMeasure goodᶜ).toReal}).toReal ≤ β₀ / c := by
-  classical
-  let errSeed : Ω → ℝ := fun r => ((seedOutput A D r).toOuterMeasure goodᶜ).toReal
-  have herr_nn : ∀ r : Ω, 0 ≤ errSeed r := fun _ => ENNReal.toReal_nonneg
-  have herr_le : ∀ r : Ω, errSeed r ≤ 1 := fun r => Probability.PMF.toOuterMeasure_toReal_le_one _ _
   have hm_sum :
-      ((A.marginal D).toOuterMeasure goodᶜ).toReal = ∑' r : Ω, (A.seed r).toReal * errSeed r := by
+      ∑' r : Ω, (A.seed r).toReal * ((seedOutput A D r).toOuterMeasure goodᶜ).toReal ≤ β₀ := by
+    refine le_trans ?_ hacc
     rw [Algorithm.marginal_eq_seed_bind, PMF.toOuterMeasure_bind_apply, ENNReal.tsum_toReal_eq]
-    · refine tsum_congr fun r => ?_
-      rw [ENNReal.toReal_mul]
-      rfl
+    · exact le_of_eq (tsum_congr fun r => ENNReal.toReal_mul.symm)
     · intro r
       exact ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (Probability.PMF.toOuterMeasure_ne_top _ _)
-  have hsum_err : Summable fun r : Ω => (A.seed r).toReal * errSeed r :=
-    (Probability.PMF.summable_toReal A.seed).of_nonneg_of_le
-      (fun r => mul_nonneg ENNReal.toReal_nonneg (herr_nn r))
-      (fun r => mul_le_of_le_one_right ENNReal.toReal_nonneg (herr_le r))
-  have hmarkov_sum : Summable fun r : Ω => if c ≤ errSeed r then (A.seed r).toReal else 0 :=
-    (Probability.PMF.summable_toReal A.seed).of_nonneg_of_le
-      (fun r => by split_ifs <;> simp [ENNReal.toReal_nonneg])
-      (fun r => by split_ifs <;> simp [ENNReal.toReal_nonneg])
-  have hmeas_tsum :
-      (A.seed.toOuterMeasure {r : Ω | c ≤ errSeed r}).toReal =
-        ∑' r : Ω, if c ≤ errSeed r then (A.seed r).toReal else 0 := by
-    rw [PMF.toOuterMeasure_apply, ENNReal.tsum_toReal_eq]
-    · refine tsum_congr fun r => ?_
-      by_cases hr : c ≤ errSeed r
-      · simp [Set.indicator_of_mem, hr]
-      · simp [Set.indicator_of_notMem, hr]
-    · intro r
-      exact ne_top_of_le_ne_top (A.seed.apply_ne_top r) (Set.indicator_le_self _ _ _)
-  have hle_sum :
-      (∑' r : Ω, (if c ≤ errSeed r then (A.seed r).toReal else 0) * c) ≤
-        ∑' r : Ω, (A.seed r).toReal * errSeed r := by
-    refine (hmarkov_sum.mul_right c).tsum_le_tsum (fun r => ?_) hsum_err
-    split_ifs with hr
-    · exact mul_le_mul_of_nonneg_left hr ENNReal.toReal_nonneg
-    · rw [zero_mul]
-      exact mul_nonneg ENNReal.toReal_nonneg (herr_nn r)
-  rw [tsum_mul_right, ← hmeas_tsum, ← hm_sum] at hle_sum
-  exact (le_div_iff₀ hc).mpr (hle_sum.trans hacc)
+  exact pmf_markov_ge_toReal_le A.seed
+    (fun r => ((seedOutput A D r).toOuterMeasure goodᶜ).toReal) hc
+    (fun _ => ENNReal.toReal_nonneg) (fun r => Probability.PMF.toOuterMeasure_toReal_le_one _ _)
+    hm_sum
+
+private theorem pmfPiFin_biUnion_toReal_le {Ω : Type*} {T : ℕ} (p : Fin T → PMF Ω)
+    (B : Fin T → Set Ω) (bound : Fin T → ℝ)
+    (hB : ∀ t : Fin T, ((p t).toOuterMeasure (B t)).toReal ≤ bound t) :
+    ((pmfPiFin p).toOuterMeasure
+      (⋃ t ∈ (Finset.univ : Finset (Fin T)), (fun xs : Fin T → Ω => xs t) ⁻¹' B t)).toReal ≤
+      ∑ t : Fin T, bound t := by
+  refine (Probability.PMF.toOuterMeasure_toReal_biUnion_finset_le _ _ _).trans ?_
+  calc ∑ t : Fin T,
+          ((pmfPiFin p).toOuterMeasure ((fun xs : Fin T → Ω => xs t) ⁻¹' B t)).toReal
+      = ∑ t : Fin T, ((p t).toOuterMeasure (B t)).toReal := by
+          refine Finset.sum_congr rfl fun t _ => ?_
+          rw [← PMF.toOuterMeasure_map_apply, pmfPiFin_map_eval]
+    _ ≤ ∑ t : Fin T, bound t := Finset.sum_le_sum fun t _ => hB t
 
 private theorem pmfPiFin_exists_le {Ω : Type*} (p : PMF Ω) (P : Ω → Prop) (bound : ℝ)
-    (hb : 0 ≤ bound) (hP : (p.toOuterMeasure {r | P r}).toReal ≤ bound) :
-    ∀ T : ℕ, ((pmfPiFin fun _ : Fin T => p).toOuterMeasure
-      {rs : Fin T → Ω | ∃ t, P (rs t)}).toReal ≤ (T : ℝ) * bound
-  | 0 => by simp
-  | T + 1 => by
-    rw [pmfPiFin]
-    have ih := pmfPiFin_exists_le p P bound hb hP T
-    have hmul : ((p.bind fun r₀ => (pmfPiFin fun _ : Fin T => p).map (Fin.cons r₀)).toOuterMeasure
-        {rs : Fin (T + 1) → Ω | ∃ t, P (rs t)}).toReal ≤ (T : ℝ) * bound + bound := by
-      refine (Probability.PMF.toOuterMeasure_bind_failure_toReal_le p _ {r | ¬ P r} _
-        (error := (T : ℝ) * bound) (by positivity) ?_).trans ?_
-      · intro r₀ _ hr₀
-        rw [PMF.toOuterMeasure_map_apply]
-        have hsub : Fin.cons r₀ ⁻¹' {rs : Fin (T + 1) → Ω | ∃ t, P (rs t)} ⊆
-            {rs' : Fin T → Ω | ∃ t, P (rs' t)} := by
-          rintro rs' ⟨t, ht⟩
-          refine Fin.cases (fun h0 => absurd h0 hr₀) (fun t' h => ⟨t', h⟩) t ht
-        exact (Probability.PMF.toOuterMeasure_toReal_mono _ hsub).trans ih
-      · have heq : ({r : Ω | ¬ P r} : Set Ω)ᶜ = {r | P r} := by
-          ext r
-          simp
-        rw [heq]
-        linarith [hP]
-    refine hmul.trans_eq ?_
-    push_cast
-    ring
+    (hP : (p.toOuterMeasure {r | P r}).toReal ≤ bound) (T : ℕ) :
+    ((pmfPiFin fun _ : Fin T => p).toOuterMeasure
+      {rs : Fin T → Ω | ∃ t, P (rs t)}).toReal ≤ (T : ℝ) * bound := by
+  have hunion :
+      {rs : Fin T → Ω | ∃ t, P (rs t)} =
+        ⋃ t ∈ (Finset.univ : Finset (Fin T)),
+          (fun rs : Fin T → Ω => rs t) ⁻¹' {r : Ω | P r} := by
+    ext rs
+    simp only [Set.mem_ofPred_eq, Set.mem_iUnion, Finset.mem_univ, Set.mem_preimage,
+      exists_true_left]
+  rw [hunion]
+  refine (pmfPiFin_biUnion_toReal_le (fun _ : Fin T => p) (fun _ => {r : Ω | P r})
+    (fun _ => bound) (fun _ => hP)).trans_eq ?_
+  simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
 private theorem bad_goodSeeds_le (A : Algorithm X Ω α m) (D : PMF X) {θ_acc : ℝ}
     (hθ_lt : θ_acc < 1) (T : ℕ) :
@@ -1519,31 +1487,17 @@ private theorem goodTrials_fail_le [DecidableEq α] (A : Algorithm X Ω α m) (D
     simp only [Set.mem_compl_iff, Set.mem_ofPred_eq, not_forall, Set.mem_iUnion,
       Finset.mem_univ, Set.mem_preimage, exists_true_left, goodTrialsSet]
   rw [hunion]
-  have hmeas := MeasureTheory.measure_biUnion_finset_le
-    (μ := (pmfPiFin fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure)
-    Finset.univ
-    (fun t : Fin T => (fun trials : Fin T → ℝ × α => trials t) ⁻¹'
+  refine (pmfPiFin_biUnion_toReal_le
+    (fun t : Fin T => trialRunMarginal A D (rs t) k₁ k₂)
+    (fun t : Fin T =>
       {pr : ℝ × α |
         |pr.1 - seedColl A D (rs t)| ≤ δ ∧
         (a - δ ≤ seedColl A D (rs t) →
           ∀ y : α, a - δ ≤ (seedOutput A D (rs t) y).toReal → pr.2 = y)}ᶜ)
-  have hreal := ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun _ _ =>
-    Probability.PMF.toOuterMeasure_ne_top _ _) hmeas
-  rw [ENNReal.toReal_sum fun _ _ => Probability.PMF.toOuterMeasure_ne_top _ _] at hreal
-  refine hreal.trans ?_
-  calc ∑ t : Fin T,
-          ((pmfPiFin fun t' : Fin T => trialRunMarginal A D (rs t') k₁ k₂).toOuterMeasure
-            ((fun trials : Fin T → ℝ × α => trials t) ⁻¹' _)).toReal
-      = ∑ t : Fin T, ((trialRunMarginal A D (rs t) k₁ k₂).toOuterMeasure _).toReal := by
-        refine Finset.sum_congr rfl fun t _ => ?_
-        rw [← PMF.toOuterMeasure_map_apply, pmfPiFin_map_eval]
-    _ ≤ ∑ _t : Fin T, (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
-          2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) :=
-        Finset.sum_le_sum fun t _ =>
-          trialRunMarginal_single_fail A D (rs t) hδ ha_half k₁ k₂
-    _ = (T : ℝ) * (2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
-          2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)) := by
-        simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
+    (fun _ => 2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2) +
+      2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2))
+    (fun t => trialRunMarginal_single_fail A D (rs t) hδ ha_half k₁ k₂)).trans_eq ?_
+  simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
 
 private theorem goodTrial_heavy_of_thresholdPass (A : Algorithm X Ω α m) (D : PMF X)
     {a b δ : ℝ} (hab : a ≤ b) {T N : ℕ} {rs : Fin T → Ω} {trials : Fin T → ℝ × α}
@@ -1695,13 +1649,10 @@ theorem disagreeProb_amplifyReplicability_le [DecidableEq α] (A : Algorithm X �
         exact hi (by rw [hpick1, hpick2, h1eq, h2eq])
       have hmono := Probability.PMF.toOuterMeasure_toReal_mono
         (Probability.PMF.uniformOfFintype (Fin N)) hpre
-      have hunion := MeasureTheory.measure_biUnion_finset_le
-        (μ := (Probability.PMF.uniformOfFintype (Fin N)).toOuterMeasure) Finset.univ
+      have hunionR := Probability.PMF.toOuterMeasure_toReal_biUnion_finset_le
+        (Probability.PMF.uniformOfFintype (Fin N)) Finset.univ
         (fun t => {i : Fin N | thresholdRound a b N i (trials₁ t).1 ≠
           thresholdRound a b N i (trials₂ t).1})
-      have hunionR := ENNReal.toReal_mono (ENNReal.sum_ne_top.2 fun _ _ =>
-        Probability.PMF.toOuterMeasure_ne_top _ _) hunion
-      rw [ENNReal.toReal_sum fun _ _ => Probability.PMF.toOuterMeasure_ne_top _ _] at hunionR
       refine (hmono.trans hunionR).trans ?_
       calc ∑ t : Fin T, ((Probability.PMF.uniformOfFintype (Fin N)).toOuterMeasure
               {i : Fin N | thresholdRound a b N i (trials₁ t).1 ≠
@@ -1761,7 +1712,6 @@ theorem isAccurateFor_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω 
   intro D hD
   rw [marginal_amplifyReplicability]
   have had_pos : 0 < a - δ := by linarith
-  have hβ₀_nn : 0 ≤ β₀ := ENNReal.toReal_nonneg.trans (hacc D hD)
   let collFail : ℝ := 2 * Real.exp (-2 * (k₁ : ℝ) * δ ^ 2)
   let majFail : ℝ := 2 * Real.exp (-2 * (k₂ : ℝ) * ((a - δ - 1 / 2) / 2) ^ 2)
   let trialFail : ℝ := (T : ℝ) * (collFail + majFail)
@@ -1781,8 +1731,7 @@ theorem isAccurateFor_amplifyReplicability [DecidableEq α] (A : Algorithm X Ω 
         (T : ℝ) * (β₀ / (a - δ)) :=
     pmfPiFin_exists_le A.seed
       (fun r => a - δ ≤ ((seedOutput A D r).toOuterMeasure (good D)ᶜ).toReal)
-      (β₀ / (a - δ)) (div_nonneg hβ₀_nn had_pos.le)
-      (seed_markov_err_lt A D (good D) had_pos (hacc D hD)) T
+      (β₀ / (a - δ)) (seed_markov_err_lt A D (good D) had_pos (hacc D hD)) T
   have hgoodRS_c :
       ((pmfPiFin fun _ : Fin T => A.seed).toOuterMeasure goodRSᶜ).toReal ≤
         (ρ₀ / (1 - θ_acc)) ^ T + (T : ℝ) * (β₀ / (a - δ)) := by
