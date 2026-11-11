@@ -6,14 +6,21 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
+import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
+import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
+import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
+import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
+import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
@@ -28,6 +35,8 @@ import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure.Converse
+import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reachability
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.TransitiveClosure.Converse
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
@@ -38,25 +47,55 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Converse
+import CslibFrontier.Computability.Complexity.Fagin.Ordered.Completeness
+import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
+import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.Kolmogorov.Incompleteness
+import CslibFrontier.Computability.Kolmogorov.MINKT
+import CslibFrontier.Computability.Kolmogorov.MKtP
+import CslibFrontier.Computability.Kolmogorov.SymmetryOfInformation
+import CslibFrontier.Computability.MCSP.AntiChecker
+import CslibFrontier.Computability.MCSP.AntiChecker.Efficient
+import CslibFrontier.Computability.MCSP.FormulaMagnification
+import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
+import CslibFrontier.Computability.MCSP.FormulaMagnification.Locality
+import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
+import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
+import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
+import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
+import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
+import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
+import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
+import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
+import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
+import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
+import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
+import CslibFrontier.Crypto.Computational.OneWay.LiuPass
+import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
 import CslibFrontier.GameTheory.Bimatrix.Existence
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
@@ -67,25 +106,39 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.CFI
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.Infinitary
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.WeisfeilerLeman
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
+import CslibFrontier.Logics.FirstOrder.Locality.Sharp
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.CNF
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.Coloring
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.IndependentSetReduction
+import CslibFrontier.Logics.FirstOrder.Ordered.Problems.SizedGraph
+import CslibFrontier.Logics.FirstOrder.Ordered.Projection.Reduction
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Binary
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Undecidability
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
+import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Infinitary
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
 import CslibFrontier.Logics.Propositional.Resolution.Pigeonhole
+import CslibFrontier.Logics.SecondOrder.Ordered.Grounding
 import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
+import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-!
@@ -419,6 +472,26 @@ register_result "constant-depth-mod-p" where
     satisfies 2·2^ℓ ≤ 5·size whenever ℓ ≥ 1 and 100(((p - 1)ℓ)^d + 1)² ≤ n + 1. Depth and \
     size count every gate, including NOT and constants; nonuniform."
 
+register_result "middle-slice-mod-two" where
+  title := "Razborov's rank method: a middle slice is in P but not in AC⁰[2]"
+  topic := "circuit complexity"
+  sources := [
+    { paper := Razborov1987, theorem := unverified, locator := unverified },
+    { paper := RazborovRudich1997, theorem := unverified, locator := "Section 3.2, p. 27" },
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := unverified,
+      locator := "p. 10:20" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two,
+    Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two
+  ]
+  scope := "The language of bit strings of length n with exactly ⌈n/2⌉ - ⌊√(n + 1)⌋/10 zeros is \
+    decided in polynomial time by a multi-tape Turing machine and is not in AC⁰[2]: no family of \
+    circuits of NOT, unbounded fan-in AND/OR and MOD_2 gates of constant depth and polynomial \
+    size decides it (nonuniform). Proved through a variant of Razborov's GF(2) rank property \
+    (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
+    sketch, and Razborov's original paper was not checked for its hard function."
+
 register_result "braverman" where
   title := "Braverman: polylogarithmic independence fools AC⁰"
   topic := "circuit complexity"
@@ -658,6 +731,55 @@ register_result "partial-mcsp" where
     binary-gate cost. Conditional: the library also refutes ETH (subexponential-sat), so the \
     premise is false; the implications remain valid."
 
+register_result "partial-mcsp-rp-hard" where
+  title := "Hirahara: Partial MCSP is NP-hard under randomized reductions"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Hirahara2022, theorem := "Theorem I.2",
+      locator := "p. 971, \"In particular\"" }
+  ]
+  theorems := [
+    Cslib.PartialMCSP.rpHard,
+    Cslib.PartialMCSP.rpHard_encBinary,
+    Cslib.PartialMCSP.rpReducible_GapCMMSA_PartialMCSP,
+    Cslib.PartialMCSP.NP_subset_BPP_of_mem_BPP,
+    Cslib.PartialMCSP.NP_subset_coRP_of_mem_coRP
+  ]
+  scope := "Every NP language reduces to PartialMCSP (the partial truth table, then the size \
+    threshold in unary, or in binary for rpHard_encBinary) by a polynomial-time randomized \
+    many-one reduction with one-sided error: yes maps to yes always, no to no with probability \
+    at least 2/3. Library route: from the library's GapCMMSA Δ g 1 (NP-hard via label cover) by \
+    the library's own seeded construction and analysis; the source fixes the statement, not the \
+    proof. The inapproximability and average-case forms of Theorem I.2 are not formalized. \
+    The BPP and coRP inclusions are conditional on PartialMCSP being in BPP or coRP; they follow \
+    from the reduction and are not stated separately in the source."
+
+register_result "multi-mcsp-np-hard" where
+  title := "Ilango–Loff–Oliveira: Multi-output MCSP is NP-hard under randomized reductions"
+  topic := "meta-complexity"
+  sources := [
+    { paper := IlangoLoffOliveira2020, theorem := "Theorem 4",
+      locator := "p. 22:5; reduction in Section 4.2, pp. 22:20–22:21" }
+  ]
+  theorems := [
+    Cslib.MultiMCSP.rpHard,
+    Cslib.MultiMCSP.rpHard_pos,
+    Cslib.MultiMCSP.rpReducible_gapSetCover,
+    Cslib.MultiMCSP.NP_subset_BPP_of_mem_BPP,
+    Cslib.MultiMCSP.NP_subset_coRP_of_mem_coRP
+  ]
+  scope := "Every NP language reduces to Multi-output MCSP (n, m and s in unary, then the m \
+    tables) by a polynomial-time randomized many-one reduction with one-sided error: yes maps \
+    to yes always, no to no with probability at least 2/3; the reduction lands in Definition \
+    1's positive instances. Over any De Morgan basis: Boolean.DeMorgan.interpretation is \
+    Definition 1's constant-free AND/OR/NOT basis, Boolean.interpretation the library variant \
+    with constants. Library route: from the library's GapSetCover 3 rather than Trevisan's \
+    bounded Set Cover; soundness by a union bound over small circuits in place of Lemma 16; \
+    windows as OR chains rather than canonical DNFs; the positions of the ground list in \
+    place of its distinct elements. The BPP and coRP inclusions are conditional on Multi-MCSP \
+    being in BPP or coRP; they follow from the reduction and are not stated separately in the \
+    source."
+
 register_result "magnification" where
   title := "McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P \
     from NP"
@@ -677,6 +799,27 @@ register_result "magnification" where
     some 2^n-bit slice of MCSP[n^k] needs more than 2^n·c·(n + 1)^c gates, then NP ⊄ P/poly \
     and P ≠ NP. Size-only lower-bound hypothesis."
 
+register_result "gap-mcsp-magnification" where
+  title := "Oliveira–Pich–Santhanam: N^(1+ε) lower bounds for Gap-MCSP imply NP ⊄ P/poly"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraPichSanthanam2019, theorem := "Theorem 1.4 (ECCC TR18-158 Theorem 4)",
+      locator := unverified }
+  ]
+  theorems := [
+    Cslib.MCSP.not_NP_subset_PPoly_of_gapMCSP_hard,
+    Cslib.MCSP.P_ne_NP_of_gapMCSP_hard,
+    Cslib.MCSP.exists_gapMCSP_separator_of_NP_subset_PPoly
+  ]
+  scope := "If for some ε > 0 and every small enough β > 0 (eventually as β → 0⁺), for \
+    infinitely many n no Boolean function on 2^n-bit truth tables that accepts every \
+    yes-instance and rejects every no-instance of Gap-MCSP[⌊2^(βn)/(10n)⌋₊, ⌊2^(βn)⌋₊] has \
+    De Morgan complexity at most N^(1+ε) (N = 2^n, all operation gates counted), then \
+    NP ⊄ P/poly and P ≠ NP. The source's constant c = 10. Proof route: the \
+    McKay–Murray–Williams circuits for MCSP[s] under NP ⊆ P/poly separate Gap-MCSP[s₁, s₂] \
+    whenever s₁ ≤ s₂; OPS's own proof through the efficient anti-checker (Lemma 4.1, registered \
+    as efficient-anti-checker) is not formalized."
+
 register_result "matrix-multiplication" where
   title := "Matrix multiplication: the exponent is at most 9/4"
   topic := "algebraic complexity"
@@ -693,6 +836,27 @@ register_result "matrix-multiplication" where
     at most c·n^(τ + ε) gates, addition, multiplication and constant gates each charged one, \
     inputs and outputs free; hence ω ≤ 9/4. No uniform generation, explicit constants or \
     integer bit complexity."
+
+register_result "depth-five-imm" where
+  title := "OpenAI: homogeneous depth-five circuits for iterated matrix multiplication"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := OpenAI2026DepthFive,
+      theorem := "Corollary 6.1 (characteristic zero); Theorem 1.1 is its complex case",
+      locator := "§6, p. 19; §1.1, p. 2" }
+  ]
+  theorems := [
+    Cslib.Circuits.DepthFive.exists_forall_rpow_le_size,
+    Cslib.Circuits.DepthFive.rpow_le_size
+  ]
+  scope := "Over every field of characteristic zero and for every n ≥ exp 29200, every \
+    syntactically homogeneous ΣΠΣΠΣ circuit computing IMM_{n,n} as a formal polynomial has at \
+    least n^(√n/400) lower product, middle sum and upper product gates; bottom linear forms \
+    are unrestricted and gates are shared. The count is of the normalized model \
+    Cslib.Circuits.DepthFive.Circuit, which is at most the source's gate count; no formal \
+    conversion from a layered circuit is proved. The source's threshold is unspecified; here \
+    it is exp 29200, not optimized. Lower bound only: no matching construction and no \
+    positive characteristic."
 
 /-! ## Further collected results -/
 
@@ -1009,6 +1173,27 @@ register_result "immerman-vardi" where
     native P under encStructure (unary cardinality, then framed truth tables); malformed \
     table shapes and universes below two are rejected."
 
+register_result "gradel-so-horn-captures-p" where
+  title := "Grädel: SO∃-Horn captures polynomial time on ordered structures with successor"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Gradel2007, theorem := "Theorems 3.2.17–3.2.18 and Exercise 3.2.20",
+      locator := "Section 3.2.3, pp. 147–148" },
+    { paper := Gradel1992, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.hornDefinable_iff_encodedLanguage_mem_P,
+    Cslib.Logic.FO.Ordered.HornDefinable.encodedLanguage_mem_P,
+    Cslib.Logic.FO.Ordered.HornDefinable.of_encodedLanguage_mem_P
+  ]
+  scope := "Queries over a finite relational vocabulary on canonically ordered structures Fin n \
+    with n ≥ 2. HornDefinable asks for one SO∃-Horn sentence with quantifier-free guards over \
+    language (succLanguage L), supplying primitive non-wrapping successor alongside the \
+    canonical numeric symbols (order, BIT, 0, 1 and max); hornDefinable_iff_exists_sentence \
+    identifies this fragment with arbitrary first-order guards over language L. A query is \
+    HornDefinable iff its language is in native P under encStructure; malformed table shapes \
+    and universes below two are rejected."
+
 register_result "fo-tc-nl" where
   title := "FO(TC) is contained in NL on ordered structures"
   topic := "descriptive complexity"
@@ -1045,6 +1230,29 @@ register_result "immerman-nl-capture" where
     (encStructure) is in native NL; positive closures suffice. Malformed table shapes and \
     universes below two are rejected."
 
+register_result "immerman-reach-nl-complete" where
+  title := "Immerman: REACH is NL-complete under ordered first-order reductions"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := "Theorem 3.16 and Exercise 3.20",
+      locator := "Chapter 3, pp. 64–66" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.reduces_Reach_iff_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.exists_fullTupleInterpretation_Reach_of_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.reach_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.stReach_encodedLanguage_mem_NL,
+    Cslib.Logic.FO.Ordered.reach_logSpaceComplete_NL
+  ]
+  scope := "Canonically ordered finite relational structures on Fin n (2 ≤ n) with built-in \
+    ≤, BIT, 0, 1 and max, encoded at encStructure; native multi-tape NL with all-branches \
+    halting. Reach is 0-to-max directed reachability over Language.graph (arbitrary binary \
+    edge relation, self-loops permitted). Every ordered query in native NL reduces to Reach \
+    by one positive-dimensional FullTupleInterpretation (hence Ordered.Reduces), and conversely \
+    via positive FO(TC) pullback. Endpoint normalization covers arbitrary marked (s, t) \
+    including s = t, and Reach is logspace interreducible with STCON (encSTCON). First-order \
+    and quantifier-free projection refinements (≤_fop, ≤_qfp) are not formalized here."
+
 register_result "fo-dtc-l" where
   title := "FO(DTC) is contained in L on ordered structures"
   topic := "descriptive complexity"
@@ -1058,7 +1266,264 @@ register_result "fo-dtc-l" where
     canonical numeric symbols, on Fin n with n ≥ 2, is in native L under encStructure; \
     malformed tables and cardinalities below two are rejected. Deterministic closure is \
     reflexive transitive closure of the deterministic reduct on tuples of fixed width, \
-    nested and at any polarity. The converse L ⊆ FO(DTC) is not formalized."
+    nested and at any polarity. The converse, L ⊆ FO(DTC), is in the entry \
+    immerman-l-capture."
+
+register_result "immerman-l-capture" where
+  title := "Immerman: FO(DTC) captures L on ordered structures"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1987, theorem := "Theorem 4.2", locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.dtcDefinable_iff_encodedLanguage_mem_L
+  ]
+  scope := "Canonically ordered finite structures over a finite relational vocabulary, with \
+    universes Fin n, n ≥ 2, and numeric symbols order, BIT, zero, one and maximum computed \
+    from the size. One FO(DTC) sentence defines the query iff its source-only encoded \
+    language (encStructure) is in native L. Deterministic closure is reflexive transitive \
+    closure of the deterministic reduct on tuples of fixed width. Malformed table shapes and \
+    universes below two are rejected."
+
+register_result "ordered-projection-reducibility" where
+  title := "Immerman–Landau: ordered FO and QF projections compose and refine FO reductions"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := ImmermanLandau1995, theorem := "Proposition 3.7", locator := "Section 3" },
+    { paper := Immerman1999, theorem := "Exercise 2.15(1)", locator := "Chapter 2, p. 36" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.ProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.ProjectionReduces.trans,
+    Cslib.Logic.FO.Ordered.ProjectionReduces.reduces,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.refl,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.trans,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.projectionReduces,
+    Cslib.Logic.FO.Ordered.QFProjectionReduces.reduces
+  ]
+  scope := "Queries on canonically ordered relational structures Fin n with n ≥ 2. Projections \
+    are positive-dimensional full-tuple interpretations whose output relations are decision \
+    trees of numeric guards with constants or single signed input literals at the leaves; \
+    first-order projections allow guards over order, BIT, 0, 1 and max, while quantifier-free \
+    projections require quantifier-free guards over order, non-wrapping successor, 0 and max \
+    without BIT. Both IsProjectionMap and IsQFProjectionMap contain the identity and are \
+    closed under composition (with BIT-free quantifier-free guard pullback via \
+    QFNumeric.onFullTuple); the logspace encoding lift at encStructure is proved in \
+    Classes.LogSpace.FirstOrder.Ordered.Projection, and NP-completeness endpoints are in \
+    immerman-sat-np-complete and ordered-np-complete-problems."
+
+register_result "ordered-sized-graph-qfp" where
+  title := "Ordered IndependentSet, Clique, and VertexCover are pairwise QF-projection equivalent"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Karp1972, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.independentSet_qfProjectionReduces_Clique,
+    Cslib.Logic.FO.Ordered.clique_qfProjectionReduces_IndependentSet,
+    Cslib.Logic.FO.Ordered.independentSet_qfProjectionReduces_VertexCover,
+    Cslib.Logic.FO.Ordered.vertexCover_qfProjectionReduces_IndependentSet,
+    Cslib.Logic.FO.Ordered.clique_qfProjectionReduces_VertexCover,
+    Cslib.Logic.FO.Ordered.vertexCover_qfProjectionReduces_Clique
+  ]
+  scope := "Queries on canonically ordered FO.sizedGraph structures on Fin n (2 ≤ n), where \
+    target set cardinality is the cardinality of the unary relation size. Dimension-1 BIT-free \
+    quantifier-free projections complement off-diagonal edges (guarding the diagonal by numeric \
+    equality x = y) and complement the unary size relation; transitivity yields all six \
+    pairwise QFProjectionReduces reductions."
+
+register_result "ordered-sat-to-threesat-qfp" where
+  title := "Ordered SAT reduces to ThreeSAT via a BIT-free quantifier-free projection"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_ThreeSAT,
+    Cslib.Logic.FO.Ordered.isQFProjection_satToThreeSATInterpretation,
+    Cslib.Logic.FO.Ordered.mem_ThreeSAT_satToThreeSATInterpretation
+  ]
+  scope := "Queries on canonically ordered FO.cnf structures on Fin n (2 ≤ n), where ThreeSAT \
+    requires at most three literals per clause. A dimension-5 BIT-free quantifier-free \
+    projection over order, non-wrapping successor, 0 and max chains positive and negative \
+    literal scans with relay variables and pads unused clause tuples with two-literal \
+    tautologies; each output bit reads at most one input literal. Unconditional NP-completeness \
+    is in ordered-np-complete-problems."
+
+register_result "ordered-sat-to-independent-set-qfp" where
+  title := "Ordered SAT reduces to IndependentSet, Clique, and VertexCover via QF projections"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Karp1972, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_IndependentSet,
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_Clique,
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_VertexCover,
+    Cslib.Logic.FO.Ordered.isQFProjection_satToIndependentSetInterpretation,
+    Cslib.Logic.FO.Ordered.mem_IndependentSet_satToIndependentSetInterpretation
+  ]
+  scope := "A dimension-4 BIT-free quantifier-free projection maps any canonically ordered \
+    FO.cnf structure on Fin n (2 ≤ n) to an FO.sizedGraph structure partitioned into n clause \
+    cliques plus one top clique with a distinguished anchor vertex and target size n + 1; \
+    anchor-to-clause edges test single negated input literals and inter-clause edges enforce \
+    variable consistency. Composing with the dimension-1 sizedGraph projections yields \
+    QFProjectionReduces to Clique and VertexCover; unconditional NP-completeness is in \
+    ordered-np-complete-problems."
+
+register_result "ordered-sat-to-three-coloring-qfp" where
+  title := "Ordered SAT reduces to simple and general 3-colorability via a QF projection"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := GareyJohnson1979, theorem := unverified, locator := unverified },
+    { paper := Sipser2013, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_SimpleThreeColorable,
+    Cslib.Logic.FO.Ordered.sat_qfProjectionReduces_ThreeColorable,
+    Cslib.Logic.FO.Ordered.isQFProjection_satToColoringInterpretation,
+    Cslib.Logic.FO.Ordered.simpleGraph_satToColoring,
+    Cslib.Logic.FO.Ordered.mem_SimpleThreeColorable_satToColoringInterpretation,
+    Cslib.Logic.FO.Ordered.mem_ThreeColorable_satToColoringInterpretation
+  ]
+  scope := "A dimension-6 BIT-free quantifier-free projection over order, non-wrapping \
+    successor, 0 and max maps any canonically ordered FO.cnf structure on Fin n (2 ≤ n) to a \
+    simple loopless undirected Language.graph structure (modeling Theory.simpleGraph on all \
+    inputs) using a palette triangle, literal switches, single-literal activation edges, and \
+    successor-linked 3-vertex OR-gate chains. Simultaneously reduces Ordered.SAT to \
+    Ordered.SimpleThreeColorable and Ordered.ThreeColorable; unconditional NP-completeness is \
+    in ordered-np-complete-problems."
+
+register_result "ordered-np-queries-fagin-and-logspace" where
+  title := "Ordered NP benchmark queries lie in ESO and native NP with logspace gadget reductions"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Fagin1974, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.ESODefinable.of_definable,
+    Cslib.Logic.FO.Ordered.sat_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.threeSAT_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.threeColorable_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.simpleThreeColorable_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.independentSet_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.clique_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.vertexCover_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_ThreeSAT,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_SimpleThreeColorable,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_ThreeColorable,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_IndependentSet,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_Clique,
+    Cslib.Logic.FO.Ordered.sat_logSpaceReducible_VertexCover
+  ]
+  scope := "Pushing unordered existential second-order sentences forward along LHom.sumInl \
+    places Ordered.SAT, Ordered.ThreeSAT, Ordered.ThreeColorable, Ordered.SimpleThreeColorable, \
+    Ordered.IndependentSet, Ordered.Clique, and Ordered.VertexCover in Ordered.ESODefinable and \
+    in native NP under encStructure via the ordered Fagin verifier; lifting their BIT-free \
+    quantifier-free projections yields deterministic LogSpaceReducible reductions at \
+    encStructure. Full ≤_qfp, ≤_fop, ≤_fo and encStructure NP-completeness is in \
+    immerman-sat-np-complete and ordered-np-complete-problems."
+
+register_result "ordered-eso-qfp-grounding" where
+  title := "Ordered relational ESO sentences ground to SAT via BIT-free QF projections"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_SAT_of_orderSentence,
+    Cslib.Logic.ESO.Sentence.isQFProjection_groundQFInterpretation,
+    Cslib.Logic.ESO.Sentence.satisfiable_tupleStructure_groundQFInterpretation_iff,
+    Cslib.Logic.ESO.Sentence.mem_SAT_groundQFInterpretation
+  ]
+  scope := "For any relational language L and existential second-order sentence Φ over \
+    L.sum ESO.orderLanguage, groundQFInterpretation compiles Φ uniformly into a positive-dimension \
+    FullTupleInterpretation L FO.cnf certified by IsQFProjection (BIT-free, over qfNumericLanguage \
+    with ≤, non-wrapping succ, 0, and max). Ground tags are encoded via binary {0, max} prefixes \
+    (MatchBinaryTag), inactive tuples carry self-tautologies, and strict order guards compile to \
+    numeric order comparisons on Fin M.size (2 ≤ M.size), yielding QFProjectionReduces K \
+    Ordered.SAT without machine or complexity imports."
+
+register_result "immerman-sat-np-complete" where
+  title := "Immerman: ordered SAT is NP-complete under BIT-free quantifier-free projections"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified },
+    { paper := Fagin1974, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_SAT_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.projectionReduces_SAT_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.reduces_SAT_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_SAT_of_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.esoDefinable_iff_qfProjectionReduces_SAT,
+    Cslib.Logic.FO.Ordered.sat_npComplete,
+    Cslib.Logic.FO.Ordered.cnf_polyTimeReducible_orderedSAT,
+    Cslib.Logic.FO.Ordered.orderedSAT_polyTimeReducible_cnf
+  ]
+  scope := "Queries on canonically ordered finite relational structures Fin n (2 ≤ n) over a \
+    finite relational vocabulary v, with source-only encodings at encStructure. Combining the \
+    ordered Fagin tableau sentence on a polynomial power structure with BIT-free quantifier-free \
+    projection grounding (ordered-eso-qfp-grounding) characterizes native NP membership at \
+    encStructure and ESODefinable uniformly by QFProjectionReduces (≤_qfp), ProjectionReduces \
+    (≤_fop), or Ordered.Reduces (≤_fo) to Ordered.SAT. At the machine level, cnfToOrdered gives an \
+    explicit polynomial-time reduction from Complexity.SAT (encCNF) to Ordered.SAT (encStructure), \
+    establishing NPComplete encStructure and bidirectional PolyTimeReducible equivalence."
+
+register_result "ordered-np-complete-problems" where
+  title := "Ordered ThreeSAT, 3-coloring, IndependentSet, Clique, and VertexCover are NP-complete"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Karp1972, theorem := unverified, locator := unverified },
+    { paper := GareyJohnson1979, theorem := unverified, locator := unverified },
+    { paper := Immerman1999, theorem := unverified, locator := unverified },
+    { paper := ImmermanLandau1995, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_ThreeSAT_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_SimpleThreeColorable_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_ThreeColorable_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_IndependentSet_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_Clique_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.qfProjectionReduces_VertexCover_iff_encodedLanguage_mem_NP,
+    Cslib.Logic.FO.Ordered.threeSAT_npComplete,
+    Cslib.Logic.FO.Ordered.simpleThreeColorable_npComplete,
+    Cslib.Logic.FO.Ordered.threeColorable_npComplete,
+    Cslib.Logic.FO.Ordered.independentSet_npComplete,
+    Cslib.Logic.FO.Ordered.clique_npComplete,
+    Cslib.Logic.FO.Ordered.vertexCover_npComplete,
+    Cslib.Logic.FO.Ordered.threeSAT_polyTimeReducible_orderedThreeSAT,
+    Cslib.Logic.FO.Ordered.orderedThreeSAT_polyTimeReducible_threeSAT,
+    Cslib.Logic.FO.Ordered.threeColoring_polyTimeReducible_orderedSimpleThreeColorable,
+    Cslib.Logic.FO.Ordered.orderedSimpleThreeColorable_polyTimeReducible_threeColoring,
+    Cslib.Logic.FO.Ordered.threeColoring_polyTimeReducible_orderedThreeColorable,
+    Cslib.Logic.FO.Ordered.orderedThreeColorable_polyTimeReducible_threeColoring,
+    Cslib.Logic.FO.Ordered.independentSet_polyTimeReducible_orderedIndependentSet,
+    Cslib.Logic.FO.Ordered.orderedIndependentSet_polyTimeReducible_independentSet,
+    Cslib.Logic.FO.Ordered.clique_polyTimeReducible_orderedClique,
+    Cslib.Logic.FO.Ordered.orderedClique_polyTimeReducible_clique,
+    Cslib.Logic.FO.Ordered.vertexCover_polyTimeReducible_orderedVertexCover,
+    Cslib.Logic.FO.Ordered.orderedVertexCover_polyTimeReducible_vertexCover
+  ]
+  scope := "Composing ≤_qfp-hardness of Ordered.SAT with the BIT-free quantifier-free gadget \
+    projections and downward NP closure under Ordered.Reduces characterizes native NP membership \
+    at encStructure by QFProjectionReduces, ProjectionReduces, and Ordered.Reduces to each of \
+    Ordered.ThreeSAT, Ordered.SimpleThreeColorable, Ordered.ThreeColorable, \
+    Ordered.IndependentSet, Ordered.Clique, and Ordered.VertexCover. Lifting to encStructure and \
+    combining with Cook–Levin / Karp hardness proves NPComplete encStructure for all six \
+    queries and explicit bidirectional PolyTimeReducible bridges to Complexity.ThreeSAT, \
+    Complexity.ThreeColoring, Complexity.IndependentSet, Complexity.Clique, and \
+    Complexity.VertexCover."
 
 register_result "trakhtenbrot" where
   title := "Trakhtenbrot: finite satisfiability is undecidable"
@@ -1080,12 +1545,12 @@ register_result "trakhtenbrot" where
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
     Corollaries: every r.e. set of finitely valid formulas misses one, so no sound proof \
-    system with a decidable proof relation proves every finitely valid formula. Libkin's \
-    form for a fixed vocabulary with a binary relation symbol and the transfer to Mathlib \
-    sentences are separate entries."
+    system with a decidable proof relation proves every finitely valid formula. The \
+    sharpening to a fixed vocabulary containing a relation symbol of arity at least two and \
+    the transfer to Mathlib sentences are separate entries."
 
 register_result "trakhtenbrot-binary" where
-  title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
+  title := "Trakhtenbrot's theorem for a vocabulary with a relation symbol of arity at least two"
   topic := "descriptive complexity"
   sources := [
     { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
@@ -1096,12 +1561,14 @@ register_result "trakhtenbrot-binary" where
     Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_not_of_rePred,
     Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_unprovable
   ]
-  scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
-    symbol, no computable procedure is correct for finite satisfiability on the raw \
-    sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
-    r.e. set of finitely valid sentences misses one over σ, and no sound proof system \
-    with a decidable proof relation proves them all. Raw library-local syntax with finite \
-    nonempty models; the form for Mathlib's L.Sentence is the entry trakhtenbrot-sentence."
+  scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a symbol of \
+    arity at least two, no computable procedure is correct for finite satisfiability on the \
+    raw sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
+    r.e. set of finitely valid sentences misses one over σ, and no sound proof system with a \
+    decidable proof relation proves them all. Libkin's Theorem 9.2 and Corollary 9.3 state \
+    the binary case; higher arities pad binary atoms by repeating the second argument. Raw \
+    library-local syntax with finite nonempty models; the form for Mathlib's L.Sentence is \
+    the entry trakhtenbrot-sentence."
 
 register_result "trakhtenbrot-sentence" where
   title := "Trakhtenbrot's theorem for Mathlib sentences"
@@ -1117,11 +1584,39 @@ register_result "trakhtenbrot-sentence" where
     FirstOrder.Language.Sentence.exists_finValid_unprovable
   ]
   scope := "Mathlib L.Sentence over a relational language with finitely many relation \
-    symbols; the negative results need a binary symbol. Sentences are coded by \
-    primcodableRaw, a scoped instance, independent of the symbol encoding up to primitive \
-    recursive equivalence. FinSat and FinValid quantify over finite nonempty structures. \
-    Function symbols, infinite vocabularies and vocabularies whose only non-unary symbols \
-    have arity at least three are not covered."
+    symbols; the negative results take a relation symbol of arity at least two (Libkin's \
+    Theorem 9.2 and Corollary 9.3 state the binary case; higher arities pad binary atoms by \
+    repeating the second argument). Sentences are coded by primcodableRaw, a scoped \
+    instance, independent of the symbol encoding up to primitive recursive equivalence. \
+    FinSat and FinValid quantify over finite nonempty structures. Function symbols and \
+    infinite vocabularies are not covered; the decidable monadic converse and dichotomy are \
+    in trakhtenbrot-dichotomy."
+
+register_result "trakhtenbrot-dichotomy" where
+  title := "Trakhtenbrot–Löwenheim: the decidability dichotomy for finite satisfiability"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Lowenheim1915, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.computablePred_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_not_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finSat_of_monadic,
+    FirstOrder.Language.Sentence.computablePred_finValid_of_monadic
+  ]
+  scope := "Mathlib L.Sentence over a relational language with finitely many relation \
+    symbols, coded by primcodableRaw. Finite satisfiability and finite validity (over \
+    finite nonempty structures) are decidable—and finite validity and finite \
+    unsatisfiability are r.e.—if and only if every relation symbol has arity at most one \
+    (allowing both unary and nullary symbols). On the monadic side, finite satisfiability \
+    and finite validity are primitive recursive by checking RawFormula.SatOnFin below the \
+    explicit bound max q 1 * 2 ^ k proved in monadic-small-model (Löwenheim is cited for \
+    decidability of the monadic class only). Function symbols and infinite vocabularies \
+    are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
@@ -1226,6 +1721,44 @@ register_result "zero-one-law-relational" where
     extension theory fails, although the 0-1 law still holds by replacing the symbol with \
     ⊥ or ⊤ (it is a.s. empty or full); that reduction is not formalized. Unlabelled \
     structures and probabilities depending on n are not covered."
+
+register_result "kolaitis-vardi-zero-one-law" where
+  title := "Kolaitis–Vardi: the 0-1 law for finite-variable infinitary logic L^k_∞ω"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := KolaitisVardi1992, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.infinitary_zero_one_law_of_finset,
+    Cslib.Logic.FO.graph.isPebbleBackAndForth_of_satisfies_extensionAxiom_lt,
+    Cslib.Logic.FO.graph.binomialRandom_infinitary_zero_one_law,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_infinitary_one_iff_radoGraph,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_infinitary_zero_iff_radoGraph,
+    Cslib.Logic.FO.graph.randomGraph_infinitary_zero_one_law,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_infinitary_one_iff_tendsto_randomGraphProb,
+    Cslib.Logic.FO.graph.not_exists_infinitaryFormula_of_not_tendsto_binomialRandom,
+    Cslib.Logic.FO.graph.tendsto_binomialRandom_real_connected,
+    Cslib.Logic.FO.Relational.isPebbleBackAndForth_of_hasExtension_lt,
+    Cslib.Logic.FO.Relational.uniformStructure_infinitary_zero_one_law,
+    Cslib.Logic.FO.Relational.bernoulliStructure_infinitary_zero_one_law,
+    Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_one_iff_model,
+    Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_zero_iff_model,
+    Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_one_iff_uniformStructure,
+    Cslib.Logic.FO.Relational.not_exists_infinitaryFormula_even_card
+  ]
+  scope := "Closed formulas of the k-variable infinitary logic L^k_∞ω (at any disjunction index \
+    universe w and any quantifier depth) over Mathlib's language of graphs under G(Fin n, p) \
+    (0 < p < 1) and G(n, 1/2), and over finite relational vocabularies with no nullary symbols \
+    under uniformStructure n and bernoulliStructure p n (0 < p R < 1). Because moving one of k \
+    pebbles leaves at most k - 1 fixed pebbles, the finitely many extension axioms of arity \
+    strictly below k make PartialIsoOn a k-pebble back-and-forth invariant. In G(Fin n, p), the \
+    limit is 1 iff the sentence holds in SimpleGraph.radoGraph (independent of p), yielding \
+    almost-sure connectivity as a corollary of L^3_∞ω definability. KolaitisVardi1992 is cited \
+    for the uniform L^k_∞ω 0-1 law; the constant-probability G(Fin n, p) and per-symbol \
+    bernoulliStructure extensions combine their pebble-game argument with the repository's \
+    constant-probability extension bounds. Fixed-point 0-1 laws (not needed separately once \
+    FO(LFP) embeds into L^ω_∞ω, which is not yet formalized), probabilities depending on n, and \
+    unlabelled structures are not covered."
 
 register_result "buchi-elgot-trakhtenbrot" where
   title := "Büchi–Elgot–Trakhtenbrot: MSO-definable languages are the regular languages"
@@ -1365,6 +1898,133 @@ register_result "bijective-pebble-games-c-k" where
     empty structures. Cai, Furer and Immerman state the characterization on graphs, for the \
     equivalent game in which the players exchange sets of equal size."
 
+register_result "immerman-lander" where
+  title := "The Immerman–Lander theorem: color refinement characterizes two-variable counting \
+    logic C²"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := ImmermanLander1990, theorem := unverified, locator := unverified },
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 5.2 (k = 1 case)",
+      locator := "Section 5" },
+    { paper := Immerman1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_graph_empty_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_singleton_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_univ_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_iff_card_add_card,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_card_add_card
+  ]
+  scope := "Finite LocallyFinite simple graphs over FirstOrder.Language.graph with the trivial \
+    initial coloring fun _ => (). Round-by-round correspondence between Hella's bijective \
+    2-pebble game (with 0, 1 or 2 placed pebbles) and color refinement: sentences of quantifier \
+    rank at most n + 1 correspond to round-n color histograms (for nonempty vertex types, since \
+    CountingFormula.Realize takes a total assignment Fin 2 → V), and one-variable formulas of \
+    rank at most n + 1 correspond to round-(n + 1) vertex colors paired with round-n histograms. \
+    Full C²-equivalence reduces to round |V| + |W|. The k-dimensional generalization to C^(k+1) \
+    is in weisfeiler-leman-counting; colored graphs with arbitrary initial colorings are not \
+    formalized."
+
+register_result "weisfeiler-leman-counting" where
+  title := "Cai–Fürer–Immerman: k-dimensional Weisfeiler–Leman characterizes (k + 1)-variable \
+    counting logic C^(k+1)"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 5.2", locator := "Section 5" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_graph_range_castSucc_iff,
+    Cslib.Logic.FO.bijPebbleWinsForever_graph_range_castSucc_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_empty_of_wlHistogram_eq,
+    Cslib.Logic.FO.wlHistogram_eq_of_bijPebbleWins_graph_empty,
+    Cslib.Logic.FO.bijPebbleWinsForever_graph_empty_iff_wlHistogram_eq,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_castSucc_iff_card_pow_add,
+    Cslib.Logic.FO.realize_countingFormula_iff_of_wlHistogram_eq,
+    Cslib.Logic.FO.wlHistogram_eq_of_forall_realize_countingFormula_empty_le,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_wlHistogram_eq,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_wlHistogram_card_pow_add,
+    Cslib.Logic.FO.forall_wlColoring_one_eq_iff,
+    Cslib.Logic.FO.forall_wlHistogram_one_eq_iff
+  ]
+  scope := "Uncolored finite simple graphs over FirstOrder.Language.graph with no LocallyFinite \
+    or DecidableRel assumption, for every dimension k : ℕ. Folklore k-WL colors k-tuples from \
+    their ordered atomic isomorphism type and refines by the multiset of (k + 1)-tuple step \
+    profiles. Two k-tuples get the same round-n color iff they agree on C^(k+1) formulas of \
+    quantifier rank at most n in the first k variables, and across all ranks iff they agree in \
+    round |V|^k + |W|^k. For nonempty graphs, C^(k+1) sentence equivalence equals k-WL histogram \
+    equality in all rounds and in round |V|^k + |W|^k, with a +k quantifier-rank shift for \
+    individual rounds. The Cai–Fürer–Immerman lower-bound graphs separating C^(k+1) and k-WL \
+    from isomorphism are in cai-furer-immerman-graphs; colored graphs are not formalized."
+
+register_result "cai-furer-immerman-graphs" where
+  title := "Cai–Fürer–Immerman lower-bound graphs separating C^(k+1) and k-WL from graph \
+    isomorphism"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := unverified, locator := "Section 6" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWinsForever_cfiEven_cfiOdd,
+    Cslib.Logic.FO.bijPebbleWins_cfiEven_cfiOdd,
+    Cslib.Logic.FO.pebbleWinsForever_cfiEven_cfiOdd,
+    Cslib.Logic.FO.realize_countingFormula_cfiEven_iff_cfiOdd,
+    Cslib.Logic.FO.realize_formula_cfiEven_iff_cfiOdd,
+    Cslib.Logic.FO.wlHistogram_cfiGraph_eq,
+    Cslib.Logic.FO.wlHistogram_cfiEven_eq_cfiOdd_of_le,
+    Cslib.Logic.FO.wlHistogram_cfiEven_eq_cfiOdd,
+    Cslib.Logic.FO.colorHistogram_cfiEven_eq_cfiOdd,
+    Cslib.Logic.FO.bijPebbleWinsForever_cfiGraph_empty,
+    Cslib.Logic.FO.realize_countingFormula_cfiGraph_iff,
+    Cslib.Logic.FO.exists_nonisomorphic_wlHistogram_eq
+  ]
+  scope := "Uncolored finite simple graphs over FirstOrder.Language.graph. For every k : ℕ, \
+    cfiEven k and cfiOdd k are built over the complete base graph K_(2k+4) with parity gadgets \
+    over ZMod 2 and triangle-apex uncoloring on each edge pair; their isomorphism \
+    classification and non-isomorphism are in cai-furer-immerman-isomorphism. Duplicator wins \
+    the infinite (k + 1)-pebble bijective game on cfiEven k and cfiOdd k, so they agree on all \
+    C^(k+1) and FO^(k+1) sentences and have identical d-WL histograms in every round for all \
+    d ≤ k. Using K_(2k+4) avoids degree-3 expanders at the cost of graphs of size exponential \
+    in k rather than O(k); the linear-size expander lower bound is not formalized."
+
+register_result "infinitary-fo-pebble-games" where
+  title := "Pebble-game characterizations and expressiveness of L^k_∞ω and C^k_∞ω"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Theorem 11.5 and Proposition 11.8",
+      locator := "Section 11.2, pp. 216–218" },
+    { paper := KolaitisVardi1992, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.pebbleWins_iff_forall_infinitaryFormula_rankLE,
+    Cslib.Logic.FO.pebbleWinsForever_iff_forall_infinitaryFormula,
+    Cslib.Logic.FO.exists_isPebbleBackAndForth_iff_forall_infinitaryFormula,
+    Cslib.Logic.FO.bijPebbleWins_iff_forall_infinitaryCountingFormula_rankLE,
+    Cslib.Logic.FO.bijPebbleWinsForever_iff_forall_infinitaryCountingFormula,
+    Cslib.Logic.FO.forall_realize_infinitaryFormula_iff_forall_realize,
+    Cslib.Logic.FO.forall_realize_infinitaryCountingFormula_iff_forall_realize,
+    Cslib.Logic.FO.FiniteVariable.realize_reachableInfinitary,
+    Cslib.Logic.FO.FiniteVariable.realize_connectedInfinitary_iff_connected,
+    Cslib.Logic.FO.FiniteVariable.realize_evenCardInfinitary,
+    Cslib.Logic.FO.not_exists_infinitaryFormula_even_card
+  ]
+  scope := "k-variable infinitary logics L^k_∞ω (InfinitaryFormula) and C^k_∞ω \
+    (InfinitaryCountingFormula) with arbitrary indexed disjunctions in Type w. For arbitrary \
+    languages and arbitrary (possibly infinite) structures M : Type w₁, N : Type w₂, Duplicator \
+    wins the n-round or infinite k-pebble game iff the positions satisfy the same L^k_∞ω \
+    formulas of quantifier rank at most n (respectively all L^k_∞ω formulas) at index universe \
+    max w₁ w₂; for finite structures, the bijective k-pebble game similarly characterizes \
+    C^k_∞ω, and L^k_∞ω / C^k_∞ω equivalence over finite relational vocabularies collapses to \
+    finitary FO^k / C^k equivalence. Expressiveness separations: graph reachability on all \
+    simple graphs and connectivity on all nonempty simple graphs (Preconnected unconditionally) \
+    are definable in L^3_∞ω, while EVEN is definable in C^1_∞ω on finite structures and not \
+    definable in L^k_∞ω for any k."
+
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"
   topic := "descriptive complexity"
@@ -1402,7 +2062,8 @@ register_result "monadic-small-model" where
     with a nonempty model has one on Fin (n + 1) with n + 1 ≤ max q 1 * 2 ^ k for k unary \
     symbols, through a substructure of the given model. The explicit bound and its proof by \
     Ehrenfeucht–Fraïssé games are proved here; Löwenheim is cited for the small model \
-    property only. The decision procedure for finite satisfiability is not yet formalized."
+    property only. The resulting decision procedure and dichotomy for finite satisfiability \
+    are in trakhtenbrot-dichotomy."
 
 register_result "connectivity-not-fo" where
   title := "Connectivity is not first-order definable"
@@ -1498,8 +2159,38 @@ register_result "transitive-closure-not-fo" where
   scope := "Finite structures of the pure language of graphs, by Gaifman locality. No formula \
     in two free variables defines the reflexive–transitive or transitive closure of the \
     edge relation, or reachability in finite simple graphs; on the successor relation of \
-    Fin N, rank q forces N ≤ 2·3^(q+1). Any Gaifman radius for rank n is at least \
-    2^(n-1); the exact rank 2^n - 1 is not formalized. Constants are not claimed sharp."
+    Fin N, rank q forces N ≤ 2·3^(q+1). Any Gaifman radius on finite simple graphs for \
+    rank n is at least 2^(n-1) (exact-locality-ranks gives the exact bound 2^n - 1 over \
+    directed graphs with self-loops). Constants are not claimed sharp."
+
+register_result "exact-locality-ranks" where
+  title := "Exact Hanf (2^(n-1) - 1) and Gaifman (2^n - 1) locality ranks of first-order logic"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Exercises 4.10 and 4.11",
+      locator := "Chapter 4 (pp. 63–64)" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Locality.NbhdIso.duplicatorWins_of_equiv_two_pow,
+    Cslib.Logic.FO.Locality.NbhdIso.duplicatorWins_of_two_pow,
+    Cslib.Logic.FO.Locality.NbhdIso.realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.NbhdIso.formula_realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.HanfEquiv.duplicatorWins_of_two_pow,
+    Cslib.Logic.FO.Locality.HanfEquiv.realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.HanfEquiv.formula_realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.realize_sentence_iff_of_nbhdIso_two_pow,
+    Cslib.Logic.FO.Locality.exists_nbhdIso_realize_loopReach,
+    Cslib.Logic.FO.Locality.two_pow_sub_one_le_of_gaifman_radius,
+    Cslib.Logic.FO.Locality.exists_hanfEquiv_sentence_not_realize_iff,
+    Cslib.Logic.FO.Locality.exists_hanfEquiv_formula_not_realize_iff,
+    Cslib.Logic.FO.Locality.two_pow_pred_sub_one_le_of_hanf_sentence_radius,
+    Cslib.Logic.FO.Locality.two_pow_pred_sub_one_le_of_hanf_radius
+  ]
+  scope := "Finite structures. Gaifman locality holds at radius 2^n - 1 and Hanf locality (for \
+    nonempty M) holds at radius 2^(n-1) - 1, giving Duplicator the n-round game in any \
+    language and formula/sentence agreement in relational languages. Matching lower bounds \
+    over Mathlib's language of graphs (interpreted via relStructure as directed graphs with \
+    self-loops) show that both radii are pointwise minimal across all quantifier ranks."
 
 register_result "fo-tc-strict" where
   title := "FO(TC) is strictly more expressive than FO on finite structures"
@@ -1530,6 +2221,7 @@ register_result "color-refinement" where
     SimpleGraph.isGreatest_ker_stableColoring,
     SimpleGraph.not_exists_iso_of_colorHistogram_ne,
     SimpleGraph.isEmpty_iso_of_colorHistogram_ne,
+    SimpleGraph.forall_refinementColoring_eq_iff,
     SimpleGraph.forall_colorHistogram_eq_iff,
     SimpleGraph.IsRegularOfDegree.colorHistogram_eq
   ]
@@ -1538,8 +2230,57 @@ register_result "color-refinement" where
     partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
     test is incomplete (equal-order d-regular graphs). The correspondence with \
-    two-variable counting logic C² is not formalized. No k-dimensional \
-    Weisfeiler–Leman, fractional isomorphism or certified algorithm."
+    two-variable counting logic C² on uncolored simple graphs is in immerman-lander, and \
+    folklore k-dimensional Weisfeiler–Leman is in weisfeiler-leman. Fractional isomorphism and a \
+    certified algorithm are not formalized."
+
+register_result "weisfeiler-leman" where
+  title := "k-dimensional Weisfeiler–Leman: partition stabilization, soundness and two-graph \
+    stabilization"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := unverified, locator := "Section 5" }
+  ]
+  theorems := [
+    SimpleGraph.ker_wlColoring_eq,
+    SimpleGraph.ker_stableWLColoring,
+    SimpleGraph.Iso.wlColoring_comp,
+    SimpleGraph.Iso.wlHistogram_eq,
+    SimpleGraph.isEmpty_iso_of_wlHistogram_ne,
+    SimpleGraph.forall_wlColoring_eq_iff,
+    SimpleGraph.forall_wlHistogram_eq_iff
+  ]
+  scope := "Uncolored finite simple graphs ([Fintype V], with no LocallyFinite or DecidableRel \
+    assumption), for every dimension k : ℕ. Folklore k-WL colors Fin k → V by ordered atomic \
+    isomorphism type at round 0 and by the multiset over all v : V of the atomic type of \
+    Fin.snoc u v paired with the k single-coordinate replacement colors. The partition \
+    stabilizes from round |V|^k - k₀ on, is isomorphism-invariant, and two-graph tuple or \
+    histogram agreement in all rounds reduces to round |V|^k + |W|^k. The logical correspondence \
+    with C^(k+1) is in weisfeiler-leman-counting, and the Cai–Fürer–Immerman lower-bound graphs \
+    are in cai-furer-immerman-graphs and cai-furer-immerman-isomorphism; initial tuple \
+    colorings and certified complexity bounds are not formalized."
+
+register_result "cai-furer-immerman-isomorphism" where
+  title := "Cai–Fürer–Immerman graphs over K_m: twist-parity isomorphism classification"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := CaiFurerImmerman1992, theorem := unverified, locator := "Section 6" }
+  ]
+  theorems := [
+    SimpleGraph.isEmpty_iso_cfiGraph_of_sum_ne,
+    SimpleGraph.not_nonempty_iso_cfiGraph_of_sum_ne,
+    SimpleGraph.nonempty_iso_cfiGraph_iff_sum_eq,
+    SimpleGraph.isEmpty_iso_cfiEven_cfiOdd,
+    SimpleGraph.not_nonempty_iso_cfiEven_cfiOdd
+  ]
+  scope := "Uncolored finite simple Cai–Fürer–Immerman graphs cfiGraph m f over the complete \
+    base graph K_m with twist f : Fin m → ZMod 2. Each edge pair is joined to an apex vertex so \
+    that triangle membership separates edge and apex vertices from parity-gadget vertices \
+    without vertex colors. Twisting f along an edge of K_m yields an isomorphic graph, and for \
+    3 ≤ m two graphs cfiGraph m f and cfiGraph m g are isomorphic iff ∑ v, f v = ∑ v, g v; in \
+    particular cfiEven k and cfiOdd k over K_(2k+4) are non-isomorphic. Indistinguishability \
+    in C^(k+1) and k-WL is in cai-furer-immerman-graphs; expander base graphs of size O(k) are \
+    not formalized."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
@@ -1562,3 +2303,636 @@ register_result "translational-time-hierarchy" where
     the source lemma is the translation method, not this statement. Only the bounds n^a and \
     2^n are covered, not arbitrary time-constructible t, and this is not W. J. Paul's \
     fixed-tape hierarchy."
+
+register_result "liu-pass" where
+  title := "Liu–Pass: one-way functions exist iff time-bounded Kolmogorov complexity is mildly \
+    hard on average"
+  topic := "meta-complexity"
+  sources := [
+    { paper := LiuPass2020, theorem := "Theorem 3.1",
+      locator := "Section 3, p. 9 of arXiv:2009.11514v1" }
+  ]
+  theorems := [
+    Cslib.Crypto.exists_oneWay_iff_exists_mildlyHardOnAverage_timeBoundedNat,
+    Cslib.Crypto.exists_oneWay_iff_exists_mildlyHardOnAverageENat_timeBounded,
+    Cslib.Crypto.exists_oneWay_iff_exists_forall_mildlyHardOnAverage_timeBoundedNat,
+    Cslib.Crypto.exists_oneWay_iff_forall_exists_mildlyHardOnAverageToApprox_clog_timeBoundedNat,
+    Cslib.Crypto.exists_oneWay_iff_forall_exists_mildlyHardOnAverageToApprox_timeBoundedNat
+  ]
+  scope := "Uniform one-way functions on bit strings and mild average-case hardness against \
+    uniform strict PPT heuristics, for the library's multi-tape K^t. Item (b) takes a \
+    polynomial clock p(n) >= n + 1 where the source writes t(n) > 0. Item (c) and the \
+    threshold consequence are proved only in the polynomial-threshold form (some p, every \
+    t >= p), with approximation windows d floor(log n) and d ceil(log n); the source's \
+    near-linear range t(n) >= (1 + eps) n is not formalized."
+
+register_result "kabanets-cai" where
+  title := "Kabanets–Cai: if MCSP is in BPP, there are no one-way functions"
+  topic := "meta-complexity"
+  sources := [
+    { paper := KabanetsCai2000, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Crypto.not_oneWay_of_MCSP_mem_BPP,
+    Cslib.Crypto.not_oneWay_of_MCSP_mem_P,
+    Cslib.Crypto.not_pseudorandomFunction_of_MCSP_mem_BPP
+  ]
+  scope := "Conditional. MCSP is the total truth-table language with De Morgan circuits \
+    counting all gates, encoded as the table followed by the threshold in binary, and the \
+    hypothesis is a bounded-error polynomial-time decider at all thresholds. Every keyed \
+    family computable in polynomial time is then distinguished from a random function by a \
+    uniform strict oracle PPT adversary with advantage at least 1/4, so no uniform one-way \
+    function on bit strings exists."
+
+register_result "formula-magnification" where
+  title := "Oliveira–Santhanam: approximate-MCSP formula lower bounds above N polylog N give \
+    NP ⊄ Formula[poly]"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 1(i) / Theorem 17(i) and Lemma 16",
+      locator := "ECCC TR18-139, Section 1.2, p. 5; Section 3.1, pp. 14–15" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.not_NP_subset_FormulaPolyOn_of_approxMCSP_poly_hard,
+    Cslib.Circuits.Boolean.not_NP_subset_FormulaPolyOn_of_approxMCSP_hard
+  ]
+  scope := "Conditional. De Morgan formulas measured by leaf size; approximate (1, 1 - 1/k)-MCSP \
+    with s₁ <= s₂, integer k >= 1 and a non-strict agreement bound in the no-set. The \
+    hypothesis is that for every c some 2^n-bit slice has no separating formula of leaf size \
+    (2^n + 1) c (n + 1)^c (polynomially bounded s₂ and k), or the query-length analogue for \
+    general parameters. The conclusion is that NP for the succinct MCSP encoding is not \
+    contained in polynomial-size formulas."
+
+register_result "formula-magnification-stretched" where
+  title := "Oliveira–Santhanam: N^(1+ε) approximate-MCSP formula lower bounds give NP formula \
+    lower bounds of size 2^(m^δ)"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 17(ii)",
+      locator := "ECCC TR18-139, Section 3.1, p. 15" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_NP_not_isBigO_formulaSize_of_approxMCSP_poly_hard,
+    Cslib.Circuits.Boolean.exists_pos_not_isBigO_formulaSize_of_approxMCSP_hard
+  ]
+  scope := "Conditional. Polynomially bounded s₂ and k; the hypothesis is approximate-MCSP \
+    formula leaf size above N^(1 + eps), N = 2^n, at arbitrarily large n. The conclusion gives \
+    some delta > 0 such that a binary NP language (and every language agreeing with succinct \
+    MCSP) has formula size not O(2^(m^delta))."
+
+register_result "formula-magnification-subexp" where
+  title := "Oliveira–Santhanam: approximate-MCSP formula lower bounds with subexponential \
+    parameters give NP ⊄ Formula[poly]"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 17(iii)",
+      locator := "ECCC TR18-139, Section 3.1, p. 15" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.not_NP_subset_FormulaPolyOn_of_approxMCSP_subexp_hard,
+    Cslib.Circuits.Boolean.not_NP_subset_FormulaPolyOn_of_approxMCSP_rpow_hard
+  ]
+  scope := "Conditional. Subexponentially bounded s₂ and k; the hypothesis is approximate-MCSP \
+    formula leaf size above 2^(n + n/d) for a fixed d > 0, or above N^(1 + eps), at \
+    arbitrarily large n. The conclusion is that NP for the succinct MCSP encoding is not \
+    contained in polynomial-size formulas."
+
+register_result "formula-magnification-average-case" where
+  title := "Oliveira–Santhanam: one-sided zero-error average-case formula lower bounds for MCSP \
+    give NP ⊄ Formula[poly]"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 27",
+      locator := "ECCC TR18-139, Section 3.3, p. 21" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_zero_error_average_case_subexp_hard,
+    Cslib.Circuits.Boolean.not_mem_FormulaPoly_of_zero_error_average_case_subexp_hard
+  ]
+  scope := "Conditional, for De Morgan formulas only. Subexponentially bounded s; average-case \
+    solvers are one-sided formulas accepting every yes-instance of MCSP[s] and at most \
+    2^(2^n - n) truth tables, with the lower bound 2^(n/d) for fixed d > 0 at arbitrarily \
+    large n. The conclusion is a binary NP language without polynomial-size formulas, weaker \
+    than the source's 2^Omega(n)."
+
+register_result "formula-magnification-ternary" where
+  title := "Oliveira–Santhanam: sublinear zero-error average-case formula lower bounds for \
+    MCSP[2^√n] imply NP ⊄ Formula[poly]"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 5",
+      locator := "ECCC TR18-139, Section 1.2, p. 8; Appendix A, Definition 43, p. 34" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_half_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_zero_error_average_case_sublinear_hard
+  ]
+  scope := "If no nonuniform family of ternary De Morgan formula devices (an unknown mask and an \
+    answer formula) with o(2^n) total leaves solves MCSP[⌊2^√n⌋] on 2^n-bit truth tables with \
+    zero error, answering ? on at most a 1/n fraction of truth tables for every large n \
+    (Definition 43), then some binary NP language has no polynomial-size De Morgan formulas; \
+    the general form takes any subexponential threshold. Circuit size counts every De Morgan \
+    gate. Conditional: no formula lower bound for MCSP is proved."
+
+register_result "formula-magnification-locality" where
+  title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: the Oliveira–Santhanam formula \
+    magnification reduction is local"
+  topic := "meta-complexity"
+  sources := [
+    { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+      theorem := "Proposition 63, [OS18] MCSP bullet",
+      locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_oracleFormula_separating_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP_real_poly
+  ]
+  scope := "MCSP[(s, 0), (s, δ)] on N = 2^n-bit truth tables is computed by De Morgan formulas \
+    with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
+    N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
+    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: for the [q, ℓ, a]-Circuit classes \
+    (LocalCircuitClass) the Gap-MCSP [OPS19] bullet is registered as gap-mcsp-oracle-circuits; \
+    the other bullets of Proposition 63 and the locality barrier (Theorem 59) are not formalized."
+
+register_result "murray-williams" where
+  title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
+  topic := "meta-complexity"
+  sources := [
+    { paper := MurrayWilliams2017, theorem := "Theorems 1.6 and 4.1",
+      locator := "Section 1, p. 5; Section 4.1, p. 13" }
+  ]
+  theorems := [
+    Cslib.Complexity.EXP_eq_NEXP_of_MCSP_npHard_of_EXP_subset_PPoly,
+    Cslib.Complexity.not_EXP_subset_NP_inter_PPolyOn_of_MCSP_npHard,
+    Cslib.Complexity.EXP_ne_NP_inter_PPolyOn_of_MCSP_npHard,
+    Cslib.Complexity.EXP_ne_ZPP_of_MCSP_npHard
+  ]
+  scope := "Conditional. The hypothesis is NP-hardness of the total truth-table MCSP (binary \
+    threshold, all gates counted) under polynomial-time many-one reductions; Theorem 4.1 \
+    assumes only reductions from sparse NP languages, so the formalization is its full-NP-hard \
+    specialization. Classes are over bit strings with native multi-tape machines; \
+    EXP ≠ NP ∩ P/poly uses the library's nondeterministic time hierarchy."
+
+register_result "anti-checker" where
+  title := "Small anti-checkers for functions without small circuits"
+  topic := "meta-complexity"
+  sources := [
+    { paper := LiptonYoung1994, theorem := unverified, locator := unverified },
+    { paper := OliveiraPichSanthanam2019, theorem := "Lemma 4.7 (ordered-tuple variant)",
+      locator := "Section 4" }
+  ]
+  theorems := [
+    Cslib.MCSP.exists_isAntiChecker,
+    Cslib.MCSP.exists_lt_complexityOn,
+    Cslib.MCSP.exists_ofFunction_notMem
+  ]
+  scope := "Unconditional, nonuniform existence. For m > 0, if no m members of a family of \
+    fewer than 2^b functions on at most 2^m inputs have f as strict majority, some set of at \
+    most 16 b inputs refutes every member. For circuits with n <= m: if f needs more than m s \
+    gates plus those of strict majority on m bits, f needs more than s gates on some set of at \
+    most 16 b inputs. Ordered tuples give the share 1/16 \
+    where the source gets 1/(2m). The efficient anti-checker lemma under NP ⊆ P/poly \
+    (Oliveira–Pich–Santhanam Lemma 4.1) is registered as efficient-anti-checker."
+
+register_result "efficient-anti-checker" where
+  title := "Oliveira–Pich–Santhanam: under NP ⊆ P/poly, anti-checkers are generated by circuits of \
+    size 2^(n + O(βn))"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraPichSanthanam2019, theorem := "Lemma 4.1 (ECCC TR18-158 Lemma 17)",
+      locator := "ECCC TR18-158, Section 4.1, p. 16" }
+  ]
+  theorems := [
+    Cslib.MCSP.AntiChecker.exists_antiChecker_circuit_of_NP_subset_PPoly,
+    Cslib.MCSP.AntiChecker.exists_antiChecker_circuit_le_of_NP_subset_PPoly
+  ]
+  scope := "Conditional on NP ⊆ P/poly (NP encBits ⊆ PPolyOn encBits). There is k such that for \
+    every β > 0 and all large n, a De Morgan circuit with at most 2^(n + kβn) gates (all gates \
+    counted) maps the truth table of f : {0,1}^n → {0,1} to ⌊2^(10βn)⌋₊ blocks of n bits, and if \
+    ⌊2^(βn)⌋₊ < complexity f, every circuit with at most ⌊2^(βn)/(10n)⌋₊ gates errs on some \
+    block. Every β > 0, where the source says sufficiently small β. The explicit form bounds the \
+    size by 2^n·c·(n + s + 1)^c for every n > 0, s and enough blocks, assuming f needs more gates \
+    than n circuits with s gates and their strict majority. Proof route: a deterministic greedy \
+    against a hash-threshold oracle with tensor-power amplification, compiled to an oracle \
+    circuit whose oracle gates are replaced by P/poly circuits; not the source's approximate \
+    counting and listing."
+
+register_result "gap-mcsp-oracle-circuits" where
+  title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: Gap-MCSP has oracle circuits with \
+    N·poly(s) gates, fan-in poly(s) and adaptivity poly(s)"
+  topic := "meta-complexity"
+  sources := [
+    { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+      theorem := "Proposition 63, [OPS19] Gap-MCSP bullet",
+      locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
+  ]
+  theorems := [
+    Cslib.MCSP.exists_oracleCircuit_gapMCSP,
+    Cslib.MCSP.localCircuitClass_gapMCSP
+  ]
+  scope := "Unconditional. Whenever n·s₁ + 2 + 2n(n + 2) ≤ s₂ at length n, one oracle circuit on \
+    N = 2^n inputs with the fixed oracle antiCheckerOracle accepts the yes-instances of \
+    Gap-MCSP[s₁, s₂] and rejects its no-instances. It has at most 5000·N·s₂^5 gates, at most \
+    610·N·s₂^4 + 1 oracle gates, fan-in at most 5000·s₂^5 and at most 610·s₂^4 + 1 oracle gates \
+    on any path. localCircuitClass_gapMCSP states this in the class LocalCircuitClass \
+    (Definition 11) at input length m with n = log₂ m, the gap condition holding at every n; its \
+    size bound has a + 1 for input length 0, which has no instances. The gap condition replaces \
+    the source's constructive s(n) ≤ 2^n/poly(n)."
+
+register_result "natural-proofs" where
+  title := "Razborov–Rudich: subexponentially secure generators rule out natural proofs \
+    against P/poly"
+  topic := "meta-complexity"
+  sources := [
+    { paper := RazborovRudich1997, theorem := unverified, locator := "Section 4" },
+    { paper := GGM1986, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.not_isUseful_PPoly_of_isNatural_of_generator
+  ]
+  scope := "Conditional. If a family of length-doubling generators with polynomial circuit \
+    complexity is subexponentially secure against circuits (for long seeds of length k, \
+    tests with at most 2^m gates, m^d <= k, have advantage at most 2^-m), then no \
+    P/poly-natural property is useful against P/poly. The generator tests are nonuniform \
+    circuits reading the 2k-bit outputs; the barrier's derived tests read whole truth tables \
+    of the GGM keyed family. The generator family is a hypothesis, not a constructed object."
+
+register_result "nw-reconstruction-learner" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
+    membership-query weak learner, one run"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 2.11",
+      locator := "Section 2.4" },
+    { paper := NisanWigderson1994, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.nwLearner_learns_of_dens,
+    Cslib.MachineLearning.UniformLearning.nwLearner_learns,
+    Cslib.MachineLearning.UniformLearning.div_two_mul_le_dens_uniformError_nwLearner_le,
+    Cslib.MachineLearning.UniformLearning.nwLearner_queriesAtMost,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_nwLearner_le
+  ]
+  scope := "One run of the reconstruction, in a library form. For an (l, n, a)-design with m > 0 \
+    blocks and a deterministic test accepting at least a delta fraction of m-bit strings but \
+    no output of the generator of any f in the class, the learner built from the negated test \
+    learns the class under the uniform distribution with membership queries, error \
+    1/2 - delta/(2m) and success probability delta/(2m) over a uniform trial. This is the \
+    delta-dense natural-property case; nwLearner_learns covers a distinguisher of any \
+    advantage eps, where the source takes advantage above 1/5, and advantage eps/(2m) \
+    replaces 1/L (the source's L is the output length m). It makes at most \
+    m 2^a queries, and every hypothesis has De Morgan circuit size at most that of the test \
+    plus m (2^a (2a + 3) + 1) + 1. The running time of the learner is not certified. Repeating \
+    runs and selecting the best hypothesis, which the full Theorem 2.11 needs, is the entry \
+    nw-reconstruction-best-of."
+
+register_result "nw-reconstruction-best-of" where
+  title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: learning from a distinguisher for the \
+    Nisan–Wigderson generator"
+  topic := "meta-complexity"
+  sources := [
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 2.11",
+      locator := "p. 10:9" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns,
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_learns_of_dens,
+    Cslib.MachineLearning.UniformLearning.bestOf_nwLearner_queriesAtMost,
+    Cslib.MachineLearning.UniformLearning.complexity_eval_bestOf_nwLearner_le
+  ]
+  scope := "Theorem 2.11 in a library form. For an (l, n, a)-design with m > 0 blocks and a \
+    deterministic test that accepts outputs of the generator of each f in the class with \
+    probability at least eps > 0 more than uniform m-bit strings, best-of-k selection on t \
+    uniform sample points over the reconstruction learner built from the test learns the class \
+    under the uniform distribution with membership queries, error 1/2 - eps/(4m) and confidence \
+    1 - eta, when eps/(2m) <= 1, log(2/eta) <= (eps/(2m)) k and 8 log(4k/eta) <= t (eps/(2m))^2. \
+    Any advantage eps > 0 replaces the source's advantage above 1/5, error 1/2 - eps/(4m) \
+    replaces 1/2 - 1/L (the source's L is the output length m), and explicit k and t replace \
+    poly(L). bestOf_nwLearner_learns_of_dens is the natural-property special case: a test \
+    accepting at least a delta > 0 fraction of m-bit strings but no generator output, used \
+    through its negation, which has advantage at least delta. It makes at most k m 2^a + t \
+    queries, and every hypothesis has the De Morgan circuit bound of one run. The running time \
+    of the learner is not certified."
+
+register_result "chaitin-incompleteness" where
+  title := "Chaitin's incompleteness theorem for plain Kolmogorov complexity"
+  topic := "Kolmogorov complexity"
+  sources := [
+    { paper := Chaitin1974, theorem := unverified, locator := unverified },
+    { paper := LiVitanyi2019, theorem := unverified, locator := "Chapter 2" }
+  ]
+  theorems := [
+    Cslib.Kolmogorov.DescriptionMethod.MinorizesPartrec.exists_forall_le_complexity_universal_add,
+    Cslib.Kolmogorov.DescriptionMethod.MinorizesPartrec.exists_forall_le_of_rePred_of_read,
+    Cslib.Kolmogorov.DescriptionMethod.MinorizesPartrec.exists_notMem_of_rePred
+  ]
+  scope := "Plain complexity under any description method of a Primcodable type that is at most \
+    an additive constant worse than every partial recursive decoder. Formal systems are r.e. \
+    predicates on Primcodable sentences with a computable reading of n <= C(x), and soundness \
+    is a hypothesis. The quantitative bound is C(encode e) + c for a code e semi-deciding the \
+    collection. Prefix-free complexity, Chaitin's Omega and logic-level theories are not \
+    formalized."
+
+register_result "symmetry-of-information" where
+  title := "Kolmogorov–Levin symmetry of information for plain complexity"
+  topic := "Kolmogorov complexity"
+  sources := [
+    { paper := ShenUspenskyVereshchagin2017, theorem := unverified,
+      locator := "Sections 2.2 and 2.3" }
+  ]
+  theorems := [
+    Cslib.Kolmogorov.DescriptionMethod.exists_complexity_universal_add_condUniversal_le,
+    Cslib.Kolmogorov.DescriptionMethod.exists_abs_complexity_universal_pair_sub_le,
+    Cslib.Kolmogorov.exists_abs_algorithmicInformation_sub_le,
+    Cslib.Kolmogorov.exists_abs_algorithmicInformation_sub_algorithmicInformation_le
+  ]
+  scope := "Plain complexity of the Partrec universal method on natural numbers, pairs coded by \
+    Nat.pair, and log the binary length Nat.size. With k = C(x, y): C(x) + C(y | x) <= \
+    k + 2 log k + 4 log log k + O(1), |C(x, y) - C(x) - C(y | x)| <= 6 log k + O(1), and \
+    |I(x : y) - I(y : x)| <= 12 log k + O(1). Exact prefix-complexity symmetry and \
+    time-bounded symmetry are not formalized."
+
+register_result "minkt-np" where
+  title := "MINKT, the time-bounded Kolmogorov complexity problem, is in NP"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Ko1991, theorem := unverified, locator := unverified },
+    { paper := Hirahara2018, theorem := unverified, locator := "Definition 9" },
+    { paper := LiuPass2020, theorem := unverified, locator := "Section 2.2" }
+  ]
+  theorems := [
+    Cslib.Kolmogorov.MINKT.mem_NP,
+    Cslib.Kolmogorov.MINKTAt.mem_NP,
+    Cslib.Kolmogorov.MINKTAt.mem_NP_polynomial₂
+  ]
+  scope := "Instances are a string with time and size thresholds in unary, and K^t is measured \
+    with the library's multi-tape universal machine and step clock. Fixed thresholds t and s \
+    computable in polynomial time in unary give an NP bit-string language. Membership only; \
+    NP-hardness of MINKT is not formalized. Hirahara's Definition 9 (after Ko) defines the \
+    problem, and the fixed-threshold MINKTAt follows Liu and Pass, Section 2.2."
+
+register_result "mktp-exp" where
+  title := "MKtP, the minimum Levin Kt complexity problem, is in E and EXP"
+  topic := "meta-complexity"
+  sources := [
+    { paper := LiuPass2021Crypto, theorem := unverified, locator := "Section 2.2" }
+  ]
+  theorems := [
+    Cslib.Kolmogorov.MKtP.mem_E,
+    Cslib.Kolmogorov.MKtP.mem_EXP,
+    Cslib.Kolmogorov.MKtPAt.mem_EXP
+  ]
+  scope := "Levin's Kt for the library's multi-tape universal machine. The threshold is \
+    encoded in unary, where Liu and Pass use a binary threshold of about log n bits; for \
+    thresholds O(|x|) the two encodings are polynomially related. MKtPAt s, with s \
+    computable in polynomial time in unary, is in EXP over bit strings. Membership only."
+
+register_result "tfnp-eopl-eq-sopl-inter-ppad" where
+  title := "EOPL = SOPL ∩ PPAD"
+  topic := "structural complexity"
+  sources := [
+    { paper := GoosEtAl2022, theorem := "Lemma 4",
+      locator := "Section 5, pp. 9–10 of arXiv:2202.07761v2" }
+  ]
+  theorems := [
+    Cslib.Complexity.EOPL_eq_SOPL_inter_PPAD,
+    Cslib.Complexity.SOPL_inter_PPAD_subset_EOPL,
+    Cslib.Complexity.mem_EOPL_of_sinkOfPotentialLine_endOfLine
+  ]
+  scope := "Uniform total-search classes over any injective encoding enc : α ↪ List Bool, \
+    defined by native deterministic multi-tape polynomial-time predecessor, successor and \
+    binary potential families with unary vertex width and polynomial-time search reductions. \
+    Potential-line graphs prune active edges along which the potential does not strictly \
+    increase. Combines an end-of-line family directly with a sink-of-potential-line family \
+    rather than routing through bijective pigeonhole."
+
+register_result "tfnp-sopl-eopl-collapse" where
+  title := "Further collapses in TFNP: SOPL = PLS ∩ PPADS and EOPL = PLS ∩ PPAD"
+  topic := "structural complexity"
+  sources := [
+    { paper := GoosEtAl2022, theorem := "Theorem 1 and Theorem 2",
+      locator := "Section 1, p. 1; Lemmas 2–3, Sections 3–4, pp. 6–8 of arXiv:2202.07761v2" }
+  ]
+  theorems := [
+    Cslib.Complexity.SOPL_eq_PLS_inter_PPADS,
+    Cslib.Complexity.EOPL_eq_PLS_inter_PPAD,
+    Cslib.Complexity.PLS_inter_PPADS_subset_SOPL,
+    Cslib.Complexity.PLS_inter_PPAD_subset_EOPL,
+    Cslib.Complexity.mem_SOPL_of_localOpt_sinkOfLine
+  ]
+  scope := "Uniform total-search classes over any injective encoding enc : α ↪ List Bool, \
+    defined by native deterministic multi-tape polynomial-time local-search, sink-of-line, \
+    end-of-line and potential-line families with unary vertex width and polynomial-time search \
+    reductions. Proves PLS ∩ PPADS ⊆ SOPL via the path-pigeonhole gadget and reversible PLS \
+    transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
+    EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
+    are not formalized."
+
+register_result "tfnp-eopl-sopl-promised-normalization" where
+  title := "Promised-source normalization for EOPL and SOPL (Fearnley et al. Definition 9)"
+  topic := "structural complexity"
+  sources := [
+    { paper := FearnleyGordonMehtaSavani2020, theorem := "Definition 9",
+      locator := "Section 2 (arXiv:1811.03841v1)" }
+  ]
+  theorems := [
+    Cslib.Complexity.promisedPotentialLine_normalized,
+    Cslib.Complexity.exists_normalizedPotentialBound,
+    Cslib.Complexity.endOfPotentialLinePromisedRel_normalized_iff,
+    Cslib.Complexity.sinkOfPotentialLinePromisedRel_normalized_iff,
+    Cslib.Complexity.endOfPotentialLineRel_searchReducible_promised_normalized,
+    Cslib.Complexity.promised_normalized_searchReducible_endOfPotentialLineRel,
+    Cslib.Complexity.endOfPotentialLineViolationRel_searchReducible_promised_normalized,
+    Cslib.Complexity.mem_EOPL_iff_promised_bounded,
+    Cslib.Complexity.mem_SOPL_iff_promised_bounded
+  ]
+  scope := "Uniform polynomial-time (n + 1)-bit normalization for EOPL and SOPL families over \
+    any injective encoding enc : α ↪ List Bool, enforcing P(0^(n+1)) = 0^(n+1) ≠ S(0^(n+1)) and \
+    V(0^(n+1)) = 0 with V'(1 u) = V u + 1, unary potential bit-bound 2^(m + 1), pure (R1)/(R2) \
+    solution relations without a failed-promise fallback, and failed-promise back-maps via \
+    potentialLineBack. Presented on uniform families rather than canonical circuit codes; UEOPL \
+    and CLS are not formalized."
+
+register_result "goemans-williamson-max2sat" where
+  title := "Goemans–Williamson α-approximation rounding for MAX-2SAT (α > 0.87856)"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Theorem 7.2.1.1",
+      locator := "Section 7.2.1" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_signedSdpValue_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_satSdpValue_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_satValue_le_integral
+  ]
+  scope := "Exact stdGaussian random-hyperplane rounding of unit-vector SDP relaxations (P') \
+    and weighted MAX-2SAT over arbitrary finite clause/variable types with nonnegative weights, \
+    using Real.goemansWilliamsonConstant (0.87856 < α). No SDP solver, Gaussian sampler, \
+    derandomization, or Section 7.2.2 MAX-SAT LP/SDP hybrid is formalized."
+
+register_result "goemans-williamson-max2sat-cnf" where
+  title := "Goemans–Williamson rounding bridge for Cslib MaxTwoSAT CNFs"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Section 7.2.1",
+      locator := "Section 7.2.1" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_countP_le_integral,
+    Cslib.Algorithms.Lean.MaxTwoSAT.goemansWilliamsonConstant_mul_target_le_integral_of_mem
+  ]
+  scope := "Specialization of Goemans–Williamson MAX-2SAT random-hyperplane rounding to list \
+    CNFs counted by Cslib.Logic.PL.CNF.countP and membership in Cslib.Complexity.MaxTwoSAT \
+    under exact stdGaussian expectation; no polynomial-time SDP solver is included."
+
+open Cslib.Algorithms.Lean.MaxDicut in
+register_result "goemans-williamson-maxdicut" where
+  title := "Goemans–Williamson β-approximation rounding for MAX-DICUT (β > 0.79607)"
+  topic := "algorithms"
+  sources := [
+    { paper := GoemansWilliamson1995, theorem := "Lemma 7.3.1, Lemma 7.3.2",
+      locator := "Section 7.3, pp. 1138–1139" }
+  ]
+  theorems := [
+    goemansWilliamsonDicutConstant_mul_dicutSdpValue_le_integral,
+    goemansWilliamsonDicutConstant_mul_dicutValue_le_integral,
+    goemansWilliamsonConstant_mul_sub_le_integral_of_isBalancedDigraph
+  ]
+  scope := "Exact stdGaussian random-hyperplane rounding for triple SDP relaxations (P'') and \
+    weighted directed multigraphs with nonnegative weights, achieving \
+    Real.goemansWilliamsonDicutConstant (0.79607 < β < 0.79608), plus the balanced-digraph \
+    reduction recovering α > 0.87856 on p. 1138. No SDP solver, finite-precision sampler, or \
+    derandomization is formalized."
+
+register_result "nayak-wu-counting" where
+  title := "Nayak–Wu: quantum query lower bound for approximate counting"
+  topic := "quantum complexity"
+  sources := [
+    { paper := NayakWu1999, theorem := "Theorem 1.11",
+      locator := "Section 1 (arXiv:quant-ph/9804066v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_exactCount_le,
+    Cslib.Quantum.one_sub_mul_approxCount_le,
+    Cslib.Quantum.approxCount_lower_bound
+  ]
+  scope := "T-query bit-query quantum algorithm outputting a real estimate y with |y - t| < Δ \
+    on inputs of Hamming weight t (failure probability at most ε, 2ε <= 1). When 1/2 <= Δ and \
+    4Δ <= n, gives (1 - 2 sqrt(ε(1-ε))) (sqrt(n/Δ) + sqrt(t(n-t))/Δ) <= 16T and <= 288T at \
+    ε = 1/3; when 0 < Δ <= 1/2 and 1 <= n, gives <= 4T. Derived from the adversary weight-layer \
+    bound rather than polynomials. Relative counting and approximate mean are not formalized."
+
+register_result "nayak-wu-kth-smallest" where
+  title := "Nayak–Wu: quantum query lower bound for approximate k-th smallest selection"
+  topic := "quantum complexity"
+  sources := [
+    { paper := NayakWu1999, theorem := "Theorem 1.5",
+      locator := "Sections 1 and 2 (arXiv:quant-ph/9804066v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_kthSmallest_le,
+    Cslib.Quantum.kthSmallest_lower_bound,
+    Cslib.Quantum.kthSmallest_involution_lower_bound,
+    Cslib.Quantum.kthSmallest_index_lower_bound
+  ]
+  scope := "T-query value-query quantum algorithm over a finite index type and linearly ordered \
+    alphabet returning an element within rank distance < Δ of k (or any relaxed value) with \
+    failure probability at most ε <= 1/2, for 1 <= k <= n, 1 <= Δ, 4Δ <= n. Proves explicit \
+    constants 32T (576T at ε = 1/3), 16T (288T) for involutive-difference oracle steps, and \
+    the same bound on T + 1 for index-returning algorithms. Comparison-tree oracles are not \
+    formalized."
+
+register_result "nayak-wu-median" where
+  title := "Nayak–Wu: quantum query lower bound for approximate median"
+  topic := "quantum complexity"
+  sources := [
+    { paper := NayakWu1999, theorem := "Corollary 1.6",
+      locator := "Section 1 (arXiv:quant-ph/9804066v2)" }
+  ]
+  theorems := [
+    Cslib.Quantum.one_sub_mul_median_le,
+    Cslib.Quantum.median_lower_bound,
+    Cslib.Quantum.median_inv_delta_lower_bound,
+    Cslib.Quantum.median_involution_lower_bound,
+    Cslib.Quantum.median_index_lower_bound
+  ]
+  scope := "T-query value-query quantum algorithm over a finite index type (1 <= n) and \
+    linearly ordered alphabet outputting a δ-approximate median (0 < δ < 1) with failure \
+    probability at most ε <= 1/2. Gives (1 - 2 sqrt(ε(1-ε))) min(1/δ, n) <= 24T, 432T at \
+    ε = 1/3 (hence 1/δ <= 432T when 1 <= δ n), 12T (216T) for involutive-difference oracle \
+    steps, and the same bound on T + 1 for index-returning algorithms. Derived via adversary \
+    weight-layer bounds rather than polynomials; comparison-tree oracles are not formalized."
+
+register_result "unique-games-perfect-completeness" where
+  title := "Satisfiable unique games are in P"
+  topic := "interactive proofs"
+  sources := [
+    { paper := Khot2010, theorem := unverified,
+      locator := "Section 2.4, after Definition 2.4 (author copy, p. 6)" }
+  ]
+  theorems := [
+    Cslib.Complexity.gapUniqueGames_one_mem_PromiseP,
+    Cslib.Complexity.gapUniqueGames_one_mem_PromiseP_of_pos,
+    Cslib.Complexity.gapUniqueGames_zero_mem_PromiseP,
+    Cslib.Complexity.isUniqueGame_mem_P,
+    Cslib.Complexity.satisfiable_uniqueGame_mem_P
+  ]
+  scope := "Native multi-tape PromiseP and P membership for each fixed finite alphabet Fin L \
+    under Graph.encoding (encPi (encFinEnum (Fin L))), the encoding of UniqueGamesConjecture. \
+    For 0 < L, label propagation over List.finRange L is certified by reading the final \
+    table directly without constructing ℕ → Fin L closures at runtime. For L = 0, Fin 0 is \
+    empty so every unique game vacuously has unsatVal = 0 and GapUniqueGames (Fin 0) 1 s \
+    has no no-instances, while no graph is satisfiable. This fixes L rather than taking it \
+    as part of the input."
+
+register_result "bareiss-rational-elimination" where
+  title := "Exact rational Bareiss–Jordan Gaussian elimination and entry bounds"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.2; Theorem 3.3; Corollary 3.3a; Equations (28)–(30)",
+      locator := "Section 3.2, pp. 29–30; Section 3.3, pp. 32–35" }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_spec,
+    Cslib.LinearAlgebra.ratRref_isReducedRowEchelon,
+    Cslib.LinearAlgebra.ratRank_eq,
+    Cslib.LinearAlgebra.ratSolve_spec,
+    Cslib.LinearAlgebra.rationalElim_entry_bounds,
+    Cslib.LinearAlgebra.ratSolve_entry_bounds
+  ]
+  scope := "Executable row-denominator-cleared fraction-free Bareiss–Jordan elimination over ℚ \
+    built on Sylvester–Bareiss minor elimination over ℤ (RREF, exact rank, linearly independent \
+    spanning row and kernel bases, canonical linear system solving, and Hadamard/factorial entry \
+    and denominator bit-length bounds via stageEntryBound). Local adaptation: clears row \
+    denominators upfront and tracks fraction-free minor-scaled Jordan updates with a \
+    factorial/Hadamard bound rather than Schrijver's normalized rational elimination \
+    (Section 3.3, pp. 32–35). Bounded milestone of Issue #3672 (circulant spectra and fibre-sum \
+    bounds remain open there)."
+
+register_result "bareiss-rational-elimination-polytime" where
+  title := "Polynomial-time multi-tape Turing certificates for rational Gaussian elimination"
+  topic := "algorithms"
+  sources := [
+    { paper := Schrijver1986,
+      theorem := "Theorem 3.3; Corollary 3.3a (ii), (iv), (v)",
+      locator := "Section 3.3, pp. 32–35" }
+  ]
+  theorems := [
+    Cslib.LinearAlgebra.rationalElim_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRref_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRank_computableInPolyTime,
+    Cslib.LinearAlgebra.ratRowBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratKernelBasis_computableInPolyTime,
+    Cslib.LinearAlgebra.ratSolve_computableInPolyTime
+  ]
+  scope := "Native Turing.MultiTapeTM.ComputableInPolyTime certificates for rationalElim, \
+    ratRref, ratRank, ratRowBasis, ratKernelBasis, and ratSolve. Local adaptations: uses \
+    row-denominator-cleared fraction-free Bareiss–Jordan integer updates and structured \
+    enc_structure codecs with explicit unary matrix dimensions and framed signed-binary/rational \
+    entries to certify native multi-tape time and workspace bounds unconditionally (including on \
+    ragged or oversized-header inputs), whereas Schrijver Section 3.3 analyzes normalized \
+    rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
+    (circulant spectra and fibre-sum bounds remain open there)."

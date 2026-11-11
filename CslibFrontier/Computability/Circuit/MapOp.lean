@@ -38,6 +38,8 @@ are translated likewise (`Formula.mapOp`), keeping their function, size, leaves 
   kept.
 * `Cslib.Circuits.Circuit.mapOp_id`, `Cslib.Circuits.Circuit.mapOp_comp`: translation is
   functorial.
+* `Cslib.Circuits.Program.cost_mapOp`, `Cslib.Circuits.Circuit.depthWith_mapOp`: under weights
+  `cost`, the translation costs and is as deep as the original under `cost ∘ φ`.
 * `Cslib.Circuits.Formula.eval_mapOp`, `Cslib.Circuits.Formula.depthWith_mapOp`: a translated
   formula computes the same function, with depth measured by the costs of the images.
 -/
@@ -181,6 +183,45 @@ theorem Circuit.Computes.mapOp [φ.Preserves I J] {c : Circuit σ n m}
     {f : (Fin n → U) → Fin m → U} (hc : c.Computes I f) : (c.mapOp φ).Computes J f :=
   fun x => (Circuit.eval_mapOp c x).trans (hc x)
 
+/-! ### Costs and weighted depths -/
+
+/-- Reindexing along `Fin.cast` keeps a sum. -/
+private theorem sum_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
+    ∑ a : Fin k, f (Fin.cast h a) = ∑ j, f j := by
+  subst h
+  rfl
+
+/-- Reindexing along `Fin.cast` keeps a supremum. -/
+private theorem sup_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
+    (Finset.univ.sup fun a : Fin k => f (Fin.cast h a)) = Finset.univ.sup f := by
+  subst h
+  rfl
+
+/-- The translated program costs, under `cost`, what the program costs under `cost ∘ φ`. -/
+theorem Program.cost_mapOp (p : Program σ n g) (cost : τ.Op → ℕ) :
+    (p.mapOp φ).cost cost = p.cost (cost ∘ φ) :=
+  p.cost_mapLines (f := Line.mapOp φ) (cost := cost ∘ φ) (cost' := cost) fun _ => rfl
+
+/-- The depth interpretation of `cost` is preserved along `φ` from that of `cost ∘ φ`. -/
+instance Signature.Hom.preserves_depthInterpretation (cost : τ.Op → ℕ) :
+    φ.Preserves (depthInterpretation (cost ∘ φ)) (depthInterpretation cost) where
+  interpret_eq op x := by
+    simp only [depthInterpretation, Fin.foldl_max_eq_max_sup, Function.comp_apply]
+    congr 2
+    exact sup_cast (φ.arity_eq op) x
+
+/-- The translated program has, under `cost`, the gate depths of the program under `cost ∘ φ`. -/
+theorem Program.depthsWith_mapOp (p : Program σ n g) (cost : τ.Op → ℕ) :
+    (p.mapOp φ).depthsWith cost = p.depthsWith (cost ∘ φ) :=
+  by unfold Program.depthsWith; exact p.eval_mapOp (fun _ => 0)
+
+/-- The translated circuit has, under `cost`, the depth of the circuit under `cost ∘ φ`. -/
+@[simp] theorem Circuit.depthWith_mapOp (c : Circuit σ n m) (cost : τ.Op → ℕ) :
+    (c.mapOp φ).depthWith cost = c.depthWith (cost ∘ φ) :=
+  congrArg (fun d =>
+      Fin.foldl m (fun depth k => max depth (Wire.elim (fun _ => 0) d (c.outputs k))) 0)
+    (c.program.depthsWith_mapOp cost)
+
 /-! ### Formulas -/
 
 variable (φ) in
@@ -199,18 +240,6 @@ arguments. -/
 @[simp] theorem Formula.mapOp_gate (op : σ.Op) (args : Fin (σ.Arity op) → Formula σ n) :
     (Formula.gate op args).mapOp φ =
       .gate (φ op) fun a => (args (Fin.cast (φ.arity_eq op) a)).mapOp φ :=
-  rfl
-
-/-- Reindexing along `Fin.cast` keeps a sum. -/
-private theorem sum_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
-    ∑ a : Fin k, f (Fin.cast h a) = ∑ j, f j := by
-  subst h
-  rfl
-
-/-- Reindexing along `Fin.cast` keeps a supremum. -/
-private theorem sup_cast {k l : ℕ} (h : k = l) (f : Fin l → ℕ) :
-    (Finset.univ.sup fun a : Fin k => f (Fin.cast h a)) = Finset.univ.sup f := by
-  subst h
   rfl
 
 /-- The translated formula has the same depth when `φ op` costs what `op` does. -/

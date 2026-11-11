@@ -39,6 +39,13 @@ base and unary exponent certificates. The complete
 magnitudes and signs. A binary exponent has a different output-size obligation: do not replace
 the unary exponent encoding merely to make a goal match.
 
+For rational numbers `ℚ` encoded as `(q.num, q.den)` under
+`Turing.MultiTapeTM.encRat` ([Encodings/Rat.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Encodings/Rat.lean)),
+import
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat`
+for `ComputableInPolyTime.rat_num`, `rat_den`, `rat_intCast`, `rat_divInt`, `rat_neg`, `rat_inv`,
+`rat_add`, `rat_sub`, `rat_mul`, `rat_div`, `rat_lt`, and `rat_le`.
+
 For a padded integer dot product, import
 [PolyTime/Int/DotProduct.lean](../../CslibFrontier/Computability/PolyTime/Int/DotProduct.lean)
 and use `ComputableInPolyTime.listDotProduct`. It certifies the existing pure public

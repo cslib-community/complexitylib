@@ -9,6 +9,9 @@ module
 
 public import CslibFrontier.Computability.DecisionTree.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.Basic
+public import Mathlib.Data.Finset.Density
+import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Uniform
 
 /-!
 # Learning with membership queries
@@ -53,6 +56,9 @@ queries as it lists points (`UniformLearning.QueryLearner.depth_ofNonadaptive_le
   the query count of a non-adaptive learner.
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.learns_ofLearner_iff`: membership queries
   subsume random examples.
+* `Cslib.MachineLearning.UniformLearning.QueryLearner.learns_uniformOfFintype_of_le_dens`: with
+  uniform seeds from a finite type, learning follows from a lower bound on the density of the
+  good seeds.
 
 ## References
 
@@ -109,6 +115,29 @@ theorem learns_iff {A : QueryLearner ι Ω} {μ : PMF Ω} {C : ConceptClass (ι 
   refine forall₂_congr fun f _ => ?_
   rw [PMF.toOuterMeasure_map_apply]
   rfl
+
+/-- **Learning from a density bound.** With uniform seeds from a finite type, a learner learns `C`
+with error `ε` and confidence `p` if, for every target in `C`, the seeds on which its hypothesis
+has error at most `ε` make up at least a `p` fraction of all seeds. -/
+theorem learns_uniformOfFintype_of_le_dens [Fintype Ω] [Nonempty Ω] {A : QueryLearner ι Ω}
+    {C : ConceptClass (ι → Bool) Bool} {ε p : ℝ}
+    (h : ∀ f ∈ C, p ≤ (Finset.dens {ω | uniformError f ((A ω).eval f) ≤ ε} : ℝ)) :
+    A.Learns (PMF.uniformOfFintype Ω) C ε (1 - p) := by
+  refine learns_iff.2 fun f hf => ?_
+  have hsplit := Finset.dens_filter_add_dens_filter_not_eq_dens (s := (Finset.univ : Finset Ω))
+    fun ω => uniformError f ((A ω).eval f) ≤ ε
+  simp only [Finset.dens_univ, not_le] at hsplit
+  have hcast : (Finset.dens {ω | uniformError f ((A ω).eval f) ≤ ε} : ℝ) +
+      Finset.dens {ω | ε < uniformError f ((A ω).eval f)} = 1 := mod_cast hsplit
+  rw [← ENNReal.ofReal_toReal (PMF.toOuterMeasure_ne_top _ _),
+    PMF.toOuterMeasure_uniformOfFintype_toReal]
+  refine ENNReal.ofReal_le_ofReal ?_
+  have hbad : ((Finset.univ.filter (· ∈ {ω | ε < uniformError f ((A ω).eval f)})).card : ℝ) /
+      Fintype.card Ω = Finset.dens {ω | ε < uniformError f ((A ω).eval f)} := by
+    rw [Finset.nnratCast_dens]
+    rfl
+  rw [hbad]
+  linarith [h f hf]
 
 end Learns
 

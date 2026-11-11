@@ -42,7 +42,7 @@ scripts/cache/ensure.sh --refresh
 
 This retries restoration; it does not assert network or cache availability. On a warm local checkout, `COMPLEXITYLIB_CACHE_AUTO=0` opts out of automatic downloads for the wrappers while retaining Lake's input checks. The [cache guide](../../scripts/cache/README.md#automatic-restoration) specifies stamps, retries and seeding.
 
-If a small change causes a large rebuild, inspect its imports and exported interface. Public declarations and exposed definition bodies can invalidate dependents. The [build fan-out case study](../development-history/case-studies.md) explains why widely imported hubs can be costly. A slow rebuild alone does not demonstrate a cache defect.
+If a small change causes a large rebuild, inspect its imports and exported interface. Public declarations and exposed definition bodies can invalidate dependents. The [build fan-out case study](../history/case-studies.md) explains why widely imported hubs can be costly. A slow rebuild alone does not demonstrate a cache defect.
 
 ## Diagnose "Too many open files in system"
 
@@ -58,6 +58,6 @@ One Lake build runs roughly as many `lean` processes at once as its thread pool 
 
 A focused build, quick changed-client check, whole-library build, full `scripts/check.sh` run and axiom audit have different scopes. Record the actual command and revision. Quick mode can fall back to the full suite; inspect its report. The [contribution chapter](contributing.md) specifies integration requirements.
 
-If generated API documentation alone is stale after a module was removed, use the targeted cleanup in [the README](../../README.md#build-the-documentation). A library-wide clean discards unrelated warm outputs and does not repair an incorrect statement.
+If generated API documentation alone is stale after a module was removed, use the targeted cleanup in [the build instructions](../BUILD.md#build-the-api-reference). A library-wide clean discards unrelated warm outputs and does not repair an incorrect statement.
 
 [complexitylib]: ../sources.md#complexitylib
