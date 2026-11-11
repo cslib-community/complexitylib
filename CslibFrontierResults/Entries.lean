@@ -73,6 +73,7 @@ import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCas
 import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
+import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
@@ -685,6 +686,32 @@ register_result "partial-mcsp" where
     N = 2^m, with explicit unary or binary size-threshold encodings and De Morgan all-gate or \
     binary-gate cost. Conditional: the library also refutes ETH (subexponential-sat), so the \
     premise is false; the implications remain valid."
+
+register_result "multi-mcsp-np-hard" where
+  title := "Ilango–Loff–Oliveira: Multi-output MCSP is NP-hard under randomized reductions"
+  topic := "meta-complexity"
+  sources := [
+    { paper := IlangoLoffOliveira2020, theorem := "Theorem 4",
+      locator := "p. 22:5; reduction in Section 4.2, pp. 22:20–22:21" }
+  ]
+  theorems := [
+    Cslib.MultiMCSP.rpHard,
+    Cslib.MultiMCSP.rpHard_pos,
+    Cslib.MultiMCSP.rpReducible_gapSetCover,
+    Cslib.MultiMCSP.NP_subset_BPP_of_mem_BPP,
+    Cslib.MultiMCSP.NP_subset_coRP_of_mem_coRP
+  ]
+  scope := "Every NP language reduces to Multi-output MCSP (n, m and s in unary, then the m \
+    tables) by a polynomial-time randomized many-one reduction with one-sided error: yes maps \
+    to yes always, no to no with probability at least 2/3; the reduction lands in Definition \
+    1's positive instances. Over any De Morgan basis: Boolean.DeMorgan.interpretation is \
+    Definition 1's constant-free AND/OR/NOT basis, Boolean.interpretation the library variant \
+    with constants. Library route: from the library's GapSetCover 3 rather than Trevisan's \
+    bounded Set Cover; soundness by a union bound over small circuits in place of Lemma 16; \
+    windows as OR chains rather than canonical DNFs; the positions of the ground list in \
+    place of its distinct elements. The BPP and coRP inclusions are conditional on Multi-MCSP \
+    being in BPP or coRP; they follow from the reduction and are not stated separately in the \
+    source."
 
 register_result "magnification" where
   title := "McKay–Murray–Williams: barely superlinear circuit lower bounds for MCSP separate P \

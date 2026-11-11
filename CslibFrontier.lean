@@ -2650,6 +2650,8 @@ public import CslibFrontier.Computability.MCSP.Magnification
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.Multi.NP
+public import CslibFrontier.Computability.MCSP.MultiNPHard
+public import CslibFrontier.Computability.MCSP.MultiNPHard.PolyTime
 public import CslibFrontier.Computability.MCSP.MultiNPHard.Reduction
 public import CslibFrontier.Computability.MCSP.MultiNPHard.Window
 public import CslibFrontier.Computability.MCSP.MultiNPHard.WindowCount
