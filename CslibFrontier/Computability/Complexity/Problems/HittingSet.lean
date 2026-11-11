@@ -1,4 +1,10 @@
+/-
+Copyright (c) 2026 Shriya Thakur, Hugo Akitaya, Freddy Stock, and Adriano Corbellino. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Shriya Thakur
+-/
 module
+
 
 -- Import vertex cover to prove that hitting set is NP hard
 public import CslibFrontier.Computability.Complexity.Problems.vertexCover
@@ -12,8 +18,33 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-!
 # Hitting Set
 
-We formalize the Hitting Set decision problem (SP8 in garey and Johnson)
+This module formalizes the Hitting Set decision problem and proves
+that it is NP-complete via a polynomial-time reduction from Vertex Cover.
+
+An instance consists of a finite universe U, a collection of subsets
+of U, and a target cardinality k. The problem asks whether there
+exists a subset of `U` of cardinality exactly k that intersects every
+set in the collection.
+
+## definitions
+
+* `HittingSetInstance`: The type of Hitting Set instances.
+* `encHittingSet`: Binary encoding of Hitting Set instances.
+* `HittingSet`: The Hitting Set decision problem.
+* `HittingSet.verifier`: A verifier for Hitting Set certificates.
+* `vertexCoverToHittingSet`: Reduction from Vertex Cover to Hitting Set.
+
+## Theorems
+
+* `HittingSet.isVerifier`: Correctness of the verifier.
+* `HittingSet.computableInPolyTime_verifier`: Polynomial-time verification.
+* `HittingSet.mem_NP`: Hitting Set belongs to NP.
+* `vertexCoverToHittingSet_mem_iff`: Correctness of the reduction.
+* `polyTimeReducible_VertexCover_HittingSet`: Polynomial-time reduction.
+* `HittingSet_npHard`: Hitting Set is NP-hard.
+* `HittingSet_npComplete`: Hitting Set is NP-complete.
 -/
+
 @[expose] public section
 
 namespace Cslib.Complexity
@@ -22,7 +53,6 @@ open Turing.MultiTapeTM ComputableInPolyTime
 /-- A Hitting Set instance consists of a universe (U), a collection of subsets (S),
 and a target cardinality (k) -/
 abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ
-
 
 /-- Encode a hitting set instance as a binary string. -/
 def encHittingSet : HittingSetInstance ↪ List Bool :=
@@ -165,12 +195,12 @@ theorem computableInPolyTime_containsNat : ComputableInPolyTime
   · fun_prop
   · fun_prop
 
--- Check whether the selected elements intersect a given subset
+/-- Check whether the selected elements intersect a given subset -/
 def hitsSubset (selected : List ℕ) (S : List ℕ) : Bool := S.any (fun u => selected.contains u)
 -- #eval hitsSubset [2, 3] [1, 2]  -- true
 -- #eval hitsSubset [2, 3] [4, 5]  -- false
 
--- Checking whether selected elements hit one subset is polynomial-time.
+/-- Checking whether selected elements hit one subset is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_hitsSubset :
 ComputableInPolyTime
@@ -180,7 +210,7 @@ ComputableInPolyTime
   unfold hitsSubset
   fun_prop
 
--- Checking whether selected elements hit every subset is polynomial-time.
+/-- Checking whether selected elements hit every subset is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_isHittingSet : ComputableInPolyTime
   (fun p : List (List ℕ) × List ℕ =>
@@ -193,9 +223,9 @@ theorem computableInPolyTime_isHittingSet : ComputableInPolyTime
 -- #check Turing.MultiTapeTM.ComputableTidilyInPolyTime.allWith
 -- #check Turing.MultiTapeTM.ComputableTidilyInPolyTime.anyWith
 
--- The Hitting Set verifier runs in polynomial time.
+/-- The Hitting Set verifier runs in polynomial time.
 -- We do this by proving the complexity of the verifier by composing smaller
--- poly time computations
+-- poly time computations -/
 @[fun_prop]
 theorem HittingSet.computableInPolyTime_verifier : ComputableInPolyTime HittingSet.verifier
   (encPair encHittingSet encBits) encBool := by
@@ -224,10 +254,10 @@ theorem HittingSet.computableInPolyTime_verifier : ComputableInPolyTime HittingS
       -- compose the extraction with our poly time hitting set checker
       exact computableInPolyTime_isHittingSet.comp hp
 
--- Reduce from vertex cover to a hittings set instance.
+/-- Reduce from vertex cover to a hittings set instance.
 -- The graphs vertices stay as the universe
 -- convert each valid edge into a 2 elem subset and preserve k
--- Covering an edge is equivalent to hitting its corresponding subset.
+-- Covering an edge is equivalent to hitting its corresponding subset. -/
 def vertexCoverToHittingSet (x : Graph × ℕ) : HittingSetInstance :=
   -- The universe of the hitting set instance is the graphs vertex list
   let vertices := x.1.1
@@ -241,9 +271,9 @@ def vertexCoverToHittingSet (x : Graph × ℕ) : HittingSetInstance :=
   -- construct hitting set intance using the same target size k
   ((vertices, subsets), x.2)
 
--- The reduction preserves YES instances
--- A graph has a vertex cover of size k iff the constructed hitting set
--- instance has a hitting set sized k.
+/-- The reduction preserves YES instances
+A graph has a vertex cover of size k iff the constructed hitting set
+instance has a hitting set sized k. -/
 theorem vertexCoverToHittingSet_mem_iff (x : Graph × ℕ) :
   vertexCoverToHittingSet x ∈ HittingSet ↔ x ∈ VertexCover := by
   -- separate Graph and target size k
@@ -310,29 +340,29 @@ theorem vertexCoverToHittingSet_mem_iff (x : Graph × ℕ) :
       simp
 
 
--- Converting from vertex cover to hitting set instance is poly time
+/-- Converting from vertex cover to hitting set instance is poly time -/
 @[fun_prop]
 theorem computableInPolyTime_vertexCoverToHittingSet : ComputableInPolyTime vertexCoverToHittingSet
   (encPair encGraph encNat) encHittingSet := by
   unfold vertexCoverToHittingSet
   fun_prop
 
--- Vertex Cover reduces to Hitting Set in polynomial time
+/-- Vertex Cover reduces to Hitting Set in polynomial time -/
 theorem polyTimeReducible_VertexCover_HittingSet : PolyTimeReducible (encPair encGraph encNat)
   encHittingSet VertexCover HittingSet :=
   ⟨vertexCoverToHittingSet,
     computableInPolyTime_vertexCoverToHittingSet,
     fun x => (vertexCoverToHittingSet_mem_iff x).symm⟩
 
--- Hitting Set is NP-hard because vertex cover is NP hard and redces to hitting set
+/-- Hitting Set is NP-hard because vertex cover is NP hard and redces to hitting set -/
 theorem HittingSet_npHard : NPHard encHittingSet HittingSet :=
   VertexCover_npHard.trans polyTimeReducible_VertexCover_HittingSet
 
--- Hitting Set belongs to NP because it has a poly time verifier
+/-- Hitting Set belongs to NP because it has a poly time verifier -/
 theorem HittingSet.mem_NP : HittingSet ∈ NP encHittingSet := ⟨Polynomial.X, HittingSet.verifier,
   HittingSet.computableInPolyTime_verifier, HittingSet.isVerifier⟩
 
--- Np complete = mebership in NP + NP hard
+/-- Np complete = mebership in NP + NP hard -/
 theorem HittingSet_npComplete : NPComplete encHittingSet HittingSet :=
   ⟨HittingSet.mem_NP, HittingSet_npHard⟩
 
