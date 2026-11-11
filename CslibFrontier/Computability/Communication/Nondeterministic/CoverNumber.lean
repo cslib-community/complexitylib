@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Communication.Nondeterministic.Basic
 public import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Data.ENat.IInf
 
 /-!
 # Cover numbers
@@ -107,13 +108,8 @@ theorem coverNumber_le_iff {r : ℕ} :
     coverNumber z R A B ≤ r ↔ ∃ C : Fin r → Set X × Set Y, IsCover z R A B C := by
   classical
   refine ⟨fun h => ?_, fun ⟨C, hC⟩ => by simpa using hC.coverNumber_le⟩
-  have : Nonempty {r : ℕ // ∃ C : Fin r → Set X × Set Y, IsCover z R A B C} := by
-    rw [← ENat.iInf_natCast_ne_top]
-    exact ne_top_of_le_ne_top (ENat.natCast_ne_top r) h
-  obtain ⟨⟨s, C, hC⟩, hmin⟩ := ENat.exists_eq_iInf
-    (fun r : {r : ℕ // ∃ C : Fin r → Set X × Set Y, IsCover z R A B C} => (r.1 : ℕ∞))
-  exact ⟨_, hC.of_embedding
-    (Fin.castLEEmb (by exact_mod_cast (hmin.trans_le h : (s : ℕ∞) ≤ r)))⟩
+  obtain ⟨⟨s, C, hC⟩, hsr⟩ := ENat.iInf_natCast_le_natCast_iff.mp h
+  exact ⟨_, hC.of_embedding (Fin.castLEEmb hsr)⟩
 
 /-- A cover by `2 ^ k` rectangles indexed by `k`-bit guesses is a cover by at most `2 ^ k`
 rectangles. -/

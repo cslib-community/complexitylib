@@ -36,7 +36,10 @@ code of minimum distance at least `d` has at least `q ^ n / V` words, where `V` 
 ball of radius `d - 1`: the **Gilbert–Varshamov bound**
 (`Cslib.Code.exists_le_minDist_and_prod_le_card_mul_card_filter_hammingDist_lt`,
 `Cslib.Code.exists_le_minDist_and_pow_le_card_mul_sum_choose`) [Gilbert1952], by Gilbert's greedy
-argument; Varshamov proved the same bound for linear codes [Varshamov1957]. Over `16` letters the
+argument; Varshamov proved the same bound for linear codes [Varshamov1957]. The same greedy argument
+covers any finite set of words by the balls of radius `r` around a subset whose words are pairwise
+more than `r` apart (`Cslib.Code.exists_subset_pairwise_lt_hammingDist_forall_exists_le`). Over
+`16` letters the
 balls of radius less than `⌈L / 2⌉` have at most `8 ^ L` words, so some code of length `L` has
 `2 ^ L` words any two of which differ in at least half of the positions
 (`Cslib.Code.exists_two_pow_le_card_and_le_two_mul_hammingDist`).
@@ -51,6 +54,8 @@ balls of radius less than `⌈L / 2⌉` have at most `8 ^ L` words, so some code
 * `Cslib.Code.card_mul_card_filter_hammingDist_le_le_prod`: the Hamming bound.
 * `Cslib.Code.card_mul_sum_choose_le_of_two_mul_lt_minDist`: the Hamming bound over a `q`-letter
   alphabet.
+* `Cslib.Code.exists_subset_pairwise_lt_hammingDist_forall_exists_le`: a finite set of words is
+  covered by the balls of radius `r` around a subset of words pairwise more than `r` apart.
 * `Cslib.Code.exists_le_minDist_and_prod_le_card_mul_card_filter_hammingDist_lt`: the
   Gilbert–Varshamov bound.
 * `Cslib.Code.exists_le_minDist_and_pow_le_card_mul_sum_choose`: the Gilbert–Varshamov bound over a
@@ -67,7 +72,7 @@ balls of radius less than `⌈L / 2⌉` have at most `8 ^ L` words, so some code
   [MacWilliamsSloane1977]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Code
 
@@ -189,6 +194,33 @@ private theorem card_filter_hammingDist_lt_eq_sum {d : ℕ} (hd : 0 < d) (x : �
       ∑ j ∈ range d, #{y : ∀ i, β i | hammingDist x y = j} := by
   simp only [Nat.lt_iff_le_pred hd, card_filter_hammingDist_le_eq_sum, Nat.sub_add_cancel hd]
 
+omit [DecidableEq ι] [∀ i, Fintype (β i)] in
+/-- **Covering by a maximal separated subset**: every finite set `L` of words contains a subset
+`C` of words pairwise more than `r` apart such that every word of `L` lies within distance `r` of
+a word of `C`. A largest such subset works: a word of `L` farther than `r` from all of it could
+be added to it. -/
+theorem exists_subset_pairwise_lt_hammingDist_forall_exists_le (L : Finset (∀ i, β i)) (r : ℕ) :
+    ∃ C ⊆ L, (C : Set (∀ i, β i)).Pairwise (fun x y => r < hammingDist x y) ∧
+      ∀ y ∈ L, ∃ x ∈ C, hammingDist x y ≤ r := by
+  classical
+  -- a largest subset of words pairwise more than `r` apart
+  obtain ⟨C, hC, hmax⟩ := exists_max_image
+    (L.powerset.filter fun C : Finset (∀ i, β i) =>
+      (C : Set (∀ i, β i)).Pairwise fun x y => r < hammingDist x y) card
+    ⟨∅, by simp⟩
+  obtain ⟨hCL, hCr⟩ := mem_filter.1 hC
+  refine ⟨C, mem_powerset.1 hCL, hCr, fun y hy => ?_⟩
+  by_contra hfar
+  simp only [not_exists, not_and, not_le] at hfar
+  have hyC : y ∉ C := fun h => by simpa using hfar y h
+  have hins : ((insert y C : Finset (∀ i, β i)) : Set (∀ i, β i)).Pairwise
+      fun x y => r < hammingDist x y := by
+    rw [coe_insert]
+    exact hCr.insert fun x hx _ => ⟨by rw [hammingDist_comm]; exact hfar x hx, hfar x hx⟩
+  have := hmax _ (mem_filter.2 ⟨mem_powerset.2 (insert_subset hy (mem_powerset.1 hCL)), hins⟩)
+  rw [card_insert_of_notMem hyC] at this
+  omega
+
 /-- **The Gilbert–Varshamov bound** [Gilbert1952]: for `d ≥ 1` there is a code of minimum distance
 at least `d` which has at least `∏ i, |β i| / V` words, where `V` is the size of a ball of radius
 `d - 1`. A largest such code works: its balls of radius `d - 1` cover every word, since a word at
@@ -198,25 +230,17 @@ theorem exists_le_minDist_and_prod_le_card_mul_card_filter_hammingDist_lt {d : �
     ∃ C : Finset (∀ i, β i), (d : ℕ∞) ≤ minDist (C : Set (∀ i, β i)) ∧
       ∏ i, Fintype.card (β i) ≤ #C * #{y : ∀ i, β i | hammingDist x₀ y < d} := by
   classical
-  -- a largest code of minimum distance `d`
-  obtain ⟨C, hC, hmax⟩ := exists_max_image
-    {C : Finset (∀ i, β i) | (C : Set (∀ i, β i)).Pairwise fun x y => d ≤ hammingDist x y} card
-    ⟨∅, by simp⟩
-  have hCd := (mem_filter.1 hC).2
-  refine ⟨C, le_minDist_iff.2 fun x hx y hy hxy => Nat.cast_le.2 (hCd hx hy hxy), ?_⟩
+  -- a maximal set of words pairwise at distance at least `d`
+  obtain ⟨C, -, hCd, hcov⟩ := exists_subset_pairwise_lt_hammingDist_forall_exists_le
+    (univ : Finset (∀ i, β i)) (d - 1)
+  refine ⟨C, le_minDist_iff.2 fun x hx y hy hxy => Nat.cast_le.2 (by
+    have := hCd hx hy hxy
+    omega), ?_⟩
   -- its balls of radius `d - 1` cover every word
   have hcover : (univ : Finset (∀ i, β i)) ⊆ C.biUnion fun x => {y | hammingDist x y < d} := by
     intro y _
-    by_contra hy
-    simp only [mem_biUnion, mem_filter, mem_univ, true_and, not_exists, not_and, not_lt] at hy
-    have hyC : y ∉ C := fun h => by simpa [hd.ne'] using hy y h
-    have hins : ((insert y C : Finset (∀ i, β i)) : Set (∀ i, β i)).Pairwise
-        fun x y => d ≤ hammingDist x y := by
-      rw [coe_insert]
-      exact hCd.insert fun x hx _ => ⟨by rw [hammingDist_comm]; exact hy x hx, hy x hx⟩
-    have := hmax _ (mem_filter.2 ⟨mem_univ _, hins⟩)
-    rw [card_insert_of_notMem hyC] at this
-    omega
+    obtain ⟨x, hx, hxy⟩ := hcov y (mem_univ y)
+    exact mem_biUnion.2 ⟨x, hx, mem_filter.2 ⟨mem_univ y, by omega⟩⟩
   have hsize (x : ∀ i, β i) : #{y : ∀ i, β i | hammingDist x y < d} =
       #{y : ∀ i, β i | hammingDist x₀ y < d} := by
     simp only [card_filter_hammingDist_lt_eq_sum hd, card_filter_hammingDist_eq]

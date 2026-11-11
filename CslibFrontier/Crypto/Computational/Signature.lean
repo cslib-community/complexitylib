@@ -465,7 +465,7 @@ theorem length_le_one_of_mem_support_run_oneTimeSigningOracle (S : SignatureSche
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))) prog).run []).support) :
     queried.length ≤ 1 := by
-  refine ProbOracleComp.run_interpret_invariant
+  refine ProbOracleComp.runWith_invariant
     (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
     (fun s => s.length ≤ 1) ?_ prog [] (by simp) result queried h
   intro ⟨⟨⟩, req⟩ s hs a s' hmem
@@ -483,13 +483,11 @@ private theorem run_oneTimeSigningOracle_apply_eq_zero_of_not_agree (S : Signatu
     {α : Type} (sk : List Bool) {agree : List Bool → Prop} (prog : WordOracleComp Unit α)
     {s queried' : List (List Bool)} (hs : ¬ ∀ r ∈ s, agree r) (hq' : ∀ r ∈ queried', agree r)
     (a : α) :
-    ((OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-        (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))) prog).run s) (a, queried') =
-      0 := by
+    (ProbOracleComp.runWith (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s)) prog s)
+      (a, queried') = 0 := by
   rw [PMF.apply_eq_zero_iff]
   intro hmem
-  refine ProbOracleComp.run_interpret_invariant
+  refine ProbOracleComp.runWith_invariant
     (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
     (fun state => ¬ ∀ r ∈ state, agree r) ?_ prog s hs a queried' hmem hq'
   intro ⟨⟨⟩, req⟩ state hstate val next hnext
@@ -580,10 +578,9 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
       (encPair encUnary encUnary) encUnary)
     {adversary : Forger} (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
     IsOraclePPT (encPair encBits encBits) (limitToOneQuery bound adversary) := by
-  have hbound := hbound.tidy
-  have hcaller := ComputableTidilyInPolyTime.fst (encPair encUnary encBits)
+  have hcaller := ComputableInPolyTime.fst (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) encBool)
-  have hstate := ComputableTidilyInPolyTime.snd (encPair encUnary encBits)
+  have hstate := ComputableInPolyTime.snd (encPair encUnary encBits)
     (encPair (encPair (encFinEnum Unit) encBits) encBool)
   have hreq := hstate.fst'.snd'
   have hrun : IsOraclePPTOn (encPair encUnary encBits)
@@ -594,23 +591,23 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
             (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
             (oneTimeFilterHandler bound caller))
           (adversary caller.1 caller.2)).run false) := by
-    apply hadversary.run_interpret_preprocess_open (operationEncoding := encFinEnum Unit)
+    apply hadversary.run_interpret_preprocess_open' (operationEncoding := encFinEnum Unit)
       (handler := oneTimeFilterHandler bound)
       (prepare := id)
       (initial := fun _ => false)
       (resources := fun caller query => bound caller.1 query.length + 1)
-      ComputableTidilyInPolyTime.id'
-      (IsOraclePPTOn.cond hstate.snd'
-        ((ComputableTidilyInPolyTime.const ([], true)).isOraclePPTOn (Operation := Unit))
-        ((IsOraclePPTOn.query_take () hreq
-          (hbound.comp (hcaller.fst'.prod (ComputableTidilyInPolyTime.length_bits.comp hreq)))).map
-          (ComputableTidilyInPolyTime.id'.prod (.const true))))
+      ComputableInPolyTime.id'
+      (IsOraclePPTOn.cond' hstate.snd'
+        ((ComputableInPolyTime.const ([], true)).isOraclePPTOn (Operation := Unit))
+        ((IsOraclePPTOn.query_take' () hreq
+          (hbound.comp' (hcaller.fst'.prod (ComputableInPolyTime.length_bits.comp' hreq)))).map'
+          (ComputableInPolyTime.id'.prod (.const true))))
       (.const false)
       (fun _ _ => True) (fun _ => trivial)
-      (ComputableTidilyInPolyTime.unary_add.comp
-        ((hbound.comp ((ComputableTidilyInPolyTime.fst (encPair encUnary encBits) encBits).fst'.prod
-          (ComputableTidilyInPolyTime.length_bits.comp
-            (ComputableTidilyInPolyTime.snd (encPair encUnary encBits) encBits)))).prod
+      (ComputableInPolyTime.unary_add.comp'
+        ((hbound.comp' ((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst'.prod
+          (ComputableInPolyTime.length_bits.comp'
+            (ComputableInPolyTime.snd (encPair encUnary encBits) encBits)))).prod
           (.const 1)))
     intro caller request state _ result hresult
     unfold oneTimeFilterHandler at hresult
@@ -622,7 +619,7 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
       obtain ⟨rawSig, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hsig
       refine ⟨trivial, (List.length_take_le _ _).trans (by lia), ?_⟩
       simp [encBool_apply]
-  exact (hrun.map (ComputableTidilyInPolyTime.fst _ _)).isOraclePPT
+  exact (hrun.map' (ComputableInPolyTime.fst _ _)).isOraclePPT
 
 /-- Running an adaptive program filtered through `oneTimeFilterHandler` against
 `signingOracleOf sign` produces the same distribution as running it against
@@ -645,16 +642,15 @@ theorem run_limitToOneQuery_eq_oneTimeSigningOracleOf
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
         (oneTimeSigningOracleOf sign sk)) prog).run []) := by
-  rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
+  rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_run_interpret,
+    PMF.map_comp]
   -- Reconstruct the filter flag from the query log, so no state invariant is needed.
-  have hsim := ProbOracleComp.run_interpret_map_state
+  have hsim := ProbOracleComp.runWith_map_state
     (oracle := fun q s => ProbComp.eval (oneTimeSigningOracleOf sign sk q s))
     (oracle' := fun q (state : Bool × List (List Bool)) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (fun q s => ProbComp.eval (signingOracleOf sign sk q s)))
-        ((oneTimeFilterHandler bound (n, pk) q).run state.1)).run state.2).map
+      (ProbOracleComp.runWith (fun q s => ProbComp.eval (signingOracleOf sign sk q s))
+          ((oneTimeFilterHandler bound (n, pk) q).run state.1) state.2).map
           (fun result => (result.1.1, result.1.2, result.2)))
     (represent := fun queried => (!queried.isEmpty, queried))
     (step := by

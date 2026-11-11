@@ -448,7 +448,7 @@ example (P : HierarchyParams 2 1 1 1 0) (i : ℕ) (x y : V P 1) :
   dsimp only
   simpa only [full, filter_true] using
     ResidualBinTask.expect_value_true P (full (α := Unit)) (full (α := Unit)) (H P 1)
-      (by norm_num) (by norm_num) (invariant_one P).2.1 (invariant_one P).2.2.2
+      (by norm_num) (invariant_one P).2.1
       (invariant_one P).2.2.1 (fun d => min 1 (max 0 (2 * d - 1)))
       (fun j => (1 / 2 : ℝ) ^ j) (fun _ => by positivity) (by norm_num) i
       (fun w => copyFraction (P.copyCutoff ((2 : ℝ)⁻¹ ^ 1)) P.m w 0)

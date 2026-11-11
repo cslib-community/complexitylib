@@ -25,7 +25,7 @@ import Mathlib.Tactic.Ring
 /-!
 # Polynomial switches with Lipschitz fourth roots
 
-The fourth-moment workstream of complexitylib issue #1721 needs a monotone switch whose fourth
+The fourth-moment workstream of cslib-frontier issue #1721 needs a monotone switch whose fourth
 root and complementary fourth root are Lipschitz. The switch of [OpenAI2026LogSpace, Section 5.1]
 is a rescaled normalized integral of `t^(s-1) (1-t)^(s-1)` on `[0,1]`.
 For the fourth-moment route (`s = 4`), its polynomial

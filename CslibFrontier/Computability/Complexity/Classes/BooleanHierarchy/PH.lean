@@ -31,7 +31,7 @@ It is a containment, not a collapse of either hierarchy; Kadin's collapse theore
 * [J.-Y. Cai et al., *The Boolean Hierarchy I: Structural Properties*][CaiEtAl1988]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 

@@ -75,7 +75,7 @@ private noncomputable def collectStep (bits : List Bool) : WordOracleComp Unit (
 -- An adaptive loop with growing requests is strict oracle PPT by its one-bit growth bound.
 example : IsOraclePPTOn encUnary encBits
     (fun n => OracleComp.iterate n collectStep []) := by
-  refine IsOraclePPTOn.iterate_of_bounded_growth (count := fun n => n) (initial := fun _ => [])
+  refine IsOraclePPTOn.iterate_of_bounded_growth' (count := fun n => n) (initial := fun _ => [])
     (by fun_prop) (.const []) (by unfold collectStep; fun_prop) (growth := 1) ?_
   intro bits next hnext
   obtain ⟨prefix_, hprefix, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
@@ -98,8 +98,8 @@ example : ¬ IsOraclePPTOn encUnary encBits (fun n => List.take (2 ^ n) <$>
   obtain ⟨n, hn⟩ := not_two_pow_le c d
   have hlength := hbound n Unit (fun _ s => PMF.pure (List.replicate (2 ^ n) true, s)) () ()
     (List.replicate (2 ^ n) true) (by
-      rw [OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query]
-      simp [StateT.run])
+      rw [ProbOracleComp.runWith_map, ProbOracleComp.runWith_query]
+      simp)
   simp only [encBits, Function.Embedding.coe_refl, id_eq, List.length_replicate, encUnary_apply]
     at hlength
   lia
@@ -137,7 +137,7 @@ example : ¬ IsOraclePPTOn (Operation := Unit) encUnary encBits
     | succ m ih =>
       rw [OracleComp.iterate_succ, ih, pure_bind, pow_succ, Nat.mul_two, List.replicate_add]
   have hlength := hbound n Unit (fun _ s => PMF.pure ([], s)) () () (List.replicate (2 ^ n) true)
-    (by rw [hiterate, OracleComp.interpret_pure, StateT.run_pure]; simp)
+    (by rw [hiterate, ProbOracleComp.runWith_pure]; simp)
   simp only [encBits, Function.Embedding.coe_refl, id_eq, List.length_replicate, encUnary_apply]
     at hlength
   lia

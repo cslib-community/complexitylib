@@ -19,7 +19,7 @@ Concrete majority families satisfy the polynomial size and fan-in hypotheses. Bo
 cover the carry-save and modular-to-majority milestones.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.ThresholdNC1
 
@@ -27,7 +27,7 @@ open Cslib Cslib.Circuits Cslib.Circuits.Boolean
 
 example : AC0Mod 3 ⊂ TC0 :=
   have : Fact (Nat.Prime 3) := ⟨by decide⟩
-  Smolensky.AC0Mod_ssubset_TC0 (by decide)
+  Smolensky.AC0Mod_ssubset_TC0
 
 example : Language.ofSlices majority ∈ NC 1 := majority_mem_NC_one
 

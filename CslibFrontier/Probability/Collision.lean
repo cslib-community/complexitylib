@@ -64,7 +64,8 @@ theorem collisionProbability_eq_sum [Fintype α] (p : PMF α) :
 theorem collisionProbability_nonneg (p : PMF α) : 0 ≤ collisionProbability p :=
   tsum_nonneg (fun _ => sq_nonneg _)
 
-private theorem summable_collision (p : PMF α) : Summable (fun a => (p a).toReal ^ 2) := by
+/-- The squared probability masses of a `PMF` are summable. -/
+theorem summable_collision (p : PMF α) : Summable (fun a => (p a).toReal ^ 2) := by
   apply Summable.of_nonneg_of_le (fun _ => sq_nonneg _) _ (summable_toReal p)
   intro a
   nlinarith [ENNReal.toReal_nonneg (a := p a), toReal_apply_le_one p a]

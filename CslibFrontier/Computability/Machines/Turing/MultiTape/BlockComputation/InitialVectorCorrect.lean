@@ -40,8 +40,7 @@ theorem values_eq_packBits {r m : ℕ} (M : MultiTapeTM k Bool Q) (e : Q ≃ Fin
       (Packed.packBits hb
         (Encoding.encode e (some (initialView (MultiTapePTM.ofDeterministic M) b))) j).val) := by
   rw [values_of_capacity M e limit m r hcapacity]
-  congr 1
-  funext j
+  congr 1 with j : 1
   exact InitialChunk.chunk_eq_packBits M e b hb j
 
 end Turing.MultiTapePTM.BlockComputation.InitialVector

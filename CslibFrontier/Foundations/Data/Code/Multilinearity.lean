@@ -12,6 +12,7 @@ public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.LinearAlgebra.AffineSpace.AffineMap
+import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Tactic.FieldSimp
@@ -82,9 +83,6 @@ lines is less than `ε`, then `f` is `3 n ^ 2 (ε + δ + 1 / N)`-approximately m
   `Cslib.Code.isMultilinear_iff_eq_eval_multilinearExtension`: multilinear functions are the
   multilinear extensions of functions on the cube.
 * `Cslib.Code.isAffineFun_iff_exists_affineMap`: affine functions of one variable are affine maps.
-* `Cslib.BitString.indicatorPoly_mem_restrictDegree`,
-  `Cslib.BitString.multilinearExtension_mem_restrictDegree`: multilinear extensions have degree at
-  most one in each variable.
 * `Cslib.Code.isMultilinear_eval_of_mem_restrictDegree`,
   `Cslib.Code.isMultilinear_iff_exists_mem_restrictDegree`: multilinear functions are the
   evaluations of polynomials of degree at most one in each variable.
@@ -210,42 +208,6 @@ theorem IsAffineFun.eq_of_eq_of_eq {g h : F → F} (hg : IsAffineFun g) (hh : Is
   funext t
   rw [hg, hh]
 
-/-! ### Multilinear extensions have degree at most one in each variable -/
-
-section RestrictDegree
-
-variable {R : Type*} [CommRing R]
-
-/-- An indicator polynomial has degree at most one in each variable. -/
-theorem _root_.Cslib.BitString.indicatorPoly_mem_restrictDegree [Fintype ι] (a : ι → Bool) :
-    (indicatorPoly a : MvPolynomial ι R) ∈ restrictDegree ι R 1 := by
-  classical
-  nontriviality R
-  rw [mem_restrictDegree]
-  intro s hs j
-  refine (degreeOf_le_iff.mp ?_) s hs
-  refine (degreeOf_prod_le j _ _).trans ?_
-  calc ∑ k, degreeOf j (if a k then X k else 1 - X k : MvPolynomial ι R)
-      ≤ ∑ k, if j = k then 1 else 0 := sum_le_sum fun k _ => by
-        have hX : degreeOf j (X k : MvPolynomial ι R) = if j = k then 1 else 0 := degreeOf_X j k
-        by_cases hk : a k
-        · simp only [hk, ite_true, hX, le_refl]
-        · simp only [hk, Bool.false_eq_true, ite_false]
-          refine (degreeOf_sub_le _ _ _).trans ?_
-          rw [hX, ← C_1, degreeOf_C]
-          simp
-    _ = 1 := by simp
-
-/-- The multilinear extension of a function on the cube has degree at most one in each
-variable. -/
-theorem _root_.Cslib.BitString.multilinearExtension_mem_restrictDegree [Fintype ι] [DecidableEq ι]
-    (g : (ι → Bool) → R) : multilinearExtension g ∈ restrictDegree ι R 1 :=
-  Submodule.sum_mem _ fun a _ => by
-    rw [C_mul']
-    exact Submodule.smul_mem _ _ (indicatorPoly_mem_restrictDegree a)
-
-end RestrictDegree
-
 /-! ### Multilinear functions -/
 
 section Multilinear
@@ -336,10 +298,8 @@ theorem isMultilinear_eval_multilinearExtension [Fintype ι] (g : (ι → Bool) 
   intro x i
   have key (a : ι → Bool) (t : F) :
       (∏ j, if a j then update x i t j else 1 - update x i t j) =
-        (if a i then t else 1 - t) * ∏ j ∈ univ \ {i}, if a j then x j else 1 - x j := by
-    rw [← prod_update_of_mem (mem_univ i)]
-    exact prod_congr rfl fun j _ =>
-      apply_update (fun j (s : F) => if a j then s else 1 - s) x i t j
+        (if a i then t else 1 - t) * ∏ j ∈ univ.erase i, if a j then x j else 1 - x j :=
+    prod_apply_update_of_mem (mem_univ i) (fun j (s : F) => if a j then s else 1 - s) x t
   unfold lineRestrict
   simp only [eval_multilinearExtension_eq_sum, eval_indicatorPoly_apply, key]
   refine isAffineFun_sum _ fun a _ => (IsAffineFun.mul_const ?_ _).const_mul (g a)
@@ -367,9 +327,8 @@ theorem isMultilinear_eval_of_mem_restrictDegree [Finite ι] {P : MvPolynomial �
   simp only [eval_eq']
   refine isAffineFun_sum _ fun s hs => IsAffineFun.const_mul ?_ _
   have key (t : F) : (∏ j, update x i t j ^ s j) =
-      t ^ s i * ∏ j ∈ univ \ {i}, x j ^ s j := by
-    rw [← prod_update_of_mem (mem_univ i)]
-    exact prod_congr rfl fun j _ => apply_update (fun j (y : F) => y ^ s j) x i t j
+      t ^ s i * ∏ j ∈ univ.erase i, x j ^ s j :=
+    prod_apply_update_of_mem (mem_univ i) (fun j (y : F) => y ^ s j) x t
   simp only [key]
   refine IsAffineFun.mul_const ?_ _
   rcases Nat.le_one_iff_eq_zero_or_eq_one.mp ((mem_restrictDegree ι P 1).mp hP s hs i) with h | h

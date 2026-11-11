@@ -25,7 +25,7 @@ search.
 The bounds are original elementary consequences of the existing finite selectors.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.ThreeSum.ChanHe
 

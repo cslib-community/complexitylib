@@ -135,10 +135,7 @@ theorem choose_le_or_pow_le_mul_size (hw : 2 ≤ w) (hk : w + 1 ≤ k) (hr : 2 *
     n.choose k ≤ Positive.errorCap n k p w * C.size ∨
       (k - 1) ^ n ≤ 2 * negativeGateCap n (k - 1) p w * C.size := by
   refine or_iff_not_imp_left.2 fun hpos => ?_
-  have hn : 0 < n := by
-    by_contra hn
-    have hchoose : n.choose k = 0 := Nat.choose_eq_zero_of_lt (by omega)
-    exact hpos (hchoose ▸ Nat.zero_le _)
+  have hn : 0 < n := by grind
   have hne := nonempty_outputApproximator (p := p) hw hk (fun _ hs => hC.ofFinset_eq_true hs)
     (not_le.1 hpos)
   have hhalf := Negative.half_le_card_acceptedColorings (r := k - 1) hn hr

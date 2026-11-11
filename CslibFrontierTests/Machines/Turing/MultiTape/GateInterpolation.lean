@@ -31,7 +31,13 @@ def haltedControl : MultiTapeTM 0 Bool (Fin 1) := MultiTapeTM.ofTr 0 fun _ _ _ =
   { inputTape := .zero, workTapes := fun _ => (none, .zero), output := none, state := none }
 
 def params : QueryGate.Params Interpolation.Context :=
-  ((1, 1, 2, 0, 1, 0, 13), (17, 2, 13), List.replicate 13 0, 8192)
+  (⟨1, 1, 2, 0, 1, 0, 13⟩, (17, 2, 13), List.replicate 13 0, 8192)
+
+/-- The named context retains the former right-nested seven-binary-register word. -/
+example (N b σ i m chunk stride : ℕ) :
+    Interpolation.encContext ⟨N, b, σ, i, m, chunk, stride⟩ =
+      encPair encNat (encPair encNat (encPair encNat (encPair encNat
+        (encPair encNat (encPair encNat encNat))))) (N, b, σ, i, m, chunk, stride) := rfl
 
 def observe : Interpolation.State 0 (Fin 1) → Option (ℕ × ℕ) :=
   Sum.elim (fun q => some q.2) (fun _ => none)

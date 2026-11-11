@@ -41,7 +41,7 @@ entries themselves are matrices (e.g. in rational circuit evaluations).
 * [OpenAI2026RationalHitting]
 -/
 
-@[expose] public section
+public section
 
 namespace Matrix
 

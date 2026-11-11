@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 import CslibFrontier.Computability.WordRAM.Call
+import CslibFrontier.Algorithms.WordRAM.NatLog
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
 public import CslibFrontier.Algorithms.WordRAM.Karger.Contract
@@ -148,8 +149,7 @@ theorem fits_workspace_of_logWidth_three {n w : ℕ} (hn : 2 ≤ n) (hw : logWid
   obtain ⟨d, rfl⟩ : ∃ d, n = d + 2 := ⟨n - 2, by omega⟩
   nlinarith
 
-/-- Under `2 ≤ n` and `logWidth 3 n ≤ w`, `highProbTrials n` and intermediate `n * (n - 1)` and
-`Nat.log 2 n + 2` values fit in `w`-bit words. -/
+/-- Under `2 ≤ n` and `logWidth 3 n ≤ w`, `highProbTrials n` fits in `w`-bit words. -/
 theorem fits_highProbTrials_of_logWidth_three {n w : ℕ} (hn : 2 ≤ n) (hw : logWidth 3 n ≤ w) :
     Fits w (highProbTrials n) := by
   refine (fits_of_lt_pow (k := 3) (n := n) ?_).mono hw
@@ -172,15 +172,8 @@ theorem fits_highProbTrials_of_logWidth_three {n w : ℕ} (hn : 2 ≤ n) (hw : l
 `InputFits w (n :: flattenMatrix W)`. -/
 theorem inputFits_single {n w : ℕ} {W : Fin n → Fin n → ℕ} (hn : 2 ≤ n)
     (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
-    InputFits w (n :: flattenMatrix W) := by
-  have hws := fits_workspace_of_logWidth_three hn hw
-  refine ⟨?_, ?_⟩
-  · simp only [List.length_cons, length_flattenMatrix]
-    exact hws.of_le (by omega)
-  · intro v hv
-    rcases List.mem_cons.mp hv with rfl | hmem
-    · exact hws.of_le (by omega)
-    · exact htot.of_le (mem_flattenMatrix_le_totalDoubledWeight W hmem)
+    InputFits w (n :: flattenMatrix W) :=
+  inputFits_cons_flattenMatrix (fits_workspace_of_logWidth_three hn hw) (by omega) (by omega) htot
 
 /-- `logWidth 3 n ≤ w`, `Fits w R`, and `Fits w (totalDoubledWeight W)` suffice for
 `InputFits w (R :: n :: flattenMatrix W)`. -/
@@ -197,27 +190,6 @@ theorem inputFits_amplified {R n w : ℕ} {W : Fin n → Fin n → ℕ} (hn : 2 
     · rcases List.mem_cons.mp hv' with rfl | hmem
       · exact hws.of_le (by omega)
       · exact htot.of_le (mem_flattenMatrix_le_totalDoubledWeight W hmem)
-
-/-- In `Data.init (pfx ++ flattenMatrix W)`, the flattened matrix occupies memory starting at
-`1 + pfx.length` with stride `n`. -/
-theorem holdsMatrix_init_append {r n : ℕ} (pfx : List ℕ) (W : Fin n → Fin n → ℕ) :
-    HoldsMatrix (Data.init (r := r) (pfx ++ flattenMatrix W)).mem (1 + pfx.length) n W := by
-  intro i j
-  have haddr : (1 + pfx.length) + i.val * n + j.val =
-      (pfx.length + (i.val * n + j.val)) + 1 := by omega
-  rw [haddr, Data.init_mem_succ]
-  have hlt : i.val * n + j.val < (flattenMatrix W).length := by
-    rw [length_flattenMatrix]
-    nlinarith [i.isLt, j.isLt]
-  rw [List.getD_eq_getElem?_getD,
-    List.getElem?_append_right (Nat.le_add_right pfx.length _)]
-  simp only [Nat.add_sub_cancel_left, List.getElem?_eq_getElem hlt, Option.getD_some]
-  exact getElem_flattenMatrix W i j
-
-/-- In `Data.init (n :: flattenMatrix W)`, memory holds `W` at base `2` with stride `n`. -/
-theorem holdsMatrix_init_single {r n : ℕ} (W : Fin n → Fin n → ℕ) :
-    HoldsMatrix (Data.init (r := r) (n :: flattenMatrix W)).mem 2 n W :=
-  holdsMatrix_init_append [n] W
 
 /-- In `Data.init (R :: n :: flattenMatrix W)`, memory holds `W` at base `3` with stride `n`. -/
 theorem holdsMatrix_init_amplified {r R n : ℕ} (W : Fin n → Fin n → ℕ) :
@@ -644,81 +616,16 @@ theorem ampTrialPost_exec {w wb i R : ℕ} {x : Data 22}
     simpa [s₁, v_new, ha'] using
       Exec.load (B := .standard) (w := w) (d := val1) (a := addr1)
         (x := ((x.set zero 0).set one 1).set addr1 (wb + 1))
-  let best_next := if i = 0 then v_new else min v_new (x.regs bestVal)
-  have hbr : ∃ s₂ : Data 22,
-      ExecWithin (B := .standard) w (ram[
-        if trialIdx = zero then [ bestVal ← val1 ] else [
-          if val1 < bestVal then [ bestVal ← val1 ] else [ zero ← #0 ]
-        ]]) s₁ s₂ 5 ∧
-      s₂.mem = x.mem ∧
-      s₂.regs one = 1 ∧
-      s₂.regs srcBase = x.regs srcBase ∧
-      s₂.regs wBase = wb ∧
-      s₂.regs dBase = x.regs dBase ∧
-      s₂.regs nOrig = x.regs nOrig ∧
-      s₂.regs matLen = x.regs matLen ∧
-      s₂.regs numTrials = x.regs numTrials ∧
-      s₂.regs trialIdx = i ∧
-      s₂.regs bestVal = best_next := by
-    have hs1_ti : s₁.regs trialIdx = i := by
-      simpa +decide [s₁, Function.update_apply] using hti
-    have hs1_z : s₁.regs zero = 0 := by simp +decide [s₁]
-    have hs1_v1 : s₁.regs val1 = v_new := by simp [s₁]
-    have hs1_bv : s₁.regs bestVal = x.regs bestVal := by simp +decide [s₁]
-    by_cases hi0 : i = 0
-    · have hc : (Cond.eq trialIdx zero).Holds s₁ := by simp [Cond.holds_eq, hs1_ti, hs1_z, hi0]
-      have e_pos : ExecWithin (B := .standard) w ram[bestVal ← val1] s₁
-          (s₁.set bestVal v_new) 1 := by
-        simpa [hs1_v1] using
-          (Exec.copy (B := .standard) (w := w) (d := bestVal) (s := val1) (x := s₁)).within
-      refine ⟨s₁.set bestVal v_new,
-        (ExecWithin.branch_pos hc e_pos).mono (by omega), rfl,
-        by simp +decide [s₁],
-        by simp +decide [s₁],
-        by simpa +decide [s₁, Function.update_apply] using hwb,
-        by simp +decide [s₁],
-        by simp +decide [s₁],
-        by simp +decide [s₁],
-        by simp +decide [s₁],
-        by simp +decide [hs1_ti],
-        by simp [best_next, hi0]⟩
-    · have hc : ¬(Cond.eq trialIdx zero).Holds s₁ := by simp [Cond.holds_eq, hs1_ti, hs1_z, hi0]
-      by_cases hlt : v_new < x.regs bestVal
-      · have hc2 : (Cond.lt val1 bestVal).Holds s₁ := by
-          simp [Cond.holds_lt, hs1_v1, hs1_bv, hlt]
-        have e_pos2 : ExecWithin (B := .standard) w ram[bestVal ← val1] s₁
-            (s₁.set bestVal v_new) 1 := by
-          simpa [hs1_v1] using
-            (Exec.copy (B := .standard) (w := w) (d := bestVal) (s := val1) (x := s₁)).within
-        have e_in := ExecWithin.branch_pos (neg := ram[zero ← #0]) hc2 e_pos2
-        refine ⟨s₁.set bestVal v_new,
-          (ExecWithin.branch_neg (pos := ram[bestVal ← val1]) hc e_in).mono (by omega), rfl,
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simpa +decide [s₁, Function.update_apply] using hwb,
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [hs1_ti],
-          by simp [best_next, hi0, Nat.min_eq_left (Nat.le_of_lt hlt)]⟩
-      · have hc2 : ¬(Cond.lt val1 bestVal).Holds s₁ := by
-          simp [Cond.holds_lt, hs1_v1, hs1_bv, hlt]
-        have e_neg2 : ExecWithin (B := .standard) w ram[zero ← #0] s₁ (s₁.set zero 0) 1 :=
-          ExecWithin.const (fits_zero w)
-        have e_in := ExecWithin.branch_neg (pos := ram[bestVal ← val1]) hc2 e_neg2
-        refine ⟨s₁.set zero 0,
-          (ExecWithin.branch_neg (pos := ram[bestVal ← val1]) hc e_in).mono (by omega), rfl,
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simpa +decide [s₁, Function.update_apply] using hwb,
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [s₁],
-          by simp +decide [hs1_ti],
-          by simp +decide [s₁, best_next, hi0, Nat.min_eq_right (Nat.le_of_not_lt hlt)]⟩
-  obtain ⟨s₂, e_br, hm2, ho2, hsb2, hwb2, hdb2, hn2, hml2, hnt2, hti2, hbv2⟩ := hbr
+  obtain ⟨s₂, e_br, hm2, hbv2, hfr⟩ := minUpdate_exec (w := w) (trial := trialIdx)
+    (zero := zero) (val := val1) (best := bestVal) (by decide) (x := s₁) (by simp +decide [s₁])
+  have ho2 : s₂.regs one = 1 := by simp +decide [hfr one, s₁]
+  have hsb2 : s₂.regs srcBase = x.regs srcBase := by simp +decide [hfr srcBase, s₁]
+  have hwb2 : s₂.regs wBase = wb := by simpa +decide [hfr wBase, s₁] using hwb
+  have hdb2 : s₂.regs dBase = x.regs dBase := by simp +decide [hfr dBase, s₁]
+  have hn2 : s₂.regs nOrig = x.regs nOrig := by simp +decide [hfr nOrig, s₁]
+  have hml2 : s₂.regs matLen = x.regs matLen := by simp +decide [hfr matLen, s₁]
+  have hnt2 : s₂.regs numTrials = x.regs numTrials := by simp +decide [hfr numTrials, s₁]
+  have hti2 : s₂.regs trialIdx = i := by simpa +decide [hfr trialIdx, s₁] using hti
   have e_inc : ExecWithin w ram[trialIdx ← trialIdx + one] s₂ (s₂.set trialIdx (i + 1)) 1 := by
     simpa [BinOp.eval, hti2, ho2] using
       ExecWithin.bin (f := .add) (d := trialIdx) (i := trialIdx) (j := one) (x := s₂)
@@ -731,7 +638,7 @@ theorem ampTrialPost_exec {w wb i R : ℕ} {x : Data 22}
     by simpa +decide [Function.update_apply] using hml2,
     by simpa +decide [Function.update_apply] using hnt2,
     by simp,
-    by simpa +decide [Function.update_apply] using hbv2⟩
+    by simpa +decide [Function.update_apply, s₁, hti] using hbv2⟩
   unfold ampTrialPost
   exact ((e1.within).seq ((e2.within).seq ((e3.within).seq
     ((e4.within).seq (e_br.seq e_inc))))).mono (by omega)
@@ -1134,55 +1041,10 @@ theorem logLoop_exec {w n : ℕ} {x : Data 22} (hn : 1 ≤ n)
       y.regs one = 1 ∧
       y.regs nOrig = n ∧
       y.regs idx = Nat.log 2 n := by
-  let I (y : Data 22) : Prop :=
-    y.mem = x.mem ∧ y.regs one = 1 ∧ y.regs nOrig = n ∧
-    1 ≤ y.regs rem ∧ y.regs rem ≤ n ∧
-    y.regs idx + Nat.log 2 (y.regs rem) = Nat.log 2 n
-  have hbody : ∀ y, I y → (Cond.lt one rem).Holds y →
-      ∃ z, ExecWithin w logStep y z 2 ∧ I z ∧
-        Nat.log 2 (z.regs rem) < Nat.log 2 (y.regs rem) := by
-    intro y ⟨hym, hy1, hyn, hyr_ge, hyr_le, hy_sum⟩ hc
-    have hgt1 : 1 < y.regs rem := by simpa [Cond.holds_lt, hy1] using hc
-    have hshr_eq : y.regs rem >>> 1 = y.regs rem / 2 := by
-      rw [Nat.shiftRight_eq_div_pow, pow_one]
-    have hlog_step : Nat.log 2 (y.regs rem) = Nat.log 2 (y.regs rem / 2) + 1 :=
-      Nat.log_of_one_lt_of_le (by decide) (by omega)
-    have hdiv_fit : Fits w (y.regs rem / 2) := hn_fit.of_le (by omega)
-    have hidx1_fit : Fits w (y.regs idx + 1) := hlg_fit.of_le (by omega)
-    let z₁ := y.set rem (y.regs rem / 2)
-    let z₂ := z₁.set idx (y.regs idx + 1)
-    have e1 : ExecWithin w ram[rem ← rem >>> one] y z₁ 1 := by
-      simpa [z₁, BinOp.eval, hy1, hshr_eq] using
-        ExecWithin.bin (f := .shiftRight) (d := rem) (i := rem) (j := one) (x := y)
-          (by simpa [BinOp.eval, hy1, hshr_eq] using hdiv_fit)
-    have e2 : ExecWithin w ram[idx ← idx + one] z₁ z₂ 1 := by
-      have hi' : z₁.regs idx = y.regs idx := by simp +decide [z₁]
-      have ho' : z₁.regs one = 1 := by simpa +decide [z₁, Function.update_apply] using hy1
-      simpa [z₂, BinOp.eval, hi', ho'] using
-        ExecWithin.bin (f := .add) (d := idx) (i := idx) (j := one) (x := z₁)
-          (by simpa [BinOp.eval, hi', ho'] using hidx1_fit)
-    refine ⟨z₂, e1.seq e2, ?_, ?_⟩
-    · refine ⟨hym,
-        by simpa +decide [z₂, z₁, Function.update_apply] using hy1,
-        by simpa +decide [z₂, z₁, Function.update_apply] using hyn,
-        by simp +decide [z₂, z₁]; omega,
-        by simp +decide [z₂, z₁]; omega,
-        ?_⟩
-      simp +decide only [z₂, z₁, Data.set_regs, Function.update_apply, ↓reduceIte]
-      omega
-    · simp +decide only [z₂, z₁, Data.set_regs, Function.update_apply, ↓reduceIte]
-      omega
-  have hx : I x := ⟨rfl, hone, hnOrig, by omega, hrem.le, by rw [hidx, hrem, zero_add]⟩
-  obtain ⟨y, he, ⟨hym, hy1, hyn, hyr_ge, _, hy_sum⟩, hnc⟩ :=
-    ExecWithin.loop_invariant I (fun y => Nat.log 2 (y.regs rem)) hbody hx
-  have hyr_eq1 : y.regs rem = 1 := by
-    have : ¬(1 < y.regs rem) := by simpa [Cond.holds_lt, hy1] using hnc
-    omega
-  have hy_idx : y.regs idx = Nat.log 2 n := by
-    rw [hyr_eq1, Nat.log_one_right, add_zero] at hy_sum
-    exact hy_sum
-  refine ⟨y, ?_, hym, hy1, hyn, hy_idx⟩
-  exact he.mono (by rw [hrem]; omega)
+  obtain ⟨y, he, hm, hidx', hframe⟩ := NatLog.shiftLoop_exec (one := one) (rem := rem)
+    (idx := idx) (by decide) (by decide) (by decide) hn hone hrem hidx hn_fit hlg_fit
+  exact ⟨y, he, hm, (hframe one (by decide) (by decide)).trans hone,
+    (hframe nOrig (by decide) (by decide)).trans hnOrig, hidx'⟩
 
 theorem highProbSetup_exec {w n : ℕ} {W : Fin n → Fin n → ℕ}
     (hn : 2 ≤ n) (hw : logWidth 3 n ≤ w) :

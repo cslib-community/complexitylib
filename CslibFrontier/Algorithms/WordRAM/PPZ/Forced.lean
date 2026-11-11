@@ -54,7 +54,8 @@ namespace Cslib.Algorithms.WordRAM.PPZ
 
 open Cslib.WordRAM Cslib.WordRAM.Block Cslib.Logic.PL Cslib.Complexity.PPZ
 open Cslib.Algorithms.WordRAM.Schoening (litCode encodeClause encodeClauses litCode_shiftRight
-  litCode_and_one length_encodeClause encodeClauses_cons encodeClauses_nil litCode_lt)
+  litCode_and_one length_encodeClause encodeClauses_cons encodeClauses_nil litCode_lt
+  one_sub_toNat_xor toNat_or toNat_xor_le_one)
 
 variable {n : ℕ}
 
@@ -108,21 +109,12 @@ theorem forced_eq_ite (φ : CNF (Fin n)) (τ : Fin n → Option Bool) (x : Fin n
   unfold forced
   simp only [key]
 
-private theorem toNat_xor_eq (a b : Bool) : 1 - (a.toNat ^^^ b.toNat) = (a == b).toNat := by
-  cases a <;> cases b <;> rfl
-
-private theorem toNat_or (a b : Bool) : a.toNat ||| b.toNat = (a || b).toNat := by
-  cases a <;> cases b <;> rfl
-
 private theorem toNat_and (a b : Bool) : a.toNat &&& b.toNat = (a && b).toNat := by
   cases a <;> cases b <;> rfl
 
-private theorem toNat_xor_le_one (a b : Bool) : a.toNat ^^^ b.toNat ≤ 1 := by
-  cases a <;> cases b <;> decide
-
 /-- The partial-assignment test of `litOk`: `τ v` is `some (!s)` exactly when its word is
 `1 - s`. -/
-private theorem optCode_eq_iff (o : Option Bool) (s : Bool) :
+theorem optCode_eq_one_sub_iff (o : Option Bool) (s : Bool) :
     optCode o = 1 - s.toNat ↔ o = some (!s) := by
   rcases o with _ | a
   · cases s <;> simp [optCode]
@@ -254,17 +246,19 @@ theorem litBody_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (l : Li
       hf.fits.of_le (by have := toNat_xor_le_one l.2 b; have := hf.pos; omega)
     have hf2 : Fits w (1 - (l.2.toNat ^^^ b.toNat)) := hf.fits.of_le (by have := hf.pos; omega)
     have hf3 : Fits w (h.toNat ||| (1 - (l.2.toNat ^^^ b.toNat))) := hf.fits.of_le (by
-      rw [toNat_xor_eq, toNat_or]; have := Bool.toNat_le (h || (l.2 == b)); have := hf.pos; omega)
+      rw [one_sub_toNat_xor, toNat_or]; have := Bool.toNat_le (h || (l.2 == b)); have := hf.pos
+      omega)
     have hf4 : Fits w (o.toNat &&& (1 - (l.2.toNat ^^^ b.toNat))) := hf.fits.of_le (by
-      rw [toNat_xor_eq, toNat_and]; have := Bool.toNat_le (o && (l.2 == b)); have := hf.pos; omega)
+      rw [one_sub_toNat_xor, toNat_and]; have := Bool.toNat_le (o && (l.2 == b)); have := hf.pos
+      omega)
     refine ⟨((((((((y.set lit (litCode l)).set var l.1.val).set sgn l.2.toNat).set eq
       (l.2.toNat ^^^ b.toNat)).set eq (1 - (l.2.toNat ^^^ b.toNat))).set hasLit
       (h.toNat ||| (1 - (l.2.toNat ^^^ b.toNat)))).set ok
       (o.toNat &&& (1 - (l.2.toNat ^^^ b.toNat)))).set lptr (y.regs lptr + 1)), ?_, rfl, ?_, ?_,
       by simp⟩
     · ram_eval [litBody, hl, hone, hvar, hsgn, hxr, hb, hh, ho, hfv, hfs, hf1, hf2, hf3, hf4, hlp]
-    · simp +decide [toNat_xor_eq, toNat_or, litHas]
-    · simp +decide [toNat_xor_eq, toNat_and, litOk]
+    · simp +decide [one_sub_toNat_xor, toNat_or, litHas]
+    · simp +decide [one_sub_toNat_xor, toNat_and, litOk]
   · have hvx' : l.1.val ≠ x.val := fun h' => hvx (Fin.ext h')
     have hbx : (l.1 == x) = false := beq_eq_false_iff_ne.mpr hvx
     have hτv : y.mem (y.regs tBase + l.1.val) = optCode (τ l.1) := hf.stored l.1
@@ -277,7 +271,7 @@ theorem litBody_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (l : Li
       · ram_eval [litBody, hl, hone, hvar, hsgn, hxr, hvx', hτv, hve, hh, ho, hfv, hfs, hfa, hfe,
           hlp]
       · simp +decide [hh, litHas, hbx]
-      · simp +decide [litOk, hvx, (optCode_eq_iff _ _).mp hve]
+      · simp +decide [litOk, hvx, (optCode_eq_one_sub_iff _ _).mp hve]
     · refine ⟨((((((((y.set lit (litCode l)).set var l.1.val).set sgn l.2.toNat).set addr
         (y.regs tBase + l.1.val)).set val (optCode (τ l.1))).set eq (1 - l.2.toNat)).set ok
         0).set lptr (y.regs lptr + 1)), ?_, rfl, ?_, ?_, by simp⟩
@@ -286,7 +280,7 @@ theorem litBody_spec (τ : Fin n → Option Bool) (x : Fin n) (b : Bool) (l : Li
       · simp +decide [hh, litHas, hbx]
       · have : (τ l.1 == some (!l.2)) = false := by
           rw [beq_eq_false_iff_ne]
-          exact fun h' => hve ((optCode_eq_iff _ _).mpr h')
+          exact fun h' => hve ((optCode_eq_one_sub_iff _ _).mpr h')
         simp +decide [litOk, hvx, this]
 
 /-- Code that writes none of the registers of `ScanFrame`. -/

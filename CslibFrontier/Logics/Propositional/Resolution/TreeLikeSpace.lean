@@ -233,22 +233,14 @@ theorem exists_of_restrict {v : V} {b : Bool} (d : (φ.restrict v b).Derivation 
       (∀ l ∈ c, l ∈ c') ∧ d'.strahler = d.strahler := by
   induction d with
   | mem hc =>
-    obtain ⟨d, hd, -, rfl⟩ := mem_restrict.1 hc
-    refine ⟨d, .mem hd, fun l hl => ?_, fun l hl => (List.mem_filter.1 hl).1, rfl⟩
-    by_cases hlv : l = (v, !b)
-    · exact Or.inr hlv
-    · exact Or.inl (List.mem_filter.2 ⟨hl, by simpa using hlv⟩)
+    obtain ⟨d, hd, hsub, hsup⟩ := exists_of_mem_restrict hc
+    exact ⟨d, .mem hd, hsup, hsub, rfl⟩
   | @resolvent c₁ c₂ u e₁ e₂ hu₁ hu₂ ih₁ ih₂ =>
     obtain ⟨d₁, f₁, h₁, h₁', hs₁⟩ := ih₁
     obtain ⟨d₂, f₂, h₂, h₂', hs₂⟩ := ih₂
-    refine ⟨d₁.resolvent d₂ u, .resolvent u f₁ f₂ (h₁' _ hu₁) (h₂' _ hu₂), fun l hl => ?_,
-      fun l hl => ?_, by rw [strahler_resolvent, strahler_resolvent, hs₁, hs₂]⟩
-    · rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-      · exact (h₁ l hl).imp_left fun hl' => Clause.mem_resolvent.2 (Or.inl ⟨hl', hne⟩)
-      · exact (h₂ l hl).imp_left fun hl' => Clause.mem_resolvent.2 (Or.inr ⟨hl', hne⟩)
-    · rcases Clause.mem_resolvent.1 hl with ⟨hl, hne⟩ | ⟨hl, hne⟩
-      · exact Clause.mem_resolvent.2 (Or.inl ⟨h₁' l hl, hne⟩)
-      · exact Clause.mem_resolvent.2 (Or.inr ⟨h₂' l hl, hne⟩)
+    exact ⟨d₁.resolvent d₂ u, .resolvent u f₁ f₂ (h₁' _ hu₁) (h₂' _ hu₂),
+      Clause.resolvent_subset_resolvent_or_eq h₁ h₂, Clause.resolvent_subset_resolvent h₁' h₂',
+      by rw [strahler_resolvent, strahler_resolvent, hs₁, hs₂]⟩
 
 end Derivation
 

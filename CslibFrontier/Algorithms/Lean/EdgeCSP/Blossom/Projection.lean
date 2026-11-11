@@ -24,6 +24,7 @@ public section
 namespace Cslib.Logic.PL.CSP.Blossom
 
 open Table Finset
+open Cslib.BitString
 
 variable {F : CSP Table ℕ}
 
@@ -84,7 +85,7 @@ theorem deviations_of_one_flip (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
 /-- Projection with the honest reference connector row. -/
 @[expose] def projectZero (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (g : OccurrenceLabeling F Bool) : OccurrenceLabeling (contract f vs) Bool :=
-  transport f vs g (fun _ => false) (oneHot (connectors F vs).length 0)
+  transport f vs g (fun _ => false) (listSingle (connectors F vs).length 0)
 
 /-- Projection retaining exactly the touched constraint that owns one internal changed port. -/
 @[expose] def projectOne (f : OccurrenceLabeling F Bool) (vs : List ℕ)
@@ -124,7 +125,7 @@ theorem valid_projectZero {f g : OccurrenceLabeling F Bool} (hf : ValidLabeling 
     ValidLabeling sem (projectZero f vs g) := by
   apply valid_transport hf hg vs (fun _ => false)
   · apply (sem_exactlyOne_eq_true _ _).mpr
-    exact ⟨by simp [oneHot], count_true_oneHot (by
+    exact ⟨by simp [listSingle], count_true_listSingle (by
       simpa only [length_connectors] using List.length_pos_iff.mpr hne)⟩
   · intro i _
     rw [deviations_zero_of_agree f g vs h i]

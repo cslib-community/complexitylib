@@ -26,8 +26,10 @@ non-isomorphism is in `AM` (`Cslib.Complexity.GraphNonIsomorphism.mem_AM`).
 The proof:
 
 * **`AM` is closed under existential quantification** over polynomially long words
-  (`Cslib.Complexity.mem_AM_of_exists`, the collapse `MAM = AM` of [Babai][Babai1985], in
-  `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification`).
+  (`Cslib.Complexity.mem_AM_of_exists`, by the argument of [Babai][Babai1985], in
+  `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Amplification`; the class equality
+  `MAM = AM` itself is `Cslib.Complexity.AMGameClass_merlin_arthur_merlin`, in
+  `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse`).
 * A problem in `Σ₂` is the projection of a problem in `Π₁ = coNP` on pairs `(a, w₁)`
   (`Cslib.Complexity.exists_mem_PiP_of_mem_SigmaP_succ`), so
   `coNP ⊆ AM` gives `Σ₂ ⊆ AM` (`Cslib.Complexity.SigmaP_two_subset_AM_of_coNP_subset_AM`), and with
@@ -52,7 +54,7 @@ The proof:
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -106,7 +108,7 @@ theorem PiP_two_eq_SigmaP_two_of_coNP_subset_AM
 [Arora and Barak, Section 8.2][AroraBarak09]: graph non-isomorphism is then `coNP`-hard, and it
 is in `AM`, which is closed under reductions, so `coNP ⊆ AM`. -/
 theorem PH_eq_SigmaP_two_of_npComplete_GraphIsomorphism
-    (hGI : NPComplete (encPair encGraph encGraph) GraphIsomorphism) : PH enc = SigmaP 2 enc :=
+    (hGI : NPComplete encGraphIsomorphism GraphIsomorphism) : PH enc = SigmaP 2 enc :=
   PH_eq_SigmaP_two_of_coNP_subset_AM fun encB A hA =>
     (NPHard.compl hGI.2 encB A hA).mem_AM GraphNonIsomorphism.mem_AM
 

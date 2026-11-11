@@ -14,8 +14,9 @@ import Mathlib.Data.List.GetD
 /-!
 # Framed native routines for nondeterministic query machines
 
-The abstract state is framed on a work tape. Each deterministic pass reads the input in place,
-performs one selected transition, and writes the continuation flag. Only the finalizer emits.
+The abstract state is framed on a work tape. The initializer writes the start state of the input,
+which may depend on the input. Each deterministic pass reads the input in place, performs one
+selected transition, and writes the continuation flag. Only the finalizer emits.
 
 ## Main definitions
 
@@ -24,7 +25,8 @@ performs one selected transition, and writes the continuation flag. Only the fin
 ## Main results
 
 * `Turing.NondeterministicQueryMachine.exists_routines`: constructs the routines from local
-  linear-space computability, with one space bound for all reachable boundary states.
+  linear-space computability and a start state computable in space `O(S)`, with one space bound
+  for all reachable boundary states.
 -/
 
 @[expose] public section
@@ -39,13 +41,6 @@ private theorem linearFlag : ComputableTidilyInLinearTimeAndSpace flagWord encBo
     ((const [true]).restrict _) ((const []).restrict _) using 1
   funext c
   cases c <;> rfl
-
-private theorem blankBoundary {k : ℕ} {V C : Fin k} (hVC : V ≠ C) (v : List Bool) :
-    passTapes V C v [] = Function.update (fun _ => []) V v := by
-  funext l
-  by_cases hl : l = C
-  · subst hl; simp [passTapes, hVC.symm]
-  · simp [passTapes, hl]
 
 private theorem le_of_add_le8 {a₁ a₂ a₃ a₄ a₅ a₆ a₇ : ℕ} {m : ℕ}
     (h : a₁ + a₂ + a₃ + a₄ + a₅ + a₆ + a₇ ≤ m) :
@@ -72,8 +67,9 @@ private theorem mul_le_of_add_le14
   exact ⟨hm h₁, hm2 h₂, hm h₃, hm h₄, hm h₅, hm h₆, hm h₇, hm h₈, hm h₉, hm h₁₀,
     hm h₁₁, hm h₁₂, hm h₁₃, hm h₁₄⟩
 
-/-- Concrete finite routines, sharing tape origins and a common linear space budget. -/
-structure Routines {α σ : Type} (M : NondeterministicQueryMachine σ)
+/-- Concrete finite routines, sharing tape origins and a common linear space budget. On the input
+`enc a` the abstract run starts in `start a`; the passes and the finalizer do not depend on `a`. -/
+structure Routines {α σ : Type} (M : NondeterministicQueryMachine σ) (start : α → σ)
     (enc : α ↪ List Bool) (S : α → ℕ) where
   /-- The shared number of work tapes. -/
   k : ℕ
@@ -102,16 +98,19 @@ structure Routines {α σ : Type} (M : NondeterministicQueryMachine σ)
   c : ℕ
   initial_spec : ∀ a, ∃ t, TransformsTapes I
     (fun inp ws => inp = enc a ∧ ws = fun _ => [])
-    (fun _ _ ws' e => ws' = boundary M.init false ∧ e = []) t (c * S a)
-  pass_spec : ∀ a s, M.Reachable (enc a) s → ∀ choice flag, ∃ t, TransformsTapes (P choice)
+    (fun _ _ ws' e => ws' = boundary (start a) false ∧ e = []) t (c * S a)
+  pass_spec : ∀ a s, (M.withInit (start a)).Reachable (enc a) s → ∀ choice flag, ∃ t,
+    TransformsTapes (P choice)
     (fun inp ws => inp = enc a ∧ ws = boundary s flag)
     (fun _ _ ws' e => ws' = boundary (M.step (enc a) s choice)
       (!M.halted (M.step (enc a) s choice)) ∧ e = []) t (c * S a)
-  final_spec : ∀ a s, M.Reachable (enc a) s → ∀ flag, ∃ t, TransformsTapes F
+  final_spec : ∀ a s, (M.withInit (start a)).Reachable (enc a) s → ∀ flag, ∃ t,
+    TransformsTapes F
     (fun inp ws => inp = enc a ∧ ws = boundary s flag)
     (fun _ _ _ e => e = [M.accept s]) t (c * S a)
 
-/-- Compile local query-machine callbacks into concrete finite native routines. -/
+/-- Compile local query-machine callbacks and a start state computable in space `O(S)` into
+concrete finite native routines. -/
 theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ List Bool}
     (M : NondeterministicQueryMachine σ)
     (hquery : ComputableInSpace M.query encS encNat fun s => (encS s).length)
@@ -120,18 +119,23 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
       fun p => (encPair encS (encPair (encOption encBool) encBool) p).length)
     (hhalted : ComputableInSpace M.halted encS encBool fun s => (encS s).length)
     (haccept : ComputableInSpace M.accept encS encBool fun s => (encS s).length)
-    (S : α → ℕ) (hlog : ∀ a, Nat.log2 (enc a).length + 1 ≤ S a)
-    (hsize : ∃ c, ∀ a choices, (encS (M.run (enc a) choices)).length ≤ c * S a) :
-    Nonempty (Routines M enc S) := by
+    (start : α → σ) (S : α → ℕ) (hlog : ∀ a, Nat.log2 (enc a).length + 1 ≤ S a)
+    (hstart : ComputableInSpace start enc encS S)
+    (hsize : ∃ c, ∀ a choices,
+      (encS ((M.withInit (start a)).run (enc a) choices)).length ≤ c * S a) :
+    Nonempty (Routines M start enc S) := by
   classical
   obtain ⟨cS, hS⟩ := hsize
   have hS1 (a : α) : 1 ≤ S a := (Nat.le_add_left _ _).trans (hlog a)
-  have hreach (a : α) (s : σ) (hs : M.Reachable (enc a) s) :
+  have hreach (a : α) (s : σ) (hs : (M.withInit (start a)).Reachable (enc a) s) :
       (encS s).length ≤ cS * S a := by
     obtain ⟨coins, rfl⟩ := hs
     exact hS a coins
-  obtain ⟨cI, hI⟩ := computableInTimeAndSpace_of_const (encIn := enc)
-    (encOut := encPass encS) ((M.init, 0, none) : PassState σ)
+  have hstart' : ComputableInSpace (fun a => ((start a, 0, none) : PassState σ)) enc
+      (encPass encS) S :=
+    (hstart.prod ((ComputableInSpace.constZero 0).prod (ComputableInSpace.constZero none))).mono_le
+      fun _ => le_rfl
+  obtain ⟨TI, cI, hI, -⟩ := Internal.NormalForm.space hstart'
   obtain ⟨cE, hE⟩ := computableInTimeAndSpace_of_const
     (encIn := encPair (encPass encS) encBool) (encOut := encBits) ([] : List Bool)
   obtain ⟨cPE, hPE⟩ := computableInTimeAndSpace_of_const
@@ -146,8 +150,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
   obtain ⟨cuf, huf⟩ := ComputableTidilyInLinearTimeAndSpace.of_unframe (f := id)
     (encIn := encFramed (encPass encS)) (encOut := encPass encS) fun s => by simp
   obtain ⟨cfl, hfl⟩ := linearFlag
-  obtain ⟨cI', hI'⟩ := ComputableTidilyInTimeAndSpace.comp_linear hfr
-    hI.computableTidilyInTimeAndSpace
+  obtain ⟨cI', hI'⟩ := ComputableTidilyInTimeAndSpace.comp_linear hfr hI
   obtain ⟨cN', hN'⟩ := ComputableTidilyInTimeAndSpace.comp_linear hfr hN
   obtain ⟨cF', hF'⟩ := ComputableTidilyInTimeAndSpace.comp_linear hF huf
   obtain ⟨cPE', hPE'⟩ := ComputableTidilyInTimeAndSpace.comp_linear
@@ -211,6 +214,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
     cF' + cPE' + cPN false + cPN true + cPN₁ false + cPN₁ true + cPN' false + cPN' true +
     cC₁ + cC' + m + 100 := ⟨_, rfl⟩
   have hcN : cN ≤ D := by omega
+  have hcI : cI ≤ D := by omega
   have hD : m + 100 ≤ D := by omega
   have hcD (b : Bool) :
       cfr + cuf + cfl + cF + cC + cI' + cN' + cF' + cPE' + cPN b + cPN₁ b + cPN' b + cC₁ + cC' ≤
@@ -218,8 +222,9 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
   clear hD_eq
   obtain ⟨L, hL_eq⟩ : ∃ L : α → ℕ, ∀ a, L a = (2 * cS + 7) * S a := ⟨_, fun _ => rfl⟩
   have hL1 (a : α) : 1 ≤ L a := by rw [hL_eq]; exact Nat.mul_pos (by omega) (hS1 a)
-  have hscan (a : α) (s : σ) (hs : M.Reachable (enc a) s) (b : Bool) (j : ℕ)
-      (hj : j ≤ (enc a).length) :
+  have hSL (a : α) : S a ≤ L a := by rw [hL_eq]; exact Nat.le_mul_of_pos_left _ (by omega)
+  have hscan (a : α) (s : σ) (hs : (M.withInit (start a)).Reachable (enc a) s) (b : Bool)
+      (j : ℕ) (hj : j ≤ (enc a).length) :
       (encPass encS (streamState ((s, 0, none) : PassState σ)
         (passNext (M.withChoice b)) (enc a) j)).length ≤ L a := by
     rw [hL_eq, QueryMachine.Simulation.streamState_passNext _ _ _ hj]
@@ -228,6 +233,8 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
   obtain ⟨U, hU_eq⟩ : ∃ U : α → ℕ, ∀ a, U a = D * (L a + 1) := ⟨_, fun _ => rfl⟩
   have hU_bounds {a : α} {n : ℕ} (hn : n ≤ L a) (b : Bool) :=
     mul_le_of_add_le14 (hcD b) (le_of_eq (hU_eq a).symm) hn
+  have hcIU (a : α) : cI * (S a + 1) ≤ U a :=
+    (Nat.mul_le_mul hcI (Nat.add_le_add_right (hSL a) 1)).trans (le_of_eq (hU_eq a).symm)
   have hm₄ {a : α} {n : ℕ} (hn : n + 1 ≤ 4 * (L a + 1)) : cN * (n + 1) ≤ 4 * U a :=
     (Nat.mul_le_mul hcN hn).trans (le_of_eq (by rw [hU_eq]; ring))
   have hlarge (a : α) : 100 * (L a + 1) + m ≤ U a := by
@@ -246,7 +253,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
     rw [hU_eq, hG_eq]
     calc k * (D * (L a + 1)) ≤ 1000 * (m + 5) * (D * ((2 * cS + 8) * S a)) := by gcongr
       _ = 1000 * (m + 5) * D * (2 * cS + 8) * S a := by ring
-  clear hcN hD hcD hL_eq hU_eq hG_eq
+  clear hcN hcI hD hcD hL_eq hU_eq hG_eq hSL
   have hflag (x : Bool) : (flagWord x).length ≤ 1 := by cases x <;> simp [flagWord]
   let B (s : σ) (flag : Bool) := passTapes V C
     (frame (encPass encS ((s, 0, none) : PassState σ))) (flagWord flag)
@@ -282,15 +289,17 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
     simp only [B, passTapes, Function.update_of_ne hVC, Function.update_self] at hv
     exact congrArg Prod.fst ((encPass encS).injective (frame_injective hv))
   · intro a
-    have hlen := hscan a M.init (M.reachable_init _) false 0 (Nat.zero_le _)
+    have hlen := hscan a (start a) ((M.withInit (start a)).reachable_init _) false 0
+      (Nat.zero_le _)
     simp only [streamState_zero] at hlen
     refine ⟨_, (hI₀ a).imp (fun _ _ h => h)
-      (fun _ _ _ _ _ ⟨hw, he⟩ => ⟨by simpa [B, flagWord, blankBoundary hVC] using hw, he⟩)
+      (fun _ _ _ _ _ ⟨hw, he⟩ => ⟨by simpa [B, flagWord, passTapes_nil hVC] using hw, he⟩)
       le_rfl (le_trans ?_ (hG a (k := 10) (by omega)))⟩
     have := hU_bounds hlen false
     have := hsmall a
     have := hk false
-    simp only [Function.comp_apply, Function.const_apply, id_eq, encFramed_apply, length_frame]
+    have := hcIU a
+    simp only [Function.comp_apply, id_eq, encFramed_apply, length_frame]
     omega
   · intro a s hs b flag
     let q (j : ℕ) := streamState ((s, 0, none) : PassState σ)
@@ -302,7 +311,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
     have hq (j : ℕ) (hj : j ≤ (enc a).length) : (encPass encS (q j)).length ≤ L a :=
       hscan a s hs false j hj
     have hq' : (encPass encS q').length ≤ L a :=
-      hscan a s' (Reachable.step M (enc a) hs b) false 0 (Nat.zero_le _)
+      hscan a s' (Reachable.step _ (enc a) hs b) false 0 (Nat.zero_le _)
     have hqn := hq (enc a).length le_rfl
     have hsm := hsmall a
     have hlg := hlarge a
@@ -394,7 +403,7 @@ theorem exists_routines {α σ : Type} {enc : α ↪ List Bool} {encS : σ ↪ L
         rw [hw', hw]
         rw [show Function.update (B s flag) C [] = passTapes V C v [] by
           simp only [B, passTapes, Function.update_idem, v]]
-        exact blankBoundary hVC v, he⟩)
+        exact passTapes_nil hVC v, he⟩)
       le_rfl le_rfl
     have hfinish := (hF₀ ((s, 0, none) : PassState σ)).imp
       (Q' := fun _ _ ws' e => ws' = Function.update (fun _ => []) V v ∧ e = [M.accept s])

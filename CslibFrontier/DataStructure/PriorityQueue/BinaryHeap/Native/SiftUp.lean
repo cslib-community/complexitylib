@@ -79,14 +79,10 @@ theorem step_eq (d : (HeapLayout × Unit) × ℕ) :
       else pure 1) := by
   unfold step
   dsimp only
-  congr 1
-  funext vk
-  congr 1
-  funext kk
-  congr 1
-  funext vp
-  congr 1
-  funext kp
+  congr 1 with vk : 1
+  congr 1 with kk : 1
+  congr 1 with vp : 1
+  congr 1 with kp : 1
   by_cases hkey : kk < kp
   · simp [PriorityQueue.IndexedMinPQ.RawPrioLT, hkey]
   · by_cases heq : kk = kp <;> by_cases hv : vk < vp <;>
@@ -116,18 +112,13 @@ theorem finish_loop_eq (d : HeapLayout × Unit) (fuel k : ℕ) (hf : Nat.log 2 k
     by_cases hk : 2 ≤ k
     · have hlog := Nat.log_of_one_lt_of_le one_lt_two hk
       simp only [boundedWhile, guard, hk, ↓reduceIte, step_eq, bind_assoc]
-      congr 1
-      funext vk
-      congr 1
-      funext kk
-      congr 1
-      funext vp
-      congr 1
-      funext kp
+      congr 1 with vk : 1
+      congr 1 with kk : 1
+      congr 1 with vp : 1
+      congr 1 with kp : 1
       split
       · simp only [bind_assoc, pure_bind]
-        congr 1
-        funext _
+        congr 1 with _ : 1
         exact ih (k / 2) (by omega)
       · simp only [pure_bind, boundedWhile_of_not guard step d fuel 1 (by change ¬(2 ≤ 1); omega)]
     · simp [boundedWhile, guard, hk]

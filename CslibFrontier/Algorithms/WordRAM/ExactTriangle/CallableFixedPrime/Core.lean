@@ -7,7 +7,8 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Source
+public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Program
+public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Source
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Parameters
 public import CslibFrontier.Computability.WordRAM.MemoryWindow
 
@@ -90,11 +91,12 @@ theorem exec_compiled {W b m n g p total : ℕ} (values : List ℤ)
     rw [hinput q hq, Nat.mod_eq_of_lt (hi.2 q)]
   have htwo : sourceWidth n (D m) g p total - 2 + 2 = sourceWidth n (D m) g p total :=
     Nat.sub_add_cancel (by have := sourceWidth_two_lt n (D m) g p total; omega)
-  have hs := exec_source (w := sourceWidth n (D m) g p total - 2) values hlen hD hg hp hN hv
-    (by simpa only [htwo] using source_admission n (D m) g p total) v vi
+  have hs := StreamingFixedPrime.exec_source (w := sourceWidth n (D m) g p total - 2) values hlen
+    hD hg hp hN hv (by simpa only [htwo] using source_admission n (D m) g p total) v vi
   rw [htwo] at hs
   obtain ⟨a, hout, z, hz, zf, zs, ziff, zw, -⟩ := hs
-  obtain ⟨y, hy, hm', hf⟩ := MemoryWindow.execWithin hz StreamingFixedPrime.program_not_readsWidth
+  obtain ⟨y, hy, hm', hf⟩ := MemoryWindow.execWithin (hz.mono (Nat.sub_le _ _))
+    StreamingFixedPrime.program_not_readsWidth
     vb (show MemoryWindow.Matches (sourceWidth n (D m) g p total) b v x from
       ⟨rfl, hb, hm⟩) hw hfit
   refine ⟨a, hout, y, hy, ?_, ?_, ?_, ?_, hf⟩

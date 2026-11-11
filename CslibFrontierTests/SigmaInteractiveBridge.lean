@@ -135,8 +135,7 @@ theorem eval_schnorrSampleChallengeWord (i : ℕ × F.Desc) :
     PMF.map_comp]
   simp only [ProbComp.eval_pure]
   rw [← PMF.bind_pure_comp]
-  congr 1
-  funext s
+  congr 1 with s : 1
   simp only [Function.comp_apply, PrimeOrderGroupFamily.schnorrEncoding,
     PrimeOrderGroupFamily.encScalar, Function.Embedding.coeFn_mk, encNat_apply,
     ZMod.val_natCast]

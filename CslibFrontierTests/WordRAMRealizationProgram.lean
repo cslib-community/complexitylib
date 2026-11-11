@@ -188,9 +188,9 @@ example : ∃ (r C : ℕ) (p : Program .exact r),
     intro v hv
     simp only [List.mem_singleton] at hv
     exact hv.symm ▸ hfit
-  have hv : (Memory.spec w).ValidHistory (inputState [d])
-      ((Memory.spec w).clientHistory (inputState [d]) (Memory.write 0 d)) := by
-    exact ⟨⟨by simp [inputState], hfit⟩, trivial⟩
+  have hv : (Memory.spec w).ValidHistory (Memory.State.init [d])
+      ((Memory.spec w).clientHistory (Memory.State.init [d]) (Memory.write 0 d)) := by
+    exact ⟨⟨by simp [Memory.State.init], hfit⟩, trivial⟩
   obtain ⟨t, ht, htime⟩ := he frontier src tmp (fun _ _ _ => Subsingleton.elim _ _) hi
     hd hf hs w d (by simp) h2 hin trivial hv
   change t ≤ C * (1 + 0 + 1) + 2 at htime

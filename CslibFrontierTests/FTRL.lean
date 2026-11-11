@@ -85,12 +85,12 @@ theorem isFTRL_xrun : IsFTRL K ψ ℓ xrun :=
 /-- The first point is the minimizer `0` of the regularizer. -/
 example : xrun 0 = 0 := by
   simp only [xrun, range_zero, sum_empty, smul_zero, sub_zero]
-  exact metricProjection_eq_self K_nonempty K_isComplete K_convex (by norm_num)
+  exact metricProjection_eq_self K_isComplete K_convex (by norm_num)
 
 /-- After one loss `y ↦ y`, FTRL plays `-1`, the minimizer of `y ^ 2 / 2 + y` on `[-1, 1]`. -/
 example : xrun 1 = -1 := by
   simp only [xrun, range_one, sum_singleton, one_smul, zero_sub]
-  exact metricProjection_eq_self K_nonempty K_isComplete K_convex (by norm_num)
+  exact metricProjection_eq_self K_isComplete K_convex (by norm_num)
 
 /-- Staying at `0` is not an FTRL run: after the loss `y ↦ y`, `-1` has a smaller objective. -/
 example : ¬ IsFTRL K ψ ℓ fun _ => 0 := fun h => by
@@ -154,7 +154,7 @@ example {x : ℕ → ℝ} (hx : IsFTRL K ψ (fun t y => ((2 * x t) • Continuou
 -/
 example : lazyOGD K 1 (fun _ _ => 1) 0 1 = -1 := by
   rw [lazyOGD_def, lazyOGDState_succ, lazyOGDState_zero, one_smul, zero_sub]
-  exact metricProjection_eq_self K_nonempty K_isComplete K_convex (by norm_num)
+  exact metricProjection_eq_self K_isComplete K_convex (by norm_num)
 
 /-- Lazy OGD on the quadratic losses `y ^ 2` with gradients `2 x` chosen at the played points. -/
 example {u : ℝ} (hu : u ∈ K) (T : ℕ) :

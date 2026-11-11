@@ -31,7 +31,7 @@ the factorial tail, the number of copies, and the detector ranks, in that order.
 existence theorem proves the new conditions; they are not extra premises on an unspecified stage.
 The underlying `HierarchyParams` can be passed directly to all existing stage theorems.
 
-This is the fourth-moment adaptation in complexitylib issue #1721 of the core hierarchy
+This is the fourth-moment adaptation in cslib-frontier issue #1721 of the core hierarchy
 conditions in [OpenAI2026LogSpace, Sections 4.1--4.4]. The pinned preprint uses eighth roots.
 The witness does not establish eighth-root regularity, every later atom/access-score margin,
 the recursive estimator, or rational-machine resource bounds. When `q` is rational, the displayed

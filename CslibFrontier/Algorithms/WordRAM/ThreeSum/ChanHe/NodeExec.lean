@@ -32,7 +32,7 @@ and preprocessing asymptotics remain the responsibility of the parent constructi
 * [T. M. Chan and Q. He, *Reducing 3SUM to Convolution-3SUM*][ChanHe2020]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.NodePacking
 

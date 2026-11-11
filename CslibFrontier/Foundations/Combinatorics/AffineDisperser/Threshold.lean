@@ -12,6 +12,7 @@ public import CslibFrontier.Foundations.Combinatorics.AffineDisperser.Explicit
 public import Mathlib.Analysis.Asymptotics.Defs
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Order.Filter.AtTopBot.Basic
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
@@ -47,7 +48,7 @@ Hence `(ℓ + 1) * explicitThreshold N ≤ 6 N` for all large `N`
 * [P. L. Chebyshev, *Mémoire sur les nombres premiers*][Chebyshev1852]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.AffineDisperser
 
@@ -276,8 +277,7 @@ theorem isBigO_explicitThreshold :
       exact_mod_cast Nat.lt_pow_succ_log_self one_lt_two N
     have h2 := Real.log_lt_log (by positivity) h1
     rw [Real.log_pow] at h2
-    have h3 : Real.log 2 < 1 := by
-      linarith [Real.log_lt_sub_one_of_pos (by norm_num : (0 : ℝ) < 2) (by norm_num)]
+    have h3 : Real.log 2 < 1 := Real.log_two_lt_one
     have h4 : 0 < Real.log 2 := Real.log_pos one_lt_two
     push_cast at h2
     nlinarith

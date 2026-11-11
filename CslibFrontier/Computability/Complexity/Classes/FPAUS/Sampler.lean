@@ -14,6 +14,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
 import Mathlib.Data.Nat.Size
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Approximate counting gives almost uniform sampling for self-reducible families

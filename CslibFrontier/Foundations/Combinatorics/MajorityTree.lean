@@ -202,8 +202,7 @@ theorem exists_forall_majTree_eq {X Ω : Type*} [Fintype Ω] [Nonempty Ω]
       _ ≤ ∑ _x ∈ S, (3 * ρ) ^ (2 ^ L) / 3 * Fintype.card Ω ^ (3 ^ L) :=
           sum_le_sum fun x hx => card_majTree_ne_le (val x) (target x) (hρ x hx) L
       _ = _ := by rw [sum_const, nsmul_eq_mul]
-  have hpow : (3 * ρ) ^ (2 ^ L) ≤ (1 / 2) ^ (2 ^ L) :=
-    pow_le_pow_left₀ (by positivity) h3 _
+  have hpow : (3 * ρ) ^ (2 ^ L) ≤ (1 / 2) ^ (2 ^ L) := by gcongr
   have hS' : (#S : ℝ) * (1 / 2) ^ (2 ^ L) ≤ 1 := by
     rw [one_div, inv_pow, ← div_eq_mul_inv, div_le_one (by positivity)]
     exact_mod_cast hS

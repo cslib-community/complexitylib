@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Read the build outputs of the three libraries, and the sources they come from.
+"""Read the build outputs of the library and its tests, and the sources they come from.
 
-`lake build CslibFrontier CslibFrontierTests CslibFrontierAbstracts` (`lake build` and `lake test`) writes
-an `.ilean` file beside each `.olean`. It records every identifier that occurs in the module's
-source, including in proofs, with the declarations the module defines. `scripts/LeanOutputs.lean`
+`lake build CslibFrontier CslibFrontierTests` (`lake build` and `lake test`) writes an `.ilean` file
+beside each `.olean`. It records every identifier that occurs in the module's source, including
+in proofs, with the declarations the module defines. `scripts/LeanOutputs.lean`
 reads the `.olean` parts for each constant's kind, export status, statement and declaration range.
 This module loads both and refuses stale outputs. `scripts/check_tidy_surface.py`,
 `scripts/check_tidy_usage.py`, `scripts/check_changed_files.py` and
@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from proof_lengths import masks  # noqa: E402
 
-ROOTS = ("CslibFrontier", "CslibFrontierTests", "CslibFrontierAbstracts")
+ROOTS = ("CslibFrontier", "CslibFrontierTests")
 # Libraries that Lake builds from a glob (`lakefile.toml`) have no root aggregator file: their
 # modules are exactly the source files under their directory.
 GLOB_ROOTS = ("CslibFrontierTests",)
@@ -53,24 +53,21 @@ def glob_modules(root: str) -> list[str]:
 
 
 def root_modules(glob=glob_modules) -> list[str]:
-    """Modules whose imports cover all three libraries: the aggregator roots and every module
-    of a glob-built library."""
+    """Modules whose imports cover both libraries: the aggregator roots and every module of a
+    glob-built library."""
     return [m for root in ROOTS
             for m in (glob(root) if root in GLOB_ROOTS else [root])]
 
 
 def module_role(module: str) -> str:
-    """`lib`, `test` or `abstract` for a module of one of the three libraries."""
-    if module.startswith("CslibFrontierAbstracts.") or module.startswith("CslibFrontierTests.Abstracts."):
-        return "abstract"
+    """`lib` or `test` for a module of one of the two libraries."""
     if module.startswith("CslibFrontierTests."):
         return "test"
     return "lib"
 
 
 def source_path(module: str) -> Path:
-    rel = module.replace(".", "/") + ".lean"
-    return ROOT / ("abstracts/" + rel if module.startswith("CslibFrontierAbstracts") else rel)
+    return ROOT / (module.replace(".", "/") + ".lean")
 
 
 def is_internal(component: str) -> bool:
@@ -86,7 +83,7 @@ def run(cmd: list[str], **kwargs) -> subprocess.CompletedProcess:
 # --- Freshness ----------------------------------------------------------------------------------
 
 def lake_outputs_current() -> bool:
-    """Whether Lake finds the default build outputs of the three libraries current."""
+    """Whether Lake finds the default build outputs of the two libraries current."""
     return subprocess.run(["lake", "build", "--no-build", *ROOTS], cwd=ROOT,
                           capture_output=True).returncode == 0
 
@@ -134,7 +131,7 @@ def check_outputs(build_dir: Path, skip: bool, current=lake_outputs_current,
 # --- Loading ------------------------------------------------------------------------------------
 
 def load_ileans(build_dir: Path, glob=glob_modules) -> dict[str, dict]:
-    """The `.ilean` data of the modules the three libraries' roots import, by module name.
+    """The `.ilean` data of the modules the two libraries' roots import, by module name.
 
     A long-lived build directory keeps the outputs of modules that were since deleted or moved,
     and `lake build --no-build` does not notice them, so modules are found by following imports
@@ -198,7 +195,7 @@ class Source:
 
 
 class Library:
-    """Build outputs and sources of the three libraries, loaded lazily where possible."""
+    """Build outputs and sources of the two libraries, loaded lazily where possible."""
 
     def __init__(self, build_dir: Path):
         self.build_dir = build_dir
@@ -250,7 +247,7 @@ def collect_declarations(lib: Library) -> tuple[dict[str, dict], dict[str, str]]
                 "name": name, "module": module, "path": rel,
                 "role": role, "kind": const["k"], "exported": const["e"],
                 "tidy": const["tidy"], "range": const["r"], "parent": parent,
-                "lib_refs": set(), "test_refs": set(), "abstract_refs": set(), "local_uses": 0,
+                "lib_refs": set(), "test_refs": set(), "local_uses": 0,
                 "unfolded_by": set(),
             }
     for name, decl in decls.items():

@@ -161,8 +161,7 @@ theorem runFrom_seekEnd (w suf pre : List Symbol) (hw : w = pre ++ suf) (o : ℤ
         (fun _ => by simp; omega)]
     · exact ih (pre ++ [x]) (by simp [hw])
     · have : tapeOfList w (o + pre.length - o) = some x := by
-        rw [add_sub_cancel_left, tapeOfList_ofNat, hw]
-        simp
+        grind [add_sub_cancel_left, tapeOfList_ofNat]
       simp only [seekEnd, tr_ofTr, this]
 
 theorem runsBetween_seekEnd (w : List Symbol) (o : ℤ) (out : List Symbol) :

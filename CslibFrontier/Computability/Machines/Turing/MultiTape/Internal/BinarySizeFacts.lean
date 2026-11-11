@@ -12,15 +12,18 @@ import Mathlib.Tactic.Linarith
 
 /-! # Pure binary-size facts
 
-Moved unchanged from the legacy binary calculus, retaining its existing qualified names. No
-computability predicate is imported or introduced here; the names remain a staged cleanup item.
+Moved from the legacy binary calculus. No computability predicate is imported or introduced here.
+`length_encNat_add_le` keeps its legacy qualified name in `ComputableTidilyInO`, a staged cleanup
+item.
 -/
 
-namespace Turing.MultiTapeTM.ComputableTidilyInO
+namespace Turing.MultiTapeTM
 
 /-- The length of `encNat` is monotone. -/
 public lemma length_encNat_mono {m n : ℕ} (h : m ≤ n) : (encNat m).length ≤ (encNat n).length := by
   simpa [Nat.size_eq_bits_len] using Nat.size_le_size h
+
+namespace ComputableTidilyInO
 
 -- upstream: vendored crei:crei/tidy-universal @9cce4cc7 (unsubmitted)
 -- vendored: `length_encNat_add_le` below, from that revision's `CslibFrontier/Binary`
@@ -38,4 +41,6 @@ public lemma length_encNat_add_le (n i : ℕ) : (encNat (n + i)).length ≤ (enc
     omega
 
 
-end Turing.MultiTapeTM.ComputableTidilyInO
+end ComputableTidilyInO
+
+end Turing.MultiTapeTM

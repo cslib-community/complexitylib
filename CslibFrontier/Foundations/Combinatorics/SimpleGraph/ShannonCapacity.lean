@@ -56,17 +56,15 @@ variable {V : Type*} {G : SimpleGraph V}
 noncomputable def shannonCapacity (G : SimpleGraph V) : ℝ :=
   ⨆ k : ℕ, ((G.strongPow (k + 1)).indepNum : ℝ) ^ ((k + 1 : ℝ)⁻¹)
 
-private theorem pow_rpow_inv_succ {x : ℝ} (hx : 0 ≤ x) (k : ℕ) :
-    (x ^ (k + 1)) ^ ((k + 1 : ℝ)⁻¹) = x := by
-  simpa using Real.pow_rpow_inv_natCast hx (Nat.succ_ne_zero k)
+/-- Taking `(k + 1)`-th roots: `a ≤ t ^ (k + 1)` gives `a ^ (k + 1)⁻¹ ≤ t`. -/
+private theorem rpow_inv_succ_le_of_le_pow {a t : ℝ} (ha : 0 ≤ a) (ht : 0 ≤ t) (k : ℕ)
+    (h : a ≤ t ^ (k + 1)) : a ^ ((k + 1 : ℝ)⁻¹) ≤ t :=
+  (Real.rpow_inv_le_iff_of_pos ha ht (by positivity)).2 (by exact_mod_cast h)
 
 theorem rpow_indepNum_strongPow_le_natCard [Finite V] (k : ℕ) :
-    ((G.strongPow (k + 1)).indepNum : ℝ) ^ ((k + 1 : ℝ)⁻¹) ≤ Nat.card V := by
-  have h : ((G.strongPow (k + 1)).indepNum : ℝ) ≤ (Nat.card V : ℝ) ^ (k + 1) := by
-    exact_mod_cast indepNum_strongPow_le (k + 1)
-  calc ((G.strongPow (k + 1)).indepNum : ℝ) ^ ((k + 1 : ℝ)⁻¹)
-      ≤ ((Nat.card V : ℝ) ^ (k + 1)) ^ ((k + 1 : ℝ)⁻¹) := by gcongr
-    _ = Nat.card V := pow_rpow_inv_succ (Nat.cast_nonneg _) k
+    ((G.strongPow (k + 1)).indepNum : ℝ) ^ ((k + 1 : ℝ)⁻¹) ≤ Nat.card V :=
+  rpow_inv_succ_le_of_le_pow (Nat.cast_nonneg _) (Nat.cast_nonneg _) k
+    (by exact_mod_cast indepNum_strongPow_le (k + 1))
 
 theorem bddAbove_range_rpow_indepNum_strongPow [Finite V] :
     BddAbove (Set.range fun k : ℕ => ((G.strongPow (k + 1)).indepNum : ℝ) ^ ((k + 1 : ℝ)⁻¹)) :=
@@ -89,10 +87,7 @@ theorem shannonCapacity_le {t : ℝ}
     (h : ∀ k : ℕ, ((G.strongPow (k + 1)).indepNum : ℝ) ≤ t ^ (k + 1)) :
     G.shannonCapacity ≤ t := by
   have ht : 0 ≤ t := by simpa using (Nat.cast_nonneg _).trans (h 0)
-  refine ciSup_le fun k => ?_
-  calc ((G.strongPow (k + 1)).indepNum : ℝ) ^ ((k + 1 : ℝ)⁻¹)
-      ≤ (t ^ (k + 1)) ^ ((k + 1 : ℝ)⁻¹) := by gcongr; exact h k
-    _ = t := pow_rpow_inv_succ ht k
+  exact ciSup_le fun k => rpow_inv_succ_le_of_le_pow (Nat.cast_nonneg _) ht k (h k)
 
 theorem shannonCapacity_le_natCard [Finite V] : G.shannonCapacity ≤ Nat.card V :=
   ciSup_le rpow_indepNum_strongPow_le_natCard

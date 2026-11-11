@@ -23,11 +23,15 @@ the client syntax, unfolding definitions, with one rule per form:
   answer's encoding (`WordEncoding`); `realize` keeps this layout itself.
 * `pure`: `Realizes.pure₀`, with each result word certified by a `GlueComputable` proof assembled
   from the closure rules of `CslibFrontier.Computability.WordRAM.Glue`: projections, constants, and
-  the exact- or standard-basis arithmetic and bitwise operations.
+  the exact- or standard-basis arithmetic and bitwise operations. Conditional values, natural
+  minima/maxima and Boolean decisions are lifted to paid branches, including inside returned
+  constructors; only the selected alternative contributes fit and definedness conditions.
 * the four memory queries: `Realizes.read`, `write`, `alloc` and `allocDirty`.
 * a method with a local zero-work `Realizes` certificate: `Realizes.reindex`, selecting its
-  arguments from live words before unfolding its implementation.
-* `if` on `a = b`, `a < b` or `a > b`: `Realizes.branch₀`.
+  arguments from live words before unfolding its implementation. Computed arguments are first
+  staged by certified glue using the method's input encoding.
+* `if` on natural `=`, `≠`, `<`, `≤`, `>` or `≥`, and their negations:
+  `Realizes.branch₀`, swapping alternatives for negated tests.
 * `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
@@ -62,8 +66,9 @@ environment, the memory, the fit of the input words, memory well-formedness, and
 domain. It splits the conjunctions and `if`s of the synthesized domain and leaves each remaining
 condition as a goal. Local method certificates are tried in context order; the remaining rule
 selection follows the client syntax, without searching for bounds. An unsupported form is
-reported with its subterm. A called method's arguments must already be live words; computed
-arguments need an explicit `pure` step, whose glue is certified and charged as usual.
+reported with its subterm. A called method whose arguments are not all live words first stages
+its whole encoded argument with a charged `pure` step. This also supports custom input encodings
+without requiring a `WordEncoding` instance for the method's argument type.
 
 Each certificate is stated for the client form as written, with its domain in the client's terms
 (`certify`), so certificates compose syntactically. A bind's continuation domain is stated at the
@@ -639,8 +644,30 @@ private def cond? (c : Expr) : MetaM (Option (Name × Expr × Expr)) := do
 /-- The comparison of a branch condition: equality or `<`, with its operands. -/
 private def parseCond (c : Expr) : MetaM (Name × Expr × Expr) := do
   if let some r ← cond? c then return r
-  throwError "realize: a branch condition must be `a = b`, `a < b` or `a > b` on words, \
+  throwError "realize: a branch condition must compare words using `=`, `≠`, `<`, `≤`, `>` \
+    or `≥`, or negate one of these comparisons, \
     got{indentExpr c}"
+
+/-- Lower a non-strict or negated word test to a native comparison. Leave word operands and
+alternatives untouched so their own rules retain live values, fit and selected-path safety. -/
+private def normalizeBranch? (body : Expr) : MetaM (Option Simp.Result) := do
+  let mut thms : SimpTheorems := {}
+  for name in [``ne_eq, ``ite_not] do
+    thms ← thms.addConst name
+  thms ← thms.addConst ``not_lt (inv := true)
+  let ctx ← Simp.mkContext
+    (config := { dsimp := false, zeta := false, proj := false, iota := false })
+    (simpTheorems := #[thms]) (congrTheorems := ← getSimpCongrTheorems)
+  let defaults := Simp.mkDefaultMethodsCore #[]
+  let methods : Simp.Methods := { defaults with
+    pre := fun e => do
+      if e == body.getArg! 3 || e == body.getArg! 4 then return .done { expr := e }
+      if (← whnfR (← inferType e)).isConstOf ``Nat then return .done { expr := e }
+      defaults.pre e }
+  let (normalized, _) ← Simp.main body ctx (methods := methods)
+  if normalized.expr.isAppOfArity ``ite 5 &&
+      (← cond? (normalized.expr.getArg! 1)).isSome then return some normalized
+  return none
 
 /-- The comparison of a loop guard, after unfolding definitions. `a = b`, `a < b` and `a > b`
 are tested as written. `a ≠ 0` is tested as `0 < a`; the flag records this rewriting. -/
@@ -746,10 +773,37 @@ private partial def callArgument (ty : Expr) : MetaM Expr := do
       #[a, b, x, ← callArgument (b.beta #[x])]
   mkFreshExprMVar ty
 
-/-- Reuse a local method certificate before unfolding its body. Every input word must already
-be live: `Realizes.reindex` supplies static wiring, without granting argument computation. -/
+/-- Wire a matched method's encoded argument to live words, retaining its domain. -/
+private def reindexCall (env : Env) (d arg certificate : Expr) (positions : Array Nat) :
+    TermElabM Out := do
+  let ty ← instantiateMVars (← inferType certificate)
+  unless ty.isAppOfArity ``Realizes 10 do
+    throwError "realize: expected a `Realizes` method certificate{indentExpr ty}"
+  let args := ty.getAppArgs
+  let k := positions.size
+  let finK := mkApp (mkConst ``Fin) (mkNatLit k)
+  let finEnv := mkApp (mkConst ``Fin) (mkNatLit env.k)
+  let rec indices : List Nat → MetaM Expr
+    | [] => mkAppOptM ``Matrix.vecEmpty #[finEnv]
+    | i :: is => do mkAppM ``Matrix.vecCons #[← finLit env.k i, ← indices is]
+  let ix ← indices positions.toList
+  let f ← mkLambdaFVars #[d] arg
+  let hwTy ← withLocalDeclD `e env.ty fun e => withLocalDeclD `i finK fun i => do
+    let lhs := mkApp (← mkAppM ``DFunLike.coe #[args[6]!, f.beta #[e]]) i
+    let rhs := mkApp (← mkAppM ``DFunLike.coe #[env.input, e]) (mkApp ix i)
+    mkForallFVars #[e, i] (← mkEq lhs rhs)
+  let hw ← proveResult hwTy k
+  let proof ← mkAppM ``Realizes.reindex #[certificate, f, env.input, ix, hw]
+  let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
+    withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+      mkLambdaFVars #[w, d, s] (← reducePairs (mkApp3 args[8]! w arg s))
+  return { proof, output := args[7]!, safe }
+
+/-- Reuse a local method certificate before unfolding its body. Live arguments use static
+wiring; otherwise a certified `pure` stage computes the argument in the callee's encoding. -/
 private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Expr)
-    (body : Expr) (output? : Option Expr) : TermElabM (Option Out) := do
+    (body : Expr) (output? : Option Expr) (stage : Expr → Expr → TermElabM Out) :
+    TermElabM (Option Out) := do
   for decl in ← getLCtx do
     if decl.isImplementationDetail then continue
     let ty ← instantiateMVars decl.type
@@ -767,37 +821,110 @@ private def tryRealizeCall (ctx : Ctx) (env : Env) (d : Expr) (atoms : Array Exp
       let matched ← if called.getAppFn == body.getAppFn &&
           called.getAppNumArgs == body.getAppNumArgs then
           (called.getAppArgs.zip body.getAppArgs).allM fun (a, b) => do
-            withReducible (isDefEq (← whnfR a) (← whnfR b))
+            let a ← whnfR a
+            let b ← whnfR b
+            -- Inherited instances such as a monad's `Pure` can be definitionally the direct
+            -- instance after unfolding their implementation. Keep runtime data opaque.
+            if (← isClass? (← inferType a)).isSome then
+              withTransparency .default (isDefEq a b)
+            else
+              withReducible (isDefEq a b)
         else withReducible (isDefEq called body)
       unless matched do
         throwError "realize: the method does not match"
       let arg ← instantiateMVars arg
       if arg.hasMVar then throwError "realize: the method argument is undetermined"
-      let out ← checkOutput decl.toExpr output?
+      discard <| checkOutput decl.toExpr output?
       let k ← encodingWidth args[6]!
       let coords ← encodingAtoms args[6]! arg k
-      let positions ← coords.mapM fun a => do
-        let some i ← findAtom atoms a
-          | throwError "realize: a method argument must first be computed into a live word"
-        pure i
-      let finK := mkApp (mkConst ``Fin) (mkNatLit k)
-      let finEnv := mkApp (mkConst ``Fin) (mkNatLit env.k)
-      let rec indices : List Nat → MetaM Expr
-        | [] => mkAppOptM ``Matrix.vecEmpty #[finEnv]
-        | i :: is => do mkAppM ``Matrix.vecCons #[← finLit env.k i, ← indices is]
-      let ix ← indices positions.toList
-      let f ← mkLambdaFVars #[d] arg
-      let hwTy ← withLocalDeclD `e env.ty fun e => withLocalDeclD `i finK fun i => do
-        let lhs := mkApp (← mkAppM ``DFunLike.coe #[args[6]!, f.beta #[e]]) i
-        let rhs := mkApp (← mkAppM ``DFunLike.coe #[env.input, e]) (mkApp ix i)
-        mkForallFVars #[e, i] (← mkEq lhs rhs)
-      let hw ← proveResult hwTy k
-      let proof ← mkAppM ``Realizes.reindex #[decl.toExpr, f, env.input, ix, hw]
+      let positions ← coords.mapM fun a => liftMetaM (findAtom atoms a)
+      if positions.all Option.isSome then
+        return some (← reindexCall env d arg decl.toExpr (positions.map Option.get!))
+      -- Stage the typed argument, rather than guessing an inverse for its encoding. The pure
+      -- bind reduces to the original call, and the existing glue rule charges its computation.
+      let hP ← stage arg args[6]!
+      let env' ← extend env args[2]! args[6]! k
+      let hQ ← withLocalDeclD `x env'.ty fun x => do
+        reindexCall env' x (← mkAppM ``Prod.snd #[x]) decl.toExpr
+          ((Array.range k).map (env.k + ·))
+      let (reply, next) ← withLocalDeclD `s (mkConst ``Memory.State) fun s => do
+        return (← mkLambdaFVars #[d, s] arg, ← mkLambdaFVars #[d, s] s)
+      let proof ← bindRun hP.proof hQ.proof reply next
       let safe ← withLocalDeclD `w (mkConst ``Nat) fun w =>
         withLocalDeclD `s (mkConst ``Memory.State) fun s => do
-          mkLambdaFVars #[w, d, s] (← reducePairs (mkApp3 args[8]! w arg s))
-      return some { proof, output := out, safe }
+          mkLambdaFVars #[w, d, s] (mkAnd (hP.safe.beta #[w, d, s])
+            (← reducePairs (mkApp3 args[8]! w arg s)))
+      return some { proof, output := hQ.output, safe }
     catch _ => saved.restore
+  return none
+
+/-- Lift returned selections through their constructor/application context. Only the listed
+equalities are used: arithmetic and method definitions are left for their existing rules. -/
+private def normalizePure? (d : Expr) (atoms : Array Expr) (body : Expr) :
+    TermElabM (Option Simp.Result) := do
+  let interesting (e : Expr) : Bool :=
+    e.isAppOfArity ``ite 5 || e.isAppOfArity ``decide 2 ||
+      e.isAppOfArity ``Nat.min 2 || e.isAppOfArity ``Nat.max 2 ||
+      ((e.isAppOfArity ``Min.min 4 || e.isAppOfArity ``Max.max 4) &&
+        (e.getArg! 0).isConstOf ``Nat)
+  if (body.appArg!.find? interesting).isNone then return none
+  -- Constants and already encoded words remain glue values, including inside a mixed result.
+  -- Expanding their selections would introduce comparisons and stronger fit obligations.
+  let fixedOrLive (e : Expr) : MetaM Bool := do
+    if !e.containsFVar d.fvarId! then return true
+    -- Simp traverses reducibly; use the same transparency as the existing glue analysis.
+    return (e.find? interesting).isSome &&
+      (← withTransparency .default (findAtom atoms e)).isSome
+  let mut thms : SimpTheorems := {}
+  for name in [``Nat.min_def, ``Nat.max_def, ``ite_not] do
+    thms ← thms.addConst name
+  thms ← thms.addConst ``not_lt (inv := true)
+  if (body.appArg!.find? (·.isAppOfArity ``decide 2)).isSome then
+    let decideRule ← Term.elabTerm (← `(fun (p : Prop) [Decidable p] =>
+      (show decide p = if p then true else false from by
+        by_cases h : p
+        · exact (decide_eq_true h).trans (ite_eq_left h).symm
+        · exact (decide_eq_false h).trans (ite_eq_right h).symm))) none
+    Term.synthesizeSyntheticMVarsNoPostponing
+    thms ← thms.add (.other `realize_decide) #[] (← instantiateMVars decideRule)
+  let ctx ← Simp.mkContext
+    (config := { dsimp := false, zeta := false, proj := false, iota := false })
+    (simpTheorems := #[thms]) (congrTheorems := ← getSimpCongrTheorems)
+  let defaults := Simp.mkDefaultMethodsCore #[]
+  let normalizeMethods : Simp.Methods := { defaults with
+    pre := fun e => do
+      if ← fixedOrLive e then return .done { expr := e }
+      defaults.pre e }
+  let (normalized, _) ← Simp.main body ctx (methods := normalizeMethods)
+  let liftCtx := ctx.setSimpTheorems #[{}]
+  let liftArgument (e : Expr) : MetaM (Option Simp.Result) := do
+    let args := e.getAppArgs
+    for h : i in [0:args.size] do
+      let choice := args[i]
+      unless choice.isAppOfArity ``ite 5 do continue
+      if ← fixedOrLive choice then continue
+      let f ← withLocalDeclD `selected (← inferType choice) fun selected => do
+        mkLambdaFVars #[selected] (mkAppN e.getAppFn (args.set i selected))
+      let proof ← mkAppOptM ``apply_ite #[none, none, f, choice.getArg! 1,
+        choice.getArg! 2, choice.getArg! 3, choice.getArg! 4]
+      let some (_, _, rhs) := (← inferType proof).eq?
+        | throwError "realize: internal error lifting a conditional result"
+      return some { expr := rhs, proof? := some proof }
+    return none
+  -- Stop at the first lifted choice. Traversing it would distribute one branch across
+  -- another; its alternatives are instead certified recursively by the branch rule.
+  let methods : Simp.Methods := { defaults with
+    pre := fun e => do
+      if e.isAppOfArity ``ite 5 || (← fixedOrLive e) then return .done { expr := e }
+      defaults.pre e
+    post := fun e => do
+      if let some result ← liftArgument e then return .visit result
+      defaults.post e }
+  let (lifted, _) ← Simp.main normalized.expr liftCtx (methods := methods)
+  if lifted.expr.isAppOfArity ``ite 5 then
+    return some {
+      expr := lifted.expr
+      proof? := some (← mkEqTrans (← normalized.getProof) (← lifted.getProof)) }
   return none
 
 mutual
@@ -807,7 +934,10 @@ private partial def realizeProg (ctx : Ctx) (env : Env) (prog : Expr) (output? :
     TermElabM Out :=
   withLocalDeclD `d env.ty fun d => do
     let atoms := env.atoms.map (·.beta #[d])
-    if let some out ← tryRealizeCall ctx env d atoms (prog.beta #[d]).headBeta output? then
+    let stage (a output : Expr) : TermElabM Out := do
+      let body ← mkAppOptM ``Pure.pure #[mkConst ``Memory.Prog, none, none, a]
+      realizeBody ctx env d atoms body (some output)
+    if let some out ← tryRealizeCall ctx env d atoms (prog.beta #[d]).headBeta output? stage then
       return { out with proof := ← certify ctx env out.proof prog out.output out.safe }
     let body ← normBody (prog.beta #[d]).headBeta
     let out ← realizeBody ctx env d atoms body output?
@@ -835,7 +965,16 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
     let out ← match output? with
       | some o => pure o
       | none => encodingOf (← resultType body)
-    return ← realizePure ctx env d atoms a out
+    let saved ← saveState
+    try
+      return ← realizePure ctx env d atoms a out
+    catch ex =>
+      saved.restore
+      if let some normalized ← normalizePure? d atoms body then
+        let out ← realizeBody ctx env d atoms normalized.expr (some out)
+        let eq ← mkLambdaFVars #[d] (← mkEqSymm (← normalized.getProof))
+        return { out with proof := ← mkAppM ``Realizes.congr #[out.proof, eq] }
+      throw ex
   -- memory queries
   if body.isAppOfArity ``PFunctor.FreeM.lift 2 then
     let op ← whnfR body.appArg!
@@ -871,6 +1010,11 @@ private partial def realizeBody (ctx : Ctx) (env : Env) (d : Expr) (atoms : Arra
     return { proof, output, safe := ← trueSafe env.ty }
   -- branching
   if body.isAppOfArity ``ite 5 then
+    if (← cond? (body.getArg! 1)).isNone then
+      if let some normalized ← normalizeBranch? body then
+        let out ← realizeBody ctx env d atoms normalized.expr output?
+        let eq ← mkLambdaFVars #[d] (← mkEqSymm (← normalized.getProof))
+        return { out with proof := ← mkAppM ``Realizes.congr #[out.proof, eq] }
     let c := body.getArg! 1
     let inst := body.getArg! 2
     let t := body.getArg! 3
@@ -1008,8 +1152,7 @@ private partial def realizeIterate (ctx : Ctx) (env : Env) (d : Expr) (atoms : A
       | zero => rfl
       | succ n ih =>
         simp only [iterate]
-        congr 1
-        funext b
+        congr 1 with b : 1
         exact ih b)) (some ty)
     mkLambdaFVars #[d] (mkApp2 (← instantiateMVars h) n a)
   else

@@ -95,8 +95,7 @@ theorem runFrom_succ (machine : MultiTapePTM k Symbol State Oracle) (coin : Orac
   | none => simp [runFrom, runConfigFrom, MultiTapeMachine.runConfigFrom, hs]
   | some state =>
     simp only [runFrom, runConfigFrom, MultiTapeMachine.runConfigFrom, hs, bind_map_left, map_bind]
-    congr 1
-    funext bit
+    congr 1 with bit : 1
     cases machine.tr state cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols cfg.answerSymbols bit <;>
       simp only [map_bind]
 

@@ -243,6 +243,15 @@ contains its block; the sink `q + n` of the edge when there is none. -/
   else (firstAfterNum k q σ ((n - q) % (k * 3) / 3 + 1) ((n - q) / (k * 3)) ((n - q) % 3)).getD
     (q + n)
 
+/-- A block-edge number past the control edges has quotient `i` and remainder `δ + 3 h` by
+`3 k`. -/
+private theorem blockEdge_div_mod (i : Fin q) (h : Fin k) (δ : Fin 3) :
+    ((δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ)) / (k * 3) = i ∧
+      ((δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ)) % (k * 3) = (δ : ℕ) + 3 * (h : ℕ) := by
+  have hlt : (δ : ℕ) + 3 * (h : ℕ) < k * 3 := by have := δ.isLt; have := h.isLt; omega
+  exact ⟨by rw [Nat.add_mul_div_left _ _ (by omega), Nat.div_eq_of_lt hlt, zero_add],
+    by rw [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hlt]⟩
+
 /-- **Edge targets on numbers.** -/
 theorem edgeTargetNum_blockEdgeEquiv (σ m : ℕ) (e : BlockEdge k q) :
     edgeTargetNum k q σ (blockEdgeEquiv k q e) =
@@ -253,14 +262,8 @@ theorem edgeTargetNum_blockEdgeEquiv (σ m : ℕ) (e : BlockEdge k q) :
     split_ifs with hi
     · rw [val_explicitVertexEquiv_interval]
     · rw [val_explicitVertexEquiv_sink, val_blockEdgeEquiv_inl]
-  · have hk : 0 < k := Fin.pos h
+  · obtain ⟨hdiv, hmod⟩ := blockEdge_div_mod i h δ
     have hδ := δ.isLt
-    have hh := h.isLt
-    have hlt : (δ : ℕ) + 3 * (h : ℕ) < k * 3 := by omega
-    have hdiv : ((δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ)) / (k * 3) = i := by
-      rw [Nat.add_mul_div_left _ _ (by omega), Nat.div_eq_of_lt hlt, zero_add]
-    have hmod : ((δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ)) % (k * 3) = (δ : ℕ) + 3 * (h : ℕ) := by
-      rw [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hlt]
     have hmod3 : ((δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ)) % 3 = δ := by
       rw [show (δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ) = δ + 3 * (h + k * i) by ring,
         Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hδ]
@@ -288,11 +291,8 @@ theorem blockSrcNum_blockEdgeEquiv (m : ℕ) (e : BlockEdge k q) :
   rcases e with i | ⟨i, h, δ⟩
   · rw [val_blockEdgeEquiv_inl, blockSrcNum, ite_eq_left i.isLt]
     rfl
-  · have hδ := δ.isLt
-    have hh := h.isLt
-    have hlt : (δ : ℕ) + 3 * (h : ℕ) < k * 3 := by omega
-    rw [val_blockEdgeEquiv_inr, blockSrcNum, ite_eq_right (by omega), Nat.add_sub_cancel_left,
-      Nat.add_mul_div_left _ _ (by omega), Nat.div_eq_of_lt hlt, zero_add]
+  · rw [val_blockEdgeEquiv_inr, blockSrcNum, ite_eq_right (by omega), Nat.add_sub_cancel_left,
+      (blockEdge_div_mod i h δ).1]
     rfl
 
 /-- The number of the vertex at which the explicit edge numbered `j` starts: the interval of its

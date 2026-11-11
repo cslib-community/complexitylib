@@ -58,7 +58,7 @@ vector `A (x₁ - x₂)`. It also applies to their restriction to Toeplitz matri
   equality*][WegmanCarter1981]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

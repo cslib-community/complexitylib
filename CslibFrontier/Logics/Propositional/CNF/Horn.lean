@@ -254,8 +254,7 @@ theorem CNF.isDualHorn_iff (φ : CNF V) : φ.IsDualHorn ↔ ∀ c ∈ φ, c.IsDu
 @[simp] theorem Clause.eval_flip (c : Clause V) (a : V → Bool) :
     c.flip.eval a = c.eval (fun i => !a i) := by
   simp only [Clause.flip, Clause.eval, List.any_map]
-  congr 1
-  funext l
+  congr 1 with l : 1
   obtain ⟨v, b⟩ := l
   cases hv : a v <;> cases b <;> simp [Std.Sat.Literal.negate, Literal.eval, hv]
 

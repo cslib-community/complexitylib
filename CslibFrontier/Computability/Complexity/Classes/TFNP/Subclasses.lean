@@ -102,31 +102,6 @@ variable {α β : Type}
 
 /-! ### Polynomial-time bit-string and binary-number primitives -/
 
-private theorem bool_or'_pt {encIn : α ↪ List Bool} {left right : α → Bool}
-    (hleft : ComputableInPolyTime left encIn encBool)
-    (hright : ComputableInPolyTime right encIn encBool) :
-    ComputableInPolyTime (fun a => left a || right a) encIn encBool :=
-  bool_or.comp (hleft.prod hright)
-
-private theorem bool_beq_pt {encIn : α ↪ List Bool} {left right : α → Bool}
-    (hleft : ComputableInPolyTime left encIn encBool)
-    (hright : ComputableInPolyTime right encIn encBool) :
-    ComputableInPolyTime (fun a => left a == right a) encIn encBool :=
-  hleft.beq hright
-
-private theorem bool_bne_pt {encIn : α ↪ List Bool} {left right : α → Bool}
-    (hleft : ComputableInPolyTime left encIn encBool)
-    (hright : ComputableInPolyTime right encIn encBool) :
-    ComputableInPolyTime (fun a => left a != right a) encIn encBool :=
-  hleft.bne hright
-
-private theorem decide_ne_pt {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    [DecidableEq β] {left right : α → β}
-    (hleft : ComputableInPolyTime left encA encB)
-    (hright : ComputableInPolyTime right encA encB) :
-    ComputableInPolyTime (fun x => decide (left x ≠ right x)) encA encBool := by
-  simpa only [Function.comp_def, decide_not] using bool_not.comp (hleft.decide_eq' hright)
-
 private theorem cond_pt {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     {c : α → Bool} {yes no : α → β}
     (hc : ComputableInPolyTime c encA encBool)
@@ -135,8 +110,8 @@ private theorem cond_pt {encA : α ↪ List Bool} {encB : β ↪ List Bool}
     ComputableInPolyTime (fun a => if c a then yes a else no a) encA encB :=
   hc.ite hyes hno
 
-attribute [local fun_prop] ComputableInPolyTime.bool_and' bool_or'_pt bool_beq_pt bool_bne_pt
-  decide_ne_pt cond_pt binary_le'
+attribute [local fun_prop] ComputableInPolyTime.bool_and' ComputableInPolyTime.bool_or' cond_pt
+  binary_le'
 
 @[fun_prop]
 theorem computableInPolyTime_zeroVertex_comp {encIn : α ↪ List Bool} {n : α → ℕ}
@@ -158,6 +133,22 @@ theorem computableInPolyTime_binaryValue_le :
   ComputableInPolyTime.binary_le.comp
     ((ComputableInPolyTime.bitsBinaryValue.comp (.fst encBits encBits)).prod
       (ComputableInPolyTime.bitsBinaryValue.comp (.snd encBits encBits)))
+
+/-- A polynomial-time number-valued function `C` on a family of cubes `{0, 1} ^ (n a)` has a
+polynomial-time width: some `m`, computed in unary, bounds the binary length of `C (a, u)` for
+every `u` of length `n a`. -/
+theorem exists_length_bits_le {enc : α ↪ List Bool} {n : α → ℕ} {C : α × List Bool → ℕ}
+    (hn : ComputableInPolyTime n enc encUnary)
+    (hC : ComputableInPolyTime C (encPair enc encBits) encNat) :
+    ∃ m : α → ℕ, ComputableInPolyTime m enc encUnary ∧
+      ∀ a u, u.length = n a → (C (a, u)).bits.length ≤ m a := by
+  obtain ⟨c, d, hbound⟩ := hC.polyBounded_length.exists_le
+  refine ⟨fun a => c * (2 * (enc a).length + n a + 2) ^ d, ?_, fun a u hu => ?_⟩
+  · exact unary_mul' (const c) ((unary_pow d).comp
+      (unary_add' (unary_add' (unary_mul' (const 2) (encoding_length enc)) hn) (const 2)))
+  · have hb := hbound (a, u)
+    simp only [encNat_apply, length_encPair, encBits_apply, hu] at hb
+    grind
 
 /-! ### `FNP` and `TFNP` membership of the family relations -/
 

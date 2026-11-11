@@ -21,8 +21,8 @@ statements is moved.
 
 Declarations written in source come from the `.ilean` files and statements from the `.olean`
 files, read by `scripts/lean_outputs.py` and `scripts/LeanOutputs.lean`. The check needs the
-build outputs of `lake build CslibFrontier CslibFrontierTests CslibFrontierAbstracts` (`lake build` and
-`lake test`), and refuses stale ones unless `--no-build-check` is given.
+build outputs of `lake build CslibFrontier CslibFrontierTests` (`lake build` and `lake test`), and
+refuses stale ones unless `--no-build-check` is given.
 This is a post-build audit; the default freshness probe invokes Lake and may materialize
 dependencies.
 """

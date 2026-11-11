@@ -51,7 +51,7 @@ soundness (`acceptProb_gmwVerifier_le`) for `Cslib.Crypto.GMW.gmwVerifier`.
 * [M. Naor, *Bit Commitment Using Pseudorandomness*][Naor1991]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.GMW
 

@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Opening.PolyTime
 public import CslibFrontier.Languages.Probabilistic.BitString
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Languages.Probabilistic.Norm
 import Mathlib.Data.List.GetD
 
 /-!
@@ -38,8 +39,9 @@ rejected, and both public observations, commit-final sender state and auxiliary 
 * `openPairs_decodeOpening`: exact list checker semantics, including malformed lengths.
 * `eval_senderClosedProgram`: exact interpretation in the existing phased-world experiment.
 * `senderClosedProgram_coupled`: joint simulation error `2⁻⌈k/2⌉`.
-* `senderClosedProgram_coupled_two_mul`, `senderClosedProgram_negligible_error`: geometric
-  negligible error on the concrete growing schedule `k = 2n`.
+* `senderClosedProgram_coupled_two_mul`: joint simulation error `2⁻ⁿ` on the concrete growing
+  schedule `k = 2n`.
+* `senderClosedProgram_negligible_error`: that error bound, as a function of `n`, is negligible.
 * `senderIdealProgram_schedule`, `senderIdealProgram_queryBound`: the four actual public calls.
 
 This is an original fixed-schedule single-session program refinement, not a universal realization
@@ -77,8 +79,7 @@ private theorem eval_senderTablesWith
   induction k generalizing st with
   | zero => rfl
   | succ k ih =>
-    simp only [senderTablesWith, ProbComp.eval_bind, ProbComp.eval_pure, senderTables_succ,
-      senderOfPrograms, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+    simp only [pmf_norm, senderTablesWith, senderTables_succ, senderOfPrograms]
     exact congrArg ((ProbComp.eval (choose k st)).bind) (funext fun ts => by rw [ih]; rfl)
 
 /-- Program interpretation preserves the semantic sender transcript and commit-final state. -/
@@ -229,10 +230,8 @@ theorem eval_senderClosedProgram
         (fun final => (ProbComp.eval (finish k final)).map
           (fun (submission, out) => (decodeOpening k submission, out))) .idle).map Prod.fst := by
   rw [senderClosedProgram_eq, senderIdeal_run]
-  simp only [ProbComp.eval_bind, ProbComp.eval_pure, eval_senderViewProgram,
-    BitString.eval_sampleList, BitString.uniformList, simulatedOpening,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-    PMF.pure_bind, PMF.map_bind, PMF.bind_map]
+  simp only [pmf_norm, eval_senderViewProgram, BitString.eval_sampleList, BitString.uniformList,
+    simulatedOpening]
   apply congrArg ((senderTables (senderOfPrograms choose receive) k st).bind)
   apply funext
   rintro ⟨ts, final⟩
@@ -280,7 +279,9 @@ theorem senderClosedProgram_coupled_two_mul
   have hcount : 2 * n - (2 * n) / 2 = n := by omega
   simpa only [hcount] using senderClosedProgram_coupled choose receive (2 * n) st finish
 
-/-- The actual majority-extraction error along the schedule `k = 2n` is negligible. -/
+/-- The error bound `2⁻¹ ^ (k - k / 2)` of `senderClosedProgram_coupled`, taken in `ℝ≥0` along the
+schedule `k = 2n`, is a negligible function of `n`. This is a statement about the bound alone; the
+coupling at that schedule is `senderClosedProgram_coupled_two_mul`. -/
 theorem senderClosedProgram_negligible_error :
     Crypto.Negligible (fun n => (2 : ℝ≥0)⁻¹ ^ (2 * n - (2 * n) / 2)) := by
   have hcount (n : ℕ) : 2 * n - (2 * n) / 2 = n := by omega
@@ -300,12 +301,10 @@ theorem senderIdealProgram_schedule
       (senderIdealProgram choose receive k st finish) (.idle, [])).support) :
     ∃ committed release : Bool, log.map Sigma.fst =
       [.inr (), .inl (if release then .open else .abort), .inr (), .inl (.commit committed)] := by
-  simp only [senderIdealProgram,
-    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query,
-    ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
-    OracleComp.withTranscript, Phased.handler, OracleComp.sumHandler,
-    Phased.advance, Phased.observe, PMF.monad_pure_eq_pure,
-    PMF.pure_map, PMF.pure_bind, PMF.bind_map, Function.comp_def] at h
+  simp only [pmf_norm, senderIdealProgram, ProbOracleComp.runWith_bind,
+    ProbOracleComp.runWith_query, ProbOracleComp.runWith_sample, ProbOracleComp.runWith_pure,
+    OracleComp.withTranscript, Phased.handler, OracleComp.sumHandler, Phased.advance,
+    Phased.observe] at h
   simp only [PMF.mem_support_bind_iff] at h
   obtain ⟨⟨tables, final⟩, _, choices, _, ⟨submission, out⟩, _, h⟩ := h
   let committed := extractPairs (tables.map fun t =>

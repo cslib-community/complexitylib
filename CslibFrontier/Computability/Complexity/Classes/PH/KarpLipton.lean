@@ -313,9 +313,7 @@ theorem PPolyOn.exists_of_computableInPolyTime_length
       by rw [List.length_append, List.length_replicate, hu, Nat.add_sub_cancel' hle], ?_⟩
     have htake : (u ++ List.replicate (p.eval (enc a).length - N a) false).take (N a) = u := by
       rw [← hu, List.take_left]
-    have hmem : (a, u ++ List.replicate (p.eval (enc a).length - N a) false) ∈ B := by
-      change P a ((u ++ List.replicate (p.eval (enc a).length - N a) false).take (N a))
-      rwa [htake]
+    have hmem : (a, u ++ List.replicate (p.eval (enc a).length - N a) false) ∈ B := by grind
     simpa [encPair_apply, encBits_apply] using (hBM _).1 hmem
   · rintro ⟨w, hw, hwM⟩
     have hmem : (a, w) ∈ B :=

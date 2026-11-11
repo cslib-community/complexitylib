@@ -95,7 +95,7 @@ class AssessTests(unittest.TestCase):
 
 class ArgumentTests(unittest.TestCase):
     def test_abbreviated_sha_and_bad_repo_are_rejected(self) -> None:
-        for argv in (["12", "abc1234"], ["12", SHA, "--repo", "complexitylib"]):
+        for argv in (["12", "abc1234"], ["12", SHA, "--repo", "cslib-frontier"]):
             with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
                 queue_pr.main(argv)
 

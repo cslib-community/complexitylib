@@ -38,7 +38,7 @@ variables keep their supplied encoding; fresh variables use their unary clause a
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 2.3.1][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL
 

@@ -172,8 +172,7 @@ theorem weights_eq_ofFn (count : ℕ) (r : List F) :
 /-- Normalization leaves an already correctly sized vector unchanged. -/
 theorem weights_ofFn {m : ℕ} (r : Fin m → F) : weights m (List.ofFn r) = List.ofFn r := by
   rw [weights_eq_ofFn]
-  congr 1
-  funext i
+  congr 1 with i : 1
   simp
 
 /-- The total list algorithm agrees with the existing algebraic check on valid wire maps. -/

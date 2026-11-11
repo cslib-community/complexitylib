@@ -27,6 +27,7 @@ public section
 namespace Cslib.Logic.PL.CSP.Blossom
 
 open Table Finset
+open Cslib.BitString
 
 variable {F : CSP Table ℕ}
 
@@ -274,9 +275,9 @@ theorem transport_expandZero (hF : EdgeInstance F) (f : OccurrenceLabeling F Boo
     (vs : List ℕ) (g : OccurrenceLabeling (contract f vs) Bool)
     (hbits : ∀ i (hi : i ∈ touched F vs), g (connectorPort f vs i hi) = false)
     (hcentral : ∀ k : Fin (connectors F vs).length,
-      g (centralPort f vs k) = (oneHot (connectors F vs).length 0).getD k.val false) :
+      g (centralPort f vs k) = (listSingle (connectors F vs).length 0).getD k.val false) :
     transport f vs (expandZero f vs g) (fun _ => false)
-      (oneHot (connectors F vs).length 0) = g := by
+      (listSingle (connectors F vs).length 0) = g := by
   let hG := edge_contract hF f vs
   funext o
   have hset : o.var ∈ (F.vars.toFinset \ vs.toFinset) ∪ (connectors F vs).toFinset := by
@@ -329,21 +330,21 @@ theorem valid_expandZero (hF : EdgeInstance F) {f : OccurrenceLabeling F Bool}
     (hg : ValidLabeling sem g)
     (hbits : ∀ i (hi : i ∈ touched F vs), g (connectorPort f vs i hi) = false)
     (hcentral : ∀ k : Fin (connectors F vs).length,
-      g (centralPort f vs k) = (oneHot (connectors F vs).length 0).getD k.val false) :
+      g (centralPort f vs k) = (listSingle (connectors F vs).length 0).getD k.val false) :
     ValidLabeling sem (expandZero f vs g) := by
-  apply valid_of_transport_zero hf vs (central := oneHot (connectors F vs).length 0)
-    (by simp [oneHot]) (fun o ho => by simp only [expandZero, dite_eq_left ho])
+  apply valid_of_transport_zero hf vs (central := listSingle (connectors F vs).length 0)
+    (by simp [listSingle]) (fun o ho => by simp only [expandZero, dite_eq_left ho])
   rwa [transport_expandZero hF f vs g hbits hcentral]
 
 /-- Zero old connector ends and the honest central reference create one fresh defect. -/
 theorem connectorDefects_zero (vs : List ℕ) (hne : touched F vs ≠ []) :
     (connectorDefects F vs (fun _ => false)
-      (oneHot (connectors F vs).length 0)).toFinset = {baseConnector F vs hne} := by
+      (listSingle (connectors F vs).length 0)).toFinset = {baseConnector F vs hne} := by
   have hpos : 0 < (touched F vs).length := List.length_pos_iff.mpr hne
   have hpred (k : Fin (touched F vs).length) :
-      (false != (oneHot (connectors F vs).length 0).getD k.val false) = true ↔ k.val = 0 := by
-    rw [List.getD_eq_getElem _ _ (by simp [oneHot])]
-    simp [oneHot, eq_comm]
+      (false != (listSingle (connectors F vs).length 0).getD k.val false) = true ↔ k.val = 0 := by
+    rw [List.getD_eq_getElem _ _ (by simp [listSingle])]
+    simp [listSingle, eq_comm]
   ext v
   simp only [connectorDefects, List.mem_toFinset, List.mem_map, List.mem_filter,
     List.mem_finRange, true_and, hpred, mem_singleton]
@@ -359,7 +360,7 @@ theorem connectorDefects_zero (vs : List ℕ) (hne : touched F vs ≠ []) :
 fresh connector defect, even when every outside value has changed. -/
 theorem card_defects_transport_zero (hF : EdgeInstance F) (f g : OccurrenceLabeling F Bool)
     (vs : List ℕ) (hne : touched F vs ≠ []) :
-    (defects (transport f vs g (fun _ => false) (oneHot (connectors F vs).length 0))).card +
+    (defects (transport f vs g (fun _ => false) (listSingle (connectors F vs).length 0))).card +
       (defects g ∩ vs.toFinset).card = (defects g).card + 1 := by
   have hfresh : baseConnector F vs hne ∉ defects g := by
     intro hv
@@ -379,7 +380,7 @@ theorem card_defects_expandZero (hF : EdgeInstance F) {f : OccurrenceLabeling F 
       g (connectorPort f (internal w) i hi) = false)
     (hcentral : ∀ k : Fin (connectors F (internal w)).length,
       g (centralPort f (internal w) k) =
-        (oneHot (connectors F (internal w)).length 0).getD k.val false) :
+        (listSingle (connectors F (internal w)).length 0).getD k.val false) :
     (defects (expandZero f (internal w) g)).card = (defects g).card := by
   let e := expandZero f (internal w) g
   have hi : defects e ∩ (internal w).toFinset = defects f ∩ (internal w).toFinset :=

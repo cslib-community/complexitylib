@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.EventBind
 
 /-!
 # Retained success across two probabilistic branches
@@ -28,7 +29,7 @@ Generalized from Renfei Zhou's Karger–Stein success rule over `ProbComp`. Runt
 budgets are separate execution obligations.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability.PMF
 
