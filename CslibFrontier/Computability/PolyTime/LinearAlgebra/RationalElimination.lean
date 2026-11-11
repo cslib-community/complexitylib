@@ -300,39 +300,6 @@ section PolyTimeImpl
 attribute [local irreducible] encRat encIntBin encNat IntTable.enc RatTable.enc
   BareissState.enc RationalElimResult.enc LinearSystemInput.enc LinearSolveResult.enc
 
-private theorem listRange_poly {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ}
-    (hn : ComputableInPolyTime n encIn encUnary) :
-    ComputableInPolyTime (fun x => List.range (n x)) encIn (encList encUnary) :=
-  .of_tidy (ComputableTidilyInPolyTime.range.comp hn.tidy)
-
-private theorem listMap_poly {α β γ : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    {encIn : γ ↪ List Bool} {f : γ → α → β} {list : γ → List α}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (hf : ComputableInPolyTime (fun p : γ × α => f p.1 p.2) (encPair encIn encA) encB) :
-    ComputableInPolyTime (fun x => (list x).map (f x)) encIn (encList encB) :=
-  .of_tidy (ComputableTidilyInPolyTime.mapWithInput hlist.tidy hf.tidy)
-
-private theorem listAll_poly {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {test : γ → α → Bool} {list : γ → List α}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (htest : ComputableInPolyTime (fun p : γ × α => test p.1 p.2) (encPair encIn encA) encBool) :
-    ComputableInPolyTime (fun x => (list x).all (test x)) encIn encBool :=
-  .of_tidy (ComputableTidilyInPolyTime.allWithInput hlist.tidy htest.tidy)
-
-private theorem listFilter_poly {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {test : γ → α → Bool} {list : γ → List α}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (htest : ComputableInPolyTime (fun p : γ × α => test p.1 p.2) (encPair encIn encA) encBool) :
-    ComputableInPolyTime (fun x => (list x).filter (test x)) encIn (encList encA) :=
-  .of_tidy (ComputableTidilyInPolyTime.filterWithInput hlist.tidy htest.tidy)
-
-private theorem listFind_poly {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
-    {test : γ → α → Bool} {list : γ → List α}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (htest : ComputableInPolyTime (fun p : γ × α => test p.1 p.2) (encPair encIn encA) encBool) :
-    ComputableInPolyTime (fun x => (list x).find? (test x)) encIn (encOption encA) :=
-  .of_tidy (ComputableTidilyInPolyTime.findWithInput hlist.tidy htest.tidy)
-
 @[local fun_prop]
 private theorem optionSome_poly {α γ : Type} {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {f : γ → α} (hf : ComputableInPolyTime f encIn encA) :
@@ -346,22 +313,6 @@ private theorem optionElim_poly {α β γ : Type} {encA : α ↪ List Bool} {enc
     (hbody : ComputableInPolyTime (fun p : α × β => body p.1 p.2) (encPair encA encB) encC) :
     ComputableInPolyTime (fun a => (value a).elim (fallback a) (body a)) encA encC :=
   .of_tidy (ComputableTidilyInPolyTime.optionElimWithInput hvalue.tidy hfallback.tidy hbody.tidy)
-
-@[local fun_prop]
-private theorem divInt_poly {α : Type} {encIn : α ↪ List Bool} {n d : α → ℤ}
-    (hn : ComputableInPolyTime n encIn encIntBin)
-    (hd : ComputableInPolyTime d encIn encIntBin) :
-    ComputableInPolyTime (fun a => Rat.divInt (n a) (d a)) encIn encRat :=
-  rat_divInt.comp (hn.prod hd)
-
-@[local fun_prop]
-private theorem intDiv_poly {α : Type} {encIn : α ↪ List Bool} {n d : α → ℤ}
-    (hn : ComputableInPolyTime n encIn encIntBin)
-    (hd : ComputableInPolyTime d encIn encIntBin) :
-    ComputableInPolyTime (fun a => n a / d a) encIn encIntBin :=
-  have hbase : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 / p.2)
-      (encPair encIntBin encIntBin) encIntBin := by fun_prop
-  hbase.comp (hn.prod hd)
 
 @[local fun_prop]
 private theorem contains_unary_poly {α : Type} {encIn : α ↪ List Bool}
@@ -419,7 +370,7 @@ private theorem normalizedRatRow_poly {α : Type} {encIn : α ↪ List Bool}
   have hbase : ComputableInPolyTime (fun p : RatTable × ℕ => normalizedRatRow p.1 p.2)
       (encPair RatTable.enc encUnary) (encList encRat) := by
     unfold normalizedRatRow
-    exact listMap_poly (listRange_poly (by fun_prop)) (by fun_prop)
+    exact mapWithInput (unary_range' (by fun_prop)) (by fun_prop)
   exact hbase.comp (hM.prod hr)
 
 @[local fun_prop]
@@ -482,7 +433,7 @@ private theorem clearRow_poly {α : Type} {encIn : α ↪ List Bool} {r : α →
         (fun p : List ℚ × ℚ => p.2.num * Int.ofNat (rowDenomProd p.1 / p.2.den))
         (encPair (encList encRat) encRat) encIntBin :=
       intBin_mul' (rat_num.comp (snd _ _)) (hcast.comp hdiv)
-    exact listMap_poly (.id') hmul
+    exact mapWithInput (.id') hmul
   exact hbase.comp hr
 
 @[local fun_prop]
@@ -494,7 +445,7 @@ private theorem clearDenoms_poly {α : Type} {encIn : α ↪ List Bool} {M : α 
     have hrows : ComputableInPolyTime
         (fun M : RatTable => (List.range M.numRows).map fun r => clearRow (normalizedRatRow M r))
         RatTable.enc (encList (encList encIntBin)) :=
-      listMap_poly (listRange_poly (by fun_prop)) (by fun_prop)
+      mapWithInput (unary_range' (by fun_prop)) (by fun_prop)
     fun_prop
   exact hbase.comp hM
 
@@ -504,7 +455,7 @@ private theorem findPivotRow_base :
   unfold findPivotRow
   have hr : ComputableInPolyTime (fun p : BareissState × ℕ => List.range p.1.table.numRows)
       (encPair BareissState.enc encUnary) (encList encUnary) :=
-    listRange_poly (by fun_prop)
+    unary_range' (by fun_prop)
   have ht : ComputableInPolyTime
       (fun p : (BareissState × ℕ) × ℕ =>
         !p.1.1.pivotRows.contains p.2 && decide (p.1.1.table.entry p.2 p.1.2 ≠ 0))
@@ -554,7 +505,7 @@ private theorem bareissStep_base :
       have hcol : ComputableInPolyTime
           (fun p : ((BareissState × ℕ) × ℕ) × ℕ => List.range p.1.1.1.table.numCols)
           (encPair (encPair (encPair BareissState.enc encUnary) encUnary) encUnary)
-          (encList encUnary) := listRange_poly (by fun_prop)
+          (encList encUnary) := unary_range' (by fun_prop)
       have hcell : ComputableInPolyTime
           (fun q : (((BareissState × ℕ) × ℕ) × ℕ) × ℕ =>
             if q.1.2 = q.1.1.2 then q.1.1.1.1.table.entry q.1.1.2 q.2
@@ -569,7 +520,7 @@ private theorem bareissStep_base :
     have hrowRange : ComputableInPolyTime
         (fun q : (BareissState × ℕ) × ℕ => List.range q.1.1.table.numRows)
         (encPair (encPair BareissState.enc encUnary) encUnary) (encList encUnary) :=
-      listRange_poly (by fun_prop)
+      unary_range' (by fun_prop)
     exact .of_tidy (ComputableTidilyInPolyTime.mapWithInput hrowRange.tidy hinner.tidy)
   have hf : ComputableInPolyTime (fun p : BareissState × ℕ => findPivotRow p.1 p.2)
       (encPair BareissState.enc encUnary) (encOption encUnary) :=
@@ -632,7 +583,7 @@ private theorem bareissElimCols_poly_of_bound {γ : Type} {encIn : γ ↪ List B
     (par := fun _ => false) (list := fun x => List.range (colLimit x))
     (init := fun x => ⟨toTable x, 1, [], []⟩)
     (step := fun _ st c => bareissStep st c)
-    (.const false) (listRange_poly hcolLimit).tidy
+    (.const false) (unary_range' hcolLimit).tidy
     (by
       have h0 : ComputableInPolyTime (fun x => (⟨toTable x, 1, [], []⟩ : BareissState))
           encIn BareissState.enc := by fun_prop
@@ -718,7 +669,7 @@ private theorem augmentRatTable_poly {α : Type} {encIn : α ↪ List Bool}
         (fun p : RatTable × List ℚ =>
           (List.range p.1.numRows).map fun i => normalizedRatRow p.1 i ++ [p.2.getD i 0])
         (encPair RatTable.enc (encList encRat)) (encList (encList encRat)) :=
-      listMap_poly (listRange_poly (by fun_prop)) (by fun_prop)
+      mapWithInput (unary_range' (by fun_prop)) (by fun_prop)
     fun_prop
   exact hbase.comp (hA.prod hb)
 
@@ -791,7 +742,7 @@ private theorem scaledIntRow_poly {α : Type} {encIn : α ↪ List Bool}
   have hbase : ComputableInPolyTime (fun p : (IntTable × ℤ) × ℕ => scaledIntRow p.1.1 p.1.2 p.2)
       (encPair (encPair IntTable.enc encIntBin) encUnary) (encList encRat) := by
     unfold scaledIntRow
-    exact listMap_poly (listRange_poly (by fun_prop)) (by fun_prop)
+    exact mapWithInput (unary_range' (by fun_prop)) (by fun_prop)
   exact hbase.comp ((hT.prod hΔ).prod hr)
 
 @[local fun_prop]
@@ -804,7 +755,7 @@ private theorem selectRatRows_poly {α : Type} {encIn : α ↪ List Bool}
   have hbase : ComputableInPolyTime (fun p : RatTable × List ℕ => selectRatRows p.1 p.2)
       (encPair RatTable.enc (encList encUnary)) (encList (encList encRat)) := by
     unfold selectRatRows
-    exact listMap_poly (snd _ _) (by fun_prop)
+    exact mapWithInput (snd _ _) (by fun_prop)
   exact hbase.comp (hM.prod hidxs)
 
 @[local fun_prop]
@@ -817,7 +768,7 @@ private theorem computeNonPivotCols_poly {α : Type} {encIn : α ↪ List Bool}
   have hbase : ComputableInPolyTime (fun p : ℕ × List ℕ => computeNonPivotCols p.1 p.2)
       (encPair encUnary (encList encUnary)) (encList encUnary) := by
     unfold computeNonPivotCols
-    exact listFilter_poly (listRange_poly (fst _ _)) (by fun_prop)
+    exact filterWithInput (unary_range' (fst _ _)) (by fun_prop)
   exact hbase.comp (hn.prod hcols)
 
 @[local fun_prop]
@@ -840,8 +791,8 @@ private theorem buildKernelVec_poly {α : Type} {encIn : α ↪ List Bool}
       funext c
       cases (p.1.pivotRows.zip p.1.pivotCols).find? fun pc => pc.2 == c <;> rfl
     rw [heq]
-    refine listMap_poly (listRange_poly (by fun_prop)) ?_
-    exact optionElim_poly (listFind_poly (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop)
+    refine mapWithInput (unary_range' (by fun_prop)) ?_
+    exact optionElim_poly (findWithInput (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop)
   exact hbase.comp (hst.prod hj)
 
 /-- `rationalElim` is computable in polynomial time on multi-tape Turing machines. -/
@@ -865,9 +816,9 @@ theorem rationalElim_computableInPolyTime :
     rfl
   rw [heq]
   have hpiv : ComputableInPolyTime pivRowsOf RatTable.enc (encList (encList encRat)) :=
-    listMap_poly (by fun_prop) (by fun_prop)
+    mapWithInput (by fun_prop) (by fun_prop)
   have hker : ComputableInPolyTime kernelOf RatTable.enc (encList (encList encRat)) :=
-    listMap_poly (by fun_prop) (by fun_prop)
+    mapWithInput (by fun_prop) (by fun_prop)
   fun_prop
 
 /-- `ratRref` is computable in polynomial time on multi-tape Turing machines. -/
@@ -946,10 +897,10 @@ theorem ratSolve_computableInPolyTime :
   have hst : ComputableInPolyTime stOf LinearSystemInput.enc BareissState.enc :=
     bareissElimCols_aug_poly
   have hcons : ComputableInPolyTime consOf LinearSystemInput.enc encBool :=
-    listAll_poly (listRange_poly (by fun_prop)) (by fun_prop)
+    allWithInput (unary_range' (by fun_prop)) (by fun_prop)
   have hsol : ComputableInPolyTime solOf LinearSystemInput.enc (encList encRat) :=
-    listMap_poly (listRange_poly (by fun_prop))
-      (optionElim_poly (listFind_poly (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop))
+    mapWithInput (unary_range' (by fun_prop))
+      (optionElim_poly (findWithInput (by fun_prop) (by fun_prop)) (by fun_prop) (by fun_prop))
   have hyes : ComputableInPolyTime
       (fun sys => LinearSolveResult.mk (some (solOf sys))
         (stOf sys).pivotRows (stOf sys).pivotCols)
