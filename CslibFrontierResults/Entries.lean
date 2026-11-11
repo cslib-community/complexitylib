@@ -50,11 +50,15 @@ import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Fagin.Converse
+import CslibFrontier.Computability.Complexity.FineGrained.CountingExponents
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
+import CslibFrontier.Computability.Complexity.FineGrained.GapETH
 import CslibFrontier.Computability.Complexity.FineGrained.OrthogonalVectors
 import CslibFrontier.Computability.Complexity.FineGrained.PPZ
+import CslibFrontier.Computability.Complexity.FineGrained.Randomized
 import CslibFrontier.Computability.Complexity.FineGrained.Schoening
+import CslibFrontier.Computability.Complexity.FineGrained.SingleSubexp
 import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
@@ -2196,3 +2200,104 @@ register_result "goemans-williamson-maxdicut" where
     Real.goemansWilliamsonDicutConstant (0.79607 < β < 0.79608), plus the balanced-digraph \
     reduction recovering α > 0.87856 on p. 1138. No SDP solver, finite-precision sampler, or \
     derandomization is formalized."
+
+register_result "counting-sat-exponents" where
+  title := "Counting k-SAT exponents, #ETH, #SETH, and clause-to-variable sparsification"
+  topic := "fine-grained complexity"
+  sources := [
+    { paper := ImpagliazzoPaturi2001, theorem := unverified, locator := unverified },
+    { paper := ImpagliazzoPaturiZane2001, theorem := unverified, locator := unverified },
+    { paper := CyganEtAl2015, theorem := unverified, locator := unverified },
+    { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.satExponent_le_sharpSatExponent,
+    Cslib.Complexity.SharpSETH_iff_tendsto,
+    Cslib.Complexity.exists_computableInExpTime_SharpKSAT_numVars_of_length,
+    Cslib.Complexity.SharpETH_iff_not_computableInSubexpTime_length,
+    Cslib.Complexity.computableInSubexpTime_SharpKSAT,
+    Cslib.Complexity.sharpSatExponent_eq_zero,
+    Cslib.Complexity.not_SharpETH,
+    Cslib.Complexity.not_SharpSETH
+  ]
+  scope := "Parameterized function-time bounds on native multi-tape machines with encCNF inputs \
+    and binary encNat counts. Proves 0 ≤ satExponent k ≤ sharpSatExponent k ≤ 1, \
+    SharpSETH ↔ Tendsto sharpSatExponent atTop (𝓝 1), clause-to-variable counting rate transfer \
+    via disjoint counting sparsification, ETH → SharpETH, SETH → SharpSETH, and unconditional \
+    sharpSatExponent k = 0, ¬SharpETH, ¬SharpSETH from CountingNativeEndpoint."
+
+register_result "single-subexp-sat" where
+  title := "Single-machine 2^o(n) subexponential time vs. ∀ δ > 0 rate families"
+  topic := "fine-grained complexity"
+  sources := [
+    { paper := ImpagliazzoPaturi2001, theorem := unverified, locator := unverified },
+    { paper := ImpagliazzoPaturiZane2001, theorem := unverified, locator := unverified },
+    { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.decidableInSingleSubexpTime_iff_exists_machine,
+    Cslib.Complexity.computableInSingleSubexpTime_iff_exists_machine,
+    Cslib.Complexity.computableInSingleSubexpTime_SharpDeclaredKSAT,
+    Cslib.Complexity.computableInSingleSubexpTime_SharpKSAT,
+    Cslib.Complexity.decidableInSingleSubexpTime_KSAT,
+    Cslib.Complexity.not_SingleETH,
+    Cslib.Complexity.not_SingleSharpETH
+  ]
+  scope := "Characterizes single-machine 2^o(μ(a))·poly(L) decidability and computability by \
+    reversing the ∀ δ > 0 quantifier inside a single ComputableInO certificate, proves \
+    ETH → SingleETH → SingleSharpETH and SharpETH → SingleSharpETH, and establishes \
+    unconditional single-machine subexponential bounds for SharpDeclaredKSAT, SharpKSAT, and \
+    KSAT at every fixed width k."
+
+register_result "randomized-sat-exponents" where
+  title := "Randomized fine-grained rates, threshold amplification, rETH, and rSETH"
+  topic := "fine-grained complexity"
+  sources := [
+    { paper := ImpagliazzoPaturi2001, theorem := unverified, locator := unverified },
+    { paper := CalabroImpagliazzoPaturi2006, theorem := unverified, locator := unverified },
+    { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.solvesWithErrorInTimeO_twoSided_iff,
+    Cslib.Complexity.solvesWithErrorInTimeO_oneSidedRP_iff,
+    Cslib.Complexity.rSatExponent_le_rpSatExponent,
+    Cslib.Complexity.rpSatExponent_le_satExponent,
+    Cslib.Complexity.rSETH_iff_tendsto,
+    Cslib.Complexity.rETH.eth,
+    Cslib.Complexity.rSETH.seth,
+    Cslib.Complexity.rpSatExponent_eq_zero,
+    Cslib.Complexity.rSatExponent_eq_zero,
+    Cslib.Complexity.not_rETH,
+    Cslib.Complexity.not_rSETH
+  ]
+  scope := "Sample-and-verify randomized promise solving with charged unary coin-count \
+    generation, compiling to halting fair-coin MultiTapePTMs and matching PromiseBPP, \
+    PromiseRP, and PromiseCoRP on polynomial bounds. Proves rate-preserving two-sided majority \
+    and one-sided OR amplification across (0, 1/2) and (0, 1), 0 ≤ rSatExponent k ≤ \
+    rpSatExponent k ≤ satExponent k, rETH → ETH, rSETH → SETH, and unconditional ¬rETH, ¬rSETH."
+
+register_result "gap-eth" where
+  title := "Gap k-SAT exponents, rational-midpoint threshold reduction, GapETH, and rGapETH"
+  topic := "fine-grained complexity"
+  sources := [
+    { paper := Dinur2016, theorem := unverified, locator := unverified },
+    { paper := ManurangsiRaghavendra2017, theorem := unverified, locator := unverified },
+    { paper := ImpagliazzoPaturi2001, theorem := unverified, locator := unverified },
+    { paper := OpenAI2026ETH, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.MaxKSATThreshold_decidableInExpTime_one,
+    Cslib.Complexity.exists_reduction_GapKSAT_to_MaxKSATThreshold,
+    Cslib.Complexity.GapKSAT_solvesPromiseInExpTime_one,
+    Cslib.Complexity.rGapSatExponent_le_gapSatExponent,
+    Cslib.Complexity.rGapETH.gapETH,
+    Cslib.Complexity.rGapETH.rETH,
+    Cslib.Complexity.GapETH.eth,
+    Cslib.Complexity.not_GapETH,
+    Cslib.Complexity.not_rGapETH
+  ]
+  scope := "Defines GapKSAT over GapKSATSpec (agreeing definitionally with GapThreeSAT at \
+    (3, 1, s)), proves 2^n·poly(L) solving and 0 ≤ rGapSatExponent P ≤ gapSatExponent P ≤ 1 \
+    for all 0 ≤ s < c ≤ 1 via rational-midpoint reduction to MaxKSATThreshold, establishes \
+    rGapETH → GapETH → ETH and rGapETH → rETH, and proves ¬GapETH and ¬rGapETH from native \
+    subexponential k-SAT. Imperfect-completeness subexponential MAX-k-SAT is not claimed."

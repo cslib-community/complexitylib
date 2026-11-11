@@ -2092,6 +2092,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.ContractionMatc
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionPartitionFunction
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingCSP
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingEndpoint
+public import CslibFrontier.Computability.Complexity.FineGrained.CountingExponents
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingFiniteCSP
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeEndpoint
 public import CslibFrontier.Computability.Complexity.FineGrained.CountingNativeModelCount
@@ -2106,6 +2107,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.DensityBranchCo
 public import CslibFrontier.Computability.Complexity.FineGrained.Diameter
 public import CslibFrontier.Computability.Complexity.FineGrained.ExhaustiveSearch
 public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
+public import CslibFrontier.Computability.Complexity.FineGrained.GapETH
 public import CslibFrontier.Computability.Complexity.FineGrained.GeneralCNFBranchSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.GraphProblems
 public import CslibFrontier.Computability.Complexity.FineGrained.LocalMapCounting
@@ -2128,11 +2130,13 @@ public import CslibFrontier.Computability.Complexity.FineGrained.PPZ
 public import CslibFrontier.Computability.Complexity.FineGrained.PPZ.LazyOrder
 public import CslibFrontier.Computability.Complexity.FineGrained.Padding
 public import CslibFrontier.Computability.Complexity.FineGrained.PermutationIndependentSet
+public import CslibFrontier.Computability.Complexity.FineGrained.Randomized
 public import CslibFrontier.Computability.Complexity.FineGrained.Reduction
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementParams
 public import CslibFrontier.Computability.Complexity.FineGrained.ReplacementScheduleDesign
 public import CslibFrontier.Computability.Complexity.FineGrained.Schoening
 public import CslibFrontier.Computability.Complexity.FineGrained.SearchStep
+public import CslibFrontier.Computability.Complexity.FineGrained.SingleSubexp
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchAsymptotics
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseBranchSchedule
 public import CslibFrontier.Computability.Complexity.FineGrained.SparseCountingScale
