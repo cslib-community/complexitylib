@@ -33,8 +33,8 @@ correlation of two encodings is the `k`-th power of the correlation of the messa
 `𝔼 signVal (g^{⊕k}) signVal (g'^{⊕k}) = (𝔼 signVal g signVal g') ^ k` for every `k`.
 
 The code is not injective for even `k`, since `g` and its complement have the same encoding, and
-its distance is poor; still its lists are short. Let `k` be odd. Messages at relative distance more
-than `δ₀` have correlation less than `1 - 2 δ₀`, so their encodings have correlation less than
+its distance is poor; still its lists are short. Let `k` be odd. Messages at relative distance at
+least `δ₀` have correlation at most `1 - 2 δ₀`, so their encodings have correlation at most
 `(1 - 2 δ₀) ^ k`, also when the messages are nearly complementary, because `t ↦ t ^ k` is monotone.
 If `(1 - 2 δ₀) ^ k ≤ 2 ε ^ 2`, the binary Johnson bound
 (`Cslib.Code.card_filter_mul_two_mul_sq_le`) shows that at most `V / (2 ε ^ 2)` functions `g`
