@@ -551,7 +551,8 @@ private theorem List.consecutivePairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b 
         rcases ql with ⟨⟨e, c⟩, lit⟩
         simp only [hs] at hmem
         split_ifs at hmem with ho
-        · simp only [List.cons_append, List.nil_append, List.consecutivePairs_cons_cons, List.consecutivePairs_singleton,
+        · simp only [List.cons_append, List.nil_append, List.consecutivePairs_cons_cons,
+          List.consecutivePairs_singleton,
           List.mem_cons,
           Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           have hcl := slotClause_clauseOwner b (e, c)
@@ -562,7 +563,9 @@ private theorem List.consecutivePairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b 
             exact Or.inl trivial
           · exact ⟨ℓ, false, hlit ▸ hs, Or.inl ⟨rfl, rfl⟩⟩
           · exact ⟨ℓ, false, hlit ▸ hs, Or.inl ⟨rfl, rfl⟩⟩
-        · simp only [List.append_nil, List.cons_append, List.nil_append, List.consecutivePairs_cons_cons, List.consecutivePairs_singleton,
+        · simp only [List.append_nil, List.cons_append, List.nil_append, 
+          List.consecutivePairs_cons_cons,
+          List.consecutivePairs_singleton,
           List.mem_cons,
           Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
@@ -583,7 +586,8 @@ private theorem List.consecutivePairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b 
         rcases ql with ⟨⟨e, c⟩, lit⟩
         simp only [hs] at hmem
         split_ifs at hmem with ho
-        · simp only [List.cons_append, List.nil_append, List.consecutivePairs_cons_cons, List.consecutivePairs_singleton,
+        · simp only [List.cons_append, List.nil_append, List.consecutivePairs_cons_cons,
+          List.consecutivePairs_singleton,
           List.mem_cons,
           Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           have hcl := slotClause_clauseOwner b (e, c)
@@ -594,7 +598,9 @@ private theorem List.consecutivePairs_slotVisit_mem {p : ℕ} (hp : 1 ≤ p) (b 
           · exact ⟨ℓ, true, hlit ▸ hs, Or.inr ⟨rfl, rfl⟩⟩
           · simp only [corrDigraphAdj, true_and]
             exact Or.inr trivial
-        · simp only [List.append_nil, List.cons_append, List.nil_append, List.consecutivePairs_cons_cons, List.consecutivePairs_singleton,
+        · simp only [List.append_nil, List.cons_append, List.nil_append, 
+          List.consecutivePairs_cons_cons,
+          List.consecutivePairs_singleton,
           List.mem_cons,
           Prod.mk.injEq, List.not_mem_nil, or_false] at hmem
           rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;>
