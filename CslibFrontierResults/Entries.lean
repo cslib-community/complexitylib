@@ -40,6 +40,8 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
 import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -1940,3 +1942,44 @@ register_result "mktp-exp" where
     encoded in unary, where Liu and Pass use a binary threshold of about log n bits; for \
     thresholds O(|x|) the two encodings are polynomially related. MKtPAt s, with s \
     computable in polynomial time in unary, is in EXP over bit strings. Membership only."
+
+register_result "tfnp-eopl-eq-sopl-inter-ppad" where
+  title := "EOPL = SOPL ∩ PPAD"
+  topic := "structural complexity"
+  sources := [
+    { paper := GoosEtAl2022, theorem := "Lemma 4",
+      locator := "Section 5, pp. 9–10 of arXiv:2202.07761v2" }
+  ]
+  theorems := [
+    Cslib.Complexity.EOPL_eq_SOPL_inter_PPAD,
+    Cslib.Complexity.SOPL_inter_PPAD_subset_EOPL,
+    Cslib.Complexity.mem_EOPL_of_sinkOfPotentialLine_endOfLine
+  ]
+  scope := "Uniform total-search classes over any injective encoding enc : α ↪ List Bool, \
+    defined by native deterministic multi-tape polynomial-time predecessor, successor and \
+    binary potential families with unary vertex width and polynomial-time search reductions. \
+    Potential-line graphs prune active edges along which the potential does not strictly \
+    increase. Combines an end-of-line family directly with a sink-of-potential-line family \
+    rather than routing through bijective pigeonhole."
+
+register_result "tfnp-sopl-eopl-collapse" where
+  title := "Further collapses in TFNP: SOPL = PLS ∩ PPADS and EOPL = PLS ∩ PPAD"
+  topic := "structural complexity"
+  sources := [
+    { paper := GoosEtAl2022, theorem := "Theorem 1 and Theorem 2",
+      locator := "Section 1, p. 1; Lemmas 2–3, Sections 3–4, pp. 6–8 of arXiv:2202.07761v2" }
+  ]
+  theorems := [
+    Cslib.Complexity.SOPL_eq_PLS_inter_PPADS,
+    Cslib.Complexity.EOPL_eq_PLS_inter_PPAD,
+    Cslib.Complexity.PLS_inter_PPADS_subset_SOPL,
+    Cslib.Complexity.PLS_inter_PPAD_subset_EOPL,
+    Cslib.Complexity.mem_SOPL_of_localOpt_sinkOfLine
+  ]
+  scope := "Uniform total-search classes over any injective encoding enc : α ↪ List Bool, \
+    defined by native deterministic multi-tape polynomial-time local-search, sink-of-line, \
+    end-of-line and potential-line families with unary vertex width and polynomial-time search \
+    reductions. Proves PLS ∩ PPADS ⊆ SOPL via the path-pigeonhole gadget and reversible PLS \
+    transitions on width n₁(a) + 2(n₁(a) + n₂(a)), then deduces SOPL = PLS ∩ PPADS and \
+    EOPL = PLS ∩ PPAD via EOPL = SOPL ∩ PPAD and PPAD ⊆ PPADS. UEOPL and query separations \
+    are not formalized."
