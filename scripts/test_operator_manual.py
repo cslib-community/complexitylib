@@ -11,6 +11,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from build_operator_manual import main as build_main
 from check_operator_manual import (MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR, book_input_errors,
                                    check, comment_depths, fix_anchors, main as check_main,
                                    source_anchor_error)
@@ -84,6 +85,34 @@ class ManualChecks(unittest.TestCase):
 
     def test_current_checkout_needs_no_git_or_historical_revision(self):
         self.assertEqual(self.errors(), [])
+
+    def test_merge_conflicts_report_document_and_opening_line(self):
+        original = self.doc.read_text()
+        for body in (
+                "<<<<<<< HEAD\nOld scope.\n=======\nNew scope.\n>>>>>>> feature\n",
+                "<<<<<<< HEAD\n[paper]: https://example.org/old\n=======\n"
+                "[paper]: https://example.org/new\n>>>>>>> feature\n",
+                "<<<<<<< ours\nOurs.\n||||||| base\nOriginal.\n=======\nTheirs.\n>>>>>>> theirs\n",
+                "  <<<<<<<<<\nOurs.\n=========\nTheirs.\n  >>>>>>>>>\n",
+                "<<<<<<< HEAD\nUnfinished resolution.\n"):
+            with self.subTest(body=body):
+                self.doc.write_text(original + "\n" + body)
+                line = len(original.splitlines()) + 2
+                self.assertIn(f"workflows/first.md: Line {line}: unresolved Git merge conflict",
+                              self.errors())
+
+    def test_pdf_entry_point_rejects_conflicts_before_rendering(self):
+        self.doc.write_text(self.doc.read_text() +
+                            "\n<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n")
+        for option in ("--tex-only", "--agent-manual"):
+            with self.subTest(option=option), mock.patch("build_operator_manual.ROOT", self.repo), \
+                    mock.patch.object(sys, "argv", ["build_operator_manual.py", option]), \
+                    mock.patch("build_operator_manual.subprocess.run") as render, \
+                    contextlib.redirect_stderr(io.StringIO()) as diagnostics:
+                self.assertEqual(build_main(), 1)
+                self.assertIn("workflows/first.md: Line", diagnostics.getvalue())
+                self.assertIn("unresolved Git merge conflict", diagnostics.getvalue())
+                render.assert_not_called()
 
     def test_source_relocation_is_allowed(self):
         self.client.write_text("-- inserted before the original source\n\n" + self.client.read_text())
@@ -694,6 +723,20 @@ class VisualSources(unittest.TestCase):
         text = '````markdown\n```mermaid\n' + self.diagram + '```\n````\n'
         self.assertEqual(book.visuals.diagram_sources(text), [])
         self.assertEqual(book.visuals.check_markup(text)['diagrams'], 0)
+
+    def test_fenced_merge_conflicts_are_literal_examples(self):
+        conflict = "<<<<<<< HEAD\nOld.\n||||||| base\nBase.\n=======\nNew.\n>>>>>>> feature\n"
+        for fence in ("```", "~~~~", "`````"):
+            with self.subTest(fence=fence):
+                text = fence + "text\n" + conflict + fence + "\n"
+                self.assertEqual(book.visuals.check_markup(text),
+                                 {"diagrams": 0, "worked_examples": 0})
+        nested = "````markdown\n```text\n" + conflict + "```\n````\n"
+        self.assertEqual(book.visuals.check_markup(nested)['worked_examples'], 0)
+
+    def test_valid_markdown_is_not_a_merge_conflict(self):
+        text = "# Heading\n\nSetext heading\n=======\n\n---\n\n***\n\n___\n\n>>>>>>> A quotation\n"
+        self.assertEqual(book.visuals.check_markup(text), {"diagrams": 0, "worked_examples": 0})
 
     def test_similar_source_paths_keep_distinct_diagram_assets(self):
         paths = ['topic-one.md', 'topic/one.md', 'topic_one.md']

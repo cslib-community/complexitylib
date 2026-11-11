@@ -12,6 +12,7 @@ import textwrap
 from pathlib import PurePosixPath
 
 FENCE = re.compile(r'^\s*(`{3,}|~{3,})(.*)$')
+CONFLICT_START = re.compile(r'<{7,}(?:[ \t].*)?$')
 IDENTIFIER = r'[A-Za-z][A-Za-z0-9_]*'
 NODE = re.compile(rf'({IDENTIFIER})\["([^"\n]+)"\]')
 EDGE = re.compile(rf'({IDENTIFIER})\s+(-->|-\.->)(?:\|"([^"\n]+)"\|)?\s+({IDENTIFIER})')
@@ -79,7 +80,7 @@ def diagram_sources(text):
 
 
 def check_markup(text):
-    """Check diagram syntax and example boundaries without publishing tools."""
+    """Check conflict starts, diagram syntax and example boundaries without publishing tools."""
     diagrams = diagram_sources(text)
     for source in diagrams:
         flowchart(source)
@@ -96,6 +97,10 @@ def check_markup(text):
             fence = match[1]
             continue
         stripped = line.strip()
+        # A separator alone can be a Setext heading, and closing markers can
+        # be blockquotes. The opening line identifies Git's conflict blocks.
+        if CONFLICT_START.fullmatch(stripped):
+            raise ValueError(f'Line {number}: unresolved Git merge conflict')
         if stripped == OPEN_EXAMPLE:
             if active:
                 raise ValueError(f'Line {number}: nested worked examples are not supported')
