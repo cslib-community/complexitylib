@@ -146,14 +146,9 @@ private theorem memoize_ens (d : PMF β) (x : α) (v : β) (y : α) (L : List (�
 
 private theorem isSome_lookup_of_suffix {L₁ L₂ : List (α × β)} (h : L₁ <:+ L₂) (x : α)
     (hx : (L₁.lookup x).isSome) : (L₂.lookup x).isSome := by
-  obtain ⟨l, rfl⟩ := h
-  induction l with
-  | nil => simpa using hx
-  | cons e l ih =>
-    obtain ⟨a, b⟩ := e
-    by_cases hxa : x = a
-    · subst hxa; simp
-    · simpa [List.lookup_cons, beq_eq_false_iff_ne.mpr hxa] using ih
+  by_contra hnone
+  exact Option.not_isSome_iff_eq_none.mpr
+    (h.lookup_eq_none (Option.not_isSome_iff_eq_none.mp hnone)) hx
 
 end Ens
 

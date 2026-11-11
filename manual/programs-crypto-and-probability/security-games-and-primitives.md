@@ -617,7 +617,7 @@ the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averagin
 `Scheme.indCcaRomAdvantage_le` bounds `indCcaRomAdvantage A` for uniform messages, a `δ`-correct
 and `γ`-spread PKE and `(qG, qH)` random-oracle queries (decapsulation queries unbounded) by
 `2 · indCpaAdvantage m₀ m₁ (romCpaReduction A m₀ m₁) + (2 qH + 2 (qG + qH)) / |M|
-+ 2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}` for some `m₀ ≠ m₁`. Its hybrids are fixed in
++ 2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}` for some `m₀ ≠ m₁` (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
 `NotBot/Hybrids.lean` (`Scheme.eagerFbGame`, `Scheme.eagerCoupledGame`, `Scheme.coupledGame`,
 `Scheme.simGame`), one file per hop: fallback-seed decoupling (`NotBot/Fallback.lean`), re-indexing
 the oracles so that decapsulation reads a ciphertext table (`NotBot/Pushforward.lean`) and its lazy
@@ -632,7 +632,7 @@ witnesses on `identityPKE`, and `ROQueryBounds`, `simHitProb`, `romCpaReduction`
 `indCcaRomAdvantage`, and eager/lazy/averaging witnesses on `identityScheme`,
 `identityUnifKeyScheme`, and `maskedShiftScheme`;
 [`CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean)
-instantiates `Scheme.indCcaRomAdvantage_le` on a perfectly correct scheme.
+instantiates `Scheme.indCcaRomAdvantage_le` on `notBotScheme` and on the `4`-spread uniform-key scheme `pairCoinScheme` (`indCcaRomAdvantage ≤ 3 / 8`).
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),

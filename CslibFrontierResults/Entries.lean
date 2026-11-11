@@ -3339,5 +3339,7 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
     qG queries to G and qH queries to H (decapsulation queries unbounded), the ROM IND-CCA \
     advantage is at most 2·Adv^{IND-CPA}(romCpaReduction) + (2qH + 2(qG + qH))/|M| + \
     2(qG + qH + 1)δ + 2(qG + qH)2^{-γ} for some distinct fixed challenge messages. The proof \
-    composes the T and U-notbot hops directly instead of through OW-PCA; information-theoretic \
-    games with no running-time accounting for the reduction; FO-⊥ and OW-PCVA are not covered."
+    composes the T and U-notbot hops directly instead of through OW-PCA; roIndCcaGame draws both \
+    real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
+    recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
+    accounting for the reduction; FO-⊥ and OW-PCVA are not covered."

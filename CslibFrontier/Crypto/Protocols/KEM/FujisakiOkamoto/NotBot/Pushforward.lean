@@ -24,8 +24,9 @@ the tables `H : Bool × M × CT → K` and `Hfb : CT → K` are read off indepen
   `H(x) = Hraw x` otherwise;
 * `Hfb c = Hq c` when `decT` rejects `c`, and `Hfb c = Hfb' c` otherwise.
 
-Since `Dec` is deterministic, each entry `Hq c` is read at most once, so the read-off tables are
-again independent and uniformly distributed (`pi_map_comp_injective`). Under this re-indexing every
+Since `Dec` is deterministic, each entry `Hq c` is read at most once, so the read-off tables
+again have independent coordinates with the original `sampleKey` law (`pi_map_comp_injective`).
+Under this re-indexing every
 decapsulation query `c ≠ c*` is answered by `Hq c`, whether `decT` accepts `c` or not. This is the
 re-randomization step of the proof of the IND-CCA theorem for `U-notbot` in
 [HofheinzHoevelmannsKiltz2017] (IACR ePrint 2017/604, full version dated 2 November 2021, §3.2.2),

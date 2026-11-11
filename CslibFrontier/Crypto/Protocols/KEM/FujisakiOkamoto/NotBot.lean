@@ -43,6 +43,11 @@ bound by composing the §3.1 theorem for `T` (IND-CPA to OW-PCA) with the §3.2.
    `c*`, which reduces to IND-CPA via `romCpaReduction`.
 
 Steps 1–3 are applied to both challenge bits, which accounts for the factor `2` on their terms.
+In `roIndCcaGame` and `eagerIndCcaGame`, both the real key (via `H`) and the independent ideal
+challenge key are drawn from the arbitrary sampler `S.sampleKey : ProbComp K` (distinct from
+`S.pke.keyGen`), and the proof holds for any `S.sampleKey`; taking `S.sampleKey` uniform on `K`
+recovers the standard KEM IND-CCA key law of [HofheinzHoevelmannsKiltz2017], §2.2, Def. 2.4 /
+Fig. 4.
 
 ## Main results
 
@@ -100,7 +105,10 @@ composed directly): for uniform messages, a `δ`-correct and `γ`-spread PKE, an
 at most `qG` queries to `G` and `qH` queries to `H`, there are distinct messages `m₀ ≠ m₁` with
 `Adv^{IND-CCA}(A) ≤ 2 · Adv^{IND-CPA}_{m₀, m₁}(romCpaReduction A m₀ m₁)
   + (2 qH + 2 (qG + qH)) / |M| + 2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}`.
-Decapsulation queries are unbounded. -/
+Decapsulation queries are unbounded. Both the real key (via `H`) and the independent ideal
+challenge key in `roIndCcaGame` are drawn from the arbitrary key sampler `S.sampleKey : ProbComp K`;
+taking `S.sampleKey` uniform on `K` recovers the standard uniform-ideal-key experiment of
+[HofheinzHoevelmannsKiltz2017], §2.2, Def. 2.4 / Fig. 4. -/
 theorem indCcaRomAdvantage_le [Fintype M] [Nonempty M] [Finite R] [Finite CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) {qG qH : ℕ}
     (hq : ROQueryBounds A qG qH) (hM : 2 ≤ Fintype.card M)
