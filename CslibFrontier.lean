@@ -1147,9 +1147,11 @@ public import CslibFrontier.Computability.Circuit.Boolean.Layered.Padding
 public import CslibFrontier.Computability.Circuit.Boolean.Layered.Padding.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Layered.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Layered.Size
+public import CslibFrontier.Computability.Circuit.Boolean.Lookup
 public import CslibFrontier.Computability.Circuit.Boolean.MachineSimulation
 public import CslibFrontier.Computability.Circuit.Boolean.Majority
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Basic
+public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.ConstantCopies
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Fine
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.FineParameters
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.FineStatement
@@ -1295,6 +1297,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.XorLemma
 public import CslibFrontier.Computability.Circuit.Boolean.Yablonskii
 public import CslibFrontier.Computability.Circuit.Clique
 public import CslibFrontier.Computability.Circuit.Complexity
+public import CslibFrontier.Computability.Circuit.Complexity.Composition
 public import CslibFrontier.Computability.Circuit.CompositionDepth
 public import CslibFrontier.Computability.Circuit.CompositionLines
 public import CslibFrontier.Computability.Circuit.Continuity

@@ -76,7 +76,6 @@ public noncomputable def frozenRound (E : MultiTapeTM K Bool SE) (Nm : MultiTape
     ((copyWord (threeTapes V N F hVN hVF hNF) true).seq
       ((clearWork Bool).extendTapes (tapeEmb N)))))
 
-open Sequential in
 /-- `frozenRound` takes the word `w` on tape `V` and every other tape blank to `next` on tape `V`
 and every other tape blank, emitting `emit`, if `E` emits `emit` from `w` and `Nm` writes `next`
 to tape `N`. -/
@@ -336,7 +335,6 @@ public theorem transformsTapesAt_streamLoop (hVN : V ≠ N) (hVF : V ≠ F) (hNF
   transformsTapesAt_streamLoop_after hVN hVF hNF [] toks htoks cont vs es hread hE hN hsR
 
 -- upstream: candidate
-open Sequential in
 /-- Initialize with a phase `I` that may move the input head past a prefix `pre`, run a streaming
 phase from there, emit from its final state and clean up. The phase specifications own the token
 reader, round callbacks and their resource accounting. -/
