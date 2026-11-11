@@ -175,11 +175,13 @@ private theorem le_countP_range_of_forall_true (P : ℕ → Bool) {m n : ℕ} (h
 @[expose] def fifthRoot (N : ℕ) : ℕ :=
   (List.range N).countP fun m => decide ((m + 1) ^ 5 ≤ N)
 
+/-- `fifthRoot N ≤ N`. -/
 theorem fifthRoot_le (N : ℕ) : fifthRoot N ≤ N := by
   unfold fifthRoot
   simpa using (List.countP_le_length :
     (List.range N).countP (fun m => decide ((m + 1) ^ 5 ≤ N)) ≤ (List.range N).length)
 
+/-- `fifthRoot N` is the exact floor fifth root `⌊N ^ (1 / 5)⌋`. -/
 theorem fifthRoot_spec (N : ℕ) :
     (fifthRoot N) ^ 5 ≤ N ∧ N < (fifthRoot N + 1) ^ 5 := by
   set P : ℕ → Bool := fun m => decide ((m + 1) ^ 5 ≤ N)
@@ -219,6 +221,7 @@ theorem fifthRoot_spec (N : ℕ) :
   let M := primeThresholdBound N
   (((List.range M).map fun i => M + 1 + i).find? Nat.Prime).getD (2 * M)
 
+/-- `primeDeg N` is a prime in `(primeThresholdBound N, 2 * primeThresholdBound N]`. -/
 theorem primeDeg_spec (N : ℕ) :
     (primeDeg N).Prime ∧ primeThresholdBound N < primeDeg N ∧
       primeDeg N ≤ 2 * primeThresholdBound N := by
@@ -246,6 +249,7 @@ theorem primeDeg_spec (N : ℕ) :
   rw [hdeg]
   exact ⟨hp_prime, by omega, by omega⟩
 
+/-- `9 ≤ primeDeg N` for every `N`. -/
 theorem nine_le_primeDeg (N : ℕ) : 9 ≤ primeDeg N := by
   have hM : 8 ≤ primeThresholdBound N := by
     have h2 : 2 ≤ max 2 (fifthRoot N) := le_max_left _ _
@@ -254,6 +258,7 @@ theorem nine_le_primeDeg (N : ℕ) : 9 ≤ primeDeg N := by
   have := (primeDeg_spec N).2.1
   omega
 
+/-- `3 ≤ primeDeg N` for every `N`. -/
 theorem three_le_primeDeg (N : ℕ) : 3 ≤ primeDeg N :=
   le_trans (by decide) (nine_le_primeDeg N)
 
@@ -279,6 +284,7 @@ private theorem dvd_two_pow_sub_one_iff_modEq {m M : ℕ} (hM : 1 < M) :
     rw [hmod] at hdiv
     exact ⟨2 ^ m / M, by omega⟩
 
+/-- `ordTwoMod q` equals the multiplicative order of `2` modulo an odd prime `q`. -/
 theorem ordTwoMod_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     let m := ordTwoMod q
     2 ≤ m ∧ m < q ∧ q ∣ 2 ^ m - 1 ∧ (∀ j, 0 < j → j < m → 2 ^ j % q ≠ 1) ∧
@@ -357,6 +363,7 @@ theorem ordTwoMod_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     exact hlt_neq j hj0 hj_lt
   · rw [hm_eq, hk_eq_d]
 
+/-- `qAdicValTwoPowSubOne q m` gives the exact `q`-adic valuation `k ≥ 1` dividing `2 ^ m - 1`. -/
 theorem qAdicValTwoPowSubOne_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     let m := ordTwoMod q
     let k := qAdicValTwoPowSubOne q m
@@ -461,6 +468,7 @@ private theorem cyclotomic_prime_pow_comp_X_pow {q j : ℕ} (hq : q.Prime) :
     rw [X_pow_comp]
   rw [h1, h2, comp_assoc, X_pow_comp, ← pow_mul, mul_comm q (q ^ j), ← pow_succ]
 
+/-- Invariant for iterating Berlekamp factoring under `polyComposePow q` in Shoup's step. -/
 theorem shoupCyclicFactor_iterate_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) (s : ℕ) :
     let f := (fun g => berlekampIrreducibleFactor (polyComposePow q g))^[s]
       (berlekampIrreducibleFactor (List.replicate q true))
@@ -506,6 +514,7 @@ theorem shoupCyclicFactor_iterate_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) 
     obtain ⟨hdvd', hirr', hdeg'⟩ := polyOfBits_berlekampIrreducibleFactor_dvd hsq_comp hdeg_comp
     exact ⟨polyTrim_berlekampIrreducibleFactor _, hdvd'.trans hdvd_comp, hirr', hdeg'⟩
 
+/-- `shoupCyclicFactor q` produces an irreducible factor whose root generates `𝔽_{2 ^ (q ^ k)}`. -/
 theorem shoupCyclicFactor_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     let m := ordTwoMod q
     let k := qAdicValTwoPowSubOne q m
@@ -578,6 +587,7 @@ theorem shoupCyclicFactor_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     omega
   exact ⟨ht, hdvd, hirr, hdeg_m, hlen⟩
 
+/-- Length bound along iterations of `shoupCyclicFactor`. -/
 theorem length_shoupCyclicFactor_iterate_le {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) {s : ℕ}
     (hs : s ≤ qAdicValTwoPowSubOne q (ordTwoMod q) - 1) :
     ((fun g => berlekampIrreducibleFactor (polyComposePow q g))^[s]
@@ -1573,6 +1583,8 @@ private theorem shoupPowers_entry_length {q m : ℕ} (hm1 : 1 ≤ m) (f : List B
     exact hc
   exact (hinv_len (q + 1)).2 c hlen i hi
 
+/-- Correctness of Shoup's deterministic algorithm: `shoupIrreducibleBits q` is trimmed and
+represents an irreducible binary polynomial of degree `q`. -/
 theorem shoupIrreducibleBits_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     Irreducible (polyOfBits (shoupIrreducibleBits q)) ∧
       (polyOfBits (shoupIrreducibleBits q)).natDegree = q ∧
@@ -1745,10 +1757,12 @@ theorem shoupIrreducibleBits_spec {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
 
 end FieldInterpretation
 
+/-- `polyOfBits (shoupIrreducibleBits q)` is irreducible for any odd prime `q`. -/
 theorem irreducible_polyOfBits_shoupIrreducibleBits {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     Irreducible (polyOfBits (shoupIrreducibleBits q)) :=
   (shoupIrreducibleBits_spec hq hq3).1
 
+/-- `(polyOfBits (shoupIrreducibleBits q)).natDegree = q` for any odd prime `q`. -/
 theorem natDegree_polyOfBits_shoupIrreducibleBits {q : ℕ} (hq : q.Prime) (hq3 : 3 ≤ q) :
     (polyOfBits (shoupIrreducibleBits q)).natDegree = q :=
   (shoupIrreducibleBits_spec hq hq3).2.1
@@ -1803,6 +1817,7 @@ private theorem getLast_of_polyTrim_eq_self {g : List Bool} (ht : polyTrim g = g
   have := List.length_pos_of_ne_nil hne
   omega
 
+/-- `primeMulTable g` satisfies `IsMulTable` for the power basis of `𝔽₂[X] / (polyOfBits g)`. -/
 theorem primeMulTable_isMulTable {g : List Bool} {q : ℕ}
     [Fact (Irreducible (polyOfBits g))] (hdeg : (polyOfBits g).natDegree = q)
     (htrim : polyTrim g = g) (hlen : g.length = q + 1)
@@ -1851,6 +1866,7 @@ theorem primeMulTable_isMulTable {g : List Bool} {q : ℕ}
   refine Finset.sum_congr rfl fun i _ => ?_
   rw [hb i]
 
+/-- `primeDisperser N` is an affine disperser for dimension `primeThreshold N + 1`. -/
 theorem isAffineDisperser_primeDisperser (N : ℕ) :
     IsAffineDisperser (primeDisperser N) (primeThreshold N + 1) := by
   set q := primeDeg N
@@ -1917,6 +1933,7 @@ theorem isAffineDisperser_primeDisperser (N : ℕ) :
   rw [heq_fn]
   exact hdisp
 
+/-- For all sufficiently large `N`, `primeThreshold N + 1 ≤ 2148 * (fifthRoot N) ^ 4`. -/
 theorem eventually_primeThreshold_le :
     ∀ᶠ N in atTop, primeThreshold N + 1 ≤ 2148 * (fifthRoot N) ^ 4 := by
   refine eventually_atTop.mpr ⟨32, fun N hN => ?_⟩
@@ -1981,6 +1998,7 @@ theorem eventually_primeThreshold_le :
       q * r / primeSymDeg N) + 1 ≤ 2148 * u ^ 4
   omega
 
+/-- Real-valued bound `primeThreshold N + 1 ≤ 2148 * N ^ (4 / 5)` for all large `N`. -/
 theorem eventually_primeThreshold_real_le :
     ∀ᶠ N in atTop, ((primeThreshold N + 1 : ℕ) : ℝ) ≤ 2148 * (N : ℝ) ^ ((4 : ℝ) / 5) := by
   filter_upwards [eventually_primeThreshold_le, eventually_ge_atTop 1] with N hle hN1
@@ -2005,6 +2023,7 @@ theorem eventually_primeThreshold_real_le :
   calc ((primeThreshold N + 1 : ℕ) : ℝ) ≤ 2148 * ((fifthRoot N : ℝ)) ^ 4 := hleR
     _ ≤ 2148 * (N : ℝ) ^ ((4 : ℝ) / 5) := by nlinarith
 
+/-- Asymptotic threshold bound `primeThreshold N + 1 = O(N ^ (4 / 5))`. -/
 theorem isBigO_primeThreshold :
     (fun N => ((primeThreshold N + 1 : ℕ) : ℝ)) =O[atTop] fun N => (N : ℝ) ^ ((4 : ℝ) / 5) := by
   refine IsBigO.of_bound 2148 ?_
@@ -2013,6 +2032,7 @@ theorem isBigO_primeThreshold :
   rw [Real.norm_of_nonneg (by positivity), Real.norm_of_nonneg (Real.rpow_nonneg hN0 _)]
   exact hrhs
 
+/-- `primeThreshold N + 1 < N` for all sufficiently large `N`. -/
 theorem eventually_primeThreshold_lt : ∀ᶠ N in atTop, primeThreshold N + 1 < N := by
   filter_upwards [eventually_primeThreshold_le, eventually_ge_atTop (2149 ^ 5)] with N hle hN
   set u := fifthRoot N

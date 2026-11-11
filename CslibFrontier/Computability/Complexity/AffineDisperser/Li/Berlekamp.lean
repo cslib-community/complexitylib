@@ -18,6 +18,7 @@ import Mathlib.Algebra.BigOperators.NatAntidiagonal
 import Mathlib.Algebra.Polynomial.Degree.Lemmas
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Algebra.Polynomial.RingDivision
+import Mathlib.Data.List.GetD
 import Mathlib.RingTheory.AdjoinRoot
 
 /-!
@@ -112,6 +113,7 @@ private theorem polyOfBits_append (l₁ l₂ : List Bool) :
     rw [List.cons_append, polyOfBits_cons, polyOfBits_cons, ih, List.length_cons, pow_succ']
     ring
 
+/-- Degree of `polyOfBits l` is strictly less than `l.length`. -/
 theorem degree_polyOfBits_lt (l : List Bool) : (polyOfBits l).degree < l.length := by
   induction l with
   | nil => simp
@@ -180,6 +182,7 @@ private theorem polyTrim_nil : polyTrim [] = [] := rfl
 private theorem polyTrim_cons (b : Bool) (p : List Bool) :
     polyTrim (b :: p) = if b || !(polyTrim p).isEmpty then b :: polyTrim p else [] := rfl
 
+/-- Trimming preserves a list ending in `true`. -/
 theorem polyTrim_append_true (l : List Bool) : polyTrim (l ++ [true]) = l ++ [true] := by
   induction l with
   | nil => simp [polyTrim]
@@ -188,6 +191,7 @@ theorem polyTrim_append_true (l : List Bool) : polyTrim (l ++ [true]) = l ++ [tr
     have hne : (l ++ [true]).isEmpty = false := by simp
     simp [hne]
 
+/-- Every trimmed coefficient list is either empty or ends in `true`. -/
 theorem polyTrim_eq_nil_or_append_true (p : List Bool) :
     polyTrim p = [] ∨ ∃ l, polyTrim p = l ++ [true] := by
   induction p with
@@ -204,12 +208,14 @@ theorem polyTrim_eq_nil_or_append_true (p : List Bool) :
       simp only [hne, Bool.not_false, Bool.or_true, ↓reduceIte]
       exact Or.inr ⟨b :: l, rfl⟩
 
+/-- `polyTrim` is idempotent. -/
 @[simp]
 theorem polyTrim_polyTrim (p : List Bool) : polyTrim (polyTrim p) = polyTrim p := by
   rcases polyTrim_eq_nil_or_append_true p with h | ⟨l, h⟩
   · rw [h]; rfl
   · rw [h, polyTrim_append_true]
 
+/-- Trimming never increases list length. -/
 theorem length_polyTrim_le (p : List Bool) : (polyTrim p).length ≤ p.length := by
   induction p with
   | nil => simp [polyTrim_nil]
@@ -217,6 +223,7 @@ theorem length_polyTrim_le (p : List Bool) : (polyTrim p).length ≤ p.length :=
     rw [polyTrim_cons]
     split_ifs <;> (simp; try omega)
 
+/-- Trimming preserves polynomial semantics. -/
 @[simp]
 theorem polyOfBits_polyTrim (p : List Bool) : polyOfBits (polyTrim p) = polyOfBits p := by
   induction p with
@@ -233,6 +240,7 @@ theorem polyOfBits_polyTrim (p : List Bool) : polyOfBits (polyTrim p) = polyOfBi
       rw [polyOfBits_nil, polyOfBits_cons, hb, ← ih]
       simp
 
+/-- `polyTrim p = []` if and only if `polyOfBits p = 0`. -/
 @[simp]
 theorem polyTrim_eq_nil_iff (p : List Bool) : polyTrim p = [] ↔ polyOfBits p = 0 := by
   constructor
@@ -247,6 +255,7 @@ theorem polyTrim_eq_nil_iff (p : List Bool) : polyTrim p = [] ↔ polyOfBits p =
       rw [polyOfBits_eq_zero_iff] at h0
       exact Bool.true_eq_false.mp (h0 true (by simp))
 
+/-- A nonempty trimmed list has degree `p.length - 1`. -/
 theorem natDegree_polyOfBits_of_polyTrim {p : List Bool} (hp : polyTrim p = p) (hne : p ≠ []) :
     (polyOfBits p).natDegree = p.length - 1 := by
   rcases polyTrim_eq_nil_or_append_true p with hnil | ⟨l, hl⟩
@@ -256,9 +265,11 @@ theorem natDegree_polyOfBits_of_polyTrim {p : List Bool} (hp : polyTrim p = p) (
     rw [hl, natDegree_polyOfBits_append_true]
     simp
 
+/-- `polyOfBits p ≠ 0` if and only if `polyTrim p ≠ []`. -/
 theorem polyOfBits_ne_zero_iff_polyTrim {p : List Bool} : polyOfBits p ≠ 0 ↔ polyTrim p ≠ [] :=
   not_congr (polyTrim_eq_nil_iff p).symm
 
+/-- Vanishing coefficients above `n` bound `(polyTrim p).length ≤ n`. -/
 theorem length_polyTrim_le_of_coeff_zero {p : List Bool} {n : ℕ}
     (h : ∀ k ≥ n, (polyOfBits p).coeff k = 0) : (polyTrim p).length ≤ n := by
   rcases polyTrim_eq_nil_or_append_true p with hnil | ⟨l, hl⟩
@@ -285,13 +296,16 @@ theorem length_polyTrim_le_of_coeff_zero {p : List Bool} {n : ℕ}
   polyTrim ((List.range (max p.length q.length)).map fun i =>
     xor (p.getD i false) (q.getD i false))
 
+/-- `polyAdd p q` is always trimmed. -/
 @[simp]
 theorem polyTrim_polyAdd (p q : List Bool) : polyTrim (polyAdd p q) = polyAdd p q :=
   polyTrim_polyTrim _
 
+/-- Length bound on `polyAdd p q`. -/
 theorem length_polyAdd_le (p q : List Bool) : (polyAdd p q).length ≤ max p.length q.length :=
   (length_polyTrim_le _).trans (by simp)
 
+/-- `polyAdd` computes addition in `𝔽₂[X]`. -/
 @[simp]
 theorem polyOfBits_polyAdd (p q : List Bool) :
     polyOfBits (polyAdd p q) = polyOfBits p + polyOfBits q := by
@@ -329,6 +343,7 @@ theorem polyOfBits_polyAdd (p q : List Bool) :
       (List.range (k + 1)).foldl
         (fun acc i => xor acc (p.getD i false && q.getD (k - i) false)) false)
 
+/-- `polyMul p q` is always trimmed. -/
 @[simp]
 theorem polyTrim_polyMul (p q : List Bool) : polyTrim (polyMul p q) = polyMul p q := by
   unfold polyMul
@@ -336,6 +351,7 @@ theorem polyTrim_polyMul (p q : List Bool) : polyTrim (polyMul p q) = polyMul p 
   · rfl
   · exact polyTrim_polyTrim _
 
+/-- `polyMul` computes multiplication in `𝔽₂[X]`. -/
 @[simp]
 theorem polyOfBits_polyMul (p q : List Bool) :
     polyOfBits (polyMul p q) = polyOfBits p * polyOfBits q := by
@@ -488,6 +504,7 @@ private theorem polyDivModStep_spec {a b : List Bool} (hb_trim : polyTrim b = b)
       rw [polyTrim_polyAdd] at hlen_le
       exact Nat.lt_of_le_of_lt hlen_le (Nat.sub_lt hr_pos Nat.one_pos)
 
+/-- Length and trimming invariants along iterations of `polyDivModStep`. -/
 theorem polyDivMod_iterate_bounds (a b : List Bool) (k : ℕ) :
     let st := (polyDivModStep b)^[k] ([], polyTrim a)
     st.1.length ≤ a.length ∧ st.2.length ≤ a.length ∧ polyTrim st.2 = st.2 := by
@@ -516,6 +533,7 @@ theorem polyDivMod_iterate_bounds (a b : List Bool) (k : ℕ) :
       refine ⟨(length_polyAdd_le _ _).trans (max_le h1 hlen1),
         (length_polyAdd_le _ _).trans (max_le h2 hlen2), polyTrim_polyAdd _ _⟩
 
+/-- Euclidean division specification for `polyQuot` and `polyMod` when `polyOfBits b ≠ 0`. -/
 theorem polyOfBits_polyDivMod_spec {a b : List Bool} (hb : polyOfBits b ≠ 0) :
     polyOfBits (polyQuot a b) * polyOfBits b + polyOfBits (polyMod a b) = polyOfBits a ∧
       (polyMod a b).length < (polyTrim b).length ∧
@@ -560,6 +578,7 @@ theorem polyOfBits_polyDivMod_spec {a b : List Bool} (hb : polyOfBits b ≠ 0) :
     omega
   exact ⟨hinv, hlt, hq, hr⟩
 
+/-- `polyOfBits b ∣ polyOfBits a` if and only if `polyMod a b = []`. -/
 theorem polyOfBits_polyMod_dvd_iff {a b : List Bool} (hb : polyOfBits b ≠ 0) :
     polyOfBits b ∣ polyOfBits a ↔ polyMod a b = [] := by
   obtain ⟨hinv, hlt, -, htrim⟩ := polyOfBits_polyDivMod_spec (a := a) hb
@@ -604,6 +623,7 @@ theorem polyOfBits_polyMod_dvd_iff {a b : List Bool} (hb : polyOfBits b ≠ 0) :
 @[expose] def polyGcd (a b : List Bool) : List Bool :=
   ((polyGcdStep)^[a.length + b.length + 1] (polyTrim a, polyTrim b)).1
 
+/-- Length and trimming invariants along iterations of `polyGcdStep`. -/
 theorem polyGcd_iterate_bounds (a b : List Bool) (k : ℕ) :
     let st := (polyGcdStep)^[k] (polyTrim a, polyTrim b)
     st.1.length ≤ max a.length b.length ∧ st.2.length ≤ max a.length b.length := by
@@ -678,6 +698,7 @@ private theorem polyGcd_terminates :
       rw [hy] at hlt
       exact polyGcd_terminates k y (polyMod x y) hr (by omega)
 
+/-- `polyGcd a b` is always trimmed. -/
 @[simp]
 theorem polyTrim_polyGcd (a b : List Bool) : polyTrim (polyGcd a b) = polyGcd a b :=
   (polyGcd_invariant a b (a.length + b.length + 1)).1
@@ -691,20 +712,24 @@ private theorem polyOfBits_polyGcd_dvd_pair (a b : List Bool) :
   rw [hnil, polyOfBits_nil] at hdiv
   exact hdiv.mp ⟨dvd_rfl, dvd_zero _⟩
 
+/-- `polyOfBits (polyGcd a b)` divides `polyOfBits a`. -/
 theorem polyOfBits_polyGcd_dvd_left (a b : List Bool) :
     polyOfBits (polyGcd a b) ∣ polyOfBits a :=
   (polyOfBits_polyGcd_dvd_pair a b).1
 
+/-- `polyOfBits (polyGcd a b)` divides `polyOfBits b`. -/
 theorem polyOfBits_polyGcd_dvd_right (a b : List Bool) :
     polyOfBits (polyGcd a b) ∣ polyOfBits b :=
   (polyOfBits_polyGcd_dvd_pair a b).2
 
+/-- Common divisors of `polyOfBits a` and `polyOfBits b` divide `polyOfBits (polyGcd a b)`. -/
 theorem dvd_polyOfBits_polyGcd {a b : List Bool} {u : (ZMod 2)[X]}
     (ha : u ∣ polyOfBits a) (hb : u ∣ polyOfBits b) :
     u ∣ polyOfBits (polyGcd a b) := by
   have hdiv := (polyGcd_invariant a b (a.length + b.length + 1)).2.2 u
   exact (hdiv.mpr ⟨ha, hb⟩).1
 
+/-- `polyOfBits (polyGcd a b) ≠ 0` whenever either argument is nonzero. -/
 theorem polyOfBits_polyGcd_ne_zero {a b : List Bool} (h : polyOfBits a ≠ 0 ∨ polyOfBits b ≠ 0) :
     polyOfBits (polyGcd a b) ≠ 0 := by
   intro h0
@@ -722,12 +747,14 @@ theorem polyOfBits_polyGcd_ne_zero {a b : List Bool} (h : polyOfBits a ≠ 0 ∨
     polyTrim ((List.range (q * f.length)).map fun j =>
       if j % q == 0 then f.getD (j / q) false else false)
 
+/-- `polyComposePow q f` is always trimmed. -/
 @[simp]
 theorem polyTrim_polyComposePow (q : ℕ) (f : List Bool) :
     polyTrim (polyComposePow q f) = polyComposePow q f := by
   unfold polyComposePow
   split_ifs <;> exact polyTrim_polyTrim _
 
+/-- `polyComposePow q f` computes polynomial composition with `X ^ q` in `𝔽₂[X]`. -/
 theorem polyOfBits_polyComposePow {q : ℕ} (hq : 0 < q) (f : List Bool) :
     polyOfBits (polyComposePow q f) = (polyOfBits f).comp (X ^ q) := by
   rw [polyComposePow, ite_eq_right hq.ne', polyOfBits_polyTrim]
@@ -821,6 +848,7 @@ private theorem dotBool_eq_dotProduct {n : ℕ} {u v : List Bool}
 @[expose] def kernelVecBits (n : ℕ) (M : List (List Bool)) : List Bool :=
   ((kernelBasisBits n M).find? fun v => v.any id).getD (List.replicate n false)
 
+/-- `kernelStepBits` preserves row count and row length `n`. -/
 theorem length_kernelStepBits {n : ℕ} {a : List Bool} {N : List (List Bool)}
     (hN_len : N.length = n) (hN_mem : ∀ v ∈ N, v.length = n) :
     (kernelStepBits a N).length = n ∧ ∀ v ∈ kernelStepBits a N, v.length = n := by
@@ -840,6 +868,7 @@ theorem length_kernelStepBits {n : ℕ} {a : List Bool} {N : List (List Bool)}
     · exact hv_len
   · exact ⟨hN_len, hN_mem⟩
 
+/-- Prefix folding of `kernelStepBits` preserves row count and row length `n`. -/
 theorem length_kernelBasisBits_take {n : ℕ} (M : List (List Bool)) (k : ℕ) :
     ((M.take k).foldl (fun N a => kernelStepBits a N) (listSingles n)).length = n ∧
       ∀ v ∈ (M.take k).foldl (fun N a => kernelStepBits a N) (listSingles n), v.length = n := by
@@ -859,11 +888,13 @@ theorem length_kernelBasisBits_take {n : ℕ} (M : List (List Bool)) (k : ℕ) :
       rw [h1]
       rwa [h2] at ih
 
+/-- `kernelBasisBits n M` has `n` rows, each of length `n`. -/
 theorem length_kernelBasisBits (n : ℕ) (M : List (List Bool)) :
     (kernelBasisBits n M).length = n ∧ ∀ v ∈ kernelBasisBits n M, v.length = n := by
   have h := length_kernelBasisBits_take (n := n) M M.length
   simpa [kernelBasisBits] using h
 
+/-- `kernelVecBits n M` has length `n`. -/
 theorem length_kernelVecBits (n : ℕ) (M : List (List Bool)) :
     (kernelVecBits n M).length = n := by
   unfold kernelVecBits
@@ -1021,6 +1052,7 @@ private theorem kernelBasisBits_take_eq {r n : ℕ} (M : List (List Bool)) (hM_l
       funext fun j => ih (by omega) j
     rw [hrow, hprev_eq]
 
+/-- `kernelBasisBits` agrees with `LinearAlgebra.kernelBasis` under `bitsToZModVec`. -/
 theorem bitsToZModVec_kernelBasisBits {r n : ℕ} (M : List (List Bool)) (hM_len : M.length = r)
     (hM_mem : ∀ a ∈ M, a.length = n) (i : Fin n) :
     bitsToZModVec n ((kernelBasisBits n M).getD i.1 []) =
@@ -1030,6 +1062,7 @@ theorem bitsToZModVec_kernelBasisBits {r n : ℕ} (M : List (List Bool)) (hM_len
   rw [htake] at h
   exact h
 
+/-- `kernelVecBits` agrees with `LinearAlgebra.kernelVec` under `bitsToZModVec`. -/
 theorem bitsToZModVec_kernelVecBits_eq {r n : ℕ} (M : List (List Bool)) (hM_len : M.length = r)
     (hM_mem : ∀ a ∈ M, a.length = n) :
     bitsToZModVec n (kernelVecBits n M) = kernelVec (rowsToZModMatrix r n M) := by
@@ -1119,12 +1152,15 @@ theorem bitsToZModVec_kernelVecBits_eq {r n : ℕ} (M : List (List Bool)) (hM_le
           simp [hne_p] at this
       rw [hsum, hjp, hv_eq, bitsToZModVec_kernelBasisBits M hM_len hM_mem ⟨p, hp_lt'⟩]
 
+/-- `kernelVecBits n M` lies in the right kernel of `rowsToZModMatrix r n M`. -/
 theorem mulVec_kernelVecBits {r n : ℕ} (M : List (List Bool)) (hM_len : M.length = r)
     (hM_mem : ∀ a ∈ M, a.length = n) :
     rowsToZModMatrix r n M *ᵥ bitsToZModVec n (kernelVecBits n M) = 0 := by
   rw [bitsToZModVec_kernelVecBits_eq M hM_len hM_mem]
   exact mulVec_kernelVec _
 
+/-- If `rowsToZModMatrix r n M` has a nonzero kernel vector, `kernelVecBits n M` has a `true`
+bit. -/
 theorem kernelVecBits_any_of_exists {r n : ℕ} (M : List (List Bool)) (hM_len : M.length = r)
     (hM_mem : ∀ a ∈ M, a.length = n)
     (hex : ∃ v : Fin n → ZMod 2, v ≠ 0 ∧ rowsToZModMatrix r n M *ᵥ v = 0) :
@@ -1319,6 +1355,7 @@ private theorem berlekampMatrix_mulVec_eq_zero_iff {l : List Bool} (hl : 2 ≤ l
             (decide (i.1 == k + 1))
         have hbl_row : row.length = l.length - 1 := by simp [row]
         have hk_lt : k.1 < row.length := by rw [hbl_row]; exact k.2
+        dsimp only [bitsToZModVec]
         rw [List.getD_eq_getElem row false hk_lt]
         dsimp only [row]
         rw [List.getElem_map, List.getElem_range, bitEquiv_symm_xor, sub_eq_add_neg]
@@ -1708,6 +1745,7 @@ theorem polyTrim_berlekampIrreducibleFactor (g : List Bool) :
     · exact polyTrim_polyGcd _ _
     · exact polyTrim_polyTrim _
 
+/-- `berlekampIrreducibleFactor g` produces a divisor of `polyOfBits g`. -/
 theorem polyOfBits_berlekampIrreducibleFactor_dvd {g : List Bool}
     (hsq : Squarefree (polyOfBits g)) (hdeg : 0 < (polyOfBits g).natDegree) :
     polyOfBits (berlekampIrreducibleFactor g) ∣ polyOfBits g ∧
@@ -1748,6 +1786,7 @@ theorem polyOfBits_berlekampIrreducibleFactor_dvd {g : List Bool}
   have := List.length_pos_of_ne_nil hf_ne
   omega
 
+/-- For squarefree `g` of positive degree, `berlekampIrreducibleFactor g` is irreducible. -/
 theorem irreducible_polyOfBits_berlekampIrreducibleFactor {g : List Bool}
     (hsq : Squarefree (polyOfBits g)) (hdeg : 0 < (polyOfBits g).natDegree) :
     Irreducible (polyOfBits (berlekampIrreducibleFactor g)) :=

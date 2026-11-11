@@ -137,9 +137,10 @@ theorem computableInPolyTime_primeDisperser :
 
 /-- The language of the unconditional prime-degree Shoup affine disperser: its slice at length
 `N` is `primeDisperser N`. -/
-noncomputable def primeDisperserLanguage : Language Bool :=
+@[expose] noncomputable def primeDisperserLanguage : Language Bool :=
   Language.ofSlices primeDisperser
 
+/-- The slice of `primeDisperserLanguage` at length `N` is `primeDisperser N`. -/
 @[simp]
 theorem slice_primeDisperserLanguage (N : ℕ) :
     primeDisperserLanguage.slice N = primeDisperser N :=
