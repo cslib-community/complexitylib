@@ -144,7 +144,7 @@ theorem mem_declaredSAT_ofStdSat_iff {n : ℕ} (f : Std.Sat.CNF (Fin n)) :
     (fun _ => rfl)
 
 /-- Round-trip law for `declaredCNFDecoder`. -/
-@[simp] theorem declaredCNFDecoder_decode_enc (x : DeclaredCNF) :
+theorem declaredCNFDecoder_decode_enc (x : DeclaredCNF) :
     declaredCNFDecoder.decode (encDeclaredCNF x) = x :=
   declaredCNFDecoder.decode_enc x
 
@@ -155,7 +155,7 @@ rejects both malformed framed bit words and out-of-range variable labels. -/
     decide (encDeclaredCNF (declaredCNFDecoder.decode w) = w)
 
 /-- On any encoded `DeclaredCNF`, `declaredCNFCode` reduces directly to `x.wellFormed`. -/
-@[simp] theorem declaredCNFCode_encDeclaredCNF (x : DeclaredCNF) :
+theorem declaredCNFCode_encDeclaredCNF (x : DeclaredCNF) :
     declaredCNFCode (encDeclaredCNF x) = x.wellFormed := by
   unfold declaredCNFCode
   rw [declaredCNFDecoder_decode_enc]
