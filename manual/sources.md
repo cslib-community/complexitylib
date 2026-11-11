@@ -297,7 +297,7 @@ Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased bu
 <a id="carmosinoimpagliazzokabanetskolokolova2016"></a>
 ## carmosinoimpagliazzokabanetskolokolova2016
 
-Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run.
+Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run. For the AC⁰[2] efficiency of their generator ([#4451](https://github.com/cslib-community/cslib-frontier/issues/4451)), also checked on 2026-11-11 against the LIPIcs PDF: Definition 3.1, Theorems 3.2 and 3.3 (p. 10:10) and the proof of Theorem 3.2 (p. 10:11); Definition 3.4 (black-box amplification, pp. 10:10–10:11) and Lemma 3.5 (p. 10:11); Section 3.1, which opens on p. 10:11 with the design requirements; Theorem 3.6 and its proof (pp. 10:12–10:13), which define the polynomials `A_i` and the sets `S_i`, bound their overlap on p. 10:12 and end with the hard-coded matrix `M_{j,k} = r_j^k`; Theorem 3.7 and its proof (p. 10:13); and Theorem 4.3 (p. 10:15) with its proof (p. 10:16). `CslibFrontier/Crypto/Primitives/PRG/NisanWigderson/{BitPolynomial,MXCircuit,AmpGeneratorCircuit}.lean` and `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/{GLAmp,GLAmpCircuit}.lean` follow them for `p = 2`.
 
 <a id="ccpv11"></a>
 ## ccpv11
@@ -338,6 +338,11 @@ Moses Charikar, Kevin Chen, Martin Farach-Colton. “Finding Frequent Items in D
 ## chattopadhyayliao20
 
 Eshan Chattopadhyay and Jyun-Jie Liao. *Optimal Error Pseudodistributions for Read-Once Branching Programs*. 35th Computational Complexity Conference (CCC 2020), LIPIcs 169, 25:1–25:27, 2020. https://doi.org/10.4230/LIPIcs.CCC.2020.25 ; cited from arXiv:2002.07208v4. Appendix A.1 (Definition A.2, Lemmas A.3 and A.4) was checked against the arXiv v4 text on 2026-11-08. Hoza (2021) cites the CCC version's Lemma 43 for the same material.
+
+<a id="chendeng06"></a>
+## chendeng06
+
+Xi Chen and Xiaotie Deng. "On the Complexity of 2D Discrete Fixed Point Problem." *Automata, Languages and Programming (ICALP 2006)*, LNCS 4051, 489–500, Springer, 2006. https://doi.org/10.1007/11786986_43 ; journal version in *Theoretical Computer Science* 410(44), 4448–4456, 2009, https://doi.org/10.1016/j.tcs.2009.07.052 . Bibliographic metadata as recorded in `references.bib`; the paper's full text was not inspected directly, so no internal theorem number or page locator is cited. The library cites it for the `PPAD`-completeness of two-dimensional discrete Sperner (`Sperner2D`) proved in [SpernerHardness.lean](../CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/SpernerHardness.lean) via an explicit polynomial-time circuit reduction from `EndOfLine` on a `2 ^ (n + 5) × 2 ^ (n + 5)` grid tiled by `16 × 16` crossing and turning cells.
 
 <a id="chenhiraharaoliveirapichrajgopalsanthanam2020"></a>
 ## chenhiraharaoliveirapichrajgopalsanthanam2020
