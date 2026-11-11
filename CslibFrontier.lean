@@ -4364,8 +4364,11 @@ public import CslibFrontier.DataStructure.Memory.Region
 public import CslibFrontier.DataStructure.Memory.Resizable
 public import CslibFrontier.DataStructure.Memory.Spec
 public import CslibFrontier.DataStructure.Memory.Triple
+public import CslibFrontier.DataStructure.NearNeighbor.Angular
 public import CslibFrontier.DataStructure.NearNeighbor.Hamming
 public import CslibFrontier.DataStructure.NearNeighbor.LSH
+public import CslibFrontier.DataStructure.NearNeighbor.MeasureLSH
+public import CslibFrontier.DataStructure.NearNeighbor.PStable
 public import CslibFrontier.DataStructure.ObliviousSequence
 public import CslibFrontier.DataStructure.Online.Basic
 public import CslibFrontier.DataStructure.Online.Randomized
@@ -5249,6 +5252,7 @@ public import CslibFrontier.Foundations.Order.Changes
 public import CslibFrontier.Foundations.Order.FiniteFixedPoint
 public import CslibFrontier.Foundations.Order.Mirsky
 public import CslibFrontier.Foundations.Order.UpperLower
+public import CslibFrontier.Foundations.Probability.Cauchy
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Clique
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Connectivity
@@ -5912,7 +5916,10 @@ public import CslibFrontier.Probability.LinearCombination
 public import CslibFrontier.Probability.LocalLemma
 public import CslibFrontier.Probability.LocalitySensitiveHash
 public import CslibFrontier.Probability.LocalitySensitiveHash.BitSampling
+public import CslibFrontier.Probability.LocalitySensitiveHash.Measure
 public import CslibFrontier.Probability.LocalitySensitiveHash.MinHash
+public import CslibFrontier.Probability.LocalitySensitiveHash.PStable
+public import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
 public import CslibFrontier.Probability.LoomisWhitney
 public import CslibFrontier.Probability.MarkovChain.Basic
 public import CslibFrontier.Probability.MarkovChain.Coloring
