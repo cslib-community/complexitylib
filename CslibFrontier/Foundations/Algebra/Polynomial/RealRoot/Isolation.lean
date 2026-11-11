@@ -56,10 +56,10 @@ concatenation (`left ++ right`) are uncharged (`0` ticks).
 
 ## References
 
-* [BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
-  unverified)
-* [Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified;
-  `isolateRootsM_time_le` and left-root refinement packaging are specific to this module)
+* [BasuPollackRoy2006] (locator unverified)
+* [Mahler1964] (originator of the Mahler-measure root-separation inequality; locator unverified)
+* [Mignotte1982] (locator unverified; `isolateRootsM_time_le` and left-root refinement packaging
+  are specific to this module)
 -/
 
 public section
@@ -103,24 +103,29 @@ coefficient evaluations across all Sturm polynomials plus scanning the resulting
   TimeM.tick (sturmSeqOpCost seq)
   pure (sturmVariationsList seq x)
 
+/-- Pure value returned by `evalListM t x`. -/
 @[simp]
 theorem evalListM_ret (t : List ℚ) (x : ℚ) : (evalListM t x).ret = evalCoeffList x t := by
   simp only [evalListM, TimeM.ret_bind, TimeM.ret_pure]
 
+/-- Time cost charged by `evalListM t x`: `t.length`. -/
 @[simp]
 theorem evalListM_time (t : List ℚ) (x : ℚ) : (evalListM t x).time = t.length := by
   simp only [evalListM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
 
+/-- Pure value returned by `sturmVariationsM seq x`. -/
 @[simp]
 theorem sturmVariationsM_ret (seq : List (List ℚ)) (x : ℚ) :
     (sturmVariationsM seq x).ret = sturmVariationsList seq x := by
   simp only [sturmVariationsM, TimeM.ret_bind, TimeM.ret_pure]
 
+/-- Time cost charged by `sturmVariationsM seq x`: `sturmSeqOpCost seq`. -/
 @[simp]
 theorem sturmVariationsM_time (seq : List (List ℚ)) (x : ℚ) :
     (sturmVariationsM seq x).time = sturmSeqOpCost seq := by
   simp only [sturmVariationsM, TimeM.time_bind, TimeM.time_tick, TimeM.time_pure, add_zero]
 
+/-- Upper bound on `sturmSeqOpCost (sturmSeqList cs)` in terms of `natDegree (ofCoeffList cs)`. -/
 theorem sturmSeqOpCost_le (cs : List ℚ) :
     sturmSeqOpCost (sturmSeqList cs) ≤
       ((ofCoeffList cs).natDegree + 1) ^ 2 + ((ofCoeffList cs).natDegree + 1) := by
@@ -225,6 +230,7 @@ in `TimeM ℕ`. -/
 @[expose] def isolateRoots (cs : List ℚ) : List RootInterval :=
   (isolateRootsM cs).ret
 
+/-- Pure value returned by `isolateRootsM cs` equals `isolateRoots cs`. -/
 @[simp]
 theorem isolateRootsM_ret (cs : List ℚ) : (isolateRootsM cs).ret = isolateRoots cs := rfl
 
@@ -843,8 +849,7 @@ theorem isolateRoots_isIsolatingFor {cs : List ℚ} (hsep : (ofCoeffList cs).Sep
     ∀ I ∈ isolateRoots cs, I.IsIsolatingFor ((ofCoeffList cs).map (algebraMap ℚ ℝ)) :=
   (isolateRoots_spec_aux hsep).1
 
-/-- Ordering: intervals returned by `isolateRoots cs` are in nondecreasing order and never share
-an endpoint at which the polynomial vanishes. -/
+/-- Ordering: consecutive intervals returned by `isolateRoots cs` satisfy `I₁.upper ≤ I₂.lower`. -/
 theorem isolateRoots_pairwise {cs : List ℚ} (hsep : (ofCoeffList cs).Separable) :
     (isolateRoots cs).Pairwise (fun I₁ I₂ => I₁.upper ≤ I₂.lower) := by
   refine (isolateRoots_spec_aux hsep).2.1.imp fun {I₁ I₂} hgap => ?_
@@ -947,6 +952,7 @@ noncomputable def isolatedRoot {cs : List ℚ} (hsep : (ofCoeffList cs).Separabl
   let hex := (isolateRoots_isIsolatingFor hsep I (List.getElem_mem i.2)).2.exists
   ⟨Classical.choose hex, let ⟨_, _, hroot⟩ := Classical.choose_spec hex; hroot⟩
 
+/-- Membership of `isolatedRoot hsep i` in the `i`-th isolating interval of `isolateRoots cs`. -/
 theorem isolatedRoot_mem {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     (i : Fin (isolateRoots cs).length) :
     let I := (isolateRoots cs)[i]
@@ -1068,16 +1074,20 @@ theorem isolateRootsM_time_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable
     _ ≤ cOp + (cOp + (k * (d / 2) * cOp + d * (2 * cEv + k * (cOp + cEv)))) := by gcongr
     _ = 2 * cOp + k * (d / 2) * cOp + d * (2 * cEv + k * (cOp + cEv)) := by ring
 
+/-- Soundness for squarefree `ofCoeffList cs`: every interval in `isolateRoots cs` isolates a
+unique real root. -/
 theorem isolateRoots_isIsolatingFor_of_squarefree {cs : List ℚ}
     (hsq : Squarefree (ofCoeffList cs)) :
     ∀ I ∈ isolateRoots cs, I.IsIsolatingFor ((ofCoeffList cs).map (algebraMap ℚ ℝ)) :=
   isolateRoots_isIsolatingFor (PerfectField.separable_iff_squarefree.mpr hsq)
 
+/-- Bijection onto real roots for squarefree `ofCoeffList cs`. -/
 theorem isolateRoots_bijective_of_squarefree {cs : List ℚ}
     (hsq : Squarefree (ofCoeffList cs)) :
     Function.Bijective (isolatedRoot (PerfectField.separable_iff_squarefree.mpr hsq)) :=
   isolateRoots_bijective (PerfectField.separable_iff_squarefree.mpr hsq)
 
+/-- Bisection/evaluation time bound for `isolateRootsM cs` when `ofCoeffList cs` is squarefree. -/
 theorem isolateRootsM_time_le_of_squarefree {cs : List ℚ}
     (hsq : Squarefree (ofCoeffList cs)) :
     let d := (ofCoeffList cs).natDegree
@@ -1095,6 +1105,7 @@ noncomputable def isolatePolyRoots (p : ℚ[X]) : List RootInterval :=
 noncomputable def isolatePolyRootsM (p : ℚ[X]) : TimeM ℕ (List RootInterval) :=
   isolateRootsM (p.coeffsBelow (p.natDegree + 1))
 
+/-- Soundness for `isolatePolyRoots p` on squarefree `p : ℚ[X]`. -/
 theorem isolatePolyRoots_isIsolatingFor {p : ℚ[X]} (hsq : Squarefree p) :
     ∀ I ∈ isolatePolyRoots p, I.IsIsolatingFor (p.map (algebraMap ℚ ℝ)) := by
   have heq : ofCoeffList (p.coeffsBelow (p.natDegree + 1)) = p :=
@@ -1105,6 +1116,7 @@ theorem isolatePolyRoots_isIsolatingFor {p : ℚ[X]} (hsq : Squarefree p) :
   rw [isolatePolyRoots, hmap_eq]
   exact isolateRoots_isIsolatingFor_of_squarefree (heq.symm ▸ hsq)
 
+/-- Ordering: consecutive intervals in `isolatePolyRoots p` satisfy `I₁.upper ≤ I₂.lower`. -/
 theorem isolatePolyRoots_pairwise {p : ℚ[X]} (hsq : Squarefree p) :
     (isolatePolyRoots p).Pairwise (fun I₁ I₂ => I₁.upper ≤ I₂.lower) := by
   have heq : ofCoeffList (p.coeffsBelow (p.natDegree + 1)) = p :=
@@ -1126,6 +1138,8 @@ noncomputable def polyIsolatedRoot {p : ℚ[X]} (hsq : Squarefree p)
       (Polynomial.ofCoeffList_coeffsBelow (Nat.lt_succ_self p.natDegree))).mp
       (isolatedRoot (polySeparable hsq) i).2⟩
 
+/-- Membership of `polyIsolatedRoot hsq i` in the `i`-th isolating interval of
+`isolatePolyRoots p`. -/
 theorem polyIsolatedRoot_mem {p : ℚ[X]} (hsq : Squarefree p)
     (i : Fin (isolatePolyRoots p).length) :
     let I := (isolatePolyRoots p)[i]
@@ -1156,6 +1170,7 @@ theorem isolatePolyRoots_bijective {p : ℚ[X]} (hsq : Squarefree p) :
     have hi' : (polyIsolatedRoot hsq i).1 = r := congrArg Subtype.val hi
     exact ⟨i, Subtype.ext hi'⟩
 
+/-- Bisection/evaluation time bound for `isolatePolyRootsM p` on squarefree `p : ℚ[X]`. -/
 theorem isolatePolyRootsM_time_le {p : ℚ[X]} (hsq : Squarefree p) :
     let cs := p.coeffsBelow (p.natDegree + 1)
     let d := p.natDegree

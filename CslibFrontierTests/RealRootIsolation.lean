@@ -357,16 +357,4 @@ example :
     by simpa only [Rat.cast_zero] using hmem0.2,
     hmem1.1, hmem1.2, hmem2.1, hmem2.2, h01, h12, hbij, htime.trans (by decide)⟩
 
-/--
-info: 'Cslib.RealRoot.isolateRoots' depends on axioms: [propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.RealRoot.isolateRoots
-
-/--
-info: 'Cslib.RealRoot.isolateRootsM' depends on axioms: [propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Cslib.RealRoot.isolateRootsM
-
 end CslibFrontierTests.RealRootIsolation

@@ -5,7 +5,8 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Analysis/Polynomial/MahlerMeasure.lean`)
+-- Hadamard's determinant inequality fits `Mathlib/LinearAlgebra/Matrix/Determinant/Basic.lean`.
 
 public import CslibFrontier.Init
 public import Mathlib.Analysis.Polynomial.MahlerMeasure
@@ -46,10 +47,11 @@ squarefree integer and rational polynomials.
 
 ## References
 
-* [Mignotte1982] (primary text not consulted in this session; section/theorem locators unverified)
-* [BasuPollackRoy2006] (primary text not consulted in this session; section/theorem locators
-  unverified; `Polynomial.mignotte_sep_sqNorm_rat` packages the cleared-denominator `ℓ²` form for
-  this library)
+* [Mahler1964] (originator of the discriminant/Mahler-measure root-separation inequality;
+  locator unverified)
+* [Mignotte1982] (locator unverified)
+* [BasuPollackRoy2006] (locator unverified; `Polynomial.mignotte_sep_sqNorm_rat` packages the
+  cleared-denominator `ℓ²` form for this library)
 -/
 
 public section
@@ -91,8 +93,7 @@ end Matrix
 namespace Polynomial
 
 /-- Sum of squares of the integer coefficients of `p : ℤ[X]`. -/
-@[expose]
-noncomputable def coeffSqNorm (p : ℤ[X]) : ℕ :=
+@[expose] noncomputable def coeffSqNorm (p : ℤ[X]) : ℕ :=
   ∑ i ∈ p.support, (p.coeff i).natAbs ^ 2
 
 /-- `coeffSqNorm p` expressed as a sum over `Finset.range (p.natDegree + 1)`. -/

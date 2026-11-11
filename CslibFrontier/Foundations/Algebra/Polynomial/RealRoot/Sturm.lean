@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Algebra/Polynomial/Sturm/Sequence.lean`)
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.Polynomial.Derivative
@@ -42,19 +42,21 @@ constant, yielding the exact root-count identity on half-open intervals `(a, b]`
 
 ## Main results
 
+* `Polynomial.sturmSeq_map`: `Polynomial.sturmSeq` commutes with `Polynomial.map` along an
+  injective ring homomorphism between fields.
 * `Polynomial.sturmVariations_sub_eq_card_roots_Ioc`: Sturm's theorem on `(a, b]` for separable
   `p : ℝ[X]`.
 * `Polynomial.sturmVariations_sub_eq_card_roots_Ioc_of_squarefree`: the squarefree form over `ℝ`.
-* `Polynomial.sturmVariations_sub_eq_card_roots_Ioo`: open-interval form when neither endpoint is a
-  root.
-* `Polynomial.sturmVariations_sub_eq_card_roots_Icc`: closed-interval form when neither endpoint is
-  a root.
+* `Polynomial.sturmVariations_sub_eq_card_roots_Ioo`: open-interval form when the right endpoint is
+  not a root.
+* `Polynomial.sturmVariations_sub_eq_card_roots_Icc`: closed-interval form when the left endpoint is
+  not a root.
 * `Polynomial.sturmVariations_antitone`: `sturmVariations p` is antitone for separable `p`.
 
 ## References
 
 * [S. Basu, R. Pollack, and M.-F. Roy, *Algorithms in Real Algebraic Geometry*][BasuPollackRoy2006]
-  (primary text not consulted in this session; section/theorem locators unverified)
+  (locator unverified)
 -/
 
 public section
@@ -63,6 +65,50 @@ open Filter Set SignType
 open scoped Topology
 
 namespace Polynomial
+
+private theorem sturmSeq_map_aux {K L : Type*} [Field K] [DecidableEq K] [Field L]
+    [DecidableEq L] (f : K →+* L) :
+    ∀ (m : ℕ) (p q : K[X]), (if q = 0 then 0 else q.natDegree + 1) ≤ m →
+      Polynomial.sturmSeq (p.map f) (q.map f) =
+        (Polynomial.sturmSeq p q).map (Polynomial.map f)
+  | m, p, q, hm => by
+    by_cases hp : p = 0
+    · subst hp
+      simp only [Polynomial.map_zero, Polynomial.sturmSeq_zero_left, List.map_nil]
+    · have hpf : p.map f ≠ 0 := (Polynomial.map_ne_zero_iff f.injective).mpr hp
+      by_cases hq : q = 0
+      · subst hq
+        simp only [Polynomial.map_zero, Polynomial.sturmSeq_zero_right,
+          ite_eq_right (fun h => absurd h hp), ite_eq_right (fun h => absurd h hpf),
+          List.map_cons, List.map_nil]
+      · have hqf : q.map f ≠ 0 := (Polynomial.map_ne_zero_iff f.injective).mpr hq
+        obtain ⟨k, hk⟩ : ∃ k, m = k + 1 := by
+          have hpos : 0 < m := by
+            rw [ite_eq_right (fun h => absurd h hq)] at hm
+            omega
+          exact Nat.exists_eq_succ_of_ne_zero hpos.ne'
+        subst hk
+        let r := -p % q
+        have hr_meas : (if r = 0 then 0 else r.natDegree + 1) ≤ k := by
+          rw [ite_eq_right (fun h => absurd h hq)] at hm
+          by_cases hr0 : r = 0
+          · simp only [hr0, ↓reduceIte, Nat.zero_le]
+          · rw [ite_eq_right (fun h => absurd h hr0)]
+            have hlt : r.degree < q.degree := Polynomial.degree_mod_lt (-p) hq
+            have hnat : r.natDegree < q.natDegree :=
+              (Polynomial.natDegree_lt_iff_degree_lt hr0).mpr
+                (by rwa [← Polynomial.degree_eq_natDegree hq])
+            omega
+        have ih := sturmSeq_map_aux f k q r hr_meas
+        rw [Polynomial.sturmSeq_cons hp, Polynomial.sturmSeq_cons hpf, List.map_cons, ← ih,
+          ← Polynomial.map_neg, ← Polynomial.map_mod]
+
+/-- `Polynomial.sturmSeq` commutes with `Polynomial.map` along any ring homomorphism between
+fields. -/
+theorem sturmSeq_map {K L : Type*} [Field K] [DecidableEq K] [Field L] [DecidableEq L]
+    (f : K →+* L) (p q : K[X]) :
+    Polynomial.sturmSeq (p.map f) (q.map f) = (Polynomial.sturmSeq p q).map (Polynomial.map f) :=
+  sturmSeq_map_aux f (if q = 0 then 0 else q.natDegree + 1) p q le_rfl
 
 /-- The number of sign variations of the canonical Sturm sequence `sturmSeq p (derivative p)`
 evaluated at `x : ℝ`. -/
