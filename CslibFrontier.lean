@@ -1107,6 +1107,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Restriction
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Subbotovskaya
+public import CslibFrontier.Computability.Circuit.Boolean.GF2Rank
 public import CslibFrontier.Computability.Circuit.Boolean.GateElimination
 public import CslibFrontier.Computability.Circuit.Boolean.Gates
 public import CslibFrontier.Computability.Circuit.Boolean.Hamming
@@ -2694,6 +2695,7 @@ public import CslibFrontier.Computability.MCSP.Magnification.AntiChecker
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree
 public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Circuit
+public import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.Multi.NP
 public import CslibFrontier.Computability.MCSP.MultiNPHard
@@ -5999,6 +6001,7 @@ public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses
 public import CslibFrontier.MachineLearning.UniformLearning.MembershipQuery
 public import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
+public import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 public import CslibFrontier.MachineLearning.UniformLearning.Reduction
 public import CslibFrontier.Privacy.DifferentialPrivacy.AboveThreshold
 public import CslibFrontier.Privacy.DifferentialPrivacy.AdvancedComposition

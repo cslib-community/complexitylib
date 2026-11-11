@@ -20,7 +20,7 @@ import CslibFrontier.Foundations.Data.Nat.Log
 # The bit-indexed polynomial design
 
 Carmosino, Impagliazzo, Kabanets and Kolokolova's AC⁰[p] construction of Nisan–Wigderson designs
-(Def 3.4, Lemma 3.5, §3.1 and the proof of Theorem 3.6, pp. 10:10–10:12)
+(§3.1 and the proof of Theorem 3.6, pp. 10:11–10:13)
 [CarmosinoImpagliazzoKabanetsKolokolova2016] indexes the blocks by bit strings. The string
 `i : BitString ℓ` names the polynomial `A_i(x) = ∑_t i_t x^t` with coefficients `0` and `1`
 (`Cslib.Crypto.PRG.NisanWigderson.bitPoly`). The universe is split into `n` rows, each a copy of
@@ -84,7 +84,7 @@ This differs from the source in these ways:
 ## References
 
 * [M. L. Carmosino, R. Impagliazzo, V. Kabanets, A. Kolokolova, *Learning algorithms from natural
-  proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016], Def 3.4, Lemma 3.5, §3.1, Theorem 3.6
+  proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016], §3.1, proof of Theorem 3.6
 * [N. Nisan, A. Wigderson, *Hardness vs randomness*][NisanWigderson1994]
 -/
 
@@ -159,7 +159,7 @@ theorem card_bitPolyBlock (i : BitString ℓ) : #(bitPolyBlock r num i) = n := b
 /-- **Distinct blocks share at most `ℓ - 1` cells**, for distinct points `r_j`. A shared cell in
 row `j` is a point `r_j` where the two polynomials agree. The polynomials are distinct and of
 degree less than `ℓ`, so this holds for at most `ℓ - 1` points (`card_polynomialBlock_inter_le`)
-[CarmosinoImpagliazzoKabanetsKolokolova2016, Lemma 3.5]. -/
+[CarmosinoImpagliazzoKabanetsKolokolova2016, proof of Theorem 3.6, p. 10:12]. -/
 theorem card_bitPolyBlock_inter_le (hr : Function.Injective r) {i i' : BitString ℓ}
     (h : i ≠ i') : #(bitPolyBlock r num i ∩ bitPolyBlock r num i') ≤ ℓ - 1 := by
   classical
