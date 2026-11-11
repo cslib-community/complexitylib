@@ -490,8 +490,11 @@ private theorem embedGroundSigma_injective {t₁ t₂ : Φ.GroundTag}
 
 section PrivateOrder
 
-local instance instCanonicalOrderStructure : ESO.orderLanguage.Structure M :=
+@[instance_reducible]
+private def instCanonicalOrderStructure : ESO.orderLanguage.Structure M :=
   ESO.varLanguage.structure (arity := fun _ : Unit => 2) (ESO.orderRelOfEquiv (Equiv.refl M))
+
+attribute [local instance] instCanonicalOrderStructure
 
 private theorem realize_targetCompatGuard_iff (t tgt : Φ.GroundTag)
     (mp : tgt.Coord → Option t.Coord) (u v : Fin Φ.groundDim → Fin M.size) :
