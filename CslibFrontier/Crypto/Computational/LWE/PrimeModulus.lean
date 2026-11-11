@@ -29,7 +29,7 @@ with a specified residue distribution. Its public sample is the binary encoding 
 
 * `Cslib.Crypto.PrimeLWE.encMatrix`: binary encoding of `ZMod q` matrices.
 * `Cslib.Crypto.PrimeLWE.searchGame`: the search experiment for `ZMod q`.
-* `Cslib.Crypto.PrimeLWE.DecisionLWE`: the decision experiment for `ZMod q`.
+* `Cslib.Crypto.DecisionLWE`: the decision experiment for `ZMod q`.
 
 ## References
 
