@@ -156,10 +156,7 @@ private theorem mul_X_sub_reduceVar_mem_boolIdeal (i : ι)
   rw [hsum]
   refine Submodule.sum_mem _ fun s hs => ?_
   have hsle : s i ≤ 1 := (mem_restrictDegree _ _ _).1 hq s hs i
-  have hX : (X i : MvPolynomial ι R) = MvPolynomial.monomial (Finsupp.single i 1) 1 := by
-    ext t
-    by_cases h : t = Finsupp.single i 1 <;> simp only [coeff_X, coeff_monomial, h, ↓reduceIte,
-      eq_comm]
+  have hX : (X i : MvPolynomial ι R) = MvPolynomial.monomial (Finsupp.single i 1) 1 := rfl
   split_ifs with hsi
   · have hmul : MvPolynomial.monomial s (q.coeff s) * (X i : MvPolynomial ι R) =
         MvPolynomial.monomial (s + Finsupp.single i 1) (q.coeff s) := by
@@ -214,19 +211,13 @@ theorem exists_mem_restrictDegree_sub_mem_boolIdeal (p : MvPolynomial ι R) :
     exact Ideal.add_mem _ (Ideal.mul_mem_right _ _ hsub) (mul_X_sub_reduceVar_mem_boolIdeal i hq)
 
 private noncomputable def indMon (S : Finset ι) : ι →₀ ℕ :=
-  S.sum fun i => Finsupp.single i 1
+  Finsupp.indicator S fun _ _ => 1
 
 private theorem indMon_apply [DecidableEq ι] (S : Finset ι) (i : ι) :
     indMon S i = if i ∈ S then 1 else 0 := by
   classical
-  induction S using Finset.induction_on with
-  | empty => simp [indMon]
-  | insert j S hj ih =>
-    rw [indMon, Finset.sum_insert hj, Finsupp.add_apply, ← indMon, ih]
-    by_cases hji : i = j
-    · subst hji
-      simp [hj]
-    · by_cases hiS : i ∈ S <;> simp [hji, hiS]
+  simp only [indMon, Finsupp.indicator_apply]
+  split_ifs <;> rfl
 
 private theorem support_indMon (S : Finset ι) : (indMon S).support = S := by
   classical

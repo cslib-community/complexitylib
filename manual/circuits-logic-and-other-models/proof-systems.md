@@ -625,14 +625,17 @@ over a field by `1 ∈ Ideal.span {p | p ∈ F} ⊔ boolIdeal σ K`
 (`Algebraic.one_mem_sup_boolIdeal_iff`), and defines the `0`/`1` clause and formula satisfaction
 indicators `Clause.satPoly R c := 1 - c.toBoolPoly R` and `CNF.satIndicatorPoly R φ`. Over any
 commutative ring `R`, summing `φ.satIndicatorPoly R` over Boolean assignments to `declared`,
-`φ.vars.toFinset`, `bitsAssignment φ.distinctVars i` (`i < 2 ^ φ.numVars`), or finite `V → Bool`
-recovers `φ.modelCountOn` and `φ.modelCount` (`CNF.sum_eval_satIndicatorPoly_declared`,
-`CNF.sum_eval_satIndicatorPoly_vars`, `CNF.sum_range_eval_satIndicatorPoly_distinctVars`,
-`CNF.sum_eval_satIndicatorPoly`).
+`φ.vars.toFinset`, or `bitsAssignment φ.distinctVars i` (`i < 2 ^ φ.numVars`) equals the natural
+count cast into `R`, `(φ.modelCountOn declared : R)` or `(φ.modelCount : R)`
+(`CNF.sum_eval_satIndicatorPoly_declared`, `CNF.sum_eval_satIndicatorPoly_vars`,
+`CNF.sum_range_eval_satIndicatorPoly_distinctVars`), whereas over the finite ambient cube `V → Bool`
+it equals `(2 : R) ^ (Fintype.card V - φ.numVars) * (φ.modelCount : R)` with the unused-variable
+factor `(2 : R) ^ (Fintype.card V - φ.numVars)` (`CNF.sum_eval_satIndicatorPoly`); in positive
+characteristic, casting into `R` preserves the counts only modulo the ring characteristic.
 [Checked examples](../../CslibFrontierTests/BooleanQuotientSAT.lean) verify uniqueness over the
 non-reduced ring `ZMod 4` (where `boolIdeal` fails to be radical), the dimension `4` on two
-variables over `ℚ`, unsatisfiability in `span F ⊔ boolIdeal`, and exact cube-sum model counts with
-unused variables.
+variables over `ℚ`, unsatisfiability in `span F ⊔ boolIdeal`, and the cube-sum identities including
+unused variables (`sparseFin3`, where `modelCount = 3` and the `Fin 3 → Bool` sum is `6`).
 
 [The subset-sum lower bound](../../CslibFrontier/Logics/Propositional/Algebraic/SubsetSum.lean) is
 Theorem 5.1 of Impagliazzo, Pudlák and Sgall. Suppose every `c i` is nonzero and `n ≥ 1`. Then
