@@ -22,8 +22,11 @@ import Mathlib.Tactic.Ring
 
 For a finite simple graph `G` on a nonempty vertex type `V` with clique number `ω(G)`, the
 maximum of the quadratic form `x ⬝ᵥ G.adjMatrix K *ᵥ x` over the standard simplex
-`Δ = {x : V → K | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}` equals `1 - 1 / ω(G)`
-[MotzkinStraus1965]. The proof works over every linearly ordered field `K` (including `ℚ` and `ℝ`):
+`Δ = {x : V → K | (∀ v, 0 ≤ x v) ∧ ∑ v, x v = 1}` equals `1 - 1 / ω(G)`. This generalizes the
+real Motzkin–Straus theorem (attributed to [MotzkinStraus1965], cited from bibliographic metadata
+only without inspecting the published text) to any linearly ordered field `K` (including `ℚ` and
+`ℝ`); the `K`-generalization and the `SimpleGraph.copositiveCliqueMatrix` packaging below are
+original formulations of this library:
 
 * **Upper bound** (`SimpleGraph.quadraticForm_adjMatrix_le_of_mem_simplex`): by strong induction on
   the support size of `x ∈ Δ`. Whenever two distinct vertices `u, v` in the support of `x` are
@@ -56,7 +59,9 @@ nonempty finite graph.
 ## References
 
 * [T. S. Motzkin, E. G. Straus, *Maxima for graphs and a new proof of a theorem of Turán*,
-  Canadian Journal of Mathematics 17 (1965), 533–540][MotzkinStraus1965]
+  Canadian Journal of Mathematics 17 (1965), 533–540][MotzkinStraus1965] (bibliographic metadata
+  only; the published article text was not inspected in this pass, and no internal theorem numbers
+  are claimed).
 -/
 
 public section
@@ -130,11 +135,7 @@ private theorem dotProduct_adjMatrix_add_smul [Fintype V] [DecidableEq V] [CommR
   set A := G.adjMatrix K
   have hsymm : Aᵀ = A := G.transpose_adjMatrix
   have hxAd : x ⬝ᵥ (A *ᵥ d) = d ⬝ᵥ (A *ᵥ x) := by
-    simp only [dotProduct, mulVec, Finset.mul_sum]
-    rw [Finset.sum_comm]
-    refine Finset.sum_congr rfl fun j _ => Finset.sum_congr rfl fun i _ => ?_
-    rw [show A i j = A j i from congrFun (congrFun hsymm j) i]
-    ring
+    rw [← dotProduct_transpose_mulVec A d x, hsymm]
   have hdAx : d ⬝ᵥ (A *ᵥ x) = (A *ᵥ x) u - (A *ᵥ x) v := by
     simp only [d, Pi.sub_apply, dotProduct, Pi.single_apply, sub_mul, Finset.sum_sub_distrib,
       ite_mul, one_mul, zero_mul, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
@@ -161,7 +162,8 @@ private theorem dotProduct_adjMatrix_add_smul [Fintype V] [DecidableEq V] [CommR
   ring
 
 /-- **Motzkin–Straus upper bound**: on the standard simplex, `x ⬝ᵥ G.adjMatrix K *ᵥ x` is at
-most `1 - 1 / G.cliqueNum` [MotzkinStraus1965]. -/
+most `1 - 1 / G.cliqueNum` (library generalization over arbitrary linearly ordered fields `K`;
+[MotzkinStraus1965] was not inspected directly). -/
 theorem quadraticForm_adjMatrix_le_of_mem_simplex [Fintype V]
     [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     (G : SimpleGraph V) [DecidableRel G.Adj]
@@ -308,8 +310,10 @@ theorem exists_mem_simplex_quadraticForm_adjMatrix_eq_of_isNClique [Fintype V]
         mul_one_div_cancel hk_ne, one_mul]
     rw [hs1, hs2, one_pow]
 
-/-- **The Motzkin–Straus theorem** [MotzkinStraus1965]: on a nonempty finite graph, the maximum
-of `x ⬝ᵥ G.adjMatrix K *ᵥ x` over the standard simplex equals `1 - 1 / G.cliqueNum`. -/
+/-- **The Motzkin–Straus theorem** (library generalization to arbitrary linearly ordered fields `K`;
+[MotzkinStraus1965] is cited at paper level without inspecting the published text): on a nonempty
+finite graph, the maximum of `x ⬝ᵥ G.adjMatrix K *ᵥ x` over the standard simplex equals
+`1 - 1 / G.cliqueNum`. -/
 theorem isGreatest_quadraticForm_adjMatrix [Fintype V]
     [Field K] [LinearOrder K] [IsStrictOrderedRing K]
     (G : SimpleGraph V) [Nonempty V] [DecidableRel G.Adj] :
@@ -324,7 +328,8 @@ theorem isGreatest_quadraticForm_adjMatrix [Fintype V]
   · rintro _ ⟨x, ⟨hx0, hx1⟩, rfl⟩
     exact quadraticForm_adjMatrix_le_of_mem_simplex G hx0 hx1
 
-/-- **The Motzkin–Straus theorem** over `ℝ` in `sSup` form [MotzkinStraus1965]. -/
+/-- **The Motzkin–Straus theorem** over `ℝ` in `sSup` form (attributed to [MotzkinStraus1965];
+the published text was not inspected in this pass). -/
 theorem sSup_quadraticForm_adjMatrix [Fintype V]
     (G : SimpleGraph V) [Nonempty V] [DecidableRel G.Adj] :
     sSup ((fun x : V → ℝ => x ⬝ᵥ G.adjMatrix ℝ *ᵥ x) ''
@@ -333,9 +338,9 @@ theorem sSup_quadraticForm_adjMatrix [Fintype V]
 
 /-! ### Copositive matrix characterization of the clique number -/
 
-/-- The symmetric integer matrix `(k - 2) J - (k - 1) A_G`: entries are `-1` on edges of `G` and
-`k - 2` on non-edges and the diagonal. For `k ≥ 2` on a nonempty finite graph, this matrix fails to
-be copositive iff `G` has a `k`-clique. -/
+/-- The symmetric integer matrix `(k - 2) J - (k - 1) A_G` (library packaging for the clique
+reduction): entries are `-1` on edges of `G` and `k - 2` on non-edges and the diagonal. For
+`k ≥ 2` on a nonempty finite graph, this matrix fails to be copositive iff `G` has a `k`-clique. -/
 @[expose] def copositiveCliqueMatrix (G : SimpleGraph V) [DecidableRel G.Adj] (k : ℕ) :
     Matrix V V ℤ :=
   of fun u v => if G.Adj u v then (-1 : ℤ) else (k : ℤ) - 2

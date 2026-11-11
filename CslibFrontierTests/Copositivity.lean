@@ -303,12 +303,35 @@ example :
   have hB : ∀ i j : Fin 2, |(!![(1 : ℤ), -2; -2, 1]) i j| ≤ 2 := by
     intro i j
     fin_cases i <;> fin_cases j <;> norm_num
+  simpa only [Fintype.card_fin] using Matrix.exists_nat_dotProduct_lt_zero_of_isSymm hsymm hB (by
+    intro hcop
+    have h := hcop (fun _ => 1) fun _ => by norm_num
+    simp only [dotProduct, mulVec, Matrix.map_apply] at h
+    rw [Fin.sum_univ_two, Fin.sum_univ_two, Fin.sum_univ_two] at h
+    norm_num [Matrix.cons_val_zero, Matrix.cons_val_one] at h)
+
+-- Arbitrary finite index type instantiation of `Matrix.exists_nat_dotProduct_lt_zero_of_isSymm`
+-- on `Bool`.
+example :
+    ∃ p : Bool → ℕ,
+      (∀ b, p b ≤
+          Nat.factorial (Fintype.card Bool) *
+            (Fintype.card Bool * (max 2 1) ^ 2 + 1) ^ Fintype.card Bool) ∧
+        (fun b => (p b : ℤ)) ⬝ᵥ
+          ((Matrix.of fun a b : Bool => if a = b then (1 : ℤ) else -2) *ᵥ
+            fun b => (p b : ℤ)) < 0 := by
+  let M : Matrix Bool Bool ℤ := Matrix.of fun a b => if a = b then (1 : ℤ) else -2
+  have hsymm : M.IsSymm := by
+    ext a b
+    simp only [M, transpose_apply, Matrix.of_apply, eq_comm]
+  have hB : ∀ a b : Bool, |M a b| ≤ 2 := by
+    intro a b
+    cases a <;> cases b <;> norm_num [M]
   refine Matrix.exists_nat_dotProduct_lt_zero_of_isSymm hsymm hB ?_
   intro hcop
   have h := hcop (fun _ => 1) fun _ => by norm_num
-  simp only [dotProduct, mulVec, Matrix.map_apply] at h
-  rw [Fin.sum_univ_two, Fin.sum_univ_two, Fin.sum_univ_two] at h
-  norm_num [Matrix.cons_val_zero, Matrix.cons_val_one] at h
+  simp only [dotProduct, mulVec, Matrix.map_apply, Fintype.sum_bool, Matrix.of_apply] at h
+  norm_num at h
 
 /-! ### Reduction instances (`cliqueToSymRatMatrix`) -/
 

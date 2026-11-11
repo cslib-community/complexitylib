@@ -35,6 +35,7 @@ import CslibFrontier.Computability.PolyTime.Int.DotProduct
 import CslibFrontier.Computability.PolyTime.Int.ExactDiv
 import CslibFrontier.Foundations.Data.List.DotProduct
 import CslibFrontier.Foundations.Data.List.OfFn
+import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -44,7 +45,11 @@ import Mathlib.Tactic.Ring
 
 Testing whether an encoded symmetric rational matrix `M` is *copositive*—meaning `x ⬝ᵥ M *ᵥ x ≥ 0`
 for all entrywise nonnegative vectors `x`—is `coNP`-complete, and testing non-copositivity is
-`NP`-complete [MurtyKabadi1987].
+`NP`-complete. These hardness/completeness results are attributed to [MurtyKabadi1987] at paper
+level from bibliographic metadata only without inspecting the published text; the row-list
+representation `SymRatMatrix`, binary encoding `encSymRatMatrix`, denominator-cleared verifier
+`NonCopositive.check`, bounded integer witness derivation, and `Clique` reduction are this
+library's formalization.
 
 By `Matrix.exists_nat_dotProduct_lt_zero_of_rat`, a symmetric rational matrix fails to be
 copositive if and only if it admits a polynomially bit-bounded nonnegative integer vector `p` with
@@ -84,9 +89,13 @@ circuits over `encRat`.
 ## References
 
 - [MotzkinStraus1965] T. S. Motzkin and E. G. Straus, *Maxima for graphs and a new proof of a
-  theorem of Turán*, Canadian Journal of Mathematics 17, 1965, 533–540.
+  theorem of Turán*, Canadian Journal of Mathematics 17, 1965, 533–540 (bibliographic metadata
+  only; the published text was not inspected in this pass, and no internal theorem numbers are
+  claimed).
 - [MurtyKabadi1987] K. G. Murty and S. N. Kabadi, *Some NP-complete problems in quadratic and
-  nonlinear programming*, Mathematical Programming 39(2), 1987, 117–129.
+  nonlinear programming*, Mathematical Programming 39(2), 1987, 117–129 (bibliographic metadata
+  only; the published text was not inspected in this pass, and no internal theorem numbers are
+  claimed).
 -/
 
 public section
@@ -201,40 +210,16 @@ theorem mem_Copositive_iff_real {M : SymRatMatrix} :
 private def SymRatMatrix.commonDenomNat (M : SymRatMatrix) : ℕ :=
   (M.rows.flatten.map fun q : ℚ => q.den).prod
 
-private theorem list_prod_pos_of_pos (l : List ℕ) (h : ∀ x ∈ l, 0 < x) : 0 < l.prod := by
-  induction l with
-  | nil => simp only [List.prod_nil, zero_lt_one]
-  | cons a l ih =>
-      simp only [List.prod_cons]
-      exact Nat.mul_pos (h a List.mem_cons_self) (ih fun x hx => h x (List.mem_cons_of_mem a hx))
-
-private theorem intCast_list_prod_nat (l : List ℕ) :
-    ((l.prod : ℕ) : ℤ) = (l.map (Nat.cast : ℕ → ℤ)).prod := by
-  induction l with
-  | nil => rfl
-  | cons a l ih =>
-      simp only [List.prod_cons, List.map_cons, Int.natCast_mul, ih]
-
 private theorem SymRatMatrix.commonDenomNat_pos (M : SymRatMatrix) : 0 < M.commonDenomNat :=
-  list_prod_pos_of_pos _ fun _ hx => by
+  List.prod_pos fun _ hx => by
     obtain ⟨q, _, rfl⟩ := List.mem_map.1 hx
     exact q.pos
 
 private theorem SymRatMatrix.commonDenom_eq_nat (M : SymRatMatrix) :
     M.commonDenom = (M.commonDenomNat : ℤ) := by
   dsimp only [SymRatMatrix.commonDenom, SymRatMatrix.commonDenomNat]
-  rw [intCast_list_prod_nat, List.map_map]
+  rw [Nat.cast_list_prod (R := ℤ), List.map_map]
   rfl
-
-private theorem list_dvd_prod {l : List ℕ} {x : ℕ} (hx : x ∈ l) : x ∣ l.prod := by
-  induction l with
-  | nil => cases hx
-  | cons a l ih =>
-      simp only [List.mem_cons] at hx
-      rcases hx with rfl | hx
-      · exact ⟨l.prod, by simp only [List.prod_cons]⟩
-      · obtain ⟨k, hk⟩ := ih hx
-        exact ⟨a * k, by simp only [List.prod_cons, hk]; ring⟩
 
 private theorem SymRatMatrix.toMatrix_eq_getElem (M : SymRatMatrix) (i j : Fin M.rows.length) :
     M.toMatrix i j =
@@ -242,12 +227,8 @@ private theorem SymRatMatrix.toMatrix_eq_getElem (M : SymRatMatrix) (i j : Fin M
   have hj_lt : j.1 < M.rows[i.1].length := by
     rw [M.square _ (List.getElem_mem i.2)]
     exact j.2
-  have h1 : M.rows.getD i.1 [] = M.rows[i.1] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem i.2, Option.getD_some]
-  have h2 : M.rows[i.1].getD j.1 0 = M.rows[i.1][j.1] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj_lt, Option.getD_some]
   dsimp only [SymRatMatrix.toMatrix, Matrix.of_apply]
-  rw [h1, h2]
+  rw [List.getD_eq_getElem _ _ i.2, List.getD_eq_getElem _ _ hj_lt]
 
 private theorem SymRatMatrix.den_dvd_commonDenomNat (M : SymRatMatrix)
     {i j : Fin M.rows.length} :
@@ -260,7 +241,7 @@ private theorem SymRatMatrix.den_dvd_commonDenomNat (M : SymRatMatrix)
   have hmem_flat : M.rows[i.1][j.1] ∈ M.rows.flatten :=
     List.mem_flatten.2 ⟨M.rows[i.1], hi, hmem_row⟩
   rw [M.toMatrix_eq_getElem i j]
-  exact list_dvd_prod (List.mem_map.2 ⟨M.rows[i.1][j.1], hmem_flat, rfl⟩)
+  exact List.dvd_prod (List.mem_map.2 ⟨M.rows[i.1][j.1], hmem_flat, rfl⟩)
 
 private noncomputable def SymRatMatrix.intMatrix (M : SymRatMatrix) :
     Matrix (Fin M.rows.length) (Fin M.rows.length) ℤ :=
@@ -279,12 +260,8 @@ private theorem SymRatMatrix.intMatrix_eq (M : SymRatMatrix) (i j : Fin M.rows.l
   have hj_int : j.1 < M.intRows[i.1].length := by
     simp only [SymRatMatrix.intRows, List.getElem_map, List.length_map]
     exact hj
-  have h1 : M.intRows.getD i.1 [] = M.intRows[i.1] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi_int, Option.getD_some]
-  have h2 : M.intRows[i.1].getD j.1 0 = M.intRows[i.1][j.1] := by
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj_int, Option.getD_some]
   dsimp only [SymRatMatrix.intMatrix, Matrix.of_apply]
-  rw [h1, h2]
+  rw [List.getD_eq_getElem _ _ hi_int, List.getD_eq_getElem _ _ hj_int]
   simp only [SymRatMatrix.intRows, List.getElem_map]
   rw [← M.toMatrix_eq_getElem i j, M.commonDenom_eq_nat, Int.natCast_ediv]
 
@@ -319,8 +296,7 @@ private theorem SymRatMatrix.dotProduct_check_eq (M : SymRatMatrix) {p : List �
     refine List.ext_getElem (by simp only [List.length_map, List.length_ofFn, hlen]) ?_
     intro k hk1 hk2
     have hk_lt : k < p.length := by simpa only [List.length_map] using hk1
-    simp only [List.getElem_map, List.getElem_ofFn, pFin, List.getD_eq_getElem?_getD,
-      List.getElem?_eq_getElem hk_lt, Option.getD_some]
+    simp only [List.getElem_map, List.getElem_ofFn, pFin, List.getD_eq_getElem _ _ hk_lt]
   have hrows_ofFn :
       (M.intRows.map fun row =>
           Mathlib.Tactic.Matrix.ListMatrix.dotProduct M.rows.length row (p.map Nat.cast)) =
@@ -345,11 +321,8 @@ private theorem SymRatMatrix.dotProduct_check_eq (M : SymRatMatrix) {p : List �
       have hj_int : j < M.intRows[k].length := by
         simp only [SymRatMatrix.intRows, List.getElem_map, List.length_map]
         rw [hrow_len]; exact hj_lt
-      have hget1 : M.intRows.getD k [] = M.intRows[k] := by
-        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hk_int, Option.getD_some]
-      have hget2 : M.intRows[k].getD j 0 = M.intRows[k][j] := by
-        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj_int, Option.getD_some]
-      simp only [List.getElem_ofFn, SymRatMatrix.intMatrix, Matrix.of_apply, hget1, hget2]
+      simp only [List.getElem_ofFn, SymRatMatrix.intMatrix, Matrix.of_apply,
+        List.getD_eq_getElem _ _ hk_int, List.getD_eq_getElem _ _ hj_int]
     simp only [List.getElem_map, List.getElem_ofFn, Matrix.mulVec]
     rw [hrow_ofFn, hp_ofFn]
     exact Mathlib.Tactic.Matrix.ListMatrix.dotProduct_ofFn
@@ -490,6 +463,7 @@ private theorem NonCopositive.complete_of_mem {M : SymRatMatrix} (hM : M ∈ Non
   obtain ⟨pFin, hpFin_le, hpFin_neg⟩ :=
     Matrix.exists_nat_dotProduct_lt_zero_of_rat M.commonDenomNat_pos M.isSymm_toMatrix
       M.intMatrix_mul_eq hB hM
+  simp only [Fintype.card_fin] at hpFin_le
   let p : List ℕ := List.ofFn pFin
   have hp_len : p.length = n := List.length_ofFn
   have hquad_neg :

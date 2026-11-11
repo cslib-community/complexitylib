@@ -16,6 +16,7 @@ import CslibFrontier.Foundations.LinearAlgebra.Matrix.BasicSolution
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Algebra.Order.BigOperators.GroupWithZero.Finset
 import Mathlib.Data.Fintype.Card
+import Mathlib.Data.Rat.BigOperators
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -34,6 +35,10 @@ nonnegative integer vector `p` with `p ⬝ᵥ M *ᵥ p < 0` whose entries are si
 bounded in the dimension and entry bit-length, hence of polynomial bit-length.
 
 As a consequence, copositivity over `ℝ`, `ℚ`, and `ℕ` coincides for symmetric rational matrices.
+[MurtyKabadi1987] is cited at paper level from bibliographic metadata only without inspecting
+the published text; the KKT + `Matrix.exists_int_nonneg_mulVec_eq` proof and the explicit witness
+bound `Nat.factorial (Fintype.card V) * (Fintype.card V * (max B 1) ^ 2 + 1) ^ Fintype.card V`
+are original to this library.
 
 ## Main definitions
 
@@ -54,7 +59,9 @@ As a consequence, copositivity over `ℝ`, `ℚ`, and `ℕ` coincides for symmet
 ## References
 
 - [MurtyKabadi1987] K. G. Murty and S. N. Kabadi, *Some NP-complete problems in quadratic and
-  nonlinear programming*, Mathematical Programming 39(2), 1987, 117–129.
+  nonlinear programming*, Mathematical Programming 39(2), 1987, 117–129 (bibliographic metadata
+  only; the published article text was not inspected in this pass, and no internal theorem numbers
+  are claimed).
 -/
 
 public section
@@ -69,41 +76,15 @@ for every entrywise nonnegative vector `x`. -/
     (M : Matrix V V K) : Prop :=
   ∀ x : V → K, (∀ v, 0 ≤ x v) → 0 ≤ x ⬝ᵥ M *ᵥ x
 
-private theorem dotProduct_symm_comm {V K : Type*} [Fintype V] [CommRing K]
-    {M : Matrix V V K} (hSymm : M.IsSymm) (x d : V → K) :
-    x ⬝ᵥ (M *ᵥ d) = d ⬝ᵥ (M *ᵥ x) := by
-  simp only [dotProduct, mulVec, Finset.mul_sum]
-  rw [Finset.sum_comm]
-  refine Finset.sum_congr rfl fun j _ => Finset.sum_congr rfl fun i _ => ?_
-  rw [show M i j = M j i from congrFun (congrFun hSymm j) i]
-  ring
-
 private theorem dotProduct_add_smul_symm {V K : Type*} [Fintype V] [CommRing K]
     {M : Matrix V V K} (hSymm : M.IsSymm) (x d : V → K) (t : K) :
     (x + t • d) ⬝ᵥ (M *ᵥ (x + t • d)) =
       x ⬝ᵥ (M *ᵥ x) + 2 * t * (d ⬝ᵥ (M *ᵥ x)) + t ^ 2 * (d ⬝ᵥ (M *ᵥ d)) := by
+  have hxMd : x ⬝ᵥ (M *ᵥ d) = d ⬝ᵥ (M *ᵥ x) := by
+    rw [← dotProduct_transpose_mulVec M d x, hSymm]
   rw [mulVec_add, mulVec_smul, dotProduct_add, add_dotProduct, add_dotProduct,
-    dotProduct_smul, smul_dotProduct, dotProduct_smul, smul_dotProduct,
-    dotProduct_symm_comm hSymm x d]
+    dotProduct_smul, smul_dotProduct, dotProduct_smul, smul_dotProduct, hxMd]
   ring
-
-private theorem continuous_finset_sum_real {α ι : Type*} [TopologicalSpace α]
-    (s : Finset ι) (g : ι → α → ℝ) (hg : ∀ i ∈ s, Continuous (g i)) :
-    Continuous fun x => ∑ i ∈ s, g i x := by
-  classical
-  induction s using Finset.induction_on with
-  | empty =>
-      simp only [Finset.sum_empty]
-      exact continuous_const
-  | @insert a s ha ih =>
-      have ha' : Continuous (g a) := hg a (Finset.mem_insert_self a s)
-      have hs' : Continuous fun x => ∑ i ∈ s, g i x :=
-        ih fun i hi => hg i (Finset.mem_insert_of_mem hi)
-      have hsum : (fun x => ∑ i ∈ insert a s, g i x) = fun x => g a x + ∑ i ∈ s, g i x := by
-        ext x
-        exact Finset.sum_insert ha
-      rw [hsum]
-      exact ha'.add hs'
 
 private theorem simplex_isCompact (n : ℕ) :
     IsCompact {x : Fin n → ℝ | (∀ i, 0 ≤ x i) ∧ ∑ i, x i = 1} := by
@@ -123,8 +104,7 @@ private theorem simplex_isCompact (n : ℕ) :
     exact isClosed_iInter fun i => isClosed_Ici.preimage (continuous_apply i)
   have hclosed2 : IsClosed {x : Fin n → ℝ | ∑ i : Fin n, x i = 1} :=
     isClosed_singleton.preimage
-      (continuous_finset_sum_real Finset.univ (fun i (x : Fin n → ℝ) => x i)
-        fun i _ => continuous_apply i)
+      (continuous_finsetSum Finset.univ fun i _ => continuous_apply i)
   exact isCompact_Icc.of_isClosed_subset (hclosed1.inter hclosed2) hsub
 
 private theorem dotProduct_mulVec_continuous {n : ℕ} (M : Matrix (Fin n) (Fin n) ℝ) :
@@ -134,8 +114,8 @@ private theorem dotProduct_mulVec_continuous {n : ℕ} (M : Matrix (Fin n) (Fin 
     ext x
     simp only [dotProduct, mulVec]
   rw [heq]
-  refine continuous_finset_sum_real Finset.univ _ fun i _ => (continuous_apply i).mul ?_
-  exact continuous_finset_sum_real Finset.univ _ fun j _ =>
+  refine continuous_finsetSum Finset.univ fun i _ => (continuous_apply i).mul ?_
+  exact continuous_finsetSum Finset.univ fun j _ =>
     continuous_const.mul (continuous_apply j)
 
 private theorem kkt_stationarity_on_simplex {n : ℕ} {M : Matrix (Fin n) (Fin n) ℝ}
@@ -200,10 +180,7 @@ private theorem kkt_stationarity_on_simplex {n : ℕ} {M : Matrix (Fin n) (Fin n
         exact mul_le_mul_of_nonneg_left (le_abs_self c) (sq_nonneg t₀)
       nlinarith
 
-/-- If a symmetric integer matrix `M` has a nonnegative real vector with negative quadratic
-form, then it has a nonnegative integer vector `p` with `p ⬝ᵥ M *ᵥ p < 0` and entries bounded by
-`Nat.factorial n * (n * (max B 1) ^ 2 + 1) ^ n`, where `B` bounds `|M i j|`. -/
-theorem exists_nat_dotProduct_lt_zero_of_isSymm {n B : ℕ} {M : Matrix (Fin n) (Fin n) ℤ}
+private theorem exists_nat_dotProduct_lt_zero_of_isSymm_fin {n B : ℕ} {M : Matrix (Fin n) (Fin n) ℤ}
     (hSymm : M.IsSymm) (hB : ∀ i j, |M i j| ≤ (B : ℤ))
     (hnc : ¬ (M.map (Int.cast : ℤ → ℝ)).IsCopositive) :
     ∃ p : Fin n → ℕ,
@@ -372,11 +349,59 @@ theorem exists_nat_dotProduct_lt_zero_of_isSymm {n B : ℕ} {M : Matrix (Fin n) 
     rw [hquad_eq]
     exact mul_neg_of_neg_of_pos (neg_lt_zero.2 hd_pos) hpS_sum_pos
 
+/-- If a symmetric integer matrix `M` has a nonnegative real vector with negative quadratic form,
+then it has a nonnegative integer vector `p` with `p ⬝ᵥ M *ᵥ p < 0` and entries bounded by
+`Nat.factorial (Fintype.card V) * (Fintype.card V * (max B 1) ^ 2 + 1) ^ Fintype.card V`, where
+`B` bounds `|M i j|`. (The KKT + `Matrix.exists_int_nonneg_mulVec_eq` proof and this explicit
+bound are this library's formulation, not verified against [MurtyKabadi1987].) -/
+theorem exists_nat_dotProduct_lt_zero_of_isSymm {V : Type*} [Fintype V] {B : ℕ} {M : Matrix V V ℤ}
+    (hSymm : M.IsSymm) (hB : ∀ i j, |M i j| ≤ (B : ℤ))
+    (hnc : ¬ (M.map (Int.cast : ℤ → ℝ)).IsCopositive) :
+    ∃ p : V → ℕ,
+      (∀ v, p v ≤
+          Nat.factorial (Fintype.card V) * (Fintype.card V * (max B 1) ^ 2 + 1) ^ Fintype.card V) ∧
+        (fun v => (p v : ℤ)) ⬝ᵥ (M *ᵥ fun v => (p v : ℤ)) < 0 := by
+  classical
+  obtain ⟨e⟩ := Fintype.truncEquivFin V
+  let M_fin : Matrix (Fin (Fintype.card V)) (Fin (Fintype.card V)) ℤ :=
+    Matrix.of fun i j => M (e.symm i) (e.symm j)
+  have hSymm_fin : M_fin.IsSymm := by
+    ext i j
+    simp only [M_fin, transpose_apply, of_apply]
+    exact congrFun (congrFun hSymm (e.symm i)) (e.symm j)
+  have hB_fin : ∀ i j, |M_fin i j| ≤ (B : ℤ) := fun i j => hB (e.symm i) (e.symm j)
+  have hnc_fin : ¬ (M_fin.map (Int.cast : ℤ → ℝ)).IsCopositive := by
+    intro hcop
+    apply hnc
+    intro x hx
+    have hsub := hcop (x ∘ e.symm) fun i => hx (e.symm i)
+    have hdot :
+        (x ∘ e.symm) ⬝ᵥ (M_fin.map (Int.cast : ℤ → ℝ) *ᵥ (x ∘ e.symm)) =
+          x ⬝ᵥ (M.map (Int.cast : ℤ → ℝ) *ᵥ x) := by
+      simp only [dotProduct, mulVec, Function.comp_apply, M_fin, map_apply, of_apply]
+      refine Fintype.sum_equiv e.symm _ _ fun i => ?_
+      refine congrArg (x (e.symm i) * ·) ?_
+      exact Fintype.sum_equiv e.symm _ _ fun _ => rfl
+    rwa [hdot] at hsub
+  obtain ⟨p_fin, hp_le, hp_neg⟩ :=
+    exists_nat_dotProduct_lt_zero_of_isSymm_fin hSymm_fin hB_fin hnc_fin
+  refine ⟨fun v => p_fin (e v), fun v => hp_le (e v), ?_⟩
+  have hdotZ :
+      (fun v => (p_fin (e v) : ℤ)) ⬝ᵥ (M *ᵥ fun v => (p_fin (e v) : ℤ)) =
+        (fun i => (p_fin i : ℤ)) ⬝ᵥ (M_fin *ᵥ fun i => (p_fin i : ℤ)) := by
+    simp only [dotProduct, mulVec, M_fin, of_apply]
+    refine (Fintype.sum_equiv e.symm _ _ fun i => ?_).symm
+    simp only [Equiv.apply_symm_apply]
+    refine congrArg ((p_fin i : ℤ) * ·) ?_
+    exact Fintype.sum_equiv e.symm _ _ fun _ => by simp only [Equiv.apply_symm_apply]
+  rwa [hdotZ]
+
 /-- For a symmetric integer matrix, copositivity over `ℝ` coincides with nonnegativity on all
 nonnegative integer vectors. -/
-theorem isCopositive_int_real_iff_nat {n : ℕ} {M : Matrix (Fin n) (Fin n) ℤ} (hSymm : M.IsSymm) :
+theorem isCopositive_int_real_iff_nat {V : Type*} [Fintype V] {M : Matrix V V ℤ}
+    (hSymm : M.IsSymm) :
     (M.map (Int.cast : ℤ → ℝ)).IsCopositive ↔
-      ∀ p : Fin n → ℕ, 0 ≤ (fun i => (p i : ℤ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℤ)) := by
+      ∀ p : V → ℕ, 0 ≤ (fun i => (p i : ℤ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℤ)) := by
   constructor
   · intro hcop p
     have hreal := hcop (fun i => (p i : ℝ)) fun i => Nat.cast_nonneg (p i)
@@ -390,38 +415,33 @@ theorem isCopositive_int_real_iff_nat {n : ℕ} {M : Matrix (Fin n) (Fin n) ℤ}
         from Int.cast_lt_zero.2 hn) hreal
   · intro hnat
     by_contra hnc
-    let B : ℕ := Finset.univ.sup fun p : Fin n × Fin n => (M p.1 p.2).natAbs
+    let B : ℕ := Finset.univ.sup fun p : V × V => (M p.1 p.2).natAbs
     have hB : ∀ i j, |M i j| ≤ (B : ℤ) := fun i j => by
       rw [← Int.natCast_natAbs (M i j)]
-      exact Int.ofNat_le.2 (Finset.le_sup (f := fun p : Fin n × Fin n => (M p.1 p.2).natAbs)
+      exact Int.ofNat_le.2 (Finset.le_sup (f := fun p : V × V => (M p.1 p.2).natAbs)
         (Finset.mem_univ (i, j)))
     obtain ⟨p, _, hp_neg⟩ := exists_nat_dotProduct_lt_zero_of_isSymm hSymm hB hnc
     exact (not_lt_of_ge (hnat p)) hp_neg
 
-private theorem rat_cast_sum {ι : Type*} (s : Finset ι) (f : ι → ℚ) :
-    (Rat.cast (∑ i ∈ s, f i) : ℝ) = ∑ i ∈ s, (Rat.cast (f i) : ℝ) := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp only [Finset.sum_empty, Rat.cast_zero]
-  | @insert a s ha ih => simp only [Finset.sum_insert ha, Rat.cast_add, ih]
-
-private theorem isCopositive_of_map_real {n : ℕ} {M : Matrix (Fin n) (Fin n) ℚ}
+private theorem isCopositive_of_map_real {V : Type*} [Fintype V] {M : Matrix V V ℚ}
     (hcopR : (M.map (Rat.cast : ℚ → ℝ)).IsCopositive) : M.IsCopositive := by
   intro x hx
   have hR := hcopR (fun i => ((x i : ℚ) : ℝ)) fun i => Rat.cast_nonneg.2 (hx i)
   have hcast :
       (Rat.cast (x ⬝ᵥ (M *ᵥ x)) : ℝ) =
         (fun i => ((x i : ℚ) : ℝ)) ⬝ᵥ (M.map (Rat.cast : ℚ → ℝ) *ᵥ fun i => ((x i : ℚ) : ℝ)) := by
-    simp only [dotProduct, mulVec, map_apply, rat_cast_sum, Rat.cast_mul]
+    simp only [dotProduct, mulVec, map_apply, Rat.cast_sum, Rat.cast_mul]
   rw [← hcast] at hR
   exact Rat.cast_nonneg.1 hR
 
-private theorem exists_rat_clearDenom {n : ℕ} (M : Matrix (Fin n) (Fin n) ℚ) :
-    ∃ (d B : ℕ) (M_Z : Matrix (Fin n) (Fin n) ℤ),
+private theorem exists_rat_clearDenom {V : Type*} [Finite V] (M : Matrix V V ℚ) :
+    ∃ (d B : ℕ) (M_Z : Matrix V V ℤ),
       0 < d ∧ (∀ i j, (d : ℚ) * M i j = (M_Z i j : ℚ)) ∧ ∀ i j, |M_Z i j| ≤ (B : ℤ) := by
-  let d : ℕ := Finset.univ.prod fun p : Fin n × Fin n => (M p.1 p.2).den
+  classical
+  let : Fintype V := Fintype.ofFinite V
+  let d : ℕ := Finset.univ.prod fun p : V × V => (M p.1 p.2).den
   have hd : 0 < d := Finset.prod_pos fun p _ => (M p.1 p.2).pos
-  let M_Z : Matrix (Fin n) (Fin n) ℤ := Matrix.of fun i j =>
+  let M_Z : Matrix V V ℤ := Matrix.of fun i j =>
     (M i j).num * ((d / (M i j).den : ℕ) : ℤ)
   have hMZ : ∀ i j, (d : ℚ) * M i j = (M_Z i j : ℚ) := by
     intro i j
@@ -440,19 +460,20 @@ private theorem exists_rat_clearDenom {n : ℕ} (M : Matrix (Fin n) (Fin n) ℚ)
       _ = (M_Z i j : ℚ) := by
         simp only [M_Z, of_apply, Int.cast_mul, Int.cast_natCast]
         ring
-  let B : ℕ := Finset.univ.sup fun p : Fin n × Fin n => (M_Z p.1 p.2).natAbs
+  let B : ℕ := Finset.univ.sup fun p : V × V => (M_Z p.1 p.2).natAbs
   have hB : ∀ i j, |M_Z i j| ≤ (B : ℤ) := fun i j => by
     rw [← Int.natCast_natAbs (M_Z i j)]
-    exact Int.ofNat_le.2 (Finset.le_sup (f := fun p : Fin n × Fin n => (M_Z p.1 p.2).natAbs)
+    exact Int.ofNat_le.2 (Finset.le_sup (f := fun p : V × V => (M_Z p.1 p.2).natAbs)
       (Finset.mem_univ (i, j)))
   exact ⟨d, B, M_Z, hd, hMZ, hB⟩
 
-private theorem exists_nat_dotProduct_lt_zero_of_rat_real {n d B : ℕ}
-    {M : Matrix (Fin n) (Fin n) ℚ} {M_Z : Matrix (Fin n) (Fin n) ℤ}
+private theorem exists_nat_dotProduct_lt_zero_of_rat_real {V : Type*} [Fintype V] {d B : ℕ}
+    {M : Matrix V V ℚ} {M_Z : Matrix V V ℤ}
     (hd : 0 < d) (hSymm : M.IsSymm) (hMZ : ∀ i j, (d : ℚ) * M i j = (M_Z i j : ℚ))
     (hB : ∀ i j, |M_Z i j| ≤ (B : ℤ)) (hnc : ¬ (M.map (Rat.cast : ℚ → ℝ)).IsCopositive) :
-    ∃ p : Fin n → ℕ,
-      (∀ i, p i ≤ Nat.factorial n * (n * (max B 1) ^ 2 + 1) ^ n) ∧
+    ∃ p : V → ℕ,
+      (∀ i, p i ≤
+          Nat.factorial (Fintype.card V) * (Fintype.card V * (max B 1) ^ 2 + 1) ^ Fintype.card V) ∧
         (fun i => (p i : ℚ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℚ)) < 0 := by
   have hd_ne : (d : ℚ) ≠ 0 := Nat.cast_ne_zero.2 hd.ne'
   have hSymmZ : M_Z.IsSymm := by
@@ -494,19 +515,23 @@ private theorem exists_nat_dotProduct_lt_zero_of_rat_real {n d B : ℕ}
 
 /-- Given a symmetric rational matrix `M` and an integer scaling `(d : ℚ) * M = M_Z` with `0 < d`
 and `|M_Z i j| ≤ B`, non-copositivity of `M` yields a nonnegative integer certificate `p` with
-`p ⬝ᵥ M *ᵥ p < 0` and entries bounded by `Nat.factorial n * (n * (max B 1) ^ 2 + 1) ^ n`. -/
-theorem exists_nat_dotProduct_lt_zero_of_rat {n d B : ℕ}
-    {M : Matrix (Fin n) (Fin n) ℚ} {M_Z : Matrix (Fin n) (Fin n) ℤ}
+`p ⬝ᵥ M *ᵥ p < 0` and entries bounded by
+`Nat.factorial (Fintype.card V) * (Fintype.card V * (max B 1) ^ 2 + 1) ^ Fintype.card V`
+(library proof and bound, not verified against [MurtyKabadi1987]). -/
+theorem exists_nat_dotProduct_lt_zero_of_rat {V : Type*} [Fintype V] {d B : ℕ}
+    {M : Matrix V V ℚ} {M_Z : Matrix V V ℤ}
     (hd : 0 < d) (hSymm : M.IsSymm) (hMZ : ∀ i j, (d : ℚ) * M i j = (M_Z i j : ℚ))
     (hB : ∀ i j, |M_Z i j| ≤ (B : ℤ)) (hnc : ¬ M.IsCopositive) :
-    ∃ p : Fin n → ℕ,
-      (∀ i, p i ≤ Nat.factorial n * (n * (max B 1) ^ 2 + 1) ^ n) ∧
+    ∃ p : V → ℕ,
+      (∀ i, p i ≤
+          Nat.factorial (Fintype.card V) * (Fintype.card V * (max B 1) ^ 2 + 1) ^ Fintype.card V) ∧
         (fun i => (p i : ℚ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℚ)) < 0 :=
   exists_nat_dotProduct_lt_zero_of_rat_real hd hSymm hMZ hB fun hreal =>
     hnc (isCopositive_of_map_real hreal)
 
 /-- For a symmetric rational matrix, copositivity over `ℚ` and over `ℝ` coincide. -/
-theorem isCopositive_rat_iff_map_real {n : ℕ} {M : Matrix (Fin n) (Fin n) ℚ} (hSymm : M.IsSymm) :
+theorem isCopositive_rat_iff_map_real {V : Type*} [Fintype V] {M : Matrix V V ℚ}
+    (hSymm : M.IsSymm) :
     M.IsCopositive ↔ (M.map (Rat.cast : ℚ → ℝ)).IsCopositive := by
   constructor
   · intro hcop
@@ -518,8 +543,8 @@ theorem isCopositive_rat_iff_map_real {n : ℕ} {M : Matrix (Fin n) (Fin n) ℚ}
 
 /-- For a symmetric rational matrix, copositivity over `ℚ` coincides with nonnegativity on all
 nonnegative integer vectors. -/
-theorem isCopositive_rat_iff_nat {n : ℕ} {M : Matrix (Fin n) (Fin n) ℚ} (hSymm : M.IsSymm) :
-    M.IsCopositive ↔ ∀ p : Fin n → ℕ, 0 ≤ (fun i => (p i : ℚ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℚ)) := by
+theorem isCopositive_rat_iff_nat {V : Type*} [Fintype V] {M : Matrix V V ℚ} (hSymm : M.IsSymm) :
+    M.IsCopositive ↔ ∀ p : V → ℕ, 0 ≤ (fun i => (p i : ℚ)) ⬝ᵥ (M *ᵥ fun i => (p i : ℚ)) := by
   constructor
   · intro hcop p
     exact hcop (fun i => (p i : ℚ)) fun i => Nat.cast_nonneg (p i)
