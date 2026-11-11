@@ -69,42 +69,6 @@ open Finset Cslib.Probability
 
 variable {U : Type*} [Fintype U] [DecidableEq U] {k : ℕ}
 
-/-- **Fibres of overwriting on `P`**: summing `H` over the tuples `r` overwritten by `b₀` on `P`
-counts each tuple that agrees with `b₀` on `P` once for each of the `#U ^ #P` values `r` had
-there. -/
-theorem sum_piecewise_eq_card_pow_nsmul_sum {M : Type*} [AddCommMonoid M] (P : Finset (Fin k))
-    (b₀ : Fin k → U) (H : (Fin k → U) → M) :
-    ∑ r : Fin k → U, H (P.piecewise b₀ r) =
-      Fintype.card U ^ #P • ∑ y ∈ {y : Fin k → U | ∀ i ∈ P, y i = b₀ i}, H y := by
-  classical
-  rw [← sum_fiberwise_of_maps_to (s := univ) (t := {y : Fin k → U | ∀ i ∈ P, y i = b₀ i})
-    (g := fun r => P.piecewise b₀ r) (fun r _ => by
-      simp only [mem_filter, mem_univ, true_and]
-      intro i hi
-      exact P.piecewise_eq_of_mem _ _ hi), smul_sum]
-  refine sum_congr rfl fun y hy => ?_
-  have hy' : ∀ i ∈ P, y i = b₀ i := by simpa using hy
-  rw [sum_congr rfl fun r hr => by rw [(mem_filter.1 hr).2], sum_const]
-  congr 1
-  have hfib : ({r ∈ (univ : Finset (Fin k → U)) | P.piecewise b₀ r = y}) =
-      Fintype.piFinset fun i => if i ∈ P then univ else {y i} := by
-    ext r
-    simp only [mem_filter, mem_univ, true_and, Fintype.mem_piFinset]
-    constructor
-    · rintro rfl i
-      split_ifs with hi
-      · exact mem_univ _
-      · simp [P.piecewise_eq_of_notMem _ _ hi]
-    · intro h
-      funext i
-      by_cases hi : i ∈ P
-      · rw [P.piecewise_eq_of_mem _ _ hi, hy' i hi]
-      · have := h i
-        simp only [hi, ↓reduceIte, mem_singleton] at this
-        rw [P.piecewise_eq_of_notMem _ _ hi, this]
-  rw [hfib, Fintype.card_piFinset]
-  simp [apply_ite card, prod_ite_mem]
-
 /-- A trial: a free position `j` and a filler tuple `r`. -/
 abbrev Trial (U : Type*) (k : ℕ) := Fin k × (Fin k → U)
 
@@ -329,30 +293,6 @@ theorem sum_card_badPairs (C' : (Fin k → U) → Fin k → V) (f : U → V) (P 
   rw [← card_eq_sum_card_fiberwise (fun _ _ => mem_univ _), card_filter, sum_product, sum_comm]
   refine sum_congr rfl fun y _ => ?_
   rw [card_filter]
-
-omit [DecidableEq U] in
-/-- **Edges into a dense slice**: for a family `S` of tuples that agree on `P`, the free entries
-carry weight at least `(#S - #U ^ w exp (-μ w / 8)) μ w / 2`, where `w = #Pᶜ`. This applies the
-tuple-sampler weight bound to the coordinates outside `P`. -/
-theorem sub_mul_le_two_mul_sum_sum_compl [Nonempty U] (F : U → ℝ) (hF : ∀ x, F x ∈ Set.Icc 0 1)
-    {μ : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ * Fintype.card U ≤ ∑ x, F x) (P : Finset (Fin k))
-    (b₀ : Fin k → U) (S : Finset (Fin k → U)) (hS : ∀ y ∈ S, ∀ i ∈ P, y i = b₀ i) :
-    ((#S : ℝ) - Fintype.card U ^ #Pᶜ * Real.exp (-(μ * #Pᶜ / 8))) * (μ * #Pᶜ) ≤
-      2 * ∑ y ∈ S, ∑ j ∈ Pᶜ, F (y j) := by
-  classical
-  let ρ : (Fin k → U) → ({i // i ∈ Pᶜ} → U) := fun y i => y i
-  have hinj : Set.InjOn ρ S := by
-    intro y hy z hz h
-    funext i
-    by_cases hi : i ∈ P
-    · rw [hS y hy i hi, hS z hz i hi]
-    · exact congrFun h ⟨i, mem_compl.2 hi⟩
-  have h := sub_mul_le_two_mul_sum_sum (ι := {i // i ∈ Pᶜ}) F hF hμ0 hμ (S.image ρ)
-  rw [card_image_of_injOn hinj, sum_image hinj, Fintype.card_coe] at h
-  refine h.trans_eq ?_
-  congr 1
-  refine sum_congr rfl fun y _ => ?_
-  exact sum_coe_sort Pᶜ fun j => F (y j)
 
 /-- **Few inputs are rarely accepted**: if the consistent tuples have density at least `μ` among
 the tuples agreeing with `b₀` on `P`, the inputs with fewer than `#S w / (4 #U)` accepted pairs,
