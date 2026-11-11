@@ -31,8 +31,10 @@ Two consequences describe the bipartite graph joining each point `x : U` to each
 * **Edges into a dense family** (`Cslib.Probability.sub_mul_le_two_mul_sum_sum`): summing
   `F` over the entries of the tuples in `W` gives at least
   `(#W - #U ^ #ι exp (-μ #ι / 8)) μ #ι / 2`.
-* **Regrouping by points** (`Cslib.Probability.sum_sum_comp_eq_sum_mul`): the same sum is
-  `∑ x, d x F x`, where `d x` counts the pairs `(b, i)` with `b ∈ W` and `b i = x`.
+* **Regrouping by points** (`Cslib.Probability.sum_sum_comp_eq_sum_nsmul`): the same sum, over
+  the positions in any set `s`, is `∑ x, d x • F x`, where `d x` counts the pairs `(b, i)` with
+  `b ∈ W`, `i ∈ s` and `b i = x`; `Cslib.Probability.sum_sum_comp_eq_sum_mul` is the real form over
+  all positions.
 
 Resampling one coordinate of a uniform tuple at a uniform value leaves it uniform, so drawing a
 point and planting it at a fixed coordinate of a uniform tuple is the same as drawing a uniform
@@ -42,15 +44,18 @@ tuple and reading the point off that coordinate
 numbering), with uniform tuples as the library form of their `k`-sets: the lower tail is the
 one-sided part of their Lemma 2.12 sampler property (their Definition 2.9 also bounds the upper
 deviation, which is not proved here), and the weight bound is of the type of their Lemma 2.13.
-Their Lemma 2.14 is not proved here; this file supplies only the regrouping identity used in its
-proof, and the inequality is assembled with the decoder.
+Their Lemma 2.14 is not proved here. The decoder module
+(`CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Decode`) uses
+the weight bound and the regrouping over the free positions to prove its analogue of their
+Lemma 3.9, and does without Lemma 2.14.
 
 ## Main results
 
 * `Cslib.Probability.card_filter_sum_le_half_le_exp`: the lower tail.
 * `Cslib.Probability.sum_sum_update_eq_card_nsmul_sum`: planting a point at a coordinate.
 * `Cslib.Probability.sub_mul_le_two_mul_sum_sum`: edges into a dense family.
-* `Cslib.Probability.sum_sum_comp_eq_sum_mul`: regrouping the edges by points.
+* `Cslib.Probability.sum_sum_comp_eq_sum_nsmul`, `Cslib.Probability.sum_sum_comp_eq_sum_mul`:
+  regrouping the edges by points.
 
 ## References
 
@@ -158,13 +163,22 @@ theorem sub_mul_le_two_mul_sum_sum [Nonempty U] (F : U → ℝ)
     linarith
   nlinarith
 
-/-- **Regrouping by points**: summing `F` over the entries of the tuples in `W` is summing `F x`
-weighted by the number of pairs `(b, i)` with `b ∈ W` and `b i = x`. -/
+omit [Fintype ι] in
+/-- **Regrouping by points**: summing `F` over the entries at positions `s` of the tuples in `W` is
+summing `F x` weighted by the number of pairs `(b, i)` with `b ∈ W`, `i ∈ s` and `b i = x`. -/
+theorem sum_sum_comp_eq_sum_nsmul [DecidableEq U] {M : Type*} [AddCommMonoid M] (F : U → M)
+    (W : Finset (ι → U)) (s : Finset ι) :
+    ∑ b ∈ W, ∑ i ∈ s, F (b i) = ∑ x, #((W ×ˢ s).filter fun p => p.1 p.2 = x) • F x := by
+  rw [← sum_product', ← sum_fiberwise (W ×ˢ s) (fun p => p.1 p.2) fun p => F (p.1 p.2)]
+  refine sum_congr rfl fun x _ => ?_
+  rw [sum_congr rfl fun p hp => by rw [(mem_filter.1 hp).2], sum_const]
+
+/-- **Regrouping by points**, real form over all positions: summing `F` over the entries of the
+tuples in `W` is summing `F x` weighted by the number of pairs `(b, i)` with `b ∈ W` and
+`b i = x`. -/
 theorem sum_sum_comp_eq_sum_mul [DecidableEq U] (F : U → ℝ) (W : Finset (ι → U)) :
     ∑ b ∈ W, ∑ i, F (b i) =
       ∑ x, (#((W ×ˢ (univ : Finset ι)).filter fun p => p.1 p.2 = x) : ℝ) * F x := by
-  rw [← sum_product', ← sum_fiberwise (W ×ˢ univ) (fun p => p.1 p.2) fun p => F (p.1 p.2)]
-  refine sum_congr rfl fun x _ => ?_
-  rw [sum_congr rfl fun p hp => by rw [(mem_filter.1 hp).2], sum_const, nsmul_eq_mul]
+  simp only [sum_sum_comp_eq_sum_nsmul F W univ, nsmul_eq_mul]
 
 end Cslib.Probability

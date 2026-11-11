@@ -32,10 +32,11 @@ that conjunction (Theorem 3.7). Inputs are the `ℓ` bits of `i` followed by the
 
 This differs from the source in these ways:
 
-* only `p = 2` is built, over `BinaryField e` with `e = binaryFieldDegree n`, so the field has
-  between `n` and `2 n` elements;
-* Theorem 3.6 is proved with the cell `(j, v)` hard-wired, which is how Theorem 3.7 uses it; the
-  circuit taking `j` and `v` as inputs is not built;
+* only `p = 2` is built, over `BinaryField e` with `e = binaryFieldDegree n`, so for `n ≥ 1` the
+  field has between `n` and `2 n` elements;
+* Theorem 3.6 is proved with the cell `(j, v)` hard-wired (`memCircuit`), and the circuit taking
+  `j` and `v` as inputs is not built; Theorem 3.7's construction (`mxCircuit`) inlines the same
+  test for every cell, sharing the literals of each row;
 * the bounds are explicit and stronger than stated: the selection has depth at most `4` and
   `n (2 e + 2 ^ e + 1) ≤ 5 n²` gates, independent of `ℓ`, where the source has `O(ℓ n³ log n)`
   gates and depth `d_NW + 2`; the conjunctions of one row share its `2 e` literals;
