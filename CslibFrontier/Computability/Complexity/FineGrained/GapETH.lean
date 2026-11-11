@@ -570,12 +570,13 @@ theorem SolvesWithErrorInExpTime.GapKSAT_perfect_of_KSAT {k : ℕ} {s : ℝ} (hs
 /-- **Gap Exponential Time Hypothesis (`GapETH`) variant**: this adaptation posits that
 for some soundness threshold `0 ≤ s < 1` and rate `δ > 0`, `GapThreeSAT s` cannot be solved
 deterministically within time `2 ^ (δ * n) * poly(L)` where `n = φ.numVars`.
-This definition ranges over unrestricted clause density and existential `s` with a closed no-promise.
-It explicitly quantifies over `ComputableInTimeO`, using occurring variables `numVars`, the `encCNF` encoding,
-a polynomial factor in encoded length `L`, and the deterministic time model.
-This is an explicitly documented adaptation and does not assert equivalence to the sparse source formulations:
-[Dinur2016, Hypothesis 2.5, p.5] has fixed soundness `< 0.9` and at most `D n` clauses,
-and [ManurangsiRaghavendra2017, §1.1, p.78:5] states the approximation ETHA formulation. -/
+This definition ranges over unrestricted clause density and existential `s` with a closed
+no-promise. It explicitly quantifies over `ComputableInTimeO`, using occurring variables
+`numVars`, the `encCNF` encoding, a polynomial factor in encoded length `L`, and the
+deterministic time model. This is an explicitly documented adaptation and does not assert
+equivalence to the sparse source formulations: [Dinur2016, Hypothesis 2.5, p.5] has fixed
+soundness `< 0.9` and at most `D n` clauses, and [ManurangsiRaghavendra2017, §1.1, p.78:5]
+states the approximation ETHA formulation. -/
 @[expose] def GapETH : Prop :=
   ∃ s : ℝ, 0 ≤ s ∧ s < 1 ∧ ∃ δ : ℝ, 0 < δ ∧
     ¬SolvesPromiseInExpTime (GapThreeSAT s) encCNF CNF.numVars δ
