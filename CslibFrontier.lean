@@ -1056,6 +1056,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Continuity
 public import CslibFrontier.Computability.Circuit.Boolean.Convolution
 public import CslibFrontier.Computability.Circuit.Boolean.Correction
 public import CslibFrontier.Computability.Circuit.Boolean.CriticalPath
+public import CslibFrontier.Computability.Circuit.Boolean.DeMorgan
 public import CslibFrontier.Computability.Circuit.Boolean.DepthClasses
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime
 public import CslibFrontier.Computability.Circuit.Boolean.DepthTime.PolyTime
@@ -1482,6 +1483,7 @@ public import CslibFrontier.Computability.Circuit.Fusion.Simulation
 public import CslibFrontier.Computability.Circuit.Fusion.SimulationContext
 public import CslibFrontier.Computability.Circuit.HintDecoding
 public import CslibFrontier.Computability.Circuit.InnerSize
+public import CslibFrontier.Computability.Circuit.Inputization
 public import CslibFrontier.Computability.Circuit.Iteration
 public import CslibFrontier.Computability.Circuit.KernelVector
 public import CslibFrontier.Computability.Circuit.Linearize
@@ -1514,6 +1516,7 @@ public import CslibFrontier.Computability.Circuit.Monotone.Formula
 public import CslibFrontier.Computability.Circuit.Monotone.KarchmerWigderson
 public import CslibFrontier.Computability.Circuit.Monotone.Set
 public import CslibFrontier.Computability.Circuit.Monotone.Synthesis
+public import CslibFrontier.Computability.Circuit.Normalization
 public import CslibFrontier.Computability.Circuit.OutputDistribution
 public import CslibFrontier.Computability.Circuit.Parallel
 public import CslibFrontier.Computability.Circuit.Pebbling
@@ -2621,6 +2624,8 @@ public import CslibFrontier.Computability.LogSpaceDerandomization.StochasticAtom
 public import CslibFrontier.Computability.LogSpaceDerandomization.TrueSampleMeans
 public import CslibFrontier.Computability.MCSP.AntiChecker
 public import CslibFrontier.Computability.MCSP.AntiChecker.Certificate
+public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle
+public import CslibFrontier.Computability.MCSP.AntiChecker.Oracle.PolyTime
 public import CslibFrontier.Computability.MCSP.AntiChecker.Threshold
 public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.MCSP.FormulaMagnification
@@ -2632,6 +2637,7 @@ public import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAve
 public import CslibFrontier.Computability.MCSP.HardnessConsequences
 public import CslibFrontier.Computability.MCSP.Magnification
 public import CslibFrontier.Computability.MCSP.Magnification.GapMCSP
+public import CslibFrontier.Computability.MCSP.Multi
 public import CslibFrontier.Computability.MCSP.NP
 public import CslibFrontier.Computability.MCSP.Partial
 public import CslibFrontier.Computability.MCSP.PartialETH
@@ -4801,6 +4807,12 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.IndepNum
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.LovaszTheta
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MatrixTree
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Metric
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Basic
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Bipartite
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Realization
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Subdivision
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MotzkinStraus
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OddCycleTransversal
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.OrientedIncidence
