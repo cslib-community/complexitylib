@@ -371,21 +371,13 @@ private theorem measurableSet_clause_eval (v : Option V → F) (c : Clause V) :
     simpa only [Clause.eval_cons, Bool.or_eq_true, Set.ofPred_or] using
       (measurableSet_literal_eval v ℓ).union ih
 
-omit [Fintype ι] [NormedAddCommGroup F] [InnerProductSpace ℝ F] [BorelSpace F] in
-private theorem integrable_ite_pred (μ : Measure F) [IsFiniteMeasure μ]
-    {p : F → Prop} [DecidablePred p] (hp : MeasurableSet {r | p r}) (c : ℝ) :
-    Integrable (fun r => if p r then c else 0) μ := by
-  rw [show (fun r : F => if p r then c else 0) = {r | p r}.indicator (fun _ => c) from
-    funext fun r => by simp only [Set.indicator_apply, Set.mem_ofPred_eq]]
-  exact (integrable_const c).indicator hp
-
 /-- The weighted satisfied-clause value under random-hyperplane rounding is integrable. -/
 theorem integrable_satValue_satHyperplaneAssignment (clauses : ι → Clause V) (w : ι → ℝ)
     (v : Option V → F) (μ : Measure F) [IsFiniteMeasure μ] :
     Integrable (fun r => satValue clauses w (satHyperplaneAssignment v r)) μ := by
   unfold satValue
   exact integrable_finsetSum _ fun j _ =>
-    integrable_ite_pred μ (measurableSet_clause_eval v (clauses j)) (w j)
+    integrable_ite_const μ (measurableSet_clause_eval v (clauses j)) (w j)
 
 variable [FiniteDimensional ℝ F]
 
@@ -464,10 +456,10 @@ private theorem goemansWilliamsonConstant_mul_satSdpClause_le_integral {v : Opti
     exact goemansWilliamsonConstant_mul_one_add_le_one_sub_arccos (norm_litVector hv ℓ₁) (hv none)
   · have hi1 : Integrable (fun r : F =>
         if ℓ₁.eval (satHyperplaneAssignment v r) = true then (1 : ℝ) else 0) (stdGaussian F) :=
-      integrable_ite_pred (stdGaussian F) (measurableSet_literal_eval v ℓ₁) 1
+      integrable_ite_const (stdGaussian F) (measurableSet_literal_eval v ℓ₁) 1
     have hi2 : Integrable (fun r : F =>
         if ℓ₂.eval (satHyperplaneAssignment v r) = true then (1 : ℝ) else 0) (stdGaussian F) :=
-      integrable_ite_pred (stdGaussian F) (measurableSet_literal_eval v ℓ₂) 1
+      integrable_ite_const (stdGaussian F) (measurableSet_literal_eval v ℓ₂) 1
     have hne_set : MeasurableSet {r : F | ℓ₁.eval (satHyperplaneAssignment v r) ≠
         ℓ₂.eval (satHyperplaneAssignment v r)} := by
       have hm : {r : F | ℓ₁.eval (satHyperplaneAssignment v r) ≠
@@ -488,7 +480,7 @@ private theorem goemansWilliamsonConstant_mul_satSdpClause_le_integral {v : Opti
     have hip : Integrable (fun r : F =>
         if ℓ₁.eval (satHyperplaneAssignment v r) ≠ ℓ₂.eval (satHyperplaneAssignment v r)
           then (1 : ℝ) else 0) (stdGaussian F) :=
-      integrable_ite_pred (stdGaussian F) hne_set 1
+      integrable_ite_const (stdGaussian F) hne_set 1
     have hi12 : Integrable (fun r : F =>
         (if ℓ₁.eval (satHyperplaneAssignment v r) = true then (1 : ℝ) else 0) +
           (if ℓ₂.eval (satHyperplaneAssignment v r) = true then 1 else 0)) (stdGaussian F) :=
@@ -527,7 +519,7 @@ theorem goemansWilliamsonConstant_mul_satSdpValue_le_integral (clauses : ι → 
       ∫ r, satValue clauses w (satHyperplaneAssignment v r) ∂stdGaussian F := by
   unfold satValue satSdpValue
   rw [integral_finsetSum _ fun j _ =>
-    integrable_ite_pred (stdGaussian F) (measurableSet_clause_eval v (clauses j)) (w j),
+    integrable_ite_const (stdGaussian F) (measurableSet_clause_eval v (clauses j)) (w j),
     Finset.mul_sum]
   refine Finset.sum_le_sum fun j _ => ?_
   have hmul : (fun r : F => if (clauses j).eval (satHyperplaneAssignment v r) then w j else 0) =

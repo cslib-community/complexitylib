@@ -103,9 +103,10 @@ extensions.
   guarantee.
 * `exists_isMaxOn_sdpValue`: the relaxation has an optimal solution.
 * `measurable_hyperplaneSide`, `measurableSet_hyperplaneSide_ne`, `measurableSet_hyperplaneSide_eq`,
-  `integral_hyperplaneSide_ne`, `integral_hyperplaneSide_eq`,
-  `goemansWilliamsonConstant_mul_one_add_le_one_sub_arccos`: measurability, separation/same-side
-  Gaussian integrals, and same-side Lemma 3.4 bound reused by the §7 extensions.
+  `integrable_ite_const`, `integral_hyperplaneSide_ne`, `integral_hyperplaneSide_eq`,
+  `goemansWilliamsonConstant_mul_one_add_le_one_sub_arccos`: measurability, indicator
+  integrability, separation/same-side Gaussian integrals, and same-side Lemma 3.4 bound reused
+  by the §7 extensions.
 
 ## References
 
@@ -229,6 +230,18 @@ measurable. -/
 theorem measurableSet_hyperplaneSide_eq (v : V → F) (i j : V) :
     MeasurableSet {r : F | hyperplaneSide v r i = hyperplaneSide v r j} := by
   simpa only [ne_eq, Set.compl_ofPred, not_not] using (measurableSet_hyperplaneSide_ne v i j).compl
+
+omit [Fintype ι] [NormedAddCommGroup F] [InnerProductSpace ℝ F] [BorelSpace F] in
+/-- An `if-then-else` indicator with constant value `c` on a measurable predicate is integrable
+under any finite measure. -/
+theorem integrable_ite_const (μ : Measure F) [IsFiniteMeasure μ]
+    {p : F → Prop} [DecidablePred p] (hp : MeasurableSet {r | p r}) (c : ℝ) :
+    Integrable (fun r => if p r then c else 0) μ := by
+  have heq : (fun r : F => if p r then c else 0) = {r | p r}.indicator (fun _ => c) := by
+    ext r
+    simp only [Set.indicator_apply, Set.mem_ofPred_eq]
+  rw [heq]
+  exact (integrable_const c).indicator hp
 
 /-- The weight of the rounded cut is integrable. -/
 theorem integrable_cutValue_hyperplaneSide (ends : ι → V × V) (w : ι → ℝ) (v : V → F)

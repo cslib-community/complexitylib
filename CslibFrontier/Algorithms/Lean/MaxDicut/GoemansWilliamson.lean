@@ -138,34 +138,27 @@ theorem goemansWilliamsonDicutConstant_mul_sub_add_inner_le {u w z : F}
 variable [MeasurableSpace F] [BorelSpace F] [FiniteDimensional ℝ F]
 
 omit [Fintype ι] [BorelSpace F] in
-private theorem integral_bool_triple_identity
-    {p p₁ p₂ p₃ : F → Prop} [DecidablePred p] [DecidablePred p₁] [DecidablePred p₂]
-    [DecidablePred p₃] (hp₁ : MeasurableSet {r | p₁ r}) (hp₂ : MeasurableSet {r | p₂ r})
-    (hp₃ : MeasurableSet {r | p₃ r})
-    (hid : ∀ r : F, 2 * (if p r then (1 : ℝ) else 0) =
-      (if p₁ r then 1 else 0) + (if p₂ r then 1 else 0) + (if p₃ r then 1 else 0) - 1) :
-    ∫ r : F, (if p r then (1 : ℝ) else 0) ∂stdGaussian F =
-      ((∫ r : F, (if p₁ r then (1 : ℝ) else 0) ∂stdGaussian F) +
-        (∫ r : F, (if p₂ r then (1 : ℝ) else 0) ∂stdGaussian F) +
-        (∫ r : F, (if p₃ r then (1 : ℝ) else 0) ∂stdGaussian F) - 1) / 2 := by
-  have hi : ∀ {q : F → Prop} [DecidablePred q], MeasurableSet {r | q r} →
-      Integrable (fun r : F => if q r then (1 : ℝ) else 0) (stdGaussian F) := by
-    intro q _ hq
-    rw [show (fun r : F => if q r then (1 : ℝ) else 0) = {r | q r}.indicator (fun _ => 1) from
-      funext fun r => by simp only [Set.indicator_apply, Set.mem_ofPred_eq]]
-    exact (integrable_const 1).indicator hq
-  have hi₁ := hi hp₁
-  have hi₂ := hi hp₂
-  have hi₃ := hi hp₃
+private theorem integral_bool_triple_identity (f g h : F → Bool)
+    (hfg : MeasurableSet {r | f r = g r}) (hfh : MeasurableSet {r | f r = h r})
+    (hgh : MeasurableSet {r | g r = h r}) :
+    ∫ r : F, (if f r = g r ∧ g r = h r then (1 : ℝ) else 0) ∂stdGaussian F =
+      ((∫ r : F, (if f r = g r then (1 : ℝ) else 0) ∂stdGaussian F) +
+        (∫ r : F, (if f r = h r then (1 : ℝ) else 0) ∂stdGaussian F) +
+        (∫ r : F, (if g r = h r then (1 : ℝ) else 0) ∂stdGaussian F) - 1) / 2 := by
+  have hi₁ := integrable_ite_const (stdGaussian F) hfg 1
+  have hi₂ := integrable_ite_const (stdGaussian F) hfh 1
+  have hi₃ := integrable_ite_const (stdGaussian F) hgh 1
   have hi₁₂ : Integrable (fun r : F =>
-      (if p₁ r then (1 : ℝ) else 0) + (if p₂ r then 1 else 0)) (stdGaussian F) := hi₁.add hi₂
+      (if f r = g r then (1 : ℝ) else 0) + (if f r = h r then 1 else 0)) (stdGaussian F) :=
+    hi₁.add hi₂
   have hi₁₂₃ : Integrable (fun r : F =>
-      (if p₁ r then (1 : ℝ) else 0) + (if p₂ r then 1 else 0) +
-        (if p₃ r then 1 else 0)) (stdGaussian F) := hi₁₂.add hi₃
-  have hpoint : (fun r : F => if p r then (1 : ℝ) else 0) = fun r : F =>
-      ((if p₁ r then (1 : ℝ) else 0) + (if p₂ r then 1 else 0) +
-        (if p₃ r then 1 else 0) - 1) / 2 := by
-    ext r; linarith [hid r]
+      (if f r = g r then (1 : ℝ) else 0) + (if f r = h r then 1 else 0) +
+        (if g r = h r then 1 else 0)) (stdGaussian F) := hi₁₂.add hi₃
+  have hpoint : (fun r : F => if f r = g r ∧ g r = h r then (1 : ℝ) else 0) = fun r : F =>
+      ((if f r = g r then (1 : ℝ) else 0) + (if f r = h r then (1 : ℝ) else 0) +
+        (if g r = h r then (1 : ℝ) else 0) - 1) / 2 := by
+    ext r
+    cases f r <;> cases g r <;> cases h r <;> norm_num
   rw [hpoint, integral_div, integral_sub hi₁₂₃ (integrable_const 1), integral_add hi₁₂ hi₃,
     integral_add hi₁ hi₂, integral_const, probReal_univ, smul_eq_mul, mul_one]
 
@@ -176,17 +169,10 @@ theorem integral_hyperplaneSide_all_eq {v : V → F} (hv : ∀ x, ‖v x‖ = 1)
     ∫ r : F, (if hyperplaneSide v r i = hyperplaneSide v r j ∧
         hyperplaneSide v r j = hyperplaneSide v r k then (1 : ℝ) else 0) ∂stdGaussian F =
       1 - (arccos ⟪v i, v j⟫ + arccos ⟪v i, v k⟫ + arccos ⟪v j, v k⟫) / (2 * π) := by
-  have hid : ∀ r : F, 2 * (if hyperplaneSide v r i = hyperplaneSide v r j ∧
-        hyperplaneSide v r j = hyperplaneSide v r k then (1 : ℝ) else 0) =
-      (if hyperplaneSide v r i = hyperplaneSide v r j then 1 else 0) +
-      (if hyperplaneSide v r i = hyperplaneSide v r k then 1 else 0) +
-      (if hyperplaneSide v r j = hyperplaneSide v r k then 1 else 0) - 1 := by
-    intro r
-    cases h1 : hyperplaneSide v r i <;> cases h2 : hyperplaneSide v r j <;>
-      cases h3 : hyperplaneSide v r k <;> norm_num
-  have hint := integral_bool_triple_identity (measurableSet_hyperplaneSide_eq v i j)
-    (measurableSet_hyperplaneSide_eq v i k) (measurableSet_hyperplaneSide_eq v j k) hid
-  rw [hint, integral_hyperplaneSide_eq hv i j, integral_hyperplaneSide_eq hv i k,
+  rw [integral_bool_triple_identity (hyperplaneSide v · i) (hyperplaneSide v · j)
+      (hyperplaneSide v · k) (measurableSet_hyperplaneSide_eq v i j)
+      (measurableSet_hyperplaneSide_eq v i k) (measurableSet_hyperplaneSide_eq v j k),
+    integral_hyperplaneSide_eq hv i j, integral_hyperplaneSide_eq hv i k,
     integral_hyperplaneSide_eq hv j k]
   ring
 
@@ -197,17 +183,14 @@ theorem integral_hyperplaneSide_ne_and_eq {v : V → F} (hv : ∀ x, ‖v x‖ =
     ∫ r : F, (if hyperplaneSide v r i ≠ hyperplaneSide v r j ∧
         hyperplaneSide v r j = hyperplaneSide v r k then (1 : ℝ) else 0) ∂stdGaussian F =
       1 - (arccos ⟪-v i, v j⟫ + arccos ⟪-v i, v k⟫ + arccos ⟪v j, v k⟫) / (2 * π) := by
-  have hid : ∀ r : F, 2 * (if hyperplaneSide v r i ≠ hyperplaneSide v r j ∧
-        hyperplaneSide v r j = hyperplaneSide v r k then (1 : ℝ) else 0) =
-      (if hyperplaneSide v r i ≠ hyperplaneSide v r j then 1 else 0) +
-      (if hyperplaneSide v r i ≠ hyperplaneSide v r k then 1 else 0) +
-      (if hyperplaneSide v r j = hyperplaneSide v r k then 1 else 0) - 1 := by
-    intro r
-    cases h1 : hyperplaneSide v r i <;> cases h2 : hyperplaneSide v r j <;>
-      cases h3 : hyperplaneSide v r k <;> norm_num
-  have hint := integral_bool_triple_identity (measurableSet_hyperplaneSide_ne v i j)
-    (measurableSet_hyperplaneSide_ne v i k) (measurableSet_hyperplaneSide_eq v j k) hid
-  rw [hint, integral_hyperplaneSide_ne hv i j, integral_hyperplaneSide_ne hv i k,
+  have hne : ∀ a b : Bool, ((!a) = b) ↔ (a ≠ b) := fun a b => by cases a <;> cases b <;> decide
+  have hm : ∀ a b : V, MeasurableSet {r : F | (!hyperplaneSide v r a) = hyperplaneSide v r b} :=
+    fun a b => by simpa only [hne] using measurableSet_hyperplaneSide_ne v a b
+  have hid := integral_bool_triple_identity (fun r => !hyperplaneSide v r i)
+    (hyperplaneSide v · j) (hyperplaneSide v · k) (hm i j) (hm i k)
+    (measurableSet_hyperplaneSide_eq v j k)
+  simp only [hne] at hid
+  rw [hid, integral_hyperplaneSide_ne hv i j, integral_hyperplaneSide_ne hv i k,
     integral_hyperplaneSide_eq hv j k, inner_neg_left, inner_neg_left, arccos_neg, arccos_neg]
   have hpi := pi_ne_zero
   field_simp
@@ -279,23 +262,15 @@ private theorem measurableSet_triple_all_eq (v : V → F) (i j k : V) :
       hyperplaneSide v r j = hyperplaneSide v r k} :=
   (measurableSet_hyperplaneSide_eq v i j).inter (measurableSet_hyperplaneSide_eq v j k)
 
-omit [Fintype ι] [NormedAddCommGroup F] [InnerProductSpace ℝ F] [BorelSpace F] in
-private theorem integrable_triple_event (μ : Measure F) [IsFiniteMeasure μ]
-    {p : F → Prop} [DecidablePred p] (hp : MeasurableSet {r | p r}) (w : ℝ) :
-    Integrable (fun r : F => if p r then w else 0) μ := by
-  rw [show (fun r : F => if p r then w else 0) = {r | p r}.indicator (fun _ => w) from
-    funext fun r => by simp only [Set.indicator_apply, Set.mem_ofPred_eq]]
-  exact (integrable_const w).indicator hp
-
 /-- `tripleCutValue` along a random hyperplane is integrable under any finite measure. -/
 theorem integrable_tripleCutValue_hyperplaneSide (triples : ι → V × V × V) (c d : ι → ℝ)
     (v : V → F) (μ : Measure F) [IsFiniteMeasure μ] :
     Integrable (fun r => tripleCutValue triples c d (hyperplaneSide v r)) μ := by
   unfold tripleCutValue
   exact integrable_finsetSum _ fun e _ =>
-    (integrable_triple_event μ
+    (integrable_ite_const μ
       (measurableSet_triple_ne_eq v (triples e).1 (triples e).2.1 (triples e).2.2) (c e)).add
-      (integrable_triple_event μ
+      (integrable_ite_const μ
         (measurableSet_triple_all_eq v (triples e).1 (triples e).2.1 (triples e).2.2) (d e))
 
 variable [FiniteDimensional ℝ F]
@@ -314,13 +289,13 @@ theorem goemansWilliamsonDicutConstant_mul_tripleSdpValue_le_integral (triples :
         if hyperplaneSide v r (triples e).1 = hyperplaneSide v r (triples e).2.1 ∧
           hyperplaneSide v r (triples e).2.1 = hyperplaneSide v r (triples e).2.2 then d e else 0)
       (stdGaussian F) := fun e _ =>
-    (integrable_triple_event (stdGaussian F) (measurableSet_triple_ne_eq v _ _ _) _).add
-      (integrable_triple_event (stdGaussian F) (measurableSet_triple_all_eq v _ _ _) _)
+    (integrable_ite_const (stdGaussian F) (measurableSet_triple_ne_eq v _ _ _) _).add
+      (integrable_ite_const (stdGaussian F) (measurableSet_triple_all_eq v _ _ _) _)
   rw [integral_finsetSum _ hint, tripleSdpValue, Finset.mul_sum]
   refine Finset.sum_le_sum fun e _ => ?_
   rw [integral_add
-    (integrable_triple_event (stdGaussian F) (measurableSet_triple_ne_eq v _ _ _) _)
-    (integrable_triple_event (stdGaussian F) (measurableSet_triple_all_eq v _ _ _) _)]
+    (integrable_ite_const (stdGaussian F) (measurableSet_triple_ne_eq v _ _ _) _)
+    (integrable_ite_const (stdGaussian F) (measurableSet_triple_all_eq v _ _ _) _)]
   have hmul1 : (fun r : F => if hyperplaneSide v r (triples e).1 ≠
       hyperplaneSide v r (triples e).2.1 ∧
       hyperplaneSide v r (triples e).2.1 = hyperplaneSide v r (triples e).2.2 then c e else 0) =
