@@ -1746,10 +1746,12 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LogClock
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Nondeterministic
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicExponentialTime
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicPolynomial
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicTime
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.ShortDesc
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.SpaceDiagonalBounds
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TimePolylog
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.TinyDesc
@@ -1796,6 +1798,7 @@ public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.DeterministicTransitiveClosure.Loop
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Formula
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered
+public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Decider
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Ordered.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Output
 public import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Reduction
@@ -2141,6 +2144,11 @@ public import CslibFrontier.Computability.Complexity.Problems.CSP.Incidence
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Majority
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Certificate
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Components
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Faces
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Graph
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Rotation
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Schaefer
 public import CslibFrontier.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.ChromaticNumber
@@ -2177,6 +2185,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSyst
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Components
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Differences
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Dual
+public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.FaceCounts
 public import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Lifting
 public import CslibFrontier.Computability.Complexity.Problems.Graph.SpanningTrees
 public import CslibFrontier.Computability.Complexity.Problems.Graph.VertexColors
@@ -2856,6 +2865,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Positions
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.DPi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families
@@ -4147,6 +4157,11 @@ public import CslibFrontier.Crypto.Protocols.PolynomialCommitment.Basic
 public import CslibFrontier.Crypto.Protocols.Quantum.OneTimePad
 public import CslibFrontier.Crypto.Protocols.SSP.Basic
 public import CslibFrontier.Crypto.Protocols.SSP.Hybrid
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Additive
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Basic
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Designs
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Privacy
+public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Shamir
 public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort.FiatShamir
@@ -4936,6 +4951,7 @@ public import CslibFrontier.Foundations.Data.List.Blocks
 public import CslibFrontier.Foundations.Data.List.Boole
 public import CslibFrontier.Foundations.Data.List.CommonPrefix
 public import CslibFrontier.Foundations.Data.List.Counting
+public import CslibFrontier.Foundations.Data.List.CourseOfValues
 public import CslibFrontier.Foundations.Data.List.DotProduct
 public import CslibFrontier.Foundations.Data.List.Equiv
 public import CslibFrontier.Foundations.Data.List.EraseDups
