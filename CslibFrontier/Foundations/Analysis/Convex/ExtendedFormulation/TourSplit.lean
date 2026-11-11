@@ -57,20 +57,22 @@ section TSPPolytope
 when `3 ≤ |V|`. -/
 theorem tourEdge_mem_top_edgeSet {V : Type*} [Fintype V] [DecidableEq V]
     (hV : 3 ≤ Fintype.card V) (σ : Fin (Fintype.card V) ≃ V) (i : Fin (Fintype.card V)) :
-    s(σ i, σ (i + 1)) ∈ (⊤ : SimpleGraph V).edgeSet := by
+    s(σ i, σ (i + ⟨1, by omega⟩)) ∈ (⊤ : SimpleGraph V).edgeSet := by
   rw [SimpleGraph.mem_edgeSet, SimpleGraph.top_adj, ne_eq, EmbeddingLike.apply_eq_iff_eq]
   intro h
-  have h1 : (1 : Fin (Fintype.card V)) = 0 := add_left_eq_self.1 (i.add_comm 1 ▸ h.symm)
-  have hval := congrArg Fin.val h1
-  have hmod : 1 < Fintype.card V := by omega
-  simp only [Fin.val_one' hmod, Fin.val_zero] at hval
-  omega
+  have hval := congrArg Fin.val h
+  rw [Fin.val_add] at hval
+  by_cases hwrap : i.1 + 1 = Fintype.card V
+  · rw [hwrap, Nat.mod_self] at hval
+    omega
+  · rw [Nat.mod_eq_of_lt (by omega)] at hval
+    omega
 
 /-- The edge set in `K_V` traced by the cyclic ordering `σ : Fin |V| ≃ V`. -/
 def tourEdgeSet {V : Type*} [Fintype V] [DecidableEq V]
     (σ : Fin (Fintype.card V) ≃ V) (hV : 3 ≤ Fintype.card V) :
     Finset ↥(⊤ : SimpleGraph V).edgeSet :=
-  Finset.univ.image fun i => ⟨s(σ i, σ (i + 1)), tourEdge_mem_top_edgeSet hV σ i⟩
+  Finset.univ.image fun i => ⟨s(σ i, σ (i + ⟨1, by omega⟩)), tourEdge_mem_top_edgeSet hV σ i⟩
 
 /-- `F` is the edge set of a Hamiltonian cycle (tour) of `K_V` (`|V| ≥ 3`). -/
 @[expose] def IsTourEdgeSet {V : Type*} [Fintype V] [DecidableEq V]
@@ -111,14 +113,14 @@ theorem tspPolytope_inter_subgraph_eq
   have hdot : ∀ F : Finset ↥(⊤ : SimpleGraph V).edgeSet,
       c ⬝ᵥ tspVertex K F = -((F.filter fun e => e.1 ∉ G.edgeSet).card : K) := fun F => by
     simp only [dotProduct, c, tspVertex]
-    rw [← Finset.sum_neg_distrib]
     have hterm : ∀ e : ↥(⊤ : SimpleGraph V).edgeSet,
-        -((if e.1 ∈ G.edgeSet then (0 : K) else -1) * (if e ∈ F then 1 else 0)) =
-          if e ∈ F ∧ e.1 ∉ G.edgeSet then 1 else 0 := fun e => by
+        (if e.1 ∈ G.edgeSet then (0 : K) else -1) * (if e ∈ F then 1 else 0) =
+          -(if e ∈ F ∧ e.1 ∉ G.edgeSet then (1 : K) else 0) := fun e => by
       by_cases hg : e.1 ∈ G.edgeSet <;> by_cases hf : e ∈ F <;>
         simp only [hg, hf, not_true_eq_false, not_false_eq_true, and_self, and_true, and_false,
-          ↓reduceIte, mul_one, mul_zero, zero_mul, neg_zero, neg_neg]
-    simp only [hterm, Finset.sum_boole, Finset.filter_mem_eq_inter, Finset.univ_inter]
+          ↓reduceIte, mul_one, mul_zero, zero_mul, neg_zero]
+    simp only [hterm, Finset.sum_neg_distrib, Finset.sum_boole, Finset.filter_mem_eq_inter,
+      Finset.univ_inter]
     rfl
   have hvalid : ∀ F : {F // IsTourEdgeSet F}, c ⬝ᵥ tspVertex K F.1 ≤ 0 := fun F => by
     rw [hdot]
@@ -130,13 +132,13 @@ theorem tspPolytope_inter_subgraph_eq
   rw [tspPolytope, convexHull_inter_dotProduct_eq hvalid]
   congr 1
   ext x
-  simp only [Set.mem_image, Set.mem_setOf_eq, Set.mem_range, Subtype.exists]
+  simp only [Set.mem_image, Set.mem_ofPred_eq, Set.mem_range, Subtype.exists]
   constructor
-  · rintro ⟨_, ⟨F, hF, hFx, rfl⟩, rfl⟩
+  · rintro ⟨_, ⟨F, hF, rfl⟩, hFx, rfl⟩
     rw [htight ⟨F, hF⟩] at hFx
     exact ⟨F, hFx, rfl⟩
   · rintro ⟨F, hFG, rfl⟩
-    refine ⟨tspVertex K F, ⟨F, hFG.1, ?_, rfl⟩, rfl⟩
+    refine ⟨tspVertex K F, ⟨F, hFG.1, rfl⟩, ?_, rfl⟩
     exact (htight ⟨F, hFG.1⟩).2 hFG
 
 end TSPPolytope
@@ -149,7 +151,7 @@ section SplitGraph
 
 /-- Vertices of the `3`-split undirected graph of a digraph on `W`, with `pad` extra middle
 nodes inserted at `v₀` [FioriniMassarPokuttaTiwaryDeWolf2015, Lemma 11, Step (iii)]. -/
-inductive SplitV (W : Type*) [DecidableEq W] (v₀ : W) (pad : ℕ) : Type
+inductive SplitV (W : Type*) [DecidableEq W] (v₀ : W) (pad : ℕ) : Type _
   | vIn (w : W)
   | vMid (w : W) (k : Fin (splitMidLen v₀ pad w))
   | vOut (w : W)
@@ -177,7 +179,10 @@ private theorem sum_splitMidLen {W : Type*} [Fintype W] [DecidableEq W] (v₀ : 
   simp only [splitMidLen]
   have hsplit : (Finset.univ : Finset W).sum (fun w => if w = v₀ then pad + 1 else 1) =
       ∑ w : W, (1 + if w = v₀ then pad else 0) :=
-    Finset.sum_congr rfl fun w _ => by by_cases h : w = v₀ <;> simp [h]
+    Finset.sum_congr rfl fun w _ => by
+      by_cases h : w = v₀
+      · simp only [h, ↓reduceIte]; omega
+      · simp only [h, ↓reduceIte, add_zero]
   rw [hsplit, Finset.sum_add_distrib, Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_one,
     Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
 

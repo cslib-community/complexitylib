@@ -57,6 +57,7 @@ private theorem sum_elim_eq_iff {α β γ : Type*} {a c : α → γ} {b d : β �
   ⟨fun h => ⟨funext fun i => congrFun h (Sum.inl i), funext fun j => congrFun h (Sum.inr j)⟩,
     fun ⟨h1, h2⟩ => h1 ▸ h2 ▸ rfl⟩
 
+omit [Finite τ] in
 /-- Intersecting a set `Q` with linear equations `C *ᵥ x = d` preserves the inequality index type
 `σ` of any extended formulation. -/
 theorem IsExtendedFormulation.inter_mulVec_eq {Q : Set (ι → K)}
@@ -104,6 +105,7 @@ section AffineImage
 variable {K : Type*} [Ring K] [PartialOrder K]
 variable {ι ν σ κ τ : Type*} [Fintype ι] [Fintype ν] [Fintype κ] [Finite τ]
 
+omit [Finite τ] in
 /-- An extended formulation of `Q` lifts to an extended formulation of any affine image
 `(fun z => T *ᵥ z + t) '' Q` with the exact same inequality index type `σ`. -/
 theorem IsExtendedFormulation.affineImage [DecidableEq ι] {Q : Set (ν → K)}

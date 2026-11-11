@@ -88,29 +88,39 @@ def corrValidVec (a : Finset α) : (α × α) → K :=
 def corrValidMatrix (α : Type*) [Fintype α] [DecidableEq α] : Matrix (Finset α) (α × α) K :=
   Matrix.of (corrValidVec K)
 
+omit [LinearOrder K] [IsStrictOrderedRing K] [Fintype α] in
 @[simp] theorem corrVertex_apply (b : Finset α) (i j : α) :
     corrVertex K b (i, j) = if i ∈ b ∧ j ∈ b then 1 else 0 := rfl
 
+omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- Evaluating `2 diag(a) - a aᵀ` on `corrVertex K b` gives `2 |a ∩ b| - |a ∩ b| ^ 2`. -/
 theorem corrValidVec_dotProduct_corrVertex (a b : Finset α) :
     corrValidVec K a ⬝ᵥ corrVertex K b =
       2 * ((a ∩ b).card : K) - ((a ∩ b).card : K) ^ 2 := by
   have hterm : ∀ i j : α,
       corrValidVec K a (i, j) * corrVertex K b (i, j) =
-        if i ∈ a ∩ b ∧ j ∈ a ∩ b then (if i = j then (2 : K) else 0) - 1 else 0 := by
-    intro i j
-    by_cases hia : i ∈ a <;> by_cases hja : j ∈ a <;>
-      by_cases hib : i ∈ b <;> by_cases hjb : j ∈ b <;> by_cases hij : i = j <;>
-      simp only [corrValidVec, corrVertex_apply, Finset.mem_inter, hia, hja, hib, hjb, hij,
-        and_self, and_true, true_and, and_false, false_and, ↓reduceIte, mul_one, mul_zero,
-        sub_self]
-    norm_num
+        if i ∈ a ∩ b ∧ j ∈ a ∩ b then (if i = j then (2 : K) else 0) - 1 else 0 := fun i j => by
+    dsimp only [corrValidVec, corrVertex_apply]
+    by_cases ha : i ∈ a ∧ j ∈ a <;> by_cases hb : i ∈ b ∧ j ∈ b
+    · have hab : i ∈ a ∩ b ∧ j ∈ a ∩ b :=
+        ⟨Finset.mem_inter.2 ⟨ha.1, hb.1⟩, Finset.mem_inter.2 ⟨ha.2, hb.2⟩⟩
+      rw [ite_eq_left ha, ite_eq_left hb, ite_eq_left hab, mul_one]
+      split_ifs <;> norm_num
+    · have nhab : ¬ (i ∈ a ∩ b ∧ j ∈ a ∩ b) := fun h =>
+        hb ⟨(Finset.mem_inter.1 h.1).2, (Finset.mem_inter.1 h.2).2⟩
+      rw [ite_eq_right hb, ite_eq_right nhab, mul_zero]
+    · have nhab : ¬ (i ∈ a ∩ b ∧ j ∈ a ∩ b) := fun h =>
+        ha ⟨(Finset.mem_inter.1 h.1).1, (Finset.mem_inter.1 h.2).1⟩
+      rw [ite_eq_right ha, ite_eq_right nhab, zero_mul]
+    · have nhab : ¬ (i ∈ a ∩ b ∧ j ∈ a ∩ b) := fun h =>
+        ha ⟨(Finset.mem_inter.1 h.1).1, (Finset.mem_inter.1 h.2).1⟩
+      rw [ite_eq_right hb, ite_eq_right nhab, mul_zero]
   calc
     corrValidVec K a ⬝ᵥ corrVertex K b
         = ∑ i : α, ∑ j : α, corrValidVec K a (i, j) * corrVertex K b (i, j) := by
       simp only [dotProduct, Fintype.sum_prod_type]
     _ = ∑ i ∈ a ∩ b, ∑ j ∈ a ∩ b, ((if i = j then (2 : K) else 0) - 1) := by
-      simp only [hterm, ← Finset.sum_filter]
+      simp only [hterm]
       rw [← Finset.sum_subset (Finset.subset_univ (a ∩ b))]
       · refine Finset.sum_congr rfl fun i hi => ?_
         rw [← Finset.sum_subset (Finset.subset_univ (a ∩ b))]
@@ -126,34 +136,39 @@ theorem corrValidVec_dotProduct_corrVertex (a b : Finset α) :
       simp only [Finset.sum_sub_distrib]
     _ = 2 * ((a ∩ b).card : K) - ((a ∩ b).card : K) ^ 2 := by
       congr 1
-      · rw [Finset.sum_congr rfl fun i hi => Finset.sum_ite_eq' (a ∩ b) i (fun _ => (2 : K))]
-        simp only [Finset.sum_const, nsmul_eq_mul, mul_comm, ite_true]
-        refine Finset.sum_congr rfl fun i hi => ?_
-        rw [if_pos hi]
+      · have hdiag : ∀ i ∈ a ∩ b, (∑ j ∈ a ∩ b, if i = j then (2 : K) else 0) = 2 :=
+          fun i hi => by rw [Finset.sum_ite_eq (a ∩ b) i (fun _ => (2 : K)), ite_eq_left hi]
+        rw [Finset.sum_congr rfl hdiag, Finset.sum_const, nsmul_eq_mul, mul_comm]
       · simp only [Finset.sum_const, nsmul_eq_mul, mul_one, sq]
 
+omit [LinearOrder K] [IsStrictOrderedRing K] in
 /-- The slack of `corrValidVec K a` at vertex `corrVertex K b` is `(|a ∩ b| - 1) ^ 2`
 [FioriniMassarPokuttaTiwaryDeWolf2015, Lemma 6]; [KaibelWeltge2015, Lemma 1]. -/
 @[simp] theorem corrValidMatrix_slackMatrix_apply (a b : Finset α) :
     (corrValidMatrix K α).slackMatrix (fun _ => 1) (corrVertex K) a b =
       (((a ∩ b).card : K) - 1) ^ 2 := by
-  rw [Matrix.slackMatrix_apply, corrValidMatrix, Matrix.of_apply, corrValidVec_dotProduct_corrVertex]
+  rw [Matrix.slackMatrix_apply]
+  change 1 - corrValidVec K a ⬝ᵥ corrVertex K b = _
+  rw [corrValidVec_dotProduct_corrVertex]
   ring
 
 /-- The inequality `corrValidMatrix K α *ᵥ x ≤ 1` is valid on `corrPolytope K α`. -/
 theorem corrValidMatrix_mulVec_le {x : (α × α) → K} (hx : x ∈ corrPolytope K α) :
     corrValidMatrix K α *ᵥ x ≤ fun _ => 1 := fun a => by
+  dsimp only [mulVec]
+  change corrValidVec K a ⬝ᵥ x ≤ 1
   refine dotProduct_le_of_mem_convexHull (fun b => ?_) hx
-  rw [corrValidMatrix, Matrix.of_apply, corrValidVec_dotProduct_corrVertex]
+  rw [corrValidVec_dotProduct_corrVertex]
   have hsq : (0 : K) ≤ (((a ∩ b).card : K) - 1) ^ 2 := sq_nonneg _
   linarith
 
+omit [Fintype α] in
 /-- For nonempty `α`, `corrPolytope K α` is nontrivial (`dim ≥ 1`). -/
 theorem corrPolytope_nontrivial [Nonempty α] : (corrPolytope K α).Nontrivial := by
   refine nontrivial_convexHull_range_iff.2 ⟨∅, {Classical.arbitrary α}, fun h => ?_⟩
   have hval := congrFun h (Classical.arbitrary α, Classical.arbitrary α)
   simp only [corrVertex_apply, Finset.notMem_empty, false_and, ↓reduceIte,
-    Finset.mem_singleton, and_self] at hval
+    Finset.mem_singleton] at hval
   exact zero_ne_one hval
 
 end Slack
@@ -175,7 +190,7 @@ theorem three_pow_le_two_pow_mul_extensionComplexity_corrPolytope [Nonempty α] 
       nonUniqueInter α := by
     ext a b
     simp only [corrValidMatrix_slackMatrix_apply, ne_eq, sq_eq_zero_iff, sub_eq_zero,
-      Nat.cast_eq_one, nonUniqueInter, decide_eq_decide]
+      Nat.cast_eq_one, nonUniqueInter]
   have hcov : coverNumberFun true (nonUniqueInter α) Set.univ Set.univ ≤
       ((corrValidMatrix K α).slackMatrix (fun _ => 1) (corrVertex K)).nonnegRank := by
     rw [← hsupp]

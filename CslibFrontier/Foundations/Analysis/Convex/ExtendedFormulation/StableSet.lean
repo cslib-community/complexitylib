@@ -36,12 +36,12 @@ isolated vertices to any `m ≥ 2` using `p = ⌊√(m / 2)⌋` produces a graph
 ## Main results
 
 * `extensionComplexity_corrPolytope_le_corrGadgetGraph`:
-  `extensionComplexity (corrPolytope K (Fin n)) ≤ extensionComplexity (stabPolytope K (corrGadgetGraph n))`.
+  `xc (corrPolytope K (Fin n)) ≤ xc (stabPolytope K (corrGadgetGraph n))`.
 * `three_pow_le_two_pow_mul_extensionComplexity_stabPolytope`:
   for `m ≥ 2` and `p = Nat.sqrt (m / 2)`,
   `3 ^ p ≤ 2 ^ p * extensionComplexity (stabPolytope K (stabHardGraph m))`.
-* `HasExtendedFormulation.three_div_two_pow_le_of_stabPolytope`:
-  `(3 / 2 : F) ^ Nat.sqrt (m / 2) ≤ r` whenever `HasExtendedFormulation (stabPolytope K (stabHardGraph m)) r`.
+* `HasExtendedFormulation.three_div_two_pow_le_of_stabPolytope`: for `m ≥ 2` and
+  `HasExtendedFormulation (stabPolytope K (stabHardGraph m)) r`, `(3 / 2 : F) ^ ⌊√(m / 2)⌋ ≤ r`.
 
 ## References
 
@@ -83,7 +83,7 @@ private def corrPairIdxEquivSubtype (n : ℕ) :
   left_inv _ := rfl
   right_inv _ := rfl
 
-instance (n : ℕ) : Fintype (CorrPairIdx n) :=
+@[no_expose] instance (n : ℕ) : Fintype (CorrPairIdx n) :=
   Fintype.ofEquiv _ (corrPairIdxEquivSubtype n).symm
 
 /-- Vertices of the FMPTW stable-set gadget graph `H_n`
@@ -105,7 +105,7 @@ private def corrGadgetVEquivSum (n : ℕ) :
   left_inv x := by cases x <;> rfl
   right_inv x := by rcases x with ⟨i, b⟩ | ⟨e, b₁, b₂⟩ <;> rfl
 
-instance (n : ℕ) : Fintype (CorrGadgetV n) :=
+@[no_expose] instance (n : ℕ) : Fintype (CorrGadgetV n) :=
   Fintype.ofEquiv _ (corrGadgetVEquivSum n).symm
 
 private def corrPairSuccEquiv (n : ℕ) : CorrPairIdx (n + 1) ≃ CorrPairIdx n ⊕ Fin n where
@@ -118,24 +118,24 @@ private def corrPairSuccEquiv (n : ℕ) : CorrPairIdx (n + 1) ≃ CorrPairIdx n 
           simpa only [Fin.lt_def, Fin.coe_castPred] using e.lt⟩
   invFun
     | Sum.inl e => ⟨e.fst.castSucc, e.snd.castSucc, by
-        simpa only [Fin.lt_def, Fin.coe_castSucc] using e.lt⟩
+        simpa only [Fin.lt_def, Fin.val_castSucc] using e.lt⟩
     | Sum.inr i => ⟨i.castSucc, Fin.last n, Fin.castSucc_lt_last i⟩
   left_inv e := by
     dsimp only
     split_ifs with h
-    · cases e with
-      | mk f s lt =>
-          simp only [Fin.castSucc_mk, Fin.eta]
-          exact congrArg (CorrPairIdx.mk f · _) h.symm
+    · obtain ⟨f, s, lt⟩ := e
+      dsimp only at h
+      subst h
+      simp only [Fin.castSucc_mk, Fin.eta]
     · cases e with
       | mk f s lt =>
           simp only [Fin.castSucc_castPred]
   right_inv x := by
     rcases x with e | i
     · dsimp only
-      have hs : e.snd.castSucc ≠ Fin.last n := Fin.castSucc_lt_last e.snd |>.ne
+      have hs : e.snd.castSucc ≠ Fin.last n := (Fin.castSucc_lt_last e.snd).ne
       simp only [hs, ↓reduceDIte, Fin.castPred_castSucc]
-    · simp only [↓reduceDIte, Fin.coe_castSucc, Fin.eta]
+    · simp only [↓reduceDIte, Fin.val_castSucc, Fin.eta]
 
 /-- Exact vertex count `|V(H_n)| = 2 n²` [FioriniMassarPokuttaTiwaryDeWolf2015, §3.3]. -/
 theorem card_corrGadgetV (n : ℕ) : Fintype.card (CorrGadgetV n) = 2 * n ^ 2 := by
@@ -154,7 +154,7 @@ theorem card_corrGadgetV (n : ℕ) : Fintype.card (CorrGadgetV n) = 2 * n ^ 2 :=
         nlinarith
   rw [Fintype.card_congr (corrGadgetVEquivSum n), Fintype.card_sum, Fintype.card_prod,
     Fintype.card_prod, Fintype.card_prod, Fintype.card_fin, Fintype.card_bool]
-  simpa only [mul_comm n 2, mul_assoc] using hpair n
+  linarith [hpair n]
 
 private def corrGadgetAdjRel {n : ℕ} : CorrGadgetV n → CorrGadgetV n → Prop
   | .vertex i b₁, .vertex j b₂ => i = j ∧ b₁ ≠ b₂
@@ -165,8 +165,8 @@ private def corrGadgetAdjRel {n : ℕ} : CorrGadgetV n → CorrGadgetV n → Pro
 /-- The FMPTW stable-set gadget graph `H_n` [FioriniMassarPokuttaTiwaryDeWolf2015, Lemma 8]. -/
 def corrGadgetGraph (n : ℕ) : SimpleGraph (CorrGadgetV n) where
   Adj := corrGadgetAdjRel
-  symm u v h := by cases u <;> cases v <;> simp only [corrGadgetAdjRel] at h ⊢ <;> tauto
-  loopless u h := by cases u <;> simp only [corrGadgetAdjRel] at h <;> tauto
+  symm := ⟨fun u v h => by cases u <;> cases v <;> simp only [corrGadgetAdjRel] at h ⊢ <;> tauto⟩
+  loopless := ⟨fun u h => by cases u <;> simp only [corrGadgetAdjRel] at h <;> tauto⟩
 
 private def gadgetBlock {n : ℕ} : CorrGadgetV n → Fin n ⊕ CorrPairIdx n
   | .vertex i _ => Sum.inl i
@@ -205,15 +205,17 @@ private theorem isIndepSet_liftCorrIndep {n : ℕ} (b : Finset (Fin n)) :
     Finset.mem_univ, true_and] at hu hv
   rcases hu with ⟨i, rfl⟩ | ⟨e₁, rfl⟩ <;> rcases hv with ⟨j, rfl⟩ | ⟨e₂, rfl⟩
   · simp only [corrGadgetGraph, corrGadgetAdjRel] at hadj
-    subst hadj.1
-    exact hadj.2 rfl
+    obtain ⟨h1, h2⟩ := hadj
+    subst h1
+    exact h2 rfl
   · simp only [corrGadgetGraph, corrGadgetAdjRel] at hadj
     rcases hadj with ⟨rfl, hb⟩ | ⟨rfl, hb⟩ <;> exact hb rfl
   · simp only [corrGadgetGraph, corrGadgetAdjRel] at hadj
     rcases hadj with ⟨rfl, hb⟩ | ⟨rfl, hb⟩ <;> exact hb rfl
   · simp only [corrGadgetGraph, corrGadgetAdjRel] at hadj
-    subst hadj.1
-    rcases hadj.2 with h | h <;> exact h rfl
+    obtain ⟨h1, h2⟩ := hadj
+    subst h1
+    rcases h2 with h | h <;> exact h rfl
 
 private theorem card_liftCorrIndep {n : ℕ} (b : Finset (Fin n)) :
     (liftCorrIndep b).card = n + Fintype.card (CorrPairIdx n) := by
@@ -258,46 +260,23 @@ private theorem stabToCorrLinear_lift {K : Type*} [Semiring K] [PartialOrder K]
     Finset.mem_union, Finset.mem_image, Finset.mem_univ, true_and, corrVertex]
   by_cases hij : i = j
   · subst hij
-    simp only [↓reduceDIte, and_self, reduceCtorEq, false_and, exists_false, or_false]
-    by_cases hi : i ∈ b
-    · simp only [hi, ↓reduceIte, CorrGadgetV.vertex.injEq, decide_eq_true_eq,
-        exists_eq_right_right, and_true]
-    · simp only [hi, ↓reduceIte, CorrGadgetV.vertex.injEq, decide_eq_true_eq, and_false,
-        exists_false]
+    simp only [↓reduceDIte, and_self, reduceCtorEq, false_and, exists_false, or_false,
+      CorrGadgetV.vertex.injEq, exists_eq_left', decide_eq_true_eq]
   · simp only [hij, ↓reduceDIte]
+    have hiff (u v : Fin n) (hlt' : u < v) :
+        (∃ e : CorrPairIdx n, CorrGadgetV.edge e (decide (e.fst ∈ b)) (decide (e.snd ∈ b)) =
+          CorrGadgetV.edge ⟨u, v, hlt'⟩ true true) ↔ u ∈ b ∧ v ∈ b := by
+      constructor
+      · rintro ⟨e, he⟩
+        simp only [CorrGadgetV.edge.injEq] at he
+        rcases he with ⟨rfl, h1, h2⟩
+        simpa only [decide_eq_true_eq] using ⟨h1, h2⟩
+      · rintro ⟨hu, hv⟩
+        exact ⟨⟨u, v, hlt'⟩, by simp only [hu, hv, decide_true]⟩
     split_ifs with hlt
-    · simp only [reduceCtorEq, false_and, exists_false, CorrGadgetV.edge.injEq, false_or]
-      by_cases hi : i ∈ b <;> by_cases hj : j ∈ b
-      · refine if_pos ⟨⟨i, j, hlt⟩, rfl, ?_⟩
-        simp only [hi, hj, decide_true, and_self]
-      · refine if_neg ?_
-        rintro ⟨e, he, _, h2⟩
-        cases he
-        simp only [hj, decide_false, Bool.false_eq_true] at h2
-      · refine if_neg ?_
-        rintro ⟨e, he, h1, _⟩
-        cases he
-        simp only [hi, decide_false, Bool.false_eq_true] at h1
-      · refine if_neg ?_
-        rintro ⟨e, he, h1, _⟩
-        cases he
-        simp only [hi, decide_false, Bool.false_eq_true] at h1
-    · simp only [reduceCtorEq, false_and, exists_false, CorrGadgetV.edge.injEq, false_or]
-      by_cases hi : i ∈ b <;> by_cases hj : j ∈ b
-      · refine if_pos ⟨⟨j, i, (lt_or_gt_of_ne hij).resolve_left hlt⟩, rfl, ?_⟩
-        simp only [hi, hj, decide_true, and_self]
-      · refine if_neg ?_
-        rintro ⟨e, he, h1, _⟩
-        cases he
-        simp only [hj, decide_false, Bool.false_eq_true] at h1
-      · refine if_neg ?_
-        rintro ⟨e, he, _, h2⟩
-        cases he
-        simp only [hi, decide_false, Bool.false_eq_true] at h2
-      · refine if_neg ?_
-        rintro ⟨e, he, h1, _⟩
-        cases he
-        simp only [hj, decide_false, Bool.false_eq_true] at h1
+    · simp only [reduceCtorEq, false_and, exists_false, false_or, hiff i j hlt]
+    · simp only [reduceCtorEq, false_and, exists_false, false_or,
+        hiff j i ((lt_or_gt_of_ne hij).resolve_left hlt), and_comm]
 
 private theorem stabToCorrLinear_tight {K : Type*} [Semiring K] [PartialOrder K]
     {n : ℕ} {S : Finset (CorrGadgetV n)}
@@ -354,18 +333,16 @@ private theorem stabToCorrLinear_tight {K : Type*} [Semiring K] [PartialOrder K]
         · intro htrue
           have huq := hinj hu htrue rfl
           cases huq
-          have : c₁ = true ∧ c₂ = true := ⟨rfl, rfl⟩
-          rw [hc₁, hc₂] at this
-          simpa only [decide_eq_true_eq] using this
+          exact ⟨decide_eq_true_eq.1 hc₁.symm, decide_eq_true_eq.1 hc₂.symm⟩
         · rintro ⟨h1, h2⟩
-          have : c₁ = true ∧ c₂ = true := by
-            rw [hc₁, hc₂, decide_eq_true h1, decide_eq_true h2]; exact ⟨rfl, rfl⟩
-          rwa [← this.1, ← this.2]
+          have hc₁' : c₁ = true := hc₁.trans (decide_eq_true h1)
+          have hc₂' : c₂ = true := hc₂.trans (decide_eq_true h2)
+          rwa [hc₁', hc₂'] at hu
   ext ⟨i, j⟩
   simp only [stabToCorrLinear, LinearMap.coe_mk, AddHom.coe_mk, stabVertex, corrVertex]
   by_cases hij : i = j
   · subst hij
-    simp only [↓reduceDIte, Finset.mem_filter, Finset.mem_univ, true_and, and_self]
+    simp only [↓reduceDIte, and_self, b, Finset.mem_filter, Finset.mem_univ, true_and]
   · simp only [hij, ↓reduceDIte]
     split_ifs with hlt
     · simp only [he_mem ⟨i, j, hlt⟩]
@@ -379,16 +356,15 @@ theorem extensionComplexity_corrPolytope_le_corrGadgetGraph
       extensionComplexity (stabPolytope K (corrGadgetGraph n)) := by
   let δ : K := (n + Fintype.card (CorrPairIdx n) : ℕ)
   let c : CorrGadgetV n → K := fun _ => 1
+  have hdot : ∀ S : Finset (CorrGadgetV n), c ⬝ᵥ stabVertex K S = (S.card : K) := fun S => by
+    simp only [dotProduct, c, stabVertex, one_mul, Finset.sum_boole, Finset.filter_mem_eq_inter,
+      Finset.univ_inter]
   have hvalid : ∀ S : {S : Finset (CorrGadgetV n) // (corrGadgetGraph n).IsIndepSet (S : Set _)},
       c ⬝ᵥ stabVertex K S.1 ≤ δ := fun S => by
-    have hdot : c ⬝ᵥ stabVertex K S.1 = (S.1.card : K) := by
-      simp only [dotProduct, c, stabVertex, one_mul, Finset.sum_boole]
     rw [hdot]
     exact_mod_cast card_le_of_isIndepSet_corrGadgetGraph S.2
   have htight_iff : ∀ S : {S : Finset (CorrGadgetV n) // (corrGadgetGraph n).IsIndepSet (S : Set _)},
       c ⬝ᵥ stabVertex K S.1 = δ ↔ S.1.card = n + Fintype.card (CorrPairIdx n) := fun S => by
-    have hdot : c ⬝ᵥ stabVertex K S.1 = (S.1.card : K) := by
-      simp only [dotProduct, c, stabVertex, one_mul, Finset.sum_boole]
     rw [hdot]
     exact Nat.cast_inj
   let face := stabPolytope K (corrGadgetGraph n) ∩ {x | c ⬝ᵥ x = δ}
@@ -401,7 +377,7 @@ theorem extensionComplexity_corrPolytope_le_corrGadgetGraph
     rw [hface, image_linearMap_convexHull, corrPolytope]
     congr 1
     ext y
-    simp only [Set.mem_image, Set.mem_setOf_eq, Set.mem_range, Subtype.exists]
+    simp only [Set.mem_image, Set.mem_ofPred_eq, Set.mem_range, Subtype.exists]
     constructor
     · rintro ⟨_, ⟨S, hS, hSc, rfl⟩, rfl⟩
       rw [htight_iff ⟨S, hS⟩] at hSc
@@ -429,10 +405,9 @@ private noncomputable def stabHardEmb (m : ℕ) (hm : 2 ≤ m) :
   let p := Nat.sqrt (m / 2)
   have hle : Fintype.card (CorrGadgetV p) ≤ m := by
     rw [card_corrGadgetV]
-    have hsq : p * p ≤ m / 2 := Nat.sqrt_le' (m / 2)
-    change 2 * p ^ 2 ≤ m
-    nlinarith
-  exact (Fintype.equivFin (CorrGadgetV p)).toEmbedding.trans (Fin.castLEEmb hle).toEmbedding
+    have hsq : p ^ 2 ≤ m / 2 := Nat.sqrt_le' (m / 2)
+    omega
+  exact (Fintype.equivFin (CorrGadgetV p)).toEmbedding.trans (Fin.castLEEmb hle)
 
 /-- An explicit `m`-vertex graph (`m ≥ 2`) obtained by embedding `corrGadgetGraph ⌊√(m / 2)⌋`
 together with isolated vertices [FioriniMassarPokuttaTiwaryDeWolf2015, Theorem 10]. -/
@@ -440,11 +415,11 @@ noncomputable def stabHardGraph (m : ℕ) : SimpleGraph (Fin m) :=
   if hm : 2 ≤ m then
     { Adj := fun u v => ∃ a b, stabHardEmb m hm a = u ∧ stabHardEmb m hm b = v ∧
         (corrGadgetGraph (Nat.sqrt (m / 2))).Adj a b
-      symm := fun _ _ ⟨a, b, ha, hb, hab⟩ => ⟨b, a, hb, ha, hab.symm⟩
-      loopless := fun _ ⟨a, b, ha, hb, hab⟩ => by
+      symm := ⟨fun _ _ ⟨a, b, ha, hb, hab⟩ => ⟨b, a, hb, ha, hab.symm⟩⟩
+      loopless := ⟨fun _ ⟨a, b, ha, hb, hab⟩ => by
         have hba : a = b := (stabHardEmb m hm).injective (ha.trans hb.symm)
         subst hba
-        exact (corrGadgetGraph (Nat.sqrt (m / 2))).loopless a hab }
+        exact (corrGadgetGraph (Nat.sqrt (m / 2))).loopless a hab⟩ }
   else ⊥
 
 private theorem extensionComplexity_corrGadgetGraph_le_stabHardGraph
@@ -468,7 +443,7 @@ private theorem extensionComplexity_corrGadgetGraph_le_stabHardGraph
         intro a ha b hb hab hadj
         simp only [Finset.mem_coe, S', Finset.mem_filter, Finset.mem_univ, true_and] at ha hb
         refine hS ha hb (fun heq => hab (emb.injective heq)) ?_
-        rw [stabHardGraph, dif_pos hm]
+        simp only [stabHardGraph, hm, ↓reduceDIte]
         exact ⟨a, b, rfl, rfl, hadj⟩
       refine ⟨S', hS', ?_⟩
       ext a
@@ -477,17 +452,16 @@ private theorem extensionComplexity_corrGadgetGraph_le_stabHardGraph
     · rintro ⟨T, hT, rfl⟩
       have hT' : (stabHardGraph m).IsIndepSet (T.map emb : Set (Fin m)) := by
         intro u hu v hv huv hadj
-        rw [stabHardGraph, dif_pos hm] at hadj
+        simp only [stabHardGraph, hm, ↓reduceDIte] at hadj
         obtain ⟨a, b, rfl, rfl, hab⟩ := hadj
-        simp only [Finset.coe_map, Set.mem_image, Finset.mem_coe,
-          RelEmbedding.coe_toEmbedding] at hu hv
+        simp only [Finset.coe_map, Set.mem_image, Finset.mem_coe] at hu hv
         obtain ⟨a', ha', hae⟩ := hu
         obtain ⟨b', hb', hbe⟩ := hv
         have haa' : a' = a := emb.injective hae
         have hbb' : b' = b := emb.injective hbe
         subst haa' hbb'
         exact hT ha' hb' (fun heq => huv (congrArg emb heq)) hab
-      refine ⟨T.map emb, hT', rfl, ?_⟩
+      refine ⟨stabVertex K (T.map emb), ⟨T.map emb, hT', rfl⟩, ?_⟩
       ext a
       simp only [proj, LinearMap.funLeft_apply, stabVertex, Finset.mem_map,
         EmbeddingLike.apply_eq_iff_eq, exists_eq_right]
@@ -502,7 +476,7 @@ theorem three_pow_le_two_pow_mul_extensionComplexity_stabPolytope
     ((3 ^ Nat.sqrt (m / 2) : ℕ) : ℕ∞) ≤
       (2 ^ Nat.sqrt (m / 2) : ℕ∞) * extensionComplexity (stabPolytope K (stabHardGraph m)) := by
   have hp : 0 < Nat.sqrt (m / 2) := Nat.sqrt_pos.2 (by omega)
-  haveI : Nonempty (Fin (Nat.sqrt (m / 2))) := ⟨⟨0, hp⟩⟩
+  have : Nonempty (Fin (Nat.sqrt (m / 2))) := ⟨⟨0, hp⟩⟩
   have h1 := three_pow_le_two_pow_mul_extensionComplexity_corrPolytope (K := K)
     (α := Fin (Nat.sqrt (m / 2)))
   rw [Fintype.card_fin] at h1
