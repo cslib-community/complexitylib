@@ -424,13 +424,8 @@ The Operator's Manual inventory records Theorem 8 as covered.
 The guessed hidden-endpoint client continues to show why old collision/covering alone is
 insufficient without a charged reveal.
 
-`IdealChain.Guessing.stopped_guess_le` and `PlantedUniqueness` keep the source-shaped audit
-decomposition: planted uniqueness on collision-free complete ledgers (`accepted_eq`), transport
-to the audit (`search_transport`), stopped guessing at most $2^{-q}$ (`audit_guess_bound`) and
-the full-ledger collision marginal $(Q^2+Q)/(N-Q)$ with $Q=T+2q$, at most $10T^2/2^m$ for
-$T\ge6$ and $q\le T$ (`audit_collision_le_ten`). Theorem 8 does not depend on them, and no
-joint stopping/collision bound for that audit is claimed; the former open `RemainingCharge`
-premise and its conditional assembly were removed.
+The former audit decomposition (`Guessing`, `PlantedUniqueness`) and its open
+`RemainingCharge` premise were removed once Theorem 8 no longer depended on them.
 The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `coarse_source_search_bound`; the best unconditional bounds are in `VerificationCovering`.
 No deprecated aliases are retained.

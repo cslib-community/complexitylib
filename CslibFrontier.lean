@@ -3987,9 +3987,7 @@ public import CslibFrontier.Cryptanalysis.AddXNORIdealCovering
 public import CslibFrontier.Cryptanalysis.AddXNORIdealCut
 public import CslibFrontier.Cryptanalysis.AddXNORIdealCutBounds
 public import CslibFrontier.Cryptanalysis.AddXNORIdealForest
-public import CslibFrontier.Cryptanalysis.AddXNORIdealGuessing
 public import CslibFrontier.Cryptanalysis.AddXNORIdealLedger
-public import CslibFrontier.Cryptanalysis.AddXNORIdealPlantedUniqueness
 public import CslibFrontier.Cryptanalysis.AddXNORIdealReplay
 public import CslibFrontier.Cryptanalysis.AddXNORIdealReveal
 public import CslibFrontier.Cryptanalysis.AddXNORIdealSearchUnion

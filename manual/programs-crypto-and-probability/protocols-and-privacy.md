@@ -1702,16 +1702,6 @@ instantiates both whole-game bounds with input-dependent private-coin forward/in
 observers at $q=T=31$, $m=30$, obtaining decision advantage and search success below one
 percent without enumerating the permutation space.
 
-The stopped guessing term is also isolated in `IdealChain.Guessing.stopped_guess_le`
-([AddXNORIdealGuessing.lean](../../CslibFrontier/Cryptanalysis/AddXNORIdealGuessing.lean)). Good final-state equality in the actual cut
-coupling transfers candidate equality with the hidden word, and independence bounds its
-probability by $2^{-q}$. `PlantedUniqueness` keeps the source-shaped audit decomposition:
-`accepted_eq` proves actual planted verification uniqueness on collision-free complete
-ledgers (including planting's queries), `search_transport` bounds success by the audit
-stopping/collision union plus stopped guessing, `audit_guess_bound` bounds the latter by
-$2^{-q}$, and `audit_collision_le_ten` bounds the full-ledger collision marginal
-$(Q^2+Q)/(N-Q)$, $Q=T+2q$, by $10T^2/2^m$ for $T\ge6$ and $q\le T$. Theorem 8 above does not
-depend on this decomposition, and no joint stopping/collision bound for the audit is claimed.
 The older `SearchUnion` endpoints are named `coarse_source_search_rate` and
 `coarse_source_search_bound`; the best unconditional bounds are in `VerificationCovering`.
 No deprecated aliases are retained.

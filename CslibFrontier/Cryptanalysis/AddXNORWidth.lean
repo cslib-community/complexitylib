@@ -174,7 +174,7 @@ theorem toPowerAddXNOR_mem_iff (a b : ℕ) (ha : 0 < a) (hb : 0 < b) (x : Subset
         ((4 * (positiveNumbers p.numbers).length + (positiveNumbers p.numbers).sum.size + 3) ^ b -
           4 * (positiveNumbers p.numbers).length - 2) (positiveNumbers p.numbers) p.target)
       input (encList encNat) := by
-    have harg := ((hM.prod hq).prod hnums).prod 
+    have harg := ((hM.prod hq).prod hnums).prod
       (by fun_prop : ComputableInPolyTime (fun p : SubsetSumInstance => p.target) input encNat)
     have h := rawOperands_polyTime.comp harg
     dsimp only [Function.comp_def] at h
