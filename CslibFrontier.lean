@@ -2672,6 +2672,7 @@ public import CslibFrontier.Computability.MCSP.PartialETH
 public import CslibFrontier.Computability.MCSP.PartialHardness.Completeness
 public import CslibFrontier.Computability.MCSP.PartialHardness.Construction
 public import CslibFrontier.Computability.MCSP.PartialHardness.Evaluator
+public import CslibFrontier.Computability.MCSP.PartialHardness.EvaluatorPolyTime
 public import CslibFrontier.Computability.MCSP.PartialHardness.Knowledge
 public import CslibFrontier.Computability.MCSP.PartialHardness.Soundness
 public import CslibFrontier.Computability.MCSP.PartialNP
@@ -2962,6 +2963,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Jacobi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime
@@ -5535,6 +5537,7 @@ public import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Infinitary
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.PebbleGame
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.WeisfeilerLeman
 public import CslibFrontier.Logics.FirstOrder.Interpretation
@@ -5657,6 +5660,7 @@ public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BernoulliStructure
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.BinomialRandomGraph
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionAxiom
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.ExtensionProbability
+public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Infinitary
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Rado
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.RandomGraph
 public import CslibFrontier.Logics.FirstOrder.ZeroOneLaw.Relational
