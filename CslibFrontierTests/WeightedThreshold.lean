@@ -212,14 +212,14 @@ example :
         (andreevWindowedCircuit 2 2 1 9).eval interpretation w 0 =
           Boolean.andreev 2 2 w} : ℝ) := by
   have hin (w : BitString (2 ^ 2 + 2 * 2)) : andreevInWindow 2 2 1 5 w := by
-    intro S hS σ
+    intro S hS τ
     have hcard : #S ≤ 1 :=
       (Finset.card_le_card ((mem_andreevPrefixSubsets S).mp hS)).trans
         (by rw [card_andreevPrefixCoords (by decide : 1 ≤ 2)])
     have hX := andreevTableScore_bounds 2 2 S w
     have ht := andreevBlockSum_bounds 2 2 S w
-    cases σ <;>
-      simp only [andreevWindowLower, andreevWindowCenter, andreevLinearForm, ↓reduceIte,
+    cases τ <;>
+      simp only [andreevWindowLower, andreevWindowCenter, andreevStairForm, ↓reduceIte,
         Bool.false_eq_true, Nat.cast_mul, Nat.cast_ofNat] <;>
       omega
   refine ⟨by rw [size_andreevWindowedCircuit (by decide)]; rfl,
