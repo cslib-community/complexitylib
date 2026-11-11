@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.Lean.DFS.SCC
 public import CslibFrontier.Computability.Complexity.Problems.TwoSAT
 public import CslibFrontier.Logics.Propositional.CNF.Compact
+import CslibFrontier.Algorithms.Lean.TimeM.Loops
 
 /-!
 # Linear-time 2-SAT via strongly connected components
@@ -49,9 +50,10 @@ a satisfying assignment `ℕ → Bool` in `O(|φ.vars| + |φ|)` `TimeM` steps.
 * `Cslib.Algorithms.Lean.TwoSAT.solve_eq_some`, `Cslib.Algorithms.Lean.TwoSAT.isSome_solve_iff`:
   soundness and completeness of `solve`.
 * `Cslib.Algorithms.Lean.TwoSAT.time_solveM_le`, `Cslib.Algorithms.Lean.TwoSAT.time_solveFinM_le`:
-  linear `O(|V| + |φ|)` `TimeM` step bound (`≤ 13 * n + 8 * φ.length + 1`).
-* `Cslib.Algorithms.Lean.TwoSAT.isSome_solveNat_iff`, `Cslib.Algorithms.Lean.TwoSAT.solveNat_eq_some`:
-  exact equivalence with `φ ∈ Cslib.Complexity.TwoSAT` and witness validity.
+  linear `O(|V| + |φ|)` `TimeM` step bound (`≤ 12 * n + 8 * φ.length + 1`).
+* `Cslib.Algorithms.Lean.TwoSAT.isSome_solveNat_iff`,
+  `Cslib.Algorithms.Lean.TwoSAT.solveNat_eq_some`: exact equivalence with
+  `φ ∈ Cslib.Complexity.TwoSAT` and witness validity.
 
 ## References
 
@@ -65,25 +67,28 @@ a satisfying assignment `ℕ → Bool` in `O(|φ.vars| + |φ|)` `TimeM` steps.
 
 namespace Cslib.Algorithms.Lean.TwoSAT
 
-open Std.Sat (Literal)
 open Cslib.Logic.PL Cslib.Algorithms.Lean.DFS TimeM
 
 variable {V : Type*}
 
 /-! ### Clause-width guard and literal enumeration -/
 
+/-- Predicate checking whether a clause has width `1` or `2`. -/
+def isValidTwoClause (c : Clause V) : Bool :=
+  decide (1 ≤ c.length ∧ c.length ≤ 2)
+
 /-- Check that every clause of `φ` has length `1` or `2`. -/
 def checkClauses (φ : CNF V) : Bool :=
-  φ.foldl (fun ok c => ok && decide (1 ≤ c.length ∧ c.length ≤ 2)) true
+  φ.foldl (fun ok c => ok && isValidTwoClause c) true
 
 /-- `checkClauses` in `TimeM`, charging one unit per clause. -/
 def checkClausesM (φ : CNF V) : TimeM ℕ Bool :=
-  φ.foldlM (fun ok c => do ✓ return (ok && decide (1 ≤ c.length ∧ c.length ≤ 2))) true
+  φ.foldlM (fun ok c => do ✓ return (ok && isValidTwoClause c)) true
 
 private theorem checkClauses_foldl :
     ∀ (cs : CNF V) (init : Bool),
-      cs.foldl (fun ok c => ok && decide (1 ≤ c.length ∧ c.length ≤ 2)) init =
-        (init && cs.all fun c => decide (1 ≤ c.length ∧ c.length ≤ 2))
+      cs.foldl (fun ok c => ok && isValidTwoClause c) init =
+        (init && cs.all isValidTwoClause)
   | [], init => by simp
   | c :: cs, init => by
     rw [List.foldl_cons, checkClauses_foldl, List.all_cons, Bool.and_assoc]
@@ -91,6 +96,7 @@ private theorem checkClauses_foldl :
 theorem checkClauses_eq_true_iff (φ : CNF V) :
     checkClauses φ = true ↔ (∀ c ∈ φ, c.length ≤ 2) ∧ [] ∉ φ := by
   rw [checkClauses, checkClauses_foldl, Bool.true_and, List.all_eq_true]
+  simp only [isValidTwoClause]
   constructor
   · intro h
     refine ⟨fun c hc => (of_decide_eq_true (h c hc)).2, fun hnil => ?_⟩
@@ -102,24 +108,12 @@ theorem checkClauses_eq_true_iff (φ : CNF V) :
     | nil => exact absurd hc hnil
     | cons _ _ => simp
 
-private theorem checkClausesM_foldlM :
-    ∀ (cs : CNF V) (init : Bool),
-      (cs.foldlM (fun ok c => do ✓ return (ok && decide (1 ≤ c.length ∧ c.length ≤ 2))) init).ret =
-        cs.foldl (fun ok c => ok && decide (1 ≤ c.length ∧ c.length ≤ 2)) init ∧
-      (cs.foldlM (fun ok c => do ✓ return (ok && decide (1 ≤ c.length ∧ c.length ≤ 2))) init).time =
-        cs.length
-  | [], init => by simp
-  | c :: cs, init => by
-    obtain ⟨hr, ht⟩ := checkClausesM_foldlM cs (init && decide (1 ≤ c.length ∧ c.length ≤ 2))
-    simp only [List.foldlM_cons, List.foldl_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons, hr, ht, true_and]
-    omega
+theorem ret_checkClausesM (φ : CNF V) : (checkClausesM φ).ret = checkClauses φ := by
+  simp [checkClausesM, checkClauses, TimeM.ret_foldlM]
 
-theorem ret_checkClausesM (φ : CNF V) : (checkClausesM φ).ret = checkClauses φ :=
-  (checkClausesM_foldlM φ true).1
-
-theorem time_checkClausesM (φ : CNF V) : (checkClausesM φ).time = φ.length :=
-  (checkClausesM_foldlM φ true).2
+theorem time_checkClausesM (φ : CNF V) : (checkClausesM φ).time = φ.length := by
+  simpa [checkClausesM] using TimeM.time_foldlM_of_time_eq
+    (fun ok c => do ✓ return (ok && isValidTwoClause c)) φ true (c := 1) (fun _ _ => rfl)
 
 /-- Enumerate both polarities `(v, false)` and `(v, true)` for each `v ∈ vs`. -/
 def literalList : List V → List (Literal V)
@@ -184,11 +178,12 @@ theorem time_literalListM (vs : List V) : (literalListM vs).time = vs.length :=
 /-- Add the implication arcs of a single clause `c` of width `1` or `2`. -/
 def addClauseEdges [DecidableEq V] (adj : Literal V → List (Literal V)) :
     Clause V → Literal V → List (Literal V)
+  | [] => adj
   | [a] => Function.update adj a.negate (a :: adj a.negate)
   | [a, b] =>
     let adj₁ := Function.update adj a.negate (b :: adj a.negate)
     Function.update adj₁ b.negate (a :: adj₁ b.negate)
-  | _ => adj
+  | _ :: _ :: _ :: _ => adj
 
 /-- Build the implication-graph adjacency lists of `φ`. -/
 def implicationAdj [DecidableEq V] (φ : CNF V) : Literal V → List (Literal V) :=
@@ -208,7 +203,8 @@ private theorem mem_addClauseEdges {adj : Literal V → List (Literal V)} {c : C
       ℓ' ∈ adj ℓ ∨ (ℓ.negate ∈ c ∧ ℓ' ∈ c ∧ ∀ m ∈ c, m = ℓ.negate ∨ m = ℓ') := by
   rcases c with _ | ⟨a, _ | ⟨b, _ | ⟨d, cs⟩⟩⟩
   · simp at hc1
-  · simp only [addClauseEdges, List.mem_singleton]
+  · dsimp only [addClauseEdges]
+    simp only [List.mem_singleton]
     by_cases hℓ : ℓ = a.negate
     · subst hℓ
       rw [negate_negate, Function.update_self, List.mem_cons]
@@ -224,7 +220,8 @@ private theorem mem_addClauseEdges {adj : Literal V → List (Literal V)} {c : C
         Function.update_of_ne hℓ _ _
       rw [hupd]
       simp [hne]
-  · simp only [addClauseEdges, List.mem_cons, List.not_mem_nil, or_false]
+  · dsimp only [addClauseEdges]
+    simp only [List.mem_cons, List.not_mem_nil, or_false]
     have hiff :
         (ℓ' ∈ (let adj₁ := Function.update adj a.negate (b :: adj a.negate)
             Function.update adj₁ b.negate (a :: adj₁ b.negate)) ℓ) ↔
@@ -255,17 +252,17 @@ private theorem mem_addClauseEdges {adj : Literal V → List (Literal V)} {c : C
     · rintro ⟨hneg, hℓ', hall⟩
       rcases hall a (.inl rfl) with ha | ha
       · rcases hall b (.inr rfl) with hb | hb
-        · have hℓa : ℓ = a.negate := by rw [← ha, negate_negate]
+        · have hℓa : ℓ = a.negate := by rw [ha, negate_negate]
           have hba : b = a := hb.trans ha.symm
           rcases hℓ' with rfl | rfl
           · exact .inl ⟨hℓa, hba.symm⟩
           · exact .inl ⟨hℓa, rfl⟩
-        · exact .inl ⟨by rw [← ha, negate_negate], hb.symm⟩
+        · exact .inl ⟨by rw [ha, negate_negate], hb.symm⟩
       · rcases hall b (.inr rfl) with hb | hb
-        · exact .inr ⟨by rw [← hb, negate_negate], ha.symm⟩
+        · exact .inr ⟨by rw [hb, negate_negate], ha.symm⟩
         · have hba : b = a := hb.trans ha.symm
           rcases hneg with hna | hnb
-          · exact .inl ⟨by rw [← hna, negate_negate], hba.symm.trans ha.symm⟩
+          · exact .inl ⟨by rw [← hna, negate_negate], ha.symm.trans hba.symm⟩
           · exact .inr ⟨by rw [← hnb, negate_negate], ha.symm⟩
   · simp at hc2
 
@@ -280,8 +277,16 @@ private theorem foldl_addClauseEdges_mem :
     have hrest : ∀ c' ∈ cs, 1 ≤ c'.length ∧ c'.length ≤ 2 :=
       fun c' hc' => hcs c' (List.mem_cons_of_mem c hc')
     rw [List.foldl_cons, foldl_addClauseEdges_mem cs _ hrest, mem_addClauseEdges hc.1 hc.2]
-    simp only [CNF.Implies, List.mem_cons, exists_eq_or_imp]
-    tauto
+    constructor
+    · rintro ((h | h) | ⟨c', hc', h⟩)
+      · exact .inl h
+      · exact .inr ⟨c, List.mem_cons_self, h⟩
+      · exact .inr ⟨c', List.mem_cons_of_mem c hc', h⟩
+    · rintro (h | ⟨c', hc', h⟩)
+      · exact .inl (.inl h)
+      · rcases List.mem_cons.1 hc' with rfl | hc'
+        · exact .inl (.inr h)
+        · exact .inr ⟨c', hc', h⟩
 
 /-- When `φ` has no empty clause and all clauses have width at most `2`, `implicationAdj φ`
 realizes `φ.Implies`. -/
@@ -313,11 +318,14 @@ private theorem sum_addClauseEdges_le [Fintype V] (adj : Literal V → List (Lit
     (c : Clause V) :
     (∑ w, (addClauseEdges adj c w).length) ≤ (∑ w, (adj w).length) + 2 := by
   rcases c with _ | ⟨a, _ | ⟨b, _ | ⟨d, cs⟩⟩⟩
-  · simp [addClauseEdges]
-  · simp only [addClauseEdges, sum_update_cons]
+  · exact Nat.le_add_right _ _
+  · change (∑ w, (Function.update adj a.negate (a :: adj a.negate) w).length) ≤ _
+    rw [sum_update_cons]
     omega
-  · simp only [addClauseEdges, sum_update_cons]
-  · simp [addClauseEdges]
+  · change (∑ w, (Function.update (Function.update adj a.negate (b :: adj a.negate))
+        b.negate (a :: Function.update adj a.negate (b :: adj a.negate) b.negate) w).length) ≤ _
+    rw [sum_update_cons, sum_update_cons]
+  · exact Nat.le_add_right _ _
 
 private theorem sum_foldl_addClauseEdges_le [Fintype V] :
     ∀ (cs : CNF V) (adj : Literal V → List (Literal V)),
@@ -333,23 +341,13 @@ theorem sum_length_implicationAdj_le [Fintype V] (φ : CNF V) :
     (∑ w, (implicationAdj φ w).length) ≤ 2 * φ.length := by
   simpa [implicationAdj] using sum_foldl_addClauseEdges_le φ (fun _ => [])
 
-private theorem implicationAdjM_foldlM :
-    ∀ (cs : CNF V) (adj : Literal V → List (Literal V)),
-      (cs.foldlM (fun adj c => do ✓ return addClauseEdges adj c) adj).ret =
-        cs.foldl addClauseEdges adj ∧
-      (cs.foldlM (fun adj c => do ✓ return addClauseEdges adj c) adj).time = cs.length
-  | [], adj => by simp
-  | c :: cs, adj => by
-    obtain ⟨hr, ht⟩ := implicationAdjM_foldlM cs (addClauseEdges adj c)
-    simp only [List.foldlM_cons, List.foldl_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons, hr, ht, true_and]
-    omega
+theorem ret_implicationAdjM (φ : CNF V) : (implicationAdjM φ).ret = implicationAdj φ := by
+  simp [implicationAdjM, implicationAdj, TimeM.ret_foldlM]
 
-theorem ret_implicationAdjM (φ : CNF V) : (implicationAdjM φ).ret = implicationAdj φ :=
-  (implicationAdjM_foldlM φ (fun _ => [])).1
-
-theorem time_implicationAdjM (φ : CNF V) : (implicationAdjM φ).time = φ.length :=
-  (implicationAdjM_foldlM φ (fun _ => [])).2
+theorem time_implicationAdjM (φ : CNF V) : (implicationAdjM φ).time = φ.length := by
+  simpa [implicationAdjM] using TimeM.time_foldlM_of_time_eq
+    (fun (adj : Literal V → List (Literal V)) c => do ✓ return addClauseEdges adj c)
+    φ (fun _ => []) (c := 1) (fun _ _ => rfl)
 
 end ImplicationGraph
 
@@ -364,11 +362,13 @@ def extractAssignment (vs : List V) (compIdx : Literal V → ℕ) : Option (V �
     none
 
 /-- `extractAssignment` in `TimeM`, charging one unit per variable in `vs`. -/
-def extractAssignmentM (vs : List V) (compIdx : Literal V → ℕ) : TimeM ℕ (Option (V → Bool)) := do
-  let ok ← vs.foldlM
-    (fun ok v => do ✓ return (ok && decide (compIdx (v, true) ≠ compIdx (v, false)))) true
-  if ok then return some fun v => decide (compIdx (v, false) < compIdx (v, true))
-  else return none
+def extractAssignmentM (vs : List V) (compIdx : Literal V → ℕ) : TimeM ℕ (Option (V → Bool)) :=
+  TimeM.bind
+    (vs.foldlM
+      (fun ok v => do ✓ return (ok && decide (compIdx (v, true) ≠ compIdx (v, false)))) true)
+    fun ok =>
+      if ok then pure (some fun v => decide (compIdx (v, false) < compIdx (v, true)))
+      else pure none
 
 private theorem extract_foldl (compIdx : Literal V → ℕ) :
     ∀ (vs : List V) (init : Bool),
@@ -378,31 +378,16 @@ private theorem extract_foldl (compIdx : Literal V → ℕ) :
   | v :: vs, init => by
     rw [List.foldl_cons, extract_foldl, List.all_cons, Bool.and_assoc]
 
-private theorem extract_foldlM (compIdx : Literal V → ℕ) :
-    ∀ (vs : List V) (init : Bool),
-      (vs.foldlM
-          (fun ok v => do ✓ return (ok && decide (compIdx (v, true) ≠ compIdx (v, false))))
-          init).ret =
-        vs.foldl (fun ok v => ok && decide (compIdx (v, true) ≠ compIdx (v, false))) init ∧
-      (vs.foldlM
-          (fun ok v => do ✓ return (ok && decide (compIdx (v, true) ≠ compIdx (v, false))))
-          init).time = vs.length
-  | [], init => by simp
-  | v :: vs, init => by
-    obtain ⟨hr, ht⟩ := extract_foldlM compIdx vs
-      (init && decide (compIdx (v, true) ≠ compIdx (v, false)))
-    simp only [List.foldlM_cons, List.foldl_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons, hr, ht, true_and]
-    omega
-
 theorem ret_extractAssignmentM (vs : List V) (compIdx : Literal V → ℕ) :
     (extractAssignmentM vs compIdx).ret = extractAssignment vs compIdx := by
-  simp only [extractAssignmentM, extractAssignment, TimeM.ret_bind, (extract_foldlM _ _ _).1]
+  dsimp only [extractAssignmentM, extractAssignment, TimeM.bind]
+  simp only [TimeM.ret_foldlM, TimeM.ret_bind, TimeM.ret_pure]
   split_ifs <;> rfl
 
 theorem time_extractAssignmentM (vs : List V) (compIdx : Literal V → ℕ) :
     (extractAssignmentM vs compIdx).time = vs.length := by
-  simp only [extractAssignmentM, TimeM.time_bind, (extract_foldlM _ _ _).2]
+  dsimp only [extractAssignmentM, TimeM.bind]
+  rw [TimeM.time_foldlM_of_time_eq _ vs true (c := 1) (fun _ _ => rfl)]
   split_ifs <;> simp
 
 /-! ### Linear-time 2-SAT solver -/
@@ -422,27 +407,30 @@ def solve [DecidableEq V] (vs : List V) (φ : CNF V) : Option (V → Bool) :=
 /-- `solve` in `TimeM`. -/
 def solveM [DecidableEq V] (vs : List V) (φ : CNF V) : TimeM ℕ (Option (V → Bool)) := do
   ✓
-  let ok ← checkClausesM φ
-  if ok then
-    let lits ← literalListM vs
-    let adj ← implicationAdjM φ
-    let comps ← sccsM adj lits
-    let compIdx ← indexComponentsM comps
-    extractAssignmentM vs compIdx
-  else
-    return none
+  TimeM.bind (checkClausesM φ) fun ok =>
+    if ok then do
+      let lits ← literalListM vs
+      let adj ← implicationAdjM φ
+      let comps ← sccsM adj lits
+      let compIdx ← indexComponentsM comps
+      extractAssignmentM vs compIdx
+    else
+      pure none
 
 section SolveCorrectness
 
 variable [DecidableEq V] {vs : List V} {φ : CNF V}
 
 theorem ret_solveM (vs : List V) (φ : CNF V) : (solveM vs φ).ret = solve vs φ := by
-  simp only [solveM, solve, TimeM.ret_bind, ret_checkClausesM]
+  simp only [solveM, solve, TimeM.ret_bind]
+  dsimp only [TimeM.bind]
+  rw [ret_checkClausesM]
   split_ifs with hok
   · simp [ret_literalListM, ret_implicationAdjM, ret_sccsM, ret_indexComponentsM,
       ret_extractAssignmentM]
   · rfl
 
+omit [DecidableEq V] in
 private theorem literal_false_lt {compIdx : Literal V → ℕ}
     (hne : ∀ v, compIdx (v, true) ≠ compIdx (v, false)) (ℓ : Literal V)
     (hf : Literal.eval (fun v => decide (compIdx (v, false) < compIdx (v, true))) ℓ = false) :
@@ -490,7 +478,7 @@ theorem solve_eq_some (hvs : ∀ v, v ∈ vs) {σ : V → Bool} (h : solve vs φ
         have hedge : Edge adj a.negate a := by
           rw [edge_implicationAdj_iff hw hnil]
           exact ⟨[a], hc, by simp, by simp, fun m hm => .inl (by simpa using hm)⟩
-        have hle := hcond.indexComponents_le_of_edge hedge
+        have hle : compIdx a.negate ≤ compIdx a := hcond.indexComponents_le_of_edge hedge
         omega
       · by_contra hceval
         have habf :
@@ -511,14 +499,13 @@ theorem solve_eq_some (hvs : ∀ v, v ∈ vs) {σ : V → Bool} (h : solve vs φ
           refine ⟨[a, b], hc, by simp, by simp, fun m hm => ?_⟩
           rcases List.mem_cons.1 hm with rfl | hm
           · exact .inr rfl
-          · exact .inl (List.mem_singleton.1 hm)
-        have hle₁ := hcond.indexComponents_le_of_edge hedge₁
-        have hle₂ := hcond.indexComponents_le_of_edge hedge₂
+          · exact .inl (by simpa [negate_negate] using List.mem_singleton.1 hm)
+        have hle₁ : compIdx a.negate ≤ compIdx b := hcond.indexComponents_le_of_edge hedge₁
+        have hle₂ : compIdx b.negate ≤ compIdx a := hcond.indexComponents_le_of_edge hedge₂
         omega
       · simp at hc2
-  · simp at h
 
-private theorem reach_iff_implies {hw : ∀ c ∈ φ, c.length ≤ 2} (hnil : [] ∉ φ)
+private theorem reach_iff_implies (hw : ∀ c ∈ φ, c.length ≤ 2) (hnil : [] ∉ φ)
     {ℓ ℓ' : Literal V} :
     Relation.ReflTransGen (Edge (implicationAdj φ)) ℓ ℓ' ↔
       Relation.ReflTransGen φ.Implies ℓ ℓ' := by
@@ -556,13 +543,14 @@ theorem isSome_solve_iff (hvs : ∀ v, v ∈ vs) :
       refine decide_eq_true fun heq => ?_
       obtain ⟨h₁, h₂⟩ := (hcond.indexComponents_eq_iff (v, true) (v, false)).1 heq
       exact CNF.not_satisfiable_of_reach (ℓ := (v, true))
-        ((reach_iff_implies hnil).1 h₁) ((reach_iff_implies hnil).1 h₂) hsat
-    simp [solve, hchk, extractAssignment, hdist]
+        ((reach_iff_implies hw hnil).1 h₁) ((reach_iff_implies hw hnil).1 h₂) hsat
+    simp only [solve, hchk, ↓reduceIte, extractAssignment, hdist, Option.isSome_some]
 
 /-- **Linear `TimeM` step bound for `solveM`**: when `vs` lists every vertex of `V` without
 repetition, `solveM vs φ` takes at most `12 * |vs| + 8 * |φ| + 1` steps. -/
-theorem time_solveM_le [Fintype V] (hvs : ∀ v, v ∈ vs) (hnd : vs.Nodup) (φ : CNF V) :
+theorem time_solveM_le (hvs : ∀ v, v ∈ vs) (hnd : vs.Nodup) (φ : CNF V) :
     (solveM vs φ).time ≤ 12 * vs.length + 8 * φ.length + 1 := by
+  let _ : Fintype V := Fintype.ofList vs hvs
   have hlits_mem : ∀ ℓ, ℓ ∈ literalList vs := mem_literalList hvs
   have hlits_nd : (literalList vs).Nodup := nodup_literalList hnd
   have hcond : IsSCCCondensation (implicationAdj φ) (sccs (implicationAdj φ) (literalList vs)) :=
@@ -585,10 +573,13 @@ theorem time_solveM_le [Fintype V] (hvs : ∀ v, v ∈ vs) (hnd : vs.Nodup) (φ 
     rw [time_indexComponentsM, hcond.length_flatten_eq_card]
     have hlen := hcond.length_le_card
     omega
-  simp only [solveM, TimeM.time_bind, TimeM.time_tick, ret_checkClausesM, time_checkClausesM]
+  simp only [solveM, TimeM.time_bind, TimeM.time_tick]
+  dsimp only [TimeM.bind]
+  rw [ret_checkClausesM, time_checkClausesM]
   split_ifs with hok
-  · simp only [TimeM.time_bind, ret_literalListM, time_literalListM, ret_implicationAdjM,
-      time_implicationAdjM, ret_sccsM, ret_indexComponentsM, time_extractAssignmentM]
+  · simp only [TimeM.time_bind, ret_literalListM, time_literalListM,
+      ret_implicationAdjM, time_implicationAdjM, ret_sccsM, ret_indexComponentsM,
+      time_extractAssignmentM]
     omega
   · simp only [TimeM.time_pure]
     omega
@@ -628,44 +619,46 @@ def toFinVar (φ : CNF ℕ) (v : ℕ) : Fin (φ.vars.length + 1) :=
 def toFinCNF (φ : CNF ℕ) : CNF (Fin (φ.vars.length + 1)) :=
   φ.relabel (toFinVar φ)
 
+/-- Relabel a single clause with `f` in `TimeM`, charging one unit per literal. -/
+def relabelClauseM {W : Type*} (f : ℕ → W) (c : Clause ℕ) : TimeM ℕ (Clause W) :=
+  c.mapM fun ℓ => do ✓ return (f ℓ.1, ℓ.2)
+
 /-- `toFinCNF` in `TimeM`, charging one unit per clause and one per literal occurrence. -/
 def toFinCNFM (φ : CNF ℕ) : TimeM ℕ (CNF (Fin (φ.vars.length + 1))) :=
   let f := toFinVar φ
   φ.mapM fun c => do
     ✓
-    c.mapM fun ℓ => do
-      ✓
-      return (f ℓ.1, ℓ.2)
+    relabelClauseM f c
 
-private theorem mapM_clause_toFin (f : ℕ → W) :
+private theorem relabelClauseM_spec {W : Type*} (f : ℕ → W) :
     ∀ (c : Clause ℕ),
-      (c.mapM fun ℓ => do ✓ return (f ℓ.1, ℓ.2)).ret = Clause.relabel f c ∧
-      (c.mapM fun ℓ => do ✓ return (f ℓ.1, ℓ.2)).time = c.length
-  | [] => by simp [Clause.relabel]
+      (relabelClauseM f c).ret = Clause.relabel f c ∧
+      (relabelClauseM f c).time = c.length
+  | [] => by simp [relabelClauseM, Clause.relabel]
   | ℓ :: c => by
-    obtain ⟨hr, ht⟩ := mapM_clause_toFin f c
-    simp only [List.mapM_cons, Clause.relabel, List.map_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons, hr, ht]
-    refine ⟨?_, by omega⟩
-    cases ℓ
-    rfl
+    obtain ⟨hr, ht⟩ := relabelClauseM_spec f c
+    simp only [relabelClauseM, List.mapM_cons, Clause.relabel, List.map_cons, TimeM.ret_bind,
+      TimeM.time_bind, TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons]
+    change ((f ℓ.1, ℓ.2) :: (relabelClauseM f c).ret = (f ℓ.1, ℓ.2) :: Clause.relabel f c) ∧
+      1 + ((relabelClauseM f c).time + 0) = c.length + 1
+    rw [hr, ht]
+    exact ⟨rfl, by omega⟩
 
-private theorem mapM_cnf_toFin (f : ℕ → W) :
+private theorem mapM_cnf_toFin {W : Type*} (f : ℕ → W) :
     ∀ (cs : CNF ℕ),
-      (cs.mapM fun c => do
-          ✓
-          c.mapM fun ℓ => do ✓ return (f ℓ.1, ℓ.2)).ret = cs.relabel f ∧
-      (cs.mapM fun c => do
-          ✓
-          c.mapM fun ℓ => do ✓ return (f ℓ.1, ℓ.2)).time = cs.length + cs.vars.length
+      (cs.mapM fun c => do ✓ relabelClauseM f c).ret = cs.relabel f ∧
+      (cs.mapM fun c => do ✓ relabelClauseM f c).time = cs.length + cs.vars.length
   | [] => by simp [CNF.relabel, CNF.vars]
   | c :: cs => by
-    obtain ⟨hr₁, ht₁⟩ := mapM_clause_toFin f c
+    obtain ⟨hr₁, ht₁⟩ := relabelClauseM_spec f c
     obtain ⟨hr₂, ht₂⟩ := mapM_cnf_toFin f cs
     simp only [List.mapM_cons, CNF.relabel, List.map_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, hr₁, hr₂, ht₁, ht₂, List.length_cons,
-      CNF.vars, List.flatten_cons, List.map_append, List.length_append, List.length_map, true_and]
-    omega
+      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, hr₁, ht₁, List.length_cons,
+      CNF.vars, List.flatten_cons, List.map_append, List.length_append, List.length_map]
+    rw [hr₂, ht₂]
+    dsimp only [CNF.vars]
+    simp only [List.length_map]
+    exact ⟨rfl, by omega⟩
 
 theorem ret_toFinCNFM (φ : CNF ℕ) : (toFinCNFM φ).ret = toFinCNF φ :=
   (mapM_cnf_toFin (toFinVar φ) φ).1
@@ -701,7 +694,7 @@ private theorem satisfiable_toFinCNF_iff (φ : CNF ℕ) :
     rw [toFinCNF, CNF.eval_relabel]
     refine (CNF.eval_congr fun v hv => ?_).trans hτ
     have hlt : φ.vars.idxOf v < φ.vars.length := List.idxOf_lt_length_of_mem hv
-    simp [toFinVar, hlt, List.getElem?_idxOf hv]
+    simp [toFinVar, hlt]
 
 /-- **Soundness of `solveNat`**: any returned assignment witnesses `φ ∈ Cslib.Complexity.TwoSAT`. -/
 theorem solveNat_eq_some {φ : CNF ℕ} {σ : ℕ → Bool} (h : solveNat φ = some σ) :

@@ -249,7 +249,7 @@ second satisfying model differing on the occurring variable `1`. -/
 theorem exists_multiple_models :
     ∃ (φ : CNF ℕ) (σ : ℕ → Bool),
       φ ∈ HornSAT ∧ φ.eval σ = true ∧ (∃ v ∈ φ.vars, σ v ≠ assignment φ v) :=
-  ⟨[[(0, false), (1, true)]], fun v => v == 1, ⟨by decide, fun _ => false, by decide⟩, by decide,
+  ⟨[[(0, false), (1, true)]], fun v => v == 1, (solve_eq_true_iff _).mp (by decide), by decide,
     1, by decide, by decide⟩
 
 end HornSAT

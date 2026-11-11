@@ -45,8 +45,7 @@ state.
   the absence of back edges in acyclic graphs (Lemma 22.11 there).
 * `Cslib.Algorithms.Lean.DFS.dfs_scc_finished_order`: if a finished vertex `u` reaches `v` while
   `v` does not reach `u`, some vertex mutually reachable with `u` finishes after `v` (the
-  component finishing-time property underlying Kosaraju's algorithm [Cormen et al., Section
-  22.5][CLRS2009]).
+  component finishing-time property underlying Kosaraju's algorithm [Cormen et al.][CLRS2009]).
 * `Cslib.Algorithms.Lean.DFS.time_dfsM`, `Cslib.Algorithms.Lean.DFS.time_dfsM_le`: the cost is one
   unit per root plus one per edge out of a finished vertex, so at most `|roots| + |E|`.
 

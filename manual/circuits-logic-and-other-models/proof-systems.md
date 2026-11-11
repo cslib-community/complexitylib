@@ -210,14 +210,21 @@ Horn/dual-Horn definition (`PL.isPolymorphism_and_iff_exists_hornCNF`,
 system (`PL.isPolymorphism_parity_iff_exists_affineSystem`). These definitions need no auxiliary
 variables and include empty/nullary relations. See the [majority examples](../../CslibFrontierTests/MajorityCNF.lean).
 
-The ordinary solvers are also reusable: `HornSAT.mem_P`, `DualHornSAT.mem_P` and
-`XORSAT.satisfiable_mem_P`. Horn syntax counts positive occurrences, so two copies of a positive
-literal violate the syntax condition; repeated negatives and opposite-polarity tautologies are
-supported. Forward chaining reaches the least-model candidate in `numVars + 1` passes, storing
-filtered occurrences rather than an array indexed by the largest name. Affine equations are
-variable lists paired with Boolean right-hand sides; repeated variables cancel in the Boolean
-ring. Dense Gaussian elimination preserves row count and weakly decreases its complete framed
-state encoding at each column. See the [Horn solver tests](../../CslibFrontierTests/HornSAT.lean)
+The ordinary solvers are also reusable: `TwoSAT.mem_P`
+([TwoSAT/PolyTime.lean](../../CslibFrontier/Computability/Complexity/Problems/TwoSAT/PolyTime.lean)),
+`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.satisfiable_mem_P`. For `TwoSAT`,
+`TwoSAT.assignment` constructs a satisfying assignment in polynomial time on binary CNF encodings
+(`TwoSAT.computableInPolyTime_assignment`, `TwoSAT.eval_assignment_of_mem`) by filtering
+occurrence-bounded implication-graph reachability lists (`TwoSAT.reach`). Horn syntax counts
+positive occurrences, so two copies of a positive literal violate the syntax condition; repeated
+negatives and opposite-polarity tautologies are supported. Forward chaining reaches the pointwise-least
+model in `numVars + 1` passes (`HornSAT.isLeast_assignment`), storing filtered occurrences rather than
+an array indexed by the largest name; `HornSAT.exists_multiple_models` exhibits a satisfiable Horn
+formula whose least model is not the unique satisfying model on its occurring variables. Affine
+equations are variable lists paired with Boolean right-hand sides; repeated variables cancel in the
+Boolean ring. Dense Gaussian elimination preserves row count and weakly decreases its complete framed
+state encoding at each column. See the [SCC and 2-SAT tests](../../CslibFrontierTests/SCCAndTwoSAT.lean),
+[Horn solver tests](../../CslibFrontierTests/HornSAT.lean)
 and [XOR solver tests](../../CslibFrontierTests/XORSAT.lean).
 
 The hard branch `CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` imports all its mathematical

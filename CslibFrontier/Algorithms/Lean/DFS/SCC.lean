@@ -8,13 +8,14 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.Lean.DFS.TopologicalSort
+import CslibFrontier.Algorithms.Lean.TimeM.Loops
 
 /-!
 # Strongly connected components
 
 Kosaraju's linear-time algorithm for the strongly connected components of a directed graph given by
 adjacency lists `adj : V → List V`, together with their condensation topological order, following
-[Cormen et al., Section 22.5][CLRS2009] (see also [Tarjan][Tarjan1972]).
+[Cormen et al.][CLRS2009] (see also [Tarjan][Tarjan1972]).
 
 From a vertex list `vs` covering `V`, `Cslib.Algorithms.Lean.DFS.sccs adj vs`:
 1. computes the finishing order `ord = topologicalSort adj vs` of depth-first search on `adj`;
@@ -178,51 +179,19 @@ theorem reflTransGen_edge_transposeAdj_iff {vs : List V} (hvs : ∀ v, v ∈ vs)
     | refl => exact .refl
     | tail _ hbc ih => exact ih.head ((edge_transposeAdj_iff hvs).2 hbc)
 
-private theorem foldlM_transpose_inner (u : V) :
-    ∀ (l : List V) (rev : V → List V),
-      (l.foldlM (fun rev v => do ✓ return Function.update rev v (u :: rev v)) rev).ret =
-        l.foldl (fun rev v => Function.update rev v (u :: rev v)) rev ∧
-      (l.foldlM (fun rev v => do ✓ return Function.update rev v (u :: rev v)) rev).time = l.length
-  | [], rev => by simp
-  | v :: l, rev => by
-    obtain ⟨hret, htime⟩ := foldlM_transpose_inner u l (Function.update rev v (u :: rev v))
-    simp only [List.foldlM_cons, List.foldl_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons, hret, htime, true_and]
-    omega
-
-private theorem foldlM_transpose_outer :
-    ∀ (vs : List V) (rev : V → List V),
-      (vs.foldlM
-          (fun rev u => do
-            ✓
-            (adj u).foldlM (fun rev v => do ✓ return Function.update rev v (u :: rev v)) rev)
-          rev).ret =
-        vs.foldl (fun rev u => (adj u).foldl (fun rev v => Function.update rev v (u :: rev v)) rev)
-          rev ∧
-      (vs.foldlM
-          (fun rev u => do
-            ✓
-            (adj u).foldlM (fun rev v => do ✓ return Function.update rev v (u :: rev v)) rev)
-          rev).time = vs.length + outDegreeSum adj vs
-  | [], rev => by simp [outDegreeSum]
-  | u :: vs, rev => by
-    obtain ⟨hr₁, ht₁⟩ := foldlM_transpose_inner u (adj u) rev
-    obtain ⟨hr₂, ht₂⟩ := foldlM_transpose_outer vs
-      ((adj u).foldl (fun rev v => Function.update rev v (u :: rev v)) rev)
-    simp only [List.foldlM_cons, List.foldl_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, hr₁, ht₁, outDegreeSum, List.map_cons,
-      List.sum_cons, List.length_cons]
-    rw [hr₂, ht₂]
-    dsimp only [outDegreeSum]
-    exact ⟨rfl, by omega⟩
-
 theorem ret_transposeAdjM (adj : V → List V) (vs : List V) :
-    (transposeAdjM adj vs).ret = transposeAdj adj vs :=
-  (foldlM_transpose_outer vs (fun _ => [])).1
+    (transposeAdjM adj vs).ret = transposeAdj adj vs := by
+  simp only [transposeAdjM, transposeAdj, TimeM.ret_foldlM, TimeM.ret_bind, TimeM.ret_pure]
 
 theorem time_transposeAdjM (adj : V → List V) (vs : List V) :
-    (transposeAdjM adj vs).time = vs.length + outDegreeSum adj vs :=
-  (foldlM_transpose_outer vs (fun _ => [])).2
+    (transposeAdjM adj vs).time = vs.length + outDegreeSum adj vs := by
+  rw [transposeAdjM, TimeM.time_foldlM_eq_sum _ (fun u => 1 + (adj u).length)]
+  · rw [List.sum_map_add]
+    simp [outDegreeSum]
+  · intro rev u
+    simp only [TimeM.time_bind, TimeM.time_tick]
+    rw [TimeM.time_foldlM_of_time_eq _ _ _ (c := 1) (fun _ _ => rfl)]
+    omega
 
 private theorem sum_length_foldl_update [Fintype V] (u : V) :
     ∀ (l : List V) (rev : V → List V),
@@ -711,25 +680,20 @@ theorem indexComponents_eq_of_mem {comps : List (List V)} (hnd : comps.flatten.N
     indexComponents comps u = i := by
   simpa [indexComponents] using indexComponentsAux_getElem 0 comps (fun _ => 0) hnd hi hu
 
-private theorem foldlM_index_inner (idx : ℕ) :
-    ∀ (c : List V) (f : V → ℕ),
-      (c.foldlM (fun f v => do ✓ return Function.update f v idx) f).ret =
-        c.foldl (fun f v => Function.update f v idx) f ∧
-      (c.foldlM (fun f v => do ✓ return Function.update f v idx) f).time = c.length
-  | [], f => by simp
-  | v :: c, f => by
-    obtain ⟨hr, ht⟩ := foldlM_index_inner idx c (Function.update f v idx)
-    simp only [List.foldlM_cons, List.foldl_cons, TimeM.ret_bind, TimeM.time_bind,
-      TimeM.time_tick, TimeM.ret_pure, TimeM.time_pure, List.length_cons, hr, ht, true_and]
-    omega
-
 private theorem indexComponentsAuxM_spec :
     ∀ (idx : ℕ) (cs : List (List V)) (f : V → ℕ),
       (indexComponentsAuxM idx cs f).ret = indexComponentsAux idx cs f ∧
       (indexComponentsAuxM idx cs f).time = cs.length + cs.flatten.length
   | _, [], f => by simp [indexComponentsAuxM, indexComponentsAux]
   | idx, c :: cs, f => by
-    obtain ⟨hr₁, ht₁⟩ := foldlM_index_inner idx c f
+    have hr₁ :
+        (c.foldlM (fun f v => do ✓ return Function.update f v idx) f).ret =
+          c.foldl (fun f v => Function.update f v idx) f := by
+      simp [TimeM.ret_foldlM]
+    have ht₁ :
+        (c.foldlM (fun f v => do ✓ return Function.update f v idx) f).time = c.length := by
+      simpa using TimeM.time_foldlM_of_time_eq
+        (fun (f : V → ℕ) v => do ✓ return Function.update f v idx) c f (c := 1) (fun _ _ => rfl)
     obtain ⟨hr₂, ht₂⟩ := indexComponentsAuxM_spec (idx + 1) cs
       (c.foldl (fun f v => Function.update f v idx) f)
     simp only [indexComponentsAuxM, indexComponentsAux, TimeM.ret_bind, TimeM.time_bind,
