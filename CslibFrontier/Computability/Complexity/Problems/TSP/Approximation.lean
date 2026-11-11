@@ -40,8 +40,8 @@ are); the bound does not need that. Entries outside the city range are irrelevan
   of `Fin n`, which transfers bounds stated for tours over `Fin n`.
 * `tourLength_approxTour_le_two_mul`: on metric matrices, the tour has length at most twice the
   length of any tour.
-* `tourLength_approxTour_le_two_mul_of_mem`: if `(D, b) ∈ TSP` with `D` metric, the tour has
-  length at most `2 * b`.
+* `tourLength_approxTour_le_two_mul_of_mem`: if `x ∈ TSP` with `x.dist` metric, the tour has
+  length at most `2 * x.bound`.
 
 ## Limitations
 
@@ -110,11 +110,11 @@ theorem tourLength_approxTour_le_two_mul {D : List (List ℕ)} (hD : IsMetric D)
   exact cycleCost_mstTour_le_two_mul (fun x y => hD.symm x x.isLt y y.isLt)
     (fun x y z => hD.triangle x x.isLt y y.isLt z z.isLt) hq hcov
 
-/-- **The 2-approximation against the decision problem**: if a metric instance `(D, b)` belongs
-to `TSP`, the MST tour has length at most `2 * b`. -/
-theorem tourLength_approxTour_le_two_mul_of_mem {D : List (List ℕ)} {b : ℕ} (hD : IsMetric D)
-    (h : (D, b) ∈ TSP) : tourLength D (approxTour D) ≤ 2 * b := by
+/-- **The 2-approximation against the decision problem**: if a metric instance `x` belongs to
+`TSP`, the MST tour has length at most `2 * x.bound`. -/
+theorem tourLength_approxTour_le_two_mul_of_mem {x : TSPInstance} (hx : IsMetric x.dist)
+    (h : x ∈ TSP) : tourLength x.dist (approxTour x.dist) ≤ 2 * x.bound := by
   obtain ⟨p, hp, hb⟩ := h
-  exact (tourLength_approxTour_le_two_mul hD hp).trans (Nat.mul_le_mul_left 2 hb)
+  exact (tourLength_approxTour_le_two_mul hx hp).trans (Nat.mul_le_mul_left 2 hb)
 
 end Cslib.Complexity.TSP

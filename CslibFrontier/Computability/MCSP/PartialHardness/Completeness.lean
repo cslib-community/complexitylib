@@ -161,8 +161,7 @@ private theorem exists_satTerm {S : Finset ℕ}
       have hjD : I.formulas.getD j [] = I.formulas[j] := by
         simp [List.getD_eq_getElem?_getD, hj]
       refine ⟨t, fun _ => ⟨hjD ▸ ht, fun q hq => ?_⟩⟩
-      have htD : term I j t = I.formulas[j][t] := by
-        simp [term, List.getD_eq_getElem?_getD, hj, ht]
+      have htD : term I j t = I.formulas[j][t] := term_eq_getElem hj ht
       rw [htD] at hq
       have hq' := (Term.eval_eq_true_iff _ _).1 hct _ (List.getElem_mem hq)
       rw [hmono _ (List.getElem_mem hj) _ (List.getElem_mem ht) _ (List.getElem_mem hq)] at hq'
@@ -248,8 +247,7 @@ private theorem combine_append_eq {S : Finset ℕ} {f : VarFunctions I lam} {τ 
     have hvS := hvars q hq
     set v := var I (formulaIndex x) (τ (formulaIndex x)) q with hv_def
     have hvn := Finset.mem_range.1 (hS hvS)
-    have hvW : varLength I lam v ≤ seedWidth I lam :=
-      Finset.le_sup (f := varLength I lam) (Finset.mem_range.2 hvn)
+    have hvW : varLength I lam v ≤ seedWidth I lam := varLength_le_seedWidth hvn
     set s := (BitString.equivFin _ (BitString.zeroExtend (d' := varLength I lam v)
       (seed x ⟨_, htΔ⟩ q i)) : ℕ) with hs_def
     have hs : s < 2 ^ varLength I lam v := (BitString.equivFin _ _).isLt
