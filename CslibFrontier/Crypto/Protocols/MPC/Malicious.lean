@@ -158,15 +158,6 @@ theorem adversaryAborts_characterization {m : ℕ} {In Out : Fin m → Type} {Vi
         simp_rw [h_all]
         simp
 
-/-- Naive without-abort composition failure:
-A randomized functionality cannot be securely realized by an aborting protocol without bias.
-We show there is a functionality (coin toss) such that ANY non-aborting simulator fails to match
-the biased joint distribution of an aborting protocol (Cleve 1986). -/
-noncomputable def coinTossFunc : Functionality 2 (fun _ => Unit) (fun _ => Bool) :=
-  fun _ => do
-    let b ← uniform Bool
-    return fun _ => b
-
 /-- In the ideal model without abort, the honest party's output is independent
 if the functionality provides no output to the adversary. -/
 noncomputable def coinTossPrivateFunc : Functionality 2 (fun _ => Unit)
@@ -199,7 +190,7 @@ theorem naive_without_abort_failure :
   have h_rhs : ProbComp.eval coinTossBiasedDist
       ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = 1/2 := by
     dsimp [coinTossBiasedDist]
-    simp [eval_bind, eval_uniform, PMF.bind_apply, PMF.pure_apply, PMF.uniformOfFintype_apply]
+    simp only [eval_bind, eval_uniform, PMF.bind_apply, PMF.uniformOfFintype_apply]
     have h_true : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) :
         (i : Fin 2) → Option (if i = 0 then Unit else Bool)) ≠ 
       (fun i => if h : i = 0 then cast (by simp [h]) (some ())
@@ -214,17 +205,24 @@ theorem naive_without_abort_failure :
             let (v, y) ← maliciousIdeal coinTossPrivateFunc I0 (fun _ => ()) S
             return (v, fun i => some (y i)))
       ((), fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) = 0 := by
-    simp [PMF.map_apply]
-    intro a b heq
-    have h_false : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none) :
-        (i : Fin 2) → Option (if i = 0 then Unit else Bool)) ≠ 
-      fun i => some (b i) := by
-      intro heq2
-      have h2 := congr_fun heq2 1
-      have h1 : (1 : Fin 2) ≠ 0 := by decide
-      revert h2
-      simp [h1]
-    contradiction
+    simp only [PMF.map_apply, bind_pure_comp, eval_map, tsum_eq_zero_iff]
+    intro a
+    split_ifs with h
+    · have h_false
+        : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
+          : (i : Fin 2) → Option (if i = 0 then Unit else Bool)) ≠ fun i => some (a.2 i) := by
+        intro heq2
+        have h2 := congr_fun heq2 1
+        have h1 : (1 : Fin 2) ≠ 0 := by decide
+        revert h2
+        simp [h1]
+      have heq2
+        : ((fun i => if h : i = 0 then cast (by simp [h]) (some ()) else none)
+          : (i : Fin 2) → Option (if i = 0 then Unit else Bool)) = fun i => some (a.2 i) := by
+        have h_snd := congr_arg Prod.snd h
+        exact h_snd
+      contradiction
+    · rfl
   rw [h_rhs, h_lhs] at H
   apply_fun ENNReal.toReal at H
   revert H
