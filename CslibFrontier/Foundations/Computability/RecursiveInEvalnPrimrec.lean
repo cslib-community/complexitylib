@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 The authors. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The authors
+Authors: Samuel Schlesinger
 -/
 module
 -- upstream: candidate
@@ -11,9 +11,12 @@ public import CslibFrontier.Foundations.Computability.RecursiveInCode
 public import Mathlib.Computability.Primrec.Basic
 
 /-!
-# Recursive in `evaln` and `primrec`
+# Primitive Recursive Evaluator for Oracle Computations
 
-Proofs of primrec for `evaln` and related functions.
+This module establishes the primitive recursiveness of `Nat.RecursiveIn.Code.evaln` and related
+functions. It provides the core `Primrec` machinery required to witness computable finite-stage
+search under the halting jump `∅'`. This forms the computational foundation for the Kleene–Post
+theorem constructing intermediate Turing degrees `A, B ≤ᵀ ∅'` in `KleenePostJump.lean`.
 -/
 
 open Encodable Denumerable
