@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryDivision
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Foundations.Data.Nat.Radix
+import CslibFrontier.Foundations.Data.Nat.Bits.Halving
 
 /-!
 # Direct signed shifts and runtime radix digits
@@ -47,11 +48,6 @@ theorem intBin_subNatNat : ComputableInPolyTime (fun p : ℕ × ℕ => Int.subNa
     rw [he]
     simp [Nat.sub_eq_zero_of_le hr]
 
-private theorem iterate_div (B x k : ℕ) : (· / B)^[k] x = x / B ^ k := by
-  induction k with
-  | zero => simp
-  | succ k ih => rw [Function.iterate_succ_apply', ih, Nat.pow_succ, Nat.div_div_eq_div_mul]
-
 /-- Read the existing radix digit with binary base/value and a unary runtime position.
 The certificate is total, including bases zero and one. -/
 theorem radix_digit :
@@ -66,7 +62,7 @@ theorem radix_digit :
     (init := fun p => p.1.2) (step := fun B acc => acc / B) hb hi hx hstep
     (bound := fun p => (encPair (encPair encNat encNat) encUnary p).length) .self (by
       intro p i _
-      rw [iterate_div]
+      rw [Nat.iterate_div]
       have hq : (encNat (p.1.2 / p.1.1 ^ i)).length ≤ (encNat p.1.2).length := by
         simpa [Nat.size_eq_bits_len] using Nat.size_le_size (Nat.div_le_self p.1.2 (p.1.1 ^ i))
       exact hq.trans ((length_le_encPair_right encNat encNat p.1).trans
@@ -74,6 +70,6 @@ theorem radix_digit :
   have h := binary_mod.comp (hit.prod hb)
   convert h using 1
   funext p
-  simp only [Cslib.Radix.digit_eq_div_pow_mod, iterate_div, Function.comp_def]
+  simp only [Cslib.Radix.digit_eq_div_pow_mod, Nat.iterate_div, Function.comp_def]
 
 end Turing.MultiTapeTM.ComputableInPolyTime
