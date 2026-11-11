@@ -462,7 +462,8 @@ end DirectionsToPath
 from the top of the first diamond to the bottom of the last exactly when its rows can be given
 directions so that every clause has a detour in the direction of its row. -/
 theorem mem_DirHamPath_iff (hD : WellFormed N slots M D) :
-    (graph N slots M D, topNode 0, topNode N) ∈ DirHamPath ↔ Satisfiable M D := by
+    (⟨graph N slots M D, topNode 0, topNode N⟩ : PathInstance) ∈ DirHamPath ↔
+      Satisfiable M D := by
   refine ⟨satisfiable_of_mem_DirHamPath hD, fun ⟨dir, hdir⟩ => ?_⟩
   choose! pick hpick using hdir
   exact ⟨_, isDirHamPath_hamPath (dir := dir) hD fun j hj =>
