@@ -388,19 +388,11 @@ end Tapes
 private noncomputable def emptyOracle : Empty × List Bool → StateT Unit PMF (List Bool) :=
   fun q => q.1.elim
 
-private theorem runOracleConfigFrom_empty {k : ℕ} {State : Type} {x : List Bool}
-    (M : MultiTapePTM k Bool State) (fuel : ℕ) (cfg : Config k Bool State Empty x) :
-    M.runOracleConfigFrom fuel cfg = ProbOracleComp.sample (M.runClosedConfigFrom fuel cfg) := by
-  dsimp only [runOracleConfigFrom, runClosedConfigFrom, MultiTapePTM.runConfigFrom,
-    ProbOracleComp.sample]
-  rw [MultiTapeMachine.interpret_runConfigFrom]
-  congr 2 with op : 1
-  exact op.elim
-
 private theorem runOracle_empty {k : ℕ} {State : Type} (M : MultiTapePTM k Bool State)
     (fuel : ℕ) (x : List Bool) :
     M.runOracle fuel x = ProbOracleComp.sample (M.runClosed fuel x) := by
-  rw [runOracle_eq_map, runOracleConfigFrom_empty, ← ProbOracleComp.sample_map, ← runClosed_eq_map]
+  rw [runOracle_eq_map, MultiTapePTM.runOracleConfigFrom_empty, ← ProbOracleComp.sample_map,
+    ← runClosed_eq_map]
 
 private theorem halted_of_computesTidily {k : ℕ} {State : Type} {x : List Bool} {t : ℕ}
     {prog : ProbOracleComp (fun _ : Empty × List Bool => List Bool) (List Bool)}
@@ -410,7 +402,8 @@ private theorem halted_of_computesTidily {k : ℕ} {State : Type} {x : List Bool
   intro final hfinal
   have hh := (h []).halted emptyOracle () (M.initialConfig x) (Cfg.init_eq_wordsCfg M.initial x)
     (fun op => op.elim) (final, ())
-  rw [runOracleConfigFrom_empty, ProbOracleComp.runWith_sample, PMF.mem_support_map_iff] at hh
+  rw [MultiTapePTM.runOracleConfigFrom_empty, ProbOracleComp.runWith_sample,
+    PMF.mem_support_map_iff] at hh
   exact hh ⟨final, hfinal, rfl⟩
 
 private theorem eval_runClosed_of_computesTidily {k : ℕ} {State : Type} {x : List Bool} {t : ℕ}
@@ -475,12 +468,53 @@ private theorem exists_comp_closed {α : Type} {k₀ k₁ : ℕ} {S₀ S₁ : Ty
       (fun w hw => hbnd a w ((hsupp w).mp hw))
       (fun w hw => hspace₁ a w ((hsupp w).mp hw))
 
-private theorem polyBounded_max {α : Type} {sz f g : α → ℕ}
-    (hf : PolyBounded sz f) (hg : PolyBounded sz g) :
-    PolyBounded sz (fun a => max (f a) (g a)) := by
-  obtain ⟨bound, hpoly, hfg⟩ := hf.add hg
-  exact ⟨bound, hpoly, fun a => (Nat.max_le.mpr ⟨Nat.le_add_right _ _, Nat.le_add_left _ _⟩).trans
-    (hfg a)⟩
+/-- Package a closed machine `fullM` running within `(count a + 1) * polyFactor a` steps and
+`fullSpace a` cells into uniform `(C, E)` polynomial envelopes. -/
+private theorem exists_envelope_closed {α : Type} {kFull : ℕ} {FullControl : Type}
+    [Finite FullControl] (fullM : MultiTapePTM kFull Bool FullControl)
+    (inp : α → List Bool) (count fullTime fullSpace polyFactor : α → ℕ)
+    (target : α → PMF (List Bool))
+    (hpolyFactor : PolyBounded (fun a => (inp a).length) polyFactor)
+    (hfullSpacePoly : PolyBounded (fun a => (inp a).length) fullSpace)
+    (hraw_le : ∀ a, fullTime a ≤ (count a + 1) * polyFactor a)
+    (hfullM : ∀ a,
+      (∀ final ∈ (ProbComp.eval
+          (fullM.runClosedConfigFrom (fullTime a) (fullM.initialConfig (inp a)))).support,
+          final.tapes.state = none) ∧
+      ProbComp.eval (fullM.runClosed (fullTime a) (inp a)) = target a ∧
+      fullM.toNTM.RunsInSpace (inp a) (fullSpace a)) :
+    ∃ (K : ℕ) (Control : Type) (_ : Finite Control)
+      (machine : MultiTapePTM K Bool Control) (C E : ℕ),
+      ∀ a,
+        let T := C * ((count a + 1) * ((inp a).length + 1) ^ E)
+        let S := C * ((inp a).length + 1) ^ E
+        (∀ final ∈ (ProbComp.eval
+            (machine.runClosedConfigFrom T (machine.initialConfig (inp a)))).support,
+            final.tapes.state = none) ∧
+          ProbComp.eval (machine.runClosed T (inp a)) = target a ∧
+          machine.toNTM.RunsInSpace (inp a) S := by
+  obtain ⟨ct, dt, hct⟩ := hpolyFactor.exists_le
+  obtain ⟨cs, ds, hcs⟩ := hfullSpacePoly.exists_le
+  let C : ℕ := max ct cs + 1
+  let E : ℕ := max dt ds
+  refine ⟨kFull, FullControl, inferInstance, fullM, C, E, fun a => ?_⟩
+  let T := C * ((count a + 1) * ((inp a).length + 1) ^ E)
+  let S := C * ((inp a).length + 1) ^ E
+  obtain ⟨hhalt_raw, heval_raw, hspace_raw⟩ := hfullM a
+  have hfull_le_T : fullTime a ≤ T := by
+    have h2 : polyFactor a ≤ C * ((inp a).length + 1) ^ E :=
+      (hct a).trans <| Nat.mul_le_mul ((le_max_left ct cs).trans (Nat.le_succ _))
+        (Nat.pow_le_pow_right (Nat.succ_pos _) (le_max_left dt ds))
+    calc fullTime a ≤ (count a + 1) * (C * ((inp a).length + 1) ^ E) :=
+          (hraw_le a).trans (Nat.mul_le_mul_left _ h2)
+      _ = T := by dsimp only [T]; ring
+  have hfull_le_S : fullSpace a ≤ S :=
+    (hcs a).trans <| Nat.mul_le_mul ((le_max_right ct cs).trans (Nat.le_succ _))
+      (Nat.pow_le_pow_right (Nat.succ_pos _) (le_max_right dt ds))
+  refine ⟨?_, ?_, fun p => (hspace_raw p).trans hfull_le_S⟩
+  · rw [fullM.eval_runClosedConfigFrom_eq_of_halted _ hfull_le_T hhalt_raw]
+    exact hhalt_raw
+  · rw [fullM.eval_runClosed_eq_of_halted _ hfull_le_T hhalt_raw, heval_raw]
 
 private theorem iterate_countdown {σ β : Type} (encode : ℕ × σ → β)
     (step : σ → WordOracleComp Empty σ) (wordStep : β → WordOracleComp Empty β)
@@ -741,17 +775,13 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
   have hmidSpacePoly : PolyBounded (fun a => (input a).length) midSpace :=
     (PolyBounded.const ((kB + 1 + 2) + kp + 2)).mul
       (((PolyBounded.const 2).mul
-        (ExpIterateInternal.polyBounded_max
-          (ExpIterateInternal.polyBounded_max hprepSpacePoly hloopSpacePoly)
-          (hboundPoly.add (.const 2)))).add (.const 1))
+        ((hprepSpacePoly.max hloopSpacePoly).max (hboundPoly.add (.const 2)))).add (.const 1))
   have hextSpacePoly : PolyBounded (fun a => (input a).length) extSpace :=
     (PolyBounded.const ke).mul (((PolyBounded.const 2).mul htePoly).add (.const 1))
   have hfullSpacePoly : PolyBounded (fun a => (input a).length) fullSpace :=
     (PolyBounded.const (ke + kMid + 2)).mul
       (((PolyBounded.const 2).mul
-        (ExpIterateInternal.polyBounded_max
-          (ExpIterateInternal.polyBounded_max hmidSpacePoly hextSpacePoly)
-          (hboundPoly.add (.const 2)))).add (.const 1))
+        ((hmidSpacePoly.max hextSpacePoly).max (hboundPoly.add (.const 2)))).add (.const 1))
   let polyFactor (a : α) : ℕ :=
     4 * tp a + 4 * (roundTime a + 10 * bound a + 23) + 16 * bound a + te a + 46
   have hpolyFactor : PolyBounded (fun a => (input a).length) polyFactor :=
@@ -759,46 +789,21 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
       ((PolyBounded.const 4).mul
         ((hroundPoly.add ((PolyBounded.const 10).mul hboundPoly)).add (.const 23)))).add
       ((PolyBounded.const 16).mul hboundPoly)).add htePoly).add (.const 46)
-  obtain ⟨ct, dt, hct⟩ := hpolyFactor.exists_le
-  obtain ⟨cs, ds, hcs⟩ := hfullSpacePoly.exists_le
-  let C : ℕ := max ct cs + 1
-  let E : ℕ := max dt ds
-  refine ⟨kFull, FullControl, hfinFull, fullM, C, E, fun a => ?_⟩
-  let T := C * ((count a + 1) * ((input a).length + 1) ^ E)
-  let S := C * ((input a).length + 1) ^ E
-  obtain ⟨hhalt_raw, heval_raw, hspace_raw⟩ := hfullM a
-  have hfull_le_T : fullTime a ≤ T := by
-    have h1 : fullTime a ≤ (count a + 1) * polyFactor a := by
+  exact ExpIterateInternal.exists_envelope_closed fullM input count fullTime fullSpace polyFactor
+    (fun a => (ProbComp.eval (OracleComp.iterate (count a) step (initial a))).map stateEncoding)
+    hpolyFactor hfullSpacePoly
+    (fun a => by
       dsimp only [fullTime, midTime, loopTime, polyFactor]
       have : 1 ≤ count a + 1 := Nat.succ_pos _
-      nlinarith
-    have h2 : polyFactor a ≤ C * ((input a).length + 1) ^ E := by
-      calc polyFactor a ≤ ct * ((input a).length + 1) ^ dt := hct a
-        _ ≤ C * ((input a).length + 1) ^ E :=
-          Nat.mul_le_mul ((le_max_left ct cs).trans (Nat.le_succ _))
-            (Nat.pow_le_pow_right (Nat.succ_pos _) (le_max_left dt ds))
-    calc fullTime a ≤ (count a + 1) * (C * ((input a).length + 1) ^ E) :=
-          h1.trans (Nat.mul_le_mul_left _ h2)
-      _ = T := by dsimp only [T]; ring
-  have hfull_le_S : fullSpace a ≤ S := by
-    calc fullSpace a ≤ cs * ((input a).length + 1) ^ ds := hcs a
-      _ ≤ S :=
-        Nat.mul_le_mul ((le_max_right ct cs).trans (Nat.le_succ _))
-          (Nat.pow_le_pow_right (Nat.succ_pos _) (le_max_right dt ds))
-  refine ⟨?_, ?_, fun p => (hspace_raw p).trans hfull_le_S⟩
-  · rw [fullM.eval_runClosedConfigFrom_eq_of_halted _ hfull_le_T hhalt_raw]
-    exact hhalt_raw
-  · rw [fullM.eval_runClosed_eq_of_halted _ hfull_le_T hhalt_raw, heval_raw]
-    dsimp only [μLoop]
-    rw [PMF.bind_map]
-    calc (ProbComp.eval (OracleComp.iterate (count a) step (initial a))).bind
-          (fun final => PMF.pure (decodeOut (encode (0, final))))
-        = (ProbComp.eval (OracleComp.iterate (count a) step (initial a))).bind
-          (fun final => PMF.pure (stateEncoding final)) := by
-          congr 1 with final : 1
-          rw [hdecodeOut]
-      _ = (ProbComp.eval (OracleComp.iterate (count a) step (initial a))).map stateEncoding :=
-          rfl
+      nlinarith)
+    (fun a => by
+      obtain ⟨hhalt_raw, heval_raw, hspace_raw⟩ := hfullM a
+      refine ⟨hhalt_raw, ?_, hspace_raw⟩
+      rw [heval_raw]
+      dsimp only [μLoop]
+      rw [PMF.bind_map]
+      congr 1 with final : 1
+      rw [hdecodeOut])
 
 /-- **Captured-input binary-counter iteration in polynomial workspace.** The loop step may capture
 the original input `a : α`. -/
@@ -930,52 +935,25 @@ theorem IsPPTOn.exists_multiTapePTM_iterateWith_binary {initial : α → σ} {co
   have hfullSpacePoly : PolyBounded (fun a => (input a).length) fullSpace :=
     (PolyBounded.const (ke + kM + 2)).mul
       (((PolyBounded.const 2).mul
-        (ExpIterateInternal.polyBounded_max
-          (ExpIterateInternal.polyBounded_max hmidSpacePoly hextSpacePoly)
-          (houtPoly.add (.const 2)))).add (.const 1))
+        ((hmidSpacePoly.max hextSpacePoly).max (houtPoly.add (.const 2)))).add (.const 1))
   let polyFactor (a : α) : ℕ := 2 * midSpace a + te a + 4
   have hpolyFactor : PolyBounded (fun a => (input a).length) polyFactor :=
     (((PolyBounded.const 2).mul hmidSpacePoly).add htePoly).add (.const 4)
-  obtain ⟨ct, dt, hct⟩ := hpolyFactor.exists_le
-  obtain ⟨cs, ds, hcs⟩ := hfullSpacePoly.exists_le
-  let C : ℕ := max ct cs + 1
-  let E : ℕ := max dt ds
-  refine ⟨kFull, FullControl, hfinFull, fullM, C, E, fun a => ?_⟩
-  let T := C * ((count a + 1) * ((input a).length + 1) ^ E)
-  let S := C * ((input a).length + 1) ^ E
-  obtain ⟨hhalt_raw, heval_raw, hspace_raw⟩ := hfullM a
-  have hraw_le_T : fullTime a ≤ T := by
-    have h1 : fullTime a ≤ (count a + 1) * polyFactor a := by
+  exact ExpIterateInternal.exists_envelope_closed fullM input count fullTime fullSpace polyFactor
+    (fun a => (ProbComp.eval (OracleComp.iterate (count a) (step a) (initial a))).map stateEncoding)
+    hpolyFactor hfullSpacePoly
+    (fun a => by
       dsimp only [fullTime, midTime, midSpace, polyFactor]
       have : 1 ≤ count a + 1 := Nat.succ_pos _
-      nlinarith
-    have h2 : polyFactor a ≤ C * ((input a).length + 1) ^ E := by
-      calc polyFactor a ≤ ct * ((input a).length + 1) ^ dt := hct a
-        _ ≤ C * ((input a).length + 1) ^ E :=
-          Nat.mul_le_mul ((le_max_left ct cs).trans (Nat.le_succ _))
-            (Nat.pow_le_pow_right (Nat.succ_pos _) (le_max_left dt ds))
-    calc fullTime a ≤ (count a + 1) * (C * ((input a).length + 1) ^ E) :=
-          h1.trans (Nat.mul_le_mul_left _ h2)
-      _ = T := by dsimp only [T]; ring
-  have hfull_le_S : fullSpace a ≤ S := by
-    calc fullSpace a ≤ cs * ((input a).length + 1) ^ ds := hcs a
-      _ ≤ S :=
-        Nat.mul_le_mul ((le_max_right ct cs).trans (Nat.le_succ _))
-          (Nat.pow_le_pow_right (Nat.succ_pos _) (le_max_right dt ds))
-  refine ⟨?_, ?_, fun p => (hspace_raw p).trans hfull_le_S⟩
-  · rw [fullM.eval_runClosedConfigFrom_eq_of_halted _ hraw_le_T hhalt_raw]
-    exact hhalt_raw
-  · rw [fullM.eval_runClosed_eq_of_halted _ hraw_le_T hhalt_raw, heval_raw]
-    dsimp only [μMid]
-    rw [PMF.bind_map]
-    calc (ProbComp.eval (OracleComp.iterate (count a) (step a) (initial a))).bind
-          (fun final => PMF.pure (decodePacked (packedEnc (a, final))))
-        = (ProbComp.eval (OracleComp.iterate (count a) (step a) (initial a))).bind
-          (fun final => PMF.pure (stateEncoding final)) := by
-          congr 1 with final : 1
-          rw [hdecodePacked]
-      _ = (ProbComp.eval (OracleComp.iterate (count a) (step a) (initial a))).map stateEncoding :=
-          rfl
+      nlinarith)
+    (fun a => by
+      obtain ⟨hhalt_raw, heval_raw, hspace_raw⟩ := hfullM a
+      refine ⟨hhalt_raw, ?_, hspace_raw⟩
+      rw [heval_raw]
+      dsimp only [μMid]
+      rw [PMF.bind_map]
+      congr 1 with final : 1
+      rw [hdecodePacked])
 
 end BinaryIterate
 

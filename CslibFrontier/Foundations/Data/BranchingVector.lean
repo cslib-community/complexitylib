@@ -280,16 +280,9 @@ private theorem forall₂_imp_left_mem {α β : Type*} {R : α → β → Prop} 
     · obtain ⟨y, hy, hry⟩ := ih hx'
       exact ⟨y, List.mem_cons_of_mem _ hy, hry⟩
 
-private theorem attach_map_val {α β : Type*} (xs : List α) (f : α → β) :
-    (xs.attach.map fun x => f x.1) = xs.map f := by
-  induction xs with
-  | nil => rfl
-  | cons x rest ih =>
-    simp only [List.attach_cons, List.map_cons, List.map_map, Function.comp_def, ih]
-
 private theorem attach_flatMap_val {α β : Type*} (xs : List α) (f : α → List β) :
     (xs.attach.flatMap fun x => f x.1) = xs.flatMap f := by
-  rw [List.flatMap_def, List.flatMap_def, attach_map_val]
+  rw [List.flatMap_def, List.flatMap_def, List.attach_map_val]
 
 /-- Every child of a non-leaf state has strictly smaller `measure`. -/
 theorem measure_child_lt {s child : σ} (hleaf : T.isLeaf s = false)

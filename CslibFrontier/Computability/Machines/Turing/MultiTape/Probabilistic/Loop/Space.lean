@@ -108,7 +108,8 @@ private theorem replay_append (M : MultiTapePTM k Bool State) (before after : Li
 private noncomputable def emptyOracle : Empty × List Bool → StateT Unit PMF (List Bool) :=
   fun q => q.1.elim
 
-private theorem runOracleConfigFrom_empty (M : MultiTapePTM k Bool State) (fuel : ℕ)
+/-- Running an oracle configuration with an `Empty` operation signature samples its closed run. -/
+theorem runOracleConfigFrom_empty (M : MultiTapePTM k Bool State) (fuel : ℕ)
     (cfg : Config k Bool State Empty x) :
     M.runOracleConfigFrom fuel cfg = ProbOracleComp.sample (M.runClosedConfigFrom fuel cfg) := by
   simp only [runOracleConfigFrom, runClosedConfigFrom, runConfigFrom, ProbOracleComp.sample,
