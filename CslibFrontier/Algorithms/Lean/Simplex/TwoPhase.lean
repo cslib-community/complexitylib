@@ -17,7 +17,6 @@ import Mathlib.Tactic.Linarith
 This module implements the two-phase simplex method for linear programs
 `max c ⬝ᵥ x` subject to `x ≥ 0`, `A *ᵥ x ≤ b`.
 -/
-
 set_option linter.deprecated false
 set_option linter.unusedVariables false
 set_option linter.unusedSectionVars false
@@ -85,8 +84,7 @@ def unskipX₀ (i : Fin (n + 1 + m)) (hi : i ≠ x₀Index) : Fin (n + m) :=
     ⟨i.val, by omega⟩
   else
     ⟨i.val - 1, by
-      have h1 : i.val ≠ n := by intro heq; apply hi; apply Fin.ext; exact heq
-      clear hi
+      have h1 : i.val ≠ n := by intro heq; apply hi; ext; simp [x₀Index, heq]
       omega⟩
 
 def skipX₀ (i : Fin (n + m)) : Fin (n + 1 + m) :=
@@ -161,7 +159,108 @@ theorem auxDictionary_rhs_k (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (k 
   rw [Fin.addCases_right]
 
 theorem phaseOneDict_feasible (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) :
-    (phaseOneDict A b).Feasible := sorry
+    (phaseOneDict A b).Feasible := by
+  dsimp [phaseOneDict]
+  cases h_min : minRhsIndex b
+  · dsimp only
+    intro i hi
+    have h_m : m = 0 := by
+      unfold minRhsIndex at h_min
+      cases h_opt : minOpt (Finset.image b Finset.univ)
+      · rw [h_opt] at h_min
+        have h_empty := minOpt_eq_none_iff.1 h_opt
+        rw [Finset.image_eq_empty] at h_empty
+        by_contra h_m
+        have : Nonempty (Fin m) := Fin.pos_iff_nonempty.1 (Nat.pos_of_ne_zero h_m)
+        exact Finset.univ_nonempty.ne_empty h_empty
+      · rename_i min_val
+        rw [h_opt] at h_min
+        have h_v := minOpt_eq_some_iff.1 h_opt
+        have h_mem : min_val ∈ Finset.image b Finset.univ := h_v.1
+        rw [Finset.mem_image] at h_mem
+        rcases h_mem with ⟨j, _, hj_eq⟩
+        have h_empty := minOpt_eq_none_iff.1 h_min
+        have h_j_in : j ∈ Finset.univ.filter (fun x => b x = min_val) := by
+          rw [Finset.mem_filter]
+          exact ⟨Finset.mem_univ j, hj_eq⟩
+        have h_absurd : j ∈ (∅ : Finset (Fin m)) := h_empty ▸ h_j_in
+        simp at h_absurd
+    have h_mem2 : n + 1 ≤ i.val := by
+      dsimp [auxDictionary, slackDictionary] at hi
+      rw [Finset.mem_filter] at hi
+      exact hi.2
+    have h_lt : i.val < n + 1 + m := i.isLt
+    omega
+  · rename_i r
+    dsimp only
+    have h_min_spec : ∀ j : Fin m, b r ≤ b j := by
+      unfold minRhsIndex at h_min
+      cases h_opt : minOpt (Finset.image b Finset.univ)
+      · rw [h_opt] at h_min; contradiction
+      · rw [h_opt] at h_min
+        rename_i min_val
+        have h_min_val := minOpt_eq_some_iff.1 h_opt
+        have h_r := minOpt_eq_some_iff.1 h_min
+        have hr1 : b r = min_val := by
+          have h1 := h_r.1
+          rw [Finset.mem_filter] at h1
+          exact h1.2
+        intro k
+        rw [hr1]
+        apply h_min_val.2
+        rw [Finset.mem_image]
+        exact ⟨k, Finset.mem_univ k, rfl⟩
+    split_ifs with h_lt
+    · intro i hi
+      have h_basis : i ∈ insert x₀Index ((auxDictionary A b).basis.erase (slackIndex r)) := hi
+      rw [Finset.mem_insert, Finset.mem_erase] at h_basis
+      rcases h_basis with rfl | ⟨h_ne, h_mem⟩
+      · have h_rhs : ((auxDictionary A b).pivot (slackIndex r) x₀Index).rhs x₀Index = - (auxDictionary A b).rhs (slackIndex r) / (auxDictionary A b).coeff (slackIndex r) x₀Index := by
+          dsimp [Dictionary.pivot]
+          rw [ite_eq_left rfl]
+        rw [h_rhs, auxDictionary_rhs_k A b r, auxDictionary_coeff_k A b r]
+        have hb : -b r / 1 = -b r := by ring
+        rw [hb]
+        linarith
+      · have h_rhs : ((auxDictionary A b).pivot (slackIndex r) x₀Index).rhs i = (auxDictionary A b).rhs i - (auxDictionary A b).coeff i x₀Index * (auxDictionary A b).rhs (slackIndex r) / (auxDictionary A b).coeff (slackIndex r) x₀Index := by
+          dsimp [Dictionary.pivot]
+          have h_if : i ≠ x₀Index := by
+            intro heq
+            dsimp [auxDictionary, slackDictionary, x₀Index] at heq h_mem
+            rw [Finset.mem_filter] at h_mem
+            have h1 := h_mem.2
+            have h2 : i.val = n := by rw [heq]; rfl
+            omega
+          rw [ite_eq_right h_if, ite_eq_left ⟨h_mem, h_ne⟩]
+        rw [h_rhs]
+        have hk : ∃ k : Fin m, i.val = n + 1 + k.val := by
+          dsimp [auxDictionary, slackDictionary] at h_mem
+          rw [Finset.mem_filter] at h_mem
+          have h_mem2 : n + 1 ≤ i.val := h_mem.2
+          have h_lt_b : i.val < n + 1 + m := i.isLt
+          have h_lt2 : i.val - (n + 1) < m := by omega
+          have h_eq : i.val = n + 1 + (i.val - (n + 1)) := by omega
+          exact ⟨⟨i.val - (n + 1), h_lt2⟩, h_eq⟩
+        rcases hk with ⟨k, hk_val⟩
+        have h_eq : i = slackIndex k := by ext; exact hk_val
+        rw [h_eq, auxDictionary_rhs_k A b r, auxDictionary_coeff_k A b r, auxDictionary_rhs_k A b k, auxDictionary_coeff_k A b k]
+        have hb : b k - 1 * b r / 1 = b k - b r := by ring
+        rw [hb]
+        exact sub_nonneg.2 (h_min_spec k)
+    · intro i hi
+      have hk : ∃ k : Fin m, i.val = n + 1 + k.val := by
+        dsimp [auxDictionary, slackDictionary] at hi
+        rw [Finset.mem_filter] at hi
+        have h_mem2 : n + 1 ≤ i.val := hi.2
+        have h_lt_b : i.val < n + 1 + m := i.isLt
+        have h_lt2 : i.val - (n + 1) < m := by omega
+        have h_eq : i.val = n + 1 + (i.val - (n + 1)) := by omega
+        exact ⟨⟨i.val - (n + 1), h_lt2⟩, h_eq⟩
+      rcases hk with ⟨k, hk_val⟩
+      have h_eq : i = slackIndex k := by ext; exact hk_val
+      rw [h_eq, auxDictionary_rhs_k A b k]
+      linarith [h_min_spec k]
+
 private theorem slackDual_spec_of_equiv (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c : Fin n → K)
     {D : Dictionary (Fin (n + m)) K}
     (hequiv : D.Equivalent (slackDictionary A b c))
@@ -205,9 +304,7 @@ private theorem slackDual_spec_of_equiv (A : Matrix (Fin m) (Fin n) K) (b : Fin 
     (fun h => absurd (Finset.mem_univ k) h), Pi.single_eq_same, mul_one] at this
   linarith [hgle (Fin.castAdd m k)]
 
-
-
-theorem phaseOneDict_equivalent (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) :
+private theorem phaseOneDict_equivalent (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) :
     (phaseOneDict A b).Equivalent (auxDictionary A b) := by
   dsimp [phaseOneDict]
   cases h : minRhsIndex b with
@@ -267,8 +364,8 @@ private theorem auxDictionary_value_le_zero (A : Matrix (Fin m) (Fin n) K) (b : 
         have hi_lt : i.val < n := hi.2
         simp [hi_lt]
       rw [h_zero, add_zero]
-      have hnot_lt : ¬((Fin.last n).val < n) := by have : (Fin.last n).val = n := rfl; omega
-      simp only [hnot_lt, ite_false, neg_inj]
+      have hnot_lt : ¬((Fin.last n).val < n) := by simp
+      simp
       rfl
     · rw [Finset.mem_filter]
       simp
@@ -424,7 +521,56 @@ theorem extractInfeasible_spec (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) 
     (D : Dictionary (Fin (n + 1 + m)) K)
     (hopt : (phaseOneDict A b).simplex = .optimal D)
     (hneg : D.objConst < 0) :
-    0 ≤ D.slackDual ∧ 0 ≤ D.slackDual ᵥ* A ∧ D.slackDual ⬝ᵥ b < 0 := sorry
+    let y := D.slackDual; 0 ≤ y ∧ 0 ≤ y ᵥ* A ∧ y ⬝ᵥ b < 0 := by
+  obtain ⟨hequiv, hfeas, -, hopt_cond⟩ := Dictionary.run_eq_optimal (phaseOneDict A b) (phaseOneDict_feasible A b) hopt
+  have H : phaseOneDict A b = match minRhsIndex b with
+    | none => auxDictionary A b
+    | some r => if b r < 0 then (auxDictionary A b).pivot (slackIndex r) x₀Index else auxDictionary A b := rfl
+  have hequiv_aux : (phaseOneDict A b).Equivalent (auxDictionary A b) := by
+    rw [H]
+    cases minRhsIndex b
+    · exact Dictionary.Equivalent.refl _
+    · rename_i r
+      dsimp only
+      split_ifs with h_lt
+      · have hp : (auxDictionary A b).Equivalent ((auxDictionary A b).pivot (slackIndex r) x₀Index) := by
+          apply Dictionary.equivalent_pivot
+          · dsimp [auxDictionary, slackDictionary, slackIndex]
+            rw [Finset.mem_filter]
+            have h1 : (Fin.natAdd (n + 1) r).val = n + 1 + r.val := rfl
+            refine ⟨Finset.mem_univ _, by omega⟩
+          · dsimp [auxDictionary, slackDictionary, x₀Index]
+            intro h
+            rw [Finset.mem_filter] at h
+            have h1 : (Fin.castAdd m (Fin.last n)).val = n := rfl
+            have h2 := h.2
+            rw [h1] at h2
+            omega
+          · dsimp [auxDictionary, slackDictionary, slackIndex, x₀Index, auxMatrix]
+            simp only [Fin.append_right, Fin.append_left]
+            have h_not_lt : ¬((Fin.last n).val < n) := by
+              have h1 : (Fin.last n).val = n := rfl
+              omega
+            simp only [h_not_lt, ↓reduceDIte, neg_eq_zero, one_ne_zero, not_false_eq_true]
+        exact Dictionary.Equivalent.symm hp
+      · exact Dictionary.Equivalent.refl _
+  have hequiv_total := Dictionary.Equivalent.trans (Dictionary.Equivalent.symm hequiv) hequiv_aux
+  obtain ⟨hy1, hy2, hy3⟩ := slackDual_spec_of_equiv (auxMatrix A) b auxObj hequiv_total hopt_cond
+  refine ⟨hy1, ?_, by linarith⟩
+  intro j
+  change (0 : K) ≤ _
+  have h_aux := hy2 (Fin.castAdd 1 j)
+  have h_obj : auxObj (Fin.castAdd 1 j) = (0 : K) := by
+    dsimp [auxObj]
+    simp only [j.isLt, ↓reduceIte]
+  have h_mat : (D.slackDual ᵥ* auxMatrix A) (Fin.castAdd 1 j) = (D.slackDual ᵥ* A) j := by
+    dsimp [vecMul, dotProduct]
+    apply Finset.sum_congr rfl
+    intro i _
+    simp only [auxMatrix, Matrix.of_apply, Fin.val_castAdd, j.isLt, ↓reduceDIte]
+  rw [h_obj, h_mat] at h_aux
+  exact h_aux
+
 lemma aux_value_eq (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (z : Fin (n + 1 + m) → K) :
     (auxDictionary A b).value z = - z x₀Index := by
   have H : ∀ j ∈ (auxDictionary A b).basisᶜ,
@@ -591,8 +737,6 @@ lemma exists_coeff_ne_zero (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (D :
   rw [hy_x0_def] at hy_x0_D
   exact one_ne_zero hy_x0_D
 
-
-
 lemma forcePivotX₀_equivalent (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (D : Dictionary (Fin (n + 1 + m)) K)
     (hequiv : (auxDictionary A b).Equivalent D) (hzero : D.objConst = 0) :
     let D' := forcePivotX₀ D
@@ -617,7 +761,6 @@ lemma forcePivotX₀_equivalent (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K)
     have h_equiv_pivot : D.Equivalent (D.pivot x₀Index j) := Dictionary.equivalent_pivot D hx0 hj_mem.1 hj_mem.2
     exact ⟨h_not_in_basis, Equivalent.trans hequiv h_equiv_pivot⟩
   · exact ⟨hx0, hequiv⟩
-
 
 lemma forcePivotX₀_feasible (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (D : Dictionary (Fin (n + 1 + m)) K)
     (hequiv : (auxDictionary A b).Equivalent D) (hzero : D.objConst = 0) (hfeas : D.Feasible) :
@@ -646,13 +789,6 @@ lemma forcePivotX₀_feasible (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (
     · exact hfeas i h2.1
     · exact le_refl 0
   · exact hfeas
-
-
-
-
-
-
-
 
 lemma skip_unskip (i : Fin (n + 1 + m)) (hi : i ≠ x₀Index) : skipX₀ (unskipX₀ i hi) = i := by
   dsimp only [unskipX₀]
@@ -789,7 +925,6 @@ lemma skipX₀_coeff_eq (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c : Fi
   · ext; simp; omega
   · ext; simp; omega
 
-
 lemma aux_slack_isSolution (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c : Fin n → K) (x : Fin (n + m) → K) :
     (auxDictionary A b).IsSolution (fun i => if hi : i = x₀Index then 0 else x (unskipX₀ i hi)) ↔ (slackDictionary A b c).IsSolution x := by
   change (slackDictionary (auxMatrix A) b auxObj).IsSolution _ ↔ (slackDictionary A b c).IsSolution x
@@ -851,7 +986,6 @@ lemma aux_slack_isSolution (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c :
       change (Fin.natAdd (n + 1) i).val - 1 = (Fin.natAdd n i).val
       omega
   rw [hy_nat, hsum]
-
 
 lemma dropX₀_equiv (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c : Fin n → K)
     (D'' : Dictionary (Fin (n + 1 + m)) K)
@@ -1132,7 +1266,6 @@ lemma dropX₀_equiv (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c : Fin n
         exact hval
   
     exact hLHS.trans hRHS.symm
-
 theorem dropX₀_equivalent (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c : Fin n → K)
     (D : Dictionary (Fin (n + 1 + m)) K)
     (hopt : (phaseOneDict A b).simplex = .optimal D)
@@ -1150,9 +1283,76 @@ theorem dropX₀_equivalent (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c 
   exact ⟨dropX₀_feasible A b c (forcePivotX₀ D) hfeas'' h_D''_not_x0, dropX₀_equiv A b c (forcePivotX₀ D) h_D''_equiv h_D''_not_x0 hfeas''⟩
 
 /-- The total certificate specification for the two-phase simplex method. -/
+
 theorem twoPhase_spec (A : Matrix (Fin m) (Fin n) K) (b : Fin m → K) (c : Fin n → K) :
     match twoPhase A b c with
     | TwoPhaseResult.infeasible y => 0 ≤ y ∧ 0 ≤ y ᵥ* A ∧ y ⬝ᵥ b < 0
     | TwoPhaseResult.unbounded x d => 0 ≤ x ∧ A *ᵥ x ≤ b ∧ 0 ≤ d ∧ A *ᵥ d ≤ 0 ∧ 0 < c ⬝ᵥ d
-    | TwoPhaseResult.optimal x y => 0 ≤ x ∧ A *ᵥ x ≤ b ∧ 0 ≤ y ∧ c ≤ y ᵥ* A ∧ c ⬝ᵥ x = y ⬝ᵥ b := sorry
+    | TwoPhaseResult.optimal x y => 0 ≤ x ∧ A *ᵥ x ≤ b ∧ 0 ≤ y ∧ c ≤ y ᵥ* A ∧ c ⬝ᵥ x = y ⬝ᵥ b := by
+  dsimp only [twoPhase]
+  generalize h_ex : phaseOneExtract A b c = ex
+  cases h_sim : (phaseOneDict A b).simplex with
+  | optimal D' =>
+    unfold phaseOneExtract at h_ex
+    rw [h_sim] at h_ex
+    dsimp only at h_ex
+    split at h_ex
+    · next hneg =>
+      cases ex
+      · next res =>
+        injection h_ex with h_ex_inj; cases h_ex_inj
+        dsimp only
+        exact extractInfeasible_spec A b c D' h_sim hneg
+      · next => contradiction
+    · next hpos =>
+      cases ex
+      · next => contradiction
+      · next =>
+        injection h_ex with h_ex_inj; cases h_ex_inj
+        set Dp := dropX₀ (forcePivotX₀ D') c
+        dsimp only
+        have hd_equiv := dropX₀_equivalent A b c D' h_sim (le_antisymm (by
+          have H_sol := D'.isSolution_basicSolution
+          have H_ge : 0 ≤ D'.basicSolution := by
+            apply (Dictionary.feasible_iff_nonneg_basicSolution D').1
+            have := Dictionary.run_eq_optimal (phaseOneDict A b) (phaseOneDict_feasible A b) h_sim
+            exact this.2.1
+          have H_equiv := Dictionary.run_eq_optimal (phaseOneDict A b) (phaseOneDict_feasible A b) h_sim
+          have H_equiv2 := Equivalent.trans (Equivalent.symm H_equiv.1) (phaseOneDict_equivalent A b)
+          have H_sol_aux := (H_equiv2.isSolution_iff D'.basicSolution).1 H_sol
+          have H_le := auxDictionary_value_le_zero A b D'.basicSolution H_sol_aux H_ge
+          have H_eq := H_equiv2.value_eq D'.basicSolution H_sol
+          have H_val : D'.value D'.basicSolution = D'.objConst := D'.value_basicSolution
+          linarith
+        ) (not_lt.1 hpos))
+        rcases hd_equiv with ⟨h_feas, h_equiv⟩
+        cases h_sim2 : Dp.simplex with
+        | optimal D'' =>
+          dsimp only
+          obtain ⟨h_equiv2, h_feas2, _, h_opt_new⟩ := Dictionary.run_eq_optimal Dp h_feas h_sim2
+          have h_equiv_new := Dictionary.Equivalent.trans (Dictionary.Equivalent.symm h_equiv2) h_equiv
+          have h_sol := (h_equiv_new.isSolution_iff _).1 D''.isSolution_basicSolution
+          have h_mem : D''.basicSolution ∈ (slackDictionary A b c).feasibleSet :=
+            (Dictionary.mem_feasibleSet _).2 ⟨h_sol, D''.feasible_iff_nonneg_basicSolution.1 h_feas2⟩
+          have hz := eq_withSlack_of_isSolution A b c h_sol
+          rw [hz] at h_mem
+          obtain ⟨hx1, hx2⟩ := (withSlack_mem_feasibleSet_iff A b c _).1 h_mem
+          obtain ⟨hy1, hy2, hy3⟩ := slackDual_spec_of_equiv A b c h_equiv_new h_opt_new
+          refine ⟨hx1, hx2, hy1, hy2, ?_⟩
+          rw [hy3, ← value_withSlack A b c, ← hz, ← h_equiv_new.value_eq _ D''.isSolution_basicSolution, D''.value_basicSolution]
+        | unbounded D'' s =>
+          dsimp only
+          exact unbounded_spec_of_equiv A b c Dp D'' h_equiv h_feas s h_sim2
+        | outOfFuel D'' =>
+          dsimp only
+          have := Dp.simplex_ne_outOfFuel h_feas D''
+          contradiction
+  | unbounded D' s =>
+    have := phaseOne_unbounded_unreachable A b c D' s h_sim
+    contradiction
+  | outOfFuel D' =>
+    have h_feas := phaseOneDict_feasible A b
+    have := (phaseOneDict A b).simplex_ne_outOfFuel h_feas D'
+    contradiction
+
 end Cslib.Algorithms.Lean.Simplex
