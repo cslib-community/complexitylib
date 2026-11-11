@@ -38,7 +38,7 @@ example (a : α) (b : β) (n : ℕ) :
 example (p : α × β) : (eB p.2).length ≤ (encPair eA eB p).length := by
   enc_len
 
-/-! The standard leaf encodings. -/
+/-! The standard leaf encodings and framed list constructors. -/
 
 example (b : Bool) (w : List Bool) (x : α) :
     (encPair encBool encBits (b, w)).length = 3 + w.length ∧
@@ -46,6 +46,16 @@ example (b : Bool) (w : List Bool) (x : α) :
       (encOption eA (none : Option α)).length = 0 ∧
       (encSum eA eB (Sum.inl x : α ⊕ β)).length = (eA x).length + 1 := by
   refine ⟨?_, ?_, ?_, ?_⟩ <;> enc_len
+
+example (a₁ a₂ : α) (l : List α) :
+    (encList eA ([] : List α)).length = 0 ∧
+      (encList eA (a₁ :: l)).length = 2 * (eA a₁).length + 1 + (encList eA l).length ∧
+      (encList eA [a₁, a₂]).length = 2 * (eA a₁).length + 2 * (eA a₂).length + 2 := by
+  refine ⟨?_, ?_, ?_⟩ <;> enc_len
+
+example (a : α) (l : List α) (T : ℕ) (h : (encList eA (a :: l)).length ≤ T) :
+    (eA a).length + (encList eA l).length < T := by
+  enc_len at h ⊢
 
 /-! Local encodings are named at the call. -/
 
@@ -99,6 +109,11 @@ example (a : α) (b : β) : (encPair eA eB (a, b)).length ≤ (eA a).length := b
 /-- ⊢ 2 * (eA a).length + 1 + (eB b).length ≤ (eA a).length -/
 #guard_msgs (substring := true) in
 example (a : α) (b : β) : (encPair eA eB (a, b)).length ≤ (eA a).length := by
+  enc_len
+
+/-- ⊢ 2 * (eA a).length + 1 + ((encList eA) l).length ≤ ((encList eA) l).length -/
+#guard_msgs (substring := true) in
+example (a : α) (l : List α) : (encList eA (a :: l)).length ≤ (encList eA l).length := by
   enc_len
 
 /-! Products stay atoms, so this needs a scaling fact. -/
