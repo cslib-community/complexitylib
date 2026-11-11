@@ -483,15 +483,23 @@ private theorem bind_evalWith_map_input {Ω α β : Type*} {In Coins Out : Fin 2
 
 /-- A simulator for coalition `I` in a correlated-source protocol without external inputs receives
 only the coalition's outputs and samples simulated views (including the correlated input share). -/
-abbrev CorrelatedSimulator (sc : Schedule 2 noOracleSpec) (A B : Type)
+abbrev SemanticCorrelatedSimulator (sc : Schedule 2 noOracleSpec) (A B : Type)
     (Coins Out : Fin 2 → Type) (I : Finset (Fin 2)) :=
   ((i : I) → Out i) → PMF ((i : I) → PartyView (Fin.cases A (fun _ => B)) Coins sc i)
 
-/-- Lift a `ProbComp` coalition simulator to a `CorrelatedSimulator`. -/
-@[expose] noncomputable def CorrelatedSimulator.ofProbComp {I : Finset (Fin 2)}
-    (S : ((i : I) → Out i) → ProbComp ((i : I) → PartyView (Fin.cases A (fun _ => B)) Coins sc i)) :
-    CorrelatedSimulator sc A B Coins Out I :=
-  fun yI => ProbComp.eval (S yI)
+/-- A simulator for coalition `I` in a correlated-source protocol without external inputs receives
+only the coalition's outputs and samples simulated views (including the correlated input share) as a `ProbComp` probabilistic program. -/
+abbrev CorrelatedSimulator (sc : Schedule 2 noOracleSpec) (A B : Type)
+    (Coins Out : Fin 2 → Type) (I : Finset (Fin 2)) :=
+  ((i : I) → Out i) → ProbComp ((i : I) → PartyView (Fin.cases A (fun _ => B)) Coins sc i)
+
+/-- Ideal joint view-and-output distribution for functionality distribution `f` and
+simulator `S`. -/
+@[expose] noncomputable def semanticIdealCorrelatedJoint (sc : Schedule 2 noOracleSpec) (A B : Type)
+    (Coins Out : Fin 2 → Type) (f : PMF ((i : Fin 2) → Out i)) (I : Finset (Fin 2))
+    (S : SemanticCorrelatedSimulator sc A B Coins Out I) :
+    PMF (((i : I) → PartyView (Fin.cases A (fun _ => B)) Coins sc i) × ((i : Fin 2) → Out i)) :=
+  f.bind fun y => (S (I.restrict y)).map (·, y)
 
 /-- Ideal joint view-and-output distribution for functionality distribution `f` and
 simulator `S`. -/
@@ -499,7 +507,7 @@ simulator `S`. -/
     (Coins Out : Fin 2 → Type) (f : PMF ((i : Fin 2) → Out i)) (I : Finset (Fin 2))
     (S : CorrelatedSimulator sc A B Coins Out I) :
     PMF (((i : I) → PartyView (Fin.cases A (fun _ => B)) Coins sc i) × ((i : Fin 2) → Out i)) :=
-  f.bind fun y => (S (I.restrict y)).map (·, y)
+  semanticIdealCorrelatedJoint sc A B Coins Out f I fun yI => ProbComp.eval (S yI)
 
 /-- Perfect semi-honest privacy over correlated source `source` for all static coalitions
 `I : Finset (Fin 2)`. -/
@@ -828,7 +836,7 @@ theorem rot_le_mutualInfo
     have hIdealEq : idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {0} (S {0}) =
         (PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun sb =>
-          (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb)).bind fun v0 =>
+          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb))).bind fun v0 =>
             (PMF.uniformOfFintype (Fin k → Bool)).map fun ch =>
               (v0, Fin.cases (motive := fun _ => Fin k → Bool × Bool) sb
                 (fun _ j => (ch j, otSelect (sb j) (ch j)))) := by
@@ -851,7 +859,7 @@ theorem rot_le_mutualInfo
     have hLHS : (idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {0} (S {0})).map proj0 =
         ((PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun sb =>
-          (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb)).map fun v0 =>
+          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb))).map fun v0 =>
             (sb, transcriptOfView proto 0 (v0 ⟨0, Finset.mem_singleton_self 0⟩))).bind
           fun st => (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·) := by
       rw [hIdealEq, PMF.map_bind, PMF.bind_bind]
@@ -868,7 +876,7 @@ theorem rot_le_mutualInfo
     have hMargSimp : (idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {0} (S {0})).map (fun p => (proj0 p).1) =
         (PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun sb =>
-          (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb)).map fun v0 =>
+          (ProbComp.eval (S {0} (restrictZero (F := fun _ => Fin k → Bool × Bool) sb))).map fun v0 =>
             (sb, transcriptOfView proto 0 (v0 ⟨0, Finset.mem_singleton_self 0⟩)) := by
       rw [hIdealEq, PMF.map_bind]
       congr 1 with sb : 1
@@ -930,7 +938,7 @@ theorem rot_le_mutualInfo
     have hIdealEq : idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {1} (S {1}) =
         (PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun rb =>
-          (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool) rb)).bind fun v1 =>
+          (ProbComp.eval (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool) rb))).bind fun v1 =>
             (PMF.uniformOfFintype (Fin k → Bool)).map fun ub =>
               (v1, Fin.cases (motive := fun _ => Fin k → Bool × Bool)
                 (fun j => if (rb j).1 then (ub j, (rb j).2) else ((rb j).2, ub j))
@@ -955,7 +963,7 @@ theorem rot_le_mutualInfo
     have hLHS : (idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {1} (S {1})).map proj1 =
         ((PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun rb =>
-          (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool) rb)).map fun v1 =>
+          (ProbComp.eval (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool) rb))).map fun v1 =>
             (transcriptOfView proto 1 (v1 ⟨1, Finset.mem_singleton_self 1⟩), rb)).bind
           fun tr => (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·) := by
       rw [hIdealEq, PMF.map_bind, PMF.bind_bind]
@@ -976,7 +984,7 @@ theorem rot_le_mutualInfo
     have hMargSimp : (idealCorrelatedJoint sc A B Coins (fun _ => Fin k → Bool × Bool)
         (idealROT k) {1} (S {1})).map (fun p => (proj1 p).1) =
         (PMF.uniformOfFintype (Fin k → Bool × Bool)).bind fun rb =>
-          (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool) rb)).map fun v1 =>
+          (ProbComp.eval (S {1} (restrictOne (F := fun _ => Fin k → Bool × Bool) rb))).map fun v1 =>
             (transcriptOfView proto 1 (v1 ⟨1, Finset.mem_singleton_self 1⟩), rb) := by
       rw [hIdealEq, PMF.map_bind]
       congr 1 with rb : 1
@@ -1025,20 +1033,35 @@ variable {A B : Type} {sc : Schedule 2 noOracleSpec} {ExtIn Coins Out : Fin 2 �
       ((i : Fin 2) → Out i)) :=
   (realCorrelatedWithInput proto source x).map (Prod.map I.restrict id)
 
-/-- Simulator for a correlated-source protocol with external inputs `ExtIn`. -/
-abbrev CorrelatedSimulatorWithInput (sc : Schedule 2 noOracleSpec) (A B : Type)
+/-- Semantic simulator for a correlated-source protocol with external inputs `ExtIn`, mapping directly to `PMF`. -/
+abbrev SemanticCorrelatedSimulatorWithInput (sc : Schedule 2 noOracleSpec) (A B : Type)
     (ExtIn Coins Out : Fin 2 → Type) (I : Finset (Fin 2)) :=
   ((i : I) → ExtIn i) → ((i : I) → Out i) →
     PMF ((i : I) → PartyView (fun i => ExtIn i × Fin.cases A (fun _ => B) i) Coins sc i)
 
+/-- Simulator for a correlated-source protocol with external inputs `ExtIn`, defined as a probabilistic program. -/
+abbrev CorrelatedSimulatorWithInput (sc : Schedule 2 noOracleSpec) (A B : Type)
+    (ExtIn Coins Out : Fin 2 → Type) (I : Finset (Fin 2)) :=
+  ((i : I) → ExtIn i) → ((i : I) → Out i) →
+    ProbComp ((i : I) → PartyView (fun i => ExtIn i × Fin.cases A (fun _ => B) i) Coins sc i)
+
 /-- Ideal joint view-and-output distribution for functionality `f : Functionality 2 ExtIn Out`. -/
+@[expose] noncomputable def semanticIdealCorrelatedJointWithInput (sc : Schedule 2 noOracleSpec)
+    (A B : Type)
+    (ExtIn Coins Out : Fin 2 → Type) (f : Functionality 2 ExtIn Out) (I : Finset (Fin 2))
+    (S : SemanticCorrelatedSimulatorWithInput sc A B ExtIn Coins Out I) (x : (i : Fin 2) → ExtIn i) :
+    PMF (((i : I) → PartyView (fun i => ExtIn i × Fin.cases A (fun _ => B) i) Coins sc i) ×
+      ((i : Fin 2) → Out i)) :=
+  (ProbComp.eval (f x)).bind fun y => (S (I.restrict x) (I.restrict y)).map (·, y)
+
+/-- Ideal joint view-and-output distribution for functionality `f : Functionality 2 ExtIn Out` and a `ProbComp` simulator. -/
 @[expose] noncomputable def idealCorrelatedJointWithInput (sc : Schedule 2 noOracleSpec)
     (A B : Type)
     (ExtIn Coins Out : Fin 2 → Type) (f : Functionality 2 ExtIn Out) (I : Finset (Fin 2))
     (S : CorrelatedSimulatorWithInput sc A B ExtIn Coins Out I) (x : (i : Fin 2) → ExtIn i) :
     PMF (((i : I) → PartyView (fun i => ExtIn i × Fin.cases A (fun _ => B) i) Coins sc i) ×
       ((i : Fin 2) → Out i)) :=
-  (ProbComp.eval (f x)).bind fun y => (S (I.restrict x) (I.restrict y)).map (·, y)
+  semanticIdealCorrelatedJointWithInput sc A B ExtIn Coins Out f I (fun x y => ProbComp.eval (S x y)) x
 
 /-- Perfect semi-honest privacy over `source` against proper static coalitions `I ≠ Finset.univ`
 for a functionality with external party inputs. -/
@@ -1222,8 +1245,8 @@ theorem chosenOT_le_mutualInfo
     have hStep0 : ∀ (x0 : Fin k → Bool → Bool) (x1 : Fin k → Bool),
         (realCorrelatedWithInput proto source (pairVec (eQ0 x0) (eQ1 x1))).map
           (fun ω => ((SOut ω, T ω), rotChoices (ROut ω))) =
-        ((S {0} (restrictZero (eQ0 x0))
-            (restrictZero (F := (batchOTSpec k Bool).Answer ()) ())).map
+        ((ProbComp.eval (S {0} (restrictZero (eQ0 x0))
+            (restrictZero (F := (batchOTSpec k Bool).Answer ()) ()))).map
           fun v0 =>
             ((sOf x0, transcriptOfView proto 0 (v0 ⟨0, Finset.mem_singleton_self 0⟩)), x1)) := by
       intro x0 x1
@@ -1254,7 +1277,7 @@ theorem chosenOT_le_mutualInfo
         rfl
       rw [hrest, hresty]
       refine map_congr_on_support
-        (S {0} (restrictZero (eQ0 x0)) (restrictZero (F := (batchOTSpec k Bool).Answer ()) ()))
+        (ProbComp.eval (S {0} (restrictZero (eQ0 x0)) (restrictZero (F := (batchOTSpec k Bool).Answer ()) ())))
         _ _ fun v0 hv0 => ?_
       have hv0_supp :
           (v0, batchOTAnswer (pairVec (F := (batchOTSpec k Bool).Query ()) (eQ0 x0) (eQ1 x1))) ∈
@@ -1275,8 +1298,8 @@ theorem chosenOT_le_mutualInfo
       simp only [sOf, heQ0]
     have hMain : real.map (fun ω => ((SOut ω, T ω), rotChoices (ROut ω))) =
         ((PMF.uniformOfFintype (Fin k → Bool → Bool)).bind fun x0 =>
-          (S {0} (restrictZero (eQ0 x0))
-              (restrictZero (F := (batchOTSpec k Bool).Answer ()) ())).map
+          (ProbComp.eval (S {0} (restrictZero (eQ0 x0))
+              (restrictZero (F := (batchOTSpec k Bool).Answer ()) ()))).map
             fun v0 =>
               (sOf x0, transcriptOfView proto 0 (v0 ⟨0, Finset.mem_singleton_self 0⟩))).bind
           fun st => (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·) := by
@@ -1289,8 +1312,8 @@ theorem chosenOT_le_mutualInfo
       exact PMF.bind_comm _ _ _
     have hMarg : real.map (fun ω => (SOut ω, T ω)) =
         (PMF.uniformOfFintype (Fin k → Bool → Bool)).bind fun x0 =>
-          (S {0} (restrictZero (eQ0 x0))
-              (restrictZero (F := (batchOTSpec k Bool).Answer ()) ())).map
+          (ProbComp.eval (S {0} (restrictZero (eQ0 x0))
+              (restrictZero (F := (batchOTSpec k Bool).Answer ()) ()))).map
             fun v0 => (sOf x0, transcriptOfView proto 0 (v0 ⟨0, Finset.mem_singleton_self 0⟩)) := by
       have h1 : real.map (fun ω => (SOut ω, T ω)) =
           (real.map fun ω => ((SOut ω, T ω), rotChoices (ROut ω))).map Prod.fst := by
@@ -1311,7 +1334,7 @@ theorem chosenOT_le_mutualInfo
         let x0 := otPairEquiv x1 (y1, u)
         (realCorrelatedWithInput proto source (pairVec (eQ0 x0) (eQ1 x1))).map
           (fun ω => ((T ω, ROut ω), rotUnselected (SOut ω) (ROut ω))) =
-        (S {1} (restrictOne (eQ1 x1)) (restrictOne (eA1 y1))).map fun v1 =>
+        (ProbComp.eval (S {1} (restrictOne (eQ1 x1)) (restrictOne (eA1 y1)))).map fun v1 =>
           ((transcriptOfView proto 1 (v1 ⟨1, Finset.mem_singleton_self 1⟩),
             fun j => (x1 j, y1 j)), u) := by
       intro x1 y1 u x0
@@ -1364,7 +1387,7 @@ theorem chosenOT_le_mutualInfo
     have hMain : real.map (fun ω => ((T ω, ROut ω), rotUnselected (SOut ω) (ROut ω))) =
         ((PMF.uniformOfFintype (Fin k → Bool)).bind fun x1 =>
           (PMF.uniformOfFintype (Fin k → Bool)).bind fun y1 =>
-            (S {1} (restrictOne (eQ1 x1)) (restrictOne (eA1 y1))).map fun v1 =>
+            (ProbComp.eval (S {1} (restrictOne (eQ1 x1)) (restrictOne (eA1 y1)))).map fun v1 =>
               (transcriptOfView proto 1 (v1 ⟨1, Finset.mem_singleton_self 1⟩),
                 fun j => (x1 j, y1 j))).bind
           fun tr => (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·) := by
@@ -1383,7 +1406,7 @@ theorem chosenOT_le_mutualInfo
     have hMarg : real.map (fun ω => (T ω, ROut ω)) =
         (PMF.uniformOfFintype (Fin k → Bool)).bind fun x1 =>
           (PMF.uniformOfFintype (Fin k → Bool)).bind fun y1 =>
-            (S {1} (restrictOne (eQ1 x1)) (restrictOne (eA1 y1))).map fun v1 =>
+            (ProbComp.eval (S {1} (restrictOne (eQ1 x1)) (restrictOne (eA1 y1)))).map fun v1 =>
               (transcriptOfView proto 1 (v1 ⟨1, Finset.mem_singleton_self 1⟩),
                 fun j => (x1 j, y1 j)) := by
       have h1 : real.map (fun ω => (T ω, ROut ω)) =
