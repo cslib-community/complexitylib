@@ -7,10 +7,10 @@ Authors: Samuel Schlesinger
 module -- shake: keep-all
 -- upstream: local-only (test file)
 
-import CslibFrontier.Algorithms.Lean.GomoryHu.Real
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.Analysis.Real.Sqrt
-import CslibFrontier.Algorithms.Lean.GomoryHu.Oracles
+public import CslibFrontier.Algorithms.Lean.GomoryHu.Real
+public import CslibFrontier.Algorithms.Lean.GomoryHu.Oracles
 
 public section
 
@@ -47,6 +47,6 @@ noncomputable def WReal : Fin 2 → Fin 2 → ℝ
 
 theorem exists_real_tree : ∃ T, IsGomoryHuTree (Cslib.WeightedCut.realCutWeight WReal) T :=
   exists_isGomoryHuTree_realCutWeight (by intro u v; fin_cases u <;> fin_cases v <;> rfl)
-    (by intro u v; fin_cases u <;> fin_cases v <;> simp [WReal] <;> try positivity)
+    (by intro u v; fin_cases u <;> fin_cases v <;> simp [WReal] )
 
 end CslibFrontierTests.GomoryHuRealAndOracles
