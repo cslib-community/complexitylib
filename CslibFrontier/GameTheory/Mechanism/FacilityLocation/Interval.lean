@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Basic
+import Mathlib.Data.Finset.Fold
 
 /-!
 # Strategyproof facility location on closed real intervals
@@ -122,48 +123,20 @@ private noncomputable def finMin {ι : Type*} (b : ℝ) (T : Finset (Finset ι))
     (g : Finset ι → ℝ) : ℝ :=
   T.fold min b g
 
-private lemma le_finMax {ι : Type*} (a : ℝ) (S : Finset ι) (g : ι → ℝ) : a ≤ finMax a S g := by
-  classical
-  dsimp only [finMax]
-  induction S using Finset.induction with
-  | empty => simp
-  | insert i S hi ih =>
-    rw [Finset.fold_insert hi]
-    exact ih.trans (le_max_right _ _)
+private lemma le_finMax {ι : Type*} (a : ℝ) (S : Finset ι) (g : ι → ℝ) : a ≤ finMax a S g :=
+  (Finset.le_fold_max a).mpr (Or.inl le_rfl)
 
 private lemma mem_le_finMax {ι : Type*} (a : ℝ) {S : Finset ι} (g : ι → ℝ) {i : ι}
-    (hi : i ∈ S) : g i ≤ finMax a S g := by
-  classical
-  dsimp only [finMax]
-  induction S using Finset.induction with
-  | empty => exact absurd hi (Finset.notMem_empty _)
-  | insert j S hj ih =>
-    rw [Finset.fold_insert hj]
-    rcases Finset.mem_insert.mp hi with rfl | hi'
-    · exact le_max_left _ _
-    · exact (ih hi').trans (le_max_right _ _)
+    (hi : i ∈ S) : g i ≤ finMax a S g :=
+  (Finset.le_fold_max (g i)).mpr (Or.inr ⟨i, hi, le_rfl⟩)
 
 private lemma finMax_le {ι : Type*} {a c : ℝ} {S : Finset ι} {g : ι → ℝ}
-    (ha : a ≤ c) (hg : ∀ i ∈ S, g i ≤ c) : finMax a S g ≤ c := by
-  classical
-  dsimp only [finMax]
-  induction S using Finset.induction with
-  | empty => simpa using ha
-  | insert j S hj ih =>
-    rw [Finset.fold_insert hj]
-    exact max_le (hg j (Finset.mem_insert_self _ _))
-      (ih (fun i hi => hg i (Finset.mem_insert_of_mem hi)))
+    (ha : a ≤ c) (hg : ∀ i ∈ S, g i ≤ c) : finMax a S g ≤ c :=
+  (Finset.fold_max_le c).mpr ⟨ha, hg⟩
 
 private lemma finMax_lt {ι : Type*} {a c : ℝ} {S : Finset ι} {g : ι → ℝ}
-    (ha : a < c) (hg : ∀ i ∈ S, g i < c) : finMax a S g < c := by
-  classical
-  dsimp only [finMax]
-  induction S using Finset.induction with
-  | empty => simpa using ha
-  | insert j S hj ih =>
-    rw [Finset.fold_insert hj]
-    exact max_lt (hg j (Finset.mem_insert_self _ _))
-      (ih (fun i hi => hg i (Finset.mem_insert_of_mem hi)))
+    (ha : a < c) (hg : ∀ i ∈ S, g i < c) : finMax a S g < c :=
+  (Finset.fold_max_lt c).mpr ⟨ha, hg⟩
 
 private lemma finMax_mono_fun {ι : Type*} (a : ℝ) (S : Finset ι) {g₁ g₂ : ι → ℝ}
     (hg : ∀ i ∈ S, g₁ i ≤ g₂ i) : finMax a S g₁ ≤ finMax a S g₂ :=
@@ -171,41 +144,19 @@ private lemma finMax_mono_fun {ι : Type*} (a : ℝ) (S : Finset ι) {g₁ g₂ 
 
 private lemma finMax_eq_of_eqOn {ι : Type*} (a : ℝ) (S : Finset ι) {g₁ g₂ : ι → ℝ}
     (hg : ∀ i ∈ S, g₁ i = g₂ i) : finMax a S g₁ = finMax a S g₂ :=
-  le_antisymm (finMax_mono_fun a S fun i hi => (hg i hi).le)
-    (finMax_mono_fun a S fun i hi => (hg i hi).symm.le)
+  Finset.fold_congr hg
 
 private lemma finMin_le {ι : Type*} (b : ℝ) {T : Finset (Finset ι)} (g : Finset ι → ℝ)
-    {S : Finset ι} (hS : S ∈ T) : finMin b T g ≤ g S := by
-  classical
-  dsimp only [finMin]
-  induction T using Finset.induction with
-  | empty => exact absurd hS (Finset.notMem_empty _)
-  | insert U T hU ih =>
-    rw [Finset.fold_insert hU]
-    rcases Finset.mem_insert.mp hS with rfl | hS'
-    · exact min_le_left _ _
-    · exact (min_le_right _ _).trans (ih hS')
+    {S : Finset ι} (hS : S ∈ T) : finMin b T g ≤ g S :=
+  (Finset.fold_min_le (g S)).mpr (Or.inr ⟨S, hS, le_rfl⟩)
 
 private lemma le_finMin {ι : Type*} {b c : ℝ} {T : Finset (Finset ι)} {g : Finset ι → ℝ}
-    (hb : c ≤ b) (hg : ∀ S ∈ T, c ≤ g S) : c ≤ finMin b T g := by
-  classical
-  dsimp only [finMin]
-  induction T using Finset.induction with
-  | empty => simpa using hb
-  | insert U T hU ih =>
-    rw [Finset.fold_insert hU]
-    exact le_min (hg U (Finset.mem_insert_self _ _))
-      (ih fun S hS => hg S (Finset.mem_insert_of_mem hS))
+    (hb : c ≤ b) (hg : ∀ S ∈ T, c ≤ g S) : c ≤ finMin b T g :=
+  (Finset.le_fold_min c).mpr ⟨hb, hg⟩
 
 private lemma finMin_le_base {ι : Type*} (b : ℝ) (T : Finset (Finset ι)) (g : Finset ι → ℝ) :
-    finMin b T g ≤ b := by
-  classical
-  dsimp only [finMin]
-  induction T using Finset.induction with
-  | empty => simp
-  | insert U T hU ih =>
-    rw [Finset.fold_insert hU]
-    exact (min_le_right _ _).trans ih
+    finMin b T g ≤ b :=
+  (Finset.fold_min_le b).mpr (Or.inl le_rfl)
 
 private lemma exists_finMin_eq {ι : Type*} {b : ℝ} {T : Finset (Finset ι)} {g : Finset ι → ℝ}
     (hT : T.Nonempty) (hbd : ∃ S ∈ T, g S ≤ b) :
@@ -217,14 +168,8 @@ private lemma exists_finMin_eq {ι : Type*} {b : ℝ} {T : Finset (Finset ι)} {
   exact le_finMin ((hS₀_le S₁ hS₁_mem).trans hS₁_le) fun S hS => hS₀_le S hS
 
 private lemma finMin_eq_of_eqOn {ι : Type*} (b : ℝ) {T : Finset (Finset ι)}
-    {g₁ g₂ : Finset ι → ℝ} (hg : ∀ S ∈ T, g₁ S = g₂ S) : finMin b T g₁ = finMin b T g₂ := by
-  classical
-  dsimp only [finMin]
-  induction T using Finset.induction with
-  | empty => rfl
-  | insert U T hU ih =>
-    rw [Finset.fold_insert hU, Finset.fold_insert hU, hg U (Finset.mem_insert_self _ _),
-      ih fun S hS => hg S (Finset.mem_insert_of_mem hS)]
+    {g₁ g₂ : Finset ι → ℝ} (hg : ∀ S ∈ T, g₁ S = g₂ S) : finMin b T g₁ = finMin b T g₂ :=
+  Finset.fold_congr hg
 
 private lemma finMin_union {ι : Type*} [DecidableEq ι] (b : ℝ) (T₁ T₂ : Finset (Finset ι))
     (g : Finset ι → ℝ) :

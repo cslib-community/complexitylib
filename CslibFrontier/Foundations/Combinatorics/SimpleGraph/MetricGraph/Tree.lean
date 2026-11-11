@@ -432,40 +432,24 @@ lemma edgeProj_cases (hT : W.graph.IsTree) (d : W.graph.Dart) (x : MetricGraph W
       · exact Or.inl rfl
       · exact Or.inr (Or.inl rfl)
 
-private lemma vertex_snd_dist_of_edgeProj_zero [Finite V] (hT : W.graph.IsTree)
-    (d : W.graph.Dart) {x : MetricGraph W} (hx : edgeProj hT d x = 0) :
-    Dist.dist x (vertex d.snd) = Dist.dist x (vertex d.fst) + W.weight d.edge := by
-  induction x using ind with
-  | vertex u =>
-    have hu : (W.graph.deleteEdges {d.edge}).Reachable u d.fst :=
-      (edgeProj_vertex_eq_zero_iff hT d u).mp hx
-    rw [dist_vertex, dist_vertex]
-    have hcut := vertexDist_eq_of_deleteEdges_cut hT d hu
-      (fun h => bridge_deleteEdges hT d h.symm)
-    simpa only [vertexDist_self W.weight_nonneg, add_zero] using hcut
-  | edgePoint d' t ht0 ht1 =>
-    have hne : d'.edge ≠ d.edge := by
-      intro he
-      rcases (dart_edge_eq_iff d' d).mp he with hdd | hdd
-      · subst d'
-        rw [edgeProj_edgePoint_self] at hx
-        exact absurd ((mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d).ne') ht0.ne'
-      · subst d'
-        rw [edgeProj_edgePoint_symm] at hx
-        have : 1 - (t : ℝ) = 0 := (mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d).ne'
-        linarith
-    have hf : (W.graph.deleteEdges {d.edge}).Reachable d'.fst d.fst := by
-      rw [edgeProj_edgePoint_of_edge_ne hT hne, edgeProj_vertex_eq_zero_iff] at hx
-      exact hx
-    have hs : (W.graph.deleteEdges {d.edge}).Reachable d'.snd d.fst :=
-      (reachable_deleteEdges_adj_iff d d' hne).mp hf
-    have hns : ¬ (W.graph.deleteEdges {d.edge}).Reachable d.snd d.fst :=
-      fun h => bridge_deleteEdges hT d h.symm
-    have h1 := vertexDist_eq_of_deleteEdges_cut hT d hf hns
-    have h2 := vertexDist_eq_of_deleteEdges_cut hT d hs hns
-    simp only [vertexDist_self W.weight_nonneg, add_zero] at h1 h2
-    rw [dist_edgePoint_vertex, dist_edgePoint_vertex, h1, h2]
-    simp only [← add_assoc, ← min_add]
+private lemma edgePoint_edgeProj_zero_decomp (hT : W.graph.IsTree) (d d' : W.graph.Dart)
+    {s : unitInterval} (hs0 : 0 < (s : ℝ)) (hs1 : (s : ℝ) < 1)
+    (hx : edgeProj hT d (edgePoint d' s) = 0) :
+    d'.edge ≠ d.edge ∧
+      (W.graph.deleteEdges {d.edge}).Reachable d'.fst d.fst ∧
+      (W.graph.deleteEdges {d.edge}).Reachable d'.snd d.fst := by
+  have hne : d'.edge ≠ d.edge := by
+    intro he
+    rcases (dart_edge_eq_iff d' d).mp he with rfl | rfl
+    · rw [edgeProj_edgePoint_self] at hx
+      exact absurd ((mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d').ne') hs0.ne'
+    · rw [edgeProj_edgePoint_symm] at hx
+      have : 1 - (s : ℝ) = 0 := (mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d).ne'
+      linarith
+  have hf : (W.graph.deleteEdges {d.edge}).Reachable d'.fst d.fst := by
+    rw [edgeProj_edgePoint_of_edge_ne hT hne, edgeProj_vertex_eq_zero_iff] at hx
+    exact hx
+  exact ⟨hne, hf, (reachable_deleteEdges_adj_iff d d' hne).mp hf⟩
 
 theorem dist_edgePoint_of_edgeProj_zero [Finite V] (hT : W.graph.IsTree) (d : W.graph.Dart)
     {x : MetricGraph W} (hx : edgeProj hT d x = 0) (t : unitInterval) :
@@ -484,21 +468,7 @@ theorem dist_edgePoint_of_edgeProj_zero [Finite V] (hT : W.graph.IsTree) (d : W.
       nlinarith
     exact min_eq_left (by linarith)
   | edgePoint d' s hs0 hs1 =>
-    have hne : d'.edge ≠ d.edge := by
-      intro he
-      rcases (dart_edge_eq_iff d' d).mp he with hdd | hdd
-      · subst d'
-        rw [edgeProj_edgePoint_self] at hx
-        exact absurd ((mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d).ne') hs0.ne'
-      · subst d'
-        rw [edgeProj_edgePoint_symm] at hx
-        have : 1 - (s : ℝ) = 0 := (mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d).ne'
-        linarith
-    have hf : (W.graph.deleteEdges {d.edge}).Reachable d'.fst d.fst := by
-      rw [edgeProj_edgePoint_of_edge_ne hT hne, edgeProj_vertex_eq_zero_iff] at hx
-      exact hx
-    have hs : (W.graph.deleteEdges {d.edge}).Reachable d'.snd d.fst :=
-      (reachable_deleteEdges_adj_iff d d' hne).mp hf
+    obtain ⟨hne, hf, hs⟩ := edgePoint_edgeProj_zero_decomp hT d d' hs0 hs1 hx
     have hns : ¬ (W.graph.deleteEdges {d.edge}).Reachable d.snd d.fst :=
       fun h => bridge_deleteEdges hT d h.symm
     have h1 := vertexDist_eq_of_deleteEdges_cut hT d hf hns
@@ -513,6 +483,12 @@ theorem dist_edgePoint_of_edgeProj_zero [Finite V] (hT : W.graph.IsTree) (d : W.
     simp only [← add_min, min_eq_left ht1]
     simp only [← add_assoc]
     rw [← min_add, vertexDist_comm d'.fst d.fst, vertexDist_comm d'.snd d.fst]
+
+private lemma vertex_snd_dist_of_edgeProj_zero [Finite V] (hT : W.graph.IsTree)
+    (d : W.graph.Dart) {x : MetricGraph W} (hx : edgeProj hT d x = 0) :
+    Dist.dist x (vertex d.snd) = Dist.dist x (vertex d.fst) + W.weight d.edge := by
+  have h := dist_edgePoint_of_edgeProj_zero hT d hx 1
+  simpa only [edgePoint_one, Set.Icc.coe_one, one_mul] using h
 
 theorem dist_of_edgeProj_zero_eq_weight [Finite V] (hT : W.graph.IsTree) (d : W.graph.Dart)
     {x y : MetricGraph W} (hx : edgeProj hT d x = 0) (hy : edgeProj hT d y = W.weight d.edge) :
@@ -530,45 +506,18 @@ theorem dist_of_edgeProj_zero_eq_weight [Finite V] (hT : W.graph.IsTree) (d : W.
         (edgeProj_vertex_eq_weight_iff hT d v).mp hy
       simpa only [dist_vertex] using vertexDist_eq_of_deleteEdges_cut hT d hu hv
     | edgePoint d₂ t ht0 ht1 =>
-      have hne : d₂.edge ≠ d.edge := by
-        intro he
-        rcases (dart_edge_eq_iff d₂ d).mp he with hdd | hdd
-        · subst d₂
-          rw [edgeProj_edgePoint_self] at hy
-          have : (t : ℝ) = 1 :=
-            mul_right_cancel₀ (W.dart_weight_pos d).ne' (by simpa only [one_mul] using hy)
-          linarith
-        · subst d₂
-          rw [edgeProj_edgePoint_symm] at hy
-          have : 1 - (t : ℝ) = 1 :=
-            mul_right_cancel₀ (W.dart_weight_pos d).ne' (by simpa only [one_mul] using hy)
-          linarith
-      have hf : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.fst d.fst := by
-        rw [edgeProj_edgePoint_of_edge_ne hT hne, edgeProj_vertex_eq_weight_iff] at hy
-        exact hy
-      have hs : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.snd d.fst := by
-        intro hr
-        exact hf ((reachable_deleteEdges_adj_iff d d₂ hne).mpr hr)
+      obtain ⟨hne', hf_sym, _⟩ := edgePoint_edgeProj_zero_decomp hT d.symm d₂ ht0 ht1 hy_symm
+      rw [Dart.edge_symm] at hne' hf_sym
+      have hf : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.fst d.fst := fun hr =>
+        bridge_deleteEdges hT d (hr.symm.trans hf_sym)
+      have hs : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.snd d.fst := fun hr =>
+        hf ((reachable_deleteEdges_adj_iff d d₂ hne').mpr hr)
       have h1 := vertexDist_eq_of_deleteEdges_cut hT d hu hf
       have h2 := vertexDist_eq_of_deleteEdges_cut hT d hu hs
       rw [dist_vertex_edgePoint, dist_vertex, dist_vertex_edgePoint, h1, h2]
       simp only [add_assoc, ← add_min]
   | edgePoint d₁ s hs0 hs1 =>
-    have hne₁ : d₁.edge ≠ d.edge := by
-      intro he
-      rcases (dart_edge_eq_iff d₁ d).mp he with hdd | hdd
-      · subst d₁
-        rw [edgeProj_edgePoint_self] at hx
-        exact absurd ((mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d).ne') hs0.ne'
-      · subst d₁
-        rw [edgeProj_edgePoint_symm] at hx
-        have : 1 - (s : ℝ) = 0 := (mul_eq_zero.mp hx).resolve_right (W.dart_weight_pos d).ne'
-        linarith
-    have hf₁ : (W.graph.deleteEdges {d.edge}).Reachable d₁.fst d.fst := by
-      rw [edgeProj_edgePoint_of_edge_ne hT hne₁, edgeProj_vertex_eq_zero_iff] at hx
-      exact hx
-    have hs₁ : (W.graph.deleteEdges {d.edge}).Reachable d₁.snd d.fst :=
-      (reachable_deleteEdges_adj_iff d d₁ hne₁).mp hf₁
+    obtain ⟨hne₁, hf₁, hs₁⟩ := edgePoint_edgeProj_zero_decomp hT d d₁ hs0 hs1 hx
     induction y using ind with
     | vertex v =>
       have hv : ¬ (W.graph.deleteEdges {d.edge}).Reachable v d.fst :=
@@ -579,35 +528,18 @@ theorem dist_of_edgeProj_zero_eq_weight [Finite V] (hT : W.graph.IsTree) (d : W.
         vertexDist_comm d₁.fst d.fst, vertexDist_comm d₁.snd d.fst]
       simp only [← add_assoc, ← min_add]
     | edgePoint d₂ t ht0 ht1 =>
-      have hne₂ : d₂.edge ≠ d.edge := by
-        intro he
-        rcases (dart_edge_eq_iff d₂ d).mp he with hdd | hdd
-        · subst d₂
-          rw [edgeProj_edgePoint_self] at hy
-          have : (t : ℝ) = 1 :=
-            mul_right_cancel₀ (W.dart_weight_pos d).ne' (by simpa only [one_mul] using hy)
-          linarith
-        · subst d₂
-          rw [edgeProj_edgePoint_symm] at hy
-          have : 1 - (t : ℝ) = 1 :=
-            mul_right_cancel₀ (W.dart_weight_pos d).ne' (by simpa only [one_mul] using hy)
-          linarith
+      obtain ⟨hne₂, hf₂_sym, _⟩ := edgePoint_edgeProj_zero_decomp hT d.symm d₂ ht0 ht1 hy_symm
+      rw [Dart.edge_symm] at hne₂ hf₂_sym
+      have hf₂ : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.fst d.fst := fun hr =>
+        bridge_deleteEdges hT d (hr.symm.trans hf₂_sym)
+      have hs₂ : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.snd d.fst := fun hr =>
+        hf₂ ((reachable_deleteEdges_adj_iff d d₂ hne₂).mpr hr)
       have hne₁₂ : d₁.edge ≠ d₂.edge := by
         intro he
         rcases (dart_edge_eq_iff d₁ d₂).mp he with h | h
-        · rw [h] at hf₁
-          rw [edgeProj_edgePoint_of_edge_ne hT hne₂, edgeProj_vertex_eq_weight_iff] at hy
-          exact hy hf₁
+        · exact hf₂ (h ▸ hf₁)
         · have hf_snd : d₁.fst = d₂.snd := by rw [h]; rfl
-          rw [hf_snd] at hf₁
-          rw [edgeProj_edgePoint_of_edge_ne hT hne₂, edgeProj_vertex_eq_weight_iff] at hy
-          exact hy ((reachable_deleteEdges_adj_iff d d₂ hne₂).mpr hf₁)
-      have hf₂ : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.fst d.fst := by
-        rw [edgeProj_edgePoint_of_edge_ne hT hne₂, edgeProj_vertex_eq_weight_iff] at hy
-        exact hy
-      have hs₂ : ¬ (W.graph.deleteEdges {d.edge}).Reachable d₂.snd d.fst := by
-        intro hr
-        exact hf₂ ((reachable_deleteEdges_adj_iff d d₂ hne₂).mpr hr)
+          exact hs₂ (hf_snd ▸ hf₁)
       have hff := vertexDist_eq_of_deleteEdges_cut hT d hf₁ hf₂
       have hfs := vertexDist_eq_of_deleteEdges_cut hT d hf₁ hs₂
       have hsf := vertexDist_eq_of_deleteEdges_cut hT d hs₁ hf₂
@@ -1015,17 +947,6 @@ end TreeGeodesic
 /-! ### Tree medians and branch partitions -/
 
 section TreeMedian
-
-/-- Minimum weight among all darts in a nonempty finite weighted graph. -/
-theorem exists_min_dart_weight [Finite V] (d₀ : W.graph.Dart) :
-    ∃ wmin : ℝ, 0 < wmin ∧ ∀ d : W.graph.Dart, wmin ≤ W.weight d.edge := by
-  classical
-  have : Finite W.graph.Dart := Finite.of_injective Dart.toProd Dart.toProd_injective
-  have hfin : (Set.univ : Set W.graph.Dart).Finite := Set.finite_univ
-  obtain ⟨d₁, _, hd₁⟩ := hfin.toFinset.exists_min_image (fun d : W.graph.Dart => W.weight d.edge)
-    ⟨d₀, hfin.mem_toFinset.mpr (Set.mem_univ d₀)⟩
-  exact ⟨W.weight d₁.edge, W.dart_weight_pos d₁, fun d =>
-    hd₁ d (hfin.mem_toFinset.mpr (Set.mem_univ d))⟩
 
 private lemma exists_edge_dart_of_ne {a b : MetricGraph W} (hab : a ≠ b) :
     Nonempty W.graph.Dart := by

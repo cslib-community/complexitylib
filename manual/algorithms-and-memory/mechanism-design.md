@@ -478,10 +478,11 @@ computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001
 For facility location, only single-facility mechanisms optimizing expected social cost (sum of
 distances) are formalized. Strategyproof onto rules are characterized on intervals, trees, and
 single shortest cycles / cycle graphs (`isStrategyProof_and_surjective_iff_exists_treeEMVS`,
-`exists_cycleDictator_of_isShortestCycle`, `exists_dictatorship_of_cycleGraph`); global extensions
-of cycle dictatorship across arbitrary multi-block cyclic graphs are not formalized beyond single
-shortest cycles and `cycleGraph n`. Also not yet formalized: maximum-cost (egalitarian) objectives,
-multiple-facility (`k ≥ 2`) location, and impossibility/lower-bound theorems beyond `1 ≤ α`.
+`exists_cycleDictator_of_isShortestCycle`, `exists_dictatorship_of_cycleGraph`); arbitrary
+non-shortest cycles, multi-cycle/block consistency, and the full cyclic-network quotient-tree
+characterization (issue #4327) remain open. Also not yet formalized: maximum-cost (egalitarian)
+objectives, multiple-facility (`k ≥ 2`) location, and impossibility/lower-bound theorems beyond
+`1 ≤ α`.
 
 For social choice, Arrow's theorem and the Gibbard–Satterthwaite theorem are formalized for strict
 individual rankings. A finite electorate is necessary, but the infinite-electorate counterexample

@@ -305,16 +305,8 @@ end TreeClients
 
 section CycleClients
 
-private theorem cycleGraph3_connected : (SimpleGraph.cycleGraph 3).Connected := by
-  rw [SimpleGraph.connected_iff_exists_forall_reachable]
-  refine ⟨0, fun v => ?_⟩
-  fin_cases v
-  · exact Reachable.refl 0
-  · exact Adj.reachable (by rw [cycleGraph_adj]; right; decide)
-  · exact Adj.reachable (by rw [cycleGraph_adj]; left; decide)
-
 private noncomputable def triGraph : WeightedGraph (Fin 3) :=
-  equalLength (SimpleGraph.cycleGraph 3) cycleGraph3_connected 1 one_pos
+  equalLength (SimpleGraph.cycleGraph 3) SimpleGraph.connected_cycleGraph_add_one 1 one_pos
 
 /-- On `cycleGraph 3`, any deterministic strategyproof surjective mechanism (for instance,
 player `1`'s dictatorship) is globally dictatorial. -/

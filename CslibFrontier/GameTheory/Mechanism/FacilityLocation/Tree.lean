@@ -45,7 +45,7 @@ scheme (`TreeEMVS`), and moreover every such mechanism is strongly group strateg
 
 ## References
 
-* [SchummerVohra2002] J. Schummer and R. V. Vohra, "Strategy-proof location on graphs",
+* [SchummerVohra2002] J. Schummer and R. V. Vohra, "Strategy-proof Location on a Network",
   Journal of Economic Theory 104(2) (2002), 405–428.
 -/
 
@@ -860,6 +860,25 @@ private lemma exists_cut_dart_of_notMem (hT : W.graph.IsTree) {S : Finset V}
       exact hnot hr.symm
     exact hd_snd (hS.2 d.fst hd_fst u hu p hp d.snd hsplit)
 
+private lemma edgeProj_eq_zero_of_mem_interval (hT : W.graph.IsTree) {d : W.graph.Dart}
+    {p q z : MetricGraph W} (hp : edgeProj hT d p = 0) (hq : edgeProj hT d q = 0)
+    (hz : z ∈ interval p q) : edgeProj hT d z = 0 := by
+  by_contra hne
+  have hpos : 0 < edgeProj hT d z := lt_of_le_of_ne (edgeProj_nonneg hT d z) (Ne.symm hne)
+  have hm₁ := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d hp hpos)
+  have hm₂ := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d hq hpos)
+  have hz_mem := mem_interval_iff.mp hz
+  have hd_pos : 0 < dist (vertex d.fst : MetricGraph W) z := by
+    by_contra hle
+    push Not at hle
+    have heq : (vertex d.fst : MetricGraph W) = z := dist_eq_zero.mp (le_antisymm hle dist_nonneg)
+    have h0 : edgeProj hT d (vertex d.fst) = 0 :=
+      (edgeProj_vertex_eq_zero_iff hT d d.fst).mpr (.refl _)
+    rw [heq] at h0
+    linarith
+  linarith [dist_triangle p (vertex d.fst) q, dist_comm (vertex d.fst : MetricGraph W) z,
+    dist_comm q z, dist_comm q (vertex d.fst)]
+
 private lemma vertex_mem_subtree_iff (hT : W.graph.IsTree) {S : Finset V}
     (hS : ConvexVertices W S) (v : V) :
     vertex v ∈ subtree W S ↔ v ∈ S := by
@@ -867,22 +886,8 @@ private lemma vertex_mem_subtree_iff (hT : W.graph.IsTree) {S : Finset V}
   · rintro ⟨u₁, hu₁, u₂, hu₂, hv⟩
     by_contra hv_not
     obtain ⟨d, hdv, hdu⟩ := exists_cut_dart_of_notMem hT hS hv_not
-    have hm₁ := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d (hdu u₁ hu₁)
-      (by rw [hdv]; exact W.dart_weight_pos d))
-    have hm₂ := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d (hdu u₂ hu₂)
-      (by rw [hdv]; exact W.dart_weight_pos d))
-    have hv_mem := mem_interval_iff.mp hv
-    have hpos : 0 < dist (vertex d.fst : MetricGraph W) (vertex v) := by
-      have hne : d.fst ≠ v := fun heq => by
-        rw [← heq] at hdv
-        have : edgeProj hT d (vertex d.fst) = 0 :=
-          (edgeProj_vertex_eq_zero_iff hT d _).mpr (.refl _)
-        linarith [W.dart_weight_pos d]
-      exact dist_pos.mpr fun h => hne (vertex_injective (W := W) h)
-    linarith [dist_triangle (vertex u₁ : MetricGraph W) (vertex d.fst) (vertex u₂),
-      dist_comm (vertex d.fst : MetricGraph W) (vertex v),
-      dist_comm (vertex u₂ : MetricGraph W) (vertex v),
-      dist_comm (vertex u₂ : MetricGraph W) (vertex d.fst)]
+    have h0 := edgeProj_eq_zero_of_mem_interval hT (hdu u₁ hu₁) (hdu u₂ hu₂) hv
+    linarith [W.dart_weight_pos d]
   · exact vertex_mem_subtree W
 
 private lemma edgePoint_mem_subtree_iff (hT : W.graph.IsTree) {S : Finset V}
@@ -903,24 +908,7 @@ private lemma edgePoint_mem_subtree_iff (hT : W.graph.IsTree) {S : Finset V}
             exact mul_pos (sub_pos.mpr ht1) (W.dart_weight_pos d₀)
         · rw [edgeProj_edgePoint_of_edge_ne hT he, hd₀_snd]
           exact W.dart_weight_pos d₀
-      have hm₁ := mem_interval_iff.mp
-        (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u u₁ hu₁) hpos)
-      have hm₂ := mem_interval_iff.mp
-        (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u u₂ hu₂) hpos)
-      have hz_mem := mem_interval_iff.mp hz
-      have hd_pos : 0 < dist (vertex d₀.fst : MetricGraph W) (edgePoint d t) := by
-        by_contra hle
-        push Not at hle
-        have heq : (vertex d₀.fst : MetricGraph W) = edgePoint d t :=
-          dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-        have h0 : edgeProj hT d₀ (vertex d₀.fst) = 0 :=
-          (edgeProj_vertex_eq_zero_iff hT d₀ d₀.fst).mpr (.refl _)
-        rw [heq] at h0
-        linarith
-      linarith [dist_triangle (vertex u₁ : MetricGraph W) (vertex d₀.fst) (vertex u₂),
-        dist_comm (vertex d₀.fst : MetricGraph W) (edgePoint d t),
-        dist_comm (vertex u₂ : MetricGraph W) (edgePoint d t),
-        dist_comm (vertex u₂ : MetricGraph W) (vertex d₀.fst)]
+      exact hpos.ne' (edgeProj_eq_zero_of_mem_interval hT (hd₀_u u₁ hu₁) (hd₀_u u₂ hu₂) hz)
     · by_contra hsnd
       obtain ⟨d₀, hd₀_snd, hd₀_u⟩ := exists_cut_dart_of_notMem hT hS hsnd
       have hpos : 0 < edgeProj hT d₀ (edgePoint d t) := by
@@ -942,24 +930,7 @@ private lemma edgePoint_mem_subtree_iff (hT : W.graph.IsTree) {S : Finset V}
             exact hs (hd_adj.symm.reachable.trans hr)
           rw [hd_fst]
           exact W.dart_weight_pos d₀
-      have hm₁ := mem_interval_iff.mp
-        (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u u₁ hu₁) hpos)
-      have hm₂ := mem_interval_iff.mp
-        (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u u₂ hu₂) hpos)
-      have hz_mem := mem_interval_iff.mp hz
-      have hd_pos : 0 < dist (vertex d₀.fst : MetricGraph W) (edgePoint d t) := by
-        by_contra hle
-        push Not at hle
-        have heq : (vertex d₀.fst : MetricGraph W) = edgePoint d t :=
-          dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-        have h0 : edgeProj hT d₀ (vertex d₀.fst) = 0 :=
-          (edgeProj_vertex_eq_zero_iff hT d₀ d₀.fst).mpr (.refl _)
-        rw [heq] at h0
-        linarith
-      linarith [dist_triangle (vertex u₁ : MetricGraph W) (vertex d₀.fst) (vertex u₂),
-        dist_comm (vertex d₀.fst : MetricGraph W) (edgePoint d t),
-        dist_comm (vertex u₂ : MetricGraph W) (edgePoint d t),
-        dist_comm (vertex u₂ : MetricGraph W) (vertex d₀.fst)]
+      exact hpos.ne' (edgeProj_eq_zero_of_mem_interval hT (hd₀_u u₁ hu₁) (hd₀_u u₂ hu₂) hz)
   · rintro ⟨hfst, hsnd⟩
     refine ⟨d.fst, hfst, d.snd, hsnd, ?_⟩
     rw [mem_interval_iff, ← edgePoint_zero d, ← edgePoint_one d,
@@ -992,63 +963,9 @@ private lemma convexSet_subtree (hT : W.graph.IsTree) {S : Finset V}
       have hw_pos : 0 < edgeProj hT d (vertex w) := by
         rw [hdw]
         exact W.dart_weight_pos d
-      have ha_mem := mem_interval_iff.mp ha
-      have hb_mem := mem_interval_iff.mp hb
-      have ha0 : edgeProj hT d a = 0 := by
-        by_contra hne
-        have hpos_a : 0 < edgeProj hT d a :=
-          lt_of_le_of_ne (edgeProj_nonneg hT d a) (Ne.symm hne)
-        have h2 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d (hdu u₁ hu₁) hpos_a)
-        have h3 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d (hdu v₁ hv₁) hpos_a)
-        have hd_pos : 0 < dist (vertex d.fst : MetricGraph W) a := by
-          by_contra hle
-          push Not at hle
-          have heq : (vertex d.fst : MetricGraph W) = a :=
-            dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-          have h0 : edgeProj hT d (vertex d.fst) = 0 :=
-            (edgeProj_vertex_eq_zero_iff hT d d.fst).mpr (.refl _)
-          rw [heq] at h0
-          linarith
-        linarith [dist_triangle (vertex u₁ : MetricGraph W) (vertex d.fst) (vertex v₁),
-          dist_comm (vertex d.fst : MetricGraph W) a, dist_comm (vertex v₁ : MetricGraph W) a,
-          dist_comm (vertex v₁ : MetricGraph W) (vertex d.fst)]
-      have hb0 : edgeProj hT d b = 0 := by
-        by_contra hne
-        have hpos_b : 0 < edgeProj hT d b :=
-          lt_of_le_of_ne (edgeProj_nonneg hT d b) (Ne.symm hne)
-        have h2 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d (hdu u₂ hu₂) hpos_b)
-        have h3 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d (hdu v₂ hv₂) hpos_b)
-        have hd_pos : 0 < dist (vertex d.fst : MetricGraph W) b := by
-          by_contra hle
-          push Not at hle
-          have heq : (vertex d.fst : MetricGraph W) = b :=
-            dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-          have h0 : edgeProj hT d (vertex d.fst) = 0 :=
-            (edgeProj_vertex_eq_zero_iff hT d d.fst).mpr (.refl _)
-          rw [heq] at h0
-          linarith
-        linarith [dist_triangle (vertex u₂ : MetricGraph W) (vertex d.fst) (vertex v₂),
-          dist_comm (vertex d.fst : MetricGraph W) b, dist_comm (vertex v₂ : MetricGraph W) b,
-          dist_comm (vertex v₂ : MetricGraph W) (vertex d.fst)]
-      have hm1 := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d ha0 hw_pos)
-      have hm2 := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d hb0 hw_pos)
-      have hz_mem := mem_interval_iff.mp hz
-      have hpos : 0 < dist (vertex d.fst : MetricGraph W) (vertex w) := by
-        by_contra hle
-        push Not at hle
-        have heq : (vertex d.fst : MetricGraph W) = vertex w :=
-          dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-        have h0 : edgeProj hT d (vertex d.fst) = 0 :=
-          (edgeProj_vertex_eq_zero_iff hT d d.fst).mpr (.refl _)
-        rw [heq] at h0
-        linarith
-      linarith [dist_triangle a (vertex d.fst) b,
-        dist_comm (vertex d.fst : MetricGraph W) (vertex w),
-        dist_comm b (vertex w), dist_comm b (vertex d.fst)]
+      have ha0 := edgeProj_eq_zero_of_mem_interval hT (hdu u₁ hu₁) (hdu v₁ hv₁) ha
+      have hb0 := edgeProj_eq_zero_of_mem_interval hT (hdu u₂ hu₂) (hdu v₂ hv₂) hb
+      exact hw_pos.ne' (edgeProj_eq_zero_of_mem_interval hT ha0 hb0 hz)
     | edgePoint d' t ht0 ht1 =>
       rw [edgePoint_mem_subtree_iff hT hS ht0 ht1]
       by_contra hnot
@@ -1087,63 +1004,9 @@ private lemma convexSet_subtree (hT : W.graph.IsTree) {S : Finset V}
           · rw [edgeProj_edgePoint_of_edge_ne hT he, hd₀_snd]
             exact W.dart_weight_pos d₀
       obtain ⟨d₀, hpos, hd₀_u⟩ := hcut
-      have ha0 : edgeProj hT d₀ a = 0 := by
-        by_contra hne
-        have hpos_a : 0 < edgeProj hT d₀ a :=
-          lt_of_le_of_ne (edgeProj_nonneg hT d₀ a) (Ne.symm hne)
-        have h2 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u u₁ hu₁) hpos_a)
-        have h3 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u v₁ hv₁) hpos_a)
-        have ha_mem := mem_interval_iff.mp ha
-        have hd_pos : 0 < dist (vertex d₀.fst : MetricGraph W) a := by
-          by_contra hle
-          push Not at hle
-          have heq : (vertex d₀.fst : MetricGraph W) = a :=
-            dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-          have h0 : edgeProj hT d₀ (vertex d₀.fst) = 0 :=
-            (edgeProj_vertex_eq_zero_iff hT d₀ d₀.fst).mpr (.refl _)
-          rw [heq] at h0
-          linarith
-        linarith [dist_triangle (vertex u₁ : MetricGraph W) (vertex d₀.fst) (vertex v₁),
-          dist_comm (vertex d₀.fst : MetricGraph W) a, dist_comm (vertex v₁ : MetricGraph W) a,
-          dist_comm (vertex v₁ : MetricGraph W) (vertex d₀.fst)]
-      have hb0 : edgeProj hT d₀ b = 0 := by
-        by_contra hne
-        have hpos_b : 0 < edgeProj hT d₀ b :=
-          lt_of_le_of_ne (edgeProj_nonneg hT d₀ b) (Ne.symm hne)
-        have h2 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u u₂ hu₂) hpos_b)
-        have h3 :=
-          mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d₀ (hd₀_u v₂ hv₂) hpos_b)
-        have hb_mem := mem_interval_iff.mp hb
-        have hd_pos : 0 < dist (vertex d₀.fst : MetricGraph W) b := by
-          by_contra hle
-          push Not at hle
-          have heq : (vertex d₀.fst : MetricGraph W) = b :=
-            dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-          have h0 : edgeProj hT d₀ (vertex d₀.fst) = 0 :=
-            (edgeProj_vertex_eq_zero_iff hT d₀ d₀.fst).mpr (.refl _)
-          rw [heq] at h0
-          linarith
-        linarith [dist_triangle (vertex u₂ : MetricGraph W) (vertex d₀.fst) (vertex v₂),
-          dist_comm (vertex d₀.fst : MetricGraph W) b, dist_comm (vertex v₂ : MetricGraph W) b,
-          dist_comm (vertex v₂ : MetricGraph W) (vertex d₀.fst)]
-      have hm1 := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d₀ ha0 hpos)
-      have hm2 := mem_interval_iff.mp (vertex_fst_mem_interval_of_edgeProj hT d₀ hb0 hpos)
-      have hz_mem := mem_interval_iff.mp hz
-      have hpos' : 0 < dist (vertex d₀.fst : MetricGraph W) (edgePoint d' t) := by
-        by_contra hle
-        push Not at hle
-        have heq : (vertex d₀.fst : MetricGraph W) = edgePoint d' t :=
-          dist_eq_zero.mp (le_antisymm hle dist_nonneg)
-        have h0 : edgeProj hT d₀ (vertex d₀.fst) = 0 :=
-          (edgeProj_vertex_eq_zero_iff hT d₀ d₀.fst).mpr (.refl _)
-        rw [heq] at h0
-        linarith
-      linarith [dist_triangle a (vertex d₀.fst) b,
-        dist_comm (vertex d₀.fst : MetricGraph W) (edgePoint d' t),
-        dist_comm b (edgePoint d' t), dist_comm b (vertex d₀.fst)]
+      have ha0 := edgeProj_eq_zero_of_mem_interval hT (hd₀_u u₁ hu₁) (hd₀_u v₁ hv₁) ha
+      have hb0 := edgeProj_eq_zero_of_mem_interval hT (hd₀_u u₂ hu₂) (hd₀_u v₂ hv₂) hb
+      exact hpos.ne' (edgeProj_eq_zero_of_mem_interval hT ha0 hb0 hz)
 
 omit [Finite V] in
 private lemma convexVertices_univ [Fintype V] [Nonempty V] (W : WeightedGraph V) :

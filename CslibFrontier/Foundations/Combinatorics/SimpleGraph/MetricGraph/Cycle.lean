@@ -61,13 +61,6 @@ variable {V : Type u} {W : WeightedGraph V}
 
 section ShortestCycle
 
-private lemma walkLength_eq_sum_map_edges {G : SimpleGraph V} (w : Sym2 V → ℝ) :
-    ∀ {u v : V} (p : G.Walk u v), walkLength w p = (p.edges.map w).sum
-  | _, _, .nil => rfl
-  | _, _, .cons _ q => by
-    simp only [walkLength_cons, Walk.edges_cons, List.map_cons, List.sum_cons,
-      walkLength_eq_sum_map_edges w q]
-
 private lemma sum_map_eq_sum_toFinset {α : Type*} [DecidableEq α] (f : α → ℝ) (l : List α)
     (hl : l.Nodup) : (l.map f).sum = ∑ x ∈ l.toFinset, f x := by
   induction l with
@@ -79,18 +72,8 @@ private lemma sum_map_eq_sum_toFinset {α : Type*} [DecidableEq α] (f : α → 
 
 private lemma walkLength_perm_eq {G : SimpleGraph V} (w : Sym2 V → ℝ)
     {u₁ v₁ u₂ v₂ : V} {p₁ : G.Walk u₁ v₁} {p₂ : G.Walk u₂ v₂} (hp : p₁.edges.Perm p₂.edges) :
-    walkLength w p₁ = walkLength w p₂ := by
-  rw [walkLength_eq_sum_map_edges, walkLength_eq_sum_map_edges]
-  exact (hp.map w).sum_eq
-
-theorem walkLength_reverse_eq {u v : V} (p : W.graph.Walk u v) :
-    walkLength W.weight p.reverse = walkLength W.weight p :=
-  walkLength_perm_eq W.weight (by simp [Walk.edges_reverse])
-
-theorem walkLength_append_eq {u v w : V} (p : W.graph.Walk u v) (q : W.graph.Walk v w) :
-    walkLength W.weight (p.append q) = walkLength W.weight p + walkLength W.weight q := by
-  rw [walkLength_eq_sum_map_edges, walkLength_eq_sum_map_edges, walkLength_eq_sum_map_edges,
-    Walk.edges_append, List.map_append, List.sum_append]
+    walkLength w p₁ = walkLength w p₂ :=
+  (hp.map w).sum_eq
 
 private lemma weight_le_walkLength_of_mem_edges : ∀ {u v : V} (p : W.graph.Walk u v)
     {e : Sym2 V}, e ∈ p.edges → W.weight e ≤ walkLength W.weight p
@@ -114,8 +97,8 @@ theorem walkLength_pos_of_not_nil {u v : V} {p : W.graph.Walk u v} (hp : ¬ p.Ni
 
 theorem walkLength_take_add_drop {u v : V} (p : W.graph.Walk u v) (k : ℕ) :
     walkLength W.weight (p.take k) + walkLength W.weight (p.drop k) = walkLength W.weight p := by
-  rw [walkLength_eq_sum_map_edges, walkLength_eq_sum_map_edges, walkLength_eq_sum_map_edges,
-    Walk.edges_take, Walk.edges_drop, ← List.sum_append, ← List.map_append, List.take_append_drop]
+  dsimp only [walkLength]
+  rw [Walk.edges_take, Walk.edges_drop, ← List.sum_append, ← List.map_append, List.take_append_drop]
 
 /-- A cycle `c` in `W.graph` is a shortest cycle if it minimizes `walkLength W.weight` among all
 cycles in `W.graph`. -/
@@ -132,7 +115,7 @@ theorem exists_isShortestCycle [Finite V] (hc : ¬ W.graph.IsAcyclic) :
   have hsub : S ⊆ Set.range (fun F : Finset (Sym2 V) => ∑ e ∈ F, W.weight e) := by
     rintro r ⟨u, c, hc_cyc, rfl⟩
     refine ⟨c.edges.toFinset, ?_⟩
-    rw [walkLength_eq_sum_map_edges, sum_map_eq_sum_toFinset _ _ hc_cyc.isTrail.edges_nodup]
+    exact (sum_map_eq_sum_toFinset W.weight c.edges hc_cyc.isTrail.edges_nodup).symm
   have hfin : Set.Finite S := (Set.finite_range _).subset hsub
   obtain ⟨v₁, c₁, hc₁⟩ := not_isAcyclic_iff_exists_isCycle.mp hc
   have hne : S.Nonempty := ⟨walkLength W.weight c₁, v₁, c₁, hc₁, rfl⟩
@@ -780,7 +763,7 @@ private lemma takeUntil_rotate_length_start [DecidableEq V] {v₀ a : V} {c : W.
   let c₂ := c.dropUntil a ha
   have hc_eq : c₁.append c₂ = c := c.take_spec ha
   have hlen12 : walkLength W.weight c₁ + walkLength W.weight c₂ = L := by
-    rw [← walkLength_append_eq, hc_eq]
+    rw [← walkLength_append, hc_eq]
   have ha_coord : cycCoord c a = walkLength W.weight c₁ := cycCoord_of_mem ha
   have hlen_arc : walkLength W.weight
         ((c.rotate a ha).takeUntil v₀
@@ -788,7 +771,7 @@ private lemma takeUntil_rotate_length_start [DecidableEq V] {v₀ a : V} {c : W.
       walkLength W.weight
         ((c.rotate a ha).dropUntil v₀
           ((c.mem_support_rotate_iff a ha).mpr (Walk.start_mem_support c))) = L := by
-    rw [← walkLength_append_eq, Walk.take_spec]
+    rw [← walkLength_append, Walk.take_spec]
     exact walkLength_perm_eq W.weight (c.rotate_edges a ha).perm
   have hc1_nn : ¬ c₁.Nil := by
     intro hnil
@@ -844,7 +827,7 @@ private lemma takeUntil_rotate_length_start [DecidableEq V] {v₀ a : V} {c : W.
     have hsp := c₂.take_spec hv0_c2
     have hln : walkLength W.weight (c₂.takeUntil v₀ hv0_c2) +
         walkLength W.weight (c₂.dropUntil v₀ hv0_c2) = walkLength W.weight c₂ := by
-      rw [← walkLength_append_eq, hsp]
+      rw [← walkLength_append, hsp]
     have hnil_len : walkLength W.weight (c₂.dropUntil v₀ hv0_c2) = 0 := by
       rw [Walk.Nil.eq_nil hdrop2]
       exact walkLength_nil W.weight
@@ -880,13 +863,13 @@ private lemma takeUntil_rotate_length [DecidableEq V] {v₀ a w : V} {c : W.grap
     let c₂ := c.dropUntil a ha
     have hc_eq : c₁.append c₂ = c := c.take_spec ha
     have hlen12 : walkLength W.weight c₁ + walkLength W.weight c₂ = L := by
-      rw [← walkLength_append_eq, hc_eq]
+      rw [← walkLength_append, hc_eq]
     have ha_coord : cycCoord c a = walkLength W.weight c₁ := cycCoord_of_mem ha
     let hw_rot := (c.mem_support_rotate_iff a ha).mpr hw
     let arc₁ := (c.rotate a ha).takeUntil w hw_rot
     let arc₂ := (c.rotate a ha).dropUntil w hw_rot
     have hlen_arc : walkLength W.weight arc₁ + walkLength W.weight arc₂ = L := by
-      rw [← walkLength_append_eq, Walk.take_spec]
+      rw [← walkLength_append, Walk.take_spec]
       exact walkLength_perm_eq W.weight (c.rotate_edges a ha).perm
     have hw_cnt : c.support.count w = 1 := hc.count_support_of_mem hw hwv0
     have hsup : c.support.count w = c₁.support.dropLast.count w + c₂.support.count w := by
@@ -912,10 +895,10 @@ private lemma takeUntil_rotate_length [DecidableEq V] {v₀ a w : V} {c : W.grap
         exact takeUntil_append_of_not_mem_left c₂ c₁ hwc2 hwc1
       have hle_c1 : walkLength W.weight (c₁.takeUntil w hwc1) ≤ walkLength W.weight c₁ := by
         have := congrArg (walkLength W.weight) (c₁.take_spec hwc1)
-        rw [walkLength_append_eq] at this
+        rw [walkLength_append] at this
         linarith [walkLength_nonneg W.weight W.weight_nonneg (c₁.dropUntil w hwc1)]
       have harc1_len : walkLength W.weight arc₁ = walkLength W.weight c₂ + cycCoord c w := by
-        rw [harc1_eq, walkLength_append_eq, hcw_eq]
+        rw [harc1_eq, walkLength_append, hcw_eq]
       have harc2_len : walkLength W.weight arc₂ = cycCoord c a - cycCoord c w := by
         linarith [hlen12, hlen_arc, ha_coord]
       have hcw_nn : 0 ≤ cycCoord c w := by
@@ -937,7 +920,7 @@ private lemma takeUntil_rotate_length [DecidableEq V] {v₀ a w : V} {c : W.grap
       have hcw_eq : cycCoord c w =
           walkLength W.weight c₁ + walkLength W.weight (c₂.takeUntil w hwc2) := by
         rw [cycCoord_of_mem hw, takeUntil_walkLength_congr hc_eq.symm hw,
-          takeUntil_append_of_not_mem_left c₁ c₂ hwc1 hwc2, walkLength_append_eq]
+          takeUntil_append_of_not_mem_left c₁ c₂ hwc1 hwc2, walkLength_append]
       have harc1_eq : arc₁ = c₂.takeUntil w hwc2 := by
         dsimp only [arc₁, Walk.rotate]
         exact Walk.takeUntil_append_of_mem_left c₂ c₁ hwc2
@@ -1039,7 +1022,7 @@ private lemma isCycle_chord_le [DecidableEq V] {v₀ : V} {c : W.graph.Walk v₀
         let arc₁ := cₐ.takeUntil w hw'
         let arc₂ := cₐ.dropUntil w hw'
         have harc_sum : walkLength W.weight arc₁ + walkLength W.weight arc₂ = L := by
-          rw [← walkLength_append_eq, Walk.take_spec, hLₐ]
+          rw [← walkLength_append, Walk.take_spec, hLₐ]
         have hcd_min : circleDist L (cycCoord c a) (cycCoord c w) ≤
             min (walkLength W.weight arc₁) (walkLength W.weight arc₂) :=
           takeUntil_rotate_length hs.1 ha hw haw
@@ -1134,7 +1117,7 @@ private lemma isCycle_chord_le [DecidableEq V] {v₀ : V} {c : W.graph.Walk v₀
             · omega
           have hs1 := hs.2 (q₁.append arc₂) hcyc1
           have hc_L : walkLength W.weight c = L := rfl
-          rw [walkLength_append_eq, hc_L] at hs1
+          rw [walkLength_append, hc_L] at hs1
           exact (min_le_left _ _).trans (by linarith)
 
 private lemma circleDist_le_vertexDist [Finite V] [DecidableEq V] {v₀ : V}
@@ -1262,7 +1245,7 @@ theorem circleMap_dist_eq_circleDist [Finite V] {v₀ : V} {c : W.graph.Walk v�
       | nil =>
         have hlen_tot : walkLength W.weight q₁ + W.weight d.edge = L := by
           have h := congrArg (walkLength W.weight) hc_eq
-          rw [walkLength_append_eq, walkLength_cons, walkLength_nil, add_zero] at h
+          rw [walkLength_append, walkLength_cons, walkLength_nil, add_zero] at h
           have hwe : W.weight s(d.fst, d.snd) = W.weight d.edge := rfl
           rw [hwe] at h
           exact h.symm
@@ -1276,7 +1259,7 @@ theorem circleMap_dist_eq_circleDist [Finite V] {v₀ : V} {c : W.graph.Walk v�
             Walk.nil_append]
         have hlen2 : walkLength W.weight (q₁.concat hadj) =
             walkLength W.weight q₁ + W.weight d.edge := by
-          rw [Walk.concat_eq_append, walkLength_append_eq, walkLength_cons, walkLength_nil,
+          rw [Walk.concat_eq_append, walkLength_append, walkLength_cons, walkLength_nil,
             add_zero]
           rfl
         rw [cycCoord_append_eq hs.1 hc_eq2 Walk.not_nil_cons, hlen2, circleDist_self hL]
@@ -1508,7 +1491,7 @@ theorem circleMap_surjective_of_cycleGraph {n : ℕ}
     rw [cycCoord_of_mem hv]
     have hle : walkLength W.weight (c.takeUntil v hv) ≤ walkLength W.weight c := by
       have := congrArg (walkLength W.weight) (c.take_spec hv)
-      rw [walkLength_append_eq] at this
+      rw [walkLength_append] at this
       linarith [walkLength_nonneg W.weight W.weight_nonneg (c.dropUntil v hv)]
     rw [circleMap_eq_walkPoint hc (walkLength_nonneg W.weight W.weight_nonneg _) hle]
     conv_lhs =>
@@ -1524,7 +1507,7 @@ theorem circleMap_surjective_of_cycleGraph {n : ℕ}
     have hw_eq : W.weight d'.edge = W.weight d.edge := congrArg W.weight hd'_edge
     have hsum_le : walkLength W.weight q₁ + W.weight d'.edge ≤ walkLength W.weight c := by
       have := congrArg (walkLength W.weight) hc_eq
-      rw [walkLength_append_eq, walkLength_cons] at this
+      rw [walkLength_append, walkLength_cons] at this
       have hq2_nn : 0 ≤ walkLength W.weight q₂ := walkLength_nonneg W.weight W.weight_nonneg q₂
       have hw' : W.weight s(d'.fst, d'.snd) = W.weight d'.edge := rfl
       linarith
@@ -1567,7 +1550,7 @@ private lemma circleMap_rotate_eq [DecidableEq V] {v₀ v : V} {c : W.graph.Walk
     have hc_eq : c₁.append c₂ = c := c.take_spec hv
     have hcv_eq : c_v = c₂.append c₁ := rfl
     have hsum : walkLength W.weight c₁ + walkLength W.weight c₂ = L := by
-      rw [← walkLength_append_eq, hc_eq]
+      rw [← walkLength_append, hc_eq]
     have hcv_coord : cycCoord c v = walkLength W.weight c₁ := cycCoord_of_mem hv
     have hc₁_le : walkLength W.weight c₁ ≤ L := by
       linarith [walkLength_nonneg W.weight W.weight_nonneg c₂]
@@ -1746,7 +1729,7 @@ theorem circleMap_local_dichotomy {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : 
         exfalso
         have hlen_c : L = walkLength W.weight q₁ + W.weight d.edge := by
           have h := congrArg (walkLength W.weight) hc_eq
-          rw [hq2c, walkLength_append_eq, walkLength_cons, walkLength_nil, add_zero] at h
+          rw [hq2c, walkLength_append, walkLength_cons, walkLength_nil, add_zero] at h
           have hwe : W.weight s(d.fst, d.snd) = W.weight d.edge := rfl
           rw [hwe] at h
           exact h
@@ -1758,7 +1741,7 @@ theorem circleMap_local_dichotomy {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : 
             Walk.nil_append]
         have hlen2 : walkLength W.weight (q₁.concat hadj) =
             walkLength W.weight q₁ + W.weight d.edge := by
-          rw [Walk.concat_eq_append, walkLength_append_eq, walkLength_cons, walkLength_nil,
+          rw [Walk.concat_eq_append, walkLength_append, walkLength_cons, walkLength_nil,
             add_zero]
           rfl
         have hcoord : s = cycCoord c d.snd + (⌊s / L⌋ : ℝ) * L := by
@@ -1797,7 +1780,7 @@ theorem circleMap_local_dichotomy {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : 
       have hr₀_le : r₀ + r ≤ L := by
         have hlen_c : L = walkLength W.weight q₁ + W.weight d.edge + walkLength W.weight q₂ := by
           have h := congrArg (walkLength W.weight) hc_eq
-          rw [walkLength_append_eq, walkLength_cons] at h
+          rw [walkLength_append, walkLength_cons] at h
           have hwe : W.weight s(d.fst, d.snd) = W.weight d.edge := rfl
           rw [hwe] at h
           linarith

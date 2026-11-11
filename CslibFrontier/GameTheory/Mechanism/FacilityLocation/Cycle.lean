@@ -17,7 +17,7 @@ import Mathlib.Tactic.Linarith
 /-!
 # Schummer–Vohra cycle dictatorship on metric graphs
 
-This module proves Schummer–Vohra (2002) Theorem 2 ("Cycle Dictator"): any deterministic
+This module proves the cycle dictatorship result of [SchummerVohra2002]: any deterministic
 strategyproof and onto facility-location mechanism on a finite metric graph `MetricGraph W`
 acts as a dictatorship on the points of any shortest cycle `c` (without assuming the range
 stays in the cycle, and without assuming group strategyproofness). When `W.graph` is itself
@@ -26,8 +26,8 @@ mechanism is globally a dictatorship.
 
 ## Main results
 
-* `Cslib.GameTheory.FacilityLocation.exists_cycleDictator_of_isShortestCycle`: Schummer–Vohra
-  Theorem 2 on an explicit shortest cycle `c`.
+* `Cslib.GameTheory.FacilityLocation.exists_cycleDictator_of_isShortestCycle`: cycle dictatorship
+  on an explicit shortest cycle `c` ([SchummerVohra2002]).
 * `Cslib.GameTheory.FacilityLocation.exists_cycleDictator_of_not_isAcyclic`: any finite cyclic
   metric graph has a shortest cycle on which every strategyproof onto rule is dictatorial.
 * `Cslib.GameTheory.FacilityLocation.exists_dictatorship_of_cycleGraph`: on `cycleGraph (n + 3)`,
@@ -35,7 +35,7 @@ mechanism is globally a dictatorship.
 
 ## References
 
-* [J. Schummer and R. V. Vohra, *Strategy-proof location on a network*][SchummerVohra2002]
+* [J. Schummer and R. V. Vohra, *Strategy-proof Location on a Network*][SchummerVohra2002]
 -/
 
 public section
@@ -106,35 +106,6 @@ end CoalitionAndMerge
 
 section CycleGeometry
 
-private theorem walkLength_pos_of_isCycle {V : Type*} (W : WeightedGraph V)
-    {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : c.IsCycle) :
-    0 < walkLength W.weight c := by
-  cases c with
-  | nil => exact absurd hc.not_nil (by simp)
-  | @cons _ b _ hadj q =>
-    rw [walkLength_cons]
-    have hw : 0 < W.weight s(v₀, b) := W.weight_pos hadj
-    have hq : 0 ≤ walkLength W.weight q := walkLength_nonneg W.weight W.weight_nonneg q
-    linarith
-
-private theorem exists_min_cycle_dart_weight {V : Type*} (W : WeightedGraph V) [Finite V]
-    {v₀ : V} {c : W.graph.Walk v₀ v₀} (hc : c.IsCycle) :
-    ∃ wmin : ℝ, 0 < wmin ∧ ∀ d : W.graph.Dart, wmin ≤ W.weight d.edge := by
-  classical
-  cases c with
-  | nil => exact absurd hc.not_nil (by simp)
-  | @cons _ b _ hadj _ =>
-    let _ : Fintype V := Fintype.ofFinite V
-    let d₀ : W.graph.Dart := ⟨(v₀, b), hadj⟩
-    let D : Finset W.graph.Dart := Finset.univ
-    have hD : D.Nonempty := ⟨d₀, Finset.mem_univ d₀⟩
-    refine ⟨D.inf' hD (fun d => W.weight d.edge), ?_, ?_⟩
-    · rw [Finset.lt_inf'_iff]
-      intro d _
-      exact W.dart_weight_pos d
-    · intro d
-      exact Finset.inf'_le (fun d : W.graph.Dart => W.weight d.edge) (Finset.mem_univ d)
-
 private theorem exists_min_vertex_dist_pos {V : Type*} (W : WeightedGraph V) [Finite V] :
     ∃ vmin : ℝ, 0 < vmin ∧ ∀ u v : V, u ≠ v →
       vmin ≤ dist (vertex u : MetricGraph W) (vertex v) := by
@@ -157,17 +128,6 @@ private theorem exists_min_vertex_dist_pos {V : Type*} (W : WeightedGraph V) [Fi
     · refine ⟨1, one_pos, fun u v hne => ?_⟩
       exfalso
       exact hP ⟨(u, v), Finset.mem_filter.mpr ⟨Finset.mem_univ _, hne⟩⟩
-
-private theorem dart_edge_eq_or {V : Type*} {G : SimpleGraph V} (d₁ d₂ : G.Dart)
-    (he : d₁.edge = d₂.edge) : d₁ = d₂ ∨ d₁ = d₂.symm := by
-  have hm : (d₁.fst = d₂.fst ∧ d₁.snd = d₂.snd) ∨ (d₁.fst = d₂.snd ∧ d₁.snd = d₂.fst) := by
-    have h : s(d₁.fst, d₁.snd) = s(d₂.fst, d₂.snd) := he
-    exact Sym2.eq_iff.mp h
-  rcases hm with ⟨h1, h2⟩ | ⟨h1, h2⟩
-  · left
-    ext <;> simp [h1, h2]
-  · right
-    ext <;> simp [h1, h2]
 
 private theorem walk_nodup_edges_at_end {V : Type*} {G : SimpleGraph V} {u v : V}
     (q : G.Walk u v) (hq : q.support.Nodup) :
@@ -238,7 +198,7 @@ private theorem exists_walk_in_cycle_length_eq_dist {V : Type*} (W : WeightedGra
     ∃ (p : W.graph.Walk v x),
       p.edges ⊆ c.edges ∧ walkLength W.weight p = dist (vertex v : MetricGraph W) (vertex x) := by
   let L := walkLength W.weight c
-  have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+  have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
   let cv := c.rotate v hv
   have hcv : cv.IsCycle := (c.isCycle_rotate hv).mpr hs.1
   have hperm : cv.edges.Perm c.edges := (c.rotate_edges v hv).perm
@@ -264,7 +224,7 @@ private theorem exists_walk_in_cycle_length_eq_dist {V : Type*} (W : WeightedGra
   have hℓ₂_nn : 0 ≤ walkLength W.weight q₂ := walkLength_nonneg W.weight W.weight_nonneg q₂
   have hsum : ℓ₁ + walkLength W.weight q₂ = L := by
     have h := congrArg (walkLength W.weight) happ
-    rw [walkLength_append_eq, hLcv] at h
+    rw [walkLength_append, hLcv] at h
     exact h
   have hℓ₁_le : ℓ₁ ≤ L := by linarith
   have hwp : circleMap hcv ℓ₁ = vertex x := by
@@ -281,7 +241,7 @@ private theorem exists_walk_in_cycle_length_eq_dist {V : Type*} (W : WeightedGra
     refine ⟨q₂.reverse, fun e he => ?_, ?_⟩
     · rw [Walk.edges_reverse, List.mem_reverse] at he
       exact hperm.mem_iff.mp (Walk.edges_dropUntil_subset_edges cv hxcv he)
-    · rw [walkLength_reverse_eq, ← circleMap_zero hcv, ← hwp]
+    · rw [walkLength_reverse, ← circleMap_zero hcv, ← hwp]
       have hper : circleMap hcv ℓ₁ = circleMap hcv (ℓ₁ - L) := by
         conv_lhs => rw [show ℓ₁ = (ℓ₁ - L) + (1 : ℤ) * walkLength W.weight cv by
           rw [hLcv]; push_cast; ring]
@@ -321,7 +281,7 @@ private theorem exists_cycle_of_path_concat_cycle_walk {V : Type*} (W : Weighted
     have h1 : walkLength W.weight ((p_d : W.graph.Walk d.snd x).append p_c).bypass ≤
         walkLength W.weight ((p_d : W.graph.Walk d.snd x).append p_c) :=
       walkLength_bypass_le W.weight W.weight_nonneg _
-    rw [walkLength_append_eq] at h1
+    rw [walkLength_append] at h1
     exact h1
   have hcyc_len : walkLength W.weight cyc =
       W.weight d.edge + walkLength W.weight (q : W.graph.Walk d.snd v) := by
@@ -366,7 +326,7 @@ private theorem dist_third_dart_gt_of_circleMap {V : Type*} (W : WeightedGraph V
       have happ := (p_d : W.graph.Walk d.snd x).take_spec hv_mem
       have hlen_ab : walkLength W.weight p_a + walkLength W.weight p_b =
           vertexDist W.graph W.weight x d.snd := by
-        rw [← walkLength_append_eq, happ, hp_d_len']
+        rw [← walkLength_append, happ, hp_d_len']
       have hpa_nn : 0 ≤ walkLength W.weight p_a := walkLength_nonneg W.weight W.weight_nonneg p_a
       have hpb_ge : dist (vertex v : MetricGraph W) (vertex x) ≤ walkLength W.weight p_b := by
         rw [dist_vertex]
@@ -378,7 +338,7 @@ private theorem dist_third_dart_gt_of_circleMap {V : Type*} (W : WeightedGraph V
         ⟨p_d, hp_d_path⟩ hv_mem p_c.reverse (fun e he => by
           rw [Walk.edges_reverse, List.mem_reverse] at he
           exact hpc_sub he)
-      rw [walkLength_reverse_eq, hpc_len, hp_d_len'] at hcyc_le
+      rw [walkLength_reverse, hpc_len, hp_d_len'] at hcyc_le
       have htri_vx : dist (vertex v : MetricGraph W) (vertex x) ≤ r + off := by
         calc dist (vertex v : MetricGraph W) (vertex x)
             ≤ dist (vertex v : MetricGraph W) b + dist b (vertex x) := dist_triangle _ _ _
@@ -1129,7 +1089,7 @@ private theorem half_step_third_dart_bound {V : Type*} (W : WeightedGraph V) [Fi
   have hr2_bound : r₂ ≤ 3 * δ := hr2_eq ▸ hry2_le
   have hd2_ne_db : d₂.edge ≠ d_b.edge := by
     intro heq
-    have hd_or := dart_edge_eq_or d₂ d_b heq
+    have hd_or := (dart_edge_eq_iff d₂ d_b).mp heq
     have hd2_eq : d₂ = d_b := hd_or.resolve_right fun hsym => by
       have : d_b.fst = d_b.snd := by rw [hb_fst, ← hd₂_fst, hsym]; rfl
       exact d_b.adj.ne this
@@ -1185,7 +1145,7 @@ private theorem half_step_third_dart_bound {V : Type*} (W : WeightedGraph V) [Fi
         hb'0 hb'1 h10 h11
     linarith
   by_cases hd2_eq_da : d₂.edge = d_a.edge
-  · have hd2_da : d₂ = d_a := (dart_edge_eq_or d₂ d_a hd2_eq_da).resolve_right fun hsym => by
+  · have hd2_da : d₂ = d_a := ((dart_edge_eq_iff d₂ d_a).mp hd2_eq_da).resolve_right fun hsym => by
       have : d_a.fst = d_a.snd := by rw [ha_fst, ← hd₂_fst, hsym]; rfl
       exact d_a.adj.ne this
     subst hd2_da
@@ -1291,9 +1251,9 @@ private theorem local_invariance_circle {V : Type*} (W : WeightedGraph V) [Finit
         f ![circleMap hs.1 (s₀ + sa), circleMap hs.1 (s₀ + sb)] ∈
           (fun r => circleMap hs.1 (s₀ + r)) '' Set.Icc (-δ) δ := by
   let L := walkLength W.weight c
-  have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+  have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
   have hsp := (Mechanism.isStrategyProof_deterministic_iff f).mp hf_sp
-  obtain ⟨wmin, hwmin_pos, hwmin⟩ := exists_min_cycle_dart_weight W hs.1
+  obtain ⟨wmin, hwmin_pos, hwmin⟩ := exists_min_dart_weight (c.firstDart hs.1.not_nil)
   obtain ⟨vmin, hvmin_pos, hvmin⟩ := exists_min_vertex_dist_pos W
   have between_of_abs_le : ∀ {sa sb r δ : ℝ}, sa ∈ Set.Icc (-δ) δ → sb ∈ Set.Icc (-δ) δ →
       |r - sa| ≤ |sb - sa| → |r - sb| ≤ |sa - sb| → r ∈ Set.Icc (-δ) δ := by
@@ -1404,7 +1364,7 @@ private theorem local_invariance_circle {V : Type*} (W : WeightedGraph V) [Finit
             mul_nonneg (sub_nonneg.mpr ht'1.le) hw'
           linarith [le_min (add_le_add hv1 hm1) (add_le_add hv2 hm2)]
         have hswap : ∃ u' : unitInterval, edgePoint d' t' = edgePoint d u' := by
-          rcases dart_edge_eq_or d' d hde with rfl | rfl
+          rcases (dart_edge_eq_iff d' d).mp hde with rfl | rfl
           · exact ⟨t', rfl⟩
           · exact ⟨unitInterval.symm t', by
               simpa only [unitInterval.symm_symm] using edgePoint_symm d (unitInterval.symm t')⟩
@@ -1596,7 +1556,7 @@ private theorem local_invariance_circle {V : Type*} (W : WeightedGraph V) [Finit
       have hry_3 : r_y ≤ 3 * δ := by dsimp only [r_y]; rw [← hvy_eq]; exact hvy_3
       have hy_on_circle : ∃ r_y' : ℝ, |r_y'| = r_y ∧ y = circleMap hs.1 (s₀ + r_y') := by
         by_cases h1 : d.edge = d₁.edge
-        · have hd_eq : d = d₁ := (dart_edge_eq_or d d₁ h1).resolve_right fun hsym => by
+        · have hd_eq : d = d₁ := ((dart_edge_eq_iff d d₁).mp h1).resolve_right fun hsym => by
             have : d₁.fst = d₁.snd := by rw [hd₁_fst, ← hd_fst, hsym]; rfl
             exact d₁.adj.ne this
           subst hd_eq
@@ -1606,7 +1566,7 @@ private theorem local_invariance_circle {V : Type*} (W : WeightedGraph V) [Finit
           rw [show s₀ + (-r_y) = s₀ - r_y by ring, hcm1, hy_eq]
           congr 1; ext; simp [r_y, mul_div_cancel_right₀ _ (W.dart_weight_pos d).ne']
         · by_cases h2 : d.edge = d₂.edge
-          · have hd_eq : d = d₂ := (dart_edge_eq_or d d₂ h2).resolve_right fun hsym => by
+          · have hd_eq : d = d₂ := ((dart_edge_eq_iff d d₂).mp h2).resolve_right fun hsym => by
               have : d₂.fst = d₂.snd := by rw [hd₂_fst, ← hd_fst, hsym]; rfl
               exact d₂.adj.ne this
             subst hd_eq
@@ -1833,7 +1793,7 @@ private theorem local_moulin_circle {V : Type*} (W : WeightedGraph V) [Finite V]
       have h21 := t₂.2.1
       have h22 := t₂.2.2
       have habs : |(t₁ : ℝ) - (t₂ : ℝ)| ≤ 2 * δ := abs_sub_le_iff.mpr ⟨by linarith, by linarith⟩
-      linarith [hδL, walkLength_pos_of_isCycle W hs.1]
+      linarith [hδL, walkLength_pos_of_not_nil hs.1.not_nil]
     rw [circleMap_dist_eq_of_le hs hle_L,
       show (s₀ - δ + (t₁ : ℝ)) - (s₀ - δ + (t₂ : ℝ)) = (t₁ : ℝ) - (t₂ : ℝ) by ring]
   have hrange : ∀ x : Fin 2 → MetricGraph W,
@@ -1912,7 +1872,7 @@ private theorem orientation_dichotomy_circle {V : Type*} (W : WeightedGraph V) [
        (∀ u r : ℝ, 0 ≤ r → r ≤ δ₀ →
           f ![circleMap hs.1 u, circleMap hs.1 (u + r)] = circleMap hs.1 (u + r))) := by
   let L := walkLength W.weight c
-  have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+  have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
   let R_left : Set ℝ := { s | ∃ η > 0, ∀ u v : ℝ, s - η < u → u ≤ v → v < s + η →
     f ![circleMap hs.1 u, circleMap hs.1 v] = circleMap hs.1 u }
   let R_right : Set ℝ := { s | ∃ η > 0, ∀ u v : ℝ, s - η < u → u ≤ v → v < s + η →
@@ -2166,7 +2126,7 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
     ∀ u r : ℝ, 0 ≤ r → r < walkLength W.weight c / 2 →
       f ![circleMap hs.1 u, circleMap hs.1 (u + σ * r)] = circleMap hs.1 u := by
   let L := walkLength W.weight c
-  have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+  have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
   have hσ_abs : |σ| = 1 := by rcases hσ with rfl | rfl <;> norm_num
   have hσ_sq : σ * σ = 1 := by rcases hσ with rfl | rfl <;> norm_num
   let hsp := (Mechanism.isStrategyProof_deterministic_iff f).mp hf_sp
@@ -2233,7 +2193,7 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
       apply hlt_all
       intro u r hr0 hrL
       exact hR_lt_holds r ⟨hr0, hR_eq ▸ hrL⟩ u
-  obtain ⟨wmin, hwmin_pos, hwmin⟩ := exists_min_cycle_dart_weight W hs.1
+  obtain ⟨wmin, hwmin_pos, hwmin⟩ := exists_min_dart_weight (c.firstDart hs.1.not_nil)
   obtain ⟨vmin, hvmin_pos, hvmin⟩ := exists_min_vertex_dist_pos W
   let η := min (R / 4) (min (δ₀ / 4) (min (wmin / 8) (min (vmin / 8) ((L / 2 - R) / 8))))
   have hη_pos : 0 < η := by positivity
@@ -2448,7 +2408,7 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
         by_cases hde : d'.edge = d.edge
         · have hswap : ∃ u' : unitInterval, 0 < (u' : ℝ) ∧ (u' : ℝ) < 1 ∧
               edgePoint d' t' = edgePoint d u' := by
-            rcases dart_edge_eq_or d' d hde with rfl | rfl
+            rcases (dart_edge_eq_iff d' d).mp hde with rfl | rfl
             · exact ⟨t', ht'0, ht'1, rfl⟩
             · exact ⟨unitInterval.symm t', sub_pos.mpr ht'1, sub_lt_self 1 ht'0, by
                 simpa only [unitInterval.symm_symm] using edgePoint_symm d (unitInterval.symm t')⟩
@@ -2681,7 +2641,7 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
                 have hfull_v' := vertex_param_full W hs.1 hd₁'_fst hd₂'_fst hs_v' δ₁' hδ₁' hmap_x
                 by_cases h1 : d''.edge = d₁'.edge
                 · have hd''_eq_d1 : d'' = d₁' :=
-                    (dart_edge_eq_or d'' d₁' h1).resolve_right fun hsym => by
+                    ((dart_edge_eq_iff d'' d₁').mp h1).resolve_right fun hsym => by
                       have : d₁'.fst = d₁'.snd := by
                         rw [hd₁'_fst, hv_eq, ← hd''_fst, hsym]; rfl
                       exact d₁'.adj.ne this
@@ -2718,7 +2678,7 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
                     · exact hde (by simpa [Dart.edge_symm] using hd''_ed.symm)
                 · by_cases h2 : d''.edge = d₂'.edge
                   · have hd''_eq_d2 : d'' = d₂' :=
-                      (dart_edge_eq_or d'' d₂' h2).resolve_right fun hsym => by
+                      ((dart_edge_eq_iff d'' d₂').mp h2).resolve_right fun hsym => by
                         have : d₂'.fst = d₂'.snd := by
                           rw [hd₂'_fst, hv_eq, ← hd''_fst, hsym]; rfl
                         exact d₂'.adj.ne this
@@ -2869,7 +2829,7 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
           have hry_le : r_y ≤ η := hd'p
           have hry_wmin : r_y < wmin := by linarith
           by_cases h1 : d'.edge = d₁.edge
-          · have hd'_eq : d' = d₁ := (dart_edge_eq_or d' d₁ h1).resolve_right fun hsym => by
+          · have hd'_eq : d' = d₁ := ((dart_edge_eq_iff d' d₁).mp h1).resolve_right fun hsym => by
               have : d₁.fst = d₁.snd := by rw [hd₁_fst, ← hd'_fst, hsym]; rfl
               exact d₁.adj.ne this
             subst hd'_eq
@@ -2889,7 +2849,7 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
             rw [h_res, hs_v, _root_.dist_self] at hd_vy
             linarith
           · by_cases h2 : d'.edge = d₂.edge
-            · have hd'_eq : d' = d₂ := (dart_edge_eq_or d' d₂ h2).resolve_right fun hsym => by
+            · have hd'_eq : d' = d₂ := ((dart_edge_eq_iff d' d₂).mp h2).resolve_right fun hsym => by
                 have : d₂.fst = d₂.snd := by rw [hd₂_fst, ← hd'_fst, hsym]; rfl
                 exact d₂.adj.ne this
               subst hd'_eq
@@ -2952,7 +2912,7 @@ private theorem finTwo_cycleDictator_of_half {V : Type*} (W : WeightedGraph V) [
     ∀ a ∈ Set.range (circleMap hs.1), ∀ b ∈ Set.range (circleMap hs.1),
       g ![a, b] = a := by
   let L := walkLength W.weight c
-  have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+  have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
   intro a ha b hb
   obtain ⟨sa, rfl⟩ := ha
   obtain ⟨sb, rfl⟩ := hb
@@ -3018,7 +2978,7 @@ private theorem finTwo_cycleDictator_pos_contra {V : Type*} (W : WeightedGraph V
     (h2 : ∀ u r : ℝ, 0 ≤ r → r < walkLength W.weight c / 2 →
       g ![circleMap hs.1 (u + r), circleMap hs.1 u] = circleMap hs.1 u) : False := by
   let L := walkLength W.weight c
-  have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+  have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
   let ε := L / 8
   have hε : 0 < ε := by positivity
   have hfirst := h1 0 (L / 2 - ε) (by dsimp only [ε]; linarith) (by dsimp only [ε]; linarith)
@@ -3059,7 +3019,7 @@ private theorem finTwo_cycleDictator_neg_contra {V : Type*} (W : WeightedGraph V
     (h2' : ∀ u r : ℝ, 0 ≤ r → r < walkLength W.weight c / 2 →
       f ![circleMap hs.1 (u - r), circleMap hs.1 u] = circleMap hs.1 u) : False := by
   let L := walkLength W.weight c
-  have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+  have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
   let ε := L / 8
   have hε : 0 < ε := by positivity
   have ha1 := h1' 0 (L / 2 - ε) (by dsimp only [ε]; linarith) (by dsimp only [ε]; linarith)
@@ -3209,9 +3169,6 @@ end Fin2CycleDictator
 
 section CycleDictator
 
-private theorem fin2_eq_zero_or_one (i : Fin 2) : i = 0 ∨ i = 1 := by
-  fin_cases i <;> simp
-
 private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V) [Finite V]
     [MeasurableSpace (MetricGraph W)] [OpensMeasurableSpace (MetricGraph W)]
     {v₀ : V} {c : W.graph.Walk v₀ v₀} (hs : IsShortestCycle W c) :
@@ -3228,7 +3185,7 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
     intro ι _ _ _ hcard f hf_sp hf_unam
     let C := Set.range (circleMap hs.1)
     let L := walkLength W.weight c
-    have hL : 0 < L := walkLength_pos_of_isCycle W hs.1
+    have hL : 0 < L := walkLength_pos_of_not_nil hs.1.not_nil
     have htwo_pts : ∃ p₀ p₁ : MetricGraph W, p₀ ∈ C ∧ p₁ ∈ C ∧ p₀ ≠ p₁ := by
       refine ⟨circleMap hs.1 0, circleMap hs.1 (L / 4), ⟨0, rfl⟩, ⟨L / 4, rfl⟩, fun h => ?_⟩
       have hd : dist (circleMap hs.1 0) (circleMap hs.1 (L / 4)) = L / 4 := by
@@ -3256,7 +3213,7 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
         have : (fun i : ι => if i ∈ S then p else p) = fun _ => p := by ext; split_ifs <;> rfl
         rw [this]; exact hf_unam p hp
       obtain ⟨k, hk⟩ := finTwo_cycleDictator W hs hg_sp hg_unam
-      rcases fin2_eq_zero_or_one k with rfl | rfl
+      fin_cases k
       · left; intro a ha b hb
         have h1 := hk a ha b hb
         dsimp only [g] at h1
@@ -3312,7 +3269,7 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
       have hg_sp : (Mechanism.deterministic g).IsStrategyProof := by
         rw [Mechanism.isStrategyProof_deterministic_iff]
         intro y j z
-        rcases fin2_eq_zero_or_one j with rfl | rfl
+        rcases (by decide : ∀ x : Fin 2, x = 0 ∨ x = 1) j with rfl | rfl
         · let x : ι → MetricGraph W :=
             fun i => if i ∈ P₂ then y 0 else if i ∈ P₃ then y 1 else b
           have hx : ∀ i ∈ P₂, x i = y 0 := fun i hi => by simp [x, hi]
@@ -3351,7 +3308,7 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
         rw [hfun]
         exact h1 p hp b hb
       obtain ⟨k, hk⟩ := finTwo_cycleDictator W hs hg_sp hg_unam
-      rcases fin2_eq_zero_or_one k with rfl | rfl
+      fin_cases k
       · exfalso
         have hex_c' : ∃ c' ∈ C, c' ≠ b := by
           by_cases he : p₀ = b
@@ -3449,7 +3406,7 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
             split_ifs <;> assumption
           have hval := hk (y 0) h0 (y 1) h1
           rw [show ![y 0, y 1] = y by
-            ext i; rcases fin2_eq_zero_or_one i with rfl | rfl <;> rfl] at hval
+            ext i; fin_cases i <;> rfl] at hval
           exact hval
         have hyk : y k = p₀ := by
           dsimp only [y]
@@ -3458,25 +3415,13 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
           · simp [h_eq]
         exact hp₀₁ (hf2y_l.symm.trans (hf2y_r.trans hyk) |>.symm)
       intro x hx
+      have hvec : (![x (e.symm 0), x (e.symm 1)] : Fin 2 → MetricGraph W) =
+          fun z => x (e.symm z) := by
+        ext z; fin_cases z <;> rfl
       have hval := hk (x (e.symm 0)) (hx _) (x (e.symm 1)) (hx _)
-      have hfun : (fun i => (![x (e.symm 0), x (e.symm 1)] : Fin 2 → MetricGraph W) (e i)) = x := by
-        ext i
-        rcases fin2_eq_zero_or_one (e i) with hei | hei
-        · rw [hei]
-          change x (e.symm 0) = x i
-          rw [← hei, Equiv.symm_apply_apply]
-        · rw [hei]
-          change x (e.symm 1) = x i
-          rw [← hei, Equiv.symm_apply_apply]
       dsimp only [f2] at hval
-      rw [hfun, hk_eq] at hval
-      rcases fin2_eq_zero_or_one (e i₀) with hei₀ | hei₀
-      · rw [hei₀] at hval
-        change f x = x (e.symm 0) at hval
-        rwa [← hei₀, Equiv.symm_apply_apply] at hval
-      · rw [hei₀] at hval
-        change f x = x (e.symm 1) at hval
-        rwa [← hei₀, Equiv.symm_apply_apply] at hval
+      rw [hvec, hk_eq] at hval
+      simpa only [Equiv.symm_apply_apply] using hval
     · have hagree : ∀ {j₁ j₂ : ι} (_ : j₁ ≠ j₂) (x : ι → MetricGraph W),
           (∀ i, x i ∈ C) → x j₁ = x j₂ → f x = x i₀ := by
         intro j₁ j₂ hne x hx hx12
@@ -3540,7 +3485,7 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
       have hh_sp : (Mechanism.deterministic h).IsStrategyProof := by
         rw [Mechanism.isStrategyProof_deterministic_iff]
         intro y j z
-        rcases fin2_eq_zero_or_one j with rfl | rfl
+        rcases (by decide : ∀ x : Fin 2, x = 0 ∨ x = 1) j with rfl | rfl
         · let x' := fun i => if i = i₀ then y 0 else if i = j₁ then y 1 else x i
           have hfun : (fun i => if i = i₀ then Function.update y 0 z 0 else
               if i = j₁ then Function.update y 0 z 1 else x i) = Function.update x' i₀ z := by
@@ -3578,7 +3523,7 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
           (by simp [hj₁_ne])
         simpa only [↓reduceIte] using hval
       obtain ⟨k, hk⟩ := finTwo_cycleDictator W hs hh_sp hh_unam
-      rcases fin2_eq_zero_or_one k with rfl | rfl
+      fin_cases k
       · have hval := hk (x i₀) (hx i₀) (x j₁) (hx j₁)
         have hfun : (fun i => if i = i₀ then (![x i₀, x j₁] : Fin 2 → MetricGraph W) 0 else
             if i = j₁ then ![x i₀, x j₁] 1 else x i) = x := by
@@ -3605,10 +3550,10 @@ private theorem cycleDictator_of_unanimous_aux {V : Type*} (W : WeightedGraph V)
           simpa only [↓reduceIte] using hval'
         exact hab (hval.symm.trans hagree_val)
 
-/-- **Schummer–Vohra Theorem 2 (Cycle Dictator)**: every deterministic strategyproof and onto
-facility-location mechanism on a finite metric graph `MetricGraph W` acts as a dictatorship
-on the points of any shortest cycle `c` (without assuming the image on `C^ι` lies in `C`,
-and without assuming group strategyproofness). -/
+/-- **Schummer–Vohra cycle dictatorship** ([SchummerVohra2002]): every deterministic strategyproof
+and onto facility-location mechanism on a finite metric graph `MetricGraph W` acts as a
+dictatorship on the points of any shortest cycle `c` (without assuming the image on `C^ι` lies in
+`C`, and without assuming group strategyproofness). -/
 theorem exists_cycleDictator_of_isShortestCycle {V : Type*} (W : WeightedGraph V) [Finite V]
     [MeasurableSpace (MetricGraph W)] [OpensMeasurableSpace (MetricGraph W)]
     {v₀ : V} {c : W.graph.Walk v₀ v₀} (hs : IsShortestCycle W c)
@@ -3637,60 +3582,6 @@ theorem exists_cycleDictator_of_not_isAcyclic {V : Type*} (W : WeightedGraph V) 
   obtain ⟨i₀, hi₀⟩ := exists_cycleDictator_of_isShortestCycle W hs hf_sp hf_onto
   exact ⟨v₀, c, hs, i₀, hi₀⟩
 
-private def cycleChainWalk {n : ℕ} :
-    ∀ (m : ℕ) (_hm : m ≤ n + 2), (SimpleGraph.cycleGraph (n + 3)).Walk ⟨0, by omega⟩ ⟨m, by omega⟩
-  | 0, _ => Walk.nil
-  | m + 1, hm =>
-    (cycleChainWalk m (by omega)).concat (by
-      rw [cycleGraph_adj]
-      right
-      exact sub_eq_of_eq_add (by
-        ext
-        simp only [Fin.val_add, Fin.val_one]
-        rw [Nat.mod_eq_of_lt (by omega)]
-        omega))
-
-private theorem cycleChainWalk_support_le {n m : ℕ} (hm : m ≤ n + 2) :
-    ∀ k ∈ (cycleChainWalk m hm).support, k.val ≤ m := by
-  induction m with
-  | zero => simp [cycleChainWalk]
-  | succ m ih =>
-    intro k hk
-    dsimp only [cycleChainWalk] at hk
-    rw [Walk.support_concat, List.mem_append, List.mem_singleton] at hk
-    rcases hk with h | rfl
-    · exact (ih (by omega) k h).trans (Nat.le_succ m)
-    · simp
-
-private theorem cycleChainWalk_support_nodup {n m : ℕ} (hm : m ≤ n + 2) :
-    (cycleChainWalk m hm).support.Nodup := by
-  induction m with
-  | zero => simp [cycleChainWalk]
-  | succ m ih =>
-    dsimp only [cycleChainWalk]
-    rw [Walk.support_concat, List.nodup_append]
-    refine ⟨ih (by omega), List.nodup_singleton _, fun a ha b hb he => ?_⟩
-    rw [List.mem_singleton] at hb
-    subst hb
-    have hle := cycleChainWalk_support_le (by omega) a ha
-    have : a.val = m + 1 := congrArg Fin.val he
-    omega
-
-private theorem cycleChainWalk_edges_mem {n m : ℕ} (hm : m ≤ n + 2) :
-    ∀ e ∈ (cycleChainWalk m hm).edges,
-      ∃ (i : ℕ) (hi : i < m),
-        e = s(⟨i, by omega⟩, ⟨i + 1, by omega⟩) := by
-  induction m with
-  | zero => simp [cycleChainWalk]
-  | succ m ih =>
-    intro e he
-    dsimp only [cycleChainWalk] at he
-    rw [Walk.edges_concat, List.concat_eq_append, List.mem_append, List.mem_singleton] at he
-    rcases he with h | rfl
-    · obtain ⟨i, hi, rfl⟩ := ih (by omega) e h
-      exact ⟨i, Nat.lt_succ_of_lt hi, rfl⟩
-    · exact ⟨m, Nat.lt_succ_self m, rfl⟩
-
 /-- Every deterministic strategyproof onto facility-location mechanism on a finite cycle graph
 `cycleGraph (n + 3)` is a global dictatorship. -/
 theorem exists_dictatorship_of_cycleGraph {V : Type*} (W : WeightedGraph V) [Finite V]
@@ -3701,27 +3592,8 @@ theorem exists_dictatorship_of_cycleGraph {V : Type*} (W : WeightedGraph V) [Fin
     (hf_sp : (Mechanism.deterministic f).IsStrategyProof)
     (hf_onto : Function.Surjective f) :
     ∃ i₀ : ι, ∀ x : ι → MetricGraph W, f x = x i₀ := by
-  let p : (SimpleGraph.cycleGraph (n + 3)).Path ⟨0, by omega⟩ ⟨n + 2, by omega⟩ :=
-    ⟨cycleChainWalk (n + 2) le_rfl, (Walk.isPath_def _).mpr (cycleChainWalk_support_nodup le_rfl)⟩
-  have hadj_close : (SimpleGraph.cycleGraph (n + 3)).Adj ⟨n + 2, by omega⟩ ⟨0, by omega⟩ := by
-    rw [cycleGraph_adj]
-    right
-    exact sub_eq_of_eq_add (by
-      ext
-      simp only [Fin.val_add, Fin.val_one]
-      rw [show (1 + (n + 2)) = n + 3 by omega, Nat.mod_self])
-  have hnot_mem : s(⟨n + 2, by omega⟩, ⟨0, by omega⟩) ∉ p.1.edges := by
-    intro hm
-    obtain ⟨i, hi, heq⟩ := cycleChainWalk_edges_mem le_rfl _ hm
-    rw [Sym2.eq_iff] at heq
-    rcases heq with ⟨h1, h2⟩ | ⟨h1, h2⟩
-    · have : n + 2 = i := congrArg Fin.val h1; omega
-    · have h0 : i = 0 := (congrArg Fin.val h2).symm
-      have h1' : i + 1 = n + 2 := (congrArg Fin.val h1).symm
-      omega
-  let c₀ := Walk.cons hadj_close p.1
-  have hc₀ : c₀.IsCycle := Path.cons_isCycle p hadj_close hnot_mem
-  have hc_W : (c₀.map e.symm.toHom).IsCycle := hc₀.map e.symm.injective
+  have hc_W : ((SimpleGraph.cycleGraph.cycle n).map e.symm.toHom).IsCycle :=
+    SimpleGraph.cycleGraph.isCycle_cycle.map e.symm.injective
   have hna : ¬ W.graph.IsAcyclic := fun h => h _ hc_W
   obtain ⟨v₀, c, hs⟩ := exists_isShortestCycle (W := W) hna
   obtain ⟨i₀, hi₀⟩ := exists_cycleDictator_of_isShortestCycle W hs hf_sp hf_onto
