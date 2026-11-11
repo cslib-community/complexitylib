@@ -29,12 +29,15 @@ uses one fixed body emitter and static registers for the mutable state and count
 
 ## Main results
 
+* `iterationWork_congr`: transport local work along equal bodies and body-work charges.
 * `iterationSum_eq`: the native grading rule's semantic sum is memory charge plus local work.
 * `loopEmit_entry`, `loopBody_tail`: the native loop's entry prologue and the control tail of one
   iteration, shared by the deterministic and randomized loop realizations.
 * `bodyBank_layout`, `bodySlot_injective`, `stateSlot_ne_bodySlot`,
   `regs_comp_append_eq_appendWords`, `loopEmit_not_readsWidth`: the body bank's register premises,
   the state words read back as appended words, and width-freedom of the loop.
+* `iterationWork_zero`, `iterationWork_congr`: evaluate zero-body work and transport grades
+  between agreeing bodies and environments.
 * `Realizes.Witness.loopEmit_spec`: the loop emitter with additive per-iteration overhead.
 * `Realizes.Witness.iterateRuntime`, `Realizes.iterateRuntime`: one uniform body witness or
   certificate realizes a runtime-bounded loop.
@@ -67,6 +70,13 @@ def iterationWork (body : δ × σ → Memory.Prog σ) (work : (δ × σ) → Me
         ((Memory.spec 0).clientResult s (body (d, a)))
         ((Memory.spec 0).clientState s (body (d, a))) + 1
 
+/-- With no body-local work, the local grade is exactly one control unit per iteration. -/
+@[simp] theorem iterationWork_zero (body : δ × σ → Memory.Prog σ) (d : δ) (n : ℕ) (a : σ)
+    (s : Memory.State) : iterationWork body (fun _ _ => 0) d n a s = n := by
+  induction n generalizing a s with
+  | zero => rfl
+  | succ n ih => simp only [iterationWork, ih, Nat.zero_add]
+
 /-- Every executed body must satisfy its explicit domain at the reached state. -/
 def iterationSafe (body : δ × σ → Memory.Prog σ)
     (safe : ℕ → (δ × σ) → Memory.State → Prop) (w : ℕ) (d : δ) :
@@ -75,6 +85,17 @@ def iterationSafe (body : δ × σ → Memory.Prog σ)
   | n + 1, a, s => safe w (d, a) s ∧ iterationSafe body safe w d n
       ((Memory.spec 0).clientResult s (body (d, a)))
       ((Memory.spec 0).clientState s (body (d, a)))
+
+/-- The local work is invariant under agreeing bodies and body charges at their environments. -/
+theorem iterationWork_congr {δ' : Type}
+    {body : δ × σ → Memory.Prog σ} {body' : δ' × σ → Memory.Prog σ}
+    {work : δ × σ → Memory.State → ℕ} {work' : δ' × σ → Memory.State → ℕ}
+    {d : δ} {d' : δ'} (hbody : ∀ a, body (d, a) = body' (d', a))
+    (hwork : ∀ a s, work (d, a) s = work' (d', a) s) (n : ℕ) (a : σ) (s : Memory.State) :
+    iterationWork body work d n a s = iterationWork body' work' d' n a s := by
+  induction n generalizing a s with
+  | zero => rfl
+  | succ n ih => simp only [iterationWork, hwork, ← hbody, ih]
 
 /-- Memory cost and certified local work decompose at each actual iteration. -/
 theorem iteration_charge_succ (body : δ × σ → Memory.Prog σ)
