@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualMinima
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOutputObservation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Rat.Binary
+import CslibFrontier.Computability.Probabilistic.NativeUnboundedExecution.OutputTransfer
 
 /-!
 # Runtime cost-aware native residual selection
@@ -391,37 +392,10 @@ theorem native_selectionOnly (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
         (by omega) accept
     | true =>
       exact NativeResidualAttainment.native_selectionOnly T points candidates P invoice hz accept
-  intro fuel next hn C hc ha
-  have hh : NativeUnboundedExecution.halted next := by
-    unfold NativeOpenSelection.result at hc
-    split_ifs at hc with hs
-    exact Option.isNone_iff_eq_none.mp hs
-  have ht := (NativeUnboundedExecution.terminal_support _ _ _ _).mpr ⟨hh, fuel, hn⟩
-  have hm : some (next.config.tapes.output, next.memory) ∈
-      ((NativeUnboundedExecution.terminal controller.program
-        (ConcurrentBatch.environment NativeResidualAttainment.limits
-          (NativeResidualOracle.sample T points candidates P invoice))
-        ⟨controller.program.initialConfig
-          (encoding ⟨NativeResidualAttainment.input T points candidates, p⟩),
-          NativeResidualAttainment.initialMemory⟩).map
-            (Option.map fun w => (w.config.tapes.output, w.memory))).support :=
-    (PMF.mem_support_map_iff _ _ _).mpr ⟨some next, ht, rfl⟩
-  rw [native_law] at hm
-  obtain ⟨result, hr, he⟩ := (PMF.mem_support_map_iff _ _ _).mp hm
-  cases result with
-  | none => cases he
-  | some before =>
-    obtain ⟨ho, hm⟩ := Prod.mk.inj (Option.some.inj he)
-    obtain ⟨hb, t, ht⟩ := (NativeUnboundedExecution.terminal_support _ _ _ before).mp hr
-    have hc' : NativeOpenSelection.result
-        (decodeFamily
-          (NativeResidualAttainment.input T points candidates).startup.system.rows.length)
-        before = some C := by
-      have hh' : next.config.tapes.state = none := hh
-      have hb' : before.config.tapes.state = none := hb
-      simpa only [NativeOpenSelection.result, hh', hb', Option.isNone_none, ite_true, ho] using hc
-    have hp := hadmit t before ht C hc' ha
-    simpa only [hm] using hp
+  exact NativeUnboundedExecution.selectionOnly_of_output_memory controller.program _
+    (NativeResidualRouting.controller (adaptive p)).program _ _ _ accept _ _
+    (native_law _ _ ⟨NativeResidualAttainment.input T points candidates, p⟩
+      NativeResidualAttainment.initialMemory) hadmit
 
 /-- The same single cost-aware program has certified tape success one by the
 source oracle deadline. The actual stopped event is transported, not assumed. -/

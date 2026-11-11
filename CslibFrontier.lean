@@ -3470,6 +3470,7 @@ public import CslibFrontier.Computability.Probabilistic.NativeRuntimeContext
 public import CslibFrontier.Computability.Probabilistic.NativeSequential
 public import CslibFrontier.Computability.Probabilistic.NativeStopGuard
 public import CslibFrontier.Computability.Probabilistic.NativeUnboundedExecution
+public import CslibFrontier.Computability.Probabilistic.NativeUnboundedExecution.OutputTransfer
 public import CslibFrontier.Computability.Probabilistic.Oracle
 public import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 public import CslibFrontier.Computability.Probabilistic.Oracle.Iteration
@@ -6043,6 +6044,7 @@ public import CslibFrontier.Probability.FiniteSampleInformation.WideTauHomConeCo
 public import CslibFrontier.Probability.FiniteTable
 public import CslibFrontier.Probability.FiniteTable.Expectation
 public import CslibFrontier.Probability.FiniteTableOfPMF
+public import CslibFrontier.Probability.FixedMeanInvoice
 public import CslibFrontier.Probability.Fooling
 public import CslibFrontier.Probability.Fooling.OneSided
 public import CslibFrontier.Probability.Forking
@@ -6208,6 +6210,7 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FlatEncoding
+public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Mixture
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Protocol
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Resources
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.SourceQuery
@@ -6225,6 +6228,9 @@ public import CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOracle
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualPolicies
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealAdaptive
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealChoice
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualRealCost
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualReplies
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRouting
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualSelector
@@ -6240,6 +6246,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchUp
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Correctness
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Execution
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Feedback
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.FeedbackMixture
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.FinalizedResponse
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.FiniteGround
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.GuardedStartup

@@ -223,6 +223,17 @@ private theorem receipt_report (invoice : Fin (z + 1) → ℕ)
       batch, NativeResidualOracle.families]
   · simp [NativeResidualReplies.report, NativeResidualReplies.answersFor, batch, hk]
 
+/-- A singleton source receipt depends on the invoice of its selected role only. -/
+theorem receipt_congr (f g : Fin (z + 1) → ℕ) (i : Fin (z + 1))
+    (r : Option (Fin z)) (h : f i = g i) :
+    receipt T points candidates f i r = receipt T points candidates g i r := by
+  have hr : (receipt T points candidates f i r).report =
+      (receipt T points candidates g i r).report := by
+    rw [receipt_report, receipt_report, h]
+  change Exchange.mk (batch T points candidates i) _ _ =
+    Exchange.mk (batch T points candidates i) _ _
+  congr 1
+
 private theorem first_slots :
     slots (NativeResidualRouting.initial true (input T points candidates)) =
       (batch T points candidates 0).slots := by
@@ -310,28 +321,29 @@ theorem first_source (P : Parameters z) (invoice : Fin (z + 1) → ℕ) :
 /-- The response-dependent follow-up is accepted once, uses the exact original
 specialist subinstance, and returns its actual report and invoice. -/
 theorem second_source (P : Parameters z) (invoice : Fin (z + 1) → ℕ)
-    (hz : 3 ≤ z) (j : Fin z) :
+    (hz : 3 ≤ z) (j : Fin z) (previous : Fin (z + 1) → ℕ := invoice) :
     serve limits (NativeResidualOracle.sample T points candidates P invoice)
-      (request (afterNear T points candidates j (invoice 0)))
-      (afterNearMemory T points candidates invoice j).privateState =
+      (request (afterNear T points candidates j (previous 0)))
+      (afterNearMemory T points candidates previous j).privateState =
       PMF.pure (replyOf (receipt T points candidates invoice j.succ none),
-        commit (afterNearMemory T points candidates invoice j).privateState
+        commit (afterNearMemory T points candidates previous j).privateState
           (receipt T points candidates invoice j.succ none) ()) := by
   rw [second_request T points candidates hz,
-    serve_accepted _ _ _ _ _ (second_admit T points candidates invoice j)]
+    serve_accepted _ _ _ _ _ (second_admit T points candidates previous j)]
   simp only [NativeResidualOracle.sample, calls_batch, finSuccEquiv_succ, reply,
     Finset.mem_singleton, reduceCtorEq, ite_false, Distribution.toPMF_pure,
     PMF.pure_map]
   have hremaining : (limits (z := z)).deadline -
-      (afterNearMemory T points candidates invoice j).privateState.elapsed = 1 := by
-    have hres := (receipt_resources T points candidates invoice 0 (some j)).2
+      (afterNearMemory T points candidates previous j).privateState.elapsed = 1 := by
+    have hres := (receipt_resources T points candidates previous 0 (some j)).2
     simp only [afterNearMemory, initialMemory, Memory.record, commit,
       ConcurrentBatch.initial, zero_add, hres, limits]
     exact tsub_eq_of_eq_add (by norm_num)
   rw [hremaining, observed_receipt T points candidates invoice j.succ none 1 le_rfl]
 
 
-private theorem near_word (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
+/-- The first actual native report is the original near-cover packet, including its invoice. -/
+theorem near_word (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
     (replyOf (receipt T points candidates invoice 0 (some j))).word =
       encodeReport (NativeResidualReplies.report T candidates
         (NativeResidualReplies.single T (0 : Fin (z + 1))

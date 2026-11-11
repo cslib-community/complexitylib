@@ -956,13 +956,76 @@ when its numerical statement is already proved. The full objective in
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
 | Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. Actual receipt/raw-history parsing, certification, residual, guard and decoded runtime result are now derived for arbitrary X3C families. The legacy least-element controller still needs canonical-role specialization. `NativeResidualRouting.controller true` instead reads the known role subuniverses from original runtime metadata, and `NativeResidualAttainment.native_law`, `native_certified`, `native_selectionOnly` and `native_expected_cost` derive original-input dispatch, native admission, certified tape success and actual bills for arbitrary point labels. |
-| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualOracle.response_factor`, `response_available`, `response_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`, `one_terminal_law`, `native_one_lower`; `NativeResidualOptimum.accept_eq`, `one_lower`, `two_lower`; `NativeResidualAttainment.native_cost_mem`, `native_optimum_of_adaptive_le`; `NativeResidualAll.native_expected_cost`, `native_certified`, `native_cost_mem`; `NativeResidualMinima.native_optimum`, `native_one_optimum`, `native_ratio`, `native_linear_ratio` | Partial: clockless native epoch tables now preserve admitted sure success, and explicit per-call price/invoice identification transfers the behavioral two-turn lower bound to actual accrued bills, including divergent prefixes. The decoded source certificate equals optimal-cover acceptance; the lower bound specializes the existing common-oracle Theorem 5 native OPT over all admitted finite-control machines. The uniform runtime-role adaptive controller now attains its exact actual bill in this same native class, and `NativeResidualAttainment.native_optimum_of_adaptive_le` proves OPT equality when near-then-residual is no dearer than all specialists. The complementary all-specialist attainment and full two-turn minimum are now proved by `NativeResidualAll.native_cost_mem` and `NativeResidualMinima.native_optimum`. The one-turn posterior law now derives the universal native lower bound, and `NativeResidualMinima.native_one_optimum`, `native_ratio` and `native_linear_ratio` give the attained one-turn equality and source ratio. The downstream `NativeResidualCostChoice.controller` now performs the cost choice at runtime from rational data and attains the same native minimum on its priced input. Arbitrary-real expected invoice realization remains outside the natural-wire specialization. These paper-local obligations are not blocked on #4335 or #4336. |
+| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualOracle.response_factor`, `response_available`, `response_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`, `one_terminal_law`, `native_one_lower`; `NativeResidualOptimum.accept_eq`, `one_lower`, `two_lower`; `NativeResidualAttainment.native_cost_mem`, `native_optimum_of_adaptive_le`; `NativeResidualAll.native_expected_cost`, `native_certified`, `native_cost_mem`; `NativeResidualMinima.native_optimum`, `native_one_optimum`, `native_ratio`, `native_linear_ratio` | Partial: clockless native epoch tables now preserve admitted sure success, and explicit per-call price/invoice identification transfers the behavioral two-turn lower bound to actual accrued bills, including divergent prefixes. The decoded source certificate equals optimal-cover acceptance; the lower bound specializes the existing common-oracle Theorem 5 native OPT over all admitted finite-control machines. The uniform runtime-role adaptive controller now attains its exact actual bill in this same native class, and `NativeResidualAttainment.native_optimum_of_adaptive_le` proves OPT equality when near-then-residual is no dearer than all specialists. The complementary all-specialist attainment and full two-turn minimum are now proved by `NativeResidualAll.native_cost_mem` and `NativeResidualMinima.native_optimum`. The one-turn posterior law now derives the universal native lower bound, and `NativeResidualMinima.native_one_optimum`, `native_ratio` and `native_linear_ratio` give the attained one-turn equality and source ratio. The downstream `NativeResidualCostChoice.controller` now performs the cost choice at runtime from rational data and attains the same native minimum on its priced input. `NativeResidualRealCost`, `NativeResidualRealAdaptive` and `NativeResidualRealChoice` now realize arbitrary fixed real expected prices by fresh natural token reports, prove the exact attained upper costs for both source strategies, and compile rational cost selection into the same native price-aware program. The universal lower optimum for this fresh-invoice oracle is still open: the existing exact lower/ratio theorems identify prices with constant natural invoices. This accounting extension and the separate unrestricted representation obligations are not blocked on #4335 or #4336. |
 
 Not everything outside #4335/#4336 is present. In particular, the native
 Theorem 6 obligations and the separate Theorem 5 representation obligations in
 the last rows remain material. No ALL-main or unrestricted Theorem 5/6 completion
 is claimed.
 
+
+### Submission 191: fixed real expected costs with natural token reports
+
+The source model (PDF p. 5) explicitly allows arbitrary real parameters in analytic
+statements, while numerical algorithmic inputs are binary rationals. Token counts
+are nonnegative natural random variables. Fixed per-call expected prices therefore
+do not require a serializer for arbitrary real numbers. Response-dependent declared
+prices would be an optional extension, not a missing source requirement.
+
+Import [FixedMeanInvoice](../../CslibFrontier/Probability/FixedMeanInvoice.lean)
+and [NativeResidualRealChoice](../../CslibFrontier/Probability/StochasticOracle/NativeResidualRealChoice.lean).
+`FixedMeanInvoice.law` draws a concrete finite-support natural invoice vector with
+any prescribed nonnegative real coordinate means. At most one coordinate is
+charged in a draw, so within-batch invoices can be correlated. Its finite cap is
+derived from the prices; no total-bill bound or integrability premise is supplied.
+`NativeResidualRealCost.sample` draws a fresh vector after each admitted batch
+selection, followed by the original conditional residual response. All native
+competitors see that same oracle. `batch_expected_cost` proves its fixed invoice
+mean for every selected batch, hidden server history, cutoff and remaining deadline,
+including cancellation.
+
+`NativeResidualRealAdaptive.feedback_law` executes both response-dependent epochs
+with independent fresh invoice draws, rather than assuming that an adaptive
+policy preserves a once-for-all mixture. `native_resources` preserves their joint
+bill and duration. The actual compiled all-specialist and near-then-specialist
+programs have certified tape output with probability one and exact accrued costs
+$$
+\mathbb E[\mathrm{bill}_{\mathrm{all}}]=\sum_j c_j,\qquad
+\mathbb E[\mathrm{bill}_{\mathrm{adaptive}}]=c_0+\sum_j p_jc_j.
+$$
+These formulas hold for arbitrary real positive expected prices. Termination and
+terminal-to-whole-trace cost equality are derived from their actual execution laws.
+`minimum_cost_mem` attains the smaller value in the existing native feasible-cost
+class, without claiming a new universal lower bound for this oracle.
+
+`NativeResidualRealChoice.native_expected_cost`, `native_certified` and
+`native_cost_mem` apply to the **same** compiled `NativeResidualCostChoice.controller`
+with its original rational price-table input ABI. Only the primitive table reflects
+the source prices and probabilities; no natural-price identity is required. The
+[real-cost client](../../CslibFrontierTests/StochasticOracleNativeResidualRealCost.lean)
+uses five nonempty overlapping-triple blocks and specialist mean $\sqrt 2$ for both
+actual strategies. The [price-aware client](../../CslibFrontierTests/StochasticOracleNativeResidualRealChoice.lean)
+uses near mean $1/4$ and specialist mean $1/2$, proves actual certified tape success
+one and expected bill $3/4$, and places that attained value in the same native cost
+class. Neither price can be identified with a constant natural invoice.
+
+The universal real-mean lower/OPT equality remains open. It needs posterior
+accounting through fresh invoice draws and conditional expected charges in place
+of the existing pointwise constant-invoice comparison. This is unblocked by #4336.
+The unrestricted source-query/cutoff interpreter and external-machine adapters
+also remain unproved. `NativeUnboundedExecution.selectionOnly_of_output_memory`
+reuses derived native output/memory laws for provenance; its concrete consumers
+are the cost-table compiler, not an assumed representation of arbitrary machines.
+The Agent Operator's Manual needs no edit: roles, ownership, build procedures and
+human direction do not change. No curated abstract or result is promoted to an
+unrestricted Theorem 5/6 or ALL-main claim.
+
+From a matching warm checkout, run:
+
+```bash
+lake build --wfail --iofail CslibFrontierTests.StochasticOracleNativeResidualRealCost \
+  CslibFrontierTests.StochasticOracleNativeResidualRealChoice
+```
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
 
@@ -1125,7 +1188,7 @@ actual compiled execution by the runtime-role controllers in
 derives the one/two-turn native-to-behavioral laws for all admitted competitors;
 `NativeResidualMinima` derives the attained native optima and ratio. The legacy
 component-order controller still needs its own canonical-role specialization.
-Natural invoices do not assert arbitrary-real expected invoice realization;
+The natural-invoice results in this subsection do not assert arbitrary-real expected invoice realization; the real-mean construction above is separate.
 `NativeResidualCostChoice` below provides compiled cost-aware choice for rational data. Source deadlines count oracle time only.
 The Agent Operator's Manual needs no edit because workflow and human direction
 are unchanged.
