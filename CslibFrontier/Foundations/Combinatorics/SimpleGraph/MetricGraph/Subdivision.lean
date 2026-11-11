@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/MetricGraph/Subdivision.lean`)
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
 import Mathlib.Data.Finset.Max
@@ -1318,16 +1318,6 @@ theorem dartBreakpoints_symm [Finite V] (W : WeightedGraph V) (p : MetricGraph W
     (d : W.graph.Dart) : dartBreakpoints W p d.symm = dartBreakpoints W p d := by
   classical
   have hw := W.dart_weight_pos d
-  have hwd : dist (vertex d.fst : MetricGraph W) (vertex d.snd) ≤ W.weight d.edge := by
-    rw [← edgePoint_zero d, ← edgePoint_one d]
-    refine (dist_edgePoint_self_le d 0 1).trans_eq ?_
-    rw [show ((0 : unitInterval) : ℝ) = 0 from rfl, show ((1 : unitInterval) : ℝ) = 1 from rfl,
-      zero_sub, abs_neg, abs_one, mul_one]
-  have hab_diff : |dist p (vertex d.fst) - dist p (vertex d.snd)| ≤ W.weight d.edge := by
-    have h1 := dist_triangle p (vertex d.snd) (vertex d.fst)
-    have h2 := dist_triangle p (vertex d.fst) (vertex d.snd)
-    rw [dist_comm (vertex d.snd) (vertex d.fst)] at h1
-    exact abs_le.mpr ⟨by linarith, by linarith⟩
   have hboth : (∃ s₀ : unitInterval, edgePoint d.symm s₀ = p) ↔
       (∃ s₀ : unitInterval, edgePoint d s₀ = p) :=
     ⟨fun ⟨s₀, hs⟩ => ⟨unitInterval.symm s₀, by simpa only [edgePoint_symm'] using hs⟩,
@@ -1340,35 +1330,9 @@ theorem dartBreakpoints_symm [Finite V] (W : WeightedGraph V) (p : MetricGraph W
     have hs_eq : s' = unitInterval.symm s := by
       apply edgePoint_injective d.symm
       rw [Classical.choose_spec hs, edgePoint_symm, Classical.choose_spec h]
-    have hp_eq : p = edgePoint d s := (Classical.choose_spec h).symm
     let a := dist p (vertex d.fst)
     let b := dist p (vertex d.snd)
     let w := W.weight d.edge
-    have ha_le : a ≤ (s : ℝ) * w := by
-      rw [show a = dist p (vertex d.fst) from rfl, hp_eq, ← edgePoint_zero d, dist_comm]
-      refine (dist_edgePoint_self_le d 0 s).trans_eq ?_
-      rw [show ((0 : unitInterval) : ℝ) = 0 from rfl, zero_sub, abs_neg, abs_of_nonneg s.2.1,
-        mul_comm]
-    have hb_le : b ≤ (1 - (s : ℝ)) * w := by
-      rw [show b = dist p (vertex d.snd) from rfl, hp_eq, ← edgePoint_one d, dist_comm]
-      refine (dist_edgePoint_self_le d 1 s).trans_eq ?_
-      rw [show ((1 : unitInterval) : ℝ) = 1 from rfl, abs_of_nonneg (unitInterval.one_sub_nonneg s),
-        mul_comm]
-    have hc1_lo : 0 ≤ (min ((s : ℝ) * w) (b + w) - a) / (2 * w) :=
-      div_nonneg (sub_nonneg.mpr (le_min ha_le (by linarith [abs_le.mp hab_diff]))) (by linarith)
-    have hc1_hi : (min ((s : ℝ) * w) (b + w) - a) / (2 * w) ≤ 1 := by
-      rw [div_le_one (by linarith)]
-      have : min ((s : ℝ) * w) (b + w) ≤ w :=
-        (min_le_left _ _).trans (mul_le_of_le_one_left hw.le s.2.2)
-      linarith [dist_nonneg (x := p) (y := vertex d.fst)]
-    have hc2_lo : 0 ≤ (b + w - min (-(s : ℝ) * w) a) / (2 * w) := by
-      refine div_nonneg ?_ (by linarith)
-      have : min (-(s : ℝ) * w) a ≤ a := min_le_right _ _
-      linarith [abs_le.mp hab_diff]
-    have hc2_hi : (b + w - min (-(s : ℝ) * w) a) / (2 * w) ≤ 1 := by
-      rw [div_le_one (by linarith)]
-      rcases min_cases (-(s : ℝ) * w) a with ⟨hm, _⟩ | ⟨hm, _⟩ <;>
-        rw [hm] <;> linarith [abs_le.mp hab_diff]
     have hsym_t2 : Set.projIcc 0 1 zero_le_one ((min ((s' : ℝ) * W.weight d.symm.edge)
           (dist p (vertex d.symm.snd) + W.weight d.symm.edge) - dist p (vertex d.symm.fst)) /
           (2 * W.weight d.symm.edge)) =
@@ -1413,13 +1377,6 @@ theorem dartBreakpoints_symm [Finite V] (W : WeightedGraph V) (p : MetricGraph W
   · have hns : ¬ ∃ s₀ : unitInterval, edgePoint d.symm s₀ = p := by
       rwa [hboth]
     simp only [dartBreakpoints, h, hns, ↓reduceDIte]
-    have h0 : 0 ≤ (dist p (vertex d.snd) + W.weight d.edge - dist p (vertex d.fst)) /
-        (2 * W.weight d.edge) :=
-      div_nonneg (by linarith [abs_le.mp hab_diff]) (by linarith)
-    have h1 : (dist p (vertex d.snd) + W.weight d.edge - dist p (vertex d.fst)) /
-        (2 * W.weight d.edge) ≤ 1 := by
-      rw [div_le_one (by linarith)]
-      linarith [abs_le.mp hab_diff]
     have hsym_eq : Set.projIcc 0 1 zero_le_one
         ((dist p (vertex d.symm.snd) + W.weight d.symm.edge -
           dist p (vertex d.symm.fst)) / (2 * W.weight d.symm.edge)) =

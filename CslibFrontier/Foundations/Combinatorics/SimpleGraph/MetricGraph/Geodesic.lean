@@ -5,12 +5,13 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/MetricGraph/Geodesic.lean`)
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Basic
 public import Mathlib.Topology.Connected.PathConnected
 public import Mathlib.Topology.MetricSpace.Isometry
 import Mathlib.Tactic.Linarith
+import Mathlib.Topology.MetricSpace.Lipschitz
 
 /-!
 # Geodesics and shortest paths in metric graphs
@@ -139,24 +140,6 @@ end IsGeodesic
 
 /-! ### Construction of geodesics -/
 
-private theorem abs_projIcc_sub_le (r₁ r₂ : ℝ) :
-    |(Set.projIcc (0 : ℝ) 1 zero_le_one r₁ : ℝ) -
-      Set.projIcc (0 : ℝ) 1 zero_le_one r₂| ≤ |r₁ - r₂| := by
-  have one_side : ∀ a b : ℝ,
-      (Set.projIcc (0 : ℝ) 1 zero_le_one a : ℝ) -
-        Set.projIcc (0 : ℝ) 1 zero_le_one b ≤ |a - b| := by
-    intro a b
-    simp only [Set.coe_projIcc]
-    have hmin : min 1 a ≤ min 1 b + |a - b| := by
-      rw [min_add]
-      exact le_min ((min_le_left 1 a).trans (le_add_of_nonneg_right (abs_nonneg (a - b))))
-        ((min_le_right 1 a).trans (by linarith [le_abs_self (a - b)]))
-    have hmax : max 0 (min 1 a) ≤ max 0 (min 1 b) + |a - b| :=
-      max_le (add_nonneg (le_max_left 0 _) (abs_nonneg _))
-        (hmin.trans (add_le_add (le_max_right 0 _) le_rfl))
-    linarith
-  exact abs_le.mpr ⟨by linarith [one_side r₂ r₁, abs_sub_comm r₁ r₂], one_side r₁ r₂⟩
-
 private noncomputable def dartRay (W : WeightedGraph V) (d : W.graph.Dart) (t₀ : unitInterval)
     (dir : Bool) (s : ℝ) : MetricGraph W :=
   edgePoint d (Set.projIcc 0 1 zero_le_one (if dir then (t₀ : ℝ) + s / W.weight d.edge
@@ -171,7 +154,11 @@ private theorem dartRay_lip [Finite V] (W : WeightedGraph V) (d : W.graph.Dart)
     dist (dartRay W d t₀ dir s₁) (dartRay W d t₀ dir s₂) ≤ |s₁ - s₂| := by
   refine (dist_edgePoint_self_le d _ _).trans ?_
   have hw := W.dart_weight_pos d
-  refine (mul_le_mul_of_nonneg_left (abs_projIcc_sub_le _ _) hw.le).trans ?_
+  have hclip := (LipschitzWith.projIcc zero_le_one).dist_le_mul
+    (if dir then (t₀ : ℝ) + s₁ / W.weight d.edge else (t₀ : ℝ) - s₁ / W.weight d.edge)
+    (if dir then (t₀ : ℝ) + s₂ / W.weight d.edge else (t₀ : ℝ) - s₂ / W.weight d.edge)
+  rw [Subtype.dist_eq, Real.dist_eq, NNReal.coe_one, one_mul, Real.dist_eq] at hclip
+  refine (mul_le_mul_of_nonneg_left hclip hw.le).trans ?_
   cases dir
   · simp only [Bool.false_eq_true, ↓reduceIte]
     have heq : ((t₀ : ℝ) - s₁ / W.weight d.edge) - ((t₀ : ℝ) - s₂ / W.weight d.edge) =

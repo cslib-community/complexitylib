@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/MetricGraph/Bipartite.lean`)
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Subdivision
 public import Mathlib.Combinatorics.SimpleGraph.Bipartite
@@ -167,16 +167,7 @@ theorem bipartite_graph_dist_adj_succ {G : SimpleGraph V} (hbip : G.IsBipartite)
     (hconn : G.Connected) (t₀ : V) {u v : V} (hadj : G.Adj u v) :
     G.dist t₀ v = G.dist t₀ u + 1 ∨ G.dist t₀ u = G.dist t₀ v + 1 := by
   have hne := bipartite_graph_dist_adj_ne hbip hconn t₀ hadj
-  have h1 : G.dist t₀ v ≤ G.dist t₀ u + 1 := by
-    obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist t₀ u
-    have hle := G.dist_le (p.concat hadj)
-    rw [Walk.length_concat, hp] at hle
-    exact hle
-  have h2 : G.dist t₀ u ≤ G.dist t₀ v + 1 := by
-    obtain ⟨p, hp⟩ := hconn.exists_walk_length_eq_dist t₀ v
-    have hle := G.dist_le (p.concat hadj.symm)
-    rw [Walk.length_concat, hp] at hle
-    exact hle
+  have hdiff := hadj.diff_dist_adj (u := t₀)
   omega
 
 theorem bipartite_dist_vertex_adj_diff [Finite V] {W : WeightedGraph V} (hbip : W.graph.IsBipartite)

@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/MetricGraph/Realization.lean`)
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Subdivision
 public import Mathlib.Analysis.InnerProductSpace.PiL2
@@ -340,30 +340,29 @@ noncomputable def realizationSubdivision [Finite V] (W : WeightedGraph V) :
     WeightedGraph { z : MetricGraph W // z ∈ realizationPoints W } :=
   subdivide W (realizationPoints W) (vertex_mem_realizationPoints W)
 
-private theorem bp1_ne_vertex [Finite V] (W : WeightedGraph V)
-    (e : W.graph.edgeSet) (v : V) : bp1 W e ≠ vertex v := by
-  intro h
-  rcases edgePoint_eq_vertex_iff.mp h with ⟨h0, _⟩ | ⟨h1, _⟩
-  · exact (ratio1_pos W e).ne' (congrArg Subtype.val h0)
-  · have hlt : (ratio1 W e : ℝ) < 1 := (ratio1_lt_ratio2 W e).trans (ratio2_lt_one W e)
-    exact hlt.ne (congrArg Subtype.val h1)
+private theorem ratio1_lt_one [Finite V] (W : WeightedGraph V) (e : W.graph.edgeSet) :
+    (ratio1 W e : ℝ) < 1 :=
+  (ratio1_lt_ratio2 W e).trans (ratio2_lt_one W e)
 
-private theorem bp2_ne_vertex [Finite V] (W : WeightedGraph V)
-    (e : W.graph.edgeSet) (v : V) : bp2 W e ≠ vertex v := by
+private theorem ratio2_pos [Finite V] (W : WeightedGraph V) (e : W.graph.edgeSet) :
+    (0 : ℝ) < ratio2 W e :=
+  (ratio1_pos W e).trans (ratio1_lt_ratio2 W e)
+
+private theorem edgePoint_interior_ne_vertex (W : WeightedGraph V)
+    {r : W.graph.edgeSet → unitInterval} (hr0 : ∀ e, (0 : ℝ) < r e) (hr1 : ∀ e, (r e : ℝ) < 1)
+    (e : W.graph.edgeSet) (v : V) : edgePoint (edgeDartOfSym2 e) (r e) ≠ vertex v := by
   intro h
   rcases edgePoint_eq_vertex_iff.mp h with ⟨h0, _⟩ | ⟨h1, _⟩
-  · have hpos : 0 < (ratio2 W e : ℝ) := (ratio1_pos W e).trans (ratio1_lt_ratio2 W e)
-    exact hpos.ne' (congrArg Subtype.val h0)
-  · exact (ratio2_lt_one W e).ne (congrArg Subtype.val h1)
+  · exact (hr0 e).ne' (congrArg Subtype.val h0)
+  · exact (hr1 e).ne (congrArg Subtype.val h1)
 
 private theorem bp1_ne_bp2 [Finite V] (W : WeightedGraph V) (e₁ e₂ : W.graph.edgeSet) :
     bp1 W e₁ ≠ bp2 W e₂ := by
   intro h
-  have hlt1 : (ratio1 W e₁ : ℝ) < 1 := (ratio1_lt_ratio2 W e₁).trans (ratio2_lt_one W e₁)
   rcases edgePoint_eq_edgePoint_iff.mp h with
     ⟨h0, _⟩ | ⟨h1, _⟩ | ⟨_, _, _, _, ⟨heq, hreq⟩ | ⟨hsym, _⟩⟩
   · exact (ratio1_pos W e₁).ne' (congrArg Subtype.val h0)
-  · exact hlt1.ne (congrArg Subtype.val h1)
+  · exact (ratio1_lt_one W e₁).ne (congrArg Subtype.val h1)
   · have h' := congrArg Dart.edge heq
     rw [edgeDartOfSym2_edge, edgeDartOfSym2_edge] at h'
     have he : e₁ = e₂ := Subtype.ext h'
@@ -375,31 +374,14 @@ private theorem bp1_ne_bp2 [Finite V] (W : WeightedGraph V) (e₁ e₂ : W.graph
     subst he
     exact (edgeDartOfSym2 e₁).symm_ne hsym.symm
 
-private theorem bp1_injective [Finite V] (W : WeightedGraph V) :
-    Function.Injective (bp1 W) := by
+private theorem edgePoint_interior_injective (W : WeightedGraph V)
+    {r : W.graph.edgeSet → unitInterval} (hr0 : ∀ e, (0 : ℝ) < r e) (hr1 : ∀ e, (r e : ℝ) < 1) :
+    Function.Injective (fun e : W.graph.edgeSet => edgePoint (edgeDartOfSym2 e) (r e)) := by
   intro e₁ e₂ h
-  have hlt1 : (ratio1 W e₁ : ℝ) < 1 := (ratio1_lt_ratio2 W e₁).trans (ratio2_lt_one W e₁)
   rcases edgePoint_eq_edgePoint_iff.mp h with
     ⟨h0, _⟩ | ⟨h1, _⟩ | ⟨_, _, _, _, ⟨heq, _⟩ | ⟨hsym, _⟩⟩
-  · exact absurd (congrArg Subtype.val h0) (ratio1_pos W e₁).ne'
-  · exact absurd (congrArg Subtype.val h1) hlt1.ne
-  · have h' := congrArg Dart.edge heq
-    rw [edgeDartOfSym2_edge, edgeDartOfSym2_edge] at h'
-    exact Subtype.ext h'
-  · have h' := congrArg Dart.edge hsym
-    rw [edgeDartOfSym2_edge, Dart.edge_symm, edgeDartOfSym2_edge] at h'
-    have he : e₁ = e₂ := Subtype.ext h'
-    subst he
-    exact absurd hsym.symm (edgeDartOfSym2 e₁).symm_ne
-
-private theorem bp2_injective [Finite V] (W : WeightedGraph V) :
-    Function.Injective (bp2 W) := by
-  intro e₁ e₂ h
-  have hpos1 : (0 : ℝ) < ratio2 W e₁ := (ratio1_pos W e₁).trans (ratio1_lt_ratio2 W e₁)
-  rcases edgePoint_eq_edgePoint_iff.mp h with
-    ⟨h0, _⟩ | ⟨h1, _⟩ | ⟨_, _, _, _, ⟨heq, _⟩ | ⟨hsym, _⟩⟩
-  · exact absurd (congrArg Subtype.val h0) hpos1.ne'
-  · exact absurd (congrArg Subtype.val h1) (ratio2_lt_one W e₁).ne
+  · exact absurd (congrArg Subtype.val h0) (hr0 e₁).ne'
+  · exact absurd (congrArg Subtype.val h1) (hr1 e₁).ne
   · have h' := congrArg Dart.edge heq
     rw [edgeDartOfSym2_edge, edgeDartOfSym2_edge] at h'
     exact Subtype.ext h'
@@ -471,11 +453,12 @@ private theorem realizationVertexPos_bp1 [Finite V] (W : WeightedGraph V)
       vertexPos W (edgeDartOfSym2 e).fst +
         (edgeLegHeight W e) • EuclideanSpace.single (Fin.succ (edgeEquiv W e)) (1 : ℝ) := by
   classical
-  have hnv : ¬ ∃ v : V, vertex v = bp1 W e := fun ⟨v, hv⟩ => bp1_ne_vertex W e v hv.symm
+  have hnv : ¬ ∃ v : V, vertex v = bp1 W e := fun ⟨v, hv⟩ =>
+    edgePoint_interior_ne_vertex W (ratio1_pos W) (ratio1_lt_one W) e v hv.symm
   have hex : ∃ e' : W.graph.edgeSet, bp1 W e' = bp1 W e := ⟨e, rfl⟩
   dsimp only [realizationVertexPos]
   split_ifs
-  rw [bp1_injective W (Classical.choose_spec hex)]
+  rw [edgePoint_interior_injective W (ratio1_pos W) (ratio1_lt_one W) (Classical.choose_spec hex)]
 
 private theorem realizationVertexPos_bp2 [Finite V] (W : WeightedGraph V)
     (e : W.graph.edgeSet) (hbp : bp2 W e ∈ realizationPoints W) :
@@ -483,13 +466,14 @@ private theorem realizationVertexPos_bp2 [Finite V] (W : WeightedGraph V)
       vertexPos W (edgeDartOfSym2 e).snd +
         (edgeLegHeight W e) • EuclideanSpace.single (Fin.succ (edgeEquiv W e)) (1 : ℝ) := by
   classical
-  have hnv : ¬ ∃ v : V, vertex v = bp2 W e := fun ⟨v, hv⟩ => bp2_ne_vertex W e v hv.symm
+  have hnv : ¬ ∃ v : V, vertex v = bp2 W e := fun ⟨v, hv⟩ =>
+    edgePoint_interior_ne_vertex W (ratio2_pos W) (ratio2_lt_one W) e v hv.symm
   have hn1 : ¬ ∃ e' : W.graph.edgeSet, bp1 W e' = bp2 W e :=
     fun ⟨e', he'⟩ => bp1_ne_bp2 W e' e he'
   have hex : ∃ e' : W.graph.edgeSet, bp2 W e' = bp2 W e := ⟨e, rfl⟩
   dsimp only [realizationVertexPos]
   split_ifs
-  rw [bp2_injective W (Classical.choose_spec hex)]
+  rw [edgePoint_interior_injective W (ratio2_pos W) (ratio2_lt_one W) (Classical.choose_spec hex)]
 
 private theorem realization_forward_dart_cases [Finite V] (W : WeightedGraph V)
     {e : W.graph.edgeSet} {s t : unitInterval} (hst : (s : ℝ) < t)
@@ -699,23 +683,6 @@ private noncomputable def classifySubDart [Finite V] (W : WeightedGraph V)
           field_simp [hwpos]
           linarith
 
-private theorem dist_single_smul_eq (W : WeightedGraph V)
-    (k : Fin (Nat.card W.graph.edgeSet + 1)) (c : ℝ) (hc : 0 ≤ c) :
-    ‖c • (EuclideanSpace.single k (1 : ℝ) :
-      EuclideanSpace ℝ (Fin (Nat.card W.graph.edgeSet + 1)))‖ = c := by
-  classical
-  rw [norm_smul, Real.norm_of_nonneg hc, PiLp.norm_eq_of_L2]
-  have hsum : ∑ i : Fin (Nat.card W.graph.edgeSet + 1),
-      ‖(EuclideanSpace.single k (1 : ℝ) :
-        EuclideanSpace ℝ (Fin (Nat.card W.graph.edgeSet + 1))) i‖ ^ 2 = 1 := by
-    rw [Finset.sum_eq_single k]
-    · rw [PiLp.single_eq_same, norm_one, one_pow]
-    · intro j _ hj
-      rw [PiLp.single_eq_of_ne 2 hj, norm_zero, zero_pow two_ne_zero]
-    · intro hk
-      exact absurd (Finset.mem_univ k) hk
-  rw [hsum, Real.sqrt_one, mul_one]
-
 /-! ### Straight-edge realization map -/
 
 /-- The straight-edge Euclidean map on `MetricGraph (realizationSubdivision W)` sending every
@@ -768,7 +735,8 @@ theorem realizationMap_edge_dist [Finite V] (W : WeightedGraph V)
           edgeLegHeight W e • EuclideanSpace.single (Fin.succ (edgeEquiv W e)) (1 : ℝ)) =
         -(edgeLegHeight W e • EuclideanSpace.single (Fin.succ (edgeEquiv W e)) (1 : ℝ)) := by
       abel
-    rw [hdiff, norm_neg, dist_single_smul_eq W _ _ (edgeLegHeight_pos W e).le]
+    rw [hdiff, norm_neg, norm_smul, Real.norm_of_nonneg (edgeLegHeight_pos W e).le,
+      PiLp.norm_single, norm_one, mul_one]
   have h2 : ∀ (a b : { z // z ∈ realizationPoints W }) (e : W.graph.edgeSet)
       (ha : a.1 = bp1 W e) (hb : b.1 = bp2 W e),
       dist (realizationVertexPos W a) (realizationVertexPos W b) = edgeChordDist W e := by
@@ -796,7 +764,8 @@ theorem realizationMap_edge_dist [Finite V] (W : WeightedGraph V)
         vertexPos W (edgeDartOfSym2 e).snd =
         edgeLegHeight W e • EuclideanSpace.single (Fin.succ (edgeEquiv W e)) (1 : ℝ) := by
       abel
-    rw [hdiff, dist_single_smul_eq W _ _ (edgeLegHeight_pos W e).le]
+    rw [hdiff, norm_smul, Real.norm_of_nonneg (edgeLegHeight_pos W e).le,
+      PiLp.norm_single, norm_one, mul_one]
   rcases classifySubDart W d' with
     ⟨e, hfst, hsnd, hw⟩ | ⟨e, hfst, hsnd, hw⟩ | ⟨e, hfst, hsnd, hw⟩ |
     ⟨e, hfst, hsnd, hw⟩ | ⟨e, hfst, hsnd, hw⟩ | ⟨e, hfst, hsnd, hw⟩
@@ -988,6 +957,23 @@ private def RealizationClassified [Finite V] (W : WeightedGraph V)
 private theorem realizationMap_classify [Finite V] (W : WeightedGraph V)
     (p : MetricGraph (realizationSubdivision W)) :
     RealizationClassified W p := by
+  have hBpCoords : ∀ (e : W.graph.edgeSet) (v : V) (x : { z // z ∈ realizationPoints W }),
+      realizationVertexPos W x =
+        vertexPos W v +
+          edgeLegHeight W e • EuclideanSpace.single (Fin.succ (edgeEquiv W e)) (1 : ℝ) →
+      (∀ k ≠ edgeEquiv W e, realizationMap W (vertex x) k.succ = 0) ∧
+      realizationMap W (vertex x) 0 = vertexPos W v 0 ∧
+      realizationMap W (vertex x) (Fin.succ (edgeEquiv W e)) = edgeLegHeight W e := by
+    intro e v x hx
+    refine ⟨?_, ?_, ?_⟩
+    · intro k hk
+      have hne : Fin.succ k ≠ Fin.succ (edgeEquiv W e) := fun h => hk (Fin.succ_inj.mp h)
+      rw [realizationMap_vertex, hx, PiLp.add_apply, PiLp.smul_apply,
+        vertexPos_apply_succ, PiLp.single_eq_of_ne 2 hne, smul_zero, zero_add]
+    · rw [realizationMap_vertex, hx, PiLp.add_apply, PiLp.smul_apply,
+        PiLp.single_eq_of_ne 2 (Fin.succ_ne_zero _).symm, smul_zero, add_zero]
+    · rw [realizationMap_vertex, hx, PiLp.add_apply, PiLp.smul_apply,
+        vertexPos_apply_succ, PiLp.single_eq_same, smul_eq_mul, mul_one, zero_add]
   have hBp1 : ∀ (e : W.graph.edgeSet) (hmem : bp1 W e ∈ realizationPoints W),
       let z := realizationMap W (vertex ⟨bp1 W e, hmem⟩)
       let q := subdivideEquiv (vertex_mem_realizationPoints W) (vertex ⟨bp1 W e, hmem⟩)
@@ -999,17 +985,10 @@ private theorem realizationMap_classify [Finite V] (W : WeightedGraph V)
     intro e hmem
     have hw : W.weight e.1 ≠ 0 := by
       simpa only [edgeDartOfSym2_edge] using (W.dart_weight_pos (edgeDartOfSym2 e)).ne'
-    refine ⟨ratio1_pos W e, (ratio1_lt_ratio2 W e).trans (ratio2_lt_one W e), ?_, ?_,
-      le_rfl, ?_, ?_⟩
+    obtain ⟨hk, h0, hs⟩ := hBpCoords e (edgeDartOfSym2 e).fst _ (realizationVertexPos_bp1 W e hmem)
+    refine ⟨ratio1_pos W e, ratio1_lt_one W e, ?_, hk, le_rfl, h0, ?_⟩
     · rw [subdivideEquiv_vertex]; rfl
-    · intro k hk
-      have hne : Fin.succ k ≠ Fin.succ (edgeEquiv W e) := fun h => hk (Fin.succ_inj.mp h)
-      rw [realizationMap_vertex, realizationVertexPos_bp1, PiLp.add_apply, PiLp.smul_apply,
-        vertexPos_apply_succ, PiLp.single_eq_of_ne 2 hne, smul_zero, zero_add]
-    · rw [realizationMap_vertex, realizationVertexPos_bp1, PiLp.add_apply, PiLp.smul_apply,
-        PiLp.single_eq_of_ne 2 (Fin.succ_ne_zero _).symm, smul_zero, add_zero]
-    · rw [realizationMap_vertex, realizationVertexPos_bp1, PiLp.add_apply, PiLp.smul_apply,
-        vertexPos_apply_succ, PiLp.single_eq_same, smul_eq_mul, mul_one, zero_add]
+    · rw [hs]
       dsimp only [ratio1]
       field_simp [hw]
   have hBp2 : ∀ (e : W.graph.edgeSet) (hmem : bp2 W e ∈ realizationPoints W),
@@ -1023,17 +1002,10 @@ private theorem realizationMap_classify [Finite V] (W : WeightedGraph V)
     intro e hmem
     have hw : W.weight e.1 ≠ 0 := by
       simpa only [edgeDartOfSym2_edge] using (W.dart_weight_pos (edgeDartOfSym2 e)).ne'
-    refine ⟨(ratio1_pos W e).trans (ratio1_lt_ratio2 W e), ratio2_lt_one W e, ?_, ?_,
-      le_rfl, ?_, ?_⟩
+    obtain ⟨hk, h0, hs⟩ := hBpCoords e (edgeDartOfSym2 e).snd _ (realizationVertexPos_bp2 W e hmem)
+    refine ⟨ratio2_pos W e, ratio2_lt_one W e, ?_, hk, le_rfl, h0, ?_⟩
     · rw [subdivideEquiv_vertex]; rfl
-    · intro k hk
-      have hne : Fin.succ k ≠ Fin.succ (edgeEquiv W e) := fun h => hk (Fin.succ_inj.mp h)
-      rw [realizationMap_vertex, realizationVertexPos_bp2, PiLp.add_apply, PiLp.smul_apply,
-        vertexPos_apply_succ, PiLp.single_eq_of_ne 2 hne, smul_zero, zero_add]
-    · rw [realizationMap_vertex, realizationVertexPos_bp2, PiLp.add_apply, PiLp.smul_apply,
-        PiLp.single_eq_of_ne 2 (Fin.succ_ne_zero _).symm, smul_zero, add_zero]
-    · rw [realizationMap_vertex, realizationVertexPos_bp2, PiLp.add_apply, PiLp.smul_apply,
-        vertexPos_apply_succ, PiLp.single_eq_same, smul_eq_mul, mul_one, zero_add]
+    · rw [hs]
       dsimp only [ratio2]
       have hsum := two_mul_legHeight_add_chord W e
       field_simp [hw]
@@ -1685,6 +1657,22 @@ theorem realizationMap_vertex_rational [Finite V] (W : WeightedGraph V)
     rw [hqw, hqd]
     push_cast
     rfl
+  have h_bp_rat : ∀ (v : V) (e : W.graph.edgeSet) (y : { z // z ∈ realizationPoints W }),
+      realizationVertexPos W y =
+        vertexPos W v +
+          edgeLegHeight W e • EuclideanSpace.single (Fin.succ (edgeEquiv W e)) (1 : ℝ) →
+      ∃ q : ℚ, realizationMap W (vertex y) i = q := by
+    intro v e y hy
+    obtain ⟨q1, hq1⟩ := hvp_rat v
+    obtain ⟨qh, hqh⟩ := hh_rat e
+    rw [realizationMap_vertex, hy]
+    by_cases hi : i = Fin.succ (edgeEquiv W e)
+    · subst hi
+      refine ⟨q1 + qh, ?_⟩
+      rw [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul, PiLp.single_eq_same, mul_one,
+        hq1, hqh, Rat.cast_add]
+    · refine ⟨q1, ?_⟩
+      rw [PiLp.add_apply, PiLp.smul_apply, PiLp.single_eq_of_ne 2 hi, smul_zero, add_zero, hq1]
   have hx := x.2
   simp only [realizationPoints, Finset.mem_union, Finset.mem_image, Finset.mem_univ,
     true_and] at hx
@@ -1693,27 +1681,11 @@ theorem realizationMap_vertex_rational [Finite V] (W : WeightedGraph V)
     rw [hsub, realizationMap_vertex, realizationVertexPos_vertex]
     exact hvp_rat v
   · have hsub : x = ⟨bp1 W e, he ▸ x.2⟩ := Subtype.ext he.symm
-    rw [hsub, realizationMap_vertex, realizationVertexPos_bp1]
-    obtain ⟨q1, hq1⟩ := hvp_rat (edgeDartOfSym2 e).fst
-    obtain ⟨qh, hqh⟩ := hh_rat e
-    by_cases hi : i = Fin.succ (edgeEquiv W e)
-    · subst hi
-      refine ⟨q1 + qh, ?_⟩
-      rw [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul, PiLp.single_eq_same, mul_one,
-        hq1, hqh, Rat.cast_add]
-    · refine ⟨q1, ?_⟩
-      rw [PiLp.add_apply, PiLp.smul_apply, PiLp.single_eq_of_ne 2 hi, smul_zero, add_zero, hq1]
+    rw [hsub]
+    exact h_bp_rat (edgeDartOfSym2 e).fst e _ (realizationVertexPos_bp1 W e _)
   · have hsub : x = ⟨bp2 W e, he ▸ x.2⟩ := Subtype.ext he.symm
-    rw [hsub, realizationMap_vertex, realizationVertexPos_bp2]
-    obtain ⟨q1, hq1⟩ := hvp_rat (edgeDartOfSym2 e).snd
-    obtain ⟨qh, hqh⟩ := hh_rat e
-    by_cases hi : i = Fin.succ (edgeEquiv W e)
-    · subst hi
-      refine ⟨q1 + qh, ?_⟩
-      rw [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul, PiLp.single_eq_same, mul_one,
-        hq1, hqh, Rat.cast_add]
-    · refine ⟨q1, ?_⟩
-      rw [PiLp.add_apply, PiLp.smul_apply, PiLp.single_eq_of_ne 2 hi, smul_zero, add_zero, hq1]
+    rw [hsub]
+    exact h_bp_rat (edgeDartOfSym2 e).snd e _ (realizationVertexPos_bp2 W e _)
 
 end MetricGraph
 

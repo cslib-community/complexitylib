@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
--- upstream: candidate
+-- upstream: candidate (Mathlib, `Mathlib/Combinatorics/SimpleGraph/MetricGraph/Basic.lean`)
 
 public import CslibFrontier.Init
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
