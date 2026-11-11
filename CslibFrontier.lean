@@ -72,6 +72,8 @@ public import CslibFrontier.Algorithms.Lean.GomoryHu.Basic
 public import CslibFrontier.Algorithms.Lean.GomoryHu.Construction
 public import CslibFrontier.Algorithms.Lean.GomoryHu.Existence
 public import CslibFrontier.Algorithms.Lean.GomoryHu.Gusfield
+public import CslibFrontier.Algorithms.Lean.GomoryHu.Oracles
+public import CslibFrontier.Algorithms.Lean.GomoryHu.Real
 public import CslibFrontier.Algorithms.Lean.GomoryHu.WeightedCut
 public import CslibFrontier.Algorithms.Lean.HousingMarket.Basic
 public import CslibFrontier.Algorithms.Lean.HousingMarket.Incentives
@@ -127,6 +129,7 @@ public import CslibFrontier.Algorithms.Lean.MaxFlow.LevelGraph
 public import CslibFrontier.Algorithms.Lean.MaxFlow.Menger
 public import CslibFrontier.Algorithms.Lean.MaxFlow.Preflow
 public import CslibFrontier.Algorithms.Lean.MaxFlow.PushRelabel
+public import CslibFrontier.Algorithms.Lean.MaxFlow.RealFlow
 public import CslibFrontier.Algorithms.Lean.MaxFlow.VertexSeparator
 public import CslibFrontier.Algorithms.Lean.MaxFlow.WeightedMatching
 public import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson

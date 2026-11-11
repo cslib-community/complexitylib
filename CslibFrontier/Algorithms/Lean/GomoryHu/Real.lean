@@ -39,6 +39,7 @@ theorem isSubmodular_realCutWeight (W : V → V → K) (hW : ∀ u v, 0 ≤ W u 
     IsSubmodular (realCutWeight W) :=
   realCutWeight_union_add_realCutWeight_inter_le W hW
 
+omit [IsStrictOrderedRing K] in
 /-- The minimum `s`–`t` cuts of the cut function are the sets containing `s` and missing `t`
 whose weight is `λ(s, t)`. -/
 theorem isMinCutBetween_realCutWeight_iff (W : V → V → K) {s t : V} {X : Finset V} :
@@ -80,6 +81,7 @@ theorem exists_isGomoryHuTree_realCutWeight [Nonempty V] {W : V → V → K}
     ∃ T : SimpleGraph V, IsGomoryHuTree (realCutWeight W) T :=
   exists_isGomoryHuTree (realCutWeight_compl' hWs) (isSubmodular_realCutWeight W hWn)
 
+omit [IsStrictOrderedRing K] in
 /-- **Flow-equivalence of a Gomory–Hu tree** ([GomoryHu1961]): with each tree edge `uv` weighted
 by `λ(u, v)`, the minimum `s`–`t` cut weight `λ(s, t)` is the least weight of an edge on the
 `s`–`t` path of the tree. -/
@@ -122,6 +124,6 @@ theorem card_image_minRealCutBetween_le {W : V → V → K} (hWs : ∀ u v, W u 
     _ ≤ T.edgeFinset.card := Finset.card_image_le
     _ = Fintype.card V - 1 := by
       omega
-      
+
 
 end Cslib.Algorithms.Lean.GomoryHu

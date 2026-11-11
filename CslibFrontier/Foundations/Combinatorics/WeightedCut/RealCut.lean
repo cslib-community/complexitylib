@@ -38,9 +38,10 @@ public section
 
 namespace Cslib.WeightedCut
 
-variable {V : Type*} [Fintype V] [DecidableEq V] {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
+variable {V : Type*} [Fintype V] [DecidableEq V] {K : Type*} [Field K]
 
 /-- The real-valued weight of a cut. -/
+@[expose]
 def realCutWeight (W : V → V → K) (C : Finset V) : K :=
   ∑ u ∈ C, ∑ v ∈ Finset.univ \ C, W u v
 
@@ -56,10 +57,12 @@ theorem realCutWeight_compl' {W : V → V → K} (hW : ∀ u v, W u v = W v u) (
     realCutWeight W Xᶜ = realCutWeight W X := by
   rw [Finset.compl_eq_univ_sdiff, realCutWeight_compl hW]
 
+variable [LinearOrder K]
+
 /-- The cut function is submodular: `w(δ(A ∪ B)) + w(δ(A ∩ B)) ≤ w(δ(A)) + w(δ(B))`. Symmetry of
 `W` is not needed, provided weights are non-negative. -/
-theorem realCutWeight_union_add_realCutWeight_inter_le (W : V → V → K) (hW : ∀ u v, 0 ≤ W u v)
-    (A B : Finset V) :
+theorem realCutWeight_union_add_realCutWeight_inter_le [IsStrictOrderedRing K] (W : V → V → K)
+    (hW : ∀ u v, 0 ≤ W u v) (A B : Finset V) :
     realCutWeight W (A ∪ B) + realCutWeight W (A ∩ B) ≤ realCutWeight W A + realCutWeight W B := by
   have key : ∀ C : Finset V, realCutWeight W C =
       ∑ u, ∑ v, if u ∈ C ∧ v ∉ C then W u v else 0 := by
@@ -81,12 +84,12 @@ theorem realCutWeight_union_add_realCutWeight_inter_le (W : V → V → K) (hW :
   rw [← Finset.sum_add_distrib, ← Finset.sum_add_distrib]
   refine Finset.sum_le_sum fun v _ => ?_
   by_cases huA : u ∈ A <;> by_cases huB : u ∈ B <;> by_cases hvA : v ∈ A <;>
-    by_cases hvB : v ∈ B <;> simp [huA, huB, hvA, hvB] <;> (try rfl) <;> (try apply hW)
+    by_cases hvB : v ∈ B <;> simp [huA, huB, hvA, hvB, hW]
 
 /-- The cut function of a multigraph is posimodular:
 `w(δ(A \ B)) + w(δ(B \ A)) ≤ w(δ(A)) + w(δ(B))`. -/
-theorem realCutWeight_sdiff_add_realCutWeight_sdiff_le {W : V → V → K} (hWs : ∀ u v, W u v = W v u)
-    (hWn : ∀ u v, 0 ≤ W u v) (A B : Finset V) :
+theorem realCutWeight_sdiff_add_realCutWeight_sdiff_le [IsStrictOrderedRing K] {W : V → V → K}
+    (hWs : ∀ u v, W u v = W v u) (hWn : ∀ u v, 0 ≤ W u v) (A B : Finset V) :
     realCutWeight W (A \ B) + realCutWeight W (B \ A) ≤ realCutWeight W A + realCutWeight W B := by
   have h := realCutWeight_union_add_realCutWeight_inter_le W hWn A Bᶜ
   rw [realCutWeight_compl' hWs B, ← Finset.sdiff_eq_inter_compl] at h
