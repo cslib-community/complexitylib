@@ -239,6 +239,11 @@ def consistent (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k)) (b₀ :
     Finset (Fin k → U) :=
   {y | (∀ i ∈ P, y i = b₀ i) ∧ ∀ i ∈ P, C' y i = C' b₀ i}
 
+@[simp] theorem mem_consistent {C' : (Fin k → U) → Fin k → V} {P : Finset (Fin k)}
+    {b₀ y : Fin k → U} :
+    y ∈ consistent C' P b₀ ↔ (∀ i ∈ P, y i = b₀ i) ∧ ∀ i ∈ P, C' y i = C' b₀ i := by
+  simp [consistent]
+
 /-- The accepted pairs are the free positions of the consistent tuples that carry `x`. -/
 theorem acceptedPairs_eq_filter (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k))
     (b₀ : Fin k → U) (x : U) :
@@ -435,6 +440,11 @@ theorem card_filter_dpDecode_ne_le (C' : (Fin k → U) → Fin k → V) (f : U �
 /-- The disagreement positions of a tuple: where `C'` differs from `f` coordinatewise. -/
 def disagreements (C' : (Fin k → U) → Fin k → V) (f : U → V) (y : Fin k → U) : Finset (Fin k) :=
   {j | C' y j ≠ f (y j)}
+
+omit [Fintype U] [DecidableEq U] in
+@[simp] theorem mem_disagreements {C' : (Fin k → U) → Fin k → V} {f : U → V} {y : Fin k → U}
+    {j : Fin k} : j ∈ disagreements C' f y ↔ C' y j ≠ f (y j) := by
+  simp [disagreements]
 
 /-- **Total error of a good seed.** Suppose the consistent tuples have density at least `δ / 2`
 on the slice of `b₀` and at most an `ε / 64` fraction of them have `ε k / 64` or more
