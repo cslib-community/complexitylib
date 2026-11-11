@@ -59,7 +59,7 @@ variable {R : Type*} {k : ℕ}
 
 /-- Border a `k × k` matrix `A` on the right by column `b`, below by row `c`, and in the
 bottom-right corner by scalar `d`. -/
-@[expose] def border [CommRing R] (A : Matrix (Fin k) (Fin k) R) (b c : Fin k → R) (d : R) :
+@[expose] def border (A : Matrix (Fin k) (Fin k) R) (b c : Fin k → R) (d : R) :
     Matrix (Fin k ⊕ Unit) (Fin k ⊕ Unit) R :=
   fromBlocks A (of fun i _ => b i) (of fun _ j => c j) (of fun _ _ => d)
 

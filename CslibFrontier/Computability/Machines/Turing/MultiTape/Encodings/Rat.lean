@@ -108,7 +108,6 @@ theorem length_encRat_divInt_le (a b : ℤ) :
     omega
 
 /-- Negation preserves the encoded length of a rational number. -/
-@[simp]
 theorem length_encRat_neg (q : ℚ) : (encRat (-q)).length = (encRat q).length := by
   simp only [length_encRat, Rat.num_neg_eq_neg_num, Rat.den_neg_eq_den, Int.natAbs_neg]
 
