@@ -31,8 +31,10 @@ gates from below by `2 ^ Ω(n ^ (1 / (2 d)))`. Hence the middle slice is not in 
 comparing with `a(n)` computed in unary from the length (`middleSlice_mem_P`), which separates
 `P` from AC⁰[2] (`exists_mem_P_notMem_AC0Mod_two`).
 
-`Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` gives the separation for odd primes through
-parity; this module covers `p = 2`, where parity is a single gate.
+For odd primes, parity separates `P` from AC⁰[p]; this module covers `p = 2`, where parity is a
+single gate. `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` combines the two for every prime,
+and `Cslib.Circuits.Boolean.Smolensky.majority_notMem_AC0Mod` uses the middle slice to show that
+majority is not in AC⁰[2].
 
 The lower bound follows the rank argument as recorded by
 [Razborov and Rudich, §3.2][RazborovRudich1997] and sketched for `p = 2` by
@@ -176,8 +178,8 @@ theorem middleSlice_mem_P : (Language.ofSlices middleSlice : Set (List Bool)) �
   exact ComputableInPolyTime.unary_eq' hcount (ComputableInPolyTime.unary_sub' hlen hlevel)
 
 /-- **Unconditional separation `P ⊄ AC⁰[2]`**: the middle slice is in `P` and not in AC⁰[2]
-[Razborov1987]. Together with `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` for odd primes,
-`P ⊄ AC⁰[p]` holds for every prime `p`. -/
+[Razborov1987]. `Cslib.Circuits.Boolean.exists_mem_P_notMem_AC0Mod` combines it with parity for odd
+primes, giving `P ⊄ AC⁰[p]` for every prime `p`. -/
 theorem exists_mem_P_notMem_AC0Mod_two :
     ∃ L : Language Bool, (L : Set (List Bool)) ∈ P encBits ∧ L ∉ AC0Mod 2 :=
   ⟨_, middleSlice_mem_P, middleSlice_notMem_AC0Mod_two⟩
