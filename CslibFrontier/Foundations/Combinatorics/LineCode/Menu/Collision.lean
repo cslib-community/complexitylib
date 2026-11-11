@@ -188,8 +188,7 @@ theorem card_filter_two_mul_card_isClean_lt_mul_two_pow_le (occupied : Finset (F
     exact Nat.pow_le_pow_right two_pos (by omega)
   calc _ ≤ 2 ^ k * (n ^ (k - s) * M ^ s) * 2 ^ k := Nat.mul_le_mul_right _ hfail
     _ = 2 ^ (2 * k) * M ^ s * n ^ (k - s) := by rw [two_mul, pow_add]; ring
-    _ ≤ 256 ^ s * M ^ s * n ^ (k - s) :=
-        Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ hpow)
+    _ ≤ 256 ^ s * M ^ s * n ^ (k - s) := by gcongr
     _ = (256 * M) ^ s * n ^ (k - s) := by rw [← mul_pow]
     _ ≤ n ^ s * n ^ (k - s) := Nat.mul_le_mul_right _ (Nat.pow_le_pow_left hbudget s)
     _ = n ^ k := by rw [← pow_add, Nat.add_sub_cancel' hsk]

@@ -233,8 +233,7 @@ theorem exists_mem_support_tsum_mul_le (μ : PMF α) (ν : PMF β) (loss : α �
 /-- The probability of an event as the mean of its indicator. -/
 private theorem toOuterMeasure_eq_tsum_mul_ite {γ : Type*} (π : PMF γ) (s : Set γ)
     [DecidablePred (· ∈ s)] : π.toOuterMeasure s = ∑' c, π c * if c ∈ s then 1 else 0 := by
-  rw [PMF.toOuterMeasure_apply]
-  exact tsum_congr fun c => by by_cases hc : c ∈ s <;> simp [hc]
+  simp only [toOuterMeasure_eq_tsum_mul_indicator, Set.indicator_apply, Pi.one_apply]
 
 /-- **The averaging argument** for events, the easy direction of Yao's principle: if a strategy
 drawn from `μ` fails on every input that `ν` can produce with probability at most `ε`, then some

@@ -158,8 +158,7 @@ theorem compareSwapCircuit.eval_record {r : ℕ} (flag : Circuit signature (r + 
   simp only [record, Circuit.eval_comp, Circuit.eval_append, Circuit.id,
     Circuit.eval_wiring, Function.comp_id, eval_flagPair]
   rw [eval_switch]
-  congr 1
-  funext j
+  congr 1 with j : 1
   simp
 
 /-- Applying the same saved controls twice restores arbitrary payloads. -/

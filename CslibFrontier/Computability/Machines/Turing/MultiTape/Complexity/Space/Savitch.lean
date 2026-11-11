@@ -35,7 +35,8 @@ decider runs in space polynomial in `n`, charging the stack of frames, the count
 test (`Cslib.Reachability.exists_polyBounded_space_savitch`); its time is exponential.
 
 The decider retains the whole input, so this is the polynomial-space consequence of Savitch's
-theorem; the quadratic bound `NSPACE(s) ⊆ DSPACE(s ^ 2)` for sublinear `s` is not claimed.
+theorem. The quadratic bound `NSPACE(s) ⊆ DSPACE(s ^ 2)`, including sublinear `s`, is
+`Turing.MultiTapeNTM.exists_decidableInTimeAndSpace_sq`, which never copies the input.
 
 ## Main definitions
 
@@ -115,18 +116,14 @@ theorem savitchDecide_eq_true_iff {c d s : ℕ} {input : List Bool} (hs : ntm.Ru
   exact (Relation.reflTransGen_iff_relatesWithinSteps_of_encard_le hcard).symm
 
 /-- The width of the codes is polynomial-time, in unary. -/
-private theorem computableTidilyInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d : ℕ) :
-    ComputableTidilyInPolyTime (fun a => ntm.codeWidth c d (enc a)) enc encUnary := by
-  have hlength := ComputableTidilyInPolyTime.encoding_length enc
-  have hinit := ComputableTidilyInPolyTime.finiteCfg_init (k := k) (.encode enc) ntm.q₀
-  have hsize := (ComputableTidilyInPolyTime.encoding_length encFiniteCfg).comp hinit
+theorem computableInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d : ℕ) :
+    ComputableInPolyTime (fun a => ntm.codeWidth c d (enc a)) enc encUnary := by
+  have hlength := ComputableInPolyTime.encoding_length enc
+  have hinit := ComputableInPolyTime.finiteCfg_init (k := k)
+    (ComputableInPolyTime.of_eq (encOut := encBits) fun _ => rfl) ntm.q₀
+  have hsize := (ComputableInPolyTime.encoding_length encFiniteCfg).comp hinit
   simp only [codeWidth, viewLengthBound, initView]
   fun_prop
-
-/-- The width of the codes is polynomial-time, in unary. -/
-theorem computableInPolyTime_codeWidth {α : Type} {enc : α ↪ List Bool} (c d : ℕ) :
-    ComputableInPolyTime (fun a => ntm.codeWidth c d (enc a)) enc encUnary :=
-  (computableTidilyInPolyTime_codeWidth c d).computableInPolyTime
 
 /-- The bit-length of the codes of the views is polynomial-time, in unary. -/
 @[fun_prop]

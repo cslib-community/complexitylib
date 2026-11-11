@@ -126,18 +126,8 @@ theorem sum_sq_dist_map_filter_le (p : ∀ i, PMF (β i)) (J : PMF ((∀ i, β i
       have := (lt_of_lt_of_le hpos this)
       exact (div_pos_iff_of_pos_right hw).mp this
     exact (PMF.mem_support_iff _ _).mpr fun h => by simp [h] at hpu
-  have hsup := sum_sum_mul_log_div_map_le Q p hQ
+  have hpinsker := sum_sq_dist_map_le Q p hQ
   have hkl := sum_mul_log_div_le_log_of_le hw hdom
-  have hpinsker : ∀ j, 2 * dist (Q.map fun u => u j) (p j) ^ 2 ≤
-      ∑ a, ((Q.map fun u => u j) a).toReal *
-        Real.log (((Q.map fun u => u j) a).toReal / (p j a).toReal) := by
-    intro j
-    refine two_mul_dist_sq_le_sum_mul_log_div fun a ha => ?_
-    rw [PMF.support_map] at ha
-    obtain ⟨u, hu, rfl⟩ := ha
-    exact (mem_support_pi_iff p u).mp (hQ hu) j
-  have := sum_le_sum fun j (_ : j ∈ univ) => hpinsker j
-  rw [← mul_sum] at this
   simp only [hmap]
   linarith
 

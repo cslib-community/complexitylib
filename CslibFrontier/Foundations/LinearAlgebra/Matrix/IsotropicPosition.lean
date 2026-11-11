@@ -175,6 +175,123 @@ private theorem det_sum_exp_smul_vecMulVec {d : ℕ} (s : Fin d → ℝ)
     det_diagonal, Real.exp_sum]
   ring
 
+/-- **One window bounds `log det` below.** If the rows of `U` indexed by a window `e` are linearly
+independent, then `log det(U_e)² + ∑ᵢ t_{e i} ≤ log det (∑ₓ exp(tₓ) uₓ uₓᵀ)`: the window's own
+terms have determinant `det(U_e)² exp(∑ᵢ t_{e i})`, and the remaining terms do not decrease it. -/
+private theorem log_det_submatrix_sq_add_sum_le {X : Type*} [Fintype X] {d : ℕ}
+    (U : Matrix X (Fin d) ℝ) (t : X → ℝ) (e : Fin d ↪ X) (hUe : (U.submatrix e id).det ≠ 0) :
+    Real.log ((U.submatrix e id).det ^ 2) + ∑ i, t (e i) ≤
+      Real.log (∑ x, Real.exp (t x) • vecMulVec (U x) (U x)).det := by
+  classical
+  set W := U.submatrix e id
+  have hsplit : ∑ x, Real.exp (t x) • vecMulVec (U x) (U x) =
+      ∑ i, Real.exp (t (e i)) • vecMulVec (W i) (W i) +
+        ∑ x ∈ (univ.map e)ᶜ, Real.exp (t x) • vecMulVec (U x) (U x) := by
+    rw [← sum_add_sum_compl (univ.map e), sum_map]
+    rfl
+  have hWpd : (∑ i, Real.exp (t (e i)) • vecMulVec (W i) (W i)).PosDef :=
+    posDef_sum_smul_vecMulVec univ _ (fun i _ => Real.exp_pos _) W fun w hw =>
+      eq_zero_of_mulVec_eq_zero hUe (funext fun i => hw i (mem_univ _))
+  have hdet := det_le_det_add_sum_smul_vecMulVec (univ.map e)ᶜ hWpd
+    (fun x => Real.exp (t x)) (fun x _ => (Real.exp_pos _).le) U
+  rw [← hsplit, det_sum_exp_smul_vecMulVec] at hdet
+  have hW2 : 0 < W.det ^ 2 := by positivity [hUe]
+  calc Real.log (W.det ^ 2) + ∑ i, t (e i)
+      = Real.log (W.det ^ 2 * Real.exp (∑ i, t (e i))) := by
+        rw [Real.log_mul hW2.ne' (Real.exp_pos _).ne', Real.log_exp]
+    _ ≤ _ := Real.log_le_log (by positivity) hdet
+
+/-- **The potential is bounded below.** For rows in general position with `d ≤ m = |X|`, the
+potential `log det (∑ₓ exp(tₓ) uₓ uₓᵀ) - (d / m) ∑ₓ tₓ` is bounded below: averaging the window bound
+`log_det_submatrix_sq_add_sum_le` over the `m` cyclic windows `x ↦ x + k`, which cover every point
+exactly `d` times. -/
+private theorem exists_le_log_det_sub {X : Type*} [Fintype X] [Nonempty X] {d : ℕ}
+    (U : Matrix X (Fin d) ℝ) (hU : ∀ e : Fin d ↪ X, (U.submatrix e id).det ≠ 0)
+    (hd : d ≤ Fintype.card X) :
+    ∃ C, ∀ t : X → ℝ, C ≤ Real.log (∑ x, Real.exp (t x) • vecMulVec (U x) (U x)).det -
+      d / Fintype.card X * ∑ x, t x := by
+  set m := Fintype.card X
+  have hm0 : 0 < m := Fintype.card_pos
+  have : NeZero m := ⟨hm0.ne'⟩
+  let σ : X ≃ Fin m := Fintype.equivFin X
+  let e : Fin m → Fin d ↪ X := fun k =>
+    ⟨fun i => σ.symm (k + Fin.castLE hd i), fun i j h => by
+      simpa using (Fin.castLE_injective hd) (add_left_cancel (σ.symm.injective h))⟩
+  have hcount : ∀ t : X → ℝ, ∑ k, ∑ i, t (e k i) = d * ∑ x, t x := by
+    intro t
+    rw [sum_comm]
+    have : ∀ i : Fin d, ∑ k : Fin m, t (e k i) = ∑ x, t x := fun i => by
+      rw [← σ.symm.sum_comp]
+      exact Fintype.sum_equiv (Equiv.addRight (Fin.castLE hd i)) _ _ fun k => rfl
+    simp only [this, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul]
+  refine ⟨(∑ k, Real.log ((U.submatrix (e k) id).det ^ 2)) / m, fun t => ?_⟩
+  have hsum := sum_le_sum fun k (_ : k ∈ (univ : Finset (Fin m))) =>
+    log_det_submatrix_sq_add_sum_le U t (e k) (hU (e k))
+  rw [sum_add_distrib, hcount, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul] at hsum
+  rw [div_le_iff₀ (by exact_mod_cast hm0)]
+  have h2 : (Real.log (∑ x, Real.exp (t x) • vecMulVec (U x) (U x)).det -
+      d / m * ∑ x, t x) * m = m * Real.log (∑ x, Real.exp (t x) • vecMulVec (U x) (U x)).det -
+        d * ∑ x, t x := by
+    field_simp
+  linarith
+
+/-- Changing the single coordinate `t x` to `b` changes `∑ z, g z (t z)` by
+`g x b - g x (t x)`. -/
+private theorem sum_apply_update_eq_add_sub {X β M : Type*} [Fintype X] [DecidableEq X]
+    [AddCommGroup M] (g : X → β → M) (t : X → β) (x : X) (b : β) :
+    ∑ z, g z (Function.update t x b z) = ∑ z, g z (t z) + (g x b - g x (t x)) := by
+  rw [← add_sum_erase _ _ (mem_univ x), ← add_sum_erase _ _ (mem_univ x), Function.update_self,
+    sum_congr rfl fun z hz => by rw [Function.update_of_ne (ne_of_mem_erase hz)]]
+  abel
+
+/-- **Lowering one weight.** Replacing `tₓ` by `tₓ - δ` in `A(t) = ∑ₓ exp(tₓ) uₓ uₓᵀ` multiplies
+`det A(t)` by `1 + (exp(-δ) - 1) qₓ`, where `qₓ = exp(tₓ) uₓᵀ A(t)⁻¹ uₓ` is the leverage of `x`
+(the matrix determinant lemma). -/
+private theorem det_sum_exp_update_sub {X : Type*} [Fintype X] [DecidableEq X] {d : ℕ}
+    (U : Matrix X (Fin d) ℝ) (t : X → ℝ) (x : X) (δ : ℝ)
+    (ht : (∑ z, Real.exp (t z) • vecMulVec (U z) (U z)).PosDef) :
+    (∑ z, Real.exp (Function.update t x (t x - δ) z) • vecMulVec (U z) (U z)).det =
+      (∑ z, Real.exp (t z) • vecMulVec (U z) (U z)).det * (1 + (Real.exp (-δ) - 1) *
+        (Real.exp (t x) * (U x ⬝ᵥ (∑ z, Real.exp (t z) • vecMulVec (U z) (U z))⁻¹ *ᵥ U x))) := by
+  have hupd : ∑ z, Real.exp (Function.update t x (t x - δ) z) • vecMulVec (U z) (U z) =
+      ∑ z, Real.exp (t z) • vecMulVec (U z) (U z) +
+        (Real.exp (t x - δ) - Real.exp (t x)) • vecMulVec (U x) (U x) := by
+    simpa only [sub_smul] using
+      sum_apply_update_eq_add_sub (fun z s => Real.exp s • vecMulVec (U z) (U z)) t x (t x - δ)
+  rw [hupd, det_add_smul_vecMulVec ht.det_pos.ne'.isUnit, sub_eq_add_neg (t x), Real.exp_add]
+  ring
+
+/-- **The scalar step of the near-minimizer argument.** With `δ = ε / (1 + r + ε)`, if lowering a
+weight by `δ` changes the potential by `log (1 + (exp(-δ) - 1) q) + r δ > -δ²`, then the leverage
+`q` is at most `r + ε`. -/
+private theorem le_add_of_neg_sq_lt_log {q r ε : ℝ} (hq : 0 ≤ q) (hr : 0 ≤ r) (hε : 0 < ε)
+    (hy : 0 < 1 + (Real.exp (-(ε / (1 + r + ε))) - 1) * q)
+    (h : -(ε / (1 + r + ε)) ^ 2 <
+      Real.log (1 + (Real.exp (-(ε / (1 + r + ε))) - 1) * q) + r * (ε / (1 + r + ε))) :
+    q ≤ r + ε := by
+  set δ : ℝ := ε / (1 + r + ε) with hδ
+  have hδ0 : 0 < δ := by positivity
+  have hδ1 : δ < 1 := by rw [hδ, div_lt_one (by positivity)]; linarith
+  have hlog := Real.log_le_sub_one_of_pos hy
+  -- `exp(-δ) - 1 ≤ -δ + δ²` for `0 < δ ≤ 1`.
+  have hexp : Real.exp (-δ) - 1 ≤ -δ + δ ^ 2 := by
+    have := Real.abs_exp_sub_one_sub_id_le (x := -δ)
+      (by rw [abs_neg, abs_of_pos hδ0]; exact hδ1.le)
+    have := (abs_le.mp this).2
+    nlinarith
+  have key : δ * (1 - δ) * q < δ ^ 2 + r * δ := by
+    nlinarith [mul_le_mul_of_nonneg_right hexp hq]
+  have key2 : (1 - δ) * q < δ + r := by
+    by_contra hcon
+    push Not at hcon
+    nlinarith [mul_le_mul_of_nonneg_left hcon hδ0.le]
+  have hδdef : δ * (1 + r + ε) = ε := by rw [hδ]; field_simp
+  by_contra hcon
+  push Not at hcon
+  have : (1 - δ) * (r + ε) < δ + r :=
+    lt_of_le_of_lt (mul_le_mul_of_nonneg_left hcon.le (by linarith)) key2
+  nlinarith
+
 /-- **Approximate isotropic position** (Forster's lemma up to `ε`). If the `m = |X|` rows of
 `U : Matrix X (Fin d) ℝ` are in general position (every `d × d` submatrix is invertible) and
 `d ≤ m`, then for every `ε > 0` there are positive weights `p` such that
@@ -200,114 +317,39 @@ theorem exists_isotropic_weights {X : Type*} [Fintype X] {d : ℕ} (U : Matrix X
     posDef_sum_smul_vecMulVec univ _ (fun x _ => Real.exp_pos _) U hspan
   rcases isEmpty_or_nonempty X with hX | hX
   · exact ⟨fun _ => 1, fun _ => one_pos, by simpa [A] using hApd 0, fun x => isEmptyElim x⟩
-  -- Each window `e` bounds `log det A(t)` below by `log det(U_e)² + ∑ᵢ t_{e i}`.
-  have hwin : ∀ (t : X → ℝ) (e : Fin d ↪ X),
-      Real.log ((U.submatrix e id).det ^ 2) + ∑ i, t (e i) ≤ Real.log (A t).det := by
-    intro t e
-    set W := U.submatrix e id
-    have hsplit : A t = ∑ i, Real.exp (t (e i)) • vecMulVec (W i) (W i) +
-        ∑ x ∈ (univ.map e)ᶜ, Real.exp (t x) • vecMulVec (U x) (U x) := by
-      rw [hA]
-      dsimp only
-      rw [← sum_add_sum_compl (univ.map e), sum_map]
-      rfl
-    have hWpd : (∑ i, Real.exp (t (e i)) • vecMulVec (W i) (W i)).PosDef :=
-      posDef_sum_smul_vecMulVec univ _ (fun i _ => Real.exp_pos _) W fun w hw =>
-        eq_zero_of_mulVec_eq_zero (hU e) (funext fun i => hw i (mem_univ _))
-    have hdet := det_le_det_add_sum_smul_vecMulVec (univ.map e)ᶜ hWpd
-      (fun x => Real.exp (t x)) (fun x _ => (Real.exp_pos _).le) U
-    rw [← hsplit, det_sum_exp_smul_vecMulVec] at hdet
-    have hW2 : 0 < W.det ^ 2 := by positivity [hU e]
-    calc Real.log (W.det ^ 2) + ∑ i, t (e i)
-        = Real.log (W.det ^ 2 * Real.exp (∑ i, t (e i))) := by
-          rw [Real.log_mul hW2.ne' (Real.exp_pos _).ne', Real.log_exp]
-      _ ≤ Real.log (A t).det := Real.log_le_log (by positivity) hdet
-  -- The `m` cyclic windows cover every point `d` times, so `φ` is bounded below.
-  set m := Fintype.card X with hm
-  have hm0 : 0 < m := Fintype.card_pos
-  have : NeZero m := ⟨hm0.ne'⟩
-  let σ : X ≃ Fin m := Fintype.equivFin X
-  let e : Fin m → Fin d ↪ X := fun k =>
-    ⟨fun i => σ.symm (k + Fin.castLE hd i), fun i j h => by
-      simpa using (Fin.castLE_injective hd) (add_left_cancel (σ.symm.injective h))⟩
-  set r : ℝ := d / m with hr
-  have hmr : (m : ℝ) * r = d := by rw [hr]; field_simp
-  set C : ℝ := (∑ k, Real.log ((U.submatrix (e k) id).det ^ 2)) / m with hC
-  have hcount : ∀ t : X → ℝ, ∑ k, ∑ i, t (e k i) = d * ∑ x, t x := by
-    intro t
-    rw [sum_comm]
-    have : ∀ i : Fin d, ∑ k : Fin m, t (e k i) = ∑ x, t x := fun i => by
-      rw [← σ.symm.sum_comp]
-      exact Fintype.sum_equiv (Equiv.addRight (Fin.castLE hd i)) _ _ fun k => rfl
-    simp only [this, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul]
-  have hlow : ∀ t : X → ℝ, C ≤ Real.log (A t).det - r * ∑ x, t x := by
-    intro t
-    have hsum := sum_le_sum fun k (_ : k ∈ (univ : Finset (Fin m))) => hwin t (e k)
-    rw [sum_add_distrib, hcount, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul] at hsum
-    rw [hC, div_le_iff₀ (by exact_mod_cast hm0)]
-    have h2 : (Real.log (A t).det - r * ∑ x, t x) * m =
-        m * Real.log (A t).det - d * ∑ x, t x := by
-      rw [← hmr]; ring
-    linarith
-  -- A `δ²`-near-minimizer of `φ` has all leverages below `r + ε`.
-  set φ : (X → ℝ) → ℝ := fun t => Real.log (A t).det - r * ∑ x, t x with hφ
-  have hbdd : BddBelow (Set.range φ) := ⟨C, by rintro _ ⟨t, rfl⟩; exact hlow t⟩
-  set L := ⨅ t, φ t
+  -- The potential `φ(t) = log det A(t) - r ∑ₓ tₓ`, `r = d / m`, is bounded below; take a
+  -- `δ²`-near-minimizer `t` and the weights `pₓ = exp(tₓ)`.
+  set r : ℝ := d / Fintype.card X
   have hr0 : 0 ≤ r := by positivity
+  set φ : (X → ℝ) → ℝ := fun t => Real.log (A t).det - r * ∑ x, t x with hφ
+  obtain ⟨C, hC⟩ := exists_le_log_det_sub U hU hd
+  have hbdd : BddBelow (Set.range φ) := ⟨C, by rintro _ ⟨t, rfl⟩; exact hC t⟩
   set δ : ℝ := ε / (1 + r + ε) with hδ
   have hδ0 : 0 < δ := by positivity
-  have hδ1 : δ < 1 := by rw [hδ, div_lt_one (by positivity)]; linarith
-  obtain ⟨t, ht⟩ : ∃ t, φ t < L + δ ^ 2 :=
+  obtain ⟨t, ht⟩ : ∃ t, φ t < (⨅ t, φ t) + δ ^ 2 :=
     exists_lt_of_ciInf_lt (by linarith [sq_pos_of_pos hδ0])
   refine ⟨fun x => Real.exp (t x), fun x => Real.exp_pos _, hApd t, fun x => ?_⟩
   change Real.exp (t x) * (U x ⬝ᵥ (A t)⁻¹ *ᵥ U x) ≤ r + ε
   set q := Real.exp (t x) * (U x ⬝ᵥ (A t)⁻¹ *ᵥ U x) with hq
   have hq0 : 0 ≤ q := mul_nonneg (Real.exp_pos _).le
     (by simpa using (hApd t).inv.posSemidef.dotProduct_mulVec_nonneg (U x))
+  -- Lowering `tₓ` by `δ` changes `φ` by `log (1 + (exp(-δ) - 1) q) + r δ`, which near-minimality
+  -- keeps above `-δ²`.
   set t' := Function.update t x (t x - δ)
-  have hLt' : L ≤ φ t' := ciInf_le hbdd t'
-  have hAt' : A t' = A t + (Real.exp (t x - δ) - Real.exp (t x)) • vecMulVec (U x) (U x) := by
-    simp only [hA, t']
-    rw [← add_sum_erase _ _ (mem_univ x), ← add_sum_erase _ _ (mem_univ x),
-      Function.update_self, sub_smul]
-    rw [sum_congr rfl fun z hz => by rw [Function.update_of_ne (ne_of_mem_erase hz)]]
-    abel
-  have hsum' : ∑ z, t' z = ∑ z, t z - δ := by
-    simp only [t']
-    rw [← add_sum_erase _ _ (mem_univ x), ← add_sum_erase _ _ (mem_univ x),
-      Function.update_self]
-    rw [sum_congr rfl fun z hz => by rw [Function.update_of_ne (ne_of_mem_erase hz)]]
-    ring
-  have hdet' : (A t').det = (A t).det * (1 + (Real.exp (-δ) - 1) * q) := by
-    rw [hAt', det_add_smul_vecMulVec (hApd t).det_pos.ne'.isUnit, hq, sub_eq_add_neg (t x),
-      Real.exp_add]
-    ring
+  have hdet' : (A t').det = (A t).det * (1 + (Real.exp (-δ) - 1) * q) :=
+    det_sum_exp_update_sub U t x δ (hApd t)
   have hy : 0 < 1 + (Real.exp (-δ) - 1) * q := by
     have h1 := (hApd t').det_pos
     rw [hdet'] at h1
     exact pos_of_mul_pos_right h1 (hApd t).det_pos.le
+  have hsum' : ∑ z, t' z = ∑ z, t z - δ :=
+    (sum_apply_update_eq_add_sub (fun _ s => s) t x (t x - δ)).trans (by ring)
   have hφ' : φ t' = φ t + Real.log (1 + (Real.exp (-δ) - 1) * q) + r * δ := by
     simp only [hφ]
     rw [hdet', Real.log_mul (hApd t).det_pos.ne' hy.ne', hsum']
     ring
-  have hlog := Real.log_le_sub_one_of_pos hy
-  have hexp : Real.exp (-δ) - 1 ≤ -δ + δ ^ 2 := by
-    have := Real.abs_exp_sub_one_sub_id_le (x := -δ)
-      (by rw [abs_neg, abs_of_pos hδ0]; exact hδ1.le)
-    have := (abs_le.mp this).2
-    nlinarith
-  have key : δ * (1 - δ) * q < δ ^ 2 + r * δ := by
-    nlinarith [mul_le_mul_of_nonneg_right hexp hq0]
-  have key2 : (1 - δ) * q < δ + r := by
-    by_contra hcon
-    push Not at hcon
-    nlinarith [mul_le_mul_of_nonneg_left hcon hδ0.le]
-  have hδdef : δ * (1 + r + ε) = ε := by rw [hδ]; field_simp
-  by_contra hcon
-  push Not at hcon
-  have : (1 - δ) * (r + ε) < δ + r :=
-    lt_of_le_of_lt (mul_le_mul_of_nonneg_left hcon.le (by linarith)) key2
-  nlinarith
+  have hLt' : (⨅ t, φ t) ≤ φ t' := ciInf_le hbdd t'
+  exact le_add_of_neg_sq_lt_log hq0 hr0 hε hy (by linarith)
 
 /-- **General position is generic.** For any `U : Matrix X (Fin d) ℝ` there is a matrix `W` such
 that for all sufficiently small `ε ≠ 0` every `d × d` submatrix of `U + ε • W` is invertible.

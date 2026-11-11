@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Pebbling.Basic
 public import Cslib.Computability.Circuit.Program
+public import Mathlib.Data.Set.Card
 import CslibFrontier.Computability.Circuit.Program
 
 /-!
@@ -42,6 +43,8 @@ register count of every gate that reads at least one wire is one lower.
 ## Main results
 
 * `Cslib.Circuits.Program.wellFounded_dag`: the computation DAG is acyclic.
+* `Cslib.Circuits.Program.ncard_dag_adj_le`: with fan-in at most `r`, every wire has at most `r`
+  predecessors.
 * `Cslib.Circuits.Program.registerLTS_mTr_trace_eq`: correctness; every occupied register holds
   the value `p.trace I x` of its wire.
 * `Cslib.Circuits.Program.evaluatesInRegisters_iff_blackPebblable`: `p` evaluates `w` with `s`
@@ -88,6 +91,24 @@ the program order. -/
 theorem Program.wellFounded_dag (p : Program σ n g) : WellFounded p.dag.Adj :=
   ⟨p.wire_induction (fun _ => ⟨_, fun _ ⟨_, _, h, _⟩ => nomatch h⟩)
     fun j ih => ⟨_, fun _ hu => by obtain ⟨k, rfl⟩ := Program.dag_adj_gate.1 hu; exact ih k⟩⟩
+
+/-- With fan-in at most `r`, every wire has at most `r` predecessors in the computation DAG. -/
+theorem Program.ncard_dag_adj_le {p : Program σ n g} {r : ℕ} (hp : p.FanInAtMost r)
+    (v : Wire n g) : {u | p.dag.Adj u v}.ncard ≤ r := by
+  cases v with
+  | input i =>
+    have hset : {u | p.dag.Adj u (.input i)} = ∅ :=
+      Set.eq_empty_of_forall_notMem fun u hu => p.not_dag_adj_input u i hu
+    rw [hset, Set.ncard_empty]
+    exact Nat.zero_le r
+  | gate j =>
+    have hset : {u | p.dag.Adj u (.gate j)} = (p.lines j).wires '' Set.univ := by
+      ext u
+      simp only [Set.mem_ofPred_eq, Program.dag_adj_gate, Set.image_univ, Set.mem_range]
+    rw [hset]
+    refine le_trans (Set.ncard_image_le (Set.toFinite _)) ?_
+    rw [Set.ncard_univ, Nat.card_eq_fintype_card, Fintype.card_fin]
+    exact Program.fanInAtMost_iff.1 hp j
 
 end Cslib.Circuits
 

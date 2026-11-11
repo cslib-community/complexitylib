@@ -236,27 +236,27 @@ private theorem collision_witness (f : BitString n → BitString n) (T K : ℕ)
 
 /-! ### Sorting and detection -/
 
-/-- Records stored in consecutive blocks of bits. -/
+/-- Records stored in consecutive blocks of bits: the encodings joined by
+`BitString.blocksEquiv.symm`. -/
 def pack (records : Fin R → Record n w) : BitString (R * width n w) :=
-  fun bit => encode (records (finProdFinEquiv.symm bit).1) (finProdFinEquiv.symm bit).2
+  BitString.blocksEquiv.symm (encode ∘ records)
 
 /-- Extracting the `j`-th block of `pack records` gives `encode (records j)`. -/
-@[simp] theorem directProductInput_pack (records : Fin R → Record n w) (j : Fin R) :
-    directProductInput (pack records) j = encode (records j) := by
-  funext bit
-  simp [directProductInput, pack]
+@[simp] theorem block_pack (records : Fin R → Record n w) (j : Fin R) :
+    BitString.block (pack records) j = encode (records j) :=
+  congrFun (BitString.block_blocksEquiv_symm _) j
 
 /-- Sort records by padding flag and state with the native Batcher circuit. -/
 def sorted (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
     Fin (BitonicSort.arity d) → Record n w :=
-  fun j => decode (directProductInput
+  fun j => decode (BitString.block
     ((bitonicSortCircuit keyBits d true).eval interpretation (pack records)) j)
 
 private theorem sorted_perm (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
     (List.ofFn (sorted d records)).Perm (List.ofFn records) := by
   have h := (bitonicSortCircuit_perm (keyBits (n := n) (w := w)) d true (pack records)).map decode
   unfold sorted
-  simpa only [List.map_ofFn, Function.comp_def, directProductInput_pack, decode_encode] using h
+  simpa only [List.map_ofFn, Function.comp_def, block_pack, decode_encode] using h
 
 private theorem monotone_key_sorted (d : ℕ) (records : Fin (BitonicSort.arity d) → Record n w) :
     Monotone (key ∘ sorted d records) := by

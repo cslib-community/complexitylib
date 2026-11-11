@@ -63,7 +63,7 @@ theorem exec_highest {w d : ℕ} (hw : 3 ≤ w) (x : Data registers)
   obtain ⟨v, hev, hv, hm⟩ := MSB.Program.exec_scalarCode hw (u.comap msbBank) (hu ▸ hd)
   let z := v.extend msbBank u
   have hz : z.regs (msbBank MSB.Program.output) = d.log2 := by
-    exact ((bank_injective _).extend_apply _ _ _).trans (hv.trans (congrArg Nat.log2 hu))
+    exact (regs_extend_bank _ v u _).trans (hv.trans (congrArg Nat.log2 hu))
   let y := z.set position (d.log2)
   have hezy : Exec (B := .standard) w
       (.op (.copy position (msbBank MSB.Program.output))) z y 1 := by
@@ -92,16 +92,13 @@ theorem exec_boundaries {w q d : ℕ} (x : Data registers) (hq : Fits w q) (hd :
       y.regs (boundaryBank 8) = upperBoundary q d ∧
       y.regs (boundaryBank 9) = ((q >>> d) &&& 1) := by
   let u := moved boundaryInputs x
-  have hf : Frame x u := frame_moved _ _ (by simp [boundaryInputs, boundaryBank, bank])
   have huq : (u.comap boundaryBank).regs BoundaryProgram.query = q := hxq
   have hud : (u.comap boundaryBank).regs BoundaryProgram.position = d := hxd
   obtain ⟨he, hl, hu, hb, hm⟩ := BoundaryProgram.exec (u.comap boundaryBank) hq hd huq hud
-  let v := BoundaryProgram.result (u.comap boundaryBank) q d
-  refine ⟨v.extend boundaryBank u, (exec_moves w _ x).seq (he.rename (bank_injective _)),
-    hf.trans (frame_extend _ (by decide) u v hm), ?_, ?_, ?_⟩
-  · exact ((bank_injective _).extend_apply _ _ _).trans hl
-  · exact ((bank_injective _).extend_apply _ _ _).trans hu
-  · exact ((bank_injective _).extend_apply _ _ _).trans hb
+  obtain ⟨hexec, hframe⟩ := exec_bankCall _ (by decide)
+    (by simp [boundaryInputs, boundaryBank, bank]) he hm
+  exact ⟨_, hexec, hframe, (regs_extend_bank _ _ _ _).trans hl,
+    (regs_extend_bank _ _ _ _).trans hu, (regs_extend_bank _ _ _ _).trans hb⟩
 
 /-- Transfer a full word to the compressor, make a sketch query and return the rank. -/
 def secondQuery (strict : Bool) (src : Fin registers) : Code .standard registers :=

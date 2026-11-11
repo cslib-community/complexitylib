@@ -43,7 +43,7 @@ Three finite counting principles replace probability in the construction of univ
   [S. Schlesinger, *Boolean circuit mass production formalization*][Schlesinger2026MassProduction].
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.LineCode
 

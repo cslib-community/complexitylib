@@ -35,7 +35,7 @@ the absorption of logarithmic error terms into the layout hypothesis.
   the layout hypothesis.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 
@@ -61,7 +61,8 @@ theorem ncard_edgeCut_union_le [Finite E] (S T : Set V) :
 
 /-- **The cut of a disjoint union.** The edges between `S` and `T` lie in the cuts of both `S`
 and `T`, but not in the cut of `S ∪ T`. -/
-theorem ncard_edgeCut_union_add [Finite E] {S T : Set V} (h : Disjoint S T) :
+theorem ncard_edgeCut_union_add {S T : Set V} (h : Disjoint S T)
+    (hS : (G.edgeCut S).Finite := by toFinite_tac) (hT : (G.edgeCut T).Finite := by toFinite_tac) :
     (G.edgeCut (S ∪ T)).ncard + 2 * (G.edgeCut S ∩ G.edgeCut T).ncard =
       (G.edgeCut S).ncard + (G.edgeCut T).ncard := by
   have hd (v : V) : v ∈ S → v ∉ T := fun hv => disjoint_left.mp h hv
@@ -77,8 +78,12 @@ theorem ncard_edgeCut_union_add [Finite E] {S T : Set V} (h : Disjoint S T) :
     have := hd (G.tgt e)
     simp only [mem_union, mem_inter_iff, mem_edgeCut] at he he'
     tauto
-  have := ncard_union_add_ncard_inter (G.edgeCut S) (G.edgeCut T)
-  rw [← h₁, ncard_union_eq h₂] at this
+  have hST : (G.edgeCut (S ∪ T) ∪ (G.edgeCut S ∩ G.edgeCut T)).Finite := by
+    rw [h₁]
+    exact hS.union hT
+  have := ncard_union_add_ncard_inter (G.edgeCut S) (G.edgeCut T) hS hT
+  rw [← h₁, ncard_union_eq h₂ (hST.subset subset_union_left)
+    (hST.subset subset_union_right)] at this
   omega
 
 /-- In a loopless multigraph, the edges leaving a single vertex are the edges at it. -/

@@ -60,7 +60,7 @@ a list size within the `q d n` of Theorem 7.3.1 (Exercise 7.7 states `2 q n`). A
 * [V. Guruswami, A. Rudra, M. Sudan, *Essential Coding Theory*][GuruswamiRudraSudan2019]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Code
 
@@ -321,8 +321,7 @@ private theorem card_filter_hammingDist_le_mul_le_of_mul_le_int [Nonempty α]
   have hq1 : (0 : ℤ) ≤ (q : ℤ) - 1 := by linarith
   have hg : ((q : ℤ) - 1) * A ^ 2 + ((n : ℤ) * M - A) ^ 2 ≤ n * (((q : ℤ) - 1) * P) := by
     rw [sum_add_distrib, ← mul_sum] at hcol
-    have h1 : ((q : ℤ) - 1) * A ^ 2 ≤ ((q : ℤ) - 1) * (n * ∑ i, (a i : ℤ) ^ 2) :=
-      mul_le_mul_of_nonneg_left hcs1 hq1
+    have h1 : ((q : ℤ) - 1) * A ^ 2 ≤ ((q : ℤ) - 1) * (n * ∑ i, (a i : ℤ) ^ 2) := by gcongr
     have h2 : (0 : ℤ) ≤ n := by positivity
     nlinarith
   -- the left side increases in `A` beyond `n M / q`, and `A ≥ M (n - e) ≥ n M / q`

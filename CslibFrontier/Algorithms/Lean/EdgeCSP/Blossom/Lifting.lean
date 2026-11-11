@@ -26,6 +26,7 @@ public section
 namespace Cslib.Logic.PL.CSP.Blossom
 
 open Table DAG Finset
+open Cslib.BitString
 
 variable {F : CSP Table ℕ} {w : Walk F}
 
@@ -91,11 +92,11 @@ theorem lift_entering_augmentation (hF : EdgeInstance F) {f : OccurrenceLabeling
     simp [Walk.flip, BitString.flipOn_apply, hn]
   obtain ⟨hbits, hcentral⟩ := flip_reference_connectors f vs q hqno
   have htransport : transport f vs (r.flip f) (fun _ => false)
-      (oneHot (connectors F vs).length 0) = q.flip (reference f vs) := by
+      (listSingle (connectors F vs).length 0) = q.flip (reference f vs) := by
     rw [restoreWalk_flip hF f vs fallback q hqno]
     exact transport_expandZero hF f vs _ hbits hcentral
   have hnew : ValidLabeling sem (pairFlip
-      (transport f vs (r.flip f) (fun _ => false) (oneHot (connectors F vs).length 0))
+      (transport f vs (r.flip f) (fun _ => false) (listSingle (connectors F vs).length 0))
       (oldPort f vs o hout) (connectorPort f vs o.1 hot)) := by
     rw [htransport, himage, hcp]
     have hv := hp.1.1.valid_take (k + 1) (by omega)

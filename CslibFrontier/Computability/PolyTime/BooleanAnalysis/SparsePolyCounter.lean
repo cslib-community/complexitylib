@@ -22,7 +22,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Mathlib.Data.List.GetD
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
@@ -293,15 +295,6 @@ abbrev SparseSystemInput.heavyThreshold (inp : SparseSystemInput) : ℕ := inp.2
 
 /-- Equation list `eqs` of a `SparseSystemInput`. -/
 abbrev SparseSystemInput.equations (inp : SparseSystemInput) : List (List (List ℕ)) := inp.2.2
-
-/-- Number of variables `n` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputNumVars (inp : HeavyBranchFold.BranchInput) : ℕ := inp.1
-
-/-- Branching variable list `S` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputVars (inp : HeavyBranchFold.BranchInput) : List ℕ := inp.2.1
-
-/-- Equation list `eqs` of a `HeavyBranchFold.BranchInput`. -/
-abbrev branchInputEquations (inp : HeavyBranchFold.BranchInput) : List (List (List ℕ)) := inp.2.2
 
 /-- Native encoding of `SparseSystemInput` (`n` and `k_deg` unary, `s_div` and `b₀` binary). -/
 def encSparseSystemInput : SparseSystemInput ↪ List Bool :=
@@ -623,19 +616,6 @@ private theorem spc_map {α β γ : Type} {encI : α ↪ List Bool} {encA : β �
     ComputableInPolyTime (fun a => (l a).map fun x => f (a, x)) encI (encList encB) :=
   mapWithInput (f := fun a x => f (a, x)) hl hf
 
-private theorem unaryFoldMax (init : ℕ) :
-    ComputableInPolyTime (fun l : List ℕ => l.foldl max init) (encList encUnary) encUnary := by
-  refine foldl' (encA := encUnary) (encL := encList encUnary) (encB := encUnary)
-    (list := id) (init := fun _ => init) (step := max)
-    id' (const init) (of_tidy .unary_max) (B := fun l => init + (encList encUnary l).length)
-    ((PolyBounded.const init).add .self) (fun l i _ => ?_)
-  simp only [encUnary_apply, List.length_replicate]
-  refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
-  simp only [List.mem_cons, forall_eq_or_imp]; refine ⟨Nat.le_add_right _ _, fun x hx => ?_⟩
-  have hsz := SizedListEncoding.length_elem_le (encA := encUnary) (encL := encList encUnary)
-    l x (List.mem_of_mem_take hx)
-  simp only [encUnary_apply, List.length_replicate] at hsz; omega
-
 @[fun_prop]
 theorem computableInPolyTime_checkVarsLt :
     ComputableInPolyTime (fun p : ℕ × List (List (List ℕ)) => checkVarsLt p.1 p.2)
@@ -693,7 +673,7 @@ theorem computableInPolyTime_scopeWidthOn :
 theorem computableInPolyTime_sysMaxDegree :
     ComputableInPolyTime sysMaxDegree encSparseSystem encUnary := by
   let encM := encList encNat
-  exact (unaryFoldMax 0).comp' ((map (length_list encNat)).comp' (of_tidy (.flatten encM)))
+  exact (unary_foldl_max 0).comp' ((map (length_list encNat)).comp' (of_tidy (.flatten encM)))
 
 @[fun_prop]
 theorem computableInPolyTime_branchMaxFactorIncidence :
@@ -702,7 +682,7 @@ theorem computableInPolyTime_branchMaxFactorIncidence :
   let encS := encList (encList (encList encNat)); let encIn := encPair encUnary encS
   have hr := range.comp' (fst encUnary encS); have hvb := unary_to_binary.comp' (snd encIn encUnary)
   have hvd := computableInPolyTime_varDegree.comp' (hvb.prod (fst encIn encUnary).snd')
-  have hmax := (unaryFoldMax 0).comp' (spc_map hr hvd)
+  have hmax := (unary_foldl_max 0).comp' (spc_map hr hvd)
   exact unary_to_binary.comp' (unary_add.comp' (hmax.prod (const 1)))
 
 @[fun_prop]
@@ -711,7 +691,7 @@ theorem computableInPolyTime_branchMaxFactorWidth :
       (encPair encUnary encSparseSystem) encNat := by
   let eEq := encList (encList encNat); let eS := encList eEq; let eI := encPair encUnary eS
   have hsc := computableInPolyTime_scopeWidthOn.comp' (((fst eI eEq).fst').prod (snd eI eEq))
-  exact unary_to_binary.comp' ((unaryFoldMax 1).comp' (spc_map (snd encUnary eS) hsc))
+  exact unary_to_binary.comp' ((unary_foldl_max 1).comp' (spc_map (snd encUnary eS) hsc))
 
 @[fun_prop]
 theorem computableInPolyTime_branchAugmentedIncidence :
@@ -887,7 +867,7 @@ theorem length_heavyVarList_le_div_of_incidence {n b₀ s_div : ℕ} {eqs : List
     (HeavyBranchFold.heavyVarList n b₀ eqs).length ≤ n / s_div := by
   have heq_sum : (eqs.map fun eq => (equationVars eq).length) = eqs.map (scopeWidthOn n) :=
     List.map_congr_left fun eq heq => (scopeWidthOn_eq_length_equationVars (hvars eq heq)).symm
-  have hdiv := HeavyBranchFold.length_heavyVarList_le_div hb₀ hvars; rw [heq_sum] at hdiv
+  have hdiv := HeavyBranchFold.length_heavyVarList_le_div n eqs hb₀; rw [heq_sum] at hdiv
   refine hdiv.trans ((Nat.le_div_iff_mul_le hs).mpr (Nat.le_of_mul_le_mul_right ?_ hb₀))
   have hqb : (eqs.map (scopeWidthOn n)).sum / b₀ * b₀ ≤ (eqs.map (scopeWidthOn n)).sum :=
     Nat.div_mul_le_self _ _
@@ -1028,8 +1008,7 @@ theorem exists_guardedBranchCertificate_time_le (N₀_branch N₁ : ℕ)
       (fun p => (NativeCertificate.ofPolyTime
           (computableInPolyTime_checkBranchFeasible N₀_branch)).time p +
         (NativeCertificate.ofPolyTime computableInPolyTime_prepareBranchEvalInput).time p +
-        ((2 ^ N₁ + 1) * P_ex p + Q_ex p)) :=
-    (hok.1.add hp.1).add (((PolyBounded.const (2 ^ N₁ + 1)).mul hP).add hQ)
+        ((2 ^ N₁ + 1) * P_ex p + Q_ex p)) := by growth_poly
   obtain ⟨C_br, d_br, hCd⟩ := hpoly.exists_le
   refine ⟨C_br, d_br, fun ⟨n', eqs'⟩ hthresh => ?_⟩
   simp only [guardedBranchCertificate, ExhaustiveCountFallback.guardedBranchOfPolyTime,
@@ -1053,7 +1032,7 @@ noncomputable def guardedBranchingCertificate (N₀_branch : ℕ)
   let csolver := guardedBranchCertificate N₀_branch cBranch
   { time := fun inp =>
       HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
-        (2 ^ (branchInputVars inp).length + 1) *
+        (2 ^ inp.vars.length + 1) *
           (HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
             HeavyBranchFold.maxReducedCost csolver.time inp)
     space := fun inp => HeavyBranchFold.stepOverhead (HeavyBranchFold.encBranchInput inp).length +
@@ -1135,9 +1114,7 @@ theorem sparsePolyCounterCertificate_time_le_of_feasible (N₀_top N₀_branch :
   have hto := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_toBranchInput
   have hstep : PolyBounded (fun inp => (encSparseSystemInput inp).length)
       (fun inp => HeavyBranchFold.stepOverhead
-        (HeavyBranchFold.encBranchInput (toBranchInput inp)).length) :=
-    (PolyBounded.of_polynomiallyBounded _ HeavyBranchFold.polynomiallyBounded_stepOverhead).comp
-      computableInPolyTime_toBranchInput.polyBounded_length
+        (HeavyBranchFold.encBranchInput (toBranchInput inp)).length) := by growth_poly
   obtain ⟨C_ov, d_ov, hCov⟩ := ((hok.1.add hto.1).add (hstep.add hstep)).exists_le
   refine ⟨C_ov, d_ov, fun inp R_branch htop hR => ?_⟩
   have hmax : HeavyBranchFold.maxReducedCost (guardedBranchCertificate N₀_branch cBranch).time
@@ -1201,8 +1178,7 @@ theorem exists_real_exp_bound_countSparsePolySystem {ι : Type} {encI : ι ↪ L
   have hproj_len := computableInPolyTime_exhaustProj.polyBounded_length.comp hmk.polyBounded_length
   have hQ : PolyBounded (fun x => (encI x).length)
       (fun x => cMk.time x + (NativeCertificate.ofPolyTime computableInPolyTime_exhaustProj).time
-        (mk x) + Q_ex ((mk x).1, (mk x).2.2)) :=
-    (hcMk.1.add (hpr.1.comp hmk.polyBounded_length)).add (hQ0.comp hproj_len)
+        (mk x) + Q_ex ((mk x).1, (mk x).2.2)) := by growth_poly
   obtain ⟨cm, dm, hcm⟩ := hcMk.1.exists_le
   have ht_fast' (x : ι) (hx : checkTopFeasible N₀_top (mk x) = true) :
       (cFast.time x : ℝ) ≤

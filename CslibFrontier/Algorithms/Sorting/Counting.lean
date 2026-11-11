@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.Finset.Card
 public import Mathlib.Data.Finset.Range
 public import Mathlib.Data.Nat.Count
@@ -24,6 +25,7 @@ public import Mathlib.Order.Interval.Finset.Nat
 ## Main results
 
 * `CountingSort.count_lt_succ`: the prefix-sum update used by a native counting pass.
+* `CountingSort.sum_count_eq_count_lt`: the bucket counts below `T` sum to the prefix count.
 * `CountingSort.position_injective`: every original position has a distinct destination.
 * `CountingSort.position_bijective`: scatter destinations form a permutation of the input.
 * `CountingSort.scatter_span_image`: an actual scattered array's bucket span has exactly
@@ -65,6 +67,13 @@ theorem count_lt_succ (key : ℕ → ℕ) (n b : ℕ) :
     have := (mem_filter.mp hi).2
     have := (mem_filter.mp hj).2
     omega)
+
+/-- The bucket counts below `T` sum to the number of positions whose key is below `T`. -/
+theorem sum_count_eq_count_lt (key : ℕ → ℕ) (n T : ℕ) :
+    ∑ b ∈ range T, Nat.count (fun i => key i = b) n = Nat.count (fun i => key i < T) n := by
+  induction T with
+  | zero => simp
+  | succ T ih => rw [sum_range_succ, ih, count_lt_succ]
 
 /-- Each occurrence lands before the next bucket, and after its own bucket's start. -/
 theorem position_mem (key : ℕ → ℕ) {n i : ℕ} (hi : i < n) :

@@ -242,6 +242,29 @@ section Transcript
 
 variable {Query : Type u} {Response : Query → Type u} {State γ : Type u}
 
+/-- If each oracle call `q` increases a state measure `size : State → ℕ` by at most `cost q` on
+every supported transition, then any `cost`-bounded execution increases `size` by at most `n`. -/
+theorem IsCostBounded.measure_le {cost : Query → ℕ} {program : OracleComp Response γ}
+    {n : ℕ} (h : IsCostBounded cost program n)
+    (oracle : (q : Query) → StateT State PMF (Response q)) (size : State → ℕ)
+    (hstep : ∀ q s res s', (res, s') ∈ (oracle q s).support → size s' ≤ size s + cost q)
+    {s s' : State} {result : γ}
+    (hmem : (result, s') ∈ ((OracleComp.interpret oracle program).run s).support) :
+    size s' ≤ size s + n := by
+  induction h generalizing s with
+  | pure a n =>
+    simp only [run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
+      PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
+    rcases hmem with ⟨-, rfl⟩
+    omega
+  | liftBind q cont n _ ih =>
+    simp only [interpret_bind, interpret_query, StateT.run_bind,
+      Probability.PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff] at hmem
+    obtain ⟨⟨ans, s₁⟩, hans, hcont⟩ := hmem
+    have h₁ := hstep q s ans s₁ hans
+    have h₂ : size s' ≤ size s₁ + n := ih ans hcont
+    omega
+
 /-- Against every stateful oracle, the calls recorded on a supported run cost at most the
 budget. -/
 theorem IsCostBounded.transcript_cost_le {cost : Query → ℕ} {program : OracleComp Response γ}

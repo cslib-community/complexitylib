@@ -188,13 +188,11 @@ def runAll : {k : ℕ} → (Fin k → Protocol X Y Z) → ((Fin k → Z) → Z')
   induction k generalizing Z' with
   | zero =>
     simp only [runAll, run_output]
-    congr 1
-    funext i
+    congr 1 with i : 1
     exact i.elim0
   | succ k ih =>
     rw [runAll, run_bind, ih]
-    congr 1
-    funext i
+    congr 1 with i : 1
     induction i using Fin.cases <;> rfl
 
 /-- Running `k` protocols of depth at most `d` one after another sends at most `k d` bits. -/

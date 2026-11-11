@@ -256,8 +256,7 @@ long code of the label of the end `b`, read at `r`. -/
 private theorem hadamardCode_oneHot_endEmbed (σ : Fin 2 → α) (b : Fin 2) (r : α → Bool) :
     hadamardCode (oneHot σ) (endEmbed b r) = longCode (σ b) r := by
   rw [hadamardCode_endEmbed, longCode_eq_hadamardCode]
-  congr 1
-  funext a
+  congr 1 with a : 1
   by_cases h : σ b = a
   · subst h
     simp

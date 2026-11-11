@@ -25,7 +25,7 @@ of fields, which these facts decode one at a time.
 * `Nat.add_two_pow_mul_lt`: fields of `a` and `b` bits fit in `a + b` bits.
 -/
 
-@[expose] public section
+public section
 
 namespace Nat
 

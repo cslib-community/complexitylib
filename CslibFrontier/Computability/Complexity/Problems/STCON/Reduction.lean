@@ -208,40 +208,11 @@ noncomputable def writer : CounterProgram where
 
 variable {ntm D} (w : List Bool) {B : ℕ}
 
-private theorem flatMap_range_true (M : ℕ) :
-    (List.range M).flatMap (fun _ => [true]) = List.replicate M true := by
-  induction M with
-  | zero => rfl
-  | succ M ih => simp [List.range_succ, List.replicate_succ', ih]
-
 /-- Bounded registers. -/
 private theorem bounded_regs {L u v y : ℕ} (hL : L ≤ B) (hu : u ≤ B) (hv : v ≤ B) (hy : y ≤ B) :
     ∀ r ∈ [L, u, v, y], r ≤ B := by
   simp only [List.mem_cons, List.not_mem_nil, or_false]
   omega
-
-/-- The input length is counted by reading the markers of the framed input. -/
-private theorem reachesOut_count (hL : w.length ≤ B) : ∀ j ≤ w.length,
-    (writer ntm D).ReachesOut (frame w) ((writer ntm D).Active B) (0, [j, 0, 0, 0])
-      (2, [w.length, 0, 0, 0]) [] := by
-  intro j hj
-  induction h : w.length - j generalizing j with
-  | zero =>
-    have : j = w.length := by omega
-    subst this
-    refine ReachesOut.read (show (writer ntm D).instr 0 = _ from rfl)
-      (bounded_regs hL (by omega) (by omega) (by omega)) ?_
-    simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-      getElem?_frame_two_mul_length, readLabel]
-    exact ReachesOut.refl _
-  | succ m ih =>
-    refine ReachesOut.read (show (writer ntm D).instr 0 = _ from rfl)
-      (bounded_regs (by omega) (by omega) (by omega) (by omega)) ?_
-    simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-      getElem?_frame_two_mul (show j < w.length by omega), readLabel]
-    refine ReachesOut.assign (show (writer ntm D).instr 1 = _ from rfl)
-      (bounded_regs (by omega) (by omega) (by omega) (by omega)) ?_
-    simpa using ih (j + 1) (by omega) (by omega)
 
 /-- A counting loop writing `M` set bits. -/
 private theorem reachesOut_ones {b body exit M : ℕ} {bound : Expr}
@@ -266,8 +237,8 @@ private theorem reachesOut_ones {b body exit M : ℕ} {bound : Expr}
     [w.length, i₀, 0, 0] (bounded_regs hL hi₀ (by omega) (by omega))
     (by simp)
   obtain ⟨rfl, -⟩ := hinv
-  rw [flatMap_range_true] at hreach
-  exact hreach
+  rwa [List.flatMap_def, List.map_const', List.length_range,
+    List.flatten_replicate_singleton] at hreach
 
 /-- The entry at labels `29` and `30`: compare the Boolean value of an expression with `0`. -/
 private theorem reachesOut_bit {l : ℕ} {e : Expr} {regs : List ℕ} {b : Bool}
@@ -420,7 +391,14 @@ theorem computableInLogSpace_configurationInstance :
     (i₀ := S) (by omega)
   obtain ⟨regs, hmat, hregs⟩ := reachesOut_matrix (ntm := ntm) (D := D) w hL hN h2
     (i₀ := VB) (by omega)
-  have hchain := (reachesOut_count (ntm := ntm) (D := D) w hL 0 (Nat.zero_le _)).trans
+  -- the input length is counted by reading the markers of the framed input
+  have hcount := reachesOut_count (P := writer ntm D) (n := w.length) (fun j => [j, 0, 0, 0])
+    (u := 0) (show (writer ntm D).instr 0 = _ from rfl) (show (writer ntm D).instr 1 = _ from rfl)
+    (fun _ _ => by simp) (fun j hj => bounded_regs (hj.trans hL) (by omega) (by omega) (by omega))
+    (fun j hj => by simpa using getElem?_frame_two_mul hj)
+    (by simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
+      getElem?_frame_two_mul_length]; decide) 0 (Nat.zero_le _)
+  have hchain := hcount.trans
     (hones₁.trans (ReachesOut.emit (show (writer ntm D).instr 6 = _ from rfl)
       (hreg _ (by omega)) (hones₂.trans (ReachesOut.emit
         (show (writer ntm D).instr 11 = _ from rfl) (hreg _ (by omega))

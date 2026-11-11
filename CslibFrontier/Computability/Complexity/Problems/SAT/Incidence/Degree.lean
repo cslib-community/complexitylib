@@ -28,7 +28,7 @@ This is the degree convention required by the canonical three-port drawing const
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 2.3][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.SAT
 

@@ -44,8 +44,10 @@ multi-round public-coin Interactive Oracle Proof (`PublicCoinIOP`) into a non-in
 * `Cslib.Crypto.Protocols.BCS.IOPCompleteness`, `Cslib.Crypto.Protocols.BCS.IOPSoundness`,
   `Cslib.Crypto.Protocols.BCS.IOPRoundByRoundSoundness`,
   `Cslib.Crypto.Protocols.BCS.IOPKnowledgeSoundnessAt`,
-  `Cslib.Crypto.Protocols.BCS.IOPKnowledgeSoundness`: completeness, soundness, round-by-round
-  soundness, and straight-line knowledge soundness of a `PublicCoinIOP`.
+  `Cslib.Crypto.Protocols.BCS.IOPKnowledgeSoundness`: perfect completeness, rejection of false
+  statements on a given set of good challenge vectors, round-by-round soundness, and
+  straight-line knowledge soundness at one challenge vector and, with zero error, at all of them,
+  for a `PublicCoinIOP`. These are deterministic predicates; none of them bounds a probability.
 * `Cslib.Crypto.Protocols.BCS.BCSOpening`, `Cslib.Crypto.Protocols.BCS.BCSProof`,
   `Cslib.Crypto.Protocols.BCS.rootPrefix`, `Cslib.Crypto.Protocols.BCS.bcsChallenge`: BCS proof
   structure and Fiat–Shamir challenge derivation from Merkle root prefixes.
@@ -69,13 +71,23 @@ multi-round public-coin Interactive Oracle Proof (`PublicCoinIOP`) into a non-in
   for any hash function `H k` and any Fiat–Shamir function `hFS`.
 * `Cslib.Crypto.Protocols.BCS.bcs_sound_or_merkleCollision`,
   `Cslib.Crypto.Protocols.BCS.isCollision_of_bcsVerify_of_iopVerify_eq_false`,
-  `Cslib.Crypto.Protocols.BCS.isCollision_of_bcsVerify_conflict`: committed-table and two-opening
-  binding extraction reducing BCS soundness to IOP soundness and Merkle collision resistance.
+  `Cslib.Crypto.Protocols.BCS.isCollision_of_bcsVerify_conflict`: deterministic Merkle binding.
+  With an injective symbol encoding, an accepted proof whose roots are the Merkle roots of given
+  oracle tables either makes the IOP verifier accept those tables at the Fiat–Shamir challenges
+  or yields an explicit hash collision; two accepted proofs that open one position under a
+  shared round root to symbols with distinct encodings also yield one. These statements involve
+  no language, error bound or adversary; the random-oracle soundness bound is
+  `Cslib.Crypto.Protocols.BCS.bcsROMSoundness_bound` in `CslibFrontier.Crypto.Protocols.BCS.ROM`.
 * `Cslib.Crypto.Protocols.BCS.bcs_knowledge_or_soundness_violation_or_collision`,
   `Cslib.Crypto.Protocols.BCS.bcs_knowledge_or_merkleCollision`,
-  `Cslib.Crypto.Protocols.BCS.rel_iopExtract_of_bcsVerify_of_openings_eq`: straight-line knowledge
-  extraction reduction from accepting BCS proofs to IOP knowledge soundness or an explicit hash
-  collision.
+  `Cslib.Crypto.Protocols.BCS.rel_iopExtract_of_bcsVerify_of_openings_eq`: consequences for an
+  arbitrary relation `rel` and function `iopExtract`. The first splits the accepting case of
+  `bcs_sound_or_merkleCollision` on whether `rel x (iopExtract x oracles)` holds. Assuming
+  `IOPKnowledgeSoundnessAt` at the Fiat–Shamir challenges for the given tables, the second yields
+  `rel x (iopExtract x oracles)` or an explicit hash collision under the hypotheses of
+  `bcs_sound_or_merkleCollision`, and the third yields `rel x (iopExtract x oracles)` when the
+  proof's openings agree with the tables. The random-oracle knowledge-soundness bound is
+  `Cslib.Crypto.Protocols.BCS.bcsROMKnowledgeSoundness_bound`, also in that module.
 
 ## References
 
@@ -192,7 +204,9 @@ def IOPCompleteness (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (rel : Stmt → 
 
 /-- **Soundness** of a `PublicCoinIOP` on a set of non-bad challenge vectors `goodChallenges`: for
 every statement `x ∉ lang`, every family of oracle tables `oracles`, and every challenge vector
-`chals ∈ goodChallenges x oracles`, the IOP verifier rejects. -/
+`chals ∈ goodChallenges x oracles`, the IOP verifier rejects. `goodChallenges` is an arbitrary
+parameter and the predicate bounds no probability; in particular it says nothing about how likely
+a challenge vector is to lie outside `goodChallenges x oracles`. -/
 def IOPSoundness (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (lang : Set Stmt)
     (goodChallenges : Stmt → (Fin r → OracleTable d Sym) → Set (Fin r → Chal)) : Prop :=
   ∀ x ∉ lang, ∀ (oracles : Fin r → OracleTable d Sym) (chals : Fin r → Chal),
@@ -219,6 +233,34 @@ structure IOPRoundByRoundSoundness (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (
     doomed x (List.ofFn fun j : Fin r => (oracles j, chals j)) →
       iopVerify iop x chals oracles = false
 
+/-- A prefix predicate `doomed x` that holds on the empty prefix and survives every round
+satisfying `goodStep` holds on the complete transcript when every round satisfies `goodStep`. -/
+theorem doomed_ofFn_of_goodSteps {doomed : Stmt → List (OracleTable d Sym × Chal) → Prop}
+    {goodStep : Stmt → List (OracleTable d Sym × Chal) → OracleTable d Sym → Chal → Prop}
+    {x : Stmt} (hinit : doomed x [])
+    (hstep : ∀ pref π c, doomed x pref → goodStep x pref π c → doomed x (pref ++ [(π, c)]))
+    (oracles : Fin r → OracleTable d Sym) (chals : Fin r → Chal)
+    (hsteps : ∀ j : Fin r,
+      goodStep x ((List.ofFn fun i : Fin r => (oracles i, chals i)).take j.val)
+        (oracles j) (chals j)) :
+    doomed x (List.ofFn fun j : Fin r => (oracles j, chals j)) := by
+  set tr := List.ofFn fun j : Fin r => (oracles j, chals j)
+  have hlen : tr.length = r := List.length_ofFn
+  suffices ∀ m ≤ r, doomed x (tr.take m) by
+    simpa only [← hlen, List.take_length] using this r le_rfl
+  intro m hm
+  induction m with
+  | zero =>
+    simpa only [List.take_zero] using hinit
+  | succ m ih =>
+    have hmr : m < r := hm
+    have hmlen : m < tr.length := by simpa only [hlen] using hmr
+    rw [List.take_succ_eq_append_getElem hmlen]
+    have hget : tr[m] = (oracles ⟨m, hmr⟩, chals ⟨m, hmr⟩) := by
+      simp [tr]
+    rw [hget]
+    exact hstep (tr.take m) (oracles ⟨m, hmr⟩) (chals ⟨m, hmr⟩) (ih hmr.le) (hsteps ⟨m, hmr⟩)
+
 /-- If every round's challenge satisfies `goodStep` under `IOPRoundByRoundSoundness`, then the IOP
 verifier rejects `x ∉ lang`. -/
 theorem IOPRoundByRoundSoundness.iopVerify_eq_false
@@ -230,25 +272,9 @@ theorem IOPRoundByRoundSoundness.iopVerify_eq_false
     (hsteps : ∀ j : Fin r,
       goodStep x ((List.ofFn fun i : Fin r => (oracles i, chals i)).take j.val)
         (oracles j) (chals j)) :
-    iopVerify iop x chals oracles = false := by
-  apply hrbr.reject_of_doomed
-  set tr := List.ofFn fun j : Fin r => (oracles j, chals j)
-  have hlen : tr.length = r := List.length_ofFn
-  suffices ∀ m ≤ r, doomed x (tr.take m) by
-    simpa only [← hlen, List.take_length] using this r le_rfl
-  intro m hm
-  induction m with
-  | zero =>
-    simpa only [List.take_zero] using hrbr.init_doomed x hx
-  | succ m ih =>
-    have hmr : m < r := hm
-    have hmlen : m < tr.length := by simpa only [hlen] using hmr
-    rw [List.take_succ_eq_append_getElem hmlen]
-    have hget : tr[m] = (oracles ⟨m, hmr⟩, chals ⟨m, hmr⟩) := by
-      simp [tr]
-    rw [hget]
-    exact hrbr.step_doomed x (tr.take m) (oracles ⟨m, hmr⟩) (chals ⟨m, hmr⟩)
-      (ih hmr.le) (hsteps ⟨m, hmr⟩)
+    iopVerify iop x chals oracles = false :=
+  hrbr.reject_of_doomed x oracles chals
+    (doomed_ofFn_of_goodSteps (hrbr.init_doomed x hx) (hrbr.step_doomed x) oracles chals hsteps)
 
 /-- **Knowledge soundness at a challenge vector** `(x, chals, oracles)`: if the IOP verifier accepts
 `oracles` at challenge `chals`, the straight-line IOP knowledge extractor `iopExtract` recovers a
@@ -258,8 +284,8 @@ def IOPKnowledgeSoundnessAt (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (rel : S
     (oracles : Fin r → OracleTable d Sym) : Prop :=
   iopVerify iop x chals oracles = true → rel x (iopExtract x oracles)
 
-/-- **Straight-line knowledge soundness** of a `PublicCoinIOP`: whenever `iopVerify` accepts
-`oracles` on `(x, chals)`, `iopExtract x oracles` satisfies `rel x`. -/
+/-- **Zero-error straight-line knowledge soundness** of a `PublicCoinIOP`: whenever `iopVerify`
+accepts `oracles` on `(x, chals)`, `iopExtract x oracles` satisfies `rel x`. -/
 def IOPKnowledgeSoundness (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (rel : Stmt → Wit → Prop)
     (iopExtract : Stmt → (Fin r → OracleTable d Sym) → Wit) : Prop :=
   ∀ x chals oracles, IOPKnowledgeSoundnessAt iop rel iopExtract x chals oracles
@@ -612,14 +638,17 @@ theorem rel_iopExtract_of_bcsVerify_of_openings_eq
     rel x (iopExtract x oracles) :=
   hks (iopVerify_eq_true_of_bcsVerify_of_openings_eq hver hagree)
 
-/-- **Three-way BCS knowledge extraction reduction**: for any straight-line IOP extractor
+/-- **Three-way case split of committed-table binding**: for an arbitrary relation `rel` and any
 `iopExtract : Stmt → (Fin r → OracleTable d Sym) → Wit`, any accepting BCS proof `prf` against
 committed oracle tables `oracles` (with `encSym` injective) satisfies at least one of:
 1. `rel x (iopExtract x oracles)` (the IOP extractor recovers a valid witness for `x`),
 2. `iopVerify iop x (bcsChallenge hFS x prf.roots) oracles = true ∧ ¬ rel x (iopExtract x oracles)`
    (`oracles` violates IOP knowledge soundness at the Fiat–Shamir challenge), or
 3. `bcsExtractTableCollision` extracts an explicit hash collision for `H k`
-   ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024], Theorem 26.1.1). -/
+   ([BenSassonChiesaSpooner2016]; compare [ChiesaYogev2024], Theorem 26.1.1).
+
+This is `bcs_sound_or_merkleCollision` with its accepting case split on whether
+`rel x (iopExtract x oracles)` holds. -/
 theorem bcs_knowledge_or_soundness_violation_or_collision
     {iop : PublicCoinIOP r d Stmt Wit Sym Chal} (rel : Stmt → Wit → Prop)
     (iopExtract : Stmt → (Fin r → OracleTable d Sym) → Wit)

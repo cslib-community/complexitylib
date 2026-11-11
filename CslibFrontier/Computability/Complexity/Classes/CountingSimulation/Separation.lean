@@ -93,9 +93,7 @@ private theorem exists_diagonal_bound_le (hTn : ∀ n, n ≤ T n) :
     (p := fun m => (4 * m + 4) ^ 5) (by fun_prop)
   refine ⟨8 * C₀, fun n => ?_⟩
   set m := T n / 4 with hm
-  have h₁ : n + 1 ≤ 4 * m + 4 := by
-    have := hTn n
-    omega
+  have h₁ : n + 1 ≤ 4 * m + 4 := by grind
   have h₂ : (n + 1) ^ 5 ≤ C₀ * 2 ^ m := (Nat.pow_le_pow_left h₁ 5).trans (hC₀ m)
   have h₃ : (2 ^ m + 1) ^ 3 ≤ 8 * 2 ^ (3 * m) := by
     have : 1 ≤ 2 ^ m := Nat.one_le_two_pow
@@ -116,9 +114,7 @@ private theorem eventually_le_two_pow_div_four (hTn : ∀ n, n ≤ T n) {e : ℕ
   have hexp : e n ≤ u := (Nat.le_div_iff_mul_le (by norm_num)).mpr (by omega)
   -- `2 c` is below `2 ^ u`
   have hcu : 2 * c ≤ 2 ^ u := by
-    have : 2 * c + 1 ≤ u := by
-      have := hTn n
-      omega
+    have : 2 * c + 1 ≤ u := by grind
     exact (Nat.le_succ _).trans (this.trans Nat.lt_two_pow_self.le)
   have hu2 : 2 ^ u * 2 ^ u ≤ 2 ^ (T n / 4) := by
     rw [← pow_add]

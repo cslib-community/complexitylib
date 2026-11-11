@@ -54,6 +54,9 @@ functions that reach `r` correspond to the in-arborescences rooted at `r`, by `T
   functions.
 * `Digraph.det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence`: the directed
   matrix-tree theorem, counting form.
+* `Digraph.finsum_isInArborescence_eq_of_balanced`,
+  `Digraph.natCard_isInArborescence_eq_of_balanced`: root independence of the arborescence weight
+  sum and count on balanced digraphs.
 
 ## References
 
@@ -262,6 +265,15 @@ private theorem det_parentMatrix_of_acyclic {f : {v // v ≠ r} → V} (hf : Acy
   · refine Finset.prod_eq_one fun i _ => ?_
     simp [parentMatrix, hne i]
 
+open Classical in
+/-- The determinant of the parent matrix is `1` for an acyclic parent function and `0`
+otherwise. -/
+private theorem det_parentMatrix (f : {v // v ≠ r} → V) :
+    (parentMatrix f : Matrix _ _ R).det = if Acyclic f then 1 else 0 := by
+  split_ifs with hf
+  · exact det_parentMatrix_of_acyclic hf
+  · exact det_parentMatrix_of_not_acyclic hf
+
 /-- The determinant of the reduced Laplacian expands over parent functions. -/
 private theorem det_laplacian_submatrix_eq_sum (A : Matrix V V R) (r : V) :
     (A.laplacian.submatrix (Subtype.val : {v // v ≠ r} → V) Subtype.val).det =
@@ -301,14 +313,7 @@ theorem det_laplacian_submatrix_eq_finsum_isInArborescence (A : Matrix V V R) (r
         ∏ᶠ (p : V × V) (_ : T.Adj p.1 p.2), A p.1 p.2 := by
   classical
   rw [det_laplacian_submatrix_eq_sum]
-  have hterm : ∀ f : {v // v ≠ r} → V,
-      (∏ i : {v // v ≠ r}, A i (f i)) * (parentMatrix f : Matrix _ _ R).det =
-        if Acyclic f then ∏ i : {v // v ≠ r}, A i (f i) else 0 := by
-    intro f
-    split_ifs with hf
-    · rw [det_parentMatrix_of_acyclic hf, mul_one]
-    · rw [det_parentMatrix_of_not_acyclic hf, mul_zero]
-  simp only [hterm]
+  simp only [det_parentMatrix, mul_ite, mul_one, mul_zero]
   rw [← Finset.sum_filter, Finset.sum_subtype (p := Acyclic) _ (fun f => by simp),
     ← finsum_subtype_eq_finsum_cond, ← finsum_comp_equiv parentEquiv, finsum_eq_sum_of_fintype]
   refine Finset.sum_congr rfl fun f _ => ?_
@@ -332,9 +337,8 @@ theorem det_laplacian_submatrix_eq_finsum_reachable (A : Matrix V V R) (r : V) :
     ⟨fun h v => exists_iterate_of_reflTransGen f (h v),
       fun h v => (isInArborescence_toDigraph h).reachable v⟩
   change _ = if ∀ v, Relation.ReflTransGen (toDigraph f).Adj v r then _ else _
-  split_ifs with hf
-  · rw [det_parentMatrix_of_acyclic (hiff.mp hf), mul_one]
-  · rw [det_parentMatrix_of_not_acyclic (mt hiff.mpr hf), mul_zero]
+  rw [det_parentMatrix, mul_ite, mul_one, mul_zero]
+  exact if_congr hiff.symm rfl rfl
 
 omit [Fintype V] [DecidableEq V] in
 open Classical in
@@ -370,6 +374,37 @@ theorem det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence (R : Type*
   congr 2
   ext T
   simp only [Finset.mem_filter, Finset.mem_univ, true_and, and_comm]
+
+omit [DecidableEq V] in
+/-- For a balanced weight matrix (`∑ w, A v w = ∑ u, A u v`), the weighted sum of spanning
+in-arborescences rooted at `u` equals that rooted at `v`. -/
+theorem finsum_isInArborescence_eq_of_balanced (A : Matrix V V R)
+    (hbal : ∀ v, ∑ w, A v w = ∑ u, A u v) (u v : V) :
+    (∑ᶠ (T : Digraph V) (_ : T.IsInArborescence u),
+        ∏ᶠ (p : V × V) (_ : T.Adj p.1 p.2), A p.1 p.2) =
+      ∑ᶠ (T : Digraph V) (_ : T.IsInArborescence v),
+        ∏ᶠ (p : V × V) (_ : T.Adj p.1 p.2), A p.1 p.2 := by
+  classical
+  rw [← det_laplacian_submatrix_eq_finsum_isInArborescence A u,
+    ← det_laplacian_submatrix_eq_finsum_isInArborescence A v]
+  exact Matrix.det_laplacian_submatrix_eq A hbal u v
+
+omit [DecidableEq V] in
+/-- For a finite balanced digraph (`∀ v, outdeg v = indeg v`), the number of spanning
+in-arborescences rooted at `u` equals that rooted at `v` ([Stanley2013], Corollary 10.3 for
+simple digraphs, without assuming connectivity). -/
+theorem natCard_isInArborescence_eq_of_balanced (G : Digraph V) [DecidableRel G.Adj]
+    (hbal : ∀ v, (Finset.univ.filter fun w => G.Adj v w).card =
+      (Finset.univ.filter fun u => G.Adj u v).card) (u v : V) :
+    Nat.card {T : Digraph V // T ≤ G ∧ T.IsInArborescence u} =
+      Nat.card {T : Digraph V // T ≤ G ∧ T.IsInArborescence v} := by
+  classical
+  apply Nat.cast_injective (R := ℤ)
+  rw [← det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ G u,
+    ← det_laplacian_adjMatrix_submatrix_eq_natCard_isInArborescence ℤ G v]
+  refine Matrix.det_laplacian_submatrix_eq (G.adjMatrix ℤ) (fun x => ?_) u v
+  simp only [adjMatrix_apply, Finset.sum_boole, Nat.cast_inj]
+  simpa only [Finset.filter_univ_mem] using hbal x
 
 end Det
 

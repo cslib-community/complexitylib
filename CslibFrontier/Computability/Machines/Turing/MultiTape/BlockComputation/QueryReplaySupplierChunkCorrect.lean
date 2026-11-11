@@ -33,10 +33,10 @@ theorem answer_runFrom_prepare {q r m : ℕ} (M : MultiTapeTM k Bool Q) (e : Q �
     (w : List Bool) (b : ℕ) [NeZero b] (σ : ℕ) (i : Fin q)
     (limit counter stride : ℕ) (hb : Encoding.width k s b ≤ r * m) (chunk : Fin r)
     (hcapacity : Encoding.width k s b ≤ limit.size) :
-    let words := Assignments.labels k (limit, counter, stride, Encoding.width k s b)
+    let words := Assignments.labels k ⟨limit, counter, stride, Encoding.width k s b⟩
     let value := gate (MultiTapePTM.ofDeterministic M) w b (scheduleOfNat k q σ) i
-      ((Encoding.NativeChecked.parse (k := k) e (b, words.1)).map fun raw => raw.toView b)
-      (fun h δ => (Encoding.NativeChecked.parse (k := k) e (b, words.2 h δ)).map
+      ((Encoding.NativeChecked.parse (k := k) e (b, words.previous)).map fun raw => raw.toView b)
+      (fun h δ => (Encoding.NativeChecked.parse (k := k) e (b, words.providers h δ)).map
         fun raw => raw.toView b)
     answer M e ((machine M e).runFrom w
       (prepare e ((m, chunk), (w.length, b, σ, i, limit, counter, stride))) b) =

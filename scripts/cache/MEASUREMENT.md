@@ -47,7 +47,7 @@ windows/quotas and inventory them completely, rather than silently relying on AP
    sources and the unmodified `cache_handoff.source_context` checks. It records source SHA,
    toolchain, dependency pins, input digests, image/platform and selection. A HEAD request must
    show the target's public mapping is absent. Dispatch and already-published targets are excluded.
-2. Normal Actions-cache, toolchain, Mathlib and Complexitylib bootstrap run once. The selected
+2. Normal Actions-cache, toolchain, Mathlib and cslib-frontier bootstrap run once. The selected
    case captures the existing remote-cache helper's output. Before any arm, the driver verifies
    the reported remote revision and Actions matched-key revision are strict ancestors, records
    cold/unknown cases explicitly, and repeats the target-publication check. Source code and pins

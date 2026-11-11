@@ -140,8 +140,7 @@ private theorem smallCapacity_state : smallCapacityActual =
     ⟨1 / 20480000, fun _ => defaultEntry (1 / 20480000)⟩ := by
   change advance univ 1 2 (dyadicFloor (1 / 20000) 1 0) 0 ⟨0, 0⟩ = _
   simp only [advance, add_zero, smallCapacity_default]
-  congr 1
-  funext y
+  congr 1 with y : 1
   rw [← smallCapacity_default]
   apply update_eq_default_of_size_le
   rw [smallCapacity_threshold]

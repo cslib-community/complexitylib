@@ -140,11 +140,11 @@ example : ∃ v : Fin 3 → P, (∀ i, ‖v i‖ = 1) ∧
 /-! ### The bridge to `MaxCut.cutWeight` -/
 
 /-- A weighted path `0 - 1 - 2` with weights `3` and `5`, and a self-loop of weight `7`. -/
-def pathL : List ((ℕ × ℕ) × ℕ) := [((0, 1), 3), ((1, 2), 5), ((2, 2), 7)]
+def pathL : List Cslib.Complexity.MaxCut.WeightedEdge := [⟨0, 1, 3⟩, ⟨1, 2, 5⟩, ⟨2, 2, 7⟩]
 
 /-- Cutting off vertex `1` cuts both path edges but never the self-loop. -/
-example : cutValue (fun i : Fin pathL.length => pathL[i].1) (fun i => (pathL[i].2 : ℝ))
-    (fun n => decide (n = 1)) = 8 := by
+example : cutValue (fun i : Fin pathL.length => (pathL[i].u, pathL[i].v))
+    (fun i => (pathL[i].weight : ℝ)) (fun n => decide (n = 1)) = 8 := by
   rw [cutValue_eq_cutWeight,
     show Cslib.Complexity.MaxCut.cutWeight pathL (fun n => decide (n = 1)) = 8 by decide]
   norm_num

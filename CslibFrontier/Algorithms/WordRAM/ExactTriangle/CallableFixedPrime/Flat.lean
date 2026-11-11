@@ -80,14 +80,9 @@ theorem runs_input {W m n g p : ℕ} (values : List ℤ)
   let b := workspaceBase n
   let w₀ := sourceWidth n (D m) g p T + 2
   have fit : Fits W (b + 4 * M + 4 * M + 1024) := admission_fits hW
-  have hw₀ : w₀ ≤ W := by
-    have h4M : Fits W (4 * M) := fit.of_le (by omega)
-    change 4 * M < 2 ^ W at h4M
-    have hpw : 2 ^ w₀ = 4 * M := pow_sourceWidth_add_two n (D m) g p T
-    by_contra h
-    have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ (2 : ℕ)) (by omega : W ≤ w₀)
-    rw [hpw] at hpow
-    omega
+  have hw₀ : w₀ ≤ W := (fit.lt_of_pow_le (k := w₀) (by
+    rw [pow_sourceWidth_add_two]
+    omega)).le
   obtain ⟨hi₀, hinitfit⟩ := input_low_admission (m := m) (g := g) (p := p) values hlen
   obtain ⟨x, hinit, xmem, xn, xD, xg, xp, xab, xbc, xac, xb⟩ := exec_entryHeader values hinitfit
   have hi : InputFits W (PreparationInput.input n (D m) g p values) := hi₀.mono hw₀
@@ -96,25 +91,16 @@ theorem runs_input {W m n g p : ℕ} (values : List ℤ)
   have hinitial : ExecWithin W entryHeader
       (.init (PreparationInput.input n (D m) g p values)) x 14 :=
     ExecWithin.mono_width entryHeader_fixed.2 hinit hw₀
-  have vab (q : ℕ) (hq : q < n * n) :
-      x.mem (x.regs Reg.ab + q) = Signed.encode (values.getD q 0) := by
-    rw [xab, xmem]
-    exact PreparationInput.input_word n (D m) g p values q
-  have vbc (q : ℕ) (hq : q < n * n) :
-      x.mem (x.regs Reg.bc + q) = Signed.encode (values.getD (n * n + q) 0) := by
-    rw [xbc, xmem]
-    simpa only [Data.init, Nat.add_assoc] using
-      PreparationInput.input_word n (D m) g p values (n * n + q)
-  have vac (q : ℕ) (hq : q < n * n) : x.mem (x.regs Reg.ac + q) =
-      Signed.encode (values.getD (2 * (n * n) + q) 0) := by
-    rw [xac, xmem]
-    simpa only [Data.init, two_mul, Nat.add_assoc] using
-      PreparationInput.input_word n (D m) g p values (2 * (n * n) + q)
+  have word (q : ℕ) : x.mem (5 + q) = Signed.encode (values.getD q 0) :=
+    (congrFun xmem _).trans (PreparationInput.input_word n (D m) g p values q)
   obtain ⟨a, hout, y, hy, ybound, yf, ys, yiff, yw, yframe, -⟩ := exec values hlen hD hg hp hN
     x xn xD xg xp xb (by rw [xab]; dsimp only [workspaceBase]; omega)
     (by rw [xbc]; dsimp only [workspaceBase]; omega)
-    (by rw [xac]; dsimp only [workspaceBase]; omega) vab vbc vac hx
-    (fit.of_le (by dsimp only [b, M, T] at *; omega))
+    (by rw [xac]; dsimp only [workspaceBase]; omega)
+    (fun q _ => by rw [xab]; exact word q)
+    (fun q _ => by rw [xbc]; simpa only [Nat.add_assoc] using word (n * n + q))
+    (fun q _ => by rw [xac]; simpa only [two_mul, Nat.add_assoc] using word (2 * (n * n) + q))
+    hx (fit.of_le (by dsimp only [b, M, T] at *; omega))
   have he : ExecWithin W entryProgram
       (.init (PreparationInput.input n (D m) g p values)) y
       (14 + timeBound (m := m) _ g p values a.mem) := hinitial.seq hy

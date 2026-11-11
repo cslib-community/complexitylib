@@ -3,7 +3,7 @@
 #
 # Usage: scripts/cache/get.sh            (from the repository root or any worktree)
 #
-# Fetches Mathlib's cache, then Complexitylib's outputs for the nearest ancestor of HEAD that
+# Fetches Mathlib's cache, then cslib-frontier's outputs for the nearest ancestor of HEAD that
 # `main` CI has uploaded (Lake looks back up to 100 commits). Missing outputs are not an error:
 # `lake build` compiles whatever the cache did not provide. See scripts/cache/README.md.
 set -u

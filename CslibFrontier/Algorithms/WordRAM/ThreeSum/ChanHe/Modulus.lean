@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Algorithms.WordRAM.ThreeSum.ChanHe.Search
 import CslibFrontier.Algorithms.ThreeSum.ChanHe.SelectorBounds
+import CslibFrontier.Computability.GenericRAM.Signed.Fits
 
 /-!
 # Native setup of the two Chan–He prime searches
@@ -220,13 +221,6 @@ private theorem same_source {x y : Data 64} (h : Same x y) (j : Fin 3) :
     y.regs (CountCall.source j) = x.regs (CountCall.source j) :=
   h.1 _ (by dsimp [Parameter, CountCall.source]; omega)
 
-private theorem signed_nat_mono {w a b : ℕ} (h : GenericRAM.Signed.Fits w (b : ℤ))
-    (hab : a ≤ b) : GenericRAM.Signed.Fits w (a : ℤ) := by
-  refine ⟨h.1, ?_, lt_of_le_of_lt (by exact_mod_cast hab) h.2.2⟩
-  have hnonneg : (0 : ℤ) ≤ a := Nat.cast_nonneg _
-  have hpower : (0 : ℤ) ≤ 2 ^ (w - 1) := by positivity
-  omega
-
 private structure LocalFits (w : ℕ) (x : Data 64) : Prop where
   source : ∀ j, Fits (w + 2) (x.regs (CountCall.source j) + x.regs (CountCall.length j))
   scratch : ∀ j, Fits (w + 2) (x.regs CountCall.scratch + x.regs (CountCall.length j))
@@ -300,7 +294,7 @@ private theorem exec_search {w : ℕ} (x y : Data 64) (values : Fin 3 → ℕ �
     rw [hp, hy.2 _ (by omega)]
     exact hbitmap q hq'
   obtain ⟨z, he, hr, hmem, ha⟩ := Search.exec y values hfactor
-    (by rw [hm]; exact signed_nat_mono hmod hM)
+    (by rw [hm]; exact hmod.of_natAbs_le hM)
     (by simpa only [hm] using hfits.limit) (by simpa only [hp, hm] using hfits.bitmap)
     (by simpa only [hp, hm, hk] using hbefore)
     hybitmap
@@ -368,7 +362,7 @@ private theorem exec_counts {w M : ℕ} (x y : Data 64) (values : Fin 3 → ℕ 
     rw [hs, hy.2 _ (by have := hsk j; omega)]
     exact hinput j i hi
   obtain ⟨z, he, hv, hr, hmem⟩ := CountTriple.exec y values hM
-    (signed_nat_mono hmod hMle) hmodreg (by simpa only [hl] using hvalues)
+    (hmod.of_natAbs_le hMle) hmodreg (by simpa only [hl] using hvalues)
     (by simpa only [hs, hl] using hfits.source)
     (by simpa only [hk, hl] using hfits.scratch)
     (by rw [hd]; exact hfits.histogram.of_le (Nat.add_le_add_left hMle _))
@@ -455,8 +449,8 @@ theorem exec {w : ℕ} (x : Data 64) (values : Fin 3 → ℕ → ℤ)
     simp only [Nat.one_mul, hacut, hcard] at hbp
     exact hbp.trans (first_selector x values hinj)
   let c := ((b.set first p).set Search.two 2).set CountCall.modulus (2 * p)
-  have hpf : GenericRAM.Signed.Fits w (p : ℤ) := signed_nat_mono hmod
-    (hp.2.trans (Nat.le_self_pow two_ne_zero _))
+  have hpf : GenericRAM.Signed.Fits w (p : ℤ) :=
+    hmod.of_natAbs_le (hp.2.trans (Nat.le_self_pow two_ne_zero _))
   have henc : encode (p : ℤ) = 2 * p := by simp [encode]
   have hencoded : Fits (w + 2) (2 * p) := by
     rw [← henc]

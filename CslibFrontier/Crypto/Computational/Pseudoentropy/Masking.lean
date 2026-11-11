@@ -11,7 +11,7 @@ public import CslibFrontier.Probability.Entropy
 public import CslibFrontier.Crypto.Computational.Prediction
 public import CslibFrontier.Crypto.Computational.Hybrid.Sequence
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Boosting.Sampling
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
@@ -77,7 +77,7 @@ theorem eval_maskBit (mask : ProbComp Bool) (truth : Bool) :
     ProbComp.eval (maskBit mask truth) = (ProbComp.eval mask).bind
       (fun replace => if replace then PMF.uniformOfFintype Bool else PMF.pure truth) := by
   rw [maskBit, ProbComp.eval_bind]
-  congr 1; funext replace; cases replace <;> simp [ProbComp.eval_uniform]
+  congr 1 with replace : 1; cases replace <;> simp [ProbComp.eval_uniform]
 
 /-- The original label remains with probability `1 - maskProbability / 2`. -/
 theorem eval_maskBit_apply (mask : ProbComp Bool) (truth bit : Bool) :

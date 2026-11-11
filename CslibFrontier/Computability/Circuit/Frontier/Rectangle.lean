@@ -133,9 +133,7 @@ theorem exists_thick_or_ncard_lt [Finite ι] [Finite U] [Nonempty U] {T : Set (�
   have hex : ∃ d, K ≤ Nat.card U ^ d := ⟨_, hle⟩
   obtain ⟨d, hdK, hdmin⟩ : ∃ d, K ≤ Nat.card U ^ d ∧ ∀ d' < d, Nat.card U ^ d' < K :=
     ⟨Nat.find hex, Nat.find_spec hex, fun d' hd' => not_le.mp (Nat.find_min hex hd')⟩
-  have hdR : d ≤ Rᶜ.ncard := by
-    by_contra! h
-    exact absurd hle (not_le.mpr (hdmin _ h))
+  have hdR : d ≤ Rᶜ.ncard := by grind
   obtain ⟨D, hDR, rfl⟩ := exists_subset_card_eq hdR
   set B : Set (↥Dᶜ → U) := Dᶜ.domRestrict '' T
   have hT : T = rectangle D univ B :=

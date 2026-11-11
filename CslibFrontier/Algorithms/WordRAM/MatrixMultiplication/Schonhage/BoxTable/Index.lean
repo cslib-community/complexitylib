@@ -117,6 +117,13 @@ theorem count_eligible_eq_card_boxes (L m t : ℕ) :
     exact ⟨cubeSlot π, mem_filter.mpr ⟨mem_range.mpr (cubeSlot_lt hp),
       eligible_cubeSlot hp⟩, slotCube_cubeSlot hp⟩
 
+/-- Every eligible slot below the directory bound has compact rank below `(boxes L m t).card`. -/
+theorem count_lt_card_boxes {L m t s : ℕ} (hs : s < (m - t + 1) * 10 ^ L)
+    (hv : Eligible L (m - t) s) :
+    Nat.count (Eligible L (m - t)) s < (boxes L m t).card := by
+  have h := Nat.count_strict_mono hv hs
+  rwa [count_eligible_eq_card_boxes] at h
+
 /-- The native subtraction computes a replacement leaf's existing decimal index exactly. -/
 theorem leafIndex_update_P0 {L : ℕ} (τ : Leaf L) (ℓ : Fin L) (d : Fin 10)
     (hτ : τ ℓ = .P0) :

@@ -51,7 +51,7 @@ into classes on which membership in `T` is constant and each of which is a recta
 * [S. Jukna, *Extremal Combinatorics*, Ch. 14][Jukna2011]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits.Frontier
 

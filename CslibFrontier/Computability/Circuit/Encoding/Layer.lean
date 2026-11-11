@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Encoding.Evaluation
 public import CslibFrontier.Computability.Circuit.Depth
+import CslibFrontier.Foundations.Data.List.GetD
 import Mathlib.Data.List.GetD
 
 /-!
@@ -37,7 +38,7 @@ as a code of layers has a depth with costs bounded by summing the costs of the l
 These are original implementation lemmas for the existing circuit semantics.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Circuits
 
@@ -89,9 +90,7 @@ theorem le_of_mem_evalCode_depth_layer (cost : σ.Op → ℕ) (x : List ℕ)
         g.2[a.val]?.elim 0 (x.getD · 0) ≤ (fun _ => D) a + 0 := fun a => by
       rcases ha : g.2[a.val]? with _ | i
       · exact Nat.zero_le _
-      · have hi : i < x.length := h g hg i (List.mem_of_getElem? ha)
-        simp only [Option.elim_some, List.getD_eq_getElem _ _ hi, Nat.add_zero]
-        exact hx _ (List.getElem_mem hi)
+      · exact hx _ (List.getD_mem 0 (h g hg i (List.mem_of_getElem? ha)))
     have := depthInterpretation_le_add cost g.1 hargs
     simp only [depthInterpretation, Nat.add_zero] at this ⊢
     have hfold : Fin.foldl (σ.Arity g.1) (fun depth k => max depth D) 0 ≤ D := by
@@ -159,10 +158,9 @@ theorem Circuit.depthWith_le_of_evalCode (cost : σ.Op → ℕ) (c : Circuit σ 
     c.depthWith cost ≤ D := by
   rw [Circuit.depthWith_le_iff]
   intro j
-  rw [← c.getD_evalCode_depthInterpretation cost j, List.getD_eq_getElem?_getD]
-  rcases hv : (evalCode (depthInterpretation cost) 0 (List.replicate n 0) c.code.1)[
-    (c.outputs j).toNat]? with _ | v
-  · exact Nat.zero_le _
-  · exact h v (List.mem_of_getElem? hv)
+  rw [← c.getD_evalCode_depthInterpretation cost j]
+  exact h _ (List.getD_mem 0 (by
+    rw [length_evalCode, List.length_replicate]
+    exact c.toNat_outputs_lt j))
 
 end Cslib.Circuits

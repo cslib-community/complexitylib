@@ -149,10 +149,7 @@ private theorem exists_not_mem_of_sq_dvd {A n m p : ℕ} (hp : p.Prime) (hp2 : p
   · have hpm : p ∣ n - 1 :=
       (hc1 m (by simpa using congrArg Units.val hc)).trans ((Dvd.intro_left 2 rfl).trans hm)
     have hpn : p ∣ n := ((Dvd.intro_left _ rfl : p ∣ p ^ 2).trans hpA).trans hAn
-    have : p ∣ 1 := by
-      have := Nat.dvd_sub hpn hpm
-      rwa [show n - (n - 1) = 1 by omega] at this
-    exact hp.one_lt.ne' (Nat.dvd_one.1 this)
+    exact hp.not_dvd_one (Nat.sub_sub_self h1.le ▸ Nat.dvd_sub hpn hpm)
   · exact hcn m (by simpa using congrArg Units.val hc)
 
 /-- If `p - 1` and `q - 1` both divide `p q - 1`, then `p = q`: `p q - 1 = q (p - 1) + (q - 1)`
@@ -224,10 +221,7 @@ private theorem card_ker_mul_pow_dvd_totient {n m p e : ℕ} [NeZero n] (hp : p.
     have hpm : p ∣ n - 1 := by
       rw [← hx, ← Subgroup.orderOf_coe]
       exact (orderOf_dvd_of_pow_eq_one hx2).trans hm
-    have : p ∣ 1 := by
-      have := Nat.dvd_sub hpn hpm
-      rwa [show n - (n - 1) = 1 by omega] at this
-    exact hp.one_lt.ne' (Nat.dvd_one.1 this)
+    exact hp.not_dvd_one (Nat.sub_sub_self h1.le ▸ Nat.dvd_sub hpn hpm)
   refine hcop.mul_dvd_of_dvd_of_dvd ?_ ?_
   · rw [← ZMod.card_units_eq_totient, ← Nat.card_eq_fintype_card]
     exact Subgroup.card_subgroup_dvd_card T

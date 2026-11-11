@@ -54,7 +54,7 @@ theorem twoPowT_run (w : List Bool) :
     rfl
 
 /-- **An exponential clock in binary.** `2 ^ (encIn a).length` is computable in linear time and
-zero work space, with linear output length, for every encoding of the input. -/
+work space, with linear output length, for every encoding of the input. -/
 theorem ComputableInDegree.two_pow_length {α : Type*} (encIn : α ↪ List Bool) :
     ComputableInDegree (fun a => 2 ^ (encIn a).length) encIn encNat 1 1 := by
   refine ⟨⟨fun a => 2 * (encIn a).length + 3, fun _ => 0,

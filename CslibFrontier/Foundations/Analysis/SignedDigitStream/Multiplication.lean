@@ -550,6 +550,20 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
   have habs_sum : |∑ p ∈ Sq \ retainedUnion t K, term p| ≤ ∑ p ∈ Sq \ retainedUnion t K, w p :=
     (abs_sum_le_sum_abs _ _).trans (sum_le_sum fun p _ => hterm_bound p)
   have hpart := sum_filter_add_sum_filter_not (Sq \ retainedUnion t K) (fun p => p.1 ≤ p.2) w
+  -- each row `r` of omitted pairs contributes at most `36 / 2 ^ bandMargin (bandIdx r)`
+  have hrow (r : ℕ) :
+      ∑ j ∈ (range (N + 1)).filter (fun j => t + bandMargin (bandIdx r) < r + j), w (r, j) ≤
+        36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
+    dsimp [w]
+    rw [← mul_sum]
+    calc (2 : ℝ) ^ t * 36 *
+          ∑ j ∈ (range (N + 1)).filter (fun j => t + bandMargin (bandIdx r) < r + j),
+            (1 / (2 : ℝ) ^ (r + j))
+        ≤ (2 : ℝ) ^ t * 36 * (1 / (2 : ℝ) ^ (t + bandMargin (bandIdx r))) :=
+          mul_le_mul_of_nonneg_left (sum_ray_tail_le N r _) (by positivity)
+      _ = 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
+          rw [pow_add]
+          field_simp
   have hO1 : ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2), w p ≤
       ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
     have hsub1 : (Sq \ retainedUnion t K).filter (fun p => p.1 ≤ p.2) ⊆
@@ -570,18 +584,8 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
           rw [sum_filter, sum_product]
           refine sum_congr rfl fun r _ => ?_
           rw [sum_filter]
-      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-          refine sum_le_sum fun r _ => ?_
-          dsimp [w]
-          rw [← mul_sum]
-          calc (2 : ℝ) ^ t * 36 *
-                ∑ j ∈ (range (N + 1)).filter (fun j => t + bandMargin (bandIdx r) < r + j),
-                  (1 / (2 : ℝ) ^ (r + j))
-              ≤ (2 : ℝ) ^ t * 36 * (1 / (2 : ℝ) ^ (t + bandMargin (bandIdx r))) :=
-                mul_le_mul_of_nonneg_left (sum_ray_tail_le N r _) (by positivity)
-            _ = 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-                rw [pow_add]
-                field_simp
+      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) :=
+          sum_le_sum fun r _ => hrow r
   have hO2 : ∑ p ∈ (Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2), w p ≤
       ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
     have hsub2 : (Sq \ retainedUnion t K).filter (fun p => ¬ p.1 ≤ p.2) ⊆
@@ -606,18 +610,8 @@ private theorem sum_omitted_le {x y : ℕ → ℤ} (hx : IsSignedStream x) (hy :
           refine sum_congr rfl fun i _ => ?_
           dsimp [w]
           rw [add_comm i r]
-      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-          refine sum_le_sum fun r _ => ?_
-          dsimp [w]
-          rw [← mul_sum]
-          calc (2 : ℝ) ^ t * 36 *
-                ∑ i ∈ (range (N + 1)).filter (fun i => t + bandMargin (bandIdx r) < r + i),
-                  (1 / (2 : ℝ) ^ (r + i))
-              ≤ (2 : ℝ) ^ t * 36 * (1 / (2 : ℝ) ^ (t + bandMargin (bandIdx r))) :=
-                mul_le_mul_of_nonneg_left (sum_ray_tail_le N r _) (by positivity)
-            _ = 36 / (2 : ℝ) ^ bandMargin (bandIdx r) := by
-                rw [pow_add]
-                field_simp
+      _ ≤ ∑ r ∈ range (N + 1), 36 / (2 : ℝ) ^ bandMargin (bandIdx r) :=
+          sum_le_sum fun r _ => hrow r
   have hsum_r : ∑ r ∈ range (N + 1), 72 / (2 : ℝ) ^ bandMargin (bandIdx r) ≤ 9 / 64 := by
     set B := bandIdx N + 1
     have hcover : range (N + 1) ⊆ (range B).biUnion fun k => Ico (bandStart k) (bandEnd k) := by
@@ -747,9 +741,7 @@ theorem mulApprox_isScaledApprox {x y : ℕ → ℤ}
               |(streamPrefix x N - streamVal x) * streamVal y| := abs_add_le _ _
         _ = |streamPrefix x N| * |streamPrefix y N - streamVal y| +
               |streamPrefix x N - streamVal x| * |streamVal y| := by rw [abs_mul, abs_mul]
-        _ ≤ 12 * (6 / (2 : ℝ) ^ N) + (6 / (2 : ℝ) ^ N) * 12 :=
-              add_le_add (mul_le_mul hx_pre hy_tail (abs_nonneg _) (by norm_num))
-                (mul_le_mul hx_tail hy_val (abs_nonneg _) (by positivity))
+        _ ≤ 12 * (6 / (2 : ℝ) ^ N) + (6 / (2 : ℝ) ^ N) * 12 := by gcongr
         _ = 144 / (2 : ℝ) ^ N := by ring
     rw [← mul_sub, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < (2 : ℝ) ^ t)]
     have hN_ge : t + 20 ≤ N := by omega
@@ -759,9 +751,7 @@ theorem mulApprox_isScaledApprox {x y : ℕ → ℤ}
     calc (2 : ℝ) ^ t * |streamPrefix x N * streamPrefix y N - streamVal x * streamVal y|
         ≤ (2 : ℝ) ^ t * (144 / (2 : ℝ) ^ N) :=
           mul_le_mul_of_nonneg_left hprod_err (by positivity)
-      _ ≤ (2 : ℝ) ^ t * (144 / ((2 : ℝ) ^ t * (2 : ℝ) ^ 20)) :=
-          mul_le_mul_of_nonneg_left
-            (div_le_div_of_nonneg_left (by norm_num) (by positivity) hpow_ge) (by positivity)
+      _ ≤ (2 : ℝ) ^ t * (144 / ((2 : ℝ) ^ t * (2 : ℝ) ^ 20)) := by gcongr
       _ = 144 / (2 : ℝ) ^ 20 := by field_simp
   have htri1 := abs_sub_le ((bandFold x y t K / (2 : ℤ) ^ mulBaseMargin : ℤ) : ℝ)
     ((bandFold x y t K : ℝ) / (2 : ℝ) ^ mulBaseMargin)

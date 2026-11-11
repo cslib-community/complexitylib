@@ -218,16 +218,8 @@ theorem Program.ComputesInTime.computableInO_of_width
       (FiniteState.resultEncoding B.encoding (FiniteState.run (width a) p.toGeneric j
         (initState B r (encode (width a) a)))).length ≤
         stateBound r (labelBound p.toGeneric) (width a)
-          ((encode (width a) a).length + 1 + steps a) := by
-    have hrun := (wordBounded_initState (B := B) (r := r) (hfits a)).length_resultEncoding_run_le
-      (p := p.toGeneric) (by simp) j
-    rw [length_entries_initState] at hrun
-    refine hrun.trans ?_
-    simp only [stateBound]
-    have := Nat.mul_le_mul_right (6 * width a + 3)
-      (show (encode (width a) a).length + 1 + j ≤ (encode (width a) a).length + 1 + steps a by
-        omega)
-    omega
+          ((encode (width a) a).length + 1 + steps a) :=
+    length_resultEncoding_run_initState_le (hfits a) p.toGeneric hj
   have ht := FiniteState.transport_inO_of_hasDegree B.encoding N hN' hD p.toGeneric
     (⟨Ts, Ss, hsteps⟩ : NativeCertificate steps encIn encNat)
     (⟨Tw, Sw, hwidth⟩ : NativeCertificate width encIn encUnary)
@@ -306,7 +298,7 @@ theorem Program.ComputesInTime.computableInO_of_width
       ← hR, ← hK] at hencS ⊢
     linarith
 
-/-- **The additive word RAM with an explicit cubic overhead.** A run of `Basis.additive` within
+/-- **The additive word RAM, with the exponent `3`.** A run of `Basis.additive` within
 `steps a` instructions on `n` input words at word size `w` costs
 `O(|encIn a| + Tw a + Te a + Ts a + (steps a + 1) · ((n + steps a + 1)(w + 1)) ^ 3)` Turing-machine
 steps; see `Program.ComputesInTime.computableInO_of_width`. -/

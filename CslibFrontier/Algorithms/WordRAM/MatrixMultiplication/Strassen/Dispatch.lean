@@ -54,8 +54,6 @@ theorem exec_dispatch {w T : ℕ} (phase : Fin 8) (x y : Data 64)
     (hstage : ExecWithin w (stage phase) (dispatchState phase x) y T) :
     ExecWithin w dispatch x y (T + dispatchBudget phase) := by
   have hfit_le (v : ℕ) (hv : v ≤ 6) : Fits w v := hfit.of_le hv
-  have hidem (z : Data 64) (a b : ℕ) : (z.set Reg.tag a).set Reg.tag b = z.set Reg.tag b := by
-    simp only [Data.set, Function.update_idem]
   refine WP.execWithin ?_
   unfold dispatch
   fin_cases phase <;>
@@ -64,6 +62,6 @@ theorem exec_dispatch {w T : ℕ} (phase : Fin 8) (x y : Data 64)
       Nat.min_def, Nat.reduceLeDiff] at hphase hstage ⊢ <;>
     wram_exec [hphase, hzero, hfit_le]
   all_goals refine WP.of_execWithin (y := y) (T := T) ?_ ⟨by omega, rfl⟩
-  all_goals simpa only [hidem] using hstage
+  all_goals simpa only [Data.set_set] using hstage
 
 end Cslib.Algorithms.WordRAM.Strassen

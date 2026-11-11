@@ -12,6 +12,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import CslibFrontier.Foundations.Data.List.Counting
 
 /-!
 # Pruning a level along a Hausdorff decomposition
@@ -236,15 +237,6 @@ theorem getElem_mem_prune_of_mem {h : ℕ} (hh : h < N.length)
   rw [List.mem_iff_getElem]
   exact ⟨h, by simpa using hh, by simp⟩
 
-private theorem length_flatMap_le {ι β : Type*} (l : List ι) (f : ι → List β) {c : ℕ}
-    (hf : ∀ x, (f x).length ≤ c) : (l.flatMap f).length ≤ l.length * c := by
-  induction l with
-  | nil => simp
-  | cons x l ih =>
-    rw [List.flatMap_cons, List.length_append, List.length_cons, Nat.succ_mul]
-    have := hf x
-    omega
-
 /-- At most `2 n (s + 2) ^ (2 n)` positions are collected from each start position. -/
 theorem length_prunePositions_le (n d : ℕ) (starts : List ℕ) :
     (prunePositions Q s N n d starts).length ≤ 2 * n * starts.length * (s + 2) ^ (2 * n) := by
@@ -254,9 +246,9 @@ theorem length_prunePositions_le (n d : ℕ) (starts : List ℕ) :
     set right := starts.flatMap (searchRightFrom (Q (2 * d)) s N)
     set left := right.flatMap (searchLeftFrom (Q (2 * d + 1)) s N)
     have hright : right.length ≤ starts.length * (s + 2) :=
-      length_flatMap_le _ _ fun _ => length_searchRightFrom_le _
+      List.length_flatMap_le fun _ _ => length_searchRightFrom_le _
     have hleft : left.length ≤ starts.length * (s + 2) ^ 2 :=
-      (length_flatMap_le _ _ fun _ => length_searchLeftFrom_le _).trans
+      (List.length_flatMap_le fun _ _ => length_searchLeftFrom_le _).trans
         ((Nat.mul_le_mul_right _ hright).trans_eq (by ring))
     have hrec := ih (d + 1) left
     simp only [prunePositions, List.length_append, List.length_map]

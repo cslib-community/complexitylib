@@ -26,7 +26,7 @@ is imported or used. The state invariant applies only to actual reachable prefix
 * `ComputableInO.foldlWith`: the same with an encoded runtime parameter retained in state.
 -/
 
-@[expose] public section
+public section
 namespace Turing.MultiTapeTM.ComputableInO
 
 variable {γ α β π : Type} {encIn : γ ↪ List Bool} {encA : α ↪ List Bool}

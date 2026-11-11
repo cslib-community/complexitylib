@@ -18,7 +18,7 @@ Concrete inversion counts, move-to-front runs, the cost decomposition, adversary
 nonvacuity of the lower bound for `CslibFrontier.DataStructure.ListUpdate`.
 -/
 
-@[expose] public section
+public section
 
 namespace CslibFrontierTests.ListUpdate
 

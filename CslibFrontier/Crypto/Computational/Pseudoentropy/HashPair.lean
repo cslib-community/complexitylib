@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Basic
 public import CslibFrontier.Languages.Probabilistic.LinearHash
 public import CslibFrontier.Languages.Probabilistic.UniformNat
+import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.HashIsolation
 import CslibFrontier.Computability.Probabilistic.LinearHash
@@ -211,9 +212,8 @@ theorem eval_sample {n : ℕ} {Image : Type*} (f : List Bool → List Bool)
       ofList_ofFn]; rfl
   have hindex : ProbComp.eval (sampleDyadicIndex (n + 6)) =
       (PMF.uniformOfFintype (Fin (hashCount n))).map Fin.val := eval_sampleDyadicIndex (n + 6)
-  simp only [sample, ProbComp.eval_bind, ProbComp.eval_pure, eval_sampleList, hindex,
-    joint, Seed, ← PMF.uniformOfFintype_prod, PMF.bind_map, PMF.map_bind,
-    PMF.bind_bind, PMF.map_comp, Function.comp_def, uniformList]
+  simp only [pmf_norm, sample, eval_sampleList, hindex, joint, Seed, ← PMF.uniformOfFintype_prod,
+    uniformList]
   simp only [Function.comp_def, hf, hhash, encodeObservation, prefixHash,
     dotProduct_eq_foldl, PMF.map]
 
