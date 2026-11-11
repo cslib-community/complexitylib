@@ -39,4 +39,51 @@ theorem eval_query_succinctWord_eq_true_iff (n : ℕ) (S : Finset (BitString n))
   rw [evalWord_succinctWord]
   exact SuccinctMCSP.enc.injective.mem_set_image
 
+open Classical in
+/-- Per-length local form of the Oliveira–Santhanam construction. -/
+theorem exists_oracleFormula_separating_approxMCSP {s₁ s₂ k : ℕ → ℕ} {n : ℕ}
+    (hk : 1 ≤ k n) (hs : s₁ n ≤ s₂ n) :
+    ∃ E : OracleFormula (2 ^ n),
+      E.leafSize ≤ 2 ^ n * approxMCSPQueryEncLength n (s₂ n) (k n) ∧
+      E.queryCount ≤ 2 ^ n ∧
+      E.maxQueryArity ≤ approxMCSPQueryEncLength n (s₂ n) (k n) ∧
+      E.adaptivity ≤ 1 ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ →
+        E.eval (oracleInterpretation succinctMCSPOracle) T = true) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+        E.eval (oracleInterpretation succinctMCSPOracle) T = false) := by
+  obtain ⟨ωs, hyes, hno⟩ := exists_seeds_approxMCSP (s₁ := s₁) hk hs
+    (card_computableFunctions_le_two_pow n (s₂ n))
+  set ℓ := approxMCSPQueryEncLength n (s₂ n) (k n)
+  let w : Fin (2 ^ n) → List (Formula signature (2 ^ n)) := fun j =>
+    succinctWord n (Finset.univ.image (ωs j)) (s₂ n)
+  have hw : ∀ j, (w j).length ≤ ℓ := fun j => by
+    simp only [w, length_succinctWord]
+    refine ofFunctionEncLength_le_approxMCSPQueryEncLength ?_
+    exact Finset.card_image_le.trans (by simp)
+  let Es : List (OracleFormula (2 ^ n)) := List.ofFn fun j => OracleFormula.query (w j)
+  refine ⟨OracleFormula.all Es, ?_, ?_, ?_, ?_, fun T hT => ?_, fun T hT => ?_⟩
+  · rw [OracleFormula.leafSize_all]
+    refine (List.sum_le_length_nsmul _ ℓ ?_).trans (by simp [Es])
+    intro x hx
+    obtain ⟨E, hE, rfl⟩ := List.mem_map.mp hx
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hE
+    exact (OracleFormula.leafSize_query_le
+      fun _ h => leafSize_le_one_of_mem_succinctWord h).trans (hw j)
+  · simp [Es, Function.comp_def]
+  · refine OracleFormula.maxQueryArity_all_le fun E hE => ?_
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hE
+    simpa using hw j
+  · refine OracleFormula.adaptivity_all_le fun E hE => ?_
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hE
+    simp
+  · rw [OracleFormula.eval_all, decide_eq_true_eq]
+    intro E hE
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hE
+    exact (eval_query_succinctWord_eq_true_iff _ _ _ T).mpr (hyes T hT j)
+  · rw [OracleFormula.eval_all, decide_eq_false_iff_not, not_forall]
+    obtain ⟨j, hj⟩ := hno T hT
+    refine ⟨OracleFormula.query (w j), fun h => hj ?_⟩
+    exact (eval_query_succinctWord_eq_true_iff _ _ _ T).mp (h (List.mem_ofFn.mpr ⟨j, rfl⟩))
+
 end Cslib.Circuits.Boolean
