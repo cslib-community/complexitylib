@@ -39,9 +39,9 @@ map `φ` that keeps its meaning under `MOD₂` gates. For AC⁰[2] circuits take
 
 This differs from the source in these ways:
 
-* only `p = 2` is built, over `BinaryField e` with `e = binaryFieldDegree n'`, so the field has
-  between `n'` and `2 n'` elements and the seed has `n' 2 ^ e ≤ 2 n'²` bits, where the source has
-  `n'²`;
+* only `p = 2` is built, over `BinaryField e` with `e = binaryFieldDegree n'`, so for `k ≥ 1` the
+  field has between `n'` and `2 n'` elements and the seed has `n' 2 ^ e ≤ 2 n'²` bits, where the
+  source has `n'²`;
 * the design has overlap `ℓ - 1` and `2 ^ ℓ` blocks, numbered by `BitString.equivFin` (least
   significant bit first), where the source has overlap at most `ℓ`;
 * the bounds are explicit where the source has `poly(m)`: gates are counted
