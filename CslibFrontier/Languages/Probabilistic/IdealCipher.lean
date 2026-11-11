@@ -225,7 +225,7 @@ theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     {program : OracleComp (Spec Key Block) β} {n : ℕ}
     (hn : IsQueryBounded program n) (cache : Key → Cache Block) :
     ((OracleComp.interpret forgetfulWithBad program).run (cache, false)).toOuterMeasure
-      {x | x.snd.snd = true} ≤
+      {x | let (_, _, bad) := x; bad = true} ≤
       (n * (Finset.univ.sum (fun k => (cache k).length)) + n.choose 2 : ℕ) * (Fintype.card Block : ℝ≥0∞)⁻¹ := by
   refine OracleComp.toOuterMeasure_bad_choose_two_le (bad := fun st : (Key → Cache Block) × Bool => st.2 = true)
     (fun st : (Key → Cache Block) × Bool => Finset.univ.sum (fun k => (st.1 k).length))

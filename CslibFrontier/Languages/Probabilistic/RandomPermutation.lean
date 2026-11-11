@@ -1354,7 +1354,7 @@ theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     {program : OracleComp (PermOracleSpec α) β} {n : ℕ}
     (hn : IsQueryBounded program n) (cache : Cache α) :
     ((OracleComp.interpret forgetfulWithBad program).run (cache, false)).toOuterMeasure
-      {x | x.2.2 = true} ≤
+      {x | let (_, _, bad) := x; bad = true} ≤
       (n * cache.length + n.choose 2 : ℕ) * (Fintype.card α : ℝ≥0∞)⁻¹ := by
   refine OracleComp.toOuterMeasure_bad_choose_two_le (bad := fun st : Cache α × Bool => st.2 = true)
     (fun st : Cache α × Bool => st.1.length)
@@ -1367,7 +1367,7 @@ theorem toOuterMeasure_bad_forgetfulWithBad_le {β : Type}
     | none =>
       have hpre : (fun a : α => (a, (PermQuery.toCacheEntry ⟨q, a⟩ :: c,
           false || decide (a ∉ freshAnswers c q)))) ⁻¹'
-          {x : α × (Cache α × Bool) | x.2.2 = true} = {a : α | a ∉ freshAnswers c q} := by
+          {x : α × (Cache α × Bool) | let (_, _, bad) := x; bad = true} = {a : α | a ∉ freshAnswers c q} := by
         ext a
         simp
       have hcard : (Finset.univ.filter fun a : α => a ∉ freshAnswers c q).card ≤ c.length := by
@@ -1512,7 +1512,7 @@ theorem toOuterMeasure_forgetfulAnswer_le_pairwise_and_length_le_add {β : Type}
     q.toOuterMeasure ((fun x : β × (Cache α × Bool) => (x.1, x.2.1)) ⁻¹'
       {x | (x.2.Pairwise (fun a b => a.1 ≠ b.1) ∧
         x.2.Pairwise (fun a b => a.2 ≠ b.2) ∧ x.2.length ≤ Q) ∧ P x.2}) +
-      q.toOuterMeasure {x | x.2.2 = true}
+      q.toOuterMeasure {x | let (_, _, bad) := x; bad = true}
   simp only [PMF.toOuterMeasure_apply, ← tsum_add]
   refine tsum_le_tsum fun ⟨a, c, b⟩ => ?_
   by_cases hmem : (a, (c, b)) ∈ q.support
