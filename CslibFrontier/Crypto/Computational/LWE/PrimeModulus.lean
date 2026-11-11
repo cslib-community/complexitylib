@@ -75,6 +75,7 @@ def encMatrix (n m q : ℕ) : Matrix (Fin n) (Fin m) (ZMod q) ↪ List Bool :=
     exact hij⟩
 
 /-- The deterministic LWE public matrix `[A * s + e | A]` modulo `q`. -/
+@[expose]
 def publicMatrix {n m q : ℕ} [Fact (Nat.Prime q)] (A : Matrix (Fin m) (Fin n) (ZMod q))
     (s : Fin n → ZMod q) (e : Fin m → ZMod q) :
     Matrix (Fin m) (Fin (n + 1)) (ZMod q) :=
