@@ -1107,6 +1107,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Restriction
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Subbotovskaya
+public import CslibFrontier.Computability.Circuit.Boolean.GF2Rank
 public import CslibFrontier.Computability.Circuit.Boolean.GateElimination
 public import CslibFrontier.Computability.Circuit.Boolean.Gates
 public import CslibFrontier.Computability.Circuit.Boolean.Hamming
