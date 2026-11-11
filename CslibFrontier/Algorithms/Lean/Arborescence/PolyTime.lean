@@ -2170,6 +2170,7 @@ private theorem findCycleList_eq {n : ℕ} [FinEnum (Fin n)]
   apply Bool.eq_iff_iff.mpr
   simp only [Bool.and_eq_true, bne_iff_ne, List.any_eq_true, List.mem_range, beq_iff_eq, hcard]
 
+private theorem list_getD_map_range {α : Type*} (f : ℕ → α) (n i : ℕ) (d : α) (hi : i < n) :
     ((List.range n).map f).getD i d = f i := by
   rw [List.getD_eq_getElem _ _ (by simp [hi]), List.getElem_map, List.getElem_range]
 
