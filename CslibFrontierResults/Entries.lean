@@ -103,6 +103,7 @@ import CslibFrontier.Logics.FirstOrder.FiniteVariable.WeisfeilerLeman
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
 import CslibFrontier.Logics.FirstOrder.Locality.Hanf
 import CslibFrontier.Logics.FirstOrder.Locality.Reachability
+import CslibFrontier.Logics.FirstOrder.Locality.Sharp
 import CslibFrontier.Logics.FirstOrder.Operator.TransitiveClosure.Expressiveness
 import CslibFrontier.Logics.FirstOrder.Ordered.Problems.CNF
 import CslibFrontier.Logics.FirstOrder.Ordered.Problems.Coloring
@@ -1887,8 +1888,38 @@ register_result "transitive-closure-not-fo" where
   scope := "Finite structures of the pure language of graphs, by Gaifman locality. No formula \
     in two free variables defines the reflexive–transitive or transitive closure of the \
     edge relation, or reachability in finite simple graphs; on the successor relation of \
-    Fin N, rank q forces N ≤ 2·3^(q+1). Any Gaifman radius for rank n is at least \
-    2^(n-1); the exact rank 2^n - 1 is not formalized. Constants are not claimed sharp."
+    Fin N, rank q forces N ≤ 2·3^(q+1). Any Gaifman radius on finite simple graphs for \
+    rank n is at least 2^(n-1) (exact-locality-ranks gives the exact bound 2^n - 1 over \
+    directed graphs with self-loops). Constants are not claimed sharp."
+
+register_result "exact-locality-ranks" where
+  title := "Exact Hanf (2^(n-1) - 1) and Gaifman (2^n - 1) locality ranks of first-order logic"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Libkin2004, theorem := "Exercises 4.10 and 4.11",
+      locator := "Chapter 4 (pp. 63–64)" }
+  ]
+  theorems := [
+    Cslib.Logic.FO.Locality.NbhdIso.duplicatorWins_of_equiv_two_pow,
+    Cslib.Logic.FO.Locality.NbhdIso.duplicatorWins_of_two_pow,
+    Cslib.Logic.FO.Locality.NbhdIso.realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.NbhdIso.formula_realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.HanfEquiv.duplicatorWins_of_two_pow,
+    Cslib.Logic.FO.Locality.HanfEquiv.realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.HanfEquiv.formula_realize_iff_of_two_pow,
+    Cslib.Logic.FO.Locality.realize_sentence_iff_of_nbhdIso_two_pow,
+    Cslib.Logic.FO.Locality.exists_nbhdIso_realize_loopReach,
+    Cslib.Logic.FO.Locality.two_pow_sub_one_le_of_gaifman_radius,
+    Cslib.Logic.FO.Locality.exists_hanfEquiv_sentence_not_realize_iff,
+    Cslib.Logic.FO.Locality.exists_hanfEquiv_formula_not_realize_iff,
+    Cslib.Logic.FO.Locality.two_pow_pred_sub_one_le_of_hanf_sentence_radius,
+    Cslib.Logic.FO.Locality.two_pow_pred_sub_one_le_of_hanf_radius
+  ]
+  scope := "Finite structures. Gaifman locality holds at radius 2^n - 1 and Hanf locality (for \
+    nonempty M) holds at radius 2^(n-1) - 1, giving Duplicator the n-round game in any \
+    language and formula/sentence agreement in relational languages. Matching lower bounds \
+    over Mathlib's language of graphs (interpreted via relStructure as directed graphs with \
+    self-loops) show that both radii are pointwise minimal across all quantifier ranks."
 
 register_result "fo-tc-strict" where
   title := "FO(TC) is strictly more expressive than FO on finite structures"
