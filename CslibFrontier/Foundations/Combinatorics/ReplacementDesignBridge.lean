@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Combinatorics.ReplacementCounting
 public import CslibFrontier.Foundations.LinearAlgebra.ReplacementDesign
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
@@ -524,9 +525,7 @@ theorem domainExaminationBound_le_mul_exp_threeTermExponent {q : ℕ} {c : ℝ}
         Real.exp ((c + 4) * (n : ℝ) * (1 / (r : ℝ))) := by
     rw [Real.rpow_def_of_pos zero_lt_two]
     refine Real.exp_le_exp.mpr ?_
-    have hlog2_le : Real.log 2 ≤ 1 := by
-      linarith [Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)]
-    have hle : 2 * Real.log 2 ≤ c + 4 := by linarith
+    have hle : 2 * Real.log 2 ≤ c + 4 := by linarith [Real.log_two_lt_one]
     have hnn : 0 ≤ (n : ℝ) * (1 / (r : ℝ)) := by positivity
     calc Real.log 2 * (2 * (n : ℝ) / r)
         = (2 * Real.log 2) * ((n : ℝ) * (1 / (r : ℝ))) := by ring

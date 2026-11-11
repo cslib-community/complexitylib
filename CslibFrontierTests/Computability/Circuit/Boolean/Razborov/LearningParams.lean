@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.Razborov.LearningParam
 /-!
 # Tests for the parameters of the CIKK learner for AC⁰[2]
 
-How the learner's correctness proof (M6.8b2 of #4451) consumes
+How the learner's correctness proof (`learns_cikkLearner_rankTest`) consumes
 `CslibFrontier.Computability.Circuit.Boolean.Razborov.LearningParams`: the fixed point gives the
 density margin `2 ^ (ℓ + 2) ≤ 2 ^ g`, the rejection lemma applies to any generator circuit of
 depth at most `d + 7` and size at most `S(g)`, and the bound on `g` specializes to explicit

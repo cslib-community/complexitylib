@@ -22,11 +22,13 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.PairCapture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
@@ -1450,85 +1452,58 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
       simp only [Functor.map_map, outDecoder.decode_enc]
       exact (id_map _).symm
     simp only [IndexedSignatureScheme.indexedEufCmaGame, scheme_keyGen, scheme_verify, keyGen,
-      ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, PMF.bind_bind,
-      PMF.pure_bind, μ, PMF.monad_bind_eq_bind, PMF.map_bind]
-    congr 1
-    funext keys
+      ProbOracleComp.eval_run_interpret, μ, pmf_norm]
+    peel_binds keys
     rw [hdecodeAdv (encPair encUnary encBits (n, keys.1)), OracleComp.interpret_map,
       StateT.run_map, _root_.PMF.monad_map_eq_map,
       hmachine (n, encPair encUnary encBits (n, keys.1)) _ _ []]
     erw [← machine.finiteRunFrom_take_runOracle (fuelOf keys.1) (wordOf keys.1)]
-    simp only [finiteRunFrom, OracleComp.interpret_map, StateT.run_map,
-      _root_.PMF.monad_map_eq_map, PMF.map_comp]
+    simp only [finiteRunFrom, OracleComp.interpret_map, StateT.run_map, pmf_norm]
     rw [iterate_finiteStep_from_empty S H machine n keys.2 (fuelOf keys.1) (fuelOf keys.1)
       (FiniteConfig.init machine.initial (wordOf keys.1))]
-    simp only [PMF.map_bind, PMF.bind_bind]
-    congr 1
-    funext coins
+    simp only [pmf_norm]
+    peel_binds coins
     dsimp only [otsDist, winIdx, finalOut, simRun, wordOf, pkOf, fuelOf,
       simWordOf, simPkOf, simFuelOf]
     cases hopt : ((coins.foldl (simStep machine [])
         (FiniteConfig.init machine.initial
           (encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))), none)).2) with
     | none =>
-      simp only [PMF.pure_map, PMF.pure_bind, Function.comp_def, hopt, PMF.bind_const]
+      simp only [PMF.bind_const, pmf_norm]
     | some m₀ =>
-      simp only [_root_.PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, hopt]
+      simp only [_root_.PMF.map, pmf_norm]
   have hotsEq :
       ProbComp.eval (S.eufOneTimeGame (oneTimeForger H sigBound machine c d) (otsParam H n)) =
         μ.map winOts := by
     simp only [SignatureScheme.eufOneTimeGame, oneTimeForger, otsParamInv_otsParam, ↓reduceIte,
-      ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, μ,
-      PMF.monad_bind_eq_bind, PMF.map_bind]
-    refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
-    simp only [OracleComp.interpret_bind, StateT.run_bind, ProbOracleComp.run_interpret_sample,
-      BitString.eval_sampleList, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.bind_map,
-      Function.comp_def]
-    congr 1
-    funext coins
-    congr 1
-    funext hashKey
-    dsimp only [otsDist, winOts, finalOut, wordOf, pkOf, fuelOf,
-      simWordOf, simPkOf, simFuelOf, otsForgeryOf]
+      BitString.eval_sampleList, μ, fuelOf, runWith_norm, pmf_norm]
+    peel_binds keys coins hashKey
+    dsimp only [otsDist, winOts, finalOut, wordOf, pkOf, fuelOf, simWordOf, simPkOf, simFuelOf,
+      otsForgeryOf]
     cases hopt : (simRun machine
         (encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))) [] coins).2 with
     | none =>
-      simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-        PMF.pure_bind, PMF.pure_map, hopt]
+      simp only [runWith_norm, pmf_norm]
     | some m₀ =>
-      simp only [bind_map_left, OracleComp.interpret_bind, OracleComp.interpret_pure,
-        StateT.run_bind, StateT.run_pure, Probability.PMF.monad_bind_eq_bind,
-        Probability.PMF.monad_pure_eq_pure, ProbOracleComp.interpret_query]
-      simp only [StateT.run, SignatureScheme.oneTimeSigningOracle, List.isEmpty_nil, ↓reduceIte,
-        ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
-        Function.comp_def, _root_.PMF.map]
-      refine PMF.bind_congr_on_support _ _ _ fun ots hots => ?_
+      simp only [SignatureScheme.oneTimeSigningOracle, List.isEmpty_nil, ↓reduceIte,
+        _root_.PMF.map, runWith_norm, pmf_norm]
+      peel_binds ots
       have htake : ots.take (sigBound n) = ots :=
         List.take_of_length_le
-          (hsigBound n keys hkeys (otsMsg H n hashKey (H.eval n hashKey m₀))
-            (length_otsMsg H n hashKey _) ots hots)
-      simp only [htake, hopt]
+          (hsigBound n keys keys_mem (otsMsg H n hashKey (H.eval n hashKey m₀))
+            (length_otsMsg H n hashKey _) ots ots_mem)
+      simp only [htake]
   have htcrEq :
       ProbComp.eval
         (targetCollisionGame H.keyLen H.eval (fun _ _ => true)
           (tcrAdversary S H machine c d) n) = μ.map winTcr := by
-    simp only [targetCollisionGame, tcrAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
-      BitString.eval_sampleList, PMF.bind_bind, PMF.pure_bind, stateDecoder.decode_enc,
-      μ, PMF.monad_bind_eq_bind, PMF.map_bind]
-    congr 1
-    funext keys
-    congr 1
-    funext coins
-    congr 1
-    funext hashKey
+    simp only [targetCollisionGame, tcrAdversary, BitString.eval_sampleList,
+      stateDecoder.decode_enc, μ, fuelOf, pmf_norm]
+    peel_binds keys coins hashKey
     dsimp only [otsDist, winTcr, finalOut, wordOf, pkOf, fuelOf, simWordOf, simPkOf, simFuelOf]
     cases hopt : (simRun machine
-        (encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))) [] coins).2 with
-    | none =>
-      simp only [ProbComp.eval_pure, PMF.pure_bind, PMF.pure_map, hopt]
-    | some m₀ =>
-      simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
-        Function.comp_def, _root_.PMF.map, hopt]
+        (encPair encUnary encBits (n, encPair encUnary encBits (n, keys.1))) [] coins).2 <;>
+      simp only [_root_.PMF.map, pmf_norm]
   have hpointwise : ∀ sample ∈ μ.support,
       winIdx sample = true → winOts sample = true ∨ winTcr sample = true := by
     rintro ⟨keys, coins, hashKey, ots⟩ hsupp hwin
@@ -1656,10 +1631,7 @@ end Reductions
 /-- Any `Negligible` function remains `Negligible` after precomposing with `otsParam H`. -/
 theorem negligible_comp_otsParam {f : ℕ → ℝ≥0} (hf : Negligible f) (H : KeyedHashFamily) :
     Negligible (fun n => f (otsParam H n)) :=
-  hf.comp_of_polynomial_bound (bound := id)
-    (Filter.tendsto_atTop_mono (le_otsParam H) Filter.tendsto_id)
-    PolynomiallyBounded.id
-    (Filter.Eventually.of_forall (le_otsParam H))
+  hf.comp_polynomiallyLowerBounded (.mono_of_le .id (le_otsParam H))
 
 end TCRSignature
 
@@ -1672,14 +1644,12 @@ theorem SignatureScheme.OneTimeEUFCMA.indexedEUFCMA_tcrSignature
     {S : SignatureScheme} (hS : S.OneTimeEUFCMA)
     {H : KeyedHashFamily} (hH : H.TargetCollisionResistant) :
     (TCRSignature.scheme S H).IndexedEUFCMA := by
-  apply IndexedSignatureScheme.IndexedEUFCMA.of_negligible
-  intro adversary hadversary
+  refine IndexedSignatureScheme.IndexedEUFCMA.of_negligible fun adversary hadversary => ?_
   obtain ⟨otForger, tcrAdv, hotPPT, htcrPPT, hbound⟩ :=
     TCRSignature.exists_reduction_indexedEufCmaGame_le S H hadversary
-  exact negligible_of_le
-    ((TCRSignature.negligible_comp_otsParam (hS.negligible otForger hotPPT) H).add
-      (hH.negligible tcrAdv htcrPPT))
-    hbound
+  have := TCRSignature.negligible_comp_otsParam (hS.negligible otForger hotPPT) H
+  have := hH.negligible tcrAdv htcrPPT
+  negligible using hbound
 
 /-- **Capacity-`2` indexed signatures from one-way functions and target collision-resistant hash
 families**: combining Lamport's one-time signature scheme (`OneWay.exists_oneTimeSignature`),
