@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeRisk
+import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeVector
 import Mathlib.Tactic
 
 /-!
@@ -23,11 +23,14 @@ open Cslib Cslib.Probability StochasticOracle PartialCover NativeExecution
 open NativeRetention ConcurrentBatch Turing Turing.MultiTapeTM NativeOpenExecution
 open scoped NNReal ENNReal
 
+attribute [local simp] Input.system SourceEncoding.toNative SourceEncoding.row
+
 private def input : NativeExecution.Input :=
   ⟨⟨⟨1, [⟨99, [true], 1⟩], ⟨1 / 2, 1 / 4⟩⟩, by
     constructor
     · norm_num
-    · constructor <;> norm_num⟩, ⟨[[0]], [1], [1], 1, []⟩, rfl⟩
+    · constructor <;> norm_num⟩, ⟨[[true]], [1], [1], 1⟩, [[false, true]], none, rfl,
+      by intro ls h; cases h⟩
 
 private theorem count_two : GreedyNative.count input.planner = 2 := by
   let t := GreedyNative.thresholdInput input.planner
@@ -41,7 +44,8 @@ private theorem count_two : GreedyNative.count input.planner = 2 := by
   change ¬GreedyNative.count input.planner ≤ 1 at hhi
   omega
 
-private theorem labels_two : GreedyNative.labels input.planner = [0, 0] := by
+private theorem labels_two : labels input = [0, 0] := by
+  change GreedyNative.labels input.planner = [0, 0]
   rw [GreedyNative.labels, GreedyNative.plan, count_two]
   norm_num [Algorithms.Lean.Multicover.Native.batch, Algorithms.Lean.Multicover.Native.initial,
     Algorithms.Lean.Multicover.Native.advance, Algorithms.Lean.Multicover.Native.select,
@@ -55,25 +59,27 @@ private theorem live : RuntimeControl.stopped (NativeExecution.initial input) = 
   norm_num [input,
     Packets.decision, Packets.assemble, complete, covered, ground, retain, List.range_succ]
 
-private def limits : Limits (GreedyNative.labels input.planner).length :=
+private def limits : Limits (labels input).length :=
   ⟨fun _ => 1, by intro _; norm_num, 1, 1⟩
 private def good (a : Fin 4) (i : ℕ) : Bool := if i = 0 then decide (a.val < 2)
   else decide (a.val < 3)
 private def path (a : Fin 4) (i : ℕ) : CallTrace :=
   ⟨some (1, [good a i]), fun _ => 1, by intro _ _ _; rfl⟩
-private def sample : Sampler (GreedyNative.labels input.planner).length (Fin 4) :=
-  fun _ _ => (PMF.uniformOfFintype (Fin 4)).map fun a => (fun i => path a i.val, a)
+private def sourceOracle : SourceQuery.SourceSampler (Fin 4) :=
+  fun _ _ _ => (PMF.uniformOfFintype (Fin 4)).map fun a => (fun i => path a i.val, a)
+private def sample : Sampler (labels input).length (Fin 4) :=
+  SourceQuery.adapt sourceOracle (labels input).length
 private def receipt (a : Fin 4) :=
   ConcurrentBatch.observe limits 1 (batch input (live_nonempty input live)) (fun i => path a i.val)
-private def memory : Memory Unit (ServerState (GreedyNative.labels input.planner).length (Fin 4)) :=
+private def memory : Memory Unit (ServerState (labels input).length (Fin 4)) :=
   ⟨ConcurrentBatch.initial 0, []⟩
 
 private theorem word (a : Fin 4) :
     (finished input memory (replyOf (receipt a))
       (commit (ConcurrentBatch.initial 0) (receipt a) a)).output =
       if a.val < 3 then [true] else [] := by
-  have hn : (GreedyNative.labels input.planner).length = 2 := by rw [labels_two]; rfl
-  have hp : Packets.families (GreedyNative.labels input.planner).length 1
+  have hn : (labels input).length = 2 := by rw [labels_two]; rfl
+  have hp : Packets.families (labels input).length 1
       (replyOf (receipt a)).word =
       [if good a 0 then [0] else [], if good a 1 then [0] else []] := by
     simp only [replyOf, Packets.families_report]
@@ -86,9 +92,9 @@ private theorem word (a : Fin 4) :
   simp only [Packets.decision, Packets.assemble, List.reverse_cons, List.reverse_nil,
     List.nil_append, List.flatMap_cons, List.flatMap_nil, List.append_nil]
   change (if complete (⟨[[0]], [1], [1], 1,
-      Packets.families (GreedyNative.labels input.planner).length 1 (replyOf (receipt a)).word⟩ :
+      Packets.families (labels input).length 1 (replyOf (receipt a)).word⟩ :
         NativeRetention.Input) then output ⟨[[0]], [1], [1], 1,
-      Packets.families (GreedyNative.labels input.planner).length 1 (replyOf (receipt a)).word⟩
+      Packets.families (labels input).length 1 (replyOf (receipt a)).word⟩
     else []) = _
   rw [hp]
   fin_cases a <;>
@@ -114,14 +120,14 @@ private theorem actual_words :
   change (NativeUnboundedExecution.terminal controller.program (environment limits sample)
     ⟨controller.program.initialConfig (encoding input), memory⟩).map _ = _ at h
   rw [h]
-  simp only [sample, PMF.map_comp, ConcurrentBatch.initial]
+  simp only [sample, SourceQuery.adapt, sourceOracle, PMF.map_comp, ConcurrentBatch.initial]
   congr 1
   funext a
   exact congrArg some (word a)
 
 example (a : Fin 4) : (receipt a).tokens = 2 ∧ (receipt a).duration = 1 := by
-  have hn : (GreedyNative.labels input.planner).length = 2 := by rw [labels_two]; rfl
-  have hne : (Finset.univ : Finset (Fin (GreedyNative.labels input.planner).length)).Nonempty :=
+  have hn : (labels input).length = 2 := by rw [labels_two]; rfl
+  have hne : (Finset.univ : Finset (Fin (labels input).length)).Nonempty :=
     ⟨⟨0, by rw [labels_two]; decide⟩, Finset.mem_univ _⟩
   norm_num [receipt, Exchange.tokens, Exchange.duration, ConcurrentBatch.observe, active_slots,
     batch, slots, active, path, limits, CallTrace.report, CallTrace.stop, hn, Finset.univ_fin2,
@@ -171,7 +177,7 @@ example {P : Type} (env : Environment Unit P) (mem : Memory Unit P) :
     let empty : NativeExecution.Input :=
       ⟨⟨{ input.planner.val with rows := [] },
         ⟨input.planner.property.ground_pos, input.planner.property.parameters_valid⟩⟩,
-        input.system, input.ground_eq⟩
+        input.source, input.queries, none, input.ground_eq, by intro ls h; cases h⟩
     (NativeUnboundedExecution.terminal controller.program env
       ⟨controller.program.initialConfig (encoding empty), mem⟩).map
       (Option.map (NativeReplyContext.observe controller.context)) =
@@ -185,15 +191,15 @@ example {P : Type} (env : Environment Unit P) (mem : Memory Unit P) :
         ⟨input.planner.property.ground_pos, input.planner.property.parameters_valid⟩⟩ :
           GreedyNative.Input) = [] :=
     List.eq_nil_iff_forall_not_mem.mpr fun j hj => Nat.not_lt_zero j (GreedyNative.labels_lt _ hj)
-  simp [RuntimeControl.stopped, NativeExecution.initial, he]
+  simp [RuntimeControl.stopped, NativeExecution.initial, labels, he]
 
 private theorem invoice_cap (a : Fin 4)
-    (i : Fin (GreedyNative.labels input.planner).length) :
+    (i : Fin (labels input).length) :
     ((path a i.val).accrued (limits.cutoff i) : ℝ) ≤
       (GreedyNative.oracleAt input.planner.val
-        ((GreedyNative.labels input.planner).get i)).cost := by
-  have he : (GreedyNative.labels input.planner).get i = 0 := by
-    have hm := List.get_mem (GreedyNative.labels input.planner) i
+        ((labels input).get i)).cost := by
+  have he : (labels input).get i = 0 := by
+    have hm := List.get_mem (labels input) i
     simpa only [labels_two, List.mem_cons, List.not_mem_nil, or_false, or_self] using hm
   rw [he]
   norm_num [path, limits, GreedyNative.oracleAt, input,
@@ -203,14 +209,14 @@ private theorem invoice_cap (a : Fin 4)
 example (a : Fin 4) :
     ((receipt a).tokens : ℝ) ≤
       (Algorithms.Lean.Multicover.bill
-        ((GreedyNative.labels input.planner).map (GreedyNative.oracleAt input.planner.val)) : ℝ) ∧
+        ((labels input).map (GreedyNative.oracleAt input.planner.val)) : ℝ) ∧
       (receipt a).duration ≤ limits.deadline := by
   apply receipt_resources input (live_nonempty input live) limits (fun i => path a i.val)
   exact invoice_cap a
 
 -- The same actual terminal law carries the whole native bill/deadline/source invariant.
 example (outcome : Option (NativeReplyContext.Observation
-      (ServerState (GreedyNative.labels input.planner).length (Fin 4))))
+      (ServerState (labels input).length (Fin 4))))
     (h : outcome ∈ ((NativeUnboundedExecution.terminal controller.program
       (environment limits sample) ⟨controller.program.initialConfig (encoding input), memory⟩).map
         (Option.map (NativeReplyContext.observe controller.context))).support) :
@@ -223,7 +229,7 @@ example (outcome : Option (NativeReplyContext.Observation
       exact invoice_cap a i) outcome h
   refine ⟨final, he, ?_, hd, ht⟩
   have hbill : (Algorithms.Lean.Multicover.bill
-      ((GreedyNative.labels input.planner).map (GreedyNative.oracleAt input.planner.val)) : ℝ) =
+      ((labels input).map (GreedyNative.oracleAt input.planner.val)) : ℝ) =
         2 := by
     rw [labels_two]
     norm_num [Algorithms.Lean.Multicover.bill, GreedyNative.oracleAt, input,
@@ -243,11 +249,23 @@ example :
     List.finRange_succ, List.finRange_zero]
 
 
-private theorem valid : Valid input.system := by
+private theorem source_valid : SourceEncoding.Valid input.source := by
   constructor
-  · intro j; cases j <;> norm_num [input]
-  · intro e; cases e <;> norm_num [input]
-  · intro j; cases j <;> norm_num [elements, ground, input]
+  · rfl
+  · intro j hj
+    have he : j = 0 := by simp only [input, List.length_cons, List.length_nil] at hj; omega
+    subst j
+    norm_num [input]
+  · intro e he
+    have hz : e = 0 := by simp only [input, List.length_cons, List.length_nil] at he; omega
+    subst e
+    norm_num [input]
+  · intro j hj
+    have he : j = 0 := by simp only [input, List.length_cons, List.length_nil] at hj; omega
+    subst j
+    norm_num [SourceEncoding.sourceSet, input, Finset.filter_singleton]
+
+private theorem valid : Valid input.system := SourceEncoding.valid_toNative _ source_valid
 
 private theorem eligibility : ∀ e : Fin input.planner.val.ground,
     ∃ row ∈ input.planner.val.rows, row.mask[e.val]?.getD false = true := by
@@ -270,7 +288,7 @@ example : riskOptimum input ≤ 2 := by
           (List.mem_singleton_self
             (Algorithms.Lean.Multicover.Native.interpret 1 ⟨99, [true], 1⟩))
     · have hc := computed_risk input valid eligibility
-      simpa only [labels_two, List.map_cons, List.map_nil] using hc
+      simpa only [← labels_greedy input rfl, labels_two, List.map_cons, List.map_nil] using hc
   exact (iInf_le_of_le ⟨[row, row], hb⟩ (by
     norm_num [row, Algorithms.Lean.Multicover.bill, GreedyNative.oracleAt, input,
       Algorithms.Lean.Multicover.Native.interpret]))
@@ -278,7 +296,7 @@ example : riskOptimum input ≤ 2 := by
 -- The combined native bill/factor/OPT conclusion is for the actual correlated
 -- terminal law already shown above to emit the singleton mask with probability 3/4.
 example (outcome : Option (NativeReplyContext.Observation
-      (ServerState (GreedyNative.labels input.planner).length (Fin 4))))
+      (ServerState (labels input).length (Fin 4))))
     (h : outcome ∈ ((NativeUnboundedExecution.terminal controller.program
       (environment limits sample) ⟨controller.program.initialConfig (encoding input), memory⟩).map
         (Option.map (NativeReplyContext.observe controller.context))).support) :
@@ -290,7 +308,7 @@ example (outcome : Option (NativeReplyContext.Observation
     native_bill_le_riskOptimum input valid eligibility
     (by intro row hr; simp only [input, List.mem_cons, List.not_mem_nil, or_false] at hr
         subst row; norm_num)
-    (by norm_num [input]) limits sample 0 (by norm_num [limits])
+    (by norm_num [input]) rfl limits sample 0 (by norm_num [limits])
     (by norm_num [limits]) (by
       intro pair hp i
       obtain ⟨a, _, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hp
@@ -306,9 +324,9 @@ private def kernel := Disintegration.kernel joint responses
 set_option backward.isDefEq.respectTransparency false in
 private theorem response_at (k : Fin 2) (a : Fin 4) :
     responses k.val (draw a) = if good a k.val then {0} else ∅ := by
-  have hn : (GreedyNative.labels input.planner).length = 2 := by rw [labels_two]; rfl
+  have hn : (labels input).length = 2 := by rw [labels_two]; rfl
   simp only [responses, NativeExecution.response, dite_eq_left (show k.val <
-    (GreedyNative.labels input.planner).length by omega)]
+    (labels input).length by omega)]
   fin_cases k <;> fin_cases a
   all_goals
     ext i
@@ -342,7 +360,8 @@ private theorem posterior_mass (h : List (Finset (Fin 1)))
   have hl : (joint.map (Disintegration.history responses h.length) h).toReal =
       if h = [] then 1 else 1 / 2 := by
     obtain rfl | rfl := hh <;>
-      norm_num [joint, sample, PMF.map_comp, Disintegration.history,
+      norm_num [joint, sample, SourceQuery.adapt, sourceOracle, PMF.map_comp,
+        Disintegration.history,
         h0,
         draw, PMF.map_apply, tsum_fintype, Fin.sum_univ_succ,
         PMF.uniformOfFintype_apply, ENNReal.toReal_add, ENNReal.toReal_inv, good]
@@ -350,7 +369,8 @@ private theorem posterior_mass (h : List (Finset (Fin 1)))
       (Disintegration.history responses h.length a, responses h.length a)) (h, {0})).toReal =
       if h = [] then 1 / 2 else 1 / 4 := by
     obtain rfl | rfl := hh <;>
-      norm_num [joint, sample, PMF.map_comp, Disintegration.history,
+      norm_num [joint, sample, SourceQuery.adapt, sourceOracle, PMF.map_comp,
+        Disintegration.history,
         h0,
         h1,
         draw, PMF.map_apply, tsum_fintype, Fin.sum_univ_succ,
@@ -418,9 +438,173 @@ example : (3 / 4 : ℝ) ≤
           (NativeExecution.certified input valid 1)) true).toReal := by
   have hq : 1 - (input.planner.val.parameters.q : ℝ) = 1 / 2 := by norm_num [input]
   have hρ : (input.system.rho : ℝ) = 1 := by norm_num [input]
-  have h := native_success input valid eligibility (by norm_num [input]) limits sample 0
+  have h := native_success input valid eligibility (by norm_num [input]) rfl limits sample 0
     (by norm_num [limits]) (by norm_num [limits]) (by
       rw [hq, hρ]
       change (sourceInstance input valid).Admissible 1 (1 / 2) kernel [] ∅ (eligible input)
       exact source_envelopes)
   convert h using 1 <;> norm_num [input, limits, memory]
+
+
+-- The controller transports opaque original source queries, for arbitrary payload lengths.
+example (query : Word) : callWord { input with queries := [query] } 0 =
+    encPair encNat encBits (0, query) := by simp [callWord]
+
+-- Original incidence positions survive conversion, with no excess-universe element added.
+example : (SourceEncoding.toNative ⟨[[true, false, true, true], [false, true]],
+    [2, 1], [1, 1, 1], 2⟩).rows = [[0, 2], [1]] := by rfl
+
+private def one := withCounts input (fun _ => 1)
+private theorem one_labels : labels one = [0] := by
+  simp [one, labels_withCounts, vectorCalls, input, List.finRange_succ, List.finRange_zero]
+private theorem one_live : RuntimeControl.stopped (NativeExecution.initial one) = false :=
+  startup_live_of_nonempty one (by rw [one_labels]; decide)
+
+-- The same finite-control native program executes one supplied call, despite the
+-- original greedy mode requiring two. The complete unbounded reply is processed.
+example (reply : Word) :
+    let env : Environment Unit Unit := fun _ _ => PMF.pure (⟨reply, 1, 1⟩, ())
+    let mem : Memory Unit Unit := ⟨(), []⟩
+    (NativeUnboundedExecution.terminal controller.program env
+      ⟨controller.program.initialConfig (encoding one), mem⟩).map
+        (Option.map (NativeReplyContext.observe controller.context)) =
+      PMF.pure (some (finished one mem ⟨reply, 1, 1⟩ ())) := by
+  dsimp only
+  rw [live_law _ _ _ one_live, PMF.pure_map]
+
+-- An arbitrary zero count vector exits before any oracle query.
+example {P : Type} (env : Environment Unit P) (mem : Memory Unit P) :
+    let zero := withCounts input (fun _ => 0)
+    (NativeUnboundedExecution.terminal controller.program env
+      ⟨controller.program.initialConfig (encoding zero), mem⟩).map
+        (Option.map (NativeReplyContext.observe controller.context)) =
+      PMF.pure (some (⟨tapeOfList (RuntimeControl.packet (NativeExecution.initial zero)),
+        RuntimeControl.result (NativeExecution.initial zero), mem⟩ :
+          NativeReplyContext.Observation P)) := by
+  dsimp only
+  apply stopped_law
+  simp [RuntimeControl.stopped, NativeExecution.initial, labels, withCounts,
+    vectorCalls, input, List.finRange_succ, List.finRange_zero]
+
+private def one_limits : Limits (labels one).length :=
+  ⟨fun _ => 1, by intro _; norm_num, 1, 1⟩
+private def certainPath : CallTrace :=
+  ⟨some (1, [true]), fun _ => 1, by intro _ _ _; rfl⟩
+private def certainSource : SourceQuery.SourceSampler Unit :=
+  fun _ _ _ => PMF.pure (fun _ => certainPath, ())
+private def one_sample : Sampler (labels one).length Unit :=
+  SourceQuery.adapt certainSource (labels one).length
+
+private theorem one_response : NativeExecution.response one one_limits one_live 0
+    (fun _ => certainPath, ()) = ({0} : Finset (Fin 1)) := by
+  have hn : (labels one).length = 1 := by rw [one_labels]; rfl
+  simp only [NativeExecution.response, dite_eq_left (show 0 < (labels one).length by omega)]
+  apply Finset.ext
+  intro i
+  fin_cases i
+  norm_num [NativeExecution.jointReceipt, NativeExecution.family, ConcurrentBatch.observe,
+    batch, slots, one_limits, certainPath, CallTrace.report, CallTrace.response, hn,
+    decodeFamily, List.finRange_succ, List.finRange_zero, Finset.univ_unique,
+    one, withCounts, input]
+  change (0 : Fin 1) ∈ ({0} : Finset (Fin 1))
+  simp
+
+-- The supplied one-call batch has a genuine positive source envelope and invoice.
+set_option backward.isDefEq.respectTransparency false in
+private theorem one_envelope : (sourceInstance one valid).Admissible 1 (1 / 2)
+    (Disintegration.kernel
+      (one_sample (ConcurrentBatch.initial ()) (batch one (live_nonempty one one_live)))
+      (NativeExecution.response one one_limits one_live)) [] ∅ (eligible one) := by
+  classical
+  have he : eligible one = [{0}] := by
+    rw [eligible, one_labels]
+    norm_num [GreedyNative.oracleAt, one, withCounts, input,
+      Algorithms.Lean.Multicover.Native.interpret, Finset.univ_unique]
+    rfl
+  rw [he]
+  constructor
+  · intro e he _
+    have hz : e = 0 := by simpa using he
+    subst e
+    rw [Disintegration.kernel_empty]
+    simp only [one_sample, SourceQuery.adapt, certainSource, PMF.pure_map, one_response,
+      Cslib.Optimization.OneConstraint.Distribution.ofPMF_pure,
+      Instance.event, Cslib.Optimization.OneConstraint.Distribution.mean_pure]
+    norm_num [Instance.Certified, Instance.covered, Instance.cost, sourceInstance,
+      Instance.reindex, instanceOf, elements, ground, one, withCounts, input]
+  · intro _ _; trivial
+
+-- Assemble the actual every-vector probability/bill/deadline theorem for a batch
+-- different from the greedy output: one supplied call instead of two computed calls.
+-- Normalize the preserved source dimensions before rewriting the vector formulas.
+set_option backward.isDefEq.respectTransparency false in
+example :
+    (((terminalLaw one one_limits one_sample ()).map
+      (NativeExecution.certified one valid 1)) true).toReal ≥ 1 / 2 ∧
+    ∀ outcome ∈ (terminalLaw one one_limits one_sample ()).support,
+      ∃ final, outcome = some final ∧ (tokenBill final.memory.events : ℝ) ≤ 1 ∧
+        elapsed final.memory.events ≤ 1 ∧ final.memory.events.length ≤ 1 := by
+  have h := vector_guarantee input (fun _ => 1) source_valid one_limits one_sample ()
+    (by norm_num [one_limits]) (by norm_num [one_limits]) (by norm_num : (0 : ℝ) ≤ 1 / 2)
+    (by norm_num : (1 / 2 : ℝ) ≤ 1) (by
+      intro hs
+      have hρ : (input.system.rho : ℝ) = 1 := by norm_num [input]
+      rw [hρ]
+      exact one_envelope) (fun _ => 1) (by
+      intro hs pair hp i
+      have hp' : pair = (fun _ => certainPath, ()) :=
+        (PMF.mem_support_pure_iff _ _).mp hp
+      subst pair
+      change (certainPath.accrued (one_limits.cutoff i) : ℝ) ≤ 1
+      norm_num [certainPath, one_limits])
+  constructor
+  · refine le_trans ?_ h.1
+    change (1 / 2 : ℝ) ≤ max 0 (1 - ∑ e ∈ ({0} : Finset ℕ),
+      (1 - (1 / 2 : ℝ)) ^ (∑ i : Fin 1,
+        if e ∈ (GreedyNative.oracleAt input.planner.val i.val).eligible.image Fin.val
+          then (1 : ℕ) else 0))
+    have hzero : 0 ∈ (GreedyNative.oracleAt input.planner.val 0).eligible.image Fin.val := by
+      change 0 ∈ ({0} : Finset ℕ)
+      simp
+    rw [Finset.sum_singleton, Fin.sum_univ_succ]
+    simp only [Fin.sum_univ_zero, Fin.val_zero, add_zero, hzero, ite_true]
+    norm_num
+  · intro outcome houtcome
+    obtain ⟨final, he, hb, hd, ht⟩ := h.2 outcome houtcome
+    have hc : (∑ _i : Fin input.planner.val.rows.length, (1 : ℝ) * (1 : ℝ)) ≤ 1 := by
+      change (∑ _i : Fin 1, (1 : ℝ) * (1 : ℝ)) ≤ 1
+      norm_num
+    have hb' : (tokenBill final.memory.events : ℝ) ≤ 1 :=
+      (show (tokenBill final.memory.events : ℝ) ≤
+        ∑ _i : Fin input.planner.val.rows.length, (1 : ℝ) * 1 by
+          simpa only [Nat.cast_one] using hb).trans hc
+    exact ⟨final, he, hb', hd, ht⟩
+
+-- Any original, possibly query-dependent joint oracle receives exactly the
+-- selected original address and opaque payload from the compiled one-call mode.
+example {P : Type} (source : SourceQuery.SourceSampler P) (seed : P) :
+    let mem : Memory Unit (ServerState (labels one).length P) :=
+      ⟨ConcurrentBatch.initial seed, []⟩
+    (NativeUnboundedExecution.terminal controller.program
+      (environment one_limits (SourceQuery.adapt source (labels one).length))
+        ⟨controller.program.initialConfig (encoding one), mem⟩).map
+          (Option.map (NativeReplyContext.observe controller.context)) =
+      (source (labels one).length (ConcurrentBatch.initial seed)
+        (fun _ => some (0, [false, true]))).map fun (paths, next) =>
+          let receipt := observe one_limits one_limits.deadline
+            (batch one (live_nonempty one one_live)) paths
+          some (finished one mem (replyOf receipt)
+            (commit (ConcurrentBatch.initial seed) receipt next)) := by
+  have h := external_source_law one one_limits source seed one_live
+    (by norm_num [one_limits]) (by norm_num [one_limits])
+  have hc : (fun i : Fin (labels one).length =>
+      some ((labels one).get i, one.queries.getD ((labels one).get i) [])) =
+        fun _ => some (0, [false, true]) := by
+    funext i
+    have he : (labels one).get i = 0 := by
+      have hm := List.get_mem (labels one) i
+      simpa only [one_labels, List.mem_cons, List.not_mem_nil, or_false] using hm
+    rw [he]
+    rfl
+  rw [hc] at h
+  exact h

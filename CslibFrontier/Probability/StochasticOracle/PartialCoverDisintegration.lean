@@ -28,6 +28,7 @@ use the prior, as in the existing posterior API. [Wang2027], Theorem 4, PDF pp. 
 
 ## Main results
 
+* `kernel_empty`: the initial derived kernel is the actual first-response marginal.
 * `history_law`: the constructed kernels reproduce the actual complete history law.
 * `retention_law`: local retention on the actual joint sample has the existing risk-law semantics.
 -/
@@ -64,6 +65,21 @@ No conditional-law equality or representation certificate is an argument. -/
 @[expose] def kernel (μ : PMF S) (response : ℕ → S → Finset J) : ResponseKernel J :=
   fun h => Distribution.ofPMF
     ((PMF.posterior μ (history response h.length) h).map (response h.length))
+
+omit [DecidableEq J] in
+/-- Before any observation the actual conditional response law is the original
+first-response marginal, including arbitrary hidden state. -/
+theorem kernel_empty (μ : PMF S) (response : ℕ → S → Finset J) :
+    kernel μ response [] = Distribution.ofPMF (μ.map (response 0)) := by
+  classical
+  have he : PMF.posterior μ (fun _ => ([] : List (Finset J))) [] = μ := by
+    ext s
+    have h := PMF.posterior_factor μ (fun _ => ([] : List (Finset J))) [] s
+    have hc : μ.map (fun _ => ([] : List (Finset J))) = PMF.pure [] :=
+      PMF.map_const μ []
+    rw [hc, PMF.pure_apply_self, one_mul] at h
+    simpa only [ite_true] using h
+  simp only [kernel, List.length_nil, history, he]
 
 /-- One history transition under the constructed conditional kernel. -/
 @[expose] def next (μ : PMF S) (response : ℕ → S → Finset J) (h : List (Finset J)) :

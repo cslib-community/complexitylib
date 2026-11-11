@@ -362,55 +362,54 @@ in [the bibliography](../../references.bib). The checked clients are in
   This closes native offline planning/resource composition for the stated finite
   binary-rational representation.
   [PartialCoverNativeExecution](../../CslibFrontier/Probability/StochasticOracle/PartialCoverNativeExecution.lean)
-  now composes the computed plan with a single actual native query/read/retain/output
-  episode from original input and blank tapes. Its opportunity count is computed
-  from the runtime plan, rather than fixed in the finite control. Every query is
-  preformed, with a computed binary source index and the original rational WSC data;
-  distinct opportunities represent repeated calls. `admit_requests` derives source
-  admission before response sampling. `source_law` identifies the same named
-  `controller`'s output/context/hidden-state/bill/duration law with the actual joint
-  trajectory sample, including cutoff and cancellation invoices. No independent
-  responses or supplied native-realization law are assumed. `completed_decodes`,
-  `completed_certificate` and `report_provenance` connect the computed completion
-  decision to the decoded tape mask, local certificate and actual completed reports.
-  `native_resources` derives terminal summed billing, maximum-latency bounds,
-  exactly one event and source feasibility for this same native program from
-  individual accrued-charge caps on possible joint trajectories. It also excludes
-  divergent terminal mass. Local instructions are outside the source deadline.
-  The [native execution client](../../CslibFrontierTests/StochasticOraclePartialCoverNativeExecution.lean)
-  derives two calls from $q=1/2$, $\delta=1/4$ and proves that this actual native
-  program emits the successful singleton mask with probability $3/4$ on a genuinely
-  correlated two-report oracle. It also checks the two-token/one-time-unit receipt,
-  arbitrary finite reply words, and stopping before query on an empty computed plan.
-  Run `lake build CslibFrontierTests.StochasticOraclePartialCoverNativeExecution`.
+  now runs either the computed greedy batch or an arbitrary supplied count vector
+  on the same finite-control program. Original input contains binary incidence
+  masks, binary rational WSC weights/dual prices and opaque original query strings.
+  [SourceEncoding](../../CslibFrontier/Probability/StochasticOracle/NativeRetention/SourceEncoding.lean)
+  computes unary incidence lists during native startup and proves polynomial
+  conversion, exact original incidences and preservation of finite source promises.
+  Candidate positions remain the source output labels. The opportunity count is
+  computed from the selected runtime batch; distinct occurrences permit concurrent
+  repeated calls to the same original oracle.
+  [SourceQuery](../../CslibFrontier/Probability/StochasticOracle/ConcurrentBatch/SourceQuery.lean)
+  decodes binary configuration addresses and unmodified source-query payloads.
+  `external_source_law` derives the named controller's full native tape/context/
+  hidden-state/invoice/duration law from one original joint source oracle, with
+  no assumed codec correspondence, independent responses or supplied realization.
+  `admit_requests` and `source_label` derive nonempty preformation, fresh opportunities
+  and original configuration addresses before any response. `completed_decodes`,
+  `completed_certificate` and `report_provenance` connect completion to the decoded
+  tape mask, local certificate and actual completed reports. Local instructions
+  remain outside the source deadline (PDF p. 5).
   [PartialCoverNativeRisk](../../CslibFrontier/Probability/StochasticOracle/PartialCoverNativeRisk.lean)
-  constructs the per-response posterior kernels from the original joint receipt
-  sample. `native_risk` transfers their reached-history local certification and
-  coverage envelopes to the same controller's decoded tape output, retaining the
-  actual deadline event. `native_success` derives the computed plan's $1-\delta$
-  guarantee. No independence or supplied conditional-law identity is used; null
-  histories receive harmless prior completion. The input enforces that the planner
-  and original WSC ground sets agree.
+  derives per-response kernels from actual joint trajectories and transfers reached
+  local-certification/coverage envelopes to certified native tape success.
+  `native_success` obtains $1-\delta$ in greedy mode. `startup_live` derives startup
+  from source coverage and $\delta<1$; it is not an execution premise.
+  [PartialCoverNativeVector](../../CslibFrontier/Probability/StochasticOracle/PartialCoverNativeVector.lean)
+  supplies the every-$\zeta$ clause. `vectorCalls_count` proves exactly $\zeta_i$
+  original-oracle occurrences. `vector_guarantee` assembles the native probability
+  bound $\max(0,1-\sum_e(1-p)^{d_e(\zeta)})$, actual bill at most
+  $\sum_i c_i\zeta_i$, and deadline, including the zero-call case. Its analytic
+  caps $c_i$ may be real and need not be encoded or read by the program; nonnegative
+  accrued-charge bounds apply to each possible call, including cancellation.
   [PartialCoverNativeOptimum](../../CslibFrontier/Probability/StochasticOracle/PartialCoverNativeOptimum.lean)
-  defines `riskOptimum` over every risk-feasible repeated-call batch from the
-  original table. `native_bill_le_riskOptimum` bounds the actual terminal bill by
-  the source factor times this infimum, without assuming an optimum value,
-  integrability or total-cost bound. The native execution client applies that
-  combined theorem to the correlated oracle above and constructs a cost-two
-  feasible benchmark. The separate
-  [disintegration client](../../CslibFrontierTests/StochasticOraclePartialCoverDisintegration.lean)
-  derives positive conditional envelopes and the $3/4$ certified-risk bound from
-  a shared four-valued hidden seed, including conditional success probability
-  $1/2$ for the second report after the first failure. The native execution client
-  now derives these same posterior envelopes from its actual trajectory sampler
-  and applies `native_success` to the compiled controller's certified tape event.
-  `startup_live` derives startup liveness from source eligibility coverage and a
-  failure budget below one; neither `native_success` nor the combined OPT theorem
-  takes liveness as an execution premise.
-  These results retain the implemented binary-rational format, discrete joint
-  sample and oracle-only deadline. External source query/WSC encoding adapters,
-  native execution/risk transfer for arbitrary call-count vectors and source
-  WSC/subinstance codecs remain open.
+  defines `riskOptimum` over all risk-feasible repeated-call batches and bounds the
+  same controller's greedy bill by the source factor times that infimum. No optimum,
+  integrability, bounded-total-bill, desired-runtime or desired-success premise is used.
+  The [complete native client](../../CslibFrontierTests/StochasticOraclePartialCoverNativeExecution.lean)
+  derives two greedy calls from $q=1/2$, $\delta=1/4$ and proves exact certified
+  tape success $3/4$ on a genuinely correlated oracle, including a derived posterior
+  envelope and application of `native_success`. It also applies `vector_guarantee`
+  to one supplied call (different from the two-call greedy plan), deriving a positive
+  $1/2$ success bound with unit invoice/deadline bounds; checks zero-call stopping,
+  arbitrary-length opaque queries and replies, an arbitrary query-dependent source
+  adapter, incidence truncation, and accrued cancellation charges. Run
+  `lake build CslibFrontierTests.StochasticOraclePartialCoverNativeExecution`.
+  The concrete interfaces use nonempty finite WSC ground sets and discrete joint samples;
+  they do not establish a universal conversion for arbitrary third-party serializers
+  or noncomputable real-valued algorithmic inputs. Theorem 6's native specialization
+  and the broader measurable/unbounded Theorem 5 remain separate.
   Set Cover approximation hardness is tracked in
   [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335),
   not supplied as a premise.
@@ -922,8 +921,8 @@ resource transfer remains open. The Poisson-binomial domination needed for Lemma
 measurable or unbounded-horizon Theorem 5 is tracked in
 [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). Theorem 4's native offline greedy runtime is now proved for the finite binary-rational
 representation above. Its computed greedy controller has the native success/OPT
-transfer above; external encoding adapters, arbitrary-batch native transfer and
-hardness remain open;
+transfer and concrete incidence/query adapters above, including every call-count
+vector. The hardness transfer remains open;
 its asymptotic factors are now proved.
 
 ### Submission 191: actual Theorem 6 residual construction and policy optima
@@ -987,7 +986,7 @@ This proves the arbitrary finite X3C construction and universal behavioral
 numerical endpoints, rather than only a singleton or supplied-certificate model.
 The unrestricted encoded-PTM representation and realization bridge is still unproved; neither
 unrestricted source Theorem 6 nor ALL-main is claimed complete. Theorem 5's
-representation/general-alphabet gaps and Theorem 4's encoding/arbitrary-batch/hardness gaps above
+representation/general-alphabet gaps and Theorem 4's hardness transfer above
 remain material. No curated abstract changes: these modules are outside the
 selected headline dependencies. The Agent Operator's Manual requires no edit:
 ownership, review, validation and human direction are unchanged.
@@ -1061,8 +1060,8 @@ representation required by Theorem 5 and the full two-turn lower optimum in
 Theorem 6. Later sections derive native query epochs and the concrete block controller.
 General response alphabets and external PTM/query encodings, canonical-label
 recovery and arbitrary source-policy compilation remain open.
-Theorem 4 now has the native greedy success/OPT transfer above; its external
-encoding adapters, arbitrary-batch native transfer and hardness remain open. ROADMAP preserves
+Theorem 4 now has concrete incidence/query adapters and native greedy/every-vector
+execution guarantees above; the hardness transfer remains open. ROADMAP preserves
 these obligations; no unrestricted theorem or ALL-main completion is claimed.
 The Agent Operator's Manual needs no change because ownership, human direction,
 review and validation procedures are unchanged. No curated abstract depends on
@@ -1665,8 +1664,8 @@ established. The trace preserves divergent mass and its earlier receipts, but eq
 with a cofinal infinite-instruction path-cost law and real integrability are separate
 obligations. Divergence has no native terminal-world bill.
 
-Theorem 4's native greedy success/OPT transfer is proved above; its external
-encoding adapters, arbitrary-batch native transfer and hardness remain open. Neither unrestricted
+Theorem 4's concrete incidence/query adapters and native greedy/every-vector
+execution guarantees are proved above; the hardness transfer remains open. Neither unrestricted
 Theorems 5/6 nor ALL-main is complete. No selected abstract model or statement
 changes. The Agent Operator's Manual requires no edit because human direction,
 ownership, review and validation procedures are unchanged.

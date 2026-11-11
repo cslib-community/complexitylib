@@ -6063,6 +6063,8 @@ public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Protocol
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Resources
+public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.SourceQuery
+public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.TokenBounds
 public import CslibFrontier.Probability.StochasticOracle.CutoffFamilies
 public import CslibFrontier.Probability.StochasticOracle.DiscreteComparison
 public import CslibFrontier.Probability.StochasticOracle.ExecutionFeasibility
@@ -6087,6 +6089,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Packets
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.ResponseExecution
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeControl
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Selector
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.SourceEncoding
 public import CslibFrontier.Probability.StochasticOracle.PartialCover
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverAsymptotics
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverDisintegration
@@ -6095,6 +6098,7 @@ public import CslibFrontier.Probability.StochasticOracle.PartialCoverGreedyNativ
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeExecution
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeOptimum
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeRisk
+public import CslibFrontier.Probability.StochasticOracle.PartialCoverNativeVector
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverReindex
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverRisk
 public import CslibFrontier.Probability.StochasticOracle.PartialCoverThreshold

@@ -78,12 +78,13 @@ is required. -/
 theorem startup_live (x : Input) (hx : Valid x.system)
     (hcover : ∀ e : Fin x.planner.val.ground, ∃ row ∈ x.planner.val.rows,
       row.mask[e.val]?.getD false = true)
-    (hδone : x.planner.val.parameters.budget < 1) :
+    (hδone : x.planner.val.parameters.budget < 1) (hmode : x.calls = none) :
     RuntimeControl.stopped (initial x) = false := by
-  have hn : 0 < (GreedyNative.labels x.planner).length := by
+  have hn : 0 < (labels x).length := by
     by_contra! h
-    have he : GreedyNative.labels x.planner = [] := List.length_eq_zero_iff.mp (by omega)
+    have he : labels x = [] := List.length_eq_zero_iff.mp (by omega)
     have hr := computed_risk x hx hcover
+    rw [← labels_greedy x hmode] at hr
     simp only [he, List.map_nil, Instance.chances, List.filter_nil, List.length_nil,
       pow_zero, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul,
       mul_one] at hr
@@ -91,12 +92,7 @@ theorem startup_live (x : Input) (hx : Valid x.system)
       exact_mod_cast x.planner.property.ground_pos
     have hδ : (x.planner.val.parameters.budget : ℝ) < 1 := by exact_mod_cast hδone
     linarith
-  have hg : x.system.dual.length ≠ 0 := by
-    rw [← x.ground_eq]
-    exact Nat.ne_of_gt x.planner.property.ground_pos
-  simpa [RuntimeControl.stopped, initial, Nat.ne_of_gt hn, Packets.decision,
-    Packets.assemble, complete, covered, ground, retain] using
-      (show ∃ i, i < x.system.dual.length from ⟨0, Nat.pos_of_ne_zero hg⟩)
+  exact startup_live_of_nonempty x hn
 
 /-- Composed source competitive bill bound for the actual named native program.
 All premises describe original input or per-call charges on possible trajectories;
@@ -105,16 +101,16 @@ theorem native_bill_le_riskOptimum {P : Type} (x : Input) (hx : Valid x.system)
     (hcover : ∀ e : Fin x.planner.val.ground, ∃ row ∈ x.planner.val.rows,
       row.mask[e.val]?.getD false = true)
     (hcost : ∀ row ∈ x.planner.val.rows, 0 ≤ row.cost)
-    (hδone : x.planner.val.parameters.budget < 1)
-    (limits : Limits (GreedyNative.labels x.planner).length)
-    (sample : Sampler (GreedyNative.labels x.planner).length P) (seed : P)
+    (hδone : x.planner.val.parameters.budget < 1) (hmode : x.calls = none)
+    (limits : Limits (labels x).length)
+    (sample : Sampler (labels x).length P) (seed : P)
     (hd : 0 < limits.deadline) (ht : 0 < limits.turns)
     (hcap : ∀ pair ∈ (sample (ConcurrentBatch.initial seed)
-      (batch x (live_nonempty x (startup_live x hx hcover hδone)))).support, ∀ i,
+      (batch x (live_nonempty x (startup_live x hx hcover hδone hmode)))).support, ∀ i,
       ((pair.1 i).accrued (limits.cutoff i) : ℝ) ≤
-        (GreedyNative.oracleAt x.planner.val ((GreedyNative.labels x.planner).get i)).cost)
+        (GreedyNative.oracleAt x.planner.val ((labels x).get i)).cost)
     (outcome : Option (NativeReplyContext.Observation
-      (ServerState (GreedyNative.labels x.planner).length P)))
+      (ServerState (labels x).length P)))
     (houtcome : outcome ∈ ((NativeUnboundedExecution.terminal controller.program
       (environment limits sample) ⟨controller.program.initialConfig (encoding x),
         ⟨ConcurrentBatch.initial seed, []⟩⟩).map
@@ -124,7 +120,7 @@ theorem native_bill_le_riskOptimum {P : Type} (x : Input) (hx : Valid x.system)
         ENNReal.ofReal (Asymptotics.factor x.planner.val.parameters.q
           x.planner.val.parameters.budget x.planner.val.ground) * riskOptimum x ∧
       elapsed final.memory.events ≤ limits.deadline := by
-  have hs := startup_live x hx hcover hδone
+  have hs := startup_live x hx hcover hδone hmode
   obtain ⟨final, he, hb, hdur, _, _⟩ :=
     native_resources x limits sample seed hs hd ht hcap outcome houtcome
   have hf := Asymptotics.factor_pos
@@ -144,7 +140,10 @@ theorem native_bill_le_riskOptimum {P : Type} (x : Input) (hx : Valid x.system)
   have hg := GreedyNative.risk_bill x.planner
     (FiniteGround.instanceOf x.system hx x.planner.val.ground x.ground_eq) rfl
     hcover hcost hδone bs.val bs.property.1 bs.property.2
-  have h := ENNReal.ofReal_le_ofReal (hb.trans hg.2)
+  have hb' : (tokenBill final.memory.events : ℝ) ≤
+      (bill ((GreedyNative.labels x.planner).map (GreedyNative.oracleAt x.planner.val)) : ℝ) := by
+    simpa only [labels_greedy x hmode] using hb
+  have h := ENNReal.ofReal_le_ofReal (hb'.trans hg.2)
   simpa only [ENNReal.ofReal_coe_nnreal, ENNReal.ofReal_mul hf.le] using h
 
 end Cslib.Probability.StochasticOracle.PartialCover.NativeExecution
