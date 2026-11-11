@@ -33,8 +33,8 @@ gates. The rank is the number of nonzero rows of `Matrix.GaussJordan.reduce`
 (`Matrix.GaussJordan.rank_eq_card_reduce_ne_zero`), which a threshold circuit
 (`Cslib.Circuits.Boolean.synthesis_atLeast`) compares with `t`.
 
-The bounds count gates only. The construction chains one stage per column, so its depth is
-`O(c)` stages; depth is not certified here. The gate counts are this library's, not a source's.
+The bounds count gates only. The construction chains one stage per column; its depth is not
+certified here. The gate counts are this library's, not a source's.
 
 ## Main definitions
 
@@ -260,8 +260,8 @@ theorem synthesis_entryBits_reduceUpTo (A : BitString n → Matrix (Fin r) (Fin 
       exact ih.mono Set.Subset.rfl Set.Subset.rfl (Nat.mul_le_mul_right _ (Nat.le_succ k))
 
 /-- **Gauss–Jordan elimination over `ZMod 2`**: the bits of `reduce (A x)` cost at most
-`14 c (r + 1) (r + c + 1)` gates on top of the bits of `A x`. The `c` stages are chained, so the
-circuit has depth `O(c)` stages. -/
+`14 c (r + 1) (r + c + 1)` gates on top of the bits of `A x`. Only the number of gates is
+bounded; depth is not certified. -/
 theorem synthesis_entryBits_reduce (A : BitString n → Matrix (Fin r) (Fin c) (ZMod 2))
     {s : Set (BooleanFunction n)} (hA : entryBits A ⊆ s) :
     Synthesis interpretation s (entryBits fun x => reduce (A x))
@@ -271,7 +271,7 @@ theorem synthesis_entryBits_reduce (A : BitString n → Matrix (Fin r) (Fin c) (
 /-- **The rank threshold over `ZMod 2`**: the test `t ≤ (A x).rank`, for `t ≤ r + 1`, costs at
 most `14 (c + 1) (r + 1) (r + c + 1)` gates on top of the bits of `A x`. It reduces `A x` and
 counts the nonzero rows (`Matrix.GaussJordan.rank_eq_card_reduce_ne_zero`). Only the number of
-gates is bounded; the depth is `O(c)` stages. -/
+gates is bounded; depth is not certified. -/
 theorem synthesis_le_rank (A : BitString n → Matrix (Fin r) (Fin c) (ZMod 2))
     {s : Set (BooleanFunction n)} (hA : entryBits A ⊆ s) {t : ℕ} (ht : t ≤ r + 1) :
     Synthesis interpretation s {fun x => decide (t ≤ (A x).rank)}
