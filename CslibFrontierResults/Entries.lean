@@ -61,6 +61,7 @@ import CslibFrontier.Computability.MCSP.FormulaMagnification
 import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
 import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
 import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
+import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.PartialETH
@@ -1703,8 +1704,27 @@ register_result "formula-magnification-average-case" where
     solvers are one-sided formulas accepting every yes-instance of MCSP[s] and at most \
     2^(2^n - n) truth tables, with the lower bound 2^(n/d) for fixed d > 0 at arbitrarily \
     large n. The conclusion is a binary NP language without polynomial-size formulas, weaker \
-    than the source's 2^Omega(n). The rounded Theorem 5 for ternary zero-error devices is \
-    not formalized."
+    than the source's 2^Omega(n)."
+
+register_result "formula-magnification-ternary" where
+  title := "Oliveira–Santhanam: sublinear zero-error average-case formula lower bounds for \
+    MCSP[2^√n] imply NP ⊄ Formula[poly]"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 5",
+      locator := "ECCC TR18-139, Section 1.2, p. 8; Appendix A, Definition 43, p. 34" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_half_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_zero_error_average_case_sublinear_hard
+  ]
+  scope := "If no nonuniform family of ternary De Morgan formula devices (an unknown mask and an \
+    answer formula) with o(2^n) total leaves solves MCSP[⌊2^√n⌋] on 2^n-bit truth tables with \
+    zero error, answering ? on at most a 1/n fraction of truth tables for every large n \
+    (Definition 43), then some binary NP language has no polynomial-size De Morgan formulas; \
+    the general form takes any subexponential threshold. Circuit size counts every De Morgan \
+    gate. Conditional: no formula lower bound for MCSP is proved."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"
