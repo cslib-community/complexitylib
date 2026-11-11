@@ -276,8 +276,7 @@ theorem allLeavesBits_le_padded_infoBits_add :
       Nat.prod_choose_le_choose_sum (Finset.range N_k) (fun _ => A) (fun _ => m)
   have hscale : Q_k ^ (N_k * m) * (N_k * A).choose (N_k * m) ≤
       P.paddedUniv.choose (N_k * m) := by
-    have hmul_le : N_k * m ≤ N_k * A := Nat.mul_le_mul_left N_k hmA
-    have h := Nat.pow_mul_choose_le_choose_mul (P.quotUniv_pos P.depth) hmul_le
+    have h := Nat.pow_mul_choose_le_choose_mul (P.quotUniv_pos P.depth) (N_k * A) (N_k * m)
     have hpad : Q_k * (N_k * A) = P.paddedUniv := by
       calc Q_k * (N_k * A) = N_k * A * Q_k := by ring
         _ = P.paddedUniv :=
