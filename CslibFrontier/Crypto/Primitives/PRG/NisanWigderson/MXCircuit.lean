@@ -74,7 +74,7 @@ namespace Cslib.Crypto.PRG.NisanWigderson
 
 open Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Unbounded Finset
 
-variable {ℓ n : ℕ}
+variable {n ℓ : ℕ}
 
 /-! ### Literals of parities -/
 
@@ -96,19 +96,46 @@ private def parityLiteral (b : Bool) (k : Fin m) : Fin (m + m) :=
 
 variable {S}
 
+private theorem eval_parityLiterals_castAdd (x : BitString ℓ) (k : Fin m) :
+    (parityLiterals S).eval (extInterpretation (modGate 2)) x (Fin.castAdd m k) =
+      parityOn (S k) x := by
+  rw [parityLiterals, Circuit.eval_comp, Circuit.eval_append, Fin.append_left,
+    Circuit.eval_wiring, Function.comp_apply, id, Circuit.eval_pi]
+  exact eval_parityOnCircuit _ _ _
+
+private theorem eval_parityLiterals_natAdd (x : BitString ℓ) (k : Fin m) :
+    (parityLiterals S).eval (extInterpretation (modGate 2)) x (Fin.natAdd m k) =
+      !parityOn (S k) x := by
+  rw [parityLiterals, Circuit.eval_comp, Circuit.eval_append, Fin.append_right,
+    Circuit.eval_pi]
+  dsimp only
+  rw [Circuit.eval_oneGate, extInterpretation_ac, interpretation_not, Circuit.eval_pi]
+  exact congrArg (!·) (eval_parityOnCircuit _ _ _)
+
+/-- The literal `parityLiteral b k` holds exactly when the parity on `S k` is `b`. -/
 private theorem eval_parityLiterals (x : BitString ℓ) (b : Bool) (k : Fin m) :
-    (parityLiterals S).eval (extInterpretation (modGate 2)) x (parityLiteral b k) = true ↔
-      parityOn (S k) x = b := by
-  cases b <;> simp [parityLiterals, parityLiteral]
+    (parityLiterals S).eval (extInterpretation (modGate 2)) x (parityLiteral b k) =
+      decide (parityOn (S k) x = b) := by
+  cases b
+  · change (parityLiterals S).eval _ x (Fin.natAdd m k) = _
+    rw [eval_parityLiterals_natAdd]
+    cases parityOn (S k) x <;> rfl
+  · change (parityLiterals S).eval _ x (Fin.castAdd m k) = _
+    rw [eval_parityLiterals_castAdd]
+    cases parityOn (S k) x <;> rfl
 
 private theorem size_parityLiterals : (parityLiterals S).size = m + m := by
   simp [parityLiterals]
 
 private theorem depth_parityLiterals_le : (parityLiterals S).depth ≤ 2 := by
-  refine (Circuit.depth_comp_le _ _).trans (Nat.add_le_add ?_ ?_)
-  · exact (Circuit.depth_append_le _ _).trans
+  have h1 : ((Circuit.wiring extSignature id).append
+      (Circuit.pi fun k : Fin m =>
+        Circuit.oneGate (σ := extSignature) (.ac .not) fun _ => k)).depth ≤ 1 :=
+    (Circuit.depth_append_le _ _).trans
       (max_le (by simp) (Circuit.depth_pi_le _ fun k => (Circuit.depth_oneGate _ _).le))
-  · exact Circuit.depth_pi_le _ fun k => (depth_parityOnCircuit _).le
+  have h2 : (Circuit.pi fun k => parityOnCircuit (S k)).depth ≤ 1 :=
+    Circuit.depth_pi_le _ fun k => (depth_parityOnCircuit _).le
+  exact (Circuit.depth_comp_le _ _).trans (by omega)
 
 end Literals
 
@@ -144,7 +171,8 @@ theorem eval_memCircuit (j : Fin n) (v : Fin (2 ^ binaryFieldDegree n)) (i : Bit
         (Design.binaryPolynomial n ℓ).block (BitString.equivFin ℓ i)) := by
   rw [memCircuit, Circuit.eval_comp, Circuit.eval_oneGate, extInterpretation_ac,
     interpretation_and, decide_eq_decide, mem_block_iff]
-  exact forall_congr' fun c => (eval_parityLiterals i _ c).trans eq_comm
+  refine forall_congr' fun c => ?_
+  rw [eval_parityLiterals, decide_eq_true_iff, eq_comm]
 
 /-- `memCircuit n ℓ j v` has `2 e + 1` gates. -/
 theorem size_memCircuit (j : Fin n) (v : Fin (2 ^ binaryFieldDegree n)) :
@@ -154,31 +182,76 @@ theorem size_memCircuit (j : Fin n) (v : Fin (2 ^ binaryFieldDegree n)) :
 
 /-- `memCircuit n ℓ j v` has depth at most `3`. -/
 theorem depth_memCircuit_le (j : Fin n) (v : Fin (2 ^ binaryFieldDegree n)) :
-    (memCircuit (ℓ := ℓ) n ℓ j v).depth ≤ 3 :=
-  (Circuit.depth_comp_le _ _).trans
-    (by rw [Circuit.depth_oneGate]; have := depth_parityLiterals_le (S := expSet n ℓ j); omega)
+    (memCircuit n ℓ j v).depth ≤ 3 := by
+  have := depth_parityLiterals_le (S := expSet n ℓ j)
+  refine (Circuit.depth_comp_le _ _).trans ?_
+  rw [Circuit.depth_oneGate]
+  omega
 
 /-! ### The selection -/
+
+section Selection
+
+variable (n ℓ)
+
+/-- The first two layers of the selection: the literals of every row `j` and bit `c`, at output
+`(j, c)` (`finProdFinEquiv`), followed by the seed. -/
+private noncomputable def mxInput :
+    Circuit extSignature (ℓ + n * 2 ^ binaryFieldDegree n)
+      ((n * binaryFieldDegree n + n * binaryFieldDegree n) + n * 2 ^ binaryFieldDegree n) :=
+  ((parityLiterals fun k : Fin (n * binaryFieldDegree n) =>
+      expSet n ℓ (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2).comp
+      (Circuit.wiring extSignature (Fin.castAdd _))).append
+    (Circuit.wiring extSignature (Fin.natAdd ℓ))
+
+/-- The literal of row `j` and bit `c` that holds when the parity is `b`, among the outputs of
+`mxInput`. -/
+private def mxLiteral (b : Bool) (j : Fin n) (c : Fin (binaryFieldDegree n)) :
+    Fin ((n * binaryFieldDegree n + n * binaryFieldDegree n) + n * 2 ^ binaryFieldDegree n) :=
+  Fin.castAdd _ (parityLiteral b (finProdFinEquiv (j, c)))
+
+/-- The third layer: for each cell `p = (j, v)`, the conjunction of the seed bit `z_p` and the
+literals of row `j` matching the bits of `v`. -/
+private noncomputable def mxCells :
+    Circuit extSignature
+      ((n * binaryFieldDegree n + n * binaryFieldDegree n) + n * 2 ^ binaryFieldDegree n)
+      (n * 2 ^ binaryFieldDegree n) :=
+  Circuit.pi fun p => Circuit.oneGate (σ := extSignature) (.ac (.and (binaryFieldDegree n + 1)))
+    (Fin.cons (Fin.natAdd _ p) fun c => mxLiteral n
+      ((BitString.equivFin _).symm (finProdFinEquiv.symm p).2 c) (finProdFinEquiv.symm p).1 c :
+        Fin (binaryFieldDegree n + 1) → _)
+
+/-- The last layer: for each row `j`, the disjunction of its cells. -/
+private noncomputable def mxRows : Circuit extSignature (n * 2 ^ binaryFieldDegree n) n :=
+  Circuit.pi fun j => Circuit.oneGate (σ := extSignature) (.ac (.or (2 ^ binaryFieldDegree n)))
+    fun v => finProdFinEquiv (j, v)
 
 /-- **The selection `MX_NW(i, z) = z|S_i` in AC⁰[2]** [CarmosinoImpagliazzoKabanetsKolokolova2016,
 Theorem 3.7], on the bits of `i` followed by the seed `z`. The literals of all rows, then for each
 cell `(j, v)` the conjunction of `z_(j, v)` with the literals matching the bits of `v`, then for
 each row `j` the disjunction of its cells. -/
-noncomputable def mxCircuit (n ℓ : ℕ) :
-    Circuit extSignature (ℓ + n * 2 ^ binaryFieldDegree n) n :=
-  (Circuit.pi fun j : Fin n =>
-      Circuit.oneGate (σ := extSignature) (.ac (.or (2 ^ binaryFieldDegree n)))
-        fun v => finProdFinEquiv (j, v)).comp
-    ((Circuit.pi fun p : Fin (n * 2 ^ binaryFieldDegree n) =>
-        Circuit.oneGate (σ := extSignature) (.ac (.and (binaryFieldDegree n + 1)))
-          (Fin.cons (Fin.natAdd _ p) fun c => Fin.castAdd _ (parityLiteral
-            ((BitString.equivFin _).symm (finProdFinEquiv.symm p).2 c)
-            (finProdFinEquiv ((finProdFinEquiv.symm p).1, c))) :
-              Fin (binaryFieldDegree n + 1) → _)).comp
-      (((parityLiterals fun k : Fin (n * binaryFieldDegree n) =>
-          expSet n ℓ (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2).comp
-          (Circuit.wiring extSignature (Fin.castAdd _))).append
-        (Circuit.wiring extSignature (Fin.natAdd ℓ))))
+noncomputable def mxCircuit : Circuit extSignature (ℓ + n * 2 ^ binaryFieldDegree n) n :=
+  (mxRows n).comp ((mxCells n).comp (mxInput n ℓ))
+
+variable {n ℓ}
+
+private theorem eval_mxInput_mxLiteral (i : BitString ℓ)
+    (z : Fin (n * 2 ^ binaryFieldDegree n) → Bool) (b : Bool) (j : Fin n)
+    (c : Fin (binaryFieldDegree n)) :
+    (mxInput n ℓ).eval (extInterpretation (modGate 2)) (Fin.append i z) (mxLiteral n b j c) =
+      decide (parityOn (expSet n ℓ j c) i = b) := by
+  rw [mxInput, mxLiteral, Circuit.eval_append, Fin.append_left, Circuit.eval_comp,
+    Circuit.eval_wiring]
+  have : Fin.append i z ∘ Fin.castAdd (n * 2 ^ binaryFieldDegree n) = i :=
+    funext fun t => Fin.append_left _ _ t
+  rw [this, eval_parityLiterals, Equiv.symm_apply_apply]
+
+private theorem eval_mxInput_natAdd (i : BitString ℓ)
+    (z : Fin (n * 2 ^ binaryFieldDegree n) → Bool) (p : Fin (n * 2 ^ binaryFieldDegree n)) :
+    (mxInput n ℓ).eval (extInterpretation (modGate 2)) (Fin.append i z) (Fin.natAdd _ p) =
+      z p := by
+  rw [mxInput, Circuit.eval_append, Fin.append_right, Circuit.eval_wiring, Function.comp_apply,
+    Fin.append_right]
 
 /-- **The circuit computes the selection**: with `MOD₂` gates, on the index `i` followed by the
 seed `z`, output `j` of `mxCircuit n ℓ` is bit `j` of `z` restricted to block `i`. -/
@@ -186,18 +259,24 @@ theorem eval_mxCircuit (i : BitString ℓ) (z : Fin (n * 2 ^ binaryFieldDegree n
     (mxCircuit n ℓ).eval (extInterpretation (modGate 2)) (Fin.append i z) =
       (Design.binaryPolynomial n ℓ).restrict (BitString.equivFin ℓ i) z := by
   funext j
-  set v := BitString.equivFin _ fun c => parityOn (expSet n ℓ j c) i with hv
+  set v := BitString.equivFin _ fun c => parityOn (expSet n ℓ j c) i
   have hcell (w : Fin (2 ^ binaryFieldDegree n)) :
-      (∀ c, (BitString.equivFin _).symm w c = parityOn (expSet n ℓ j c) i) ↔ w = v := by
-    rw [← funext_iff, Equiv.symm_apply_eq]
-  rw [Design.restrict_binaryPolynomial i z j v fun c => (hcell v).2 rfl c]
-  sorry
+      (∀ c, parityOn (expSet n ℓ j c) i = (BitString.equivFin _).symm w c) ↔ w = v := by
+    rw [← funext_iff, eq_comm, Equiv.symm_apply_eq]
+  rw [Design.restrict_binaryPolynomial i z j v fun c => ((hcell v).2 rfl c).symm, mxCircuit,
+    Circuit.eval_comp, Circuit.eval_comp, mxRows, Circuit.eval_pi]
+  dsimp only
+  rw [Circuit.eval_oneGate, extInterpretation_ac, interpretation_or]
+  simp only [mxCells, Circuit.eval_pi, Circuit.eval_oneGate, extInterpretation_ac,
+    interpretation_and, Equiv.symm_apply_apply, Fin.forall_fin_succ, Fin.cons_zero,
+    Fin.cons_succ, eval_mxInput_natAdd, eval_mxInput_mxLiteral, decide_eq_true_iff, hcell,
+    exists_eq_right, Bool.decide_eq_true]
 
 /-- `mxCircuit n ℓ` has `n (2 e + 2 ^ e + 1)` gates: `2 e` literals, `2 ^ e` conjunctions and one
 disjunction for each row. -/
 theorem size_mxCircuit (n ℓ : ℕ) :
     (mxCircuit n ℓ).size = n * (2 * binaryFieldDegree n + 2 ^ binaryFieldDegree n + 1) := by
-  simp [mxCircuit, size_parityLiterals]
+  simp [mxCircuit, mxRows, mxCells, mxInput, size_parityLiterals]
   ring
 
 /-- **`mxCircuit n ℓ` has at most `5 n²` gates**, whatever `ℓ`. -/
@@ -214,15 +293,18 @@ theorem size_mxCircuit_le (n ℓ : ℕ) : (mxCircuit n ℓ).size ≤ 5 * n ^ 2 :
 /-- **`mxCircuit n ℓ` has depth at most `4`**: parities, negations, conjunctions and
 disjunctions. -/
 theorem depth_mxCircuit_le (n ℓ : ℕ) : (mxCircuit n ℓ).depth ≤ 4 := by
-  refine (Circuit.depth_comp_le _ _).trans ?_
-  have h3 := Circuit.depth_pi_le (n := n * 2 ^ binaryFieldDegree n) (fun j : Fin n =>
-      Circuit.oneGate (σ := extSignature) (.ac (.or (2 ^ binaryFieldDegree n)))
-        fun v => finProdFinEquiv (j, v)) fun j => (Circuit.depth_oneGate _ _).le
-  refine Nat.add_le_add h3 ((Circuit.depth_comp_le _ _).trans (Nat.add_le_add
-    (Circuit.depth_pi_le _ fun p => (Circuit.depth_oneGate _ _).le) ?_)) |>.trans le_rfl
-  refine (Circuit.depth_append_le _ _).trans (max_le ?_ (by simp))
-  refine (Circuit.depth_comp_le _ _).trans ?_
-  rw [Circuit.depth_wiring, add_zero]
-  exact depth_parityLiterals_le
+  have hrows : (mxRows n).depth ≤ 1 :=
+    Circuit.depth_pi_le _ fun _ => (Circuit.depth_oneGate _ _).le
+  have hcells : (mxCells n).depth ≤ 1 :=
+    Circuit.depth_pi_le _ fun _ => (Circuit.depth_oneGate _ _).le
+  have hinput : (mxInput n ℓ).depth ≤ 2 := by
+    refine (Circuit.depth_append_le _ _).trans (max_le ?_ (by simp))
+    refine (Circuit.depth_comp_le _ _).trans ?_
+    rw [Circuit.depth_wiring, add_zero]
+    exact depth_parityLiterals_le
+  have := Circuit.depth_comp_le (mxCells n) (mxInput n ℓ)
+  exact (Circuit.depth_comp_le _ _).trans (by omega)
+
+end Selection
 
 end Cslib.Crypto.PRG.NisanWigderson
