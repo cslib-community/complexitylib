@@ -451,12 +451,12 @@ inductive ExecFlatProgramOps {B : Basis} {r : ℕ}
         (∀ i, input i = true → Fits w (encode o i)) ∧
         ExecProgramDist w p_op (prepareFlatRegs input encode o p.2)
           ((μ_step p).map Prod.snd) (T_step p + 1) ∧
-        ∀ q ∈ (μ_step p).support,
-          q.2.2.Bounded w ∧
-          decode o q.2.1 q.2.2.regs = some (D.stepFn s o).2 ∧
-          Modifies (Block.mk base space).footprint p.2.mem q.2.2.mem) →
+        ∀ ℓ outVal y, (ℓ, outVal, y) ∈ (μ_step p).support →
+          y.Bounded w ∧
+          decode o outVal y.regs = some (D.stepFn s o).2 ∧
+          Modifies (Block.mk base space).footprint p.2.mem y.mem) →
       ExecFlatProgramOps D Latent w base space p_op input encode decode (D.stepFn s o).1 ops
-        (ν.bind fun p => (μ_step p).map fun q => (q.1, q.2.2)) ν_final T_rest →
+        (ν.bind fun p => (μ_step p).map fun ⟨ℓ, _, y⟩ => (ℓ, y)) ν_final T_rest →
       ExecFlatProgramOps D Latent w base space p_op input encode decode s (o :: ops) ν ν_final
         ((∑' p, ν p * T_step p) + T_rest)
 
@@ -519,7 +519,7 @@ private theorem simFlatOps_induction {B : Basis} {r regCells wCell w base space 
       obtain ⟨p, hp, hq_map⟩ := hp₁
       rw [PMF.mem_support_map_iff] at hq_map
       obtain ⟨q, hq, rfl⟩ := hq_map
-      obtain ⟨hq_bdd, _, hmod⟩ := (hstep p hp).2.2 q hq
+      obtain ⟨hq_bdd, _, hmod⟩ := (hstep p hp).2.2 q.1 q.2.1 q.2.2 hq
       exact ⟨hq_bdd, fun a ha => (hmod a ha).trans ((hsupp p hp).2 a ha)⟩
     obtain ⟨hcorr_rem, hexp_rem⟩ := ih hlen_rem halph_rem hT_rest_fin hsupp₁
     refine ⟨?_, ?_⟩
@@ -542,7 +542,7 @@ private theorem simFlatOps_induction {B : Basis} {r regCells wCell w base space 
       obtain ⟨vy, hvy, hz₁_eq⟩ := hsup_sim z_full hz_full
       rw [PMF.mem_support_map_iff] at hvy
       obtain ⟨q, hq, rfl⟩ := hvy
-      obtain ⟨_, hdec_q, _⟩ := hq_all q hq
+      obtain ⟨_, hdec_q, _⟩ := hq_all q.1 q.2.1 q.2.2 hq
       have hz₁_ans : z_full.1.1 = (D.stepFn s o).2 := by
         have h1 := congrArg Prod.fst hz₁_eq
         simpa [hdec_q] using h1
@@ -992,9 +992,11 @@ theorem ExecStepsOfFn.toExecFlatProgramOps
       rw [PMF.map_comp, PMF.map_comp]
       rfl
     rw [hmap_snd] at hpdist
-    refine ⟨C.arguments_fit o hvo, hpdist, fun q hq => ?_⟩
+    refine ⟨C.arguments_fit o hvo, hpdist, fun ℓ outVal y hq => ?_⟩
     rw [PMF.mem_support_map_iff] at hq
-    obtain ⟨q₀, hq₀, rfl⟩ := hq
+    obtain ⟨q₀, hq₀, hq_eq⟩ := hq
+    rcases Prod.mk.inj hq_eq with ⟨rfl, hq_eq₂⟩
+    rcases Prod.mk.inj hq_eq₂ with ⟨_, rfl⟩
     obtain ⟨hdec, hrep, hmod⟩ := hq_all q₀ hq₀
     exact ⟨C.bounded hrep, hdec, hmod⟩
 

@@ -1129,7 +1129,8 @@ private theorem execFlatProgramOps_cons_inv
   | nil => cases hops'
   | cons hstep hrem _ =>
     cases hops'
-    exact ⟨_, _, _, hstep, hrem⟩
+    exact ⟨_, _, _, fun p hp =>
+      ⟨(hstep p hp).1, (hstep p hp).2.1, fun q hq => (hstep p hp).2.2 q.1 q.2.1 q.2.2 hq⟩, hrem⟩
 
 /-- **Probe-free program refutation sanity check (`[Instr.halt retReg]`):**
 A trivial `1`-instruction flat program `[Instr.halt retReg]` (for **any** `Basis`, register count
