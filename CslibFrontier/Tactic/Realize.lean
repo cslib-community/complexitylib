@@ -30,8 +30,8 @@ the client syntax, unfolding definitions, with one rule per form:
 * a method with a local zero-work `Realizes` certificate: `Realizes.reindex`, selecting its
   arguments from live words before unfolding its implementation. Computed arguments are first
   staged by certified glue using the method's input encoding.
-* `if` on natural `=`, `≠`, `<`, `≤`, `>` or `≥`, and their negations:
-  `Realizes.branch₀`, swapping alternatives for negated tests.
+* `if` on natural `=`, `≠`, `<`, `≤`, `>` or `≥`, combined with `¬`, `∧` and `∨`:
+  `Realizes.branch₀`, retaining short-circuiting. Named guards unfold to these forms.
 * `match` on an optional word or word pair: the client equals the branch on its presence tag
   (`Realizes.congr`, proved by cases).
 * `iterate step D n a` whose step begins with a query: `Realizes.iterate₀`, after
@@ -644,29 +644,65 @@ private def cond? (c : Expr) : MetaM (Option (Name × Expr × Expr)) := do
 /-- The comparison of a branch condition: equality or `<`, with its operands. -/
 private def parseCond (c : Expr) : MetaM (Name × Expr × Expr) := do
   if let some r ← cond? c then return r
-  throwError "realize: a branch condition must compare words using `=`, `≠`, `<`, `≤`, `>` \
-    or `≥`, or negate one of these comparisons, \
+  throwError "realize: a branch condition must combine word comparisons \
+    (`=`, `≠`, `<`, `≤`, `>` or `≥`) using `¬`, `∧` or `∨`, \
     got{indentExpr c}"
 
-/-- Lower a non-strict or negated word test to a native comparison. Leave word operands and
-alternatives untouched so their own rules retain live values, fit and selected-path safety. -/
+/-- Expose named predicates throughout the logical guard while leaving word comparisons intact. -/
+private partial def unfoldGuard (c : Expr) (fuel : Nat := 64) : MetaM Expr := do
+  if let some name := c.getAppFn.constName? then
+    if [``Eq, ``Ne, ``LT.lt, ``LE.le, ``GT.gt, ``GE.ge].contains name then
+      return c
+  if fuel == 0 then throwError "realize: branch guard unfolding exceeded its limit at{indentExpr c}"
+  if c.isAppOfArity ``And 2 || c.isAppOfArity ``Or 2 then
+    return mkApp2 c.getAppFn (← unfoldGuard (c.getArg! 0) (fuel - 1))
+      (← unfoldGuard (c.getArg! 1) (fuel - 1))
+  if c.isAppOfArity ``Not 1 then
+    return mkApp c.getAppFn (← unfoldGuard c.appArg! (fuel - 1))
+  let c' ← whnfR c
+  if c' != c then return ← unfoldGuard c' (fuel - 1)
+  if let some c' ← withTransparency .default (unfoldDefinition? c) then
+    return ← unfoldGuard c' (fuel - 1)
+  return c
+
+/-- Lower a compound word test to native comparisons. Leave word operands and alternatives
+untouched so their own rules retain live values, fit and selected-path safety. -/
 private def normalizeBranch? (body : Expr) : MetaM (Option Simp.Result) := do
-  let mut thms : SimpTheorems := {}
-  for name in [``ne_eq, ``ite_not] do
-    thms ← thms.addConst name
-  thms ← thms.addConst ``not_lt (inv := true)
+  let guard ← unfoldGuard (body.getArg! 1)
+  let mut guardThms : SimpTheorems := {}
+  guardThms ← guardThms.addConst ``ne_eq
+  guardThms ← guardThms.addConst ``not_lt (inv := true)
   let ctx ← Simp.mkContext
     (config := { dsimp := false, zeta := false, proj := false, iota := false })
-    (simpTheorems := #[thms]) (congrTheorems := ← getSimpCongrTheorems)
+    (simpTheorems := #[guardThms]) (congrTheorems := ← getSimpCongrTheorems)
   let defaults := Simp.mkDefaultMethodsCore #[]
+  let guardMethods : Simp.Methods := { defaults with
+    pre := fun e => do
+      if (← whnfR (← inferType e)).isConstOf ``Nat then return .done { expr := e }
+      if e != guard && (← isProp e) then return .done { expr := e }
+      defaults.pre e }
+  let (condition, _) ← Simp.main guard ctx (methods := guardMethods)
+  -- Rebuild decidability from the exposed formula. Its original instance can be hidden
+  -- behind a named guard; conditional congruence checks the bridge for either instance.
+  let h ← mkAppOptM ``ite_cond_congr #[some (body.getArg! 0), some (body.getArg! 1),
+    some condition.expr, some (body.getArg! 2), none, some (body.getArg! 3),
+    some (body.getArg! 4), some (← condition.getProof)]
+  let some (_, _, canonical) := (← inferType h).eq?
+    | throwError "realize: internal error rebuilding a branch condition"
+  let mut thms : SimpTheorems := {}
+  for name in [``ite_not, ``ite_and, ``ite_or] do
+    thms ← thms.addConst name
   let methods : Simp.Methods := { defaults with
     pre := fun e => do
       if e == body.getArg! 3 || e == body.getArg! 4 then return .done { expr := e }
-      if (← whnfR (← inferType e)).isConstOf ``Nat then return .done { expr := e }
+      if ← isProp e then return .done { expr := e }
       defaults.pre e }
-  let (normalized, _) ← Simp.main body ctx (methods := methods)
+  let (normalized, _) ← Simp.main canonical (ctx.setSimpTheorems #[thms]) (methods := methods)
+  -- Each recursive call exposes an alias or simplifies the outer condition. Do not
+  -- recurse merely because an unsupported condition acquired a different instance.
   if normalized.expr.isAppOfArity ``ite 5 &&
-      (← cond? (normalized.expr.getArg! 1)).isSome then return some normalized
+      normalized.expr.getArg! 1 != body.getArg! 1 then
+    return some { normalized with proof? := some (← mkEqTrans h (← normalized.getProof)) }
   return none
 
 /-- The comparison of a loop guard, after unfolding definitions. `a = b`, `a < b` and `a > b`

@@ -82,6 +82,17 @@ example :
   ⟨isLarge_setOf_lt_complexity, isUseful_PPoly_setOf_lt_complexity, fun _ h => h.elim,
     isUseful_PPoly_iff.1 isUseful_PPoly_setOf_lt_complexity _ (by fun_prop)⟩
 
+/-- Patching: every language with constant slices is in `P/poly`, so a property useful against
+`P/poly`, here the hard functions, eventually contains no constant function. The patched language
+may take a different constant at each length. -/
+example :
+    ∀ᶠ n in atTop, ∀ f ∈ {f : BooleanFunction n |
+      2 ^ n / (5 * n) < complexity interpretation (single f)}, ¬ ∃ b, f = fun _ => b :=
+  isUseful_PPoly_setOf_lt_complexity.eventually_forall_not
+    (fun g hg => PPoly.of_slice_const (fun n => (hg n).choose) fun n x => by
+      rw [Language.slice_ofSlices]; exact congrFun (hg n).choose_spec x)
+    fun _ => ⟨_, false, rfl⟩
+
 /-! ### Circuit tests -/
 
 /-- A constant test is computed with one gate, and circuit tests with more gates include those with

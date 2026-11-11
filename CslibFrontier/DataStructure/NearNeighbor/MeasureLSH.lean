@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.DataStructure.NearNeighbor.LSH
 public import CslibFrontier.Probability.LocalitySensitiveHash.Measure
-import Mathlib.MeasureTheory.Integral.Lebesgue.Basic
+import CslibFrontier.Probability.EventCount
 import Mathlib.MeasureTheory.Integral.Lebesgue.Markov
 import Mathlib.MeasureTheory.Measure.Real
 
@@ -55,39 +55,6 @@ open Cslib.Probability MeasureTheory
 open scoped ENNReal
 
 variable {ι X Y : Type*} [MeasurableSpace ι] [DecidableEq Y]
-
-/-- A list count of measurable events, each of probability at most `B`, is measurable and has
-Lebesgue integral at most `l.length * B`. -/
-private theorem measurable_and_lintegral_countP_le {Ω : Type*} [MeasurableSpace Ω] (μ : Measure Ω)
-    (E : Ω → X → Prop) [∀ ω x, Decidable (E ω x)] (B : ℝ≥0∞) :
-    ∀ l : List X, (∀ x ∈ l, MeasurableSet {ω | E ω x}) →
-      (∀ x ∈ l, μ {ω | E ω x} ≤ B) →
-        Measurable (fun ω => ((l.countP fun x => decide (E ω x) : ℕ) : ℝ≥0∞)) ∧
-          ∫⁻ ω, ((l.countP fun x => decide (E ω x) : ℕ) : ℝ≥0∞) ∂μ ≤ l.length * B
-  | [], _, _ => by
-      simp only [List.countP_nil, Nat.cast_zero, lintegral_zero, List.length_nil, zero_mul]
-      exact ⟨measurable_const, le_rfl⟩
-  | y :: l, hm, hl => by
-      have hmy := hm y List.mem_cons_self
-      have hy := hl y List.mem_cons_self
-      obtain ⟨hm_ih, hi_ih⟩ := measurable_and_lintegral_countP_le μ E B l
-        (fun x hx => hm x (List.mem_cons_of_mem y hx))
-        (fun x hx => hl x (List.mem_cons_of_mem y hx))
-      have hfun : (fun ω => (((y :: l).countP fun x => decide (E ω x) : ℕ) : ℝ≥0∞)) =
-          fun ω => {ω | E ω y}.indicator 1 ω + ((l.countP fun x => decide (E ω x) : ℕ) : ℝ≥0∞) := by
-        funext ω
-        rw [List.countP_cons]
-        by_cases hω : E ω y
-        · simp only [hω, decide_true, ite_true, Nat.cast_add, Nat.cast_one,
-            Set.indicator_of_mem (show ω ∈ {ω | E ω y} from hω), Pi.one_apply, add_comm]
-        · simp only [hω, decide_false, Bool.false_eq_true, ite_false, Nat.add_zero,
-            Set.indicator_of_notMem (show ω ∉ {ω | E ω y} from hω), zero_add]
-      rw [hfun]
-      refine ⟨(measurable_one.indicator hmy).add hm_ih, ?_⟩
-      rw [lintegral_add_left (measurable_one.indicator hmy), lintegral_indicator_one hmy,
-        List.length_cons, Nat.cast_add, Nat.cast_one, add_comm (l.length : ℝ≥0∞) 1,
-        add_mul, one_mul]
-      exact add_le_add hy hi_ih
 
 /-- A list count of far colliding candidates in a single table is measurable and bounded in
 expectation by `P.length * ENNReal.ofReal P₂`. -/

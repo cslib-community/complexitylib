@@ -75,7 +75,7 @@ variable {α : Type} {H : List Bool → List Bool → List Bool} {V : PCPVerifie
 
 /-- The payload bits of an opening: its bit and the bits of its path labels. -/
 def kilianOpeningBits : KilianOpening → ℕ
-  | (_, path) => 1 + (path.map List.length).sum
+  | o => 1 + (o.path.map List.length).sum
 
 /-- The payload bits of a response: the bits of all its openings. -/
 def kilianResponseBits (response : KilianResponse) : ℕ :=
@@ -235,7 +235,7 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
         (kilianPosition V x a)).length ≤ d := by
       rw [length_merklePath]
       simpa [kilianLeaves, kilianDepth] using kilianDepth_le hq
-    simp only [encKilianOpening, length_encPair, encBool_apply, List.length_singleton]
+    simp only [encKilianOpening_apply, length_encPair, encBool_apply, List.length_singleton]
     nlinarith
   have hanswers (ρ : List Bool) (hρ : ρ ∈ ρs) :
       (encList encKilianOpening (kilianOpen H V k x table ρ)).length ≤
