@@ -20,7 +20,7 @@ import CslibFrontier.Foundations.Data.BitString.Basic
 The learner of Carmosino, Impagliazzo, Kabanets and Kolokolova
 [Carmosino, Impagliazzo, Kabanets and Kolokolova, Theorem 5.1, p. 10:19]
 [CarmosinoImpagliazzoKabanetsKolokolova2016], for `p = 2`, in a per-function black-box form.
-Let `test` be a Boolean function on strings of `2 ^ ℓ` bits. Suppose it accepts a
+Let `test` be a Boolean function on strings of `2 ^ ℓ` bits. Suppose it accepts at least a
 `2 ^ (ℓ + 1 - g)` fraction of all strings but no output of the Nisan–Wigderson generator of the
 amplified function `Amp(f) = glAmp f k`, with `k = cikkK e g` and the design
 `Design.binaryPolynomial (k n + k) ℓ`. Then `cikkLearner n ℓ e g h test` learns `f` with membership
@@ -60,6 +60,7 @@ The following deviations from the source are labelled:
 
 ## Main results
 
+* `Cslib.MachineLearning.UniformLearning.cikkLearner_def`: the learner unfolded into its stages.
 * `Cslib.MachineLearning.UniformLearning.learns_cikkLearner`: learning from a dense test that
   rejects the generator of every amplified target.
 * `Cslib.MachineLearning.UniformLearning.queriesAtMost_cikkLearner`,
@@ -93,6 +94,18 @@ noncomputable def cikkLearner (n ℓ e g h : ℕ) (test : BitString (2 ^ ℓ) �
       (nwLearner (Design.binaryPolynomial (cikkK e g * n + cikkK e g) ℓ) fun y => !test y)
       (cikkFixed e g) (cikkTrials e g) (cikkMasks e g))
     (cikkRuns e g h) (cikkSamples e g h)
+
+/-- `cikkLearner` unfolded: best-of selection over the reconstruction of the amplification over
+the Nisan–Wigderson reconstruction built from the negated test. -/
+theorem cikkLearner_def (n ℓ e g h : ℕ) (test : BitString (2 ^ ℓ) → Bool) :
+    cikkLearner n ℓ e g h test =
+      QueryLearner.bestOf
+        (ampLearner
+          (nwLearner (Design.binaryPolynomial (cikkK e g * n + cikkK e g) ℓ) fun y => !test y)
+          (cikkFixed e g) (cikkTrials e g) (cikkMasks e g))
+        (cikkRuns e g h) (cikkSamples e g h) := by
+  unfold cikkLearner
+  rfl
 
 /-- The seed distribution of `cikkLearner`: `cikkRuns e g h` independent seeds of the
 reconstruction of `Amp(f)`, each a uniform Nisan–Wigderson trial with an independent uniform
