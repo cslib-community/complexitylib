@@ -13,6 +13,7 @@ import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -21,6 +22,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
+import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
@@ -50,6 +52,7 @@ import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
+import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -494,6 +497,29 @@ register_result "middle-slice-mod-two" where
     (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
     sketch, and Razborov's original paper was not checked for its hard function."
 
+register_result "rank-property-natural-ac0-2" where
+  title := "Razborov's rank property is a P/poly-natural property useful against AC⁰[2]"
+  topic := "circuit complexity"
+  sources := [
+    { paper := RazborovRudich1997, theorem := unverified, locator := "Section 3.2, p. 27" },
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := "Theorem 5.3",
+      locator := "p. 10:19; p = 2 property p. 10:20" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.Razborov.isNatural_PPoly_and_isUseful_AC0Mod_two_rankProperty,
+    Cslib.Circuits.Boolean.Razborov.isUseful_AC0Mod_two_rankProperty,
+    Cslib.Circuits.Boolean.Razborov.notMem_rankProperty_rankLength_of_computes,
+    Cslib.Circuits.Boolean.Razborov.rankLength_add_one_le
+  ]
+  scope := "Along the level ⌈n/2⌉ - ⌊√(n + 1)⌋/10, the GF(2) rank property (a variant: one square \
+    matrix, threshold C(n, a)/2) is large, its truth tables are decided by De Morgan circuits of \
+    173·8^n gates (P/poly; size only, depth not certified, not the sources' NC²), and it is useful \
+    against AC⁰[2] (NOT, unbounded fan-in AND/OR and MOD_2 gates; nonuniform). Explicitly, at \
+    the input length m = rankLength d x, which satisfies m + 1 ≤ 401·2^(2d(2d+7))·x^(2d) for \
+    x ≥ 1, no circuit of depth at most d with at most 2^x gates computes a function with the \
+    property. p = 2 only; the constants are this library's. \
+    The learning consequences (CIKK Theorem 5.1 class form, Corollary 5.4) are not included."
+
 register_result "braverman" where
   title := "Braverman: polylogarithmic independence fools AC⁰"
   topic := "circuit complexity"
@@ -857,8 +883,26 @@ register_result "depth-five-imm" where
     are unrestricted and gates are shared. The count is of the normalized model \
     Cslib.Circuits.DepthFive.Circuit, which is at most the source's gate count; no formal \
     conversion from a layered circuit is proved. The source's threshold is unspecified; here \
-    it is exp 29200, not optimized. Lower bound only: no matching construction and no \
-    positive characteristic."
+    it is exp 29200, not optimized. Lower bound only; the matching construction is the \
+    entry depth-five-imm-upper. Not proved in positive characteristic."
+
+register_result "depth-five-imm-upper" where
+  title := "OpenAI: a homogeneous depth-five circuit for iterated matrix multiplication"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := OpenAI2026DepthFive, theorem := "the block construction of §6",
+      locator := unverified }
+  ]
+  theorems := [
+    Cslib.Circuits.DepthFive.exists_circuit_size_le_rpow,
+    Cslib.Circuits.DepthFive.exists_circuit_imm_of_le_mul
+  ]
+  scope := "Over every commutative semiring and for every n ≥ 2, some syntactically \
+    homogeneous ΣΠΣΠΣ circuit computes IMM_{n,n} as a formal polynomial with at most \
+    n^(√n + 4) lower product, middle sum and upper product gates; for n ≤ r·t the exact count \
+    is r·n^(t+1) + r·n² + n^(r+1). Normalized model Cslib.Circuits.DepthFive.Circuit: leaves \
+    and bottom sums are not counted, and there are n^(r+1) upper products where the source \
+    has n^(r-1). With depth-five-imm the size is n^Θ(√n) over characteristic zero."
 
 /-! ## Further collected results -/
 
@@ -2987,3 +3031,24 @@ register_result "bareiss-rational-elimination-polytime" where
     ragged or oversized-header inputs), whereas Schrijver Section 3.3 analyzes normalized \
     rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
     (circulant spectra and fibre-sum bounds remain open there)."
+
+register_result "sperner-2d-ppad-completeness" where
+  title := "PPAD-completeness of circuit two-dimensional Sperner (Sperner2D)"
+  topic := "structural complexity"
+  sources := [
+    { paper := ChenDeng2006, theorem := unverified,
+      locator := unverified },
+    { paper := ChenDengTeng2009, theorem := unverified,
+      locator := "Section 4.1, Definitions 4.2, 4.4 and 4.5 (with d = 2)" }
+  ]
+  theorems := [
+    Cslib.Complexity.EndOfLine_searchReducible_Sperner2D,
+    Cslib.Complexity.Sperner2D_searchHard,
+    Cslib.Complexity.Sperner2D_searchComplete
+  ]
+  scope := "Explicit polynomial-time search reduction EndOfLine ≤ Sperner2D compiling each \
+    n-bit EndOfLine instance uniformly into a circuit on a 2^(n + 5) × 2^(n + 5) grid of 16 × 16 \
+    routing, crossover and end-tile gadgets, combined with Sperner2D_mem_PPAD under encSperner2D. \
+    Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
+    as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
+    completeness and d-dimensional circuit Sperner are not formalized."

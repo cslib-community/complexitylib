@@ -42,9 +42,12 @@ has error above `ε` with probability at most `δ`, the combined learner has err
 with probability at most `δ ^ k + 2 k exp (-2 t θ²)`: every run fails with probability `δ ^ k`,
 and otherwise some agreement estimate is off by `t θ` with probability at most
 `2 k exp (-2 t θ²)` by Hoeffding's inequality and a union bound
-(`UniformLearning.QueryLearner.learns_bestOf`). For a weak learner, with agreement at least
-`1/2 + γ` with probability at least `p`, taking `θ = γ/4`, `k ≥ log (2/η) / p` and
-`t ≥ 8 log (4k/η) / γ²` gives agreement at least `1/2 + γ/2` with probability at least `1 - η`
+(`UniformLearning.QueryLearner.learns_bestOf`). For a learner with error at most `ε` with
+probability at least `p`, taking `k ≥ log (2/η) / p` and `t ≥ log (4k/η) / (2θ²)` gives error at
+most `ε + 2θ` with probability at least `1 - η`
+(`UniformLearning.QueryLearner.learns_bestOf_of_success`). For a weak learner, with agreement at
+least `1/2 + γ` with probability at least `p`, taking `θ = γ/4` gives agreement at least
+`1/2 + γ/2` with probability at least `1 - η` once `t ≥ 8 log (4k/η) / γ²`
 (`UniformLearning.QueryLearner.learns_bestOf_of_weak`).
 
 As for the other query learners here, only the number of queries is certified; running time is
@@ -69,6 +72,8 @@ not. Selection compares exact integer agreement counts; ties go to the first max
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.le_sup_eval_bestOf`: hypothesis complexity
   is at most the largest among the runs.
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.learns_bestOf`: the confidence of `bestOf`.
+* `Cslib.MachineLearning.UniformLearning.QueryLearner.learns_bestOf_of_success`: a learner that
+  succeeds with probability `p` becomes one with confidence `1 - η`, at error `ε + 2θ`.
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.learns_bestOf_of_weak`: weak learners
   become learners with confidence `1 - η`.
 
@@ -278,17 +283,16 @@ theorem learns_bestOf [NeZero k] {A : QueryLearner ι Ω} {μ : PMF Ω}
         gcongr
     _ = _ := (ENNReal.ofReal_add (by positivity) (by positivity)).symm
 
-/-- **From weak to confident learning.** If `A` outputs a hypothesis with agreement at least
-`1/2 + γ` (error at most `1/2 - γ`) with probability at least `p`, then `bestOf A k t` with
-`k ≥ log (2/η) / p` runs and `t ≥ 8 log (4k/η) / γ²` sample points outputs a hypothesis with
-agreement at least `1/2 + γ/2` with probability at least `1 - η`. -/
-theorem learns_bestOf_of_weak [NeZero k] {A : QueryLearner ι Ω} {μ : PMF Ω}
-    {C : PACLearning.ConceptClass (ι → Bool) Bool} {γ p η : ℝ}
-    (hA : A.Learns μ C (1 / 2 - γ) (1 - p)) (hγ : 0 < γ) (hp : p ≤ 1) (hη : 0 < η)
-    (hk : Real.log (2 / η) ≤ p * k) (ht : 8 * Real.log (4 * k / η) ≤ t * γ ^ 2) :
-    (bestOf A k t).Learns (bestOfSeed μ k t) C (1 / 2 - γ / 2) η := by
-  refine (learns_bestOf hA (by linarith) (by linarith : (0 : ℝ) ≤ γ / 4)).mono le_rfl
-    (by linarith) ?_
+/-- **Boosting the confidence.** If `A` has error at most `ε` with probability at least `p`, then
+`bestOf A k t` with `k ≥ log (2/η) / p` runs and `t ≥ log (4k/η) / (2θ²)` sample points has error at
+most `ε + 2θ` with probability at least `1 - η`: all runs fail with probability at most `η / 2`, and
+some agreement estimate is off by `tθ` with probability at most `η / 2`. -/
+theorem learns_bestOf_of_success [NeZero k] {A : QueryLearner ι Ω} {μ : PMF Ω}
+    {C : PACLearning.ConceptClass (ι → Bool) Bool} {ε p θ η : ℝ}
+    (hA : A.Learns μ C ε (1 - p)) (hp : p ≤ 1) (hθ : 0 ≤ θ) (hη : 0 < η)
+    (hk : Real.log (2 / η) ≤ p * k) (ht : Real.log (4 * k / η) ≤ 2 * t * θ ^ 2) :
+    (bestOf A k t).Learns (bestOfSeed μ k t) C (ε + 2 * θ) η := by
+  refine (learns_bestOf hA (by linarith) hθ).mono le_rfl le_rfl ?_
   have hkpos : (0 : ℝ) < k := Nat.cast_pos.2 (Nat.pos_of_ne_zero (NeZero.ne k))
   -- all `k` runs fail with probability at most `η / 2`
   have h1 : (1 - p) ^ k ≤ η / 2 := by
@@ -296,15 +300,28 @@ theorem learns_bestOf_of_weak [NeZero k] {A : QueryLearner ι Ω} {μ : PMF Ω}
           Real.one_sub_pow_le_exp hp (by linarith)
       _ = η / 2 := by
           rw [Real.exp_neg, Real.exp_log (by positivity), inv_div]
-  -- some agreement estimate is off by `t γ / 4` with probability at most `η / 2`
-  have h2 : Real.exp (-2 * t * (γ / 4) ^ 2) ≤ η / (4 * k) := by
-    calc Real.exp (-2 * t * (γ / 4) ^ 2) ≤ Real.exp (-Real.log (4 * k / η)) :=
-          Real.exp_le_exp.2 (by nlinarith)
+  -- some agreement estimate is off by `t θ` with probability at most `η / 2`
+  have h2 : Real.exp (-2 * t * θ ^ 2) ≤ η / (4 * k) := by
+    calc Real.exp (-2 * t * θ ^ 2) ≤ Real.exp (-Real.log (4 * k / η)) :=
+          Real.exp_le_exp.2 (by linarith)
       _ = η / (4 * k) := by
           rw [Real.exp_neg, Real.exp_log (by positivity), inv_div]
-  have h3 : 2 * k * Real.exp (-2 * t * (γ / 4) ^ 2) ≤ η / 2 := by
-    calc 2 * k * Real.exp (-2 * t * (γ / 4) ^ 2) ≤ 2 * k * (η / (4 * k)) := by gcongr
+  have h3 : 2 * k * Real.exp (-2 * t * θ ^ 2) ≤ η / 2 := by
+    calc 2 * k * Real.exp (-2 * t * θ ^ 2) ≤ 2 * k * (η / (4 * k)) := by gcongr
       _ = η / 2 := by field_simp; ring
   linarith
+
+/-- **From weak to confident learning.** If `A` outputs a hypothesis with agreement at least
+`1/2 + γ` (error at most `1/2 - γ`) with probability at least `p`, then `bestOf A k t` with
+`k ≥ log (2/η) / p` runs and `t ≥ 8 log (4k/η) / γ²` sample points outputs a hypothesis with
+agreement at least `1/2 + γ/2` with probability at least `1 - η`. This is
+`learns_bestOf_of_success` with `θ = γ / 4`. -/
+theorem learns_bestOf_of_weak [NeZero k] {A : QueryLearner ι Ω} {μ : PMF Ω}
+    {C : PACLearning.ConceptClass (ι → Bool) Bool} {γ p η : ℝ}
+    (hA : A.Learns μ C (1 / 2 - γ) (1 - p)) (hγ : 0 < γ) (hp : p ≤ 1) (hη : 0 < η)
+    (hk : Real.log (2 / η) ≤ p * k) (ht : 8 * Real.log (4 * k / η) ≤ t * γ ^ 2) :
+    (bestOf A k t).Learns (bestOfSeed μ k t) C (1 / 2 - γ / 2) η :=
+  (learns_bestOf_of_success hA hp (by linarith : (0 : ℝ) ≤ γ / 4) hη hk
+    (by nlinarith)).mono le_rfl (by linarith) le_rfl
 
 end Cslib.MachineLearning.UniformLearning.QueryLearner
