@@ -12,6 +12,7 @@ import textwrap
 from pathlib import PurePosixPath
 
 FENCE = re.compile(r'^\s*(`{3,}|~{3,})(.*)$')
+LIST_PREFIX = re.compile(r'^(?: {0,3}(?:[-+*]|[0-9]{1,9}[.)]) +)+')
 CONFLICT_START = re.compile(r'<{7,}(?:[ \t].*)?$')
 IDENTIFIER = r'[A-Za-z][A-Za-z0-9_]*'
 NODE = re.compile(rf'({IDENTIFIER})\["([^"\n]+)"\]')
@@ -19,6 +20,14 @@ EDGE = re.compile(rf'({IDENTIFIER})\s+(-->|-\.->)(?:\|"([^"\n]+)"\|)?\s+({IDENTI
 OPEN_EXAMPLE = '<!-- worked-example -->'
 CLOSE_EXAMPLE = '<!-- /worked-example -->'
 TITLE = re.compile(r'^\*\*Worked example: (.+)\*\*$')
+
+
+def fence_opening(line):
+    """Recognize a fence on a list's first line, with its continuation indent."""
+    line = line.expandtabs(4)
+    prefix = LIST_PREFIX.match(line)
+    indent = prefix.end() if prefix else 0
+    return FENCE.match(line[indent:]), indent
 
 
 def flowchart(source):
@@ -53,9 +62,12 @@ def flowchart(source):
 
 def diagram_sources(text):
     """Return top-level Mermaid blocks, ignoring literal fenced examples."""
-    result, body, fence, mermaid = [], [], None, False
+    result, body, fence, mermaid, indent = [], [], None, False, 0
     for number, line in enumerate(text.splitlines(), 1):
         match = FENCE.match(line)
+        if fence and indent and line.strip() and not line.expandtabs(4).startswith(' ' * indent):
+            # An unclosed list-contained fence ends with its list container.
+            fence, body, mermaid = None, [], False
         if fence:
             if match and match[1][0] == fence[0] and len(match[1]) >= len(fence) and not match[2].strip():
                 if mermaid:
@@ -72,7 +84,10 @@ def diagram_sources(text):
             if nested and nested[2].strip() == 'mermaid' and (
                     unnested != line or line != line.lstrip()):
                 raise ValueError(f'Line {number}: Mermaid fences must be unindented top-level blocks')
+            match, indent = fence_opening(line)
             if match:
+                if match[2].strip() == 'mermaid' and indent:
+                    raise ValueError(f'Line {number}: Mermaid fences must be unindented top-level blocks')
                 fence, mermaid = match[1], match[2].strip() == 'mermaid'
     if fence and mermaid:
         raise ValueError('Unclosed Mermaid code fence')
@@ -84,13 +99,16 @@ def check_markup(text):
     diagrams = diagram_sources(text)
     for source in diagrams:
         flowchart(source)
-    active, awaiting_title, fence, examples = False, False, None, 0
+    active, awaiting_title, fence, examples, indent = False, False, None, 0, 0
     for number, line in enumerate(text.splitlines(), 1):
         match = FENCE.match(line)
+        if fence and indent and line.strip() and not line.expandtabs(4).startswith(' ' * indent):
+            fence = None
         if fence:
             if match and match[1][0] == fence[0] and len(match[1]) >= len(fence) and not match[2].strip():
                 fence = None
             continue
+        match, indent = fence_opening(line)
         if match:
             if awaiting_title:
                 raise ValueError(f'Line {number}: example needs a bold Worked example title first')

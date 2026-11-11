@@ -738,6 +738,28 @@ class VisualSources(unittest.TestCase):
         text = "# Heading\n\nSetext heading\n=======\n\n---\n\n***\n\n___\n\n>>>>>>> A quotation\n"
         self.assertEqual(book.visuals.check_markup(text), {"diagrams": 0, "worked_examples": 0})
 
+    def test_list_fenced_conflicts_are_literal_until_the_fence_closes(self):
+        conflict = "<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n"
+        for marker in ("- ", "+ ", "* ", "1. ", "12) ", "- - "):
+            with self.subTest(marker=marker):
+                indent = " " * len(marker)
+                example = marker + "```text\n" + "".join(
+                    indent + line + "\n" for line in conflict.splitlines()) + indent + "```\n"
+                self.assertEqual(book.visuals.check_markup(example),
+                                 {"diagrams": 0, "worked_examples": 0})
+                for after in ("<<<<<<< HEAD\n", indent + "<<<<<<< HEAD\n"):
+                    with self.assertRaisesRegex(ValueError, "Line 8: unresolved Git merge conflict"):
+                        book.visuals.check_markup(example + after)
+                literal_diagram = marker + "````markdown\n" + indent + "```mermaid\n" + \
+                    indent + "This is a literal example, not a model diagram.\n" + \
+                    indent + "```\n" + indent + "````\n"
+                self.assertEqual(book.visuals.check_markup(literal_diagram)['diagrams'], 0)
+
+    def test_leaving_a_list_also_ends_its_literal_fence(self):
+        text = "- ```text\n  Literal example.\n<<<<<<< HEAD\nOld.\n=======\nNew.\n>>>>>>> feature\n"
+        with self.assertRaisesRegex(ValueError, "Line 3: unresolved Git merge conflict"):
+            book.visuals.check_markup(text)
+
     def test_similar_source_paths_keep_distinct_diagram_assets(self):
         paths = ['topic-one.md', 'topic/one.md', 'topic_one.md']
         names = [book.visuals.diagram_name(path, 1) for path in paths]
@@ -745,7 +767,7 @@ class VisualSources(unittest.TestCase):
         self.assertEqual(names[1], 'figures/topic/one-1.pdf')
 
     def test_nested_mermaid_fences_fail_before_publishing(self):
-        for prefix in ('> ', '>> ', '  ', '    ', '- ', '1. ', '> - '):
+        for prefix in ('> ', '>> ', '  ', '    ', '- ', '1. ', '> - ', '- - ', '1. - '):
             with self.subTest(prefix=prefix), self.assertRaisesRegex(ValueError, 'top-level'):
                 book.visuals.check_markup(prefix + '```mermaid\n' + self.diagram + '```\n')
 
