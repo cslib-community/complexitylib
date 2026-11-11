@@ -410,7 +410,8 @@ example : ∃ c e : ℕ, ∃ Space : ℕ → ℕ,
     PolyBounded (fun a => (encUnary a).length) Space ∧
     ComputableInO (dummyStackSpec.run id) encUnary encNat
       (fun a => c * ((encUnary a).length + 1) ^ e +
-        (dummyStackSpec.rounds a + 1) * (c * ((encUnary a).length + 1) ^ e + (encNat 0).length)) Space ∧
+        (dummyStackSpec.rounds a + 1) *
+          (c * ((encUnary a).length + 1) ^ e + (encNat 0).length)) Space ∧
     ComputableInPolySpace (dummyStackSpec.run id) encUnary encNat := by
   have h := StackAccumulationSpec.exists_computableInO_run dummyStackSpec
     (g := id) (Tg := fun x => (encNat x).length) (Sg := fun x => (encNat x).length)
