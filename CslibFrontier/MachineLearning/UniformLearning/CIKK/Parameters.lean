@@ -15,13 +15,18 @@ import Mathlib.Data.Nat.Log
 /-!
 # Parameters of the CIKK learner
 
-The learner of Carmosino, Impagliazzo, Kabanets and Kolokolova
+The library's form of the learner of Carmosino, Impagliazzo, Kabanets and Kolokolova
 [Carmosino, Impagliazzo, Kabanets and Kolokolova, Theorem 5.1, p. 10:19]
 [CarmosinoImpagliazzoKabanetsKolokolova2016] chains three stages:
 - the Nisan–Wigderson reconstruction on the amplified function `Amp(f) = (f^k)^GL`;
 - the reconstruction of the amplification (Goldreich–Levin candidates and the direct-product
   decoder);
 - best-of selection.
+
+The source composes only the first two reconstructions, each of which boosts its own confidence
+[Carmosino, Impagliazzo, Kabanets and Kolokolova, proof of Theorem 3.2, p. 10:11]. The single
+outer best-of selection, which replaces those per-stage boosts and gives the same result up to
+constants, is the library's.
 
 This file fixes the parameters of the last two stages as explicit numerals in three precision
 exponents:
@@ -36,16 +41,17 @@ It proves the inequalities the stages need:
   - the direct-product conditions `2s ≤ k` (`two_mul_cikkFixed_le_cikkK`),
     `64/ε · log (512/(ε δ₀²)) ≤ s` (`le_cikkFixed`) and `16/δ₀ · log (8/ε) ≤ m`
     (`le_cikkTrials`);
-- for best-of selection over a learner that succeeds with probability `γ δ₀² / 8`, with deviation
-  `θ = 2^{-(e+2)}`: `log (2/η) ≤ p b` (`log_le_cikkRuns`) and `log (4b/η) ≤ 2 t θ²`
+- for the outer best-of selection over a learner that succeeds with probability `γ δ₀² / 8`, with
+  deviation `θ = 2^{-(e+2)}`: `log (2/η) ≤ p b` (`log_le_cikkRuns`) and `log (4b/η) ≤ 2 t θ²`
   (`log_le_cikkSamples`).
 
 The direct-product length `k` is a power of two. With every quantity a power of two, the
 conditions are linear in the exponents, after `log x ≤ N` for `0 < x ≤ 2 ^ N`
 (`Real.log_le_of_le_two_pow`). This solves the condition `2s ≤ k`, which is a fixed point in `k`
 because `s` grows with `log (1/δ₀)` and `δ₀` with `1/k`. It replaces the source's
-`k = ⌈3c/ε · ln(1/γ)⌉ + 1`. For fixed `e`, `k` is linear in `g` (`cikkK_le`), and so is the input
-length `k n + k` of `Amp(f)`.
+`k = ⌈3c/ε · ln(1/γ)⌉ + 1` [Carmosino, Impagliazzo, Kabanets and Kolokolova, proof of
+Theorem 4.3, step 1, p. 10:15]. For fixed `e`, `k` is linear in `g` (`cikkK_le`), and so is the
+input length `k n + k` of `Amp(f)`.
 
 ## Main definitions
 
@@ -62,10 +68,12 @@ length `k n + k` of `Amp(f)`.
 
 * `Cslib.MachineLearning.UniformLearning.cikkK_le_cikkMasks`: the list condition.
 * `Cslib.MachineLearning.UniformLearning.two_mul_cikkFixed_le_cikkK`,
+  `Cslib.MachineLearning.UniformLearning.cikkFixed_le_cikkK`,
   `Cslib.MachineLearning.UniformLearning.le_cikkFixed`,
   `Cslib.MachineLearning.UniformLearning.le_cikkTrials`: the direct-product conditions.
 * `Cslib.MachineLearning.UniformLearning.log_le_cikkRuns`,
-  `Cslib.MachineLearning.UniformLearning.log_le_cikkSamples`: the best-of conditions.
+  `Cslib.MachineLearning.UniformLearning.log_le_cikkSamples`: the conditions of the outer best-of
+  selection.
 * `Cslib.MachineLearning.UniformLearning.cikkK_le`: `k ≤ 2 ^ (e + 10) (6g + 3e + 36)`.
 
 ## References
@@ -124,9 +132,11 @@ theorem cikkMasks_pos (e g : ℕ) : 0 < cikkMasks e g := by
   unfold cikkMasks
   omega
 
-/-- **The list condition**: with `γ = 2^{-g}`, `k ≤ 2 (γ/2)² (2^K - 1)` for `K = cikkMasks e g`. -/
+/-- **The list condition**: with `γ = 2^{-g}`, `k ≤ 2 (γ/2)² (2^K - 1)` for `K = cikkMasks e g`,
+with `2^K - 1` computed in `ℕ`. -/
 theorem cikkK_le_cikkMasks (e g : ℕ) :
-    (cikkK e g : ℝ) ≤ 2 * (1 / 2 ^ g / 2) ^ 2 * (2 ^ cikkMasks e g - 1) := by
+    (cikkK e g : ℝ) ≤ 2 * (1 / 2 ^ g / 2) ^ 2 * ((2 ^ cikkMasks e g - 1 : ℕ) : ℝ) := by
+  rw [Nat.cast_sub Nat.one_le_two_pow]
   simp only [cikkK, cikkMasks]
   generalize cikkLogK e g = j
   push_cast
@@ -244,7 +254,12 @@ theorem cikkK_le (e g : ℕ) : cikkK e g ≤ 2 ^ (e + 10) * (6 * g + 3 * e + 36)
 instance (e g h : ℕ) : NeZero (cikkRuns e g h) :=
   ⟨by unfold cikkRuns; positivity⟩
 
+/-- The fixed set fits in the direct-product length: `s ≤ k`. -/
+theorem cikkFixed_le_cikkK (e g : ℕ) : cikkFixed e g ≤ cikkK e g := by
+  have := two_mul_cikkFixed_le_cikkK e g
+  omega
+
 instance (e g : ℕ) : Fact (cikkFixed e g ≤ cikkK e g) :=
-  ⟨by have := two_mul_cikkFixed_le_cikkK e g; omega⟩
+  ⟨cikkFixed_le_cikkK e g⟩
 
 end Cslib.MachineLearning.UniformLearning
