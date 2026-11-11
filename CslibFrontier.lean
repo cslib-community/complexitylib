@@ -4536,7 +4536,6 @@ public import CslibFrontier.Foundations.Algebra.DFT
 public import CslibFrontier.Foundations.Algebra.FiniteMagnitude
 public import CslibFrontier.Foundations.Algebra.GeometricTail
 public import CslibFrontier.Foundations.Algebra.Module.ZLattice.CoefficientFiber
-<<<<<<< HEAD
 public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.DuplicatedFinsetOrder
 public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.FiniteSubsetOrder
 public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.GenericMinorBasic
@@ -4549,12 +4548,10 @@ public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.Rectangu
 public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.SignedLaplaceProduct
 public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.StandardMinorIndependence
 public import CslibFrontier.Foundations.Algebra.Polynomial.MaximalMinor.StandardMinorProducts
-=======
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Isolation
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RatPoly
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 public import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
->>>>>>> origin/main
 public import CslibFrontier.Foundations.Algebra.Shear
 public import CslibFrontier.Foundations.Algebra.Tropical
 public import CslibFrontier.Foundations.AlgebraicGeometry.EllipticCurve.Hasse
