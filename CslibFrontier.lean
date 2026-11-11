@@ -1835,6 +1835,7 @@ public import CslibFrontier.Computability.Complexity.Classes.EXP.Padding
 public import CslibFrontier.Computability.Complexity.Classes.EXP.Separation
 public import CslibFrontier.Computability.Complexity.Classes.FPAUS
 public import CslibFrontier.Computability.Complexity.Classes.FPAUS.Counting
+public import CslibFrontier.Computability.Complexity.Classes.FPAUS.ExactSampler
 public import CslibFrontier.Computability.Complexity.Classes.FPAUS.FPRAS
 public import CslibFrontier.Computability.Complexity.Classes.FPAUS.OfFPRAS
 public import CslibFrontier.Computability.Complexity.Classes.FPAUS.Sampler
@@ -1973,6 +1974,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Oracle.QueryBit
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.SelfReduction
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.Space
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.TQBF
+public import CslibFrontier.Computability.Complexity.Classes.Oracle.ThresholdSearch
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.WitnessBit
 public import CslibFrontier.Computability.Complexity.Classes.P
 public import CslibFrontier.Computability.Complexity.Classes.P.Closure
