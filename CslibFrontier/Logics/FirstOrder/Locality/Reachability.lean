@@ -54,8 +54,9 @@ graph, and `(Fin N, ⋖)` is the successor relation on `N` points.
   `distLE (k + 1)` (`exists_nbhdIso_realize_distLE`). So any radius that makes all formulas of rank
   `n` Gaifman-local on finite graphs is at least `2 ^ (n - 1)` (`two_pow_le_of_gaifman_radius`),
   against the upper bound `(3 ^ (n + 1) - 1) / 2` of [Libkin, Corollary 4.13][Libkin2004]. The
-  exact value `2 ^ n - 1` of [Libkin, Exercises 4.10 and 4.11 (pp. 63–64)][Libkin2004] is not
-  formalized here.
+  exact values `2 ^ (n - 1) - 1` and `2 ^ n - 1` of
+  [Libkin, Exercises 4.10 and 4.11 (pp. 63–64)][Libkin2004] are proved in
+  `CslibFrontier.Logics.FirstOrder.Locality.Sharp`.
 
 All formulas range over the pure graph vocabulary `FirstOrder.Language.graph`, with no built-in
 order or arithmetic. The constants come from Gaifman's radius; they are not claimed to be sharp.
@@ -503,7 +504,7 @@ theorem exists_nbhdIso_realize_distLE (k : ℕ) :
 quantifier rank at most `n` Gaifman-local on finite graphs (as `(3 ^ (n + 1) - 1) / 2` does,
 [Libkin, Corollary 4.13][Libkin2004]), then `ρ (k + 1) ≥ 2 ^ k`. This is Libkin's lower bound
 `lr(d_k) ≥ 2 ^ (k - 1)`; the exact Gaifman rank `2 ^ n - 1` ([Libkin, Exercise 4.11][Libkin2004])
-is not formalized. -/
+is proved in `CslibFrontier.Logics.FirstOrder.Locality.Sharp`. -/
 theorem two_pow_le_of_gaifman_radius {ρ : ℕ → ℕ}
     (hρ : ∀ (n : ℕ) (V : Type) [Finite V] (G : SimpleGraph V) (a b : Fin 2 → V)
       (φ : Language.graph.Formula (Fin 2)), quantifierRank φ ≤ n →
