@@ -14,6 +14,49 @@ import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
 # Shifts that concentrate a multilinear polynomial on monomials of small support
+
+Let `f` be a nonzero multilinear polynomial of split rank at most `w` across every set of `k`
+variables (`MvPolynomial.SplitRankLE`), with `w < 2 ^ k`. The monomial `∏ᵢ Xᵢ` shows that `f`
+itself may have no monomial with few variables. After a shift by a sufficiently generic point `γ`
+it does: `f (X + γ)` has a monomial with fewer than `k` variables
+(`exists_mem_support_shift_card_lt`).
+
+Generic means that, for every set `Y` of `k` variables, the `2 ^ k` products `∏_{j ∈ T} γ j`,
+`T ⊆ Y`, are linearly independent over the field of coefficients. The point `γ` has coordinates
+in a domain `R` over that field, for instance a polynomial ring; an explicit set of shifts in the
+field itself is obtained from such a point in `HittingSet/ConcentratingShiftSet.lean`.
+
+This is the case of individual degree one of the support concentration theorem of Forbes,
+Saptharishi and Shpilka [ForbesSaptharishiShpilka2014, Theorem 4.1 with Corollary 3.22], in the
+form quoted by Shpilka [Shpilka2026, Theorem 2.3]. Two things differ. The source treats
+polynomials of any individual degree, by rank condensers built from codes; for multilinear
+polynomials the direct argument below suffices and that machinery is not formalized. The source
+bounds the support by `⌊lg w²⌋` because it works with a `w × w` matrix of polynomials; working
+with the polynomial gives `⌊lg w⌋`.
+
+## Proof
+
+Take a monomial `m₀` of `G = f (X + γ)` with the fewest variables, and suppose it has `k`
+variables `Y` among its variables. Substitute `Xⱼ ↦ Xⱼ - γⱼ` for `j ∈ Y`, `Xⱼ ↦ 1` for the other
+variables of `m₀`, and `Xⱼ ↦ 0` for the rest. By minimality only `m₀` survives in `G`, which
+becomes `c ∏_{j ∈ Y} (Xⱼ - γⱼ)` with `c ≠ 0`. Applied to `f = ∑ᵢ pᵢ qᵢ`, with `pᵢ` in the variables
+`Y`, the composite substitution fixes `pᵢ` and turns `qᵢ` into a constant. So
+`c ∏_{j ∈ Y} (Xⱼ - γⱼ)` is a combination of the `w` polynomials `pᵢ`. As `w < 2 ^ k`, some nonzero
+functional on the multilinear monomials in `Y` kills every `pᵢ`; evaluated on the product it is a
+nonzero combination of the products `∏_{j ∈ T} γⱼ`, which is nonzero by genericity.
+
+## Main results
+
+* `exists_mem_support_shift_card_lt`: a generic shift of a nonzero multilinear polynomial of
+  small split rank has a monomial of small support.
+
+## References
+
+* [M. A. Forbes, R. Saptharishi, A. Shpilka, *Pseudorandomness for multilinear read-once
+  algebraic branching programs, in any order*][ForbesSaptharishiShpilka2014]
+* [A. Shpilka, *Polynomial-size hitting sets for multilinear any-order read-once algebraic
+  branching programs and for set-multilinear depth-3 circuits with constant-size variable
+  sets*][Shpilka2026] (unrefereed preprint)
 -/
 
 public section

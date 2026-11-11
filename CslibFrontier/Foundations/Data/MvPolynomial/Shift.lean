@@ -24,6 +24,8 @@ be shifted by a point with polynomial coordinates; the result is a polynomial ov
 ## Main results
 
 * `MvPolynomial.degreeOf_shift_le`: shifting does not increase the degree in a variable.
+* `MvPolynomial.degreeOf_coeff_shift_le`: a degree bound for the coefficients of a shift by a
+  point with polynomial coordinates.
 * `MvPolynomial.shift_injective`: shifting is injective when `R → A` is.
 * `MvPolynomial.aeval_X_eq_map`: substituting the variables over an algebra is a base change.
 * `MvPolynomial.map_shift`: shifting commutes with a change of the ring of the point.
@@ -89,6 +91,67 @@ theorem degreeOf_shift_le (a : σ → A) (f : MvPolynomial σ R) (i : σ) :
   · exact Nat.zero_le _
 
 end CommSemiring
+
+section Coefficients
+
+variable [CommSemiring R] {τ : Type*}
+
+private theorem degreeOf_coeff_mul_le {P Q : MvPolynomial σ (MvPolynomial τ R)} {i : τ}
+    {B₁ B₂ : ℕ} (hP : ∀ m, (P.coeff m).degreeOf i ≤ B₁) (hQ : ∀ m, (Q.coeff m).degreeOf i ≤ B₂)
+    (m : σ →₀ ℕ) : ((P * Q).coeff m).degreeOf i ≤ B₁ + B₂ := by
+  classical
+  rw [coeff_mul]
+  exact (degreeOf_sum_le _ _ _).trans (Finset.sup_le fun x _ =>
+    (degreeOf_mul_le _ _ _).trans (add_le_add (hP _) (hQ _)))
+
+/-- When the point has polynomial coordinates of degree at most `d` in a variable `i`, every
+coefficient of the shifted polynomial has degree at most `f.totalDegree * d` in `i`. -/
+theorem degreeOf_coeff_shift_le (a : σ → MvPolynomial τ R) (f : MvPolynomial σ R) (i : τ) {d : ℕ}
+    (ha : ∀ j, (a j).degreeOf i ≤ d) (m : σ →₀ ℕ) :
+    ((shift a f).coeff m).degreeOf i ≤ f.totalDegree * d := by
+  classical
+  have hone : ∀ m : σ →₀ ℕ,
+      ((1 : MvPolynomial σ (MvPolynomial τ R)).coeff m).degreeOf i ≤ 0 := fun m => by
+    rw [← C_1, coeff_C]
+    split_ifs
+    · rw [← C_1, degreeOf_C]
+    · rw [degreeOf_zero]
+  have hX : ∀ (j : σ) (m : σ →₀ ℕ),
+      ((X j + C (a j) : MvPolynomial σ (MvPolynomial τ R)).coeff m).degreeOf i ≤ d := fun j m => by
+    rw [show (X j + C (a j) : MvPolynomial σ (MvPolynomial τ R)).coeff m =
+      (X j : MvPolynomial σ (MvPolynomial τ R)).coeff m + (C (a j)).coeff m from rfl,
+      coeff_X, coeff_C]
+    refine (degreeOf_add_le _ _ _).trans (max_le ?_ ?_)
+    · split_ifs
+      · rw [← C_1, degreeOf_C]; exact Nat.zero_le _
+      · rw [degreeOf_zero]; exact Nat.zero_le _
+    · split_ifs
+      · exact ha j
+      · rw [degreeOf_zero]; exact Nat.zero_le _
+  have hpow : ∀ (j : σ) (e : ℕ) (m : σ →₀ ℕ),
+      (((X j + C (a j) : MvPolynomial σ (MvPolynomial τ R)) ^ e).coeff m).degreeOf i ≤ e * d := by
+    intro j e
+    induction e with
+    | zero => intro m; rw [pow_zero, zero_mul]; exact hone m
+    | succ e ih => intro m; rw [pow_succ, Nat.succ_mul]; exact degreeOf_coeff_mul_le ih (hX j) m
+  have hprod : ∀ (s : Finset σ) (e : σ → ℕ) (m : σ →₀ ℕ),
+      ((∏ j ∈ s, (X j + C (a j) : MvPolynomial σ (MvPolynomial τ R)) ^ e j).coeff m).degreeOf i ≤
+        (∑ j ∈ s, e j) * d := by
+    intro s e
+    induction s using Finset.induction_on with
+    | empty => intro m; rw [Finset.prod_empty, Finset.sum_empty, zero_mul]; exact hone m
+    | insert j s hj ih =>
+      intro m
+      rw [Finset.prod_insert hj, Finset.sum_insert hj, add_mul]
+      exact degreeOf_coeff_mul_le (hpow j _) ih m
+  rw [shift, aeval_def, eval₂_eq, coeff_sum]
+  refine (degreeOf_sum_le _ _ _).trans (Finset.sup_le fun m' hm' => ?_)
+  rw [algebraMap_apply, coeff_C_mul]
+  refine (degreeOf_mul_le _ _ _).trans ?_
+  rw [algebraMap_eq, degreeOf_C, zero_add]
+  exact (hprod _ _ _).trans (Nat.mul_le_mul_right _ (le_totalDegree hm'))
+
+end Coefficients
 
 section CommRing
 
