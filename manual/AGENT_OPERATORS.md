@@ -84,6 +84,13 @@ Assign review to an agent that did not design or implement the change. For examp
 > results-inventory entry. Report concrete findings and a verdict, stating what you checked and
 > what remains uncertain.
 
+Ask the reviewer to consider whether a different statement, API, invariant or proof strategy
+would make the result clearer to state, prove and use, while preserving its mathematical strength.
+Require inspection of the duplication notices and the declarations or proof blocks they identify;
+an advisory check's successful exit does not establish that its candidates were reviewed. Concrete
+cleanup affecting the contribution belongs in its original PR, under the
+[quality and deferral rules](../AGENTS.md#improving-library-ergonomics).
+
 Lean validation establishes the checked statements under their definitions and dependencies.
 Review must also judge whether those statements express the intended mathematics and whether
 someone can use the interface. Ask for a satisfying instance or meaningful edge case when a

@@ -72,6 +72,19 @@ The axiom audit checks allowed dependencies of declarations stored in imported C
 
 ## Make the handoff reviewable
 
+Before approval, inspect the CI **Parallel-definition**, **Duplicate-statement** and **Repeated-proof-block**
+notices for the reviewed revision. Follow the source links, compare both declarations or proof
+blocks, and record reuse, generalization or the concrete reason to retain both. Link existing
+resolutions instead of repeating them. Skipped or incomplete scans need an explicit coverage
+assessment and targeted source checks, following [the review cycle](../../AGENTS.md#review-cycle).
+For local commands and matching limits, see [the tooling reference](../../CONTRIBUTING.md#ai-assistance-and-review).
+
+Consider alternative statements, representations, invariants and proof strategies when they make
+the mathematics more natural to state, prove and apply. Demonstrate the benefit on actual clients,
+preserve the mathematical claim and resource bounds, and complete the cleanup affecting the
+contribution before approval. Deferral requires the exceptional disposition described in
+[Improving library ergonomics](../../AGENTS.md#improving-library-ergonomics).
+
 Explain the problem, resulting behavior, limitations and validation in the PR. Link its task issue and source references, preserve contributor credit, and disclose AI tools and their role under the applicable policy. Obtain independent correctness/API review of the current revision. Reviewers read new and changed proofs against the rest of the file and nearby modules, because a diff does not show the existing proof that a new block repeats; a new copy of an argument the library already makes is a [review finding](../../AGENTS.md#review-cycle) when a shared lemma would pay under the [library quality standard](../../CONTRIBUTING.md#library-quality-standard). A reviewer who helped design or implement the change cannot supply that independence; agent review is not human approval.
 
 After fixes, request review of the affected delta. Changed reasoning, statement semantics and uncertain conflict resolutions require fresh review; a clean rebase may sometimes preserve existing approval. Integration requires maintainer authority as well as validation and review. State what is complete and what remains. When only a milestone is delivered, keep the broader objective visible and open or explicitly disposed of.

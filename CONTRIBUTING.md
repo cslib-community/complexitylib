@@ -308,6 +308,9 @@ library theorem or a Lean core, Batteries, Mathlib or cslib theorem already has,
 universe levels, the order of hypotheses and instance arguments, and the notations `≥`, `>`, `≠`;
 CI runs that notice too. `--all` examines the whole library: `python3 scripts/parallel_defs.py
 --theorems --all --limit 1000` lists every such group, the candidates of #949 item A.2.
+The reports link project declarations at the checked revision and disclose skipped or incomplete
+comparisons. Reviewers inspect the notices and resolve relevant candidates before approval under
+[the review cycle](AGENTS.md#review-cycle); a successful advisory exit alone is not a clean audit.
 On pull requests CI also runs a third advisory notice, `python3 scripts/proof_copies.py`, which
 reads only the sources. It lists tactic blocks of four or more lines, on lines a change adds or
 modifies, that repeat a block of another proof, or of the same proof, in the same file or
