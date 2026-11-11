@@ -28,8 +28,9 @@ example : #{J ∈ (range 5).powersetCard 2 | Disjoint ({0, 1} : Finset ℕ) J} =
 
 example : #{J ∈ (range 5).powersetCard 2 | Disjoint ({0, 1} : Finset ℕ) J} = 3 := by decide
 
--- `C(4, 3) 6³ = 864 ≤ 1280 = C(6, 3) 4³`.
-example : (6 - 2).choose 3 * 6 ^ 3 ≤ (6).choose 3 * (6 - 2) ^ 3 := choose_sub_mul_pow_le 6 2 3
+-- `C(4, 3) ≤ C(6, 3) exp (-2 · 3 / 6)`, that is `4 ≤ 20 / e`.
+example : ((6 - 2).choose 3 : ℝ) ≤ (6).choose 3 * Real.exp (-(2 * 3 / 6)) := by
+  exact_mod_cast choose_sub_le_choose_mul_exp (by norm_num : 2 ≤ 6) 3
 
 example : (#{J ∈ (range 5).powersetCard 2 | Disjoint ({0, 1} : Finset ℕ) J} : ℝ) ≤
     #((range 5).powersetCard 2) * Real.exp (-(#({0, 1} : Finset ℕ) * 2 / #(range 5))) :=
@@ -72,12 +73,12 @@ example (W : Finset (Fin 4 → Bool)) :
     ((#W : ℝ) - Fintype.card Bool ^ Fintype.card (Fin 4) *
         Real.exp (-(1 / 2 * Fintype.card (Fin 4) / 8))) * (1 / 2 * Fintype.card (Fin 4)) ≤
       2 * ∑ b ∈ W, ∑ i, indTrue (b i) :=
-  card_mul_sub_le_two_mul_sum_sum indTrue indTrue_mem (by norm_num) indTrue_mean W
+  sub_mul_le_two_mul_sum_sum indTrue indTrue_mem (by norm_num) indTrue_mean W
 
 -- Planting `x` at coordinate `0` of a pair counts each pair twice.
 example : ∑ x : Bool, ∑ r : Fin 2 → Bool, indTrue (Function.update r 0 x 1) =
     Fintype.card Bool • ∑ b : Fin 2 → Bool, indTrue (b 1) :=
-  sum_sum_update_eq_card_mul_sum 0 fun _ b => indTrue (b 1)
+  sum_sum_update_eq_card_nsmul_sum 0 fun _ b => indTrue (b 1)
 
 example (W : Finset (Fin 2 → Bool)) : ∑ b ∈ W, ∑ i, indTrue (b i) =
     ∑ x, (#((W ×ˢ (univ : Finset (Fin 2))).filter fun p => p.1 p.2 = x) : ℝ) * indTrue x :=

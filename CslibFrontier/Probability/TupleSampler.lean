@@ -28,7 +28,7 @@ tuples, where `μ` is a lower bound on the mean of `F`
 Two consequences describe the bipartite graph joining each point `x : U` to each pair `(b, i)` with
 `b i = x`, restricted to a family `W` of tuples.
 
-* **Edges into a dense family** (`Cslib.Probability.card_mul_sub_le_two_mul_sum_sum`): summing
+* **Edges into a dense family** (`Cslib.Probability.sub_mul_le_two_mul_sum_sum`): summing
   `F` over the entries of the tuples in `W` gives at least
   `(#W - #U ^ #ι exp (-μ #ι / 8)) μ #ι / 2`.
 * **Regrouping by points** (`Cslib.Probability.sum_sum_comp_eq_sum_mul`): the same sum is
@@ -37,16 +37,19 @@ Two consequences describe the bipartite graph joining each point `x : U` to each
 Resampling one coordinate of a uniform tuple at a uniform value leaves it uniform, so drawing a
 point and planting it at a fixed coordinate of a uniform tuple is the same as drawing a uniform
 tuple and reading the point off that coordinate
-(`Cslib.Probability.sum_sum_update_eq_card_mul_sum`). Together these are the sampler facts that
-[Impagliazzo, Jaiswal, Kabanets and
-Wigderson][ImpagliazzoJaiswalKabanetsWigderson2010] use for their decoder (Lemmas 2.12–2.14 of
-the preprint), specialized to uniform tuples, which is the library form of their `k`-sets.
+(`Cslib.Probability.sum_sum_update_eq_card_nsmul_sum`). In terms of the decoder of
+[Impagliazzo, Jaiswal, Kabanets and Wigderson][ImpagliazzoJaiswalKabanetsWigderson2010] (preprint
+numbering), with uniform tuples as the library form of their `k`-sets: the lower tail is the
+one-sided part of their Lemma 2.12 sampler property (their Definition 2.9 also bounds the upper
+deviation, which is not proved here), and the weight bound is of the type of their Lemma 2.13.
+Their Lemma 2.14 is not proved here; this file supplies only the regrouping identity used in its
+proof, and the inequality is assembled with the decoder.
 
 ## Main results
 
 * `Cslib.Probability.card_filter_sum_le_half_le_exp`: the lower tail.
-* `Cslib.Probability.sum_sum_update_eq_card_mul_sum`: planting a point at a coordinate.
-* `Cslib.Probability.card_mul_sub_le_two_mul_sum_sum`: edges into a dense family.
+* `Cslib.Probability.sum_sum_update_eq_card_nsmul_sum`: planting a point at a coordinate.
+* `Cslib.Probability.sub_mul_le_two_mul_sum_sum`: edges into a dense family.
 * `Cslib.Probability.sum_sum_comp_eq_sum_mul`: regrouping the edges by points.
 
 ## References
@@ -107,7 +110,7 @@ theorem card_filter_sum_le_half_le_exp [DecidableEq ι] [Nonempty U] (F : U → 
 
 /-- **Planting a point**: summing over a point `x` and a tuple `r` with `x` written at coordinate
 `j` counts every tuple `b` once for each value `r j` it overwrote, with `x = b j`. -/
-theorem sum_sum_update_eq_card_mul_sum [DecidableEq ι] {M : Type*} [AddCommMonoid M]
+theorem sum_sum_update_eq_card_nsmul_sum [DecidableEq ι] {M : Type*} [AddCommMonoid M]
     (j : ι) (H : U → (ι → U) → M) :
     ∑ x, ∑ r : ι → U, H x (Function.update r j x) =
       Fintype.card U • ∑ b : ι → U, H (b j) b := by
@@ -124,7 +127,7 @@ theorem sum_sum_update_eq_card_mul_sum [DecidableEq ι] {M : Type*} [AddCommMono
 /-- **Edges into a dense family**: if `F` takes values in `[0, 1]` and has mean at least `μ`, the
 entries of the tuples in any family `W` carry total weight at least
 `(#W - #U ^ #ι exp (-μ #ι / 8)) μ #ι / 2`. -/
-theorem card_mul_sub_le_two_mul_sum_sum [Nonempty U] (F : U → ℝ)
+theorem sub_mul_le_two_mul_sum_sum [Nonempty U] (F : U → ℝ)
     (hF : ∀ x, F x ∈ Set.Icc 0 1) {μ : ℝ} (hμ0 : 0 ≤ μ) (hμ : μ * Fintype.card U ≤ ∑ x, F x)
     (W : Finset (ι → U)) :
     ((#W : ℝ) - Fintype.card U ^ Fintype.card ι * Real.exp (-(μ * Fintype.card ι / 8))) *
