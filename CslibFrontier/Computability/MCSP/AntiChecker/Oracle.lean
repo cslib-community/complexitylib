@@ -27,7 +27,9 @@ input bits and its label (`Cslib.MCSP.AntiChecker.encQuery`). The yes-queries
 power of the valid certificates consistent with the samples is not covered by `u + 1` affine hash
 functions to `u` bits. The language `Cslib.MCSP.AntiChecker.antiCheckerOracle` consists of the
 encodings of the yes-queries. On the queries of the greedy it is the hash oracle
-(`Cslib.MCSP.AntiChecker.encQuery_ofSamples_mem_antiCheckerOracle_iff`).
+(`Cslib.MCSP.AntiChecker.encQuery_ofSamples_mem_antiCheckerOracle_iff`), so an oracle agreeing with
+it on those queries can drive the greedy
+(`Cslib.MCSP.AntiChecker.isThresholdOracle_of_eq_true_iff`).
 
 At power `1` and threshold `0` a query is a no-query exactly when some function computable with at
 most `s` gates agrees with every sample
@@ -61,8 +63,9 @@ This is the oracle of the library's deterministic greedy, not the approximate-co
 * `Cslib.MCSP.AntiChecker.length_encQuery`, `Cslib.MCSP.AntiChecker.length_encQuery_ofSamples`:
   the exact query length.
 * `Cslib.MCSP.AntiChecker.encQuery_mem_antiCheckerOracle`: the language decides the yes-queries.
-* `Cslib.MCSP.AntiChecker.encQuery_ofSamples_mem_antiCheckerOracle_iff`: on the greedy's queries
-  it is the hash oracle.
+* `Cslib.MCSP.AntiChecker.encQuery_ofSamples_mem_antiCheckerOracle_iff`,
+  `Cslib.MCSP.AntiChecker.isThresholdOracle_of_eq_true_iff`: on the greedy's queries it is the hash
+  oracle, so any oracle agreeing with it there is a threshold oracle.
 * `Cslib.MCSP.AntiChecker.encQuery_ofSamples_one_zero_notMem_antiCheckerOracle_iff`,
   `Cslib.MCSP.AntiChecker.encQuery_ofSamples_one_zero_notMem_iff_mem_succinctMCSP`:
   at power `1` and threshold `0`, a no-query is a yes-instance of Succinct MCSP.
@@ -148,7 +151,7 @@ def antiCheckerOracle : Language Bool :=
   {w | ∃ q ∈ smallSet, encQuery q = w}
 
 /-- The anti-checker oracle decides the yes-queries. -/
-@[simp] theorem encQuery_mem_antiCheckerOracle {q : Query} :
+theorem encQuery_mem_antiCheckerOracle {q : Query} :
     encQuery q ∈ antiCheckerOracle ↔ q ∈ smallSet :=
   ⟨fun ⟨_, hq', h⟩ => encQuery.injective h ▸ hq', fun hq => ⟨q, hq, rfl⟩⟩
 
@@ -170,6 +173,17 @@ theorem encQuery_ofSamples_mem_antiCheckerOracle_iff {n s ℓ u : ℕ}
   rw [encQuery_mem_antiCheckerOracle, mem_smallSet, hashOracle_eq_true, hashOracle_eq_true]
   simp only [Query.ofSamples]
   rw [consistent_map_ofFn]
+
+/-- **An oracle agreeing with the anti-checker oracle on the greedy's queries is a threshold
+oracle** for the valid certificates, at every power `ℓ > 0`. -/
+theorem isThresholdOracle_of_eq_true_iff {n s ℓ : ℕ} (hℓ : 0 < ℓ)
+    {O : List (BitString n × Bool) → ℕ → Bool}
+    (hO : ∀ P u, O P u = true ↔ encQuery (Query.ofSamples n s ℓ u P) ∈ antiCheckerOracle) :
+    IsThresholdOracle (validCertificates n s) (certificateFunction n s) ℓ O := by
+  have h : O = hashOracle (validCertificates n s) (certificateFunction n s) ℓ := by
+    funext P u
+    exact Bool.eq_iff_iff.2 ((hO P u).trans encQuery_ofSamples_mem_antiCheckerOracle_iff)
+  exact h ▸ isThresholdOracle_hashOracle _ _ hℓ
 
 /-- **At power `1` and threshold `0`, a no-query is a yes-instance of Succinct MCSP**: the query
 of samples `P` is not in the anti-checker oracle exactly when some function computable with at
