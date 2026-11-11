@@ -108,7 +108,7 @@ theorem parsimoniousReducible_SharpSAT_SharpThreeSAT :
 
 /-- A guarded count reduces parsimoniously to `#SAT`: replace a rejected input by the
 unsatisfiable formula `[[]]`. -/
-private theorem parsimoniousReducible_guard {g : CNF ℕ → Bool}
+theorem parsimoniousReducible_guard {g : CNF ℕ → Bool}
     (hg : ComputableInPolyTime g encCNF encBool) :
     ParsimoniousReducible encCNF encCNF (fun φ => if g φ then SharpSAT φ else 0) SharpSAT := by
   refine ⟨fun φ => if g φ then φ else [[]], hg.ite (by fun_prop) (by fun_prop), fun φ => ?_⟩

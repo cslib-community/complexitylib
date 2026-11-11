@@ -76,6 +76,7 @@ import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
+import CslibFrontier.Computability.Complexity.Problems.SharpTwoSAT
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
@@ -3507,6 +3508,26 @@ register_result "bareiss-rational-elimination-polytime" where
     ragged or oversized-header inputs), whereas Schrijver Section 3.3 analyzes normalized \
     rational elimination in binary input encoding size. Bounded milestone of Issue #3672 \
     (circulant spectra and fibre-sum bounds remain open there)."
+
+register_result "sharp-2sat-completeness" where
+  title := "Valiant: #2-SAT is #P-complete under polynomial-time counting Turing reductions"
+  topic := "counting complexity"
+  sources := [
+    { paper := Valiant1979Enumeration, theorem := "Theorem 1", locator := "p. 414 (§4, problem 7)" }
+  ]
+  theorems := [
+    Cslib.Complexity.SharpTwoSAT_countingTuringComplete,
+    Cslib.Complexity.countingTuringReducible_SharpSAT_SharpTwoSAT,
+    Cslib.Complexity.SharpTwoSAT_polyTime_implies_P_eq_NP
+  ]
+  scope := "SharpTwoSAT counts satisfying assignments on occurring variables of CNFs of clause \
+    width at most 2 (and returns 0 otherwise) under encCNF. Completeness is under native \
+    polynomial-time counting Turing reductions (PolyTimeOracleProgram against AnswersBits). \
+    Original source proves completeness for monotone #2-SAT using a function-value oracle (§2, p. 411). \
+    This formalization establishes it for general #2-SAT on occurring variables using a standard bit-oracle \
+    convention and an original adaptation of the direct clause-weight gadget and finite-difference interpolation. \
+    AnswersBits), proved via clause-weight 2-CNF gadgets and division-free finite-difference \
+    polynomial interpolation at 0."
 
 register_result "kosaraju-scc" where
   title := "Kosaraju's linear-time strongly connected components and condensation order"

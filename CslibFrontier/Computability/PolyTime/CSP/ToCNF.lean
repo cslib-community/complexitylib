@@ -59,24 +59,6 @@ variable {Rel V : Type}
 open Cslib.Logic.PL.CSP ComputableInPolyTime
 
 
-private theorem computableInPolyTime_mapFilterConst {α ι γ : Type} {encIn : α ↪ List Bool}
-    {encC : γ ↪ List Bool} (items : List ι) {test : α → ι → Bool} {f : α → ι → γ}
-    (htest : ∀ i ∈ items, ComputableInPolyTime (fun a => test a i) encIn encBool)
-    (hf : ∀ i ∈ items, ComputableInPolyTime (fun a => f a i) encIn encC) :
-    ComputableInPolyTime (fun a => (items.filter (test a)).map (f a)) encIn (encList encC) := by
-  induction items with
-  | nil => exact const []
-  | cons item rest ih =>
-    have hrest := ih (fun i hi => htest i (List.mem_cons_of_mem _ hi))
-      (fun i hi => hf i (List.mem_cons_of_mem _ hi))
-    have hhead := hf item List.mem_cons_self
-    have hkeep := htest item List.mem_cons_self
-    refine (hkeep.ite (cons' hhead hrest) hrest).of_enc_eq fun a => ?_
-    simp only [List.filter_cons]
-    cases test a item <;> simp
-
-private theorem computableInPolyTime_forbidClause (encV : V ↪ List Bool) :
-    ComputableInPolyTime
       (fun p : List V × List Bool => Constraint.forbidClause p.1 p.2)
       (encPair (encList encV) (encList encBool))
       (encList (encPair encV encBool)) := by
@@ -92,7 +74,7 @@ private theorem computableInPolyTime_toCNFAt (encRel : Rel ↪ List Bool)
         ((BitString.enumList r).filter fun w => !sem c.1 w).map (Constraint.forbidClause c.2))
       (encConstraint encRel encV)
       (encList (encList (encPair encV encBool))) := by
-  refine computableInPolyTime_mapFilterConst (BitString.enumList r)
+  refine ComputableInPolyTime.mapFilterConst (BitString.enumList r)
     (test := fun (c : Constraint Rel V) (w : List Bool) => !sem c.1 w)
     (f := fun (c : Constraint Rel V) (w : List Bool) => Constraint.forbidClause c.2 w)
     (fun w hw => ?_) (fun w _ => ?_)

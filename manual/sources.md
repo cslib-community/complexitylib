@@ -1606,6 +1606,16 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
 
+<a id="valiant79"></a>
+## valiant79
+
+Leslie G. Valiant. "The Complexity of Computing the Permanent." *Theoretical Computer Science* 8(2), 189–201, 1979. https://doi.org/10.1016/0304-3975(79)90044-6 . Bibliographic metadata from `references.bib`; the journal text was not inspected directly, so no internal theorem number or page locator is cited. Credited at paper level for introducing `#P` and `#P`-completeness under polynomial-time counting Turing reductions.
+
+<a id="valiant79enumeration"></a>
+## valiant79enumeration
+
+Leslie G. Valiant. "The Complexity of Enumeration and Reliability Problems." *SIAM Journal on Computing* 8(3), 410–421, 1979. https://doi.org/10.1137/0208032 . Source text checked on 2026-11-11. Credited for `#P`-completeness of `#2-SAT` (§4, problem 7 and Theorem 1, p. 414). The source proves `#P`-completeness for monotone `#2-SAT` using a function-value oracle (§2, p. 411). [`SharpTwoSAT.lean`](../CslibFrontier/Computability/Complexity/Problems/SharpTwoSAT.lean) establishes it for general occurring-variable `#2-SAT` via a standard bit-oracle convention (`AnswersBits`). The direct clause-weight `2-CNF` gadget and finite-difference polynomial interpolation are an original adaptation, replacing the bipartite matching reductions presented in the source.
+
 <a id="vanaardenneehrenfestdebruijn51"></a>
 ## vanaardenneehrenfestdebruijn51
 
