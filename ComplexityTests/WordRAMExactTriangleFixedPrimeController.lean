@@ -6,7 +6,7 @@ Authors: Erik Demaine
 
 -- upstream: local-only (tests)
 
-import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Controller
+import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Controller
 import Complexity.Algorithms.WordRAM.ExactTriangle.FixedPrime.Potential
 
 /-!
@@ -26,7 +26,8 @@ open Cslib.Algorithms.WordRAM.ExactTriangle
 
 private def fixture (flag : ℕ) : Data 416 :=
   { regs := fun j =>
-      if j.val = 40 then 7 else if j.val = 392 then flag else if j.val = 396 then 3
+      if j.val = 40 then 2 else if j.val = 41 then 7 else if j.val = 392 then flag
+      else if j.val = 396 then 3
       else if j.val = 400 then 2 else if j.val = 401 then 7 else if j.val = 403 then 5
       else if j.val = 404 then 1 else 99
     mem := fun a => if a = 17 then 123 else 0 }
@@ -37,8 +38,8 @@ private def observe (code : Code .standard 416) (flag : ℕ) : Option (List ℕ 
       y.regs FixedPrime.Reg.found, y.regs FixedPrime.Reg.scans, y.regs FixedPrime.Reg.one,
       y.regs 392, y.mem 17], t)
 
-#guard observe FixedPrime.setup 1 == some ([0, 7, 0, 0, 1, 1, 123], 5)
-#guard observe FixedPrime.select 0 == some ([2, 7, 99, 5, 1, 0, 123], 1)
+#guard observe StreamingFixedPrime.setup 1 == some ([0, 7, 0, 0, 1, 1, 123], 5)
+#guard observe StreamingFixedPrime.select 0 == some ([2, 7, 99, 5, 1, 0, 123], 1)
 #guard observe FixedPrime.receive 0 == some ([3, 7, 0, 8, 1, 0, 123], 6)
 #guard observe FixedPrime.receive 1 == some ([3, 3, 1, 8, 1, 1, 123], 5)
 
@@ -47,7 +48,7 @@ private def observe (code : Code .standard 416) (flag : ℕ) : Option (List ℕ 
 private def stopped : Option (ℕ × ℕ) := do
   let (y, _) ← FixedPrime.receive.eval 16 0 (fixture 1)
   let (z, t) ← (Code.loop (.lt FixedPrime.Reg.index FixedPrime.Reg.limit)
-    FixedPrime.step).eval 16 0 y
+    StreamingFixedPrime.step).eval 16 0 y
   pure (z.regs FixedPrime.Reg.scans, t)
 
 #guard stopped == some (8, 2)
@@ -55,7 +56,7 @@ private def stopped : Option (ℕ × ℕ) := do
 -- A failed record leaves more work and therefore cannot exit with zero body fuel.
 private def pending : Option (Data 416 × ℕ) := do
   let (y, _) ← FixedPrime.receive.eval 16 0 (fixture 0)
-  (Code.loop (.lt FixedPrime.Reg.index FixedPrime.Reg.limit) FixedPrime.step).eval 16 0 y
+  (Code.loop (.lt FixedPrime.Reg.index FixedPrime.Reg.limit) StreamingFixedPrime.step).eval 16 0 y
 
 #guard pending.isNone
 

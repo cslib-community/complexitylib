@@ -48,8 +48,8 @@ Over capacity `n` (`n_max`) with concrete integer potential
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.pkg`, `pkgStd`: `PQPackage` bundles over
   `Basis.exact` and `Basis.standard` for plug-and-play graph algorithms (such as Dijkstra).
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ.impl`,
-  `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.run_ops_exact_fresh`,
-  `MinPQ.run_ops_exact_reusable`: `StateTransitionImpl` and flat-program implementations of the
+  `MinPQ.dynamicProgram`, `MinPQ.certificate`, `MinPQ.run_client_exact_fresh`,
+  `MinPQ.run_client_exact_reusable`: `StateTransitionImpl` and flat-program implementations of the
   key–value
   Fibonacci heap with handles (`Cslib.DataStructure.PriorityQueue.minPQSpec`).
 * `Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.initFreshProg`, `initClearProg`,

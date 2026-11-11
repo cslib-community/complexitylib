@@ -1,0 +1,611 @@
+{
+  "_fixture": "Preview-only sample data. Never used as a production fallback.",
+  "schema": 1,
+  "generated_at": "2026-11-08T02:27:10.699980Z",
+  "refresh_seconds": 300,
+  "coverage": {
+    "since": "2026-11-06T02:27:10.699980Z",
+    "until": "2026-11-08T02:27:10.699980Z",
+    "records": 118318,
+    "invalid_records": 0,
+    "excluded_requests": 87,
+    "limited": true
+  },
+  "windows": {
+    "hour": {
+      "since": "2026-11-08T02:27:10.699980Z",
+      "seconds": 3600,
+      "requests": 4130,
+      "artifact_downloads": 4103,
+      "mapping_downloads": 13,
+      "body_bytes": 142739267,
+      "average_mbps": 0.31719837111111115,
+      "successes": 4123,
+      "misses": 5,
+      "errors": 0,
+      "throttled": 1,
+      "auth_failures": 1,
+      "publication_successes": 2,
+      "median_seconds": 0.057,
+      "p95_seconds": 0.312,
+      "status_counts": {
+        "200": 4121,
+        "201": 2,
+        "404": 5,
+        "429": 1,
+        "401": 1
+      }
+    },
+    "day": {
+      "since": "2026-11-07T03:27:10.699980Z",
+      "seconds": 86400,
+      "requests": 66631,
+      "artifact_downloads": 65983,
+      "mapping_downloads": 312,
+      "body_bytes": 2295482587,
+      "average_mbps": 0.21254468398148146,
+      "successes": 66463,
+      "misses": 120,
+      "errors": 0,
+      "throttled": 24,
+      "auth_failures": 24,
+      "publication_successes": 48,
+      "median_seconds": 0.057,
+      "p95_seconds": 0.312,
+      "status_counts": {
+        "200": 66415,
+        "201": 48,
+        "404": 120,
+        "429": 24,
+        "401": 24
+      }
+    },
+    "week": {
+      "since": "2026-11-06T02:27:10.699980Z",
+      "seconds": 176400,
+      "requests": 118318,
+      "artifact_downloads": 116995,
+      "mapping_downloads": 637,
+      "body_bytes": 4070139055,
+      "average_mbps": 0.1845868052154195,
+      "successes": 117975,
+      "misses": 245,
+      "errors": 0,
+      "throttled": 49,
+      "auth_failures": 49,
+      "publication_successes": 98,
+      "median_seconds": 0.057,
+      "p95_seconds": 0.312,
+      "status_counts": {
+        "200": 117877,
+        "201": 98,
+        "404": 245,
+        "429": 49,
+        "401": 49
+      }
+    }
+  },
+  "series": [
+    {
+      "time": "2026-11-06T02:27:10.699980Z",
+      "requests": 1627,
+      "downloads": 1600,
+      "body_bytes": 55662400,
+      "average_mbps": 0.12369422222222222
+    },
+    {
+      "time": "2026-11-06T03:27:10.699980Z",
+      "requests": 2494,
+      "downloads": 2467,
+      "body_bytes": 85824463,
+      "average_mbps": 0.1907210288888889
+    },
+    {
+      "time": "2026-11-06T04:27:10.699980Z",
+      "requests": 2968,
+      "downloads": 2941,
+      "body_bytes": 102314449,
+      "average_mbps": 0.2273654422222222
+    },
+    {
+      "time": "2026-11-06T05:27:10.699980Z",
+      "requests": 2839,
+      "downloads": 2812,
+      "body_bytes": 97826668,
+      "average_mbps": 0.21739259555555554
+    },
+    {
+      "time": "2026-11-06T06:27:10.699980Z",
+      "requests": 2182,
+      "downloads": 2155,
+      "body_bytes": 74970295,
+      "average_mbps": 0.16660065555555556
+    },
+    {
+      "time": "2026-11-06T07:27:10.699980Z",
+      "requests": 1320,
+      "downloads": 1293,
+      "body_bytes": 44982177,
+      "average_mbps": 0.09996039333333333
+    },
+    {
+      "time": "2026-11-06T08:27:10.699980Z",
+      "requests": 673,
+      "downloads": 646,
+      "body_bytes": 22473694,
+      "average_mbps": 0.04994154222222222
+    },
+    {
+      "time": "2026-11-06T09:27:10.699980Z",
+      "requests": 559,
+      "downloads": 532,
+      "body_bytes": 18507748,
+      "average_mbps": 0.041128328888888885
+    },
+    {
+      "time": "2026-11-06T10:27:10.699980Z",
+      "requests": 1046,
+      "downloads": 1019,
+      "body_bytes": 35449991,
+      "average_mbps": 0.07877775777777778
+    },
+    {
+      "time": "2026-11-06T11:27:10.699980Z",
+      "requests": 1918,
+      "downloads": 1891,
+      "body_bytes": 65785999,
+      "average_mbps": 0.14619110888888887
+    },
+    {
+      "time": "2026-11-06T12:27:10.699980Z",
+      "requests": 2781,
+      "downloads": 2754,
+      "body_bytes": 95808906,
+      "average_mbps": 0.21290868
+    },
+    {
+      "time": "2026-11-06T13:27:10.699980Z",
+      "requests": 3241,
+      "downloads": 3214,
+      "body_bytes": 111811846,
+      "average_mbps": 0.2484707688888889
+    },
+    {
+      "time": "2026-11-06T14:27:10.699980Z",
+      "requests": 3097,
+      "downloads": 3070,
+      "body_bytes": 106802230,
+      "average_mbps": 0.2373382888888889
+    },
+    {
+      "time": "2026-11-06T15:27:10.699980Z",
+      "requests": 2431,
+      "downloads": 2404,
+      "body_bytes": 83632756,
+      "average_mbps": 0.1858505688888889
+    },
+    {
+      "time": "2026-11-06T16:27:10.699980Z",
+      "requests": 1570,
+      "downloads": 1543,
+      "body_bytes": 53679427,
+      "average_mbps": 0.11928761555555556
+    },
+    {
+      "time": "2026-11-06T17:27:10.699980Z",
+      "requests": 933,
+      "downloads": 906,
+      "body_bytes": 31518834,
+      "average_mbps": 0.07004185333333333
+    },
+    {
+      "time": "2026-11-06T18:27:10.699980Z",
+      "requests": 834,
+      "downloads": 807,
+      "body_bytes": 28074723,
+      "average_mbps": 0.062388273333333334
+    },
+    {
+      "time": "2026-11-06T19:27:10.699980Z",
+      "requests": 1333,
+      "downloads": 1306,
+      "body_bytes": 45434434,
+      "average_mbps": 0.1009654088888889
+    },
+    {
+      "time": "2026-11-06T20:27:10.699980Z",
+      "requests": 2210,
+      "downloads": 2183,
+      "body_bytes": 75944387,
+      "average_mbps": 0.16876530444444446
+    },
+    {
+      "time": "2026-11-06T21:27:10.699980Z",
+      "requests": 3067,
+      "downloads": 3040,
+      "body_bytes": 105758560,
+      "average_mbps": 0.23501902222222223
+    },
+    {
+      "time": "2026-11-06T22:27:10.699980Z",
+      "requests": 3514,
+      "downloads": 3487,
+      "body_bytes": 121309243,
+      "average_mbps": 0.26957609555555556
+    },
+    {
+      "time": "2026-11-06T23:27:10.699980Z",
+      "requests": 3356,
+      "downloads": 3329,
+      "body_bytes": 115812581,
+      "average_mbps": 0.2573612911111111
+    },
+    {
+      "time": "2026-11-07T00:27:10.699980Z",
+      "requests": 2681,
+      "downloads": 2654,
+      "body_bytes": 92330006,
+      "average_mbps": 0.20517779111111112
+    },
+    {
+      "time": "2026-11-07T01:27:10.699980Z",
+      "requests": 1820,
+      "downloads": 1793,
+      "body_bytes": 62376677,
+      "average_mbps": 0.13861483777777778
+    },
+    {
+      "time": "2026-11-07T02:27:10.699980Z",
+      "requests": 1193,
+      "downloads": 1166,
+      "body_bytes": 40563974,
+      "average_mbps": 0.09014216444444444
+    },
+    {
+      "time": "2026-11-07T03:27:10.699980Z",
+      "requests": 1108,
+      "downloads": 1081,
+      "body_bytes": 37606909,
+      "average_mbps": 0.08357090888888889
+    },
+    {
+      "time": "2026-11-07T04:27:10.699980Z",
+      "requests": 1620,
+      "downloads": 1593,
+      "body_bytes": 55418877,
+      "average_mbps": 0.12315306
+    },
+    {
+      "time": "2026-11-07T05:27:10.699980Z",
+      "requests": 2502,
+      "downloads": 2475,
+      "body_bytes": 86102775,
+      "average_mbps": 0.1913395
+    },
+    {
+      "time": "2026-11-07T06:27:10.699980Z",
+      "requests": 3353,
+      "downloads": 3326,
+      "body_bytes": 115708214,
+      "average_mbps": 0.25712936444444445
+    },
+    {
+      "time": "2026-11-07T07:27:10.699980Z",
+      "requests": 3787,
+      "downloads": 3760,
+      "body_bytes": 130806640,
+      "average_mbps": 0.2906814222222222
+    },
+    {
+      "time": "2026-11-07T08:27:10.699980Z",
+      "requests": 3614,
+      "downloads": 3587,
+      "body_bytes": 124788143,
+      "average_mbps": 0.2773069844444444
+    },
+    {
+      "time": "2026-11-07T09:27:10.699980Z",
+      "requests": 2930,
+      "downloads": 2903,
+      "body_bytes": 100992467,
+      "average_mbps": 0.22442770444444446
+    },
+    {
+      "time": "2026-11-07T10:27:10.699980Z",
+      "requests": 2070,
+      "downloads": 2043,
+      "body_bytes": 71073927,
+      "average_mbps": 0.15794206
+    },
+    {
+      "time": "2026-11-07T11:27:10.699980Z",
+      "requests": 1453,
+      "downloads": 1426,
+      "body_bytes": 49609114,
+      "average_mbps": 0.11024247555555557
+    },
+    {
+      "time": "2026-11-07T12:27:10.699980Z",
+      "requests": 1383,
+      "downloads": 1356,
+      "body_bytes": 47173884,
+      "average_mbps": 0.10483085333333333
+    },
+    {
+      "time": "2026-11-07T13:27:10.699980Z",
+      "requests": 1908,
+      "downloads": 1881,
+      "body_bytes": 65438109,
+      "average_mbps": 0.14541801999999998
+    },
+    {
+      "time": "2026-11-07T14:27:10.699980Z",
+      "requests": 2794,
+      "downloads": 2767,
+      "body_bytes": 96261163,
+      "average_mbps": 0.21391369555555553
+    },
+    {
+      "time": "2026-11-07T15:27:10.699980Z",
+      "requests": 3639,
+      "downloads": 3612,
+      "body_bytes": 125657868,
+      "average_mbps": 0.27923970666666664
+    },
+    {
+      "time": "2026-11-07T16:27:10.699980Z",
+      "requests": 4060,
+      "downloads": 4033,
+      "body_bytes": 140304037,
+      "average_mbps": 0.31178674888888885
+    },
+    {
+      "time": "2026-11-07T17:27:10.699980Z",
+      "requests": 3872,
+      "downloads": 3845,
+      "body_bytes": 133763705,
+      "average_mbps": 0.29725267777777775
+    },
+    {
+      "time": "2026-11-07T18:27:10.699980Z",
+      "requests": 3179,
+      "downloads": 3152,
+      "body_bytes": 109654928,
+      "average_mbps": 0.24367761777777777
+    },
+    {
+      "time": "2026-11-07T19:27:10.699980Z",
+      "requests": 2320,
+      "downloads": 2293,
+      "body_bytes": 79771177,
+      "average_mbps": 0.1772692822222222
+    },
+    {
+      "time": "2026-11-07T20:27:10.699980Z",
+      "requests": 1713,
+      "downloads": 1686,
+      "body_bytes": 58654254,
+      "average_mbps": 0.13034278666666665
+    },
+    {
+      "time": "2026-11-07T21:27:10.699980Z",
+      "requests": 1658,
+      "downloads": 1631,
+      "body_bytes": 56740859,
+      "average_mbps": 0.12609079777777776
+    },
+    {
+      "time": "2026-11-07T22:27:10.699980Z",
+      "requests": 2195,
+      "downloads": 2168,
+      "body_bytes": 75422552,
+      "average_mbps": 0.16760567111111113
+    },
+    {
+      "time": "2026-11-07T23:27:10.699980Z",
+      "requests": 3086,
+      "downloads": 3059,
+      "body_bytes": 106419551,
+      "average_mbps": 0.23648789111111113
+    },
+    {
+      "time": "2026-11-08T00:27:10.699980Z",
+      "requests": 3925,
+      "downloads": 3898,
+      "body_bytes": 135607522,
+      "average_mbps": 0.3013500488888889
+    },
+    {
+      "time": "2026-11-08T01:27:10.699980Z",
+      "requests": 4332,
+      "downloads": 4305,
+      "body_bytes": 149766645,
+      "average_mbps": 0.33281476666666665
+    },
+    {
+      "time": "2026-11-08T02:27:10.699980Z",
+      "requests": 4130,
+      "downloads": 4103,
+      "body_bytes": 142739267,
+      "average_mbps": 0.31719837111111115
+    }
+  ],
+  "storage": {
+    "snapshot_at": "2026-11-08T02:27:10.699980Z",
+    "stale": false,
+    "entry_count": 7024,
+    "artifact_count": 6969,
+    "mapping_count": 43,
+    "artifact_bytes": 252758332,
+    "mapping_bytes": 12555344,
+    "logical_retained_bytes": 10221151372,
+    "saved_bytes": 9968393040,
+    "dedup_ratio": 40.44,
+    "missing_artifacts": 0,
+    "disk": {
+      "total_bytes": 16729894912,
+      "used_bytes": 572758332,
+      "available_bytes": 16127136580,
+      "inodes_total": 1048576,
+      "inodes_available": 1041300
+    }
+  },
+  "latest": {
+    "revision": "a4d41f463d05c3fe4612fe32632447a52eaaec37",
+    "toolchain": "leanprover--lean4---v4.36.0-rc2",
+    "published_at": "2026-11-08T02:09:10.699980Z",
+    "module_count": 6654,
+    "artifact_count": 6654,
+    "artifact_bytes": 239445811
+  },
+  "builds": [
+    {
+      "revision": "0000000000000000000000000000000000000001",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-08T02:09:10.699980Z",
+      "module_count": 6654,
+      "artifact_count": 6654,
+      "artifact_bytes": 239445811,
+      "mapping_requests": 35
+    },
+    {
+      "revision": "0000000000000000000000000000000000000002",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-08T01:27:10.699980Z",
+      "module_count": 6646,
+      "artifact_count": 6654,
+      "artifact_bytes": 239295811,
+      "mapping_requests": 33
+    },
+    {
+      "revision": "0000000000000000000000000000000000000003",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-08T00:45:10.699980Z",
+      "module_count": 6638,
+      "artifact_count": 6654,
+      "artifact_bytes": 239145811,
+      "mapping_requests": 31
+    },
+    {
+      "revision": "0000000000000000000000000000000000000004",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-08T00:03:10.699980Z",
+      "module_count": 6630,
+      "artifact_count": 6654,
+      "artifact_bytes": 238995811,
+      "mapping_requests": 29
+    },
+    {
+      "revision": "0000000000000000000000000000000000000005",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T23:21:10.699980Z",
+      "module_count": 6622,
+      "artifact_count": 6654,
+      "artifact_bytes": 238845811,
+      "mapping_requests": 27
+    },
+    {
+      "revision": "0000000000000000000000000000000000000006",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T22:39:10.699980Z",
+      "module_count": 6614,
+      "artifact_count": 6654,
+      "artifact_bytes": 238695811,
+      "mapping_requests": 25
+    },
+    {
+      "revision": "0000000000000000000000000000000000000007",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T21:57:10.699980Z",
+      "module_count": 6606,
+      "artifact_count": 6654,
+      "artifact_bytes": 238545811,
+      "mapping_requests": 23
+    },
+    {
+      "revision": "0000000000000000000000000000000000000008",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T21:15:10.699980Z",
+      "module_count": 6598,
+      "artifact_count": 6654,
+      "artifact_bytes": 238395811,
+      "mapping_requests": 21
+    },
+    {
+      "revision": "0000000000000000000000000000000000000009",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T20:33:10.699980Z",
+      "module_count": 6590,
+      "artifact_count": 6654,
+      "artifact_bytes": 238245811,
+      "mapping_requests": 19
+    },
+    {
+      "revision": "000000000000000000000000000000000000000a",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T19:51:10.699980Z",
+      "module_count": 6582,
+      "artifact_count": 6654,
+      "artifact_bytes": 238095811,
+      "mapping_requests": 17
+    },
+    {
+      "revision": "000000000000000000000000000000000000000b",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T19:09:10.699980Z",
+      "module_count": 6574,
+      "artifact_count": 6654,
+      "artifact_bytes": 237945811,
+      "mapping_requests": 15
+    },
+    {
+      "revision": "000000000000000000000000000000000000000c",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "published_at": "2026-11-07T18:27:10.699980Z",
+      "module_count": 6566,
+      "artifact_count": 6654,
+      "artifact_bytes": 237795811,
+      "mapping_requests": 13
+    }
+  ],
+  "popular_builds": [
+    {
+      "revision": "0000000000000000000000000000000000000001",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "mapping_requests": 35
+    },
+    {
+      "revision": "0000000000000000000000000000000000000002",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "mapping_requests": 33
+    },
+    {
+      "revision": "0000000000000000000000000000000000000003",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "mapping_requests": 31
+    },
+    {
+      "revision": "0000000000000000000000000000000000000004",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "mapping_requests": 29
+    },
+    {
+      "revision": "0000000000000000000000000000000000000005",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "mapping_requests": 27
+    },
+    {
+      "revision": "0000000000000000000000000000000000000006",
+      "toolchain": "leanprover--lean4---v4.36.0-rc2",
+      "mapping_requests": 25
+    }
+  ],
+  "gc": {
+    "status": "ok",
+    "last_run_at": "2026-11-07T23:27:10.699980Z",
+    "last_success_at": "2026-11-07T23:27:10.699980Z",
+    "deleted_artifacts": 927,
+    "deleted_mappings": 28,
+    "deleted_bytes": 51544139
+  }
+}

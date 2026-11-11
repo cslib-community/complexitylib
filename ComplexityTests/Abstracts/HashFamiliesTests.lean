@@ -45,6 +45,13 @@ lemma space_4_16 : space 4 16 = 16 := by
 
 example : evalTimeBound 4 = 444943 := by decide
 
+example : doubleTabEvalTime = 6862 := rfl
+
+/-- The large-regime evaluation budget never exceeds the all-regime one. -/
+example (k : ℕ) : doubleTabEvalTime ≤ evalTimeBound k := by
+  dsimp only [doubleTabEvalTime, evalTimeBound]
+  omega
+
 lemma resampleTime_4_16 : resampleTime 4 16 = 33 := by
   rw [resampleTime_eq_of_lt lt_regimeThreshold_16]
 
@@ -114,7 +121,7 @@ theorem nonvacuous_small_fresh :
   obtain ⟨ν₀, hhalts, hexp, _, _, hops⟩ :=
     hexec 64 100 hw hsp hn hUfit testRegSmall (fun _ => 0)
       wordBounded_testRegSmall rfl rfl rfl rfl (fun _ _ _ => rfl)
-  obtain ⟨ν_final, hruns, hcontract⟩ := hops sampleOps
+  obtain ⟨ν_final, hruns, -, hcontract⟩ := hops sampleOps
   have hcontract0 := hcontract boundedEpochKeys_sampleOps
   have hfp : failureProbBound 4 16 = 0 := failureProbBound_eq_zero_of_lt lt_regimeThreshold_16
   rw [hfp] at hcontract0
@@ -145,7 +152,7 @@ theorem nonvacuous_small_clear :
     highIndependenceHashFamily_clear 4 16 16 4 hU hM
   obtain ⟨ν₀, hhalts, hexp, _, _, hops⟩ :=
     hexec 64 100 hw hsp hn hUfit testRegSmall (fun a => a % 7) hbdd rfl rfl rfl rfl
-  obtain ⟨ν_final, hruns, hcontract⟩ := hops sampleOps
+  obtain ⟨ν_final, hruns, -, hcontract⟩ := hops sampleOps
   have hcontract0 := hcontract boundedEpochKeys_sampleOps
   have hfp : failureProbBound 4 16 = 0 := failureProbBound_eq_zero_of_lt lt_regimeThreshold_16
   rw [hfp] at hcontract0
@@ -187,5 +194,51 @@ theorem nonvacuous_large_failureProbBound :
   have h64 : (64 : ℕ) = 2 ^ 6 := rfl
   rw [← mul_assoc, h16, h32, h64, ← pow_mul, ← pow_add, ← pow_mul, ← pow_add]
   exact two_pow_le_two_pow (by decide)
+
+/-- Initial register bank for `(k, U, M, base) = (4, 16, 4, 0)` at capacity `n_max`. -/
+def testRegLarge (n_max : ℕ) : Fin 23 → ℕ
+  | ⟨1, _⟩ => n_max
+  | ⟨2, _⟩ => 16
+  | ⟨3, _⟩ => 4
+  | _ => 0
+
+lemma testRegLarge_le (n_max : ℕ) (i : Fin 23) : testRegLarge n_max i ≤ n_max + 16 := by
+  fin_cases i <;> simp only [testRegLarge] <;> omega
+
+/-- Non-vacuity of the `k`-independent evaluation conjunct of `highIndependenceHashFamily_fresh`:
+for every capacity `n_max ≥ regimeThreshold` (for instance `n_max = regimeThreshold`), running
+`sampleOps` keeps every `.eval u` within `doubleTabEvalTime = 6862` instructions. -/
+theorem nonvacuous_large_fresh_eval (n_max : ℕ) (hge : regimeThreshold ≤ n_max) :
+    ∃ (p_op : List (Instr 23)) (ν₀ ν_final : PMF (SeqState 16 16)),
+      RunsOps (space 4 n_max + n_max + 17) p_op 0 (space 4 n_max) doubleTabEvalTime
+        (resampleTime 4 n_max) sampleOps ν₀ ν_final := by
+  have hle_pow : ∀ a : ℕ, a ≤ space 4 n_max + n_max + 17 →
+      a < 2 ^ (space 4 n_max + n_max + 17) :=
+    fun _ ha => ha.trans_lt Nat.lt_two_pow_self
+  have hU : 16 ≤ max n_max 4 ^ 4 :=
+    (by decide : 16 ≤ 4 ^ 4).trans (Nat.pow_le_pow_left (le_max_right n_max 4) 4)
+  have hM : 4 ≤ 4 * Nat.clog 2 (max n_max 4) + 5 := by omega
+  have hdeg : trinomialDeg 16 4 = 6 := by decide
+  have hw : 2 * trinomialDeg 16 4 ≤ space 4 n_max + n_max + 17 := by omega
+  have hsp : 0 + space 4 n_max < 2 ^ (space 4 n_max + n_max + 17) := hle_pow _ (by omega)
+  have hn : max n_max 2 < 2 ^ (space 4 n_max + n_max + 17) :=
+    hle_pow _ (max_le (by omega) (by omega))
+  have hUfit : max 16 2 + 1 < 2 ^ (space 4 n_max + n_max + 17) := by
+    rw [show max 16 2 = 16 from rfl]
+    exact hle_pow _ (by omega)
+  have hbdd : WordBounded (space 4 n_max + n_max + 17) (testRegLarge n_max) (fun _ => 0) :=
+    ⟨fun i => hle_pow _ ((testRegLarge_le n_max i).trans (by omega)),
+      fun _ => Nat.two_pow_pos _⟩
+  obtain ⟨_, p_op, hexec⟩ := highIndependenceHashFamily_fresh 4 n_max 16 4 hU hM
+  obtain ⟨ν₀, -, -, -, -, hops⟩ :=
+    hexec (space 4 n_max + n_max + 17) 0 hw hsp hn hUfit (testRegLarge n_max) (fun _ => 0)
+      hbdd rfl rfl rfl rfl (fun _ _ _ => rfl)
+  obtain ⟨ν_final, -, hlarge, -⟩ := hops sampleOps
+  exact ⟨p_op, ν₀, ν_final, hlarge hge⟩
+
+example : ∃ (p_op : List (Instr 23)) (ν₀ ν_final : PMF (SeqState 16 16)),
+    RunsOps (space 4 regimeThreshold + regimeThreshold + 17) p_op 0 (space 4 regimeThreshold)
+      doubleTabEvalTime (resampleTime 4 regimeThreshold) sampleOps ν₀ ν_final :=
+  nonvacuous_large_fresh_eval regimeThreshold le_rfl
 
 end ComplexityTests.Abstracts.HashFamiliesTests

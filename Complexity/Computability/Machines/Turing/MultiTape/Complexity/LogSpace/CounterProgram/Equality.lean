@@ -42,23 +42,6 @@ private def equalityProgram : CounterProgram where
      accept, reject]
   registers := 2
 
-private theorem marker (u v : List Bool) {i : ℕ} (hi : i < u.length) :
-    (frame u ++ v)[2 * i]? = some true := by
-  rw [List.getElem?_append_left (by rw [length_frame]; omega), getElem?_frame_two_mul hi]
-
-private theorem ending (u v : List Bool) :
-    (frame u ++ v)[2 * u.length]? = some false := by
-  rw [List.getElem?_append_left (by rw [length_frame]; omega), getElem?_frame_two_mul_length]
-
-private theorem bit (u v : List Bool) {i : ℕ} (hi : i < u.length) :
-    (frame u ++ v)[2 * i + 1]? = u[i]? := by
-  rw [List.getElem?_append_left (by rw [length_frame]; omega), getElem?_frame_two_mul_add_one hi]
-
-private theorem tailBit (u v : List Bool) (i : ℕ) :
-    (frame u ++ v)[2 * u.length + 1 + i]? = v[i]? := by
-  rw [List.getElem?_append_right (by rw [length_frame]; omega)]
-  simp [length_frame]
-
 private theorem bounded {a b B : ℕ} (ha : a ≤ B) (hb : b ≤ B) :
     ∀ r ∈ [a, b], r ≤ B := by simp_all
 
@@ -77,11 +60,11 @@ private theorem equality_run (u v : List Bool) {B : ℕ}
       have : i = u.length := by omega
       subst i
       apply Reaches.read (by rfl) (bounded (by omega) (by omega))
-      simpa [ending, readLabel] using Reaches.refl (2, [u.length, 0])
+      simpa [getElem?_frame_append_length, readLabel] using Reaches.refl (2, [u.length, 0])
     | succ n ih =>
       apply Reaches.read (by rfl) (bounded (by omega) (by omega))
       simp only [eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-        marker u v (show i < u.length by omega), readLabel]
+        (getElem?_frame_append u v (show i < u.length by omega)).1, readLabel]
       apply Reaches.assign (by rfl) (bounded (by omega) (by omega))
       simpa using ih (i + 1) (by omega) (by omega)
   have loop : ∀ i ≤ u.length, ∃ s,
@@ -99,10 +82,10 @@ private theorem equality_run (u v : List Bool) {B : ℕ}
       · refine ⟨(9, [u.length, u.length]), ?_, ?_, hregs⟩
         · apply Reaches.read (by rfl) hregs
           simp only [eval_mul, eval_const, eval_reg, List.getD_cons_succ, List.getD_cons_zero,
-            ending, readLabel]
+            getElem?_frame_append_length, readLabel]
           apply Reaches.read (by rfl) hregs
           simp only [eval_add, eval_mul, eval_const, eval_reg, List.getD_cons_zero,
-            List.getD_cons_succ, tailBit]
+            List.getD_cons_succ, getElem?_frame_append_boundary]
           rw [List.getElem?_eq_getElem hv]
           cases v[u.length] <;> exact Reaches.refl _
         · have : v.drop u.length ≠ [] := by simp [List.drop_eq_nil_iff, hv.not_ge]
@@ -110,9 +93,10 @@ private theorem equality_run (u v : List Bool) {B : ℕ}
       · refine ⟨(8, [u.length, u.length]), ?_, ?_, hregs⟩
         · apply Reaches.read (by rfl) hregs
           simp only [eval_mul, eval_const, eval_reg, List.getD_cons_succ, List.getD_cons_zero,
-            ending, readLabel]
+            getElem?_frame_append_length, readLabel]
           apply Reaches.read (by rfl) hregs
-          simpa [tailBit, List.getElem?_eq_none (by omega : v.length ≤ u.length), readLabel]
+          simpa [getElem?_frame_append_boundary,
+            List.getElem?_eq_none (by omega : v.length ≤ u.length), readLabel]
             using (Reaches.refl (P := equalityProgram) (w := frame u ++ v)
               (Q := equalityProgram.Running B) (8, [u.length, u.length]))
         · simp [List.drop_eq_nil_iff.mpr (by omega : v.length ≤ u.length), equalityProgram,
@@ -125,10 +109,10 @@ private theorem equality_run (u v : List Bool) {B : ℕ}
           (if u[i] then 4 else 5, [u.length, i]) := by
         apply Reaches.read (by rfl) hregs
         simp only [eval_mul, eval_const, eval_reg, List.getD_cons_succ, List.getD_cons_zero,
-          marker u v hiu, readLabel]
+          (getElem?_frame_append u v hiu).1, readLabel]
         apply Reaches.read (by rfl) hregs
         simp only [eval_add, eval_mul, eval_const, eval_reg, List.getD_cons_succ,
-          List.getD_cons_zero, bit u v hiu, List.getElem?_eq_getElem hiu]
+          List.getD_cons_zero, (getElem?_frame_append u v hiu).2]
         cases u[i] <;> exact Reaches.refl _
       by_cases hv : i < v.length
       · by_cases heq : u[i] = v[i]
@@ -141,7 +125,8 @@ private theorem equality_run (u v : List Bool) {B : ℕ}
             cases hu : u[i] <;> simp only [Bool.false_eq_true, ↓reduceIte]
             all_goals
               apply Reaches.read (by rfl) hregs
-              simpa [tailBit, List.getElem?_eq_getElem hv, ← heq, hu, readLabel] using hnext
+              simpa [getElem?_frame_append_boundary, List.getElem?_eq_getElem hv, ← heq, hu,
+                readLabel] using hnext
           · have hd : u.drop i = v.drop i ↔ u.drop (i + 1) = v.drop (i + 1) := by
               rw [← List.cons_getElem_drop_succ (l := u) (n := i) (h := hiu),
                 ← List.cons_getElem_drop_succ (l := v) (n := i) (h := hv)]
@@ -155,7 +140,8 @@ private theorem equality_run (u v : List Bool) {B : ℕ}
               have hvb : v[i] = !u[i] := by
                 apply Bool.eq_not_iff.mpr
                 exact Ne.symm heq
-              simpa [tailBit, List.getElem?_eq_getElem hv, hvb, hu, readLabel]
+              simpa [getElem?_frame_append_boundary, List.getElem?_eq_getElem hv, hvb, hu,
+                readLabel]
                 using (Reaches.refl (P := equalityProgram) (w := frame u ++ v)
                   (Q := equalityProgram.Running B) (9, [u.length, i]))
           · have hd : u.drop i ≠ v.drop i := by
@@ -168,7 +154,8 @@ private theorem equality_run (u v : List Bool) {B : ℕ}
         · cases hu : u[i] <;> simp only [Bool.false_eq_true, ↓reduceIte]
           all_goals
             apply Reaches.read (by rfl) hregs
-            simpa [tailBit, List.getElem?_eq_none (by omega : v.length ≤ i), readLabel]
+            simpa [getElem?_frame_append_boundary,
+              List.getElem?_eq_none (by omega : v.length ≤ i), readLabel]
               using (Reaches.refl (P := equalityProgram) (w := frame u ++ v)
                 (Q := equalityProgram.Running B) (9, [u.length, i]))
         · have hd : u.drop i ≠ v.drop i := by

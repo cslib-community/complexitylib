@@ -225,7 +225,7 @@ variable [Fintype α]
 fixed list `pairs` is tested against its constraint table. -/
 @[fun_prop]
 theorem isPolyTime_toCNF :
-    ComputableInPolyTime (toCNF e pairs) (encoding (encPi (encPi encBool))) encCNF := by
+    ComputableInPolyTime (toCNF e pairs) (encoding encConstraintTable) encCNF := by
   have hpair : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
       (encPair encUnary encUnary) encUnary := by
     have hleft : ComputableInPolyTime (fun p : ℕ × ℕ => p.2 * p.2 + p.1)
@@ -300,7 +300,7 @@ soundness `1 - (1 - s) / (|α| ^ 2 * (2 k - 2))`, through `Cslib.PCP.Encoded.Gra
 splitting to width three. -/
 theorem polyTimeReducible_GapTwoCSP_GapThreeSAT {α : Type} [Fintype α] {k : ℕ}
     (e : α ≃ (Fin k → Bool)) (hs : s < 1) :
-    PromiseProblem.PolyTimeReducible (Graph.encoding (encPi (encPi encBool))) encCNF
+    PromiseProblem.PolyTimeReducible (Graph.encoding encConstraintTable) encCNF
       (GapTwoCSP α s)
       (GapThreeSAT (1 - (1 - s) / (Fintype.card α ^ 2 * max 1 (2 * k - 2) : ℕ))) := by
   have : Nonempty α := ⟨e.symm fun _ => false⟩

@@ -31,7 +31,7 @@ one parameter `n`.) Standard uniform formulations therefore index both compressi
 `H : List Bool → List Bool → List Bool` by a public key `k ← {0, 1}^n` sampled uniformly at
 security parameter `n`; the adversary receives `(1^n, k)` and wins by outputting a pair `(m₁, m₂)`
 of valid inputs with `m₁ ≠ m₂` and `H k m₁ = H k m₂` ([BonehShoup2023], Sections 8.1–8.2;
-[KatzLindell2020], Section 5.1).
+[KatzLindell2020], Section 6.1).
 
 Parameterizing the experiment by a validity predicate `valid : ℕ → List Bool → Bool` accommodates
 both fixed-input-length compression families (`validCompressionInput n x := (x.length == 2 * n)`,
@@ -91,7 +91,7 @@ p. 290). Standard keyed word-level collision resistance (`CollisionFinder`, `Col
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Section 8.1 (Definition 8.2 and Fig. 8.3, printed pp. 290–291).
-* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 5.1.
+* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*][KatzLindell2020], Section 6.1.
 -/
 
 @[expose] public section
@@ -205,8 +205,8 @@ theorem CollisionResistantForOn.negligible {Param : Type} {Digest : Param → Ty
     (adversary : CollisionFinderFor Param)
     (hPPT : IsPPTOn (encPair encUnary encParam) (encPair encBits encBits)
       (fun p => adversary p.1 p.2)) :
-    Negligible (fun n => Game.succProbability (collisionGameFor setup H valid adversary n)) := by
-  simpa only [Game.advantage_pure_false] using h adversary hPPT
+    Negligible (fun n => Game.succProbability (collisionGameFor setup H valid adversary n)) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hPPT
 
 /-- Establish setup-parameterized collision resistance by bounding every strict PPT adversary's
 success probability. -/
@@ -218,9 +218,8 @@ theorem CollisionResistantForOn.of_negligible {Param : Type} {Digest : Param →
       IsPPTOn (encPair encUnary encParam) (encPair encBits encBits)
         (fun p => adversary p.1 p.2) →
       Negligible (fun n => Game.succProbability (collisionGameFor setup H valid adversary n))) :
-    CollisionResistantForOn encParam setup H valid := by
-  intro adversary hPPT
-  simpa only [Game.advantage_pure_false] using h adversary hPPT
+    CollisionResistantForOn encParam setup H valid :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 /-- **Finding collisions with probability bounded away from zero refutes
 `CollisionResistantForOn`**: a strict PPT collision finder whose success probability is at least a
@@ -293,19 +292,15 @@ theorem CollisionResistantForOn.of_map
       H₂ (f n p₁) m₁ = H₂ (f n p₁) m₂ →
       valid₁ n p₁ m₁ = true ∧ valid₁ n p₁ m₂ = true ∧ H₁ p₁ m₁ = H₁ p₁ m₂) :
     CollisionResistantForOn encParam₂ (fun m => (setup₁ m).map (f m)) H₂ valid₂ := by
-  apply CollisionResistantForOn.of_negligible
-  intro adversary hadversary
-  let redAdversary : CollisionFinderFor Param₁ := fun n p₁ => adversary n (f n p₁)
   have hpre : ComputableInPolyTime
       (fun p : ℕ × Param₁ => (p.1, f p.1 p.2))
       (encPair encUnary encParam₁)
       (encPair encUnary encParam₂) :=
     (by fun_prop : ComputableInPolyTime (fun p : ℕ × Param₁ => p.1) _ encUnary).prod hf
-  have hredPPT :
-      IsPPTOn (encPair encUnary encParam₁) (encPair encBits encBits)
-        (fun p => redAdversary p.1 p.2) :=
-    hadversary.preprocess hpre
-  refine negligible_of_eventually_le (hCR.negligible redAdversary hredPPT) ?_
+  refine hCR.of_eventually_succProbability_reduction
+    (fun adversary n p₁ => adversary n (f n p₁))
+    (fun _ hadversary => hadversary.preprocess hpre)
+    (fun adversary _ => ?_)
   filter_upwards [hinj] with n hn
   exact succProbability_collisionGameFor_map_le setup₁ f H₁ H₂ valid₁ valid₂ adversary n hn
 
@@ -500,11 +495,6 @@ theorem CollisionResistantOn.of_extract
       isCollision H₁ valid₁ n k m₁ m₂ = true →
       isCollision H₂ valid₂ n k (extract n k m₁ m₂).1 (extract n k m₁ m₂).2 = true) :
     CollisionResistantOn H₁ valid₁ := by
-  apply CollisionResistantOn.of_negligible
-  intro adversary hadversary
-  let redAdversary : CollisionFinder := fun n k => do
-    let pair ← adversary n k
-    return extract n k pair.1 pair.2
   have hpost : ComputableTidilyInPolyTime
       (fun p : (ℕ × List Bool) × (List Bool × List Bool) =>
         extract p.1.1 p.1.2 p.2.1 p.2.2)
@@ -513,13 +503,15 @@ theorem CollisionResistantOn.of_extract
     hextract.tidy.comp
       ((ComputableTidilyInPolyTime.fst _ _).fst'.prod
         ((ComputableTidilyInPolyTime.fst _ _).snd'.prod (ComputableTidilyInPolyTime.snd _ _)))
-  have hredPPT : IsPPT (encPair encBits encBits) redAdversary := by
-    change IsPPTOn (encPair encUnary encBits) (encPair encBits encBits)
-      (fun p => redAdversary p.1 p.2)
-    exact hadversary.bind_with hpost.isPPTOn
-  refine negligible_of_eventually_le (hCR.negligible redAdversary hredPPT) ?_
+  refine hCR.of_eventually_succProbability_reduction
+    (fun adversary n k => do
+      let pair ← adversary n k
+      return extract n k pair.1 pair.2)
+    (fun _ hadversary => hadversary.bind_with hpost.isPPTOn)
+    (fun adversary _ => ?_)
   filter_upwards [himp] with n hn
-  exact succProbability_collisionGame_le_of_extract extract adversary n hn
+  simpa only [collisionGameFor_sampleList_eq] using
+    succProbability_collisionGame_le_of_extract extract adversary n hn
 
 /-- Restricting the valid input domain preserves collision resistance. -/
 theorem CollisionResistantOn.mono

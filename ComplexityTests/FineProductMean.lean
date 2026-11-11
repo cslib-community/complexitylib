@@ -3,7 +3,7 @@ Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserv
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
-import Complexity.Foundations.Probability.FineOmission
+import Complexity.Computability.LogSpaceDerandomization.FineOmission
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum

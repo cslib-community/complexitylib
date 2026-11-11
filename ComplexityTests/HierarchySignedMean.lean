@@ -6,8 +6,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: local-only (tests of actual signed canonical means)
 
-import Complexity.Foundations.Probability.HierarchySignedMean
-import Complexity.Foundations.Probability.NormalizedAtomRows.FirstSignal
+import Complexity.Computability.LogSpaceDerandomization.HierarchySignedMean
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.FirstSignal
 import all ComplexityTests.HierarchySharedMidpoint
 
 /-! Fixed HP.k, final dispatched corrections, literal signed rawSample and two statistical

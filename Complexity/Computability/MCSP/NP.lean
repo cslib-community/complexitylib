@@ -11,6 +11,7 @@ public import Complexity.Computability.Circuit.Boolean.Encoding.Certificate
 public import Complexity.Computability.Complexity.Classes.NP
 public import Complexity.Computability.MCSP.Basic
 public import Complexity.Foundations.Data.BitString.Enumeration
+import Complexity.Computability.Circuit.Encoding.Layer
 import Complexity.Foundations.Data.BitString.List
 public import Complexity.Foundations.Data.BitString.List.Binary
 import Complexity.Computability.Circuit.Boolean.Hierarchy
@@ -21,6 +22,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.BitString.Binary
 import Complexity.Foundations.Data.List.Lookup
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 
 /-!
@@ -100,9 +102,7 @@ theorem encInstance_apply (x : Instance) :
 
 /-- The table of an instance is no longer than its encoding. -/
 private theorem two_pow_le_length_encInstance (x : Instance) :
-    2 ^ x.arity ≤ (encInstance x).length := by
-  rw [encInstance_apply, length_encPair, encBits_apply, List.length_ofFn]
-  omega
+    2 ^ x.arity ≤ (encInstance x).length := by enc_len [encInstance_apply, List.length_ofFn]
 
 /-- The number of gates a certificate for `t` samples on `n` inputs may describe: the threshold
 `s`, capped at the sample-set bound `t * (2 * n + 3) + 1`. -/
@@ -127,7 +127,7 @@ def tableFunction (m : ℕ) (T : List Bool) : BooleanFunction m :=
 circuit code with a valid output wire. -/
 def validCertificate (m S : ℕ) (w : List Bool) : Bool :=
   let c := readCertificate m S w
-  codeCheck m c.1 && decide (c.2 < m + c.1.length)
+  codeCheck signature m c.1 && decide (c.2 < m + c.1.length)
 
 /-- Evaluate the certificate `w` (for `m` inputs and gate budget `S`) on input `y`. -/
 def evalCertificate (m S : ℕ) (w y : List Bool) : Bool :=
@@ -181,9 +181,7 @@ theorem exists_checkCertificateOn_append {α : Type} {tests : List α}
       accept t (C.eval interpretation y 0) = true) :
     ∃ u : List Bool, u.length = certLength m S ∧
       ∀ extra, checkCertificateOn tests input accept m S (u ++ extra) = true := by
-  have hcode : Program.IsCodeFrom signature m 0 C.code.1 := by
-    rw [← Program.isSome_ofCode_iff, Circuit.code, Program.ofCode_code]
-    rfl
+  have hcode := C.isCodeFrom_code
   refine ⟨certificate m S C.code.1 (C.outputs 0).toNat, length_certificate_code C hcS,
     fun extra => ?_⟩
   simp only [checkCertificateOn, validCertificate, evalCertificate,
@@ -518,8 +516,7 @@ theorem computableInPolyTime_checkCertificate_table {α : Type} {encT : List α 
     set T := r.1.1.length
     have hT_enc : 2 * T + 1 ≤ (encIn r).length := by
       have h1 := hlen_le r.1.1
-      simp only [encIn, length_encPair]
-      omega
+      enc_len [encIn]
     have hpow : 2 ^ Nat.log 2 T ≤ T + 1 := by
       rcases Nat.eq_zero_or_pos T with h | h
       · simp [h]
@@ -527,8 +524,7 @@ theorem computableInPolyTime_checkCertificate_table {α : Type} {encT : List α 
     have hlog : 2 * Nat.log 2 T + 1 ≤ 2 * T + 1 := by
       have := Nat.log_le_self 2 T
       omega
-    calc 2 ^ Nat.log 2 T * (2 * Nat.log 2 T + 1) ≤ (T + 1) * (2 * T + 1) :=
-          Nat.mul_le_mul hpow hlog
+    calc 2 ^ Nat.log 2 T * (2 * Nat.log 2 T + 1) ≤ (T + 1) * (2 * T + 1) := by gcongr
       _ ≤ (encIn r).length * (encIn r).length :=
           Nat.mul_le_mul (by omega) hT_enc
   have hproj : ComputableInPolyTime

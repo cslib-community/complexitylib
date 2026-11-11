@@ -9,6 +9,7 @@ module
 
 public import Complexity.Crypto.Computational.Encryption.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
+public import Complexity.Crypto.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Tactic.PolyTime
@@ -54,11 +55,11 @@ theorem isPPTOn_gameOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, pk, msg⟩ => encrypt n pk msg))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
@@ -77,7 +78,7 @@ theorem isPPTOn_game {Msg : Type} {encMsg : Msg ↪ List Bool}
     {keyGen : ℕ → ProbComp (List Bool × List Bool)}
     {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
     (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) keyGen)
-    (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencrypt : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, pk, msg⟩ => encrypt n pk msg))
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary)
     {α : Type} {input : α ↪ List Bool} {n : α → ℕ} {bit : α → Bool}
@@ -94,7 +95,7 @@ theorem AdversaryOf.IsPPT.restrict {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     {adversary : AdversaryOf Msg} (hadversary : AdversaryOf.IsPPT encMsg adversary) :
     AdversaryOf.IsPPT encMsg (adversary.restrict valid) where
   choose := by
@@ -114,7 +115,7 @@ theorem INDCPAOf.indcpaOn {Msg : Type} {encMsg : Msg ↪ List Bool}
     (h : INDCPAOf encMsg keyGen encrypt)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool) :
+      (encChallengePairInput encMsg) encBool) :
     INDCPAOn valid encMsg keyGen encrypt := by
   intro adversary hadversary
   simpa only [eval_game_restrict] using

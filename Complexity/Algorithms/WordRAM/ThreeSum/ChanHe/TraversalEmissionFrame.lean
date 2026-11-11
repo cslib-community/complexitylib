@@ -33,15 +33,25 @@ namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Traversal
 open Cslib.WordRAM
 
 /-- An actual emission preserves each old-prefix cell except its one explicit table store. -/
-theorem Emission.prefix_preserved {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) (p : ℕ) (hp : p < x.regs heap)
+theorem Emission.prefix_preserved {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (p : ℕ) (hp : p < x.regs heap)
     (hne : p ≠ x.regs outputs + x.regs outputCount) : y.mem p = x.mem p := by
-  rw [h.memory, Function.update_of_ne hne]
-  exact h.prefixMemory p hp
+  cases published with
+  | false =>
+    have hm : y.mem = h.before := by simpa using h.memory
+    rw [hm]
+    exact h.prefixMemory p hp
+  | true =>
+    have hm : y.mem = Function.update h.before (x.regs outputs + x.regs outputCount)
+        (recordLayout x h.M).packed := by simpa using h.memory
+    rw [hm, Function.update_of_ne hne]
+    exact h.prefixMemory p hp
 
 /-- All persistent caller parameters survive the actual complete visit. -/
-theorem Emission.controls {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) {a : Arena} (hc : a.Controls x) : a.Controls y := by
+theorem Emission.controls {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) {a : Arena} (hc : a.Controls x) : a.Controls y := by
   apply hc.congr
   intro i hi
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
@@ -49,8 +59,9 @@ theorem Emission.controls {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 12
     first | omega | (intro he; have := congrArg Fin.val he; norm_num at this; omega)
 
 /-- The current root record survives the visit until the actual child-preparation instructions. -/
-theorem Emission.loaded {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) (hl : e.Loaded x) : e.Loaded y := by
+theorem Emission.loaded {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (hl : e.Loaded x) : e.Loaded y := by
   have hs (i : Fin 7) : y.regs (slot i) = x.regs (slot i) := by
     apply h.registers <;>
       first | (dsimp [slot]; omega) |
@@ -69,8 +80,9 @@ theorem Emission.loaded {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
 
 /-- Old input columns below the stack or above the output table cannot be overwritten by the
 single native pointer store, and both actual kernels preserve the old prefix. -/
-theorem Emission.stored {Q : Finset ℕ} {Λ : ℕ} {e d : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) {a : Arena} (ha : a.Separated) (hc : a.Controls x)
+theorem Emission.stored {Q : Finset ℕ} {Λ : ℕ} {e d : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) {a : Arena} (ha : a.Separated) (hc : a.Controls x)
     (hs : d.Stored x.mem) (hg : d.Around a.stack (a.floor - a.stack))
     (hend : ∀ j, d.source j + (d.data j).length ≤ x.regs heap)
     (htable : x.regs outputs + x.regs outputCount < a.floor) : d.Stored y.mem := by
@@ -83,15 +95,17 @@ theorem Emission.stored {Q : Finset ℕ} {Λ : ℕ} {e d : Entry} {x y : Data 12
   rcases hg j with hj | hj <;> omega
 
 /-- Top-first native child entries with the three actual compact heavy buffers. -/
-def Emission.children {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) : List Entry :=
+def Emission.children {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) : List Entry :=
   [e.child 0 ((recordLayout x h.M).heavy 0) (h.lists 0),
     e.child 1 ((recordLayout x h.M).heavy 1) (h.lists 1),
     e.child 2 ((recordLayout x h.M).heavy 2) (h.lists 2)]
 
 /-- Actual heavy-buffer readback represents exactly the existing ordered three-child recursion. -/
-theorem Emission.children_tasks {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) :
+theorem Emission.children_tasks {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) :
     h.children.map Entry.task = e.task.children Q Λ (e.fuel - 1) := by
   simp only [Emission.children, List.map_cons, List.map_nil]
   apply e.task_children Q Λ (recordLayout x h.M).heavy h.lists
@@ -99,8 +113,9 @@ theorem Emission.children_tasks {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : D
   rw [h.sets j, h.exactModulus]
 
 /-- Each of the actual three heavy-child arrays retains the existing admissibility promises. -/
-theorem Emission.children_valid {Q : Finset ℕ} {Λ n U : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) (hv : e.Valid n U) : ∀ d ∈ h.children, d.Valid n U := by
+theorem Emission.children_valid {Q : Finset ℕ} {Λ n U : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (hv : e.Valid n U) : ∀ d ∈ h.children, d.Valid n U := by
   intro d hd
   have hc (j : Fin 3) :
       (e.child j ((recordLayout x h.M).heavy j) (h.lists j)).Valid n U := by
@@ -114,8 +129,10 @@ theorem Emission.children_valid {Q : Finset ℕ} {Λ n U : ℕ} {e : Entry} {x y
   · exact hc 2
 
 /-- Each child reuses the two surviving original columns and one actual compact heavy buffer. -/
-theorem Emission.children_stored {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) (hs : e.Stored y.mem) : ∀ d ∈ h.children, d.Stored y.mem := by
+theorem Emission.children_stored {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published)
+    (hs : e.Stored y.mem) : ∀ d ∈ h.children, d.Stored y.mem := by
   intro d hd
   have hc (j : Fin 3) := hs.child j ((recordLayout x h.M).heavy j) (h.lists j) (h.heavy j)
   simp only [Emission.children, List.mem_cons, List.not_mem_nil, or_false] at hd
@@ -125,36 +142,36 @@ theorem Emission.children_stored {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : 
   · exact hc 2
 
 /-- The actual heap pointer advances past the old frontier. -/
-theorem Emission.heap_mono {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) : x.regs heap ≤ y.regs heap := by
+theorem Emission.heap_mono {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) : x.regs heap ≤ y.regs heap := by
   rw [h.heap_eq, recordLayout_endpoint]
   omega
 
-/-- Every actual child column lies below the advanced native allocation frontier. -/
-theorem Emission.children_ends {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) (hl : e.Loaded x)
+/-- Every live child column ends before the packed tail, including unchanged parent columns. -/
+theorem Emission.children_ends_packed {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (hl : e.Loaded x)
     (hend : ∀ j, e.source j + (e.data j).length ≤ x.regs heap) :
-    ∀ d ∈ h.children, ∀ k, d.source k + (d.data k).length ≤ y.regs heap := by
-  have hpacked : (recordLayout x h.M).packed ≤ (recordLayout x h.M).endpoint := by
-    dsimp only [NodePacking.Layout.endpoint, NodePacking.Layout.hist, NodePacking.Layout.scratch]
+    ∀ d ∈ h.children, ∀ k, d.source k + (d.data k).length ≤ (recordLayout x h.M).packed := by
+  have hpacked : x.regs heap ≤ (recordLayout x h.M).packed := by
+    dsimp only [recordLayout, NodePacking.Layout.packed]
     omega
   have heavyEnd (j : Fin 3) :
-      (recordLayout x h.M).heavy j + (h.lists j).length ≤ y.regs heap := by
-    rw [h.heap_eq]
+      (recordLayout x h.M).heavy j + (h.lists j).length ≤ (recordLayout x h.M).packed := by
     calc (recordLayout x h.M).heavy j + (h.lists j).length
         ≤ (recordLayout x h.M).heavy j + (recordLayout x h.M).n j := by
           apply Nat.add_le_add_left
           simpa only [recordLayout, hl.2.2] using h.length_le j
       _ ≤ (recordLayout x h.M).packed := (recordLayout x h.M).heavy_end_le_packed j
-      _ ≤ (recordLayout x h.M).endpoint := hpacked
   have hc (j k : Fin 3) :
       (e.child j ((recordLayout x h.M).heavy j) (h.lists j)).source k +
         ((e.child j ((recordLayout x h.M).heavy j) (h.lists j)).data k).length ≤
-          y.regs heap := by
+          (recordLayout x h.M).packed := by
     by_cases he : k = j
     · subst k
       simpa only [Entry.child, Function.update_self] using heavyEnd j
-    · simpa only [Entry.child, Function.update_of_ne he] using (hend k).trans h.heap_mono
+    · simpa only [Entry.child, Function.update_of_ne he] using (hend k).trans hpacked
   intro d hd k
   simp only [Emission.children, List.mem_cons, List.not_mem_nil, or_false] at hd
   rcases hd with rfl | rfl | rfl
@@ -162,9 +179,22 @@ theorem Emission.children_ends {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Da
   · exact hc 1 k
   · exact hc 2 k
 
+/-- Every actual child column lies below the advanced native allocation frontier. -/
+theorem Emission.children_ends {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (hl : e.Loaded x)
+    (hend : ∀ j, e.source j + (e.data j).length ≤ x.regs heap) :
+    ∀ d ∈ h.children, ∀ k, d.source k + (d.data k).length ≤ y.regs heap := by
+  intro d hd k
+  apply (h.children_ends_packed hl hend d hd k).trans
+  rw [h.heap_eq]
+  dsimp only [NodePacking.Layout.endpoint, NodePacking.Layout.hist, NodePacking.Layout.scratch]
+  omega
+
 /-- Every new heavy child begins above the reserved stack/table gap. -/
-theorem Emission.children_around {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) {base capacity : ℕ} (hg : e.Around base capacity)
+theorem Emission.children_around {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) {base capacity : ℕ} (hg : e.Around base capacity)
     (hfloor : base + capacity ≤ x.regs heap) :
     ∀ d ∈ h.children, d.Around base capacity := by
   have hc (j : Fin 3) :
@@ -182,8 +212,9 @@ theorem Emission.children_around {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : 
   · exact hc 2
 
 /-- The exact native words prepared for the three pushes are the new semantic child records. -/
-theorem Emission.children_words {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) (hl : e.Loaded x) :
+theorem Emission.children_words {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (hl : e.Loaded x) :
     childWords y 0 ++ childWords y 1 ++ childWords y 2 = h.children.flatMap Entry.words := by
   rw [Entry.child_words (h.loaded hl) _ _ h.bases h.lengths 0,
     Entry.child_words (h.loaded hl) _ _ h.bases h.lengths 1,
@@ -193,11 +224,12 @@ theorem Emission.children_words {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : D
 
 /-- The complete visit retains the actual pending stack, including its native pointer and
 length registers; its sole external memory store lies above the stack reservation. -/
-theorem Emission.stack {Q : Finset ℕ} {Λ w : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) {a : Arena} (ha : a.Separated) (hc : a.Controls x)
+theorem Emission.stack {Q : Finset ℕ} {Λ w : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) {a : Arena} (ha : a.Separated) (hc : a.Controls x)
     (hy : y.Bounded w) (vs : List ℕ)
     (hr : WordStack.Rep w a.stack a.capacity vs (x.comap Traversal.registers))
-    (htable : x.regs outputs + x.regs outputCount < x.regs heap) :
+    (hend : a.stack + a.capacity ≤ x.regs heap) :
     WordStack.Rep w a.stack a.capacity vs (y.comap Traversal.registers) := by
   have hregs (i : Fin 9) : y.regs (Traversal.registers i) = x.regs (Traversal.registers i) := by
     apply h.registers <;>
@@ -209,7 +241,7 @@ theorem Emission.stack {Q : Finset ℕ} {Λ w : ℕ} {e : Entry} {x y : Data 128
   intro i
   have hi : i.val < a.capacity := lt_of_lt_of_le i.isLt hr.capacity_le
   change y.mem (a.stack + i.val) = _
-  rw [h.prefix_preserved _ (by have := ha.2.1; omega)
+  rw [h.prefix_preserved _ (by omega)
     (by have := ha.2.1; omega)]
   exact hr.contents i
 
@@ -224,6 +256,8 @@ theorem Emission.output {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
     (htable : a.table + ns.length < a.floor) (hfloor : a.floor ≤ x.regs heap) :
     StoredNodes a.U a.N a.table
       (ns ++ [((recordLayout x h.M).packed, e.task.node Q Λ)]) y.mem := by
+  have hm : y.mem = Function.update h.before (x.regs outputs + x.regs outputCount)
+      (recordLayout x h.M).packed := by simpa using h.memory
   have hU : x.regs magnitude = a.U := hc.2.2.1
   have hN : x.regs groups = a.N := hc.2.2.2.1
   have ht : x.regs outputs = a.table := hc.2.2.2.2.2.2.1
@@ -242,16 +276,17 @@ theorem Emission.output {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
     have hi : i.val < 4 * x.regs groups := by simpa only [hN] using i.isLt
     have hp := h.packed ⟨i.val, hi⟩
     change y.mem ((recordLayout x h.M).packed + i.val) = _ at hp
-    rw [h.memory, Function.update_of_ne (show
+    rw [hm, Function.update_of_ne (show
       (recordLayout x h.M).packed + i.val ≠ x.regs outputs + x.regs outputCount by
         rw [ht, hcount]; omega)] at hp
     simpa only [Block.read, hU] using hp
-  rw [h.memory, ht, hcount]
+  rw [hm, ht, hcount]
   exact hbefore.append hnew (by intro i; have := (hbounds i).1; omega) (by omega)
 
 /-- For a live entry, the actual heavy children and emitted node are the exact finite step. -/
-theorem Emission.math_step {Q : Finset ℕ} {Λ : ℕ} {e : Entry} {x y : Data 128}
-    (h : Emission Q Λ e x y) (es : List Entry) (hf : e.fuel ≠ 0)
+theorem Emission.math_step {Q : Finset ℕ} {Λ : ℕ} {e : Entry}
+    {x y : Data 128} {published : Bool}
+    (h : Emission Q Λ e x y published) (es : List Entry) (hf : e.fuel ≠ 0)
     (hn : ∀ j, (e.data j).length ≠ 0) :
     Math.step Q Λ e.task (es.map Entry.task) =
       ((h.children ++ es).map Entry.task, some (e.task.node Q Λ)) := by

@@ -114,8 +114,8 @@ example : ¬ IsOraclePPTOn encUnary encBits (fun n => List.take 1 <$>
   have hcall := (hbound n).2.forall_mem_transcript (fun _ (s : Unit) => PMF.pure ([], s))
     (s := ()) (s' := ()) (result := [])
     (transcript := [⟨((), List.replicate (2 ^ n) true), []⟩]) (by
-      rw [OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query]
-      simp [OracleComp.withTranscript, StateT.run]) _ List.mem_cons_self
+      rw [ProbOracleComp.runWith_map, ProbOracleComp.runWith_query]
+      simp [OracleComp.withTranscript]) _ List.mem_cons_self
   simp only [List.length_replicate, encUnary_apply] at hcall
   lia
 

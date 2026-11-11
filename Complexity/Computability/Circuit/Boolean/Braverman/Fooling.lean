@@ -214,8 +214,7 @@ theorem independence_le {q : ℕ} (hq : 1 ≤ q) (d : ℕ) :
     rw [show (2 * d + 3) * (d + 7) = (2 * d + 3) + (2 * d + 3) * (d + 6) by ring, pow_add B,
       pow_mul B]
     exact Nat.mul_le_mul h4 (Nat.pow_le_pow_left h16 _)
-  have hAt : B ^ (2 * d) ≤ B ^ ((2 * d + 3) * (d + 7)) :=
-    Nat.pow_le_pow_right (by omega) (by nlinarith)
+  have hAt : B ^ (2 * d) ≤ B ^ ((2 * d + 3) * (d + 7)) := by gcongr <;> omega
   have hB4 := Nat.mul_le_mul_left (B ^ ((2 * d + 3) * (d + 7))) hB
   change 2 * (A ^ d + 4 * σ * (16 * σ + 1) ^ (d + 6)) ≤ _
   rw [pow_succ B]
@@ -264,8 +263,7 @@ private theorem error_le {q m : ℕ} (hq : 1 ≤ q) (hm : m ≤ 2 ^ q) (d : ℕ)
         rw [pow_add, ← pow_mul, mul_comm q 2]
         exact Nat.mul_le_mul_right _ hA1
       have h2q : 1 ≤ 2 ^ q := Nat.one_le_two_pow
-      calc m * ((A + 1) * (2 ^ q) ^ 2 + 3) + 1 ≤ 2 ^ q * (2 ^ (A + 2 * q) + 3) + 1 :=
-            Nat.add_le_add_right (Nat.mul_le_mul hm (Nat.add_le_add_right hS 3)) 1
+      calc m * ((A + 1) * (2 ^ q) ^ 2 + 3) + 1 ≤ 2 ^ q * (2 ^ (A + 2 * q) + 3) + 1 := by gcongr
         _ ≤ 2 ^ q * (4 * 2 ^ (A + 2 * q)) := by nlinarith
         _ = 2 ^ (A + 3 * q + 2) := by ring
     have hε : 2 * ε ≤ 4 * (q + 1) * A ^ d :=

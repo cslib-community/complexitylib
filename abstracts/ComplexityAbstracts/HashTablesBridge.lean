@@ -309,19 +309,6 @@ private theorem support_coupledStateOf_init {S : Presentation} {P : DictPresenta
     exact ha
   exact hmod a ha'
 
-private theorem totalCost_const {U V n_max : ℕ} (c : ℕ) (s : Dictionary.State U)
-    (ops : List (Dictionary.Op U)) :
-    (Dictionary.spec U V n_max).totalCost (fun _ _ => c) s ops = ops.length * c := by
-  induction ops generalizing s with
-  | nil =>
-    change 0 = 0 * c
-    simp
-  | cons o os ih =>
-    change c + (Dictionary.spec U V n_max).totalCost (fun _ _ => c)
-      ((Dictionary.spec U V n_max).stepFn s o).1 os = (os.length + 1) * c
-    rw [ih]
-    ring
-
 /-- Compile any library `ExecCodeDist w c ⟨reg, mem⟩ μ_lib T` to `P.ExecProgramDist`. -/
 theorem compile_execCodeDist {S : Presentation} (hS : Laws S)
     {P : DictPresentation S} (hP : DictLaws S P)
@@ -578,7 +565,7 @@ theorem chainedHashing (S : Presentation) (hS : Laws S)
         ((Dictionary.spec U V n_max).totalCost (fun _ _ => ChainedHash.chargeVal)
           (Dictionary.empty U) ops_lib : ℝ≥0∞) + ∑' p, ν₀ p * ((0 : ℕ) : ℝ≥0∞) at hamort
       simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero] at hamort
-      rw [totalCost_const] at hamort
+      rw [StateTransitionSpec.totalCost_const] at hamort
       rw [List.length_map]
       calc (16 : ℝ≥0∞) + T_ops
         _ ≤ 16 + ((ops_lib.length * ChainedHash.chargeVal : ℕ) : ℝ≥0∞) := add_le_add le_rfl hamort
@@ -794,7 +781,7 @@ theorem linearProbing (S : Presentation) (hS : Laws S)
       ((Dictionary.spec U V n_max).totalCost (fun _ _ => LinearProbing.charge U n_max)
         (Dictionary.empty U) ops_lib : ℝ≥0∞) + ∑' p, ν₀ p * ((0 : ℕ) : ℝ≥0∞) at hamort
     simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero] at hamort
-    rw [totalCost_const, ← lpOpCharge_eq] at hamort
+    rw [StateTransitionSpec.totalCost_const, ← lpOpCharge_eq] at hamort
     have hbound : (lpInitSteps U n_max : ℝ≥0∞) + T_ops ≤
         ((lpInitSteps U n_max + ops_lib.length * lpOpCharge U n_max : ℕ) : ℝ≥0∞) := by
       rw [Nat.cast_add]
@@ -915,14 +902,26 @@ theorem upOpCharge_eq : upOpCharge = UniformProbing.expectedOpCharge 4 := by
   unfold upOpCharge UniformProbing.expectedOpCharge
   rw [regimeThreshold_eq, upHashEvalSteps_eq]
 
+/-- Expected per-operation instruction charge `13 * 3 + upHashEvalSteps + 8 = 13778` for uniform
+probing at `c_exp = 4` once `n_max ≥ regimeThreshold`. -/
+def upLargeOpCharge : ℕ :=
+  13 * 3 + upHashEvalSteps + 8
+
+theorem charge_eq_upLargeOpCharge {n_max : ℕ} (hge : regimeThreshold ≤ n_max) :
+    UniformProbing.charge 4 n_max = upLargeOpCharge := by
+  rw [regimeThreshold_eq] at hge
+  rw [UniformProbing.charge_of_le hge, upLargeOpCharge, upHashEvalSteps_eq]
+  omega
+
 /-- Headline bridge theorem for uniform probing (`UniformProbing.seq_expected_amortized`) at
 `c_exp = 4`. -/
 theorem uniformProbing (S : Presentation) (hS : Laws S)
     (P : DictPresentation S) (hP : DictLaws S P)
-    (regimeThreshold' upHashEvalSteps' upOpCharge' : ℕ)
+    (regimeThreshold' upHashEvalSteps' upOpCharge' upLargeOpCharge' : ℕ)
     (hRegime : regimeThreshold' = 2 ^ 320000)
     (hHashEval : upHashEvalSteps' = 2 * doubleTabEvalSteps 8 64 + 15)
-    (hCharge : upOpCharge' = 13 * regimeThreshold' + upHashEvalSteps' + 8) :
+    (hCharge : upOpCharge' = 13 * regimeThreshold' + upHashEvalSteps' + 8)
+    (hLargeCharge : upLargeOpCharge' = 13 * 3 + upHashEvalSteps' + 8) :
     ∀ (n_max : ℕ),
       ∃ (p_init p_op : List (S.Instr 16)),
         ∀ (U V w base : ℕ),
@@ -950,7 +949,10 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
                     base (upSpace n_max) (DictPresentation.emptyDict U) ops
                     μ_init μ_final T_ops ∧
                   (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
-                    ((upInitSteps n_max + ops.length * upOpCharge' : ℕ) : ℝ≥0∞) := by
+                    ((upInitSteps n_max + ops.length * upOpCharge' : ℕ) : ℝ≥0∞) ∧
+                  (regimeThreshold' ≤ n_max →
+                    (upInitSteps n_max : ℝ≥0∞) + T_ops ≤
+                      ((upInitSteps n_max + ops.length * upLargeOpCharge' : ℕ) : ℝ≥0∞)) := by
   intro n_max
   let Sub := UniformProbing.subroutineCode 4 n_max
   refine ⟨S.programOf (Sub.initFresh.program ⟨12, by decide⟩),
@@ -981,7 +983,14 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
       (validDictHistory_map_dictOpOf hP (DictPresentation.emptyDict U) ops_lib).mp hv_abs
     obtain ⟨ν_final, T_ops, hex_steps, -, -, hamort⟩ :=
       C.steps_expected_amortized_ofFn ops_lib ν₀ hv_lib hseed₀ fun p hp => (hsupp₀ p hp).2.1
-    refine ⟨ν_final.map P.coupledStateOf, T_ops, ?_, ?_⟩
+    change T_ops + ∑' q, ν_final q * ((0 : ℕ) : ℝ≥0∞) ≤
+      ((Dictionary.spec U V n_max).totalCost (fun _ _ => UniformProbing.charge 4 n_max)
+        (Dictionary.empty U) ops_lib : ℝ≥0∞) + ∑' p, ν₀ p * ((0 : ℕ) : ℝ≥0∞) at hamort
+    simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero] at hamort
+    rw [StateTransitionSpec.totalCost_const] at hamort
+    have hReg : regimeThreshold' = regimeThreshold := hRegime
+    have hHE : upHashEvalSteps' = upHashEvalSteps := hHashEval
+    refine ⟨ν_final.map P.coupledStateOf, T_ops, ?_, ?_, fun hge => ?_⟩
     · rw [upSpace_eq]
       exact compile_execStepsOfFn hS hP C true
         ⟨0, by decide⟩ ⟨12, by decide⟩ ⟨13, by decide⟩ ⟨14, by decide⟩ ⟨12, by decide⟩
@@ -1017,17 +1026,16 @@ theorem uniformProbing (S : Presentation) (hS : Laws S)
             rw [hP.opOutputCorrect_insert]
             trivial)
         hex_steps
-    · change T_ops + ∑' q, ν_final q * ((0 : ℕ) : ℝ≥0∞) ≤
-        ((Dictionary.spec U V n_max).totalCost (fun _ _ => UniformProbing.expectedOpCharge 4)
-          (Dictionary.empty U) ops_lib : ℝ≥0∞) + ∑' p, ν₀ p * ((0 : ℕ) : ℝ≥0∞) at hamort
-      simp only [Nat.cast_zero, mul_zero, tsum_zero, add_zero] at hamort
-      have hReg : regimeThreshold' = regimeThreshold := hRegime
-      have hHE : upHashEvalSteps' = upHashEvalSteps := hHashEval
-      have hCharge_eq : upOpCharge' = UniformProbing.expectedOpCharge 4 := by
+    · have hCharge_eq : upOpCharge' = UniformProbing.expectedOpCharge 4 := by
         rw [hCharge, hReg, hHE]
         exact upOpCharge_eq
-      rw [totalCost_const, ← hCharge_eq] at hamort
+      have hle : ops_lib.length * UniformProbing.charge 4 n_max ≤ ops_lib.length * upOpCharge' :=
+        Nat.mul_le_mul_left _ (hCharge_eq ▸ UniformProbing.charge_le_expectedOpCharge 4 n_max)
       rw [List.length_map, Nat.cast_add]
+      exact add_le_add le_rfl (hamort.trans (Nat.cast_le.mpr hle))
+    · have hLarge_eq : upLargeOpCharge' = UniformProbing.charge 4 n_max := by
+        rw [hLargeCharge, hHE, charge_eq_upLargeOpCharge (hReg ▸ hge), upLargeOpCharge]
+      rw [List.length_map, Nat.cast_add, hLarge_eq]
       exact add_le_add le_rfl hamort
 
 /-! ## Part 5: Pagh–Rodler Cuckoo Hashing (`CuckooHashing.lean`) -/

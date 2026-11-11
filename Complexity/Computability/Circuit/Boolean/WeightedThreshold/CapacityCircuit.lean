@@ -626,8 +626,7 @@ private theorem DirectionRuns.prod_cost_le_four_pow_mul {p : Program signature n
 private theorem lt_of_two_pow_lt_mul {n k K X e : ℕ} (hK : K ≤ 2 ^ k) (hX : X ≤ 2 ^ e)
     (h : 2 ^ n < 4 * K ^ 2 * X) : n < 2 * k + 2 + e := by
   have hle : 4 * K ^ 2 * X ≤ 2 ^ (2 * k + 2 + e) := by
-    calc 4 * K ^ 2 * X ≤ 4 * (2 ^ k) ^ 2 * 2 ^ e :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hK _)) hX
+    calc 4 * K ^ 2 * X ≤ 4 * (2 ^ k) ^ 2 * 2 ^ e := by gcongr
       _ = 2 ^ (2 * k + 2 + e) := by
           rw [pow_add, pow_add, ← pow_mul, mul_comm k 2]
           ring

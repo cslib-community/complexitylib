@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Parameters
+public import Complexity.Algorithms.WordRAM.ExactTriangle.StreamingFixedPrime.Program
 public import Complexity.Computability.WordRAM.CopySum
 public import Complexity.Computability.WordRAM.MemoryWindow
 public import Complexity.Computability.WordRAM.Power
@@ -25,7 +26,8 @@ Raw verdict/witness/scans return in 632–636. Registers 160–578 embed the com
 The adapter copies exactly the three original arrays into its workspace, accumulating their
 actual raw words. It writes five original-input headers and computes its own source modulus
 with native ceiling-logarithm and power loops. No caller catalogue or reserved window is
-cleared or copied. The real one-time producer and all-record traversal remain unchanged.
+cleared or copied. The real catalogue prefix feeds one physical record slot. Each record is
+consumed immediately, then its heap is reset before the next logical record.
 -/
 
 public section
@@ -155,7 +157,7 @@ Neither the dirty memory window nor the caller's register bank is cleared. -/
 
 /-- Every original solver load/store has actual runtime address translation and normalization. -/
 @[expose] def solve : Code .standard 640 :=
-  (MemoryWindow.compile FixedPrime.program).rename sourceBank
+  (MemoryWindow.compile StreamingFixedPrime.program).rename sourceBank
 
 /-- Return raw verdict, original coordinates and the single accumulated scan counter. -/
 @[expose] def receive : Code .standard 640 :=

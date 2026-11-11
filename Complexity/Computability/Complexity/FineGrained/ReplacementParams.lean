@@ -597,8 +597,7 @@ theorem rowCost_le {β n : ℕ} (hr : 2 ≤ numGroups n) (hR : 32 ≤ rowBound �
           ≤ 2 * ((β : ℝ) + 3) * Real.sqrt lam * Real.sqrt lam :=
             mul_le_mul_of_nonneg_right hR_upper hsqrt_pos.le
         _ = 2 * ((β : ℝ) + 3) * lam := by rw [mul_assoc, hsq]
-        _ ≤ 2 * ((β : ℝ) + 3) * (256 * (nu : ℝ) * Q) :=
-            mul_le_mul_of_nonneg_left hQ_lower (by positivity)
+        _ ≤ 2 * ((β : ℝ) + 3) * (256 * (nu : ℝ) * Q) := by gcongr
         _ = 512 * ((β : ℝ) + 3) * (nu : ℝ) * Q := by ring
     have hlog_Q : Real.log (2 * (Q : ℝ) / R) ≤ 2 * nu := by
       have hQR_le : 2 * (Q : ℝ) / R ≤ (2 : ℝ) ^ (2 * nu) := by
@@ -608,8 +607,7 @@ theorem rowCost_le {β n : ℕ} (hr : 2 ≤ numGroups n) (hR : 32 ≤ rowBound �
                 Nat.mul_le_mul_left 2 ((Nat.div_le_self _ _).trans (Nat.le_pow_clog one_lt_two lam))
             _ = 2 ^ (nu + 1) := (pow_succ' 2 nu).symm
             _ ≤ 2 ^ (2 * nu) := Nat.pow_le_pow_right two_pos (by omega)
-        calc 2 * (Q : ℝ) / R ≤ 2 * (Q : ℝ) / 1 :=
-              div_le_div_of_nonneg_left (by positivity) one_pos hR1
+        calc 2 * (Q : ℝ) / R ≤ 2 * (Q : ℝ) / 1 := by gcongr
           _ = ((2 * Q : ℕ) : ℝ) := by push_cast; ring
           _ ≤ (2 : ℝ) ^ (2 * nu) := by exact_mod_cast h2Q_nat
       calc Real.log (2 * (Q : ℝ) / R)
@@ -978,8 +976,7 @@ theorem isBigO_mul_rowCost_interpolationScale {β : ℕ} (hβ : 1 ≤ β) :
               nlinarith
           _ = (Real.log (2 / Real.log 2) + 1) * LL := by ring
       calc (nu : ℝ) ≤ 2 / Real.log 2 * Real.log lam := clog_two_le_mul_log hlam3
-        _ ≤ 2 / Real.log 2 * ((Real.log (2 / Real.log 2) + 1) * LL) :=
-            mul_le_mul_of_nonneg_left hlog_lam (by positivity)
+        _ ≤ 2 / Real.log 2 * ((Real.log (2 / Real.log 2) + 1) * LL) := by gcongr
         _ = K * LL := by ring
     have hsqrt_inv : 1 / Real.sqrt lam ≤ Real.sqrt 2 / Real.sqrt L := by
       rw [div_le_div_iff₀ (Real.sqrt_pos.mpr (by positivity)) (Real.sqrt_pos.mpr hL_pos), one_mul,
@@ -988,9 +985,7 @@ theorem isBigO_mul_rowCost_interpolationScale {β : ℕ} (hβ : 1 ≤ β) :
     rw [Real.norm_of_nonneg (by positivity), Real.norm_of_nonneg (by positivity)]
     calc (nu : ℝ) ^ 2 / Real.sqrt lam
         = (nu : ℝ) ^ 2 * (1 / Real.sqrt lam) := div_eq_mul_one_div _ _
-      _ ≤ (K * LL) ^ 2 * (Real.sqrt 2 / Real.sqrt L) :=
-          mul_le_mul (pow_le_pow_left₀ (Nat.cast_nonneg _) hnu_le 2) hsqrt_inv
-            (by positivity) (by positivity)
+      _ ≤ (K * LL) ^ 2 * (Real.sqrt 2 / Real.sqrt L) := by gcongr
       _ = K ^ 2 * Real.sqrt 2 * (LL ^ 2 / Real.sqrt L) := by ring
   have hmul := (isBigO_refl (fun n : ℕ => (n : ℝ)) atTop).mul ((isBigO_rowCost hβ).trans hscale)
   unfold interpolationScale

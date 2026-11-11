@@ -22,3 +22,6 @@ example : decodeIntBin [true, true, false, true] = -5 ∧
 example : ComputableInPolyTime (fun p : List Bool × List Bool =>
     decodeIntBin p.1 - decodeIntBin p.2) (encPair encBits encBits) encIntBin := by
   fun_prop
+
+example : (Decoder.list Decoder.intBin).decode (encList encIntBin [-3, 0, 7]) = [-3, 0, 7] :=
+  (Decoder.list Decoder.intBin).decode_enc _

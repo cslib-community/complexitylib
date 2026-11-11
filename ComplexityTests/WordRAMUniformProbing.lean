@@ -177,7 +177,7 @@ theorem test_wordram_seq_expected_amortized :
           ((Dictionary.spec 16 100 2).run (Dictionary.empty 16) testOps).1 p.2) ∧
       (impl (V := 100) hS hU_fit hV hU).initTime + T_ops ≤
         (3 + setupSteps 2 2 : ℝ≥0∞) +
-          ((Dictionary.spec 16 100 2).totalCost (fun _ _ => expectedOpCharge 2)
+          ((Dictionary.spec 16 100 2).totalCost (fun _ _ => charge 2 2)
             (Dictionary.empty 16) testOps : ℝ≥0∞) := by
   have hS : Fits 64 (16 + space 2 2) := by decide
   have hU_fit : ∀ u : Fin 16, Fits 64 u.val := fun u => by fin_cases u <;> decide
@@ -192,6 +192,16 @@ theorem test_wordram_seq_expected_amortized :
   have hfr : x₀.regs regV = 16 := rfl
   have hz : ∀ a ∈ (Block.mk 16 (space 2 2)).footprint, x₀.mem a = 0 := fun _ _ => rfl
   exact seq_expected_amortized (V := 100) hS hU_fit hV hU testOps hx₀ hfr hz testOps_validHistory
+
+/-- The per-capacity charge is at most the uniform charge at every capacity, and above the
+Double Tabulation threshold it is the threshold-free `hashEvalSteps c_exp + 47` (`3858` at
+`c_exp = 2`). -/
+theorem test_wordram_charge_bounds :
+    charge 2 2 ≤ expectedOpCharge 2 ∧
+    charge 2 (doubleTabThreshold 2) = 3858 := by
+  refine ⟨charge_le_expectedOpCharge 2 2, ?_⟩
+  rw [charge_of_le le_rfl]
+  decide
 
 /-- Concrete instantiation of the standard-basis (`Basis.standard`) certificate and ideal
 uniform-probing expected-step bound (`≤ 3845` steps) at `c_exp = 2`, `U = 16`, `n_max = 2`. -/

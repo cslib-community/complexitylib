@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.WordRAM.Dynamic
 public import Complexity.Computability.WordRAM.Heap
 public import Complexity.Computability.WordRAM.MapOp
+public import Complexity.Computability.WordRAM.RegisterFrame
 
 /-!
 # Composable Word-RAM subroutine infrastructure
@@ -89,16 +90,6 @@ theorem ExecWithin.loop_potential_retain {B : Basis} {r w : ℕ} {cond : Cond r}
       obtain ⟨z, T₂, hz, hIz, hcz, hΦz⟩ := ih (Φ y) (by omega) hIy rfl
       exact ⟨z, T₁ + T₂ + 2, .loop_iter hc hy hz, hIz, hcz, by omega⟩
     · exact ⟨x, 2, .loop_exit hc, hx, hc, by omega⟩
-
-/-- Registers outside `Set.range f` retain their caller values under `Data.extend`. -/
-theorem Data.extend_regs_of_notMem {r r' : ℕ} {f : Fin r → Fin r'} (y : Data r) (x : Data r')
-    {j : Fin r'} (hj : j ∉ Set.range f) : (y.extend f x).regs j = x.regs j :=
-  Function.extend_apply' _ _ _ hj
-
-/-- `Data.extend` preserves memory. -/
-@[simp]
-theorem Data.extend_mem {r r' : ℕ} (f : Fin r → Fin r') (y : Data r) (x : Data r') :
-    (y.extend f x).mem = y.mem := rfl
 
 /-- `Data.comap` preserves `Bounded w`. -/
 theorem Data.Bounded.comap {r r' w : ℕ} {x : Data r'} (hx : x.Bounded w) (f : Fin r → Fin r') :

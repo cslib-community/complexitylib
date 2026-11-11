@@ -296,12 +296,9 @@ theorem fastCutLaw_root_hit_prob_ge {n : ℕ} (hn : 2 ≤ n)
     (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞) ≤
       (fastCutLaw n ⟨n, W⟩).toOuterMeasure {v | v = minCut W} := by
   obtain ⟨C, hC, hCmin⟩ := exists_minCut_achiever (by rw [Fintype.card_fin]; omega) W
-  have hid : pullbackCut id C = C := by
-    ext x
-    simp [mem_pullbackCut]
   rw [← root_hit_prob_eq]
   exact fastCutLaw_hit_prob_ge hmin _ hn (fastCutDepth_le_two_mul_log n)
-    (isContractionOf_id hW) C hC (by rw [hid, hCmin])
+    (isContractionOf_id hW) C hC (by rw [pullbackCut_id, hCmin])
 
 /-- The law of independent recursive trials, keeping their least answer. The trial schedule is
 the existing concrete `O(log² n)` schedule; no additional native model is used. -/

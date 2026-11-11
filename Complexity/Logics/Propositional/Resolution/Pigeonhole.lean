@@ -645,8 +645,7 @@ private theorem pow_le_mul_countP_satPairs {C d : ℕ} (hd : 0 < d) :
       _ = (C - 1) ^ t *
           (C * ls'.countP (fun c => d ≤ #(satPairs (P.erase i₀) (H.erase j₀) c))) := by
         ring
-      _ ≤ (C - 1) ^ t * ((C - 1) * ls.countP (fun c => d ≤ #(satPairs P H c))) :=
-        Nat.mul_le_mul_left _ hstep
+      _ ≤ (C - 1) ^ t * ((C - 1) * ls.countP (fun c => d ≤ #(satPairs P H c))) := by gcongr
       _ = (C - 1) ^ (t + 1) * ls.countP (fun c => d ≤ #(satPairs P H c)) := by ring
 
 end Pigeonhole

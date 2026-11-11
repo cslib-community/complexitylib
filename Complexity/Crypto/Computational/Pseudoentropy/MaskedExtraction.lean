@@ -73,9 +73,7 @@ theorem maskBit_mass_ge (mask : ProbComp Bool) (truth bit : Bool) {mass : ℝ}
       (PMF.apply_ne_top _ _)
   rw [eval_maskBit_apply] at hpositive ⊢
   split_ifs at hpositive ⊢ with heq
-  · have hle := ENNReal.toReal_mono (by simp : (1 : ENNReal) ≠ ⊤)
-      (PMF.coe_le_one (ProbComp.eval mask) true)
-    norm_num only [ENNReal.toReal_one] at hle
+  · have hle := toReal_apply_le_one (ProbComp.eval mask) true
     linarith
   · have h := hmask (by linarith)
     linarith

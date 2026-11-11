@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Crypto.Computational.Stretch
+import Complexity.Crypto.Computational.Stretch.Prefix
+import Complexity.Foundations.Data.BitString.List.Operations
 import Complexity.Tactic.PPT
 
 /-! Functional stretch, captured parameters, strict reductions and zero-count boundaries. -/
@@ -277,5 +278,67 @@ example : ∃ (tGen : Bool × List Bool → ℕ) (csG c : ℕ),
   have h := hcsG (x.1.1, PRGStretch.seedAt (fun s => s ++ [x.1.1]) x.1.2 i)
   simp only [length_encPair, encBits_apply, hlen_seed, pow_one] at h ⊢
   exact h
+
+
+-- Emitted prefixes discard the final seed; zero widths and zero rounds stay distinct.
+example : (PRGStretch.forwardIterate expand 3 []).take 3 = [false, false, false] := by
+  decide
+
+example (seed : List Bool) : (PRGStretch.forwardIterate expand 0 seed).take 0 = [] := rfl
+
+example : (PRGStretch.forwardIterate shiftIn 3 [false, false, true]).take 3 =
+    [true, false, false] := by decide
+
+-- The complete output is not prefix-consistent: the retained final seed moves as rounds grow.
+example : (PRGStretch.forwardIterate expand 2 [true]).take 2 ≠
+    PRGStretch.forwardIterate expand 1 [true] := by decide
+
+example (seed : List Bool) {count total : ℕ} (hle : count ≤ total) :
+    (PRGStretch.forwardIterate shiftIn total seed).take count =
+      (PRGStretch.forwardIterate shiftIn count seed).take count :=
+  PRGStretch.take_forwardIterate_prefix length_shiftIn seed hle
+
+-- This is an actual word-encryption/recovery calculation, without a security claim for shiftIn.
+example : List.zipWith Bool.xor
+    ((PRGStretch.forwardIterate shiftIn 3 [false, false, true]).take 3)
+    [false, true, false] = [true, true, false] := by decide
+
+example {generator : List Bool → List Bool}
+    (hlen : ∀ s, (generator s).length = s.length + 1) (seed msg : List Bool) :
+    List.zipWith Bool.xor ((PRGStretch.forwardIterate generator msg.length seed).take msg.length)
+      (List.zipWith Bool.xor
+        ((PRGStretch.forwardIterate generator msg.length seed).take msg.length) msg) = msg :=
+  BitString.zipWith_xor_self_left _ _ (PRGStretch.length_take_forwardIterate hlen seed msg.length)
+
+-- Full-input native encryption: the plaintext length, not the seed length, selects the rounds.
+example {generator : List Bool → List Bool}
+    (hgenerator : ComputableInPolyTime generator encBits encBits)
+    (hlen : ∀ s, (generator s).length = s.length + 1) :
+    ComputableInPolyTime
+      (fun p : List Bool × List Bool => List.zipWith Bool.xor
+        ((PRGStretch.forwardIterate generator p.2.length p.1).take p.2.length) p.2)
+      (encPair encBits encBits) encBits := by
+  have hinput : ComputableInPolyTime
+      (fun p : List Bool × List Bool => (p.1, p.2.length))
+      (encPair encBits encBits) (encPair encBits encUnary) := by fun_prop
+  have hpad := (PRGStretch.polyTime_take_forwardIterate hgenerator hlen).comp hinput
+  exact ComputableInPolyTime.bitsZipWithInput Bool.xor hpad (by fun_prop)
+
+-- A nonidentity schedule and the empty-output schedule use the original n-bit key sampler.
+example {generator : List Bool → List Bool}
+    (hgenerator : PseudorandomGenerator generator (fun n => n + 1)) :
+    ComputationallyIndistinguishable
+      (fun n => (BitString.uniformList n).map
+        (fun seed => (PRGStretch.forwardIterate generator (2 * n + 7) seed).take (2 * n + 7)))
+      (fun n => BitString.uniformList (2 * n + 7)) :=
+  PRGStretch.indistinguishable_take_forwardIterate hgenerator (by fun_prop)
+
+example {generator : List Bool → List Bool}
+    (hgenerator : PseudorandomGenerator generator (fun n => n + 1)) :
+    ComputationallyIndistinguishable
+      (fun n => (BitString.uniformList n).map
+        (fun seed => (PRGStretch.forwardIterate generator 0 seed).take 0))
+      (fun _ => BitString.uniformList 0) :=
+  PRGStretch.indistinguishable_take_forwardIterate hgenerator (ComputableInPolyTime.const 0)
 
 end ComplexityTests.PRGStretch

@@ -58,6 +58,8 @@ clauses of `ψ` (`Cslib.Logic.PL.CNF.IsProof.comp`).
   `Cslib.Logic.PL.CNF.IsProof.restrictBy`: restricting and lifting proofs along a fixed variable or
   a partial assignment.
 * `Cslib.Logic.PL.CNF.IsProof.comp`: composing proofs.
+* `Cslib.Logic.PL.CNF.IsProof.width_le`: the lines of a proof from `φ` have width at most twice
+  the number of variables of `φ`.
 
 ## References
 
@@ -170,6 +172,20 @@ theorem fst_mem_vars (h : φ.IsProof ls) (hc : c ∈ ls) {l : Literal V} (hl : l
     · rcases Clause.mem_resolvent.1 hl with ⟨hl, -⟩ | ⟨hl, -⟩
       exacts [ih h₁ hl, ih h₂ hl]
     · exact ih hc hl
+
+/-- A line of a proof from `φ` is at most twice as wide as `φ` has variables. -/
+theorem width_le (h : φ.IsProof ls) (hc : c ∈ ls) : c.width ≤ 2 * φ.vars.toFinset.card := by
+  have hsub : c.toFinset ⊆ φ.vars.toFinset.image (·, true) ∪ φ.vars.toFinset.image (·, false) := by
+    rintro ⟨v, b⟩ hl
+    have hv := List.mem_toFinset.2 (h.fst_mem_vars hc (List.mem_toFinset.1 hl))
+    cases b
+    · exact Finset.mem_union_right _ (Finset.mem_image_of_mem _ hv)
+    · exact Finset.mem_union_left _ (Finset.mem_image_of_mem _ hv)
+  calc c.width ≤ _ := Finset.card_le_card hsub
+    _ ≤ _ := Finset.card_union_le _ _
+    _ ≤ φ.vars.toFinset.card + φ.vars.toFinset.card :=
+        Nat.add_le_add Finset.card_image_le Finset.card_image_le
+    _ = 2 * φ.vars.toFinset.card := (Nat.two_mul _).symm
 
 end IsProof
 

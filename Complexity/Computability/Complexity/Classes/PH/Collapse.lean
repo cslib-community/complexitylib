@@ -64,20 +64,16 @@ private theorem exists_length_add_iff {a b : ℕ} {P : List Bool → Prop} :
   · rintro ⟨u, hu, v, hv, hP⟩
     exact ⟨u ++ v, by simp [hu, hv], hP⟩
 
-/-- **One level of the collapse.** If `Πₖ ⊆ Σₖ` for problems on pairs of an instance and a word,
-for some `k ≥ 1`, then `Σₖ₊₁ ⊆ Σₖ`: the pairs `(a, w₁)` from which the last `k` quantifiers
-accept form a problem in `Πₖ`, hence in `Σₖ`, and the quantifier over `w₁` merges with its first
-quantifier. -/
-theorem SigmaP_succ_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
-    (h : PiP k (encPair enc encBits) ⊆ SigmaP k (encPair enc encBits)) :
-    SigmaP (k + 1) enc ⊆ SigmaP k enc := by
-  intro A hA
-  -- the pairs of an instance and a first certificate from which the last `k` quantifiers accept
-  obtain ⟨p, B, hB, hA⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
-  obtain ⟨rs, V', hrs, hV', hB'⟩ := h hB
+/-- **`Σₖ` is closed under polynomially bounded existential quantification**, for `k ≥ 1`: if
+`B ∈ Σₖ` as a problem on pairs of an instance and a word, then so is its projection along words of
+length `p |enc a|`. The new quantifier merges with the first quantifier of `B`, whose block lengths
+are polynomials in the length of the encoded pair, hence in `|enc a|`. -/
+theorem mem_SigmaP_of_exists {k : ℕ} (hk : 1 ≤ k) {B : Set (α × List Bool)}
+    (hB : B ∈ SigmaP k (encPair enc encBits)) (p : Polynomial ℕ) :
+    {a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} ∈ SigmaP k enc := by
+  obtain ⟨rs, V', hrs, hV', hB'⟩ := hB
   obtain ⟨r, rs, rfl⟩ := List.exists_cons_of_length_eq_add_one
     (show rs.length = (k - 1) + 1 by omega)
-  -- the length of the encoded pair of an instance and a first certificate
   let L : Polynomial ℕ := 2 * Polynomial.X + 1 + p
   have hL (a : α) (w : List Bool) (hw : w.length = p.eval (enc a).length) :
       (encPair enc encBits (a, w)).length = L.eval (enc a).length := by
@@ -93,9 +89,8 @@ theorem SigmaP_succ_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
     exact hV'.comp (((ComputableInPolyTime.fst _ _).prod
       (ComputableInPolyTime.bitsTakeWithInput (.snd _ _) hn)).prod
         (ComputableInPolyTime.bitsDropWithInput (.snd _ _) hn))
-  · rw [hA a]
-    simp only [List.map_cons, alternation_true_cons, Polynomial.eval_add, Polynomial.eval_comp,
-      List.map_map, Function.comp_def]
+  · simp only [Set.mem_ofPred_eq, List.map_cons, alternation_true_cons, Polynomial.eval_add,
+      Polynomial.eval_comp, List.map_map, Function.comp_def]
     rw [exists_length_add_iff]
     refine exists_congr fun w => and_congr_right fun hw => ?_
     have hmem := hB' (a, w)
@@ -103,6 +98,20 @@ theorem SigmaP_succ_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
     rw [hmem]
     refine exists_congr fun v => and_congr_right fun hv => alternation_congr fun u => ?_
     simp [hw, List.append_assoc]
+
+/-- **One level of the collapse.** If `Πₖ ⊆ Σₖ` for problems on pairs of an instance and a word,
+for some `k ≥ 1`, then `Σₖ₊₁ ⊆ Σₖ`: the pairs `(a, w₁)` from which the last `k` quantifiers
+accept form a problem in `Πₖ`, hence in `Σₖ`, and the quantifier over `w₁` merges with its first
+quantifier (`Cslib.Complexity.mem_SigmaP_of_exists`). -/
+theorem SigmaP_succ_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
+    (h : PiP k (encPair enc encBits) ⊆ SigmaP k (encPair enc encBits)) :
+    SigmaP (k + 1) enc ⊆ SigmaP k enc := by
+  intro A hA
+  -- the pairs of an instance and a first certificate from which the last `k` quantifiers accept
+  obtain ⟨p, B, hB, hA⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
+  convert mem_SigmaP_of_exists hk (h hB) p using 1
+  ext a
+  exact hA a
 
 /-! ### The collapses -/
 

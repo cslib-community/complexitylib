@@ -85,12 +85,13 @@ def ready (input word : List Bool) : Config (k + r + 1) Bool PrepareState Oracle
 theorem start_ready (machine : MultiTapePTM k Bool State Oracle) (input word : List Bool) :
     Sequential.start (machine.extendTapes (Fin.castAddEmb r)).withClock
       (ready (PrepareState := PrepareState) input word) =
-      Clock.config ((machine.extendTapes (Fin.castAddEmb r)).initialConfig input)
+      AuxiliaryTape.config ((machine.extendTapes (Fin.castAddEmb r)).initialConfig input)
         (tapeOfList word) 0 false := by
   refine Config.ext ?_ rfl
   refine Cfg.ext rfl rfl ?_ ?_ rfl <;> funext i <;>
     refine Fin.lastCases ?_ (fun j => ?_) i <;>
-      simp [Sequential.start, ready, Cfg.withState, wordsCfg, Clock.config, initialConfig, Cfg.init]
+      simp [Sequential.start, ready, Cfg.withState, wordsCfg, AuxiliaryTape.config,
+        initialConfig, Cfg.init]
 
 /-- The embedded deterministic preparation reaches the exact ready configuration. -/
 theorem prepare_runFrom (prepare : MultiTapeTM (r + 1) Bool PrepareState)
@@ -109,7 +110,7 @@ theorem prepare_runFrom (prepare : MultiTapeTM (r + 1) Bool PrepareState)
 /-- The source data after exhaustion, embedded alongside the consumed budget and halted control. -/
 def finish {input : List Bool} (cfg : Config k Bool State Oracle input) (budget : ℕ) :
     Config (k + r + 1) Bool (PrepareState ⊕ Clock.Control State) Oracle input :=
-  Sequential.right (Clock.stopped
+  Sequential.right (AuxiliaryTape.stopped
     (cfg.embed (Fin.castAddEmb r) (fun _ _ => none) (fun _ => 0))
     (tapeOfList (List.replicate budget true)) budget)
 
@@ -216,7 +217,7 @@ theorem exists_polynomialClock {k : ℕ} {State Oracle : Type} [Finite State] [D
   · have hout := congrArg (PMF.map (fun result => (result.1.tapes.output, result.2))) hrun
     simpa only [run, runFrom, OracleComp.interpret_map, StateT.run_map, PMF.monad_map_eq_map,
       PMF.map_comp, Function.comp_def, finish, Sequential.right, Cfg.mapState,
-      Clock.stopped_output, Config.embed_output] using hout
+      AuxiliaryTape.stopped_output, Config.embed_output] using hout
   · intro result hresult
     rw [hrun] at hresult
     obtain ⟨⟨cfg, state⟩, _, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hresult

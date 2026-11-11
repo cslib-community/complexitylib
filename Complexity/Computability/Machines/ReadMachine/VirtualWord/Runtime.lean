@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Machines.ReadMachine.VirtualWord
+import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Frame.Lookup
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinaryNormalization
 import Complexity.Foundations.Data.Nat.Bits
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Quantitative
@@ -86,26 +87,6 @@ A missing frame marker ends initialization; a missing payload is decoded as fals
   halted s := s.bit.isSome
   finish s := if s.bit.isSome then [answer (decode s.header.reverse) (s.bit.getD false)] else []
 
-private theorem frame_marker (h x : List Bool) {k : ℕ} (hk : k < h.length) :
-    (frame h ++ x)[2 * k]? = some true := by
-  induction h generalizing k with
-  | nil => simp at hk
-  | cons b h ih =>
-    cases k with
-    | zero => simp
-    | succ k =>
-      simpa [frame_cons, Nat.mul_add, Nat.add_assoc] using ih (k := k) (by simpa using hk)
-
-private theorem frame_payload (h x : List Bool) {k : ℕ} (hk : k < h.length) :
-    (frame h ++ x)[2 * k + 1]? = some h[k] := by
-  induction h generalizing k with
-  | nil => simp at hk
-  | cons b h ih =>
-    cases k with
-    | zero => simp
-    | succ k =>
-      simpa [frame_cons, Nat.mul_add, Nat.add_assoc] using ih (k := k) (by simpa using hk)
-
 /-- At each frame marker only the already scanned header prefix is stored. -/
 theorem run_marker (h x : List Bool) {k : ℕ} (hk : k ≤ h.length) :
     machine.run (frame h ++ x) (2 * k) =
@@ -118,7 +99,7 @@ theorem run_marker (h x : List Bool) {k : ℕ} (hk : k ≤ h.length) :
       QueryMachine.run_succ, QueryMachine.run_succ, ih (by omega)]
     simp only [QueryMachine.step, QueryMachine.read, machine, State.ready, State.payload,
       State.bit, State.header, State.cursor, Bool.false_eq_true, ↓reduceIte, Option.isSome_none,
-      frame_marker h x hk', Option.getD_some, frame_payload h x hk']
+      (getElem?_frame_append h x hk').1, Option.getD_some, (getElem?_frame_append h x hk').2]
     rw [List.take_succ_eq_append_getElem hk', List.reverse_append]
     simp
 
@@ -127,18 +108,16 @@ theorem run_payload (h x : List Bool) {k : ℕ} (hk : k < h.length) :
     machine.run (frame h ++ x) (2 * k + 1) =
       (((h.take k).reverse, 2 * k + 1), true, false, none) := by
   rw [QueryMachine.run_succ, run_marker h x (by omega)]
-  simp [QueryMachine.step, QueryMachine.read, machine, frame_marker h x hk]
+  simp [QueryMachine.step, QueryMachine.read, machine, (getElem?_frame_append h x hk).1]
 
 /-- Initialization finishes with exactly the supplied header and the original-word offset. -/
 theorem run_initialized (h x : List Bool) :
     machine.run (frame h ++ x) (2 * h.length + 1) =
       ((h.reverse, 2 * h.length + 1), false, true, none) := by
   rw [QueryMachine.run_succ, run_marker h x le_rfl]
-  have hb : (frame h ++ x)[2 * h.length]? = some false := by
-    induction h with
-    | nil => simp
-    | cons b h ih => simpa [frame_cons, Nat.mul_add, Nat.add_assoc] using ih
-  simp [QueryMachine.step, QueryMachine.read, machine, hb]
+  simp only [List.take_length, QueryMachine.step, QueryMachine.read, machine, State.bit,
+    State.ready, State.payload, State.header, State.cursor, Option.isSome_none, Bool.false_eq_true,
+    ↓reduceIte, getElem?_frame_append_length, Option.getD_some]
 
 /-- One further step reads the original input at the runtime address. -/
 theorem run_halted (d : Data) (x : List Bool) :
@@ -148,13 +127,10 @@ theorem run_halted (d : Data) (x : List Bool) :
   change machine.run (frame (encData d) ++ x) _ = _
   rw [show 2 * (encData d).length + 2 = (2 * (encData d).length + 1) + 1 by omega,
     QueryMachine.run_succ, run_initialized]
-  have hget : (frame (encData d) ++ x)[2 * (encData d).length + 1 + d.address]? =
-      x[d.address]? := by
-    rw [List.getElem?_append_right (by simp)]
-    simp
   simp only [QueryMachine.step, QueryMachine.read, machine, State.bit, State.ready,
     State.payload, State.header, State.cursor, Option.isSome_none, Bool.false_eq_true,
-    ↓reduceIte, List.reverse_reverse, decode_encData, hget, List.getD_eq_getElem?_getD]
+    ↓reduceIte, List.reverse_reverse, decode_encData,
+    getElem?_frame_append_boundary (encData d) x d.address, List.getD_eq_getElem?_getD]
 
 /-- Every runtime parameter is an input to this one fixed machine, rather than part of its code. -/
 theorem output (d : Data) (x : List Bool) :

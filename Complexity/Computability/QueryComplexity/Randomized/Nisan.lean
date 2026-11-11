@@ -224,8 +224,7 @@ theorem one_sub_two_mul_pow_three_mul_complexity_le (hε : 0 ≤ ε) (f : Boolea
       (Nat.cast_nonneg _)).trans (by positivity)
   have hD : (complexity f : ℝ) ≤ (blockSensitivity f : ℝ) ^ 3 := by
     exact_mod_cast complexity_le_blockSensitivity_pow_three f
-  calc (1 - 2 * ε) ^ 3 * complexity f ≤ (1 - 2 * ε) ^ 3 * (blockSensitivity f : ℝ) ^ 3 :=
-        mul_le_mul_of_nonneg_left hD (by positivity)
+  calc (1 - 2 * ε) ^ 3 * complexity f ≤ (1 - 2 * ε) ^ 3 * (blockSensitivity f : ℝ) ^ 3 := by gcongr
     _ = ((1 - 2 * ε) * blockSensitivity f) ^ 3 := by ring
     _ ≤ (randomizedComplexity ε f : ℝ) ^ 3 :=
         pow_le_pow_left₀ (by positivity)

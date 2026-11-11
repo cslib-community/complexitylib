@@ -26,14 +26,14 @@ exponents is upward closed, so the hypotheses are statements about the exponents
 
 ## Measuring by clauses
 
-A formula of width `k` with `m` clauses has at most `k m` variables
-(`Cslib.Logic.PL.CNF.numVars_le_mul_length`), so a decider for `k`-SAT within time `2 ^ (δ n)` times
-a polynomial gives one within time `2 ^ (k δ m)` times a polynomial
+A formula of width `k` with `m` clauses has at most `k * m` variables
+(`Cslib.Logic.PL.CNF.numVars_le_mul_length`), so a decider for `k`-SAT within time `2 ^ (δ * n)`
+times a polynomial gives one within time `2 ^ (k * δ * m)` times a polynomial
 (`Cslib.Complexity.DecidableInExpTime.length_of_numVars`). Hence the exponential time hypothesis
 holds as soon as 3SAT is not decidable in subexponential time in the number of clauses
 (`Cslib.Complexity.ETH_of_not_decidableInSubexpTime_length`). The converse is the content of the
 sparsification lemma of Impagliazzo, Paturi and Zane [ImpagliazzoPaturiZane2001], with the
-sparsified formulas searched within time `2 ^ (ε n)` times a polynomial; it is proved in
+sparsified formulas searched within time `2 ^ (ε * n)` times a polynomial; it is proved in
 `Cslib.Complexity.ETH_iff_not_decidableInSubexpTime_length`.
 
 ## Main results
@@ -152,9 +152,10 @@ theorem SETH_iff_tendsto : SETH ↔ Tendsto satExponent atTop (𝓝 1) := by
 
 /-! ### Measuring by clauses -/
 
-/-- **From variables to clauses.** A formula of width `k` with `m` clauses has at most `k m`
-variables, so a decider for `k`-SAT within time `2 ^ (δ n)` times a polynomial, on formulas with `n`
-variables, gives one within time `2 ^ (k δ m)` times a polynomial, on formulas with `m` clauses. -/
+/-- **From variables to clauses.** A formula of width `k` with `m` clauses has at most `k * m`
+variables, so a decider for `k`-SAT within time `2 ^ (δ * n)` times a polynomial, on formulas with
+`n` variables, gives one within time `2 ^ (k * δ * m)` times a polynomial, on formulas with `m`
+clauses. -/
 theorem DecidableInExpTime.length_of_numVars {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : DecidableInExpTime (KSAT k) encCNF CNF.numVars δ) :
     DecidableInExpTime (KSAT k) encCNF List.length (k * δ) := by

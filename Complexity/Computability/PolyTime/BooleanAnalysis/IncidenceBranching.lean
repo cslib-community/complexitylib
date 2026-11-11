@@ -99,8 +99,6 @@ namespace Cslib.Complexity.SubexponentialSAT.IncidenceBranching
 
 open Cslib Cslib.BitString Cslib.Complexity Cslib.GenericRAM Turing.MultiTapeTM
 
-local notation "encSys" => encList (encList (encList encNat))
-
 public section
 
 /-! ### The threshold, the branching variables and the counter -/
@@ -294,7 +292,8 @@ theorem IsReducedBranch.le_two_mul {n n' : ℕ} {sys sys' : List (List (List ℕ
 in the encoded length of the branch transfer to the parent input. -/
 theorem IsReducedBranch.length_enc_le {n n' : ℕ} {sys sys' : List (List (List ℕ))}
     (hb : IsReducedBranch n sys n' sys') :
-    (encPair encUnary encSys (n', sys')).length ≤ (encPair encUnary encSys (n, sys)).length := by
+    (encPair encUnary encSparseSystem (n', sys')).length ≤
+      (encPair encUnary encSparseSystem (n, sys)).length := by
   obtain ⟨_, -, hred⟩ := hb
   exact HeavyBranchFold.length_enc_reduced_le_parent hred
 
@@ -384,13 +383,14 @@ local notation "CPT" => ComputableInPolyTime
 private theorem computableInPolyTime_incidences :
     CPT (fun p : ℕ × List (List (List ℕ)) =>
         max 1 (p.2.map fun eq => (equationVars eq).length).sum)
-      (encPair encUnary encSys) encNat := by
+      (encPair encUnary encSparseSystem) encNat := by
   have hlen : CPT (fun eq : List (List ℕ) => (equationVars eq).length)
       (encList (encList encNat)) encNat :=
     unary_to_binary.comp ((length_list encNat).comp computableInPolyTime_equationVars)
   have hlist : CPT (fun p : ℕ × List (List (List ℕ)) =>
-      p.2.map fun eq => (equationVars eq).length) (encPair encUnary encSys) (encList encNat) :=
-    mapWithInput (snd encUnary encSys) (hlen.comp (snd _ _))
+      p.2.map fun eq => (equationVars eq).length)
+      (encPair encUnary encSparseSystem) (encList encNat) :=
+    mapWithInput (snd encUnary encSparseSystem) (hlen.comp (snd _ _))
   have hsum := (show CPT List.sum (encList encNat) encNat by fun_prop).comp hlist
   have hmax1 : CPT (fun x : ℕ => max 1 x) encNat encNat :=
     ((binary_le' (const 1) id').ite' id' (const 1)).of_enc_eq fun x =>
@@ -403,25 +403,26 @@ public section
 @[fun_prop]
 theorem computableInPolyTime_threshold :
     CPT (fun p : ℕ × List (List (List ℕ)) => threshold p.1 p.2)
-      (encPair encUnary encSys) encNat :=
+      (encPair encUnary encSparseSystem) encNat :=
   ParameterCheck.computableInPolyTime_heavyIncidenceCutoff_apply computableInPolyTime_incidences
-    (unary_to_binary.comp (fst encUnary encSys))
+    (unary_to_binary.comp (fst encUnary encSparseSystem))
 
 /-- The branching variables are polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_branchVars :
     CPT (fun p : ℕ × List (List (List ℕ)) => branchVars p.1 p.2)
-      (encPair encUnary encSys) (encList encNat) :=
-  HeavyBranchFold.computableInPolyTime_heavyVarList_comp (fst encUnary encSys)
-    computableInPolyTime_threshold (snd encUnary encSys)
+      (encPair encUnary encSparseSystem) (encList encNat) :=
+  HeavyBranchFold.computableInPolyTime_heavyVarList_comp (fst encUnary encSparseSystem)
+    computableInPolyTime_threshold (snd encUnary encSparseSystem)
 
 /-- The input of the streaming branching is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_branchInput :
     CPT (fun p : ℕ × List (List (List ℕ)) => branchInput p.1 p.2)
-      (encPair encUnary encSys) HeavyBranchFold.encBranchInput := by
+      (encPair encUnary encSparseSystem) HeavyBranchFold.encBranchInput := by
   unfold HeavyBranchFold.encBranchInput
-  exact (fst encUnary encSys).prod (computableInPolyTime_branchVars.prod (snd encUnary encSys))
+  exact (fst encUnary encSparseSystem).prod
+    (computableInPolyTime_branchVars.prod (snd encUnary encSparseSystem))
 
 end
 
@@ -447,18 +448,20 @@ length of the input. With `length_branchVars_le`, `2 ^ |S| ≤ 2 ^ (n / ⌈√λ
 theorem exists_count_certificate :
     ∃ K : ℕ, ∀ (solver : ℕ → List (List (List ℕ)) → ℕ)
       (csolver : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => solver p.1 p.2)
-        (encPair encUnary encSys) encNat),
+        (encPair encUnary encSparseSystem) encNat),
       (∀ n' sys', solver n' sys' ≤ 2 ^ n') →
       ∃ cs : NativeCertificate (fun p : ℕ × List (List (List ℕ)) => count solver p.1 p.2)
-          (encPair encUnary encSys) encNat,
+          (encPair encUnary encSparseSystem) encNat,
         ∀ (n : ℕ) (sys : List (List (List ℕ))) (R Q : ℕ),
           (∀ n' sys', IsReducedBranch n sys n' sys' →
             csolver.time (n', sys') ≤ R ∧ csolver.space (n', sys') ≤ Q) →
           cs.time (n, sys) ≤ (2 ^ (branchVars n sys).length + 1) *
-              (K * ((encPair encUnary encSys (n, sys)).length + 1) ^ K + R) ∧
-            cs.space (n, sys) ≤ K * ((encPair encUnary encSys (n, sys)).length + 1) ^ K + Q := by
+              (K * ((encPair encUnary encSparseSystem (n, sys)).length + 1) ^ K + R) ∧
+            cs.space (n, sys) ≤
+              K * ((encPair encUnary encSparseSystem (n, sys)).length + 1) ^ K + Q := by
   have hPrep := NativeCertificate.ofPolyTime_isPolynomial computableInPolyTime_branchInput
-  have hstep : PolyBounded (fun p : ℕ × List (List (List ℕ)) => (encPair encUnary encSys p).length)
+  have hstep : PolyBounded
+      (fun p : ℕ × List (List (List ℕ)) => (encPair encUnary encSparseSystem p).length)
       (fun p => HeavyBranchFold.stepOverhead
         (HeavyBranchFold.encBranchInput (branchInput p.1 p.2)).length) :=
     (PolyBounded.of_polynomiallyBounded _ HeavyBranchFold.polynomiallyBounded_stepOverhead).comp
@@ -479,8 +482,8 @@ theorem exists_count_certificate :
   have hQ := maxReducedCost_branchInput_le (cost := csolver.space) fun n' sys' h =>
     (hRQ n' sys' h).2
   have hbase := hCd (n, sys)
-  have hpow : C * ((encPair encUnary encSys (n, sys)).length + 1) ^ d ≤
-      (C + d) * ((encPair encUnary encSys (n, sys)).length + 1) ^ (C + d) :=
+  have hpow : C * ((encPair encUnary encSparseSystem (n, sys)).length + 1) ^ d ≤
+      (C + d) * ((encPair encUnary encSparseSystem (n, sys)).length + 1) ^ (C + d) :=
     Nat.mul_le_mul (Nat.le_add_right C d)
       (Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_add_left d C))
   have h1 : 1 ≤ 2 ^ (branchVars n sys).length := Nat.one_le_two_pow

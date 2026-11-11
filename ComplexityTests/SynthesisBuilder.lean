@@ -53,4 +53,16 @@ example : True := by
     have : (fun _ : BitString 0 => false) ∈ inputs 0 := by synthesis_available
   trivial
 
+-- `Synthesis.extend` keeps everything built so far and names each new family explicitly. Starting
+-- from the sources, a negation and a conjunction that reuses it cost two gates.
+example : Synthesis interpretation (inputs 2)
+    ((inputs 2 ∪ {fun x : BitString 2 => !x 0}) ∪ {fun x => !x 0 && x 1}) 2 := by
+  have S0 : Synthesis interpretation (inputs 2) (inputs 2) 0 := Synthesis.of_subset le_rfl
+  have S1 := S0.extend {fun x : BitString 2 => !x 0}
+    (Synthesis.of_mem (f := fun x => x 0) (by synthesis_available)).not
+  have S2 := S1.extend {fun x : BitString 2 => !x 0 && x 1}
+    ((Synthesis.of_mem (f := fun x : BitString 2 => !x 0) (by synthesis_available)).and
+      (Synthesis.of_mem (f := fun x => x 1) (by synthesis_available)))
+  exact S2
+
 end ComplexityTests.SynthesisBuilder

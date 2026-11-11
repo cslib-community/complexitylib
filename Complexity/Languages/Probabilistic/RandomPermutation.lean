@@ -10,6 +10,7 @@ module
 public import Complexity.Languages.Probabilistic.RandomOracle
 public import Complexity.Languages.Probabilistic.UntilBad
 public import Mathlib.Data.Fintype.Perm
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Uniform
 import Mathlib.Data.Finset.Card
@@ -21,8 +22,9 @@ import Mathlib.Tactic.Ring
 # Lazy sampling of random permutations and the PRP/PRF switching lemma
 
 A bidirectional permutation oracle (`PermOracleSpec α`) answers forward queries (`.forward x`) and
-inverse queries (`.inverse y`) on a finite type `α`. We provide two lazy stateful samplers over an
-association-list cache `Cache α = List (α × α)`:
+inverse queries (`.inverse y`) on a type `α`. Over an association-list cache
+`Cache α = List (α × α)`, we provide two lazy stateful samplers on finite nonempty types together
+with polymorphic bidirectional query deduplication over arbitrary `[DecidableEq α]`:
 
 1. **Exact without-replacement lazy permutation (`RandomPermutation.answer`)**: on a cache hit,
    return the recorded image or preimage; on a cache miss, sample uniformly from the remaining
@@ -44,19 +46,42 @@ association-list cache `Cache α = List (α × α)`:
    a uniformly random function `f ← PMF.uniformOfFintype (α → α)`, yielding the classical
    **PRP/PRF switching lemma** (`abs_sub_uniformPerm_uniformFunc_le`, [BonehShoup2023],
    Section 4.4, Theorem 4.4).
+3. **Bidirectional query deduplication (`RandomPermutation.bidirDedupStep`,
+   `RandomPermutation.bidirDedup`)**: for any `[DecidableEq α]`, wrap a bidirectional oracle
+   program so that forward hits in `dom(cache)` and inverse hits in `ran(cache)` are answered from
+   `cache` without invoking the underlying oracle, preserving the output distribution against
+   `evalPerm π` (`map_fst_interpret_bidirDedup_evalPerm`), preserving query bounds
+   (`isQueryBounded_bidirDedup`), recording non-repeating underlying queries and the exact
+   reverse-chronological transcript (`nodup_transcript_of_mem_support_withTranscript_bidirDedup`,
+   `cache_eq_of_mem_support_withTranscript_bidirDedup`), and maintaining pairwise-distinct domain
+   and range entries under `evalPerm π` (`agreesWith_and_pairwise_of_mem_support_bidirDedup`).
 
 ## Main definitions
 
-* `Cslib.RandomPermutation.PermQuery`, `PermQuery.ofBoolProd`, `PermOracleSpec`, `evalPerm`,
-  `liftForward`, `liftBoolProd`: bidirectional permutation queries, oracle specification,
-  deterministic evaluation, and query liftings.
+* `Cslib.RandomPermutation.PermQuery`, `PermQuery.ofBoolProd`, `PermQuery.toCacheEntry`,
+  `PermOracleSpec`, `evalPerm`, `liftForward`, `liftBoolProd`: bidirectional permutation queries,
+  oracle specification, deterministic evaluation, and query liftings.
 * `Cslib.RandomPermutation.Cache`, `invLookup`, `AgreesWith`, `IsPartialBijection`, `extPerms`,
   `unusedDomain`, `unusedRange`: partial bijection caches and extension sets.
+* `Cslib.RandomPermutation.bidirDedupStep`, `bidirDedup`: stateful bidirectional query
+  deduplication over a partial-permutation cache.
 * `Cslib.RandomPermutation.answer`, `complete`, `forgetfulAnswer`: exact and forgetful lazy
   bidirectional permutation samplers and uniform completion.
 
 ## Main results
 
+* `Cslib.RandomPermutation.map_fst_interpret_bidirDedupStep_evalPerm`,
+  `Cslib.RandomPermutation.map_fst_interpret_bidirDedup_evalPerm`,
+  `Cslib.RandomPermutation.isQueryBounded_bidirDedupStep`,
+  `Cslib.RandomPermutation.isQueryBounded_bidirDedup`,
+  `Cslib.RandomPermutation.cache_eq_of_mem_support_withTranscript_bidirDedup`,
+  `Cslib.RandomPermutation.nodup_transcript_of_mem_support_withTranscript_bidirDedup`,
+  `Cslib.RandomPermutation.length_cache_le_of_mem_support_bidirDedup`,
+  `Cslib.RandomPermutation.agreesWith_and_pairwise_of_mem_support_bidirDedup`,
+  `Cslib.RandomPermutation.interpret_bidirDedup_uniformOfFintype`: exact `evalPerm` equivalence,
+  query-bound preservation, transcript-cache provenance and query non-repetition, cache-length and
+  pairwise-uniqueness invariants, and `forgetfulAnswer` correspondence for bidirectional query
+  deduplication.
 * `Cslib.RandomPermutation.answer_complete`,
   `Cslib.RandomPermutation.run_interpret_answer_complete`,
   `Cslib.RandomPermutation.uniform_interpret_eq_lazy`: exact eager/lazy equivalence for
@@ -169,6 +194,20 @@ theorem isQueryBounded_liftBoolProd {α β : Type}
         fun y => liftBoolProd (cont y)) (n + 1)
     simpa [Nat.add_comm] using
       (IsCostBounded.query (spec := PermOracleSpec α) (PermQuery.ofBoolProd q)).bind ih
+
+/-- Orient a bidirectional query-answer pair `⟨q, a⟩` into an `(input, output)` cache entry:
+`⟨.forward x, y⟩ ↦ (x, y)` and `⟨.inverse y, x⟩ ↦ (x, y)`. -/
+def PermQuery.toCacheEntry {α : Type} : (q : PermQuery α) × PermOracleSpec α q → α × α
+  | ⟨.forward x, y⟩ => (x, y)
+  | ⟨.inverse y, x⟩ => (x, y)
+
+/-- A forward query-answer pair `⟨.forward x, y⟩` records the cache entry `(x, y)`. -/
+@[simp] theorem PermQuery.toCacheEntry_forward {α : Type} (x y : α) :
+    PermQuery.toCacheEntry ⟨.forward x, y⟩ = (x, y) := rfl
+
+/-- An inverse query-answer pair `⟨.inverse y, x⟩` records the cache entry `(x, y)`. -/
+@[simp] theorem PermQuery.toCacheEntry_inverse {α : Type} (y x : α) :
+    PermQuery.toCacheEntry ⟨.inverse y, x⟩ = (x, y) := rfl
 
 /-! ### Partial bijection cache and lookup lemmas -/
 
@@ -351,6 +390,446 @@ theorem IsPartialBijection.cons_of_lookup_eq_none {cache : Cache α}
     IsPartialBijection ((x, y) :: cache) := by
   obtain ⟨π, hπ⟩ := h
   exact ⟨π.trans (Equiv.swap (π x) y), hπ.trans_swap_of_lookup_eq_none hx hy⟩
+
+omit [DecidableEq α] in
+/-- If `π` agrees with `cache` and the domain entries of `cache` are pairwise distinct, then the
+range entries of `cache` are pairwise distinct. -/
+theorem AgreesWith.pairwise_snd_of_pairwise_fst {cache : Cache α} {π : Equiv.Perm α}
+    (hπ : AgreesWith cache π) (hp1 : cache.Pairwise (fun a b => a.1 ≠ b.1)) :
+    cache.Pairwise (fun a b => a.2 ≠ b.2) := by
+  induction cache with
+  | nil => exact List.Pairwise.nil
+  | cons e rest ih =>
+    obtain ⟨he, hp1'⟩ := List.pairwise_cons.mp hp1
+    obtain ⟨hπe, hπ'⟩ := (agreesWith_cons e rest π).mp hπ
+    refine List.pairwise_cons.mpr ⟨fun e' he' h2 => he e' he' ?_, ih hπ' hp1'⟩
+    exact π.injective (hπe.trans (h2.trans (hπ' e' he').symm))
+
+/-! ### Bidirectional query deduplication -/
+
+/-- One step of stateful bidirectional query deduplication over a partial-permutation cache
+`cache`: answer `.forward x` from `cache.lookup x` and `.inverse y` from `invLookup cache y` on
+hits, and otherwise forward the query to the underlying `PermOracleSpec α` oracle and prepend
+`(x, y)` to `cache`. -/
+def bidirDedupStep (q : PermQuery α) :
+    StateT (Cache α) (OracleComp (PermOracleSpec α)) α := fun cache =>
+  match q with
+  | .forward x =>
+    match cache.lookup x with
+    | some y => pure (y, cache)
+    | none => do
+      let y ← OracleComp.query (spec := PermOracleSpec α) (.forward x)
+      pure (y, (x, y) :: cache)
+  | .inverse y =>
+    match invLookup cache y with
+    | some x => pure (x, cache)
+    | none => do
+      let x ← OracleComp.query (spec := PermOracleSpec α) (.inverse y)
+      pure (x, (x, y) :: cache)
+
+/-- On a forward cache hit `cache.lookup x = some y`, `bidirDedupStep` returns `(y, cache)` without
+issuing an oracle query. -/
+theorem bidirDedupStep_forward_of_some {x y : α} {cache : Cache α}
+    (h : cache.lookup x = some y) :
+    bidirDedupStep (.forward x) cache = pure (y, cache) := by
+  simp [bidirDedupStep, h]
+
+/-- On a forward cache miss `cache.lookup x = none`, `bidirDedupStep` queries `.forward x` and
+prepends `(x, y)` to `cache`. -/
+theorem bidirDedupStep_forward_of_none {x : α} {cache : Cache α}
+    (h : cache.lookup x = none) :
+    bidirDedupStep (.forward x) cache = (do
+      let y ← OracleComp.query (spec := PermOracleSpec α) (.forward x)
+      pure (y, (x, y) :: cache)) := by
+  simp [bidirDedupStep, h]
+
+/-- On an inverse cache hit `invLookup cache y = some x`, `bidirDedupStep` returns `(x, cache)`
+without issuing an oracle query. -/
+theorem bidirDedupStep_inverse_of_some {y x : α} {cache : Cache α}
+    (h : invLookup cache y = some x) :
+    bidirDedupStep (.inverse y) cache = pure (x, cache) := by
+  simp [bidirDedupStep, h]
+
+/-- On an inverse cache miss `invLookup cache y = none`, `bidirDedupStep` queries `.inverse y` and
+prepends `(x, y)` to `cache`. -/
+theorem bidirDedupStep_inverse_of_none {y : α} {cache : Cache α}
+    (h : invLookup cache y = none) :
+    bidirDedupStep (.inverse y) cache = (do
+      let x ← OracleComp.query (spec := PermOracleSpec α) (.inverse y)
+      pure (x, (x, y) :: cache)) := by
+  simp [bidirDedupStep, h]
+
+/-- Deduplicate a bidirectional permutation program starting from the empty cache `[]`, returning
+both the program output and the final `(input, output)` cache. Forward queries in `dom(cache)` and
+inverse queries in `ran(cache)` are answered from `cache` without calling the underlying oracle. -/
+def bidirDedup {β : Type} (program : OracleComp (PermOracleSpec α) β) :
+    OracleComp (PermOracleSpec α) (β × Cache α) :=
+  (OracleComp.interpret bidirDedupStep program).run []
+
+/-- One step of `bidirDedupStep` issues at most `1` underlying oracle query. -/
+theorem isQueryBounded_bidirDedupStep (q : PermQuery α) (cache : Cache α) :
+    IsQueryBounded (bidirDedupStep q cache) 1 := by
+  cases q with
+  | forward x =>
+    cases h : cache.lookup x with
+    | some y =>
+      rw [bidirDedupStep_forward_of_some h]
+      exact IsCostBounded.pure (y, cache) 1
+    | none =>
+      rw [bidirDedupStep_forward_of_none h]
+      simpa using (IsCostBounded.query (spec := PermOracleSpec α) (.forward x)).bind
+        fun y => IsCostBounded.pure (y, (x, y) :: cache) 0
+  | inverse y =>
+    cases h : invLookup cache y with
+    | some x =>
+      rw [bidirDedupStep_inverse_of_some h]
+      exact IsCostBounded.pure (x, cache) 1
+    | none =>
+      rw [bidirDedupStep_inverse_of_none h]
+      simpa using (IsCostBounded.query (spec := PermOracleSpec α) (.inverse y)).bind
+        fun x => IsCostBounded.pure (x, (x, y) :: cache) 0
+
+/-- Running `bidirDedupStep` from any initial `cache` preserves `Q`-query bounds. -/
+theorem isQueryBounded_run_bidirDedupStep {β : Type}
+    {program : OracleComp (PermOracleSpec α) β} {Q : ℕ}
+    (hQ : IsQueryBounded program Q) (cache : Cache α) :
+    IsQueryBounded ((OracleComp.interpret bidirDedupStep program).run cache) Q :=
+  hQ.run_interpret isQueryBounded_bidirDedupStep cache
+
+/-- Bidirectional query deduplication `bidirDedup` preserves `Q`-query bounds. -/
+theorem isQueryBounded_bidirDedup {β : Type}
+    {program : OracleComp (PermOracleSpec α) β} {Q : ℕ}
+    (hQ : IsQueryBounded program Q) :
+    IsQueryBounded (bidirDedup program) Q :=
+  isQueryBounded_run_bidirDedupStep hQ []
+
+/-- Evaluating a `bidirDedupStep`-wrapped program against `evalPerm π` from any cache agreeing with
+`π` produces the exact same output distribution as evaluating the original program against
+`evalPerm π`. -/
+theorem map_fst_interpret_bidirDedupStep_evalPerm {β : Type} (π : Equiv.Perm α)
+    (program : OracleComp (PermOracleSpec α) β)
+    {cache : Cache α} (hcache : AgreesWith cache π) :
+    (OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+      ((OracleComp.interpret bidirDedupStep program).run cache)).map Prod.fst =
+    OracleComp.interpret (fun q => PMF.pure (evalPerm π q)) program := by
+  induction program using OracleComp.induction generalizing cache with
+  | pure a =>
+    simp [PMF.pure_map]
+  | query_bind q cont ih =>
+    simp only [OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind,
+      Probability.PMF.monad_bind_eq_bind, PMF.pure_bind]
+    change (((OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+      (bidirDedupStep q cache)).bind fun p =>
+        OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+          ((OracleComp.interpret bidirDedupStep (cont p.1)).run p.2)).map Prod.fst) =
+      OracleComp.interpret (fun q => PMF.pure (evalPerm π q)) (cont (evalPerm π q))
+    cases q with
+    | forward x =>
+      cases h : cache.lookup x with
+      | some y =>
+        rw [bidirDedupStep_forward_of_some h]
+        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure,
+          PMF.pure_bind, evalPerm_forward, hcache.apply_of_lookup_eq_some h]
+        exact ih y hcache
+      | none =>
+        rw [bidirDedupStep_forward_of_none h]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_forward]
+        exact ih (π x) ((agreesWith_cons _ _ _).mpr ⟨rfl, hcache⟩)
+    | inverse y =>
+      cases h : invLookup cache y with
+      | some x =>
+        rw [bidirDedupStep_inverse_of_some h]
+        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure,
+          PMF.pure_bind, evalPerm_inverse, hcache.symm_apply_of_invLookup_eq_some h]
+        exact ih x hcache
+      | none =>
+        rw [bidirDedupStep_inverse_of_none h]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_inverse]
+        exact ih (π.symm y) ((agreesWith_cons _ _ _).mpr ⟨Equiv.apply_symm_apply π y, hcache⟩)
+
+/-- **Exact `evalPerm` equivalence for `bidirDedup`**: deduplicating a bidirectional permutation
+program does not change its output distribution against `evalPerm π`. -/
+theorem map_fst_interpret_bidirDedup_evalPerm {β : Type} (π : Equiv.Perm α)
+    (program : OracleComp (PermOracleSpec α) β) :
+    (OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+      (bidirDedup program)).map Prod.fst =
+    OracleComp.interpret (fun q => PMF.pure (evalPerm π q)) program :=
+  map_fst_interpret_bidirDedupStep_evalPerm π program (agreesWith_nil π)
+
+/-- Whether a bidirectional query misses `cache`. -/
+private def missesCache (cache : Cache α) : PermQuery α → Prop
+  | .forward x => cache.lookup x = none
+  | .inverse y => invLookup cache y = none
+
+private theorem missesCache_of_cons {e : α × α} {cache : Cache α} {q : PermQuery α}
+    (hq : missesCache (e :: cache) q) : missesCache cache q := by
+  cases q with
+  | forward x =>
+    exact lookup_eq_none_iff.mpr fun e' he' =>
+      lookup_eq_none_iff.mp hq e' (List.mem_cons_of_mem e he')
+  | inverse y =>
+    exact invLookup_eq_none_iff.mpr fun e' he' =>
+      invLookup_eq_none_iff.mp hq e' (List.mem_cons_of_mem e he')
+
+private theorem forward_ne_of_missesCache_cons {x y : α} {cache : Cache α} {q : PermQuery α}
+    (hq : missesCache ((x, y) :: cache) q) : q ≠ .forward x := by
+  rintro rfl
+  exact lookup_eq_none_iff.mp hq (x, y) List.mem_cons_self rfl
+
+private theorem inverse_ne_of_missesCache_cons {x y : α} {cache : Cache α} {q : PermQuery α}
+    (hq : missesCache ((x, y) :: cache) q) : q ≠ .inverse y := by
+  rintro rfl
+  exact invLookup_eq_none_iff.mp hq (x, y) List.mem_cons_self rfl
+
+private theorem bidirDedupStep_transcript_inv {β σ : Type}
+    (oracle : (q : PermQuery α) → StateT σ PMF α)
+    (program : OracleComp (PermOracleSpec α) β)
+    {cache cache' : Cache α} {s s' : σ} {result : β}
+    {transcript : OracleComp.Transcript (PermOracleSpec α)}
+    (hmem : ((result, cache'), (s', transcript)) ∈
+      ((OracleComp.interpret (OracleComp.withTranscript oracle)
+        ((OracleComp.interpret bidirDedupStep program).run cache)).run (s, [])).support) :
+    cache' = transcript.map PermQuery.toCacheEntry ++ cache ∧
+      (transcript.map Sigma.fst).Nodup ∧
+      ∀ q ∈ transcript.map Sigma.fst, missesCache cache q := by
+  induction program using OracleComp.induction generalizing cache s transcript with
+  | pure a =>
+    simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure,
+      PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
+    rcases hmem with ⟨⟨_, rfl⟩, _, rfl⟩
+    exact ⟨rfl, List.nodup_nil, fun _ h => False.elim (List.not_mem_nil h)⟩
+  | query_bind q cont ih =>
+    simp only [OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind] at hmem
+    change ((result, cache'), (s', transcript)) ∈
+      (((OracleComp.interpret (OracleComp.withTranscript oracle) (bidirDedupStep q cache)).run
+        (s, [])).bind fun p =>
+          (OracleComp.interpret (OracleComp.withTranscript oracle)
+            ((OracleComp.interpret bidirDedupStep (cont p.1.1)).run p.1.2)).run p.2).support at hmem
+    cases q with
+    | forward x =>
+      cases hx : cache.lookup x with
+      | some y =>
+        rw [bidirDedupStep_forward_of_some hx] at hmem
+        simp only [OracleComp.interpret_pure, StateT.run_pure,
+          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind] at hmem
+        exact ih y hmem
+      | none =>
+        rw [bidirDedupStep_forward_of_none hx] at hmem
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
+          PMF.mem_support_bind_iff] at hmem
+        obtain ⟨⟨y, s₁, tr₁⟩, hfirst, hrest⟩ := hmem
+        simp only [StateT.run, OracleComp.withTranscript, PMF.mem_support_map_iff] at hfirst
+        obtain ⟨⟨y', s₁'⟩, -, heq⟩ := hfirst
+        cases heq
+        rw [OracleComp.run_interpret_withTranscript_append, PMF.mem_support_map_iff] at hrest
+        obtain ⟨⟨⟨res', c'⟩, s₂', fresh⟩, hfresh, heq'⟩ := hrest
+        cases heq'
+        obtain ⟨hceq, hnodup, hmiss⟩ := ih y' hfresh
+        refine ⟨?_, ?_, ?_⟩
+        · simp only [List.map_append, List.map_cons, List.map_nil, PermQuery.toCacheEntry_forward,
+            List.append_assoc, List.singleton_append, hceq]
+        · rw [List.map_append, List.map_cons, List.map_nil, List.nodup_append]
+          refine ⟨hnodup, List.nodup_singleton _, fun q' hq' q'' hq'' => ?_⟩
+          rw [List.mem_singleton] at hq''
+          exact hq'' ▸ forward_ne_of_missesCache_cons (hmiss q' hq')
+        · intro q' hq'
+          rw [List.map_append, List.map_cons, List.map_nil, List.mem_append,
+            List.mem_singleton] at hq'
+          rcases hq' with hq' | rfl
+          · exact missesCache_of_cons (hmiss q' hq')
+          · exact hx
+    | inverse y =>
+      cases hy : invLookup cache y with
+      | some x =>
+        rw [bidirDedupStep_inverse_of_some hy] at hmem
+        simp only [OracleComp.interpret_pure, StateT.run_pure,
+          Probability.PMF.monad_pure_eq_pure, PMF.pure_bind] at hmem
+        exact ih x hmem
+      | none =>
+        rw [bidirDedupStep_inverse_of_none hy] at hmem
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
+          PMF.mem_support_bind_iff] at hmem
+        obtain ⟨⟨x, s₁, tr₁⟩, hfirst, hrest⟩ := hmem
+        simp only [StateT.run, OracleComp.withTranscript, PMF.mem_support_map_iff] at hfirst
+        obtain ⟨⟨x', s₁'⟩, -, heq⟩ := hfirst
+        cases heq
+        rw [OracleComp.run_interpret_withTranscript_append, PMF.mem_support_map_iff] at hrest
+        obtain ⟨⟨⟨res', c'⟩, s₂', fresh⟩, hfresh, heq'⟩ := hrest
+        cases heq'
+        obtain ⟨hceq, hnodup, hmiss⟩ := ih x' hfresh
+        refine ⟨?_, ?_, ?_⟩
+        · simp only [List.map_append, List.map_cons, List.map_nil, PermQuery.toCacheEntry_inverse,
+            List.append_assoc, List.singleton_append, hceq]
+        · rw [List.map_append, List.map_cons, List.map_nil, List.nodup_append]
+          refine ⟨hnodup, List.nodup_singleton _, fun q' hq' q'' hq'' => ?_⟩
+          rw [List.mem_singleton] at hq''
+          exact hq'' ▸ inverse_ne_of_missesCache_cons (hmiss q' hq')
+        · intro q' hq'
+          rw [List.map_append, List.map_cons, List.map_nil, List.mem_append,
+            List.mem_singleton] at hq'
+          rcases hq' with hq' | rfl
+          · exact missesCache_of_cons (hmiss q' hq')
+          · exact hy
+
+/-- Against any stateful handler `oracle`, the final deduplication cache after running
+`bidirDedupStep` from `cache` equals `transcript.map PermQuery.toCacheEntry ++ cache`. -/
+theorem cache_eq_of_mem_support_withTranscript_bidirDedupStep {β σ : Type}
+    (oracle : (q : PermQuery α) → StateT σ PMF α)
+    (program : OracleComp (PermOracleSpec α) β)
+    {cache cache' : Cache α} {s s' : σ} {result : β}
+    {transcript : OracleComp.Transcript (PermOracleSpec α)}
+    (hmem : ((result, cache'), (s', transcript)) ∈
+      ((OracleComp.interpret (OracleComp.withTranscript oracle)
+        ((OracleComp.interpret bidirDedupStep program).run cache)).run (s, [])).support) :
+    cache' = transcript.map PermQuery.toCacheEntry ++ cache :=
+  (bidirDedupStep_transcript_inv oracle program hmem).1
+
+/-- Against any stateful handler `oracle`, the final deduplication cache produced by `bidirDedup`
+equals `transcript.map PermQuery.toCacheEntry`. -/
+theorem cache_eq_of_mem_support_withTranscript_bidirDedup {β σ : Type}
+    (oracle : (q : PermQuery α) → StateT σ PMF α)
+    (program : OracleComp (PermOracleSpec α) β)
+    {cache' : Cache α} {s s' : σ} {result : β}
+    {transcript : OracleComp.Transcript (PermOracleSpec α)}
+    (hmem : ((result, cache'), (s', transcript)) ∈
+      ((OracleComp.interpret (OracleComp.withTranscript oracle)
+        (bidirDedup program)).run (s, [])).support) :
+    cache' = transcript.map PermQuery.toCacheEntry := by
+  simpa only [List.append_nil] using
+    cache_eq_of_mem_support_withTranscript_bidirDedupStep oracle program hmem
+
+/-- Against any stateful handler `oracle`, `bidirDedupStep` never forwards the same underlying
+`PermQuery α` twice. -/
+theorem nodup_transcript_of_mem_support_withTranscript_bidirDedupStep {β σ : Type}
+    (oracle : (q : PermQuery α) → StateT σ PMF α)
+    (program : OracleComp (PermOracleSpec α) β)
+    {cache cache' : Cache α} {s s' : σ} {result : β}
+    {transcript : OracleComp.Transcript (PermOracleSpec α)}
+    (hmem : ((result, cache'), (s', transcript)) ∈
+      ((OracleComp.interpret (OracleComp.withTranscript oracle)
+        ((OracleComp.interpret bidirDedupStep program).run cache)).run (s, [])).support) :
+    (transcript.map Sigma.fst).Nodup :=
+  (bidirDedupStep_transcript_inv oracle program hmem).2.1
+
+/-- Against any stateful handler `oracle`, `bidirDedup` never forwards the same underlying
+`PermQuery α` twice. -/
+theorem nodup_transcript_of_mem_support_withTranscript_bidirDedup {β σ : Type}
+    (oracle : (q : PermQuery α) → StateT σ PMF α)
+    (program : OracleComp (PermOracleSpec α) β)
+    {cache' : Cache α} {s s' : σ} {result : β}
+    {transcript : OracleComp.Transcript (PermOracleSpec α)}
+    (hmem : ((result, cache'), (s', transcript)) ∈
+      ((OracleComp.interpret (OracleComp.withTranscript oracle)
+        (bidirDedup program)).run (s, [])).support) :
+    (transcript.map Sigma.fst).Nodup :=
+  nodup_transcript_of_mem_support_withTranscript_bidirDedupStep oracle program hmem
+
+/-- Against any stateful handler `oracle`, running `bidirDedupStep` on a `Q`-query-bounded program
+from `cache` adds at most `Q` entries to `cache`. -/
+theorem length_cache_le_of_mem_support_run_bidirDedupStep {β σ : Type}
+    {program : OracleComp (PermOracleSpec α) β} {Q : ℕ}
+    (hQ : IsQueryBounded program Q)
+    (oracle : (q : PermQuery α) → StateT σ PMF α)
+    {cache cache' : Cache α} {s s' : σ} {result : β}
+    (hmem : ((result, cache'), s') ∈
+      ((OracleComp.interpret oracle
+        ((OracleComp.interpret bidirDedupStep program).run cache)).run s).support) :
+    cache'.length ≤ cache.length + Q := by
+  rw [← OracleComp.run_interpret_withTranscript oracle
+    ((OracleComp.interpret bidirDedupStep program).run cache) s [],
+    PMF.mem_support_map_iff] at hmem
+  obtain ⟨⟨⟨res', c'⟩, s'', transcript⟩, htr, heq⟩ := hmem
+  cases heq
+  have hceq := cache_eq_of_mem_support_withTranscript_bidirDedupStep oracle program htr
+  have hlen := (isQueryBounded_run_bidirDedupStep hQ cache).length_transcript_le oracle htr
+  rw [hceq, List.length_append, List.length_map, Nat.add_comm]
+  exact Nat.add_le_add_left hlen cache.length
+
+/-- Against any stateful handler `oracle`, running `bidirDedup` on a `Q`-query-bounded program
+produces a cache of length at most `Q`. -/
+theorem length_cache_le_of_mem_support_bidirDedup {β σ : Type}
+    {program : OracleComp (PermOracleSpec α) β} {Q : ℕ}
+    (hQ : IsQueryBounded program Q)
+    (oracle : (q : PermQuery α) → StateT σ PMF α)
+    {cache' : Cache α} {s s' : σ} {result : β}
+    (hmem : ((result, cache'), s') ∈
+      ((OracleComp.interpret oracle (bidirDedup program)).run s).support) :
+    cache'.length ≤ Q := by
+  simpa only [List.length_nil, Nat.zero_add] using
+    length_cache_le_of_mem_support_run_bidirDedupStep hQ oracle hmem
+
+/-- Evaluating `bidirDedupStep` against `evalPerm π` from any cache agreeing with `π` whose domain
+entries are pairwise distinct preserves `AgreesWith` and maintains pairwise-distinct domain and
+range entries. -/
+theorem agreesWith_and_pairwise_of_mem_support_run_bidirDedupStep {β : Type} (π : Equiv.Perm α)
+    (program : OracleComp (PermOracleSpec α) β) {cache cache' : Cache α} {result : β}
+    (hπ : AgreesWith cache π) (hp1 : cache.Pairwise (fun a b => a.1 ≠ b.1))
+    (hmem : (result, cache') ∈
+      (OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+        ((OracleComp.interpret bidirDedupStep program).run cache)).support) :
+    AgreesWith cache' π ∧
+      cache'.Pairwise (fun a b => a.1 ≠ b.1) ∧
+      cache'.Pairwise (fun a b => a.2 ≠ b.2) := by
+  induction program using OracleComp.induction generalizing cache with
+  | pure a =>
+    simp only [OracleComp.interpret_pure, StateT.run_pure,
+      Probability.PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
+    rcases hmem with ⟨_, rfl⟩
+    exact ⟨hπ, hp1, hπ.pairwise_snd_of_pairwise_fst hp1⟩
+  | query_bind q cont ih =>
+    simp only [OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind,
+      Probability.PMF.monad_bind_eq_bind] at hmem
+    change (result, cache') ∈
+      ((OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+        (bidirDedupStep q cache)).bind fun p =>
+          OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+            ((OracleComp.interpret bidirDedupStep (cont p.1)).run p.2)).support at hmem
+    cases q with
+    | forward x =>
+      cases hx : cache.lookup x with
+      | some y =>
+        rw [bidirDedupStep_forward_of_some hx] at hmem
+        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure,
+          PMF.pure_bind] at hmem
+        exact ih y hπ hp1 hmem
+      | none =>
+        rw [bidirDedupStep_forward_of_none hx] at hmem
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_forward] at hmem
+        exact ih (π x) ((agreesWith_cons _ _ _).mpr ⟨rfl, hπ⟩)
+          (List.pairwise_cons.mpr ⟨fun e he => (lookup_eq_none_iff.mp hx e he).symm, hp1⟩) hmem
+    | inverse y =>
+      cases hy : invLookup cache y with
+      | some x =>
+        rw [bidirDedupStep_inverse_of_some hy] at hmem
+        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure,
+          PMF.pure_bind] at hmem
+        exact ih x hπ hp1 hmem
+      | none =>
+        rw [bidirDedupStep_inverse_of_none hy] at hmem
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure, evalPerm_inverse] at hmem
+        have hx : cache.lookup (π.symm y) = none := hπ.lookup_symm_apply_eq_none hy
+        exact ih (π.symm y)
+          ((agreesWith_cons _ _ _).mpr ⟨Equiv.apply_symm_apply π y, hπ⟩)
+          (List.pairwise_cons.mpr ⟨fun e he => (lookup_eq_none_iff.mp hx e he).symm, hp1⟩) hmem
+
+/-- Evaluating `bidirDedup` against `evalPerm π` produces a cache agreeing with `π` whose domain and
+range entries are both pairwise distinct. -/
+theorem agreesWith_and_pairwise_of_mem_support_bidirDedup {β : Type} (π : Equiv.Perm α)
+    (program : OracleComp (PermOracleSpec α) β) {cache' : Cache α} {result : β}
+    (hmem : (result, cache') ∈
+      (OracleComp.interpret (fun q => PMF.pure (evalPerm π q))
+        (bidirDedup program)).support) :
+    AgreesWith cache' π ∧
+      cache'.Pairwise (fun a b => a.1 ≠ b.1) ∧
+      cache'.Pairwise (fun a b => a.2 ≠ b.2) :=
+  agreesWith_and_pairwise_of_mem_support_run_bidirDedupStep π program (agreesWith_nil π)
+    List.Pairwise.nil hmem
 
 /-! ### Finite domain/range complements and extension finsets -/
 
@@ -743,8 +1222,7 @@ theorem run_interpret_answer_complete {β : Type}
     (fun q π => (·, π) <$> PMF.pure (evalPerm π q)) complete IsPartialBijection
     answer_preserve_isPartialBijection
     (fun q c hc => by
-      simpa only [PMF.monad_bind_eq_bind, PMF.monad_map_eq_map, PMF.pure_map, PMF.map,
-        Function.comp_def, PMF.pure_bind] using answer_complete q c hc)
+      simpa only [pmf_norm, PMF.map] using answer_complete q c hc)
     program cache hcache
   refine h.trans (congrArg ((complete cache).bind) (funext fun π => ?_))
   simpa only [PMF.monad_map_eq_map] using OracleComp.run_interpret_readOnly
@@ -761,8 +1239,7 @@ theorem uniform_interpret_eq_lazy {β : Type} (program : OracleComp (PermOracleS
     ((OracleComp.interpret answer program).run []).map Prod.fst := by
   have h := congrArg (PMF.map Prod.fst)
     (run_interpret_answer_complete program [] isPartialBijection_nil)
-  simpa only [PMF.monad_bind_eq_bind, complete_nil, PMF.map_bind, PMF.map_comp, PMF.map,
-    Function.comp_def, PMF.bind_const, PMF.bind_pure, PMF.bind_bind, PMF.pure_bind] using h.symm
+  simpa only [pmf_norm, complete_nil, PMF.map, PMF.bind_const] using h.symm
 
 /-! ### Forgetful lazy permutation sampler and bidirectional switching bound -/
 
@@ -779,6 +1256,85 @@ noncomputable def forgetfulAnswer (q : PermQuery α) : StateT (Cache α) PMF α 
     match invLookup cache y with
     | some x => PMF.pure (x, cache)
     | none => (PMF.uniformOfFintype α).map fun x => (x, (x, y) :: cache)
+
+/-- On a forward cache hit `cache.lookup x = some y`, `forgetfulAnswer` returns `(y, cache)`. -/
+theorem forgetfulAnswer_forward_of_some {x y : α} {cache : Cache α}
+    (h : cache.lookup x = some y) :
+    forgetfulAnswer (.forward x) cache = PMF.pure (y, cache) := by
+  simp [forgetfulAnswer, h]
+
+/-- On a forward cache miss `cache.lookup x = none`, `forgetfulAnswer` samples `y` uniformly from
+`α` and prepends `(x, y)` to `cache`. -/
+theorem forgetfulAnswer_forward_of_none {x : α} {cache : Cache α}
+    (h : cache.lookup x = none) :
+    forgetfulAnswer (.forward x) cache =
+      (PMF.uniformOfFintype α).map fun y => (y, (x, y) :: cache) := by
+  simp [forgetfulAnswer, h]
+
+/-- On an inverse cache hit `invLookup cache y = some x`, `forgetfulAnswer` returns `(x, cache)`. -/
+theorem forgetfulAnswer_inverse_of_some {y x : α} {cache : Cache α}
+    (h : invLookup cache y = some x) :
+    forgetfulAnswer (.inverse y) cache = PMF.pure (x, cache) := by
+  simp [forgetfulAnswer, h]
+
+/-- On an inverse cache miss `invLookup cache y = none`, `forgetfulAnswer` samples `x` uniformly
+from `α` and prepends `(x, y)` to `cache`. -/
+theorem forgetfulAnswer_inverse_of_none {y : α} {cache : Cache α}
+    (h : invLookup cache y = none) :
+    forgetfulAnswer (.inverse y) cache =
+      (PMF.uniformOfFintype α).map fun x => (x, (x, y) :: cache) := by
+  simp [forgetfulAnswer, h]
+
+/-- Interpreting a `bidirDedupStep`-wrapped program against i.i.d. uniform answers from `α` produces
+the exact same joint result and cache distribution as `forgetfulAnswer`. -/
+theorem interpret_run_bidirDedupStep_uniformOfFintype {β : Type}
+    (program : OracleComp (PermOracleSpec α) β) (cache : Cache α) :
+    OracleComp.interpret (fun _ : PermQuery α => PMF.uniformOfFintype α)
+      ((OracleComp.interpret bidirDedupStep program).run cache) =
+    (OracleComp.interpret forgetfulAnswer program).run cache := by
+  induction program using OracleComp.induction generalizing cache with
+  | pure a => rfl
+  | query_bind q cont ih =>
+    simp only [OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind]
+    change ((OracleComp.interpret (fun _ : PermQuery α => PMF.uniformOfFintype α)
+      (bidirDedupStep q cache)).bind fun p =>
+        OracleComp.interpret (fun _ : PermQuery α => PMF.uniformOfFintype α)
+          ((OracleComp.interpret bidirDedupStep (cont p.1)).run p.2)) =
+      ((forgetfulAnswer q cache).bind fun p =>
+        (OracleComp.interpret forgetfulAnswer (cont p.1)).run p.2)
+    cases q with
+    | forward x =>
+      cases h : cache.lookup x with
+      | some y =>
+        rw [bidirDedupStep_forward_of_some h, forgetfulAnswer_forward_of_some h]
+        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
+        exact ih y cache
+      | none =>
+        rw [bidirDedupStep_forward_of_none h, forgetfulAnswer_forward_of_none h]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure]
+        exact congrArg (PMF.bind _) (funext fun y => ih y ((x, y) :: cache))
+    | inverse y =>
+      cases h : invLookup cache y with
+      | some x =>
+        rw [bidirDedupStep_inverse_of_some h, forgetfulAnswer_inverse_of_some h]
+        simp only [OracleComp.interpret_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_bind]
+        exact ih x cache
+      | none =>
+        rw [bidirDedupStep_inverse_of_none h, forgetfulAnswer_inverse_of_none h]
+        simp only [pmf_norm, OracleComp.interpret_bind, OracleComp.interpret_query,
+          OracleComp.interpret_pure]
+        exact congrArg (PMF.bind _) (funext fun x => ih x ((x, y) :: cache))
+
+/-- Interpreting `bidirDedup program` against i.i.d. uniform answers from `α` produces the exact
+same joint result and cache distribution as `(OracleComp.interpret forgetfulAnswer program).run []`.
+-/
+theorem interpret_bidirDedup_uniformOfFintype {β : Type}
+    (program : OracleComp (PermOracleSpec α) β) :
+    OracleComp.interpret (fun _ : PermQuery α => PMF.uniformOfFintype α)
+      (bidirDedup program) =
+    (OracleComp.interpret forgetfulAnswer program).run [] :=
+  interpret_run_bidirDedupStep_uniformOfFintype program []
 
 /-- On forward-only programs (`liftForward`), `forgetfulAnswer` never queries `invLookup`, so its
 joint result and cache distribution is identical to `memoize (fun _ => PMF.uniformOfFintype α)`. -/
@@ -1288,7 +1844,7 @@ theorem uniformPerm_bind_apply_le_forgetful {β γ : Type}
   rw [uniform_interpret_eq_lazy,
     ← run_interpret_exactWithBad_map_fst program [] false isPartialBijection_nil,
     ← run_interpret_forgetfulWithBad_map_fst program [] false]
-  simp only [PMF.map_comp, Function.comp_def, PMF.bind_map]
+  simp only [pmf_norm]
   have hdiff := identicalUntilBad_exactWithBad_forgetfulWithBad.bind_apply_le
     program ([], false) (fun x => next x.1) c
   rw [identicalUntilBad_exactWithBad_forgetfulWithBad.bad_eq] at hdiff
@@ -1310,7 +1866,7 @@ theorem forgetfulAnswer_bind_apply_le_uniformPerm {β γ : Type}
   rw [uniform_interpret_eq_lazy,
     ← run_interpret_exactWithBad_map_fst program [] false isPartialBijection_nil,
     ← run_interpret_forgetfulWithBad_map_fst program [] false]
-  simp only [PMF.map_comp, Function.comp_def, PMF.bind_map]
+  simp only [pmf_norm]
   have hdiff := identicalUntilBad_exactWithBad_forgetfulWithBad.symm.bind_apply_le
     program ([], false) (fun x => next x.1) c
   refine hdiff.trans (add_le_add le_rfl ?_)
@@ -1447,7 +2003,7 @@ theorem abs_sub_uniformPerm_forgetful_le {β γ : Type}
   rw [uniform_interpret_eq_lazy,
     ← run_interpret_exactWithBad_map_fst program [] false isPartialBijection_nil,
     ← run_interpret_forgetfulWithBad_map_fst program [] false]
-  simp only [PMF.map_comp, Function.comp_def, PMF.bind_map]
+  simp only [pmf_norm]
   have hdiff := identicalUntilBad_exactWithBad_forgetfulWithBad.abs_sub_le
     program ([], false) (fun x => next x.1) c
   rw [identicalUntilBad_exactWithBad_forgetfulWithBad.bad_eq] at hdiff

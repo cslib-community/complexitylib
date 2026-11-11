@@ -9,6 +9,7 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.CyclicConvolution.Term
 public import Complexity.Computability.WordRAM.Signed.Fits
+import Complexity.Computability.WordRAM.CountingLoop
 
 /-!
 # A complete native cyclic-convolution coefficient
@@ -78,18 +79,16 @@ theorem exec_coefficient {w p r A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
       y.regs Reg.coefficient = r + 1 ∧
       y.mem = Function.update x.mem (x.regs Reg.output + r) (encode (convolution p u v r)) ∧
       ∀ i, 9 ≤ i.val ∧ (i.val ≤ 12 ∨ 18 ≤ i.val) → y.regs i = x.regs i := by
-  let I (y : Data 32) : Prop :=
+  let P (j : ℕ) (y : Data 32) : Prop :=
     (∀ i, ¬TermLocal i → y.regs i = x.regs i) ∧
-    y.regs Reg.index ≤ p ∧
-    y.regs Reg.accumulator = encode (partialConvolution p u v r (y.regs Reg.index)) ∧
+    y.regs Reg.accumulator = encode (partialConvolution p u v r j) ∧
     y.mem = x.mem
-  have hbody (y : Data 32) (hy : I y) (hc : (Cond.lt Reg.index Reg.length).Holds y) :
-      ∃ z, ExecWithin (w + 2) term y z 40 ∧ I z ∧
-        p - z.regs Reg.index < p - y.regs Reg.index := by
-    obtain ⟨hregs, hi, hacc, hmem⟩ := hy
+  have hbody (y : Data 32) (hy : P (y.regs Reg.index) y) (hlt : y.regs Reg.index < p) :
+      ∃ z, ExecWithin (w + 2) term y z 40 ∧ P (y.regs Reg.index + 1) z ∧
+        z.regs Reg.index = y.regs Reg.index + 1 := by
+    obtain ⟨hregs, hacc, hmem⟩ := hy
     have hl := (hregs Reg.length (by decide)).trans hlen
     have hr' := (hregs Reg.coefficient (by decide)).trans hrow
-    have hlt : y.regs Reg.index < p := by simpa only [Cond.holds_lt, hl] using hc
     let i := y.regs Reg.index
     let j := subIndex p r i
     have hj : j < p := subIndex_lt hr hlt
@@ -101,7 +100,7 @@ theorem exec_coefficient {w p r A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
       rw [Int.natAbs_mul]
       exact (Nat.mul_le_mul (hu i hlt) (hv j hj)).trans (product_le_bound p A B))
     have hsf : GenericRAM.Signed.Fits w (partialConvolution p u v r i) :=
-      hbound.of_natAbs_le (partial_le_bound hr hi hu hv)
+      hbound.of_natAbs_le (partial_le_bound hr hlt.le hu hv)
     have hya := hregs Reg.inputA (by decide)
     have hyb := hregs Reg.inputB (by decide)
     have hwrap : Fits (w + 2) (y.regs Reg.coefficient + y.regs Reg.length) := by
@@ -119,34 +118,25 @@ theorem exec_coefficient {w p r A B : ℕ} (x : Data 32) (u v : ℕ → ℤ)
         (by rw [hmem, hya]; exact hA i hlt)
         (by simpa only [hl, hr', hmem, hyb] using hB j hj) hacc
         ((hregs Reg.one (by decide)).trans hone)
-    refine ⟨z, hz, ⟨fun k hk => (hzregs k hk).trans (hregs k hk), ?_, ?_, hzmem.trans hmem⟩, ?_⟩
-    · rw [hzi]
-      omega
-    · rw [hzi, partialConvolution_succ]
-      exact hzacc
-    · rw [hzi]
-      omega
+    refine ⟨z, hz, ⟨fun k hk => (hzregs k hk).trans (hregs k hk), ?_, hzmem.trans hmem⟩, hzi⟩
+    rw [partialConvolution_succ]
+    exact hzacc
   let x₀ := (x.set Reg.index 0).set Reg.accumulator 0
   have hzero : Fits (w + 2) 0 := Nat.two_pow_pos _
   have hinit : ExecWithin (B := .standard) (w + 2)
       (ram[ Reg.index ← #0; Reg.accumulator ← #0 ]) x x₀ 2 := by
     ram_eval [x₀, hzero]
-  have hx₀ : I x₀ := by
-    refine ⟨fun i hi => hinit.regs_eq (init_preserves i hi), ?_, ?_, rfl⟩
-    · simp +decide [x₀, Reg.index, Reg.accumulator]
-    · simp +decide [x₀, Reg.index, Reg.accumulator]
-  obtain ⟨z, hz, hzI, hstop⟩ :=
-    ExecWithin.loop_invariant I (fun z => p - z.regs Reg.index) hbody hx₀
-  obtain ⟨hzregs, hzi, hzacc, hzmem⟩ := hzI
-  have hzl := (hzregs Reg.length (by decide)).trans hlen
-  have hend : z.regs Reg.index = p := by
-    simp only [Cond.holds_lt, hzl] at hstop
-    omega
+  have hx₀ : P (x₀.regs Reg.index) x₀ := by
+    refine ⟨fun i hi => hinit.regs_eq (init_preserves i hi), ?_, rfl⟩
+    simp +decide [x₀, Reg.index, Reg.accumulator]
+  obtain ⟨z, hz, ⟨hzregs, hzacc, hzmem⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => (hy.1 Reg.length (by decide)).trans hlen) hbody
+    (by simp +decide [x₀, Reg.index, Reg.accumulator]) hx₀
   have hzr := (hzregs Reg.coefficient (by decide)).trans hrow
   have hzo := hzregs Reg.output (by decide)
   have hz1 := (hzregs Reg.one (by decide)).trans hone
   have hza : z.regs Reg.accumulator = encode (convolution p u v r) := by
-    simpa only [hend, convolution] using hzacc
+    simpa only [convolution] using hzacc
   let y := ((z.set Reg.address (x.regs Reg.output + r)).write
     (x.regs Reg.output + r) (encode (convolution p u v r))).set Reg.coefficient (r + 1)
   have hnextrow : Fits (w + 2) (r + 1) := h2p.of_le (by omega)

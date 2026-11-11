@@ -222,8 +222,7 @@ theorem exists_entryAdmissible_specNet (C : ℕ) :
             omega
         _ = (C * (n + 1) ^ C + a * (n + 1) ^ d) * 2 ^ ((C + a + d) * ceilNineTenths s) := by
             ring
-        _ ≤ (C + a + d) * (n + 1) ^ (C + a + d) * 2 ^ ((C + a + d) * ceilNineTenths s) :=
-            Nat.mul_le_mul_right _ hsplit
+        _ ≤ (C + a + d) * (n + 1) ^ (C + a + d) * 2 ^ ((C + a + d) * ceilNineTenths s) := by gcongr
     · change (specEntryCertificate entry ce).space ((u.2, P, ℓ, fl, ζ), bs) ≤
         (C + a + d) * (n + 1) ^ (C + a + d)
       have := hS.trans hbase
@@ -251,8 +250,7 @@ theorem exists_entry_le_of_entryAdmissible (C : ℕ) :
     calc C * (s + L + 1) ^ C ≤ C * (2 * (L + 1)) ^ C :=
           Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
       _ = C * 2 ^ C * (L + 1) ^ C := by rw [Nat.mul_pow, Nat.mul_assoc]
-      _ ≤ (C * 2 ^ C + C) * (L + 1) ^ (C * 2 ^ C + C) :=
-          Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right hL1 (by omega))
+      _ ≤ (C * 2 ^ C + C) * (L + 1) ^ (C * 2 ^ C + C) := by gcongr <;> omega
   have h2 : 2 ^ (C * ceilNineTenths s) ≤ 2 ^ ((C * 2 ^ C + C) * s) :=
     Nat.pow_le_pow_right (by norm_num)
       (Nat.mul_le_mul (by omega) (ceilNineTenths_le_self s))

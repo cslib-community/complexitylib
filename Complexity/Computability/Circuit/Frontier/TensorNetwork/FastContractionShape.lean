@@ -162,8 +162,7 @@ theorem nodePrec_le_add (ha : active x = true) (hM : x.edges ≤ x.scale) (j : �
     (Nat.pow_le_pow_right (by norm_num) (Nat.sub_le _ _)).trans hL
   have h2 : step x ≤ 4 * m := by omega
   have h3 : 8 * step x * 2 ^ (slots x - level x ((nodes x).getD j 0)) ≤ 32 * m ^ 2 :=
-    calc 8 * step x * 2 ^ (slots x - level x ((nodes x).getD j 0)) ≤ 8 * (4 * m) * m :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left _ h2) h1
+    calc 8 * step x * 2 ^ (slots x - level x ((nodes x).getD j 0)) ≤ 8 * (4 * m) * m := by gcongr
       _ = 32 * m ^ 2 := by ring
   have h4 : 8 * x.edges * (slots x + 1) ≤ 8 * m ^ 2 :=
     calc 8 * x.edges * (slots x + 1) ≤ 8 * m * m := Nat.mul_le_mul (Nat.mul_le_mul_left _ hM)

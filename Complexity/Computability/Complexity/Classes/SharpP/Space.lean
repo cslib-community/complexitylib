@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.In
 import Complexity.Foundations.Data.Nat.PolynomialBound.Closure
 import Mathlib.Data.Nat.Size
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import Complexity.Tactic.EncLen
 
 /-!
 # Exact counting in polynomial space
@@ -168,9 +169,7 @@ theorem computableInPolySpace_acceptCount {V : α × List Bool → Bool} {r : α
         V (a, increment^[i] (List.replicate (r a) false))).card).length ≤ r a + 1 := by
       rw [encNat_apply, Nat.size_eq_bits_len]
       exact Nat.size_le.mpr (hcard.trans_lt (Nat.pow_lt_pow_right (by norm_num) (by lia)))
-    simp only [length_encPair, encBits_apply, BitString.length_iterate_increment,
-      List.length_replicate] at hsize ⊢
-    lia
+    enc_len [BitString.length_iterate_increment] at hsize ⊢
 
 /-- Every #P function is computable in polynomial space when its output is written in binary. -/
 theorem SharpP.computableInPolySpace {f : α → ℕ} (hf : f ∈ SharpP enc) :

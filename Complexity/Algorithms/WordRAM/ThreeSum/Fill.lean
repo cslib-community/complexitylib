@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.ThreeSum.Cell
 public import Complexity.Algorithms.WordRAM.ThreeSum.Memory
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Native matrix-building loop for Convolution-3SUM
 
@@ -82,15 +84,14 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
       y.regs Cell.filler = encode A.filler := by
   let P (i : Fin 28) : Prop := i.val = 10 ∨ i.val = 11 ∨ i.val = 12 ∨
     (15 ≤ i.val ∧ i.val ≤ 19)
-  let I (y : Data 28) : Prop :=
+  let Inv (j : ℕ) (y : Data 28) : Prop :=
     (∀ i, P i → y.regs i = x.regs i) ∧ y.regs one = 1 ∧
-    y.regs area = A.t * A.t ∧ y.regs Cell.cell ≤ A.t * A.t ∧
-    y.mem = A.filled x.mem (y.regs Cell.cell)
-  have hbody (y : Data 28) (hy : I y) (hc : (Cond.lt Cell.cell area).Holds y) :
-      ∃ z, ExecWithin (w + 2) body y z 129 ∧ I z ∧
-        A.t * A.t - z.regs Cell.cell < A.t * A.t - y.regs Cell.cell := by
-    obtain ⟨hr, ho, ha, hq, hm⟩ := hy
-    have hlt : y.regs Cell.cell < A.t * A.t := by simpa only [Cond.holds_lt, ha] using hc
+    y.regs area = A.t * A.t ∧
+    y.mem = A.filled x.mem j
+  have hbody (y : Data 28) (hy : Inv (y.regs Cell.cell) y) (hlt : y.regs Cell.cell < A.t * A.t) :
+      ∃ z, ExecWithin (w + 2) body y z 129 ∧ Inv (y.regs Cell.cell + 1) z ∧
+        z.regs Cell.cell = y.regs Cell.cell + 1 := by
+    obtain ⟨hr, ho, ha, hm⟩ := hy
     have hinput : ∀ i < A.N, y.mem (A.base + i) = encode (A.values i) := by
       intro i hi
       rw [hm, A.input_filled x.mem _ hbelow (by omega) (by omega) hi]
@@ -120,7 +121,7 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
     · have hi := (ExecWithin.bin (f := BinOp.add)
         (x := z) (d := Cell.cell) (i := Cell.cell) (j := one) hinc)
       simpa only [body, BinOp.eval, hzc, hzo] using he.seq hi
-    · refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · refine ⟨?_, ?_, ?_, ?_⟩
       · intro i hi
         have hne : i ≠ Cell.cell := by
           intro h
@@ -133,15 +134,13 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
           ↓reduceIte] using hzo
       · simpa +decide only [Data.set_regs, Function.update_apply, area, Cell.cell,
           ↓reduceIte] using hza
-      · simpa only [Data.set_regs, Function.update_self] using Nat.succ_le_of_lt hlt
-      · simpa only [Data.set_mem, Data.set_regs, Function.update_self] using hmemory
+      · exact hmemory
     · simp only [Data.set_regs, Function.update_self]
-      omega
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
   have harea : Fits (w + 2) (A.t * A.t) := hacfit.of_le (by omega)
   let x₀ := ((x.set Cell.cell 0).set one 1).set area (A.t * A.t)
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  have hx₀ : Inv (x₀.regs Cell.cell) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_⟩
     · intro i hi
       have hic : i ≠ Cell.cell := by
         intro h
@@ -166,14 +165,9 @@ theorem exec {w : ℕ} (A : Args) (x : Data 28)
     · simp +decide [x₀, one, area, Cell.cell]
     · simp [x₀]
     · simp +decide [x₀, one, area, Cell.cell]
-    · simp +decide [x₀, one, area, Cell.cell]
-  obtain ⟨y, he, hy, hc⟩ := ExecWithin.loop_invariant I
-    (fun y => A.t * A.t - y.regs Cell.cell) hbody hx₀
-  obtain ⟨hr, ho, ha, hq, hm⟩ := hy
-  have hend : y.regs Cell.cell = A.t * A.t := by
-    simp only [Cond.holds_lt, ha] at hc
-    omega
-  refine ⟨y, ?_, by simpa only [hend] using hm,
+  obtain ⟨y, he, ⟨hr, _, _, hm⟩, _⟩ := ExecWithin.loop_count Inv
+    (fun _ hy => hy.2.2.1) hbody (by simp +decide [x₀, Cell.cell, area, one]) hx₀
+  refine ⟨y, ?_, hm,
     (hr Cell.side (by decide)).trans ht, (hr Cell.inst (by decide)).trans hs,
     (hr Cell.matAB (by decide)).trans hab, (hr Cell.matBC (by decide)).trans hbc,
     (hr Cell.matAC (by decide)).trans hac, (hr Cell.len (by decide)).trans hlen,

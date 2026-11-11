@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import Complexity.Algorithms.WordRAM.ExactTriangle.PreparationAdjacency
+public import Complexity.Algorithms.WordRAM.ExactTriangle.RecordProduct.RecordData
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Callable.Width
 public import Complexity.Algorithms.WordRAM.NatLog
 public import Complexity.Computability.WordRAM.Copy

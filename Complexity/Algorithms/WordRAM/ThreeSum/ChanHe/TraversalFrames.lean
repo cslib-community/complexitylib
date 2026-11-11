@@ -59,6 +59,24 @@ def Entry.words (e : Entry) : List ℕ :=
 /-- The unchanged finite recursion task represented by an entry. -/
 def Entry.task (e : Entry) : Math.Task := ⟨e.fuel, fun j => (e.data j).toFinset⟩
 
+/-- A zero-fuel or empty-column native entry has no mathematical emission. -/
+theorem Entry.step_of_skip (Q : Finset ℕ) (Λ : ℕ) (e : Entry) (es : List Entry)
+    (hskip : e.fuel = 0 ∨ (e.data 0).length = 0 ∨
+      (e.data 1).length = 0 ∨ (e.data 2).length = 0) :
+    Math.step Q Λ e.task (es.map Entry.task) = (es.map Entry.task, none) := by
+  by_cases hf : e.fuel = 0
+  · simp only [Math.step, Entry.task, hf]
+  · have hempty : e.task.empty := by
+      simp only [Math.Task.empty, Entry.task, List.toFinset_eq_empty_iff]
+      rcases hskip with hf' | h₀ | h₁ | h₂
+      · exact (hf hf').elim
+      · exact Or.inl (List.eq_nil_of_length_eq_zero h₀)
+      · exact Or.inr (Or.inl (List.eq_nil_of_length_eq_zero h₁))
+      · exact Or.inr (Or.inr (List.eq_nil_of_length_eq_zero h₂))
+    cases he : e.fuel with
+    | zero => exact (hf he).elim
+    | succ f => simp only [Math.step, show e.task.fuel = f + 1 from he, hempty, ↓reduceIte]
+
 /-- Total extension of the compact list for the existing native array APIs. -/
 def Entry.read (e : Entry) (j : Fin 3) (i : ℕ) : ℤ := (e.data j).getD i 0
 

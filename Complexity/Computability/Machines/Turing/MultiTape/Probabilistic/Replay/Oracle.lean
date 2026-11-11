@@ -42,6 +42,8 @@ supplied random coins for a closed machine using an additional work tape.
   output are polynomial-time.
 * `Turing.MultiTapePTM.length_pendingRequest_replayPrefix_le`: request size is bounded by the
   number of elapsed instructions.
+* `Turing.MultiTapePTM.eq_oracleReplies_iff`: a transcript is canonical exactly when every bit is
+  the reply to the query pending after its prefix.
 * `Turing.MultiTapePTM.replayOutput_oracleReplies`: canonical replay is the certified oracle run.
 
 ## References
@@ -350,6 +352,45 @@ theorem getD_oracleReplies (g : List Bool → Bool) (fuel : ℕ) (input : List B
         else false := by
   rw [replayPrefix_oracleReplies, Nat.min_eq_left hindex.le]
   exact machine.getD_oracleRepliesFrom g _ fuel index hindex
+
+/-- **The canonical transcript is characterized by its reply equations.** A transcript is the
+canonical transcript of its own length exactly when each of its bits is the reply to the query
+pending after replay of the preceding bits, and `false` when no query is pending. -/
+theorem eq_oracleReplies_iff (g : List Bool → Bool) (input answers : List Bool) :
+    answers = machine.oracleReplies g answers.length input ↔
+      ∀ i < answers.length, answers.getD i false =
+        let cfg := machine.replayPrefix input answers i
+        if (machine.pendingQuery cfg).isSome then g (machine.pendingRequest cfg) else false := by
+  constructor
+  · intro h i hi
+    have hstep := machine.getD_oracleReplies g answers.length input i hi
+    rwa [← h] at hstep
+  · intro h
+    set oracle := machine.oracleReplies g answers.length input
+    have hlen_or : oracle.length = answers.length :=
+      machine.length_oracleReplies g answers.length input
+    have htake : ∀ m ≤ answers.length, answers.take m = oracle.take m := by
+      intro m hm
+      induction m with
+      | zero => rfl
+      | succ m ih =>
+        have hm_lt : m < answers.length := Nat.lt_of_succ_le hm
+        have hm_or : m < oracle.length := hlen_or ▸ hm_lt
+        have ih_m : answers.take m = oracle.take m := ih hm_lt.le
+        have hcfg : machine.replayPrefix input answers m =
+            machine.replayPrefix input oracle m := by
+          simp only [replayPrefix, ih_m]
+        have hbit : answers[m] = oracle[m] := by
+          rw [← List.getD_eq_getElem answers false hm_lt,
+            ← List.getD_eq_getElem oracle false hm_or,
+            h m hm_lt, machine.getD_oracleReplies g answers.length input m hm_lt, hcfg]
+        calc
+          answers.take (m + 1) = answers.take m ++ [answers[m]] :=
+            List.take_succ_eq_append_getElem hm_lt
+          _ = oracle.take m ++ [oracle[m]] := by rw [ih_m, hbit]
+          _ = oracle.take (m + 1) := (List.take_succ_eq_append_getElem hm_or).symm
+    have := htake answers.length le_rfl
+    rwa [List.take_length, List.take_of_length_le hlen_or.le] at this
 
 /-- Replayed canonical outputs agree exactly with interpretation of the clocked oracle program. -/
 theorem replayOutput_oracleReplies (g : List Bool → Bool) (fuel : ℕ) (input : List Bool) :

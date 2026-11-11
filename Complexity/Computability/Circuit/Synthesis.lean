@@ -30,6 +30,7 @@ ordinary `Synthesis` certificates; they do not search for a cheaper construction
 ## Main results
 
 * `Cslib.Circuits.Synthesis.circuit`: applying a circuit costs its number of gates.
+* `Cslib.Circuits.Synthesis.extend`: append a construction fed by the wires built so far.
 * `Cslib.Circuits.Synthesis.Builder.finish`: select outputs within a requested gate budget.
 
 ## References
@@ -69,6 +70,14 @@ namespace Synthesis
 
 variable {s : Set ((Fin n → U) → U)}
 
+/-- Append a construction whose inputs are among the targets built so far, keeping those targets
+available. This is the certificate behind `Builder.add`. The new family `u` is explicit, so a
+chain of `extend` steps accumulates the syntactic union `s ∪ t₁ ∪ ⋯ ∪ tₖ`, and membership in it
+can be checked without unfolding. -/
+theorem extend {t : Set ((Fin n → U) → U)} {a b : ℕ} (h : Synthesis I s t a)
+    (u : Set ((Fin n → U) → U)) (h' : Synthesis I t u b) : Synthesis I s (t ∪ u) (a + b) :=
+  h.comp (h'.mono Set.subset_union_right Set.Subset.rfl le_rfl)
+
 /-- A sequence of certified constructions, including every wire available along the way. -/
 structure Builder (I : Interpretation σ U) (s : Set ((Fin n → U) → U)) where
   /-- Original sources and all outputs built so far. -/
@@ -87,8 +96,7 @@ def start (I : Interpretation σ U) (s : Set ((Fin n → U) → U)) : Builder I 
 /-- Append a construction whose inputs are available, retaining both old and new wires. -/
 def add (b : Builder I s) {t : Set ((Fin n → U) → U)} {k : ℕ}
     (h : Synthesis I b.wires t k) : Builder I s :=
-  ⟨b.wires ∪ t, b.cost + k,
-    b.bound.comp (h.mono Set.subset_union_right Set.Subset.rfl le_rfl)⟩
+  ⟨b.wires ∪ t, b.cost + k, b.bound.extend t h⟩
 
 /-- Select outputs from the final wires and enlarge the accumulated budget. -/
 theorem finish (b : Builder I s) {t : Set ((Fin n → U) → U)} {k : ℕ}

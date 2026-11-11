@@ -66,7 +66,7 @@ open Cslib.BitString (bitVal monomial monomialSum clearedMonomialPoly clearedMon
   monomialSum_zmod_two_eq_zero_iff_even eval_zero_clearedMonomialPoly
   eval_zero_clearedMonomialSumPoly)
 open Cslib.Complexity (IsCanonicalMonomial IsCanonicalEquation evalMonomialList
-  bitVal_evalMonomialList_eq_sum_monomial)
+  bitVal_evalMonomialList_eq_sum_monomial encSparseEquation)
 
 private lemma getD_truncZJet_of_lt {J j : ℕ} (hj : j < J) (u : List ℤ) :
     (truncZJet J u).getD j 0 = u.getD j 0 := List.getD_map_range _ 0 hj
@@ -931,17 +931,17 @@ theorem length_encIntBin_evalEquationParityFactorJet_le {J ℓ k B₀ : ℕ} {dD
         8 * ℓ ^ 2 + 2 * ℓ * (eq.length * B₀ ^ k + dDen.natAbs ^ k + 2).size + 2 := by
   obtain ⟨hsum, hmem⟩ := length_encIntBin_evalParityFactorJet_le hr m
   have hy := (polyNorm1_take_le _ J).trans (polyNorm1_evalClearedEquationJet_le hd hjets hdeg)
-  have hsize : (polyNorm1 ((evalClearedEquationJet J k dDen varJets eq).take J) +
-      (dDen ^ k).natAbs + 2).size ≤ (eq.length * B₀ ^ k + dDen.natAbs ^ k + 2).size := by
-    rw [Int.natAbs_pow]; exact Nat.size_le_size (by omega)
-  refine ⟨by nlinarith, fun z hz => ?_⟩
-  have hmz := hmem z hz; nlinarith
+  have hsize : 2 * ℓ * (polyNorm1 ((evalClearedEquationJet J k dDen varJets eq).take J) +
+      (dDen ^ k).natAbs + 2).size ≤ 2 * ℓ * (eq.length * B₀ ^ k + dDen.natAbs ^ k + 2).size := by
+    rw [Int.natAbs_pow]; exact Nat.mul_le_mul_left _ (Nat.size_le_size (by omega))
+  exact ⟨by omega, fun z hz => by have := hmem z hz; omega⟩
 
 /-! ### 5. Plain polynomial-time certificates (`ComputableInPolyTime`) -/
 
 section PolyTime
 
 open Turing MultiTapeTM MultiTapeTM.ComputableInPolyTime
+attribute [local irreducible] ComputableInPolyTime
 
 variable {α : Type} {encIn : α ↪ List Bool}
 
@@ -1033,7 +1033,7 @@ Boolean list encoding `encX` (both `encBits` and `encList encBool`). -/
 @[fun_prop] theorem computableInPolyTime_evalBaselineAt {encX : List Bool ↪ List Bool}
     {t : α → ℤ} {rowCoeffs : α → List (List ℤ)} {x : α → List Bool}
     (ht : ComputableInPolyTime t encIn encIntBin)
-    (hrow : ComputableInPolyTime rowCoeffs encIn (encList (encList encIntBin)))
+    (hrow : ComputableInPolyTime rowCoeffs encIn encIntTable)
     (hx : ComputableInPolyTime x encIn encX)
     [ListEncoding encBool encX] [SizedListEncoding encBool encX] :
     ComputableInPolyTime (fun a => evalBaselineAt (t a) (rowCoeffs a) (x a)) encIn encIntBin := by
@@ -1041,74 +1041,54 @@ Boolean list encoding `encX` (both `encBits` and `encList encBool`). -/
   have ha := fst encIn encUnary; have hu := snd encIn encUnary
   have hxu := listGetD_binary (encA := encBool) (encL := encX) false
     (hx.comp ha) (unary_to_binary.comp hu)
-  have hcu : ComputableInPolyTime (fun p : α × ℕ => (rowCoeffs p.1).getD p.2 [])
-      (encPair encIn encUnary) (encList encIntBin) :=
+  have hcu :=
     listGetD_binary (encA := encList encIntBin) [] (hrow.comp ha) (unary_to_binary.comp hu)
   have hshift := computableInPolyTime_taylorShiftZJet (const 1) (ht.comp ha) hcu
   have hval := (listGetD (encA := encIntBin) (encL := encList encIntBin) 0).comp
     (hshift.prod (const 0))
-  have hbody : ComputableInPolyTime
-      (fun p : α × ℕ => if (x p.1).getD p.2 false then
-        (taylorShiftZJet 1 (t p.1) ((rowCoeffs p.1).getD p.2 [])).getD 0 0 else 0)
-      (encPair encIn encUnary) encIntBin := by
-    simpa only [Function.comp_apply] using hxu.ite' hval (const 0)
-  unfold evalBaselineAt; exact intBin_sum_polytime.comp (mapWithInput hrange hbody)
+  exact intBin_sum_polytime.comp (mapWithInput hrange (hxu.ite' hval (const 0)))
 
 /-- Compositional plain polynomial-time certificate for `evalTaylorCorrectionZJet` supporting any
 sized Boolean list encoding `encU` (both `encBits` and `encList encBool`). -/
 @[fun_prop] theorem computableInPolyTime_evalTaylorCorrectionZJet {encU : List Bool ↪ List Bool}
     {J : α → ℕ} {t : α → ℤ} {rowCoeffs : α → List (List ℤ)} {U : α → List Bool}
     (hJ : ComputableInPolyTime J encIn encUnary) (ht : ComputableInPolyTime t encIn encIntBin)
-    (hrow : ComputableInPolyTime rowCoeffs encIn (encList (encList encIntBin)))
+    (hrow : ComputableInPolyTime rowCoeffs encIn encIntTable)
     (hU : ComputableInPolyTime U encIn encU)
     [ListEncoding encBool encU] [SizedListEncoding encBool encU] :
     ComputableInPolyTime (fun a => evalTaylorCorrectionZJet (J a) (t a) (rowCoeffs a) (U a))
       encIn (encList encIntBin) := by
-  let uTerm (a : α) (u : ℕ) : List ℤ :=
-    if (U a).getD u false then
-      combineAffineInputZJet (J a) 0 (taylorShiftZJet (J a) (t a) ((rowCoeffs a).getD u []))
-    else truncZJet (J a) []
   have hrangeU := range.comp ((length_list (encList encIntBin)).comp hrow)
   have ha := fst encIn encUnary; have hu := snd encIn encUnary
   have hUu := listGetD_binary (encA := encBool) (encL := encU) false
     (hU.comp ha) (unary_to_binary.comp hu)
-  have hcu : ComputableInPolyTime (fun p : α × ℕ => (rowCoeffs p.1).getD p.2 [])
-      (encPair encIn encUnary) (encList encIntBin) :=
+  have hcu :=
     listGetD_binary (encA := encList encIntBin) [] (hrow.comp ha) (unary_to_binary.comp hu)
   have hshift := computableInPolyTime_taylorShiftZJet (hJ.comp ha) (ht.comp ha) hcu
   have hjetT := computableInPolyTime_combineAffineInputZJet (hJ.comp ha) (const 0) hshift
   have hjetF := computableInPolyTime_truncZJet (hJ.comp ha) (const [])
-  have hbodyU : ComputableInPolyTime (fun p : α × ℕ => uTerm p.1 p.2)
-      (encPair encIn encUnary) (encList encIntBin) := by
-    simpa only [uTerm, Function.comp_apply] using hUu.ite' hjetT hjetF
-  have huJets : ComputableInPolyTime
-      (fun a => (List.range (rowCoeffs a).length).map (uTerm a))
-      encIn (encList (encList encIntBin)) := mapWithInput hrangeU hbodyU
-  have hcol : ComputableInPolyTime
-      (fun p : (α × ℕ) × List ℤ => p.2.getD p.1.2 0)
-      (encPair (encPair encIn encUnary) (encList encIntBin)) encIntBin :=
-    (listGetD (encA := encIntBin) (encL := encList encIntBin) 0).comp
-      ((snd (encPair encIn encUnary) (encList encIntBin)).prod
-        ((fst (encPair encIn encUnary) (encList encIntBin)).snd'))
-  have hsumJ : ComputableInPolyTime
-      (fun p : α × ℕ => (((List.range (rowCoeffs p.1).length).map (uTerm p.1)).map
-        fun q => q.getD p.2 0).sum)
-      (encPair encIn encUnary) encIntBin := intBin_sum_polytime.comp (mapWithInput (huJets.comp ha)
-        hcol)
-  unfold evalTaylorCorrectionZJet; exact mapWithInput (range.comp hJ) hsumJ
+  have huJets := mapWithInput
+    (f := fun a u => if (U a).getD u false then
+      combineAffineInputZJet (J a) 0 (taylorShiftZJet (J a) (t a) ((rowCoeffs a).getD u []))
+      else truncZJet (J a) []) hrangeU (hUu.ite' hjetT hjetF)
+  have hcol := (listGetD (encA := encIntBin) (encL := encList encIntBin) 0).comp
+    ((snd (encPair encIn encUnary) (encList encIntBin)).prod
+      ((fst (encPair encIn encUnary) (encList encIntBin)).snd'))
+  exact mapWithInput (range.comp hJ) (intBin_sum_polytime.comp (mapWithInput (huJets.comp ha) hcol))
 
 /-- Compositional plain polynomial-time certificate for `evalAffineInputZJet` supporting both
 `encBits` and `encList encBool` for `(U, x)`. -/
 @[fun_prop] theorem computableInPolyTime_evalAffineInputZJet {encU encX : List Bool ↪ List Bool}
     {J : α → ℕ} {t : α → ℤ} {rowCoeffs : α → List (List ℤ)} {U x : α → List Bool}
     (hJ : ComputableInPolyTime J encIn encUnary) (ht : ComputableInPolyTime t encIn encIntBin)
-    (hrow : ComputableInPolyTime rowCoeffs encIn (encList (encList encIntBin)))
+    (hrow : ComputableInPolyTime rowCoeffs encIn encIntTable)
     (hU : ComputableInPolyTime U encIn encU) (hx : ComputableInPolyTime x encIn encX)
     [ListEncoding encBool encU] [SizedListEncoding encBool encU]
     [ListEncoding encBool encX] [SizedListEncoding encBool encX] :
     ComputableInPolyTime (fun a => evalAffineInputZJet (J a) (t a) (rowCoeffs a) (U a) (x a))
-      encIn (encList encIntBin) :=
-  computableInPolyTime_combineAffineInputZJet hJ (computableInPolyTime_evalBaselineAt ht hrow hx)
+      encIn (encList encIntBin) := by
+  exact computableInPolyTime_combineAffineInputZJet hJ
+    (computableInPolyTime_evalBaselineAt ht hrow hx)
     (computableInPolyTime_evalTaylorCorrectionZJet hJ ht hrow hU)
 
 /-- Compositional plain polynomial-time certificate for `evalAffineInputZJetTable` supporting both
@@ -1117,20 +1097,16 @@ sized Boolean list encoding `encU` (both `encBits` and `encList encBool`). -/
     {encU encX : List Bool ↪ List Bool}
     {J : α → ℕ} {t : α → ℤ} {rowsCoeffs : α → List (List (List ℤ))} {U x : α → List Bool}
     (hJ : ComputableInPolyTime J encIn encUnary) (ht : ComputableInPolyTime t encIn encIntBin)
-    (hrows : ComputableInPolyTime rowsCoeffs encIn (encList (encList (encList encIntBin))))
+    (hrows : ComputableInPolyTime rowsCoeffs encIn (encList encIntTable))
     (hU : ComputableInPolyTime U encIn encU) (hx : ComputableInPolyTime x encIn encX)
     [ListEncoding encBool encU] [SizedListEncoding encBool encU]
     [ListEncoding encBool encX] [SizedListEncoding encBool encX] :
     ComputableInPolyTime (fun a => evalAffineInputZJetTable (J a) (t a) (rowsCoeffs a) (U a) (x a))
-      encIn (encList (encList encIntBin)) := by
+      encIn encIntTable := by
   let encRow := encList (encList encIntBin)
-  have hp1 : ComputableInPolyTime (Prod.fst (α := α) (β := List (List ℤ)))
-      (encPair encIn encRow) encIn := fst encIn encRow
-  have hp2 : ComputableInPolyTime (Prod.snd (α := α) (β := List (List ℤ)))
-      (encPair encIn encRow) encRow := snd encIn encRow
-  unfold evalAffineInputZJetTable
+  have hp1 := fst encIn encRow
   exact mapWithInput hrows (computableInPolyTime_evalAffineInputZJet
-    (hJ.comp hp1) (ht.comp hp1) hp2 (hU.comp hp1) (hx.comp hp1))
+    (hJ.comp hp1) (ht.comp hp1) (snd encIn encRow) (hU.comp hp1) (hx.comp hp1))
 
 private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List (List ℤ)}
     {mon : α → List ℕ}
@@ -1149,12 +1125,11 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
         encNat)
       (encList encIntBin) := by
     let encLeft := encPair (encPair encUnary (encList (encList encIntBin))) (encList encIntBin)
-    have hget : ComputableInPolyTime
-        (fun p : ((ℕ × List (List ℤ)) × List ℤ) × ℕ => p.1.1.2.getD p.2 [])
-        (encPair encLeft encNat) (encList encIntBin) :=
-      listGetD_binary (encA := encList encIntBin) []
-        (fst encLeft encNat).fst'.snd' (snd encLeft encNat)
-    dsimp only [stepFn]; fun_prop
+    have hJ' := (fst encLeft encNat).fst'.fst'
+    have hget := listGetD_binary (encA := encList encIntBin) []
+      (fst encLeft encNat).fst'.snd' (snd encLeft encNat)
+    exact computableInPolyTime_mulZJet hJ' (fst encLeft encNat).snd'
+      (computableInPolyTime_truncZJet hJ' hget)
   let bElem (Lv Lm : ℕ) : ℕ := 2 * Lv * Lm + 2
   let bound (n Lv Lm : ℕ) : ℕ := n * (2 * bElem Lv Lm + 1)
   have hLv := hvarJets.polyBounded_length; have hLm := hmon.polyBounded_length
@@ -1186,7 +1161,7 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hk : ComputableInPolyTime k encIn encUnary)
     (hdDen : ComputableInPolyTime dDen encIn encIntBin)
-    (hvarJets : ComputableInPolyTime varJets encIn (encList (encList encIntBin)))
+    (hvarJets : ComputableInPolyTime varJets encIn encIntTable)
     (hmon : ComputableInPolyTime mon encIn (encList encNat)) :
     ComputableInPolyTime
       (fun x => evalClearedMonomialJet (J x) (k x) (dDen x) (varJets x) (mon x))
@@ -1203,8 +1178,8 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
     (hJ : ComputableInPolyTime J encIn encUnary)
     (hk : ComputableInPolyTime k encIn encUnary)
     (hdDen : ComputableInPolyTime dDen encIn encIntBin)
-    (hvarJets : ComputableInPolyTime varJets encIn (encList (encList encIntBin)))
-    (heq : ComputableInPolyTime eq encIn (encList (encList encNat))) :
+    (hvarJets : ComputableInPolyTime varJets encIn encIntTable)
+    (heq : ComputableInPolyTime eq encIn encSparseEquation) :
     ComputableInPolyTime
       (fun x => evalClearedEquationJet (J x) (k x) (dDen x) (varJets x) (eq x))
       encIn (encList encIntBin) := by
@@ -1281,12 +1256,12 @@ private theorem prodMonomialJet_polytime {J : α → ℕ} {varJets : α → List
     (hℓ : ComputableInPolyTime ℓ encIn encUnary)
     (hk : ComputableInPolyTime k encIn encUnary)
     (hdDen : ComputableInPolyTime dDen encIn encIntBin)
-    (hvarJets : ComputableInPolyTime varJets encIn (encList (encList encIntBin)))
-    (heq : ComputableInPolyTime eq encIn (encList (encList encNat))) :
+    (hvarJets : ComputableInPolyTime varJets encIn encIntTable)
+    (heq : ComputableInPolyTime eq encIn encSparseEquation) :
     ComputableInPolyTime
       (fun x => evalEquationParityFactorJet (J x) (ℓ x) (k x) (dDen x) (varJets x) (eq x))
-      encIn (encList (encList encIntBin)) :=
-  computableInPolyTime_evalParityFactorJet hJ hℓ (intBin_pow_polytime hdDen hk)
+      encIn encIntTable := by
+  exact computableInPolyTime_evalParityFactorJet hJ hℓ (intBin_pow_polytime hdDen hk)
     (computableInPolyTime_evalClearedEquationJet hJ hk hdDen hvarJets heq)
 
 end PolyTime

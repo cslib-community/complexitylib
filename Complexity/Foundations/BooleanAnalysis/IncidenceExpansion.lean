@@ -150,25 +150,6 @@ section Expansion
 
 variable [CommRing R] [Fintype ι] [DecidableEq ι]
 
-/-- **A local function in the monomials of its scope**: if `g` depends only on the coordinates in
-`I`, then `g x` is the sum over the subsets `S ⊆ I` of the subset Möbius transform of
-`T ↦ g 1_T` at `S`, times the monomial of `S` at `x`. -/
-theorem eq_sum_subsetMobius_of_local {I : Finset ι} {g : (ι → Bool) → R}
-    (hg : ∀ x y : ι → Bool, (∀ v ∈ I, x v = y v) → g x = g y) (x : ι → Bool) :
-    g x = ∑ S ∈ I.powerset, subsetMobius (fun T => g fun v => decide (v ∈ T)) S *
-      if ∀ v ∈ S, x v = true then 1 else 0 := by
-  set W := I.filter fun v => x v = true
-  have hgx : g x = g fun v => decide (v ∈ W) :=
-    hg _ _ fun v hv => by simp only [W, mem_filter, hv, true_and, Bool.decide_eq_true]
-  rw [hgx, ← sum_powerset_subsetMobius (fun T => g fun v => decide (v ∈ T)) W]
-  simp only [mul_ite, mul_one, mul_zero]
-  rw [← sum_filter]
-  refine sum_congr ?_ fun _ _ => rfl
-  ext S
-  simp only [mem_powerset, mem_filter, W, subset_iff]
-  exact ⟨fun h => ⟨fun v hv => (h hv).1, fun v hv => (h hv).2⟩,
-    fun h v hv => ⟨h.1 hv, h.2 v hv⟩⟩
-
 variable [Fintype κ] [DecidableEq κ]
 
 /-- **The incidence expansion of a cube sum.** If every `g i` depends only on the coordinates in

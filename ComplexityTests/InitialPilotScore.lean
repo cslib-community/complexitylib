@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of allocated initial-pilot calls)
-import Complexity.Foundations.Probability.InitialPilotCompleted
+import Complexity.Computability.LogSpaceDerandomization.InitialPilotCompleted
 import Complexity.Foundations.Combinatorics.Expander.LowerBound
 
 /-! Actual source-correlated RAW/score calls, including positive allocated walks. -/

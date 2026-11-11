@@ -178,8 +178,7 @@ theorem iterate_spec {initial : α → σ} {count : α → ℕ}
     have hcomp := hprepare'.comp true
       (prog₂ := fun _ => OracleComp.iterate (count a) wordStep start)
       (t₂ := loopTime a) (fun word State oracle s s' hword => by
-        simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-          PMF.mem_support_pure_iff] at hword
+        simp only [ProbOracleComp.runWith_pure, PMF.mem_support_pure_iff] at hword
         obtain ⟨rfl, rfl⟩ := Prod.mk.inj hword
         exact hrun)
     have hstart : start = encode (0 + count a, initial a) := by simp [start]

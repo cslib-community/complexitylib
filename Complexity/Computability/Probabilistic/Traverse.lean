@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Poly
 public import Complexity.Computability.Probabilistic.PPT
 public import Complexity.Languages.Probabilistic.Traverse
 import Complexity.Probability.PMF.Bind
+import Complexity.Languages.Probabilistic.Traverse.CoinTape
 import Complexity.Computability.Probabilistic.CoinTape
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Computability.Probabilistic.PPT.Capture
@@ -38,26 +39,6 @@ deterministic list calculus charges the traversal, row extraction and complete o
 namespace Cslib.Probability
 
 open Turing.MultiTapeTM
-
-private theorem eval_mapM_of_uniformList {α β : Type} (program : α → ProbComp β)
-    (evaluate : α → List Bool → β) (width : ℕ) (list : List α)
-    (hlaw : ∀ a ∈ list,
-      ProbComp.eval (program a) = (BitString.uniformList width).map (evaluate a)) :
-    ProbComp.eval (list.mapM program) =
-      (BitString.uniformList (list.length * width)).map
-        (fun tape => List.zipWith evaluate list (BitString.listRows list.length width tape)) := by
-  induction list with
-  | nil => simp [BitString.listRows, ProbComp.eval_pure]
-  | cons a list ih =>
-    simp only [List.mapM_cons, bind_pure_comp, ProbComp.eval_bind, ProbComp.eval_map]
-    rw [hlaw a (List.mem_cons_self ..), ih (fun b hb => hlaw b (List.mem_cons_of_mem _ hb))]
-    rw [show (a :: list).length * width = width + list.length * width by
-      simp [Nat.add_mul, Nat.add_comm]]
-    rw [BitString.uniformList_add, PMF.map_bind, PMF.bind_map]
-    apply PMF.bind_congr_on_support
-    intro front hfront
-    have hlength := BitString.length_of_mem_support_uniformList hfront
-    simp [PMF.map_comp, Function.comp_def, BitString.listRows_succ_append _ _ hlength]
 
 private theorem zipWith_listRows_eq {α β : Type} (evaluate : α → List Bool → β)
     (list : List α) (width : ℕ) (tape : List Bool) :
@@ -99,7 +80,7 @@ theorem IsPPTOn.mapM {α β : Type} {input : α ↪ List Bool} {output : β ↪ 
   intro list
   rw [ProbComp.eval_map, BitString.eval_sampleList]
   symm
-  rw [eval_mapM_of_uniformList program evaluate (budget list) list]
+  rw [ProbComp.eval_mapM_of_uniformList program evaluate (budget list) list]
   · simp only [zipWith_listRows_eq, Function.comp_def]
   · intro a ha
     apply hlaw

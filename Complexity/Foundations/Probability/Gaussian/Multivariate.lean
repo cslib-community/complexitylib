@@ -33,7 +33,9 @@ with probability at most `‖u‖ ^ 2 / c ^ 2` (`stdGaussian_le_abs_inner_le`).
 
 The standard Gaussian vector of `EuclideanSpace ℝ ι` is a vector of independent standard Gaussian
 coordinates (`measurePreserving_toLp_pi_gaussianReal`), which transfers these facts to the
-product measure `Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ`.
+product measure `Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ`; for instance `a ⬝ᵥ ·` is
+a centered Gaussian of variance `‖WithLp.toLp 2 a‖ ^ 2`, the squared Euclidean norm, there
+(`pi_gaussianReal_map_dotProduct`).
 
 ## Main results
 
@@ -46,6 +48,10 @@ product measure `Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ`.
   window and tail bounds for a projection.
 * `ProbabilityTheory.measurePreserving_toLp_pi_gaussianReal`: independent standard Gaussian
   coordinates form a standard Gaussian vector of `EuclideanSpace ℝ ι`.
+* `ProbabilityTheory.pi_gaussianReal_map_dotProduct`: the law of a projection of independent
+  standard Gaussian coordinates.
+* `ProbabilityTheory.memLp_dotProduct_pi_gaussianReal`,
+  `ProbabilityTheory.integrable_dotProduct_pi_gaussianReal`: its moments.
 * `ProbabilityTheory.measureReal_pi_gaussianReal_eq`: the product measure of standard Gaussians
   carries events to the standard Gaussian measure on `EuclideanSpace ℝ ι`.
 -/
@@ -53,7 +59,7 @@ product measure `Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ`.
 @[expose] public section
 
 open MeasureTheory
-open scoped NNReal RealInnerProductSpace
+open scoped ENNReal NNReal RealInnerProductSpace
 
 namespace ProbabilityTheory
 
@@ -116,6 +122,33 @@ theorem measurePreserving_toLp_pi_gaussianReal (ι : Type*) [Fintype ι] :
     MeasurePreserving (WithLp.toLp 2) (Measure.pi fun _ : ι => gaussianReal 0 1)
       (stdGaussian (EuclideanSpace ℝ ι)) :=
   ⟨by fun_prop, map_pi_eq_stdGaussian⟩
+
+/-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` is a centered
+Gaussian of variance `‖WithLp.toLp 2 a‖ ^ 2`, the squared Euclidean norm of `a` (the plain
+`‖a‖` on `ι → ℝ` is the sup norm). -/
+theorem pi_gaussianReal_map_dotProduct {ι : Type*} [Fintype ι] (a : ι → ℝ) :
+    (Measure.pi fun _ : ι => gaussianReal 0 1).map (a ⬝ᵥ ·) =
+      gaussianReal 0 (‖WithLp.toLp 2 a‖₊ ^ 2) := by
+  have h : (a ⬝ᵥ ·) = (fun x : EuclideanSpace ℝ ι => ⟪WithLp.toLp 2 a, x⟫) ∘ WithLp.toLp 2 := by
+    funext z
+    simp only [Function.comp_apply, EuclideanSpace.inner_toLp_toLp, star_trivial,
+      dotProduct_comm]
+  rw [h, ← Measure.map_map (by fun_prop) (by fun_prop),
+    (measurePreserving_toLp_pi_gaussianReal ι).map_eq, stdGaussian_map_inner]
+
+/-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` has finite moments
+of every finite order. -/
+theorem memLp_dotProduct_pi_gaussianReal {ι : Type*} [Fintype ι] (a : ι → ℝ) {p : ℝ≥0∞}
+    (hp : p ≠ ∞) :
+    MemLp (fun x => a ⬝ᵥ x) p (Measure.pi fun _ : ι => gaussianReal 0 1) := by
+  have hD : Measurable fun x : ι → ℝ => a ⬝ᵥ x := by fun_prop
+  exact (memLp_id_gaussianReal' p hp).comp_measurePreserving
+    ⟨hD, pi_gaussianReal_map_dotProduct a⟩
+
+/-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` is integrable. -/
+theorem integrable_dotProduct_pi_gaussianReal {ι : Type*} [Fintype ι] (a : ι → ℝ) :
+    Integrable (fun x => a ⬝ᵥ x) (Measure.pi fun _ : ι => gaussianReal 0 1) :=
+  memLp_one_iff_integrable.1 (memLp_dotProduct_pi_gaussianReal a ENNReal.one_ne_top)
 
 /-- The product of standard Gaussians on `ι → ℝ` carries an event to the same event under the
 standard Gaussian measure of `EuclideanSpace ℝ ι`. -/

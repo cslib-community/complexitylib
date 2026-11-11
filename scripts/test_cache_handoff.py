@@ -105,6 +105,23 @@ class HandoffTests(unittest.TestCase):
         change(data)
         path.write_text(json.dumps(data))
 
+    def test_recovery_generation_rejects_preincident_handoff_without_installing(self):
+        self.pack()
+        original = (self.build / "lib/lean/Example.olean").read_bytes()
+        self.env["CACHE_RECOVERY_GENERATION"] = "incident-20261106-1"
+        with self.assertRaisesRegex(handoff.Rejected, "mismatch"):
+            self.restore()
+        self.assertEqual((self.build / "lib/lean/Example.olean").read_bytes(), original)
+
+    def test_cache_recovery_disables_handoff_before_packing_or_api_access(self):
+        self.env["DISABLE_CACHE_RESTORE"] = "true"
+        with self.assertRaisesRegex(handoff.Rejected, "cache recovery"):
+            self.pack()
+        with self.assertRaisesRegex(handoff.Rejected, "cache recovery"):
+            self.restore()
+        self.assertFalse(self.output.exists())
+        self.assertEqual(self.api.calls, [])
+
     def replace_archive(self, members):
         archive = self.output / "build.tar.gz"
         size = 0
@@ -226,7 +243,7 @@ class HandoffTests(unittest.TestCase):
         with patch.object(handoff, "MAX_BYTES", 1), self.assertRaises(handoff.Rejected) as error:
             self.pack()
         self.assertIn(f"3 files / {total} bytes", str(error.exception))
-        self.assertIn("limits 100000 files / 1 bytes", str(error.exception))
+        self.assertIn(f"limits {handoff.MAX_FILES} files / 1 bytes", str(error.exception))
         self.assertIn("omitted 1 module setup inputs / 5 bytes", str(error.exception))
         self.assertFalse(self.output.exists())
 
@@ -475,6 +492,31 @@ class HandoffTests(unittest.TestCase):
                     contextlib.redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(handoff.main(), 0)
                 self.assertIn("continuing without this optional cache", output.getvalue())
+
+    def test_cli_errors_are_workflow_warnings_in_actions(self):
+        error = handoff.Rejected("Build output count or size is outside handoff limits: 100%\nx")
+        with patch("sys.argv", ["cache_handoff.py", "pack", "--output", "/nonexistent/out"]), \
+                patch.dict(os.environ, {"GITHUB_ACTIONS": "true"}), \
+                patch.object(handoff, "pack", side_effect=error), \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(handoff.main(), 0)
+        line = output.getvalue().strip()
+        self.assertTrue(line.startswith("::warning title=Build handoff unavailable::"), line)
+        self.assertIn("100%25%0Ax", line)
+        self.assertNotIn("\n", line)
+
+    def test_default_download_uses_the_handoff_budget(self):
+        with patch.object(handoff, "gh_download_artifact") as download:
+            handoff.download_handoff("o/r", 7, "lean-build-x", Path("/tmp/d"))
+        download.assert_called_once_with("o/r", 7, "lean-build-x", Path("/tmp/d"),
+                                         timeout=handoff.DOWNLOAD_SECONDS)
+
+    def test_limits_hold_a_measured_full_build(self):
+        # A full build measured on 2026-11-08; the limits must keep headroom above it.
+        files, unpacked, packed = 101_848, 4_639_707_458, 1_665_078_866
+        self.assertGreaterEqual(handoff.MAX_FILES, 2 * files)
+        self.assertGreaterEqual(handoff.MAX_BYTES, 2 * unpacked)
+        self.assertGreaterEqual(handoff.MAX_ARCHIVE_BYTES, 2 * packed)
 
 
 if __name__ == "__main__":

@@ -30,6 +30,13 @@ of its selected count with the round count then forces exhaustiveness.
 * `Cslib.InductiveCounting.Safe`: no bad vertex is reachable in the restricted input graph.
 * `Cslib.InductiveCounting.Invariant`: the semantic assertion at each instruction.
 
+## Main results
+
+* `Cslib.InductiveCounting.mem_roundSet`: round sets are bounded reachability.
+* `Cslib.InductiveCounting.prefixCount_succ`, `Cslib.InductiveCounting.prefixCount_full`:
+  stepping a prefix count, and the full prefix count.
+* `Cslib.InductiveCounting.accepts_sound`: an accepting replay certifies safety.
+
 ## References
 
 * [N. Immerman, *Nondeterministic Space Is Closed under Complementation*][Immerman1988]
@@ -82,6 +89,12 @@ theorem roundSet_card_le : (roundSet N edge source k).card ≤ N := by
   classical
   exact (Finset.card_le_card (Finset.filter_subset _ _)).trans_eq (Finset.card_range N)
 
+/-- Every member of a round set lies below `N`. -/
+theorem lt_of_mem_roundSet (h : u ∈ roundSet N edge source k) : u < N := by
+  classical
+  unfold roundSet at h
+  exact Finset.mem_range.mp (Finset.mem_filter.mp h).1
+
 theorem mem_roundSet_succ (hsource : source < N) (hv : v < N) :
     v ∈ roundSet N edge source (k + 1) ↔
       ∃ u ∈ roundSet N edge source k, u = v ∨ edge u v = true := by
@@ -113,6 +126,38 @@ theorem mem_roundSet_final (hsource : source < N) (hk : k + 1 = N) :
     Relation.reachableWithin_eq_of_encard_le he]
   rfl
 
+/-- Raising a prefix bound past a member `x` inserts `x`. -/
+theorem filter_lt_succ_of_mem {S : Finset ℕ} {x : ℕ} (hx : x ∈ S) :
+    S.filter (· < x + 1) = insert x (S.filter (· < x)) := by
+  ext c
+  simp only [Finset.mem_filter, Finset.mem_insert]
+  constructor
+  · rintro ⟨hc, hcx⟩
+    rcases Nat.lt_succ_iff_lt_or_eq.mp hcx with h | rfl
+    · exact Or.inr ⟨hc, h⟩
+    · exact Or.inl rfl
+  · rintro (rfl | ⟨hc, h⟩)
+    · exact ⟨hx, Nat.lt_succ_self _⟩
+    · exact ⟨hc, by omega⟩
+
+/-- Raising a prefix bound past a non-member `x` changes nothing. -/
+theorem filter_lt_succ_of_notMem {S : Finset ℕ} {x : ℕ} (hx : x ∉ S) :
+    S.filter (· < x + 1) = S.filter (· < x) := by
+  ext c
+  simp only [Finset.mem_filter]
+  constructor
+  · rintro ⟨hc, hcx⟩
+    exact ⟨hc, lt_of_le_of_ne (Nat.lt_succ_iff.mp hcx) fun h => hx (h ▸ hc)⟩
+  · rintro ⟨hc, h⟩
+    exact ⟨hc, by omega⟩
+
+/-- Counting the members of a set of numbers below `x + 1`. -/
+theorem card_filter_lt_succ (S : Finset ℕ) (x : ℕ) :
+    (S.filter (· < x + 1)).card = (S.filter (· < x)).card + if x ∈ S then 1 else 0 := by
+  by_cases hx : x ∈ S
+  · rw [filter_lt_succ_of_mem hx, Finset.card_insert_of_notMem (by simp), ite_eq_left hx]
+  · rw [filter_lt_succ_of_notMem hx, ite_eq_right hx, Nat.add_zero]
+
 /-- Count of members of the next round below the current target. -/
 noncomputable def prefixCount (N : ℕ) (edge : ℕ → ℕ → Bool) (source k v : ℕ) : ℕ :=
   ((roundSet N edge source (k + 1)).filter (· < v)).card
@@ -121,33 +166,28 @@ noncomputable def prefixCount (N : ℕ) (edge : ℕ → ℕ → Bool) (source k 
 @[simp] theorem prefixCount_zero : prefixCount N edge source k 0 = 0 := by
   simp [prefixCount]
 
-private theorem prefixCount_full : prefixCount N edge source k N =
+/-- A prefix count is at most `N`. -/
+theorem prefixCount_le : prefixCount N edge source k v ≤ N := by
+  unfold prefixCount
+  exact (Finset.card_le_card (Finset.filter_subset _ _)).trans roundSet_card_le
+
+/-- A prefix count below a target of at least `N` counts the whole next round. -/
+theorem prefixCount_of_le (hv : N ≤ v) : prefixCount N edge source k v =
     (roundSet N edge source (k + 1)).card := by
-  classical
   unfold prefixCount
   congr 1
-  apply Finset.filter_true_of_mem
-  intro u hu
-  exact Finset.mem_range.mp (Finset.mem_of_mem_filter u hu)
+  exact Finset.filter_true_of_mem fun u hu => (lt_of_mem_roundSet hu).trans_le hv
 
-private theorem prefixCount_succ (v : ℕ) : prefixCount N edge source k (v + 1) =
+/-- The prefix count below `N` counts the whole next round. -/
+theorem prefixCount_full : prefixCount N edge source k N =
+    (roundSet N edge source (k + 1)).card :=
+  prefixCount_of_le le_rfl
+
+/-- Raising the target by one adds the old target exactly when it is in the next round. -/
+theorem prefixCount_succ (v : ℕ) : prefixCount N edge source k (v + 1) =
     prefixCount N edge source k v +
-      (if v ∈ roundSet N edge source (k + 1) then 1 else 0) := by
-  classical
-  have he : (roundSet N edge source (k + 1)).filter (· < v + 1) =
-      if v ∈ roundSet N edge source (k + 1) then
-        insert v ((roundSet N edge source (k + 1)).filter (· < v))
-      else (roundSet N edge source (k + 1)).filter (· < v) := by
-    ext u
-    split_ifs with hv <;>
-      by_cases hu : u ∈ roundSet N edge source (k + 1) <;>
-      by_cases huv : u = v <;>
-      simp_all [Finset.mem_filter, Finset.mem_insert] <;> omega
-  unfold prefixCount
-  rw [he]
-  split_ifs with hv
-  · rw [Finset.card_insert_of_notMem (by simp)]
-  · rfl
+      (if v ∈ roundSet N edge source (k + 1) then 1 else 0) :=
+  card_filter_lt_succ _ v
 
 /-- The predicate observed for one included candidate. -/
 def Observed (edge : ℕ → ℕ → Bool) (bad : ℕ → Bool) (s : State) (u : ℕ) : Prop :=

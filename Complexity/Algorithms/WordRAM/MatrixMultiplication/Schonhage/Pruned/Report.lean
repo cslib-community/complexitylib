@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
 public import Complexity.Computability.WordRAM.Heap
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Returning queried values in the actual input order
 
@@ -58,29 +60,26 @@ theorem exec_report {w N capacity : ℕ} (x : Data registers) (codes : ℕ → �
   let u := x.set index 0
   have hsetup : ExecWithin w (ram[ index ← #0 ] : Code .standard registers) x u 1 := by
     ram_eval [u]
-  let I (y : Data registers) : Prop :=
-    y.regs index ≤ N ∧
-    (∀ i < y.regs index, y.mem (x.regs output + i) = x.mem (x.regs values + codes i)) ∧
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    (∀ i < j, y.mem (x.regs output + i) = x.mem (x.regs values + codes i)) ∧
     (∀ i < N, y.mem (x.regs queries + i) = codes i) ∧
     (∀ q < capacity, y.mem (x.regs values + q) = x.mem (x.regs values + q)) ∧
     Modifies (Block.mk (x.regs output) N).footprint x.mem y.mem ∧
     (∀ i, ¬ReportLocal i → y.regs i = x.regs i)
-  have hinit : I u := by
-    refine ⟨by simp [u], ?_, hinput, fun _ _ => rfl, Modifies.refl _ _, ?_⟩
+  have hinit : P (u.regs index) u := by
+    refine ⟨?_, hinput, fun _ _ => rfl, Modifies.refl _ _, ?_⟩
     · simp only [u, Data.set_regs, Function.update_self, not_lt_zero, false_implies,
         implies_true]
     · intro i hi
       exact Function.update_of_ne (by intro he; exact hi (Or.inl he)) _ _
-  have hstep (y : Data registers) (hy : I y)
-      (hc : (Cond.lt index queryCount).Holds y) :
-      ∃ z, ExecWithin w reportStep y z 7 ∧ I z ∧ N - z.regs index < N - y.regs index := by
-    obtain ⟨hle, hdone, hread, hvalue, hframe, hfrozen⟩ := hy
+  have hstep (y : Data registers) (hy : P (y.regs index) y) (hk : y.regs index < N) :
+      ∃ z, ExecWithin w reportStep y z 7 ∧ P (y.regs index + 1) z ∧
+        z.regs index = y.regs index + 1 := by
+    obtain ⟨hdone, hread, hvalue, hframe, hfrozen⟩ := hy
     have hq := hfrozen queries (by decide)
     have hv := hfrozen values (by decide)
     have ho := hfrozen output (by decide)
-    have hn := (hfrozen queryCount (by decide)).trans hN
     have h1' := (hfrozen one (by decide)).trans h1
-    have hk : y.regs index < N := by simpa only [Cond.holds_lt, hn] using hc
     let k := y.regs index
     let value := x.mem (x.regs values + codes k)
     let z := (((((((y.set address (y.regs queries + k)).set query (codes k)).set
@@ -106,15 +105,14 @@ theorem exec_report {w N capacity : ℕ} (x : Data registers) (codes : ℕ → �
     have hawayVal (q : ℕ) (hq' : q < capacity) :
         x.regs values + q ≠ x.regs output + k := by
       rcases hvals with h | h <;> dsimp [k] <;> omega
-    refine ⟨z, hz, ?_, by dsimp [k] at hidx; omega⟩
-    refine ⟨by dsimp [k] at hidx; omega, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨z, hz, ?_, hidx⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
     · intro i hi
-      rw [hidx] at hi
       by_cases he : i = k
       · subst i
         simp only [hmem, Function.update_self, value]
       · rw [hmem, Function.update_of_ne (by omega : x.regs output + i ≠ x.regs output + k)]
-        exact hdone i (by dsimp [k] at hi; omega)
+        exact hdone i (by omega)
     · intro i hi
       rw [hmem, Function.update_of_ne (hawaySrc i hi)]
       exact hread i hi
@@ -132,17 +130,12 @@ theorem exec_report {w N capacity : ℕ} (x : Data registers) (codes : ℕ → �
       rw [hmem, Function.update_of_ne hnot]
       exact hframe a ha
     · exact fun i hi => (hz.regs_eq (reportStep_preserves i hi)).trans (hfrozen i hi)
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I (fun y => N - y.regs index)
-    hstep hinit
-  obtain ⟨hle, hdone, _, _, hframe, hfrozen⟩ := hIy
-  have hn := (hfrozen queryCount (by decide)).trans hN
-  have hidx : y.regs index = N := by
-    simp only [Cond.holds_lt, hn, not_lt] at hstop
-    omega
+  obtain ⟨y, hy, ⟨hdone, _, _, hframe, hfrozen⟩, hidx⟩ := ExecWithin.loop_count P
+    (fun _ ⟨_, _, _, _, hf⟩ => (hf queryCount (by decide)).trans hN) hstep (by simp [u]) hinit
   have hloop : ExecWithin w (.loop (.lt index queryCount) reportStep) u y (9 * N + 2) := by
     simpa only [u, Data.set_regs, Function.update_self, Nat.sub_zero, Nat.mul_comm] using hy
   have he : ExecWithin w report x y (9 * N + 3) := (hsetup.seq hloop).mono (by omega)
-  exact ⟨y, he, hidx, by simpa only [hidx] using hdone, hframe,
+  exact ⟨y, he, hidx, hdone, hframe,
     fun i hi => he.regs_eq (report_preserves i hi)⟩
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PrunedQuery

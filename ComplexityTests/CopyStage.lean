@@ -3,7 +3,7 @@ Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
-import Complexity.Foundations.LinearAlgebra.Matrix.CopyStage
+import Complexity.Computability.LogSpaceDerandomization.CopyStage
 
 /-!
 # Tests for one stage of the correction-and-copy hierarchy

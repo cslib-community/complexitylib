@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Place
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Charged execution of the native Chan–He placement scan
 
@@ -204,16 +206,15 @@ theorem exec {w M N U t : ℕ} (x : Data 32) (values : ℕ → ℤ) (neg : Bool)
       y.regs count = (heavyList values (x.regs len) M (x.regs len)).length ∧
       ∀ i, 9 ≤ i.val ∧ i.val ≤ 19 → y.regs i = x.regs i := by
   let P (i : Fin 32) : Prop := 9 ≤ i.val ∧ i.val ≤ 19
-  let I (y : Data 32) : Prop :=
+  let Inv (j : ℕ) (y : Data 32) : Prop :=
     (∀ i, P i → y.regs i = x.regs i) ∧ y.regs one = 1 ∧ y.regs two = 2 ∧
-      y.regs four = 4 ∧ y.regs zero = 0 ∧ y.regs idx ≤ x.regs len ∧
-      y.regs count = (heavyList values (x.regs len) M (y.regs idx)).length ∧
+      y.regs four = 4 ∧ y.regs zero = 0 ∧
+      y.regs count = (heavyList values (x.regs len) M j).length ∧
       y.mem = memory x.mem values (x.regs len) M (x.regs heavy) (x.regs packed)
-        (x.regs column) (x.regs distance) t neg (y.regs idx)
-  have hbody (y : Data 32) (hy : I y) (hcond : (Cond.lt idx len).Holds y) :
-      ∃ z, ExecWithin w body y z 30 ∧ I z ∧
-        x.regs len - z.regs idx < x.regs len - y.regs idx := by
-    obtain ⟨hr, h1, h2, h4, h0, hi, hcount, hm⟩ := hy
+        (x.regs column) (x.regs distance) t neg j
+  have hbody (y : Data 32) (hy : Inv (y.regs idx) y) (hlt : y.regs idx < x.regs len) :
+      ∃ z, ExecWithin w body y z 30 ∧ Inv (y.regs idx + 1) z ∧ z.regs idx = y.regs idx + 1 := by
+    obtain ⟨hr, h1, h2, h4, h0, hcount, hm⟩ := hy
     have hs := hr src (by decide)
     have hk := hr keys (by decide)
     have hl := hr len (by decide)
@@ -225,13 +226,12 @@ theorem exec {w M N U t : ℕ} (x : Data 32) (values : ℕ → ℤ) (neg : Bool)
     have hmod' := (hr modulus (by decide)).trans hmod
     have htag' := (hr tag (by decide)).trans htag
     have hneg' := (hr negative (by decide)).trans hneg
-    have hlt : y.regs idx < x.regs len := by simpa only [Cond.holds_lt, hl] using hcond
     have hbefore (a : ℕ) (ha : a < x.regs heavy) : y.mem a = x.mem a := by
       rw [hm]
-      apply memory_outside _ _ _ _ _ _ _ _ _ N neg hM hN hc hd hi <;> omega
+      apply memory_outside _ _ _ _ _ _ _ _ _ N neg hM hN hc hd hlt.le <;> omega
     have hafter (a : ℕ) (ha : x.regs keys ≤ a) : y.mem a = x.mem a := by
       rw [hm]
-      apply memory_outside _ _ _ _ _ _ _ _ _ N neg hM hN hc hd hi <;> omega
+      apply memory_outside _ _ _ _ _ _ _ _ _ N neg hM hN hc hd hlt.le <;> omega
     obtain ⟨z, he, hzm, hzc, hzi, hzr⟩ := exec_body y values neg hM hN
       (by simpa only [hcol] using hc) (by simpa only [hdist] using hd) ht hmod' htag' hneg'
       h1 h2 h4 h0 (by simpa only [hl] using hlt) (by simpa only [hl] using hcount)
@@ -240,34 +240,30 @@ theorem exec {w M N U t : ℕ} (x : Data 32) (values : ℕ → ℤ) (neg : Bool)
       (by rw [hs, hbefore _ (by omega)]; exact hinput _ hlt)
       (by rw [hk, hafter _ (by omega)]; exact hkey _ hlt)
       (by rw [hh, hl, hafter _ (by omega)]; exact hhist _ (residueKey_lt hM _))
-    refine ⟨z, he, ?_, by omega⟩
+    refine ⟨z, he, ?_, hzi⟩
     refine ⟨fun i hi => (hzr i (Or.inl hi)).trans (hr i hi),
       (hzr one (by simp)).trans h1,
       (hzr two (by simp)).trans h2, (hzr four (by simp)).trans h4,
-      (hzr zero (by simp)).trans h0, by omega,
-      by simpa only [hl, hzi] using hzc, ?_⟩
-    rw [hzm, hl, ho, hp, hcol, hdist, hm, hzi]
+      (hzr zero (by simp)).trans h0,
+      by simpa only [hl] using hzc, ?_⟩
+    rw [hzm, hl, ho, hp, hcol, hdist, hm]
     rfl
   let x₀ := (((((x.set idx 0).set count 0).set one 1).set two 2).set four 4).set zero 0
-  have hx₀ : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  have hx₀ : Inv (x₀.regs idx) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
     · intro i hi
       fin_cases i <;> norm_num [P] at hi <;> rfl
     all_goals simp +decide [x₀, idx, count, one, two, four, zero, heavyList, memory]
-  obtain ⟨y, he, hy, hstop⟩ := ExecWithin.loop_invariant I
-    (fun y => x.regs len - y.regs idx) hbody hx₀
-  obtain ⟨hr, h1, h2, h4, h0, hi, hcount, hm⟩ := hy
-  have hend : y.regs idx = x.regs len := by
-    have hl := hr len (by decide)
-    simp only [Cond.holds_lt, hl] at hstop
-    omega
+  obtain ⟨y, he, ⟨hr, _, _, _, _, hcount, hm⟩, _⟩ := ExecWithin.loop_count Inv
+    (fun _ hy => hy.1 len (by decide)) hbody
+    (by simp +decide [x₀, idx, count, one, two, four, zero]) hx₀
   have f4 : Fits w 4 := hfit.of_le (by dsimp only [budget]; omega)
   have f2 : Fits w 2 := f4.of_le (by decide)
   have f1 : Fits w 1 := f4.of_le (by decide)
   have hinit : ExecWithin (B := .standard) w (ram[
       idx ← #0; count ← #0; one ← #1; two ← #2; four ← #4; zero ← #0 ]) x x₀ 6 := by
     ram_eval [x₀, f1, f2, f4]
-  refine ⟨y, ?_, by simpa only [hend] using hm, by simpa only [hend] using hcount, hr⟩
+  refine ⟨y, ?_, hm, hcount, hr⟩
   convert hinit.seq he using 1
   · rfl
   · simp +decide only [x₀, idx, count, one, two, four, zero, Data.set_regs,

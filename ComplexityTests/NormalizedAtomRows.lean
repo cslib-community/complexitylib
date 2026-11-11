@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 -- upstream: candidate
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.BoundedLoss
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.BoundedLoss
 
 /-! Behavioral regressions for actual uncentered normalization: full-rank off-usage
 sensitivity and the obstruction to allowing arbitrary common first loss. -/

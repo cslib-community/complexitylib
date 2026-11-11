@@ -10,6 +10,7 @@ module
 public import Complexity.Init
 public import Mathlib.Data.Fintype.Perm
 import Complexity.Foundations.Data.Nat.Choose
+import Complexity.Foundations.GroupTheory.Perm.Fixing
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Data.Fintype.CardEmbedding
@@ -63,30 +64,19 @@ section Count
 variable {V : Type*} [Fintype V] [DecidableEq V]
 
 /-- At most `(n - k)!` permutations of an `n`-element type agree with a given injective map on a
-`k`-element set `K`: on the complement of `K` they are embeddings into the complement of its image.
--/
+`k`-element set `K`; in fact exactly that many do (`Equiv.Perm.card_filter_forall_eq_of_injOn`). -/
 private theorem card_filter_forall_eq_le (K : Finset V) (g : K → V)
     (hg : Function.Injective g) :
     #{σ : Perm V | ∀ v : K, σ v = g v} ≤ (Fintype.card V - #K)! := by
-  set R : Finset V := (univ.image g)ᶜ with hR
-  have hRcard : #R = Fintype.card V - #K := by
-    rw [hR, card_compl, card_image_of_injective _ hg, card_univ, Fintype.card_coe]
-  calc #{σ : Perm V | ∀ v : K, σ v = g v}
-      ≤ Fintype.card ({v // v ∈ Kᶜ} ↪ {v // v ∈ R}) := by
-        rw [← Fintype.card_coe]
-        refine Fintype.card_le_of_injective (fun σ ↦ ⟨fun v ↦ ⟨σ.1 v, ?_⟩, fun a b h ↦
-          Subtype.ext (σ.1.injective (congrArg Subtype.val h))⟩) fun σ τ h ↦ ?_
-        · rw [hR, mem_compl, mem_image]
-          rintro ⟨w, -, hw⟩
-          rw [← (mem_filter.1 σ.2).2 w] at hw
-          exact (mem_compl.1 v.2) (σ.1.injective hw ▸ w.2)
-        · refine Subtype.ext (Equiv.ext fun v ↦ ?_)
-          by_cases hv : v ∈ K
-          · rw [(mem_filter.1 σ.2).2 ⟨v, hv⟩, (mem_filter.1 τ.2).2 ⟨v, hv⟩]
-          · exact congrArg Subtype.val (DFunLike.congr_fun h ⟨v, mem_compl.2 hv⟩)
-    _ = (Fintype.card V - #K)! := by
-        rw [Fintype.card_embedding_eq, Fintype.card_coe, Fintype.card_coe, hRcard, card_compl,
-          Nat.descFactorial_self]
+  let f : V → V := fun v ↦ if h : v ∈ K then g ⟨v, h⟩ else v
+  have hf : Set.InjOn f K := by
+    intro a ha b hb hab
+    simp only [f, mem_coe.1 ha, mem_coe.1 hb, ↓reduceDIte] at hab
+    exact congrArg Subtype.val (hg hab)
+  refine le_of_eq (Eq.trans ?_ (Perm.card_filter_forall_eq_of_injOn K f hf))
+  refine congrArg card (filter_congr fun σ _ ↦ ⟨fun h u hu ↦ ?_, fun h v ↦ ?_⟩)
+  · simpa only [f, hu, ↓reduceDIte] using h ⟨u, hu⟩
+  · simpa only [f, v.2, ↓reduceDIte] using h v v.2
 
 /-- At most `s (s - 1) ⋯ (s - k + 1) (n - k)!` permutations of an `n`-element type map a
 `k`-element set `K` into an `s`-element set `S`: on `K` such a permutation is one of the

@@ -97,10 +97,19 @@ Make the scope and authority clear. A coordinator request can say:
 > manuals as part of every review, including any justified no-impact assessment. Arrange
 > non-author review for your own changes. Report what landed, remaining objectives and blockers.
 
-Add the integration authority you intend to grant. Without that authority, the coordinator can
-prepare and review work but must not assume permission to merge. When integration is authorized,
-the coordinator still needs the required validation and independent review and should monitor
-the merge queue through landing. [Coordinator duties](../AGENTS.md#coordinators) define the details.
+Reviewers with write access queue the exact heads they approve, so an approved PR does not wait for
+a coordinator ([Approve and queue](../AGENTS.md#approve-and-queue)). To keep a PR for your own
+review, say so in the PR or its linked issue: agents then approve it without queueing, and you or
+someone you name queues it. Agents without write access can prepare and review work but cannot
+queue it. Coordinators queue approved heads still waiting and monitor the merge queue through
+landing. [Coordinator duties](../AGENTS.md#coordinators) define the details.
+When the queue ejects a PR whose only conflict is in `references.bib`, the coordinator or author
+can run `python3 scripts/resolve_bib_conflict.py origin/<branch>` after `git fetch origin` to
+write the merge with `main` instead of sending the PR back. It refuses any other conflict and
+pushes nothing. Pushing its commit to the PR branch is a deliberate step by the author or a
+coordinator acting for them, who records the push. Existing approval carries forward when
+`scripts/check_restack.py` passes and CI passes at the new head, as
+[Restacks](../AGENTS.md#restacks) describes.
 
 The manuals are part of this workflow. Changes to library usage belong in the Operator's Manual;
 changes to roles, delegation, review or human direction may affect this Agent Operator's Manual.

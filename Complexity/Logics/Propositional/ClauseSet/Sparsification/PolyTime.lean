@@ -9,6 +9,7 @@ module
 
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.List
 public import Complexity.Logics.Propositional.ClauseSet.Sparsification.Bounds
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
@@ -23,15 +24,21 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Pl
 The list-level sparsification step (`Cslib.Logic.PL.CNF.Sparsification.next`), the test for
 sparseness (`Cslib.Logic.PL.CNF.Sparsification.isSparse`) and normalization
 (`Cslib.Logic.PL.CNF.Sparsification.normalize`) are polynomial-time on the framed encoding of
-formulas, for any encoding of the variables. The width `k` is fixed, so a clause has a constant
-number of candidate hearts; the thresholds enter only through comparisons `θ j ≤ n`, which must
-themselves be polynomial-time in unary. They are for the explicit thresholds
-(`Cslib.Logic.PL.ClauseSet.Sparsification.computableInPolyTime_threshold_le`).
+formulas (`Cslib.Logic.PL.encCNFOver`), for any encoding of the variables. The width `k` is fixed,
+so a clause has a constant number of candidate hearts; the thresholds enter only through
+comparisons `θ j ≤ n`, which must themselves be polynomial-time in unary. They are for the
+explicit thresholds (`Cslib.Logic.PL.ClauseSet.Sparsification.computableInPolyTime_threshold_le`).
 
 The thresholds may also be read from a runtime parameter `p`, as `θ p`: the `…With` certificates
 take the parameter as part of the input and charge its encoding, so one machine serves every
 parameter value. The certificates for fixed thresholds are their specializations to a constant
 parameter.
+
+## Main definitions
+
+* `Cslib.Logic.PL.CNF.Sparsification.encUnaryComparison`: the input of a threshold comparison,
+  with a runtime parameter.
+* `Cslib.Logic.PL.CNF.Sparsification.encCandidate`: a candidate pair of a clause size and a heart.
 
 ## Main results
 
@@ -75,13 +82,23 @@ end Cslib.Logic.PL.ClauseSet.Sparsification
 
 namespace Cslib.Logic.PL.CNF.Sparsification
 
+/-- The input `(p, j, n)` of a threshold comparison `θ p j ≤ n`, with `j` and `n` in unary: the
+framed runtime parameter `p`, then the framed `j`, then `n`. -/
+abbrev encUnaryComparison {P : Type} (encP : P ↪ List Bool) : P × ℕ × ℕ ↪ List Bool :=
+  encPair encP (encPair encUnary encUnary)
+
+/-- A candidate `(c, H)` of a clause size and a heart, with `c` in unary: the framed `c`, then the
+heart `H` as a clause (`encClause encV`). -/
+abbrev encCandidate {V : Type} (encV : V ↪ List Bool) : ℕ × Clause V ↪ List Bool :=
+  encPair encUnary (encClause encV)
+
 variable {V : Type} [DecidableEq V] (encV : V ↪ List Bool)
 
 /-- The framed encoding of clauses. -/
-local notation "encC" => encList (encPair encV encBool)
+local notation "encC" => encClause encV
 
 /-- The framed encoding of formulas. -/
-local notation "encF" => encList (encList (encPair encV encBool))
+local notation "encF" => encCNFOver encV
 
 /-- The list-level reduction is polynomial-time. -/
 theorem computableInPolyTime_reduce :
@@ -98,7 +115,7 @@ theorem computableInPolyTime_dedupClauses :
 /-- Computing the flower of a clause size and heart is polynomial-time. -/
 theorem computableInPolyTime_flower :
     ComputableInPolyTime (fun p : CNF V × (ℕ × Clause V) => flower p.1 p.2.1 p.2.2)
-      (encPair encF (encPair encUnary encC)) encF := by
+      (encPair encF (encCandidate encV)) encF := by
   unfold flower subclause
   fun_prop
 
@@ -107,9 +124,9 @@ heavy for thresholds `θ p` read from a runtime parameter `p` is polynomial-time
 encoding of `p`. -/
 theorem computableInPolyTime_heavyWith {P : Type} {encP : P ↪ List Bool} {θ : P → ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
-      (encPair encP (encPair encUnary encUnary)) encBool) :
+      (encUnaryComparison encP) encBool) :
     ComputableInPolyTime (fun x : P × (CNF V × (ℕ × Clause V)) => heavy (θ x.1) x.2.1 x.2.2)
-      (encPair encP (encPair encF (encPair encUnary encC))) encBool := by
+      (encPair encP (encPair encF (encCandidate encV))) encBool := by
   have := computableInPolyTime_flower encV
   have h₁ : ComputableInPolyTime (fun x : P × (CNF V × (ℕ × Clause V)) =>
       decide (1 ≤ x.2.2.2.length) && decide (x.2.2.2.length < x.2.2.1))
@@ -128,7 +145,7 @@ theorem computableInPolyTime_const_threshold {θ : ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
       (encPair encUnary encUnary) encBool) :
     ComputableInPolyTime (fun x : ℕ × ℕ × ℕ => decide ((fun _ : ℕ => θ) x.1 x.2.1 ≤ x.2.2))
-      (encPair encUnary (encPair encUnary encUnary)) encBool :=
+      (encUnaryComparison encUnary) encBool :=
   hθ.comp (snd encUnary (encPair encUnary encUnary))
 
 /-- Testing whether a candidate `(c, H)` is heavy is polynomial-time. -/
@@ -136,7 +153,7 @@ theorem computableInPolyTime_heavy {θ : ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
       (encPair encUnary encUnary) encBool) :
     ComputableInPolyTime (fun p : CNF V × (ℕ × Clause V) => heavy θ p.1 p.2)
-      (encPair encF (encPair encUnary encC)) encBool := by
+      (encPair encF (encCandidate encV)) encBool := by
   have h := computableInPolyTime_heavyWith encV (P := ℕ) (encP := encUnary) (θ := fun _ => θ)
     (computableInPolyTime_const_threshold hθ)
   simpa only [Function.comp_def] using h.comp ((const (encOut := encUnary) 0).prod id')
@@ -144,7 +161,7 @@ theorem computableInPolyTime_heavy {θ : ℕ → ℕ}
 omit [DecidableEq V] in
 /-- Listing the candidate pairs `(c, H)` of a formula is polynomial-time. -/
 theorem computableInPolyTime_candidates (k : ℕ) :
-    ComputableInPolyTime (candidates (V := V) k) encF (encList (encPair encUnary encC)) := by
+    ComputableInPolyTime (candidates (V := V) k) encF (encList (encCandidate encV)) := by
   have : ComputableInPolyTime (hearts (V := V) k) encC (encList encC) := by
     unfold hearts
     refine mapWithInput (const (encOut := encList (encList encUnary)) _) ?_
@@ -156,9 +173,9 @@ theorem computableInPolyTime_candidates (k : ℕ) :
 parameter. -/
 theorem computableInPolyTime_choiceWith {P : Type} {encP : P ↪ List Bool} {θ : P → ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
-      (encPair encP (encPair encUnary encUnary)) encBool) (k : ℕ) :
+      (encUnaryComparison encP) encBool) (k : ℕ) :
     ComputableInPolyTime (fun x : P × CNF V => choice (θ x.1) k x.2)
-      (encPair encP encF) (encPair encUnary encC) := by
+      (encPair encP encF) (encCandidate encV) := by
   have hheavy := computableInPolyTime_heavyWith encV hθ
   have hc : ComputableInPolyTime
       (fun x : P × CNF V => (candidates k x.2).filter (heavy (θ x.1) x.2))
@@ -182,7 +199,7 @@ theorem computableInPolyTime_choiceWith {P : Type} {encP : P ↪ List Bool} {θ 
 theorem computableInPolyTime_choice {θ : ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun p : ℕ × ℕ => decide (θ p.1 ≤ p.2))
       (encPair encUnary encUnary) encBool) (k : ℕ) :
-    ComputableInPolyTime (choice (V := V) θ k) encF (encPair encUnary encC) := by
+    ComputableInPolyTime (choice (V := V) θ k) encF (encCandidate encV) := by
   have h := computableInPolyTime_choiceWith encV (P := ℕ) (encP := encUnary) (θ := fun _ => θ)
     (computableInPolyTime_const_threshold hθ) k
   simpa only [Function.comp_def] using h.comp ((const (encOut := encUnary) 0).prod id')
@@ -191,7 +208,7 @@ theorem computableInPolyTime_choice {θ : ℕ → ℕ}
 encoding of the parameter. -/
 theorem computableInPolyTime_isSparseWith {P : Type} {encP : P ↪ List Bool} {θ : P → ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
-      (encPair encP (encPair encUnary encUnary)) encBool) (k : ℕ) :
+      (encUnaryComparison encP) encBool) (k : ℕ) :
     ComputableInPolyTime (fun x : P × CNF V => isSparse (θ x.1) k x.2)
       (encPair encP encF) encBool := by
   have hheavy := computableInPolyTime_heavyWith encV hθ
@@ -222,7 +239,7 @@ private theorem computableInPolyTime_child :
 parameter. -/
 theorem computableInPolyTime_nextWith {P : Type} {encP : P ↪ List Bool} {θ : P → ℕ → ℕ}
     (hθ : ComputableInPolyTime (fun x : P × ℕ × ℕ => decide (θ x.1 x.2.1 ≤ x.2.2))
-      (encPair encP (encPair encUnary encUnary)) encBool) (k : ℕ) :
+      (encUnaryComparison encP) encBool) (k : ℕ) :
     ComputableInPolyTime (fun x : P × (CNF V × Bool) => next (θ x.1) k x.2.1 x.2.2)
       (encPair encP (encPair encF encBool)) encF := by
   have hchild := computableInPolyTime_child encV

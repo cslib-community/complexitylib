@@ -289,8 +289,7 @@ theorem batched_counter_power (T r : ℕ) (hr : r ≤ 2 ^ (k + k)) :
   have hc := clog_two_pow_add_le hr
   have hw : (Nat.clog 2 (r + (2 ^ k - 1)) + 1) ^ 2 * (k + k + 1) ≤ 8 * (k + 1) ^ 3 := by
     have h2 : Nat.clog 2 (r + (2 ^ k - 1)) + 1 ≤ 2 * (k + 1) := by omega
-    have hsq : (Nat.clog 2 (r + (2 ^ k - 1)) + 1) ^ 2 ≤ (2 * (k + 1)) ^ 2 :=
-      Nat.pow_le_pow_left h2 2
+    have hsq : (Nat.clog 2 (r + (2 ^ k - 1)) + 1) ^ 2 ≤ (2 * (k + 1)) ^ 2 := by gcongr
     have hlin : k + k + 1 ≤ 2 * (k + 1) := by omega
     have hmul := Nat.mul_le_mul hsq hlin
     nlinarith

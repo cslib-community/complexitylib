@@ -23,6 +23,7 @@ word; total decoding alone is not a canonical-input validator.
 ## Main definitions
 
 * `Turing.MultiTapeTM.decodeIntBin`: total sign/magnitude decoding.
+* `Turing.MultiTapeTM.Decoder.intBin`: total `Decoder encIntBin` built from `decodeIntBin`.
 
 ## Main results
 
@@ -70,5 +71,11 @@ theorem computableInPolyTime_decodeIntBin :
         Nat.size_eq_bits_len, Nat.size_eq_zero]
     cases sign <;> simp [hz, Nat.pos_iff_ne_zero]
   exact hassemble.comp (hsign.prod hmag)
+
+/-- Total polynomial-time decoder for signed binary integers. -/
+def Decoder.intBin : Decoder encIntBin where
+  decode := decodeIntBin
+  decode_enc := decodeIntBin_encIntBin
+  computable := computableInPolyTime_decodeIntBin.exists_degree
 
 end Turing.MultiTapeTM

@@ -44,6 +44,21 @@ example {α β γ : Type} (enc : α ↪ List Bool) {a : α ↪ List Bool} {b : �
   exact ⟨by fun_prop, by fun_prop, by fun_prop, by fun_prop, rfl, rfl, rfl,
     by fun_prop, by fun_prop, by fun_prop, by fun_prop, by fun_prop⟩
 
+/-- The captured map rule is available with only the low plain option API imported. -/
+example {α β γ : Type} {a : α ↪ List Bool} {b : β ↪ List Bool} {c : γ ↪ List Bool}
+    {value : α → Option β} (hvalue : ComputableInPolyTime value a (encOption b))
+    {f _missing : α → β → γ}
+    (hf : ComputableInPolyTime (fun p : α × β => f p.1 p.2) (encPair a b) c) :
+    ComputableInPolyTime (fun x => (value x).map (f x)) a (encOption c) := by
+  fail_if_success
+    have : ComputableInPolyTime (fun x => (value x).map (_missing x)) a (encOption c) := by
+      fun_prop
+  fun_prop
+
+/-- Mapping never turns rejection into success; a successful empty value stays present. -/
+example : (none : Option (List Bool)).map (fun _ => ([] : List Bool)) = none ∧
+    (some ([] : List Bool)).map (fun _ => ([] : List Bool)) = some [] := ⟨rfl, rfl⟩
+
 open Lean Elab Command in
 run_cmd do
   for name in #[`Turing.MultiTapeTM.ComputableTidilyInPolyTime,

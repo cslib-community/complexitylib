@@ -16,7 +16,8 @@ public import Mathlib.Data.List.Lex
 A prefix of a list is lexicographically at most that list (`List.isPrefix_le`), and the extensions
 of any prefix form an order-convex interval under the lexicographic order
 (`List.IsPrefix.of_le_of_le`, `List.IsPrefix.of_prefix_of_le_of_le`). Lists of equal length keep a
-strict comparison when anything is appended to them (`List.append_lt_append_of_lt_of_length_eq`).
+strict comparison when anything is appended to them (`List.append_lt_append_of_lt_of_length_eq`),
+and truncating two lists to a common length preserves their order (`List.take_le_take_of_le`).
 
 Mathlib's lexicographic `LinearOrder` on lists replaces core's `≤` on lists, so core's
 `List.cons_le_cons_iff` does not apply to it; `List.cons_le_cons_iff'` is its counterpart.
@@ -29,6 +30,7 @@ Mathlib's lexicographic `LinearOrder` on lists replaces core's `≤` on lists, s
 * `List.isPrefix_le`: if `a <+: b`, then `a ≤ b` lexicographically.
 * `List.IsPrefix.of_le_of_le`: if `p <+: b` and `p ≤ c ≤ b`, then `p <+: c`.
 * `List.IsPrefix.of_prefix_of_le_of_le`: if `p <+: a`, `p <+: b`, and `a ≤ c ≤ b`, then `p <+: c`.
+* `List.take_le_take_of_le`: if `a ≤ b`, then `a.take n ≤ b.take n`.
 -/
 
 @[expose] public section
@@ -104,5 +106,22 @@ theorem IsPrefix.of_le_of_le {p b c : List α}
 theorem IsPrefix.of_prefix_of_le_of_le {p a b c : List α}
     (ha : p <+: a) (hb : p <+: b) (hac : a ≤ c) (hcb : c ≤ b) : p <+: c :=
   hb.of_le_of_le ((isPrefix_le ha).trans hac) hcb
+
+/-- Truncating two lists to a common length preserves their lexicographic order. -/
+theorem take_le_take_of_le {a b : List α} (h : a ≤ b) (n : ℕ) : a.take n ≤ b.take n := by
+  induction n generalizing a b with
+  | zero => simp only [take_zero, le_refl]
+  | succ n ih =>
+    cases a with
+    | nil => rw [take_nil]; exact isPrefix_le nil_prefix
+    | cons x a =>
+      cases b with
+      | nil =>
+        exact absurd h (not_le_of_gt (show ([] : List α) < x :: a from List.Lex.nil))
+      | cons y b =>
+        rw [take_succ_cons, take_succ_cons]
+        rcases cons_le_cons_iff'.mp h with hxy | ⟨rfl, hab⟩
+        · exact le_of_lt (show x :: a.take n < y :: b.take n from List.Lex.rel hxy)
+        · exact cons_le_cons x (ih hab)
 
 end List

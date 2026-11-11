@@ -57,12 +57,20 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | CNF satisfiability (Cook–Levin) | `CookLevin.SAT_npComplete` |
 | At most three literals per clause | `ThreeSAT_npComplete` |
 | Exactly three literals, repetitions allowed | `ExactThreeSAT_npComplete` |
+| Exactly three distinct variables per clause | `EUThreeSAT_npComplete` |
+| Not-all-equal SAT, clause width at most three | `NAEThreeSAT_npComplete` |
+| NAE EU3SAT, exactly three distinct variables per clause | `NAEEUThreeSAT_npComplete` |
+| Not-all-equal SAT, width and variable occurrences at most three | `NAEThreeSATThree_npComplete` |
 | Boolean circuit satisfiability | `CircuitSAT_npComplete` |
 | Independent set | `IndependentSet_npComplete` |
 | Clique | `Clique_npComplete` |
 | Vertex cover | `VertexCover_npComplete` |
 | Three-colorability | `ThreeColoring_npComplete` |
 | Fixed `k`-colorability, `3 ≤ k` | `KColoring_npComplete` |
+| Chromatic number, `k` in the input | `ChromaticNumber_npComplete` |
+| Clique cover | `CliqueCover_npComplete` |
+| Directed feedback vertex set (Karp's feedback node set) | `FeedbackVertexSet_npComplete` |
+| Feedback arc set | `FeedbackArcSet_npComplete` |
 | Directed Hamiltonian path, specified endpoints | `DirHamPath_npComplete` |
 | Directed Hamiltonian cycle | `DirHamCycle_npComplete` |
 | Undirected Hamiltonian path, specified endpoints | `HamPath_npComplete` |
@@ -70,6 +78,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | Subset sum | `SubsetSum_npComplete` |
 | Partition | `Partition_npComplete` |
 | Knapsack | `Knapsack_npComplete` |
+| Weighted maximum cut | `MaxCut_npComplete` |
+| Sequencing with deadlines and penalties | `JobSequencing_npComplete` |
 | Zero-one integer programming | `ZeroOneIP_npComplete` |
 | Traveling salesperson | `TSP_npComplete` |
 
@@ -80,10 +90,15 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | SAT → CircuitSAT | `SAT.polyTimeReducible_CircuitSAT` |
 | SAT → IndependentSet | `polyTimeReducible_SAT_IndependentSet` |
 | IndependentSet → Clique | `polyTimeReducible_IndependentSet_Clique` |
+| Clique → IndependentSet | `polyTimeReducible_Clique_IndependentSet` |
 | IndependentSet → VertexCover | `polyTimeReducible_IndependentSet_VertexCover` |
+| VertexCover → FeedbackVertexSet | `polyTimeReducible_VertexCover_FeedbackVertexSet` |
+| FeedbackVertexSet → FeedbackArcSet | `polyTimeReducible_FeedbackVertexSet_FeedbackArcSet` |
 | SAT → ThreeColoring | `polyTimeReducible_SAT_ThreeColoring` |
 | ThreeSAT → ThreeColoring | `polyTimeReducible_ThreeSAT_ThreeColoring` |
 | SAT → KColoring `k`, for `3 ≤ k` | `polyTimeReducible_SAT_KColoring` |
+| KColoring `k` → ChromaticNumber | `polyTimeReducible_KColoring_ChromaticNumber` |
+| ChromaticNumber → CliqueCover | `polyTimeReducible_ChromaticNumber_CliqueCover` |
 | SAT → DirHamPath | `polyTimeReducible_SAT_DirHamPath` |
 | ThreeSAT → DirHamPath | `polyTimeReducible_ThreeSAT_DirHamPath` |
 | SAT → DirHamCycle | `polyTimeReducible_SAT_DirHamCycle` |
@@ -92,6 +107,8 @@ problem to SAT. These are navigation tables, not an exhaustive list of reduction
 | ThreeSAT → SubsetSum | `polyTimeReducible_ThreeSAT_SubsetSum` |
 | SubsetSum → Partition | `polyTimeReducible_SubsetSum_Partition` |
 | SubsetSum → Knapsack | `polyTimeReducible_SubsetSum_Knapsack` |
+| SubsetSum → JobSequencing | `polyTimeReducible_SubsetSum_JobSequencing` |
+| Partition → MaxCut | `polyTimeReducible_Partition_MaxCut` |
 | SubsetSum → ZeroOneIP | `polyTimeReducible_SubsetSum_ZeroOneIP` |
 | ThreeSAT → ZeroOneIP | `polyTimeReducible_ThreeSAT_ZeroOneIP` |
 | HamCycle → TSP | `polyTimeReducible_HamCycle_TSP` |

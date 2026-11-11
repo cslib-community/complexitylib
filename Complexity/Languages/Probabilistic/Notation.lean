@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Languages.Probabilistic.Basic
+public import Complexity.Probability.PMF.ToReal
 
 /-!
 # Probability notation for Boolean experiments
@@ -21,7 +22,9 @@ is the distribution form at `ProbComp.eval e`. The elaborator tries `ProbComp Bo
 `do` block or a chain of binds is read as a program, and falls back to `PMF Bool`.
 
 Probabilities are real numbers so that advantages and biases are signed differences, as in
-`|Pr[real] - Pr[ideal]|` or `Pr[game] - 1 / 2`. Nonnegativity is `ENNReal.toReal_nonneg`.
+`|Pr[real] - Pr[ideal]|` or `Pr[game] - 1 / 2`. Nonnegativity is `ENNReal.toReal_nonneg`; the
+upper bound `Pr[e] ≤ 1` is `Cslib.Probability.PMF.toReal_apply_le_one`, from
+`Complexity.Probability.PMF.ToReal`, which this module re-exports.
 
 Events are final returns. The probability that a sample of `μ : PMF α` lies in a set `s` is
 `Pr[(fun x => decide (x ∈ s)) <$> μ]`, and the probability of an outcome `a` is
@@ -39,7 +42,6 @@ namespace `Cslib`. It then also prints both forms back as `Pr[e]`.
 
 ## Main results
 
-* `Cslib.Probability.PMF.toReal_apply_le_one`: a probability is at most one.
 * `Cslib.ProbComp.probability_pure`: a program that returns a constant.
 * `Cslib.ProbComp.probability_bind`: after a finite random choice, the probability is the
   average over the choice.
@@ -97,10 +99,6 @@ meta def delabProbabilityTrue : Delab := whenPPOption getPPNotation do
     `(Pr[$distribution])
 
 namespace PMF
-
-/-- A probability is at most one; in particular `Pr[e] ≤ 1` for every Boolean experiment. -/
-theorem toReal_apply_le_one {α : Type*} (μ : _root_.PMF α) (a : α) : (μ a).toReal ≤ 1 :=
-  ENNReal.toReal_le_of_le_ofReal zero_le_one (by simpa using μ.coe_le_one a)
 
 variable {α : Type}
 

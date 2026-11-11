@@ -10,6 +10,28 @@ Copies and memory moves rely on a bounded-state invariant rather than rechecking
 
 Structured [Complexity/Computability/WordRAM/Structured.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Structured.lean) has operations, sequencing, branches and loops. Its `Exec` relation counts actual branch/jump overhead, and assembly preserves exact counts. Hoare and potential rules prove executions of this code; they do not treat a source-language loop as one machine instruction.
 
+## Proving a constant-cost counting loop
+
+Import [`CountingLoop`](../../Complexity/Computability/WordRAM/CountingLoop.lean) for a native
+`while index < limit` whose body increments `index` by exactly one. Supply an indexed semantic
+invariant `P j state`, show that it retains the fixed limit `N`, and prove the actual body runs
+within `T` instructions and establishes `P (j+1)`. Start with `index ≤ N` and `P index state`.
+`ExecWithin.loop_count` returns `P N`, `index = N`, and allowance
+`(N-index)*(T+2)+2`. This includes two control instructions per iteration and the final exit;
+setup and halt are separate. The rule introduces no `Fits (N+1)` requirement.
+
+Keep array contents, aliases, dirty-memory frames and instruction fits in the semantic/body
+proof. Derive unchanged registers using `ExecWithin.regs_eq` and `Code.Preserves` when helpful.
+The [complete counting-loop client](../../ComplexityTests/WordRAMCountingLoop.lean) starts at a
+nonzero counter, reaches the largest fitting word, and checks an already-completed loop. It also
+runs [Chan–He Padding](../../Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/Padding.lean) from dirty
+memory, checking empty/nonempty output and the exact `12*N+5` clock. To check the client, run
+`lake build ComplexityTests.WordRAMCountingLoop --wfail --iofail` from the repository root after
+[setup](../workflows/getting-started.md). If the body skips an index, changes the endpoint or has
+an irregular stopping condition, use `ExecWithin.loop_invariant`; for varying iteration charges,
+use `ExecWithin.loop_potential` in
+[`Structured`](../../Complexity/Computability/WordRAM/Structured.lean).
+
 ## Proving routine calls and memory frames
 
 For structured `Code`, import
@@ -28,6 +50,21 @@ existing separate rules. Missing word fits, alias conditions or a mismatched rou
 proof. Open the complete ordinary-import
 [call examples](../../ComplexityTests/WordRAMCallAutomation.lean), including a dirty caller,
 its actual continuation, a variable allowance and rejected wrong-code/insufficient-time cases.
+
+When a continuation would otherwise rebuild many caller-register equalities, import
+[`SymbolicExec.CanonicalCall`](../../Complexity/Computability/WordRAM/SymbolicExec/CanonicalCall.lean)
+and use `wram_call routine_spec canonical bank_injective with small post` at the same call
+boundary. The continuation's caller state is `small.extend bank oldCaller`. Run `wram_exec`
+or `wram_simp` with the callee's output facts: closed finite-bank reads normalize individually,
+and outside-bank reads return the original caller values. Inside-bank inputs still need actual
+callee preservation facts. Memory always comes from `small`, including its writes; a register
+frame supplies no memory frame. The raw equations are shared with the subroutine API in
+[`RegisterFrame`](../../Complexity/Computability/WordRAM/RegisterFrame.lean).
+For symbolic banks use `Data.extend_regs_of_eq` or
+`Data.extend_regs_of_forall_ne` explicitly. The complete
+[canonical-call examples](../../ComplexityTests/WordRAMCanonicalCall.lean) check a permuted bank,
+both callee and continuation stores, dirty outside registers, an empty bank and symbolic reads.
+Do not unfold `Function.extend`; these read rules keep nested caller states manageable.
 
 For memory readback, import
 [`MemoryView`](../../Complexity/Computability/WordRAM/MemoryView.lean).
@@ -77,6 +114,7 @@ one-entry matrix run and the zero-entry boundary case.
 |---|---|---|
 | Word-RAM ↔ generic interpreter | `step_toGeneric`, `run_toGeneric`, `executes_toGeneric_iff` in [Complexity/Computability/WordRAM/Defs.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Defs.lean) | Same basis, exact state correspondence and step count |
 | Multitape TM → Word-RAM | `ComputableInPolyTime.exists_wordRAM` and `exists_wordRAM_nat` in [Complexity/Computability/WordRAM/OfTuring.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/OfTuring.lean) | One fixed additive program; tapes represented by interleaved addresses; scalar answer must fit |
+| Space-bounded multitape TM → Word-RAM | `executes_simProgram_of_runsInSpace` and `uniformDecidableInTimeLogWord_of_decidableInTimeAndSpace` in [Complexity/Computability/WordRAM/OfTuring/Space.lean](../../Complexity/Computability/WordRAM/OfTuring/Space.lean) | Same simulator; words hold addresses linear in the work space, not the running time, so polynomial work space gives logarithmic width at any running time; decision bit only |
 | Word-RAM → native TM | [Complexity/Computability/WordRAM/Turing/Overhead.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Turing/Overhead.lean) | Efficient scalar operations, encoded fitted input, width and step budget construction charged |
 | Polynomial-time decisions | [mem_P_iff_uniformPolynomialTime](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/P/WordRAM.lean#L153) | Fixed program; basis contains additive operations and has polynomial native scalar cost; specified encoding and threshold |
 | Polynomial-time scalar functions | [Complexity/Computability/WordRAM/Invariance.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Invariance.lean) | General polynomial-bit answers use a polynomial width threshold; logarithmic-width equivalence additionally requires polynomially bounded answer values |
@@ -104,6 +142,8 @@ simulation -->|"charge the whole simulation"| result
 Every incoming requirement is explicit in [Program.ComputesInTime.turingComputableInPolyTime_of_width](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Turing.lean#L514). The chosen width is computable in unary, the fitted input words are computable from the original encoding, and each checked basis operation has a native certificate. The bounds are measured in that original encoded input length. [WordRAMTuring](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/ComplexityTests/WordRAMTuring.lean#L65) demonstrates the route. List-output and width-selected code use their own contracts.
 
 The reverse TM simulation's displayed overhead for a `T`-step, `n`-word, width-`w` run with scalar degree `d` is `O((T+1)*((n+T+1)*(w+1))^max(3,d))`, in addition to setup/clock obligations. The cubic floor reflects the finite association-list representation used by this simulator; it is not asserted to be an optimal RAM/TM overhead. The additive case has scalar degree two and still pays this cubic floor.
+
+The time-bounded inclusion `DTIME_subset_RAMTIME_additive` needs a polynomially bounded running time because the simulator's addresses grow with time. A decider with polynomial work space and super-polynomial time instead goes through [`uniformDecidableInTimeLogWord_of_decidableInTimeAndSpace`](../../Complexity/Computability/WordRAM/OfTuring/Space.lean). [`uniformDecidableInTimeLogWord_KSAT`](../../Complexity/Computability/Complexity/FineGrained/WordRAM.lean) applies it to the native model counter: for every `δ > 0`, one fixed additive program decides `k`-SAT on the bits of `encCNF φ` within `O(⌈2^(δ n)⌉ (L + 1)^e)` instructions at logarithmic width, so ETH fails on that word RAM too. The work-space bound must come from the decider's own contract; `DecidableInTimeO` forgets it.
 
 For scalar functions, polynomial output **bit length** differs from polynomial output **value**. `UniformComputableInPolyTime.polyBounded` records the necessity of the latter for a logarithmic-width scalar output. The general-width equivalence and logarithmic-width equivalence should not be merged into one unqualified theorem.
 

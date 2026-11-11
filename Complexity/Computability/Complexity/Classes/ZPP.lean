@@ -13,7 +13,6 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Li
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import Complexity.Foundations.Data.BitString.WordCount
-import Complexity.Tactic.OptionMatch
 import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
@@ -124,10 +123,7 @@ end DecidesWithZeroError
 /-- **`ZPP` is closed under complement.** -/
 theorem compl_mem_ZPP {A : Set α} (hA : A ∈ ZPP enc) : Aᶜ ∈ ZPP enc := by
   obtain ⟨p, V, hV, h⟩ := mem_ZPP.mp hA
-  refine mem_ZPP.mpr ⟨p, fun x => (V x).map Bool.not, ?_, h.compl⟩
-  unfold Option.map
-  option_match_to_elim
-  fun_prop
+  exact mem_ZPP.mpr ⟨p, fun x => (V x).map Bool.not, by fun_prop, h.compl⟩
 
 /-- **`ZPP ⊆ RP`**: accept exactly on the answer `some true`. -/
 theorem ZPP_subset_RP : ZPP enc ⊆ RP enc := fun _ ⟨p, V, hV, h⟩ =>

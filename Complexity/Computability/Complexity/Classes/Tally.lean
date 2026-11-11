@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fo
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
+import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Pair
 import Mathlib.Data.Set.Finite.List
 import Mathlib.NumberTheory.Chebyshev
 
@@ -192,16 +193,6 @@ end Tally
 
 open ComputableInPolyTime
 
-/-- The natural-number pairing function on unary naturals is polynomial-time. -/
-private theorem computableInPolyTime_unary_pair :
-    ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2) (encPair encUnary encUnary)
-      encUnary := by
-  have hleft : ComputableInPolyTime (fun p : ℕ × ℕ => p.2 * p.2 + p.1)
-      (encPair encUnary encUnary) encUnary := by fun_prop
-  have hright : ComputableInPolyTime (fun p : ℕ × ℕ => p.1 * p.1 + p.1 + p.2)
-      (encPair encUnary encUnary) encUnary := by fun_prop
-  simpa [Nat.pair] using unary_lt.ite hleft hright
-
 /-- The residue modulo a computed unary `m + 1` of a computed word is polynomial-time. -/
 private theorem computableInPolyTime_residue {γ : Type} {encIn : γ ↪ List Bool} {m : γ → ℕ}
     {u : γ → List Bool} (hm : ComputableInPolyTime m encIn encUnary)
@@ -245,8 +236,8 @@ theorem exists_polyTimeCTTReducible_encUnary_of_mem_SPARSE {β : Type} {encB : �
     have hres : ComputableInPolyTime (fun p : β × ℕ => Tally.residue p.2 (encB p.1))
         (encPair encB encUnary) encUnary :=
       computableInPolyTime_residue (snd _ _) (hencB.comp (fst _ _))
-    exact computableInPolyTime_unary_pair.comp
-      (hlen.prod (computableInPolyTime_unary_pair.comp ((snd _ _).prod hres)))
+    exact unary_pair.comp
+      (hlen.prod (unary_pair.comp ((snd _ _).prod hres)))
   · by_contra hb
     have hu : encB b ∉ encB '' S := fun hmem => hb (encB.injective.mem_set_image.1 hmem)
     obtain ⟨m, hm, hnot⟩ := Tally.exists_fingerprint_notMem
@@ -297,8 +288,8 @@ theorem PolyTimeCTTReducible.exists_encUnary_inter (h₁ : PolyTimeCTTReducible 
     have hq₂' : ComputableInPolyTime (fun p : α × ℕ => q₂ (p.1, p.2 - r₁ p.1))
         (encPair encA encUnary) encUnary := hq₂.comp (hfst.prod (unary_sub' hsnd (hr₁.comp hfst)))
     have h := ite' (unary_lt' hsnd (hr₁.comp hfst))
-      (computableInPolyTime_unary_pair.comp ((const 0).prod hq₁))
-      (computableInPolyTime_unary_pair.comp ((const 1).prod hq₂'))
+      (unary_pair.comp ((const 0).prod hq₁))
+      (unary_pair.comp ((const 1).prod hq₂'))
     simpa only [Function.comp_def, decide_eq_true_eq] using h
   · simp only [Set.mem_inter_iff, hL₁ a, hL₂ a]
     constructor
@@ -327,7 +318,7 @@ theorem PolyTimeCTTReducible.exists_encUnary_union (h₁ : PolyTimeCTTReducible 
         encUnary := unary_div.comp ((snd _ _).prod (hr₂.comp hfst))
     have hmod : ComputableInPolyTime (fun p : α × ℕ => p.2 % r₂ p.1) (encPair encA encUnary)
         encUnary := unary_mod.comp ((snd _ _).prod (hr₂.comp hfst))
-    exact computableInPolyTime_unary_pair.comp
+    exact unary_pair.comp
       ((hq₁.comp (hfst.prod hdiv)).prod (hq₂.comp (hfst.prod hmod)))
   · simp only [Set.mem_union, hL₁ a, hL₂ a, Set.mem_ofPred_eq, Nat.unpair_pair]
     constructor

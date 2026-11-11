@@ -247,8 +247,7 @@ theorem precisionBound_le (C s d : ℕ) :
     calc precisionBound C s (d + 1)
         = precisionBound C s d + C * s * (8 * (4 * 2 ^ a + a + 1)) := by
           rw [precisionBound]; ring
-      _ ≤ C * s * 2 ^ a * (n + 1 + d * (8 * n + 40)) + C * s * (2 ^ a * (8 * n + 40)) :=
-          Nat.add_le_add hP (Nat.mul_le_mul_left _ hstep)
+      _ ≤ C * s * 2 ^ a * (n + 1 + d * (8 * n + 40)) + C * s * (2 ^ a * (8 * n + 40)) := by gcongr
       _ = C * s * 2 ^ prefixBits s (d + 1) * (n + 1 + (d + 1) * (8 * n + 40)) := by
           rw [show prefixBits s (d + 1) = a from rfl]; ring
 
@@ -325,8 +324,7 @@ theorem sqrt_log_two_le_mul_sqrt_taper {s d : ℕ} (hu : 1 ≤ taper s d) :
       _ < (u + 1) * 2 ^ (17 + d) := hn
       _ ≤ 4 * y ^ 2 * 2 ^ (17 + d) := Nat.mul_le_mul_right _ hu1
       _ = 2 ^ (19 + d) * y ^ 2 := by rw [show 19 + d = 2 + (17 + d) by omega, pow_add]; ring
-      _ ≤ 2 ^ (20 + 2 * d) * y ^ 2 := Nat.mul_le_mul_right _ (Nat.pow_le_pow_right two_pos
-          (by omega))
+      _ ≤ 2 ^ (20 + 2 * d) * y ^ 2 := by gcongr <;> omega
       _ = (2 ^ (10 + d) * y) ^ 2 := by rw [mul_pow, ← pow_mul]; ring_nf
   exact ((Nat.pow_lt_pow_iff_left (by norm_num)).1 hsq).le
 
@@ -400,9 +398,7 @@ private theorem mul_taper_le_of {p C s A d n σ u M : ℕ}
       _ ≤ C * n ^ 2 * (50 * n ^ 2) := Nat.mul_le_mul (Nat.mul_le_mul_left _ h2) h1
       _ = 50 * C * n ^ 4 := by ring
   calc p * u ≤ C * s * 2 ^ A * (n + 1 + d * (8 * n + 40)) * u := Nat.mul_le_mul_right _ hp
-    _ ≤ C * (M * σ) * 2 ^ A * (n + 1 + d * (8 * n + 40)) * u :=
-        Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _
-          (Nat.mul_le_mul_left C hsM)))
+    _ ≤ C * (M * σ) * 2 ^ A * (n + 1 + d * (8 * n + 40)) * u := by gcongr
     _ = M * 2 ^ A * (C * σ * (n + 1 + d * (8 * n + 40)) * u) := by ring
     _ ≤ M * 2 ^ A * 2 ^ u := Nat.mul_le_mul_left _ (hfac.trans hpow)
     _ = M * 2 ^ (A + u) := by rw [mul_assoc, ← pow_add]
@@ -411,8 +407,7 @@ private theorem mul_taper_le_of {p C s A d n σ u M : ℕ}
 private theorem eight_mul_le_two_pow {a u n C : ℕ} (hC : 1 ≤ C) (hn : 1 ≤ n) (ha : a ≤ n)
     (hu : u ≤ n) (hpow : 50 * C * n ^ 4 ≤ 2 ^ u) : 8 * (a + 1) * u ≤ 2 ^ u := by
   have h1 : 8 * (a + 1) * u ≤ 16 * n ^ 2 := by
-    calc 8 * (a + 1) * u ≤ 8 * (n + n) * n :=
-          Nat.mul_le_mul (Nat.mul_le_mul_left 8 (Nat.add_le_add ha hn)) hu
+    calc 8 * (a + 1) * u ≤ 8 * (n + n) * n := by gcongr
       _ = 16 * n ^ 2 := by ring
   have h2 : n ^ 2 ≤ n ^ 4 := Nat.pow_le_pow_right hn (by norm_num)
   have h3 : 16 * n ^ 4 ≤ 50 * C * n ^ 4 :=
@@ -551,8 +546,7 @@ private theorem activeBounds_of {C s d M p : ℕ} (hA : Active C s d M p)
       calc Nat.log 2 s ^ 4 ≤ ((Nat.sqrt (Nat.log 2 s) + 1) ^ 2) ^ 4 :=
             Nat.pow_le_pow_left hnσ.le 4
         _ = (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 := by rw [← pow_mul]
-    calc 50 * C * Nat.log 2 s ^ 4 ≤ 50 * C * (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 :=
-          Nat.mul_le_mul_left _ hn4
+    calc 50 * C * Nat.log 2 s ^ 4 ≤ 50 * C * (Nat.sqrt (Nat.log 2 s) + 1) ^ 8 := by gcongr
       _ ≤ 2 ^ (Nat.sqrt (Nat.log 2 s) / (2 ^ 17 * C)) := hA1
       _ ≤ 2 ^ taper s d := Nat.pow_le_pow_right two_pos (hA.le_taper hs2)
   have hu1 : 1 ≤ taper s d := by
@@ -694,8 +688,7 @@ theorem card_modeBudget_le {C s d M p : ℕ} (hA : Active C s d M p) (hs : 2 ≤
   have hσ1 : 1 ≤ σ := Nat.one_le_sqrt_log_two hs
   have hx : x ≤ 15360 * C * s / (σ * 8 ^ d) := by
     rw [Nat.le_div_iff_mul_le (by positivity)]
-    calc x * (σ * 8 ^ d) ≤ x * (2 ^ (10 + d) * y * 8 ^ d) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hσ)
+    calc x * (σ * 8 ^ d) ≤ x * (2 ^ (10 + d) * y * 8 ^ d) := by gcongr
       _ = x * y * 2 ^ 10 * (2 ^ d * 8 ^ d) := by rw [pow_add]; ring
       _ ≤ 15 * M * 2 ^ 10 * 16 ^ d := by
           rw [← mul_pow]

@@ -11,6 +11,8 @@ public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTa
 public import Complexity.Computability.GenericRAM.Signed.Fits
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete native ten-child accumulation
 
@@ -54,26 +56,21 @@ theorem exec_childLoop {w D V c e T p R C : ℕ} (x : Data registers)
         hmag d ((Finset.mem_range.mp hd).trans_le hk)
       _ = k * C := by simp
       _ ≤ 10 * C := Nat.mul_le_mul_right C hk
-  let I (y : Data registers) : Prop :=
-    y.regs Reg.term ≤ 10 ∧
-      y.regs Reg.accumulator = Signed.encode (∑ d ∈ Finset.range (y.regs Reg.term), b d) ∧
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    y.regs Reg.accumulator = Signed.encode (∑ d ∈ Finset.range j, b d) ∧
       y.mem = x.mem ∧ (∀ i, ¬ChildLocal i → y.regs i = x.regs i)
-  have hi : I x := by
-    refine ⟨by simp [hd], ?_, rfl, fun _ _ => rfl⟩
+  have hi : P (x.regs Reg.term) x := by
+    refine ⟨?_, rfl, fun _ _ => rfl⟩
     simp [hd, hacc, Signed.encode]
-  have hb (y : Data registers) (hy : I y)
-      (hg : (Cond.lt Reg.term Reg.ten).Holds y) :
-      ∃ z, ExecWithin (w + 2) addChild y z 29 ∧ I z ∧
-        10 - z.regs Reg.term < 10 - y.regs Reg.term := by
-    obtain ⟨hle, hsumy, hmem, hregs⟩ := hy
-    have hy10 : y.regs Reg.ten = 10 := (hregs _ (by decide)).trans h10
-    have hlt : y.regs Reg.term < 10 := by
-      simpa only [Cond.holds_lt, hy10] using hg
+  have hb (y : Data registers) (hy : P (y.regs Reg.term) y) (hlt : y.regs Reg.term < 10) :
+      ∃ z, ExecWithin (w + 2) addChild y z 29 ∧ P (y.regs Reg.term + 1) z ∧
+        z.regs Reg.term = y.regs Reg.term + 1 := by
+    obtain ⟨hsumy, hmem, hregs⟩ := hy
     have hchildmag : (b (y.regs Reg.term)).natAbs ≤ 10 * C :=
       (hmag _ hlt).trans (by omega)
     have hchildrank := hrange _ hlt
     obtain ⟨z, hz, hza, hzd, hzm, hzf⟩ := exec_addChild
-      (hsigned.of_natAbs_le (hsum _ hle)) (hsigned.of_natAbs_le hchildmag) y
+      (hsigned.of_natAbs_le (hsum _ hlt.le)) (hsigned.of_natAbs_le hchildmag) y
       ((hregs _ (by decide)).trans hD) ((hregs _ (by decide)).trans hV)
       ((hregs _ (by decide)).trans hc) ((hregs _ (by decide)).trans he)
       ((hregs _ (by decide)).trans hT) hTpos ((hregs _ (by decide)).trans hp)
@@ -81,18 +78,11 @@ theorem exec_childLoop {w D V c e T p R C : ℕ} (x : Data registers)
       (by simpa only [hmem] using hrank _ hlt)
       (by simpa only [hmem] using hvalue _ hlt)
       (hfit.of_le (by omega))
-    refine ⟨z, hz, ⟨by omega, ?_, hzm.trans hmem,
-      fun i hi => (hzf i hi).trans (hregs i hi)⟩, by omega⟩
-    simpa only [hzd, Finset.sum_range_succ] using hza
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I
-    (fun y => 10 - y.regs Reg.term) hb hi
-  obtain ⟨hle, hya, hym, hyf⟩ := hIy
-  have hy10 : y.regs Reg.ten = 10 := (hyf _ (by decide)).trans h10
-  have hdone : y.regs Reg.term = 10 := by
-    simp only [Cond.holds_lt, hy10, not_lt] at hstop
-    omega
-  refine ⟨y, ?_, hdone, ?_, hym, hyf⟩
-  · simpa only [hd] using hy
-  · simpa only [hdone] using hya
+    refine ⟨z, hz, ⟨?_, hzm.trans hmem,
+      fun i hi => (hzf i hi).trans (hregs i hi)⟩, hzd⟩
+    simpa only [Finset.sum_range_succ] using hza
+  obtain ⟨y, hy, ⟨hya, hym, hyf⟩, hdone⟩ := ExecWithin.loop_count P
+    (fun _ ⟨_, _, hf⟩ => (hf _ (by decide)).trans h10) hb (by simp [hd]) hi
+  exact ⟨y, by simpa only [hd] using hy, hdone, hya, hym, hyf⟩
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.BoxTable

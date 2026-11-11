@@ -54,6 +54,12 @@ example : ETH ↔ Cslib.Complexity.ETH := Iff.rfl
 
 example : SETH ↔ Cslib.Complexity.SETH := Iff.rfl
 
+-- The direct theorem is the library's subexponential-time notion, unfolded.
+example (k : ℕ) :
+    Cslib.Complexity.DecidableInSubexpTime (Cslib.Complexity.KSAT k) Cslib.Complexity.encCNF
+      Cslib.Logic.PL.CNF.numVars :=
+  decidableInExpTime_KSAT k
+
 example (n : ℕ) :
     interpolationScale n = Cslib.Complexity.SubexponentialSAT.interpolationScale n := rfl
 

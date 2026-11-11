@@ -12,6 +12,7 @@ public import Complexity.Computability.Machines.Turing.MultiTape.BlockComputatio
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Degree.Bounds
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.BinarySizeFacts
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.FinRange
 
 /-!
@@ -138,8 +139,7 @@ theorem walk_inSpace (k : ℕ) :
             16 * ((encWalkArgs a).length + 1) := by
     have hc := hstates a i hi.le
     have hm := length_le_encList_of_mem encNat (List.getElem_mem hi)
-    simp only [length_encPair, encWalkArgs, encProviderArgs] at *
-    omega
+    enc_len [encWalkArgs, encProviderArgs] at *
   have hfold := ComputableInSpace.foldlWith
     (encIn := encWalkArgs) (encP := encProviderArgs) (encB := encNat)
     (encA := encNat) (encL := encList encNat)
@@ -152,8 +152,6 @@ theorem walk_inSpace (k : ℕ) :
     (step := fun par n j => child k (par.1, par.2, n, j))
     hpar hpath hq (pathStep_inSpace k)
     hspace hstates
-  exact hfold.weaken (.of_le_linear 100 100 fun a => by
-    simp only [encWalkArgs, encProviderArgs, length_encPair]
-    omega)
+  exact hfold.weaken (.of_le_linear 100 100 fun a => by enc_len [encWalkArgs, encProviderArgs])
 
 end Turing.MultiTapePTM.BlockComputation.ImplicitPath

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionMachine
 public import Complexity.Computability.Circuit.Frontier.TensorNetwork.FastContractionStep
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.Lists
+import Complexity.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 
@@ -100,17 +101,14 @@ theorem scale_add_prec_add_length_fl_le (x : Call T) :
     x.scale + x.prec + x.fl.length ≤ (encCall encT x).length := by
   have h := length_le_length_encList encNat x.fl
   obtain ⟨⟨s, d, b, p, fl, r⟩, D⟩ := x
-  simp only [Call.scale, Call.prec, Call.fl, encCall, encParams, length_encPair, encUnary_apply,
-    List.length_replicate] at h ⊢
-  omega
+  enc_len [Call.scale, Call.prec, Call.fl, encCall, encParams] at h ⊢
 
 /-- The network of a call is at most its encoded length. -/
 theorem length_net_le (x : Call T) :
     (DescribedNetwork.encDescribed (VertexDesc.enc encT) x.net).length ≤
       (encCall encT x).length := by
   obtain ⟨p, D⟩ := x
-  simp only [Call.net, encCall, length_encPair]
-  omega
+  enc_len [Call.net, encCall]
 
 /-- A vertex of a call is at most its encoded length. -/
 theorem length_vertex_le {x : Call T} {v : List ℕ × VertexDesc T}
@@ -121,9 +119,7 @@ theorem length_vertex_le {x : Call T} {v : List ℕ × VertexDesc T}
       (DescribedNetwork.encDescribed (VertexDesc.enc encT) x.net).length := by
     change _ ≤ (encPair encUnary (encList (encPair (encList encNat) (VertexDesc.enc encT)))
       (x.net.numEdges, x.net.vertices)).length
-    rw [length_encPair]
-    dsimp only
-    omega
+    enc_len
   have h3 := length_net_le encT x
   omega
 
@@ -608,8 +604,7 @@ theorem leafCertificate_le_of_packetShape
   set N := (encCall encT x).length + ES with hN
   have hR : (encCall encT x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + ES + 1 ≤
       (N + 1) ^ 2 := by
-    have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤ (N + 1) * N :=
-      Nat.mul_le_mul (by omega) (by omega)
+    have : 2 ^ (Nat.log 2 x.scale / 32768) * x.prec ≤ (N + 1) * N := by gcongr <;> omega
     nlinarith
   have hpow : K * ((encCall encT x).length + 2 ^ (Nat.log 2 x.scale / 32768) * x.prec + ES +
       1) ^ K ≤ 2 * K * (N + 1) ^ (2 * K) :=
@@ -759,16 +754,14 @@ theorem exists_packetFactor_le (C c : ℕ) : ∃ K : ℕ, ∀ s m p : ℕ, 2 ≤
         ≤ ((c₀ + 2) * (c + 1) * (μ + 1)) * (2 ^ c₀ * 2 ^ (μ / 32768)) * (μ + 1) :=
           Nat.mul_le_mul (Nat.mul_le_mul h1 hA') h2
       _ = (c₀ + 2) * (c + 1) * 2 ^ c₀ * ((μ + 1) ^ 2 * 2 ^ (μ / 32768)) := by ring
-      _ ≤ (c₀ + 2) * (c + 1) * 2 ^ c₀ * (16 * 2 ^ (μ / 2) * 2 ^ (μ / 32768)) :=
-          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ h3)
+      _ ≤ (c₀ + 2) * (c + 1) * 2 ^ c₀ * (16 * 2 ^ (μ / 2) * 2 ^ (μ / 32768)) := by gcongr
       _ = 16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * (2 ^ (μ / 2) * 2 ^ (μ / 32768)) := by ring
       _ ≤ 16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s := Nat.mul_le_mul_left _ (h4.trans h5)
   have hE' : ((lam + 1) * (c + 1) + 1) * A ≤ 16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s / Nat.sqrt μ :=
     (Nat.le_div_iff_mul_le (by omega)).mpr hE
   calc (A * p + 2) ^ A ≤ (2 ^ ((lam + 1) * (c + 1) + 1)) ^ A := Nat.pow_le_pow_left hbase _
     _ = 2 ^ (((lam + 1) * (c + 1) + 1) * A) := by rw [← pow_mul]
-    _ ≤ 2 ^ (16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s / Nat.sqrt μ) :=
-        Nat.pow_le_pow_right (by norm_num) hE'
+    _ ≤ 2 ^ (16 * ((c₀ + 2) * (c + 1)) * 2 ^ c₀ * s / Nat.sqrt μ) := by gcongr
 
 /-- **The leaf factor is subexponential.** For all constants `C`, `c` and `s₀` there is `K` such
 that, for `s ≤ m ≤ C s`, `M ≤ 2 m` and `p ≤ n`, writing `A = 2 ^ (⌊log₂ m⌋ / 32768)`,

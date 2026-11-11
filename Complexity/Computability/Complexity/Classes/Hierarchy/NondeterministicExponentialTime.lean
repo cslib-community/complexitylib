@@ -20,6 +20,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Tactic.EncLen
 
 /-!
 # A nondeterministic exponential time hierarchy by lazy diagonalization
@@ -211,7 +212,7 @@ theorem expLazyDiagonal_notMem_NTIME (k : ℕ) :
   have hMP : M ≤ P := by
     have := hwlen; generalize 2 ^ code.length = e at this; omega
   have hxlen (m : ℕ) (hm : P ≤ m) : (x m).length = m := by
-    simp only [x, List.length_append, length_frame, List.length_replicate]; omega
+    enc_len [x]
   have hshort : Diagonal.shortDesc w = true := by
     rw [Diagonal.shortDesc, decide_eq_true_eq, unframe_frame_append, hwlen]; omega
   have hverifier (m : ℕ) (hm : P ≤ m) (v : List Bool) : verifier k (x m, v) =
@@ -324,9 +325,7 @@ private theorem exists_computableInO_accepts : ∃ D, ComputableInO
     refine le_trans ?_ (Nat.mul_le_mul_left K (Nat.le_succ _))
     rw [e]
     have ⟨h₁, h₂⟩ := hbounds q
-    simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
-      length_frame, hb] at h₁ h₂ ⊢
-    omega
+    enc_len [Function.comp_apply, enc, hb] at h₁ h₂ ⊢
 
 /-- The numeric facts behind the bound of the brute force: the encoded pair of length `N`, the
 certificate length `c`, the unary certificate length and the search. -/
@@ -506,8 +505,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
       CE * 2 ^ (2 * (unframe p.1).length + 1) +
         4 ^ ((k + 2) * (2 * (unframe p.1).length + 1 + 1)) ≤ (2 * CE + 1) * cheap k p := by
     have hu := length_unframe_le p.1
-    have hn : p.1.length ≤ (encPair encBits encBits p).length := by
-      simp only [length_encPair, encBits_apply]; omega
+    have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
     obtain ⟨hZ, hE'⟩ := horizon_le k CE p.1
     set Y := 4 ^ ((k + 2) * (p.1.length + 1))
     have hY : 1 ≤ Y := Nat.one_le_pow _ _ (by norm_num)
@@ -653,8 +651,7 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
     omega
   -- the tests
   have hcheap : cheap k (x, v) ≤ A₁ * M := by
-    have hN : (encPair encBits encBits (x, v)).length + 1 ≤ 2 * V := by
-      simp only [length_encPair, encBits_apply, hv', ← hn]; omega
+    have hN : (encPair encBits encBits (x, v)).length + 1 ≤ 2 * V := by enc_len [hv', ← hn]
     calc cheap k (x, v) = ((encPair encBits encBits (x, v)).length + 1) ^ 2 *
           (4 ^ ((k + 2) * (n + 1))) ^ 2 := rfl
       _ ≤ (2 * V) ^ 2 * (4 ^ ((k + 2) * (n + 1))) ^ 2 :=
@@ -704,8 +701,7 @@ theorem expLazyDiagonal_mem_NTIME (k : ℕ) :
       Nat.lt_two_pow_self.le.trans
         (Nat.pow_le_pow_right Nat.one_lt_two.le (Nat.le_mul_of_pos_left _ (Nat.succ_pos _)))
     have hlen : (encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
-        certLen k P ≤ 3 * certLen k P := by
-      simp only [length_encPair, encBits_apply, length_frame]; omega
+        certLen k P ≤ 3 * certLen k P := by enc_len
     rcases le_or_gt (3 * K) (2 ^ (P + 1)) with hK | hK
     · have hle : K * ((encPair encBits encBits (unframe (unframe x), frame (unframe x))).length +
           certLen k P) ≤ horizon k P :=

@@ -17,11 +17,12 @@ import Complexity.Computability.WordRAM.Call
 
 The controller saves the computed frontend metadata, builds the shared prime bitmap, delivers
 the traversal arguments and reserves space for the forest. These private stage contracts keep
-the computed metadata and exact instruction costs together; `PreprocessingExecute` composes them.
+the computed metadata and exact instruction costs together; catalogue and visitor initialization
+compose them.
 The native ABI, layout and composition proofs are original.
 -/
 
--- Proof-only companion; PreprocessingExecute imports these helpers with `import all`.
+-- Proof-only companion; catalogue and visitor initialization use `import all`.
 set_option linter.privateModule false
 
 namespace Cslib.Algorithms.WordRAM.ThreeSum.ChanHe.Preprocessing

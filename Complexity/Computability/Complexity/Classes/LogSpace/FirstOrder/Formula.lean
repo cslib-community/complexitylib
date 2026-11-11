@@ -9,6 +9,7 @@ module
 
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram
 public import Complexity.Logics.FirstOrder.Basic
+public import Complexity.Logics.FirstOrder.QuantifierRank
 import Complexity.Foundations.Data.List.Lookup
 
 /-!
@@ -32,6 +33,8 @@ code lengths, quantifier order or empty-universe behavior.
 
 * `Cslib.Logic.Vocabulary.ModelChecker.reaches_formulaCodeWith`: semantic correctness and
   register preservation, from the actual atomic-handler proofs.
+* `Cslib.Logic.FO.boundDepth_eq_add_quantifierRank`: the register depth is the number of bound
+  variables in scope plus the quantifier rank.
 
 ## References
 
@@ -65,6 +68,20 @@ theorem le_boundDepth {α : Type*} : ∀ {k : ℕ} (φ : L.BoundedFormula α k),
   | _, .rel _ _ => le_rfl
   | _, .imp φ _ => (le_boundDepth φ).trans (le_max_left _ _)
   | _, .all φ => (Nat.le_succ _).trans (le_boundDepth φ)
+
+/-- The register depth of a formula is the number of bound variables in scope plus its quantifier
+rank. -/
+theorem boundDepth_eq_add_quantifierRank {α : Type*} :
+    ∀ {k : ℕ} (φ : L.BoundedFormula α k), boundDepth φ = k + quantifierRank φ
+  | _, .falsum => by rw [quantifierRank_falsum]; rfl
+  | _, .equal _ _ => by rw [quantifierRank_equal]; rfl
+  | _, .rel _ _ => by rw [quantifierRank_rel]; rfl
+  | _, .imp φ ψ => by
+    rw [quantifierRank_imp, boundDepth, boundDepth_eq_add_quantifierRank φ,
+      boundDepth_eq_add_quantifierRank ψ, Nat.add_max_add_left]
+  | _, .all φ => by
+    rw [quantifierRank_all, boundDepth, boundDepth_eq_add_quantifierRank φ]
+    omega
 
 end FO
 

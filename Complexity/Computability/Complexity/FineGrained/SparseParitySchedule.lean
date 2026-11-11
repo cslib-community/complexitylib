@@ -460,8 +460,7 @@ theorem CNF.initialRowWeightBound_le_mul_pow_clog {n m B C_B β_B : ℕ}
   have hm_pow : m ≤ 2 ^ ((C_B + β_B + 1) * lam) := by
     calc m ≤ B * n := hm
       _ ≤ C_B * lam ^ β_B * n := Nat.mul_le_mul_right n hB
-      _ ≤ 2 ^ (C_B * lam) * 2 ^ (lam * β_B) * 2 ^ lam :=
-          Nat.mul_le_mul (Nat.mul_le_mul hCB_pow hlam_pow) hn_pow
+      _ ≤ 2 ^ (C_B * lam) * 2 ^ (lam * β_B) * 2 ^ lam := by gcongr
       _ = 2 ^ ((C_B + β_B + 1) * lam) := by rw [← pow_add, ← pow_add]; ring_nf
   have hlog : Nat.log 2 m + 1 ≤ (C_B + β_B + 2) * lam := by
     have hlog_le : Nat.log 2 m ≤ (C_B + β_B + 1) * lam := by

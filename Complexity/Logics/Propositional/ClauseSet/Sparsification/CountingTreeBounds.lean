@@ -403,8 +403,7 @@ theorem length_countingLeaves_pow_le_two_pow_of_budget {k M B : ℕ}
   refine (CountingBranchingRule.card_le_two_pow_of_isLeafWord (R := countingTreeRule (M ^ ·))
     hM hred hnt hk declared hsupport hB hbudget (countingLeafWords (M ^ ·) ψ).toFinset
     (fun w hw => isLeafWord_of_mem_countingLeafWords hθ (List.mem_toFinset.mp hw))).trans ?_
-  exact Nat.pow_le_pow_right (by decide : 0 < 2)
-    (Nat.add_le_add_right (Nat.div_le_div_right hn) 1)
+  gcongr
 
 /-- **Appendix A.3 `2 ^ (n / B + 1)` leaf-count bound at `countingThresholdBase k B`.**
 For any width `k : ℕ`, inverse error budget `1 ≤ B`, and reduced, nontautological clause set `ψ`

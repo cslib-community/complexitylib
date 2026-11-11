@@ -107,8 +107,7 @@ private theorem shiftedCount_inO {α : Type} {encA : α ↪ List Bool}
       have h2 : 1 ≤ Y ^ q := Nat.one_le_pow q Y hY1
       nlinarith
     have hφ_b₀ : ((encCNF (φ x)).length + 1) ^ b₀ ≤ (p + 1) ^ b₀ * Y ^ (q * b₀) := by
-      calc ((encCNF (φ x)).length + 1) ^ b₀ ≤ ((p + 1) * Y ^ q) ^ b₀ :=
-            Nat.pow_le_pow_left hφ_len' b₀
+      calc ((encCNF (φ x)).length + 1) ^ b₀ ≤ ((p + 1) * Y ^ q) ^ b₀ := by gcongr
         _ = (p + 1) ^ b₀ * Y ^ (q * b₀) := by rw [mul_pow, pow_mul]
     have hSpair : Y ^ d₂ + (Y ^ d₁ + ((encCNF (φ x)).length + 1) ^ b₀) ≤
         (2 + (p + 1) ^ b₀) * Y ^ B₁ := by
@@ -138,8 +137,7 @@ private theorem shiftedCount_inO {α : Type} {encA : α ↪ List Bool}
     set N : ℕ := G x
     have hN1 : 1 ≤ N := hG1 x
     have hφ_e₀ : ((encCNF (φ x)).length + 1) ^ e₀ ≤ (p + 1) ^ e₀ * Y ^ e := by
-      calc ((encCNF (φ x)).length + 1) ^ e₀ ≤ ((p + 1) * Y ^ q) ^ e₀ :=
-            Nat.pow_le_pow_left hφ_len' e₀
+      calc ((encCNF (φ x)).length + 1) ^ e₀ ≤ ((p + 1) * Y ^ q) ^ e₀ := by gcongr
         _ = (p + 1) ^ e₀ * Y ^ (q * e₀) := by rw [mul_pow, pow_mul]
         _ ≤ (p + 1) ^ e₀ * Y ^ e := Nat.mul_le_mul_left _ (Nat.pow_le_pow_right hY1 (by omega))
     have hsub : F (φ x) * ((encCNF (φ x)).length + 1) ^ e₀ ≤ (p + 1) ^ e₀ * (N * Y ^ e) := by
@@ -237,8 +235,7 @@ theorem exists_circuitAcceptCounter {σ : Signature} [Finite σ.Op]
             (m + 1) * ((Compiler.toCNF c.2 I acc).numVars + 1) := by nlinarith
         calc (Compiler.toCNF c.2 I acc).length
             ≤ 2 ^ (k + 1) * ((Compiler.toCNF c.2 I acc).numVars + m) := h
-          _ ≤ 2 ^ (k + 1) * ((m + 1) * ((Compiler.toCNF c.2 I acc).numVars + 1)) :=
-              Nat.mul_le_mul_left _ this
+          _ ≤ 2 ^ (k + 1) * ((m + 1) * ((Compiler.toCNF c.2 I acc).numVars + 1)) := by gcongr
           _ = _ := by ring)
       (fun c => (Compiler.numVars_toCNF_le I acc (hk c.2)).trans (by nlinarith))
   refine ⟨count, A, e, b, fun c => ?_, hinO⟩

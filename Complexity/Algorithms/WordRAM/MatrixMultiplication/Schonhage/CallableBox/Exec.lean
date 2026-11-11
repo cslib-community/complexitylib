@@ -34,7 +34,8 @@ open Cslib.Algorithms.MatrixMultiplication.Schonhage
 @[expose] def timeBound (m t : ℕ) {N : ℕ} (qs : List (Fin N × Fin N)) : ℕ :=
   coreTime m t qs + 7 * (QueriedProduct.inputEnd m N qs.length + 1) + 7 * qs.length + 14
 
-private theorem spans_le_budget (L m t N Q : ℕ) :
+/-- Input-block end and output span fit disjointly inside `BoxProduct.wordBudget`. -/
+theorem spans_le_budget (L m t N Q : ℕ) :
     QueriedProduct.inputEnd m N Q + 1 ≤ QueriedProduct.outputBase L m N Q ∧
       QueriedProduct.inputEnd m N Q + 1 + QueriedProduct.outputBase L m N Q + Q + 2 ≤
         BoxProduct.wordBudget L m t N Q := by

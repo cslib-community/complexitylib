@@ -9,9 +9,10 @@ module
 
 public import Complexity.Languages.Probabilistic.UniformNat
 public import Complexity.Languages.Probabilistic.Repeat
+import Complexity.Probability.Option
+import Complexity.Probability.PMF.Option.Bind
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Data.Fintype.Fin
-import Mathlib.Logic.Equiv.Option
-import Mathlib.Topology.Algebra.InfiniteSum.Constructions
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
 
@@ -361,12 +362,6 @@ theorem eval_sampleUniformInterval_some_eq (bound attempts value : ℕ) [NeZero 
   · simp [hv, div_eq_mul_inv]
   · simp [hv]
 
-private theorem tsum_option_eq {α : Type} (f : Option α → ℝ≥0∞) :
-    ∑' x, f x = f none + ∑' x, f (some x) := by
-  rw [← (Equiv.optionEquivSumPUnit.{0, 0} α).symm.tsum_eq f]
-  rw [CompleteLattice.summable.tsum_sum CompleteLattice.summable]
-  simp [add_comm]
-
 private theorem optional_map_density {α β : Type} (μ : PMF (Option α)) (ν : PMF α)
     (mass : ℝ≥0∞) (h : ∀ a, μ (some a) = mass * ν a) (f : α → β) (b : β) :
     (μ.map (fun x => x.elim none (fun a => some (f a)))) (some b) = mass * (ν.map f) b := by
@@ -600,15 +595,8 @@ private theorem optional_test {α : Type} (μ : PMF (Option α)) (ν : PMF α)
     (mass : ℝ≥0∞) (h : ∀ a, μ (some a) = mass * ν a) (test : Option α → Bool) :
     (μ.map test) true = (if test none then μ none else 0) +
       mass * (ν.map (fun a => test (some a))) true := by
-  classical
-  rw [PMF.map_apply, tsum_option_eq, PMF.map_apply, ← ENNReal.tsum_mul_left]
-  congr 1
-  · cases htest : test none <;> simp
-  · apply tsum_congr
-    intro a
-    by_cases ht : true = test (some a)
-    · simp [ht, h]
-    · simp [ht]
+  simpa [PMF.map, PMF.pure_apply] using
+    Probability.PMF.bind_option_apply_of_some μ ν mass h (fun a => PMF.pure (test a)) true
 
 private theorem optional_test_error {α : Type} (μ : PMF (Option α)) (ν : PMF α)
     (mass : ℝ≥0∞) (hmass_top : mass ≠ ⊤) (h : ∀ a, μ (some a) = mass * ν a)
@@ -626,9 +614,7 @@ private theorem optional_test_error {α : Type} (μ : PMF (Option α)) (ν : PMF
     linarith
   let u := ((ν.map (fun out => test (some out))) true).toReal
   have hu0 : 0 ≤ u := ENNReal.toReal_nonneg
-  have hu1 : u ≤ 1 := by
-    simpa only [ENNReal.toReal_one] using ENNReal.toReal_mono ENNReal.one_ne_top
-      ((ν.map (fun out => test (some out))).coe_le_one true)
+  have hu1 : u ≤ 1 := PMF.toReal_apply_le_one _ true
   have hf0 : 0 ≤ (μ none).toReal := ENNReal.toReal_nonneg
   have hfirst : (if test none then μ none else 0) ≠ (⊤ : ℝ≥0∞) := by
     split_ifs

@@ -10,6 +10,8 @@ module
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Memory
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pruned.Control
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Sparse initialization of requested accumulators
 
@@ -114,51 +116,45 @@ theorem exec_clearRequested {w N capacity : ℕ} (x : Data registers) (input : �
       (∀ i < N, y.mem (x.regs listBase + i) = input i) ∧
       (∀ i, ¬ClearLocal i → y.regs i = x.regs i) := by
   let x0 := x.set index 0
-  let I (y : Data registers) : Prop := y.regs index ≤ N ∧
-    y.mem = zeroQueryPrefix x.mem (x.regs valueBase) input (y.regs index) ∧
+  let P (j : ℕ) (y : Data registers) : Prop :=
+    y.mem = zeroQueryPrefix x.mem (x.regs valueBase) input j ∧
     (∀ i, ¬ClearLocal i → y.regs i = x.regs i)
-  have hinit : I x0 := by
-    refine ⟨by simp [x0], by simp [x0], ?_⟩
+  have hinit : P (x0.regs index) x0 := by
+    refine ⟨by simp [x0], ?_⟩
     intro i hi
     have hne : i ≠ index := by intro h; subst h; exact hi (Or.inr (Or.inr rfl))
     simp [x0, hne]
-  have hread (y : Data registers) (hy : I y) (i : ℕ) (hi : i < N) :
+  have hread (j : ℕ) (y : Data registers) (hj : j ≤ N) (hy : P j y) (i : ℕ) (hi : i < N) :
       y.mem (x.regs listBase + i) = input i := by
-    rw [hy.2.1, zeroQueryPrefix_outside (fun j hj => hcode j (by omega))]
+    rw [hy.1, zeroQueryPrefix_outside (fun j hj => hcode j (by omega))]
     · exact hinput i hi
     · change ¬(x.regs valueBase ≤ x.regs listBase + i ∧
         x.regs listBase + i < x.regs valueBase + capacity)
       rcases hsep with h | h <;> omega
-  have hstep (y : Data registers) (hy : I y) (hc : (Cond.lt index count).Holds y) :
-      ∃ z, ExecWithin w clearValueStep y z 5 ∧ I z ∧
-        N - z.regs index < N - y.regs index := by
-    obtain ⟨hle, hm, hf⟩ := hy
-    have hcount := (hf count (by decide)).trans hN
+  have hstep (y : Data registers) (hy : P (y.regs index) y) (hk : y.regs index < N) :
+      ∃ z, ExecWithin w clearValueStep y z 5 ∧ P (y.regs index + 1) z ∧
+        z.regs index = y.regs index + 1 := by
+    obtain ⟨hm, hf⟩ := hy
     have hb := hf listBase (by decide)
     have hv := hf valueBase (by decide)
     have hnil := (hf nil (by decide)).trans h0
     have hone := (hf one (by decide)).trans h1
-    have hk : y.regs index < N := by simpa only [Cond.holds_lt, hcount] using hc
     have hq := hcode (y.regs index) hk
     obtain ⟨z, hz, hi, hmem, hregs⟩ := exec_clearValueStep y (input (y.regs index))
-      (by rw [hb]; exact hread y ⟨hle, hm, hf⟩ _ hk) hnil hone
+      (by rw [hb]; exact hread (y.regs index) y hk.le ⟨hm, hf⟩ _ hk) hnil hone
       (hw.of_le (by rw [hb]; omega)) (hw.of_le (by rw [hv]; omega)) (hw.of_le (by omega))
-    refine ⟨z, hz, ⟨by omega, ?_, fun i hi => (hregs i hi).trans (hf i hi)⟩, by omega⟩
-    rw [hmem, hm, hv, hi, zeroQueryPrefix_succ]
-  obtain ⟨y, hy, hIy, hstop⟩ := ExecWithin.loop_invariant I (fun y => N - y.regs index)
-    hstep hinit
-  have hcount := (hIy.2.2 count (by decide)).trans hN
-  have hindex : y.regs index = N := by
-    simp only [Cond.holds_lt, hcount, not_lt] at hstop
-    omega
+    refine ⟨z, hz, ⟨?_, fun i hi => (hregs i hi).trans (hf i hi)⟩, hi⟩
+    rw [hmem, hm, hv, zeroQueryPrefix_succ]
+  obtain ⟨y, hy, hIy, hindex⟩ := ExecWithin.loop_count P
+    (fun _ hy => (hy.2 count (by decide)).trans hN) hstep (by simp [x0]) hinit
   have hsetup : ExecWithin w (ram[ index ← #0 ] : Code .standard registers) x x0 1 := by
     ram_eval [x0]
   have hloop : ExecWithin w (Code.loop (.lt index count) clearValueStep) x0 y (7 * N + 2) := by
     simpa only [x0, Data.set_regs, Function.update_self, Nat.sub_zero, Nat.mul_comm] using hy
   have he : ExecWithin w clearRequested x y (7 * N + 3) :=
     (hsetup.seq hloop).mono (by omega)
-  refine ⟨y, he, hindex, ?_, hread y hIy, fun i hi => he.regs_eq (clear_preserves i hi)⟩
-  simpa only [hindex] using hIy.2.1
+  exact ⟨y, he, hindex, hIy.1, hread N y le_rfl hIy,
+    fun i hi => he.regs_eq (clear_preserves i hi)⟩
 
 /-- Registers changed by a complete internal-node initialization. -/
 def ClearValuesLocal (i : Fin registers) : Prop := ClearLocal i ∨ AdvanceLocal i

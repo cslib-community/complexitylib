@@ -40,6 +40,8 @@ coefficient `L`, so that each layout theorem reads as one line:
 
 ## Main definitions
 
+* `Cslib.Circuits.Frontier.DenseRectangleFree`: the hypotheses on the problem, that `S_n` is
+  eventually `K_n`-rectangle-free with `log K_n = o(n)` and `|S_n| ≥ |U| ^ (n - o(n))`.
 * `Cslib.Circuits.Frontier.CircuitLowerBound`: for a coefficient `L` and every `ε > 0`, circuits of
   fan-in at most two deciding dense rectangle-free sets on `n` inputs need more than `(L - ε) n`
   inner gates.
@@ -79,6 +81,19 @@ theorem logb_ncard_le_self {n : ℕ} {S : Set (Fin n → U)} (hS : S.Nonempty) :
         Real.logb_le_logb_of_le hq hpos hle
     _ = n := by rw [Real.logb_pow, Real.logb_self_eq_one hq, mul_one]
 
+omit [Finite U] [Nontrivial U] in
+/-- **Dense rectangle-free families**, the hypotheses on the problem in every frontier lower
+bound: for all large `n` the set `S_n ⊆ U^n` is `K_n`-rectangle-free, `log K_n = o(n)`, and
+`n log |U| - log |S_n| = o(n)`, that is, `|S_n| ≥ |U| ^ (n - o(n))`. -/
+structure DenseRectangleFree (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ) : Prop where
+  /-- For all large `n`, `S_n` is `K_n`-rectangle-free. -/
+  eventually_rectangleFree : ∀ᶠ n in atTop, RectangleFree (S n) (K n)
+  /-- The rectangle bound is subexponential: `log K_n = o(n)`. -/
+  isLittleO_log : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ)
+  /-- The sets are dense: `n log |U| - log |S_n| = o(n)`. -/
+  isLittleO_deficit :
+    (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop] fun n => (n : ℝ)
+
 variable {S : ∀ n, Set (Fin n → U)} {K : ℕ → ℕ}
 
 /-- A dense family of sets has `n - log_|U| |S_n| = o(n)`. -/
@@ -93,10 +108,7 @@ private theorem isLittleO_sub_logb_ncard
 
 /-- A dense family of rectangle-free sets is eventually large enough for the reduction:
 `|U| K_n ^ 2 ≤ |S_n|`. -/
-theorem eventually_card_mul_sq_le_ncard (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ)) :
+theorem eventually_card_mul_sq_le_ncard (hSK : DenseRectangleFree S K) :
     ∀ᶠ n in atTop, Nat.card U * K n ^ 2 ≤ (S n).ncard := by
   set q := Nat.card U
   have hq : (1 : ℝ) < q := by exact_mod_cast Finite.one_lt_card
@@ -105,9 +117,9 @@ theorem eventually_card_mul_sq_le_ncard (hfree : ∀ᶠ n in atTop, RectangleFre
       (n * Real.log q - Real.log (S n).ncard)) =o[atTop] fun n => (n : ℝ) :=
     ((isLittleO_const_left.mpr
       (Or.inr (tendsto_norm_atTop_atTop.comp tendsto_natCast_atTop_atTop))).add
-      (hK.const_mul_left 2)).add hdense
-  filter_upwards [hlog.bound (show 0 < Real.log q / 2 by positivity), hfree,
-    eventually_ge_atTop 1] with n hn hfreen hn1
+      (hSK.isLittleO_log.const_mul_left 2)).add hSK.isLittleO_deficit
+  filter_upwards [hlog.bound (show 0 < Real.log q / 2 by positivity),
+    hSK.eventually_rectangleFree, eventually_ge_atTop 1] with n hn hfreen hn1
   have hn1' : (1 : ℝ) ≤ n := by exact_mod_cast hn1
   have hK1 : (1 : ℝ) ≤ K n := by exact_mod_cast hfreen.pos
   have hlogK : 0 ≤ Real.log (K n) := Real.log_nonneg hK1
@@ -227,11 +239,7 @@ vertices, cycle rank at most `(r - 1) g - n + log_q K_n + 1`, and every layout o
 This is the numerical half of the lower bound, independent of circuits: the comparison of demand
 and supply `eventually_lt_of_frontier`, with the layout hypothesis as the supply. -/
 theorem eventually_lt_of_graph {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
-    (hlayout : LayoutBound (r + 1) A) (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hlayout : LayoutBound (r + 1) A) (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (g : ℕ) (V E : Type) [Finite V] [Finite E] (G : Multigraph V E),
       G.toSimpleGraph.Connected → G.Loopless → G.MaxDegreeLE (r + 1) →
       Nat.card V ≤ 2 * r * g + 3 →
@@ -242,10 +250,10 @@ theorem eventually_lt_of_graph {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
       (1 + 1 / A - ε) * n < (r - 1) * g := by
   set q := Nat.card U
   have hq : (1 : ℝ) < q := by exact_mod_cast Finite.one_lt_card
-  obtain ⟨η, hη, H⟩ := eventually_lt_of_frontier hA (r + 2) hK hdense
-    (isLittleO_zero (fun n : ℕ => (n : ℝ)) atTop) hε
+  obtain ⟨η, hη, H⟩ := eventually_lt_of_frontier hA (r + 2) hSK.isLittleO_log
+    hSK.isLittleO_deficit (isLittleO_zero (fun n : ℕ => (n : ℝ)) atTop) hε
   obtain ⟨C, hC⟩ := hlayout η hη
-  filter_upwards [H C, hfree, eventually_card_mul_sq_le_ncard hfree hK hdense] with
+  filter_upwards [H C, hSK.eventually_rectangleFree, eventually_card_mul_sq_le_ncard hSK] with
     n hn hfreen hbign
   intro g V E _ _ G hconn hloop hdeg hV hrank hwidth
   obtain ⟨π, hπ⟩ := hC V E G hconn hloop hdeg
@@ -277,16 +285,12 @@ alphabet `U` with at least two symbols, with `log K_n = o(n)` and
 at most `r` deciding `S_n`, over any basis and interpretation on `U`, has `s` inner gates with
 `(r - 1) s > (1 + 1/A - ε) n`. -/
 theorem eventually_lt_mul_innerSize {r : ℕ} (hr : 2 ≤ r) {A : ℝ} (hA : 0 < A)
-    (hlayout : LayoutBound (r + 1) A) (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hlayout : LayoutBound (r + 1) A) (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost r → c.Decides I Acc (S n) →
         (1 + 1 / A - ε) * n < (r - 1) * c.innerSize := by
-  filter_upwards [eventually_lt_of_graph hr hA hlayout hfree hK hdense hε, hfree,
-    eventually_card_mul_sq_le_ncard hfree hK hdense] with n hn hf hb
+  filter_upwards [eventually_lt_of_graph hr hA hlayout hSK hε, hSK.eventually_rectangleFree,
+    eventually_card_mul_sq_le_ncard hSK] with n hn hf hb
   intro σ I Acc c hfan hS
   obtain ⟨V, E, _, _, G, hc, hl, hd, hV, hrank, hw⟩ := exists_graph_of_decides hr hfan hS hf hb
   exact hn c.innerSize V E G hc hl hd hV hrank hw
@@ -296,15 +300,11 @@ with coefficient `A > 0`. Under the hypotheses of `eventually_lt_mul_innerSize`,
 `ε > 0` and all large `n`, every circuit of fan-in at most two deciding `S_n`, over any basis and
 interpretation on `U`, has more than `(1 + 1/A - ε) n` inner gates. -/
 theorem eventually_lt_innerSize {A : ℝ} (hA : 0 < A) (hlayout : LayoutBound 3 A)
-    (hfree : ∀ᶠ n in atTop, RectangleFree (S n) (K n))
-    (hK : (fun n => Real.log (K n)) =o[atTop] fun n => (n : ℝ))
-    (hdense : (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop]
-      fun n => (n : ℝ))
-    {ε : ℝ} (hε : 0 < ε) :
+    (hSK : DenseRectangleFree S K) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost 2 → c.Decides I Acc (S n) →
         (1 + 1 / A - ε) * n < c.innerSize := by
-  filter_upwards [eventually_lt_mul_innerSize le_rfl hA hlayout hfree hK hdense hε] with n hn
+  filter_upwards [eventually_lt_mul_innerSize le_rfl hA hlayout hSK hε] with n hn
   intro σ I Acc c hfan hS
   simpa only [Nat.cast_ofNat, show (2 : ℝ) - 1 = 1 by norm_num, one_mul] using
     hn σ I Acc c hfan hS
@@ -318,9 +318,7 @@ gates of positive arity.
 The alphabet lives in the universe `u` and the basis in the universe `v`. -/
 def CircuitLowerBound (L : ℝ) : Prop :=
   ∀ (U : Type u) [Finite U] [Nontrivial U] (S : ∀ n, Set (Fin n → U)) (K : ℕ → ℕ),
-    (∀ᶠ n in atTop, RectangleFree (S n) (K n)) →
-    (fun n => Real.log (K n)) =o[atTop] (fun n => (n : ℝ)) →
-    (fun n => n * Real.log (Nat.card U) - Real.log (S n).ncard) =o[atTop] (fun n => (n : ℝ)) →
+    DenseRectangleFree S K →
     ∀ ε > 0, ∀ᶠ n in atTop, ∀ (σ : Signature.{v}) (I : Interpretation σ U) (Acc : Set U)
       (c : Circuit σ n 1), c.FanInAtMost 2 → c.Decides I Acc (S n) →
         (L - ε) * n < c.innerSize
@@ -328,8 +326,8 @@ def CircuitLowerBound (L : ℝ) : Prop :=
 /-- A circuit lower bound holds for every smaller coefficient. -/
 theorem CircuitLowerBound.mono {L L' : ℝ} (h : CircuitLowerBound.{u, v} L) (hL : L' ≤ L) :
     CircuitLowerBound.{u, v} L' := by
-  intro U _ _ S K hfree hK hdense ε hε
-  filter_upwards [h U S K hfree hK hdense ε hε] with n hn
+  intro U _ _ S K hSK ε hε
+  filter_upwards [h U S K hSK ε hε] with n hn
   intro σ I Acc c hfan hS
   exact lt_of_le_of_lt (mul_le_mul_of_nonneg_right (sub_le_sub_right hL ε) (Nat.cast_nonneg n))
     (hn σ I Acc c hfan hS)
@@ -339,6 +337,6 @@ theorem CircuitLowerBound.mono {L L' : ℝ} (h : CircuitLowerBound.{u, v} L) (hL
 rectangle-free sets need more than `(1 + 1/A - ε) n` inner gates. -/
 theorem circuitLowerBound_of_layoutBound {A : ℝ} (hA : 0 < A) (hlayout : LayoutBound 3 A) :
     CircuitLowerBound.{u, v} (1 + 1 / A) :=
-  fun _ _ _ _ _ hfree hK hdense _ hε => eventually_lt_innerSize hA hlayout hfree hK hdense hε
+  fun _ _ _ _ _ hSK _ hε => eventually_lt_innerSize hA hlayout hSK hε
 
 end Cslib.Circuits.Frontier

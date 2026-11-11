@@ -1006,10 +1006,10 @@ private noncomputable def etmOneTimeMACIntermediateOracle (E : SymmetricCipher) 
     (n : ℕ) (ke km : List Bool) (request : Unit × List Bool) :
     StateT (List (List Bool × List Bool)) PMF (List Bool) :=
   fun queriedPairs =>
-    if queriedPairs.isEmpty && (request.2.length == n) then
-      (ProbComp.eval (E.encrypt n ke request.2)).bind fun c =>
-        (ProbComp.eval (M.sign km c)).bind fun tag =>
-          PMF.pure (encPair encBits encBits (c, tag), [(c, tag)])
+    if queriedPairs.isEmpty && (request.2.length == n) then do
+      let c ← ProbComp.eval (E.encrypt n ke request.2)
+      let tag ← ProbComp.eval (M.sign km c)
+      return (encPair encBits encBits (c, tag), [(c, tag)])
     else
       PMF.pure ([], queriedPairs)
 
@@ -1123,7 +1123,8 @@ theorem eval_sufOneTimeGame_etmToOneTimeMACForger (E : SymmetricCipher) (M : MAC
           _root_.PMF.monad_map_eq_map, MACScheme.oneTimeSigningPairOracle]
         dsimp only [StateT.run]
         simp only [List.isEmpty_nil, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-          PMF.map_bind, PMF.pure_map, List.isEmpty_cons, Bool.not_false]
+          Probability.PMF.monad_pure_eq_pure, PMF.map_bind, PMF.pure_map, List.isEmpty_cons,
+          Bool.not_false]
         apply PMF.bind_congr_on_support
         intro tag htag
         rw [List.take_of_length_le (htagBound km hkm c hcLen tag htag)]
@@ -1147,7 +1148,8 @@ theorem eval_sufOneTimeGame_etmToOneTimeMACForger (E : SymmetricCipher) (M : MAC
       dsimp only [encryptThenMAC]
       rw [hunframe_k, hdrop_k, List.isEmpty_map]
       by_cases hcond : (queriedPairs.isEmpty && (msg.length == n)) = true
-      · simp only [hcond, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind,
+      · simp only [hcond, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
+          Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.map_bind,
           PMF.pure_map, PMF.bind_bind, PMF.pure_bind, List.map_cons, List.map_nil]
       · simp [hcond, ProbComp.eval_pure])
     (adversary n []) []
@@ -2378,12 +2380,12 @@ private noncomputable def prfCipherFaithfulWithBadOracle (n : ℕ) (bit : Bool)
   fun ⟨cache, bad⟩ =>
     let m0 := unframe request.2
     let m1 := dropFrame request.2
-    if (m0.length == n) && (m1.length == n) then
+    if (m0.length == n) && (m1.length == n) then do
       let msg := if bit then m1 else m0
-      (BitString.uniformList n).bind fun r =>
-        (memoize (fun _ => BitString.uniformList n) r cache).map fun res =>
-          (r ++ List.zipWith xor (res.1.take n) msg,
-            (res.2, bad || (cache.lookup r).isSome))
+      let r ← BitString.uniformList n
+      (memoize (fun _ => BitString.uniformList n) r cache).map fun res =>
+        (r ++ List.zipWith xor (res.1.take n) msg,
+          (res.2, bad || (cache.lookup r).isSome))
     else
       PMF.pure ([], (cache, bad))
 
@@ -2397,12 +2399,12 @@ private noncomputable def prfCipherForgetfulWithBadOracle (n : ℕ) (bit : Bool)
   fun ⟨cache, bad⟩ =>
     let m0 := unframe request.2
     let m1 := dropFrame request.2
-    if (m0.length == n) && (m1.length == n) then
+    if (m0.length == n) && (m1.length == n) then do
       let msg := if bit then m1 else m0
-      (BitString.uniformList n).bind fun r =>
-        (BitString.uniformList n).map fun pad =>
-          (r ++ List.zipWith xor (pad.take n) msg,
-            ((r, pad) :: cache, bad || (cache.lookup r).isSome))
+      let r ← BitString.uniformList n
+      (BitString.uniformList n).map fun pad =>
+        (r ++ List.zipWith xor (pad.take n) msg,
+          ((r, pad) :: cache, bad || (cache.lookup r).isSome))
     else
       PMF.pure ([], (cache, bad))
 
@@ -2413,10 +2415,9 @@ private noncomputable def prfCipherOTPOracle (n : ℕ) (request : Unit × List B
   fun _ =>
     let m0 := unframe request.2
     let m1 := dropFrame request.2
-    if (m0.length == n) && (m1.length == n) then
-      (BitString.uniformList n).bind fun r =>
-        (BitString.uniformList n).map fun pad =>
-          (r ++ pad, ())
+    if (m0.length == n) && (m1.length == n) then do
+      let r ← BitString.uniformList n
+      (BitString.uniformList n).map fun pad => (r ++ pad, ())
     else
       PMF.pure ([], ())
 
@@ -2496,7 +2497,8 @@ private theorem run_prfCipherForgetfulWithBadOracle_map_fst (adversary : OracleD
       intro ⟨⟨⟩, payload⟩ ⟨c, b⟩
       unfold prfCipherForgetfulWithBadOracle prfCipherOTPOracle
       by_cases hlenEq : ((unframe payload).length == n && (dropFrame payload).length == n) = true
-      · simp only [hlenEq, ↓reduceIte, PMF.map_bind, PMF.map_comp, Function.comp_def]
+      · simp only [hlenEq, ↓reduceIte, Probability.PMF.monad_bind_eq_bind, PMF.map_bind,
+          PMF.map_comp, Function.comp_def]
         simp only [Bool.and_eq_true, beq_iff_eq] at hlenEq
         have hmsgLen : (if bit then dropFrame payload else unframe payload).length = n := by
           cases bit <;> simp [hlenEq]
@@ -2537,7 +2539,7 @@ private theorem identicalUntilBad_prfCipherFaithful_forgetful (n : ℕ) (bit : B
         prfCipherForgetfulWithBadOracle, Bool.false_or]
       by_cases hlenEq :
           ((unframe request.2).length == n && (dropFrame request.2).length == n) = true
-      · simp only [hlenEq, ↓reduceIte, PMF.bind_apply]
+      · simp only [hlenEq, ↓reduceIte, Probability.PMF.monad_bind_eq_bind, PMF.bind_apply]
         refine tsum_congr fun r => congrArg (_ * ·) ?_
         cases hlookup : cache.lookup r with
         | some pad₀ =>
@@ -2603,7 +2605,7 @@ private theorem step_bad_prfCipherForgetfulWithBadOracle_le (n : ℕ) (bit : Boo
   unfold prfCipherForgetfulWithBadOracle
   simp only [Bool.false_or]
   by_cases hlenEq : ((unframe request.2).length == n && (dropFrame request.2).length == n) = true
-  · simp only [hlenEq, ↓reduceIte]
+  · simp only [hlenEq, ↓reduceIte, Probability.PMF.monad_bind_eq_bind]
     rw [PMF.toOuterMeasure_bind_apply]
     calc ∑' r, (BitString.uniformList n) r *
           ((BitString.uniformList n).map fun pad =>

@@ -141,8 +141,7 @@ private theorem eventually_lt_of_three_support_bounds {k : ℕ → ℕ}
           ≤ ((ε / 4) * m) * (Nat.log 2 (n + q) : ℝ) :=
             mul_le_mul_of_nonneg_right hDm (Nat.cast_nonneg _)
         _ = (ε / 4) * ((m : ℝ) * Nat.log 2 (n + q)) := mul_assoc _ _ _
-        _ ≤ (ε / 4) * ((n : ℝ) + q + (m * m : ℕ)) :=
-            mul_le_mul_of_nonneg_left hmlog (by positivity)
+        _ ≤ (ε / 4) * ((n : ℝ) + q + (m * m : ℕ)) := by gcongr
         _ ≤ (ε / 4) * (2 * (n : ℝ) + (m * m : ℕ)) :=
             mul_le_mul_of_nonneg_left (by linarith) (by positivity)
     dsimp only [B] at hconstant

@@ -17,6 +17,7 @@ public import Complexity.Computability.WordRAM.Call
 
 * `preprocessing_injective`, `host_injective`, `controller_injective`: actual bank embeddings.
 * `controller_ne_host`, `controller_ne_preprocessing`: the two callee banks miss outer controls.
+* `preprocessing_ne_host`: solver calls cannot alias live traversal registers.
 
 These finite bank proofs are original.
 -/
@@ -38,6 +39,15 @@ theorem host_injective (r : ℕ) : (hostRegisters r).Injective :=
 /-- The outer controls occupy sixteen distinct registers after both callees. -/
 theorem controller_injective (r : ℕ) : (controllerRegisters r).Injective :=
   Fin.natAdd_injective _ _
+
+/-- No live traversal register aliases a host or solver register. -/
+theorem preprocessing_ne_host {r : ℕ} (i : Fin 128) (j : Fin (64 + (r + 7))) :
+    preprocessingRegisters r i ≠ hostRegisters r j := by
+  intro h
+  have hv := congrArg Fin.val h
+  have hi := i.isLt
+  simp only [preprocessingRegisters, hostRegisters, Fin.val_natAdd, Fin.val_castAdd] at hv
+  omega
 
 /-- No outer control aliases a host or solver register. -/
 theorem controller_ne_host {r : ℕ} (i : Fin 16) (j : Fin (64 + (r + 7))) :

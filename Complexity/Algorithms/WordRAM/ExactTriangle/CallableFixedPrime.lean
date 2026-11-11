@@ -18,7 +18,9 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Tim
 arrays and a dirty caller window. It retains the existing `CallableFixedPrime` ABI: eight
 arguments600–607, raw verdict/witness/scans632–636, and the protected low160 selector bank.
 The genuine array copy/sum and virtual-width setup are unchanged; `solve` really compiles
-`FixedPrime.program`. There is no clean-workspace or supplied solver/execution premise.
+`StreamingFixedPrime.program`, constructing and consuming one physical slot per logical
+record before a charged heap reset. There is no clean-workspace or supplied solver/execution
+premise.
 
 `runs_input` delivers original headers and arrays, and returns the same prehalt state and
 charged halt, original-weight verdict, original-coordinate witness and one global failure

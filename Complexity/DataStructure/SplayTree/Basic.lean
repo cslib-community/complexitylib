@@ -858,10 +858,7 @@ theorem splay_split_lt {t L R : BinaryTree α} {x r : α} (ht : Ordered t)
     intro y hyL
     have hy_lt_r : y < r := hord.2.2.1 y hyL
     have hy_mem : y ∈ elements t := helem ▸ (by simp [hyL])
-    have hy_ne_x : y ≠ x := by
-      intro hyx
-      subst hyx
-      exact ne_of_lt hxr (hr_eq ▸ hxeq hy_mem).symm
+    have hy_ne_x : y ≠ x := by grind
     rcases lt_trichotomy y x with hyx | rfl | hxy
     · exact hyx
     · exact (hy_ne_x rfl).elim

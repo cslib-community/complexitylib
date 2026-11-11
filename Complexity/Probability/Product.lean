@@ -32,6 +32,8 @@ Replacing one coordinate of a uniform tuple by a fresh uniform sample preserves 
   and independence laws.
 * `Cslib.Probability.PMF.sum_pi_mul_eval`, `Cslib.Probability.PMF.sum_pi_mul_sum`: expectation of
   coordinate functions and their sums under `pi p`.
+* `Cslib.Probability.PMF.uniformOfFintype_update`, `.bind_uniformOfFintype_update`: replacing one
+  coordinate of a uniform tuple by an independent uniform sample.
 * `Cslib.Probability.PMF.pi_bind_update_pair`: reveal a coordinate and retain the entire tuple.
 * `Cslib.Probability.PMF.pi_map`, `.pi_bind`: coordinatewise mapping and sampling laws.
 * `Cslib.Probability.PMF.conditionalSnd_pi_joint`: coordinatewise conditioning.
@@ -148,6 +150,17 @@ theorem uniformOfFintype_update [DecidableEq ι] {γ : Type*} [Fintype γ] [None
     (uniformOfFintype_map_equiv hswap.toPerm)
   simpa [PMF.map_comp, ← uniformOfFintype_prod, PMF.map_bind, Function.comp_def, swap,
     PMF.map, PMF.bind_const] using h
+
+/-- Replacing one coordinate of a uniform tuple by an independent uniform value preserves the law
+of any experiment on the tuple. -/
+theorem bind_uniformOfFintype_update [DecidableEq ι] {γ δ : Type*} [Fintype γ] [Nonempty γ]
+    (i : ι) (F : (ι → γ) → PMF δ) :
+    (PMF.uniformOfFintype (ι → γ)).bind F =
+      (PMF.uniformOfFintype γ).bind fun value =>
+        (PMF.uniformOfFintype (ι → γ)).bind fun values =>
+          F (Function.update values i value) := by
+  conv_lhs => rw [← uniformOfFintype_update i]
+  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
 
 /-- Applying a separate function to each coordinate preserves the product structure. -/
 theorem pi_map [∀ i, Finite (β i)] (p : ∀ i, PMF (α i)) (f : ∀ i, α i → β i) :

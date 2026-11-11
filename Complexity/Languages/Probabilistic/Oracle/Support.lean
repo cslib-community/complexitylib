@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Languages.Probabilistic.Oracle
+public import Complexity.Languages.Probabilistic.Oracle.Interaction
 public import Complexity.Languages.Probabilistic.Iteration
 
 import Complexity.Languages.Probabilistic.Oracle.Simulation
@@ -64,8 +64,7 @@ variable {Query α β : Type} {spec : Query → Type}
 /-- A result supported by one stateful execution is possible. -/
 theorem mem_support_of_mem {program : ProbOracleComp spec α} {State : Type}
     (oracle : (q : Query) → StateT State PMF (spec q)) {s s' : State} {result : α}
-    (h : (result, s') ∈ ((OracleComp.interpret
-      (sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle) program).run s).support) :
+    (h : (result, s') ∈ (runWith oracle program s).support) :
     result ∈ support program :=
   mem_supportWith_of_mem_support_runWith _ (fun _ _ _ _ _ => Set.mem_univ _) h
 

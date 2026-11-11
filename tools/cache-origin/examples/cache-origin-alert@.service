@@ -1,0 +1,15 @@
+[Unit]
+Description=Mail the cache operator about %i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/libexec/cache-origin-alert.py %i
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=64M
+TasksMax=8
+TimeoutStartSec=45s
+# Postfix sendmail deposits mail via the local postdrop queue.
+ReadWritePaths=/var/spool/postfix

@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual finite estimated input and noise)
-import Complexity.Foundations.Probability.NormalizedAtomRows.FirstPayment
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.FirstPayment
 import all ComplexityTests.HierarchyRawMoment
 
 /-! Fixed structural requests, a nonconstant two-bin input, exact signs and finite steps. -/

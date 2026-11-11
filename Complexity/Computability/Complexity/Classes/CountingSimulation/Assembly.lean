@@ -15,6 +15,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
+import Complexity.Tactic.EncLen
 
 /-!
 # The deterministic counting simulation, assembled from its interfaces
@@ -197,8 +198,7 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
       cr.time (c, i) ≤ U c * E c ∧ cr.space (c, i) ≤ U c := by
     have hZ : (encPair (encPair encBits encUnary) encNat (c, i)).length ≤ Z c := by
       have := (length_encNat_mono hi.le)
-      simp only [length_encPair, Z, sz] at this ⊢
-      omega
+      enc_len [Z, sz] at this ⊢
     have hG : (encN (F.net (c.1, c.2, i))).length ≤
         an * ((encPair (encPair encBits encUnary) encNat (c, i)).length + 1) ^ dn := hnl (c, i)
     have hY : (encPair encNat encN (paddedTime c.2 + 1, F.net (c.1, c.2, i))).length ≤ Y c := by
@@ -261,8 +261,7 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
       have h1 : (scheduleCount F.heads c.2 + 1) * (a * (sz c + 1) ^ d + R c) ≤
           2 * (a * (sz c + 1) ^ d + U c) * (scheduleCount F.heads c.2 * E c) := by
         have hAE : a * (sz c + 1) ^ d ≤ a * (sz c + 1) ^ d * E c := Nat.le_mul_of_pos_right _ (hE c)
-        calc _ ≤ (scheduleCount F.heads c.2 + 1) * (a * (sz c + 1) ^ d + U c * E c) :=
-              Nat.mul_le_mul_left _ (by omega)
+        calc _ ≤ (scheduleCount F.heads c.2 + 1) * (a * (sz c + 1) ^ d + U c * E c) := by gcongr
           _ ≤ (2 * scheduleCount F.heads c.2) * ((a * (sz c + 1) ^ d + U c) * E c) :=
               Nat.mul_le_mul (by have := hcnt1 c; omega)
                 ((Nat.add_le_add_right hAE (U c * E c)).trans_eq (Nat.add_mul _ _ _).symm)
@@ -298,15 +297,11 @@ theorem exists_computableInO_simulate (F : NetworkFamily encN value Admissible c
   -- Absorb the constants.
   set k := k₀ * 2 ^ d₀ + d₀ + K with hk
   have hVk (c : List Bool × ℕ) : V c ≤ k * (c.1.length + c.2 + 1) ^ k := by
-    have hszc : sz c + 1 ≤ 2 * (c.1.length + c.2 + 1) := by
-      simp only [sz, length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-      omega
+    have hszc : sz c + 1 ≤ 2 * (c.1.length + c.2 + 1) := by enc_len [sz]
     calc V c ≤ k₀ * (sz c + 1) ^ d₀ := hV c
-      _ ≤ k₀ * (2 * (c.1.length + c.2 + 1)) ^ d₀ :=
-          Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hszc _)
+      _ ≤ k₀ * (2 * (c.1.length + c.2 + 1)) ^ d₀ := by gcongr
       _ = k₀ * 2 ^ d₀ * (c.1.length + c.2 + 1) ^ d₀ := by rw [mul_pow, mul_assoc]
-      _ ≤ k * (c.1.length + c.2 + 1) ^ k :=
-          Nat.mul_le_mul (by omega) (Nat.pow_le_pow_right (by omega) (by omega))
+      _ ≤ k * (c.1.length + c.2 + 1) ^ k := by gcongr <;> omega
   refine ⟨k, csim.computes.mono_le (fun c => ?_) fun c => (hspace c).trans (hVk c)⟩
   have hEk : E c ≤ 2 ^ (k * c.2 / Nat.sqrt (Nat.log 2 c.2)) :=
     Nat.pow_le_pow_right (by norm_num)
@@ -372,9 +367,7 @@ theorem exists_computableInO_countPair (F : NetworkFamily encN value Admissible 
     have hτ := paddedTime_add_one_le h2t
     have hcnt1 : 1 ≤ scheduleCount F.heads t := Nat.one_le_pow _ _ (by norm_num)
     have hE : 1 ≤ 2 ^ (k * t / Nat.sqrt (Nat.log 2 t)) := Nat.one_le_two_pow
-    have hctx : (encPair encBits encUnary (x, t)).length ≤ 3 * t + 1 := by
-      simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-      omega
+    have hctx : (encPair encBits encUnary (x, t)).length ≤ 3 * t + 1 := by enc_len
     have hsimx : simulate F (x, t) = count x (paddedTime t) :=
       simulate_eq F hnt h2t (hcount x _)
     have hout : (encPair encUnary encNat (paddedTime t, simulate F (x, t))).length ≤ 6 * t + 3 := by
@@ -384,8 +377,7 @@ theorem exists_computableInO_countPair (F : NetworkFamily encN value Admissible 
         rw [hsimx]
         calc _ ≤ (encNat (2 ^ paddedTime t)).length := length_encNat_mono (hcount x _)
           _ = paddedTime t + 1 := by rw [length_encNat_eq_size, Nat.size_pow]
-      simp only [length_encPair]
-      omega
+      enc_len
     have hTu : (encUnary (T n)).length ≤ t := by
       simp only [encUnary_apply, List.length_replicate]
       exact hTt
@@ -515,8 +507,7 @@ theorem exists_computableInO_countWith (F : NetworkFamily encN value Admissible 
           2 ^ (C * T x.length / Nat.sqrt (Nat.log 2 (T x.length)))) := by
         have := Nat.add_le_add hfirst (hpost'.trans hsecond)
         nlinarith only [this]
-      _ ≤ (a + 1) * 2 ^ (C' * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) :=
-        Nat.mul_le_mul_left _ hmain
+      _ ≤ (a + 1) * 2 ^ (C' * T x.length / Nat.sqrt (Nat.log 2 (T x.length))) := by gcongr
       _ ≤ 2 ^ ((a + 2) * (C' + 1) * T x.length /
           Nat.sqrt (Nat.log 2 (T x.length))) := by
         have := Nat.mul_two_pow_div_sqrt_log_two_add_le

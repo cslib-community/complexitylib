@@ -194,9 +194,8 @@ theorem abs_sub_le (h : IdenticalUntilBad first second bad) (program : OracleCom
   rw [← h.bad_eq] at hle'
   have hbad := Probability.PMF.toOuterMeasure_ne_top ((interpret first program).run s)
     {x | bad x.2}
-  have h1 := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _, hbad⟩) hle
-  have h2 := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _, hbad⟩) hle'
-  rw [ENNReal.toReal_add (PMF.apply_ne_top _ _) hbad] at h1 h2
+  have h1 := ENNReal.toReal_le_add hle (PMF.apply_ne_top _ _) hbad
+  have h2 := ENNReal.toReal_le_add hle' (PMF.apply_ne_top _ _) hbad
   exact abs_sub_le_iff.mpr ⟨by linarith, by linarith⟩
 
 end IdenticalUntilBad

@@ -270,12 +270,8 @@ theorem member_iff_contains {t : Tree d} (ht : t.Valid) (x : ℕ) :
                 exact False.elim (hm hm')
               · have hylt := (ht.2.2.1 j).contains_lt hy
                 have hcoord := cluster_coordinates (i := j.val) (universeSize_pos d) hylt
-                have hhigh : x / universeSize d = j.val := by
-                  rw [hxy]
-                  exact hcoord.1
-                have hlow : x % universeSize d = y := by
-                  rw [hxy]
-                  exact hcoord.2
+                have hhigh : x / universeSize d = j.val := by grind
+                have hlow : x % universeSize d = y := by grind
                 have hij : i = j := Fin.ext hhigh
                 simpa only [hij, hlow] using hy
           · have hx : ¬(Tree.node (some (m, M)) s c).Contains x := by

@@ -645,13 +645,19 @@ abbrev SubsetPairQuery.index (p : SubsetPairQuery) : ℕ := p.2
 /-- Encoding for decoded `(indE, indU, negSign)` triples. -/
 abbrev encDecodedPair : DecodedPair ↪ List Bool := encPair encBits (encPair encBits encBool)
 
+/-- Pascal tables of binomial coefficients, such as `pascalTable n`, as lists of rows with entries
+in binary: the concatenation of the framed rows, each row the concatenation of its framed entries,
+each encoded by `encNat`. This is the layout `encList (encList encNat)` that other modules name by
+their own roles, such as `Cslib.Complexity.encSparseEquation`; the name records the role. -/
+abbrev encPascalTable : List (List ℕ) ↪ List Bool := encList (encList encNat)
+
 section PlainProofs
 
 open ComputableInPolyTime
 
 /-- `pascalTable` is computable in polynomial time from `n` in unary. -/
 @[fun_prop, program_certificate] theorem pascalTable_polyTime :
-    ComputableInPolyTime pascalTable encUnary (encList (encList encNat)) := by
+    ComputableInPolyTime pascalTable encUnary encPascalTable := by
   let encRow := encList encNat; let encTab := encList encRow
   have hrep0 : ComputableInPolyTime (fun n : ℕ => List.replicate n 0) encUnary encRow :=
     ((map (const (encIn := encUnary) (encOut := encNat) 0)).comp range).of_enc_eq fun n => by
@@ -757,7 +763,7 @@ private theorem computableInPolyTime_bucketStep :
 private theorem computableInPolyTime_findBucket :
     ComputableInPolyTime
       (fun p : ((ℕ × ℕ) × ℕ) × List (List ℕ) => Internal.findBucket p.1.1.1 p.1.1.2 p.1.2 p.2)
-      (encPair (encPair encParams encNat) (encList (encList encNat)))
+      (encPair (encPair encParams encNat) encPascalTable)
       (encOption (encPair encUnary encNat)) := by
   let encTab := encList (encList encNat); let encIn := encPair (encPair encParams encNat) encTab
   let encSt := encPair encNat (encOption (encPair encUnary encNat))
@@ -794,7 +800,7 @@ the table. -/
     ComputableInPolyTime
       (fun ((((n, k), rank), table) : ((ℕ × ℕ) × ℕ) × List (List ℕ)) =>
         Internal.unrankComb n k rank table)
-      (encPair (encPair encParams encNat) (encList (encList encNat))) encBits := by
+      (encPair (encPair encParams encNat) encPascalTable) encBits := by
   let encTab := encList (encList encNat); let encIn := encPair (encPair encParams encNat) encTab
   let encSt := encPair (encPair encUnary encNat) encBits
   have hp1 := fst (encPair encParams encNat) encTab
@@ -894,7 +900,7 @@ end PlainProofs
 
 /-- Native certificate for `pascalTable`, selected via `NativeCertificate.ofPolyTime`. -/
 noncomputable def pascalTableCertificate :
-    NativeCertificate pascalTable encUnary (encList (encList encNat)) :=
+    NativeCertificate pascalTable encUnary encPascalTable :=
   NativeCertificate.ofPolyTime pascalTable_polyTime
 
 /-- `pascalTableCertificate` has polynomial time and workspace bounds. -/

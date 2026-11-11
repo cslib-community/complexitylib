@@ -9,15 +9,17 @@ module
 
 public import Complexity.Crypto.Computational.ElGamal.KDF
 public import Complexity.Crypto.Computational.ElGamal.ProbComp
+public import Complexity.Crypto.Encoding
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import Complexity.Computability.Probabilistic.PPT.Capture
 import Complexity.Computability.Probabilistic.Sampling
 import Complexity.Crypto.Game.Statistical
 import Complexity.Crypto.Negligible.Basic
+import Complexity.Languages.Probabilistic.Norm
 import Complexity.Probability.PMF
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.StatisticalDistance
-import Complexity.Tactic.PPT
 
 /-!
 # General-Cipher Hashed ElGamal ([BonehShoup2023], Section 11.5, Theorem 11.5)
@@ -205,35 +207,16 @@ theorem computableInPolyTime_encodeHashedElGamalCipherEncrypt {Msg : Type}
     (hencSym : ComputableInPolyTime encSym (encPair encBits encMsg) encBits) :
     ComputableInPolyTime (F.encodeHashedElGamalCipherEncrypt H encSym)
       (encPair F.encDesc (encPair encBits (encPair encMsg encNat)))
-      (encPair encBits encBits) := by
-  let E := encPair F.encDesc (encPair encBits (encPair encMsg encNat))
-  have hd : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × Msg × ℕ => input.1) E F.encDesc := by fun_prop
-  have hgen : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × Msg × ℕ => F.encode input.1 (F.generator input.1))
-      E encBits :=
-    F.computableInPolyTime_generator.comp hd
-  have hv : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × Msg × ℕ =>
-        F.smul (input.1, input.2.2.2, F.encode input.1 (F.generator input.1))) E encBits :=
-    F.computableInPolyTime_smul.comp (hd.prod ((by fun_prop :
-      ComputableInPolyTime (fun input : F.Desc × List Bool × Msg × ℕ => input.2.2.2)
-        E encNat).prod hgen))
-  have hw : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × Msg × ℕ => F.smul (input.1, input.2.2.2, input.2.1))
-      E encBits :=
-    F.computableInPolyTime_smul.comp (by fun_prop)
-  have hk : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × Msg × ℕ =>
-        H (input.1, F.smul (input.1, input.2.2.2, input.2.1))) E encBits :=
-    hH.comp (hd.prod hw)
-  have hc : ComputableInPolyTime
-      (fun input : F.Desc × List Bool × Msg × ℕ =>
-        encSym (H (input.1, F.smul (input.1, input.2.2.2, input.2.1)), input.2.2.1))
-      E encBits :=
-    hencSym.comp (hk.prod (by fun_prop))
-  unfold encodeHashedElGamalCipherEncrypt
-  exact hv.prod hc
+      (encPair encBits encBits) :=
+  let hd := ComputableInPolyTime.fst F.encDesc (encPair encBits (encPair encMsg encNat))
+  let hr := ComputableInPolyTime.snd F.encDesc (encPair encBits (encPair encMsg encNat))
+  let hb := hr.snd'.snd'
+  (F.computableInPolyTime_smul.comp'
+    (hd.prod (hb.prod (F.computableInPolyTime_generator.comp' hd)))).prod
+    (hencSym.comp'
+      ((hH.comp'
+        (hd.prod (F.computableInPolyTime_smul.comp' (hd.prod (hb.prod hr.fst'))))).prod
+        hr.snd'.fst'))
 
 /-- Word-level Hashed ElGamal decryption with a general symmetric cipher `decSym`: given
 `(d, a, encode v, c)`, derive `k = H (d, encode (a • v))` and compute `decSym (k, c)`. -/
@@ -276,20 +259,13 @@ theorem computableInPolyTime_decodeHashedElGamalCipher {Msg : Type}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
     (hdecSym : ComputableInPolyTime decSym (encPair encBits encBits) encMsg) :
     ComputableInPolyTime (F.decodeHashedElGamalCipher H decSym)
-      (encPair F.encDesc (encPair encNat (encPair encBits encBits))) encMsg := by
-  let E := encPair F.encDesc (encPair encNat (encPair encBits encBits))
-  have hd : ComputableInPolyTime
-      (fun input : F.Desc × ℕ × List Bool × List Bool => input.1) E F.encDesc := by fun_prop
-  have hw : ComputableInPolyTime
-      (fun input : F.Desc × ℕ × List Bool × List Bool =>
-        F.smul (input.1, input.2.1, input.2.2.1)) E encBits :=
-    F.computableInPolyTime_smul.comp (by fun_prop)
-  have hk : ComputableInPolyTime
-      (fun input : F.Desc × ℕ × List Bool × List Bool =>
-        H (input.1, F.smul (input.1, input.2.1, input.2.2.1))) E encBits :=
-    hH.comp (hd.prod hw)
-  unfold decodeHashedElGamalCipher
-  exact hdecSym.comp (hk.prod (by fun_prop))
+      (encPair F.encDesc (encPair encNat (encPair encBits encBits))) encMsg :=
+  let hd := ComputableInPolyTime.fst F.encDesc (encPair encNat (encPair encBits encBits))
+  let hr := ComputableInPolyTime.snd F.encDesc (encPair encNat (encPair encBits encBits))
+  hdecSym.comp'
+    ((hH.comp'
+      (hd.prod (F.computableInPolyTime_smul.comp' (hd.prod (hr.fst'.prod hr.snd'.fst'))))).prod
+      hr.snd'.snd')
 
 /-! ### PMF-level general-cipher Hashed ElGamal IND-CPA games and Theorem 11.5 reductions -/
 
@@ -336,8 +312,8 @@ theorem hashedElGamalCPAGame_eq_hashedElGamalCipherCPAGame (setup : ℕ → PMF 
     F.hashedElGamalCPAGame setup H adversary bit n =
       F.hashedElGamalCipherCPAGame setup H
         (fun _ pad m => pure (Cslib.BitString.listXor pad.length [pad, m])) adversary bit n := by
-  simp only [hashedElGamalCPAGame, hashedElGamalCipherCPAGame, hashedElGamalCipherCPAGameOn,
-    ↓reduceIte, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.pure_bind]
+  simp only [pmf_norm, hashedElGamalCPAGame, hashedElGamalCipherCPAGame,
+    hashedElGamalCipherCPAGameOn, ↓reduceIte]
 
 /-- **Game 1** for general-cipher Hashed ElGamal ([BonehShoup2023], Section 11.5.2, proof of
 Theorem 11.5, p. 450): replace the Diffie–Hellman shared element `(α * β) • g` with an independent
@@ -406,16 +382,14 @@ theorem hashedElGamalCipherCPAGame_restrict {Msg : Type}
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.hashedElGamalCipherCPAGame setup H encryptSym (adversary.restrict valid) bit n =
       F.hashedElGamalCipherCPAGameOn valid setup H encryptSym adversary bit n := by
-  simp only [hashedElGamalCipherCPAGame, hashedElGamalCipherCPAGameOn,
-    Encryption.AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    List.headD_cons, List.tail_cons]
+  simp only [pmf_norm, hashedElGamalCipherCPAGame, hashedElGamalCipherCPAGameOn,
+    Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
   congr 1; funext d
   congr 1; funext α
   congr 1; funext choice
   cases valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 <;>
-    simp [PMF.bind_const]
+    simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.bind_const]
 
 /-- Running the unrestricted `hashedElGamalCipherIdealDDHGame` on `adversary.restrict valid` has the
 same output distribution as running `hashedElGamalCipherIdealDDHGameOn valid` on `adversary`. -/
@@ -426,16 +400,14 @@ theorem hashedElGamalCipherIdealDDHGame_restrict {Msg : Type}
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.hashedElGamalCipherIdealDDHGame setup H encryptSym (adversary.restrict valid) bit n =
       F.hashedElGamalCipherIdealDDHGameOn valid setup H encryptSym adversary bit n := by
-  simp only [hashedElGamalCipherIdealDDHGame, hashedElGamalCipherIdealDDHGameOn,
-    Encryption.AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    List.headD_cons, List.tail_cons]
+  simp only [pmf_norm, hashedElGamalCipherIdealDDHGame, hashedElGamalCipherIdealDDHGameOn,
+    Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
   congr 1; funext d
   congr 1; funext α
   congr 1; funext choice
   cases valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 <;>
-    simp [PMF.bind_const]
+    simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.bind_const]
 
 /-- Running the unrestricted `hashedElGamalCipherUniformKeyGame` on `adversary.restrict valid` has
 the same output distribution as running `hashedElGamalCipherUniformKeyGameOn valid` on
@@ -446,16 +418,14 @@ theorem hashedElGamalCipherUniformKeyGame_restrict {Msg : Type}
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym (adversary.restrict valid) bit n =
       F.hashedElGamalCipherUniformKeyGameOn valid setup keyLen encryptSym adversary bit n := by
-  simp only [hashedElGamalCipherUniformKeyGame, hashedElGamalCipherUniformKeyGameOn,
-    Encryption.AdversaryOf.restrict, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-    List.headD_cons, List.tail_cons]
+  simp only [pmf_norm, hashedElGamalCipherUniformKeyGame, hashedElGamalCipherUniformKeyGameOn,
+    Encryption.AdversaryOf.restrict, ↓reduceIte, List.headD_cons, List.tail_cons]
   congr 1; funext d
   congr 1; funext α
   congr 1; funext choice
   cases valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 <;>
-    simp [PMF.bind_const]
+    simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure, PMF.bind_const]
 
 /-- Per-bit DDH distinguisher constructed from a general-cipher Hashed ElGamal IND-CPA adversary
 ([BonehShoup2023], Section 11.5.2, proof of Theorem 11.5, p. 450): given `(d, u, v, w)`, pass
@@ -512,42 +482,34 @@ theorem isPPTOn_hashedElGamalCipherToDDHDistinguisher {Msg : Type} {encMsg : Msg
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
     IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
       encBool
       (fun input =>
         F.hashedElGamalCipherToDDHDistinguisher H encryptSym adversary bit input.1 input.2) := by
-  let E0 := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
-  let E1 := encPair E0 (encPair (encPair encMsg encMsg) encBits)
-  let E2 := encPair E1 encBits
-  have hchoose := hA.choose.on
-  have hguess := hA.guess
-  have hm : ComputableInPolyTime
-      (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) × (Msg × Msg) × List Bool =>
-        if bit then p.2.1.2 else p.2.1.1) E1 encMsg := by
-    cases bit <;> fun_prop
-  have hk : ComputableInPolyTime
-      (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) × (Msg × Msg) × List Bool =>
-        H (p.1.2.1, p.1.2.2.2.2)) E1 encBits :=
-    hH.comp (by fun_prop)
-  unfold hashedElGamalCipherToDDHDistinguisher
-  refine (hchoose.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, encPair F.encDesc encBits (input.2.1, input.2.2.1))) (by fun_prop)).bind_with ?_
-  refine (hencryptSym.preprocess
-    (prepare := fun p :
-        (ℕ × F.Desc × List Bool × List Bool × List Bool) × (Msg × Msg) × List Bool =>
-      (p.1.1, H (p.1.2.1, p.1.2.2.2.2), if bit then p.2.1.2 else p.2.1.1))
-    (by fun_prop)).bind_with ?_
-  exact hguess.preprocess
-    (prepare := fun p :
-        ((ℕ × F.Desc × List Bool × List Bool × List Bool) × (Msg × Msg) × List Bool) × List Bool =>
-      (p.1.1.1, p.1.2.2, encPair encBits encBits (p.1.1.2.2.2.1, p.2)))
-    (by fun_prop)
+  let EIn := encPair F.encDesc (encPair encBits (encPair encBits encBits))
+  let E0 := encPair encUnary EIn
+  let EChoice := encPair (encPair encMsg encMsg) encBits
+  let E1 := encPair E0 EChoice
+  let hp1 := ComputableInPolyTime.fst encUnary EIn
+  let hp2 := ComputableInPolyTime.snd encUnary EIn
+  let hq1 := ComputableInPolyTime.fst E0 EChoice
+  let hq2 := ComputableInPolyTime.snd E0 EChoice
+  let hr1 := ComputableInPolyTime.fst E1 encBits
+  let hr2 := ComputableInPolyTime.snd E1 encBits
+  exact (hA.choose.on.preprocess
+    (hp1.prod ((hp2.fst'.prod hp2.snd'.fst').encoding_comp))).bind_with
+    ((hencryptSym.preprocess
+      ((hp1.comp' hq1).prod
+        ((hH.comp' ((hp2.fst'.comp' hq1).prod (hp2.snd'.snd'.snd'.comp' hq1))).prod
+          ((ComputableInPolyTime.const (encOut := encBool) bit).ite
+            hq2.fst'.snd' hq2.fst'.fst')))).bind_with
+      (hA.guess.preprocess
+        ((hp1.comp' (hq1.comp' hr1)).prod
+          ((hq2.snd'.comp' hr1).prod
+            (((hp2.snd'.snd'.fst'.comp' (hq1.comp' hr1)).prod hr2).encoding_comp)))))
 
 /-- Single hidden-bit DDH distinguisher $\mathcal{B}_{\mathrm{ddh}}$ ([BonehShoup2023],
 Section 11.5.2, proof of Theorem 11.5, Figure 11.4 and Equation `(11.17)`, p. 450): sample a uniform
@@ -569,7 +531,7 @@ theorem isPPTOn_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :
     IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
@@ -578,22 +540,21 @@ theorem isPPTOn_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg : Type}
         F.hashedElGamalCipherToDDHHiddenBitDistinguisher H encryptSym adversary
           input.1 input.2) := by
   let E0 := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
+  let E1 := encPair E0 encBool
+  let hp1 := ComputableInPolyTime.fst E0 encBool
+  let hp2 := ComputableInPolyTime.snd E0 encBool
+  let hq1 := ComputableInPolyTime.fst E1 encBool
+  let hq2 := ComputableInPolyTime.snd E1 encBool
   have hFalse := F.isPPTOn_hashedElGamalCipherToDDHDistinguisher hH hencryptSym hA false
   have hTrue := F.isPPTOn_hashedElGamalCipherToDDHDistinguisher hH hencryptSym hA true
-  have hStep : IsPPTOn (encPair E0 encBool) encBool
+  have hStep : IsPPTOn E1 encBool
       (fun p : (ℕ × F.Desc × List Bool × List Bool × List Bool) × Bool =>
-        F.hashedElGamalCipherToDDHDistinguisher H encryptSym adversary p.2 p.1.1 p.1.2) := by
-    refine (IsPPTOn.cond (condition := Prod.snd) (by fun_prop)
-      (hTrue.preprocess (prepare := Prod.fst) (by fun_prop))
-      (hFalse.preprocess (prepare := Prod.fst) (by fun_prop))).congr ?_
-    intro ⟨input, bit⟩
-    cases bit <;> rfl
-  have hXor : ComputableInPolyTime
-      (fun p : ((ℕ × F.Desc × List Bool × List Bool × List Bool) × Bool) × Bool => p.2 ^^ p.1.2)
-      (encPair (encPair E0 encBool) encBool) encBool := by
-    fun_prop
-  unfold hashedElGamalCipherToDDHHiddenBitDistinguisher
-  exact (isPPTOn_uniform_bool E0).bind_with (hStep.bind_with hXor.isPPTOn)
+        F.hashedElGamalCipherToDDHDistinguisher H encryptSym adversary p.2 p.1.1 p.1.2) :=
+    (IsPPTOn.cond' hp2 (hTrue.preprocess hp1) (hFalse.preprocess hp1)).congr
+      (fun ⟨_, bit⟩ => by cases bit <;> rfl)
+  exact (isPPTOn_uniform_bool E0).bind_with
+    (hStep.bind_with
+      ((ComputableInPolyTime.bool_xor.comp' (hq2.prod (hp2.comp' hq1))).isPPTOn))
 
 /-- Per-bit KDF distinguisher constructed from a general-cipher Hashed ElGamal IND-CPA adversary
 ([BonehShoup2023], Section 11.5.2, proof of Theorem 11.5, pp. 450–451): given `(d, u, v, k)`, pass
@@ -652,36 +613,34 @@ def hashedElGamalCipherToKDFDistinguisher {Msg : Type}
 theorem isPPTOn_hashedElGamalCipherToKDFDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
     IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
       encBool
       (fun input =>
         F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary bit input.1 input.2) := by
-  let E0 := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
-  let E1 := encPair E0 (encPair (encPair encMsg encMsg) encBits)
-  have hchoose := hA.choose.on
-  have hguess := hA.guess
-  have hm : ComputableInPolyTime
-      (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) × (Msg × Msg) × List Bool =>
-        if bit then p.2.1.2 else p.2.1.1) E1 encMsg := by
-    cases bit <;> fun_prop
-  unfold hashedElGamalCipherToKDFDistinguisher
-  refine (hchoose.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, encPair F.encDesc encBits (input.2.1, input.2.2.1))) (by fun_prop)).bind_with ?_
-  refine (hencryptSym.preprocess
-    (prepare := fun p :
-        (ℕ × F.Desc × List Bool × List Bool × List Bool) × (Msg × Msg) × List Bool =>
-      (p.1.1, p.1.2.2.2.2, if bit then p.2.1.2 else p.2.1.1))
-    (by fun_prop)).bind_with ?_
-  exact hguess.preprocess
-    (prepare := fun p :
-        ((ℕ × F.Desc × List Bool × List Bool × List Bool) × (Msg × Msg) × List Bool) × List Bool =>
-      (p.1.1.1, p.1.2.2, encPair encBits encBits (p.1.1.2.2.2.1, p.2)))
-    (by fun_prop)
+  let EIn := encPair F.encDesc (encPair encBits (encPair encBits encBits))
+  let E0 := encPair encUnary EIn
+  let EChoice := encPair (encPair encMsg encMsg) encBits
+  let E1 := encPair E0 EChoice
+  let hp1 := ComputableInPolyTime.fst encUnary EIn
+  let hp2 := ComputableInPolyTime.snd encUnary EIn
+  let hq1 := ComputableInPolyTime.fst E0 EChoice
+  let hq2 := ComputableInPolyTime.snd E0 EChoice
+  let hr1 := ComputableInPolyTime.fst E1 encBits
+  let hr2 := ComputableInPolyTime.snd E1 encBits
+  exact (hA.choose.on.preprocess
+    (hp1.prod ((hp2.fst'.prod hp2.snd'.fst').encoding_comp))).bind_with
+    ((hencryptSym.preprocess
+      ((hp1.comp' hq1).prod
+        ((hp2.snd'.snd'.snd'.comp' hq1).prod
+          ((ComputableInPolyTime.const (encOut := encBool) bit).ite
+            hq2.fst'.snd' hq2.fst'.fst')))).bind_with
+      (hA.guess.preprocess
+        ((hp1.comp' (hq1.comp' hr1)).prod
+          ((hq2.snd'.comp' hr1).prod
+            (((hp2.snd'.snd'.fst'.comp' (hq1.comp' hr1)).prod hr2).encoding_comp)))))
 
 /-- Single hidden-bit KDF distinguisher $\mathcal{B}_{\mathrm{kdf}}$ ([BonehShoup2023],
 Section 11.5.2, proof of Theorem 11.5, Equation `(11.18)`, pp. 450–451): sample a uniform challenge
@@ -700,7 +659,7 @@ noncomputable def hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
 theorem isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
     {encMsg : Msg ↪ List Bool} {encryptSym : ℕ → List Bool → Msg → ProbComp (List Bool)}
     {adversary : Encryption.AdversaryOf Msg}
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :
     IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
@@ -709,22 +668,21 @@ theorem isPPTOn_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg : Type}
         F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym adversary
           input.1 input.2) := by
   let E0 := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
+  let E1 := encPair E0 encBool
+  let hp1 := ComputableInPolyTime.fst E0 encBool
+  let hp2 := ComputableInPolyTime.snd E0 encBool
+  let hq1 := ComputableInPolyTime.fst E1 encBool
+  let hq2 := ComputableInPolyTime.snd E1 encBool
   have hFalse := F.isPPTOn_hashedElGamalCipherToKDFDistinguisher hencryptSym hA false
   have hTrue := F.isPPTOn_hashedElGamalCipherToKDFDistinguisher hencryptSym hA true
-  have hStep : IsPPTOn (encPair E0 encBool) encBool
+  have hStep : IsPPTOn E1 encBool
       (fun p : (ℕ × F.Desc × List Bool × List Bool × List Bool) × Bool =>
-        F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary p.2 p.1.1 p.1.2) := by
-    refine (IsPPTOn.cond (condition := Prod.snd) (by fun_prop)
-      (hTrue.preprocess (prepare := Prod.fst) (by fun_prop))
-      (hFalse.preprocess (prepare := Prod.fst) (by fun_prop))).congr ?_
-    intro ⟨input, bit⟩
-    cases bit <;> rfl
-  have hXor : ComputableInPolyTime
-      (fun p : ((ℕ × F.Desc × List Bool × List Bool × List Bool) × Bool) × Bool => p.2 ^^ p.1.2)
-      (encPair (encPair E0 encBool) encBool) encBool := by
-    fun_prop
-  unfold hashedElGamalCipherToKDFHiddenBitDistinguisher
-  exact (isPPTOn_uniform_bool E0).bind_with (hStep.bind_with hXor.isPPTOn)
+        F.hashedElGamalCipherToKDFDistinguisher encryptSym adversary p.2 p.1.1 p.1.2) :=
+    (IsPPTOn.cond' hp2 (hTrue.preprocess hp1) (hFalse.preprocess hp1)).congr
+      (fun ⟨_, bit⟩ => by cases bit <;> rfl)
+  exact (isPPTOn_uniform_bool E0).bind_with
+    (hStep.bind_with
+      ((ComputableInPolyTime.bool_xor.comp' (hq2.prod (hp2.comp' hq1))).isPPTOn))
 
 /-- **Quantitative reduction of general-cipher Hashed ElGamal IND-CPA to DDH, `SecureKDF`, and
 Game 2 via two per-bit distinguishers** ([BonehShoup2023], Section 11.5.2, Theorem 11.5,
@@ -807,9 +765,8 @@ private theorem ddhRealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg 
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherCPAGame setup H encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← ddhRealGame_hashedElGamalCipherToDDHDistinguisher, ddhRealGame,
-    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← ddhRealGame_hashedElGamalCipherToDDHDistinguisher, ddhRealGame,
+    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α]
     rw [PMF.bind_comm]
@@ -828,9 +785,8 @@ private theorem ddhIdealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherIdealDDHGame setup H encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← ddhIdealGame_hashedElGamalCipherToDDHDistinguisher, ddhIdealGame,
-    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← ddhIdealGame_hashedElGamalCipherToDDHDistinguisher, ddhIdealGame,
+    hashedElGamalCipherToDDHHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α, 2, β]
     rw [PMF.bind_comm]
@@ -852,9 +808,8 @@ private theorem kdfRealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg 
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherIdealDDHGame setup H encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← kdfRealGame_hashedElGamalCipherToKDFDistinguisher, kdfRealGame,
-    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← kdfRealGame_hashedElGamalCipherToKDFDistinguisher, kdfRealGame,
+    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α, 2, β]
     rw [PMF.bind_comm]
@@ -876,9 +831,8 @@ private theorem kdfIdealGame_hashedElGamalCipherToKDFHiddenBitDistinguisher {Msg
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (F.hashedElGamalCipherUniformKeyGame setup keyLen encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
-  simp only [← kdfIdealGame_hashedElGamalCipherToKDFDistinguisher, kdfIdealGame,
-    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
+  simp only [pmf_norm, ← kdfIdealGame_hashedElGamalCipherToKDFDistinguisher, kdfIdealGame,
+    hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_uniform]
   conv_lhs =>
     enter [2, d, 2, α, 2, β]
     rw [PMF.bind_comm]
@@ -954,9 +908,9 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn {F : PrimeOrderGroupFamily}
     (hDDH : F.DDH setup) (hKDF : F.SecureKDF setup H keyLen)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary)
@@ -1013,81 +967,81 @@ theorem isPPT_hashedElGamalCipherToDEMAdversary {Msg : Type} {encMsg : Msg ↪ L
   let E1 := encPair E0 F.encDesc
   let E2 := encPair E1 encNat
   let E3 := encPair E2 encNat
-  let E4 := encPair E3 (encPair (encPair encMsg encMsg) encBits)
-  have hn0 : ComputableInPolyTime (fun p : ℕ × List Bool => p.1) E0 encUnary := by
-    dsimp only [E0]; fun_prop
-  have hn1 : ComputableInPolyTime (fun p : (ℕ × List Bool) × F.Desc => p.1.1) E1 encUnary := by
-    dsimp only [E1, E0]; fun_prop
-  have hd1 : ComputableInPolyTime (fun p : (ℕ × List Bool) × F.Desc => p.2) E1 F.encDesc := by
-    dsimp only [E1]; fun_prop
+  let EChoice := encPair (encPair encMsg encMsg) encBits
+  let E4 := encPair E3 EChoice
+  have hn0 : ComputableInPolyTime (fun p : ℕ × List Bool => p.1) E0 encUnary :=
+    ComputableInPolyTime.fst encUnary encBits
+  have hp1 := ComputableInPolyTime.fst E0 F.encDesc
+  have hd1 : ComputableInPolyTime (fun p : (ℕ × List Bool) × F.Desc => p.2) E1 F.encDesc :=
+    ComputableInPolyTime.snd E0 F.encDesc
+  have hn1 : ComputableInPolyTime (fun p : (ℕ × List Bool) × F.Desc => p.1.1) E1 encUnary :=
+    hp1.fst'
+  have hp2 := ComputableInPolyTime.fst E1 encNat
   have hn2 : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × F.Desc) × ℕ => p.1.1.1) E2 encUnary := by
-    dsimp only [E2, E1, E0]; fun_prop
+      (fun p : ((ℕ × List Bool) × F.Desc) × ℕ => p.1.1.1) E2 encUnary := hp2.fst'.fst'
   have hd2 : ComputableInPolyTime
-      (fun p : ((ℕ × List Bool) × F.Desc) × ℕ => p.1.2) E2 F.encDesc := by
-    dsimp only [E2, E1]; fun_prop
+      (fun p : ((ℕ × List Bool) × F.Desc) × ℕ => p.1.2) E2 F.encDesc := hp2.snd'
+  have hp3 := ComputableInPolyTime.fst E2 encNat
   have hd3 : ComputableInPolyTime
-      (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ => p.1.1.2) E3 F.encDesc := by
-    dsimp only [E3, E2, E1]; fun_prop
+      (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ => p.1.1.2) E3 F.encDesc := hp3.fst'.snd'
   have ha3 : ComputableInPolyTime
-      (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ => p.1.2) E3 encNat := by
-    dsimp only [E3, E2]; fun_prop
+      (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ => p.1.2) E3 encNat := hp3.snd'
   have hu3 : ComputableInPolyTime
       (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ =>
         F.encodeElGamalPublicKey (p.1.1.2, p.1.2)) E3 encBits :=
-    F.computableInPolyTime_encodeElGamalPublicKey.comp (hd3.prod ha3)
+    F.computableInPolyTime_encodeElGamalPublicKey.comp' (hd3.prod ha3)
   have hpk3 : ComputableInPolyTime
       (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ =>
         encPair F.encDesc encBits (p.1.1.2, F.encodeElGamalPublicKey (p.1.1.2, p.1.2)))
       E3 encBits :=
-    (ComputableInPolyTime.of_eq fun _ => rfl).comp (hd3.prod hu3)
+    (hd3.prod hu3).encoding_comp
   have hn3 : ComputableInPolyTime
-      (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ => p.1.1.1.1) E3 encUnary := by
-    dsimp only [E3, E2, E1, E0]; fun_prop
-  have hchoose3 : IsPPTOn E3 (encPair (encPair encMsg encMsg) encBits)
+      (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ => p.1.1.1.1) E3 encUnary :=
+    hp3.fst'.fst'.fst'
+  have hchoose3 : IsPPTOn E3 EChoice
       (fun p : (((ℕ × List Bool) × F.Desc) × ℕ) × ℕ =>
         adversary.choose p.1.1.1.1
           (encPair F.encDesc encBits (p.1.1.2, F.encodeElGamalPublicKey (p.1.1.2, p.1.2)))) :=
     hA.choose.on.preprocess (hn3.prod hpk3)
+  have hp4 := ComputableInPolyTime.fst E3 EChoice
+  have hq4 := ComputableInPolyTime.snd E3 EChoice
   have hd4 : ComputableInPolyTime
       (fun p : ((((ℕ × List Bool) × F.Desc) × ℕ) × ℕ) × (Msg × Msg) × List Bool => p.1.1.1.2)
-      E4 F.encDesc := by
-    dsimp only [E4, E3, E2, E1]; fun_prop
+      E4 F.encDesc := hp4.fst'.fst'.snd'
   have hb4 : ComputableInPolyTime
       (fun p : ((((ℕ × List Bool) × F.Desc) × ℕ) × ℕ) × (Msg × Msg) × List Bool => p.1.2)
-      E4 encNat := by
-    dsimp only [E4, E3]; fun_prop
+      E4 encNat := hp4.snd'
   have hv4 : ComputableInPolyTime
       (fun p : ((((ℕ × List Bool) × F.Desc) × ℕ) × ℕ) × (Msg × Msg) × List Bool =>
         F.encodeElGamalPublicKey (p.1.1.1.2, p.1.2)) E4 encBits :=
-    F.computableInPolyTime_encodeElGamalPublicKey.comp (hd4.prod hb4)
+    F.computableInPolyTime_encodeElGamalPublicKey.comp' (hd4.prod hb4)
   have hst4 : ComputableInPolyTime
       (fun p : ((((ℕ × List Bool) × F.Desc) × ℕ) × ℕ) × (Msg × Msg) × List Bool =>
         encPair encBits encBits (F.encodeElGamalPublicKey (p.1.1.1.2, p.1.2), p.2.2))
       E4 encBits :=
-    (ComputableInPolyTime.of_eq fun _ => rfl).comp
-      (hv4.prod (by dsimp only [E4]; fun_prop))
+    (hv4.prod hq4.snd').encoding_comp
   have hret4 : ComputableInPolyTime
       (fun p : ((((ℕ × List Bool) × F.Desc) × ℕ) × ℕ) × (Msg × Msg) × List Bool =>
         (p.2.1, encPair encBits encBits (F.encodeElGamalPublicKey (p.1.1.1.2, p.1.2), p.2.2)))
-      E4 (encPair (encPair encMsg encMsg) encBits) :=
-    (by dsimp only [E4]; fun_prop : ComputableInPolyTime _ E4 (encPair encMsg encMsg)).prod hst4
+      E4 EChoice :=
+    hq4.fst'.prod hst4
   let EG := encPair encUnary (encPair encBits encBits)
+  have hqG := ComputableInPolyTime.snd encUnary (encPair encBits encBits)
   have hstG : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => dropFrame p.2.1)
       EG encBits :=
-    ComputableInPolyTime.dropFrame.comp (by dsimp only [EG]; fun_prop)
+    ComputableInPolyTime.dropFrame.comp' hqG.fst'
   have hvG : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => unframe p.2.1)
       EG encBits :=
-    ComputableInPolyTime.unframe.comp (by dsimp only [EG]; fun_prop)
+    ComputableInPolyTime.unframe.comp' hqG.fst'
   have hctG : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool => encPair encBits encBits (unframe p.2.1, p.2.2))
       EG encBits :=
-    (ComputableInPolyTime.of_eq fun _ => rfl).comp (hvG.prod (by dsimp only [EG]; fun_prop))
+    (hvG.prod hqG.snd').encoding_comp
   have hargG : ComputableInPolyTime
       (fun p : ℕ × List Bool × List Bool =>
         (p.1, dropFrame p.2.1, encPair encBits encBits (unframe p.2.1, p.2.2)))
       EG EG :=
-    (by dsimp only [EG]; fun_prop : ComputableInPolyTime _ EG encUnary).prod (hstG.prod hctG)
+    (ComputableInPolyTime.fst encUnary (encPair encBits encBits)).prod (hstG.prod hctG)
   refine ⟨?_, hA.guess.preprocess hargG⟩
   unfold Probability.IsPPT hashedElGamalCipherToDEMAdversary
   exact (hsetup.preprocess hn0).bind_with
@@ -1138,7 +1092,7 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
     congr 1; funext α
     conv_rhs => rw [PMF.bind_comm]
     congr 1; funext choice
-    split_ifs <;> simp [PMF.bind_const]
+    split_ifs <;> simp only [PMF.bind_const]
   have hdem :
       ProbComp.eval
         (Encryption.demKeyGameOn validSym keyLen encryptSym
@@ -1147,12 +1101,10 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
         (ProbComp.eval (F.sampleExp n d)).bind fun a =>
           (ProbComp.eval (F.sampleExp n d)).bind fun b =>
             k d (a : ZMod (F.order d)) (b : ZMod (F.order d)) := by
-    simp only [Encryption.demKeyGameOn, hashedElGamalCipherToDEMAdversary,
-      Encryption.AdversaryOf.restrict, ProbComp.eval_bind, ProbComp.eval_pure,
-      Cslib.BitString.eval_sampleList, apply_ite ProbComp.eval,
-      PMF.bind_bind, PMF.pure_bind, encPair_apply, encBits_apply,
-      unframe_frame_append, dropFrame_frame_append, List.headD_cons, List.tail_cons,
-      encodeElGamalPublicKey_eq_encode, k]
+    simp only [pmf_norm, Encryption.demKeyGameOn, hashedElGamalCipherToDEMAdversary,
+      Encryption.AdversaryOf.restrict, Cslib.BitString.eval_sampleList, apply_ite ProbComp.eval,
+      encPair_apply, encBits_apply, unframe_frame_append, dropFrame_frame_append, List.headD_cons,
+      List.tail_cons, encodeElGamalPublicKey_eq_encode, k]
     rw [PMF.bind_comm]
     congr 1; funext d
     rw [PMF.bind_comm]
@@ -1167,10 +1119,10 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le {Msg : Typ
     · have hvs := hvalid_imp d (F.encode d ((a : ZMod (F.order d)) • F.generator d))
         choice.1.1 choice.1.2 hv
       simp only [encPair_apply, encBits_apply] at hv
-      simp [hv, hvs]
+      simp only [hv, hvs, ↓reduceIte]
     · simp only [Bool.not_eq_true, encPair_apply, encBits_apply] at hv
       by_cases hvs : validSym n [] choice.1.1 choice.1.2 = true <;>
-        simp [hv, hvs, PMF.bind_const]
+        simp only [hv, hvs, Bool.false_eq_true, ↓reduceIte, PMF.bind_const]
   rw [hgame2, hdem]
   refine Game.advantage_bind_le_nnreal (ProbComp.eval (setupProb n)) _ _ fun d => ?_
   rw [Game.advantage_comm]
@@ -1227,13 +1179,8 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn {Msg : Typ
         keyLen encryptSym adversary false n)
       (F.hashedElGamalCipherUniformKeyGameOn valid (fun m => ProbComp.eval (setupProb m))
         keyLen encryptSym adversary true n) ≤
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demKeyGameOn validSym keyLen encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
   have hf := F.advantage_hashedElGamalCipherUniformKeyGameOn_demKeyGameOn_le
     valid validSym setupProb keyLen encryptSym adversary false n hvalid_imp
@@ -1263,13 +1210,8 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn {Msg : Typ
           (adversary.restrict valid)) true n))] at htri2
   have hcomb := htri1.trans (add_le_add hf (htri2.trans (add_le_add le_rfl ht)))
   calc _ ≤ (2 : ℝ≥0) / 2 ^ n +
-        (Game.advantage
-          (ProbComp.eval
-            (Encryption.demKeyGameOn validSym keyLen encryptSym
-              (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-          (ProbComp.eval
-            (Encryption.demKeyGameOn validSym keyLen encryptSym
-              (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+        (Encryption.advantage (Encryption.demKeyGameOn validSym keyLen encryptSym
+          (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
         2 / 2 ^ n) := hcomb
     _ = _ := by ring
 
@@ -1291,15 +1233,11 @@ theorem advantage_hashedElGamalCipherUniformKeyGameOn_le_demGameOn {Msg : Type}
         keyLen encryptSym adversary false n)
       (F.hashedElGamalCipherUniformKeyGameOn valid (fun m => ProbComp.eval (setupProb m))
         keyLen encryptSym adversary true n) ≤
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demGameOn validSym encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
-  rw [← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
+  rw [Encryption.advantage,
+    ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
     ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ true hkeyLen]
   exact F.advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn
     valid validSym setupProb keyLen encryptSym adversary n hvalid_imp
@@ -1342,13 +1280,8 @@ theorem advantage_hashedElGamalCipherCPAGameOn_le_demKeyGameOn {Msg : Type}
         (F.kdfIdealGame (fun m => ProbComp.eval (setupProb m)) keyLen
           (F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym
             (adversary.restrict valid)) n) +
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demKeyGameOn validSym keyLen encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demKeyGameOn validSym keyLen encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
   have h1 := F.advantage_hashedElGamalCipherCPAGameOn_le_two_mul
     valid (fun m => ProbComp.eval (setupProb m)) H keyLen encryptSym adversary n
@@ -1394,15 +1327,11 @@ theorem advantage_hashedElGamalCipherCPAGameOn_le_demGameOn {Msg : Type}
         (F.kdfIdealGame (fun m => ProbComp.eval (setupProb m)) keyLen
           (F.hashedElGamalCipherToKDFHiddenBitDistinguisher encryptSym
             (adversary.restrict valid)) n) +
-      Game.advantage
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) false n))
-        (ProbComp.eval
-          (Encryption.demGameOn validSym encryptSym
-            (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid)) true n)) +
+      Encryption.advantage (Encryption.demGameOn validSym encryptSym
+        (F.hashedElGamalCipherToDEMAdversary setupProb (adversary.restrict valid))) n +
       4 / 2 ^ n := by
-  rw [← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
+  rw [Encryption.advantage,
+    ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ false hkeyLen,
     ← Encryption.demKeyGameOn_eq_demGameOn_of_eq validSym keyLen encryptSym _ true hkeyLen]
   exact F.advantage_hashedElGamalCipherCPAGameOn_le_demKeyGameOn
     valid validSym setupProb H keyLen encryptSym adversary n hvalid_imp
@@ -1420,7 +1349,7 @@ theorem negligible_hashedElGamalCipherUniformKeyGameOn_of_demOneTimeKeyINDCPAOn 
     (hsetup : IsPPTOn encUnary F.encDesc setupProb)
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hvalid_imp : ∀ n d u m₀ m₁,
       valid n (encPair F.encDesc encBits (d, u)) m₀ m₁ = true →
         validSym n [] m₀ m₁ = true)
@@ -1438,7 +1367,7 @@ theorem negligible_hashedElGamalCipherUniformKeyGameOn_of_demOneTimeKeyINDCPAOn 
   have herr : Negligible (fun n : ℕ => (4 : ℝ≥0) / 2 ^ n) := by
     simpa only [div_eq_mul_inv, inv_pow, Nat.cast_ofNat] using
       (negligible_geometric (ratio := 2⁻¹) (by norm_num)).polynomiallyBounded_mul
-        (p := fun _ => 4) (by fun_prop)
+        (p := fun _ => 4) (PolynomiallyBounded.const 4)
   exact negligible_of_le (hdem.add herr) fun n =>
     F.advantage_hashedElGamalCipherUniformKeyGameOn_le_demKeyGameOn
       valid validSym setupProb keyLen encryptSym adversary n (hvalid_imp n)
@@ -1456,7 +1385,7 @@ theorem negligible_hashedElGamalCipherUniformKeyGameOn_of_demOneTimeINDCPAOn {Ms
     (hkeyLen : ∀ n, keyLen n = n)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hvalid_imp : ∀ n d u m₀ m₁,
       valid n (encPair F.encDesc encBits (d, u)) m₀ m₁ = true →
         validSym n [] m₀ m₁ = true)
@@ -1489,12 +1418,12 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeKeyINDCPAOn
     (hsetup : IsPPTOn encUnary F.encDesc setupProb)
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hvalid_imp : ∀ n d u m₀ m₁,
       valid n (encPair F.encDesc encBits (d, u)) m₀ m₁ = true →
         validSym n [] m₀ m₁ = true)
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :
@@ -1526,12 +1455,12 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeINDCPAOn
     (hkeyLen : ∀ n, keyLen n = n)
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hvalid_imp : ∀ n d u m₀ m₁,
       valid n (encPair F.encDesc encBits (d, u)) m₀ m₁ = true →
         validSym n [] m₀ m₁ = true)
     (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :
@@ -1558,8 +1487,7 @@ noncomputable def seededSetupProb (setupProb : ℕ → ProbComp F.Desc)
     (seedLen : ℕ → F.Desc → ℕ) (n : ℕ) :
     ProbComp.eval (F.seededSetupProb setupProb seedLen n) =
       F.seededSetup (fun m => ProbComp.eval (setupProb m)) seedLen n := by
-  simp only [seededSetupProb, seededSetup, ProbComp.eval_bind, ProbComp.eval_pure,
-    Cslib.BitString.eval_sampleList, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+  simp only [pmf_norm, seededSetupProb, seededSetup, Cslib.BitString.eval_sampleList]
 
 /-- `F.seededSetupProb setupProb seedLen` is uniform strict PPT whenever `setupProb` is uniform
 strict PPT and `seedLen` is computable in polynomial time in unary. -/
@@ -1576,9 +1504,8 @@ theorem isPPTOn_seededSetupProb {setupProb : ℕ → ProbComp F.Desc}
     ComputableInPolyTime.sampleList hseed
   have hret : ComputableInPolyTime
       (fun p : (ℕ × F.Desc) × List Bool => (p.1.2, p.2))
-      E2 F.withSeed.encDesc := by
-    dsimp only [E2, E1, withSeed]
-    fun_prop
+      E2 F.withSeed.encDesc :=
+    (ComputableInPolyTime.fst E1 encBits).snd'.prod (ComputableInPolyTime.snd E1 encBits)
   unfold seededSetupProb
   exact hsetup.bind_with (hsample.bind_with hret.isPPTOn)
 
@@ -1609,11 +1536,11 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeK
     (hneg : Negligible fun n => (2 : ℝ≥0) ^ (outLen n) / (qMin n : ℝ≥0))
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hvalid_imp : ∀ n d u m₀ m₁,
       valid n (encPair F.withSeed.encDesc encBits (d, u)) m₀ m₁ = true →
         validSym n [] m₀ m₁ = true)
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun p => encryptSym p.1 p.2.1 p.2.2))
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :
@@ -1670,11 +1597,11 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF {F : PrimeOrde
     (hneg : Negligible fun n => (2 : ℝ≥0) ^ n / (qMin n : ℝ≥0))
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
-      (encPair encUnary (encPair encBits (encPair encMsg encMsg))) encBool)
+      (encChallengePairInput encMsg) encBool)
     (hvalid_imp : ∀ n d u m₀ m₁,
       valid n (encPair F.withSeed.encDesc encBits (d, u)) m₀ m₁ = true →
         validSym n [] m₀ m₁ = true)
-    (hencryptSym : IsPPTOn (encPair encUnary (encPair encBits encMsg)) encBits
+    (hencryptSym : IsPPTOn (encKeyedInput encMsg) encBits
       (fun ⟨n, k, m⟩ => encryptSym n k m))
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) :

@@ -1,0 +1,28 @@
+[Unit]
+Description=Refresh public cache statistics
+RequiresMountsFor=/srv/cache-origin
+AssertPathIsMountPoint=/srv/cache-origin
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -B /usr/local/libexec/cache-dashboard-collect.py --root /srv/cache-origin --output /var/lib/cache-dashboard/stats.json
+StateDirectory=cache-dashboard
+StateDirectoryMode=0755
+UMask=0022
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadOnlyPaths=/srv/cache-origin
+MemoryMax=128M
+TasksMax=8
+TimeoutStartSec=90s
+Nice=10
+IOSchedulingClass=idle

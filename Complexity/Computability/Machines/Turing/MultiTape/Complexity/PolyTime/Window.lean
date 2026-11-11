@@ -40,10 +40,10 @@ open MultiTapeTM ComputableInPolyTime
 /-- Enumerate all tape positions within a unary distance of the origin, in signed unary. -/
 @[fun_prop]
 theorem computableInPolyTime_windowList :
-    ComputableInPolyTime windowList encUnary (encList encInt) := by
+    ComputableInPolyTime windowList encUnary (encList encIntUnary) := by
   unfold windowList
   have hf : ComputableInPolyTime (fun p : ℕ × ℕ => (p.2 : ℤ) - p.1)
-      (encPair encUnary encUnary) encInt :=
+      (encPair encUnary encUnary) encIntUnary :=
     ComputableInPolyTime.int_natCast_sub.comp
       ((snd encUnary encUnary).prod (fst encUnary encUnary))
   exact mapWithInput (by fun_prop) hf

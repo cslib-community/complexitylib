@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Cases
+import Complexity.Tactic.EncLen
 
 /-!
 # Divide and conquer
@@ -419,13 +420,9 @@ private lemma round_inO (hisBase : ComputableTidilyInO D.isBase encA encBool Tt 
     · simp only [Sum.elim_inl, length_encPair, encSum_inl, List.length_cons]
       split_ifs <;> omega
     · rcases o with _ | a | g <;>
-      simp only [Function.comp_apply, Sum.elim_inl, Sum.elim_inr, Option.elim_none,
-        Option.elim_some, length_encPair, encSum_inl, encSum_inr, List.length_cons,
-        encOption_some] <;> omega
+      enc_len [Function.comp_apply, Sum.elim_inl, Sum.elim_inr, Option.elim_none, Option.elim_some]
     · have := length_encList_toList_le (encFrame encA encG) o
-      simp only [Function.comp_apply, Sum.elim_inr, length_encPair, encSum_inr,
-        List.length_cons] at *
-      omega
+      enc_len [Function.comp_apply, Sum.elim_inr] at *
 
 /-- The halting test of the loop, in linear time. -/
 private lemma halt_inO : ComputableTidilyInO D.loop.halt (encVal encA encB) encBool
@@ -532,8 +529,7 @@ theorem ComputableInO.divConq {δ α β γ : Type} {encIn : δ ↪ List Bool}
       fsize (some (.inl a)) + fsize (some (.inr (D.mid (a, b₁)).2)) + 2 ≤ 6 * cn a b₁ b₂ := by
     intro a b₁ b₂ ha
     have h₁ := hcn a b₁ b₂ ha
-    simp only [fsize, hencF, encOption_some, encSum_inl, encSum_inr, List.length_cons]
-    omega
+    enc_len [fsize, hencF]
   -- the trace of every input
   have htrace := fun x => D.eval_trace hb' hc' hm' hj' hf' ((heval x).scale 6) []
   choose m hm hh hs using htrace

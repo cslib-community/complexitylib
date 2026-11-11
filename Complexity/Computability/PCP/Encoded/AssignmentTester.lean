@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.PCP.AssignmentTester
+public import Complexity.Computability.PCP.Encoded.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
@@ -120,7 +121,7 @@ theorem isPolyTime_query (coinsEncoding : Rand α ↪ List Bool)
     (queryEncoding : Query ↪ List Bool) (positionEncoding : Pos α ↪ List Bool) :
     ComputableInPolyTime
       (fun p : (α → α → Bool) × Rand α × Query => query p.1 p.2.1 p.2.2)
-      (encPair (encPi (encPi encBool)) (encPair coinsEncoding queryEncoding)) positionEncoding :=
+      (encTableCoinsQuery coinsEncoding queryEncoding) positionEncoding :=
   ComputableInPolyTime.of_finite _
 
 /-- Fixed-alphabet acceptance charges the supplied constraint, coins, and all query answers. -/
@@ -128,7 +129,7 @@ theorem isPolyTime_query (coinsEncoding : Rand α ↪ List Bool)
 theorem isPolyTime_accepts (coinsEncoding : Rand α ↪ List Bool) :
     ComputableInPolyTime
       (fun p : (α → α → Bool) × Rand α × (Query → Bool) => accepts p.1 p.2.1 p.2.2)
-      (encPair (encPi (encPi encBool)) (encPair coinsEncoding (encPi encBool))) encBool :=
+      (encPair encConstraintTable (encPair coinsEncoding (encPi encBool))) encBool :=
   ComputableInPolyTime.of_finite _
 
 end Cslib.PCP.Encoded.HadamardTester

@@ -23,6 +23,7 @@ types need no inhabitant assumption.
 * `ComputableInPolyTime.optionIsSome`: test a computed optional value.
 * `ComputableInPolyTime.optionGetD`: read an option with a runtime fallback.
 * `ComputableInPolyTime.optionGetDWithInput`, `.optionElimWithInput`: retain captured inputs.
+* `ComputableInPolyTime.optionMapWithInput`: map a computed option with a captured callback.
 -/
 
 @[expose] public section
@@ -92,5 +93,18 @@ theorem optionElimWithInput {γ : Type} {encC : γ ↪ List Bool}
     funext a
     dsimp only [Function.comp_def]
     cases value a <;> rfl
+
+/-- Map a computed option, charging the callback jointly with its captured input. -/
+@[fun_prop]
+theorem optionMapWithInput {γ : Type} {encC : γ ↪ List Bool}
+    {value : α → Option β} {f : α → β → γ}
+    (hvalue : ComputableInPolyTime value encA (encOption encB))
+    (hf : ComputableInPolyTime (fun p : α × β => f p.1 p.2) (encPair encA encB) encC) :
+    ComputableInPolyTime (fun a => (value a).map (f a)) encA (encOption encC) := by
+  have h := hvalue.optionElimWithInput (body := fun a b => some (f a b))
+    (ComputableInPolyTime.const none) ((optionSome encC).comp hf)
+  convert h using 1
+  funext a
+  cases value a <;> rfl
 
 end Turing.MultiTapeTM.ComputableInPolyTime

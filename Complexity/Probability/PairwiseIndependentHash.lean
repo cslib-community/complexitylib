@@ -67,6 +67,9 @@ is `1 / 8`.
   `S` hits a target is at most `μ`, and that it misses it at most `1 / μ`.
 * `Cslib.Probability.IsPairwiseIndependentHash.three_quarters_mul_le_dens_filter_mem_image`: the
   set lower bound protocol.
+* `Cslib.Probability.IsPairwiseIndependentHash.card_filter_mem_image_mul_le`,
+  `Cslib.Probability.IsPairwiseIndependentHash.card_filter_notMem_image_mul_le`: the same two
+  bounds in counts.
 * `Cslib.Probability.IsPairwiseIndependentHash.four_mul_card_filter_notMem_image_le`,
   `Cslib.Probability.IsPairwiseIndependentHash.four_mul_card_filter_mem_image_le`: in counts, a
   target is missed by at most a quarter of the seeds when `#S ≥ 4 |Y|`, and hit by at most a
@@ -303,29 +306,10 @@ theorem one_sub_le_dens_filter_mem_image (hh : IsPairwiseIndependentHash h) {S :
   gcongr
   exact hh.dens_filter_notMem_image_le hS y
 
-/-- **Large sets are hit**: if `#S ≥ 4 |Y|`, at most a quarter of the seeds miss a target, in
-counts. -/
-theorem four_mul_card_filter_notMem_image_le (hh : IsPairwiseIndependentHash h) {S : Finset X}
-    (hS : 4 * Fintype.card Y ≤ #S) (y : Y) :
-    4 * #{i | y ∉ S.image (h i)} ≤ Fintype.card ι := by
-  have hY : 0 < Fintype.card Y := Fintype.card_pos_iff.2 ⟨y⟩
-  have hne : S.Nonempty := card_pos.1 (by omega)
-  have hι : 0 < Fintype.card ι := by
-    obtain ⟨x, -⟩ := hne
-    have := hh.nonempty x y
-    exact Fintype.card_pos
-  have hd := hh.dens_filter_notMem_image_le hne y
-  rw [dens_eq_card_div_card, div_le_div_iff₀ (by exact_mod_cast hι)
-    (by exact_mod_cast hne.card_pos)] at hd
-  have hd' : #{i | y ∉ S.image (h i)} * #S ≤ Fintype.card Y * Fintype.card ι := by
-    exact_mod_cast hd
-  nlinarith
-
-/-- **Small sets are missed**: if `4 #S ≤ |Y|`, at most a quarter of the seeds hit a target, in
-counts. -/
-theorem four_mul_card_filter_mem_image_le (hh : IsPairwiseIndependentHash h) {S : Finset X}
-    (hS : 4 * #S ≤ Fintype.card Y) (y : Y) :
-    4 * #{i | y ∈ S.image (h i)} ≤ Fintype.card ι := by
+/-- **First moment bound, in counts**: the seeds for which `S` hits `y`, times `|Y|`, number at
+most `#S` times all seeds. -/
+theorem card_filter_mem_image_mul_le (hh : IsPairwiseIndependentHash h) (S : Finset X) (y : Y) :
+    #{i | y ∈ S.image (h i)} * Fintype.card Y ≤ #S * Fintype.card ι := by
   have hY : 0 < Fintype.card Y := Fintype.card_pos_iff.2 ⟨y⟩
   rcases S.eq_empty_or_nonempty with rfl | hne
   · simp
@@ -335,8 +319,38 @@ theorem four_mul_card_filter_mem_image_le (hh : IsPairwiseIndependentHash h) {S 
     exact Fintype.card_pos
   have hd := hh.dens_filter_mem_image_le S y
   rw [dens_eq_card_div_card, div_le_div_iff₀ (by exact_mod_cast hι) (by exact_mod_cast hY)] at hd
-  have hd' : #{i | y ∈ S.image (h i)} * Fintype.card Y ≤ #S * Fintype.card ι := by
-    exact_mod_cast hd
+  exact_mod_cast hd
+
+/-- **Second moment bound, in counts**: for a nonempty `S`, the seeds for which `S` misses `y`,
+times `#S`, number at most `|Y|` times all seeds. -/
+theorem card_filter_notMem_image_mul_le (hh : IsPairwiseIndependentHash h) {S : Finset X}
+    (hS : S.Nonempty) (y : Y) :
+    #{i | y ∉ S.image (h i)} * #S ≤ Fintype.card Y * Fintype.card ι := by
+  have hι : 0 < Fintype.card ι := by
+    obtain ⟨x, -⟩ := hS
+    have := hh.nonempty x y
+    exact Fintype.card_pos
+  have hd := hh.dens_filter_notMem_image_le hS y
+  rw [dens_eq_card_div_card, div_le_div_iff₀ (by exact_mod_cast hι)
+    (by exact_mod_cast hS.card_pos)] at hd
+  exact_mod_cast hd
+
+/-- **Large sets are hit**: if `#S ≥ 4 |Y|`, at most a quarter of the seeds miss a target, in
+counts. -/
+theorem four_mul_card_filter_notMem_image_le (hh : IsPairwiseIndependentHash h) {S : Finset X}
+    (hS : 4 * Fintype.card Y ≤ #S) (y : Y) :
+    4 * #{i | y ∉ S.image (h i)} ≤ Fintype.card ι := by
+  have hY : 0 < Fintype.card Y := Fintype.card_pos_iff.2 ⟨y⟩
+  have hd' := hh.card_filter_notMem_image_mul_le (S := S) (card_pos.1 (by omega)) y
+  nlinarith
+
+/-- **Small sets are missed**: if `4 #S ≤ |Y|`, at most a quarter of the seeds hit a target, in
+counts. -/
+theorem four_mul_card_filter_mem_image_le (hh : IsPairwiseIndependentHash h) {S : Finset X}
+    (hS : 4 * #S ≤ Fintype.card Y) (y : Y) :
+    4 * #{i | y ∈ S.image (h i)} ≤ Fintype.card ι := by
+  have hY : 0 < Fintype.card Y := Fintype.card_pos_iff.2 ⟨y⟩
+  have hd' := hh.card_filter_mem_image_mul_le S y
   nlinarith
 
 /-- **Inclusion–exclusion for hitting a target**: `S` hits `y` with probability at least

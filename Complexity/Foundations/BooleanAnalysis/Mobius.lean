@@ -7,8 +7,10 @@ module
 -- upstream: candidate
 
 public import Complexity.Foundations.BooleanAnalysis.LowDegree
+import Mathlib.Algebra.BigOperators.Group.Finset.Powerset
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.LinearAlgebra.Pi
+import Mathlib.Tactic.LinearCombination
 
 /-!
 # Boolean Möbius reconstruction
@@ -39,6 +41,13 @@ proof of Lemma D.2, p. 56 of [OpenAI2026ETH].
 * `Cslib.BitString.sum_powerset_subsetMobius`: Möbius inversion on the subsets of a set.
 * `Cslib.BitString.subsetMobius_eq_zero_of_mem_lowDegree`: the transform vanishes above the
   degree.
+* `Cslib.BitString.subsetMobius_bitVal_mul`: multiplying by the bit `x i` shifts the transform.
+* `Cslib.BitString.eq_sum_subsetMobius_of_local`: a function depending only on the coordinates
+  in `I` is the combination of the monomials of subsets of `I`.
+* `Cslib.BitString.eq_sum_subsetMobius_smul_monomial`: every function on a finite cube is the
+  combination of the monomials with its subset Möbius coefficients.
+* `Cslib.BitString.mem_lowDegree_iff_subsetMobius_eq_zero`: a function has degree at most `D`
+  exactly when its transform vanishes on every set of more than `D` elements.
 -/
 
 open scoped BigOperators
@@ -198,7 +207,133 @@ public theorem subsetMobius_eq_zero_of_mem_lowDegree [DecidableEq ι] {D : ℕ}
     simp only [AddMonoidHom.coe_mulLeft, hg, mul_zero] at h
     simpa only [Pi.smul_apply, smul_eq_mul] using h.symm
 
+/-- The subset Möbius transform commutes with subtraction. -/
+public theorem subsetMobius_sub (f g : Finset ι → M) (S : Finset ι) :
+    subsetMobius (fun T => f T - g T) S = subsetMobius f S - subsetMobius g S := by
+  simp only [subsetMobius, smul_sub, sum_sub_distrib]
+
+/-- The subset Möbius transform commutes with finite sums. -/
+public theorem subsetMobius_sum {κ : Type*} (s : Finset κ) (f : κ → Finset ι → M)
+    (S : Finset ι) :
+    subsetMobius (fun T => ∑ k ∈ s, f k T) S = ∑ k ∈ s, subsetMobius (f k) S := by
+  simp only [subsetMobius, smul_sum]
+  exact sum_comm
+
+/-- The subset Möbius transform commutes with multiplication by a constant. -/
+public theorem subsetMobius_const_mul (c : R) (f : Finset ι → R) (S : Finset ι) :
+    subsetMobius (fun T => c * f T) S = c * subsetMobius f S :=
+  (map_subsetMobius (AddMonoidHom.mulLeft c) f S).symm
+
+/-- **Multiplying by a bit shifts the transform.** Multiplying the values `f T` by the bit of `i`
+at the indicator of `T` gives the transform `μ S + μ (S \ {i})` at the sets containing `i`, and `0`
+elsewhere, where `μ` is the transform of `f`. -/
+public theorem subsetMobius_bitVal_mul [DecidableEq ι] (i : ι) (f : Finset ι → R)
+    (S : Finset ι) :
+    subsetMobius (fun T => bitVal R (decide (i ∈ T)) * f T) S =
+      if i ∈ S then subsetMobius f S + subsetMobius f (S.erase i) else 0 := by
+  split_ifs with hi
+  · set S' := S.erase i with hS'
+    have hiS' : i ∉ S' := notMem_erase i S
+    rw [(insert_erase hi).symm]
+    simp only [subsetMobius]
+    rw [sum_powerset_insert hiS', sum_powerset_insert hiS', card_insert_of_notMem hiS']
+    have h0 : ∑ T ∈ S'.powerset,
+        (-1 : ℤ) ^ (#S' + 1 - #T) • (bitVal R (decide (i ∈ T)) * f T) = 0 := by
+      refine sum_eq_zero fun T hT => ?_
+      have : i ∉ T := fun h => hiS' (mem_powerset.1 hT h)
+      rw [decide_eq_false this, bitVal_false, zero_mul, smul_zero]
+    have h1 : ∀ T ∈ S'.powerset, (-1 : ℤ) ^ (#S' + 1 - #(insert i T)) •
+        (bitVal R (decide (i ∈ insert i T)) * f (insert i T)) =
+          (-1 : ℤ) ^ (#S' - #T) • f (insert i T) := by
+      intro T hT
+      have hiT : i ∉ T := fun h => hiS' (mem_powerset.1 hT h)
+      rw [card_insert_of_notMem hiT, Nat.add_sub_add_right,
+        decide_eq_true (mem_insert_self i T), bitVal_true, one_mul]
+    have h2 : ∀ T ∈ S'.powerset, (-1 : ℤ) ^ (#S' + 1 - #T) • f T +
+        (-1 : ℤ) ^ (#S' - #T) • f T = 0 := by
+      intro T hT
+      have hT' : #T ≤ #S' := card_le_card (mem_powerset.1 hT)
+      rw [show #S' + 1 - #T = (#S' - #T) + 1 by omega, pow_succ, mul_neg_one, neg_smul,
+        neg_add_cancel]
+    have h4 : ∀ T ∈ S'.powerset, (-1 : ℤ) ^ (#S' + 1 - #(insert i T)) • f (insert i T) =
+        (-1 : ℤ) ^ (#S' - #T) • f (insert i T) := by
+      intro T hT
+      have hiT : i ∉ T := fun h => hiS' (mem_powerset.1 hT h)
+      rw [card_insert_of_notMem hiT, Nat.add_sub_add_right]
+    rw [h0, zero_add, sum_congr rfl h1, sum_congr rfl h4]
+    have h3 := sum_congr rfl h2
+    rw [sum_add_distrib, sum_const_zero] at h3
+    linear_combination -h3
+  · simp only [subsetMobius]
+    refine sum_eq_zero fun T hT => ?_
+    have : i ∉ T := fun h => hi (mem_powerset.1 hT h)
+    rw [decide_eq_false this, bitVal_false, zero_mul, smul_zero]
+
 end SubsetMobius
+
+section MonomialExpansion
+
+variable [Fintype ι] [DecidableEq ι]
+
+/-- **A local function in the monomials of its scope**: if `g` depends only on the coordinates in
+`I`, then `g x` is the sum over the subsets `S ⊆ I` of the subset Möbius transform of
+`T ↦ g 1_T` at `S`, times the monomial of `S` at `x`. -/
+public theorem eq_sum_subsetMobius_of_local {I : Finset ι} {g : (ι → Bool) → R}
+    (hg : ∀ x y : ι → Bool, (∀ v ∈ I, x v = y v) → g x = g y) (x : ι → Bool) :
+    g x = ∑ S ∈ I.powerset, subsetMobius (fun T => g fun v => decide (v ∈ T)) S *
+      if ∀ v ∈ S, x v = true then 1 else 0 := by
+  set W := I.filter fun v => x v = true
+  have hgx : g x = g fun v => decide (v ∈ W) :=
+    hg _ _ fun v hv => by simp only [W, mem_filter, hv, true_and, Bool.decide_eq_true]
+  rw [hgx, ← sum_powerset_subsetMobius (fun T => g fun v => decide (v ∈ T)) W]
+  simp only [mul_ite, mul_one, mul_zero]
+  rw [← sum_filter]
+  refine sum_congr ?_ fun _ _ => rfl
+  ext S
+  simp only [mem_powerset, mem_filter, W, subset_iff]
+  exact ⟨fun h => ⟨fun v hv => (h hv).1, fun v hv => (h hv).2⟩,
+    fun h v hv => ⟨h.1 hv, h.2 v hv⟩⟩
+
+/-- **Monomial expansion on the cube.** Every function on a finite cube is the combination of the
+monomials with coefficients the subset Möbius transform of its values at indicators of sets: the
+case `I = univ` of `Cslib.BitString.eq_sum_subsetMobius_of_local`. -/
+public theorem eq_sum_subsetMobius_smul_monomial (g : (ι → Bool) → R) :
+    g = ∑ S : Finset ι, subsetMobius (fun T => g fun i => decide (i ∈ T)) S • monomial R S := by
+  funext x
+  rw [eq_sum_subsetMobius_of_local (I := univ) (fun x y h => congrArg g (funext fun v =>
+    h v (mem_univ v))) x, powerset_univ]
+  simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, monomial_apply]
+  exact sum_congr rfl fun S _ => by congr
+
+end MonomialExpansion
+
+section MonomialExpansionFinite
+
+variable [Finite ι] [DecidableEq ι]
+
+/-- **Low degree through the Möbius transform.** A function on a finite cube has degree at most
+`D` exactly when the subset Möbius transform of its values vanishes on every set of more than `D`
+elements. -/
+public theorem mem_lowDegree_iff_subsetMobius_eq_zero {D : ℕ} {g : (ι → Bool) → R} :
+    g ∈ lowDegree R ι D ↔
+      ∀ S : Finset ι, D < #S → subsetMobius (fun T => g fun i => decide (i ∈ T)) S = 0 := by
+  have := Fintype.ofFinite ι
+  refine ⟨fun hg S hS => subsetMobius_eq_zero_of_mem_lowDegree hg hS, fun hg => ?_⟩
+  rw [eq_sum_subsetMobius_smul_monomial g]
+  refine Submodule.sum_mem _ fun S _ => ?_
+  by_cases hS : #S ≤ D
+  · exact Submodule.smul_mem _ _ (monomial_mem_lowDegree hS)
+  · rw [hg S (by omega), zero_smul]
+    exact Submodule.zero_mem _
+
+/-- A function on a finite cube whose subset Möbius transform vanishes everywhere is zero. -/
+public theorem eq_zero_of_subsetMobius_eq_zero {g : (ι → Bool) → R}
+    (hg : ∀ S : Finset ι, subsetMobius (fun T => g fun i => decide (i ∈ T)) S = 0) : g = 0 := by
+  have := Fintype.ofFinite ι
+  rw [eq_sum_subsetMobius_smul_monomial g]
+  exact sum_eq_zero fun S _ => by rw [hg S, zero_smul]
+
+end MonomialExpansionFinite
 
 open Classical in
 private noncomputable def reconstruction [Fintype ι] (q : ℕ) (x : ι → Bool) :

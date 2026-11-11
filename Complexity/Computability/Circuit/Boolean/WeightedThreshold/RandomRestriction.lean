@@ -478,8 +478,7 @@ theorem sum_card_not_forcedToAtMostOne_ltfEval_le {Ω ι : Type*} [Fintype Ω] [
       calc (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)} : ℝ) ^ 2
           = (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)} : ℝ) *
               (#{ω : Ω | i ∈ B ω ∧ 2 ≤ #(B ω ∩ S)} : ℝ) := sq _
-        _ ≤ (p * (Fintype.card Ω : ℝ)) * ((#S : ℝ) * p ^ 2 * (Fintype.card Ω : ℝ)) :=
-            mul_le_mul hb1 hb2 (by positivity) (by positivity)
+        _ ≤ (p * (Fintype.card Ω : ℝ)) * ((#S : ℝ) * p ^ 2 * (Fintype.card Ω : ℝ)) := by gcongr
         _ = (Real.sqrt #S) ^ 2 * p ^ 2 * (Real.sqrt p) ^ 2 * (Fintype.card Ω : ℝ) ^ 2 := by
             rw [Real.sq_sqrt (by positivity), Real.sq_sqrt hp0]; ring
         _ = (Real.sqrt #S * p * Real.sqrt p * (Fintype.card Ω : ℝ)) ^ 2 := by ring

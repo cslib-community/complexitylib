@@ -23,6 +23,16 @@ answers and final states alone do not preserve the charged history.
 
 [Complexity/DataStructure/ObliviousSequence.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/ObliviousSequence.lean) instead accepts a fixed finite operation list and constrains its joint typed transcript law. It is deliberately state-free at the interface and nonadaptive. A theorem over all lists chosen before the random seed does not allow a client to choose the next query after observing random outputs. The hash-family and hash-table headline theorems use this boundary explicitly.
 
+### Cell-probe state-transition and oblivious-sequence implementations
+
+Import [`Complexity.DataStructure.CellProbe.StateTransition`](../../Complexity/DataStructure/CellProbe/StateTransition.lean), [`Complexity.DataStructure.CellProbe.Randomized.StateTransition`](../../Complexity/DataStructure/CellProbe/Randomized/StateTransition.lean), and [`Complexity.DataStructure.CellProbe.Randomized.ObliviousSequence`](../../Complexity/DataStructure/CellProbe/Randomized/ObliviousSequence.lean) to connect `Cslib.CellProbe` schemes ([query and communication complexity](../circuits-logic-and-other-models/query-and-communication.md#adaptive-cell-probe-trees-and-schemes)) to `StateTransitionSpec` and `ObliviousSequenceSpec`. Persistent state between operations lives solely in `Mem cells w` (`cells` words of `w` bits, with no persistent registers); reads and writes cost one probe each, while local computation and private coin draws cost zero probes.
+
+- `CellProbe.StateTransitionImpl D P s₀` certifies a deterministic `CellProbe.Scheme` with potential-amortized probe charge `charge`, projecting via `toBaseImpl`, `toAmortized`, and (when `potential = 0`) `toBound` over `ExecOp P` to adaptive `D.Client` bounds (`run_client_amortized`, `run_client_bound`) and multi-step `P.runSeq` / `P.seqProbes` bounds (`runSeq_amortized`, `runSeq_ofFn`), with cell-count monotonicity `padCells`.
+- `CellProbe.Randomized.StateTransitionImpl D P s₀` couples `Randomized.Scheme` execution with a latent `Seed` (`seedSlack * seedLaw`), `CoupledState` / `CoupledOutcome` marginals, and an addition-only `ℝ≥0∞` amortized-in-expectation probe inequality (`seq_expected_amortized`, `seq_expected_amortized_ofFn`), lifting deterministic implementations via `toRandomized` and projecting to `CellProbe.Randomized.ObliviousSequenceImpl` via `toObliviousSequenceImpl`.
+- For **zero-error (Las Vegas)** schemes on deterministic specifications (`[D.HasStepFn f]`) against oblivious sequences (bounded-error Monte Carlo schemes and adaptive sequence adversaries are out of scope), `CellProbe.Randomized.exists_det_indexedScheme_le_expectedSeqProbes` and `StateTransitionImpl.le_expected_totalCost_of_det_indexedScheme` package the **averaging (easy) direction of Yao's principle** over an explicit finite `opsAlphabet : Finset D.Op` and `horizon : ℕ` (separating `correctSeqs` from `hardDist`, so infinite operation types such as `Dictionary.Op U` need no `[Fintype]` instance). Because per-step coin fixing returns a step-indexed `IndexedScheme` (the **time-aware relaxation** with a free step clock outside cell memory), any deterministic cell-probe lower bound paired with it must hold against step-indexed `IndexedScheme`s; in the **random initial memory / coin-free steps** specialization (`IsCoinFree`), `exists_det_scheme_le_expectedSeqProbes` and `StateTransitionImpl.exists_det_scheme` return a time-invariant `CellProbe.Scheme` without `opsAlphabet` or `horizon`.
+
+Open the complete [checked client](../../ComplexityTests/DataStructureCellProbe.lean) for a non-zero-potential 2-bit binary counter (`4` probes on carry vs. amortized charge `3`), a worst-case direct-mapped `Dictionary.spec` instance, a randomized 2-key dictionary combining a uniform initial swap seed with per-query coin flips, zero-error coin-fixing over non-`Fintype` `Dictionary.Op 2`, and a `3 / 2` probe lower-bound transfer check across arbitrary `cells` and `w`. Run `scripts/build.sh --wfail --iofail ComplexityTests.DataStructureCellProbe`. Word-RAM-to-cell-probe simulation bridges follow separately; these modules do not by themselves transfer cell-probe lower bounds to Word-RAM instruction counts.
+
 ## Word memory as an oracle
 
 [Complexity/DataStructure/Memory/Spec.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/Memory/Spec.lean) has total memory `Nat → Nat`, a monotone allocation frontier and word width. Reads/writes must address allocated cells; values/frontier must fit. Zeroed allocation charges `k+1` for a `k`-cell block in its abstract currency, whereas dirty allocation charges one and retains previous cell contents. There is no automatic deallocation or reuse. `Memory.Prog` uses the same free-program client syntax.
@@ -158,8 +168,27 @@ postcondition; register disjointness alone says nothing about its writes.
 
 From a checkout containing this API, check the client with
 `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMCall`.
-The [ordinary 3SUM call proof](https://github.com/cslib-community/complexitylib/blob/4b571e0f55c64471a95728d28955f3532ed9329f/Complexity/Algorithms/WordRAM/ThreeSum/Decision/Body.lean)
-uses the same rule for its Convolution host and retained controller registers.
+The ordinary 3SUM visitor's
+[`Visitor.exec_consume`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorCall.lean)
+uses the same rule for its Convolution host. Actual copies deliver the current node's packed
+pointer and allocation endpoint; the complete traversal register bank and lower live prefix
+survive the call, while higher scratch may be dirty. This permits pending heavy arrays to be
+used after the call without publishing or reading a packed-pointer catalogue.
+
+The subsequent
+[`Visitor.exec_releasePacked`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorRelease.lean)
+executes one copy from the actual packed pointer to the heap register, making the dead packed,
+residue and histogram tail reusable. The memory function is unchanged by that copy. Heavy-buffer
+capacities and count cells remain below the committed frontier, whose persistent allocation
+advances monotonically; the old reserved gap remains too. Keep the `Emission` witness anchored
+at the construction state before the consumer call: its `heap_eq` describes the complete node
+endpoint. `construct_consume` returns that state, both charged executions and the actual
+callee register/prefix frames. Transport the live stack and child arrays through those frames;
+the continuation needs no reconstructed packed-array readback after consumption.
+Use `release_frontier` and `release_children_ends` with the retained emission and register frame
+for the smaller released frontier and actual child arrays. The visitor's body storage equality is in
+[`live_transition`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorTransition.lean);
+it does not bound total space or arbitrary callee high-water scratch.
 For a renamed execution without a surrounding preparation and continuation, use
 `Exec.rename_post` or `ExecWithin.rename_post`. They return the postcondition on the callee
 bank and the unchanged outside registers; the first retains an exact instruction count.
@@ -169,6 +198,13 @@ The Chan–He traversal's record helpers are another `Exec.rename_post` client.
 move a fixed register bank through the traversal's own nine-register word stack in exactly
 `9*n+1` and `14*n+1` instructions. They are local to the hand-stepped traversal, not a library
 stack API; the library's bounded stack is `Stack.Memory`, run natively by `Stack.Native`.
+
+Both root controllers reuse
+[`Traversal.initializeRoot_exec`](../../Complexity/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalInitialize.lean).
+It proves the actual four setup instructions and seven-word root push in 68 instructions,
+with exact stack readback and the stack write frame. `Exec.rename_post` lifts this same prefix
+into the visitor's register bank. The catalogue and visitor loops then establish their own
+output invariants; neither caller supplies a root-prefix execution as an assumption.
 
 ### Reuse routine postconditions and register frames
 
@@ -195,13 +231,46 @@ and use `Code.preserves_rename_of_offset`. Supply the equation
 `i.val < offset ∨ offset + sourceRegisters ≤ i.val`.
 `Exec.regs_eq` or `ExecWithin.regs_eq` then gives the protected register equality for the actual
 execution. This works with arbitrary basis and register counts; an enumerated map can supply
-its offset equation once. Sparse maps and protection inside a bank still use the more general
-`preserves_rename_of_forall_ne` or the routine's own preservation contract.
+its offset equation once. For a sparse map, `Code.preserves_rename_of_forall_ne` protects a
+register outside the bank image, given `∀ j, bank j ≠ i`.
+
+For a preserved register inside an injective bank, first prove the routine's own
+`h : code.Preserves i`. Then `Code.preserves_rename hf h`, with `hf : bank.Injective`, gives
+`(code.rename bank).Preserves (bank i)`. Apply `Exec.regs_eq` or `ExecWithin.regs_eq` to obtain
+the actual register equality. The native visitor's
+[`Visitor.oneRoot_preserves`](../../Complexity/Algorithms/WordRAM/ThreeSum/Decision/VisitorRoot.lean)
+uses this shared rule for saved preprocessing controls. If this step fails, check the source
+routine's preservation fact and injectivity separately; being inside the bank requires that
+source fact, while the outside-image and offset rules retain their existing uses.
 
 The complete [register-frame client](../../ComplexityTests/WordRAMRegisterFrames.lean)
 copies inside an interior bank in one instruction and retains dirty registers on both sides
 and arbitrary memory. Its negative control checks that an owned destination can change.
 Run `scripts/build.sh --wfail --iofail ComplexityTests.WordRAMRegisterFrames`.
+
+### Pay variable native loop work with a ghost potential
+
+Import
+[`Complexity.Computability.WordRAM.GhostLoop`](../../Complexity/Computability/WordRAM/GhostLoop.lean)
+and use `ExecWithin.loop_potential_state` for a native loop whose body paths have different
+charged costs. Choose proof state `σ`, a relation `I : σ → Data r → Prop` and a natural-valued
+potential `μ : σ → ℕ`. For every `s` and `x` satisfying `I s x` and the actual loop
+condition, supply a successor `s'`, native state `y` and charge `t` with
+`ExecWithin W body x y t`, `I s' y` and `t + 2 + μ s' ≤ μ s`.
+The two extra units pay that iteration's loop control. The conclusion executes the fixed native
+loop within `μ s + 2`, preserves the final relation and establishes that its condition is false;
+the final two units pay the exit. Proof state and potential insert no machine instructions.
+The body premise still requires execution of the actual code, including its fit and memory
+obligations. The uniform-body `loop_invariant_state` rule remains available.
+
+The complete [checked client](../../ComplexityTests/NativeGhostPotential.lean) includes its
+`GhostLoop` import, phase relation and actual branch executions. Its counter follows
+`1 → 2 → 0`, with body costs two and four. Ghost potentials `10 → 6 → 0` pay those bodies and
+loop control, yielding a twelve-step loop bound; the evaluator independently checks that exact
+clock and preserved dirty memory. From the repository root, run
+`scripts/build.sh --wfail --iofail ComplexityTests.NativeGhostPotential`.
+If the potential inequality fails, include each branch's actual cost and both control units;
+if execution fails, resolve the native body or invariant premise before changing its charge.
 
 ### Derive word admission from a numerical envelope
 
@@ -225,7 +294,7 @@ envelope, then check the original value bound; do not replace a strict premise b
 
 [HeapAssertion](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Heap.lean#L62) records a finite support and a predicate on total memory. Separating conjunction uses disjoint supports; `Modifies` records agreement outside an allowed write set. This is an explicit-footprint frame calculus inspired by separation logic, not a replacement semantics in which inaccessible cells disappear [reynolds02][reynolds02].
 
-[Complexity/Computability/WordRAM/Trace.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Trace.lean) decorates actual executions with address/value reads and writes. `TraceExec.exec` erases the trace; `Exec.exists_trace` supplies one for every ordinary execution; trace length is bounded by instructions. These are access costs of a fixed RAM computation. They are not a general cell-probe model allowing arbitrary uncharged local computation.
+[Complexity/Computability/WordRAM/Trace.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/Trace.lean) decorates actual executions with address/value reads and writes. `TraceExec.exec` erases the trace; `Exec.exists_trace` supplies one for every ordinary execution; trace length is bounded by instructions. These are access costs of a fixed RAM computation. They are not a general cell-probe model allowing arbitrary uncharged local computation; for adaptive `w`-bit cell-probe trees and randomized cell-probe schemes (`Cslib.CellProbe`), see [query and communication complexity](../circuits-logic-and-other-models/query-and-communication.md#adaptive-cell-probe-trees-and-schemes).
 
 [Complexity/Computability/WordRAM/MemoryWindow.lean](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/WordRAM/MemoryWindow.lean) compiles standard code to a caller-owned region with three extra registers. Loads use address addition, load and normalization; stores use addition and store. `view` clips dirty memory to the source width. No bulk zeroing is silently inserted, and the view is a relation on ordinary RAM states, not another execution machine. Signed pairs and multiword banks similarly implement representations inside the ordinary instruction model.
 

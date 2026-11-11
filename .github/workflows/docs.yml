@@ -13,6 +13,12 @@ permissions:
   contents: read
   actions: read
 
+env:
+  DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
+  COMPLEXITYLIB_CACHE_URLS: ${{ vars.COMPLEXITYLIB_CACHE_URLS }}
+  LAKE_NO_CACHE: ${{ vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1' }}
+  MATHLIB_NO_CACHE_ON_UPDATE: ${{ (vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1') && '1' || '0' }}
+
 # A newer build of the same branch supersedes an older one, so only the latest build deploys.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,6 +40,7 @@ jobs:
           test: "false"
           lint: "false"
           use-mathlib-cache: "false"
+          use-github-cache: "false"
       - name: Restore Mathlib cache with retries
         continue-on-error: true
         timeout-minutes: 10

@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import Complexity.Computability.Probabilistic.Oracle.Parameter
 public import Complexity.Computability.Probabilistic.Parameter
+public import Complexity.Crypto.Encoding
 public import Complexity.Crypto.Game
 import Complexity.Probability.PMF.Bind
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -49,20 +50,28 @@ We formalize two adaptive chosen-message security notions against uniform strict
 ## Main definitions
 
 * `Cslib.Crypto.Forger`: adaptive oracle adversary outputting a `(message, signature)` pair.
+* `Cslib.Crypto.encForgeryLog`: the encoding of a forgery with the list of queried messages.
 * `Cslib.Crypto.SignatureScheme`: uniform digital signature scheme on `n`-bit messages.
-* `Cslib.Crypto.SignatureScheme.signingOracle`, `eufCmaGame`, `EUFCMA`: full adaptive EUF-CMA
-  experiment and security predicate.
-* `Cslib.Crypto.SignatureScheme.oneTimeSigningOracle`, `eufOneTimeGame`, `OneTimeEUFCMA`: one-time
-  adaptive EUF-CMA experiment and security predicate.
+* `Cslib.Crypto.SignatureScheme.signingOracleOf`, `Cslib.Crypto.SignatureScheme.signingOracle`,
+  `eufCmaGame`, `EUFCMA`: message-logging signing oracle and full adaptive EUF-CMA experiment and
+  security predicate.
+* `Cslib.Crypto.SignatureScheme.oneTimeSigningOracleOf`,
+  `Cslib.Crypto.SignatureScheme.oneTimeSigningOracle`, `eufOneTimeGame`, `OneTimeEUFCMA`: one-time
+  message-logging signing oracle and one-time adaptive EUF-CMA experiment and security predicate.
 
 ## Main results
 
-* `Cslib.Crypto.SignatureScheme.isPPTOn_eufCmaGame`, `isPPT_eufCmaGame`: strict PPT certificates
-  for the full EUF-CMA experiment.
-* `Cslib.Crypto.SignatureScheme.isPPTOn_eufOneTimeGame`, `isPPT_eufOneTimeGame`: strict PPT
-  certificates for the one-time EUF-CMA experiment.
-* `Cslib.Crypto.SignatureScheme.EUFCMA.oneTimeEUFCMA`: full EUF-CMA security implies one-time
-  EUF-CMA security.
+* `Cslib.Crypto.SignatureScheme.isPPTOn_run_signingOracleOf`,
+  `Cslib.Crypto.SignatureScheme.isPPTOn_run_signingOracle`,
+  `Cslib.Crypto.SignatureScheme.isPPTOn_eufCmaGame`, `isPPT_eufCmaGame`: strict PPT certificates
+  for the message-logging signing oracle and full EUF-CMA experiment.
+* `Cslib.Crypto.SignatureScheme.isPPTOn_run_oneTimeSigningOracleOf`,
+  `Cslib.Crypto.SignatureScheme.isPPTOn_run_oneTimeSigningOracle`,
+  `Cslib.Crypto.SignatureScheme.isPPTOn_eufOneTimeGame`, `isPPT_eufOneTimeGame`: strict PPT
+  certificates for the one-time signing oracle and one-time EUF-CMA experiment.
+* `Cslib.Crypto.SignatureScheme.run_limitToOneQuery_eq_oneTimeSigningOracleOf`,
+  `Cslib.Crypto.SignatureScheme.EUFCMA.oneTimeEUFCMA`: one-query filter simulation and implication
+  from full EUF-CMA security to one-time EUF-CMA security.
 
 ## References
 
@@ -82,6 +91,12 @@ open scoped NNReal
 /-- An adaptive forger receives a unary security parameter and a public verification key, queries a
 signing oracle on chosen messages, and outputs a candidate `(message, signature)` pair. -/
 abbrev Forger := ℕ → List Bool → WordOracleComp Unit (List Bool × List Bool)
+
+/-- Output `((msg, sig), queried)` of a forger run against a message-logging signing oracle: the
+candidate forgery `(msg, sig)` as bit words, then the list of queried messages. The forgery is
+framed, with `msg` framed again inside it, and so is each queried message. -/
+abbrev encForgeryLog : (List Bool × List Bool) × List (List Bool) ↪ List Bool :=
+  encPair (encPair encBits encBits) (encList encBits)
 
 /-- A uniform digital signature scheme on `n`-bit messages at security parameter `n`, with strict
 polynomial-time key generation and signing, deterministic polynomial-time verification, and perfect
@@ -139,7 +154,7 @@ private theorem computableInPolyTime_signResources (c d : ℕ) :
     ComputableInPolyTime
       (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
         c * (2 * pair.1.2.2.length + pair.2.length + 2) ^ d + 2 * pair.2.length + 2)
-      (encPair (encPair encUnary (encPair encBits encBits)) encBits) encUnary := by
+      (encPair encKeyPairInput encBits) encUnary := by
   have hskLen := (ComputableInPolyTime.fst
     (encPair encUnary (encPair encBits encBits)) encBits).snd'.snd'.length_bits_comp
   have hqLen := (ComputableInPolyTime.snd
@@ -154,8 +169,7 @@ private theorem computableTidilyInPolyTime_eufPost (S : SignatureScheme) :
       (fun pair : (ℕ × (List Bool × List Bool)) × ((List Bool × List Bool) × List (List Bool)) =>
         (pair.2.1.1.length == pair.1.1) && !pair.2.2.contains pair.2.1.1 &&
           S.verify pair.1.2.1 pair.2.1.1 pair.2.1.2)
-      (encPair (encPair encUnary (encPair encBits encBits))
-        (encPair (encPair encBits encBits) (encList encBits))) encBool := by
+      (encPair encKeyPairInput encForgeryLog) encBool := by
   have hcaller := ComputableTidilyInPolyTime.fst
     (encPair encUnary (encPair encBits encBits))
     (encPair (encPair encBits encBits) (encList encBits))
@@ -179,6 +193,14 @@ private theorem computableTidilyInPolyTime_eufPost (S : SignatureScheme) :
 
 /-! ### Full adaptive chosen-message security (`EUFCMA`) -/
 
+/-- Stateful signing/tagging oracle that invokes `sign sk` on the requested message and prepends
+the message to the list of queried messages. -/
+abbrev signingOracleOf (sign : List Bool → List Bool → ProbComp (List Bool)) (sk : List Bool)
+    (request : Unit × List Bool) : StateT (List (List Bool)) ProbComp (List Bool) :=
+  fun queried => do
+    let sig ← sign sk request.2
+    return (sig, request.2 :: queried)
+
 /-- Stateful signing oracle that signs the requested message under `sk` and prepends the message to
 the list of queried messages. -/
 def signingOracle (S : SignatureScheme) (sk : List Bool)
@@ -200,48 +222,70 @@ def eufCmaGame (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
   return (msig.1.length == n) && !out.2.contains msig.1 &&
     S.verify keys.1 msig.1 msig.2
 
-/-- Run the complete EUF-CMA experiment on its unary security parameter for any oracle-PPT
-forger. -/
+/-- Running an oracle-PPT forger against `signingOracleOf sign` is uniformly strict PPT in the
+unary security parameter, public/auxiliary input, and secret key. -/
 @[program_certificate]
-theorem isPPTOn_eufCmaGame (S : SignatureScheme) {adversary : Forger}
-    (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn encUnary encBool (S.eufCmaGame adversary) := by
-  obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
+theorem isPPTOn_run_signingOracleOf {sign : List Bool → List Bool → ProbComp (List Bool)}
+    (hsign : IsPPTOn (encPair encBits encBits) encBits (fun p => sign p.1 p.2))
+    {adversary : Forger} (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsPPTOn encKeyPairInput encForgeryLog
+      (fun caller : ℕ × (List Bool × List Bool) =>
+        (OracleComp.interpret
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+            (signingOracleOf sign caller.2.2)) (adversary caller.1 caller.2.1)).run []) := by
+  obtain ⟨c, d, hlen⟩ := hsign.length_le
   have hcaller := ComputableTidilyInPolyTime.fst
     (encPair encUnary (encPair encBits encBits))
     (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
   have hstate := ComputableTidilyInPolyTime.snd
     (encPair encUnary (encPair encBits encBits))
     (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
-  have hrun : IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair encBits encBits) (encList encBits))
+  apply hadversary.run_interpret_preprocess' (operationEncoding := encFinEnum Unit)
+    (handler := fun caller : ℕ × (List Bool × List Bool) => signingOracleOf sign caller.2.2)
+    (prepare := fun caller : ℕ × (List Bool × List Bool) => (caller.1, caller.2.1))
+    (initial := fun _ => ([] : List (List Bool)))
+    (resources := fun caller query =>
+      c * (2 * caller.2.2.length + query.length + 2) ^ d + 2 * query.length + 2)
+    ((ComputableInPolyTime.fst _ _).prod (ComputableInPolyTime.snd _ _).fst')
+    ((hsign.preprocess
+      ((ComputableInPolyTime.of_tidy hcaller.snd'.snd').prod
+        (.of_tidy hstate.fst'.snd'))).bind_with
+      (ComputableTidilyInPolyTime.prod (.snd _ _)
+        (ComputableTidilyInPolyTime.cons' (hstate.fst'.snd'.comp (.fst _ _))
+          (hstate.snd'.comp (.fst _ _)))).isPPTOn)
+    (.const []) (fun _ _ => True) (fun _ => trivial)
+    (computableInPolyTime_signResources c d)
+  intro caller request queried _ result hresult
+  simp only [signingOracleOf, ProbComp.eval_bind, ProbComp.eval_pure,
+    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hresult
+  obtain ⟨sig, hsig, rfl⟩ := hresult
+  have hsigLen := hlen (caller.2.2, request.2) sig hsig
+  simp only [encBits_apply, length_encPair] at hsigLen
+  refine ⟨trivial, by lia, ?_⟩
+  simp only [encList_cons, List.length_append, length_frame, encBits_apply]
+  lia
+
+/-- Running an oracle-PPT forger against `S.signingOracle` is uniformly strict PPT in the unary
+security parameter, public key, and secret key. -/
+@[program_certificate]
+theorem isPPTOn_run_signingOracle (S : SignatureScheme) {adversary : Forger}
+    (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsPPTOn encKeyPairInput encForgeryLog
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-            (S.signingOracle caller.2.2)) (adversary caller.1 caller.2.1)).run []) := by
-    apply hadversary.run_interpret_preprocess' (operationEncoding := encFinEnum Unit)
-      (handler := fun caller : ℕ × (List Bool × List Bool) => S.signingOracle caller.2.2)
-      (prepare := fun caller : ℕ × (List Bool × List Bool) => (caller.1, caller.2.1))
-      (initial := fun _ => ([] : List (List Bool)))
-      (resources := fun caller query =>
-        c * (2 * caller.2.2.length + query.length + 2) ^ d + 2 * query.length + 2)
-      ((ComputableInPolyTime.fst _ _).prod (ComputableInPolyTime.snd _ _).fst')
-      ((S.isPPTOn_sign_comp (.of_tidy hcaller.snd'.snd') (.of_tidy hstate.fst'.snd')).bind_with
-        (ComputableTidilyInPolyTime.prod (.snd _ _)
-          (ComputableTidilyInPolyTime.cons' (hstate.fst'.snd'.comp (.fst _ _))
-            (hstate.snd'.comp (.fst _ _)))).isPPTOn)
-      (.const []) (fun _ _ => True) (fun _ => trivial)
-      (computableInPolyTime_signResources c d)
-    intro caller request queried _ result hresult
-    simp only [signingOracle, ProbComp.eval_bind, ProbComp.eval_pure,
-      PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hresult
-    obtain ⟨sig, hsig, rfl⟩ := hresult
-    have hsigLen := hlen (caller.2.2, request.2) sig hsig
-    simp only [encBits_apply, length_encPair] at hsigLen
-    refine ⟨trivial, by lia, ?_⟩
-    simp only [encList_cons, List.length_append, length_frame, encBits_apply]
-    lia
-  exact S.keyGen_ppt.bind_with (hrun.bind_with (computableTidilyInPolyTime_eufPost S).isPPTOn)
+            (S.signingOracle caller.2.2)) (adversary caller.1 caller.2.1)).run []) :=
+  isPPTOn_run_signingOracleOf S.sign_ppt hadversary
+
+/-- Run the complete EUF-CMA experiment on its unary security parameter for any oracle-PPT
+forger. -/
+@[program_certificate]
+theorem isPPTOn_eufCmaGame (S : SignatureScheme) {adversary : Forger}
+    (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsPPTOn encUnary encBool (S.eufCmaGame adversary) :=
+  S.keyGen_ppt.bind_with
+    ((S.isPPTOn_run_signingOracle hadversary).bind_with
+      (computableTidilyInPolyTime_eufPost S).isPPTOn)
 
 /-- The EUF-CMA experiment is uniformly strict PPT, independently of unused auxiliary input. -/
 @[program_certificate]
@@ -261,18 +305,28 @@ def EUFCMA (S : SignatureScheme) : Prop :=
 /-- Full EUF-CMA security gives negligible forgery probability for every oracle-PPT forger. -/
 theorem EUFCMA.negligible {S : SignatureScheme} (h : S.EUFCMA)
     (adversary : Forger) (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (S.eufCmaGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (S.eufCmaGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish EUF-CMA security by bounding every oracle-PPT forger's success probability. -/
 theorem EUFCMA.of_negligible {S : SignatureScheme}
     (h : ∀ adversary, IsOraclePPT (encPair encBits encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (S.eufCmaGame adversary n)))) :
-    S.EUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    S.EUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 /-! ### One-time adaptive chosen-message security (`OneTimeEUFCMA`) -/
+
+/-- One-time signing/tagging oracle that answers at most the first query using `sign sk` and
+returns the empty word without signing on any subsequent query. -/
+abbrev oneTimeSigningOracleOf (sign : List Bool → List Bool → ProbComp (List Bool)) (sk : List Bool)
+    (request : Unit × List Bool) : StateT (List (List Bool)) ProbComp (List Bool) :=
+  fun queried =>
+    if queried.isEmpty then do
+      let sig ← sign sk request.2
+      return (sig, [request.2])
+    else
+      return ([], queried)
 
 /-- One-time signing oracle that answers at most the first signing query using `S.sign sk` and
 returns the empty word without signing on any subsequent query. -/
@@ -299,18 +353,18 @@ def eufOneTimeGame (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
   return (msig.1.length == n) && !out.2.contains msig.1 &&
     S.verify keys.1 msig.1 msig.2
 
-/-- Running an oracle-PPT forger against `oneTimeSigningOracle` is uniformly strict PPT in the
-unary security parameter, public key, and secret key. -/
+/-- Running an oracle-PPT forger against `oneTimeSigningOracleOf sign` is uniformly strict PPT in
+the unary security parameter, public/auxiliary input, and secret key. -/
 @[program_certificate]
-theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forger}
-    (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits))
-      (encPair (encPair encBits encBits) (encList encBits))
+theorem isPPTOn_run_oneTimeSigningOracleOf {sign : List Bool → List Bool → ProbComp (List Bool)}
+    (hsign : IsPPTOn (encPair encBits encBits) encBits (fun p => sign p.1 p.2))
+    {adversary : Forger} (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsPPTOn encKeyPairInput encForgeryLog
       (fun caller : ℕ × (List Bool × List Bool) =>
         (OracleComp.interpret
           (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-            (S.oneTimeSigningOracle caller.2.2)) (adversary caller.1 caller.2.1)).run []) := by
-  obtain ⟨c, d, hlen⟩ := S.sign_ppt.length_le
+            (oneTimeSigningOracleOf sign caller.2.2)) (adversary caller.1 caller.2.1)).run []) := by
+  obtain ⟨c, d, hlen⟩ := hsign.length_le
   have hcaller := ComputableTidilyInPolyTime.fst
     (encPair encUnary (encPair encBits encBits))
     (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
@@ -318,14 +372,16 @@ theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forg
     (encPair encUnary (encPair encBits encBits))
     (encPair (encPair (encFinEnum Unit) encBits) (encList encBits))
   apply hadversary.run_interpret_preprocess' (operationEncoding := encFinEnum Unit)
-    (handler := fun caller : ℕ × (List Bool × List Bool) => S.oneTimeSigningOracle caller.2.2)
+    (handler := fun caller : ℕ × (List Bool × List Bool) => oneTimeSigningOracleOf sign caller.2.2)
     (prepare := fun caller : ℕ × (List Bool × List Bool) => (caller.1, caller.2.1))
     (initial := fun _ => ([] : List (List Bool)))
     (resources := fun caller query =>
       c * (2 * caller.2.2.length + query.length + 2) ^ d + 2 * query.length + 2)
     ((ComputableInPolyTime.fst _ _).prod (ComputableInPolyTime.snd _ _).fst')
     (IsPPTOn.cond ((ComputableTidilyInPolyTime.listIsEmpty' encBits).comp hstate.snd')
-      ((S.isPPTOn_sign_comp (.of_tidy hcaller.snd'.snd') (.of_tidy hstate.fst'.snd')).bind_with
+      ((hsign.preprocess
+        ((ComputableInPolyTime.of_tidy hcaller.snd'.snd').prod
+          (.of_tidy hstate.fst'.snd'))).bind_with
         (ComputableTidilyInPolyTime.prod (.snd _ _)
           (ComputableTidilyInPolyTime.cons' (hstate.fst'.snd'.comp (.fst _ _))
             (.const []))).isPPTOn)
@@ -333,7 +389,7 @@ theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forg
     (.const []) (fun _ _ => True) (fun _ => trivial)
     (computableInPolyTime_signResources c d)
   intro caller request queried _ result hresult
-  unfold oneTimeSigningOracle at hresult
+  unfold oneTimeSigningOracleOf at hresult
   split_ifs at hresult with hempty
   · simp only [ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hresult
@@ -348,6 +404,18 @@ theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forg
   · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
     subst result
     exact ⟨trivial, by simp, by lia⟩
+
+/-- Running an oracle-PPT forger against `oneTimeSigningOracle` is uniformly strict PPT in the
+unary security parameter, public key, and secret key. -/
+@[program_certificate]
+theorem isPPTOn_run_oneTimeSigningOracle (S : SignatureScheme) {adversary : Forger}
+    (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
+    IsPPTOn encKeyPairInput encForgeryLog
+      (fun caller : ℕ × (List Bool × List Bool) =>
+        (OracleComp.interpret
+          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+            (S.oneTimeSigningOracle caller.2.2)) (adversary caller.1 caller.2.1)).run []) :=
+  isPPTOn_run_oneTimeSigningOracleOf S.sign_ppt hadversary
 
 /-- Run the complete one-time EUF-CMA experiment on its unary security parameter for any oracle-PPT
 forger. -/
@@ -378,17 +446,16 @@ def OneTimeEUFCMA (S : SignatureScheme) : Prop :=
 /-- One-time EUF-CMA security gives negligible forgery probability for every oracle-PPT forger. -/
 theorem OneTimeEUFCMA.negligible {S : SignatureScheme} (h : S.OneTimeEUFCMA)
     (adversary : Forger) (hadversary : IsOraclePPT (encPair encBits encBits) adversary) :
-    Negligible (fun n => Game.succProbability (ProbComp.eval (S.eufOneTimeGame adversary n))) := by
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    Negligible (fun n => Game.succProbability (ProbComp.eval (S.eufOneTimeGame adversary n))) :=
+  Game.Indistinguishable.negligible_succProbability h adversary hadversary
 
 /-- Establish one-time EUF-CMA security by bounding every oracle-PPT forger's success
 probability. -/
 theorem OneTimeEUFCMA.of_negligible {S : SignatureScheme}
     (h : ∀ adversary, IsOraclePPT (encPair encBits encBits) adversary →
       Negligible (fun n => Game.succProbability (ProbComp.eval (S.eufOneTimeGame adversary n)))) :
-    S.OneTimeEUFCMA := by
-  intro adversary hadversary
-  simpa only [Game.advantage_pure_false] using h adversary hadversary
+    S.OneTimeEUFCMA :=
+  Game.Indistinguishable.of_negligible_succProbability h
 
 /-- Starting from the empty query log, `oneTimeSigningOracle` records at most one queried
 message. -/
@@ -402,7 +469,7 @@ theorem length_le_one_of_mem_support_run_oneTimeSigningOracle (S : SignatureSche
     (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
     (fun s => s.length ≤ 1) ?_ prog [] (by simp) result queried h
   intro ⟨⟨⟩, req⟩ s hs a s' hmem
-  unfold oneTimeSigningOracle at hmem
+  rw [oneTimeSigningOracle] at hmem
   split_ifs at hmem with hempty
   · simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
       PMF.mem_support_pure_iff] at hmem
@@ -426,7 +493,7 @@ private theorem run_oneTimeSigningOracle_apply_eq_zero_of_not_agree (S : Signatu
     (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
     (fun state => ¬ ∀ r ∈ state, agree r) ?_ prog s hs a queried' hmem hq'
   intro ⟨⟨⟩, req⟩ state hstate val next hnext
-  unfold oneTimeSigningOracle at hnext
+  rw [oneTimeSigningOracle] at hnext
   split_ifs at hnext with hempty
   · rw [List.isEmpty_iff] at hempty
     subst hempty
@@ -557,7 +624,62 @@ theorem isOraclePPT_limitToOneQuery {bound : ℕ → ℕ → ℕ}
       simp [encBool_apply]
   exact (hrun.map (ComputableTidilyInPolyTime.fst _ _)).isOraclePPT
 
-private theorem run_limitToOneQuery_eq_oneTimeSigningOracle (S : SignatureScheme)
+/-- Running an adaptive program filtered through `oneTimeFilterHandler` against
+`signingOracleOf sign` produces the same distribution as running it against
+`oneTimeSigningOracleOf sign` whenever all outputs of `sign sk msg` have length at most
+`bound n msg.length`. -/
+theorem run_limitToOneQuery_eq_oneTimeSigningOracleOf
+    (sign : List Bool → List Bool → ProbComp (List Bool))
+    (bound : ℕ → ℕ → ℕ) (n : ℕ) (pk sk : List Bool)
+    (hbound : ∀ msg sig, sig ∈ (ProbComp.eval (sign sk msg)).support →
+      sig.length ≤ bound n msg.length)
+    (prog : WordOracleComp Unit (List Bool × List Bool)) :
+    ProbComp.eval (Prod.map Prod.fst id <$> ((OracleComp.interpret
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+        (signingOracleOf sign sk))
+      ((OracleComp.interpret
+        (OracleComp.sumHandler
+          (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
+          (oneTimeFilterHandler bound (n, pk)))
+        prog).run false)).run [])) =
+    ProbComp.eval ((OracleComp.interpret
+      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+        (oneTimeSigningOracleOf sign sk)) prog).run []) := by
+  rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
+    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
+  -- Reconstruct the filter flag from the query log, so no state invariant is needed.
+  have hsim := ProbOracleComp.run_interpret_map_state
+    (oracle := fun q s => ProbComp.eval (oneTimeSigningOracleOf sign sk q s))
+    (oracle' := fun q (state : Bool × List (List Bool)) =>
+      ((OracleComp.interpret
+        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
+          (fun q s => ProbComp.eval (signingOracleOf sign sk q s)))
+        ((oneTimeFilterHandler bound (n, pk) q).run state.1)).run state.2).map
+          (fun result => (result.1.1, result.1.2, result.2)))
+    (represent := fun queried => (!queried.isEmpty, queried))
+    (step := by
+      intro ⟨⟨⟩, msg⟩ queried
+      change _ = ((OracleComp.interpret (m := StateT (List (List Bool)) PMF) _
+        (oneTimeFilterHandler bound (n, pk) ((), msg) (!queried.isEmpty))).run queried).map _
+      cases queried with
+      | nil =>
+        simp only [oneTimeSigningOracleOf, List.isEmpty_nil, ↓reduceIte, Bool.not_true,
+          oneTimeFilterHandler, Bool.false_eq_true, Functor.map_map,
+          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
+          PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def, signingOracleOf,
+          ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind]
+        simp only [StateT.run, PMF.map_bind]
+        refine PMF.bind_congr_on_support _ _ _ fun sig hsig => ?_
+        simp [List.take_of_length_le (hbound msg sig hsig)]
+      | cons head tail =>
+        simp [oneTimeSigningOracleOf, oneTimeFilterHandler, OracleComp.interpret_pure,
+          StateT.run_pure, ProbComp.eval_pure])
+    prog []
+  have hproj := congrArg (PMF.map (fun result => (result.1, result.2.2))) hsim
+  rw [PMF.map_comp] at hproj
+  exact hproj.symm.trans (PMF.map_id _)
+
+theorem run_limitToOneQuery_eq_oneTimeSigningOracle (S : SignatureScheme)
     (bound : ℕ → ℕ → ℕ) (n : ℕ) (pk sk : List Bool)
     (hbound : ∀ msg sig, sig ∈ (ProbComp.eval (S.sign sk msg)).support →
       sig.length ≤ bound n msg.length)
@@ -572,40 +694,8 @@ private theorem run_limitToOneQuery_eq_oneTimeSigningOracle (S : SignatureScheme
         prog).run false)).run [])) =
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-        (S.oneTimeSigningOracle sk)) prog).run []) := by
-  rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret,
-    ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
-  -- Reconstruct the filter flag from the query log, so no state invariant is needed.
-  have hsim := ProbOracleComp.run_interpret_map_state
-    (oracle := fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
-    (oracle' := fun q (state : Bool × List (List Bool)) =>
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (fun q s => ProbComp.eval (S.signingOracle sk q s)))
-        ((oneTimeFilterHandler bound (n, pk) q).run state.1)).run state.2).map
-          (fun result => (result.1.1, result.1.2, result.2)))
-    (represent := fun queried => (!queried.isEmpty, queried))
-    (step := by
-      intro ⟨⟨⟩, msg⟩ queried
-      change _ = ((OracleComp.interpret (m := StateT (List (List Bool)) PMF) _
-        (oneTimeFilterHandler bound (n, pk) ((), msg) (!queried.isEmpty))).run queried).map _
-      cases queried with
-      | nil =>
-        simp only [oneTimeSigningOracle, List.isEmpty_nil, ↓reduceIte, Bool.not_true,
-          oneTimeFilterHandler, Bool.false_eq_true, Functor.map_map,
-          OracleComp.interpret_map, StateT.run_map, ProbOracleComp.interpret_query,
-          PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def, signingOracle,
-          ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind]
-        simp only [StateT.run, PMF.map_bind]
-        refine PMF.bind_congr_on_support _ _ _ fun sig hsig => ?_
-        simp [List.take_of_length_le (hbound msg sig hsig)]
-      | cons head tail =>
-        simp [oneTimeSigningOracle, oneTimeFilterHandler, OracleComp.interpret_pure,
-          StateT.run_pure, ProbComp.eval_pure])
-    prog []
-  have hproj := congrArg (PMF.map (fun result => (result.1, result.2.2))) hsim
-  rw [PMF.map_comp] at hproj
-  exact hproj.symm.trans (PMF.map_id _)
+        (S.oneTimeSigningOracle sk)) prog).run []) :=
+  run_limitToOneQuery_eq_oneTimeSigningOracleOf S.sign bound n pk sk hbound prog
 
 /-- Full EUF-CMA security implies one-time EUF-CMA security. -/
 theorem EUFCMA.oneTimeEUFCMA {S : SignatureScheme} (h : S.EUFCMA) : S.OneTimeEUFCMA := by
@@ -622,12 +712,9 @@ theorem EUFCMA.oneTimeEUFCMA {S : SignatureScheme} (h : S.EUFCMA) : S.OneTimeEUF
     (ComputableInPolyTime.const cs).unary_mul' ((ComputableInPolyTime.unary_pow ds).comp
       ((((ComputableInPolyTime.const 2).unary_mul' hsk).unary_add' (.snd _ _)).unary_add'
         (.const 2)))
-  apply OneTimeEUFCMA.of_negligible
-  intro adversary hadversary
-  have hred := h.negligible (limitToOneQuery bound adversary)
-    (isOraclePPT_limitToOneQuery hbound_poly hadversary)
-  refine hred.congr fun n => ?_
-  congr 1
+  refine h.of_succProbability_reduction (limitToOneQuery bound)
+    (fun _ => isOraclePPT_limitToOneQuery hbound_poly) fun adversary _ n => ?_
+  refine le_of_eq (congrArg Game.succProbability ?_)
   simp only [eufOneTimeGame, eufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
   have hkeysLen := hlenk n keys hkeys
@@ -643,9 +730,9 @@ theorem EUFCMA.oneTimeEUFCMA {S : SignatureScheme} (h : S.EUFCMA) : S.OneTimeEUF
     (adversary n keys.1)
   dsimp only [limitToOneQuery]
   rw [OracleComp.interpret_map, StateT.run_map]
-  exact congrArg (fun p : PMF ((List Bool × List Bool) × List (List Bool)) =>
+  exact (congrArg (fun p : PMF ((List Bool × List Bool) × List (List Bool)) =>
     p.bind fun x => PMF.pure
-      ((x.1.1.length == n) && !x.2.contains x.1.1 && S.verify keys.1 x.1.1 x.1.2)) hrun
+      ((x.1.1.length == n) && !x.2.contains x.1.1 && S.verify keys.1 x.1.1 x.1.2)) hrun).symm
 
 end SignatureScheme
 

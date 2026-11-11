@@ -81,8 +81,7 @@ noncomputable def pedersenPublicOperations : F.pedersenScheme.PublicOperations w
   randomness k := (PMF.uniformOfFintype (ZMod (F.order k.1))).map (fun r => r.val.bits)
   map_commit k m := by
     simp only [PMF.map_comp, pedersenScheme, pedersenCommitPairLaw]
-    congr 1
-    funext r
+    congr 1 with r : 1
     have hr : (ofBits r.val.bits : ZMod (F.order k.1)) = r := by
       unfold ofBits
       rw [Nat.foldr_bit_bits, ZMod.natCast_zmod_val]

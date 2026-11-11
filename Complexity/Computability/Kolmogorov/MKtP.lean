@@ -305,8 +305,7 @@ theorem boundedSearch_eq_true_iff_of_two_pow_le {x : List Bool} {k N : ℕ}
   · rintro ⟨p, hplen, hp⟩
     refine ⟨Ladner.index p, List.mem_range.mpr ?_, ?_⟩
     · have hind := Ladner.index_add_two_le p
-      have hpow : 2 ^ (p.length + 1) ≤ 2 ^ (k + 1) :=
-        Nat.pow_le_pow_right (by norm_num) (by omega)
+      have hpow : 2 ^ (p.length + 1) ≤ 2 ^ (k + 1) := by gcongr
       omega
     · simp only [Ladner.word_index, Bool.and_eq_true, decide_eq_true_eq]
       refine ⟨hplen, ?_⟩

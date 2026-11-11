@@ -65,8 +65,7 @@ theorem clockedVertexBound_add_one_le_pow {k : ℕ} (D d n : ℕ) :
   have hd : 1 ≤ F ^ d := Nat.one_le_pow _ _ (by omega)
   change (2 * F ^ d + 1) * vertexBound (k := k) (radix D n) + 1 ≤ F ^ (E + d + 2)
   calc
-    _ ≤ (2 * F ^ d + 1) * F ^ E + 1 :=
-      Nat.add_le_add_right (Nat.mul_le_mul_left _ hN) 1
+    _ ≤ (2 * F ^ d + 1) * F ^ E + 1 := by gcongr
     _ ≤ (F ^ E * F ^ d) * 4 := by nlinarith
     _ ≤ (F ^ E * F ^ d) * F ^ 2 :=
       Nat.mul_le_mul_left _ (by nlinarith [sq_nonneg (F - 2 : ℤ)])

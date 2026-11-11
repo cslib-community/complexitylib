@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Logics.Propositional.CNF.ThreeCNF.Exact
+public import Complexity.Logics.Propositional.CNF.Encoding
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 public import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Sum
 public import Complexity.Computability.Machines.Turing.MultiTape.PolyTime
@@ -107,13 +108,13 @@ index. -/
 theorem Clause.isPolyTime_orChainAux {input : Input ↪ List Bool} {enc : W ↪ List Bool}
     {fresh : Input → ℕ → W} {index : Input → ℕ} {carry : Input → Literal W}
     {rest : Input → Clause W}
-    (hrest : ComputableInPolyTime rest input (encList (encPair enc encBool)))
+    (hrest : ComputableInPolyTime rest input (encClause enc))
     (hcarry : ComputableInPolyTime carry input (encPair enc encBool))
     (hindex : ComputableInPolyTime index input encUnary)
     (hfresh : ComputableInPolyTime (fun p : Input × ℕ => fresh p.1 p.2)
       (encPair input encUnary) enc) :
     ComputableInPolyTime (fun x => Clause.orChainAux (fresh x) (index x) (carry x) (rest x))
-      input (encList (encList (encPair enc encBool))) := by
+      input (encCNFOver enc) := by
   have hdrop : ComputableInPolyTime (fun x => (rest x).drop ((rest x).length - 2))
       input (encList (encPair enc encBool)) :=
     (dropUnary (encA := encPair enc encBool)).comp (hrest.prod (by fun_prop))
@@ -141,12 +142,12 @@ routine. -/
 @[fun_prop]
 theorem Clause.isPolyTime_orSplit3 {input : Input ↪ List Bool} {enc : W ↪ List Bool}
     {fresh : Input → ℕ → W} {index : Input → ℕ} {clause : Input → Clause W}
-    (hclause : ComputableInPolyTime clause input (encList (encPair enc encBool)))
+    (hclause : ComputableInPolyTime clause input (encClause enc))
     (hindex : ComputableInPolyTime index input encUnary)
     (hfresh : ComputableInPolyTime (fun p : Input × ℕ => fresh p.1 p.2)
       (encPair input encUnary) enc) :
     ComputableInPolyTime (fun x => Clause.orSplit3 (fresh x) (index x) (clause x))
-      input (encList (encList (encPair enc encBool))) := by
+      input (encCNFOver enc) := by
   have heq (f : ℕ → W) (j : ℕ) (c : Clause W) : Clause.orSplit3 f j c =
       c.head?.elim [[]] (fun carry => Clause.orChainAux f j carry c.tail) := by
     cases c <;> rfl
@@ -163,8 +164,7 @@ traversal and all output copying. -/
 @[fun_prop]
 theorem CNF.isPolyTime_toExact3CNF (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.toExact3CNF (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair (encSum enc (encPair encUnary encUnary)) encBool))) := by
+      (encCNFOver enc) (encCNFOver (encSum enc (encPair encUnary encUnary))) := by
   have hsplit : ComputableInPolyTime
       (fun p : CNF V × (Clause V × ℕ) => Clause.orSplit3 (fun j => Sum.inr (p.2.2, j)) 0
         (Clause.relabel Sum.inl p.2.1))

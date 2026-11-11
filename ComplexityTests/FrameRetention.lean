@@ -3,7 +3,7 @@ Copyright (c) 2026 Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
-import Complexity.Probability.PairwiseIndependentHash.FrameRetention
+import Complexity.Computability.LogSpaceDerandomization.PairwiseIndependentHash.FrameRetention
 import Mathlib.Tactic.NormNum.Prime
 
 /-!

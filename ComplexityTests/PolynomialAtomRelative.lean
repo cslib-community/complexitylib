@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import Complexity.Foundations.Probability.PolynomialAtomRows.FirstOverflow
-import Complexity.Foundations.Analysis.RowCompression.PreloadedIteration
+import Complexity.Computability.LogSpaceDerandomization.PolynomialAtomRows.FirstOverflow
+import Complexity.Computability.LogSpaceDerandomization.RowCompression.PreloadedIteration
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum

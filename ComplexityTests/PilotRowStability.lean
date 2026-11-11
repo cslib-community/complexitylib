@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual pilot local accuracy)
-import Complexity.Foundations.Probability.HierarchyPilotStability
+import Complexity.Computability.LogSpaceDerandomization.HierarchyPilotStability
 
 /-! An actual raw rank change closes a nonzero score, detector and running maximum. -/
 set_option linter.privateModule false

@@ -58,7 +58,7 @@ theorem Clause.atMostOneOccurrences_eq_flatMap (c : Clause V) :
 @[fun_prop]
 theorem Clause.computableInPolyTime_atMostOneOccurrences (enc : V ↪ List Bool) :
     ComputableInPolyTime (Clause.atMostOneOccurrences (V := V))
-      (encList (encPair enc encBool)) (encList (encList (encPair enc encBool))) := by
+      (encClause enc) (encCNFOver enc) := by
   have he : (Clause.atMostOneOccurrences (V := V)) = fun c =>
       c.zipIdx.flatMap fun p => (c.drop (p.2 + 1)).map fun l =>
         [Std.Sat.Literal.negate p.1, Std.Sat.Literal.negate l] :=
@@ -70,7 +70,7 @@ theorem Clause.computableInPolyTime_atMostOneOccurrences (enc : V ↪ List Bool)
 @[fun_prop]
 theorem Clause.computableInPolyTime_oneEncoding (enc : V ↪ List Bool) :
     ComputableInPolyTime (Clause.oneEncoding (V := V))
-      (encList (encPair enc encBool)) (encList (encList (encPair enc encBool))) := by
+      (encClause enc) (encCNFOver enc) := by
   unfold Clause.oneEncoding
   fun_prop
 
@@ -78,8 +78,7 @@ theorem Clause.computableInPolyTime_oneEncoding (enc : V ↪ List Bool) :
 @[fun_prop]
 theorem CNF.computableInPolyTime_oneEncoding (enc : V ↪ List Bool) :
     ComputableInPolyTime (CNF.oneEncoding (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair enc encBool))) := by
+      (encCNFOver enc) (encCNFOver enc) := by
   unfold CNF.oneEncoding
   fun_prop
 
@@ -157,8 +156,7 @@ private theorem computableInPolyTime_forcePadding (enc : V ↪ List Bool) (k : �
 @[fun_prop]
 theorem computableInPolyTime_clause (enc : V ↪ List Bool) :
     ComputableInPolyTime (fun p : ℕ × Clause V => clause p.1 p.2)
-      (encPair encUnary (encList (encPair enc encBool)))
-      (encList (encList (encPair (encVariable enc) encBool))) := by
+      (encPair encUnary (encClause enc)) (encCNFOver (encVariable enc)) := by
   have hs : (fun p : ℕ × Clause V => clause p.1 p.2) = fun p =>
       core p.1 (selectedLiteral p.1 0 p.2) (selectedLiteral p.1 1 p.2)
         (selectedLiteral p.1 2 p.2) ++
@@ -175,8 +173,7 @@ theorem computableInPolyTime_clause (enc : V ↪ List Bool) :
 @[fun_prop]
 theorem computableInPolyTime_formula (enc : V ↪ List Bool) :
     ComputableInPolyTime (formula (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair (encVariable enc) encBool))) := by
+      (encCNFOver enc) (encCNFOver (encVariable enc)) := by
   unfold formula
   fun_prop
 
@@ -236,8 +233,7 @@ private theorem computableInPolyTime_clauseClauses (enc : V ↪ List Bool) :
 @[fun_prop]
 theorem computableInPolyTime_formula (enc : V ↪ List Bool) :
     ComputableInPolyTime (formula (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair (encVariable enc) encBool))) := by
+      (encCNFOver enc) (encCNFOver (encVariable enc)) := by
   have hzip := computableInPolyTime_zipIdx (encList (encPair enc encBool))
   have hswap : ComputableInPolyTime
       (fun p : CNF V × (Clause V × ℕ) => (p.2.2, p.2.1))
@@ -264,8 +260,7 @@ def encVariable (enc : V ↪ List Bool) : Variable V ↪ List Bool :=
 @[fun_prop]
 theorem computableInPolyTime_rawFormula (enc : V ↪ List Bool) :
     ComputableInPolyTime (rawFormula (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair (encVariable enc) encBool))) :=
+      (encCNFOver enc) (encCNFOver (encVariable enc)) :=
   (PositiveExactOne.computableInPolyTime_formula (FromSAT.encVariable enc)).comp
     (FromSAT.computableInPolyTime_formula enc)
 
@@ -273,8 +268,7 @@ theorem computableInPolyTime_rawFormula (enc : V ↪ List Bool) :
 @[fun_prop]
 theorem computableInPolyTime_formula [DecidableEq V] (enc : V ↪ List Bool) :
     ComputableInPolyTime (formula (V := V))
-      (encList (encList (encPair enc encBool)))
-      (encList (encList (encPair encNat encBool))) := by
+      (encCNFOver enc) (encCNFOver encNat) := by
   have hu := (CNF.isPolyTime_compact (encVariable enc)).comp
     (computableInPolyTime_rawFormula enc)
   have hi : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat :=

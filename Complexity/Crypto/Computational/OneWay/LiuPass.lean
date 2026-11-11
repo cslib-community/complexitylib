@@ -16,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Foundations.Data.Nat.Asymptotics
 import Complexity.Foundations.Data.Nat.Log
+import Complexity.Probability.PMF.ToReal
 
 /-!
 # One-Way Functions and Average-Case Hardness of Time-Bounded Kolmogorov Complexity
@@ -572,7 +573,7 @@ theorem CondEPPRG.exists_mildlyHardOnAverageToOneSidedApprox_timeBoundedNat_log_
       hideal_eq, abs_sub_comm] at hadv
     rw [hq_eval]
     exact oneSided_succ_le_of_threshold_bounds hm4 (by omega) hm_ge_n hm_le_nsq (by omega)
-      ((ENNReal.toReal_mono ENNReal.one_ne_top (PMF.coe_le_one _ _)).trans_eq ENNReal.toReal_one)
+      (toReal_apply_le_one _ _)
       hclaim1 hclaim2 ((le_abs_self _).trans hadv)
   filter_upwards [(tendsto_seedLen γ).eventually h_ev_n] with m hm
   have hseed := lt_stretchLen_seedLen γ m

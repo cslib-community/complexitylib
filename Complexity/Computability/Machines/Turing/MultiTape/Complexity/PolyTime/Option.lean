@@ -29,6 +29,9 @@ its fallback may be computed from the input; no inhabitant of the value type is 
 * `Turing.MultiTapeTM.ComputableInPolyTime.optionElimWithInput`: branch on an optional
   value while retaining the original input, including empty value types.
 
+* `Turing.MultiTapeTM.ComputableInPolyTime.optionMapWithInput`: map an optional value
+  with a callback certified jointly with its captured original input.
+
 ## References
 
 Uses Christian Reitwiessner's option encoding and degree-bounded machine calculus.

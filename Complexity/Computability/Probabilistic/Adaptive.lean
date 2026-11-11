@@ -34,6 +34,8 @@ machines, replay code or decoders.
 
 * `Cslib.Probability.IsPPTOn.iterate_spec`: certify efficiency and the final supported invariant.
 * `Cslib.Probability.IsPPTOn.iterateWith_spec`: allow the step to capture the original input.
+* `Cslib.Probability.IsPPTOn.iterateWith_spec'`: the same rule with plain `ComputableInPolyTime`
+  count and initial state. The primed name is transitional, as for the oracle rules (#608, #862).
 * `Cslib.Probability.IsPPTOn.iterateWith_of_bounded_growth`: infer accumulated size from
   input-dependent growth of the full state.
 * `Cslib.Probability.IsPPTOn.iterate_of_bounded_growth`, `.iterate_of_length_le`: automatic
@@ -99,6 +101,33 @@ theorem IsPPTOn.iterateWith_spec {initial : α → State} {count : α → ℕ}
         state ∈ (ProbComp.eval (OracleComp.iterate (count a) (step a) (initial a))).support →
         invariant a (count a) state := by
   have hloop := IsOraclePPTOn.iterateWith_spec hcount hinitial
+    (hstep.isOraclePPTOn (Operation := Empty)) invariant hbase
+    (fun a i state hi hstate next hnext => hpreserve a i state hi hstate next
+      ((ProbOracleComp.support_sample _).subset hnext)) hsize hbound
+  refine ⟨?_, fun a => ProbComp.iterate_invariant (count a) (step a) (initial a)
+    (invariant a) (hbase a)
+    (fun i hi state hinvariant => hpreserve a i state hi hinvariant)⟩
+  apply IsOraclePPTOn.isPPTOn
+  simpa only [ProbOracleComp.sample, OracleComp.interpret_iterate] using hloop.1
+
+/-- `Cslib.Probability.IsPPTOn.iterateWith_spec` with plain polynomial-time count and initial
+state. -/
+theorem IsPPTOn.iterateWith_spec' {initial : α → State} {count : α → ℕ}
+    {step : α → State → ProbComp State}
+    (hcount : ComputableInPolyTime count input encUnary)
+    (hinitial : ComputableInPolyTime initial input stateEncoding)
+    (hstep : IsPPTOn (encPair input stateEncoding) stateEncoding (fun pair => step pair.1 pair.2))
+    (invariant : α → ℕ → State → Prop) (hbase : ∀ a, invariant a 0 (initial a))
+    (hpreserve : ∀ a i state, i < count a → invariant a i state →
+      ∀ next ∈ (ProbComp.eval (step a state)).support, invariant a (i + 1) next)
+    {size : α → ℕ} (hsize : PolyBounded (fun a => (input a).length) size)
+    (hbound : ∀ a i state, i ≤ count a → invariant a i state →
+      (stateEncoding state).length ≤ size a) :
+    IsPPTOn input stateEncoding (fun a => OracleComp.iterate (count a) (step a) (initial a)) ∧
+      ∀ a state,
+        state ∈ (ProbComp.eval (OracleComp.iterate (count a) (step a) (initial a))).support →
+        invariant a (count a) state := by
+  have hloop := IsOraclePPTOn.iterateWith_spec' hcount hinitial
     (hstep.isOraclePPTOn (Operation := Empty)) invariant hbase
     (fun a i state hi hstate next hnext => hpreserve a i state hi hstate next
       ((ProbOracleComp.support_sample _).subset hnext)) hsize hbound

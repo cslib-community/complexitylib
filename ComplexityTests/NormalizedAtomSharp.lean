@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 -- upstream: candidate
 
-import Complexity.Foundations.Probability.NormalizedAtomRows.RequestSharp
+import Complexity.Computability.LogSpaceDerandomization.NormalizedAtomRows.RequestSharp
 
 /-! A zero-start actual increment consumes the sharp no-overflow comparison at a positive
 floor. This tests the weighted preloss/final-error conclusion with exact raw prefixes. -/

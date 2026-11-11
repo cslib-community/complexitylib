@@ -70,6 +70,14 @@ and `f n = n ^ (k + 1)` this gives `NE ⊆ E` and `NEXP ⊆ EXP`.
 The hypothesis is `NP ⊆ P` for problems on bit words, under `encBits`; the conclusions hold for
 problems on any type, under any encoding.
 
+The proof only uses the `P` decider of a padded problem on padded instances. So the translation
+lemma holds under the weaker hypothesis that every problem in `NP` agrees with some problem in `P`
+on the padded words `frame u ++ 1^{t |u|}`
+(`Cslib.Complexity.NTIME_subset_iUnion_DTIME_of_agree_padded`). For exponential padding this is
+`Cslib.Complexity.ExpPaddedNPEasy`, the hypothesis that `NP` is easy on exponentially padded
+instances. It gives `NE ⊆ E` and `NEXP ⊆ EXP`, and it also follows from easiness of `NP` on
+average (`Complexity.Computability.Complexity.Classes.AverageCase.WorstCase`).
+
 The unconditional pullback lemmas `Cslib.Complexity.preimage_mem_NTIME_of_mem_NP` and
 `Cslib.Complexity.preimage_pad_mem_NEXP` compose a timed deterministic map with an `NP` verifier;
 exponential padding yields an `NEXP` decider without a collapse hypothesis.
@@ -78,6 +86,8 @@ exponential padding yields an `NEXP` decider without a collapse hypothesis.
 
 * `Turing.MultiTapeNTM.checkPadded`: the verifier of padded instances.
 * `Turing.MultiTapeNTM.padded`: the padded problem of a nondeterministic machine.
+* `Cslib.Complexity.ExpPaddedNPEasy`: every problem in `NP` agrees with a problem in `P` on
+  exponentially padded instances.
 
 ## Main results
 
@@ -90,7 +100,12 @@ exponential padding yields an `NEXP` decider without a collapse hypothesis.
 * `Turing.MultiTapeNTM.padded_mem_NP`,
   `Turing.MultiTapeNTM.DecidesInTime.frame_append_mem_padded_iff`: the padded problem is in `NP`,
   and decides the original problem on padded instances.
-* `Cslib.Complexity.NTIME_subset_iUnion_DTIME_of_NP_subset_P`: the translation lemma.
+* `Cslib.Complexity.NTIME_subset_iUnion_DTIME_of_NP_subset_P`: the translation lemma;
+  `Cslib.Complexity.NTIME_subset_iUnion_DTIME_of_agree_padded`: the same from agreement on padded
+  instances.
+* `Cslib.Complexity.NE_subset_E_of_expPaddedNPEasy`,
+  `Cslib.Complexity.NEXP_subset_EXP_of_expPaddedNPEasy`: if `NP` is easy on exponentially padded
+  instances, then `NE ⊆ E` and `NEXP ⊆ EXP`.
 * `Cslib.Complexity.NEXP_subset_EXP_of_NP_subset_P`, `Cslib.Complexity.EXP_eq_NEXP_of_P_eq_NP`:
   if `P = NP`, then `EXP = NEXP`.
 * `Cslib.Complexity.NE_subset_E_of_NP_subset_P`, `Cslib.Complexity.E_eq_NE_of_P_eq_NP`: if
@@ -157,19 +172,38 @@ variable {α β : Type} {enc : α ↪ List Bool} {encB : β ↪ List Bool}
 
 /-! ### The translation lemma -/
 
-/-- **The translation lemma.** If `NP ⊆ P` for problems on bit words, and `t n` is computable in
-unary from any word of length `n` within time `O(T n)`, then every problem decidable by a
-nondeterministic machine within time `O(t n)` is decidable deterministically within time
-`O((n + T n + 1) ^ d)` for some `d`: the padded problem with padding `t n` is in `NP`, hence in
-`P`, and the padding is written within time `O(n + T n)`. -/
-theorem NTIME_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) {t T : ℕ → ℕ}
+/-- **`NP` is easy on exponentially padded instances**: every problem `B ∈ NP` agrees with some
+problem `B' ∈ P` on the words `frame u ++ 1^m` with `2 ^ |u| ≤ m`. This holds if `NP ⊆ P`
+(`Cslib.Complexity.expPaddedNPEasy_of_NP_subset_P`), and also if every distributional `NP` problem
+with a polynomial-time computable ensemble has a polynomial-time heuristic scheme
+(`Cslib.Complexity.expPaddedNPEasy_of_DistNP_subset_HeurP`). It suffices for the padding
+arguments below. -/
+def ExpPaddedNPEasy : Prop :=
+  ∀ B ∈ NP encBits, ∃ B' ∈ P encBits, ∀ (u : List Bool) (m : ℕ), 2 ^ u.length ≤ m →
+    (frame u ++ List.replicate m true ∈ B' ↔ frame u ++ List.replicate m true ∈ B)
+
+/-- If `NP ⊆ P`, then `NP` is easy on exponentially padded instances. -/
+theorem expPaddedNPEasy_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : ExpPaddedNPEasy :=
+  fun B hB => ⟨B, hNP hB, fun _ _ _ => Iff.rfl⟩
+
+/-- **The translation lemma on padded instances.** Suppose every problem in `NP` agrees with some
+problem in `P` on the words `frame u ++ 1^{t |u|}`, and `t n` is computable in unary from any word
+of length `n` within time `O(T n)`. Then every problem decidable by a nondeterministic machine
+within time `O(t n)` is decidable deterministically within time `O((n + T n + 1) ^ d)` for some
+`d`: the padded problem with padding `t n` agrees with a problem in `P` on padded instances, and
+the padding is written within time `O(n + T n)`. -/
+theorem NTIME_subset_iUnion_DTIME_of_agree_padded {t T : ℕ → ℕ}
+    (hNP : ∀ B ∈ NP encBits, ∃ B' ∈ P encBits, ∀ u : List Bool,
+      (frame u ++ List.replicate (t u.length) true ∈ B' ↔
+        frame u ++ List.replicate (t u.length) true ∈ B))
     {S : List Bool → ℕ}
     (hpad : Turing.MultiTapeTM.ComputableInO (fun x : List Bool => t x.length) encBits encUnary
       (fun x => T x.length) S) :
     NTIME enc t ⊆ ⋃ d, DTIME enc fun n => (n + T n + 1) ^ d := by
   rintro A ⟨c₁, c₂, k, State, hfinite, ntm, hA⟩
   set c := Nat.card (Turing.Action k Bool State) * (c₁ + c₂)
-  obtain ⟨d, hd⟩ := mem_P_iff_exists_mem_DTIME.mp (hNP (ntm.padded_mem_NP c))
+  obtain ⟨B', hB', hagree⟩ := hNP _ (ntm.padded_mem_NP c)
+  obtain ⟨d, hd⟩ := mem_P_iff_exists_mem_DTIME.mp hB'
   -- the reduction: frame the instance and append `t n` ones
   let g (a : α) : List Bool := frame (enc a) ++ List.replicate (t (enc a).length) true
   have hg : ComputableInO g enc encBits (fun a => (enc a).length + T (enc a).length)
@@ -181,8 +215,9 @@ theorem NTIME_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits
     simp [g]
   have ht (a : α) : t (enc a).length ≤ c' * (T (enc a).length + 1) := by
     simpa only [encUnary_apply, List.length_replicate] using hc' (enc a)
-  have hpre : A = g ⁻¹' ntm.padded c := by
+  have hpre : A = g ⁻¹' B' := by
     ext a
+    refine Iff.trans ?_ (hagree (enc a)).symm
     refine (hA.frame_append_mem_padded_iff ?_).symm
     rw [List.length_append, List.length_replicate, length_frame]
     have : c₁ * t (enc a).length + c₂ ≤ (c₁ + c₂) * (2 * (enc a).length + 1 + t (enc a).length) :=
@@ -210,11 +245,23 @@ theorem NTIME_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits
     _ = ((c' + 2) ^ d + 1) * X ^ (d + 1) := by ring
     _ ≤ _ := Nat.le_add_right _ _
 
-/-- **Padding exponential time.** If `NP ⊆ P` for problems on bit words, and `f` is computable in
-unary in polynomial time with `n ≤ f n`, then every problem decidable by a nondeterministic machine
-within time `O(2 ^ f n)` is decidable deterministically within time `O(2 ^ (d * f n))` for some
-`d`. -/
-theorem NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits)
+/-- **The translation lemma.** If `NP ⊆ P` for problems on bit words, and `t n` is computable in
+unary from any word of length `n` within time `O(T n)`, then every problem decidable by a
+nondeterministic machine within time `O(t n)` is decidable deterministically within time
+`O((n + T n + 1) ^ d)` for some `d`: the padded problem with padding `t n` is in `NP`, hence in
+`P`, and the padding is written within time `O(n + T n)`. -/
+theorem NTIME_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) {t T : ℕ → ℕ}
+    {S : List Bool → ℕ}
+    (hpad : Turing.MultiTapeTM.ComputableInO (fun x : List Bool => t x.length) encBits encUnary
+      (fun x => T x.length) S) :
+    NTIME enc t ⊆ ⋃ d, DTIME enc fun n => (n + T n + 1) ^ d :=
+  NTIME_subset_iUnion_DTIME_of_agree_padded (fun B hB => ⟨B, hNP hB, fun _ => Iff.rfl⟩) hpad
+
+/-- **Padding exponential time on padded instances.** If `NP` is easy on exponentially padded
+instances, and `f` is computable in unary in polynomial time with `n ≤ f n`, then every problem
+decidable by a nondeterministic machine within time `O(2 ^ f n)` is decidable deterministically
+within time `O(2 ^ (d * f n))` for some `d`. -/
+theorem NTIME_two_pow_subset_iUnion_DTIME_of_expPaddedNPEasy (hNP : ExpPaddedNPEasy)
     {f : ℕ → ℕ} (hf : Turing.MultiTapeTM.ComputableInPolyTime f encUnary encUnary)
       (hn : ∀ n, n ≤ f n) :
     NTIME enc (fun n => 2 ^ f n) ⊆ ⋃ d, DTIME enc fun n => 2 ^ (d * f n) := by
@@ -225,7 +272,12 @@ theorem NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P
       (fun x => x.length + (x.length + 1) ^ d + (f x.length + 1) * 2 ^ f x.length)
       fun x => x.length + (x.length + 1) ^ d + 2 ^ f x.length :=
     hpad.mono_le (fun x => by simp [encUnary_apply]) fun x => by simp [encUnary_apply]
-  obtain ⟨D, hD⟩ := Set.mem_iUnion.mp (NTIME_subset_iUnion_DTIME_of_NP_subset_P hNP
+  have hagree : ∀ B ∈ NP encBits, ∃ B' ∈ P encBits, ∀ u : List Bool,
+      (frame u ++ List.replicate (2 ^ f u.length) true ∈ B' ↔
+        frame u ++ List.replicate (2 ^ f u.length) true ∈ B) := fun B hB => by
+    obtain ⟨B', hB', h⟩ := hNP B hB
+    exact ⟨B', hB', fun u => h u _ (Nat.pow_le_pow_right (by norm_num) (hn _))⟩
+  obtain ⟨D, hD⟩ := Set.mem_iUnion.mp (NTIME_subset_iUnion_DTIME_of_agree_padded hagree
     (T := fun n => n + (n + 1) ^ d + (f n + 1) * 2 ^ f n) hpad' hA)
   obtain ⟨C₀, hC₀⟩ := (PolynomiallyBounded.of_forall_le 1 d fun n => by
     simp only [one_mul]; exact le_rfl).exists_le_mul_two_pow (p := fun n => (n + 1) ^ d)
@@ -247,35 +299,54 @@ theorem NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P
     _ = (C₀ + 3) ^ D * 2 ^ (2 * D * f n) := by rw [Nat.mul_pow, ← Nat.pow_mul]; ring_nf
     _ ≤ _ := Nat.le_add_right _ _
 
+/-- **Padding exponential time.** If `NP ⊆ P` for problems on bit words, and `f` is computable in
+unary in polynomial time with `n ≤ f n`, then every problem decidable by a nondeterministic machine
+within time `O(2 ^ f n)` is decidable deterministically within time `O(2 ^ (d * f n))` for some
+`d`. -/
+theorem NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P (hNP : NP encBits ⊆ P encBits)
+    {f : ℕ → ℕ} (hf : Turing.MultiTapeTM.ComputableInPolyTime f encUnary encUnary)
+      (hn : ∀ n, n ≤ f n) :
+    NTIME enc (fun n => 2 ^ f n) ⊆ ⋃ d, DTIME enc fun n => 2 ^ (d * f n) :=
+  NTIME_two_pow_subset_iUnion_DTIME_of_expPaddedNPEasy (expPaddedNPEasy_of_NP_subset_P hNP) hf hn
+
 /-! ### Exponential time -/
 
-/-- **If `NP ⊆ P`, then `NE ⊆ E`**, by padding [Book][Book1974]. -/
-theorem NE_subset_E_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NE enc ⊆ E enc := by
+/-- **If `NP` is easy on exponentially padded instances, then `NE ⊆ E`**, by the padding argument
+of Book [Book][Book1974]. -/
+theorem NE_subset_E_of_expPaddedNPEasy (hNP : ExpPaddedNPEasy) : NE enc ⊆ E enc := by
   intro A hA
   obtain ⟨k, hk⟩ := mem_NE_iff.mp hA
   have hk' : A ∈ NTIME enc fun n => 2 ^ ((k + 1) * n) :=
     NTIME_mono (fun n => Nat.pow_le_pow_right (by norm_num)
       (Nat.mul_le_mul_right n (Nat.le_succ k))) hk
-  obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P hNP
+  obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_expPaddedNPEasy hNP
     (f := fun n => (k + 1) * n) (by fun_prop)
       (fun n => Nat.le_mul_of_pos_left n (Nat.succ_pos k))
     hk')
   exact mem_E_iff.mpr ⟨d * (k + 1), by simpa only [Nat.mul_assoc] using hd⟩
 
-/-- **If `NP ⊆ P`, then `NEXP ⊆ EXP`** [Arora and Barak, Section 2.6][AroraBarak09]. -/
-theorem NEXP_subset_EXP_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NEXP enc ⊆ EXP enc := by
+/-- **If `NP ⊆ P`, then `NE ⊆ E`**, by padding [Book][Book1974]. -/
+theorem NE_subset_E_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NE enc ⊆ E enc :=
+  NE_subset_E_of_expPaddedNPEasy (expPaddedNPEasy_of_NP_subset_P hNP)
+
+/-- **If `NP` is easy on exponentially padded instances, then `NEXP ⊆ EXP`**, by padding. -/
+theorem NEXP_subset_EXP_of_expPaddedNPEasy (hNP : ExpPaddedNPEasy) : NEXP enc ⊆ EXP enc := by
   intro A hA
   obtain ⟨k, hk⟩ := mem_NEXP_iff.mp hA
   have hk' : A ∈ NTIME enc fun n => 2 ^ n ^ (k + 1) :=
     NTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr ⟨1, fun n hn =>
       Nat.pow_le_pow_right (by norm_num) (Nat.pow_le_pow_right hn (Nat.le_succ k))⟩) hk
-  obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_NP_subset_P hNP
+  obtain ⟨d, hd⟩ := Set.mem_iUnion.mp (NTIME_two_pow_subset_iUnion_DTIME_of_expPaddedNPEasy hNP
     (ComputableInPolyTime.unary_pow (k + 1))
       (fun n => Nat.le_self_pow (by omega) n) hk')
   refine mem_EXP_iff.mpr ⟨k + 2, DTIME_mono_of_eventually_le (Filter.eventually_atTop.mpr
     ⟨d, fun n hn => Nat.pow_le_pow_right (by norm_num) ?_⟩) hd⟩
   rw [pow_succ' n (k + 1)]
   exact Nat.mul_le_mul_right _ hn
+
+/-- **If `NP ⊆ P`, then `NEXP ⊆ EXP`** [Arora and Barak, Section 2.6][AroraBarak09]. -/
+theorem NEXP_subset_EXP_of_NP_subset_P (hNP : NP encBits ⊆ P encBits) : NEXP enc ⊆ EXP enc :=
+  NEXP_subset_EXP_of_expPaddedNPEasy (expPaddedNPEasy_of_NP_subset_P hNP)
 
 /-- **If `P = NP`, then `E = NE`**, by padding [Book][Book1974]. -/
 theorem E_eq_NE_of_P_eq_NP (h : P encBits = NP encBits) : E enc = NE enc :=

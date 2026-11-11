@@ -27,7 +27,8 @@ Lean checks the transfer through the bridge, and `#check_abstract` audits the pu
 
 ## References
 
-* [M. Sipser, *Introduction to the Theory of Computation*, Corollary 8.6][Sipser2013]
+* [M. Sipser, *Introduction to the Theory of Computation*, Theorem 8.5 and the remark after
+  Definition 8.6][Sipser2013]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, Section 4.2][AroraBarak09]
 -/
 

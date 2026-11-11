@@ -9,6 +9,8 @@ module
 
 public import Complexity.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Product.Transfer
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # One charged timestamp initialization for all product tiles
 
@@ -35,17 +37,17 @@ public theorem exec_initializeDirectory {w L m N Q : ℕ} (x : Data 160)
   let H := 10 ^ L
   let body : Code .standard 160 := ram[
     Reg.address ← Reg.stamps + Reg.index; *Reg.address ← Reg.zero; Reg.index ← Reg.index + Reg.one ]
-  let I (z : Data 160) : Prop := Parameters L m N Q z ∧ z.regs Reg.index ≤ H ∧
-    (∀ j < z.regs Reg.index, z.mem (stampBase L m N Q + j) = 0) ∧
+  let P (k : ℕ) (z : Data 160) : Prop := Parameters L m N Q z ∧
+    (∀ j < k, z.mem (stampBase L m N Q + j) = 0) ∧
     (∀ a, a < stampBase L m N Q ∨ memoryEnd L m N Q ≤ a → z.mem a = x.mem a)
   let start := x.set Reg.index 0
   have hs : ExecWithin (B := .standard) w (ram[Reg.index ← #0]) x start 1 := by
     ram_eval [start]
   have sp : Parameters L m N Q start := hp.set_work Reg.index (by decide) _
-  have hstart : I start := ⟨sp, by simp [start], by simp [start], by simp [start]⟩
-  have hbody (z : Data 160) (hz : I z) (hc : (Cond.lt Reg.index Reg.leaves).Holds z) :
-      ∃ u, ExecWithin w body z u 3 ∧ I u ∧ H - u.regs Reg.index < H - z.regs Reg.index := by
-    have hi : z.regs Reg.index < H := by simpa only [Cond.holds_lt, hz.1.leaves, H] using hc
+  have hstart : P (start.regs Reg.index) start := ⟨sp, by simp [start], by simp [start]⟩
+  have hbody (z : Data 160) (hz : P (z.regs Reg.index) z) (hi : z.regs Reg.index < H) :
+      ∃ u, ExecWithin w body z u 3 ∧ P (z.regs Reg.index + 1) u ∧
+        u.regs Reg.index = z.regs Reg.index + 1 := by
     have ha : Fits w (stampBase L m N Q + z.regs Reg.index) := allocated_fits hfit (by
       unfold memoryEnd
       dsimp only [H] at hi
@@ -62,30 +64,24 @@ public theorem exec_initializeDirectory {w L m N Q : ℕ} (x : Data 160)
     have up : Parameters L m N Q u :=
       ((hz.1.set_work Reg.address (by decide) _).write _ _).set_work Reg.index (by decide) _
     have hnext : u.regs Reg.index = z.regs Reg.index + 1 := by simp [u]
-    refine ⟨u, he, ⟨up, by rw [hnext]; omega, ?_, ?_⟩, by rw [hnext]; omega⟩
+    refine ⟨u, he, ⟨up, ?_, ?_⟩, hnext⟩
     · intro j hj
-      rw [hnext] at hj
       change Function.update z.mem (stampBase L m N Q + z.regs Reg.index) 0
         (stampBase L m N Q + j) = 0
       by_cases h : j = z.regs Reg.index
       · subst j
         exact Function.update_self _ _ _
       · rw [Function.update_of_ne (by omega)]
-        exact hz.2.2.1 j (by omega)
+        exact hz.2.1 j (by omega)
     · intro a ha
       change Function.update z.mem (stampBase L m N Q + z.regs Reg.index) 0 a = _
       rw [Function.update_of_ne (by
         unfold memoryEnd at ha
         dsimp only [H] at hi
         rcases ha with ha | ha <;> omega)]
-      exact hz.2.2.2 a ha
-  obtain ⟨y, he, hy, hc⟩ :=
-    ExecWithin.loop_invariant I (fun z => H - z.regs Reg.index) hbody hstart
-  have hn : y.regs Reg.index = H := by
-    have hi := hy.2.1
-    simp only [Cond.holds_lt, hy.1.leaves] at hc
-    dsimp only [H] at hi ⊢
-    omega
+      exact hz.2.2 a ha
+  obtain ⟨y, he, hy, _⟩ := ExecWithin.loop_count P (fun _ hy => hy.1.leaves)
+    hbody (by simp [start]) hstart
   let z := (y.set Reg.epoch 0).set Reg.index 0
   have hz : ExecWithin (B := .standard) w (ram[Reg.epoch ← #0; Reg.index ← #0]) y z 2 := by
     ram_eval [z]
@@ -94,9 +90,8 @@ public theorem exec_initializeDirectory {w L m N Q : ℕ} (x : Data 160)
   · apply (hs.seq (he.seq hz)).mono
     have hzero : start.regs Reg.index = 0 := by simp [start]
     rw [hzero, Nat.sub_zero]
-    dsimp only [H]
     omega
-  · simpa only [z, Data.set_mem, hn, H] using hy.2.2.1
-  · simpa only [z, Data.set_mem] using hy.2.2.2
+  · simpa only [z, Data.set_mem, H] using hy.2.1
+  · simpa only [z, Data.set_mem] using hy.2.2
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.QueriedProduct

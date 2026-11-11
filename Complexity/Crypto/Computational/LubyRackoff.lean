@@ -21,7 +21,7 @@ import Complexity.Probability.PMF.Bind
 import Complexity.Probability.Product
 
 /-!
-# The Luby–Rackoff block cipher from a pseudorandom function
+# The Luby–Rackoff block ciphers from a pseudorandom function
 
 From a keyed family `family` with `n`-bit keys, inputs and outputs, the Luby–Rackoff cipher
 `lubyRackoffCipher` ([BonehShoup2023], Section 4.5) has `3 * n`-bit keys `k₁ ++ k₂ ++ k₃` and
@@ -41,6 +41,14 @@ compares the network with a uniform permutation of `2 * n`-bit blocks for determ
 fixing the private coins of the adversary (`ProbOracleComp.coinLaw`) transfers it to randomized
 ones (`advantage_lubyRackoffRandomRounds_prpIdealGame_le`).
 
+**Four rounds** ([LubyRackoff1988]; [KatzLindell2020], Section 8.6): the four-round cipher
+`lubyRackoff4Cipher` (keys `k₁ ++ k₂ ++ k₃ ++ k₄`) is a strong pseudorandom permutation, secure
+against adversaries that may also decrypt (`PseudorandomFunction.strongPRP_lubyRackoff4Cipher`);
+strongly secure block ciphers are [BonehShoup2023], Section 4.1.3 and Exercise 4.9. The proof has
+the same structure, with the bidirectional adapter `strongLubyRackoffAdversary`, four PRF channels
+and the finite-group bound
+`LubyRackoff.advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le`.
+
 ## Main definitions
 
 * `Cslib.Crypto.feistelRoundWord`, `Cslib.Crypto.feistelNetworkWord`,
@@ -52,6 +60,10 @@ ones (`advantage_lubyRackoffRandomRounds_prpIdealGame_le`).
   channels.
 * `Cslib.Crypto.lubyRackoffQuery`, `Cslib.Crypto.lubyRackoffAdversary`: the reduction to the
   three-key PRF games.
+* `Cslib.Crypto.lubyRackoff4Encrypt`, `Cslib.Crypto.lubyRackoff4Decrypt`,
+  `Cslib.Crypto.lubyRackoff4Cipher`: the four-round cipher.
+* `Cslib.Crypto.strongLubyRackoffQuery`, `Cslib.Crypto.strongLubyRackoffAdversary`: the
+  bidirectional reduction to the four-key PRF games.
 
 ## Main results
 
@@ -62,11 +74,21 @@ ones (`advantage_lubyRackoffRandomRounds_prpIdealGame_le`).
   `Q`-query adversary has advantage at most `2 * Q.choose 2 / 2 ^ n + Q.choose 2 / 4 ^ n` against a
   uniform permutation.
 * `Cslib.Crypto.PseudorandomFunction.prp_lubyRackoffCipher`: the Luby–Rackoff theorem.
+* `Cslib.Crypto.isOraclePPT_strongLubyRackoffAdversary`,
+  `Cslib.Crypto.eval_strongPRPRealGame_lubyRackoff4Cipher`,
+  `Cslib.Crypto.advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le`: the four-round
+  reduction and the random-round bound `2 * Q.choose 2 / 2 ^ n + 2 * Q.choose 2 / 4 ^ n`.
+* `Cslib.Crypto.PseudorandomFunction.strongPRP_lubyRackoff4Cipher`,
+  `Cslib.Crypto.PseudorandomFunction.prp_lubyRackoff4Cipher`: the four-round cipher is a strong
+  pseudorandom permutation, hence a pseudorandom permutation.
 
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*, Version 0.6][BonehShoup2023]:
-  Section 4.5 (printed pp. 141–147), Theorem 4.9 (p. 143) and Exercise 4.26 (p. 174).
+  Section 4.1.3 (p. 101), Exercise 4.9 (p. 169), Section 4.5 (printed pp. 141–147), Theorem 4.9
+  (p. 143) and Exercise 4.26 (pp. 174–175).
+* [J. Katz, Y. Lindell, *Introduction to Modern Cryptography*, 3rd ed.][KatzLindell2020]:
+  Section 8.6.
 * [M. Luby, C. Rackoff, *How to Construct Pseudorandom Permutations from Pseudorandom
   Functions*][LubyRackoff1988].
 -/
@@ -779,5 +801,411 @@ theorem PseudorandomFunction.prp_lubyRackoffCipher {family : List Bool → List 
   refine hrandom.trans ?_
   push_cast
   nlinarith
+
+
+/-! ### Four rounds: a strong pseudorandom permutation -/
+
+section Cipher4
+
+variable (family : List Bool → List Bool → List Bool)
+
+/-- Four-round Luby–Rackoff encryption of a block under a key `k₁ ++ k₂ ++ k₃ ++ k₄`. -/
+@[expose] def lubyRackoff4Encrypt (n : ℕ) (key : List Bool) : List Bool → List Bool :=
+  feistelNetworkWord [family (keyBlock n 0 key), family (keyBlock n 1 key),
+    family (keyBlock n 2 key), family (keyBlock n 3 key)] n
+
+/-- Four-round Luby–Rackoff decryption of a block under a key `k₁ ++ k₂ ++ k₃ ++ k₄`. -/
+@[expose] def lubyRackoff4Decrypt (n : ℕ) (key : List Bool) : List Bool → List Bool :=
+  feistelNetworkWordInv [family (keyBlock n 0 key), family (keyBlock n 1 key),
+    family (keyBlock n 2 key), family (keyBlock n 3 key)] n
+
+variable {family}
+
+private theorem forall₂_represents_four
+    (hlength : ∀ key query, query.length = key.length → (family key query).length = key.length)
+    {n : ℕ} {key : List Bool} (hkey : key.length = 4 * n) :
+    List.Forall₂ Represents
+      [family (keyBlock n 0 key), family (keyBlock n 1 key), family (keyBlock n 2 key),
+        family (keyBlock n 3 key)]
+      [roundFunction family n 0 key, roundFunction family n 1 key, roundFunction family n 2 key,
+        roundFunction family n 3 key] :=
+  have hrep {i} (hi : i < 4) := represents_roundFunction hlength hkey hi
+  .cons (hrep (by decide))
+    (.cons (hrep (by decide)) (.cons (hrep (by decide)) (.cons (hrep (by decide)) .nil)))
+
+private theorem lubyRackoff4Encrypt_eq
+    (hlength : ∀ key query, query.length = key.length → (family key query).length = key.length)
+    {n : ℕ} {key block : List Bool} (hkey : key.length = 4 * n) (hblock : block.length = 2 * n) :
+    lubyRackoff4Encrypt family n key block =
+      joinBlock (LubyRackoff.feistel4 (roundFunction family n 0 key)
+        (roundFunction family n 1 key) (roundFunction family n 2 key)
+        (roundFunction family n 3 key) (splitBlock n block)) := by
+  conv_lhs => rw [← joinBlock_splitBlock hblock]
+  exact feistelNetworkWord_joinBlock (forall₂_represents_four hlength hkey) _
+
+private theorem lubyRackoff4Decrypt_eq
+    (hlength : ∀ key query, query.length = key.length → (family key query).length = key.length)
+    {n : ℕ} {key block : List Bool} (hkey : key.length = 4 * n) (hblock : block.length = 2 * n) :
+    lubyRackoff4Decrypt family n key block =
+      joinBlock ((LubyRackoff.feistel4 (roundFunction family n 0 key)
+        (roundFunction family n 1 key) (roundFunction family n 2 key)
+        (roundFunction family n 3 key)).symm (splitBlock n block)) := by
+  conv_lhs => rw [← joinBlock_splitBlock hblock]
+  exact feistelNetworkWordInv_joinBlock (forall₂_represents_four hlength hkey) _
+
+variable (family) in
+/-- The four-round Luby–Rackoff block cipher with `4 * n`-bit keys and `2 * n`-bit blocks, built
+from a length-preserving keyed family computable in polynomial time ([LubyRackoff1988]). -/
+@[expose] def lubyRackoff4Cipher
+    (hpoly : ComputableInPolyTime (fun pair : List Bool × List Bool => family pair.1 pair.2)
+      (encPair encBits encBits) encBits)
+    (hlength : ∀ key query, query.length = key.length → (family key query).length = key.length) :
+    BlockCipher where
+  keyLen n := 4 * n
+  blockLen n := 2 * n
+  keyLen_polyTime := by exact ComputableInPolyTime.unary_mul' (.const 4) .id'
+  blockLen_polyTime := by exact ComputableInPolyTime.unary_mul' (.const 2) .id'
+  encrypt := lubyRackoff4Encrypt family
+  decrypt := lubyRackoff4Decrypt family
+  encrypt_polyTime := by
+    have hn := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+    have hb := (ComputableInPolyTime.snd encUnary (encPair encBits encBits)).snd'
+    exact computableInPolyTime_feistelRoundWord (computableInPolyTime_keyRound hpoly 3) hn
+      (computableInPolyTime_feistelRoundWord (computableInPolyTime_keyRound hpoly 2) hn
+        (computableInPolyTime_feistelRoundWord (computableInPolyTime_keyRound hpoly 1) hn
+          (computableInPolyTime_feistelRoundWord (computableInPolyTime_keyRound hpoly 0) hn hb)))
+  decrypt_polyTime := by
+    have hn := ComputableInPolyTime.fst encUnary (encPair encBits encBits)
+    have hb := (ComputableInPolyTime.snd encUnary (encPair encBits encBits)).snd'
+    exact computableInPolyTime_feistelInvRoundWord (computableInPolyTime_keyRound hpoly 0) hn
+      (computableInPolyTime_feistelInvRoundWord (computableInPolyTime_keyRound hpoly 1) hn
+        (computableInPolyTime_feistelInvRoundWord (computableInPolyTime_keyRound hpoly 2) hn
+          (computableInPolyTime_feistelInvRoundWord (computableInPolyTime_keyRound hpoly 3) hn hb)))
+  length_encrypt n key block hkey hblock := by
+    rw [lubyRackoff4Encrypt_eq hlength hkey hblock, length_joinBlock]
+  length_decrypt n key block hkey hblock := by
+    rw [lubyRackoff4Decrypt_eq hlength hkey hblock, length_joinBlock]
+  decrypt_encrypt n key block hkey hblock := by
+    rw [lubyRackoff4Decrypt_eq hlength hkey (by rw [lubyRackoff4Encrypt_eq hlength hkey hblock,
+      length_joinBlock]), lubyRackoff4Encrypt_eq hlength hkey hblock, splitBlock_joinBlock,
+      Equiv.symm_apply_apply, joinBlock_splitBlock hblock]
+  encrypt_decrypt n key block hkey hblock := by
+    rw [lubyRackoff4Encrypt_eq hlength hkey (by rw [lubyRackoff4Decrypt_eq hlength hkey hblock,
+      length_joinBlock]), lubyRackoff4Decrypt_eq hlength hkey hblock, splitBlock_joinBlock,
+      Equiv.apply_symm_apply, joinBlock_splitBlock hblock]
+
+end Cipher4
+
+/-! ### The reduction to four PRF keys -/
+
+/-- Answer one forward (`false`) or inverse (`true`) block query through four PRF channels, which
+provide the four Feistel rounds. Malformed blocks are answered with `[]` without querying. -/
+@[expose] def strongLubyRackoffQuery (n : ℕ) (request : Bool × List Bool) :
+    WordOracleComp (Fin 4) (List Bool) :=
+  match request with
+  | (inverse, block) =>
+    if block.length = 2 * n then
+      if inverse then feistelNetworkInvQuery [0, 1, 2, 3] n block
+      else feistelNetworkQuery [0, 1, 2, 3] n block
+    else pure []
+
+/-- Run a bidirectional block-cipher adversary against four PRF channels, answering each query
+with `strongLubyRackoffQuery`. -/
+@[expose] def strongLubyRackoffAdversary (adversary : StrongPRPDistinguisher) :
+    MultiKeyDistinguisher 4 :=
+  fun n aux => OracleComp.interpret
+    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
+      (strongLubyRackoffQuery n)) (adversary n aux)
+
+/-- The bidirectional adapter is oracle PPT for every oracle-PPT adversary. -/
+theorem isOraclePPT_strongLubyRackoffAdversary {adversary : StrongPRPDistinguisher}
+    (hadversary : IsOraclePPT encBool adversary) :
+    IsOraclePPT encBool (strongLubyRackoffAdversary adversary) := by
+  have hn := (ComputableInPolyTime.fst (encPair encUnary encBits)
+    (encPair (encFinEnum Bool) encBits)).fst'
+  have hreq := ComputableInPolyTime.snd (encPair encUnary encBits)
+    (encPair (encFinEnum Bool) encBits)
+  have hblock := hreq.snd'
+  refine isOraclePPT_interpret_handler hadversary
+    (IsOraclePPTOn.ite'
+      (ComputableInPolyTime.unary_eq' (hblock.trans ComputableInPolyTime.length_bits)
+        (ComputableInPolyTime.unary_mul' (.const 2) hn))
+      (IsOraclePPTOn.cond' (hreq.fst'.trans (.of_finite id))
+        (isOraclePPTOn_feistelNetworkInvQuery [0, 1, 2, 3] hn hblock)
+        (isOraclePPTOn_feistelNetworkQuery [0, 1, 2, 3] hn hblock))
+      ((ComputableInPolyTime.const ([] : List Bool)).isPPTOn.isOraclePPTOn (Operation := Fin 4)))
+    (resources := fun n _ => 2 * n)
+    (ComputableInPolyTime.unary_mul' (.const 2)
+      (ComputableInPolyTime.fst (encPair encUnary encBits) encBits).fst')
+    fun n ⟨inverse, block⟩ reply hreply => ?_
+  simp only [strongLubyRackoffQuery] at hreply
+  split_ifs at hreply with hblock hinverse
+  · exact (length_le_of_mem_support_feistelNetworkInvQuery _ _ _ _ hreply).trans hblock.le
+  · exact (length_le_of_mem_support_feistelNetworkQuery _ _ _ _ hreply).trans hblock.le
+  · simp only [OracleComp.support, OracleComp.supportWith_pure, Set.mem_singleton_iff] at hreply
+    subst hreply; simp
+
+/-- Interpreting the bidirectional adapter against deterministic channels runs the adversary
+against the word-level Feistel rounds that read the channels. -/
+private theorem interpret_strongLubyRackoffAdversary (adversary : StrongPRPDistinguisher)
+    (n : ℕ) (oracle : Fin 4 × List Bool → List Bool) :
+    OracleComp.interpret
+        (OracleComp.sumHandler ProbComp.unifOracle (fun request => PMF.pure (oracle request)))
+        (strongLubyRackoffAdversary adversary n []) =
+      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
+        PMF.pure (if request.2.length = 2 * n then
+          (if request.1 then
+            feistelNetworkWordInv ([0, 1, 2, 3].map fun i query => (oracle (i, query)).take n) n
+              request.2
+          else
+            feistelNetworkWord ([0, 1, 2, 3].map fun i query => (oracle (i, query)).take n) n
+              request.2)
+        else []))) (adversary n []) := by
+  simp only [strongLubyRackoffAdversary, OracleComp.interpret_interpret,
+    OracleComp.interpret_sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
+    OracleComp.interpret_query]
+  congr 2; funext ⟨inverse, block⟩; dsimp only [strongLubyRackoffQuery]; split_ifs
+  · exact interpret_feistelNetworkInvQuery oracle n _ _
+  · exact interpret_feistelNetworkQuery oracle n _ _
+  · rfl
+
+/-- The real chosen-ciphertext experiment of the four-round cipher is the real four-key
+experiment of the bidirectional adapter. -/
+theorem eval_strongPRPRealGame_lubyRackoff4Cipher {family : List Bool → List Bool → List Bool}
+    (hfamily : PseudorandomFunction family) (adversary : StrongPRPDistinguisher) (n : ℕ) :
+    ProbComp.eval ((lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).strongPRPRealGame
+        adversary n) =
+      ProbComp.eval (prfMultiRealGame family 4 (strongLubyRackoffAdversary adversary) n) := by
+  simp only [BlockCipher.strongPRPRealGame, prfMultiRealGame, ProbComp.eval_bind,
+    BitString.eval_sampleList, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
+  refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
+  have hkeyLength : key.length = 4 * n := BitString.length_of_mem_support_uniformList hkey
+  have hrep {i} (hi : i < 4) := represents_prfOracle_take hfamily.length_eq hkeyLength hi
+  have hrounds : List.Forall₂ Represents
+      ([0, 1, 2, 3].map fun (i : Fin 4) query =>
+        (prfOracle family n (keyBlock n i key) query).take n)
+      [roundFunction family n 0 key, roundFunction family n 1 key,
+        roundFunction family n 2 key, roundFunction family n 3 key] :=
+    .cons (hrep (by decide))
+      (.cons (hrep (by decide)) (.cons (hrep (by decide)) (.cons (hrep (by decide)) .nil)))
+  rw [interpret_strongLubyRackoffAdversary]; congr 2; funext ⟨inverse, block⟩; congr 1
+  change (if block.length = 2 * n then
+    (if inverse then lubyRackoff4Decrypt family n key block
+    else lubyRackoff4Encrypt family n key block) else []) = _
+  by_cases hblock : block.length = 2 * n
+  · simp only [hblock, ↓reduceIte]
+    conv_rhs => rw [← joinBlock_splitBlock hblock]
+    cases inverse
+    · simp only [Bool.false_eq_true, ↓reduceIte]
+      rw [lubyRackoff4Encrypt_eq hfamily.length_eq hkeyLength hblock]
+      exact (feistelNetworkWord_joinBlock hrounds _).symm
+    · simp only [↓reduceIte]
+      rw [lubyRackoff4Decrypt_eq hfamily.length_eq hkeyLength hblock]
+      exact (feistelNetworkWordInv_joinBlock hrounds _).symm
+  · simp only [hblock, ↓reduceIte]
+
+/-! ### Four random rounds against a random permutation, in both directions -/
+
+/-- Read a permutation of pairs of `n`-bit strings in both directions on `2 * n`-bit words,
+answering other words with `[]`. -/
+private def strongBlockOracle (n : ℕ) (σ : Equiv.Perm (BitString n × BitString n))
+    (request : Bool × List Bool) : List Bool :=
+  if request.2.length = 2 * n then
+    joinBlock ((if request.1 then σ.symm else σ) (splitBlock n request.2))
+  else []
+
+/-- A bidirectional permutation as a deterministic table. -/
+private def strongTable {X : Type} (σ : Equiv.Perm X) (request : Bool × X) : X :=
+  if request.1 then σ.symm request.2 else σ request.2
+
+private theorem feistelStrongOracle_eq {n : ℕ} (σ : Equiv.Perm (BitString n × BitString n)) :
+    LubyRackoff.feistelStrongOracle σ = fun request => PMF.pure (strongTable σ request) := by
+  funext ⟨inverse, p⟩; cases inverse <;> rfl
+
+private theorem strongRandomPermOracle_eq_strongBlockOracle (n : ℕ)
+    (π : Equiv.Perm (BitString (2 * n))) (request : Bool × List Bool) :
+    strongRandomPermOracle (2 * n) π request =
+      strongBlockOracle n ((blockEquiv n).permCongr π) request := by
+  obtain ⟨inverse, block⟩ := request
+  unfold strongRandomPermOracle strongBlockOracle; dsimp only
+  by_cases hblock : block.length = 2 * n
+  · simp only [hblock, ↓reduceIte]
+    cases inverse
+    · simp only [Bool.false_eq_true, ↓reduceIte, Equiv.permCongr_apply, blockEquiv,
+        Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk, joinBlock_splitBlock hblock,
+        joinBlock_splitBlock List.length_ofFn]
+    · simp only [↓reduceIte]
+      change _ = joinBlock ((blockEquiv n).permCongr π.symm (splitBlock n block))
+      simp only [Equiv.permCongr_apply, blockEquiv, Equiv.coe_fn_mk, Equiv.coe_fn_symm_mk,
+        joinBlock_splitBlock hblock, joinBlock_splitBlock List.length_ofFn]
+  · simp only [hblock, ↓reduceIte]
+
+/-- The bidirectional adversary as a program querying pairs of `n`-bit halves. -/
+private noncomputable def strongPairAdversary (adversary : StrongPRPDistinguisher) (n : ℕ) :
+    ProbOracleComp (fun _ : Bool × (BitString n × BitString n) => BitString n × BitString n)
+      Bool :=
+  OracleComp.interpret
+    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
+      (fun request : Bool × List Bool =>
+        if request.2.length = 2 * n then
+          joinBlock <$> ProbOracleComp.query (request.1, splitBlock n request.2)
+        else pure []))
+    (adversary n [])
+
+private theorem isQueryBounded_strongPairAdversary {adversary : StrongPRPDistinguisher}
+    {n Q : ℕ} (hQ : (adversary n []).IsQueryBounded Q) :
+    (strongPairAdversary adversary n).IsQueryBounded Q := by
+  refine hQ.interpret fun q => ?_
+  rcases q with k | request
+  · exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
+  · dsimp only [OracleComp.sumHandler]; split_ifs
+    · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero, Sum.elim_inr] using
+        (ProbOracleComp.IsQueryBounded.query (request.1, splitBlock n request.2)).bind fun _ =>
+          OracleComp.IsCostBounded.pure _ 0
+    · exact OracleComp.IsCostBounded.pure [] _
+
+private theorem interpret_strongPairAdversary (adversary : StrongPRPDistinguisher) (n : ℕ)
+    (σ : Equiv.Perm (BitString n × BitString n)) :
+    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+        (fun request => PMF.pure (strongTable σ request))) (strongPairAdversary adversary n) =
+      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+        (fun request : Bool × List Bool => PMF.pure (strongBlockOracle n σ request)))
+        (adversary n []) := by
+  simp only [strongPairAdversary, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
+    ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query]
+  congr 2; funext request; unfold strongBlockOracle strongTable
+  split_ifs <;> simp [*, PMF.monad_map_eq_map]
+
+/-- With random round functions, the bidirectional adapter runs the adversary against the
+four-round Feistel network of independent uniform random functions, in both directions. -/
+private theorem eval_prfMultiIdealGame_strongLubyRackoffAdversary
+    (adversary : StrongPRPDistinguisher) (n : ℕ) :
+    ProbComp.eval (prfMultiIdealGame 4 (strongLubyRackoffAdversary adversary) n) =
+      (PMF.uniformOfFintype (Fin 4 → BitString n → BitString n)).bind fun tables =>
+        OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
+          PMF.pure (strongTable (LubyRackoff.feistel4 (tables 0) (tables 1) (tables 2) (tables 3))
+            request))) (strongPairAdversary adversary n) := by
+  simp only [prfMultiIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_strongPairAdversary]
+  congr 1; funext tables; rw [interpret_strongLubyRackoffAdversary]; congr 2
+  funext ⟨inverse, block⟩; congr 1
+  have hT (i : Fin 4) : Represents (fun q => (randomFunctionOracle n (tables i) q).take n)
+      (tables i) := fun x => by
+    simp only [randomFunctionOracle, List.length_ofFn, ↓reduceIte, BitString.ofList_ofFn]
+    exact List.take_of_length_le List.length_ofFn.le
+  have hrounds := List.Forall₂.cons (hT 0) (.cons (hT 1) (.cons (hT 2) (.cons (hT 3) .nil)))
+  unfold strongBlockOracle; dsimp only
+  by_cases hblock : block.length = 2 * n
+  · simp only [hblock, ↓reduceIte]
+    conv_lhs => rw [← joinBlock_splitBlock hblock]
+    cases inverse
+    · simp only [Bool.false_eq_true, ↓reduceIte]
+      exact feistelNetworkWord_joinBlock hrounds _
+    · simp only [↓reduceIte]
+      exact feistelNetworkWordInv_joinBlock hrounds _
+  · simp only [hblock, ↓reduceIte]
+
+/-- Four independent uniform draws are the coordinates of a uniform quadruple. -/
+private theorem bind_uniformOfFintype_fin_four {X β : Type} [Fintype X] [Nonempty X]
+    (F : X → X → X → X → PMF β) :
+    (PMF.uniformOfFintype (Fin 4 → X)).bind (fun f => F (f 0) (f 1) (f 2) (f 3)) =
+      (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
+        (PMF.uniformOfFintype X).bind fun c => (PMF.uniformOfFintype X).bind fun d =>
+          F a b c d := by
+  let e : X × X × X × X ≃ (Fin 4 → X) :=
+    { toFun := fun t => ![t.1, t.2.1, t.2.2.1, t.2.2.2]
+      invFun := fun f => (f 0, f 1, f 2, f 3)
+      left_inv := fun _ => rfl
+      right_inv := fun f => by funext i; fin_cases i <;> rfl }
+  rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
+    ← PMF.uniformOfFintype_prod, ← PMF.uniformOfFintype_prod]
+  simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]; rfl
+
+/-- **Four random Feistel rounds against a random permutation, in both directions**
+([LubyRackoff1988]), for randomized bidirectional word-oracle adversaries: with independent
+uniform random round functions, a `Q`-query adversary distinguishes the adapter's four-key ideal
+game from a uniform permutation of `2 * n`-bit blocks with advantage at most
+`2 * Q.choose 2 / 2 ^ n + 2 * Q.choose 2 / 4 ^ n`. -/
+theorem advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le
+    (adversary : StrongPRPDistinguisher) (n Q : ℕ) (hQ : (adversary n []).IsQueryBounded Q) :
+    (Game.advantage (ProbComp.eval (prfMultiIdealGame 4 (strongLubyRackoffAdversary adversary) n))
+      (ProbComp.eval (strongPRPIdealGame (fun n => 2 * n) adversary n)) : ℝ) ≤
+      2 * (Q.choose 2 : ℝ) * ((2 : ℝ) ^ n)⁻¹ +
+        2 * (Q.choose 2 : ℝ) * (((2 : ℝ) ^ n)⁻¹) ^ 2 := by
+  have hadaptedQ := isQueryBounded_strongPairAdversary hQ
+  have hperm : ProbComp.eval (strongPRPIdealGame (fun n => 2 * n) adversary n) =
+      (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))).bind fun σ =>
+        OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
+          (fun request => PMF.pure (strongTable σ request))) (strongPairAdversary adversary n) := by
+    simp only [strongPRPIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+      ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_strongPairAdversary]
+    rw [← PMF.uniformOfFintype_map_equiv (blockEquiv n).permCongr, PMF.bind_map]
+    congr 1; funext π; simp only [Function.comp_apply, strongRandomPermOracle_eq_strongBlockOracle]
+  rw [eval_prfMultiIdealGame_strongLubyRackoffAdversary, hperm,
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (Fin 4 → BitString n → BitString n))
+      (fun tables request =>
+        strongTable (LubyRackoff.feistel4 (tables 0) (tables 1) (tables 2) (tables 3)) request)
+      (strongPairAdversary adversary n),
+    ProbOracleComp.table_bind_interpret_eq_coinLaw_bind
+      (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n)))
+      (fun σ request => strongTable σ request) (strongPairAdversary adversary n)]
+  refine Game.advantage_bind_le _ _ _ fun ω => ?_
+  have h := LubyRackoff.advantage_feistel4StrongRandomRoundsGame_idealStrongGame_le
+    (ProbOracleComp.isQueryBounded_fixCoins hadaptedQ ω)
+  rw [bind_uniformOfFintype_fin_four (fun f₁ f₂ f₃ f₄ => OracleComp.interpret
+    (fun request => PMF.pure (strongTable (LubyRackoff.feistel4 f₁ f₂ f₃ f₄) request))
+    (ProbOracleComp.fixCoins (strongPairAdversary adversary n) ω))]
+  simpa only [LubyRackoff.feistel4StrongRandomRoundsGame, LubyRackoff.idealStrongGame,
+    feistelStrongOracle_eq, Probability.PMF.monad_bind_eq_bind, Fintype.card_pi,
+    Fintype.card_fin, Fintype.card_bool, Finset.prod_const, Finset.card_univ, Nat.cast_pow,
+    Nat.cast_ofNat] using h
+
+/-- **Four-round Luby–Rackoff theorem** ([LubyRackoff1988]; [KatzLindell2020], Section 8.6;
+strongly secure block ciphers as in [BonehShoup2023], Section 4.1.3 and Exercise 4.9): the
+four-round Luby–Rackoff cipher built from a pseudorandom function is a strong pseudorandom
+permutation against oracle-PPT distinguishers. -/
+theorem PseudorandomFunction.strongPRP_lubyRackoff4Cipher
+    {family : List Bool → List Bool → List Bool} (hfamily : PseudorandomFunction family) :
+    (lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).StrongPRP := by
+  intro adversary hadversary
+  obtain ⟨c, d, hbounds⟩ := hadversary.query_bounds
+  let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
+  have hQ : PolynomiallyBounded fun n => 4 * (Q n).choose 2 := by
+    refine PolynomiallyBounded.mono_of_le (g := fun n => 4 * Q n ^ 2)
+      ((PolynomiallyBounded.const 4).mul
+        (((PolynomiallyBounded.const c).mul ((PolynomiallyBounded.id.add (.const 2)).pow d)).pow 2))
+      fun n => ?_
+    change 4 * (Q n).choose 2 ≤ 4 * Q n ^ 2
+    rw [Nat.choose_two_right, sq]
+    exact Nat.mul_le_mul_left _
+      ((Nat.div_le_self _ 2).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _)))
+  have hgeometric : Negligible fun n => ((2 : ℝ≥0) ^ n)⁻¹ := by
+    simpa only [inv_pow] using negligible_geometric (ratio := (2 : ℝ≥0)⁻¹) (by norm_num)
+  refine negligible_of_le ((hfamily.multiKey 4 (strongLubyRackoffAdversary adversary)
+    (isOraclePPT_strongLubyRackoffAdversary hadversary)).add
+      (hgeometric.polynomiallyBounded_mul hQ)) fun n => ?_
+  dsimp only [Pi.add_apply]
+  rw [eval_strongPRPRealGame_lubyRackoff4Cipher hfamily]
+  refine (Game.advantage_triangle _
+    (ProbComp.eval (prfMultiIdealGame 4 (strongLubyRackoffAdversary adversary) n)) _).trans
+      (add_le_add le_rfl ?_)
+  rw [← NNReal.coe_le_coe]
+  have hrandom := advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le adversary n (Q n)
+    (by simpa only [List.length_nil, Nat.add_zero, Q] using (hbounds n []).1)
+  have hsmall : (((2 : ℝ) ^ n)⁻¹) ^ 2 ≤ ((2 : ℝ) ^ n)⁻¹ := by
+    have h₀ : 0 ≤ ((2 : ℝ) ^ n)⁻¹ := by positivity
+    have h₁ : ((2 : ℝ) ^ n)⁻¹ ≤ 1 := inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
+    nlinarith
+  have hchoose : (0 : ℝ) ≤ (Q n).choose 2 := Nat.cast_nonneg _
+  refine hrandom.trans ?_
+  push_cast
+  nlinarith
+
+/-- The four-round Luby–Rackoff cipher is in particular a pseudorandom permutation. -/
+theorem PseudorandomFunction.prp_lubyRackoff4Cipher
+    {family : List Bool → List Bool → List Bool} (hfamily : PseudorandomFunction family) :
+    (lubyRackoff4Cipher family hfamily.polyTime hfamily.length_eq).PRP :=
+  hfamily.strongPRP_lubyRackoff4Cipher.prp
 
 end Cslib.Crypto

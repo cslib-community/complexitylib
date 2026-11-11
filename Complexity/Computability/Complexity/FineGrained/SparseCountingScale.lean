@@ -138,15 +138,8 @@ theorem numGroups_eq_iff {n s : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :
     numGroups n = s ↔
       s ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 ≤ Nat.clog 2 n ∧
         Nat.clog 2 n < (s + 1) ^ 2 * Nat.clog 2 (Nat.clog 2 n) ^ 4 := by
-  constructor
-  · rintro rfl
-    exact numGroups_floor_bounds hnu
-  · rintro ⟨hle, hlt⟩
-    have h1 : s ≤ numGroups n := (le_numGroups_iff hnu s).mpr hle
-    have h2 : ¬ s + 1 ≤ numGroups n := by
-      rw [le_numGroups_iff hnu (s + 1)]
-      omega
-    omega
+  rw [← le_numGroups_iff hnu s, ← not_le, ← le_numGroups_iff hnu (s + 1)]
+  omega
 
 private theorem sqrt_clog_lt_succ_mul_iter_clog_sq {n : ℕ} (hnu : 1 ≤ Nat.clog 2 (Nat.clog 2 n)) :
     Real.sqrt (Nat.clog 2 n : ℝ) <
@@ -167,8 +160,10 @@ private theorem four_mul_succ_pow_four_le_two_pow {m : ℕ} (hm : 20 ≤ m) :
   | base => norm_num
   | succ m hm ih =>
     have hstep : (m + 2) ^ 4 ≤ 2 * (m + 1) ^ 4 := by
-      have hm3 : (m + 1) ^ 3 * 15 ≤ (m + 1) ^ 3 * (m + 1) := Nat.mul_le_mul_left _ (by omega)
-      nlinarith [sq_nonneg m]
+      obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le hm
+      exact Nat.le.intro (by ring :
+        (20 + k + 2) ^ 4 + (k ^ 4 + 80 * k ^ 3 + 2388 * k ^ 2 + 31496 * k + 154706) =
+          2 * (20 + k + 1) ^ 4)
     calc
       4 * (m + 2) ^ 4 ≤ 4 * (2 * (m + 1) ^ 4) := Nat.mul_le_mul_left 4 hstep
       _ = 2 * (4 * (m + 1) ^ 4) := by ring
@@ -208,26 +203,16 @@ theorem eventually_two_le_numGroups : ∀ᶠ n : ℕ in atTop, 2 ≤ numGroups n
 /-- When `2 ≤ numGroups n`, `5 ≤ n`. -/
 theorem five_le_of_two_le_numGroups {n : ℕ} (hs : 2 ≤ numGroups n) : 5 ≤ n := by
   by_contra hlt
-  have hlam : Nat.clog 2 n < 2 ^ 2 := by
-    have : Nat.clog 2 n ≤ Nat.clog 2 4 := Nat.clog_mono_right 2 (by omega)
-    have h4 : Nat.clog 2 4 = 2 := by decide
-    omega
-  have hsqrt : (Nat.clog 2 n).sqrt < 2 := Nat.sqrt_lt.mpr hlam
-  have hs_le := numGroups_le_sqrt n
-  omega
+  have h4 : Nat.clog 2 n < 2 ^ 2 :=
+    (Nat.clog_mono_right 2 (by omega : n ≤ 4)).trans_lt (by decide)
+  exact (hs.trans (numGroups_le_sqrt n)).not_gt (Nat.sqrt_lt.mpr h4)
 
 private theorem clog_two_le_three_mul_log (n : ℕ) :
     (Nat.clog 2 n : ℝ) ≤ 3 * Real.log ((n : ℝ) + 16) := by
   match n with
-  | 0 =>
-    have h0 : (Nat.clog 2 0 : ℝ) = 0 := by rw [show Nat.clog 2 0 = 0 by decide, Nat.cast_zero]
-    linarith [log_add_sixteen_pos 0]
-  | 1 =>
-    have h1 : (Nat.clog 2 1 : ℝ) = 0 := by rw [show Nat.clog 2 1 = 0 by decide, Nat.cast_zero]
-    linarith [log_add_sixteen_pos 1]
-  | 2 =>
-    rw [show Nat.clog 2 2 = 1 by decide, Nat.cast_one]
-    linarith [one_lt_log_add_sixteen 2]
+  | 0 => simp only [show Nat.clog 2 0 = 0 by decide, Nat.cast_zero]; positivity
+  | 1 => simp only [show Nat.clog 2 1 = 0 by decide, Nat.cast_zero]; positivity
+  | 2 => rw [show Nat.clog 2 2 = 1 by decide, Nat.cast_one]; linarith [one_lt_log_add_sixteen 2]
   | n' + 3 =>
     set n := n' + 3
     set lam := Nat.clog 2 n
@@ -235,7 +220,8 @@ private theorem clog_two_le_three_mul_log (n : ℕ) :
     set k := lam - 1
     have hk_eq : lam = k + 1 := by omega
     have hk1 : 1 ≤ k := by omega
-    have hpow : 2 ^ k < n := (Nat.lt_clog_iff_pow_lt one_lt_two).mp (by change k < lam; omega)
+    have hpow : 2 ^ k < n := (Nat.lt_clog_iff_pow_lt one_lt_two).mp (by omega : k < lam)
+    clear_value n lam k
     have hpow_real : (2 : ℝ) ^ k < (n : ℝ) + 16 := by
       have hcast : ((2 ^ k : ℕ) : ℝ) < (n : ℝ) := Nat.cast_lt.mpr hpow
       push_cast at hcast; linarith
@@ -244,7 +230,10 @@ private theorem clog_two_le_three_mul_log (n : ℕ) :
     have hk_le : (lam : ℝ) ≤ 2 * (k : ℝ) := by
       rw [hk_eq]; push_cast
       linarith [show (1 : ℝ) ≤ k from Nat.one_le_cast.mpr hk1]
-    nlinarith [Real.log_two_gt_d9]
+    have hlog2 : (2 / 3 : ℝ) * (k : ℝ) ≤ (k : ℝ) * Real.log 2 := by
+      rw [mul_comm]
+      exact mul_le_mul_of_nonneg_left (by linarith [Real.log_two_gt_d9]) (Nat.cast_nonneg k)
+    linarith
 
 private theorem tendsto_clog_two_atTop : Tendsto (Nat.clog 2) atTop atTop :=
   tendsto_atTop_atTop.mpr fun b => ⟨2 ^ b, fun _ hn =>
@@ -277,8 +266,8 @@ theorem tendsto_numGroups_atTop : Tendsto numGroups atTop atTop := by
   obtain ⟨N₁, hN₁⟩ := eventually_atTop.mp <| (hsmall.comp tendsto_clog_two_atTop).eventually
     (gt_mem_nhds (show (0 : ℝ) < 1 / (9 * ((B : ℝ) + 1)) by positivity))
   refine ⟨max N₁ 3, fun n hn => ?_⟩
-  set lam := Nat.clog 2 n
-  set nu := Nat.clog 2 lam
+  let lam := Nat.clog 2 n
+  let nu := Nat.clog 2 lam
   have hn3 : 3 ≤ n := (le_max_right N₁ 3).trans hn
   have hnu1 : 1 ≤ nu := one_le_iter_clog_two_iff.mpr hn3
   have hsqrt_pos : 0 < Real.sqrt (lam : ℝ) :=
@@ -289,13 +278,15 @@ theorem tendsto_numGroups_atTop : Tendsto numGroups atTop atTop := by
       pow_le_pow_left₀ (Nat.cast_nonneg _) hnu_le 2
   have hcross : Real.log ((lam : ℝ) + 16) ^ 2 * (9 * ((B : ℝ) + 1)) < 1 * Real.sqrt (lam : ℝ) :=
     (div_lt_div_iff₀ hsqrt_pos (by positivity)).mp (hN₁ n ((le_max_left N₁ 3).trans hn))
-  have hmul : (nu : ℝ) ^ 2 * ((B : ℝ) + 1) < Real.sqrt (lam : ℝ) := by
-    have : (0 : ℝ) < (B : ℝ) + 1 := by positivity
-    nlinarith
-  have hsucc_real := sqrt_clog_lt_succ_mul_iter_clog_sq hnu1
+  have hsucc_real : Real.sqrt (lam : ℝ) < ((numGroups n : ℝ) + 1) * (nu : ℝ) ^ 2 :=
+    sqrt_clog_lt_succ_mul_iter_clog_sq hnu1
+  clear_value lam nu
+  have hmul : ((B : ℝ) + 1) * (nu : ℝ) ^ 2 < ((numGroups n : ℝ) + 1) * (nu : ℝ) ^ 2 := by
+    have h1 := mul_le_mul_of_nonneg_right hnu_sq (show (0 : ℝ) ≤ (B : ℝ) + 1 by positivity)
+    linarith
   have hB_lt : (B : ℝ) < ((numGroups n + 1 : ℕ) : ℝ) := by
-    have : (0 : ℝ) < (nu : ℝ) ^ 2 := by positivity
-    push_cast; nlinarith
+    have hlt := lt_of_mul_lt_mul_right hmul (sq_nonneg (nu : ℝ))
+    push_cast; linarith
   have hB_nat : B < numGroups n + 1 := (Nat.cast_lt (α := ℝ)).mp hB_lt
   omega
 
@@ -342,27 +333,31 @@ private theorem log_add_sixteen_le_clog_two {n : ℕ} (hn : 16 ≤ n) :
     rw [pow_succ]; linarith [show (16 : ℝ) ≤ n from Nat.cast_le.mpr hn]
   have hlog : Real.log ((n : ℝ) + 16) ≤ ((lam : ℝ) + 1) * Real.log 2 := by
     simpa only [Real.log_pow, Nat.cast_add, Nat.cast_one] using Real.log_le_log (by positivity) hpow
-  nlinarith [Real.log_two_lt_d9]
+  clear_value lam
+  have hlog2 := mul_le_mul_of_nonneg_left (show Real.log 2 ≤ 4 / 5 by linarith [Real.log_two_lt_d9])
+    (show (0 : ℝ) ≤ (lam : ℝ) + 1 by linarith)
+  linarith
 
 /-- Explicit constant tree-exponent inequality: whenever `640000 ≤ Nat.clog 2 n`,
 `n / numGroups n ≤ 16 * interpolationScale n`. -/
 theorem div_numGroups_le_interpolationScale_of_clog_ge {n : ℕ} (h : 640000 ≤ Nat.clog 2 n) :
     (n : ℝ) / (numGroups n : ℝ) ≤ 16 * interpolationScale n := by
-  set lam := Nat.clog 2 n
-  set nu := Nat.clog 2 lam
+  let lam := Nat.clog 2 n
+  let nu := Nat.clog 2 lam
   have hs2 : 2 ≤ numGroups n := two_le_numGroups_of_clog_ge h
   have hn16 : 16 ≤ n := by have := clog_two_le_self n; omega
-  have hdiv := div_numGroups_le_two_mul (by omega : 1 ≤ numGroups n)
-  have hsqrt_ge : Real.sqrt (Real.log ((n : ℝ) + 16)) ≤ Real.sqrt (lam : ℝ) :=
+  have hdiv : (n : ℝ) / (numGroups n : ℝ) ≤ 2 * ((n : ℝ) * (nu : ℝ) ^ 2 / Real.sqrt (lam : ℝ)) :=
+    div_numGroups_le_two_mul (by omega : 1 ≤ numGroups n)
+  let X := Real.log ((n : ℝ) + 16)
+  let L := Real.log X
+  have hsqrt_ge : Real.sqrt X ≤ Real.sqrt (lam : ℝ) :=
     Real.sqrt_le_sqrt (log_add_sixteen_le_clog_two hn16)
-  set X := Real.log ((n : ℝ) + 16)
-  set L := Real.log X
   have hL4 : 4 < L := by
     have hpow100 : 2 ^ 100 < n :=
-      (Nat.lt_clog_iff_pow_lt one_lt_two).mp (by change 100 < lam; omega)
+      (Nat.lt_clog_iff_pow_lt one_lt_two).mp (by omega : 100 < lam)
     have hpow_real : (2 : ℝ) ^ (100 : ℕ) < (n : ℝ) + 16 := by
       have hcast : ((2 ^ 100 : ℕ) : ℝ) < (n : ℝ) := Nat.cast_lt.mpr hpow100
-      push_cast at hcast; linarith
+      rw [Nat.cast_pow, Nat.cast_ofNat] at hcast; linarith
     have hlog_pow : ((100 : ℕ) : ℝ) * Real.log 2 < X := by
       simpa only [Real.log_pow] using Real.log_lt_log (by positivity) hpow_real
     have hexp4 : Real.exp 4 < 56 := by
@@ -384,30 +379,31 @@ theorem div_numGroups_le_interpolationScale_of_clog_ge {n : ℕ} (h : 640000 ≤
       simpa only [Nat.cast_ofNat, mul_one] using Real.exp_nat_mul 1 2
     linarith
   have hnu2 : 2 ≤ nu := two_le_iter_clog_two_iff.mpr (by omega)
-  set m := nu - 1
+  let m := nu - 1
   have hm_eq : nu = m + 1 := by omega
   have hX_pos : 0 < X := log_add_sixteen_pos n
   have hpow_m : (2 : ℝ) ^ m < 3 * X := by
-    have hlt : 2 ^ m < lam := (Nat.lt_clog_iff_pow_lt one_lt_two).mp (by change m < nu; omega)
+    have hlt : 2 ^ m < lam := (Nat.lt_clog_iff_pow_lt one_lt_two).mp (by omega : m < nu)
     have hcast : ((2 ^ m : ℕ) : ℝ) < (lam : ℝ) := Nat.cast_lt.mpr hlt
     push_cast at hcast
     exact hcast.trans_le (clog_two_le_three_mul_log n)
   have hlog_m : (m : ℝ) * Real.log 2 < Real.log 3 + L := by
     have h1 := Real.log_lt_log (by positivity) hpow_m
     rwa [Real.log_pow, Real.log_mul (by norm_num) hX_pos.ne'] at h1
+  have hscale_def : interpolationScale n = (n : ℝ) * L ^ 2 / Real.sqrt X := rfl
+  clear_value lam nu X L m
   have hnu_le : (nu : ℝ) ≤ (5 / 2 : ℝ) * L := by
-    have hm_le : (m : ℝ) ≤ (9 / 4 : ℝ) * L := by
-      nlinarith [Real.log_two_gt_d9, (Nat.cast_nonneg m : (0 : ℝ) ≤ m)]
+    have hm_le : (2 / 3 : ℝ) * (m : ℝ) ≤ (m : ℝ) * Real.log 2 := by
+      rw [mul_comm]
+      exact mul_le_mul_of_nonneg_left (by linarith [Real.log_two_gt_d9]) (Nat.cast_nonneg m)
     rw [hm_eq]; push_cast; linarith
-  have hnu_sq : (nu : ℝ) ^ 2 ≤ 8 * L ^ 2 := by
-    have hsq := pow_le_pow_left₀ (Nat.cast_nonneg _) hnu_le 2
-    nlinarith
+  have hnu_sq : (nu : ℝ) ^ 2 ≤ 8 * L ^ 2 :=
+    (pow_le_pow_left₀ (Nat.cast_nonneg _) hnu_le 2).trans
+      (by rw [mul_pow]; exact mul_le_mul_of_nonneg_right (by norm_num) (sq_nonneg L))
   have hsqrtX_pos : 0 < Real.sqrt X := Real.sqrt_pos.mpr hX_pos
   have hsqrtL_pos : 0 < Real.sqrt (lam : ℝ) := lt_of_lt_of_le hsqrtX_pos hsqrt_ge
   have hfrac : (n : ℝ) * (nu : ℝ) ^ 2 / Real.sqrt (lam : ℝ) ≤ 8 * interpolationScale n := by
-    unfold interpolationScale
-    change (n : ℝ) * (nu : ℝ) ^ 2 / Real.sqrt (lam : ℝ) ≤ 8 * ((n : ℝ) * L ^ 2 / Real.sqrt X)
-    rw [mul_div_assoc', div_le_div_iff₀ hsqrtL_pos hsqrtX_pos]
+    rw [hscale_def, mul_div_assoc', div_le_div_iff₀ hsqrtL_pos hsqrtX_pos]
     have h1 : (n : ℝ) * (nu : ℝ) ^ 2 * Real.sqrt X ≤ (n : ℝ) * (8 * L ^ 2) * Real.sqrt X :=
       mul_le_mul_of_nonneg_right
         (mul_le_mul_of_nonneg_left hnu_sq (Nat.cast_nonneg n)) hsqrtX_pos.le
@@ -416,7 +412,7 @@ theorem div_numGroups_le_interpolationScale_of_clog_ge {n : ℕ} (h : 640000 ≤
       rw [show (n : ℝ) * (8 * L ^ 2) = 8 * ((n : ℝ) * L ^ 2) by ring]
       exact mul_le_mul_of_nonneg_left hsqrt_ge (by positivity)
     exact h1.trans h2
-  linarith
+  exact hdiv.trans ((mul_le_mul_of_nonneg_left hfrac zero_le_two).trans_eq (by ring))
 
 /-- Concrete eventual tree-exponent bound (`C = 16`): eventually
 `n / numGroups n ≤ 16 * interpolationScale n`. -/
@@ -453,7 +449,7 @@ theorem isLittleO_log_pow_interpolationScale (d : ℕ) :
   have h3 : (fun n : ℕ => (n : ℝ)) =O[atTop]
       (fun n : ℕ => (n : ℝ) * Real.log (Real.log (u n)) ^ 2) := by
     refine IsBigO.of_bound 1 (Eventually.of_forall fun n => ?_)
-    have hsq : 1 ≤ Real.log (Real.log (u n)) ^ 2 := by nlinarith [one_lt_log_log_add_sixteen n]
+    have hsq : 1 ≤ Real.log (Real.log (u n)) ^ 2 := one_le_pow₀ (one_lt_log_log_add_sixteen n).le
     rw [one_mul, Real.norm_of_nonneg (Nat.cast_nonneg n), Real.norm_of_nonneg (by positivity)]
     exact le_mul_of_one_le_right (Nat.cast_nonneg n) hsq
   have h4 := (h1.trans_isBigO (h2.trans h3)).mul_isBigO
@@ -479,32 +475,26 @@ theorem isLittleO_clog_pow_interpolationScale (d : ℕ) :
 theorem eventually_mul_log_pow_le_interpolationScale (C : ℝ) (d : ℕ) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n : ℕ in atTop, C * Real.log ((n : ℝ) + 16) ^ d ≤ ε * interpolationScale n := by
   rcases le_or_gt C 0 with hC | hC
-  · exact Eventually.of_forall fun n => by
-      nlinarith [pow_nonneg (log_add_sixteen_pos n).le d,
-        mul_nonneg hε.le (interpolationScale_nonneg n)]
+  · exact Eventually.of_forall fun n =>
+      (mul_nonpos_of_nonpos_of_nonneg hC (pow_nonneg (log_add_sixteen_pos n).le d)).trans
+        (mul_nonneg hε.le (interpolationScale_nonneg n))
   · filter_upwards [(isLittleO_log_pow_interpolationScale d).bound (div_pos hε hC)] with n hn
     rw [Real.norm_of_nonneg (pow_nonneg (log_add_sixteen_pos n).le d),
       Real.norm_of_nonneg (interpolationScale_nonneg n)] at hn
-    calc
-      C * Real.log ((n : ℝ) + 16) ^ d ≤ C * (ε / C * interpolationScale n) :=
-        mul_le_mul_of_nonneg_left hn hC.le
-      _ = ε * interpolationScale n := by field_simp
+    exact (mul_le_mul_of_nonneg_left hn hC.le).trans_eq (by field_simp)
 
 /-- Every constant multiple of `⌈log₂ n⌉ ^ d` is eventually bounded by `ε * interpolationScale n`
 for any `ε > 0`. -/
 theorem eventually_mul_clog_pow_le_interpolationScale (C : ℝ) (d : ℕ) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n : ℕ in atTop, C * (Nat.clog 2 n : ℝ) ^ d ≤ ε * interpolationScale n := by
   rcases le_or_gt C 0 with hC | hC
-  · exact Eventually.of_forall fun n => by
-      nlinarith [pow_nonneg (Nat.cast_nonneg (Nat.clog 2 n) : (0 : ℝ) ≤ Nat.clog 2 n) d,
-        mul_nonneg hε.le (interpolationScale_nonneg n)]
+  · exact Eventually.of_forall fun n =>
+      (mul_nonpos_of_nonpos_of_nonneg hC (by positivity)).trans
+        (mul_nonneg hε.le (interpolationScale_nonneg n))
   · filter_upwards [(isLittleO_clog_pow_interpolationScale d).bound (div_pos hε hC)] with n hn
     rw [Real.norm_of_nonneg (by positivity),
       Real.norm_of_nonneg (interpolationScale_nonneg n)] at hn
-    calc
-      C * (Nat.clog 2 n : ℝ) ^ d ≤ C * (ε / C * interpolationScale n) :=
-        mul_le_mul_of_nonneg_left hn hC.le
-      _ = ε * interpolationScale n := by field_simp
+    exact (mul_le_mul_of_nonneg_left hn hC.le).trans_eq (by field_simp)
 
 /-- Quasi-polynomial base-`2` overhead `(2 : ℝ) ^ (C * ⌈log₂ n⌉ ^ d)` is eventually bounded by
 `(2 : ℝ) ^ (ε * interpolationScale n)` for every `ε > 0`. -/
@@ -519,8 +509,8 @@ private theorem eventually_two_pow_succ_clog_pow_le (C : ℝ) (d : ℕ) {ε : �
       (2 : ℝ) ^ (ε * interpolationScale n) := by
   rcases le_or_gt C 0 with hC | hC
   · refine Eventually.of_forall fun n => Real.rpow_le_rpow_of_exponent_le one_le_two ?_
-    have h1 : (0 : ℝ) ≤ ((Nat.clog 2 n : ℝ) + 1) ^ d := by positivity
-    nlinarith [mul_nonneg hε.le (interpolationScale_nonneg n)]
+    exact (mul_nonpos_of_nonpos_of_nonneg hC (by positivity)).trans
+      (mul_nonneg hε.le (interpolationScale_nonneg n))
   · filter_upwards [eventually_ge_atTop 2,
       eventually_two_pow_clog_pow_le (C * (2 : ℝ) ^ d) d hε] with n hn2 hpow
     have hlam1 : (1 : ℝ) ≤ Nat.clog 2 n := Nat.one_le_cast.mpr (one_le_clog_two_iff.mpr hn2)
@@ -529,7 +519,7 @@ private theorem eventually_two_pow_succ_clog_pow_le (C : ℝ) (d : ℕ) {ε : �
       exact pow_le_pow_left₀ (by positivity) (by linarith) d
     have hexp :
         C * ((Nat.clog 2 n : ℝ) + 1) ^ d ≤ C * (2 : ℝ) ^ d * (Nat.clog 2 n : ℝ) ^ d := by
-      linarith [mul_le_mul_of_nonneg_left hp hC.le]
+      rw [mul_assoc]; exact mul_le_mul_of_nonneg_left hp hC.le
     exact (Real.rpow_le_rpow_of_exponent_le one_le_two hexp).trans hpow
 
 /-- Concrete leaf-factor bound (`A_tree = 17`): for any polynomial degree `d`, eventually
@@ -543,7 +533,7 @@ theorem eventually_poly_mul_two_pow_div_numGroups_le (d : ℕ) :
     with n hdiv hlog
   have hbase_le : (n : ℝ) + (numGroups n : ℝ) + 1 ≤ ((n : ℝ) + 16) ^ 2 := by
     have hs_le : (numGroups n : ℝ) ≤ n := Nat.cast_le.mpr (numGroups_le_self n)
-    nlinarith [(Nat.cast_nonneg n : (0 : ℝ) ≤ n)]
+    linarith [sq_nonneg (n : ℝ), (Nat.cast_nonneg n : (0 : ℝ) ≤ n)]
   have hpoly_le : ((n : ℝ) + (numGroups n : ℝ) + 1) ^ d ≤ (2 : ℝ) ^ interpolationScale n := by
     have hpow : ((n : ℝ) + (numGroups n : ℝ) + 1) ^ d ≤ ((n : ℝ) + 16) ^ (2 * d) := by
       rw [pow_mul]; exact pow_le_pow_left₀ (by positivity) hbase_le d
@@ -579,44 +569,38 @@ private theorem query_count_le_two_pow_succ_clog_pow {n m B P C_B β C_P e_B e_�
     (hP : P ≤ C_P * B ^ e_B * Nat.clog 2 (2 * m + 4) ^ e_μ) :
     3 * n * (2 * m + 2) ^ P + 1 ≤
       2 ^ (queryExpCoeff C_B β C_P e_B e_μ * (Nat.clog 2 n + 1) ^ (β * e_B + e_μ + 1)) := by
-  set lam1 := Nat.clog 2 n + 1
+  let lam1 := Nat.clog 2 n + 1
   have hlam1 : 1 ≤ lam1 := Nat.succ_pos _
   have hn_pow : n ≤ 2 ^ lam1 :=
     (Nat.le_pow_clog one_lt_two n).trans (Nat.pow_le_pow_right two_pos (Nat.le_succ _))
   have hm_pow : 2 * m + 4 ≤ 2 ^ ((C_B + β + 4) * lam1) := by
-    have hlam_pow : Nat.clog 2 n ^ β ≤ 2 ^ (lam1 * β) := by
-      calc
-        Nat.clog 2 n ^ β ≤ lam1 ^ β := Nat.pow_le_pow_left (Nat.le_succ _) β
-        _ ≤ (2 ^ lam1) ^ β := Nat.pow_le_pow_left lam1.lt_two_pow_self.le β
-        _ = 2 ^ (lam1 * β) := (pow_mul 2 lam1 β).symm
-    have hprod : 2 * m ≤ 2 ^ (C_B + lam1 * β + lam1 + 1) := by
-      calc
-        2 * m ≤ 2 * (C_B * Nat.clog 2 n ^ β * n) :=
-          Nat.mul_le_mul_left 2 (hm.trans (Nat.mul_le_mul_right n hB))
-        _ ≤ 2 ^ 1 * (2 ^ C_B * 2 ^ (lam1 * β) * 2 ^ lam1) := by
-          simp only [pow_one]
-          exact Nat.mul_le_mul_left 2
-            (Nat.mul_le_mul (Nat.mul_le_mul C_B.lt_two_pow_self.le hlam_pow) hn_pow)
-        _ = 2 ^ (C_B + lam1 * β + lam1 + 1) := by ring
+    have hlam_pow : Nat.clog 2 n ^ β ≤ 2 ^ (lam1 * β) :=
+      (Nat.pow_le_pow_left ((Nat.le_succ _).trans lam1.lt_two_pow_self.le) β).trans_eq
+        (pow_mul 2 lam1 β).symm
+    have hprod : 2 * m ≤ 2 ^ (C_B + lam1 * β + lam1 + 1) :=
+      (Nat.mul_le_mul_left 2 (hm.trans (Nat.mul_le_mul_right n hB))).trans
+        ((Nat.mul_le_mul_left 2 (Nat.mul_le_mul
+          (Nat.mul_le_mul C_B.lt_two_pow_self.le hlam_pow) hn_pow)).trans_eq (by ring))
     have h4 : 4 ≤ 2 ^ (C_B + lam1 * β + lam1 + 2) :=
       (show 4 = 2 ^ 2 by norm_num).trans_le (Nat.pow_le_pow_right two_pos (by omega))
     have hsum : 2 * m + 4 ≤ 2 ^ (C_B + lam1 * β + lam1 + 3) := by
       have hp1 := hprod.trans (Nat.pow_le_pow_right two_pos (by omega :
         C_B + lam1 * β + lam1 + 1 ≤ C_B + lam1 * β + lam1 + 2))
       exact (Nat.add_le_add hp1 h4).trans_eq (by ring)
-    exact hsum.trans (Nat.pow_le_pow_right two_pos (by nlinarith))
+    exact hsum.trans (Nat.pow_le_pow_right two_pos (Nat.le.intro
+      (by dsimp only [lam1]; ring :
+        C_B + lam1 * β + lam1 + 3 + (C_B * Nat.clog 2 n + 3 * Nat.clog 2 n) =
+          (C_B + β + 4) * lam1)))
   have hclog : Nat.clog 2 (2 * m + 4) ≤ (C_B + β + 4) * lam1 :=
     (Nat.clog_le_iff_le_pow one_lt_two).mpr hm_pow
   have hB_le : B ≤ (C_B + 1) * lam1 ^ β :=
     hB.trans (Nat.mul_le_mul (Nat.le_succ C_B) (Nat.pow_le_pow_left (Nat.le_succ _) β))
-  set K := C_P * (C_B + 1) ^ e_B * (C_B + β + 4) ^ e_μ
-  have hP_le : P ≤ K * lam1 ^ (β * e_B + e_μ) := by
-    calc
-      P ≤ C_P * ((C_B + 1) * lam1 ^ β) ^ e_B * ((C_B + β + 4) * lam1) ^ e_μ :=
-        hP.trans (Nat.mul_le_mul (Nat.mul_le_mul_left C_P (Nat.pow_le_pow_left hB_le e_B))
-          (Nat.pow_le_pow_left hclog e_μ))
-      _ = K * lam1 ^ (β * e_B + e_μ) := by simp only [K, mul_pow, ← pow_mul, pow_add]; ring
-  set E := (C_B + β + 4) * K * lam1 ^ (β * e_B + e_μ + 1)
+  let K := C_P * (C_B + 1) ^ e_B * (C_B + β + 4) ^ e_μ
+  have hP_le : P ≤ K * lam1 ^ (β * e_B + e_μ) :=
+    (hP.trans (Nat.mul_le_mul (Nat.mul_le_mul_left C_P (Nat.pow_le_pow_left hB_le e_B))
+      (Nat.pow_le_pow_left hclog e_μ))).trans_eq
+      (by simp only [K, mul_pow, ← pow_mul, pow_add]; ring)
+  let E := (C_B + β + 4) * K * lam1 ^ (β * e_B + e_μ + 1)
   have hbase_pow : (2 * m + 2) ^ P ≤ 2 ^ E := by
     calc
       (2 * m + 2) ^ P ≤ (2 ^ ((C_B + β + 4) * lam1)) ^ P :=
@@ -625,20 +609,20 @@ private theorem query_count_le_two_pow_succ_clog_pow {n m B P C_B β C_P e_B e_�
       _ ≤ 2 ^ ((C_B + β + 4) * lam1 * (K * lam1 ^ (β * e_B + e_μ))) :=
         Nat.pow_le_pow_right two_pos (Nat.mul_le_mul_left _ hP_le)
       _ = 2 ^ E := by dsimp only [E]; rw [pow_succ]; ring_nf
-  have hterm : 3 * n * (2 * m + 2) ^ P + 1 ≤ 2 ^ (2 + lam1 + E) := by
-    have hpos : 1 ≤ 2 ^ (lam1 + E) := Nat.one_le_pow _ 2 two_pos
-    calc
-      3 * n * (2 * m + 2) ^ P + 1 ≤ 3 * (2 ^ lam1 * 2 ^ E) + 1 := by
-        linarith [Nat.mul_le_mul hn_pow hbase_pow]
-      _ = 3 * 2 ^ (lam1 + E) + 1 := by rw [← pow_add]
-      _ ≤ 4 * 2 ^ (lam1 + E) := by omega
-      _ = 2 ^ (2 + lam1 + E) := by ring
-  refine hterm.trans (Nat.pow_le_pow_right two_pos ?_)
-  have hlam_pow1 : lam1 ≤ lam1 ^ (β * e_B + e_μ + 1) := Nat.le_self_pow (by omega) lam1
-  have h1_pow : 1 ≤ lam1 ^ (β * e_B + e_μ + 1) := hlam1.trans hlam_pow1
   have hK_eq : queryExpCoeff C_B β C_P e_B e_μ = 3 + (C_B + β + 4) * K := by
     simp only [queryExpCoeff, K]; ring
-  rw [hK_eq]; dsimp only [E]; linarith
+  clear_value K
+  have hterm : 3 * n * (2 * m + 2) ^ P + 1 ≤ 2 ^ (2 + lam1 + E) :=
+    (Nat.add_le_add (Nat.mul_le_mul (Nat.mul_le_mul_left 3 hn_pow) hbase_pow)
+      (Nat.one_le_pow (lam1 + E) 2 two_pos)).trans_eq (by ring)
+  refine hterm.trans (Nat.pow_le_pow_right two_pos ?_)
+  have hlam_pow1 : lam1 ≤ lam1 ^ (β * e_B + e_μ + 1) := Nat.le_self_pow (by omega) lam1
+  have h1_pow : 2 ≤ 2 * lam1 ^ (β * e_B + e_μ + 1) :=
+    Nat.mul_le_mul_left 2 (hlam1.trans hlam_pow1)
+  change 2 + lam1 + (C_B + β + 4) * K * lam1 ^ (β * e_B + e_μ + 1) ≤
+    queryExpCoeff C_B β C_P e_B e_μ * lam1 ^ (β * e_B + e_μ + 1)
+  rw [hK_eq]
+  exact (Nat.add_le_add_right (Nat.add_le_add h1_pow hlam_pow1) _).trans_eq (by ring)
 
 private theorem query_term_le_two_pow_succ_clog {n m B P C_B β C_P e_B e_μ : ℕ}
     (hm : m ≤ B * n) (hB : B ≤ C_B * Nat.clog 2 n ^ β)
@@ -707,7 +691,11 @@ theorem numGroups_mul_clog_le_clog {n : ℕ} (hn : 5 ≤ n) :
   have hclog : Nat.clog 2 (2 * numGroups n) ≤ nu + 1 := by
     rw [Nat.clog_le_iff_le_pow one_lt_two, pow_succ']
     exact Nat.mul_le_mul_left 2 ((numGroups_le_clog n).trans (Nat.le_pow_clog one_lt_two lam))
-  have hnu_sq : Nat.clog 2 (2 * numGroups n) + 1 ≤ nu ^ 2 := by nlinarith
+  have hnu_sq : Nat.clog 2 (2 * numGroups n) + 1 ≤ nu ^ 2 :=
+    calc
+      Nat.clog 2 (2 * numGroups n) + 1 ≤ 2 * nu := by omega
+      _ ≤ nu * nu := Nat.mul_le_mul_right nu hnu2
+      _ = nu ^ 2 := (sq nu).symm
   calc
     numGroups n * (Nat.clog 2 (2 * numGroups n) + 1)
         ≤ numGroups n * nu ^ 2 := Nat.mul_le_mul_left _ hnu_sq
@@ -811,9 +799,9 @@ private theorem leaf_poly_le_input_poly {n m m_leaf B_n C_B β : ℕ} (d_leaf : 
     (by omega : n + 1 ≤ n + m + 1).trans (Nat.le_self_pow (by omega) _)
   have hsum_real : (n : ℝ) + (m_leaf : ℝ) + 1 ≤
       ((C_B + 1 : ℕ) : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ (β + 1) := by
-    have hcast : ((n + m_leaf + 1 : ℕ) : ℝ) ≤
-        (((C_B + 1) * (n + m + 1) ^ (β + 1) : ℕ) : ℝ) := Nat.cast_le.mpr (by linarith)
-    push_cast at hcast ⊢; exact hcast
+    have hnat : n + m_leaf + 1 ≤ (C_B + 1) * (n + m + 1) ^ (β + 1) :=
+      (Nat.add_right_comm n m_leaf 1).le.trans ((Nat.add_le_add hn1_le hm_le).trans_eq (by ring))
+    exact_mod_cast hnat
   calc
     ((n : ℝ) + (m_leaf : ℝ) + 1) ^ d_leaf
         ≤ (((C_B + 1 : ℕ) : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ (β + 1)) ^ d_leaf :=
@@ -861,51 +849,59 @@ theorem sparse_formula_time_bound
         time n m ≤
           (C_sparse : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse *
             (2 : ℝ) ^ (A_sparse * interpolationScale n) := by
-  set d_sparse : ℕ := max d_exhaust d_call
-  set A' : ℝ := max A_sys 0
-  set A_sparse : ℝ := A' + 1
-  have hA_pos : 0 < A_sparse := by positivity
-  set C_q : ℕ := queryExpCoeff C_B β C_P e_B e_μ
-  set d_q : ℕ := β * e_B + e_μ + 1
-  set F_main : ℕ → ℝ := fun n =>
+  let d_sparse : ℕ := max d_exhaust d_call
+  let A' : ℝ := max A_sys 0
+  let A_sparse : ℝ := A' + 1
+  have hA'_nn : 0 ≤ A' := le_max_right A_sys 0
+  have hA_pos : 0 < A_sparse := add_pos_of_nonneg_of_pos hA'_nn one_pos
+  let C_q : ℕ := queryExpCoeff C_B β C_P e_B e_μ
+  let d_q : ℕ := β * e_B + e_μ + 1
+  let F_main : ℕ → ℝ := fun n =>
     (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init) +
       (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
         (2 : ℝ) ^ (A' * interpolationScale n)
-  set G : ℕ → ℝ := fun n => if n < N₀ then max ((C_exhaust : ℝ) * (2 : ℝ) ^ n) (F_main n)
+  let G : ℕ → ℝ := fun n => if n < N₀ then max ((C_exhaust : ℝ) * (2 : ℝ) ^ n) (F_main n)
     else F_main n
-  set time_sparse : ℕ → ℕ → ℝ := fun n m =>
+  have hG_ex (n : ℕ) (hlt : n < N₀) : (C_exhaust : ℝ) * (2 : ℝ) ^ n ≤ G n := by
+    simp only [G, hlt, ↓reduceIte]; exact le_max_left _ _
+  have hG_main (n : ℕ) : F_main n ≤ G n := by
+    dsimp only [G]; split_ifs <;> [exact le_max_right _ _; exact le_rfl]
+  have hG_large (n : ℕ) (hn0 : N₀ ≤ n) : G n = F_main n := by
+    have hnot : ¬ n < N₀ := not_lt_of_ge hn0
+    simp only [G, hnot, ↓reduceIte]
+  clear_value G
+  let time_sparse : ℕ → ℕ → ℝ := fun n m =>
     if m ≤ C_B * Nat.clog 2 n ^ β * n then time n m else 0
   obtain ⟨C_sparse, hC⟩ := uniform_bound_of_eventually (time := time_sparse) (G := G)
     (d := d_sparse) (C_large := 2) hA_pos
     (fun n m => by
+      have hbase_nn : (0 : ℝ) ≤ (n : ℝ) + (m : ℝ) + 1 := by positivity
+      have hpoly_nn : (0 : ℝ) ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse := pow_nonneg hbase_nn d_sparse
       by_cases hm_dom : m ≤ C_B * Nat.clog 2 n ^ β * n
       swap
       · have hF_nonneg : 0 ≤ F_main n := by dsimp only [F_main]; positivity
-        have hG_nonneg : 0 ≤ G n := by
-          dsimp only [G]; split_ifs <;> [exact le_max_of_le_right hF_nonneg; exact hF_nonneg]
         simp only [time_sparse, hm_dom, ↓reduceIte]
-        exact mul_nonneg (by positivity) hG_nonneg
+        exact mul_nonneg hpoly_nn (hF_nonneg.trans (hG_main n))
       simp only [time_sparse, hm_dom, ↓reduceIte]
       have hbase1 : (1 : ℝ) ≤ (n : ℝ) + (m : ℝ) + 1 := by
         linarith [(Nat.cast_nonneg n : (0 : ℝ) ≤ n), (Nat.cast_nonneg m : (0 : ℝ) ≤ m)]
-      have hd_ex := pow_le_pow_right₀ hbase1 (le_max_left d_exhaust d_call)
-      have hd_call := pow_le_pow_right₀ hbase1 (le_max_right d_exhaust d_call)
+      have hd_ex : ((n : ℝ) + (m : ℝ) + 1) ^ d_exhaust ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse :=
+        pow_le_pow_right₀ hbase1 (le_max_left d_exhaust d_call)
+      have hd_call : ((n : ℝ) + (m : ℝ) + 1) ^ d_call ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse :=
+        pow_le_pow_right₀ hbase1 (le_max_right d_exhaust d_call)
       have hd_pos : (1 : ℝ) ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse := one_le_pow₀ hbase1
       have hA_le : (2 : ℝ) ^ (A_sys * interpolationScale n) ≤
           (2 : ℝ) ^ (A' * interpolationScale n) :=
         Real.rpow_le_rpow_of_exponent_le one_le_two
           (mul_le_mul_of_nonneg_right (le_max_left A_sys 0) (interpolationScale_nonneg n))
+      clear_value d_sparse A' A_sparse time_sparse
       rcases htime n m hm_dom with ⟨hlt, hfb⟩ | ⟨_, B, P, hm, hB, hP, hsp⟩
-      · have hG_ge : (C_exhaust : ℝ) * (2 : ℝ) ^ n ≤ G n := by
-          simp only [G, hlt, ↓reduceIte]; exact le_max_left _ _
-        calc
-          time n m ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_exhaust * ((C_exhaust : ℝ) * (2 : ℝ) ^ n) := by
-            linarith
-          _ ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse * G n :=
-            mul_le_mul hd_ex hG_ge (by positivity) (by positivity)
-      · have hG_ge : F_main n ≤ G n := by
-          dsimp only [G]; split_ifs <;> [exact le_max_right _ _; exact le_rfl]
-        have hq := query_term_le_two_pow_succ_clog hm hB hP
+      · exact (hfb.trans_eq (by ring)).trans
+          (mul_le_mul hd_ex (hG_ex n hlt) (by positivity) hpoly_nn)
+      · have hq : 3 * (n : ℝ) * (2 * (m : ℝ) + 2) ^ P + 1 ≤
+            (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) :=
+          query_term_le_two_pow_succ_clog hm hB hP
+        clear_value C_q d_q
         have hinit_le := le_mul_of_one_le_left
           (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init))
           hd_pos
@@ -917,18 +913,19 @@ theorem sparse_formula_time_bound
               ((2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
                 (2 : ℝ) ^ (A' * interpolationScale n)) := by
           rw [mul_assoc]
-          exact mul_le_mul hd_call hm1 (by positivity) (by positivity)
-        have hF : time n m ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse * F_main n := by
-          dsimp only [F_main] at *; linarith
-        exact hF.trans (mul_le_mul_of_nonneg_left hG_ge (by positivity)))
+          exact mul_le_mul hd_call hm1 (by positivity) hpoly_nn
+        have hF : time n m ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_sparse * F_main n :=
+          hsp.trans ((add_le_add hinit_le hprod_le).trans_eq (by dsimp only [F_main]; ring))
+        exact hF.trans (mul_le_mul_of_nonneg_left (hG_main n) hpoly_nn))
     (by
+      clear_value C_q d_q d_sparse time_sparse
       filter_upwards [eventually_ge_atTop N₀,
         eventually_two_pow_clog_pow_le (C_init : ℝ) d_init one_pos,
         eventually_two_pow_succ_clog_pow_le (C_q : ℝ) d_q one_pos] with n hn0 hinit_ev hq_ev
-      have hnot : ¬ n < N₀ := not_lt_of_ge hn0
-      simp only [G, hnot, ↓reduceIte, F_main, Nat.cast_ofNat]
-      linarith [rpow_two_le_add_one n (le_max_right A_sys 0) hinit_ev,
-        rpow_two_mul_le_add_one (A := A') n hq_ev])
+      rw [hG_large n hn0]
+      exact (add_le_add (rpow_two_le_add_one n hA'_nn hinit_ev)
+        (rpow_two_mul_le_add_one (A := A') n hq_ev)).trans_eq
+        (by dsimp only [A_sparse, Nat.cast_ofNat]; ring))
   refine ⟨C_sparse, d_sparse, A_sparse, hA_pos, fun n m hm_dom => ?_⟩
   simpa only [time_sparse, hm_dom, ↓reduceIte] using hC n m
 
@@ -959,15 +956,16 @@ theorem prop64_time_bound_general
       ∀ n m : ℕ, time n m ≤
         (C_total : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_total *
           (2 : ℝ) ^ (A_total * interpolationScale n) := by
-  set d_total : ℕ := max d_exhaust (max d_node ((β + 1) * d_leaf))
-  set A' : ℝ := max A_sys 0
-  set A_total : ℝ := A' + 18
-  have hA_pos : 0 < A_total := by positivity
-  set C_q : ℕ := queryExpCoeff C_B β C_P e_B e_μ
-  set d_q : ℕ := β * e_B + e_μ + 1
-  set K_coeff : ℕ := C_node + C_init_coeff + (C_B + 1) ^ d_leaf
-  set C_large : ℕ := 2 * C_tree * K_coeff
-  set F_tree : ℕ → ℝ := fun n =>
+  let d_total : ℕ := max d_exhaust (max d_node ((β + 1) * d_leaf))
+  let A' : ℝ := max A_sys 0
+  let A_total : ℝ := A' + 18
+  have hA'_nn : 0 ≤ A' := le_max_right A_sys 0
+  have hA_pos : 0 < A_total := add_pos_of_nonneg_of_pos hA'_nn (by norm_num)
+  let C_q : ℕ := queryExpCoeff C_B β C_P e_B e_μ
+  let d_q : ℕ := β * e_B + e_μ + 1
+  let K_coeff : ℕ := C_node + C_init_coeff + (C_B + 1) ^ d_leaf
+  let C_large : ℕ := 2 * C_tree * K_coeff
+  let F_tree : ℕ → ℝ := fun n =>
     2 * (C_tree : ℝ) * ((n : ℝ) + (numGroups n : ℝ) + 1) ^ d_tree *
       (2 : ℝ) ^ ((n : ℝ) / (numGroups n : ℝ)) *
       ((C_node : ℝ) +
@@ -975,9 +973,23 @@ theorem prop64_time_bound_general
         (((C_B + 1) ^ d_leaf : ℕ) : ℝ) *
           (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
           (2 : ℝ) ^ (A' * interpolationScale n))
-  set G : ℕ → ℝ := fun n =>
+  let G : ℕ → ℝ := fun n =>
     if n < N₀ ∨ numGroups n < 2 then max ((C_exhaust : ℝ) * (2 : ℝ) ^ n) (F_tree n)
     else F_tree n
+  have hG_ex (n : ℕ) (hcond : n < N₀ ∨ numGroups n < 2) :
+      (C_exhaust : ℝ) * (2 : ℝ) ^ n ≤ G n := by
+    simp only [G, hcond, ↓reduceIte]; exact le_max_left _ _
+  have hG_tree (n : ℕ) : F_tree n ≤ G n := by
+    dsimp only [G]; split_ifs <;> [exact le_max_right _ _; exact le_rfl]
+  have hG_large (n : ℕ) (hn0 : N₀ ≤ n) (hs2 : 2 ≤ numGroups n) : G n = F_tree n := by
+    have hnot : ¬ (n < N₀ ∨ numGroups n < 2) := by omega
+    simp only [G, hnot, ↓reduceIte]
+  have hK : (K_coeff : ℝ) =
+      (C_node : ℝ) + (C_init_coeff : ℝ) + (((C_B + 1) ^ d_leaf : ℕ) : ℝ) := by
+    dsimp only [K_coeff]; push_cast; rfl
+  have hC_cast : (C_large : ℝ) = 2 * (C_tree : ℝ) * (K_coeff : ℝ) := by
+    dsimp only [C_large]; push_cast; ring
+  clear_value G K_coeff C_large
   obtain ⟨C_total, hC⟩ := uniform_bound_of_eventually (time := time) (G := G)
     (d := d_total) (C_large := C_large) hA_pos
     (fun n m => by
@@ -991,21 +1003,16 @@ theorem prop64_time_bound_general
           ((n : ℝ) + (m : ℝ) + 1) ^ ((β + 1) * d_leaf) ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_total :=
         pow_le_pow_right₀ hbase1 ((le_max_right _ _).trans (le_max_right _ _))
       have hd_pos : (1 : ℝ) ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_total := one_le_pow₀ hbase1
+      have hpoly_nn : (0 : ℝ) ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_total := zero_le_one.trans hd_pos
       have hA_le : (2 : ℝ) ^ (A_sys * interpolationScale n) ≤
           (2 : ℝ) ^ (A' * interpolationScale n) :=
         Real.rpow_le_rpow_of_exponent_le one_le_two
           (mul_le_mul_of_nonneg_right (le_max_left A_sys 0) (interpolationScale_nonneg n))
+      clear_value d_total A' A_total
       rcases htime n m with ⟨hfb_cond, hfb⟩ | ⟨_, B_n, m_leaf, P_leaf, hm, hB, hP, htr⟩
-      · have hG_ge : (C_exhaust : ℝ) * (2 : ℝ) ^ n ≤ G n := by
-          simp only [G, hfb_cond, ↓reduceIte]; exact le_max_left _ _
-        calc
-          time n m ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_exhaust * ((C_exhaust : ℝ) * (2 : ℝ) ^ n) := by
-            linarith
-          _ ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_total * G n :=
-            mul_le_mul hd_ex hG_ge (by positivity) (by positivity)
-      · have hG_ge : F_tree n ≤ G n := by
-          dsimp only [G]; split_ifs <;> [exact le_max_right _ _; exact le_rfl]
-        have hdiv_pow : (2 : ℝ) ^ (n / numGroups n + 1 : ℕ) ≤
+      · exact (hfb.trans_eq (by ring)).trans
+          (mul_le_mul hd_ex (hG_ex n hfb_cond) (by positivity) hpoly_nn)
+      · have hdiv_pow : (2 : ℝ) ^ (n / numGroups n + 1 : ℕ) ≤
             2 * (2 : ℝ) ^ ((n : ℝ) / (numGroups n : ℝ)) := by
           rw [pow_succ', ← Real.rpow_natCast]
           exact mul_le_mul_of_nonneg_left
@@ -1013,14 +1020,19 @@ theorem prop64_time_bound_general
         have hleaf_poly : ((n : ℝ) + (m_leaf : ℝ) + 1) ^ d_leaf ≤
             (((C_B + 1) ^ d_leaf : ℕ) : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_total :=
           (leaf_poly_le_input_poly d_leaf hm hB).trans
-            (mul_le_mul_of_nonneg_left hd_leaf_deg (by positivity))
-        have hq := query_term_le_two_pow_succ_clog hm hB hP
+            (mul_le_mul_of_nonneg_left hd_leaf_deg (Nat.cast_nonneg _))
+        have hq : 3 * (n : ℝ) * (2 * (m_leaf : ℝ) + 2) ^ P_leaf + 1 ≤
+            (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) :=
+          query_term_le_two_pow_succ_clog hm hB hP
+        clear_value C_q d_q
         have ht1 : (C_node : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_node ≤
-            ((n : ℝ) + (m : ℝ) + 1) ^ d_total * (C_node : ℝ) := by
-          linarith [mul_le_mul_of_nonneg_left hd_node (Nat.cast_nonneg C_node)]
+            ((n : ℝ) + (m : ℝ) + 1) ^ d_total * (C_node : ℝ) :=
+          (mul_comm (C_node : ℝ) _).trans_le
+            (mul_le_mul_of_nonneg_right hd_node (Nat.cast_nonneg _))
         have ht2 := le_mul_of_one_le_left (by positivity :
           (0 : ℝ) ≤ (C_init_coeff : ℝ) * (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init))
           hd_pos
+        have hm1 := mul_le_mul hq hA_le (by positivity) (by positivity)
         have ht3 : ((n : ℝ) + (m_leaf : ℝ) + 1) ^ d_leaf *
               (3 * (n : ℝ) * (2 * (m_leaf : ℝ) + 2) ^ P_leaf + 1) *
               (2 : ℝ) ^ (A_sys * interpolationScale n) ≤
@@ -1028,7 +1040,6 @@ theorem prop64_time_bound_general
               ((((C_B + 1) ^ d_leaf : ℕ) : ℝ) *
                 (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
                 (2 : ℝ) ^ (A' * interpolationScale n)) := by
-          have hm1 := mul_le_mul hq hA_le (by positivity) (by positivity)
           calc
             ((n : ℝ) + (m_leaf : ℝ) + 1) ^ d_leaf *
                 (3 * (n : ℝ) * (2 * (m_leaf : ℝ) + 2) ^ P_leaf + 1) *
@@ -1036,7 +1047,9 @@ theorem prop64_time_bound_general
                 ≤ ((((C_B + 1) ^ d_leaf : ℕ) : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_total) *
                   ((2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
                     (2 : ℝ) ^ (A' * interpolationScale n)) := by
-              rw [mul_assoc]; exact mul_le_mul hleaf_poly hm1 (by positivity) (by positivity)
+              rw [mul_assoc]
+              exact mul_le_mul hleaf_poly hm1 (by positivity)
+                (mul_nonneg (Nat.cast_nonneg _) hpoly_nn)
             _ = ((n : ℝ) + (m : ℝ) + 1) ^ d_total *
                   ((((C_B + 1) ^ d_leaf : ℕ) : ℝ) *
                     (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
@@ -1044,9 +1057,8 @@ theorem prop64_time_bound_general
         have houter : (C_tree : ℝ) * ((n : ℝ) + (numGroups n : ℝ) + 1) ^ d_tree *
               (2 : ℝ) ^ (n / numGroups n + 1 : ℕ) ≤
             2 * (C_tree : ℝ) * ((n : ℝ) + (numGroups n : ℝ) + 1) ^ d_tree *
-              (2 : ℝ) ^ ((n : ℝ) / (numGroups n : ℝ)) := by
-          linarith [mul_le_mul_of_nonneg_left hdiv_pow (by positivity : (0 : ℝ) ≤
-            (C_tree : ℝ) * ((n : ℝ) + (numGroups n : ℝ) + 1) ^ d_tree)]
+              (2 : ℝ) ^ ((n : ℝ) / (numGroups n : ℝ)) :=
+          (mul_le_mul_of_nonneg_left hdiv_pow (by positivity)).trans_eq (by ring)
         have hinner :
             (C_node : ℝ) * ((n : ℝ) + (m : ℝ) + 1) ^ d_node +
                 (C_init_coeff : ℝ) * (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init) +
@@ -1058,72 +1070,57 @@ theorem prop64_time_bound_general
                   (C_init_coeff : ℝ) * (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init) +
                   (((C_B + 1) ^ d_leaf : ℕ) : ℝ) *
                     (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
-                    (2 : ℝ) ^ (A' * interpolationScale n)) := by linarith
+                    (2 : ℝ) ^ (A' * interpolationScale n)) :=
+          (add_le_add (add_le_add ht1 ht2) ht3).trans_eq (by ring)
         have hF : time n m ≤ ((n : ℝ) + (m : ℝ) + 1) ^ d_total * F_tree n := by
           refine htr.trans ((mul_le_mul houter hinner (by positivity)
             (by positivity)).trans_eq ?_)
           dsimp only [F_tree]; ring
-        exact hF.trans (mul_le_mul_of_nonneg_left hG_ge (by positivity)))
+        exact hF.trans (mul_le_mul_of_nonneg_left (hG_tree n) hpoly_nn))
     (by
+      clear_value C_q d_q d_total
       filter_upwards [eventually_ge_atTop N₀, eventually_two_le_numGroups,
         eventually_poly_mul_two_pow_div_numGroups_le d_tree,
         eventually_two_pow_clog_pow_le (C_init : ℝ) d_init one_pos,
         eventually_two_pow_succ_clog_pow_le (C_q : ℝ) d_q one_pos]
         with n hn0 hs2 htree_ev hinit_ev hq_ev
-      have hnot : ¬ (n < N₀ ∨ numGroups n < 2) := by omega
-      simp only [G, hnot, ↓reduceIte]
+      rw [hG_large n hn0 hs2]
       have hrho := interpolationScale_nonneg n
       have h1_1A' : (1 : ℝ) ≤ (2 : ℝ) ^ ((A' + 1) * interpolationScale n) :=
-        Real.one_le_rpow one_le_two (mul_nonneg (by positivity) hrho)
+        Real.one_le_rpow one_le_two (mul_nonneg (add_nonneg hA'_nn zero_le_one) hrho)
       have hb1 : (C_node : ℝ) ≤ (C_node : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n) :=
         le_mul_of_one_le_right (Nat.cast_nonneg _) h1_1A'
       have hb2 : (C_init_coeff : ℝ) * (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init) ≤
           (C_init_coeff : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n) :=
-        mul_le_mul_of_nonneg_left (rpow_two_le_add_one n (le_max_right A_sys 0) hinit_ev)
-          (Nat.cast_nonneg _)
+        mul_le_mul_of_nonneg_left (rpow_two_le_add_one n hA'_nn hinit_ev) (Nat.cast_nonneg _)
       have hb3 : (((C_B + 1) ^ d_leaf : ℕ) : ℝ) *
             (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
             (2 : ℝ) ^ (A' * interpolationScale n) ≤
           (((C_B + 1) ^ d_leaf : ℕ) : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n) := by
         rw [mul_assoc]
-        exact mul_le_mul_of_nonneg_left (rpow_two_mul_le_add_one (A := A') n hq_ev) (by positivity)
+        exact mul_le_mul_of_nonneg_left (rpow_two_mul_le_add_one (A := A') n hq_ev)
+          (Nat.cast_nonneg _)
       have hinner_ev :
           (C_node : ℝ) +
               (C_init_coeff : ℝ) * (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init) +
               (((C_B + 1) ^ d_leaf : ℕ) : ℝ) *
                 (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
                 (2 : ℝ) ^ (A' * interpolationScale n) ≤
-            (K_coeff : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n) := by
-        have hK : (K_coeff : ℝ) =
-            (C_node : ℝ) + (C_init_coeff : ℝ) + (((C_B + 1) ^ d_leaf : ℕ) : ℝ) := by
-          dsimp only [K_coeff]; push_cast; rfl
-        rw [hK]; linarith
-      have hC_cast : (C_large : ℝ) = 2 * (C_tree : ℝ) * (K_coeff : ℝ) := by
-        dsimp only [C_large]; push_cast; ring
-      calc
-        F_tree n = (2 * (C_tree : ℝ)) *
-            (((n : ℝ) + (numGroups n : ℝ) + 1) ^ d_tree *
-              (2 : ℝ) ^ ((n : ℝ) / (numGroups n : ℝ))) *
-            ((C_node : ℝ) +
-              (C_init_coeff : ℝ) * (2 : ℝ) ^ ((C_init : ℝ) * (Nat.clog 2 n : ℝ) ^ d_init) +
-              (((C_B + 1) ^ d_leaf : ℕ) : ℝ) *
-                (2 : ℝ) ^ ((C_q : ℝ) * ((Nat.clog 2 n : ℝ) + 1) ^ d_q) *
-                (2 : ℝ) ^ (A' * interpolationScale n)) := by dsimp only [F_tree]; ring
-        _ ≤ (2 * (C_tree : ℝ)) * (2 : ℝ) ^ (17 * interpolationScale n) *
-              ((K_coeff : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n)) :=
-          mul_le_mul (mul_le_mul_of_nonneg_left htree_ev (by positivity)) hinner_ev
-            (by positivity) (by positivity)
-        _ = (C_large : ℝ) * (2 : ℝ) ^ (A_total * interpolationScale n) := by
-          rw [hC_cast]
-          calc
-            (2 * (C_tree : ℝ)) * (2 : ℝ) ^ (17 * interpolationScale n) *
-                ((K_coeff : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n))
-                = (2 * (C_tree : ℝ) * (K_coeff : ℝ)) *
-                  ((2 : ℝ) ^ (17 * interpolationScale n) *
-                    (2 : ℝ) ^ ((A' + 1) * interpolationScale n)) := by ring
-            _ = (2 * (C_tree : ℝ) * (K_coeff : ℝ)) *
-                  (2 : ℝ) ^ (A_total * interpolationScale n) := by
-              rw [← Real.rpow_add two_pos]; dsimp only [A_total]; ring_nf)
+            (K_coeff : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n) :=
+        (add_le_add (add_le_add hb1 hb2) hb3).trans_eq (by rw [hK]; ring)
+      have htree_mul : 2 * (C_tree : ℝ) * ((n : ℝ) + (numGroups n : ℝ) + 1) ^ d_tree *
+            (2 : ℝ) ^ ((n : ℝ) / (numGroups n : ℝ)) ≤
+          2 * (C_tree : ℝ) * (2 : ℝ) ^ (17 * interpolationScale n) := by
+        rw [mul_assoc (2 * (C_tree : ℝ))]
+        exact mul_le_mul_of_nonneg_left htree_ev (by positivity)
+      refine (mul_le_mul htree_mul hinner_ev (by positivity) (by positivity)).trans_eq ?_
+      rw [hC_cast, show 2 * (C_tree : ℝ) * (2 : ℝ) ^ (17 * interpolationScale n) *
+        ((K_coeff : ℝ) * (2 : ℝ) ^ ((A' + 1) * interpolationScale n)) =
+        2 * (C_tree : ℝ) * (K_coeff : ℝ) *
+          ((2 : ℝ) ^ (17 * interpolationScale n) *
+            (2 : ℝ) ^ ((A' + 1) * interpolationScale n)) by ring,
+        ← Real.rpow_add two_pos]
+      dsimp only [A_total]; ring_nf)
   exact ⟨C_total, d_total, A_total, hA_pos, hC⟩
 
 /-- **Proposition 6.4 runtime-composition theorem** (printed pp. 43–44): combining

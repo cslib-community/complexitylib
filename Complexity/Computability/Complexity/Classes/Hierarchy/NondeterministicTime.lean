@@ -17,6 +17,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Foundations.Data.Nat.PolynomialBound.Exponential
+import Complexity.Tactic.EncLen
 
 /-!
 # A nondeterministic time hierarchy by lazy diagonalization
@@ -338,9 +339,7 @@ private theorem exists_computableInO_brute (d : ℕ) : ∃ K, ComputableInO
   have hf := hacc.comp hre
   have hsize (q : (List Bool × List Bool) × List Bool) :
       q.1.1.length ≤ (enc q).length ∧ q.1.2.length ≤ (enc q).length ∧
-        q.2.length ≤ (enc q).length := by
-    simp only [enc, length_encPair, encBits_apply]
-    omega
+        q.2.length ≤ (enc q).length := by enc_len [enc]
   have hpoly : PolyBounded (fun q => (enc q).length) fun q =>
       (enc q).length + ((enc q).length + (enc q).length) +
         accBound d D (q.1.1, q.1.2, q.2) :=
@@ -408,8 +407,7 @@ private theorem exists_computableInO_verifier (d : ℕ) :
       (2 * (encPair encBits encBits p).length + 4 +
         (2 * (unframe p.1).length + 1 + 1) ^ (d + 3)) ^ 2 ≤ (G + 4) ^ 2 * cheap d p := by
     have hu := length_unframe_le p.1
-    have hn : p.1.length ≤ (encPair encBits encBits p).length := by
-      simp only [length_encPair, encBits_apply]; omega
+    have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
     have hZ : (2 * (unframe p.1).length + 1 + 1) ^ (d + 3) ≤
         2 ^ (d + 3) * (p.1.length + 1) ^ (d + 3) := by
       rw [← mul_pow]; exact Nat.pow_le_pow_left (by omega) _
@@ -537,8 +535,7 @@ theorem lazyDiagonal_mem_NTIME (d : ℕ) :
     have h₁ : n + 2 ≤ (n + 2) ^ (d + 2) := Nat.le_self_pow (Nat.succ_ne_zero _) _
     have h₂ : ((n + 2) ^ (d + 2) + 1) ^ 2 ≤ 4 * (n + 2) ^ (2 * d + 4) :=
       (Nat.pow_le_pow_left (m := 2 * (n + 2) ^ (d + 2)) (by omega) 2).trans_eq (by ring)
-    have h₃ : (n + 2) ^ (d + 2) ≤ (n + 2) ^ (2 * d + 4) :=
-      Nat.pow_le_pow_right (Nat.succ_pos _) (by omega)
+    have h₃ : (n + 2) ^ (d + 2) ≤ (n + 2) ^ (2 * d + 4) := by gcongr <;> omega
     have h₄ : 7 * (n + 2) ^ (2 * d + 4) ≤ A₃ * M :=
       calc _ ≤ 7 * (2 ^ (2 * d + 4) * (n + 1) ^ (2 * d + 4)) := Nat.mul_le_mul_left _ (h2 _)
         _ = A₃ * (n + 1) ^ (2 * d + 4) := by rw [hA₃]; ring
@@ -552,8 +549,7 @@ theorem lazyDiagonal_mem_NTIME (d : ℕ) :
       omega
     calc cheap d (x, v) = ((encPair encBits encBits (x, v)).length + 1) ^ 2 *
           ((n + 1) ^ (d + 3)) ^ 2 := rfl
-      _ ≤ (3 * (n + 2) ^ (d + 2)) ^ 2 * ((n + 1) ^ (d + 3)) ^ 2 :=
-          Nat.mul_le_mul_right _ (Nat.pow_le_pow_left hN 2)
+      _ ≤ (3 * (n + 2) ^ (d + 2)) ^ 2 * ((n + 1) ^ (d + 3)) ^ 2 := by gcongr
       _ = 9 * (n + 2) ^ (2 * d + 4) * (n + 1) ^ (2 * d + 6) := by ring
       _ ≤ 9 * (2 ^ (2 * d + 4) * (n + 1) ^ (2 * d + 4)) * (n + 1) ^ (2 * d + 6) :=
           Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (h2 _))
@@ -578,8 +574,7 @@ theorem lazyDiagonal_mem_NTIME (d : ℕ) :
             (n + 2) ^ (2 * d + 6) := by
           simp only [accBound, List.length_append, List.length_singleton, hv', ← hn, add_assoc,
             Nat.reduceAdd]
-      _ ≤ ((CD + 3) * (n + 2) ^ (d + 2)) ^ 4 * (n + 2) ^ (2 * d + 6) :=
-          Nat.mul_le_mul_right _ (Nat.pow_le_pow_left hb 4)
+      _ ≤ ((CD + 3) * (n + 2) ^ (d + 2)) ^ 4 * (n + 2) ^ (2 * d + 6) := by gcongr
       _ = (CD + 3) ^ 4 * (n + 2) ^ (6 * d + 14) := by ring
       _ ≤ (CD + 3) ^ 4 * (2 ^ (6 * d + 14) * (n + 1) ^ (6 * d + 14)) :=
           Nat.mul_le_mul_left _ (h2 _)

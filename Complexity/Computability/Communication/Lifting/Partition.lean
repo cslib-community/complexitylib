@@ -265,28 +265,17 @@ theorem sum_card_le_of_pairwise {S : Finset (Fin n → Fin m)} :
     simp only [List.map_cons, List.sum_cons]
     linarith
 
-/-- The union of a list of finite sets. -/
-def unionOf {β : Type*} [DecidableEq β] (L : List (Finset β)) : Finset β :=
-  L.foldr (· ∪ ·) ∅
-
-theorem mem_unionOf {β : Type*} [DecidableEq β] {L : List (Finset β)} {y : β} :
-    y ∈ unionOf L ↔ ∃ s ∈ L, y ∈ s := by
-  induction L with
-  | nil => simp [unionOf]
-  | cons s L ih =>
-    simp only [unionOf, List.foldr_cons, mem_union, List.mem_cons, exists_eq_or_imp] at ih ⊢
-    rw [ih]
-
-/-- A union of finite sets has at most the sum of their sizes. -/
-theorem card_unionOf_le {β : Type*} [DecidableEq β] :
-    ∀ L : List (Finset β), (#(unionOf L) : ℝ) ≤ (L.map fun s => (#s : ℝ)).sum
-  | [] => by simp [unionOf]
-  | s :: L => by
-    have h := card_unionOf_le L
-    have h' : #(unionOf (s :: L)) ≤ #s + #(unionOf L) := card_union_le _ _
-    have h'' : (#(unionOf (s :: L)) : ℝ) ≤ #s + #(unionOf L) := by exact_mod_cast h'
-    simp only [List.map_cons, List.sum_cons]
-    linarith
+/-- A finite union indexed by a list has at most the sum of its members' sizes. -/
+private theorem card_biUnion_toFinset_le {α β : Type*} [DecidableEq α] [DecidableEq β]
+    (f : α → Finset β) : ∀ L : List α,
+      (#(L.toFinset.biUnion f) : ℝ) ≤ (L.map fun a => (#(f a) : ℝ)).sum
+  | [] => by simp
+  | a :: L => by
+    have h := card_biUnion_toFinset_le f L
+    have h' : (#(f a ∪ L.toFinset.biUnion f) : ℝ) ≤ #(f a) + #(L.toFinset.biUnion f) :=
+      by exact_mod_cast card_union_le (f a) (L.toFinset.biUnion f)
+    simpa only [List.toFinset_cons, biUnion_insert, List.map_cons, List.sum_cons] using
+      h'.trans (add_le_add le_rfl h)
 
 /-- The inputs of `Y` on which the gadget takes the value `β` on `I` at the pointers `α`. -/
 abbrev allowing (Y : Finset (Fin n → Fin m → Bool)) (I : Finset (Fin n)) (α : Fin n → Fin m)
@@ -316,20 +305,20 @@ private theorem card_allowing_le_of_lt {X : Finset (Fin n → Fin m)}
   nlinarith [mul_le_mul_of_nonneg_left h4 (mul_nonneg hA hτI.le),
     mul_le_mul_of_nonneg_left h2 hYpos, mul_le_mul_of_nonneg_left h2 hA]
 
+open Classical in
 /-- Removing the union of bad pieces (each of size at most `#Y * #q.P / (2 * #X)`) from `Y`
 leaves at least half of `Y`. -/
-private theorem card_le_two_mul_card_sdiff_unionOf_allowing {X : Finset (Fin n → Fin m)}
+private theorem card_le_two_mul_card_sdiff_biUnion_allowing {X : Finset (Fin n → Fin m)}
     {Y : Finset (Fin n → Fin m → Bool)} {L : List (Piece n m)}
     (hL : IsPartition τ F X L) (hX : X.Nonempty) (βq : Piece n m → Fin n → Bool)
     (hsmall : ∀ q ∈ L, (#(allowing Y q.I q.α (βq q)) : ℝ) ≤ #Y * #q.P / (2 * #X)) :
-    (#Y : ℝ) ≤ 2 * #(Y \ unionOf (L.map fun q => allowing Y q.I q.α (βq q))) := by
+    (#Y : ℝ) ≤ 2 * #(Y \ L.toFinset.biUnion (fun q => allowing Y q.I q.α (βq q))) := by
   have hXpos : (0 : ℝ) < #X := by exact_mod_cast card_pos.mpr hX
-  set Ybad := unionOf (L.map fun q => allowing Y q.I q.α (βq q))
+  set Ybad := L.toFinset.biUnion (fun q => allowing Y q.I q.α (βq q))
   set Ygood := Y \ Ybad
   have hbad : (#Ybad : ℝ) ≤ #Y / 2 := by
-    refine (card_unionOf_le _).trans ?_
-    rw [List.map_map]
-    calc (L.map ((fun s => (#s : ℝ)) ∘ fun q => allowing Y q.I q.α (βq q))).sum
+    refine (card_biUnion_toFinset_le _ _).trans ?_
+    calc (L.map fun q => (#(allowing Y q.I q.α (βq q)) : ℝ)).sum
         ≤ (L.map fun q => (#Y * #q.P / (2 * #X) : ℝ)).sum :=
           List.sum_le_sum fun q hq => hsmall q hq
       _ = #Y / (2 * #X) * (L.map fun q => (#q.P : ℝ)).sum := by
@@ -347,18 +336,18 @@ private theorem card_le_two_mul_card_sdiff_unionOf_allowing {X : Finset (Fin n �
     linarith
   linarith
 
-/-- The union `unionOf (L.map Piece.P)` of the pieces of a partition of `X` is a subset of `X`
+open Classical in
+/-- The union `L.toFinset.biUnion Piece.P` of the pieces of a partition of `X` is a subset of `X`
 containing at least half of `X`. -/
-private theorem IsPartition.subset_and_card_le_two_mul_card_unionOf
+private theorem IsPartition.subset_and_card_le_two_mul_card_biUnion
     {X : Finset (Fin n → Fin m)} {L : List (Piece n m)} (hL : IsPartition τ F X L) :
-    unionOf (L.map Piece.P) ⊆ X ∧ (#X : ℝ) ≤ 2 * #(unionOf (L.map Piece.P)) := by
+    L.toFinset.biUnion Piece.P ⊆ X ∧ (#X : ℝ) ≤ 2 * #(L.toFinset.biUnion Piece.P) := by
   refine ⟨fun x hx => ?_, ?_⟩
-  · obtain ⟨s, hs, hxs⟩ := mem_unionOf.mp hx
-    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hs
-    exact hL.subset q hq hxs
-  · have hX'sum : (L.map fun q => (#q.P : ℝ)).sum ≤ #(unionOf (L.map Piece.P)) :=
+  · obtain ⟨q, hq, hxq⟩ := mem_biUnion.mp hx
+    exact hL.subset q (List.mem_toFinset.mp hq) hxq
+  · have hX'sum : (L.map fun q => (#q.P : ℝ)).sum ≤ #(L.toFinset.biUnion Piece.P) :=
       sum_card_le_of_pairwise
-        (fun q hq x hx => mem_unionOf.mpr ⟨q.P, List.mem_map.mpr ⟨q, hq, rfl⟩, hx⟩) hL.pairwise
+        (fun q hq x hx => mem_biUnion.mpr ⟨q, List.mem_toFinset.mpr hq, hx⟩) hL.pairwise
     exact hL.cover.trans (by linarith)
 
 /-- **Choosing a piece** [Mertz and Pitassi, Lemma 3.6][MertzPitassi2020]. Let `X` hold at least
@@ -373,19 +362,20 @@ theorem exists_piece_forall_le_card_filter {X X₀ : Finset (Fin n → Fin m)}
     (hYfix : ∀ y ∈ Y, ∀ y' ∈ Y, ∀ i ∉ F, y i = y' i)
     (hY : (2 : ℝ) ^ (#F * m) ≤ 2 ^ D * #Y) (hτD : 64 * #F * (D + 2) ≤ τ) :
     ∃ q ∈ L, ∀ β : Fin n → Bool, (#Y : ℝ) ≤ #(allowing Y q.I q.α β) * (4 * τ) ^ #q.I := by
+  classical
   by_contra hcon
   push Not at hcon
   choose! βq hβq using hcon
   have hXpos : (0 : ℝ) < #X := by exact_mod_cast card_pos.mpr hX
   -- each piece has few inputs allowing its bad value, so at least half of `Y` allows none
-  set Ybad := unionOf (L.map fun q => allowing Y q.I q.α (βq q))
+  set Ybad := L.toFinset.biUnion (fun q => allowing Y q.I q.α (βq q))
   set Ygood := Y \ Ybad
   have hgood : (#Y : ℝ) ≤ 2 * #Ygood :=
-    card_le_two_mul_card_sdiff_unionOf_allowing hL hX βq
+    card_le_two_mul_card_sdiff_biUnion_allowing hL hX βq
       fun q hq => card_allowing_le_of_lt hτ hL hX hq (hβq q hq)
   -- the vectors in the pieces
-  set X' := unionOf (L.map Piece.P)
-  obtain ⟨hX'X, hX'big⟩ := hL.subset_and_card_le_two_mul_card_unionOf
+  set X' := L.toFinset.biUnion Piece.P
+  obtain ⟨hX'X, hX'big⟩ := hL.subset_and_card_le_two_mul_card_biUnion
   have hX'ne : X'.Nonempty := by
     rw [← card_pos]
     have : (0 : ℝ) < #X' := by linarith
@@ -402,11 +392,10 @@ theorem exists_piece_forall_le_card_filter {X X₀ : Finset (Fin n → Fin m)}
     (by rw [pow_succ]; nlinarith [pow_pos (by norm_num : (0 : ℝ) < 2) D])
     (by push_cast; linarith) βx
   have hex : ∃ q ∈ L, x ∈ q.P := by
-    obtain ⟨s, hs, hxs⟩ := mem_unionOf.mp hx
-    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hs
-    exact ⟨q, hq, hxs⟩
+    simpa only [mem_biUnion, List.mem_toFinset] using
+      (show x ∈ L.toFinset.biUnion Piece.P from hx)
   obtain ⟨hqL, hxq⟩ := hex.choose_spec
-  refine (mem_sdiff.mp hy).2 (mem_unionOf.mpr ⟨_, List.mem_map.mpr ⟨hex.choose, hqL, rfl⟩,
+  refine (mem_sdiff.mp hy).2 (mem_biUnion.mpr ⟨hex.choose, List.mem_toFinset.mpr hqL,
     mem_filter.mpr ⟨(mem_sdiff.mp hy).1, ?_⟩⟩)
   intro i hi
   have := hxy i (hL.I_subset _ hqL hi)

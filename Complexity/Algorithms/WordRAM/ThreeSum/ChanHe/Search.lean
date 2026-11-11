@@ -12,6 +12,8 @@ public import Complexity.Algorithms.WordRAM.ThreeSum.ChanHe.Query
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.NormNum
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Native least-prime collision searches
 
@@ -210,14 +212,12 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
     ∃ y, ExecWithin w program x y ((x.regs limit + 1) * (T + 15) + 9) ∧
       Stable x y ∧ y.regs answer = minOrOne {q ∈ Nat.primesLE (x.regs limit) | A q} := by
   let m := x.regs limit
-  let I (y : Data 64) : Prop := Stable x y ∧ y.regs stop = m + 1 ∧
-    y.regs one = 1 ∧ y.regs zero = 0 ∧ y.regs two = 2 ∧ y.regs cursor ≤ m + 1 ∧
-    Status A (y.regs cursor) y
-  have hbody (y : Data 64) (hy : I y) (hc : (Cond.lt cursor stop).Holds y) :
-      ∃ z, ExecWithin w body y z (T + 13) ∧ I z ∧
-        m + 1 - z.regs cursor < m + 1 - y.regs cursor := by
-    obtain ⟨hstable, hstop, ho, hz, ht, hi, hstatus⟩ := hy
-    have hlt : y.regs cursor < m + 1 := by simpa only [Cond.holds_lt, hstop] using hc
+  let P (j : ℕ) (y : Data 64) : Prop := Stable x y ∧ y.regs stop = m + 1 ∧
+    y.regs one = 1 ∧ y.regs zero = 0 ∧ y.regs two = 2 ∧ Status A j y
+  have hbody (y : Data 64) (hy : P (y.regs cursor) y) (hlt : y.regs cursor < m + 1) :
+      ∃ z, ExecWithin w body y z (T + 13) ∧ P (y.regs cursor + 1) z ∧
+        z.regs cursor = y.regs cursor + 1 := by
+    obtain ⟨hstable, hstop, ho, hz, ht, hstatus⟩ := hy
     have hinner : ∃ z, ExecWithin w inner y z (T + 12) ∧ Stable x z ∧
         z.regs stop = m + 1 ∧ z.regs one = 1 ∧ z.regs zero = 0 ∧ z.regs two = 2 ∧
         z.regs cursor = y.regs cursor ∧ Status A (y.regs cursor + 1) z := by
@@ -314,18 +314,15 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
       simpa only [BinOp.eval, hzo] using (ExecWithin.bin (f := .add) (d := cursor) (i := cursor)
         (j := one) hinc)
     refine ⟨z.set cursor (z.regs cursor + 1), he.seq hstep, ?_, ?_⟩
-    · refine ⟨stable_set_high hs cursor (by decide) _, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · refine ⟨stable_set_high hs cursor (by decide) _, ?_, ?_, ?_, ?_, ?_⟩
       · simpa +decide [stop, cursor] using hsp
       · simpa +decide [one, cursor] using hzo
       · simpa +decide [zero, cursor] using hzz
       · simpa +decide [two, cursor] using hzt
-      · simpa only [Data.set_regs, Function.update_self, hzi] using Nat.succ_le_of_lt hlt
-      · simpa only [Data.set_regs, Function.update_self] using
-          status_of_regs (x := z) (y := z.set cursor (z.regs cursor + 1))
+      · exact status_of_regs (x := z) (y := z.set cursor (z.regs cursor + 1))
             (by simp +decide [found, cursor])
-            (by simp +decide [answer, cursor]) (by simpa only [hzi] using hstat)
+            (by simp +decide [answer, cursor]) hstat
     · simp only [Data.set_regs, Function.update_self, hzi]
-      omega
   let x₀ := ((((((x.set one 1).set zero 0).set two 2).set cursor 0).set stop (m + 1)).set
     answer 1).set found 0
   have hinit : ExecWithin w (ram[
@@ -337,19 +334,16 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
     have hm : Fits w (m + 1) := hfit.of_le (by change m + 1 ≤ m + 3; omega)
     ram_eval [x₀, m, one, zero, two, cursor, stop, limit, answer, found,
       h1, h2, h0, hm, Fin.mk.injEq]
-  have hi : I x₀ := by
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, Or.inl ⟨?_, ?_, ?_⟩⟩
+  have hi : P (x₀.regs cursor) x₀ := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, Or.inl ⟨?_, ?_, ?_⟩⟩
     · exact stable_set_high (stable_set_high (stable_set_high (stable_set_high
         (stable_set_high (stable_set_high (stable_set_high ⟨fun _ _ => rfl,
           fun _ _ => rfl⟩ one (by decide) _) zero (by decide) _) two (by decide) _)
             cursor (by decide) _) stop (by decide) _) answer (by decide) _) found (by decide) _
     all_goals simp +decide [x₀, stop, one, zero, two, cursor, answer, found]
-  obtain ⟨y, he, hy, hexit⟩ := ExecWithin.loop_invariant I
-    (fun y => m + 1 - y.regs cursor) hbody hi
-  obtain ⟨hs, hsp, hyo, hyz, hyt, hyi, hstat⟩ := hy
-  have hcur : y.regs cursor = m + 1 := by
-    simp only [Cond.holds_lt, hsp] at hexit
-    omega
+  obtain ⟨y, he, ⟨hs, _, _, _, _, hstat⟩, _⟩ := ExecWithin.loop_count P
+    (fun _ hy => hy.2.1) hbody
+    (by simp +decide [x₀, cursor, found, answer, stop]) hi
   refine ⟨y, (hinit.seq he).mono ?_, hs, ?_⟩
   · have hcur₀ : x₀.regs cursor = 0 := by
       simp +decide [x₀, cursor, found, answer, stop]
@@ -359,7 +353,7 @@ private theorem exec_driver {w T : ℕ} (x : Data 64) (A : ℕ → Prop) [Decida
     have hcost : T + 13 + 2 = T + 15 := by omega
     rw [hcost]
     omega
-  · exact status_min (by simpa only [hcur] using hstat)
+  · exact status_min hstat
 
 /-- The least prime whose three actual collision counts satisfy the supplied thresholds.
 Every candidate query is executed by `Query.program`; the hypotheses only constrain native

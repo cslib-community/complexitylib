@@ -38,6 +38,8 @@ oracle program `fixCoins prog ω : OracleComp spec α` with no private sampling 
 
 ## Main results
 
+* `Cslib.ProbOracleComp.coinLaw_pure`, `Cslib.ProbOracleComp.coinLaw_liftBind_inl`,
+  `Cslib.ProbOracleComp.coinLaw_liftBind_inr`: constructor equations for `coinLaw`.
 * `Cslib.ProbOracleComp.isCostBounded_fixCoins`,
   `Cslib.ProbOracleComp.isQueryBounded_fixCoins`: fixing private coins preserves query budgets.
 * `Cslib.ProbOracleComp.bind_interpret_fixCoins`: averaging `fixCoins prog ω` over `coinLaw prog`
@@ -89,6 +91,24 @@ noncomputable def coinLaw [∀ q, Fintype (spec q)] :
         (coinLaw (cont c)).map fun ω => (⟨c, ω⟩ : (c : Fin (k + 1)) × Coins (cont c))
     | .inr _ =>
       Probability.PMF.pi fun y => coinLaw (cont y)
+
+@[simp]
+theorem coinLaw_pure [∀ q, Fintype (spec q)] (a : α) :
+    coinLaw (pure a : ProbOracleComp spec α) = PMF.pure PUnit.unit := by
+  rfl
+
+theorem coinLaw_liftBind_inl [∀ q, Fintype (spec q)] (k : ℕ)
+    (cont : Fin (k + 1) → ProbOracleComp spec α) :
+    coinLaw (.liftBind (.inl k) cont) =
+      (ProbComp.unifOracle k).bind fun c =>
+        (coinLaw (cont c)).map fun ω => (⟨c, ω⟩ : (c : Fin (k + 1)) × Coins (cont c)) := by
+  rfl
+
+theorem coinLaw_liftBind_inr [∀ q, Fintype (spec q)] (q : Query)
+    (cont : spec q → ProbOracleComp spec α) :
+    coinLaw (.liftBind (.inr q) cont) =
+      Probability.PMF.pi fun y => coinLaw (cont y) := by
+  rfl
 
 /-- Deterministic oracle program obtained by supplying `ω : Coins prog` for all private samples. -/
 @[expose] def fixCoins : (prog : ProbOracleComp spec α) → Coins prog → OracleComp spec α

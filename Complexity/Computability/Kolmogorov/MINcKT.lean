@@ -14,6 +14,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Tactic.EncLen
 
 /-!
 # The Conditional Time-Bounded Kolmogorov Complexity Problem (`MINcKT`)
@@ -135,14 +136,10 @@ theorem enc_apply (i : Instance) :
   rfl
 
 /-- The unary size parameter `i.size` is at most `(enc i).length`. -/
-theorem size_le_length_enc (i : Instance) : i.size ≤ (enc i).length := by
-  simp only [enc_apply, length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-  omega
+theorem size_le_length_enc (i : Instance) : i.size ≤ (enc i).length := by enc_len [enc_apply]
 
 /-- The unary time parameter `i.time` is at most `(enc i).length`. -/
-theorem time_le_length_enc (i : Instance) : i.time ≤ (enc i).length := by
-  simp only [enc_apply, length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-  omega
+theorem time_le_length_enc (i : Instance) : i.time ≤ (enc i).length := by enc_len [enc_apply]
 
 /-- `i ∈ MINcKT` iff `condTimeBoundedAt i.time i.string i.cond ≤ i.size`. -/
 theorem mem_iff {i : Instance} :

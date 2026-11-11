@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.LinearAlgebra.Matrix.CorrectionHierarchy
+public import Complexity.Foundations.LinearAlgebra.Matrix.NonnegMulVec
+public import Complexity.Foundations.LinearAlgebra.Matrix.StrictUpperTriangular
 import Mathlib.Data.Fintype.Prod
 
 /-!

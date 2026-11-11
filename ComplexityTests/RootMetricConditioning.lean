@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import Complexity.Foundations.Probability.RootMetric.Conditioning
+public import Complexity.Computability.LogSpaceDerandomization.RootMetric.Conditioning
 
 /-! # Conditioning on one retained start
 

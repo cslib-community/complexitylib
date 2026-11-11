@@ -13,6 +13,7 @@ import Complexity.Probability.Divergence
 import Complexity.Probability.PMF.Event
 import Complexity.Probability.PMF.Expect
 import Complexity.Probability.PMF.Map
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Algebra.Order.Chebyshev
 
 /-!
@@ -42,7 +43,8 @@ inequality and Cauchy–Schwarz then bound the sum of statistical distances.
 * `Cslib.Probability.PMF.toOuterMeasure_toReal_le_two_rpow`: Holenstein's form
   `Pr[W] ≤ 2 ^ (-∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖²)`.
 * `Cslib.Probability.PMF.sq_sum_dist_map_filter_pi_le`,
-  `Cslib.Probability.PMF.sum_dist_map_filter_pi_le`: the forms summed by Cauchy–Schwarz,
+  `Cslib.Probability.PMF.sum_dist_map_filter_pi_le`: the forms summed by Cauchy–Schwarz, over any
+  subset of `k` coordinates and over all `k` coordinates,
   `∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖ ≤ √(k · ln (1 / Pr[W]))`.
 
 ## References
@@ -167,8 +169,7 @@ theorem toOuterMeasure_toReal_le_two_rpow (p : ∀ i, PMF (β i)) (W : Set (∀ 
       (2 : ℝ) ^ (-∑ j, dist (((pi p).filter W hW).map fun u => u j) (p j) ^ 2) := by
   set w := ((pi p).toOuterMeasure W).toReal
   have hw0 : 0 < w := (toOuterMeasure_toReal_pos_iff _ W).mpr hW
-  have hw1 : w ≤ 1 := by
-    simpa using ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one (pi p) W)
+  have hw1 : w ≤ 1 := toOuterMeasure_toReal_le_one (pi p) W
   have hlog : 0 ≤ Real.log (1 / w) := Real.log_nonneg (by rw [le_div_iff₀ hw0]; linarith)
   have hln2 : 0 < Real.log 2 := Real.log_pos one_lt_two
   -- `ln (1 / w) / 2 ≤ log₂ (1 / w)` because `ln 2 < 2`.
@@ -182,19 +183,19 @@ theorem toOuterMeasure_toReal_le_two_rpow (p : ∀ i, PMF (β i)) (W : Set (∀ 
           one_div, inv_inv]
     _ ≤ _ := Real.rpow_le_rpow_of_exponent_le one_le_two (neg_le_neg hsum)
 
-/-- **Raz's conditioning lemma**, summed: `(∑ⱼ ‖P_{Uⱼ | W} - P_{Uⱼ}‖)² ≤ k · ln (1 / Pr[W]) / 2`
-for `k` independent coordinates, by Cauchy–Schwarz. -/
+/-- **Raz's conditioning lemma**, summed over any `k` of the independent coordinates by
+Cauchy–Schwarz: `(∑_{j ∈ s} ‖P_{Uⱼ | W} - P_{Uⱼ}‖)² ≤ k · ln (1 / Pr[W]) / 2` with `k = #s`. -/
 theorem sq_sum_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β i))
-    (hW : ∃ u ∈ W, u ∈ (pi p).support) :
-    (∑ j, dist (((pi p).filter W hW).map fun u => u j) (p j)) ^ 2 ≤
-      Fintype.card ι * Real.log (1 / ((pi p).toOuterMeasure W).toReal) / 2 := by
-  have hcs := sq_sum_le_card_mul_sum_sq (s := univ)
+    (hW : ∃ u ∈ W, u ∈ (pi p).support) (s : Finset ι) :
+    (∑ j ∈ s, dist (((pi p).filter W hW).map fun u => u j) (p j)) ^ 2 ≤
+      #s * Real.log (1 / ((pi p).toOuterMeasure W).toReal) / 2 := by
+  have hcs := sq_sum_le_card_mul_sum_sq (s := s)
     (f := fun j => dist (((pi p).filter W hW).map fun u => u j) (p j))
-  rw [card_univ] at hcs
   calc _ ≤ _ := hcs
-    _ ≤ Fintype.card ι * (Real.log (1 / ((pi p).toOuterMeasure W).toReal) / 2) := by
+    _ ≤ #s * (Real.log (1 / ((pi p).toOuterMeasure W).toReal) / 2) := by
         gcongr
-        exact sum_sq_dist_map_filter_pi_le p W hW
+        exact (sum_le_univ_sum_of_nonneg fun j => sq_nonneg _).trans
+          (sum_sq_dist_map_filter_pi_le p W hW)
     _ = _ := by ring
 
 /-- **Raz's conditioning lemma** in the form of [Holenstein, (4.2)][Holenstein2009]:
@@ -203,12 +204,13 @@ theorem sum_dist_map_filter_pi_le (p : ∀ i, PMF (β i)) (W : Set (∀ i, β i)
     (hW : ∃ u ∈ W, u ∈ (pi p).support) :
     ∑ j, dist (((pi p).filter W hW).map fun u => u j) (p j) ≤
       Real.sqrt (Fintype.card ι * Real.log (1 / ((pi p).toOuterMeasure W).toReal)) := by
-  have hw : ((pi p).toOuterMeasure W).toReal ≤ 1 := by
-    simpa using ENNReal.toReal_mono ENNReal.one_ne_top (toOuterMeasure_le_one (pi p) W)
+  have hw : ((pi p).toOuterMeasure W).toReal ≤ 1 := toOuterMeasure_toReal_le_one (pi p) W
   have hw0 : 0 < ((pi p).toOuterMeasure W).toReal := (toOuterMeasure_toReal_pos_iff _ W).mpr hW
   have hlog : 0 ≤ Real.log (1 / ((pi p).toOuterMeasure W).toReal) :=
     Real.log_nonneg (by rw [le_div_iff₀ hw0]; linarith)
-  refine Real.le_sqrt_of_sq_le ((sq_sum_dist_map_filter_pi_le p W hW).trans ?_)
+  have h := sq_sum_dist_map_filter_pi_le p W hW univ
+  rw [card_univ] at h
+  refine Real.le_sqrt_of_sq_le (h.trans ?_)
   have : (0 : ℝ) ≤ Fintype.card ι * Real.log (1 / ((pi p).toOuterMeasure W).toReal) := by
     positivity
   linarith

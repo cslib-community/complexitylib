@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import Complexity.Computability.Complexity.Classes.Ladner.Basic
+public import Complexity.Computability.Complexity.Classes.P
 public import Complexity.Computability.Complexity.Problems.SAT.PolyTime
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import Complexity.Computability.Machines.Turing.MultiTape.Universal.PolyTime
@@ -15,6 +16,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bi
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import Complexity.Computability.Machines.Turing.MultiTape.Run
 import Complexity.Foundations.Data.List.Lookup
 
 /-!
@@ -61,6 +63,8 @@ descriptions and coding their input bits use the shared polynomial-time rules in
 * `Cslib.Complexity.Ladner.hstepB_eq`: the search computes the step.
 * `Cslib.Complexity.Ladner.computableInPolyTime_H`: `H` is polynomial-time.
 * `Cslib.Complexity.Ladner.SATH_mem_NP`: Ladner's language is in `NP`.
+* `Cslib.Complexity.Ladner.exists_index_of_mem_P`: a problem in `P` is decided by machines of
+  arbitrarily large index within their clocks.
 
 ## References
 
@@ -426,5 +430,32 @@ theorem isVerifier : IsVerifier encBits Polynomial.X verifier SATH := by
 /-- **Ladner's language is in `NP`**, with the verifier evaluating the padded formula. -/
 theorem SATH_mem_NP : SATH ∈ NP encBits :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
+
+/-! ### Machines deciding problems in `P` -/
+
+/-- **A problem in `P` is decided by machines with large indices and large clocks.** It is
+decided by a Boolean function `f`, and machines of arbitrarily large index output `[f w]` on each
+word `w` within their clock. -/
+theorem exists_index_of_mem_P {A : Set (List Bool)} (h : A ∈ P encBits) (B : ℕ) :
+    ∃ f : List Bool → Bool, (∀ w, w ∈ A ↔ f w = true) ∧ ∃ i, B ≤ i ∧
+      ∀ w, runIndexed i w (clock i w.length) = ([eBit (f w)], true) := by
+  obtain ⟨f, ⟨t, s, ht, -, k, State, hfinite, tm, htm⟩, hf⟩ := mem_P.mp h
+  have := Fintype.ofFinite State
+  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
+  have hrun (x : List Bool) : (tm.runFrom (tm.initCfg x) (t x.length)).Halted ∧
+      (tm.runFrom (tm.initCfg x) (t x.length)).output = [f x] :=
+    (htm x).runFrom_of_le le_rfl
+  obtain ⟨c, e, hle⟩ := (PolyBounded.of_polynomiallyBounded List.length ht).exists_le
+  obtain ⟨i, hi, hdesc⟩ := exists_index_ge (desc eS eBit tm) (B + c + e)
+  -- the clock of the index exceeds the time bound
+  have hclock (x : List Bool) : t x.length ≤ clock i x.length := by
+    calc t x.length ≤ c * (x.length + 1) ^ e := hle x
+      _ ≤ 2 ^ i * (x.length + 1) ^ i :=
+          Nat.mul_le_mul ((Nat.lt_two_pow_self (n := i)).le.trans' (by omega))
+            (Nat.pow_le_pow_right (by omega) (by omega))
+      _ = clock i x.length := by rw [clock, ← mul_pow]; ring_nf
+  refine ⟨f, hf, i, by omega, fun w => ?_⟩
+  rw [runIndexed, hdesc]
+  exact universal_desc_of_halted eS tm hrun (hclock _)
 
 end Cslib.Complexity.Ladner

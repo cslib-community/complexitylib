@@ -21,6 +21,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Na
 import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Probabilistic.Oracle.Composition
 import Mathlib.NumberTheory.Bertrand
+import Complexity.Tactic.EncLen
 
 /-!
 # The machine verifier for quantified Boolean formulas
@@ -443,9 +444,7 @@ private theorem length_encVState_push_le (st : VState) (entries : List Claim) (b
           List.sum_le_sum fun e he => by have := hentries e he; omega
       _ = entries.length * (2 * B + 1) := by simp
       _ ≤ 2 * (2 * B + 1) := Nat.mul_le_mul_right _ hlen
-  simp only [encVState, length_encPair, encList_append, List.length_append, encBool_apply,
-    List.length_singleton]
-  omega
+  enc_len [encVState, encList_append, List.length_singleton]
 
 /-- **Every step adds a bounded amount of storage**, polynomial in the input of the loop. -/
 theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {next : VState}

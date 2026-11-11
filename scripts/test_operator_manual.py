@@ -4,13 +4,14 @@ import json
 import contextlib
 import importlib.util
 import io
+import shutil
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
-from check_operator_manual import check
+from check_operator_manual import book_input_errors, check
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -101,6 +102,61 @@ class ManualChecks(unittest.TestCase):
     def test_paths_cannot_escape_checkout(self):
         self.doc.write_text(self.doc.read_text() + "\n[Outside](../../../outside.md)\n")
         self.assertTrue(any("escapes repository" in e for e in self.errors()))
+
+    def test_manual_without_builder_skips_chapter_lists(self):
+        self.assertFalse(check(self.repo)["book_inputs_checked"])
+
+
+class BookRegistration(unittest.TestCase):
+    """Run the chapter-list check with the real builder on placeholder copies of its pages."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-registration-")
+        self.addCleanup(self.temp.cleanup)
+        self.repo = Path(self.temp.name)
+        self.manual = self.repo / "manual"
+        (self.manual / "data").mkdir(parents=True)
+        for name in book.CONVERTER_INPUTS:
+            shutil.copy(DATA.parent / name, self.manual / name)
+        for name in [*book.FILES, "AGENT_OPERATORS.md"]:
+            (self.manual / name).parent.mkdir(parents=True, exist_ok=True)
+            (self.manual / name).write_text("# Placeholder chapter\n")
+
+    def errors(self):
+        return book_input_errors(self.repo, self.manual)
+
+    def test_registered_pages_pass(self):
+        self.assertEqual(self.errors(), [])
+
+    def test_unregistered_page_names_the_list_to_edit(self):
+        (self.manual / "machines-and-classes/unregistered.md").write_text("# Outside the book\n")
+        [error] = self.errors()
+        self.assertRegex(error, r"missing=\['machines-and-classes/unregistered\.md'\]")
+        self.assertIn("ORDER in manual/data/build_latex.py", error)
+
+    def test_deleted_page_must_leave_the_chapter_list(self):
+        page = book.REFERENCE[-1]
+        (self.manual / page).unlink()
+        [error] = self.errors()
+        self.assertIn(f"extra=['{page}']", error)
+
+    def test_checked_manual_uses_its_own_chapter_lists(self):
+        page = book.REFERENCE[-1]
+        source = self.manual / "data/build_latex.py"
+        entry = repr(Path(page).stem)
+        self.assertEqual(source.read_text().count(entry), 1)
+        source.write_text(source.read_text().replace(entry, ""))
+        path, cached = list(sys.path), sys.modules.get("build_latex")
+        [error] = self.errors()
+        self.assertIn(f"missing=['{page}']", error)
+        self.assertEqual(sys.path, path)
+        self.assertIs(sys.modules.get("build_latex"), cached)
+
+    def test_full_check_reports_unregistered_page(self):
+        (self.manual / "workflows/unregistered.md").write_text("# Outside the book\n")
+        result = check(self.repo)
+        self.assertTrue(result["book_inputs_checked"])
+        self.assertTrue(any("missing=['workflows/unregistered.md']" in e for e in result["errors"]))
 
 
 class BookInputs(unittest.TestCase):
@@ -251,6 +307,71 @@ class BookInputs(unittest.TestCase):
             (self.output / "agent-manual-source-manifest.json").read_bytes())
         with self.assertRaisesRegex(ValueError, "Manifest describes the other manual"):
             book.validate_manifest(self.root, self.output, ["README.md"])
+
+
+class PortableLinks(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="complexitylib-manual-links-")
+        self.addCleanup(self.temp.cleanup)
+        self.repo = Path(self.temp.name)
+        self.root = self.repo / 'manual'
+        self.root.mkdir()
+        (self.repo / 'ComplexityTests').mkdir()
+        self.revision = 'a' * 40
+        for name, value in {
+            'ROOT': self.root, 'FILES': ['README.md', 'workflows/first.md'],
+            'SOURCE_REVISION': self.revision,
+            'SOURCE_PATHS': {'ComplexityTests', 'ComplexityTests/A client.lean',
+                             'manual/AGENT_OPERATORS.md'},
+            'CHANGED_PATHS': set(),
+        }.items():
+            patch = mock.patch.object(book.base, name, value)
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def link(self, href, path='README.md'):
+        return book.base.transform({'t': 'Link', 'c': [
+            ['', [], []], [{'t': 'Str', 'c': 'Client'}], [href, 'Title']]}, path)
+
+    def target(self, href, path='README.md'):
+        return self.link(href, path)['c'][2][0]
+
+    def test_source_links_are_pinned_encoded_and_keep_query_and_fragment(self):
+        self.assertEqual(self.target('../ComplexityTests/A%20client.lean?plain=1#L12'),
+                         f'https://github.com/cslib-community/complexitylib/blob/{self.revision}'
+                         '/ComplexityTests/A%20client.lean?plain=1#L12')
+        self.assertEqual(self.target('../ComplexityTests'),
+                         f'https://github.com/cslib-community/complexitylib/tree/{self.revision}'
+                         '/ComplexityTests')
+
+    def test_internal_anchors_and_citations_stay_in_the_book(self):
+        self.assertEqual(self.target('workflows/first.md#example'),
+                         '#doc-workflows-first--example')
+        self.assertEqual(self.target('#overview'), '#doc-README--overview')
+        self.assertEqual(self.target('sources.md'), '#doc-sources')
+        self.assertEqual(self.link('sources.md#example')['c'], ['latex', r'\cite{example}'])
+
+    def test_other_manual_is_a_repository_link(self):
+        self.assertEqual(self.target('AGENT_OPERATORS.md#review'),
+                         f'https://github.com/cslib-community/complexitylib/blob/{self.revision}'
+                         '/manual/AGENT_OPERATORS.md#review')
+
+    def test_external_links_are_unchanged(self):
+        for href in ('https://example.org/a?q=b#c', '//example.org/a#b', 'mailto:a@example.org'):
+            with self.subTest(href=href):
+                self.assertEqual(self.target(href), href)
+
+    def test_unpublished_or_changed_targets_fail_instead_of_linking_wrong_content(self):
+        with self.assertRaisesRegex(ValueError, 'absent from the rendered revision'):
+            self.target('../ComplexityTests/New.lean')
+        with mock.patch.object(book.base, 'CHANGED_PATHS', {'ComplexityTests/A client.lean'}):
+            for href in ('../ComplexityTests/A%20client.lean', '../ComplexityTests'):
+                with self.subTest(href=href), self.assertRaisesRegex(ValueError, 'uncommitted changes'):
+                    self.target(href)
+
+    def test_paths_outside_repository_are_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'outside the repository'):
+            self.target('../../outside.txt')
 
 
 class VisualSources(unittest.TestCase):

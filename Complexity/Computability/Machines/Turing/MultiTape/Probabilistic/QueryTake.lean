@@ -64,10 +64,8 @@ theorem computesTidily_coinMachine (x : List Bool) :
   have hs : cfg.tapes.state = some () := by rw [htapes]; rfl
   dsimp only [runOracleConfigFrom, runConfigFrom]
   simp only [MultiTapeMachine.runConfigFrom, hs, coinMachine, bind_map_left,
-    OracleComp.interpret_bind, OracleComp.interpret_pure, OracleComp.interpret_map,
-    StateT.run_bind, StateT.run_pure, StateT.run_map, run_interpret_sample_uniform_bool,
-    Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-    PMF.monad_map_eq_map, PMF.bind_map, PMF.map_bind, PMF.pure_map, PMF.map_comp,
+    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_pure, ProbOracleComp.runWith_map,
+    run_interpret_sample_uniform_bool, PMF.bind_map, PMF.map_bind, PMF.pure_map, PMF.map_comp,
     Function.comp_def]
   constructor
   · change (PMF.uniformOfFintype Bool).map _ = (PMF.uniformOfFintype Bool).map _
@@ -174,10 +172,9 @@ theorem run_copyReply (x : List Bool)
     ∀ (pre : List Bool) (h : x = pre ++ List.replicate remLimit true)
       (pos : ℕ) (answer out : List Bool) (ch : Operation → Channel Bool)
       (_hch : ch op = ⟨[], answer, (pos : ℤ)⟩) (s : OracleState),
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      ProbOracleComp.runWith oracle
         ((queryTakeCore op).runOracleConfigFrom (remLimit + 1)
-          (config x (some .copyReply) pre.length (by subst h; simp) out ch))).run s =
+          (config x (some .copyReply) pre.length (by subst h; simp) out ch)) s =
         PMF.pure
           (config x none x.length le_rfl (out ++ (answer.drop pos).take remLimit)
             (Function.update ch op ⟨[], answer, (pos + remLimit : ℤ)⟩), s) := by
@@ -192,7 +189,7 @@ theorem run_copyReply (x : List Bool)
       (config x (some .copyReply) pre.length (by lia) out ch) s rfl
       (fun _ => by rw [hsym]; rfl)]
     dsimp only [runOracleConfigFrom, runConfigFrom, MultiTapeMachine.runConfigFrom]
-    simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure]
+    simp only [ProbOracleComp.runWith_pure]
     congr 1
     refine Prod.ext (Config.ext ?_ ?_) rfl
     · exact Cfg.ext_zero_tapes rfl
@@ -263,10 +260,9 @@ theorem run_frame (x : List Bool)
     (rem : List Bool) :
     ∀ (pre suf : List Bool) (h : x = pre ++ frame rem ++ suf)
       (out : List Bool) (ch : Operation → Channel Bool) (s : OracleState),
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+      ProbOracleComp.runWith oracle
         ((queryTakeCore op).runOracleConfigFrom (2 * rem.length + 2)
-          (config x (some .marker) pre.length (by subst h; simp) out ch))).run s =
+          (config x (some .marker) pre.length (by subst h; simp) out ch)) s =
         (oracle (op, (ch op).queryBuffer ++ rem) s).map
           (fun (answer, s') =>
             (config x (some .copyReply) (pre.length + (frame rem).length)
@@ -293,10 +289,9 @@ theorem run_frame (x : List Bool)
       change (moveInputPos _ .pos).val = pre.length + 1 + 1
       rw [moveInputPos_pos_of_ne_right _ (by simp only [config]; lia)]
       rfl
-    change (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+    change ProbOracleComp.runWith oracle
         ((queryTakeCore op).runOracleConfigFrom (0 + 1 + 1)
-          (config x (some .marker) pre.length hlt.le out ch))).run s = _
+          (config x (some .marker) pre.length hlt.le out ch)) s = _
     rw [run_interpret_runOracleConfigFrom_succ_step (queryTakeCore op) oracle (0 + 1)
       (config x (some .marker) pre.length hlt.le out ch) s rfl
       (fun _ => by rw [hsym]; rfl),
@@ -305,8 +300,7 @@ theorem run_frame (x : List Bool)
         (config x (some .submit) (pre.length + 1) (by subst h; simp) out ch) s rfl
         (fun _ => rfl)]
     dsimp only [runOracleConfigFrom, runConfigFrom, MultiTapeMachine.runConfigFrom]
-    simp only [OracleComp.interpret_pure, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
-      List.append_nil]
+    simp only [ProbOracleComp.runWith_pure, List.append_nil]
     rfl
   | cons b rem ih =>
     intro pre suf h out ch s
@@ -411,16 +405,13 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
     exact Cfg.ext_zero_tapes rfl rfl rfl
   -- Combine `run_frame` and `run_copyReply` for `queryTakeCore op`
   have hcore :
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-        ((queryTakeCore op).runOracleConfigFrom tCore cfg₀)).run s =
+      ProbOracleComp.runWith oracle ((queryTakeCore op).runOracleConfigFrom tCore cfg₀) s =
       (oracle (op, q) s).map
         (fun (answer, s') =>
           (QueryTakeCore.config x none x.length le_rfl (out₀ ++ answer.take limit)
             (Function.update cfg.channels op ⟨[], answer, (limit : ℤ)⟩), s')) := by
     dsimp only [tCore, runOracleConfigFrom, runConfigFrom]
-    rw [MultiTapeMachine.runConfigFrom_add, OracleComp.interpret_bind, StateT.run_bind,
-      Probability.PMF.monad_bind_eq_bind]
+    rw [MultiTapeMachine.runConfigFrom_add, ProbOracleComp.runWith_bind]
     have hframe := QueryTakeCore.run_frame op x oracle q [] (List.replicate limit true)
       (by simp [hx]) out₀ cfg.channels s
     dsimp only [runOracleConfigFrom, runConfigFrom] at hframe
@@ -433,9 +424,8 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
       (Function.update cfg.channels op ⟨[], answer, 0⟩) (by simp) s₁
     dsimp only [runOracleConfigFrom, runConfigFrom] at hcopy
     simpa only [List.drop_zero, Nat.cast_zero, zero_add, Function.update_idem] using hcopy
-  have hhalt₁ : ∀ result ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      ((queryTakeCore op).runOracleConfigFrom tCore cfg₀)).run s).support,
+  have hhalt₁ : ∀ result ∈ (ProbOracleComp.runWith oracle
+      ((queryTakeCore op).runOracleConfigFrom tCore cfg₀) s).support,
       result.1.tapes.state = none := by
     intro result hresult
     rw [hcore] at hresult
@@ -454,13 +444,11 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
     rw [htime]
     exact (runFrom_rewindInput ⟨x.length + 1, by lia⟩ Fin.elim0 Fin.elim0
       (out₀ ++ answer.take limit)).trans (Cfg.ext_zero_tapes rfl rfl rfl)
-  have hhalt₂ : ∀ result ∈ ((OracleComp.interpret
-      (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
-      ((queryTakeCore op).runOracleConfigFrom tCore cfg₀)).run s).support,
-      ∀ final ∈ ((OracleComp.interpret
-        (OracleComp.sumHandler (fun n => StateT.lift (ProbComp.unifOracle n)) oracle)
+  have hhalt₂ : ∀ result ∈ (ProbOracleComp.runWith oracle
+      ((queryTakeCore op).runOracleConfigFrom tCore cfg₀) s).support,
+      ∀ final ∈ (ProbOracleComp.runWith oracle
         ((ofDeterministic (rewindInput Bool)).runOracleConfigFrom tRew
-          (Sequential.start (ofDeterministic (rewindInput Bool)) result.1))).run result.2).support,
+          (Sequential.start (ofDeterministic (rewindInput Bool)) result.1)) result.2).support,
         final.1.tapes.state = none := by
     rintro result hresult ⟨finalCfg, finalState⟩ hfinal
     rw [hcore] at hresult
@@ -480,9 +468,8 @@ theorem computesTidily_queryTakePTM (op : Operation) (q : List Bool) (limit : �
   constructor
   · simp only [PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def,
       run_interpret_runOracleConfigFrom_ofDeterministic, hrew, PMF.pure_map,
-      OracleComp.interpret_map, ProbOracleComp.interpret_query, StateT.run_map,
-      PMF.monad_map_eq_map, Sequential.right, Cfg.mapState, wordsCfg_state, Option.map_none,
-      id_eq]
+      ProbOracleComp.runWith_map, ProbOracleComp.runWith_query, Sequential.right, Cfg.mapState,
+      wordsCfg_state, Option.map_none, id_eq]
     rfl
   · rintro ⟨finalCfg, finalState⟩ hfinal other
     rw [PMF.bind_map] at hfinal

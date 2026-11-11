@@ -172,7 +172,7 @@ theorem modifies {w n K base : ℕ} (hn : Fits w n) (hK : Fits w K)
     (hv : IndexedMinPQ.valid K s o) (he : (backend n K base).exec w x o a y steps) :
     Modifies (footprint n base) x.mem y.mem := by
   have h := Backend.modifies (M := framed hn hK base) (implements hn hK hfit) hr hv he
-  simpa only [Memory.Framed.region, framed, Memory.Framed.ofStatic, Nat.add_zero,
+  simpa only [Memory.Framed.region, framed_footprint, framed_room, Nat.add_zero,
     Finset.Ico_self, Finset.union_empty] using h
 
 end Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native

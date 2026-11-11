@@ -2,6 +2,8 @@
 
 This family specifies how often an efficient algorithm can compute or approximate a numerical function on uniformly random bit strings. It uses the [native strict-PPT model](programs-and-realization.md), and connects the [clocked Kolmogorov model](../machines-and-classes/computability-and-description.md) to [uniform one-way functions](security-games-and-primitives.md). These are hardness predicates on functions, not a new machine instruction set [complexitylib][complexitylib].
 
+Levin's distributional framework, which pairs languages with arbitrary ensembles and defines `AvgP`, `HeurP` and dominating reductions, is described in [Distributional problems, AvgP, HeurP and Levin reductions](distributional-complexity.md). Its bridge theorem shows that a Boolean target whose uniform distributional problem lies in `HeurP` is not mildly hard on average.
+
 ## Heuristics, success events, and quantifiers
 
 [MildlyHardOnAverage](https://github.com/cslib-community/complexitylib/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/AverageCase.lean#L94) chooses one polynomial `p : Polynomial ℕ`, positive at every natural input, before quantifying over heuristics. For every `H : List Bool → ProbComp ℕ` with `IsPPTOn encBits encNat H`, there is a length threshold, allowed to depend on `H`, after which

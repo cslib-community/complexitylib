@@ -151,8 +151,7 @@ private theorem threshold_div_le_interpolationScale {n : ℕ} (hn : 16384 ≤ n)
     calc (threshold n : ℝ) * Real.sqrt lam = (n : ℝ) * nu * Real.sqrt lam := by
           simp only [threshold, Nat.cast_mul, nu, lam]
       _ ≤ (n : ℝ) * nu * (2 * q) := mul_le_mul_of_nonneg_left hsqrt (by positivity)
-      _ ≤ (n : ℝ) * (nu : ℝ) ^ 2 * (2 * q) :=
-          mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hnuR hn0) (by positivity)
+      _ ≤ (n : ℝ) * (nu : ℝ) ^ 2 * (2 * q) := by gcongr
   linarith
 
 /-- The length of a formula's encoding is at least its number of clauses. -/
@@ -195,8 +194,7 @@ private theorem two_pow_le_of_le_threshold (A₁ : ℕ) {φ : CNF ℕ}
             rw [Nat.cast_mul, mul_div_assoc]
             exact mul_le_mul_of_nonneg_left (div_le_div_of_nonneg_right hm hq.le)
               (Nat.cast_nonneg _)
-        _ ≤ A₁ * (32 * interpolationScale φ.numVars) :=
-            mul_le_mul_of_nonneg_left hscale (Nat.cast_nonneg _)
+        _ ≤ A₁ * (32 * interpolationScale φ.numVars) := by gcongr
         _ = ((32 * A₁ : ℕ) : ℝ) * interpolationScale φ.numVars := by push_cast; ring
     have h2E : ((2 ^ E : ℕ) : ℝ) ≤ ⌈X⌉₊ := by
       calc ((2 ^ E : ℕ) : ℝ) = (2 : ℝ) ^ (E : ℝ) := by

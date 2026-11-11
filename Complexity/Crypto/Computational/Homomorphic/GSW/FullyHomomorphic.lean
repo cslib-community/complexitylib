@@ -101,28 +101,18 @@ theorem isPPT_leveledAdversary {budget : ℕ → ℕ}
 the running-time clause is not formalized). -/
 theorem advantage_leveled_eq (budget : ℕ → ℕ) (adversary : Encryption.Adversary)
     (security : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (Leveled.scheme decryptionCircuits budget).keyGen
-        (Leveled.scheme decryptionCircuits budget).encrypt adversary false security))
-      (ProbComp.eval (Encryption.game (Leveled.scheme decryptionCircuits budget).keyGen
-        (Leveled.scheme decryptionCircuits budget).encrypt adversary true security)) =
+    Encryption.advantage (Encryption.game (Leveled.scheme decryptionCircuits budget).keyGen
+      (Leveled.scheme decryptionCircuits budget).encrypt adversary) security =
     4 * (dyadicSize (2 * budget security) : ℝ≥0) * dyadicSize (secretWidth security) *
-      Game.advantage
-        (ProbComp.eval (Encryption.game scheme.keyGen scheme.encrypt
-          (Leveled.leveledAdversary scheme (fun k => 2 * budget k) secretWidth adversary)
-          false security))
-        (ProbComp.eval (Encryption.game scheme.keyGen scheme.encrypt
-          (Leveled.leveledAdversary scheme (fun k => 2 * budget k) secretWidth adversary)
-          true security)) :=
+      Encryption.advantage (Encryption.game scheme.keyGen scheme.encrypt
+        (Leveled.leveledAdversary scheme (fun k => 2 * budget k) secretWidth adversary)) security :=
   Leveled.advantage_scheme_eq_leveledAdversary decryptionCircuits budget secretWidth adversary
     security (secretWidth security) (fixedWidth.secret_length security) le_rfl
 
 /-- One uniform reduction bounds the base GSW scheme's chosen-message advantage by twice its
 decision-LWE advantage plus `hidingError`. -/
 theorem advantage_scheme_le (adversary : Encryption.Adversary) (security : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game scheme.keyGen scheme.encrypt adversary false security))
-      (ProbComp.eval (Encryption.game scheme.keyGen scheme.encrypt adversary true security)) ≤
+    Encryption.advantage (Encryption.game scheme.keyGen scheme.encrypt adversary) security ≤
     2 * Game.advantage
       (distinguishingGame
         (LWE.realEnsemble dimension samples width
@@ -134,22 +124,12 @@ theorem advantage_scheme_le (adversary : Encryption.Adversary) (security : ℕ) 
       hidingError (dimension security) (samples security) (width security) := by
   have h := GSW.advantage_game_le dimension samples width noise adversary security
   have hfg :
-      Game.advantage
-        (ProbComp.eval (Encryption.game scheme.keyGen scheme.encrypt adversary false security))
-        (ProbComp.eval (Encryption.game scheme.keyGen scheme.encrypt adversary true security)) =
-      Game.advantage
-        (ProbComp.eval (Encryption.game
-          (fun k => keyGenSerialized (dimension k) (samples k) (width k) (noise k))
-          (fun k => encryptSerialized (dimension k) (samples k) (width k))
-          adversary false security))
-        (ProbComp.eval (Encryption.game
-          (fun k => keyGenSerialized (dimension k) (samples k) (width k) (noise k))
-          (fun k => encryptSerialized (dimension k) (samples k) (width k))
-          adversary true security)) :=
+      Encryption.advantage (Encryption.game scheme.keyGen scheme.encrypt adversary) security =
+      Encryption.advantage
+        (Encryption.game (fun k => keyGenSerialized (dimension k) (samples k) (width k) (noise k))
+          (fun k => encryptSerialized (dimension k) (samples k) (width k)) adversary) security :=
     congrArg₂
-      (fun kg enc => Game.advantage
-        (ProbComp.eval (Encryption.game kg enc adversary false security))
-        (ProbComp.eval (Encryption.game kg enc adversary true security)))
+      (fun kg enc => Encryption.advantage (Encryption.game kg enc adversary) security)
       rfl rfl
   exact hfg.trans_le h
 
@@ -158,11 +138,8 @@ advantage and `hidingError` ([Gentry2009], Section 2, Theorem 4, p. 171, up to a
 in the loss; the running-time clause is not formalized). -/
 theorem advantage_leveled_le (budget : ℕ → ℕ) (adversary : Encryption.Adversary)
     (security : ℕ) :
-    Game.advantage
-      (ProbComp.eval (Encryption.game (Leveled.scheme decryptionCircuits budget).keyGen
-        (Leveled.scheme decryptionCircuits budget).encrypt adversary false security))
-      (ProbComp.eval (Encryption.game (Leveled.scheme decryptionCircuits budget).keyGen
-        (Leveled.scheme decryptionCircuits budget).encrypt adversary true security)) ≤
+    Encryption.advantage (Encryption.game (Leveled.scheme decryptionCircuits budget).keyGen
+      (Leveled.scheme decryptionCircuits budget).encrypt adversary) security ≤
     4 * (dyadicSize (2 * budget security) : ℝ≥0) * dyadicSize (secretWidth security) *
       (2 * Game.advantage
         (distinguishingGame

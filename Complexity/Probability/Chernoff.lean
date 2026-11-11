@@ -10,7 +10,9 @@ module
 public import Complexity.Probability.Product
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Probability.Moments.Basic
+import Complexity.Foundations.Analysis.SpecialFunctions.ExpBounds
 import Complexity.Probability.PMF.Event
+import Complexity.Probability.PMF.ToReal
 import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
@@ -201,15 +203,6 @@ theorem pi_sum_ge_one_add_mul_of_le_one (p : ∀ i, PMF (α i)) (score : ∀ i, 
   rw [neg_le_neg_iff]
   exact div_le_div_of_nonneg_left (by positivity) (by linarith) (by linarith)
 
-/-- `exp (-δ) ≤ 1 - δ + δ² / 2` for `δ ≥ 0`, from `1 + δ + δ² / 2 ≤ exp δ`. -/
-private theorem exp_neg_le_quadratic {δ : ℝ} (hδ : 0 ≤ δ) :
-    Real.exp (-δ) ≤ 1 - δ + δ ^ 2 / 2 := by
-  have hq := Real.quadratic_le_exp_of_nonneg hδ
-  have hpos : 0 < 1 + δ + δ ^ 2 / 2 := by positivity
-  rw [Real.exp_neg, inv_le_iff_one_le_mul₀ (Real.exp_pos δ)]
-  nlinarith [sq_nonneg δ, Real.exp_pos δ,
-    mul_le_mul_of_nonneg_left hq (show (0 : ℝ) ≤ 1 - δ + δ ^ 2 / 2 by nlinarith)]
-
 /-- **The multiplicative Chernoff bound for the lower tail** [Mitzenmacher and Upfal,
 Section 4.2][MitzenmacherUpfal2017]: if independent scores in `[0, 1]` have mean at least `μ`,
 their sum is at most `(1 - δ) μ` with probability at most `exp (-δ² μ / 2)`, for every `δ ≥ 0`.
@@ -220,17 +213,15 @@ theorem pi_sum_le_one_sub_mul (p : ∀ i, PMF (α i)) (score : ∀ i, α i → �
     ((pi p).toOuterMeasure {outcome | ∑ i, score i (outcome i) ≤ (1 - δ) * μ}).toReal ≤
       Real.exp (-(δ ^ 2 * μ / 2)) := by
   rcases lt_or_ge μ 0 with hμ0 | hμ0
-  · refine (ENNReal.toReal_le_of_le_ofReal zero_le_one ?_).trans
+  · exact (toOuterMeasure_toReal_le_one _ _).trans
       (Real.one_le_exp (by nlinarith [sq_nonneg δ]))
-    rw [ENNReal.ofReal_one]
-    exact toOuterMeasure_le_one _ _
   refine (pi_sum_le_le_exp p score hscore (neg_nonpos.mpr hδ) _).trans (Real.exp_le_exp.mpr ?_)
   have hexp : Real.exp (-δ) - 1 ≤ 0 := by
     rw [sub_nonpos, Real.exp_le_one_iff]
     linarith
   have hmean : (∑ i, ∑ a, (p i a).toReal * score i a) * (Real.exp (-δ) - 1) ≤
       μ * (Real.exp (-δ) - 1) := mul_le_mul_of_nonpos_right hμ hexp
-  nlinarith [mul_le_mul_of_nonneg_left (exp_neg_le_quadratic hδ) hμ0]
+  nlinarith [mul_le_mul_of_nonneg_left (Real.exp_neg_le_one_sub_add_sq_div_two hδ) hμ0]
 
 /-- **The two-sided multiplicative Chernoff bound** [Mitzenmacher and Upfal, Section 4.2]
 [MitzenmacherUpfal2017]: a sum of independent scores in `[0, 1]` deviates from its mean by at

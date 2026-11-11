@@ -621,10 +621,7 @@ theorem erase_eq_of_not_contains {t : Tree d} (ht : t.Valid) {x : ℕ}
         by_cases hout : x < m ∨ M < x
         · rw [erase, ite_eq_left hout]
         · have hxm : x ≠ m := fun h => hx (h ▸ he.2.2.1)
-          have heq : m ≠ M := by
-            intro h
-            apply hxm
-            omega
+          have heq : m ≠ M := by grind
           have hx_lt : x < universeSize (d + 1) :=
             Nat.lt_of_le_of_lt (show x ≤ M by omega) he.2.1
           have hx_div : x / universeSize d < universeSize d :=

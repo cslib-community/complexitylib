@@ -36,6 +36,7 @@ algorithm relies on.
 * `Relation.RelatesWithinSteps.succ_iff`: one more step of breadth-first search.
 * `Relation.RelatesInSteps.add_iff`, `Relation.RelatesWithinSteps.add_iff`: walks split at any
   point; the second is the midpoint recursion.
+* `Relation.RelatesInSteps.add_mul_of_cycle`: pumping a cycle any number of times.
 * `Relation.RelatesWithinSteps.two_mul_iff`, `Relation.RelatesWithinSteps.two_pow_succ_iff`,
   `Relation.RelatesWithinSteps.one_iff`: the recursion of Savitch's algorithm and its base case.
 * `Relation.ReflTransGen.relatesWithinSteps_of_encard_le`,
@@ -112,6 +113,16 @@ theorem RelatesInSteps.add_iff :
     obtain ⟨c', h, hstep⟩ := h.succ
     obtain ⟨b, h₁, h₂⟩ := ih h
     exact ⟨b, h₁, .tail b c' c n h₂ hstep⟩
+
+/-- **Pumping a cycle.** A walk of `i` steps to `b` followed by `rounds` rounds of a cycle of `m`
+steps at `b` is a walk of `i + rounds * m` steps. -/
+theorem RelatesInSteps.add_mul_of_cycle {i : ℕ} (h : RelatesInSteps r a b i)
+    (hcycle : RelatesInSteps r b b m) (rounds : ℕ) : RelatesInSteps r a b (i + rounds * m) := by
+  induction rounds with
+  | zero => simpa using h
+  | succ rounds ih =>
+    have := ih.trans hcycle
+    rwa [Nat.add_assoc, ← Nat.succ_mul] at this
 
 /-- **The midpoint recursion.** A walk of at most `m + n` steps is exactly a walk of at most `m`
 steps to some midpoint followed by a walk of at most `n` steps from it. The midpoint is all a

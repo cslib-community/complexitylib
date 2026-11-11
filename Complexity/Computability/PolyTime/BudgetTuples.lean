@@ -19,6 +19,7 @@ import Complexity.Computability.Machines.Turing.MultiTape.Encodings.Length
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeBinaryPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListPrimitives
 import Complexity.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
+import Complexity.Tactic.EncLen
 
 /-!
 # The successor of a tuple of bounded weight in polynomial time
@@ -191,9 +192,7 @@ theorem computableInPolyTime_budgetNext :
       induction ws with
       | nil => simp
       | cons _ _ ih => simp only [List.length_cons, List.map_cons, List.sum_cons]; omega
-    simp only [encScanState, encBudgetInput, length_encPair, encUnary_apply,
-      List.length_replicate, size]
-    omega
+    enc_len [encScanState, encBudgetInput, size]
   · rw [← budgetNextScan_eq]
     rfl
 

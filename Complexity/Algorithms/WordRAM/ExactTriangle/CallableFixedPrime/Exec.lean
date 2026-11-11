@@ -17,8 +17,8 @@ public import Complexity.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime.Rec
 # Complete caller-safe fixed-prime solver execution
 
 Only runtime original scalars, canonical signed arrays and caller workspace are inputs. The
-program copies those arrays once, computes its width, runs the real one-time producer and
-all-record solver, and returns its actual original-coordinate witness. The proof's reference
+program copies those arrays once, computes its width, runs the real catalogue prefix and
+one-slot streaming solver, and returns its actual original-coordinate witness. The proof's reference
 prepared state is an output of the derivation, never a layout/run/time certificate supplied
 by the caller. Raw old-word bounds include dirty words before any normalization.
 -/

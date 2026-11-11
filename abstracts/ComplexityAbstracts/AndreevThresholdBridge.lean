@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger, Christian Reitwiessner
 -- upstream: local-only (formal abstract library)
 
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.Andreev
+import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevApproxMajority
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevAverage
 import Complexity.Computability.Circuit.Boolean.WeightedThreshold.AndreevLowerBound
 
@@ -55,19 +56,28 @@ def andreev (b m : ℕ) (x : Fin (2 ^ b + b * m) → Bool) : Bool :=
   tableInput x (tableIndex b fun j => parity m (blockInput x j))
 
 /-- **Exact quadratic upper bound.** For all `b, m`, Andreev's function on `n = 2^b + b*m` bits is
-computed by a depth-two weighted threshold circuit with `4 * 4^b + b * m * 2^b + 1` gates
-(`4 * 4^b + b * m * 2^b` bottom gates and one top gate). -/
+computed by a depth-two weighted threshold circuit with `2 * 4^b + b * m * 2^b + 1` gates in which
+every gate either reads only original inputs, with integer weights of absolute value at most `2`, or
+reads only gates, with odd integer weights of absolute value below `2 n`. The weight conjunct is
+`Cslib.Circuits.Boolean.WeightedThreshold.lines_andreevCircuit_bottom_or_top`. -/
 theorem exact_upper_bound (b m : ℕ) :
     ∃ c : ThrCircuit (2 ^ b + b * m),
       c.depth ≤ 2 ∧
-      c.size = 4 * 4 ^ b + b * m * 2 ^ b + 1 ∧
-      wireCount c ≤ (4 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
-      (∀ x, evaluate c x = andreev b m x) :=
+      c.size = 2 * 4 ^ b + b * m * 2 ^ b + 1 ∧
+      wireCount c ≤ (2 * 4 ^ b + b * m * 2 ^ b) * (2 ^ b + b * m + 1) ∧
+      (∀ x, evaluate c x = andreev b m x) ∧
+      ∀ gate : Fin c.size,
+        ((∀ a, ∃ i, (c.program.lines gate).wires a = Cslib.Circuits.Wire.input i) ∧
+          ∀ a, ∃ z : ℤ, |z| ≤ 2 ∧ (c.program.lines gate).op.weight a = z) ∨
+        ((∀ a, ∃ g, (c.program.lines gate).wires a = Cslib.Circuits.Wire.gate g) ∧
+          ∀ a, ∃ z : ℤ, Odd z ∧ |z| < 2 * ((2 ^ b + b * m : ℕ) : ℤ) ∧
+            (c.program.lines gate).op.weight a = z) :=
   ⟨Cslib.Circuits.Boolean.WeightedThreshold.andreevCircuit b m,
     Cslib.Circuits.Boolean.WeightedThreshold.depth_andreevCircuit_le b m,
     Cslib.Circuits.Boolean.WeightedThreshold.size_andreevCircuit b m,
     Cslib.Circuits.Boolean.WeightedThreshold.wireCount_andreevCircuit_le b m,
-    fun x => congrFun (Cslib.Circuits.Boolean.WeightedThreshold.computes_andreevCircuit b m x) 0⟩
+    fun x => congrFun (Cslib.Circuits.Boolean.WeightedThreshold.computes_andreevCircuit b m x) 0,
+    Cslib.Circuits.Boolean.WeightedThreshold.lines_andreevCircuit_bottom_or_top b m⟩
 
 /-- **High-agreement (`1 - δ`) windowed upper bound.** Restricting the `2^b` parity-character
 ladders to closed windows of half-width `B` around their expected centers gives a depth-two
@@ -184,5 +194,49 @@ theorem exact_wire_lower_bound {b m : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
   rw [hall, Finset.card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool]
   push_cast
   linarith
+
+/-- Gate lower bound for approximate majorities of depth-two circuits. -/
+theorem approx_majority_gate_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b) (ht : 0 < t)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, (C i).size ≤ s)
+    (hmaj : ∀ x, (t : ℝ) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤
+      144 * ((b : ℝ) + 2) * (s : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_approxMajority_andreev_of_le_two_pow hm hmN
+    ht hε C hd hs hmaj
+
+/-- Wire lower bound for approximate majorities of depth-two circuits. -/
+theorem approx_majority_wire_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b) (ht : 0 < t)
+    {ε : ℝ} (hε : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ ε)
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, wireCount (C i) ≤ s)
+    (hmaj : ∀ x, (t : ℝ) * (1 / 2 + ε) ≤
+      ((Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card : ℝ)) :
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b * ε ^ 2 ≤ 144 * ((b : ℝ) + 2) * (s : ℝ) :=
+  Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_approxMajority_andreev_of_le_two_pow hm
+    hmN ht hε C hd hs hmaj
+
+/-- Top fan-in gate lower bound for majority votes of depth-two circuits. -/
+theorem majority_vote_gate_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
+    (hb : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ 1 / (2 * t))
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, (C i).size ≤ s)
+    (hvote : ∀ x, t < 2 * (Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card) :
+    (m : ℝ) * (2 : ℝ) ^ b ≤
+      576 * ((b : ℝ) + 2) * (t : ℝ) ^ 2 * (s : ℝ) * Real.sqrt ((2 ^ b + b * m : ℕ) : ℝ) :=
+  Cslib.Circuits.Boolean.WeightedThreshold.size_ge_of_majorityVote_andreev_of_le_two_pow hm hmN
+    hb C hd hs hvote
+
+/-- Top fan-in wire lower bound for majority votes of depth-two circuits. -/
+theorem majority_vote_wire_lower_bound {b m t : ℕ} (hm : 0 < m) (hmN : m ≤ 2 ^ b)
+    (hb : 3 * ((b : ℝ) + 2) / Real.sqrt ((2 : ℝ) ^ b) ≤ 1 / (2 * t))
+    (C : Fin t → ThrCircuit (2 ^ b + b * m)) (hd : ∀ i, (C i).depth ≤ 2)
+    (s : ℕ) (hs : ∀ i, wireCount (C i) ≤ s)
+    (hvote : ∀ x, t < 2 * (Finset.univ.filter fun i => evaluate (C i) x = andreev b m x).card) :
+    (m : ℝ) * Real.sqrt (m : ℝ) * (2 : ℝ) ^ b ≤ 576 * ((b : ℝ) + 2) * (t : ℝ) ^ 2 * (s : ℝ) :=
+  Cslib.Circuits.Boolean.WeightedThreshold.wireCount_ge_of_majorityVote_andreev_of_le_two_pow hm
+    hmN hb C hd hs hvote
 
 end ComplexityAbstracts.AndreevThresholdBridge

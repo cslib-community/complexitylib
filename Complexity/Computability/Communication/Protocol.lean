@@ -17,8 +17,9 @@ public import Mathlib.Data.ENat.Lattice
 Alice holds `x : X` and Bob holds `y : Y`. A deterministic protocol is a binary tree whose internal
 nodes are owned by one of the players, who sends one bit computed from their input to choose the
 branch, and whose leaves are labelled by outputs (`Protocol.run`)
-[Kushilevitz and Nisan, Chapter 1][KushilevitzNisan1997]. Its depth is the number of bits sent in
-the worst case, and a protocol of depth `d` has at most `2 ^ d` leaves
+[Kushilevitz and Nisan, Chapter 1][KushilevitzNisan1997]. Its tree depth bounds the number of bits
+sent on any input, counting even branches unreachable by any input. A protocol of depth `d`
+has at most `2 ^ d` leaves
 (`Protocol.leafCount_le_two_pow_depth`). A function of the two inputs *solves* a relation `R` on
 inputs from `A × B` when its value on every such pair is related to the pair (`Solves`), and a
 protocol solves `R` when its output does (`Protocol.Solves`); the communication complexity of `R`
@@ -107,7 +108,8 @@ def run : Protocol X Y Z → X → Y → Z
   | alice send p₀ p₁, x, y => cond (send x) (p₁.run x y) (p₀.run x y)
   | bob send p₀ p₁, x, y => cond (send y) (p₁.run x y) (p₀.run x y)
 
-/-- The number of bits sent in the worst case. -/
+/-- The tree depth, counting even unreachable branches. It bounds the number of bits sent
+on every input. -/
 def depth : Protocol X Y Z → ℕ
   | output _ => 0
   | alice _ p₀ p₁ => max p₀.depth p₁.depth + 1

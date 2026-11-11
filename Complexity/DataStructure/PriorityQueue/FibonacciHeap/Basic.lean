@@ -246,9 +246,7 @@ theorem absRaw_eq_of_fibRawInv {n K : ℕ} {s : IndexedMinPQ.State n} {st : RawS
   funext v
   cases hs : s v with
   | none =>
-    have : st.inHeap v = 0 := by
-      by_contra h0
-      simpa [hs] using (hin v).1.mp h0
+    have : st.inHeap v = 0 := by grind
     simp [absRaw, this]
   | some k =>
     have h0 : st.inHeap v ≠ 0 := (hin v).1.mpr (by simp [hs])

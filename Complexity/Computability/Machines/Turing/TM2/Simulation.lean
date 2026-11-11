@@ -33,6 +33,8 @@ Halting configurations remain fixed, so a clock may safely run beyond the source
   encoded configuration.
 * `Turing.TM2.stepTotal_stack_bound`: a fixed source transition adds at most a constant number
   of symbols to any stack.
+* `Turing.TM2.iterate_stepTotal_stack_le`: running `i` padded transitions from `initList` grows
+  every stack by at most `C * i` symbols beyond the input length.
 
 ## References
 
@@ -197,5 +199,24 @@ theorem stepTotal_stack_bound (M : Λ → Stmt Γ Λ σ) : ∃ C : ℕ,
       (stepAux_stack_bound (M l) cfg.var cfg.stk bound h k).trans
         (Nat.add_le_add_left (Finset.single_le_sum (f := fun l => pushBound (M l))
           (fun _ _ => Nat.zero_le _) (Finset.mem_univ l)) bound)
+
+/-- Running `i` padded transitions from `initList tm input` keeps every stack within
+`input.length + C * i`. -/
+theorem iterate_stepTotal_stack_le (tm : FinTM2) {C : ℕ}
+    (hC : ∀ (cfg : Cfg tm.Γ tm.Λ tm.σ) (bound : ℕ), (∀ k, (cfg.stk k).length ≤ bound) →
+      ∀ k, ((stepTotal tm.m cfg).stk k).length ≤ bound + C)
+    (input : List (tm.Γ tm.k₀)) (i : ℕ) (k : tm.K) :
+    (((stepTotal tm.m)^[i] (initList tm input)).stk k).length ≤ input.length + C * i := by
+  induction i generalizing k with
+  | zero =>
+    by_cases hk : k = tm.k₀
+    · subst hk; simp [initList]
+    · simp [initList, hk]
+  | succ i ih =>
+    calc _ = ((stepTotal tm.m ((stepTotal tm.m)^[i] (initList tm input))).stk k).length :=
+          congrArg (fun cfg : Cfg tm.Γ tm.Λ tm.σ => (cfg.stk k).length)
+            (Function.iterate_succ_apply' (stepTotal tm.m) i (initList tm input))
+      _ ≤ input.length + C * i + C := hC _ _ ih k
+      _ = input.length + C * (i + 1) := by rw [Nat.mul_succ, ← Nat.add_assoc]
 
 end Turing.TM2

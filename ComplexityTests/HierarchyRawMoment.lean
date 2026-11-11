@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 module
 -- upstream: local-only (tests of actual hierarchy input moments)
-import Complexity.Foundations.Probability.HierarchyRawMoment
+import Complexity.Computability.LogSpaceDerandomization.HierarchyRawMoment
 import ComplexityTests.HierarchyCutoffs
 
 /-! Nonzero products, shared randomness, normalization and actual-child regressions. -/

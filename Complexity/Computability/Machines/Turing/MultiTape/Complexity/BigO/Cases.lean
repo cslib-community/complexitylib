@@ -10,6 +10,7 @@ module
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO
 public import Complexity.Computability.Machines.Turing.MultiTape.Complexity.BigO.Sum
 import Complexity.Computability.Machines.Turing.MultiTape.Combinators.Ite
+import Complexity.Tactic.EncLen
 
 /-!
 # Case analysis on a component, within given bounds
@@ -102,8 +103,7 @@ private theorem sumElimSnd_tidy {f : π × α → ε} {g : π × β → ε} {Tf 
       (fun p => (enc p).length) (fun p => (enc p).length) := by
     refine ((ComputableInO.isLeft_deg encA encB).inO_one.tidy.comp
       (snd encP (encSum encA encB))).mono 2 (fun p => ?_) (fun p => ?_) <;>
-    · simp only [enc, length_encPair]
-      omega
+    · enc_len [enc]
   -- the two branches, on their cases
   let L : {p : π × (α ⊕ β) // p.2.isLeft = true} → π × α :=
     fun p => (p.1.1, p.1.2.getLeft (by simpa using p.2))
@@ -214,9 +214,7 @@ private theorem optionElimSnd_tidy {f : π → ε} {g : π × α → ε} {Tf Sf 
         hd).of_enc_eq (fun p => ?_) |>.mono 2 (fun p => ?_) (fun p => ?_)
       · obtain ⟨x, _ | a⟩ := p <;> simp [enc, dropFrame_frame_append]
       all_goals
-        simp only [enc, encPair_apply, dropFrame_frame_append, encBits,
-          Function.Embedding.refl_apply, List.length_append, length_frame]
-        omega
+        enc_len [enc, encPair_apply, dropFrame_frame_append, encBits, Function.Embedding.refl_apply]
     refine ((ComputableTidilyInDegree.of_finite (encIn := encBool) (encMid := encBool)
       Bool.not).inO_one.comp
       he).of_enc_eq (fun p => ?_) |>.mono 2 (fun p => ?_) (fun p => ?_)

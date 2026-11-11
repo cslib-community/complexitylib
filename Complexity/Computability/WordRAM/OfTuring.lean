@@ -1083,7 +1083,7 @@ section Run
 variable {tm : MultiTapeTM k Bool Q} {inp : List Bool}
 
 /-- The output tape only grows. -/
-private theorem length_output_runFrom_mono (c : Cfg k Bool Q inp) {j j' : ℕ} (h : j ≤ j') :
+theorem length_output_runFrom_mono (c : Cfg k Bool Q inp) {j j' : ℕ} (h : j ≤ j') :
     (tm.runFrom c j).output.length ≤ (tm.runFrom c j').output.length := by
   induction h with
   | refl => exact le_rfl

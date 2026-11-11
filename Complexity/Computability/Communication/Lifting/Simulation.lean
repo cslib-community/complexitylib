@@ -231,20 +231,6 @@ theorem Good.bob {send : (Fin n → Fin m → Bool) → Bool} {p₀ p₁ : Proto
     simp only [Protocol.depth] at this
     cases b <;> simp only [Bool.cond_true, Bool.cond_false] <;> omega
 
-/-- When `I ⊆ Jᶜ`, `(J ∪ I)ᶜ = Jᶜ \ I`, `#(J ∪ I)ᶜ + #I = #Jᶜ`, and `#(J ∪ I) = #J + #I`. -/
-private theorem compl_union_and_cards_of_subset_compl {J I : Finset (Fin n)} (hIJ : I ⊆ Jᶜ) :
-    (J ∪ I)ᶜ = Jᶜ \ I ∧ #(J ∪ I)ᶜ + #I = #Jᶜ ∧ #(J ∪ I) = #J + #I := by
-  have hdisj : Disjoint J I := by
-    rw [disjoint_iff_ne]
-    rintro a ha b' hb' rfl
-    exact (mem_compl.mp (hIJ hb')) ha
-  have hcompl : (J ∪ I)ᶜ = Jᶜ \ I := by
-    ext i
-    simp only [mem_compl, mem_union, mem_sdiff]
-    tauto
-  refine ⟨hcompl, ?_, card_union_of_disjoint hdisj⟩
-  rw [hcompl, card_sdiff_of_subset hIJ, Nat.sub_add_cancel (card_le_card hIJ)]
-
 /-- Under the hypotheses of `Good.alice`, Bob's filtered set `Y'` satisfies the deficiency
 invariant for `st.t + 1` and `st.J ∪ q.I`. -/
 private theorem Good.alice_Y_large {send : (Fin n → Fin m) → Bool} {p₀ p₁ : Protocol _ _ O}
@@ -258,7 +244,10 @@ private theorem Good.alice_Y_large {send : (Fin n → Fin m) → Bool} {p₀ p�
       2 ^ (st.t + 1) * (4 * τ) ^ #(st.J ∪ q.I) *
         #(st.Y.filter fun y => ∀ i ∈ q.I, y i = η i) := by
   set Y' := st.Y.filter fun y => ∀ i ∈ q.I, y i = η i
-  obtain ⟨-, hcardc, hcardJ⟩ := compl_union_and_cards_of_subset_compl (hL.I_subset q hqL)
+  have hIJ := hL.I_subset q hqL
+  have hcardJ := card_union_of_disjoint (subset_compl_iff_disjoint_left.mp hIJ)
+  have hcardc : #(st.J ∪ q.I)ᶜ + #q.I = #st.Jᶜ := by
+    simpa only [compl_union, ← sdiff_eq_inter_compl] using card_sdiff_add_card_eq_card hIJ
   have h1 := h.Y_large
   have h2 := hq ρ'
   rw [hcardJ, ← hcardc] at *
@@ -298,7 +287,10 @@ private theorem Good.alice_X_large {send : (Fin n → Fin m) → Bool} {p₀ p�
     (hL : IsPartition τ st.Jᶜ (st.X.filter fun x => send x = b) L) {q : Piece n m}
     (hqL : q ∈ L) :
     (m : ℝ) ^ #(st.J ∪ q.I)ᶜ * (m / τ) ^ #(st.J ∪ q.I) ≤ 4 ^ (st.t + 1) * #q.P := by
-  obtain ⟨-, hcardc, hcardJ⟩ := compl_union_and_cards_of_subset_compl (hL.I_subset q hqL)
+  have hIJ := hL.I_subset q hqL
+  have hcardJ := card_union_of_disjoint (subset_compl_iff_disjoint_left.mp hIJ)
+  have hcardc : #(st.J ∪ q.I)ᶜ + #q.I = #st.Jᶜ := by
+    simpa only [compl_union, ← sdiff_eq_inter_compl] using card_sdiff_add_card_eq_card hIJ
   have hPcard := hL.card_le q hqL
   have h1 := h.X_large
   rw [← hcardc, pow_add] at h1
@@ -333,7 +325,6 @@ theorem Good.alice {send : (Fin n → Fin m) → Bool} {p₀ p₁ : Protocol _ _
   have hPX : q.P ⊆ st.X := (hL.subset q hqL).trans (filter_subset _ _)
   have hXpos : (0 : ℝ) < #st.X := by exact_mod_cast card_pos.mpr h.X_nonempty
   have hPcard := hL.card_le q hqL
-  obtain ⟨hcompl, -, -⟩ := compl_union_and_cards_of_subset_compl (hL.I_subset q hqL)
   refine ⟨?_, ?_, ?_, ?_, ?_,
     h.alice_Y_large hτ b hL hqL hq ρ' η hηcard,
     h.alice_X_large hτ b hb hL hqL, ?_, ?_⟩
@@ -356,8 +347,7 @@ theorem Good.alice {send : (Fin n → Fin m) → Bool} {p₀ p₁ : Protocol _ _
       exact (hρ' i hi).symm
     · rw [(mem_filter.mp hy).2 i hi, hL.fixed q hqL x hx i hi, hη i hi]
   · change IsDense τ (st.J ∪ q.I)ᶜ q.P
-    rw [hcompl]
-    exact hL.dense q hqL
+    simpa only [compl_union, ← sdiff_eq_inter_compl] using hL.dense q hqL
   · intro x hx y hy
     have hx' := mem_filter.mp (hL.subset q hqL (mem_coe.mp hx))
     have := h.solves x (mem_coe.mpr hx'.1) y (mem_coe.mpr (filter_subset _ _ (mem_coe.mp hy)))
@@ -538,8 +528,9 @@ private theorem pow_depth_sim_alice (hτ4 : 4 ≤ τ) (hτm : τ ^ 2 ≤ m)
     fun ρ' => hρ₀ ▸ le_sup (f := fun ρ' => (k ρ').depth) (mem_univ ρ')
   rw [length_toList] at hdepth
   have hJ : #(st.afterAlice q ρ₀).J = #st.J + #q.I :=
-    (SimState.compl_union_and_cards_of_subset_compl ((isPartition_partitionOf hτ st.Jᶜ
-      (st.X.filter fun x => send x = bigHalf st.X send)).I_subset q hqL)).2.2
+    card_union_of_disjoint (subset_compl_iff_disjoint_left.mp
+      ((isPartition_partitionOf hτ st.Jᶜ
+        (st.X.filter fun x => send x = bigHalf st.X send)).I_subset q hqL))
   have key : ∀ b : Bool, (st.afterAlice q ρ₀).Good τ c R (cond b p₁ p₀) →
       ((m : ℝ) / τ) ^ (#st.J + #q.I +
         (cond b (sim τ p₁ (st.afterAlice q ρ₀)) (sim τ p₀ (st.afterAlice q ρ₀))).depth) ≤

@@ -10,6 +10,8 @@ module
 public import Complexity.Computability.WordRAM.Signed.ArrayArithmetic.Body
 public import Complexity.Computability.WordRAM.Signed.Fits
 
+import Complexity.Computability.WordRAM.CountingLoop
+
 /-!
 # Complete native signed array arithmetic with exact aliases
 
@@ -49,19 +51,16 @@ theorem exec {w n A B : ℕ} (subtract : Bool) (x : Data 16) (u v : ℕ → ℤ)
         encode (if subtract then u i - v i else u i + v i)) ∧
       (∀ a, a < x.regs Reg.output ∨ x.regs Reg.output + n ≤ a → y.mem a = x.mem a) ∧
       ∀ i, 9 ≤ i.val ∧ i.val ≤ 12 → y.regs i = x.regs i := by
-  let I (y : Data 16) : Prop :=
+  let P (j : ℕ) (y : Data 16) : Prop :=
     (∀ i, 9 ≤ i.val ∧ i.val ≤ 12 → y.regs i = x.regs i) ∧ y.regs Reg.one = 1 ∧
-    y.regs Reg.index ≤ n ∧
-    (∀ i < y.regs Reg.index, y.mem (x.regs Reg.output + i) =
+    (∀ i < j, y.mem (x.regs Reg.output + i) =
       encode (if subtract then u i - v i else u i + v i)) ∧
-    ∀ a, ¬(x.regs Reg.output ≤ a ∧ a < x.regs Reg.output + y.regs Reg.index) →
+    ∀ a, ¬(x.regs Reg.output ≤ a ∧ a < x.regs Reg.output + j) →
       y.mem a = x.mem a
-  have hbody (y : Data 16) (hy : I y) (hc : (Cond.lt Reg.index Reg.length).Holds y) :
-      ∃ z, ExecWithin (w + 2) (body subtract) y z 24 ∧ I z ∧
-        n - z.regs Reg.index < n - y.regs Reg.index := by
-    obtain ⟨hregs, h1, hi, hvalues, hframe⟩ := hy
-    have hl := (hregs Reg.length (by decide)).trans hlen
-    have hlt : y.regs Reg.index < n := by simpa only [Cond.holds_lt, hl] using hc
+  have hbody (y : Data 16) (hy : P (y.regs Reg.index) y) (hlt : y.regs Reg.index < n) :
+      ∃ z, ExecWithin (w + 2) (body subtract) y z 24 ∧ P (y.regs Reg.index + 1) z ∧
+        z.regs Reg.index = y.regs Reg.index + 1 := by
+    obtain ⟨hregs, h1, hvalues, hframe⟩ := hy
     have hra := hregs Reg.inputA (by decide)
     have hrb := hregs Reg.inputB (by decide)
     have hro := hregs Reg.output (by decide)
@@ -88,12 +87,9 @@ theorem exec {w n A B : ℕ} (subtract : Bool) (x : Data 16) (u v : ℕ → ℤ)
         simp only [BodyLocal, Reg.index, Reg.address, Fin.ext_iff]
         omega
       exact (hzregs i hnl).trans (hregs i hip)
-    refine ⟨z, hz, ⟨hpres, ?_, ?_, ?_, ?_⟩, ?_⟩
+    refine ⟨z, hz, ⟨hpres, ?_, ?_, ?_⟩, hzi⟩
     · exact (hzregs Reg.one (by decide)).trans h1
-    · rw [hzi]
-      omega
     · intro i hip
-      rw [hzi] at hip
       rw [hm]
       by_cases he : i = y.regs Reg.index
       · subst i
@@ -101,42 +97,29 @@ theorem exec {w n A B : ℕ} (subtract : Bool) (x : Data 16) (u v : ℕ → ℤ)
       · rw [Function.update_of_ne (by omega)]
         exact hvalues i (by omega)
     · intro a ha'
-      have hne : a ≠ x.regs Reg.output + y.regs Reg.index := by
-        intro he
-        apply ha'
-        rw [he, hzi]
-        omega
+      have hne : a ≠ x.regs Reg.output + y.regs Reg.index := by omega
       rw [hm, Function.update_of_ne hne]
       apply hframe
       intro h
       apply ha'
-      rw [hzi]
-      omega
-    · rw [hzi]
       omega
   let x₀ := (x.set Reg.index 0).set Reg.one 1
   have h1 : Fits (w + 2) 1 := (show Fits 2 1 from by decide).mono (by omega)
   have hinit : ExecWithin (B := .standard) (w + 2)
       (ram[ Reg.index ← #0; Reg.one ← #1 ]) x x₀ 2 := by ram_eval [x₀, h1]
-  have hx₀ : I x₀ := by
-    refine ⟨fun i hi => hinit.regs_eq (init_preserves i hi), by simp [x₀], ?_, ?_, ?_⟩
-    · simp +decide [x₀, Reg.one, Reg.index]
+  have hx₀ : P (x₀.regs Reg.index) x₀ := by
+    refine ⟨fun i hi => hinit.regs_eq (init_preserves i hi), by simp [x₀], ?_, ?_⟩
     · simp +decide [x₀, Reg.one, Reg.index]
     · intro _ _
       rfl
-  obtain ⟨y, hy, hyI, hstop⟩ :=
-    ExecWithin.loop_invariant I (fun y => n - y.regs Reg.index) hbody hx₀
-  obtain ⟨hregs, _, hi, hvalues, hframe⟩ := hyI
-  have hl := (hregs Reg.length (by decide)).trans hlen
-  have hend : y.regs Reg.index = n := by
-    simp only [Cond.holds_lt, hl] at hstop
-    omega
+  obtain ⟨y, hy, ⟨hregs, _, hvalues, hframe⟩, _⟩ := ExecWithin.loop_count P
+    (fun y hy => (hy.1 Reg.length (by decide)).trans hlen) hbody
+    (by simp +decide [x₀, Reg.one, Reg.index]) hx₀
   have he : ExecWithin (w + 2) (program subtract) x y (26 * n + 4) :=
     (hinit.seq hy).mono (by simp +decide [x₀, Reg.one, Reg.index]; omega)
-  refine ⟨y, he, by simpa only [hend] using hvalues, ?_, hregs⟩
+  refine ⟨y, he, hvalues, ?_, hregs⟩
   intro a ha'
   apply hframe
-  rw [hend]
   omega
 
 /-- Both closed operation choices use fixed standard code and never read physical width. -/
