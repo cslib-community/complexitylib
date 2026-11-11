@@ -7,9 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Decoding
 public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Noise
-public import CslibFrontier.Crypto.Computational.LWE.Basic
+public import CslibFrontier.Crypto.Computational.LWE.Decoding
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 import Mathlib.LinearAlgebra.Matrix.Notation
 
 /-!
@@ -30,7 +30,7 @@ probability of excessive noise.
 
 ## Main definitions
 
-* `Ciphertext`, `secretVector`, `publicMatrix`: the bit-matrix ciphertext and actual key formulas.
+* `Ciphertext`, `gadgetMatrix`: the bit-matrix ciphertext type and gadget matrix.
 * `encryptWithCoins`, `nand`, `decrypt`: the actual deterministic algorithms.
 * `HasError`: the modular equation witnessed by an explicit integer error vector.
 
@@ -59,24 +59,6 @@ open scoped _root_.Matrix
 
 /-- A square Boolean ciphertext with `(n + 1) * w` rows and columns. -/
 abbrev Ciphertext (n w : ℕ) := Matrix (Fin (n + 1) × Fin w) (Fin (n + 1) × Fin w) Bool
-
-/-- The secret vector has leading coordinate one, followed by the negated secret entries. -/
-def secretVector {n w : ℕ} (t : Fin n → ZMod (2 ^ w)) : Fin (n + 1) → ZMod (2 ^ w) :=
-  Fin.cons 1 (-t)
-
-/-- The public matrix is `[B * t + error | B]`, with integer errors cast modulo `2 ^ w`. -/
-def publicMatrix {n m w : ℕ} (B : Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
-    (t : Fin n → ZMod (2 ^ w)) (error : Fin m → ℤ) :
-    Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) :=
-  LWE.publicMatrix B t fun i => (error i : ZMod (2 ^ w))
-
-/-- The constructed public matrix has exactly the chosen error against the secret vector. -/
-theorem publicMatrix_mulVec_secretVector {n m w : ℕ}
-    (B : Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
-    (t : Fin n → ZMod (2 ^ w)) (error : Fin m → ℤ) :
-    publicMatrix B t error *ᵥ secretVector t = fun i => (error i : ZMod (2 ^ w)) := by
-  ext i
-  simp [publicMatrix, LWE.publicMatrix, secretVector, Matrix.mulVec, dotProduct, Fin.sum_univ_succ]
 
 /-- The public gadget matrix obtained by recomposing the identity. -/
 def gadgetMatrix (n w : ℕ) : Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w)) :=
@@ -114,14 +96,14 @@ def nand {n w : ℕ} (C₁ C₂ : Ciphertext n w) : Ciphertext n w :=
 This relation does not impose a size bound on the error. -/
 def HasError {n w : ℕ} (t : Fin n → ZMod (2 ^ w)) (C : Ciphertext n w)
     (μ : Bool) (error : Fin (n + 1) × Fin w → ℤ) : Prop :=
-  bitMatrix (ZMod (2 ^ w)) C *ᵥ powersOfTwo w (secretVector t) =
-    (μ.toNat : ZMod (2 ^ w)) • powersOfTwo w (secretVector t) +
+  bitMatrix (ZMod (2 ^ w)) C *ᵥ powersOfTwo w (LWE.secretVector t) =
+    (μ.toNat : ZMod (2 ^ w)) • powersOfTwo w (LWE.secretVector t) +
       fun i => (error i : ZMod (2 ^ w))
 
 /-- Decode the highest digit of the leading secret coordinate. Width zero returns `false`. -/
 def decrypt {n w : ℕ} (t : Fin n → ZMod (2 ^ w)) (C : Ciphertext n w) : Bool :=
   if hw : 0 < w then
-    decode w ((bitMatrix (ZMod (2 ^ w)) C *ᵥ powersOfTwo w (secretVector t))
+    LWE.decode w ((bitMatrix (ZMod (2 ^ w)) C *ᵥ powersOfTwo w (LWE.secretVector t))
       (0, ⟨w - 1, by omega⟩))
   else false
 
@@ -139,10 +121,11 @@ theorem recomposeMatrix_encryptWithCoins {n m w : ℕ}
 theorem encryptWithCoins_hasError {n m w : ℕ}
     (B : Matrix (Fin m) (Fin n) (ZMod (2 ^ w))) (t : Fin n → ZMod (2 ^ w))
     (error : Fin m → ℤ) (μ : Bool) (R : Matrix (Fin (n + 1) × Fin w) (Fin m) Bool) :
-    HasError t (encryptWithCoins (publicMatrix B t error) μ R) μ (encryptionError R error) := by
+    HasError t (encryptWithCoins (LWE.publicMatrixInt B t error) μ R) μ
+      (encryptionError R error) := by
   unfold HasError encryptWithCoins
   rw [flattenMatrix_mulVec, add_mulVec, smul_mulVec, one_mulVec, decomposeMatrix_mulVec,
-    ← mulVec_mulVec, publicMatrix_mulVec_secretVector, bitMatrix_mulVec_intCast]
+    ← mulVec_mulVec, LWE.publicMatrixInt_mulVec_secretVector, bitMatrix_mulVec_intCast]
 
 /-- The actual NAND formula has error `-μ₂ * error₁ - C₁ * error₂` over the integers. -/
 theorem nand_hasError {n w : ℕ} (t : Fin n → ZMod (2 ^ w))
@@ -165,8 +148,8 @@ theorem decrypt_eq_of_hasError {n w : ℕ} (hw : 0 < w)
   let i : Fin (n + 1) × Fin w := (0, ⟨w - 1, by omega⟩)
   simp only [decrypt, dite_eq_left hw]
   rw [hC]
-  simpa [i, powersOfTwo, secretVector] using
-    decode_eq_of_error hw μ (error i) (herror i)
+  simpa [i, powersOfTwo, LWE.secretVector] using
+    LWE.decode_eq_of_error hw μ (error i) (herror i)
 
 /-- Fresh encryption is correct whenever the sum bound on its integer errors fits below
 one quarter of the modulus. This holds for every binary choice of encryption coins. -/
@@ -175,7 +158,7 @@ theorem decrypt_encryptWithCoins {n m w bound : ℕ}
     (error : Fin m → ℤ) (μ : Bool) (R : Matrix (Fin (n + 1) × Fin w) (Fin m) Bool)
     (hw : 0 < w) (herror : ∀ j, (error j).natAbs ≤ bound)
     (hmargin : 4 * (m * bound) < 2 ^ w) :
-    decrypt t (encryptWithCoins (publicMatrix B t error) μ R) = μ := by
+    decrypt t (encryptWithCoins (LWE.publicMatrixInt B t error) μ R) = μ := by
   apply decrypt_eq_of_hasError hw t _ μ _ (encryptWithCoins_hasError B t error μ R)
   intro i
   have hbound : (encryptionError R error i).natAbs ≤ m * bound := by
