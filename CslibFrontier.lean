@@ -4921,6 +4921,9 @@ public import CslibFrontier.Foundations.Combinatorics.Multigraph
 public import CslibFrontier.Foundations.Combinatorics.Multigraph.CutSpace
 public import CslibFrontier.Foundations.Combinatorics.PacketPacking
 public import CslibFrontier.Foundations.Combinatorics.PartialLabelScores
+public import CslibFrontier.Foundations.Combinatorics.PerfectHashFamily.Basic
+public import CslibFrontier.Foundations.Combinatorics.PerfectHashFamily.Defs
+public import CslibFrontier.Foundations.Combinatorics.PerfectHashFamily.LinearHash
 public import CslibFrontier.Foundations.Combinatorics.PessimisticEstimator
 public import CslibFrontier.Foundations.Combinatorics.PowersetTail
 public import CslibFrontier.Foundations.Combinatorics.ReplacementCounting
