@@ -736,7 +736,7 @@ private theorem lagrangeDenomMod_spec {ι : Type} {q : ℕ} [Fact q.Prime]
     rw [ih]
 
 /-- Coefficient `j` of `simLagrangePoly` modulo `q` via Fermat inversion `denom ^ (q - 2) % q`. -/
-@[expose] def lagrangeCoeffMod {ι : Type} [DecidableEq ι] (t q : ℕ) (x : ι → ℕ)
+@[expose] def lagrangeCoeffMod {ι : Type} (t q : ℕ) (x : ι → ℕ)
     (ms : List ι) (k : ι) (j : Fin (t + 1)) : ℕ :=
   ((lagrangeDenomMod q x (x k) ms ^ (q - 2) % q) * lagrangeNumMod t q x ms j) % q
 
@@ -885,7 +885,7 @@ private theorem computableInPolyTime_mulXSubConstMod {α : Type} {input : α ↪
             (ComputableTidilyInPolyTime.binary_sub' hq'
               (ComputableTidilyInPolyTime.binary_mod' ha' hq')) hck2)) hq'
 
-private theorem computableInPolyTime_lagrangeCoeffMod {ι : Type} [DecidableEq ι]
+private theorem computableInPolyTime_lagrangeCoeffMod {ι : Type}
     (t : ℕ) (x : ι → F.Desc → ℕ)
     (hx : ∀ m : ι, ComputableInPolyTime (x m) F.encDesc encNat)
     (ms : List ι) (k : ι) (j : Fin (t + 1)) :
