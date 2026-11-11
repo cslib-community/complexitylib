@@ -68,23 +68,20 @@ private def afterCopy (input context : List Bool) :
 
 private theorem copy_run (input context : List Bool) :
     NativeRuntimeContext.update.outputToWord.runFrom
-      (Sequential.leftCfg
-        ((rewindWork Bool).extendTapes (tapeEmb (Fin.last 2)))
-        (entry (input := input) context))
+      ((entry (input := input) context).mapState
+        (handOver ((rewindWork Bool).extendTapes (tapeEmb (Fin.last 2))).q₀))
         (context.length + 2 * input.length + 2 + ((context ++ frame input).length + 2)) =
-      Sequential.rightCfg (afterCopy input context) := by
+      (afterCopy input context).mapState (Option.map .inr) := by
   have hu : NativeRuntimeContext.update.outputToTape.runFrom
       (entry (input := input) context) (context.length + 2 * input.length + 2) =
       outCfg (NativeRuntimeContext.updateConfig (input := input) none input.length le_rfl
         (context ++ frame input) (context ++ frame input).length
         (context ++ frame input)) := by
-    have hs := (step_outCfg NativeRuntimeContext.update).iterate_right
-      (context.length + 2 * input.length + 2)
-      (NativeRuntimeContext.updateConfig (input := input) (some .scan) 0 (by omega) context 0 [])
-    change outCfg (NativeRuntimeContext.update.runFrom _ _) =
-      NativeRuntimeContext.update.outputToTape.runFrom _ _ at hs
+    have hs := runFrom_map (outCfgHom NativeRuntimeContext.update)
+      (NativeRuntimeContext.updateConfig (input := input) (some .scan) 0
+        (by omega) context 0 []) (context.length + 2 * input.length + 2)
     rw [NativeRuntimeContext.update_run] at hs
-    exact hs.symm
+    exact hs
   unfold MultiTapeTM.outputToWord
   apply runFrom_seq hu rfl _ rfl
   rw [runFrom_tapeEmb]
@@ -140,7 +137,7 @@ theorem splice_run (input context : List Bool) :
   have hfirst := runFrom_seq
     (tm₁ := (rewindWork Bool (some none)).extendTapes (tapeEmb (0 : Fin 3)))
     hcopy rfl
-    (by simpa [Sequential.rightCfg, Cfg.mapState, afterCopy, Cfg.withState] using herase) rfl
+    (by simpa [Cfg.mapState, afterCopy, Cfg.withState] using herase) rfl
   have hrewind : ((rewindInput Bool).extendTapes
       (noTapes 3)).runFrom
         ((erased input context).withState (some (rewindInput Bool).q₀))
@@ -164,18 +161,15 @@ theorem splice_run (input context : List Bool) :
   have hlast := runFrom_seq
     (tm₁ := (rewindInput Bool).extendTapes (noTapes 3))
     hfirst rfl
-    (by simpa [Sequential.rightCfg, Cfg.mapState, erased, Cfg.withState] using hrewind) rfl
+    (by simpa [Cfg.mapState, erased, Cfg.withState] using hrewind) rfl
   convert hlast using 1
   · congr 1
     · apply Cfg.ext
-      · simp [splice, Sequential.leftCfg, Cfg.mapState, wordsCfg, entry,
-          MultiTapeTM.outputToWord, NativeRuntimeContext.update, MultiTapeTM.seq,
-          MultiTapeTM.outputToTape, outCfg,
-          NativeRuntimeContext.updateConfig]
       · rfl
-      · funext i; fin_cases i <;> simp [Sequential.leftCfg, Cfg.mapState, entry, outCfg, wordsCfg,
+      · rfl
+      · funext i; fin_cases i <;> simp [handOver, Cfg.mapState, entry, outCfg, wordsCfg,
           NativeRuntimeContext.updateConfig, lastCases_three]
-      · funext i; fin_cases i <;> simp [Sequential.leftCfg, Cfg.mapState, entry, outCfg, wordsCfg,
+      · funext i; fin_cases i <;> simp [handOver, Cfg.mapState, entry, outCfg, wordsCfg,
           NativeRuntimeContext.updateConfig, lastCases_three]
       · rfl
     · simp; omega
