@@ -92,6 +92,42 @@ example {g : ℕ → Game} (hQ : PolynomiallyBounded Q) (hR : PolynomiallyBounde
     Negligible (fun n => Game.succProbability (g n)) := by
   negligible using hle
 
+/-! ### Multiple `def` game-advantage leaves (no deep `whnf` unfolding across distinct games) -/
+
+noncomputable def testBindGameA (D : ℕ → Bool × Bool → PMF Bool) (bit : Bool) (n : ℕ) : Game :=
+  (PMF.pure false).bind fun x =>
+    (PMF.pure true).bind fun y =>
+      (PMF.pure bit).bind fun z =>
+        D n (x ^^ bit, y ^^ z)
+
+noncomputable def testBindGameB (D : ℕ → Bool × Bool → PMF Bool) (bit : Bool) (n : ℕ) : Game :=
+  (PMF.pure true).bind fun x =>
+    (PMF.pure false).bind fun y =>
+      D n (x, y ^^ bit)
+
+set_option maxHeartbeats 25000 in
+-- Verify `negligible` matches game leaves at `.instances` transparency without unfolding `def`s.
+example (D₁ D₂ : Bool → ℕ → Bool × Bool → PMF Bool) {target : Bool → ℕ → Game}
+    (h₀ : Negligible fun n =>
+      Game.advantage (testBindGameA (fun m p => D₁ false m p) false n)
+        (testBindGameB (fun m p => D₁ false m p) false n))
+    (h₁ : Negligible fun n =>
+      Game.advantage (testBindGameA (fun m p => D₂ false m p) false n)
+        (testBindGameB (fun m p => D₂ false m p) false n))
+    (h₂ : Negligible fun n =>
+      Game.advantage (testBindGameA (fun m p => D₂ true m p) true n)
+        (testBindGameB (fun m p => D₂ true m p) true n))
+    (h₃ : Negligible fun n =>
+      Game.advantage (testBindGameA (fun m p => D₁ true m p) true n)
+        (testBindGameB (fun m p => D₁ true m p) true n))
+    (hle : ∀ n, Game.advantage (target false n) (target true n) ≤
+      Game.advantage (testBindGameA (D₁ false) false n) (testBindGameB (D₁ false) false n) +
+      Game.advantage (testBindGameA (D₂ false) false n) (testBindGameB (D₂ false) false n) +
+      Game.advantage (testBindGameA (D₂ true) true n) (testBindGameB (D₂ true) true n) +
+      Game.advantage (testBindGameA (D₁ true) true n) (testBindGameB (D₁ true) true n)) :
+    Negligible (fun n => Game.advantage (target false n) (target true n)) := by
+  negligible using hle
+
 /-! ### Eventual upper bounds (`negligible eventually hle`) in `ℝ≥0` and `ℝ` -/
 
 example {f : ℕ → ℝ≥0} (hQ : PolynomiallyBounded Q) (hε : Negligible ε)

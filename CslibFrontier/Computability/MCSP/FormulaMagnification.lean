@@ -16,6 +16,7 @@ public import CslibFrontier.Computability.MCSP.SuccinctNP
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Foundations.Combinatorics.FiniteCover.Basic
 import CslibFrontier.Foundations.Combinatorics.MajorityVote
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import Cslib.Computability.Circuit.Boolean.Counting
 import Mathlib.Algebra.Order.Archimedean.Real.Basic
 import Mathlib.Algebra.Order.Floor.Semiring
@@ -1395,23 +1396,7 @@ theorem card_filter_agreesOn_eq_two_pow (n : ℕ) (S : Finset (BitString n))
     · exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hT).2⟩
     · refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
       simpa using (Finset.mem_filter.mp hf).2
-  have hpi : (Finset.univ.filter fun f : BooleanFunction n => ∀ y ∈ S, f y = g y) =
-      Fintype.piFinset (fun y : BitString n =>
-        if y ∈ S then ({g y} : Finset Bool) else Finset.univ) := by
-    ext f
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Fintype.mem_piFinset]
-    refine ⟨fun hf y => ?_, fun hf y hy => ?_⟩
-    · split_ifs with hy
-      · exact Finset.mem_singleton.mpr (hf y hy)
-      · exact Finset.mem_univ (f y)
-    · have hfy := hf y
-      simp only [hy, ↓reduceIte, Finset.mem_singleton] at hfy
-      exact hfy
-  rw [hbij, hpi, Fintype.card_piFinset]
-  simp only [apply_ite Finset.card, Finset.prod_ite, Finset.prod_const,
-    Finset.card_singleton, one_pow, one_mul, Finset.filter_not, Finset.filter_mem_eq_inter,
-    Finset.univ_inter, Finset.card_sdiff_of_subset (Finset.subset_univ S), Finset.card_univ,
-    Fintype.card_bool]
+  rw [hbij, Fintype.card_filter_forall_mem_eq, Fintype.card_bool, Finset.card_compl]
   simp [BitString]
 
 open Classical in
