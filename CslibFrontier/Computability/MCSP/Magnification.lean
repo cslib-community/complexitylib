@@ -69,9 +69,13 @@ special case.
   merged certificates.
 * `Cslib.MCSP.CircuitMinMergeLanguage`: the `Circuit-Min-Merge` decision problem, adapted to binary
   subcube merging of fixed-threshold certificates.
+* `Cslib.MCSP.subcubeState`: the validity bit and least certificate of a subcube.
+* `Cslib.MCSP.mergeVec`: the multi-output merge step read from slices of a language.
 
 ## Main results
 
+* `Cslib.MCSP.mergeVec_eq_subcubeState`: one merge step maps the states of two half-subcubes to
+  the state of their parent.
 * `Cslib.MCSP.circuitMinMergeLanguage_mem_PPolyOn`: under `NP ⊆ P/poly`,
   `CircuitMinMergeLanguage ∈ PPolyOn encMerge`.
 * `Cslib.MCSP.exists_complexity_yesSet_le_of_NP_subset_PPoly`: under `NP ⊆ P/poly`,
@@ -649,15 +653,20 @@ private theorem mergeCert₁_append_subcubeState (n s : ℕ) (f : BooleanFunctio
     Nat.add_sub_cancel_left, List.take_of_length_le (by simp [hlen1])]
 
 /-- The multi-output merge step obtained by hardwiring the header `((n, s), (p, j))` into the
-slices of a language `L` for each output bit `j : Fin (stateWidth n s)`. -/
-private noncomputable def mergeVec (L : Language Bool) (n s : ℕ) (p : List Bool)
+slices of a language `L` for each output bit `j : Fin (stateWidth n s)`. When `L` encodes
+`CircuitMinMergeLanguage`, it maps the states of the half-subcubes `p ++ [false]` and
+`p ++ [true]` to the state of `p` (`Cslib.MCSP.mergeVec_eq_subcubeState`). -/
+@[no_expose] noncomputable def mergeVec (L : Language Bool) (n s : ℕ) (p : List Bool)
     (y : BitString (stateWidth n s + stateWidth n s)) : BitString (stateWidth n s) :=
   fun j =>
     let f := frame (encHeader ((n, s), (p, (j : ℕ))))
     L.slice (f.length + (stateWidth n s + stateWidth n s))
       (substitute (prependInputs (BitString.ofList f.length f)) y)
 
-private theorem mergeVec_eq_subcubeState {L : Language Bool}
+/-- **One merge step.** If `L` encodes `CircuitMinMergeLanguage` under `encMerge`, then
+`mergeVec L n s p` maps the states of the half-subcubes `p ++ [false]` and `p ++ [true]` to the
+state of `p`, for every proper prefix `p` of an `n`-bit input. -/
+theorem mergeVec_eq_subcubeState {L : Language Bool}
     (hL : ∀ a : MergeInput, a ∈ CircuitMinMergeLanguage ↔ encMerge a ∈ L)
     {n s : ℕ} (f : BooleanFunction n) {p : List Bool} (hp : p.length < n) :
     mergeVec L n s p
@@ -745,7 +754,9 @@ private theorem isSubcubeCert_of_length_eq {n s : ℕ} {f : BooleanFunction n} {
       rw [← hx', BitString.ofList_ofFn]
     rw [hx', hxy, h]
 
-private theorem subcubeState_congr_of_length_eq {n s : ℕ} {f₁ f₂ : BooleanFunction n}
+/-- The state of a full-length prefix `p`, a single point of `{0, 1} ^ n`, depends only on the
+value of `f` at that point. -/
+theorem subcubeState_congr_of_length_eq {n s : ℕ} {f₁ f₂ : BooleanFunction n}
     {p : List Bool} (hp : p.length = n)
     (hf : f₁ (BitString.ofList n p) = f₂ (BitString.ofList n p)) :
     subcubeState n s f₁ p = subcubeState n s f₂ p := by
@@ -837,7 +848,9 @@ private theorem isSubcubeCert_nil_iff {n s : ℕ} {f : BooleanFunction n} :
     obtain ⟨w, hlen, hvalid, heval⟩ := exists_validCertificate_of_circuit C hcS
     exact ⟨w, hlen, hvalid, fun x _ => (heval x).trans (Circuit.computes_single_iff.1 hC x)⟩
 
-private theorem subcubeState_nil_zero_eq_slice_yesSet (s : ℕ → ℕ) (n : ℕ) (T : BitString (2 ^ n)) :
+/-- Bit `0` of the state of the root subcube (the empty prefix) of the function with truth
+table `T` is the answer of `MCSP[s]` (`GapMCSP.yesSet s`) on `T`. -/
+theorem subcubeState_nil_zero_eq_slice_yesSet (s : ℕ → ℕ) (n : ℕ) (T : BitString (2 ^ n)) :
     subcubeState n (s n) ((truthTable n).symm T) [] ⟨0, Nat.succ_pos _⟩ =
       (GapMCSP.yesSet s).slice (2 ^ n) T := by
   rw [Bool.eq_iff_iff, GapMCSP.slice_yesSet_eq_true_iff, ← isSubcubeCert_nil_iff,
