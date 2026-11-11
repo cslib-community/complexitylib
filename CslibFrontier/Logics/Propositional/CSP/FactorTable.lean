@@ -70,11 +70,9 @@ section Radix
   | len + 1, idx => (idx % d) :: lsbDecode d len (idx / d)
 
 /-- Evaluating `Nat.ofDigits` on an all-zero coordinate tuple yields `0`. -/
-theorem ofDigits_map_zero {V : Type*} (d : ℕ) : ∀ xs : List V,
-    Nat.ofDigits d (xs.map fun _ => 0) = 0
-  | [] => rfl
-  | _ :: xs => by
-      rw [List.map_cons, Nat.ofDigits_cons, ofDigits_map_zero d xs, mul_zero, zero_add]
+theorem ofDigits_map_zero {V : Type*} (d : ℕ) (xs : List V) :
+    Nat.ofDigits d (xs.map fun _ => 0) = 0 := by
+  rw [List.map_const', Nat.ofDigits_replicate_zero]
 
 @[simp]
 theorem length_lsbDecode (d len idx : ℕ) : (lsbDecode d len idx).length = len := by
@@ -103,16 +101,9 @@ theorem ofDigits_lt_pow_length {d : ℕ} (xs : List ℕ) (h : ∀ x ∈ xs, x < 
     | cons x _ =>
         have hx := h x (by simp)
         omega
-  · have hz : xs = xs.map fun _ => 0 := by
-      induction xs with
-      | nil => rfl
-      | cons x xs ih =>
-          have hx0 : x = 0 := by
-            have := h x (by simp)
-            omega
-          subst hx0
-          exact congrArg (0 :: ·) (ih fun y hy => h y (by simp [hy]))
-    rw [hz, ofDigits_map_zero, one_pow]
+  · have hz : xs = List.replicate xs.length 0 :=
+      List.eq_replicate_iff.mpr ⟨rfl, fun x hx => Nat.lt_one_iff.mp (h x hx)⟩
+    rw [hz, Nat.ofDigits_replicate_zero, one_pow]
     exact Nat.zero_lt_one
   · exact Nat.ofDigits_lt_base_pow_length hd1 h
 
