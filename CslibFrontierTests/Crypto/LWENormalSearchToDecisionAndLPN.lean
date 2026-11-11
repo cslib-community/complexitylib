@@ -54,6 +54,15 @@ example : SearchLPN (fun _ => 0) (fun _ => 0) (fun _ => 0) ↔
   SearchLWE (fun _ => 0) (fun _ => 0) (fun _ => 2) (fun _ => bernoulliZMod2 0) := Iff.rfl
 
 -- Singular top block reduction logic on zero word
-example : reduceNormalDecision (n := 1) (m := 0) (q := 2) (fun _ => pure true) [false, false] = pure false := rfl
+example : reduceNormalDecision (n := 1) (m := 0) (q := 2) (fun _ => pure true) [false, false]
+    = pure false := by
+  have h : Turing.MultiTapeTM.frames [false, false] = [[], []] := by
+    rw [Turing.MultiTapeTM.frames]
+    dsimp [Turing.MultiTapeTM.unframe, Turing.MultiTapeTM.dropFrame]
+    rw [Turing.MultiTapeTM.frames]
+    dsimp [Turing.MultiTapeTM.unframe, Turing.MultiTapeTM.dropFrame]
+    rw [Turing.MultiTapeTM.frames]
+    rfl
+  simp [reduceNormalDecision, topBlock, decodeMatrix, gaussInv?, h]
 
 end CslibFrontierTests.Crypto.LWENormalSearchToDecisionAndLPN
