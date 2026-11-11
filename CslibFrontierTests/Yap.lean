@@ -123,8 +123,8 @@ example {β : Type} {encB : β ↪ List Bool} {B : Set β} {f : List (CNF ℕ) �
 /-- Corollary 2 of Bodlaender, Jansen and Kratsch under `PH ≠ Σ₃`: k-Path has neither a polynomial
 kernel nor a polynomial compression if `PH encBits ≠ SigmaP 3 encBits`. -/
 example (hPH : PH encBits ≠ SigmaP 3 encBits) :
-    ¬ HasPolyKernel (encPair encGraph encNat) Prod.snd LongPath ∧
-    ¬ HasPolyCompression (encPair encGraph encNat) Prod.snd LongPath :=
+    ¬ HasPolyKernel encLongPath LongPathInstance.target LongPath ∧
+    ¬ HasPolyCompression encLongPath LongPathInstance.target LongPath :=
   ⟨not_hasPolyKernel_LongPath_of_PH_ne_SigmaP_three hPH,
     not_hasPolyCompression_LongPath_of_PH_ne_SigmaP_three hPH⟩
 
