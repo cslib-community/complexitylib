@@ -22,11 +22,13 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -1246,20 +1248,16 @@ private theorem eval_targetCollisionGame_tcrMultiAdversary {k : ℕ} {Control : 
       (PMF.uniformOfFintype (Fin (dyadicSize (fuelUpper H ckg dkg c d n)))).bind fun i =>
         tcrSlotTrial S H machine c d n i.val := by
   intro _
-  simp only [targetCollisionGame, tcrMultiAdversary, ProbComp.eval_bind,
-    eval_sampleDyadicIndex, BitString.eval_sampleList, PMF.bind_bind, PMF.bind_map,
-    Function.comp_def]
-  rw [PMF.bind_comm]
-  congr 1; funext i
-  congr 1; funext keys
+  simp only [targetCollisionGame, tcrMultiAdversary, tcrSlotTrial, eval_sampleDyadicIndex,
+    BitString.eval_sampleList, pmf_norm]
+  peel_binds keys i
   by_cases hlt : i.val < simFuelOf c d n keys.1
-  · dsimp only [tcrSlotTrial, simFuelOf, simWordOf, simPkOf] at hlt ⊢
-    simp only [hlt, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-      ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.pure_bind,
-      tcrStateDecoder.decode_enc, _root_.PMF.map, Function.comp_def]
-  · dsimp only [tcrSlotTrial, simFuelOf, simWordOf, simPkOf] at hlt ⊢
-    simp only [hlt, ↓reduceIte, ProbComp.eval_pure, PMF.pure_bind,
-      tcrStateDecoder.decode_enc, Bool.false_eq_true, _root_.PMF.map, Function.comp_def]
+  · dsimp only [simFuelOf, simWordOf, simPkOf] at hlt ⊢
+    simp only [hlt, ↓reduceIte, ProbComp.eval_uniform, tcrStateDecoder.decode_enc,
+      _root_.PMF.map, pmf_norm]
+  · dsimp only [simFuelOf, simWordOf, simPkOf] at hlt ⊢
+    simp only [hlt, ↓reduceIte, tcrStateDecoder.decode_enc, Bool.false_eq_true,
+      _root_.PMF.map, pmf_norm]
 
 private theorem succProbability_winTcrAt_le_trial {k : ℕ} {Control : Type}
     (S : SignatureScheme) (H : KeyedHashFamily)
@@ -1375,16 +1373,14 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
   have : NeZero D := ⟨hDpos.ne'⟩
   let μ := traceSamplePMF S H machine c d n
   have hrunPair : ∀ keys : List Bool × List Bool,
-      ((OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-          (pairSigningOracle S H n keys.2))
-        (adversary n (pkOf keys.1))).run []) =
+      ProbOracleComp.runWith (pairSigningOracle S H n keys.2) (adversary n (pkOf keys.1)) [] =
       (ProbComp.eval (OracleComp.iterate (fuelOf keys.1)
         (sampleStep S H machine n keys.2 (fuelOf keys.1) (wordOf keys.1)) [])).map fun trace =>
           let res := trace.foldl (replayPairStep machine (fuelOf keys.1))
             (FiniteConfig.init machine.initial (wordOf keys.1), [])
           (msgSigDecoder.decode res.1.tapes.output, res.2) := by
     intro keys
+    rw [← ProbOracleComp.run_interpret_eq_runWith]
     have hdecode : adversary n (pkOf keys.1) =
         msgSigDecoder.decode <$> ((encPair encBits encBits) <$> adversary n (pkOf keys.1)) := by
       simp only [Functor.map_map, msgSigDecoder.decode_enc]
@@ -1419,11 +1415,9 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
   have hwordEq :
       ProbComp.eval ((wordScheme S H).eufCmaGame adversary n) = μ.map winGame := by
     simp only [WordSignatureScheme.eufCmaGame, wordScheme_keyGen, wordScheme_verify, keyGen,
-      ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, PMF.bind_bind,
-      PMF.pure_bind, μ, traceSamplePMF, PMF.monad_bind_eq_bind, PMF.map_bind]
-    congr 1
-    funext keys
-    have hsim := ProbOracleComp.run_interpret_map_state
+      μ, traceSamplePMF, runWith_norm, pmf_norm]
+    peel_binds keys
+    have hsim := ProbOracleComp.runWith_map_state
       (oracle := pairSigningOracle S H n keys.2)
       (oracle' := fun q s =>
         ProbComp.eval ((wordScheme S H).signingOracle (pkOf keys.2) q s))
@@ -1431,64 +1425,49 @@ theorem succProbability_wordScheme_eufCmaGame_le_of_machine {k : ℕ} {Control :
       (step := by
         intro ⟨⟨⟩, msg⟩ pairs
         simp only [pairSigningOracle, WordSignatureScheme.signingOracle, wordScheme_sign, sign,
-          pkOf, simPkOf, keyDecoder.decode_enc, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-          BitString.eval_sampleList, PMF.monad_bind_eq_bind, Function.comp_def, _root_.PMF.map,
-          PMF.bind_bind, PMF.pure_bind, List.map_cons])
+          pkOf, simPkOf, keyDecoder.decode_enc, ↓reduceIte, BitString.eval_sampleList,
+          List.map_cons, _root_.PMF.map, pmf_norm])
       (adversary n (pkOf keys.1)) []
     have hrun := hrunPair keys
     simp only [List.map_nil, pkOf, simPkOf] at hsim hrun
     rw [← hsim, hrun]
-    simp only [_root_.PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, winGame, pkOf,
-      wordOf, fuelOf, simPkOf]
+    simp only [_root_.PMF.map, winGame, pkOf, wordOf, fuelOf, simPkOf, simWordOf, simFuelOf,
+      pmf_norm]
   have hsigEq :
       ProbComp.eval (S.eufCmaGame (manyTimeForger H sigBound adversary) (otsParam H n)) =
         μ.map winSig := by
     simp only [SignatureScheme.eufCmaGame, manyTimeForger, simPkOf, otsParamInv_otsParam,
-      ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure, ProbOracleComp.eval_run_interpret, μ,
-      traceSamplePMF, PMF.monad_bind_eq_bind, PMF.map_bind]
-    refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
-    simp only [OracleComp.interpret_bind, OracleComp.interpret_pure, StateT.run_bind,
-      StateT.run_pure, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-      ProbOracleComp.run_interpret_run_interpret, PMF.bind_map, Function.comp_def]
-    have hsim := ProbOracleComp.run_interpret_map_state
+      ↓reduceIte, μ, traceSamplePMF, runWith_norm, pmf_norm]
+    peel_binds keys
+    have hsim := ProbOracleComp.runWith_map_state
       (oracle := pairSigningOracle S H n keys.2)
       (oracle' := fun q (state : Unit × List (List Bool)) =>
-        ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-            (fun req s => ProbComp.eval (S.signingOracle keys.2 req s)))
-          (StateT.run (manyTimeHandler H sigBound n q) state.1)).run state.2).map
+        (ProbOracleComp.runWith (fun req s => ProbComp.eval (S.signingOracle keys.2 req s))
+          (StateT.run (manyTimeHandler H sigBound n q) state.1) state.2).map
             (fun p => (p.1.1, p.1.2, p.2)))
       (represent := fun pairs : List (List Bool × List Bool) =>
         ((), pairs.map fun p => otsMsg H n p.2 (H.eval n p.2 p.1)))
       (step := by
         intro ⟨⟨⟩, msg⟩ pairs
-        change _ = (((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
-            (fun req s => ProbComp.eval (S.signingOracle keys.2 req s)))
-          (manyTimeHandler H sigBound n ((), msg) ())).run
-            (pairs.map fun p => otsMsg H n p.2 (H.eval n p.2 p.1))).map
-              fun p => (p.1.1, p.1.2, p.2))
-        simp only [manyTimeHandler, bind_map_left, OracleComp.interpret_bind,
-          OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure,
-          ProbOracleComp.run_interpret_sample, ProbOracleComp.interpret_query,
-          BitString.eval_sampleList, Probability.PMF.monad_bind_eq_bind,
-          Probability.PMF.monad_pure_eq_pure, pairSigningOracle,
-          PMF.bind_bind, PMF.pure_bind, Function.comp_def, List.map_cons, _root_.PMF.map]
-        simp only [StateT.run, SignatureScheme.signingOracle, ProbComp.eval_bind,
-          ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
-        refine PMF.bind_congr_on_support _ _ _ fun hashKey _ => ?_
-        refine PMF.bind_congr_on_support _ _ _ fun ots hots => ?_
+        change _ = (ProbOracleComp.runWith
+          (fun req s => ProbComp.eval (S.signingOracle keys.2 req s))
+          (manyTimeHandler H sigBound n ((), msg) ())
+          (pairs.map fun p => otsMsg H n p.2 (H.eval n p.2 p.1))).map
+            (fun p => (p.1.1, p.1.2, p.2))
+        simp only [manyTimeHandler, SignatureScheme.signingOracle, pairSigningOracle,
+          BitString.eval_sampleList, List.map_cons, _root_.PMF.map, runWith_norm, pmf_norm]
+        peel_binds hashKey ots
         have htake : ots.take (sigBound n) = ots :=
           List.take_of_length_le
-            (hsigBound n keys.1 keys.2 hkeys (otsMsg H n hashKey (H.eval n hashKey msg))
-              (length_otsMsg H n hashKey _) ots hots)
+            (hsigBound n keys.1 keys.2 keys_mem (otsMsg H n hashKey (H.eval n hashKey msg))
+              (length_otsMsg H n hashKey _) ots ots_mem)
         simp only [htake])
       (adversary n (pkOf keys.1)) []
     have hrun := hrunPair keys
     simp only [List.map_nil, pkOf, simPkOf] at hsim hrun
     rw [← hsim, hrun]
-    simp only [_root_.PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, winSig,
-      otsForgeryOf, wordOf, fuelOf]
+    simp only [_root_.PMF.map, winSig, otsForgeryOf, wordOf, fuelOf, simWordOf, simFuelOf,
+      pmf_norm]
   have hpointwise : ∀ sample ∈ μ.support,
       winGame sample = true →
         winSig sample = true ∨ ∃ i : Fin D, winTcrAt H machine c d n i.val sample = true := by
@@ -1634,14 +1613,12 @@ theorem SignatureScheme.EUFCMA.eufCMA_wordScheme
     {S : SignatureScheme} (hS : S.EUFCMA)
     {H : KeyedHashFamily} (hH : H.TargetCollisionResistant) :
     (TCRSignature.wordScheme S H).EUFCMA := by
-  apply WordSignatureScheme.EUFCMA.of_negligible
-  intro adversary hadversary
+  refine WordSignatureScheme.EUFCMA.of_negligible fun adversary hadversary => ?_
   obtain ⟨sigForger, tcrAdv, loss, hsigPPT, htcrPPT, hlossPoly, hbound⟩ :=
     TCRSignature.exists_reduction_wordScheme_eufCmaGame_le S H hadversary
-  exact negligible_of_le
-    ((TCRSignature.negligible_comp_otsParam (hS.negligible sigForger hsigPPT) H).add
-      ((hH.negligible tcrAdv htcrPPT).polynomiallyBounded_mul hlossPoly))
-    hbound
+  have := TCRSignature.negligible_comp_otsParam (hS.negligible sigForger hsigPPT) H
+  have := hH.negligible tcrAdv htcrPPT
+  negligible using hbound
 
 /-- Any `EUFCMA`-secure `WordSignatureScheme` implies the existence of a uniform `OneWay`
 function. -/

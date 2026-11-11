@@ -30,13 +30,13 @@ combines with the same spelling.
 
 * `Cslib.Crypto.encKeyedInput`: the input `(1ⁿ, key, x)` of a keyed algorithm.
 * `Cslib.Crypto.encKeyPairInput`: the input `(1ⁿ, pk, sk)` of an experiment after key generation.
-* `Cslib.Crypto.encInstanceAuxInput`: the input `(1ⁿ, a, z)` of a malicious verifier and of its
-  simulator.
+* `Cslib.Crypto.encInstanceAuxInput`: the input `(1ⁿ, a, z)` with an instance and an auxiliary
+  input word.
 * `Cslib.Crypto.encInstanceWitnessAuxInput`: the input `(1ⁿ, a, w, z)` of a zero-knowledge
   experiment that also runs the honest prover.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
@@ -55,12 +55,12 @@ of `encKeyedInput encBits`; the name records the role. -/
 abbrev encKeyPairInput : ℕ × List Bool × List Bool ↪ List Bool :=
   encPair encUnary (encPair encBits encBits)
 
-/-- Input `(1ⁿ, a, z)` of a malicious verifier: the security parameter `n` in unary, the instance
-`a` encoded by `enc`, and an auxiliary input `z` as a bit word. The parameter and the instance are
-framed; `z` is not. A zero-knowledge simulator takes the same input. A distinguisher takes it
-paired with a view, as `encPair (encInstanceAuxInput enc) encBits`, with its own auxiliary input
-`z′` in the last slot. The layout is that of `Cslib.Probability.encAuxTriple encUnary enc`; the
-name records the role. -/
+/-- Input `(1ⁿ, a, z)` of an algorithm taking a unary security parameter `n`, an instance `a`
+encoded by `enc`, and an auxiliary input word `z`, such as a malicious verifier or a
+zero-knowledge simulator. The parameter and the instance are framed; `z` is not. A distinguisher
+takes the same triple paired with a view, as `encPair (encInstanceAuxInput enc) encBits`, with an
+auxiliary input word in the `z` slot. The layout is that of
+`Cslib.Probability.encAuxTriple encUnary enc`; the name records the role. -/
 abbrev encInstanceAuxInput {α : Type} (enc : α ↪ List Bool) : ℕ × α × List Bool ↪ List Bool :=
   encPair encUnary (encPair enc encBits)
 

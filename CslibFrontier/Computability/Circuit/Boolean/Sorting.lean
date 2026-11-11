@@ -141,15 +141,10 @@ private theorem bitonicMergeCircuit.records_secondHalf {n r : ℕ} (x : BitStrin
 
 namespace bitonicSortTraceCircuit
 
-/-- Flatten a finite array of equal-width records. -/
-def flatten {n r : ℕ} (x : Fin n → BitString r) : BitString (n * r) :=
-  fun i => x (finProdFinEquiv.symm i).1 (finProdFinEquiv.symm i).2
-
-/-- Taking the record view of a flattened record array recovers the array. -/
-@[simp] theorem block_flatten {n r : ℕ} (x : Fin n → BitString r) :
-    BitString.block (flatten x) = x := by
-  funext i b
-  simp only [BitString.block, flatten, Equiv.symm_apply_apply]
+/-- Flatten a finite array of equal-width records: the inverse of cutting into blocks,
+`BitString.blocksEquiv.symm`. -/
+abbrev flatten {n r : ℕ} (x : Fin n → BitString r) : BitString (n * r) :=
+  BitString.blocksEquiv.symm x
 
 /-- The controls retain both a decision and its complement. -/
 def controls {t n r : ℕ} (x : BitString (t * 2 + n * r)) : Fin t → BitString 2 :=
@@ -167,16 +162,12 @@ def pack {t n r : ℕ} (c : Fin t → BitString 2) (x : Fin n → BitString r) :
 /-- Reading the controls of `pack c x` recovers `c`. -/
 @[simp] theorem controls_pack {t n r : ℕ} (c : Fin t → BitString 2)
     (x : Fin n → BitString r) : controls (pack c x) = c := by
-  funext i b
-  simp only [controls, pack, flatten, BitString.block, Function.comp_apply,
-    Fin.append_left, Equiv.symm_apply_apply]
+  simp only [controls, pack, Fin.append_comp_castAdd, BitString.block_blocksEquiv_symm]
 
 /-- Reading the records of `pack c x` recovers `x`. -/
 @[simp] theorem records_pack {t n r : ℕ} (c : Fin t → BitString 2)
     (x : Fin n → BitString r) : records (pack c x) = x := by
-  funext i b
-  simp only [records, pack, flatten, BitString.block, Function.comp_apply,
-    Fin.append_right, Equiv.symm_apply_apply]
+  simp only [records, pack, Fin.append_comp_natAdd, BitString.block_blocksEquiv_symm]
 
 /-- Restricting `pack c x` to the suffix past the control wires yields `flatten x`. -/
 @[simp] theorem pack_comp_natAdd {t n r : ℕ} (c : Fin t → BitString 2)
@@ -185,9 +176,8 @@ def pack {t n r : ℕ} (c : Fin t → BitString 2) (x : Fin n → BitString r) :
 
 /-- Flattening the record view recovers the original wire assignment. -/
 @[simp] theorem flatten_block {n r : ℕ} (x : BitString (n * r)) :
-    flatten (BitString.block x) = x := by
-  funext i
-  simp only [flatten, BitString.block, Prod.mk.eta, Equiv.apply_symm_apply]
+    flatten (BitString.block x) = x :=
+  BitString.blocksEquiv.symm_apply_apply x
 
 /-- Apply a circuit to the payload while retaining every control pair by free wiring. -/
 theorem eval_parallel_pack {t n m r v : ℕ}
@@ -495,7 +485,7 @@ theorem eval_bitonicMergeTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : �
     | left i => exact Fin.elim0 i
     | right i =>
       simp only [Circuit.eval_wiring, Function.comp_apply, Fin.addCases_right,
-        pack, Fin.append_right, flatten, BitString.block, Prod.mk.eta,
+        pack, Fin.append_right, BitString.blocksEquiv_symm_apply, BitString.block, Prod.mk.eta,
         Equiv.apply_symm_apply, id_eq]
   | succ d ih =>
     dsimp only [arity] at x
@@ -503,7 +493,7 @@ theorem eval_bitonicMergeTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : �
       BitonicSort.mergeTrace, BitonicSort.merge]
     erw [eval_chain _ _ _ _ _ (eval_layer key (arity d) ascending x), eval_halves]
     simp only [ih, controls_pack, records_pack, bitonicMergeCircuit.records_firstHalf,
-      bitonicMergeCircuit.records_secondHalf, block_flatten, pairs_append]
+      bitonicMergeCircuit.records_secondHalf, BitString.block_blocksEquiv_symm, pairs_append]
 
 /-- The forward sorter exposes exactly the semantic trace and sorted records. -/
 theorem eval_bitonicSortTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : ℕ)
@@ -521,7 +511,7 @@ theorem eval_bitonicSortTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : �
     | left i => exact Fin.elim0 i
     | right i =>
       simp only [Circuit.eval_wiring, Function.comp_apply, Fin.addCases_right,
-        pack, Fin.append_right, flatten, BitString.block, Prod.mk.eta,
+        pack, Fin.append_right, BitString.blocksEquiv_symm_apply, BitString.block, Prod.mk.eta,
         Equiv.apply_symm_apply, id_eq]
   | succ d ih =>
     dsimp only [arity] at x
@@ -530,7 +520,7 @@ theorem eval_bitonicSortTraceCircuit {k r : ℕ} (key : Fin k → Fin r) (d : �
     erw [eval_chain _ _ _ _ _ (eval_halves _ _ x), eval_bitonicMergeTraceCircuit]
     simp only [ih, arity, mergeTraceSize, controls_pack, records_pack,
       bitonicMergeCircuit.records_firstHalf,
-      bitonicMergeCircuit.records_secondHalf, block_flatten]
+      bitonicMergeCircuit.records_secondHalf, BitString.block_blocksEquiv_symm]
     erw [controls_pack, records_pack, ← pairs_append, ← pairs_append]
 
 /-- A traced merge computes each comparator once, retaining its existing control pair. -/

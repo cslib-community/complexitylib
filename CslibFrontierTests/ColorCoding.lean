@@ -31,7 +31,7 @@ example : P4.IsVertexPath [0, 1, 2, 3] :=
       ← Graph.adjBool_eq_true_iff]
     decide⟩
 
-example : (P4, 4) ∈ LongPath :=
+example : (⟨P4, 4⟩ : LongPathInstance) ∈ LongPath :=
   ⟨[0, 1, 2, 3], ⟨by decide, by decide, by
     simp only [List.isChain_cons_cons, List.isChain_singleton, and_true,
       ← Graph.adjBool_eq_true_iff]
@@ -42,9 +42,9 @@ example : ¬P4.IsVertexPath [0, 2] := fun ⟨_, _, h⟩ => by
   rw [List.isChain_pair, ← Graph.adjBool_eq_true_iff] at h
   exact absurd h (by decide)
 
-example : (P4, 0) ∈ LongPath := mem_LongPath_zero P4
+example : (⟨P4, 0⟩ : LongPathInstance) ∈ LongPath := mem_LongPath_zero P4
 
-example : (P4, 5) ∉ LongPath := not_mem_LongPath_of_lt (by decide)
+example : (⟨P4, 5⟩ : LongPathInstance) ∉ LongPath := not_mem_LongPath_of_lt (by decide)
 
 /-! ### Colorful paths, decided by the dynamic programming -/
 
