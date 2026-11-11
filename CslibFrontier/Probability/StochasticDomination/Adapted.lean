@@ -1038,11 +1038,8 @@ private theorem abs_tsum_pmf_mul_le_one {α : Type*} (p : PMF α) (F : α → �
         exact mul_le_of_le_one_right ENNReal.toReal_nonneg (abs_le.mp (hF a)).2
       _ = 1 := PMF.tsum_toReal p
 
-private def snocEquiv (α : Type*) (n : ℕ) : (Fin n → α) × α ≃ (Fin (n + 1) → α) where
-  toFun p := Fin.snoc (α := fun _ => α) p.1 p.2
-  invFun h := (Fin.init h, h (Fin.last n))
-  left_inv p := Prod.ext (@Fin.init_snoc n (fun _ => α) p.2 p.1) (by simp [Fin.snoc])
-  right_inv h := Fin.snoc_init_self h
+private def snocEquiv (α : Type*) (n : ℕ) : (Fin n → α) × α ≃ (Fin (n + 1) → α) :=
+  (Equiv.prodComm (Fin n → α) α).trans (Fin.snocEquiv fun _ => α)
 
 private theorem seqProcess_snoc {α : Type*} (step : ∀ t : ℕ, (Fin t → α) → PMF α)
     (n : ℕ) (h₀ : Fin n → α) (a : α) :
@@ -1053,14 +1050,8 @@ private theorem seqProcess_snoc {α : Type*} (step : ∀ t : ℕ, (Fin t → α)
   · rw [PMF.map_apply, tsum_eq_single a]
     · simp
     · intro b hb
-      have hne : Fin.snoc (α := fun _ => α) h₀ a ≠ Fin.snoc (α := fun _ => α) h₀ b := by
-        intro heq
-        have heq_last :
-            Fin.snoc (α := fun _ => α) h₀ a (Fin.last n) =
-              Fin.snoc (α := fun _ => α) h₀ b (Fin.last n) :=
-          congrFun heq (Fin.last n)
-        simp only [Fin.snoc, Fin.val_last, lt_self_iff_false, ↓reduceDIte, cast_eq] at heq_last
-        exact hb heq_last.symm
+      have hne : Fin.snoc (α := fun _ => α) h₀ a ≠ Fin.snoc (α := fun _ => α) h₀ b := fun heq =>
+        hb (Fin.snoc_right_injective (α := fun _ => α) h₀ heq).symm
       simp [hne]
   · intro h hh
     have hmap0 :
@@ -1068,11 +1059,8 @@ private theorem seqProcess_snoc {α : Type*} (step : ∀ t : ℕ, (Fin t → α)
           (Fin.snoc (α := fun _ => α) h₀ a) = 0 := by
       rw [PMF.map_apply]
       refine (tsum_congr fun b => ?_).trans tsum_zero
-      have hne : Fin.snoc (α := fun _ => α) h₀ a ≠ Fin.snoc (α := fun _ => α) h b := by
-        intro heq
-        apply hh
-        have := congrArg Fin.init heq
-        simpa [Fin.init_snoc] using this.symm
+      have hne : Fin.snoc (α := fun _ => α) h₀ a ≠ Fin.snoc (α := fun _ => α) h b := fun heq =>
+        hh (Fin.snoc_injective2 (α := fun _ => α) heq).1.symm
       simp [hne]
     simp [hmap0]
 
@@ -1117,7 +1105,8 @@ private theorem tsum_toReal_seqProcess_step {α : Type*} (step : ∀ t : ℕ, (F
             ((seqProcess step (n + 1)) h).toReal * g h).symm
       _ = ∑' p : (Fin n → α) × α, F p := by
           refine tsum_congr fun p => ?_
-          dsimp only [snocEquiv, Equiv.coe_fn_mk, F]
+          simp only [snocEquiv, Equiv.trans_apply, Equiv.prodComm_apply, Fin.snocEquiv_apply,
+            Prod.fst_swap, Prod.snd_swap, F]
           rw [seqProcess_snoc, ENNReal.toReal_mul, mul_assoc]
       _ = ∑' h : Fin n → α, ∑' a : α, F (h, a) := hs_prod.tsum_prod
       _ = ∑' h : Fin n → α, ((seqProcess step n) h).toReal *
@@ -1225,26 +1214,8 @@ private theorem seqCount_stochasticallyDominates_poissonBinomial_of_length {α :
   have hlhs :
       Cslib.Probability.pbValue ps f 0 0 =
         ((poissonBinomial ps).toOuterMeasure (Set.Ici r)).toReal := by
-    have hsum :
-        (poissonBinomial ps).toOuterMeasure (Set.Ici r) =
-          ∑ j ∈ Finset.range (ps.length + 1),
-            if r ≤ j then poissonBinomial ps j else 0 := by
-      rw [PMF.toOuterMeasure_apply]
-      have hfin :
-          (∑' j : ℕ, (Set.Ici r).indicator (⇑(poissonBinomial ps)) j) =
-            ∑ j ∈ Finset.range (ps.length + 1),
-              (Set.Ici r).indicator (⇑(poissonBinomial ps)) j := by
-        refine tsum_eq_sum fun j hj => ?_
-        simp only [Finset.mem_range, not_lt] at hj
-        have hz := poissonBinomial_eq_zero_of_lt (ps := ps) (by omega : ps.length < j)
-        by_cases hrj : r ≤ j <;> simp [hrj, hz]
-      rw [hfin]
-      refine Finset.sum_congr rfl fun j _ => ?_
-      by_cases hj : r ≤ j <;> simp [hj]
-    rw [hsum, ENNReal.toReal_sum fun j _ => by split_ifs <;> simp [PMF.apply_ne_top]]
-    simp only [Cslib.Probability.pbValue, List.drop_zero, zero_add]
-    refine Finset.sum_congr rfl fun j _ => ?_
-    by_cases hj : r ≤ j <;> simp [f, hj]
+    rw [Cslib.Probability.pbValue_zero_Ici_eq_real ps r, measureReal_def,
+      PMF.toMeasure_apply_eq_toOuterMeasure_apply _ measurableSet_Ici]
   have hrhs :
       (∑' h : Fin ps.length → α,
           ((seqProcess step ps.length) h).toReal *

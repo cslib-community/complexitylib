@@ -288,17 +288,8 @@ theorem lintegral_le_of_antitone [IsFiniteMeasure μ] [IsFiniteMeasure ν]
 
 private theorem lintegral_ofReal_ne_top {α : Type*} [MeasurableSpace α] {μ : Measure α}
     {f : α → ℝ} (hf : Integrable f μ) :
-    ∫⁻ x, ENNReal.ofReal (f x) ∂μ ≠ ⊤ := by
-  have hpos := hf.pos_part.2
-  have heq : (fun x => ENNReal.ofReal (f x)) = fun x => ‖max (f x) 0‖ₑ := by
-    ext x
-    rw [Real.enorm_eq_ofReal_abs, abs_of_nonneg (le_max_right _ _)]
-    by_cases hx : 0 ≤ f x
-    · simp [max_eq_left hx]
-    · have hxle : f x ≤ 0 := le_of_not_ge hx
-      simp [max_eq_right hxle, ENNReal.ofReal_of_nonpos hxle]
-  rw [heq]
-  exact hpos.ne
+    ∫⁻ x, ENNReal.ofReal (f x) ∂μ ≠ ⊤ :=
+  ((lintegral_ofReal_le_lintegral_enorm f).trans_lt hf.2).ne
 
 /-- First-order stochastic domination on probability measures implies `∫ x, f x ∂ν ≤ ∫ x, f x ∂μ`
 for every integrable measurable monotone function `f : α → ℝ`. -/

@@ -109,26 +109,6 @@ theorem lintegral_withTopToENNReal {Ω : Type*} [MeasurableSpace Ω] (P : Measur
   refine tsum_congr fun n => ?_
   rw [lintegral_indicator (hs n), lintegral_const, one_mul, Measure.restrict_apply_univ]
 
-private theorem measurable_withTop_nat_of_stoppingTime {Ω : Type*} [m : MeasurableSpace Ω]
-    {ℱ : Filtration ℕ m} {τ : Ω → WithTop ℕ} (hτ : IsStoppingTime ℱ τ) :
-    Measurable τ := by
-  refine measurable_to_countable' fun x => ?_
-  cases x with
-  | top =>
-    have hset : τ ⁻¹' {⊤} = (⋃ n : ℕ, {ω | τ ω ≤ (n : WithTop ℕ)})ᶜ := by
-      ext ω
-      simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_compl_iff, Set.mem_iUnion,
-        Set.mem_ofPred_eq, not_exists]
-      cases hω : τ ω with
-      | top => simp
-      | coe k =>
-        exact ⟨fun h => absurd h WithTop.coe_ne_top,
-          fun hk => absurd le_rfl (hk k)⟩
-    rw [hset]
-    exact (MeasurableSet.iUnion fun n => ℱ.le n _ (hτ.measurableSet_le n)).compl
-  | coe n =>
-    exact ℱ.le n _ (hτ.measurableSet_eq_of_countable n)
-
 /-- If the real survival series `∑' n, P.real {n < τ}` converges under a finite measure `P`,
 then `τ ≠ ⊤` a.e., `(τ ·).untopD 0` is integrable, and
 `∫ ω, (τ ω).untopD 0 ∂P = ∑' n, P.real {n < τ}`. -/
@@ -250,7 +230,7 @@ theorem stoppingTime_mean_le_of_adaptedCount_le {Ω : Type*} [m : MeasurableSpac
     (hA t).union (ℱ.mono t.le_succ _ (hτ.measurableSet_gt t).compl)
   have hp' : ∀ t : ℕ, (fun _ => (p : ℝ)) ≤ᵐ[P] P[(A' t).indicator (fun _ => (1 : ℝ)) | ℱ t] :=
     fun t => ae_le_condExp_union_compl ℱ (hA t) (hτ.measurableSet_gt t) (hp t)
-  refine mean_le_of_real_lt_le_binomial P (measurable_withTop_nat_of_stoppingTime hτ) hp_pos
+  refine mean_le_of_real_lt_le_binomial P hτ.measurable' hp_pos
     fun n => ?_
   let ps := List.replicate n p
   have hdom := adaptedCount_stochasticallyDominates_poissonBinomial ℱ hA' ps fun t ht => by
@@ -362,8 +342,7 @@ theorem trajMeasure_countHittingTime_mean_le {X : ℕ → Type*} [∀ n, Measura
     (hA t).union ((measurable_adaptedCount Filtration.piLE hA t).mono
       (Filtration.piLE.mono t.le_succ) le_rfl measurableSet_Ici)
   refine mean_le_of_real_lt_le_binomial (Kernel.trajMeasure μ₀ κ)
-    (measurable_withTop_nat_of_stoppingTime
-      (isStoppingTime_countHittingTime Filtration.piLE hA r))
+    (isStoppingTime_countHittingTime Filtration.piLE hA r).measurable'
     hp_pos fun n => ?_
   let ps := List.replicate n p
   have hp' : ∀ t (ht : t < ps.length), ∀ᵐ x ∂Kernel.trajMeasure μ₀ κ,

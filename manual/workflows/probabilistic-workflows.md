@@ -2324,12 +2324,16 @@ probabilities satisfy lower or upper bounds.
 - **First-order stochastic order**:
   [`StochasticDomination/Basic.lean`](../../CslibFrontier/Probability/StochasticDomination/Basic.lean)
   defines `StochasticallyDominates μ ν` on `Measure α` (`ν U ≤ μ U` for measurable upper sets)
-  and `PMF.StochasticallyDominates p q` on `PMF α`. Equate them with monotone Lebesgue/Bochner
-  expectations (`stochasticallyDominates_iff_lintegral`, `stochasticallyDominates_iff_integral`),
-  tail intervals and `ProbabilityTheory.cdf` (`stochasticallyDominates_nat_iff_Ici`,
-  `stochasticallyDominates_nat_iff_Iio`, `stochasticallyDominates_real_iff_cdf`), `Bool` coin laws
-  (`PMF.stochasticallyDominates_bool_iff`), couplings (`StochasticallyDominates.of_coupling`), and
-  closure under `map`, `bind`, and `add_prod`.
+  and `PMF.StochasticallyDominates p q` on `PMF α`. Equate them with measurable monotone
+  `ℝ≥0∞`-valued Lebesgue expectations on `SFinite` measures (`stochasticallyDominates_iff_lintegral`),
+  with measurable monotone Bochner expectations on probability measures (`IsProbabilityMeasure μ`,
+  `IsProbabilityMeasure ν`) for functions integrable under both `μ` and `ν`
+  (`stochasticallyDominates_iff_integral`, which fails for unequal-mass measures), with upper tails
+  on `ℕ` (`stochasticallyDominates_nat_iff_Ici`) and probability-measure lower tails /
+  `ProbabilityTheory.cdf` (`stochasticallyDominates_nat_iff_Iio`,
+  `stochasticallyDominates_real_iff_cdf`), `Bool` coin laws (`PMF.stochasticallyDominates_bool_iff`),
+  couplings (`StochasticallyDominates.of_coupling`), and closure under `map`, `bind` (on `SFinite`
+  measures), and `add_prod`.
 - **Poisson-binomial and binomial benchmarks**:
   [`PoissonBinomial.lean`](../../CslibFrontier/Probability/PoissonBinomial.lean) defines
   `PMF.poissonBinomial : List unitInterval → PMF ℕ` with convolution (`poissonBinomial_append`),
@@ -2338,16 +2342,17 @@ probabilities satisfy lower or upper bounds.
   (`toMeasure_poissonBinomial_replicate`).
   [`StochasticDomination/PoissonBinomial.lean`](../../CslibFrontier/Probability/StochasticDomination/PoissonBinomial.lean)
   proves parameter monotonicity (`poissonBinomial_stochasticallyDominates_of_forall₂`,
-  `binomial_stochasticallyDominates_of_le`, `binomial_stochasticallyDominates_of_nat_le`) and the
-  exact negative-binomial waiting-time series
-  `tsum_binomial_real_Iio : ∑' t, (ProbabilityTheory.binomial t p).real (Set.Iio r) = r / p`.
+  `binomial_stochasticallyDominates_of_le`, `binomial_stochasticallyDominates_of_nat_le`) and, for
+  strictly positive success probability `0 < (p : ℝ)`, the exact negative-binomial waiting-time
+  series `tsum_binomial_real_Iio : ∑' t, (ProbabilityTheory.binomial t p).real (Set.Iio r) = r / p`.
 - **Finite-horizon adapted processes**:
   [`StochasticDomination/Adapted.lean`](../../CslibFrontier/Probability/StochasticDomination/Adapted.lean)
-  defines `adaptedCount A n` on general `Filtration ℕ m` with both lower- and upper-envelope
-  domination (`adaptedCount_stochasticallyDominates_poissonBinomial`,
+  defines `adaptedCount A n` on general `Filtration ℕ m` (under `IsProbabilityMeasure P` and
+  `MeasurableSet[ℱ (t + 1)] (A t)`) with both lower- and upper-envelope domination
+  (`adaptedCount_stochasticallyDominates_poissonBinomial`,
   `poissonBinomial_stochasticallyDominates_adaptedCount`), active-before-target binomial tails
   requiring the lower bound `p` only while `adaptedCount A t < r`
-  (`adaptedCount_real_Iio_le_binomial`), specializations to Ionescu–Tulcea trajectories
+  (`adaptedCount_real_Iio_le_binomial`), specializations to Markov Ionescu–Tulcea trajectories
   (`traj_adaptedCount_stochasticallyDominates_poissonBinomial`,
   `poissonBinomial_stochasticallyDominates_traj_adaptedCount`,
   `trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`,
@@ -2356,11 +2361,17 @@ probabilities satisfy lower or upper bounds.
   `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
-  proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal`,
-  `integral_untopD_eq_tsum_real_lt`) and deduces a.s. finiteness, integrability of
-  `((τ ·).untopD 0 : ℝ)`, and `𝔼[τ] ≤ r / p` for stopping times bounded by `countHittingTime A r`
-  (`stoppingTime_mean_le_of_adaptedCount_le`, `countHittingTime_mean_le`,
-  `traj_countHittingTime_mean_le`, `trajMeasure_countHittingTime_mean_le`).
+  proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and
+  `integral_untopD_eq_tsum_real_lt` under `IsFiniteMeasure P`, measurable `τ`, and summability of
+  `fun n => P.real {n < τ}`, certifying `τ ≠ ⊤` a.e. and integrability of
+  `((τ ·).untopD 0 : ℝ)`). Under `IsProbabilityMeasure P` (or `IsMarkovKernel (κ n)`), adapted events
+  `MeasurableSet[ℱ (t + 1)] (A t)`, and strictly positive success probability `0 < (p : ℝ)`,
+  `stoppingTime_mean_le_of_adaptedCount_le` assumes `P[A t | ℱ t] ≥ p` a.e. before `τ` (`{t < τ}`)
+  and `r ≤ adaptedCount A n ω → τ ω ≤ n` to deduce `τ ≠ ⊤` a.e., integrability of
+  `((τ ·).untopD 0 : ℝ)`, and `𝔼[(τ ·).untopD 0] ≤ r / p`; the hitting-time specializations
+  (`countHittingTime_mean_le`, `traj_countHittingTime_mean_le`,
+  `trajMeasure_countHittingTime_mean_le`) assume the conditional lower bound `p` while
+  `adaptedCount A t < r`.
 
 The checked [`StochasticDomination.lean` clients](../../CslibFrontierTests/StochasticDomination.lean)
 verify concrete `ℕ`/`ℝ`/`Bool` order inequalities (`lintegral_le`, `integral_le`, `bind`), exact

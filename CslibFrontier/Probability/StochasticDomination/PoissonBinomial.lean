@@ -226,6 +226,12 @@ theorem binomial_real_Iio_succ (t r : ℕ) (p : I) :
     ring
   linarith
 
+private theorem binomial_zero_real_Iio_succ (r : ℕ) (p : I) :
+    (ProbabilityTheory.binomial 0 p).real (Set.Iio (r + 1)) = 1 := by
+  simp only [ProbabilityTheory.binomial_zero, Measure.real,
+    Measure.dirac_apply' _ measurableSet_Iio, Set.mem_Iio, Nat.zero_lt_succ,
+    Set.indicator_of_mem, Pi.one_apply, ENNReal.toReal_one]
+
 /-- Partial sums of `(ProbabilityTheory.binomial t p).real (Set.Iio r)` are bounded by `r / p`. -/
 theorem sum_binomial_real_Iio_le (N r : ℕ) {p : I} (hp : 0 < (p : ℝ)) :
     ∑ t ∈ Finset.range N, (ProbabilityTheory.binomial t p).real (Set.Iio r) ≤ (r : ℝ) / p := by
@@ -242,14 +248,7 @@ theorem sum_binomial_real_Iio_le (N r : ℕ) {p : I} (hp : 0 < (p : ℝ)) :
       linarith [binomial_real_Iio_succ t r p]
     rw [Finset.sum_mul]
     simp_rw [hrec, Finset.sum_add_distrib, Finset.sum_range_sub']
-    have h0 : (ProbabilityTheory.binomial 0 p).real (Set.Iio (r + 1)) = 1 := by
-      simp only [binomial_real_Iio_eq_sum, List.replicate_zero, PMF.poissonBinomial_nil,
-        PMF.pure_apply]
-      rw [Finset.sum_eq_single 0]
-      · simp
-      · intro k _ hk
-        simp [hk]
-      · simp
+    have h0 := binomial_zero_real_Iio_succ r p
     have hN : 0 ≤ (ProbabilityTheory.binomial N p).real (Set.Iio (r + 1)) := measureReal_nonneg
     have htail :
         ∑ t ∈ Finset.range N, (ProbabilityTheory.binomial t p).real (Set.Iio r) * (p : ℝ) ≤ r := by
@@ -289,14 +288,7 @@ theorem tsum_binomial_real_Iio (r : ℕ) {p : I} (hp : 0 < (p : ℝ)) :
             (p : ℝ) * ∑' t : ℕ, (ProbabilityTheory.binomial t p).real (Set.Iio r) := by
       simp_rw [binomial_real_Iio_succ]
       rw [Summable.tsum_add (hs1.mul_left _) (hs0.mul_left _), tsum_mul_left, tsum_mul_left]
-    have h0 : (ProbabilityTheory.binomial 0 p).real (Set.Iio (r + 1)) = 1 := by
-      simp only [binomial_real_Iio_eq_sum, List.replicate_zero, PMF.poissonBinomial_nil,
-        PMF.pure_apply]
-      rw [Finset.sum_eq_single 0]
-      · simp
-      · intro k _ hk
-        simp [hk]
-      · simp
+    have h0 := binomial_zero_real_Iio_succ r p
     rw [hshift, h0] at hrec_sum
     push_cast
     linarith
