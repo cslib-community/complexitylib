@@ -21,7 +21,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
-import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
+import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
@@ -44,6 +44,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder.Transi
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.USTCON
 import CslibFrontier.Computability.Complexity.Classes.PH.SipserLautemann
+import CslibFrontier.Computability.Complexity.Classes.PH.Yap
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic
 import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
@@ -491,7 +492,7 @@ register_result "middle-slice-mod-two" where
       locator := "p. 10:20" }
   ]
   theorems := [
-    Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two,
+    Cslib.Circuits.Boolean.Razborov.middleSlice_mem_P,
     Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two
   ]
   scope := "The language of bit strings of length n with exactly ⌈n/2⌉ - ⌊√(n + 1)⌋/10 zeros is \
@@ -499,7 +500,8 @@ register_result "middle-slice-mod-two" where
     circuits of NOT, unbounded fan-in AND/OR and MOD_2 gates of constant depth and polynomial \
     size decides it (nonuniform). Proved through a variant of Razborov's GF(2) rank property \
     (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
-    sketch, and Razborov's original paper was not checked for its hard function."
+    sketch, and Razborov's original paper was not checked for its hard function. The lower bound \
+    itself is middleSlice_notMem_AC0Mod_two in the imported module Razborov.MiddleSlice."
 
 register_result "rank-property-natural-ac0-2" where
   title := "Razborov's rank property is a P/poly-natural property useful against AC⁰[2]"
@@ -3195,3 +3197,27 @@ register_result "sperner-2d-ppad-completeness" where
     Sperner2D fixes the boundary colouring rather than taking a circuit-enforced boundary promise \
     as in discrete Brouwer; two-dimensional discrete Brouwer, three-dimensional Sperner \
     completeness and d-dimensional circuit Sperner are not formalized."
+
+register_result "yap-collapse" where
+  title := "Yap's theorem: coNP in NP/poly collapses the polynomial hierarchy to Σ₃"
+  topic := "structural complexity"
+  sources := [
+    { paper := Yap1983, theorem := unverified, locator := unverified },
+    { paper := BodlaenderJansenKratsch2014, theorem := "Theorem 2",
+      locator := "p. 6 (arXiv v1)" }
+  ]
+  theorems := [
+    Cslib.Complexity.SigmaP_two_subset_NPPoly_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PiP_three_eq_SigmaP_three_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_coNP_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_UNSAT_mem_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_of_coNP_encBits_subset_NPPoly,
+    Cslib.Complexity.PH_eq_SigmaP_three_inter_PiP_three_of_coNP_subset_NPPoly
+  ]
+  scope := "Conditional collapse for arbitrary injective instance encodings. NPPoly uses a \
+    polynomially bounded bit-string advice function of the encoded input length read by a \
+    native polynomial-time NP verifier; PH uses polynomial-time alternating verifiers with \
+    exact polynomial block lengths. Under coNP ⊆ NP/poly (equivalently NP ⊆ coNP/poly, \
+    coNP encBits ⊆ NPPoly encBits, or UNSAT ∈ NPPoly encCNF via Cook–Levin and the CNF \
+    decoder), Σ₂ ⊆ NP/poly, Π₃ = Σ₃, and PH = Σ₃ = Σ₃ ∩ Π₃. General level-k advice collapses \
+    from Σ_k ⊆ Π_k/poly are not part of this entry."
