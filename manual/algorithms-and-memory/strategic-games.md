@@ -172,6 +172,15 @@ In Rock–Paper–Scissors, the uniform distribution on the six outcomes without
 correlated equilibrium but not a correlated equilibrium. Since `a + 1` beats `a` there, a player
 recommended `a` gains by switching to `a + 2`.
 
+[SwapRegretDynamics.lean](../../CslibFrontier/GameTheory/Strategic/SwapRegretDynamics.lean) defines
+`IsApproxCorrelatedEquilibrium ε σ`, where the expected cost bound is relaxed by `ε i` for each
+player. As shown in Lecture 18, Proposition 1.3 of [roughgarden13cs364a][roughgarden13cs364a], if
+each player minimizes swap regret, the time average of the product distributions converges to an
+approximate correlated equilibrium (`timeAverage_productDist_isApproxCorrelatedEquilibrium`).
+Instantiating this with the Blum–Mansour reduction over Hedge copies
+(`blumMansour_isApproxCorrelatedEquilibrium`), the time average converges to a correlated
+equilibrium at a rate of $O(\sqrt{m \log m / T})$.
+
 ## Atomic congestion games
 
 [Congestion/Basic.lean](../../CslibFrontier/GameTheory/Congestion/Basic.lean) defines

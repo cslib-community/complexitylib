@@ -106,6 +106,7 @@ import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 import CslibFrontier.GameTheory.Strategic.Correlated
 import CslibFrontier.GameTheory.Strategic.Nash
+import CslibFrontier.GameTheory.Strategic.SwapRegretDynamics
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Connectivity
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
@@ -1136,7 +1137,9 @@ register_result "correlated-equilibrium-hierarchy" where
     Cslib.GameTheory.CostGame.IsPureNash.isCorrelatedEquilibrium,
     Cslib.GameTheory.CostGame.IsMixedNash.isCorrelatedEquilibrium,
     Cslib.GameTheory.CostGame.IsCorrelatedEquilibrium.isCoarseCorrelatedEquilibrium,
-    Cslib.GameTheory.CostGame.exists_isCorrelatedEquilibrium
+    Cslib.GameTheory.CostGame.exists_isCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.timeAverage_productDist_isApproxCorrelatedEquilibrium,
+    Cslib.GameTheory.CostGame.blumMansour_isApproxCorrelatedEquilibrium
   ]
   scope := "Finite cost-minimization games and finitely supported distributions on profiles. \
     Correlated equilibria are defined by switching functions and shown equivalent to the \
