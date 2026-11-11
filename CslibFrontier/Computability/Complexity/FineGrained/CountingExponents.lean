@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.ResourceFacts
+import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
 import Mathlib.Topology.Instances.Real.Lemmas
@@ -53,7 +54,8 @@ clause-measured counting rates transfer to variable-measured counting rates thro
 counting sparsification (`exists_computableInExpTime_SharpKSAT_numVars_of_length`,
 `SharpETH_iff_not_computableInSubexpTime_length`). In addition, `SETH → ETH` (`SETH.eth`) follows
 unconditionally via `toThreeSAT` clause-splitting and `3`-SAT sparsification, and
-`unrestrictedSatExponent` separates unbounded-width `SAT` from fixed-width `SETH`.
+`unrestrictedSatExponent` distinguishes unbounded-width `SAT` from fixed-width
+`⨆ k, satExponent k`.
 
 ## Main definitions
 
@@ -887,28 +889,6 @@ theorem SETH.sharpSETH (h : SETH) : SharpSETH := by
 
 /-! ### Positive-rate infima, finite-prefix suprema, `SETH → ETH`, and unrestricted `SAT` -/
 
-/-- For any upward-closed predicate `P : ℝ → Prop` holding at `1`, the infimum over `δ ≥ 0` agrees
-with the infimum over strictly positive rates `δ > 0`. -/
-theorem csInf_nonneg_eq_csInf_pos {P : ℝ → Prop}
-    (hmono : ∀ ⦃δ δ' : ℝ⦄, δ ≤ δ' → P δ → P δ') (h1 : P 1) :
-    sInf {δ : ℝ | 0 ≤ δ ∧ P δ} = sInf {δ : ℝ | 0 < δ ∧ P δ} := by
-  have hne_pos : {δ : ℝ | 0 < δ ∧ P δ}.Nonempty := ⟨1, one_pos, h1⟩
-  have hne_nn : {δ : ℝ | 0 ≤ δ ∧ P δ}.Nonempty := ⟨1, zero_le_one, h1⟩
-  have hbdd_pos : BddBelow {δ : ℝ | 0 < δ ∧ P δ} := ⟨0, fun _ h => h.1.le⟩
-  have hbdd_nn : BddBelow {δ : ℝ | 0 ≤ δ ∧ P δ} := ⟨0, fun _ h => h.1⟩
-  refine le_antisymm
-    (csInf_le_csInf hbdd_nn hne_pos fun _ h => ⟨h.1.le, h.2⟩)
-    (le_csInf hne_nn fun δ ⟨hδ, hP⟩ => ?_)
-  by_contra hlt
-  rw [not_le] at hlt
-  set ε : ℝ := (sInf {r : ℝ | 0 < r ∧ P r} - δ) / 2
-  have hε : 0 < ε := by dsimp only [ε]; linarith
-  have hmem : δ + ε ∈ {r : ℝ | 0 < r ∧ P r} :=
-    ⟨by linarith, hmono (by linarith) hP⟩
-  have hle := csInf_le hbdd_pos hmem
-  dsimp only [ε] at hle
-  linarith
-
 /-- `satExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
 theorem satExponent_eq_sInf_pos (k : ℕ) :
     satExponent k = sInf {δ : ℝ | 0 < δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ} :=
@@ -919,51 +899,6 @@ theorem sharpSatExponent_eq_sInf_pos (k : ℕ) :
     sharpSatExponent k =
       sInf {δ : ℝ | 0 < δ ∧ ComputableInExpTime (SharpKSAT k) encCNF encNat CNF.numVars δ} :=
   csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle) (SharpKSAT_computableInExpTime_one k)
-
-/-- Dropping any finite prefix `k < K` of a monotone bounded sequence `s : ℕ → ℝ` preserves its
-supremum. -/
-theorem iSup_ge_eq_iSup_of_monotone {s : ℕ → ℝ} (hmono : Monotone s) {B : ℝ}
-    (hbdd : ∀ k, s k ≤ B) (K : ℕ) :
-    (⨆ k : {k : ℕ // K ≤ k}, s k.val) = ⨆ k : ℕ, s k := by
-  have : Nonempty {k : ℕ // K ≤ k} := ⟨⟨K, le_rfl⟩⟩
-  have hBdd : BddAbove (Set.range s) := ⟨B, Set.forall_mem_range.mpr hbdd⟩
-  have hBddK : BddAbove (Set.range fun k : {k : ℕ // K ≤ k} => s k.val) :=
-    ⟨B, Set.forall_mem_range.mpr fun k => hbdd k.val⟩
-  refine le_antisymm
-    (ciSup_le fun k => le_ciSup hBdd k.val)
-    (ciSup_le fun k => (hmono (Nat.le_max_left k K)).trans
-      (le_ciSup hBddK ⟨max k K, Nat.le_max_right k K⟩))
-
-/-- A monotone sequence bounded above by `1` tends to `1` iff its supremum equals `1`. -/
-theorem tendsto_atTop_nhds_one_iff_iSup_eq_one {s : ℕ → ℝ} (hmono : Monotone s)
-    (hbdd : ∀ k, s k ≤ 1) :
-    Tendsto s atTop (𝓝 1) ↔ (⨆ k : ℕ, s k) = 1 := by
-  have hBdd : BddAbove (Set.range s) := ⟨1, Set.forall_mem_range.mpr hbdd⟩
-  constructor
-  · intro htend
-    refine le_antisymm (ciSup_le hbdd) ?_
-    by_contra hlt
-    rw [not_le] at hlt
-    set ε : ℝ := (1 - ⨆ k : ℕ, s k) / 2
-    have hε : 0 < ε := by dsimp only [ε]; linarith
-    obtain ⟨k, hk⟩ := (htend.eventually (lt_mem_nhds (by linarith : 1 - ε < 1))).exists
-    have hle : s k ≤ ⨆ m : ℕ, s m := le_ciSup hBdd k
-    dsimp only [ε] at hk
-    linarith
-  · intro hsup
-    rw [Metric.tendsto_atTop]
-    intro ε hε
-    have hex : ∃ K : ℕ, 1 - ε < s K := by
-      by_contra hall
-      simp only [not_exists, not_lt] at hall
-      have hle : (⨆ k : ℕ, s k) ≤ 1 - ε := ciSup_le hall
-      linarith
-    obtain ⟨K, hK⟩ := hex
-    refine ⟨K, fun k hk => ?_⟩
-    have h1 : 1 - ε < s k := hK.trans_le (hmono hk)
-    have h2 : s k ≤ 1 := hbdd k
-    rw [Real.dist_eq, abs_sub_lt_iff]
-    constructor <;> linarith
 
 /-- Dropping any finite prefix `k < K` leaves `⨆ k, satExponent k` unchanged. -/
 theorem iSup_ge_satExponent_eq_iSup (K : ℕ) :

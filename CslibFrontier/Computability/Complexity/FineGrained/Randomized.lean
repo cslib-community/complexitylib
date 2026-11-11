@@ -27,11 +27,13 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Compo
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
+import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.BitString.Block
 import CslibFrontier.Foundations.Data.BitString.List
 import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
+import CslibFrontier.Probability.MajorityVote
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Topology.Instances.Real.Lemmas
 
@@ -86,8 +88,6 @@ promise-problem runtime bounds:
   `Cslib.Complexity.mem_PromiseRP_iff_exists_solvesWithErrorInTimeO`,
   `Cslib.Complexity.exists_ptm_of_solvesWithErrorInTimeO`: bridges to deterministic solvers,
   polynomial promise classes, and closed fair-coin `MultiTapePTM` machines.
-* `Cslib.Complexity.card_filter_card_filter_le_of_err_lt_half`: weighted moment bound
-  `(4 * ε * (1 - ε)) ^ r` for majority voting from any constant advantage `ε < 1 / 2`.
 * `Cslib.Complexity.solvesWithErrorInTimeO_twoSided_iff`,
   `Cslib.Complexity.solvesWithErrorInTimeO_oneSidedRP_iff`,
   `Cslib.Complexity.SolvesWithErrorInTimeO.oneSidedRP_to_twoSided`: rate-preserving threshold
@@ -1172,93 +1172,6 @@ theorem mem_PromiseCoRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α
   · simpa only [ErrorModel.symm_coRP] using h.compl
 
 /-! ### Rate-preserving error amplification (`O(T a)` and exact rate `δ`) -/
-
-/-- **Weighted moment bound for majority votes.** If at least `(1 - ε) * |Ω|` elements of `Ω` lie
-in `G` (`0 ≤ ε < 1 / 2`), then among the `2 r`-tuples over `Ω`, those with at most `r` entries in
-`G` make up at most a `(4 * ε * (1 - ε)) ^ r` fraction (`4 * ε * (1 - ε) = 1 - (1 - 2 ε)² < 1`). -/
-theorem card_filter_card_filter_le_of_err_lt_half {Ω : Type*} [Fintype Ω] [DecidableEq Ω]
-    (G : Finset Ω) {ε : ℝ} (hε₀ : 0 ≤ ε) (hε₁ : ε < 1 / 2)
-    (hG : (1 - ε) * (Fintype.card Ω : ℝ) ≤ G.card) (r : ℕ) :
-    ((Finset.univ.filter fun ω : Fin (2 * r) → Ω =>
-      (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card : ℝ) ≤
-      (4 * ε * (1 - ε)) ^ r * (Fintype.card Ω : ℝ) ^ (2 * r) := by
-  rcases r.eq_zero_or_pos with rfl | hr_pos
-  · have hcard : (Finset.univ.filter fun ω : Fin (2 * 0) → Ω =>
-        (Finset.univ.filter fun i => ω i ∈ G).card ≤ 0).card ≤ 1 :=
-      (Finset.card_filter_le _ _).trans (by simp)
-    simp only [Nat.mul_zero, pow_zero, mul_one]
-    exact_mod_cast hcard
-  rcases hε₀.eq_or_lt with rfl | hε_pos
-  · have hN_le : Fintype.card Ω ≤ G.card := by
-      simp only [sub_zero, one_mul] at hG
-      exact_mod_cast hG
-    have hG_univ : G = Finset.univ :=
-      Finset.eq_univ_of_card G (le_antisymm (Finset.card_le_univ G) hN_le)
-    subst hG_univ
-    have hemp : (Finset.univ.filter fun ω : Fin (2 * r) → Ω =>
-        (Finset.univ.filter fun i => ω i ∈ (Finset.univ : Finset Ω)).card ≤ r) = ∅ := by
-      rw [Finset.filter_eq_empty_iff]
-      intro ω _
-      simp only [Finset.mem_univ, Finset.filter_true_of_mem (fun _ _ => trivial),
-        Finset.card_univ, Fintype.card_fin, not_le]
-      omega
-    rw [hemp, Finset.card_empty, Nat.cast_zero]
-    positivity
-  set N := Fintype.card Ω
-  set bad := Finset.univ.filter fun ω : Fin (2 * r) → Ω =>
-    (Finset.univ.filter fun i => ω i ∈ G).card ≤ r
-  let w : Ω → ℝ := fun x => if x ∈ G then ε else 1 - ε
-  have hw_nn : ∀ x, 0 ≤ w x := fun x => by dsimp only [w]; split_ifs <;> linarith
-  have hsum_w : ∑ x : Ω, w x ≤ 2 * ε * (1 - ε) * N := by
-    have hsum_eq : ∑ x : Ω, w x = G.card * ε + ((N - G.card : ℕ) : ℝ) * (1 - ε) := by
-      dsimp only [w]
-      rw [Finset.sum_ite, Finset.sum_const, Finset.sum_const, nsmul_eq_mul, nsmul_eq_mul,
-        Finset.filter_mem_eq_inter, Finset.univ_inter, Finset.filter_not,
-        Finset.filter_mem_eq_inter, Finset.univ_inter, ← Finset.compl_eq_univ_sdiff,
-        Finset.card_compl]
-    rw [hsum_eq, Nat.cast_sub (Finset.card_le_univ G)]
-    have h1 : (1 - ε) * (N : ℝ) * (1 - 2 * ε) ≤ G.card * (1 - 2 * ε) :=
-      mul_le_mul_of_nonneg_right hG (by linarith)
-    nlinarith
-  have hbad_w : ∀ ω ∈ bad, (ε * (1 - ε)) ^ r ≤ ∏ i : Fin (2 * r), w (ω i) := by
-    intro ω hω
-    set g := (Finset.univ.filter fun i : Fin (2 * r) => ω i ∈ G).card
-    set b := (Finset.univ.filter fun i : Fin (2 * r) => ω i ∉ G).card
-    have hg : g ≤ r := (Finset.mem_filter.mp hω).2
-    have hgb : g + b = 2 * r := by
-      simpa only [Finset.card_univ, Fintype.card_fin] using
-        Finset.card_filter_add_card_filter_not (s := (Finset.univ : Finset (Fin (2 * r))))
-          fun i => ω i ∈ G
-    have hb_eq : b = (r - g) + r := by omega
-    have hprod_eq : ∏ i : Fin (2 * r), w (ω i) = ε ^ g * (1 - ε) ^ b := by
-      dsimp only [w]
-      rw [Finset.prod_ite, Finset.prod_const, Finset.prod_const]
-    rw [hprod_eq, hb_eq, pow_add]
-    have h1ε_nn : 0 ≤ 1 - ε := by linarith
-    have hpow_le : ε ^ (r - g) ≤ (1 - ε) ^ (r - g) :=
-      pow_le_pow_left₀ hε_pos.le (by linarith) (r - g)
-    calc (ε * (1 - ε)) ^ r
-        = ε ^ (g + (r - g)) * (1 - ε) ^ r := by rw [Nat.add_sub_of_le hg, mul_pow]
-      _ = ε ^ g * (ε ^ (r - g) * (1 - ε) ^ r) := by rw [pow_add, mul_assoc]
-      _ ≤ ε ^ g * ((1 - ε) ^ (r - g) * (1 - ε) ^ r) :=
-        mul_le_mul_of_nonneg_left
-          (mul_le_mul_of_nonneg_right hpow_le (pow_nonneg h1ε_nn r)) (by positivity)
-  have hmarkov : (ε * (1 - ε)) ^ r * (bad.card : ℝ) ≤ (2 * ε * (1 - ε) * N) ^ (2 * r) := by
-    calc (ε * (1 - ε)) ^ r * (bad.card : ℝ)
-        = ∑ _ω ∈ bad, (ε * (1 - ε)) ^ r := by rw [Finset.sum_const, nsmul_eq_mul, mul_comm]
-      _ ≤ ∑ ω ∈ bad, ∏ i, w (ω i) := Finset.sum_le_sum hbad_w
-      _ ≤ ∑ ω : Fin (2 * r) → Ω, ∏ i, w (ω i) :=
-        Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _)
-          fun _ _ _ => Finset.prod_nonneg fun _ _ => hw_nn _
-      _ = (∑ x : Ω, w x) ^ (2 * r) := (Fintype.sum_pow w (2 * r)).symm
-      _ ≤ (2 * ε * (1 - ε) * N) ^ (2 * r) :=
-        pow_le_pow_left₀ (Finset.sum_nonneg fun x _ => hw_nn x) hsum_w (2 * r)
-  have hident : (2 * ε * (1 - ε) * N) ^ (2 * r) =
-      (ε * (1 - ε)) ^ r * ((4 * ε * (1 - ε)) ^ r * (N : ℝ) ^ (2 * r)) := by
-    rw [pow_mul, pow_mul (N : ℝ) 2 r, ← mul_pow, ← mul_pow]
-    exact congrArg (· ^ r) (by ring)
-  rw [hident] at hmarkov
-  exact le_of_mul_le_mul_left hmarkov (pow_pos (mul_pos hε_pos (by linarith)) r)
 
 /-- Collect `K` Boolean votes from `K` consecutive `ℓ a`-bit slices of `p.2`, padding short seeds
 with ones so every verifier call receives a seed of exact length `ℓ p.1`. -/

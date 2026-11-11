@@ -12,6 +12,8 @@ import CslibFrontier.Computability.Complexity.FineGrained.SingleSubexp
 import CslibFrontier.Computability.Complexity.FineGrained.Randomized
 import CslibFrontier.Computability.Complexity.FineGrained.GapETH
 import CslibFrontier.Computability.Complexity.FineGrained.RatesNativeEndpoint
+import CslibFrontier.Foundations.Analysis.SublinearEnvelope
+import CslibFrontier.Probability.MajorityVote
 
 /-!
 # Fine-grained rates, exponents, and exponential-time hypotheses
@@ -46,7 +48,7 @@ set_option linter.privateModule false
 
 namespace CslibFrontierTests.FineGrainedRates
 
-open Cslib.Complexity Cslib.Logic.PL Filter Topology Turing.MultiTapeTM
+open Cslib Cslib.Complexity Cslib.Logic.PL Filter Topology Turing.MultiTapeTM
 
 /-! ### 1. Concrete CNF formulas and kernel-checked `BruteForceCount` / `SharpKSAT` tests -/
 

@@ -4670,6 +4670,7 @@ public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Trigonometric.Bounds
 public import CslibFrontier.Foundations.Analysis.SpecificLimits.DescFactorial
 public import CslibFrontier.Foundations.Analysis.SpecificLimits.PolyLtPow
+public import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 public import CslibFrontier.Foundations.BooleanAnalysis.AffineDegree
 public import CslibFrontier.Foundations.BooleanAnalysis.Affinity
 public import CslibFrontier.Foundations.BooleanAnalysis.Anticoncentration
@@ -6101,6 +6102,7 @@ public import CslibFrontier.Probability.LocalitySensitiveHash
 public import CslibFrontier.Probability.LocalitySensitiveHash.BitSampling
 public import CslibFrontier.Probability.LocalitySensitiveHash.MinHash
 public import CslibFrontier.Probability.LoomisWhitney
+public import CslibFrontier.Probability.MajorityVote
 public import CslibFrontier.Probability.MarkovChain.Basic
 public import CslibFrontier.Probability.MarkovChain.Coloring
 public import CslibFrontier.Probability.MarkovChain.Coloring.Count

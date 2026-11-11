@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
+import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.Nat.Power
 import Mathlib.Analysis.Asymptotics.Lemmas
 import Mathlib.Analysis.SpecialFunctions.Log.Base
@@ -47,7 +48,7 @@ their exact relationship to the family notions:
 * **Hierarchy** (`DecidableInSingleSubexpTime.decidableInSubexpTime`,
   `ComputableInSingleSubexpTime.computableInSubexpTime`): single-machine subexponential time
   implies family subexponential time, hence `ETH → SingleETH` and `SharpETH → SingleSharpETH`.
-* **Monotone envelope and transfers** (`exists_monotone_isLittleO_ge`,
+* **Monotone envelope and transfers** (`Cslib.exists_monotone_isLittleO_ge`,
   `DecidableInSingleSubexpTime.of_reduction`, `ComputableInSingleSubexpTime.of_reduction`):
   replacing `s` by its running maximum `(Finset.range (n + 1)).sup' _ s` preserves `s =o[atTop] id`
   while making `s` monotone, so single-machine subexponential time transfers unconditionally along
@@ -68,9 +69,6 @@ their exact relationship to the family notions:
 
 ## Main results
 
-* `Cslib.Complexity.exists_two_pow_le_of_isLittleO`,
-  `Cslib.Complexity.exists_monotone_isLittleO_ge`: asymptotic comparison and monotone envelopes for
-  `o(n)` scales.
 * `Cslib.Complexity.decidableInSingleSubexpTime_iff_exists_machine`,
   `Cslib.Complexity.computableInSingleSubexpTime_iff_exists_machine`: equivalence with exchanging
   `∃ (M, e)` and `∀ δ > 0`.
@@ -95,74 +93,7 @@ namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing Turing.MultiTapeTM Filter Asymptotics Topology
 
-/-! ### Asymptotic envelopes for `o(n)` exponents -/
-
-/-- Any sublinear exponent `s =o[atTop] id` satisfies `2 ^ s n ≤ K * 2 ^ (δ * n)` globally for
-every `δ > 0`. -/
-theorem exists_two_pow_le_of_isLittleO {s : ℕ → ℝ}
-    (hs : s =o[atTop] fun n : ℕ => (n : ℝ)) {δ : ℝ} (hδ : 0 < δ) :
-    ∃ K : ℝ, 1 ≤ K ∧ ∀ n : ℕ, (2 : ℝ) ^ s n ≤ K * (2 : ℝ) ^ (δ * n) := by
-  have hev : ∀ᶠ n : ℕ in atTop, s n ≤ δ * n := by
-    filter_upwards [hs.bound hδ] with n hn
-    rw [Real.norm_of_nonneg (Nat.cast_nonneg n)] at hn
-    exact (Real.le_norm_self (s n)).trans hn
-  obtain ⟨N₀, hN₀⟩ := eventually_atTop.mp hev
-  let K : ℝ := 1 + ∑ m ∈ Finset.range N₀, (2 : ℝ) ^ s m
-  have hsum : 0 ≤ ∑ m ∈ Finset.range N₀, (2 : ℝ) ^ s m :=
-    Finset.sum_nonneg fun _ _ => by positivity
-  have hK1 : 1 ≤ K := by dsimp only [K]; linarith
-  refine ⟨K, hK1, fun n => ?_⟩
-  have h2δ : (1 : ℝ) ≤ (2 : ℝ) ^ (δ * n) := Real.one_le_rpow (by norm_num) (by positivity)
-  by_cases hn : n < N₀
-  · have hle_sum : (2 : ℝ) ^ s n ≤ ∑ m ∈ Finset.range N₀, (2 : ℝ) ^ s m :=
-      Finset.single_le_sum (f := fun m => (2 : ℝ) ^ s m)
-        (fun _ _ => by positivity) (Finset.mem_range.mpr hn)
-    have hle_K : (2 : ℝ) ^ s n ≤ K := by dsimp only [K]; linarith
-    exact hle_K.trans (le_mul_of_one_le_right (by positivity) h2δ)
-  · have hrpow : (2 : ℝ) ^ s n ≤ (2 : ℝ) ^ (δ * n) :=
-      Real.rpow_le_rpow_of_exponent_le (by norm_num) (hN₀ n (not_lt.mp hn))
-    exact hrpow.trans (le_mul_of_one_le_left (by positivity) hK1)
-
-/-- Every nonnegative `o(n)` scale is bounded above by a *monotone* nonnegative `o(n)` scale
-(its running maximum). -/
-theorem exists_monotone_isLittleO_ge {s : ℕ → ℝ} (hnn : ∀ n, 0 ≤ s n)
-    (hs : s =o[atTop] fun n : ℕ => (n : ℝ)) :
-    ∃ sBar : ℕ → ℝ, Monotone sBar ∧ (∀ n, 0 ≤ sBar n) ∧ (∀ n, s n ≤ sBar n) ∧
-      (sBar =o[atTop] fun n : ℕ => (n : ℝ)) := by
-  let sBar (N : ℕ) : ℝ := (Finset.range (N + 1)).sup' Finset.nonempty_range_add_one s
-  have hle : ∀ N, s N ≤ sBar N := fun N =>
-    Finset.le_sup' s (Finset.mem_range.mpr (Nat.lt_succ_self N))
-  have hnnBar : ∀ N, 0 ≤ sBar N := fun N => (hnn N).trans (hle N)
-  have hmono : Monotone sBar := fun M N hMN =>
-    Finset.sup'_mono s (Finset.range_mono (Nat.add_le_add_right hMN 1))
-      Finset.nonempty_range_add_one
-  refine ⟨sBar, hmono, hnnBar, hle, isLittleO_iff.mpr fun ε hε => ?_⟩
-  have hev : ∀ᶠ m : ℕ in atTop, s m ≤ (ε / 2) * m := by
-    filter_upwards [hs.bound (half_pos hε)] with m hm
-    rw [Real.norm_of_nonneg (Nat.cast_nonneg m)] at hm
-    exact (Real.le_norm_self (s m)).trans hm
-  obtain ⟨N₀, hN₀⟩ := eventually_atTop.mp hev
-  let B : ℝ := ∑ m ∈ Finset.range N₀, s m
-  have hB_nn : 0 ≤ B := Finset.sum_nonneg fun m _ => hnn m
-  have hsBar_le : ∀ N : ℕ, sBar N ≤ B + (ε / 2) * N := fun N => by
-    refine Finset.sup'_le Finset.nonempty_range_add_one s fun m hm => ?_
-    have hmN : (m : ℝ) ≤ N := by exact_mod_cast Nat.lt_succ_iff.mp (Finset.mem_range.mp hm)
-    by_cases hm0 : m < N₀
-    · have h1 : s m ≤ B :=
-        Finset.single_le_sum (fun k _ => hnn k) (Finset.mem_range.mpr hm0)
-      have h2 : (0 : ℝ) ≤ (ε / 2) * N := by positivity
-      linarith
-    · have h1 : s m ≤ (ε / 2) * m := hN₀ m (not_lt.mp hm0)
-      have h2 : (ε / 2) * m ≤ (ε / 2) * N := mul_le_mul_of_nonneg_left hmN (by positivity)
-      linarith
-  refine eventually_atTop.mpr ⟨⌈2 * B / ε⌉₊, fun N hN => ?_⟩
-  have hBN : B ≤ (ε / 2) * N := by
-    have hceil : 2 * B / ε ≤ (N : ℝ) :=
-      (Nat.le_ceil _).trans (by exact_mod_cast hN)
-    rw [div_le_iff₀ hε] at hceil
-    linarith
-  rw [Real.norm_of_nonneg (hnnBar N), Real.norm_of_nonneg (Nat.cast_nonneg N)]
-  linarith [hsBar_le N]
+/-! ### Asymptotic rescaling for `o(n)` exponents -/
 
 private theorem isLittleO_comp_linear_of_nonneg {s : ℕ → ℝ} (hnn : ∀ n, 0 ≤ s n)
     (hs : s =o[atTop] fun n : ℕ => (n : ℝ)) (c d : ℕ) :
