@@ -153,7 +153,7 @@ end Log
 section Structure
 
 /-- Labels `i` and `j` are equal or share a variable. -/
-def Adj [DecidableEq V] (vbl : ι → Finset V) (i j : ι) : Prop :=
+def Adj (vbl : ι → Finset V) (i j : ι) : Prop :=
   i = j ∨ ¬Disjoint (vbl i) (vbl j)
 
 instance [DecidableEq ι] [DecidableEq V] (vbl : ι → Finset V) (i j : ι) :
@@ -486,7 +486,7 @@ private def lvl [DecidableEq ι] (S : Finset (ι × ℕ)) (l : ℕ) : Finset ι 
   (S.filter fun p => p.2 = l).image Prod.fst
 
 /-- The labels `R`-related to some label of `I`. -/
-private def nbrRel (R : ι → ι → Prop) [DecidableRel R] [DecidableEq ι] [Fintype ι]
+private def nbrRel (R : ι → ι → Prop) [DecidableRel R] [Fintype ι]
     (I : Finset ι) : Finset ι :=
   univ.filter fun j => ∃ i ∈ I, R i j
 

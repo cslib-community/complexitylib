@@ -247,7 +247,7 @@ private theorem traceSteps_swap (hRs : ∀ {i j}, R i j → R j i) (S₀ : Finse
         rwa [← levelRel_insert_of_not_rel hnab la' S₀]
       refine ⟨hnab, ?_, ?_⟩
       · have ha0' : levelRel R a S₀ ≠ 0 := ha0
-        simp [traceSteps, hb0', ha0']
+        simp only [traceSteps, hb0', ha0', ↓reduceIte]
         rfl
       · simp only [foldPush, List.foldl_cons, List.foldl_nil]
         exact (pushRel_comm_of_not_rel hnba hnab S₀).symm
@@ -565,22 +565,11 @@ private theorem phase2_sort_perm {A : ι → Set (∀ v, α v)}
             L₀.map some ++ [some q, some p] ++ L₂'.map some := by
           rw [← happ, htr']
           simp [List.map_append]
-        have hpre_u : traceSteps R S₀' u = L₀.map some := by
-          have hl : (traceSteps R S₀' u).length = (L₀.map some).length := by
-            rw [traceSteps_length, hulen, List.length_map, hlen0]
-          rw [List.append_assoc, List.append_assoc] at happ'
-          exact (List.append_inj happ' hl).1
-        have hsuf_u : traceSteps R (foldPush R S₀' u) [a, b] ++
-            traceSteps R (foldPush R (foldPush R S₀' u) [a, b]) v =
-            [some q, some p] ++ L₂'.map some := by
-          have hl : (traceSteps R S₀' u).length = (L₀.map some).length := by
-            rw [traceSteps_length, hulen, List.length_map, hlen0]
-          rw [List.append_assoc, List.append_assoc] at happ'
-          exact (List.append_inj happ' hl).2
-        have hst_ab : traceSteps R (foldPush R S₀' u) [a, b] = [some q, some p] :=
-          (List.append_inj hsuf_u (by rw [traceSteps_length]; rfl)).1
-        have htail : traceSteps R (foldPush R (foldPush R S₀' u) [a, b]) v = L₂'.map some :=
-          (List.append_inj hsuf_u (by rw [traceSteps_length]; rfl)).2
+        have hlen_u : (traceSteps R S₀' u).length = (L₀.map some).length := by
+          rw [traceSteps_length, hulen, List.length_map, hlen0]
+        rw [List.append_assoc, List.append_assoc] at happ'
+        obtain ⟨hpre_u, hsuf_u⟩ := List.append_inj happ' hlen_u
+        obtain ⟨hst_ab, htail⟩ := List.append_inj hsuf_u (by rw [traceSteps_length]; rfl)
         have haq_val : q = (a, levelRel R a (foldPush R S₀' u)) := by
           by_cases ha0 : levelRel R a (foldPush R S₀' u) = 0
           · simp [traceSteps, ha0] at hst_ab
