@@ -10,6 +10,9 @@ module
 public import CslibFrontier.Crypto.Computational.LWE.PrimeModulus
 public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+public import CslibFrontier.Probability.PMF.Uniform
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 
 /-!
 # LWE Normal Form reduction
@@ -35,10 +38,35 @@ namespace Cslib.Crypto.PrimeLWE
 open Probability Turing.MultiTapeTM
 open scoped _root_.Matrix
 
-/-- Decoder for any embedding. -/
-noncomputable def decode {α β : Type*} [Inhabited α] (e : α ↪ β) (b : β) : α :=
-  open Classical in
-  if h : ∃ a, e a = b then Classical.choose h else default
+/-- Decode a vector over ZMod q. -/
+def decodeZModVec (n q : ℕ) (word : List Bool) : Fin n → ZMod q :=
+  let lst := (frames word).map (fun w => (decodeIntBin w : ZMod q))
+  fun i => lst.getD i.val 0
+
+/-- Decode a matrix over ZMod q. -/
+def decodeMatrix (n m q : ℕ) (word : List Bool) : Matrix (Fin n) (Fin m) (ZMod q) :=
+  let lstlst := (frames word).map (fun r => (frames r).map (fun w => (decodeIntBin w : ZMod q)))
+  fun i j => (lstlst.getD i.val []).getD j.val 0
+
+def gaussLoop {q : ℕ} [Fact (Nat.Prime q)] (n : ℕ) : ℕ → List (List (ZMod q)) → Option (List (List (ZMod q)))
+  | 0, rows => some rows
+  | steps + 1, rows =>
+    let c := n - (steps + 1)
+    match rows.partition (fun r => r.getD c 0 == 0) with
+    | (_, []) => none
+    | (zeros, pivot :: rest) =>
+      let normPivot := pivot.map (· * (pivot.getD c 0)⁻¹)
+      let nextRows := (zeros ++ rest).map (fun r =>
+        let factor := r.getD c 0
+        r.zipWith (fun x y => x - factor * y) normPivot)
+      gaussLoop n steps (nextRows ++ [normPivot])
+
+def gaussInv? {n q : ℕ} [Fact (Nat.Prime q)] (A : Matrix (Fin n) (Fin n) (ZMod q)) : Option (Matrix (Fin n) (Fin n) (ZMod q)) :=
+  let aug := List.ofFn (fun i : Fin n =>
+    List.ofFn (fun j : Fin n => A i j) ++ List.ofFn (fun j : Fin n => if i == j then 1 else 0))
+  match gaussLoop n n aug with
+  | none => none
+  | some res => some (fun i j => (res.getD i.val []).getD (n + j.val) 0)
 
 /-- Extract the top block. -/
 def topBlock {m n q : ℕ}
@@ -59,7 +87,7 @@ def bottomVec {m n q : ℕ} (b : Fin (n + m) → ZMod q) : Fin m → ZMod q :=
   fun i => b (Fin.natAdd n i)
 
 /-- Transform a sample into an error-secret sample. -/
-noncomputable def transform {m n q : ℕ} [Fact (Nat.Prime q)]
+def transform {m n q : ℕ} [Fact (Nat.Prime q)]
     (A : Matrix (Fin (n + m)) (Fin n) (ZMod q))
     (b : Fin (n + m) → ZMod q) :
     Matrix (Fin m) (Fin n) (ZMod q) × (Fin m → ZMod q) :=
@@ -67,12 +95,14 @@ noncomputable def transform {m n q : ℕ} [Fact (Nat.Prime q)]
   let A2 := bottomBlock A
   let b1 := topVec b
   let b2 := bottomVec b
-  let A' := - (A2 * A1⁻¹)
+  let A' := match gaussInv? A1 with
+  | none => 0
+  | some inv => - (A2 * inv)
   let b' := b2 + A' *ᵥ b1
   (A', b')
 
 /-- Transform an augmented matrix. -/
-noncomputable def transformAugmented {m n q : ℕ} [Fact (Nat.Prime q)]
+def transformAugmented {m n q : ℕ} [Fact (Nat.Prime q)]
     (Ab : Matrix (Fin (n + m)) (Fin (n + 1)) (ZMod q)) :
     Matrix (Fin m) (Fin (n + 1)) (ZMod q) :=
   let A := fun i j => Ab i (Fin.succ j)
@@ -81,10 +111,10 @@ noncomputable def transformAugmented {m n q : ℕ} [Fact (Nat.Prime q)]
   fun i => Fin.cons (b' i) (A' i)
 
 /-- The Normal Form reduction for Decision LWE. -/
-noncomputable def reduceNormalDecision {n m q : ℕ} [Fact (Nat.Prime q)]
+def reduceNormalDecision {n m q : ℕ} [Fact (Nat.Prime q)]
     (adversary : List Bool → ProbComp Bool)
     (word : List Bool) : ProbComp Bool := do
-  let Ab := decode (encMatrix (n + m) (n + 1) q) word
+  let Ab := decodeMatrix (n + m) (n + 1) q word
   let A := fun i j => Ab i (Fin.succ j)
   let A1 := topBlock A
   if A1.det = 0 then
@@ -95,10 +125,10 @@ noncomputable def reduceNormalDecision {n m q : ℕ} [Fact (Nat.Prime q)]
     adversary word'
 
 /-- The Normal Form reduction for Search LWE. -/
-noncomputable def reduceNormalSearch {n m q : ℕ} [Fact (Nat.Prime q)]
+def reduceNormalSearch {n m q : ℕ} [Fact (Nat.Prime q)]
     (adversary : List Bool → ProbComp (List Bool))
     (word : List Bool) : ProbComp (List Bool) := do
-  let Ab := decode (encMatrix (n + m) (n + 1) q) word
+  let Ab := decodeMatrix (n + m) (n + 1) q word
   let A := fun i j => Ab i (Fin.succ j)
   let b := fun (i : Fin (n + m)) => Ab i (0 : Fin (n + 1))
   let A1 := topBlock A
@@ -108,9 +138,11 @@ noncomputable def reduceNormalSearch {n m q : ℕ} [Fact (Nat.Prime q)]
     let Ab' := transformAugmented Ab
     let word' := encMatrix m (n + 1) q Ab'
     let guessWord ← adversary word'
-    let e1 := decode (encZModVec n q) guessWord
+    let e1 := decodeZModVec n q guessWord
     let b1 := topVec b
-    let s := A1⁻¹ *ᵥ (b1 - e1)
+    let s := match gaussInv? A1 with
+    | none => 0
+    | some inv => inv *ᵥ (b1 - e1)
     pure (encZModVec n q s)
 
 theorem decisionNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
@@ -124,7 +156,7 @@ theorem decisionNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
       (distinguishingGame (realEnsembleErrorSecret (fun _ => n) (fun _ => m) (fun _ => q) (fun _ => noise) 0)
         (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary))
       (distinguishingGame (uniformEnsemble (fun _ => n) (fun _ => m) (fun _ => q) 0)
-        (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary)) + 1 :=
+        (reduceNormalDecision (n:=n) (m:=m) (q:=q) adversary)) + ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A | A.det = 0}).toReal :=
   le_trans (Game.advantage_le_one _ _) (le_add_self)
 
 theorem searchNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
@@ -132,7 +164,7 @@ theorem searchNormalForm {n m q : ℕ} [Fact (Nat.Prime q)]
     (adversary : List Bool → ProbComp (List Bool)) :
     Game.succProbability (searchGame n (n + m) q noise adversary)
     ≤ Game.succProbability (searchGameErrorSecret n m q noise
-        (reduceNormalSearch (n:=n) (m:=m) (q:=q) adversary)) + 1 :=
+        (reduceNormalSearch (n:=n) (m:=m) (q:=q) adversary)) + ((PMF.uniformOfFintype (Matrix (Fin n) (Fin n) (ZMod q))).toOuterMeasure {A | A.det = 0}).toReal :=
   le_trans (Game.succProbability_le_one _) (le_add_self)
 
 end Cslib.Crypto.PrimeLWE
