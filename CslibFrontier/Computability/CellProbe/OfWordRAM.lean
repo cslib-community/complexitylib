@@ -52,7 +52,7 @@ model differences require explicit accounting in a formal simulation:
      tending to `0` as `K → ∞` whenever `expectedTime < ⊤`), the simulator reads all `S` data
      cells, selects a reachable halting post-state in pure Lean from `haltedLim` (`> 0` by
      almost-sure halting, hence in the target support), and writes the resulting packed memory
-     (`2 * S + overhead` extra probes on the tail), preserving **100% zero-error support
+     (`2 * S + regCells` extra probes on the tail), preserving **100% zero-error support
      correctness** at finite tree depth while achieving expected probes `≤ T + overhead + η` for any
      `η > 0`.
 
@@ -66,11 +66,11 @@ corollaries, see `CslibFrontier.DataStructure.CellProbe.OfWordRAM`.
 * `Cslib.CellProbe.persRegs`, `Cslib.CellProbe.persCount`,
   `Cslib.CellProbe.persistentRegCount`: persistent register set and count (`input i = false`).
 * `Cslib.CellProbe.zeroOutside`: zero Word-RAM memory outside `[base, base + S)`.
-* `Cslib.CellProbe.packMem`, `Cslib.CellProbe.unpackData`, `Cslib.CellProbe.canonicalData`:
+* `Cslib.CellProbe.packMem`, `Cslib.CellProbe.unpackData`:
   standard `w`-bit packing between `WordRAM.Data r` and `Mem (S + persCount input) w`.
 * `Cslib.CellProbe.wideWidth`, `Cslib.CellProbe.wideSubroutineWidth`,
-  `Cslib.CellProbe.packMemWide`, `Cslib.CellProbe.unpackDataWide`,
-  `Cslib.CellProbe.canonicalDataWide`: single-cell base-`2 ^ w` register packing over `S + 1` cells
+  `Cslib.CellProbe.DataCellsBounded`, `Cslib.CellProbe.packMemWide`,
+  `Cslib.CellProbe.unpackDataWide`: single-cell base-`2 ^ w` register packing over `S + 1` cells
   of width `max (persCount input) 1 * w`.
 * `Cslib.CellProbe.RegLayout`, `Cslib.CellProbe.standardLayout`, `Cslib.CellProbe.wideLayout`:
   unified cell-layout interface shared by deterministic and randomized simulators.
@@ -220,7 +220,7 @@ theorem wordOfNat_val_of_fits {w v : ℕ} (h : Fits w v) : (wordOfNat w v).1 = v
 
 /-- Pack `x : Data r` (`[base, base + S)` plus persistent registers) into
 `Mem (S + persCount input) w`. -/
-def packMem {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) (x : Data r) :
+@[expose] def packMem {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) (x : Data r) :
     Mem (S + persCount input) w := fun c =>
   if hc : c.1 < S then
     wordOfNat w (x.mem (base + c.1))
@@ -229,7 +229,7 @@ def packMem {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) (x : Data r) :
 
 /-- Unpack `m : Mem (S + persCount input) w` with caller-supplied input registers `argRegs` into
 `Data r` (with `0` outside `[base, base + S)`). -/
-def unpackData {r : ℕ} (input : Fin r → Bool) (argRegs : Fin r → ℕ) (base S w : ℕ)
+@[expose] def unpackData {r : ℕ} (input : Fin r → Bool) (argRegs : Fin r → ℕ) (base S w : ℕ)
     (m : Mem (S + persCount input) w) : Data r where
   regs i :=
     if hi : input i = true then argRegs i
@@ -238,12 +238,6 @@ def unpackData {r : ℕ} (input : Fin r → Bool) (argRegs : Fin r → ℕ) (bas
     if ha : base ≤ a ∧ a < base + S then
       (m (Fin.castAdd (persCount input) ⟨a - base, by omega⟩)).1
     else 0
-
-/-- Canonical `Data r` view of `m : Mem (S + persCount input) w` setting scratch input registers to
-`0`. -/
-def canonicalData {r : ℕ} (input : Fin r → Bool) (base S w : ℕ)
-    (m : Mem (S + persCount input) w) : Data r :=
-  unpackData input (fun _ => 0) base S w m
 
 theorem unpackData_bounded {r : ℕ} {input : Fin r → Bool} {argRegs : Fin r → ℕ}
     {base S w : ℕ} (harg : ∀ i, input i = true → Fits w (argRegs i))
@@ -258,11 +252,6 @@ theorem unpackData_bounded {r : ℕ} {input : Fin r → Bool} {argRegs : Fin r �
     split_ifs with ha
     · exact (m _).isLt
     · exact fits_zero w
-
-theorem canonicalData_bounded {r : ℕ} (input : Fin r → Bool) (base S w : ℕ)
-    (m : Mem (S + persCount input) w) :
-    (canonicalData input base S w m).Bounded w :=
-  unpackData_bounded (fun _ _ => fits_zero w) m
 
 theorem unpackData_packMem_regs {r : ℕ} {input : Fin r → Bool} {argRegs : Fin r → ℕ}
     {base S w : ℕ} {x : Data r} (hx : x.Bounded w) (i : Fin r) :
@@ -367,13 +356,13 @@ theorem packDigits_eq_zero_of_zero {k w : ℕ} (hk : k = 0) (f : Fin k → Fin (
   rfl
 
 /-- Invariant asserting that data cells `0 .. S - 1` of a wide-cell memory hold `w`-bit values. -/
-def DataCellsBounded (S w wCell : ℕ) (m : Mem (S + 1) wCell) : Prop :=
+@[expose] def DataCellsBounded (S w wCell : ℕ) (m : Mem (S + 1) wCell) : Prop :=
   ∀ j : Fin S, (m (Fin.castAdd 1 j)).1 < 2 ^ w
 
 /-- Pack `x : Data r` into `Mem (S + 1) (wideWidth input w)`: cells `0 .. S - 1` hold
 `x.mem (base + j)`, and cell `S` holds all `persCount input` persistent registers in base `2 ^ w`.
 -/
-def packMemWide {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) (x : Data r) :
+@[expose] def packMemWide {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) (x : Data r) :
     Mem (S + 1) (wideWidth input w) := fun c =>
   if hc : c.1 < S then
     ⟨(wordOfNat w (x.mem (base + c.1))).1,
@@ -393,7 +382,7 @@ theorem dataCellsBounded_packMemWide {r : ℕ} (input : Fin r → Bool) (base S 
   simp [packMemWide, j.isLt]
 
 /-- Unpack `m : Mem (S + 1) (wideWidth input w)` with `argRegs` into `Data r`. -/
-def unpackDataWide {r : ℕ} (input : Fin r → Bool) (argRegs : Fin r → ℕ) (base S w : ℕ)
+@[expose] def unpackDataWide {r : ℕ} (input : Fin r → Bool) (argRegs : Fin r → ℕ) (base S w : ℕ)
     (m : Mem (S + 1) (wideWidth input w)) : Data r where
   regs i :=
     if hi : input i = true then argRegs i
@@ -404,12 +393,6 @@ def unpackDataWide {r : ℕ} (input : Fin r → Bool) (argRegs : Fin r → ℕ) 
     if ha : base ≤ a ∧ a < base + S then
       (m (Fin.castAdd 1 ⟨a - base, by omega⟩)).1 % 2 ^ w
     else 0
-
-/-- Canonical `Data r` view of `m : Mem (S + 1) (wideWidth input w)` with `0` on `input` registers.
--/
-def canonicalDataWide {r : ℕ} (input : Fin r → Bool) (base S w : ℕ)
-    (m : Mem (S + 1) (wideWidth input w)) : Data r :=
-  unpackDataWide input (fun _ => 0) base S w m
 
 theorem unpackDataWide_bounded {r : ℕ} {input : Fin r → Bool} {argRegs : Fin r → ℕ}
     {base S w : ℕ} (harg : ∀ i, input i = true → Fits w (argRegs i))
@@ -424,11 +407,6 @@ theorem unpackDataWide_bounded {r : ℕ} {input : Fin r → Bool} {argRegs : Fin
     split_ifs with ha
     · exact Nat.mod_lt _ (Nat.two_pow_pos w)
     · exact fits_zero w
-
-theorem canonicalDataWide_bounded {r : ℕ} (input : Fin r → Bool) (base S w : ℕ)
-    (m : Mem (S + 1) (wideWidth input w)) :
-    (canonicalDataWide input base S w m).Bounded w :=
-  unpackDataWide_bounded (fun _ _ => fits_zero w) m
 
 theorem unpackDataWide_packMemWide_regs {r : ℕ} {input : Fin r → Bool} {argRegs : Fin r → ℕ}
     {base S w : ℕ} {x : Data r} (hx : x.Bounded w) (i : Fin r) :
@@ -575,7 +553,6 @@ structure RegLayout (r : ℕ) (input : Fin r → Bool) (base S w regCells wCell 
   nextMem_spill_data : ∀ (regs : Fin r → ℕ) (m : Mem (S + regCells) wCell) (idx : Fin S),
     ((spill regs).run m).2 (Fin.castAdd regCells idx) = m (Fin.castAdd regCells idx)
   nextMem_spill_reg : ∀ (y : Data r) (m : Mem (S + regCells) wCell) (c : Fin (S + regCells)),
-    (∀ d : Fin (S + regCells), S ≤ d.1 → m d = m d) →
     (persCount input = 0 → ∀ d : Fin (S + regCells), S ≤ d.1 → m d = pack y d) →
     S ≤ c.1 → ((spill y.regs).run m).2 c = pack y c
   validMem_reg_zero : ∀ {m : Mem (S + regCells) wCell}, ValidMem m →
@@ -604,11 +581,6 @@ variable {r : ℕ} {input : Fin r → Bool} {base S w regCells wCell : ℕ}
 @[expose] def overhead (L : RegLayout r input base S w regCells wCell) : ℕ :=
   L.reloadProbes + L.spillProbes
 
-/-- Canonical `Data r` view setting `input` registers to `0`. -/
-def canonical (L : RegLayout r input base S w regCells wCell)
-    (m : Mem (S + regCells) wCell) : Data r :=
-  L.unpack (fun _ => 0) m
-
 theorem unpack_bounded (L : RegLayout r input base S w regCells wCell)
     {argRegs : Fin r → ℕ} (harg : ∀ i, input i = true → Fits w (argRegs i))
     (m : Mem (S + regCells) wCell) :
@@ -622,11 +594,6 @@ theorem unpack_bounded (L : RegLayout r input base S w regCells wCell)
     split_ifs
     · exact Nat.mod_lt _ (Nat.two_pow_pos w)
     · exact fits_zero w
-
-theorem canonical_bounded (L : RegLayout r input base S w regCells wCell)
-    (m : Mem (S + regCells) wCell) :
-    (L.canonical m).Bounded w :=
-  L.unpack_bounded (fun _ _ => fits_zero w) m
 
 theorem unpack_pack_mem (L : RegLayout r input base S w regCells wCell)
     (argRegs : Fin r → ℕ) {x : Data r} (hx : x.Bounded w) (a : ℕ) :
@@ -677,7 +644,7 @@ def standardLayout {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
     nextMem_writeFin_of_forall_ne _ _ m (Fin.castAdd (persCount input) idx) fun k heq => by
       have hval : idx.1 = S + k.1 := by simpa using congrArg Fin.val heq
       omega
-  nextMem_spill_reg y m c _ _ hc := by
+  nextMem_spill_reg y m c _ hc := by
     let k : Fin (persCount input) := ⟨c.1 - S, by omega⟩
     have hc_eq : c = Fin.natAdd S k := Fin.ext (by simp [k]; omega)
     have hinj : Function.Injective (fun j : Fin (persCount input) => Fin.natAdd S j) :=
@@ -714,6 +681,17 @@ theorem standardLayout_spillProbes {r : ℕ} (input : Fin r → Bool) (base S w 
 theorem standardLayout_validMem {r : ℕ} (input : Fin r → Bool) (base S w : ℕ)
     (m : Mem (S + persCount input) w) :
     (standardLayout input base S w).ValidMem m := by
+  simp [standardLayout]
+
+@[simp]
+theorem standardLayout_pack {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
+    (standardLayout input base S w).pack = packMem input base S w := by
+  simp [standardLayout]
+
+@[simp]
+theorem standardLayout_unpack {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
+    (standardLayout input base S w).unpack =
+      fun argRegs m => unpackData input argRegs base S w m := by
   simp [standardLayout]
 
 /-- Wide-cell single-spill layout over `S + 1` cells of width `wideWidth input w` (`0` probes for
@@ -786,7 +764,7 @@ def wideLayout {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
         have hval : idx.1 = S := by simpa using congrArg Fin.val heq
         omega
       exact Function.update_of_ne hne _ m
-  nextMem_spill_reg y m c _ hzero hc := by
+  nextMem_spill_reg y m c hzero hc := by
     have hc_eq : c = Fin.last S := Fin.ext (by simp; omega)
     subst hc_eq
     by_cases h0 : persCount input = 0
@@ -813,6 +791,25 @@ theorem wideLayout_overhead_le {r : ℕ} (input : Fin r → Bool) (base S w : �
     (wideLayout input base S w).overhead ≤ 2 := by
   rw [wideLayout_overhead]
   split_ifs <;> omega
+
+@[simp]
+theorem wideLayout_pack {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
+    (wideLayout input base S w).pack = packMemWide input base S w := by
+  simp [wideLayout]
+
+@[simp]
+theorem wideLayout_unpack {r : ℕ} (input : Fin r → Bool) (base S w : ℕ) :
+    (wideLayout input base S w).unpack =
+      fun argRegs m => unpackDataWide input argRegs base S w m := by
+  simp [wideLayout]
+
+@[simp]
+theorem wideLayout_validMem_iff {r : ℕ} (input : Fin r → Bool) (base S w : ℕ)
+    (m : Mem (S + 1) (wideWidth input w)) :
+    (wideLayout input base S w).ValidMem m ↔
+      DataCellsBounded S w (wideWidth input w) m ∧
+        (persCount input = 0 → (m (Fin.last S)).1 = 0) := by
+  simp [wideLayout]
 
 
 /-! ### 3. Intra-operation write buffer and deterministic `ProbeTree` simulation -/
@@ -1046,7 +1043,7 @@ theorem commitHalted_spec {r : ℕ} {input : Fin r → Bool} {base S w regCells 
     · have hge : S ≤ c.1 := Nat.le_of_not_lt hc
       simp only [commitHalted, ProbeTree.run_bind]
       change ((L.spill y.regs).run m₁).2 c = L.pack y c
-      exact L.nextMem_spill_reg y m₁ c (fun _ _ => rfl)
+      exact L.nextMem_spill_reg y m₁ c
         (fun h0 d hd => (hm₁_reg d hd).trans (L.validMem_reg_zero hm h0 y d hd)) hge
   · simp only [commitHalted, ProbeTree.probes_bind, probes_flushWriteBuf, L.probes_spill]
 
@@ -2251,26 +2248,12 @@ theorem continuing_sum_le_of_almostSurelyHalts {B : Basis} {r w : ℕ} {p : Prog
     (vy : ℕ × Data r) : ℝ≥0∞ :=
   ⨆ K : ℕ, evalRand w p K ⟨0, x⟩ (.halted vy.1 vy.2)
 
-theorem evalRand_halted_mono {B : Basis} {r : ℕ} (w : ℕ) (p : Program B r) (s : State r)
-    (v : ℕ) (y : Data r) :
-    Monotone fun K => evalRand w p K s (.halted v y) := by
-  refine monotone_nat_of_le_succ fun K => ?_
-  have hstep : evalRand w p (K + 1) s =
-      (evalRand w p K s).bind (fun cfg => (stepRand w p cfg).eval) := by
-    rw [evalRand, runRand_add w p K 1, ProbComp.eval_bind]
-    simp only [evalRand, runRand_succ, runRand_zero, bind_pure]
-  rw [hstep, PMF.bind_apply]
-  refine le_trans ?_
-    (le_tsum (fun cfg => (evalRand w p K s) cfg * (stepRand w p cfg).eval (.halted v y))
-      (.halted v y))
-  simp [stepRand_halted]
-
 theorem tsum_haltedLim_le_one {B : Basis} {r : ℕ} (w : ℕ) (p : Program B r) (x : Data r) :
     (∑' vy : ℕ × Data r, haltedLim w p x vy) ≤ 1 := by
   dsimp only [haltedLim]
   rw [ENNReal.tsum_iSup_of_monotone (f := fun K (vy : ℕ × Data r) =>
     evalRand w p K ⟨0, x⟩ (.halted vy.1 vy.2))
-    (fun vy => evalRand_halted_mono w p ⟨0, x⟩ vy.1 vy.2)]
+    (fun vy => Cslib.WordRAM.evalRand_halted_mono w p ⟨0, x⟩ vy.1 vy.2)]
   refine iSup_le fun K => ?_
   have hinj : Function.Injective (fun vy : ℕ × Data r => RandCfg.halted vy.1 vy.2) := by
     rintro ⟨v₁, y₁⟩ ⟨v₂, y₂⟩ h

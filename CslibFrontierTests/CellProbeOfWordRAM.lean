@@ -32,15 +32,18 @@ Kernel-checked end-to-end instances, lower-bound transfers, and non-vacuity sani
      registers (`r0 = base`, `r1 = 1`), comparing standard `toCellProbe` (`4` cells of width `3`,
      `+ 4` probes/op) against single-spill `toCellProbeWide` (`3` cells of width `6`, `+ 2`
      probes/op).
+   - **Finite-tree randomized `ObliviousSequenceImpl` (`exists_cellProbe_of_execRand`):** a
+     `Code.rand` coin-flipping subroutine realizing `HasFiniteExecRand` across the module boundary
+     with exact output law and zero `η`-loss.
 2. **Unconditional contrapositive Word-RAM lower-bound transfer over non-`Fintype`
-   `Dictionary.Dynamic.Op 1` (`0` `η`-loss):** proves a `3`-probe deterministic step-indexed
-   `IndexedScheme` lower bound across `[.insert 0 0, .query 0]` and `[.insert 0 1, .query 0]` at
-   arbitrary cell count and word width, then transfers it via
+   `Dictionary.Dynamic.Op 2` (`0` `η`-loss) + concrete instances:** proves a `3`-probe deterministic
+   step-indexed `IndexedScheme` lower bound across `[.insert 0 0, .query 0]` and
+   `[.insert 0 1, .query 0]` at arbitrary cell count and word width, transfers it via
    `wordRAM_lower_bound_of_det_cellProbe_lower_bound`,
    `wordRAM_lower_bound_of_det_cellProbe_wide`, and
-   `oblivious_wordRAM_lower_bound_of_det_cellProbe` to every zero-error randomized Word-RAM
-   implementation.
-3. **Trivial `[Instr.halt retReg]` non-vacuity sanity check:** proves directly from
+   `oblivious_wordRAM_lower_bound_of_det_cellProbe`, and instantiates all three on
+   `dynDictZeroPersImpl.toRandomized` and `dynDictRelocImpl.toRandomized`.
+3. **Probe-free `[Instr.halt retReg]` refutation sanity check:** proves directly from
    `ExecProgramDist.haltedLim_eq` that a `1`-instruction `[Instr.halt retReg]` flat program cannot
    satisfy `ExecFlatProgramOps` on both `[.insert 0 0, .query 0]` and `[.insert 0 1, .query 0]`
    under any register count, input mask, encoding, or decoding.
@@ -105,17 +108,17 @@ def dynDictZeroPersDecode :
   | .insert _ _, _ => some ()
   | .delete _, _ => some ()
 
-def dynDictZeroPersRep (s : Dictionary.State 2) (x : Data 5) : Prop :=
+@[expose] def dynDictZeroPersRep (s : Dictionary.State 2) (x : Data 5) : Prop :=
   x.Bounded 2 ∧
     Dictionary.ValuesBounded 3 s ∧
     ∀ u : Fin 2, x.mem u.1 = match s u with | none => 0 | some v => v + 1
 
-def dynDictZeroPersCharge (_ : Dictionary.State 2) : Dictionary.Dynamic.Op 2 → ℕ
+@[expose] def dynDictZeroPersCharge (_ : Dictionary.State 2) : Dictionary.Dynamic.Op 2 → ℕ
   | .query _ => 2
   | .insert _ _ => 3
   | .delete _ => 3
 
-def dynDictZeroPersImpl :
+@[expose] def dynDictZeroPersImpl :
     WordRAM.StateTransitionImpl dynDictZeroPersCode (Dictionary.Dynamic.spec 2 3 2) 2 0 Fin.elim0
       (Dictionary.empty 2) :=
   WordRAM.StateTransitionImpl.ofFn
@@ -595,26 +598,243 @@ theorem simReloc_standard_vs_wide_spec :
   obtain ⟨htr, _⟩ := wideB.2.1.runSeq_ofFn sampleDynTrace hv
   exact ⟨by decide, hstd_chg, hwide_chg, htr.trans sampleDynTrace_run_eq⟩
 
+/-! ### 1C. Finite-tree `ExecRand` oblivious-sequence simulation (`exists_cellProbe_of_execRand`) -/
+
+abbrev coinFlipSpec : ObliviousSequenceSpec where
+  Op := Unit
+  Result _ := Bool
+  ValidOpSeq _ := True
+  Contract ops law := ∀ tr ∈ law.support, tr.length = ops.length
+
+def coinFlipCode : SubroutineCode .standard 5 0 where
+  allocSpan := .op (.copy 0 2)
+  initSetup := .op (.const 0 0)
+  code := .rand 3 1
+  frontierReg := 2
+  baseReg := 0
+  initParams := Fin.elim0
+  curReg := 1
+  zeroReg := 3
+  oneReg := 4
+  incCur := .bin .add 1 1 4
+  input _ := true
+  output := 3
+
+def coinFlipEncode (_ : Unit) (i : Fin 5) : ℕ :=
+  if i.val = 1 then 1 else 0
+
+def coinFlipDecode (_ : Unit) (regs : Fin 5 → ℕ) : Option Bool :=
+  some (regs 3 == 1)
+
+private theorem coinFlip_execStepsRand (ops : List Unit)
+    (ν : PMF (WordRAM.Randomized.SeqOutcome Unit coinFlipSpec.Result 5))
+    (hbdd : ∀ t ∈ ν.support, t.data.Bounded 2) :
+    ∃ (ν_final : PMF (WordRAM.Randomized.SeqOutcome Unit coinFlipSpec.Result 5)) (T_ops : ℝ≥0∞),
+      WordRAM.Randomized.ExecStepsRand coinFlipCode coinFlipSpec Unit 2 0 0
+        coinFlipEncode coinFlipDecode ops ν ν_final T_ops ∧
+      (∀ q ∈ ν_final.support, ∃ t ∈ ν.support,
+        q.transcript.length = t.transcript.length + ops.length) ∧
+      T_ops ≤ ((ops.map fun _ => 1).sum : ℝ≥0∞) := by
+  induction ops generalizing ν with
+  | nil =>
+    exact ⟨ν, 0, .nil ν, fun q hq => ⟨q, hq, by simp⟩, by simp⟩
+  | cons o ops_rem ih =>
+    let mc : WordRAM.Randomized.SeqOutcome Unit coinFlipSpec.Result 5 → ProbComp (Data 5 × ℕ) :=
+      fun t => do
+        let k ← ProbComp.unifFin
+          (((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).regs 1)
+        pure (((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).set
+          3 k.val, 1)
+    let μ_step : WordRAM.Randomized.SeqOutcome Unit coinFlipSpec.Result 5 →
+        PMF (WordRAM.Randomized.StepOutcome Unit Bool 5) :=
+      fun t => (mc t).eval.map fun z => ⟨(), z.1, z.1.regs 3 == 1⟩
+    have hstep : ∀ t ∈ ν.support,
+        t.data.Bounded 2 ∧
+        (∀ i, coinFlipCode.input i = true → Fits 2 (coinFlipEncode o i)) ∧
+        ExecRand 2 coinFlipCode.code
+          ((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data) (mc t) ∧
+        (mc t).eval.map Prod.fst = (μ_step t).map WordRAM.Randomized.StepOutcome.data ∧
+        ∀ q ∈ (μ_step t).support,
+          q.data.Bounded 2 ∧
+          coinFlipDecode o q.data.regs = some q.result ∧
+          Modifies (Block.mk 0 0).footprint t.data.mem q.data.mem := by
+      intro t ht
+      have harg : ∀ i, coinFlipCode.input i = true → Fits 2 (coinFlipEncode o i) := by
+        intro i _
+        decide +revert
+      have hfit1 : Fits 2
+          (((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).regs
+            1) := by
+        simp [SubroutineCode.toDynamicProgram, DynamicProgram.prepare, coinFlipCode,
+          coinFlipEncode, Fits]
+      have hexr : ExecRand 2 coinFlipCode.code
+          ((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data)
+          (mc t) := ExecRand.rand hfit1
+      have hprep_bdd :
+          ((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).Bounded
+            2 :=
+        ⟨fun i => harg i rfl, (hbdd t ht).2⟩
+      refine ⟨hbdd t ht, harg, hexr, ?_, ?_⟩
+      · dsimp only [μ_step]
+        rw [PMF.map_comp]
+        rfl
+      · intro q hq
+        dsimp only [μ_step] at hq
+        rw [PMF.mem_support_map_iff] at hq
+        obtain ⟨z, hz, rfl⟩ := hq
+        have hz_supp : z ∈ (mc t).support := (ProbComp.support_eval (mc t)) ▸ hz
+        refine ⟨hexr.bounded hprep_bdd hz_supp, rfl, ?_⟩
+        intro a _
+        dsimp only [mc] at hz
+        simp only [ ← bind_pure_comp, ProbComp.eval_bind, ProbComp.eval_pure,
+          PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hz
+        obtain ⟨k, _, rfl⟩ := hz
+        rfl
+    have hbdd₁ :
+        ∀ t₁ ∈ (ν.bind fun t => (μ_step t).map (t.appendStep o)).support, t₁.data.Bounded 2 := by
+      intro t₁ ht₁
+      rw [PMF.mem_support_bind_iff] at ht₁
+      obtain ⟨t, ht, hq_map⟩ := ht₁
+      rw [PMF.mem_support_map_iff] at hq_map
+      obtain ⟨q, hq, rfl⟩ := hq_map
+      exact ((hstep t ht).2.2.2.2 q hq).1
+    obtain ⟨ν_final, T_rest, hex_rem, hlen_rem, hT_rem⟩ := ih _ hbdd₁
+    have hexp_le : (∑' t, ν t * ProbComp.expect (mc t) (fun z => (z.2 : ℝ≥0∞))) ≤ 1 := by
+      have hmc_one : ∀ t, ProbComp.expect (mc t) (fun z => (z.2 : ℝ≥0∞)) = 1 := by
+        intro t
+        dsimp only [mc]
+        simp [ProbComp.expect_map]
+      simp [hmc_one, ν.tsum_coe]
+    refine ⟨ν_final, (∑' t, ν t * ProbComp.expect (mc t) (fun z => (z.2 : ℝ≥0∞))) + T_rest,
+      .cons hstep hex_rem, ?_, ?_⟩
+    · intro q hq
+      obtain ⟨t₁, ht₁, hql⟩ := hlen_rem q hq
+      rw [PMF.mem_support_bind_iff] at ht₁
+      obtain ⟨t, ht, hqm⟩ := ht₁
+      rw [PMF.mem_support_map_iff] at hqm
+      obtain ⟨q_s, _, rfl⟩ := hqm
+      refine ⟨t, ht, ?_⟩
+      simp only [WordRAM.Randomized.SeqOutcome.appendStep, List.length_append,
+        List.length_cons, List.length_nil] at hql ⊢
+      omega
+    · simp only [List.map_cons, List.sum_cons]
+      push_cast
+      exact add_le_add hexp_le hT_rem
+
+noncomputable def coinFlipObliviousImpl :
+    WordRAM.Randomized.ObliviousSequenceImpl coinFlipCode coinFlipSpec 2 0 Fin.elim0 where
+  Latent := Unit
+  space := 0
+  spanTime := 1
+  setupTime := 1
+  initPotential := 0
+  charge _ := 1
+  initInv ν := ∀ t ∈ ν.support, t.data.Bounded 2
+  encode := coinFlipEncode
+  decode := coinFlipDecode
+  bounded h := h
+  arguments_fit _ _ i _ := by decide +revert
+  clear_nodup := by decide
+  params_not_clear j := Fin.elim0 j
+  incCur_eval {x} h1 hfit := by
+    change Data.put 2 x 1 (x.regs 1 + x.regs 4) = some (x.set 1 (x.regs 1 + 1))
+    change x.regs 4 = 1 at h1
+    rw [h1]
+    exact Data.put_of_fits hfit
+  span_exec {x} _ hfr _ :=
+    ⟨x.set 0 (x.regs 2),
+      by simpa [coinFlipCode] using (Exec.copy (w := 2) (x := x) (d := 0) (s := 2)).within, rfl,
+      by simpa [coinFlipCode, Data.set] using hfr,
+      by simpa [coinFlipCode, Data.set] using hfr, fun j => Fin.elim0 j⟩
+  setup_exec {x₁} hbdd₁ _ hfr₁ _ _ := by
+    let x₂ := x₁.set 0 0
+    refine ⟨PMF.pure ⟨(), x₂⟩, ?_, ?_, ?_⟩
+    · have hex : ExecRand 2 coinFlipCode.initSetup x₁ (pure (x₂, 1)) :=
+        ExecRand.op (Data.put_of_fits (fits_zero 2))
+      have hc := ExecCodeDist.of_execRand hex
+      simpa [ProbComp.eval_map, ProbComp.eval_pure, ProbComp.expect_pure] using hc
+    · intro t ht
+      rw [PMF.mem_support_pure_iff] at ht
+      subst ht
+      exact hbdd₁.set (fits_zero 2)
+    · intro t ht
+      rw [PMF.mem_support_pure_iff] at ht
+      subst ht
+      exact ⟨hbdd₁.set (fits_zero 2), by simpa [coinFlipCode, x₂, Data.set] using hfr₁,
+        Modifies.refl _ _⟩
+  steps_exec ops ν₀ _ hinv := by
+    have hbdd_seq :
+        ∀ t ∈ (ν₀.map (WordRAM.Randomized.SeqOutcome.ofLatentState
+          (Result := coinFlipSpec.Result))).support, t.data.Bounded 2 := by
+      intro t ht
+      rw [PMF.mem_support_map_iff] at ht
+      obtain ⟨u, hu, rfl⟩ := ht
+      exact hinv u hu
+    obtain ⟨ν_final, T_ops, hexr, hlen, hT⟩ := coinFlip_execStepsRand ops _ hbdd_seq
+    refine ⟨ν_final, T_ops, hexr.toExecSteps, ?_, le_trans hT (by simp)⟩
+    intro tr htr
+    rw [PMF.mem_support_map_iff] at htr
+    obtain ⟨q, hq, rfl⟩ := htr
+    obtain ⟨t, ht, hqt⟩ := hlen q hq
+    rw [PMF.mem_support_map_iff] at ht
+    obtain ⟨_, _, rfl⟩ := ht
+    simpa [WordRAM.Randomized.SeqOutcome.ofLatentState] using hqt
+
+theorem coinFlipObliviousImpl_hasFiniteExecRand :
+    coinFlipObliviousImpl.HasFiniteExecRand := by
+  dsimp only [WordRAM.Randomized.ObliviousSequenceImpl.HasFiniteExecRand, coinFlipObliviousImpl]
+  intro ops ν₀ _ hinv
+  have hbdd_seq :
+      ∀ t ∈ (ν₀.map (WordRAM.Randomized.SeqOutcome.ofLatentState
+        (Result := coinFlipSpec.Result))).support, t.data.Bounded 2 := by
+    intro t ht
+    rw [PMF.mem_support_map_iff] at ht
+    obtain ⟨u, hu, rfl⟩ := ht
+    exact hinv u hu
+  obtain ⟨ν_final, T_ops, hexr, hlen, hT⟩ := coinFlip_execStepsRand ops _ hbdd_seq
+  refine ⟨ν_final, T_ops, hexr, ?_, le_trans hT (by simp)⟩
+  intro tr htr
+  rw [PMF.mem_support_map_iff] at htr
+  obtain ⟨q, hq, rfl⟩ := htr
+  obtain ⟨t, ht, hqt⟩ := hlen q hq
+  rw [PMF.mem_support_map_iff] at ht
+  obtain ⟨_, _, rfl⟩ := ht
+  simpa [WordRAM.Randomized.SeqOutcome.ofLatentState] using hqt
+
+theorem coinFlipObliviousImpl_cellProbe_spec :
+    ∃ (P_cp : Cslib.CellProbe.Randomized.Scheme coinFlipSpec.Op coinFlipSpec.Result
+          (coinFlipObliviousImpl.space + persistentRegCount coinFlipCode) 2)
+      (C_cp : Cslib.DataStructure.CellProbe.Randomized.ObliviousSequenceImpl coinFlipSpec P_cp),
+      C_cp.initPotential = 0 ∧ (∀ o, C_cp.charge o = 1) := by
+  have h0 := mkInitData0_spec coinFlipCode Fin.elim0 (fits_zero 2)
+  obtain ⟨P_cp, C_cp, hip, hchg⟩ :=
+    coinFlipObliviousImpl.exists_cellProbe_of_execRand h0.1 h0.2.1 h0.2.2.1
+      coinFlipObliviousImpl_hasFiniteExecRand
+  have hpers0 : persistentRegCount coinFlipCode = 0 :=
+    persistentRegCount_eq_zero_of_all_input fun _ => rfl
+  exact ⟨P_cp, C_cp, by simpa [coinFlipObliviousImpl] using hip,
+    fun o => by simpa [coinFlipObliviousImpl, hpers0] using hchg o⟩
+
 /-! ### 2. Unconditional contrapositive Word-RAM lower-bound transfer (`Dictionary.Dynamic.spec`) -/
 
-def dynLbOps0 : List (Dictionary.Dynamic.Op 1) := [.insert 0 0, .query 0]
-def dynLbOps1 : List (Dictionary.Dynamic.Op 1) := [.insert 0 1, .query 0]
+def dynLbOps0 : List (Dictionary.Dynamic.Op 2) := [.insert 0 0, .query 0]
+def dynLbOps1 : List (Dictionary.Dynamic.Op 2) := [.insert 0 1, .query 0]
 
-noncomputable def dynLbHardDist : PMF (List (Dictionary.Dynamic.Op 1)) :=
+noncomputable def dynLbHardDist : PMF (List (Dictionary.Dynamic.Op 2)) :=
   (Probability.PMF.uniformOfFintype Bool).map fun b => cond b dynLbOps1 dynLbOps0
 
-def dynLbAlphabet : Finset (Dictionary.Dynamic.Op 1) :=
+def dynLbAlphabet : Finset (Dictionary.Dynamic.Op 2) :=
   {.insert 0 0, .insert 0 1, .query 0, .delete 0}
 
 /-- Deterministic cell-probe lower bound at **arbitrary** cell count `cells` and word width `w`:
 any step-indexed `IndexedScheme` correctly answering `dynLbOps0` and `dynLbOps1` makes at least `3`
 total probes across the pair. -/
 theorem three_le_dynDict_seqProbes_pair_of_correct {cells w : ℕ}
-    (D_det : IndexedScheme (Dictionary.Dynamic.Op 1) Dictionary.Dynamic.Op.Result cells w)
+    (D_det : IndexedScheme (Dictionary.Dynamic.Op 2) Dictionary.Dynamic.Op.Result cells w)
     (h0 : (D_det.runSeq dynLbOps0).1 =
-      ((Dictionary.Dynamic.spec 1 2 1).run (Dictionary.empty 1) dynLbOps0).2)
+      ((Dictionary.Dynamic.spec 2 3 2).run (Dictionary.empty 2) dynLbOps0).2)
     (h1 : (D_det.runSeq dynLbOps1).1 =
-      ((Dictionary.Dynamic.spec 1 2 1).run (Dictionary.empty 1) dynLbOps1).2) :
+      ((Dictionary.Dynamic.spec 2 3 2).run (Dictionary.empty 2) dynLbOps1).2) :
     3 ≤ D_det.seqProbes dynLbOps0 + D_det.seqProbes dynLbOps1 := by
   set t0 := D_det.step 0 (.insert 0 0)
   set t1 := D_det.step 0 (.insert 0 1)
@@ -666,9 +886,9 @@ theorem three_le_dynDict_seqProbes_pair_of_correct {cells w : ℕ}
   omega
 
 private theorem three_halves_le_expected_dynLb {cells w : ℕ}
-    (D_det : IndexedScheme (Dictionary.Dynamic.Op 1) Dictionary.Dynamic.Op.Result cells w)
-    (hD : ∀ ops ∈ ({dynLbOps0, dynLbOps1} : Set (List (Dictionary.Dynamic.Op 1))),
-      (D_det.runSeq ops).1 = ((Dictionary.Dynamic.spec 1 2 1).run (Dictionary.empty 1) ops).2) :
+    (D_det : IndexedScheme (Dictionary.Dynamic.Op 2) Dictionary.Dynamic.Op.Result cells w)
+    (hD : ∀ ops ∈ ({dynLbOps0, dynLbOps1} : Set (List (Dictionary.Dynamic.Op 2))),
+      (D_det.runSeq ops).1 = ((Dictionary.Dynamic.spec 2 3 2).run (Dictionary.empty 2) ops).2) :
     (3 : ℝ≥0∞) / 2 ≤ ∑' ops, dynLbHardDist ops * (D_det.seqProbes ops : ℝ≥0∞) := by
   have hpair := three_le_dynDict_seqProbes_pair_of_correct D_det (hD dynLbOps0 (Or.inl rfl))
     (hD dynLbOps1 (Or.inr rfl))
@@ -687,20 +907,20 @@ private theorem three_halves_le_expected_dynLb {cells w : ℕ}
         mul_le_mul_right hcast _
 
 private theorem dynLb_valid0 :
-    (Dictionary.Dynamic.spec 1 2 1).ValidHistory (Dictionary.empty 1) dynLbOps0 := by
+    (Dictionary.Dynamic.spec 2 3 2).ValidHistory (Dictionary.empty 2) dynLbOps0 := by
   dsimp [dynLbOps0, Dictionary.Dynamic.spec, StateTransitionSpec.ValidHistory,
     StateTransitionSpec.ofFn, Dictionary.Dynamic.valid, Dictionary.Dynamic.step]
   exact ⟨⟨Or.inl (by decide), by decide⟩, trivial, trivial⟩
 
 private theorem dynLb_valid1 :
-    (Dictionary.Dynamic.spec 1 2 1).ValidHistory (Dictionary.empty 1) dynLbOps1 := by
+    (Dictionary.Dynamic.spec 2 3 2).ValidHistory (Dictionary.empty 2) dynLbOps1 := by
   dsimp [dynLbOps1, Dictionary.Dynamic.spec, StateTransitionSpec.ValidHistory,
     StateTransitionSpec.ofFn, Dictionary.Dynamic.valid, Dictionary.Dynamic.step]
   exact ⟨⟨Or.inl (by decide), by decide⟩, trivial, trivial⟩
 
 private theorem dynLb_correctSeqs :
-    ∀ ops ∈ ({dynLbOps0, dynLbOps1} : Set (List (Dictionary.Dynamic.Op 1))),
-      (Dictionary.Dynamic.spec 1 2 1).ValidHistory (Dictionary.empty 1) ops ∧
+    ∀ ops ∈ ({dynLbOps0, dynLbOps1} : Set (List (Dictionary.Dynamic.Op 2))),
+      (Dictionary.Dynamic.spec 2 3 2).ValidHistory (Dictionary.empty 2) ops ∧
         ops.length ≤ 2 ∧ ∀ o ∈ ops, o ∈ dynLbAlphabet := by
   rintro ops (rfl | rfl)
   · exact ⟨dynLb_valid0, by decide, by simp [dynLbOps0, dynLbAlphabet]⟩
@@ -708,7 +928,7 @@ private theorem dynLb_correctSeqs :
 
 private theorem dynLb_hardDist_valid :
     ∀ ops ∈ dynLbHardDist.support,
-      (Dictionary.Dynamic.spec 1 2 1).ValidHistory (Dictionary.empty 1) ops ∧
+      (Dictionary.Dynamic.spec 2 3 2).ValidHistory (Dictionary.empty 2) ops ∧
         ops.length ≤ 2 ∧ ∀ o ∈ ops, o ∈ dynLbAlphabet := by
   intro ops hops
   rw [dynLbHardDist, PMF.mem_support_map_iff] at hops
@@ -718,22 +938,22 @@ private theorem dynLb_hardDist_valid :
   · exact ⟨dynLb_valid1, by decide, by simp [dynLbOps1, dynLbAlphabet]⟩
 
 /-- **End-to-end unconditional Word-RAM lower-bound transfer (`0` `η`-loss, non-`Fintype`
-`Dictionary.Dynamic.Op 1`):**
-Every zero-error `WordRAM.Randomized.StateTransitionImpl` of `Dictionary.Dynamic.spec 1 2 1` over
+`Dictionary.Dynamic.Op 2`):**
+Every zero-error `WordRAM.Randomized.StateTransitionImpl` of `Dictionary.Dynamic.spec 2 3 2` over
 **any** `Basis`, register count `r_ds`, word width `w`, and space `C.space` satisfies the `3 / 2`
 certified expected instruction lower bound. -/
 theorem three_halves_le_any_wordRAM_randomized_impl
     {B : Basis} {r_ds k_init w base : ℕ}
     {P : SubroutineCode B r_ds k_init}
     {params : Fin k_init → ℕ}
-    (C : WordRAM.Randomized.StateTransitionImpl P (Dictionary.Dynamic.spec 1 2 1) w base params
-      (Dictionary.empty 1))
+    (C : WordRAM.Randomized.StateTransitionImpl P (Dictionary.Dynamic.spec 2 3 2) w base params
+      (Dictionary.empty 2))
     {d₀ : Data r_ds} (hd₀ : d₀.Bounded w)
     (hfr : d₀.regs P.frontierReg = base)
     (hpar : ∀ j, d₀.regs (P.initParams j) = params j) :
     (3 : ℝ≥0∞) / 2 ≤ (C.initPotential : ℝ≥0∞) +
       ∑' ops, dynLbHardDist ops *
-        (((Dictionary.Dynamic.spec 1 2 1).totalCost C.charge (Dictionary.empty 1) ops : ℝ≥0∞) +
+        (((Dictionary.Dynamic.spec 2 3 2).totalCost C.charge (Dictionary.empty 2) ops : ℝ≥0∞) +
           ((2 * persistentRegCount P : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) :=
   wordRAM_lower_bound_of_det_cellProbe_lower_bound C hd₀ hfr hpar le_rfl dynLbAlphabet 2
     {dynLbOps0, dynLbOps1} dynLb_correctSeqs dynLbHardDist dynLb_hardDist_valid
@@ -746,14 +966,14 @@ theorem three_halves_le_any_zeroPers_wordRAM_randomized_impl
     {B : Basis} {r_ds k_init w base : ℕ}
     {P : SubroutineCode B r_ds k_init} (hall : ∀ i, P.input i = true)
     {params : Fin k_init → ℕ}
-    (C : WordRAM.Randomized.StateTransitionImpl P (Dictionary.Dynamic.spec 1 2 1) w base params
-      (Dictionary.empty 1))
+    (C : WordRAM.Randomized.StateTransitionImpl P (Dictionary.Dynamic.spec 2 3 2) w base params
+      (Dictionary.empty 2))
     {d₀ : Data r_ds} (hd₀ : d₀.Bounded w)
     (hfr : d₀.regs P.frontierReg = base)
     (hpar : ∀ j, d₀.regs (P.initParams j) = params j) :
     (3 : ℝ≥0∞) / 2 ≤ (C.initPotential : ℝ≥0∞) +
       ∑' ops, dynLbHardDist ops *
-        ((Dictionary.Dynamic.spec 1 2 1).totalCost C.charge (Dictionary.empty 1) ops : ℝ≥0∞) := by
+        ((Dictionary.Dynamic.spec 2 3 2).totalCost C.charge (Dictionary.empty 2) ops : ℝ≥0∞) := by
   have hraw := three_halves_le_any_wordRAM_randomized_impl C hd₀ hfr hpar
   simpa [persistentRegCount_eq_zero_of_all_input hall] using hraw
 
@@ -766,14 +986,14 @@ theorem three_halves_le_any_wordRAM_randomized_impl_wide
     {B : Basis} {r_ds k_init w base : ℕ}
     {P : SubroutineCode B r_ds k_init}
     {params : Fin k_init → ℕ}
-    (C : WordRAM.Randomized.StateTransitionImpl P (Dictionary.Dynamic.spec 1 2 1) w base params
-      (Dictionary.empty 1))
+    (C : WordRAM.Randomized.StateTransitionImpl P (Dictionary.Dynamic.spec 2 3 2) w base params
+      (Dictionary.empty 2))
     {d₀ : Data r_ds} (hd₀ : d₀.Bounded w)
     (hfr : d₀.regs P.frontierReg = base)
     (hpar : ∀ j, d₀.regs (P.initParams j) = params j) :
     (3 : ℝ≥0∞) / 2 ≤ (C.initPotential : ℝ≥0∞) +
       ∑' ops, dynLbHardDist ops *
-        (((Dictionary.Dynamic.spec 1 2 1).totalCost C.charge (Dictionary.empty 1) ops : ℝ≥0∞) +
+        (((Dictionary.Dynamic.spec 2 3 2).totalCost C.charge (Dictionary.empty 2) ops : ℝ≥0∞) +
           (2 : ℝ≥0∞) * (ops.length : ℝ≥0∞)) :=
   wordRAM_lower_bound_of_det_cellProbe_wide C hd₀ hfr hpar le_rfl dynLbAlphabet 2
     {dynLbOps0, dynLbOps1} dynLb_correctSeqs dynLbHardDist dynLb_hardDist_valid
@@ -785,7 +1005,7 @@ theorem three_halves_le_any_oblivious_wordRAM_impl
     {P : SubroutineCode B r_ds k_init}
     {params : Fin k_init → ℕ}
     (C : WordRAM.Randomized.ObliviousSequenceImpl P
-      ((Dictionary.Dynamic.spec 1 2 1).toObliviousSequenceSpec (Dictionary.empty 1)) w base params)
+      ((Dictionary.Dynamic.spec 2 3 2).toObliviousSequenceSpec (Dictionary.empty 2)) w base params)
     {d₀ : Data r_ds} (hd₀ : d₀.Bounded w)
     (hfr : d₀.regs P.frontierReg = base)
     (hpar : ∀ j, d₀.regs (P.initParams j) = params j) :
@@ -796,6 +1016,34 @@ theorem three_halves_le_any_oblivious_wordRAM_impl
   oblivious_wordRAM_lower_bound_of_det_cellProbe C hd₀ hfr hpar le_rfl dynLbAlphabet 2
     {dynLbOps0, dynLbOps1} dynLb_correctSeqs dynLbHardDist dynLb_hardDist_valid
     fun D_det hD => three_halves_le_expected_dynLb D_det hD
+
+/-- Concrete non-vacuity instances applying all three lower-bound transfer theorems to
+`dynDictZeroPersImpl.toRandomized`, `dynDictRelocImpl.toRandomized`, and
+`dynDictZeroPersImpl.toRandomized.toObliviousSequenceImpl`. -/
+theorem concrete_dynDict_lower_bound_instances :
+    let C0 := dynDictZeroPersImpl.toRandomized
+    let C_rel := dynDictRelocImpl.toRandomized
+    let C_obl := C0.toObliviousSequenceImpl
+      (dynDictZeroPersCharge (Dictionary.empty 2)) (fun _ _ _ => le_rfl)
+    ((3 : ℝ≥0∞) / 2 ≤ (C0.initPotential : ℝ≥0∞) +
+        ∑' ops, dynLbHardDist ops *
+          ((Dictionary.Dynamic.spec 2 3 2).totalCost C0.charge (Dictionary.empty 2) ops : ℝ≥0∞)) ∧
+      ((3 : ℝ≥0∞) / 2 ≤ (C_rel.initPotential : ℝ≥0∞) +
+        ∑' ops, dynLbHardDist ops *
+          (((Dictionary.Dynamic.spec 2 3 2).totalCost C_rel.charge
+              (Dictionary.empty 2) ops : ℝ≥0∞) +
+            (2 : ℝ≥0∞) * (ops.length : ℝ≥0∞))) ∧
+      ((3 : ℝ≥0∞) / 2 ≤ (C_obl.initPotential : ℝ≥0∞) +
+        ∑' ops, dynLbHardDist ops *
+          (((ops.map C_obl.charge).sum : ℝ≥0∞) +
+            ((2 * persistentRegCount dynDictZeroPersCode : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞))) := by
+  intro C0 C_rel C_obl
+  have h0 := mkInitData0_spec dynDictZeroPersCode Fin.elim0 (fits_zero 2)
+  have hrel := mkInitData0_spec dynDictRelocCode Fin.elim0 (by decide : Fits 3 1)
+  exact ⟨three_halves_le_any_zeroPers_wordRAM_randomized_impl (fun _ => rfl) C0
+      h0.1 h0.2.1 h0.2.2.1,
+    three_halves_le_any_wordRAM_randomized_impl_wide C_rel hrel.1 hrel.2.1 hrel.2.2.1,
+    three_halves_le_any_oblivious_wordRAM_impl C_obl h0.1 h0.2.1 h0.2.2.1⟩
 
 /-! ### 3. Explicit 1-instruction `[Instr.halt retReg]` non-vacuity sanity test -/
 
@@ -883,25 +1131,24 @@ private theorem execFlatProgramOps_cons_inv
     cases hops'
     exact ⟨_, _, _, hstep, hrem⟩
 
-/-- **Non-vacuity sanity check (`[Instr.halt retReg]`):**
+/-- **Probe-free program refutation sanity check (`[Instr.halt retReg]`):**
 A trivial `1`-instruction flat program `[Instr.halt retReg]` (for **any** `Basis`, register count
 `r`, word width `w`, footprint, input mask `input`, encoder, decoder, and initial state law `ν₀`)
 **cannot** satisfy `ExecFlatProgramOps` on both `dynLbOps0 = [.insert 0 0, .query 0]` and
-`dynLbOps1 = [.insert 0 1, .query 0]` for `Dictionary.Dynamic.spec 1 2 1`, confirming that the
+`dynLbOps1 = [.insert 0 1, .query 0]` for `Dictionary.Dynamic.spec 2 3 2`, confirming that the
 hypotheses of `flat_wordRAM_lower_bound_of_det_cellProbe` and
-`wordRAM_lower_bound_of_det_cellProbe_lower_bound` refute probe-free `1`-step programs rather than
-holding vacuously. -/
+`wordRAM_lower_bound_of_det_cellProbe_lower_bound` rule out probe-free `1`-step programs. -/
 theorem not_execFlatProgramOps_halt_pair
     {B : Basis} {r w base space : ℕ} {Latent : Type}
     (retReg : Fin r) (input : Fin r → Bool)
-    (encode : Dictionary.Dynamic.Op 1 → Fin r → ℕ)
-    (decode : (o : Dictionary.Dynamic.Op 1) → ℕ → (Fin r → ℕ) → Option o.Result)
+    (encode : Dictionary.Dynamic.Op 2 → Fin r → ℕ)
+    (decode : (o : Dictionary.Dynamic.Op 2) → ℕ → (Fin r → ℕ) → Option o.Result)
     (ν₀ ν_f0 ν_f1 : PMF (Latent × Data r)) (T0 T1 : ℝ≥0∞)
-    (hex0 : ExecFlatProgramOps (Dictionary.Dynamic.spec 1 2 1) Latent w base space
-      ([Instr.halt retReg] : Program B r) input encode decode (Dictionary.empty 1)
+    (hex0 : ExecFlatProgramOps (Dictionary.Dynamic.spec 2 3 2) Latent w base space
+      ([Instr.halt retReg] : Program B r) input encode decode (Dictionary.empty 2)
       dynLbOps0 ν₀ ν_f0 T0)
-    (hex1 : ExecFlatProgramOps (Dictionary.Dynamic.spec 1 2 1) Latent w base space
-      ([Instr.halt retReg] : Program B r) input encode decode (Dictionary.empty 1)
+    (hex1 : ExecFlatProgramOps (Dictionary.Dynamic.spec 2 3 2) Latent w base space
+      ([Instr.halt retReg] : Program B r) input encode decode (Dictionary.empty 2)
       dynLbOps1 ν₀ ν_f1 T1) :
     False := by
   obtain ⟨p₀, hp₀⟩ := ν₀.support_nonempty

@@ -25,30 +25,35 @@ oblivious-sequence data-structure `Impl` hierarchies (`Cslib.DataStructure.WordR
 averaging direction of Yao's principle [Yao1977] to obtain unconditional contrapositive Word-RAM
 instruction lower bounds from deterministic step-indexed cell-probe lower bounds.
 
-Four simulation and transfer layers are provided, each in both **standard `w`-bit layout**
+Four simulation and transfer layers are provided across the **standard `w`-bit layout**
 (`space + persistentRegCount P` cells of width `w`, additive overhead `2 * persistentRegCount P`,
-which equals `0` extra cells and `0` extra probes when `∀ i, P.input i = true`) and **wide-cell
-single-spill layout** (`space + 1` cells of width `wideSubroutineWidth P w`, additive overhead at
-most `2` regardless of register count `r`):
+which equals `0` extra cells and `0` extra probes when `∀ i, P.input i = true`) and, for the main
+implementation and lower-bound transfer theorems, the **wide-cell single-spill layout** (`space + 1`
+cells of width `wideSubroutineWidth P w`, additive overhead at most `2` regardless of register count
+`r`):
 1. **Deterministic `WordRAM.StateTransitionImpl` (`toCellProbe`, `toCellProbeWide`, `simInit`):**
    Uses `rep_supported` and `potential_supported` with `zeroOutside` so no extra read-footprint
    hypothesis is required on `WordRAM.StateTransitionImpl`; pre-operation initialization is packed
-   into `Scheme.init` at `0` operation probes, and `simInit` additionally simulates `P.initFresh`
-   from zeroed cell memory in at most `C.initTime + persistentRegCount P` probes.
-2. **Flat `(p_init, p_op)` programs (`ExecFlatProgramOps`, `exists_cellProbe_of_flatPrograms`,
-   `flat_wordRAM_lower_bound_of_det_cellProbe`):** Direct multi-operation Las Vegas bridge for flat
-   `WordRAM.Program B r` pairs without wrapping `SubroutineCode`.
+   into `Scheme.init` at `0` operation probes, and `simInit` (in standard `w`-bit layout)
+   additionally simulates `P.initFresh` from zeroed cell memory in at most
+   `C.initTime + persistentRegCount P` probes.
+2. **Flat `(ν₀, p_op)` pairs (`ExecFlatProgramOps`, `exists_cellProbe_of_flatPrograms`,
+   `exists_cellProbeWide_of_flatPrograms`, `flat_wordRAM_lower_bound_of_det_cellProbe`,
+   `flat_wordRAM_lower_bound_of_det_cellProbe_wide`):** Direct multi-operation Las Vegas bridge
+   coupling an initial state distribution `ν₀` with a flat `p_op : WordRAM.Program B r` without
+   wrapping `SubroutineCode`.
 3. **Randomized Las Vegas `WordRAM.Randomized.StateTransitionImpl` (`exists_cellProbe_lasVegas`,
-   `wordRAM_lower_bound_of_det_cellProbe_lower_bound`,
+   `exists_cellProbeWide_lasVegas`, `wordRAM_lower_bound_of_det_cellProbe_lower_bound`,
    `wordRAM_lower_bound_of_det_cellProbe_wide`):** Buffered finite-horizon truncation preserves
    **100% zero-error transcript correctness** on all admissible histories over `opsAlphabet` up to
    `M_corr` (without `[Fintype D.Op]`), and taking `η → 0` eliminates truncation slack completely
    from the contrapositive Word-RAM lower bound.
 4. **Randomized `WordRAM.Randomized.ObliviousSequenceImpl` (`exists_cellProbe_of_execRand`,
-   `exists_cellProbe_lasVegas`, `wordRAM_lower_bound_of_det_cellProbe_lower_bound`):** Exact
-   zero-slack simulation for finite-tree `ExecRand` on arbitrary `ObliviousSequenceSpec`s (including
-   Monte Carlo contracts) and buffered zero-error simulation + lower-bound transfer on
-   `D.toObliviousSequenceSpec s₀`.
+   `exists_cellProbe_lasVegas`, `oblivious_wordRAM_lower_bound_of_det_cellProbe`,
+   `oblivious_wordRAM_lower_bound_of_det_cellProbe_wide`):** Exact zero-slack standard-layout
+   simulation for finite-tree `ExecRand` on arbitrary `ObliviousSequenceSpec`s (including Monte
+   Carlo contracts), standard-layout buffered zero-error simulation, and both standard- and
+   wide-layout contrapositive lower-bound transfers on `D.toObliviousSequenceSpec s₀`.
 
 ## Main definitions
 
@@ -57,9 +62,10 @@ most `2` regardless of register count `r`):
   `Cslib.DataStructure.WordRAM.StateTransitionImpl.simInit`: deterministic `StateTransitionImpl`
   simulation bridges and fresh-initializer probe tree.
 * `Cslib.DataStructure.CellProbe.prepareFlatRegs`,
-  `Cslib.DataStructure.CellProbe.ExecFlatProgramOps`: flat `(p_init, p_op)` multi-operation Las
-  Vegas execution contract.
-* `Cslib.DataStructure.WordRAM.Randomized.ObliviousSequenceImpl.HasFiniteExecRand`: finite-tree
+  `Cslib.DataStructure.CellProbe.ExecFlatProgramOps`: flat `(ν₀, p_op)` multi-operation Las Vegas
+  execution contract.
+* `Cslib.DataStructure.WordRAM.Randomized.ExecStepsRand`,
+  `Cslib.DataStructure.WordRAM.Randomized.ObliviousSequenceImpl.HasFiniteExecRand`: finite-tree
   `ExecRand` step witness for exact zero-slack oblivious-sequence simulation.
 
 ## Main results
@@ -1199,13 +1205,12 @@ theorem wordRAM_lower_bound_of_det_cellProbe_lower_bound
     hd₀ hfr hpar hspace' opsAlphabet M_corr correctSeqs hcorrectSeqs hardDist hhardDist
     (by simp [standardLayout_overhead, persistentRegCount_eq_persCount]) hlb
 
-set_option linter.unusedFintypeInType false in
-/-- `[Fintype D.Op]` convenience specialization of
+/-- `[Finite D.Op]` convenience specialization of
 `wordRAM_lower_bound_of_det_cellProbe_lower_bound`, instantiating `opsAlphabet := Finset.univ`. -/
 theorem wordRAM_lower_bound_of_det_cellProbe_of_fintype
     {B : Basis} {r_ds k_init w base S_max : ℕ}
     {P : SubroutineCode B r_ds k_init}
-    {D : StateTransitionSpec.{u, v, 0}} [Fintype D.Op]
+    {D : StateTransitionSpec.{u, v, 0}} [Finite D.Op]
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     {params : Fin k_init → ℕ} {s₀ : D.State}
     (C : WordRAM.Randomized.StateTransitionImpl P D w base params s₀)
@@ -1224,8 +1229,9 @@ theorem wordRAM_lower_bound_of_det_cellProbe_of_fintype
     LB ≤ (C.initPotential : ℝ≥0∞) +
       ∑' ops, hardDist ops *
         ((D.totalCost C.charge s₀ ops : ℝ≥0∞) +
-          ((2 * persistentRegCount P : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) :=
-  wordRAM_lower_bound_of_det_cellProbe_lower_bound C hd₀ hfr hpar hspace Finset.univ M_corr
+          ((2 * persistentRegCount P : ℕ) : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by
+  cases nonempty_fintype D.Op
+  exact wordRAM_lower_bound_of_det_cellProbe_lower_bound C hd₀ hfr hpar hspace Finset.univ M_corr
     correctSeqs
     (fun ops hops => ⟨(hcorrectSeqs ops hops).1, (hcorrectSeqs ops hops).2,
       fun _ _ => Finset.mem_univ _⟩)
@@ -1239,7 +1245,7 @@ theorem wordRAM_lower_bound_of_det_cellProbe_of_fintype
 Transfers any deterministic step-indexed cell-probe lower bound at cell width
 `wideSubroutineWidth P w := max (persistentRegCount P) 1 * w` and space `S_max ≥ C.space + 1` to
 arbitrary `r_ds`-register `WordRAM.Randomized.StateTransitionImpl`s with **at most `2` additive
-probes per operation** (`0` when `persistentRegCount P = 0`) and **zero** `η` truncation loss! -/
+probes per operation** and **zero** `η` truncation loss! -/
 theorem wordRAM_lower_bound_of_det_cellProbe_wide
     {B : Basis} {r_ds k_init w base S_max : ℕ}
     {P : SubroutineCode B r_ds k_init}
@@ -1269,12 +1275,11 @@ theorem wordRAM_lower_bound_of_det_cellProbe_wide
     hd₀ hfr hpar hspace opsAlphabet M_corr correctSeqs hcorrectSeqs hardDist hhardDist
     (by rw [wideLayout_overhead]; split_ifs <;> norm_num) hlb
 
-set_option linter.unusedFintypeInType false in
-/-- `[Fintype D.Op]` convenience specialization of `wordRAM_lower_bound_of_det_cellProbe_wide`. -/
+/-- `[Finite D.Op]` convenience specialization of `wordRAM_lower_bound_of_det_cellProbe_wide`. -/
 theorem wordRAM_lower_bound_of_det_cellProbe_wide_of_fintype
     {B : Basis} {r_ds k_init w base S_max : ℕ}
     {P : SubroutineCode B r_ds k_init}
-    {D : StateTransitionSpec.{u, v, 0}} [Fintype D.Op]
+    {D : StateTransitionSpec.{u, v, 0}} [Finite D.Op]
     {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D.HasStepFn f]
     {params : Fin k_init → ℕ} {s₀ : D.State}
     (C : WordRAM.Randomized.StateTransitionImpl P D w base params s₀)
@@ -1292,8 +1297,10 @@ theorem wordRAM_lower_bound_of_det_cellProbe_wide_of_fintype
       LB ≤ ∑' ops, hardDist ops * (D_det.seqProbes ops : ℝ≥0∞)) :
     LB ≤ (C.initPotential : ℝ≥0∞) +
       ∑' ops, hardDist ops *
-        ((D.totalCost C.charge s₀ ops : ℝ≥0∞) + (2 : ℝ≥0∞) * (ops.length : ℝ≥0∞)) :=
-  wordRAM_lower_bound_of_det_cellProbe_wide C hd₀ hfr hpar hspace Finset.univ M_corr correctSeqs
+        ((D.totalCost C.charge s₀ ops : ℝ≥0∞) + (2 : ℝ≥0∞) * (ops.length : ℝ≥0∞)) := by
+  cases nonempty_fintype D.Op
+  exact wordRAM_lower_bound_of_det_cellProbe_wide C hd₀ hfr hpar hspace Finset.univ M_corr
+    correctSeqs
     (fun ops hops => ⟨(hcorrectSeqs ops hops).1, (hcorrectSeqs ops hops).2,
       fun _ _ => Finset.mem_univ _⟩)
     hardDist
@@ -1344,9 +1351,37 @@ inductive ExecStepsRand {B : Basis} {r_ds k_init : ℕ}
       ExecStepsRand P S Latent w base space encode decode (o :: ops) ν ν_final
         ((∑' t, ν t * ProbComp.expect (mc t) (fun z => (z.2 : ℝ≥0∞))) + T_rest)
 
+/-- Every finite-tree `ExecStepsRand` trace embeds directly into `ExecSteps` via
+`ExecCodeDist.of_execRand`. -/
+theorem ExecStepsRand.toExecSteps {B : Basis} {r_ds k_init : ℕ}
+    {P : SubroutineCode B r_ds k_init}
+    {S : DataStructure.ObliviousSequenceSpec.{u, 0}}
+    {Latent : Type z} {w base space : ℕ}
+    {encode : S.Op → Fin r_ds → ℕ}
+    {decode : (o : S.Op) → (Fin r_ds → ℕ) → Option (S.Result o)}
+    {ops : List S.Op} {ν ν_final : PMF (SeqOutcome Latent S.Result r_ds)} {T_ops : ℝ≥0∞}
+    (h : ExecStepsRand P S Latent w base space encode decode ops ν ν_final T_ops) :
+    ExecSteps P S Latent w base space encode decode ops ν ν_final T_ops := by
+  induction h with
+  | nil ν => exact .nil ν
+  | @cons o ops ν ν_final mc μ_step T_rest hstep _ ih =>
+    refine .cons (fun t ht => ?_) ih
+    obtain ⟨hbdd, harg, hexr, hmap, hq⟩ := hstep t ht
+    have hprep_bdd : ((P.toDynamicProgram encode decode).prepare o t.data).Bounded w :=
+      ⟨fun i => by
+        dsimp only [SubroutineCode.toDynamicProgram, DynamicProgram.prepare]
+        split_ifs with hi
+        · exact harg i hi
+        · exact hbdd.1 i, hbdd.2⟩
+    have hdist : ExecCodeDist w P.code ((P.toDynamicProgram encode decode).prepare o t.data)
+        ((μ_step t).map StepOutcome.data) (ProbComp.expect (mc t) fun z => (z.2 : ℝ≥0∞)) := by
+      have hc := ExecCodeDist.of_execRand hexr
+      rwa [ProbComp.eval_map, hmap] at hc
+    exact ⟨hbdd, harg, hprep_bdd, hdist, hq⟩
+
 /-- Predicate asserting that every admissible sequence on `C : ObliviousSequenceImpl` executes via
 finite `ExecRand` computation trees (`ExecStepsRand`). -/
-def ObliviousSequenceImpl.HasFiniteExecRand {B : Basis} {r_ds k_init w base : ℕ}
+@[expose] def ObliviousSequenceImpl.HasFiniteExecRand {B : Basis} {r_ds k_init w base : ℕ}
     {P : SubroutineCode B r_ds k_init}
     {S : DataStructure.ObliviousSequenceSpec.{u, 0}}
     {params : Fin k_init → ℕ}
@@ -2060,7 +2095,8 @@ theorem oblivious_wordRAM_lower_bound_of_det_cellProbe
 
 /-- **Wide-cell contrapositive Word-RAM lower-bound transfer for zero-error
 `ObliviousSequenceImpl`s** (`S_max ≥ C.space + 1` cells of width `wideSubroutineWidth P w`,
-`≤ 2` additive probes per operation regardless of `r_ds`, `0` `η`-loss, no `[Fintype D.Op]`). -/
+at most `2` additive probes per operation regardless of `r_ds`, `0` `η`-loss, no `[Fintype D.Op]`).
+-/
 theorem oblivious_wordRAM_lower_bound_of_det_cellProbe_wide
     {B : Basis} {r_ds k_init w base S_max : ℕ}
     {P : SubroutineCode B r_ds k_init}
