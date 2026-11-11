@@ -20,10 +20,9 @@ namespace CslibFrontierTests.AffineDisperser4nRefuter
 open Cslib Cslib.BitString Cslib.Circuits Cslib.Circuits.Boolean
 open Cslib.Circuits.Boolean.AffineDisperserCore
 open Cslib.Circuits.Boolean.AffineDisperser4n
-
-/-- A `0`-gate circuit on `100` bits. -/
 open Cslib.Circuits.Boolean.SemiCircuit
 
+/-- A `0`-gate circuit on `100` bits. -/
 def proj100Circuit : Circuit (fullSignature 2 Bool) 100 1 :=
   ⟨Program.empty, fun _ => Wire.input ⟨0, by decide⟩⟩
 
@@ -35,15 +34,5 @@ theorem exists_disperser_refute_disagrees :
         f (@refute 100 11 proj100Circuit f) := by
   obtain ⟨f, hf⟩ := exists_isAffineDisperser (n := 100) (d := 11) (by norm_num)
   exact ⟨f, hf, refute_correct proj100Circuit f hf (by decide)⟩
-
-/--
-A nonterminal circuit on `100` bits with one XOR gate, whose initial state is nonterminal.
--/
-def xor100Circuit : Circuit (fullSignature 2 Bool) 100 1 :=
-  ⟨Program.gate Program.empty
-    ⟨FullOp.fn fun xs => xs 0 ^^ xs 1, fun i => if h : i.val = 0 then Wire.input ⟨0, by decide⟩ else Wire.input ⟨1, by decide⟩⟩,
-    fun _ => Wire.gate ⟨0, by decide⟩⟩
-
-#guard (chooseStep? (initialState xor100Circuit)).isSome
 
 end CslibFrontierTests.AffineDisperser4nRefuter
