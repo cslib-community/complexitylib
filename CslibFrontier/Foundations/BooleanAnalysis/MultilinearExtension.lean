@@ -32,6 +32,9 @@ Its total degree is at most the dimension.
   basis.
 * `Cslib.BitString.totalDegree_multilinearExtension_le`: its total degree is at most the
   dimension.
+* `Cslib.BitString.indicatorPoly_mem_restrictDegree`,
+  `Cslib.BitString.multilinearExtension_mem_restrictDegree`: multilinear extensions have degree at
+  most one in each variable.
 * `Cslib.BitString.rename_multilinearExtension`: renaming the coordinates along an equivalence
   gives the multilinear extension of the function read through the equivalence.
 
@@ -108,6 +111,34 @@ theorem totalDegree_multilinearExtension_le [Fintype ι] [DecidableEq ι] (g : (
   refine (totalDegree_finsetSum _ _).trans <| Finset.sup_le fun a _ => ?_
   exact (totalDegree_mul _ _).trans <| by
     simpa using totalDegree_indicatorPoly_le (R := R) a
+
+/-- An indicator polynomial has degree at most one in each variable. -/
+theorem indicatorPoly_mem_restrictDegree [Fintype ι] (a : ι → Bool) :
+    (indicatorPoly a : MvPolynomial ι R) ∈ restrictDegree ι R 1 := by
+  classical
+  nontriviality R
+  rw [mem_restrictDegree]
+  intro s hs j
+  refine (degreeOf_le_iff.mp ?_) s hs
+  refine (degreeOf_prod_le j _ _).trans ?_
+  calc ∑ k, degreeOf j (if a k then X k else 1 - X k : MvPolynomial ι R)
+      ≤ ∑ k, if j = k then 1 else 0 := Finset.sum_le_sum fun k _ => by
+        have hX : degreeOf j (X k : MvPolynomial ι R) = if j = k then 1 else 0 := degreeOf_X j k
+        by_cases hk : a k
+        · simp only [hk, ite_true, hX, le_refl]
+        · simp only [hk, Bool.false_eq_true, ite_false]
+          refine (degreeOf_sub_le _ _ _).trans ?_
+          rw [hX, ← C_1, degreeOf_C]
+          simp
+    _ = 1 := by simp
+
+/-- The multilinear extension of a function on the cube has degree at most one in each
+variable. -/
+theorem multilinearExtension_mem_restrictDegree [Fintype ι] [DecidableEq ι]
+    (g : (ι → Bool) → R) : multilinearExtension g ∈ restrictDegree ι R 1 :=
+  Submodule.sum_mem _ fun a _ => by
+    rw [C_mul']
+    exact Submodule.smul_mem _ _ (indicatorPoly_mem_restrictDegree a)
 
 /-- Renaming the coordinates along an equivalence `e` turns the multilinear extension of `g` into
 the multilinear extension of `g` read through `e`. -/
