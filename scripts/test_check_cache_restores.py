@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_cache_restores as c  # noqa: E402
+import quick_check as quick  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 LAKEFILE = """name = "restorefixture"
@@ -72,7 +73,7 @@ class Fixture(unittest.TestCase):
 
 
 class RestoredFileTests(Fixture):
-    def test_only_changed_files_with_synthetic_traces_are_selected(self) -> None:
+    def test_full_check_includes_unchanged_built_clients_and_executables(self) -> None:
         self.write("Demo/Committed.lean", "def committed := 1\n")
         self.commit()
         self.write("Demo/Staged.lean", "def staged := 1\n")
@@ -85,15 +86,49 @@ class RestoredFileTests(Fixture):
         for module in ("Demo/Committed", "Demo/Staged", "DemoTests/Untracked", "Tool"):
             self.trace(module, synthetic=True, log=[])
         self.trace("DemoTests/Client", log=[])  # built here: its log was replayed
-        self.trace("Demo/Base", synthetic=True, log=[])  # restored, but unchanged
-        self.assertEqual(c.restored_files(self.root, "origin/main"),
-                         ["Demo/Committed.lean", "Demo/Staged.lean", "DemoTests/Untracked.lean",
-                          "tools/Tool.lean"])
+        self.trace("Demo/Base", synthetic=True, log=[])  # unchanged sources are covered too
+        self.assertEqual(c.restored_files(self.root),
+                         ["Demo/Base.lean", "Demo/Committed.lean", "Demo/Staged.lean",
+                          "DemoTests/Untracked.lean", "tools/Tool.lean"])
+
+    def test_full_check_does_not_depend_on_changed_file_selection(self) -> None:
+        self.trace("DemoTests/Client", synthetic=True, log=[])
+        self.trace("Demo/Base", synthetic=True, log=[])
+        (self.root / "Demo/Base.lean").unlink()
+        self.write("lean-toolchain", "a different toolchain\n")
+        self.assertEqual(c.restored_files(self.root), ["DemoTests/Client.lean"])
+
+    def test_explicit_scope_covers_unchanged_client_and_missing_traces(self) -> None:
+        self.trace("Demo/Base", synthetic=True, log=[])
+        self.trace("DemoTests/Client", synthetic=True, log=[])
+        self.assertEqual(c.restored_files(self.root, ["DemoTests/Client.lean", "tools/Tool.lean"]),
+                         ["DemoTests/Client.lean", "tools/Tool.lean"])
+
+    def test_full_check_includes_outputs_without_traces(self) -> None:
+        self.write(".lake/build/lib/lean/DemoTests/Client.olean", "compiled output")
+        self.assertEqual(c.restored_files(self.root), ["DemoTests/Client.lean"])
+
+    def test_executable_scope_includes_built_helpers_without_expanding_library_scope(self) -> None:
+        self.write("tools/Helper.lean", "import Demo.Base\n")
+        for module in ("Demo/Base", "DemoTests/Client", "Tool", "Helper"):
+            self.trace(module, synthetic=True, log=[])
+        self.assertEqual(c.restored_files(self.root, ["Demo/Base.lean"], ["tools"]),
+                         ["Demo/Base.lean", "tools/Helper.lean", "tools/Tool.lean"])
+
+    def test_optional_aggregate_is_checked_only_when_built(self) -> None:
+        self.assertEqual(c.restored_files(self.root, [], ["Demo.lean"]), [])
+        self.write(".lake/build/lib/lean/Demo.olean", "compiled output")
+        self.assertEqual(c.restored_files(self.root, [], ["Demo.lean"]), ["Demo.lean"])
+
+    def test_paths_with_whitespace_are_preserved(self) -> None:
+        self.write("Demo/has space\nand newline.lean", "example : True := trivial\n")
+        self.trace("Demo/has space\nand newline", synthetic=True, log=[])
+        self.assertEqual(c.restored_files(self.root), ["Demo/has space\nand newline.lean"])
 
     def test_unreadable_trace_counts_as_restored(self) -> None:
         self.write("Demo/Base.lean", "def value : Nat := 2\n")
         self.write(".lake/build/lib/lean/Demo/Base.trace", "{not json")
-        self.assertEqual(c.restored_files(self.root, "origin/main"), ["Demo/Base.lean"])
+        self.assertEqual(c.restored_files(self.root), ["Demo/Base.lean"])
 
     def test_custom_source_directories_and_build_directory(self) -> None:
         self.write("lakefile.toml", 'name = "f"\nsrcDir = "src"\nbuildDir = "out"\n'
@@ -101,10 +136,12 @@ class RestoredFileTests(Fixture):
         lib_dir, dirs = c.layout(self.root)
         self.assertEqual((lib_dir, dirs), (self.root / "out/lib/lean",
                                            [Path("src/tools"), Path("src")]))
-        self.write("out/lib/lean/Tool.trace", "{}")
+        self.write("src/tools/Tool.lean", "def main : IO Unit := pure ()\n")
+        self.write("out/lib/lean/Tool.trace", '{"synthetic": true}')
         self.assertEqual(c.trace_path("src/tools/Tool.lean", lib_dir, dirs),
                          self.root / "out/lib/lean/Tool.trace")
         self.assertIsNone(c.trace_path("Elsewhere/Tool.lean", lib_dir, dirs))
+        self.assertEqual(c.restored_files(self.root), ["src/tools/Tool.lean"])
 
 
 class MainTests(Fixture):
@@ -143,10 +180,22 @@ class MainTests(Fixture):
     def test_failed_elaboration_fails(self) -> None:
         self.assertEqual(self.run_main(1, "")[0], 1)
 
-    def test_unresolvable_base_fails(self) -> None:
-        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
-            c.main(["--base", "no-such-ref"], self.root)
-        self.assertTrue(raised.exception.code)
+    def test_invalid_scope_fails_instead_of_becoming_an_empty_check(self) -> None:
+        for contents in ('{"files": []}', '[1]', '["missing.lean"]', 'null', 'not JSON'):
+            with self.subTest(contents=contents):
+                scope = self.root / "scope.json"
+                scope.write_text(contents)
+                with redirect_stderr(io.StringIO()):
+                    self.assertEqual(c.main(["--files-from", str(scope)], self.root), 1)
+
+    def test_explicit_json_scope_excludes_unaffected_restores(self) -> None:
+        self.trace("DemoTests/Client", synthetic=True, log=[])
+        scope = self.root / "scope.json"
+        scope.write_text(json.dumps(["DemoTests/Client.lean"]))
+        with patch.object(c, "elaborate", return_value=subprocess.CompletedProcess([], 0, "")) as run, \
+             redirect_stdout(io.StringIO()):
+            self.assertEqual(c.main(["--files-from", str(scope)], self.root), 0)
+        self.assertEqual(run.call_args.args, (self.root, "DemoTests/Client.lean"))
 
 
 class RealLakeTests(Fixture):
@@ -158,11 +207,15 @@ class RealLakeTests(Fixture):
 
     def setUp(self) -> None:
         # CI runs Python tests before installing Lean.
-        if not shutil.which("elan"):
+        if not shutil.which("lake"):
             self.skipTest("installed Lean toolchain unavailable")
         toolchain = (REPO / "lean-toolchain").read_text().strip()
-        listed = subprocess.run(["elan", "toolchain", "list"], capture_output=True, text=True)
-        if toolchain not in listed.stdout:
+        if shutil.which("elan"):
+            listed = subprocess.run(["elan", "toolchain", "list"], capture_output=True, text=True)
+            if toolchain not in listed.stdout:
+                self.skipTest("repository Lean toolchain not installed")
+        version = subprocess.run(["lake", "--version"], cwd=REPO, capture_output=True, text=True)
+        if version.returncode or f"Lean version {toolchain.rsplit(':v', 1)[-1]})" not in version.stdout:
             self.skipTest("repository Lean toolchain not installed")
         super().setUp()
         self.write("lean-toolchain", toolchain + "\n")
@@ -176,7 +229,8 @@ class RealLakeTests(Fixture):
         self.addCleanup(environment.stop)
 
     def lake(self, *args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(["lake", *args], cwd=self.root, capture_output=True, text=True)
+        return subprocess.run(["lake", *args], cwd=self.root, capture_output=True, text=True,
+                              timeout=120)
 
     def test_warning_dropped_by_a_cache_restore_is_reported(self) -> None:
         self.write("Demo/Base.lean", "theorem dropped : 1 = 2 := by sorry\n")
@@ -192,6 +246,44 @@ class RealLakeTests(Fixture):
         with redirect_stdout(out), redirect_stderr(out):
             self.assertEqual(c.main([], self.root), 1)
         self.assertIn("sorry", out.getvalue())
+
+    def test_changed_import_makes_unchanged_restored_client_warn_in_full_and_quick_checks(self) -> None:
+        self.write("Demo/Base.lean", "def value : Nat := 1\ndef oldValue : Nat := value\n")
+        self.write("DemoTests/Client.lean", "import Demo.Base\nexample : Nat := oldValue\n")
+        self.assert_unchanged_warning(
+            'def value : Nat := 1\n@[deprecated value (since := "2026-11-11")]\n'
+            'def oldValue : Nat := value\n', "DemoTests/Client.lean")
+
+    def test_unchanged_aggregate_import_warning_is_checked(self) -> None:
+        self.write("DemoTests/Client.lean", "import Demo\nexample : Nat := value\n")
+        self.assert_unchanged_warning(
+            'def value : Nat := 1\ndeprecated_module (since := "2026-11-11")\n', "Demo.lean")
+
+    def assert_unchanged_warning(self, edited_base: str, warning_file: str) -> None:
+        """A changed import can hide a warning in any unchanged source on a built client's path."""
+        # Run quick mode's actual subprocess audit in this private project, stopping at its failure.
+        for name in ("quick_check.py", "check_cache_restores.py", "QuickImports.lean"):
+            self.write(f"scripts/{name}", (REPO / "scripts" / name).read_text())
+        baseline = self.lake("build", "--wfail", "--iofail", "DemoTests.Client")
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+        self.commit()  # include the generated manifest before measuring the Lean-only change
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", edited_base)
+        populate = self.lake("build", "DemoTests.Client")
+        self.assertEqual(populate.returncode, 0, populate.stdout + populate.stderr)
+        self.assertIn("deprecated", populate.stdout + populate.stderr)
+        self.assertEqual(self.git("diff", "--name-only"), "Demo/Base.lean")
+        shutil.rmtree(self.root / ".lake/build")  # only this fixture's disposable outputs
+        restored = self.lake("build", "--wfail", "--iofail", "DemoTests.Client")
+        self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
+        self.assertTrue(c.restored(self.root / ".lake/build/lib/lean/DemoTests/Client.trace"))
+        for check in (c.main, quick.main):
+            with self.subTest(check=check.__module__):
+                out = io.StringIO()
+                with redirect_stdout(out), redirect_stderr(out):
+                    self.assertEqual(check([], self.root), 1, out.getvalue())
+                self.assertIn("deprecated", out.getvalue())
+                self.assertIn(f"FAIL  {warning_file}", out.getvalue())
 
 
 if __name__ == "__main__":

@@ -8,8 +8,9 @@ module built in one checkout (a worktree, an agent sandbox, a second clone) is r
 other checkout on the same machine with the same inputs. Outputs are hard-linked back into
 `.lake/build`. `lake cache clean` empties it; it lives in the Lean toolchain's directory under
 `~/.elan` unless `LAKE_CACHE_DIR` says otherwise. A restored module's warnings are not replayed,
-so `--wfail` can pass locally where CI fails; `scripts/check.sh` re-elaborates changed modules
-restored this way
+so `--wfail` can pass locally where CI fails. Full `scripts/check.sh` re-elaborates built
+root-package sources restored this way; quick mode checks affected sources, including unchanged
+clients, built import aggregates and executable helpers
 ([troubleshooting](../../manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
 **Remote cache.** CI uploads the build outputs of every commit on `main`; `scripts/cache/get.sh`
