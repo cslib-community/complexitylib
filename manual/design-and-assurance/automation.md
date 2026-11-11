@@ -278,7 +278,10 @@ the check that local opens do not leak into later declarations.
 
 Place a callee's zero-local-work `Realizes` certificate in the local context to reuse an opaque
 method before unfolding it. The tactic checks its basis and output encoding and uses existing
-`Realizes.reindex` to wire every encoded argument coordinate to an already live word. The
+`Realizes.reindex` to wire encoded argument coordinates to live words. When some coordinates
+need computation, it first certifies a charged `pure` stage for the whole argument using the
+callee's input encoding, then wires the call to those new words. This supports custom and
+dependent input encodings without a `WordEncoding` instance for the argument type. The
 complete [method-call clients](../../CslibFrontierTests/WordRAMRealizationCall.lean) cover
 projections, aliased inputs, curried and dependent arguments, and optional-pair replies.
 Word-vector type abbreviations in the callee's input and output encodings are accepted without
@@ -289,13 +292,17 @@ Zero local work is an absorbed grading: the callee still has its certified nativ
 against memory charge. It does not mean zero machine instructions.
 
 The called method's domain must hold at the memory actually reached by earlier queries.
-The call client after a write demonstrates that obligation explicitly. Computed arguments
-such as `d+1` need an explicit certified `pure` stage and its fit/domain proof; they cannot be
-supplied by static register wiring. The same file contrasts the rejected unstaged call with
-its successful staged version and includes dependent pair/scalar staging.
+The call client after a write demonstrates that obligation explicitly. Write computed arguments
+directly, such as `method (d + 1)`: `realize` leaves the result's `Fits w (d + 1)` obligation and
+the method's domain as goals. Exact subtraction and division retain their definedness conditions.
+The same file checks automatic and explicit staging, dependent arguments, standard-basis
+truncated subtraction, and rejection when fit or exact-operation evidence is missing.
+Automatic staging computes the whole encoded argument when any coordinate needs computation;
+an explicit `pure` stage remains useful to share a computed value between several calls.
 
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
-certificate's basis, output encoding, zero local work and live input coordinates, then inspect
+certificate's basis, output encoding, zero local work and whether its argument coordinates use
+supported word glue, then inspect
 the domain at the reached memory. Retain the fit and safety obligations left by the tactic;
 unfolding the method or dropping a resource premise does not supply those proofs. The
 [realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
