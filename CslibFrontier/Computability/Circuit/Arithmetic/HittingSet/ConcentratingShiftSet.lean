@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShift
+public import CslibFrontier.Foundations.Combinatorics.PerfectHashFamily.Basic
 public import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Combinatorics.Colex
 import Mathlib.Combinatorics.Nullstellensatz
@@ -46,6 +47,9 @@ Characteristic zero is used only to have the nodes `0, 1, …` distinct.
 * `exists_mem_concentratingShifts`: some shift in the set gives a monomial with fewer than `k`
   variables.
 * `card_concentratingShifts_le`: the set has at most `(n |P| + 1) (n 2 ^ k + 1)` points.
+* `exists_mem_concentratingShifts_perfectHashFamily`,
+  `card_concentratingShifts_perfectHashFamily_le`: the same with `Cslib.perfectHashFamily` and
+  `k = ⌊lg w⌋ + 1`, a set of size polynomial in `n` and `w`.
 
 ## References
 
@@ -99,7 +103,7 @@ private theorem aeval_genericShift (P : Finset (Fin n → Fin k)) (e₀ : Fin P.
 /-- The generic shift of a perfect family of colourings satisfies the independence hypothesis of
 `exists_mem_support_shift_card_lt`. -/
 theorem genericShift_independent {P : Finset (Fin n → Fin k)}
-    (hP : ∀ S : Finset (Fin n), S.card = k → ∃ h ∈ P, Set.InjOn h S)
+    (hP : IsPerfectHashFamily P k)
     (Y : Finset (Fin n)) (hY : Y.card = k) (c : Finset (Fin n) → F)
     (hc : ∑ T ∈ Y.powerset, c T • ∏ j ∈ T, genericShift F P j = 0) :
     ∀ T ∈ Y.powerset, c T = 0 := by
@@ -210,7 +214,7 @@ with `k` colours and `w < 2 ^ k`. Every nonzero multilinear polynomial in `n` va
 rank at most `w` across every set of `k` variables has, after shifting by some point of
 `concentratingShifts F P`, a monomial with fewer than `k` variables. -/
 theorem exists_mem_concentratingShifts {P : Finset (Fin n → Fin k)}
-    (hP : ∀ S : Finset (Fin n), S.card = k → ∃ h ∈ P, Set.InjOn h S) {w : ℕ} (hw : w < 2 ^ k)
+    (hP : IsPerfectHashFamily P k) {w : ℕ} (hw : w < 2 ^ k)
     {f : MvPolynomial (Fin n) F} (hf0 : f ≠ 0) (hmul : ∀ i, f.degreeOf i ≤ 1)
     (hf : ∀ Y : Finset (Fin n), Y.card = k → SplitRankLE (Y : Set (Fin n)) w f) :
     ∃ a ∈ concentratingShifts F P, ∃ m ∈ (shift a f).support, m.support.card < k := by
@@ -253,5 +257,29 @@ theorem exists_mem_concentratingShifts {P : Finset (Fin n → Fin k)}
   simp only [coeff_map, RingHom.coe_coe, aeval_eq_eval] at hmap
   rw [← hmap]
   exact hxc
+
+/-- **Support-concentrating shifts, with the perfect hash family of the library.** Every nonzero
+multilinear polynomial in `n` variables of split rank at most `w` across every set of
+`⌊lg w⌋ + 1` variables has, after shifting by some point of an explicit set, a monomial with at
+most `⌊lg w⌋` variables. -/
+theorem exists_mem_concentratingShifts_perfectHashFamily {w : ℕ} {f : MvPolynomial (Fin n) F}
+    (hf0 : f ≠ 0) (hmul : ∀ i, f.degreeOf i ≤ 1)
+    (hf : ∀ Y : Finset (Fin n), Y.card = Nat.log 2 w + 1 → SplitRankLE (Y : Set (Fin n)) w f) :
+    ∃ a ∈ concentratingShifts F (perfectHashFamily n (Nat.log 2 w + 1)),
+      ∃ m ∈ (shift a f).support, m.support.card ≤ Nat.log 2 w := by
+  obtain ⟨a, ha, m, hm, hmk⟩ := exists_mem_concentratingShifts
+    (isPerfectHashFamily_perfectHashFamily n _ (Nat.succ_pos _))
+    (Nat.lt_pow_succ_log_self (by norm_num) w) hf0 hmul hf
+  exact ⟨a, ha, m, hm, Nat.lt_succ_iff.1 hmk⟩
+
+omit [CharZero F] in
+/-- The explicit set of shifts for width `w` has at most
+`(n² 2 ^ (25 (⌊lg w⌋ + 1)) + 1) (n 2 ^ (⌊lg w⌋ + 1) + 1)` points, which is polynomial in `n`
+and `w`. -/
+theorem card_concentratingShifts_perfectHashFamily_le (n w : ℕ) :
+    (concentratingShifts F (perfectHashFamily n (Nat.log 2 w + 1))).card ≤
+      (n * (n * 2 ^ (25 * (Nat.log 2 w + 1))) + 1) * (n * 2 ^ (Nat.log 2 w + 1) + 1) :=
+  (card_concentratingShifts_le _).trans (Nat.mul_le_mul_right _ (Nat.add_le_add_right
+    (Nat.mul_le_mul_left _ (card_perfectHashFamily_le _ _)) _))
 
 end Cslib.Circuits.Arithmetic

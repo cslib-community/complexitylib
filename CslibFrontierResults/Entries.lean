@@ -954,6 +954,31 @@ register_result "hitting-set-derivative-closed" where
     algorithm model, nothing in positive characteristic, and not the source's extension to \
     noncommutative ABPs."
 
+register_result "support-concentrating-shifts" where
+  title := "Support-concentrating shifts for multilinear polynomials of small split rank"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := ForbesSaptharishiShpilka2014,
+      theorem := "Theorem 4.1 with Lemma 4.4, for individual degree one",
+      locator := "§4, pp. 21–23 (arXiv v1)" },
+    { paper := Shpilka2026, theorem := "Theorem 2.3 and Corollary 2.4, for δ = 1",
+      locator := "§2, p. 5" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.exists_mem_concentratingShifts_perfectHashFamily,
+    Cslib.Circuits.Arithmetic.card_concentratingShifts_perfectHashFamily_le,
+    Cslib.Circuits.Arithmetic.exists_mem_concentratingShifts
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of at most \
+    (n²·2^(25(⌊lg w⌋+1)) + 1)(n·2^(⌊lg w⌋+1) + 1) points such that every nonzero multilinear \
+    polynomial in n variables that is a sum of w products across every split of ⌊lg w⌋ + 1 \
+    variables from the rest has, after shifting by one of the points, a monomial with at most \
+    ⌊lg w⌋ variables. Individual degree one only, by a direct argument and not the sources' \
+    rank condensers; the support bound ⌊lg w⌋ is smaller than the sources' ⌊lg w²⌋. The set is \
+    built from a perfect hash family of the library and not from the Klivans–Spielman \
+    generator. Split rank is a decomposition into products, not a coefficient-matrix rank or \
+    a branching program. No hitting set for read-once branching programs is claimed here."
+
 /-! ## Further collected results -/
 
 register_result "sharp-p-lowness" where

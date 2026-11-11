@@ -208,6 +208,27 @@ lake build CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic \
 
 **Not certified here.** Characteristic zero is a genuine hypothesis: the Wronskian argument fails in positive characteristic. The source's extension to noncommutative algebraic branching programs is not formalized. Nothing is proved about the bit length of the points or the cost of computing them, and the bound `n * r ^ 2 + r` is the source's, not optimized. This is unrelated to the rational-formula hitting list of the next section, which concerns noncommutative rational formulas.
 
+## Support-concentrating shifts and perfect hash families
+
+Import [HittingSet/ConcentratingShiftSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean). These are the two ingredients that the hitting sets for multilinear any-order read-once branching programs take from earlier work; the hitting set itself is not yet in the library.
+
+`MvPolynomial.SplitRankLE U w f` ([SplitRank.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/SplitRank.lean)) says that `f` is a sum of `w` products `p * q` with `p` in the variables of `U` and `q` in the others. It stands for "the coefficient matrix of `f` across the split has rank at most `w`", but no matrix is defined and that equivalence is not proved. `MvPolynomial.shift a` ([Shift.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/Shift.lean)) is `f ↦ f (X + a)`; the point may have coordinates in an algebra over the coefficient ring.
+
+The endpoint [exists_mem_concentratingShifts_perfectHashFamily](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShiftSet.lean) is for `[Field F] [CharZero F]` and `f : MvPolynomial (Fin n) F` with `f ≠ 0`, `f.degreeOf i ≤ 1` for all `i`, and `SplitRankLE ↑Y w f` for every `Y : Finset (Fin n)` with `Y.card = Nat.log 2 w + 1`. It gives a point `a` of `concentratingShifts F (perfectHashFamily n (Nat.log 2 w + 1))` and a monomial of `shift a f` with at most `Nat.log 2 w` variables; `card_concentratingShifts_perfectHashFamily_le` bounds the set by `(n * (n * 2 ^ (25 * (Nat.log 2 w + 1))) + 1) * (n * 2 ^ (Nat.log 2 w + 1) + 1)`. `exists_mem_concentratingShifts` is the same for any `P` with `IsPerfectHashFamily P k` and `w < 2 ^ k`.
+
+**To use a different shift**, apply [exists_mem_support_shift_card_lt](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConcentratingShift.lean): it needs a point `γ` over a domain `R` that is an `F`-algebra such that, for every set `Y` of `k` variables, the products `∏ j ∈ T, γ j` over `T ⊆ Y` are linearly independent over `F`. It has no characteristic hypothesis.
+
+`Cslib.IsPerfectHashFamily P s` ([PerfectHashFamily/Defs.lean](../../CslibFrontier/Foundations/Combinatorics/PerfectHashFamily/Defs.lean)) says that every `s`-element set is mapped injectively by some member of `P`. [perfectHashFamily n r](../../CslibFrontier/Foundations/Combinatorics/PerfectHashFamily/Basic.lean) is such a family of maps `Fin n → Fin r` for `0 < r` (`isPerfectHashFamily_perfectHashFamily`) with at most `n * 2 ^ (25 * r)` members (`card_perfectHashFamily_le`). The construction is the library's own and the bound is not the best known.
+
+Complete clients: [ConcentratingShift.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConcentratingShift.lean) gives `X 0 * X 1` a constant term by a shift from the explicit set, and [PerfectHashFamily.lean](../../CslibFrontierTests/Foundations/Combinatorics/PerfectHashFamily.lean) separates two points of `Fin 5`. Build them with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConcentratingShift \
+  CslibFrontierTests.Foundations.Combinatorics.PerfectHashFamily
+```
+
+**Not certified here.** Polynomials of individual degree above one: the argument is for multilinear polynomials only, and the general statement of Forbes, Saptharishi and Shpilka needs their rank condensers. Positive characteristic for the explicit set, which uses the nodes `0, 1, …`. The `2 ^ O(r) * (log n) ^ 2` bound of Schmidt and Siegel for perfect hash families. Any statement about branching programs, and any cost of computing the points.
+
 ## Rational formulas and hitting lists
 
 [RatOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Rational/Defs.lean#L69) uses rational constants, addition, multiplication and inverse. Evaluation is a relation: an inverse node is defined only when both products with the proposed inverse are one. This supports noncommutative matrix substitution without silently assigning a value at poles. A formula is admissible if some positive-dimensional rational matrix substitution makes it defined, and nonzero if some defined value is nonzero.

@@ -20,7 +20,7 @@ public section
 
 namespace CslibFrontierTests.ConcentratingShift
 
-open Cslib.Circuits.Arithmetic MvPolynomial
+open Cslib Cslib.Circuits.Arithmetic MvPolynomial
 
 /-- Split rank one of `X 0 * X 1` across any single variable. -/
 theorem splitRankLE_X_mul_X (Y : Finset (Fin 2)) (hY : Y.card = 1) :

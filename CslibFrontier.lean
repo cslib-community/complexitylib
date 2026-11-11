@@ -1000,6 +1000,8 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.Hessian.SourceCompl
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AlgebraicIndependent
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ClosedWronskian
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShift
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LogCurve
 public import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.Exponent
@@ -5214,7 +5216,9 @@ public import CslibFrontier.Foundations.Data.MvPolynomial.SchwartzZippel
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinear
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjection
 public import CslibFrontier.Foundations.Data.MvPolynomial.SetMultilinearProjectionProd
+public import CslibFrontier.Foundations.Data.MvPolynomial.Shift
 public import CslibFrontier.Foundations.Data.MvPolynomial.SliceMatrix
+public import CslibFrontier.Foundations.Data.MvPolynomial.SplitRank
 public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import CslibFrontier.Foundations.Data.MvPolynomial.Support
 public import CslibFrontier.Foundations.Data.MvPolynomial.TruncateTotalDegree
