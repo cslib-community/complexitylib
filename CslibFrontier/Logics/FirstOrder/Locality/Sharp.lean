@@ -77,21 +77,21 @@ by meeting at their midpoint.
   `Cslib.Logic.FO.Locality.NbhdIso.duplicatorWins_of_two_pow`,
   `Cslib.Logic.FO.Locality.NbhdIso.realize_iff_of_two_pow`,
   `Cslib.Logic.FO.Locality.NbhdIso.formula_realize_iff_of_two_pow`: sharp Gaifman locality at
-  radius `2 ^ n - 1` ([Libkin, Exercise 4.11][Libkin2004]).
+  radius `2 ^ n - 1` ([Libkin, Exercises 4.10 and 4.11][Libkin2004]).
 * `Cslib.Logic.FO.Locality.HanfEquiv.duplicatorWins_of_two_pow`,
   `Cslib.Logic.FO.Locality.HanfEquiv.realize_iff_of_two_pow`,
   `Cslib.Logic.FO.Locality.HanfEquiv.formula_realize_iff_of_two_pow`,
   `Cslib.Logic.FO.Locality.realize_sentence_iff_of_nbhdIso_two_pow`: sharp Hanf locality at radius
-  `2 ^ (n - 1) - 1` ([Libkin, Exercise 4.10][Libkin2004]).
+  `2 ^ (n - 1) - 1` ([Libkin, Exercises 4.10 and 4.11][Libkin2004]).
 * `Cslib.Logic.FO.Locality.quantifierRank_loopReach`,
   `Cslib.Logic.FO.Locality.exists_nbhdIso_realize_loopReach`,
   `Cslib.Logic.FO.Locality.two_pow_sub_one_le_of_gaifman_radius`: optimality of the `2 ^ n - 1`
-  Gaifman radius.
+  Gaifman radius ([Libkin, Exercise 4.11][Libkin2004]).
 * `Cslib.Logic.FO.Locality.exists_hanfEquiv_sentence_not_realize_iff`,
   `Cslib.Logic.FO.Locality.exists_hanfEquiv_formula_not_realize_iff`,
   `Cslib.Logic.FO.Locality.two_pow_pred_sub_one_le_of_hanf_sentence_radius`,
   `Cslib.Logic.FO.Locality.two_pow_pred_sub_one_le_of_hanf_radius`: optimality of the
-  `2 ^ (n - 1) - 1` Hanf radius.
+  `2 ^ (n - 1) - 1` Hanf radius ([Libkin, Exercise 4.11][Libkin2004]).
 
 ## References
 
@@ -530,10 +530,11 @@ private theorem ClusterWitness.duplicatorWins [Finite M] :
 
 /-! ### Sharp Gaifman locality (`2 ^ n - 1`) -/
 
-/-- **Sharp Gaifman locality, two-structure form** ([Libkin, Exercise 4.11][Libkin2004]): if a
-bijection `e : M ≃ N` from a finite structure matches points with isomorphic
-radius-`(2 ^ (n - 1) - 1)` neighborhoods, then tuples with isomorphic radius-`(2 ^ n - 1)`
-neighborhoods are `n`-round Ehrenfeucht–Fraïssé-equivalent. -/
+/-- **Sharp Gaifman locality, two-structure form**
+([Libkin, Exercises 4.10 and 4.11][Libkin2004]): if a bijection `e : M ≃ N` from a finite
+structure matches points with isomorphic radius-`(2 ^ (n - 1) - 1)` neighborhoods, then tuples
+with isomorphic radius-`(2 ^ n - 1)` neighborhoods are `n`-round
+Ehrenfeucht–Fraïssé-equivalent. -/
 theorem NbhdIso.duplicatorWins_of_equiv_two_pow [Finite M] {n k : ℕ} {a : Fin k → M}
     {b : Fin k → N} (e : M ≃ N)
     (he : ∀ c, NbhdIso L (2 ^ (n - 1) - 1) (fun _ : Fin 1 => c) (fun _ : Fin 1 => e c))
@@ -557,22 +558,24 @@ theorem NbhdIso.duplicatorWins_of_equiv_two_pow [Finite M] {n k : ℕ} {a : Fin 
   refine W.duplicatorWins e fun m hm z => (he z).mono ?_
   exact Nat.sub_le_sub_right (Nat.pow_le_pow_right (by decide) (by omega)) 1
 
-/-- **Sharp Gaifman locality** ([Libkin, Exercise 4.11][Libkin2004]): in a finite structure, tuples
-with isomorphic radius-`(2 ^ n - 1)` neighborhoods are `n`-round Ehrenfeucht–Fraïssé-equivalent. -/
+/-- **Sharp Gaifman locality** ([Libkin, Exercises 4.10 and 4.11][Libkin2004]): in a finite
+structure, tuples with isomorphic radius-`(2 ^ n - 1)` neighborhoods are `n`-round
+Ehrenfeucht–Fraïssé-equivalent. -/
 theorem NbhdIso.duplicatorWins_of_two_pow [Finite M] {n k : ℕ} {a₁ a₂ : Fin k → M}
     (hab : NbhdIso L (2 ^ n - 1) a₁ a₂) : DuplicatorWins L n a₁ a₂ :=
   hab.duplicatorWins_of_equiv_two_pow (Equiv.refl M) fun _ => NbhdIso.refl _ _
 
-/-- **Sharp Gaifman locality for bounded formulas** ([Libkin, Exercise 4.11][Libkin2004]): in a
-finite structure over a relational language, tuples with isomorphic radius-`(2 ^ n - 1)`
-neighborhoods satisfy the same formulas of quantifier rank at most `n`. -/
+/-- **Sharp Gaifman locality for bounded formulas**
+([Libkin, Exercises 4.10 and 4.11][Libkin2004]): in a finite structure over a relational language,
+tuples with isomorphic radius-`(2 ^ n - 1)` neighborhoods satisfy the same formulas of quantifier
+rank at most `n`. -/
 theorem NbhdIso.realize_iff_of_two_pow [L.IsRelational] [Finite M] {n k : ℕ} {a₁ a₂ : Fin k → M}
     (h : NbhdIso L (2 ^ n - 1) a₁ a₂) {φ : L.BoundedFormula Empty k}
     (hφ : quantifierRank φ ≤ n) : φ.Realize default a₁ ↔ φ.Realize default a₂ :=
   h.duplicatorWins_of_two_pow.realize_iff hφ
 
 /-- **Sharp Gaifman locality for formulas with free variables**
-([Libkin, Exercise 4.11][Libkin2004]): the form of `NbhdIso.realize_iff_of_two_pow` for
+([Libkin, Exercises 4.10 and 4.11][Libkin2004]): the form of `NbhdIso.realize_iff_of_two_pow` for
 `φ : L.Formula (Fin k)`. -/
 theorem NbhdIso.formula_realize_iff_of_two_pow [L.IsRelational] [Finite M] {n k : ℕ}
     {a₁ a₂ : Fin k → M} (h : NbhdIso L (2 ^ n - 1) a₁ a₂) {φ : L.Formula (Fin k)}
@@ -581,8 +584,8 @@ theorem NbhdIso.formula_realize_iff_of_two_pow [L.IsRelational] [Finite M] {n k 
 
 /-! ### Sharp Hanf locality (`2 ^ (n - 1) - 1`) -/
 
-/-- **Sharp Hanf locality** ([Libkin, Exercise 4.10][Libkin2004]): over a finite nonempty
-structure, tuples that are Hanf-equivalent at radius `2 ^ (n - 1) - 1` are `n`-round
+/-- **Sharp Hanf locality** ([Libkin, Exercises 4.10 and 4.11][Libkin2004]): over a finite
+nonempty structure, tuples that are Hanf-equivalent at radius `2 ^ (n - 1) - 1` are `n`-round
 Ehrenfeucht–Fraïssé-equivalent. The language is arbitrary. -/
 theorem HanfEquiv.duplicatorWins_of_two_pow [Finite M] [Nonempty M] :
     ∀ {n k : ℕ} {a : Fin k → M} {b : Fin k → N},
@@ -608,9 +611,9 @@ theorem HanfEquiv.duplicatorWins_of_two_pow [Finite M] [Nonempty M] :
       rw [f.apply_symm_apply] at hd
       exact hd.duplicatorWins_of_equiv_two_pow f he
 
-/-- **Sharp Hanf locality for bounded formulas** ([Libkin, Exercise 4.10][Libkin2004]): over a
-finite nonempty structure and a relational language, tuples that are Hanf-equivalent at radius
-`2 ^ (n - 1) - 1` satisfy the same bounded formulas of quantifier rank at most `n`. -/
+/-- **Sharp Hanf locality for bounded formulas** ([Libkin, Exercises 4.10 and 4.11][Libkin2004]):
+over a finite nonempty structure and a relational language, tuples that are Hanf-equivalent at
+radius `2 ^ (n - 1) - 1` satisfy the same bounded formulas of quantifier rank at most `n`. -/
 theorem HanfEquiv.realize_iff_of_two_pow [L.IsRelational] [Finite M] [Nonempty M] {n k : ℕ}
     {a : Fin k → M} {b : Fin k → N} (h : HanfEquiv L (2 ^ (n - 1) - 1) a b)
     {φ : L.BoundedFormula Empty k} (hφ : quantifierRank φ ≤ n) :
@@ -618,15 +621,15 @@ theorem HanfEquiv.realize_iff_of_two_pow [L.IsRelational] [Finite M] [Nonempty M
   h.duplicatorWins_of_two_pow.realize_iff hφ
 
 /-- **Sharp Hanf locality for formulas with free variables**
-([Libkin, Exercise 4.10][Libkin2004]). -/
+([Libkin, Exercises 4.10 and 4.11][Libkin2004]). -/
 theorem HanfEquiv.formula_realize_iff_of_two_pow [L.IsRelational] [Finite M] [Nonempty M]
     {n k : ℕ} {a : Fin k → M} {b : Fin k → N} (h : HanfEquiv L (2 ^ (n - 1) - 1) a b)
     {φ : L.Formula (Fin k)} (hφ : quantifierRank φ ≤ n) :
     φ.Realize a ↔ φ.Realize b :=
   h.duplicatorWins_of_two_pow.formula_realize_iff hφ
 
-/-- **Sharp Hanf locality for sentences** ([Libkin, Exercise 4.10][Libkin2004]): if a bijection
-between a finite nonempty structure `M` and `N` matches points with isomorphic
+/-- **Sharp Hanf locality for sentences** ([Libkin, Exercises 4.10 and 4.11][Libkin2004]): if a
+bijection between a finite nonempty structure `M` and `N` matches points with isomorphic
 radius-`(2 ^ (n - 1) - 1)` neighborhoods, then `M` and `N` satisfy the same sentences of
 quantifier rank at most `n`. -/
 theorem realize_sentence_iff_of_nbhdIso_two_pow [L.IsRelational] [Finite M] [Nonempty M] {n : ℕ}
@@ -1353,7 +1356,7 @@ private theorem exists_dirSumPath_hanfEquiv {k d : ℕ} (hd : d < 2 ^ (k + 1) - 
       omega
 
 /-- **Exactness of the Hanf locality rank `2 ^ (n - 1) - 1` for sentences**
-([Libkin, Exercise 4.10][Libkin2004]): for every `n ≥ 2` and `d < 2 ^ (n - 1) - 1`, there exist
+([Libkin, Exercise 4.11][Libkin2004]): for every `n ≥ 2` and `d < 2 ^ (n - 1) - 1`, there exist
 finite nonempty `Language.graph`-structures `M` and `N` and a sentence `σ` of quantifier rank `n`
 such that `M ⇆_d N` while `M ⊨ σ` and `¬ N ⊨ σ`. -/
 theorem exists_hanfEquiv_sentence_not_realize_iff {n d : ℕ} (hn : 2 ≤ n)
@@ -1684,7 +1687,7 @@ private theorem realize_twoLoopSentence_optRel {V : Type*} (R : V → V → Prop
     fun ⟨z, hz⟩ => ⟨some z, hz⟩⟩
 
 /-- **Exactness of the Hanf locality rank `2 ^ (n - 1) - 1` for `1`-tuples**
-([Libkin, Exercise 4.10][Libkin2004]): for every `n ≥ 2` and `d < 2 ^ (n - 1) - 1`, there exist
+([Libkin, Exercise 4.11][Libkin2004]): for every `n ≥ 2` and `d < 2 ^ (n - 1) - 1`, there exist
 finite nonempty `Language.graph`-structures `M` and `N`, `1`-tuples `a` and `b`, and a formula `φ`
 of quantifier rank `n` such that `(M, a) ⇆_d (N, b)` while `φ` holds of `a` and fails of `b`. -/
 theorem exists_hanfEquiv_formula_not_realize_iff {n d : ℕ} (hn : 2 ≤ n)
@@ -1713,7 +1716,7 @@ theorem exists_hanfEquiv_formula_not_realize_iff {n d : ℕ} (hn : 2 ≤ n)
     rwa [Subsingleton.elim ((fun _ : Fin 1 => none) ∘ Empty.elim) _] at h
 
 /-- **Optimality of the Hanf locality rank `2 ^ (n - 1) - 1` for sentences**
-([Libkin, Exercise 4.10][Libkin2004]): any radius function `ρ` giving Hanf locality on finite
+([Libkin, Exercise 4.11][Libkin2004]): any radius function `ρ` giving Hanf locality on finite
 nonempty `Language.graph`-structures for sentences of quantifier rank at most `n` satisfies
 `2 ^ (n - 1) - 1 ≤ ρ n` for every `n`. -/
 theorem two_pow_pred_sub_one_le_of_hanf_sentence_radius {ρ : ℕ → ℕ}
@@ -1732,7 +1735,7 @@ theorem two_pow_pred_sub_one_le_of_hanf_sentence_radius {ρ : ℕ → ℕ}
     rcases this with rfl | rfl <;> simp
 
 /-- **Optimality of the Hanf locality rank `2 ^ (n - 1) - 1` for `1`-tuples**
-([Libkin, Exercise 4.10][Libkin2004]): any radius function `ρ` giving Hanf locality on finite
+([Libkin, Exercise 4.11][Libkin2004]): any radius function `ρ` giving Hanf locality on finite
 nonempty `Language.graph`-structures for `1`-tuples and formulas of quantifier rank at most `n`
 satisfies `2 ^ (n - 1) - 1 ≤ ρ n` for every `n`. -/
 theorem two_pow_pred_sub_one_le_of_hanf_radius {ρ : ℕ → ℕ}
