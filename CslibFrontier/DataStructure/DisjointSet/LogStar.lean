@@ -113,10 +113,11 @@ theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank 
         · rfl
       have heq_class : equivClass (uf.link x y hy) r = if r = x.1 then equivClass uf x.1 ∪ equivClass uf y.1 else equivClass uf r := by
         ext i
-        simp only [mem_equivClass, hsize, Finset.mem_union, ite_eq_left_iff]
+        simp only [mem_equivClass, hsize, Finset.mem_union]
         by_cases hxr : r = x.1
-        · simp [hxr, hroot]
-        · simp [hxr, hroot]
+        · simp only [hxr, hroot, ite_eq_left_iff]
+          tauto
+        · simp only [hxr, hroot, ite_eq_left_iff]
           constructor
           · intro h
             exact h
@@ -127,7 +128,7 @@ theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank 
             · exact h
       by_cases hxr : r = x.1
       · rw [hxr] at hp heq_class ⊢
-        rw [heq_class, if_pos rfl]
+        rw [heq_class, ite_eq_left rfl]
         have h_filter_eq : ((equivClass uf x.1 ∪ equivClass uf y.1).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
                            ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z)) ∪
                            ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) := by
@@ -139,9 +140,9 @@ theorem link {uf : Batteries.UnionFind} (h : RankCount uf) (h_valid : ValidRank 
         have h_disj : Disjoint (equivClass uf x.1) (equivClass uf y.1) := disjoint_equivClass_of_ne uf hxy
         have h_disj_filter : Disjoint ((equivClass uf x.1).filter (fun z => a ≤ uf.rank z)) ((equivClass uf y.1).filter (fun z => a ≤ uf.rank z)) :=
           Finset.disjoint_filter_filter h_disj
-        rw [Finset.card_union_of_disjoint h_disj_filter, Finset.card_union_of_disjoint h_disj, mul_add, mul_add]
+        rw [Finset.card_union_of_disjoint h_disj_filter, Finset.card_union_of_disjoint h_disj, Nat.mul_add, Nat.mul_add]
         exact Nat.add_le_add (h hr hp) (h y.2 hy)
-      · rw [heq_class, if_neg hxr]
+      · rw [heq_class, ite_eq_right hxr]
         have h_filter_eq : ((equivClass uf r).filter (fun z => a ≤ (uf.link x y hy).rank z)) =
                            ((equivClass uf r).filter (fun z => a ≤ uf.rank z)) := by
           ext i
