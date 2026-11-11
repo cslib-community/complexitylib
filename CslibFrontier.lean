@@ -2303,6 +2303,7 @@ public import CslibFrontier.Computability.Complexity.Problems.PlanarThreeSATThre
 public import CslibFrontier.Computability.Complexity.Problems.Primes
 public import CslibFrontier.Computability.Complexity.Problems.Primes.MillerRabin
 public import CslibFrontier.Computability.Complexity.Problems.SAT
+public import CslibFrontier.Computability.Complexity.Problems.SAT.Declared
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.Drawing
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.DrawingAssembly
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.DrawingAvoidance
@@ -5828,8 +5829,11 @@ public import CslibFrontier.Logics.Propositional.CNF.Planar.PairedCrossover
 public import CslibFrontier.Logics.Propositional.CNF.Planar.PairedWire
 public import CslibFrontier.Logics.Propositional.CNF.PolyTime
 public import CslibFrontier.Logics.Propositional.CNF.PolynomialTests
+public import CslibFrontier.Logics.Propositional.CNF.Restrict
+public import CslibFrontier.Logics.Propositional.CNF.Simplification
 public import CslibFrontier.Logics.Propositional.CNF.SparseDesignCounter
 public import CslibFrontier.Logics.Propositional.CNF.SparseParityCounter
+public import CslibFrontier.Logics.Propositional.CNF.StdSat
 public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF
 public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.Exact
 public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.Exact.PolyTime
@@ -5837,6 +5841,7 @@ public import CslibFrontier.Logics.Propositional.CNF.ThreeCNF.PolyTime
 public import CslibFrontier.Logics.Propositional.CNF.ThreeOccurrence
 public import CslibFrontier.Logics.Propositional.CNF.ThreeOccurrence.PolyTime
 public import CslibFrontier.Logics.Propositional.CNF.TwoCNF
+public import CslibFrontier.Logics.Propositional.CNF.UnitPropagation
 public import CslibFrontier.Logics.Propositional.CNF.UnsatVal
 public import CslibFrontier.Logics.Propositional.CSP
 public import CslibFrontier.Logics.Propositional.CSP.Affine

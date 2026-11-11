@@ -140,6 +140,25 @@ Local Lemma; check them with `scripts/build.sh CslibFrontierTests.MoserLocalLemm
 
 Support-based CNF model counting counts assignments to variables that occur. Declared-universe counting instead fixes a larger variable set and can include free choices for unused variables. The library supplies relabeling and exact gadget-counting bridges, so a reduction claiming preservation of counts must specify which convention it preserves. This distinction is particularly relevant to dense relabeling and the [native fixed-width counting endpoint](../machines-and-classes/native-counting.md).
 
+For interoperability and generic solver/branching APIs over `CNF`, import
+[StdSat](../../CslibFrontier/Logics/Propositional/CNF/StdSat.lean),
+[Restrict](../../CslibFrontier/Logics/Propositional/CNF/Restrict.lean),
+[Simplification](../../CslibFrontier/Logics/Propositional/CNF/Simplification.lean), and
+[UnitPropagation](../../CslibFrontier/Logics/Propositional/CNF/UnitPropagation.lean). `CNF.toStdSat`
+and `CNF.ofStdSat` give exact bijections with `Std.Sat.CNF` preserving `Sat`, `Unsat`, relabeling,
+`Std.Sat.CNF.relabelFin`, and exact `Fintype.card` vs `modelCountOn`/`modelCount` on `Std.Sat.CNF (Fin n)` (bundled as
+`Clause.equivStdSat` and `CNF.equivStdSat`). `CNF.restrict` splits models via the explicit
+bijections `CNF.restrictModelsEquiv` and `CNF.modelsSplitEquiv` and gives additive branching
+(`CNF.modelCountOn_eq_add_restrict`) plus length and occurrence bounds; `CNF.unitPropagate` performs fuel-bounded structural propagation
+while conserving satisfiability and model counts (`CNF.modelCountOn_unitPropagate`,
+`CNF.modelCount_unitPropagate`); and `CNF.Sparsification` width-free lemmas track evaluation,
+scaling, total literal counts, and occurrences under `removeTautologies`, `dedup`, `dedupClauses`,
+`reduce`, `normalize`, and `countingNormalize`. For binary encodings paired with a unary
+variable bound `numVars`, [DeclaredCNF](../../CslibFrontier/Computability/Complexity/Problems/SAT/Declared.lean)
+supplies `declaredCNFDecoder` and the polynomial-time well-formed word recognizer
+`declaredCNFCode`. See the [CNF basis tests](../../CslibFrontierTests/CNFBasics.lean), checked with
+`scripts/build.sh CslibFrontierTests.CNFBasics`.
+
 [Constraint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface; see [weighted CSP partition functions and variable elimination](networks-and-iteration.md#weighted-csp-partition-functions-and-variable-elimination) for `partitionFunctionOn`, separator conditioning, `FactorTable` tensor bridges, and `TimeM` / weight-cost variable elimination.
 
 [QBF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
