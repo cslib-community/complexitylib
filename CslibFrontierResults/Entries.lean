@@ -59,8 +59,10 @@ import CslibFrontier.Computability.Kolmogorov.SymmetryOfInformation
 import CslibFrontier.Computability.MCSP.AntiChecker
 import CslibFrontier.Computability.MCSP.FormulaMagnification
 import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
+import CslibFrontier.Computability.MCSP.FormulaMagnification.Locality
 import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
 import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
+import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
 import CslibFrontier.Computability.MCSP.HardnessConsequences
 import CslibFrontier.Computability.MCSP.Magnification
 import CslibFrontier.Computability.MCSP.PartialETH
@@ -1114,12 +1116,12 @@ register_result "trakhtenbrot" where
     nonempty structure and assignment. Decidability is Mathlib's ComputablePred/REPred; the \
     reduction is from halting of Mathlib's Code.evaln, not from Turing machine runs. \
     Corollaries: every r.e. set of finitely valid formulas misses one, so no sound proof \
-    system with a decidable proof relation proves every finitely valid formula. Libkin's \
-    form for a fixed vocabulary with a binary relation symbol and the transfer to Mathlib \
-    sentences are separate entries."
+    system with a decidable proof relation proves every finitely valid formula. The \
+    sharpening to a fixed vocabulary containing a relation symbol of arity at least two and \
+    the transfer to Mathlib sentences are separate entries."
 
 register_result "trakhtenbrot-binary" where
-  title := "Trakhtenbrot's theorem for a vocabulary with a binary relation symbol"
+  title := "Trakhtenbrot's theorem for a vocabulary with a relation symbol of arity at least two"
   topic := "descriptive complexity"
   sources := [
     { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
@@ -1130,12 +1132,14 @@ register_result "trakhtenbrot-binary" where
     Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_not_of_rePred,
     Cslib.Logic.FO.RawFormula.exists_isSentenceOver_finValid_unprovable
   ]
-  scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a binary \
-    symbol, no computable procedure is correct for finite satisfiability on the raw \
-    sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
-    r.e. set of finitely valid sentences misses one over σ, and no sound proof system \
-    with a decidable proof relation proves them all. Raw library-local syntax with finite \
-    nonempty models; the form for Mathlib's L.Sentence is the entry trakhtenbrot-sentence."
+  scope := "For every vocabulary σ ⊆ ℕ × ℕ of (symbol, arity) pairs containing a symbol of \
+    arity at least two, no computable procedure is correct for finite satisfiability on the \
+    raw sentences over σ, and the finitely valid sentences over σ are not r.e.; hence every \
+    r.e. set of finitely valid sentences misses one over σ, and no sound proof system with a \
+    decidable proof relation proves them all. Libkin's Theorem 9.2 and Corollary 9.3 state \
+    the binary case; higher arities pad binary atoms by repeating the second argument. Raw \
+    library-local syntax with finite nonempty models; the form for Mathlib's L.Sentence is \
+    the entry trakhtenbrot-sentence."
 
 register_result "trakhtenbrot-sentence" where
   title := "Trakhtenbrot's theorem for Mathlib sentences"
@@ -1151,11 +1155,39 @@ register_result "trakhtenbrot-sentence" where
     FirstOrder.Language.Sentence.exists_finValid_unprovable
   ]
   scope := "Mathlib L.Sentence over a relational language with finitely many relation \
-    symbols; the negative results need a binary symbol. Sentences are coded by \
-    primcodableRaw, a scoped instance, independent of the symbol encoding up to primitive \
-    recursive equivalence. FinSat and FinValid quantify over finite nonempty structures. \
-    Function symbols, infinite vocabularies and vocabularies whose only non-unary symbols \
-    have arity at least three are not covered."
+    symbols; the negative results take a relation symbol of arity at least two (Libkin's \
+    Theorem 9.2 and Corollary 9.3 state the binary case; higher arities pad binary atoms by \
+    repeating the second argument). Sentences are coded by primcodableRaw, a scoped \
+    instance, independent of the symbol encoding up to primitive recursive equivalence. \
+    FinSat and FinValid quantify over finite nonempty structures. Function symbols and \
+    infinite vocabularies are not covered; the decidable monadic converse and dichotomy are \
+    in trakhtenbrot-dichotomy."
+
+register_result "trakhtenbrot-dichotomy" where
+  title := "Trakhtenbrot–Löwenheim: the decidability dichotomy for finite satisfiability"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := Trakhtenbrot1950, theorem := unverified, locator := unverified },
+    { paper := Lowenheim1915, theorem := unverified, locator := unverified },
+    { paper := Libkin2004, theorem := "Theorem 9.2 and Corollary 9.3", locator := unverified }
+  ]
+  theorems := [
+    FirstOrder.Language.Sentence.computablePred_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_finValid_iff,
+    FirstOrder.Language.Sentence.rePred_not_finSat_iff,
+    FirstOrder.Language.Sentence.computablePred_finSat_of_monadic,
+    FirstOrder.Language.Sentence.computablePred_finValid_of_monadic
+  ]
+  scope := "Mathlib L.Sentence over a relational language with finitely many relation \
+    symbols, coded by primcodableRaw. Finite satisfiability and finite validity (over \
+    finite nonempty structures) are decidable—and finite validity and finite \
+    unsatisfiability are r.e.—if and only if every relation symbol has arity at most one \
+    (allowing both unary and nullary symbols). On the monadic side, finite satisfiability \
+    and finite validity are primitive recursive by checking RawFormula.SatOnFin below the \
+    explicit bound max q 1 * 2 ^ k proved in monadic-small-model (Löwenheim is cited for \
+    decidability of the monadic class only). Function symbols and infinite vocabularies \
+    are not covered."
 
 register_result "zero-one-law-graphs" where
   title := "Glebskiĭ–Kogan–Liogon'kiĭ–Talanov and Fagin: the 0-1 law for random graphs"
@@ -1500,7 +1532,8 @@ register_result "monadic-small-model" where
     with a nonempty model has one on Fin (n + 1) with n + 1 ≤ max q 1 * 2 ^ k for k unary \
     symbols, through a substructure of the given model. The explicit bound and its proof by \
     Ehrenfeucht–Fraïssé games are proved here; Löwenheim is cited for the small model \
-    property only. The decision procedure for finite satisfiability is not yet formalized."
+    property only. The resulting decision procedure and dichotomy for finite satisfiability \
+    are in trakhtenbrot-dichotomy."
 
 register_result "connectivity-not-fo" where
   title := "Connectivity is not first-order definable"
@@ -1797,8 +1830,47 @@ register_result "formula-magnification-average-case" where
     solvers are one-sided formulas accepting every yes-instance of MCSP[s] and at most \
     2^(2^n - n) truth tables, with the lower bound 2^(n/d) for fixed d > 0 at arbitrarily \
     large n. The conclusion is a binary NP language without polynomial-size formulas, weaker \
-    than the source's 2^Omega(n). The rounded Theorem 5 for ternary zero-error devices is \
-    not formalized."
+    than the source's 2^Omega(n)."
+
+register_result "formula-magnification-ternary" where
+  title := "Oliveira–Santhanam: sublinear zero-error average-case formula lower bounds for \
+    MCSP[2^√n] imply NP ⊄ Formula[poly]"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2018, theorem := "Theorem 5",
+      locator := "ECCC TR18-139, Section 1.2, p. 8; Appendix A, Definition 43, p. 34" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_sqrtThreshold_half_average_case_hard,
+    Cslib.Circuits.Boolean.exists_NP_not_mem_FormulaPoly_of_zero_error_average_case_sublinear_hard
+  ]
+  scope := "If no nonuniform family of ternary De Morgan formula devices (an unknown mask and an \
+    answer formula) with o(2^n) total leaves solves MCSP[⌊2^√n⌋] on 2^n-bit truth tables with \
+    zero error, answering ? on at most a 1/n fraction of truth tables for every large n \
+    (Definition 43), then some binary NP language has no polynomial-size De Morgan formulas; \
+    the general form takes any subexponential threshold. Circuit size counts every De Morgan \
+    gate. Conditional: no formula lower bound for MCSP is proved."
+
+register_result "formula-magnification-locality" where
+  title := "Chen–Hirahara–Oliveira–Pich–Rajgopal–Santhanam: the Oliveira–Santhanam formula \
+    magnification reduction is local"
+  topic := "meta-complexity"
+  sources := [
+    { paper := ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+      theorem := "Proposition 63, [OS18] MCSP bullet",
+      locator := "ECCC TR19-168, Appendix A.2, p. 52; Section 2.5, Definition 11, p. 13" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_oracleFormula_separating_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP,
+    Cslib.Circuits.Boolean.localFormulaClass_approxMCSP_real_poly
+  ]
+  scope := "MCSP[(s, 0), (s, δ)] on N = 2^n-bit truth tables is computed by De Morgan formulas \
+    with at most N oracle gates, each of fan-in at most 98·(⌈1/δ⌉·(s + 1))^3, adaptivity 1 and \
+    N times that many input leaves, under one fixed oracle (encoded SuccinctMCSP) for all \
+    lengths, when n ≤ s(n) and 0 < δ(n). Formulas only: the DAG [q, ℓ, a]-Circuit classes, the \
+    other bullets of Proposition 63 and the locality barrier (Theorem 59) are not formalized."
 
 register_result "murray-williams" where
   title := "Murray–Williams: if MCSP is NP-hard, then EXP ≠ NP ∩ P/poly and EXP ≠ ZPP"

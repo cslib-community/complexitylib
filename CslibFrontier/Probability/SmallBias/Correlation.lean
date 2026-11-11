@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Probability.SmallBias
 import CslibFrontier.Foundations.Analysis.InnerProductSpace.NearlyOrthogonal
-import Mathlib.Analysis.InnerProductSpace.PiL2
+import CslibFrontier.Foundations.Data.BitString.SignWord
 
 /-!
 # Codes from small-bias lists: nearly uncorrelated codewords and short correlation lists
@@ -30,7 +30,8 @@ messages `x` with `|∑ z, signVal (T z) * signVal (r z ⬝ᵥ x)| ≥ γ |Z|` s
 `N * (γ ^ 2 - δ) ≤ 1`, so `N ≤ 1 / (γ ^ 2 - δ)` when `γ ^ 2 > δ`
 (`Cslib.BitString.card_le_abs_sum_signVal_mul_signVal_dotProduct_mul_le`). This is
 [KaneWilliams2016], Lemma 6.1 (label `uncorrAgreeLem`), with explicit constants; it follows from
-`card_mul_sub_le_one_of_abs_inner_ge` for the `±1` words in `EuclideanSpace ℝ Z`.
+`card_mul_sub_le_one_of_abs_inner_ge` for the `±1` words in `EuclideanSpace ℝ Z`
+(`Cslib.BitString.signWord`).
 
 ## Main results
 
@@ -93,18 +94,6 @@ theorem abs_sum_signVal_mul_signVal_dotProduct_le [Nonempty Z] {δ : ℝ} {r : Z
   rw [hsum]
   exact abs_sum_signVal_dotProduct_le hr fun h =>
     hxy (funext fun i => (BooleanRing.add_eq_zero' (x i) (y i)).mp (congrFun h i))
-
-/-- The `±1` word of a Boolean function, as a vector of `EuclideanSpace ℝ Z`. -/
-private noncomputable def signWord (f : Z → Bool) : EuclideanSpace ℝ Z :=
-  WithLp.toLp 2 fun z => signVal (f z)
-
-private theorem inner_signWord (f g : Z → Bool) :
-    ⟪signWord f, signWord g⟫ = ∑ z, signVal (f z) * signVal (g z) := by
-  simp [signWord, PiLp.inner_apply, mul_comm]
-
-private theorem norm_signWord_sq (f : Z → Bool) : ‖signWord f‖ ^ 2 = Fintype.card Z := by
-  rw [← real_inner_self_eq_norm_sq, inner_signWord]
-  simp [signVal_mul_self]
 
 /-- **Few codewords correlate with a fixed word** ([KaneWilliams2016], `arXiv:1511.07860v1`,
 Lemma 6.1, with explicit constants): if the list `r` is `δ`-biased with `δ ≥ 0` and `γ ≥ 0`, then
