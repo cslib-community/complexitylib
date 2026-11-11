@@ -5416,6 +5416,7 @@ public import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 public import CslibFrontier.Logics.FirstOrder.Encoding.Sum
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Basic
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.BijectiveGame
+public import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Counting
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka

@@ -81,6 +81,7 @@ import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.FiniteLinearOrder
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.GraphProperties
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Hintikka
 import CslibFrontier.Logics.FirstOrder.EhrenfeuchtFraisse.Monadic
+import CslibFrontier.Logics.FirstOrder.FiniteVariable.ColorRefinement
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.Hintikka
 import CslibFrontier.Logics.FirstOrder.Locality.GraphProperties
@@ -1396,6 +1397,36 @@ register_result "bijective-pebble-games-c-k" where
     empty structures. Cai, Furer and Immerman state the characterization on graphs, for the \
     equivalent game in which the players exchange sets of equal size."
 
+register_result "immerman-lander" where
+  title := "The Immerman–Lander theorem: color refinement characterizes two-variable counting \
+    logic C²"
+  topic := "descriptive complexity"
+  sources := [
+    { paper := ImmermanLander1990, theorem := unverified, locator := unverified },
+    { paper := CaiFurerImmerman1992, theorem := "Theorem 5.2 (k = 1 case)",
+      locator := "Section 5" },
+    { paper := Immerman1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Logic.FO.bijPebbleWins_graph_empty_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_singleton_iff,
+    Cslib.Logic.FO.bijPebbleWins_graph_univ_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_singleton_iff_card_add_card,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_le_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff,
+    Cslib.Logic.FO.forall_realize_countingFormula_empty_iff_card_add_card
+  ]
+  scope := "Finite LocallyFinite simple graphs over FirstOrder.Language.graph with the trivial \
+    initial coloring fun _ => (). Round-by-round correspondence between Hella's bijective \
+    2-pebble game (with 0, 1 or 2 placed pebbles) and color refinement: sentences of quantifier \
+    rank at most n + 1 correspond to round-n color histograms (for nonempty vertex types, since \
+    CountingFormula.Realize takes a total assignment Fin 2 → V), and one-variable formulas of \
+    rank at most n + 1 correspond to round-(n + 1) vertex colors paired with round-n histograms. \
+    Full C²-equivalence reduces to round |V| + |W|. Colored graphs with arbitrary initial \
+    colorings and k-dimensional Weisfeiler–Leman for k >= 2 are not formalized."
+
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"
   topic := "descriptive complexity"
@@ -1561,6 +1592,7 @@ register_result "color-refinement" where
     SimpleGraph.isGreatest_ker_stableColoring,
     SimpleGraph.not_exists_iso_of_colorHistogram_ne,
     SimpleGraph.isEmpty_iso_of_colorHistogram_ne,
+    SimpleGraph.forall_refinementColoring_eq_iff,
     SimpleGraph.forall_colorHistogram_eq_iff,
     SimpleGraph.IsRegularOfDegree.colorHistogram_eq
   ]
@@ -1569,8 +1601,8 @@ register_result "color-refinement" where
     partition refining χ₀; the source states |V| + |W| rounds for a bipartite matrix from \
     the trivial partition. Differing histograms rule out color-preserving isomorphism; the \
     test is incomplete (equal-order d-regular graphs). The correspondence with \
-    two-variable counting logic C² is not formalized. No k-dimensional \
-    Weisfeiler–Leman, fractional isomorphism or certified algorithm."
+    two-variable counting logic C² on uncolored simple graphs is in immerman-lander. No \
+    k-dimensional Weisfeiler–Leman, fractional isomorphism or certified algorithm."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
