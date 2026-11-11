@@ -109,6 +109,7 @@ public import CslibFrontier.Algorithms.Lean.Matroid.Intersection.Solver
 public import CslibFrontier.Algorithms.Lean.Matroid.PSystem
 public import CslibFrontier.Algorithms.Lean.MaxCut.GoemansWilliamson
 public import CslibFrontier.Algorithms.Lean.MaxCut.GoemansWilliamsonCutWeight
+public import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
 public import CslibFrontier.Algorithms.Lean.MaxFlow.AugmentingPath
 public import CslibFrontier.Algorithms.Lean.MaxFlow.Basic
 public import CslibFrontier.Algorithms.Lean.MaxFlow.BipartiteMatching
@@ -125,6 +126,8 @@ public import CslibFrontier.Algorithms.Lean.MaxFlow.Preflow
 public import CslibFrontier.Algorithms.Lean.MaxFlow.PushRelabel
 public import CslibFrontier.Algorithms.Lean.MaxFlow.VertexSeparator
 public import CslibFrontier.Algorithms.Lean.MaxFlow.WeightedMatching
+public import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
+public import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 public import CslibFrontier.Algorithms.Lean.MergeSort.Comparator
 public import CslibFrontier.Algorithms.Lean.OptimalBST.Basic
 public import CslibFrontier.Algorithms.Lean.OptimalBST.Knuth
@@ -4524,6 +4527,7 @@ public import CslibFrontier.Foundations.Analysis.LpNorm
 public import CslibFrontier.Foundations.Analysis.LpNormMeasure
 public import CslibFrontier.Foundations.Analysis.MarkovBrothersInequality
 public import CslibFrontier.Foundations.Analysis.Normed.Ring.PowSub
+public import CslibFrontier.Foundations.Analysis.Normed.UnitSphere
 public import CslibFrontier.Foundations.Analysis.RootError
 public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Basic
 public import CslibFrontier.Foundations.Analysis.SignedDigitStream.Elementary
@@ -4534,6 +4538,7 @@ public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpLogQuadratic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpOneSubInvPow
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliamson
+public import CslibFrontier.Foundations.Analysis.SpecialFunctions.GoemansWilliamsonDicut
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.Hyperbolic
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogSum
 public import CslibFrontier.Foundations.Analysis.SpecialFunctions.PolynomialSwitch

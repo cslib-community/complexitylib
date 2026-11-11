@@ -75,8 +75,10 @@ depend on the machine-level complexity of `MaxCut`.
 The theorem analyzes the rounding of a given vector solution under an exact Gaussian. Solving the
 semidefinite program to precision `ε` in polynomial time, a finite-precision or `ProbComp`
 realization of the Gaussian sample, the tightness of the analysis (the integrality gap of Feige and
-Schechtman, Karloff's examples), the extensions to MAX-2SAT and MAX-DICUT, and derandomization are
-not formalized.
+Schechtman, Karloff's examples), and derandomization are not formalized; see
+`CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson` and
+`CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson` for the MAX-2SAT and MAX-DICUT
+extensions.
 
 ## Main definitions
 
@@ -100,6 +102,10 @@ not formalized.
 * `exists_forall_goemansWilliamsonConstant_mul_sub_le`: some hyperplane cut achieves the
   guarantee.
 * `exists_isMaxOn_sdpValue`: the relaxation has an optimal solution.
+* `measurable_hyperplaneSide`, `measurableSet_hyperplaneSide_ne`, `measurableSet_hyperplaneSide_eq`,
+  `integral_hyperplaneSide_ne`, `integral_hyperplaneSide_eq`,
+  `goemansWilliamsonConstant_mul_one_add_le_one_sub_arccos`: measurability, separation/same-side
+  Gaussian integrals, and same-side Lemma 3.4 bound reused by the §7 extensions.
 
 ## References
 
@@ -222,7 +228,7 @@ theorem measurableSet_hyperplaneSide_ne (v : V → F) (i j : V) :
 measurable. -/
 theorem measurableSet_hyperplaneSide_eq (v : V → F) (i j : V) :
     MeasurableSet {r : F | hyperplaneSide v r i = hyperplaneSide v r j} := by
-  simpa only [ne_eq, Set.compl_setOf, not_not] using (measurableSet_hyperplaneSide_ne v i j).compl
+  simpa only [ne_eq, Set.compl_ofPred, not_not] using (measurableSet_hyperplaneSide_ne v i j).compl
 
 /-- The weight of the rounded cut is integrable. -/
 theorem integrable_cutValue_hyperplaneSide (ends : ι → V × V) (w : ι → ℝ) (v : V → F)

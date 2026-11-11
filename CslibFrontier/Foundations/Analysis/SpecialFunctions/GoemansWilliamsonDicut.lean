@@ -302,7 +302,8 @@ def DicutAngleSet : Set (ℝ × ℝ × ℝ) :=
     p.1 ≤ p.2.1 + p.2.2 ∧ p.2.1 ≤ p.1 + p.2.2 ∧ p.2.2 ≤ p.1 + p.2.1 ∧
     p.1 + p.2.1 + p.2.2 ≤ 2 * π}
 
-private theorem mem_dicutAngleSet_iff {a b c : ℝ} :
+/-- Membership characterization for `Real.DicutAngleSet`. -/
+theorem mem_dicutAngleSet_iff {a b c : ℝ} :
     (a, b, c) ∈ DicutAngleSet ↔
       0 ≤ a ∧ a ≤ π ∧ 0 ≤ b ∧ b ≤ π ∧ 0 ≤ c ∧ c ≤ π ∧
         a ≤ b + c ∧ b ≤ a + c ∧ c ≤ a + b ∧ a + b + c ≤ 2 * π :=
