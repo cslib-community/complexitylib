@@ -246,8 +246,9 @@ in [the bibliography](../../references.bib). The checked clients are in
   success-correlated bills. The rational optimizer uses the generic
   [one-constraint LP](../../CslibFrontier/Foundations/Optimization/OneConstraint.lean)
   support reduction and finite vertex enumeration; its schedule set can be
-  exponential. The partial-cover selector and adaptive
-  endpoints remain open under [issue 2527](https://github.com/cslib-community/cslib-frontier/issues/2527).
+  exponential. The source coverage inventory below records the partial-cover
+  controllers and remaining unrestricted adaptive/native-specialization obligations
+  under [issue 2527](https://github.com/cslib-community/cslib-frontier/issues/2527).
 - [PartialCover](../../CslibFrontier/Probability/StochasticOracle/PartialCover.lean)
   proves submission 191, Lemma 1 (PDF pp. 9, 15). `Instance` supplies the finite
   universe, original weighted sets and a nonnegative feasible dual vector.
@@ -568,8 +569,9 @@ in [the bibliography](../../references.bib). The checked clients are in
   and $c_i\ge0$. Submodularity reuses the library's `IsSubmodular`; savings need
   not be monotone (the test has singleton saving one and full-set saving zero).
   The scheduling theorem and binary-input FPTAS are supplied by `StochasticOracle`.
-  Theorem 3's exact-selection results are described above; Theorems 4–6's partial
-  and adaptive-cover endpoints remain open.
+  Theorem 3's exact-selection results are described above. The source coverage
+  inventory below distinguishes Theorem 4's covered model and the remaining
+  unrestricted Theorem 5/6 obligations.
 - [PeerPrediction.Quadratic](../../CslibFrontier/Probability/PeerPrediction/Quadratic.lean)
   implements Kong's equation (8), Lemma 7.2 and Theorem 7.3 (PDF pp. 18–19).
   `IsJoint` means a nonnegative finite probability table of total mass one;
@@ -925,6 +927,43 @@ transfer and concrete incidence/query adapters above, including every call-count
 vector. The hardness transfer remains open;
 its asymptotic factors are now proved.
 
+### Submission 191: source coverage inventory
+
+This table records the numbered results of [Wang2027] against the primary PDF,
+including Appendix A. “Covered” means the stated finite/source-interface model
+described in the linked sections, not an arbitrary external PTM serializer or
+nonatomic oracle implementation. “Partial” identifies a remaining obligation even
+when its numerical statement is already proved. The full objective in
+[issue 2527](https://github.com/cslib-community/cslib-frontier/issues/2527) remains open.
+
+| Source locator | Lean declarations (in `Probability.StochasticOracle` unless stated) | Status and scope |
+| --- | --- | --- |
+| Proposition 1, PDF p. 6; App. A.1, p. 14 | `one_turn_cost`, `two_batch_reduction`, `minimum_two_batch` | Covered: attained one/two-turn maximum-success costs, including randomized competitors, in the finite failure-oblivious/FICA model. |
+| Theorem 1(1), PDF pp. 6–7 | `preselection_equivalent`, `policy_iff_lp`, `cost_success_frontier` | Covered: actual stopped policy law, all-failure schedule law and finite LP have the same frontier. |
+| Theorem 1(2)–(3), PDF p. 7 | `target_feasible_iff_schedule`, `optimal_two_schedules`, `maximum_success_support`, `deterministic_max_success`; `optimal_rational_program` | Covered: feasibility, attained support at most two, maximum-success endpoint and exact rational-input sampling. Exact sampling is not a worst-case fair-coin runtime bound. |
+| Theorem 2(1), PDF p. 7 | `Cslib.Algorithms.Lean.Submodular.OracleSavings.savings_nonneg`, `savings_isSubmodular` | Covered: the finite savings set function is nonnegative and submodular; the explicit namespace here is outside `StochasticOracle`. |
+| Theorem 2(2), PDF pp. 7–8 | `TwoBatchNative.fptas`, `selectedProgram_law` | Covered: rational binary native FPTAS, both numerical approximation inequalities, original deadline/maximum success and stopped selected-program law. |
+| Theorem 3(1), PDF p. 9; App. A.2, pp. 14–15 | `TwoBatchHardness.restrictedDecision_npHard`, `reduction_mem_iff` | Covered: actual randomized-policy decision hardness, unit cutoffs and common success/cost ratio. |
+| Theorem 3(2), PDF p. 9 | `TwoBatchIntegral.runtime`, `optimizer`, `selectedProgram_law` | Covered: native exact optimizer with resource bound polynomial in input bits plus numerical integer cost sum. |
+| Lemma 1, PDF p. 9; App. A.3, p. 15 | `PartialCover.Instance.retain_cover_bound`; `NativeRetention.certified_eq`, `retain_eq`, `completed_output` | Covered: local dual certification, overlap-aware retention and derived full-cover weight bound, with actual rational native tests. |
+| Theorem 4, PDF pp. 10–11, arbitrary count vectors | `PartialCover.NativeExecution.vector_guarantee`, `external_source_law`; `NativeRetention.SourceEncoding.valid_toNative` | Covered: same native machine, original binary WSC/query interfaces, exact call multiplicities, certified tape-risk, sum-of-caps bill and oracle-only deadline, including zero calls and $q=0,1$. |
+| Theorem 4, PDF pp. 10–11, greedy algorithm and approximation factor | `PartialCover.GreedyNative.uniform_plan`, `risk_bill`; `PartialCover.NativeExecution.native_success`, `native_bill_le_riskOptimum`; `PartialCover.Asymptotics.fixed_failure`, `polynomial_failure` | Covered: native threshold/eligibility/cost/output composition, success and OPT-risk comparison, and $O(\log^2 n)$ / $O(\log n)$ corollaries for nonempty finite binary-rational inputs. |
+| Hardness remark after Theorem 4's proof, PDF p. 11 | No Set Cover approximation-hardness transfer | Blocked on [#4335](https://github.com/cslib-community/cslib-frontier/issues/4335); this remark is distinct from Theorem 4's algorithmic statement. |
+| Lemma 2, PDF p. 11; App. A.4, pp. 15–16 | `AdaptiveSelection.binomial_le_completion` and finite conditional-history comparison APIs | Blocked for the source’s varying-$p_t$ Poisson-binomial guarantee; finite homogeneous comparisons are present. The heterogeneous and measurable/unbounded comparison is tracked in [#4336](https://github.com/cslib-community/cslib-frontier/issues/4336). |
+| Theorem 5(1), PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOutput.upper_controller`, `BatchUpper.stopping_controller` | Covered for the named finite-opportunity block controller: certified decoded tape success, binomial deadline, survival-sum/mean/budget bill bounds, same source oracle and actual receipts. Unrestricted source-policy realization remains partial. |
+| Theorem 5(2) and consequence, PDF p. 12; App. A.5, p. 16 | `NativeRetention.BatchOptimum.lower`, `success_le`, `feasible_success_le`, `upper`, `competitive` | Covered for admitted finite-control native selection-only competitors on the same oracle and seed: expected-cost lower bound, effective-turn binomial deadline obstruction and OPT envelope. |
+| Unrestricted Theorem 5 source coverage, PDF pp. 4–6, 11–12 | Native epoch/whole-policy representation and the preceding controller APIs | Partial: unrestricted source query/cutoff and external-machine realization, broader unbounded-horizon/divergent-path real-cost packaging and general measurable interfaces remain. Domination needed for measurable/unbounded progress is blocked on #4336; the other representation obligations are not blocked on that issue. |
+| Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
+| Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
+| Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `incidence`, `region`, `weight_cast`, `dual_cast`; `NativeResidualSelector.computable_request`, `controller_law` | Partial: original-label binary construction and incidence/weight/price correspondence, runtime component/residual planner and one same-code native program with runtime role count are present. A complete three-block native source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. The general X3C-family residual-history/certification specialization remains unproved. |
+| Theorem 6 universal native optimum and optimal uniform selectors, PDF p. 13 | `ResidualCover.native_one_turn_lower` is only the older clocked one-turn bridge | Missing: unrestricted native one/two-turn competitor transfer, native optimum specialization and a quantified optimal-output guarantee for the new selector. These are paper-local obligations, not blocked on #4335 or #4336. |
+
+Not everything outside #4335/#4336 is present. In particular, the native
+Theorem 6 obligations and the separate Theorem 5 representation obligations in
+the last rows remain material. No ALL-main or unrestricted Theorem 5/6 completion
+is claimed.
+
+
 ### Submission 191: actual Theorem 6 residual construction and policy optima
 
 The source setup (1)–(3), PDF pages 12–13, and Theorem 6/proof, PDF page 13, are
@@ -991,6 +1030,64 @@ remain material. No curated abstract changes: these modules are outside the
 selected headline dependencies. The Agent Operator's Manual requires no edit:
 ownership, review, validation and human direction are unchanged.
 
+
+### Submission 191: compiled residual-directed source queries
+
+Import [NativeResidualSelector](../../CslibFrontier/Probability/StochasticOracle/NativeResidualSelector.lean)
+and [NativeResidualEncoding](../../CslibFrontier/Probability/StochasticOracle/NativeResidualEncoding.lean).
+`NativeResidualEncoding.source` creates binary incidence and rational weights/dual
+prices from arbitrary promised X3C blocks and explicit original point/candidate
+enumerations. The hidden exact-cover witnesses are not serialized. `incidence`,
+`weight_cast` and `dual_cast` preserve the original source quantities; `region`
+derives component recovery for this source construction, using its whole-block
+fallback sets rather than a supplied recovery certificate.
+
+`NativeResidualSelector.Query` pairs the original rational WSC input with original
+point labels of the requested subuniverse. `Query.candidates` restricts to candidates
+contained in that universe while retaining their global labels. `representatives`
+computes component representatives from original incidence alone. The original
+input to `controller` is `startupEncoding (source, z)`: the source instance is
+framed first and the number of specialist roles is unary. One finite-control
+program handles all these runtime data, including variable role counts and
+arbitrary finite raw replies. Roles are ordered by increasing component minimum;
+slot zero is the near cover and slot `j+1` is specialist `j`.
+
+The first request asks the near cover. The guarded feedback loop parses and locally
+certifies its actual raw report, computes `residual` from retained coverage, and
+selects the specialist whose recovered representative is the least uncovered
+point. The second query contains that actual residual WSC subinstance. The same
+code performs both turns, cleanup and final mask emission. `request_eq` proves that
+the runtime list implementation is exactly the concurrent source codec;
+The original retention certificates `computable_rows`, `computable_dual`,
+`computable_ground` and `computable_covered` are public and reused by this planner;
+its incidence computation does not duplicate a private proof.
+`controller_law` derives the complete joint native law, preserving source hidden
+state, raw history, stopping, decoded tape output and resource metadata. No
+separately compiled continuation or assumed scheduler-realization law is used.
+`controller_protocol` also derives termination with the accepted source ledger
+and exact bill/time/provenance meters on the guarded source environment; that
+endpoint does not assert acceptance of malformed or unsupported queries.
+
+Run `lake build CslibFrontierTests.StochasticOracleNativeResidualSelector` for the
+[native residual client](../../CslibFrontierTests/StochasticOracleNativeResidualSelector.lean).
+It uses three nonempty three-point X3C blocks, each with a triple and fallback. For
+every missing component, it derives both source admissions, queries only its
+matching specialist after the near reply, returns the actual weight-one cover mask,
+and consumes exactly the two distinct opportunities with bill five and oracle
+duration two. The original dual validity and the final computed family’s certificate
+are derived, and the actual joint output/bill/duration marginal is a point mass. A full-support uniform hidden initial component gives the derived
+joint mixture of these correlated native executions. The specialist checks the
+actual query bytes against its own original labeled subinstance. This is a
+nontrivial integrated client, not a universal native optimum theorem.
+
+The general source-family specialization still needs proofs that arbitrary encoded
+near/specialist responses induce the required runtime histories, certificates,
+canonical role correspondence and optimal output in this controller. Universal
+native one/two-turn optimum transfer and selection of the cheaper attained strategy
+remain open. Natural invoices in the concrete source protocol do not assert an
+encoding for arbitrary real-valued bills. Source deadlines count oracle time only;
+no wall-clock bound including native local instructions is claimed. The Agent
+Operator's Manual needs no edit because workflow and human direction are unchanged.
 
 ### Submission 191: a concrete native-to-behavioral bridge
 
@@ -1655,7 +1752,7 @@ response/metadata approximation or publicly available offline proposal list is
 assumed.
 
 The fixed block scheduler, original runtime codec and configured finite opportunity/
-cutoff interface restrict the implemented model. Source WSC subinstance/role and
+cutoff interface restrict the implemented model. Unrestricted source WSC subinstance/role and
 residual-label codecs and unrestricted external PTM representation remain open.
 A latent scenario is never assumed publicly visible.
 Fixed finite call opportunities and external nonnegative real clocks remain interface

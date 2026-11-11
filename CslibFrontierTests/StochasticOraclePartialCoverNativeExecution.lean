@@ -511,7 +511,8 @@ private theorem one_response : NativeExecution.response one one_limits one_live 
 
 -- The supplied one-call batch has a genuine positive source envelope and invoice.
 set_option backward.isDefEq.respectTransparency false in
-private theorem one_envelope : (sourceInstance one valid).Admissible 1 (1 / 2)
+private theorem one_envelope (p : ℝ) (hp : p ≤ 1) :
+    (sourceInstance one valid).Admissible 1 p
     (Disintegration.kernel
       (one_sample (ConcurrentBatch.initial ()) (batch one (live_nonempty one one_live)))
       (NativeExecution.response one one_limits one_live)) [] ∅ (eligible one) := by
@@ -532,6 +533,7 @@ private theorem one_envelope : (sourceInstance one valid).Admissible 1 (1 / 2)
       Instance.event, Cslib.Optimization.OneConstraint.Distribution.mean_pure]
     norm_num [Instance.Certified, Instance.covered, Instance.cost, sourceInstance,
       Instance.reindex, instanceOf, elements, ground, one, withCounts, input]
+    exact hp
   · intro _ _; trivial
 
 -- Assemble the actual every-vector probability/bill/deadline theorem for a batch
@@ -550,7 +552,7 @@ example :
       intro hs
       have hρ : (input.system.rho : ℝ) = 1 := by norm_num [input]
       rw [hρ]
-      exact one_envelope) (fun _ => 1) (by
+      exact one_envelope (1 / 2) (by norm_num)) (fun _ => 1) (by
       intro hs pair hp i
       have hp' : pair = (fun _ => certainPath, ()) :=
         (PMF.mem_support_pure_iff _ _).mp hp
@@ -579,6 +581,42 @@ example :
         ∑ _i : Fin input.planner.val.rows.length, (1 : ℝ) * 1 by
           simpa only [Nat.cast_one] using hb).trans hc
     exact ⟨final, he, hb', hd, ht⟩
+
+-- Endpoint source probabilities exercise q=0 and q=1 on the same nonempty
+-- compiled one-call controller, rather than only the scalar polynomial formula.
+set_option backward.isDefEq.respectTransparency false in
+private theorem one_probability (p : ℝ) (hp : 0 ≤ p) (hpone : p ≤ 1) :
+    p ≤ (((terminalLaw one one_limits one_sample ()).map
+      (NativeExecution.certified one valid 1)) true).toReal := by
+  have h := native_risk_all one valid one_limits one_sample ()
+    (by norm_num [one_limits]) (by norm_num [one_limits]) hp hpone (by
+      intro hs
+      have hρ : (one.system.rho : ℝ) = 1 := by norm_num [one, withCounts, input]
+      rw [hρ]
+      exact one_envelope p hpone)
+  have he : eligible one = [{0}] := by
+    rw [eligible, one_labels]
+    norm_num [GreedyNative.oracleAt, one, withCounts, input,
+      Algorithms.Lean.Multicover.Native.interpret, Finset.univ_unique]
+    rfl
+  have hb : max 0 (1 - ∑ e ∈ (instanceOf one.system valid).ground,
+      (1 - p) ^ Instance.chances e (eligible one)) = p := by
+    rw [he]
+    change max 0 (1 - ∑ e ∈ ({0} : Finset ℕ),
+      (1 - p) ^ Instance.chances e [{0}]) = p
+    simp [Instance.chances, max_eq_right hp]
+  rw [hb] at h
+  exact h
+
+-- q=0: a certain reached source envelope gives certain actual native output.
+example : (((terminalLaw one one_limits one_sample ()).map
+    (NativeExecution.certified one valid 1)) true).toReal ≥ 1 :=
+  one_probability 1 (by norm_num) (by norm_num)
+
+-- q=1: the zero envelope remains valid for the same nonempty run and invoice.
+example : (((terminalLaw one one_limits one_sample ()).map
+    (NativeExecution.certified one valid 1)) true).toReal ≥ 0 :=
+  one_probability 0 (by norm_num) (by norm_num)
 
 -- Any original, possibly query-dependent joint oracle receives exactly the
 -- selected original address and opaque payload from the compiled one-call mode.

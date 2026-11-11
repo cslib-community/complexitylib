@@ -29,6 +29,8 @@ acceptance table, native machine or output-correctness certificate is an input.
 
 ## Main results
 
+* `computable_rows`, `computable_dual`, `computable_ground`, `computable_covered`:
+  reusable runtime incidence/price reads and original coverage computation.
 * `computable_decision`: uniform native completion and retention/output computation.
 * `compiled_output`: the derived machine halts and writes the actual mask.
 
@@ -105,24 +107,27 @@ private theorem fields_computable : ComputableInPolyTime
       (encPair (encList encRatBin) (encPair encRatBin (encList (encList encUnary)))))) :=
   .of_eq fun _ => rfl
 
-private theorem rows_computable : ComputableInPolyTime Input.rows encInput
+/-- Read the original runtime incidence rows without interpreting a response. -/
+theorem computable_rows : ComputableInPolyTime Input.rows encInput
     (encList (encList encUnary)) := fields_computable.fst'
 private theorem weights_computable : ComputableInPolyTime Input.weights encInput
     (encList encRatBin) := fields_computable.snd'.fst'
-private theorem dual_computable : ComputableInPolyTime Input.dual encInput
+/-- Read the original binary-rational dual vector from runtime input. -/
+theorem computable_dual : ComputableInPolyTime Input.dual encInput
     (encList encRatBin) := fields_computable.snd'.snd'.fst'
 private theorem rho_computable : ComputableInPolyTime Input.rho encInput encRatBin :=
   fields_computable.snd'.snd'.snd'.fst'
 private theorem proposals_computable : ComputableInPolyTime Input.proposals encInput
     (encList (encList encUnary)) := fields_computable.snd'.snd'.snd'.snd'
-attribute [local fun_prop] rows_computable weights_computable dual_computable
+attribute [local fun_prop] computable_rows weights_computable computable_dual
   rho_computable proposals_computable
 
 private theorem population_computable : ComputableInPolyTime population encInput
     (encList encUnary) := by unfold population; fun_prop
-private theorem ground_computable : ComputableInPolyTime ground encInput
+/-- Enumerate the original ground labels in polynomial time. -/
+theorem computable_ground : ComputableInPolyTime ground encInput
     (encList encUnary) := by unfold ground; fun_prop
-attribute [local fun_prop] population_computable ground_computable
+attribute [local fun_prop] population_computable computable_ground
 
 private theorem normalize_computable : ComputableInPolyTime
     (fun p : Input × List ℕ => normalize p.1 p.2) (encPair encInput (encList encUnary))
@@ -131,7 +136,8 @@ private theorem normalize_computable : ComputableInPolyTime
   apply filterWithInput (by fun_prop)
   fun_prop
 
-private theorem covered_computable : ComputableInPolyTime
+/-- Compute original covered elements from runtime candidate labels in polynomial time. -/
+theorem computable_covered : ComputableInPolyTime
     (fun p : Input × List ℕ => covered p.1 p.2) (encPair encInput (encList encUnary))
     (encList encUnary) := by
   unfold covered
@@ -139,7 +145,7 @@ private theorem covered_computable : ComputableInPolyTime
   apply anyWithInput (by fun_prop)
   fun_prop
 
-attribute [local fun_prop] normalize_computable covered_computable
+attribute [local fun_prop] normalize_computable computable_covered
 
 private theorem newly_computable : ComputableInPolyTime
     (fun p : (Input × List ℕ) × List ℕ => newly p.1.1 p.1.2 p.2)
@@ -216,7 +222,7 @@ turns. Composition with a query loop remains a separate construction. -/
 theorem computable_complete : ComputableInPolyTime complete encInput encBool := by
   have hr := computable_retain
   unfold complete
-  apply allWithInput ground_computable
+  apply allWithInput computable_ground
   fun_prop
 
 /-- One native computation emits the completion decision and retained mask from

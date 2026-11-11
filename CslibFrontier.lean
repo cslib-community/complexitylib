@@ -6069,7 +6069,9 @@ public import CslibFrontier.Probability.StochasticOracle.CutoffFamilies
 public import CslibFrontier.Probability.StochasticOracle.DiscreteComparison
 public import CslibFrontier.Probability.StochasticOracle.ExecutionFeasibility
 public import CslibFrontier.Probability.StochasticOracle.FullCover
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualEncoding
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualSelector
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchAdmission
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.BatchOptimum

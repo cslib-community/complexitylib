@@ -211,9 +211,9 @@ theorem risk_sum_eq (x : Input) (hx : Valid x.system) (q : ℝ) :
       ∑ e : Fin x.planner.val.ground, q ^ Instance.chances e
         (((labels x).map (GreedyNative.oracleAt x.planner.val)).map
           Cslib.Algorithms.Lean.Multicover.Oracle.eligible) := by
-  change (∑ e ∈ (List.range x.system.dual.length).toFinset,
+  change (∑ e ∈ (List.range x.source.dual.length).toFinset,
     q ^ Instance.chances e (eligible x)) = _
-  erw [List.toFinset_range, ← x.ground_eq, ← Fin.sum_univ_eq_sum_range]
+  rw [List.toFinset_range, ← x.ground_eq, ← Fin.sum_univ_eq_sum_range]
   have he : eligible x =
       (((labels x).map (GreedyNative.oracleAt x.planner.val)).map
         Cslib.Algorithms.Lean.Multicover.Oracle.eligible).map
