@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.WeightLayers
 public import CslibFrontier.Computability.QueryComplexity.Quantum.ValueQuery
 import CslibFrontier.Foundations.Quantum.Measurement.Overlap
+import CslibFrontier.Foundations.Quantum.Measurement.ReadoutOverlap
 
 /-!
 # Lower bounds of Nayak and Wu for approximate counting, median, and selection
@@ -165,17 +166,10 @@ end ProblemDefs
 
 section Helpers
 
-/-- The error-`1/3` factor `1 - 2√((1/3)(2/3))` is at least `1 / 18`. -/
-private theorem one_eighteenth_le_factor :
-    (1 / 18 : ℝ) ≤ 1 - 2 * √((1 / 3 : ℝ) * (1 - 1 / 3)) := by
-  have hsqrt : √((1 / 3 : ℝ) * (1 - 1 / 3)) ≤ 17 / 36 :=
-    (Real.sqrt_le_left (by norm_num)).2 (by norm_num)
-  linarith
-
 private theorem le_eighteen_mul_of_one_sub_mul_le {X B : ℝ} (hX : 0 ≤ X)
     (h : (1 - 2 * √((1 / 3 : ℝ) * (1 - 1 / 3))) * X ≤ B) : X ≤ 18 * B := by
   have hle : (1 / 18 : ℝ) * X ≤ (1 - 2 * √((1 / 3 : ℝ) * (1 - 1 / 3))) * X :=
-    mul_le_mul_of_nonneg_right one_eighteenth_le_factor hX
+    mul_le_mul_of_nonneg_right one_eighteenth_le_one_sub_two_mul_sqrt hX
   linarith
 
 /-- Division-free scaling from an integer gap `d ≤ 4 * Δ` to a real gap `Δ > 0`. -/

@@ -237,6 +237,165 @@ class RestackTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn(f"--approved-base {lower}", out)
 
+    def newer_main_stack(self, lower_files: dict[str, str] | None = None,
+                         resolution: dict[str, str] | None = None) -> tuple[str, str]:
+        """An upper PR on a lower PR that merged a newer `main` than the lower head before
+        approval (#4510): `main` sets `y := 3` after the lower branch forks.
+
+        Returns the lower head and the approved upper head."""
+        self.git("checkout", "-q", "-b", "lower", "main")
+        lower = self.commit("lower", lower_files or {"Lower.lean": "def z := 3\n"})
+        self.git("checkout", "-q", "-b", "feature", "lower")
+        self.commit("upper", {"B.lean": "def b := z\n"})
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 3")})
+        return lower, self.merge_main(resolution)
+
+    def land_lower(self) -> None:
+        """Squash the lower branch onto `main`."""
+        self.git("checkout", "-q", "main")
+        self.git("merge", "-q", "--squash", "lower")
+        self.git("commit", "-q", "-m", "lower (#1)")
+
+    def test_stacked_pr_that_merged_newer_main_passes_from_the_lower_head(self) -> None:
+        lower, approved = self.newer_main_stack()
+        self.land_lower()
+        # `main` rewrites the line that the approved head took from the newer `main`.
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 4")})
+        new = self.merge_main()
+        # From the lower head alone, the replayed change would include `y := 3` and conflict.
+        replayed, conflicts = check_restack.replay(
+            self.root, lower, approved, self.git("merge-base", "main", new))
+        self.assertIn("Lib.lean", conflicts)
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 0, out)
+        main_base = self.git("merge-base", "main", approved)
+        self.assertIn(f"(from the merge of {lower[:12]} and {main_base[:12]})", out)
+        self.assertIn(f"--approved-base {lower}", out)
+
+    def test_stacked_pr_that_merged_newer_main_with_an_edit_is_reported(self) -> None:
+        lower, approved = self.newer_main_stack()
+        self.land_lower()
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 4")})
+        self.merge_main()
+        new = self.commit("edit", {"B.lean": "def b := z + 1\n"})
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("B.lean: the new head differs", out)
+
+    def test_stacked_pr_that_merged_newer_main_keeps_an_unlanded_lower_branch_out(self) -> None:
+        lower, approved = self.newer_main_stack({"Lower.lean": "axiom unreviewed : False\n"})
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 4")})
+        new = self.merge_main()
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Lower.lean", out)
+
+    def test_stacked_pr_that_merged_newer_main_whose_lower_pr_changed_passes(self) -> None:
+        lower, approved = self.newer_main_stack()
+        self.git("checkout", "-q", "lower")
+        self.commit("lower revised", {"Lower.lean": "def z := 4\n"})
+        self.land_lower()
+        new = self.merge_main({"Lower.lean": "def z := 4\n"})
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 0, out)
+        # Keeping the lower PR's approved version instead is reported.
+        code, out = self.check(approved, self.commit("old", {"Lower.lean": "def z := 3\n"}),
+                               "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Lower.lean", out)
+
+    def test_stacked_pr_whose_lower_pr_landed_before_its_main_merge_uses_main(self) -> None:
+        self.git("checkout", "-q", "-b", "lower", "main")
+        lower = self.commit("lower", {"Lower.lean": "def z := 3\n"})
+        self.git("checkout", "-q", "-b", "feature", "lower")
+        self.commit("upper", {"B.lean": "def b := z\n"})
+        self.git("checkout", "-q", "main")
+        self.git("merge", "-q", "--no-ff", "--no-edit", "lower")
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 3")})
+        approved = self.merge_main()
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 4")})
+        new = self.merge_main()
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 0, out)
+        self.assertIn(f"(from {self.git('merge-base', 'main', approved)[:12]})", out)
+
+    def conflicting_stack(self) -> tuple[str, str]:
+        """`newer_main_stack` where the lower branch and `main` both edit `y` and the approved
+        head resolves it as `y := 5`."""
+        return self.newer_main_stack({"Lib.lean": LIB.replace("def y := 2", "def y := 9")},
+                                     {"Lib.lean": LIB.replace("def y := 2", "def y := 5")})
+
+    def test_conflicting_lower_and_main_leave_the_resolution_for_review(self) -> None:
+        lower, approved = self.conflicting_stack()
+        self.on_main({"Other.lean": "def o := 0\n"})
+        new = self.merge_main()
+        # The base keeps the markers, so `main`'s own version conflicts with the resolution.
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("which conflicted in Lib.lean", out)
+        self.assertIn("Lib.lean: the replay conflicted here", out)
+
+    def test_conflicting_lower_and_main_pass_when_main_resolves_them_alike(self) -> None:
+        lower, approved = self.conflicting_stack()
+        # The lower PR lands with the same resolution.
+        self.on_main({"Lib.lean": LIB.replace("def y := 2", "def y := 5")})
+        new = self.merge_main()
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 0, out)
+        self.assertIn("which conflicted in Lib.lean", out)
+        dropped = self.commit("drop", {"Lib.lean": LIB.replace("def y := 2", "def y := 9")})
+        code, out = self.check(approved, dropped, "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("Lib.lean", out)
+
+    def modify_delete_stack(self, lower_files: dict[str, str | bytes | None]) -> tuple[str, str]:
+        """An upper PR on a lower PR that writes `lower_files`, deleting `F.lean`, where `main`
+        modifies `F.lean` after the lower branch forks and the approved head's merge of that `main`
+        keeps the deletion: a conflict of the base merge without markers.
+
+        Returns the lower head and the approved upper head."""
+        self.commit("F", {"F.lean": "def f := 1\n"})
+        self.git("checkout", "-q", "-b", "lower", "main")
+        lower = self.commit("lower", lower_files)
+        self.git("checkout", "-q", "-b", "feature", "lower")
+        self.commit("upper", {"B.lean": "def b := 0\n"})
+        self.on_main({"F.lean": "def f := 2\n"})
+        approved = self.merge_main({"F.lean": None})
+        # Neither PR's diff shows the deletion of `main`'s modified file.
+        self.assertNotIn("F.lean", self.git("diff", "--name-only", lower, approved))
+        return lower, approved
+
+    def test_modify_delete_in_the_base_is_reported_when_the_lower_pr_never_lands(self) -> None:
+        lower, approved = self.modify_delete_stack({"F.lean": None})
+        self.on_main({"Other.lean": "def o := 0\n"})
+        new = self.merge_main()
+        self.assertIn("F.lean", self.git("ls-tree", "--name-only", "main"))
+        self.assertNotIn("F.lean", self.git("ls-tree", "--name-only", new))
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("which conflicted in F.lean", out)
+        self.assertIn("F.lean: the replay conflicted here", out)
+
+    def test_modify_delete_in_the_base_is_reported_when_the_lower_pr_keeps_the_file(self) -> None:
+        lower, approved = self.modify_delete_stack({"F.lean": None, "Lower.lean": "def z := 3\n"})
+        self.git("checkout", "-q", "lower")
+        self.commit("lower revised", {"F.lean": "def f := 1\n"})
+        self.land_lower()
+        new = self.merge_main()
+        self.assertIn("F.lean", self.git("ls-tree", "--name-only", "main"))
+        self.assertNotIn("F.lean", self.git("ls-tree", "--name-only", new))
+        code, out = self.check(approved, new, "--approved-base", lower)
+        self.assertEqual(code, 1, out)
+        self.assertIn("F.lean: the replay conflicted here", out)
+
+    def test_modify_delete_in_the_base_passes_when_the_lower_pr_lands_the_deletion(self) -> None:
+        lower, approved = self.modify_delete_stack({"F.lean": None})
+        self.on_main({"F.lean": None})
+        self.on_main({"Other.lean": "def o := 0\n"})
+        code, out = self.check(approved, self.merge_main(), "--approved-base", lower)
+        self.assertEqual(code, 0, out)
+        self.assertIn("which conflicted in F.lean", out)
+
     # Changed restacks are reported.
 
     def test_edited_pr_line_is_reported(self) -> None:

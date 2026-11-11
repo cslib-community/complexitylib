@@ -390,14 +390,15 @@ theorem two_mul_card_andreevSubcubeEval_eq_andreev {b r : ℕ} (hr : r < b) (m :
 
 /-! ### Hoeffding window union bound and average-case circuit upper bounds -/
 
-/-- If `|X_S(w)| < 2 * t` and `|t_S(w) - #S * m / 2| < t` with `3 * t + 1 / 2 ≤ B`, then `u^±_S(w)`
-lies in `[andreevWindowLower m B S σ, andreevWindowLower m B S σ + 2 * B]` for both `σ : Bool`. -/
+/-- If `|X_S(w)| < 2 * t` and `|t_S(w) - #S * m / 2| < t` with `3 * t + 1 / 2 ≤ B`, then both
+staircase forms `andreevStairForm b m S τ w` (`X_S(w) + t_S(w)` and `t_S(w)`) lie in
+`[andreevWindowLower m B S, andreevWindowLower m B S + 2 * B]`. -/
 theorem mem_window_of_tableScore_and_blockSum_lt {b m B : ℕ} {S : Finset (Fin b)}
     {w : BitString (2 ^ b + b * m)} {t : ℝ} (hB : 3 * t + 1 / 2 ≤ (B : ℝ))
     (hX : |(andreevTableScore b m S w : ℝ)| < 2 * t)
-    (ht : |(andreevBlockSum b m S w : ℝ) - (#S * m : ℝ) / 2| < t) (σ : Bool) :
-    andreevWindowLower m B S σ ≤ andreevLinearForm b m S σ w ∧
-      andreevLinearForm b m S σ w ≤ andreevWindowLower m B S σ + (2 * B : ℕ) := by
+    (ht : |(andreevBlockSum b m S w : ℝ) - (#S * m : ℝ) / 2| < t) (τ : Bool) :
+    andreevWindowLower m B S ≤ andreevStairForm b m S τ w ∧
+      andreevStairForm b m S τ w ≤ andreevWindowLower m B S + (2 * B : ℕ) := by
   have hfloor : 0 ≤ ((#S * m : ℕ) : ℝ) / 2 - (((#S * m) / 2 : ℕ) : ℝ) ∧
       ((#S * m : ℕ) : ℝ) / 2 - (((#S * m) / 2 : ℕ) : ℝ) ≤ 1 / 2 := by
     have hdiv : 2 * ((#S * m) / 2) ≤ #S * m ∧ #S * m ≤ 2 * ((#S * m) / 2) + 1 :=
@@ -406,12 +407,12 @@ theorem mem_window_of_tableScore_and_blockSum_lt {b m B : ℕ} {S : Finset (Fin 
     have h2 : ((#S * m : ℕ) : ℝ) ≤ 2 * (((#S * m) / 2 : ℕ) : ℝ) + 1 := by exact_mod_cast hdiv.2
     constructor <;> linarith
   rw [abs_lt] at hX ht; rw [Nat.cast_mul] at hfloor
-  have hreal : (andreevWindowLower m B S σ : ℝ) ≤ (andreevLinearForm b m S σ w : ℝ) ∧
-      (andreevLinearForm b m S σ w : ℝ) ≤ (andreevWindowLower m B S σ + (2 * B : ℕ) : ℝ) := by
-    cases σ <;>
-      simp only [andreevWindowLower, andreevWindowCenter, andreevLinearForm, ↓reduceIte,
-        Bool.false_eq_true, Int.cast_sub, Int.cast_add, Int.cast_mul, Int.cast_neg,
-        Int.cast_one, Int.cast_natCast, Nat.cast_mul, Nat.cast_ofNat] <;>
+  have hreal : (andreevWindowLower m B S : ℝ) ≤ (andreevStairForm b m S τ w : ℝ) ∧
+      (andreevStairForm b m S τ w : ℝ) ≤ (andreevWindowLower m B S + (2 * B : ℕ) : ℝ) := by
+    cases τ <;>
+      simp only [andreevWindowLower, andreevWindowCenter, andreevStairForm, ↓reduceIte,
+        Bool.false_eq_true, Int.cast_sub, Int.cast_add, Int.cast_natCast, Nat.cast_mul,
+        Nat.cast_ofNat] <;>
       constructor <;> linarith
   exact ⟨by exact_mod_cast hreal.1, by exact_mod_cast hreal.2⟩
 
@@ -430,9 +431,9 @@ theorem card_not_andreevInWindow_le (b m r B : ℕ) {t : ℝ} (ht : 0 ≤ t)
           ({w : BitString (2 ^ b + b * m) |
             t ≤ |(andreevBlockSum b m S w : ℝ) - (#S * m : ℝ) / 2|} : Finset _) := by
     intro w hw; simp only [mem_filter, mem_univ, true_and, andreevInWindow, not_forall] at hw
-    rcases hw with ⟨S, hS, σ, hnot⟩
+    rcases hw with ⟨S, hS, τ, hnot⟩
     rw [mem_biUnion]; refine ⟨S, hS, ?_⟩; simp only [mem_union, mem_filter, mem_univ, true_and]
-    by_contra! hboth; exact hnot (mem_window_of_tableScore_and_blockSum_lt hB hboth.1 hboth.2 σ)
+    by_contra! hboth; exact hnot (mem_window_of_tableScore_and_blockSum_lt hB hboth.1 hboth.2 τ)
   have hcard : (#{w : BitString (2 ^ b + b * m) | ¬ andreevInWindow b m r B w} : ℝ) ≤
       ∑ S ∈ andreevPrefixSubsets b r,
         ((#{w : BitString (2 ^ b + b * m) |

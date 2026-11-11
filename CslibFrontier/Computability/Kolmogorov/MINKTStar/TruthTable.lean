@@ -35,8 +35,8 @@ tables of `PartialMCSP`. The agreement condition is then the right-hand side of
 ## References
 
 The truth-table form is used in the no case of the library's proof of the `MINKT*` clause of
-[Hirahara2022, Theorem I.2], which issue #4447 tracks. There, a count of programs replaces the
-source's argument.
+[Hirahara2022, Theorem I.2], `MINKTStar.rpHard` in `Hardness.lean`. There, a count of programs
+replaces the source's argument.
 -/
 
 public section
