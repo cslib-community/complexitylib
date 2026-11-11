@@ -27,8 +27,8 @@ is the agnostic route to PAC learning: no concept of the class needs to fit the 
 
 The domain and label spaces are arbitrary measurable spaces. Each hypothesis needs a measurable
 misclassification set; `measurableSet_misclassified` supplies this for measurable hypotheses with
-`Bool` labels. Hoeffding's inequality is the library's finite-PMF form
-(`Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge`), applied to the Bernoulli indicators of
+`Bool` labels. Hoeffding's inequality is the library's finite-PMF form for `[0, 1]` scores
+(`Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge_card_mul`), applied to the Bernoulli indicators of
 misclassification.
 
 ## Main definitions
@@ -131,11 +131,8 @@ theorem measure_pi_le_abs_empiricalMiscount_div_sub_error (D : Measure (α × β
         m * ε ≤ |∑ i, score i (b i) - ∑ i : Fin m, ∑ a, (q a).toReal * score i a|} ≠ ⊤ :=
     Cslib.Probability.PMF.toOuterMeasure_ne_top _ _
   rw [ENNReal.le_ofReal_iff_toReal_le hne (by positivity)]
-  refine (Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge (fun _ : Fin m => q) score
-    (bound := 1) zero_le_one hscore (by positivity)).trans_eq ?_
-  congr 2
-  simp only [Fintype.card_fin, one_pow, mul_one]
-  field_simp
+  simpa only [Fintype.card_fin] using
+    Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge_card_mul (fun _ : Fin m => q) score hscore hε
 
 /-- **Uniform convergence for a finite class** [ShalevShwartzBenDavid2014, Section 4.2]: `m` i.i.d.
 examples fail to be `ε`-representative for a finite class `H` with probability at most
