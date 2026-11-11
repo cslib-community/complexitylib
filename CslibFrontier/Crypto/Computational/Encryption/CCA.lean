@@ -519,6 +519,97 @@ theorem isPPTOn_run_cca2Phase1Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
           (adversary.choose n pk)).run ()) :=
   isPPTOn_run_cca2Phase1Oracle_of_choose hdec hA.choose
 
+/-- The shared Phase 2 certificate permits any encoded challenge container and polynomial-time
+blocking test. Rejected queries return the same empty word, and accepted queries use the same
+encoded decryption-reply length budget as the concrete single- and multi-challenge games. -/
+private theorem isPPTOn_run_cca2Phase2Oracle_of_guess {Challenge Out : Type}
+    {encChallenge : Challenge ↪ List Bool} {encOut : Out ↪ List Bool}
+    {decrypt : ℕ → List Bool → List Bool → Option Out}
+    {guess : ℕ → List Bool → Challenge → WordOracleComp Unit Bool}
+    {blocked : List Bool → Challenge → Bool}
+    (hdec : ComputableInPolyTime
+      (fun ⟨n, sk, ct⟩ => decrypt n sk ct)
+      (encKeyedInput encBits) (encOption encOut))
+    (hguess : IsOraclePPTOn (Operation := Unit)
+      (encPair encUnary (encPair encBits encChallenge)) encBool
+      (fun ⟨n, state, challenge⟩ => guess n state challenge))
+    (hblocked : ComputableInPolyTime
+      (fun pair : List Bool × Challenge => blocked pair.1 pair.2)
+      (encPair encBits encChallenge) encBool) :
+    IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encChallenge)))
+      (encPair encBool (encFinEnum Unit))
+      (fun ⟨n, sk, state, challenge⟩ =>
+        (OracleComp.interpret
+          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+            (fun request s => if blocked request.2 challenge then pure ([], s)
+              else pure (encOption encOut (decrypt n sk request.2), s)))
+          (guess n state challenge)).run ()) := by
+  let ECaller := encPair encUnary (encPair encBits (encPair encBits encChallenge))
+  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
+  have hdecArg : ComputableInPolyTime
+      (fun p : (ℕ × List Bool × List Bool × Challenge) × ((Unit × List Bool) × Unit) =>
+        (p.1.1, p.1.2.1, p.2.1.2))
+      EIn (encPair encUnary (encPair encBits encBits)) := by fun_prop
+  have hdecWord : ComputableInPolyTime
+      (fun p : (ℕ × List Bool × List Bool × Challenge) × ((Unit × List Bool) × Unit) =>
+        encOption encOut (decrypt p.1.1 p.1.2.1 p.2.1.2))
+      EIn encBits :=
+    (hdec.comp hdecArg).encoding_comp
+  have hguardArg : ComputableInPolyTime
+      (fun p : (ℕ × List Bool × List Bool × Challenge) × ((Unit × List Bool) × Unit) =>
+        (p.2.1.2, p.1.2.2.2))
+      EIn (encPair encBits encChallenge) := by fun_prop
+  have hguard : ComputableInPolyTime
+      (fun p : (ℕ × List Bool × List Bool × Challenge) × ((Unit × List Bool) × Unit) =>
+        blocked p.2.1.2 p.1.2.2.2)
+      EIn encBool :=
+    hblocked.comp hguardArg
+  have hnoReply : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
+      (fun p : (ℕ × List Bool × List Bool × Challenge) × ((Unit × List Bool) × Unit) =>
+        pure ([], p.2.2)) :=
+    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
+      (by fun_prop)).isPPTOn
+  have hhandler : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
+      (fun pair : (ℕ × List Bool × List Bool × Challenge) × ((Unit × List Bool) × Unit) =>
+        if blocked pair.2.1.2 pair.1.2.2.2 then pure ([], pair.2.2)
+        else pure (encOption encOut (decrypt pair.1.1 pair.1.2.1 pair.2.1.2), pair.2.2)) :=
+    IsPPTOn.cond' hguard hnoReply
+      ((ComputableInPolyTime.prod hdecWord (by fun_prop)).isPPTOn)
+  have hres : ComputableInPolyTime
+      (fun pair : (ℕ × List Bool × List Bool × Challenge) × List Bool =>
+        (encOption encOut (decrypt pair.1.1 pair.1.2.1 pair.2)).length)
+      (encPair ECaller encBits) encUnary := by
+    have harg : ComputableInPolyTime
+        (fun pair : (ℕ × List Bool × List Bool × Challenge) × List Bool =>
+          (pair.1.1, pair.1.2.1, pair.2))
+        (encPair ECaller encBits) (encPair encUnary (encPair encBits encBits)) := by fun_prop
+    exact ComputableInPolyTime.length_bits.comp (hdec.comp harg).encoding_comp
+  have hprep : ComputableInPolyTime
+      (fun caller : ℕ × List Bool × List Bool × Challenge =>
+        (caller.1, caller.2.2.1, caller.2.2.2))
+      ECaller (encPair encUnary (encPair encBits encChallenge)) := by fun_prop
+  exact hguess.run_interpret_preprocess
+    (prepare := fun caller : ℕ × List Bool × List Bool × Challenge =>
+      (caller.1, caller.2.2.1, caller.2.2.2))
+    (initial := fun _ => ())
+    (resources := fun caller req => (encOption encOut (decrypt caller.1 caller.2.1 req)).length)
+    hprep.tidy
+    hhandler
+    (ComputableInPolyTime.const ()).tidy
+    (fun _ _ => True)
+    (fun _ => trivial)
+    hres.tidy
+    (fun caller request state _ result hresult => by
+      split_ifs at hresult with hct
+      · have hresEq : result = ([], state) := by simpa using hresult
+        subst hresEq
+        exact ⟨trivial, Nat.zero_le _, Nat.le_add_right _ _⟩
+      · have hresEq :
+            result = (encOption encOut (decrypt caller.1 caller.2.1 request.2), state) := by
+          simpa using hresult
+        subst hresEq
+        exact ⟨trivial, le_rfl, Nat.le_add_right _ _⟩)
+
 /-- Running Phase 2 (`adversary.guess`) against `cca2Phase2Oracle` is uniformly strict PPT in
 `(n, sk, state, ct)` whenever `decrypt` is computable in polynomial time. -/
 @[program_certificate]
@@ -536,68 +627,9 @@ theorem isPPTOn_run_cca2Phase2Oracle {Msg Out : Type} {encMsg : Msg ↪ List Boo
           (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2Phase2Oracle encOut decrypt n sk ct))
           (adversary.guess n state ct)).run ()) := by
-  let ECaller := encPair encUnary (encPair encBits (encPair encBits encBits))
-  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
-  have hdecArg : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        (p.1.1, p.1.2.1, p.2.1.2))
-      EIn (encPair encUnary (encPair encBits encBits)) := by fun_prop
-  have hdecWord : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        encOption encOut (decrypt p.1.1 p.1.2.1 p.2.1.2))
-      EIn encBits :=
-    (hdec.comp hdecArg).encoding_comp
-  have heqCt : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        p.2.1.2 == p.1.2.2.2)
-      EIn encBool :=
-    ComputableInPolyTime.beq (by dsimp only [EIn]; fun_prop)
-      (by dsimp only [EIn, ECaller]; fun_prop)
-  have hnoReply : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
-      (fun p : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        pure ([], p.2.2)) :=
-    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-      (by fun_prop)).isPPTOn
-  have hhandler : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
-      (fun pair : (ℕ × List Bool × List Bool × List Bool) × ((Unit × List Bool) × Unit) =>
-        cca2Phase2Oracle encOut decrypt pair.1.1 pair.1.2.1 pair.1.2.2.2 pair.2.1 pair.2.2) :=
-    IsPPTOn.cond' heqCt hnoReply
-      ((ComputableInPolyTime.prod hdecWord (by fun_prop)).isPPTOn)
-  have hres : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool × List Bool) × List Bool =>
-        (encOption encOut (decrypt pair.1.1 pair.1.2.1 pair.2)).length)
-      (encPair ECaller encBits) encUnary := by
-    have harg : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool × List Bool) × List Bool =>
-          (pair.1.1, pair.1.2.1, pair.2))
-        (encPair ECaller encBits) (encPair encUnary (encPair encBits encBits)) := by fun_prop
-    exact ComputableInPolyTime.length_bits.comp (hdec.comp harg).encoding_comp
-  have hprep : ComputableInPolyTime
-      (fun caller : ℕ × List Bool × List Bool × List Bool =>
-        (caller.1, caller.2.2.1, caller.2.2.2))
-      ECaller (encPair encUnary (encPair encBits encBits)) := by fun_prop
-  exact hA.guess.run_interpret_preprocess
-    (prepare := fun caller : ℕ × List Bool × List Bool × List Bool =>
-      (caller.1, caller.2.2.1, caller.2.2.2))
-    (initial := fun _ => ())
-    (resources := fun caller req => (encOption encOut (decrypt caller.1 caller.2.1 req)).length)
-    hprep.tidy
-    hhandler
-    (ComputableInPolyTime.const ()).tidy
-    (fun _ _ => True)
-    (fun _ => trivial)
-    hres.tidy
-    (fun caller request state _ result hresult => by
-      dsimp only [cca2Phase2Oracle] at hresult
-      split_ifs at hresult with hct
-      · have hresEq : result = ([], state) := by simpa using hresult
-        subst hresEq
-        exact ⟨trivial, Nat.zero_le _, Nat.le_add_right _ _⟩
-      · have hresEq :
-            result = (encOption encOut (decrypt caller.1 caller.2.1 request.2), state) := by
-          simpa using hresult
-        subst hresEq
-        exact ⟨trivial, le_rfl, Nat.le_add_right _ _⟩)
+  exact isPPTOn_run_cca2Phase2Oracle_of_guess
+    (blocked := fun req ct => req == ct) hdec hA.guess
+    (ComputableInPolyTime.beq (by fun_prop) (by fun_prop))
 
 /-- The complete `cca2GameOn` experiment is uniformly strict PPT on the unary security parameter
 whenever `valid`, `keyGen`, `encrypt`, `decrypt`, and `adversary` are admissible. -/
@@ -1194,68 +1226,8 @@ theorem isPPTOn_run_cca2MultiPhase2Oracle {Msg Out : Type} {encMsg : Msg ↪ Lis
           (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
             (cca2MultiPhase2Oracle encOut decrypt caller.1 caller.2.1 caller.2.2.2))
           (adversary.guess caller.1 caller.2.2.1 caller.2.2.2)).run ()) := by
-  let ECaller := encPair encUnary (encPair encBits (encPair encBits (encList encBits)))
-  let EIn := encPair ECaller (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
-  have hdecArg : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool × List (List Bool)) × ((Unit × List Bool) × Unit) =>
-        (p.1.1, p.1.2.1, p.2.1.2))
-      EIn (encPair encUnary (encPair encBits encBits)) := by fun_prop
-  have hdecWord : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool × List (List Bool)) × ((Unit × List Bool) × Unit) =>
-        encOption encOut (decrypt p.1.1 p.1.2.1 p.2.1.2))
-      EIn encBits :=
-    (hdec.comp hdecArg).encoding_comp
-  have hmemCts : ComputableInPolyTime
-      (fun p : (ℕ × List Bool × List Bool × List (List Bool)) × ((Unit × List Bool) × Unit) =>
-        decide (p.2.1.2 ∈ p.1.2.2.2))
-      EIn encBool := by
-    dsimp only [EIn, ECaller]
-    fun_prop
-  have hnoReply : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
-      (fun p : (ℕ × List Bool × List Bool × List (List Bool)) × ((Unit × List Bool) × Unit) =>
-        pure ([], p.2.2)) :=
-    (ComputableInPolyTime.prod (ComputableInPolyTime.const [])
-      (by fun_prop)).isPPTOn
-  have hhandler : IsPPTOn EIn (encPair encBits (encFinEnum Unit))
-      (fun pair : (ℕ × List Bool × List Bool × List (List Bool)) × ((Unit × List Bool) × Unit) =>
-        cca2MultiPhase2Oracle encOut decrypt pair.1.1 pair.1.2.1 pair.1.2.2.2 pair.2.1 pair.2.2) :=
-    IsPPTOn.cond' hmemCts hnoReply
-      ((ComputableInPolyTime.prod hdecWord (by fun_prop)).isPPTOn)
-  have hres : ComputableInPolyTime
-      (fun pair : (ℕ × List Bool × List Bool × List (List Bool)) × List Bool =>
-        (encOption encOut (decrypt pair.1.1 pair.1.2.1 pair.2)).length)
-      (encPair ECaller encBits) encUnary := by
-    have harg : ComputableInPolyTime
-        (fun pair : (ℕ × List Bool × List Bool × List (List Bool)) × List Bool =>
-          (pair.1.1, pair.1.2.1, pair.2))
-        (encPair ECaller encBits) (encPair encUnary (encPair encBits encBits)) := by fun_prop
-    exact ComputableInPolyTime.length_bits.comp (hdec.comp harg).encoding_comp
-  have hprep : ComputableInPolyTime
-      (fun caller : ℕ × List Bool × List Bool × List (List Bool) =>
-        (caller.1, caller.2.2.1, caller.2.2.2))
-      ECaller (encPair encUnary (encPair encBits (encList encBits))) := by fun_prop
-  exact hA.guess.run_interpret_preprocess
-    (prepare := fun caller : ℕ × List Bool × List Bool × List (List Bool) =>
-      (caller.1, caller.2.2.1, caller.2.2.2))
-    (initial := fun _ => ())
-    (resources := fun caller req => (encOption encOut (decrypt caller.1 caller.2.1 req)).length)
-    hprep.tidy
-    hhandler
-    (ComputableInPolyTime.const ()).tidy
-    (fun _ _ => True)
-    (fun _ => trivial)
-    hres.tidy
-    (fun caller request state _ result hresult => by
-      dsimp only [cca2MultiPhase2Oracle] at hresult
-      split_ifs at hresult with hct
-      · have hresEq : result = ([], state) := by simpa using hresult
-        subst hresEq
-        exact ⟨trivial, Nat.zero_le _, Nat.le_add_right _ _⟩
-      · have hresEq :
-            result = (encOption encOut (decrypt caller.1 caller.2.1 request.2), state) := by
-          simpa using hresult
-        subst hresEq
-        exact ⟨trivial, le_rfl, Nat.le_add_right _ _⟩)
+  exact isPPTOn_run_cca2Phase2Oracle_of_guess
+    (blocked := fun req cts => decide (req ∈ cts)) hdec hA.guess (by fun_prop)
 
 /-- The complete `cca2MultiGameOn` experiment is uniformly strict PPT on the unary security
 parameter whenever `valid`, `keyGen`, `encrypt`, `decrypt`, and `adversary` are admissible. -/
