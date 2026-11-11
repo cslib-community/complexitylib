@@ -45,8 +45,7 @@ open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 open Cslib.DataStructure.PriorityQueue
 
-/-- Four original reads, followed by the original swap or a stop index. The nested comparisons
-are the existing key-first, handle-tie priority relation spelled as native scalar conditions. -/
+/-- Four original reads, followed by the original priority test, swap or stop index. -/
 def step (d : (HeapLayout × Unit) × ℕ) : Memory.Prog ℕ := do
   let L := d.1.1.2
   let k := d.2
@@ -54,39 +53,10 @@ def step (d : (HeapLayout × Unit) × ℕ) : Memory.Prog ℕ := do
   let kk ← L.key.get vk
   let vp ← L.heap.get (k / 2)
   let kp ← L.key.get vp
-  if kk < kp then do
+  if IndexedMinPQ.RawPrioLT (vk, kk) (vp, kp) then do
     PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
     pure (k / 2)
-  else if kk = kp then
-    if vk < vp then do
-      PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
-      pure (k / 2)
-    else pure 1
   else pure 1
-
-/-- The scalar branch spelling changes neither reads nor writes. -/
-theorem step_eq (d : (HeapLayout × Unit) × ℕ) :
-    step d = (do
-      let L := d.1.1.2
-      let k := d.2
-      let vk ← L.heap.get k
-      let kk ← L.key.get vk
-      let vp ← L.heap.get (k / 2)
-      let kp ← L.key.get vp
-      if PriorityQueue.IndexedMinPQ.RawPrioLT (vk, kk) (vp, kp) then do
-        PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
-        pure (k / 2)
-      else pure 1) := by
-  unfold step
-  dsimp only
-  congr 1 with vk : 1
-  congr 1 with kk : 1
-  congr 1 with vp : 1
-  congr 1 with kp : 1
-  by_cases hkey : kk < kp
-  · simp [PriorityQueue.IndexedMinPQ.RawPrioLT, hkey]
-  · by_cases heq : kk = kp <;> by_cases hv : vk < vp <;>
-      simp [PriorityQueue.IndexedMinPQ.RawPrioLT, hkey, heq, hv]
 
 /-- The loop state is a one-based position; returning 1 terminates without another read. -/
 def guard (_ : HeapLayout × Unit) (k : ℕ) : Prop := 2 ≤ k
@@ -111,7 +81,7 @@ theorem finish_loop_eq (d : HeapLayout × Unit) (fuel k : ℕ) (hf : Nat.log 2 k
     rw [PriorityQueue.BinaryHeap.Memory.siftUp]
     by_cases hk : 2 ≤ k
     · have hlog := Nat.log_of_one_lt_of_le one_lt_two hk
-      simp only [boundedWhile, guard, hk, ↓reduceIte, step_eq, bind_assoc]
+      simp only [boundedWhile, guard, hk, ↓reduceIte, step, bind_assoc]
       congr 1 with vk : 1
       congr 1 with kk : 1
       congr 1 with vp : 1
@@ -146,7 +116,7 @@ theorem step_triple {w : ℕ} {d : HeapLayout × Unit} {k : ℕ} {s : Memory.Sta
   have hvk := hshape.vertex_lt k hk1 hkS
   have hvp := hshape.vertex_lt (k / 2) (by omega) (by omega)
   have hlog := Nat.log_of_one_lt_of_le one_lt_two hk
-  rw [step_eq]
+  unfold step
   dsimp only
   refine Triple.read_bind (PriorityQueue.BinaryHeap.Memory.heap_lt hA (by omega)) <|
     Triple.read_bind (PriorityQueue.BinaryHeap.Memory.key_lt hA hvk) <|
@@ -175,7 +145,7 @@ theorem loop_currency_le {w : ℕ} {d : HeapLayout × Unit} {k fuel : ℕ} {s : 
   obtain ⟨_, _, hpost⟩ := triple_iff.mp (step_triple hi hg)
   rw [clientResult_width w, clientState_width w] at hpost
   have hc' : memoryCost (step (d, a)) s ≤ 8 := by
-    rw [step_eq]
+    unfold step
     simp only [memoryCost, StateTransitionSpec.clientHistory,
       StateTransitionSpec.runClient_lift_bind', StateTransitionSpec.totalCost_cons,
       StateTransitionSpec.stepFn, Memory.step, Memory.charge]
