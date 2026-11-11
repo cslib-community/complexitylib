@@ -76,7 +76,7 @@ example : WCS.yesInstance 1 ∈ WCS 1 1 ∧ WCS.noInstance 1 ∉ WCS 1 1 :=
 /-! ### The circuit of a graph -/
 
 /-- The triangle on `0, 1, 2`. -/
-def K3 : Graph := ([0, 1, 2], [(0, 1), (1, 2), (0, 2)])
+def K3 : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩
 
 example : IndependentSet.edgeIndices K3 = [(0, 1), (1, 2), (0, 2)] := by decide
 
@@ -96,15 +96,15 @@ example : (K3, 2) ∉ IndependentSet := by
   decide
 
 -- An edge with an undeclared end is not an edge of the circuit.
-example : IndependentSet.edgeIndices ([0, 1], [(0, 5)]) = [] := by decide
+example : IndependentSet.edgeIndices ⟨[0, 1], [(0, 5)]⟩ = [] := by decide
 
-example : ((([0, 1], [(0, 5)]), 2) : Graph × ℕ) ∈ IndependentSet := by
+example : ((⟨[0, 1], [(0, 5)]⟩, 2) : Graph × ℕ) ∈ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
   exact ⟨fun _ => true, by decide, by
     dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩
 
 -- A self-loop is not an edge of the circuit.
-example : ((([0], [(0, 0)]), 1) : Graph × ℕ) ∈ IndependentSet := by
+example : ((⟨[0], [(0, 0)]⟩, 1) : Graph × ℕ) ∈ IndependentSet := by
   rw [← IndependentSet.toWCS_mem_WCS_iff]
   exact ⟨fun _ => true, by decide, by
     dsimp [IndependentSet.toWCS]; rw [IndependentSet.eval_toCircuit]; decide⟩

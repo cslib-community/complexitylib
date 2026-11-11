@@ -289,7 +289,7 @@ theorem decideDominatingSet_iff {A : List (List ℕ) × ℕ → List ℕ} {ρ : 
         (hfinj.injOn)
     have hTdom : (indexGraph G).IsDominatingSet T := by
       refine SimpleGraph.isDominatingSet_iff.2 fun i => ?_
-      have hfiV : f i ∈ G.1 := hfe i ▸ (e i).2
+      have hfiV : f i ∈ G.vertices := hfe i ▸ (e i).2
       rcases hS (f i) hfiV with h | ⟨s, hs, hadj⟩
       · exact Or.inl (by simpa [T] using h)
       · obtain ⟨j, rfl⟩ := hsurj s (Graph.mem_distinctVertices.2 (hSV s hs))

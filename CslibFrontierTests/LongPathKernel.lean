@@ -24,10 +24,10 @@ namespace CslibFrontierTests.LongPathKernel
 open Cslib Cslib.Complexity Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The edge `1 — 2`. -/
-def edge : Graph := ([1, 2], [(1, 2)])
+def edge : Graph := ⟨[1, 2], [(1, 2)]⟩
 
 /-- The vertices `1` and `2` without edges. -/
-def noEdge : Graph := ([1, 2], [])
+def noEdge : Graph := ⟨[1, 2], []⟩
 
 /-- The edge `1 — 2` has a Hamiltonian path from `1` to `2`. -/
 theorem edge_mem_HamPath : (edge, 1, 2) ∈ HamPath := by
@@ -113,8 +113,8 @@ example : IsPolyEquivalence encUnary fun p : ℕ × ℕ => decide (p.1 = p.2) :=
 
 /-- The hypotheses of the cross-composition theorem hold for k-Path: `HamPath` is `NP`-hard and
 OR-cross-composes into k-Path, so the kernel lower bound assumes only `coNP ⊄ NP/poly`. -/
-example : NPHard (encPair encGraph (encPair encNat encNat)) HamPath ∧
-    ORCrossComposes (encPair encGraph (encPair encNat encNat)) HamPath (encPair encGraph encNat)
+example : NPHard encPathInstance HamPath ∧
+    ORCrossComposes encPathInstance HamPath (encPair encGraph encNat)
       Prod.snd LongPath :=
   ⟨HamPath_npHard, HamPath.orCrossComposes_LongPath⟩
 

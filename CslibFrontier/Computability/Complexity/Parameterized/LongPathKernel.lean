@@ -85,8 +85,8 @@ namespace HamPath
 
 /-- The disjoint union of the pendant copies of a list of instances, copy `i` for entry `i`. -/
 def pendantUnion (l : List (Graph × ℕ × ℕ)) : Graph :=
-  (l.zipIdx.flatMap fun p => (pendantCopy p.1 p.2).1,
-    l.zipIdx.flatMap fun p => (pendantCopy p.1 p.2).2)
+  ⟨l.zipIdx.flatMap fun p => (pendantCopy p.1 p.2).vertices,
+    l.zipIdx.flatMap fun p => (pendantCopy p.1 p.2).edges⟩
 
 /-- The cross-composition of `HamPath` into `LongPath`: the disjoint union of the pendant copies,
 with target two more than the number of distinct vertices of the first entry. -/
@@ -100,11 +100,12 @@ theorem computableInPolyTime_toLongPath :
       (encList encPathInstance) (encList (encPair encPathInstance encUnary)) :=
     (ComputableTidilyInPolyTime.zipIdx encPathInstance).computableInPolyTime
   have hc := computableInPolyTime_pendantCopy
-  unfold encGraph at hc
   have hU : ComputableInPolyTime pendantUnion (encList encPathInstance) encGraph := by
-    unfold pendantUnion encGraph
-    exact (flatMapWithInput hz (hc.fst'.comp (snd _ _))).prod
-      (flatMapWithInput hz (hc.snd'.comp (snd _ _)))
+    have hV := flatMapWithInput (f := fun _ p => (pendantCopy p.1 p.2).vertices) hz
+      ((encGraph_vertices_polyTime hc).comp (snd _ _))
+    have hE := flatMapWithInput (f := fun _ p => (pendantCopy p.1 p.2).edges) hz
+      ((encGraph_edges_polyTime hc).comp (snd _ _))
+    exact encGraph_mk_polyTime hV hE
   have hk : ComputableInPolyTime
       (fun l : List (Graph × ℕ × ℕ) => (l.headD default).1.distinctVertices.length + 2)
       (encList encPathInstance) encNat := by
@@ -120,17 +121,17 @@ theorem computableInPolyTime_toLongPath :
 /-! ### The disjoint union -/
 
 private theorem mem_pendantUnion_fst {l : List (Graph × ℕ × ℕ)} {w : ℕ} :
-    w ∈ (pendantUnion l).1 ↔ ∃ x i, l[i]? = some x ∧ w ∈ (pendantCopy x i).1 := by
+    w ∈ (pendantUnion l).vertices ↔ ∃ x i, l[i]? = some x ∧ w ∈ (pendantCopy x i).vertices := by
   simp only [pendantUnion, List.mem_flatMap, List.mem_zipIdx_iff_getElem?, Prod.exists]
 
 private theorem mem_pendantUnion_snd {l : List (Graph × ℕ × ℕ)} {e : ℕ × ℕ} :
-    e ∈ (pendantUnion l).2 ↔ ∃ x i, l[i]? = some x ∧ e ∈ (pendantCopy x i).2 := by
+    e ∈ (pendantUnion l).edges ↔ ∃ x i, l[i]? = some x ∧ e ∈ (pendantCopy x i).edges := by
   simp only [pendantUnion, List.mem_flatMap, List.mem_zipIdx_iff_getElem?, Prod.exists]
 
 /-- On the vertices of copy `i`, the union has the vertices of copy `i`. -/
-private theorem mem_pendantUnion_fst_iff {l : List (Graph × ℕ × ℕ)} {x : Graph × ℕ × ℕ}
-    {i w : ℕ} (hx : l[i]? = some x) (hw : (Nat.unpair w).1 = i) :
-    w ∈ (pendantUnion l).1 ↔ w ∈ (pendantCopy x i).1 := by
+private theorem mem_pendantUnion_fst_iff {l : List (Graph × ℕ × ℕ)}
+    {x : Graph × ℕ × ℕ} {i w : ℕ} (hx : l[i]? = some x) (hw : (Nat.unpair w).1 = i) :
+    w ∈ (pendantUnion l).vertices ↔ w ∈ (pendantCopy x i).vertices := by
   refine ⟨fun h => ?_, fun h => mem_pendantUnion_fst.2 ⟨x, i, hx, h⟩⟩
   obtain ⟨y, j, hy, hwy⟩ := mem_pendantUnion_fst.1 h
   obtain rfl : j = i := (unpair_of_mem_pendantCopy_fst hwy).symm.trans hw
@@ -138,9 +139,10 @@ private theorem mem_pendantUnion_fst_iff {l : List (Graph × ℕ × ℕ)} {x : G
   exact hwy
 
 /-- On the edges at copy `i`, the union has the edges of copy `i`. -/
-private theorem mem_pendantUnion_snd_iff {l : List (Graph × ℕ × ℕ)} {x : Graph × ℕ × ℕ}
-    {i : ℕ} {e : ℕ × ℕ} (hx : l[i]? = some x) (he : (Nat.unpair e.1).1 = i) :
-    e ∈ (pendantUnion l).2 ↔ e ∈ (pendantCopy x i).2 := by
+private theorem mem_pendantUnion_snd_iff {l : List (Graph × ℕ × ℕ)}
+    {x : Graph × ℕ × ℕ} {i : ℕ} {e : ℕ × ℕ} (hx : l[i]? = some x)
+    (he : (Nat.unpair e.1).1 = i) :
+    e ∈ (pendantUnion l).edges ↔ e ∈ (pendantCopy x i).edges := by
   refine ⟨fun h => ?_, fun h => mem_pendantUnion_snd.2 ⟨x, i, hx, h⟩⟩
   obtain ⟨y, j, hy, hey⟩ := mem_pendantUnion_snd.1 h
   obtain rfl : j = i := (unpair_of_mem_pendantCopy_snd hey).1.symm.trans he
@@ -160,9 +162,9 @@ private theorem unpair_fst_eq_of_adj {l : List (Graph × ℕ × ℕ)} {u v : ℕ
     exact this.2.trans this.1.symm
 
 /-- Adjacency of the union at copy `i` is adjacency of copy `i`. -/
-private theorem adj_pendantUnion_iff {l : List (Graph × ℕ × ℕ)} {x : Graph × ℕ × ℕ}
-    {i u v : ℕ} (hx : l[i]? = some x) (hu : (Nat.unpair u).1 = i)
-    (hv : (Nat.unpair v).1 = i) :
+private theorem adj_pendantUnion_iff {l : List (Graph × ℕ × ℕ)}
+    {x : Graph × ℕ × ℕ} {i u v : ℕ} (hx : l[i]? = some x)
+    (hu : (Nat.unpair u).1 = i) (hv : (Nat.unpair v).1 = i) :
     (pendantUnion l).toSimpleGraph.Adj u v ↔ (pendantCopy x i).toSimpleGraph.Adj u v := by
   rw [Graph.toSimpleGraph_adj, Graph.toSimpleGraph_adj,
     mem_pendantUnion_snd_iff (e := (u, v)) hx hu, mem_pendantUnion_snd_iff (e := (v, u)) hx hv]
@@ -202,14 +204,14 @@ theorem toLongPath_mem_iff {l : List (Graph × ℕ × ℕ)} (hl : l ≠ [])
   change (pendantUnion (y :: l'), y.1.distinctVertices.length + 1 + 1) ∈ LongPath ↔ _
   rw [pendantUnion_mem_LongPath_iff]
   constructor
-  · rintro ⟨⟨G, s, t⟩, j, hx, hmem⟩
+  · rintro ⟨x, j, hx, hmem⟩
     have hxl := List.mem_of_getElem? hx
-    refine ⟨(G, s, t), hxl, ?_⟩
+    refine ⟨x, hxl, ?_⟩
     rw [hkey y List.mem_cons_self _ hxl] at hmem
     exact pendantCopy_mem_LongPath_iff.1 hmem
-  · rintro ⟨⟨G, s, t⟩, hxl, hx⟩
+  · rintro ⟨x, hxl, hx⟩
     obtain ⟨j, hj⟩ := List.mem_iff_getElem?.1 hxl
-    refine ⟨(G, s, t), j, hj, ?_⟩
+    refine ⟨x, j, hj, ?_⟩
     rw [hkey y List.mem_cons_self _ hxl]
     exact pendantCopy_mem_LongPath_iff.2 hx
 
@@ -223,7 +225,8 @@ the disjoint union of the pendant copies, whose target is two more than the comm
 distinct vertices. -/
 theorem HamPath.orCrossComposes_LongPath :
     ORCrossComposes encPathInstance HamPath (encPair encGraph encNat) Prod.snd LongPath := by
-  have hkey : ComputableInPolyTime (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length)
+  have hkey : ComputableInPolyTime
+      (fun x : Graph × ℕ × ℕ => x.1.distinctVertices.length)
       encPathInstance encUnary :=
     (length_list encNat).comp (Graph.computableInPolyTime_distinctVertices.comp (by fun_prop))
   refine ⟨_, HamPath.toLongPath, fun n => n + 2, IsPolyEquivalence.of_key hkey, by fun_prop,

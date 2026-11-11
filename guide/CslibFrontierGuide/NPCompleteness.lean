@@ -611,7 +611,7 @@ least one bit per vertex. The verifier is executable, so you can test it on a tr
 
 ```lean (name := triangle)
 #eval Clique.verifier
-  ((([0, 1, 2], [(0, 1), (1, 2), (0, 2)]), 3), [true, true, true])
+  ((⟨[0, 1, 2], [(0, 1), (1, 2), (0, 2)]⟩, 3), [true, true, true])
 ```
 ```leanOutput triangle
 true
@@ -645,9 +645,10 @@ on the same vertices ({name}`Graph.compl`), so complementing reduces {name}`Inde
 every pair of distinct declared vertices that no edge joins:
 
 ```lean
-example (G : Graph) : G.compl = (G.1, G.1.flatMap fun u =>
-    (G.1.filter fun v => decide (u ≠ v ∧ (u, v) ∉ G.2 ∧ (v, u) ∉ G.2)).map
-      fun v => (u, v)) :=
+example (G : Graph) : G.compl = ⟨G.vertices, G.vertices.flatMap fun u =>
+    (G.vertices.filter fun v =>
+      decide (u ≠ v ∧ (u, v) ∉ G.edges ∧ (v, u) ∉ G.edges)).map
+      fun v => (u, v)⟩ :=
   rfl
 ```
 
@@ -834,7 +835,7 @@ successor. Complete face/incident-vertex and component bijections establish:
 ```lean
 open Cslib.Complexity in
 example {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) :
     r.dualRotation.NumericalGenusZero ↔ r.NumericalGenusZero :=
   r.numericalGenusZero_dual_iff hG
 ```
@@ -849,8 +850,8 @@ it is the endpoint XOR of vertex spins:
 ```lean
 open Cslib.Complexity in
 example {G : Graph} (r : Graph.RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
-    (hgenus : r.NumericalGenusZero) (x : Fin G.2.length → Bool) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices)
+    (hgenus : r.NumericalGenusZero) (x : Fin G.edges.length → Bool) :
     r.FaceEven x ↔ ∃ spin : ℕ → Bool, G.edgeGradient spin = x :=
   r.faceEven_iff_exists_vertexSpins hG hgenus x
 ```
