@@ -224,7 +224,7 @@ theorem synthesis_sorted (s : Set (BooleanFunction n)) (d : ℕ)
   apply h.mono Set.Subset.rfl ?_ (size_sortCircuit_le d)
   intro fn hfn
   obtain ⟨j, bit, rfl⟩ := Set.mem_iUnion.mp hfn
-  exact ⟨finProdFinEquiv (j, bit), by simp [sorted, directProductInput]⟩
+  exact ⟨finProdFinEquiv (j, bit), by simp [sorted, BitString.block]⟩
 
 end Record
 

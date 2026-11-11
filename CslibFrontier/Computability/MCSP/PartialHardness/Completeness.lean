@@ -12,6 +12,7 @@ import Cslib.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Computability.Circuit.Boolean.Lookup
 import CslibFrontier.Computability.Circuit.Boolean.MassProduction.ConstantCopies
 import CslibFrontier.Foundations.Data.BitString.Binary
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.Nat.AlignedPacking
 import CslibFrontier.Foundations.Data.Nat.Log
 import Mathlib.Tactic.GCongr
@@ -243,10 +244,8 @@ private theorem combine_append_eq {S : Finset ℕ} {f : VarFunctions I lam} {τ 
       0 = b := by
   have hj := formulaIndex_lt_of_entry_eq_some hx
   obtain ⟨htj, hvars⟩ := hτ _ hj
-  have hφΔ : (I.formulas.getD (formulaIndex x) []).length ≤ Δ := by
-    have hmem : I.formulas.getD (formulaIndex x) [] ∈ I.formulas := by
-      simp [List.getD_eq_getElem?_getD, hj, List.getElem_mem]
-    exact hΔ.length_le hmem
+  have hφΔ : (I.formulas.getD (formulaIndex x) []).length ≤ Δ :=
+    hΔ.length_le (List.getD_mem [] hj)
   have htΔ : τ (formulaIndex x) < Δ := lt_of_lt_of_le htj hφΔ
   rw [← termParity_eq_of_entry_eq_some hx ⟨_, htΔ⟩ htj]
   simp only [combine, combineCore, Fin.append_left, Fin.append_right, termParity, slotBit,
@@ -262,10 +261,10 @@ private theorem combine_append_eq {S : Finset ℕ} {f : VarFunctions I lam} {τ 
     set s := (BitString.equivFin _ (BitString.zeroExtend (d' := varLength I lam v)
       (seed x ⟨_, htΔ⟩ q i)) : ℕ) with hs_def
     have hs : s < 2 ^ varLength I lam v := (BitString.equivFin _ _).isLt
-    have hin : directProductInput (addr L τ o x) (finProdFinEquiv (q, i)) =
+    have hin : BitString.block (addr L τ o x) (finProdFinEquiv (q, i)) =
         natBits L (o v + s) := by
       funext r
-      simp only [directProductInput, addr, Equiv.symm_apply_apply, natBits]
+      simp only [BitString.block, addr, Equiv.symm_apply_apply, natBits]
       exact addrBit_eq (t := ⟨_, htΔ⟩) rfl rfl hvW (hfit v hvS).1 i r
     have hlt : o v + s < 2 ^ L := by have := (hfit v hvS).2; omega
     simp only [directProduct, hin]

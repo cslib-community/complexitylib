@@ -14,8 +14,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
-import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Polynomial
-import Cslib.Foundations.Data.Polynomial.Monotone
+import CslibFrontier.Computability.Kolmogorov.TimeBounded.PolyTime
 
 /-!
 # Average-case hardness building blocks for time-bounded Kolmogorov complexity (`K^t`)
@@ -38,7 +37,10 @@ follow the full version `arXiv:2009.11514v1` (and ECCC TR20-052).
   polynomial-time generator $G : \{0, 1\}^* \to \{0, 1\}^*$, there exist a polynomial $p_G$ and a
   constant $c$ such that for all $t \ge p_G$ and all $z$, $K^t(G(z)) \le |z| + c$
   ([Liu and Pass, Proof of Theorem 5.2, Equation (3), §5.2, pp. 11–12 of
-  arXiv:2009.11514v1][LiuPass2020]).
+  arXiv:2009.11514v1][LiuPass2020]). It specializes
+  `Cslib.Kolmogorov.exists_timeBounded_of_computableInPolyTime`
+  (`CslibFrontier.Computability.Kolmogorov.TimeBounded.PolyTime`), which allows any encoded input
+  type.
 * `Cslib.Kolmogorov.sum_uniform_timeBoundedNat_lt_le`: counting bound on the fraction of $n$-bit
   strings with $K^t(x) < n - k$
   ([Liu and Pass, Proof of Theorem 5.2, Equation (2), §5.2, p. 11 of
@@ -86,37 +88,6 @@ theorem mildlyHardOnAverageIOENat_timeBounded_iff {t : ℕ → ℕ} (ht : ∀ n,
 /-! ### Generator $K^t$ upper bound
 ([Liu and Pass, Proof of Theorem 5.2, Eq. (3), §5.2, pp. 11–12 of arXiv:2009.11514v1][LiuPass2020])
 -/
-
-/-- General polynomial-time $K^t$ upper bound for any encoded input type $\alpha$: if
-`G : α → List Bool` is computable in polynomial time with respect to `enc : α ↪ List Bool` and
-`encBits`, there exist a monotone polynomial `pG` (with `n + 1 ≤ pG.eval n`) and a constant `c`
-such that whenever `pG.eval (enc a).length ≤ t (G a).length`, we have
-`timeBounded t (G a) ≤ ((enc a).length + c : ℕ)`. -/
-theorem exists_timeBounded_of_computableInPolyTime {α : Type*} {enc : α ↪ List Bool}
-    {G : α → List Bool} (hG : ComputableInPolyTime G enc encBits) :
-    ∃ (pG : Polynomial ℕ) (c : ℕ),
-      (∀ n, n + 1 ≤ pG.eval n) ∧
-      Monotone pG.eval ∧
-      ∀ {t : ℕ → ℕ} (a : α), pG.eval (enc a).length ≤ t (G a).length →
-        timeBounded t (G a) ≤ ((enc a).length + c : ℕ) := by
-  obtain ⟨tG, sG, htG, _, k, State, hfin, tm, htm⟩ := hG
-  obtain ⟨pG, hpG⟩ := htG.exists_polynomial_le
-  obtain ⟨c_sim, hsim⟩ :=
-    DescriptionMethod.exists_etimeBoundedComplexity_universalTM_le_ofMultiTapeTM tm
-  refine ⟨pG, c_sim, fun n => (hpG n).1, pG.monotone_eval, fun {t} a hstep' => ?_⟩
-  have hcomp := htm a
-  have hstep : tG (enc a).length ≤ t (G a).length := (hpG _).2.trans hstep'
-  have htm_le :
-      (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG (enc a).length) (G a) ≤
-        ((enc a).length : ℕ∞) :=
-    DescriptionMethod.etimeBoundedComplexity_ofMultiTapeTM_le hcomp.2.1 hcomp.1
-  calc
-    timeBounded t (G a) = timeBoundedAt (t (G a).length) (G a) := rfl
-    _ ≤ timeBoundedAt (tG (enc a).length) (G a) := timeBoundedAt_anti hstep
-    _ ≤ (DescriptionMethod.ofMultiTapeTM tm).etimeBoundedComplexity (tG (enc a).length) (G a) +
-        c_sim := hsim (tG (enc a).length) (G a)
-    _ ≤ ((enc a).length : ℕ∞) + c_sim := add_le_add_left htm_le _
-    _ = ((enc a).length + c_sim : ℕ) := by rw [Nat.cast_add]
 
 /-- **[Liu and Pass, Proof of Theorem 5.2, Equation (3), §5.2, pp. 11–12 of
 arXiv:2009.11514v1][LiuPass2020]:

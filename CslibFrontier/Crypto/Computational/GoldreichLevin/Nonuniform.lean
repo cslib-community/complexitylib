@@ -47,7 +47,8 @@ indices: if the predictors agree with the parities on a `1 / 2 + ε` fraction of
   `1 / 2 ^ (k + 1)` fraction of the good targets.
 * `Cslib.Crypto.GoldreichLevin.dens_filter_candidate_eq_ge`: the density form, for a fraction of
   the masks and guesses.
-* `Cslib.Crypto.GoldreichLevin.dens_filter_agreement_ge`: averaging from agreement over pairs to
+* `Cslib.Crypto.GoldreichLevin.dens_filter_agreement_ge`,
+  `Cslib.Crypto.GoldreichLevin.card_filter_agreement_ge`: averaging from agreement over pairs to
   agreement per index.
 
 ## References
@@ -262,5 +263,16 @@ theorem dens_filter_agreement_ge {X : Type*} [Fintype X] [Nonempty X]
   have hrev := Fintype.expect_sub_le_dens_filter (fun x => agreement_le_one (pred x) (target x))
     (θ := 1 / 2 + ε / 2) (by positivity)
   linarith
+
+/-- **Averaging for Goldreich–Levin, counting form.** If predictors `pred x` agree with the
+parities of `target x` on a `1 / 2 + ε` fraction of all pairs `(x, r)`, with `0 ≤ ε`, then at least
+`ε / 2 * #X` indices have agreement at least `1 / 2 + ε / 2`. -/
+theorem card_filter_agreement_ge {X : Type*} [Fintype X] [Nonempty X]
+    (pred : X → BitString n → Bool) (target : X → BitString n) {ε : ℝ} (hε : 0 ≤ ε)
+    (hagree : (1 / 2 + ε) * (Fintype.card X * 2 ^ n) ≤
+      #{xr : X × BitString n | pred xr.1 xr.2 = target xr.1 ⬝ᵥ xr.2}) :
+    ε / 2 * Fintype.card X ≤ (#{x | 1 / 2 + ε / 2 ≤ agreement (pred x) (target x)} : ℝ) := by
+  have h := dens_filter_agreement_ge pred target hε hagree
+  rwa [nnratCast_dens, le_div_iff₀ (Nat.cast_pos.2 Fintype.card_pos)] at h
 
 end Cslib.Crypto.GoldreichLevin

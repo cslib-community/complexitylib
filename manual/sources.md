@@ -69,6 +69,11 @@ Noga Alon and Joel H. Spencer. *The Probabilistic Method*, 4th edition. Wiley, 2
 
 Noga Alon, Raphael Yuster, Uri Zwick. "Color-Coding." *Journal of the ACM* 42(4), 844–856, 1995. https://doi.org/10.1145/210332.210337 . Bibliographic data from the DOI record. The locator Lemma 3.1 (colorful paths by dynamic programming over color sets) was taken from secondary descriptions; the full text was not inspected in this pass.
 
+<a id="ambainis02"></a>
+## ambainis02
+
+Andris Ambainis. "Quantum lower bounds by quantum arguments." *Journal of Computer and System Sciences* 64(4), 750–767, 2002 (preliminary version in STOC 2000). https://doi.org/10.1006/jcss.2002.1826 ; open preprint arXiv:quant-ph/0002066v1 (24 February 2000), https://arxiv.org/abs/quant-ph/0002066 . Checked in arXiv:quant-ph/0002066v1 (`density4.tex`) on 2026-11-11: Section 2 (query model and extension to larger input/output alphabets), Section 3 Lemma 1 (multi-outcome distinguishing state-overlap bound `2√(ε(1-ε))`, proved in `Overlap.lean` and `ReadoutOverlap.lean`), Section 6.1 Theorem 6 (relational adversary bound `(1 - 2√(ε(1-ε))) √(m m') = O(T √l_max)` for non-Boolean input alphabets and pairwise conflict product `l_{x,i} l_{y,i} ≤ l_max`, proved in `ValueAdversary.lean` with constant `2` for arbitrary unitary value oracles), and Section 6.2 Theorem 7 (`Ω(√N)` query lower bound for inverting a permutation via single-transposition pairs across a balanced bipartition, proved in `PermutationInversion.lean`). Journal pagination comes from `references.bib` and was not directly inspected.
+
 <a id="ambainismoscatappdewolf00"></a>
 ## ambainismoscatappdewolf00
 
@@ -297,7 +302,7 @@ Clément L. Canonne. *Topics and Techniques in Distribution Testing: A Biased bu
 <a id="carmosinoimpagliazzokabanetskolokolova2016"></a>
 ## carmosinoimpagliazzokabanetskolokolova2016
 
-Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run. For the AC⁰[2] efficiency of their generator ([#4451](https://github.com/cslib-community/cslib-frontier/issues/4451)), also checked on 2026-11-11 against the LIPIcs PDF: Definition 3.1, Theorems 3.2 and 3.3 (p. 10:10) and the proof of Theorem 3.2 (p. 10:11); Definition 3.4 (black-box amplification, pp. 10:10–10:11) and Lemma 3.5 (p. 10:11); Section 3.1, which opens on p. 10:11 with the design requirements; Theorem 3.6 and its proof (pp. 10:12–10:13), which define the polynomials `A_i` and the sets `S_i`, bound their overlap on p. 10:12 and end with the hard-coded matrix `M_{j,k} = r_j^k`; Theorem 3.7 and its proof (p. 10:13); and Theorem 4.3 (p. 10:15) with its proof (p. 10:16). `CslibFrontier/Crypto/Primitives/PRG/NisanWigderson/{BitPolynomial,MXCircuit,AmpGeneratorCircuit}.lean` and `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/{GLAmp,GLAmpCircuit}.lean` follow them for `p = 2`.
+Marco L. Carmosino, Russell Impagliazzo, Valentine Kabanets and Antonina Kolokolova. *Learning Algorithms from Natural Proofs*. 31st Conference on Computational Complexity (CCC 2016), LIPIcs 50, 10:1–10:24, 2016. https://doi.org/10.4230/LIPIcs.CCC.2016.10 . Checked on 2026-11-11 against the LIPIcs PDF: Section 2.4, Definitions 2.8–2.10, Theorem 2.11 and the sketch of the reconstruction algorithm that follows it (p. 10:9), which `CslibFrontier/MachineLearning/UniformLearning/NisanWigderson.lean` follows for one run. For the AC⁰[2] efficiency of their generator ([#4451](https://github.com/cslib-community/cslib-frontier/issues/4451)), also checked on 2026-11-11 against the LIPIcs PDF: Definition 3.1, Theorems 3.2 and 3.3 (p. 10:10) and the proof of Theorem 3.2 (p. 10:11); Definition 3.4 (black-box amplification, pp. 10:10–10:11) and Lemma 3.5 (p. 10:11); Section 3.1, which opens on p. 10:11 with the design requirements; Theorem 3.6 and its proof (pp. 10:12–10:13), which define the polynomials `A_i` and the sets `S_i`, bound their overlap on p. 10:12 and end with the hard-coded matrix `M_{j,k} = r_j^k`; Theorem 3.7 and its proof (p. 10:13); and Theorem 4.3 (p. 10:15) with its proof (pp. 10:15–10:16). `CslibFrontier/Crypto/Primitives/PRG/NisanWigderson/{BitPolynomial,MXCircuit,AmpGeneratorCircuit}.lean` and `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/{GLAmp,GLAmpCircuit}.lean` follow them for `p = 2`. For the reconstruction for `p = 2`, also checked on 2026-11-11 against the LIPIcs PDF: Theorem 4.1 (p. 10:14); Theorem 4.2 and the sketch of its algorithm (p. 10:15); and Claim 4.4 (p. 10:15), whose proof and the combination with Theorem 4.1 that ends the proof of Theorem 4.3 follow on pp. 10:15–10:16. `CslibFrontier/Computability/Circuit/Boolean/HardnessAmplification/GLAmpDecode.lean` and `CslibFrontier/MachineLearning/UniformLearning/CIKK/Amplification.lean` follow them.
 
 <a id="ccpv11"></a>
 ## ccpv11
@@ -1615,6 +1620,11 @@ F. Frances Yao. "Efficient Dynamic Programming Using Quadrangle Inequalities." *
 ## yao86
 
 Andrew Chi-Chih Yao. "How to Generate and Exchange Secrets (Extended Abstract)." *27th Annual Symposium on Foundations of Computer Science (FOCS 1986)*, 162–167, 1986. https://doi.org/10.1109/SFCS.1986.25 . Bibliographic data from the DOI record and secondary listings, cited as the customary origin of garbled circuits. The full text was not inspected in this pass.
+
+<a id="yap1983"></a>
+## yap1983
+
+Chee K. Yap. "Some Consequences of Non-Uniform Conditions on Uniform Classes." *Theoretical Computer Science* 26(3), 287–300, 1983. https://doi.org/10.1016/0304-3975(83)90020-8 . Bibliographic data from the library bibliography (`Yap1983`); the full text is paywalled and was not inspected, so no theorem number in Yap's paper is cited. The manual attributes to it the collapse `coNP ⊆ NP/poly → PH = Σ₃` (`NP ⊆ coNP/poly → PH = Σ₃`), as cited in [Bodlaender, Jansen and Kratsch](#bodlaenderjansenkratsch2014), Theorem 2 (p. 6 of arXiv v1).
 
 <a id="yekhanin12"></a>
 ## yekhanin12
