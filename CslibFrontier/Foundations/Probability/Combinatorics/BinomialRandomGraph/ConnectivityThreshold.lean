@@ -74,7 +74,8 @@ variable {V : Type*}
 section IsolatedMoments
 
 private theorem card_biUnion_incident [Fintype V] [DecidableEq V] (S : Finset V) :
-    #(S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v)) = #S * Fintype.card V - #S * (#S + 1) / 2 := by
+    #(S.biUnion fun v => (Finset.univ.erase v).image (Sym2.mk v)) =
+      #S * Fintype.card V - #S * (#S + 1) / 2 := by
   induction S using Finset.induction with
   | empty => simp
   | @insert v S hv ih =>
@@ -82,7 +83,9 @@ private theorem card_biUnion_incident [Fintype V] [DecidableEq V] (S : Finset V)
       rw [Finset.card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
         Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
     rw [Finset.biUnion_insert, Finset.card_union, hcard, ih]
-    have hinter : (Finset.univ.erase v).image (Sym2.mk v) ∩ (S.biUnion fun v' => (Finset.univ.erase v').image (Sym2.mk v')) = S.image fun w => s(v, w) := by
+    have hinter : (Finset.univ.erase v).image (Sym2.mk v) ∩
+        (S.biUnion fun v' => (Finset.univ.erase v').image (Sym2.mk v')) =
+          S.image fun w => s(v, w) := by
       ext e
       simp only [Finset.mem_inter, Finset.mem_biUnion, Finset.mem_image, Finset.mem_image]
       constructor
@@ -92,8 +95,10 @@ private theorem card_biUnion_incident [Fintype V] [DecidableEq V] (S : Finset V)
         · exact ⟨_, hu, rfl⟩
       · rintro ⟨w, hw, rfl⟩
         have hwv : w ≠ v := fun h => hv (h ▸ hw)
-        exact ⟨⟨w, Finset.mem_erase.mpr ⟨hwv, Finset.mem_univ _⟩, rfl⟩, w, hw, v, Finset.mem_erase.mpr ⟨hwv.symm, Finset.mem_univ _⟩, Sym2.eq_swap⟩
-    have hcard_inter : #((Finset.univ.erase v).image (Sym2.mk v) ∩ S.biUnion (fun v' => (Finset.univ.erase v').image (Sym2.mk v'))) = #S := by
+        exact ⟨⟨w, Finset.mem_erase.mpr ⟨hwv, Finset.mem_univ _⟩, rfl⟩, w, hw, v,
+          Finset.mem_erase.mpr ⟨hwv.symm, Finset.mem_univ _⟩, Sym2.eq_swap⟩
+    have hcard_inter : #((Finset.univ.erase v).image (Sym2.mk v) ∩
+        S.biUnion (fun v' => (Finset.univ.erase v').image (Sym2.mk v'))) = #S := by
       rw [hinter, Finset.card_image_of_injective _ fun _ _ h => Sym2.congr_right.mp h]
     have hSn : #S + 1 ≤ Fintype.card V := by
       rw [← Finset.card_insert_of_notMem hv]
@@ -426,7 +431,8 @@ private theorem card_sym2_filter_not_isDiag [DecidableEq V] (S : Finset V) :
   change #S + (#S).choose 2 - #S = (#S).choose 2
   omega
 
-private theorem disjoint_sym2_filter_not_isDiag_cutPairs [Fintype V] [DecidableEq V] (S : Finset V) :
+private theorem disjoint_sym2_filter_not_isDiag_cutPairs [Fintype V] [DecidableEq V]
+    (S : Finset V) :
     Disjoint (S.sym2.filter (¬ ·.IsDiag)) ((S ×ˢ Sᶜ).image Sym2.mk.uncurry) := by
   rw [Finset.disjoint_left]
   intro e he_in he_cut
@@ -471,7 +477,8 @@ private theorem binomialRandom_real_edgeSet_and_cut [Fintype V] [DecidableEq V] 
       · intro e he
         exact (h e (Or.inl he)).mpr (by simp [he])
       · intro u hu v hv huv
-        have hec : s(u, v) ∈ cP := Finset.mem_image.mpr ⟨(u, v), Finset.mem_product.mpr ⟨hu, Finset.mem_compl.mpr hv⟩, rfl⟩
+        have hec : s(u, v) ∈ cP := Finset.mem_image.mpr ⟨(u, v),
+          Finset.mem_product.mpr ⟨hu, Finset.mem_compl.mpr hv⟩, rfl⟩
         have hf := (h (s(u, v)) (Or.inr hec)).mp huv
         have hnot : ¬ (s(u, v) ∈ t) := by
           intro hbad
@@ -522,13 +529,7 @@ theorem binomialRandom_real_forall_not_isIsolated_and_not_connected_le [Fintype 
       exists_connected_induce_forall_not_adj_of_not_connected hnc hni
     obtain ⟨tS, htScard, htSedge⟩ := exists_card_sub_one_subset_edgeSet_of_connected hSconn
     let f : Sym2 (S : Set V) → Sym2 V := Sym2.map Subtype.val
-    have hfinj : Function.Injective f := fun a b h => by
-      induction a using Sym2.ind with
-      | _ a₁ a₂ =>
-        induction b using Sym2.ind with
-        | _ b₁ b₂ =>
-          change s(a₁.1, a₂.1) = s(b₁.1, b₂.1) at h
-          rcases Sym2.eq_iff.mp h with ⟨h1, h2⟩ | ⟨h1, h2⟩ <;> simp [Subtype.ext h1, Subtype.ext h2]
+    have hfinj : Function.Injective f := Sym2.map.injective Subtype.val_injective
     let t : Finset (Sym2 V) := tS.image f
     have ht_in : t ⊆ S.sym2.filter (¬ ·.IsDiag) := by
       intro e he

@@ -71,8 +71,10 @@ variable {V : Type*}
 
 /-- The `|V| - 1` possible edges at `v`. -/
 theorem isIsolated_iff_disjoint_incident [Fintype V] [DecidableEq V] (G : SimpleGraph V) (v : V) :
-    G.IsIsolated v ↔ Disjoint (((Finset.univ.erase v).image (Sym2.mk v) : Finset (Sym2 V)) : Set (Sym2 V)) G.edgeSet := by
-  simp only [SimpleGraph.IsIsolated, Set.disjoint_left, Finset.coe_image, Finset.coe_erase, Finset.coe_univ,
+    G.IsIsolated v ↔ Disjoint (((Finset.univ.erase v).image (Sym2.mk v) : Finset (Sym2 V)) :
+      Set (Sym2 V)) G.edgeSet := by
+  simp only [SimpleGraph.IsIsolated, Set.disjoint_left, Finset.coe_image, Finset.coe_erase,
+    Finset.coe_univ,
     Set.mem_image, Set.mem_sdiff, Set.mem_univ, Set.mem_singleton_iff, true_and]
   constructor
   · rintro h _ ⟨w, hw, rfl⟩ hw_edge
@@ -104,7 +106,8 @@ theorem binomialRandom_real_isIsolated [Fintype V] (p : I) (v : V) :
 
 /-- The possible edges at two distinct vertices share only the edge between them. -/
 private theorem incidentPairs_inter [Fintype V] [DecidableEq V] {u v : V} (huv : u ≠ v) :
-    (Finset.univ.erase u).image (Sym2.mk u) ∩ (Finset.univ.erase v).image (Sym2.mk v) = {s(u, v)} := by
+    (Finset.univ.erase u).image (Sym2.mk u) ∩ (Finset.univ.erase v).image (Sym2.mk v) =
+      {s(u, v)} := by
   ext e
   simp only [Finset.mem_inter, Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true,
     Finset.mem_singleton]
@@ -132,7 +135,8 @@ theorem binomialRandom_real_isIsolated_and [Fintype V] (p : I) {u v : V} (huv : 
   have h2 : 2 ≤ Fintype.card V := Fintype.one_lt_card_iff.2 ⟨u, v, huv⟩
   have hdiag : ∀ e ∈ tu ∪ tv, ¬e.IsDiag := by
     intro e he
-    simp only [tu, tv, Finset.mem_union, Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true] at he
+    simp only [tu, tv, Finset.mem_union, Finset.mem_image, Finset.mem_erase, Finset.mem_univ,
+      and_true] at he
     rcases he with ⟨w, hw, rfl⟩ | ⟨w, hw, rfl⟩
     · simpa using Ne.symm hw
     · simpa using Ne.symm hw

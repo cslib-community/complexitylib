@@ -29,7 +29,8 @@ binomial (factorial) moment of the count `X ω = Nat.card {i : ι // ω ∈ A i}
 * `ProbabilityTheory.measureReal_natCard_eq_le_bonferroni` and
   `ProbabilityTheory.bonferroni_le_measureReal_natCard_eq`: the truncated inclusion-exclusion
   (**Bonferroni**) upper and lower bounds for `μ.real {ω | Nat.card {i // ω ∈ A i} = k}` at any
-  odd (`2 * m + 1`) or even (`2 * m`) truncation depth (see [FriezeKaronski2016] Lemma 33.10, pp. 696–697).
+  odd (`2 * m + 1`) or even (`2 * m`) truncation depth (see [FriezeKaronski2016] Lemma 33.10,
+  pp. 696–697).
 * `ProbabilityTheory.measureReal_forall_notMem_le_bonferroni` and
   `ProbabilityTheory.bonferroni_le_measureReal_forall_notMem`: the `k = 0` specialization for
   `μ.real {ω | ∀ i, ω ∉ A i}`.
