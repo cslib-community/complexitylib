@@ -54,6 +54,8 @@ Oliveira and Santhanam's formula magnification [oliveirasanthanam2018][oliveiras
 
 The average-case form covers formulas only, not the ternary zero-error devices of Theorem 5.
 
+[Locality.lean](../../CslibFrontier/Computability/MCSP/FormulaMagnification/Locality.lean) (registry ID `formula-magnification-locality`) proves the MCSP `[OS18]` bullet of Proposition 63 of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam [chenhiraharaoliveirapichrajgopalsanthanam2020][chenhiraharaoliveirapichrajgopalsanthanam2020]: the reduction above is local. For `n ≤ s(n)` and `δ > 0`, `MCSP[(s, 0), (s, δ)]` on `N`-bit truth tables is in their class `[N, poly(s/δ), 1]–Formula[N·poly(s/δ)]` (`LocalFormulaClass`, Definition 11, in [OracleFormula.lean](../../CslibFrontier/Computability/Circuit/Boolean/OracleFormula.lean)). The formula is a conjunction of at most `N` oracle gates. Each gate reads constants and input bits that encode a succinct-MCSP instance sampling the truth table at fixed seed points, so no oracle gate feeds another. A single succinct-MCSP oracle serves every length. Only formulas are covered, not the DAG `[q, ℓ, a]–Circuit` classes, the other bullets of Proposition 63, or the locality barrier (Theorem 59).
+
 ## Consequences of NP-hardness of MCSP
 
 [HardnessConsequences.lean](../../CslibFrontier/Computability/MCSP/HardnessConsequences.lean) (registry ID `murray-williams`) assumes that total MCSP is NP-hard under polynomial-time many-one reductions. From this, `EXP_eq_NEXP_of_MCSP_npHard_of_EXP_subset_PPoly` derives `EXP = NEXP` when `EXP ⊆ P/poly`, and `EXP_ne_NP_inter_PPolyOn_of_MCSP_npHard` and `EXP_ne_ZPP_of_MCSP_npHard` give Murray and Williams's Theorems 4.1 and 1.6 [murraywilliams2017][murraywilliams2017]. Theorem 4.1 needs reductions only from sparse NP languages, so the library proves its full-NP-hardness specialization. `PH_eq_SigmaP_two_of_MCSP_npHard_of_mem_PPolyOn` adds the Karp–Lipton collapse when MCSP is also in P/poly. Consequences of hardness under local or weak reductions are not formalized.
@@ -146,11 +148,12 @@ The [metacomplexity track](https://github.com/cslib-community/cslib-frontier/iss
 - The efficient anti-checker of Oliveira, Pich and Santhanam (their Lemma 4.1), which needs approximate counting by circuits; only existence is proved.
 - The rounded `2^√n`, ternary zero-error-device form of Oliveira–Santhanam Theorem 5.
 - NP-hardness of `MINKT` and `MINcKT`, Hirahara's NP-hardness of Partial MCSP (FOCS 2022), and Hirahara–Watanabe on the limits of reductions to MCSP.
-- The minimum formula size problem (MFSP) as a separate problem, and the locality barrier of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam.
+- The minimum formula size problem (MFSP) as a separate problem, and the locality barrier (Theorem 59) of Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam; of their Proposition 63, only the MCSP `[OS18]` bullet is formalized.
 - Prefix-free complexity, Chaitin's `Ω`, exact prefix symmetry of information, and time-bounded symmetry of information.
 
 [alonbabaisuzuki1991]: ../sources.md#alonbabaisuzuki1991
 [alonspencer2016]: ../sources.md#alonspencer2016
+[chenhiraharaoliveirapichrajgopalsanthanam2020]: ../sources.md#chenhiraharaoliveirapichrajgopalsanthanam2020
 [complexitylib]: ../sources.md#complexitylib
 [erdos1947]: ../sources.md#erdos1947
 [erdosszekeres1935]: ../sources.md#erdosszekeres1935
