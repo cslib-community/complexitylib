@@ -13,7 +13,8 @@ import Mathlib.ModelTheory.Order
 Covers:
 1. Infinite graph reachability and connectivity (`walkFormula`, `reachableInfinitary`,
    `connectedInfinitary` in `L^3_{∞ω}`) on the infinite ray `(ℕ, natRay)` versus two disjoint
-   infinite rays `ℕ ⊕ ℕ`, witnessing non-existence of a `3`-pebble back-and-forth invariant.
+   infinite rays `ℕ ⊕ ℕ` (plus the `SimpleGraph Empty` `Preconnected` vs `Connected` boundary),
+   witnessing `¬PebbleWinsForever` directly on infinite structures.
 2. An explicit closed `L^2_{∞ω}` formula of **unbounded** quantifier depth (`infiniteAscChain`)
    over `Language.order` that holds on `(ℕ, ≤)` and fails on every finite linear order `(Fin n, ≤)`,
    plus verification that it has no finite quantifier-rank bound (`¬QuantifierRankLE n`).
@@ -111,16 +112,16 @@ example :
   rw [realize_reachableInfinitary]
   exact twoRays_not_reachable_inl_inr 0 0
 
-/-- No `3`-pebble back-and-forth invariant relates `natRay` and `twoRays` from `∅`, because
-`connectedInfinitary` separates them. -/
+/-- Duplicator does not win the infinite `3`-pebble game between the infinite structures `natRay`
+and `twoRays` from `∅`, directly exercising `pebbleWinsForever_iff_forall_infinitaryFormula` without
+any `[Finite]` assumption. -/
 example :
     ¬(letI := natRay.structure; letI := twoRays.structure;
-      ∃ Inv : Set (Fin 3) → (Fin 3 → ℕ) → (Fin 3 → ℕ ⊕ ℕ) → Prop,
-        IsPebbleBackAndForth Language.graph Inv ∧
-          Inv ∅ (fun _ => 0) (fun _ => Sum.inl 0)) := by
+      PebbleWinsForever Language.graph ∅ (fun _ : Fin 3 => (0 : ℕ))
+        (fun _ : Fin 3 => (Sum.inl 0 : ℕ ⊕ ℕ))) := by
   let _ := natRay.structure
   let _ := twoRays.structure
-  rw [exists_isPebbleBackAndForth_iff_forall_infinitaryFormula]
+  rw [pebbleWinsForever_iff_forall_infinitaryFormula]
   intro hall
   have hiff := hall connectedInfinitary (by rw [freeVars_connectedInfinitary])
   have htrue : (connectedInfinitary : InfinitaryFormula.{0, 0, 0} Language.graph 3).Realize
@@ -131,6 +132,12 @@ example :
     mt (realize_connectedInfinitary_iff_connected twoRays (fun _ => Sum.inl 0)).1
       twoRays_not_connected
   exact hfalse (hiff.1 htrue)
+
+/-- Empty-graph control: `(⊥ : SimpleGraph Empty)` is vacuously `Preconnected` (matching
+`realize_connectedInfinitary_iff_preconnected`), whereas `SimpleGraph.Connected` additionally
+requires `Nonempty`. -/
+example : (⊥ : SimpleGraph Empty).Preconnected ∧ ¬(⊥ : SimpleGraph Empty).Connected :=
+  ⟨fun u => u.elim, fun h => h.nonempty.elim fun u => u.elim⟩
 
 /-! ### 2. Unbounded-rank `L^2_{∞ω}` sentence separating `(ℕ, ≤)` from all `(Fin n, ≤)` -/
 

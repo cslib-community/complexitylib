@@ -1419,6 +1419,7 @@ register_result "kolaitis-vardi-zero-one-law" where
     Cslib.Logic.FO.Relational.uniformStructure_infinitary_zero_one_law,
     Cslib.Logic.FO.Relational.bernoulliStructure_infinitary_zero_one_law,
     Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_one_iff_model,
+    Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_zero_iff_model,
     Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_one_iff_uniformStructure,
     Cslib.Logic.FO.Relational.not_exists_infinitaryFormula_even_card
   ]
@@ -1694,11 +1695,12 @@ register_result "infinitary-fo-pebble-games" where
     languages and arbitrary (possibly infinite) structures M : Type w₁, N : Type w₂, Duplicator \
     wins the n-round or infinite k-pebble game iff the positions satisfy the same L^k_∞ω \
     formulas of quantifier rank at most n (respectively all L^k_∞ω formulas) at index universe \
-    max u v w₁ w₂; for finite structures, the bijective k-pebble game similarly characterizes \
+    max w₁ w₂; for finite structures, the bijective k-pebble game similarly characterizes \
     C^k_∞ω, and L^k_∞ω / C^k_∞ω equivalence over finite relational vocabularies collapses to \
-    finitary FO^k / C^k equivalence. Expressiveness separations: graph reachability and \
-    connectivity are definable in L^3_∞ω on all simple graphs, while EVEN is definable in \
-    C^1_∞ω on finite structures and not definable in L^k_∞ω for any k."
+    finitary FO^k / C^k equivalence. Expressiveness separations: graph reachability on all \
+    simple graphs and connectivity on all nonempty simple graphs (Preconnected unconditionally) \
+    are definable in L^3_∞ω, while EVEN is definable in C^1_∞ω on finite structures and not \
+    definable in L^k_∞ω for any k."
 
 register_result "even-linear-orders" where
   title := "EVEN is not first-order definable on finite linear orders"

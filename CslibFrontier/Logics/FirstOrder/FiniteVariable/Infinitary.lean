@@ -11,7 +11,6 @@ public import CslibFrontier.Foundations.ModelTheory.Graph
 public import CslibFrontier.Logics.FirstOrder.FiniteVariable.BijectiveGame
 public import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
 import CslibFrontier.Foundations.Data.Fintype.FiberEquiv
-import CslibFrontier.Foundations.Order.AntitoneSwap
 import CslibFrontier.Logics.FirstOrder.FiniteVariable.CountingHintikka
 import Mathlib.Tactic.FinCases
 
@@ -74,8 +73,9 @@ games and unbounded-rank formulas such as transitive closure.
   equivalence over finite relational vocabularies.
 * `Cslib.Logic.FO.FiniteVariable.realize_reachableInfinitary`,
   `Cslib.Logic.FO.FiniteVariable.realize_connectedInfinitary_iff_preconnected`,
-  `Cslib.Logic.FO.FiniteVariable.realize_connectedInfinitary_iff_connected`: graph reachability and
-  connectivity are definable in `L^3_{∞ω}` on all simple graphs.
+  `Cslib.Logic.FO.FiniteVariable.realize_connectedInfinitary_iff_connected`: graph reachability on
+  all simple graphs and connectivity on all nonempty simple graphs (and
+  `SimpleGraph.Preconnected` unconditionally) are definable in `L^3_{∞ω}`.
 * `Cslib.Logic.FO.FiniteVariable.realize_evenCardInfinitary`,
   `Cslib.Logic.FO.pebbleWinsForever_fin_succ`,
   `Cslib.Logic.FO.not_exists_infinitaryFormula_even_card`: even cardinality is definable in
@@ -1173,22 +1173,15 @@ theorem PebbleWinsForever.realize_infinitaryFormula_iff_of_quantifierRankLE {S :
     (hS : φ.freeVars ⊆ S) : φ.Realize a ↔ φ.Realize b :=
   (h.pebbleWins n).realize_infinitaryFormula_iff hr hS
 
-/-- **Infinite pebble games and `L^k_{∞ω}`, easy direction on finite structures.** On finite
-structures, a winning position of the infinite `k`-pebble game preserves every `L^k_{∞ω}` formula
-whose free variables lie in `S`, including formulas of unbounded quantifier depth. (On infinite
-structures, use `IsPebbleBackAndForth.realize_infinitaryFormula_iff`.) -/
-theorem PebbleWinsForever.realize_infinitaryFormula_iff [Finite M] [Finite N] {S : Set (Fin k)}
+/-- **Infinite pebble games and `L^k_{∞ω}`, easy direction.** On arbitrary structures, a winning
+position of the infinite `k`-pebble game preserves every `L^k_{∞ω}` formula whose free variables
+lie in `S`, including formulas of unbounded quantifier depth. -/
+theorem PebbleWinsForever.realize_infinitaryFormula_iff {S : Set (Fin k)}
     {a : Fin k → M} {b : Fin k → N} (h : PebbleWinsForever L S a b)
     {φ : InfinitaryFormula.{w, u, v} L k} (hS : φ.freeVars ⊆ S) :
-    φ.Realize a ↔ φ.Realize b := by
-  have hI : IsPebbleBackAndForth L
-      (fun (S : Set (Fin k)) (a : Fin k → M) (b : Fin k → N) => ∀ n, PebbleWins L n S a b) :=
-    ⟨fun h => (h 0).partialIsoOn,
-      fun h i c => (Finite.forall_exists_iff_exists_forall_of_antitone
-        fun _ _ _ hmn hd => hd.mono hmn).1 fun n => (h (n + 1)).forth i c,
-      fun h i d => (Finite.forall_exists_iff_exists_forall_of_antitone
-        fun _ _ _ hmn hc => hc.mono hmn).1 fun n => (h (n + 1)).back i d⟩
-  exact hI.realize_infinitaryFormula_iff h.pebbleWins hS
+    φ.Realize a ↔ φ.Realize b :=
+  let ⟨_, hI, hSab⟩ := pebbleWinsForever_iff_exists_isPebbleBackAndForth.1 h
+  hI.realize_infinitaryFormula_iff hSab hS
 
 private theorem partialIsoOn_of_forall_infinitaryFormula {S : Set (Fin k)} {a : Fin k → M}
     {b : Fin k → N}
@@ -1369,16 +1362,18 @@ theorem pebbleWinsForever_of_forall_infinitaryFormula {S : Set (Fin k)} {a : Fin
   obtain ⟨_, hI, hSab⟩ := exists_isPebbleBackAndForth_of_forall_infinitaryFormula h
   exact hI.pebbleWinsForever hSab
 
-/-- **Pebble-game characterization of `L^k_{∞ω}` on finite structures** ([Libkin2004],
-Theorem 11.5(b)). Over any vocabulary `L` (even infinite) and finite structures `M` and `N`,
-Duplicator wins the infinite `k`-pebble game from `(S, a, b)` if and only if `a` and `b` satisfy
-the same `L^k_{∞ω}` formulas with free variables in `S`. -/
-theorem pebbleWinsForever_iff_forall_infinitaryFormula [Finite M] [Finite N] {S : Set (Fin k)}
+/-- **Pebble-game characterization of `L^k_{∞ω}` on arbitrary structures** ([Libkin2004],
+Theorem 11.5(b)). Over any vocabulary `L` (even infinite) and arbitrary (possibly infinite)
+structures `M : Type w₁` and `N : Type w₂`, Duplicator wins the infinite `k`-pebble game from
+`(S, a, b)` if and only if `a` and `b` satisfy the same `L^k_{∞ω}` formulas (at index universe
+`max w₁ w₂`) with free variables in `S`. -/
+theorem pebbleWinsForever_iff_forall_infinitaryFormula {S : Set (Fin k)}
     {a : Fin k → M} {b : Fin k → N} :
     PebbleWinsForever L S a b ↔
       ∀ φ : InfinitaryFormula.{max w₁ w₂, u, v} L k, φ.freeVars ⊆ S →
         (φ.Realize a ↔ φ.Realize b) :=
-  ⟨fun h _ hS => h.realize_infinitaryFormula_iff hS, pebbleWinsForever_of_forall_infinitaryFormula⟩
+  pebbleWinsForever_iff_exists_isPebbleBackAndForth.trans
+    exists_isPebbleBackAndForth_iff_forall_infinitaryFormula
 
 /-! ### Bijective pebble-game characterizations of `C^k_{∞ω}` -/
 
@@ -1468,22 +1463,15 @@ theorem BijPebbleWinsForever.realize_infinitaryCountingFormula_iff_of_quantifier
     (hS : φ.freeVars ⊆ S) : φ.Realize a ↔ φ.Realize b :=
   (h.bijPebbleWins n).realize_infinitaryCountingFormula_iff hr hS
 
-/-- **Infinite bijective pebble games and `C^k_{∞ω}`, easy direction on finite structures.** When
-`M` is finite, a winning position of the infinite bijective `k`-pebble game preserves every
-`C^k_{∞ω}` formula whose free variables lie in `S`, even of unbounded quantifier depth. -/
-theorem BijPebbleWinsForever.realize_infinitaryCountingFormula_iff [Finite M] {S : Set (Fin k)}
+/-- **Infinite bijective pebble games and `C^k_{∞ω}`, easy direction.** On arbitrary structures, a
+winning position of the infinite bijective `k`-pebble game preserves every `C^k_{∞ω}` formula whose
+free variables lie in `S`, even of unbounded quantifier depth. -/
+theorem BijPebbleWinsForever.realize_infinitaryCountingFormula_iff {S : Set (Fin k)}
     {a : Fin k → M} {b : Fin k → N} (h : BijPebbleWinsForever L S a b)
     {φ : InfinitaryCountingFormula.{w, u, v} L k} (hS : φ.freeVars ⊆ S) :
-    φ.Realize a ↔ φ.Realize b := by
-  have hI : IsBijPebbleBackAndForth L
-      (fun (S : Set (Fin k)) (a : Fin k → M) (b : Fin k → N) => ∀ n, BijPebbleWins L n S a b) := by
-    refine ⟨fun h => (h 0).partialIsoOn, fun {S a b} h i => ?_⟩
-    obtain ⟨f, hf⟩ := (Finite.forall_exists_iff_exists_forall_of_antitone
-      (p := fun (f : M ≃ N) n => ∀ c,
-        BijPebbleWins L n (insert i S) (Function.update a i c) (Function.update b i (f c)))
-      fun _ _ _ hmn hf c => (hf c).mono hmn).1 fun n => (h (n + 1)).move i
-    exact ⟨f, fun c n => hf n c⟩
-  exact hI.realize_infinitaryCountingFormula_iff h.bijPebbleWins hS
+    φ.Realize a ↔ φ.Realize b :=
+  let ⟨_, hI, hSab⟩ := bijPebbleWinsForever_iff_exists_isBijPebbleBackAndForth.1 h
+  hI.realize_infinitaryCountingFormula_iff hSab hS
 
 private def bijSumRel (L : Language.{u, v}) {M : Type w₁} {N : Type w₂}
     [L.Structure M] [L.Structure N] {k : ℕ} (n : ℕ) (S : Set (Fin k))
@@ -1943,21 +1931,9 @@ private theorem forth_partialIsoOn_of_isEmpty_relations {L : Language.{u, v}}
     {b : Fin k → N} (h : PartialIsoOn L S a b) (i : Fin k) (c : M) :
     ∃ d : N, PartialIsoOn L (insert i S) (Function.update a i c) (Function.update b i d) := by
   classical
-  by_cases hex : ∃ j ∈ S \ {i}, a j = c
-  · obtain ⟨j, ⟨hjS, _⟩, rfl⟩ := hex
-    refine ⟨b j, fun p hp q hq => ?_, fun R => isEmptyElim R⟩
-    have hval : ∀ r ∈ insert i S, ∃ r' ∈ S,
-        Function.update a i (a j) r = a r' ∧ Function.update b i (b j) r = b r' := by
-      intro r hr
-      by_cases hri : r = i
-      · rw [hri]
-        exact ⟨j, hjS, by simp only [Function.update_self], by simp only [Function.update_self]⟩
-      · exact ⟨r, (Set.mem_insert_iff.1 hr).resolve_left hri,
-          Function.update_of_ne hri _ _, Function.update_of_ne hri _ _⟩
-    obtain ⟨p', hp', hap, hbp⟩ := hval p hp
-    obtain ⟨q', hq', haq, hbq⟩ := hval q hq
-    rw [hap, haq, hbp, hbq]
-    exact h.eq_iff p' hp' q' hq'
+  by_cases hex : ∃ j ∈ S, j ≠ i ∧ a j = c
+  · obtain ⟨j, hjS, -, haj⟩ := hex
+    exact ⟨b j, h.update_of_mem hjS haj⟩
   · push Not at hex
     have hcard_lt : (b '' (S \ {i})).encard < (Set.univ : Set N).encard := by
       have hsub : S \ {i} ⊆ ↑(Finset.univ.erase i) := fun j hj =>
@@ -1974,24 +1950,8 @@ private theorem forth_partialIsoOn_of_isEmpty_relations {L : Language.{u, v}}
       by_contra! hall
       exact hne (Set.eq_univ_of_forall hall)
     obtain ⟨d, hd⟩ := hex_d
-    have hdb : ∀ j ∈ S \ {i}, d ≠ b j := fun j hj hdj => hd ⟨j, hj, hdj.symm⟩
-    refine ⟨d, fun p hp q hq => ?_, fun R => isEmptyElim R⟩
-    by_cases hpi : p = i <;> by_cases hqi : q = i
-    · rw [hpi, hqi]
-      simp only [Function.update_self]
-    · have hqS : q ∈ S \ {i} := ⟨(Set.mem_insert_iff.1 hq).resolve_left hqi, hqi⟩
-      rw [hpi, Function.update_self, Function.update_self, Function.update_of_ne hqi,
-          Function.update_of_ne hqi]
-      exact iff_of_false (fun hca => hex q hqS hca.symm) (hdb q hqS)
-    · have hpS : p ∈ S \ {i} := ⟨(Set.mem_insert_iff.1 hp).resolve_left hpi, hpi⟩
-      rw [hqi, Function.update_self, Function.update_self, Function.update_of_ne hpi,
-          Function.update_of_ne hpi]
-      exact iff_of_false (hex p hpS) (fun hbd => hdb p hpS hbd.symm)
-    · have hpS : p ∈ S := (Set.mem_insert_iff.1 hp).resolve_left hpi
-      have hqS : q ∈ S := (Set.mem_insert_iff.1 hq).resolve_left hqi
-      rw [Function.update_of_ne hpi, Function.update_of_ne hqi,
-          Function.update_of_ne hpi, Function.update_of_ne hqi]
-      exact h.eq_iff p hpS q hqS
+    have hdb : ∀ j ∈ S, j ≠ i → d ≠ b j := fun j hjS hji hdj => hd ⟨j, ⟨hjS, hji⟩, hdj.symm⟩
+    exact ⟨d, ⟨fun p hp q hq => h.update_eq_iff_of_fresh hex hdb hp hq, fun R => isEmptyElim R⟩⟩
 
 /-- Over a language with no relation symbols, if both `M` and `N` have at least `k` elements,
 `PartialIsoOn L` is a back-and-forth invariant for the `k`-pebble game: moving pebble `i` leaves

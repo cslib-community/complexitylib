@@ -232,10 +232,16 @@ example (k : ℕ) (φ : InfinitaryFormula.{0, 0, 0} HyperColorLang k) (hφ : φ.
     (Tendsto (fun n => infinitaryProb (bernoulliStructure symbolProbs n) φ) atTop (nhds 0) ∨
       Tendsto (fun n => infinitaryProb (bernoulliStructure symbolProbs n) φ) atTop (nhds 1)) ∧
     (Tendsto (fun n => infinitaryProb (bernoulliStructure symbolProbs n) φ) atTop (nhds 1) ↔
-      Tendsto (fun n => infinitaryProb (uniformStructure n) φ) atTop (nhds 1)) :=
-  ⟨Relational.bernoulliStructure_infinitary_zero_one_law symbolProbs_mem hφ,
+      Tendsto (fun n => infinitaryProb (uniformStructure n) φ) atTop (nhds 1)) ∧
+    (Tendsto (fun n => infinitaryProb (bernoulliStructure symbolProbs n) φ) atTop (nhds 0) ↔
+      Tendsto (fun n => infinitaryProb (uniformStructure n) φ) atTop (nhds 0)) := by
+  obtain ⟨M₀⟩ := Relational.isSatisfiable_extensionTheory (L := HyperColorLang)
+  exact ⟨Relational.bernoulliStructure_infinitary_zero_one_law symbolProbs_mem hφ,
     Relational.tendsto_infinitaryProb_bernoulliStructure_one_iff_uniformStructure
-      symbolProbs_mem hφ⟩
+      symbolProbs_mem hφ,
+    (Relational.tendsto_infinitaryProb_bernoulliStructure_zero_iff_model (M₀ := M₀)
+      symbolProbs_mem hφ).trans
+      (Relational.tendsto_infinitaryProb_uniformStructure_zero_iff_model (M₀ := M₀) hφ).symm⟩
 
 example (k : ℕ) :
     ¬∃ φ : InfinitaryFormula.{0, 0, 0} HyperColorLang k, φ.freeVars = ∅ ∧

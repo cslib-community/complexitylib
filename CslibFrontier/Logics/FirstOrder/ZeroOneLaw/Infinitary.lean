@@ -69,6 +69,9 @@ As an illustration beyond first-order logic, graph connectivity is definable in 
 * `Cslib.Logic.FO.Relational.bernoulliStructure_infinitary_zero_one_law`,
   `Cslib.Logic.FO.Relational.uniformStructure_infinitary_zero_one_law`: the Kolaitis–Vardi `0-1`
   law for `bernoulliStructure p n` (`0 < p R < 1`) and `uniformStructure n`.
+* `Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_one_iff_model`,
+  `Cslib.Logic.FO.Relational.tendsto_infinitaryProb_bernoulliStructure_zero_iff_model`: model
+  characterizations of asymptotic probability `1` and `0` via `extensionTheory L`.
 
 ## References
 
@@ -142,37 +145,6 @@ theorem realizeInfinitary_iff_of_isPebbleBackAndForth {M N : Type*} [L.Structure
     RealizeInfinitary (M := M) φ ↔ RealizeInfinitary (M := N) φ := by
   rw [realizeInfinitary_iff_realize hφ a, realizeInfinitary_iff_realize hφ b]
   exact hInv.realize_infinitaryFormula_iff hab (by rw [hφ])
-
-/-- Updating pebble `i` to an already-placed pebble `a j₀` (`j₀ ∈ S`) preserves `PartialIsoOn` when
-paired with `b j₀`. -/
-private theorem PartialIsoOn.update_of_mem {M N : Type*} [L.Structure M] [L.Structure N] {k : ℕ}
-    {S : Set (Fin k)} {a : Fin k → M} {b : Fin k → N} (h : PartialIsoOn L S a b) {i j₀ : Fin k}
-    (hj₀ : j₀ ∈ S) {c : M} (hc : a j₀ = c) :
-    PartialIsoOn L (insert i S) (Function.update a i c) (Function.update b i (b j₀)) := by
-  classical
-  let g : Fin k → Fin k := Function.update id i j₀
-  have hgS : ∀ r ∈ insert i S, g r ∈ S := by
-    intro r hr
-    by_cases hri : r = i
-    · subst hri
-      simp only [g, Function.update_self, hj₀]
-    · simp only [g, Function.update_of_ne hri, id_eq]
-      exact (Set.mem_insert_iff.1 hr).resolve_left hri
-  have ha : Function.update a i c = a ∘ g := by
-    funext r
-    by_cases hri : r = i
-    · subst hri
-      simp only [Function.update_self, Function.comp_apply, g, hc]
-    · simp only [Function.update_of_ne hri, Function.comp_apply, g, id_eq]
-  have hb : Function.update b i (b j₀) = b ∘ g := by
-    funext r
-    by_cases hri : r = i
-    · subst hri
-      simp only [Function.update_self, Function.comp_apply, g]
-    · simp only [Function.update_of_ne hri, Function.comp_apply, g, id_eq]
-  rw [ha, hb]
-  exact ⟨fun r hr s hs => h.eq_iff (g r) (hgS r hr) (g s) (hgS s hs),
-    fun R f hf => h.relMap_iff R (g ∘ f) fun t => hgS (f t) (hf t)⟩
 
 /-- **Measure-independent infinitary transfer (probability `1`).** If a finite set `T₀` of
 first-order sentences holds with probability tending to `1` under `μ n`, and every nonempty finite
@@ -300,30 +272,6 @@ private theorem exists_distinct_pebble_enum {M N : Type*} [L.Structure M] [L.Str
   refine ⟨hxp, (h.eq_iff (idx (pos j hj hne)) hidxS j hj).2
     ((hidx_spec (pos j hj hne)).2.trans hxp)⟩
 
-/-- Equality preservation on `insert i S` when updating pebble `i` to fresh elements `c` and `d`
-outside `{a j | j ∈ S ∧ j ≠ i}` and `{b j | j ∈ S ∧ j ≠ i}`. -/
-private theorem update_eq_iff_of_fresh {M N : Type*} [L.Structure M] [L.Structure N] {k : ℕ}
-    {S : Set (Fin k)} {a : Fin k → M} {b : Fin k → N} (h : PartialIsoOn L S a b) {i : Fin k}
-    {c : M} {d : N} (hc : ∀ j ∈ S, j ≠ i → a j ≠ c) (hd : ∀ j ∈ S, j ≠ i → d ≠ b j)
-    {r : Fin k} (hr : r ∈ insert i S) {q : Fin k} (hq : q ∈ insert i S) :
-    Function.update a i c r = Function.update a i c q ↔
-      Function.update b i d r = Function.update b i d q := by
-  by_cases hri : r = i <;> by_cases hqi : q = i
-  · subst hri; subst hqi
-    simp only [Function.update_self]
-  · subst hri
-    have hqS : q ∈ S := (Set.mem_insert_iff.1 hq).resolve_left hqi
-    simp only [Function.update_self, Function.update_of_ne hqi]
-    exact iff_of_false (fun hca => hc q hqS hqi hca.symm) (hd q hqS hqi)
-  · subst hqi
-    have hrS : r ∈ S := (Set.mem_insert_iff.1 hr).resolve_left hri
-    simp only [Function.update_self, Function.update_of_ne hri]
-    exact iff_of_false (hc r hrS hri) (fun hbd => hd r hrS hri hbd.symm)
-  · have hrS : r ∈ S := (Set.mem_insert_iff.1 hr).resolve_left hri
-    have hqS : q ∈ S := (Set.mem_insert_iff.1 hq).resolve_left hqi
-    simp only [Function.update_of_ne hri, Function.update_of_ne hqi]
-    exact h.eq_iff r hrS q hqS
-
 end GeneralTransfer
 
 /-! ### Simple graphs and `G(Fin n, p)` -/
@@ -386,7 +334,7 @@ private theorem forth_partialIsoOn_of_satisfies_extensionAxiom_lt {V W : Type*}
       exact hadj.symm
     refine ⟨d, (partialIsoOn_graph_iff (G := G) (H := H)).2 ?_⟩
     intro r hr q hq
-    refine ⟨update_eq_iff_of_fresh h hmem hd_fresh hr hq, ?_⟩
+    refine ⟨h.update_eq_iff_of_fresh hmem hd_fresh hr hq, ?_⟩
     by_cases hri : r = i <;> by_cases hqi : q = i
     · subst hri; subst hqi
       simp only [Function.update_self, SimpleGraph.irrefl]
@@ -666,7 +614,7 @@ private theorem forth_partialIsoOn_of_hasExtension_lt {M N : Type*} [L.Structure
     obtain ⟨d, hd_ne, hd_rel⟩ := hN m hm p x hx
     have hd_fresh : ∀ j ∈ S, j ≠ i → d ≠ b j :=
       fun j hj hne hdb => hd_ne (pos j hj hne) (hdb.trans (hpos j hj hne).1.symm)
-    refine ⟨d, ⟨fun r hr q hq => update_eq_iff_of_fresh h hmem hd_fresh hr hq,
+    refine ⟨d, ⟨fun r hr q hq => h.update_eq_iff_of_fresh hmem hd_fresh hr hq,
       fun {l} R f hf => ?_⟩⟩
     by_cases hall : ∀ q, f q ≠ i
     · have hfS : ∀ q, f q ∈ S := fun q => (Set.mem_insert_iff.1 (hf q)).resolve_left (hall q)
@@ -767,6 +715,21 @@ private theorem backAndForth_of_relationalExtensionFinset {M₀ : Type*} [L.Stru
   exact ⟨PartialIsoOn L, a, b, isPebbleBackAndForth_of_hasExtension_lt hS_ext hM₀_ext,
     partialIsoOn_empty a b⟩
 
+omit [IsEmpty (L.Relations 0)] in
+private theorem tendsto_relationalExtensionFinset_uniform {k : ℕ}
+    {ψ : L.Sentence} (hψ : ψ ∈ relationalExtensionFinset (L := L) k) :
+    Tendsto (fun n => sentenceProb (uniformStructure n) ψ) atTop (nhds 1) := by
+  obtain ⟨m, q, rfl⟩ := mem_relationalExtensionFinset.1 hψ
+  exact tendsto_sentenceProb_extensionAxiom m.1 q
+
+omit [IsEmpty (L.Relations 0)] in
+private theorem tendsto_relationalExtensionFinset_bernoulli
+    {p : (Σ l, L.Relations l) → I} (hp : ∀ R, 0 < (p R : ℝ) ∧ (p R : ℝ) < 1) {k : ℕ}
+    {ψ : L.Sentence} (hψ : ψ ∈ relationalExtensionFinset (L := L) k) :
+    Tendsto (fun n => sentenceProb (bernoulliStructure p n) ψ) atTop (nhds 1) := by
+  obtain ⟨m, q, rfl⟩ := mem_relationalExtensionFinset.1 hψ
+  exact tendsto_sentenceProb_bernoulliStructure_extensionAxiom hp m.1 q
+
 /-- **The Kolaitis–Vardi `0-1` law for `uniformStructure n`** over a finite relational vocabulary
 without nullary relation symbols ([KolaitisVardi1992]). For every closed `L^k_{∞ω}` formula `φ`,
 the probability that a uniform random `L`-structure on `Fin n` satisfies `φ` tends to `0` or to
@@ -777,11 +740,10 @@ theorem uniformStructure_infinitary_zero_one_law {k : ℕ}
       Tendsto (fun n => infinitaryProb (uniformStructure n) φ) atTop (nhds 1) := by
   obtain ⟨M₀⟩ := isSatisfiable_extensionTheory (L := L)
   have : Infinite M₀ := infinite_of_model_extensionTheory (L := L)
-  refine infinitary_zero_one_law_of_finset uniformStructure
-    (relationalExtensionFinset (L := L) k) (fun ψ hψ => ?_)
+  exact infinitary_zero_one_law_of_finset uniformStructure
+    (relationalExtensionFinset (L := L) k)
+    (fun _ hψ => tendsto_relationalExtensionFinset_uniform hψ)
     (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ
-  obtain ⟨m, p, rfl⟩ := mem_relationalExtensionFinset.1 hψ
-  exact tendsto_sentenceProb_extensionAxiom m.1 p
 
 /-- **The Kolaitis–Vardi `0-1` law for `bernoulliStructure p n`** over a finite relational
 vocabulary without nullary relation symbols ([KolaitisVardi1992]). For constant probabilities
@@ -794,11 +756,10 @@ theorem bernoulliStructure_infinitary_zero_one_law {p : (Σ l, L.Relations l) �
       Tendsto (fun n => infinitaryProb (bernoulliStructure p n) φ) atTop (nhds 1) := by
   obtain ⟨M₀⟩ := isSatisfiable_extensionTheory (L := L)
   have : Infinite M₀ := infinite_of_model_extensionTheory (L := L)
-  refine infinitary_zero_one_law_of_finset (bernoulliStructure p)
-    (relationalExtensionFinset (L := L) k) (fun ψ hψ => ?_)
+  exact infinitary_zero_one_law_of_finset (bernoulliStructure p)
+    (relationalExtensionFinset (L := L) k)
+    (fun _ hψ => tendsto_relationalExtensionFinset_bernoulli hp hψ)
     (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ
-  obtain ⟨m, q, rfl⟩ := mem_relationalExtensionFinset.1 hψ
-  exact tendsto_sentenceProb_bernoulliStructure_extensionAxiom hp m.1 q
 
 /-- A closed `L^k_{∞ω}` formula holds almost surely in `bernoulliStructure p n` (`0 < p R < 1`) iff
 it holds in any model `M₀` of `extensionTheory L`. -/
@@ -809,18 +770,15 @@ theorem tendsto_infinitaryProb_bernoulliStructure_one_iff_model {M₀ : Type*} [
     Tendsto (fun n => infinitaryProb (bernoulliStructure p n) φ) atTop (nhds 1) ↔
       RealizeInfinitary (M := M₀) φ := by
   have : Infinite M₀ := infinite_of_model_extensionTheory (L := L)
-  have hT₀ : ∀ ψ ∈ relationalExtensionFinset (L := L) k,
-      Tendsto (fun n => sentenceProb (bernoulliStructure p n) ψ) atTop (nhds 1) := by
-    intro ψ hψ
-    obtain ⟨m, q, rfl⟩ := mem_relationalExtensionFinset.1 hψ
-    exact tendsto_sentenceProb_bernoulliStructure_extensionAxiom hp m.1 q
   refine ⟨fun h1 => ?_, fun hM₀ => tendsto_infinitaryProb_one_of_finset (bernoulliStructure p)
-    (relationalExtensionFinset (L := L) k) hT₀
+    (relationalExtensionFinset (L := L) k)
+    (fun _ hψ => tendsto_relationalExtensionFinset_bernoulli hp hψ)
     (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hM₀⟩
   by_contra hnot
   exact zero_ne_one (tendsto_nhds_unique
     (tendsto_infinitaryProb_zero_of_finset (bernoulliStructure p)
-      (relationalExtensionFinset (L := L) k) hT₀
+      (relationalExtensionFinset (L := L) k)
+      (fun _ hψ => tendsto_relationalExtensionFinset_bernoulli hp hψ)
       (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hnot) h1)
 
 /-- A closed `L^k_{∞ω}` formula holds almost surely in `uniformStructure n` iff it holds in any
@@ -831,19 +789,55 @@ theorem tendsto_infinitaryProb_uniformStructure_one_iff_model {M₀ : Type*} [L.
     Tendsto (fun n => infinitaryProb (uniformStructure n) φ) atTop (nhds 1) ↔
       RealizeInfinitary (M := M₀) φ := by
   have : Infinite M₀ := infinite_of_model_extensionTheory (L := L)
-  have hT₀ : ∀ ψ ∈ relationalExtensionFinset (L := L) k,
-      Tendsto (fun n => sentenceProb (uniformStructure n) ψ) atTop (nhds 1) := by
-    intro ψ hψ
-    obtain ⟨m, q, rfl⟩ := mem_relationalExtensionFinset.1 hψ
-    exact tendsto_sentenceProb_extensionAxiom m.1 q
   refine ⟨fun h1 => ?_, fun hM₀ => tendsto_infinitaryProb_one_of_finset uniformStructure
-    (relationalExtensionFinset (L := L) k) hT₀
+    (relationalExtensionFinset (L := L) k)
+    (fun _ hψ => tendsto_relationalExtensionFinset_uniform hψ)
     (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hM₀⟩
   by_contra hnot
   exact zero_ne_one (tendsto_nhds_unique
     (tendsto_infinitaryProb_zero_of_finset uniformStructure
-      (relationalExtensionFinset (L := L) k) hT₀
+      (relationalExtensionFinset (L := L) k)
+      (fun _ hψ => tendsto_relationalExtensionFinset_uniform hψ)
       (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hnot) h1)
+
+/-- A closed `L^k_{∞ω}` formula holds almost never in `bernoulliStructure p n` (`0 < p R < 1`) iff
+it fails in any model `M₀` of `extensionTheory L`. -/
+theorem tendsto_infinitaryProb_bernoulliStructure_zero_iff_model {M₀ : Type*} [L.Structure M₀]
+    [M₀ ⊨ extensionTheory L] {p : (Σ l, L.Relations l) → I}
+    (hp : ∀ R, 0 < (p R : ℝ) ∧ (p R : ℝ) < 1) {k : ℕ}
+    {φ : FiniteVariable.InfinitaryFormula.{w, u, v} L k} (hφ : φ.freeVars = ∅) :
+    Tendsto (fun n => infinitaryProb (bernoulliStructure p n) φ) atTop (nhds 0) ↔
+      ¬RealizeInfinitary (M := M₀) φ := by
+  have : Infinite M₀ := infinite_of_model_extensionTheory (L := L)
+  refine ⟨fun h0 hM₀ => ?_,
+    fun hnot => tendsto_infinitaryProb_zero_of_finset (bernoulliStructure p)
+      (relationalExtensionFinset (L := L) k)
+      (fun _ hψ => tendsto_relationalExtensionFinset_bernoulli hp hψ)
+      (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hnot⟩
+  exact zero_ne_one (tendsto_nhds_unique h0
+    (tendsto_infinitaryProb_one_of_finset (bernoulliStructure p)
+      (relationalExtensionFinset (L := L) k)
+      (fun _ hψ => tendsto_relationalExtensionFinset_bernoulli hp hψ)
+      (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hM₀))
+
+/-- A closed `L^k_{∞ω}` formula holds almost never in `uniformStructure n` iff it fails in any
+model `M₀` of `extensionTheory L`. -/
+theorem tendsto_infinitaryProb_uniformStructure_zero_iff_model {M₀ : Type*} [L.Structure M₀]
+    [M₀ ⊨ extensionTheory L] {k : ℕ}
+    {φ : FiniteVariable.InfinitaryFormula.{w, u, v} L k} (hφ : φ.freeVars = ∅) :
+    Tendsto (fun n => infinitaryProb (uniformStructure n) φ) atTop (nhds 0) ↔
+      ¬RealizeInfinitary (M := M₀) φ := by
+  have : Infinite M₀ := infinite_of_model_extensionTheory (L := L)
+  refine ⟨fun h0 hM₀ => ?_,
+    fun hnot => tendsto_infinitaryProb_zero_of_finset uniformStructure
+      (relationalExtensionFinset (L := L) k)
+      (fun _ hψ => tendsto_relationalExtensionFinset_uniform hψ)
+      (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hnot⟩
+  exact zero_ne_one (tendsto_nhds_unique h0
+    (tendsto_infinitaryProb_one_of_finset uniformStructure
+      (relationalExtensionFinset (L := L) k)
+      (fun _ hψ => tendsto_relationalExtensionFinset_uniform hψ)
+      (backAndForth_of_relationalExtensionFinset (M₀ := M₀)) hφ hM₀))
 
 /-- **Independence of `p` for relational `L^k_{∞ω}`.** For constant probabilities `0 < p R < 1`,
 a closed `L^k_{∞ω}` formula holds almost surely in `bernoulliStructure p n` iff it holds almost
