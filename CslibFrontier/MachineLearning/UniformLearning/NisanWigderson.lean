@@ -34,9 +34,9 @@ fraction of all strings but no output of the generator yields a weak learner for
 negation (`Cslib.MachineLearning.UniformLearning.nwLearner_learns_of_dens`). This is one run of the
 reconstruction of [Carmosino, Impagliazzo, Kabanets and Kolokolova, Theorem
 2.11][CarmosinoImpagliazzoKabanetsKolokolova2016], in a library form: the test is `δ`-dense for an
-arbitrary `δ` instead of `1 / 5`, and the advantage is `δ / (2 m)` instead of `1 / m`. Their
-repetition and selection of the best of `poly(m)` runs, which raises the success probability, is
-not part of this file.
+arbitrary `δ` instead of `1 / 5`, and the advantage is `δ / (2 m)` instead of `1 / L`, where the
+source's `L` is the output length `m`. Their repetition and selection of the best of `poly(m)` runs,
+which raises the success probability, is not part of this file.
 
 The running time of the learner is not certified: the library counts its queries and the size of
 its hypotheses, not the steps needed to list the queries and build the hypothesis.
@@ -140,8 +140,8 @@ the deterministic test `test` accept at least a `δ` fraction of all strings of 
 output of the Nisan–Wigderson generator built from `D` and any target `f ∈ C`. Then with uniformly
 random seeds the learner built from the negation of `test` learns `C` with error
 `1 / 2 - δ / (2 m)` and confidence `δ / (2 m)`. The test is `δ`-dense for any `δ`, where the source
-takes `δ = 1 / 5`, and the advantage is `δ / (2 m)` instead of `1 / m`; the running time of the
-learner is not certified. -/
+takes `δ = 1 / 5`, and the advantage is `δ / (2 m)` instead of `1 / L`, where the source's `L` is
+the output length `m`; the running time of the learner is not certified. -/
 theorem nwLearner_learns_of_dens [NeZero m] {C : ConceptClass (Fin n → Bool) Bool} {δ : ℝ}
     (hδ : δ ≤ dens {y | test y = true}) (havoid : ∀ f ∈ C, ∀ z, test (generator D f z) = false) :
     (nwLearner D (fun y => !test y)).Learns (PMF.uniformOfFintype (Trial ℓ m)) C
