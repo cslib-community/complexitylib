@@ -1987,6 +1987,7 @@ public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PPA
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLine
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineCollapse
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Principles
+public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 public import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.Sperner
 public import CslibFrontier.Computability.Complexity.Classes.Tally
 public import CslibFrontier.Computability.Complexity.Classes.Time
