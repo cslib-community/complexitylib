@@ -11,6 +11,7 @@ import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamson
 import CslibFrontier.Algorithms.Lean.MaxTwoSAT.GoemansWilliamsonMaxTwoSAT
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
@@ -806,6 +807,27 @@ register_result "matrix-multiplication" where
     at most c·n^(τ + ε) gates, addition, multiplication and constant gates each charged one, \
     inputs and outputs free; hence ω ≤ 9/4. No uniform generation, explicit constants or \
     integer bit complexity."
+
+register_result "depth-five-imm" where
+  title := "OpenAI: homogeneous depth-five circuits for iterated matrix multiplication"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := OpenAI2026DepthFive,
+      theorem := "Corollary 6.1 (characteristic zero); Theorem 1.1 is its complex case",
+      locator := "§6, p. 19; §1.1, p. 2" }
+  ]
+  theorems := [
+    Cslib.Circuits.DepthFive.exists_forall_rpow_le_size,
+    Cslib.Circuits.DepthFive.rpow_le_size
+  ]
+  scope := "Over every field of characteristic zero and for every n ≥ exp 29200, every \
+    syntactically homogeneous ΣΠΣΠΣ circuit computing IMM_{n,n} as a formal polynomial has at \
+    least n^(√n/400) lower product, middle sum and upper product gates; bottom linear forms \
+    are unrestricted and gates are shared. The count is of the normalized model \
+    Cslib.Circuits.DepthFive.Circuit, which is at most the source's gate count; no formal \
+    conversion from a layered circuit is proved. The source's threshold is unspecified; here \
+    it is exp 29200, not optimized. Lower bound only: no matching construction and no \
+    positive characteristic."
 
 /-! ## Further collected results -/
 
