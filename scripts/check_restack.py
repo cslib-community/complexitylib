@@ -32,10 +32,12 @@ change from the lower head alone would include that `main`, and later `main` com
 the same lines would make the replay conflict where the PR changed nothing. So with
 `--approved-base`, APPROVED's merge base with it is compared with APPROVED's merge base with
 `--base`. When one contains the other, the later one is the approved change's base. Otherwise the
-base is the merge of the two, which the result names. Where that merge conflicts, its conflict
-markers stay in the base, so the approved head's resolution counts as part of the approved change:
-such a path passes only when the new `main` already resolves it the same way, and otherwise needs
-review as a replay conflict. The result names those paths too. The lower branch's changes are in
+base is the merge of the two, which the result names. Where that merge conflicts, the approved
+head's resolution counts as part of the approved change: such a path passes only when the replay
+leaves it as the new `main` has it, and otherwise needs review as a replay conflict. Conflict
+markers in the base already make a differing resolution conflict in the replay; a conflict without
+markers, such as a file that one side deleted and the other modified, is checked against the new
+`main` directly. The result names those paths too. The lower branch's changes are in
 that base either way, so they are never replayed: when the lower PR never landed, a new head that
 still carries them differs from the replay.
 
@@ -220,9 +222,10 @@ def stacked_base(root: Path, lower: str, main_base: str, attributes: str
     When one of `lower` and `main_base` contains the other, the later one is the base: the lower
     branch's changes stay in the replay unless `main` has them. Otherwise the approved head has
     merged a `main` that the lower head lacks, and the base is a commit of their merge, which is
-    the approved head without the PR's own change. A conflicted path keeps its markers, so the
-    approved head's resolution of it is part of the replayed change, which passes only where the
-    new `main` resolves it the same way. The merge uses the attributes in `attributes`."""
+    the approved head without the PR's own change. A conflicted path keeps its markers, if any, so
+    the approved head's resolution of it is part of the replayed change. `main` passes such a path
+    only where the replay leaves it as the new `main` has it. The merge uses the attributes in
+    `attributes`."""
     if ancestor(root, main_base, lower):
         return lower, None, set()
     if ancestor(root, lower, main_base):
@@ -458,6 +461,11 @@ def main(argv: list[str] | None = None) -> int:
             raise GitError(f"the approved head {approved[:12]} makes no change relative to "
                            f"{origin}; check --approved-base")
         replayed, conflicts = replay(root, approved_base, approved, new_base)
+        # A conflicted path of the base merge may carry no markers (a deletion, a binary file), so
+        # the approved head's choice there can look unchanged. It passes only when the replay has
+        # the new `main`'s version.
+        if base_conflicts:
+            conflicts |= base_conflicts & set(changed_paths(root, replayed, tree(root, new_base)))
         new_tree = tree(root, new)
         differing = [] if replayed == new_tree else changed_paths(root, replayed, new_tree)
         if replayed != new_tree and not differing:
