@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
+import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
@@ -447,6 +448,26 @@ register_result "constant-depth-mod-p" where
     when the number of true inputs is nonzero mod p) of depth d computing parity of n bits \
     satisfies 2·2^ℓ ≤ 5·size whenever ℓ ≥ 1 and 100(((p - 1)ℓ)^d + 1)² ≤ n + 1. Depth and \
     size count every gate, including NOT and constants; nonuniform."
+
+register_result "middle-slice-mod-two" where
+  title := "Razborov: a middle slice is in P but not in AC⁰[2]"
+  topic := "circuit complexity"
+  sources := [
+    { paper := Razborov1987, theorem := unverified, locator := unverified },
+    { paper := RazborovRudich1997, theorem := unverified, locator := "Section 3.2, p. 27" },
+    { paper := CarmosinoImpagliazzoKabanetsKolokolova2016, theorem := unverified,
+      locator := "p. 10:20" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.Razborov.middleSlice_notMem_AC0Mod_two,
+    Cslib.Circuits.Boolean.Razborov.exists_mem_P_notMem_AC0Mod_two
+  ]
+  scope := "The language of bit strings of length n with exactly ⌈n/2⌉ - ⌊√(n + 1)⌋/10 zeros is \
+    decided in polynomial time by a multi-tape Turing machine and is not in AC⁰[2]: no family of \
+    circuits of NOT, unbounded fan-in AND/OR and MOD_2 gates of constant depth and polynomial \
+    size decides it (nonuniform). Proved through a variant of Razborov's GF(2) rank property \
+    (one square matrix, threshold C(n, a)/2); the sources give the abstract property and a \
+    sketch, and Razborov's original paper was not checked for its hard function."
 
 register_result "braverman" where
   title := "Braverman: polylogarithmic independence fools AC⁰"
