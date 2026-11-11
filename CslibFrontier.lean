@@ -1901,6 +1901,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Measure.Basic
 public import CslibFrontier.Computability.Complexity.Classes.Measure.Conservation
 public import CslibFrontier.Computability.Complexity.Classes.Measure.DTIME
 public import CslibFrontier.Computability.Complexity.Classes.ModP
+public import CslibFrontier.Computability.Complexity.Classes.ModP.Composite
 public import CslibFrontier.Computability.Complexity.Classes.ModP.GapP
 public import CslibFrontier.Computability.Complexity.Classes.ModP.PrimePower
 public import CslibFrontier.Computability.Complexity.Classes.ModP.Time
