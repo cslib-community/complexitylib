@@ -36,24 +36,22 @@ import Mathlib.Data.Nat.Choose.Basic
 /-!
 # `#2SAT` is `#P`-complete under counting Turing reductions
 
-Valiant's theorem ([Valiant 1979][Valiant1979Enumeration]): counting the satisfying assignments of
+Valiant's theorem ([Valiant 1979][Valiant1979Enumeration], §4, problem 7 and Theorem 1, p. 414): counting the satisfying assignments of
 a `2-CNF` formula (`SharpTwoSAT`) belongs to `#P` and is `#P`-hard under polynomial-time counting
 Turing reductions (`CountingTuringComplete encCNF SharpTwoSAT`).
 
-Given any CNF formula `φ` with `m` clauses and parameter `r : ℕ`, `valiantTwoSAT φ r` replaces
-each original variable `v` by `2 * v` and attaches to each clause `i < m` a clause indicator
-`zVar r i` together with `r - 1` monotone chain variables `uVar r i j` so that each assignment `σ`
-to `φ` extends to `1` solution of gadget `i` when clause `i` is satisfied and `r + 1` solutions
-when clause `i` is falsified. Therefore `SharpTwoSAT (valiantTwoSAT φ r) = P(r + 1)` where
-`P(X) = ∑ σ, X ^ (φ.countUnsat σ)` has degree at most `m` and `P(0) = SharpSAT φ`. Evaluating `P(0)`
-via `Polynomial.eval_zero_eq_sum_neg_one_pow_choose_eval_succ` yields `SharpSAT φ` as a difference
-of two nonnegative binomial combinations with no division, completing the counting Turing reduction.
+The original source establishes this hardness for MONOTONE 2-SAT via bipartite matchings
+(reductions 6-7, p. 415), and uses a function-value oracle (§2, p. 411). Our formalization establishes
+it for general `2-CNF` formulas over occurring variables (mapping back to the stronger monotone source
+result) and uses a standard bit-oracle convention (`AnswersBits`). The direct clause-indicator/chain
+gadget (`valiantTwoSAT`) and its finite-difference interpolation proof below are an original adaptation
+for general `2-CNF`, not the bipartite matching reductions presented in the 1979 paper.
 
 ## Main definitions
 
 * `Cslib.Complexity.SharpTwoSAT`: the number of satisfying assignments on occurring variables when
   every clause has length at most `2`, and `0` otherwise.
-* `Cslib.Complexity.valiantTwoSAT`: Valiant's `2-CNF` clause-weight gadget formula.
+* `Cslib.Complexity.valiantTwoSAT`: The `2-CNF` clause-weight gadget formula.
 
 ## Main results
 
@@ -88,7 +86,7 @@ theorem SharpTwoSAT.mem_SharpP : SharpTwoSAT ∈ SharpP encCNF :=
   (parsimoniousReducible_guard (computableInPolyTime_all_length_le 2)).mem_SharpP
     SharpSAT.mem_SharpP
 
-/-! ### Valiant's 2-CNF clause-weight gadget construction -/
+/-! ### 2-CNF clause-weight gadget construction (original adaptation) -/
 
 /-- Auxiliary clause-indicator variable index for clause `i` at weight parameter `r`. -/
 @[expose] def zVar (r i : ℕ) : ℕ :=
@@ -116,7 +114,7 @@ and otherwise permits `r + 1` extensions of `(zVar r i, uVar r i 0, …, uVar r 
         (List.range (r - 2)).map fun j => [(uVar r i j, true), (uVar r i (j + 1), false)]
   litClauses ++ auxClauses
 
-/-- Valiant's `2-CNF` formula at interpolation parameter `r : ℕ`. -/
+/-- The clause-weight `2-CNF` formula at interpolation parameter `r : ℕ`. -/
 @[expose] def valiantTwoSAT (φ : CNF ℕ) (r : ℕ) : CNF ℕ :=
   valiantVarTauts φ ++ (φ.zipIdx.flatMap (valiantClauseGadget r))
 
@@ -752,7 +750,7 @@ private theorem eval_valiantTwoSAT_iff (φ : CNF ℕ) (r : ℕ)
             exact Or.inr
               (by simpa [huEq ⟨i, hi⟩ ⟨j + 1, by omega⟩] using hiPred.2.2 j (by omega) hfj)
 
-/-- **Exact model count of Valiant's `2-CNF` formula**:
+/-- **Exact model count of The clause-weight `2-CNF` formula**:
 `SharpTwoSAT (valiantTwoSAT φ r) = ∑ σ : φ.vars.toFinset → Bool, (r + 1) ^ (φ.countUnsat ext(σ))`.
 -/
 theorem modelCount_valiantTwoSAT (φ : CNF ℕ) (r : ℕ) :

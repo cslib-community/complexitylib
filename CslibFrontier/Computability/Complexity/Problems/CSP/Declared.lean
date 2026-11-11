@@ -65,8 +65,11 @@ theorem encDeclaredCSP_mk_polyTime {Rel : Type} {γ : Type}
     {numVars : γ → ℕ} {formula : γ → CSP Rel ℕ}
     (hnumVars : ComputableInPolyTime numVars encIn encUnary)
     (hformula : ComputableInPolyTime formula encIn (encCSP encRel encNat)) :
-    ComputableInPolyTime (fun x => DeclaredCSP.mk (numVars x) (formula x)) encIn (encDeclaredCSP encRel) := by
-  have hd : ComputableInDegree (fun p : ℕ × CSP Rel ℕ => DeclaredCSP.mk p.1 p.2) (encPair encUnary (encCSP encRel encNat)) (encDeclaredCSP encRel) 1 1 := ComputableInDegree.of_eq fun _ => rfl
+    ComputableInPolyTime (fun x => DeclaredCSP.mk (numVars x) (formula x))
+      encIn (encDeclaredCSP encRel) := by
+  have hd : ComputableInDegree (fun p : ℕ × CSP Rel ℕ => DeclaredCSP.mk p.1 p.2)
+    (encPair encUnary (encCSP encRel encNat)) (encDeclaredCSP encRel) 1 1 :=
+      ComputableInDegree.of_eq fun _ => rfl
   exact hd.computableInPolyTime.comp (hnumVars.prod hformula)
 
 namespace DeclaredCSP

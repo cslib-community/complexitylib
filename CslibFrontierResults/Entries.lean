@@ -3512,8 +3512,7 @@ register_result "sharp-2sat-completeness" where
   title := "Valiant: #2-SAT is #P-complete under polynomial-time counting Turing reductions"
   topic := "counting complexity"
   sources := [
-    { paper := Valiant1979Enumeration, theorem := unverified, locator := unverified },
-    { paper := Valiant1979, theorem := unverified, locator := unverified }
+    { paper := Valiant1979Enumeration, theorem := "Theorem 1", locator := "p. 414 (§4, problem 7)" }
   ]
   theorems := [
     Cslib.Complexity.SharpTwoSAT_countingTuringComplete,
@@ -3522,7 +3521,10 @@ register_result "sharp-2sat-completeness" where
   ]
   scope := "SharpTwoSAT counts satisfying assignments on occurring variables of CNFs of clause \
     width at most 2 (and returns 0 otherwise) under encCNF. Completeness is under native \
-    polynomial-time counting Turing reductions (PolyTimeOracleProgram against \
+    polynomial-time counting Turing reductions (PolyTimeOracleProgram against AnswersBits). \
+    Original source proves completeness for monotone #2-SAT using a function-value oracle (§2, p. 411). \
+    This formalization establishes it for general #2-SAT on occurring variables using a standard bit-oracle \
+    convention and an original adaptation of the direct clause-weight gadget and finite-difference interpolation. \
     AnswersBits), proved via clause-weight 2-CNF gadgets and division-free finite-difference \
     polynomial interpolation at 0."
 

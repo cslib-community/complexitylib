@@ -1609,7 +1609,7 @@ Leslie G. Valiant. "The Complexity of Computing the Permanent." *Theoretical Com
 <a id="valiant79enumeration"></a>
 ## valiant79enumeration
 
-Leslie G. Valiant. "The Complexity of Enumeration and Reliability Problems." *SIAM Journal on Computing* 8(3), 410–421, 1979. https://doi.org/10.1137/0208032 . Bibliographic metadata checked on 2026-11-11; the journal text was not inspected directly, so no internal theorem number or page locator is cited. Credited at paper level for `#P`-completeness of `#2-SAT` (proved there for monotone `#2-SAT`; [`SharpTwoSAT.lean`](../CslibFrontier/Computability/Complexity/Problems/SharpTwoSAT.lean) formalizes `#P`-completeness of `#2-SAT` from `#SAT` via clause-weight `2-CNF` gadgets and finite-difference polynomial interpolation).
+Leslie G. Valiant. "The Complexity of Enumeration and Reliability Problems." *SIAM Journal on Computing* 8(3), 410–421, 1979. https://doi.org/10.1137/0208032 . Source text checked on 2026-11-11. Credited for `#P`-completeness of `#2-SAT` (§4, problem 7 and Theorem 1, p. 414). The source proves `#P`-completeness for monotone `#2-SAT` using a function-value oracle (§2, p. 411). [`SharpTwoSAT.lean`](../CslibFrontier/Computability/Complexity/Problems/SharpTwoSAT.lean) establishes it for general occurring-variable `#2-SAT` via a standard bit-oracle convention (`AnswersBits`). The direct clause-weight `2-CNF` gadget and finite-difference polynomial interpolation are an original adaptation, replacing the bipartite matching reductions presented in the source.
 
 <a id="vanaardenneehrenfestdebruijn51"></a>
 ## vanaardenneehrenfestdebruijn51

@@ -307,6 +307,42 @@ private theorem coloringDecode_spec [DecidableEq V] {q : ℕ} {vs : List V} {es 
 
 /-- **Assignment bijection for `coloringCNF`**: satisfying assignments on the one-hot variables
 `vs.toFinset ×ˢ Finset.range q` biject with proper `Fin q`-colourings of `G`. -/
+
+private def coloringEncode [DecidableEq V] {q : ℕ} {vs : List V}
+    {G : SimpleGraph {v : V // v ∈ vs}}
+    (C : G.Coloring (Fin q)) : (vs.toFinset ×ˢ Finset.range q : Finset (V × ℕ)) → Bool :=
+  fun p => decide (p.1.2 = (C ⟨p.1.1, List.mem_toFinset.mp (Finset.mem_product.mp p.2).1⟩).1)
+
+private theorem eval_coloringEncode [DecidableEq V] {q : ℕ} {vs : List V} {es : List (V × V)}
+    {G : SimpleGraph {v : V // v ∈ vs}}
+    (hG : ∀ (u w : {v : V // v ∈ vs}), G.Adj u w ↔
+      u.1 ≠ w.1 ∧ ((u.1, w.1) ∈ es ∨ (w.1, u.1) ∈ es))
+    (C : G.Coloring (Fin q)) :
+    (coloringCNF q vs es).eval
+      (fun p => if hp : p ∈ vs.toFinset ×ˢ Finset.range q then coloringEncode C ⟨p, hp⟩ else false) =
+        true := by
+  rw [eval_coloringCNF]
+  refine ⟨fun v hv => ?_, fun e he h1 h2 hne c hc hs1 hs2 => ?_⟩
+  · refine ⟨⟨(C ⟨v, hv⟩).1, (C ⟨v, hv⟩).2, ?_⟩, fun c₁ hc₁ c₂ hc₂ h1 h2 => ?_⟩
+    · have hp : (v, (C ⟨v, hv⟩).1) ∈ vs.toFinset ×ˢ Finset.range q :=
+        Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr (C ⟨v, hv⟩).2⟩
+      simp [coloringEncode, hp]
+    · have hp1 : (v, c₁) ∈ vs.toFinset ×ˢ Finset.range q :=
+        Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr hc₁⟩
+      have hp2 : (v, c₂) ∈ vs.toFinset ×ˢ Finset.range q :=
+        Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr hc₂⟩
+      simp only [coloringEncode, hp1, ↓reduceDIte, decide_eq_true_eq] at h1
+      simp only [coloringEncode, hp2, ↓reduceDIte, decide_eq_true_eq] at h2
+      exact h1.trans h2.symm
+  · have hp1 : (e.1, c) ∈ vs.toFinset ×ˢ Finset.range q :=
+      Finset.mem_product.mpr ⟨List.mem_toFinset.mpr h1, Finset.mem_range.mpr hc⟩
+    have hp2 : (e.2, c) ∈ vs.toFinset ×ˢ Finset.range q :=
+      Finset.mem_product.mpr ⟨List.mem_toFinset.mpr h2, Finset.mem_range.mpr hc⟩
+    simp only [coloringEncode, hp1, ↓reduceDIte, decide_eq_true_eq] at hs1
+    simp only [coloringEncode, hp2, ↓reduceDIte, decide_eq_true_eq] at hs2
+    have hadj : G.Adj ⟨e.1, h1⟩ ⟨e.2, h2⟩ := (hG _ _).mpr ⟨hne, Or.inl he⟩
+    exact C.valid hadj (Fin.ext (hs1.symm.trans hs2))
+
 noncomputable def coloringCNFEquiv [DecidableEq V] {q : ℕ} {vs : List V} {es : List (V × V)}
     {G : SimpleGraph {v : V // v ∈ vs}}
     (hG : ∀ (u w : {v : V // v ∈ vs}), G.Adj u w ↔
@@ -327,28 +363,7 @@ noncomputable def coloringCNFEquiv [DecidableEq V] {q : ℕ} {vs : List V} {es :
           (fun h => hne h.symm) (coloringDecode σ.2 u).1 (coloringDecode σ.2 u).2
           (heqcol ▸ coloringDecode_spec σ.2 w) (coloringDecode_spec σ.2 u)
   invFun C :=
-    ⟨fun p => decide (p.1.2 = (C ⟨p.1.1, List.mem_toFinset.mp (Finset.mem_product.mp p.2).1⟩).1), by
-      rw [eval_coloringCNF]
-      refine ⟨fun v hv => ?_, fun e he h1 h2 hne c hc hs1 hs2 => ?_⟩
-      · refine ⟨⟨(C ⟨v, hv⟩).1, (C ⟨v, hv⟩).2, ?_⟩, fun c₁ hc₁ c₂ hc₂ h1 h2 => ?_⟩
-        · have hp : (v, (C ⟨v, hv⟩).1) ∈ vs.toFinset ×ˢ Finset.range q :=
-            Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr (C ⟨v, hv⟩).2⟩
-          simp [hp]
-        · have hp1 : (v, c₁) ∈ vs.toFinset ×ˢ Finset.range q :=
-            Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr hc₁⟩
-          have hp2 : (v, c₂) ∈ vs.toFinset ×ˢ Finset.range q :=
-            Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr hc₂⟩
-          simp only [hp1, ↓reduceDIte, decide_eq_true_eq] at h1
-          simp only [hp2, ↓reduceDIte, decide_eq_true_eq] at h2
-          exact h1.trans h2.symm
-      · have hp1 : (e.1, c) ∈ vs.toFinset ×ˢ Finset.range q :=
-          Finset.mem_product.mpr ⟨List.mem_toFinset.mpr h1, Finset.mem_range.mpr hc⟩
-        have hp2 : (e.2, c) ∈ vs.toFinset ×ˢ Finset.range q :=
-          Finset.mem_product.mpr ⟨List.mem_toFinset.mpr h2, Finset.mem_range.mpr hc⟩
-        simp only [hp1, ↓reduceDIte, decide_eq_true_eq] at hs1
-        simp only [hp2, ↓reduceDIte, decide_eq_true_eq] at hs2
-        have hadj : G.Adj ⟨e.1, h1⟩ ⟨e.2, h2⟩ := (hG _ _).mpr ⟨hne, Or.inl he⟩
-        exact C.valid hadj (Fin.ext (hs1.symm.trans hs2))⟩
+    ⟨coloringEncode C, eval_coloringEncode hG C⟩
   left_inv σ := by
     obtain ⟨σ, hσ⟩ := σ
     ext ⟨⟨v, c⟩, hp⟩
@@ -378,32 +393,10 @@ noncomputable def coloringCNFEquiv [DecidableEq V] {q : ℕ} {vs : List V} {es :
   right_inv C := by
     ext ⟨u, hu⟩
     dsimp only
-    let σ0 : (vs.toFinset ×ˢ Finset.range q : Finset (V × ℕ)) → Bool := fun p =>
-      decide (p.1.2 = (C ⟨p.1.1, List.mem_toFinset.mp (Finset.mem_product.mp p.2).1⟩).1)
+    let σ0 := coloringEncode C
     have hσ0 : (coloringCNF q vs es).eval
         (fun p => if hp : p ∈ vs.toFinset ×ˢ Finset.range q then σ0 ⟨p, hp⟩ else false) =
-        true := by
-      rw [eval_coloringCNF]
-      refine ⟨fun v hv => ?_, fun e he h1 h2 hne c hc hs1 hs2 => ?_⟩
-      · refine ⟨⟨(C ⟨v, hv⟩).1, (C ⟨v, hv⟩).2, ?_⟩, fun c₁ hc₁ c₂ hc₂ h1 h2 => ?_⟩
-        · have hp : (v, (C ⟨v, hv⟩).1) ∈ vs.toFinset ×ˢ Finset.range q :=
-            Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr (C ⟨v, hv⟩).2⟩
-          simp [σ0, hp]
-        · have hp1 : (v, c₁) ∈ vs.toFinset ×ˢ Finset.range q :=
-            Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr hc₁⟩
-          have hp2 : (v, c₂) ∈ vs.toFinset ×ˢ Finset.range q :=
-            Finset.mem_product.mpr ⟨List.mem_toFinset.mpr hv, Finset.mem_range.mpr hc₂⟩
-          simp only [σ0, hp1, ↓reduceDIte, decide_eq_true_eq] at h1
-          simp only [σ0, hp2, ↓reduceDIte, decide_eq_true_eq] at h2
-          exact h1.trans h2.symm
-      · have hp1 : (e.1, c) ∈ vs.toFinset ×ˢ Finset.range q :=
-          Finset.mem_product.mpr ⟨List.mem_toFinset.mpr h1, Finset.mem_range.mpr hc⟩
-        have hp2 : (e.2, c) ∈ vs.toFinset ×ˢ Finset.range q :=
-          Finset.mem_product.mpr ⟨List.mem_toFinset.mpr h2, Finset.mem_range.mpr hc⟩
-        simp only [σ0, hp1, ↓reduceDIte, decide_eq_true_eq] at hs1
-        simp only [σ0, hp2, ↓reduceDIte, decide_eq_true_eq] at hs2
-        have hadj : G.Adj ⟨e.1, h1⟩ ⟨e.2, h2⟩ := (hG _ _).mpr ⟨hne, Or.inl he⟩
-        exact C.valid hadj (Fin.ext (hs1.symm.trans hs2))
+        true := eval_coloringEncode hG C
     change (coloringDecode hσ0 ⟨u, hu⟩).1 = (C ⟨u, hu⟩).1
     have hspec := coloringDecode_spec hσ0 ⟨u, hu⟩
     have hp : (u, (coloringDecode hσ0 ⟨u, hu⟩).1) ∈ vs.toFinset ×ˢ Finset.range q :=
