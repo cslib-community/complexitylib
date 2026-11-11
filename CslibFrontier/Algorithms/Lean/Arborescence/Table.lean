@@ -176,7 +176,9 @@ variable {β : Type*} [LinearOrder β] {n : ℕ}
 
 /-- Result of selecting optimal parents. -/
 structure SelectParentsResult (n : ℕ) where
+  /-- True if every non-root node has at least one incoming edge, so a valid parent was found. -/
   feasible : Bool
+  /-- The selected parents. -/
   parents : ParentTable n
 
 /-- Select the cheapest outgoing candidate parent for every non-root vertex (`r` maps to `some r`),
@@ -245,7 +247,9 @@ private theorem time_selectParentsM (a : AdjTable n) (c : CostTable β n) (r : F
 
 /-- Fold state for cycle search. -/
 structure CycleSearchState (n : ℕ) where
+  /-- Current node in the traversal. -/
   current : Fin n
+  /-- True if the traversal has hit the starting node again. -/
   hit : Bool
 
 /-- Test whether iterating `f` starting from `x` returns to `x` within `n` steps (`n` ticks). -/
@@ -395,7 +399,9 @@ private theorem ret_findCycleM (r : Fin n) (f : ParentTable n) :
 
 /-- Fold state for cycle masking. -/
 structure CycleMaskState (n : ℕ) where
+  /-- Current node in the traversal. -/
   current : Fin n
+  /-- Accumulator for the cycle mask. -/
   mask : Vector Bool n
 
 /-- Materialize the cycle indicator vector `inCycle` of the orbit `cycleOf f x0` (`2 * n` ticks). -/
@@ -733,7 +739,7 @@ variable {β : Type*} [LinearOrder β] [AddCommMonoid β]
 
 section Transfer
 
-set_option linter.unusedSectionVars false in
+omit [AddCommMonoid β] in
 private theorem selectParentsM_spec {V : Type*} [FinEnum V]
     (a : AdjTable (FinEnum.card V)) (c : CostTable β (FinEnum.card V))
     (aV : V → V → Bool) (cV : V → V → β) (rV : V)
@@ -910,7 +916,7 @@ private theorem otherCycleCostM_spec {V : Type*} [FinEnum V]
   · intro y _
     rw [hc y f[y.1], hf y]
 
-set_option linter.unusedSectionVars false in
+omit [AddCommMonoid β] in
 private theorem bestEntryTableM_spec {V : Type*} [FinEnum V]
     (a : AdjTable (FinEnum.card V)) (c : CostTable β (FinEnum.card V))
     (inCycle : Vector Bool (FinEnum.card V))

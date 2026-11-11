@@ -2314,7 +2314,7 @@ private theorem runListAux_eq_edmondsAux {n : ℕ} [FinEnum (Fin n)]
           rw [h]
           unfold bestEntry
           rw [htl]
-          rw [isSome_argmin_filter]
+          rw [List.isSome_argmin_filter]
           apply congrArg
           ext y
           exact congrArg (· && tableAdj n a u y) (decide_congr_inst _ _)
@@ -2355,7 +2355,7 @@ private theorem runListAux_eq_edmondsAux {n : ℕ} [FinEnum (Fin n)]
           rw [h]
           unfold bestExit
           rw [htl]
-          rw [isSome_argmin_filter]
+          rw [List.isSome_argmin_filter]
           apply congrArg
           ext x
           exact congrArg (· && tableAdj n a x w) (decide_congr_inst _ _)
