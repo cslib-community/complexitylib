@@ -57,7 +57,8 @@ The tree of the output is its parent graph `SimpleGraph.parentGraph`
 
 * `Cslib.Algorithms.Lean.GomoryHu.isGomoryHuTree_gusfieldParent`: for a symmetric submodular `f`
   and an oracle returning minimum cuts, Gusfield's algorithm computes a Gomory–Hu tree of `f`.
-* `Cslib.Algorithms.Lean.GomoryHu.isGomoryHuTree_gusfieldWithWeights`,
+* `Cslib.Algorithms.Lean.GomoryHu.gusfieldWithWeights_spec`,
+  `Cslib.Algorithms.Lean.GomoryHu.isGomoryHuTree_gusfieldWithWeights`,
   `Cslib.Algorithms.Lean.GomoryHu.gusfieldWithWeights_weight_eq`,
   `Cslib.Algorithms.Lean.GomoryHu.isMinCutBetween_gusfieldWithWeights_edgeSide`:
   `gusfieldWithWeights` computes the same Gomory–Hu tree together with
@@ -200,6 +201,8 @@ oracle `val`, root `r`, initial weight `w₀`, and vertex order `l`. -/
     (l : List V) : (V → V) × (V → β) :=
   gusfieldWeightLoop C val r l (fun _ => r) (fun _ => w₀)
 
+/-- Ignoring edge weights, `gusfieldWeightLoop` computes the same parent function as
+`gusfieldLoop`. -/
 theorem fst_gusfieldWeightLoop (C : V → V → Finset V) (val : V → V → β) (r : V) :
     ∀ (l : List V) (p : V → V) (w : V → β),
       (gusfieldWeightLoop C val r l p w).1 = gusfieldLoop C r l p
@@ -208,6 +211,7 @@ theorem fst_gusfieldWeightLoop (C : V → V → Finset V) (val : V → V → β)
     by_cases hsr : s = r <;>
       simp only [gusfieldWeightLoop, gusfieldLoop, hsr, ↓reduceIte, fst_gusfieldWeightLoop]
 
+/-- The first component of `gusfieldWithWeights` equals `gusfieldParent`. -/
 theorem fst_gusfieldWithWeights (C : V → V → Finset V) (val : V → V → β) (r : V) (w₀ : β)
     (l : List V) :
     (gusfieldWithWeights C val r w₀ l).1 = gusfieldParent C r l :=
@@ -935,62 +939,6 @@ private theorem gInv_gusfieldWithWeights [Fintype V] [DecidableEq V] [AddCommMon
   rw [huniv] at I
   exact ⟨S, I, hwr⟩
 
-/-- **Correctness of Gusfield's algorithm with edge weights** ([Gusfield1990]): for a symmetric
-submodular `f`, a cut oracle `C` returning minimum cuts, a consistent value oracle
-`val s t = f (C s t)`, a root `r` and a duplicate-free list `l` covering `V \ {r}`,
-`gusfieldWithWeights` returns a Gomory–Hu parent function `p` and edge-weight function `w`. -/
-theorem isGomoryHuTree_gusfieldWithWeights [Fintype V] [DecidableEq V] [AddCommMonoid β]
-    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
-    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
-    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
-    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
-    (hl : ∀ x, x ≠ r → x ∈ l) :
-    IsGomoryHuTree f (parentGraph (gusfieldWithWeights C val r w₀ l).1) := by
-  obtain ⟨S, I, -⟩ := gInv_gusfieldWithWeights hsym hsub hC hval r w₀ hnd hl
-  exact (gInv_isGomoryHuTree hsym I).1
-
-theorem isMinCutBetween_gusfieldWithWeights_edgeSide [Fintype V] [DecidableEq V] [AddCommMonoid β]
-    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
-    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
-    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
-    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
-    (hl : ∀ x, x ≠ r → x ∈ l) {u : V} (hur : u ≠ r) :
-    let res := gusfieldWithWeights C val r w₀ l
-    IsMinCutBetween f u (res.1 u) (edgeSide (parentGraph res.1) u (res.1 u)) := by
-  obtain ⟨S, I, -⟩ := gInv_gusfieldWithWeights hsym hsub hC hval r w₀ hnd hl
-  exact ((gInv_isGomoryHuTree hsym I).2 u hur).1
-
-theorem gusfieldWithWeights_weight_eq [Fintype V] [DecidableEq V] [AddCommMonoid β]
-    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
-    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
-    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
-    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
-    (hl : ∀ x, x ≠ r → x ∈ l) {u : V} (hur : u ≠ r) :
-    let res := gusfieldWithWeights C val r w₀ l
-    res.2 u = f (edgeSide (parentGraph res.1) u (res.1 u)) := by
-  obtain ⟨S, I, -⟩ := gInv_gusfieldWithWeights hsym hsub hC hval r w₀ hnd hl
-  exact ((gInv_isGomoryHuTree hsym I).2 u hur).2
-
-theorem gusfieldWithWeights_parent_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
-    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
-    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
-    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
-    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
-    (hl : ∀ x, x ≠ r → x ∈ l) :
-    (gusfieldWithWeights C val r w₀ l).1 r = r := by
-  obtain ⟨S, I, -⟩ := gInv_gusfieldWithWeights hsym hsub hC hval r w₀ hnd hl
-  exact I.parent_root
-
-theorem gusfieldWithWeights_weight_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
-    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
-    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
-    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
-    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
-    (hl : ∀ x, x ≠ r → x ∈ l) :
-    (gusfieldWithWeights C val r w₀ l).2 r = w₀ := by
-  obtain ⟨S, I, hwr⟩ := gInv_gusfieldWithWeights hsym hsub hC hval r w₀ hnd hl
-  exact hwr
-
 /-- **Correctness of Gusfield's algorithm** ([Gusfield1990]). For a symmetric submodular `f`, a
 cut oracle `C` returning a minimum `s`–`t` cut for all `s ≠ t`, a root `r` and a duplicate-free
 list `l` containing every vertex other than `r`, the parent function computed by Gusfield's
@@ -1001,6 +949,97 @@ theorem isGomoryHuTree_gusfieldParent [Fintype V] [DecidableEq V] [AddCommMonoid
     (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) {l : List V} (hnd : l.Nodup)
     (hl : ∀ x, x ≠ r → x ∈ l) : IsGomoryHuTree f (parentGraph (gusfieldParent C r l)) := by
   rw [← fst_gusfieldWithWeights C (fun s t => f (C s t)) r (f ∅) l]
-  exact isGomoryHuTree_gusfieldWithWeights hsym hsub hC (fun _ _ _ => rfl) r (f ∅) hnd hl
+  obtain ⟨_, I, -⟩ :=
+    gInv_gusfieldWithWeights hsym hsub hC (fun _ _ _ => rfl) r (f ∅) hnd hl
+  exact (gInv_isGomoryHuTree hsym I).1
+
+/-- The root `r` remains its own parent in `gusfieldParent`. -/
+private theorem gusfieldParent_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) :
+    gusfieldParent C r l r = r := by
+  rw [← fst_gusfieldWithWeights C (fun s t => f (C s t)) r (f ∅) l]
+  obtain ⟨_, I, -⟩ :=
+    gInv_gusfieldWithWeights hsym hsub hC (fun _ _ _ => rfl) r (f ∅) hnd hl
+  exact I.parent_root
+
+/-- **Bundled correctness of Gusfield's algorithm with edge weights** ([Gusfield1990]): for a
+symmetric submodular `f`, cut oracle `C`, consistent value oracle `val s t = f (C s t)`, root `r`,
+initial weight `w₀` and duplicate-free list `l` covering `V \ {r}`, `gusfieldWithWeights` produces
+a Gomory–Hu parent graph with fixed root `r`, root weight `w₀`, and non-root weights equal to `f`
+on each tree-edge side. -/
+theorem gusfieldWithWeights_spec [Fintype V] [DecidableEq V] [AddCommMonoid β] [LinearOrder β]
+    [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) :
+    let res := gusfieldWithWeights C val r w₀ l
+    IsGomoryHuTree f (parentGraph res.1) ∧ res.1 r = r ∧ res.2 r = w₀ ∧
+      ∀ u, u ≠ r →
+        IsMinCutBetween f u (res.1 u) (edgeSide (parentGraph res.1) u (res.1 u)) ∧
+          res.2 u = f (edgeSide (parentGraph res.1) u (res.1 u)) := by
+  obtain ⟨S, I, hwr⟩ := gInv_gusfieldWithWeights hsym hsub hC hval r w₀ hnd hl
+  obtain ⟨htree, hside⟩ := gInv_isGomoryHuTree hsym I
+  exact ⟨htree, I.parent_root, hwr, fun u hur => hside u hur⟩
+
+/-- **Correctness of Gusfield's algorithm with edge weights** ([Gusfield1990]): for a symmetric
+submodular `f`, a cut oracle `C` returning minimum cuts, a root `r` and a duplicate-free list `l`
+covering `V \ {r}`, the parent component of `gusfieldWithWeights` is a Gomory–Hu tree of `f`. -/
+theorem isGomoryHuTree_gusfieldWithWeights [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) (w₀ : β) {l : List V}
+    (hnd : l.Nodup) (hl : ∀ x, x ≠ r → x ∈ l) :
+    IsGomoryHuTree f (parentGraph (gusfieldWithWeights C val r w₀ l).1) := by
+  rw [fst_gusfieldWithWeights]
+  exact isGomoryHuTree_gusfieldParent hsym hsub hC r hnd hl
+
+/-- For every non-root vertex `u`, the tree-edge side containing `u` in `gusfieldWithWeights` is a
+minimum `u`–`p u` cut of `f`. -/
+theorem isMinCutBetween_gusfieldWithWeights_edgeSide [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) {u : V} (hur : u ≠ r) :
+    let res := gusfieldWithWeights C val r w₀ l
+    IsMinCutBetween f u (res.1 u) (edgeSide (parentGraph res.1) u (res.1 u)) :=
+  ((gusfieldWithWeights_spec hsym hsub hC hval r w₀ hnd hl).2.2.2 u hur).1
+
+/-- **Edge-weight correctness of Gusfield's algorithm** ([Gusfield1990]): for every non-root vertex
+`u`, the weight recorded by `gusfieldWithWeights` equals `f` on the tree-edge side containing
+`u`. -/
+theorem gusfieldWithWeights_weight_eq [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) {u : V} (hur : u ≠ r) :
+    let res := gusfieldWithWeights C val r w₀ l
+    res.2 u = f (edgeSide (parentGraph res.1) u (res.1 u)) :=
+  ((gusfieldWithWeights_spec hsym hsub hC hval r w₀ hnd hl).2.2.2 u hur).2
+
+/-- The root `r` remains its own parent in `gusfieldWithWeights`. -/
+theorem gusfieldWithWeights_parent_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t)) (r : V) (w₀ : β) {l : List V}
+    (hnd : l.Nodup) (hl : ∀ x, x ≠ r → x ∈ l) :
+    (gusfieldWithWeights C val r w₀ l).1 r = r := by
+  rw [fst_gusfieldWithWeights]
+  exact gusfieldParent_root hsym hsub hC r hnd hl
+
+/-- The weight recorded at the root `r` in `gusfieldWithWeights` equals the initial weight `w₀`. -/
+theorem gusfieldWithWeights_weight_root [Fintype V] [DecidableEq V] [AddCommMonoid β]
+    [LinearOrder β] [IsOrderedCancelAddMonoid β] {f : Finset V → β} (hsym : ∀ X, f Xᶜ = f X)
+    (hsub : IsSubmodular f) {C : V → V → Finset V} {val : V → V → β}
+    (hC : ∀ s t, s ≠ t → IsMinCutBetween f s t (C s t))
+    (hval : ∀ s t, s ≠ t → val s t = f (C s t)) (r : V) (w₀ : β) {l : List V} (hnd : l.Nodup)
+    (hl : ∀ x, x ≠ r → x ∈ l) :
+    (gusfieldWithWeights C val r w₀ l).2 r = w₀ :=
+  (gusfieldWithWeights_spec hsym hsub hC hval r w₀ hnd hl).2.2.1
 
 end Cslib.Algorithms.Lean.GomoryHu

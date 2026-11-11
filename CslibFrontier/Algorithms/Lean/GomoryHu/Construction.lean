@@ -37,13 +37,14 @@ flow value as the oracle.
 * `Cslib.Algorithms.Lean.GomoryHu.isGomoryHuTree_gomoryHuM`: the parent graph of the output is a
   Gomory–Hu tree of `cutWeight W` (cut-equivalent: the side of each tree edge `uv` containing `u`
   is a minimum `u`–`v` cut of `W`).
-* `Cslib.Algorithms.Lean.GomoryHu.vget_gomoryHuM_weight_eq_minCutBetween`: for every non-root
-  vertex `u`, the recorded weight `vget (gomoryHuM W adj r).ret.weight u` equals
+* `Cslib.Algorithms.Lean.GomoryHu.vget_gomoryHuM_weight_eq_minCutBetween`: for every vertex
+  `u : Fin n`, the recorded weight `vget (gomoryHuM W adj r).ret.weight u` equals
   `minCutBetween W u (vget (gomoryHuM W adj r).ret.parent u)` (`0` at the root `r`,
   `vget_gomoryHuM_weight_root`).
-* `Cslib.Algorithms.Lean.GomoryHu.vget_gomoryHuM_parent`,
+* `Cslib.Algorithms.Lean.GomoryHu.vget_gomoryHuM`,
+  `Cslib.Algorithms.Lean.GomoryHu.vget_gomoryHuM_parent`,
   `Cslib.Algorithms.Lean.GomoryHu.vget_gomoryHuM_weight`: the output agrees with the abstract
-  `gusfieldWithWeights` run with the Edmonds–Karp cut and flow-value oracles `ekCut` and `ekValue`.
+  `gusfieldParent` and `gusfieldWithWeights` run with `ekCut` and `ekValue`.
 * `Cslib.Algorithms.Lean.GomoryHu.gomoryHuM_time_le_of_forall`: the charged time is at most `3 n`
   plus `n - 1` times (any bound on one Edmonds–Karp computation, plus `n + 3`).
 * `Cslib.Algorithms.Lean.GomoryHu.gomoryHuM_time_le`: the same with the Edmonds–Karp bound
@@ -53,14 +54,16 @@ flow value as the oracle.
 ## Cost model
 
 The unit-cost model of `Cslib.Algorithms.Lean.MaxFlow.edmondsKarpM`, extended with `Finset`
-membership on the returned cut and reading `out.flow.value` from the returned flow output as free
-primitives: `Vector` reads and writes, those membership tests, equality tests on `Fin n`, and
-evaluating `W u v` count as `O(1)` primitives inside charged steps. (Even an `O(n)` membership test
-or explicit `O(n)` flow-value sum over `Fin n` would add only `O(n³)` in total.) Charged: `n` ticks
-to allocate the parent array `p`, `n` ticks to allocate the edge-weight array `fl`, `1` tick per
-vertex for the loop test `s = r`, and for each non-root vertex `s`: `1` tick to read its parent,
-the full Edmonds–Karp cost, `n` ticks for the re-hanging scan over all vertices, `1` tick for the
-final swap test and its parent writes, and `1` tick to record the edge weight in `fl`.
+membership on the returned cut and reading `out.flow.value` (`netOut N.s`, an `O(n)` sum over
+`Fin n`) as free primitives: `Vector` reads and writes, those membership tests, that `Flow.value`
+sum, equality tests on `Fin n`, and evaluating `W u v` count as `O(1)` primitives inside charged
+steps. (Computing `out.flow.value` once per step would add `O(n²)` in total, subsumed by the
+re-hanging scan; `O(n)` `Finset` membership tests inside each `n`-vertex scan would add `O(n³)` in
+total.) Charged: `n` ticks to allocate the parent array `p`, `n` ticks to allocate the edge-weight
+array `fl`, `1` tick per vertex for the loop test `s = r`, and for each non-root vertex `s`: `1`
+tick to read its parent, the full Edmonds–Karp cost, `n` ticks for the re-hanging scan over all
+vertices, `1` tick for the final swap test and its parent writes, and `1` tick to record the edge
+weight in `fl`.
 
 ## Limitations
 
@@ -203,6 +206,7 @@ theorem vget_gusfieldStepM_parent (W : Fin n → Fin n → ℕ) (adj : Fin n →
     simp only [hX, hzs, hzt, ↓reduceIte, TimeM.ret_pure, vget_vset_ne _ _ (Ne.symm hzs),
       vget_vset_ne _ _ (Ne.symm hzt), hq]
 
+/-- The weight array computed by `gusfieldStepM` agrees pointwise with `gusfieldStepWeight`. -/
 theorem vget_gusfieldStepM_weight (W : Fin n → Fin n → ℕ) (adj : Fin n → List (Fin n))
     (p : Vector (Fin n) n) (fl : Vector ℕ n) (s : Fin n) (z : Fin n) :
     vget (gusfieldStepM W adj p fl s).ret.weight z =
@@ -287,19 +291,38 @@ private theorem vget_gomoryHuM_spec (W : Fin n → Fin n → ℕ) (adj : Fin n �
   rw [hp, hw] at hpar hwt
   exact ⟨hpar, hwt⟩
 
+/-- The parent array returned by `gomoryHuM` agrees pointwise with the first component of
+`gusfieldWithWeights`. -/
 theorem vget_gomoryHuM_parent (W : Fin n → Fin n → ℕ) (adj : Fin n → List (Fin n)) (r : Fin n) :
     vget (gomoryHuM W adj r).ret.parent =
       (gusfieldWithWeights (ekCut W adj) (ekValue W adj) r 0 (List.finRange n)).1 :=
   (vget_gomoryHuM_spec W adj r).1
 
+/-- The parent array returned by `gomoryHuM` agrees pointwise with `gusfieldParent`. -/
 theorem vget_gomoryHuM (W : Fin n → Fin n → ℕ) (adj : Fin n → List (Fin n)) (r : Fin n) :
     vget (gomoryHuM W adj r).ret.parent = gusfieldParent (ekCut W adj) r (List.finRange n) := by
   rw [vget_gomoryHuM_parent, fst_gusfieldWithWeights]
 
+/-- The weight array returned by `gomoryHuM` agrees pointwise with the second component of
+`gusfieldWithWeights`. -/
 theorem vget_gomoryHuM_weight (W : Fin n → Fin n → ℕ) (adj : Fin n → List (Fin n)) (r : Fin n) :
     vget (gomoryHuM W adj r).ret.weight =
       (gusfieldWithWeights (ekCut W adj) (ekValue W adj) r 0 (List.finRange n)).2 :=
   (vget_gomoryHuM_spec W adj r).2
+
+private theorem gomoryHuM_pure_spec {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W)
+    {adj : Fin n → List (Fin n)} (hadj : ∀ u v, u ≠ v → 0 < W u v + W v u → v ∈ adj u)
+    (r : Fin n) :
+    let res := gusfieldWithWeights (ekCut W adj) (ekValue W adj) r 0 (List.finRange n)
+    IsGomoryHuTree (cutWeight W) (parentGraph res.1) ∧ res.1 r = r ∧ res.2 r = 0 ∧
+      ∀ u, u ≠ r →
+        IsMinCutBetween (cutWeight W) u (res.1 u)
+            (SimpleGraph.edgeSide (parentGraph res.1) u (res.1 u)) ∧
+          res.2 u = cutWeight W (SimpleGraph.edgeSide (parentGraph res.1) u (res.1 u)) :=
+  gusfieldWithWeights_spec (cutWeight_compl' hW) (isSubmodular_cutWeight W)
+    (fun _ _ hst => isMinCutBetween_ekCut hadj hst)
+    (fun _ _ hst => ekValue_eq_cutWeight hadj hst) r 0 (List.nodup_finRange n)
+    fun x _ => List.mem_finRange x
 
 /-- **Correctness of Gusfield's algorithm with Edmonds–Karp** ([Gusfield1990]): for a weighted
 multigraph `W` on `Fin n` and adjacency lists `adj` covering its edges, the parent array computed
@@ -309,10 +332,8 @@ theorem isGomoryHuTree_gomoryHuM {W : Fin n → Fin n → ℕ} (hW : IsMultigrap
     {adj : Fin n → List (Fin n)} (hadj : ∀ u v, u ≠ v → 0 < W u v + W v u → v ∈ adj u)
     (r : Fin n) :
     IsGomoryHuTree (cutWeight W) (parentGraph (vget (gomoryHuM W adj r).ret.parent)) := by
-  rw [vget_gomoryHuM]
-  exact isGomoryHuTree_gusfieldParent (cutWeight_compl' hW) (isSubmodular_cutWeight W)
-    (fun _ _ hst => isMinCutBetween_ekCut hadj hst) r (List.nodup_finRange n)
-    fun x _ => List.mem_finRange x
+  rw [vget_gomoryHuM_parent]
+  exact (gomoryHuM_pure_spec hW hadj r).1
 
 /-- The recorded root weight is `0`. -/
 theorem vget_gomoryHuM_weight_root {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W)
@@ -320,46 +341,24 @@ theorem vget_gomoryHuM_weight_root {W : Fin n → Fin n → ℕ} (hW : IsMultigr
     (r : Fin n) :
     vget (gomoryHuM W adj r).ret.weight r = 0 := by
   rw [vget_gomoryHuM_weight]
-  exact gusfieldWithWeights_weight_root (cutWeight_compl' hW) (isSubmodular_cutWeight W)
-    (fun _ _ hst => isMinCutBetween_ekCut hadj hst)
-    (fun _ _ hst => ekValue_eq_cutWeight hadj hst) r 0 (List.nodup_finRange n)
-    fun x _ => List.mem_finRange x
+  exact (gomoryHuM_pure_spec hW hadj r).2.2.1
 
-/-- **Correctness of the edge weights returned by `gomoryHuM`** ([Gusfield1990]): for every
-non-root vertex `u`, the weight `vget (gomoryHuM W adj r).ret.weight u` equals the minimum cut
-weight `minCutBetween W u (vget (gomoryHuM W adj r).ret.parent u)` between `u` and its parent. -/
+/-- **Correctness of the edge weights returned by `gomoryHuM`** ([Gusfield1990]): for every vertex
+`u : Fin n`, the weight `vget (gomoryHuM W adj r).ret.weight u` equals the minimum cut weight
+`minCutBetween W u (vget (gomoryHuM W adj r).ret.parent u)` between `u` and its parent (`0` at the
+root `r`). -/
 theorem vget_gomoryHuM_weight_eq_minCutBetween {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W)
-    {adj : Fin n → List (Fin n)} (hadj : ∀ u v, u ≠ v → 0 < W u v + W v u → v ∈ adj u)
-    (r u : Fin n) (hur : u ≠ r) :
-    vget (gomoryHuM W adj r).ret.weight u =
-      minCutBetween W u (vget (gomoryHuM W adj r).ret.parent u) := by
-  have hcut := isMinCutBetween_gusfieldWithWeights_edgeSide (cutWeight_compl' hW)
-    (isSubmodular_cutWeight W) (fun _ _ hst => isMinCutBetween_ekCut hadj hst)
-    (fun _ _ hst => ekValue_eq_cutWeight hadj hst) r 0 (List.nodup_finRange n)
-    (fun x _ => List.mem_finRange x) hur
-  have hw := gusfieldWithWeights_weight_eq (cutWeight_compl' hW)
-    (isSubmodular_cutWeight W) (fun _ _ hst => isMinCutBetween_ekCut hadj hst)
-    (fun _ _ hst => ekValue_eq_cutWeight hadj hst) r 0 (List.nodup_finRange n)
-    (fun x _ => List.mem_finRange x) hur
-  rw [vget_gomoryHuM_weight, vget_gomoryHuM_parent]
-  exact hw.trans ((isMinCutBetween_cutWeight_iff W).mp hcut).2.2
-
-/-- Edge-weight correctness for every vertex `u : Fin n` (at `r`, both sides equal `0`). -/
-theorem vget_gomoryHuM_weight_eq_minCutBetween_all {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W)
     {adj : Fin n → List (Fin n)} (hadj : ∀ u v, u ≠ v → 0 < W u v + W v u → v ∈ adj u)
     (r u : Fin n) :
     vget (gomoryHuM W adj r).ret.weight u =
       minCutBetween W u (vget (gomoryHuM W adj r).ret.parent u) := by
+  have hspec := gomoryHuM_pure_spec hW hadj r
+  rw [vget_gomoryHuM_weight, vget_gomoryHuM_parent]
   by_cases hur : u = r
   · subst hur
-    have hpr : vget (gomoryHuM W adj u).ret.parent u = u := by
-      rw [vget_gomoryHuM_parent]
-      exact gusfieldWithWeights_parent_root (cutWeight_compl' hW) (isSubmodular_cutWeight W)
-        (fun _ _ hst => isMinCutBetween_ekCut hadj hst)
-        (fun _ _ hst => ekValue_eq_cutWeight hadj hst) u 0 (List.nodup_finRange n)
-        fun x _ => List.mem_finRange x
-    rw [vget_gomoryHuM_weight_root hW hadj u, hpr, minCutBetween_self]
-  · exact vget_gomoryHuM_weight_eq_minCutBetween hW hadj r u hur
+    rw [hspec.2.1, hspec.2.2.1, minCutBetween_self]
+  · obtain ⟨hcut, hw⟩ := hspec.2.2.2 u hur
+    exact hw.trans ((isMinCutBetween_cutWeight_iff W).mp hcut).2.2
 
 theorem gomoryHuLoopM_time_le (W : Fin n → Fin n → ℕ) (adj : Fin n → List (Fin n)) (r : Fin n)
     {B : ℕ} (hB : ∀ s t, (edmondsKarpM (Network.mk W s t) adj).time ≤ B) :

@@ -94,12 +94,12 @@ example : IsGomoryHuTree (cutWeight W) (parentGraph (vget (gomoryHuM W adjW 0).r
 example (u : Fin 4) :
     vget (gomoryHuM W adjW 0).ret.weight u =
       minCutBetween W u (vget (gomoryHuM W adjW 0).ret.parent u) :=
-  vget_gomoryHuM_weight_eq_minCutBetween_all hW hadjW 0 u
+  vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 0 u
 
 example : minCutBetween W 1 0 = 5 ∧ minCutBetween W 2 1 = 4 ∧ minCutBetween W 3 2 = 4 := by
-  have h1 := vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 0 1 (by decide)
-  have h2 := vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 0 2 (by decide)
-  have h3 := vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 0 3 (by decide)
+  have h1 := vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 0 1
+  have h2 := vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 0 2
+  have h3 := vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 0 3
   rw [gomoryHuM_zero_weight, gomoryHuM_zero_parent] at h1 h2 h3
   exact ⟨h1.symm, h2.symm, h3.symm⟩
 
@@ -137,10 +137,10 @@ example : parentGraph (vget (gomoryHuM W adjW 3).ret.parent) = SimpleGraph.pathG
   revert x y
   decide
 
-example (u : Fin 4) (hu : u ≠ 3) :
+example (u : Fin 4) :
     vget (gomoryHuM W adjW 3).ret.weight u =
       minCutBetween W u (vget (gomoryHuM W adjW 3).ret.parent u) :=
-  vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 3 u hu
+  vget_gomoryHuM_weight_eq_minCutBetween hW hadjW 3 u
 
 /-! ### Running time -/
 
@@ -237,7 +237,7 @@ example (u : Fin 3) :
     vget (gomoryHuM (fun _ _ => 0) (fun _ => []) (0 : Fin 3)).ret.weight u =
       minCutBetween (fun _ _ : Fin 3 => 0) u
         (vget (gomoryHuM (fun _ _ => 0) (fun _ => []) (0 : Fin 3)).ret.parent u) :=
-  vget_gomoryHuM_weight_eq_minCutBetween_all ⟨fun _ _ => rfl, fun _ => rfl⟩
+  vget_gomoryHuM_weight_eq_minCutBetween ⟨fun _ _ => rfl, fun _ => rfl⟩
     (fun _ _ _ h => absurd h (by decide)) 0 u
 
 end CslibFrontierTests.GomoryHuConstruction
