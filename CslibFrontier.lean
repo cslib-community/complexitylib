@@ -3328,6 +3328,7 @@ public import CslibFrontier.Computability.PCP.Approximation.SetCover.ApproxReduc
 public import CslibFrontier.Computability.PCP.Approximation.SetCover.LundYannakakis
 public import CslibFrontier.Computability.PCP.Approximation.SetCover.PartitionGadget
 public import CslibFrontier.Computability.PCP.Approximation.ThreeXOR
+public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Propagation
 public import CslibFrontier.Computability.PCP.Approximation.UniqueGames.PropagationTime
 public import CslibFrontier.Computability.PCP.AssignmentTester
