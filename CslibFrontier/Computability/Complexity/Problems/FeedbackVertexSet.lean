@@ -81,7 +81,7 @@ structure FeedbackVertexSetInstance where
   graph : Graph
   /-- The maximum number of vertices to remove. -/
   bound : ℕ
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `FeedbackVertexSetInstance` as a pair `(graph, bound)`. -/
 enc_structure encFeedbackVertexSet : FeedbackVertexSetInstance where

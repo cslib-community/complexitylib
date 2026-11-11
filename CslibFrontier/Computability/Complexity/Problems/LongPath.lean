@@ -77,7 +77,7 @@ structure LongPathInstance where
   graph : Graph
   /-- The target number of vertices on the path. -/
   target : ℕ
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `LongPathInstance` as `(graph, target)` with `target` in binary. -/
 enc_structure encLongPath : LongPathInstance where

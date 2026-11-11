@@ -130,7 +130,7 @@ structure GeneralizedGeographyInstance where
   graph : Graph
   /-- The starting vertex of the token. -/
   start : ℕ
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `GeneralizedGeographyInstance` as a pair `(graph, start)`. -/
 enc_structure encGeneralizedGeography : GeneralizedGeographyInstance where

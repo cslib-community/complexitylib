@@ -65,6 +65,8 @@ example :
       (encPair encGraph encGraph) encGraphIsomorphism := by
   fun_prop
 
+example : (default : GraphIsomorphismInstance) = ⟨default, default⟩ := rfl
+
 -- The certificate decoding `[7, 5, 9]` (positions `0, 1, 2` of
 -- `path'.vertices = [7, 5, 9, 5]` in unary
 -- blocks of width `4`) maps positions `0, 1, 2` of `path` to `7, 5, 9` and is accepted.

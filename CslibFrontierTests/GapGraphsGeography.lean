@@ -172,4 +172,6 @@ example : ComputableInPolyTime
     (encPair encGraph encNat) encGeneralizedGeography := by
   fun_prop
 
+example : (default : GeneralizedGeographyInstance) = ⟨default, default⟩ := rfl
+
 end CslibFrontierTests.GapGraphsGeography
