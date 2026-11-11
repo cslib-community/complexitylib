@@ -100,6 +100,12 @@ section Selection
 def agreeCount (g h : (ι → Bool) → Bool) (x : Fin t → ι → Bool) : ℕ :=
   (Finset.univ.filter fun i => h (x i) = g (x i)).card
 
+/-- The agreement count is the number of sample indices at which the hypothesis agrees with the
+target. -/
+theorem agreeCount_eq_card (g h : (ι → Bool) → Bool) (x : Fin t → ι → Bool) :
+    agreeCount g h x = (Finset.univ.filter fun i => h (x i) = g (x i)).card := by
+  rw [agreeCount]
+
 /-- The index of a hypothesis among `hs` with the largest agreement count with `g` on the sample
 `x`; the first such index. -/
 def selectBest [NeZero k] (g : (ι → Bool) → Bool) (hs : Fin k → (ι → Bool) → Bool)

@@ -8,8 +8,11 @@ module
 -- upstream: candidate
 
 public import Cslib.Computability.Circuit.Boolean.Complexity
+public import CslibFrontier.MachineLearning.UniformLearning.BestOf
+public import CslibFrontier.MachineLearning.UniformLearning.NonadaptiveCircuit
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Computability.Circuit.Boolean.PopulationCount
+import CslibFrontier.Computability.Circuit.Boolean.Substitution
 import CslibFrontier.Computability.Circuit.Boolean.Synthesis
 import CslibFrontier.Computability.Circuit.Boolean.Tournament
 import CslibFrontier.Computability.Circuit.Complexity
@@ -32,16 +35,29 @@ beyond `k - 1` keyed minimums of `8 (⌈log₂ (t + 1)⌉ + 1) + 5` gates, when 
 hypotheses at the sample points cost at most `A`, those of the target `B`, and those of the
 hypotheses at the point to classify `C` (`QueryLearner.exists_complexity_select_le`).
 
+Applied to a learner that, on every seed, queries `q` fixed points and computes its hypothesis
+from the answers by a circuit with at most `S` gates (`QueryLearner.HasCircuit`), this shows that
+`bestOf A k t` is such a learner with `k * q + t` queries and at most
+`k (t + 1) (S + 469) + (k - 1) (8 (⌈log₂ (t + 1)⌉ + 1) + 5)` gates
+(`QueryLearner.hasCircuit_bestOf`): the circuit of each run is evaluated at the `t` sample points
+and at the point to classify. As for `QueryLearner.HasCircuit`, only size is bounded; neither
+depth nor running time is certified.
+
 ## Main results
 
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.exists_complexity_select_le`: a circuit
   outputs the value of the first hypothesis with the most agreements.
+* `Cslib.MachineLearning.UniformLearning.QueryLearner.hasCircuit_bestOf`: best-of-`k` selection
+  of a learner with a circuit has a circuit.
 
 ## References
 
 * [M. L. Carmosino, R. Impagliazzo, V. Kabanets and A. Kolokolova,
   *Learning Algorithms from Natural Proofs*][CarmosinoImpagliazzoKabanetsKolokolova2016],
   Theorem 2.11, p. 10:9 (the confidence boosting step).
+* [L. Chen, S. Hirahara, I. C. Oliveira, J. Pich, N. Rajgopal and R. Santhanam, *Beyond Natural
+  Proofs: Hardness Magnification and Locality*][ChenHiraharaOliveiraPichRajgopalSanthanam2020],
+  Definition 3, p. 12 (learning by circuits with non-adaptive membership queries).
 -/
 
 public section
@@ -123,5 +139,71 @@ theorem exists_complexity_select_le [NeZero k] {N : ℕ} (v : Fin k → Fin t �
         have := hcount s; have := hcount j; have := hlt j hj
         omega)
     simp only [hrs, r, Fin.append_right, single_apply]
+
+/-- **Best-of-`k` selection keeps a learner's circuit small.** If on every seed `A` queries `q`
+fixed points and computes its hypothesis from the answers with at most `S` gates, so does
+`bestOf A k t`, with `k * q + t` queries (the points of the `k` runs, then the `t` sample points)
+and at most `k (t + 1) (S + 469) + (k - 1) (8 (⌈log₂ (t + 1)⌉ + 1) + 5)` gates. Its circuit
+evaluates the circuit of every run at each sample point, two more gates for fixing the point, and
+at the point to classify, then selects as in `exists_complexity_select_le`. -/
+theorem hasCircuit_bestOf {n q S : ℕ} {Ω : Type*} {A : QueryLearner (Fin n) Ω} [NeZero k]
+    (hA : A.HasCircuit q S) :
+    (bestOf A k t).HasCircuit (k * q + t)
+      (k * ((t + 1) * (S + 469)) + (k - 1) * (8 * (Nat.clog 2 (t + 1) + 1) + 5)) := by
+  rintro ⟨ω, xs⟩
+  choose pts F hF hev using fun j => hA (ω j)
+  -- Answer slot `slot j i` holds the answer at point `i` of run `j`, and `sample i` the answer at
+  -- sample point `i`; the point to classify follows.
+  let slot : Fin k → Fin q → Fin (k * q + t + n) := fun j i =>
+    Fin.castAdd n (Fin.castAdd t (finProdFinEquiv (j, i)))
+  let sample : Fin t → Fin (k * q + t + n) := fun i => Fin.castAdd n (Fin.natAdd (k * q) i)
+  let point : Fin n → Fin (k * q + t + n) := Fin.natAdd (k * q + t)
+  -- Run `j` at sample point `i`, the target at sample point `i`, and run `j` at the point to
+  -- classify.
+  let v : Fin k → Fin t → BooleanFunction (k * q + t + n) := fun j i z =>
+    F j (substitute (Fin.append (fun l => .inl (slot j l)) (fun l => .inr (xs i l))) z)
+  let y : Fin t → BooleanFunction (k * q + t + n) := fun i z => z (sample i)
+  let h : Fin k → BooleanFunction (k * q + t + n) := fun j z =>
+    F j (z ∘ Fin.append (slot j) point)
+  obtain ⟨g, hg, hsel⟩ := exists_complexity_select_le v y h (A := S + 2) (B := 0) (C := S)
+    (fun j i => (complexity_substitute_le _ _).trans (Nat.add_le_add_right (hF j) 2))
+    (fun i => (complexity_single_proj (I := interpretation) (sample i)).le)
+    (fun j => by
+      have := complexity_comp_le (I := interpretation) (fun z => z ∘ Fin.append (slot j) point)
+        (single (F j))
+      rw [complexity_wiring, zero_add] at this
+      exact this.trans (hF j))
+  refine ⟨Fin.append (fun l => pts (finProdFinEquiv.symm l).1 (finProdFinEquiv.symm l).2) xs, g,
+    hg.trans (Nat.add_le_add_right (Nat.mul_le_mul_left k (by nlinarith)) _), fun f x => ?_⟩
+  -- The answers and the point to classify.
+  set z : BitString (k * q + t + n) :=
+    Fin.append (fun i => f (Fin.append
+      (fun l => pts (finProdFinEquiv.symm l).1 (finProdFinEquiv.symm l).2) xs i)) x
+  have hslot : ∀ j l, z (slot j l) = f (pts j l) := fun j l => by
+    simp only [z, slot, Fin.append_left, Equiv.symm_apply_apply]
+  have hv : ∀ j i, v j i z = (A (ω j)).eval f (xs i) := fun j i => by
+    rw [hev]
+    simp only [v]
+    congr 1
+    funext l
+    refine Fin.addCases (fun l => ?_) (fun l => ?_) l
+    · simp [substitute, hslot]
+    · simp [substitute]
+  have hy : ∀ i, y i z = f (xs i) := fun i => by
+    simp [y, z, sample, Fin.append_left, Fin.append_right]
+  have hh : ∀ j, h j z = (A (ω j)).eval f x := fun j => by
+    rw [hev]
+    simp only [h]
+    congr 1
+    funext l
+    refine Fin.addCases (fun l => ?_) (fun l => ?_) l
+    · simp [hslot]
+    · simp [z, point, Fin.append_right]
+  have hcount : ∀ j, #{i | v j i z = y i z} = agreeCount f ((A (ω j)).eval f) xs := fun j => by
+    simp only [hv, hy, agreeCount_eq_card]
+  rw [eval_bestOf, ← hh]
+  refine (hsel z _ (fun j => ?_) (fun j hj => ?_)).symm <;> rw [hcount, hcount]
+  · exact agreeCount_le_selectBest f (fun j => (A (ω j)).eval f) xs j
+  · exact agreeCount_lt_selectBest f (fun j => (A (ω j)).eval f) xs hj
 
 end Cslib.MachineLearning.UniformLearning.QueryLearner
