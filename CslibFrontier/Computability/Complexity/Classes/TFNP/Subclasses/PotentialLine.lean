@@ -66,15 +66,20 @@ iff it search-reduces to the violation relation of some uniform polynomial-time 
 potential range `{0, …, 2 ^ m - 1}` of Definition 9 corresponds to the polynomial bit-length of the
 binary output of `V` (`exists_potentialBound`).
 
-Two syntactic conditions of Definition 9 are not imposed, exactly as `endOfLineRel` does not impose
-the promise of End-of-Line: an instance violating `LineSourcePromise` has the extra solution
+Two syntactic conditions of Definition 9 are not imposed here, just as `endOfLineRel` does not
+impose the promise of End-of-Line: an instance violating `LineSourcePromise` has the extra solution
 `0 ^ n`, and the normalization `V (0 ^ n) = 0`, which does not occur in (R1) or (R2), is omitted.
-This does not change the class (informal argument, not formalized here): the instance on `n + 1`
-bits with `S' (0 ^ (n + 1)) = 1 0 ^ n`, `P' (0 ^ (n + 1)) = 0 ^ (n + 1)`, `V' (0 ^ (n + 1)) = 0`,
-with `S' (1 u) = 1 (potentialSucc u)`, `P' (1 u) = 1 (potentialPred u)` (except
-`P' (1 0 ^ n) = 0 ^ (n + 1)`) and `V' (1 u) = V u + 1`, and with every other string isolated
-satisfies both conditions, and its (R1)/(R2) solutions are exactly the strings `1 u` with `u` an end
-(resp., without the start-of-line clause, a sink) of the original potential line.
+`CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization`
+formalizes the uniform polynomial-time `(n + 1)`-bit normalization to both conditions
+(`PromisedPotentialLine`, `endOfPotentialLinePromisedRel`, `sinkOfPotentialLinePromisedRel`,
+`mem_EOPL_iff_promised`, `mem_SOPL_iff_promised`): the instance on `n + 1` bits with
+`S' (0 ^ (n + 1)) = 1 0 ^ n`, `P' (0 ^ (n + 1)) = 0 ^ (n + 1)`, `V' (0 ^ (n + 1)) = 0`, with
+`S' (1 u) = 1 (potentialSucc u)`, `P' (1 u) = 1 (potentialPred u)` (except
+`P' (1 0 ^ n) = 0 ^ (n + 1)`) and `V' (1 u) = V u + 1`, and with every other string isolated at
+potential `0` satisfies both conditions, and its pure (R1)/(R2) solutions are exactly the strings
+`1 u` with `u` an end (resp., without the start-of-line clause, a sink) of the original potential
+line. Both presentations use uniform polynomial-time families rather than canonical circuit codes;
+`UEOPL` and `CLS` are not formalized.
 
 ## Main definitions
 

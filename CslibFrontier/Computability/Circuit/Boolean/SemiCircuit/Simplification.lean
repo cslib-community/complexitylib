@@ -42,9 +42,9 @@ consistent assignments of the deletions lift to the original semi-circuit
 
 ## Main results
 
-* `Cslib.Circuits.Boolean.SemiCircuit.WellFormed.restrict`, `WellFormed.deleteGate`,
-  `WellFormed.deleteEqn`, `WellFormed.dropEqn`, `WellFormed.dropTrivialEqn`: the simplifications
-  preserve well-formedness.
+* `Cslib.Circuits.Boolean.SemiCircuit.WellFormed.restrict`, `WellFormed.deleteGate_of_reads`,
+  `WellFormed.deleteGate`, `WellFormed.deleteEqn`, `WellFormed.dropEqn`,
+  `WellFormed.dropTrivialEqn`: the simplifications preserve well-formedness.
 
 ## References
 
@@ -181,14 +181,15 @@ theorem mem_live_deleteGate {J : ℕ} {ℓ : Lit} {i : ℕ} (hi : i ∈ C.live) 
   rw [Finset.mem_erase]
   tauto
 
-/-- Deleting a gate preserves well-formedness. -/
-theorem WellFormed.deleteGate (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (h : C.DeleteGateOK J ℓ) :
+/-- Deleting a gate whose replacement literal reads only inputs of `J` preserves well-formedness. -/
+theorem WellFormed.deleteGate_of_reads (hC : C.WellFormed) {J : ℕ} {ℓ : Lit}
+    (hJ : J ∈ C.gates) (hreads : ∀ t, ℓ.Reads t → (C.gate J).Reads t) :
     (C.deleteGate J ℓ).WellFormed := by
-  have hℓJ := h.not_reads hC
+  have hℓJ : ℓ.arg ≠ .node J := fun he => hC.not_reads_self hJ (hreads J he)
   have heqn : ∀ e ∈ C.eqns, (C.eqn e).subst J ℓ = C.eqn e := fun e he =>
-    Equation.subst_of_notMem (hC.notMem_terms_of_mem_gates h.mem he)
+    Equation.subst_of_notMem (hC.notMem_terms_of_mem_gates hJ he)
   have hreads_live : ∀ t, ℓ.Reads t → t ∈ C.live := fun t ht =>
-    hC.reads_live J h.mem t (h.reads t ht)
+    hC.reads_live J hJ t (hreads t ht)
   refine
     { disjoint_params_aux := hC.disjoint_params_aux
       disjoint_params_gates := Finset.disjoint_of_subset_right (Finset.erase_subset _ _)
@@ -204,15 +205,15 @@ theorem WellFormed.deleteGate (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (h : C.D
       out_live := fun i hi => ?_
       solvable := fun u => by
         obtain ⟨val, hu, heq⟩ := hC.solvable u
-        exact ⟨val, hu, (eqnsHold_deleteGate hC h.mem val).2 heq⟩
+        exact ⟨val, hu, (eqnsHold_deleteGate hC hJ val).2 heq⟩
       unique := fun val val' hagree heq heq' =>
-        hC.unique val val' hagree ((eqnsHold_deleteGate hC h.mem val).1 heq)
-          ((eqnsHold_deleteGate hC h.mem val').1 heq') }
+        hC.unique val val' hagree ((eqnsHold_deleteGate hC hJ val).1 heq)
+          ((eqnsHold_deleteGate hC hJ val').1 heq') }
   · have hK' := Finset.mem_of_mem_erase hK
     have hi' := Finset.mem_of_mem_erase hi
     rcases Gate.reads_of_reads_subst hr with hr | ⟨hrJ, hr⟩
     · exact hC.reads_lt K hK' i hi' hr
-    · exact (hC.reads_lt J h.mem i hi' (h.reads i hr)).trans (hC.reads_lt K hK' J h.mem hrJ)
+    · exact (hC.reads_lt J hJ i hi' (hreads i hr)).trans (hC.reads_lt K hK' J hJ hrJ)
   · refine mem_live_deleteGate ?_ fun he => Gate.not_reads_subst hℓJ (he ▸ hr)
     rcases Gate.reads_of_reads_subst hr with hr | ⟨-, hr⟩
     · exact hC.reads_live K (Finset.mem_of_mem_erase hK) i hr
@@ -221,6 +222,11 @@ theorem WellFormed.deleteGate (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (h : C.D
     rcases Lit.reads_of_reads_subst hi with hi | ⟨-, hi⟩
     · exact hC.out_live i hi
     · exact hreads_live i hi
+
+/-- Deleting a gate preserves well-formedness. -/
+theorem WellFormed.deleteGate (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (h : C.DeleteGateOK J ℓ) :
+    (C.deleteGate J ℓ).WellFormed :=
+  hC.deleteGate_of_reads h.mem h.reads
 
 /-- A consistent assignment of a gate deletion lifts, by giving the deleted gate its value. -/
 theorem DeleteGateOK.liftsTo (hC : C.WellFormed) {J : ℕ} {ℓ : Lit} (h : C.DeleteGateOK J ℓ) :
