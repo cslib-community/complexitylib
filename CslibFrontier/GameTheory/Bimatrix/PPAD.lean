@@ -1428,60 +1428,20 @@ private lemma isNash_posMat {c : BimatrixCode} (hc : c.WellFormed)
     rw [(posMat_getD_eq hc i j).2]
     push_cast
     exact congrArg (· + (shiftVal c : ℝ)) hsc
-  have hrow1 : ∀ (ysum : ∑ j : Fin c.cols, y j = 1) (i : Fin c.rows),
-      ((posMatA c).map Int.cast *ᵥ y) i =
-        (clearScale c : ℝ) * (c.toGame.A *ᵥ y) i + (shiftVal c : ℝ) := by
-    intro ysum i
-    change ∑ j : Fin c.cols, ((posMatA c).map Int.cast) i j * y j =
-      (clearScale c : ℝ) * ∑ j : Fin c.cols, c.toGame.A i j * y j + (shiftVal c : ℝ)
-    calc
-      ∑ j : Fin c.cols, ((posMatA c).map Int.cast) i j * y j
-        = ∑ j : Fin c.cols, ((clearScale c : ℝ) * c.toGame.A i j * y j +
-            (shiftVal c : ℝ) * y j) := by
-          refine Finset.sum_congr rfl fun j _ => ?_
-          rw [hA_eq, add_mul]
-      _ = (clearScale c : ℝ) * ∑ j : Fin c.cols, c.toGame.A i j * y j + (shiftVal c : ℝ) := by
-          rw [Finset.sum_add_distrib, ← Finset.mul_sum, ysum, mul_one, Finset.mul_sum]
-          refine congrArg (· + (shiftVal c : ℝ)) ?_
-          refine Finset.sum_congr rfl fun j _ => by ring
-  have hrow2 : ∀ (xsum : ∑ i : Fin c.rows, x i = 1) (j : Fin c.cols),
-      (x ᵥ* (posMatB c).map Int.cast) j =
-        (clearScale c : ℝ) * (x ᵥ* c.toGame.B) j + (shiftVal c : ℝ) := by
-    intro xsum j
-    change ∑ i : Fin c.rows, x i * ((posMatB c).map Int.cast) i j =
-      (clearScale c : ℝ) * ∑ i : Fin c.rows, x i * c.toGame.B i j + (shiftVal c : ℝ)
-    calc
-      ∑ i : Fin c.rows, x i * ((posMatB c).map Int.cast) i j
-        = ∑ i : Fin c.rows, (x i * ((clearScale c : ℝ) * c.toGame.B i j) +
-            x i * (shiftVal c : ℝ)) := by
-          refine Finset.sum_congr rfl fun i _ => ?_
-          rw [hB_eq, mul_add]
-      _ = (clearScale c : ℝ) * ∑ i : Fin c.rows, x i * c.toGame.B i j + (shiftVal c : ℝ) := by
-          rw [Finset.sum_add_distrib, ← Finset.sum_mul, xsum, one_mul, Finset.mul_sum]
-          refine congrArg (· + (shiftVal c : ℝ)) ?_
-          refine Finset.sum_congr rfl fun i _ => by ring
-  simp only [BimatrixGame.isNash_iff, BimatrixGame.isBestResponse₁_iff,
-    BimatrixGame.isBestResponse₂_iff, BimatrixGame.isPureBestResponse₁_iff,
-    BimatrixGame.isPureBestResponse₂_iff]
-  constructor <;> rintro ⟨⟨hx, h1⟩, ⟨hy, h2⟩⟩
-  · have hysum : ∑ j : Fin c.cols, y j = 1 := (isMixedStrategy_iff.1 hy).2
-    have hxsum : ∑ i : Fin c.rows, x i = 1 := (isMixedStrategy_iff.1 hx).2
-    refine ⟨⟨hx, fun i hi i' => ?_⟩, ⟨hy, fun j hj j' => ?_⟩⟩
-    · have hi' := h1 i hi i'
-      rw [hrow1 hysum i', hrow1 hysum i, add_le_add_iff_right] at hi'
-      exact le_of_mul_le_mul_left hi' hDc
-    · have hj' := h2 j hj j'
-      rw [hrow2 hxsum j', hrow2 hxsum j, add_le_add_iff_right] at hj'
-      exact le_of_mul_le_mul_left hj' hDc
-  · have hysum : ∑ j : Fin c.cols, y j = 1 := (isMixedStrategy_iff.1 hy).2
-    have hxsum : ∑ i : Fin c.rows, x i = 1 := (isMixedStrategy_iff.1 hx).2
-    refine ⟨⟨hx, fun i hi i' => ?_⟩, ⟨hy, fun j hj j' => ?_⟩⟩
-    · rw [hrow1 hysum i', hrow1 hysum i, add_le_add_iff_right]
-      exact mul_le_mul_of_nonneg_left (h1 i hi i') hDc.le
-    · rw [hrow2 hxsum j', hrow2 hxsum j, add_le_add_iff_right]
-      exact mul_le_mul_of_nonneg_left (h2 j hj j') hDc.le
-
-/-- Explicit perturbation bit bound `bitBound c.rows c.cols (HVal c)`. -/
+  let GD : BimatrixGame (Fin c.rows) (Fin c.cols) :=
+    BimatrixGame.mk ((clearScale c : ℝ) • c.toGame.A) ((clearScale c : ℝ) • c.toGame.B)
+  have hA_eq' : (posMatA c).map (Int.cast : ℤ → ℝ) = (GD.addConst (shiftVal c : ℝ)).A := by
+    ext i j
+    rw [BimatrixGame.addConst_A_apply]
+    exact hA_eq i j
+  have hB_eq' : (posMatB c).map (Int.cast : ℤ → ℝ) = (GD.addConst (shiftVal c : ℝ)).B := by
+    ext i j
+    rw [BimatrixGame.addConst_B_apply]
+    exact hB_eq i j
+  have hadd : ({ A := (posMatA c).map Int.cast, B := (posMatB c).map Int.cast } :
+        BimatrixGame (Fin c.rows) (Fin c.cols)) = GD.addConst (shiftVal c : ℝ) :=
+    congr_arg₂ BimatrixGame.mk hA_eq' hB_eq'
+  rw [hadd, BimatrixGame.isNash_addConst, BimatrixGame.isNash_smul hDc c.toGame]
 private def bitBoundVal (c : BimatrixCode) : ℕ :=
   bitBound c.rows c.cols (HVal c)
 
@@ -3359,48 +3319,6 @@ private lemma halfEdgeIndex_congr {m n : ℕ}
   subst h1 h2
   rfl
 
-private lemma inter_eq_empty_of_mem_union {κ : Type*} [Fintype κ] [DecidableEq κ]
-    {m n : ℕ} (T₁ T₂ : Finset κ) (hcard : Fintype.card κ = m + n)
-    (h1 : T₁.card = m) (h2 : T₂.card = n) {k₀ : κ}
-    (hacl : ∀ k : κ, k ≠ k₀ → k ∈ T₁ ∨ k ∈ T₂) (hk₀ : k₀ ∈ T₁ ∨ k₀ ∈ T₂) :
-    T₁ ∩ T₂ = ∅ := by
-  have hu_eq : T₁ ∪ T₂ = Finset.univ := by
-    ext z
-    simp only [Finset.mem_univ, iff_true, Finset.mem_union]
-    exact if hz : z = k₀ then hz ▸ hk₀ else hacl z hz
-  have hci := Finset.card_union_add_card_inter T₁ T₂
-  rw [hu_eq, Finset.card_univ, hcard, h1, h2] at hci
-  exact Finset.card_eq_zero.1 (by omega)
-
-private lemma leaveLabel_mem_inter_unique {κ : Type*} [Fintype κ] [DecidableEq κ] [LinearOrder κ]
-    {m n : ℕ} (T₁ T₂ : Finset κ) (hcard : Fintype.card κ = m + n)
-    (h1 : T₁.card = m) (h2 : T₂.card = n) {k₀ : κ}
-    (hacl : ∀ k : κ, k ≠ k₀ → k ∈ T₁ ∨ k ∈ T₂) (hk₀1 : k₀ ∉ T₁) (hk₀2 : k₀ ∉ T₂) :
-    LemkeHowson.leaveLabel T₁ T₂ k₀ ∈ T₁ ∩ T₂ ∧
-      ∀ r ∈ T₁ ∩ T₂, r = LemkeHowson.leaveLabel T₁ T₂ k₀ := by
-  have hk₀ : k₀ ∉ T₁ ∪ T₂ := Finset.notMem_union.2 ⟨hk₀1, hk₀2⟩
-  have hu_eq : T₁ ∪ T₂ = Finset.univ.erase k₀ := by
-    ext z
-    simp only [Finset.mem_union, Finset.mem_erase, Finset.mem_univ, and_true]
-    exact ⟨fun hz he => hk₀ (he ▸ Finset.mem_union.2 hz), fun hne => hacl z hne⟩
-  have hci := Finset.card_union_add_card_inter T₁ T₂
-  rw [hu_eq, Finset.card_erase_of_mem (Finset.mem_univ k₀), Finset.card_univ, hcard, h1, h2] at hci
-  have hpos : 1 ≤ m + n := by
-    have := Finset.card_pos.2 ⟨k₀, Finset.mem_univ k₀⟩
-    rw [Finset.card_univ, hcard] at this
-    exact this
-  have hcard_one : (T₁ ∩ T₂).card = 1 := by omega
-  obtain ⟨z₀, hz₀⟩ := Finset.card_eq_one.1 hcard_one
-  have hleave : LemkeHowson.leaveLabel T₁ T₂ k₀ = z₀ := by
-    simp only [LemkeHowson.leaveLabel, ite_eq_right hk₀, hz₀,
-      dite_eq_left (Finset.singleton_nonempty z₀), Finset.min'_singleton]
-  refine ⟨?_, ?_⟩
-  · rw [hleave, hz₀]; exact Finset.mem_singleton_self z₀
-  · intro r hr
-    rw [hleave]
-    rw [hz₀, Finset.mem_singleton] at hr
-    exact hr
-
 private lemma decodeT₁_encodeNodes_eq {c : BimatrixCode} {v : List Bool} {L₁ L₂ : List ℕ}
     (hv : v = encodeNodes c L₁ L₂) (hsort : L₁.Pairwise (· < ·))
     (hlt : ∀ k ∈ L₁, k < c.rows + c.cols) : decodeT₁ c v = L₁ := by
@@ -3500,8 +3418,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
       by_cases hk₀_in : k₀ ∈ T₁s
       · simp only [l', LemkeHowson.leaveLabel, ite_eq_left (Finset.mem_union.2 (.inl hk₀_in))]
         exact hk₀_in
-      · exact (Finset.mem_inter.1 (leaveLabel_mem_inter_unique T₁s T₂s hsum_card hcard₁ hcard₂
-          hacl hk₀_in hk₀_not_T₂s).1).1
+      · exact (Finset.mem_inter.1 (LemkeHowson.mem_inter_of_acl_not_mem hsum_card hcard₁ hcard₂
+          hacl (Finset.notMem_union.2 ⟨hk₀_in, hk₀_not_T₂s⟩)).1).1
     have hpiv := pivotBasisRows_spec (intMatP (posMatB c))
       (pertRhsPInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c))
       (allRowsP c) (allRhsP c) (allRowsP_spec c) (allRhsP_spec c)
@@ -3529,8 +3447,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
       · subst hkl
         have hk₀_not_1 : k₀ ∉ T₁s := fun h => hk (by
           simp only [l', LemkeHowson.leaveLabel, ite_eq_left (Finset.mem_union.2 (.inl h))])
-        exact .inr (Finset.mem_inter.1 (leaveLabel_mem_inter_unique T₁s T₂s hsum_card hcard₁ hcard₂
-          hacl hk₀_not_1 hk₀_not_T₂s).1).2
+        exact .inr (Finset.mem_inter.1 (LemkeHowson.mem_inter_of_acl_not_mem hsum_card hcard₁ hcard₂
+          hacl (Finset.notMem_union.2 ⟨hk₀_not_1, hk₀_not_T₂s⟩)).1).2
       · rcases hacl k hk with h1 | h2
         · refine .inl (hT₁'_tight ▸ hqx_sub (Finset.mem_erase.2 ⟨hkl, by rw [htx]; exact h1⟩))
         · exact .inr h2
@@ -3624,8 +3542,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
         by_cases hk₀_q : k₀ ∈ finsetOfList c.rows c.cols T₁'
         · simp only [m'_fin, LemkeHowson.leaveLabel, ite_eq_left (Finset.mem_union.2 (.inl hk₀_q))]
           exact hk₀_q
-        · exact (Finset.mem_inter.1 (leaveLabel_mem_inter_unique (finsetOfList c.rows c.cols T₁')
-            T₂s hsum_card hcard₁' hcard₂ hacl_q hk₀_q hk₀_not_T₂s).1).1
+        · exact (Finset.mem_inter.1 (LemkeHowson.mem_inter_of_acl_not_mem hsum_card hcard₁' hcard₂
+            hacl_q (Finset.notMem_union.2 ⟨hk₀_q, hk₀_not_T₂s⟩)).1).1
       have hqm'_eq_p : pivotVertex
           ((intMatP (posMatB c)).map Int.cast : Matrix _ _ ℚ)
           (fun r => (pertRhsPInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c) r : ℚ))
@@ -3641,14 +3559,14 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
           · exact hzk₀ ▸ hk₀_not_T₂s
           · intro hz2
             by_cases hk₀_q : k₀ ∈ finsetOfList c.rows c.cols T₁'
-            · have he := inter_eq_empty_of_mem_union (finsetOfList c.rows c.cols T₁') T₂s
-                hsum_card hcard₁' hcard₂ hacl_q (.inl hk₀_q)
+            · have he := LemkeHowson.inter_eq_empty_of_mem_union hsum_card hcard₁' hcard₂
+                hacl_q (Finset.mem_union.2 (.inl hk₀_q))
               have hmem : z ∈ finsetOfList c.rows c.cols T₁' ∩ T₂s := Finset.mem_inter.2 ⟨hz.2, hz2⟩
               rw [he] at hmem
               exact Finset.notMem_empty z hmem
-            · exact hz.1 ((leaveLabel_mem_inter_unique (finsetOfList c.rows c.cols T₁') T₂s
-                hsum_card hcard₁' hcard₂ hacl_q hk₀_q hk₀_not_T₂s).2 z
-                (Finset.mem_inter.2 ⟨hz.2, hz2⟩))
+            · exact hz.1 (Finset.mem_singleton.1 ((LemkeHowson.mem_inter_of_acl_not_mem hsum_card
+                hcard₁' hcard₂ hacl_q (Finset.notMem_union.2 ⟨hk₀_q, hk₀_not_T₂s⟩)).2 ▸
+                Finset.mem_inter.2 ⟨hz.2, hz2⟩))
         have hzk₀ : z ≠ k₀ := by
           intro hzk
           have hk₀_q : k₀ ∈ finsetOfList c.rows c.cols T₁' ∪ T₂s :=
@@ -3709,8 +3627,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
       by_cases hk₀_in : k₀ ∈ T₂s
       · simp only [l', LemkeHowson.leaveLabel, ite_eq_left (Finset.mem_union.2 (.inr hk₀_in))]
         exact hk₀_in
-      · exact (Finset.mem_inter.1 (leaveLabel_mem_inter_unique T₁s T₂s hsum_card hcard₁ hcard₂
-          hacl hk₀_not_T₁s hk₀_in).1).2
+      · exact (Finset.mem_inter.1 (LemkeHowson.mem_inter_of_acl_not_mem hsum_card hcard₁ hcard₂
+          hacl (Finset.notMem_union.2 ⟨hk₀_not_T₁s, hk₀_in⟩)).1).2
     have hpiv := pivotBasisRows_spec (intMatQ (posMatA c))
       (pertRhsQInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c))
       (allRowsQ c) (allRhsQ c) (allRowsQ_spec c) (allRhsQ_spec c)
@@ -3738,8 +3656,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
       · subst hkl
         have hk₀_not_2 : k₀ ∉ T₂s := fun h => hk (by
           simp only [l', LemkeHowson.leaveLabel, ite_eq_left (Finset.mem_union.2 (.inr h))])
-        exact .inl (Finset.mem_inter.1 (leaveLabel_mem_inter_unique T₁s T₂s hsum_card hcard₁ hcard₂
-          hacl hk₀_not_T₁s hk₀_not_2).1).1
+        exact .inl (Finset.mem_inter.1 (LemkeHowson.mem_inter_of_acl_not_mem hsum_card hcard₁ hcard₂
+          hacl (Finset.notMem_union.2 ⟨hk₀_not_T₁s, hk₀_not_2⟩)).1).1
       · rcases hacl k hk with h1 | h2
         · exact .inl h1
         · refine .inr (hT₂'_tight ▸ hqy_sub (Finset.mem_erase.2 ⟨hkl, by rw [hty]; exact h2⟩))
@@ -3882,9 +3800,8 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
         by_cases hk₀_q : k₀ ∈ finsetOfList c.rows c.cols T₂'
         · simp only [m'_fin, LemkeHowson.leaveLabel, ite_eq_left (Finset.mem_union.2 (.inr hk₀_q))]
           exact hk₀_q
-        · exact (Finset.mem_inter.1 (leaveLabel_mem_inter_unique T₁s
-            (finsetOfList c.rows c.cols T₂') hsum_card hcard₁ hcard₂'
-            hacl_q hk₀_not_T₁s hk₀_q).1).2
+        · exact (Finset.mem_inter.1 (LemkeHowson.mem_inter_of_acl_not_mem hsum_card hcard₁ hcard₂'
+            hacl_q (Finset.notMem_union.2 ⟨hk₀_not_T₁s, hk₀_q⟩)).1).2
       have hqm'_eq_p : pivotVertex
           ((intMatQ (posMatA c)).map Int.cast : Matrix _ _ ℚ)
           (fun r => (pertRhsQInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c) r : ℚ))
@@ -3900,14 +3817,14 @@ private lemma stepGraph_roundTrip {c : BimatrixCode} (hc : c.WellFormed) (wantNe
           · exact hzk₀ ▸ hk₀_not_T₁s
           · intro hz1
             by_cases hk₀_q : k₀ ∈ finsetOfList c.rows c.cols T₂'
-            · have he := inter_eq_empty_of_mem_union T₁s (finsetOfList c.rows c.cols T₂')
-                hsum_card hcard₁ hcard₂' hacl_q (.inr hk₀_q)
+            · have he := LemkeHowson.inter_eq_empty_of_mem_union hsum_card hcard₁ hcard₂'
+                hacl_q (Finset.mem_union.2 (.inr hk₀_q))
               have hmem : z ∈ T₁s ∩ finsetOfList c.rows c.cols T₂' := Finset.mem_inter.2 ⟨hz1, hz.2⟩
               rw [he] at hmem
               exact Finset.notMem_empty z hmem
-            · exact hz.1 ((leaveLabel_mem_inter_unique T₁s (finsetOfList c.rows c.cols T₂')
-                hsum_card hcard₁ hcard₂' hacl_q hk₀_not_T₁s hk₀_q).2 z
-                (Finset.mem_inter.2 ⟨hz1, hz.2⟩))
+            · exact hz.1 (Finset.mem_singleton.1 ((LemkeHowson.mem_inter_of_acl_not_mem hsum_card
+                hcard₁ hcard₂' hacl_q (Finset.notMem_union.2 ⟨hk₀_not_T₁s, hk₀_q⟩)).2 ▸
+                Finset.mem_inter.2 ⟨hz1, hz.2⟩))
         have hzk₀ : z ≠ k₀ := by
           intro hzk
           have hk₀_q : k₀ ∈ T₁s ∪ finsetOfList c.rows c.cols T₂' :=
@@ -4103,7 +4020,7 @@ private lemma endOfLineRel_wellFormed_props {c : BimatrixCode} (hc : c.WellForme
         rcases Int.units_eq_one_or u with rfl | rfl <;> norm_num
       have hs2 : ∀ x : ℚ, |LemkeHowson.signOfK x| ≤ 1 := fun x => by
         simp only [LemkeHowson.signOfK]
-        split_ifs <;> norm_num
+        cases SignType.sign x <;> norm_num
       have hle_abs : |LemkeHowson.halfEdgeIndex
           ((intMatP (posMatB c)).map Int.cast : Matrix _ _ ℚ)
           ((intMatQ (posMatA c)).map Int.cast : Matrix _ _ ℚ)
@@ -4403,17 +4320,6 @@ private lemma natAbs_sum_mat (D : ℤ) (M : List (List ℚ)) :
       simp only [List.map_cons, List.sum_cons, Nat.cast_add, ih]
       exact congrArg (· + _) (Int.natCast_natAbs _)
 
-/-- Exact bit-length of `Turing.MultiTapeTM.encRat q` in terms of `q.num` and `q.den`. -/
-theorem length_encRat_eq (q : ℚ) :
-    (encRat q).length = 2 * (q.num.natAbs.size + 1) + 1 + q.den.size := by
-  simp only [encRat_apply, length_encPair, length_encIntBin, encNat_apply, Nat.size_eq_bits_len]
-
-/-- Every encoded rational number uses at least `4` bits. -/
-theorem length_encRat_ge (q : ℚ) : 4 ≤ (encRat q).length := by
-  rw [length_encRat_eq]
-  have h1 : 1 ≤ q.den.size := Nat.size_pos.2 q.den_pos
-  omega
-
 private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
     38 * c.rows * c.cols + 1 ≤ (encBimatrix c).length ∧
       (HVal c).size ≤ 4 * (encBimatrix c).length + 4 := by
@@ -4432,7 +4338,7 @@ private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
       have hrow_ge : ∀ row ∈ M, c.cols * 9 ≤ (encList encRat row).length := by
         intro row hrow
         rw [← hMrow row hrow]
-        exact length_encList_ge_mul encRat row 4 fun q _ => length_encRat_ge q
+        exact length_encList_ge_mul encRat row 4 fun q _ => Turing.MultiTapeTM.four_le_length_encRat q
       have hm_ge := length_encList_ge_mul (encList encRat) M (c.cols * 9) hrow_ge
       rwa [hMlen] at hm_ge
     have h1_ge := hmat_len c.matA rfl hc.2.2.2.1
@@ -4450,7 +4356,7 @@ private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
       have hrow_p : Nat.size (row.map fun q => q.den).prod ≤
           (row.map fun q => (encRat q).length).sum + 1 :=
         size_prod_le row _ (fun q => (encRat q).length) fun q _ => by
-          have hlen_eq := length_encRat_eq q
+          have hlen_eq := Turing.MultiTapeTM.length_encRat q
           omega
       have hsum_le :=
         hrow_p.trans (Nat.add_le_add_right (sum_length_le_length_encList encRat row) 1)
@@ -4493,7 +4399,7 @@ private lemma size_HVal_and_dims_le {c : BimatrixCode} (hc : c.WellFormed) :
             have hq_enc : (encRat q).length ≤ L :=
               (length_le_encList_of_mem encRat hq).trans hrow_enc
             have hq_num : q.num.natAbs.size ≤ L := by
-              have hlen_eq := length_encRat_eq q
+              have hlen_eq := Turing.MultiTapeTM.length_encRat q
               omega
             have hsc_le : (scaledEntry (clearScale c) q).natAbs ≤
                 q.num.natAbs * (clearScale c).natAbs := by

@@ -12,6 +12,8 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.VertexOrientation
 public import CslibFrontier.GameTheory.Bimatrix.LemkeHowson
 public import Mathlib.Data.Finset.Sort
 public import Mathlib.GroupTheory.Perm.Sign
+public import Mathlib.Basic.Sign.Basic
+public import Mathlib.Basic.Sign.Defs
 import Mathlib.Tactic.Ring
 
 /-!
@@ -68,36 +70,28 @@ variable {K : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
 
 /-- Ordered-field sign in `{-1, 0, 1}`. -/
 @[expose] def signOfK (c : K) : ℤ :=
-  if 0 < c then 1 else if c < 0 then -1 else 0
+  SignType.sign c
 
 theorem signOfK_mul (a b : K) : signOfK (a * b) = signOfK a * signOfK b := by
-  rcases lt_trichotomy a 0 with ha | rfl | ha <;>
-    rcases lt_trichotomy b 0 with hb | rfl | hb
-  · simp [signOfK, ha, hb, mul_pos_of_neg_of_neg ha hb, not_lt.2 ha.le, not_lt.2 hb.le]
-  · simp [signOfK]
-  · simp [signOfK, ha, hb, mul_neg_of_neg_of_pos ha hb, not_lt.2 (mul_neg_of_neg_of_pos ha hb).le,
-      not_lt.2 ha.le]
-  · simp [signOfK]
-  · simp [signOfK]
-  · simp [signOfK]
-  · simp [signOfK, ha, hb, mul_neg_of_pos_of_neg ha hb, not_lt.2 (mul_neg_of_pos_of_neg ha hb).le,
-      not_lt.2 hb.le]
-  · simp [signOfK]
-  · simp [signOfK, ha, hb, mul_pos ha hb]
+  dsimp [signOfK]
+  rw [sign_mul, SignType.coe_mul]
 
 omit [IsStrictOrderedRing K] in
 theorem signOfK_ne_zero {a : K} (ha : a ≠ 0) : signOfK a ≠ 0 := by
-  rcases lt_or_gt_of_ne ha with h | h <;> simp [signOfK, h, not_lt.2 h.le]
+  dsimp [signOfK]
+  rcases lt_or_gt_of_ne ha with h | h <;> simp [h]
 
 omit [IsStrictOrderedRing K] in
 theorem signOfK_sq {a : K} (ha : a ≠ 0) : signOfK a * signOfK a = 1 := by
-  rcases lt_or_gt_of_ne ha with h | h <;> simp [signOfK, h, not_lt.2 h.le]
+  dsimp [signOfK]
+  rcases lt_or_gt_of_ne ha with h | h <;> simp [h]
 
 theorem signOfK_eq_neg_of_mul_lt_zero {a b : K} (h : a * b < 0) :
     signOfK b = -signOfK a := by
   have ha : a ≠ 0 := fun ha0 => by simp [ha0] at h
   have hmul : signOfK (a * b) = -1 := by
-    simp only [signOfK, h, ↓reduceIte, not_lt.2 h.le]
+    dsimp [signOfK]
+    simp [h]
   rw [signOfK_mul] at hmul
   calc signOfK b = 1 * signOfK b := (one_mul _).symm
     _ = (signOfK a * signOfK a) * signOfK b := by rw [signOfK_sq ha]
@@ -106,20 +100,16 @@ theorem signOfK_eq_neg_of_mul_lt_zero {a b : K} (h : a * b < 0) :
     _ = -signOfK a := mul_neg_one _
 
 theorem signOfK_intCast (z : ℤ) : signOfK (z : K) = z.sign := by
-  rcases lt_trichotomy z 0 with hz | rfl | hz
-  · have hK : (z : K) < 0 := Int.cast_lt_zero.2 hz
-    simp [signOfK, hK, not_lt.2 hK.le, Int.sign_eq_neg_one_of_neg hz]
-  · simp [signOfK]
-  · have hK : (0 : K) < z := Int.cast_pos.2 hz
-    simp [signOfK, hK, Int.sign_eq_one_of_pos hz]
+  dsimp [signOfK]
+  rw [sign_intCast, ← Int.sign_eq_sign]
 
 theorem signOfK_neg_one_pow (k : ℕ) : signOfK ((-1 : K) ^ k) = (-1 : ℤ) ^ k := by
-  induction k with
-  | zero => simp [signOfK, zero_lt_one]
-  | succ k ih =>
-    rw [pow_succ, pow_succ, signOfK_mul, ih, show signOfK (-1 : K) = -1 by
-      simp [signOfK, not_lt.2 (by norm_num : (-1 : K) ≤ 0), (by norm_num : (-1 : K) < 0)]]
-
+  dsimp [signOfK]
+  rw [sign_pow, SignType.coe_pow]
+  have : (SignType.sign (-1 : K) : ℤ) = -1 := by
+    rw [show (-1 : K) = ((-1 : ℤ) : K) by simp, sign_intCast, ← Int.sign_eq_sign]
+    rfl
+  rw [this]
 end Signs
 
 section HalfEdge
@@ -170,7 +160,7 @@ private lemma card_inter_eq_one_of_acl {m n : ℕ} (hcard : Fintype.card κ = m 
   omega
 
 omit [LinearOrder κ] in
-private lemma inter_eq_empty_of_mem_union {m n : ℕ} (hcard : Fintype.card κ = m + n)
+lemma inter_eq_empty_of_mem_union {m n : ℕ} (hcard : Fintype.card κ = m + n)
     {T₁ T₂ : Finset κ} (hT₁ : T₁.card = m) (hT₂ : T₂.card = n) {k₀ : κ}
     (hacl : ∀ k, k ≠ k₀ → k ∈ T₁ ∨ k ∈ T₂) (hk₀ : k₀ ∈ T₁ ∪ T₂) :
     T₁ ∩ T₂ = ∅ := by
@@ -184,7 +174,7 @@ private lemma inter_eq_empty_of_mem_union {m n : ℕ} (hcard : Fintype.card κ =
   rw [hT₁, hT₂, hunion, Finset.card_univ, hcard] at hadd
   exact Finset.card_eq_zero.1 (by omega)
 
-private lemma mem_inter_of_acl_not_mem {m n : ℕ} (hcard : Fintype.card κ = m + n)
+lemma mem_inter_of_acl_not_mem {m n : ℕ} (hcard : Fintype.card κ = m + n)
     {T₁ T₂ : Finset κ} (hT₁ : T₁.card = m) (hT₂ : T₂.card = n) {k₀ : κ}
     (hacl : ∀ k, k ≠ k₀ → k ∈ T₁ ∨ k ∈ T₂) (hk₀ : k₀ ∉ T₁ ∪ T₂) :
     leaveLabel T₁ T₂ k₀ ∈ T₁ ∩ T₂ ∧ T₁ ∩ T₂ = {leaveLabel T₁ T₂ k₀} := by
@@ -677,7 +667,9 @@ theorem halfEdgeIndex_pivot_left_eq_neg {m n : ℕ}
   rw [hM₁p_det, hM₁q_det, hperm_eq, Equiv.Perm.sign_permCongr] at hdet_lt
   have hsign_det : (Equiv.Perm.sign σ₁ : ℤ) * (signOfK M₁p.det * signOfK M₁q.det) = -1 := by
     have hneg1 : signOfK (((Equiv.Perm.sign σ₁ : ℤ) : K) * (M₁p.det * M₁q.det)) = -1 := by
-      simp only [signOfK, hdet_lt, ↓reduceIte, not_lt.2 hdet_lt.le]
+      dsimp [signOfK]
+      rw [sign_neg hdet_lt]
+      rfl
     rw [signOfK_mul, signOfK_mul, signOfK_intCast] at hneg1
     have hσ_sign : (Equiv.Perm.sign σ₁ : ℤ).sign = (Equiv.Perm.sign σ₁ : ℤ) := by
       rcases Int.units_eq_one_or (Equiv.Perm.sign σ₁) with h | h <;> simp [h]

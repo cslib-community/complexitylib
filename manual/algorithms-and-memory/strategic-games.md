@@ -447,8 +447,8 @@ parity argument:
   perturbs positive integer payoff matrices with `K = 2 ^ bitBound m n H` (`intMatP`, `intMatQ`,
   `pertRhsPInt`, `pertRhsQInt`), establishes nondegeneracy over every ordered field, and recovers
   unperturbed exact rational Nash equilibria via signed Cramer determinants (`cramerVec`,
-  `basisSignNum`, `IsFeasibleBasis`, `isNash_extractNum`) with polynomial numerator bounds
-  `m! * H^m` and `n! * H^n`.
+  `basisSignNum`, `IsFeasibleBasis`, `isNash_extractNum`) with bounded numerators
+  `m! * H^m` and `n! * H^n` with polynomial bit length.
 - [Bimatrix/PPAD.lean](../../CslibFrontier/GameTheory/Bimatrix/PPAD.lean) defines the
   structures `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix` using
   `Turing.MultiTapeTM.encRat`) and `StrategyPair` (fields `x`, `y`, encoded via

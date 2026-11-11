@@ -77,13 +77,13 @@ example : nonRectCode.wellFormedB = false ∧ ¬nonRectCode.WellFormed ∧
 /-! ### Encoding opacity and witness-length checks -/
 
 example : (encRat (-1 : ℚ)).length = 6 := by
-  rw [length_encRat_eq]
+  rw [Turing.MultiTapeTM.length_encRat]
   have h1 : (-1 : ℚ).num = -1 ∧ (-1 : ℚ).den = 1 := by norm_num
   rw [h1.1, h1.2]
   decide
 
 example : (encRat (4 / 5 : ℚ)).length = 12 := by
-  rw [length_encRat_eq]
+  rw [Turing.MultiTapeTM.length_encRat]
   have h45 : (4 / 5 : ℚ).num = 4 ∧ (4 / 5 : ℚ).den = 5 := by norm_num
   rw [h45.1, h45.2]
   decide
@@ -109,7 +109,7 @@ private lemma witness_len_le_of_entry_le {c : BimatrixCode} {x y : List ℚ} {K 
 
 private lemma encRat_length_le_sixteen {q : ℚ} (hn : q.num.natAbs ≤ 10) (hd : q.den ≤ 10) :
     (encRat q).length ≤ 16 := by
-  rw [length_encRat_eq]
+  rw [Turing.MultiTapeTM.length_encRat]
   have h1 : q.num.natAbs.size ≤ 4 := Nat.size_le.2 (by omega)
   have h2 : q.den.size ≤ 4 := Nat.size_le.2 (by omega)
   omega
@@ -122,8 +122,9 @@ example : (encWitness ⟨[1 / 2, 1 / 2], [1 / 2, 1 / 2]⟩).length ≤
       rcases hq with rfl | rfl <;> apply encRat_length_le_sixteen <;> norm_num
 
 example : 4 ≤ (encRat (0 : ℚ)).length ∧ 18 ≤ (encList encRat [1 / 2, 1 / 2]).length := by
-  refine ⟨length_encRat_ge 0, ?_⟩
-  have h := length_encList_ge_mul encRat [1 / 2, 1 / 2] 4 fun q _ => length_encRat_ge q
+  refine ⟨Turing.MultiTapeTM.four_le_length_encRat 0, ?_⟩
+  have h := length_encList_ge_mul encRat [1 / 2, 1 / 2] 4 fun q _ =>
+    Turing.MultiTapeTM.four_le_length_encRat q
   exact Nat.le_trans (by decide) h
 
 /-! ### Valid and invalid rational Nash witnesses -/
