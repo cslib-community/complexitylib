@@ -56,4 +56,24 @@ def RazExtractorTheorem (M : Y → Matrix ι ι (ZMod 2)) (t : ℕ) (δ : ℝ) (
     (_hk₂ : C * Real.log (Fintype.card ι) ≤ k₂) : Prop :=
   IsTwoSourceExtractor (fun x y => razExtractor M x y) k₁ k₂ ε
 
+omit [Fintype Y] [DecidableEq ι] in
+theorem razExtractor_add_left (M : Y → Matrix ι ι (ZMod 2)) (x₁ x₁' x₂ : ι → ZMod 2) (y : Y) :
+    razExtractor M (x₁ + x₁', x₂) y = razExtractor M (x₁, x₂) y + razExtractor M (x₁', x₂) y := by
+  simp [razExtractor, ]
+
+omit [Fintype Y] [DecidableEq ι] in
+theorem razExtractor_add_right (M : Y → Matrix ι ι (ZMod 2)) (x₁ x₂ x₂' : ι → ZMod 2) (y : Y) :
+    razExtractor M (x₁, x₂ + x₂') y = razExtractor M (x₁, x₂) y + razExtractor M (x₁, x₂') y := by
+  simp [razExtractor, mulVec_add]
+
+omit [Fintype Y] [DecidableEq ι] in
+theorem razExtractor_zero_left (M : Y → Matrix ι ι (ZMod 2)) (x₂ : ι → ZMod 2) (y : Y) :
+    razExtractor M (0, x₂) y = 0 := by
+  simp [razExtractor, zero_dotProduct]
+
+omit [Fintype Y] [DecidableEq ι] in
+theorem razExtractor_zero_right (M : Y → Matrix ι ι (ZMod 2)) (x₁ : ι → ZMod 2) (y : Y) :
+    razExtractor M (x₁, 0) y = 0 := by
+  simp [razExtractor, mulVec_zero, dotProduct_zero]
+
 end Cslib.Probability
