@@ -40,6 +40,9 @@ size at the polynomially bounded arities of the queries, shows the converse
 * `Cslib.Circuits.Boolean.OracleOp`, `Cslib.Circuits.Boolean.OracleOp.arity`,
   `Cslib.Circuits.Boolean.oracleSignature`, `Cslib.Circuits.Boolean.oracleInterpretation`: the De
   Morgan basis with oracle gates.
+* `Cslib.Circuits.Boolean.OracleOp.queryWeight`, `Cslib.Circuits.Boolean.OracleOp.queryArity`:
+  the weight counting oracle gates and the fan-in of an oracle gate, for measuring the oracle
+  gates of a device.
 * `Cslib.Circuits.Boolean.toOracle`: the De Morgan basis inside it.
 * `Cslib.Circuits.Boolean.oracleImpl`, `Cslib.Circuits.Boolean.oracleSize`,
   `Cslib.Circuits.Boolean.oracleDepth`, `Cslib.Circuits.Boolean.inlineOracle`: gate replacement and
@@ -74,6 +77,25 @@ inductive OracleOp where
 abbrev OracleOp.arity : OracleOp → ℕ
   | .base op => signature.Arity op
   | .query q => q
+
+/-- One for an oracle gate and zero for a De Morgan operation: the weight whose cost counts oracle
+gates and whose weighted depth counts oracle gates along a path. -/
+def OracleOp.queryWeight : OracleOp → ℕ
+  | .base _ => 0
+  | .query _ => 1
+
+/-- The fan-in of an oracle gate, and zero for a De Morgan operation. -/
+def OracleOp.queryArity : OracleOp → ℕ
+  | .base _ => 0
+  | .query q => q
+
+@[simp] theorem OracleOp.queryWeight_base (op : Op) : (OracleOp.base op).queryWeight = 0 := rfl
+
+@[simp] theorem OracleOp.queryWeight_query (q : ℕ) : (OracleOp.query q).queryWeight = 1 := rfl
+
+@[simp] theorem OracleOp.queryArity_base (op : Op) : (OracleOp.base op).queryArity = 0 := rfl
+
+@[simp] theorem OracleOp.queryArity_query (q : ℕ) : (OracleOp.query q).queryArity = q := rfl
 
 /-- The De Morgan basis with an oracle gate of every arity. It is reducible, so that case analysis
 on its operations sees their arities. -/

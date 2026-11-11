@@ -1200,6 +1200,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.NonconstantCost
 public import CslibFrontier.Computability.Circuit.Boolean.Nondeterminism
 public import CslibFrontier.Computability.Circuit.Boolean.OpValue
 public import CslibFrontier.Computability.Circuit.Boolean.Oracle
+public import CslibFrontier.Computability.Circuit.Boolean.OracleFormula
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Circuit.Boolean.PPolyHard
 public import CslibFrontier.Computability.Circuit.Boolean.Parity
@@ -2613,9 +2614,11 @@ public import CslibFrontier.Computability.LogSpaceDerandomization.StochasticAtom
 public import CslibFrontier.Computability.LogSpaceDerandomization.TrueSampleMeans
 public import CslibFrontier.Computability.MCSP.AntiChecker
 public import CslibFrontier.Computability.MCSP.AntiChecker.Certificate
+public import CslibFrontier.Computability.MCSP.AntiChecker.Threshold
 public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.MCSP.FormulaMagnification
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.AverageCase
+public import CslibFrontier.Computability.MCSP.FormulaMagnification.Locality
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.StretchedExponential
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.Subexponential
 public import CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase
@@ -4848,6 +4851,7 @@ public import CslibFrontier.Foundations.Data.BitString.Balanced
 public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.Foundations.Data.BitString.Binary
 public import CslibFrontier.Foundations.Data.BitString.Block
+public import CslibFrontier.Foundations.Data.BitString.BlockPower
 public import CslibFrontier.Foundations.Data.BitString.Combination
 public import CslibFrontier.Foundations.Data.BitString.Convolution
 public import CslibFrontier.Foundations.Data.BitString.Counter
@@ -6004,6 +6008,7 @@ public import CslibFrontier.Probability.PairwiseIndependentHash
 public import CslibFrontier.Probability.PairwiseIndependentHash.Affine
 public import CslibFrontier.Probability.PairwiseIndependentHash.ComponentGap
 public import CslibFrontier.Probability.PairwiseIndependentHash.ConditionalAveraging
+public import CslibFrontier.Probability.PairwiseIndependentHash.Covering
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameChannel
 public import CslibFrontier.Probability.PairwiseIndependentHash.FrameSubstitution
 public import CslibFrontier.Probability.PairwiseIndependentHash.Mixing
