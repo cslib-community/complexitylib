@@ -241,15 +241,25 @@ theorem mem_validArcs {G : Graph} {e : ℕ × ℕ} :
     e ∈ G.validArcs ↔ e ∈ G.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 := by
   simp [validArcs]
 
+theorem mem_validArcs_fst {G : Graph} {e : ℕ × ℕ} (he : e ∈ G.validArcs) :
+    e.1 ∈ G.1 := by
+  rcases mem_validArcs.1 he with ⟨_, h1, _⟩
+  exact h1
+
+theorem mem_validArcs_snd {G : Graph} {e : ℕ × ℕ} (he : e ∈ G.validArcs) :
+    e.2 ∈ G.1 := by
+  rcases mem_validArcs.1 he with ⟨_, _, h2⟩
+  exact h2
+
 /-- Source vertex of an arc in `G.validArcs`. -/
 @[expose]
 def arcSrc (G : Graph) (e : Fin G.validArcs.length) : {v // v ∈ G.1} :=
-  ⟨G.validArcs[e].1, (mem_validArcs.1 (List.getElem_mem e.isLt)).2.1⟩
+  ⟨G.validArcs[e].1, mem_validArcs_fst (List.getElem_mem e.isLt)⟩
 
 /-- Target vertex of an arc in `G.validArcs`. -/
 @[expose]
 def arcTgt (G : Graph) (e : Fin G.validArcs.length) : {v // v ∈ G.1} :=
-  ⟨G.validArcs[e].2, (mem_validArcs.1 (List.getElem_mem e.isLt)).2.2⟩
+  ⟨G.validArcs[e].2, mem_validArcs_snd (List.getElem_mem e.isLt)⟩
 
 /-- Entry `(u, v)` of the out-degree integer Laplacian of the multidigraph with arc list `arcs`. -/
 def multiLaplacianEntry (arcs : List (ℕ × ℕ)) (u v : ℕ) : ℤ :=
@@ -476,9 +486,13 @@ theorem computableInPolyTime_natCard_digraphIsInArborescence :
   refine computableInPolyTime_digraphInArborescenceCount.of_enc_eq fun p => ?_
   rw [digraphInArborescenceCount_eq_natCard]
 
+/-- Binary encoding of a list of directed arcs `(ℕ × ℕ)`. -/
+abbrev encArcList : List (ℕ × ℕ) ↪ List Bool :=
+  encList (encPair encNat encNat)
+
 @[fun_prop]
 theorem computableInPolyTime_validArcs :
-    ComputableInPolyTime validArcs encGraph (encList (encPair encNat encNat)) := by
+    ComputableInPolyTime validArcs encGraph encArcList := by
   have h1 : ComputableInPolyTime (fun G : Graph => G.1) encGraph (encList encNat) := by
     unfold encGraph; exact ComputableInPolyTime.fst _ _
   have h2 : ComputableInPolyTime (fun G : Graph => G.2) encGraph
@@ -506,7 +520,7 @@ theorem computableInPolyTime_validArcs :
 @[fun_prop]
 theorem computableInPolyTime_multiLaplacianEntry {γ : Type} {encIn : γ ↪ List Bool}
     {arcs : γ → List (ℕ × ℕ)}
-    (harcs : ComputableInPolyTime arcs encIn (encList (encPair encNat encNat))) :
+    (harcs : ComputableInPolyTime arcs encIn encArcList) :
     ComputableInPolyTime
       (fun p : (γ × ℕ) × ℕ => multiLaplacianEntry (arcs p.1.1) p.1.2 p.2)
       (encPair (encPair encIn encNat) encNat) encIntBin := by
@@ -551,7 +565,7 @@ and root vertex are. -/
 theorem computableInPolyTime_multiLaplacianCount {γ : Type} {encIn : γ ↪ List Bool}
     {vs : γ → List ℕ} {arcs : γ → List (ℕ × ℕ)} {r : γ → ℕ}
     (hvs : ComputableInPolyTime vs encIn (encList encNat))
-    (harcs : ComputableInPolyTime arcs encIn (encList (encPair encNat encNat)))
+    (harcs : ComputableInPolyTime arcs encIn encArcList)
     (hr : ComputableInPolyTime r encIn encNat) :
     ComputableInPolyTime (fun x => multiLaplacianCount (vs x) (arcs x) (r x)) encIn encNat :=
   ComputableInPolyTime.intBin_toNat.comp
