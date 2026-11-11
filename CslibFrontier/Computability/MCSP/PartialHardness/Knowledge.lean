@@ -82,63 +82,73 @@ variable {I : CMMSAInstance} {Δ k lam : ℕ}
 /-! ### Splitting an input into its parts -/
 
 variable (I Δ k lam) in
-/-- An input of the table, split into its parts: the formula-index bits, the `k` seeds of each
-slot `(t, q)`, and the mask bit of each slot. -/
-private abbrev Parts : Type :=
-  BitString (indexWidth I) × (Fin Δ × Fin Δ → Fin k → BitString (seedWidth I lam)) ×
-    (Fin Δ × Fin Δ → Bool)
+/-- An input of the table, split into its parts. -/
+@[ext] private structure Parts where
+  /-- The formula-index bits. -/
+  index : BitString (indexWidth I)
+  /-- The `k` seeds of each slot `(t, q)`. -/
+  seeds : Fin Δ × Fin Δ → Fin k → BitString (seedWidth I lam)
+  /-- The mask bit of each slot `(t, q)`. -/
+  masks : Fin Δ × Fin Δ → Bool
+
+variable (I Δ k lam) in
+/-- The parts as a triple. -/
+private def Parts.equivProd : Parts I Δ k lam ≃
+    BitString (indexWidth I) × (Fin Δ × Fin Δ → Fin k → BitString (seedWidth I lam)) ×
+      (Fin Δ × Fin Δ → Bool) where
+  toFun p := (p.index, p.seeds, p.masks)
+  invFun p := ⟨p.1, p.2.1, p.2.2⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+private instance : Fintype (Parts I Δ k lam) := Fintype.ofEquiv _ (Parts.equivProd I Δ k lam).symm
 
 /-- The input with the given parts. -/
 private def Parts.toInput (p : Parts I Δ k lam) : BitString (inputLength I Δ k lam) :=
-  Fin.append p.1 fun s =>
+  Fin.append p.index fun s =>
     Fin.snoc (α := fun _ => Bool)
       (fun r : Fin (k * seedWidth I lam) =>
-        p.2.1 (finProdFinEquiv.symm (finProdFinEquiv.symm s).1)
+        p.seeds (finProdFinEquiv.symm (finProdFinEquiv.symm s).1)
           (finProdFinEquiv.symm r).1 (finProdFinEquiv.symm r).2)
-      (p.2.2 (finProdFinEquiv.symm (finProdFinEquiv.symm s).1)) (finProdFinEquiv.symm s).2
+      (p.masks (finProdFinEquiv.symm (finProdFinEquiv.symm s).1)) (finProdFinEquiv.symm s).2
 
 @[simp] private theorem Parts.toInput_indexPos (p : Parts I Δ k lam) (i : Fin (indexWidth I)) :
-    p.toInput (indexPos I Δ k lam i) = p.1 i := by
+    p.toInput (indexPos I Δ k lam i) = p.index i := by
   simp [Parts.toInput, indexPos]
 
 @[simp] private theorem Parts.toInput_seedPos (p : Parts I Δ k lam) (t q : Fin Δ) (i : Fin k)
-    (r : Fin (seedWidth I lam)) : p.toInput (seedPos I Δ k lam t q i r) = p.2.1 (t, q) i r := by
+    (r : Fin (seedWidth I lam)) : p.toInput (seedPos I Δ k lam t q i r) = p.seeds (t, q) i r := by
   simp only [Parts.toInput, seedPos, slotPos, Fin.append_right, Equiv.symm_apply_apply]
   exact (Fin.snoc_castSucc (α := fun _ => Bool) ..).trans (by rw [Equiv.symm_apply_apply])
 
 @[simp] private theorem Parts.toInput_maskPos (p : Parts I Δ k lam) (t q : Fin Δ) :
-    p.toInput (maskPos I Δ k lam t q) = p.2.2 (t, q) := by
+    p.toInput (maskPos I Δ k lam t q) = p.masks (t, q) := by
   simp only [Parts.toInput, maskPos, slotPos, Fin.append_right, Equiv.symm_apply_apply]
   exact Fin.snoc_last (α := fun _ => Bool) ..
 
 @[simp] private theorem Parts.formulaIndex_toInput (p : Parts I Δ k lam) :
-    formulaIndex p.toInput = BitString.equivFin _ p.1 := by
+    formulaIndex p.toInput = BitString.equivFin _ p.index := by
   simp [formulaIndex]
 
 @[simp] private theorem Parts.seed_toInput (p : Parts I Δ k lam) (t q : Fin Δ) (i : Fin k) :
-    seed p.toInput t q i = p.2.1 (t, q) i := by
+    seed p.toInput t q i = p.seeds (t, q) i := by
   funext r
   simp [seed]
 
 private theorem Parts.slotBit_toInput (f : VarFunctions I lam) (p : Parts I Δ k lam) (t q : Fin Δ) :
     slotBit f p.toInput t q =
-      p.2.2 (t, q) + ∑ i : Fin k,
-        evalVar f (var I (BitString.equivFin _ p.1) t q) (p.2.1 (t, q) i) := by
+      p.masks (t, q) + ∑ i : Fin k,
+        evalVar f (var I (BitString.equivFin _ p.index) t q) (p.seeds (t, q) i) := by
   simp [slotBit]
 
 private theorem card_parts : Fintype.card (Parts I Δ k lam) = 2 ^ inputLength I Δ k lam := by
-  simp only [Fintype.card_prod, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool,
-    inputLength, slotWidth]
+  simp only [Fintype.card_congr (Parts.equivProd I Δ k lam), Fintype.card_prod, Fintype.card_fun,
+    Fintype.card_fin, Fintype.card_bool, inputLength, slotWidth]
   rw [← pow_mul, ← pow_mul, ← pow_add, ← pow_add]
   congr 1
   ring
 
 /-! ### Seeds carrying a word -/
-
-/-- `ℓ v` is at most the seed width for a variable `v < n`. -/
-private theorem varLength_le_seedWidth {v : ℕ} (hv : v < I.weights.length) :
-    varLength I lam v ≤ seedWidth I lam :=
-  Finset.le_sup (f := varLength I lam) (Finset.mem_range.2 hv)
 
 /-- The `k` seeds whose low `ℓ` bits are the blocks of `z` and whose other bits are zero. -/
 private def seedsOf {ℓ : ℕ} (z : BitString (k * ℓ)) (i : Fin k) : BitString (seedWidth I lam) :=
@@ -160,7 +170,7 @@ private theorem sum_evalVar_seedsOf (f : VarFunctions I lam) (v : Fin I.weights.
 /-- Writing the word `z` into the seeds of slot `tq`. -/
 private def Parts.write (p : Parts I Δ k lam) (tq : Fin Δ × Fin Δ) {ℓ : ℕ} (z : BitString (k * ℓ)) :
     Parts I Δ k lam :=
-  (p.1, update p.2.1 tq (seedsOf z), p.2.2)
+  { p with seeds := update p.seeds tq (seedsOf z) }
 
 /-! ### Candidates -/
 
@@ -224,24 +234,6 @@ theorem card_cand_le (hk : Odd k) (hΔ : 0 < Δ) {δ₀ : ℝ} (hδ₀ : 0 ≤ �
 
 /-! ### The knowledge set is heavy -/
 
-/-- An entry is `b` when the formula index is below `m`, the formula has a term, and every term
-has parity `b`. -/
-private theorem entry_eq_some_of_forall_termParity {f : VarFunctions I lam}
-    {x : BitString (inputLength I Δ k lam)} {b : Bool} (hj : formulaIndex x < I.formulas.length)
-    (hne : ∃ t : Fin Δ, (t : ℕ) < (I.formulas.getD (formulaIndex x) []).length)
-    (hb : ∀ t : Fin Δ, (t : ℕ) < (I.formulas.getD (formulaIndex x) []).length →
-      termParity f x t = b) :
-    entry f x = some b := by
-  unfold entry
-  rw [ite_eq_left hj]
-  cases b with
-  | true => rw [ite_eq_left hb]
-  | false =>
-    obtain ⟨t₀, ht₀⟩ := hne
-    have hnot : ¬ ∀ t : Fin Δ, (t : ℕ) < (I.formulas.getD (formulaIndex x) []).length →
-        termParity f x t = true := fun h => by simpa [hb t₀ ht₀] using h t₀ ht₀
-    rw [ite_eq_right hnot, ite_eq_left hb]
-
 /-- The parity of a term, split at one of its occupied slots `q₀`. -/
 private theorem termParity_eq_add {f : VarFunctions I lam} {x : BitString (inputLength I Δ k lam)}
     {t q₀ : Fin Δ} (hq₀ : (q₀ : ℕ) < (term I (formulaIndex x) t).length) :
@@ -250,11 +242,6 @@ private theorem termParity_eq_add {f : VarFunctions I lam} {x : BitString (input
         if (q : ℕ) < (term I (formulaIndex x) t).length then slotBit f x t q else 0 := by
   unfold termParity
   rw [← Finset.add_sum_erase _ _ (mem_univ q₀), ite_eq_left hq₀]
-
-/-- Term `t < |φ_j|` of formula `j < m` is `φ_j[t]`. -/
-private theorem term_eq_getElem {j t : ℕ} (hj : j < I.formulas.length)
-    (ht : t < I.formulas[j].length) : term I j t = I.formulas[j][t] := by
-  simp [term, List.getD_eq_getElem?_getD, hj, ht]
 
 /-- **The knowledge set of a circuit is heavy** (the core of No soundness). Let `I` be a No
 instance of `GapCMMSA Δ g 1`, and let `h` agree with the table of `I` for the functions `f`. Then
@@ -324,8 +311,9 @@ theorem lt_weight_cand {g : ℝ} (hI : I ∈ (GapCMMSA Δ g 1).no) (P : ℕ) (f 
   have ha : (BitString.equivFin _ a : ℕ) = j := by simp [a]
   -- the parts carrying the words `w τ` at the chosen slots, with every other slot zero
   let mk (w : ∀ τ : Fin T, BitString (k * varLength I lam (vs τ)) × Bool) : Parts I Δ k lam :=
-    (a, fun tq => (inv tq).elim (fun _ _ => false) fun τ => seedsOf (w τ).1,
-      fun tq => (inv tq).elim false fun τ => (w τ).2)
+    { index := a
+      seeds tq := (inv tq).elim (fun _ _ => false) fun τ => seedsOf (w τ).1
+      masks tq := (inv tq).elim false fun τ => (w τ).2 }
   have hmk_idx (w) : formulaIndex (mk w).toInput = j := by
     rw [Parts.formulaIndex_toInput]; exact ha
   -- the contribution of the other slots of term `τ`, which are zero
@@ -362,7 +350,7 @@ theorem lt_weight_cand {g : ℝ} (hI : I ∈ (GapCMMSA Δ g 1).no) (P : ℕ) (f 
     have hfirst : slotBit f (mk w).toInput (sl τ).1 (sl τ).2 =
         E τ (z τ) + b + xorPower (f (vs τ)) k (z τ) := by
       rw [Parts.slotBit_toInput, ha, hvar]
-      simp only [mk, Prod.mk.eta, hinv_sl, Option.elim_some, hw]
+      simp only [mk, hinv_sl, Option.elim_some, hw]
       rw [sum_evalVar_seedsOf]
     have hrest : (∑ q ∈ univ.erase (sl τ).2,
         if (q : ℕ) < (term I (formulaIndex (mk w).toInput) (sl τ).1).length then
@@ -382,12 +370,12 @@ theorem lt_weight_cand {g : ℝ} (hI : I ∈ (GapCMMSA Δ g 1).no) (P : ℕ) (f 
     cases x <;> cases r <;> cases b <;> rfl
   -- the hybrid argument finds a channel `h` predicts
   obtain ⟨τ, base, y₀, hcount⟩ := exists_card_add_decode_update_eq E D hD
-  set p₀ : Parts I Δ k lam := ((mk base).1, (mk base).2.1, update (mk base).2.2 (sl τ) y₀)
+  set p₀ : Parts I Δ k lam := { mk base with masks := update (mk base).masks (sl τ) y₀ }
     with hp₀
   have hwrite (z : BitString (k * varLength I lam (vs τ))) :
       p₀.write (sl τ) z = mk (update base τ (z, y₀)) := by
     simp only [Parts.write, hp₀, mk]
-    refine Prod.ext rfl (Prod.ext ?_ ?_) <;> funext tq <;> dsimp only <;>
+    refine Parts.ext rfl ?_ ?_ <;> funext tq <;> dsimp only <;>
       by_cases htq : tq = sl τ
     · subst htq
       simp [hinv_sl]
