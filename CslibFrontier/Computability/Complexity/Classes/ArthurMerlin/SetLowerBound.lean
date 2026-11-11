@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Probabilistic.AffineHash
+import CslibFrontier.Foundations.Data.BitString.BlockPower
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Foundations.Data.BitString.WordCount
 
@@ -115,8 +116,10 @@ theorem card_amplifiedSet {N : ℕ} (S : Finset (BitString N)) {T ℓ : ℕ} (h 
     rw [BitString.card_filter_take h fun w => (!w.any fun b => b) = true,
       BitString.card_filter_not_any, mul_one]
   have hblocks : #{u : BitString (5 * N) | ∀ i, BitString.block u i ∈ S} = #S ^ 5 := by
-    rw [show #S ^ 5 = ∏ _i : Fin 5, #S by simp, ← Fintype.card_piFinset]
-    exact card_equiv BitString.blocksEquiv fun u => by simp [Fintype.mem_piFinset]
+    rw [← BitString.card_blockPower]
+    congr 1
+    ext u
+    simp
   simp only [BitString.ofList_ofFn]
   rw [← hblocks, card_filter, sum_mul]
   refine sum_congr rfl fun u _ => ?_
