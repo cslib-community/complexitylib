@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 The cslib-frontier Authors. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: The cslib-frontier Authors
+Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.ModP.Composite
@@ -42,11 +42,11 @@ example : ModP 12 enc = ModP 6 enc := by
   rw [h_prod] at h
   exact h
 
-example (A B : Set α) (hA : A ∈ ModP 0 enc) (hB : B ∈ ModP 0 enc) : A ∪ B ∈ ModP 0 enc :=
-  supClosed_ModP 0 hA hB
+example : ModP 0 enc = NP enc := ModP_zero
 
--- k = 1 is the empty language since everything mod 1 is 0, so f(x) mod 1 ≠ 0 is false.
-example (A B : Set α) (hA : A ∈ ModP 1 enc) (hB : B ∈ ModP 1 enc) : A ∪ B ∈ ModP 1 enc :=
-  supClosed_ModP 1 hA hB
+example : ModP 1 enc = { ∅ } := by
+  ext A
+  simp only [Set.mem_singleton_iff]
+  exact mem_ModP_one
 
 end Cslib.Complexity.Tests

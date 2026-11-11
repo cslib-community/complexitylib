@@ -22,8 +22,13 @@ Contains the Hertrampf equivalence for prime factorizations, the union closure f
 moduli `k`, and the equivalence of intersection and complement closures for non-prime powers.
 
 ## References
-* [Beigel and Gill 1996](https://cis.temple.edu/~beigel/papers/bg-mods-tcs.html)
-  (Theorem 32, Corollaries 33-35)
+
+* R. Beigel and J. Gill, *Counting classes: thresholds, parity, mods, and fewness*,
+  TCS 103(1):3–23, 1992 (`BeigelGill1992`). Locators here (Theorem 32, Corollaries 33–35)
+  are from the author's full version (June 10, 1996, pp. 4, 16), linked from
+  https://cis.temple.edu/~beigel/papers/bg-mods-tcs.html. That version credits the main
+  result to U. Hertrampf, *Relations among MOD-classes*, TCS 74(3):325–328, 1990; the
+  Hertrampf proofs here are locally reconstructed and the 1990 original was not inspected.
 -/
 
 public section
