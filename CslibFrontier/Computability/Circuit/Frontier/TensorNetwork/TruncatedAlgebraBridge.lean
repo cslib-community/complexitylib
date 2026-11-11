@@ -107,7 +107,6 @@ theorem truncEquivTruncated_symm_mk (P ℓ : ℕ) (p : (ZMod (2 ^ P))[X]) :
       Polynomial.Truncated.mk ℓ p :=
   (truncEquivTruncated P ℓ).symm_apply_eq.mpr (truncEquivTruncated_mk_zmod P ℓ p).symm
 
-@[simp]
 theorem truncEquivTruncated_mk (P ℓ : ℕ) (p : ℤ[X]) :
     truncEquivTruncated P ℓ
         (Polynomial.Truncated.mk ℓ (p.map (Int.castRingHom (ZMod (2 ^ P))))) =

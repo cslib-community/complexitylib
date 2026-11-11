@@ -351,7 +351,6 @@ theorem ofCoeffList_coeffs (x : Truncated R r) : Polynomial.ofCoeffList (coeffs 
   · rw [List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map, List.getElem_range]
   · rw [List.getD_eq_default _ _ (by simpa using hi), coeff_eq_zero_of_le (not_lt.mp hi)]
 
-@[simp]
 theorem getD_coeffs (x : Truncated R r) (i : ℕ) : (coeffs x).getD i 0 = coeff i x := by
   rw [← Polynomial.coeff_ofCoeffList, ofCoeffList_coeffs, coeff_toPoly]
 
