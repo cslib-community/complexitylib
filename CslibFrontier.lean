@@ -2073,6 +2073,7 @@ public import CslibFrontier.Computability.Complexity.ExplicitRamsey.FranklWilson
 public import CslibFrontier.Computability.Complexity.Fagin.Converse
 public import CslibFrontier.Computability.Complexity.Fagin.Layout
 public import CslibFrontier.Computability.Complexity.Fagin.Ordered
+public import CslibFrontier.Computability.Complexity.Fagin.Ordered.Completeness
 public import CslibFrontier.Computability.Complexity.Fagin.Ordered.Problems
 public import CslibFrontier.Computability.Complexity.Fagin.Ordered.Verifier
 public import CslibFrontier.Computability.Complexity.Fagin.Power
@@ -5889,6 +5890,7 @@ public import CslibFrontier.Logics.SecondOrder.Horn.GuardElimination
 public import CslibFrontier.Logics.SecondOrder.Horn.LeastFixedPoint
 public import CslibFrontier.Logics.SecondOrder.Horn.Ordered
 public import CslibFrontier.Logics.SecondOrder.IndependentSet
+public import CslibFrontier.Logics.SecondOrder.Ordered.Grounding
 public import CslibFrontier.Logics.SecondOrder.Projection
 public import CslibFrontier.Logics.SecondOrder.Reduction
 public import CslibFrontier.Logics.SecondOrder.WordMSO.Basic
