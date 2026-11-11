@@ -21,6 +21,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
+import CslibFrontier.Foundations.Data.List.ArgMin
+import CslibFrontier.Foundations.Data.Nat.BinarySize
 import CslibFrontier.Tactic.PolyTime
 import Mathlib.Data.List.GetD
 
@@ -475,11 +477,6 @@ on fallback arcs incident to vertex `n`. -/
 
 /-! ### Polynomial-time certificates for list operations -/
 
-private theorem polyBounded_unary_comp {α : Type} {encIn : α ↪ List Bool} {f : α → ℕ}
-    (hf : ComputableInPolyTime f encIn encUnary) :
-    PolyBounded (fun x => (encIn x).length) f := by
-  simpa only [encUnary_apply, List.length_replicate] using hf.polyBounded_length
-
 private theorem length_encOption_unary_le {o : Option ℕ} {n : ℕ}
     (ho : ∀ x, o = some x → x ≤ n) :
     (encOption encUnary o).length ≤ n + 1 := by
@@ -565,7 +562,7 @@ private theorem computableInPolyTime_argMinRange {γ π : Type}
         ((optionSome encUnary).comp hrcur)
     simpa only [argMinStep] using ite hcond (optionElimWithInput hacc hsomej hbody) hacc
   have hB : PolyBounded (fun x => (encIn x).length) (fun x => bound x + 1) := by
-    obtain ⟨c, d, hcd⟩ := (polyBounded_unary_comp hbound).exists_le
+    obtain ⟨c, d, hcd⟩ := hbound.polyBounded.exists_le
     refine PolyBounded.of_forall_le (c + 1) d fun x => ?_
     have h1 := hcd x
     have hpow : 1 ≤ ((encIn x).length + 1) ^ d := Nat.one_le_pow _ _ (Nat.succ_pos _)
@@ -1406,9 +1403,6 @@ private theorem stateBoundInv_iterate (x : TableAuxInput) :
     rw [Function.iterate_succ_apply']
     exact stateBoundInv_step x _ i (stateBoundInv_iterate x i)
 
-private theorem nat_size_le_self (k : ℕ) : k.size ≤ k :=
-  Nat.size_le.mpr Nat.lt_two_pow_self
-
 theorem computableInPolyTime_edmondsTableAuxList :
     ComputableInPolyTime
       (fun x : TableAuxInput => edmondsTableAuxList x.fuel x.root x.adj x.cost)
@@ -1483,7 +1477,7 @@ theorem computableInPolyTime_edmondsTableAuxList :
               ((x.adj.length + 1) ^ i).size + M₀.size := Nat.size_mul_le _ _
           have hs3 : ((x.adj.length + 1) ^ i).size ≤ i * (x.adj.length + 1).size + 1 :=
             Nat.size_pow_le _ _
-          have hs4 : (x.adj.length + 1).size ≤ L + 1 := (nat_size_le_self _).trans (by omega)
+          have hs4 : (x.adj.length + 1).size ≤ L + 1 := (Nat.size_le_self _).trans (by omega)
           have hmul : i * (x.adj.length + 1).size ≤ L * (L + 1) :=
             Nat.mul_le_mul (hi.trans hfuel) hs4
           omega
@@ -1989,12 +1983,6 @@ private theorem localFinEnum_toList (n : ℕ) :
 private theorem map_val_finRange (n : ℕ) : (List.finRange n).map Fin.val = List.range n := by
   apply List.ext_getElem <;> simp
 
-private theorem exists_argmin_eq_some' {α β : Type*} [LinearOrder β] {f : α → β} {l : List α}
-    (hl : l ≠ []) : ∃ m, l.argmin f = some m := by
-  cases hm : l.argmin f with
-  | none => exact absurd (List.argmin_eq_none.mp hm) hl
-  | some m => exact ⟨m, rfl⟩
-
 private theorem foldl_argMinStep_fin {n : ℕ} (pred : Fin n → Bool) (key : Fin n → ℤ)
     (predN : ℕ → Bool) (keyN : ℕ → ℤ)
     (hpred : ∀ w : Fin n, pred w = predN w.1)
@@ -2123,7 +2111,7 @@ private theorem selectParentsList_eq {n : ℕ} [FinEnum (Fin n)]
       rw [hget, hopts_get v]
       by_cases hvr : v = r
       · simp [hvr]
-      · obtain ⟨m, hm⟩ := exists_argmin_eq_some' (f := tableCost c v) (hall v hvr)
+      · obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := tableCost c v) (hall v hvr)
         simp [hvr, hm]
   split_ifs with hall
   · have hcond := hall_iff.mp hall
@@ -2136,7 +2124,8 @@ private theorem selectParentsList_eq {n : ℕ} [FinEnum (Fin n)]
       rw [h1, hopts_get ⟨i, hi⟩]
       by_cases hir : (⟨i, hi⟩ : Fin n) = r
       · simp [hir, r.isLt]
-      · obtain ⟨m, hm⟩ := exists_argmin_eq_some' (f := tableCost c ⟨i, hi⟩) (hcond ⟨i, hi⟩ hir)
+      · obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := tableCost c ⟨i, hi⟩)
+          (hcond ⟨i, hi⟩ hir)
         simp [hir, hm, m.isLt]
     · have hv_opt : v.1 < opts.length := by rw [hopts_len]; exact v.2
       rw [List.getD_eq_getElem _ _ (by simp [opts]), List.getElem_map]
@@ -2146,7 +2135,7 @@ private theorem selectParentsList_eq {n : ℕ} [FinEnum (Fin n)]
       unfold cheapestParent
       by_cases hvr : v = r
       · simp [hvr]
-      · obtain ⟨m, hm⟩ := exists_argmin_eq_some' (f := tableCost c v) (hcond v hvr)
+      · obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := tableCost c v) (hcond v hvr)
         simp [hvr, hm]
   · exact fun h => hall (hall_iff.mpr h)
 
@@ -2195,7 +2184,7 @@ private theorem isSome_argmin_filter_eq_any {α β : Type*} [LinearOrder β] (l 
   rw [List.filter_congr fun x _ => hpq x]
   by_cases hex : ∃ x ∈ l, q x = true
   · obtain ⟨x, hx, hqx⟩ := hex
-    obtain ⟨m, hm⟩ := exists_argmin_eq_some' (f := f)
+    obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := f)
       (List.ne_nil_of_mem (List.mem_filter.mpr ⟨hx, hqx⟩))
     rw [hm, Option.isSome_some]
     symm
@@ -2670,14 +2659,6 @@ private theorem arcCost_congr_dec {V β : Type*} [Fintype V] [AddCommMonoid β]
     @arcCost V β _ _ T d₁ c = @arcCost V β _ _ T d₂ c :=
   arcCost_congr_inst _ _ d₁ d₂ c
 
-private theorem arcCost_eq_of_eq {V β : Type*} {f₁ f₂ : Fintype V} [AddCommMonoid β]
-    {T₁ T₂ : Digraph V} (h : T₁ = T₂) {d₁ : DecidableRel T₁.Adj} {d₂ : DecidableRel T₂.Adj}
-    (c : V → V → β) :
-    @arcCost V β f₁ _ T₁ d₁ c = @arcCost V β f₂ _ T₂ d₂ c := by
-  cases Subsingleton.elim f₁ f₂
-  subst h
-  exact arcCost_congr_dec _ _ _
-
 theorem minArborescenceDecide_eq_true_iff (d : ArborescenceDecInstance) :
     minArborescenceDecide d = true ↔ d ∈ minArborescenceDec := by
   unfold minArborescenceDecide minArborescenceDec
@@ -2880,9 +2861,8 @@ theorem minOutArborescenceDecide_eq_true_iff (d : ArborescenceDecInstance) :
               (Classical.decRel _) (fun u w => tableCost d.inst.cost w u)] at hc
           have hT₁_eq : T₁ = (Digraph.parentDigraph ⟨d.inst.root, hr'⟩ t).reverse := by
             rw [ht_eq, Digraph.reverse_reverse]
-          have hT₁_eq' := arcCost_eq_of_eq (f₁ := Fin.fintype n) (f₂ := Fin.fintype n)
-            (d₁ := Classical.decRel _) (d₂ := Classical.decRel _)
-            hT₁_eq (tableCost d.inst.cost)
+          have hT₁_eq' := arcCost_congr (Fin.fintype n) (Fin.fintype n)
+            (Classical.decRel _) (Classical.decRel _) hT₁_eq (tableCost d.inst.cost)
           rw [← hT₁_eq'] at hc
           dsimp only at hle₁
           exact hc.trans hle₁
@@ -3167,7 +3147,8 @@ theorem maxBranchingDecide_eq_true_iff (d : BranchingDecInstance) :
           (Classical.decRel _) (tableCost d.inst.weight) =
         @arcCost (Fin n) ℤ (Fin.fintype n) Int.instAddCommMonoid
           (Digraph.branchingDigraph P_fun) (Classical.decRel _) (tableCost d.inst.weight) :=
-      arcCost_eq_of_eq hBstar_eq_p (tableCost d.inst.weight)
+      arcCost_congr (Fin.fintype n) (Fin.fintype n) (Classical.decRel _) (Classical.decRel _)
+        hBstar_eq_p (tableCost d.inst.weight)
     rw [hBstar_sub]
     unfold arcCost
     rw [Finset.sum_filter, Fintype.sum_prod_type]
@@ -3259,7 +3240,8 @@ theorem maxBranchingDecide_eq_true_iff (d : BranchingDecInstance) :
             (arcCost_mapDigraph e _ _).symm
         _ = @arcCost (Option (Fin n)) ℤ inferInstance _ Bstar.superRootExtend
               (Classical.decRel _) (superRootCost (tableCost d.inst.weight)) :=
-            arcCost_eq_of_eq hB_ext.symm (superRootCost (tableCost d.inst.weight))
+            arcCost_congr _ _ _ (Classical.decRel _)
+              hB_ext.symm (superRootCost (tableCost d.inst.weight))
         _ = -@arcCost (Fin n) ℤ (Fin.fintype n) Int.instAddCommMonoid Bstar (Classical.decRel _)
               (tableCost d.inst.weight) := by
             rw [arcCost_superRootExtend Bstar (tableCost d.inst.weight),

@@ -236,13 +236,6 @@ private theorem time_selectParentsM (a : AdjTable n) (c : CostTable β n) (r : F
   · rw [time_vectorOfFnM]
     simp
 
-private theorem foldl_and_isSome {α : Type*} (p : α → Bool) :
-    ∀ (l : List α) (b : Bool),
-      l.foldl (fun acc x => acc && p x) b = (b && l.all p)
-  | [], b => by simp
-  | x :: l, b => by
-    simp only [List.foldl_cons, List.all_cons, foldl_and_isSome p l, Bool.and_assoc]
-
 /-- Test whether iterating `f` starting from `x` returns to `x` within `n` steps (`n` ticks). -/
 @[expose] def hasCycleFromM (x : Fin n) (f : ParentTable n) : TimeM ℕ Bool := do
   let (_, hit) ← (List.range n).foldlM

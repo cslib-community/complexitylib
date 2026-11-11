@@ -136,7 +136,8 @@ theorem arcCost_neg {V β : Type*} [Fintype V] [AddCommGroup β]
   unfold arcCost
   rw [Finset.sum_neg_distrib]
 
-private theorem arcCost_congr {V β : Type*} (inst₁ inst₂ : Fintype V) [m : AddCommMonoid β]
+/-- Congruence of `arcCost` across `Fintype`, `DecidableRel`, and equal digraphs. -/
+theorem arcCost_congr {V β : Type*} (inst₁ inst₂ : Fintype V) [m : AddCommMonoid β]
     {T₁ T₂ : Digraph V} (d₁ : DecidableRel T₁.Adj) (d₂ : DecidableRel T₂.Adj)
     (h : T₁ = T₂) (c : V → V → β) :
     @arcCost V β inst₁ m T₁ d₁ c = @arcCost V β inst₂ m T₂ d₂ c := by
