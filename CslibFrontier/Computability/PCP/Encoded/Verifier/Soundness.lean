@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.PCP.Encoded.Verifier
 public import CslibFrontier.Probability.BitString
-import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.UniformNat
 import CslibFrontier.Foundations.Data.Nat.Log
 

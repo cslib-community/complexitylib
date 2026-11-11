@@ -283,14 +283,15 @@ For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean m
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability ratchet: both read only sources and take seconds.
-Quick mode lints only the affected library modules, skips the global test/style/init-import gates
-and the post-build audits, which need whole-library outputs, and is not full validation. Non-Lean
-changes, deletions/renames, changed aggregates, unsupported layouts and ambiguous change/import
-analysis fall back to the full check. The one exception is
-`scripts/encoding_readability_baseline.json`, which no Lean gate reads: a change to it runs the
-encoding-readability lint instead. Quick success alone does not satisfy the full validation
-requirement above; documentation-only checks need not invoke quick mode.
+library module changed, the encoding readability and projection chain ratchets: all read only
+sources and take seconds. Quick mode lints only the affected library modules, skips the global
+test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
+not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
+and ambiguous change/import analysis fall back to the full check. The exceptions are the
+ratchet baselines `scripts/encoding_readability_baseline.json` and
+`scripts/projection_chains_baseline.json`, which no Lean gate reads: a change to one runs its
+ratchet instead. Quick success alone does not satisfy the full validation requirement above;
+documentation-only checks need not invoke quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
 `CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -529,6 +530,16 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 [`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them and then check them
 with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
 never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
+
+When the only conflicts with `main` are in the aggregates or `references.bib`,
+`python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
+without running the PR's code. It requires the `check_restack.py` check below to pass for the
+current head, merges `origin/main` with both drivers, writes the aggregates as `lake exe mk_all`
+would for the merged tree, and runs the check on the result, both times from a checkout of
+`origin/main`. It refuses any other conflict and is a dry run unless given `--push`, which pushes
+the merge only when the check passes and the PR's branch still points at the head it merged. It
+never queues and never comments: post its result line, and queue the new head under the rules
+below once CI passes.
 
 A branch that forked before the module root was renamed from Complexity to CslibFrontier is
 restacked with `python3 scripts/rename_module_root.py --restack` (from a checkout of current

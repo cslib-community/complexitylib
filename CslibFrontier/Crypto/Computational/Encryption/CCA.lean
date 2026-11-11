@@ -289,8 +289,9 @@ def CCA2AdversaryOf.IsQueryBounded {Msg : Type} (adversary : CCA2AdversaryOf Msg
   (∀ n pk, (adversary.choose n pk).IsQueryBounded (Q₁ n)) ∧
   (∀ n state ct, (adversary.guess n state ct).IsQueryBounded (Q₂ n))
 
-/-- Every strict oracle PPT `CCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries,
-Phase 2 queries, and saved-state length in terms of `(n, pk.length, ct.length)`. -/
+/-- Every strict oracle PPT `CCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries and
+saved-state length in terms of `(n, pk.length)`, and on its Phase 2 queries in terms of
+`(n, state.length, ct.length)` for every input state word `state`. -/
 theorem CCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : CCA2AdversaryOf Msg} (hA : adversary.IsPPT encMsg) :
     ∃ c₁ d₁ c₂ d₂ cs ds : ℕ,
@@ -986,8 +987,9 @@ def MultiCCA2AdversaryOf.IsQueryBounded {Msg : Type} (adversary : MultiCCA2Adver
   (∀ n state cts, (adversary.guess n state cts).IsQueryBounded (Q₂ n))
 
 /-- Every strict oracle PPT `MultiCCA2AdversaryOf Msg` has polynomial bounds on its Phase 1 queries,
-Phase 2 queries, challenge-list length, and saved-state length in terms of
-`(n, pk.length, (encList encBits cts).length)`. -/
+challenge-list length, and saved-state length in terms of `(n, pk.length)`, and on its Phase 2
+queries in terms of `(n, state.length, (encList encBits cts).length)` for every input state word
+`state`. -/
 theorem MultiCCA2AdversaryOf.IsPPT.query_bounds {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : MultiCCA2AdversaryOf Msg} (hA : adversary.IsPPT encMsg) :
     ∃ c₁ d₁ c₂ d₂ cs ds : ℕ,
