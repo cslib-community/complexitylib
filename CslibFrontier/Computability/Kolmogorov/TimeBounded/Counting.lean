@@ -34,8 +34,8 @@ of `MCSP.truthTable` and of the partial tables of `PartialMCSP`.
 ## References
 
 The truth-table count is used in the no case of the library's proof of the `MINKT*` clause of
-[Hirahara2022, Theorem I.2], where a count of programs replaces the source's argument. Issue #4447
-tracks that development.
+[Hirahara2022, Theorem I.2] (`MINKTStar.rpHard`), where a count of programs replaces the source's
+argument.
 -/
 
 public section

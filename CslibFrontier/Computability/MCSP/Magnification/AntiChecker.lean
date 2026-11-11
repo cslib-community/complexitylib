@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Boolean.Oracle.LocalCircuit
 public import CslibFrontier.Computability.MCSP.AntiChecker.Generator
 import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 import CslibFrontier.Computability.Circuit.Boolean.Hierarchy
@@ -39,9 +40,18 @@ statement differs from the source in three ways. The first drops a uniformity co
 second drops a size restriction, and the third is a difference of presentation:
 * "constructive" is dropped: the circuits are nonuniform, so `s₁` and `s₂` are arbitrary;
 * `s ≤ 2 ^ n / poly(n)` is not needed: the bounds hold for every `s₂` above the gap;
-* the class `[q, ℓ, a]–Circuit[·]` of Definition 11 is not defined here. The four bounds are stated
-  directly: size, oracle-gate count (`Program.cost` with `OracleOp.queryWeight`), fan-in
-  (`Circuit.FanInAtMost`) and oracle depth (`Circuit.depthWith`).
+* the four bounds of Definition 11 are stated directly here: size, oracle-gate count
+  (`Program.cost` with `OracleOp.queryWeight`), fan-in (`Circuit.FanInAtMost`) and oracle depth
+  (`Circuit.depthWith`).
+
+`Cslib.MCSP.localCircuitClass_gapMCSP` restates the bullet in the class
+`Cslib.Circuits.Boolean.LocalCircuitClass`, at input length `m`, with `n = Nat.log 2 m`
+and the gap condition at every `n`. Its oracle is `antiCheckerOracle` at every length. The fan-in
+bound bounds the oracle gates (`Circuit.QueryArityAtMost.of_fanInAtMost`). Every truth-table length
+`2 ^ n` is covered by `exists_oracleCircuit_gapMCSP`, including `n = 0` (`N = 1`), where the circuit
+is a constant gate. The class also asks for a circuit at the lengths that are not powers of two,
+which carry no instances; only length `0` needs a gate there, so the class's size bound has a
+`+ 1`.
 
 Source locator: ECCC TR19-168, Appendix A.2, Proposition 63, sixth bullet (p. 52).
 
@@ -50,6 +60,9 @@ Source locator: ECCC TR19-168, Appendix A.2, Proposition 63, sixth bullet (p. 52
 * `Cslib.MCSP.exists_oracleCircuit_gapMCSP`: Gap-MCSP oracle circuits with `5000 N s₂ ^ 5` gates,
   at most `610 N s₂ ^ 4 + 1` oracle gates, each of fan-in at most `5000 s₂ ^ 5`, and at most
   `610 s₂ ^ 4 + 1` oracle gates on any path, under the oracle `antiCheckerOracle`.
+* `Cslib.MCSP.localCircuitClass_gapMCSP`: `Gap-MCSP[s₁, s₂]` is in
+  `[610 m s₂ ^ 4 + 1, 5000 s₂ ^ 5, 610 s₂ ^ 4 + 1]–Circuit[5000 m s₂ ^ 5 + 1]` on input length `m`,
+  with `s₂` evaluated at `log₂ m`.
 
 ## References
 
@@ -224,5 +237,34 @@ theorem exists_oracleCircuit_gapMCSP {s₁ s₂ : ℕ → ℕ} {n : ℕ}
     obtain ⟨x, hx, hgx⟩ := isAntiChecker_samplesOf_generator hn (fun _ => Iff.rfl) hf g hg
     obtain ⟨p, hp, rfl⟩ := List.mem_map.1 hx
     exact hgx ((hagree p hp).trans (snd_eq_of_mem_samplesOf_eval_generator _ n s ℓ R f hp))
+
+/-- **Gap-MCSP in a local circuit class** [ChenHiraharaOliveiraPichRajgopalSanthanam2020,
+Appendix A.2, Proposition 63, \[OPS19\] Gap-MCSP bullet, p. 52; Section 2.5, Definition 11, p. 13].
+Whenever `n s₁(n) + 2 + 2 n (n + 2) ≤ s₂(n)` for every `n`, `Gap-MCSP[s₁, s₂]` is in the local
+circuit class with, at input length `m` and `n = Nat.log 2 m`,
+- at most `610 m s₂(n) ^ 4 + 1` oracle gates (quantity),
+- each of fan-in at most `5000 s₂(n) ^ 5` (locality),
+- at most `610 s₂(n) ^ 4 + 1` oracle gates on any path (adaptivity),
+- at most `5000 m s₂(n) ^ 5 + 1` gates.
+
+The oracle is `antiCheckerOracle` at every length. Each truth-table length `m = 2 ^ n` is
+covered by `exists_oracleCircuit_gapMCSP` at that `n`, under the parameter bound
+`n s₁(n) + 2 + 2 n (n + 2) ≤ s₂(n)` at that `n`. This includes `n = 0` (`m = 1`): every function
+of no variables is constant, so there are no no-instances, and that theorem uses one constant gate.
+The other lengths carry no instances, so any circuit within the bounds will do
+(`LocalCircuitClass.of_two_pow`). For `m ≥ 2` it is a circuit with no gates that outputs an input.
+At `m = 0` there is no input wire, so the output needs one constant gate. The `+ 1` in the size
+bound pays for it and is needed only there: without it the bound at `m = 0` would be `0`. -/
+theorem localCircuitClass_gapMCSP {s₁ s₂ : ℕ → ℕ}
+    (hgap : ∀ n, n * s₁ n + 2 + 2 * n * (n + 2) ≤ s₂ n) :
+    LocalCircuitClass (fun m => m * (610 * s₂ (Nat.log 2 m) ^ 4) + 1)
+      (fun m => 5000 * s₂ (Nat.log 2 m) ^ 5) (fun m => 610 * s₂ (Nat.log 2 m) ^ 4 + 1)
+      (fun m => 5000 * m * s₂ (Nat.log 2 m) ^ 5 + 1)
+      (GapMCSP.yesSet s₁) (GapMCSP.noSet s₂) := by
+  refine LocalCircuitClass.of_two_pow antiCheckerOracle (Nat.le_add_left _ _)
+    (fun _ ⟨n, h, _⟩ => ⟨n, h⟩) (fun _ ⟨n, h, _⟩ => ⟨n, h⟩) fun n => ?_
+  obtain ⟨E, hS, hq, hℓ, ha, hyes, hno⟩ := exists_oracleCircuit_gapMCSP (hgap n)
+  simp only [Nat.log_pow Nat.one_lt_two]
+  exact ⟨E, hS.trans (Nat.le_succ _), hq, .of_fanInAtMost hℓ, ha, hyes, hno⟩
 
 end Cslib.MCSP
