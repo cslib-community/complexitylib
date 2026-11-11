@@ -983,17 +983,17 @@ theorem clientState_scanStepReads (t : Memory.State) (x : ClusterInput × (ℕ �
 /-- Update `(s₀, s)` during one step of `scanLoopProg`. -/
 @[expose] def scanStepTargetProg
     (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × (ℕ × ℕ)))) : Memory.Prog (ℕ × ℕ) :=
-  if x.1.1 < x.2.1.1 + 1 then
+  if x.1.1 ≤ x.2.1.1 then
     pure (x.2.2.2.1 + 1, x.2.2.2.2 + 1)
-  else if x.1.1 < x.2.1.2 + 1 then
+  else if x.1.1 ≤ x.2.1.2 then
     if x.1.2 < x.2.2.1 then pure (x.2.2.2.1, x.2.2.2.2 + 1) else pure (x.2.2.2.1, x.2.2.2.2)
   else
     pure (x.2.2.2.1, x.2.2.2.2)
 
 theorem realizes_scanStepTarget :
     Realizes .exact scanStepTargetProg WordEncoding.encode WordEncoding.encode
-      (fun w x _ => x.2.1.1 + 1 < 2 ^ w ∧ x.2.1.2 + 1 < 2 ^ w ∧
-        x.2.2.2.1 + 1 < 2 ^ w ∧ x.2.2.2.2 + 1 < 2 ^ w) (fun _ _ => 0) := by
+      (fun w x _ => x.2.2.2.1 + 1 < 2 ^ w ∧ x.2.2.2.2 + 1 < 2 ^ w)
+      (fun _ _ => 0) := by
   realize <;> {
     dsimp only [Fits] at h ⊢
     omega
@@ -1044,18 +1044,16 @@ theorem clientState_scanStepStop (t : Memory.State)
 /-- Update `qFound` (`queryAnyPrefix`) during one step of `scanLoopProg`. -/
 @[expose] def scanStepQueryProg (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) : Memory.Prog ℕ :=
   if x.2.1.1 < x.1.1 then
-    if x.1.1 < x.2.1.2 + 1 then
+    if x.1.1 ≤ x.2.1.2 then
       if x.1.2 = x.2.2.1 then pure 1 else pure x.2.2.2
     else pure x.2.2.2
   else pure x.2.2.2
 
 theorem realizes_scanStepQuery :
     Realizes .exact scanStepQueryProg WordEncoding.encode WordEncoding.encode
-      (fun w x _ => 1 < 2 ^ w ∧ x.2.1.2 + 1 < 2 ^ w) (fun _ _ => 0) := by
-  realize <;> {
-    dsimp only [Fits] at h ⊢
-    omega
-  }
+      (fun w _ _ => 1 < 2 ^ w) (fun _ _ => 0) := by
+  realize
+  exact h
 
 theorem clientResult_scanStepQuery (t : Memory.State)
     (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :

@@ -168,6 +168,8 @@ cover local registrations and both reducibility cases.
 
 Plain and internal tidy predicates have separate search rules at this snapshot. The preferred plain tactic does not change the user's goal to tidy computability or silently restate hypotheses. Machine-level proofs may still use tidy witnesses internally. This is the implemented direction even where older prose or issues describe a stronger prohibition on tidy use inside proofs.
 
+Import [`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured`](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Captured.lean) for shared-input plain composition rules (`CslibFrontier.Tactic.PolyTime` does not import it). It registers `fun_prop` rules for `_root_.cond`, `List.take` and `List.drop` (requiring `encUnary` count premises), `List.head?`, `List.headD`, `List.count` (returning its count in `encUnary`), and fixed-list `List.any` (`anyConst`, whose fixed list needs no index encoding). Rules whose result encoding hides an element encoding (`listHead?WithInput`, `listHeadDWithInput`, `countWithInput`) also carry `program_certificate hlist` so `polytime` infers the element encoding from the `encList E` list premise before checking element arguments or outer projections. Binary remainder `ComputableInPolyTime.binary_mod'` on `encNat` stays explicit alongside `binary_div'` so `HMod.hMod` automation on `encUnary` remains unambiguous; see the complete checked client [`PolyTimeCaptured.lean`](../../CslibFrontierTests/PolyTimeCaptured.lean).
+
 ## Rewrite option matches before resource automation
 
 Import `CslibFrontier.Tactic.OptionMatch` to use `option_match_to_elim`. For a
@@ -299,6 +301,32 @@ The same file checks automatic and explicit staging, dependent arguments, standa
 truncated subtraction, and rejection when fit or exact-operation evidence is missing.
 Automatic staging computes the whole encoded argument when any coordinate needs computation;
 an explicit `pure` stage remains useful to share a computed value between several calls.
+
+Ordinary `if` guards accept natural-word `=`, `≠`, `<`, `≤`, `>` and `≥`, combined using
+`¬`, `∧` and `∨`. A depth limit bounds logical traversal and unfolding of named predicates.
+The heap's `IndexedMinPQ.RawPrioLT` can stay in the source program. The
+[compound-guard clients](../../CslibFrontierTests/WordRAMRealizeCompound.lean) check that priority
+predicate, aliases, tie-breaking and arbitrary decidability instances. Conjunctions and
+disjunctions retain left-to-right short-circuiting: the arithmetic and fit obligations of a
+later test arise only on paths that reach it. Complete encoded operands retain their live-word
+treatment, including operands containing an opaque host predicate.
+
+Write `if a ≤ b then ... else ...` directly: the tactic reverses a strict test and swaps
+alternatives, charging the existing branch without computing `b + 1`. An operand actually
+written as `b + 1` still needs its usual fit proof. The complete
+[guard clients](../../CslibFrontierTests/WordRAMRealizeGuards.lean) check equal and maximal
+fitting words, selected-path safety and native execution of the migrated QuotientFilter query
+scan step with a maximal cutoff. From the repository root, run:
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGuards \
+  CslibFrontierTests.WordRAMRealizeCompound
+```
+
+An unsupported predicate is reported at its guard. Expose its supported comparisons, or use a
+separately certified memory method to compute a word and compare that word. Loop guards keep
+their existing grammar: `=`, `<`,
+`>` and `≠ 0`; this branch support does not extend the loop guard rules.
 
 Returned choices can also stay inside `pure`, including tuple and option components:
 `pure (min a b, max a b)` and `pure (decide (a = 0))` need no separate source program with

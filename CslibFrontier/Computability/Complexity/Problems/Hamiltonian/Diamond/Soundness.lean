@@ -382,7 +382,8 @@ private theorem exists_detour (hD : WellFormed N slots M D)
 /-- A Hamiltonian path of the diamond graph gives directions of the rows satisfying every
 clause. -/
 theorem satisfiable_of_mem_DirHamPath (hD : WellFormed N slots M D)
-    (h : (graph N slots M D, topNode 0, topNode N) ∈ DirHamPath) : Satisfiable M D := by
+    (h : (⟨graph N slots M D, topNode 0, topNode N⟩ : PathInstance) ∈ DirHamPath) :
+    Satisfiable M D := by
   classical
   obtain ⟨p, hp⟩ := h
   refine ⟨fun i => decide (Follows p (topNode i) (rowNode i 0)), fun j hj => ?_⟩

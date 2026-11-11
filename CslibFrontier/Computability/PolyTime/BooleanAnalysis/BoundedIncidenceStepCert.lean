@@ -180,32 +180,6 @@ private theorem bi_intBin_add' {α : Type} {encIn : α ↪ List Bool} {a b : α 
     ComputableInPolyTime (fun x => a x + b x) encIn encIntBin :=
   bi_intBin_add.comp (ha.prod hb)
 
-private theorem bi_replicate_base {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : ℕ × α => List.replicate p.1 p.2)
-      (encPair encUnary enc) (encList enc) := by fun_prop
-
-private theorem bi_takeUnary {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × ℕ => p.1.take p.2)
-      (encPair (encList enc) encUnary) (encList enc) := by fun_prop
-
-private theorem bi_listTakeWithInput {α γ : Type} {encA : α ↪ List Bool}
-    {encIn : γ ↪ List Bool} {list : γ → List α} {count : γ → ℕ}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (hcount : ComputableInPolyTime count encIn encUnary) :
-    ComputableInPolyTime (fun x => (list x).take (count x)) encIn (encList encA) :=
-  (bi_takeUnary encA).comp (hlist.prod hcount)
-
-private theorem bi_dropUnary {α : Type} (enc : α ↪ List Bool) :
-    ComputableInPolyTime (fun p : List α × ℕ => p.1.drop p.2)
-      (encPair (encList enc) encUnary) (encList enc) := by fun_prop
-
-private theorem bi_listDropWithInput {α γ : Type} {encA : α ↪ List Bool}
-    {encIn : γ ↪ List Bool} {list : γ → List α} {count : γ → ℕ}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (hcount : ComputableInPolyTime count encIn encUnary) :
-    ComputableInPolyTime (fun x => (list x).drop (count x)) encIn (encList encA) :=
-  (bi_dropUnary encA).comp (hlist.prod hcount)
-
 private theorem bi_listGetD_nat_dyn {α : Type} {encIn : α ↪ List Bool}
     {xs : α → List ℕ} {idx fallback : α → ℕ}
     (hxs : ComputableInPolyTime xs encIn (encList encNat))

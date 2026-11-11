@@ -154,7 +154,6 @@
  "CslibFrontier/Computability/Complexity/Problems/SAT/ExactOne/DrawingAssembly.lean": 3,
  "CslibFrontier/Computability/Complexity/Problems/SAT/ExactOne/DrawingAvoidance.lean": 8,
  "CslibFrontier/Computability/Complexity/Problems/SAT/ExactOne/DrawingData.lean": 5,
- "CslibFrontier/Computability/Complexity/Problems/SAT/ExactOne/DrawingPorts.lean": 4,
  "CslibFrontier/Computability/Complexity/Problems/SAT/ExactOne/DrawingValid.lean": 6,
  "CslibFrontier/Computability/Complexity/Problems/SAT/ExactOne/GeometryCollarData.lean": 6,
  "CslibFrontier/Computability/Complexity/Problems/SAT/Incidence.lean": 1,

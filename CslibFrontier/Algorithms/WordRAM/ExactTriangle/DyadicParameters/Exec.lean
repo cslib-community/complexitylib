@@ -36,19 +36,37 @@ private def Ready (n : ℕ) (x : Data 16) : Prop := x.regs Reg.side = n ∧
   x.regs Reg.blocks = ParameterChoice.blocks n ∧ x.regs Reg.level = ParameterChoice.level n ∧
   x.regs Reg.tensorDepth = ParameterChoice.tensorDepth n ∧ x.regs Reg.four = 4
 
-private theorem power_preserves : ∀ i : Fin 16, i.val < 7 ∨ 12 ≤ i.val →
+private theorem offset7_injective {r : ℕ} {f : Fin r → Fin 16}
+    (hf : ∀ i, (f i).val = i.val + 7) : Function.Injective f := by
+  intro i j h
+  apply Fin.ext
+  have hv := congrArg Fin.val h
+  rw [hf, hf] at hv
+  omega
+
+private theorem offset7_preserves {r : ℕ} (c : Code .standard r) (f : Fin r → Fin 16)
+    (hf : ∀ i, (f i).val = i.val + 7) (i : Fin 16) (hi : i.val < 7 ∨ 7 + r ≤ i.val) :
+    (c.rename f).Preserves i :=
+  c.preserves_rename_of_offset f (fun j => (hf j).trans (Nat.add_comm j.val 7)) i hi
+
+private theorem power_preserves (i : Fin 16) (hi : i.val < 7 ∨ 12 ≤ i.val) :
     (Power.program.rename powerRegisters).Preserves i :=
-  fun i hi => Power.program.preserves_rename_of_offset powerRegisters
-    (fun j => Nat.add_comm j.val 7) i hi
+  offset7_preserves Power.program powerRegisters (fun _ => rfl) i hi
+
+private theorem Ready.of_frame {n : ℕ} {x y : Data 16} (hx : Ready n x)
+    (h : ∀ i : Fin 16, i = Reg.side ∨ i = Reg.blocks ∨ i = Reg.level ∨
+      i = Reg.tensorDepth ∨ i = Reg.four → y.regs i = x.regs i) : Ready n y :=
+  ⟨(h Reg.side (by decide)).trans hx.1,
+    (h Reg.blocks (by decide)).trans hx.2.1,
+    (h Reg.level (by decide)).trans hx.2.2.1,
+    (h Reg.tensorDepth (by decide)).trans hx.2.2.2.1,
+    (h Reg.four (by decide)).trans hx.2.2.2.2⟩
 
 private theorem Ready.after_power {w n : ℕ} {x y : Data 16} {t : ℕ}
     (hx : Ready n x) (he : ExecWithin w (Power.program.rename powerRegisters) x y t) :
     Ready n y :=
-  ⟨(he.regs_eq (power_preserves Reg.side (by decide))).trans hx.1,
-    (he.regs_eq (power_preserves Reg.blocks (by decide))).trans hx.2.1,
-    (he.regs_eq (power_preserves Reg.level (by decide))).trans hx.2.2.1,
-    (he.regs_eq (power_preserves Reg.tensorDepth (by decide))).trans hx.2.2.2.1,
-    (he.regs_eq (power_preserves Reg.four (by decide))).trans hx.2.2.2.2⟩
+  hx.of_frame fun i hi => he.regs_eq (power_preserves i (by
+    rcases hi with rfl | rfl | rfl | rfl | rfl <;> decide))
 
 private theorem exec_finish {w n : ℕ} (x : Data 16)
     (hb : x.regs Reg.blocks = ParameterChoice.blocks n)
@@ -132,18 +150,8 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
     change ParameterChoice.window n + ParameterChoice.level n + 2 ≤ _
     unfold wordBudget
     omega)
-  have log_inj : Function.Injective logRegisters := by
-    intro i j h
-    apply Fin.ext
-    have hv := congrArg (fun i : Fin 16 => i.val) h
-    dsimp [logRegisters] at hv
-    omega
-  have pow_inj : Function.Injective powerRegisters := by
-    intro i j h
-    apply Fin.ext
-    have hv := congrArg (fun i : Fin 16 => i.val) h
-    dsimp [powerRegisters] at hv
-    omega
+  have log_inj : Function.Injective logRegisters := offset7_injective (fun _ => rfl)
+  have pow_inj : Function.Injective powerRegisters := offset7_injective (fun _ => rfl)
   let a := x.set Reg.workValue n
   have copy : ExecWithin (B := .standard) w (ram[ Reg.workValue ← Reg.side ]) x a 1 := by
     simpa only [hn] using ExecWithin.copy (w := w) (x := x) (d := Reg.workValue) (s := Reg.side)
@@ -151,11 +159,9 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
     (hfit.of_le (by unfold wordBudget; omega))
     (hfit.of_le (by change n ≤ _; unfold wordBudget; omega))
     (hfit.of_le (by change Nat.log 2 n + 1 ≤ _; unfold wordBudget; omega))
-  have bside : b.regs Reg.side = n := by
-    have frame := hb.regs_eq (Code.preserves_rename_of_offset (offset := 7)
-      NatLog.program logRegisters
-      (fun _ => by simp [logRegisters, Nat.add_comm]) Reg.side (Or.inl (by decide)))
-    exact frame.trans (by simpa +decide [a, Reg.side, Reg.workValue] using hn)
+  have bside : b.regs Reg.side = n :=
+    (hb.regs_eq (offset7_preserves NatLog.program logRegisters (fun _ => rfl) Reg.side
+      (by decide))).trans hn
   have blog' : b.regs Reg.workCount = Nat.log 2 n := blog
   let c := ((((((((b.set Reg.divisor 2394).set Reg.blocks (ParameterChoice.blocks n)).set
     (13 : Fin 16) 63).set Reg.level (ParameterChoice.level n)).set (14 : Fin 16) 21).set
@@ -167,10 +173,7 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
       h2394, h63, h21, h4, htFit, hmFit, hLFit, ht2Fit, ht2Fit', two_mul, Reg.divisor, Reg.blocks,
       Reg.level, Reg.tensorDepth, Reg.four, Reg.workBase,
       Reg.workExponent, Reg.workCount, Fin.mk.injEq]
-  have cReady : Ready n c := by
-    refine ⟨?_, rfl, rfl, rfl, rfl⟩
-    simpa +decide [c, Reg.side, Reg.divisor, Reg.blocks, Reg.level, Reg.tensorDepth, Reg.four,
-      Reg.workBase, Reg.workExponent] using bside
+  have cReady : Ready n c := ⟨bside, rfl, rfl, rfl, rfl⟩
   obtain ⟨d, hd, dg, _, _, dmem, _, _, _⟩ := Power.exec_rename powerRegisters pow_inj
     4 (2 * ParameterChoice.blocks n) (by decide) c (by rfl) (by rfl) hpg
   have dReady := cReady.after_power hd
@@ -181,27 +184,25 @@ theorem exec {w n : ℕ} (x : Data 16) (hn : x.regs Reg.side = n)
     ram_eval [nextPower, e, dg', dReady.2.2.1, dReady.2.2.2.2,
       Reg.groups, Reg.workValue, Reg.workBase, Reg.workExponent, Reg.level, Reg.four,
       Fin.mk.injEq]
-  have eReady : Ready n e := by
-    simpa +decide [Ready, e, Reg.side, Reg.blocks, Reg.level, Reg.tensorDepth, Reg.four,
-      Reg.groups, Reg.workBase, Reg.workExponent] using dReady
+  have eReady : Ready n e := dReady.of_frame fun i hi => by
+    rcases hi with rfl | rfl | rfl | rfl | rfl <;> rfl
   obtain ⟨f, hf, fD, _, _, fmem, _, _, _⟩ := Power.exec_rename powerRegisters pow_inj
     4 (ParameterChoice.level n) (by decide) e (by rfl) (by rfl) hpD
   have fReady := eReady.after_power hf
   have fg : f.regs Reg.groups = ParameterChoice.groups n :=
     (hf.regs_eq (power_preserves Reg.groups (by decide))).trans (by rfl)
   obtain ⟨y, hy, yD, yflag, ymem, yr⟩ := exec_finish f fReady.2.1 fD hfit
+  have yReady : Ready n y := fReady.of_frame fun i hi =>
+    yr i (by rcases hi with rfl | rfl | rfl | rfl | rfl <;> decide)
+      (by rcases hi with rfl | rfl | rfl | rfl | rfl <;> decide)
   have full := copy.seq (hb.seq (prep.seq (hd.seq (next.seq (hf.seq hy)))))
-  refine ⟨y, full.mono ?_, ?_, ?_, ?_, yD, ?_, ?_, yflag, ?_⟩
-  · change 1 + (4 * Nat.log 2 n + 5 + (9 + (4 * (2 * ParameterChoice.blocks n) + 5 +
-      (3 + (4 * ParameterChoice.level n + 5 + 5))))) ≤ timeBound n
-    unfold timeBound
-    omega
-  · exact (yr Reg.side (by decide) (by decide)).trans fReady.1
-  · exact (yr Reg.blocks (by decide) (by decide)).trans fReady.2.1
-  · exact (yr Reg.level (by decide) (by decide)).trans fReady.2.2.1
-  · exact (yr Reg.groups (by decide) (by decide)).trans fg
-  · exact (yr Reg.tensorDepth (by decide) (by decide)).trans fReady.2.2.2.1
-  · exact ymem.trans (fmem.trans (dmem.trans bmem))
+  refine ⟨y, full.mono ?_, yReady.1, yReady.2.1, yReady.2.2.1, yD,
+    (yr Reg.groups (by decide) (by decide)).trans fg, yReady.2.2.2.1, yflag,
+    ymem.trans (fmem.trans (dmem.trans bmem))⟩
+  change 1 + (4 * Nat.log 2 n + 5 + (9 + (4 * (2 * ParameterChoice.blocks n) + 5 +
+    (3 + (4 * ParameterChoice.level n + 5 + 5))))) ≤ timeBound n
+  unfold timeBound
+  omega
 
 /-- Actual execution is logarithmic, even using conservative bounds for both power calls. -/
 theorem timeBound_le (n : ℕ) : timeBound n ≤ 16 * Nat.log 2 n + 33 := by
