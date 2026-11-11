@@ -385,6 +385,45 @@ theorem payload_dual (hz : 0 < z) (S : Finset (Fin z)) :
   rw [payload_covered, sum_biUnion (fun i _ j _ hij => groundBlock_disjoint T hij), payload_cost]
   simp [block_dual T hz, div_eq_mul_inv]
 
+/-- Any fresh specialist passes the source local dual test after arbitrary
+previously covered blocks. No ordering or equal block-size assumption is used. -/
+theorem specialist_certified (hz : 0 < z) (S : Finset (Fin z)) (j : Fin z) (hj : j ∉ S) :
+    (coverInstance T hz).Certified 1 (payload T S) (specialist T j) := by
+  classical
+  have hf : (coverInstance T hz).covered (specialist T j) \
+      (coverInstance T hz).covered (payload T S) = groundBlock T j := by
+    ext e
+    simp only [mem_sdiff, specialist_covered T hz, mem_groundBlock, mem_payload_covered T hz]
+    constructor
+    · exact And.left
+    · intro h
+      exact ⟨h, h ▸ hj⟩
+  unfold Instance.Certified
+  rw [hf, one_mul, specialist_cost T hz, block_dual T hz]
+  exact ⟨groundBlock_nonempty T j, le_rfl⟩
+
+/-- A preformed batch of distinct specialists is retained in any report order;
+the resulting family is exactly their original source payload. -/
+theorem retain_specialists (hz : 0 < z) (js : List (Fin z)) (hn : js.Nodup)
+    (S : Finset (Fin z)) (hd : Disjoint S js.toFinset) :
+    (coverInstance T hz).retain 1 (payload T S) (js.map (specialist T)) =
+      payload T (S ∪ js.toFinset) := by
+  classical
+  induction js generalizing S with
+  | nil => simp [Instance.retain]
+  | cons j js ih =>
+    have hj : j ∉ S := fun hj => (disjoint_left.mp hd) hj (by simp)
+    have ht : Disjoint (S ∪ {j}) js.toFinset := by
+      apply disjoint_union_left.mpr
+      refine ⟨?_, ?_⟩
+      · exact disjoint_of_subset_right (by intro k hk; simp [hk]) hd
+      · simpa using (List.nodup_cons.mp hn).1
+    have hp : payload T {j} = specialist T j := by simp [payload]
+    simp only [List.map_cons, Instance.retain, specialist_certified T hz S j hj, ite_true]
+    rw [← hp, ← payload_union, ih hn.of_cons (S ∪ {j}) ht]
+    congr 1
+    simp [List.toFinset_cons]
+
 /-- Near-cover and specialist responses pass the actual local dual tests with rho=1. -/
 theorem responses_certified (hz : 3 ≤ z) (j : Fin z) :
     (coverInstance T (by omega)).Certified 1 ∅ (payload T (univ.erase j)) ∧
@@ -405,20 +444,7 @@ theorem responses_certified (hz : 3 ≤ z) (j : Fin z) :
     have he : I.covered ∅ = ∅ := by simp [Instance.covered]
     rw [he, sdiff_empty, one_mul]
     exact ⟨hnear, (payload_dual T hz0 _).ge⟩
-  · have hf : I.covered (specialist T j) \
-        I.covered (payload T (univ.erase j)) = groundBlock T j := by
-      change (coverInstance T hz0).covered (specialist T j) \
-        (coverInstance T hz0).covered (payload T (univ.erase j)) = groundBlock T j
-      ext e
-      simp only [mem_sdiff, specialist_covered T hz0, mem_groundBlock,
-        mem_payload_covered T hz0, mem_erase, mem_univ, and_true]
-      tauto
-    change (I.covered _ \ I.covered _).Nonempty ∧ _
-    rw [hf]
-    refine ⟨groundBlock_nonempty T j, ?_⟩
-    change (coverInstance T hz0).cost (specialist T j) ≤
-      1 * ∑ e ∈ groundBlock T j, (coverInstance T hz0).dual e
-    rw [one_mul, specialist_cost T hz0, block_dual T hz0]
+  · exact specialist_certified T hz0 (univ.erase j) j (by simp)
 
 /-- Decode a residual using only the actual uncovered points, with a default on
 empty residuals. In the construction the residual is nonempty. -/

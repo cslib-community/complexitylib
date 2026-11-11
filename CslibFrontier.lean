@@ -6197,8 +6197,10 @@ public import CslibFrontier.Probability.StochasticOracle.CutoffFamilies
 public import CslibFrontier.Probability.StochasticOracle.DiscreteComparison
 public import CslibFrontier.Probability.StochasticOracle.ExecutionFeasibility
 public import CslibFrontier.Probability.StochasticOracle.FullCover
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualAll
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualAttainment
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualEncoding
+public import CslibFrontier.Probability.StochasticOracle.NativeResidualMinima
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOneTurn
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOracle
@@ -6224,6 +6226,7 @@ public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Initial
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Packets
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.ResponseExecution
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeControl
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeProvenance
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.Selector
 public import CslibFrontier.Probability.StochasticOracle.NativeRetention.SourceEncoding
 public import CslibFrontier.Probability.StochasticOracle.PartialCover

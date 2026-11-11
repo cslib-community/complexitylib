@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualRouting
 public import CslibFrontier.Probability.StochasticOracle.NativeResidualOptimum
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.TerminalResources
+public import CslibFrontier.Probability.StochasticOracle.NativeRetention.RuntimeProvenance
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic
 
@@ -369,20 +370,22 @@ private theorem specialist_word (invoice : Fin (z + 1) → ℕ) (j : Fin z) :
     (commit (afterNearMemory T points candidates invoice j).privateState
       (receipt T points candidates invoice j.succ none) ())
 
-private theorem initial_live (hz : 3 ≤ z) :
-    RuntimeControl.stopped (NativeResidualRouting.initial true (input T points candidates)) =
+/-- Both fixed strategies start live on every nonempty promised source instance. -/
+theorem initial_live (adaptive : Bool) (hz : 3 ≤ z) :
+    RuntimeControl.stopped (NativeResidualRouting.initial adaptive (input T points candidates)) =
       false := by
   let j : Fin z := ⟨0, by omega⟩
   let e : Fin (3 * (T j).r) := ⟨0, by have := (T j).r_pos; omega⟩
   have hn : 0 < n := Nat.zero_lt_of_lt (points.symm ⟨j, e⟩).isLt
   have hno : (Packets.decision
-      (NativeResidualRouting.initial true (input T points candidates)).work).1 = false := by
+      (NativeResidualRouting.initial adaptive (input T points candidates)).work).1 = false := by
     simpa [Packets.decision, Packets.assemble, NativeResidualRouting.initial, input,
       GuardedStartup.state, RuntimeControl.initial, complete, ground, retain, covered,
       source, SourceEncoding.toNative, List.all_eq_false] using (⟨0, hn⟩ : ∃ x : ℕ, x < n)
-  change (decide (2 = 0) || decide (z + 1 = 0) || decide (2 = 0) || _) = false
+  change (decide ((if adaptive then 2 else 1 : ℕ) = 0) ||
+    decide (z + 1 = 0) || decide (2 = 0) || _) = false
   rw [hno]
-  simp
+  cases adaptive <;> simp
 
 /-- The completed native runtime result decodes to a full weight-one cover;
 no hidden cover or optimal-output contract is supplied to the program. -/
@@ -430,7 +433,7 @@ theorem feedback_law (P : Parameters z) (invoice : Fin (z + 1) → ℕ) (hz : 3 
           (afterNearMemory T points candidates invoice j).privateState)) := by
     change serve _ _ _ (ConcurrentBatch.initial ()) = _
     exact first_source T points candidates P invoice
-  rw [Feedback.run, initial_live T points candidates hz]
+  rw [Feedback.run, initial_live T points candidates true hz]
   simp only [Bool.false_eq_true, ite_false, PMF.monad_bind_eq_bind, PMF.map_bind]
   rw [henv, PMF.bind_map]
   have hstate (j : Fin z) : RuntimeControl.afterReply
@@ -627,59 +630,19 @@ private theorem output_provenance (invoice : Fin (z + 1) → ℕ) (j : Fin z)
       (SourceEncoding.toNative (source T points candidates)).rows.length
       (afterSpecialistMemory T points candidates invoice j).events := by
   let state := afterSpecialist T points candidates invoice j
-  let selected : Selector.State := ⟨state.work.history, false, state.requests, state.privateWord⟩
   have hwork : state.work.system = SourceEncoding.toNative (source T points candidates) := rfl
   have hopps : state.work.opportunities = z + 1 := rfl
-  have hp : Packets.assemble state.work = Selector.data (z + 1) state.work.system selected := by
-    have hcanonical (word) (hw : word ∈ state.work.history) :
-        Packets.families (z + 1) state.work.system.rows.length word =
-          (parseProposals (z + 1) state.work.system.rows.length word).map sourceIndices := by
-      change word ∈ [_ , _] at hw
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hw
-      rcases hw with rfl | rfl <;>
-        exact (Packets.families_report _).trans (by simp only [replyOf, parseProposals_report])
-    have hps : state.work.history.reverse.flatMap
-        (Packets.families (z + 1) state.work.system.rows.length) =
-        state.work.history.reverse.flatMap
-          (fun word => (parseProposals (z + 1) state.work.system.rows.length word).map
-            sourceIndices) := by
-      apply List.flatMap_congr
-      intro word hw
-      exact hcanonical word (List.mem_reverse.mp hw)
-    simpa only [Packets.assemble, hopps, Selector.data, selected, List.map_flatMap] using
-      congrArg (fun ps => { state.work.system with proposals := ps }) hps
   have hhistory : state.work.history =
       (afterSpecialistMemory T points candidates invoice j).events.map (fun e => e.reply.word) := by
     change [_ , _] = [_ , _]
     dsimp only
     rw [near_word T points candidates invoice j]
-  have hav : Selector.available (z + 1) state.work.system.rows.length state.work.history =
-      NativeBatch.nativeAvailable (n := z + 1) state.work.system.rows.length
-        (afterSpecialistMemory T points candidates invoice j).events := by
-    rw [hhistory]
-    generalize (afterSpecialistMemory T points candidates invoice j).events = events
-    induction events with
-    | nil => rfl
-    | cons e es ih =>
-      simp only [List.map_cons, Selector.available, NativeBatch.nativeAvailable, ih]
-  have hprov := Selector.provenance (z + 1) state.work.system (hwork.symm ▸ hx) selected
-  rw [hav] at hprov
-  change decodeFamily state.work.system.rows.length (RuntimeControl.result state) = some C at hC
-  unfold RuntimeControl.result Packets.decision at hC
-  rw [hp] at hC
-  split_ifs at hC with hc
-  · dsimp only [Prod.snd] at hC
-    change decodeFamily (Selector.data (z + 1) state.work.system selected).rows.length
-      (output (Selector.data (z + 1) state.work.system selected)) = some C at hC
-    rw [decode_output] at hC
-    cases hC
-    exact hprov
-  · simp only [decodeFamily, List.length_nil] at hC
-    split_ifs at hC
-    cases hC
-    intro i hi
-    have hbad := (Finset.mem_filter.mp hi).2
-    simp at hbad
+  apply RuntimeProvenance.result_available state _ (hwork.symm ▸ hx) hopps hhistory _ C hC
+  intro word hw
+  change word ∈ [_ , _] at hw
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hw
+  rcases hw with rfl | rfl <;>
+    exact (Packets.families_report _).trans (by simp only [replyOf, parseProposals_report])
 
 /-- The compiled adaptive program is actually admitted in the source's native
 selection-only class. Admission follows from its runtime retention and actual

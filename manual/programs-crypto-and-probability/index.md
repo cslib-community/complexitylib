@@ -956,7 +956,7 @@ when its numerical statement is already proved. The full objective in
 | Theorem 6 construction and $L=\mathrm{OPT}=1$, PDF pp. 12–13 | `ResidualCover.coverInstance`, `primal_optimum`, `dual_optimum`, `responses_certified`, `decode_near_residual` | Covered mathematically for arbitrary promised finite X3C inputs, with hidden fixed exact covers and derived certificates. |
 | Theorem 6 one/two-turn optima and ratio, PDF p. 13 | `ResidualCover.one_turn_optimum`, `two_turn_optimum`, `attained_ratio`, `attained_linear_ratio` | Covered for all finite behavioral policies, including randomized extraction and mixed concurrent first batches. |
 | Theorem 6 native WSC/role/residual realization, PDF pp. 12–13 | `NativeResidualEncoding.source`, `source_valid`, `native_primal_optimum`, `native_dual_optimum`, `native_near_residual`, `native_responses_certified`; `NativeResidualSelector.computable_request`, `controller_law`; `NativeResidualReplies.observed_proposals`, `retained`, `near_residual`, `near_live`, `completed_output` | Partial: arbitrary-family binary construction now derives native WSC validity, primal/dual optimum one, original-label coverage/cost, residual and local certification correspondence. Runtime component/residual planning and one same-code native program are present. A three-block source-protocol client checks original input, adaptive requests, provenance, output, nonreuse and joint bill/time. Actual receipt/raw-history parsing, certification, residual, guard and decoded runtime result are now derived for arbitrary X3C families. The legacy least-element controller still needs canonical-role specialization. `NativeResidualRouting.controller true` instead reads the known role subuniverses from original runtime metadata, and `NativeResidualAttainment.native_law`, `native_certified`, `native_selectionOnly` and `native_expected_cost` derive original-input dispatch, native admission, certified tape success and actual bills for arbitrary point labels. |
-| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualOracle.response_factor`, `response_available`, `response_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`; `NativeResidualOptimum.accept_eq`, `two_lower`; `NativeResidualAttainment.native_cost_mem`, `native_optimum_of_adaptive_le` | Partial: clockless native epoch tables now preserve admitted sure success, and explicit per-call price/invoice identification transfers the behavioral two-turn lower bound to actual accrued bills, including divergent prefixes. The decoded source certificate equals optimal-cover acceptance; the lower bound specializes the existing common-oracle Theorem 5 native OPT over all admitted finite-control machines. The uniform runtime-role adaptive controller now attains its exact actual bill in this same native class, and `NativeResidualAttainment.native_optimum_of_adaptive_le` proves OPT equality when near-then-residual is no dearer than all specialists. The complementary all-specialist attainment, native one-turn lower/equality, full two-turn equality/ratio and cost-aware uniform choice remain open, as does arbitrary-real invoice representation. These paper-local obligations are not blocked on #4335 or #4336. |
+| Theorem 6 universal native query-token optimum and optimal uniform selectors, PDF p. 13 | `NativeResidualOracle.response_factor`, `response_available`, `response_charge`; `NativeResidualPolicies.policy_law`, `terminal_law`, `selection_success_one`, `native_two_lower`; `NativeResidualOptimum.accept_eq`, `two_lower`; `NativeResidualAttainment.native_cost_mem`, `native_optimum_of_adaptive_le`; `NativeResidualAll.native_expected_cost`, `native_certified`, `native_cost_mem`; `NativeResidualMinima.native_optimum` | Partial: clockless native epoch tables now preserve admitted sure success, and explicit per-call price/invoice identification transfers the behavioral two-turn lower bound to actual accrued bills, including divergent prefixes. The decoded source certificate equals optimal-cover acceptance; the lower bound specializes the existing common-oracle Theorem 5 native OPT over all admitted finite-control machines. The uniform runtime-role adaptive controller now attains its exact actual bill in this same native class, and `NativeResidualAttainment.native_optimum_of_adaptive_le` proves OPT equality when near-then-residual is no dearer than all specialists. The complementary all-specialist attainment and full two-turn minimum are now proved by `NativeResidualAll.native_cost_mem` and `NativeResidualMinima.native_optimum`. Native one-turn lower/equality, the ratio and cost-aware uniform choice remain open, as does arbitrary-real invoice representation. These paper-local obligations are not blocked on #4335 or #4336. |
 
 Not everything outside #4335/#4336 is present. In particular, the native
 Theorem 6 obligations and the separate Theorem 5 representation obligations in
@@ -1230,7 +1230,7 @@ For this **same named program** `native_selectionOnly` proves admission on all
 finite halted executions, `native_certified` proves certified tape success one
 by the oracle deadline two, and `native_expected_cost` proves
 $$
-mathbb E[mathrm{bill}]=c_0+sum_j p_jc_j.
+\mathbb E[\mathrm{bill}]=c_0+\sum_j p_jc_j.
 $$
 Termination is derived from the concrete native law. The general
 `NativeBatch.Quantitative.expected_charge_eq_terminal` then identifies terminal
@@ -1245,8 +1245,8 @@ competitor class; it is not a behavioral score or a fresh surrogate optimum.
 `native_optimum_of_adaptive_le` combines the attained upper bound with the
 universal lower bound, proving
 $$
-mathrm{OPT}_{mathrm{native},2}=c_0+sum_jp_jc_j
-quad	ext{when}quad c_0+sum_jp_jc_jlesum_jc_j.
+\mathrm{OPT}_{\mathrm{native},2}=c_0+\sum_jp_jc_j
+\quad\text{when}\quad c_0+\sum_jp_jc_j\le\sum_jc_j.
 $$
 The proof-only reindexing of the decoded candidate count preserves the exact
 source sampler, query bytes, masks and invoices (`source_reindex`,
@@ -1261,14 +1261,47 @@ different actual requests and invoices. It also checks duplicate/order-insensiti
 subuniverse comparison and preservation of the role frame under arbitrary replies.
 Run `lake build CslibFrontierTests.StochasticOracleNativeResidualAttainment`.
 
-The complementary all-specialist attainment is still open. Although the fixed
-all-specialist mode has a compiled joint feedback law, its general source
-certification, native cost membership and optimum upper bound are not claimed.
-Native one-turn lower/equality, the full two-turn minimum/ratio and uniform
-cost-aware strategy choice also remain open. This section closes the adaptive
-attainment case, not unrestricted Theorem 6 or the whole paper. The Agent
-Operator's Manual needs no edit: roles, operating procedures and human direction
-are unchanged. The curated abstract/results inventory is not promoted.
+The complementary all-specialist case is now provided by
+[NativeResidualAll](../../CslibFrontier/Probability/StochasticOracle/NativeResidualAll.lean).
+For every positive source turn budget, the fixed `NativeResidualRouting.controller false`
+preforms all specialist requests from the original role metadata, before seeing
+any reply. `source` derives the actual accepted batch transaction;
+`completed_retained` proves certification and retention for distinct specialist
+replies in their actual report order. `native_law` composes this transaction with
+the original-input clockless native program. `native_certified` and
+`native_selectionOnly` derive actual tape success and provenance. `native_resources`
+and `native_expected_cost` give joint bill/duration and exact accrued expectation
+$\sum_j c_j$; termination is derived, not assumed. `native_cost_mem` therefore
+attains this value in the same native class for both one and two source turns.
+
+Import [NativeResidualMinima](../../CslibFrontier/Probability/StochasticOracle/NativeResidualMinima.lean)
+for `native_cost_mem` and `native_optimum`, which combine both concrete controllers
+with the universal two-turn lower bound:
+$$
+\mathrm{OPT}_{\mathrm{native},2}
+  =\min\left\{\sum_j c_j,\ c_0+\sum_jp_jc_j\right\}.
+$$
+This is equality for the original common-oracle native infimum, including the
+case where all specialists are strictly cheaper. The proof selects between two
+fixed compiled programs; it does not yet compile a uniform cost-comparison
+procedure into one program.
+
+The [all-specialist client](../../CslibFrontierTests/StochasticOracleNativeResidualAll.lean)
+uses the same nontrivial five blocks, near invoice twenty and specialist invoices
+one through five. It derives exact native OPT fifteen (the adaptive alternative
+costs twenty-three), certified one-turn tape success, the one-turn native upper
+bound, and joint bill fifteen/duration one. Its expected-cost check works for
+every positive permitted turn budget.
+Run `lake build CslibFrontierTests.StochasticOracleNativeResidualAll`.
+
+Native one-turn lower/equality, the ratio and uniform cost-aware strategy choice
+remain open. The existing two-turn posterior theorem does not itself supply the
+one-turn universal lower bound; one must derive the one-epoch output/conditional
+law and preserve successful selection provenance for every competitor. Arbitrary
+real invoice representation also remains open. These paper-local obligations
+are not blocked on #4335 or #4336, so the full objective is still incomplete.
+The Agent Operator's Manual needs no edit: roles, operating procedures and human
+direction are unchanged. The curated abstract/results inventory is not promoted.
 
 
 ### Submission 191: a concrete native-to-behavioral bridge
