@@ -33,9 +33,9 @@ least half of the trial vectors give a hypothesis with error at most `ε #U`. It
 tuples consistent with the seed have density at least `δ / 2` and that at most an `ε / 64`
 fraction of them disagree with `f` in `ε k / 64` or more positions. The module
 `CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.DirectProduct.Density`
-discharges these hypotheses for a `δ / 4` fraction of seeds and proves the counting headline. The
-decoder's circuit size, and with it M6.3 of #4451, remains open. The analysis follows the shape
-of IJKW's Lemmas 3.8–3.10. Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`,
+discharges these hypotheses for a `δ / 4` fraction of seeds and proves the counting headline, and
+`DirectProduct.Complexity` bounds the decoder's circuit size. The analysis follows the shape of
+IJKW's Lemmas 3.8–3.10. Its constants (`ε / 64`, `(64 / ε) log (4 / δ)`,
 `(16 / δ) log (8 / ε)`) are ours, derived for the tuple formulation; they are not IJKW's. The
 parameter roles are swapped relative to IJKW's Theorem 1.2: `ε` here is their output error `δ`,
 and `δ` here is their agreement `ε`. The tuple form also omits their Algorithm 1 lookup that
@@ -43,7 +43,8 @@ answers `x = aᵢ` with the corresponding output.
 
 ## Main definitions
 
-* `trialTuple`, `accepts`, `dpDecode`: the decoder.
+* `trialTuple`, `accepts`, `dpDecode`: the decoder. Other modules unfold them with `trialTuple_eq`,
+  `accepts_eq`, `dpDecode_zero` and `dpDecode_cons`.
 * `consistent`, `acceptedPairs`, `badPairs`, `disagreements`: the counting objects.
 
 ## Main results
@@ -164,6 +165,38 @@ first accepted trial, or `dflt` if no trial is accepted. -/
 def dpDecode (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k)) (b₀ : Fin k → U)
     {m : ℕ} (v : Fin m → Trial U k) (x : U) : V :=
   ((firstAccepted (accepts C' P b₀ x) v).map fun t => C' (trialTuple P b₀ x t) t.1).getD dflt
+
+omit [Fintype U] [DecidableEq U] in
+/-- The trial tuple overwrites the free position of `b₀` on `P` and the filler elsewhere. -/
+theorem trialTuple_eq (P : Finset (Fin k)) (b₀ : Fin k → U) (x : U) (t : Trial U k) :
+    trialTuple P b₀ x t = Function.update (P.piecewise b₀ t.2) t.1 x := by
+  unfold trialTuple
+  rfl
+
+omit [Fintype U] [DecidableEq U] in
+/-- Unfolding the acceptance test. -/
+theorem accepts_eq (C' : (Fin k → U) → Fin k → V) (P : Finset (Fin k)) (b₀ : Fin k → U) (x : U)
+    (t : Trial U k) :
+    accepts C' P b₀ x t = decide (t.1 ∉ P ∧ ∀ i ∈ P, C' (trialTuple P b₀ x t) i = C' b₀ i) := by
+  unfold accepts
+  rfl
+
+omit [Fintype U] [DecidableEq U] in
+/-- With no trials, the decoder outputs the default. -/
+@[simp] theorem dpDecode_zero (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k))
+    (b₀ : Fin k → U) (v : Fin 0 → Trial U k) (x : U) : dpDecode C' dflt P b₀ v x = dflt := by
+  unfold dpDecode
+  simp
+
+omit [Fintype U] [DecidableEq U] in
+/-- The decoder answers from the first trial if it is accepted, and otherwise from the rest. -/
+theorem dpDecode_cons (C' : (Fin k → U) → Fin k → V) (dflt : V) (P : Finset (Fin k))
+    (b₀ : Fin k → U) {m : ℕ} (t : Trial U k) (w : Fin m → Trial U k) (x : U) :
+    dpDecode C' dflt P b₀ (Fin.cons t w : Fin (m + 1) → Trial U k) x =
+      if accepts C' P b₀ x t then C' (trialTuple P b₀ x t) t.1 else dpDecode C' dflt P b₀ w x := by
+  unfold dpDecode
+  rw [firstAccepted_cons]
+  split_ifs <;> rfl
 
 /-- The pairs `(j, y)` that account for the trials accepted at `x`: `j ∉ P`, `y = b₀` on `P`,
 `y j = x` and `C' y = C' b₀` on `P`. -/

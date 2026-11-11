@@ -17,6 +17,8 @@ quick = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = quick
 SPEC.loader.exec_module(quick)
 REPO = Path(__file__).resolve().parent.parent
+# The audit of changed files restored from the artifact cache, run after the build (#4523).
+RESTORES = [sys.executable, "-B", "scripts/check_cache_restores.py", "--base", "base"]
 
 
 class QuickCheckTests(unittest.TestCase):
@@ -211,6 +213,7 @@ class QuickCheckTests(unittest.TestCase):
         plan = quick.Plan("base", ["Demo.Base"], [("lint", ["lint", "--base", "base"])])
         for lint_status, expected in ((0, [["lint", "--base", "base"],
                                            ["lake", "build", "--wfail", "--iofail", "Demo.Base"],
+                                           RESTORES,
                                            ["lake", "exe", "mk_all", "--check"]]),
                                       (3, [["lint", "--base", "base"]])):
             with self.subTest(lint_status=lint_status):
@@ -290,7 +293,7 @@ class QuickCheckTests(unittest.TestCase):
                 with patch.object(quick, "make_plan", return_value=plan), \
                      patch.object(quick, "run_check", side_effect=run):
                     self.assertEqual(quick.main([], self.root), lint_status)
-                expected = [["lake", "build", "--wfail", "--iofail", *plan.targets],
+                expected = [["lake", "build", "--wfail", "--iofail", *plan.targets], RESTORES,
                             *(["lake", "lint", "--", "--no-build", f"--only-modules={listing}",
                                target] for listing, target in zip(listings, lint))]
                 if not lint_status:
@@ -298,6 +301,24 @@ class QuickCheckTests(unittest.TestCase):
                 self.assertEqual(calls, expected)
                 self.assertEqual(len(listings), 2)
                 self.assertFalse(any(listing.exists() for listing in listings))
+
+    def test_cache_restore_audit_follows_the_build_and_stops_on_failure(self):
+        for targets, audit_status, expected in (
+                (["Demo.Base"], 4, [["lake", "build", "--wfail", "--iofail", "Demo.Base"],
+                                    RESTORES]),
+                # Without Lean changes nothing was built, so there is nothing to audit.
+                ([], 4, [["lake", "exe", "mk_all", "--check"]])):
+            with self.subTest(targets=targets):
+                calls = []
+
+                def run(root, command, label):
+                    calls.append(command)
+                    return audit_status if command == RESTORES else 0
+
+                with patch.object(quick, "make_plan", return_value=quick.Plan("base", targets, [])), \
+                     patch.object(quick, "run_check", side_effect=run):
+                    self.assertEqual(quick.main([], self.root), audit_status if targets else 0)
+                self.assertEqual(calls, expected)
 
     def test_deleted_or_renamed_module_falls_back(self):
         (self.root / "Demo/Base.lean").rename(self.root / "Demo/Renamed.lean")

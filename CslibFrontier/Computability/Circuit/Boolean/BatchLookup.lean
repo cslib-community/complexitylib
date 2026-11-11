@@ -70,8 +70,8 @@ def withPadding {k v requests padding d : ℕ} (table : BitString k → BitStrin
 /-- Every request receives its table value, including repeated addresses. -/
 theorem eval_withPadding {k v requests padding d : ℕ} (table : BitString k → BitString v)
     (h : requests + (2 ^ k + padding) = BitonicSort.arity d) (x : BitString (requests * k)) :
-    directProductInput ((withPadding table h).eval interpretation x) =
-      table ∘ directProductInput x := by
+    BitString.block ((withPadding table h).eval interpretation x) =
+      table ∘ BitString.block x := by
   funext request bit
   apply Bool.eq_iff_iff.mpr
   change (batchOrCircuit.withPadding _ _ _ h).eval interpretation x
@@ -80,10 +80,10 @@ theorem eval_withPadding {k v requests padding d : ℕ} (table : BitString k →
   simp only [substitute, Function.comp_apply, Sum.elim_inr, id_eq]
   constructor
   · rintro ⟨source, hkey, hvalue⟩
-    change (BitString.equivFin k).symm source = directProductInput x request at hkey
+    change (BitString.equivFin k).symm source = BitString.block x request at hkey
     exact hkey ▸ hvalue
   · intro hvalue
-    exact ⟨(BitString.equivFin k) (directProductInput x request),
+    exact ⟨(BitString.equivFin k) (BitString.block x request),
       (BitString.equivFin k).symm_apply_apply _, by
         simpa only [Equiv.symm_apply_apply] using hvalue⟩
 

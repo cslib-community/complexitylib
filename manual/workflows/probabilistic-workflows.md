@@ -2346,3 +2346,73 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 `scripts/build.sh CslibFrontierTests.ProductValidatedWords` from the repository root to check them.
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
+
+## Bound adapted Bernoulli counts and hitting times by stochastic domination
+
+Import [`CslibFrontier.Probability.StochasticDomination`](../../CslibFrontier/Probability/StochasticDomination.lean)
+(or its constituent submodules) and open `Cslib.Probability` when proving tail bounds or expected
+stopping-time bounds for sequences of adapted events whose step-wise conditional success
+probabilities satisfy lower or upper bounds.
+
+- **First-order stochastic order**:
+  [`StochasticDomination/Basic.lean`](../../CslibFrontier/Probability/StochasticDomination/Basic.lean)
+  defines `StochasticallyDominates μ ν` on `Measure α` (`ν U ≤ μ U` for measurable upper sets)
+  and `PMF.StochasticallyDominates p q` on `PMF α`. Equate them with measurable monotone
+  `ℝ≥0∞`-valued Lebesgue expectations on `SFinite` measures (`stochasticallyDominates_iff_lintegral`),
+  with measurable monotone Bochner expectations on probability measures (`IsProbabilityMeasure μ`,
+  `IsProbabilityMeasure ν`) for functions integrable under both `μ` and `ν`
+  (`stochasticallyDominates_iff_integral`, which fails for unequal-mass measures), with upper tails
+  on `ℕ` (`stochasticallyDominates_nat_iff_Ici`) and probability-measure lower tails /
+  `ProbabilityTheory.cdf` (`stochasticallyDominates_nat_iff_Iio`,
+  `stochasticallyDominates_real_iff_cdf`), `Bool` coin laws (`PMF.stochasticallyDominates_bool_iff`),
+  couplings (`StochasticallyDominates.of_coupling`), and closure under `map`, `bind` (on `SFinite`
+  measures), and `add_prod`.
+- **Poisson-binomial and binomial benchmarks**:
+  [`PoissonBinomial.lean`](../../CslibFrontier/Probability/PoissonBinomial.lean) defines
+  `PMF.poissonBinomial : List unitInterval → PMF ℕ` with convolution (`poissonBinomial_append`),
+  permutation invariance (`poissonBinomial_perm`), independent-coin product equivalence
+  (`poissonBinomial_eq_map_pi`), and `ProbabilityTheory.binomial` specialization
+  (`toMeasure_poissonBinomial_replicate`).
+  [`StochasticDomination/PoissonBinomial.lean`](../../CslibFrontier/Probability/StochasticDomination/PoissonBinomial.lean)
+  proves parameter monotonicity (`poissonBinomial_stochasticallyDominates_of_forall₂`,
+  `binomial_stochasticallyDominates_of_le`, `binomial_stochasticallyDominates_of_nat_le`) and, for
+  strictly positive success probability `0 < (p : ℝ)`, the exact negative-binomial waiting-time
+  series `tsum_binomial_real_Iio : ∑' t, (ProbabilityTheory.binomial t p).real (Set.Iio r) = r / p`.
+- **Finite-horizon adapted processes**:
+  [`StochasticDomination/Adapted.lean`](../../CslibFrontier/Probability/StochasticDomination/Adapted.lean)
+  defines `adaptedCount A n` on general `Filtration ℕ m` (under `IsProbabilityMeasure P` and
+  `MeasurableSet[ℱ (t + 1)] (A t)`) with both lower- and upper-envelope domination
+  (`adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_adaptedCount`), active-before-target binomial tails
+  requiring the lower bound `p` only while `adaptedCount A t < r`
+  (`adaptedCount_real_Iio_le_binomial`), specializations to Markov Ionescu–Tulcea trajectories
+  (`traj_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_traj_adaptedCount`,
+  `trajMeasure_adaptedCount_stochasticallyDominates_poissonBinomial`,
+  `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
+  sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
+  `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Infinite-horizon stopping-time means**:
+  [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
+  proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and
+  `integral_untopD_eq_tsum_real_lt` under `IsFiniteMeasure P`, measurable `τ`, and summability of
+  `fun n => P.real {n < τ}`, certifying `τ ≠ ⊤` a.e. and integrability of
+  `((τ ·).untopD 0 : ℝ)`). Under `IsProbabilityMeasure P` (or `IsMarkovKernel (κ n)` with an initial `[IsProbabilityMeasure μ₀]` for mixtures, or just `IsMarkovKernel (κ n)` for fixed prefixes), adapted events
+  `MeasurableSet[ℱ (t + 1)] (A t)`, and strictly positive success probability `0 < (p : ℝ)`,
+  `stoppingTime_mean_le_of_adaptedCount_le` assumes `P[A t | ℱ t] ≥ p` a.e. before `τ` (`{t < τ}`)
+  and `r ≤ adaptedCount A n ω → τ ω ≤ n` to deduce `τ ≠ ⊤` a.e., integrability of
+  `((τ ·).untopD 0 : ℝ)`, and `𝔼[(τ ·).untopD 0] ≤ r / p`; the hitting-time specializations
+  (`countHittingTime_mean_le`, `traj_countHittingTime_mean_le`,
+  `trajMeasure_countHittingTime_mean_le`) assume the conditional lower bound `p` while
+  `adaptedCount A t < r`.
+
+The checked [`StochasticDomination.lean` clients](../../CslibFrontierTests/StochasticDomination.lean)
+verify concrete `ℕ`/`ℝ`/`Bool` order inequalities (`lintegral_le`, `integral_le`, `bind`), exact
+heterogeneous `poissonBinomial` masses and means, `ProbabilityTheory.binomial` comparison, a
+state-dependent sequential `PMF` process, lower/upper `Kernel.trajMeasure` envelopes, a
+target-stopped `Kernel.trajMeasure` process whose success probability drops to `0` once `r = 2`
+successes are reached while satisfying `𝔼[τ_2] ≤ 4`, and a truncated stopping time strictly
+distinct from `countHittingTime`. Run `scripts/build.sh CslibFrontierTests.StochasticDomination` from
+the repository root to check them.
+Instantiating these theorems on oracle-program executions remains open until the stochastic-oracle
+semantics ([#2530](https://github.com/cslib-community/cslib-frontier/pull/2530)) lands on `main`.

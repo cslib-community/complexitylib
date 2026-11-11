@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Ramsey.Basic
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import CslibFrontier.Foundations.Data.BitString.Agree
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import Mathlib.Data.Sym.Card
 
 /-!
@@ -80,16 +80,6 @@ private theorem forall_pairs_of_isIndepSet {n : ℕ} {x : Sym2 (Fin n) → Bool}
   rw [ofMarks, fromEdgeSet_adj] at hna
   simpa [hne] using hna
 
-/-- Prescribing the values on `S` leaves `2 ^ (|ι| - |S|)` Boolean functions. -/
-private theorem card_filter_forall_mem_eq_mul {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (S : Finset ι) (b : Bool) :
-    #{x : ι → Bool | ∀ i ∈ S, x i = b} * 2 ^ #S = 2 ^ Fintype.card ι := by
-  have hcard : #{x : ι → Bool | ∀ i ∈ S, x i = b} = 2 ^ #Sᶜ := by
-    rw [← Cslib.BitString.card_filter_forall_notMem_eq Sᶜ fun _ => b]
-    refine congrArg card (filter_congr fun x _ => ?_)
-    simp only [mem_compl, not_not]
-  rw [hcard, ← pow_add, card_compl, Nat.sub_add_cancel (card_le_univ S)]
-
 /-- **Erdős's counting bound**, asymmetric form: if
 `C(n, k) 2 ^ (-C(k, 2)) + C(n, l) 2 ^ (-C(l, 2)) < 1`, written without division, then some graph
 on `Fin n` has no `k`-clique and no `l`-independent set [Erdos1947] [AlonSpencer2016, §1.1]. -/
@@ -112,8 +102,9 @@ theorem exists_cliqueFree_indepSetFree_of_choose {n k l : ℕ}
       _ = ∑ t ∈ powersetCard j (univ : Finset (Fin n)), 2 ^ N := by
           rw [sum_mul]
           refine sum_congr rfl fun t ht => ?_
-          rw [← (mem_powersetCard.1 ht).2, ← card_pairs]
-          exact card_filter_forall_mem_eq_mul _ _
+          rw [← (mem_powersetCard.1 ht).2, ← card_pairs,
+            Fintype.card_filter_forall_mem_eq (pairs t) fun _ => b, Fintype.card_bool, ← pow_add,
+            card_compl, Nat.sub_add_cancel (card_le_univ _)]
       _ = n.choose j * 2 ^ N := by
           rw [sum_const, card_powersetCard, card_univ, Fintype.card_fin, smul_eq_mul]
   have hA : #A * 2 ^ k.choose 2 ≤ n.choose k * 2 ^ N := hcount k true
