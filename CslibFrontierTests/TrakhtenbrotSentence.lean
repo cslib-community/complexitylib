@@ -11,14 +11,16 @@ public import CslibFrontier.Logics.FirstOrder.Trakhtenbrot.Sentence
 public import CslibFrontierTests.Trakhtenbrot
 public import Mathlib.ModelTheory.Graph
 
-/-! # Trakhtenbrot's theorem for Mathlib sentences: checked instances
+/-! # Trakhtenbrot's theorem and the monadic dichotomy for Mathlib sentences: checked instances
 
-The raw coding of sentences in the language of graphs: a computed raw formula, decoding of a
-well-scoped code, rejection of ill-scoped codes (wrong binder, out-of-scope bound name, free name,
-unknown symbol, wrong arity), the level-naming of a raw sentence, a finitely satisfiable and a
-finitely valid sentence on both sides of the translation, the reduction on a finitely satisfiable
-formula and on the axiom of infinity, and the headline theorems for both the language of graphs and
-a finite relational language whose only relation symbol is ternary (no binary symbol). -/
+The raw coding of sentences in the language of graphs: a computed raw formula, quantifier rank via
+raw quantifier depth, decoding of a well-scoped code, rejection of ill-scoped codes (wrong binder,
+out-of-scope bound name, free name, unknown symbol, wrong arity), the level-naming of a raw
+sentence, a finitely satisfiable and a finitely valid sentence on both sides of the translation, the
+reduction on a finitely satisfiable formula and on the axiom of infinity, the headline theorems for
+both the language of graphs and a ternary-only relational language, and a monadic language with both
+unary and nullary relation symbols witnessing the positive half and both directions of the
+Trakhtenbrot–Löwenheim dichotomy (including the rank-`0` and size-`2 ^ k` small-model cases). -/
 
 @[expose] public section
 
@@ -55,6 +57,10 @@ def irrefl : Language.graph.Sentence :=
 /-- The outer quantifier binds `0`, the inner one `2`. -/
 theorem toRaw_symm :
     toRaw symm = .all 0 (.all 2 (.imp (.rel 0 [0, 2]) (.rel 0 [2, 0]))) := rfl
+
+/-- Raw quantifier depth computes sentence quantifier rank. -/
+example : quantifierRank symm = 2 := by rw [← quantifierDepth_toRaw]; decide
+example : quantifierRank irrefl = 1 := by rw [← quantifierDepth_toRaw]; decide
 
 /-- The raw formula of `symm` decodes to `symm`. -/
 example : fromRaw 0 (.all 0 (.all 2 (.imp (.rel 0 [0, 2]) (.rel 0 [2, 0])))) = some symm := by
@@ -267,5 +273,215 @@ def otherEncoding : Encodable (Σ l, Language.graph.Relations l) :=
 example : @Primrec _ _ primcodableRaw (@primcodableRaw _ _ 0 _ otherEncoding _ _)
     (id : Language.graph.Sentence → _) :=
   primrec_id_primcodableRaw _ otherEncoding
+
+/-! ### A monadic language with unary and nullary symbols, and the dichotomy -/
+
+/-- Relation symbols of `monadicLang`: one nullary symbol `flag` and two unary symbols `p0`,
+`p1`. -/
+inductive MonadicRel : ℕ → Type
+  | flag : MonadicRel 0
+  | p0 : MonadicRel 1
+  | p1 : MonadicRel 1
+  deriving DecidableEq
+
+/-- A finite monadic relational language containing both unary symbols (`p0`, `p1`) and a nullary
+symbol (`flag`). -/
+def monadicLang : Language := ⟨fun _ => Empty, MonadicRel⟩
+  deriving Language.IsRelational
+
+/-- The nullary relation symbol of `monadicLang`. -/
+abbrev flag : monadicLang.Relations 0 := .flag
+
+/-- The first unary relation symbol of `monadicLang`. -/
+abbrev p0 : monadicLang.Relations 1 := .p0
+
+/-- The second unary relation symbol of `monadicLang`. -/
+abbrev p1 : monadicLang.Relations 1 := .p1
+
+/-- Every relation symbol of `monadicLang` has arity at most `1`. -/
+theorem monadicLang_monadic : ∀ l, 2 ≤ l → IsEmpty (monadicLang.Relations l) :=
+  fun _ hl => ⟨fun r => by cases r <;> omega⟩
+
+/-- Equivalence of `monadicLang` relation symbols with `Fin 3`. -/
+def monadicSymbols : (Σ l, monadicLang.Relations l) ≃ Fin 3 where
+  toFun
+    | ⟨_, .flag⟩ => 0
+    | ⟨_, .p0⟩ => 1
+    | ⟨_, .p1⟩ => 2
+  invFun
+    | ⟨0, _⟩ => ⟨0, .flag⟩
+    | ⟨1, _⟩ => ⟨1, .p0⟩
+    | ⟨_ + 2, _⟩ => ⟨1, .p1⟩
+  left_inv := fun ⟨_, r⟩ => by cases r <;> rfl
+  right_inv := fun ⟨i, hi⟩ => by
+    rcases i with _ | _ | _ | i
+    · rfl
+    · rfl
+    · rfl
+    · omega
+
+instance : Encodable (Σ l, monadicLang.Relations l) := Encodable.ofEquiv (Fin 3) monadicSymbols
+
+instance : Finite (Σ l, monadicLang.Relations l) := .of_equiv (Fin 3) monadicSymbols.symm
+
+/-- Equivalence of the unary relation symbols of `monadicLang` with `Bool`. -/
+def monadicUnary : monadicLang.Relations 1 ≃ Bool where
+  toFun
+    | .p0 => false
+    | .p1 => true
+  invFun
+    | false => .p0
+    | true => .p1
+  left_inv := fun r => by cases r <;> rfl
+  right_inv := fun b => by cases b <;> rfl
+
+instance : Finite (monadicLang.Relations 1) := .of_equiv Bool monadicUnary.symm
+
+theorem card_monadicLang_unary : Nat.card (monadicLang.Relations 1) = 2 := by
+  rw [Nat.card_congr monadicUnary]
+  simp
+
+/-- The rank-`0` sentence consisting of the nullary relation symbol `flag`. -/
+def flagSentence : monadicLang.Sentence := BoundedFormula.rel flag ![]
+
+theorem quantifierRank_flagSentence : quantifierRank flagSentence = 0 := by
+  rw [← quantifierDepth_toRaw]
+  decide
+
+/-- Without `max (quantifierRank _) 1`, the bound `q * 2 ^ k` vanishes at rank `0`, leaving no
+candidate size `n < 0`. -/
+example : ¬∃ n < quantifierRank flagSentence * 2 ^ Nat.card (monadicLang.Relations 1),
+    RawFormula.SatOnFin n flagSentence.toRaw := by
+  simp [quantifierRank_flagSentence]
+
+/-- One-point `monadicLang`-structure where `flag` holds. -/
+@[instance_reducible]
+def flagTrueStruct : monadicLang.Structure (Fin 1) where
+  RelMap
+    | .flag, _ => True
+    | _, _ => False
+
+/-- One-point `monadicLang`-structure where `flag` fails. -/
+@[instance_reducible]
+def flagFalseStruct : monadicLang.Structure (Fin 1) where
+  RelMap _ _ := False
+
+theorem satOnFin_zero_flagSentence : RawFormula.SatOnFin 0 flagSentence.toRaw :=
+  (Sentence.exists_structure_fin_realize_iff_satOnFin 0 flagSentence).1 ⟨flagTrueStruct, trivial⟩
+
+theorem finSat_flagSentence : Sentence.FinSat flagSentence :=
+  (Sentence.finSat_iff_exists_lt_satOnFin monadicLang_monadic flagSentence).2
+    ⟨0, by rw [quantifierRank_flagSentence, card_monadicLang_unary]; decide,
+      satOnFin_zero_flagSentence⟩
+
+theorem not_finValid_flagSentence : ¬Sentence.FinValid flagSentence :=
+  fun h => @h (Fin 1) flagFalseStruct inferInstance inferInstance
+
+/-- Rank-`1` sentence requiring all four unary `(p0, p1)` color combinations to occur. -/
+def allFourColors : monadicLang.Sentence :=
+  ((∃' (p0.boundedFormula₁ &0 ⊓ p1.boundedFormula₁ &0)) ⊓
+    (∃' (p0.boundedFormula₁ &0 ⊓ ∼(p1.boundedFormula₁ &0)))) ⊓
+  ((∃' (∼(p0.boundedFormula₁ &0) ⊓ p1.boundedFormula₁ &0)) ⊓
+    (∃' (∼(p0.boundedFormula₁ &0) ⊓ ∼(p1.boundedFormula₁ &0))))
+
+theorem quantifierRank_allFourColors : quantifierRank allFourColors = 1 := by
+  rw [← quantifierDepth_toRaw]
+  decide
+
+/-- `allFourColors` has no model on `Fin 3` (`n = 2`), since four mutually exclusive unary types
+cannot fit in three elements. -/
+theorem not_satOnFin_two_allFourColors : ¬RawFormula.SatOnFin 2 allFourColors.toRaw := by
+  intro h
+  obtain ⟨S, hS⟩ := (Sentence.exists_structure_fin_realize_iff_satOnFin 2 allFourColors).2 h
+  simp only [allFourColors, Sentence.Realize, Formula.Realize, realize_inf, realize_ex,
+    realize_not, realize_rel₁] at hS
+  obtain ⟨⟨⟨a, ha0, ha1⟩, ⟨b, hb0, hb1⟩⟩, ⟨⟨c, hc0, hc1⟩, ⟨d, hd0, hd1⟩⟩⟩ := hS
+  have hab : a.val ≠ b.val := fun heq => hb1 (Fin.ext heq ▸ ha1)
+  have hac : a.val ≠ c.val := fun heq => hc0 (Fin.ext heq ▸ ha0)
+  have had : a.val ≠ d.val := fun heq => hd0 (Fin.ext heq ▸ ha0)
+  have hbc : b.val ≠ c.val := fun heq => hc0 (Fin.ext heq ▸ hb0)
+  have hbd : b.val ≠ d.val := fun heq => hd0 (Fin.ext heq ▸ hb0)
+  have hcd : c.val ≠ d.val := fun heq => hd1 (Fin.ext heq ▸ hc1)
+  omega
+
+/-- Four-element `monadicLang`-structure realizing all four `(p0, p1)` combinations. -/
+@[instance_reducible]
+def fourColorStruct : monadicLang.Structure (Fin 4) where
+  RelMap
+    | .flag, _ => False
+    | .p0, xs => (xs 0).val / 2 = 1
+    | .p1, xs => (xs 0).val % 2 = 1
+
+/-- `allFourColors` holds on `Fin 4` (`n = 3`), attaining `max 1 1 * 2 ^ 2 = 4`. -/
+theorem satOnFin_three_allFourColors : RawFormula.SatOnFin 3 allFourColors.toRaw := by
+  refine (Sentence.exists_structure_fin_realize_iff_satOnFin 3 allFourColors).1
+    ⟨fourColorStruct, ?_⟩
+  simp only [allFourColors, Sentence.Realize, Formula.Realize, realize_inf, realize_ex,
+    realize_not, realize_rel₁]
+  refine ⟨⟨⟨3, ?_, ?_⟩, ⟨2, ?_, ?_⟩⟩, ⟨⟨1, ?_, ?_⟩, ⟨0, ?_, ?_⟩⟩⟩
+  · exact (rfl : (3 : Fin 4).val / 2 = 1)
+  · exact (rfl : (3 : Fin 4).val % 2 = 1)
+  · exact (rfl : (2 : Fin 4).val / 2 = 1)
+  · exact fun (h : (2 : Fin 4).val % 2 = 1) => by omega
+  · exact fun (h : (1 : Fin 4).val / 2 = 1) => by omega
+  · exact (rfl : (1 : Fin 4).val % 2 = 1)
+  · exact fun (h : (0 : Fin 4).val / 2 = 1) => by omega
+  · exact fun (h : (0 : Fin 4).val % 2 = 1) => by omega
+
+example : Sentence.FinSat allFourColors :=
+  (Sentence.finSat_iff_exists_lt_satOnFin monadicLang_monadic allFourColors).2
+    ⟨3, by rw [quantifierRank_allFourColors, card_monadicLang_unary]; decide,
+      satOnFin_three_allFourColors⟩
+
+/-- Positive half of the dichotomy on `monadicLang`: `FinSat` and `FinValid` are primitive
+recursive, decidable, and r.e. -/
+example : PrimrecPred (Sentence.FinSat (L := monadicLang)) :=
+  Sentence.primrecPred_finSat_of_monadic monadicLang_monadic
+
+example : ComputablePred (Sentence.FinSat (L := monadicLang)) :=
+  Sentence.computablePred_finSat_iff.2 monadicLang_monadic
+
+example : PrimrecPred (Sentence.FinValid (L := monadicLang)) :=
+  Sentence.primrecPred_finValid_of_monadic monadicLang_monadic
+
+example : ComputablePred (Sentence.FinValid (L := monadicLang)) :=
+  Sentence.computablePred_finValid_iff.2 monadicLang_monadic
+
+example : REPred (Sentence.FinValid (L := monadicLang)) :=
+  Sentence.rePred_finValid_iff.2 monadicLang_monadic
+
+example : REPred (fun φ : monadicLang.Sentence => ¬Sentence.FinSat φ) :=
+  Sentence.rePred_not_finSat_iff.2 monadicLang_monadic
+
+/-- Forward (contrapositive) direction of the dichotomy on `Language.graph` and `ternaryLang`. -/
+theorem not_monadic_graph : ¬∀ l, 2 ≤ l → IsEmpty (Language.graph.Relations l) :=
+  fun h => (h 2 le_rfl).false adj
+
+example : ¬ComputablePred (Sentence.FinSat (L := Language.graph)) :=
+  mt Sentence.computablePred_finSat_iff.1 not_monadic_graph
+
+example : ¬ComputablePred (Sentence.FinValid (L := Language.graph)) :=
+  mt Sentence.computablePred_finValid_iff.1 not_monadic_graph
+
+example : ¬REPred (Sentence.FinValid (L := Language.graph)) :=
+  mt Sentence.rePred_finValid_iff.1 not_monadic_graph
+
+example : ¬REPred (fun φ : Language.graph.Sentence => ¬Sentence.FinSat φ) :=
+  mt Sentence.rePred_not_finSat_iff.1 not_monadic_graph
+
+theorem not_monadic_ternaryLang : ¬∀ l, 2 ≤ l → IsEmpty (ternaryLang.Relations l) :=
+  fun h => (h 3 (by decide)).false rel3
+
+example : ¬ComputablePred (Sentence.FinSat (L := ternaryLang)) :=
+  mt Sentence.computablePred_finSat_iff.1 not_monadic_ternaryLang
+
+example : ¬ComputablePred (Sentence.FinValid (L := ternaryLang)) :=
+  mt Sentence.computablePred_finValid_iff.1 not_monadic_ternaryLang
+
+example : ¬REPred (Sentence.FinValid (L := ternaryLang)) :=
+  mt Sentence.rePred_finValid_iff.1 not_monadic_ternaryLang
+
+example : ¬REPred (fun φ : ternaryLang.Sentence => ¬Sentence.FinSat φ) :=
+  mt Sentence.rePred_not_finSat_iff.1 not_monadic_ternaryLang
 
 end Cslib.Tests.TrakhtenbrotSentence
