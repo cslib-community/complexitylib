@@ -19,8 +19,9 @@ Seeds `seeds i` of a family of functions `h i : X → Y` *cover* `Y` from a fini
 every `y : Y` is the image of an element of `S` under one of the functions `h (seeds i)`
 (`Cslib.Probability.Covers`). Covering is a two-sided size test for `S`:
 
-* if `h` is pairwise independent, `q |Y| ≤ #S` and `|Y| < q ^ p`, then some `p` seeds cover `Y`
-  (`Cslib.Probability.IsPairwiseIndependentHash.exists_covers_of_card`): by the second moment
+* if `h` is pairwise independent, `Y` is nonempty, `q |Y| ≤ #S` and `|Y| < q ^ p`, then some `p`
+  seeds cover `Y` (`Cslib.Probability.IsPairwiseIndependentHash.exists_covers_of_card`; with `Y`
+  empty there may be no seeds at all): by the second moment
   bound, at most a `1 / q` fraction of the seeds miss a given target, and a union bound over the
   targets finds `p` seeds that miss none
   (`Cslib.exists_cover_of_scaled_card_lt`);
@@ -30,7 +31,8 @@ every `y : Y` is the image of an element of `S` under one of the functions `h (s
 With `Y` the strings of `u` bits, `q = 2` and `p = u + 1`, covering holds when `#S ≥ 2 ^ (u + 1)`
 and fails when `(u + 1) #S < 2 ^ u`: a test that separates sizes a factor `2 (u + 1)` apart. Like
 the hashing analysis of the set lower bound protocol of Goldwasser and Sipser
-[Arora and Barak, Section 8.2][AroraBarak09], covering certifies a lower bound on a size. The
+[GoldwasserSipser1986], [Arora and Barak, Section 8.2][AroraBarak09], covering certifies a lower
+bound on a size. The
 union bound over the targets is that of Lautemann's covering lemma [Lautemann1983]
 (`Cslib.exists_forall_exists_mul_mem_of_mul_card_compl_le`), with the seeds of a pairwise
 independent family in place of shifts.
@@ -48,6 +50,8 @@ independent family in place of shifts.
 
 ## References
 
+* [S. Goldwasser, M. Sipser, *Private coins versus public coins in interactive proof
+  systems*][GoldwasserSipser1986]
 * [C. Lautemann, *BPP and the polynomial hierarchy*][Lautemann1983]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
